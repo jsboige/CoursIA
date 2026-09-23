@@ -1,9 +1,8 @@
-# Ledgers de dette partages (`issue-debt`, `pr-actions`)
+# Ledger de dette partage (`issue-debt`)
 
-Deux registres append-only qui portent, d'un cycle a l'autre, ce que la flotte
+Un registre append-only qui porte, d'un cycle a l'autre, ce que la flotte
 rederivait jusqu'ici en relisant dashboards, inbox et GitHub : la **dette
-d'issue** (ce qu'une issue doit encore) et **l'action de PR** (ce qu'une PR
-attend).
+d'issue** (ce qu'une issue doit encore).
 
 Ce dossier contient l'**utilitaire generique** : schemas, reducteur, CLI, tests.
 Il ne connait ni GitHub ni RooSync et **n'ecrit jamais sur le systeme de
@@ -17,12 +16,11 @@ ecrivent le meme fichier font du *last-write-wins* — un ledger multi-ecrivain 
 **perdrait silencieusement des observations**, exactement la perte que le ledger
 existe pour empecher.
 
-Le transport est **deux dashboards workspace dedies**, un par nature :
+Le transport est **un dashboard workspace dedie** :
 
 | Ledger | Dashboard | Qui ecrit quoi |
 |---|---|---|
 | `issue-debt` | `CoursIA-issue-debt-ledger` | adjoint + bots : `append` d'observations |
-| `pr-actions` | `CoursIA-pr-action-ledger` | adjoint + Hermes + NanoClaw : `append` d'observations |
 
 - **Une observation = un message append-only.** `content` est une ligne JSON
   prefixee `[OBS] `. Le message n'est jamais edite : le journal est
@@ -44,7 +42,7 @@ roosync_dashboard(action:"update", type:"workspace", workspace:"CoursIA-issue-de
                   section:"status", content:"<snapshots/status.md>")   # ai-01 UNIQUEMENT
 ```
 
-`init` imprime ces appels pour chacun des deux ledgers (le `schema.json` genere
+`init` imprime ces appels pour le ledger (le `schema.json` genere
 les porte aussi sous `dashboard_calls`).
 
 ## Artefacts locaux (jamais dans le depot, jamais sous `$ROOSYNC_SHARED_PATH`)
@@ -77,14 +75,13 @@ meme montage.
 {
   "schema": "debt-ledger-observation/v1",
   "observation_id": "obs-<sha256 tronque du contenu>",
-  "ledger": "pr-actions",
+  "ledger": "issue-debt",
   "actor": "myia-po-2025:CoursIA-2",
   "observed_at": "2026-09-17T19:48:00Z",
   "confidence": "high",
-  "evidence": "gh pr view 16001 --json headRefOid,reviews",
-  "entity": {"repo": "jsboige/CoursIA", "pr": 16001, "head_sha": "<40 hex>"},
-  "head_transition": false,
-  "fields": {"action_class": "review-ready", "review_required": true}
+  "evidence": "gh issue view 15545",
+  "entity": {"repo": "jsboige/CoursIA", "issue": 15545},
+  "fields": {"state_class": "open-blocked", "eat_hours": 4.0}
 }
 ```
 
@@ -99,8 +96,6 @@ Regles dures :
   (`unknown_key`, `unknown_field`) : une typo qui cree un champ fantome vaut
   pire qu'un refus bruyant, parce que le champ fantome ne fusionne jamais avec le
   vrai et deux lanes lisent alors deux verites differentes.
-- `head_sha` est le SHA **complet** (40 hex). Une forme abregée est refusee
-  (`short_head_sha`) : elle creerait une transition de tete fantome.
 
 ### Champs — `issue-debt`
 
@@ -112,23 +107,6 @@ Regles dures :
 | `eat_hours` | nombre >= 0 | heures de tache atomique (EAT) encore dues |
 | `dependencies` | liste | entiers (`repo#N` implicite) ou `{kind: issue\|pr\|external, repo?, number?, note?}` |
 | `followup` | objet ou `null` | `{kind: issue, repo, number}` ou `{kind: waiver, reason}` ou `{kind: none}` |
-
-### Champs — `pr-actions`
-
-`head_bound` = le champ decrit les surfaces d'UN commit : il est **refuse** s'il
-provient d'une observation prise contre une tete de PR deja remplacee.
-
-| Champ | Type | `head_bound` | Sens |
-|---|---|---|---|
-| `action_class` | enum | non | `ready-to-merge` · `review-ready` · `needs-review` · `needs-repair` · `blocked-on-ci` · `blocked-on-author` · `blocked-on-reserve` · `merged` · `closed` · `unknown` |
-| `review_required` | bool | non | une review est-elle encore due |
-| `reviewer` | texte | non | lane ou bot attendu (adjoint, Hermes, NanoClaw, ai-01) |
-| `producer` | texte | non | lane productrice |
-| `live_reserves` | liste | **oui** | reserves ouvertes sur la tete COURANTE (chaine nue ou `{summary, url?, author?}`) |
-| `live_checks` | objet | **oui** | nom de check -> statut |
-| `update_branch_status` | enum | **oui** | `up-to-date` · `behind` · `update-required` · `unknown` |
-| `dossier_status` | enum | **oui** | `absent` · `requested` · `ready` · `stale` · `invalid` |
-| `next_action` | texte | **oui** | le geste unique que la lane doit |
 
 Une observation **partielle** est legitime : rien n'est obligatoire dans
 `fields`, et l'incompletude se mesure (`summary.rows.incomplete`), elle ne
@@ -192,23 +170,6 @@ que le checkpoint n'est pas fatal (ses observations perdent sur `observed_at`)
 mais il est signale (`export_older_than_checkpoint`) : un export perime ne doit
 jamais faire regresser l'etat.
 
-### Regle de tete (PR)
-
-Les tetes sont ordonnees par `observed_at`. Une observation qui declare une tete
-**deja remplacee** ne peut pas ramener la tete en arriere, et ses champs
-`head_bound` sont refuses — elle est consignee `stale_head` dans l'historique.
-Les champs non `head_bound` s'appliquent quand meme (ils decrivent la PR, pas un
-commit). Un retour en arriere reel (force-push) se declare explicitement avec
-`head_transition: true` et se compte (`head.head_regressions`).
-
-Un enregistrement plie depuis le checkpoint est une **observation, jamais une
-declaration** : sans cette distinction, une tete deja refusee reviendrait comme
-un force-push declare a chaque re-pliage, et le ledger deriverait vers la vue
-perimee au lieu de tenir le refus. Le compteur
-`head.stale_head_observations` compte des **observations** (par
-`observation_id`), pas des champs : une observation portant trois champs
-`head_bound` reste une observation perimee.
-
 ## CLI
 
 ```bash
@@ -216,14 +177,14 @@ perimee au lieu de tenir le refus. Le compteur
 python scripts/coordination/debt_ledger.py init --state-dir <etat> --apply
 
 # 2. fabriquer une observation, imprimer l'appel MCP a poster (n'ecrit rien de partage)
-python scripts/coordination/debt_ledger.py append --ledger pr-actions \
-    --entity jsboige/CoursIA#16001 --head-sha <40 hex> --actor myia-po-2025:CoursIA-2 \
-    --evidence "gh pr view 16001" --confidence high \
-    --fields-json '{"action_class":"review-ready","review_required":true}'
-#    -> ajouter --out-dir <etat>/pr-actions/spool pour garder une boite d'envoi locale
+python scripts/coordination/debt_ledger.py append --ledger issue-debt \
+    --entity jsboige/CoursIA#15545 --actor myia-po-2025:CoursIA-2 \
+    --evidence "gh issue view 15545" --confidence high \
+    --fields-json '{"state_class":"open-blocked","eat_hours":4.0}'
+#    -> ajouter --out-dir <etat>/issue-debt/spool pour garder une boite d'envoi locale
 
 # 3. plier (le snapshot precedent est repris automatiquement comme checkpoint)
-python scripts/coordination/debt_ledger.py reduce --ledger pr-actions \
+python scripts/coordination/debt_ledger.py reduce --ledger issue-debt \
     --events <export.json> --state-dir <etat>
 ```
 
@@ -245,9 +206,6 @@ Codes de sortie : `0` ok · `1` fatal (ou rejets avec `--fail-on-rejections`) ·
 - `issue-debt` : EAT total et par `state_class`, `remaining_atomic_prs`,
   `closeable_now` (les issues fermables en l'etat), dependances (dont externes),
   suivi des follow-ups (`issue` / `waiver` / `none` / `missing`).
-- `pr-actions` : `action_class`, review due/par reviewer/par producteur, reserves
-  vivantes, checks en echec, `update_branch_status`, `dossier_status`,
-  `review_ready` (la file a deleguer), observations `stale_head`.
 
 ## Tests
 
@@ -256,7 +214,7 @@ python -m pytest scripts/tests/test_debt_ledger.py
 ```
 
 Ils couvrent les proprietes dont chacune est un mode d'echec reel de la flotte :
-observations concurrentes distinctes, tete perimee qui n'ecrase pas la tete
-courante, idempotence (re-append et re-pliage), schema invalide refuse avec sa
-raison, metriques PR/EAT, suivi des follow-ups, contrats d'archive et de
-verrouillage/atomicite des ecritures locales.
+observations concurrentes distinctes, idempotence (re-append et re-pliage), schema
+invalide refuse avec sa raison, metriques EAT, suivi des follow-ups, contrats
+d'archive et de verrouillage/atomicite des ecritures locales, et l'adaptateur
+d'enveloppe du producteur (`data.intercom.messages`, auteur normalise).

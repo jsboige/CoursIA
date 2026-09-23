@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
-"""Tests for ``scripts/coordination/debt_ledger.py`` -- the shared debt ledgers.
+"""Tests for ``scripts/coordination/debt_ledger.py`` -- the shared debt ledger.
 
-The ledgers are append-only journals carried by two DEDICATED RooSync workspace
-dashboards; the reducer is the only place where the journal is folded into
-state, and it must be trustworthy on five properties that are each a real
-fleet failure mode:
+The ledger is an append-only journal carried by a DEDICATED RooSync workspace
+dashboard; the reducer is the only place where the journal is folded into state,
+and it must be trustworthy on five properties that are each a real fleet failure
+mode:
 
   * two lanes observing the same entity at the same instant never clobber each
     other (distinct observations survive, the merge is deterministic);
-  * an observation taken against a SUPERSEDED PR head never overwrites the
-    current head's reserves/checks/dossier -- a stale view is not a verdict;
   * a re-append of the same observation is a no-op, and a re-fold of the same
     journal yields the same state (idempotency, not "mostly idempotent");
   * a malformed observation is REJECTED with its reason rather than silently
     merged into a phantom field;
-  * the summary carries the EAT (issue debt) and PR metrics the cycle decides on,
-    and follow-ups are tracked as named issues or explicit waivers.
+  * an export whose adjacency the dashboard has condensed away still folds from
+    the checkpoint without re-deriving or losing state;
+  * the summary carries the EAT (issue debt) metrics the cycle decides on, and
+    follow-ups are tracked as named issues or explicit waivers.
 
 Run: python -m pytest scripts/tests/test_debt_ledger.py
 """
@@ -34,9 +34,6 @@ import debt_ledger as dl  # noqa: E402
 
 NOW = datetime(2026, 9, 17, 20, 0, 0, tzinfo=timezone.utc)
 FROZEN = "--now=2026-09-17T20:00:00Z"
-HEAD_A = "a" * 40
-HEAD_B = "b" * 40
-HEAD_C = "c" * 40
 
 
 # --- helpers -----------------------------------------------------------------
@@ -59,30 +56,6 @@ def issue_obs(
         "confidence": confidence,
         "evidence": evidence,
         "entity": {"repo": "jsboige/CoursIA", "issue": issue},
-        "fields": dict(fields),
-    }
-
-
-def pr_obs(
-    pr: int = 16001,
-    *,
-    head: str = HEAD_A,
-    actor: str = "myia-po-2025:CoursIA-2",
-    observed_at: str = "2026-09-17T19:00:00Z",
-    confidence: str = "high",
-    evidence: str = "gh pr view 16001",
-    head_transition: bool = False,
-    **fields,
-) -> dict:
-    return {
-        "schema": dl.OBSERVATION_SCHEMA,
-        "ledger": dl.PR_ACTIONS,
-        "actor": actor,
-        "observed_at": observed_at,
-        "confidence": confidence,
-        "evidence": evidence,
-        "entity": {"repo": "jsboige/CoursIA", "pr": pr, "head_sha": head},
-        "head_transition": head_transition,
         "fields": dict(fields),
     }
 
@@ -128,14 +101,10 @@ def row_of(snapshot, key: str) -> dict:
 
 
 def state_of(snapshot) -> dict:
-    """The state that must survive a re-fold: values, verdict, current head."""
+    """The state that must survive a re-fold: per row, its values and verdict."""
     snapshot = getattr(snapshot, "snapshot", snapshot)
     return {
-        row["key"]: (
-            row["fields"],
-            row["historical"],
-            (row.get("head") or {}).get("current"),
-        )
+        row["key"]: (row["fields"], row["historical"])
         for row in snapshot["rows"]
     }
 
@@ -215,156 +184,6 @@ def test_merge_order_is_actor_then_digest_and_never_filesystem_order():
     assert state_of(forward) == state_of(backward)
 
 
-# --- PR head rule ------------------------------------------------------------
-
-
-def test_stale_head_does_not_overwrite_current_head():
-    """#1068-class trap: a late observation against a dead head is not a verdict."""
-    snapshot = reduce_it(
-        dl.PR_ACTIONS,
-        [
-            pr_obs(head=HEAD_A, observed_at="2026-09-17T18:00:00Z",
-                   live_reserves=["r1"], action_class="review-ready"),
-            pr_obs(head=HEAD_B, observed_at="2026-09-17T18:30:00Z",
-                   live_reserves=["r2"], action_class="needs-repair", next_action="fix the reserve"),
-            # Newer than everything, but taken against the head that HEAD_B replaced.
-            pr_obs(head=HEAD_A, observed_at="2026-09-17T19:00:00Z",
-                   live_reserves=["r3"], action_class="ready-to-merge", next_action="merge now"),
-        ],
-    )
-    row = row_of(snapshot, "jsboige/CoursIA#16001")
-    assert row["head"]["current"] == HEAD_B
-    assert row["fields"]["live_reserves"] == [{"summary": "r2"}]
-    assert row["fields"]["next_action"] == "fix the reserve"
-    # Head-independent fields still take the newest read: they describe the PR,
-    # not a commit.
-    assert row["fields"]["action_class"] == "ready-to-merge"
-    assert row["head"]["stale_head_observations"] == 1
-    stale = [entry for entry in row["history"]["live_reserves"] if entry["reason"] == "stale_head"]
-    assert len(stale) == 1
-    assert stale[0]["value"] == [{"summary": "r3"}]
-    assert stale[0]["head_sha"] == HEAD_A
-
-
-def test_stale_head_refusal_survives_a_checkpoint_refold():
-    """A -> B -> stale A, then two more cycles that only re-fold the checkpoint.
-
-    The defect this pins: folding a history entry stamped it as a DECLARED head
-    transition, so a head the reducer had already refused came back as a
-    force-push on every re-fold -- the ledger drifted toward the stale view
-    instead of holding the refusal.
-    """
-    stale_a = pr_obs(
-        head=HEAD_A, observed_at="2026-09-17T19:00:00Z", actor="myia-po-2026:CoursIA",
-        live_reserves=["r3"], next_action="merge now",
-    )
-    cycle1 = reduce_it(
-        dl.PR_ACTIONS,
-        [
-            pr_obs(head=HEAD_A, observed_at="2026-09-17T18:00:00Z", live_reserves=["r1"]),
-            pr_obs(head=HEAD_B, observed_at="2026-09-17T18:30:00Z", live_reserves=["r2"]),
-            stale_a,
-        ],
-    )
-    first = row_of(cycle1, "jsboige/CoursIA#16001")
-    assert first["head"]["current"] == HEAD_B
-    assert first["fields"]["live_reserves"] == [{"summary": "r2"}]
-    assert first["head"]["stale_head_observations"] == 1
-
-    # Cycle 2: the dashboard archived the journal, so the tail is EMPTY -- only
-    # the checkpoint carries the refusal.
-    cycle2 = dl.reduce_ledger(
-        ledger=dl.PR_ACTIONS,
-        export=journal(dl.PR_ACTIONS, [], kind="incremental"),
-        prior_snapshot=cycle1.snapshot,
-        now=NOW,
-    )
-    second = row_of(cycle2, "jsboige/CoursIA#16001")
-    assert second["head"]["current"] == HEAD_B
-    assert second["fields"]["live_reserves"] == [{"summary": "r2"}]
-    assert second["head"]["stale_head_observations"] == 1
-    assert second["head"]["superseded_heads"] == [HEAD_A]
-    refused = [entry for entry in second["history"]["live_reserves"]
-               if entry["reason"] == "stale_head"]
-    assert len(refused) == 1
-    assert refused[0]["value"] == [{"summary": "r3"}]
-
-    # Cycle 3: the same journal is replayed on top of the checkpoint -- a replay
-    # must not change the verdict either.
-    cycle3 = dl.reduce_ledger(
-        ledger=dl.PR_ACTIONS,
-        export=journal(dl.PR_ACTIONS, [stale_a], kind="incremental"),
-        prior_snapshot=cycle2.snapshot,
-        now=NOW,
-    )
-    third = row_of(cycle3, "jsboige/CoursIA#16001")
-    assert third["head"]["current"] == HEAD_B
-    assert third["fields"]["live_reserves"] == [{"summary": "r2"}]
-    assert third["head"]["stale_head_observations"] == 1
-    assert third["head"]["head_regressions"] == 0
-
-
-def test_stale_count_is_per_observation_not_per_field():
-    """One observation carrying three head-bound fields is ONE stale observation."""
-    snapshot = reduce_it(
-        dl.PR_ACTIONS,
-        [
-            pr_obs(head=HEAD_A, observed_at="2026-09-17T18:00:00Z", live_reserves=["r1"]),
-            pr_obs(head=HEAD_B, observed_at="2026-09-17T18:30:00Z", live_reserves=["r2"]),
-            pr_obs(head=HEAD_A, observed_at="2026-09-17T19:00:00Z",
-                   live_reserves=["r3"], live_checks={"PR gate": "failure"},
-                   next_action="merge now", update_branch_status="behind"),
-        ],
-    )
-    row = row_of(snapshot, "jsboige/CoursIA#16001")
-    assert row["head"]["stale_head_observations"] == 1
-    assert row["diagnostics"]["stale_head_observations"] == 1
-    assert snapshot.summary["heads"]["stale_head_observations"] == 1
-
-
-def test_a_declared_rewind_is_still_honoured_after_a_refusal():
-    """The refusal rule must not swallow a genuine force-push declaration."""
-    snapshot = reduce_it(
-        dl.PR_ACTIONS,
-        [
-            pr_obs(head=HEAD_A, observed_at="2026-09-17T18:00:00Z", live_reserves=["r1"]),
-            pr_obs(head=HEAD_B, observed_at="2026-09-17T18:30:00Z", live_reserves=["r2"]),
-            pr_obs(head=HEAD_A, observed_at="2026-09-17T19:00:00Z", live_reserves=["r3"]),
-            pr_obs(head=HEAD_A, observed_at="2026-09-17T19:30:00Z", head_transition=True,
-                   live_reserves=["r4"]),
-        ],
-    )
-    row = row_of(snapshot, "jsboige/CoursIA#16001")
-    assert row["head"]["current"] == HEAD_A
-    assert row["fields"]["live_reserves"] == [{"summary": "r4"}]
-    assert row["head"]["head_regressions"] == 1
-    assert row["head"]["stale_head_observations"] == 1
-
-
-def test_declared_head_transition_allows_a_forced_rewind():
-    snapshot = reduce_it(
-        dl.PR_ACTIONS,
-        [
-            pr_obs(head=HEAD_A, observed_at="2026-09-17T18:00:00Z", live_reserves=["r1"]),
-            pr_obs(head=HEAD_B, observed_at="2026-09-17T18:30:00Z", live_reserves=["r2"]),
-            pr_obs(head=HEAD_A, observed_at="2026-09-17T19:00:00Z", head_transition=True,
-                   live_reserves=["r3"]),
-        ],
-    )
-    row = row_of(snapshot, "jsboige/CoursIA#16001")
-    assert row["head"]["current"] == HEAD_A
-    assert row["fields"]["live_reserves"] == [{"summary": "r3"}]
-    assert row["head"]["head_regressions"] == 1
-    assert row["head"]["stale_head_observations"] == 0
-
-
-def test_short_head_sha_is_refused():
-    raw = pr_obs(head="abc1234", live_reserves=["r"])
-    with pytest.raises(dl.ObservationError) as excinfo:
-        dl.parse_observation(raw, dl.PR_ACTIONS)
-    assert excinfo.value.reason == "short_head_sha"
-
-
 # --- idempotency -------------------------------------------------------------
 
 
@@ -391,20 +210,21 @@ def test_refolding_the_same_journal_is_byte_identical():
 def test_incremental_refold_of_the_same_events_preserves_rows_exactly():
     """Archive-aware: the checkpoint fold must not inflate or drift the rows."""
     observations = [
-        pr_obs(head=HEAD_A, observed_at="2026-09-17T18:00:00Z",
-               live_reserves=["r1"], action_class="review-ready", review_required=True),
-        pr_obs(head=HEAD_B, observed_at="2026-09-17T18:30:00Z",
-               live_reserves=["r2"], update_branch_status="behind", dossier_status="stale"),
+        issue_obs(issue=1, observed_at="2026-09-17T18:00:00Z",
+                  state_class="open-blocked", eat_hours=4.0),
+        issue_obs(issue=2, observed_at="2026-09-17T18:30:00Z",
+                  state_class="open-actionable", remaining_atomic_prs=2,
+                  closeability="closeable-now"),
     ]
-    full = reduce_it(dl.PR_ACTIONS, observations)
+    full = reduce_it(dl.ISSUE_DEBT, observations)
     incremental = dl.reduce_ledger(
-        ledger=dl.PR_ACTIONS,
-        export=journal(dl.PR_ACTIONS, observations, kind="incremental", archives=["arch-1"]),
+        ledger=dl.ISSUE_DEBT,
+        export=journal(dl.ISSUE_DEBT, observations, kind="incremental", archives=["arch-1"]),
         prior_snapshot=full.snapshot,
         now=NOW,
     )
     assert incremental.snapshot["rows"] == full.snapshot["rows"]
-    assert incremental.summary["action_class"] == full.summary["action_class"]
+    assert incremental.summary["state_class"] == full.summary["state_class"]
 
 
 # --- archive-aware checkpoint contract ---------------------------------------
@@ -469,11 +289,13 @@ def test_an_older_export_cannot_regress_state():
 
 def test_checkpoint_ledger_mismatch_is_fatal():
     issue_snapshot = reduce_it(dl.ISSUE_DEBT, [issue_obs(state_class="open-blocked")]).snapshot
+    foreign = dict(issue_snapshot, ledger="another-ledger")
     with pytest.raises(dl.LedgerError) as excinfo:
         dl.reduce_ledger(
-            ledger=dl.PR_ACTIONS,
-            export=journal(dl.PR_ACTIONS, [pr_obs(live_reserves=["r"])], kind="incremental"),
-            prior_snapshot=issue_snapshot,
+            ledger=dl.ISSUE_DEBT,
+            export=journal(dl.ISSUE_DEBT, [issue_obs(state_class="open-blocked")],
+                           kind="incremental"),
+            prior_snapshot=foreign,
             now=NOW,
         )
     assert excinfo.value.reason == "CHECKPOINT_LEDGER_MISMATCH"
@@ -500,7 +322,7 @@ def test_replayed_observation_is_counted():
     [
         (dict(issue_obs(state_class="open-blocked"), schema="debt-ledger-observation/v9"),
          "unsupported_schema_version"),
-        (dict(issue_obs(state_class="open-blocked"), ledger=dl.PR_ACTIONS), "ledger_mismatch"),
+        (dict(issue_obs(state_class="open-blocked"), ledger="release-notes"), "ledger_mismatch"),
         (dict(issue_obs(state_class="open-blocked"), verdict="nope"), "unknown_key"),
         (dict(issue_obs(state_class="open-blocked"), fields={"state": "open-blocked"}),
          "unknown_field"),
@@ -559,7 +381,7 @@ def test_an_unparsable_message_body_is_rejected_without_killing_the_export():
 
 def test_export_ledger_mismatch_is_fatal_not_silent():
     export = journal(dl.ISSUE_DEBT, [issue_obs(state_class="open-blocked")])
-    export["ledger"] = dl.PR_ACTIONS
+    export["ledger"] = "release-notes"
     with pytest.raises(dl.LedgerError) as excinfo:
         dl.reduce_ledger(ledger=dl.ISSUE_DEBT, export=export, now=NOW)
     assert excinfo.value.reason == "EXPORT_LEDGER_MISMATCH"
@@ -568,13 +390,13 @@ def test_export_ledger_mismatch_is_fatal_not_silent():
 def test_a_corrupt_config_degrades_to_the_compiled_in_workspace():
     """The dashboard a ledger lives on is a fact of the code, not of the file."""
     result = dl.reduce_ledger(
-        ledger=dl.PR_ACTIONS,
-        export=journal(dl.PR_ACTIONS, [pr_obs(live_reserves=["r"])]),
+        ledger=dl.ISSUE_DEBT,
+        export=journal(dl.ISSUE_DEBT, [issue_obs(state_class="open-blocked")]),
         now=NOW,
-        config={"ledgers": {"pr-actions": "not-an-object"}},
+        config={"ledgers": {"issue-debt": "not-an-object"}},
     )
-    assert result.snapshot["workspace"] == "CoursIA-pr-action-ledger"
-    assert result.summary["workspace"] == "CoursIA-pr-action-ledger"
+    assert result.snapshot["workspace"] == "CoursIA-issue-debt-ledger"
+    assert result.summary["workspace"] == "CoursIA-issue-debt-ledger"
 
 
 def test_a_producer_shaped_export_is_adapted_not_refused():
@@ -601,7 +423,7 @@ def test_a_producer_shaped_export_is_adapted_not_refused():
                     {"id": "msg-78",
                      "timestamp": "2026-09-17T19:05:00Z",
                      "author": {"machineId": "myia-ai-01", "workspace": "CoursIA"},
-                     "content": "[LEDGER] pr-actions @ 2026-09-17T19:05:00Z | rows 3 live"},
+                     "content": "[LEDGER] issue-debt @ 2026-09-17T19:05:00Z | rows 3 live"},
                 ],
             }
         },
@@ -706,45 +528,10 @@ def test_unknown_ledger_is_refused():
     assert excinfo.value.reason == "UNKNOWN_LEDGER"
 
 
-@pytest.mark.parametrize(
-    "fields",
-    [
-        {"live_checks": {"PR gate": "maybe"}},
-        {"live_checks": ["PR gate"]},
-        {"live_reserves": {"r1": "open"}},
-        {"live_reserves": [{"note": "no summary"}]},
-        {"next_action": ""},
-        {"action_class": "looks-good"},
-        {"review_required": "yes"},
-        {"update_branch_status": "stale"},
-        {"dossier_status": "pending"},
-    ],
-)
-def test_pr_field_shapes_are_validated(fields):
-    with pytest.raises(dl.ObservationError) as excinfo:
-        dl.parse_observation(pr_obs(**fields), dl.PR_ACTIONS)
-    assert excinfo.value.reason == "invalid_field_value"
-
-
-def test_pr_field_normalisation_is_canonical():
-    observation = dl.parse_observation(
-        pr_obs(
-            live_reserves=["bare string", {"summary": "with url", "url": "https://x/1"}],
-            live_checks={"PR gate": "failure"},
-        ),
-        dl.PR_ACTIONS,
-    )
-    assert observation["fields"]["live_reserves"] == [
-        {"summary": "bare string"},
-        {"summary": "with url", "url": "https://x/1"},
-    ]
-    assert observation["fields"]["live_checks"] == {"PR gate": "failure"}
-
-
 # --- terminal rows stay historical -------------------------------------------
 
 
-def test_closed_and_merged_rows_remain_historical():
+def test_closed_rows_remain_historical():
     issue_snapshot = reduce_it(
         dl.ISSUE_DEBT,
         [
@@ -757,18 +544,6 @@ def test_closed_and_merged_rows_remain_historical():
     assert rows["jsboige/CoursIA#2"]["historical"] is False
     assert issue_snapshot.snapshot["counts"]["historical"] == 1
     assert issue_snapshot.summary["state_class"] == {"open-blocked": 1}
-
-    pr_snapshot = reduce_it(
-        dl.PR_ACTIONS,
-        [
-            pr_obs(pr=10, action_class="merged"),
-            pr_obs(pr=11, action_class="ready-to-merge", live_reserves=["r"]),
-        ],
-    )
-    pr_rows = {row["key"]: row for row in pr_snapshot.snapshot["rows"]}
-    assert pr_rows["jsboige/CoursIA#10"]["historical"] is True
-    assert pr_rows["jsboige/CoursIA#11"]["historical"] is False
-    assert pr_snapshot.summary["action_class"] == {"ready-to-merge": 1}
 
 
 # --- baseline ----------------------------------------------------------------
@@ -800,7 +575,7 @@ def test_baseline_rows_are_superseded_by_a_newer_observation():
 def test_a_baseline_for_another_ledger_is_fatal():
     baseline = {
         "schema": dl.BASELINE_SCHEMA,
-        "ledger": dl.PR_ACTIONS,
+        "ledger": "release-notes",
         "generated_at": "2026-09-01T00:00:00Z",
         "rows": [],
     }
@@ -916,53 +691,12 @@ def test_summary_counts_missing_fields_as_incomplete():
     assert snapshot.summary["rows"]["incomplete"] == 1
 
 
-# --- summary: PR metrics -----------------------------------------------------
-
-
-def test_summary_carries_pr_action_metrics():
-    snapshot = reduce_it(
-        dl.PR_ACTIONS,
-        [
-            pr_obs(pr=20, head=HEAD_A, action_class="review-ready", review_required=True,
-                   reviewer="adjoint", producer="myia-po-2025:CoursIA-2",
-                   live_reserves=["nit 1", "nit 2"], live_checks={"PR gate": "pending"},
-                   update_branch_status="behind", dossier_status="absent"),
-            pr_obs(pr=21, head=HEAD_B, action_class="needs-repair", review_required=False,
-                   reviewer="Hermes", producer="myia-po-2026:CoursIA",
-                   live_reserves=["one"], live_checks={"Scripts Tests": "failure"},
-                   update_branch_status="up-to-date", dossier_status="ready"),
-            pr_obs(pr=22, head=HEAD_C, action_class="merged"),
-        ],
-    )
-    summary = snapshot.summary
-    assert summary["action_class"] == {"needs-repair": 1, "review-ready": 1}
-    assert summary["review"] == {
-        "required": 1,
-        "not_required": 1,
-        "unknown": 0,
-        "by_reviewer": {"Hermes": 1, "adjoint": 1},
-        "by_producer": {"myia-po-2025:CoursIA-2": 1, "myia-po-2026:CoursIA": 1},
-    }
-    assert summary["reserves"] == {
-        "rows_with_live_reserves": 2,
-        "live_total": 3,
-        "by_action_class": {"needs-repair": 1, "review-ready": 2},
-    }
-    assert summary["checks"]["rows_with_failing_checks"] == 1
-    assert summary["checks"]["status_counts"] == {"failure": 1, "pending": 1}
-    assert summary["update_branch_status"] == {"behind": 1, "up-to-date": 1}
-    assert summary["dossier_status"] == {"absent": 1, "ready": 1}
-    assert summary["review_ready"] == ["jsboige/CoursIA#20"]
-    assert summary["rows"]["historical"] == 1
-    assert "review_required 1" in snapshot.status_text
-
-
 def test_status_text_is_bounded_by_status_max_rows():
     observations = [
-        pr_obs(pr=100 + index, head=HEAD_A, action_class="needs-review", live_reserves=["r"])
+        issue_obs(issue=100 + index, state_class="open-blocked", eat_hours=float(index))
         for index in range(30)
     ]
-    snapshot = reduce_it(dl.PR_ACTIONS, observations, config={"status_max_rows": 5})
+    snapshot = reduce_it(dl.ISSUE_DEBT, observations, config={"status_max_rows": 5})
     body = [line for line in snapshot.status_text.splitlines() if line.startswith("  ")]
     assert len([line for line in body if "more live rows" not in line]) == 5
     assert any("more live rows" in line for line in body)
@@ -1010,7 +744,6 @@ def test_init_dry_run_creates_nothing_then_apply_writes_the_contract(tmp_path, c
     config = json.loads((tmp_path / "config.json").read_text(encoding="utf-8"))
     assert config["schema"] == dl.CONFIG_SCHEMA
     assert config["ledgers"][dl.ISSUE_DEBT]["workspace"] == "CoursIA-issue-debt-ledger"
-    assert config["ledgers"][dl.PR_ACTIONS]["workspace"] == "CoursIA-pr-action-ledger"
 
     doc = json.loads((tmp_path / dl.ISSUE_DEBT / "schema.json").read_text(encoding="utf-8"))
     assert doc["schema"] == dl.SCHEMA_DOC_VERSION
@@ -1019,7 +752,7 @@ def test_init_dry_run_creates_nothing_then_apply_writes_the_contract(tmp_path, c
     assert names == ["state_class", "closeability", "remaining_atomic_prs", "eat_hours",
                      "dependencies", "followup"]
     assert doc["dashboard_calls"]["append_observation"].startswith("roosync_dashboard(action:\"append\"")
-    baseline = json.loads((tmp_path / dl.PR_ACTIONS / "baseline.json").read_text(encoding="utf-8"))
+    baseline = json.loads((tmp_path / dl.ISSUE_DEBT / "baseline.json").read_text(encoding="utf-8"))
     assert baseline["schema"] == dl.BASELINE_SCHEMA
 
 
@@ -1225,16 +958,6 @@ def test_stray_deep_format_is_ignored_but_a_declared_format_is_enforced():
         dl.parse_journal_export(declared, dl.ISSUE_DEBT)
 
 
-def test_cli_pr_actions_requires_head_sha(tmp_path, capsys):
-    assert dl.main([
-        "append", "--ledger", dl.PR_ACTIONS, "--entity", "jsboige/CoursIA#16001",
-        "--actor", "ai-01", "--evidence", "gh pr view 16001",
-        "--fields-json", json.dumps({"action_class": "review-ready"}),
-        "--state-dir", str(tmp_path),
-    ]) == 1
-    assert "MISSING_INPUT" in capsys.readouterr().err
-
-
 def test_cli_malformed_fields_json_is_a_controlled_error(tmp_path, capsys):
     for bad in ("{not json", "[1, 2]", '"a string"'):
         exit_code = dl.main([
@@ -1248,16 +971,16 @@ def test_cli_malformed_fields_json_is_a_controlled_error(tmp_path, capsys):
 
 def test_cli_append_json_descriptor_and_spool_out_dir(tmp_path, capsys):
     exit_code = dl.main([
-        "append", "--ledger", dl.PR_ACTIONS, "--entity", "jsboige/CoursIA#16001",
-        "--head-sha", HEAD_A, "--actor", "myia-po-2025:CoursIA-2",
-        "--observed-at", "2026-09-17T19:00:00Z", "--evidence", "gh pr view 16001",
-        "--fields-json", json.dumps({"action_class": "review-ready", "review_required": True}),
+        "append", "--ledger", dl.ISSUE_DEBT, "--entity", "jsboige/CoursIA#15545",
+        "--actor", "myia-po-2025:CoursIA-2",
+        "--observed-at", "2026-09-17T19:00:00Z", "--evidence", "gh issue view 15545",
+        "--fields-json", json.dumps({"state_class": "open-blocked", "eat_hours": 4.0}),
         "--json", "--out-dir", str(tmp_path / "spool"),
     ])
     captured = capsys.readouterr()
     assert exit_code == 0
     descriptor = json.loads(captured.out)
-    assert descriptor["workspace"] == "CoursIA-pr-action-ledger"
+    assert descriptor["workspace"] == "CoursIA-issue-debt-ledger"
     assert descriptor["mcp_call"].startswith('roosync_dashboard(action:"append"')
     spooled = list((tmp_path / "spool").glob("*.json"))
     assert len(spooled) == 1
@@ -1303,10 +1026,10 @@ def test_cli_reduce_writes_snapshot_summary_and_status(tmp_path, capsys):
 
 def test_cli_reduce_dry_run_writes_nothing(tmp_path):
     events = tmp_path / "events.json"
-    events.write_text(json.dumps(journal(dl.PR_ACTIONS, [pr_obs(live_reserves=["r"])])),
+    events.write_text(json.dumps(journal(dl.ISSUE_DEBT, [issue_obs(state_class="closed")])),
                       encoding="utf-8")
     state_dir = tmp_path / "state"
-    assert dl.main(["reduce", "--ledger", dl.PR_ACTIONS, "--events", str(events),
+    assert dl.main(["reduce", "--ledger", dl.ISSUE_DEBT, "--events", str(events),
                     "--state-dir", str(state_dir), "--dry-run", FROZEN]) == 0
     assert not state_dir.exists()
 

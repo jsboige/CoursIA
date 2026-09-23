@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
-r"""debt_ledger.py -- shared append-only debt ledgers (issue-debt, pr-actions).
+r"""debt_ledger.py -- shared append-only debt ledger (issue-debt).
 
 WHY
 ===
 
-The fleet keeps two ledgers that were, until now, re-derived from scratch every
-cycle by reading dashboards, inboxes and GitHub: one for the ISSUES that owe
-work ("issue debt"), one for the ACTIONS a PR is waiting for ("PR actions").
-Re-deriving is what makes a 4 h cadence expensive -- every cycle re-reads three
-surfaces per PR and re-learns what the previous cycle already knew -- and
-nothing survives a session boundary except prose.
+The fleet keeps a ledger that was, until now, re-derived from scratch every
+cycle by reading dashboards, inboxes and GitHub: the ISSUES that owe work
+("issue debt"). Re-deriving is what makes a 4 h cadence expensive -- every cycle
+re-reads the issue's surfaces and re-learns what the previous cycle already
+knew -- and nothing survives a session boundary except prose.
 
 This module is the UTILITY half of that fix: schemas, reducer, CLI, tests. It
 knows nothing about GitHub and nothing about RooSync, and it never writes to the
@@ -23,20 +22,17 @@ mount: no locking, no compare-and-swap, so two lanes writing the same file is
 last-write-wins -- a multi-writer ledger there would silently LOSE observations,
 which is the exact class of loss the ledger exists to prevent.
 
-The transport is two DEDICATED RooSync workspace dashboards, one per kind
-(``LEDGER_WORKSPACES``):
-
-  * ``CoursIA-issue-debt-ledger``  for ``issue-debt``
-  * ``CoursIA-pr-action-ledger``   for ``pr-actions``
+The transport is a DEDICATED RooSync workspace dashboard, one per ledger kind
+(``LEDGER_WORKSPACES``): ``CoursIA-issue-debt-ledger`` for ``issue-debt``.
 
 Each OBSERVATION is one append-only dashboard message: ``content`` is a one-line
 JSON envelope, ``[OBS] {...}``. Messages are never edited, so the journal is
 append-only by construction; a stable ``observation_id`` (content-derived, see
 ``observation_id_for``) makes a replay detectable instead of harmful.
 
-The SNAPSHOT is written by ai-01 ALONE, into the ``status`` section of those two
-dashboards, through the dashboard ``update``/``replace`` action -- never by a
-second writer, and never as an append (a snapshot is a derived value, not an
+The SNAPSHOT is written by ai-01 ALONE, into the ``status`` section of that
+dedicated dashboard, through the dashboard ``update``/``replace`` action -- never
+by a second writer, and never as an append (a snapshot is a derived value, not an
 event). Reducers other than ai-01 produce snapshots locally for review.
 
 WHAT LANDS ON DISK (local artifacts only)
@@ -100,24 +96,12 @@ rather than quietly emitting a snapshot built from the tail alone. An export
 OLDER than the checkpoint is not fatal (its observations lose on ``observed_at``)
 but it is surfaced as a warning -- a stale export must never regress state.
 
-PR HEAD RULE
-============
-
-A PR observation carries a full 40-hex ``head_sha``. Heads are ordered by
-``observed_at``: an observation declaring a head that was ALREADY SUPERSEDED
-cannot move the head back, and its head-bound fields (reserves, checks,
-update-branch, dossier, next action) are refused -- it is recorded as
-``stale_head`` in history instead. Head-independent fields (action class,
-review requirement, reviewer, producer) still apply, because they are properties
-of the PR, not of one commit. A genuine forced rewind is declared explicitly
-with ``head_transition: true`` and is counted as ``head_regressions``.
-
 CLI
 ===
 
 ::
 
-    python scripts/coordination/debt_ledger.py init   [--ledger both] [--apply]
+    python scripts/coordination/debt_ledger.py init   [--apply]
     python scripts/coordination/debt_ledger.py append --ledger issue-debt ...
     python scripts/coordination/debt_ledger.py reduce --ledger issue-debt --events export.json
 
@@ -158,15 +142,13 @@ CONFIG_SCHEMA = "debt-ledger-config/v1"
 SCHEMA_DOC_VERSION = "debt-ledger-schema/v1"
 
 ISSUE_DEBT = "issue-debt"
-PR_ACTIONS = "pr-actions"
-LEDGERS: tuple[str, ...] = (ISSUE_DEBT, PR_ACTIONS)
+LEDGERS: tuple[str, ...] = (ISSUE_DEBT,)
 
-#: The two DEDICATED dashboards. One per ledger kind: a ledger never shares a
+#: The DEDICATED dashboards. One per ledger kind: a ledger never shares a
 #: dashboard with another kind, so a condensation of one never truncates the
 #: other's journal.
 LEDGER_WORKSPACES: dict[str, str] = {
     ISSUE_DEBT: "CoursIA-issue-debt-ledger",
-    PR_ACTIONS: "CoursIA-pr-action-ledger",
 }
 
 #: Tag prefix of a one-line observation envelope posted as dashboard content.
@@ -193,52 +175,17 @@ CLOSEABILITY_VALUES: tuple[str, ...] = (
     "not-closeable",
     "unknown",
 )
-ACTION_CLASSES: tuple[str, ...] = (
-    "ready-to-merge",
-    "review-ready",
-    "needs-review",
-    "needs-repair",
-    "blocked-on-ci",
-    "blocked-on-author",
-    "blocked-on-reserve",
-    "merged",
-    "closed",
-    "unknown",
-)
-UPDATE_BRANCH_STATUSES: tuple[str, ...] = (
-    "up-to-date",
-    "behind",
-    "update-required",
-    "unknown",
-)
-DOSSIER_STATUSES: tuple[str, ...] = ("absent", "requested", "ready", "stale", "invalid")
-CHECK_STATUSES: tuple[str, ...] = (
-    "success",
-    "failure",
-    "pending",
-    "queued",
-    "in_progress",
-    "neutral",
-    "skipped",
-    "cancelled",
-    "timed_out",
-    "action_required",
-    "unknown",
-)
 DEPENDENCY_KINDS: tuple[str, ...] = ("issue", "pr", "external")
 FOLLOWUP_KINDS: tuple[str, ...] = ("issue", "waiver", "none")
 
 TERMINAL_ISSUE_STATE: frozenset[str] = frozenset({"closed"})
-TERMINAL_PR_ACTION: frozenset[str] = frozenset({"merged", "closed"})
 
 #: Entity fields per ledger. ``repo`` is always the first component of the key.
 ENTITY_FIELDS: dict[str, tuple[str, ...]] = {
     ISSUE_DEBT: ("repo", "issue"),
-    PR_ACTIONS: ("repo", "pr", "head_sha"),
 }
 
 _REPO_RE = re.compile(r"^[\w.-]+/[\w.-]+$")
-_HEX40_RE = re.compile(r"^[0-9a-f]{40}$")
 _ACTOR_RE = re.compile(r"^[A-Za-z0-9._-]+(:[A-Za-z0-9._-]+)?$")
 
 
@@ -249,17 +196,10 @@ class FieldSpec:
     ``kind`` selects both the validator and the normalisation applied before the
     observation id is computed (so a re-append of the same raw file is
     byte-identical, see ``canonical_json``).
-
-    ``head_bound`` marks a field whose value describes one COMMIT's surfaces: it
-    is refused from an observation taken against a superseded PR head. Head
-    independence is a deliberate, per-field judgement -- reserves, checks,
-    update-branch, dossier and next-action are head-bound; the action class,
-    the review requirement and the producer/reviewer identities are not.
     """
 
     name: str
     kind: str
-    head_bound: bool = False
     values: tuple[str, ...] = ()
     description: str = ""
 
@@ -299,69 +239,16 @@ ISSUE_DEBT_FIELDS: tuple[FieldSpec, ...] = (
     ),
 )
 
-PR_ACTIONS_FIELDS: tuple[FieldSpec, ...] = (
-    FieldSpec(
-        "action_class",
-        "enum",
-        values=ACTION_CLASSES,
-        description="What the PR is waiting for; 'merged'/'closed' are terminal.",
-    ),
-    FieldSpec(
-        "review_required", "bool", description="Is a review still owed on this PR?"
-    ),
-    FieldSpec(
-        "reviewer",
-        "text",
-        description="Lane or bot expected to review (adjoint, Hermes, NanoClaw, ai-01).",
-    ),
-    FieldSpec("producer", "text", description="Lane that produced the PR."),
-    FieldSpec(
-        "live_reserves",
-        "reserves",
-        head_bound=True,
-        description="Reserves still open on the CURRENT head, one entry each.",
-    ),
-    FieldSpec(
-        "live_checks",
-        "checks",
-        head_bound=True,
-        description="Check name -> status on the CURRENT head.",
-    ),
-    FieldSpec(
-        "update_branch_status",
-        "enum",
-        head_bound=True,
-        values=UPDATE_BRANCH_STATUSES,
-        description="Is the branch behind main (update-branch remedy).",
-    ),
-    FieldSpec(
-        "dossier_status",
-        "enum",
-        head_bound=True,
-        values=DOSSIER_STATUSES,
-        description="Adjoint preflight dossier: absent/requested/ready/stale/invalid.",
-    ),
-    FieldSpec(
-        "next_action",
-        "text",
-        head_bound=True,
-        description="The single next gesture owed by the owning lane.",
-    ),
-)
-
 LEDGER_FIELD_SPECS: dict[str, dict[str, FieldSpec]] = {
     ISSUE_DEBT: {spec.name: spec for spec in ISSUE_DEBT_FIELDS},
-    PR_ACTIONS: {spec.name: spec for spec in PR_ACTIONS_FIELDS},
 }
 
 #: Terminal values, per ledger, keyed by the field that carries the verdict.
 TERMINAL_VALUES: dict[str, tuple[str, str]] = {
     ISSUE_DEBT: ("state_class", "closed"),
-    PR_ACTIONS: ("action_class", "merged"),
 }
 TERMINAL_SETS: dict[str, frozenset[str]] = {
     ISSUE_DEBT: TERMINAL_ISSUE_STATE,
-    PR_ACTIONS: TERMINAL_PR_ACTION,
 }
 
 #: Top-level keys allowed in an observation envelope. Anything else is a
@@ -583,35 +470,16 @@ def _validate_entity(raw: Any, ledger: str) -> dict[str, Any]:
     if not isinstance(repo, str) or not _REPO_RE.match(repo.strip()):
         raise ObservationError("entity_mismatch", f"repo={repo!r} is not 'owner/name'")
     entity: dict[str, Any] = {"repo": repo.strip()}
-    if ledger == ISSUE_DEBT:
-        number = raw["issue"]
-        if isinstance(number, bool) or not isinstance(number, int) or number <= 0:
-            raise ObservationError("entity_mismatch", f"issue={number!r} is not a positive int")
-        entity["issue"] = number
-    else:
-        number = raw["pr"]
-        if isinstance(number, bool) or not isinstance(number, int) or number <= 0:
-            raise ObservationError("entity_mismatch", f"pr={number!r} is not a positive int")
-        entity["pr"] = number
-        head = raw["head_sha"]
-        if not isinstance(head, str) or not head.strip():
-            raise ObservationError("entity_mismatch", "head_sha must be a non-empty string")
-        head = head.strip().lower()
-        if not _HEX40_RE.match(head):
-            # An abbreviated SHA would silently create a phantom head transition
-            # against the same commit observed at full length.
-            raise ObservationError(
-                "short_head_sha",
-                f"head_sha={head!r} must be the full 40-character SHA (gh pr list --json headRefOid)",
-            )
-        entity["head_sha"] = head
+    number = raw["issue"]
+    if isinstance(number, bool) or not isinstance(number, int) or number <= 0:
+        raise ObservationError("entity_mismatch", f"issue={number!r} is not a positive int")
+    entity["issue"] = number
     return entity
 
 
 def entity_key(entity: dict[str, Any]) -> str:
-    """``owner/repo#N`` -- the row identity. A head is NOT part of the row key."""
-    number = entity.get("issue", entity.get("pr"))
-    return f"{entity['repo']}#{number}"
+    """``owner/repo#N`` -- the row identity."""
+    return f"{entity['repo']}#{entity['issue']}"
 
 
 def _validate_dependencies(value: Any, entity: dict[str, Any]) -> list[dict[str, Any]]:
@@ -692,53 +560,6 @@ def _validate_followup(value: Any) -> dict[str, Any] | None:
     return {"kind": "none"}
 
 
-def _validate_reserves(value: Any) -> list[dict[str, Any]]:
-    """Normalise reserves to ``[{"summary": ...}, ...]``.
-
-    A bare string is the ergonomic form a lane writes; the canonical form is an
-    object, and absent optional keys are OMITTED rather than set to null, so a
-    snapshot stays readable at 40 rows.
-    """
-    if not isinstance(value, list):
-        raise ObservationError("invalid_field_value", "live_reserves must be a list")
-    out: list[dict[str, Any]] = []
-    for index, item in enumerate(value):
-        where = f"live_reserves[{index}]"
-        if isinstance(item, str):
-            out.append({"summary": _require_str(item, where)})
-            continue
-        if not isinstance(item, dict):
-            raise ObservationError(
-                "invalid_field_value", f"{where} must be a string or an object"
-            )
-        unknown = sorted(set(item) - {"summary", "url", "author"})
-        if unknown:
-            raise ObservationError(
-                "invalid_field_value", f"{where} has unknown key(s): {', '.join(unknown)}"
-            )
-        entry = {"summary": _require_str(item.get("summary"), f"{where}.summary")}
-        for optional in ("url", "author"):
-            if item.get(optional) is not None:
-                entry[optional] = _require_str(item[optional], f"{where}.{optional}")
-        out.append(entry)
-    return out
-
-
-def _validate_checks(value: Any) -> dict[str, str]:
-    if not isinstance(value, dict):
-        raise ObservationError("invalid_field_value", "live_checks must be an object")
-    out: dict[str, str] = {}
-    for raw_name, raw_status in value.items():
-        name = _require_str(raw_name, "live_checks key")
-        if not isinstance(raw_status, str) or raw_status not in CHECK_STATUSES:
-            raise ObservationError(
-                "invalid_field_value",
-                f"live_checks[{name!r}]={raw_status!r} not in {'/'.join(CHECK_STATUSES)}",
-            )
-        out[name] = raw_status
-    return out
-
-
 def normalize_field_value(spec: FieldSpec, value: Any, entity: dict[str, Any]) -> Any:
     """Validate and normalise one field value; raise ``ObservationError``."""
     if spec.kind == "enum":
@@ -770,10 +591,6 @@ def normalize_field_value(spec: FieldSpec, value: Any, entity: dict[str, Any]) -
         return _validate_dependencies(value, entity)
     if spec.kind == "followup":
         return _validate_followup(value)
-    if spec.kind == "reserves":
-        return _validate_reserves(value)
-    if spec.kind == "checks":
-        return _validate_checks(value)
     raise LedgerError("UNKNOWN_FIELD_KIND", f"{spec.name}: {spec.kind}")  # pragma: no cover
 
 
@@ -907,10 +724,6 @@ class Record:
     message_id: str | None
     source: str
     fields: dict[str, Any] = dataclass_field(default_factory=dict)
-    head_sha: str | None = None
-    head_transition: bool = False
-    status: str = "live"
-    reason: str = ""
 
     def sort_key(self) -> tuple[datetime, str, str]:
         return (self.observed_at, self.actor, self.observation_id)
@@ -928,8 +741,6 @@ def record_from_observation(observation: dict[str, Any], source: str) -> Record:
         message_id=observation.get("message_id"),
         source=source,
         fields=dict(observation["fields"]),
-        head_sha=observation["entity"].get("head_sha"),
-        head_transition=bool(observation.get("head_transition", False)),
     )
 
 
@@ -943,7 +754,6 @@ def _provenance_entry(
     observation_id: str,
     message_id: str | None,
     source: str,
-    head_sha: str | None,
 ) -> dict[str, Any]:
     entry = {
         "value": value,
@@ -956,8 +766,6 @@ def _provenance_entry(
     }
     if message_id is not None:
         entry["message_id"] = message_id
-    if head_sha is not None:
-        entry["head_sha"] = head_sha
     return entry
 
 
@@ -975,32 +783,6 @@ def records_from_snapshot(snapshot: dict[str, Any], ledger: str) -> list[Record]
             entity = _validate_entity(row.get("entity"), ledger)
         except ObservationError:
             continue  # a corrupt row is dropped, never allowed to poison the fold
-        key = entity_key(entity)
-        head = row.get("head") or {}
-        if ledger == PR_ACTIONS:
-            for entry in head.get("history", []):
-                observed = entry.get("first_seen_at") or entry.get("observed_at")
-                if not observed:
-                    continue
-                try:
-                    seen_at = parse_utc_timestamp(observed, where="snapshot.head.history")
-                except ObservationError:
-                    continue  # a corrupt head entry is dropped, never fatal
-                records.append(
-                    Record(
-                        entity=dict(entity),
-                        key=key,
-                        actor=entry.get("actor", "checkpoint"),
-                        observed_at=seen_at,
-                        confidence="medium",
-                        evidence=entry.get("evidence", "snapshot:head-history"),
-                        observation_id=entry.get("observation_id", f"head-{entry.get('head_sha')}"),
-                        message_id=None,
-                        source="checkpoint",
-                        head_sha=entry.get("head_sha"),
-                        head_transition=bool(entry.get("head_transition", True)),
-                    )
-                )
         for name, entries in (row.get("history") or {}).items():
             spec = LEDGER_FIELD_SPECS[ledger].get(name)
             if spec is None or not isinstance(entries, list):
@@ -1016,19 +798,8 @@ def records_from_snapshot(snapshot: dict[str, Any], ledger: str) -> list[Record]
                     "confidence": entry.get("confidence", "medium"),
                     "evidence": entry.get("evidence", "snapshot"),
                     "entity": dict(entity),
-                    # A folded entry is an OBSERVATION, never a declaration: were
-                    # it flagged as a head transition, a head this reducer
-                    # already REFUSED would come back as a declared rewind on
-                    # every re-fold -- the ledger would drift toward the stale
-                    # view instead of holding the refusal.
-                    "head_transition": False,
                     "fields": {name: entry["value"]},
                 }
-                head_sha = entry.get("head_sha")
-                if ledger == PR_ACTIONS and head_sha:
-                    raw_observation["entity"]["head_sha"] = head_sha
-                elif ledger == PR_ACTIONS:
-                    raw_observation["entity"]["head_sha"] = entity["head_sha"]
                 try:
                     observation = parse_observation(raw_observation, ledger)
                 except ObservationError:
@@ -1274,76 +1045,6 @@ def parse_journal_export(raw: Any, ledger: str) -> tuple[dict[str, Any], list[Re
 # ---------------------------------------------------------------------------
 
 
-def _apply_head_rule(records: Sequence[Record]) -> dict[str, Any]:
-    """Order the heads in time, mark refusals IN PLACE, return the head state.
-
-    ONE state machine, not two. The previous split (a marker pass and a summary
-    pass) let a refusal and the head history disagree about the same record,
-    which is how a stale head could be refused on one pass and re-instated on
-    the other.
-
-    A head that was already superseded cannot come back: an observation against
-    it was taken from a stale view and its head-bound fields describe a commit
-    nobody is looking at. The ONE exception is an observation that DECLARES the
-    rewind (``head_transition: true``, a force-push); a record folded from the
-    checkpoint is an observation, never a declaration, so a refusal survives the
-    fold instead of being replayed as a declared rewind.
-
-    Counters are per OBSERVATION (``observation_id``), not per record: one
-    observation carrying three head-bound fields is one stale observation, not
-    three.
-    """
-    head: str | None = None
-    superseded: set[str] = set()
-    history: list[dict[str, Any]] = []
-    regressions = 0
-    stale: set[str] = set()
-    for record in sorted(records, key=Record.sort_key):
-        observed = record.head_sha
-        if observed is None:
-            continue
-        if head is None:
-            head = observed
-            history.append(_head_history_entry(record, transition=False))
-            continue
-        if observed == head:
-            continue
-        if observed in superseded and not record.head_transition:
-            record.status = "stale_head"
-            record.reason = f"head {observed[:12]} was superseded by {head[:12]}"
-            stale.add(record.observation_id)
-            continue
-        if observed in superseded:
-            regressions += 1
-        else:
-            superseded.add(head)
-        for entry in history:
-            if entry["head_sha"] == head and entry["superseded_at"] is None:
-                entry["superseded_at"] = format_utc(record.observed_at)
-        head = observed
-        history.append(_head_history_entry(record, transition=True))
-    return {
-        "current": head,
-        "history": history,
-        "superseded_heads": sorted(superseded),
-        "stale_head_observations": len(stale),
-        "head_regressions": regressions,
-    }
-
-
-def _head_history_entry(record: Record, *, transition: bool) -> dict[str, Any]:
-    """One head as first seen, with what it takes to fold it back faithfully."""
-    return {
-        "head_sha": record.head_sha,
-        "first_seen_at": format_utc(record.observed_at),
-        "actor": record.actor,
-        "evidence": record.evidence,
-        "observation_id": record.observation_id,
-        "head_transition": transition,
-        "superseded_at": None,
-    }
-
-
 def _merge_row(
     ledger: str,
     entity: dict[str, Any],
@@ -1351,7 +1052,6 @@ def _merge_row(
     config: dict[str, Any],
 ) -> dict[str, Any]:
     specs = LEDGER_FIELD_SPECS[ledger]
-    head = _apply_head_rule(records) if ledger == PR_ACTIONS else None
     history_cap = int(config.get("history_max_entries_per_field", 25))
 
     fields: dict[str, Any] = {}
@@ -1359,7 +1059,7 @@ def _merge_row(
     history: dict[str, Any] = {}
     truncated: dict[str, int] = {}
 
-    for name, spec in specs.items():
+    for name in specs:
         # One contribution per OBSERVATION, not per occurrence: the checkpoint
         # fold and the journal re-read describe the same observation, and the
         # journal copy (seen last) wins so the richer provenance survives.
@@ -1371,25 +1071,18 @@ def _merge_row(
         if not contributions:
             continue
         contributions.sort(key=Record.sort_key)
-        admissible = [
-            record
-            for record in contributions
-            if record.status == "live" or not spec.head_bound
-        ]
-        winner = admissible[-1] if admissible else None
-        if winner is not None:
-            fields[name] = winner.fields[name]
-            provenance[name] = _provenance_entry(
-                value=winner.fields[name],
-                observed_at=format_utc(winner.observed_at),
-                actor=winner.actor,
-                confidence=winner.confidence,
-                evidence=winner.evidence,
-                observation_id=winner.observation_id,
-                message_id=winner.message_id,
-                source=winner.source,
-                head_sha=winner.head_sha,
-            )
+        winner = contributions[-1]
+        fields[name] = winner.fields[name]
+        provenance[name] = _provenance_entry(
+            value=winner.fields[name],
+            observed_at=format_utc(winner.observed_at),
+            actor=winner.actor,
+            confidence=winner.confidence,
+            evidence=winner.evidence,
+            observation_id=winner.observation_id,
+            message_id=winner.message_id,
+            source=winner.source,
+        )
         entries = []
         for record in contributions:
             entry = _provenance_entry(
@@ -1401,15 +1094,9 @@ def _merge_row(
                 observation_id=record.observation_id,
                 message_id=record.message_id,
                 source=record.source,
-                head_sha=record.head_sha,
             )
             entry["applied"] = record is winner
-            if record is winner:
-                entry["reason"] = "applied"
-            elif record.status == "stale_head":
-                entry["reason"] = "stale_head"
-            else:
-                entry["reason"] = "superseded"
+            entry["reason"] = "applied" if record is winner else "superseded"
             entries.append(entry)
         if len(entries) > history_cap:
             truncated[name] = len(entries) - history_cap
@@ -1419,15 +1106,10 @@ def _merge_row(
     key = entity_key(entity)
     verdict_field, _terminal = TERMINAL_VALUES[ledger]
     verdict = fields.get(verdict_field)
-    entity_out = dict(entity)
-    if head is not None and head["current"]:
-        # The row's head is the CURRENT one, not whatever the first record saw:
-        # consumers read `entity.head_sha` and `head.current` as one fact.
-        entity_out["head_sha"] = head["current"]
     row: dict[str, Any] = {
         "key": key,
         "ledger": ledger,
-        "entity": entity_out,
+        "entity": dict(entity),
         "historical": verdict in TERMINAL_SETS[ledger],
         "fields": fields,
         "provenance": provenance,
@@ -1436,10 +1118,7 @@ def _merge_row(
         "last_observed_at": max((format_utc(record.observed_at) for record in records), default=None),
         "contributions": len({record.observation_id for record in records}),
     }
-    if head is not None:
-        row["head"] = head
     diagnostics: dict[str, Any] = {
-        "stale_head_observations": (head or {}).get("stale_head_observations", 0),
         "rejected_observations": 0,
         # Where the CURRENT state comes from -- not every source ever folded, or
         # the field would change on a re-fold of identical observations.
@@ -1631,7 +1310,7 @@ def reduce_ledger(
 
 
 # ---------------------------------------------------------------------------
-# 9. SUMMARY -- PR metrics and EAT metrics
+# 9. SUMMARY -- EAT metrics
 # ---------------------------------------------------------------------------
 
 
@@ -1732,72 +1411,6 @@ def _summarize_issue_debt(rows: Sequence[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def _summarize_pr_actions(rows: Sequence[dict[str, Any]]) -> dict[str, Any]:
-    live = _live_rows(rows)
-    reserves_by_class: dict[str, int] = {}
-    check_status_counts: dict[str, int] = {}
-    rows_with_failing_checks = 0
-    for row in live:
-        action_class = str(row["fields"].get("action_class", "unknown"))
-        reserves = row["fields"].get("live_reserves") or []
-        reserves_by_class[action_class] = reserves_by_class.get(action_class, 0) + len(reserves)
-        checks = row["fields"].get("live_checks") or {}
-        failing = False
-        for status in checks.values():
-            check_status_counts[status] = check_status_counts.get(status, 0) + 1
-            if status in ("failure", "timed_out", "action_required"):
-                failing = True
-        if failing:
-            rows_with_failing_checks += 1
-    stale_head = sum(
-        int(row.get("head", {}).get("stale_head_observations", 0)) for row in rows
-    )
-    regressions = sum(int(row.get("head", {}).get("head_regressions", 0)) for row in rows)
-    return {
-        "rows": {
-            "total": len(rows),
-            "live": len(live),
-            "historical": len(rows) - len(live),
-            "incomplete": sum(1 for row in live if row["missing_fields"]),
-            "stale": sum(1 for row in live if row.get("stale")),
-        },
-        "action_class": _counts(row["fields"].get("action_class") for row in live),
-        "review": {
-            "required": sum(1 for row in live if row["fields"].get("review_required") is True),
-            "not_required": sum(
-                1 for row in live if row["fields"].get("review_required") is False
-            ),
-            "unknown": sum(
-                1 for row in live if row["fields"].get("review_required") is None
-            ),
-            "by_reviewer": _counts(row["fields"].get("reviewer") for row in live),
-            "by_producer": _counts(row["fields"].get("producer") for row in live),
-        },
-        "reserves": {
-            "rows_with_live_reserves": sum(
-                1 for row in live if row["fields"].get("live_reserves")
-            ),
-            "live_total": sum(len(row["fields"].get("live_reserves") or []) for row in live),
-            "by_action_class": dict(sorted(reserves_by_class.items())),
-        },
-        "checks": {
-            "rows_with_failing_checks": rows_with_failing_checks,
-            "status_counts": dict(sorted(check_status_counts.items())),
-        },
-        "update_branch_status": _counts(
-            row["fields"].get("update_branch_status") for row in live
-        ),
-        "dossier_status": _counts(row["fields"].get("dossier_status") for row in live),
-        "review_ready": sorted(
-            row["key"] for row in live if row["fields"].get("action_class") == "review-ready"
-        ),
-        "heads": {
-            "stale_head_observations": stale_head,
-            "head_regressions": regressions,
-        },
-    }
-
-
 def _summarize(
     ledger: str,
     rows: Sequence[dict[str, Any]],
@@ -1808,9 +1421,7 @@ def _summarize(
     now: datetime,
     replayed: int,
 ) -> dict[str, Any]:
-    detail = (
-        _summarize_issue_debt(rows) if ledger == ISSUE_DEBT else _summarize_pr_actions(rows)
-    )
+    detail = _summarize_issue_debt(rows)
     summary: dict[str, Any] = {
         "schema": SUMMARY_SCHEMA,
         "ledger": ledger,
@@ -1848,67 +1459,35 @@ def _status_text(
         f"| rows {counts['live']} live / {counts['historical']} historical "
         f"| window {summary['window']['kind']}"
     ]
-    if ledger == ISSUE_DEBT:
-        eat = summary["eat_hours"]
+    eat = summary["eat_hours"]
+    lines.append(
+        f"eat_hours {eat['total']:.2f} | remaining_atomic_prs "
+        f"{summary['remaining_atomic_prs']['total']} | closeable-now "
+        f"{len(summary['closeable_now'])} | stale rows {counts['stale']}"
+    )
+    lines.append(
+        "state_class: "
+        + (", ".join(f"{k} {v}" for k, v in summary["state_class"].items()) or "-")
+    )
+    followups = summary["followups"]
+    lines.append(
+        f"followups: issue {followups['issue']}, waiver {followups['waiver']}, "
+        f"none {followups['none']}, missing {followups['missing']}"
+    )
+    ranked = sorted(
+        _live_rows(snapshot["rows"]),
+        key=lambda row: (
+            -float(row["fields"].get("eat_hours", 0) or 0),
+            row["key"],
+        ),
+    )
+    for row in ranked[:max_rows]:
         lines.append(
-            f"eat_hours {eat['total']:.2f} | remaining_atomic_prs "
-            f"{summary['remaining_atomic_prs']['total']} | closeable-now "
-            f"{len(summary['closeable_now'])} | stale rows {counts['stale']}"
+            f"  {row['key']} {row['fields'].get('state_class', '?')} "
+            f"eat {float(row['fields'].get('eat_hours', 0) or 0):.2f}h "
+            f"prs {int(row['fields'].get('remaining_atomic_prs', 0) or 0)} "
+            f"close {row['fields'].get('closeability', '?')}"
         )
-        lines.append(
-            "state_class: "
-            + (", ".join(f"{k} {v}" for k, v in summary["state_class"].items()) or "-")
-        )
-        followups = summary["followups"]
-        lines.append(
-            f"followups: issue {followups['issue']}, waiver {followups['waiver']}, "
-            f"none {followups['none']}, missing {followups['missing']}"
-        )
-        ranked = sorted(
-            _live_rows(snapshot["rows"]),
-            key=lambda row: (
-                -float(row["fields"].get("eat_hours", 0) or 0),
-                row["key"],
-            ),
-        )
-        for row in ranked[:max_rows]:
-            lines.append(
-                f"  {row['key']} {row['fields'].get('state_class', '?')} "
-                f"eat {float(row['fields'].get('eat_hours', 0) or 0):.2f}h "
-                f"prs {int(row['fields'].get('remaining_atomic_prs', 0) or 0)} "
-                f"close {row['fields'].get('closeability', '?')}"
-            )
-    else:
-        review = summary["review"]
-        lines.append(
-            f"review_required {review['required']} | live_reserves "
-            f"{summary['reserves']['live_total']} on {summary['reserves']['rows_with_live_reserves']} rows "
-            f"| failing_checks {summary['checks']['rows_with_failing_checks']} | stale rows {counts['stale']}"
-        )
-        lines.append(
-            "action_class: "
-            + (", ".join(f"{k} {v}" for k, v in summary["action_class"].items()) or "-")
-        )
-        lines.append(
-            "update_branch: "
-            + (", ".join(f"{k} {v}" for k, v in summary["update_branch_status"].items()) or "-")
-            + " | dossier: "
-            + (", ".join(f"{k} {v}" for k, v in summary["dossier_status"].items()) or "-")
-        )
-        ranked = sorted(
-            _live_rows(snapshot["rows"]),
-            key=lambda row: (
-                (row["fields"].get("action_class") or "zzz"),
-                row["key"],
-            ),
-        )
-        for row in ranked[:max_rows]:
-            lines.append(
-                f"  {row['key']} {row['fields'].get('action_class', '?')} "
-                f"head {(row.get('head') or {}).get('current', '?')[:12]} "
-                f"reserves {len(row['fields'].get('live_reserves') or [])} "
-                f"-> {row['fields'].get('next_action', '-')}"
-            )
     if len(_live_rows(snapshot["rows"])) > max_rows:
         lines.append(f"  ... {len(_live_rows(snapshot['rows'])) - max_rows} more live rows")
     if snapshot["rejections"]:
@@ -2150,13 +1729,10 @@ def schema_document() -> dict[str, Any]:
                     {
                         "name": spec.name,
                         "kind": spec.kind,
-                        "head_bound": spec.head_bound,
                         "values": list(spec.values),
                         "description": spec.description,
                     }
-                    for spec in (
-                        ISSUE_DEBT_FIELDS if ledger == ISSUE_DEBT else PR_ACTIONS_FIELDS
-                    )
+                    for spec in LEDGER_FIELD_SPECS[ledger].values()
                 ],
             }
             for ledger in LEDGERS
@@ -2170,7 +1746,6 @@ def schema_document() -> dict[str, Any]:
             "unknown_key",
             "ledger_mismatch",
             "entity_mismatch",
-            "short_head_sha",
             "unknown_field",
             "invalid_field_value",
             "invalid_confidence",
@@ -2182,10 +1757,6 @@ def schema_document() -> dict[str, Any]:
             "unparsable_envelope",
             "observation_id_mismatch",
         ],
-        "head_rule": (
-            "a superseded PR head cannot come back without head_transition:true; its "
-            "head-bound fields are refused as stale_head, head-independent fields still apply"
-        ),
     }
 
 
@@ -2319,7 +1890,7 @@ def _declare_full_window(export: Any, ledger: str) -> Any:
 
 
 def _cli_init(args: argparse.Namespace) -> int:
-    ledgers = list(LEDGERS) if args.ledger == "both" else [args.ledger]
+    ledgers = [args.ledger]
     state_dir = Path(args.state_dir) if args.state_dir else default_state_dir()
     planned = init_ledger_tree(
         state_dir, ledgers=ledgers, dry_run=not args.apply, now=parse_utc_timestamp(args.now, where="--now") if args.now else None
@@ -2348,12 +1919,7 @@ def _cli_append(args: argparse.Namespace) -> int:
                 "MISSING_INPUT", "append needs --observation-file, or --entity with --fields-json"
             )
         repo, number = _parse_entity_argument(args.entity)
-        entity: dict[str, Any] = {"repo": repo}
-        entity["issue" if args.ledger == ISSUE_DEBT else "pr"] = number
-        if args.ledger == PR_ACTIONS:
-            if not args.head_sha:
-                raise LedgerError("MISSING_INPUT", "pr-actions needs --head-sha")
-            entity["head_sha"] = args.head_sha
+        entity: dict[str, Any] = {"repo": repo, "issue": number}
         raw = {
             "schema": OBSERVATION_SCHEMA,
             "ledger": args.ledger,
@@ -2362,7 +1928,6 @@ def _cli_append(args: argparse.Namespace) -> int:
             "confidence": args.confidence,
             "evidence": args.evidence,
             "entity": entity,
-            "head_transition": args.head_transition,
             "fields": _loads_object(args.fields_json, where="--fields-json"),
         }
         if args.note:
@@ -2487,9 +2052,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="debt_ledger.py",
         description=(
-            "Generic reducer for the shared append-only debt ledgers (issue-debt, "
-            "pr-actions). Observations travel as append-only dashboard messages; this "
-            "tool only ever writes LOCAL artifacts."
+            "Generic reducer for the shared append-only debt ledger (issue-debt). "
+            "Observations travel as append-only dashboard messages; this tool only "
+            "ever writes LOCAL artifacts."
         ),
     )
     sub = parser.add_subparsers(dest="command", required=True)
@@ -2501,7 +2066,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     init = sub.add_parser("init", parents=[common], help="create the local ledger tree")
-    init.add_argument("--ledger", choices=[*LEDGERS, "both"], default="both")
+    init.add_argument("--ledger", choices=list(LEDGERS), default=ISSUE_DEBT)
     init.add_argument("--apply", action="store_true", help="write (default is dry-run)")
     init.set_defaults(func=_cli_init)
 
@@ -2509,13 +2074,11 @@ def build_parser() -> argparse.ArgumentParser:
     append.add_argument("--ledger", choices=list(LEDGERS), required=True)
     append.add_argument("--observation-file", help="read a full observation envelope from JSON")
     append.add_argument("--entity", help="'owner/repo#N'")
-    append.add_argument("--head-sha", help="full 40-hex PR head (pr-actions only)")
     append.add_argument("--actor", default=os.environ.get("COURSIA_LEDGER_ACTOR", "ai-01"))
     append.add_argument("--observed-at", help="UTC ISO-8601; defaults to now")
     append.add_argument("--confidence", choices=list(CONFIDENCE_LEVELS), default="medium")
     append.add_argument("--evidence", default="manual append")
     append.add_argument("--fields-json", help="JSON object of field values")
-    append.add_argument("--head-transition", action="store_true")
     append.add_argument("--note")
     append.add_argument("--out", help="write the envelope to this local file")
     append.add_argument("--out-dir", help="write into this local spool dir")
