@@ -813,7 +813,8 @@ def test_tree_lease_same_tree_second_refused_then_released():
         proj = _lake_fixture(Path(td))
         with _state_env(state):
             lease = le.tree_lease_path(proj.resolve())
-        cap = dict(LEAN_EXEC_CAP=8, LEAN_EXEC_BUDGET=1)
+        cap = dict(LEAN_EXEC_CAP=8, LEAN_EXEC_BUDGET=1,
+                   LEAN_EXEC_FORCE_BACKENDS="native")
         first = subprocess.Popen(
             [PY, LEAN_EXEC, "run", "--json", "--caller", "t2-first", "--",
              *SLEEP_CMD],
@@ -856,7 +857,7 @@ def test_tree_lease_stale_autobroken():
         }), encoding="utf-8")
         rc = _run(state, ["run", "--json", "--",
                           PY, "-c", "print('ok')"], cwd=proj, timeout=60,
-                  LEAN_EXEC_CAP=8)
+                  LEAN_EXEC_CAP=8, LEAN_EXEC_FORCE_BACKENDS="native")
         assert rc.returncode == le.EXIT_OK, rc.stdout + rc.stderr
         assert "TREE_LEASE_BROKEN" in rc.stderr, rc.stderr
         assert "stale" in rc.stderr, rc.stderr
@@ -878,7 +879,7 @@ def test_tree_lease_foreign_host_never_broken():
         }), encoding="utf-8")
         rc = _run(state, ["run", "--json", "--",
                           PY, "-c", "print('ok')"], cwd=proj, timeout=60,
-                  LEAN_EXEC_CAP=8)
+                  LEAN_EXEC_CAP=8, LEAN_EXEC_FORCE_BACKENDS="native")
         assert rc.returncode == le.EXIT_REFUSED, rc.returncode
         refused = json.loads(rc.stdout[rc.stdout.index("{"):])
         reason = refused.get("reason") or ""
