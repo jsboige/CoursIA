@@ -20,6 +20,8 @@ import pytest
 from ict.bench_factorise import (
     FactoredBench,
     Mess3,
+    Mess3Canonical,
+    Mess3_ObsCoupled,
     ProcessError,
     RRXOR,
     belief_simplex_coords,
@@ -58,26 +60,39 @@ def test_mess3_sample_reproductible_et_formes():
 
 
 def test_mess3_parametrage_invalide_rejete():
+    # Mess3 = Mess3Canonical (alias #16225) : validation de stay/emission_diag
     with pytest.raises(ProcessError):
         Mess3(stay=1.5)
     with pytest.raises(ProcessError):
-        Mess3(std=0.0)
+        Mess3(emission_diag=0.2)  # <= 1/n : ne domine plus, casse le regime
+    # Le banc gaussien historique garde sa propre validation (signaux continus)
     with pytest.raises(ProcessError):
-        Mess3(means=(0.0, 1.0))
+        Mess3_ObsCoupled(std=0.0)
+    with pytest.raises(ProcessError):
+        Mess3_ObsCoupled(means=(0.0, 1.0))
 
 
-def _mess3_bruteforce_beliefs(m: Mess3, obs: np.ndarray) -> np.ndarray:
+def _mess3_bruteforce_beliefs(m, obs: np.ndarray) -> np.ndarray:
     """Enumeration exacte (independante du forward) : pour chaque sequence
     complete d'etats, poids joint = prior * prod(transitions) * prod(likelihoods),
     puis marginalisation en P(s_k | o_{0..n-1}) — beliefs lisses, a comparer
-    au forward apres troncature des observations au meme prefixe."""
+    au forward apres troncature des observations au meme prefixe.
+
+    Generique : chemin discret via ``emission_matrix`` (Mess3Canonical),
+    chemin gaussien via ``means``/``std`` (Mess3_ObsCoupled)."""
     n = len(obs)
-    means = np.asarray(m.means)
     prior = m.stationary()
     t = m.transition_matrix()
+    if hasattr(m, "emission_matrix") and not hasattr(m, "means"):
+        e = m.emission_matrix()
 
-    def lik(o: float, s: int) -> float:
-        return math.exp(-0.5 * ((o - means[s]) / m.std) ** 2)
+        def lik(o, s: int) -> float:
+            return float(e[s, int(o)])
+    else:
+        means = np.asarray(m.means)
+
+        def lik(o, s: int) -> float:
+            return math.exp(-0.5 * ((o - means[s]) / m.std) ** 2)
 
     weights = np.zeros(m.n_states)
     for seq in itertools.product(range(m.n_states), repeat=n):
@@ -89,7 +104,7 @@ def _mess3_bruteforce_beliefs(m: Mess3, obs: np.ndarray) -> np.ndarray:
 
 
 def test_mess3_beliefs_vs_enumeration_brute():
-    m = Mess3(means=(-0.15, 0.0, 0.15), std=0.05, stay=0.9)
+    m = Mess3(stay=0.9)
     _, obs = m.sample(8, seed=42)
     fast_last = m.beliefs(obs)[-1]
     brute_last = _mess3_bruteforce_beliefs(m, obs)
@@ -102,12 +117,32 @@ def test_mess3_beliefs_vs_enumeration_brute():
         )
 
 
-def test_mess3_beliefs_somment_a_un_et_modes_lisibles():
+def test_mess3_obscoupled_beliefs_vs_enumeration_brute():
+    """Le banc gaussien historique garde sa contre-verification bruteforce."""
+    m = Mess3_ObsCoupled(means=(-0.15, 0.0, 0.15), std=0.05, stay=0.9)
+    _, obs = m.sample(8, seed=42)
+    assert np.allclose(m.beliefs(obs)[-1], _mess3_bruteforce_beliefs(m, obs), atol=1e-10)
+
+
+def test_mess3_beliefs_somment_a_un_et_non_dirac():
+    """Sur le banc canonique (#16225), le belief vit dans le simplexe SANS
+    s'effondrer en Dirac : c'est la propriete que l'ancien banc obs = etat
+    detruisait (accuracy tautologique 1.000)."""
     m = Mess3()
     states, obs = m.sample(500, seed=3)
     b = m.beliefs(obs)
     assert np.allclose(b.sum(axis=1), 1.0, atol=1e-12)
-    # modes bien separees : argmax du belief = etat emis la plupart du temps
+    max_probs = b.max(axis=1)
+    # non-Dirac : jamais certain a 100%, mais informes : au-dessus du hasard 1/3
+    assert max_probs.max() < 0.999, "le belief canonique ne doit pas etre un Dirac"
+    assert max_probs.mean() > 1.0 / 3.0, "le belief canonique doit rester informatif"
+
+
+def test_mess3_obscoupled_modes_lisibles():
+    """Le banc gaussien historique conserve ses modes bien separees (comparateur)."""
+    m = Mess3_ObsCoupled()
+    states, obs = m.sample(500, seed=3)
+    b = m.beliefs(obs)
     acc = (b.argmax(axis=1) == states).mean()
     assert acc > 0.95, f"modes mal separees, accuracy={acc}"
 
@@ -118,40 +153,70 @@ def test_mess3_beliefs_rejette_2d():
 
 
 # ---------------------------------------------------------------------------
-# RRXOR : invariants, beliefs
+# RRXOR : conformite litterature (Riechers & Crutchfield 2018, 1706.00883)
 # ---------------------------------------------------------------------------
 
 
-def test_rrxor_invariant_xor_et_etats():
+def test_rrxor_triplets_xor_alignes():
+    """Le processus repete (r1, r2, r1 XOR r2) : le 3e symbole de chaque
+    triplet est le XOR des deux precedents -- sur toute trajectoire."""
     r = RRXOR()
-    states, obs = r.sample(200, seed=11)
-    # y_t = a XOR b avec etat = 2a + b
-    a, b = states // 2, states % 2
-    assert np.array_equal(a ^ b, obs)
-    assert set(np.unique(states)) <= {0, 1, 2, 3}
+    states, obs = r.sample(300, seed=11)
+    k = (len(obs) // 3) * 3
+    assert np.array_equal(obs[2:k:3], obs[0:k:3] ^ obs[1:k:3])
+    assert set(np.unique(states)) <= {0, 1, 2, 3, 4}
+
+
+def test_rrxor_correlations_par_paires_nulles():
+    """Propriete litterature : correlations par paires nulles (spectre plat)
+    -- toute la structure vit dans la contrainte de triplet."""
+    r = RRXOR()
+    _, obs = r.sample(60000, seed=42)
+    p1 = obs[1:]
+    p0 = obs[:-1]
+    corr = np.corrcoef(p0.astype(float), p1.astype(float))[0, 1]
+    assert abs(corr) < 0.02
+    # ... mais le triplet, lui, est deterministe : structure masquee
+    k = (len(obs) // 3) * 3
+    assert np.array_equal(obs[2:k:3], obs[0:k:3] ^ obs[1:k:3])
 
 
 def test_rrxor_transition_stationnaire():
     r = RRXOR()
     t = r.transition_matrix()
     assert np.allclose(t.sum(axis=1), 1.0)
-    assert np.allclose(t @ r.stationary(), r.stationary())
-    # chaque etat a exactement 2 successeurs equiprobables
-    assert np.all((t > 0).sum(axis=1) == 2)
-    assert np.allclose(t[t > 0], 0.5)
+    assert np.allclose(r.stationary() @ t, r.stationary())
+    # G et A ont 2 successeurs equiprobables ; X est deterministe vers G
+    for s in (0, 1, 2):
+        assert (t[s] > 0).sum() == 2
+        np.testing.assert_allclose(t[s][t[s] > 0], 0.5, atol=1e-12)
+    np.testing.assert_allclose(t[3, 0], 1.0, atol=1e-12)
+    np.testing.assert_allclose(t[4, 0], 1.0, atol=1e-12)
 
 
-def test_rrxor_beliefs_sur_2_etats_coherents():
+def test_rrxor_beliefs_filtration_aretes():
+    """La filtration forward Mealy : b' = normaliser(b @ W[:, :, y]).
+    Controle sur sequence (0, 0) : la croyance doit coder l'alignement de
+    phase -- prediction suivante P(y=0) = 2/3, pas 1/2."""
     r = RRXOR()
-    states, obs = r.sample(100, seed=5)
-    b = r.beliefs(obs)
+    b = r.beliefs(np.array([0, 0]))
     assert np.allclose(b.sum(axis=1), 1.0, atol=1e-12)
-    e = r.emission_matrix()
-    for k in range(len(obs)):
-        coherent = e[:, int(obs[k])] > 0
-        assert coherent.sum() == 2
-        assert b[k, coherent] == pytest.approx(0.5)
-        assert b[k, ~coherent] == pytest.approx(0.0, abs=1e-15)
+    W = r.edge_tensor()
+    p0 = float((b[-1] @ W[:, :, 0]).sum())
+    assert p0 == pytest.approx(2.0 / 3.0, abs=1e-10)
+    # les etats incompatibles avec le chemin sont exclus
+    assert b[-1][2] == pytest.approx(0.0, abs=1e-12)  # A1 exclu par r1 = 0
+
+
+def test_rrxor_beliefs_synchronise_vers_dirac():
+    """Depuis le prior stationnaire, un long prefix suffit a synchroniser :
+    la croyance converge vers un Dirac sur un etat causal (5 etats
+    recurrents de la S-MSP, cf. litterature p. 17)."""
+    r = RRXOR()
+    _, obs = r.sample(300, seed=7)
+    b = r.beliefs(obs)
+    entropie_finale = float(-(b[-1] * np.log(np.clip(b[-1], 1e-12, 1))).sum())
+    assert entropie_finale < 1e-6
 
 
 def test_rrxor_beliefs_rejette_non_binaire():
@@ -170,7 +235,7 @@ def test_bench_observation_jointe_et_beliefs_produit():
     assert run["obs_joint"].shape == (30, 2)
     assert np.array_equal(run["obs_joint"][:, 0], run["obs_a"])
     bel = bench.beliefs(run["obs_a"], run["obs_b"])
-    na, nb = 3, 4
+    na, nb = 3, 5
     assert bel["belief_joint"].shape == (30, na * nb)
     recompose = bel["belief_joint"].reshape(30, na, nb)
     assert np.allclose(recompose, bel["belief_a"][:, :, None] * bel["belief_b"][:, None, :])
@@ -179,7 +244,7 @@ def test_bench_observation_jointe_et_beliefs_produit():
 
 def test_bench_deux_mess3_independants():
     """L'option « deux Mess3 independants » de l'issue : meme architecture, facteurs homogenes."""
-    bench = FactoredBench(Mess3(means=(-0.15, 0.0, 0.15)), Mess3(means=(1.0, 1.2, 1.4), name="mess3_b"))
+    bench = FactoredBench(Mess3_ObsCoupled(means=(-0.15, 0.0, 0.15)), Mess3_ObsCoupled(means=(1.0, 1.2, 1.4), name="mess3_b"))
     run = bench.sample(20, seed_a=0, seed_b=9)
     bel = bench.beliefs(run["obs_a"], run["obs_b"])
     assert bel["belief_joint"].shape == (20, 9)

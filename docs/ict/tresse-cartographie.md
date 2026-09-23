@@ -9,7 +9,7 @@
 > **Discipline.** Consolidation grade C. Aucune nouvelle dépendance expérimentale n'est créée. Les ancres citées (notebooks ICT, modules `grothendieck_lean`, fichiers `docs/`) sont sur `origin/main`. Les PR cités comme OPEN à la rédaction sont désormais résolus : [#9545](https://github.com/jsboige/CoursIA/pull/9545) (ICT-14b EFE banc) et [#9547](https://github.com/jsboige/CoursIA/pull/9547) (dissolution-scalaires) sont MERGED, l'issue [#9532](https://github.com/jsboige/CoursIA/issues/9532) (banc EFE) est CLOSED. Le document **ne propose pas de théorie unifiée** : il décrit une tresse, marque les ponts qui *résistent* à un transport formel, et se tient à distance des unifications prématurées (cf. l'avertissement méthodologique de [`synthese-invariants-dissociations-obstructions.md`](synthese-invariants-dissociations-obstructions.md#ce-que-ce-document-nest-pas)). Issue-source : [#7738](https://github.com/jsboige/CoursIA/issues/7738). See [#4588](https://github.com/jsboige/CoursIA/issues/4588) (Epic umbrella ICT).
 
 >
-> **Mise à jour (post-strate-6/7, resync #7424).** Rédigée quand la série s'arrêtait à la strate 5, cette cartographie décrit la tresse des quatre opérations (Thom / Grothendieck / Schmidhuber / Friston) sur les **cinq fils verticaux** alors documentés. L'arc s'est depuis étendu de deux rangs : la **strate 6** (distillation de Thom, *Sémiophysique* 1991 — PR [#9534](https://github.com/jsboige/CoursIA/pull/9534), [#9528](https://github.com/jsboige/CoursIA/pull/9528), [#9487](https://github.com/jsboige/CoursIA/pull/9487), [#9491](https://github.com/jsboige/CoursIA/pull/9491), [#9509](https://github.com/jsboige/CoursIA/pull/9509), [#9559](https://github.com/jsboige/CoursIA/pull/9559)) et la **strate 7** (coopération comme opérateur, Epic [#7746](https://github.com/jsboige/CoursIA/issues/7746) livré — ICT-26..30). Trois chantiers greenlightés operationalisent des fragments de la tresse : [#9531](https://github.com/jsboige/CoursIA/issues/9531) (proxy σ → géométrie de bassin), [#9532](https://github.com/jsboige/CoursIA/issues/9532) (banc EFE, CLOSED), [#9533](https://github.com/jsboige/CoursIA/issues/9533) (matrice 4-objets comme générateur d'expériences). Les docs satellites [`jambe-c4-propagation.md`](jambe-c4-propagation.md), [`strate7-boussole-myth.md`](strate7-boussole-myth.md) et [`strate7-cadres-libres.md`](strate7-cadres-libres.md) étendent la lecture horizontale vers ces nouveaux rangs **sans invalider** la cartographie ci-dessous, qui reste exacte sur son périmètre strate-1..5. Une resync complète de la tresse sur l'arc strate-1..7 (intégration des deux nouveaux rangs dans la table de composition §1) fait l'objet d'une tranche ultérieure de [#7424](https://github.com/jsboige/CoursIA/issues/7424).
+> **Mise à jour (resync strate-1..7, 2026-09-20).** Rédigée quand la série s'arrêtait à la strate 5, cette cartographie décrit la tresse des quatre opérations (Thom / Grothendieck / Schmidhuber / Friston) sur les **cinq fils verticaux** alors documentés. L'arc s'est depuis étendu de deux rangs — et **la resync jusqu'ici différée est faite ici** : [§1.6](#16--arc-des-strates-1--7-et-axe-transverse) donne l'arc strate 1 → 7 avec ses ancres, et y replace les objets transverses. Elle avait été renvoyée à [#7424](https://github.com/jsboige/CoursIA/issues/7424) — **CLOSED/COMPLETED depuis le 2026-08-21T10:41:31Z** : la tranche différée avait survécu à son porteur, et personne ne relisait le texte contre l'arbre ([#16777](https://github.com/jsboige/CoursIA/issues/16777)). Trois chantiers greenlightés opérationnalisent des fragments de la tresse : [#9531](https://github.com/jsboige/CoursIA/issues/9531) (proxy σ → géométrie de bassin), [#9532](https://github.com/jsboige/CoursIA/issues/9532) (banc EFE, CLOSED), [#9533](https://github.com/jsboige/CoursIA/issues/9533) (matrice 4-objets comme générateur d'expériences). Les docs satellites [`jambe-c4-propagation.md`](jambe-c4-propagation.md), [`strate7-boussole-myth.md`](strate7-boussole-myth.md) et [`strate7-cadres-libres.md`](strate7-cadres-libres.md) étendent la lecture horizontale vers ces nouveaux rangs. **Deux corrections d'axe** sont apportées au passage, tranchées en [#13908](https://github.com/jsboige/CoursIA/issues/13908) et alignées sur la **source de vérité unique** des strates ([`ICT-0-Framing.md` § « Deux axes de lecture »](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-0-Framing.md#deux-axes-de-lecture--strates-verticales--tresse-transverse)) : (i) la **strate 7** n'est **pas** « Epic [#7746](https://github.com/jsboige/CoursIA/issues/7746) livré — ICT-26..30 » — ces cinq expériences sont la **dimension D2** de l'axe transverse, des *pattes* et non des *barreaux*, tandis que la strate 7 reste celle des **freebits d'ordre 2 et de la réversibilité agentique** ([#7745](https://github.com/jsboige/CoursIA/issues/7745)), que D1 cadre et que D2 **alimente sans l'occuper** ; (ii) **Thom n'est pas la strate 6** mais un **socle transverse** — la strate 6 reste l'**argumentation** (graine [#7289](https://github.com/jsboige/CoursIA/issues/7289), non livrée), avec C3/C4 pour pattes.
 
 ## Pourquoi une cartographie horizontale
 
@@ -42,6 +42,38 @@ Quatre opérations, chacune avec son ancrage dans le dépôt, ses aboutissants o
 - *Avec Thom (1.3).* Grothendieck traite la **non-recomposabilité** comme un fait structurant (`H¹ ≠ 0`) ; Thom la traite comme une **bifurcation** dans un paysage de prégnances (catastrophe fronce, pli, cusp). Une **prétendue identité** entre les deux forcerait à réduire les catastrophes à des classes cohomologiques — opération non disponible en l'état (le langage de Thom est *qualitatif*, celui de Grothendieck est *homologique*).
 - *Avec Schmidhuber (1.2).* Schmidhuber parle d'**amélioration de compression** (transition de phase représentationnelle) ; Grothendieck parle de **transport formel** (sections compatibles sur des ouverts qui se chevauchent). Une compression plus profonde *peut* coïncider avec un recollement — mais l'inverse n'est pas garanti : un recollement peut transporter une structure sans la comprimer.
 
+> **Statut de Schreiber — tranché (2026-09-20, [#16777](https://github.com/jsboige/CoursIA/issues/16777)).**
+> Le commentaire de [#7738](https://github.com/jsboige/CoursIA/issues/7738) (2026-07-23) le posait en
+> « **cinquième témoin du fil grothendieckien** », et `strates-as-adjunctions-prototype.md`
+> mappe ses trois triplets d'adjoints — Cohesion `∎ ⊣ ♭ ⊣ ♯` / Elasticity
+> `Re ⊣ ℱ ⊣ &` / Solidity `⇉ ⊣ ⇝ ⊣ Rh` (Schreiber, *Perì
+> Pantheōrías*, nLab) — sur les jambes d'ICT. La question était ouverte :
+> **témoin ou fibre ?**
+>
+> **Le critère est posé par le user sur [#16759](https://github.com/jsboige/CoursIA/issues/16759)
+> (2026-09-18) : une fibre s'acquiert par un *organe* ou une *méthode*, pas par une *citation*.**
+> Être cité par la série ne fait pas entrer dans la tresse ; produire une opération que la
+> série *exécute* le fait. Appliqué à Schreiber, le critère rend un verdict sans ambiguïté :
+>
+> | Mesure (2026-09-20) | Résultat |
+> |---|---|
+> | Fichiers mentionnant `Schreiber` | **7**, **tous** sous `docs/` |
+> | Notebooks, modules, lakes | **0** (`git grep -il schreiber -- '*.ipynb' '*.lean' '*.py'` → vide) |
+> | `strates-as-adjunctions-prototype.md` | un **document**, pas un organe — il déclare lui-même « Ce prototype n'est pas une preuve, c'est une **forme** » ; il *propose* la correspondance, il ne l'exécute pas, ne la teste pas, ne la prouve pas |
+>
+> **Verdict : Schreiber est aujourd'hui un *témoin*, pas une fibre.** Sa présence dans le dépôt
+> est intégralement en prose. Et « témoin » n'est pas un quasi-synonyme de « fibre »,
+> c'est son contraire réglé : dans le vocabulaire ICT un *témoin* est un **crédit de lecture
+> grade C** — il *marque* la borne haute, il ne la franchit pas (cf. `grothendieckian-lens.md`,
+> annexe des grades : le seul défaut possible n'est jamais d'être en grade C, c'est de *présenter
+> un grade C comme un grade A* ; la physique de Schreiber y est citée au grade A, l'usage qu'ICT en fait
+> reste au grade C).
+>
+> **La question, reformulée** (elle est plus simple ainsi) : *le prototype d'adjonctions doit-il devenir un
+> **organe** — code ou Lean — et si oui, lequel ?* Tant que la réponse est non, le statut reste
+> **témoin**. La réponse vaut jurisprudence : c'est le même critère qui tranche Tegmark
+> ([#16759](https://github.com/jsboige/CoursIA/issues/16759)) et les suivants.
+
 ### 1.2 — Schmidhuber : la compression comme dissociations
 
 **L'opération.** *Ce qui s'améliore en compression* — la diminution de la longueur de description d'un objet sans perte d'information *utile*. La dissociation, dans la grille du premier document, est le **tell** d'un gain de compression : deux proxys qui *s'éloignent* (l'un comprime mieux que l'autre) marquent une transition de phase représentationnelle.
@@ -63,13 +95,13 @@ Quatre opérations, chacune avec son ancrage dans le dépôt, ses aboutissants o
 **L'opération.** *Ce qui se forme* — la singularité qualitative d'un paysage dynamique (pli, fronce, cusp) et la prégnance associée (forme stable qui retient l'attention). Thom est **catégoriel** : il classe les morphologies, sans les quantifier en un scalaire unique.
 
 **Ancrage dépôt.**
-- [`MyIA.AI.Notebooks/IIT/ICT-Series/thom-synthese-distillation.md`](../../MyIA.AI.Notebooks/IIT/ICT-Series/thom-synthese-distillation.md) — distillation PR [#9534](https://github.com/jsboige/CoursIA/pull/9534) MERGED 2026-08-05T01:55:30Z par jsboige, distillation Ch.1 à Ch.8 de *Sémiophysique* (1991) pour les strates 6 et 7 (langage / circulation de prégnances, genres comme espaces de possibles extensibles).
+- [`MyIA.AI.Notebooks/IIT/ICT-Series/thom-synthese-distillation.md`](../../MyIA.AI.Notebooks/IIT/ICT-Series/thom-synthese-distillation.md) — distillation PR [#9534](https://github.com/jsboige/CoursIA/pull/9534) MERGED 2026-08-05T01:55:30Z par jsboige, distillation Ch.1 à Ch.8 de *Sémiophysique* (1991) pour le **socle transverse** des strates hautes (langage / circulation de prégnances, genres comme espaces de possibles extensibles) — un socle de lecture, **pas un barreau** de l'axe vertical (divergence 2 de [#13908](https://github.com/jsboige/CoursIA/issues/13908)).
 - [ICT-10-CatastropheGrammar.ipynb](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar.ipynb) — la catastrophe fronce, le métathéorème, le lacet de prédation (cycle d'hystérésis à 2 catastrophes avec perception J et capture K, aire signée non nulle, représentant interne `p̂`).
 - [ICT-12-ValenceFieldsAndAnimats.ipynb](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats.ipynb) — prolonge ICT-10 en mesurant les rôles actantiels (capture, évasion, irréversibilité, switching). L'animat anticipateur `p̂` y gagne en balistique, perd en erratique.
 
 **Aboutissants opérationnels dans la série ICT.**
 - Le *lacet de prédation* d'ICT-10 = hystérésis à 2 catastrophes ; c'est la **mesure** Thom-compatible la plus directe dans la série (aire signée non nulle sur cycle perception-capture).
-- La distillation 2026-08-05 (§A-F du Ch.7, *substance, logos, continu vs discret*) installe le **socle théorique** pour les strates 6 et 7 sans réinventer. *Universalisme linguistique*, *valence Tesnière*, *transitivité prototypique = prédation*, *genres*, *hypergenres* sont nommés et situés dans l'ouvrage, sans confusion entre le grade A du cadre mathématique (catastrophes, dynamiques lentes-rapides) et le grade C d'une lecture « ICT candidate » (cf. rectification A2 de [#7733](https://github.com/jsboige/CoursIA/issues/7733)).
+- La distillation 2026-08-05 (§A-F du Ch.7, *substance, logos, continu vs discret*) installe le **socle théorique transverse** que les strates hautes (S6/S7) consomment sans réinventer — il les irrigue **sans occuper de rang** sur l'axe vertical (divergence 2 de [#13908](https://github.com/jsboige/CoursIA/issues/13908)). *Universalisme linguistique*, *valence Tesnière*, *transitivité prototypique = prédation*, *genres*, *hypergenres* sont nommés et situés dans l'ouvrage, sans confusion entre le grade A du cadre mathématique (catastrophes, dynamiques lentes-rapides) et le grade C d'une lecture « ICT candidate » (cf. rectification A2 de [#7733](https://github.com/jsboige/CoursIA/issues/7733)).
 
 **Frictions frontales avec les autres fils.**
 - *Avec Grothendieck (1.1).* Voir §1.1 — la catastrophe thomienne est un **objet géométrique**, la classe cohomologique est un **objet algébrique**. L'identité formelle n'est pas disponible.
@@ -105,6 +137,75 @@ Cette section *résume* ce qui précède en une **table de composabilité**. Le 
 **Lecture de la table.** Les « compose avec » sont des **ponts** au sens de la conversation 2026-07-20 (tours 247-267, recollement/cohomologie/bestiaire Grothendieck) : des *gestes* mesurables qui *réalisent* un fragment d'un autre fil. Les « s'oppose à » sont des **frontières** : deux opérations qui *ne s'identifient pas* en l'état. La **seule** identité formellement prouvée dans le dépôt est celle du pont (a) Hashlife / `#5726` — voir §3.1.
 
 > **Le point de recollement identifié aux tours 550-568.** Les quatre fils partagent un **objet commun** : les *classes de prégnances* / *formes universelles d'organisation*. Thom les appelle **formes stables** (catastrophes), Grothendieck les appelle **invariants sous changement de point de vue** (sections globales), Friston les appelle **organisations favorisées** (minima d'énergie libre), et une tradition contemporaine (cf. Anthropic sur la *forme* émergente) les appelle **formes émergentes**. Le *machiavélisme* d'une persona, dans la série ICT, serait **une réalisation parmi d'autres** de ce recollement commun. **Aucune de ces identités n'est formellement prouvée** — le présent document marque le **point de rencontre** sans le **réaliser**.
+
+
+### 1.6 — Arc des strates 1 → 7 et axe transverse
+
+La table ci-dessus compose les **fils** entre eux. Elle ne dit rien de l'**échelle** sur laquelle ces
+fils se mesurent — c'est l'objet de cette section, et c'est la resync que l'en-tête annonçait.
+Source de vérité : [`ICT-0-Framing.md` § « Deux axes de lecture »](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-0-Framing.md#deux-axes-de-lecture--strates-verticales--tresse-transverse), qui fait foi depuis l'arbitrage [#13908](https://github.com/jsboige/CoursIA/issues/13908).
+**Zéro renumérotation** : seules des étiquettes de strate bougent, aucun numéro `ICT-N`
+([#7260](https://github.com/jsboige/CoursIA/issues/7260)).
+
+**Axe vertical — les substrats.** L'échelle est ordonnée *du plus transparent au plus opaque* :
+
+| Strate | Substrat | Notebooks | Fil(s) rouge(s) dont la tresse s'y mesure |
+|---|---|---|---|
+| **S1** | tri auto-organisé | ICT-1 → ICT-7 | Grothendieck (recollement sur banc entièrement transparent) |
+| **S2** | morphogenèse dynamique (attracteurs engendrés) | ICT-8 / ICT-9, charnière ICT-10 | **Thom** (catastrophe fronce, lacet de prédation, `p̂`) |
+| **S3** | agents : réactifs → inhibés → stratégiques | ICT-11 / ICT-12 / ICT-13 + Synthèse | **Thom** (prégnance, valences) · Schmidhuber (stabilité stratégique) |
+| **S4** | scalaires fondateurs $\Phi/F/K$ sur substrats **non-LLM** | ICT-14 → ICT-20 | **Friston** (énergie libre, EFE) · Schmidhuber (identité MDL, $\epsilon$-machine) |
+| *charnière S4→S5* | **grokking** — `p̂` cesse d'anticiper un comportement pour devenir un état de représentation apprise | ICT-17b | Schmidhuber (compression / transition de phase) — traceur [#7735](https://github.com/jsboige/CoursIA/issues/7735) |
+| **S5** | représentations internes des LLMs | ICT-21 → ICT-25 | **Grothendieck** (SAE, recollement de cartes) |
+| **S6** | **argumentation** (+ jambe explicabilité LLM) | graine [#7289](https://github.com/jsboige/CoursIA/issues/7289) | Thom via les pattes C3/C4 — **non livrée** |
+| **S7** | **freebits d'ordre 2 & réversibilité agentique** | cadrage D1 | **non livrée** — voir point 3 ci-dessous |
+
+**Trois points que cette table tranche** (les trois divergences de [#13908](https://github.com/jsboige/CoursIA/issues/13908), dans
+l'ordre où elles touchent la tresse) :
+
+1. **S4 / S5.** Les substrats non-LLM (ICT-16 → ICT-20) relèvent de **S4** ; S5 commence à
+   **ICT-21** (SAE), là où le substrat *est* un transformer entraîné. `ICT-17b` est la
+   **charnière**, pas une strate pleine.
+2. **Thom n'est pas la strate 6.** La sémiophysique est un **outil de lecture transverse** : elle
+   irrigue ICT-10, ICT-13 et les pattes C3/C4, et **ne porte aucun notebook en propre**. La strate 6
+   reste l'**argumentation** (graine [#7289](https://github.com/jsboige/CoursIA/issues/7289), non livrée).
+3. **La strate 7 n'est pas ICT-26 → ICT-30.** Ces cinq notebooks sont la **dimension D2** — des
+   *pattes*, pas des *barreaux*. La strate 7 reste les **freebits d'ordre 2 et la réversibilité
+   agentique** ([#7745](https://github.com/jsboige/CoursIA/issues/7745)), que D1 **cadre** et que D2 **alimente sans l'occuper**. **Rien n'y est
+   livré.**
+
+**Axe transverse — la tresse (pattes & dimensions).** Orthogonal à l'échelle, une famille
+d'expériences éclaire un même substrat sous plusieurs angles : elle ne s'insère **pas** dans
+l'arc vertical. *Une jambe (C1-C5) est une expérience **sur** une strate ; une dimension (D1-D3) cadre
+l'**horizon** des strates hautes.*
+
+| Objet | Contenu | Axe |
+|---|---|---|
+| **C1** — animat prégnance / valence ([#7740](https://github.com/jsboige/CoursIA/issues/7740)) | opérationnaliser l'investissement thomien | patte de S3 |
+| **C2** — animat inhibé, Laborit ([#7741](https://github.com/jsboige/CoursIA/issues/7741)) | contrôlabilité, inhibition de l'action | patte de S3 |
+| **C3** — morphogenèse rhétorique ([#7742](https://github.com/jsboige/CoursIA/issues/7742)) | transition argumentative | patte de S6 |
+| **C4** — grammaire de propagation ([#7743](https://github.com/jsboige/CoursIA/issues/7743)) | seuil de bascule ($\pi$, $W$) | patte de S6 |
+| **C5** — méta-proxy → cochaîne de Čech pondérée ([#7744](https://github.com/jsboige/CoursIA/issues/7744)) | — | transverse (aucune strate nommée) |
+| **D1** — cadrage **strate 7** ([#7745](https://github.com/jsboige/CoursIA/issues/7745)) | free coordinates, jeu évolutif $G_t$ + mécanisme $M$, six proxys | dimension |
+| **D2** — cinq expériences du jeu évolutif ([#7746](https://github.com/jsboige/CoursIA/issues/7746)) | ICT-26 → ICT-30 (signaling, invention, seuil $\rho_c$, inoculation, inhibition) | dimension — **alimente S7 sans l'occuper** |
+| **D3** — mythe fondateur / boussole ([#7747](https://github.com/jsboige/CoursIA/issues/7747)) | auto-référence performative | dimension |
+
+**Ce que cette table ne place pas encore.** Cinq documents de la phase
+[#5726](https://github.com/jsboige/CoursIA/issues/5726) restent hors carte :
+`ICT-Life-SubstratCertifie`, `ICT-32-StratificationCausaleLife` et `ICT-33-SoupCollisions` portent sur le
+substrat GOL et **appellent un barreau** — question **ouverte**, explicitement *non* tranchée en
+[#13908](https://github.com/jsboige/CoursIA/issues/13908) (l'automate cellulaire dont la correction est certifiée en Lean est le substrat *le
+plus transparent* de la série : l'insérer demande de décider s'il précède S1 ou constitue
+une entrée latérale) ; `ICT-31-ContrasteTroisSubstrats` et `ICT-34-BancRecollementLectures` sont des
+**pattes** (cross-substrat).
+
+**Ce que la tresse y gagne.** Les quatre fils ne se répartissent pas au hasard sur l'échelle :
+**Thom** domine les strates basses (S2-S3, où la forme se mesure directement) et remonte en **socle
+transverse** vers S6/S7 ; **Friston** est concentré en S4 ; **Schmidhuber** traverse S4 et sa
+charnière ; **Grothendieck** est le seul dont l'ancrage *outillé* (lake `grothendieck_lean`) vit à
+part de l'échelle — il éclaire S5 et au-delà par le recollement. C'est la lecture
+horizontale appliquée à l'axe vertical : **la tresse se mesure sur les strates, elle ne les remplace
+pas.**
 
 ---
 
@@ -207,6 +308,7 @@ Sans (a), la prose ICT risque de glisser d'opérationnellement valide à formell
 - [`dissolution-scalaires.md`](dissolution-scalaires.md) — 5e fil : dissolution des scalaires Φ/F/K → faisceau de proxys, livré par PR [#9547](https://github.com/jsboige/CoursIA/pull/9547) MERGED (c.1238).
 
 **Ancres dépôt** :
+- [`MyIA.AI.Notebooks/IIT/ICT-Series/ICT-0-Framing.md`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-0-Framing.md) — cadrage ICT-0, **source de vérité unique des strates** (§ « Deux axes de lecture : strates verticales × tresse transverse », arbitrage [#13908](https://github.com/jsboige/CoursIA/issues/13908)) : c'est la carte que §1.6 consomme et sur laquelle les corrections d'axe de ce document sont alignées.
 - [`docs/grothendieckian-lens.md`](../grothendieckian-lens.md) — la lentille Grothendieck, re-groundée PR [#8189](https://github.com/jsboige/CoursIA/pull/8189) + [#8382](https://github.com/jsboige/CoursIA/pull/8382).
 - [`MyIA.AI.Notebooks/IIT/ICT-Series/thom-synthese-distillation.md`](../../MyIA.AI.Notebooks/IIT/ICT-Series/thom-synthese-distillation.md) — distillation Thom Ch.1-8, PR [#9534](https://github.com/jsboige/CoursIA/pull/9534) MERGED 2026-08-05.
 - Lake [`grothendieck_lean`](../../MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/), modules [`SheafCohomology/Basic.lean`](../../MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SheafCohomology/Basic.lean) et [`MayerVietoris.lean`](../../MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SheafCohomology/MayerVietoris.lean).

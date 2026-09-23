@@ -1038,3 +1038,47 @@ class TestTranslationAwareMode:
         with mock.patch.object(dml, "ref_resolves", return_value=True), \
              mock.patch.object(dml, "path_exists_at_ref", return_value=True):
             assert dml.main([str(pair), "--base", "MOCK", "--check"]) == 1
+
+
+# ---------------------------------------------------------------------------
+# 6b. Motifs ancres aux formes de section, jamais a la prose (#17473)
+# ---------------------------------------------------------------------------
+class TestAnchoredMotifs:
+    def test_real_section_lost_while_prose_mentions_word_signals(self):
+        # Faux negatif d'avant #17473 : la vraie section disparait pendant qu'une
+        # phrase ajoutee ailleurs contient le mot. L'ancien compte restait a 1
+        # des deux cotes et la perte passait inapercue.
+        base = _nb(_md("## Prérequis\n\n- Python 3.10\n- numpy"), _md("Texte."))
+        head = _nb(_md("Texte. L'installation sert de prérequis au reste."))
+        findings = dml._compare_motifs(dml._collect_motifs(base), dml._collect_motifs(head))
+        assert any(f["kind"] == "LOST_MOTIF" and f["motif"] == "Prerequis" for f in findings)
+
+    def test_prose_cell_removed_is_not_a_lost_motif(self):
+        # Faux positif mesure sur #17460 (10a-SemanticKernel-NotebookMaker-batch) :
+        # la seule occurrence etait un nom commun dans une lecture retiree.
+        base = _nb(_md("Titre."), _md("L'installation sert alors de prérequis aux réutilisations."))
+        head = _nb(_md("Titre."))
+        findings = dml._compare_motifs(dml._collect_motifs(base), dml._collect_motifs(head))
+        assert all(f["kind"] != "LOST_MOTIF" for f in findings)
+
+    def test_objective_word_in_prose_removed_is_not_a_lost_motif(self):
+        # Seconde instance mesuree sur #17463 (Serre100/08) : « L'objectif imprime : ... ».
+        base = _nb(_md("Titre."), _md("L'objectif imprimé : `ssc_iff_coprime` compile."))
+        head = _nb(_md("Titre."))
+        findings = dml._compare_motifs(dml._collect_motifs(base), dml._collect_motifs(head))
+        assert all(f["kind"] != "LOST_MOTIF" for f in findings)
+
+    @pytest.mark.parametrize(
+        "src",
+        [
+            "## Objectifs pédagogiques\n\nComprendre la mesure.",
+            "### 1. Prérequis",
+            "**Navigation** : [Index](README.md)",
+            "> **Prérequis :** Python 3.10",
+            "> Prerequis conseilles : [ICT-0](ICT-0-Framing.md)",
+            "Objectif : mesurer la derive.",
+        ],
+    )
+    def test_structural_forms_are_counted(self, src):
+        counts = dml._collect_motifs(_nb(_md(src)))
+        assert sum(counts[k] for k in ("Navigation", "Objectif(s)", "Prerequis")) == 1
