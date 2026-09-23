@@ -66,6 +66,38 @@ Avant toute bascule, relever au minimum :
 
 Le détail par workflow sépare la capacité réellement consommée de l'auto-contention. En particulier, le `PR gate` peut occuper un runner pendant qu'il sonde des checks eux-mêmes en file : dimensionner sur la demande brute financerait ce temps d'attente au lieu de le corriger. Les distributions par label et runner localisent une saturation observée ; elles ne révèlent pas à elles seules combien de runners partagent un hôte physique, son plafond de concurrence, ni la politique de capacité à retenir. Ces décisions exigent une mesure de topologie distincte.
 
+## Co-résidence : hôte, concurrence, slots (#15574)
+
+Les deux nombres que le paragraphe précédent laisse ouverts sont mesurables, mais **côté API, pas côté machine** : `actions/runners` rend les slots enregistrés, et les horodatages des jobs rendent le recouvrement. `scripts/ci/measure_runner_demand.py` les produit en deux blocs, à lire ensemble — le premier dit ce qui s'est passé, le second la capacité qui l'a produit.
+
+| Bloc | Question | Source | Nature |
+|---|---|---|---|
+| `runners_inventory` | Combien de runners partagent un hôte ? | `actions/runners` (`--runners`) | STATIQUE |
+| `co_residence` | Combien de jobs un hôte a-t-il portés simultanément, et à quelle durée ? | horodatages des jobs | DYNAMIQUE |
+
+**L'hôte est présumé du nom du runner.** Le pool nomme ses slots `<hôte>-<n>` (`myia-po-2024-linux-docker-1/-2`), donc le regroupement par préfixe reconstitue l'hôte. Un nom sans suffixe numérique n'est **pas** attribué : l'inventer fabriquerait un hôte d'un seul slot, c'est-à-dire exactement le chiffre qu'on cherche à mesurer. Les jobs et runners non attribuables sont comptés séparément (`jobs_unplaced`, `unplaced_runners`).
+
+**Deux statistiques de concurrence par job**, parce qu'elles répondent à deux questions distinctes :
+
+- le **pic** — combien de jobs l'hôte a portés simultanément pendant ce job ; c'est lui qui dit le plafond atteint ;
+- la **moyenne** — quelle part de la durée s'est faite en compagnie.
+
+Le pic est calculé sur les **bornes** des intervalles : entre deux bornes le compte ne peut pas changer, et un échantillon unique au point médian rate un job qui chevauche un autre sur la moitié de sa durée (constaté en écrivant la suite de tests).
+
+**Bornes et honnêteté de la mesure.** La concurrence observée est une **borne inférieure** : seuls les jobs de la fenêtre collectée sont connus, un job hors fenêtre qui tournait en parallèle est invisible. Elle peut donc montrer qu'un hôte est sur-souscrit, jamais prouver qu'il ne l'est pas. Les caveats sont émis **dans la sortie JSON**, pas seulement dans ce document, et une corrélation durée↔concurrence n'y est pas présentée comme une cause : une durée plus longue en concurrence peut venir du job lui-même. L'inventaire distingue trois états — `measured`, `unavailable` (droit de lecture manquant, raison incluse) et `not_collected` — dont **aucun** ne rend un parc vide.
+
+**Pourquoi un runner de workflow et pas une commande locale.** La collecte coûte environ un appel API par run (la lecture des jobs), plus la pagination. Un poste de travail épuise son quota REST avant de couvrir une fenêtre utile — mesuré le 2026-09-21 : quota épuisé avant la fin d'une fenêtre d'**une heure**, l'instrument rendant alors `BROKEN INSTRUMENT` (exit 2) plutôt qu'un zéro propre, ce qui est le comportement voulu. `runner-coresidence-advisory.yml` porte donc la mesure sur `ubuntu-latest` (l'observateur ne consomme pas ce qu'il observe), en advisory — `schedule` + `workflow_dispatch` seulement, jamais `pull_request`, donc un run rouge ne peut pas bloquer une PR.
+
+```bash
+# après merge (workflow_dispatch exige le fichier sur la branche par défaut)
+gh workflow run runner-coresidence-advisory.yml -f hours=6 -f runner_inventory=true
+# ou en local, quand le quota REST est disponible
+python scripts/ci/measure_runner_demand.py --repo jsboige/CoursIA \
+    --since <ISO8601Z> --until <ISO8601Z> --runners --output coresidence.json
+```
+
+**État de la mesure.** L'instrument et son runner sont livrés ; **les chiffres ne le sont pas encore**. Ils seront publiés par le premier run de l'organe (cron du mardi 04:20 UTC, ou dispatch immédiat après merge) et versés ici datés, avec la décision de capacité qu'ils fondent. Tant qu'ils ne sont pas là, #15574 reste ouvert : un instrument n'est pas une caractérisation.
+
 ## Topologie retenue
 
 `jsboige/CoursIA` appartient à un compte GitHub personnel. Les groupes de runners personnalisés sont réservés aux organisations et ne constituent donc pas une barrière disponible ici. La frontière activable repose sur deux contrôles complémentaires :
@@ -229,11 +261,14 @@ Pas de `--gpus` (aucun passthrough GPU, par design). Le runner `--ephemeral` tra
 `scripts/ci/docker/linux-runner/supervise.sh` (livré 2026-09-01, finalisation du volet laissé en conception). Un slot = une boucle `while` qui relance un conteneur dès que le précédent meurt ; **N slots = N jobs concurrents**. C'est toute la différence entre le conteneur et le service Windows : côté Windows, chaque ré-enregistrement est une tâche planifiée à orchestrer ; ici c'est un `docker run` de plus, gratuit et parallélisable.
 
 ```bash
-docker build -t coursia-linux-runner:2.336.0 scripts/ci/docker/linux-runner/
+scripts/ci/docker/linux-runner/supervise.sh pin        # epingle le contexte hors arbre (#16134)
+docker build -t coursia-linux-runner:2.337.0 "$COURSIA_RUNNER_PINNED_CTX"
 scripts/ci/docker/linux-runner/supervise.sh start 2   # 2 slots concurrents
 scripts/ci/docker/linux-runner/supervise.sh status
 scripts/ci/docker/linux-runner/supervise.sh stop      # gracieux : les jobs en cours finissent
 ```
+
+Le **build se fait depuis l'épingle** (`pin`, défaut `$STATE_DIR/image-context`), pas depuis le checkout : le garde de fraîcheur #14801 compare l'image à cette copie épinglée, et un checkout de branche ou une édition non commitée n'invalident plus le parc (#16134 — l'incident du 2026-09-14 : 1 h 15 de flotte morte parce que le garde comparait l'arbre vivant). Après un merge qui touche `entrypoint.sh` ou `work_cache_health.sh` : `pin` (qui publie le diff d'empreintes), rebuild, restart.
 
 Trois points de conception qui ne sont pas négociables :
 
@@ -355,6 +390,39 @@ Deux pièges font échouer un cache écrit « au feeling » :
 **Ce que cette tranche ne fait pas** : `ACTIONS_RUNNER_SYMLINK_CACHED_ACTIONS` (forme « dossier déployé » du même cache) n'est **pas** activée — elle exige d'extraire chaque archive selon une disposition stricte, et le runner retombe silencieusement sur le téléchargement en cas d'écart. C'est un second levier, pas A1 ; l'archive est la forme que A1 demande.
 
 **Résiduel honnête** : A2/A3 (contrôles positif et négatif sur un **log de job** réel) ne sont pas satisfaits par cette tranche. Ils exigent une image **reconstruite et redéployée**, puis un job réel : la preuve qu'on peut apporter sans déploiement s'arrête au contenu de l'image, et c'est ce qui est mesuré ci-dessus.
+
+### Mode persistent — le conteneur qui retire le maillon superviseur (#14329)
+
+Le superviseur hôte n'existe que parce que les runners sont `--ephemeral` : un runner éphémère traite **au plus un job** puis se désenregistre, donc un processus hôte doit reminter un token et relancer un conteneur à chaque job — et ce processus hôte est exactement le maillon qui meurt au logoff (mesure du reboot 2026-09-02 : flotte retombée à 1 runner, tous les `PR gate` gelés en STARVED). L'idée user : « un conteneur en autorestart qui fait le polling tout seul ».
+
+**Le design livré dans l'image** (`RUNNER_MODE=persistent`, `--ephemeral` reste le défaut — rétro-compatible) :
+
+- **Volume de config par slot** monté sur `/opt/runner` : il porte le layout complet du runner (`.runner` + `.credentials` + binaires). L'image extrait le tarball vers `/opt/runner-dist` (source vierge) **et** copie vers `/opt/runner` ; si le volume est créé vide, l'entrypoint restaure les binaires depuis `runner-dist` au boot — monter un volume sur `/opt/runner` ne masque donc jamais les binaires.
+- **Enregistrement une seule fois** : `token`/`url`/`name`/`labels` ne sont exigés que si `.runner` est absent (premier boot). Aux restarts suivants, l'entrypoint détecte `.runner`, journalise « reprise sans ré-enregistrement » et lance `run.sh` directement — **aucune variable requise**, le token (valable 1 h) ne sert plus jamais.
+- **Pas de teardown** : le `trap 'config.sh remove'` du mode éphémère est absent — désenregistrer au EXIT tuerait la propriété même du mode. `--replace` reste posé à l'enregistrement : un slot recréé remplace son entrée offline.
+
+Lancement type (slot N) :
+
+```
+docker run -d --restart unless-stopped \
+  -v coursia-runner-cfg-N:/opt/runner \
+  -v coursia-work-N:/home/runner/_work \
+  -e RUNNER_MODE=persistent \
+  -e ACTIONS_RUNNER_INPUT_TOKEN=... -e ACTIONS_RUNNER_INPUT_URL=https://github.com/jsboige/CoursIA \
+  -e ACTIONS_RUNNER_INPUT_NAME=myia-po-2024-linux-docker-N \
+  -e ACTIONS_RUNNER_INPUT_LABELS=self-hosted,coursia-linux \
+  coursia-linux-runner
+```
+
+Docker relance le conteneur à chaque démarrage du daemon (donc de la distro) ; le volume `_work` de #14288 se **combine** avec celui de config, il ne s'y substitue pas.
+
+**Ce que la non-éphéméralité coûte — écrit, pas supposé** :
+
+1. **État persistant entre jobs.** C'est précisément ce que `--ephemeral` achetait (#13378) : workspace, tool-cache et processus résiduels survivent d'un job au suivant. Le troc est accepté parce que la contrainte « le code des forks étudiants ne touche jamais le self-hosted » tient **par ailleurs** : aucun `pull_request_target` auto-hébergé, garde universelle fork/payload (`github.event.pull_request.head.repo.full_name == github.repository`, tranche 4), et « Require approval for all outside collaborators » côté dépôt. Retirer la persistance avant tout trigger `pull_request` reste la règle.
+2. **Sémantique des hooks entrypoint.** En éphémère, les blocs de désarmement (sparse-checkout résiduel, refs dangling) et `work_cache_health` s'exécutent **à chaque job** (conteneur `--rm` par job). En persistent, ils s'exécutent **au boot du conteneur** seulement : le runner enchaîne les jobs sans relancer l'entrypoint. Le nettoyage inter-jobs repose alors sur le `clean` par défaut du checkout ; le hook de boot reste en première ligne à chaque restart Docker. Ce n'est pas un renforcement : c'est une couverture **moins fréquente**, assumée.
+3. **Un slot offline consomme son inscription.** Un runner non-éphémère arrêté reste enregistré « idle/offline » sur GitHub jusqu'à son retour — contrairement à l'éphémère qui se désenregistre seul. Sans incident tant que le conteneur revient ; c'est le compteur GitHub à lire après un long arrêt.
+
+**Validation au déploiement (po-2024 uniquement, jamais ai-01)** : la preuve du mode est un `systemctl restart docker` qui voit les slots revenir **sans intervention** — geste destructif réservé à la machine qui ne porte ni vLLM, ni Qdrant, ni ComfyUI. La mesure avant/après du temps de checkout se prend au même moment (volumes `_work` + config combinés).
 
 ## Tranches suivantes, activation partielle
 

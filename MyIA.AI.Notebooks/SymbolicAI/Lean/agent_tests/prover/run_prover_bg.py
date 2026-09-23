@@ -94,6 +94,16 @@ def _derive_result_kind(result, final_sorry: int, original_sorry: int) -> str:
                           Tells a coordinator the arm needs a shorter reasoning
                           budget / different search / smaller decomposition, NOT
                           more wall-clock or iterations.
+      freeze_loop      -> TacticAgent never got a tool call through: the
+                          freeze-loop guard escalated to Coordinator N times
+                          (text-without-tool streaks) with ZERO tactic
+                          submissions and the workflow yielded at the hardcap
+                          instead of burning iteration_cap (#1453 C3,
+                          2026-09-19; founder: qwen2.5:7b emits tool-calls as
+                          fenced-JSON prose — 6 firings, 8/8 iterations, 0
+                          attempts). Tells a coordinator to change
+                          model/provider (tool-calling capability), NOT more
+                          iterations.
       no_progress      -> diagnostic data only
 
     Real progress outranks the outage flag: a run that lowered the sorry count
@@ -163,6 +173,19 @@ def _derive_result_kind(result, final_sorry: int, original_sorry: int) -> str:
     # "agent spun reasoning without editing" from "agent tried and failed".
     if isinstance(result, dict) and result.get("reasoning_budget_exceeded"):
         return "reasoning_budget_exceeded"
+    # C3 (#1453 calibration forensic, po-2024 2026-09-19): the freeze-loop
+    # escalation hardcap ended the run — the C617 guard forced N Coordinator
+    # handoffs (TacticAgent text-without-tool streaks) while tactic_history
+    # stayed EMPTY. The model structurally cannot tool-call (founder case:
+    # qwen2.5:7b via Ollama emits tool-calls as fenced-JSON prose; the harness
+    # echoes its own text back as [receive] — 6 guard firings, 8/8 iterations,
+    # 0 attempts). Ranked after every progress/outage/refusal flag (mutually
+    # exclusive with them by construction: the yield requires an empty
+    # tactic_history, so no sorry/structural outcome can precede it). Tells a
+    # coordinator to change model/provider (tool-calling capability), NOT more
+    # iterations. Legacy-safe: field absent -> falsy -> no_progress.
+    if isinstance(result, dict) and result.get("freeze_loop"):
+        return "freeze_loop"
     return "no_progress"
 
 
@@ -323,6 +346,12 @@ def _run_with_calibration_stub(demo, name, filepath, line, mode, iterations,
     ):
         target_path = Path(demo["file"])
         original = target_path.read_bytes()
+        # #17433: capture the COMMITTED sorry count BEFORE the stub write
+        # and stash it on a demo COPY — provers.py's FX-6 guard measures
+        # against the committed statement, not the stubbed file. Copy, not
+        # mutation: DEMOS entries are module-level dicts shared across runs.
+        demo = {**demo, "pre_stub_sorry_count": count_real_sorries(
+            original.decode("utf-8"))}
         stubbed = stub_theorem_proof(
             original.decode("utf-8"), demo["theorem_name"]
         )

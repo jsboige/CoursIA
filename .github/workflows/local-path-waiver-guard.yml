@@ -1,0 +1,60 @@
+name: Local path waiver guard
+
+# #16780: a PR comment whose body is a local filesystem path (the
+# `gh --body "@$TEMP/file.md"` accident) was read as a DWELL waiver -- but
+# the file lives on one machine, so the "authorization" is unreadable by
+# every PR reader. This advisory guard FLAGS (warning, never a gate) any
+# comment body that is a lone path or carries a Windows profile path
+# segment. A waiver counts only if its substance is ON the PR.
+
+on:
+  issue_comment:
+    types: [created, edited]
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to check'
+        required: true
+        type: string
+
+permissions:
+  issues: read
+  pull-requests: read
+
+# The group is keyed by EVENT as well as by PR. An `issue_comment` run always
+# executes against the default branch, so its check-run attaches to `main`,
+# never to the PR head. Sharing one group with the `pull_request` run let every
+# comment cancel the PR-head run still waiting in the queue, leaving the head
+# with a `cancelled` check that `PR gate` reads as "never concluded" -> FAIL:
+# an advisory guard turned into a kill-switch (measured 2026-09-22 on 25 open
+# PRs, 22 gates citing it). Each event now only supersedes its own kind.
+concurrency:
+  group: local-path-waiver-${{ github.event_name }}-${{ github.event.issue.number || github.event.pull_request.number || github.event.inputs.pr_number }}
+  cancel-in-progress: true
+
+jobs:
+  guard:
+    name: No local-path waiver bodies
+    # issue_comment also fires on plain issues -- only guard PR surfaces.
+    if: github.event_name != 'issue_comment' || github.event.issue.pull_request
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Resolve PR number
+        id: pr
+        run: |
+          PR="${{ github.event.pull_request.number || github.event.issue.number || github.event.inputs.pr_number }}"
+          echo "number=$PR" >> "$GITHUB_OUTPUT"
+      - name: Check PR comment surface
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # Arbitration ai-01 (#16780): the leak is VISIBLE but never a gate --
+        # the path comes from a miswritten command on another machine; failing
+        # the victim PR's check punishes the innocent and erases nothing.
+        # The blocking side of #16780 lives in the B.0 organ (can_lift).
+        run: python scripts/check_local_path_waivers.py "${{ steps.pr.outputs.number }}" --report-only

@@ -181,6 +181,71 @@
         "MyIA.AI.Notebooks/ML/learning_theory_lean/lakefile.toml",
         "MyIA.AI.Notebooks/ML/learning_theory_lean/lean-toolchain"
       ]
+    },
+    {
+      "lake": "decisiontheory",
+      "project-path": "MyIA.AI.Notebooks/Probas/decision_theory_lean",
+      "display-name": "decision_theory_lean",
+      "sorry-baseline": "2",
+      "sorry-filter-mode": "real",
+      "paths": [
+        "MyIA.AI.Notebooks/Probas/decision_theory_lean/**.lean",
+        "MyIA.AI.Notebooks/Probas/decision_theory_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/Probas/decision_theory_lean/lakefile.toml",
+        "MyIA.AI.Notebooks/Probas/decision_theory_lean/lean-toolchain"
+      ]
+    },
+    {
+      "lake": "gametheory",
+      "project-path": "MyIA.AI.Notebooks/GameTheory/game_theory_lean",
+      "display-name": "game_theory_lean",
+      "sorry-baseline": "1",
+      "sorry-filter-mode": "real",
+      "paths": [
+        "MyIA.AI.Notebooks/GameTheory/game_theory_lean/**.lean",
+        "MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.toml",
+        "MyIA.AI.Notebooks/GameTheory/game_theory_lean/lean-toolchain"
+      ]
+    },
+    {
+      "lake": "mathlibexamples",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples",
+      "display-name": "mathlib_examples",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/lakefile.toml",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/lean-toolchain"
+      ]
+    },
+    {
+      "lake": "socialchoicepeters",
+      "project-path": "MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters",
+      "display-name": "social_choice_lean_peters",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "paths": [
+        "MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters/**.lean",
+        "MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters/lakefile.lean",
+        "MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters/lakefile.toml",
+        "MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters/lean-toolchain"
+      ]
+    },
+    {
+      "lake": "tegmarkmuh",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean",
+      "display-name": "tegmark_muh_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lakefile.toml",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lean-toolchain"
+      ]
     }
   ]
 }
