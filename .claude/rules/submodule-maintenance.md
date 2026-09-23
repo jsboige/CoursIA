@@ -97,6 +97,14 @@ Préférer cette forme à `gh auth switch`, qui mute un état **global au proces
 
 Une lane sans grain peut être servie par un sous-module : son backlog fait partie du pool. Un cycle `/coordinate` qui ne regarde que `jsboige/CoursIA` laisse structurellement quatre dépôts sans coordinateur — c'est précisément l'état que ce mandat corrige. La mesure de la Règle 2 est à passer **à chaque cycle**, au même titre que la passe de merge.
 
+## Règle HARD 7 — le gitlink suit la tête de sa branche (mandat user 2026-09-23)
+
+> « Argumentum et Z3.Linq, on fait tout avancer de front : le sous-module doit toujours pointer vers l'état le plus récent et permettre des MAJ depuis le dépôt principal. »
+
+- **Suivre** : `Z3.Linq` (`branch = main`) et `Argumentum` (`branch = master`) déclarent leur branche dans `.gitmodules`. `.github/dependabot.yml` (écosystème `gitsubmodule`) ouvre chaque jour la PR de bump quand elle avance. Cette PR passe le gate et B.0 comme les autres ; pour un sous-module à l'état 3 (R3), elle cite le run vert de la branche par défaut, et elle nomme les notebooks qui lisent des fichiers du sous-module.
+- **Modifier depuis CoursIA** : `git submodule update --remote <chemin>`, puis `git -C <chemin> switch <branche>`, commit **dedans**, push, et enfin le bump (ordre de R2). On ne commite jamais sur une tête détachée.
+- Pour ces deux sous-modules, une dérive mesurée par R2 n'est plus une veille : c'est une PR de bump qui attend son merge.
+
 ## Voir aussi
 
 - [docs/reference/submodule-maintenance-detail.md](../../docs/reference/submodule-maintenance-detail.md) — **détail** : table de statut de gate, mesures datées, incidents
