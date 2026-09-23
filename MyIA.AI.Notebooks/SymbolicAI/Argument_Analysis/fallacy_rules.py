@@ -28,13 +28,21 @@ Divergences documentees vis-a-vis du source (convention distillation) :
    ``APPEL_À_LA_TRADITION``, ``ARGUMENT_D_AUTORITÉ_*``) sont conservees
    telles quelles : elles sont l'identite de la regle, pas de la prose.
 2. Les specs de tokens nues ``{"OP": "+"}`` des motifs de mining (sans
-   autre attribut) sont normalisees en jokers explicites
-   ``{"TEXT": {"REGEX": ".*"}}`` avec le meme operateur : spaCy exige au
-   moins un attribut hors ``OP`` par spec de token. Semantique inchangee.
+   autre attribut) sont ecrites en jokers explicites
+   ``{"TEXT": {"REGEX": ".*"}}`` avec le meme operateur. Choix de
+   lisibilite, pas contrainte de spaCy : spaCy 3.8.16 accepte la spec
+   nue, avec ou sans ``Matcher(validate=True)``, et les deux formes
+   rendent les memes matches (mesure du 2026-09-23). Semantique inchangee.
 3. Les comptes mesures ici (15 motifs sophismes, 2+3 motifs mining)
    divergent des comptes annonces par l'audit R887 (13 et 6) : les
    nombres ci-dessous sont recomptes sur le source charge, fichier par
-   fichier ; l'ecart est consigne, pas silencieux.
+   fichier ; l'ecart est consigne, pas silencieux. Le 13 coincide avec
+   la consolidation du coeur Epita (``argumentation_analysis/adapters/
+   french_fallacy_adapter.py``, ``_SYMBOLIC_FALLACY_RULES`` : 5 cles,
+   13 motifs, origin/main ``f246e200b``), qui a retire les motifs
+   d'autorite ``[NOUN] (le) dire`` et ``[PROPN] dire`` ainsi que le
+   motif de premisse ``les/des NOUN montrer/indiquer que`` ; le 6 du
+   minage ne correspond ni au source (2+3) ni au coeur (2+2).
 4. ``mine_claims_premises`` deduplique les matches par position de
    debut (plus long match conserve) : le joker ``OP: "+"`` du source,
    applique a une spec ``TEXT`` quelconque, fait rendre au Matcher
@@ -302,8 +310,8 @@ PREMISE_PATTERNS = [
 def _wildcard(op: str = "+") -> dict:
     """Spec de token joker, equivalent de la spec nue ``{"OP": op}``.
 
-    spaCy exige au moins un attribut hors ``OP`` dans chaque spec de
-    token (divergence 2 documentee en en-tete de module).
+    Forme explicite retenue pour la lisibilite ; spaCy accepte aussi la
+    spec nue (divergence 2 documentee en en-tete de module).
     """
     return {"TEXT": {"REGEX": ".*"}, "OP": op}
 
