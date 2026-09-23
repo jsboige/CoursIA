@@ -284,7 +284,7 @@ Le lake le plus honnête du dépôt, à cet égard, est aussi celui qui porte le
 
 
 
-Car le seul vrai défaut, dans tout le dépôt, n'est jamais d'être à l'extrémité ouverte du continuum, ni d'être resté petit sur l'axe de l'échelle. C'est d'être à l'extrémité ouverte tout en portant le costume de l'autre : un résultat empirique présenté comme une preuve, une réussite d'échelle maquillée en garantie. La noix, ici encore, est le cas d'école — mais elle vient de nous apprendre quelque chose de plus fin sur ces deux axes, et c'est peut-être le meilleur de ce mois-ci.
+Le défaut qu'il faut tenir à distance — celui que l'Annexe grades nomme explicitement — n'est jamais d'être à l'extrémité ouverte du continuum, ni d'être resté petit sur l'axe de l'échelle. C'est d'être à l'extrémité ouverte tout en portant le costume de l'autre : un résultat empirique présenté comme une preuve, une réussite d'échelle maquillée en garantie. La noix, ici encore, est le cas d'école — mais elle vient de nous apprendre quelque chose de plus fin sur ces deux axes, et c'est peut-être le meilleur de ce mois-ci.
 
 
 
