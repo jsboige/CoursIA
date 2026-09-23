@@ -50,6 +50,8 @@ GitHub auto-closes issues on `Refs #N`, `Fixes #N`, `Closes #N`. Use safe syntax
   4. le coordinateur merge **immédiatement**, et **la branche est gelée entre 3 et 4**.
 
   Le gel est la pièce qui manquait : un dossier a besoin d'une **branche silencieuse**, sinon le travail de prévalidation est détruit par le travail de réparation, indéfiniment.
+
+  La forme **opérationnelle** du contrat exact-head vit dans [`coordinate/SKILL.md`](../skills/coordinate/SKILL.md) (« un changement de head ou de surface le perime ») et n'est **pas** reformulée ici — deux surfaces qui redécrivent la même règle finissent par diverger (#16962). Verbatim de l'organe et réconciliation de l'issue fondatrice : [prevalidation-dossier-order-detail.md](../../docs/reference/prevalidation-dossier-order-detail.md).
 - **`--force-with-lease` plutôt que `--force`** : il échoue si le remote a bougé depuis ta dernière lecture — précisément le cas « une autre lane a poussé sans que je le sache ». C'est le garde-fou qui rend le périmètre ci-dessus sûr.
 - **Jamais de `reset --hard`** sur `main` ni sur une branche partagée.
 - **Un secret déjà commité ne se répare PAS par réécriture d'historique** : branche propre + cherry-pick, et **rotation de la clé** (cf [secrets-hygiene.md](secrets-hygiene.md) règle 5).

@@ -79,6 +79,18 @@ AUXILIAIRES_2CHARS_PLUS = frozenset({
 # port des tests CI, c.1415).
 LOCUTIONS_DONNE_MARKERS = re.compile(r"\b(?:etant|tant)\b")
 
+# #17523 : la locution ne legitime QUE dans la phrase courante -- meme invariant
+# que ``is_prouve_legitimate`` (auxiliaire coupe au dernier separateur, c.1415).
+# Ancre = dernier ``.``/``!``/``?`` ou ligne BLANCHE. Mesure corpus (1383
+# notebooks, 198 ``donné`` accentués hors backticks, 59 préservés) :
+#   - borner aux seuls ``[.!?]``            : 0 verdict change ;
+#   - y ajouter la ligne blanche            : 0 verdict change ;
+#   - y ajouter le saut de ligne SIMPLE     : 1 verdict change, et c'est une
+#     locution REELLE coupée par un retour a la ligne
+#     (``PyMC-10-Model-Selection`` : « l'inférence bayésienne : étant\ndonné un
+#     jeu de données ») -- le saut simple reste donc DANS la phrase.
+_SENTENCE_BOUND = re.compile(r"[.!?]|\n\s*\n")
+
 
 # --- Discrimination 'decide' / 'verifier' (reconciliation c.1415) ------------
 #
@@ -177,12 +189,17 @@ def is_donne_legitimate(ctx_before: str) -> bool:
     """Verifie si 'donne' est dans une locution figee (etant donne / tant donne).
 
     Fenetre 60 chars avant (Tell c.1317-L7 ★★★★ fondateur -- mots intercalés
-    OK). Detection par marqueurs a bordure de mot (cf LOCUTIONS_DONNE_MARKERS).
+    OK), **bornee a la phrase courante** (#17523, cf ``_SENTENCE_BOUND``) :
+    sans cette borne, une locution d'une phrase anterieure legitimisait un
+    « donné » fautif de la phrase suivante (defaut que documentait le skip de
+    ``test_notebook_contamine``). Detection par marqueurs a bordure de mot
+    (cf LOCUTIONS_DONNE_MARKERS).
     """
     ctx = _strip_accents(_normalize(ctx_before))
     if not ctx:
         return False
-    return bool(LOCUTIONS_DONNE_MARKERS.search(ctx[-60:]))
+    segment = _SENTENCE_BOUND.split(ctx)[-1]
+    return bool(LOCUTIONS_DONNE_MARKERS.search(segment[-60:]))
 
 
 def is_verifie_legitimate(ctx_before: str) -> bool:
@@ -418,11 +435,22 @@ def _self_test() -> int:
     if is_prouve_legitimate("se "):
         failures.append("'se prouve' devrait etre fautif (cf Tell c.1315-L15)")
 
-    # Locution "etant donne" : legitime
-    if not is_donne_legitimate("Etant donne les contraintes, le probleme est complexe. On "):
+    # Locution "etant donne" : legitime DANS la phrase courante (#17523)
+    if not is_donne_legitimate("Etant donne les contraintes, le probleme est complexe pour "):
         failures.append("'Etant donne' devrait etre legitime (locution figee)")
     if not is_donne_legitimate("Pour un theoreme qui est tant donne, le cluster "):
         failures.append("'tant donne' devrait etre legitime (mots intercalés OK)")
+    # Witness corpus : un saut de ligne SIMPLE ne borne pas la phrase (PyMC-10)
+    if not is_donne_legitimate("l'inference bayesienne : etant\n"):
+        failures.append("un saut de ligne simple ne doit PAS borner la phrase "
+                        "(locution reelle coupee, PyMC-10)")
+    # Frontiere de phrase (#17523) : une locution d'une phrase ANTERIEURE ne
+    # legitimise PAS l'occurrence suivante.
+    if is_donne_legitimate("Etant donne les contraintes, le probleme est complexe. Le sup "):
+        failures.append("une locution avant le point ne doit PAS legitimiser "
+                        "l'occurrence apres la frontiere de phrase (#17523)")
+    if is_donne_legitimate("Etant donne les contraintes, on propose X.\n\nLe sup "):
+        failures.append("une ligne blanche borne la phrase (#17523)")
 
     # Verbe 3e pers. : "le sup donne" -> fautif
     if is_donne_legitimate("Le sup "):
@@ -495,7 +523,10 @@ def _self_test() -> int:
         for f in failures:
             print(f"  - {f}")
         return 1
-    print("[OK] repair_morpho self-test (20 invariants verifies)")
+    # Compte = branchements `failures.append` du self-test (mesure :
+    # `grep -c` sur le corps de _self_test). #17523 en ajoute 3 a la famille
+    # locution ; HEAD en imprimait 20 pour 19 controles.
+    print("[OK] repair_morpho self-test (22 invariants verifies)")
     return 0
 
 

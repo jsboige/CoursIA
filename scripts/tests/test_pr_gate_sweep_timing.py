@@ -40,7 +40,7 @@ def _extract_instrument() -> str:
     step = candidates[0]
     run = step["run"]
     assert "jobs?filter=all" not in run
-    match = re.search(r"python - <<'PY'\n(.*?)\nPY\n?$", run, re.S)
+    match = re.search(r"python3 - <<'PY'\n(.*?)\nPY\n?$", run, re.S)
     assert match, "timing heredoc missing from pr-gate-stale-sweep.yml"
     return match.group(1)
 

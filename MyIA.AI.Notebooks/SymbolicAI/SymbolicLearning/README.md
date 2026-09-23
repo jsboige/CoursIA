@@ -27,15 +27,17 @@ SL-12b prolonge SL-12 par l'autre versant du registre discret : la **synthèse l
 
 SL-13 ferme la phase 5 par un **diagnostic DISCOVER léger** (McCoy et al. arXiv:2608.29530, digestion EPIC #14366 grain G6) — un GRU/Transformer 1-2 couches entraîné sur copy/reverse/interleave est-il porteur d'une structure *Tensor Product Representation* (TPR) approximative ? Factorisation role × filler par moindres carrés alternés, réinjection dans le décodeur, constituent surgery, contrôle *white-box TPR vs embeddings atomiques*, balayage de capacité et régularisation L2,1 — le tout CPU-only, avec une conclusion bornée (la structure est *approximative*, pas une implémentation symbolique exacte).
 
+SL-14 ouvre un registre que la série n'avait pas encore visité : la **découverte d'équations** — la régression symbolique d'AI Feynman 2.0 (Udrescu, Tan, Feng, Neto, Wu, Tegmark, NeurIPS 2020, arXiv:2006.10782 ; digestion Epic #16741 grain T4). Le **vrai outil** `aifeynman` est exécuté sur le cas d'école du papier, l'énergie cinétique relativiste, et le notebook ouvre ses trois idées : symétries lues dans les gradients d'un réseau (la séparabilité E(m,v) = g(m)·h(v) détectée par le score S[f] sans chercher aucune formule), critère de description en bits (le MEDL ignore les outliers là où la MSE se fait traîner), et front de Pareto complexité–précision (mv²/2 à 13,6 bits cohabite avec la forme exacte d'Einstein) — plus la leçon transversale : « simple » dépend du langage de description. Le paquet (figé en 2021, extensions Fortran) s'exécute dans le conteneur `aifeynman:sl14` construit par `assets/Dockerfile.aifeynman` (Python 3.9 + gfortran + torch CPU).
+
 ## À qui s'adresse cette série
 
 Étudiants en IA, informaticiens intéressés par le raisonnement symbolique, et chercheurs en apprentissage automatique souhaitant comprendre les approches non-statistiques.
 
 ## Prérequis et dépendances
 
-Les notebooks (~20h55 total — 15 Python + 8 jumeaux C# marathon parité #4956 + 1 compagnon Lean natif) se répartissent ainsi :
+Les notebooks (~22h10 total — 16 Python + 8 jumeaux C# marathon parité #4956 + 1 compagnon Lean natif) se répartissent ainsi :
 
-- **Track Python** : Python 3.10+ standard library suffit, sauf SL-3 (scikit-learn + numpy pour la comparaison RBL / information mutuelle), SL-4 (Popper + `janus_swi` + SWI-Prolog, kernel Linux/WSL), SL-6 (moteurs ILP réels : SWI-Prolog, Popper, Lernd), SL-7 (`torch` + `LTNtorch` pour les Logic Tensor Networks), SL-8 (`rdflib` + `clingo` pour les knowledge graphs et l'ASP), SL-12 (difflogic + torch), SL-12b (numpy + matplotlib pour la synthèse spectrale), SL-12b' (numpy seul CPU pour la reproduction Pavlov DLS) et SL-13 (`torch` CPU + numpy pour le diagnostic DISCOVER) ; SL-9 et SL-11 acceptent une clé OpenRouter optionnelle (fichier `.env`) pour des appels LLM réels, avec un simulateur déterministe en repli.
+- **Track Python** : Python 3.10+ standard library suffit, sauf SL-3 (scikit-learn + numpy pour la comparaison RBL / information mutuelle), SL-4 (Popper + `janus_swi` + SWI-Prolog, kernel Linux/WSL), SL-6 (moteurs ILP réels : SWI-Prolog, Popper, Lernd), SL-7 (`torch` + `LTNtorch` pour les Logic Tensor Networks), SL-8 (`rdflib` + `clingo` pour les knowledge graphs et l'ASP), SL-12 (difflogic + torch), SL-12b (numpy + matplotlib pour la synthèse spectrale), SL-12b' (numpy seul CPU pour la reproduction Pavlov DLS), SL-13 (`torch` CPU + numpy pour le diagnostic DISCOVER) et SL-14 (conteneur Docker `aifeynman:sl14` — le paquet `aifeynman` figé en 2021 exige Python 3.9, NumPy < 2 et gfortran ; construction : `docker build -f assets/Dockerfile.aifeynman -t aifeynman:sl14 assets/`, puis exécution papermill dans le conteneur) ; SL-9 et SL-11 acceptent une clé OpenRouter optionnelle (fichier `.env`) pour des appels LLM réels, avec un simulateur déterministe en repli.
 - **Compagnon Lean** : SL-1b s'exécute sur le kernel Lean 4 `lean4-wsl` (lake `learning_theory_lean`, Mathlib).
 - **Jumeaux C#** : les 8 jumeaux (.NET Interactive 1.4+, `Microsoft.dotnet-interactive`) sont des ré-implémentations from-scratch en C# pur des mêmes algorithmes, sans dépendance externe ML.
 - **Niveau requis** : une familiarité avec la logique propositionnelle suffit pour SL-1 à SL-6 et SL-10 ; SL-7, SL-9 et SL-11 supposent une intuition des réseaux de neurones et des LLMs.
@@ -89,15 +91,15 @@ Cette série montre que les deux approches ne s'opposent pas — elles se **comp
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 24 (15 Python canoniques + 8 jumeaux C# marathon parité #4956 + 1 compagnon Lean natif) |
-| Exercices (table de pioche) | 55 |
-| Kernel | Python 3 + .NET Interactive (jumeaux C#) + lean4-wsl (compagnon Lean) |
-| Durée estimée | ~1255 min (~20 h 55 : Python 13 h 25 + compagnon Lean 40 min + jumeaux C# 6 h 50) |
-| Prérequis | Python 3.10+ (standard library + sklearn + numpy pour SL-3 seulement ; SL-4 relève de SWI-Prolog/Popper via kernel Linux/WSL ; rdflib+clingo pour SL-8 ; torch+LTNtorch pour SL-7 ; difflogic+torch pour SL-12 ; numpy+matplotlib pour SL-12b ; numpy seul CPU pour SL-12b' ; torch CPU + numpy pour SL-13 ; clé OpenRouter optionnelle pour SL-9/SL-11) + .NET Interactive 1.4+ pour les 8 jumeaux C# + kernel lean4-wsl (lake `learning_theory_lean`) pour SL-1b |
+| Notebooks | 25 (16 Python canoniques + 8 jumeaux C# marathon parité #4956 + 1 compagnon Lean natif) |
+| Exercices (table de pioche) | 58 |
+| Kernel | Python 3 + .NET Interactive (jumeaux C#) + lean4-wsl (compagnon Lean) + conteneur aifeynman:sl14 (SL-14) |
+| Durée estimée | ~1330 min (~22 h 10 : Python 14 h 40 + compagnon Lean 40 min + jumeaux C# 6 h 50) |
+| Prérequis | Python 3.10+ (standard library + sklearn + numpy pour SL-3 seulement ; SL-4 relève de SWI-Prolog/Popper via kernel Linux/WSL ; rdflib+clingo pour SL-8 ; torch+LTNtorch pour SL-7 ; difflogic+torch pour SL-12 ; numpy+matplotlib pour SL-12b ; numpy seul CPU pour SL-12b' ; torch CPU + numpy pour SL-13 ; conteneur Docker aifeynman:sl14 pour SL-14 ; clé OpenRouter optionnelle pour SL-9/SL-11) + .NET Interactive 1.4+ pour les 8 jumeaux C# + kernel lean4-wsl (lake `learning_theory_lean`) pour SL-1b |
 
 ## Parcours d'apprentissage
 
-Le parcours progresse en six phases où **chacune répond à une limite de la précédente** — le bruit motive le recours à la connaissance, la rigidité logique motive la différentiabilité, l'opacité motive la provenance (thèse détaillée en conclusion) :
+Le parcours progresse en sept phases où **chacune répond à une limite de la précédente** — le bruit motive le recours à la connaissance, la rigidité logique motive la différentiabilité, l'opacité motive la provenance (thèse détaillée en conclusion) :
 
 ```mermaid
 flowchart TD
@@ -107,11 +109,13 @@ flowchart TD
     P4["<b>Phase 4 · Moteurs ILP réels</b><br/>SL-6 · Aleph · Metagol · Popper · ∂ILP<br/>4 machineries comparées"]
     P5["<b>Phase 5 · Neuro-symbolique</b><br/>SL-7/8/9/13 · T-norms · KG mining · boucle LLM · diagnostic TPR<br/>différentiable + vérifiable + structurelle"]
     P6(("<b>Phase 6 · Capstone</b><br/>SL-10/11/12/12b/12b' · L* actif · pipeline 6 étages · portes differentiables · synthèse spectrale + reproduction Pavlov<br/>LLM ↔ logique en boucle"))
+    P7["<b>Phase 7 · Découvrir l'équation</b><br/>SL-14 · AI Feynman · gradients + MDL + Pareto<br/>du réseau à la formule fermée"]
     P1 -->|"bruit + disjonction<br/>non représentables"| P2
     P2 -->|"passer des attributs<br/>aux programmes"| P3
     P3 -->|"comparer les machineries<br/>sur une même tâche"| P4
     P4 -->|"rigidité logique<br/>→ différentiabilité"| P5
     P5 -->|"opacité neuronale<br/>→ provenance"| P6
+    P6 -->|"langages et circuits fixés<br/>→ découvrir la formule"| P7
 ```
 
 ### Phase 1 : Fondations inductives (SL-1, ~50 min)
@@ -155,6 +159,10 @@ Cinq notebooks concluent la série.
 
 **SL-12b' — Reproduction Pavlov DLS (recherche)** complète SL-12b par la **mesure de discrimination** au cœur du claim Pavlov (EPIC #14366 G1) : on reproduit Phase 1 (16 opérations n=2) et Phase 2 (11 opérations temporelles n=4) avec un **routeur linéaire signé** (modèle simple) vs un **routeur Sinkhorn-constrained** (proxy du papier Pavlov). Mesure multi-seed (4 seeds Phase 1, 3 seeds Phase 2) sur 27 opérations. **Verdict honnête** : le linéaire signé atteint **100% sur les 27 opérations** ; notre proxy Sinkhorn reste à 0-25% — défaut de gradient proxy, **pas** une réfutation du claim Pavlov original. C'est une **tranche de recherche bornée** (CPU-only, NumPy seul) qui pose la borne inférieure et identifie la dette (gradient exact du Sinkhorn-Knopp) pour une tranche ultérieure.
 
+### Phase 7 : Découvrir l'équation (SL-14, ~75 min)
+
+**SL-14 — AI Feynman : découvrir des équations** inverse la question de toute la série : au lieu d'apprendre des règles ou des circuits *dans un langage donné*, peut-on retrouver la **formule fermée** qui engendre les données ? Le vrai outil `aifeynman` (AI Feynman 2.0, NeurIPS 2020) est exécuté sur le cas d'école du papier — l'énergie cinétique relativiste — où le front de Pareto complexité–précision fait cohabiter mv²/2 (13,6 bits, erronée aux hautes vitesses) et la forme exacte E = mc²(1/√(1−v²/c²) − 1). Les trois leviers de l'algorithme sont ouverts un à un : **symétries lues dans les gradients** d'un NN 128/128/64/64 tanh (le score S[f] de l'Eq. 6 détecte que E(m,v) = g(m)·h(v) sans chercher aucune formule — et explique le choix de tanh plutôt que ReLU), **MEDL** (description en bits des résidus : les outliers coûtent logarithmiquement, la démo Fig. 4 retrouvée), et **le biais du langage de description** (cos(cos θ) préféré à cos²θ, tanh indécouvrable hors base — compteur RPN à l'appui). Le budget d'exécution est volontairement borné et confronté honnêtement aux résultats du papier. Environnement : conteneur `aifeynman:sl14` (paquet PyPI figé en 2021, extensions Fortran via numpy.distutils — construction documentée dans `assets/Dockerfile.aifeynman`).
+
 ### Parcours alternatifs
 
 #### Parcours rapide (SL-1 + SL-7 + SL-9 + SL-11, ~4h)
@@ -173,7 +181,7 @@ Pour les étudiants en informatique théorique : le cadre inductif général (SL
 
 Pour les professionnels du web sémantique et des données structurees : EBL, RBL, FOIL sur clauses Horn, puis application directe sur des knowledge graphs réels avec rdflib et AMIE. Presuppose une familiarité avec RDF/SPARQL.
 
-## Seance de restitution : la table de pioche (55 exercices)
+## Seance de restitution : la table de pioche (58 exercices)
 
 Modalite de la séance : chaque groupe choisit **un exercice** dans la table ci-dessous, le prépare, et le présente en séance. Resoudre l'exercice est le minimum attendu ; chaque exercice est assorti d'une **question-twist** (détaillée dans la cellule « Defi présentation » du notebook correspondant) qui fait partie intégrante de la présentation. Premier arrive, premier servi : annoncez votre choix pour éviter les doublons.
 
@@ -234,6 +242,9 @@ Modalite de la séance : chaque groupe choisit **un exercice** dans la table ci-
 | 53 | [SL-13](SL-13-Discover-TPR.ipynb) | Ex. 1 — Tâche à rôles sémantiques (argmax_pos) | Quand les rôles ne sont plus des positions mais des étiquettes, la TPR émerge-t-elle encore ? |
 | 54 | [SL-13](SL-13-Discover-TPR.ipynb) | Ex. 2 — Constituent surgery sémantique | La permutation des rôles 0↔1 dans la TPR produit-elle la sortie attendue pour la séquence aux rôles permutés ? |
 | 55 | [SL-13](SL-13-Discover-TPR.ipynb) | Ex. 3 — Seuil de capacité et TPR | Quel d_model marque le point d'inflexion entre compression forcée et TPR non-nécessaire ? |
+| 56 | [SL-14](SL-14-AIFeynman-Discover-Equations.ipynb) | Ex. 1 — Rejet statistique anticipé (ν=10) | En combien de points un mauvais candidat meurt-il, et pourquoi ν=10 rend-il le test quasi immunisé aux faux positifs ? |
+| 57 | [SL-14](SL-14-AIFeynman-Discover-Equations.ipynb) | Ex. 2 — Addition relativiste récursive | La symétrie généralisée se déclenche deux fois de suite : jusqu'où peut-on empiler les vitesses ? |
+| 58 | [SL-14](SL-14-AIFeynman-Discover-Equations.ipynb) | Ex. 3 — Frontière de bruit | À quel niveau de bruit la forme relativiste disparaît-elle du front — et que mesure vraiment la table 3 du papier ? |
 
 Note : dans SL-7, le premier exercice de la numérotation interne est un exemple guide ; les exercices à piocher sont Ex. 2 à Ex. 5.
 

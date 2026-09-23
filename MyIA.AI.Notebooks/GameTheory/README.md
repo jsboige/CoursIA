@@ -232,6 +232,7 @@ flowchart TD
 | 4c | [GameTheory-04c-NashExistence-Csharp](GameTheory-04c-NashExistence-Csharp.ipynb) | C# (.NET) | **Jumeau C#** — Brouwer point fixe + Matching Pennies, from-scratch, parité #4956 | 45 min |
 | 4d | [GameTheory-04d-Marchandage-Asymetrique](GameTheory-04d-Marchandage-Asymetrique.ipynb) | Python | **Marchandage asymétrique (strate-7)** — point de désaccord (Nash 1950), faisceau de dépendance multi-composantes (#12682), contre-exemple au principe du moindre intérêt, robustesse au générateur de poids (endogène/exogène/constant, #13313) et dissociation (#14442 tranche D1) | 40 min |
 | 4e | [GameTheory-04e-Reflective-Oracles](GameTheory-04e-Reflective-Oracles.ipynb) | Python | **Oracles réflexifs** — Fallenstein/Taylor/Christiano 2015 (arXiv 1508.04145) : boucle / contradiction diagonale sur Matching Pennies déterministe, requête `(M,p)` et menteur probabiliste (orbite de période 2 → unique point cohérent q = 1/2), théorèmes 3.1 (encodage d'utilités en requête, écart CDT/EDT strict) / 4.1 (Nash par déviations unilatérales) / 5.1 (restriction finie-fermée-bornée mesurée, jeu auxiliaire Nashpy, 2/49 équilibres réflexivement cohérents) démontrés numériquement, **vérificateur indépendant + contre-épreuves rejetées**, **frontière explicite résultat fini ↔ oracle universel** (#14450) | 60 min |
+| 4f | [GameTheory-04f-Theories-Decision-Predicteur](GameTheory-04f-Theories-Decision-Predicteur.ipynb) | Python | **Théories de la décision face à un prédicteur** — seuil EDT exact de Newcomb (p* = 1001/2000) et simulation « why ain'cha rich? », lésion de Fisher en exact et par modèle causal `dowhy.gcm`, défense du chatouillement, réduction de la CCDT à EDT (Mohajeri 2023), EDT/CDT/UDT sur six problèmes dans **un seul cadre générique**, 2TDT-1CDT de Wei Dai (seuils exacts, simulation d'agents, dynamique du réplicateur bistable), inattention rationnelle par Blahut-Arimoto (contraction non monotone du support, borne de la politique constante, contre-épreuve SLSQP), **frontière explicite** face aux sept problèmes ouverts de Dai (#17543) | 75 min |
 | 5 | [GameTheory-05-ZeroSum-Minimax](GameTheory-05-ZeroSum-Minimax.ipynb) | Python | Théorème minimax, LP primal/dual, Von Neumann | 40 min |
 | 5 (C#) | [GameTheory-05-ZeroSum-Minimax-Csharp](GameTheory-05-ZeroSum-Minimax-Csharp.ipynb) | .NET (C#) | Twin C# du 5 : **simplexe from-scratch** (Dantzig, règle de Bland) + dualité LP, Matching Pennies/RPS/Blotto (See #4956) | 45 min |
 | 5b | [GameTheory-05b-Lean-Minimax](GameTheory-05b-Lean-Minimax.ipynb) | Lean 4 | Companion **natif** (kernel Lean) : preuve formelle 0-sorry de von Neumann dans le lake `minimax_lean` (Sion), `#check` + `#print axioms` in-kernel — voir [#4054](https://github.com/jsboige/CoursIA/issues/4054) (création du lake) et `LEAN_INVENTORY.md` du dossier | 45 min |
@@ -290,6 +291,7 @@ flowchart TD
 | 15c (C#) | [GameTheory-15c-CooperativeGames-Csharp](GameTheory-15c-CooperativeGames-Csharp.ipynb) | .NET (C#) | Twin C# du 15c : Shapley (permutations), Banzhaf (swing), Core vide (majorité 3-joueurs), Mini-ONU, convexité from-scratch (See #4956) | 40 min |
 | 15d | [GameTheory-15d-Mobius-Coalitions](GameTheory-15d-Mobius-Coalitions.ipynb) | Python | Décomposition de Möbius sur le treillis des coalitions et dividendes d'interaction | 45 min |
 | 15e | [GameTheory-15e-Coalition-Power-SMT](GameTheory-15e-Coalition-Power-SMT.ipynb) | Python | Pouvoir coalitionnel : calcul exhaustif, encodage SMT borné et preuve — prolonge Shapley/Banzhaf par la force du solveur | 50 min |
+| 15f | [GameTheory-15f-Shapley-Groupes](GameTheory-15f-Shapley-Groupes.ipynb) | Python | Valeur de Shapley de groupe (Flores-Molina-Tejada 2019) : évaluer une équipe comme une unité — jeu fusionné, théorème 2, réseau florentin exact et Monte Carlo sur le club de karaté | 50 min |
 | 16 | [GameTheory-16-MechanismDesign](GameTheory-16-MechanismDesign.ipynb) | Python | Principe de révélation, VCG (non-monotonie du revenu, Conitzer-Sandholm), matching | 65 min |
 | 16 (C#) | [GameTheory-16-MechanismDesign-Csharp](GameTheory-16-MechanismDesign-Csharp.ipynb) | .NET (C#) | Twin C# du 16 : **enchères Vickrey 1er/2nd prix + VCG (règle de Clarke) + Gale-Shapley (stable matching) + double auction** from-scratch, BCL .NET 9 (See #4956) | 50 min |
 | 16b | [GameTheory-16b-Automated-Mechanism-Design](GameTheory-16b-Automated-Mechanism-Design.ipynb) | Python | Automated Mechanism Design : synthèse et vérification d'un mécanisme sous contraintes | 35 min |
@@ -334,7 +336,7 @@ La vague « strate 7 » étend la série au-delà du fil historique : chaque not
 
 Les huit extensions `3a` à `3h` figurent dans la Partie 1, au voisinage du notebook GT-3 qu'elles prolongent. Elles couvrent respectivement les chemins de swaps, les chambres et murs, le joueur LLM, le plan de déformation, les méta-actions tarifées, le parcours complet, la dérivation quotient et les deux espèces de flèches.
 
-**Durée totale des tableaux** : ~84h en parcourant chaque ligne une fois, jumeaux C# et sous-série SocialChoice compris. Un parcours Python sans jumeaux C# ni side tracks Lean est sensiblement plus court.
+**Durée totale des tableaux** : ~88h en parcourant chaque ligne une fois, jumeaux C# et sous-série SocialChoice compris. Un parcours Python sans jumeaux C# ni side tracks Lean est sensiblement plus court.
 
 ## Concepts clés
 
@@ -397,6 +399,7 @@ Chaque notebook introduit un concept ou un modèle spécifique. Le tableau ci-de
 | 15 | CooperativeGames | Valeur de Shapley, Core, Bondareva-Shapley |
 | 15d | Mobius-Coalitions | Décomposition de Möbius du jeu de coalition et dividendes d'interaction |
 | 15e | Coalition-Power-SMT | Pouvoir coalitionnel : calcul exhaustif, encodage SMT borné et preuve |
+| 15f | Shapley-Groupes | Valeur de Shapley de groupe : le meilleur binôme n'est pas celui des deux meilleurs individus (exact sur 2^15 coalitions, Monte Carlo au-delà) |
 | 16 | MechanismDesign | Principe de révélation, VCG (incl. non-monotonie du revenu), matching, enchères |
 | 16b | Automated-Mechanism-Design | Synthèse d'un mécanisme sous contraintes et vérification de ses propriétés |
 | 16c | Extraction-de-Revenu | La dimension paiement que le designer n'a jamais cherchée : extraction de revenu sous DSIC/IR |
@@ -443,6 +446,7 @@ Chaque notebook introduit un concept ou un modèle spécifique. Le tableau ci-de
 | 4c | NashExistence-Python | Point fixe Brouwer **discriminant** (`regret ≡ 0 ⟺ fixed point`, contraste à deux seeds non-équilibre/équilibre, anti-tautologie) — visualisation convergence Nash via `perturbed_br` |
 | 4d | Marchandage-Asymetrique | Marchandage asymétrique (strate-7) : point de désaccord, faisceau de dépendance multi-composantes, contre-exemple au principe du moindre intérêt |
 | 4e | Reflective-Oracles | Oracles réflexifs (Faltenstein et al. 2015) : boucle diagonale sur Matching Pennies déterministe, CDT/EDT et équilibre de Nash cohérents |
+| 4f | Theories-Decision-Predicteur | EDT, CDT, CCDT et UDT face à un prédicteur : Newcomb, Fisher (`dowhy`), six problèmes dans un cadre générique, 2TDT-1CDT de Wei Dai, inattention rationnelle (Blahut-Arimoto) |
 | 6c | RepeatedGames-FolkTheorem | Compagnon formel de GT-6 : horizon fini vs infini, condition de crédibilité du grim trigger $\delta \geq (T-R)/(T-P)$, Folk Theorem |
 | 6d | Sympathie-vs-Engagement | Statique comparative sur les gains d'autrui : séparer empiriquement sympathie (pente croissante, alpha mesuré) et engagement (pente plate + marque de règle) — l'identification que le classifieur à alpha posé de 6c §7d ne peut pas faire |
 | 8c | CombinatorialGames-Python | Variantes avancées (Wythoff, Chomp), visualisations |
@@ -750,6 +754,7 @@ Chaque notebook adopte la même trame pédagogique — introduction motivée, pl
 | 4c | NashExistence-Python | ~20 | 2 | **COMPLET** |
 | 4d | Marchandage-Asymetrique | 21 | 0 | **NOUVEAU** (strate 7) |
 | 4e | Reflective-Oracles | 39 | 13 | **COMPLET** |
+| 4f | Theories-Decision-Predicteur | 63 | 4 | **NOUVEAU** (#17543) |
 | 5 | ZeroSum-Minimax | ~25 | 3 | **COMPLET** |
 | 5b | Lean-Minimax | ~20 | 3 | **COMPLET** |
 | 6 | EvolutionTrust | ~40 | 3 | **COMPLET** |
@@ -783,6 +788,7 @@ Chaque notebook adopte la même trame pédagogique — introduction motivée, pl
 | 15c | CooperativeGames-Python | ~25 | 3 | **COMPLET** |
 | 15d | Mobius-Coalitions | 26 | 4 | **NOUVEAU** |
 | 15e | Coalition-Power-SMT | 35 | 3 | **NOUVEAU** |
+| 15f | Shapley-Groupes | 44 | 4 | **NOUVEAU** |
 | 16 | MechanismDesign | ~40 | 3 | **COMPLET** |
 | 16b | Automated-Mechanism-Design | 9 | 3 | **NOUVEAU** |
 | 16c | Extraction-de-Revenu-DSIC-IR | 23 | 3 | **NOUVEAU** |
@@ -920,6 +926,8 @@ GameTheory/
 ├── GameTheory-04c-NashExistence-Python.ipynb        # Side tracks c — approfondissement (Python 4c, 6c, 6d, 8c, 15c)
 ├── GameTheory-04c-NashExistence-Csharp.ipynb        #   Jumeau C# (.NET Interactive) — Brouwer point fixe + Matching Pennies (parité #4956)
 ├── GameTheory-04d-Marchandage-Asymetrique.ipynb     # Side track strate-7 — marchandage asymétrique, dissociation du §8 GT-04 (#14442 tranche D1)
+├── GameTheory-04e-Reflective-Oracles.ipynb          # Oracles réflexifs — écart CDT/EDT, Nash réflexivement cohérent (#14450)
+├── GameTheory-04f-Theories-Decision-Predicteur.ipynb  # Newcomb, Fisher, UDT, 2TDT-1CDT, inattention rationnelle (#17543)
 ├── GameTheory-06b-Lean-RepeatedGames.ipynb          # Compagnon lean (lecture) du 6c — lake game_theory_lean dévoilé, visibilité #11703
 ├── GameTheory-06c-RepeatedGames-FolkTheorem.ipynb
 ├── GameTheory-06c-RepeatedGames-FolkTheorem-Csharp.ipynb  #   Jumeau C# — grim trigger/TFT/Folk Theorem from-scratch (parité #4956)
@@ -936,6 +944,7 @@ GameTheory/
 ├── GameTheory-15c-CooperativeGames-Csharp.ipynb    #   Jumeau C# — Shapley (permutations) + Banzhaf + Core vide (majorité) + Mini-ONU + convexité from-scratch (parité #4956)
 ├── GameTheory-15d-Mobius-Coalitions.ipynb          # Décomposition de Möbius sur le treillis des coalitions
 ├── GameTheory-15e-Coalition-Power-SMT.ipynb        # Pouvoir coalitionnel : calcul, SMT borné, preuve
+├── GameTheory-15f-Shapley-Groupes.ipynb            # Valeur de Shapley de groupe : évaluer une équipe
 ├── GameTheory-16c-Extraction-de-Revenu-DSIC-IR.ipynb  # Extraction de revenu DSIC/IR
 ├── GameTheory-16e-LLM-Players-Othman-Sandholm.ipynb   # Pilote : joueurs LLM sur mécanisme Othman-Sandholm
 ├── GameTheory-16b-Automated-Mechanism-Design.ipynb # Synthèse automatique de mécanismes
@@ -981,6 +990,7 @@ GameTheory/
 │   ├── core.py                    # Core, Bondareva-Shapley
 │   ├── assistance_games.py        # Jeux d'assistance (veto, etc.)
 │   ├── coalition_games.py         # Jeux de coalition
+│   ├── group_value.py             # Valeur de Shapley de groupe (Flores-Molina-Tejada 2019)
 │   └── french_politics.py         # Politique française (exemples)
 ├── trust_simulation/              # Module Evolution of Trust
 │   ├── strategies.py              # Tit-for-tat, hawks, doves, etc.
@@ -1007,16 +1017,27 @@ GameTheory/
 │   ├── stag_hunt_forward_induction.py  # Stag hunt + SPE
 │   └── arrow_simple.lean
 └── tests/
-    ├── test_nash_computation.py
-    ├── test_strategies.py
-    ├── test_lean_definitions.py
+    ├── test_assistance_games.py
+    ├── test_centipede_game.py
     ├── test_cooperative_core.py
     ├── test_extensive_form.py
+    ├── test_fictitious_play.py
+    ├── test_french_politics.py
+    ├── test_group_value.py
     ├── test_kuhn_poker_cfr.py
+    ├── test_lean_definitions.py
+    ├── test_limit_sets.py
+    ├── test_nash_computation.py
     ├── test_phase3.py
+    ├── test_prisoners_dilemma.py
     ├── test_shapley.py
+    ├── test_stackelberg.py
+    ├── test_stackelberg_asymmetric.py
+    ├── test_stag_hunt_forward_induction.py
+    ├── test_strategies.py
     ├── test_topology_2x2.py
     ├── test_trust_simulation.py
+    ├── test_validate_lean_setup.py
     └── test_vcg_auction.py
 ```
 
