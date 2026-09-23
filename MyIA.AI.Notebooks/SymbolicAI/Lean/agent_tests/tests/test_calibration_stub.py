@@ -147,6 +147,95 @@ def test_root_launcher_marks_applied_calibration(tmp_path, monkeypatch):
     assert target.read_bytes() == original_bytes
 
 
+def test_root_launcher_stashes_committed_count_pre_stub(tmp_path, monkeypatch):
+    """#17433: the root launcher stashes the COMMITTED sorry count on a demo
+    COPY before writing the stub, so provers.py's FX-6 guard can measure
+    against the committed statement instead of the stubbed file. The
+    caller's demo dict is NOT mutated (DEMOS entries are shared)."""
+    import run_prover_bg as launcher
+
+    target = tmp_path / "Nim.lean"
+    target.write_text(NIM_FIXTURE, encoding="utf-8", newline="\n")
+    original_bytes = target.read_bytes()
+    demo = {
+        "file": str(target),
+        "theorem_name": "isWinningNim_345",
+        "sorry_type": "sorry_replacement",
+        "line": 22,
+    }
+    seen = []
+
+    async def _record(_args, demo_in, _file_target, calibration=False):
+        seen.append(dict(demo_in))
+        return 0
+
+    monkeypatch.setattr(launcher, "_run_calibration_ready", _record)
+    args = SimpleNamespace()
+    assert asyncio.run(launcher._run_locked(args, demo, str(target))) == 0
+    # Committed fixture has 0 real sorry — the stash must carry exactly that.
+    assert seen[0].get("pre_stub_sorry_count") == 0
+    assert "pre_stub_sorry_count" not in demo, (
+        "launcher must not mutate the caller's demo dict (shared DEMOS entry)"
+    )
+    assert target.read_bytes() == original_bytes
+
+
+def test_subdir_launcher_stashes_committed_count_pre_stub(tmp_path, monkeypatch):
+    """#17433, subdir launcher (prover/run_prover_bg.py — the one exercised
+    by the #17409 gradient): same contract as the root launcher."""
+    import prover.run_prover_bg as subdir
+
+    target = tmp_path / "Nim.lean"
+    target.write_text(NIM_FIXTURE, encoding="utf-8", newline="\n")
+    original_bytes = target.read_bytes()
+    demo = {
+        "file": str(target),
+        "theorem_name": "isWinningNim_345",
+        "sorry_type": "sorry_replacement",
+        "line": 22,
+    }
+    seen = []
+
+    def _capture(demo_in, *_args, **_kwargs):
+        seen.append(dict(demo_in))
+        return {"name": "captured", "result_kind": "captured"}
+
+    monkeypatch.setattr(subdir, "_run_prover_locked", _capture)
+    subdir._run_with_calibration_stub(
+        demo, "custom_Nim_L22", str(target), 22, "multi", 1, "zai", "local",
+        None, None, None, False, 0,
+    )
+    assert seen[0].get("pre_stub_sorry_count") == 0
+    assert "pre_stub_sorry_count" not in demo, (
+        "launcher must not mutate the caller's demo dict (shared DEMOS entry)"
+    )
+    assert target.read_bytes() == original_bytes
+
+
+def test_subdir_launcher_no_stash_without_calibration(tmp_path, monkeypatch):
+    """Control: a demo without sorry_replacement targets runs stub-free —
+    the demo reaching the runner carries NO pre_stub_sorry_count key, so
+    the guard baseline falls back to the session count (normal runs
+    unchanged)."""
+    import prover.run_prover_bg as subdir
+
+    target = tmp_path / "Nim.lean"
+    target.write_text(NIM_FIXTURE, encoding="utf-8", newline="\n")
+    demo = {"file": str(target), "line": 22}
+    seen = []
+
+    def _capture(demo_in, *_args, **_kwargs):
+        seen.append(dict(demo_in))
+        return {"name": "captured", "result_kind": "captured"}
+
+    monkeypatch.setattr(subdir, "_run_prover_locked", _capture)
+    subdir._run_with_calibration_stub(
+        demo, "custom_Nim_L22", str(target), 22, "multi", 1, "zai", "local",
+        None, None, None, False, 0,
+    )
+    assert "pre_stub_sorry_count" not in seen[0]
+
+
 @pytest.mark.parametrize("calibration", [True, False])
 def test_root_launcher_emits_calibration_result(
     tmp_path, monkeypatch, capsys, calibration
