@@ -1,0 +1,21 @@
+date: '2026-09-21'
+by: myia-po-2025:CoursIA
+python_sha: 2d381eabaa21c324b548fc6e735e2c4c9cf8ceb5
+csharp_sha: 750e1ac5e3beded312fbbadca07868d18ec81c43
+content_python_sha: 15f175c0ec377079e730429129675562ea71d7cfa66d26c631de5ad48869d2c9
+content_csharp_sha: 04e774d05b152982c2b2cb0b350cd40cbf070be697b30e88427d1410f25d3e33
+reason: 'Reparation de la regle 2 du STOP #13410 (PR de cette lane) : `check_split_reading_cells.py` mesurait
+  22 violations sur la tete de la PR (17 sur PyMC-09, 5 sur Percolation-Lean) alors que `origin/main`
+  est `clean` sur les deux -- jusqu''a 6 cellules de lecture empilees sur une meme sortie de code. Fusion
+  appliquee : PyMC-09 54 -> 36 cellules et 27 -> 10 lectures ; Percolation-Lean 29 -> 24 cellules (= le
+  compte de la base). AUDIT DE PARITE, et non re-attestation aveugle -- trois mesures. (1) Le jumeau C#
+  n''est PAS touche : `csharp_sha` et `content_csharp_sha` sont IDENTIQUES a ceux de l''audit 0009 du
+  2026-09-03, la derive est donc unilaterale. (2) Le contenu Python ne bouge qu''en MARKDOWN : le multiset
+  de SHA des cellules de code et celui des `outputs` sont identiques avant/apres (assertion du script
+  de fusion), donc aucun modele, aucune sortie et aucun claim de l''axe partage (socle pedagogique commun
+  : classification bayesienne modelisee dans les deux stacks) n''est modifie. (3) `parity_level: native-both`
+  -- le schema du registre rappelle que ce niveau ne dit RIEN de la correspondance structurelle cellule-par-cellule,
+  et le jumeau C# porte 2 lectures pour 22 cellules de code (aucun empilement a corriger de son cote)
+  : aucune edition en lockstep n''est due. Controle de non-perte : `detect_md_content_loss.py` rend findings=0
+  sur les deux carnets, le head portant PLUS de markdown que la base (13858 vs 9038 caracteres normalises
+  pour PyMC-09).'

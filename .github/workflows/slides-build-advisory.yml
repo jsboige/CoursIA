@@ -391,7 +391,7 @@ jobs:
           if [ "$FAILURES" -gt 0 ]; then
             gh label create "$LABEL" \
               --description "A Slidev deck impacted by this PR does not construct (#8807)" \
-              --color "D93F0B" --force 2>/dev/null || true
+              --color "D93F0B" --force || true
             if [ "$NOCTURNE" -eq 1 ]; then
               echo "::warning::$FAILURES deck(s) impacted by the last-24h window failed to build. Failed:$FAILED_LIST"
               exit 0
