@@ -61,13 +61,9 @@ concurrency:
 jobs:
   health:
     name: PR gate sweep health advisory
-    # Retour arriere du routage #14283 tranche 4 (autorise par son auteur,
-    # #17470, 2026-09-23) : Hermes a mesure 15/15 `cancelled` sur le pool
-    # coursia-linux -- l'observateur mourait dans la meme file que le sweep
-    # qu'il surveille. Un organe de sante doit survivre a ce qu'il observe :
-    # profil pur gh + python3, 5 min, exactement ce que ubuntu-latest sert
-    # sans file d'attente. Entree allowlist retiree de
-    # check_self_hosted_runner_policy.py dans le meme diff.
+    # Q35 etape 2 (#17397) : balayage cron pur-Python, aucun secret ni
+    # toolchain locale -- routage #14283 inverse, retour sur ubuntu-latest
+    # et sortie de SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit.
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -95,7 +91,7 @@ jobs:
           # d'agregation, qui porte le rouge de CE step et de la sonde d'age --
           # sans cela, un echec ici SKIPPERAIT la sonde d'age (short-circuit
           # Actions, repare sur dispatch ai-01 2026-09-10).
-          python3 scripts/ci/check_scheduler_liveness.py --repo "$REPO"
+          python scripts/ci/check_scheduler_liveness.py --repo "$REPO"
 
       - name: Check age of last successful sweep run
         id: sweep_age
@@ -117,7 +113,7 @@ jobs:
           # No successful run at all -> that absence IS the state this exists
           # to catch (history purged or scheduler dead). Fail visibly but, being
           # advisory, non-blocking.
-          AGE_S=$(python3 - "$RUN" <<'PY'
+          AGE_S=$(python - "$RUN" <<'PY'
           import json, sys
           from datetime import datetime, timezone
           runs = json.loads(sys.argv[1])
