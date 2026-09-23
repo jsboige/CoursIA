@@ -340,11 +340,14 @@ jobs:
           # couvre donc les DEUX apports non rattrapes : si #17159 merge sans
           # son propre relevement (sa PR n'en porte pas), la base #17164
           # portera le floor correct sur l'arbre final.
-          # Label "(57 package)" -> "(59 package)" : 57 modules sur main + les
-          # deux fichiers test_*.py neufs. Le libelle est cosmetique (le guard
+          # Label "(57 package)" -> "(60 package)" : 57 modules sur main au
+          # moment du bump, +1 drift main (58, compte Hermes deux voies API
+          # contents/git trees), +1 case 16 (sur main depuis le squash de
+          # #17159, 2026-09-22) et +1 case 17 (cette PR) = 60 fichiers
+          # test_*.py sur l'arbre final. Le libelle est cosmetique (le guard
           # ne lit que le floor) et n'est reference nulle part -- "PR gate" est
           # le seul contexte requis de la protection de main, verifie 2026-09-21.
-          - suite-name: "ict/tests/ (59 package)"
+          - suite-name: "ict/tests/ (60 package)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests
             test-args: .
             test-parallel: ""
