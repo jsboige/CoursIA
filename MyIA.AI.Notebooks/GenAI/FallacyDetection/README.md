@@ -14,6 +14,7 @@ Série de notebooks pour la **détection et classification de sophismes** (falla
 | 02 | [02_fallacy_datasets_landscape.ipynb](02_fallacy_datasets_landscape.ipynb) | Paysage des datasets annotés en accès réel (≥ 3 exercices) |
 | 03 | [03_taxonomy_coverage_gap.ipynb](03_taxonomy_coverage_gap.ipynb) | Écart de couverture taxonomique académique vs Argumentum (≥ 3 exercices) |
 | 04 | [04_coverage_matrix.ipynb](04_coverage_matrix.ipynb) | Matrice de couverture cross-notebooks N×M (sophismes, formalismes, domaines, preuve) + heatmap (≥ 3 exercices) |
+| 05 | [05_dataset_builder.ipynb](05_dataset_builder.ipynb) | Phase 2, tranche A : produit cartésien Scénarii × taxonomies, équilibrage par exposant $lpha$, splits déterministes sans fuite de scénario, prompts sans circularité (3 exercices) |
 
 ## Chaîne des phases
 
@@ -23,7 +24,7 @@ Série de notebooks pour la **détection et classification de sophismes** (falla
 | 1 — Extraction Jessynoo | [data/jessynoo_rfallacy_anonymized.csv](data/jessynoo_rfallacy_anonymized.csv) + [scripts/fallacy_detection/extract_jessynoo_fallacy.py](../../../scripts/fallacy_detection/extract_jessynoo_fallacy.py) | livré |
 | 1 — Paysage datasets | [02_fallacy_datasets_landscape.ipynb](02_fallacy_datasets_landscape.ipynb) — 7 datasets testés en accès réel | livré |
 | 1 — Inventaire SAE Qwen | ≥ 3 tailles (gate de faisabilité) | à livrer |
-| 2 — Dataset builder | projection de la taxonomie Argumentum par **produit cartésien Scénarii × Fallacy** (167 × 1408), colonnes `_en` (natif AN) ou autres langues au choix | Phase 2 |
+| 2 — Dataset builder | tranche A : [05_dataset_builder.ipynb](05_dataset_builder.ipynb) + [scripts/fallacy_detection/cartesian_dataset_builder.py](../../../scripts/fallacy_detection/cartesian_dataset_builder.py) — couples (scénario, nœud) sur **167 × (1407 + 222)**, splits dans [data/phase2/](data/phase2/) ; tranches B (génération des textes par LLM auto-hébergé) et C (test humain externe) à venir ([#17578](https://github.com/jsboige/CoursIA/issues/17578)) | tranche A livrée |
 | 3 — Fine-tuning (série FT) | mémorisation du motif général→particulier | Phase 3 |
 | 4 — Post-training (série PT) | utilisation du workflow | Phase 4 |
 | 5 — Analyse SAE (strate 6 ICT) | features « motif » FT vs PT | gate de succès, Phase 5 |
@@ -57,8 +58,25 @@ Huit groupes de colonnes : `text_<lang>`, `desc_<lang>`, `example_<lang>`, `link
 
 Deux voies complémentaires, pas exclusives :
 
-1. **Corpus académiques annotés réellement obtenables** — déjà mesurés en Phase 1 dans [02_fallacy_datasets_landscape.ipynb](02_fallacy_datasets_landscape.ipynb) (Logic 13 + MAFALDA L2 23 = 27 classes après déduplication de 9 doublons). Le paysage montre un écart de **plus d'un ordre de grandeur** avec la taxonomie Argumentum : couverture ~3 % des feuilles et ~2 % des nœuds (mesuré dans [03_taxonomy_coverage_gap.ipynb](03_taxonomy_coverage_gap.ipynb)). C'est utile mais structurellement limité : aucune académie n'a produit 1408 fine-grained fallacies étiquetées.
+1. **Corpus académiques annotés réellement obtenables** — déjà mesurés en Phase 1 dans [02_fallacy_datasets_landscape.ipynb](02_fallacy_datasets_landscape.ipynb) (Logic 13 + MAFALDA L2 23 = 27 classes après déduplication de 9 doublons). Le paysage montre un écart de **plus d'un ordre de grandeur** avec la taxonomie Argumentum : couverture ~3 % des feuilles et ~2 % des nœuds (mesuré dans [03_taxonomy_coverage_gap.ipynb](03_taxonomy_coverage_gap.ipynb)). C'est utile mais structurellement limité : aucune académie n'a produit 1407 fine-grained fallacies étiquetées.
 
-2. **Corpus synthétique par produit cartésien Scénarii × Fallacy** — Argumentum fournit aussi `Cards/Scenarii/Argumentum Scenarii - Taxonomy.csv` (167 scénarii mesurés). Le produit cartésien `167 × 1408 = 235 376` couples (scénario, sophisme) fournit, par construction, **un exemple annoté pour chaque sophisme de la taxonomie**. La génération du label est triviale (c'est le second facteur du couple) ; la production du `body` est le travail de la Phase 2 — typiquement via un LLM conditionné à l'étiquette (template par sophisme, paraphrase, validation humaine sur un échantillon). Cette voie est **la seule** qui porte la couverture uniforme de la taxonomie qu'aucun corpus naturel ne donne, et c'est ce qui justifie l'échelle des phases 3-5.
+2. **Corpus synthétique par produit cartésien Scénarii × taxonomies** — Argumentum fournit aussi `Cards/Scenarii/Argumentum Scenarii - Cards.csv` (167 scénarii en 7 catégories, copie verbatim dans [data/argumentum_scenarii_cards.csv](data/argumentum_scenarii_cards.csv), licence dans [data/NOTICE-SCENARII](data/NOTICE-SCENARII)). Le produit cartésien avec les deux taxonomies hors racine, `167 × (1407 sophismes + 222 vertus) = 272 043` couples (scénario, nœud), fournit, par construction, **un exemple annoté pour chaque nœud**, et les vertus donnent au classifieur la classe « argument sain » sans laquelle il ne verrait que des sophismes. La génération du label est triviale (c'est le second facteur du couple) ; la production du `body` est le travail de la Phase 2 — typiquement via un LLM conditionné à l'étiquette (template par sophisme, paraphrase, validation humaine sur un échantillon). Cette voie est **la seule** qui porte la couverture uniforme de la taxonomie qu'aucun corpus naturel ne donne, et c'est ce qui justifie l'échelle des phases 3-5.
 
 Les deux voies sont complémentaires : le corpus académique **valide** que les features apprises par fine-tuning discrimininent vraiment (évaluation OOS sur données humaines), et le corpus synthétique **porte l'échelle** (Phase 3 fine-tuning sur la couverture complète de la taxonomie).
+
+### Format des splits de la Phase 2 (`data/phase2/`)
+
+Produits par [05_dataset_builder.ipynb](05_dataset_builder.ipynb) (ou `python scripts/fallacy_detection/cartesian_dataset_builder.py`) avec les paramètres par défaut ($lpha = 0{,}5$, budgets 12 000 sophismes + 2 000 vertus, graine 0). Une ligne par couple, en UTF-8 et fins de ligne LF :
+
+| Colonne | Contenu |
+|---|---|
+| `pair_id` | `<split>-F<pk>-<scenario_path>` pour un sophisme, `V<pk>` pour une vertu (ex. `test-F798-2.2.8`), unique |
+| `split` | `train`, `val` ou `test` |
+| `polarity` | `fallacy` ou `virtue` |
+| `node_pk` | clé du nœud dans sa taxonomie |
+| `family` | famille de premier niveau du nœud (7 par taxonomie) |
+| `depth` | profondeur du nœud (1 = famille) |
+| `is_leaf` | 1 si le nœud n'a pas d'enfant |
+| `scenario_path` | chemin décimal du scénario (`catégorie.sous-catégorie.rang`) |
+
+Les textes ne sont pas dans les splits : ils se relisent dans les trois sources au moment du rendu du prompt, ce qui garde les CSV petits et fait porter toute la traçabilité par les SHA1 de blob épinglés dans `manifest.json`. `val.csv` (1 629 lignes, un couple par nœud) et `test.csv` (3 258 lignes, deux par nœud) sont committés ; `train.csv` (14 000 lignes) se régénère à l'identique et n'est épinglé que par son SHA-256 dans le manifeste. Les trois splits utilisent des scénarii disjoints (117 / 25 / 25).
