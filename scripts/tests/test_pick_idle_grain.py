@@ -536,6 +536,13 @@ def _patch_backlog(monkeypatch, prs, states, nits=None):
     # rouge -- meme neutralisation par defaut, meme raison (reseau +
     # determinisme). Les tests qui veulent une ardoise la re-patchent apres.
     monkeypatch.setattr(pig, "fetch_lane_record_prs", lambda **k: ([], None))
+    # #17154 : la sonde de la tete de `main` est une requete reseau de plus.
+    # Neutralisee par DEFAUT (None = non mesure), pour la meme raison que
+    # ci-dessus -- et pour une seconde, propre a cette sonde : sa valeur change
+    # avec le jour. Un test qui affirme une imputation a la base basculerait
+    # selon que le check est vert ou rouge sur `main` le jour du run, sans
+    # qu'aucune ligne de code n'ait bouge. Les tests de #17154 la re-patchent.
+    monkeypatch.setattr(pig, "fetch_main_head_probe", lambda *a, **k: None)
 
 
 def _pr(n, lane, age_hours, *, draft=False):
@@ -674,6 +681,172 @@ def test_base_inherited_red_is_not_the_lanes(monkeypatch):
                 if i["check"] == "Scripts Tests (CPU)")
     assert 1 in wits and 2 in wits    # la lane ET l'etrangere corroborent
     assert out["base_unresolved"] == []
+
+
+def _probe(*, main_red=(), main_names=()):
+    """Sonde #17154 : etat des checks sur la tete de la branche par defaut."""
+    return {"sha": "deadbeef", "red_keys": set(main_red), "names": set(main_names)}
+
+
+def _red_on_two_lanes(monkeypatch, check="Scripts Tests (CPU)", *, aggregate=False):
+    """Deux lanes distinctes, le meme check rouge : la corroboration minimale.
+
+    C'est la configuration que #13545 impute a la base -- et exactement celle
+    que #17154 doit departager selon l'etat du MEME check sur `main`.
+    """
+    def state(rid):
+        st = _state(checks=[(check, "FAILURE", True)])
+        if aggregate:
+            st["commits"]["nodes"][0]["commit"]["statusCheckRollup"]["contexts"][
+                "nodes"][0]["databaseId"] = rid
+        return st
+    if aggregate:
+        monkeypatch.setattr(pig, "fetch_check_organs", lambda rid: ["perimeter"])
+    _patch_backlog(monkeypatch, [
+        _pr_with_author(1, "myia-po-2023:CoursIA", 30, "myia-po-2023"),
+        _pr_with_author(2, "myia-po-2026:CoursIA-2", 5, "myia-po-2026"),
+    ], {1: state(111), 2: state(222)})
+
+
+def test_sonde_non_prise_impute_a_la_base_comme_avant(monkeypatch):
+    """Sonde indisponible (panne reseau) : comportement d'avant #17154.
+
+    `None` veut dire « on n'a pas mesure », pas « main est vert ». Une sonde
+    qui echoue ne doit JAMAIS elargir la classe infra : sinon une panne du
+    picker deviendrait une accusation de la lane sur des rouges de base.
+    """
+    _red_on_two_lanes(monkeypatch)
+    monkeypatch.setattr(pig, "fetch_main_head_probe", lambda *a, **k: None)
+    out = pig.red_backlog("myia-po-2023:CoursIA", 24, count_threshold=3)
+    assert {i["check"] for i in out["base_inherited"]} == {"Scripts Tests (CPU)"}
+    assert out["infra_rerun"] == []
+    assert out["base_undecided"] == []
+    assert out["red"] == []
+
+
+def test_check_vert_sur_main_devient_infra_rejeu(monkeypatch):
+    """#17154 : la corroboration inter-lanes ne prouve pas une cause SUR `main`.
+
+    Mesure fondatrice du 2026-09-21 : `Scripts Tests (CPU)` rouge sur #16612 /
+    #17136 / #17141 / #16971 et `success` sur `main` (mort de runner, kill
+    `xdist-watchdog`). L'imputation a la base disait alors « pas le votre, pas
+    reparable par la lane -- tache COORDINATEUR » : deux affirmations dont la
+    seconde est fausse, et la consequence pratique etait qu'AUCUNE action
+    n'etait demandee. Le rouge compte de nouveau dans le refus, avec le geste
+    qui le leve.
+    """
+    _red_on_two_lanes(monkeypatch)
+    monkeypatch.setattr(pig, "fetch_main_head_probe",
+                        lambda *a, **k: _probe(main_names=["Scripts Tests (CPU)"]))
+    out = pig.red_backlog("myia-po-2023:CoursIA", 24, count_threshold=3)
+    assert out["base_inherited"] == []
+    assert out["base_undecided"] == []
+    assert {i["check"] for i in out["infra_rerun"]} == {"Scripts Tests (CPU)"}
+    assert [r["number"] for r in out["red"]] == [1]
+    causes = [c for r in out["red"] for c in r["causes"]]
+    assert any("vert sur main" in c and "rejeu de la jambe" in c for c in causes), causes
+    # Ni une reparation de diff, ni un routage coordinateur : le geste est le rejeu.
+    assert not any("check requis en echec" in c for c in causes), causes
+
+
+def test_regression_de_main_reste_imputee_a_la_base(monkeypatch):
+    """Le champ de #13545 n'est pas retire : rouge sur `main` -> imputation inchangee.
+
+    L'issue fondatrice est explicite : une vraie regression de la branche par
+    defaut doit rester correctement detectee et routee au coordinateur. La
+    garde #17154 est une garde SUPPLEMENTAIRE, pas un remplacement.
+    """
+    _red_on_two_lanes(monkeypatch)
+    monkeypatch.setattr(
+        pig, "fetch_main_head_probe",
+        lambda *a, **k: _probe(main_red=["Scripts Tests (CPU)"],
+                               main_names=["Scripts Tests (CPU)"]))
+    out = pig.red_backlog("myia-po-2023:CoursIA", 24, count_threshold=3)
+    assert {i["check"] for i in out["base_inherited"]} == {"Scripts Tests (CPU)"}
+    assert out["infra_rerun"] == []
+    assert out["base_undecided"] == []
+    assert out["red"] == []
+    assert out["triggers"] == []
+
+
+def test_agregateur_absent_de_main_n_est_pas_un_vert(monkeypatch):
+    """« Absent de `main` » n'est pas « vert sur `main` » -- le 3e etat est decisif.
+
+    Les agregateurs (`PR gate`, `Lane Claim Guard`, `Variation Tag Guard`) ne
+    tournent que sur `pull_request` : ils ne peuvent PAS figurer dans le rollup
+    de la branche par defaut. Les confondre avec des verts classerait en infra
+    d'execution exactement les checks sur lesquels #13545 a construit sa
+    protection. On ne tranche donc pas : imputation a la base comme avant, et
+    l'incertitude est DITE (#14567) au lieu de passer pour un acquittement.
+    """
+    _red_on_two_lanes(monkeypatch, check="PR gate", aggregate=True)
+    monkeypatch.setattr(pig, "fetch_main_head_probe",
+                        lambda *a, **k: _probe(main_names=["Scripts Tests (CPU)"]))
+    out = pig.red_backlog("myia-po-2023:CoursIA", 24, count_threshold=3)
+    assert out["infra_rerun"] == []
+    assert {i["check"] for i in out["base_inherited"]} == {"PR gate :: perimeter"}
+    assert {i["check"] for i in out["base_undecided"]} == {"PR gate :: perimeter"}
+    assert out["red"] == []
+
+
+def test_split_base_corroboration_trois_etats():
+    """Le tri est PUR : il confronte deux mesures, il n'en prend aucune lui-meme.
+
+    Les trois cles sont les trois formes REELLES : un check direct rouge sur
+    `main` (cause de base), un check direct vert sur `main` (infra), et une
+    cle d'agregateur `nom :: organe` dont le nom ne tourne que sur PR (non
+    tranche). La cle de la sonde et celle de la corroboration sont baties par
+    le meme `failed_check_keys`, donc comparables -- c'est ce qui rend le tri
+    possible sans table de correspondance.
+    """
+    corroborated = {"Scripts Tests (CPU)": [1, 2],
+                    "Quarto Pages": [3, 4],
+                    "PR gate :: perimeter": [5, 6]}
+    names = {"Scripts Tests (CPU)": {"Scripts Tests (CPU)"},
+             "Quarto Pages": {"Quarto Pages"},
+             "PR gate :: perimeter": {"PR gate"}}
+    base, infra, undecided = pig.split_base_corroboration(
+        corroborated, names,
+        _probe(main_red=["Scripts Tests (CPU)"],
+               main_names=["Scripts Tests (CPU)", "Quarto Pages"]))
+    assert set(base) == {"Scripts Tests (CPU)", "PR gate :: perimeter"}
+    assert set(infra) == {"Quarto Pages"}
+    assert set(undecided) == {"PR gate :: perimeter"}
+    assert base["Scripts Tests (CPU)"] == [1, 2] and infra["Quarto Pages"] == [3, 4]
+
+    base2, infra2, undec2 = pig.split_base_corroboration(corroborated, names, None)
+    assert base2 == corroborated and infra2 == {} and undec2 == {}
+
+    base3, infra3, undec3 = pig.split_base_corroboration({}, {}, _probe())
+    assert (base3, infra3, undec3) == ({}, {}, {})
+
+
+def test_geste_infra_n_invente_pas_d_id_de_run():
+    """L'id du check-run n'est pas un id de workflow run : le picker n'en donne aucun.
+
+    Le picker connait le NOM de la jambe et l'id du check-run. Ecrire
+    `gh run rerun <id-du-check-run>` produirait une commande fausse -- c'est
+    exactement le genre de geste plausible-mais-faux que cette classe existe
+    pour eviter. Le seul id sur est un placeholder que la lane resout.
+    """
+    cause = pig.infra_rerun_cause("Scripts Tests (CPU)")
+    assert "gh run rerun" in cause and "<run_id>" in cause
+    assert not any(ch.isdigit() for ch in cause), cause
+    assert "Scripts Tests (CPU)" in cause
+
+
+def test_dwell_prime_sur_infra():
+    """Un minuteur reste un minuteur : le rejeu le remet a zero, donc aucune cause.
+
+    L'ordre des branches de `blocking_causes` est une propriete, pas un detail
+    de style : #15910 (DWELL) precede #17154 (infra). Inverser les deux
+    enverrait la lane rejouer une jambe qui n'attend que l'horloge.
+    """
+    st = _state(checks=[("PR gate", "FAILURE", True)])
+    assert pig.blocking_causes(
+        st, infra_rerun={"PR gate"},
+        dwell_by_name={"PR gate": {"lift_at": "2026-09-21T06:00:00Z",
+                                   "remaining_min": 12}}) == []
 
 
 def test_same_author_failures_are_not_imputed(monkeypatch):
@@ -2728,3 +2901,74 @@ def test_organs_banner_still_blocks_end_to_end(monkeypatch):
     assert [r["number"] for r in out["red"]] == [1, 2, 3]
     assert "count" in out["triggers"]
     assert out["dwell_waiting"] == []
+
+
+# --- LIVRÉ-urn : variantes du marqueur (issue #17263, c.754) --------------
+# Mesure first-hand : 3 formes employees par les lanes, dont la forme
+# canonique `[INFO] candidate-delivered` (avec fermante `]`) n'etait PAS
+# detectee par le motif `\[INFO[\s_]candidate-delivered` parce que la
+# fermante `]` cassait la continuite apres `[INFO`. Verifie Tell c.1086 §B
+# strict et Tell c.488 ★★★ audit-reassessment (LP fondateur : le test
+# `test_marker_only_surfaces_delivered_urn` ne couvrait que la forme 2).
+
+
+def test_marker_form_1_canonical_with_bracket(monkeypatch):
+    """Forme 1 (canonique, fermante `]`) : `[INFO] candidate-delivered` --
+    la plus naturelle, employee par les lanes recemment ; doit etre
+    detectee par le motif elargi."""
+    calls = []
+    _patch_gh_dispatch(
+        calls, monkeypatch, pr_payload=[],
+        comments_payload={"comments": [
+            _delivered_marker_comment(),
+            _delivered_marker_comment(
+                body="[INFO] candidate-delivered — verification first-hand "
+                     "du geste 1 sur origin/main, MERGE 6d0bd02093."),
+        ]})
+    picks = [_pick(n=14373)]
+    notes = pig.recent_delivery(picks)
+    assert 14373 in notes
+    assert "[INFO]" in notes[14373]
+    assert picks[0]["klass"] == "delivered"
+
+
+def test_marker_form_3_announcement_lane(monkeypatch):
+    """Forme 3 (annonce lane) : `[INFO] lane <machine:workspace> -- <sujet>
+    -- candidate-delivered <suite>` -- le mot n'est pas immediatement apres
+    `[INFO` mais sur la meme ligne. Tell c.534 L1 ★★ fondateur."""
+    calls = []
+    _patch_gh_dispatch(
+        calls, monkeypatch, pr_payload=[],
+        comments_payload={"comments": [
+            _delivered_marker_comment(
+                body="[INFO] lane myia-po-2026:CoursIA-2 — c.678 reprise "
+                     "(tick 4) — candidate-delivered signal pour issue #16053"),
+        ]})
+    picks = [_pick(n=16053)]
+    notes = pig.recent_delivery(picks)
+    assert 16053 in notes
+    assert "[INFO]" in notes[16053]
+    assert picks[0]["klass"] == "delivered"
+
+
+def test_marker_no_match_discursive_mention(monkeypatch):
+    """Anti-FP Tell c.488 ★★★ : un commentaire qui MENTIONNE le mecanisme
+    `candidate-delivered` sans etre un marqueur de livraison ne doit PAS
+    declencher la klasse `delivered`. La forme etroite exige `candidate-
+    delivered` comme mot complet (`\b`) sur la MEME ligne qu'un `[INFO]`
+    en tete."""
+    calls = []
+    _patch_gh_dispatch(
+        calls, monkeypatch, pr_payload=[],
+        comments_payload={"comments": [
+            {"body": "[INFO] voici une analyse du mecanisme candidate-delivered "
+                     "et de ses variantes."},
+            {"body": "[INFO] diagnostic general, pas de signal livraison."},
+        ]})
+    picks = [_pick(n=14374)]
+    notes = pig.recent_delivery(picks)
+    # PAS de signal car la 1re forme est une mention discursive ([INFO] n'est
+    # PAS en tete de ligne pour la 2e variante, et la 1ere n'a pas le mot
+    # sur la meme ligne que [INFO]).
+    assert notes == {}
+    assert picks[0]["klass"] == "grain"

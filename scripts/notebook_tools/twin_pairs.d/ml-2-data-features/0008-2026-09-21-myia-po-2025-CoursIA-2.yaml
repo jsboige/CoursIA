@@ -1,0 +1,10 @@
+reason: 're-attestation apres densification markdown-only de la campagne #17040
+  (suppressions de cellules de remplissage). Audit firsthand : cellules code
+  byte-identiques base->HEAD (9/9), cote C# non touche par la PR ; parite
+  native-both du code inchangee.'
+date: '2026-09-21'
+by: myia-po-2025:CoursIA-2
+python_sha: 80a3923577e47c6340fefa45f056533ff723d31a
+csharp_sha: 2a158cc55996dead23a76fd0f495efc6f17e6ff0
+content_python_sha: 5f0e1a0cb0e0f17e296be730f64881d189cfb9616ba5b27057577e132c463dbe
+content_csharp_sha: 3ec82bd447b7aa98691918b396642483479158675869b041731d431828a0dfdf

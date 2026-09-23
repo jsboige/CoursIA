@@ -24,6 +24,7 @@ Status heuristics (B-2 from #623):
 
 import argparse
 import ast
+import datetime as _dt
 import json
 import re
 import subprocess
@@ -94,6 +95,148 @@ def estimate_duration(cells_code: int, kernel: str, requirements: dict) -> str:
     return "15min"
 
 
+# --- Consommation de ressources (champ `resource_cost`) ----------------------
+#
+# Deux couts, mesures separement parce qu'ils ne se substituent pas : ce que
+# le notebook coute a EXECUTER, et ce qu'il a coute a PRODUIRE.
+#
+# Le premier est reellement mesure. 92,5 % du corpus porte des horodatages
+# `metadata.execution` ecrits par nbclient/papermill (mesure du 2026-09-21 :
+# 1173 notebooks a timing complet, 90 partiel, 102 sans, 1 illisible), d'ou
+# des quartiles observes de 2,8 s / 9,4 s / 42,3 s et un maximum a 17 762 s.
+# Les seuils ci-dessous sont poses sur cette distribution.
+#
+# Le second est un PROXY, et il est declare comme tel plutot que maquille en
+# chiffre. Sur l'historique COMPLET (2309 notebooks dates, remontant a 2024),
+# les revisions se distribuent q1 2 / mediane 4 / q3 11 / p90 27 / p95 35 /
+# max 64 -- c'est cette distribution qui fixe les seuils ci-dessous. Les
+# auteurs distincts, eux, ne discriminent presque rien (mediane 1, max 4) :
+# ils sont rendus, ils ne classent pas.
+#
+# Ce que le proxy ne voit pas, et qu'il ne faut pas lui faire dire : le
+# squash-merge ecrase chaque PR en un commit, donc `revisions` compte les PRs,
+# pas les cycles ; et ni les cycles d'agent sans commit, ni les tokens brules,
+# ni le temps humain n'y figurent. Il separe « ecrit une fois, jamais
+# revisite » de « retravaille des dizaines de fois », et rien de plus fin.
+#
+# Ce que le champ NE mesure pas, et qu'il ne faut pas lui faire dire :
+# le temps de paroi d'un appel d'API est de la latence reseau, pas le calcul
+# brule a l'autre bout. Un notebook `requires_api` classe LIGHT est leger
+# **pour cette machine**, pas pour le monde. C'est pourquoi `external` est
+# rendu a cote de la classe sans la corriger : corriger la classe fabriquerait
+# un chiffre que rien ne mesure.
+EXEC_COST_THRESHOLDS_SECONDS = ((60.0, "LIGHT"), (600.0, "MODERATE"),
+                                (3600.0, "HEAVY"))
+CREATION_COST_THRESHOLDS_REVISIONS = ((2, "LIGHT"), (11, "MODERATE"),
+                                      (34, "HEAVY"))
+
+# Bornes de plausibilite d'une cellule : un ecart negatif (horloge qui recule,
+# horodatage forge) ou superieur a 10 h n'est pas une mesure, c'est un artefact.
+# Il est ecarte du total et decompte de la couverture -- jamais additionne.
+CELL_SECONDS_MAX = 36000.0
+
+
+def _cell_seconds(cell: dict) -> float | None:
+    """Duree mesuree d'une cellule, ou None si elle n'est pas mesurable."""
+    execution = (cell.get("metadata") or {}).get("execution") or {}
+    start = execution.get("iopub.execute_input") or execution.get("iopub.status.busy")
+    end = execution.get("shell.execute_reply") or execution.get("iopub.status.idle")
+    if not start or not end:
+        return None
+    try:
+        began = _dt.datetime.fromisoformat(str(start).replace("Z", "+00:00"))
+        ended = _dt.datetime.fromisoformat(str(end).replace("Z", "+00:00"))
+    except (ValueError, TypeError):
+        return None
+    seconds = (ended - began).total_seconds()
+    if seconds < 0 or seconds > CELL_SECONDS_MAX:
+        return None
+    return seconds
+
+
+def measure_execution_cost(code_cells: list, requirements: dict) -> dict:
+    """Cout d'execution mesure sur les horodatages des cellules.
+
+    `coverage` dit sur quoi la mesure porte, et la classe en depend : un
+    notebook qu'on n'a pas pu chronometrer rend **UNKNOWN**, jamais LIGHT --
+    une absence de mesure n'est pas une mesure a zero, et le rendre leger
+    ferait passer pour bon marche ce qu'on n'a pas ouvert.
+    """
+    timed = [d for d in (_cell_seconds(c) for c in code_cells) if d is not None]
+    external = [name for name, key in (("api", "requires_api"), ("gpu", "requires_gpu"),
+                                       ("cloud", "requires_cloud"), ("wsl", "requires_wsl"))
+                if requirements.get(key)]
+    if not code_cells:
+        coverage = "NONE"
+    elif not timed:
+        coverage = "NONE"
+    elif len(timed) < len(code_cells):
+        coverage = "PARTIAL"
+    else:
+        coverage = "FULL"
+
+    if coverage == "NONE":
+        cost_class = "UNKNOWN"
+        wall = None
+    else:
+        wall = round(sum(timed), 1)
+        cost_class = "VERY_HEAVY"
+        for ceiling, name in EXEC_COST_THRESHOLDS_SECONDS:
+            if wall < ceiling:
+                cost_class = name
+                break
+    return {
+        "class": cost_class,
+        "wall_seconds": wall,
+        "cells_timed": len(timed),
+        "cells_code": len(code_cells),
+        "coverage": coverage,
+        "external": external,
+    }
+
+
+def classify_creation_cost(git_meta_entry: dict | None) -> dict:
+    """Proxy du cout de production, derive de l'historique git.
+
+    Voir le commentaire de section : proxy faible et assume. Sans historique,
+    la classe est **UNKNOWN** -- un notebook dont on ignore l'histoire n'est
+    pas un notebook bon marche.
+    """
+    gm = git_meta_entry or {}
+    revisions = gm.get("revisions")
+    if not revisions:
+        return {"class": "UNKNOWN", "history": "ABSENT", "revisions": None,
+                "authors": None, "first_commit": "", "span_days": None}
+    if gm.get("history_truncated", True):
+        # Les comptes restent rendus -- ils sont vrais pour la fenetre -- mais
+        # la CLASSE refuse de naitre d'un horizon, et `first_commit` est tu :
+        # sur un clone coupe c'est la date de coupe, pas une date de creation,
+        # et la publier fabriquerait l'age qu'on pretend mesurer.
+        return {"class": "UNKNOWN", "history": "TRUNCATED",
+                "revisions": revisions, "authors": gm.get("authors"),
+                "first_commit": "", "span_days": None}
+    cost_class = "VERY_HEAVY"
+    for ceiling, name in CREATION_COST_THRESHOLDS_REVISIONS:
+        if revisions <= ceiling:
+            cost_class = name
+            break
+    first, last = gm.get("first_commit", ""), gm.get("last_validation", "")
+    span = None
+    if first and last:
+        try:
+            span = (_dt.date.fromisoformat(last) - _dt.date.fromisoformat(first)).days
+        except ValueError:
+            span = None
+    return {
+        "class": cost_class,
+        "history": "COMPLETE",
+        "revisions": revisions,
+        "authors": gm.get("authors"),
+        "first_commit": first,
+        "span_days": span,
+    }
+
+
 # Plafond mesure, pas devine. Sur le pool `[self-hosted, coursia-ephemeral,
 # coursia-linux]` qui publie le catalogue (checkout `fetch-depth: 0`), sept runs
 # du 2026-09-13 rendent ce step entre 10 s et 64 s. Les trois runs sous 25 s
@@ -133,6 +276,51 @@ class GitMetadataUnavailable(RuntimeError):
     """
 
 
+def shallow_boundaries() -> set[str] | None:
+    """SHA des commits ou l'historique local est GREFFE (clone shallow).
+
+    Determinant pour le cout de creation : au bord d'une greffe, `revisions`
+    ne compte pas les revisions d'un notebook, il compte celles **tombees dans
+    la fenetre du clone**. Mesure du 2026-09-21 sur le meme depot, avant et
+    apres approfondissement : la fenetre coupee au 2026-08-25 donnait une
+    mediane de 3 revisions pour un maximum de 13 ; l'historique complet donne
+    une mediane de 4, un q3 de 11, un p95 de 35 et un maximum de 64. Publier
+    les premiers chiffres comme un cout de production, c'est publier la
+    largeur du clone.
+
+    Pourquoi pas `git rev-parse --is-shallow-repository` : il repond pour le
+    DEPOT, pas pour les notebooks. Mesure sur ce meme depot approfondi -- il
+    rend `true` a cause de six greffes residuelles dont **aucune** n'est dans
+    l'historique de `MyIA.AI.Notebooks`, dont le plus vieux commit remonte a
+    2024 et porte un parent. S'y fier rendrait UNKNOWN partout precisement la
+    ou le champ fonctionne.
+
+    Rend None si la question n'a pas pu etre posee -- et l'appelant traite
+    None comme « coupe », jamais comme « complet ».
+    """
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--git-common-dir"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            cwd=str(REPO_ROOT), timeout=30,
+        )
+    except (subprocess.SubprocessError, OSError):
+        return None
+    if result.returncode != 0:
+        return None
+    common = Path(result.stdout.strip())
+    if not common.is_absolute():
+        common = REPO_ROOT / common
+    marker = common / "shallow"
+    if not marker.exists():
+        return set()            # aucune greffe : historique complet
+    try:
+        return {line.strip() for line in marker.read_text(encoding="utf-8").splitlines()
+                if line.strip()}
+    except OSError:
+        return None
+
+
 def build_git_metadata() -> dict[str, dict]:
     """Build last-commit metadata for all notebooks via git log.
 
@@ -140,6 +328,14 @@ def build_git_metadata() -> dict[str, dict]:
         last_validation: ISO date of last commit touching the file
         last_validator: email of last committer
         issues_prs: list of '#NNN' references from commit messages
+        revisions: number of commits touching the file
+        authors: number of distinct committer emails
+        first_commit: ISO date of the OLDEST commit touching the file
+
+    Les trois derniers alimentent le proxy de cout de creation. Ils sont
+    accumules dans cette meme passe -- `git log` parcourt deja tout
+    l'historique pour ne retenir que le commit le plus recent, donc les
+    compter est gratuit ; les obtenir autrement couterait un second parcours.
 
     Raises:
         GitMetadataUnavailable: git timed out, is missing, or exited non-zero.
@@ -151,7 +347,7 @@ def build_git_metadata() -> dict[str, dict]:
     try:
         result = subprocess.run(
             [
-                "git", "log", "--name-only", "--format=COMMIT:%ai|%ae|%s",
+                "git", "log", "--name-only", "--format=COMMIT:%H|%ai|%ae|%s",
                 "--", GIT_LOG_PATHSPEC,
             ],
             capture_output=True, text=True, encoding="utf-8", errors="replace",
@@ -176,6 +372,7 @@ def build_git_metadata() -> dict[str, dict]:
         )
 
     metadata: dict[str, dict] = {}
+    current_sha = ""
     current_date = ""
     current_email = ""
     current_subject = ""
@@ -183,11 +380,12 @@ def build_git_metadata() -> dict[str, dict]:
 
     for line in result.stdout.split("\n"):
         if line.startswith("COMMIT:"):
-            parts = line[7:].split("|", 2)
-            if len(parts) >= 3:
-                current_date = parts[0][:10]
-                current_email = parts[1]
-                current_subject = parts[2]
+            parts = line[7:].split("|", 3)
+            if len(parts) >= 4:
+                current_sha = parts[0]
+                current_date = parts[1][:10]
+                current_email = parts[2]
+                current_subject = parts[3]
         elif line.strip() and current_date:
             path = line.strip()
             if not path.endswith(".ipynb"):
@@ -201,7 +399,31 @@ def build_git_metadata() -> dict[str, dict]:
                     "last_validation": current_date,
                     "last_validator": current_email,
                     "issues_prs": [f"#{n}" for n in issues[:5]],
+                    "revisions": 0,
+                    "_authors": set(),
                 }
+            entry = metadata[rel]
+            entry["revisions"] += 1
+            entry["_authors"].add(current_email)
+            # `git log` rend du plus recent au plus ancien : le dernier commit
+            # vu pour un chemin est donc le plus ancien.
+            entry["first_commit"] = current_date
+            entry["_first_sha"] = current_sha
+
+    grafts = shallow_boundaries()
+    truncated_count = 0
+    for entry in metadata.values():
+        entry["authors"] = len(entry.pop("_authors"))
+        first_sha = entry.pop("_first_sha", "")
+        # Un notebook est coupe si son PROPRE plus vieux commit est une
+        # frontiere de greffe : l'historique s'y arrete faute d'objets, pas
+        # faute de commits. `grafts is None` (question impossible) est traite
+        # comme coupe -- fail-closed.
+        entry["history_truncated"] = grafts is None or first_sha in grafts
+        truncated_count += entry["history_truncated"]
+    if truncated_count:
+        print(f"Git metadata: {truncated_count} notebook(s) a historique COUPE "
+              "-- resource_cost.creation y rendra UNKNOWN/TRUNCATED")
 
     # Emitted on every run so a healthy pass is legible too: a low
     # "Preserved curated fields" count only means something next to the number
@@ -1094,6 +1316,11 @@ def analyze_notebook(nb_path: Path, pedagogical: bool, git_meta: dict | None = N
         "executed_at": gm.get("executed_at", ""),
         "forensic_category": gm.get("forensic_category", ""),
         "duree_estimee": estimate_duration(len(code_cells), kernel, requirements),
+        "resource_cost": {
+            "schema": 1,
+            "execution": measure_execution_cost(code_cells, requirements),
+            "creation": classify_creation_cost(gm),
+        },
         "owner_logique": OWNER_MAP.get(serie, ""),
         "last_validation": gm.get("last_validation", ""),
         "last_validator": gm.get("last_validator", ""),
