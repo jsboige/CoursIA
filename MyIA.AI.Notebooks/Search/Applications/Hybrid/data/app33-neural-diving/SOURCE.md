@@ -1,6 +1,6 @@
-# Provenance `app32-neural-diving`
+# Provenance `app33-neural-diving`
 
-Ce répertoire accompagne App-32, reproduction locale de la composante
+Ce répertoire accompagne App-33, reproduction locale de la composante
 **diving** de l'article Nair et al. (2021) sur le terrain contrôlé de la
 coloration de graphe.
 
@@ -30,8 +30,8 @@ Le prototype a éliminé deux familles d'instances avant l'écriture du
 notebook : les set-cover denses (résolus au presolve, `nodes = 0` — aucune
 recherche à influencer) et les knapsack multidimensionnels corrélés
 (pas de preuve en fenêtre notebook). La coloration 60 sommets / 3 arêtes par
-sommet est la famille fenêtre : elle branche (500-800 nœuds) et se prouve
-(< 0,1 s). La leçon méthodologique est mesurée, pas postulée : sur la
+sommet est la famille fenêtre : elle branche (médiane 2742 sur les 60
+instances d'entraînement, 2303-3799) et se prouve (< 0,1 s). La leçon méthodologique est mesurée, pas postulée : sur la
 médiane, le hint coûte ; sur la queue, il stabilise ; la précision par bit
 ne prédit pas l'effet, la cohérence avec les contraintes oui.
 
