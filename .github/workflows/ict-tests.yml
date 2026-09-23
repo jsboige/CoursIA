@@ -217,6 +217,13 @@ jobs:
           # rattrape ici sur l'arbre merge (mesure 2026-09-16 ci-dessus,
           # header). Cette branche (xdist) n'apporte RIEN a tests/ non plus :
           # 1156 est la collection mesuree de l'arbre merge, le cliquet suit.
+          # Floor 1156 -> 1177 : +19 de DRIFT MAIN (origin/main@bf212573c0
+          # collecte 1175 -- mesure firsthand du 2026-09-21 sur un worktree
+          # detache a ce sha, pas une inference) + 2 items de CETTE branche
+          # (#16750 : les deux tests du garde de degenerescence inter-jeux,
+          # tests/test_sae_traces.py -- 12 items contre 10 sur main).
+          # Mesure de l'arbre merge : 1177 collectes, 1150 passes + 28 skips.
+          # Le cliquet suit la collection mesuree, jamais l'inverse.
           #
           # PARALLELISATION (#14598 levier b) -- cette jambe UNIQUEMENT.
           # Mesure de concentration sur la sonde `ict-tests-profile.yml`
@@ -258,7 +265,7 @@ jobs:
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series
             test-args: tests
             test-parallel: "-n 4 --dist loadscope"
-            test-floor: 1156
+            test-floor: 1177
           # ict/tests/ : 42 strates package (85 - 43 consolides dans tests/,
           # #9478) -> 686 items collectes = 670 (mesure 2x sur
           # origin/main@5302d974aa, CI-confirme run 34307798875) + 16 tests

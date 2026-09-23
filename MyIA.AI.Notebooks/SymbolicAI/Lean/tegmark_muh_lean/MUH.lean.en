@@ -32,12 +32,15 @@ This is what this library does. The modules:
     relations + arities/types + value table).
   - `MUH.Encoding`: encoding per Tegmark §c (`# of sets | # of relations |
     sizes... | rels...`) and complexity `H(s) = Σᵢ log₂(2 + kᵢ)` (§d).
-  - `MUH.Boolean`: 2-element Boolean algebra, with proof that the 1-generator
-    definition (Sheffer / NAND) is equivalent to the 8-generator definition
-    (Tegmark §2a).
+  - `MUH.Boolean`: 2-element Boolean algebra, **canonical examples** (Sheffer
+    at 1 generator; F/T/NOT/AND at 4 generators — Tegmark eq. (A1)-(A2)). The
+    **equivalence Sheffer ↔ 4 generators** is out of scope of this PR; see
+    #16958 for follow-up.
   - `MUH.Cyclic`: cyclic groups C₂ and C₃ (Tegmark §2b).
-  - `MUH.Decidable`: halting enumerative algorithm to decide equivalence in
-    the restricted case (arity ≤ 2, cardinality ≤ 3). -/
+  - `MUH.Decidable`: **documented enumerative skeleton** (Tegmark §1 in fine).
+    The delivered code is a **stub** (`decideEq` compares `nSets`,
+    `ClosedUnderComp` is `trivial`) — **not** a halting enumerative algorithm.
+    The full implementation is out of scope; see #16958. -/
 
 
 /-- Sub-libraries of MUH, exposed through a single import. -/
