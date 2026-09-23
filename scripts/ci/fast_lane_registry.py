@@ -1254,6 +1254,38 @@ TRANCHE11: list[Guard] = [
     ),
 ]
 
+# ---------------------------------------------------------------------------
+# TRANCHE 13 -- reading-anchor advisory (#16695).
+#
+# Garde NATIF absorbant le workflow d'origine (needs_base=True, delta vs base,
+# self-test pre-control #11685). Advisory non bloquant a zero FP mesure.
+# ---------------------------------------------------------------------------
+TRANCHE13: list[Guard] = [
+    Guard(
+        name="Reading-anchor advisory (lecture sans output, #16695)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**.ipynb",
+            "scripts/notebook_tools/check_reading_anchor.py",
+            "scripts/notebook_tools/tests/test_check_reading_anchor.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        pre_argv=[
+            "python", "scripts/notebook_tools/check_reading_anchor.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_reading_anchor.py",
+            "--base", "{base_ref}",
+            "--head", "HEAD",
+            "--fail", "--json",
+        ],
+        blocking=False,
+        needs_base=True,
+        absorbed=True,
+    ),
+]
 
 # ---------------------------------------------------------------------------
 # TRANCHE 12 -- link-label agreement advisory (#16645).
