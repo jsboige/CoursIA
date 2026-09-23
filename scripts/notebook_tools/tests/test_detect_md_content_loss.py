@@ -375,6 +375,145 @@ class TestLostMotifs:
 
 
 # ---------------------------------------------------------------------------
+# 6b. Liens de navigation : cibles distinctes vivantes (#17392)
+# ---------------------------------------------------------------------------
+class TestNavLinkDistinctLiveTargets:
+    """#17392 : l'identite d'un lien de navigation est sa CIBLE normalisee
+    (ancre ignoree), pas son occurrence. Une cible de base absente de la tete
+    n'est PERDUE que si trois excuses ecrites ne s'appliquent aucune :
+    (e1) cible MORTE en base (reparation), (e2) libelle survivant pointant
+    ailleurs (retarget), (e3) cible nouvelle gagnee en tete (reconstruction).
+    Cas fondateur : PR dedoublonnant un bloc de nav legacy + reparant un
+    footer pointant un README inexistant -- 7 instances -> 4, flagge a tort
+    par le compte d'occurrences."""
+
+    def _lab6_fixture(self, tmp_path):
+        # Reproduit la geometrie reelle de Lab6-First-Agent : dossier du
+        # notebook a 5 niveaux ; ../../README.md = README du Day3 (VIVANT,
+        # cree) ; ../../../../README.md = README 4 niveaux plus haut (MORT,
+        # jamais cree -- dans le depot reel : DataScienceWithAgents/README.md
+        # inexistant, mesure firsthand #17392).
+        lab6 = tmp_path / "Track1-LangChain" / "Day3-Data-Agents" / "Labs" / "Lab6-First-Agent"
+        lab6.mkdir(parents=True)
+        (tmp_path / "Track1-LangChain" / "Day3-Data-Agents" / "README.md").write_text(
+            "day3", encoding="utf-8")
+        nb = lab6 / "Lab6-First-Agent.ipynb"
+        nb.write_text(json.dumps(_nb(_md("# Lab6"))), encoding="utf-8")
+        return nb
+
+    _LAB6_BASE = _nb(
+        _md("[Index](../../../../README.md)\n"
+            "[<< Lab5](../Lab5-Viz-ML/Lab5-Viz-ML.ipynb)\n"
+            "[Lab7 >>](../Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb)"),
+        _md("[Lab 5 <<](../Lab5-Viz-ML/Lab5-Viz-ML.ipynb)\n"
+            "[Index](../../README.md)\n"
+            "[>> Lab 7](../Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb)"),
+        _md("Corps pedagogique substantiel du lab. " * 8),
+        _md("[Index ML](../../../../README.md)"),
+    )
+    _LAB6_HEAD = _nb(
+        _md("[Lab 5 <<](../Lab5-Viz-ML/Lab5-Viz-ML.ipynb)\n"
+            "[Index](../../README.md)\n"
+            "[>> Lab 7](../Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb)"),
+        _md("Corps pedagogique substantiel du lab. " * 8),
+        _md("[Journee 3](../../README.md)"),
+    )
+
+    def test_lab6_dedup_and_dead_footer_no_finding(self, tmp_path):
+        # CONTROLE NEGATIF (cas reel #17392) : base 7 instances / 4 cibles,
+        # tete 4 instances / 3 cibles. La cible disparue etait MORTE en base
+        # -> aucune perte -> vert. C'est le faux positif qui bloquait la PR.
+        nb = self._lab6_fixture(tmp_path)
+        findings = dml._compare_motifs(
+            dml._collect_motifs(self._LAB6_BASE), dml._collect_motifs(self._LAB6_HEAD),
+            nav_base_path=nb, nav_base_ref=None,
+        )
+        assert all(f["kind"] != "LOST_NAV_LINKS" for f in findings), findings
+
+    def test_lab6_case_end_to_end_scan(self, tmp_path):
+        # Meme cas, via scan_notebook complet : la liveness passe par
+        # path_exists_at_ref (ref git). Seul le README 4-niveaux-haut est
+        # mort ; le README Day3 et le notebook lui-meme repondent True.
+        nb = self._lab6_fixture(tmp_path)
+        nb.write_text(json.dumps(self._LAB6_HEAD), encoding="utf-8")
+        dead = tmp_path / "README.md"
+        with mock.patch.object(dml, "read_notebook_at_ref",
+                               return_value=self._LAB6_BASE), \
+             mock.patch.object(dml, "ref_resolves", return_value=True), \
+             mock.patch.object(dml, "path_exists_at_ref",
+                               side_effect=lambda p, ref: Path(p) != dead):
+            r = dml.scan_notebook(nb, base_ref="MOCK_BASE", head_ref=None)
+        assert all(f["kind"] != "LOST_NAV_LINKS" for f in r["findings"]), r["findings"]
+
+    def test_live_target_loss_still_signals(self, tmp_path):
+        # CONTROLE POSITIF : une cible VIVANTE en base, absente de la tete,
+        # sans libelle survivant ni cible gagnee -> LOST_NAV_LINKS. La tete
+        # garde un lien (perte PARTIELLE : le regime LOST_NAV_LINKS, pas le
+        # LOST_MOTIF de la disparition totale).
+        nb = self._lab6_fixture(tmp_path)
+        extras = tmp_path / "Track1-LangChain" / "Day3-Data-Agents" / "Extras"
+        extras.mkdir()
+        (extras / "Extras.ipynb").write_text("{}", encoding="utf-8")
+        base = _nb(_md("[Extras](../../Extras/Extras.ipynb) [Index](../../README.md)"))
+        head = _nb(_md("[Index](../../README.md)"))
+        findings = dml._compare_motifs(
+            dml._collect_motifs(base), dml._collect_motifs(head),
+            nav_base_path=nb, nav_base_ref=None,
+        )
+        nav = [f for f in findings if f["kind"] == "LOST_NAV_LINKS"]
+        assert len(nav) == 1, findings
+        assert nav[0]["lost_targets"] == ["../../Extras/Extras.ipynb"]
+
+    def test_dead_repair_does_not_mask_live_loss(self, tmp_path):
+        # Transparence : un meme diff qui repare une cible morte ET perd une
+        # cible vivante -> seule la vivante compte, la morte est listee comme
+        # reparee (audit) dans le finding.
+        nb = self._lab6_fixture(tmp_path)
+        extras = tmp_path / "Track1-LangChain" / "Day3-Data-Agents" / "Extras"
+        extras.mkdir()
+        (extras / "Extras.ipynb").write_text("{}", encoding="utf-8")
+        base = _nb(_md("[Mort](../../../../README.md) [Vivant](../../Extras/Extras.ipynb) [Index](../../README.md)"))
+        head = _nb(_md("[Index](../../README.md)"))
+        findings = dml._compare_motifs(
+            dml._collect_motifs(base), dml._collect_motifs(head),
+            nav_base_path=nb, nav_base_ref=None,
+        )
+        nav = [f for f in findings if f["kind"] == "LOST_NAV_LINKS"]
+        assert len(nav) == 1, findings
+        assert nav[0]["lost_targets"] == ["../../Extras/Extras.ipynb"]
+        assert nav[0]["repaired_dead_targets"] == ["../../../../README.md"]
+
+    def test_retarget_same_label_excused(self, tmp_path):
+        # (e2) RETARGET, regle ecrite : le libelle du lien survit en tete en
+        # pointant ailleurs -> l'affleurement de navigation garde son
+        # etiquette, ce n'est pas une perte (cf. note NAV_LINK_RE : re-cible
+        # notebook -> README de serie, convention majoritaire).
+        nb = self._lab6_fixture(tmp_path)
+        extras = tmp_path / "Track1-LangChain" / "Day3-Data-Agents" / "Extras"
+        extras.mkdir()
+        (extras / "Extras.ipynb").write_text("{}", encoding="utf-8")
+        base = _nb(_md("[Index](../../README.md) [Notes](../../Extras/Extras.ipynb)"))
+        head = _nb(_md("[Index](../../README.md) [Notes](../../README.md)"))
+        findings = dml._compare_motifs(
+            dml._collect_motifs(base), dml._collect_motifs(head),
+            nav_base_path=nb, nav_base_ref=None,
+        )
+        assert all(f["kind"] != "LOST_NAV_LINKS" for f in findings), findings
+
+    def test_unresolvable_context_stays_conservative(self, tmp_path):
+        # Sans contexte de resolution (nav_base_path=None, fixtures sans
+        # depot), la liveness est reputee VIVE : une cible absente de la
+        # tete reste signalee. Le garde ne se desarme pas faute de contexte.
+        base = _nb(_md("[a](1.ipynb) [b](2.ipynb)"))
+        head = _nb(_md("[a](1.ipynb)"))
+        findings = dml._compare_motifs(
+            dml._collect_motifs(base), dml._collect_motifs(head),
+            nav_base_path=None, nav_base_ref=None,
+        )
+        assert any(f["kind"] == "LOST_NAV_LINKS" for f in findings)
+
+
+# ---------------------------------------------------------------------------
 # 7. scan_notebook end-to-end (base via mock, head = working tree tmp file)
 # ---------------------------------------------------------------------------
 class TestScanNotebook:

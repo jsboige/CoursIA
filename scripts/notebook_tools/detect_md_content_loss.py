@@ -47,11 +47,17 @@ Pour chaque notebook compare entre sa base git (defaut origin/main) et sa tete
 
   4. MOTIFS STRUCTURANTS PERDUS : signale explicitement la disparition de
      `**Navigation**`, `**Objectif(s)**`, `**Prerequis**`, `### Enonce`, et
-     des liens de navigation `[...](*.ipynb)` ou `[...](README.md)` -- des
-     elements dont la perte est un signal fort independamment du seuil de
-     caracteres. Le `README.md` de serie est un index de navigation au meme
-     titre qu'un notebook (cf. la note de ``NAV_LINK_RE`` : compter les cibles
-     `*.ipynb` seules fait passer une RE-CIBLE legitime pour une perte).
+     la perte de CIBLES de navigation vivantes `[...](*.ipynb)` /
+     `[...](README.md)` -- des elements dont la perte est un signal fort
+     independamment du seuil de caracteres. Depuis #17392, les liens de
+     navigation se comparent par CIBLES DISTINCTES VIVANTES (ancre ignoree),
+     pas par nombre d'occurrences : une cible de base absente de la tete
+     n'est PERDUE que si elle etait vivante en base (une cible morte qui
+     disparait est une reparation), si aucun libelle de son lien ne survit
+     en tete (retarget assumee), et si la tete n'a gagne aucune cible
+     nouvelle (barre reconstruite). Dedoublonner un bloc de navigation
+     legacy duplique ne perd aucune cible -> vert (#17392 : 7 instances ->
+     4, 4 cibles -> 3, la cible perdue etait un README inexistant en base).
 
   5. NE BLOQUE PAS LA REFORMULATION LEGITIME : le detecteur SIGNALE, la PR
      justifie en review (design #4). Sortie exploitable : fichier / cellule /
@@ -143,6 +149,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import posixpath
 import re
 import subprocess
 import sys
@@ -279,6 +286,48 @@ MOTIF_TRANSLATION_ALIASES = {
 # reellement supprime decremente toujours le compte (la somme des deux cibles
 # reste la mesure du nombre de liens de navigation presents).
 NAV_LINK_RE = re.compile(r"\[[^\]]+\]\([^)]*(?:\.ipynb|README\.md)\)")
+# Decomposition texte/cible d'un match NAV_LINK_RE (regle des cibles distinctes,
+# #17392) : l'identite d'un lien de navigation est son COUPLE (libelle, cible
+# normalisee), pas son occurrence -- un bloc de navigation duplique en base puis
+# dedoublonne en tete conserve chaque couple, donc rien n'est perdu.
+_NAV_LINK_PARTS_RE = re.compile(r"\A\[(?P<text>[^\]]*)\]\((?P<url>[^)]*)\)\Z")
+
+
+def _nav_target_identity(url: str) -> str:
+    """Identite canonique d'une cible de lien de navigation (#17392).
+
+    L'ancre est retiree (``foo.ipynb#section`` et ``foo.ipynb`` ouvrent le
+    meme fichier : l'affleurement de navigation survit) et le chemin est
+    normalise lexicalement (``./x.ipynb`` == ``x.ipynb``). Les liens externes
+    (``http://``) et les ancres pures gardent leur URL brute comme identite.
+    """
+    path = url.split("#", 1)[0].strip()
+    if not path or "://" in path or path.startswith("mailto:"):
+        return url
+    return posixpath.normpath(path)
+
+
+def _nav_target_live(target: str, nb_path: Path, ref: str | None) -> bool:
+    """True si la cible est vivante (fichier existant) a la revision de la BASE.
+
+    Resolution relative au dossier du notebook de base. ``ref`` git -> ``git
+    cat-file -e`` ; ``ref=None`` -> existence disque (working tree). Une cible
+    NON VERIFIABLE (lien externe, ancre pure) est reputee VIVE : le garde
+    reste conservateur (il signale) quand il ne peut pas trancher. Une cible
+    verifiable et ABSENTE a la base est MORTE : sa disparition en tete est une
+    REPARATION, pas une perte de contenu (#17392 : le footer legacy
+    ``[Index ML](../../../../README.md)`` pointait un README inexistant).
+    """
+    path = target.split("#", 1)[0].strip()
+    if not path or "://" in path or path.startswith("mailto:"):
+        return True
+    resolved = posixpath.normpath(posixpath.join(nb_path.parent.as_posix(), path))
+    if ref is None:
+        try:
+            return (nb_path.parent / path).resolve().exists()
+        except OSError:
+            return True
+    return path_exists_at_ref(Path(resolved), ref)
 MOTIF_PATTERNS = [
     (_anchored_motif("Navigation"), "Navigation"),
     (_anchored_motif("Objectifs?"), "Objectif(s)"),
@@ -538,7 +587,19 @@ def _collect_motifs(nb: dict, include_aliases: bool = False) -> dict:
             if alias is not None:
                 n += len(alias.findall(full_md))
         counts[label] = n
+    # Liens de navigation : le compte d'INSTANCES reste publie (statistique de
+    # volume), mais la decision de perte se prend ailleurs, sur les CIBLES
+    # DISTINCTES vivantes (``nav_map``, regle #17392) : compter les instances
+    # faisait passer un dedoublonnage de bloc legacy pour une perte.
+    nav_map: dict[str, set[str]] = {}
+    for m in NAV_LINK_RE.finditer(full_md):
+        parts = _NAV_LINK_PARTS_RE.match(m.group(0))
+        if parts is None:
+            continue
+        tgt = _nav_target_identity(parts.group("url"))
+        nav_map.setdefault(tgt, set()).add(parts.group("text").strip())
     counts["nav_links"] = len(NAV_LINK_RE.findall(full_md))
+    counts["nav_map"] = nav_map
     return counts
 
 
@@ -753,10 +814,37 @@ def _emit_cell_finding(b_idx: int, b_src: str,
         })
 
 
-def _compare_motifs(base_counts: dict, head_counts: dict) -> list[dict]:
-    """Signale les motifs structurants disparus (present en base, absent en head)."""
+def _compare_motifs(base_counts: dict, head_counts: dict,
+                    nav_base_path: Path | None = None,
+                    nav_base_ref: str | None = None) -> list[dict]:
+    """Signale les motifs structurants disparus (present en base, absent en head).
+
+    Liens de navigation -- regle des CIBLES DISTINCTES VIVANTES (#17392).
+    L'identite d'un lien est sa cible normalisee (ancre ignoree), pas son
+    occurrence : dedoublonner un bloc de navigation legacy conserve chaque
+    cible et n'est pas une perte. Une cible de base absente de la tete est
+    PERDUE si et seulement si AUCUNE de ces trois excuses ecrites ne
+    s'applique :
+
+      (e1) la cible etait MORTE en base (fichier inexistant a la revision de
+           base, verifie via ``nav_base_path``/``nav_base_ref``) -- sa
+           disparition est une REPARATION, pas une perte ;
+      (e2) un libelle de son lien de base survit en tete pointant ailleurs --
+           le RETARGET est une re-cible assumee, l'affleurement de navigation
+           garde son etiquette ;
+      (e3) la tete a gagne au moins une cible distincte NOUVELLE -- la barre
+           a ete reconstruite, pas videe (re-cible historique notebook ->
+           README de serie, cf. la note de ``NAV_LINK_RE``).
+
+    Sans contexte de resolution (``nav_base_path=None``, tests unitaires sur
+    fixtures sans depot), la liveness est reputee VIVE (conservateur : le
+    garde signale). La qualite des liens de la TETE (cibles mortes nouvelles)
+    reste du ressort du verificateur de liens, pas de ce garde.
+    """
     findings: list[dict] = []
     for key, b_count in base_counts.items():
+        if key == "nav_map" or isinstance(b_count, dict):
+            continue
         h_count = head_counts.get(key, 0)
         if b_count > 0 and h_count == 0:
             findings.append({
@@ -764,15 +852,39 @@ def _compare_motifs(base_counts: dict, head_counts: dict) -> list[dict]:
                 "motif": key,
                 "before_count": b_count,
             })
-        elif key == "nav_links" and h_count < b_count:
-            # Perte PARTIELLE de liens de navigation : signalee (secondary).
-            findings.append({
-                "kind": "LOST_NAV_LINKS",
-                "motif": "nav_links",
-                "before_count": b_count,
-                "after_count": h_count,
-                "delta": b_count - h_count,
-            })
+
+    base_map: dict = base_counts.get("nav_map") or {}
+    head_map: dict = head_counts.get("nav_map") or {}
+    head_targets = set(head_map)
+    head_texts: set[str] = set()
+    for texts in head_map.values():
+        head_texts |= texts
+    gained = [t for t in head_targets if t not in base_map]
+
+    lost_targets: list[str] = []
+    repaired_dead: list[str] = []
+    for tgt in sorted(base_map):
+        if tgt in head_targets:
+            continue
+        if nav_base_path is not None and not _nav_target_live(tgt, nav_base_path, nav_base_ref):
+            repaired_dead.append(tgt)
+            continue
+        if base_map[tgt] & head_texts:
+            continue  # (e2) retarget : le libelle survit pointant ailleurs
+        if gained:
+            continue  # (e3) reconstruction : la tete gagne une cible nouvelle
+        lost_targets.append(tgt)
+
+    if lost_targets:
+        findings.append({
+            "kind": "LOST_NAV_LINKS",
+            "motif": "nav_links",
+            "before_count": len(base_map),
+            "after_count": len(head_map),
+            "delta": len(lost_targets),
+            "lost_targets": lost_targets,
+            "repaired_dead_targets": repaired_dead,
+        })
     return findings
 
 
@@ -865,6 +977,11 @@ def scan_notebook(nb_path: Path, base_ref: str, head_ref: str | None = None) -> 
             findings.extend(_compare_motifs(
                 _collect_motifs(nb_sibling, include_aliases=True),
                 _collect_motifs(nb_head, include_aliases=True),
+                # La "base" du mode traduction est le sibling FR : la liveness
+                # des cibles se resout depuis son dossier, a la revision du
+                # head (git ref, ou disque si working tree).
+                nav_base_path=_fr_sibling_path(nb_path),
+                nav_base_ref=head_ref,
             ))
             sib_total = sum(_norm_len(x) for _, _, x in sibling_md)
             head_total = sum(_norm_len(x) for _, _, x in head_md_t)
@@ -945,7 +1062,10 @@ def scan_notebook(nb_path: Path, base_ref: str, head_ref: str | None = None) -> 
 
     findings: list[dict] = []
     findings.extend(_compare_cells(base_md, head_md, head_cost))
-    findings.extend(_compare_motifs(_collect_motifs(nb_base), _collect_motifs(nb_head)))
+    findings.extend(_compare_motifs(
+        _collect_motifs(nb_base), _collect_motifs(nb_head),
+        nav_base_path=nb_path, nav_base_ref=base_ref,
+    ))
 
     base_total = sum(_norm_len(s) for _, _, s in base_md)
     head_total = sum(_norm_len(s) for _, _, s in head_md)
@@ -1174,8 +1294,13 @@ def main(argv: list[str] | None = None) -> int:
                     print(f"  - {f['kind']}: '{f['motif']}' disparu "
                           f"(base={f['before_count']})")
                 elif f["kind"] == "LOST_NAV_LINKS":
-                    print(f"  - {f['kind']}: {f['delta']} lien(s) de navigation en moins "
-                          f"({f['before_count']} -> {f['after_count']})")
+                    print(f"  - {f['kind']}: {f['delta']} cible(s) de navigation "
+                          f"vivante(s) perdue(s) ({f['before_count']} -> "
+                          f"{f['after_count']} cibles distinctes) : "
+                          f"{', '.join(f.get('lost_targets', []))}")
+                    if f.get("repaired_dead_targets"):
+                        print(f"      (cibles mortes en base reparées, ignorées : "
+                              f"{', '.join(f['repaired_dead_targets'])})")
                 elif f["kind"] == "FRONTMATTER_COST_DIVERGENCE":
                     print(f"  - cell {f['cell_idx']} {f['kind']}: le bloc cost du "
                           f"frontmatter a disparu sans migration equivalente ; "
