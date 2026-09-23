@@ -236,18 +236,38 @@ def _is_generated_artifact(nb_path: Path, nb_head: dict | None = None) -> bool:
 # Aliases EN des motifs structurants : en mode traduction, un motif FR disparu
 # mais present sous sa forme anglaise dans le rendu N'EST PAS une perte --
 # c'est une traduction fidele (Objectif -> Objective, #13548).
+def _anchored_motif(word: str) -> "re.Pattern[str]":
+    """Motif structurant ancre a une forme de section, jamais a la prose (#17473).
+
+    Trois formes comptent : un titre markdown qui contient le mot
+    (``## Objectifs pedagogiques``), un callout en gras qui commence par le mot
+    (``**Navigation** : ...``, ``> **Prerequis :**``), et une etiquette en debut
+    de ligne, sous ``>`` ou non (``> Prerequis conseilles : [ICT-0](...)``).
+    Le mot dans une phrase (« sert de prerequis ») ne compte plus : il faisait
+    naitre un LOST_MOTIF bloquant quand une cellule de prose disparaissait, et
+    masquait une vraie section supprimee des qu'une phrase ajoutee ailleurs
+    contenait le mot.
+    """
+    return re.compile(
+        rf"^[ \t]*#{{1,6}}[^\n]*\b{word}\b"
+        rf"|\*\*[ \t]*{word}\b[^*\n]*\*\*"
+        rf"|^[ \t]*(?:>[ \t]*)*{word}\b[^\n:]{{0,30}}:",
+        re.I | re.M,
+    )
+
+
 MOTIF_TRANSLATION_ALIASES = {
-    "Navigation": re.compile(r"\bNavigation\b", re.I),  # identique en EN
-    "Objectif(s)": re.compile(r"\bObjectives?\b", re.I),
-    "Prerequis": re.compile(r"\bPrerequisites?\b", re.I),
+    "Navigation": _anchored_motif("Navigation"),  # identique en EN
+    "Objectif(s)": _anchored_motif("Objectives?"),
+    "Prerequis": _anchored_motif("Prerequisites?"),
     "Enonce": re.compile(r"^#{1,6}\s*(?:Statement|Problem|Task)\b", re.I | re.M),
 }
 
 # Motifs structurants dont la disparition est un signal fort (design #3 #8655).
-# Notes : "Navigation" / "Objectif(s)" / "Prerequis" sont matches aussi bien en
-# titre (`## Navigation`) qu'en callout (`> **Navigation :**`) car la regex
-# cible le mot-cle hors-marqueurs. Les liens de navigation sont comptes
-# collectivement (perte = N liens disparus).
+# Notes : "Navigation" / "Objectif(s)" / "Prerequis" sont matches en titre
+# (`## Navigation`), en callout (`> **Navigation :**`) ou en etiquette de debut
+# de ligne, jamais dans la prose (`_anchored_motif`, #17473). Les liens de
+# navigation sont comptes collectivement (perte = N liens disparus).
 #
 # La cible comptee inclut le `README.md` de serie (`[Index](README.md)`,
 # `[Index](../README.md)`) au meme titre qu'un notebook. Compter les seules
@@ -260,9 +280,9 @@ MOTIF_TRANSLATION_ALIASES = {
 # reste la mesure du nombre de liens de navigation presents).
 NAV_LINK_RE = re.compile(r"\[[^\]]+\]\([^)]*(?:\.ipynb|README\.md)\)")
 MOTIF_PATTERNS = [
-    (re.compile(r"\bNavigation\b", re.I), "Navigation"),
-    (re.compile(r"\bObjectifs?\b", re.I), "Objectif(s)"),
-    (re.compile(r"\bPr[eé]requis\b", re.I), "Prerequis"),
+    (_anchored_motif("Navigation"), "Navigation"),
+    (_anchored_motif("Objectifs?"), "Objectif(s)"),
+    (_anchored_motif("Pr[eé]requis"), "Prerequis"),
     (re.compile(r"^#{1,6}\s*Enonc[eé]", re.I | re.M), "Enonce"),
 ]
 
