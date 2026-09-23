@@ -31,6 +31,13 @@ import pandas as pd
 import torch
 import torch.nn as nn
 
+from bias_metrics import (  # Epic #1454: shared organ (#14363) + 4-state machine (#14388)
+    _aggregate_state,
+    _dm_centered_mse,
+    _is_beats,
+    _is_beaten,
+    _mse_decomposition,
+)
 from dm_test import dm_verdict
 from har_model import walk_forward_har
 from intraday_loader import (
@@ -335,10 +342,47 @@ def _mse_without_bias(errors: np.ndarray) -> float:
     return float(np.mean((errors - np.mean(errors)) ** 2))
 
 
+def _aligned_errors(
+    dl_forecasts: pd.Series,
+    dl_targets: pd.Series,
+    har_forecasts: pd.Series,
+    har_targets: pd.Series,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Date-align the DLinear and HAR OOS error series (inner join).
+
+    Lesson #12684: the two walk-forwards emit their forecasts on their own
+    date indexes; the centered-DM leg compares errors of the SAME days, so the
+    join must happen on dates, never positionally.
+    """
+    dl_err = (dl_forecasts - dl_targets).dropna()
+    har_err = (har_forecasts - har_targets).dropna()
+    joined = pd.concat(
+        [dl_err.rename("dl"), har_err.rename("har")], axis=1, join="inner",
+    ).dropna()
+    return joined["dl"].to_numpy(), joined["har"].to_numpy()
+
+
 def _edge_pct(baseline_mse: float, model_mse: float) -> float:
     if not np.isfinite(baseline_mse) or baseline_mse <= 0:
         return float("nan")
     return float((baseline_mse - model_mse) / baseline_mse * 100)
+
+
+def _nanmean_or_none(values: list[float]) -> float | None:
+    """Moyenne ignorant les NaN, ou `None` si AUCUNE valeur n'a ete mesuree.
+
+    `np.nanmean` sur une liste vide ou entierement NaN emet
+    « Mean of empty slice » et rend `nan` -- que `json.dump` ecrit `NaN`,
+    hors specification JSON. Le cas n'est pas theorique : les cles de biais
+    de la jambe brute sont absentes quand `--debias` est desactive, donc le
+    repli `r.get(..., nan)` fait une liste entierement NaN. `None` (null
+    JSON) dit exactement la meme chose -- non mesure -- sans le bruit ni
+    l'invalidite.
+    """
+    arr = np.asarray(values, dtype=float)
+    if arr.size == 0 or bool(np.all(np.isnan(arr))):
+        return None
+    return float(np.nanmean(arr))
 
 
 def aggregate_verdicts(rows: list[dict]) -> list[dict]:
@@ -402,6 +446,31 @@ def aggregate_verdicts(rows: list[dict]) -> list[dict]:
         else:
             verdict_sc = "INCONCLUSIVE"
 
+        # --- four-state machine on both legs (Epic #1454, unification #14388) --
+        # The raw leg counts `dm_verdict` (DM vs RAW HAR errors) -- the leg the
+        # published doc tables carry. The de-biased leg counts `dm_centered_*`
+        # (DM on date-aligned, self-centered errors: pure variance differential).
+        # Both share `_aggregate_state`; the raw call passes no parent leg.
+        raw_verdicts = [r.get("dm_verdict", "UNKNOWN") for r in seeds_rows]
+        n_beats_raw = sum(1 for v in raw_verdicts if _is_beats(v))
+        n_beaten_raw = sum(1 for v in raw_verdicts if _is_beaten(v))
+        dm_p_median_raw = float(np.nanmedian(
+            [r.get("dm_pvalue", 1.0) for r in seeds_rows]
+        ))
+        centered_verdicts = [r.get("dm_centered_verdict", "UNKNOWN") for r in seeds_rows]
+        n_beats_centered = sum(1 for v in centered_verdicts if _is_beats(v))
+        n_beaten_centered = sum(1 for v in centered_verdicts if _is_beaten(v))
+        dm_centered_p_median = float(np.nanmedian(
+            [r.get("dm_centered_pvalue", 1.0) for r in seeds_rows]
+        ))
+        aggregate_verdict_4state = _aggregate_state(
+            n_beats_raw, n_beaten_raw, n_seeds, dm_p_median_raw,
+        )
+        aggregate_verdict_debiased = _aggregate_state(
+            n_beats_centered, n_beaten_centered, n_seeds, dm_centered_p_median,
+            n_beats_parent=n_beats_raw,
+        )
+
         results.append({
             "coin": coin,
             "horizon": h,
@@ -421,6 +490,25 @@ def aggregate_verdicts(rows: list[dict]) -> list[dict]:
             "mean_dm_pvalue": float(np.nanmean(p_values)),
             "verdict": agg_verdict,
             "verdict_sc": verdict_sc,
+            # --- four-state machine + bias aggregates (Epic #1454) -------------
+            "n_beats_raw": n_beats_raw,
+            "n_beaten_raw": n_beaten_raw,
+            "dm_p_median_raw": dm_p_median_raw,
+            "aggregate_verdict_4state": aggregate_verdict_4state,
+            "n_beats_centered": n_beats_centered,
+            "n_beaten_centered": n_beaten_centered,
+            "dm_centered_p_median": dm_centered_p_median,
+            "aggregate_verdict_debiased": aggregate_verdict_debiased,
+            "mean_dlinear_bias_oos": _nanmean_or_none(
+                [r.get("dlinear_bias_oos", float("nan")) for r in seeds_rows]
+            ),
+            "mean_har_bias_oos": _nanmean_or_none(
+                [r.get("har_bias_oos", float("nan")) for r in seeds_rows]
+            ),
+            "mean_har_bias_share_of_mse": _nanmean_or_none(
+                [r.get("har_bias_share_of_mse", float("nan")) for r in seeds_rows]
+            ),
+            "mean_edge_debiased_pct": mean_debiased_edge_pct,
         })
 
     return results
@@ -570,6 +658,23 @@ def _eval_one_coin(
                 }
 
             dl_debiased_mse = _mse_without_bias(dl_errors)
+
+            # --- bias report + precision leg (Epic #1454, pattern M5/#14359) --
+            # The raw DM below answers "which model has the lower loss", NOT
+            # "which model is more precise": `MSE = bias^2 + variance` lets an
+            # edge be carried by the baseline being miscalibrated (#12745
+            # measured `har_bias_oos = -0.227` on BTC against this same HAR).
+            # Three additions, none replacing a published field:
+            #   * MSE decomposition per model (signed bias already persisted),
+            #   * the centered-DM leg (pure variance differential, #10961),
+            #   * the share of HAR's MSE that is bias^2, read by the doc table.
+            dl_decomp = _mse_decomposition(dl_errors)
+            har_decomp_raw = _mse_decomposition(har_errors)
+            dl_al, har_al = _aligned_errors(
+                dl_forecasts, dl_targets, har_forecasts, har_targets,
+            )
+            dm_centered = _dm_centered_mse(dl_al, har_al, horizon=h)
+
             # Per-observation persistence (lesson #12684): the out-of-bias
             # (recentred error) DM re-validation needs the forecast series,
             # not only aggregates. DL and HAR series are persisted each on
@@ -596,6 +701,21 @@ def _eval_one_coin(
                 "mse_reduction_pct": _edge_pct(har_mse, dl_mse),
                 "edge_debiased_pct": _edge_pct(har_debiased_mse, dl_debiased_mse),
                 "calibrated_edge_pct": _edge_pct(har_calibrated_mse, dl_mse),
+                # --- bias decomposition + centered-DM leg (Epic #1454) --------
+                "dlinear_bias_sq": dl_decomp["bias_sq"],
+                "dlinear_variance": dl_decomp["variance"],
+                "har_bias_sq_raw": har_decomp_raw["bias_sq"],
+                "har_variance_raw": har_decomp_raw["variance"],
+                "har_bias_share_of_mse": (
+                    har_decomp_raw["bias_sq"] / har_decomp_raw["mse"]
+                    if np.isfinite(har_decomp_raw["mse"]) and har_decomp_raw["mse"] > 0
+                    else float("nan")
+                ),
+                "dm_centered_stat": dm_centered["dm_stat"],
+                "dm_centered_pvalue": dm_centered["dm_pvalue"],
+                "dm_centered_verdict": dm_centered["dm_verdict"],
+                "dm_centered_mean_loss_diff": dm_centered.get("mean_loss_diff", float("nan")),
+                "n_aligned_centered": int(len(dl_al)),
                 "dl_dates": [d.strftime("%Y-%m-%d") for d in dl_targets.index],
                 "dl_pred": [float(x) for x in dl_forecasts.values],
                 "dl_target": [float(x) for x in dl_targets.values],

@@ -113,9 +113,12 @@ on:
   # run-created -> job-started 25-136 s on the last four successes -- so no
   # re-route is warranted today: `coursia-waiter` stays forbidden (deadlock:
   # the waiters are held by the aggregators this sweep must unblock),
-  # GitHub-hosted stays out (mandat: consume the containerized runs; #12728
-  # measured a 1.6-2.2 h hosted queue here), and a dedicated pool is the
-  # material lever #15770 leaves to arbitration.
+  # GitHub-hosted was ruled out on a measurement, not on a mandate: #12728
+  # measured a 1.6-2.2 h hosted queue HERE, on its own window. That premise has
+  # since inverted -- the saturated queue today is ours, not GitHub's -- so the
+  # reasoning of #12728, applied to current conditions, concludes the other way
+  # (#17397). A dedicated pool is the material lever #15770 leaves to
+  # arbitration.
   # Heartbeat independent of the `schedule` event class -- the SAME remedy
   # #15332 gave the observer (pr-gate-sweep-health-advisory.yml), which this
   # file never received. The asymmetry was backwards: the heartbeat went to the
@@ -202,31 +205,49 @@ concurrency:
 jobs:
   sweep:
     name: Re-aggregate stale PR gate verdicts
-    # Routed to the self-hosted Linux pool (#14201 PART 2, #12728 acceptance) :
-    # this sweep is a 2-minute job that waited 1.6-2.2 h for a GitHub-hosted
-    # slot (98-99 % queue, measured on 30 runs, see #12728) and was cancelled
-    # 19/30 by its own successor -- the organ went quiet precisely under the
-    # congestion it exists to absorb. The coursia-linux pool is dedicated
-    # capacity (mandat user : consommer les runs conteneurises, ce sont les
-    # GitHub-hosted qui coutent), so the queue wait collapses at the source.
-    # Coupling assumed: a dead supervisor now starves this sweep too -- covered
-    # by TWO independent observers, linux-runner-starvation-advisory.yml
-    # (#14263, extinction/starvation) and pr-gate-sweep-health-advisory.yml
-    # (last successful sweep > 1 h, runs on ubuntu-latest so it survives what
-    # it watches).
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
-    timeout-minutes: 15
+    # Routing history: self-hosted coursia-linux from #14201 PART 2 to
+    # 2026-09-22, then back to GitHub-hosted (#17444). Two measurements, in
+    # order:
+    #   - #12728 (routing IN): as a GitHub-hosted job it waited 1.6-2.2 h for
+    #     a slot (98-99 % queue, 30 runs) and was cancelled 19/30 by its own
+    #     successor.
+    #   - 2026-09-22 19:33Z (routing OUT, ai-01): 15/15 runs `cancelled` on
+    #     the coursia pool -- the sweep starves on the SAME saturated parc it
+    #     is meant to unblock, dying silently (no rollup ever goes red for a
+    #     cancelled cron). The organ must survive what it watches: its own
+    #     health advisory already assumed ubuntu-latest. The container-run
+    #     mandate stays the rule for every OTHER workflow that can afford
+    #     the wait.
+    runs-on: ubuntu-latest
+    # 25 min, contre 15 jusqu'ici (#15770, datapoint Hermes 2026-09-21 ;
+    # garde au rebasage #17470 : le cout mesure ci-dessous est une propriete
+    # du POOL OUVERT, pas du runner -- il voyage avec le sweep sur
+    # ubuntu-latest). Le plafond de 900 s etait FRANCHI a chaque passage :
+    # cout mesure par etape --
+    #   etape 3 « Find stale verdicts and re-run their gate » : 10m55s-11m38s
+    #   etape 5 « Flag PRs whose PR gate never ran »          :  3m05s-4m15s
+    #   etapes 4/6/7 : quelques secondes
+    # soit ~15,5-16 min de travail contre un plafond de 15 min. Les deux runs
+    # 35600494259 et 35602445799 montrent l'etape 5 `cancelled` en plein vol :
+    # la population « gate absent » cesse alors d'etre etiquetee -- la raison
+    # meme de son repli dans ce sweep (#14477). Un plafond sous le cout mesure
+    # du travail n'est pas un garde-fou, c'est le tueur de l'organe.
+    #
+    # Le cout des etapes 3 et 5 croit avec la taille du pool ouvert (307 PRs
+    # mesurees le 21/09) : c'est pourquoi le levier de fond (un appel API en
+    # moins par PR non candidate) est traite dans l'etape 3 elle-meme, et le
+    # plafond ne fait que rendre la marge explicite. Re-mesurer apres fusion :
+    # l'etape 3 doit redescendre nettement sous ses 11 min.
+    timeout-minutes: 25
     steps:
       - name: Bootstrap gh into the persistent toolcache
-        # The coursia-linux image (#14171: ubuntu:24.04 + python3/jq/curl/git)
-        # deliberately does not ship gh, and this sweep is gh-driven. The
-        # binary is installed ONCE into the toolcache volume: the volume
-        # persists across ephemeral containers -- that is its purpose -- so
-        # every sweep after the first reuses it. No setup-python / pip here on
-        # purpose either: the image's python3 suffices, which keeps this sweep
-        # immune to the RUNNER_TOOL_CACHE bug class that broke Python tooling
-        # on mangled generations (2026-09-02) -- the bootstrap hardcodes the
-        # mount point and its worst case is a re-download, never a break.
+        # ubuntu-latest ships gh, python3, jq, curl and git preinstalled, so
+        # this step's fast path ("command -v gh") is the normal one and the
+        # toolcache bootstrap below is dead code kept for reproducibility on
+        # a runner image that would drop gh. No setup-python / pip here on
+        # purpose: python3 suffices, which keeps this sweep immune to the
+        # RUNNER_TOOL_CACHE bug class that broke Python tooling on mangled
+        # generations (2026-09-02).
         env:
           GH_BOOTSTRAP_VERSION: "2.80.0"
         run: |
@@ -332,7 +353,22 @@ jobs:
             # `|| WFMAP=''`: an unguarded assignment failure would kill the
             # step under `bash -e` BEFORE the empty-map fallback below runs
             # (same silent death as run 35188299290, zero runtime output).
-            WFMAP=$(gh api "repos/$REPO/actions/runs?head_sha=$SHA&per_page=100" --jq '[.workflow_runs[] | {key:(.id|tostring), value:.workflow_id}] | from_entries' 2>/dev/null) || WFMAP=''
+            #
+            # #15770 -- cet appel n'est fait QUE si la PR porte une jambe
+            # `PR gate`. La carte n'est consommee que par `_fold_key` (repli de
+            # repliement des runs jumeaux, #11808), et le selecteur `continue`
+            # AVANT de l'utiliser des qu'il n'y a aucune jambe `PR gate` -- donc
+            # l'appel est du travail mort pour toute la population non
+            # candidate, qui est la majorite du pool ouvert. C'est le levier de
+            # cout de cette etape (mesure 2026-09-21 : etape 3 = 11 min pour
+            # ~100 PRs x 1-2 appels REST, sur un pool ouvert de 307).
+            # Un payload dont l'appel a echoue ne porte pas de nom de check :
+            # la carte reste vide, exactement le comportement d'avant.
+            if printf '%s' "$BODY" | grep -q '"name":"PR gate"'; then
+              WFMAP=$(gh api "repos/$REPO/actions/runs?head_sha=$SHA&per_page=100" --jq '[.workflow_runs[] | {key:(.id|tostring), value:.workflow_id}] | from_entries' 2>/dev/null) || WFMAP=''
+            else
+              WFMAP=''
+            fi
             if [ -z "${WFMAP:-}" ]; then WFMAP='{}'; fi
             printf '{"number":%s,"sha":"%s","fork":%s,"checks":%s,"workflows":%s}\n' "$NUM" "$SHA" "${FORK:-false}" "$BODY" "$WFMAP" >> /tmp/runs.jsonl
           done < /tmp/openprs.txt
@@ -357,7 +393,7 @@ jobs:
             --jq '[.workflows[] | {key:(.id|tostring), value:.name}] | from_entries' \
             > /tmp/wfnames.json 2>/dev/null || echo '{}' > /tmp/wfnames.json
 
-          python - <<'PY' > /tmp/candidates.txt
+          python3 - <<'PY' > /tmp/candidates.txt
           import json, os, re, sys
           from datetime import datetime, timezone
 
@@ -926,7 +962,7 @@ jobs:
           # pose). The remediation is now CAUSE-DEPENDENT (#14477): a PR in
           # conflict with main gets the conflict remedy, NEVER the empty
           # re-push (measured inert on #14220).
-          python scripts/pr_gate_missing.py --repo "$REPO" $DRY || {
+          python3 scripts/pr_gate_missing.py --repo "$REPO" $DRY || {
             echo "::warning::gate-absent sweep failed -- nothing labeled this pass"
             exit 0
           }
@@ -953,7 +989,7 @@ jobs:
             exit 0
           }
 
-          RUN_JSON="$RUN" JOBS_JSON="$JOBS" python - <<'PY'
+          RUN_JSON="$RUN" JOBS_JSON="$JOBS" python3 - <<'PY'
           import json
           import os
           from datetime import datetime, timezone
@@ -1030,7 +1066,7 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           set -uo pipefail
-          python scripts/ci/pr_gate_stale_sweep_tir.py \
+          python3 scripts/ci/pr_gate_stale_sweep_tir.py \
             --repo "$REPO" \
             --workflow-file pr-gate-stale-sweep.yml \
             --window-hours 168 \
