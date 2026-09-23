@@ -64,6 +64,16 @@ jobs:
 
     - name: Set up KaTeX leg
       run: |
+        # La classe coursia-linux n'expose pas npm dans PATH (mesure Hermes,
+        # run 35820361645 : exit 127 sur 2 runners distincts) -- la jambe KaTeX
+        # se SAUTE alors en etant annoncee par le detecteur lui-meme
+        # ("[KATEX] node+katex non resolubles -- jambe SAUTEE, verdict partiel"),
+        # jamais en echec du job (#14849 : une jambe sautee n'est pas verte,
+        # mais elle n'est pas rouge non plus).
+        if ! command -v npm >/dev/null 2>&1; then
+          echo "::notice::npm absent du runner -- jambe KaTeX SAUTEE, verdict partiel (classes statiques seules)."
+          exit 0
+        fi
         npm install katex --no-save --silent
         echo "NODE_PATH=$PWD/node_modules" >> "$GITHUB_ENV"
 
