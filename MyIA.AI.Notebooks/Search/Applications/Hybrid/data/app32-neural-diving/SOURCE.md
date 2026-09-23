@@ -7,9 +7,9 @@ coloration de graphe.
 | Champ | Valeur |
 |---|---|
 | **Travail original** | *Solving Mixed Integer Programs Using Neural Networks* — Nair, V., Bartunov, S., Gimeno, F., et al. |
-| **Publication** | Nature 607 (2021) |
+| **Publication** | arXiv:2012.13349 (v3, juillet 2021) |
 | **Gisement partagé** | `G:\Mon Drive\MyIA\IA\Bibliographie IA\Search\2021 - Nair et al - Solving Mixed Integer Programs Using Neural Networks.pdf` |
-| **Verdict audité** | médiane des branches 790 → 880 (dégradation ≈ 10 %) ; égarements de la recherche (nA jusqu'à 3972) majoritairement ramenés ≤ 900 ; 40-45 % des arêtes du hint en conflit avec les contraintes |
+| **Verdict audité** | run déterministe (`num_workers = 1`) : médiane des branches 2829 → 2325 (−18 %) ; **25/25 instances améliorées**, gain relatif 8-28 % croissant avec la dureté (ρ = 0,60) ; ≈ 49 % des arêtes du hint en conflit avec l'adjacence sans annuler le gain net |
 
 ## Ce qui est attribué
 
