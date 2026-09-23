@@ -155,7 +155,7 @@ Pipeline d'audit qualité et de **matrice de coût** (EPIC #8056) + audit séman
 | `check_dataset_registry.py` | Cohérence registre datasets (#8055 tr.2) : verdicts `DRIFT` / `MISSING` / `CARD_REQUIRED` / `OK` (litmus : EXTRACT, pas DECIDE), sortie YAML |
 | `check_denominators.py` | Détecteur léger de divergence entre 3 sources (disque / forensic / catalogue), #8050 ; `--strict` → exit 1 sur drift |
 | `check_editorial_review.py` | Cohérence registre editorial-review (YAML ↔ catalogue) : 6 validations dont `reviewer != owner_logique`, `evidence_pr` en état `MERGED` |
-| `check_lean_notebook_sorry.py` | Tally `sorry` par notebook Lean (#8051, kernel `lean4-wsl`) : strip commentaires puis compte `sorry` word-bounded — alimente l'axe scientific_review |
+| `check_lean_notebook_sorry.py` | Tally `sorry` par notebook Lean (#8051, kernel `lean4-wsl`) : strip commentaires puis compte `sorry` word-bounded. **N'alimente plus l'axe `scientific_review`** depuis #14831 : l'echelle mesure le risque du contenu, pas la rigueur formelle, et le compte de `sorry` ne concerne qu'une poignee de notebooks. `sorry_free` reste rendu comme preuve a cote |
 | `extract_claims_vs_outputs.py` | Audit sémantique cellule-par-cellule (#8052 P0) : compare prose markdown (claims) vs sorties code (outputs) ; 5 classes de mismatch |
 
 ### Populateurs (écrivent `nb.metadata['cost']`)
