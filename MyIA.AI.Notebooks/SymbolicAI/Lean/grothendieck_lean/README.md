@@ -113,7 +113,7 @@ La formalisation couvre **83 modules leaf** + **1 umbrella** `Grothendieck.lean`
 
 | Partie | Fichier | `_en` | Contenu | Lignes |
 |--------|---------|-------|---------|--------|
-| racine | `Grothendieck.lean` | (aucun — FR-only) | **Racine umbrella** (imports-only + commentaire d'invariant FR-only) ; importe **chaque** leaf FR (82) et **jamais** un sibling `_en` (invariant #16154 ; les 83 siblings `_en` restent compilés par les `globs` du lakefile) ; `ExceptionalDirect` importé c.2026-08-15, **fermeture #11286** | 291 |
+| racine | `Grothendieck.lean` | (aucun — FR-only) | **Racine umbrella** (imports-only + commentaire d'invariant FR-only) ; importe **chaque** leaf FR (83) et **jamais** un sibling `_en` (invariant #16154 ; les 83 siblings `_en` restent compilés par les `globs` du lakefile) ; `ExceptionalDirect` importé c.2026-08-15, **fermeture #11286** | 291 |
 | 1 | `Grothendieck/CategoryAndSites.lean` | `CategoryAndSites_en.lean` | Cribles, topologies de Grothendieck (triviale/discrète/dense), trois axiomes | 243 |
 | 2 | `Grothendieck/SchemesTour.lean` | `SchemesTour_en.lean` | Type des schémas, foncteur Spec, Γ, `homeoOfIso`, pleinement fidèle | 196 |
 | 3 | `Grothendieck/ZariskiSite.lean` | `ZariskiSite_en.lean` | Prétopologie de Zariski, théorème-pont `zariskiTopology_eq`, sous-canonique | 139 |
@@ -273,7 +273,7 @@ Quatre frictions réelles, documentées à la source :
 
 1. **Contrainte d'anti-régression auto-imposée** : chaque module complet à la création (0 `sorry`, 0 axiome ajouté) — le plafond du lake est borné par ce que Mathlib expose déjà, pas par un choix de sous-formalisation. C'est une friction **de périmètre** : quand un concept manque dans Mathlib, il est soit reconstruit localement, soit renvoyé en attente.
 2. **Frontière Mathlib vivante** : `Classifier.lean:190` — `ElementaryTopos` « pas encore disponible dans cette révision » : la borne du lake est mobile avec Mathlib.
-3. **Dette de raccord résolue** : `#11286` — import umbrella de `ExceptionalDirect` **CLOSED 2026-08-16** (PR #11294) : un module orphelin depuis #10357, relié en 6 semaines. L'umbrella importe chaque leaf FR (83) et jamais un `_en` (#16154), tandis que le `globs` du lakefile assure aussi la compilation des 82 siblings `_en`.
+3. **Dette de raccord résolue** : `#11286` — import umbrella de `ExceptionalDirect` **CLOSED 2026-08-16** (PR #11294) : un module orphelin depuis #10357, relié en 6 semaines. L'umbrella importe chaque leaf FR (83) et jamais un `_en` (#16154), tandis que le `globs` du lakefile assure aussi la compilation des 83 siblings `_en`.
 4. **Friction i18n historique résolue** : l'absence d'un sibling `_en` pour `PullbackFunctor` (comblée depuis c.2026-08-18, cf §Build & état) — la paire bilingue est une contrainte de maintenance vérifiable par `scripts/lean/check_i18n_siblings.py`.
 
 ### Point 7 — chemin de découverte (comblement)
