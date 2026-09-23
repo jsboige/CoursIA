@@ -1,0 +1,96 @@
+name: Notebook Math Render
+
+# #17380 (myia-po-2023:CoursIA, 2026-09-23): user review of IIT-06 reported
+# "pas mal de syntaxe mathematique n'est pas interpretee" in markdown
+# paragraphs. Firsthand measurement: the notebook itself is CLEAN (62/62
+# scopes render under KaTeX 0.18, zero orphan dollars, zero pure-LaTeX
+# delimiters) -- the non-rendering came from the viewer, not the notebook.
+# But the corpus-wide question stands: which notebooks carry math that NO
+# mainstream viewer (Jupyter MathJax, GitHub, VS Code/KaTeX) renders as
+# written?
+#
+# This guard (ADVISORY, non-blocking -- the coordinateur decides):
+#   - scans every notebook touched by the PR with
+#     scripts/notebook_tools/check_math_render.py (4 classes:
+#     LATEX-PURE-DELIMS \(\)/\[\], ODD-DOLLARS per paragraph,
+#     NUDE-LATEX outside scopes, KATEX-UNRENDERABLE scopes);
+#   - the KaTeX leg installs katex via npm (no-save) and is ACTIVE in CI;
+#     when node+katex are missing the detector says the leg is SKIPPED --
+#     a skipped leg is never a green one (#14849);
+#   - on occurrences: ::warning:: annotations (one per defect) + summary,
+#     exit 0 -- advisory organ, the PR gate does not fail;
+#   - on detector error (exit 2): ::warning:: NAMING the failure -- never
+#     a silent pass;
+#   - runs its unit tests (positive AND negative controls).
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, edited, reopened]
+    paths:
+      - '**.ipynb'
+      - 'scripts/notebook_tools/check_math_render.py'
+      - '.github/workflows/notebook-math-render.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/notebook_tools/check_math_render.py'
+      - '.github/workflows/notebook-math-render.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: notebook-math-render-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  math-render:
+    # Route vers la jambe Linux auto-hebergee (cf notebook-latex-control-chars
+    # #14859) : garde Python pur + jambe KaTeX npm, sans secret ni GITHUB_TOKEN.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    timeout-minutes: 10
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Set up KaTeX leg
+      run: |
+        npm install katex --no-save --silent
+        echo "NODE_PATH=$PWD/node_modules" >> "$GITHUB_ENV"
+
+    - name: Scan notebooks touched by PR (advisory)
+      env:
+        BASE: ${{ github.event.pull_request.base.sha }}
+        HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+      run: |
+        set -uo pipefail
+        if [ -z "$BASE" ] || [ "$BASE" = "$HEAD" ]; then
+          echo "No PR base SHA available; whole-repo scan (informational)."
+          python scripts/notebook_tools/check_math_render.py
+          exit 0
+        fi
+        # Detector exit codes: 0 clean, 1 occurrences (advisory here), 2 error.
+        if python scripts/notebook_tools/check_math_render.py --pr-diff "$BASE" "$HEAD"; then
+          echo "Aucune syntaxe math non rendable dans les notebooks touches."
+        else
+          RC=$?
+          if [ "$RC" = "2" ]; then
+            echo "::warning::Detecteur math-render en ERREUR (exit 2 -- notebook illisible ou args invalides) : verdict UNKNOWN, voir le log ci-dessus (#14849)."
+            exit 1
+          fi
+          echo "::warning::Syntaxe math non rendable dans les notebooks touches (advisory #17380) : corriger la cause (delimiteurs, parite des \$, portee KaTeX) -- details dans le log ci-dessus."
+          exit 0
+        fi
+
+    - name: Run unit tests
+      run: |
+        python -m unittest scripts.tests.test_check_math_render -v

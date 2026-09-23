@@ -393,6 +393,23 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   tranche 1 #13378). Rollback = revert de la PR (l'entree disparait de
     #   l'allowlist).
     "notebook-latex-control-chars.yml",
+    # #17380 (owner myia-po-2023:CoursIA) : garde advisory sur la syntaxe
+    #   math non rendable des cellules markdown -- 4 classes (delimiteurs
+    #   LaTeX purs \(..\)/\[..\], dollars impairs par paragraphe, commandes
+    #   LaTeX nues hors scopes, scopes que KaTeX refuse). Reponse au
+    #   commentaire user du 2026-09-22 sur IIT-06 : le notebook mesurait
+    #   propre (62/62 scopes rendables), la cause etait le visualiseur --
+    #   l'organe rend la question mesurable a l'echelle du corpus.
+    #   pull_request/push filtrant **.ipynb + detecteur + workflow ; jambe
+    #   KaTeX active en CI via npm install katex --no-save (node requis par
+    #   le runner ephemeral, saut dite a voix haute sinon, #14849) ;
+    #   occurrences = ::warning:: + exit 0 (jamais bloquant), exit 2 =
+    #   warning UNKNOWN nomme + exit 1. Aucun secret, aucun GITHUB_TOKEN
+    #   cote job, garde same-repo parenthesee au niveau job (#13874).
+    #   Runner = jambe Linux containerisee (LINUX_RUNNER_LABELS, meme
+    #   profil que notebook-latex-control-chars). Rollback = revert de la
+    #   PR (l'entree disparait de l'allowlist).
+    "notebook-math-render.yml",
     # #14532 item 1 (owner myia-po-2026:CoursIA-2) : garde PR pure-Python sur
     #   les disparitions de section au plan des notebooks pedagogiques.
     #   workflow_dispatch-only ce cycle (anti-panic-deploiement, idem

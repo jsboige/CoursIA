@@ -1,0 +1,118 @@
+"""Unit tests for check_math_render.py (positive AND negative controls).
+
+Lesson #14859: a detector is validated by its false negatives -- write the
+forms it must catch and check it catches them, and the forms it must spare.
+"""
+
+import sys
+import unittest
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "notebook_tools"))
+
+import check_math_render as m  # noqa: E402
+
+STATIC = {"with_katex": False}
+
+
+def kinds(source):
+    defects, _ = m.find_defects(source, **STATIC)
+    return {d["kind"] for d in defects}
+
+
+class TestLatexPureDelims(unittest.TestCase):
+    def test_inline_paren_detected(self):
+        self.assertIn("LATEX-PURE-DELIMS", kinds(r"le flux \(\Phi_{DM}\) croit"))
+
+    def test_block_bracket_detected(self):
+        self.assertIn("LATEX-PURE-DELIMS", kinds(r"formule \[EI(A \to B)\] directe"))
+
+    def test_delim_in_backtick_spared(self):
+        self.assertNotIn("LATEX-PURE-DELIMS", kinds("utilise `\\(x\\)` en LaTeX pur"))
+
+    def test_dollar_scope_spared(self):
+        self.assertNotIn("LATEX-PURE-DELIMS", kinds(r"le flux $\Phi$ croit"))
+
+
+class TestOddDollars(unittest.TestCase):
+    def test_odd_dollar_paragraph(self):
+        src = "prix : 5$ et $\\Phi$ puis\n\nun $ orphelin"
+        self.assertIn("ODD-DOLLARS", kinds(src))
+
+    def test_even_dollars_spared(self):
+        self.assertNotIn("ODD-DOLLARS", kinds(r"$a$ et $b$ dans le meme paragraphe"))
+
+    def test_display_block_spared(self):
+        self.assertNotIn("ODD-DOLLARS", kinds("$$x = 1$$"))
+
+    def test_dollar_in_backtick_spared(self):
+        self.assertNotIn("ODD-DOLLARS", kinds("la commande `$FILE` vaut 5"))
+
+    def test_odd_count_confined_to_paragraph(self):
+        src = "$a$ pair ici\n\nparagraphe $ orphelin\n\n$a$ redevient $b$"
+        self.assertIn("ODD-DOLLARS", kinds(src))
+
+
+class TestNudeLatex(unittest.TestCase):
+    def test_nude_command_detected(self):
+        self.assertIn("NUDE-LATEX", kinds(r"le \Phi du systeme"))
+
+    def test_command_in_scope_spared(self):
+        self.assertNotIn("NUDE-LATEX", kinds(r"le $\Phi$ du systeme"))
+
+    def test_command_in_backtick_spared(self):
+        self.assertNotIn("NUDE-LATEX", kinds(r"la commande `\frac{a}{b}` en code"))
+
+    def test_known_command_word_boundary(self):
+        # "\top" n'est pas dans la liste ; "\to" l'est -- frontiere de mot
+        self.assertIn("NUDE-LATEX", kinds(r"flèche A \to B"))
+
+    def test_lone_backslash_spared(self):
+        self.assertNotIn("NUDE-LATEX", kinds("un antislash \\ seul"))
+
+
+class TestScanNotebook(unittest.TestCase):
+    def _nb(self, tmp, cells):
+        import json
+        nb = {"cells": [{"cell_type": t, "source": s, "id": f"c{i}"}
+                        for i, (t, s) in enumerate(cells)]}
+        p = tmp / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        return p
+
+    def test_markdown_only_code_cell_spared(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            p = self._nb(Path(d), [("code", r"x = '\Phi'  # pas du markdown")])
+            self.assertEqual(m.scan_notebook(p, with_katex=False), [])
+
+    def test_defect_carries_cell_index(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            p = self._nb(Path(d), [
+                ("markdown", "propre"),
+                ("markdown", r"un \(\Phi\) nu"),
+            ])
+            defects = m.scan_notebook(p, with_katex=False)
+            self.assertEqual(len(defects), 1)
+            self.assertEqual(defects[0]["cell_index"], 1)
+
+
+class TestExitContract(unittest.TestCase):
+    def test_clean_returns_zero(self):
+        import json, tempfile
+        with tempfile.TemporaryDirectory() as d:
+            p = self._nb(Path(d), [("markdown", "rien a signaler")])
+            self.assertEqual(m.main(["--path", str(p), "--no-katex"]), 0)
+
+    def test_defect_returns_one(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            p = self._nb(Path(d), [("markdown", r"\(x\) nu")])
+            self.assertEqual(m.main(["--path", str(p), "--no-katex"]), 1)
+
+    _nb = TestScanNotebook._nb
+
+
+if __name__ == "__main__":
+    unittest.main()
