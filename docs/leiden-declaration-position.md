@@ -34,7 +34,7 @@ L’Epic #13105 se déploie selon un parcours en trois temps — **apprendre, ex
 
 **Extraire.** R03 (Michaud et al., 2024, [`arXiv:2402.05110`](https://arxiv.org/abs/2402.05110) — *program synthesis via mechanistic interpretability*) montre qu’à partir d’un réseau grokké, on peut extraire un programme lisible. Côté CoursIA, ce geste est porté par les organes d’interprétabilité (harnais SAE Qwen, #10355), par les notebooks d’AST et de circuits, et par les passages qui reconstruisent un algorithme identifiable à partir d’un artefact neuronal. L’extraction n’est pas seulement technique : elle exige de choisir le niveau d’abstraction où le programme devient *lisible par un humain*, et ce choix est pédagogique avant d’être mathématique.
 
-**Prouver.** R15 (Bursuc, Trimponas, Sato et Nikolić, 2025, [`arXiv:2509.22908`](https://arxiv.org/abs/2509.22908) — *vericoding*), démontre que la sortie d’un modèle peut être accompagnée d’une preuve formelle vérifiée par un noyau. La chaîne Tao *Mathematics in the Age of AI* propose précisément ce contrat : génération, vérification, exposition, puis digestion dans un corpus humainement cohérent. Lean-18 Sendov, Lean-19 Analysis I et Lean-20 PFR sont trois premières mailles locales de cette chaîne.
+**Prouver.** R15 (Bursuc, Ehrenborg, Lin et al., 2025, [`arXiv:2509.22908`](https://arxiv.org/abs/2509.22908) — *vericoding*), démontre que la sortie d’un modèle peut être accompagnée d’une preuve formelle vérifiée par un noyau. La chaîne Tao *Mathematics in the Age of AI* propose précisément ce contrat : génération, vérification, exposition, puis digestion dans un corpus humainement cohérent. Lean-18 Sendov, Lean-19 Analysis I et Lean-20 PFR sont trois premières mailles locales de cette chaîne.
 
 **Les deux directions de l’intersection.** La Boussole distingue deux usages distincts de la preuve formelle appliquée à l’IA :
 
@@ -57,7 +57,7 @@ Ces deux directions ne sont pas séparables : un *verifier* qui s’appuie sur d
 - R10 — *Not All Language Model Features Are One-Dimensionally Linear* ([`arXiv:2405.14860`](https://arxiv.org/abs/2405.14860)) · sha8 `7DEAC929`
 - R12 — *Towards Guaranteed Safe AI* ([`arXiv:2405.06624`](https://arxiv.org/abs/2405.06624)), distillation #17216
 - R14 — *Open Problems in Mechanistic Interpretability* ([`arXiv:2501.16496`](https://arxiv.org/abs/2501.16496)) · sha8 `9A50CDC6`
-- R15 — *Vericoding* (Bursuc, Trimponas, Sato et Nikolić, 2025, [`arXiv:2509.22908`](https://arxiv.org/abs/2509.22908))
+- R15 — *A benchmark for vericoding* (Bursuc, Ehrenborg, Lin et al., 2025, [`arXiv:2509.22908`](https://arxiv.org/abs/2509.22908))
 - Terry Tao, *Mathematics in the Age of AI*, ICM 2026 ([`arXiv:2608.16753`](https://arxiv.org/abs/2608.16753))
 
 ## Principes, pratiques, preuves et engagements
