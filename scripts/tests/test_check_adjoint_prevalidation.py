@@ -1,8 +1,11 @@
 """Causal tests for the adjoint prevalidation entry gate (#16442)."""
 
 import importlib.util
+import json
 import sys
 from pathlib import Path
+
+import pytest
 
 HERE = Path(__file__).resolve().parent
 CHECK_PATH = HERE.parent / "check_adjoint_prevalidation.py"
@@ -349,6 +352,86 @@ def test_unresolved_thread_cannot_be_ready():
     assert "READY requires zero unresolved threads" in errors
 
 
+def test_empty_diff_cannot_be_ready():
+    """A PR changing zero files has nothing to squash -- READY is refuted.
+
+    Positive control, taken from the measured instance: #16975 and #16976 each
+    carried an INTACT dossier declaring `diff-files: 0` with `verdict: READY`,
+    so the gate returned 0 and authorised merging a pull request that delivered
+    nothing. The dossier is self-consistent with the live PR -- every count
+    matches -- which is why no staleness check could catch it.
+    """
+    live = _base_snapshot()
+    live["changedFiles"] = 0
+    live["additions"] = 0
+    live["deletions"] = 0
+    dossier = _body(
+        **{"diff-files": "0", "diff-additions": "0", "diff-deletions": "0"}
+    )
+    live["comments"].append(_comment(dossier))
+    verdict, errors = mod.evaluate(live)
+    assert "READY requires a non-empty diff: 0 files changed" in errors
+    assert verdict == "", errors
+
+
+def test_blocked_dossier_tolerates_an_empty_diff():
+    """An empty diff refutes READY, never BLOCKED.
+
+    Same asymmetry as the draft and unresolved-thread legs: an empty diff is a
+    reason a PR is NOT mergeable, and attesting it is precisely a BLOCKED
+    dossier's job. Refusing it there would deny the coordinator the attested
+    motive it dispatches from.
+    """
+    live = _base_snapshot()
+    live["changedFiles"] = 0
+    live["additions"] = 0
+    live["deletions"] = 0
+    dossier = _body(
+        verdict="BLOCKED", b0="blocked", checks="BLOCKED", scope="fail",
+        domain="fail",
+        **{"diff-files": "0", "diff-additions": "0", "diff-deletions": "0"},
+    )
+    live["comments"].append(_comment(dossier))
+    verdict, errors = mod.evaluate(live)
+    assert verdict == mod.VERDICT_BLOCKED, errors
+
+
+def test_two_line_fix_is_still_ready():
+    """Negative control: the #15740 counter-example must keep passing.
+
+    « une correction de 2 lignes d'un bug critique serait acceptable » -- the
+    new leg measures absence, not smallness. A one-file, two-line diff is as
+    READY as a large one.
+    """
+    live = _base_snapshot()
+    live["changedFiles"] = 1
+    live["additions"] = 1
+    live["deletions"] = 1
+    dossier = _body(
+        **{"diff-files": "1", "diff-additions": "1", "diff-deletions": "1"}
+    )
+    live["comments"].append(_comment(dossier))
+    verdict, errors = mod.evaluate(live)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_absent_diff_stat_never_reads_as_an_empty_diff():
+    """Missing data must not decide (#14849) -- and here it already cannot.
+
+    The new leg tests equality with 0, so `None` does not trip it. But the
+    state is unreachable anyway: `validate_dossier` indexes `changedFiles`
+    directly, and `main` catches `KeyError` among the fail-closed exceptions,
+    reporting UNKNOWN (rc=2). Absent stats therefore become "I could not
+    measure", never "the diff is empty" -- which is the distinction that
+    matters, because rc=2 refuses while a fabricated `empty` would accuse.
+    """
+    live = _base_snapshot()
+    live.pop("changedFiles")
+    live["comments"].append(_comment(_body()))
+    with pytest.raises(KeyError):
+        mod.evaluate(live)
+
+
 def test_comment_after_dossier_invalidates_it():
     snapshot = _snapshot(_body())
     snapshot["comments"].append(_comment("new concern after preflight"))
@@ -547,8 +630,16 @@ def test_coordinator_own_later_comment_does_not_expire_the_dossier():
 
 
 def test_any_other_author_still_expires_the_dossier():
-    """The negative control: neutrality is for the coordinator ALONE."""
-    for login in ("jsboige", "clusterManager-Myia", "lcetinsoy"):
+    """The negative control: neutrality is for the coordinator ALONE.
+
+    Since #16883 the coordinator voice is recognised under BOTH
+    ``COORDINATOR_LOGIN`` (``myia-ai-01``) and ``SHARED_GITHUB_LOGIN``
+    (``jsboige``) -- the merged-account mandate means every coordinator
+    action reaches the API under ``jsboige``. A genuinely foreign author
+    (a worker lane that did NOT carry the dossier, or a bot) must still
+    expire the dossier.
+    """
+    for login in ("clusterManager-Myia", "lcetinsoy", "myia-po-2024", "dependabot"):
         base = _stamped_snapshot("")
         base["comments"].pop()
         snapshot = _stamped_snapshot(_dossier_for(base))
@@ -558,12 +649,59 @@ def test_any_other_author_still_expires_the_dossier():
         errors = _errors(snapshot)
         assert any("discussion changed after dossier" in e for e in errors), login
 
-        snapshot2 = _stamped_snapshot(_dossier_for(base))
-        snapshot2["reviews"].append(
-            {"state": "CHANGES_REQUESTED", "author": {"login": login},
-             "submittedAt": T1, "body": "new reserve"}
-        )
-        assert _errors(snapshot2), login
+
+def test_shared_login_lift_does_not_expire_dossier():
+    """#16883 CN4-bis: a coordinator lift posted under SHARED_GITHUB_LOGIN
+    (the merged-account mandate, every lane signs ``jsboige``) is
+    recognised as the coordinator's voice. The dossier stays intact and
+    its READY verdict still passes the gate.
+    """
+    base = _stamped_snapshot("")
+    base["comments"].pop()
+    snapshot = _stamped_snapshot(_dossier_for(base))
+    own = _comment("Lifting the stale PREFLIGHT_HOLD.", login=mod.SHARED_GITHUB_LOGIN)
+    own["createdAt"] = T1
+    snapshot["comments"].append(own)
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_shared_login_anterior_comment_does_not_neutralise():
+    """#16883 CN2-bis: a SHARED_GITHUB_LOGIN comment written BEFORE the
+    dossier is part of the surfaces the dossier attested. The adjoint
+    already saw it; the dossier stays intact. (The neutrality only fires
+    on later rows, never on attested ones.)
+    """
+    snapshot = _base_snapshot()
+    anterior = _comment("pre-dossier coordinator remark", login=mod.SHARED_GITHUB_LOGIN)
+    anterior["createdAt"] = T0
+    snapshot["comments"].insert(0, anterior)
+    dossier_body = _dossier_for(snapshot)
+    dossier = _comment(dossier_body)
+    dossier["createdAt"] = T0
+    snapshot["comments"].append(dossier)
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_fingerprint_includes_lift_surface():
+    """The fingerprint (#16957) covers every comment -- coordinator or not.
+    A lift that lands between the dossier and the gate re-evaluation
+    changes the hash; that is the dossier attesting the new surface.
+    Neutralisation is only at evaluate time, never at stamp time.
+    """
+    base = _stamped_snapshot("")
+    base["comments"].pop()
+    snapshot_at_stamp = _stamped_snapshot(_dossier_for(base))
+    fp_at_stamp = mod.surfaces_fingerprint(snapshot_at_stamp)
+
+    snapshot_after_lift = json.loads(json.dumps(snapshot_at_stamp))
+    lift = _comment("LIFT -- shared login", login=mod.SHARED_GITHUB_LOGIN)
+    lift["createdAt"] = T1
+    snapshot_after_lift["comments"].append(lift)
+
+    fp_after_lift = mod.surfaces_fingerprint(snapshot_after_lift)
+    assert fp_after_lift != fp_at_stamp
 
 
 def test_coordinator_review_BEFORE_the_dossier_must_still_be_attested():

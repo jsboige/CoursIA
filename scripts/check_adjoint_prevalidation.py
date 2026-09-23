@@ -293,10 +293,18 @@ def _is_own_later_act(row: dict[str, Any], timestamp_key: str, neutral_after: st
     coordinator is unaware of -- it wrote it. Neutralising exactly those rows is
     what lets the coordinator lift its own reserve and still merge, without
     weakening the gate: a row from any other author still expires the dossier.
+
+    Note (#16883): the coordinator account ``myia-ai-01`` and the shared worker
+    sign-in ``jsboige`` both author coordinator-side actions on this gate's
+    only consumer (cf. lane-claim protocol and the merged-account mandate).
+    A neutralisation scoped to ``COORDINATOR_LOGIN`` alone misses every
+    coordinator action posted under the shared sign-in -- the very loop
+    measured on #16840. We accept either login as the coordinator's voice.
     """
     if not neutral_after:
         return False
-    if _login(row) != COORDINATOR_LOGIN:
+    author = _login(row)
+    if author not in (COORDINATOR_LOGIN, SHARED_GITHUB_LOGIN):
         return False
     stamp = row.get(timestamp_key) or ""
     return bool(stamp) and stamp > neutral_after
@@ -672,6 +680,20 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
             errors.append("draft pull request cannot be READY")
         if integers.get("threads-unresolved") not in {None, 0}:
             errors.append("READY requires zero unresolved threads")
+        # A pull request that changes zero files has nothing to squash, whatever
+        # its genre, domain or author. This is not a judgement on smallness --
+        # `check_trivial_diff.py` owns that, and deliberately lets a two-line
+        # critical fix through (#15740). It is the absence of a deliverable.
+        # Measured on #16975/#16976 (2026-09-22): both carried an INTACT dossier
+        # declaring `diff-files: 0` and `verdict: READY`, so the gate returned 0
+        # and authorised a merge that would have closed a grain having delivered
+        # nothing (G.3). Only B.0, holding an unrelated morphological reserve,
+        # happened to stop it. A dossier asserting READY over an empty diff is
+        # self-contradictory, which is exactly what "no dossier worth trusting"
+        # means -- hence the existing rc=1 path, not a new one. A BLOCKED dossier
+        # over an empty diff stays intact: it attests, correctly, non-mergeability.
+        if snapshot.get("changedFiles") == 0:
+            errors.append("READY requires a non-empty diff: 0 files changed")
     return errors
 
 
@@ -824,16 +846,41 @@ def _head_check_runs(head_sha: str) -> list[dict[str, Any]]:
         page += 1
 
 
-def _pr_metadata(pr: int) -> dict[str, Any]:
-    fields = (
-        "number,title,body,state,isDraft,baseRefName,headRefOid,updatedAt,"
-        "changedFiles,additions,deletions,statusCheckRollup"
-    )
-    data = gh_json([
-        "pr", "view", str(pr), "--repo", REPO, "--json", fields,
-    ])
-    if not isinstance(data, dict):
+def _pr_metadata(pr: int, *, with_rollup: bool) -> dict[str, Any]:
+    # Scalar fields come from REST (`repos/.../pulls/N`) so the shared GraphQL
+    # quota only pays for the check rollup below. Keys keep the exact shape
+    # `gh pr view --json` produced, so fingerprints and the identity bracket
+    # stay byte-compatible with dossiers stamped before this change.
+    row = gh_json(["api", f"repos/{REPO}/pulls/{pr}"])
+    if not isinstance(row, dict):
         raise RuntimeError("pull request response is not an object")
+    state = row.get("state") or ""
+    data: dict[str, Any] = {
+        "number": row.get("number"),
+        "title": row.get("title"),
+        "body": row.get("body") or "",
+        # REST renders state lowercase and folds MERGED into "closed";
+        # `gh pr view` rendered uppercase with a distinct MERGED state, and
+        # the fingerprint payload hashes this field verbatim.
+        "state": "MERGED" if row.get("merged") else state.upper(),
+        "isDraft": row.get("draft"),
+        "baseRefName": (row.get("base") or {}).get("ref"),
+        "headRefOid": (row.get("head") or {}).get("sha"),
+        "updatedAt": row.get("updated_at"),
+        "changedFiles": row.get("changed_files"),
+        "additions": row.get("additions"),
+        "deletions": row.get("deletions"),
+    }
+    if with_rollup:
+        # The check rollup has no REST equivalent, so it stays on GraphQL
+        # as a single-field query instead of the former twelve-field one.
+        rollup = gh_json([
+            "pr", "view", str(pr), "--repo", REPO,
+            "--json", "statusCheckRollup",
+        ])
+        if not isinstance(rollup, dict):
+            raise RuntimeError("pull request response is not an object")
+        data["statusCheckRollup"] = rollup.get("statusCheckRollup")
     return data
 
 
@@ -849,7 +896,7 @@ def _metadata_identity(data: dict[str, Any]) -> str:
 
 
 def load_snapshot(pr: int) -> dict[str, Any]:
-    before = _pr_metadata(pr)
+    before = _pr_metadata(pr, with_rollup=True)
     snapshot = dict(before)
     snapshot["comments"] = _issue_comments(pr)
     snapshot["reviews"] = _reviews(pr)
@@ -859,7 +906,7 @@ def load_snapshot(pr: int) -> dict[str, Any]:
     # caller retries), so the claim verification below never reads a state
     # that was already stale when captured.
     snapshot["checkRuns"] = _head_check_runs(snapshot["headRefOid"])
-    after = _pr_metadata(pr)
+    after = _pr_metadata(pr, with_rollup=True)
     if _metadata_identity(before) != _metadata_identity(after):
         raise RuntimeError("pull request changed while prevalidation snapshot was read")
     return snapshot

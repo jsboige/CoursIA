@@ -1254,6 +1254,38 @@ TRANCHE11: list[Guard] = [
     ),
 ]
 
+# ---------------------------------------------------------------------------
+# TRANCHE 13 -- reading-anchor advisory (#16695).
+#
+# Garde NATIF absorbant le workflow d'origine (needs_base=True, delta vs base,
+# self-test pre-control #11685). Advisory non bloquant a zero FP mesure.
+# ---------------------------------------------------------------------------
+TRANCHE13: list[Guard] = [
+    Guard(
+        name="Reading-anchor advisory (lecture sans output, #16695)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**.ipynb",
+            "scripts/notebook_tools/check_reading_anchor.py",
+            "scripts/notebook_tools/tests/test_check_reading_anchor.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        pre_argv=[
+            "python", "scripts/notebook_tools/check_reading_anchor.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_reading_anchor.py",
+            "--base", "{base_ref}",
+            "--head", "HEAD",
+            "--fail", "--json",
+        ],
+        blocking=False,
+        needs_base=True,
+        absorbed=True,
+    ),
+]
 
 # ---------------------------------------------------------------------------
 # TRANCHE 12 -- link-label agreement advisory (#16645).
@@ -1327,12 +1359,16 @@ TRANCHE12: list[Guard] = [
 # #14325, TRANCHE7).
 # ---------------------------------------------------------------------------
 #
-# Renomme TRANCHE12 -> TRANCHE13 au merge de #17031 : la PR soeur #16645
-# (link-label agreement) a pris TRANCHE12 sur main entre-temps. Meme classe de
-# collision que le renommage TRANCHE9 -> TRANCHE10 plus haut -- le POSTERIEUR
-# cede l'index, jamais l'inverse (deux affectations du meme nom se
+# Renomme TRANCHE12 -> TRANCHE14 au merge de #17031 : la PR soeur #16645
+# (link-label agreement) a pris TRANCHE12 sur main entre-temps, et TRANCHE13
+# etait deja pris par reading-anchor (#16695) -- la premiere version de ce
+# renommage reutilisait TRANCHE13 et le second binding ecrasait le premier :
+# reading-anchor disparaissait du registre et Scripts Tests rougissait sur
+# toute PR (test_tranche13_reading_anchor_advisory_guard_is_wired). Meme
+# classe de collision que le renommage TRANCHE9 -> TRANCHE10 plus haut -- le
+# POSTERIEUR cede l'index, jamais l'inverse (deux affectations du meme nom se
 # remplaceraient silencieusement et un garde disparaitrait du registre).
-TRANCHE13: list[Guard] = [
+TRANCHE14: list[Guard] = [
     Guard(
         name="Split-reading-cells advisory (per-notebook, non-blocking)",
         source="split-reading-advisory.yml",

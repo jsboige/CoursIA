@@ -66,6 +66,38 @@ Avant toute bascule, relever au minimum :
 
 Le détail par workflow sépare la capacité réellement consommée de l'auto-contention. En particulier, le `PR gate` peut occuper un runner pendant qu'il sonde des checks eux-mêmes en file : dimensionner sur la demande brute financerait ce temps d'attente au lieu de le corriger. Les distributions par label et runner localisent une saturation observée ; elles ne révèlent pas à elles seules combien de runners partagent un hôte physique, son plafond de concurrence, ni la politique de capacité à retenir. Ces décisions exigent une mesure de topologie distincte.
 
+## Co-résidence : hôte, concurrence, slots (#15574)
+
+Les deux nombres que le paragraphe précédent laisse ouverts sont mesurables, mais **côté API, pas côté machine** : `actions/runners` rend les slots enregistrés, et les horodatages des jobs rendent le recouvrement. `scripts/ci/measure_runner_demand.py` les produit en deux blocs, à lire ensemble — le premier dit ce qui s'est passé, le second la capacité qui l'a produit.
+
+| Bloc | Question | Source | Nature |
+|---|---|---|---|
+| `runners_inventory` | Combien de runners partagent un hôte ? | `actions/runners` (`--runners`) | STATIQUE |
+| `co_residence` | Combien de jobs un hôte a-t-il portés simultanément, et à quelle durée ? | horodatages des jobs | DYNAMIQUE |
+
+**L'hôte est présumé du nom du runner.** Le pool nomme ses slots `<hôte>-<n>` (`myia-po-2024-linux-docker-1/-2`), donc le regroupement par préfixe reconstitue l'hôte. Un nom sans suffixe numérique n'est **pas** attribué : l'inventer fabriquerait un hôte d'un seul slot, c'est-à-dire exactement le chiffre qu'on cherche à mesurer. Les jobs et runners non attribuables sont comptés séparément (`jobs_unplaced`, `unplaced_runners`).
+
+**Deux statistiques de concurrence par job**, parce qu'elles répondent à deux questions distinctes :
+
+- le **pic** — combien de jobs l'hôte a portés simultanément pendant ce job ; c'est lui qui dit le plafond atteint ;
+- la **moyenne** — quelle part de la durée s'est faite en compagnie.
+
+Le pic est calculé sur les **bornes** des intervalles : entre deux bornes le compte ne peut pas changer, et un échantillon unique au point médian rate un job qui chevauche un autre sur la moitié de sa durée (constaté en écrivant la suite de tests).
+
+**Bornes et honnêteté de la mesure.** La concurrence observée est une **borne inférieure** : seuls les jobs de la fenêtre collectée sont connus, un job hors fenêtre qui tournait en parallèle est invisible. Elle peut donc montrer qu'un hôte est sur-souscrit, jamais prouver qu'il ne l'est pas. Les caveats sont émis **dans la sortie JSON**, pas seulement dans ce document, et une corrélation durée↔concurrence n'y est pas présentée comme une cause : une durée plus longue en concurrence peut venir du job lui-même. L'inventaire distingue trois états — `measured`, `unavailable` (droit de lecture manquant, raison incluse) et `not_collected` — dont **aucun** ne rend un parc vide.
+
+**Pourquoi un runner de workflow et pas une commande locale.** La collecte coûte environ un appel API par run (la lecture des jobs), plus la pagination. Un poste de travail épuise son quota REST avant de couvrir une fenêtre utile — mesuré le 2026-09-21 : quota épuisé avant la fin d'une fenêtre d'**une heure**, l'instrument rendant alors `BROKEN INSTRUMENT` (exit 2) plutôt qu'un zéro propre, ce qui est le comportement voulu. `runner-coresidence-advisory.yml` porte donc la mesure sur `ubuntu-latest` (l'observateur ne consomme pas ce qu'il observe), en advisory — `schedule` + `workflow_dispatch` seulement, jamais `pull_request`, donc un run rouge ne peut pas bloquer une PR.
+
+```bash
+# après merge (workflow_dispatch exige le fichier sur la branche par défaut)
+gh workflow run runner-coresidence-advisory.yml -f hours=6 -f runner_inventory=true
+# ou en local, quand le quota REST est disponible
+python scripts/ci/measure_runner_demand.py --repo jsboige/CoursIA \
+    --since <ISO8601Z> --until <ISO8601Z> --runners --output coresidence.json
+```
+
+**État de la mesure.** L'instrument et son runner sont livrés ; **les chiffres ne le sont pas encore**. Ils seront publiés par le premier run de l'organe (cron du mardi 04:20 UTC, ou dispatch immédiat après merge) et versés ici datés, avec la décision de capacité qu'ils fondent. Tant qu'ils ne sont pas là, #15574 reste ouvert : un instrument n'est pas une caractérisation.
+
 ## Topologie retenue
 
 `jsboige/CoursIA` appartient à un compte GitHub personnel. Les groupes de runners personnalisés sont réservés aux organisations et ne constituent donc pas une barrière disponible ici. La frontière activable repose sur deux contrôles complémentaires :
