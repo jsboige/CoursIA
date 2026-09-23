@@ -50,11 +50,20 @@ class MixedStatePresentation:
     """
 
     nodes: Tuple[Tuple[Array, ...], ...]  # nodes[depth] = tuple de Array
-    edges: Tuple[Tuple[Tuple[int, ...], ...], ...]  # edges[depth][i] = indices des filles de nodes[depth][i]
+    edges: Tuple[Tuple[Tuple[int, ...], ...], ...]  # edges[depth][i] = indices des filles de nodes[depth][i], dans l'ordre de l'alphabet
+    alphabet: Tuple[int, ...] = ()  # alphabet des observations, dans l'ordre utilise par le BFS
 
     @property
     def depth(self) -> int:
         return len(self.nodes)
+
+    def n_distinct_total(self) -> int:
+        """Cardinal de l'union des croyances distinctes sur toutes profondeurs."""
+        seen = set()
+        for level in self.nodes:
+            for b in level:
+                seen.add(_round_belief(b))
+        return len(seen)
 
     def n_distinct(self, depth: int) -> int:
         if depth < 0 or depth >= self.depth:
@@ -99,32 +108,30 @@ class MixedStatePresentation:
         # de la trajectoire forward.
         if self.depth >= 2:
             try:
-                # Reconstruction du premier chemin : on suit edges[d][0][*]
-                obs_seq: List[int] = []
-                d = 0
-                current_idx = 0
-                while d < self.depth - 1 and self.edges[d] and self.edges[d][current_idx]:
-                    next_idx = self.edges[d][current_idx][0]
-                    obs_seq.append(next_idx)
-                    # Avancer vers la fille
-                    d += 1
-                    current_idx = next_idx  # la fille devient parent
-                obs_array = np.asarray(obs_seq, dtype=np.int64)
-                fb = forward_beliefs_factory(obs_array)
-                if fb.ndim == 2 and fb.shape[0] >= 1:
-                    last_fb = fb[-1]
-                    if last_fb.shape == self.nodes[self.depth - 1][0].shape:
-                        key = _round_belief(last_fb)
-                        keys = {_round_belief(b) for b in self.nodes[self.depth - 1]}
-                        if key not in keys:
-                            # Tolerance : au cas ou l'arrondi differe d'une ULP
-                            similar = any(
-                                np.allclose(last_fb, b, atol=1e-5)
-                                for b in self.nodes[self.depth - 1]
-                            )
-                            if not similar:
+                # Reconstruction d'un chemin : on suit la premiere fille
+                # (position 0 = premier symbole de l'alphabet) et le symbole
+                # correspondant -- edges[d][i] est ordonne par l'alphabet.
+                if self.alphabet:
+                    obs_seq: List[int] = []
+                    d = 0
+                    current_idx = 0
+                    while d < self.depth - 1 and self.edges[d] and self.edges[d][current_idx]:
+                        next_idx = self.edges[d][current_idx][0]
+                        if next_idx < 0:
+                            break  # arete impossible depuis cette croyance
+                        obs_seq.append(int(self.alphabet[0]))
+                        d += 1
+                        current_idx = next_idx
+                    obs_array = np.asarray(obs_seq, dtype=np.int64)
+                    fb = forward_beliefs_factory(obs_array)
+                    if fb.ndim == 2 and fb.shape[0] == len(obs_seq) and len(obs_seq) >= 1:
+                        last_fb = fb[-1]
+                        target = self.nodes[len(obs_seq)][current_idx]
+                        if last_fb.shape == target.shape:
+                            if not np.allclose(last_fb, target, atol=1e-7):
                                 failures.append(
-                                    f"forward last belief at depth {self.depth-1} absent de la MSP"
+                                    f"forward belief at depth {len(obs_seq)} "
+                                    f"diverge du node du chemin reconstruit"
                                 )
             except Exception as exc:
                 failures.append(f"forward factory leve {type(exc).__name__}: {exc}")
@@ -144,30 +151,60 @@ def build_msp(
     max_depth: int,
     obs_alphabet: Iterable[int],
     prior: Array,
-    transition: Array,
-    emission: Array,
+    transition: Array = None,
+    emission: Array = None,
+    edge_tensor: Array = None,
 ) -> MixedStatePresentation:
     """Construit la MSP par BFS sur l'arbre des sequences d'observations.
 
-    Parametres :
-    - ``generator`` : instance conforme (Mess3Canonical, RRXOR, ...)
-      utilisee seulement pour les metadonnees (profondeur max fixee par
-      l'usage, pas par le generateur).
-    - ``max_depth`` : profondeur maximale de l'arbre.
-    - ``obs_alphabet`` : iterable des valeurs d'observation possibles
-      (par exemple ``range(n_states)`` pour Mess3 ou ``(0, 1)`` pour RRXOR).
-    - ``prior`` : distribution a priori sur les etats caches (np.ndarray).
-    - ``transition`` : matrice de transition T (np.ndarray).
-    - ``emission`` : matrice d'emission E (np.ndarray, shape ``(n_states, n_obs)``).
+    Deux conventions d'emission, mutuellement exclusives :
 
-    Retourne : :class:`MixedStatePresentation`.
+    - **Moore** (``transition`` + ``emission``) : l'etat emet, puis transite.
+      Mise a jour : ``b' = normaliser((b @ T) * E[:, y])``. Convient a
+      :class:`Mess3Canonical`.
+    - **Mealy** (``edge_tensor`` seul) : les emissions vivent sur les aretes,
+      ``W[s, s', y] = P(s' et y | s)``. Mise a jour :
+      ``b' = normaliser(b @ W[:, :, y])``. Convient a :class:`RRXOR`
+      (Riechers & Crutchfield 2018, arXiv:1706.00883v1 : l'epsilon-machine
+      du RRXOR est Mealy -- l'emission revele l'arete, pas l'etat).
+
+    Parametres :
+    - ``generator`` : instance conforme (Mess3Canonical, RRXOR, ...).
+    - ``max_depth`` : profondeur maximale de l'arbre.
+    - ``obs_alphabet`` : iterable des valeurs d'observation possibles.
+    - ``prior`` : distribution a priori sur les etats caches (np.ndarray).
+    - ``transition``/``emission`` : convention Moore.
+    - ``edge_tensor`` : convention Mealy (priorise sur Moore si fourni).
+
+    Retourne : :class:`MixedStatePresentation` (avec ``alphabet`` stocke pour
+    permettre la reconstruction de chemins dans ``verify_invariants``).
     """
     if max_depth < 1:
         raise ProcessError("max_depth doit etre >= 1")
+    if edge_tensor is None and (transition is None or emission is None):
+        raise ProcessError(
+            "build_msp exige soit edge_tensor (Mealy), soit transition + emission (Moore)"
+        )
     obs_alphabet = tuple(obs_alphabet)
-    n_states = prior.shape[0]
     nodes: List[List[Array]] = []
     edges: List[List[Tuple[int, ...]]] = []
+
+    def _child(parent_b: Array, o: int):
+        """Croyance fille apres l'observation ``o``, ou ``None`` si impossible.
+
+        Une croyance Dirac sur un etat a emission deterministe (cas Mealy :
+        les X du RRXOR) peut rendre un symbole de probabilite nulle ;
+        l'arete correspondante n'existe pas dans la MSP.
+        """
+        if edge_tensor is not None:
+            w = parent_b @ edge_tensor[:, :, int(o)]
+        else:
+            pred = parent_b @ transition
+            w = pred * emission[:, int(o)]
+        z = w.sum()
+        if z <= 0.0:
+            return None
+        return w / z
 
     # Niveau 0 : prior unique (avant toute observation)
     nodes.append([prior.copy()])
@@ -183,14 +220,10 @@ def build_msp(
         for parent_b in nodes[d]:
             child_indices: List[int] = []
             for o in obs_alphabet:
-                pred = parent_b @ transition
-                w = pred * emission[:, int(o)]
-                z = w.sum()
-                if z <= 0.0:
-                    raise ProcessError(
-                        f"vraisemblance nulle a depth {d}, obs {o}"
-                    )
-                child_b = w / z
+                child_b = _child(parent_b, o)
+                if child_b is None:
+                    child_indices.append(-1)  # arete impossible
+                    continue
                 key = _round_belief(child_b)
                 if key in next_seen:
                     child_idx = next_seen[key]
@@ -199,6 +232,11 @@ def build_msp(
                     next_nodes.append(child_b)
                     child_idx = next_seen[key]
                 child_indices.append(child_idx)
+            if all(ci < 0 for ci in child_indices):
+                raise ProcessError(
+                    f"generateur degenerate : croyance sans aucune observation "
+                    f"possible a depth {d} (toutes les emissions sont nulles)"
+                )
             current_edges.append(tuple(child_indices))
         # Pas de nouvelle node : on s'arrete
         if not next_nodes:
@@ -211,6 +249,7 @@ def build_msp(
     return MixedStatePresentation(
         nodes=tuple(tuple(arr for arr in lvl) for lvl in nodes),
         edges=tuple(tuple(e for e in lvl) for lvl in edges),
+        alphabet=obs_alphabet,
     )
 
 
@@ -233,24 +272,21 @@ def msp_mess3(max_depth: int = 6) -> MixedStatePresentation:
     )
 
 
-def msp_rrxor(max_depth: int = 6) -> MixedStatePresentation:
-    """MSP du RRXOR : alphabet binaire, 4 etats caches.
+def msp_rrxor(max_depth: int = 8) -> MixedStatePresentation:
+    """MSP du RRXOR (Riechers & Crutchfield 2018) : alphabet binaire, 5 etats causaux Mealy.
 
-    Note : avec prior stationnaire uniforme, la MSP au pas 0 contient 1
-    croyance ; au pas 1 (apres 1 observation), elle contient 2 croyances
-    distinctes (deux valeurs possibles de y determinent le sous-ensemble
-    d'etats coherents) ; au pas k, le cardinal de la MSP suit la
-    dynamique de l'arbre binaire.
+    Depuis le prior stationnaire, l'union des croyances distinctes vaut
+    **36** : 31 transitoires + 5 recurrentes (les Diracs sur les etats
+    causaux, atteints en profondeur <= 7). C'est la valeur de la
+    litterature (arXiv:1706.00883v1, p. 17, Fig. 7) : le regime
+    transitoire resout l'ambiguite de phase de la modulation periodique
+    d'ordre 3 -- c'est précisément ce que le notebook ICT-37 montre.
     """
     r = RRXOR()
-    prior = r.stationary()
-    T = r.transition_matrix()
-    E = r.emission_matrix()
     return build_msp(
         generator=r,
         max_depth=max_depth,
         obs_alphabet=(0, 1),
-        prior=prior,
-        transition=T,
-        emission=E,
+        prior=r.stationary(),
+        edge_tensor=r.edge_tensor(),
     )

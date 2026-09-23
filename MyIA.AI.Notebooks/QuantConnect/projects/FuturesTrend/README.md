@@ -279,6 +279,37 @@ credentials). La méthode `_carry_forecast(front_close, deferred_close)`
 reste l'interface prévue — l'appelant futur (lane QC équipée) n'a qu'à passer
 les deux closes réelles.
 
+**Addendum 2026-09-22 (semis #17320, tranche 2) — le stub ci-dessus est
+remplacé par la formule Carver #11 exacte.** Le port de la stratégie #11
+(*Combined Carry and Trend*, article QC #16001, parent direct de notre #13)
+est engagé sur ce projet (verdict de catégorie : CONSOLIDATION — lecture
+analytique 5-axes et acceptance dans l'issue #17320). La tranche 2 livre :
+
+- `carry_forecast.py` — module **pur numpy** (patron `breadth_multiplier.py`,
+  REPAIR-8 c.1115 : pas de duplication formule test/production) implémentant
+  la formule exacte de l'article : `(near − further)` annualisé par l'écart
+  d'expiry (`round(days/30)` mois), risk-ajusté, lissé EWMA sur les spans
+  5/20/60/120 (`min_periods=span` : un span sans historique est omis),
+  scalé par le scalaire Carver **30** (p.216), capé ±20 ;
+- `tests/test_carry_forecast.py` — 15 tests CPU (exemple dollar/an de
+  l'article, contango/backwardation, gap nul → None, cap symétrique,
+  `min_periods`, décroissance géométrique d'un choc ancien, sémantique
+  `ewm(span, adjust=True)` sur constante et 2 points) ;
+- dans `main_carver13.py`, le stub c.1107 (ratio front/deferred,
+  annualisation ×4 « mild ») est **remplacé** par `_annualized_carry(near,
+  further, near_exp, further_exp)` + `_carry_forecast(history)` qui
+  délèguent au module pur — **toujours pas appelés depuis `_rebalance`**
+  (`CARVER_CARRY_WEIGHT = 0.0` inchangé) : l'activation du blend 60/40 est
+  la tranche 3, avec les closes et expirys réels de la chain API QC Cloud
+  et les backtests dev/OOS ≥ 2016-2026 de l'acceptance #17320.
+
+La phrase historique ci-dessus (« passer les deux closes réelles ») décrivait
+l'interface du stub ratio-based ; la formule Carver-true exige **aussi les
+deux expirys** (l'annualisation en dépend). Le choix FDM-Table-52-vs-breadth
+et l'harmonisation des scalaires trend (approximation sqrt du #13 vs
+Table 29) sont explicitement reportés à la tranche 3, à trancher sur
+mesure (acceptance #17320).
+
 ### Note Tell c.1069 strict — FDM requalifié en breadth multiplier (c.1109 REPAIR-3 + c.1111 REPAIR-5)
 
 Le préflight adjoint po-2025 (`msg-20260911T043805-i7tl0g` pour c.1109,

@@ -460,6 +460,18 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   peut etre rejoue sans frais). Pas de label pose. Rollback = revert
     #   de la PR (l'entree disparait de l'allowlist).
     "notebook-kernel-drift-guard.yml",
+    # #16776 (owner myia-po-2023:CoursIA, PR #16801) : organ-duplication
+    #   advisory -- signale les symboles ajoutes qui collident avec l'organ
+    #   API d'une autre serie (scripts/audit/organ_api_index.yaml, regle
+    #   organ-first). Pure-Python stdlib, garde same-repo au niveau job
+    #   (#13874) -- fork PRs skipped, pull_request filtre par paths en
+    #   auto-couverture des fichiers de l'organe (#8822), workflow_dispatch
+    #   pour re-run manuel. runs-on STATIQUE jambe Linux containerisee
+    #   (routage #14283 tranche 3). Advisory non-bloquant (sticky comment).
+    #   Entree ajoutee par le repair du rouge WORKFLOW_NOT_ALLOWED signale
+    #   par Hermes (CONCERNS 19/09) : la PR routait le job self-hosted sans
+    #   toucher cette allowlist fail-closed. Rollback = revert de la PR.
+    "organ-duplication-advisory.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",

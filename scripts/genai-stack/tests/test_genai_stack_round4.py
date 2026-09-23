@@ -13,6 +13,7 @@ Dispatch #2149, item 6.
 import json
 import os
 import sys
+import tempfile
 import unittest
 from io import StringIO
 from pathlib import Path
@@ -127,6 +128,110 @@ class TestGetHfToken(unittest.TestCase):
     def test_hf_token_none_when_no_env_no_files(self, mock_home, mock_exists):
         from commands.models import _get_hf_token
         self.assertIsNone(_get_hf_token())
+
+    @patch.dict(os.environ, {}, clear=True)
+    @patch.object(Path, "home", return_value=Path("C:/Users/test"))
+    def test_hf_token_survives_cwd_change(self, mock_home):
+        """Le jeton doit rester trouvable depuis N'IMPORTE QUEL repertoire.
+
+        Defaut mesure (#17268) : `.secrets/.env.huggingface` etait cherche en
+        chemin RELATIF. L'invocation canonique de la CLI --
+        `cd scripts/genai-stack && python genai.py models download-qwen` --
+        perdait donc le jeton et retombait en requetes anonymes, sans autre
+        signal qu'un WARNING noye dans le log. Les trois tests precedents ne
+        l'ont pas vu : deux retournent AVANT la boucle de fichiers, le
+        troisieme mocke `Path.exists` a False, donc la branche fautive n'etait
+        jamais executee.
+
+        Le test s'auto-ecarte la ou l'artefact n'existe pas (CI, checkout
+        frais : `.secrets/` est gitignore), pour ne pas fabriquer un faux rouge.
+        """
+        from commands import models
+
+        candidate = (Path(models.__file__).resolve().parents[3]
+                     / ".secrets" / ".env.huggingface")
+        if not candidate.exists():
+            self.skipTest(f"pas de {candidate} sur cette machine")
+
+        previous = os.getcwd()
+        os.chdir(tempfile.gettempdir())
+        try:
+            self.assertIsNotNone(
+                models._get_hf_token(),
+                "le jeton doit etre resolu depuis la racine du depot, "
+                "pas depuis le repertoire courant (#17268)",
+            )
+        finally:
+            os.chdir(previous)
+
+    @patch.dict(os.environ, {}, clear=True)
+    @patch.object(Path, "home", return_value=Path("C:/Users/inexistant"))
+    def test_hf_token_cwd_independence_is_testable_everywhere(self, mock_home):
+        """Le pin de non-dependance au cwd, SANS dependre de la machine.
+
+        Reserve 1 de la review NanoClaw sur #17269 : le test precedent porte un
+        `skipTest` honnete (`.secrets/` est gitignore, donc absent d'un
+        checkout CI), ce qui a une consequence non voulue -- **la CI
+        n'execute jamais la branche fautive**, et le garde-fou se reduit a un
+        canari de la lane dev.
+
+        Ce test supprime la dependance : il FABRIQUE l'artefact dans un
+        repertoire temporaire, mocke `_repo_root()` pour le designer, et se
+        place ailleurs. La non-dependance au cwd devient une propriete
+        verifiee partout, pas un espoir conditionne a la presence d'un secret.
+        """
+        from commands import models
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "fausse-racine"
+            secrets_dir = root / ".secrets"
+            secrets_dir.mkdir(parents=True)
+            (secrets_dir / ".env.huggingface").write_text(
+                "HF_TOKEN=hf_fabrique_pour_le_test\n", encoding="utf-8"
+            )
+
+            elsewhere = Path(tmp) / "ailleurs"
+            elsewhere.mkdir()
+            previous = os.getcwd()
+            os.chdir(elsewhere)
+            try:
+                with patch.object(models, "_repo_root", return_value=root):
+                    self.assertEqual(
+                        models._get_hf_token(),
+                        "hf_fabrique_pour_le_test",
+                        "le jeton doit etre resolu contre la racine RENDUE PAR "
+                        "_repo_root(), jamais contre le repertoire courant "
+                        "(#17268)",
+                    )
+            finally:
+                os.chdir(previous)
+
+    @patch.dict(os.environ, {}, clear=True)
+    @patch.object(Path, "home", return_value=Path("C:/Users/inexistant"))
+    def test_hf_token_absent_when_root_has_no_secret(self, mock_home):
+        """Controle negatif du test precedent : sans `.secrets/` sous la racine
+        rendue, la fonction rend `None`. Sans ce controle, un `_get_hf_token`
+        qui renverrait un jeton en dur passerait le test ci-dessus.
+
+        L'assertion est volontairement ecrite `is None` et non `assertIsNone` :
+        mesure du 2026-09-21, sous un defaut injecte (racine rendue cwd-relative)
+        le repertoire courant de pytest etait la racine du depot, donc la
+        fonction lisait le VRAI `.secrets/.env.huggingface` de la machine et
+        `assertIsNone` a **imprime le jeton reel** dans la sortie de test. Un
+        test ne doit jamais pouvoir faire fuiter un secret dans un log -- la
+        forme booleenne n'interpole pas la valeur.
+        """
+        from commands import models
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "racine-sans-secret"
+            root.mkdir()
+            with patch.object(models, "_repo_root", return_value=root):
+                self.assertTrue(
+                    models._get_hf_token() is None,
+                    "aucun jeton ne doit etre rendu quand la racine rendue par "
+                    "_repo_root() ne porte pas de `.secrets/`",
+                )
 
 
 # ============================================================================
@@ -543,6 +648,58 @@ class TestGpuRunCmd(unittest.TestCase):
         ok, stdout, stderr = _run_cmd("bad")
         self.assertFalse(ok)
         self.assertIn("boom", stderr)
+
+
+class TestDownloadQwenDockerScratch(unittest.TestCase):
+    """Reserve 2 de la review NanoClaw sur #17269 : le scratch de telechargement
+    de `_download_qwen_docker` etait `Path("./temp_qwen_models")`, cwd-relatif.
+
+    Meme classe que `_get_hf_token` juste au-dessus, et meme invocation fautive :
+    depuis `scripts/genai-stack`, les telechargements de plusieurs Go
+    atterrissaient sous `scripts/genai-stack/temp_qwen_models/` au lieu de la
+    racine, sans qu'aucun `.gitignore` ne couvre cet emplacement -- donc bruit
+    untracked en plus.
+
+    La fonction n'est pas testable telle quelle (elle exige un container
+    Docker) : on mocke `subprocess.run` pour la seule verification de presence
+    du container, et `hf_hub_download` pour ne rien telecharger. Ce qui est
+    teste est l'ANCRE, pas le reseau.
+    """
+
+    @patch.dict(os.environ, {}, clear=True)
+    def test_scratch_is_anchored_on_repo_root(self):
+        from commands import models
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "fausse-racine"
+            root.mkdir()
+
+            class _FauxProc:
+                stdout = "mon-container"
+
+            def faux_run(cmd, *args, **kwargs):
+                return _FauxProc()
+
+            with patch.object(models, "_repo_root", return_value=root), \
+                    patch.object(models.subprocess, "run", side_effect=faux_run), \
+                    patch("huggingface_hub.hf_hub_download") as mock_dl:
+                models._download_qwen_docker("mon-container", None)
+
+            # L'ANCRE se lit sur `local_dir`, pas sur le disque : la fonction
+            # termine par `shutil.rmtree(temp_dir, ignore_errors=True)`, donc
+            # le scratch n'existe plus a la sortie -- c'est un transitoire, et
+            # une assertion sur `is_dir()` serait fausse par conception
+            # (mesure du 2026-09-21 : premier jet du test, rouge sur le code
+            # deja corrige).
+            self.assertTrue(mock_dl.called, "aucun telechargement demande ?")
+            attendu = root / "temp_qwen_models"
+            for appel in mock_dl.call_args_list:
+                local_dir = appel.kwargs.get("local_dir")
+                self.assertTrue(
+                    local_dir is not None and Path(local_dir) == attendu,
+                    "le scratch doit etre ancre sur la racine rendue par "
+                    f"_repo_root(), obtenu : {local_dir} (#17268)",
+                )
 
 
 if __name__ == "__main__":
