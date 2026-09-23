@@ -117,15 +117,32 @@ ZIMAGE_VAE_CONFIG = {
 }
 
 
+def _repo_root() -> Path:
+    """Racine du depot, independante du repertoire courant (#17268).
+
+    `commands/models.py` vit a `<racine>/scripts/genai-stack/commands/`, donc
+    trois `parents` au-dessus du fichier.
+    """
+    return Path(__file__).resolve().parents[3]
+
+
 def _get_hf_token() -> Optional[str]:
-    """Recupere le token HuggingFace."""
+    """Recupere le token HuggingFace.
+
+    Les chemins sont ancres sur la RACINE DU DEPOT, jamais sur le cwd. La CLI
+    s'invoque naturellement depuis `scripts/genai-stack` -- exactement le
+    repertoire ou un `.secrets/` relatif ne resout plus, ce qui faisait perdre
+    le jeton en silence (`huggingface_hub` retombait alors en requetes
+    anonymes, sans autre signal qu'un WARNING dans le log applicatif).
+    """
     token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_TOKEN")
     if token:
         return token
 
+    root = _repo_root()
     secrets_paths = [
-        Path(".secrets/.env.huggingface"),
-        Path("docker-configurations/.secrets/.env.huggingface"),
+        root / ".secrets" / ".env.huggingface",
+        root / "docker-configurations" / ".secrets" / ".env.huggingface",
         Path.home() / ".huggingface" / "token",
     ]
     for path in secrets_paths:
@@ -254,7 +271,15 @@ def _download_qwen_docker(container: str, token: Optional[str],
         print(f"Container '{container}' non trouve")
         return False
 
-    temp_dir = Path("./temp_qwen_models")
+    # Ancre sur la RACINE du depot, jamais sur le cwd (#17268, meme classe que
+    # `_get_hf_token` juste au-dessus). Ce repertoire est un scratch de
+    # telechargements de plusieurs Go : resolu contre le cwd, il atterrissait
+    # sous `scripts/genai-stack/temp_qwen_models/` quand la CLI est invoquee
+    # depuis son repertoire canonique (`cd scripts/genai-stack && python
+    # genai.py ...`) -- exactement la forme que le mode d'emploi prescrit.
+    # Il ne figurait dans aucun `.gitignore` a cet emplacement, donc le
+    # scratch apparaissait en plus comme bruit untracked.
+    temp_dir = _repo_root() / "temp_qwen_models"
     temp_dir.mkdir(exist_ok=True)
 
     from huggingface_hub import hf_hub_download
