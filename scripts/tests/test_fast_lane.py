@@ -32,7 +32,7 @@ sys.path.insert(0, str(CI_DIR))
 import fast_lane  # noqa: E402
 from fast_lane_registry import (  # noqa: E402
     FAST_LANE_NATIVE, PILOT, TRANCHE1, TRANCHE2, TRANCHE3, TRANCHE4,
-    TRANCHE5, TRANCHE8, TRANCHE12, TRANCHE13, Guard,
+    TRANCHE5, TRANCHE8, TRANCHE12, TRANCHE13, TRANCHE14, Guard,
 )
 
 
@@ -1295,3 +1295,35 @@ def test_tranche13_reading_anchor_advisory_guard_is_wired():
     )
     assert r.returncode == 0, f"self-test du detecteur en echec : {r.stdout}"
     assert "positif" in r.stdout and "PASS" in r.stdout
+
+
+def test_tranche14_split_reading_guard_is_wired():
+    """Tranche 14 = garde split-reading-cells (#16762/#17031), advisory.
+
+    Cable a l'origine comme deuxieme TRANCHE13, il ecrasait silencieusement
+    le garde reading-anchor de #16704 (redefinition Python) : le postieur
+    cede l'index (cf. registre, commentaire TRANCHE14).
+    """
+    assert len(TRANCHE14) == 1
+    guard = TRANCHE14[0]
+    assert guard.name == "Split-reading-cells advisory (per-notebook, non-blocking)"
+    assert not guard.blocking, "advisory : signale les paires scindees, ne rougit jamais"
+    assert guard.absorbed, f"{guard.name} doit porter absorbed=True"
+    assert guard.iterates_paths
+    assert "--json" in guard.argv and "--fail-on-findings" in guard.argv
+
+
+def test_both_reading_guards_alive_after_tranche14_split():
+    """Controle du bug de collision : les DEUX gardes vivent dans DEUX tranches.
+
+    La redefinition silencieuse de TRANCHE13 par #17031 faisait disparaitre
+    reading-anchor du registre sans aucun message (le nom pointait sur la
+    seule liste split-reading). Ce controle aurait ete rouge le jour du
+    merge : il epingle les DEUX noms, distincts, un garde par tranche.
+    """
+    assert len(TRANCHE13) == 1 and len(TRANCHE14) == 1
+    assert TRANCHE13[0].name != TRANCHE14[0].name
+    assert {g.name for g in TRANCHE13 + TRANCHE14} == {
+        "Reading-anchor advisory (lecture sans output, #16695)",
+        "Split-reading-cells advisory (per-notebook, non-blocking)",
+    }

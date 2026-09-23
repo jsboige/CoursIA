@@ -1359,12 +1359,13 @@ TRANCHE12: list[Guard] = [
 # #14325, TRANCHE7).
 # ---------------------------------------------------------------------------
 #
-# Renomme TRANCHE12 -> TRANCHE13 au merge de #17031 : la PR soeur #16645
-# (link-label agreement) a pris TRANCHE12 sur main entre-temps. Meme classe de
-# collision que le renommage TRANCHE9 -> TRANCHE10 plus haut -- le POSTERIEUR
-# cede l'index, jamais l'inverse (deux affectations du meme nom se
-# remplaceraient silencieusement et un garde disparaitrait du registre).
-TRANCHE13: list[Guard] = [
+# Renomme en TRANCHE14 (originellement cablee comme TRANCHE12 puis TRANCHE13
+# par #17031) : TRANCHE13 est deja pris par le garde reading-anchor de #16704.
+# La redefinition silencieuse de TRANCHE13 par #17031 a fait exactement ce que
+# la regle ci-dessous interdit : deux affectations du meme nom se remplacent
+# silencieusement et le garde reading-anchor a disparu du registre a
+# l'execution -- le POSTERIEUR cede l'index, jamais l'inverse.
+TRANCHE14: list[Guard] = [
     Guard(
         name="Split-reading-cells advisory (per-notebook, non-blocking)",
         source="split-reading-advisory.yml",
