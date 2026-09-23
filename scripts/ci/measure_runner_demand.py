@@ -11,11 +11,21 @@ Examples:
       --since 2026-08-24T09:00:00Z --until 2026-08-24T10:00:00Z \
       --output runner-demand.json
   python scripts/ci/measure_runner_demand.py --input runner-demand.json
+
+Co-residence (#15574) : l'analyse croise, par job, sa duree avec le nombre de
+jobs qui tournent sur le meme hote physique -- l'hote etant presume du prefixe
+du `runner_name` (`<hote>-<n>`). Deux blocs en sortent : `co_residence`, mesure
+DYNAMIQUE (par job, pic et moyenne de concurrence sur son hote, borne
+inferieure), et `runners_inventory`, mesure STATIQUE des slots enregistres par
+hote (avec `--runners`, droit d'administration requis). Les deux sont requis
+pour trancher une sur-souscription : la premiere dit ce qui s'est produit, la
+seconde dit la capacite qui l'a produit.
 """
 from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from collections import Counter, defaultdict
@@ -29,6 +39,11 @@ EXIT_BROKEN = 2
 PER_PAGE = 100
 SEARCH_CAP = 1000
 MIN_SLICE = timedelta(seconds=1)
+
+# Convention de nommage du pool self-hosted : un slot est `<hote>-<n>`, l'hote
+# etant le reste du nom (cf docs/ci/self-hosted-runners.md). Le suffixe est
+# donc ce qui separe deux slots d'un meme hote de deux hotes distincts.
+_RUNNER_SLOT_SUFFIX = re.compile(r"^(?P<host>.+)-\d+$")
 
 
 class MeasurementError(RuntimeError):
@@ -50,6 +65,25 @@ def parse_time(value: str) -> datetime:
 
 def iso_z(value: datetime) -> str:
     return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def host_of(runner_name: object) -> str | None:
+    """Hote physique PRESUME d'un runner, derive de son nom.
+
+    Le pool nomme ses slots `<hote>-<n>` (`myia-po-2024-linux-docker-1/-2`).
+    Deux slots d'un meme hote ne different donc que par leur suffixe numerique,
+    et le regroupement par prefixe reconstitue l'hote -- c'est le seul chemin
+    vers « combien de runners partagent un hote », que les distributions par
+    runner ne peuvent pas rendre (docs/ci/self-hosted-runners.md).
+
+    Un nom qui ne porte aucun suffixe numerique n'est PAS attribue : il rend
+    ``None`` plutot qu'un hote d'un seul slot. Inventer un hote pour chaque nom
+    irreductible fabriquerait exactement le chiffre qu'on cherche a mesurer.
+    """
+    if not isinstance(runner_name, str) or not runner_name or runner_name.startswith("<"):
+        return None
+    match = _RUNNER_SLOT_SUFFIX.match(runner_name)
+    return match.group("host") if match else None
 
 
 def gh_api(endpoint: str) -> object:
@@ -216,24 +250,91 @@ def _minimal_run(row: dict, jobs: list[dict]) -> dict:
     }
 
 
+def collect_runners(repo: str, fetch: Callable[[str], object] = gh_api) -> list[dict]:
+    """Inventaire des runners enregistres : la moitie STATIQUE de la co-residence.
+
+    Le nombre de slots par hote se lit directement ici -- c'est le chiffre que
+    les distributions par label ou par runner ne peuvent pas rendre, et que
+    `docs/ci/po2024-topology-baseline.md` classe « non mesurable OS-localement ».
+    Il l'est, mais cote API, pas cote machine.
+
+    L'appel exige un droit d'administration sur le depot. L'echec remonte comme
+    echec : un inventaire vide et un « je n'ai pas le droit de lire » ne se
+    ressemblent pas et ne doivent jamais etre confondus.
+    """
+    rows: list[dict] = []
+    page = 1
+    total: int | None = None
+    while total is None or len(rows) < total:
+        endpoint = f"repos/{repo}/actions/runners?" + urlencode(
+            {"per_page": PER_PAGE, "page": page}
+        )
+        payload = fetch(endpoint)
+        if not isinstance(payload, dict) or not isinstance(payload.get("runners"), list):
+            raise MeasurementError(f"invalid actions/runners response, page {page}")
+        reported = payload.get("total_count")
+        if not isinstance(reported, int) or reported < 0:
+            raise MeasurementError("actions/runners response has no valid total_count")
+        if total is None:
+            total = reported
+        elif reported != total:
+            raise MeasurementError("actions/runners total_count changed while paging")
+        chunk = payload["runners"]
+        if not chunk and len(rows) < total:
+            raise MeasurementError(
+                f"actions/runners page {page} empty before total_count={total}"
+            )
+        rows.extend(chunk)
+        page += 1
+    if len(rows) != total:
+        raise MeasurementError(
+            f"actions/runners pagination mismatch: total_count={total}, collected={len(rows)}"
+        )
+    return [
+        {
+            "id": row.get("id"),
+            "name": row.get("name"),
+            "status": row.get("status"),
+            "busy": row.get("busy"),
+            "labels": sorted(
+                label.get("name")
+                for label in (row.get("labels") or [])
+                if isinstance(label, dict) and label.get("name")
+            ),
+        }
+        for row in rows
+        if isinstance(row, dict)
+    ]
+
+
 def collect_snapshot(
     repo: str,
     since: datetime,
     until: datetime,
     fetch: Callable[[str], object] = gh_api,
+    include_runners: bool = False,
 ) -> dict:
     runs = collect_runs(repo, since, until, fetch)
     collected = [
         _minimal_run(run, collect_jobs(repo, run["id"], fetch))
         for run in runs
     ]
-    return {
+    snapshot = {
         "schema_version": 1,
         "repo": repo,
         "since": iso_z(since),
         "until": iso_z(until),
         "runs": collected,
     }
+    if include_runners:
+        # Un inventaire illisible ne doit pas emporter la mesure de temps avec
+        # lui : l'echec est consigne dans le snapshot, et l'analyse le rendra
+        # comme « non disponible » plutot que comme un parc vide.
+        try:
+            snapshot["runners"] = collect_runners(repo, fetch)
+        except MeasurementError as exc:
+            snapshot["runners"] = {"error": str(exc)}
+    return snapshot
 
 
 def _duration_minutes(start: str, end: str, label: str) -> float | None:
@@ -322,6 +423,203 @@ def _render_timing_groups(groups: dict[str, dict], key: str) -> list[dict]:
     return rendered
 
 
+def _runtime_percentiles(values: list[float]) -> dict:
+    return {
+        name: (round(value, 3) if value is not None else None)
+        for name, value in (
+            ("p50", _percentile(values, 0.5)),
+            ("p90", _percentile(values, 0.9)),
+            ("max", max(values) if values else None),
+        )
+    }
+
+
+def _coresidence(records: list[dict]) -> dict:
+    """Croise la duree d'un job avec le nombre de jobs qui tournent sur son hote.
+
+    Deux statistiques par job, parce qu'elles repondent a deux questions
+    distinctes : la concurrence de PIC (combien de jobs l'hote a-t-il portes
+    simultanement pendant ce job -- c'est elle qui dit le plafond atteint) et la
+    concurrence MOYENNE (quelle part de la duree s'est faite en compagnie).
+
+    Le pic est calcule sur les bornes des intervalles : entre deux bornes le
+    compte ne peut pas changer, et un echantillon unique (un point median) rate
+    un job qui chevauche un autre sur la moitie de sa duree.
+
+    La concurrence mesuree est une BORNE INFERIEURE de la vraie : seuls les jobs
+    de la fenetre collectee sont connus, et un job hors fenetre qui tournait en
+    parallele est invisible. Elle ne peut donc pas servir a prouver qu'un hote
+    n'est jamais sur-souscrit -- seulement a montrer qu'il l'est.
+    """
+    per_host: dict[str, list[dict]] = defaultdict(list)
+    unplaced = 0
+    for record in records:
+        if record["host"] is None:
+            unplaced += 1
+            continue
+        per_host[record["host"]].append(record)
+
+    solo: list[float] = []
+    shared: list[float] = []
+    rendered = []
+    for host in sorted(per_host):
+        host_records = per_host[host]
+        buckets: dict[int, list[float]] = defaultdict(list)
+        for record in host_records:
+            start, end = record["start"], record["end"]
+            points = {start}
+            for other in host_records:
+                # Les seuls instants ou le compte peut changer sont les bornes
+                # des intervalles : echantillonner ailleurs ne peut rien
+                # apprendre, et un point median unique rate un job qui
+                # chevauche un autre sur la moitie de sa duree.
+                for bound in (other["start"], other["end"]):
+                    if start <= bound < end:
+                        points.add(bound)
+            peak = max(
+                (sum(1 for other in host_records
+                     if other["start"] <= point < other["end"]) or 1)
+                for point in points
+            )
+            duration = (end - start).total_seconds()
+            if duration > 0:
+                overlapped = sum(
+                    max(0.0, (min(end, other["end"]) - max(start, other["start"])).total_seconds())
+                    for other in host_records
+                    if other is not record
+                )
+                record["mean_concurrency"] = 1.0 + overlapped / duration
+            else:
+                record["mean_concurrency"] = float(peak)
+            buckets[max(1, peak)].append(record["work"])
+        for level, values in buckets.items():
+            if level <= 1:
+                solo.extend(values)
+            else:
+                shared.extend(values)
+
+        # La queue est clairsemee par construction : au-dela de 4 jobs
+        # concurrents sur un hote, les niveaux exacts ne portent plus de signal
+        # distinct, seul le fait d'etre sature compte.
+        tail: list[float] = []
+        groups = []
+        for level in sorted(buckets):
+            if level >= 5:
+                tail.extend(buckets[level])
+                continue
+            groups.append({
+                "concurrency": level,
+                "jobs": len(buckets[level]),
+                "runtime_minutes": _runtime_percentiles(buckets[level]),
+            })
+        if tail:
+            groups.append({
+                "concurrency": "5+",
+                "jobs": len(tail),
+                "runtime_minutes": _runtime_percentiles(tail),
+            })
+
+        rendered.append({
+            "host": host,
+            "runners": sorted({record["runner"] for record in host_records}),
+            "slots_observed": len({record["runner"] for record in host_records}),
+            "jobs": len(host_records),
+            "max_concurrency_observed": max(buckets) if buckets else None,
+            "mean_concurrency_overall": (
+                round(
+                    sum(record["mean_concurrency"] for record in host_records)
+                    / len(host_records),
+                    3,
+                )
+                if host_records else None
+            ),
+            "runtime_by_concurrency": groups,
+        })
+
+    solo_p50 = _percentile(solo, 0.5)
+    shared_p50 = _percentile(shared, 0.5)
+    return {
+        "method": (
+            "hote prefixe du runner_name (`<hote>-<n>`) ; par job, "
+            "concurrence de PIC (max sur les bornes des intervalles) et "
+            "concurrence MOYENNE (integral du recouvrement / duree)"
+        ),
+        "caveats": [
+            "la concurrence est une borne inferieure : les jobs hors fenetre de collecte sont invisibles",
+            "l'hote est presume du nom du runner ; un nom sans suffixe numerique n'est pas attribue",
+            "une correlation n'est pas une cause : une duree plus longue en concurrence peut venir du job lui-meme",
+        ],
+        "hosts": rendered,
+        "summary": {
+            "hosts": len(rendered),
+            "jobs_placed": len(records) - unplaced,
+            "jobs_unplaced": unplaced,
+            "solo_jobs": len(solo),
+            "shared_jobs": len(shared),
+            "solo_runtime_minutes": _runtime_percentiles(solo),
+            "shared_runtime_minutes": _runtime_percentiles(shared),
+            "shared_over_solo_p50_ratio": (
+                round(shared_p50 / solo_p50, 3)
+                if solo_p50 and shared_p50 is not None and solo_p50 > 0
+                else None
+            ),
+        },
+    }
+
+
+def _runners_inventory(raw: object) -> dict:
+    """Slots enregistres par hote -- ou l'aveu explicite qu'on ne les a pas lus.
+
+    Trois etats distincts, jamais confondus : `measured`, `unavailable` (le
+    droit de lecture manque -- le detail porte la raison) et `not_collected`
+    (l'inventaire n'a pas ete demande). Aucun des trois ne rend un parc vide.
+    """
+    if isinstance(raw, dict) and "error" in raw:
+        return {"availability": "unavailable", "detail": str(raw["error"])}
+    if not isinstance(raw, list):
+        return {
+            "availability": "not_collected",
+            "detail": "inventaire non demande : relancer la collecte avec --runners",
+        }
+
+    per_host: dict[str, dict] = defaultdict(
+        lambda: {"slots": 0, "online": 0, "busy": 0, "labels": set()}
+    )
+    unplaced = 0
+    for runner in raw:
+        if not isinstance(runner, dict):
+            continue
+        host = host_of(runner.get("name"))
+        if host is None:
+            unplaced += 1
+            continue
+        entry = per_host[host]
+        entry["slots"] += 1
+        if runner.get("status") == "online":
+            entry["online"] += 1
+        if runner.get("busy"):
+            entry["busy"] += 1
+        entry["labels"].update(
+            label for label in (runner.get("labels") or []) if isinstance(label, str)
+        )
+
+    return {
+        "availability": "measured",
+        "total_runners": len(raw),
+        "unplaced_runners": unplaced,
+        "hosts": [
+            {
+                "host": host,
+                "slots": data["slots"],
+                "online": data["online"],
+                "busy": data["busy"],
+                "labels": sorted(data["labels"]),
+            }
+            for host, data in sorted(per_host.items())
+        ],
+    }
+
+
 def analyze(snapshot: dict) -> dict:
     if snapshot.get("schema_version") != 1:
         raise MeasurementError("unsupported or missing snapshot schema_version")
@@ -346,6 +644,7 @@ def analyze(snapshot: dict) -> dict:
     total_jobs = timed_jobs = incomplete_jobs = skipped_without_start = 0
     timestamp_skew_jobs = 0
     runner_minutes = queue_minutes = 0.0
+    timed_records: list[dict] = []
 
     seen_runs: set[int] = set()
     for run in runs:
@@ -407,6 +706,16 @@ def analyze(snapshot: dict) -> dict:
             timed_jobs += 1
             runner_minutes += work
             queue_minutes += wait
+            timed_records.append({
+                "job_id": job.get("id"),
+                "workflow": workflow,
+                "runner": runner,
+                "host": host_of(runner),
+                "start": parse_time(str(started)),
+                "end": parse_time(str(completed)),
+                "work": work,
+                "wait": wait,
+            })
             workflow_data[workflow]["timed_jobs"] += 1
             workflow_data[workflow]["runner_minutes"] += work
             workflow_data[workflow]["queue_minutes"] += wait
@@ -453,6 +762,8 @@ def analyze(snapshot: dict) -> dict:
         "by_workflow": by_workflow,
         "by_label": _render_timing_groups(label_data, "label"),
         "by_runner": _render_timing_groups(runner_data, "runner_name"),
+        "co_residence": _coresidence(timed_records),
+        "runners_inventory": _runners_inventory(snapshot.get("runners")),
     }
 
 
@@ -477,17 +788,33 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--since", help="inclusive UTC ISO-8601 start (live mode)")
     parser.add_argument("--until", help="exclusive UTC ISO-8601 end (live mode)")
     parser.add_argument("--output", type=Path, help="write JSON result (default: stdout)")
+    parser.add_argument(
+        "--runners",
+        action="store_true",
+        help=(
+            "collecter aussi l'inventaire des runners enregistres (slots par hote). "
+            "Exige un droit d'administration sur le depot : sans lui l'inventaire "
+            "sort `unavailable` avec sa raison, jamais un parc vide."
+        ),
+    )
     args = parser.parse_args(argv)
 
     try:
         if args.input:
             if args.since or args.until:
                 raise MeasurementError("--since/--until cannot be combined with --input")
+            if args.runners:
+                raise MeasurementError("--runners cannot be combined with --input")
             snapshot = load_snapshot(args.input)
         else:
             if not args.since or not args.until:
                 raise MeasurementError("live mode requires --since and --until")
-            snapshot = collect_snapshot(args.repo, parse_time(args.since), parse_time(args.until))
+            snapshot = collect_snapshot(
+                args.repo,
+                parse_time(args.since),
+                parse_time(args.until),
+                include_runners=args.runners,
+            )
         result = {"snapshot": snapshot, "analysis": analyze(snapshot)}
         rendered = json.dumps(result, indent=2, ensure_ascii=False) + "\n"
         if args.output:
