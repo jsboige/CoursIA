@@ -50,7 +50,7 @@ GitHub auto-closes issues on `Refs #N`, `Fixes #N`, `Closes #N`. Use safe syntax
   **L'ordre qui sort de la boucle — le dossier vient APRÈS la stabilisation de la branche, jamais avant :**
 
   1. la lane `update-branch` si elle doit récupérer `main` ;
-  2. on laisse les checks se ré-agréger à la nouvelle tête, puis **on rejoue** le job si besoin — personne ne re-pousse. Le plancher DWELL, lui, n'a **pas** été ré-armé par un `update-branch` sans conflit : il continue de se mesurer depuis le dernier commit d'auteur. Il ne se ré-arme que si le rafraîchissement a exigé une **résolution manuelle de conflit** (arbre ≠ auto-merge des parents), cas où l'attente de 120 min redevient réelle ;
+  2. on laisse les checks se ré-agréger à la nouvelle tête, puis **on rejoue** le job si besoin — personne ne re-pousse. Le plancher DWELL, lui, n'a **pas** été ré-armé par un `update-branch` sans conflit : il continue de se mesurer depuis le dernier commit qui modifie le côté PR — la date de committer que remonte `last_authoritative_committed_at`, pas celle de la fusion de rafraîchissement. Il ne se ré-arme que si le rafraîchissement a exigé une **résolution manuelle de conflit** (arbre ≠ auto-merge des parents), cas où l'attente de 120 min redevient réelle ;
   3. **alors** l'adjoint écrit le dossier, à la tête exacte ;
   4. le coordinateur merge **immédiatement**, et **la branche est gelée entre 3 et 4**.
 

@@ -83,6 +83,21 @@ def hourly_sweep_claims(text: str):
     return _HOURLY_SWEEP.findall(_norm(text))
 
 
+def predicate_is_named(text: str) -> bool:
+    """La regle nomme-t-elle le predicat par ce qui le DEFINIT ?
+
+    Nuance qui compte : « le dernier commit de la branche » et « le dernier
+    commit qui MODIFIE le cote PR » different exactement sur le cas
+    update-branch — c'est l'erreur d'origine. Nommer `last_authoritative_
+    committed_at` ne suffit donc pas si la phrase continue d'expliquer le
+    plancher par le commit de branche.
+    """
+    section = _norm(text)
+    if "last_authoritative_committed_at" not in section:
+        return False
+    return "dernier commit" not in section or "modifie le cote pr" in section
+
+
 def _rule_text() -> str:
     return RULE.read_text(encoding="utf-8")
 
@@ -118,15 +133,14 @@ def test_negative_control_the_old_wording_is_flagged():
 # --------------------------------------------------- 2. le predicat est nomme
 
 def test_rule_names_the_real_predicate():
-    """La regle doit nommer l'organe par ce qui le definit, pas par « dernier commit ».
+    """La regle doit nommer l'organe par ce qui le definit, pas par « dernier commit »."""
+    assert predicate_is_named(_dwell_section())
 
-    Nuance qui compte : « le dernier commit de la branche » et « le dernier
-    commit qui MODIFIE le cote PR » different exactement sur le cas
-    update-branch — c'est l'erreur d'origine.
-    """
-    section = _norm(_dwell_section())
-    assert "last_authoritative_committed_at" in section
-    assert "dernier commit" not in section or "modifie le cote pr" in section
+
+def test_negative_control_the_old_predicate_wording_is_flagged():
+    """Controle negatif — l'ancienne phrase mesurait « le dernier commit de la
+    branche » : le meme predicat doit la refuser (elle ne nomme rien)."""
+    assert predicate_is_named(OLD_LINE) is False
 
 
 def test_rule_states_the_three_conjunctive_conditions():
