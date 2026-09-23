@@ -764,7 +764,7 @@ layout: default
 <img src="./images/img_040.png" class="max-h-[190px] w-full object-contain" alt="Réseau sémantique : Mammals, Persons, Mary, John reliés par liens d'héritage et propriétés" />
 </div>
 
-<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-01-Introduction.ipynb">Z3-Python-01-Introduction.ipynb</a> (SAT/SMT).</p>
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01-Introduction-Python.ipynb">Z3-01-Introduction-Python.ipynb</a> (SAT/SMT).</p>
 ---
 
 
@@ -802,7 +802,7 @@ layout: default
   <img src="./images/img_040.png" class="max-h-[190px] w-auto object-contain" alt="Réseau sémantique : Mammals, Persons, Mary, John reliés par liens d'héritage et propriétés" />
 </div>
 
-<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-05-Quantifiers-Proofs.ipynb">Z3-Python-05-Quantifiers-Proofs.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02c-FOL-CSharp.ipynb">Tweety-02c-FOL-CSharp.ipynb</a>.</p>
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-05-Quantifiers-Proofs-Python.ipynb">Z3-05-Quantifiers-Proofs-Python.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02c-FOL-CSharp.ipynb">Tweety-02c-FOL-CSharp.ipynb</a>.</p>
 ---
 
 
@@ -950,7 +950,7 @@ layout: default
 
 <!-- Exemples : triplets RDF (sujet-predicat-objet), ontologies OWL, SPARQL -->
 
-<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization.ipynb">Z3-Python-06-Advanced-Optimization.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-2b-Python-RDFBasics.ipynb">SW-2b-Python-RDFBasics.ipynb</a> (triplets RDF).</p>
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-06-Advanced-Optimization-Python.ipynb">Z3-06-Advanced-Optimization-Python.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-2b-Python-RDFBasics.ipynb">SW-2b-Python-RDFBasics.ipynb</a> (triplets RDF).</p>
 ---
 
 
@@ -1913,7 +1913,7 @@ layout: section
 </div>
 </div>
 
-<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/24_NGrammes_Modeles_De_Langue.ipynb">24_NGrammes_Modeles_De_Langue.ipynb</a>.</p>
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/NLP/02_NGrammes_Modeles_De_Langue.ipynb">24_NGrammes_Modeles_De_Langue.ipynb</a>.</p>
 ---
 
 
@@ -1978,7 +1978,7 @@ Le <strong>NLU</strong> est un sous-ensemble du <strong>NLP</strong> : les tâch
 <img src="./images/img_126.png" class="max-h-[160px] w-[44%] object-contain" alt="Arbre syntaxique probabiliste de « Every wumpus smells » avec probabilités par nœud" />
 </div>
 
-<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/26_PCFG_CYK_Parsing.ipynb">26_PCFG_CYK_Parsing.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/25_CRF_Etiquetage_Sequentiel.ipynb">25_CRF_Etiquetage_Sequentiel.ipynb</a>.</p>
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/NLP/04_PCFG_CYK_Parsing.ipynb">26_PCFG_CYK_Parsing.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/NLP/03_CRF_Etiquetage_Sequentiel.ipynb">25_CRF_Etiquetage_Sequentiel.ipynb</a>.</p>
 ---
 
 

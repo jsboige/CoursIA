@@ -1,0 +1,104 @@
+name: Notebook Kernel Drift Guard
+
+# c.559 — kernel-drift-guard: detect when a notebook's execution kernel
+# (Python version, kernelspec) or float-output repr differs from the base
+# reference without documentation in the PR body. Motivated by PR #16043
+# (2026-09-14): the PR re-executed Lean-18 Sendov-Complex-Analysis.ipynb
+# under Python 3.13 instead of 3.11, introducing a NumPy 1.x -> 2.x repr
+# drift in cells 12 and 14 ([1.0, 1.0, ...] -> [1.0, 0.9999..., 1.0]).
+# The acceptance of issue #15650 (point 4) requires "cellules non
+# touchées reproduisent leurs sorties - ou l'écart résiduel est expliqué
+# par une section ## Diagnostic dérive (C.4)". This guard enforces that
+# contract mechanically: a textual-shape drift in float-array output
+# without a documented justification fails the run.
+#
+# Two failure classes are surfaced:
+#   - KERNEL: language_info.version or kernelspec.name differs from base.
+#     Requires `## Diagnostic dérive` in the PR body explaining the change.
+#   - SIGNATURE: float-array repr changed on one or more code cells
+#     without a documented justification.
+on:
+  pull_request:
+    types: [opened, synchronize, edited, reopened]
+    branches: [main]
+    paths:
+      - '**.ipynb'
+      - 'scripts/notebook_tools/check_kernel_drift.py'
+      - 'scripts/notebook_tools/tests/test_check_kernel_drift.py'
+      - '.github/workflows/notebook-kernel-drift-guard.yml'
+  workflow_dispatch:
+    inputs:
+      base_ref:
+        description: 'Base ref to check against (default origin/main)'
+        required: false
+        default: 'origin/main'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: notebook-kernel-drift-guard-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  kernel-drift:
+    name: Kernel drift guard (base vs PR)
+    # Same routing as notebook-papermill-ratchet.yml (#13378 tranche 1):
+    # Linux auto-hosted runner, no GITHUB_TOKEN, fork PRs skipped.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          filter: blob:none
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Kernel drift check
+        env:
+          BASE_REF: ${{ github.event.inputs.base_ref }}
+          PR_BASE: ${{ github.base_ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_BODY_FILE: ${{ runner.temp }}/pr_body
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BASE="${BASE_REF:-origin/${PR_BASE:-main}}"
+          # Write the PR body to a file the script can read (defect 1: exemption check).
+          # PR_BODY env must be set ABOVE (github.event.pull_request.body) for the
+          # '## Diagnostic dérive' exemption to activate in CI -- without it, body_exempts
+          # is False on every run and C.4 acceptance is unreachable.
+          #
+          # Stale-payload fix (2026-09-22, PR #17389): `github.event.pull_request.body`
+          # is the body AT EVENT TIME -- it never moves on rerun, so a body edited to add
+          # the '## Diagnostic dérive' exemption is invisible to every rerun and the
+          # exemption becomes unreachable in CI even with the correct body. Fetch the LIVE
+          # body when the event carries a PR number; fall back to the payload on
+          # workflow_dispatch (no number) or if the API call fails (offline runner).
+          if [ -n "$PR_NUMBER" ]; then
+            LIVE_BODY=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq '.body' 2>/dev/null) || LIVE_BODY=""
+            if [ -n "$LIVE_BODY" ]; then
+              PR_BODY="$LIVE_BODY"
+            fi
+          fi
+          if [ -n "$PR_BODY" ]; then
+            printf '%s' "$PR_BODY" > "$PR_BODY_FILE"
+          fi
+          # Defect 3: ONE invocation. --json is the source of truth.
+          set +e
+          python scripts/notebook_tools/check_kernel_drift.py "$BASE" --explain --json > kernel-drift.json
+          rc=$?
+          set -e
+          echo "JSON findings:" && cat kernel-drift.json
+          echo "Exit code: ${rc}"
+          exit ${rc}
+
+      - name: Kernel drift unit tests
+        run: |
+          python -m pip install --quiet pytest
+          python -m pytest scripts/notebook_tools/tests/test_check_kernel_drift.py -q
