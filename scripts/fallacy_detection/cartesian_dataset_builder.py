@@ -64,6 +64,11 @@ if __package__ in (None, ""):
 
 from fallacy_detection.argumentum_taxonomy_explorer import _load_nodes  # noqa: E402
 
+# Univers des langues : source unique `check_perimeter` (#10109) -- une copie
+# locale est refusee par `test_lang_single_source.py`.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "translation"))
+from check_perimeter import ALL_LANGS  # noqa: E402
+
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _ARG_DATA = _REPO_ROOT / "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data"
 DEFAULT_FALLACIES = _ARG_DATA / "argumentum_fallacies_taxonomy.csv"
@@ -77,7 +82,7 @@ DEFAULT_SCENARII = (
 SCENARII_UPSTREAM_COMMIT = "0ab05d66576a1007c3952a67e2dd1eaf8f9b502c"
 SCENARII_BLOB_SHA1 = "9f20eb808a1d22c9c1a5dd1b96460b0d6a23db60"
 
-LANGS = ("fr", "en", "ru", "pt", "ar", "es", "zh", "fa")
+LANGS = tuple(ALL_LANGS)
 LANG_NAMES = {
     "fr": "French", "en": "English", "ru": "Russian", "pt": "Portuguese",
     "ar": "Arabic", "es": "Spanish", "zh": "Chinese", "fa": "Persian",
