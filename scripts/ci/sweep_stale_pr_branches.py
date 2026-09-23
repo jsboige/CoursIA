@@ -30,6 +30,14 @@ d'organe porte `invalidated`; le pilote les AGREGE dans `dossiers_invalides`
 en tete de sortie pour que l'adjoint sache quels dossiers refabriquer --
 sinon le sweep detruit du premachage en silence.
 
+Gel des branches sous dossier READY (reserve adjoint 5788054957, arbitrage
+ai-01 voie (a), #16924) : une PR dont `check_adjoint_prevalidation.py <N>`
+rend 0 (dossier READY a la tete exacte) est ecartee AVANT `process_one` et
+rendue sous `skipped_ready_dossier` -- un synchronize tuerait le dossier a
+la seconde. Seul rc=0 protege : rc=1 (pas de dossier), rc=2 (UNKNOWN) et
+rc=3 (BLOCKED, dont un rouge de base perimee est justement le cas que
+l'organe #16149 repare) restent candidates.
+
 Le plancher DWELL ne se re-arme PAS sur un update-branch serveur legitime :
 l'exemption `last_authoritative_committed_at` (merge_dwell.py, #16149) reste
 la seule autorite, et le test `test_sweep_update_ne_re_arme_pas_le_dwell`
@@ -41,6 +49,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -48,6 +57,7 @@ from typing import Any
 
 HERE = Path(__file__).resolve().parent
 ORGANE = HERE / "update_stale_pr_branches.py"
+PREVALIDATION = HERE.parent / "check_adjoint_prevalidation.py"
 
 _spec = importlib.util.spec_from_file_location("update_stale_pr_branches", ORGANE)
 organe = importlib.util.module_from_spec(_spec)
@@ -68,6 +78,22 @@ ORDER_OLDEST = "oldest"
 ORDER_NEWEST = "newest"
 ORDER_NUMBER = "number"
 ORDERS = (ORDER_OLDEST, ORDER_NEWEST, ORDER_NUMBER)
+
+#: Seul rc=0 (EXIT_READY) gele la branche ; 1/2/3 la laissent candidate.
+PREVALIDATION_READY = 0
+
+
+def default_run_prevalidation(pr: int) -> int:
+    """rc de l'organe de prevalidation pour une PR : 0 = dossier READY a la
+    tete exacte (branche gelee jusqu'au merge). Sous-processus natif, sans
+    reimport -- l'organe reste la seule autorite sur ses codes de sortie."""
+    proc = subprocess.run(
+        [sys.executable, str(PREVALIDATION), str(pr)],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+    return proc.returncode
 
 
 def list_open_prs(repo: str, limit: int, run_gh=None) -> list[dict[str, Any]]:
@@ -140,18 +166,35 @@ def sweep(
     in_flight_ttl: int,
     now: float | None = None,
     run_gh=None,
+    run_prevalidation=None,
 ) -> dict[str, Any]:
     """Enumerer, trier, deleguer, agreger. Un seul appel `gh pr list`, puis
-    un `process_one` par candidate -- jamais de mise a jour reimplementee."""
+    un `process_one` par candidate -- jamais de mise a jour reimplementee.
+
+    Avant la delegation, chaque candidate passe par l'organe de
+    prevalidation : rc=0 (dossier READY a la tete exacte) gele la branche --
+    elle ne part pas a `process_one` et figure sous `skipped_ready_dossier`."""
     if run_gh is None:
         run_gh = organe.run_gh
+    if run_prevalidation is None:
+        run_prevalidation = default_run_prevalidation
     rows = list_open_prs(repo, limit, run_gh=run_gh)
     candidates = pick_candidates(rows, order=order)
+
+    skipped_ready_dossier: list[dict[str, Any]] = []
+    swept: list[int] = []
+    for pr in candidates:
+        if run_prevalidation(pr) == PREVALIDATION_READY:
+            skipped_ready_dossier.append(
+                {"pr": pr, "reason": "ready_dossier_at_exact_head"}
+            )
+        else:
+            swept.append(pr)
 
     moment = time.time() if now is None else now
     applied = 0
     results: list[dict[str, Any]] = []
-    for pr in candidates:
+    for pr in swept:
         result = organe.process_one(
             pr,
             repo=repo,
@@ -195,6 +238,7 @@ def sweep(
         "candidates": len(candidates),
         "updates_applied": applied,
         "dossiers_invalides": dossiers_invalides,
+        "skipped_ready_dossier": skipped_ready_dossier,
         "summary": {"by_action": by_action, "by_code": by_code},
         "results": results,
     }

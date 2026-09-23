@@ -26,6 +26,13 @@ name: Stale PR branches sweep
 # borne combien de dossiers peuvent perir par jour -- un sweep non borne qui
 # toucherait 12 branches d'un coup detruirait 12 premachages simultanement.
 #
+# Gel des branches sous dossier READY (#16924, reserve adjoint 5788054957) :
+# avant toute delegation, le pilote ecarte les PRs dont
+# `check_adjoint_prevalidation.py` rend 0 (dossier READY a la tete exacte)
+# et les rend sous `skipped_ready_dossier` -- un synchronize tuerait le
+# dossier a la seconde. Seul rc=0 protege : les BLOCKED restent candidates,
+# un rouge de base perimee etant justement le cas que l'organe repare.
+#
 # Le plancher DWELL ne se re-arme PAS sur ces updates : un `update-branch`
 # serveur est une fusion content-free, exempte par
 # `merge_dwell.last_authoritative_committed_at` (#16149) --
@@ -35,9 +42,10 @@ name: Stale PR branches sweep
 # depot sont servis 4.7-7.2x tard ; les quotidiens exactement (mesure
 # 2026-09-12T08:19Z, scripts/ci/check_scheduler_liveness.py). Un sweep
 # quotidien a --max-updates 3 rattrape ~3 branches/jour sans jamais perimer
-# plus de 3 dossiers : borne lente par choix, pas par timidite -- la file des
-# PRs en retard se reforme en continu et le plafond la desserve au rythme ou
-# les lanes porteuses peuvent refabriquer leurs dossiers.
+# plus de 3 dossiers (hors gel READY, qui ne periment plus du tout) : borne
+# lente par choix, pas par timidite -- la file des PRs en retard se reforme
+# en continu et le plafond la desserve au rythme ou les lanes porteuses
+# peuvent refabriquer leurs dossiers.
 
 on:
   schedule:

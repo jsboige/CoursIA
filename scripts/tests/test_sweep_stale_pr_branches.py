@@ -158,9 +158,16 @@ class FakeGh:
         return [c[2] for c in self.calls if c[:2] == ["pr", "view"]]
 
 
-def run_main(monkeypatch, capsys, tmp_path, listing, views, argv=()):
+def run_main(monkeypatch, capsys, tmp_path, listing, views, argv=(), prevalidation=None):
     fake = FakeGh(listing, views)
     monkeypatch.setattr(organe, "run_gh", fake)
+    #: Prevalidation hermetique par defaut : rc=1 (EXIT_NO_DOSSIER) -- aucune
+    #: branche n'est gelee, tout part a l'organe, comme avant le filtre.
+    monkeypatch.setattr(
+        sweep_mod,
+        "default_run_prevalidation",
+        prevalidation or (lambda pr: 1),
+    )
     rc = sweep_mod.main(
         ["--state-dir", str(tmp_path / "st")] + list(argv)
     )
@@ -212,6 +219,44 @@ def test_clean_en_retard_est_candidate(monkeypatch, capsys, tmp_path):
     # Dry-run : l'organe mesure le deficit et refuse d'ecrire, mais la PR a
     # bien ete consideree (result present, pas filtree).
     assert out["results"][0]["behind_by"] == 11
+
+
+# --- gel des branches sous dossier READY (reserve 5788054957, #16924) -------
+
+
+def test_ready_dossier_exclu_avant_process_one(monkeypatch, capsys, tmp_path):
+    """Controle positif : rc=0 (dossier READY a la tete exacte) => la PR ne
+    part JAMAIS a l'organe (pas meme un `pr view`) et figure sous
+    `skipped_ready_dossier`. Un update-branch tuerait le dossier a la
+    seconde -- le gel dossier->merge (git-workflow.md) l'exige."""
+    listing = [row(11), row(12)]
+    rc, out, fake = run_main(
+        monkeypatch, capsys, tmp_path, listing, {12: [view(12)]},
+        prevalidation=lambda pr: 0 if pr == 11 else 1,
+    )
+    assert fake.view_order == ["12", "12"]
+    assert out["skipped_ready_dossier"] == [
+        {"pr": 11, "reason": "ready_dossier_at_exact_head"}
+    ]
+    assert out["candidates"] == 2
+    assert [r["pr"] for r in out["results"]] == [12]
+
+
+def test_blocked_ou_sans_dossier_restent_candidates(monkeypatch, capsys, tmp_path):
+    """Controle negatif : rc=1 (EXIT_NO_DOSSIER), rc=2 (EXIT_UNKNOWN) et
+    rc=3 (EXIT_BLOCKED_WITH_SUBSTANCE) ne protegent PAS la branche. Le cas
+    BLOCKED est justement celui que l'organe #16149 repare (rouge de base
+    perimee) -- l'exclure reviendrait a ne plus jamais rafraichir les PRs
+    qui en ont le plus besoin."""
+    listing = [row(11), row(12), row(13)]
+    rc, out, fake = run_main(
+        monkeypatch, capsys, tmp_path, listing,
+        {11: [view(11)], 12: [view(12)], 13: [view(13)]},
+        prevalidation=lambda pr: {11: 1, 12: 2, 13: 3}[pr],
+    )
+    assert out["skipped_ready_dossier"] == []
+    assert fake.view_order == ["11", "11", "12", "12", "13", "13"]
+    assert [r["pr"] for r in out["results"]] == [11, 12, 13]
 
 
 def test_ordre_oldest_d_abord(monkeypatch, capsys, tmp_path):
