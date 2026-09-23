@@ -347,7 +347,9 @@ def checkpoint_resume(
     empty_history = {}
 
     if os.path.exists(model_save_path):
-        print(f"Modele final trouve: {model_save_path}")
+        # basename : le chemin absolu resolu au cwd de papermill est un chemin
+        # machine (ratchet Output-failure), meme convention que `finalize()`.
+        print(f"Modele final trouve: {os.path.basename(model_save_path)}")
         save_dict = torch.load(model_save_path, weights_only=False, map_location=map_loc)
         model.load_state_dict(save_dict['model_state_dict'])
         print("Modele charge, entrainement saute.")
@@ -355,7 +357,7 @@ def checkpoint_resume(
         return -1, float('inf'), empty_history, extra
 
     elif os.path.exists(checkpoint_path):
-        print(f"Checkpoint trouve: {checkpoint_path}")
+        print(f"Checkpoint trouve: {os.path.basename(checkpoint_path)}")
         ckpt = torch.load(checkpoint_path, weights_only=False, map_location=map_loc)
         model.load_state_dict(ckpt['model_state_dict'])
 
