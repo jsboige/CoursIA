@@ -924,3 +924,43 @@ def test_diff_reading_before_code_ne_mord_pas_si_code_sans_sortie():
     # Le code n'a pas d'output -> is_exercise_cell = False (pas de marker)
     # mais il n'a pas non plus de sortie utile -> devrait etre ignore.
     assert detect_added_readings(head, base) == []
+
+
+# --- 4. Delta #17087 (rebase post-#17135) : les trois cas non couverts --------
+
+
+def test_titres_reels_accentues_sont_reconnus():
+    """Les carnets reels ecrivent « Lecture chiffrée du résultat » AVEC accents :
+    deaccent() fait partie du chemin de detection, et toute la suite ci-dessus
+    ne fabrique que des titres desaccentues -- le chemin accentue etait mort
+    s'il regressait (delta #17087, non couvert par #17135)."""
+    findings = detect(nb(
+        md("### Lecture du résultat\nConvergence nette vers l'optimum."),
+        md("### Lecture chiffrée du résultat\nLe score atteint 0.94 en 40 itérations."),
+    ))
+    assert len(findings) == 1
+    assert findings[0]["type"] == "named_split"
+
+
+def test_source_string_sans_liste_supportee():
+    """nbformat admet ``source`` comme str OU liste de str. Les carnets ecrits
+    a la main (et certains exports) laissent la forme str : le detecteur doit
+    digerer les deux -- la suite existante ne fabrique que des listes."""
+    a = {"cell_type": "markdown", "source": "### Lecture du resultat", "metadata": {}}
+    b = {"cell_type": "markdown", "source": "### Lecture chiffree du resultat",
+         "metadata": {}}
+    findings = detect(nb(a, b))
+    assert len(findings) == 1
+    assert findings[0]["type"] == "named_split"
+
+
+def test_convention_le_titre_compte_dans_la_mesure():
+    """Corps disjoints ; le seul mot partage est le mot-TITRE « lecture »,
+    present dans les deux sources. Jaccard = 1/8 = 0.125, containment des
+    rares = 1/4 = 0.25. Epingle la convention : la mesure porte le titre,
+    pas seulement le corps -- les bodies cites (#17040) citent ces chiffres."""
+    a = md("### Lecture\nalpha beta gamma")
+    b = md("### Lecture chiffree\ndelta epsilon zeta")
+    findings = detect(nb(a, b))
+    assert findings[0]["jaccard"] == 0.125
+    assert findings[0]["rare_containment"] == 0.25
