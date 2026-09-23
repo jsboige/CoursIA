@@ -409,6 +409,10 @@ docker-configurations/shared/cache/
 # Outputs temporaires
 outputs/
 output_z_image/
+# Scratch de telechargement de `models download-qwen*` (#17268) : ancre sur la
+# racine du depot, donc ici, et non sous scripts/genai-stack/ ou il atterrissait
+# avant que le chemin soit ancre.
+temp_qwen_models/
 
 # Modèles locaux (trop volumineux)
 models/
@@ -432,6 +436,11 @@ docker-configurations/comfyui-qwen/workspace/venv/
 *.env
 *.env.backup
 *.env.backup-SECURE
+# Sauvegardes horodatees d'un .env (ex: .env.bak-20260912T1404Z) : la famille
+# .env.backup* etait couverte, la famille .env.bak* ne l'etait pas -- un
+# `git add -A` aurait commite un fichier de secrets. Cf .claude/rules/secrets-hygiene.md
+.env.bak*
+*.env.bak*
 docker-configurations/services/comfyui-qwen/workspace/
 
 # Ignore nested git repository
@@ -1071,3 +1080,14 @@ MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/obj/
 MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/.cuda-libs/
 MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/cuda-detect-probe/
 /.scratch-attic/
+
+# Papermill run artifacts — #16633. Patterns `*_executed.ipynb` /
+# `*_output*.ipynb` déclarés l.608-611 ci-dessus. Les chemins absolus que
+# papermill grave dans `metadata.papermill.*` ou que les sorties exposent
+# (matplotlib/pip/.NET temp paths) ne sont **pas** couverts par .gitignore ;
+# outillage canonique : detect_papermill_path_leak.py (read-only),
+# scrub_papermill_paths.py (correctif), _papermill_meta.py (préventif).
+# Mesure fresh horodatée : voir commentaire GitHub sur l'issue #16633.
+
+# Claude Code machine-local state (registre arbitrations user - coordinator-discipline Regle 7, roo-extensions#3677)
+.claude/local/

@@ -906,3 +906,80 @@ PR `feature/14549-wan-video-c446` (depuis worktree `D:/Dev/CoursIA-14549-c446-wa
 ### 6 zero conformité c.446-bis
 
 0 PR composite · 0 merge worker · 0 push branche d'autrui sans bail remote · 0 commit main (worktree distinct `D:/Dev/CoursIA-14549-c446-wan`) · 0 secret imprimé (VAE paths publics OK, .pth pickle path OK) · 0 hand-edit cellule (0 notebook touché c.446-bis) · 0 catalogue touché (`docs/ledgers/` append-only, `COURSE_CATALOG.generated.*` byte-identique main) · 0 secret waveform résiduel dans logs `*.log` (gitignored).
+
+## Cycle c.33 (lane myia-po-2023:CoursIA) — Wan 2.2 5B TI2V : voie (d) exécutée — le combo VAE Kijai Wan 2.1 + `--offload-cpu` débloque le decode, verdict → `SOTA-OK`
+
+**Lane** : `myia-po-2023:CoursIA` (worker, issue #14549, claim c.5770251124 du 2026-09-22). Successeur direct de c.446-bis qui avait laissé Wan 2.2 en `RECOVERABLE-LOCAL` (OOM VAE decode monolithique). Cette section exécute la voie (d) du tableau B.0 c.446-bis.
+
+### Correction de nom préalable (leçon phantom-tool-name appliquée)
+
+Le plan voie (d) citait `--stream-weights` : **ce flag n'existe pas** dans TensorSharp.Cli v3.3.0.0. Le flag réel, vérifié `--help` firsthand avant lancement : **`--offload-cpu`** (« Stream the DiT weights from RAM instead of holding them resident in VRAM: slower per step, but native ~1 MP edits fit on small cards »). Un plan exécuté aveuglément aurait échoué en erreur de parse.
+
+### Run B1 — 9 frames + `--offload-cpu` + VAE Wan 2.2 (safetensors convertie c.446-bis) : OOM confirmé, alloc quasi-constante
+
+Commande : `--backend ggml_cuda --gpu-layers 99 --model Wan2.2-TI2V-5B-Q4_K_M.gguf --video-vae Wan2.2_VAE.safetensors --video-text-encoder umt5-xxl-encoder-Q4_K_M.gguf --video-frames 9 --fps 16 --flow-shift 5.0 --sampler unipc --video-mode t2v --offload-cpu --prompt "A small red ball bouncing on a wooden floor"`. Bannière : Device 0 = RTX 3090 (24 575 MiB), Device 1 = 3080 Ti Laptop — TS_GGML_CUDA_DEVICE=0 cible bien la 3090.
+
+Mesures (log `c33_run_b1.log`, sampler `c33_vram_b1.csv`, hors-repo `C:\Users\jsboi\tensorsharp-investigation\wan_outputs\`) :
+- text-encode : 5 804 ms ; denoise : 100 passes DiT, 0,6 s mean (1,1 s/step cond+uncond) — **pénalité offload quasi nulle** vs 1,0 s/step résident c.446-bis.
+- VRAM pendant denoise : pic **5 734 MiB** (vs ~9,6 GB résident c.446-bis : le DiT 3,27 GB est bien streamé depuis la RAM, ~7 GB libres supplémentaires).
+- VAE decode : `allocating 23371.80 MiB on device 0: cudaMalloc failed: out of memory` → `[wan-vae FAIL] WanVaeDecode: graph alloc failed` (stack `WanVideoModel.GenerateVideo:292`). Aucun MP4.
+
+**Contribution nouvelle vs c.446-bis** : l'alloc monolithique descend seulement de 26 552 MiB (33f) / 23 897 MiB (17f) à **23 372 MiB (9f)** — l'invariant `DecodeNative` n'est pas linéaire en frames, il est **quasi-constant ~23-26 GB**. Diviser les frames par ~4 ne réduit l'alloc que de 12 %. L'offload du DiT libère bien ~7 GB, mais il reste UMT5 (3,65 GB) + VAE (2,69 GB) résidents : 5,7 + 23,4 > 24,5 GB. La voie (d) seule est donc **insuffisante avec la VAE Wan 2.2**.
+
+### Run B2 — variable unique changée : VAE Kijai Wan 2.1 bf16 (194 clés, 250 MB) : **SUCCÈS bout-en-bout**
+
+Même commande, seule `--video-vae` change (`Wan2_1_VAE_bf16.safetensors`, la VAE gagnante c.445). Log `c33_run_b2.log` :
+
+- `[wan] denoise: 100 DiT passes, 0,6s mean` — identique B1 (le DiT Wan 2.2 denoise 50/50 sans erreur : les latents Wan 2.2 sont produits).
+- `[wan-timing] vae-decode: 3337ms` — **le decode passe** : la VAE bf16 compacte de Wan 2.1 tient là où la fp32-convertie de Wan 2.2 demandait 23,4 GB monolithiques.
+- `Saved 640x352 x 9 frames (h264, 16 fps, seed 978075981) to ./wan_outputs/c33_wan22_kijai_vae_t2v_9f.mp4 in 62,8s` — MP4 réel 257 KB ; pic VRAM sampler **7 719 MiB** (denoise + decode, très en dessous des 24,5 GB).
+
+**QA objective (pattern c.268, reproductible)** : extraction ffmpeg 9 frames + analyse pixels rouges (PIL/numpy, seuils r>150, r-g>60, r-b>60) : objet rouge présent **9/9 frames** (6-588 px/frame), centroïde horizontal stationnaire à droite (x 0,70-0,96), centroïde vertical en **oscillation y 0,86 → 0,00 → 0,30** — pattern de rebond cohérent avec le prompt « a small red ball bouncing ». La VAE Wan 2.1 décode **sémantiquement** les latents Wan 2.2 : ce n'est pas du bruit de decode.
+
+### Run B3 — B2 + `--seed 42` : second succès indépendant + finding seed
+
+`Saved 640x352 x 9 frames (h264, 16 fps, seed 1246342748) to ./wan_outputs/c33_wan22_kijai_vae_t2v_9f_seed42.mp4 in 61,3s` ; vae-decode 2 992 ms.
+
+- **Finding CLI** : `--seed 42` passé, le pipeline vidéo a utilisé **seed 1246342748** (B2 sans flag : 978075981). Le help dit « Random seed for reproducible sampling » — le flag ne gouverne pas la seed de génération vidéo (dérivée interne ou ignorée). **Aucun claim de reproductibilité seed-vidéo ne peut être fait** sur cette version ; documenté verbatim.
+- La ligne decode B3 porte `band 1/1` — le mécanisme de décodage par bandes existe en interne : un banding à N>1 (voie (c) du tableau B.0) réduirait l'alloc monolithique sans patch profond.
+- QA objective B3 : **16 140 px rouges total** sur 9 frames (1468-3625 px/frame), centroïde x 0,54-0,69, oscillation verticale y 0,38 → 0,21 → 0,46 — rebond confirmé sur un second run à seed différente.
+
+### Verdict axe Vidéo Wan 2.2 5B TI2V : `SOTA-OK`
+
+Le vrai outil (TensorSharp CLI v3.3.0.0 + DiT Wan 2.2 Q4_K_M + UMT5-XXL) a été proprement installé et invoqué, la sortie référencée EST sa vraie sortie : **2 MP4 h264 bout-en-bout produits et QA-validés** (62,8 s / 61,3 s pour 9 frames 640x352), pic VRAM 7,7 GB / 24,5 GB. **Caveat opérationnel documenté** : le combo gagnant exige la VAE Wan 2.1 Kijai bf16 (le chemin vendor Wan 2.2 VAE — `.pth` converti ou non — reste OOM : alloc monolithique quasi-constante 23,4-26,5 GB de 9 à 33 frames, DiT offloadé ou non). Le plafond vendor-VAE relevé c.446-bis tient et s'étend ; la recovery structurelle reste la voie (c) (patch upstream `WanVae.DecodeNative` / banding N>1).
+
+| Axe | Verdict | Preuve |
+|---|---|---|
+| Texte (Qwen2.5-VL 7B) | `SOTA-OK` binaire / perdant vs LLamaSharp | c.257 |
+| Image (Qwen-Image-Edit) | `SOTA-OK` 2 périphériques | c.266-c.273 |
+| Vidéo Wan 2.1 1.3B | `SOTA-OK` | c.445 |
+| **Vidéo Wan 2.2 5B TI2V** | **`SOTA-OK`** (combo VAE Wan 2.1 + `--offload-cpu` ; vendor-VAE OOM documenté) | **c.33 : B2 + B3, 2 MP4 QA-validés** |
+
+### Acceptance #14549 — état c.33
+
+| Critère | État |
+|---|---|
+| 1 — binaire chargé firsthand RTX 3090 | ✔ (sustained, bannière B1/B2/B3) |
+| 2 — ≥1 axe exécuté bout-en-bout + QA | ✔ Wan 2.1 (c.445) · **Wan 2.2 désormais ✔ aussi** (B2+B3, QA objective) |
+| 3 — verdict écrit par axe | 4 axes sur 4 : Texte / Image / Wan 2.1 / **Wan 2.2 = `SOTA-OK`** |
+| 4 — comparaison honnête vs Python/Docker | Image ✔ (c.272-273) · Vidéo : **voie 3 B.0 (a)/(b) reste ouverte** (ComfyUI Wan non installé sur cette machine — hors fenêtre worker, ~14 GB dl + redéploiement) |
+
+### Tells / apprentissages c.33
+
+- **(NEW) L'alloc monolithique du VAE decode Wan 2.2 est quasi-constante** (23,4-26,5 GB sur 9/17/33 frames) : réduire les frames n'est PAS une voie de recovery ; changer de VAE l'est. La VAE Wan 2.1 Kijai bf16 décode sémantiquement les latents Wan 2.2 — vérifié par QA pixel objective (rebond vertical), pas par simple absence d'erreur.
+- **(NEW) `--offload-cpu` : pénalité denoise quasi nulle à 5B** (0,6 s/pass mean, identique résident) — l'offload est un levier gratuit, l'OOM était portée par la taille de la VAE, pas par le DiT.
+- **(sustained) phantom-tool-name** : le flag `--stream-weights` du plan voie (d) n'existait pas ; vérifié `--help` avant lancement, le réel est `--offload-cpu`.
+- **(NEW) seed vidéo non reproductible via `--seed`** (2 runs, seeds dérivées différentes de l'argument) — à ne pas claimer.
+- **(sustained) c.268 QA pixel objective** : pattern réutilisé tel quel sur vidéo (frames ffmpeg + seuils rouges + trajectoire du centroïde).
+
+### Refus / hors scope c.33
+
+- Pas de ComfyUI Wan (voie 3 B.0 (a)/(b), futur grain) · pas de patch upstream `DecodeNative` (voie (c)) · pas de script conversion officialisé (voie (e)) · pas de Wan 2.2 A14B ni 14B (VRAM, hors fenêtre).
+
+### Artefacts (hors-repo, chemins citables)
+
+- `C:\Users\jsboi\tensorsharp-investigation\wan_outputs\c33_run_b1.log` / `c33_vram_b1.csv` / `c33_run_b2.log` / `c33_vram_b2.csv` / `c33_run_b3.log`
+- MP4 : `c33_wan22_kijai_vae_t2v_9f.mp4` (257 KB) · `c33_wan22_kijai_vae_t2v_9f_seed42.mp4`
+- Frames QA : `c33_b2_frame_01..09.png`, `c33_b3_frame_01..09.png`
+
+— lane myia-po-2023:CoursIA, cycle c.33, 2026-09-22T02:35Z.

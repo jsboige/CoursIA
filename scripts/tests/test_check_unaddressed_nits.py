@@ -2308,17 +2308,30 @@ def test_12148_glyphe_narre_a_plus_d_un_mot_citer_surflagge_assume():
     que le mot precedent plus un mot d'attribution (#11044). Elargir la
     fenetre fabriquerait des faux NEGATIFS sur de vraies emissions — la
     sur-accusation coute une relecture, la sous-accusation coute un merge.
-    Autant que ce soit vu plutot que decouvert. Ce test AFFIRME le residu
-    par ecrit : si le path glyphe-precede-de-2-mots doit etre couvert un
-    jour, c'est un fix separe avec son propre scan distribution."""
-    body = (
+    Autant que ce soit vu plutot que decouvert.
+
+    #16688 — la moitie deterministe de ce residu est couverte : « un 🟡 »
+    (determinant + glyphe) est neutralise en amont par Position J (C)
+    DETERMINANT, avant meme que `_is_cited` n'entre en jeu. Le residu
+    `_is_cited` proprement dit (narration SANS determinant, a >1 mot du
+    citeur) reste assume : si ce path doit etre couvert un jour, c'est un
+    fix separe avec son propre scan distribution."""
+    body_det = (
         "## Suivi\n"
         "- la review precedente portait un 🟡 sur l'incoherence — leve "
         "par 06956bd0a. Tout est ok maintenant."
     )
-    # Sur-flag assume : le glyphe precede de 'un ' (a >1 mot du 'portait'),
-    # donc `_is_cited` ne neutralise pas et le glyphe reste vivant -> BOT-CONCERN.
-    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+    # Couvert par #16688 Position J (C) : « un 🟡 » = referent, mention.
+    assert mod.classify("clusterManager-Myia", body_det) is None
+    body_nu = (
+        "## Suivi\n"
+        "- la review precedente portait 🟡 sur l'incoherence — leve "
+        "par 06956bd0a. Tout est ok maintenant."
+    )
+    # Sur-flag ASSUME (residu _is_cited vivant) : sans determinant, le
+    # glyphe n'est ni un referent (C) ni un enum (B) ni un meta-nom (A) ;
+    # `_is_cited` ne voit pas 'portait' a >1 mot -> reste vivant.
+    assert mod.classify("clusterManager-Myia", body_nu) == "BOT-CONCERN"
 
 
 # === GRAIN #12311 — REQUEST_CHANGES (verbe) complete CHANGES_REQUESTED (nom) ===
@@ -3790,6 +3803,163 @@ def test_15556_headrefoid_prefere_au_dernier_oid():
     assert mod._pr_head_oid(data) == "f" * 40
     assert mod._pr_head_oid({"commits": [{"oid": "e" * 40}]}) == "e" * 40
     assert mod._pr_head_oid({"commits": [{"committedDate": at(19)}]}) == ""
+
+
+# --- #16764 : deux faux positifs de blocage mesures sur ai-01 (18/09) ------
+#
+# Un gate qui force a deformer la prose pour passer entraîne a ecrire pour
+# l'organe. Classe 1 : un SHA cite pour DATER la reserve (« (review ...,
+# head <sha>) », « la reserve posee sur <sha> ») etait lu comme SHA de
+# PREUVE -> refus #13639. Classe 2 : la levee par siege qualifiant
+# (contrat #15511) n'etait pas vue -- la trappe tierce exigeait le
+# marqueur [OVERRIDE]. Fixtures = corps REELS des instances.
+
+# Verbatim fondateur r.5252462567,
+# 2026-09-18T20:46:45Z sur #16657, refuse puis reposte sans aucun SHA
+# (r.5252468566) -- la levee finale MOINS precise que la refusee.
+_LIFT_16657_ORIGINAL = """[OVERRIDE] lane myia-ai-01:CoursIA
+
+Je leve la reserve `VERDICT: CONCERNS` de NanoClaw (review 05:48:49Z, head `c3095774`) en tant qu'arbitre tiers, et voici sur quoi.
+
+**La reserve n'a plus d'objet au head courant.** Elle visait un changement de patterns. Mesure au head `ec3ac10b71a` :
+"""
+
+# Verbatim fondateur de la review Hermes r.5242448146, 2026-09-17T23:34:29Z
+# sur #16608 : elle CONCLUT elle-meme au relais (deux occurrences).
+_HERMES_REVIEW_16608 = """VERDICT: CONCERNS (fond solide et conforme à l'arbitrage — deux réserves ci-dessous ; contrat #15511 : COMMENT, relais à un siège qualifiant)
+
+**[Hermes]** Review au head exact `896075ed8d`.
+
+**Réserves :**
+1. **Le vert `Scripts Tests (CPU)` n'existe pas au head** — le job échoue « Out of memory ».
+2. **L'option explicite de visibilité demandée par l'arbitrage** n'existe pas sous ce nom.
+
+Auteur = jsboige → COMMENT-only (self-review cap #3219). Disposition de fusion : siège qualifiant.
+"""
+
+# Verbatim (intro + jambes) de la levee c.5728784093, 2026-09-18T10:34:50Z
+# sur #16608 : valide au contrat #15511, invisible pour l'organe avant fix.
+_SIEGE_LIFT_16608 = """## Siege qualifiant — les deux reserves sont levees, et je tranche la question posee
+
+La review Hermes du 2026-09-17T23:34:29Z se conclut « relais a un siege qualifiant » (contrat
+#15511 : l'auteur du post etant `jsboige`, le bot ne pouvait qu'emettre `COMMENT`). Je suis ce
+siege, tiers a la lane. Je leve, apres verification a la main des deux jambes.
+
+**Reserve 1 — vert `Scripts Tests` au head.** Levee, avec la preuve du bon genre : le rouge etait un
+**avortement de runner** (OOM, run 35286571354), relance a 00:52Z, **PASS** en 8 m 38.
+
+**Reserve 2 — l'option de visibilite.** Levee, et la reponse pose correctement le fait :
+`--include-delivered` court-circuite **le bloc entier**.
+
+Merge.
+"""
+
+
+def _concern_16657_review(at_hour=10):
+    return {"author": {"login": "clusterManager-Myia"}, "state": "COMMENTED",
+            "submittedAt": at(at_hour),
+            "body": ("VERDICT: CONCERNS\n\n**[NanoClaw]** review structurelle : "
+                     "les deux patterns ajoutes existent deja dans main.")}
+
+
+def test_16764_classe1_sha_datation_head_exempte_levee_fondateur():
+    """Instance fondatrice #16657 : le SHA `c3095774` DATE la reserve
+    (apposition « (review 05:48:49Z, head `c3095774`) »), il ne la prouve
+    pas. Resolu cote serveur ET rattache a la PR, il doit etre EXEMPT --
+    ni refus, ni avertissement. Sous l'organe d'avant : blocked=True,
+    voided_lifts=['c3095774'] (mesure au dev)."""
+    lift = {"author": {"login": "myia-ai-01"}, "createdAt": at(12),
+            "body": _LIFT_16657_ORIGINAL}
+    res = run([lift], reviews=[_concern_16657_review()],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"c3095774": "fix(gitignore,#0): duplique"})
+    assert res["blocked"] is False
+    assert res["voided_lifts"] == []
+    assert res["absent_sha_warnings"] == []
+
+
+def test_16764_classe1_sha_datation_posee_sur_exempte():
+    """Forme piste de l'issue : « la reserve posee sur <sha> est adressee
+    par <sha2> » -- le premier SHA date, le second prouve (et appartient
+    a la PR)."""
+    body = ("[OVERRIDE] lane myia-ai-01:CoursIA\n\n"
+            "Je leve la reserve de NanoClaw posee sur `c3095774`, "
+            "adressee par `ec3ac10b71`.")
+    lift = {"author": {"login": "myia-ai-01"}, "createdAt": at(12), "body": body}
+    res = run([lift], reviews=[_concern_16657_review()],
+              commits=[{"oid": "ec3ac10b71" + "0" * 30,
+                        "committedDate": at(19)}],
+              _absent_sha_messages={"c3095774": "fix(gitignore,#0): duplique"})
+    assert res["blocked"] is False
+    assert res["voided_lifts"] == []
+    assert res["absent_sha_warnings"] == []
+
+
+def test_16764_classe1_sha_preuve_perime_toujours_refuse():
+    """Controle negatif OBLIGATOIRE (criteres de sortie) : « traitee en
+    <sha-perime> » gouverne le SHA par un VERBE D'ADRESSE -- c'est une
+    preuve. Absente + resolue + rattachee : refus, inchange."""
+    body = ("La reserve est traitee en `d1e2f3a4b`. Je leve la reserve.")
+    lift = {"author": {"login": "jsboige"}, "createdAt": at(12), "body": body}
+    res = run([USER_NIT, lift],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"d1e2f3a4b": "fix(x,#0): typo"})
+    assert res["blocked"] is True
+    assert [v["sha"] for v in res["voided_lifts"]] == ["d1e2f3a4b"]
+
+
+def test_16764_classe1_collision_traitee_sur_head_refuse():
+    """Moitie garde (residu assume documente) : « traitee sur le head
+    anterieur <sha> » gouverne le head par un VERBE D'ADRESSE -- la
+    collision retire l'exemption de datation : preuve vieillie, refus."""
+    body = ("La reserve est traitee sur le head anterieur `d1e2f3a4b`. "
+            "Je leve la reserve.")
+    lift = {"author": {"login": "jsboige"}, "createdAt": at(12), "body": body}
+    res = run([USER_NIT, lift],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"d1e2f3a4b": "fix(x,#0): typo"})
+    assert res["blocked"] is True
+    assert [v["sha"] for v in res["voided_lifts"]] == ["d1e2f3a4b"]
+
+
+def test_16764_classe2_siege_qualifiant_leve_la_reserve():
+    """Instance fondatrice #16608 : la review Hermes conclut « relais a un
+    siege qualifiant » (contrat #15511), la levee d'ai-01 revendique le
+    siege en tete. Valide au contrat, doit lever. Sous l'organe d'avant :
+    blocked=True, 1 BOT-CONCERN non leve (mesure au dev : gate live
+    BLOCKED, et differential main/fixe 3 nits -> 2)."""
+    hermes = {"author": {"login": "clusterManager-Myia"}, "state": "COMMENTED",
+              "submittedAt": at(10), "body": _HERMES_REVIEW_16608}
+    lift = {"author": {"login": "myia-ai-01"}, "createdAt": at(12),
+            "body": _SIEGE_LIFT_16608}
+    res = run([lift], reviews=[hermes])
+    assert res["blocked"] is False
+
+
+def test_16764_classe2_sans_revendication_en_tete_reste_bloque():
+    """Borne de la conjunction : la revendication du siege doit etre POSEE
+    en tete de ligne (ancre #13030, comme _OVERRIDE_LANE) -- un « siege
+    qualifiant » cite en milieu de prose ne compte pas."""
+    hermes = {"author": {"login": "clusterManager-Myia"}, "state": "COMMENTED",
+              "submittedAt": at(10), "body": _HERMES_REVIEW_16608}
+    lift = {"author": {"login": "myia-ai-01"}, "createdAt": at(12),
+            "body": _SIEGE_LIFT_16608.replace(
+                "## Siege qualifiant — les deux reserves sont levees",
+                "## Arbitrage — les deux reserves sont levees", 1)}
+    res = run([lift], reviews=[hermes])
+    assert res["blocked"] is True
+
+
+def test_16764_classe2_siege_par_non_siege_reste_bloque():
+    """Borne d'auteur : la revendication du siege n'ouvre que le siege
+    (LIFT_OVERRIDE_LOGINS) -- un tiers quelconque qui revendique le
+    siege ne leve rien."""
+    hermes = {"author": {"login": "clusterManager-Myia"}, "state": "COMMENTED",
+              "submittedAt": at(10), "body": _HERMES_REVIEW_16608}
+    lift = {"author": {"login": "myia-po-2025"}, "createdAt": at(12),
+            "body": _SIEGE_LIFT_16608}
+    res = run([lift], reviews=[hermes])
+    assert res["blocked"] is True
 
 
 # --- #15973 : un rebase sur une base avancee n'est pas un rembobinage ------
@@ -5306,6 +5476,65 @@ def test_14277_vp_ligne_suivante_sans_meta_nom_reste_bloquant():
     assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
 
 
+# --- #16688 — Position J discriminateur (C) DÉTERMINANT : référent vs émission ---
+# Fondateur : levée c.5730596602 sur #16617, titre
+# « ### 1. Le 🟡 sur le tag `Grain:` — c'est moi qui l'ai posé, c'est donc
+#  à moi de le lever » — préfixe sans méta-nom ni séparateur, glyphe resté
+# vivant, l'organe classait la levée elle-même comme réserve neuve.
+
+
+def test_16688_determinant_referent_fondateur_neutralise():
+    body = ("## Levée des deux réserves, par leur auteur ou par issue nommée — "
+            "avant merge\n"
+            "### 1. Le 🟡 sur le tag `Grain:` — c'est moi qui l'ai posé, "
+            "c'est donc à moi de le lever. Vérifié firsthand : la clause "
+            "`lane` est présente au head 92b74e9e1d.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_16688_determinant_anglais_the_this_neutralise():
+    body = ("Lifting the 🟡 I raised on the Grain tag: lane clause verified "
+            "firsthand at head 92b74e9e1d. My 🔴 on the missing numpy-only "
+            "note is carried by #16687.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_16688_determinant_en_milieu_de_ligne_neutralise():
+    # Le déterminant doit TOUCHER le glyphe mais peut suivre toute prose
+    # de ligne (l'ancre est la fin du préfixe, pas le début de ligne).
+    body = ("Reprise de la review : je lève le 🔴 sur la cellule [7] "
+            "(indexing corrigé au head 63960fd8d1), le reste est OK.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_16688_vp_emission_tete_de_ligne_reste_bloquant():
+    # L'émission Hermes ouvre la ligne : aucun déterminant ne la précède.
+    body = "🟡 FINDING — les 5 hyperparametres contredisent le run mesure."
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
+def test_16688_vp_nom_commun_non_determinant_reste_bloquant():
+    # « Nit 🟡 » pose une réserve : « nit » est un nom commun, pas un
+    # déterminant — le set (C) est borné, il ne s'étend pas aux noms.
+    body = "Nit 🟡 — le tag `Grain:` incomplet au head courant."
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
+def test_16688_vp_determinant_suffixe_dans_mot_neutre_reste_bloquant():
+    # « sample 🟡 » / « table 🔴 » : le `le` final de ces mots n'a pas de
+    # \b devant lui — l'ancre mot-borne empêche le déterminant suffixe.
+    body = "table 🔴 — la colonne mAP50-95 contredit la prose du 4.2h."
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
+def test_16688_vp_determinant_suivi_de_prose_reste_bloquant():
+    # Le déterminant doit toucher le glyphe : « le nit 🟡 » où 🟡 suit le
+    # nom n'est PAS couvert par (C) seul (l'ancre exige déterminant + espaces
+    # immédiatement avant le glyphe) — « le » précède « nit », pas 🟡.
+    body = "le nit 🟡 posé hier reste valable : cellule [7] non corrigée."
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
 
 def test_14277_ce1_mutation_position_j_desactivee_fp1_rougit():
     # Contrôle positif : sans Position J, FP1 doit rougir (BOT-CONCERN).
@@ -6585,3 +6814,74 @@ def test_16128_delivered_prefix_mutation_rouge_le_test() -> None:
     finally:
         # Restauration in-place
         mod.AGENT_PREFIXES = original
+
+
+# --- #16780 : inertie du corps-pointeur (waiver par chemin local) ------------
+
+
+def test_16780_can_lift_rejette_le_corps_pointeur_16670() -> None:
+    """#16780, contrôle positif REJOUE -- le corps exact de l'incident
+    #16670 (commentaire supprimé depuis par le user : un test live ne
+    trouverait rien, le vert le plus dangereux qui soit). Le corps est un
+    chemin seul, séparateurs mixtes, préfixe `@` : il ne dit rien, il ne
+    peut rien lever."""
+    comment = {
+        "author": {"login": "jsboige"},
+        "createdAt": at(12),
+        "body": r"@C:\Users\jsboi\AppData\Local\Temp/a16670.md",
+    }
+    assert mod.can_lift(comment) is False, (
+        "Un corps réduit à un chemin local n'est pas une réponse écrite -- "
+        "le fichier visé est illisible pour tout lecteur de la PR (#16780, "
+        "arbitrage ai-01 : corps-pointeur INERTE)."
+    )
+
+
+def test_16780_nom_de_fichier_portant_un_marqueur_ne_leve_pas() -> None:
+    """#16780, pire cas vise par l'arbitrage : le NOM DE FICHIER contient
+    un marqueur de levée par sous-chaîne (« levee_16794.md »). Sans
+    l'inertie, le sac de mots du registre LIFT transformerait le pointeur
+    en levée fabriquée -- le mécanisme exact lu comme waiver sur #16670."""
+    comment = {
+        "author": {"login": "jsboige"},
+        "createdAt": at(12),
+        "body": "@C:/Users/jsboi/AppData/Local/Temp/levee_16794.md",
+    }
+    assert mod.can_lift(comment) is False
+
+
+def test_16780_chemin_unix_seul_inerte() -> None:
+    comment = {
+        "author": {"login": "jsboige"},
+        "createdAt": at(12),
+        "body": "/tmp/reply_levee.md",
+    }
+    assert mod.can_lift(comment) is False
+
+
+def test_16780_nit_survit_au_commentaire_pointeur() -> None:
+    """Intégration : le nit humain de 9h SURVIT à un commentaire-pointeur
+    de 12h -- bloqué au merge. Avant l'inertie, la sous-chaîne « levee »
+    du nom de fichier éteignait le nit."""
+    pointer = {
+        "author": {"login": "jsboige"},
+        "createdAt": at(12),
+        "body": r"@C:\Users\jsboi\AppData\Local\Temp/levee_16670.md",
+    }
+    res = run([USER_NIT, pointer])
+    assert res["blocked"] is True, (
+        "Le corps-pointeur ne doit éteindre aucun nit (#16780) : levée "
+        "fabriquée par sous-chaîne du nom de fichier."
+    )
+
+
+def test_16780_phrase_reelle_poursuit_de_lever() -> None:
+    """Contre-positif : l'inertie ne sur-bloque pas -- une PHRASE de levée
+    réelle (corps qui dit quelque chose) lève toujours le nit."""
+    real_lift = {
+        "author": {"login": "jsboige"},
+        "createdAt": at(12),
+        "body": "Bien vu, corrigé — les deux nits sont levés.",
+    }
+    res = run([USER_NIT, real_lift])
+    assert res["blocked"] is False

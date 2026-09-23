@@ -29,11 +29,11 @@ Agent orchestrateur pour iterer sur les 110 notebooks GenAI (`MyIA.AI.Notebooks/
 
 ## Pratiques d'auth (verifie via genai-stack/commands/auth.py)
 
-- ComfyUI : **Bearer token** (hash bcrypt cote serveur, `bcrypt_hash` dans la config) — env `COMFYUI_BEARER_TOKEN` (+ `COMFYUI_RAW_TOKEN`).
+- ComfyUI : **Bearer token** (hash bcrypt côté serveur, `bcrypt_hash` dans la config). Env canonique `COMFYUI_API_TOKEN` (alias `COMFYUI_AUTH_TOKEN`, deux noms pour le même secret, gérés par `render_envs.py`). Le bearer vit dans `.secrets/qwen-api-user.token`. `COMFYUI_BEARER_TOKEN`/`COMFYUI_RAW_TOKEN` ne sont plus gérés (cf #14382).
 - Forge : **Basic auth** — env `FORGE_USER` / `FORGE_PASSWORD`.
 - vLLM (z-image) : pas d'auth.
 - Verifier l'auth de chaque service : `python genai.py auth`.
-- **FLAG inventaire (a normaliser)** : incoherence de nommage `COMFYUI_BEARER_TOKEN` vs `COMFYUI_AUTH_TOKEN` selon les notebooks — harmoniser, ne pas dupliquer.
+- **FLAG inventaire (résolu par #16647)** : `COMFYUI_API_TOKEN` = `COMFYUI_AUTH_TOKEN` (alias canonique). `COMFYUI_BEARER_TOKEN` n'est plus géré — éviter le nom dans les nouveaux notebooks/docs.
 
 ## Quantization (recommandations verifiees via commands/quant.py)
 
@@ -83,7 +83,6 @@ Commandes :
 1. URLs placeholder `yourdomain.com` : `Image/04-4-Cross-Stitch-Legacy` (cell ~256), `Texte/10_LocalLlama` (cell ~509) — remplacer par le vrai sous-domaine.
 2. `02-5-Multi-Model-TTS-Gateway` : 401 (auth a corriger).
 3. Leak `LOCAL_MODE` dans les outputs committes de `02-4-Z-Image-Lumina2` + `02-1-Qwen-Image-Edit-2509` — re-executer en mode remote propre.
-4. Naming `COMFYUI_BEARER_TOKEN` vs `COMFYUI_AUTH_TOKEN` — harmoniser.
 
 ## Anti-patterns interdits
 

@@ -249,6 +249,12 @@ def matched_random_null(X: np.ndarray, sizes: list[int], m_null: int,
                         seed: int) -> float:
     """Médiane de D sur des partitions aléatoires de MÊMES tailles."""
     n = X.shape[1]
+    # Invariant d'appariement du null : `sizes` doit partitionner exactement
+    # les n nœuds, sinon les tranches de `perm` se retrouvent vides ou
+    # amputées sans signal (suggestion Hermes, review #16509).
+    assert sum(sizes) == n, (
+        f"sizes {sizes} ne partitionnent pas les {n} nœuds (somme={sum(sizes)})"
+    )
     rng = np.random.default_rng(seed)
     divs = []
     for _ in range(m_null):

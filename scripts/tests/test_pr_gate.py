@@ -2044,14 +2044,17 @@ def test_check_run_output_titles_a_dwell_red_as_a_floor_not_a_defect(monkeypatch
     title = seen["fields"]["output[title]"]
     assert title.startswith("PR gate: DWELL -- tete du 2026-09-13T10:00:00Z")
     assert "plancher 120 min" in title
-    # L'instant que le titre annonce (ecoulement du plancher) est tete + 120 min
-    # -- lisible sans rien recalculer (acceptance 2), re-arme depuis le commit
-    # le plus recent apres tout push ou update-branch (acceptance 4). #15726 :
-    # le titre DATE l'ecoulement, il ne promet plus le balayage -- l'ancienne
-    # formule « leve au premier balayage suivant » adossait la levee a un
-    # balayage de cadence mesuree 2 h 33 - 5 h 18 (#15197) ; cette cadence vit
-    # dans le summary, pas dans une promesse du titre.
-    assert "ecoule a 2026-09-13T12:00:00Z" in title
+    # L'instant que le titre annonce est le premier SWEEP_MINUTE:00:00Z (=:07)
+    # strictement posterieur au plancher brut (tete + 120 min = 12:00:00Z ->
+    # sweep suivant = 12:07:00Z). #16092 : c'est l'heure GARANTIE d'un
+    # sweep nominal post-plancher, pas l'heure du plancher brut (qui tait
+    # qu'un sweep vient de passer). Re-arme depuis le commit le plus recent
+    # apres tout push ou update-branch (acceptance 4). #15726 : le titre
+    # DATE l'instant garanti, il ne promet plus un balayage horaire --
+    # l'ancienne formule « leve au premier balayage suivant » adossait la
+    # levee a un balayage de cadence mesuree 2 h 33 - 5 h 18 (#15197) ;
+    # cette cadence vit dans le summary, pas dans une promesse du titre.
+    assert "ecoule a 2026-09-13T12:07:00Z" in title
     # Garantie « rien a reparer » au niveau du TITRE aussi : la troncature
     # [:255] peut l'y couper sans que rien ne l'annonce -- le test doit tomber.
     assert "Rien a corriger dans le code" in title
@@ -2238,6 +2241,12 @@ def test_declared_wall_is_read_from_the_real_workflows():
     """Le cas fondateur, lu sur le depot et non sur une fixture."""
     walls = pr_gate.derive_declared_timeouts()
     assert walls.get("Scripts Tests (CPU)") == 30
+    # #16139 : le mur de `ML Pipeline Tests (CPU)` a ete atteint quatre fois a
+    # 30 min, dont deux fois sur un `push main` ou `cancel-in-progress` est
+    # faux (donc inannulable). Epingle en EGALITE, comme celui du dessus :
+    # c'est l'egalite qui rend un changement de plafond visible et impossible a
+    # glisser sous une autre PR.
+    assert walls.get("ML Pipeline Tests (CPU)") == 45
 
 
 def test_declared_timeouts_tolerate_an_unreadable_state(tmp_path):
@@ -2366,7 +2375,22 @@ def _fake_check_api(completed_at="2026-09-12T14:21:22Z"):
                 "started_at": "2026-09-12T14:01:01Z",
                 "completed_at": completed_at,
                 "id": 7,
+                # #17031: the check-run names the workflow run that owns it.
+                # Without this field the successor question cannot be asked at
+                # all, so the fixture carries it and the route below answers it.
+                "details_url": "https://github.com/o/r/actions/runs/100/job/7",
             }]}
+        if "/actions/runs" in path:
+            # #17031: `fetch_checks` consults the WORKFLOW-RUN view once an
+            # unconcluded record is present. Answered here so the real path
+            # (fetch -> mark) stays exercised, rather than only the shapes a
+            # test poses by hand.
+            return {"total_count": 2, "workflow_runs": [
+                {"id": 100, "workflow_id": 9,
+                 "created_at": "2026-09-12T14:01:01Z"},
+                {"id": 101, "workflow_id": 9,
+                 "created_at": "2026-09-12T14:05:00Z"},
+            ]}
         return {"statuses": [{
             "context": "legacy/check",
             "state": "failure",
@@ -2408,3 +2432,161 @@ def test_timeout_clause_is_reachable_from_a_fetched_check(monkeypatch):
     assert code == 1
     assert "hit their declared timeout-minutes" in msg
     assert "never concluded" not in msg
+
+
+# --- #17031 : un `cancelled` de SUPERSESSION n'est pas un verdict -------------
+#
+# PR #17031, mesure du 2026-09-21. Deux livraisons `pull_request` a 2 s
+# d'intervalle (meme tete 030ee971, meme evenement, attempt=1 des deux cotes) :
+# la premiere vague est annulee par le groupe `cancel-in-progress` par-PR, la
+# seconde repart. La jambe `PR gate` a conclu a 07:20:46 -- 26 s apres la
+# creation de la seconde vague, et 59 s AVANT que le check-run successeur de
+# `Scripts Tests (CPU)` ne demarre (07:21:45). Elle a publie un FAIL definitif
+# nommant deux checks annules dont les successeurs sont tous deux passes au
+# vert, et ce verdict n'a pu etre leve que par un `gh run rerun` manuel.
+#
+# La premisse du fail-fast -- « un echec ne se defait pas en attendant » -- est
+# vraie pour un rouge REEL et fausse pour un check qui n'a jamais conclu :
+# `dedupe_latest` compare des CHECK-RUNS et ne peut donc pas voir la vague de
+# remplacement dont le check-run n'existe pas encore.
+
+
+def _cancel(name="Scripts Tests (CPU)", details_url=None, rid=1):
+    check = run(name, "cancelled", started_at="2026-09-21T07:20:18Z", rid=rid)
+    check["details_url"] = details_url
+    return check
+
+
+def _runs(*specs):
+    return [
+        {"id": rid, "workflow_id": wid, "created_at": created}
+        for rid, wid, created in specs
+    ]
+
+
+def test_mark_inflight_successors_flags_a_superseded_cancel():
+    """Un `cancelled` dont le workflow a un run PLUS RECENT sur la meme tete est
+    une supersession en cours, pas un verdict sur le code."""
+    checks = [_cancel(details_url="https://github.com/o/r/actions/runs/100/job/7")]
+    pr_gate.mark_inflight_successors(checks, _runs(
+        (100, 9, "2026-09-21T07:20:18Z"),
+        (101, 9, "2026-09-21T07:20:20Z"),
+    ))
+    assert checks[0]["successor_run_inflight"] is True
+
+
+def test_mark_inflight_successors_leaves_a_famine_cancel_alone():
+    """Sans run plus recent, le `cancelled` EST le dernier mot (famine de
+    runners, #13510) : le garde doit continuer d'echouer vite dessus."""
+    checks = [_cancel(details_url="https://github.com/o/r/actions/runs/100/job/7")]
+    pr_gate.mark_inflight_successors(checks, _runs(
+        (100, 9, "2026-09-21T07:20:18Z"),
+    ))
+    assert checks[0]["successor_run_inflight"] is False
+
+
+def test_mark_inflight_successors_never_marks_a_real_red():
+    """Seules les conclusions NON CONCLUES portent le marqueur : un `failure`
+    est un verdict sur le code, aucune attente ne le defait."""
+    checks = [_cancel()]
+    checks[0]["conclusion"] = "failure"
+    checks[0]["details_url"] = "https://github.com/o/r/actions/runs/100/job/7"
+    pr_gate.mark_inflight_successors(checks, _runs(
+        (100, 9, "2026-09-21T07:20:18Z"),
+        (101, 9, "2026-09-21T07:20:20Z"),
+    ))
+    assert checks[0]["successor_run_inflight"] is False
+
+
+def test_mark_inflight_successors_ignores_a_run_of_another_workflow():
+    """Le successeur doit appartenir au MEME workflow : un run plus recent d'un
+    workflow voisin ne remplace rien."""
+    checks = [_cancel(details_url="https://github.com/o/r/actions/runs/100/job/7")]
+    pr_gate.mark_inflight_successors(checks, _runs(
+        (100, 9, "2026-09-21T07:20:18Z"),
+        (101, 12, "2026-09-21T07:20:20Z"),
+    ))
+    assert checks[0]["successor_run_inflight"] is False
+
+
+def test_mark_inflight_successors_ignores_a_legacy_status():
+    """Un statut legacy n'a pas de `details_url` : comportement historique
+    conserve, pas de promotion silencieuse."""
+    checks = [_cancel()]
+    pr_gate.mark_inflight_successors(checks, _runs(
+        (100, 9, "2026-09-21T07:20:18Z"),
+        (101, 9, "2026-09-21T07:20:20Z"),
+    ))
+    assert checks[0]["successor_run_inflight"] is False
+
+
+def test_inflight_successor_excludes_self_and_advisory():
+    """Le predicat ne retient que le bloquant : ni le garde lui-meme, ni un
+    advisory (dont la rougeur ne bloque pas -- le garde n'a pas a l'attendre)."""
+    url = "https://github.com/o/r/actions/runs/100/job/7"
+    checks = [
+        _cancel("PR gate", details_url=url, rid=1),
+        _cancel("CJK residue advisory (label, non-blocking)", details_url=url, rid=2),
+        _cancel("Scripts Tests (CPU)", details_url=url, rid=3),
+    ]
+    pr_gate.mark_inflight_successors(checks, _runs(
+        (100, 9, "2026-09-21T07:20:18Z"),
+        (101, 9, "2026-09-21T07:20:20Z"),
+    ))
+    assert pr_gate.unconcluded_with_inflight_successor(checks) == [
+        "Scripts Tests (CPU)"
+    ]
+
+
+def test_fetched_check_carries_the_successor_marker(monkeypatch):
+    """Le correctif ne vaut que si le chemin REEL l'atteint : fetch_checks ->
+    marqueur, sur la forme que l'API renvoie (meme exigence que le test
+    timeout ci-dessus)."""
+    monkeypatch.setattr(pr_gate, "_gh_api", _fake_check_api())
+    checks = {c["name"]: c for c in pr_gate.fetch_checks("o/r", "deadbeef")}
+    assert checks["Scripts Tests (CPU)"]["successor_run_inflight"] is True
+
+
+def test_wait_loop_holds_a_superseded_cancel_until_its_successor_surfaces():
+    """LE test de regression #17031 : le garde doit ATTENDRE le check-run
+    successeur au lieu de publier un rouge que le poll suivant dement."""
+    polls = []
+
+    def fetch(_repo, _sha):
+        polls.append(1)
+        cancelled = _cancel(details_url="https://github.com/o/r/actions/runs/100/job/7")
+        if len(polls) == 1:
+            # La vague 2 est creee, son check-run n'existe pas encore.
+            cancelled["successor_run_inflight"] = True
+            return [cancelled]
+        # Le check-run de remplacement est apparu, vert. Les DEUX enregistrements
+        # coexistent : c'est `dedupe_latest` qui tranche par le plus recent.
+        return [
+            cancelled,
+            run("Scripts Tests (CPU)", "success",
+                started_at="2026-09-21T07:21:45Z", rid=2),
+        ]
+
+    code, msg = pr_gate.wait_and_decide(
+        "o/r", "sha", "PR gate", timeout_min=90, poll_sec=0,
+        settle_polls=2, sleep=lambda _s: None, fetch=fetch, now=_clock(),
+    )
+    assert code == 0, msg
+    assert len(polls) >= 2, "le `cancelled` supersede ne doit pas conclure au poll 1"
+
+
+def test_wait_loop_still_fails_fast_on_a_cancel_with_no_successor():
+    """Contrepartie, et garde-fou de la regle 3 : sans run de remplacement, le
+    `cancelled` reste un rouge immediat -- on ne brule pas le budget."""
+    polls = []
+
+    def fetch(_repo, _sha):
+        polls.append(1)
+        return [_cancel()]
+
+    code, msg = pr_gate.wait_and_decide(
+        "o/r", "sha", "PR gate", timeout_min=90, poll_sec=0,
+        settle_polls=2, sleep=lambda _s: None, fetch=fetch, now=_clock(),
+    )
+    assert code == 1 and "Scripts Tests (CPU)" in msg
+    assert len(polls) == 1

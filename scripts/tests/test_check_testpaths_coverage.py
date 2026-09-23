@@ -3,6 +3,10 @@
 Le garde vit dans scripts/check_testpaths_coverage.py : il compare les
 testpaths de pytest.ini aux cibles pytest réelles des workflows CI et rougit
 sur tout testpath ni couvert ni déclaré CI-EXCLUDED.
+
+#17250 : ajoute la séparation entre étapes `pytest --collect-only` (floors,
+qui sondent la collecte sans exécuter) et étapes d'exécution effectives.
+Un dossier qui n'apparaît que dans un floor ne couvre pas un testpath.
 """
 
 from __future__ import annotations
@@ -15,6 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from check_testpaths_coverage import (  # noqa: E402
     REPO_ROOT,
     WORKFLOW_COVERAGE,
+    _partition_run_blocks,
     extract_run_targets,
     is_covered,
     load_ci_excluded,
@@ -96,3 +101,88 @@ def test_guard_green_on_current_main() -> None:
     assert uncovered == [], f"testpaths non couverts: {uncovered}"
     # Le testpath `tests` racine a été retiré de pytest.ini (reliquat vide).
     assert "tests" not in testpaths
+
+
+# --- #17250 : séparation des floors `--collect-only` ---
+
+
+def test_partition_floor_pur_exclut_covered() -> None:
+    """Un step `python -m pytest X --collect-only -q` seul met X en floor,
+    pas en covered. Si le testpath X n'apparaît que dans ce bloc,
+    extract_run_targets ne le retourne pas — c'est le défaut pré-existant
+    que #17250 ferme.
+    """
+    text = (
+        "- name: Audit floor\n"
+        "        run: |\n"
+        "          N=$(python -m pytest scripts/audit/tests "
+        "--collect-only -q 2>/dev/null)\n"
+        "          if [ -z \"$N\" ]; then exit 1; fi\n"
+    )
+    covered, floors = _partition_run_blocks(text)
+    assert "scripts/audit/tests" not in covered
+    assert "scripts/audit/tests" in floors
+
+
+def test_partition_execution_seule_va_en_covered() -> None:
+    """Un step d'exécution pure met ses cibles en covered, jamais en floor."""
+    text = (
+        "        run: |\n"
+        "          pytest scripts/tests scripts/lean/tests --tb=short -q\n"
+    )
+    covered, floors = _partition_run_blocks(text)
+    assert "scripts/tests" in covered
+    assert "scripts/lean/tests" in covered
+    assert "scripts/tests" not in floors
+
+
+def test_partition_run_et_floor_dans_blocs_freres_isoles() -> None:
+    """Mutation A mesurée dans #17250 : un floor et un run principal dans
+    le même step séparent leurs cibles, le floor n'exécute pas le testpath.
+    Si on retire `scripts/audit/tests` de la liste pytest partagée,
+    extract_run_targets ne le voit plus, et `is_covered` conclut NOT
+    covered — c'est précisément la dérive que le fix ferme.
+    """
+    text = (
+        "      - name: Audit floor\n"
+        "        if: always()\n"
+        "        env:\n"
+        "          AUDIT_TESTS_FLOOR: 455\n"
+        "        run: |\n"
+        "          N=$(python -m pytest scripts/audit/tests "
+        "--collect-only -q 2>/dev/null)\n"
+        "      - name: Real coverage\n"
+        "        run: |\n"
+        "          pytest \\\n"
+        "            scripts/tests \\\n"
+        "            scripts/lean/tests \\\n"
+        "            --tb=short -q\n"
+    )
+    covered, _floors = _partition_run_blocks(text)
+    # Le testpath `scripts/audit/tests` n'apparaît QUE dans le floor ; il
+    # n'est pas couvert, donc il déclenchera le ROUGE du checker si on
+    # l'ajoute à pytest.ini sans le recabler.
+    assert "scripts/audit/tests" not in covered
+    assert "scripts/tests" in covered
+
+
+def test_partition_neutralite_lignes_non_pytest() -> None:
+    """Les lignes `if / echo / exit / fi` qui mentionnent `--collect-only`
+    dans leur texte (message d'erreur, comparaison) n'invalident pas la
+    classification floor du bloc. Seule une ligne invoquant `pytest` est
+    classificatoire. Reproduction directe de la cause-racine mesurée
+    dans #17250.
+    """
+    text = (
+        "- name: Audit floor\n"
+        "        run: |\n"
+        "          N=$(python -m pytest scripts/audit/tests "
+        "--collect-only -q 2>/dev/null)\n"
+        "          if [ -z \"$N\" ] || [ \"$N\" -eq 0 ]; then\n"
+        "            echo \"::error::--collect-only returned no tests.\"\n"
+        "            exit 1\n"
+        "          fi\n"
+    )
+    covered, floors = _partition_run_blocks(text)
+    assert "scripts/audit/tests" in floors
+    assert "scripts/audit/tests" not in covered

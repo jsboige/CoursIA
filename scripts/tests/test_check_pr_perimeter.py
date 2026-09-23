@@ -267,6 +267,38 @@ def test_extract_skips_scope_word_inside_a_longer_word():
     assert not _has_strong_scope(changer.lower())
 
 
+def test_issue_15950_strong_scope_word_boundary_control():
+    """Issue #15950: validation par les faux negatifs.
+
+    Corpus de controle passe sous les deux portes (5 doivent firer, 3 doivent
+    se taire) pour verifier que _has_strong_scope() teste bien les mots en
+    entier et non en sous-chaine.
+
+    See #15950, #15833, #15846, #12718, #11800.
+    """
+    # Cas positifs: doivent etre detectes comme assertions de perimetre
+    positive_cases = [
+        "Aucune autre modification.",
+        "Perimetre : uniquement 3 fichiers modifies.",
+        "Le scope est uniquement ce fichier.",
+        "**Perimetre** : aucune autre modification que celles listees.",
+        "Only the workflow changed -- no other modification.",
+    ]
+    for line in positive_cases:
+        result = extract_perimeter_assertions(line)
+        assert result, f"Expected assertion, got none for: {line!r}"
+
+    # Cas negatifs: ne doivent PAS etre detectes (faux positifs a eviter)
+    negative_cases = [
+        "--dist loadscope sur uniquement grace a ce groupement",
+        "permissions read-only inchangees, uniquement",
+        "Ce point est out-of-scope, traite uniquement dans l'issue fille.",
+    ]
+    for line in negative_cases:
+        result = extract_perimeter_assertions(line)
+        assert result == [], f"Unexpected assertion for: {line!r}"
+
+
 def test_whole_word_scope_still_extracts_real_declarations():
     """Positive control for the guard above: it must not silence the real
     thing. Each line carries a STANDALONE scope word and stays a perimeter
@@ -3992,3 +4024,149 @@ def test_16162_scan_thread_extracts_founders_without_blocking():
     files = [{"path": f"f{i}.py"} for i in range(4)]
     for c in cands:
         assert check_assertion(files, c.text, block=c.block, body_hint=c.body_text) == []
+
+
+# ---------------------------------------------------------------------------
+# #17262-classe (3e surface) — un quota d'API epuise est une NON-MESURE, pas
+# une contradiction de perimetre.
+#
+# Mesure fondatrice du 2026-09-21 : quatre runs `perimeter review guard` sur
+# quatre tetes distinctes en trois heures, tous refuses par
+# `gh error: GraphQL: API rate limit already exceeded for site ID
+# installation.` -- et tous rapportes a l'auteur comme « a perimeter
+# assertion ... contradicts the effective file list », un verdict que le
+# garde n'avait jamais mesure. `#14576` avait deja ratifie la consequence
+# pour la cause « liste vide » (verdict nomme, exit 0) ; la lecture refusee
+# est la meme absence par une autre cause.
+# ---------------------------------------------------------------------------
+
+# Les trois orthographes mesurees, une par surface : #17229 (`user ID`),
+# les runs de ce fichier (`site ID installation`), et la forme `installation`.
+RATE_LIMITS_MESURES = [
+    "gh error: GraphQL: API rate limit already exceeded for site ID installation.",
+    "gh: API rate limit exceeded for installation. If you reach out to GitHub Support for help, please.",
+    "gh error: GraphQL: API rate limit already exceeded for user ID 3159389.",
+]
+
+
+def test_rate_limit_signatures_recognised():
+    """Les trois orthographes mesurees sont reconnues."""
+    import check_pr_perimeter as cpp
+
+    for stderr in RATE_LIMITS_MESURES:
+        assert cpp._is_transient_gh_failure(stderr), stderr
+
+
+def test_unrecognised_error_is_not_transient():
+    """CONTROLE NEGATIF de la fonction : un echec NON reconnu ne downgrade
+    pas. Sans ce controle, « ne bloque plus » serait indistinguable d'un
+    garde debranche."""
+    import check_pr_perimeter as cpp
+
+    for stderr in [
+        "gh: Not Found (HTTP 404)",
+        "gh: could not resolve host github.com",
+        "gh error: GraphQL: Something went wrong while executing your query.",
+        "",
+    ]:
+        assert not cpp._is_transient_gh_failure(stderr), stderr
+
+
+def test_rate_limit_read_exits_zero_with_named_verdict(monkeypatch, capsys):
+    """Une lecture refusee par quota rend PERIMETRE NON MESURABLE + exit 0,
+    et n'ecrit JAMAIS une contradiction de perimetre."""
+    import check_pr_perimeter as cpp
+
+    monkeypatch.setattr(
+        cpp, "_run_gh_rc",
+        lambda args: (1, "", RATE_LIMITS_MESURES[0]),
+    )
+    with pytest.raises(SystemExit) as exc:
+        cpp._run_gh(["pr", "view", "17269", "--json", "body"])
+    assert exc.value.code == 0, "une non-mesure ne doit pas tenir la PR"
+    out = capsys.readouterr().out
+    assert "PERIMETRE NON MESURABLE" in out
+    assert "budget d'API GitHub est epuise" in out
+    assert "contradiction" in out, "le verdict doit se nommer comme tel"
+
+
+def test_unrecognised_transport_failure_stays_fail_closed(monkeypatch, capsys):
+    """CONTROLE NEGATIF du garde : un echec de transport NON reconnu garde
+    le fail-closed (exit 2) et ne rend PAS le verdict de non-mesure. C'est
+    la propriete que le downgrade ne doit pas emporter avec lui."""
+    import check_pr_perimeter as cpp
+
+    monkeypatch.setattr(
+        cpp, "_run_gh_rc",
+        lambda args: (1, "", "gh: could not resolve host github.com"),
+    )
+    with pytest.raises(SystemExit) as exc:
+        cpp._run_gh(["pr", "view", "17269", "--json", "body"])
+    assert exc.value.code == 2, "un echec indetermine reste fail-closed"
+    out = capsys.readouterr().out
+    assert "PERIMETRE NON MESURABLE" not in out
+
+
+def test_diff_rate_limit_also_unmeasurable(monkeypatch, capsys):
+    """Le second site (`_pr_diff_text`) applique la meme doctrine : sans lui,
+    le quota epuise y ressuscitait un exit 2."""
+    import check_pr_perimeter as cpp
+
+    monkeypatch.setattr(
+        cpp, "_run_gh_rc",
+        lambda args: (1, "", RATE_LIMITS_MESURES[1]),
+    )
+    with pytest.raises(SystemExit) as exc:
+        cpp._pr_diff_text(17269)
+    assert exc.value.code == 0
+    assert "PERIMETRE NON MESURABLE" in capsys.readouterr().out
+
+
+def test_no_workflow_collapses_the_three_outcomes():
+    """#17273, controle de regression DURABLE.
+
+    Le defaut vivait au niveau du WRAPPER shell, pas du script : un
+    `cmd || { echo <conclusion>; exit 1; }` ecrase les trois issues (0 mesure
+    faite, 1 contradiction, 2 mesure impossible) dans le message de
+    contradiction. Deux sites le portaient (perimeter-review-guard.yml et
+    always-on-guards.yml) ; le second, sur la surface `pull_request`, se
+    declenche le plus souvent et avait ete manque au premier passage.
+
+    Une relecture a la main ne tient pas ce controle d'un cycle a l'autre :
+    on le rend executables. Le troisieme site (fast_lane_registry.py) lit le
+    rc via `conclusion_for`, qui mappe deja 2 -> failure et 0 -> success ;
+    il n'a donc pas de wrapper a corriger.
+    """
+    import re as _re
+    from pathlib import Path as _Path
+
+    root = _Path(__file__).resolve().parents[2]
+    offenders = []
+    for wf in sorted((root / ".github" / "workflows").glob("*.yml")):
+        text = wf.read_text(encoding="utf-8")
+        for i, line in enumerate(text.splitlines(), 1):
+            if "check_pr_perimeter.py" not in line:
+                continue
+            # Le `||` sur la MEME ligne, ou l'amorce d'un bloc `|| {` qui suit.
+            if "||" in line:
+                offenders.append(f"{wf.name}:{i}: {line.strip()[:120]}")
+    assert not offenders, (
+        "un `||` sur l'invocation du garde ecrase ses trois issues dans le "
+        "message de contradiction (#17273) :\n  " + "\n  ".join(offenders)
+    )
+
+
+def test_both_invoking_workflows_branch_on_rc():
+    """Controle positif : les DEUX sites qui portent le garde distinguent
+    rc=1 (contradiction) de rc=2 (mesure impossible). Sans ce controle, un
+    troisieme site pourrait reapparaitre sans que rien ne le remarque."""
+    from pathlib import Path as _Path
+
+    root = _Path(__file__).resolve().parents[2]
+    for name in ("perimeter-review-guard.yml", "always-on-guards.yml"):
+        text = (root / ".github" / "workflows" / name).read_text(encoding="utf-8")
+        assert "check_pr_perimeter.py" in text, f"{name} ne porte plus le garde ?"
+        assert '"$rc" -eq 1' in text, (
+            f"{name} ne distingue plus rc=1 : le message de contradiction "
+            "serait rendu pour un echec de mesure (#17273)"
+        )

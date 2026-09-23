@@ -78,8 +78,17 @@ attributions:
 
   - arxiv_id: "2102.09544"
     notebook: "MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb"
-    cell_index: 51
+    cell_index: 52
     expected_citation: "[Cappart et al. (2021) : Combinatorial optimization and reasoning with graph neural networks](https://arxiv.org/abs/2102.09544)"
     source_pr: "#12838"
     correction: "Référence GNN+combinatorial: placeholder 'Graph Neural Networks for combinatorial optimization' (arxiv:2012.01806, lien mort) -> Cappart et al. 2021 (Combinatorial Optimization and Reasoning with Graph Neural Networks, arXiv:2102.09544, référence canonique)"
     date: "2026-08-24"
+
+  # ===== Passe 5 — rescan du 2026-09-21 (PR #17296) =====
+  - arxiv_id: "2301.05217"
+    notebook: "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.9d-Features-Circulaires-Helice-Nombres.ipynb"
+    cell_index: 53
+    expected_citation: "3. Nanda, N., Chan, L., et al. (2023). *Progress Measures for Grokking via Mechanistic Interpretability*. [arXiv:2301.05217](https://arxiv.org/abs/2301.05217)."
+    source_pr: "#17296"
+    correction: "Nanda et al. grokking: identifiant 2305.00493 (Basak 2023, physique nucleaire -- Estimation of collision centrality) -> 2301.05217 (Progress measures for grokking via mechanistic interpretability). Titre et auteurs etaient deja justes : seule l'attribution de l'ID etait fausse."
+    date: "2026-09-21"

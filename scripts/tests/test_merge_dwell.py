@@ -66,14 +66,55 @@ def test_message_de_refus_nomme_le_geste_de_levee():
 def test_message_de_refus_porte_lheure_de_levee_absolue():
     """#15693 : l'heure de tete ET l'heure de LEVEE. « 101 min » oblige la
     lane a refaire le calcul et l'incite a agir ; un re-push reactionnaire
-    remet le plancher a zero depuis la nouvelle tete. Tete 11:55 + plancher
-    120 min -> leve au premier balayage suivant 13:55."""
+    remet le plancher a zero depuis la nouvelle tete.
+
+    #16092 : la levee est arrondie au premier `SWEEP_MINUTE:00:00Z`
+    strictement posterieur au plancher brut. Tete 11:55 + plancher 120 min
+    -> plancher brut 13:55 ; sweep `:07` qui suit = 14:07 (13:07 est
+    anterieur a 13:55). C'est l'heure GARANTIE d'un sweep nominal, pas
+    l'heure du plancher brut (qui tait que le sweep vient de passer)."""
     ok, _, msg = merge_dwell.evaluate(
         NOW.replace(hour=11, minute=55), NOW, 120.0
     )
     assert ok is False
     assert "tete du 2026-09-07T11:55:00Z" in msg
-    assert "2026-09-07T13:55:00Z" in msg, "l'heure de levee, pas seulement les minutes"
+    assert "2026-09-07T14:07:00Z" in msg, (
+        "l'heure de levee, arrondie au sweep :07 strictement postérieur "
+        "au plancher brut (11:55+120=13:55 ; sweep suivant = 14:07)"
+    )
+
+
+def test_levee_arrondie_au_sweep_strictement_posterieur():
+    """#16092 : quand le plancher brut est juste apres un `:07`, le calcul
+    prend le `:07` suivant, pas l'anterieur (qui vient de passer et ne leve
+    plus). Tete 11:55 + 10 min -> plancher 12:05 ; sweep anterieur 12:07
+    inexistant (apres), 11:07 anterieur a 12:05, donc sweep suivant 12:07.
+    """
+    ok, _, msg = merge_dwell.evaluate(
+        NOW.replace(hour=11, minute=55), NOW, 10.0
+    )
+    assert ok is False
+    assert "2026-09-07T12:07:00Z" in msg
+
+
+def test_levee_si_plancher_brut_pile_avant_un_sweep():
+    """#16092 : tete 11:48 + 20 min -> plancher brut 12:08 ; sweep anterieur
+    11:07 (avant), sweep suivant 12:07 STRICTEMENT anterieur ; le troisieme
+    candidat suivant 13:07 est le strict-postérieur. Verifie qu'on ne
+    selectionne jamais un sweep anterieur au plancher brut, même s'il est
+    tres proche."""
+    ok, _, msg = merge_dwell.evaluate(
+        NOW.replace(hour=11, minute=48), NOW, 20.0
+    )
+    assert ok is False
+    assert "2026-09-07T13:07:00Z" in msg
+
+
+def test_sweep_minute_constant():
+    """La constante `SWEEP_MINUTE` est rattachee au cron
+    `pr-gate-stale-sweep.yml:102` (cron: '7 * * * *'). Si le cron bouge,
+    elle doit bouger -- le commentaire dans merge_dwell.py porte ce lien."""
+    assert merge_dwell.SWEEP_MINUTE == 7
 
 
 # --- 2. le futur n'est pas « tres vieux » -----------------------------------
@@ -173,7 +214,45 @@ def test_check_bout_en_bout_accepte_une_tete_agee():
     assert "dwell ecoule" in msg
 
 
-# --- 5. #16149 -- le rafraichissement de base ne re-arme pas le plancher ----
+# --- 5. le message est RELISIBLE par ses consommateurs (#15910) --------------
+
+def test_le_plancher_est_relisible_par_ses_consommateurs():
+    """Round-trip emetteur -> lecteur : la forme du message tient des deux cotes.
+
+    Le picker ne peut pas recalculer le plancher (il ne voit que le texte du
+    gate) : il lit ce message pour distinguer « ce rouge est un minuteur » de
+    « ce rouge est un defaut ». Si la formulation derive d'un cote, le lecteur
+    cesse de matcher EN SILENCE et le rouge DWELL redevient un grain dit
+    reparable -- ce test echoue a la place, dans le module qui possede la forme.
+    """
+    ok, remaining, msg = merge_dwell.evaluate(NOW - timedelta(minutes=7), NOW, 120.0)
+    assert ok is False
+    parsed = merge_dwell.parse_pending_message(msg)
+    # #16092 : lift_at est l'heure GARANTIE du balayage :07 posterieur au
+    # plancher brut (11:53 + 120 min = 13:53 -> 14:07), pas le plancher brut.
+    assert parsed == {"head_at": "2026-09-07T11:53:00Z", "dwell_min": 120,
+                      "remaining_min": 113, "lift_at": "2026-09-07T14:07:00Z"}
+    assert parsed["remaining_min"] == int(remaining)
+
+
+def test_controle_negatif_les_autres_verdicts_ne_sont_pas_des_planchers():
+    """Les DEUX autres verdicts du gate ne doivent PAS se lire comme un plancher.
+
+    « plancher ecoule » est un rouge qui tombe seul au prochain balayage ;
+    « derogation » dit que le plancher ne mord pas. Les confondre avec un
+    plancher en cours ferait attendre une PR qui n'attend rien -- et, pire,
+    ferait acquitter un rouge que personne ne levera.
+    """
+    _ok, _rem, ecoule = merge_dwell.evaluate(NOW - timedelta(minutes=200), NOW, 120.0)
+    assert merge_dwell.parse_pending_message(ecoule) is None
+    _ok, _rem, derogation = merge_dwell.evaluate(
+        NOW - timedelta(minutes=5), NOW, 120.0, waived=True)
+    assert merge_dwell.parse_pending_message(derogation) is None
+    assert merge_dwell.parse_pending_message("") is None
+    assert merge_dwell.parse_pending_message("texte etranger") is None
+
+
+# --- 6. #16149 -- le rafraichissement de base ne re-arme pas le plancher ----
 
 def _commit(sha, date, parents, tree=None):
     payload = {
@@ -470,7 +549,8 @@ def _git_version_supported():
     """`git merge-tree --write-tree` demande Git >= 2.38 (CR 2026-09-16)."""
     try:
         out = subprocess.run(
-            ["git", "--version"], capture_output=True, text=True
+            ["git", "--version"], capture_output=True, text=True,
+            encoding="utf-8", errors="replace"
         ).stdout
     except OSError:
         return False
@@ -484,6 +564,15 @@ def _git_version_supported():
     return (major, minor) >= (2, 38)
 
 
+# Resolution git FIGEE au module (#17172) : resoudre "git" via le PATH a
+# chaque appel rend la suite sensible a toute pollution ulterieure de
+# os.environ["PATH"] par un test anterieur -- le discriminateur observe
+# (git qui interprete file:///C:/ en /C:/, POSIX) disparait des qu'on
+# fige le binaire. Le module est importe (collected) avant toute
+# execution de test : la resolution est faite sur un PATH propre.
+_GIT = shutil.which("git") or "git"
+
+
 def _git(cwd, *args, env=None):
     e = {
         "GIT_AUTHOR_NAME": "test", "GIT_AUTHOR_EMAIL": "test@local",
@@ -492,7 +581,7 @@ def _git(cwd, *args, env=None):
     if env:
         e.update(env)
     return subprocess.run(
-        ["git", *args], cwd=str(cwd), env={**os.environ, **e},
+        [_GIT, *args], cwd=str(cwd), env={**os.environ, **e},
         capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
 
@@ -679,3 +768,43 @@ def test_cr_20260916_repo_complet_sans_merge_base_reste_fail_closed():
     )
     assert ok is False
     assert "fetch" not in calls, "un depot complet sans merge-base ne fetch pas"
+
+
+def test_git_helper_immune_to_path_pollution(tmp_path, monkeypatch):
+    """#17172 -- non-regression : le helper _git doit utiliser le binaire
+    resolu a l'import (_GIT, chemin absolu), pas re-resoudre ``git`` dans le
+    PATH courant. Un test anterieur qui pollue ``os.environ["PATH"]`` avec un
+    bin/ factice en tete ne doit pas detourner les topologies reelles (le
+    discriminateur observe : un git qui interprete ``file:///C:/`` en
+    ``/C:/``).
+
+    Windows (reserve B.0, mesure sur poste natif) : CreateProcess n'appende
+    que ``.exe`` pour un nom nu -- un ``git.bat`` factice est INVISIBLE pour
+    ``subprocess(["git", ...])`` et le test restait vert pre-fix. Le faux
+    mesurable est une copie de ``where.exe`` nommee ``git.exe`` : vrai ``.exe``
+    en tete du PATH, il EST choisi par l'appel nu (la recherche CreateProcess
+    lit le PATH du processus APPELANT, que monkeypatch.setenv mute -- pas
+    celui de ``env=`` passe a l'enfant) et echoue (rc!=0, stdout vide).
+    Pre-fix : rouge. Post-fix : _GIT fige a l'import sous PATH propre, le
+    vrai git repond."""
+    marker = tmp_path / "fake_git_called"
+    bindir = tmp_path / "bin"
+    bindir.mkdir()
+    if os.name == "nt":
+        fake = bindir / "git.exe"
+        shutil.copy(
+            Path(os.environ.get("SystemRoot", r"C:\Windows")) / "System32" / "where.exe",
+            fake,
+        )
+    else:
+        fake = bindir / "git"
+        fake.write_text("#!/bin/sh\ntouch '" + str(marker) + "'\nexit 1\n", encoding="utf-8")
+        fake.chmod(fake.stat().st_mode | 0o111)
+    monkeypatch.setenv("PATH", str(bindir) + os.pathsep + os.environ.get("PATH", ""))
+    r = _git(tmp_path, "--version")
+    assert r.returncode == 0, r.stderr
+    # Windows : le faux (where.exe copie) repond rc!=0 avec stdout vide --
+    # la signature du VRAI git fait foi. POSIX : le faux ecrit un marqueur.
+    assert "git version" in r.stdout, "stdout != vrai git : {!r}".format(r.stdout[:80])
+    assert not marker.exists(), "le git factice du PATH pollue a ete appele"
+    assert Path(_GIT).name.lower().startswith("git"), _GIT
