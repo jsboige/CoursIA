@@ -1171,11 +1171,20 @@ def test_backend_no_lake_root_runs_native_without_pin():
         assert _registry(state) == {}
 
 
-def test_wsl_path_mangling_and_translation_form():
+def test_wsl_path_mangling_and_translation_form(monkeypatch):
     """Forme pure de la traduction WSL : tout appel d'outil Linux passe par
     bash -lc (l'argv direct de wsl.exe mange les backslashes, mesure
     po-2026 2026-09-14), cwd traduit via --cd, threads exportes dans le
-    shell de login, arguments shlex-quotes."""
+    shell de login, arguments shlex-quotes.
+
+    L'hote est **force** des deux cotes : ``backend_command`` ne traduit que
+    depuis Windows (``os.name == "nt"``) et rend la commande telle quelle
+    ailleurs. Sans ce forcage, l'epingle n'affirmait sa forme que sur un poste
+    Windows et **rougissait sur la CI Linux**, ou l'appel non force rendait
+    ``["lake", "build", ...]`` — mesuree sur la jambe ``Scripts Tests (CPU)``
+    du 2026-09-23 (1 failed, 15209 passed). Les deux branches de l'hote sont
+    desormais epinglees, sur n'importe quelle machine."""
+    monkeypatch.setattr(le.os, "name", "nt")
     saved = le.wsl_path_of
     try:
         le.wsl_path_of = lambda p: "/mnt/c/dev/proj"
@@ -1191,10 +1200,15 @@ def test_wsl_path_mangling_and_translation_form():
         # Sans threads declares : pas d'export prepended.
         cmd2, _ = le.backend_command(["lake", "build"], "wsl", {})
         assert cmd2[6] == "lake build", cmd2[6]
-        # Backend natif ou hote POSIX : pas de traduction du tout.
+        # Backend natif : pas de traduction du tout.
         cmd3, env3 = le.backend_command(
             ["lake", "build"], "native", {"LEAN_NUM_THREADS": "3"})
         assert cmd3 == ["lake", "build"] and env3["LEAN_NUM_THREADS"] == "3"
+        # Hote POSIX, backend wsl demande : wsl.exe n'existe pas la-bas, donc
+        # commande rendue telle quelle — c'est cette branche que la CI exerce.
+        monkeypatch.setattr(le.os, "name", "posix")
+        cmd4, _ = le.backend_command(["lake", "build"], "wsl", {})
+        assert cmd4 == ["lake", "build"], cmd4
     finally:
         le.wsl_path_of = saved
 
