@@ -183,10 +183,14 @@ def _version_prefix(version):
     patch component alone (measured 2026-09-22 on #16858: base 3.13.3,
     venv 3.13.15, 10/10 cells, 0 error). A patch bump does not change
     repr() semantics; a kernel swap or a major/minor change does. Versions
-    with fewer than two components ("", "3") are returned verbatim.
+    with fewer than two components ("", "3") are returned verbatim. A JSON
+    ``"version": null`` (valid nbformat, which the ``.get("version", "")``
+    default does not cover) is read as the empty version rather than
+    crashing: the guard must emit a finding, never a traceback.
     """
-    parts = version.split(".")
-    return ".".join(parts[:2]) if len(parts) >= 2 else version
+    text = str(version or "")
+    parts = text.split(".")
+    return ".".join(parts[:2]) if len(parts) >= 2 else text
 
 
 def diff_kernel(base_info, head_info):
