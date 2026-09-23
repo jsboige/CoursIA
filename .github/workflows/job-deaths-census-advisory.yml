@@ -1,0 +1,151 @@
+name: Job deaths census advisory
+
+# Census periodique des morts de job CI (#15055, tranche 2).
+#
+# La tranche 1 a livre l'instrument : `scripts/ci/classify_job_deaths.py` +
+# ses tests. Elle a livre un instrument que RIEN n'invoque. Mesure du
+# 2026-09-21 : scan des 158 workflows de `main`, zero occurrence de
+# `classify_job_deaths`, de `15055` ou de `job death`. L'artefact
+# `docs/audit/job-deaths/latest.md` annonce par la tranche 1 n'existe pas non
+# plus sur `main` et n'est reference nulle part. Autrement dit : la capacite
+# de NOMMER la cause d'une mort de job existe, la mesure periodique qui la
+# rend utile n'existe pas. C'est ce trou que cet organe ferme.
+#
+# Pourquoi un organe SEPARE du classifieur, et pas un job de plus dans un
+# workflow existant : le census ne doit dependre d'aucun des workflows qu'il
+# observe, sinon il meurt de ce qu'il mesure. Il est en lecture seule
+# (`gh api` seulement : runs, jobs, annotations de check-run), il n'ecrit
+# dans le depot, et il tourne sur la jambe GitHub-hosted.
+#
+# Pourquoi ubuntu-latest et non le parc auto-heberge (meme arbitrage que
+# `linux-runner-starvation-advisory.yml`, #16134). Le census mesure les morts
+# DU PARC : `NO_RUNNER_ACQUIRED`, `RUNNER_LOST_COMM`, et -- quand #17171 sera
+# mergee -- `OOM` et mort de worker. Un observateur qui tourne SUR le parc ne
+# peut pas rapporter la panne du parc, il en est une victime ; il rapporterait
+# ce qu'il a pu executer, jamais ce qui n'a pas pu l'etre. Depot public : les
+# minutes GitHub-hosted sont gratuites, l'argument de cout ne s'applique pas.
+#
+# Pourquoi pas de heartbeat `workflow_run` (que porte l'organe d'extinction
+# des runners, #15332) : ce census est un RAPPORT, pas une alerte. Sa panne
+# propre n'est pas une cecite -- un creneau manque est un trou de la fenetre,
+# et la fenetre est rattrapable : `workflow_dispatch` accepte n'importe quel
+# `hours` (un `--hours 168` hebdomadaire reconstruit la semaine perdue). Un
+# heartbeat `workflow_run` couterait un census complet a chaque poussee pour
+# couvrir un trou que la relance manuelle couvre deja ; il se justifie pour
+# un organe qui doit crier, pas pour un organe qui doit chiffrer.
+#
+# Advisory PAR CONSTRUCTION : `schedule` + `workflow_dispatch` uniquement,
+# jamais `pull_request`/`push` -- aucun run rouge ne peut bloquer une PR. Le
+# nom porte "advisory" (ADVISORY_MARKER, cf `scripts/pr_gate.py:205`). Le
+# cron est a un offset hors sweeps (13,43) et hors audits (03:37, 05:37).
+#
+# Le cap `--max-runs` est une TRONCATURE REELLE, pas un reglage cosmetique :
+# le jeton d'Actions est plafonne a 1000 requetes/h par depot, et le census
+# coute 1 requete par run plus 1 par job. Le defaut (60) couvre une journee
+# nominale en restant sous le plafond. Quand le cap mord, l'instrument le dit
+# lui-meme sur stderr et le rapport le reprend -- une fenetre tronquee doit se
+# lire comme tronquee, jamais comme un total.
+
+on:
+  schedule:
+    # 04:27 UTC quotidien : hors catalog-cron (03:37), hors audit des filtres
+    # paths (05:37), hors offset des sweeps (13,43) et de la starvation (19,49).
+    - cron: '27 4 * * *'
+  workflow_dispatch:
+    inputs:
+      hours:
+        description: "Fenetre glissante en heures (defaut 24 ; 168 pour rattraper une semaine)"
+        required: false
+        type: string
+        default: "24"
+      max_runs:
+        description: "Cap de runs rouges analyses (defaut 60 ; la troncature est rapportee)"
+        required: false
+        type: string
+        default: "60"
+
+permissions:
+  contents: read   # checkout du script
+  actions: read    # lecture des runs et des jobs
+  checks: read     # lecture des annotations de check-run (le motif de mort y est)
+
+concurrency:
+  group: job-deaths-census-advisory
+  cancel-in-progress: false
+
+jobs:
+  census:
+    name: Job deaths census advisory
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run the census
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          # `inputs.*` est VIDE sur l'evenement schedule (mesure #15962) : le
+          # defaut est donc pose ici, dans le shell, et pas dans la valeur de
+          # l'input -- sur le cron il n'y a aucun input a qui se fier.
+          HOURS="${{ inputs.hours }}"
+          MAX_RUNS="${{ inputs.max_runs }}"
+          [ -n "${HOURS}" ] || HOURS=24
+          [ -n "${MAX_RUNS}" ] || MAX_RUNS=60
+          echo "Census sur les ${HOURS} dernieres heures (cap ${MAX_RUNS} runs)"
+
+          python3 scripts/ci/classify_job_deaths.py \
+            --hours "${HOURS}" \
+            --max-runs "${MAX_RUNS}" \
+            --report census.md \
+            2> census-warn.txt
+
+      - name: Publish to the step summary
+        if: always()
+        run: |
+          set -eu
+          # `always()` : un census qui a echoue a mi-parcours a quand meme une
+          # fenetre a montrer (et l'absence de rapport est elle-meme le
+          # resultat). Un etage qui ne rapporte que ses succes cache
+          # exactement les cas qu'on vient lire ici.
+          if [ ! -f census.md ]; then
+            {
+              echo "## Census morts de job -- AUCUN RAPPORT PRODUIT"
+              echo
+              echo "L'instrument n'a pas rendu de rapport : lire le log de"
+              echo "l'etape precedente. Une absence de rapport n'est pas un"
+              echo "census vide -- c'est un census qui n'a pas eu lieu."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          {
+            echo "## Census morts de job -- $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo
+            cat census.md
+            if [ -s census-warn.txt ]; then
+              echo
+              # Le bloc porte TOUT le stderr de l'instrument, pas seulement ses
+              # avertissements : c'est ce qui dispense de trier sa sortie.
+              # Trier reviendrait a choisir ce que le lecteur a le droit de
+              # voir ; un rapport tronque se lit comme tronque, il ne se
+              # maquille pas en rapport complet.
+              echo "### Sortie stderr de l'instrument"
+              echo
+              echo '```'
+              cat census-warn.txt
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the census
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: job-deaths-census
+          path: census.md
+          if-no-files-found: ignore
+          retention-days: 30
