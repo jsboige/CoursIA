@@ -2375,7 +2375,22 @@ def _fake_check_api(completed_at="2026-09-12T14:21:22Z"):
                 "started_at": "2026-09-12T14:01:01Z",
                 "completed_at": completed_at,
                 "id": 7,
+                # #17031: the check-run names the workflow run that owns it.
+                # Without this field the successor question cannot be asked at
+                # all, so the fixture carries it and the route below answers it.
+                "details_url": "https://github.com/o/r/actions/runs/100/job/7",
             }]}
+        if "/actions/runs" in path:
+            # #17031: `fetch_checks` consults the WORKFLOW-RUN view once an
+            # unconcluded record is present. Answered here so the real path
+            # (fetch -> mark) stays exercised, rather than only the shapes a
+            # test poses by hand.
+            return {"total_count": 2, "workflow_runs": [
+                {"id": 100, "workflow_id": 9,
+                 "created_at": "2026-09-12T14:01:01Z"},
+                {"id": 101, "workflow_id": 9,
+                 "created_at": "2026-09-12T14:05:00Z"},
+            ]}
         return {"statuses": [{
             "context": "legacy/check",
             "state": "failure",
@@ -2417,3 +2432,309 @@ def test_timeout_clause_is_reachable_from_a_fetched_check(monkeypatch):
     assert code == 1
     assert "hit their declared timeout-minutes" in msg
     assert "never concluded" not in msg
+
+
+# --- #17031 : un `cancelled` de SUPERSESSION n'est pas un verdict -------------
+#
+# PR #17031, mesure du 2026-09-21. Deux livraisons `pull_request` a 2 s
+# d'intervalle (meme tete 030ee971, meme evenement, attempt=1 des deux cotes) :
+# la premiere vague est annulee par le groupe `cancel-in-progress` par-PR, la
+# seconde repart. La jambe `PR gate` a conclu a 07:20:46 -- 26 s apres la
+# creation de la seconde vague, et 59 s AVANT que le check-run successeur de
+# `Scripts Tests (CPU)` ne demarre (07:21:45). Elle a publie un FAIL definitif
+# nommant deux checks annules dont les successeurs sont tous deux passes au
+# vert, et ce verdict n'a pu etre leve que par un `gh run rerun` manuel.
+#
+# La premisse du fail-fast -- « un echec ne se defait pas en attendant » -- est
+# vraie pour un rouge REEL et fausse pour un check qui n'a jamais conclu :
+# `dedupe_latest` compare des CHECK-RUNS et ne peut donc pas voir la vague de
+# remplacement dont le check-run n'existe pas encore.
+
+
+def _cancel(name="Scripts Tests (CPU)", details_url=None, rid=1):
+    check = run(name, "cancelled", started_at="2026-09-21T07:20:18Z", rid=rid)
+    check["details_url"] = details_url
+    return check
+
+
+def _runs(*specs):
+    return [
+        {"id": rid, "workflow_id": wid, "created_at": created}
+        for rid, wid, created in specs
+    ]
+
+
+def test_mark_inflight_successors_flags_a_superseded_cancel():
+    """Un `cancelled` dont le workflow a un run PLUS RECENT sur la meme tete est
+    une supersession en cours, pas un verdict sur le code."""
+    checks = [_cancel(details_url="https://github.com/o/r/actions/runs/100/job/7")]
+    pr_gate.mark_inflight_successors(checks, _runs(
+        (100, 9, "2026-09-21T07:20:18Z"),
+        (101, 9, "2026-09-21T07:20:20Z"),
+    ))
+    assert checks[0]["successor_run_inflight"] is True
+
+
+def test_mark_inflight_successors_leaves_a_famine_cancel_alone():
+    """Sans run plus recent, le `cancelled` EST le dernier mot (famine de
+    runners, #13510) : le garde doit continuer d'echouer vite dessus."""
+    checks = [_cancel(details_url="https://github.com/o/r/actions/runs/100/job/7")]
+    pr_gate.mark_inflight_successors(checks, _runs(
+        (100, 9, "2026-09-21T07:20:18Z"),
+    ))
+    assert checks[0]["successor_run_inflight"] is False
+
+
+def test_mark_inflight_successors_never_marks_a_real_red():
+    """Seules les conclusions NON CONCLUES portent le marqueur : un `failure`
+    est un verdict sur le code, aucune attente ne le defait."""
+    checks = [_cancel()]
+    checks[0]["conclusion"] = "failure"
+    checks[0]["details_url"] = "https://github.com/o/r/actions/runs/100/job/7"
+    pr_gate.mark_inflight_successors(checks, _runs(
+        (100, 9, "2026-09-21T07:20:18Z"),
+        (101, 9, "2026-09-21T07:20:20Z"),
+    ))
+    assert checks[0]["successor_run_inflight"] is False
+
+
+def test_mark_inflight_successors_ignores_a_run_of_another_workflow():
+    """Le successeur doit appartenir au MEME workflow : un run plus recent d'un
+    workflow voisin ne remplace rien."""
+    checks = [_cancel(details_url="https://github.com/o/r/actions/runs/100/job/7")]
+    pr_gate.mark_inflight_successors(checks, _runs(
+        (100, 9, "2026-09-21T07:20:18Z"),
+        (101, 12, "2026-09-21T07:20:20Z"),
+    ))
+    assert checks[0]["successor_run_inflight"] is False
+
+
+def test_mark_inflight_successors_ignores_a_legacy_status():
+    """Un statut legacy n'a pas de `details_url` : comportement historique
+    conserve, pas de promotion silencieuse."""
+    checks = [_cancel()]
+    pr_gate.mark_inflight_successors(checks, _runs(
+        (100, 9, "2026-09-21T07:20:18Z"),
+        (101, 9, "2026-09-21T07:20:20Z"),
+    ))
+    assert checks[0]["successor_run_inflight"] is False
+
+
+def test_inflight_successor_excludes_self_and_advisory():
+    """Le predicat ne retient que le bloquant : ni le garde lui-meme, ni un
+    advisory (dont la rougeur ne bloque pas -- le garde n'a pas a l'attendre)."""
+    url = "https://github.com/o/r/actions/runs/100/job/7"
+    checks = [
+        _cancel("PR gate", details_url=url, rid=1),
+        _cancel("CJK residue advisory (label, non-blocking)", details_url=url, rid=2),
+        _cancel("Scripts Tests (CPU)", details_url=url, rid=3),
+    ]
+    pr_gate.mark_inflight_successors(checks, _runs(
+        (100, 9, "2026-09-21T07:20:18Z"),
+        (101, 9, "2026-09-21T07:20:20Z"),
+    ))
+    assert pr_gate.unconcluded_with_inflight_successor(checks) == [
+        "Scripts Tests (CPU)"
+    ]
+
+
+def test_fetched_check_carries_the_successor_marker(monkeypatch):
+    """Le correctif ne vaut que si le chemin REEL l'atteint : fetch_checks ->
+    marqueur, sur la forme que l'API renvoie (meme exigence que le test
+    timeout ci-dessus)."""
+    monkeypatch.setattr(pr_gate, "_gh_api", _fake_check_api())
+    checks = {c["name"]: c for c in pr_gate.fetch_checks("o/r", "deadbeef")}
+    assert checks["Scripts Tests (CPU)"]["successor_run_inflight"] is True
+
+
+def test_wait_loop_holds_a_superseded_cancel_until_its_successor_surfaces():
+    """LE test de regression #17031 : le garde doit ATTENDRE le check-run
+    successeur au lieu de publier un rouge que le poll suivant dement."""
+    polls = []
+
+    def fetch(_repo, _sha):
+        polls.append(1)
+        cancelled = _cancel(details_url="https://github.com/o/r/actions/runs/100/job/7")
+        if len(polls) == 1:
+            # La vague 2 est creee, son check-run n'existe pas encore.
+            cancelled["successor_run_inflight"] = True
+            return [cancelled]
+        # Le check-run de remplacement est apparu, vert. Les DEUX enregistrements
+        # coexistent : c'est `dedupe_latest` qui tranche par le plus recent.
+        return [
+            cancelled,
+            run("Scripts Tests (CPU)", "success",
+                started_at="2026-09-21T07:21:45Z", rid=2),
+        ]
+
+    code, msg = pr_gate.wait_and_decide(
+        "o/r", "sha", "PR gate", timeout_min=90, poll_sec=0,
+        settle_polls=2, sleep=lambda _s: None, fetch=fetch, now=_clock(),
+    )
+    assert code == 0, msg
+    assert len(polls) >= 2, "le `cancelled` supersede ne doit pas conclure au poll 1"
+
+
+# --- #17364 -- runner lost mid-step: annotate, never re-route ----------------
+#
+# Measured 2026-09-22 on the 16 blocked PRs of #17364: a self-hosted runner
+# that vanishes mid-step force-concludes its job `failure` with the running
+# step at `conclusion: null` and no logs uploaded. From the check-runs API
+# alone -- everything `classify` sees -- that red is byte-identical to a code
+# failure, and twelve lanes were told their code was broken when it had never
+# been measured. The annotation reads the job's steps and carries the
+# observation into the FAIL line. What these tests pin, by damage if wrong:
+#
+# 1. **Routing is untouched** -- an annotated entry still lands in the
+#    `failing checks` clause of `_split_bad` (#15693 three-state). A
+#    mis-routed entry would silently change the repair gesture the clause
+#    prescribes.
+# 2. **The verdict is untouched** -- exit 1 before, exit 1 after.
+# 3. **Enrichment failure is inert** -- a non-Actions check, a fetch error,
+#    or a fully-concluded job leaves the entry byte-identical. A diagnostic
+#    that could break the verdict is worse than no diagnostic.
+
+
+def _death_check(name="Scripts Tests (CPU)", job_id=4242):
+    return run(name, "failure", rid=job_id) | {
+        "details_url": f"https://github.com/o/r/actions/runs/99/job/{job_id}",
+    }
+
+
+def _death_job(step="Run tests"):
+    return {
+        "conclusion": "failure",
+        "steps": [
+            {"name": "Set up job", "conclusion": "success"},
+            {"name": step, "conclusion": None},
+            {"name": "Post Run actions/checkout@v4", "conclusion": None},
+        ],
+    }
+
+
+def test_runner_death_failure_is_annotated():
+    """The observed signature (job failure + null-conclusion steps) appends
+    the observation and the repair gesture to the real-red entry."""
+    checks = [_death_check()]
+    _pending, bad, _ok, _adv = pr_gate.classify(checks, "PR gate")
+    annotated = pr_gate._annotate_runner_deaths(
+        "o/r", bad, checks, fetch_job=lambda _p: _death_job()
+    )
+    (entry,) = annotated
+    assert entry.startswith("Scripts Tests (CPU) (failure")
+    assert 'runner lost mid-step at "Run tests"' in entry
+    assert "the code was never measured" in entry
+    assert "rerun the CHILD run" in entry
+
+
+def test_annotated_entry_still_routes_to_failing_checks():
+    """#15693 routing: the annotation must NOT turn the entry into an
+    unconcluded suffix -- it stays a real red with its own clause."""
+    checks = [_death_check()]
+    _pending, bad, _ok, _adv = pr_gate.classify(checks, "PR gate")
+    annotated = pr_gate._annotate_runner_deaths(
+        "o/r", bad, checks, fetch_job=lambda _p: _death_job()
+    )
+    failed, unconcluded = pr_gate._split_bad(annotated)
+    assert failed and not unconcluded
+    code, msg = pr_gate.verdict([], annotated, settled=True)
+    assert code == 1
+    assert msg.startswith("FAIL -- failing checks:")
+    assert "never concluded" not in msg
+
+
+def test_non_actions_check_is_left_unannotated():
+    """A legacy status or external check has no job to read -- the entry is
+    returned unchanged and no fetch is attempted."""
+    checks = [run("legacy/check", "failure", rid=1)]
+    _pending, bad, _ok, _adv = pr_gate.classify(checks, "PR gate")
+
+    def _boom(_p):
+        raise AssertionError("no job fetch may happen for a non-Actions check")
+
+    annotated = pr_gate._annotate_runner_deaths("o/r", bad, checks, fetch_job=_boom)
+    assert annotated == bad
+
+
+def test_fetch_error_leaves_entry_unchanged():
+    """The enrichment is diagnostic-only: a failing job lookup must not
+    raise and must not alter the verdict text."""
+    checks = [_death_check()]
+    _pending, bad, _ok, _adv = pr_gate.classify(checks, "PR gate")
+
+    def _gate_error(_p):
+        raise pr_gate.GateError("gh api exploded")
+
+    annotated = pr_gate._annotate_runner_deaths("o/r", bad, checks, fetch_job=_gate_error)
+    assert annotated == bad
+
+
+def test_fully_concluded_job_is_not_annotated():
+    """A normal code failure (every step concluded) must stay a plain red --
+    annotating it would assert a cause the gate has not established."""
+    checks = [_death_check()]
+    _pending, bad, _ok, _adv = pr_gate.classify(checks, "PR gate")
+    job = {
+        "conclusion": "failure",
+        "steps": [
+            {"name": "Set up job", "conclusion": "success"},
+            {"name": "Run tests", "conclusion": "failure"},
+        ],
+    }
+    annotated = pr_gate._annotate_runner_deaths(
+        "o/r", bad, checks, fetch_job=lambda _p: job
+    )
+    assert annotated == bad
+
+
+def test_annotation_reads_the_deduped_latest_job():
+    """Two same-name check-runs on the SHA: the entry carries the latest
+    one's conclusion, so the steps read must come from THAT job, not the
+    superseded twin (dedupe_latest parity with classify)."""
+    old = _death_check(job_id=111) | {"started_at": "2026-09-21T07:50:44Z"}
+    new = _death_check(job_id=222) | {"started_at": "2026-09-21T23:24:58Z"}
+    checks = [old, new]
+    _pending, bad, _ok, _adv = pr_gate.classify(checks, "PR gate")
+    seen = []
+
+    def fetch_job(path):
+        seen.append(path)
+        return _death_job(step="Audit tests collection floor (455)")
+
+    annotated = pr_gate._annotate_runner_deaths("o/r", bad, checks, fetch_job=fetch_job)
+    assert seen == ["repos/o/r/actions/jobs/222"], seen
+    assert 'at "Audit tests collection floor (455)"' in annotated[0]
+
+
+def test_wait_loop_fail_fast_carries_the_annotation():
+    """The production path (fetch -> classify -> verdict inside
+    wait_and_decide) must surface the annotation in its FAIL message."""
+    checks = [_death_check()]
+
+    def fetch(_repo, _sha):
+        return checks
+
+    code, msg = pr_gate.wait_and_decide(
+        "o/r", "sha", "PR gate", timeout_min=90, poll_sec=0,
+        settle_polls=2, sleep=lambda _s: None, fetch=fetch, now=_clock(),
+        fetch_job=lambda _p: _death_job(),
+    )
+    assert code == 1
+    assert 'runner lost mid-step at "Run tests"' in msg
+
+
+def test_wait_loop_still_fails_fast_on_a_cancel_with_no_successor():
+    """Contrepartie, et garde-fou de la regle 3 : sans run de remplacement, le
+    `cancelled` reste un rouge immediat -- on ne brule pas le budget."""
+    polls = []
+
+    def fetch(_repo, _sha):
+        polls.append(1)
+        return [_cancel()]
+
+    code, msg = pr_gate.wait_and_decide(
+        "o/r", "sha", "PR gate", timeout_min=90, poll_sec=0,
+        settle_polls=2, sleep=lambda _s: None, fetch=fetch, now=_clock(),
+    )
+    assert code == 1 and "Scripts Tests (CPU)" in msg
+    assert len(polls) == 1

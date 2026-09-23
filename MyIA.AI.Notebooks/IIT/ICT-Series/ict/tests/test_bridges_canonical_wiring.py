@@ -10,7 +10,7 @@ verdict est cable. Avant la tranche 3 de #14051, ``quasi_experimental.py``
 redeclarait localement ``make_panel_did`` et ``iv_replay`` ; les gates B1-B6
 passaient donc au vert en comparant ``ict.causal_attribution`` a une
 reproduction de l'organe natif, et non a l'organe natif. Un changement
-d'estimateur dans ``Quasi-Experimental.ipynb`` les aurait laisses verts.
+d'estimateur dans ``CausalBridges-07-Quasi-Experimental.ipynb`` les aurait laisses verts.
 
 Les gates W1-W7 ferment exactement cet angle mort pour ``quasi_experimental``.
 Les gates W8-W12 font de meme pour ``pymc_enumerate``, cable sur
@@ -123,7 +123,7 @@ def test_bridge_source_defines_no_estimator_of_its_own():
 def test_canonical_two_by_two_matches_the_notebook_cell_arithmetic():
     """W6 -- ``panel_did_two_by_two`` == la double difference de la cellule 5.
 
-    La cellule 5 de ``Quasi-Experimental.ipynb`` calcule les quatre moyennes
+    La cellule 5 de ``CausalBridges-07-Quasi-Experimental.ipynb`` calcule les quatre moyennes
     en ligne avec ``.query()`` et garde volontairement cette forme deroulee
     (montrer les quatre cellules 2x2 EST le geste pedagogique). Ce gate rejoue
     cette arithmetique-la, telle qu'elle est ecrite dans le notebook, et exige
