@@ -15,7 +15,10 @@ text is legitimate). Two discriminants learned from the first corpus
 measurement (458 raw hits, most of them false positives): fenced code
 blocks (```` ``` ````) are masked before everything -- Lean/pseudo-code and
 shell `$var` inside fences are code, not prose -- and a `$` immediately
-followed by a digit is currency ("costs $5"), not a math delimiter:
+followed by a digit is currency ("costs $5"), not a math delimiter. An
+inline scope may span single newlines (MathJax, GitHub and KaTeX all
+render `$a +\nb$`) but never a blank line -- that is the paragraph
+boundary:
 
   1. LATEX-PURE-DELIMS -- `\\(...\\)` or `\\[...\\]` in markdown prose.
      Jupyter, GitHub and VS Code render `$...$` / `$$...$$`; the pure LaTeX
@@ -65,7 +68,7 @@ BACKTICK_SPAN = re.compile(r"`[^`\n]*`")
 FENCED_BLOCK = re.compile(r"```[\s\S]*?(?:```|$)")
 LATEX_INLINE = re.compile(r"\\\(.*?\\\)")
 LATEX_BLOCK = re.compile(r"\\\[.*?\\\]")
-MATH_SCOPE = re.compile(r"\$\$([\s\S]+?)\$\$|\$([^$\n]+?)\$")
+MATH_SCOPE = re.compile(r"\$\$([\s\S]+?)\$\$|\$((?:(?!\n\s*\n)[^$])+?)\$")
 CURRENCY_DOLLAR = re.compile(r"\$\d")
 KNOWN_COMMANDS = (
     "Phi", "mathbb", "mathcal", "mathbf", "mathrm", "mathsf", "lfloor",

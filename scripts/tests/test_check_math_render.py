@@ -90,6 +90,19 @@ class TestNudeLatex(unittest.TestCase):
         src = "preuve :\n```lean\ntheorem t : x \\in S := by simp\n```\nfin"
         self.assertNotIn("NUDE-LATEX", kinds(src))
 
+    def test_multiline_scope_spared(self):
+        # v2 FP : un scope inline sur 2 lignes ("$... \\ge\\n\\alpha$") est
+        # rendu par MathJax/GitHub/KaTeX -- le scope traverse un simple \\n.
+        src = r"contrainte $\mathrm{alloc}_i + \mathrm{alloc}_{n+j} \ge" + "\n" + r"\alpha_{ij}$ fixee"
+        self.assertNotIn("NUDE-LATEX", kinds(src))
+        self.assertNotIn("ODD-DOLLARS", kinds(src))
+
+    def test_scope_never_crosses_blank_line(self):
+        # ... mais jamais une ligne vide : le 2e dollar vit dans un autre
+        # paragraphe, chacun est orphelin
+        src = "$a\n\nb$ deux paragraphes"
+        self.assertIn("ODD-DOLLARS", kinds(src))
+
     def test_latex_delim_in_fenced_code_spared(self):
         src = "exemple :\n```text\nf\\(x\\) brute\n```\nfin"
         self.assertNotIn("LATEX-PURE-DELIMS", kinds(src))
