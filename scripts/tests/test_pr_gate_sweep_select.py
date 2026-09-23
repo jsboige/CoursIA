@@ -793,3 +793,56 @@ def test_workflow_pins_constituent_rerun_branch():
     branch = run.split('TARGET="${TARGET:--}"', 1)[1].split("fi", 1)[0]
     assert "gh run rerun" in branch
     assert "PR gate" not in branch
+
+
+def _collector_run() -> str:
+    """Le `run` de l'etape de collecte + selection (celle qui porte MAX_MATURE)."""
+    with open(WORKFLOW, encoding="utf-8") as f:
+        doc = yaml.safe_load(f)
+    return str(next(
+        step.get("run", "") for step in doc["jobs"]["sweep"]["steps"]
+        if "MAX_MATURE" in str(step.get("run", ""))
+    ))
+
+
+def test_workflows_map_is_inert_without_a_gate_leg(tmp_path):
+    """La carte `workflows` ne change RIEN pour une PR sans jambe `PR gate`.
+
+    Contrat de l'economie #15770 : le collecteur ne paie l'appel
+    `actions/runs?head_sha=` QUE si le payload porte un check nomme `PR gate`
+    (un appel REST en moins par PR non candidate -- la majorite du pool ouvert,
+    mesure 2026-09-21 : 307 PRs ouvertes). Ce test est ce qui rend l'economie
+    SURE plutot que supposee : si un jour le selecteur se mettait a lire la
+    carte dans la branche `gate_legs` vide, le collecteur cesserait de
+    l'alimenter en silence et le defaut serait invisible (un selecteur plus
+    etroit que la gate, la classe que ce fichier combat).
+    """
+    # Meme PR, meme rouge non-gate : seule la presence de la carte differe.
+    assert _run_selector(tmp_path, [_pr(202, [OTHER_RED])]).strip() == ""
+    assert _run_selector(
+        tmp_path, [_pr(202, [OTHER_RED], workflows={555: 999})]
+    ).strip() == ""
+
+    # Controle positif -- la MEME forme de ligne EST candidate des qu'une jambe
+    # `PR gate` rouge existe : sans lui, un `assert ""` sur une fixture cassee
+    # passerait aussi, et ne prouverait rien.
+    out = _run_selector(
+        tmp_path, [_pr(203, [GATE_FAIL, OTHER_GREEN], workflows={555: 999})]
+    )
+    assert out.strip() == "203 deadbeef false 0"
+
+
+def test_workflow_fetches_wfmap_only_for_gate_bearing_prs():
+    """Garde structurelle de l'economie #15770 : le garde PRECEDE la collecte.
+
+    Le selecteur, lui, est garde par `test_workflows_map_is_inert_without_a_gate_leg` ;
+    ce pin garde le COLLECTEUR des deux derives symetriques : l'appel
+    inconditionnel (l'economie disparait en silence) et un garde debranche du
+    motif reel (`"name":"PR gate"` est la forme que le jq du collecteur emet).
+    """
+    run = _collector_run()
+    guard = run.find("""grep -q '"name":"PR gate"'""")
+    fetch = run.find("WFMAP=$(gh api")
+    assert guard != -1, "garde de collecte de la carte absent (#15770)"
+    assert fetch != -1
+    assert guard < fetch, "la carte est demandee hors du garde (#15770)"
