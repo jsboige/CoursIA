@@ -10,6 +10,17 @@ mdc: true
 layout: cover
 ---
 
+<!-- Archive header (standard _archive convention, 2026-09-21)
+     - Date archived : 2026-08-06 (LastWriteTime filesystem)
+     - Superseded by : deck-1-fondamentaux.md + deck-2-strategies.md + deck-3-pratique-lean.md
+     - Verdict recorded in : commit cc96a2c88d (kernel drift guard) + split observable dans l'arbre
+     -
+     Per-section disposition :
+     - Sections 1-N (frontmatter unique "S4 Trading Algorithmique") : split en 3 decks specialises
+     - Sections workflows/outils : absorbees dans _tools/ et analysis/
+     - Sections strategie : deck-2-strategies.md reprend et etend
+-->
+
 # Trading Algorithmique
 
 Intelligence Artificielle -- S4

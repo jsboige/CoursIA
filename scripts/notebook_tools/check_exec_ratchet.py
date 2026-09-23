@@ -152,6 +152,16 @@ def ratchet(base, cwd=None):
 
 
 def main():
+    # Sibling pattern (#12811, #13191, #14154, #15185, #15668) : l'organe est
+    # consomme en subprocess par la CI et les tests, qui decodent stdout/stderr
+    # en UTF-8 (encoding="utf-8"). Sur Windows ACP 1252, un pipe sans
+    # reconfigure emet l'em-dash des annotations ::error en byte 0x97 cp1252 --
+    # UnicodeDecodeError dans le reader thread, stderr=None, verdict masque
+    # (#17427). Le hasattr couvre Python < 3.7 et les flux captes sans
+    # reconfigure (pytest).
+    for _stream in (sys.stdout, sys.stderr):
+        if hasattr(_stream, "reconfigure"):
+            _stream.reconfigure(encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser(
         description="Ratchet gate: PR must not soil a clean sequence "
                     "(issue #11112 tier 2)")
