@@ -8,9 +8,14 @@ Strips:
 - All code-cell `outputs: []` and sets `execution_count = None`.
 - Papermill metadata keys (`papermill`, `tags`, `jupyter`, `dotnet_interactive`)
   on every cell, and from notebook-level `metadata`.
-- Top-level `metadata.kernelspec` (papermill artifact).
 - Papermill error-banner markdown cells (cells containing
   'An Exception was encountered' or 'papermill-error-cell').
+
+Kept (NOT stripped — these are the notebook's own identity, not papermill artifacts):
+- `metadata.kernelspec` — kernel identity (name/display_name/language). Without it,
+  Jupyter cannot reopen the notebook on the right kernel, and papermill cannot replay
+  it without `-k .net-csharp`. Adjoint finding c.44 / 2026-09-23.
+- `metadata.language_info` — language hints for syntax highlighting / introspection.
 
 Used in PR #17422 (RFC dotnet-restore-bug-17361) to keep a stable
 pre-execution reference for future probes, without committing a notebook
@@ -64,7 +69,9 @@ def main() -> int:
 
     nb["cells"] = new_cells
     nb_meta = nb.get("metadata", {}) or {}
-    for k in ("kernelspec", "papermill", "language_info"):
+    # Only strip papermill-level artifacts. Keep `kernelspec` (kernel identity)
+    # and `language_info` (language hints) — see adjoint finding c.44.
+    for k in ("papermill",):
         nb_meta.pop(k, None)
 
     os.makedirs(os.path.dirname(os.path.abspath(args.output)), exist_ok=True)

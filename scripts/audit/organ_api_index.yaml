@@ -1,0 +1,189 @@
+version: 1
+# Index des API publiques caracteristiques des organes de series (#16776, fille de #13564).
+#
+# Regle servie : .claude/rules/organ-first-implementation.md (merge #16778) --
+# avant de reimplementer une semantique qu'une autre serie possede deja, la PR
+# doit nommer l'organe (5 questions) ou declarer une copie pedagogique.
+#
+# Source des symboles : MESURE sur l'arbre au cycle 41 (def/class publics des
+# .py des packages + cellules code des .ipynb par serie). Aucun symbole de
+# memoire. Les exemples illustratifs de la spec d'origine (`grounded_extension`,
+# `sparql_update`, `assert_expr`, `plan`...) ont ete mesures a 0 hit sur l'arbre
+# -- ils ne sont PAS dans l'index.
+#
+# Curation : symboles GENERIQUES exclus volontairement (solve, install, main,
+# Search, Marginal, download, benchmark, plot_dist, memoize...) : une collision
+# ne compte que sur un nom distinctif de l'organe. Une re-curation doit
+# re-mesurer (grep def/class par serie) avant d'ajouter un symbole.
+
+series:
+  Planners:
+    owner_path: MyIA.AI.Notebooks/SymbolicAI/Planners
+    organ: "moteur STRIPS + recherche classique planification (notebooks, lake planning_lean)"
+    symbols:
+      - Operateur
+      - ops_de_base
+      - ops_avec_radeau
+      - prop
+      - successeurs
+      - successeurs_relaxes
+      - h_max
+      - distances_relaxees
+      - astar_hmax
+      - iddfs
+      - reconstruire
+      - Action
+      - GridState
+      - GridWorld
+      - build_state_graph
+      - run_fast_downward_docker
+      - pull_fast_downward
+      - start_fd_container
+      - estimate_states
+    # Mesure : 37 notebooks, 66 symboles .ipynb (cellules code) + 0 .py.
+    # Controle positif Greffe2 : Operateur/ops_de_base/ops_avec_radeau/prop/
+    # successeurs copies dans ICT-Greffe2 (#13802, declare).
+
+  ArgumentAnalysis:
+    owner_path: MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis
+    organ: "pont Tweety/JVM (argumentation_lib : AF, ADF, modal, FOL, dialogue)"
+    symbols:
+      - AFHandler
+      - ADFHandler
+      - TweetyBridge
+      - TweetyInitializer
+      - ModalHandler
+      - FOLHandler
+      - PLHandler
+      - ProbabilisticHandler
+      - BeliefRevisionHandler
+      - DialogueHandler
+      - RankingHandler
+      - RhetoricalAnalysisState
+      - TaxonomySophismDetector
+      - AnalysisRunner
+      - initialize_jvm
+      - is_jvm_started
+      - shutdown_jvm
+    # Mesure : argumentation_lib, 60 symboles publics .py.
+
+  CooperativeGames:
+    owner_path: MyIA.AI.Notebooks/GameTheory/cooperative_games
+    organ: "jeux cooperatifs -- Shapley, coeur, vote pondere"
+    symbols:
+      - VotingGame
+      - WeightedVotingGame
+      - ShapleyCalculator
+      - CoalitionGame
+      - AssistanceGame
+      - compute_core
+      - is_in_core
+      - core_constraints
+      - core_vertices_2d
+      - core_vertices_3d
+      - bondareva_shapley_condition
+      - marginal_contribution
+      - majority_game
+    # Mesure : cooperative_games, 44 symboles publics .py.
+
+  TrustSimulation:
+    owner_path: MyIA.AI.Notebooks/GameTheory/trust_simulation
+    organ: "dilemme du prisonnier itere + dynamique de replicateurs (Axelrod)"
+    symbols:
+      - TitForTat
+      - TitForTwoTats
+      - Grudger
+      - Copykitten
+      - Detective
+      - Pavlov
+      - AlwaysCooperate
+      - AlwaysDefect
+      - Tournament
+      - TournamentResults
+      - MatchResult
+      - play_match
+      - play_round
+      - replicator_dynamics
+      - run_axelrod_tournament
+      - ecological_simulation
+    # Mesure : trust_simulation, 24 symboles publics .py.
+
+  Sudoku:
+    owner_path: MyIA.AI.Notebooks/Sudoku
+    organ: "solveurs Sudoku (backtracking, MRV, annealing, graph coloring) + dataset ML"
+    symbols:
+      - SudokuGrid
+      - BacktrackingSolver
+      - MRVBacktrackingSolver
+      - SimulatedAnnealingSolver
+      - SimpleBacktracking
+      - SudokuDataset
+      - SmallCNNModel
+      - SmallDenseModel
+      - count_solutions
+      - load_puzzles
+      - puzzle_to_grid
+      - solve_graph_coloring
+      - find_hidden_pairs
+      - generate_sudoku_data
+      - train_one_epoch
+    # Mesure : 15 symboles publics .py (hors Test*) + 68 notebooks, 225 symboles
+    # .ipynb (top: load_puzzles, SudokuGrid, count_solutions, BacktrackingSolver...).
+
+  Probas:
+    owner_path: MyIA.AI.Notebooks/Probas
+    organ: "Infer.NET/PyMC -- RSA pragmatique, VaR/CVaR, causalite DoWhy"
+    symbols:
+      - HashingMarginal
+      - literal_listener
+      - pragmatic_listener
+      - speaker
+      - meaning
+      - state_prior
+      - utterance_prior
+      - compute_var
+      - compute_cvar
+      - analyse_portfolio
+      - bornes_rosenbaum
+      - biais_iv_vs_ols
+      - ResultatRR
+      - ResultatEValue
+      - DowhyBackdoorResult
+      - DowhyIvResult
+    # Mesure : 187 symboles publics .py (hors Test*) + 63 notebooks, 120 symboles
+    # .ipynb (top: HashingMarginal, literal_listener, pragmatic_listener...).
+    # Controle negatif : ICT-12e (consommateur Infer.NET+PyMC, 0 def/class) = 0 collision.
+
+  SMT:
+    owner_path: MyIA.AI.Notebooks/SymbolicAI/SMT
+    organ: "solveur Z3 -- pipelines de contraintes (taches, crypto, sudoku-SMT)"
+    symbols:
+      - compter_solutions
+      - trouver_triplet_pythagoricien
+      - ordonnancer_taches
+      - allocation_optimale
+      - resoudre_sudoku
+      - resoudre_sudoku_anti_diagonale
+      - pipeline_tactiques
+      - trouver_clef_xor
+      - reverse_bits_8
+      - verifier_commutativite_store
+      - generer_mot_de_passe_valide
+      - compter_indices
+    # Mesure : 43 notebooks, 50 symboles .ipynb (top: compter_solutions,
+    # trouver_triplet_pythagoricien, ordonnancer_taches...). Les 5 symboles .py
+    # (download*, main) sont generiques : exclus.
+
+  SemanticWeb:
+    owner_path: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb
+    organ: "RDF/SPARQL + GraphRAG (reification, sous-graphes, requetes LLM)"
+    symbols:
+      - reify
+      - to_uri_id
+      - extract_subgraph
+      - graphrag_query
+      - extract_entities_llm
+      - safe_llm_call
+      - add_score_claim
+      - slugify
+    # Mesure : 36 notebooks, 19 symboles .ipynb.

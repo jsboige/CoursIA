@@ -409,6 +409,10 @@ docker-configurations/shared/cache/
 # Outputs temporaires
 outputs/
 output_z_image/
+# Scratch de telechargement de `models download-qwen*` (#17268) : ancre sur la
+# racine du depot, donc ici, et non sous scripts/genai-stack/ ou il atterrissait
+# avant que le chemin soit ancre.
+temp_qwen_models/
 
 # Modèles locaux (trop volumineux)
 models/
@@ -1087,3 +1091,10 @@ MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/cuda-detect-probe/
 
 # Claude Code machine-local state (registre arbitrations user - coordinator-discipline Regle 7, roo-extensions#3677)
 .claude/local/
+
+# PR #17422 — probes directory artifacts (papermill _out, _deps DLL mirror).
+# `_out` n'est pas couvert par `*_output.ipynb` au-dessus (suffixe distinct).
+# `_deps/` héberge la copie locale de QuikGraph.dll pour la mesure c.790 du
+# workaround relatif (#r "./_deps/QuikGraph.dll") — ne pas la committer.
+scripts/notebook_tools/probes/*_out.ipynb
+scripts/notebook_tools/probes/_deps/
