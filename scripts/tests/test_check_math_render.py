@@ -170,6 +170,57 @@ class TestScanNotebook(unittest.TestCase):
             self.assertEqual(defects[0]["cell_index"], 1)
 
 
+class TestEscapedAndPostfixDollar(unittest.TestCase):
+    """v5 : \$ est un littéral (jamais un délimiteur, aucun moteur ne
+    l'apparie) et la devise française postfixée (180$) n'est pas de la
+    math. Instance fondatrice : QC-Py-09-Order-Types, 8 ODD-DOLLARS dont
+    zéro défaut réel de math -- que de la devise en prose."""
+
+    _nb = TestScanNotebook._nb
+
+    def test_escaped_dollars_pair_no_scope_and_no_orphan(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            p = self._nb(Path(d), [
+                ("markdown", r"long AAPL à 180\$, stop à 171\$ (perte -5%)"),
+                ("markdown", r"impair aussi : 100\$ seul dans son paragraphe"),
+            ])
+            self.assertEqual(m.scan_notebook(p, with_katex=False), [])
+
+    def test_escaped_dollar_sends_nothing_to_katex(self):
+        src = [r"devises 180\$ et 171\$ encadrantes"]
+        defects, scopes = m.find_defects(src, with_katex=False)
+        self.assertEqual(defects, [])
+        self.assertEqual(scopes, [])
+
+    def test_postfix_french_currency_is_not_an_orphan(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            p = self._nb(Path(d), [
+                ("markdown", "prix actuel 100$, monte à 110$, retombe à 95$"),
+            ])
+            self.assertEqual(m.scan_notebook(p, with_katex=False), [])
+
+    def test_real_orphan_still_flagged_after_v5(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            p = self._nb(Path(d), [
+                ("markdown", r"le scope $x$ est fermé mais $y reste ouvert"),
+            ])
+            defects = m.scan_notebook(p, with_katex=False)
+            self.assertEqual(len(defects), 1)
+            self.assertEqual(defects[0]["kind"], "ODD-DOLLARS")
+
+    def test_real_math_scope_survives_postfix_strip(self):
+        # $x = 5$ : le délimiteur fermant précède un chiffre -- il doit être
+        # consommé par MATH_SCOPE AVANT le strip postfix, donc rester une math.
+        src = [r"si $x = 5$ alors la contrainte est satisfaite"]
+        defects, scopes = m.find_defects(src, with_katex=False)
+        self.assertEqual(defects, [])
+        self.assertEqual(len(scopes), 1)
+        self.assertEqual(scopes[0]["formula"], "x = 5")
+
+
 class TestExitContract(unittest.TestCase):
     def test_clean_returns_zero(self):
         import json, tempfile

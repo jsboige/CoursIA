@@ -70,6 +70,12 @@ LATEX_INLINE = re.compile(r"\\\(.*?\\\)")
 LATEX_BLOCK = re.compile(r"\\\[.*?\\\]")
 MATH_SCOPE = re.compile(r"\$\$([\s\S]+?)\$\$|\$((?:(?!\n\s*\n)[^$])+?)\$")
 CURRENCY_DOLLAR = re.compile(r"\$\d")
+ESCAPED_DOLLAR = re.compile(r"\\\$")
+# Devise française POSTFIXÉE (« 180$ ») : le $ suit le chiffre. Séparé de
+# CURRENCY_DOLLAR car l'ordre importe -- un $ précédé d'un chiffre qui
+# SURVIT à l'appariement des scopes est de la devise (un vrai délimiteur
+# fermant comme « $x = 5$ » a déjà été consommé par MATH_SCOPE avant).
+POSTFIX_CURRENCY = re.compile(r"\d\$")
 KNOWN_COMMANDS = (
     "Phi", "mathbb", "mathcal", "mathbf", "mathrm", "mathsf", "lfloor",
     "rfloor", "frac", "dfrac", "tfrac", "sqrt", "log", "ln", "exp", "min",
@@ -144,6 +150,13 @@ def find_defects(source, with_katex: bool) -> tuple[list[dict], list[dict]]:
 
     masked = FENCED_BLOCK.sub("```", text)
     masked = BACKTICK_SPAN.sub("``", masked)
+    # \$ = dollar littéral, jamais un délimiteur, dans tout moteur (KaTeX,
+    # MathJax, GitHub). Remplacé avant TOUTE détection : sinon deux devises
+    # échappées s'apparient en faux scope math et polluent les deux jambes
+    # (ODD-DOLLARS compte un orphelin, KaTeX reçoit un scope poubelle).
+    # Approximation assumée : un \$ À L'INTÉRIEUR d'un vrai scope casse la
+    # détection de ce scope -- cas rare, jamais croisé sur le corpus.
+    masked = ESCAPED_DOLLAR.sub("D", masked)
 
     for m in LATEX_INLINE.finditer(masked):
         defects.append({
@@ -162,7 +175,8 @@ def find_defects(source, with_katex: bool) -> tuple[list[dict], list[dict]]:
         without_display = re.sub(r"\$\$[\s\S]*?\$\$", "", para)
         without_scopes = MATH_SCOPE.sub("", without_display)
         without_currency = CURRENCY_DOLLAR.sub("D", without_scopes)
-        orphans = without_currency.count("$")
+        without_postfix = POSTFIX_CURRENCY.sub("D", without_currency)
+        orphans = without_postfix.count("$")
         if orphans:
             defects.append({
                 "kind": "ODD-DOLLARS",
