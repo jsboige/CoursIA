@@ -128,6 +128,8 @@ python scripts/ci/measure_runner_demand.py --repo jsboige/CoursIA \
 
 **Le sizing nominal de l'organe est périmé d'un ordre de grandeur.** La fenêtre par défaut de 6 h était calibrée sur « ~60-80 runs/heure » (≈500 appels, plafond 1 000/h du jeton de workflow). Mesuré : **1 433 runs sur 6 h le 2026-09-11** (≈240/h) et **781 runs sur la dernière heure le 2026-09-23** (≈780/h) — le rythme a plus que triplé entre les deux. À ce rythme, une fenêtre de 6 h exige ~5 800 appels, hors de portée du jeton de workflow comme d'un poste de travail ; le premier dispatch (fenêtre 6 h) a été annulé au profit d'une fenêtre de 1 h (≈780 appels, sous le plafond). Toute fenêtre future se calcule sur le rythme mesuré du dépôt au moment du run, pas sur la constante de conception.
 
+**Vérifiabilité des deux blocs.** La lecture `actions/runners` a été prise sous le compte `myia-ai-01`, détenteur de la permission fine-grained `runners` sur ce dépôt : un reviewer qui ne l'a pas obtient un `403` (constaté depuis `clusterManager-Myia` le 2026-09-23T20:28Z), donc ce contrôle précis se demande à ce compte, ou se rejoue via l'organe lui-même (`runner_inventory=true`) sur un inventaire frais — il ne se lit pas de l'extérieur du dépôt. Les chiffres de co-résidence se rejouent par un dispatch de `runner-coresidence-advisory.yml` (commande ci-dessus, `hours=1`) : c'est une photo datée d'une heure, pas un relevé continu, et le run qui l'a produite (35877355222) est cité avec sa fenêtre.
+
 Les deux nombres étant versés et datés ci-dessus, la caractérisation est complète ; reste ouverte la décision de capacité (plafond de concurrence par hôte, retrait ou renfort documenté des slots), qui relève du coordinateur et n'est pas prise dans ce document.
 
 ## Topologie retenue
