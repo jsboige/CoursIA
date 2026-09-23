@@ -112,7 +112,7 @@ python scripts/ci/measure_runner_demand.py --repo jsboige/CoursIA \
 | `myia-ai-01-linux-waiter` | 16 | 0 | `coursia-waiter` |
 
 - **Le pool `coursia-ephemeral` compte 12 slots, dont 9 (75 %) sur le seul hôte physique `myia-po-2024`** (7 `linux-docker` + 2 `lean-docker`) ; les 3 autres sont sur `myia-ai-01-wsl`. Au moment de la mesure, **les 7 slots `linux-docker` de po-2024 étaient occupés simultanément** : le plafond de concurrence observé sur cet hôte est donc d'au moins 7.
-- Les slots `po-2024-linux-docker-9` et `-10`, cités par le diagnostic fondateur du 2026-09-11 (les deux runners tués à 71 % des tests), **ne figurent plus dans l'inventaire**, pas plus que `-7` : le parc a perdu trois slots depuis, retrait non consigné ailleurs dans ce document.
+- Les slots `po-2024-linux-docker-9` et `-10`, cités par le diagnostic fondateur du 2026-09-11 (les deux runners tués à 71 % des tests), **sont absents de tous les inventaires relevés** (14:44Z à la rédaction ; contrôle du 2026-09-23 18:31Z). Le reste de la composition est daté et volatile : `-7` absent de l'inventaire de 14:44Z est relevé en ligne à 18:31Z — une absence n'est pas un retrait, aucune trace de désenregistrement n'est citée ; le point durable est la paire {-9, -10}.
 - Les profils `coursia-fast-guards` de `self_hosted_runner_profiles.json` ne portent aucun runner enregistré à cet instant — c'est leur état nominal : le cycle est éphéméral (un slot s'enregistre à la demande pour un job, puis se désenregistre ; cf `windows-self-hosted-tests.yml`).
 
 *Co-résidence dynamique — premier run de l'organe `runner-coresidence-advisory.yml`, fenêtre 1 h (2026-09-23T14:08Z → 15:08Z, run 35877355222) :*
