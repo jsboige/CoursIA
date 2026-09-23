@@ -198,12 +198,21 @@ def body_has_derive_exemption(body):
     tolerates the unaccented 'derive' (covers authors who type the header
     without the accent, a common shortcut when reviewing on a non-French
     keyboard layout).
+
+    Fix v3 (suffix form, cas vecu #17220): also tolerate a trailing
+    parenthetical qualifier, e.g. '## Diagnostic derive (C.4)' -- the exact
+    form used in the PR body of #17220, whose exemption silently failed to
+    fire because
+    the strict end-of-line anchor rejected the '(C.4)' suffix (measured
+    firsthand 2026-09-21: kernel_diffs downgraded nowhere, guard red on a
+    3.13.7 -> 3.13.15 patch drift that the C.4 section was documenting).
     """
     if not body:
         return False
-    # Case-insensitive header, optional whitespace, optional accent on 'e'.
+    # Case-insensitive header, optional whitespace, optional accent on 'e',
+    # optional trailing parenthetical qualifier such as '(C.4)'.
     pattern = re.compile(
-        r"^##\s*Diagnostic\s*d[ée]rive\s*$",
+        r"^##\s*Diagnostic\s*d[ée]rive(?:\s*\([^)]*\))?\s*$",
         re.MULTILINE | re.IGNORECASE,
     )
     return bool(pattern.search(body))
