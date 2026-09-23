@@ -549,7 +549,7 @@ def _git_version_supported():
     """`git merge-tree --write-tree` demande Git >= 2.38 (CR 2026-09-16)."""
     try:
         out = subprocess.run(
-            ["git", "--version"], capture_output=True, text=True,
+            [_GIT, "--version"], capture_output=True, text=True,
             encoding="utf-8", errors="replace"
         ).stdout
     except OSError:
@@ -808,3 +808,8 @@ def test_git_helper_immune_to_path_pollution(tmp_path, monkeypatch):
     assert "git version" in r.stdout, "stdout != vrai git : {!r}".format(r.stdout[:80])
     assert not marker.exists(), "le git factice du PATH pollue a ete appele"
     assert Path(_GIT).name.lower().startswith("git"), _GIT
+
+    # #17448 -- _git_version_supported() doit suivre le meme chemin fige :
+    # sous PATH pollue, il repond avec le VRAI git, le fake n'est jamais appele.
+    assert _git_version_supported() is True, "version_supported detourne par le PATH"
+    assert not marker.exists(), "le git factice a ete appele par _git_version_supported"
