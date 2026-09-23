@@ -61,13 +61,10 @@ concurrency:
 jobs:
   health:
     name: PR gate sweep health advisory
-    # Routage #14283 tranche 4 (ai-01 2026-09-02) : balayage cron pur-Python.
-    # Declencheurs `schedule` + `push` sur main -- les deux ne portent que des
-    # refs du depot (SAFE_SELF_HOSTED_TRIGGERS), donc aucun code de fork ne peut
-    # l'atteindre et aucune garde same-repo n'est requise (cf en-tete de
-    # check_self_hosted_runner_policy.py). Retour arriere = remettre
-    # `runs-on: ubuntu-latest` + retrait de l'allowlist.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Q35 etape 2 (#17397) : balayage cron pur-Python, aucun secret ni
+    # toolchain locale -- routage #14283 inverse, retour sur ubuntu-latest
+    # et sortie de SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit.
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
