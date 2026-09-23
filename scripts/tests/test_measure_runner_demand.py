@@ -302,3 +302,152 @@ def test_main_returns_two_for_broken_snapshot(tmp_path):
     source = tmp_path / "bad.json"
     source.write_text("{}", encoding="utf-8")
     assert mod.main(["--input", str(source)]) == mod.EXIT_BROKEN
+
+
+# --- Co-residence #15574 -----------------------------------------------------
+#
+# L'hote est presume du nom du runner ; la concurrence est echantillonnee au
+# point median de chaque job. Ce qui doit rester vrai : deux slots d'un meme
+# hote se regroupent, un nom non attribuable n'est PAS un hote, et une
+# concurrence non observable ne se lit pas comme une absence de concurrence.
+
+def job_on(job_id, runner, start_min, end_min, day_minutes=0):
+    """Un job borne en minutes depuis dt(0), pour lire les recouvrements a l'oeil."""
+    base = dt(0, day_minutes // 60, day_minutes % 60)
+    started = base.replace(minute=0) + mod.timedelta(minutes=start_min)
+    return job(
+        job_id,
+        created=started,
+        started=started,
+        completed=started + mod.timedelta(minutes=end_min),
+        runner_name=runner,
+    )
+
+
+def test_host_of_groups_slots_and_refuses_unattributable_names():
+    assert mod.host_of("myia-po-2024-linux-docker-1") == "myia-po-2024-linux-docker"
+    assert mod.host_of("myia-po-2024-linux-docker-12") == "myia-po-2024-linux-docker"
+    # Deux slots du meme hote partagent donc bien leur prefixe.
+    assert (
+        mod.host_of("myia-po-2024-linux-docker-1")
+        == mod.host_of("myia-po-2024-linux-docker-9")
+    )
+    # Un nom sans suffixe numerique n'est pas un hote : le deviner fabriquerait
+    # un hote d'un seul slot, c'est-a-dire le chiffre meme qu'on mesure.
+    assert mod.host_of("GitHub Actions 1") is None
+    assert mod.host_of("myia-po-2024-linux-docker") is None
+    assert mod.host_of("<unassigned>") is None
+    assert mod.host_of(None) is None
+
+
+def test_coresidence_separates_solo_from_shared_on_the_same_host():
+    # Deux jobs du meme hote se recouvrent (0-20 et 10-30) ; un troisieme est
+    # seul (40-50). Le job de 20 min en concurrence doit sortir « shared », le
+    # job seul « solo » -- sans quoi la correlation duree/concurrence serait
+    # mesuree sur un melange.
+    rows = [
+        snapshot([run(1, dt(0), name="W")]),
+    ]
+    jobs = [
+        job_on(11, "myia-po-2024-linux-docker-1", 0, 20),
+        job_on(12, "myia-po-2024-linux-docker-2", 10, 30),
+        job_on(13, "myia-po-2024-linux-docker-3", 40, 50),
+    ]
+    rows[0]["runs"] = [with_jobs(run(1, dt(0), name="W"), jobs)]
+    result = mod.analyze(rows[0])
+
+    block = result["co_residence"]
+    assert block["summary"]["hosts"] == 1
+    assert block["summary"]["jobs_placed"] == 3
+    assert block["summary"]["jobs_unplaced"] == 0
+    assert block["summary"]["solo_jobs"] == 1
+    assert block["summary"]["shared_jobs"] == 2
+    host = block["hosts"][0]
+    assert host["host"] == "myia-po-2024-linux-docker"
+    assert host["slots_observed"] == 3
+    assert host["max_concurrency_observed"] == 2
+
+
+def test_coresidence_counts_two_hosts_apart():
+    # Deux jobs simultanes mais sur deux hotes distincts ne sont PAS en
+    # concurrence : c'est tout l'objet de la derivation d'hote.
+    jobs = [
+        job_on(21, "myia-po-2024-linux-docker-1", 0, 30),
+        job_on(22, "myia-ai-01-linux-1", 0, 30),
+    ]
+    snap = snapshot([with_jobs(run(1, dt(0), name="W"), jobs)])
+    block = mod.analyze(snap)["co_residence"]
+    assert block["summary"]["hosts"] == 2
+    assert block["summary"]["shared_jobs"] == 0
+    assert {host["max_concurrency_observed"] for host in block["hosts"]} == {1}
+
+
+def test_coresidence_reports_unplaced_instead_of_inventing_a_host():
+    jobs = [
+        job_on(31, "myia-po-2024-linux-docker-1", 0, 10),
+        job_on(32, "some-unlabelled-runner", 0, 10),
+    ]
+    snap = snapshot([with_jobs(run(1, dt(0), name="W"), jobs)])
+    block = mod.analyze(snap)["co_residence"]
+    assert block["summary"]["jobs_unplaced"] == 1
+    assert block["summary"]["jobs_placed"] == 1
+    assert [host["host"] for host in block["hosts"]] == ["myia-po-2024-linux-docker"]
+
+
+def test_coresidence_declares_its_own_caveats():
+    snap = snapshot([with_jobs(run(1, dt(0), name="W"), [job_on(41, "h-1", 0, 5)])])
+    block = mod.analyze(snap)["co_residence"]
+    joined = " ".join(block["caveats"])
+    assert "borne inferieure" in joined
+    assert "presume" in joined
+
+
+def test_coresidence_ratio_is_none_when_nothing_is_shared():
+    snap = snapshot([with_jobs(run(1, dt(0), name="W"), [job_on(51, "h-1", 0, 5)])])
+    summary = mod.analyze(snap)["co_residence"]["summary"]
+    assert summary["shared_jobs"] == 0
+    assert summary["shared_over_solo_p50_ratio"] is None
+
+
+# --- Inventaire des runners (moitie statique) --------------------------------
+
+def test_runners_inventory_groups_slots_per_host():
+    snap = snapshot([])
+    snap["runners"] = [
+        {"id": 1, "name": "myia-po-2024-linux-docker-1", "status": "online", "busy": False,
+         "labels": ["self-hosted", "coursia-ephemeral"]},
+        {"id": 2, "name": "myia-po-2024-linux-docker-2", "status": "online", "busy": True,
+         "labels": ["self-hosted", "coursia-ephemeral"]},
+        {"id": 3, "name": "myia-ai-01-linux-1", "status": "offline", "busy": False,
+         "labels": ["self-hosted"]},
+    ]
+    inv = mod.analyze(snap)["runners_inventory"]
+    assert inv["availability"] == "measured"
+    assert inv["total_runners"] == 3
+    assert inv["unplaced_runners"] == 0
+    by_host = {row["host"]: row for row in inv["hosts"]}
+    assert by_host["myia-po-2024-linux-docker"]["slots"] == 2
+    assert by_host["myia-po-2024-linux-docker"]["online"] == 2
+    assert by_host["myia-po-2024-linux-docker"]["busy"] == 1
+    assert by_host["myia-ai-01-linux"]["slots"] == 1
+    assert by_host["myia-ai-01-linux"]["online"] == 0
+
+
+def test_runners_inventory_distinguishes_unavailable_from_empty():
+    # Un refus de lecture n'est pas un parc vide : les deux doivent rester
+    # distinguables jusque dans la sortie.
+    unavailable = mod.analyze({**snapshot([]), "runners": {"error": "gh api failed: 403"}})
+    assert unavailable["runners_inventory"]["availability"] == "unavailable"
+    assert "403" in unavailable["runners_inventory"]["detail"]
+
+    not_collected = mod.analyze(snapshot([]))["runners_inventory"]
+    assert not_collected["availability"] == "not_collected"
+
+
+def test_runners_inventory_does_not_invent_a_host_for_an_unattributable_name():
+    snap = snapshot([])
+    snap["runners"] = [{"id": 9, "name": "ephemeral", "status": "online", "busy": False,
+                        "labels": []}]
+    inv = mod.analyze(snap)["runners_inventory"]
+    assert inv["unplaced_runners"] == 1
+    assert inv["hosts"] == []
