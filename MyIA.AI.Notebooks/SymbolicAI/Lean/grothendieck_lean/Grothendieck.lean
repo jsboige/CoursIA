@@ -42,6 +42,7 @@ import Grothendieck.Flasque
 import Grothendieck.FlasqueStability
 import Grothendieck.FlasqueRetract
 import Grothendieck.FlasqueExact
+import Grothendieck.FlasqueQuotient
 import Grothendieck.Fppf
 import Grothendieck.KanExtensions
 import Grothendieck.LawvereTierney

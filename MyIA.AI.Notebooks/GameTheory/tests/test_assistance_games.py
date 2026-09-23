@@ -479,3 +479,19 @@ class TestOffSwitchMarginReport:
         out = off_switch_margin_report(override_threshold=0.9)
         assert "0.90" in out or "0.9" in out
         assert "deliberately" in out or "deliberate" in out or "safety" in out.lower()
+
+
+class TestPackageExports:
+    """Chaque nom de cooperative_games.__all__ est un attribut du package (#17535)."""
+
+    def test_all_names_are_importable(self):
+        import cooperative_games
+
+        missing = [n for n in cooperative_games.__all__ if not hasattr(cooperative_games, n)]
+        assert missing == []
+
+    def test_margin_functions_are_exported_by_the_package(self):
+        import cooperative_games
+
+        assert cooperative_games.off_switch_margin_analysis is off_switch_margin_analysis
+        assert cooperative_games.off_switch_margin_report is off_switch_margin_report
