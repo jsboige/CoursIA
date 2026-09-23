@@ -103,6 +103,8 @@ Quand le user formule une demande concrete et realisable :
 
 **Deux dashboards workspace co-egaux** : `workspace-CoursIA` et `workspace-CoursIA-2`. **Aucun n'est "le dashboard du coordinateur"**. Un `lane` = **machine x workspace** ; chaque worker avec une lane CoursIA-2 a **AUSSI** une lane CoursIA.
 
+> **Pivot R3 — tricéphalie.** Ces DEUX dashboards co-egaux restent co-egaux *à l'intérieur* de la tricéphalie : ils se lisent ensemble dans le tour `/coordinate`. Le **troisième dashboard** — `workspace-CoursIA-3` (le secrétariat) — n'est **PAS** dans cette liste binaire : il a son propre tour (DMs nominatifs, alertes) et se lit à part, ou en réaction à un DM nominatif qu'il a posté sur l'inbox. L'**enumération** par `roosync_dashboard(action:"list")` reste la voie canonique — jamais une liste codée en dur. Voir [tricéphale-circulation.md](tricéphale-circulation.md) §« Pivot R3 ».
+
 Chaque cycle `/coordinate` : **LIRE `section:"all"` sur LES DEUX** (sinon les ASKs/blockers d'une lane restent invisibles) **et POSTER un contenu lane-specific sur LES DEUX** — **jamais de broadcast miroir** (copier-coller identique), jamais traiter l'un comme « le mien » et l'autre comme « celui des workers ». Surveiller la **duplication cross-lane** (un worker peut dedoubler une livraison sur ses deux lanes → reconcilier : 1 canonique mergee, l'autre disposee).
 
 Mapping lanes + incident fondateur (mandat 2026-06-14) : [§2.3](../../docs/reference/secrets-and-coord-detail.md#2-coordinator-discipline-ai-01).

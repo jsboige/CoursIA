@@ -23,6 +23,18 @@ Tout cycle de coordination (adjoint comme coordinateur) :
 
 **Pourquoi énumérer, et pas nommer** : une liste codée en dur rend **structurellement aveugle** à toute clé qu'elle n'anticipe pas. Mesure fondatrice (#17197) : `workspace-CoursIA (2)`, clé forkée par collision de noms Google Drive, a porté **23 messages vivants** de deux lanes, dont deux PRs débloquées en attente du merge-gate, pendant plusieurs jours sans qu'aucun cycle la voie. Une clé à suffixe ` (N)` dont le `workspace` déclaré **ne porte pas** ce suffixe est une **moitié de la même lane**, pas une lane voisine : la lire, et escalader la réparation (`action:"merge"`).
 
+## Pivot R3 — les deux clés co-egales restent co-egales *à l'intérieur* de la tricéphalie
+
+La R3 de [coordinator-discipline.md](coordinator-discipline.md) (« coordonner CHAQUE lane indépendamment ») parle des **deux dashboards du binôme coordinateur/titulaire** : `workspace-CoursIA` et `workspace-CoursIA-2`. Ces **deux-là sont co-egaux et se lisent ensemble** dans le tour `/coordinate` (le titulaire et le coordinateur partagent la responsabilité de chaque lane `CoursIA` et `CoursIA-2`).
+
+Le **troisième dashboard** — `workspace-CoursIA-3`, le secrétariat — n'est **pas** ajouté à cette liste de lecture binaire :
+
+- il a sa propre logique de tour (DMs nominatifs, alertes conflits/quota/runners), pas le tour `/coordinate` ;
+- l'inclure dans la liste R3 forcerait chaque cycle à lire un dashboard dont le tempo (push rapide, souvent sans action requise) ne correspond pas au cycle lent du merge ;
+- il se lit **à part**, dans le tour du secrétaire, ou en réaction à un DM nominatif qu'il a posté sur l'inbox.
+
+**En clair** : R3 reste vraie pour les DEUX dashboards co-egaux du binôme coordinateur/titulaire. Ce qui est interdit, c'est d'en faire la **liste de lecture codée en dur** — d'où l'**enumération** par `roosync_dashboard(action:"list")` plutôt qu'une énumération statique. Le secrétaire entre dans cette énumération si et seulement si sa clé apparaît dans le résultat du `list` au moment du cycle, comme n'importe quelle autre clé pertinente — jamais par contrat.
+
 ## Le format se rend nominatif — mesuré, pas négociable
 
 | Format rendu au coordinateur | Conversion en merge |
