@@ -224,75 +224,17 @@ Il faut être franc sur la marche exacte où cette lecture se tient — c'est le
 
 ## La noix, ce mois-ci — quand c'est le cadre qui cède
 
+Il faut maintenant revenir à la noix, parce qu'il lui est arrivé, en quelques semaines, la chose la plus grothendieckienne que ce dépôt ait produite. Le récit vaut d'être fait dans l'ordre où il s'est déroulé — mais il vit désormais ailleurs, dans la vitrine GOL ([#17465](https://github.com/jsboige/CoursIA/issues/17465)) et les notebooks `Lean-16*` ([Lean-16j-Conway-Hashlife-Correctness-Native](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16j-Conway-Hashlife-Correctness-Native.ipynb), [Lean-16b-Conway-Game-of-Life-Lean](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb), [Lean-16d-Conway-Game-of-Life-Lean-Native](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16d-Conway-Game-of-Life-Lean-Native.ipynb)). La lentille n'en retient que la forme, qui est la sienne : le mouvement par lequel le cadre devient l'obstruction, puis change.
 
+**Le faux départ.** On a d'abord frappé. Longtemps. L'assemblage borné de la correction centrale vers l'égalité globale — le mur `p4_nw_overlap_wall`, sa chaîne d'auxiliaires en quatre étages — occupait des cycles entiers ; le compte de `sorry` descendait d'une unité, puis d'une autre. Chaque coup portait. Aucun ne traversait — et c'est le point important.
 
+**Le cadre comme obstruction.** Puis on a démontré que les coups ne *pouvaient pas* traverser. Dans le cadrage standard de HashLife, le rapport marge/portée reste structurellement inférieur à 1 dès la profondeur 3, et ne se remonte pas en rembourrant (`no_padding_depth_suffices`, [`Conway/Life/JumpCapture.lean`](../MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/JumpCapture.lean)). Ce n'est pas une conjecture de découragement, c'est un théorème : **le cadre est l'obstruction**, l'énoncé général est simplement faux dans ce cadre-là, le saut clippe. La même foulée a livré un second résultat de la même famille, plus inconfortable : l'hypothèse géométrique `supportInMargin` s'est révélée être une **tautologie** — un habillage vacant — et le dépôt l'a publiée comme telle, remplacée par `jumpCaptured`, décidable et témoigné faux sur la ligne de sept au niveau 3. Un garde qui refuse quelque chose : voilà un garde. Détail et dates dans la vitrine GOL et [Lean-16j](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16j-Conway-Hashlife-Correctness-Native.ipynb).
 
+**La mer qui monte.** Le levier n'était ni un lemme plus fin ni une tactique plus retorse : c'était un paramètre que Gosper avait mis dans HashLife et que le portage n'avait pas exploité — **décorréler la portée du saut du niveau de la cellule**, sauter `2^j` avec `j = niveau − 2`. La marge excède désormais la portée, et la capture devient un corollaire de l'invariant du cadre : `jumpAt_capture_centered` est prouvé, sans `sorry`. Personne n'a frappé le coup décisif. On a relevé le niveau de l'eau, et la coque a cédé toute seule. Ce qui suit — `evolveHashlifeFastAtN_correct` pour tout `n` et toute grille sous la brique `OneJumpAtCorrect`, la ligne de sept qui passe de contre-exemple à cas nominal — est décrit dans la vitrine et dans [Lean-16j](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16j-Conway-Hashlife-Correctness-Native.ipynb).
 
+**L'état du lake.** Le lake [`conway_lean`](../MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/) porte **un** `sorry` de code, un seul — et il ne se trouve pas sur le chemin qu'on vient de décrire. Il est resté dans l'**ancien** cadre, sur `hashlife_correct_margin` ([#6724](https://github.com/jsboige/CoursIA/issues/6724)). La nouvelle chaîne, elle, n'a aucun `sorry` : elle a une *hypothèse*, ce qui n'est ni la même chose ni la même honnêteté — un `sorry` est un trou dans une preuve, une hypothèse nommée est une dette lisible dans l'énoncé. Le chantier vivant est [#11161](https://github.com/jsboige/CoursIA/issues/11161) (re-cadrage Gosper) ; [#17465](https://github.com/jsboige/CoursIA/issues/17465) en portera la vitrine.
 
-
-Il faut maintenant revenir à la noix, parce qu'il lui est arrivé, en quelques semaines, la chose la plus grothendieckienne que ce dépôt ait produite. Et le récit vaut d'être fait dans l'ordre où il s'est déroulé, faux départ compris.
-
-
-
-
-
-
-
-On a d'abord frappé. Longtemps. L'assemblage borné de la correction centrale vers l'égalité globale — le mur `p4_nw_overlap_wall`, sa chaîne d'auxiliaires en quatre étages — a occupé des cycles entiers ; le compte de `sorry` descendait d'une unité, puis d'une autre. Chaque coup portait. Aucun ne traversait.
-
-
-
-
-
-
-
-Puis on a démontré que les coups ne *pouvaient pas* traverser. C'est le tournant, et il est facile à manquer parce qu'il ressemble à un échec. Dans le cadrage standard de HashLife, une cellule de niveau `k` saute `2^k` générations ; le cône de lumière de la règle, à vitesse 1, atteint `2^k` en exactement `2^k` générations, tandis que la marge de la fenêtre centrale ne vaut que `2^(k-1)` — plus deux cellules de cadre. La marge est donc structurellement inférieure à la portée dès `k ≥ 3`, et l'on ne s'en sort pas en rembourrant : le rembourrage agrandit la cellule **et** le saut à parts égales, si bien que le rapport marge/portée reste `1 − 2^(1-p) < 1` quelle que soit la profondeur `p`. Ce n'est pas une conjecture de découragement, c'est un théorème du lake : `no_padding_depth_suffices`. Il ne dit pas que le problème est dur. Il dit que **le cadre est l'obstruction** — et que dans ce cadre-là, l'énoncé général est simplement faux, le saut clippe.
-
-
-
-
-
-
-
-Il y a eu, dans la foulée, une seconde découverte de la même famille, plus inconfortable encore, et le dépôt l'a écrite noir sur blanc plutôt que de la ravaler. L'hypothèse géométrique qui gardait l'énoncé — `supportInMargin`, « le support tient dans la fenêtre avec marge » — s'est révélée être une **tautologie** : le prédicat est vrai pour toute grille et tout horizon, il ne restreignait rien, et le théorème qu'il semblait relativiser était en réalité l'inconditionnel complet sous un habillage qui n'habillait rien. Le lake porte la note de correction, datée, et la remplace par un prédicat authentique, `jumpCaptured` — décidable, vrai sur le bloc et le planeur, et **témoigné faux** sur la ligne de sept cellules au niveau 3, dont le burst transitoire atteint la rangée 7 à la génération 8 exactement, un cran sous le bord de la fenêtre. Un garde qui refuse quelque chose : voilà un garde. Découvrir que sa propre hypothèse ne disait rien, et le publier, coûte plus qu'un `sorry` de moins ; c'est pourtant ce qui a rendu la suite possible.
-
-
-
-
-
-
-
-Alors la mer est montée. Le levier n'était ni un lemme plus fin ni une tactique plus retorse : c'était un paramètre que Gosper avait mis dans HashLife et que le portage n'avait pas exploité — **décorréler la portée du saut du niveau de la cellule**. Au lieu de sauter `2^k` depuis un niveau `k`, on saute `2^j` avec `j` choisi indépendamment, `j = niveau − 2`. Le calcul change de signe : la marge, elle, croît avec le niveau, la portée non ; la marge **excède** désormais la portée d'un facteur `2^(niveau−2−j)`. Et la capture — cette hypothèse qu'on n'arrivait pas à établir — cesse d'être une hypothèse : elle devient un corollaire de l'invariant du cadre. `jumpAt_capture_centered` est prouvé, sans `sorry`, et il dit précisément cela : sous la seule condition de cadre `B + 2·pad ≤ 2^lvl`, les marges gauche et droite couvrent chacune la portée. Personne n'a frappé le coup décisif. On a relevé le niveau de l'eau, et la coque a cédé toute seule.
-
-
-
-
-
-
-
-Ce qui suit s'est déroulé vite, comme il arrive quand le cadre est enfin le bon. L'induction sur le carburant, qui butait dans l'ancien cadre sur une hypothèse de capture *trajectoire* qu'il fallait ré-instancier à chaque saut, passe désormais d'un trait : la brique un-saut y est universellement quantifiée, la ré-instanciation est gratuite, l'invariant se préserve parce qu'un saut consomme au moins une génération par unité de carburant. Résultat, `evolveHashlifeFastAtN_correct` : le moteur décorrélé calcule exactement `evolve n g` **pour tout `n` et toute grille** — plus aucune borne, plus aucune hypothèse de capture — sous une unique brique nommée, `OneJumpAtCorrect`, dont le déchargement est le chantier en cours. Et le meilleur témoin de ce que le cadre a changé, c'est la ligne de sept : celle-là même qui *falsifiait* le moteur plein passe sur le moteur décorrélé. L'objet qui servait de contre-exemple est devenu un cas nominal.
-
-
-
-
-
-
-
-Où en est-on ce matin, exactement ? Le lake `conway_lean` porte **un** `sorry` de code, un seul — et il ne se trouve pas sur le chemin qu'on vient de décrire. Il est resté dans l'**ancien** cadre, sur `hashlife_correct_margin`, ce fragment « fenêtre à marge » dont on sait maintenant que l'habillage était vacant ; il y est documenté comme le cœur de recherche ouvert de la route abandonnée. La nouvelle chaîne, elle, n'a aucun `sorry` : elle a une *hypothèse*, ce qui n'est ni la même chose ni la même honnêteté — un `sorry` est un trou dans une preuve, une hypothèse nommée est une dette lisible dans l'énoncé. Le front avance sur elle, tranche par tranche : enveloppe seize voies du membre gauche, assemblage forward du pas inductif, et il reste la direction converse puis l'induction forte avant que `OneJumpAtCorrect` ne tombe. L'Epic historique [#2162](https://github.com/jsboige/CoursIA/issues/2162) est close depuis longtemps ; ce sont [#6724](https://github.com/jsboige/CoursIA/issues/6724) — le résidu de l'ancien cadre — et surtout [#11161](https://github.com/jsboige/CoursIA/issues/11161) — le re-cadrage Gosper — qui portent la suite.
-
-
-
-
-
-
-
-La noix n'est donc toujours pas ouverte. Mais elle n'est plus la même noix : de « prouver un théorème difficile » elle est devenue « décharger une brique nommée dans un cadre où la difficulté a disparu ». C'est exactement ce que Grothendieck décrivait, et c'est arrivé ici sans que personne ne l'ait cherché sous ce nom.
-
-
-
-
-
-
+La noix n'est donc toujours pas ouverte. Mais elle n'est plus la même noix : de « prouver un théorème difficile » elle est devenue « décharger une brique nommée dans un cadre où la difficulté a disparu ». C'est exactement ce que Grothendieck décrivait, et c'est arrivé ici sans que personne ne l'ait cherché sous ce nom. Le détail technique a sa place ailleurs — la vitrine GOL, [`Lean-16j`](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16j-Conway-Hashlife-Correctness-Native.ipynb), [`Lean-16b`](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb), [`Lean-16d`](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16d-Conway-Game-of-Life-Lean-Native.ipynb) — et la lentille n'a plus à le porter.
 
 ## Deux axes — l'échelle, la garantie, et une troisième chose apprise en route
 
@@ -434,6 +376,24 @@ Et si l'on y prête attention, ce texte a fait subir le même traitement à son 
 
 
 
+## Ce que le dépôt a livré depuis — neuf gains, un seul geste
+
+L'été 2026 a été dense. Le texte ci-dessus se tient, mais il décrit un dépôt tel qu'il était lu en juin ; entre la rédaction initiale et cette refonte, neuf livraisons ont confirmé et étendu la lecture. Elles sont citées ici en une ligne chacune, avec la preuve (PR/commit, fichier:ligne) — selon la règle de la consigne qui a porté ce travail.
+
+- **[#16945](https://github.com/jsboige/CoursIA/pull/16945)** — *Backbone topologique dans Lean-15c.* Le notebook [`Lean-15c-Lean-Grothendieck-Companion.ipynb`](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15c-Lean-Grothendieck-Companion.ipynb) (commit `eee1d487c99d`) expose le squelette topologique du companion Grothendieck — la structure qu'on attendait derrière l'hommage au langage. La cohomologie de Čech passe de l'aboutissement documentaire à un compagnon de calcul.
+- **[#17375](https://github.com/jsboige/CoursIA/pull/17375)** — *Dissocier nombres de Betti et cohomologie entière — RP² témoin.* Le notebook [`03-cohomologie-cech-espaces-finis.ipynb`](../MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/03-cohomologie-cech-espaces-finis.ipynb) (l.21, 27, 50, 263) — `Serre 100` montre, sur le projectif réel RP², que la dissociation `β_k ≠ h_k` est l'invariant correct : la cohomologie entière détecte ce que les seuls nombres de Betti laisseraient invisible. Lecture cohomologique de l'obstruction, devenue falsifiable.
+- **[#17279](https://github.com/jsboige/CoursIA/pull/17279)** — *Saturation de Tsirelson native (tranche 5).* Le notebook [`Lean-13c-CHSH-Landau-Saturation.ipynb`](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13c-CHSH-Landau-Saturation.ipynb) (l.17, 19, 24, 28, 58) — `Conway.CHSHLandau` est le quatrième module de la série CHSH du lake ; il exécute le témoin de Pauli qui manquait : la borne de Tsirelson est réalisée, pas seulement majorée. Quatre modules, une borne, et la distinction « réalisée / majorée » tenue par le noyau.
+- **[#17223](https://github.com/jsboige/CoursIA/pull/17223)** — *Pendant kernel du lemme de Yoneda.* Le fichier [`Serre100/YonedaCalcule.lean`](../MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/Serre100/YonedaCalcule.lean) (l.9, 10) porte le pendant kernel du notebook `04-lemme-yoneda-categories-finies` — `Serre 100` dépasse le seul calcul sur les faisceaux et passe aux catégories finies, où le lemme de Yoneda devient effectif.
+- **[#17214](https://github.com/jsboige/CoursIA/pull/17214)** — *Restauration des « 18 vérifications » dans Lean-15b.* Le notebook [`Lean-15b-Lean-Grothendieck.ipynb`](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Lean-Grothendieck.ipynb) (l.2397, 2440) restaure mot pour mot l'index vivant des 18 vérifications `#check` — l'index qui prouve que MathlibMap n'est pas déclaré mais vérifié, ligne à ligne.
+- **[#16942](https://github.com/jsboige/CoursIA/pull/16942)** — *Tegmark R16 Annexe A — algèbre de Boole, NAND, C₂/C₃.* Le fichier [`tegmark_muh_lean/MUH/Boolean.lean`](../MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/MUH/Boolean.lean) (l.4, 8, 10, 20, 34) introduit le générateur Sheffer/NAND à 1 générateur et les structures finies C₂, C₃ — Tegmark R16 passe de la promesse à l'algèbre effective.
+- **[#17082](https://github.com/jsboige/CoursIA/pull/17082)** — *Portage FLT × 3 — Z[ζ₇], Z[ζ₁₁], Z[ζ₁₃] principaux.* Les fichiers [`hecke_lean/Hecke/SevenPid.lean`](../MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/Hecke/SevenPid.lean) (l.8, 12, 16, 34, 35) et siblings `ElevenPid.lean`, `ThirteenPid.lean` portent trois PID — l'invariant « principal » pour trois anneaux d'entiers cyclotomiques, la base du portage FLT.
+- **[#17017](https://github.com/jsboige/CoursIA/pull/17017)** — *Pont modal Tweety ↔ FFL — `FormalLogic.ModalBridge` (tranche C).* Le fichier [`formal_logic_lean/FormalLogic/ModalBridge.lean`](../MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/FormalLogic/ModalBridge.lean) (l.36 → l.132) fait la jointure entre les logiques modales Kripke de Tweety et le portage Lean — la traduction qui manquait devient un module du lake.
+- **[#16228](https://github.com/jsboige/CoursIA/pull/16228)** — *Umbrella Grothendieck FR-only.* Le fichier [`grothendieck_lean/Grothendieck.lean`](../MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck.lean) (l.1, 2, 3, 4, 5) indexe les modules FR et exclut explicitement les siblings `_en` (convention i18n #4980). `Consolider ≠ Archiver` y prend sa forme : 17 imports EN consolidés en un invariant d'index — l'umbrella FR est lu en FR, les EN restent construits par les globs du lakefile, jamais réécrits en place.
+
+Et le [#17465](https://github.com/jsboige/CoursIA/issues/17465) à venir — vitrine GOL où vivra, en regard de la noix, le détail technique que la lentille n'a plus à porter.
+
+---
+
 ### Annexe — Grades de certification (pour qui veut creuser, sans rompre le fil)
 
 
@@ -481,6 +441,13 @@ Exemples par série :
 | Série | Mécanisme dominant | Portée certifiée |
 |-------|--------------------|-------------------|
 | **Sensitivity** (Lean-12) | A (0 `sorry`, `huang_degree_theorem`) | Théorème de Huang complet |
+| **Lean-15c** (companion Grothendieck) | A sur le squelette topologique ([#16945](https://github.com/jsboige/CoursIA/pull/16945)) ; cumul A du langage Grothendieck parent ([#1646](https://github.com/jsboige/CoursIA/issues/1646)) | Backbone topologique exposé dans [`Lean-15c-Lean-Grothendieck-Companion.ipynb`](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15c-Lean-Grothendieck-Companion.ipynb) — la cohomologie de Čech passe de l'aboutissement documentaire à un compagnon de calcul |
+| **Lean-13c** (CHSH tranche 5) | A — borne de Tsirelson réalisée par noyau ([#17279](https://github.com/jsboige/CoursIA/pull/17279)) | `Conway.CHSHLandau`, quatrième module CHSH du lake ([`Lean-13c-CHSH-Landau-Saturation.ipynb`](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13c-CHSH-Landau-Saturation.ipynb)) — Tsirelson réalisée, pas majorée |
+| **Serre 100** | A sur le calcul effectif — cohomologie de Čech dissociée des β_k ([#17375](https://github.com/jsboige/CoursIA/pull/17375)), pendant kernel Yoneda ([#17223](https://github.com/jsboige/CoursIA/pull/17223)) | RP² témoin de la dissociation `β_k ≠ h_k` ([`03-cohomologie-cech-espaces-finis.ipynb`](../MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/03-cohomologie-cech-espaces-finis.ipynb)) ; lemme de Yoneda effectif sur catégories finies ([`Serre100/YonedaCalcule.lean`](../MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/Serre100/YonedaCalcule.lean)) |
+| **Tegmark R16** | A — algèbre de Boole Sheffer/NAND + C₂/C₃ ([#16942](https://github.com/jsboige/CoursIA/pull/16942)) | [`tegmark_muh_lean/MUH/Boolean.lean`](../MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/MUH/Boolean.lean) — 1 générateur, structures finies effectives |
+| **Hecke (FLT × 3)** | A sur la principalité — Z[ζ₇], Z[ζ₁₁], Z[ζ₁₃] ([#17082](https://github.com/jsboige/CoursIA/pull/17082)) | [`hecke_lean/Hecke/{Seven,Eleven,Thirteen}Pid.lean`](../MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/Hecke/SevenPid.lean) — trois PID, base du portage FLT |
+| **FormalLogic** | A — pont modal Tweety ↔ FFL ([#17017](https://github.com/jsboige/CoursIA/pull/17017)) | [`formal_logic_lean/FormalLogic/ModalBridge.lean`](../MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/FormalLogic/ModalBridge.lean) — jointure Kripke/Lean tenue par le module |
+
 | **Social Choice** | A (0 `sorry` sur Arrow/Sen/Voting) | Théorèmes d'impossibilité |
 | **Grothendieck** (Lean-15) | A sur le langage formalisé (dont `SheafCohomology`, 0 `sorry` de production) ; C-documentaire sur la cartographie et la lecture ICT | Sites, faisceaux, schémas **et cohomologie de l'obstruction** (`H⁰`=sections globales, Čech, Mayer-Vietoris, `Hⁿ` via Ext) : langage abouti ([#1646](https://github.com/jsboige/CoursIA/issues/1646)) ; interprétation EGA/SGA + lecture cohomologique d'ICT documentaires |
 | **Conway / HashLife** (Lean-16b) | A sur les batteries adversariales (kernel-`decide` pur, zéro axiome natif) ; B là où `native_decide` subsiste ; **correction générale conditionnelle** sur le cadre décorrélé | `evolveHashlifeFastAtN_correct` : exact pour tout `n` et toute grille sous la brique `OneJumpAtCorrect` (déchargement en cours, [#11161](https://github.com/jsboige/CoursIA/issues/11161)). Un unique `sorry` de code subsiste dans le lake, sur l'**ancien** cadre ([#6724](https://github.com/jsboige/CoursIA/issues/6724)) |
@@ -520,6 +487,16 @@ Exemples par série :
 | [#8182](https://github.com/jsboige/CoursIA/issues/8182) Veille TOE ↔ conscience | Le fil Schreiber / Jaimungal : socle topos partagé au grade A côté physique, franchissement vers la conscience laissé au grade C côté ICT. |
 | [#1468](https://github.com/jsboige/CoursIA/issues/1468) SOTA Lean (fermée) | La grille des 3 grades en a hérité un vocabulaire commun ; le chantier lui-même est distinct (concret vs. méta). |
 | [#1203](https://github.com/jsboige/CoursIA/issues/1203) / [#1206](https://github.com/jsboige/CoursIA/issues/1206) / [#1210](https://github.com/jsboige/CoursIA/issues/1210) | Les trois bibliothèques externalisées, lues par la clé, mentionnées seulement. |
+| [#11703](https://github.com/jsboige/CoursIA/issues/11703) Lean-15c companion topologique | [#16945](https://github.com/jsboige/CoursIA/pull/16945) : squelette topologique exposé dans le notebook — le backbone que l'hommage au langage attendait |
+| [#16920](https://github.com/jsboige/CoursIA/issues/16920) Serre100 dissociation Betti/cohomologie | [#17375](https://github.com/jsboige/CoursIA/pull/17375) : sur RP², `β_k ≠ h_k` devient l'invariant falsifiable — la lecture cohomologique de l'obstruction quitte le documentaire |
+| [#13106](https://github.com/jsboige/CoursIA/issues/13106) Lean-13c CHSH tranche 5 | [#17279](https://github.com/jsboige/CoursIA/pull/17279) : `Conway.CHSHLandau` réalise la borne de Tsirelson — la distinction « réalisée / majorée » est tenue par le noyau |
+| [#16334](https://github.com/jsboige/CoursIA/issues/16334) Serre100 pendant kernel Yoneda | [#17223](https://github.com/jsboige/CoursIA/pull/17223) : le pendant kernel du notebook Yoneda ouvre la voie des catégories finies effectives |
+| [#17066](https://github.com/jsboige/CoursIA/issues/17066) Lean-15b 18 vérifications | [#17214](https://github.com/jsboige/CoursIA/pull/17214) : restauration mot pour mot de l'index vivant `#check` — MathlibMap est vérifié, pas déclaré |
+| [#16753](https://github.com/jsboige/CoursIA/issues/16753) Tegmark R16 algèbre effective | [#16942](https://github.com/jsboige/CoursIA/pull/16942) : Sheffer/NAND à 1 générateur, C₂/C₃ et structures finies — la promesse passe à l'algèbre |
+| [#16557](https://github.com/jsboige/CoursIA/issues/16557) Portage FLT × 3 | [#17082](https://github.com/jsboige/CoursIA/pull/17082) : Z[ζ₇], Z[ζ₁₁], Z[ζ₁₃] principaux — trois PID, base du portage |
+| [#15066](https://github.com/jsboige/CoursIA/issues/15066) Pont modal Tweety ↔ FFL | [#17017](https://github.com/jsboige/CoursIA/pull/17017) : `FormalLogic.ModalBridge` fait la jointure entre les logiques modales Kripke de Tweety et le portage Lean |
+| [#16154](https://github.com/jsboige/CoursIA/issues/16154) Umbrella Grothendieck FR-only | [#16228](https://github.com/jsboige/CoursIA/pull/16228) : 17 imports EN consolidés en invariant d'index — `Consolider ≠ Archiver` : FR-only par construction, EN par lakefile |
+| [#17465](https://github.com/jsboige/CoursIA/issues/17465) Vitrine GOL | À venir : le détail technique que la lentille n'a plus à porter — `Lean-16*` notebooks + `conway_lean/**`, point de rendez-vous de la noix |
 | [#2137](https://github.com/jsboige/CoursIA/issues/2137) Argumentum (fermée) | Une ligne de la table ; pipeline LLM + Tweety = changement de représentation vers le vérifiable. |
 
 
