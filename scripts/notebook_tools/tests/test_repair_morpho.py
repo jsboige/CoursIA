@@ -130,8 +130,38 @@ class TestAuxiliaires(unittest.TestCase):
         self.assertFalse(is_verifie_legitimate("Tao le "))
 
     def test_etant_donne_legitime(self):
+        """Locution legitime : meme phrase, fenetre 60 chars.
+
+        #17523 : l'assertion d'origine franchissait un point
+        (« ...est complexe. On ») -- elle encodait le defaut corrige. La borne
+        de phrase ne change aucun verdict sur le corpus mesure (0 verdict sur
+        1383 notebooks), mais elle rend la locution inter-phrase inoperante
+        (cf test_locution_inter_phrase_ne_legitime_plus).
+        """
         self.assertTrue(is_donne_legitimate(
-            "Etant donne les contraintes, le probleme est complexe. On "))
+            "Etant donne les contraintes, le probleme est complexe pour "))
+
+    def test_locution_inter_phrase_ne_legitime_plus(self):
+        """#17523 : la locution d'une phrase ANTERIEURE ne legitime plus un
+        « donné » fautif de la phrase suivante (defaut documente par le skip de
+        test_notebook_contamine, desormais leve). Symetrique de l'invariant
+        'auxiliaire' de is_prouve_legitimate (self-test multi-occurrences)."""
+        self.assertFalse(is_donne_legitimate(
+            "Etant donne les contraintes, le probleme est complexe. Le sup "))
+
+    def test_ligne_blanche_borne_la_phrase(self):
+        """#17523 : une ligne BLANCHE borne la phrase (mesure corpus : aucune
+        locution n'est coupee par une ligne blanche -> zero faux positif)."""
+        self.assertFalse(is_donne_legitimate(
+            "Etant donne les contraintes, on propose X.\n\nLe sup "))
+
+    def test_locution_coupee_par_saut_de_ligne_simple(self):
+        """Witness corpus ``PyMC-10-Model-Selection`` : « l'inférence bayésienne :
+        étant\\ndonne un jeu de données ». Un saut de ligne SIMPLE reste dans la
+        phrase -- le borner casserait une locution reelle (1 cas mesure, legitime,
+        le seul verdict que le saut simple changerait sur le corpus)."""
+        self.assertTrue(is_donne_legitimate(
+            "L'un des problemes centraux de l'inference bayesienne : etant\n"))
 
     def test_tant_donne_avec_intercalation(self):
         """'tant donne' avec mots intercalés OK (Tell c.1317-L7)."""
@@ -367,12 +397,12 @@ class TestControlePositifReaccentUpstream(unittest.TestCase):
     """Controle positif : un notebook contamine par REACCENT upstream fautif
     doit etre detecte + repare, avec preservation des formes legitimes."""
 
-    @unittest.skip("bug organe is_donne_legitimate fenetre 60 chars (Tell c.1349-L1) -- "
-                   "une locution 'Etant donne' anterieure masque un 'sup donné' fautif "
-                   "dans la meme fenetre. La borne phrase-courante n'est pas appliquee "
-                   "aux locutions (la locution inter-phrase est un cas reel, cf "
-                   "test_etant_donne_legitime). Fix a suivre ; le test documente le defect.")
     def test_notebook_contamine(self):
+        """Le defaut que documentait le skip (#17523) est corrige : la locution
+        ne franchit plus la frontiere de phrase. La borne retenue est mesurée
+        sur le corpus -- terminateurs ``[.!?]`` et ligne blanche ; le saut de
+        ligne simple reste dans la phrase (witness PyMC-10, cf
+        test_locution_coupee_par_saut_de_ligne_simple)."""
         cell = _md_str(
             "Tao le prouvé en passant. "
             "Le theoreme localement prouvé est interessant. "

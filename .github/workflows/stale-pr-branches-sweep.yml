@@ -1,0 +1,133 @@
+name: Stale PR branches sweep
+
+# #16915 : `scripts/ci/update_stale_pr_branches.py` (#16149) savait mettre a
+# jour une PR NOMMEE -- detection de base empilee, epinglage TOCTOU, registre
+# en vol, plafond -- mais `--pr` y etait requis : aucun workflow, aucun cron,
+# aucun skill ne l'invoquait. Ce workflow est la seconde piece manquante, la
+# premiere etant le pilote `scripts/ci/sweep_stale_pr_branches.py`, qui
+# enumere et delegue SANS reimplementer la mise a jour.
+#
+# Mandat user 2026-09-19 : « j'ai l'impression que le CI n'aide pas avec des
+# MAJ de rebase successives qui sont mandatees et coutent enormement de temps
+# a tout le monde : il faut qu'elles soient automatiques pour la plupart ».
+#
+# Ce que ce sweep vaut, sans survendre l'organe (mesure #16915 du 2026-09-19
+# sur 213 PRs ouvertes) : 104 CLEAN, 79 BLOCKED, 12 DIRTY, 9 UNSTABLE,
+# 9 UNKNOWN. Le sweep rattrape les retards -- dont les 12 DIRTY et la masse
+# des CLEAN-en-retard que le pool porte (le retard ne se lit pas dans
+# `mergeStateStatus`, mesure 2026-09-17 : 0 BEHIND sur 200 lignes ouvertes).
+# La valeur n'est pas le deblocage seul : c'est la SUPPRESSION des
+# allers-retours (un commentaire, une session worker dediee, un dossier
+# exact-head refabrique -- remplaces par un run).
+#
+# Peremption, LE piege #16915 : chaque update reecrit une tete et perime
+# checks, reviews et dossier `[ADJOINT PREFLIGHT]`. Le pilote agrege
+# `dossiers_invalides` EN TETE de sa sortie JSON, et le plafond ci-dessous
+# borne combien de dossiers peuvent perir par jour -- un sweep non borne qui
+# toucherait 12 branches d'un coup detruirait 12 premachages simultanement.
+#
+# Gel des branches sous dossier READY (#16924, reserve adjoint 5788054957) :
+# avant toute delegation, le pilote ecarte les PRs dont
+# `check_adjoint_prevalidation.py` rend 0 (dossier READY a la tete exacte)
+# et les rend sous `skipped_ready_dossier` -- un synchronize tuerait le
+# dossier a la seconde. Seul rc=0 protege : les BLOCKED restent candidates,
+# un rouge de base perimee etant justement le cas que l'organe repare.
+#
+# Le plancher DWELL ne se re-arme PAS sur ces updates : un `update-branch`
+# serveur est une fusion content-free, exempte par
+# `merge_dwell.last_authoritative_committed_at` (#16149) --
+# `test_update_ne_re_arme_pas_le_dwell` epingle l'integration.
+#
+# Cadence : QUOTIDIENNE, minute anti-stampede. Les crons sub-hourly de ce
+# depot sont servis 4.7-7.2x tard ; les quotidiens exactement (mesure
+# 2026-09-12T08:19Z, scripts/ci/check_scheduler_liveness.py). Un sweep
+# quotidien a --max-updates 3 rattrape ~3 branches/jour sans jamais perimer
+# plus de 3 dossiers (hors gel READY, qui ne periment plus du tout) : borne
+# lente par choix, pas par timidite -- la file des PRs en retard se reforme
+# en continu et le plafond la desserve au rythme ou les lanes porteuses
+# peuvent refabriquer leurs dossiers.
+
+on:
+  schedule:
+    - cron: '43 4 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "dry-run (defaut true : aucune ecriture)"
+        type: boolean
+        default: true
+      max_updates:
+        description: "plafond de mises a jour (defaut 3)"
+        type: number
+        default: 3
+      limit:
+        description: "borne d'enumeration (defaut 50)"
+        type: number
+        default: 50
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: stale-pr-branches-sweep
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    name: Update stale PR branches (delegated to the #16149 organ)
+    # Q35 etape 2 (#17397, meme profil que stale-guard-red-sweep.yml) :
+    # balayage cron pur-Python -- `gh` preinstalle + `python3`, aucun secret
+    # ni toolchain locale. Routage #14283 inverse : retour sur ubuntu-latest
+    # et sortie de SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout (the pilot lives in the repo)
+        uses: actions/checkout@v4
+
+      - name: Sweep stale PR branches
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+          MAX_UPDATES: ${{ github.event.inputs.max_updates }}
+          LIMIT: ${{ github.event.inputs.limit }}
+        run: |
+          set -uo pipefail
+
+          # Plafond OBLIGATOIRE (acceptance 4 #16915) : en cron, dry-run
+          # interdit -- un cron qui ne ferait que mesurer n'arreterait pas de
+          # payer l'enumeration pour rien ; la borne --max-updates est ce qui
+          # rend le geste cron SUR. En dispatch manuel, dry-run par defaut.
+          ARGS=(--repo "$REPO" --max-updates "${MAX_UPDATES:-3}" --limit "${LIMIT:-50}")
+          if [ "${GITHUB_EVENT_NAME}" != "workflow_dispatch" ] || [ "${DRY_RUN:-true}" != "true" ]; then
+            ARGS+=(--apply)
+            MODE="apply"
+          else
+            MODE="dry-run (dispatch default)"
+          fi
+
+          echo "[sweep] mode: $MODE"
+          echo "[sweep] args: ${ARGS[*]}"
+          python3 scripts/ci/sweep_stale_pr_branches.py "${ARGS[@]}" | tee sweep-output.json
+
+          # La liste des dossiers perimes est le livrable -- pas noyee dans le
+          # log : extraite et affichee une seconde fois en annotation lisible.
+          python3 - <<'PY'
+          import json, pathlib
+          payload = json.loads(pathlib.Path("sweep-output.json").read_text(encoding="utf-8"))
+          invalides = payload.get("dossiers_invalides") or []
+          print("::group::Dossiers [ADJOINT PREFLIGHT] perimes par ce sweep")
+          if not invalides:
+              print("(aucun -- rien a refabriquer)")
+          for item in invalides:
+              print(f"#{item['pr']}  tete_avant={str(item.get('previous_head'))[:12]}  "
+                    f"invalidated={','.join(item.get('invalidated') or [])}")
+          print("::endgroup::")
+          PY
+
+      - name: Timing (queue vs execution, for scheduler-liveness)
+        if: always()
+        run: |
+          echo "job started : $(date -u +%FT%TZ)"

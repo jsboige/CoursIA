@@ -487,7 +487,7 @@ def test_pool_gele_depuis_24h_n_est_pas_perime_s_il_n_a_pas_bouge(tmp_path, monk
     pig.fetch_pool(cache=cache, cache_mode="auto", cache_status=status)
 
     second = {}
-    pool = pig.fetch_pool(cache=cache, cache_mode="auto", cache_status=second)
+    pool, _read_error = pig.fetch_pool(cache=cache, cache_mode="auto", cache_status=second)
     assert len(pool) == 5, "le pool gele doit rester servi"
     assert second["pool"]["status"] == "hit"
     assert second["pool"]["verified"] is True, "la sonde a mesure : le hit est etabli"
@@ -517,7 +517,7 @@ def test_pool_perime_et_refresh_impossible_sort_un_stale_explicite(tmp_path, mon
     pig.fetch_pool(cache=cache, cache_mode="auto", cache_status={})
 
     status = {}
-    pool = pig.fetch_pool(cache=cache, cache_mode="auto", cache_status=status)
+    pool, _read_error = pig.fetch_pool(cache=cache, cache_mode="auto", cache_status=status)
     assert status["pool"]["status"] == "stale"
     # `fetch_pool` rend des entrees DERIVEES (age, genre, polarite...), pas le
     # payload brut : la comparaison porte sur l'identite du candidat, qui est ce

@@ -4,6 +4,7 @@ Cooperative Game Theory Module
 
 This module provides tools for analyzing cooperative games:
 - Shapley value computation (exact and Monte Carlo)
+- Shapley group value of a coalition acting as one unit (generalized Shapley value)
 - Core computation via Linear Programming
 - Coalition game structures
 - French political coalition example (2024 data)
@@ -35,6 +36,14 @@ from .shapley import (
     shapley_decomposition,
     ShapleyCalculator
 )
+from .group_value import (
+    merging_game,
+    shapley_group_value,
+    additive_group_value,
+    shapley_group_value_monte_carlo,
+    connectivity_game,
+    GroupValueTable
+)
 from .core import (
     compute_core,
     is_in_core,
@@ -65,6 +74,8 @@ from .assistance_games import (
     off_switch_game,
     off_switch_analysis,
     off_switch_metauncertain,
+    off_switch_margin_analysis,
+    off_switch_margin_report,
     AssistanceGame,
     paperclip_vs_coordination_comparison,
     PaperclipGameResult,
@@ -86,6 +97,13 @@ __all__ = [
     "marginal_contribution",
     "shapley_decomposition",
     "ShapleyCalculator",
+    # Group value (Flores, Molina & Tejada 2019)
+    "merging_game",
+    "shapley_group_value",
+    "additive_group_value",
+    "shapley_group_value_monte_carlo",
+    "connectivity_game",
+    "GroupValueTable",
     # Core
     "compute_core",
     "is_in_core",

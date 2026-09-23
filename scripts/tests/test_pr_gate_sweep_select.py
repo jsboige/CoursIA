@@ -59,14 +59,14 @@ def _extract_selector() -> str:
     # que ce contrat doive bouger.
     for step in doc["jobs"]["sweep"]["steps"]:
         m = re.search(
-            r"python - <<'PY'[^\n]*\n(.*?)\nPY\n",
+            r"python3 - <<'PY'[^\n]*\n(.*?)\nPY\n",
             str(step.get("run", "")),
             re.S,
         )
         if m:
             return m.group(1)
     raise AssertionError(
-        "heredoc python introuvable dans pr-gate-stale-sweep.yml"
+        "heredoc python3 introuvable dans pr-gate-stale-sweep.yml"
     )
 
 

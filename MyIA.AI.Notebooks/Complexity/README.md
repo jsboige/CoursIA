@@ -24,8 +24,10 @@ montre, machines en main, ce que la couche complexité **exigerait** — et mesu
 (`Mathlib/Computability/` couvre machines de Turing, halting, degrés de Turing, mais aucune
 classe de complexité temporelle : encart §6 du notebook 01 ; `Mathlib.Combinatorics.Matroid`
 existe mais compétitivité, k-server et work functions sont absents : encart §6 du notebook 02).
-Le notebook 02 fonde la saisie de l'**algorithmique online** dans le dépôt — décisions
-irréversibles sous incertitude, ratio compétitif — reliée à la RL et à la théorie des jeux.
+Le notebook 02 saisit l'**algorithmique online** côté Complexity — décisions
+irréversibles sous incertitude, ratio compétitif — en écho aux notebooks sœurs
+`RL/rl_17_k_server_wfa` et `RL/rl_18_matroid_secretary` qui distillent les mêmes
+preprints côté RL.
 Le notebook 03 étend la mesure **côté algèbre** : pour la première fois la série rend un
 verdict Mathlib positif (`Matrix.permanent` existe — mais à l'état de définition $n!$,
 sans Ryser ni #P : encart §5), et relie la permanente au dépôt existant — couplages
