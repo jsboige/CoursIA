@@ -1391,7 +1391,7 @@ TRANCHE14: list[Guard] = [
 ]
 
 # ---------------------------------------------------------------------------
-# TRANCHE 14 -- garde natif anti-invocation-directe lake (#15666, T4).
+# TRANCHE 15 -- garde natif anti-invocation-directe lake (#15666, T4).
 #
 # L'epic #15666 impose un organe canonique d'exécution Lean
 # (``scripts/lean/lean_exec.py`` : admission machine-wide fail-closed, budget
