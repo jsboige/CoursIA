@@ -326,10 +326,10 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "repeated-prose-advisory.yml",
     "scripts-tests.yml",
     "series-naming-gate.yml",
-    # registre TRANCHE13 (issue #16762, owner myia-po-2023:CoursIA) : meme
+    # registre TRANCHE14 (issue #16762, owner myia-po-2023:CoursIA) : meme
     #   profil que repeated-prose-advisory.yml (TRANCHE7) ci-dessus --
     #   vehicule workflow_dispatch-ONLY servant de cible d'identite au
-    #   check-run absorbe par fast-lane (registre TRANCHE13) et de re-run
+    #   check-run absorbe par fast-lane (registre TRANCHE14) et de re-run
     #   manuel du recensement sur main. Detecteur de paires de cellules de
     #   lecture scindees (check_split_reading_cells.py), advisory
     #   pur-Python stdlib-only, jamais bloquant, aucun secret.
