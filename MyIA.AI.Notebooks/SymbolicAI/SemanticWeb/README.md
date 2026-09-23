@@ -74,7 +74,7 @@ La série propose délibérément deux stacks en parité (.NET ⇄ Python, marat
 ## Progression recommandée
 
 ### Parcours principal
-Suivez les notebooks **SW-1 à SW-15** dans l'ordre numérique pour une progression logique des concepts.
+Suivez les notebooks **SW-1 à SW-16** dans l'ordre numérique pour une progression logique des concepts.
 
 ### Sidetracks Python (optionnels)
 Les sidetracks marqués `b-Python` sont des notebooks complémentaires qui présentent l'équivalent Python des concepts .NET. Ils sont **optionnels** mais recommandés si vous souhaitez travailler avec Python plutôt qu'avec .NET.
