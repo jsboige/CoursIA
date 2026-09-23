@@ -227,6 +227,14 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "review-coverage-advisory.yml",
     "slides-build-advisory.yml",
     "slow-lane.yml",
+    # stale-branch-update-sweep.yml (#16915, owner myia-po-2023:CoursIA) :
+    #   pilote de rebase automatique des PRs quietes -- cron `23 */6 * * *`
+    #   + workflow_dispatch, pur-Python + organe `update_stale_pr_branches.py`
+    #   par sous-processus, aucun trigger pull_request (meme profil que
+    #   pr-gate-stale-sweep, tranche 4 #14283). Permissions GH_TOKEN bornees
+    #   par le workflow ; dry-run par defaut, --apply --max-updates 3.
+    #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
+    "stale-branch-update-sweep.yml",
     "stale-guard-red-sweep.yml",
     "translation-parity.yml",
     "twin-parity-cron.yml",
