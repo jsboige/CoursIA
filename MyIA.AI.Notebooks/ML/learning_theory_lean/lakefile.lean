@@ -69,3 +69,13 @@ et `GradientFlow`. -/
 @[default_target]
 lean_lib «EffectiveTheory» where
   globs := #[.submodules `EffectiveTheory, `EffectiveTheory]
+
+/-- Module `Grokking` — corpus Tegmark #16741, arc « ouverte, responsable, prouvable,
+explicable » (#16752, tranche R02) : théorie effective du grokking (Liu, Michaud,
+Tegmark, arXiv:2205.10343). Parallélogrammes de représentation (Déf. 1, Props 1-2)
+et lois de conservation de la perte effective `ℓ₀/Z₀` (Appendice F), avec le terme
+résiduel `dC/dt = (2ℓ₀/Z₀²)·C` que la preuve du papier omet. Frère de `Perceptron`,
+`PacLearning` et `GradientFlow`. -/
+@[default_target]
+lean_lib «Grokking» where
+  globs := #[.submodules `Grokking, `Grokking, `Grokking_en]
