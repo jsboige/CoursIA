@@ -67,11 +67,10 @@ concurrency:
 jobs:
   sweep:
     name: Refresh stale G-VAR-3 adjacency verdicts
-    # Routage tranche 4 (#14283, pool coursia-linux) : balayage cron horaire
-    # pur-Python -- déclencheurs schedule/workflow_dispatch uniquement, donc
-    # code repo-owned seul, aucune garde same-repo requise (cf. entêtes de
-    # check_self_hosted_runner_policy.py et stale-guard-red-sweep.yml).
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Q35 etape 2 (#17397) : balayage cron pur-Python, aucun secret ni
+    # toolchain locale -- routage #14283 inverse, retour sur ubuntu-latest
+    # et sortie de SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit.
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - name: Bootstrap gh into the persistent toolcache

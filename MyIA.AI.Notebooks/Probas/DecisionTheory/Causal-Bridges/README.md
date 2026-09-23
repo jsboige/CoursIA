@@ -10,7 +10,7 @@
 
 | Notebook | Durée | Concepts |
 |----------|-------|----------|
-| [Do-Calculus-Bridge](Do-Calculus-Bridge.ipynb) | ~55 min | Échelle de Pearl, trois règles du do-calculus, critères *backdoor* / *front-door* exécutés avec `dowhy`, Pearl (intervention) vs Hoel (émergence causale) |
+| [Do-Calculus-Bridge](Do-Calculus-Bridge.ipynb) | ~65 min | Échelle de Pearl, trois règles du do-calculus, critères *backdoor* / *front-door* exécutés avec `dowhy` ; quatre tâches du **data-fusion** (sélection corrigée par IPW, transportabilité stratifiée), **CHT démontré machine** (deux SCM gaussiens à loi jointe identique, interventions opposées), jonction do-calculus ↔ baseline Shapley (`do` vs `voir`) ; Pearl (intervention) vs Hoel (émergence causale) |
 | [DoWhy-1 — Exiger un estimand](DoWhy-1-Estimand-et-Intervention.ipynb) | ~45 min | Identification causale **nommée** via `dowhy` (backdoor, front-door, instrumentale) sur un cas complet ; sensibilité au graphe **mesurée** quand une hypothèse saute |
 | [DoWhy-2 — Le contrefactuel individuel](DoWhy-2-Contrefactuel-Individuel.ipynb) | ~40 min | Troisième échelon de Pearl : `dowhy.gcm` (abduction-action-prédiction) sur **un individu** ; l'effet moyen nul cache une CATE linéaire ±3 ; fragilité du chiffre individuel à la spécification du mécanisme |
 | [DoWhy-3 — Le graphe qu'on n'a pas](DoWhy-3-Decouverte-de-Structure.ipynb) | ~45 min | Découverte de structure via `causal-learn` (PC, GES, LiNGAM) : classes d'équivalence de Markov, verdict **CPDAG ambigu = résultat** ; LiNGAM tranche sous non-gaussianité mais rend un DAG faux-silencieux sinon ; l'ambiguïté se propage à l'estimand (3 extensions du même CPDAG → 3 estimands dowhy) |
@@ -49,6 +49,7 @@ Le notebook suit la convention du dépôt (stubs à compléter, sans erreur volo
 1. **Ajouter un second confondeur à la backdoor** — étendre l'ensemble d'ajustement à `{aptitude, motivation}`.
 2. **Rompre le critère front-door** — ajouter un chemin direct qui contourne le médiateur et vérifier que l'identification front-door échoue.
 3. **Comparer effet naïf et effet ajusté** — générer un nouveau jeu à effet vrai connu, mesurer l'écart dû au confondeur.
+4. **Le compromis biais-variance du transport stratifié** — refaire le transport de la tâche 4 à K ∈ {3, 20, 100} strates : biais résiduel intra-strate à petit K, variance Monte-Carlo à grand K.
 
 Exercices de DoWhy-2 :
 
