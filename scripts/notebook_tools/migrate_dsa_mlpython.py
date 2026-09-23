@@ -314,19 +314,22 @@ def apply_sweep(reps: list[tuple[str, str]], paths: list[str]) -> int:
     return total
 
 
-def report_gating() -> list[str]:
-    """PRs ouvertes tenant des lignes du hub (best-effort via gh)."""
+def report_gating() -> list[str] | None:
+    """PRs ouvertes tenant des lignes du hub (best-effort via gh).
+
+    None = mesure impossible (gh absent ou en echec) : distinct de [] (mesure
+    faite, hub libre) -- l'appelant refuse --apply sur None (fail-closed)."""
     try:
         out = subprocess.run(
             ["gh", "pr", "list", "-R", "jsboige/CoursIA", "--state", "open",
-             "--json", "number,files", "--limit", "300", "--paginate"],
+             "--json", "number,files", "--limit", "300"],
             capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(REPO_ROOT))
         if out.returncode != 0:
-            print(f"[gating] gh indisponible ({out.stderr.strip()[:80]}) -- mesure sautee")
-            return []
+            print(f"[gating] gh a echoue ({out.stderr.strip()[:80]}) -- mesure impossible")
+            return None
     except FileNotFoundError:
-        print("[gating] gh absent -- mesure sautee")
-        return []
+        print("[gating] gh absent -- mesure impossible")
+        return None
     prs = json.loads(out.stdout or "[]")
     holding = []
     for pr in prs:
@@ -346,7 +349,8 @@ def main(argv: list[str] | None = None) -> int:
     errors += check_plan(plan)
     reps = build_replacements(plan)
 
-    gating = report_gating() if args.report_gating else []
+    measure = args.report_gating or args.apply
+    gating = report_gating() if measure else None
 
     if not args.json:
         print(f"=== PLAN : {len(plan)} fichiers {HUB_OLD} -> {HUB_NEW} ===")
@@ -366,11 +370,14 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  ERREUR: {e}")
         if not errors:
             print("  toutes les verifications passent (collisions, cibles, kernelspecs, couverture notebooks)")
-        if gating:
-            print(f"\n=== PRs GELANTES tenant le hub ({len(gating)}) ===")
-            print("  " + ", ".join(gating))
-        elif args.report_gating:
-            print("\n=== PRs GELANTES : aucune (le hub est libre) ===")
+        if measure:
+            if gating is None:
+                print("\n=== PRs GELANTES : mesure impossible (fail-closed) ===")
+            elif gating:
+                print(f"\n=== PRs GELANTES tenant le hub ({len(gating)}) ===")
+                print("  " + ", ".join(gating))
+            else:
+                print("\n=== PRs GELANTES : aucune (le hub est libre) ===")
         print(f"\nmode {'APPLY' if args.apply else 'DRY-RUN (aucune ecriture)'}")
 
     if args.json:
@@ -383,6 +390,9 @@ def main(argv: list[str] | None = None) -> int:
     if errors:
         return 1
     if args.apply:
+        if gating is None:
+            print("REFUS : mesure des PRs gelantes impossible (gate #5.4 fail-closed) -- aucun git mv execute.")
+            return 1
         if gating:
             print("REFUS : des PRs ouvertes tiennent le hub (gate #5.4) -- aucun git mv execute.")
             return 1
