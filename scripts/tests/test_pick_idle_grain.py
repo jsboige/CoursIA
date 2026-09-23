@@ -525,12 +525,15 @@ def test_blocked_awaiting_review_is_not_a_red():
     assert pig.blocking_causes(_state(checks=[("PR gate", "SUCCESS", True)])) == []
 
 
-def _patch_backlog(monkeypatch, prs, states, nits=None):
-    monkeypatch.setattr(pig, "fetch_open_prs", lambda: prs)
+def _neutralize_organs(monkeypatch, states, nits=None):
+    """Les organes reseau du garde rouge, neutralises par DEFAUT.
+
+    Sans cela chaque test partirait sur le reseau interroger des numeros de PR
+    fictifs (mesure : 2,9 s pour trois numeros), et la suite deviendrait non
+    deterministe sans jamais rougir. #17474 : partage avec les tests qui
+    laissent le VRAI `fetch_open_prs` courir derriere un faux `gh`.
+    """
     monkeypatch.setattr(pig, "fetch_pr_states", lambda nums: {n: states[n] for n in nums if n in states})
-    # Neutraliser l'organe B.0 par DEFAUT : sans cela chaque test partirait sur
-    # le reseau interroger des numeros de PR fictifs (mesure : 2,9 s pour trois
-    # numeros), et la suite deviendrait non deterministe sans jamais rougir.
     monkeypatch.setattr(pig, "unaddressed_review_points", lambda nums: dict(nits or {}))
     # L721 : l'ardoise de lane ajoute un fetch gh dans main() AVANT le garde
     # rouge -- meme neutralisation par defaut, meme raison (reseau +
@@ -543,6 +546,11 @@ def _patch_backlog(monkeypatch, prs, states, nits=None):
     # selon que le check est vert ou rouge sur `main` le jour du run, sans
     # qu'aucune ligne de code n'ait bouge. Les tests de #17154 la re-patchent.
     monkeypatch.setattr(pig, "fetch_main_head_probe", lambda *a, **k: None)
+
+
+def _patch_backlog(monkeypatch, prs, states, nits=None):
+    monkeypatch.setattr(pig, "fetch_open_prs", lambda: prs)
+    _neutralize_organs(monkeypatch, states, nits)
 
 
 def _pr(n, lane, age_hours, *, draft=False):
@@ -2584,6 +2592,90 @@ def test_orphan_report_neg2_human_on_chore_pending_stays(monkeypatch):
         _untagged_pr(9, author="jsboige", branch="chore/x-pending"),
     ], {9: red})
     assert [r["number"] for r in pig.unattributed_blocked_prs()] == [9]
+
+
+# --- #17474 : le plafond de `fetch_open_prs` amputait la traine -------------
+# `gh pr list` rend du plus RECENT au plus ancien (mesure firsthand du
+# 2026-09-23 sur ce depot : #17565 `2026-09-23T13:29:52Z` en tete, #15942
+# `2026-09-13T08:33:00Z` en queue pour 158 ouvertes), donc un plafond franchi
+# fait disparaitre les PRs les plus ANCIENNES -- exactement celles que la file
+# de reparation et le compte WIP de lane (Q41) existent pour voir. Le faux `gh`
+# ci-dessous reproduit ce mode d'echec plutot que de le supposer : il tronque
+# la population au `--limit` DEMANDE, comme le vrai.
+
+
+def _fake_gh_pr_list(monkeypatch, population):
+    """Faux `gh pr list` : les plus recentes de `population`, tronquees au plafond.
+
+    `population` est ordonnee du plus recent au plus ancien, comme ce que rend
+    le vrai `gh`.
+    """
+    calls = []
+
+    def fake_run(cmd, **kwargs):
+        calls.append(cmd)
+        limit = int(cmd[cmd.index("--limit") + 1])
+        return _FakeCompleted(json.dumps(population[:limit]))
+
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+    return calls
+
+
+def _tagged_pr(n):
+    """PR ouverte taggee par une lane -- hors des deux volets du garde rouge."""
+    return {"number": n, "title": f"pr {n}",
+            "body": "Grain: MED/guard -- lane myia-po-2026:CoursIA\n",
+            "createdAt": "2026-09-20T00:00:00Z", "isDraft": False,
+            "author": {"login": "jsboige"}, "headRefName": f"feature/{n}"}
+
+
+def test_open_prs_fetch_limit_no_longer_the_old_300(monkeypatch):
+    """Le plafond demande a `gh` est celui du pool, et il est surveille."""
+    calls = _fake_gh_pr_list(monkeypatch, [_tagged_pr(1)])
+    prs = pig.fetch_open_prs()
+    assert prs == [_tagged_pr(1)]
+    limit = int(calls[0][calls[0].index("--limit") + 1])
+    assert limit == pig.OPEN_PRS_FETCH_LIMIT >= pig.POOL_FETCH_LIMIT
+
+
+def test_open_prs_truncation_is_said_not_silent(monkeypatch, capsys):
+    """Sous le plafond : rien de dit. Au plafond : la troncature se dit."""
+    monkeypatch.setattr(pig, "OPEN_PRS_FETCH_LIMIT", 4)
+    _fake_gh_pr_list(monkeypatch, [_tagged_pr(n) for n in (5, 4, 2)])
+    pig.fetch_open_prs()
+    assert capsys.readouterr().err == "", "aucun avertissement sous le plafond"
+
+    monkeypatch.setattr(pig, "OPEN_PRS_FETCH_LIMIT", 3)
+    _fake_gh_pr_list(monkeypatch, [_tagged_pr(n) for n in (5, 4, 3, 2)])
+    pig.fetch_open_prs()
+    err = capsys.readouterr().err
+    assert "[PRS TRONQUEES]" in err
+    assert "3 PRs rendues pour un plafond de 3" in err
+    assert "OPEN_PRS_FETCH_LIMIT" in err
+
+
+def test_the_oldest_blocked_orphan_survives_the_cap(monkeypatch):
+    """#17474, faux negatif : la traine reste vue par la file de reparation.
+
+    La population porte 320 PRs taggees (invisibles au garde rouge) et, en
+    queue -- donc la plus ANCIENNE --, une orpheline bloquee. Le controle de
+    falsification est dans le test : au plafond historique de 300, la meme
+    fixture ne voit RIEN, ce qui prouve que le test mord sur le defaut et non
+    sur un faux `gh` complaisant.
+    """
+    population = [_tagged_pr(10_000 - i) for i in range(320)] + [_untagged_pr(17)]
+    red = {17: _state(checks=[("PR gate", "FAILURE", True)])}
+    _fake_gh_pr_list(monkeypatch, population)
+    _neutralize_organs(monkeypatch, red)
+
+    monkeypatch.setattr(pig, "OPEN_PRS_FETCH_LIMIT", 300)
+    assert pig.unattributed_blocked_prs() == [], (
+        "au plafond de 300 la traine doit etre invisible -- sinon la fixture "
+        "ne reproduit pas la troncature reelle"
+    )
+
+    monkeypatch.setattr(pig, "OPEN_PRS_FETCH_LIMIT", pig.POOL_FETCH_LIMIT)
+    assert [r["number"] for r in pig.unattributed_blocked_prs()] == [17]
 
 
 # --- #15139 : delegation a l'organe check_unaddressed_nits -----------------

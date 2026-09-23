@@ -2055,14 +2055,44 @@ def _hours_since(iso: str) -> float:
     return (NOW - dt.datetime.fromisoformat(iso.replace("Z", "+00:00"))).total_seconds() / 3600.0
 
 
+# #17474 : le meme raisonnement que POOL_FETCH_LIMIT, applique aux PRs -- et
+# la meme trappe. `gh pr list` rend du plus RECENT au plus ancien (mesure du
+# 2026-09-23 sur ce depot : `first=2026-09-23T13:29:52Z` #17565,
+# `last=2026-09-13T08:33:00Z` #15942), donc un plafond franchi ampute
+# exactement la traine : les PRs bloquees depuis plus de 24 h, que
+# `unattributed_blocked_prs` (file de reparation) et le compte WIP de lane
+# (Q41) existent pour voir. Le plafond est donc HAUT et SURVEILLE -- un
+# plafond atteint se dit au lieu d'inverser l'instrument en silence.
+# Cout : nul sous le plafond. `gh` pagine par 100 et s'arrete a l'epuisement
+# de la population comme au plafond, donc 158 ouvertes = 2 requetes, ici
+# comme avant.
+OPEN_PRS_FETCH_LIMIT = POOL_FETCH_LIMIT
+
+
 def fetch_open_prs() -> list[dict]:
     """Toutes les PRs ouvertes, avec le corps (pour y lire le tag de lane)."""
     out = subprocess.run(
-        ["gh", "pr", "list", "--repo", REPO, "--state", "open", "--limit", "300",
+        ["gh", "pr", "list", "--repo", REPO, "--state", "open",
+         "--limit", str(OPEN_PRS_FETCH_LIMIT),
          "--json", "number,title,body,createdAt,isDraft,author,headRefName"],
         capture_output=True, text=True, encoding="utf-8", check=True, timeout=120,
     ).stdout
-    return json.loads(out)
+    prs = json.loads(out)
+    if len(prs) >= OPEN_PRS_FETCH_LIMIT:
+        # Signature de la troncature : on a recu exactement ce qu'on a demande.
+        # Le garde reste utilisable (bloquer la lane serait pire), mais son
+        # resultat est biaise VERS LE RECENT et le dire est la seule chose qui
+        # empeche de le lire comme une couverture de l'ouvert.
+        print(
+            f"[PRS TRONQUEES] {len(prs)} PRs rendues pour un plafond de "
+            f"{OPEN_PRS_FETCH_LIMIT} : l'ouvert est probablement plus grand. "
+            "gh rend les plus RECENTES, donc la traine -- PRs bloquees de "
+            "plus de 24 h, file de reparation et compte WIP de lane -- est "
+            "absente de cette mesure. Relever OPEN_PRS_FETCH_LIMIT avant de "
+            "conclure quoi que ce soit de ce resultat.",
+            file=sys.stderr,
+        )
+    return prs
 
 
 def fetch_pr_states(numbers: list[int]) -> dict[int, dict]:
