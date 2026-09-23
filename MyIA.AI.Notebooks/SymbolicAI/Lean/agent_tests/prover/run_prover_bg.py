@@ -336,8 +336,18 @@ def _run_with_calibration_stub(demo, name, filepath, line, mode, iterations,
     (#6790). A ``stub_theorem_proof`` failure (unknown declaration, no ``:=``)
     raises BEFORE any write: a calibration run must fail loud rather than
     stub the wrong region.
+
+    #17433: the COMMITTED sorry count is captured BEFORE the stub write and
+    threaded down as ``guard_baseline_sorry_count`` in the demo dict. The
+    FX-6 guard compares against it, so a file that ends back at the
+    committed truth (0 sorry) is never read as a "drop nobody proved" — the
+    double semantics of ``STMT_MUTATION_FALSE_SUCCESS`` on the calibration
+    path (#17409 rungs 39-41) is closed. Verdict semantics (sorry_delta,
+    result_kind) keep the RUN-START count: a reproduced approved proof IS a
+    1 -> 0 drop.
     """
     calibration_target = None
+    pre_stub_sorry = None
     if (
         demo.get("sorry_type") == "sorry_replacement"
         and demo.get("file")
@@ -346,6 +356,7 @@ def _run_with_calibration_stub(demo, name, filepath, line, mode, iterations,
     ):
         target_path = Path(demo["file"])
         original = target_path.read_bytes()
+        pre_stub_sorry = count_real_sorries(original.decode("utf-8"))
         stubbed = stub_theorem_proof(
             original.decode("utf-8"), demo["theorem_name"]
         )
@@ -363,7 +374,7 @@ def _run_with_calibration_stub(demo, name, filepath, line, mode, iterations,
             demo, name, filepath, line, mode, iterations, provider,
             local_provider, director_provider, coordinator_provider,
             tactic_provider, use_diagnosis_agent, concurrent_search_count,
-            calibration=calibration,
+            calibration=calibration, pre_stub_sorry=pre_stub_sorry,
         )
     finally:
         if calibration_target is not None:
@@ -374,8 +385,16 @@ def _run_with_calibration_stub(demo, name, filepath, line, mode, iterations,
 def _run_prover_locked(demo, name, filepath, line, mode, iterations, provider,
                        local_provider, director_provider, coordinator_provider,
                        tactic_provider, use_diagnosis_agent,
-                       concurrent_search_count, calibration=False):
-    """The original run body, executed while holding the tree lock."""
+                       concurrent_search_count, calibration=False,
+                       pre_stub_sorry=None):
+    """The original run body, executed while holding the tree lock.
+
+    ``pre_stub_sorry`` (#17433): the COMMITTED sorry count captured before
+    the calibration stub write (None on ordinary runs). Threaded into the
+    prover via ``demo["guard_baseline_sorry_count"]`` so the FX-6 guard
+    compares against the committed truth; verdict semantics keep the
+    run-start count.
+    """
     original = Path(filepath).read_text(encoding="utf-8")
     original_sorry = count_real_sorries(original)
     print(f"Target: {name}")
@@ -425,6 +444,13 @@ def _run_prover_locked(demo, name, filepath, line, mode, iterations, provider,
 
     trace = TraceLogger(output_dir=str(TRACES_DIR))
 
+    # #17433: thread the committed (pre-stub) count into the prover so the
+    # FX-6 guard compares against the committed truth, not the stubbed
+    # run-start state.
+    demo_run = demo
+    if pre_stub_sorry is not None:
+        demo_run = dict(demo, guard_baseline_sorry_count=pre_stub_sorry)
+
     if mode == "multi":
         prover = MultiAgentSorryProver(
             trace=trace, provider=provider, local_provider=local_provider,
@@ -440,12 +466,12 @@ def _run_prover_locked(demo, name, filepath, line, mode, iterations, provider,
     try:
         if mode == "multi":
             result = asyncio.run(
-                prover.prove_sorry(demo=demo, max_iterations=iterations,
+                prover.prove_sorry(demo=demo_run, max_iterations=iterations,
                                    use_diagnosis_agent=use_diagnosis_agent,
                                    concurrent_search_count=concurrent_search_count)
             )
         else:
-            result = prover.prove_sorry(demo=demo, max_iterations=iterations)
+            result = prover.prove_sorry(demo=demo_run, max_iterations=iterations)
     except Exception as e:
         print(f"\nProver crashed: {e}")
         result = {"error": str(e)}
@@ -492,6 +518,12 @@ def _run_prover_locked(demo, name, filepath, line, mode, iterations, provider,
         "iterations": iterations,
         "actual_iterations": result.get("iterations") if isinstance(result, dict) else None,
         "original_sorry": original_sorry,
+        # #17433: the COMMITTED count (pre-stub on calibration runs, equal
+        # to original_sorry otherwise). With calibration=True, an audit
+        # reads original_sorry=1 / committed_sorry=0 / final_sorry to
+        # disambiguate "back at committed truth" (final=0) from "stub never
+        # resolved" (final=1) without the stdout of the guard.
+        "committed_sorry": pre_stub_sorry if pre_stub_sorry is not None else original_sorry,
         "final_sorry": final_sorry,
         # Convention: sorry_delta = final - original. POSITIF = REGRESSION (plus de sorry), NEGATIF = progres. Oppose a tools.py (original - current). Forensic #1453 2026-06-23.
         "sorry_delta": final_sorry - original_sorry,

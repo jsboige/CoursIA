@@ -108,7 +108,8 @@ def _patch_fake_prover(monkeypatch, prove_behavior=None, init_raises=None):
     lifecycle runs for real.
     """
     launcher, count_real_sorries, _ = _load()
-    calls = {"constructed": 0, "spawn_sorry_counts": [], "spawn_bytes": []}
+    calls = {"constructed": 0, "spawn_sorry_counts": [], "spawn_bytes": [],
+             "spawn_demos": []}
 
     class _FakeProver:
         def __init__(self, **kwargs):
@@ -117,6 +118,7 @@ def _patch_fake_prover(monkeypatch, prove_behavior=None, init_raises=None):
                 raise init_raises
 
         async def prove_sorry(self, demo=None, max_iterations=8, **kwargs):
+            calls["spawn_demos"].append(dict(demo))
             raw = Path(demo["file"]).read_bytes()
             calls["spawn_bytes"].append(raw)
             calls["spawn_sorry_counts"].append(
@@ -270,3 +272,52 @@ def test_sorry_replacement_with_live_sorry_no_stub(tmp_path, monkeypatch, capsys
     assert "CALIBRATION_STUB" not in out
     assert "CALIBRATION_RESTORE" not in out
     assert target.read_bytes() == original_bytes
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# #17433: the committed (pre-stub) count is threaded to the prover and the
+# summary — no more double semantics for STMT_MUTATION_FALSE_SUCCESS on the
+# calibration path.
+# ──────────────────────────────────────────────────────────────────────────
+
+
+def test_calibration_threads_committed_baseline(tmp_path, monkeypatch):
+    """#17433: the prover receives guard_baseline_sorry_count = the COMMITTED
+    count (0), and the summary carries BOTH counts so an artifact audit can
+    disambiguate "back at committed truth" from "stub never resolved"."""
+    demo, _ = _make_setup(tmp_path, NIM_LIKE)
+    calls = _patch_fake_prover(monkeypatch)  # no-op prover: file stays stubbed
+    summary = _run(monkeypatch, tmp_path, demo)
+
+    assert summary["calibration"] is True
+    # Run-start (stubbed) count drives the verdict semantics.
+    assert summary["original_sorry"] == 1
+    # Committed (pre-stub) count is first-class in the summary.
+    assert summary["committed_sorry"] == 0
+    # The prover's demo carries the committed count for the FX-6 guard.
+    assert calls["spawn_demos"], "fake prover never spawned"
+    assert calls["spawn_demos"][0]["guard_baseline_sorry_count"] == 0
+    # Verdict unchanged: a no-op run at the stubbed state is no_progress,
+    # and the guard (baseline 0 <= final 1) cannot false-fire.
+    assert summary["final_sorry"] == 1
+    assert summary["result_kind"] == "no_progress"
+
+
+def test_non_calibration_run_has_no_guard_baseline_key(tmp_path, monkeypatch):
+    """Ordinary run (no sorry_replacement): the demo dict is passed through
+    untouched — no guard_baseline_sorry_count key, committed_sorry == the
+    run-start count (the committed state IS the run-start state)."""
+    demo, target = _make_setup(tmp_path, stub_theorem_proof_free(NIM_LIKE))
+    calls = _patch_fake_prover(monkeypatch)
+    summary = _run(monkeypatch, tmp_path, demo)
+
+    assert summary["calibration"] is False
+    assert "guard_baseline_sorry_count" not in calls["spawn_demos"][0]
+    assert summary["committed_sorry"] == summary["original_sorry"] == 1
+
+
+def stub_theorem_proof_free(source):
+    """Local helper: pre-stub the fixture OUTSIDE the launcher so the demo
+    does NOT match the calibration condition (count != 0)."""
+    _, _, stub_theorem_proof = _load()
+    return stub_theorem_proof(source, "isWinningNim_345")

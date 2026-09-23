@@ -551,6 +551,16 @@ class MultiAgentSorryProver:
         original_content = Path(filepath).read_text(encoding="utf-8")
         original_sorry_count = count_real_sorries(original_content)
 
+        # #17433: on the calibration path the launcher stubs the approved
+        # proof (0 -> 1 sorry) BEFORE spawning, so the read above sees the
+        # STUBBED state. The FX-6 guard must compare against the COMMITTED
+        # count (pre-stub, threaded by the launcher via the demo dict): a
+        # file back at the committed truth is NOT a "drop nobody proved".
+        # The success gate keeps the run-start count — a calibration win IS
+        # a 1 -> 0 drop from the stub.
+        _gb = demo.get("guard_baseline_sorry_count")
+        guard_baseline_sorry = _gb if _gb is not None else original_sorry_count
+
         # Auto-detect actual sorry line — exclude lines where "sorry" appears
         # only inside comments. A line is "sorry inside comment" when:
         #   - it starts with `--` (line comment), OR
@@ -1144,12 +1154,12 @@ class MultiAgentSorryProver:
             )
             structural_progress = False
         stmt_mutation = _stmt_mutation_guard(
-            final_sorry, original_sorry_count, final_build_ok,
+            final_sorry, guard_baseline_sorry, final_build_ok,
             proof_found, verified_tactic_count,
         )
         if stmt_mutation:
             print(
-                f"  STMT_MUTATION_FALSE_SUCCESS: sorry {original_sorry_count}"
+                f"  STMT_MUTATION_FALSE_SUCCESS: sorry {guard_baseline_sorry}"
                 f" -> {final_sorry} with 0 verified tactic (proof_found="
                 f"{proof_found}). The statement was mutated, nothing was "
                 f"proved. Restoring original file."
@@ -1290,6 +1300,11 @@ class MultiAgentSorryProver:
             "structural_edits": getattr(tactic_tools, "_structural_edits_verified", 0),
             # FX-6 (#1453): diagnostic fields for the statement-mutation guard.
             "verified_tactic_count": verified_tactic_count,
+            # #17433: the baseline the FX-6 guard compared against — the
+            # committed (pre-stub) count on calibration runs, the run-start
+            # count otherwise. Lets an artifact audit disambiguate "back at
+            # committed truth" from "run-start drop nobody proved".
+            "guard_baseline_sorry": guard_baseline_sorry,
             **({"flag": "STMT_MUTATION_FALSE_SUCCESS"} if stmt_mutation else {}),
         }
 
@@ -1398,6 +1413,11 @@ class AutonomousProver:
 
         original_content = Path(filepath).read_text(encoding="utf-8")
         original_sorry_count = count_real_sorries(original_content)
+
+        # #17433: same committed-truth baseline as the multi-agent path —
+        # see prove_sorry (launcher threads it via the demo dict).
+        _gb = demo.get("guard_baseline_sorry_count")
+        guard_baseline_sorry = _gb if _gb is not None else original_sorry_count
 
         # Auto-detect actual sorry line — pick NEAREST to configured line
         actual_sorry_lines = [
@@ -2113,12 +2133,12 @@ class AutonomousProver:
             1 for a in state.tactic_history if a.success
         )
         stmt_mutation = _stmt_mutation_guard(
-            final_sorry, original_sorry_count, final_build_ok,
+            final_sorry, guard_baseline_sorry, final_build_ok,
             proof_found=False, verified_tactic_count=verified_tactic_count,
         )
         if stmt_mutation:
             print(
-                f"  STMT_MUTATION_FALSE_SUCCESS: sorry {original_sorry_count}"
+                f"  STMT_MUTATION_FALSE_SUCCESS: sorry {guard_baseline_sorry}"
                 f" -> {final_sorry} with 0 verified tactic. The statement was "
                 f"mutated, nothing was proved. Restoring original file."
             )
@@ -2226,6 +2246,11 @@ class AutonomousProver:
             "structural_edits": getattr(tactic_tools, "_structural_edits_verified", 0),
             # FX-6 (#1453): diagnostic fields for the statement-mutation guard.
             "verified_tactic_count": verified_tactic_count,
+            # #17433: the baseline the FX-6 guard compared against — the
+            # committed (pre-stub) count on calibration runs, the run-start
+            # count otherwise. Lets an artifact audit disambiguate "back at
+            # committed truth" from "run-start drop nobody proved".
+            "guard_baseline_sorry": guard_baseline_sorry,
             **({"flag": "STMT_MUTATION_FALSE_SUCCESS"} if stmt_mutation else {}),
         }
 

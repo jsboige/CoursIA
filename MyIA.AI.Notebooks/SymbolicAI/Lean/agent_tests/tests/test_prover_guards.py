@@ -1966,6 +1966,35 @@ def test_stmt_mutation_guard_quiet_cases(final_sorry, original, build_ok,
     ) is False, why
 
 
+def test_stmt_mutation_guard_committed_baseline_no_false_fire():
+    """#17433: calibration run, guard baseline = COMMITTED count (0).
+
+    Run-start (stubbed) = 1, file ends back at the committed truth (0 sorry,
+    0 verified tactic, proof_found False). With the pre-stub baseline the
+    guard is silent: 0 < 0 is False — a file at the committed truth is not
+    a "drop nobody proved". This is the exact shape of the #17409 rungs
+    39-41 false STMT_MUTATION_FALSE_SUCCESS.
+    """
+    from prover.provers import _stmt_mutation_guard
+
+    assert _stmt_mutation_guard(
+        final_sorry=0, original_sorry_count=0, final_build_ok=True,
+        proof_found=False, verified_tactic_count=0,
+    ) is False
+
+
+def test_stmt_mutation_guard_runstart_baseline_still_fires():
+    """#17433 counterpart: the SAME outcome measured against the run-start
+    (stubbed) baseline 1 WOULD fire — documents the pre-fix double
+    semantics the launcher threading eliminates on calibration runs."""
+    from prover.provers import _stmt_mutation_guard
+
+    assert _stmt_mutation_guard(
+        final_sorry=0, original_sorry_count=1, final_build_ok=True,
+        proof_found=False, verified_tactic_count=0,
+    ) is True
+
+
 # ──────────────────────────────────────────────────────────────────────────
 # FX-6 (#1453) — count_real_sorries: comment-stripped, word-bounded counter.
 # The legacy `content.count("sorry")` substring counter over-counts prose
