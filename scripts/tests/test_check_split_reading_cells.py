@@ -34,7 +34,7 @@ pourrir. Cf #17134.
 Emplacement : `scripts/tests/` -- c'est la ou l'organe portait deja sa suite
 depuis #16786 (`scripts/tests/test_check_split_reading_cells.py`, 9 tests), et
 c'est le chemin que citent le registre de cablage (`fast_lane_registry.py`,
-TRANCHE13) et le cliquet #17044.
+TRANCHE14) et le cliquet #17044.
 
 La suite de #16786 est **conservation verbatim** en fin de fichier (section
 « repris de #16786 ») : aucun de ses 9 tests n'est supprime, aucun n'est reecrit.
