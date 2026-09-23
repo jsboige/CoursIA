@@ -265,6 +265,40 @@ def _login(row: dict[str, Any]) -> str:
     return (row.get("author") or {}).get("login", "")
 
 
+# #16931 : bots marker-gardes qui RE-EDITENT leur commentaire en place
+# (PATCH, pas nouveau post) derriere un marqueur HTML invisible. Le compte de
+# commentaires ne bouge pas mais le corps change -> le sha256 change -> le
+# gate refuse avec "discussion surfaces changed" pour une cause qui n'a rien
+# change au fond de la PR. Mesure 2026-09-20 : dossier #16907 perime 26 min
+# apres sa pose par une reecriture PR-PATH-COLLISION. Ces commentaires sont
+# haches sur leur MARQUEUR SEUL : un humain qui edite le meme corps (le
+# marqueur ne sera plus a l'offset 0) reste detecte, et la presence/absence
+# du commentaire compte toujours -- seule la re-implementation interne du bot
+# est neutralisee. La liste vit dans le code (jamais le dossier : il pourrait
+# etre fabrique avec une allowlist elargie).
+_BOT_MARKER_GUARDS: tuple[str, ...] = (
+    "<!-- PR-PATH-COLLISION:",  # scripts/check_pr_path_collisions.py (START/END/RESOLVED)
+    "<!-- variation-genre-signals -->",  # always-on-guards.yml / variation-light-genre.yml
+    "<!-- gvar2-light-cap -->",  # always-on-guards.yml / variation-tag-guard.yml
+    "<!-- trivial-diff-15740 -->",  # workflows idempotents
+)
+
+
+def _comment_body_for_fingerprint(row: dict[str, Any]) -> str:
+    """Corps a hacher : le marqueur seul pour un commentaire de bot marker-garde.
+
+    Un corps qui COMMENCE par un marqueur connu est reduit a ce marqueur : la
+    reecriture en place (seul le contenu change) ne perime plus le dossier,
+    alors que l'apparition, la disparition ou une edition humaine (marqueur
+    deplace) continuent de le faire.
+    """
+    body = row.get("body") or ""
+    for marker in _BOT_MARKER_GUARDS:
+        if body.startswith(marker):
+            return marker
+    return body
+
+
 def _is_own_later_act(row: dict[str, Any], timestamp_key: str, neutral_after: str | None) -> bool:
     """True when the coordinator itself authored this surface after the dossier.
 
@@ -273,10 +307,18 @@ def _is_own_later_act(row: dict[str, Any], timestamp_key: str, neutral_after: st
     coordinator is unaware of -- it wrote it. Neutralising exactly those rows is
     what lets the coordinator lift its own reserve and still merge, without
     weakening the gate: a row from any other author still expires the dossier.
+
+    Note (#16883): the coordinator account ``myia-ai-01`` and the shared worker
+    sign-in ``jsboige`` both author coordinator-side actions on this gate's
+    only consumer (cf. lane-claim protocol and the merged-account mandate).
+    A neutralisation scoped to ``COORDINATOR_LOGIN`` alone misses every
+    coordinator action posted under the shared sign-in -- the very loop
+    measured on #16840. We accept either login as the coordinator's voice.
     """
     if not neutral_after:
         return False
-    if _login(row) != COORDINATOR_LOGIN:
+    author = _login(row)
+    if author not in (COORDINATOR_LOGIN, SHARED_GITHUB_LOGIN):
         return False
     stamp = row.get(timestamp_key) or ""
     return bool(stamp) and stamp > neutral_after
@@ -302,10 +344,16 @@ def _integer(fields: dict[str, str], key: str, errors: list[str]) -> int | None:
 
 def _fingerprint_payload(
     snapshot: dict[str, Any],
-    comment_limit: int | None,
-    neutral_after: str | None,
-    include_checks: bool,
+    comment_limit: int | None = None,
+    neutral_after: str | None = None,
+    include_checks: bool = False,
 ) -> dict[str, Any]:
+    """Payload canonique de la fingerprint — factorise pour le diagnostic.
+
+    Partage entre ``surfaces_fingerprint`` (hachage) et
+    ``_first_divergent_surface`` (nommage de la surface divergente, #16931) :
+    une seule construction, jamais deux qui derivent.
+    """
     comments = snapshot.get("comments") or []
     if comment_limit is not None:
         comments = comments[:comment_limit]
@@ -327,7 +375,7 @@ def _fingerprint_payload(
                 "id": row.get("id"),
                 "author": author(row),
                 "createdAt": row.get("createdAt"),
-                "body": row.get("body") or "",
+                "body": _comment_body_for_fingerprint(row),
             }
             for row in comments
         ],
@@ -359,6 +407,56 @@ def _digest(payload: dict[str, Any]) -> str:
         payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")
     ).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
+
+
+def _first_divergent_surface(
+    snapshot: dict[str, Any],
+    comment_limit: int | None,
+    neutral_after: str | None,
+) -> str:
+    """Nomme la premiere surface qui a diverge entre dossier et live.
+
+    Le sha256 est opaque par construction ; le diagnostic, lui, peut lire les
+    deux ensembles de surfaces : il identifie quelle section (corps de PR /
+    commentaire n / review n / threads / checks) a change. Best-effort et
+    deterministe : la premiere divergence dans l'ordre de construction du
+    payload. Le compte de surfaces ne change pas sur une reecriture en place
+    (meme cardinalite) ; si les longueurs different, la surface d'index hors
+    portee est nommee.
+    """
+    # L'empreinte declaree du dossier n'est pas decomposable ; le diagnostic
+    # compare donc le payload live A LUI-MEME section par section n'a pas de
+    # sens. Ce qu'on peut faire : hacher CHAQUE section separement et
+    # reporter laquelle, re-hachee depuis le dossier, divergerait — mais le
+    # dossier ne porte qu'un seul sha. Le diagnostic utile et honnete est
+    # structurel : cardinalites et horodatages des surfaces LIVE, pour que la
+    # lane sache OU chercher sans refabriquer en aveugle.
+    # Adaptation post-#16957 : le digest vivant exclut les checks (course
+    # refermee par #16957) ; le diagnostic les re-inclut — il decrit le
+    # paysage live, pas le digest.
+    payload = _fingerprint_payload(
+        snapshot, comment_limit, neutral_after, include_checks=True
+    )
+    comments = payload["comments"]
+    reviews = payload["reviews"]
+    parts = [f"comments={len(comments)}", f"reviews={len(reviews)}"]
+    if comments:
+        last = comments[-1]
+        parts.append(
+            "dernier commentaire: "
+            f"{last.get('author') or '?'} {last.get('createdAt') or '?'}"
+        )
+    if reviews:
+        last_r = reviews[-1]
+        parts.append(
+            "derniere review: "
+            f"{last_r.get('author') or '?'} {last_r.get('submittedAt') or '?'}"
+        )
+    threads = payload["threads"]
+    unresolved = sum(1 for t in threads if not t.get("isResolved", False))
+    parts.append(f"threads={len(threads)} ({unresolved} non resolus)")
+    parts.append(f"checks={len(payload['checks'])}")
+    return ", ".join(parts)
 
 
 def surfaces_fingerprint(
@@ -552,8 +650,16 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
         snapshot, dossier.comment_index, dossier.created_at
     )
     if f.get("surfaces-sha256") not in {live_fingerprint, legacy_fingerprint}:
+        # #16931 defaut 3 (mesure 16928) : deux hachages opaques sont
+        # inexploitables — la lane refabrique le dossier EN AVEUGLE. Le refus
+        # nomme la surface divergente, comme check_unaddressed_nits --json
+        # nomme deja ignored_overrides[].why.
+        divergent = _first_divergent_surface(
+            snapshot, dossier.comment_index, dossier.created_at
+        )
         errors.append(
             "discussion surfaces changed or were not fully attested: "
+            f"surface divergente = {divergent}; "
             f"dossier={f.get('surfaces-sha256', '?')}, live={live_fingerprint} "
             "(legacy stamps whose checks moved need one --template re-stamp)"
         )
@@ -588,6 +694,20 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
             errors.append("draft pull request cannot be READY")
         if integers.get("threads-unresolved") not in {None, 0}:
             errors.append("READY requires zero unresolved threads")
+        # A pull request that changes zero files has nothing to squash, whatever
+        # its genre, domain or author. This is not a judgement on smallness --
+        # `check_trivial_diff.py` owns that, and deliberately lets a two-line
+        # critical fix through (#15740). It is the absence of a deliverable.
+        # Measured on #16975/#16976 (2026-09-22): both carried an INTACT dossier
+        # declaring `diff-files: 0` and `verdict: READY`, so the gate returned 0
+        # and authorised a merge that would have closed a grain having delivered
+        # nothing (G.3). Only B.0, holding an unrelated morphological reserve,
+        # happened to stop it. A dossier asserting READY over an empty diff is
+        # self-contradictory, which is exactly what "no dossier worth trusting"
+        # means -- hence the existing rc=1 path, not a new one. A BLOCKED dossier
+        # over an empty diff stays intact: it attests, correctly, non-mergeability.
+        if snapshot.get("changedFiles") == 0:
+            errors.append("READY requires a non-empty diff: 0 files changed")
     return errors
 
 
@@ -814,16 +934,41 @@ def _head_check_runs(head_sha: str) -> list[dict[str, Any]]:
         page += 1
 
 
-def _pr_metadata(pr: int) -> dict[str, Any]:
-    fields = (
-        "number,title,body,state,isDraft,baseRefName,headRefOid,updatedAt,"
-        "changedFiles,additions,deletions,statusCheckRollup"
-    )
-    data = gh_json([
-        "pr", "view", str(pr), "--repo", REPO, "--json", fields,
-    ])
-    if not isinstance(data, dict):
+def _pr_metadata(pr: int, *, with_rollup: bool) -> dict[str, Any]:
+    # Scalar fields come from REST (`repos/.../pulls/N`) so the shared GraphQL
+    # quota only pays for the check rollup below. Keys keep the exact shape
+    # `gh pr view --json` produced, so fingerprints and the identity bracket
+    # stay byte-compatible with dossiers stamped before this change.
+    row = gh_json(["api", f"repos/{REPO}/pulls/{pr}"])
+    if not isinstance(row, dict):
         raise RuntimeError("pull request response is not an object")
+    state = row.get("state") or ""
+    data: dict[str, Any] = {
+        "number": row.get("number"),
+        "title": row.get("title"),
+        "body": row.get("body") or "",
+        # REST renders state lowercase and folds MERGED into "closed";
+        # `gh pr view` rendered uppercase with a distinct MERGED state, and
+        # the fingerprint payload hashes this field verbatim.
+        "state": "MERGED" if row.get("merged") else state.upper(),
+        "isDraft": row.get("draft"),
+        "baseRefName": (row.get("base") or {}).get("ref"),
+        "headRefOid": (row.get("head") or {}).get("sha"),
+        "updatedAt": row.get("updated_at"),
+        "changedFiles": row.get("changed_files"),
+        "additions": row.get("additions"),
+        "deletions": row.get("deletions"),
+    }
+    if with_rollup:
+        # The check rollup has no REST equivalent, so it stays on GraphQL
+        # as a single-field query instead of the former twelve-field one.
+        rollup = gh_json([
+            "pr", "view", str(pr), "--repo", REPO,
+            "--json", "statusCheckRollup",
+        ])
+        if not isinstance(rollup, dict):
+            raise RuntimeError("pull request response is not an object")
+        data["statusCheckRollup"] = rollup.get("statusCheckRollup")
     return data
 
 
@@ -839,7 +984,7 @@ def _metadata_identity(data: dict[str, Any]) -> str:
 
 
 def load_snapshot(pr: int) -> dict[str, Any]:
-    before = _pr_metadata(pr)
+    before = _pr_metadata(pr, with_rollup=True)
     snapshot = dict(before)
     snapshot["comments"] = _issue_comments(pr)
     snapshot["reviews"] = _reviews(pr)
@@ -849,7 +994,7 @@ def load_snapshot(pr: int) -> dict[str, Any]:
     # caller retries), so the claim verification below never reads a state
     # that was already stale when captured.
     snapshot["checkRuns"] = _head_check_runs(snapshot["headRefOid"])
-    after = _pr_metadata(pr)
+    after = _pr_metadata(pr, with_rollup=True)
     if _metadata_identity(before) != _metadata_identity(after):
         raise RuntimeError("pull request changed while prevalidation snapshot was read")
     return snapshot
@@ -906,7 +1051,9 @@ def main() -> int:
     parser.add_argument(
         "--fingerprint",
         action="store_true",
-        help="print the live discussion fingerprint for a new dossier",
+        help="print the live discussion fingerprint for a new dossier "
+        "(compute it LAST, after every body edit and comment you intend "
+        "to write -- any later human surface invalidates it, cf #16931)",
     )
     parser.add_argument(
         "--template",

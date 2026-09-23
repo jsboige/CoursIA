@@ -19,7 +19,7 @@ Une ligne par notebook, cinq colonnes : **Intention** (ce que le cadrage `ICT-0-
 | Rang | Strand | Notebooks | État |
 |---|---|---|---|
 | 1 | **Life + Čech** | `ICT-15d`, `ICT-31`, `ICT-Life-SubstratCertifie` | **LU** (tranche 1, 2026-08-21) |
-| 2 | Le moule 26→30 | six notebooks ~17 cellules / 8 code | non démarré |
+| 2 | Le moule 26→30 | cinq notebooks (26-30), 8 code chacun, 18-25 cellules | **LU** (strand 2, 2026-09-19) |
 | 3 | 18 / 18b / 19 / 19b | asymétrie qui s'inverse entre paires | **LU** (strand 3, 2026-09-19) |
 | 4 | ICT-25 | tri des négatifs, désordre de sections établi | **LU** (tranche 1, 2026-08-24) |
 | 5 | GWT / SAE + non numérotés | alimente #7260 (renumérotation) | **LU 2/3 tranches** (1 SAE + 3 non-numérotés, 2026-09-19 ; tranche 2 GWT en revue #16821) |
@@ -69,6 +69,70 @@ Lecture complète (contenu ET `outputs`) des trois notebooks, 2026-08-21, par `m
 1. **Matrice périmée sur 15d, à deux endroits** (rangée 96 + note case 6 ligne 399, vs re-exec #9792) — la colonne Résultat de ce ledger ne la cite pas silencieusement ; correction des deux emplacements = décision d'arbitrage, pas une retouche de lecture.
 2. **Inversion de charge** : le non-numéroté (`ICT-Life-SubstratCertifie`) porte la substance du strand (calibration, pont Lean, EI), les numérotés portent l'application (31 : solide) et le maillon faible (15d : à muscler). Entrée directe pour #7260.
 3. **Deux instruments déclarant leurs aveugles** (ICT-31 axe S, écho Gate 21 ICT-25) : la série a une culture méthodologique saine de l'instrument qui ne voit pas — à préserver dans les consolidations.
+
+---
+
+## Strand 2 — Le moule 26→30 (rang 2)
+
+Lecture complète (contenu ET `outputs`) des cinq notebooks, 2026-09-19, par `myia-po-2023:CoursIA`. Correction factuelle d'entrée : la table annonçait « six notebooks ~17 cellules » — le disque en porte **cinq** (`ICT-26` à `ICT-30`, 18-25 cellules chacun). Le moule réel = **8 cellules code par notebook, 8/8 exécutées partout**, sur un squelette constant : 4 sections d'expérience (chacune verdict multi-graines + lecture) → synthèse → 3 exercices stubs C.1. Les cinq rangées matrice correspondantes (lignes 173-177) disent « **Fortement soutenu** » — la lecture le **confirme sur les outputs committés, aucune contradiction à crier**.
+
+### `ICT-26-SignalingConvention.ipynb` (numéroté) — 22 cellules (14 md, 8 code, 8/8 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | Expérience A, strate 7 (Lewis/Skyrms) : une convention de signalisation **émerge** par RL sans signification pré-inscrite — et ses limites. |
+| **Contenu réel** | 4 sections : §1 émergence multi-graines ; §2 le goulot du vocabulaire FIXE ; §3 succès ≠ signification (contrôle à état dominant) ; §4 stabilité sous chocs ; synthèse ; 3 exercices C.1. Module `ict.signaling_convention` importé en direct. |
+| **Résultat** | Émergence **4/5 graines** ; goulot **5/5** (le verdict le plus robuste du notebook) : MI plein vocabulaire 1.861 ± 0.297 vs limité 0.483 ± 0.017, ratio 0.266 ± 0.053 (plafonds analytiques log2(4)=2 / log2(2)=1) ; signification **5/5** avec la nuance affichée — le contrôle à état dominant réussit (succès ≈ 1.000) avec MI basse (0.627-1.145), et la graine 7 est la seule non-convergence totale (0.714 / 1.233) ; stabilité **4/5** : choc modéré résisté avec récupération, choc brutal détruit la convention. |
+| **Critique** | (1) §1 et §4 partagent leur graine manquante (« même racine », dit le titre lui-même) — redondance documentée, pas cachée. (2) La nuance graine 7 (§3) est mesurée mais pas discutée : pourquoi cette graine cale-t-elle à 0.714 alors que les autres atteignent 1.000 ? Une phrase de lecture suffirait. |
+| **Verdict + action** | **SOLIDE**. Le goulot 5/5 est la motivation écrite d'ICT-27 — la chaîne A→B est explicite. Action d'arbitrage (mineure) : une phrase de lecture sur la graine 7 en §3. |
+
+### `ICT-27-SymbolInvention.ipynb` (numéroté) — 18 cellules (10 md, 8 code, 8/8 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | Expérience B : lever le goulot d'ICT-26 — le vocabulaire **s'invente** et croît jusqu'à suffire, ni en-deçà ni au-delà, sous coût d'invention. |
+| **Contenu réel** | 4 sections : §1 baseline figée (invention interdite) ; §2 verdict CROISSANCE ; §3 verdict COUT (gate de rentabilité) ; §4 verdict DIVERSITÉ ; synthèse ; 3 exercices C.1 (plafond explicite, asymétrie des états, invention ciblée). |
+| **Résultat** | Baseline figée : succès **0.256 ≈ plafond théorique 1/4 = 0.250** (« aucun renforcement ne lève le plafond : le goulot est structurel ») ; CROISSANCE : vocabulaire final **[3, 4, 5, 6] pour attendu [3, 4, 5, 6]** — inventé à la mesure exacte du problème ; COUT : [6, 6, 6, 5.75, 4.25] — l'invention ralentit quand elle coûte, sans s'effondrer ; DIVERSITÉ : **5/6 conventions distinctes**, chacune une bijection de [0..3], parmi 24 valides (4!) — la graine sélectionne, elle n'impose pas. |
+| **Critique** | Aucune majeure. Le plus dense du moule (18 cellules) et le seul où chaque section porte un verdict quantitatif à guichet fermé (attendu affiché avant la mesure). La réponse chiffrée au goulot d'ICT-26 (0.266 → [3,4,5,6]) est la chaîne la plus propre de la strate. |
+| **Verdict + action** | **SOLIDE, mature**. Aucune action de contenu. |
+
+### `ICT-28-CollectiveAdoption.ipynb` (numéroté) — 25 cellules (17 md, 8 code, 8/8 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | Expérience C : la convention devient **causale** au niveau population — cascade d'adoption au-delà d'un seuil `rho_c` d'instigateurs épinglés (seuil de bascule C4, #7743). |
+| **Contenu réel** | 4 sections + lectures chiffrées : §1 la courbe en S ; §2 sous le seuil la convention meurt ; §3 au-dessus, la cascade ; §4 contrôle négatif sans instigateur ; synthèse ; 3 exercices C.1 dont un sweep N (taille de population) et un sweep force d'engagement. |
+| **Résultat** | Seuil : `threshold_exists = True`, **rho_c = 0.425**, saut maximal 0.472, adoption 0.000 @rho=0.05 → 1.000 @rho=0.95 ; sous le seuil : 0.011 (contre 0.333 au hasard — elle meurt) ; au-dessus : **0.850** ; contrôle négatif : **0.000 sans instigateur** (jamais de cascade spontanée). Exercice sweep N : rho_c = 0.300 (N=12), **0.575 (N=24)**, 0.425 (N=48) ; sweep force : 0.333 (s=2) puis plateau 0.556 (s=5/10/20). |
+| **Critique** | (1) Le sweep N (exercice 1) montre un rho_c **non-monotone en taille de population** (0.300 → 0.575 → 0.425) — mesuré, affiché, mais sans phrase de lecture : effets de taille finie ? variance ? C'est le seul verdict du moule qui ne se stabilise pas et il vit dans un exercice. (2) Le plateau de force d'engagement (0.556 dès s=5) mérite sa phrase : l'engagement sature, il ne remplace pas la masse. |
+| **Verdict + action** | **SOLIDE** (les 4 gates + contrôle négatif sont au niveau). Action d'arbitrage (mineure) : phrase de lecture sur la non-monotonie du sweep N — soit l'expliquer, soit la marquer comme variation de taille finie assumée. |
+
+### `ICT-29-ConceptInoculation.ipynb` (numéroté) — 25 cellules (17 md, 8 code, 8/8 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | Expérience D (Sperber 1996, contagion culturelle) : un concept transmis de proche en proche **survit** au retrait de l'instigateur — la distinction clé vs ICT-28, dont la convention s'effondre sans source. |
+| **Contenu réel** | 4 sections à double étage (expérience + « lecture du verdict avec son chiffre » 1b/2a/3a) : transmission au-delà des graines ; biais de confirmation ; survie post-instigateur ; contrôle négatif sans transmission ; synthèse ; 3 exercices C.1 **avec caveats mesurés pré-écrits** (5a saturation de la transition de phase, 5b la baseline du stub mesure une adoption toutes précoces, 5c l'assortativité dégénère à saturation). |
+| **Résultat** | Transmission réelle mais **partielle** (le concept dépasse les graines) ; biais de confirmation : fraction finale 1.000 (bias=0) → **0.335** (bias=0.9) — un frein, pas une extinction ; survie post-instigateur : 1.000 (persistant) → **0.725** (retiré), déclin mesuré 0.275 — endémie réelle mais érodée ; contrôle : **0.0 converti au-delà de la graine** sans transmission. |
+| **Critique** | Aucune. Le double étage (verdict + lecture chiffrée sous chaque section) est le meilleur format de lecture du moule — et les exercices portent leurs propres caveats MESURÉS (5a/5b/5c) au lieu d'un énoncé naïf : culture méthodologique exemplaire, même geste que ICT-31/ICT-25 (strand 1/4). |
+| **Verdict + action** | **SOLIDE, mature**. Candidat de référence pour le format « verdict + lecture chiffrée » si le user veut l'étendre au reste de la série (arbitrage). |
+
+### `ICT-30-InhibitedInvention.ipynb` (numéroté) — 22 cellules (14 md, 8 code, 8/8 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | Expérience E (pont Laborit C2, #7741) : l'agent qui **peut** inventer mais **inhibe** cette extension exhibe une dette mesurable — l'inhibition comme mécanisme négatif distinct de l'incapacité. |
+| **Contenu réel** | 4 sections : §1 rigidification (l'inhibition fige le vocabulaire) ; §2 impuissance apprise (plafond et piège) ; §3 le piège est permanent (pas un manque de calcul) ; §4 contrôle négatif sans inhibition ; synthèse ; 3 exercices C.1 dont sweeps decay et growth (dose-réponse). |
+| **Résultat** | Rigidification : vocabulaire 4.00 (inhibition 0) → **1.00** (inhibition max) ; impuissance apprise : inhibition **1.000 au plafond de renoncement**, vocabulaire final 2.00 (sous-optimal vs n_states=4) ; piège **STRUCTUREL** : persiste sous budget de calcul accru (l'inhibition supprime le mécanisme de sortie) ; contrôle : sans inhibition vocabulaire **4.00 = n_states** et coordination 1.000 — c'est bien l'inhibition qui piège. Exercices dose-réponse propres : decay 0.000→2.00, 0.030→4.00 ; growth 0.010→4.00, 0.060→2.00. |
+| **Critique** | Aucune. Le contrôle négatif (§4) est exactement le monde d'ICT-26/27 sans inhibition — la réponse croisée est au chiffre (4.00 vs le 1 signal figé de 27 §1). |
+| **Verdict + action** | **SOLIDE, mature**. Aucune action de contenu. |
+
+### Findings transverses du strand 2 (pour l'arbitrage user)
+
+1. **Le moule est réel, tenu et homogène** — la série la plus propre du ledger : 5 notebooks, même squelette (4 sections d'expérience + synthèse + 3 exercices C.1), même batterie `ict.*`, **8/8 cellules exécutées partout**, chaque notebook porte ses gates multi-graines + son contrôle négatif + ses sweeps en exercice. Aucune action de contenu majeure sur le strand : trois phrases de lecture mineures (26 graine 7, 28 sweep N, 28 plateau force) constituent tout le résiduel.
+2. **L'arc narratif A→E est chaîné explicitement ET au chiffre** : A mesure le goulot du vocabulaire fixe (ratio MI 0.266) → B le lève par invention ([3,4,5,6] = attendu exact) → C fait passer la convention à la population (rho_c = 0.425, s'effondre sans instigateur : 0.011) → D inocule le concept qui SURVIT au retrait (0.725) — la distinction C/D est le point Sperber et elle est démontrée par contraste des deux contrôles → E montre le revers individuel (l'inhibition piège : 2.00 vs 4.00). Les renvois inter-notebooks sont écrits dans les prose, pas seulement dans la matrice.
+3. **Cohérence matrice ↔ outputs vérifiée sur les cinq rangées** (173-177) : « Fortement soutenu » correspond aux verdicts mesurés — contrairement au strand 1 (15d, matrice périmée à deux endroits), rien à crier ici. La mise à jour matrice de 15d reste le seul finding matrice ouvert.
+4. **Format gagnant identifié pour la série** : ICT-29 (verdict + « lecture du verdict avec son chiffre » sous chaque section + caveats mesurés pré-écrits dans les exercices) est le meilleur format de lecture du strand — candidat de référence si le user veut harmoniser le style des strates (arbitrage, pas une action de lane).
+5. **Entrées pour #7260 (renumérotation)** : l'ordre 26→27→28→29→30 est porteur de sens narratif (individu → invention → population → culture → pathologie), à préserver tel quel ; aucun candidat à la fusion ni à la renumérotation dans le strand ; les cinq sont numérotés proprement.
 
 ---
 
@@ -199,6 +263,59 @@ Le rang 5 (~15 notebooks) se livre en tranches comme le strand 4. **Tranche 1 = 
 4. **Négatif propre à préserver** : « l'inoculation est absente » (21c) — la signature différentielle survit à l'ablation de 85 % du dictionnaire (overlap 2-3/64 stable, FVU 0.28→0.82). Action proposée : rangée matrice dédiée (le signal vit dans la charge du panneau, pas dans le dictionnaire).
 5. **Entrées pour #7260 (renumérotation)** : (a) le non-numéroté tête-à-tête porte une rangée matrice `W_t` et 31 cellules — candidat de tête à numéroter, naturellement adjacent à ICT-21 ; (b) l'ordre 21→21b→21c est correct (substrat → calibration → perturbations) ; (c) ICT-21b est le seul de la famille avec un titre de section (axe J-lens) que ses outputs committés ne répondent pas — complété ou retitré à l'arbitrage.
 6. **Tranches restantes du rang 5** : GWT (ICT-22, 22b, 23, 24), puis les non-numérotés restants (Annexe-ProxyContextuality, Argumentation-BeliefTrajectories, Dissociation-PhatSelfReference, Dissociation-SaillancePregnance, Greffe2, Greffe4, Synthese-CrossSubstrat ; Greffe5 après son rework #16762).
+
+## Strand 5 — GWT / SAE + non numérotés (rang 5) — tranche 2 : la famille GWT (Global Workspace)
+
+Lecture complète (contenu ET `outputs`) des quatre notebooks GWT, 2026-09-19, par `myia-po-2023:CoursIA`. La famille reçoit le Gate 12 qu'ICT-21 lui défère explicitement, le moteur d'intervention causal (22b), la fronce de Thom appliquée au désalignement (23) et le gate de réconciliation IIT↔GWT (24). Rangées matrice concernées (ICT-22, ICT-23, ICT-24 Gates 22-23, ICT-24 Gate 24) : **toutes cohérentes avec les outputs committés** — la matrice énonce déjà le négatif de 22 (« intégration cross-substrat effectivement négative ») et la non-co-localisation de 24 comme thèses.
+
+### `ICT-22-LLMSubstrat.ipynb` (numéroté) — 26 cellules (17 md, 9 code, 9/9 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | Intégrer le transformer comme quatrième substrat du banc cross-substrat et y créditer l'émergence (Gate 12, double contrôle) puis re-tester la convergence à quatre substrats (Gate 13). |
+| **Contenu réel** | Mêmes traces S4 qu'ICT-21 (2699 tokens, W64K, 5 jeux de prompts) ; sélection différentielle ; discrétisation grossière ; Gate 12 par jeu vs shuffle ET vs modèle contrôle ; Gate 13 : tableau des gains des 4 substrats + τ de Kendall par paire ; 3 exercices C.1 ; conclusion. |
+| **Résultat** | **Gate 12 : 2/5 jeux crédités** (code_python ec_gain 0.634 ✓, dialogue 1.677 ✓ ; math 0.819 ✗, narrative_en −0.019 ✗, prose_fr −1.066 ✗) ; `fe_gain` positive sur 5/5 (0.226-0.532) ; la différence trained-vs-contrôle **change de signe selon le jeu** (−1.225 à +0.356). **Gate 13 : S4 = le substrat le plus faible** (ec_gain 0.684 vs S1 3.438 / S2 2.097 / S3 2.009) ; τ(ec,fe) = +0.667, τ(ec,k) = +0.000, τ(fe,k) = +0.333 — **consistent = False partout**. La lecture honnête titrée dans le notebook : « **nuancé et majoritairement négatif, et c'est un résultat en soi** ». |
+| **Critique** | Aucune : le négatif est livré avec ses deux contrôles, multi-jeux, sans maquillage — et la matrice l'avait déjà énoncé comme tel (« effectivement négative »). La régularité transitionnelle (`fe_gain` 5/5) vs l'émergence causale multi-échelles (2/5) est une dissociation proprement établie à l'intérieur même du notebook. |
+| **Verdict + action** | **SOLIDE** — négatif-par-protocole assumé (même famille que le tri des négatifs d'ICT-25, strand 4). Aucune action de contenu. |
+
+### `ICT-22b-CausalInterventionEngine.ipynb` (numéroté) — 41 cellules (27 md, 14 code, 14/14 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | Le moteur d'intervention causal : opérer, contrôler, mesurer — sur un banc où la vérité terrain est connue **par construction** (format Gate 24, #5635). |
+| **Contenu réel** | Banc synthétique float64 (avec garde de cwd expliquée) où la causalité est un choix expérimental ; 5 opérations sur le panneau d'entrée (canal ÉTAT) ; canaux séparés état/readout/comportement dans un même run ; **contrôles obligatoires** (cible aléatoire APPARIÉE, sham, doses symétriques) ; famille trois bras cible/aléatoire-apparié/intact ; courbe dose-réponse ; interchange contre-factuel par protocole capture-puis-écriture ; **verdict falsifiable à critères fixés AVANT la lecture** ; récapitulatif « sept contrôles, aucun relâché » ; « Portée du verdict : ce que SUPPORTED ne dit pas » ; 3 exercices C.1. |
+| **Résultat** | Ablation : sélectivité `selective` (la tranche cible seule bouge) ; famille trois bras : « effet massif et sélectif à la fois » ; dose-réponse « monotone et quasi antisymétrique » ; interchange features causales (3, 17) : **bascule causale OUI + contrôle stable OUI** (pred(a′)=0, pred(b′)=1) ; **VERDICT : SUPPORTED**. |
+| **Critique** | Aucune — c'est la discipline instrumentale la plus haute de la série ICT : vérité terrain par construction, sept contrôles nommés un à un, critères de verdict écrits avant la lecture des résultats, portée du verdict explicitement bornée (« ce que SUPPORTED ne dit pas »). C'est l'instrument que les cases matrice 4/5/15 (confabulation, self-model, AST) réutilisent en aval. |
+| **Verdict + action** | **SOLIDE, mature** — le référentiel méthodologique de la série. Aucune action. |
+
+### `ICT-23-PersonaCatastrophe.ipynb` (numéroté) — 20 cellules (13 md, 7 code, 7/7 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | Modéliser le désalignement émergent par la fronce de Thom : V(p; a, b) avec a = −T·s (transgression × charge sémantique) et b = r (récompense) — prédiction P1 d'#5104 (hystérésis + signature d'inoculation monotone), prédiction P2 (EWS Wissel/Scheffer). |
+| **Contenu réel** | Trois jambes explicatives ; paramétrage sémantique du potentiel fronce ; bistabilité par balayage de s ; **Gates 16-17** : boucle d'hystérésis + signature d'inoculation N_catastrophes(s) ; EWS variance + AR1 sur trajectoires SDE bistable vs inoculée ; exercice 1 (potentiel V-linéaire), 2 (balayage continu), 3 (permission vague) ; cellule frontière ; continuité ICT-13 (grim trigger). |
+| **Résultat** | Bistabilité : s=0 **False**, s=0.3 **True**, s=1.0 **True** — la charge sémantique ouvre bien le pli. Sweep de charge : **N_catastrophes = 0 / 4 / 2 / 2** pour s = 0 / 0.3 / 0.6 / 0.9. EWS : bistable variance 0.0001 / AR1 0.1391 vs inoculée 0.0000 / 0.1175 — direction conforme, amplitude faible. |
+| **Critique** | (1) La signature d'inoculation prédite (cellule §3 : « **monotone non-croissante** : maximale sous forte charge sémantique, nulle sous inoculation totale ») n'est **pas réalisée dans le sweep committé** : le pic est à s=0.3 (4 catastrophes) puis DÉCROÎT (2, 2) — maximale à charge moyenne, pas forte ; seul le point s=0 (inoculation → N=0) tient. Aucune cellule « lecture » ne relit ce sweep (c'est le seul notebook de la famille sans lecture dédiée par résultat). (2) L'écart EWS (AR1 0.139 vs 0.118, +18 %) va dans le bon sens mais n'est pas confronté à un seuil. |
+| **Verdict + action** | **SOLIDE sur le cœur** (la fronce modélise le phénomène, l'inoculation aplatit — matrice cohérente) **/ À COMPLÉTER sur la signature P1**. Action d'arbitrage : une cellule lecture du sweep N(s) (non-monotonie assumée ? grain de balayage trop grossier ? effets de taille finie ?) + un seuil sur l'EWS — une demi-heure de travail. |
+
+### `ICT-24-WorkspaceIgnition.ipynb` (numéroté) — 23 cellules (14 md, 9 code, 9/9 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | L'axe Global Workspace sur S4 et le **gate de réconciliation IIT↔GWT** : les ignitions (lecture Dehaene, seuil quantile 0.85, persistance ≥ 3) portent-elles les pics de complexité créditée (emergence_gain, Hoel) ? |
+| **Contenu réel** | Garde-fous ; mêmes traces S4 ; sanité sur un panel synthétique où hub et ignition sont **plantés** ; **Gate 22** (structure : fan-out d'influence, 3 variantes trained/control/time-shuffled) ; **Gate 23** (co-localisation ignition×crédit, double contrôle, 5 jeux = multi-graines, n_shuffles=10) ; **Gate 24** (ablation sélective par clamp = phase 2 GPU, explicitement déléguée à une PR distincte) ; note « écart de nommage assumé » sur la numérotation des gates (#56xx) ; 3 exercices C.1. |
+| **Résultat** | **Gate 22 : partiel** — fan-out concentré (Gini 0.485-0.659) mais **non spécifique au modèle entraîné** (max fan-out : control 18 > trained 10) ; `concentrated=True` y compris temps mélangés → « seuil trop permissif », auto-diagnostiqué (« déjà marqué empirique faible, à recalibrer, ligne 411 du module »). **Gate 23 : la co-localisation N'A PAS LIEU** — 36 événements, 6 crédités (17 %), contraste moyen **−0.2320** (signe négatif = anti-co-localisation) — c'est la **dissociation IIT↔GWT**, énoncée comme thèse par la matrice. Gate 24 : non exécuté ici (phase 2 GPU), matrice « verdict en attente » — cohérent. |
+| **Critique** | Aucune — les trois gates sont livrés avec leur statut exact : partiel auto-diagnostiqué (avec la ligne de code à recalibrer), négatif-thèse confirmée, causal différé explicitement. Le clamp sélectif (Gate 24) reste **la seule mesure interventionnelle** de l'axe workspace : c'est la dette GPU documentée du strand, pas un manque de rigueur. |
+| **Verdict + action** | **SOLIDE**. Actions d'arbitrage : (a) exécuter Gate 24 phase 2 (extraction GPU2, déjà cadrée dans le notebook et la matrice) ; (b) recalibrage du seuil Gini ligne 411 (entré aussi par la lecture de Gate 22). |
+
+### Findings transverses de la tranche 2 (pour l'arbitrage user)
+
+1. **La famille GWT livre des négatifs assumés comme résultats** — c'est sa signature : Gate 12 « majoritairement négatif et c'est un résultat en soi » (22), non-co-localisation = la thèse même (24, contraste moyen −0.23), Gate 22 partiel auto-diagnostiqué avec la ligne de code fautive (24). La matrice est **cohérente sur les 5 rangées** (elle avait déjà énoncé le négatif de 22 et la dissociation de 24 comme claims) — rien à crier, contrairement au strand 1.
+2. **ICT-22b est le référentiel méthodologique de la série** : vérité terrain par construction, sept contrôles nominés, critères de verdict fixés avant lecture, portée de SUPPORTED bornée — l'instrument que les cases matrice 4/5/15 réutilisent. À préserver tel quel dans toute consolidation.
+3. **Un seul point de charge de la famille : ICT-23** — le plus court (20 cellules), sans cellules lecture par résultat, avec une sous-prédiction (signature d'inoculation monotone) **partiellement violée dans le sweep committé** (N = 0/4/2/2, pic à charge moyenne) et non relue dans le notebook. Une cellule lecture + un seuil EWS suffisent.
+4. **La chaîne 21→22→24 est tenue au fil des notebooks** : 21 certifie S4 et défère Gate 12 à 22 « en toutes lettres » ; 22 l'exécute et livre le négatif ; 24 prend le relais workspace avec la même primitive `emergence_gain` réutilisée (« la même primitive que le reste de la série »). La continuité SAE→GWT est réelle, pas seulement éditoriale.
+5. **Entrées pour #7260 (renumérotation)** : ordre 22→22b→23→24 correct (substrat → moteur causal → fronce → workspace) ; aucun candidat à la fusion ; le Gate 24 phase 2 = dette GPU documentée (déjà tracée matrice), pas un motif de renumérotation ; l'« écart de nommage assumé » des gates (#56xx) est une entrée supplémentaire pour l'ancrage par section plutôt que par numéro (même leçon que le strand 4, renvois décalés).
+6. **Tranche 3 restante du rang 5** : les non-numérotés (Annexe-ProxyContextuality, Argumentation-BeliefTrajectories, Dissociation-PhatSelfReference, Dissociation-SaillancePregnance, Greffe2, Greffe4, Synthese-CrossSubstrat ; Greffe5 après son rework #16762).
 
 ## Strand 5 — GWT / SAE + non numérotés (rang 5) — tranche 3 : les non numérotés
 

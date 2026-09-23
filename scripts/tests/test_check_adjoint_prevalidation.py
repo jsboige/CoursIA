@@ -5,6 +5,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 HERE = Path(__file__).resolve().parent
 CHECK_PATH = HERE.parent / "check_adjoint_prevalidation.py"
 spec = importlib.util.spec_from_file_location("check_adjoint_prevalidation", CHECK_PATH)
@@ -350,6 +352,86 @@ def test_unresolved_thread_cannot_be_ready():
     assert "READY requires zero unresolved threads" in errors
 
 
+def test_empty_diff_cannot_be_ready():
+    """A PR changing zero files has nothing to squash -- READY is refuted.
+
+    Positive control, taken from the measured instance: #16975 and #16976 each
+    carried an INTACT dossier declaring `diff-files: 0` with `verdict: READY`,
+    so the gate returned 0 and authorised merging a pull request that delivered
+    nothing. The dossier is self-consistent with the live PR -- every count
+    matches -- which is why no staleness check could catch it.
+    """
+    live = _base_snapshot()
+    live["changedFiles"] = 0
+    live["additions"] = 0
+    live["deletions"] = 0
+    dossier = _body(
+        **{"diff-files": "0", "diff-additions": "0", "diff-deletions": "0"}
+    )
+    live["comments"].append(_comment(dossier))
+    verdict, errors = mod.evaluate(live)
+    assert "READY requires a non-empty diff: 0 files changed" in errors
+    assert verdict == "", errors
+
+
+def test_blocked_dossier_tolerates_an_empty_diff():
+    """An empty diff refutes READY, never BLOCKED.
+
+    Same asymmetry as the draft and unresolved-thread legs: an empty diff is a
+    reason a PR is NOT mergeable, and attesting it is precisely a BLOCKED
+    dossier's job. Refusing it there would deny the coordinator the attested
+    motive it dispatches from.
+    """
+    live = _base_snapshot()
+    live["changedFiles"] = 0
+    live["additions"] = 0
+    live["deletions"] = 0
+    dossier = _body(
+        verdict="BLOCKED", b0="blocked", checks="BLOCKED", scope="fail",
+        domain="fail",
+        **{"diff-files": "0", "diff-additions": "0", "diff-deletions": "0"},
+    )
+    live["comments"].append(_comment(dossier))
+    verdict, errors = mod.evaluate(live)
+    assert verdict == mod.VERDICT_BLOCKED, errors
+
+
+def test_two_line_fix_is_still_ready():
+    """Negative control: the #15740 counter-example must keep passing.
+
+    « une correction de 2 lignes d'un bug critique serait acceptable » -- the
+    new leg measures absence, not smallness. A one-file, two-line diff is as
+    READY as a large one.
+    """
+    live = _base_snapshot()
+    live["changedFiles"] = 1
+    live["additions"] = 1
+    live["deletions"] = 1
+    dossier = _body(
+        **{"diff-files": "1", "diff-additions": "1", "diff-deletions": "1"}
+    )
+    live["comments"].append(_comment(dossier))
+    verdict, errors = mod.evaluate(live)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_absent_diff_stat_never_reads_as_an_empty_diff():
+    """Missing data must not decide (#14849) -- and here it already cannot.
+
+    The new leg tests equality with 0, so `None` does not trip it. But the
+    state is unreachable anyway: `validate_dossier` indexes `changedFiles`
+    directly, and `main` catches `KeyError` among the fail-closed exceptions,
+    reporting UNKNOWN (rc=2). Absent stats therefore become "I could not
+    measure", never "the diff is empty" -- which is the distinction that
+    matters, because rc=2 refuses while a fabricated `empty` would accuse.
+    """
+    live = _base_snapshot()
+    live.pop("changedFiles")
+    live["comments"].append(_comment(_body()))
+    with pytest.raises(KeyError):
+        mod.evaluate(live)
+
+
 def test_comment_after_dossier_invalidates_it():
     snapshot = _snapshot(_body())
     snapshot["comments"].append(_comment("new concern after preflight"))
@@ -548,8 +630,16 @@ def test_coordinator_own_later_comment_does_not_expire_the_dossier():
 
 
 def test_any_other_author_still_expires_the_dossier():
-    """The negative control: neutrality is for the coordinator ALONE."""
-    for login in ("jsboige", "clusterManager-Myia", "lcetinsoy"):
+    """The negative control: neutrality is for the coordinator ALONE.
+
+    Since #16883 the coordinator voice is recognised under BOTH
+    ``COORDINATOR_LOGIN`` (``myia-ai-01``) and ``SHARED_GITHUB_LOGIN``
+    (``jsboige``) -- the merged-account mandate means every coordinator
+    action reaches the API under ``jsboige``. A genuinely foreign author
+    (a worker lane that did NOT carry the dossier, or a bot) must still
+    expire the dossier.
+    """
+    for login in ("clusterManager-Myia", "lcetinsoy", "myia-po-2024", "dependabot"):
         base = _stamped_snapshot("")
         base["comments"].pop()
         snapshot = _stamped_snapshot(_dossier_for(base))
@@ -559,12 +649,59 @@ def test_any_other_author_still_expires_the_dossier():
         errors = _errors(snapshot)
         assert any("discussion changed after dossier" in e for e in errors), login
 
-        snapshot2 = _stamped_snapshot(_dossier_for(base))
-        snapshot2["reviews"].append(
-            {"state": "CHANGES_REQUESTED", "author": {"login": login},
-             "submittedAt": T1, "body": "new reserve"}
-        )
-        assert _errors(snapshot2), login
+
+def test_shared_login_lift_does_not_expire_dossier():
+    """#16883 CN4-bis: a coordinator lift posted under SHARED_GITHUB_LOGIN
+    (the merged-account mandate, every lane signs ``jsboige``) is
+    recognised as the coordinator's voice. The dossier stays intact and
+    its READY verdict still passes the gate.
+    """
+    base = _stamped_snapshot("")
+    base["comments"].pop()
+    snapshot = _stamped_snapshot(_dossier_for(base))
+    own = _comment("Lifting the stale PREFLIGHT_HOLD.", login=mod.SHARED_GITHUB_LOGIN)
+    own["createdAt"] = T1
+    snapshot["comments"].append(own)
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_shared_login_anterior_comment_does_not_neutralise():
+    """#16883 CN2-bis: a SHARED_GITHUB_LOGIN comment written BEFORE the
+    dossier is part of the surfaces the dossier attested. The adjoint
+    already saw it; the dossier stays intact. (The neutrality only fires
+    on later rows, never on attested ones.)
+    """
+    snapshot = _base_snapshot()
+    anterior = _comment("pre-dossier coordinator remark", login=mod.SHARED_GITHUB_LOGIN)
+    anterior["createdAt"] = T0
+    snapshot["comments"].insert(0, anterior)
+    dossier_body = _dossier_for(snapshot)
+    dossier = _comment(dossier_body)
+    dossier["createdAt"] = T0
+    snapshot["comments"].append(dossier)
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_fingerprint_includes_lift_surface():
+    """The fingerprint (#16957) covers every comment -- coordinator or not.
+    A lift that lands between the dossier and the gate re-evaluation
+    changes the hash; that is the dossier attesting the new surface.
+    Neutralisation is only at evaluate time, never at stamp time.
+    """
+    base = _stamped_snapshot("")
+    base["comments"].pop()
+    snapshot_at_stamp = _stamped_snapshot(_dossier_for(base))
+    fp_at_stamp = mod.surfaces_fingerprint(snapshot_at_stamp)
+
+    snapshot_after_lift = json.loads(json.dumps(snapshot_at_stamp))
+    lift = _comment("LIFT -- shared login", login=mod.SHARED_GITHUB_LOGIN)
+    lift["createdAt"] = T1
+    snapshot_after_lift["comments"].append(lift)
+
+    fp_after_lift = mod.surfaces_fingerprint(snapshot_after_lift)
+    assert fp_after_lift != fp_at_stamp
 
 
 def test_coordinator_review_BEFORE_the_dossier_must_still_be_attested():
@@ -922,3 +1059,109 @@ def test_evaluate_keeps_its_two_tuple_shape():
     """The gate's historical view is unchanged: no caller moves under it."""
     verdict, errors = mod.evaluate(_snapshot(_body()))
     assert (verdict, errors) == (mod.VERDICT_READY, [])
+
+# --- #16931 : reecriture en place d'un bot marker-garde = fingerprint STABLE --
+
+
+def test_marker_guarded_bot_rewrite_keeps_the_fingerprint():
+    """Un bot qui re-edite son commentaire en place ne perime plus le dossier.
+
+    Mesure fondatrice (2026-09-20) : le dossier de #16907 a ete perime 26 min
+    apres sa pose par une reecriture `PR-PATH-COLLISION` du bot -- le compte
+    de commentaires etait exact, seul le hash bougeait. Le corps d'un
+    commentaire dont la premiere ligne est un marqueur HTML connu est hache
+    sur ce marqueur SEUL : la presence du commentaire compte, sa
+    re-implementation interne non.
+    """
+    base = _base_snapshot()
+    v1 = dict(base)
+    v1["comments"] = [_comment("<!-- PR-PATH-COLLISION:START -->\n"
+                               "paires fortes: #123/#456 (chevauchent)",
+                               "github-actions[bot]")]
+    v2 = dict(base)
+    v2["comments"] = [_comment("<!-- PR-PATH-COLLISION:START -->\n"
+                               "paires fortes: #123/#789 (re-scan apres push)",
+                               "github-actions[bot]")]
+    assert mod.surfaces_fingerprint(v1) == mod.surfaces_fingerprint(v2)
+
+
+def test_marker_guarded_variation_signals_and_cap_also_stable():
+    """Les 3 marqueurs mesures sont neutralises, pas seulement le fondateur."""
+    base = _base_snapshot()
+    for marker in ("<!-- variation-genre-signals -->",
+                   "<!-- gvar2-light-cap -->",
+                   "<!-- trivial-diff-15740 -->"):
+        a = dict(base, comments=[_comment(marker + "\ncontenu v1", "github-actions[bot]")])
+        b = dict(base, comments=[_comment(marker + "\ncontenu v2 totalement different",
+                                          "github-actions[bot]")])
+        assert mod.surfaces_fingerprint(a) == mod.surfaces_fingerprint(b), marker
+
+
+def test_marker_guarded_bot_comment_presence_still_counts():
+    """Ajouter ou retirer le commentaire garde change toujours le hash."""
+    base = _base_snapshot()
+    with_bot = dict(base, comments=list(base["comments"]) + [
+        _comment("<!-- PR-PATH-COLLISION:START -->\npaires: aucune",
+                 "github-actions[bot]")])
+    assert mod.surfaces_fingerprint(base) != mod.surfaces_fingerprint(with_bot)
+
+
+def test_human_edit_of_the_same_body_still_changes_the_fingerprint():
+    """Fail-closed symetrique : un contenu qui n'est PAS un bot garde change.
+
+    Le refus « discussion surfaces changed » reste le verdict nominal quand un
+    commentaire humain est edite : l'allowlist ne couvre que les corps qui
+    COMMENCENT par le marqueur, et le marqueur seul est hache -- tout le
+    contenu humain, partout ailleurs, continue de perimer le dossier.
+    """
+    base = _base_snapshot()
+    v1 = dict(base, comments=[_comment("reserve: verifier le diff", "jsboige")])
+    v2 = dict(base, comments=[_comment("reserve: verifier le diff, corrige", "jsboige")])
+    assert mod.surfaces_fingerprint(v1) != mod.surfaces_fingerprint(v2)
+    # Marqueur non plus a l'offset 0 = edition humaine d'un corps de bot :
+    v3 = dict(base, comments=[_comment("edit: <!-- PR-PATH-COLLISION:START -->\n...",
+                                       "jsboige")])
+    v4 = dict(base, comments=[_comment("edit2: <!-- PR-PATH-COLLISION:START -->\n...",
+                                       "jsboige")])
+    assert mod.surfaces_fingerprint(v3) != mod.surfaces_fingerprint(v4)
+
+
+def test_fingerprint_refusal_names_the_live_surface_landscape():
+    """Le refus d'empreinte est exploitable : il nomme OU chercher (#16931 defaut 3).
+
+    Deux hachages opaques forcent une re-fabrication en aveugle. Le refus doit
+    reporter le PAYSAGE des surfaces live (compte + dernier commentaire/review
+    + threads non resolus), pour que la lane identifie la divergence sans
+    refaire toute la lecture B.0. L'empreinte divergente reste un REFUS
+    (fail-closed preserve) — seul le diagnostic est ajoute.
+    """
+    base = _base_snapshot()
+    # Snapshot dont la fingerprint ne reproduit pas celle du dossier
+    # (un commentaire humain edite, cf test precedent).
+    live = dict(base)
+    live["comments"] = [
+        {"author": {"login": "jsboige"}, "createdAt": "2026-09-19T20:00:00Z",
+         "body": "un commentaire edite apres le dossier"}
+    ]
+    live["threads"] = [{"isResolved": True}, {"isResolved": False}]
+    # Dossier calcule sur le snapshot de base, compare au live divergent.
+    dossier_fields = {
+        "schema": "1", "lane": mod.ADJOINT_LANE, "pr": "123", "head": HEAD,
+        "complete": "true", "body": "read", "comments-reviewed": "1",
+        "reviews-reviewed": "2", "threads-reviewed": "1",
+        "threads-unresolved": "0",
+        "surfaces-sha256": mod.surfaces_fingerprint(base, 1, None),
+        "diff-files": "3", "diff-additions": "42", "diff-deletions": "7",
+        "checks": "latest-wins-green", "b0": "clear", "scope": "pass",
+        "domain": "pass", "verdict": "READY",
+    }
+    dossier = mod.Dossier(dossier_fields, 1, mod.SHARED_GITHUB_LOGIN, "2026-09-19T19:00:00Z")
+    errors = mod.validate_dossier(dossier, live)
+    fingerprint_errors = [e for e in errors if "discussion surfaces changed" in e]
+    assert fingerprint_errors, f"no fingerprint error in: {errors}"
+    msg = fingerprint_errors[0]
+    # Nomme le paysage live : dernier commentaire et sa date, threads, checks.
+    assert "dernier commentaire: jsboige 2026-09-19T20:00:00Z" in msg
+    assert "threads=2 (1 non resolus)" in msg
+    assert "checks=1" in msg
+    assert "reviews=2" in msg
