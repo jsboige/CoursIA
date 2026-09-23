@@ -150,7 +150,7 @@ jobs:
               echo "::notice::CJK residue in THIS PR ($PR_LEAKS leak line(s)): $FILES -- see the '$LABEL' label (#8826/#8428)."
               gh label create "$LABEL" \
                 --description "CJK residue: a Chinese/Japanese word soldered into Latin prose (#8428/#8826)" \
-                --color "D93F0B" --force 2>/dev/null || true
+                --color "D93F0B" --force || true
               gh pr edit "$PR_NUMBER" --add-label "$LABEL" || true
             fi
           else
