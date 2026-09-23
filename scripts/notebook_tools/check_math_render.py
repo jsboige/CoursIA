@@ -11,13 +11,17 @@ math that NO mainstream viewer (Jupyter MathJax, GitHub, VS Code/KaTeX)
 would render as written?
 
 Four detectable classes, markdown cells only (in code cells LaTeX-looking
-text is legitimate):
+text is legitimate). Two discriminants learned from the first corpus
+measurement (458 raw hits, most of them false positives): fenced code
+blocks (```` ``` ````) are masked before everything -- Lean/pseudo-code and
+shell `$var` inside fences are code, not prose -- and a `$` immediately
+followed by a digit is currency ("costs $5"), not a math delimiter:
 
   1. LATEX-PURE-DELIMS -- `\\(...\\)` or `\\[...\\]` in markdown prose.
      Jupyter, GitHub and VS Code render `$...$` / `$$...$$`; the pure LaTeX
-     delimiters are left as literal text. Detected outside backtick spans.
+     delimiters are left as literal text. Detected outside code spans.
   2. ODD-DOLLARS -- a paragraph (blank-line-separated block) whose count of
-     single `$` is odd after removing paired `$$` and backtick spans: one
+     single `$` is odd after removing paired `$$`, code and currency: one
      unmatched dollar silently breaks MathJax pairing for the WHOLE
      paragraph, so valid formulas elsewhere in it stop rendering too.
   3. NUDE-LATEX -- a known LaTeX command (`\\Phi`, `\\mathbb`, `\\frac`, ...)
@@ -56,9 +60,11 @@ EXCLUDED_DIRS = ("/.lake/", "/_archive/", "/node_modules/", "/.venv/")
 EXCLUDED_SUFFIX = "_output.ipynb"
 
 BACKTICK_SPAN = re.compile(r"`[^`\n]*`")
+FENCED_BLOCK = re.compile(r"```[\s\S]*?(?:```|$)")
 LATEX_INLINE = re.compile(r"\\\(.*?\\\)")
 LATEX_BLOCK = re.compile(r"\\\[.*?\\\]")
 MATH_SCOPE = re.compile(r"\$\$([\s\S]+?)\$\$|\$([^$\n]+?)\$")
+CURRENCY_DOLLAR = re.compile(r"\$\d")
 KNOWN_COMMANDS = (
     "Phi", "mathbb", "mathcal", "mathbf", "mathrm", "mathsf", "lfloor",
     "rfloor", "frac", "dfrac", "tfrac", "sqrt", "log", "ln", "exp", "min",
@@ -113,10 +119,11 @@ def katex_available() -> bool:
 
 
 def katex_failures(scopes: list[dict]) -> list[dict]:
+    payload = [{"formula": s["formula"], "display": s["display"], "pos": i}
+               for i, s in enumerate(scopes)]
     proc = subprocess.run(
         ["node", "-e", KATEX_PROBE],
-        input=json.dumps([{"formula": s["formula"], "display": s["display"],
-                           "pos": s["pos"]} for s in scopes]),
+        input=json.dumps(payload),
         capture_output=True, text=True, encoding="utf-8",
     )
     if proc.returncode != 0:
@@ -130,7 +137,8 @@ def find_defects(source, with_katex: bool) -> tuple[list[dict], list[dict]]:
     defects: list[dict] = []
     scopes: list[dict] = []
 
-    masked = BACKTICK_SPAN.sub("``", text)
+    masked = FENCED_BLOCK.sub("```", text)
+    masked = BACKTICK_SPAN.sub("``", masked)
 
     for m in LATEX_INLINE.finditer(masked):
         defects.append({
@@ -147,7 +155,8 @@ def find_defects(source, with_katex: bool) -> tuple[list[dict], list[dict]]:
 
     for para in re.split(r"\n\s*\n", masked):
         without_display = re.sub(r"\$\$[\s\S]*?\$\$", "", para)
-        singles = without_display.count("$")
+        without_currency = CURRENCY_DOLLAR.sub("D", without_display)
+        singles = without_currency.count("$")
         if singles % 2 == 1:
             defects.append({
                 "kind": "ODD-DOLLARS", "detail": f"{singles} single '$' in paragraph",
