@@ -208,7 +208,12 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     # repliee comme etape du sweep ci-dessous (design-gate ai-01 : "meme
     # population, meme requete ; seule la branche de remediation differe.
     # Ne pas creer un troisieme organe").
-    "pr-gate-sweep-health-advisory.yml",
+    # pr-gate-sweep-health-advisory.yml : RETIREE le 2026-09-23 (#17470) --
+    #   retour arriere assume du routage #14283 tranche 4, autorise par son
+    #   auteur : Hermes a mesure 15/15 `cancelled` sur le pool coursia-linux,
+    #   l'observateur mourait dans la meme file que le sweep qu'il surveille.
+    #   Repasse sur `ubuntu-latest` (le commentaire de rollback du workflow
+    #   decrivait exactement ce geste).
     "pr-path-collision-advisory.yml",
     # queue-ghost-watch.yml (#14367, owner myia-po-2023:CoursIA-2) : sonde cron
     #   04:17 UTC (offset anti-stampede, hors-:00) sur les 18 zombies QUEUED

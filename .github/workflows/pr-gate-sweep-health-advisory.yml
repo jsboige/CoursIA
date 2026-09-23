@@ -61,13 +61,14 @@ concurrency:
 jobs:
   health:
     name: PR gate sweep health advisory
-    # Routage #14283 tranche 4 (ai-01 2026-09-02) : balayage cron pur-Python.
-    # Declencheurs `schedule` + `push` sur main -- les deux ne portent que des
-    # refs du depot (SAFE_SELF_HOSTED_TRIGGERS), donc aucun code de fork ne peut
-    # l'atteindre et aucune garde same-repo n'est requise (cf en-tete de
-    # check_self_hosted_runner_policy.py). Retour arriere = remettre
-    # `runs-on: ubuntu-latest` + retrait de l'allowlist.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Retour arriere du routage #14283 tranche 4 (autorise par son auteur,
+    # #17470, 2026-09-23) : Hermes a mesure 15/15 `cancelled` sur le pool
+    # coursia-linux -- l'observateur mourait dans la meme file que le sweep
+    # qu'il surveille. Un organe de sante doit survivre a ce qu'il observe :
+    # profil pur gh + python3, 5 min, exactement ce que ubuntu-latest sert
+    # sans file d'attente. Entree allowlist retiree de
+    # check_self_hosted_runner_policy.py dans le meme diff.
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
@@ -94,7 +95,7 @@ jobs:
           # d'agregation, qui porte le rouge de CE step et de la sonde d'age --
           # sans cela, un echec ici SKIPPERAIT la sonde d'age (short-circuit
           # Actions, repare sur dispatch ai-01 2026-09-10).
-          python scripts/ci/check_scheduler_liveness.py --repo "$REPO"
+          python3 scripts/ci/check_scheduler_liveness.py --repo "$REPO"
 
       - name: Check age of last successful sweep run
         id: sweep_age
@@ -116,7 +117,7 @@ jobs:
           # No successful run at all -> that absence IS the state this exists
           # to catch (history purged or scheduler dead). Fail visibly but, being
           # advisory, non-blocking.
-          AGE_S=$(python - "$RUN" <<'PY'
+          AGE_S=$(python3 - "$RUN" <<'PY'
           import json, sys
           from datetime import datetime, timezone
           runs = json.loads(sys.argv[1])
