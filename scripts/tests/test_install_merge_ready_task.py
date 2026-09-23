@@ -88,6 +88,30 @@ def test_sync_repo_refuse_hors_main(tmp_path, monkeypatch):
     assert not any("fetch" in c or "merge" in c for c in calls)
 
 
+def test_sync_repo_siege_detache_avance_sur_origin_main(tmp_path, monkeypatch):
+    # Le worktree dedie d'ai-01 ne peut pas porter `main` (tenue par le
+    # checkout principal) : il est detache, et c'est son etat nominal.
+    fake, calls = _scripted([("rev-parse", _Res(out="HEAD"))])
+    monkeypatch.setattr(imod, "_run", fake)
+    ok, _ = imod.sync_repo(tmp_path)
+    assert ok
+    assert any("fetch" in c for c in calls)
+    assert any("--is-ancestor" in c for c in calls)
+    assert any("checkout" in c and "--detach" in c for c in calls)
+    assert not any("--ff-only" in c for c in calls)
+
+
+def test_sync_repo_siege_detache_refuse_commits_locaux(tmp_path, monkeypatch):
+    # HEAD detache hors d'origin/main : des commits locaux seraient abandonnes.
+    fake, calls = _scripted(
+        [("rev-parse", _Res(out="HEAD")), ("--is-ancestor", _Res(rc=1))]
+    )
+    monkeypatch.setattr(imod, "_run", fake)
+    ok, msg = imod.sync_repo(tmp_path)
+    assert not ok and "is-ancestor" in msg
+    assert not any("checkout" in c for c in calls)
+
+
 def test_sync_repo_refuse_depot_modifie(tmp_path, monkeypatch):
     fake, calls = _scripted(
         [("rev-parse", _Res(out="main")), ("status", _Res(out=" M scripts/x.py"))]
