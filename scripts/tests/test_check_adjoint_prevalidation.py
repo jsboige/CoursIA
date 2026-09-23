@@ -5,6 +5,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 HERE = Path(__file__).resolve().parent
 CHECK_PATH = HERE.parent / "check_adjoint_prevalidation.py"
 spec = importlib.util.spec_from_file_location("check_adjoint_prevalidation", CHECK_PATH)
@@ -348,6 +350,86 @@ def test_unresolved_thread_cannot_be_ready():
     snapshot["threads"] = [{"isResolved": False}]
     errors = _errors(snapshot)
     assert "READY requires zero unresolved threads" in errors
+
+
+def test_empty_diff_cannot_be_ready():
+    """A PR changing zero files has nothing to squash -- READY is refuted.
+
+    Positive control, taken from the measured instance: #16975 and #16976 each
+    carried an INTACT dossier declaring `diff-files: 0` with `verdict: READY`,
+    so the gate returned 0 and authorised merging a pull request that delivered
+    nothing. The dossier is self-consistent with the live PR -- every count
+    matches -- which is why no staleness check could catch it.
+    """
+    live = _base_snapshot()
+    live["changedFiles"] = 0
+    live["additions"] = 0
+    live["deletions"] = 0
+    dossier = _body(
+        **{"diff-files": "0", "diff-additions": "0", "diff-deletions": "0"}
+    )
+    live["comments"].append(_comment(dossier))
+    verdict, errors = mod.evaluate(live)
+    assert "READY requires a non-empty diff: 0 files changed" in errors
+    assert verdict == "", errors
+
+
+def test_blocked_dossier_tolerates_an_empty_diff():
+    """An empty diff refutes READY, never BLOCKED.
+
+    Same asymmetry as the draft and unresolved-thread legs: an empty diff is a
+    reason a PR is NOT mergeable, and attesting it is precisely a BLOCKED
+    dossier's job. Refusing it there would deny the coordinator the attested
+    motive it dispatches from.
+    """
+    live = _base_snapshot()
+    live["changedFiles"] = 0
+    live["additions"] = 0
+    live["deletions"] = 0
+    dossier = _body(
+        verdict="BLOCKED", b0="blocked", checks="BLOCKED", scope="fail",
+        domain="fail",
+        **{"diff-files": "0", "diff-additions": "0", "diff-deletions": "0"},
+    )
+    live["comments"].append(_comment(dossier))
+    verdict, errors = mod.evaluate(live)
+    assert verdict == mod.VERDICT_BLOCKED, errors
+
+
+def test_two_line_fix_is_still_ready():
+    """Negative control: the #15740 counter-example must keep passing.
+
+    « une correction de 2 lignes d'un bug critique serait acceptable » -- the
+    new leg measures absence, not smallness. A one-file, two-line diff is as
+    READY as a large one.
+    """
+    live = _base_snapshot()
+    live["changedFiles"] = 1
+    live["additions"] = 1
+    live["deletions"] = 1
+    dossier = _body(
+        **{"diff-files": "1", "diff-additions": "1", "diff-deletions": "1"}
+    )
+    live["comments"].append(_comment(dossier))
+    verdict, errors = mod.evaluate(live)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_absent_diff_stat_never_reads_as_an_empty_diff():
+    """Missing data must not decide (#14849) -- and here it already cannot.
+
+    The new leg tests equality with 0, so `None` does not trip it. But the
+    state is unreachable anyway: `validate_dossier` indexes `changedFiles`
+    directly, and `main` catches `KeyError` among the fail-closed exceptions,
+    reporting UNKNOWN (rc=2). Absent stats therefore become "I could not
+    measure", never "the diff is empty" -- which is the distinction that
+    matters, because rc=2 refuses while a fabricated `empty` would accuse.
+    """
+    live = _base_snapshot()
+    live.pop("changedFiles")
+    live["comments"].append(_comment(_body()))
+    with pytest.raises(KeyError):
+        mod.evaluate(live)
 
 
 def test_comment_after_dossier_invalidates_it():

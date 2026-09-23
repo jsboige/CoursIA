@@ -680,6 +680,20 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
             errors.append("draft pull request cannot be READY")
         if integers.get("threads-unresolved") not in {None, 0}:
             errors.append("READY requires zero unresolved threads")
+        # A pull request that changes zero files has nothing to squash, whatever
+        # its genre, domain or author. This is not a judgement on smallness --
+        # `check_trivial_diff.py` owns that, and deliberately lets a two-line
+        # critical fix through (#15740). It is the absence of a deliverable.
+        # Measured on #16975/#16976 (2026-09-22): both carried an INTACT dossier
+        # declaring `diff-files: 0` and `verdict: READY`, so the gate returned 0
+        # and authorised a merge that would have closed a grain having delivered
+        # nothing (G.3). Only B.0, holding an unrelated morphological reserve,
+        # happened to stop it. A dossier asserting READY over an empty diff is
+        # self-contradictory, which is exactly what "no dossier worth trusting"
+        # means -- hence the existing rc=1 path, not a new one. A BLOCKED dossier
+        # over an empty diff stays intact: it attests, correctly, non-mergeability.
+        if snapshot.get("changedFiles") == 0:
+            errors.append("READY requires a non-empty diff: 0 files changed")
     return errors
 
 
