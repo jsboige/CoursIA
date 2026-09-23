@@ -196,8 +196,14 @@ def test_three_shared_payloads_are_reused_without_changing_derivations(
     cache = PayloadCache(tmp_path, clock=lambda: 100.0)
 
     first_status = {}
+    # `probe=None` : ce test isole la REUTILISATION des trois payloads (l'intention
+    # de `len(calls) == 3`). La verification de fraicheur (#17096) ajoute une
+    # sonde reseau et a ses propres tests ; la laisser active ici melangerait
+    # deux comptes et ferait dire au test autre chose que ce qu'il epingle.
     first = (
-        pig.fetch_pool(cache=cache, cache_mode="auto", cache_status=first_status),
+        pig.fetch_pool(
+            cache=cache, cache_mode="auto", cache_status=first_status, probe=None
+        ),
         pig.fetch_visits(cache=cache, cache_mode="auto", cache_status=first_status),
         series.fetch_series_visits(
             cache=cache, cache_mode="auto", cache_status=first_status
@@ -205,7 +211,9 @@ def test_three_shared_payloads_are_reused_without_changing_derivations(
     )
     second_status = {}
     second = (
-        pig.fetch_pool(cache=cache, cache_mode="auto", cache_status=second_status),
+        pig.fetch_pool(
+            cache=cache, cache_mode="auto", cache_status=second_status, probe=None
+        ),
         pig.fetch_visits(cache=cache, cache_mode="auto", cache_status=second_status),
         series.fetch_series_visits(
             cache=cache, cache_mode="auto", cache_status=second_status
@@ -216,6 +224,8 @@ def test_three_shared_payloads_are_reused_without_changing_derivations(
     assert len(calls) == 3
     assert {entry["status"] for entry in first_status.values()} == {"miss"}
     assert {entry["status"] for entry in second_status.values()} == {"hit"}
+    # Un hit SANS sonde n'est pas une mesure : la suite doit pouvoir le dire.
+    assert second_status["pool"]["verified"] is False
     assert first[1] == ({13920: 1}, None)
     zones, issue_to_family, error = first[2]
     assert error is None
@@ -253,3 +263,265 @@ def test_stale_visits_are_used_but_reported_as_unmeasured(monkeypatch, tmp_path)
     assert counts == {13920: 1}
     assert status["visits"]["status"] == "stale"
     assert "GitHub unavailable" in error
+
+
+# --- #17096 : sonde de fraicheur, hit non verifie, et non-silence --------------
+#
+# Le defaut : `--cache auto` servait une entree TTL-valide en silence, sans jamais
+# la confronter au distant. Un payload gele pouvait donc circuler comme s'il avait
+# ete verifie. Ces tests epinglent les deux moities de la parade -- la sonde qui
+# PROUVE (et rafraichit), et l'aveu explicite quand la preuve manque.
+#
+# Horloge realiste : la sonde compare un timestamp DISTANT (`updatedAt`) a
+# `fetched_at`, ecrit par `PayloadCache.clock`. Les deux doivent donc etre sur la
+# meme echelle -- une horloge a 100.0 (1970) rendrait toute date reelle
+# « posterieure » et ferait conclure a tort que le distant a bouge.
+
+
+class _Raw:
+    """Sortie brute de `gh` (la sonde rend une date nue, pas du JSON)."""
+
+    def __init__(self, text):
+        self.stdout = text
+        self.returncode = 0
+
+
+FETCHED_AT = 1_780_000_000.0  # 2026-06-07, echelle `time.time()`
+
+
+def _iso(epoch):
+    return dt.datetime.fromtimestamp(epoch, dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def test_sonde_sans_mouvement_verifie_le_hit(tmp_path):
+    """La sonde a parle et confirme : le hit est servi ET marque verifie."""
+    calls = []
+    cache = PayloadCache(tmp_path, clock=lambda: FETCHED_AT)
+    cache.get_or_fetch("pool", 60, lambda: [1])
+    result = cache.get_or_fetch(
+        "pool", 60, lambda: calls.append(True) or [2],
+        probe=lambda: FETCHED_AT - 300.0,
+    )
+    assert result.status == "hit"
+    assert result.payload == [1]
+    assert result.verified is True
+    assert result.probe_delta_seconds == -300.0
+    assert calls == [], "un hit verifie ne doit declencher aucun fetch"
+
+
+def test_sonde_qui_prouve_le_mouvement_declenche_un_refresh(tmp_path):
+    """La sonde PROUVE que le distant a bouge apres le snapshot : on rafraichit sans operateur."""
+    cache = PayloadCache(tmp_path, clock=lambda: FETCHED_AT)
+    cache.get_or_fetch("pool", 60, lambda: [1])
+    result = cache.get_or_fetch(
+        "pool", 60, lambda: [2],
+        probe=lambda: FETCHED_AT + 45.0,
+    )
+    assert result.status == "miss"
+    assert result.payload == [2]
+    assert result.verified is True
+    assert result.probe_delta_seconds == 45.0
+
+
+def test_sonde_muette_laisse_le_hit_mais_le_marque_non_verifie(tmp_path):
+    """Sonde qui ne sait pas mesurer : le payload reste utilisable, la confiance non."""
+    cache = PayloadCache(tmp_path, clock=lambda: FETCHED_AT)
+    cache.get_or_fetch("pool", 60, lambda: [1])
+    result = cache.get_or_fetch("pool", 60, lambda: [2], probe=lambda: None)
+    assert result.status == "hit"
+    assert result.payload == [1]
+    assert result.verified is False
+    assert result.probe_delta_seconds is None
+
+
+def test_sonde_qui_leve_ne_casse_pas_le_picker(tmp_path):
+    """Une sonde en echec ne doit jamais faire tomber le tirage de grains."""
+    cache = PayloadCache(tmp_path, clock=lambda: FETCHED_AT)
+    cache.get_or_fetch("pool", 60, lambda: [1])
+
+    def boom():
+        raise OSError("gh absent")
+
+    result = cache.get_or_fetch("pool", 60, lambda: [2], probe=boom)
+    assert result.status == "hit"
+    assert result.verified is False
+
+
+def test_sonde_ignoree_en_mode_off_et_refresh(tmp_path):
+    """`off` fait un fetch neuf, `refresh` force le fetch : aucun des deux ne consulte la sonde."""
+    probed = []
+    cache = PayloadCache(tmp_path, clock=lambda: FETCHED_AT)
+    cache.get_or_fetch("pool", 60, lambda: [1])
+
+    off = cache.get_or_fetch(
+        "pool", 60, lambda: [2], mode="off", probe=lambda: probed.append(1) or FETCHED_AT
+    )
+    forced = cache.get_or_fetch(
+        "pool", 60, lambda: [3], mode="refresh",
+        probe=lambda: probed.append(1) or FETCHED_AT,
+    )
+    assert off.status == "bypass" and off.verified is True
+    assert forced.status == "refresh" and forced.verified is True
+    assert probed == []
+
+
+def test_notice_signale_un_hit_non_verifie_meme_sans_cache_status():
+    """#17096 : le silence est le defaut. Un hit non verifie doit sortir SANS le drapeau."""
+    lines = pig.cache_notice_lines({
+        "pool": {"status": "hit", "verified": False, "age_seconds": 42.0,
+                 "probe_delta_seconds": None, "fetched_at": FETCHED_AT, "error": None},
+    })
+    assert len(lines) == 2
+    assert "CACHE HIT NON RE-VERIFIE" in lines[1]
+    assert "42 s de cache" in lines[1]
+    assert "sonde distante muette" in lines[1]
+    assert "pool=hit" in lines[0] and "age=42s" in lines[0]
+
+
+def test_notice_signale_le_mouvement_mesure_par_la_sonde():
+    lines = pig.cache_notice_lines({
+        "pool": {"status": "hit", "verified": False, "age_seconds": 10.0,
+                 "probe_delta_seconds": 5.0, "fetched_at": FETCHED_AT, "error": None},
+    })
+    assert "sonde a +5 s" in lines[1]
+
+
+def test_notice_muette_quand_tout_est_verifie_et_que_le_drapeau_est_absent():
+    """Le pendant du test precedent : une cache saine ne doit pas bavarder sans --cache-status."""
+    assert pig.cache_notice_lines({
+        "pool": {"status": "hit", "verified": True, "age_seconds": 12.0,
+                 "probe_delta_seconds": -3.0, "fetched_at": FETCHED_AT, "error": None},
+        "visits": {"status": "miss", "verified": True, "age_seconds": 0.0,
+                   "probe_delta_seconds": None, "fetched_at": FETCHED_AT, "error": None},
+    }) == []
+    assert pig.cache_notice_lines({}, show_all=True) == []
+
+
+def test_notice_stale_reste_annonce_et_distingue_du_hit_non_verifie():
+    lines = pig.cache_notice_lines({
+        "pool": {"status": "stale", "verified": False, "age_seconds": 900.0,
+                 "probe_delta_seconds": None, "fetched_at": FETCHED_AT,
+                 "error": "RuntimeError: GitHub unavailable"},
+    })
+    assert any("STALE explicite" in line for line in lines)
+    assert any("GitHub unavailable" in line for line in lines)
+    assert not any("CACHE HIT NON RE-VERIFIE" in line for line in lines)
+
+
+def test_sonde_interroge_le_bon_champ_rest(monkeypatch):
+    """`gh api` rend le REST v3 en SNAKE_CASE ; `gh issue list --json` en camelCase.
+
+    Demander `updatedAt` a `gh api` rend une chaine vide (champ absent) : la sonde
+    devient muette a chaque appel et la verification cesse de fonctionner SANS que
+    rien ne plante -- une degradation silencieuse, exactement ce que #17096
+    corrige. Ce test epingle le nom de champ sur la commande CONSTRUITE (aucun
+    appel reseau) ; il a ete ecrit apres qu'une passe end-to-end l'ait attrape --
+    les fakes, eux, rendaient ce qu'on leur demandait quel que soit le champ.
+    """
+    seen = {}
+
+    def run(command, **kwargs):
+        seen["command"] = command
+        return _Raw(_iso(FETCHED_AT))
+
+    monkeypatch.setattr(pig.subprocess, "run", run)
+    assert pig._newest_remote_issue_update() == FETCHED_AT
+
+    jq = seen["command"][seen["command"].index("--jq") + 1]
+    assert "updated_at" in jq
+    assert "updatedAt" not in jq
+    assert "pull_request == null" in jq, "les PR partagent l'endpoint /issues"
+
+
+def test_sonde_rend_un_timestamp_ou_none(monkeypatch):
+    """Contrat de la sonde : un flottant exploitable, ou None -- jamais une exception."""
+    monkeypatch.setattr(
+        pig.subprocess, "run",
+        lambda command, **kwargs: _Raw("2026-09-21T03:18:17Z"),
+    )
+    value = pig._newest_remote_issue_update()
+    assert value == dt.datetime(
+        2026, 9, 21, 3, 18, 17, tzinfo=dt.timezone.utc
+    ).timestamp()
+
+    monkeypatch.setattr(pig.subprocess, "run", lambda command, **kwargs: _Raw(""))
+    assert pig._newest_remote_issue_update() is None
+
+    monkeypatch.setattr(pig.subprocess, "run", lambda command, **kwargs: _Raw("null"))
+    assert pig._newest_remote_issue_update() is None
+
+    def boom(command, **kwargs):
+        raise OSError("gh absent")
+
+    monkeypatch.setattr(pig.subprocess, "run", boom)
+    assert pig._newest_remote_issue_update() is None
+
+
+def test_pool_gele_depuis_24h_n_est_pas_perime_s_il_n_a_pas_bouge(tmp_path, monkeypatch):
+    """Acceptance #17096 : 5 issues gelees >24 h sans mutation -> candidat servi, etat FACTUEL.
+
+    Une issue gelee n'est pas une issue perimee : la sonde mesure l'absence de
+    mouvement, donc le pool est servi comme courant. Ce qui change par rapport au
+    defaut, c'est que l'etat est desormais etabli au lieu d'etre suppose.
+    """
+    frozen = [
+        {
+            "number": 19100 + index,
+            "title": f"[bug] sujet gele {index}",
+            "labels": [],
+            "body": "",
+            "createdAt": _iso(FETCHED_AT - 40 * 3600),
+            "updatedAt": _iso(FETCHED_AT - 30 * 3600),  # > 24 h sans mutation
+        }
+        for index in range(5)
+    ]
+
+    def run(command, **kwargs):
+        if command[1] == "api":
+            return _Raw(_iso(FETCHED_AT - 30 * 3600))  # rien de plus recent
+        return _Completed(frozen)
+
+    monkeypatch.setattr(pig.subprocess, "run", run)
+    cache = PayloadCache(tmp_path, clock=lambda: FETCHED_AT)
+    status = {}
+    pig.fetch_pool(cache=cache, cache_mode="auto", cache_status=status)
+
+    second = {}
+    pool = pig.fetch_pool(cache=cache, cache_mode="auto", cache_status=second)
+    assert len(pool) == 5, "le pool gele doit rester servi"
+    assert second["pool"]["status"] == "hit"
+    assert second["pool"]["verified"] is True, "la sonde a mesure : le hit est etabli"
+    assert second["pool"]["probe_delta_seconds"] == -30 * 3600
+    assert pig.cache_notice_lines(second) == [], "un hit verifie ne doit pas alerter"
+    assert status["pool"]["status"] == "miss"
+
+
+def test_pool_perime_et_refresh_impossible_sort_un_stale_explicite(tmp_path, monkeypatch):
+    """La sonde prouve le mouvement, le refresh echoue : STALE explicite, jamais un silence."""
+    stale_pool = [{
+        "number": 19200, "title": "[bug] deja pris ailleurs", "labels": [], "body": "",
+        "createdAt": _iso(FETCHED_AT - 3600), "updatedAt": _iso(FETCHED_AT - 3600),
+    }]
+    state = {"fetched": False}
+
+    def run(command, **kwargs):
+        if command[1] == "api":
+            return _Raw(_iso(FETCHED_AT + 60.0))  # le distant a bouge
+        if not state["fetched"]:
+            state["fetched"] = True
+            return _Completed(stale_pool)
+        raise RuntimeError("GitHub unavailable")
+
+    monkeypatch.setattr(pig.subprocess, "run", run)
+    cache = PayloadCache(tmp_path, clock=lambda: FETCHED_AT)
+    pig.fetch_pool(cache=cache, cache_mode="auto", cache_status={})
+
+    status = {}
+    pool = pig.fetch_pool(cache=cache, cache_mode="auto", cache_status=status)
+    assert status["pool"]["status"] == "stale"
+    # `fetch_pool` rend des entrees DERIVEES (age, genre, polarite...), pas le
+    # payload brut : la comparaison porte sur l'identite du candidat, qui est ce
+    # que la lane lit pour decider -- l'ancien payload reste exploitable.
+    assert [item["number"] for item in pool] == [19200]
+    lines = pig.cache_notice_lines(status)
+    assert any("STALE explicite" in line for line in lines)

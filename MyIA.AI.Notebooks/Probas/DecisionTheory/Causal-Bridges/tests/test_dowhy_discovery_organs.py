@@ -312,8 +312,11 @@ def test_notebook_cellule_dgp_byte_identique_module():
 
 
 def test_notebook_cellule_pc_consomme_lorgane():
-    """La cellule PC (index 6) reference ddo.executer_pc."""
-    src = _lire_cellule(NB_PATH, 6)
+    """La cellule PC (index 7) reference ddo.executer_pc.
+
+    Note: index +1 depuis enrichissement markdown pedagogique (cellule 6 = intro markdown).
+    """
+    src = _lire_cellule(NB_PATH, 7)
     assert "ddo.executer_pc" in src
     assert "alpha=0.01" in src, (
         "le notebook motive alpha=0.01 pour PC (v-structure robuste 20/20)"
