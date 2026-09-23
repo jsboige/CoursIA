@@ -37,7 +37,15 @@ SCRIPTS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 from dm_test import dm_verdict
-from bias_metrics import _dm_centered_mse, _mse_decomposition  # noqa: E402
+# `_aggregate_state`/`_is_beats`/`_is_beaten` are re-exported from here:
+# `tests/test_hmm_regime_vol.py` imports them from this module (#14388).
+from bias_metrics import (  # noqa: E402, F401
+    _aggregate_state,
+    _dm_centered_mse,
+    _is_beats,
+    _is_beaten,
+    _mse_decomposition,
+)
 from har_model import HARModel, _make_split_indices
 from intraday_loader import load_binance_eth, load_bitstamp_btc
 from realized_variance import daily_realized_variance, har_lag_features, realized_variance_to_log
@@ -70,89 +78,10 @@ N_HMM_STATES = 2
 RESULTS_DIR = SCRIPTS_DIR / "results"
 
 
-# `_mse_decomposition` and `_dm_centered_mse` are the canonical bias/precision
-# helpers introduced by PR #12742 in `btc_vol.py`. They are duplicated here for
-# the reason `btc_m15.py` states verbatim -- "keep this PR self-contained until
-# a shared module is extracted (TODO post-merge)" -- with one M5-specific
-# reason on top: `btc_vol` imports `dlinear_vol`, which imports `torch` at
-# module level. M5 is HMM + OLS and runs on CPU with no deep-learning stack;
-# importing it for two pure numpy functions would drag torch into a script that
-# does not need it. M5 is now the THIRD duplication site, which is the argument
-# for finally extracting them -- filed separately rather than folded in here.
-def _is_beats(verdict: str) -> bool:
-    """True only for `dm_verdict`'s winning verdict.
-
-    `dm_verdict` emits exactly three strings: "BEATS baseline",
-    "BEATEN BY baseline" and "INCONCLUSIVE". A bare `"BEATS" in verdict`
-    also matches "BEATEN BY baseline" under a substring test on some
-    tokenisations, hence the explicit exclusion kept from the original code.
-    """
-    return "BEATS" in verdict and "BEATEN" not in verdict
-
-
-def _is_beaten(verdict: str) -> bool:
-    """True only for `dm_verdict`'s losing verdict ("BEATEN BY baseline").
-
-    The mirror of `_is_beats`. "BEATEN" appears in exactly one of the three
-    strings `dm_verdict` emits, so no exclusion clause is needed here -- but
-    the guard rails of `_is_beats` still apply the other way round: the two
-    sentinel verdicts this module adds ("SHAPE_MISMATCH", "INSUFFICIENT_DATA")
-    contain neither token and are therefore counted as neither win nor loss.
-    """
-    return "BEATEN" in verdict
-
-
-def _aggregate_state(
-    n_beats: int,
-    n_beaten: int,
-    n_seeds: int,
-    dm_p_median: float,
-    *,
-    n_beats_parent: int | None = None,
-) -> str:
-    """Single state machine shared by the raw and the de-biased (precision) legs.
-
-    Before #14388 the runner carried two aggregation conventions: a raw leg
-    with two states ("BEATS" iff 4/4 seeds BEATS, else "INCONCLUSIVE") and a
-    de-biased leg with four states (BEATS / NO BEATS / refuted-de-biased /
-    INCONCLUSIVE). Two consumers reading the same artefact closed the gap
-    manually with different rules; the two configs the doc publishes as
-    "NO BEATS on the raw leg" were silently persisted as INCONCLUSIVE, and
-    the executable could not reproduce its own published verdict.
-
-    The unified machine is the four-state precedence, decided once here and
-    sealed by tests (the raw leg simply never triggers the refuted branch,
-    since there is no parent leg above it).
-
-    1. unanimous BEATS + significant median  -> "BEATS"
-    2. unanimous BEATEN + significant median -> "NO BEATS"
-    3. the parent leg was unanimous BEATS   -> "refuted-de-biased"
-    4. otherwise                             -> "INCONCLUSIVE"
-
-    `NO BEATS` deliberately outranks `refuted-de-biased` when both apply (a raw
-    win that the precision leg significantly reverses). "Refuted" states that a
-    claim was not confirmed; the measurement in that case says more than that --
-    it says the model loses. Reporting the weaker of the two would soften a
-    measured loss, and the refutation stays legible anyway because every summary
-    row prints the raw and the de-biased verdict side by side.
-
-    The significance clause is redundant under unanimity (each per-seed BEATS /
-    BEATEN already carries p < alpha, so the median of them does too) and is
-    kept explicit only because the pre-existing BEATS branch stated it: an
-    asymmetric pair of conditions would read as a deliberate difference.
-
-    `n_seeds == 0` yields "INCONCLUSIVE" rather than a vacuous unanimity.
-    `n_beats_parent is None` disables the refuted branch (raw-leg callsite).
-    """
-    if n_seeds <= 0:
-        return "INCONCLUSIVE"
-    if n_beats == n_seeds and dm_p_median < 0.05:
-        return "BEATS"
-    if n_beaten == n_seeds and dm_p_median < 0.05:
-        return "NO BEATS"
-    if n_beats_parent is not None and n_beats_parent == n_seeds:
-        return "refuted-de-biased"
-    return "INCONCLUSIVE"
+# The bias/precision helpers (_mse_decomposition, _dm_centered_mse) and the
+# four-state aggregate machine (_aggregate_state, #14388) live in
+# bias_metrics.py since dlinear_vol.py became the third consumer; they are
+# imported (and re-exported for the tests) at the top of this module.
 
 
 def fit_hmm_regimes(log_rv_train: np.ndarray, seed: int) -> "GaussianHMM":
