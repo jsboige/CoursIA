@@ -557,3 +557,69 @@ def test_skip_frozen_branch_before_gate(tmp_path):
     assert rc == 0
     assert lines[-1]["reason"] == "frozen:#13410(veto #17040,branch wt/vibe-*)"
     assert not any("check_adjoint_prevalidation.py" in flat for flat in runner.flat())
+
+
+# --- retenues du coordinateur (hold.txt) ----------------------------------------
+
+
+def test_hold_skips_before_any_pr_call(tmp_path):
+    # La retenue est lue a cote du journal ; la PR retenue n'est ni vue, ni
+    # passee au gate, ni mergee -- la PR suivante suit le chemin nominal.
+    (tmp_path / "hold.txt").write_text(
+        "# retenues ai-01\n\n16808  # rebase sur #17521 d'abord\n", encoding="utf-8"
+    )
+    runner = ScriptedRunner(prs=(16808, 124))
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    by_pr = {row["pr"]: row for row in lines}
+    assert by_pr[16808]["verdict"] == "skipped"
+    assert by_pr[16808]["reason"] == "hold:rebase sur #17521 d'abord"
+    assert not any(flat.startswith("gh pr view 16808") for flat in runner.flat())
+    assert not any("merge 16808" in flat for flat in runner.flat())
+    assert by_pr[124]["verdict"] == "merged"
+
+
+def test_hold_without_reason_names_the_file(tmp_path):
+    (tmp_path / "hold.txt").write_text("123\n", encoding="utf-8")
+    runner = ScriptedRunner()
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["reason"] == "hold:hold.txt"
+
+
+def test_hold_file_absent_means_no_hold(tmp_path):
+    runner = ScriptedRunner()
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "merged"
+
+
+def test_hold_hash_number_is_malformed_not_a_comment(tmp_path):
+    # `#17530` lu comme un commentaire ferait tomber la retenue en silence :
+    # l'organe refuse de demarrer plutot que de merger sans savoir.
+    (tmp_path / "hold.txt").write_text("#123 attente decision\n", encoding="utf-8")
+    runner = ScriptedRunner()
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 2
+    assert lines == []
+    assert not any(" merge " in f" {flat} " for flat in runner.flat())
+
+
+def test_hold_malformed_line_refuses_to_start(tmp_path):
+    (tmp_path / "hold.txt").write_text("PR 123\n", encoding="utf-8")
+    runner = ScriptedRunner()
+    rc, _, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 2
+    assert runner.calls == []
+
+
+def test_hold_file_override(tmp_path):
+    other = tmp_path / "ailleurs" / "retenues.txt"
+    other.parent.mkdir()
+    other.write_text("123 ordre de stack\n", encoding="utf-8")
+    runner = ScriptedRunner()
+    rc, lines, _ = run_organ(
+        tmp_path, runner, extra=("--apply", "--hold-file", str(other))
+    )
+    assert rc == 0
+    assert lines[-1]["reason"] == "hold:ordre de stack"
