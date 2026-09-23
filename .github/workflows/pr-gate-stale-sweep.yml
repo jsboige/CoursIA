@@ -357,8 +357,19 @@ jobs:
 
           : > /tmp/runs.jsonl
           : > /tmp/mute.txt
+          # #17566 -- compter LISTED/INSPECTED/OMITTED pour ne plus rendre un
+          # vert a vide quand l'appel REST de la boucle tombe sous rate-limit.
+          # Meme famille d'annotation que la garde du listing ci-dessus
+          # (#17243) : `::error::[stale-sweep] NO-OP -- ...` est triable par
+          # `scripts/ci/classify_job_deaths.py`. Avant ce garde, un balayage
+          # dont tous les appels par PR echouaient rendait `success` avec
+          # `runs.jsonl` vide (run 35866395602 du 2026-09-23T13:20:35Z, etc.).
+          LISTED=0
+          INSPECTED=0
+          OMITTED=0
           while read -r NUM SHA FORK; do
             [ -z "${NUM:-}" ] && continue
+            LISTED=$((LISTED+1))
             # details_url (.../actions/runs/{run_id}/job/{job_id}) is collected
             # on purpose: it is the only field carrying the run id, which the
             # selector resolves through the map below to fold check-runs per
@@ -368,8 +379,16 @@ jobs:
             # `title` (#15825): the collected output.title, "" when the
             # check-run concluded without one -- the mute-leg signal the
             # selector routes to the repair stream instead of a re-run.
-            BODY=$(gh api "repos/$REPO/commits/$SHA/check-runs?per_page=100" \
-                     --jq '[.check_runs[] | {name, status, conclusion, started_at, details_url, title: (.output.title // "")}]' 2>/dev/null) || continue
+            # #17566 -- ne PAS `continue` en silence sur echec de l'appel : la
+            # PR est omise, on incremente OMITTED, et la garde NO-OP plus bas
+            # transformera une omission totale en `failure`. Le balayage reste
+            # utile pour les PRs que l'appel a reussies a inspecter.
+            if ! BODY=$(gh api "repos/$REPO/commits/$SHA/check-runs?per_page=100" \
+                     --jq '[.check_runs[] | {name, status, conclusion, started_at, details_url, title: (.output.title // "")}]' 2>/dev/null); then
+              OMITTED=$((OMITTED+1))
+              continue
+            fi
+            INSPECTED=$((INSPECTED+1))
             # Carte run_id -> workflow_id. UN seul appel de plus par PR (pas par
             # run) : la liste des runs du SHA porte deja `workflow_id`. C'est ce
             # qui permet de replier les runs JUMEAUX d'un MEME workflow sans
@@ -398,7 +417,29 @@ jobs:
             if [ -z "${WFMAP:-}" ]; then WFMAP='{}'; fi
             printf '{"number":%s,"sha":"%s","fork":%s,"checks":%s,"workflows":%s}\n' "$NUM" "$SHA" "${FORK:-false}" "$BODY" "$WFMAP" >> /tmp/runs.jsonl
           done < /tmp/openprs.txt
-          echo "[stale-sweep] open PRs inspected: $(wc -l < /tmp/runs.jsonl | tr -d ' ')"
+          echo "[stale-sweep] open PRs listed=$LISTED inspected=$INSPECTED omitted=$OMITTED"
+          # #17566 -- garde NO-OP : si on a LISTED > 0 PRs et que TOUTES les
+          # inspections REST ont echoue, le run ne peut pas conclure success --
+          # sinon le `pr-gate-sweep-health-advisory` voit un run vert a vide et
+          # reste silencieux. Meme contrat de classification que la garde du
+          # listing : `scripts/ci/classify_job_deaths.py` regroupe ces
+          # annotations sous la meme famille de defaut.
+          if [ "$LISTED" -gt 0 ] && [ "$INSPECTED" -eq 0 ]; then
+            echo "::error::[stale-sweep] NO-OP -- check-runs unreadable for all $LISTED listed PRs (rate-limit or upstream failure?); NOTHING was swept this run (no repair pass, no rescue)"
+            exit 1
+          fi
+          # #17566 -- garde omission partielle : au-dela de 10 % de PRs listees
+          # omises, on averti. La sonde advisory verifie la FRAICHEUR, pas
+          # l'integrite du balayage ; un blanc partiel degrade silencieusement
+          # la selection sans que le vert s'eteigne. Le seuil 10 % est
+          # conservateur -- le balayage mesure omettait 0 a 5 PRs sur 150+
+          # en regime nominal, donc 10 % indique deja un signal.
+          if [ "$LISTED" -gt 0 ]; then
+            PCT=$(( OMITTED * 100 / LISTED ))
+            if [ "$PCT" -gt 10 ]; then
+              echo "::warning::[stale-sweep] PARTIAL -- $OMITTED/$LISTED PRs omitted (${PCT}% > 10%); inspect the loop, this is not the green path"
+            fi
+          fi
 
           # Resolution id -> NOM de workflow : UN appel pour tout le sweep, pas
           # un par PR. `is_advisory` porte DEUX signaux (rule 6 de pr_gate.py) :
