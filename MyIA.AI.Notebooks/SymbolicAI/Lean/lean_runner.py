@@ -53,6 +53,7 @@ import os
 import shutil
 import json
 import platform
+import uuid
 from pathlib import Path
 from dataclasses import dataclass
 from typing import Optional, List, Literal
@@ -88,11 +89,11 @@ class LeanRunner:
     - auto: Automatically select best available backend
     """
 
-    # Default WSL lake project providing the Init prelude (OfNat, Nat literals,
-    # core tactics). Without a project cwd, the standalone `repl` invocation
-    # cannot resolve OfNat for numeric literals (`0`, `1`, ...) and every
-    # theorem touching a literal fails with "Unknown constant `OfNat`" followed
-    # by a parser cascade ("unexpected token '+' / '*'").
+    # Default WSL lake project used as the cwd for the `lean --json` invocation.
+    # The user code is wrapped with `import Init.Prelude` and written to a
+    # temp file inside this project so the standalone Lean compiler can
+    # resolve OfNat, Nat, True, rfl, trivial, etc. (the `repl` binary does
+    # NOT load Init.Prelude automatically — see issue #17612).
     # See: ~/lean-projects/notebook_context (lakefile.lean + lean-toolchain).
     DEFAULT_WSL_PROJECT_DIR = "~/lean-projects/notebook_context"
 
@@ -110,9 +111,11 @@ class LeanRunner:
             lean_path: Path to lean executable. If None, auto-detected.
             timeout: Timeout in seconds for Lean execution.
             backend: Backend to use ('subprocess', 'wsl', 'leandojo', 'auto')
-            wsl_project_dir: WSL path to the lake project providing the Init
-                prelude context for the `repl` (default: notebook_context).
-                Required for numeric literals to resolve through OfNat.
+            wsl_project_dir: WSL path to the lake project used as cwd for the
+                `lean --json` invocation (default: notebook_context). The user
+                code is wrapped with `import Init.Prelude` before being
+                compiled, so numeric literals resolve through OfNat without
+                requiring the caller to add the import.
         """
         self.timeout = timeout
         self._temp_dir = None
@@ -145,13 +148,19 @@ class LeanRunner:
         return Backend.SUBPROCESS
 
     def _check_wsl_available(self) -> bool:
-        """Check if WSL with lean4_jupyter is available."""
+        """Check if WSL with the standalone Lean compiler is available.
+
+        The WSL backend invokes `lean --json` against a lake project — it
+        no longer uses the `repl` binary (see issue #17612), so a working
+        `lean` install is sufficient. Requiring `which repl` here would
+        spuriously report a perfectly capable WSL as unavailable after
+        the user's `.elan/bin/repl` happens to be absent (e.g. elan did
+        not install the legacy REPL wrapper, or it was pruned).
+        """
         try:
             result = subprocess.run(
                 ["wsl", "-d", "Ubuntu", "--", "bash", "-c",
-                 "source ~/.lean4-venv/bin/activate 2>/dev/null && "
-                 "source ~/.elan/env 2>/dev/null && "
-                 "which lean && which repl"],
+                 "source ~/.elan/env 2>/dev/null && which lean"],
                 capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10
             )
             return result.returncode == 0
@@ -456,63 +465,136 @@ class LeanRunner:
             )
 
     def _run_wsl(self, code: str) -> LeanResult:
-        """Execute Lean code via WSL lean4_jupyter REPL.
+        """Execute Lean code via WSL `lean --json` against a lake project.
 
-        The REPL is invoked from inside the lake project directory
+        The previous implementation piped user code into `repl` (Lean 4
+        REPL). The REPL does NOT load `Init.Prelude` automatically, so
+        every Nat literal failed with "Unknown identifier `OfNat`" / "Unknown
+        identifier `Nat`" followed by a parser cascade ("unexpected token
+        '+' / '*'"), and even a simple `theorem t : True := trivial` did
+        not resolve. Issue #17612 documented this firsthand.
+
+        Fix: write the user code to a temp file inside the lake project
         (`self.wsl_project_dir`, default `~/lean-projects/notebook_context`)
-        so the Init prelude is loaded and numeric literals resolve through
-        `OfNat`. Running `repl` from the WSL home folder leaves the
-        environment without `OfNat` instances and every theorem touching a
-        Nat literal fails with "Unknown constant `OfNat`".
+        with `import Init.Prelude` prepended, and invoke the standalone
+        Lean compiler in `--json` mode. This loads the prelude correctly
+        and emits structured JSON messages (severity=error/warning/info)
+        that we parse to build the LeanResult. The temp file is removed
+        after execution.
         """
-        # Build JSON command for REPL. Escape single quotes so the shell
-        # heredoc-via-echo remains parseable when the LLM-generated code
-        # contains apostrophes.
-        json_cmd = json.dumps({"cmd": code}).replace("'", "'\\''")
+        # Convert Windows path to WSL path (e.g. C:\Users\foo -> /mnt/c/Users/foo).
+        wsl_tmpdir = subprocess.run(
+            ["wsl", "-d", "Ubuntu", "--", "bash", "-c", "echo ${TMPDIR:-/tmp}"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10
+        ).stdout.strip() or "/tmp"
+        # Use a stable filename inside WSL /tmp to avoid Windows/WSL path quoting.
+        wsl_lean_file = f"{wsl_tmpdir}/lean_runner_wsl_{os.getpid()}.lean"
+        wsl_lean_path_for_cmd = wsl_lean_file  # already in WSL form
+
+        # Wrap the user code with `import Init.Prelude` so OfNat, Nat,
+        # True, rfl, trivial, etc. resolve. Strip any user-provided
+        # `import Init.Prelude` line to avoid duplication.
+        user_lines = [
+            ln for ln in code.splitlines()
+            if ln.strip() not in ("import Init.Prelude", "import Init")
+        ]
+        wrapped_code = "import Init.Prelude\n\n" + "\n".join(user_lines)
+
+        # Write the wrapped code into WSL via stdin heredoc to avoid
+        # Windows/WSL quoting. The file is in WSL's own /tmp, so we
+        # can write it directly with `cat > file <<'EOM' ... EOM`.
+        # Use a per-invocation random delimiter so that a user-supplied
+        # line that happens to match the marker cannot terminate the
+        # heredoc prematurely and have the rest of the code executed
+        # as raw bash in the WSL environment (NanoClaw review #17621
+        # finding #1, structural). 32 bits of randomness make an
+        # accidental collision with a verbatim line in user code
+        # astronomically unlikely; we still refuse if it ever matches
+        # (defence in depth).
+        eom = f"LEANRUNNER_EOM_{uuid.uuid4().hex[:8]}"
+        if eom in wrapped_code:
+            return LeanResult(
+                success=False, output="",
+                errors=(
+                    f"Heredoc delimiter collision: user-supplied code contains "
+                    f"the marker {eom!r}. Retry with different code (the marker "
+                    f"is randomised per invocation)."
+                ),
+                code=code, exit_code=-1, backend="wsl",
+            )
+        heredoc = (
+            f"cd {self.wsl_project_dir} && source ~/.elan/env && "
+            f"cat > {wsl_lean_path_for_cmd} <<'{eom}'\n"
+            f"{wrapped_code}\n"
+            f"{eom}\n"
+            f"lean --json {wsl_lean_path_for_cmd}"
+        )
 
         try:
             result = subprocess.run(
-                ["wsl", "-d", "Ubuntu", "--", "bash", "-c",
-                 f"cd {self.wsl_project_dir} && source ~/.elan/env "
-                 f"&& echo '{json_cmd}' | repl"],
-                capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=self.timeout
+                ["wsl", "-d", "Ubuntu", "--", "bash", "-c", heredoc],
+                capture_output=True, text=True, encoding="utf-8", errors="replace",
+                timeout=self.timeout
             )
 
-            if result.returncode == 0 and result.stdout.strip():
-                try:
-                    output_json = json.loads(result.stdout.strip())
-                    messages = output_json.get("messages", [])
-                    outputs = []
-                    errors = []
-
-                    for msg in messages:
+            # `lean --json` emits one JSON object per line on stdout.
+            # Non-JSON lines (e.g., a stderr line that bled through) are
+            # preserved as informational output rather than silently
+            # dropped — they often carry diagnostic context that helps
+            # the caller debug a misbehaving lean invocation.
+            outputs = []
+            errors = []
+            saw_error = False
+            saw_warning = False
+            if result.stdout.strip():
+                for line in result.stdout.splitlines():
+                    stripped = line.strip()
+                    if not stripped:
+                        continue
+                    if stripped.startswith("{"):
+                        try:
+                            msg = json.loads(stripped)
+                        except json.JSONDecodeError:
+                            # Looks like JSON but isn't — preserve verbatim.
+                            outputs.append(stripped)
+                            continue
                         severity = msg.get("severity", "info")
                         data = msg.get("data", "")
                         if severity == "error":
                             errors.append(data)
+                            saw_error = True
+                        elif severity == "warning":
+                            # `declaration uses 'sorry'` is treated as a
+                            # failure for the proof verifier: a sorry is
+                            # not a real proof.
+                            if "sorry" in data.lower() or msg.get("kind") == "hasSorry":
+                                errors.append(data)
+                                saw_error = True
+                            else:
+                                saw_warning = True
+                                outputs.append(data)
                         else:
                             outputs.append(data)
+                    else:
+                        # Plain text line (not JSON) — preserve as output.
+                        outputs.append(stripped)
 
-                    return LeanResult(
-                        success=len(errors) == 0,
-                        output="\n".join(outputs),
-                        errors="\n".join(errors),
-                        code=code,
-                        exit_code=0 if len(errors) == 0 else 1,
-                        backend="wsl"
-                    )
-                except json.JSONDecodeError:
-                    return LeanResult(
-                        success=False, output=result.stdout,
-                        errors="Failed to parse REPL output",
-                        code=code, exit_code=1, backend="wsl"
-                    )
-            else:
-                return LeanResult(
-                    success=False, output="",
-                    errors=result.stderr or "Unknown error",
-                    code=code, exit_code=result.returncode, backend="wsl"
-                )
+            # Cleanup the temp file in WSL. Best-effort: ignore errors
+            # (the file may already be gone on a failed heredoc).
+            subprocess.run(
+                ["wsl", "-d", "Ubuntu", "--", "bash", "-c", f"rm -f {wsl_lean_path_for_cmd}"],
+                capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=5
+            )
+
+            success = not saw_error
+            return LeanResult(
+                success=success,
+                output="\n".join(outputs).strip(),
+                errors="\n".join(errors).strip(),
+                code=code,
+                exit_code=0 if success else 1,
+                backend="wsl"
+            )
 
         except subprocess.TimeoutExpired:
             return LeanResult(
