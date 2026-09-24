@@ -29,9 +29,10 @@ port ni adaptation locale. La fermeture propositionnelle historique reste légè
 le module `FormalLogic.GLBridge`, puis le lake complet avec sa fermeture
 arithmétique, ont compilé respectivement 1356 et 1361 jobs. Mesure du 2026-09-23,
 après l'ajout de `ModalBridge` et de `FairBotLoeb` : le lake complet compile
-1403 jobs, et `FormalLogic.FairBotLoeb` seul 1225. Avec `ModalZoo`, le lake
-complet passe à 1430 jobs ; `FormalLogic.ModalZoo` seul en compile 1023, sans la
-fermeture arithmétique.
+1403 jobs, et `FormalLogic.FairBotLoeb` seul 1225. Sur le commit de cette tranche,
+`FormalLogic.ModalZoo` seul compile 1023 jobs, sans la fermeture arithmétique.
+La cible par défaut du lake, qui l'importe via `FormalLogic.lean`, compile
+1430 jobs (mesure du 2026-09-24 après reprise incrémentale).
 
 L'import arithmétique reste cantonné à deux modules. `GLBridge` en a besoin pour
 le théorème de correction arithmétique ; `FairBotLoeb` importe directement
@@ -98,8 +99,9 @@ Lean 4.33.1 : six erreurs (`unsolved goals`, quatre `split` en échec, un pas de
   systèmes normaux qu'un cours rencontre d'abord : `K`, `KD`, `KT`, `KTB`, `K4`,
   `S4`, `KD45`, `S5`. Pour chacun, le module établit **exactement** lesquels des
   schémas `D`, `T`, `B`, `4`, `5` il prouve. Les 18 cases positives sont des
-  dérivations de Hilbert ; les 22 cases négatives se ramènent à huit contre-modèles
-  de Kripke finis (au plus trois mondes), via la correction de Kripke de
+  dérivations de Hilbert ; les 22 cases négatives se ramènent à huit réfutations
+  sur quatre cadres de Kripke finis (six couples cadre–valuation distincts, au plus
+  trois mondes), via la correction de Kripke de
   `ModalLogic` et cinq correspondances cadre ↦ schéma prouvées dans le module.
   Il en déduit `weakerThan_iff_profile` : `L₁ ⪯ L₂` équivaut à l'inclusion des
   profils. Le diagramme de Hasse (11 arêtes de couverture) et les 7 paires

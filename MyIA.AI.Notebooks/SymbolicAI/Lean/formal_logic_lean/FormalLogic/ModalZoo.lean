@@ -17,7 +17,8 @@ deux sens ont une nature différente :
   grand prouve ;
 - le sens « plus faible ⇒ profil inclus » exige de savoir qu'un schéma n'est **pas**
   prouvable. Chacune des 22 cases négatives du tableau des profils se ramène à
-  l'un de huit contre-modèles de Kripke finis (au plus trois mondes). La
+  l'une de huit réfutations sur quatre cadres de Kripke finis (six couples
+  cadre–valuation distincts, au plus trois mondes). La
   correction de Kripke vient de `ModalLogic` ; les cinq correspondances qu'elle
   demande (sérialité ↦ `D`, réflexivité ↦ `T`, symétrie ↦ `B`, transitivité ↦ `4`,
   euclidianité ↦ `5`) sont prouvées ici.
@@ -269,9 +270,9 @@ theorem unprovable_of_countermodel {s : Sys} {φ : Formula ℕ} (F : Kripke.Fram
 
 end Correspondence
 
-/-! ## Huit contre-modèles : ce que chaque système ne prouve pas
+/-! ## Huit réfutations : ce que chaque système ne prouve pas
 
-Quatre cadres finis suffisent, chacun avec une ou deux valuations :
+Quatre cadres finis et six couples cadre–valuation suffisent aux huit réfutations :
 
 | cadre | mondes | relation | propriétés | ce qu'il réfute |
 |---|---|---|---|---|
