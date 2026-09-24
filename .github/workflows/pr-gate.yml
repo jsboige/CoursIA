@@ -241,8 +241,9 @@ jobs:
       # aussi les fichiers de la racine, ce qui suffit au reste du job.
       #
       # Perimetre requis, mesure : pr_gate.py n importe que la stdlib plus
-      # yaml en import paresseux, et son seul chemin est
-      # DEFAULT_WORKFLOWS_DIR = <repo>/.github/workflows, que
+      # yaml en import paresseux et scripts/gh_identity.py (#17418 Phase A,
+      # epinglage du jeton machine — in-come par le cone), et son seul
+      # chemin est DEFAULT_WORKFLOWS_DIR = <repo>/.github/workflows, que
       # derive_always_on_jobs et derive_advisory_jobs globent (canari regle 8).
       - uses: actions/checkout@v4
         with:

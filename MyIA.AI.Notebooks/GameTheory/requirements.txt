@@ -23,6 +23,9 @@ tqdm>=4.65.0
 # Data handling
 pandas>=2.0.0
 
+# Causal inference (GameTheory-04f, lésion de Fisher par modèle causal graphique)
+dowhy>=0.12
+
 # Symbolic computation (for Shapley value calculations)
 sympy>=1.12
 

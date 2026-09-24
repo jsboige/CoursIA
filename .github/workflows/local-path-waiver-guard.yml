@@ -23,8 +23,15 @@ permissions:
   issues: read
   pull-requests: read
 
+# The group is keyed by EVENT as well as by PR. An `issue_comment` run always
+# executes against the default branch, so its check-run attaches to `main`,
+# never to the PR head. Sharing one group with the `pull_request` run let every
+# comment cancel the PR-head run still waiting in the queue, leaving the head
+# with a `cancelled` check that `PR gate` reads as "never concluded" -> FAIL:
+# an advisory guard turned into a kill-switch (measured 2026-09-22 on 25 open
+# PRs, 22 gates citing it). Each event now only supersedes its own kind.
 concurrency:
-  group: local-path-waiver-${{ github.event.issue.number || github.event.pull_request.number || github.event.inputs.pr_number }}
+  group: local-path-waiver-${{ github.event_name }}-${{ github.event.issue.number || github.event.pull_request.number || github.event.inputs.pr_number }}
   cancel-in-progress: true
 
 jobs:
