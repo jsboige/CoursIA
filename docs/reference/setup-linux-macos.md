@@ -11,8 +11,14 @@ Pour les commandes spécifiques aux machines du cluster (paths `C:\Users\MYIA\..
 Le SDK .NET et `dotnet-interactive` sont cross-OS : les notebooks `.net-csharp` s'exécutent à l'identique.
 
 ```bash
-# Linux (Ubuntu/Debian) : dépôt Microsoft
-sudo apt update && sudo apt install -y dotnet-sdk-9.0
+# Linux : script officiel Microsoft (installation dans ~/.dotnet, sans sudo).
+# Les dépôts d'Ubuntu 24.04 LTS ne fournissent que dotnet-sdk-8.0 :
+# `sudo apt install dotnet-sdk-9.0` y échoue (« Couldn't find any package »).
+curl -sSL https://dot.net/v1/dotnet-install.sh -o dotnet-install.sh
+bash dotnet-install.sh --channel 9.0
+bash dotnet-install.sh --channel 10.0   # requis par `dotnet restore MyIA.CoursIA.sln` (projets net10.0)
+export DOTNET_ROOT="$HOME/.dotnet"
+export PATH="$DOTNET_ROOT:$DOTNET_ROOT/tools:$PATH"   # à reporter dans ~/.bashrc
 # macOS : Homebrew Cask
 brew install --cask dotnet-sdk
 
