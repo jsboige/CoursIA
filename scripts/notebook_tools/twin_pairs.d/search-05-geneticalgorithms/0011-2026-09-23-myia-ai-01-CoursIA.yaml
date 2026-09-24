@@ -1,0 +1,7 @@
+date: '2026-09-23'
+by: myia-ai-01:CoursIA
+reason: 'Restauration lecture unique (#17040, PR #17463 commit 65be7312ae) : Search-05 Python recoit 1 cellule markdown de lecture (h48b9adf062 apres trap3b-code), nombres verifies dans la sortie courante. Audit firsthand : cellules code, outputs, execution_count et metadata identiques a HEAD~1. Jumeau C# Search-05-Csharp non touche (csharp_sha inchange).'
+python_sha: 1b32ce125f169b1003cacf993eb6ed802474938c
+csharp_sha: a532f96ef99d13b3d1d3bd6467cf405cbab363a1
+content_python_sha: 188ffff9b862ea8b3a73b35a381b3128985dd53ef3e290852b286c7d1518facb
+content_csharp_sha: 2f5f5e1926d4f3d8fc4d5fff365e61d12f6e25f5550eec45f198663fe0f07b42

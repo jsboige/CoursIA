@@ -352,6 +352,56 @@ def arcPartition (d : KnotDiagram) : List (List Nat) :=
   let pairs := d.crossings.map (fun c => (c.e2, c.e4))
   pairs.foldl (fun P p => mergePair P p.1 p.2) singles
 
+/-- La fusion de classes est symétrique : fusionner selon `(x, y)` ou `(y, x)`
+    produit la même partition. Première brique de l'invariance R3
+    (issue #16650) : la chirurgie réécrit les paires de passage-dessus du
+    triangle avec des orientations qui diffèrent d'un diagramme à l'autre,
+    et l'argument de réindexation exige que l'orientation d'une paire ne
+    change pas la partition obtenue. -/
+theorem mergePair_symm (P : List (List Nat)) (x y : Nat) :
+    mergePair P x y = mergePair P y x := by
+  simp [mergePair, Bool.and_comm, Bool.or_comm]
+
+/-- La découpe en `take`/cons/`drop` restitue la liste : lecture « liste
+    pure » du voisinage de l'indice `i`, prouvée par induction sur la liste. -/
+theorem take_cons_drop_eq {α : Type _} (l : List α) (i : Nat)
+    (hi : i < l.length) :
+    l.take i ++ [l.get ⟨i, hi⟩] ++ l.drop (i + 1) = l := by
+  induction l generalizing i with
+  | nil => exact absurd hi (Nat.not_lt_zero i)
+  | cons a as ih =>
+    rcases i with _ | n
+    · have hget0 : (a :: as).get ⟨0, hi⟩ = a := rfl
+      rw [hget0, List.take_zero, List.nil_append]
+      simp [List.drop_succ_cons]
+    · have hn : n < as.length := by simpa using hi
+      have hget : (a :: as).get ⟨n + 1, hi⟩ = as.get ⟨n, hn⟩ := rfl
+      rw [List.take_succ_cons, List.drop_succ_cons, hget, List.cons_append]
+      exact congrArg (fun t => a :: t) (ih n hn)
+
+/-- Le repli `arcPartition` est insensible à l'orientation d'une paire
+    isolée : renverser la paire en position `i` ne change pas la partition
+    produite. C'est la traduction au niveau du repli de `mergePair_symm` —
+    la chirurgie R3 connexe réécrit les paires du triangle avec des
+    orientations qui diffèrent d'un diagramme à l'autre, et ce lemme absorbe
+    ces différences (issue #16650, deuxième brique). -/
+theorem foldl_mergePair_swap (pairs : List (Nat × Nat)) (i : Nat)
+    (hi : i < pairs.length) (P₀ : List (List Nat)) :
+    (pairs.take i ++ [(pairs.get ⟨i, hi⟩).swap] ++ pairs.drop (i + 1)).foldl
+        (fun P p => mergePair P p.1 p.2) P₀
+      = pairs.foldl (fun P p => mergePair P p.1 p.2) P₀ := by
+  have hmid : ∀ (m : Nat × Nat),
+      (pairs.take i ++ [m] ++ pairs.drop (i + 1)).foldl
+          (fun P p => mergePair P p.1 p.2) P₀
+        = (pairs.take i ++ [m.swap] ++ pairs.drop (i + 1)).foldl
+            (fun P p => mergePair P p.1 p.2) P₀ := by
+    intro m
+    obtain ⟨a, b⟩ := m
+    simp only [List.foldl_append, List.foldl_cons, List.foldl_nil,
+      Prod.swap_prod_mk]
+    rw [mergePair_symm]
+  rw [← hmid, take_cons_drop_eq pairs i hi]
+
 /-! #### Le fait de Fox : la paire de dessus partage une classe d'arcs
 
 La docstring d'`alexanderEntry` avance que « chaque ligne somme à zéro ».

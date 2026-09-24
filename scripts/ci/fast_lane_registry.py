@@ -1254,6 +1254,38 @@ TRANCHE11: list[Guard] = [
     ),
 ]
 
+# ---------------------------------------------------------------------------
+# TRANCHE 13 -- reading-anchor advisory (#16695).
+#
+# Garde NATIF absorbant le workflow d'origine (needs_base=True, delta vs base,
+# self-test pre-control #11685). Advisory non bloquant a zero FP mesure.
+# ---------------------------------------------------------------------------
+TRANCHE13: list[Guard] = [
+    Guard(
+        name="Reading-anchor advisory (lecture sans output, #16695)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**.ipynb",
+            "scripts/notebook_tools/check_reading_anchor.py",
+            "scripts/notebook_tools/tests/test_check_reading_anchor.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        pre_argv=[
+            "python", "scripts/notebook_tools/check_reading_anchor.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_reading_anchor.py",
+            "--base", "{base_ref}",
+            "--head", "HEAD",
+            "--fail", "--json",
+        ],
+        blocking=False,
+        needs_base=True,
+        absorbed=True,
+    ),
+]
 
 # ---------------------------------------------------------------------------
 # TRANCHE 12 -- link-label agreement advisory (#16645).
@@ -1327,14 +1359,31 @@ TRANCHE12: list[Guard] = [
 # #14325, TRANCHE7).
 # ---------------------------------------------------------------------------
 #
-# Renomme TRANCHE12 -> TRANCHE13 au merge de #17031 : la PR soeur #16645
-# (link-label agreement) a pris TRANCHE12 sur main entre-temps. Meme classe de
-# collision que le renommage TRANCHE9 -> TRANCHE10 plus haut -- le POSTERIEUR
-# cede l'index, jamais l'inverse (deux affectations du meme nom se
+# Renomme TRANCHE12 -> TRANCHE14 au merge de #17031 : la PR soeur #16645
+# (link-label agreement) a pris TRANCHE12 sur main entre-temps, et TRANCHE13
+# etait deja pris par reading-anchor (#16695) -- la premiere version de ce
+# renommage reutilisait TRANCHE13 et le second binding ecrasait le premier :
+# reading-anchor disparaissait du registre et Scripts Tests rougissait sur
+# toute PR (test_tranche13_reading_anchor_advisory_guard_is_wired). Meme
+# classe de collision que le renommage TRANCHE9 -> TRANCHE10 plus haut -- le
+# POSTERIEUR cede l'index, jamais l'inverse (deux affectations du meme nom se
 # remplaceraient silencieusement et un garde disparaitrait du registre).
-TRANCHE13: list[Guard] = [
+#
+# PROMOTION EN CLIQUET (#17044, 2026-09-24). Le garde naissait advisory : la
+# dette corpus heritee au cablage (109 findings) aurait rougi toute PR
+# touchant un carnet porteur, ce qui punit le voisin, pas l'auteur. Le
+# cliquet leve exactement cette objection sans renoncer au mandat user
+# 2026-09-20 (« une sortie de cellule a UNE cellule de lecture ; si elle en a
+# deja une, on la REECRIT, on n'en ajoute jamais une seconde ») : il ne
+# regarde QUE ce que la PR change -- lectures AJOUTEES (detect_added_readings)
+# ou compte de paires qui MONTE sur un carnet touche. Les 91 findings herites
+# restent donc grandfathered, et le cliquet ne rougit que l'augmentation.
+# Mesure avant cablage : 0/11 faux positifs sur les 11 dernieres PR notebook
+# mergees, controle positif fondateur 26+16 intact (organe
+# scripts/ci/check_17464_positive_control.py), self-test 5/5.
+TRANCHE14: list[Guard] = [
     Guard(
-        name="Split-reading-cells advisory (per-notebook, non-blocking)",
+        name="Split-reading ratchet (base vs PR)",
         source="split-reading-advisory.yml",
         paths=[
             "MyIA.AI.Notebooks/**/*.ipynb",
@@ -1342,14 +1391,60 @@ TRANCHE13: list[Guard] = [
             "scripts/tests/test_check_split_reading_cells.py",
             ".github/workflows/split-reading-advisory.yml",
         ],
-        iterate_paths=["MyIA.AI.Notebooks/**/*.ipynb"],
+        pre_argv=[
+            "python", "scripts/notebook_tools/check_split_reading_cells.py",
+            "--self-test",
+        ],
         argv=[
             "python", "scripts/notebook_tools/check_split_reading_cells.py",
-            "--json", "--fail-on-findings", "{changed_paths}",
+            "--base-ref", "{base_ref}", "--head", "HEAD",
+            "--json", "--fail-on-findings",
         ],
-        blocking=False,  # advisory : signale les paires scindees, ne rougit jamais
-        iterates_paths=True,
+        blocking=True,  # cliquet : rougit l'AJOUT de lecture scindee, jamais la dette heritee
+        needs_base=True,
         absorbed=True,
-        warn_rc=(1, 2),  # rc=2 = findings (signale sans bloquer) ; rc=1 = vacuue
+    ),
+]
+
+# ---------------------------------------------------------------------------
+# TRANCHE 15 -- garde natif anti-invocation-directe lake (#15666, T4).
+#
+# L'epic #15666 impose un organe canonique d'exécution Lean
+# (``scripts/lean/lean_exec.py`` : admission machine-wide fail-closed, budget
+# min-des-sources, backend epingle par lake) et exige pour sa tranche T4 :
+# « un garde CI qui refuse toute nouvelle invocation directe de
+# ``lake build``/``lake env lean`` dans du code d'orchestration hors
+# allowlist documentée ». Le défaut fondateur (2026-09-12 : ~30 processus
+# ``lean.exe`` à 95 % du CPU, DriveFS et Claudish étouffés) est réintroduit
+# par CHAQUE voie directe qui échappe au budget commun -- ce garde ferme la
+# porte d'entrée, l'allowlist documente la dette de migration (ratchet
+# descendant : une entrée devenue stérile est signalée, jamais ignorée).
+#
+# Détection AST (pas grep) : docstrings, sondes ``which``, tests
+# d'appartenance et prose d'erreur ne comptent pas. Calibration mesurée sur
+# le corpus : 6 fichiers en dette, 0 faux positif -- chaque classe de FP
+# rencontrée a son négatif dans test_check_lake_direct_invocation.py.
+# ---------------------------------------------------------------------------
+# Renomme TRANCHE12 -> TRANCHE15 au merge : les PR #16645 (link-label),
+# #17031 (split-reading) puis #17485 (dedupe TRANCHE13) ont pris
+# TRANCHE12/TRANCHE13/TRANCHE14 sur main entre-temps.
+# Regle registry : le POSTERIEUR cede l'index (cf renommage TRANCHE9 -> TRANCHE10).
+TRANCHE15: list[Guard] = [
+    Guard(
+        name="lake-direct-invocation-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**/*.py",
+            "scripts/lean/check_lake_direct_invocation.py",
+            "scripts/lean/lake_direct_allowlist.json",
+            "scripts/lean/tests/test_check_lake_direct_invocation.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/lean/check_lake_direct_invocation.py",
+            "--all", "--check",
+        ],
+        blocking=True,
     ),
 ]
