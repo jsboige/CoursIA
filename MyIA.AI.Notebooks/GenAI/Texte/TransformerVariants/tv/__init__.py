@@ -54,6 +54,7 @@ from .task import (
     evaluer_single_hop,
     evaluer_multi_hop,
     entrainer,
+    entrainer_multi_seed,
 )
 
 __all__ = [
@@ -71,4 +72,5 @@ __all__ = [
     "evaluer_single_hop",
     "evaluer_multi_hop",
     "entrainer",
+    "entrainer_multi_seed",
 ]

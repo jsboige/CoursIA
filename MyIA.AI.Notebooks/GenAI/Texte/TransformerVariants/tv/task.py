@@ -184,7 +184,8 @@ def entrainer(
     """Entraîne un modèle sur la tâche choisie, renvoie (exactitude, perplexite, secondes).
 
     Tell c.1493 strict fondateur nuance — multi-seed : cette fonction utilise UNE graine.
-    La mesure multi-seed (≥4) est dans le grain de mesure suivant (TV-03 v2).
+    La mesure multi-seed (≥4) est dans le grain de mesure suivant (TV-03 v2), portée par
+    :func:`entrainer_multi_seed`.
     """
     import time
 
@@ -204,3 +205,61 @@ def entrainer(
     else:
         acc, ppl = evaluer_single_hop(modele, vocab, T)
     return acc, ppl, secondes
+
+
+def entrainer_multi_seed(
+    fabrique_modele,
+    vocab: Vocab,
+    T: int,
+    multi_hop: bool,
+    graines: list[int],
+    pas: int = 300,
+    batch: int = 32,
+    lr: float = 3e-3,
+) -> dict:
+    """Mesure multi-seed (≥4) : moyenne, écart-type, secondes totales.
+
+    Tell c.1493 strict fondateur nuance — la mesure multi-seed par graine est attendue par
+    le protocole PR review-discipline §C (≥4 graines parmi 0/1/7/42/99). On expose moyenne,
+    écart-type et liste brute pour permettre les vérifs edge≥2σ / DM cross-seed.
+
+    :param fabrique_modele: callable ``(vocab) -> nn.Module`` qui crée un modèle vierge.
+        L'instance est recréée pour chaque graine — pas de contamination de l'initialisation.
+    :param graines: liste explicite d'identifiants de graine (par défaut ``[0, 1, 7, 42]``).
+    :return: dict avec ``acc_moy``, ``acc_std``, ``ppl_moy``, ``ppl_std``, ``secondes``,
+        ``brut`` (liste de tuples ``(graine, acc, ppl, sec)``).
+    """
+    import time
+    import statistics
+
+    if not graines:
+        raise ValueError("graines doit être non vide")
+
+    debut_total = time.perf_counter()
+    brut = []
+    for graine in graines:
+        modele = fabrique_modele(vocab)
+        acc, ppl, sec = entrainer(
+            modele,
+            vocab,
+            T=T,
+            multi_hop=multi_hop,
+            graine=graine,
+            pas=pas,
+            batch=batch,
+            lr=lr,
+        )
+        brut.append((graine, acc, ppl, sec))
+    secondes = time.perf_counter() - debut_total
+
+    accs = [b[1] for b in brut]
+    ppls = [b[2] for b in brut]
+    return {
+        "acc_moy": statistics.fmean(accs),
+        "acc_std": statistics.pstdev(accs) if len(accs) > 1 else 0.0,
+        "ppl_moy": statistics.fmean(ppls),
+        "ppl_std": statistics.pstdev(ppls) if len(ppls) > 1 else 0.0,
+        "secondes": secondes,
+        "brut": brut,
+        "n_graines": len(graines),
+    }
