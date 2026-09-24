@@ -31,7 +31,7 @@ dotnet interactive --version   # 1.0.617701 (pin, cf kernels-runtime.md)
 jupyter kernelspec list | grep ".net"   # .net-csharp, .net-fsharp
 ```
 
-Le pin de version **1.0.617701** s'applique cross-OS (1.0.712001 casse `#!import` partout, pas seulement Windows).
+Le pin de version **1.0.617701** s'applique cross-OS. La casse de `#!import` sous 1.0.712001, constatée sur ai-01, n'est pas reproduite partout : ni sur po-2024, ni sous Linux (Ubuntu 24.04, `#!import` exécuté sous les deux versions, [#17654](https://github.com/jsboige/CoursIA/issues/17654)). Le pin reste le standard tant que le dé-pin n'est pas décidé ([kernels-runtime.md](kernels-runtime.md)).
 
 ## Python 3.10+ + Conda
 
@@ -55,15 +55,18 @@ Lean 4 s'installe via `elan` (cross-OS), équivalent de `rustup` pour Lean. **Pa
 
 ```bash
 curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh
-source $HOME/.cargo/env   # ou relancer le shell
+source $HOME/.elan/env   # elan s'installe dans ~/.elan (pas ~/.cargo) ; ou relancer le shell
 
 elan toolchain install stable
 lean --version
 
-# Kernel Jupyter Lean 4
+# Kernel Jupyter Lean 4 : le module d'installation est lean4_jupyter.install
+# (`python -m lean4_jupyter.kernel install` ne fait rien et rend 0)
 pip install lean4-jupyter
-python -m lean4_jupyter.kernel install
+python -m lean4_jupyter.install --user
 ```
+
+> **Limite connue ([#17654](https://github.com/jsboige/CoursIA/issues/17654), D1).** Cette commande enregistre un kernel nommé `lean4`, alors que les notebooks Lean du dépôt déclarent `lean4-wsl`, et le chemin natif ne reprend ni la détection de la racine lake ni le lancement direct du REPL du wrapper Windows. Le parcours Lean n'est donc pas encore opérationnel de bout en bout sous Linux ou macOS.
 
 ## Packages système courants
 
