@@ -131,7 +131,7 @@ def test_un_secret_deja_suivi_est_un_defaut(mod, tmp_path):
     subprocess.run(["git", "commit", "-qm", "oups"], cwd=r, check=True)
     rapport = mod.analyser(r, SONDES, CONTROLES)
     assert rapport["verdict"] == "SUIVI"
-    assert ".secrets/master.env" in rapport["secrets_deja_suivis"]
+    assert ".secrets/master.env" in rapport["chemins_sensibles_deja_suivis"]
 
 
 def test_hors_depot_rend_unknown_pas_un_vert(mod, tmp_path):

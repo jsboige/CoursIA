@@ -134,7 +134,7 @@ def analyser(
         "controles_positifs": controles,
         "defauts": defauts,
         "instrument_casse": instrument_casse,
-        "secrets_deja_suivis": suivis_sensibles,
+        "chemins_sensibles_deja_suivis": suivis_sensibles,
         "verdict": (
             "INSTRUMENT_CASSE"
             if instrument_casse
@@ -173,9 +173,9 @@ def main(argv: list[str] | None = None) -> int:
     if rapport["instrument_casse"]:
         print("\nINSTRUMENT_CASSE -- un controle positif ressort ignore : mesure sans valeur.")
         return EXIT_DEFECT
-    if rapport["secrets_deja_suivis"]:
+    if rapport["chemins_sensibles_deja_suivis"]:
         print("\nSUIVI -- ces fichiers sont deja dans l'index, aucune regle ne les retire :")
-        for f in rapport["secrets_deja_suivis"]:
+        for f in rapport["chemins_sensibles_deja_suivis"]:
             print(f"    {f}")
         return EXIT_DEFECT
     if rapport["defauts"]:
