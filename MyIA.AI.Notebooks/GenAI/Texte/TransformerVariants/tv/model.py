@@ -25,6 +25,9 @@ Invariants vérifiés (cf TV-00b cellules 12-15) :
 - L'étalement KV utilise ``repeat_interleave`` (vues partagées, pas de copie).
 - Le coût en paramètres des projections K/V décroît avec ``n_kv_heads``.
 - ``attn_banded`` et ``attn_masked`` rendent le même tenseur pour les mêmes (q, k, v, W).
+  Ancré en continu par :func:`selfcheck_attn_equivalence` (B=2, H=4, T=64, dh=64,
+  W in (8, 16, 32), seed 42, tol float32 1e-5). Mesure typique ~1.2e-07 (cf
+  TV-00b cellules 16 et 31).
 """
 from __future__ import annotations
 
@@ -173,3 +176,37 @@ class PetitLM(nn.Module):
         for b in self.blocs:
             x = b(x)
         return self.tete(self.ln_f(x))
+
+
+def selfcheck_attn_equivalence(B: int = 2, H: int = 4, T: int = 64, dh: int = 64,
+                               windows: tuple[int, ...] = (8, 16, 32),
+                               seed: int = 42, tol: float = 1e-5) -> dict:
+    """Ancre l'invariant documente dans la docstring du module.
+
+    Pour chaque fenetre W dans ``windows``, mesure ``max|attn_banded - attn_masked|``
+    sur des tenseurs (q, k, v) tires aleatoirement avec la graine ``seed``. Le
+    resultat est borne par ``tol`` (float32, juste en deca de la limite pratique
+    mesuree dans TV-00b cellules 16 et 31, ~1.2e-07).
+
+    Retourne ``{"max_abs_diff": float, "passed": bool, "samples": list[dict]}``
+    ou chaque sample porte ``{"window": int, "max_abs_diff": float}``.
+
+    Le test est strictement CPU (le device suit ``q.device``), pas de gradient
+    necessaire. Si un echantillon echoue, le dictionnaire le signale dans
+    ``samples`` et ``passed = False``.
+    """
+    g = torch.Generator(device="cpu").manual_seed(seed)
+    samples: list[dict] = []
+    worst = 0.0
+    for W in windows:
+        q = torch.randn(B, H, T, dh, generator=g) * 0.5
+        k = torch.randn(B, H, T, dh, generator=g) * 0.5
+        v = torch.randn(B, H, T, dh, generator=g) * 0.5
+        with torch.no_grad():
+            o_band = attn_banded(q, k, v, W)
+            o_mask = attn_masked(q, k, v, W)
+        diff = float((o_band - o_mask).abs().max().item())
+        samples.append({"window": W, "max_abs_diff": diff})
+        worst = max(worst, diff)
+    return {"max_abs_diff": worst, "passed": worst <= tol, "samples": samples,
+            "tol": tol, "B": B, "H": H, "T": T, "dh": dh, "seed": seed}

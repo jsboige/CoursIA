@@ -45,6 +45,7 @@ from .model import (
     attn_masked,
     attn_banded,
     causal_window_mask,
+    selfcheck_attn_equivalence,
 )
 from .task import (
     Vocab,
@@ -69,6 +70,7 @@ __all__ = [
     "attn_masked",
     "attn_banded",
     "causal_window_mask",
+    "selfcheck_attn_equivalence",
     "Vocab",
     "Lot",
     "lot_single_hop",
