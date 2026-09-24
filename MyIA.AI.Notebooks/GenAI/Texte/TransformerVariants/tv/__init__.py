@@ -46,6 +46,15 @@ from .model import (
     attn_banded,
     causal_window_mask,
 )
+from .task import (
+    Vocab,
+    Lot,
+    lot_single_hop,
+    lot_multi_hop,
+    evaluer_single_hop,
+    evaluer_multi_hop,
+    entrainer,
+)
 
 __all__ = [
     "VariantAttn",
@@ -55,4 +64,11 @@ __all__ = [
     "attn_masked",
     "attn_banded",
     "causal_window_mask",
+    "Vocab",
+    "Lot",
+    "lot_single_hop",
+    "lot_multi_hop",
+    "evaluer_single_hop",
+    "evaluer_multi_hop",
+    "entrainer",
 ]
