@@ -405,7 +405,7 @@ class TestCodeCellOnlyExercise:
         it as a stub even though it has more than one effective code line (the
         ``<= 1 effective code-line`` rule alone misses it).
 
-        Regression for ``Search-11-Metaheuristics-Csharp`` cells 24-26 (ABC /
+        Regression for ``Search-11-Metaheuristics-CSharp`` cells 24-26 (ABC /
         inertia-schedule / Schwefel): each ``// Exercice N`` + ``// TODO etudiant``
         + partial skeleton was silently under-counted, so the notebook read as
         1 exercise instead of its real 3.

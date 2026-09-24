@@ -1,0 +1,3259 @@
+pair_id,split,polarity,node_pk,family,depth,is_leaf,scenario_path
+test-F798-2.2.8,test,fallacy,798,Abus de langage,1,0,2.2.8
+test-F798-7.2.11,test,fallacy,798,Abus de langage,1,0,7.2.11
+test-F799-2.2.8,test,fallacy,799,Abus de langage,2,0,2.2.8
+test-F799-5.1.3,test,fallacy,799,Abus de langage,2,0,5.1.3
+test-F800-2.1.10,test,fallacy,800,Abus de langage,3,0,2.1.10
+test-F800-3.2.1,test,fallacy,800,Abus de langage,3,0,3.2.1
+test-F801-5.2.4,test,fallacy,801,Abus de langage,4,1,5.2.4
+test-F801-6.2.4,test,fallacy,801,Abus de langage,4,1,6.2.4
+test-F802-4.1.12,test,fallacy,802,Abus de langage,4,1,4.1.12
+test-F802-4.3.9,test,fallacy,802,Abus de langage,4,1,4.3.9
+test-F803-2.2.8,test,fallacy,803,Abus de langage,4,1,2.2.8
+test-F803-7.2.11,test,fallacy,803,Abus de langage,4,1,7.2.11
+test-F804-3.2.11,test,fallacy,804,Abus de langage,3,0,3.2.11
+test-F804-5.1.5,test,fallacy,804,Abus de langage,3,0,5.1.5
+test-F805-1.2.1,test,fallacy,805,Abus de langage,4,0,1.2.1
+test-F805-3.2.11,test,fallacy,805,Abus de langage,4,0,3.2.11
+test-F806-4.2.4,test,fallacy,806,Abus de langage,5,1,4.2.4
+test-F806-5.1.3,test,fallacy,806,Abus de langage,5,1,5.1.3
+test-F807-1.3.2,test,fallacy,807,Abus de langage,5,1,1.3.2
+test-F807-7.2.11,test,fallacy,807,Abus de langage,5,1,7.2.11
+test-F808-2.1.10,test,fallacy,808,Abus de langage,4,0,2.1.10
+test-F808-6.2.4,test,fallacy,808,Abus de langage,4,0,6.2.4
+test-F809-1.3.3,test,fallacy,809,Abus de langage,5,1,1.3.3
+test-F809-3.1.8,test,fallacy,809,Abus de langage,5,1,3.1.8
+test-F810-2.2.8,test,fallacy,810,Abus de langage,5,0,2.2.8
+test-F810-7.2.2,test,fallacy,810,Abus de langage,5,0,7.2.2
+test-F811-6.1.3,test,fallacy,811,Abus de langage,6,1,6.1.3
+test-F811-6.2.4,test,fallacy,811,Abus de langage,6,1,6.2.4
+test-F812-1.3.3,test,fallacy,812,Abus de langage,6,1,1.3.3
+test-F812-3.1.4,test,fallacy,812,Abus de langage,6,1,3.1.4
+test-F813-2.1.10,test,fallacy,813,Abus de langage,5,1,2.1.10
+test-F813-7.2.2,test,fallacy,813,Abus de langage,5,1,7.2.2
+test-F814-6.2.4,test,fallacy,814,Abus de langage,5,0,6.2.4
+test-F814-7.2.12,test,fallacy,814,Abus de langage,5,0,7.2.12
+test-F815-3.2.1,test,fallacy,815,Abus de langage,6,1,3.2.1
+test-F815-5.2.4,test,fallacy,815,Abus de langage,6,1,5.2.4
+test-F816-4.1.12,test,fallacy,816,Abus de langage,6,1,4.1.12
+test-F816-4.2.4,test,fallacy,816,Abus de langage,6,1,4.2.4
+test-F817-2.2.8,test,fallacy,817,Abus de langage,6,1,2.2.8
+test-F817-7.2.11,test,fallacy,817,Abus de langage,6,1,7.2.11
+test-F818-3.2.11,test,fallacy,818,Abus de langage,5,1,3.2.11
+test-F818-7.2.12,test,fallacy,818,Abus de langage,5,1,7.2.12
+test-F819-5.1.3,test,fallacy,819,Abus de langage,4,0,5.1.3
+test-F819-7.2.11,test,fallacy,819,Abus de langage,4,0,7.2.11
+test-F820-2.1.1,test,fallacy,820,Abus de langage,5,1,2.1.1
+test-F820-3.2.5,test,fallacy,820,Abus de langage,5,1,3.2.5
+test-F821-2.1.10,test,fallacy,821,Abus de langage,5,0,2.1.10
+test-F821-5.1.3,test,fallacy,821,Abus de langage,5,0,5.1.3
+test-F822-4.3.9,test,fallacy,822,Abus de langage,6,1,4.3.9
+test-F822-5.1.3,test,fallacy,822,Abus de langage,6,1,5.1.3
+test-F823-4.2.4,test,fallacy,823,Abus de langage,6,1,4.2.4
+test-F823-4.3.9,test,fallacy,823,Abus de langage,6,1,4.3.9
+test-F824-3.2.11,test,fallacy,824,Abus de langage,7,1,3.2.11
+test-F824-5.2.4,test,fallacy,824,Abus de langage,7,1,5.2.4
+test-F825-1.3.2,test,fallacy,825,Abus de langage,6,1,1.3.2
+test-F825-4.3.6,test,fallacy,825,Abus de langage,6,1,4.3.6
+test-F826-5.1.5,test,fallacy,826,Abus de langage,3,0,5.1.5
+test-F826-5.2.4,test,fallacy,826,Abus de langage,3,0,5.2.4
+test-F827-1.3.2,test,fallacy,827,Abus de langage,4,0,1.3.2
+test-F827-3.1.8,test,fallacy,827,Abus de langage,4,0,3.1.8
+test-F828-4.1.12,test,fallacy,828,Abus de langage,5,1,4.1.12
+test-F828-5.1.3,test,fallacy,828,Abus de langage,5,1,5.1.3
+test-F829-2.1.10,test,fallacy,829,Abus de langage,4,0,2.1.10
+test-F829-7.2.12,test,fallacy,829,Abus de langage,4,0,7.2.12
+test-F830-2.2.5,test,fallacy,830,Abus de langage,5,1,2.2.5
+test-F830-7.2.2,test,fallacy,830,Abus de langage,5,1,7.2.2
+test-F831-3.2.1,test,fallacy,831,Abus de langage,5,1,3.2.1
+test-F831-4.3.9,test,fallacy,831,Abus de langage,5,1,4.3.9
+test-F832-5.2.4,test,fallacy,832,Abus de langage,4,1,5.2.4
+test-F832-7.3.5,test,fallacy,832,Abus de langage,4,1,7.3.5
+test-F833-2.2.5,test,fallacy,833,Abus de langage,2,0,2.2.5
+test-F833-4.3.6,test,fallacy,833,Abus de langage,2,0,4.3.6
+test-F834-3.1.4,test,fallacy,834,Abus de langage,3,0,3.1.4
+test-F834-3.2.11,test,fallacy,834,Abus de langage,3,0,3.2.11
+test-F835-1.2.1,test,fallacy,835,Abus de langage,4,1,1.2.1
+test-F835-7.2.11,test,fallacy,835,Abus de langage,4,1,7.2.11
+test-F836-3.2.11,test,fallacy,836,Abus de langage,4,1,3.2.11
+test-F836-3.2.5,test,fallacy,836,Abus de langage,4,1,3.2.5
+test-F837-1.3.3,test,fallacy,837,Abus de langage,4,1,1.3.3
+test-F837-5.1.3,test,fallacy,837,Abus de langage,4,1,5.1.3
+test-F838-1.2.1,test,fallacy,838,Abus de langage,4,1,1.2.1
+test-F838-3.1.8,test,fallacy,838,Abus de langage,4,1,3.1.8
+test-F839-5.2.4,test,fallacy,839,Abus de langage,3,0,5.2.4
+test-F839-7.2.12,test,fallacy,839,Abus de langage,3,0,7.2.12
+test-F840-3.2.1,test,fallacy,840,Abus de langage,4,1,3.2.1
+test-F840-5.1.3,test,fallacy,840,Abus de langage,4,1,5.1.3
+test-F841-3.2.11,test,fallacy,841,Abus de langage,4,1,3.2.11
+test-F841-5.2.4,test,fallacy,841,Abus de langage,4,1,5.2.4
+test-F842-4.3.6,test,fallacy,842,Abus de langage,4,1,4.3.6
+test-F842-6.1.3,test,fallacy,842,Abus de langage,4,1,6.1.3
+test-F843-3.1.4,test,fallacy,843,Abus de langage,4,1,3.1.4
+test-F843-4.2.4,test,fallacy,843,Abus de langage,4,1,4.2.4
+test-F844-1.3.3,test,fallacy,844,Abus de langage,3,0,1.3.3
+test-F844-3.2.5,test,fallacy,844,Abus de langage,3,0,3.2.5
+test-F845-3.1.4,test,fallacy,845,Abus de langage,4,1,3.1.4
+test-F845-7.2.12,test,fallacy,845,Abus de langage,4,1,7.2.12
+test-F846-3.2.11,test,fallacy,846,Abus de langage,2,0,3.2.11
+test-F846-5.2.4,test,fallacy,846,Abus de langage,2,0,5.2.4
+test-F847-2.1.1,test,fallacy,847,Abus de langage,3,0,2.1.1
+test-F847-3.1.4,test,fallacy,847,Abus de langage,3,0,3.1.4
+test-F848-1.2.1,test,fallacy,848,Abus de langage,4,1,1.2.1
+test-F848-1.3.2,test,fallacy,848,Abus de langage,4,1,1.3.2
+test-F849-4.2.4,test,fallacy,849,Abus de langage,4,0,4.2.4
+test-F849-7.2.2,test,fallacy,849,Abus de langage,4,0,7.2.2
+test-F850-6.2.4,test,fallacy,850,Abus de langage,5,1,6.2.4
+test-F850-7.2.12,test,fallacy,850,Abus de langage,5,1,7.2.12
+test-F851-7.2.11,test,fallacy,851,Abus de langage,4,0,7.2.11
+test-F851-7.3.5,test,fallacy,851,Abus de langage,4,0,7.3.5
+test-F852-1.3.3,test,fallacy,852,Abus de langage,5,1,1.3.3
+test-F852-4.3.6,test,fallacy,852,Abus de langage,5,1,4.3.6
+test-F853-3.1.4,test,fallacy,853,Abus de langage,4,1,3.1.4
+test-F853-7.3.5,test,fallacy,853,Abus de langage,4,1,7.3.5
+test-F854-1.2.1,test,fallacy,854,Abus de langage,4,1,1.2.1
+test-F854-3.1.4,test,fallacy,854,Abus de langage,4,1,3.1.4
+test-F855-2.1.1,test,fallacy,855,Abus de langage,3,0,2.1.1
+test-F855-3.1.4,test,fallacy,855,Abus de langage,3,0,3.1.4
+test-F856-1.3.3,test,fallacy,856,Abus de langage,4,0,1.3.3
+test-F856-2.1.1,test,fallacy,856,Abus de langage,4,0,2.1.1
+test-F857-2.2.5,test,fallacy,857,Abus de langage,5,1,2.2.5
+test-F857-4.3.6,test,fallacy,857,Abus de langage,5,1,4.3.6
+test-F858-1.2.1,test,fallacy,858,Abus de langage,5,0,1.2.1
+test-F858-6.1.3,test,fallacy,858,Abus de langage,5,0,6.1.3
+test-F859-3.1.8,test,fallacy,859,Abus de langage,6,1,3.1.8
+test-F859-5.1.3,test,fallacy,859,Abus de langage,6,1,5.1.3
+test-F860-3.2.5,test,fallacy,860,Abus de langage,4,0,3.2.5
+test-F860-4.1.12,test,fallacy,860,Abus de langage,4,0,4.1.12
+test-F861-5.1.3,test,fallacy,861,Abus de langage,5,1,5.1.3
+test-F861-5.2.4,test,fallacy,861,Abus de langage,5,1,5.2.4
+test-F862-6.1.3,test,fallacy,862,Abus de langage,5,0,6.1.3
+test-F862-6.2.4,test,fallacy,862,Abus de langage,5,0,6.2.4
+test-F863-1.3.2,test,fallacy,863,Abus de langage,6,1,1.3.2
+test-F863-2.2.5,test,fallacy,863,Abus de langage,6,1,2.2.5
+test-F864-2.2.8,test,fallacy,864,Abus de langage,5,1,2.2.8
+test-F864-4.1.12,test,fallacy,864,Abus de langage,5,1,4.1.12
+test-F865-3.1.4,test,fallacy,865,Abus de langage,4,0,3.1.4
+test-F865-7.2.2,test,fallacy,865,Abus de langage,4,0,7.2.2
+test-F866-5.1.5,test,fallacy,866,Abus de langage,5,0,5.1.5
+test-F866-6.2.4,test,fallacy,866,Abus de langage,5,0,6.2.4
+test-F867-2.1.10,test,fallacy,867,Abus de langage,6,1,2.1.10
+test-F867-5.1.5,test,fallacy,867,Abus de langage,6,1,5.1.5
+test-F868-1.2.1,test,fallacy,868,Abus de langage,5,0,1.2.1
+test-F868-3.2.11,test,fallacy,868,Abus de langage,5,0,3.2.11
+test-F869-3.2.11,test,fallacy,869,Abus de langage,6,0,3.2.11
+test-F869-4.3.9,test,fallacy,869,Abus de langage,6,0,4.3.9
+test-F870-3.1.4,test,fallacy,870,Abus de langage,7,1,3.1.4
+test-F870-7.2.11,test,fallacy,870,Abus de langage,7,1,7.2.11
+test-F871-2.1.1,test,fallacy,871,Abus de langage,7,1,2.1.1
+test-F871-5.1.3,test,fallacy,871,Abus de langage,7,1,5.1.3
+test-F872-3.1.4,test,fallacy,872,Abus de langage,6,0,3.1.4
+test-F872-4.3.9,test,fallacy,872,Abus de langage,6,0,4.3.9
+test-F873-2.1.10,test,fallacy,873,Abus de langage,7,1,2.1.10
+test-F873-5.1.3,test,fallacy,873,Abus de langage,7,1,5.1.3
+test-F874-6.2.4,test,fallacy,874,Abus de langage,6,1,6.2.4
+test-F874-7.3.5,test,fallacy,874,Abus de langage,6,1,7.3.5
+test-F875-3.2.5,test,fallacy,875,Abus de langage,6,1,3.2.5
+test-F875-7.3.5,test,fallacy,875,Abus de langage,6,1,7.3.5
+test-F876-2.1.10,test,fallacy,876,Abus de langage,3,0,2.1.10
+test-F876-2.2.8,test,fallacy,876,Abus de langage,3,0,2.2.8
+test-F877-2.1.10,test,fallacy,877,Abus de langage,4,0,2.1.10
+test-F877-5.2.4,test,fallacy,877,Abus de langage,4,0,5.2.4
+test-F878-2.2.5,test,fallacy,878,Abus de langage,5,0,2.2.5
+test-F878-4.3.9,test,fallacy,878,Abus de langage,5,0,4.3.9
+test-F879-2.2.5,test,fallacy,879,Abus de langage,6,1,2.2.5
+test-F879-4.3.6,test,fallacy,879,Abus de langage,6,1,4.3.6
+test-F880-1.3.2,test,fallacy,880,Abus de langage,6,1,1.3.2
+test-F880-3.2.5,test,fallacy,880,Abus de langage,6,1,3.2.5
+test-F881-2.2.8,test,fallacy,881,Abus de langage,4,0,2.2.8
+test-F881-6.2.4,test,fallacy,881,Abus de langage,4,0,6.2.4
+test-F882-2.1.1,test,fallacy,882,Abus de langage,5,1,2.1.1
+test-F882-2.2.5,test,fallacy,882,Abus de langage,5,1,2.2.5
+test-F883-3.2.11,test,fallacy,883,Abus de langage,4,0,3.2.11
+test-F883-7.2.2,test,fallacy,883,Abus de langage,4,0,7.2.2
+test-F884-2.1.1,test,fallacy,884,Abus de langage,5,1,2.1.1
+test-F884-5.1.5,test,fallacy,884,Abus de langage,5,1,5.1.5
+test-F885-3.1.4,test,fallacy,885,Abus de langage,5,1,3.1.4
+test-F885-4.3.6,test,fallacy,885,Abus de langage,5,1,4.3.6
+test-F886-2.2.8,test,fallacy,886,Abus de langage,4,1,2.2.8
+test-F886-6.2.4,test,fallacy,886,Abus de langage,4,1,6.2.4
+test-F696-2.1.10,test,fallacy,696,Erreur de raisonnement,1,0,2.1.10
+test-F696-4.3.9,test,fallacy,696,Erreur de raisonnement,1,0,4.3.9
+test-F697-1.2.1,test,fallacy,697,Erreur de raisonnement,2,0,1.2.1
+test-F697-3.1.4,test,fallacy,697,Erreur de raisonnement,2,0,3.1.4
+test-F698-2.1.10,test,fallacy,698,Erreur de raisonnement,3,0,2.1.10
+test-F698-4.1.12,test,fallacy,698,Erreur de raisonnement,3,0,4.1.12
+test-F699-1.3.3,test,fallacy,699,Erreur de raisonnement,4,0,1.3.3
+test-F699-5.2.4,test,fallacy,699,Erreur de raisonnement,4,0,5.2.4
+test-F700-3.2.1,test,fallacy,700,Erreur de raisonnement,5,1,3.2.1
+test-F700-5.2.4,test,fallacy,700,Erreur de raisonnement,5,1,5.2.4
+test-F701-1.3.2,test,fallacy,701,Erreur de raisonnement,4,1,1.3.2
+test-F701-3.2.1,test,fallacy,701,Erreur de raisonnement,4,1,3.2.1
+test-F702-1.3.3,test,fallacy,702,Erreur de raisonnement,4,1,1.3.3
+test-F702-6.1.3,test,fallacy,702,Erreur de raisonnement,4,1,6.1.3
+test-F703-5.1.3,test,fallacy,703,Erreur de raisonnement,4,1,5.1.3
+test-F703-7.2.12,test,fallacy,703,Erreur de raisonnement,4,1,7.2.12
+test-F704-3.2.5,test,fallacy,704,Erreur de raisonnement,4,1,3.2.5
+test-F704-4.2.4,test,fallacy,704,Erreur de raisonnement,4,1,4.2.4
+test-F705-3.1.8,test,fallacy,705,Erreur de raisonnement,4,1,3.1.8
+test-F705-3.2.11,test,fallacy,705,Erreur de raisonnement,4,1,3.2.11
+test-F706-1.2.1,test,fallacy,706,Erreur de raisonnement,4,1,1.2.1
+test-F706-3.1.4,test,fallacy,706,Erreur de raisonnement,4,1,3.1.4
+test-F707-4.2.4,test,fallacy,707,Erreur de raisonnement,3,0,4.2.4
+test-F707-7.2.2,test,fallacy,707,Erreur de raisonnement,3,0,7.2.2
+test-F708-2.1.10,test,fallacy,708,Erreur de raisonnement,4,0,2.1.10
+test-F708-6.1.3,test,fallacy,708,Erreur de raisonnement,4,0,6.1.3
+test-F709-4.1.12,test,fallacy,709,Erreur de raisonnement,5,1,4.1.12
+test-F709-7.2.2,test,fallacy,709,Erreur de raisonnement,5,1,7.2.2
+test-F710-3.2.5,test,fallacy,710,Erreur de raisonnement,4,0,3.2.5
+test-F710-7.2.2,test,fallacy,710,Erreur de raisonnement,4,0,7.2.2
+test-F711-2.1.10,test,fallacy,711,Erreur de raisonnement,5,1,2.1.10
+test-F711-7.3.5,test,fallacy,711,Erreur de raisonnement,5,1,7.3.5
+test-F712-1.3.2,test,fallacy,712,Erreur de raisonnement,4,1,1.3.2
+test-F712-2.1.1,test,fallacy,712,Erreur de raisonnement,4,1,2.1.1
+test-F713-3.2.1,test,fallacy,713,Erreur de raisonnement,4,0,3.2.1
+test-F713-7.2.11,test,fallacy,713,Erreur de raisonnement,4,0,7.2.11
+test-F714-1.3.2,test,fallacy,714,Erreur de raisonnement,5,1,1.3.2
+test-F714-2.1.10,test,fallacy,714,Erreur de raisonnement,5,1,2.1.10
+test-F715-4.1.12,test,fallacy,715,Erreur de raisonnement,5,0,4.1.12
+test-F715-7.3.5,test,fallacy,715,Erreur de raisonnement,5,0,7.3.5
+test-F716-2.2.8,test,fallacy,716,Erreur de raisonnement,6,1,2.2.8
+test-F716-4.2.4,test,fallacy,716,Erreur de raisonnement,6,1,4.2.4
+test-F717-7.2.11,test,fallacy,717,Erreur de raisonnement,4,1,7.2.11
+test-F717-7.2.12,test,fallacy,717,Erreur de raisonnement,4,1,7.2.12
+test-F718-3.2.5,test,fallacy,718,Erreur de raisonnement,4,1,3.2.5
+test-F718-6.2.4,test,fallacy,718,Erreur de raisonnement,4,1,6.2.4
+test-F719-2.1.10,test,fallacy,719,Erreur de raisonnement,3,0,2.1.10
+test-F719-7.2.11,test,fallacy,719,Erreur de raisonnement,3,0,7.2.11
+test-F720-1.3.2,test,fallacy,720,Erreur de raisonnement,4,0,1.3.2
+test-F720-3.2.5,test,fallacy,720,Erreur de raisonnement,4,0,3.2.5
+test-F721-1.2.1,test,fallacy,721,Erreur de raisonnement,5,0,1.2.1
+test-F721-5.1.5,test,fallacy,721,Erreur de raisonnement,5,0,5.1.5
+test-F722-5.1.5,test,fallacy,722,Erreur de raisonnement,6,1,5.1.5
+test-F722-7.3.5,test,fallacy,722,Erreur de raisonnement,6,1,7.3.5
+test-F723-1.3.2,test,fallacy,723,Erreur de raisonnement,6,1,1.3.2
+test-F723-3.1.4,test,fallacy,723,Erreur de raisonnement,6,1,3.1.4
+test-F724-5.1.3,test,fallacy,724,Erreur de raisonnement,4,1,5.1.3
+test-F724-7.3.5,test,fallacy,724,Erreur de raisonnement,4,1,7.3.5
+test-F725-1.3.2,test,fallacy,725,Erreur de raisonnement,4,1,1.3.2
+test-F725-2.1.1,test,fallacy,725,Erreur de raisonnement,4,1,2.1.1
+test-F726-3.2.1,test,fallacy,726,Erreur de raisonnement,2,0,3.2.1
+test-F726-3.2.5,test,fallacy,726,Erreur de raisonnement,2,0,3.2.5
+test-F727-2.1.1,test,fallacy,727,Erreur de raisonnement,3,0,2.1.1
+test-F727-3.2.11,test,fallacy,727,Erreur de raisonnement,3,0,3.2.11
+test-F728-4.3.6,test,fallacy,728,Erreur de raisonnement,4,0,4.3.6
+test-F728-5.1.5,test,fallacy,728,Erreur de raisonnement,4,0,5.1.5
+test-F729-5.1.3,test,fallacy,729,Erreur de raisonnement,5,1,5.1.3
+test-F729-5.1.5,test,fallacy,729,Erreur de raisonnement,5,1,5.1.5
+test-F730-1.3.3,test,fallacy,730,Erreur de raisonnement,4,0,1.3.3
+test-F730-6.1.3,test,fallacy,730,Erreur de raisonnement,4,0,6.1.3
+test-F731-4.3.6,test,fallacy,731,Erreur de raisonnement,5,1,4.3.6
+test-F731-7.2.12,test,fallacy,731,Erreur de raisonnement,5,1,7.2.12
+test-F732-3.1.8,test,fallacy,732,Erreur de raisonnement,4,0,3.1.8
+test-F732-7.2.2,test,fallacy,732,Erreur de raisonnement,4,0,7.2.2
+test-F733-3.1.8,test,fallacy,733,Erreur de raisonnement,5,1,3.1.8
+test-F733-3.2.1,test,fallacy,733,Erreur de raisonnement,5,1,3.2.1
+test-F734-3.2.11,test,fallacy,734,Erreur de raisonnement,5,1,3.2.11
+test-F734-4.1.12,test,fallacy,734,Erreur de raisonnement,5,1,4.1.12
+test-F735-3.1.8,test,fallacy,735,Erreur de raisonnement,3,0,3.1.8
+test-F735-4.1.12,test,fallacy,735,Erreur de raisonnement,3,0,4.1.12
+test-F736-3.2.5,test,fallacy,736,Erreur de raisonnement,4,0,3.2.5
+test-F736-6.2.4,test,fallacy,736,Erreur de raisonnement,4,0,6.2.4
+test-F737-3.1.4,test,fallacy,737,Erreur de raisonnement,5,1,3.1.4
+test-F737-4.2.4,test,fallacy,737,Erreur de raisonnement,5,1,4.2.4
+test-F738-1.2.1,test,fallacy,738,Erreur de raisonnement,5,1,1.2.1
+test-F738-3.1.8,test,fallacy,738,Erreur de raisonnement,5,1,3.1.8
+test-F739-5.1.5,test,fallacy,739,Erreur de raisonnement,5,1,5.1.5
+test-F739-6.1.3,test,fallacy,739,Erreur de raisonnement,5,1,6.1.3
+test-F740-2.1.10,test,fallacy,740,Erreur de raisonnement,4,0,2.1.10
+test-F740-5.1.3,test,fallacy,740,Erreur de raisonnement,4,0,5.1.3
+test-F741-2.1.1,test,fallacy,741,Erreur de raisonnement,5,1,2.1.1
+test-F741-3.1.4,test,fallacy,741,Erreur de raisonnement,5,1,3.1.4
+test-F742-2.2.5,test,fallacy,742,Erreur de raisonnement,5,0,2.2.5
+test-F742-7.2.2,test,fallacy,742,Erreur de raisonnement,5,0,7.2.2
+test-F743-2.2.5,test,fallacy,743,Erreur de raisonnement,6,1,2.2.5
+test-F743-2.2.8,test,fallacy,743,Erreur de raisonnement,6,1,2.2.8
+test-F744-4.1.12,test,fallacy,744,Erreur de raisonnement,5,1,4.1.12
+test-F744-5.1.3,test,fallacy,744,Erreur de raisonnement,5,1,5.1.3
+test-F745-3.2.1,test,fallacy,745,Erreur de raisonnement,5,1,3.2.1
+test-F745-5.2.4,test,fallacy,745,Erreur de raisonnement,5,1,5.2.4
+test-F746-3.1.4,test,fallacy,746,Erreur de raisonnement,5,1,3.1.4
+test-F746-4.1.12,test,fallacy,746,Erreur de raisonnement,5,1,4.1.12
+test-F747-3.2.5,test,fallacy,747,Erreur de raisonnement,5,1,3.2.5
+test-F747-5.2.4,test,fallacy,747,Erreur de raisonnement,5,1,5.2.4
+test-F748-3.2.11,test,fallacy,748,Erreur de raisonnement,5,1,3.2.11
+test-F748-4.2.4,test,fallacy,748,Erreur de raisonnement,5,1,4.2.4
+test-F749-3.1.4,test,fallacy,749,Erreur de raisonnement,4,1,3.1.4
+test-F749-5.2.4,test,fallacy,749,Erreur de raisonnement,4,1,5.2.4
+test-F750-3.1.8,test,fallacy,750,Erreur de raisonnement,3,0,3.1.8
+test-F750-7.3.5,test,fallacy,750,Erreur de raisonnement,3,0,7.3.5
+test-F751-4.2.4,test,fallacy,751,Erreur de raisonnement,4,0,4.2.4
+test-F751-7.2.11,test,fallacy,751,Erreur de raisonnement,4,0,7.2.11
+test-F752-1.3.2,test,fallacy,752,Erreur de raisonnement,5,1,1.3.2
+test-F752-4.2.4,test,fallacy,752,Erreur de raisonnement,5,1,4.2.4
+test-F753-2.1.10,test,fallacy,753,Erreur de raisonnement,4,1,2.1.10
+test-F753-7.3.5,test,fallacy,753,Erreur de raisonnement,4,1,7.3.5
+test-F754-2.2.8,test,fallacy,754,Erreur de raisonnement,4,1,2.2.8
+test-F754-4.3.9,test,fallacy,754,Erreur de raisonnement,4,1,4.3.9
+test-F755-4.1.12,test,fallacy,755,Erreur de raisonnement,4,0,4.1.12
+test-F755-4.2.4,test,fallacy,755,Erreur de raisonnement,4,0,4.2.4
+test-F756-2.2.5,test,fallacy,756,Erreur de raisonnement,5,1,2.2.5
+test-F756-5.1.3,test,fallacy,756,Erreur de raisonnement,5,1,5.1.3
+test-F757-5.1.5,test,fallacy,757,Erreur de raisonnement,4,1,5.1.5
+test-F757-7.2.12,test,fallacy,757,Erreur de raisonnement,4,1,7.2.12
+test-F758-2.1.1,test,fallacy,758,Erreur de raisonnement,2,0,2.1.1
+test-F758-6.2.4,test,fallacy,758,Erreur de raisonnement,2,0,6.2.4
+test-F759-2.2.8,test,fallacy,759,Erreur de raisonnement,3,0,2.2.8
+test-F759-3.2.1,test,fallacy,759,Erreur de raisonnement,3,0,3.2.1
+test-F760-2.1.10,test,fallacy,760,Erreur de raisonnement,4,0,2.1.10
+test-F760-2.2.5,test,fallacy,760,Erreur de raisonnement,4,0,2.2.5
+test-F761-3.1.8,test,fallacy,761,Erreur de raisonnement,5,1,3.1.8
+test-F761-5.2.4,test,fallacy,761,Erreur de raisonnement,5,1,5.2.4
+test-F762-2.1.10,test,fallacy,762,Erreur de raisonnement,5,0,2.1.10
+test-F762-5.2.4,test,fallacy,762,Erreur de raisonnement,5,0,5.2.4
+test-F763-1.2.1,test,fallacy,763,Erreur de raisonnement,6,0,1.2.1
+test-F763-6.1.3,test,fallacy,763,Erreur de raisonnement,6,0,6.1.3
+test-F764-1.3.2,test,fallacy,764,Erreur de raisonnement,7,1,1.3.2
+test-F764-6.2.4,test,fallacy,764,Erreur de raisonnement,7,1,6.2.4
+test-F765-3.1.4,test,fallacy,765,Erreur de raisonnement,5,1,3.1.4
+test-F765-7.2.2,test,fallacy,765,Erreur de raisonnement,5,1,7.2.2
+test-F766-1.3.3,test,fallacy,766,Erreur de raisonnement,5,0,1.3.3
+test-F766-7.2.11,test,fallacy,766,Erreur de raisonnement,5,0,7.2.11
+test-F767-2.1.10,test,fallacy,767,Erreur de raisonnement,6,1,2.1.10
+test-F767-3.1.8,test,fallacy,767,Erreur de raisonnement,6,1,3.1.8
+test-F768-2.2.8,test,fallacy,768,Erreur de raisonnement,4,0,2.2.8
+test-F768-3.1.8,test,fallacy,768,Erreur de raisonnement,4,0,3.1.8
+test-F769-6.2.4,test,fallacy,769,Erreur de raisonnement,5,1,6.2.4
+test-F769-7.2.12,test,fallacy,769,Erreur de raisonnement,5,1,7.2.12
+test-F770-1.3.2,test,fallacy,770,Erreur de raisonnement,4,1,1.3.2
+test-F770-1.3.3,test,fallacy,770,Erreur de raisonnement,4,1,1.3.3
+test-F771-1.3.2,test,fallacy,771,Erreur de raisonnement,4,0,1.3.2
+test-F771-4.2.4,test,fallacy,771,Erreur de raisonnement,4,0,4.2.4
+test-F772-2.2.5,test,fallacy,772,Erreur de raisonnement,5,1,2.2.5
+test-F772-3.2.5,test,fallacy,772,Erreur de raisonnement,5,1,3.2.5
+test-F773-6.2.4,test,fallacy,773,Erreur de raisonnement,4,1,6.2.4
+test-F773-7.3.5,test,fallacy,773,Erreur de raisonnement,4,1,7.3.5
+test-F774-2.1.10,test,fallacy,774,Erreur de raisonnement,4,1,2.1.10
+test-F774-5.1.3,test,fallacy,774,Erreur de raisonnement,4,1,5.1.3
+test-F775-2.2.5,test,fallacy,775,Erreur de raisonnement,4,1,2.2.5
+test-F775-7.2.12,test,fallacy,775,Erreur de raisonnement,4,1,7.2.12
+test-F776-2.2.8,test,fallacy,776,Erreur de raisonnement,4,1,2.2.8
+test-F776-3.2.5,test,fallacy,776,Erreur de raisonnement,4,1,3.2.5
+test-F777-6.2.4,test,fallacy,777,Erreur de raisonnement,3,0,6.2.4
+test-F777-7.2.11,test,fallacy,777,Erreur de raisonnement,3,0,7.2.11
+test-F778-7.2.11,test,fallacy,778,Erreur de raisonnement,4,0,7.2.11
+test-F778-7.2.2,test,fallacy,778,Erreur de raisonnement,4,0,7.2.2
+test-F779-1.2.1,test,fallacy,779,Erreur de raisonnement,5,1,1.2.1
+test-F779-5.1.5,test,fallacy,779,Erreur de raisonnement,5,1,5.1.5
+test-F780-3.2.1,test,fallacy,780,Erreur de raisonnement,4,0,3.2.1
+test-F780-7.3.5,test,fallacy,780,Erreur de raisonnement,4,0,7.3.5
+test-F781-3.1.8,test,fallacy,781,Erreur de raisonnement,5,1,3.1.8
+test-F781-7.2.12,test,fallacy,781,Erreur de raisonnement,5,1,7.2.12
+test-F782-5.1.3,test,fallacy,782,Erreur de raisonnement,5,1,5.1.3
+test-F782-6.1.3,test,fallacy,782,Erreur de raisonnement,5,1,6.1.3
+test-F783-2.2.5,test,fallacy,783,Erreur de raisonnement,4,1,2.2.5
+test-F783-3.1.4,test,fallacy,783,Erreur de raisonnement,4,1,3.1.4
+test-F784-2.1.1,test,fallacy,784,Erreur de raisonnement,3,0,2.1.1
+test-F784-7.2.11,test,fallacy,784,Erreur de raisonnement,3,0,7.2.11
+test-F785-1.3.3,test,fallacy,785,Erreur de raisonnement,4,0,1.3.3
+test-F785-2.2.8,test,fallacy,785,Erreur de raisonnement,4,0,2.2.8
+test-F786-2.2.5,test,fallacy,786,Erreur de raisonnement,5,0,2.2.5
+test-F786-6.2.4,test,fallacy,786,Erreur de raisonnement,5,0,6.2.4
+test-F787-1.3.2,test,fallacy,787,Erreur de raisonnement,6,1,1.3.2
+test-F787-3.1.4,test,fallacy,787,Erreur de raisonnement,6,1,3.1.4
+test-F788-2.2.8,test,fallacy,788,Erreur de raisonnement,5,0,2.2.8
+test-F788-6.2.4,test,fallacy,788,Erreur de raisonnement,5,0,6.2.4
+test-F789-3.1.4,test,fallacy,789,Erreur de raisonnement,6,1,3.1.4
+test-F789-3.2.1,test,fallacy,789,Erreur de raisonnement,6,1,3.2.1
+test-F790-2.2.5,test,fallacy,790,Erreur de raisonnement,6,1,2.2.5
+test-F790-3.1.4,test,fallacy,790,Erreur de raisonnement,6,1,3.1.4
+test-F791-1.3.3,test,fallacy,791,Erreur de raisonnement,4,0,1.3.3
+test-F791-3.2.1,test,fallacy,791,Erreur de raisonnement,4,0,3.2.1
+test-F792-7.2.11,test,fallacy,792,Erreur de raisonnement,5,1,7.2.11
+test-F792-7.2.2,test,fallacy,792,Erreur de raisonnement,5,1,7.2.2
+test-F793-1.3.2,test,fallacy,793,Erreur de raisonnement,5,1,1.3.2
+test-F793-1.3.3,test,fallacy,793,Erreur de raisonnement,5,1,1.3.3
+test-F794-1.3.2,test,fallacy,794,Erreur de raisonnement,5,1,1.3.2
+test-F794-2.1.1,test,fallacy,794,Erreur de raisonnement,5,1,2.1.1
+test-F795-3.1.4,test,fallacy,795,Erreur de raisonnement,4,0,3.1.4
+test-F795-7.3.5,test,fallacy,795,Erreur de raisonnement,4,0,7.3.5
+test-F796-1.3.2,test,fallacy,796,Erreur de raisonnement,5,1,1.3.2
+test-F796-4.2.4,test,fallacy,796,Erreur de raisonnement,5,1,4.2.4
+test-F797-4.2.4,test,fallacy,797,Erreur de raisonnement,5,1,4.2.4
+test-F797-5.2.4,test,fallacy,797,Erreur de raisonnement,5,1,5.2.4
+test-F594-4.2.4,test,fallacy,594,Erreur mathématique,1,0,4.2.4
+test-F594-7.2.11,test,fallacy,594,Erreur mathématique,1,0,7.2.11
+test-F595-2.1.1,test,fallacy,595,Erreur mathématique,2,0,2.1.1
+test-F595-6.1.3,test,fallacy,595,Erreur mathématique,2,0,6.1.3
+test-F596-3.2.1,test,fallacy,596,Erreur mathématique,3,0,3.2.1
+test-F596-5.1.3,test,fallacy,596,Erreur mathématique,3,0,5.1.3
+test-F597-2.1.1,test,fallacy,597,Erreur mathématique,4,0,2.1.1
+test-F597-3.1.4,test,fallacy,597,Erreur mathématique,4,0,3.1.4
+test-F598-3.1.4,test,fallacy,598,Erreur mathématique,5,0,3.1.4
+test-F598-3.2.11,test,fallacy,598,Erreur mathématique,5,0,3.2.11
+test-F599-3.2.1,test,fallacy,599,Erreur mathématique,6,1,3.2.1
+test-F599-5.2.4,test,fallacy,599,Erreur mathématique,6,1,5.2.4
+test-F600-1.2.1,test,fallacy,600,Erreur mathématique,6,1,1.2.1
+test-F600-5.1.3,test,fallacy,600,Erreur mathématique,6,1,5.1.3
+test-F601-3.2.1,test,fallacy,601,Erreur mathématique,5,1,3.2.1
+test-F601-4.1.12,test,fallacy,601,Erreur mathématique,5,1,4.1.12
+test-F602-2.2.8,test,fallacy,602,Erreur mathématique,4,0,2.2.8
+test-F602-4.3.6,test,fallacy,602,Erreur mathématique,4,0,4.3.6
+test-F603-2.1.1,test,fallacy,603,Erreur mathématique,5,1,2.1.1
+test-F603-7.3.5,test,fallacy,603,Erreur mathématique,5,1,7.3.5
+test-F604-1.3.2,test,fallacy,604,Erreur mathématique,5,0,1.3.2
+test-F604-4.3.6,test,fallacy,604,Erreur mathématique,5,0,4.3.6
+test-F605-5.2.4,test,fallacy,605,Erreur mathématique,6,1,5.2.4
+test-F605-7.2.12,test,fallacy,605,Erreur mathématique,6,1,7.2.12
+test-F606-1.2.1,test,fallacy,606,Erreur mathématique,5,0,1.2.1
+test-F606-6.1.3,test,fallacy,606,Erreur mathématique,5,0,6.1.3
+test-F607-1.3.2,test,fallacy,607,Erreur mathématique,6,1,1.3.2
+test-F607-2.1.10,test,fallacy,607,Erreur mathématique,6,1,2.1.10
+test-F608-2.1.1,test,fallacy,608,Erreur mathématique,4,0,2.1.1
+test-F608-4.2.4,test,fallacy,608,Erreur mathématique,4,0,4.2.4
+test-F609-3.1.8,test,fallacy,609,Erreur mathématique,5,0,3.1.8
+test-F609-4.3.9,test,fallacy,609,Erreur mathématique,5,0,4.3.9
+test-F610-2.2.8,test,fallacy,610,Erreur mathématique,6,1,2.2.8
+test-F610-5.1.5,test,fallacy,610,Erreur mathématique,6,1,5.1.5
+test-F611-1.3.2,test,fallacy,611,Erreur mathématique,5,1,1.3.2
+test-F611-1.3.3,test,fallacy,611,Erreur mathématique,5,1,1.3.3
+test-F612-4.1.12,test,fallacy,612,Erreur mathématique,5,1,4.1.12
+test-F612-5.2.4,test,fallacy,612,Erreur mathématique,5,1,5.2.4
+test-F613-3.2.1,test,fallacy,613,Erreur mathématique,5,1,3.2.1
+test-F613-7.2.11,test,fallacy,613,Erreur mathématique,5,1,7.2.11
+test-F614-1.3.2,test,fallacy,614,Erreur mathématique,3,0,1.3.2
+test-F614-5.2.4,test,fallacy,614,Erreur mathématique,3,0,5.2.4
+test-F615-1.3.2,test,fallacy,615,Erreur mathématique,4,0,1.3.2
+test-F615-3.2.5,test,fallacy,615,Erreur mathématique,4,0,3.2.5
+test-F616-4.3.6,test,fallacy,616,Erreur mathématique,5,1,4.3.6
+test-F616-7.2.2,test,fallacy,616,Erreur mathématique,5,1,7.2.2
+test-F617-2.1.1,test,fallacy,617,Erreur mathématique,4,1,2.1.1
+test-F617-2.2.5,test,fallacy,617,Erreur mathématique,4,1,2.2.5
+test-F618-1.2.1,test,fallacy,618,Erreur mathématique,4,0,1.2.1
+test-F618-1.3.2,test,fallacy,618,Erreur mathématique,4,0,1.3.2
+test-F619-2.2.8,test,fallacy,619,Erreur mathématique,5,1,2.2.8
+test-F619-3.2.5,test,fallacy,619,Erreur mathématique,5,1,3.2.5
+test-F620-4.3.6,test,fallacy,620,Erreur mathématique,4,1,4.3.6
+test-F620-5.2.4,test,fallacy,620,Erreur mathématique,4,1,5.2.4
+test-F621-2.2.8,test,fallacy,621,Erreur mathématique,3,0,2.2.8
+test-F621-5.2.4,test,fallacy,621,Erreur mathématique,3,0,5.2.4
+test-F622-3.2.11,test,fallacy,622,Erreur mathématique,4,0,3.2.11
+test-F622-6.2.4,test,fallacy,622,Erreur mathématique,4,0,6.2.4
+test-F623-1.3.3,test,fallacy,623,Erreur mathématique,5,1,1.3.3
+test-F623-7.2.11,test,fallacy,623,Erreur mathématique,5,1,7.2.11
+test-F624-1.3.3,test,fallacy,624,Erreur mathématique,5,1,1.3.3
+test-F624-7.2.12,test,fallacy,624,Erreur mathématique,5,1,7.2.12
+test-F625-3.2.1,test,fallacy,625,Erreur mathématique,4,0,3.2.1
+test-F625-7.3.5,test,fallacy,625,Erreur mathématique,4,0,7.3.5
+test-F626-1.3.3,test,fallacy,626,Erreur mathématique,5,0,1.3.3
+test-F626-7.2.11,test,fallacy,626,Erreur mathématique,5,0,7.2.11
+test-F627-6.2.4,test,fallacy,627,Erreur mathématique,6,1,6.2.4
+test-F627-7.2.2,test,fallacy,627,Erreur mathématique,6,1,7.2.2
+test-F628-3.1.8,test,fallacy,628,Erreur mathématique,6,1,3.1.8
+test-F628-4.3.6,test,fallacy,628,Erreur mathématique,6,1,4.3.6
+test-F629-1.3.2,test,fallacy,629,Erreur mathématique,6,1,1.3.2
+test-F629-4.2.4,test,fallacy,629,Erreur mathématique,6,1,4.2.4
+test-F630-1.3.2,test,fallacy,630,Erreur mathématique,6,1,1.3.2
+test-F630-4.3.6,test,fallacy,630,Erreur mathématique,6,1,4.3.6
+test-F631-3.1.4,test,fallacy,631,Erreur mathématique,5,1,3.1.4
+test-F631-4.3.6,test,fallacy,631,Erreur mathématique,5,1,4.3.6
+test-F632-4.2.4,test,fallacy,632,Erreur mathématique,2,0,4.2.4
+test-F632-6.1.3,test,fallacy,632,Erreur mathématique,2,0,6.1.3
+test-F633-5.1.3,test,fallacy,633,Erreur mathématique,3,0,5.1.3
+test-F633-5.1.5,test,fallacy,633,Erreur mathématique,3,0,5.1.5
+test-F634-5.1.3,test,fallacy,634,Erreur mathématique,4,1,5.1.3
+test-F634-7.2.12,test,fallacy,634,Erreur mathématique,4,1,7.2.12
+test-F635-4.3.9,test,fallacy,635,Erreur mathématique,4,1,4.3.9
+test-F635-7.2.11,test,fallacy,635,Erreur mathématique,4,1,7.2.11
+test-F636-4.3.6,test,fallacy,636,Erreur mathématique,4,1,4.3.6
+test-F636-7.2.11,test,fallacy,636,Erreur mathématique,4,1,7.2.11
+test-F637-2.1.1,test,fallacy,637,Erreur mathématique,4,0,2.1.1
+test-F637-5.2.4,test,fallacy,637,Erreur mathématique,4,0,5.2.4
+test-F638-5.1.3,test,fallacy,638,Erreur mathématique,5,1,5.1.3
+test-F638-7.3.5,test,fallacy,638,Erreur mathématique,5,1,7.3.5
+test-F639-5.1.3,test,fallacy,639,Erreur mathématique,5,1,5.1.3
+test-F639-6.1.3,test,fallacy,639,Erreur mathématique,5,1,6.1.3
+test-F640-2.1.1,test,fallacy,640,Erreur mathématique,5,1,2.1.1
+test-F640-2.1.10,test,fallacy,640,Erreur mathématique,5,1,2.1.10
+test-F641-5.2.4,test,fallacy,641,Erreur mathématique,5,1,5.2.4
+test-F641-7.2.2,test,fallacy,641,Erreur mathématique,5,1,7.2.2
+test-F642-4.1.12,test,fallacy,642,Erreur mathématique,4,0,4.1.12
+test-F642-5.2.4,test,fallacy,642,Erreur mathématique,4,0,5.2.4
+test-F643-2.1.1,test,fallacy,643,Erreur mathématique,5,1,2.1.1
+test-F643-3.2.11,test,fallacy,643,Erreur mathématique,5,1,3.2.11
+test-F644-1.3.3,test,fallacy,644,Erreur mathématique,3,0,1.3.3
+test-F644-7.3.5,test,fallacy,644,Erreur mathématique,3,0,7.3.5
+test-F645-1.3.3,test,fallacy,645,Erreur mathématique,4,0,1.3.3
+test-F645-5.2.4,test,fallacy,645,Erreur mathématique,4,0,5.2.4
+test-F646-5.1.3,test,fallacy,646,Erreur mathématique,5,1,5.1.3
+test-F646-7.2.11,test,fallacy,646,Erreur mathématique,5,1,7.2.11
+test-F647-4.3.9,test,fallacy,647,Erreur mathématique,4,0,4.3.9
+test-F647-5.2.4,test,fallacy,647,Erreur mathématique,4,0,5.2.4
+test-F648-4.3.9,test,fallacy,648,Erreur mathématique,5,1,4.3.9
+test-F648-6.1.3,test,fallacy,648,Erreur mathématique,5,1,6.1.3
+test-F649-1.3.3,test,fallacy,649,Erreur mathématique,5,1,1.3.3
+test-F649-3.1.4,test,fallacy,649,Erreur mathématique,5,1,3.1.4
+test-F650-1.3.2,test,fallacy,650,Erreur mathématique,5,1,1.3.2
+test-F650-5.1.3,test,fallacy,650,Erreur mathématique,5,1,5.1.3
+test-F651-4.1.12,test,fallacy,651,Erreur mathématique,5,1,4.1.12
+test-F651-4.3.6,test,fallacy,651,Erreur mathématique,5,1,4.3.6
+test-F652-3.1.8,test,fallacy,652,Erreur mathématique,4,0,3.1.8
+test-F652-7.2.2,test,fallacy,652,Erreur mathématique,4,0,7.2.2
+test-F653-2.1.1,test,fallacy,653,Erreur mathématique,5,1,2.1.1
+test-F653-3.2.1,test,fallacy,653,Erreur mathématique,5,1,3.2.1
+test-F654-2.1.1,test,fallacy,654,Erreur mathématique,5,1,2.1.1
+test-F654-7.3.5,test,fallacy,654,Erreur mathématique,5,1,7.3.5
+test-F655-3.2.1,test,fallacy,655,Erreur mathématique,5,1,3.2.1
+test-F655-5.1.5,test,fallacy,655,Erreur mathématique,5,1,5.1.5
+test-F656-3.1.8,test,fallacy,656,Erreur mathématique,5,1,3.1.8
+test-F656-6.1.3,test,fallacy,656,Erreur mathématique,5,1,6.1.3
+test-F657-4.3.6,test,fallacy,657,Erreur mathématique,4,1,4.3.6
+test-F657-4.3.9,test,fallacy,657,Erreur mathématique,4,1,4.3.9
+test-F658-2.1.1,test,fallacy,658,Erreur mathématique,3,0,2.1.1
+test-F658-5.1.3,test,fallacy,658,Erreur mathématique,3,0,5.1.3
+test-F659-1.2.1,test,fallacy,659,Erreur mathématique,4,0,1.2.1
+test-F659-2.2.8,test,fallacy,659,Erreur mathématique,4,0,2.2.8
+test-F660-3.1.8,test,fallacy,660,Erreur mathématique,5,1,3.1.8
+test-F660-3.2.1,test,fallacy,660,Erreur mathématique,5,1,3.2.1
+test-F661-1.3.3,test,fallacy,661,Erreur mathématique,4,0,1.3.3
+test-F661-3.2.1,test,fallacy,661,Erreur mathématique,4,0,3.2.1
+test-F662-5.2.4,test,fallacy,662,Erreur mathématique,5,0,5.2.4
+test-F662-6.1.3,test,fallacy,662,Erreur mathématique,5,0,6.1.3
+test-F663-4.3.6,test,fallacy,663,Erreur mathématique,6,1,4.3.6
+test-F663-6.2.4,test,fallacy,663,Erreur mathématique,6,1,6.2.4
+test-F664-1.2.1,test,fallacy,664,Erreur mathématique,5,0,1.2.1
+test-F664-5.2.4,test,fallacy,664,Erreur mathématique,5,0,5.2.4
+test-F665-7.2.12,test,fallacy,665,Erreur mathématique,6,1,7.2.12
+test-F665-7.2.2,test,fallacy,665,Erreur mathématique,6,1,7.2.2
+test-F666-2.2.8,test,fallacy,666,Erreur mathématique,2,0,2.2.8
+test-F666-5.2.4,test,fallacy,666,Erreur mathématique,2,0,5.2.4
+test-F667-7.2.2,test,fallacy,667,Erreur mathématique,3,0,7.2.2
+test-F667-7.3.5,test,fallacy,667,Erreur mathématique,3,0,7.3.5
+test-F668-1.3.2,test,fallacy,668,Erreur mathématique,4,0,1.3.2
+test-F668-6.2.4,test,fallacy,668,Erreur mathématique,4,0,6.2.4
+test-F669-1.2.1,test,fallacy,669,Erreur mathématique,5,1,1.2.1
+test-F669-7.3.5,test,fallacy,669,Erreur mathématique,5,1,7.3.5
+test-F670-4.2.4,test,fallacy,670,Erreur mathématique,4,0,4.2.4
+test-F670-5.1.5,test,fallacy,670,Erreur mathématique,4,0,5.1.5
+test-F671-2.1.1,test,fallacy,671,Erreur mathématique,5,0,2.1.1
+test-F671-3.2.11,test,fallacy,671,Erreur mathématique,5,0,3.2.11
+test-F672-2.1.10,test,fallacy,672,Erreur mathématique,6,1,2.1.10
+test-F672-6.2.4,test,fallacy,672,Erreur mathématique,6,1,6.2.4
+test-F673-2.2.8,test,fallacy,673,Erreur mathématique,5,0,2.2.8
+test-F673-4.2.4,test,fallacy,673,Erreur mathématique,5,0,4.2.4
+test-F674-6.2.4,test,fallacy,674,Erreur mathématique,6,1,6.2.4
+test-F674-7.2.2,test,fallacy,674,Erreur mathématique,6,1,7.2.2
+test-F675-4.2.4,test,fallacy,675,Erreur mathématique,5,1,4.2.4
+test-F675-4.3.9,test,fallacy,675,Erreur mathématique,5,1,4.3.9
+test-F676-3.2.1,test,fallacy,676,Erreur mathématique,4,0,3.2.1
+test-F676-6.1.3,test,fallacy,676,Erreur mathématique,4,0,6.1.3
+test-F677-4.3.9,test,fallacy,677,Erreur mathématique,5,1,4.3.9
+test-F677-5.1.5,test,fallacy,677,Erreur mathématique,5,1,5.1.5
+test-F678-2.2.5,test,fallacy,678,Erreur mathématique,5,1,2.2.5
+test-F678-5.1.5,test,fallacy,678,Erreur mathématique,5,1,5.1.5
+test-F679-3.1.4,test,fallacy,679,Erreur mathématique,5,1,3.1.4
+test-F679-3.1.8,test,fallacy,679,Erreur mathématique,5,1,3.1.8
+test-F680-1.3.2,test,fallacy,680,Erreur mathématique,5,1,1.3.2
+test-F680-5.1.3,test,fallacy,680,Erreur mathématique,5,1,5.1.3
+test-F681-2.2.8,test,fallacy,681,Erreur mathématique,3,0,2.2.8
+test-F681-7.2.11,test,fallacy,681,Erreur mathématique,3,0,7.2.11
+test-F682-3.2.11,test,fallacy,682,Erreur mathématique,4,1,3.2.11
+test-F682-4.2.4,test,fallacy,682,Erreur mathématique,4,1,4.2.4
+test-F683-2.2.8,test,fallacy,683,Erreur mathématique,4,0,2.2.8
+test-F683-3.1.8,test,fallacy,683,Erreur mathématique,4,0,3.1.8
+test-F684-2.2.8,test,fallacy,684,Erreur mathématique,5,1,2.2.8
+test-F684-7.2.12,test,fallacy,684,Erreur mathématique,5,1,7.2.12
+test-F685-6.2.4,test,fallacy,685,Erreur mathématique,5,1,6.2.4
+test-F685-7.2.2,test,fallacy,685,Erreur mathématique,5,1,7.2.2
+test-F686-3.1.8,test,fallacy,686,Erreur mathématique,5,1,3.1.8
+test-F686-7.2.11,test,fallacy,686,Erreur mathématique,5,1,7.2.11
+test-F687-5.1.5,test,fallacy,687,Erreur mathématique,5,1,5.1.5
+test-F687-7.2.12,test,fallacy,687,Erreur mathématique,5,1,7.2.12
+test-F688-2.2.8,test,fallacy,688,Erreur mathématique,5,1,2.2.8
+test-F688-3.1.8,test,fallacy,688,Erreur mathématique,5,1,3.1.8
+test-F689-1.3.3,test,fallacy,689,Erreur mathématique,4,1,1.3.3
+test-F689-3.2.5,test,fallacy,689,Erreur mathématique,4,1,3.2.5
+test-F690-4.1.12,test,fallacy,690,Erreur mathématique,3,0,4.1.12
+test-F690-6.1.3,test,fallacy,690,Erreur mathématique,3,0,6.1.3
+test-F691-4.2.4,test,fallacy,691,Erreur mathématique,4,0,4.2.4
+test-F691-5.2.4,test,fallacy,691,Erreur mathématique,4,0,5.2.4
+test-F692-2.1.10,test,fallacy,692,Erreur mathématique,5,1,2.1.10
+test-F692-3.1.8,test,fallacy,692,Erreur mathématique,5,1,3.1.8
+test-F693-3.2.11,test,fallacy,693,Erreur mathématique,5,1,3.2.11
+test-F693-4.3.9,test,fallacy,693,Erreur mathématique,5,1,4.3.9
+test-F694-3.1.4,test,fallacy,694,Erreur mathématique,4,1,3.1.4
+test-F694-6.1.3,test,fallacy,694,Erreur mathématique,4,1,6.1.3
+test-F695-1.2.1,test,fallacy,695,Erreur mathématique,4,1,1.2.1
+test-F695-5.1.5,test,fallacy,695,Erreur mathématique,4,1,5.1.5
+test-F175-6.1.3,test,fallacy,175,Influence,1,0,6.1.3
+test-F175-7.2.2,test,fallacy,175,Influence,1,0,7.2.2
+test-F176-7.2.2,test,fallacy,176,Influence,2,0,7.2.2
+test-F176-7.3.5,test,fallacy,176,Influence,2,0,7.3.5
+test-F177-2.2.5,test,fallacy,177,Influence,3,0,2.2.5
+test-F177-7.2.11,test,fallacy,177,Influence,3,0,7.2.11
+test-F178-1.2.1,test,fallacy,178,Influence,4,0,1.2.1
+test-F178-6.2.4,test,fallacy,178,Influence,4,0,6.2.4
+test-F179-1.3.3,test,fallacy,179,Influence,5,0,1.3.3
+test-F179-3.1.4,test,fallacy,179,Influence,5,0,3.1.4
+test-F180-6.2.4,test,fallacy,180,Influence,6,1,6.2.4
+test-F180-7.2.12,test,fallacy,180,Influence,6,1,7.2.12
+test-F181-4.2.4,test,fallacy,181,Influence,5,1,4.2.4
+test-F181-7.2.12,test,fallacy,181,Influence,5,1,7.2.12
+test-F182-2.2.8,test,fallacy,182,Influence,5,1,2.2.8
+test-F182-3.2.5,test,fallacy,182,Influence,5,1,3.2.5
+test-F183-1.2.1,test,fallacy,183,Influence,4,1,1.2.1
+test-F183-1.3.3,test,fallacy,183,Influence,4,1,1.3.3
+test-F184-2.2.8,test,fallacy,184,Influence,4,1,2.2.8
+test-F184-4.2.4,test,fallacy,184,Influence,4,1,4.2.4
+test-F185-4.3.6,test,fallacy,185,Influence,4,0,4.3.6
+test-F185-4.3.9,test,fallacy,185,Influence,4,0,4.3.9
+test-F186-7.2.2,test,fallacy,186,Influence,5,1,7.2.2
+test-F186-7.3.5,test,fallacy,186,Influence,5,1,7.3.5
+test-F187-2.2.8,test,fallacy,187,Influence,5,1,2.2.8
+test-F187-4.1.12,test,fallacy,187,Influence,5,1,4.1.12
+test-F188-4.1.12,test,fallacy,188,Influence,5,1,4.1.12
+test-F188-7.3.5,test,fallacy,188,Influence,5,1,7.3.5
+test-F189-4.3.6,test,fallacy,189,Influence,5,1,4.3.6
+test-F189-6.1.3,test,fallacy,189,Influence,5,1,6.1.3
+test-F190-2.2.5,test,fallacy,190,Influence,4,0,2.2.5
+test-F190-5.1.3,test,fallacy,190,Influence,4,0,5.1.3
+test-F191-4.2.4,test,fallacy,191,Influence,5,0,4.2.4
+test-F191-6.2.4,test,fallacy,191,Influence,5,0,6.2.4
+test-F192-3.1.4,test,fallacy,192,Influence,6,1,3.1.4
+test-F192-5.2.4,test,fallacy,192,Influence,6,1,5.2.4
+test-F193-1.3.3,test,fallacy,193,Influence,6,0,1.3.3
+test-F193-3.2.1,test,fallacy,193,Influence,6,0,3.2.1
+test-F194-4.3.6,test,fallacy,194,Influence,7,1,4.3.6
+test-F194-6.1.3,test,fallacy,194,Influence,7,1,6.1.3
+test-F195-1.3.2,test,fallacy,195,Influence,7,1,1.3.2
+test-F195-3.2.11,test,fallacy,195,Influence,7,1,3.2.11
+test-F196-5.2.4,test,fallacy,196,Influence,7,1,5.2.4
+test-F196-6.2.4,test,fallacy,196,Influence,7,1,6.2.4
+test-F197-3.2.5,test,fallacy,197,Influence,7,0,3.2.5
+test-F197-5.2.4,test,fallacy,197,Influence,7,0,5.2.4
+test-F198-3.1.4,test,fallacy,198,Influence,8,1,3.1.4
+test-F198-3.1.8,test,fallacy,198,Influence,8,1,3.1.8
+test-F199-3.1.8,test,fallacy,199,Influence,7,0,3.1.8
+test-F199-7.2.12,test,fallacy,199,Influence,7,0,7.2.12
+test-F200-4.1.12,test,fallacy,200,Influence,8,1,4.1.12
+test-F200-5.1.3,test,fallacy,200,Influence,8,1,5.1.3
+test-F201-4.3.9,test,fallacy,201,Influence,7,1,4.3.9
+test-F201-7.2.2,test,fallacy,201,Influence,7,1,7.2.2
+test-F202-5.1.5,test,fallacy,202,Influence,6,1,5.1.5
+test-F202-7.2.11,test,fallacy,202,Influence,6,1,7.2.11
+test-F203-2.1.1,test,fallacy,203,Influence,5,0,2.1.1
+test-F203-5.1.5,test,fallacy,203,Influence,5,0,5.1.5
+test-F204-4.2.4,test,fallacy,204,Influence,6,1,4.2.4
+test-F204-6.2.4,test,fallacy,204,Influence,6,1,6.2.4
+test-F205-3.2.11,test,fallacy,205,Influence,6,1,3.2.11
+test-F205-3.2.5,test,fallacy,205,Influence,6,1,3.2.5
+test-F206-2.2.5,test,fallacy,206,Influence,6,1,2.2.5
+test-F206-3.2.1,test,fallacy,206,Influence,6,1,3.2.1
+test-F207-7.2.11,test,fallacy,207,Influence,6,0,7.2.11
+test-F207-7.3.5,test,fallacy,207,Influence,6,0,7.3.5
+test-F208-3.2.11,test,fallacy,208,Influence,7,1,3.2.11
+test-F208-6.2.4,test,fallacy,208,Influence,7,1,6.2.4
+test-F209-3.2.5,test,fallacy,209,Influence,7,0,3.2.5
+test-F209-5.1.3,test,fallacy,209,Influence,7,0,5.1.3
+test-F210-2.1.1,test,fallacy,210,Influence,8,1,2.1.1
+test-F210-4.1.12,test,fallacy,210,Influence,8,1,4.1.12
+test-F211-4.1.12,test,fallacy,211,Influence,5,1,4.1.12
+test-F211-4.3.6,test,fallacy,211,Influence,5,1,4.3.6
+test-F212-3.2.11,test,fallacy,212,Influence,4,0,3.2.11
+test-F212-7.2.2,test,fallacy,212,Influence,4,0,7.2.2
+test-F213-4.3.6,test,fallacy,213,Influence,5,0,4.3.6
+test-F213-7.2.2,test,fallacy,213,Influence,5,0,7.2.2
+test-F214-3.1.8,test,fallacy,214,Influence,6,1,3.1.8
+test-F214-6.1.3,test,fallacy,214,Influence,6,1,6.1.3
+test-F215-2.2.5,test,fallacy,215,Influence,5,0,2.2.5
+test-F215-4.3.6,test,fallacy,215,Influence,5,0,4.3.6
+test-F216-2.1.1,test,fallacy,216,Influence,6,1,2.1.1
+test-F216-4.3.9,test,fallacy,216,Influence,6,1,4.3.9
+test-F217-1.3.2,test,fallacy,217,Influence,5,1,1.3.2
+test-F217-5.1.3,test,fallacy,217,Influence,5,1,5.1.3
+test-F218-1.2.1,test,fallacy,218,Influence,5,1,1.2.1
+test-F218-2.1.1,test,fallacy,218,Influence,5,1,2.1.1
+test-F219-2.1.10,test,fallacy,219,Influence,3,0,2.1.10
+test-F219-4.3.9,test,fallacy,219,Influence,3,0,4.3.9
+test-F220-3.1.4,test,fallacy,220,Influence,4,0,3.1.4
+test-F220-4.1.12,test,fallacy,220,Influence,4,0,4.1.12
+test-F221-3.2.5,test,fallacy,221,Influence,5,1,3.2.5
+test-F221-4.3.6,test,fallacy,221,Influence,5,1,4.3.6
+test-F222-3.1.8,test,fallacy,222,Influence,5,0,3.1.8
+test-F222-7.2.2,test,fallacy,222,Influence,5,0,7.2.2
+test-F223-1.3.3,test,fallacy,223,Influence,6,1,1.3.3
+test-F223-7.2.12,test,fallacy,223,Influence,6,1,7.2.12
+test-F224-3.2.1,test,fallacy,224,Influence,6,1,3.2.1
+test-F224-4.3.9,test,fallacy,224,Influence,6,1,4.3.9
+test-F225-4.1.12,test,fallacy,225,Influence,6,1,4.1.12
+test-F225-5.2.4,test,fallacy,225,Influence,6,1,5.2.4
+test-F226-3.1.8,test,fallacy,226,Influence,6,1,3.1.8
+test-F226-3.2.11,test,fallacy,226,Influence,6,1,3.2.11
+test-F227-1.2.1,test,fallacy,227,Influence,5,0,1.2.1
+test-F227-6.1.3,test,fallacy,227,Influence,5,0,6.1.3
+test-F228-3.2.11,test,fallacy,228,Influence,6,1,3.2.11
+test-F228-4.3.6,test,fallacy,228,Influence,6,1,4.3.6
+test-F229-7.2.11,test,fallacy,229,Influence,6,0,7.2.11
+test-F229-7.2.12,test,fallacy,229,Influence,6,0,7.2.12
+test-F230-3.2.1,test,fallacy,230,Influence,7,1,3.2.1
+test-F230-3.2.5,test,fallacy,230,Influence,7,1,3.2.5
+test-F231-4.2.4,test,fallacy,231,Influence,4,0,4.2.4
+test-F231-7.2.11,test,fallacy,231,Influence,4,0,7.2.11
+test-F232-6.2.4,test,fallacy,232,Influence,5,1,6.2.4
+test-F232-7.2.12,test,fallacy,232,Influence,5,1,7.2.12
+test-F233-2.1.1,test,fallacy,233,Influence,5,0,2.1.1
+test-F233-4.3.6,test,fallacy,233,Influence,5,0,4.3.6
+test-F234-1.3.2,test,fallacy,234,Influence,6,1,1.3.2
+test-F234-6.2.4,test,fallacy,234,Influence,6,1,6.2.4
+test-F235-1.3.3,test,fallacy,235,Influence,6,0,1.3.3
+test-F235-4.3.9,test,fallacy,235,Influence,6,0,4.3.9
+test-F236-3.2.5,test,fallacy,236,Influence,7,1,3.2.5
+test-F236-4.3.9,test,fallacy,236,Influence,7,1,4.3.9
+test-F237-7.2.11,test,fallacy,237,Influence,7,1,7.2.11
+test-F237-7.3.5,test,fallacy,237,Influence,7,1,7.3.5
+test-F238-2.2.8,test,fallacy,238,Influence,5,0,2.2.8
+test-F238-4.3.6,test,fallacy,238,Influence,5,0,4.3.6
+test-F239-3.2.11,test,fallacy,239,Influence,6,1,3.2.11
+test-F239-7.2.2,test,fallacy,239,Influence,6,1,7.2.2
+test-F240-2.2.8,test,fallacy,240,Influence,6,0,2.2.8
+test-F240-4.1.12,test,fallacy,240,Influence,6,0,4.1.12
+test-F241-1.2.1,test,fallacy,241,Influence,7,1,1.2.1
+test-F241-5.2.4,test,fallacy,241,Influence,7,1,5.2.4
+test-F242-1.3.3,test,fallacy,242,Influence,7,1,1.3.3
+test-F242-3.1.4,test,fallacy,242,Influence,7,1,3.1.4
+test-F243-2.2.8,test,fallacy,243,Influence,7,1,2.2.8
+test-F243-6.2.4,test,fallacy,243,Influence,7,1,6.2.4
+test-F244-2.2.8,test,fallacy,244,Influence,4,0,2.2.8
+test-F244-4.3.9,test,fallacy,244,Influence,4,0,4.3.9
+test-F245-4.3.9,test,fallacy,245,Influence,5,1,4.3.9
+test-F245-7.2.11,test,fallacy,245,Influence,5,1,7.2.11
+test-F246-6.1.3,test,fallacy,246,Influence,5,1,6.1.3
+test-F246-7.2.12,test,fallacy,246,Influence,5,1,7.2.12
+test-F247-1.3.2,test,fallacy,247,Influence,3,0,1.3.2
+test-F247-5.2.4,test,fallacy,247,Influence,3,0,5.2.4
+test-F248-3.2.11,test,fallacy,248,Influence,4,0,3.2.11
+test-F248-5.1.5,test,fallacy,248,Influence,4,0,5.1.5
+test-F249-3.1.8,test,fallacy,249,Influence,5,1,3.1.8
+test-F249-7.2.11,test,fallacy,249,Influence,5,1,7.2.11
+test-F250-5.1.3,test,fallacy,250,Influence,5,1,5.1.3
+test-F250-7.3.5,test,fallacy,250,Influence,5,1,7.3.5
+test-F251-2.1.1,test,fallacy,251,Influence,5,1,2.1.1
+test-F251-7.2.12,test,fallacy,251,Influence,5,1,7.2.12
+test-F252-2.2.8,test,fallacy,252,Influence,5,1,2.2.8
+test-F252-5.2.4,test,fallacy,252,Influence,5,1,5.2.4
+test-F253-4.3.9,test,fallacy,253,Influence,5,0,4.3.9
+test-F253-7.3.5,test,fallacy,253,Influence,5,0,7.3.5
+test-F254-3.2.1,test,fallacy,254,Influence,6,1,3.2.1
+test-F254-5.1.3,test,fallacy,254,Influence,6,1,5.1.3
+test-F255-1.2.1,test,fallacy,255,Influence,4,0,1.2.1
+test-F255-3.1.8,test,fallacy,255,Influence,4,0,3.1.8
+test-F256-4.3.9,test,fallacy,256,Influence,5,0,4.3.9
+test-F256-7.2.2,test,fallacy,256,Influence,5,0,7.2.2
+test-F257-1.3.3,test,fallacy,257,Influence,6,1,1.3.3
+test-F257-4.3.6,test,fallacy,257,Influence,6,1,4.3.6
+test-F258-3.1.8,test,fallacy,258,Influence,6,1,3.1.8
+test-F258-6.1.3,test,fallacy,258,Influence,6,1,6.1.3
+test-F259-7.2.11,test,fallacy,259,Influence,5,0,7.2.11
+test-F259-7.2.2,test,fallacy,259,Influence,5,0,7.2.2
+test-F260-2.1.1,test,fallacy,260,Influence,6,1,2.1.1
+test-F260-4.3.6,test,fallacy,260,Influence,6,1,4.3.6
+test-F261-3.2.11,test,fallacy,261,Influence,6,1,3.2.11
+test-F261-7.2.2,test,fallacy,261,Influence,6,1,7.2.2
+test-F262-1.2.1,test,fallacy,262,Influence,5,0,1.2.1
+test-F262-6.1.3,test,fallacy,262,Influence,5,0,6.1.3
+test-F263-1.3.2,test,fallacy,263,Influence,6,1,1.3.2
+test-F263-5.2.4,test,fallacy,263,Influence,6,1,5.2.4
+test-F264-2.2.5,test,fallacy,264,Influence,5,0,2.2.5
+test-F264-6.1.3,test,fallacy,264,Influence,5,0,6.1.3
+test-F265-5.2.4,test,fallacy,265,Influence,6,1,5.2.4
+test-F265-7.2.2,test,fallacy,265,Influence,6,1,7.2.2
+test-F266-4.3.9,test,fallacy,266,Influence,6,1,4.3.9
+test-F266-7.2.2,test,fallacy,266,Influence,6,1,7.2.2
+test-F267-2.2.5,test,fallacy,267,Influence,5,1,2.2.5
+test-F267-5.1.5,test,fallacy,267,Influence,5,1,5.1.5
+test-F268-1.3.2,test,fallacy,268,Influence,4,0,1.3.2
+test-F268-2.2.8,test,fallacy,268,Influence,4,0,2.2.8
+test-F269-3.2.11,test,fallacy,269,Influence,5,1,3.2.11
+test-F269-4.1.12,test,fallacy,269,Influence,5,1,4.1.12
+test-F270-3.2.1,test,fallacy,270,Influence,5,1,3.2.1
+test-F270-3.2.11,test,fallacy,270,Influence,5,1,3.2.11
+test-F271-2.2.5,test,fallacy,271,Influence,5,1,2.2.5
+test-F271-7.3.5,test,fallacy,271,Influence,5,1,7.3.5
+test-F272-2.2.8,test,fallacy,272,Influence,5,1,2.2.8
+test-F272-4.1.12,test,fallacy,272,Influence,5,1,4.1.12
+test-F273-4.3.6,test,fallacy,273,Influence,4,0,4.3.6
+test-F273-6.1.3,test,fallacy,273,Influence,4,0,6.1.3
+test-F274-3.1.8,test,fallacy,274,Influence,5,1,3.1.8
+test-F274-6.2.4,test,fallacy,274,Influence,5,1,6.2.4
+test-F275-3.2.1,test,fallacy,275,Influence,5,1,3.2.1
+test-F275-3.2.5,test,fallacy,275,Influence,5,1,3.2.5
+test-F276-2.1.1,test,fallacy,276,Influence,5,1,2.1.1
+test-F276-4.2.4,test,fallacy,276,Influence,5,1,4.2.4
+test-F277-4.1.12,test,fallacy,277,Influence,5,1,4.1.12
+test-F277-7.3.5,test,fallacy,277,Influence,5,1,7.3.5
+test-F278-3.2.1,test,fallacy,278,Influence,5,1,3.2.1
+test-F278-7.3.5,test,fallacy,278,Influence,5,1,7.3.5
+test-F279-5.1.3,test,fallacy,279,Influence,5,1,5.1.3
+test-F279-5.2.4,test,fallacy,279,Influence,5,1,5.2.4
+test-F280-3.1.4,test,fallacy,280,Influence,5,1,3.1.4
+test-F280-7.2.11,test,fallacy,280,Influence,5,1,7.2.11
+test-F281-1.3.2,test,fallacy,281,Influence,5,1,1.3.2
+test-F281-4.1.12,test,fallacy,281,Influence,5,1,4.1.12
+test-F282-2.1.10,test,fallacy,282,Influence,4,0,2.1.10
+test-F282-7.2.2,test,fallacy,282,Influence,4,0,7.2.2
+test-F283-1.3.2,test,fallacy,283,Influence,5,1,1.3.2
+test-F283-3.2.1,test,fallacy,283,Influence,5,1,3.2.1
+test-F284-5.1.5,test,fallacy,284,Influence,5,1,5.1.5
+test-F284-6.2.4,test,fallacy,284,Influence,5,1,6.2.4
+test-F285-3.1.4,test,fallacy,285,Influence,5,1,3.1.4
+test-F285-3.2.1,test,fallacy,285,Influence,5,1,3.2.1
+test-F286-5.1.5,test,fallacy,286,Influence,5,1,5.1.5
+test-F286-7.2.12,test,fallacy,286,Influence,5,1,7.2.12
+test-F287-2.2.8,test,fallacy,287,Influence,5,1,2.2.8
+test-F287-3.1.4,test,fallacy,287,Influence,5,1,3.1.4
+test-F288-2.1.10,test,fallacy,288,Influence,5,0,2.1.10
+test-F288-3.1.4,test,fallacy,288,Influence,5,0,3.1.4
+test-F289-4.1.12,test,fallacy,289,Influence,6,1,4.1.12
+test-F289-5.2.4,test,fallacy,289,Influence,6,1,5.2.4
+test-F290-1.3.3,test,fallacy,290,Influence,4,0,1.3.3
+test-F290-7.2.11,test,fallacy,290,Influence,4,0,7.2.11
+test-F291-2.2.5,test,fallacy,291,Influence,5,1,2.2.5
+test-F291-3.1.4,test,fallacy,291,Influence,5,1,3.1.4
+test-F292-6.2.4,test,fallacy,292,Influence,5,1,6.2.4
+test-F292-7.2.11,test,fallacy,292,Influence,5,1,7.2.11
+test-F293-6.1.3,test,fallacy,293,Influence,5,1,6.1.3
+test-F293-7.2.11,test,fallacy,293,Influence,5,1,7.2.11
+test-F294-2.2.5,test,fallacy,294,Influence,5,1,2.2.5
+test-F294-7.2.12,test,fallacy,294,Influence,5,1,7.2.12
+test-F295-2.2.5,test,fallacy,295,Influence,5,0,2.2.5
+test-F295-3.2.5,test,fallacy,295,Influence,5,0,3.2.5
+test-F296-4.3.6,test,fallacy,296,Influence,6,1,4.3.6
+test-F296-6.2.4,test,fallacy,296,Influence,6,1,6.2.4
+test-F297-2.2.5,test,fallacy,297,Influence,5,0,2.2.5
+test-F297-4.3.9,test,fallacy,297,Influence,5,0,4.3.9
+test-F298-4.3.9,test,fallacy,298,Influence,6,1,4.3.9
+test-F298-7.3.5,test,fallacy,298,Influence,6,1,7.3.5
+test-F299-1.3.3,test,fallacy,299,Influence,2,0,1.3.3
+test-F299-3.2.11,test,fallacy,299,Influence,2,0,3.2.11
+test-F300-2.2.5,test,fallacy,300,Influence,3,0,2.2.5
+test-F300-7.2.11,test,fallacy,300,Influence,3,0,7.2.11
+test-F301-2.2.5,test,fallacy,301,Influence,4,0,2.2.5
+test-F301-5.1.5,test,fallacy,301,Influence,4,0,5.1.5
+test-F302-3.1.8,test,fallacy,302,Influence,5,1,3.1.8
+test-F302-4.3.6,test,fallacy,302,Influence,5,1,4.3.6
+test-F303-1.3.2,test,fallacy,303,Influence,4,0,1.3.2
+test-F303-1.3.3,test,fallacy,303,Influence,4,0,1.3.3
+test-F304-3.2.1,test,fallacy,304,Influence,5,1,3.2.1
+test-F304-7.2.2,test,fallacy,304,Influence,5,1,7.2.2
+test-F305-3.2.1,test,fallacy,305,Influence,5,0,3.2.1
+test-F305-5.1.5,test,fallacy,305,Influence,5,0,5.1.5
+test-F306-2.2.8,test,fallacy,306,Influence,6,1,2.2.8
+test-F306-5.1.5,test,fallacy,306,Influence,6,1,5.1.5
+test-F307-2.2.8,test,fallacy,307,Influence,6,1,2.2.8
+test-F307-5.1.5,test,fallacy,307,Influence,6,1,5.1.5
+test-F308-1.2.1,test,fallacy,308,Influence,5,0,1.2.1
+test-F308-6.2.4,test,fallacy,308,Influence,5,0,6.2.4
+test-F309-4.2.4,test,fallacy,309,Influence,6,1,4.2.4
+test-F309-5.2.4,test,fallacy,309,Influence,6,1,5.2.4
+test-F310-3.2.5,test,fallacy,310,Influence,6,1,3.2.5
+test-F310-5.1.5,test,fallacy,310,Influence,6,1,5.1.5
+test-F311-2.2.8,test,fallacy,311,Influence,6,1,2.2.8
+test-F311-3.2.5,test,fallacy,311,Influence,6,1,3.2.5
+test-F312-3.2.5,test,fallacy,312,Influence,5,1,3.2.5
+test-F312-4.1.12,test,fallacy,312,Influence,5,1,4.1.12
+test-F313-4.3.9,test,fallacy,313,Influence,4,0,4.3.9
+test-F313-7.3.5,test,fallacy,313,Influence,4,0,7.3.5
+test-F314-2.2.5,test,fallacy,314,Influence,5,1,2.2.5
+test-F314-2.2.8,test,fallacy,314,Influence,5,1,2.2.8
+test-F315-5.1.3,test,fallacy,315,Influence,5,0,5.1.3
+test-F315-7.2.2,test,fallacy,315,Influence,5,0,7.2.2
+test-F316-2.1.10,test,fallacy,316,Influence,6,0,2.1.10
+test-F316-7.2.12,test,fallacy,316,Influence,6,0,7.2.12
+test-F317-2.1.10,test,fallacy,317,Influence,7,1,2.1.10
+test-F317-7.2.2,test,fallacy,317,Influence,7,1,7.2.2
+test-F318-3.1.4,test,fallacy,318,Influence,5,1,3.1.4
+test-F318-7.2.11,test,fallacy,318,Influence,5,1,7.2.11
+test-F319-2.1.10,test,fallacy,319,Influence,4,0,2.1.10
+test-F319-4.3.9,test,fallacy,319,Influence,4,0,4.3.9
+test-F320-1.2.1,test,fallacy,320,Influence,5,1,1.2.1
+test-F320-4.3.6,test,fallacy,320,Influence,5,1,4.3.6
+test-F321-3.2.5,test,fallacy,321,Influence,5,1,3.2.5
+test-F321-4.3.6,test,fallacy,321,Influence,5,1,4.3.6
+test-F322-1.3.3,test,fallacy,322,Influence,3,0,1.3.3
+test-F322-5.2.4,test,fallacy,322,Influence,3,0,5.2.4
+test-F323-4.2.4,test,fallacy,323,Influence,4,0,4.2.4
+test-F323-4.3.6,test,fallacy,323,Influence,4,0,4.3.6
+test-F324-3.2.5,test,fallacy,324,Influence,5,0,3.2.5
+test-F324-5.1.3,test,fallacy,324,Influence,5,0,5.1.3
+test-F325-3.2.11,test,fallacy,325,Influence,6,1,3.2.11
+test-F325-5.1.5,test,fallacy,325,Influence,6,1,5.1.5
+test-F326-2.2.5,test,fallacy,326,Influence,5,1,2.2.5
+test-F326-3.2.1,test,fallacy,326,Influence,5,1,3.2.1
+test-F327-4.1.12,test,fallacy,327,Influence,5,0,4.1.12
+test-F327-7.3.5,test,fallacy,327,Influence,5,0,7.3.5
+test-F328-3.2.1,test,fallacy,328,Influence,6,1,3.2.1
+test-F328-7.3.5,test,fallacy,328,Influence,6,1,7.3.5
+test-F329-5.1.5,test,fallacy,329,Influence,4,0,5.1.5
+test-F329-7.2.2,test,fallacy,329,Influence,4,0,7.2.2
+test-F330-4.1.12,test,fallacy,330,Influence,5,1,4.1.12
+test-F330-4.2.4,test,fallacy,330,Influence,5,1,4.2.4
+test-F331-2.1.10,test,fallacy,331,Influence,5,1,2.1.10
+test-F331-2.2.5,test,fallacy,331,Influence,5,1,2.2.5
+test-F332-3.1.8,test,fallacy,332,Influence,4,0,3.1.8
+test-F332-7.2.12,test,fallacy,332,Influence,4,0,7.2.12
+test-F333-2.1.10,test,fallacy,333,Influence,5,1,2.1.10
+test-F333-2.2.8,test,fallacy,333,Influence,5,1,2.2.8
+test-F334-1.3.2,test,fallacy,334,Influence,5,1,1.3.2
+test-F334-5.2.4,test,fallacy,334,Influence,5,1,5.2.4
+test-F335-1.3.2,test,fallacy,335,Influence,5,1,1.3.2
+test-F335-3.1.4,test,fallacy,335,Influence,5,1,3.1.4
+test-F336-2.1.10,test,fallacy,336,Influence,5,1,2.1.10
+test-F336-3.2.1,test,fallacy,336,Influence,5,1,3.2.1
+test-F337-2.1.1,test,fallacy,337,Influence,4,0,2.1.1
+test-F337-6.2.4,test,fallacy,337,Influence,4,0,6.2.4
+test-F338-1.2.1,test,fallacy,338,Influence,5,1,1.2.1
+test-F338-3.1.8,test,fallacy,338,Influence,5,1,3.1.8
+test-F339-2.2.5,test,fallacy,339,Influence,5,1,2.2.5
+test-F339-5.1.3,test,fallacy,339,Influence,5,1,5.1.3
+test-F340-3.1.4,test,fallacy,340,Influence,3,0,3.1.4
+test-F340-4.2.4,test,fallacy,340,Influence,3,0,4.2.4
+test-F341-2.2.5,test,fallacy,341,Influence,4,0,2.2.5
+test-F341-4.3.9,test,fallacy,341,Influence,4,0,4.3.9
+test-F342-1.3.3,test,fallacy,342,Influence,5,1,1.3.3
+test-F342-7.2.12,test,fallacy,342,Influence,5,1,7.2.12
+test-F343-1.2.1,test,fallacy,343,Influence,5,1,1.2.1
+test-F343-4.1.12,test,fallacy,343,Influence,5,1,4.1.12
+test-F344-3.2.1,test,fallacy,344,Influence,5,1,3.2.1
+test-F344-7.2.11,test,fallacy,344,Influence,5,1,7.2.11
+test-F345-7.2.12,test,fallacy,345,Influence,5,1,7.2.12
+test-F345-7.3.5,test,fallacy,345,Influence,5,1,7.3.5
+test-F346-6.2.4,test,fallacy,346,Influence,5,1,6.2.4
+test-F346-7.2.11,test,fallacy,346,Influence,5,1,7.2.11
+test-F347-3.1.4,test,fallacy,347,Influence,4,0,3.1.4
+test-F347-7.2.11,test,fallacy,347,Influence,4,0,7.2.11
+test-F348-1.3.2,test,fallacy,348,Influence,5,0,1.3.2
+test-F348-7.2.11,test,fallacy,348,Influence,5,0,7.2.11
+test-F349-1.3.3,test,fallacy,349,Influence,6,1,1.3.3
+test-F349-7.3.5,test,fallacy,349,Influence,6,1,7.3.5
+test-F350-1.3.2,test,fallacy,350,Influence,6,1,1.3.2
+test-F350-6.1.3,test,fallacy,350,Influence,6,1,6.1.3
+test-F351-3.2.5,test,fallacy,351,Influence,4,0,3.2.5
+test-F351-6.2.4,test,fallacy,351,Influence,4,0,6.2.4
+test-F352-4.1.12,test,fallacy,352,Influence,5,1,4.1.12
+test-F352-7.2.12,test,fallacy,352,Influence,5,1,7.2.12
+test-F353-3.1.8,test,fallacy,353,Influence,5,1,3.1.8
+test-F353-4.3.6,test,fallacy,353,Influence,5,1,4.3.6
+test-F354-7.2.11,test,fallacy,354,Influence,5,1,7.2.11
+test-F354-7.3.5,test,fallacy,354,Influence,5,1,7.3.5
+test-F355-3.2.11,test,fallacy,355,Influence,4,1,3.2.11
+test-F355-4.1.12,test,fallacy,355,Influence,4,1,4.1.12
+test-F356-3.2.5,test,fallacy,356,Influence,2,0,3.2.5
+test-F356-4.3.9,test,fallacy,356,Influence,2,0,4.3.9
+test-F357-3.2.1,test,fallacy,357,Influence,3,0,3.2.1
+test-F357-4.2.4,test,fallacy,357,Influence,3,0,4.2.4
+test-F358-2.1.1,test,fallacy,358,Influence,4,0,2.1.1
+test-F358-6.1.3,test,fallacy,358,Influence,4,0,6.1.3
+test-F359-3.2.5,test,fallacy,359,Influence,5,0,3.2.5
+test-F359-6.1.3,test,fallacy,359,Influence,5,0,6.1.3
+test-F360-4.3.6,test,fallacy,360,Influence,6,1,4.3.6
+test-F360-5.2.4,test,fallacy,360,Influence,6,1,5.2.4
+test-F361-1.2.1,test,fallacy,361,Influence,6,0,1.2.1
+test-F361-4.3.6,test,fallacy,361,Influence,6,0,4.3.6
+test-F362-4.3.9,test,fallacy,362,Influence,7,1,4.3.9
+test-F362-5.1.3,test,fallacy,362,Influence,7,1,5.1.3
+test-F363-3.2.5,test,fallacy,363,Influence,6,1,3.2.5
+test-F363-6.2.4,test,fallacy,363,Influence,6,1,6.2.4
+test-F364-5.1.3,test,fallacy,364,Influence,6,1,5.1.3
+test-F364-6.2.4,test,fallacy,364,Influence,6,1,6.2.4
+test-F365-1.3.2,test,fallacy,365,Influence,6,1,1.3.2
+test-F365-2.1.1,test,fallacy,365,Influence,6,1,2.1.1
+test-F366-2.1.1,test,fallacy,366,Influence,6,1,2.1.1
+test-F366-7.2.2,test,fallacy,366,Influence,6,1,7.2.2
+test-F367-3.1.4,test,fallacy,367,Influence,6,1,3.1.4
+test-F367-3.2.1,test,fallacy,367,Influence,6,1,3.2.1
+test-F368-1.3.2,test,fallacy,368,Influence,6,1,1.3.2
+test-F368-3.1.8,test,fallacy,368,Influence,6,1,3.1.8
+test-F369-2.1.10,test,fallacy,369,Influence,5,0,2.1.10
+test-F369-7.3.5,test,fallacy,369,Influence,5,0,7.3.5
+test-F370-5.2.4,test,fallacy,370,Influence,6,0,5.2.4
+test-F370-7.2.12,test,fallacy,370,Influence,6,0,7.2.12
+test-F371-5.1.3,test,fallacy,371,Influence,7,1,5.1.3
+test-F371-6.1.3,test,fallacy,371,Influence,7,1,6.1.3
+test-F372-3.2.11,test,fallacy,372,Influence,7,1,3.2.11
+test-F372-5.1.3,test,fallacy,372,Influence,7,1,5.1.3
+test-F373-3.2.1,test,fallacy,373,Influence,6,0,3.2.1
+test-F373-5.1.5,test,fallacy,373,Influence,6,0,5.1.5
+test-F374-6.1.3,test,fallacy,374,Influence,7,1,6.1.3
+test-F374-6.2.4,test,fallacy,374,Influence,7,1,6.2.4
+test-F375-2.2.5,test,fallacy,375,Influence,7,1,2.2.5
+test-F375-7.3.5,test,fallacy,375,Influence,7,1,7.3.5
+test-F376-2.1.1,test,fallacy,376,Influence,5,0,2.1.1
+test-F376-3.1.8,test,fallacy,376,Influence,5,0,3.1.8
+test-F377-2.2.8,test,fallacy,377,Influence,6,1,2.2.8
+test-F377-5.2.4,test,fallacy,377,Influence,6,1,5.2.4
+test-F378-2.1.10,test,fallacy,378,Influence,6,1,2.1.10
+test-F378-6.2.4,test,fallacy,378,Influence,6,1,6.2.4
+test-F379-2.2.8,test,fallacy,379,Influence,6,1,2.2.8
+test-F379-5.1.5,test,fallacy,379,Influence,6,1,5.1.5
+test-F380-7.2.12,test,fallacy,380,Influence,6,1,7.2.12
+test-F380-7.2.2,test,fallacy,380,Influence,6,1,7.2.2
+test-F381-1.2.1,test,fallacy,381,Influence,6,1,1.2.1
+test-F381-4.3.9,test,fallacy,381,Influence,6,1,4.3.9
+test-F382-1.2.1,test,fallacy,382,Influence,6,1,1.2.1
+test-F382-2.1.1,test,fallacy,382,Influence,6,1,2.1.1
+test-F383-3.1.4,test,fallacy,383,Influence,5,1,3.1.4
+test-F383-4.1.12,test,fallacy,383,Influence,5,1,4.1.12
+test-F384-2.1.10,test,fallacy,384,Influence,4,0,2.1.10
+test-F384-4.3.6,test,fallacy,384,Influence,4,0,4.3.6
+test-F385-2.1.10,test,fallacy,385,Influence,5,0,2.1.10
+test-F385-5.1.3,test,fallacy,385,Influence,5,0,5.1.3
+test-F386-3.1.4,test,fallacy,386,Influence,6,1,3.1.4
+test-F386-4.3.9,test,fallacy,386,Influence,6,1,4.3.9
+test-F387-1.2.1,test,fallacy,387,Influence,5,0,1.2.1
+test-F387-7.2.11,test,fallacy,387,Influence,5,0,7.2.11
+test-F388-2.2.5,test,fallacy,388,Influence,6,1,2.2.5
+test-F388-5.2.4,test,fallacy,388,Influence,6,1,5.2.4
+test-F389-3.1.4,test,fallacy,389,Influence,5,0,3.1.4
+test-F389-6.2.4,test,fallacy,389,Influence,5,0,6.2.4
+test-F390-1.2.1,test,fallacy,390,Influence,6,1,1.2.1
+test-F390-2.2.5,test,fallacy,390,Influence,6,1,2.2.5
+test-F391-4.3.6,test,fallacy,391,Influence,5,1,4.3.6
+test-F391-7.2.12,test,fallacy,391,Influence,5,1,7.2.12
+test-F392-1.2.1,test,fallacy,392,Influence,4,0,1.2.1
+test-F392-2.1.1,test,fallacy,392,Influence,4,0,2.1.1
+test-F393-2.1.1,test,fallacy,393,Influence,5,0,2.1.1
+test-F393-7.3.5,test,fallacy,393,Influence,5,0,7.3.5
+test-F394-3.2.1,test,fallacy,394,Influence,6,1,3.2.1
+test-F394-7.2.2,test,fallacy,394,Influence,6,1,7.2.2
+test-F395-1.3.2,test,fallacy,395,Influence,6,1,1.3.2
+test-F395-5.1.3,test,fallacy,395,Influence,6,1,5.1.3
+test-F396-2.2.5,test,fallacy,396,Influence,6,1,2.2.5
+test-F396-3.1.8,test,fallacy,396,Influence,6,1,3.1.8
+test-F397-3.2.11,test,fallacy,397,Influence,6,1,3.2.11
+test-F397-5.1.5,test,fallacy,397,Influence,6,1,5.1.5
+test-F398-2.2.5,test,fallacy,398,Influence,5,0,2.2.5
+test-F398-6.1.3,test,fallacy,398,Influence,5,0,6.1.3
+test-F399-5.1.5,test,fallacy,399,Influence,6,1,5.1.5
+test-F399-7.2.12,test,fallacy,399,Influence,6,1,7.2.12
+test-F400-4.3.9,test,fallacy,400,Influence,6,1,4.3.9
+test-F400-5.1.3,test,fallacy,400,Influence,6,1,5.1.3
+test-F401-3.1.8,test,fallacy,401,Influence,6,1,3.1.8
+test-F401-5.1.3,test,fallacy,401,Influence,6,1,5.1.3
+test-F402-3.1.8,test,fallacy,402,Influence,6,1,3.1.8
+test-F402-7.3.5,test,fallacy,402,Influence,6,1,7.3.5
+test-F403-1.2.1,test,fallacy,403,Influence,6,1,1.2.1
+test-F403-3.1.4,test,fallacy,403,Influence,6,1,3.1.4
+test-F404-4.1.12,test,fallacy,404,Influence,4,0,4.1.12
+test-F404-5.1.5,test,fallacy,404,Influence,4,0,5.1.5
+test-F405-3.1.8,test,fallacy,405,Influence,5,1,3.1.8
+test-F405-5.1.3,test,fallacy,405,Influence,5,1,5.1.3
+test-F406-6.1.3,test,fallacy,406,Influence,5,1,6.1.3
+test-F406-6.2.4,test,fallacy,406,Influence,5,1,6.2.4
+test-F407-2.1.1,test,fallacy,407,Influence,4,0,2.1.1
+test-F407-3.2.1,test,fallacy,407,Influence,4,0,3.2.1
+test-F408-6.2.4,test,fallacy,408,Influence,5,0,6.2.4
+test-F408-7.2.2,test,fallacy,408,Influence,5,0,7.2.2
+test-F409-2.1.1,test,fallacy,409,Influence,6,1,2.1.1
+test-F409-5.1.3,test,fallacy,409,Influence,6,1,5.1.3
+test-F410-2.2.5,test,fallacy,410,Influence,5,1,2.2.5
+test-F410-6.1.3,test,fallacy,410,Influence,5,1,6.1.3
+test-F411-4.2.4,test,fallacy,411,Influence,5,1,4.2.4
+test-F411-5.1.5,test,fallacy,411,Influence,5,1,5.1.5
+test-F412-4.1.12,test,fallacy,412,Influence,5,1,4.1.12
+test-F412-6.1.3,test,fallacy,412,Influence,5,1,6.1.3
+test-F413-4.1.12,test,fallacy,413,Influence,5,1,4.1.12
+test-F413-6.2.4,test,fallacy,413,Influence,5,1,6.2.4
+test-F414-4.3.6,test,fallacy,414,Influence,4,0,4.3.6
+test-F414-7.3.5,test,fallacy,414,Influence,4,0,7.3.5
+test-F415-4.1.12,test,fallacy,415,Influence,5,1,4.1.12
+test-F415-4.3.6,test,fallacy,415,Influence,5,1,4.3.6
+test-F416-3.1.8,test,fallacy,416,Influence,5,0,3.1.8
+test-F416-3.2.11,test,fallacy,416,Influence,5,0,3.2.11
+test-F417-1.3.3,test,fallacy,417,Influence,6,1,1.3.3
+test-F417-5.1.3,test,fallacy,417,Influence,6,1,5.1.3
+test-F418-4.3.9,test,fallacy,418,Influence,5,1,4.3.9
+test-F418-6.1.3,test,fallacy,418,Influence,5,1,6.1.3
+test-F419-2.2.5,test,fallacy,419,Influence,5,1,2.2.5
+test-F419-3.2.1,test,fallacy,419,Influence,5,1,3.2.1
+test-F420-2.1.10,test,fallacy,420,Influence,3,0,2.1.10
+test-F420-7.2.11,test,fallacy,420,Influence,3,0,7.2.11
+test-F421-4.2.4,test,fallacy,421,Influence,4,0,4.2.4
+test-F421-7.2.2,test,fallacy,421,Influence,4,0,7.2.2
+test-F422-3.1.4,test,fallacy,422,Influence,5,0,3.1.4
+test-F422-5.2.4,test,fallacy,422,Influence,5,0,5.2.4
+test-F423-3.2.5,test,fallacy,423,Influence,6,0,3.2.5
+test-F423-6.1.3,test,fallacy,423,Influence,6,0,6.1.3
+test-F424-4.2.4,test,fallacy,424,Influence,7,1,4.2.4
+test-F424-6.1.3,test,fallacy,424,Influence,7,1,6.1.3
+test-F425-2.2.8,test,fallacy,425,Influence,7,1,2.2.8
+test-F425-6.2.4,test,fallacy,425,Influence,7,1,6.2.4
+test-F426-1.3.2,test,fallacy,426,Influence,6,1,1.3.2
+test-F426-7.2.12,test,fallacy,426,Influence,6,1,7.2.12
+test-F427-4.3.9,test,fallacy,427,Influence,6,1,4.3.9
+test-F427-7.2.11,test,fallacy,427,Influence,6,1,7.2.11
+test-F428-2.2.8,test,fallacy,428,Influence,6,1,2.2.8
+test-F428-3.1.4,test,fallacy,428,Influence,6,1,3.1.4
+test-F429-3.2.11,test,fallacy,429,Influence,5,1,3.2.11
+test-F429-4.1.12,test,fallacy,429,Influence,5,1,4.1.12
+test-F430-4.1.12,test,fallacy,430,Influence,5,1,4.1.12
+test-F430-6.1.3,test,fallacy,430,Influence,5,1,6.1.3
+test-F431-3.1.4,test,fallacy,431,Influence,4,0,3.1.4
+test-F431-7.3.5,test,fallacy,431,Influence,4,0,7.3.5
+test-F432-1.2.1,test,fallacy,432,Influence,5,0,1.2.1
+test-F432-7.3.5,test,fallacy,432,Influence,5,0,7.3.5
+test-F433-2.2.5,test,fallacy,433,Influence,6,0,2.2.5
+test-F433-3.2.1,test,fallacy,433,Influence,6,0,3.2.1
+test-F434-4.3.9,test,fallacy,434,Influence,7,0,4.3.9
+test-F434-5.1.5,test,fallacy,434,Influence,7,0,5.1.5
+test-F435-1.3.3,test,fallacy,435,Influence,8,1,1.3.3
+test-F435-5.2.4,test,fallacy,435,Influence,8,1,5.2.4
+test-F436-2.1.10,test,fallacy,436,Influence,8,1,2.1.10
+test-F436-2.2.8,test,fallacy,436,Influence,8,1,2.2.8
+test-F437-1.3.3,test,fallacy,437,Influence,7,1,1.3.3
+test-F437-3.2.1,test,fallacy,437,Influence,7,1,3.2.1
+test-F438-6.1.3,test,fallacy,438,Influence,7,1,6.1.3
+test-F438-6.2.4,test,fallacy,438,Influence,7,1,6.2.4
+test-F439-2.2.5,test,fallacy,439,Influence,7,0,2.2.5
+test-F439-5.1.3,test,fallacy,439,Influence,7,0,5.1.3
+test-F440-3.2.11,test,fallacy,440,Influence,8,1,3.2.11
+test-F440-4.3.6,test,fallacy,440,Influence,8,1,4.3.6
+test-F441-3.1.4,test,fallacy,441,Influence,6,0,3.1.4
+test-F441-3.2.5,test,fallacy,441,Influence,6,0,3.2.5
+test-F442-3.2.1,test,fallacy,442,Influence,7,0,3.2.1
+test-F442-6.1.3,test,fallacy,442,Influence,7,0,6.1.3
+test-F443-1.3.3,test,fallacy,443,Influence,8,1,1.3.3
+test-F443-3.1.8,test,fallacy,443,Influence,8,1,3.1.8
+test-F444-4.3.9,test,fallacy,444,Influence,7,1,4.3.9
+test-F444-7.3.5,test,fallacy,444,Influence,7,1,7.3.5
+test-F445-4.2.4,test,fallacy,445,Influence,7,0,4.2.4
+test-F445-5.2.4,test,fallacy,445,Influence,7,0,5.2.4
+test-F446-2.1.1,test,fallacy,446,Influence,8,1,2.1.1
+test-F446-2.2.8,test,fallacy,446,Influence,8,1,2.2.8
+test-F447-1.3.2,test,fallacy,447,Influence,7,1,1.3.2
+test-F447-4.3.9,test,fallacy,447,Influence,7,1,4.3.9
+test-F448-1.3.2,test,fallacy,448,Influence,7,0,1.3.2
+test-F448-4.1.12,test,fallacy,448,Influence,7,0,4.1.12
+test-F449-3.2.1,test,fallacy,449,Influence,8,1,3.2.1
+test-F449-4.3.6,test,fallacy,449,Influence,8,1,4.3.6
+test-F450-1.2.1,test,fallacy,450,Influence,7,1,1.2.1
+test-F450-2.2.8,test,fallacy,450,Influence,7,1,2.2.8
+test-F451-3.1.8,test,fallacy,451,Influence,7,1,3.1.8
+test-F451-5.1.5,test,fallacy,451,Influence,7,1,5.1.5
+test-F452-3.1.4,test,fallacy,452,Influence,5,1,3.1.4
+test-F452-4.3.9,test,fallacy,452,Influence,5,1,4.3.9
+test-F453-1.3.3,test,fallacy,453,Influence,5,1,1.3.3
+test-F453-2.2.5,test,fallacy,453,Influence,5,1,2.2.5
+test-F454-4.2.4,test,fallacy,454,Influence,5,1,4.2.4
+test-F454-5.1.3,test,fallacy,454,Influence,5,1,5.1.3
+test-F455-2.2.5,test,fallacy,455,Influence,5,1,2.2.5
+test-F455-7.2.12,test,fallacy,455,Influence,5,1,7.2.12
+test-F456-4.3.9,test,fallacy,456,Influence,4,0,4.3.9
+test-F456-7.3.5,test,fallacy,456,Influence,4,0,7.3.5
+test-F457-3.1.4,test,fallacy,457,Influence,5,0,3.1.4
+test-F457-4.2.4,test,fallacy,457,Influence,5,0,4.2.4
+test-F458-2.2.5,test,fallacy,458,Influence,6,0,2.2.5
+test-F458-5.1.3,test,fallacy,458,Influence,6,0,5.1.3
+test-F459-3.2.1,test,fallacy,459,Influence,7,1,3.2.1
+test-F459-6.1.3,test,fallacy,459,Influence,7,1,6.1.3
+test-F460-3.2.5,test,fallacy,460,Influence,7,1,3.2.5
+test-F460-7.2.12,test,fallacy,460,Influence,7,1,7.2.12
+test-F461-2.2.8,test,fallacy,461,Influence,6,0,2.2.8
+test-F461-7.2.12,test,fallacy,461,Influence,6,0,7.2.12
+test-F462-3.2.11,test,fallacy,462,Influence,7,1,3.2.11
+test-F462-5.1.5,test,fallacy,462,Influence,7,1,5.1.5
+test-F463-4.2.4,test,fallacy,463,Influence,7,1,4.2.4
+test-F463-7.2.12,test,fallacy,463,Influence,7,1,7.2.12
+test-F464-1.3.2,test,fallacy,464,Influence,7,1,1.3.2
+test-F464-5.1.5,test,fallacy,464,Influence,7,1,5.1.5
+test-F465-1.2.1,test,fallacy,465,Influence,6,1,1.2.1
+test-F465-4.1.12,test,fallacy,465,Influence,6,1,4.1.12
+test-F466-1.3.2,test,fallacy,466,Influence,6,0,1.3.2
+test-F466-5.1.5,test,fallacy,466,Influence,6,0,5.1.5
+test-F467-3.2.5,test,fallacy,467,Influence,7,0,3.2.5
+test-F467-7.2.11,test,fallacy,467,Influence,7,0,7.2.11
+test-F468-4.1.12,test,fallacy,468,Influence,8,1,4.1.12
+test-F468-5.1.5,test,fallacy,468,Influence,8,1,5.1.5
+test-F469-7.2.2,test,fallacy,469,Influence,7,1,7.2.2
+test-F469-7.3.5,test,fallacy,469,Influence,7,1,7.3.5
+test-F470-2.1.10,test,fallacy,470,Influence,7,1,2.1.10
+test-F470-4.1.12,test,fallacy,470,Influence,7,1,4.1.12
+test-F471-2.1.1,test,fallacy,471,Influence,6,1,2.1.1
+test-F471-4.3.6,test,fallacy,471,Influence,6,1,4.3.6
+test-F472-3.2.1,test,fallacy,472,Influence,5,0,3.2.1
+test-F472-5.1.5,test,fallacy,472,Influence,5,0,5.1.5
+test-F473-3.1.4,test,fallacy,473,Influence,6,1,3.1.4
+test-F473-3.2.1,test,fallacy,473,Influence,6,1,3.2.1
+test-F474-3.2.11,test,fallacy,474,Influence,6,0,3.2.11
+test-F474-7.3.5,test,fallacy,474,Influence,6,0,7.3.5
+test-F475-3.1.8,test,fallacy,475,Influence,7,1,3.1.8
+test-F475-4.3.6,test,fallacy,475,Influence,7,1,4.3.6
+test-F476-2.1.10,test,fallacy,476,Influence,7,1,2.1.10
+test-F476-4.3.9,test,fallacy,476,Influence,7,1,4.3.9
+test-F477-4.3.6,test,fallacy,477,Influence,7,1,4.3.6
+test-F477-4.3.9,test,fallacy,477,Influence,7,1,4.3.9
+test-F478-2.1.1,test,fallacy,478,Influence,7,1,2.1.1
+test-F478-3.1.8,test,fallacy,478,Influence,7,1,3.1.8
+test-F479-3.2.11,test,fallacy,479,Influence,6,0,3.2.11
+test-F479-6.2.4,test,fallacy,479,Influence,6,0,6.2.4
+test-F480-2.2.8,test,fallacy,480,Influence,7,1,2.2.8
+test-F480-7.3.5,test,fallacy,480,Influence,7,1,7.3.5
+test-F481-1.3.3,test,fallacy,481,Influence,7,0,1.3.3
+test-F481-4.3.6,test,fallacy,481,Influence,7,0,4.3.6
+test-F482-2.1.10,test,fallacy,482,Influence,8,1,2.1.10
+test-F482-4.1.12,test,fallacy,482,Influence,8,1,4.1.12
+test-F483-1.3.3,test,fallacy,483,Influence,8,1,1.3.3
+test-F483-5.1.5,test,fallacy,483,Influence,8,1,5.1.5
+test-F484-1.3.2,test,fallacy,484,Influence,7,1,1.3.2
+test-F484-4.3.9,test,fallacy,484,Influence,7,1,4.3.9
+test-F485-4.2.4,test,fallacy,485,Influence,5,0,4.2.4
+test-F485-4.3.6,test,fallacy,485,Influence,5,0,4.3.6
+test-F486-1.2.1,test,fallacy,486,Influence,6,0,1.2.1
+test-F486-4.1.12,test,fallacy,486,Influence,6,0,4.1.12
+test-F487-4.2.4,test,fallacy,487,Influence,7,1,4.2.4
+test-F487-6.2.4,test,fallacy,487,Influence,7,1,6.2.4
+test-F488-2.1.10,test,fallacy,488,Influence,7,1,2.1.10
+test-F488-2.2.5,test,fallacy,488,Influence,7,1,2.2.5
+test-F489-1.3.2,test,fallacy,489,Influence,6,1,1.3.2
+test-F489-7.3.5,test,fallacy,489,Influence,6,1,7.3.5
+test-F490-1.3.3,test,fallacy,490,Influence,6,1,1.3.3
+test-F490-3.2.5,test,fallacy,490,Influence,6,1,3.2.5
+test-F491-2.1.10,test,fallacy,491,Influence,6,1,2.1.10
+test-F491-4.3.9,test,fallacy,491,Influence,6,1,4.3.9
+test-F492-2.1.10,test,fallacy,492,Influence,5,0,2.1.10
+test-F492-6.1.3,test,fallacy,492,Influence,5,0,6.1.3
+test-F493-7.2.2,test,fallacy,493,Influence,6,1,7.2.2
+test-F493-7.3.5,test,fallacy,493,Influence,6,1,7.3.5
+test-F494-1.3.2,test,fallacy,494,Influence,6,1,1.3.2
+test-F494-5.1.5,test,fallacy,494,Influence,6,1,5.1.5
+test-F495-1.3.3,test,fallacy,495,Influence,5,1,1.3.3
+test-F495-3.1.4,test,fallacy,495,Influence,5,1,3.1.4
+test-F496-1.3.3,test,fallacy,496,Influence,5,1,1.3.3
+test-F496-2.2.8,test,fallacy,496,Influence,5,1,2.2.8
+test-F497-1.2.1,test,fallacy,497,Influence,4,0,1.2.1
+test-F497-3.1.4,test,fallacy,497,Influence,4,0,3.1.4
+test-F498-5.2.4,test,fallacy,498,Influence,5,0,5.2.4
+test-F498-7.2.11,test,fallacy,498,Influence,5,0,7.2.11
+test-F499-6.2.4,test,fallacy,499,Influence,6,0,6.2.4
+test-F499-7.2.11,test,fallacy,499,Influence,6,0,7.2.11
+test-F500-2.2.8,test,fallacy,500,Influence,7,1,2.2.8
+test-F500-3.2.5,test,fallacy,500,Influence,7,1,3.2.5
+test-F501-3.1.8,test,fallacy,501,Influence,6,1,3.1.8
+test-F501-7.3.5,test,fallacy,501,Influence,6,1,7.3.5
+test-F502-2.2.8,test,fallacy,502,Influence,6,1,2.2.8
+test-F502-3.2.1,test,fallacy,502,Influence,6,1,3.2.1
+test-F503-2.2.8,test,fallacy,503,Influence,6,1,2.2.8
+test-F503-6.1.3,test,fallacy,503,Influence,6,1,6.1.3
+test-F504-3.1.8,test,fallacy,504,Influence,6,1,3.1.8
+test-F504-4.3.6,test,fallacy,504,Influence,6,1,4.3.6
+test-F505-3.2.5,test,fallacy,505,Influence,5,0,3.2.5
+test-F505-4.3.6,test,fallacy,505,Influence,5,0,4.3.6
+test-F506-5.1.3,test,fallacy,506,Influence,6,0,5.1.3
+test-F506-7.2.2,test,fallacy,506,Influence,6,0,7.2.2
+test-F507-4.1.12,test,fallacy,507,Influence,7,1,4.1.12
+test-F507-5.2.4,test,fallacy,507,Influence,7,1,5.2.4
+test-F508-1.2.1,test,fallacy,508,Influence,6,1,1.2.1
+test-F508-2.2.5,test,fallacy,508,Influence,6,1,2.2.5
+test-F509-4.2.4,test,fallacy,509,Influence,6,1,4.2.4
+test-F509-6.2.4,test,fallacy,509,Influence,6,1,6.2.4
+test-F510-1.3.2,test,fallacy,510,Influence,6,1,1.3.2
+test-F510-6.1.3,test,fallacy,510,Influence,6,1,6.1.3
+test-F511-4.1.12,test,fallacy,511,Influence,3,0,4.1.12
+test-F511-5.1.5,test,fallacy,511,Influence,3,0,5.1.5
+test-F512-2.2.8,test,fallacy,512,Influence,4,0,2.2.8
+test-F512-6.1.3,test,fallacy,512,Influence,4,0,6.1.3
+test-F513-3.1.8,test,fallacy,513,Influence,5,1,3.1.8
+test-F513-3.2.1,test,fallacy,513,Influence,5,1,3.2.1
+test-F514-4.1.12,test,fallacy,514,Influence,5,0,4.1.12
+test-F514-7.2.12,test,fallacy,514,Influence,5,0,7.2.12
+test-F515-6.1.3,test,fallacy,515,Influence,6,1,6.1.3
+test-F515-7.2.12,test,fallacy,515,Influence,6,1,7.2.12
+test-F516-3.2.1,test,fallacy,516,Influence,6,1,3.2.1
+test-F516-7.2.11,test,fallacy,516,Influence,6,1,7.2.11
+test-F517-3.1.4,test,fallacy,517,Influence,6,1,3.1.4
+test-F517-3.2.1,test,fallacy,517,Influence,6,1,3.2.1
+test-F518-2.2.8,test,fallacy,518,Influence,4,1,2.2.8
+test-F518-5.1.3,test,fallacy,518,Influence,4,1,5.1.3
+test-F519-1.3.2,test,fallacy,519,Influence,4,0,1.3.2
+test-F519-4.3.6,test,fallacy,519,Influence,4,0,4.3.6
+test-F520-2.1.10,test,fallacy,520,Influence,5,1,2.1.10
+test-F520-4.3.6,test,fallacy,520,Influence,5,1,4.3.6
+test-F521-1.2.1,test,fallacy,521,Influence,5,0,1.2.1
+test-F521-7.2.2,test,fallacy,521,Influence,5,0,7.2.2
+test-F522-3.1.8,test,fallacy,522,Influence,6,1,3.1.8
+test-F522-3.2.5,test,fallacy,522,Influence,6,1,3.2.5
+test-F523-4.2.4,test,fallacy,523,Influence,5,0,4.2.4
+test-F523-5.2.4,test,fallacy,523,Influence,5,0,5.2.4
+test-F524-5.1.5,test,fallacy,524,Influence,6,0,5.1.5
+test-F524-7.2.12,test,fallacy,524,Influence,6,0,7.2.12
+test-F525-1.3.3,test,fallacy,525,Influence,7,0,1.3.3
+test-F525-5.1.3,test,fallacy,525,Influence,7,0,5.1.3
+test-F526-5.1.3,test,fallacy,526,Influence,8,1,5.1.3
+test-F526-7.2.11,test,fallacy,526,Influence,8,1,7.2.11
+test-F527-1.2.1,test,fallacy,527,Influence,8,1,1.2.1
+test-F527-7.2.11,test,fallacy,527,Influence,8,1,7.2.11
+test-F528-2.2.5,test,fallacy,528,Influence,8,1,2.2.5
+test-F528-4.3.6,test,fallacy,528,Influence,8,1,4.3.6
+test-F529-3.1.4,test,fallacy,529,Influence,7,1,3.1.4
+test-F529-3.2.5,test,fallacy,529,Influence,7,1,3.2.5
+test-F530-1.3.3,test,fallacy,530,Influence,7,1,1.3.3
+test-F530-7.2.11,test,fallacy,530,Influence,7,1,7.2.11
+test-F531-2.2.5,test,fallacy,531,Influence,7,1,2.2.5
+test-F531-3.2.5,test,fallacy,531,Influence,7,1,3.2.5
+test-F532-1.3.3,test,fallacy,532,Influence,7,1,1.3.3
+test-F532-3.2.11,test,fallacy,532,Influence,7,1,3.2.11
+test-F533-5.1.5,test,fallacy,533,Influence,7,1,5.1.5
+test-F533-7.2.2,test,fallacy,533,Influence,7,1,7.2.2
+test-F534-5.1.5,test,fallacy,534,Influence,7,1,5.1.5
+test-F534-7.3.5,test,fallacy,534,Influence,7,1,7.3.5
+test-F535-2.1.1,test,fallacy,535,Influence,6,0,2.1.1
+test-F535-7.2.11,test,fallacy,535,Influence,6,0,7.2.11
+test-F536-5.1.3,test,fallacy,536,Influence,7,1,5.1.3
+test-F536-6.1.3,test,fallacy,536,Influence,7,1,6.1.3
+test-F537-2.1.1,test,fallacy,537,Influence,7,1,2.1.1
+test-F537-3.2.5,test,fallacy,537,Influence,7,1,3.2.5
+test-F538-3.1.4,test,fallacy,538,Influence,7,1,3.1.4
+test-F538-5.1.3,test,fallacy,538,Influence,7,1,5.1.3
+test-F539-1.3.3,test,fallacy,539,Influence,7,1,1.3.3
+test-F539-7.3.5,test,fallacy,539,Influence,7,1,7.3.5
+test-F540-3.2.1,test,fallacy,540,Influence,7,1,3.2.1
+test-F540-7.2.2,test,fallacy,540,Influence,7,1,7.2.2
+test-F541-3.2.5,test,fallacy,541,Influence,7,1,3.2.5
+test-F541-4.2.4,test,fallacy,541,Influence,7,1,4.2.4
+test-F542-5.1.3,test,fallacy,542,Influence,7,1,5.1.3
+test-F542-5.2.4,test,fallacy,542,Influence,7,1,5.2.4
+test-F543-4.3.9,test,fallacy,543,Influence,6,0,4.3.9
+test-F543-5.2.4,test,fallacy,543,Influence,6,0,5.2.4
+test-F544-3.2.1,test,fallacy,544,Influence,7,1,3.2.1
+test-F544-6.2.4,test,fallacy,544,Influence,7,1,6.2.4
+test-F545-2.1.10,test,fallacy,545,Influence,7,1,2.1.10
+test-F545-2.2.5,test,fallacy,545,Influence,7,1,2.2.5
+test-F546-3.1.4,test,fallacy,546,Influence,7,1,3.1.4
+test-F546-4.3.9,test,fallacy,546,Influence,7,1,4.3.9
+test-F547-1.3.2,test,fallacy,547,Influence,7,1,1.3.2
+test-F547-7.2.2,test,fallacy,547,Influence,7,1,7.2.2
+test-F548-2.1.1,test,fallacy,548,Influence,7,1,2.1.1
+test-F548-6.2.4,test,fallacy,548,Influence,7,1,6.2.4
+test-F549-1.3.2,test,fallacy,549,Influence,7,1,1.3.2
+test-F549-3.2.11,test,fallacy,549,Influence,7,1,3.2.11
+test-F550-1.2.1,test,fallacy,550,Influence,7,1,1.2.1
+test-F550-4.1.12,test,fallacy,550,Influence,7,1,4.1.12
+test-F551-2.2.5,test,fallacy,551,Influence,7,1,2.2.5
+test-F551-4.1.12,test,fallacy,551,Influence,7,1,4.1.12
+test-F552-3.1.8,test,fallacy,552,Influence,7,1,3.1.8
+test-F552-4.2.4,test,fallacy,552,Influence,7,1,4.2.4
+test-F553-4.3.6,test,fallacy,553,Influence,6,0,4.3.6
+test-F553-5.2.4,test,fallacy,553,Influence,6,0,5.2.4
+test-F554-7.2.11,test,fallacy,554,Influence,7,1,7.2.11
+test-F554-7.3.5,test,fallacy,554,Influence,7,1,7.3.5
+test-F555-1.3.3,test,fallacy,555,Influence,7,1,1.3.3
+test-F555-6.1.3,test,fallacy,555,Influence,7,1,6.1.3
+test-F556-2.1.1,test,fallacy,556,Influence,7,1,2.1.1
+test-F556-6.2.4,test,fallacy,556,Influence,7,1,6.2.4
+test-F557-3.2.11,test,fallacy,557,Influence,7,1,3.2.11
+test-F557-3.2.5,test,fallacy,557,Influence,7,1,3.2.5
+test-F558-4.1.12,test,fallacy,558,Influence,7,1,4.1.12
+test-F558-6.2.4,test,fallacy,558,Influence,7,1,6.2.4
+test-F559-5.2.4,test,fallacy,559,Influence,7,1,5.2.4
+test-F559-7.2.11,test,fallacy,559,Influence,7,1,7.2.11
+test-F560-3.2.1,test,fallacy,560,Influence,7,1,3.2.1
+test-F560-3.2.11,test,fallacy,560,Influence,7,1,3.2.11
+test-F561-2.2.8,test,fallacy,561,Influence,7,1,2.2.8
+test-F561-3.2.5,test,fallacy,561,Influence,7,1,3.2.5
+test-F562-2.2.5,test,fallacy,562,Influence,6,0,2.2.5
+test-F562-3.2.5,test,fallacy,562,Influence,6,0,3.2.5
+test-F563-2.1.10,test,fallacy,563,Influence,7,0,2.1.10
+test-F563-4.3.9,test,fallacy,563,Influence,7,0,4.3.9
+test-F564-4.1.12,test,fallacy,564,Influence,8,1,4.1.12
+test-F564-4.3.9,test,fallacy,564,Influence,8,1,4.3.9
+test-F565-1.3.3,test,fallacy,565,Influence,7,1,1.3.3
+test-F565-4.2.4,test,fallacy,565,Influence,7,1,4.2.4
+test-F566-4.3.9,test,fallacy,566,Influence,7,1,4.3.9
+test-F566-6.2.4,test,fallacy,566,Influence,7,1,6.2.4
+test-F567-2.1.1,test,fallacy,567,Influence,7,1,2.1.1
+test-F567-7.2.2,test,fallacy,567,Influence,7,1,7.2.2
+test-F568-2.2.5,test,fallacy,568,Influence,7,1,2.2.5
+test-F568-4.3.6,test,fallacy,568,Influence,7,1,4.3.6
+test-F569-3.1.8,test,fallacy,569,Influence,7,1,3.1.8
+test-F569-5.1.5,test,fallacy,569,Influence,7,1,5.1.5
+test-F570-4.2.4,test,fallacy,570,Influence,7,1,4.2.4
+test-F570-6.1.3,test,fallacy,570,Influence,7,1,6.1.3
+test-F571-4.3.6,test,fallacy,571,Influence,6,0,4.3.6
+test-F571-6.2.4,test,fallacy,571,Influence,6,0,6.2.4
+test-F572-4.3.6,test,fallacy,572,Influence,7,1,4.3.6
+test-F572-4.3.9,test,fallacy,572,Influence,7,1,4.3.9
+test-F573-1.3.3,test,fallacy,573,Influence,7,1,1.3.3
+test-F573-4.3.6,test,fallacy,573,Influence,7,1,4.3.6
+test-F574-4.2.4,test,fallacy,574,Influence,7,1,4.2.4
+test-F574-4.3.9,test,fallacy,574,Influence,7,1,4.3.9
+test-F575-1.2.1,test,fallacy,575,Influence,7,1,1.2.1
+test-F575-7.2.12,test,fallacy,575,Influence,7,1,7.2.12
+test-F576-1.3.3,test,fallacy,576,Influence,7,1,1.3.3
+test-F576-3.2.1,test,fallacy,576,Influence,7,1,3.2.1
+test-F577-1.2.1,test,fallacy,577,Influence,7,1,1.2.1
+test-F577-7.2.2,test,fallacy,577,Influence,7,1,7.2.2
+test-F578-4.1.12,test,fallacy,578,Influence,7,1,4.1.12
+test-F578-5.1.3,test,fallacy,578,Influence,7,1,5.1.3
+test-F579-1.3.2,test,fallacy,579,Influence,7,1,1.3.2
+test-F579-4.3.6,test,fallacy,579,Influence,7,1,4.3.6
+test-F580-2.1.1,test,fallacy,580,Influence,6,0,2.1.1
+test-F580-7.2.2,test,fallacy,580,Influence,6,0,7.2.2
+test-F581-5.2.4,test,fallacy,581,Influence,7,1,5.2.4
+test-F581-7.3.5,test,fallacy,581,Influence,7,1,7.3.5
+test-F582-1.3.2,test,fallacy,582,Influence,7,1,1.3.2
+test-F582-1.3.3,test,fallacy,582,Influence,7,1,1.3.3
+test-F583-3.1.8,test,fallacy,583,Influence,7,1,3.1.8
+test-F583-4.1.12,test,fallacy,583,Influence,7,1,4.1.12
+test-F584-2.1.1,test,fallacy,584,Influence,7,1,2.1.1
+test-F584-3.2.5,test,fallacy,584,Influence,7,1,3.2.5
+test-F585-2.1.10,test,fallacy,585,Influence,7,1,2.1.10
+test-F585-7.2.12,test,fallacy,585,Influence,7,1,7.2.12
+test-F586-5.1.5,test,fallacy,586,Influence,5,1,5.1.5
+test-F586-6.1.3,test,fallacy,586,Influence,5,1,6.1.3
+test-F587-1.3.3,test,fallacy,587,Influence,5,0,1.3.3
+test-F587-3.1.8,test,fallacy,587,Influence,5,0,3.1.8
+test-F588-3.1.8,test,fallacy,588,Influence,6,1,3.1.8
+test-F588-6.1.3,test,fallacy,588,Influence,6,1,6.1.3
+test-F589-2.2.5,test,fallacy,589,Influence,6,1,2.2.5
+test-F589-4.1.12,test,fallacy,589,Influence,6,1,4.1.12
+test-F590-2.2.5,test,fallacy,590,Influence,4,0,2.2.5
+test-F590-5.1.3,test,fallacy,590,Influence,4,0,5.1.3
+test-F591-3.1.8,test,fallacy,591,Influence,5,1,3.1.8
+test-F591-3.2.1,test,fallacy,591,Influence,5,1,3.2.1
+test-F592-3.1.4,test,fallacy,592,Influence,5,1,3.1.4
+test-F592-7.2.11,test,fallacy,592,Influence,5,1,7.2.11
+test-F593-3.2.11,test,fallacy,593,Influence,4,1,3.2.11
+test-F593-5.2.4,test,fallacy,593,Influence,4,1,5.2.4
+test-F1406-6.1.3,test,fallacy,1406,Influence,4,0,6.1.3
+test-F1406-7.2.11,test,fallacy,1406,Influence,4,0,7.2.11
+test-F1-1.3.3,test,fallacy,1,Insuffisance,1,0,1.3.3
+test-F1-2.2.5,test,fallacy,1,Insuffisance,1,0,2.2.5
+test-F2-1.3.3,test,fallacy,2,Insuffisance,2,0,1.3.3
+test-F2-3.2.5,test,fallacy,2,Insuffisance,2,0,3.2.5
+test-F3-2.1.10,test,fallacy,3,Insuffisance,3,0,2.1.10
+test-F3-5.2.4,test,fallacy,3,Insuffisance,3,0,5.2.4
+test-F4-2.2.5,test,fallacy,4,Insuffisance,4,0,2.2.5
+test-F4-7.2.12,test,fallacy,4,Insuffisance,4,0,7.2.12
+test-F5-3.2.11,test,fallacy,5,Insuffisance,5,0,3.2.11
+test-F5-7.2.2,test,fallacy,5,Insuffisance,5,0,7.2.2
+test-F6-2.1.10,test,fallacy,6,Insuffisance,6,1,2.1.10
+test-F6-5.2.4,test,fallacy,6,Insuffisance,6,1,5.2.4
+test-F7-4.1.12,test,fallacy,7,Insuffisance,6,1,4.1.12
+test-F7-5.2.4,test,fallacy,7,Insuffisance,6,1,5.2.4
+test-F8-2.1.10,test,fallacy,8,Insuffisance,6,1,2.1.10
+test-F8-7.3.5,test,fallacy,8,Insuffisance,6,1,7.3.5
+test-F9-1.3.2,test,fallacy,9,Insuffisance,5,0,1.3.2
+test-F9-6.2.4,test,fallacy,9,Insuffisance,5,0,6.2.4
+test-F10-1.3.3,test,fallacy,10,Insuffisance,6,1,1.3.3
+test-F10-3.2.5,test,fallacy,10,Insuffisance,6,1,3.2.5
+test-F11-5.1.5,test,fallacy,11,Insuffisance,5,0,5.1.5
+test-F11-6.1.3,test,fallacy,11,Insuffisance,5,0,6.1.3
+test-F12-1.3.2,test,fallacy,12,Insuffisance,6,1,1.3.2
+test-F12-5.2.4,test,fallacy,12,Insuffisance,6,1,5.2.4
+test-F13-2.1.1,test,fallacy,13,Insuffisance,6,1,2.1.1
+test-F13-5.1.5,test,fallacy,13,Insuffisance,6,1,5.1.5
+test-F14-3.1.8,test,fallacy,14,Insuffisance,5,1,3.1.8
+test-F14-7.2.11,test,fallacy,14,Insuffisance,5,1,7.2.11
+test-F15-2.1.1,test,fallacy,15,Insuffisance,5,1,2.1.1
+test-F15-3.2.1,test,fallacy,15,Insuffisance,5,1,3.2.1
+test-F16-3.1.8,test,fallacy,16,Insuffisance,5,0,3.1.8
+test-F16-7.3.5,test,fallacy,16,Insuffisance,5,0,7.3.5
+test-F17-6.1.3,test,fallacy,17,Insuffisance,6,1,6.1.3
+test-F17-7.2.11,test,fallacy,17,Insuffisance,6,1,7.2.11
+test-F18-3.1.8,test,fallacy,18,Insuffisance,6,1,3.1.8
+test-F18-6.1.3,test,fallacy,18,Insuffisance,6,1,6.1.3
+test-F19-1.2.1,test,fallacy,19,Insuffisance,6,1,1.2.1
+test-F19-4.2.4,test,fallacy,19,Insuffisance,6,1,4.2.4
+test-F20-1.3.2,test,fallacy,20,Insuffisance,4,0,1.3.2
+test-F20-2.2.8,test,fallacy,20,Insuffisance,4,0,2.2.8
+test-F21-3.2.1,test,fallacy,21,Insuffisance,5,1,3.2.1
+test-F21-7.2.12,test,fallacy,21,Insuffisance,5,1,7.2.12
+test-F22-2.1.10,test,fallacy,22,Insuffisance,4,0,2.1.10
+test-F22-3.1.8,test,fallacy,22,Insuffisance,4,0,3.1.8
+test-F23-2.2.5,test,fallacy,23,Insuffisance,5,1,2.2.5
+test-F23-5.1.3,test,fallacy,23,Insuffisance,5,1,5.1.3
+test-F24-1.2.1,test,fallacy,24,Insuffisance,5,1,1.2.1
+test-F24-2.2.8,test,fallacy,24,Insuffisance,5,1,2.2.8
+test-F25-4.2.4,test,fallacy,25,Insuffisance,5,1,4.2.4
+test-F25-5.1.3,test,fallacy,25,Insuffisance,5,1,5.1.3
+test-F26-2.1.1,test,fallacy,26,Insuffisance,4,0,2.1.1
+test-F26-6.2.4,test,fallacy,26,Insuffisance,4,0,6.2.4
+test-F27-3.1.4,test,fallacy,27,Insuffisance,5,1,3.1.4
+test-F27-7.3.5,test,fallacy,27,Insuffisance,5,1,7.3.5
+test-F28-1.2.1,test,fallacy,28,Insuffisance,5,1,1.2.1
+test-F28-5.1.3,test,fallacy,28,Insuffisance,5,1,5.1.3
+test-F29-3.2.5,test,fallacy,29,Insuffisance,5,1,3.2.5
+test-F29-7.2.2,test,fallacy,29,Insuffisance,5,1,7.2.2
+test-F30-1.2.1,test,fallacy,30,Insuffisance,5,1,1.2.1
+test-F30-2.1.1,test,fallacy,30,Insuffisance,5,1,2.1.1
+test-F31-5.1.3,test,fallacy,31,Insuffisance,5,1,5.1.3
+test-F31-7.2.2,test,fallacy,31,Insuffisance,5,1,7.2.2
+test-F32-2.2.8,test,fallacy,32,Insuffisance,5,1,2.2.8
+test-F32-3.1.8,test,fallacy,32,Insuffisance,5,1,3.1.8
+test-F33-1.3.3,test,fallacy,33,Insuffisance,3,0,1.3.3
+test-F33-4.1.12,test,fallacy,33,Insuffisance,3,0,4.1.12
+test-F34-2.1.1,test,fallacy,34,Insuffisance,4,0,2.1.1
+test-F34-2.1.10,test,fallacy,34,Insuffisance,4,0,2.1.10
+test-F35-2.1.1,test,fallacy,35,Insuffisance,5,1,2.1.1
+test-F35-5.1.3,test,fallacy,35,Insuffisance,5,1,5.1.3
+test-F36-3.2.11,test,fallacy,36,Insuffisance,5,1,3.2.11
+test-F36-3.2.5,test,fallacy,36,Insuffisance,5,1,3.2.5
+test-F37-2.1.1,test,fallacy,37,Insuffisance,5,0,2.1.1
+test-F37-4.2.4,test,fallacy,37,Insuffisance,5,0,4.2.4
+test-F38-1.3.3,test,fallacy,38,Insuffisance,6,1,1.3.3
+test-F38-2.1.10,test,fallacy,38,Insuffisance,6,1,2.1.10
+test-F39-2.1.1,test,fallacy,39,Insuffisance,6,1,2.1.1
+test-F39-2.2.8,test,fallacy,39,Insuffisance,6,1,2.2.8
+test-F40-2.1.1,test,fallacy,40,Insuffisance,5,1,2.1.1
+test-F40-5.1.3,test,fallacy,40,Insuffisance,5,1,5.1.3
+test-F41-1.2.1,test,fallacy,41,Insuffisance,5,1,1.2.1
+test-F41-7.2.11,test,fallacy,41,Insuffisance,5,1,7.2.11
+test-F42-5.2.4,test,fallacy,42,Insuffisance,5,1,5.2.4
+test-F42-7.3.5,test,fallacy,42,Insuffisance,5,1,7.3.5
+test-F43-2.2.8,test,fallacy,43,Insuffisance,4,0,2.2.8
+test-F43-4.2.4,test,fallacy,43,Insuffisance,4,0,4.2.4
+test-F44-1.3.2,test,fallacy,44,Insuffisance,5,0,1.3.2
+test-F44-3.2.1,test,fallacy,44,Insuffisance,5,0,3.2.1
+test-F45-1.2.1,test,fallacy,45,Insuffisance,6,1,1.2.1
+test-F45-5.2.4,test,fallacy,45,Insuffisance,6,1,5.2.4
+test-F46-1.2.1,test,fallacy,46,Insuffisance,5,1,1.2.1
+test-F46-4.3.9,test,fallacy,46,Insuffisance,5,1,4.3.9
+test-F47-4.1.12,test,fallacy,47,Insuffisance,5,1,4.1.12
+test-F47-5.1.3,test,fallacy,47,Insuffisance,5,1,5.1.3
+test-F48-4.2.4,test,fallacy,48,Insuffisance,5,0,4.2.4
+test-F48-7.2.11,test,fallacy,48,Insuffisance,5,0,7.2.11
+test-F49-2.1.10,test,fallacy,49,Insuffisance,6,1,2.1.10
+test-F49-3.1.8,test,fallacy,49,Insuffisance,6,1,3.1.8
+test-F50-4.1.12,test,fallacy,50,Insuffisance,5,1,4.1.12
+test-F50-7.2.11,test,fallacy,50,Insuffisance,5,1,7.2.11
+test-F51-3.1.8,test,fallacy,51,Insuffisance,4,0,3.1.8
+test-F51-3.2.1,test,fallacy,51,Insuffisance,4,0,3.2.1
+test-F52-6.2.4,test,fallacy,52,Insuffisance,5,1,6.2.4
+test-F52-7.2.11,test,fallacy,52,Insuffisance,5,1,7.2.11
+test-F53-1.3.2,test,fallacy,53,Insuffisance,5,0,1.3.2
+test-F53-7.2.11,test,fallacy,53,Insuffisance,5,0,7.2.11
+test-F54-4.1.12,test,fallacy,54,Insuffisance,6,1,4.1.12
+test-F54-4.2.4,test,fallacy,54,Insuffisance,6,1,4.2.4
+test-F55-4.3.9,test,fallacy,55,Insuffisance,3,0,4.3.9
+test-F55-7.2.12,test,fallacy,55,Insuffisance,3,0,7.2.12
+test-F56-2.1.1,test,fallacy,56,Insuffisance,4,0,2.1.1
+test-F56-5.1.5,test,fallacy,56,Insuffisance,4,0,5.1.5
+test-F57-2.1.10,test,fallacy,57,Insuffisance,5,1,2.1.10
+test-F57-4.3.9,test,fallacy,57,Insuffisance,5,1,4.3.9
+test-F58-3.2.5,test,fallacy,58,Insuffisance,5,0,3.2.5
+test-F58-5.1.5,test,fallacy,58,Insuffisance,5,0,5.1.5
+test-F59-3.1.4,test,fallacy,59,Insuffisance,6,0,3.1.4
+test-F59-7.2.11,test,fallacy,59,Insuffisance,6,0,7.2.11
+test-F60-4.1.12,test,fallacy,60,Insuffisance,7,1,4.1.12
+test-F60-7.2.11,test,fallacy,60,Insuffisance,7,1,7.2.11
+test-F61-2.1.10,test,fallacy,61,Insuffisance,4,1,2.1.10
+test-F61-7.2.11,test,fallacy,61,Insuffisance,4,1,7.2.11
+test-F62-3.1.4,test,fallacy,62,Insuffisance,4,0,3.1.4
+test-F62-7.2.12,test,fallacy,62,Insuffisance,4,0,7.2.12
+test-F63-1.3.2,test,fallacy,63,Insuffisance,5,0,1.3.2
+test-F63-6.2.4,test,fallacy,63,Insuffisance,5,0,6.2.4
+test-F64-3.2.5,test,fallacy,64,Insuffisance,6,1,3.2.5
+test-F64-4.3.6,test,fallacy,64,Insuffisance,6,1,4.3.6
+test-F65-1.3.3,test,fallacy,65,Insuffisance,5,1,1.3.3
+test-F65-7.3.5,test,fallacy,65,Insuffisance,5,1,7.3.5
+test-F66-2.2.8,test,fallacy,66,Insuffisance,4,0,2.2.8
+test-F66-7.2.2,test,fallacy,66,Insuffisance,4,0,7.2.2
+test-F67-2.1.1,test,fallacy,67,Insuffisance,5,1,2.1.1
+test-F67-7.3.5,test,fallacy,67,Insuffisance,5,1,7.3.5
+test-F68-2.1.1,test,fallacy,68,Insuffisance,4,0,2.1.1
+test-F68-7.2.11,test,fallacy,68,Insuffisance,4,0,7.2.11
+test-F69-4.2.4,test,fallacy,69,Insuffisance,5,1,4.2.4
+test-F69-7.2.2,test,fallacy,69,Insuffisance,5,1,7.2.2
+test-F70-4.3.9,test,fallacy,70,Insuffisance,2,0,4.3.9
+test-F70-7.2.12,test,fallacy,70,Insuffisance,2,0,7.2.12
+test-F71-2.2.5,test,fallacy,71,Insuffisance,3,0,2.2.5
+test-F71-2.2.8,test,fallacy,71,Insuffisance,3,0,2.2.8
+test-F72-1.3.3,test,fallacy,72,Insuffisance,4,0,1.3.3
+test-F72-2.1.10,test,fallacy,72,Insuffisance,4,0,2.1.10
+test-F73-1.3.2,test,fallacy,73,Insuffisance,5,0,1.3.2
+test-F73-5.1.3,test,fallacy,73,Insuffisance,5,0,5.1.3
+test-F74-2.1.1,test,fallacy,74,Insuffisance,6,1,2.1.1
+test-F74-4.3.9,test,fallacy,74,Insuffisance,6,1,4.3.9
+test-F75-3.2.11,test,fallacy,75,Insuffisance,5,1,3.2.11
+test-F75-4.2.4,test,fallacy,75,Insuffisance,5,1,4.2.4
+test-F76-2.1.10,test,fallacy,76,Insuffisance,5,1,2.1.10
+test-F76-6.1.3,test,fallacy,76,Insuffisance,5,1,6.1.3
+test-F77-2.2.5,test,fallacy,77,Insuffisance,5,1,2.2.5
+test-F77-4.3.9,test,fallacy,77,Insuffisance,5,1,4.3.9
+test-F78-2.2.5,test,fallacy,78,Insuffisance,4,0,2.2.5
+test-F78-3.2.11,test,fallacy,78,Insuffisance,4,0,3.2.11
+test-F79-4.3.9,test,fallacy,79,Insuffisance,5,0,4.3.9
+test-F79-7.2.12,test,fallacy,79,Insuffisance,5,0,7.2.12
+test-F80-4.1.12,test,fallacy,80,Insuffisance,6,1,4.1.12
+test-F80-7.3.5,test,fallacy,80,Insuffisance,6,1,7.3.5
+test-F81-2.1.10,test,fallacy,81,Insuffisance,6,1,2.1.10
+test-F81-3.2.1,test,fallacy,81,Insuffisance,6,1,3.2.1
+test-F82-6.2.4,test,fallacy,82,Insuffisance,6,1,6.2.4
+test-F82-7.3.5,test,fallacy,82,Insuffisance,6,1,7.3.5
+test-F83-1.3.2,test,fallacy,83,Insuffisance,5,1,1.3.2
+test-F83-6.2.4,test,fallacy,83,Insuffisance,5,1,6.2.4
+test-F84-3.2.1,test,fallacy,84,Insuffisance,4,0,3.2.1
+test-F84-4.3.6,test,fallacy,84,Insuffisance,4,0,4.3.6
+test-F85-1.3.3,test,fallacy,85,Insuffisance,5,0,1.3.3
+test-F85-5.1.3,test,fallacy,85,Insuffisance,5,0,5.1.3
+test-F86-3.2.5,test,fallacy,86,Insuffisance,6,1,3.2.5
+test-F86-4.3.6,test,fallacy,86,Insuffisance,6,1,4.3.6
+test-F87-2.1.10,test,fallacy,87,Insuffisance,6,0,2.1.10
+test-F87-7.2.2,test,fallacy,87,Insuffisance,6,0,7.2.2
+test-F88-1.3.2,test,fallacy,88,Insuffisance,7,1,1.3.2
+test-F88-3.2.11,test,fallacy,88,Insuffisance,7,1,3.2.11
+test-F89-2.1.1,test,fallacy,89,Insuffisance,7,1,2.1.1
+test-F89-5.2.4,test,fallacy,89,Insuffisance,7,1,5.2.4
+test-F90-4.3.6,test,fallacy,90,Insuffisance,7,1,4.3.6
+test-F90-7.2.12,test,fallacy,90,Insuffisance,7,1,7.2.12
+test-F91-1.3.3,test,fallacy,91,Insuffisance,5,0,1.3.3
+test-F91-2.2.8,test,fallacy,91,Insuffisance,5,0,2.2.8
+test-F92-3.2.1,test,fallacy,92,Insuffisance,6,1,3.2.1
+test-F92-4.1.12,test,fallacy,92,Insuffisance,6,1,4.1.12
+test-F93-2.1.1,test,fallacy,93,Insuffisance,5,0,2.1.1
+test-F93-4.3.9,test,fallacy,93,Insuffisance,5,0,4.3.9
+test-F94-2.2.8,test,fallacy,94,Insuffisance,6,0,2.2.8
+test-F94-3.2.11,test,fallacy,94,Insuffisance,6,0,3.2.11
+test-F95-6.1.3,test,fallacy,95,Insuffisance,7,1,6.1.3
+test-F95-7.2.11,test,fallacy,95,Insuffisance,7,1,7.2.11
+test-F96-2.2.5,test,fallacy,96,Insuffisance,3,0,2.2.5
+test-F96-4.3.6,test,fallacy,96,Insuffisance,3,0,4.3.6
+test-F97-3.2.5,test,fallacy,97,Insuffisance,4,1,3.2.5
+test-F97-6.2.4,test,fallacy,97,Insuffisance,4,1,6.2.4
+test-F98-5.2.4,test,fallacy,98,Insuffisance,4,0,5.2.4
+test-F98-7.2.2,test,fallacy,98,Insuffisance,4,0,7.2.2
+test-F99-3.1.4,test,fallacy,99,Insuffisance,5,1,3.1.4
+test-F99-7.2.2,test,fallacy,99,Insuffisance,5,1,7.2.2
+test-F100-3.1.8,test,fallacy,100,Insuffisance,5,1,3.1.8
+test-F100-6.1.3,test,fallacy,100,Insuffisance,5,1,6.1.3
+test-F101-2.2.5,test,fallacy,101,Insuffisance,5,1,2.2.5
+test-F101-3.1.8,test,fallacy,101,Insuffisance,5,1,3.1.8
+test-F102-1.3.3,test,fallacy,102,Insuffisance,5,1,1.3.3
+test-F102-7.2.2,test,fallacy,102,Insuffisance,5,1,7.2.2
+test-F103-3.1.4,test,fallacy,103,Insuffisance,5,1,3.1.4
+test-F103-7.2.12,test,fallacy,103,Insuffisance,5,1,7.2.12
+test-F104-4.3.6,test,fallacy,104,Insuffisance,4,0,4.3.6
+test-F104-5.1.3,test,fallacy,104,Insuffisance,4,0,5.1.3
+test-F105-4.2.4,test,fallacy,105,Insuffisance,5,1,4.2.4
+test-F105-4.3.9,test,fallacy,105,Insuffisance,5,1,4.3.9
+test-F106-1.3.3,test,fallacy,106,Insuffisance,5,1,1.3.3
+test-F106-3.2.5,test,fallacy,106,Insuffisance,5,1,3.2.5
+test-F107-1.3.3,test,fallacy,107,Insuffisance,5,1,1.3.3
+test-F107-3.1.8,test,fallacy,107,Insuffisance,5,1,3.1.8
+test-F108-1.2.1,test,fallacy,108,Insuffisance,4,0,1.2.1
+test-F108-4.2.4,test,fallacy,108,Insuffisance,4,0,4.2.4
+test-F109-3.2.1,test,fallacy,109,Insuffisance,5,1,3.2.1
+test-F109-4.3.9,test,fallacy,109,Insuffisance,5,1,4.3.9
+test-F110-1.3.3,test,fallacy,110,Insuffisance,5,1,1.3.3
+test-F110-4.3.9,test,fallacy,110,Insuffisance,5,1,4.3.9
+test-F111-2.1.10,test,fallacy,111,Insuffisance,5,1,2.1.10
+test-F111-7.2.12,test,fallacy,111,Insuffisance,5,1,7.2.12
+test-F112-1.3.3,test,fallacy,112,Insuffisance,3,0,1.3.3
+test-F112-4.2.4,test,fallacy,112,Insuffisance,3,0,4.2.4
+test-F113-1.3.3,test,fallacy,113,Insuffisance,4,0,1.3.3
+test-F113-5.1.3,test,fallacy,113,Insuffisance,4,0,5.1.3
+test-F114-1.3.3,test,fallacy,114,Insuffisance,5,1,1.3.3
+test-F114-3.1.8,test,fallacy,114,Insuffisance,5,1,3.1.8
+test-F115-2.1.1,test,fallacy,115,Insuffisance,4,0,2.1.1
+test-F115-3.1.4,test,fallacy,115,Insuffisance,4,0,3.1.4
+test-F116-2.1.10,test,fallacy,116,Insuffisance,5,1,2.1.10
+test-F116-7.2.11,test,fallacy,116,Insuffisance,5,1,7.2.11
+test-F117-4.3.6,test,fallacy,117,Insuffisance,4,0,4.3.6
+test-F117-7.2.12,test,fallacy,117,Insuffisance,4,0,7.2.12
+test-F118-3.2.1,test,fallacy,118,Insuffisance,5,0,3.2.1
+test-F118-7.2.11,test,fallacy,118,Insuffisance,5,0,7.2.11
+test-F119-1.2.1,test,fallacy,119,Insuffisance,6,1,1.2.1
+test-F119-2.1.1,test,fallacy,119,Insuffisance,6,1,2.1.1
+test-F120-2.1.10,test,fallacy,120,Insuffisance,6,1,2.1.10
+test-F120-5.2.4,test,fallacy,120,Insuffisance,6,1,5.2.4
+test-F121-3.2.1,test,fallacy,121,Insuffisance,5,0,3.2.1
+test-F121-3.2.11,test,fallacy,121,Insuffisance,5,0,3.2.11
+test-F122-2.2.5,test,fallacy,122,Insuffisance,6,1,2.2.5
+test-F122-3.2.5,test,fallacy,122,Insuffisance,6,1,3.2.5
+test-F123-3.2.5,test,fallacy,123,Insuffisance,6,1,3.2.5
+test-F123-7.2.12,test,fallacy,123,Insuffisance,6,1,7.2.12
+test-F124-1.2.1,test,fallacy,124,Insuffisance,4,0,1.2.1
+test-F124-3.2.11,test,fallacy,124,Insuffisance,4,0,3.2.11
+test-F125-2.1.10,test,fallacy,125,Insuffisance,5,0,2.1.10
+test-F125-7.2.11,test,fallacy,125,Insuffisance,5,0,7.2.11
+test-F126-4.3.6,test,fallacy,126,Insuffisance,6,1,4.3.6
+test-F126-4.3.9,test,fallacy,126,Insuffisance,6,1,4.3.9
+test-F127-3.2.1,test,fallacy,127,Insuffisance,4,0,3.2.1
+test-F127-6.2.4,test,fallacy,127,Insuffisance,4,0,6.2.4
+test-F128-5.1.3,test,fallacy,128,Insuffisance,5,1,5.1.3
+test-F128-7.2.2,test,fallacy,128,Insuffisance,5,1,7.2.2
+test-F129-2.2.5,test,fallacy,129,Insuffisance,5,1,2.2.5
+test-F129-7.3.5,test,fallacy,129,Insuffisance,5,1,7.3.5
+test-F130-1.3.3,test,fallacy,130,Insuffisance,4,0,1.3.3
+test-F130-4.2.4,test,fallacy,130,Insuffisance,4,0,4.2.4
+test-F131-2.2.8,test,fallacy,131,Insuffisance,5,1,2.2.8
+test-F131-4.1.12,test,fallacy,131,Insuffisance,5,1,4.1.12
+test-F132-4.1.12,test,fallacy,132,Insuffisance,4,1,4.1.12
+test-F132-5.2.4,test,fallacy,132,Insuffisance,4,1,5.2.4
+test-F133-4.3.6,test,fallacy,133,Insuffisance,2,0,4.3.6
+test-F133-7.2.2,test,fallacy,133,Insuffisance,2,0,7.2.2
+test-F134-3.1.8,test,fallacy,134,Insuffisance,3,0,3.1.8
+test-F134-3.2.1,test,fallacy,134,Insuffisance,3,0,3.2.1
+test-F135-2.1.10,test,fallacy,135,Insuffisance,4,0,2.1.10
+test-F135-3.2.11,test,fallacy,135,Insuffisance,4,0,3.2.11
+test-F136-3.1.4,test,fallacy,136,Insuffisance,5,1,3.1.4
+test-F136-7.2.12,test,fallacy,136,Insuffisance,5,1,7.2.12
+test-F137-4.3.6,test,fallacy,137,Insuffisance,5,1,4.3.6
+test-F137-4.3.9,test,fallacy,137,Insuffisance,5,1,4.3.9
+test-F138-4.3.6,test,fallacy,138,Insuffisance,5,1,4.3.6
+test-F138-7.2.11,test,fallacy,138,Insuffisance,5,1,7.2.11
+test-F139-1.2.1,test,fallacy,139,Insuffisance,5,1,1.2.1
+test-F139-6.1.3,test,fallacy,139,Insuffisance,5,1,6.1.3
+test-F140-5.1.3,test,fallacy,140,Insuffisance,5,1,5.1.3
+test-F140-5.2.4,test,fallacy,140,Insuffisance,5,1,5.2.4
+test-F141-3.1.8,test,fallacy,141,Insuffisance,4,0,3.1.8
+test-F141-7.2.12,test,fallacy,141,Insuffisance,4,0,7.2.12
+test-F142-1.3.3,test,fallacy,142,Insuffisance,5,1,1.3.3
+test-F142-3.2.5,test,fallacy,142,Insuffisance,5,1,3.2.5
+test-F143-2.1.10,test,fallacy,143,Insuffisance,5,1,2.1.10
+test-F143-5.2.4,test,fallacy,143,Insuffisance,5,1,5.2.4
+test-F144-1.3.3,test,fallacy,144,Insuffisance,5,1,1.3.3
+test-F144-3.1.4,test,fallacy,144,Insuffisance,5,1,3.1.4
+test-F145-4.1.12,test,fallacy,145,Insuffisance,4,0,4.1.12
+test-F145-7.2.12,test,fallacy,145,Insuffisance,4,0,7.2.12
+test-F146-2.1.10,test,fallacy,146,Insuffisance,5,0,2.1.10
+test-F146-7.2.11,test,fallacy,146,Insuffisance,5,0,7.2.11
+test-F147-1.2.1,test,fallacy,147,Insuffisance,6,0,1.2.1
+test-F147-2.1.1,test,fallacy,147,Insuffisance,6,0,2.1.1
+test-F148-3.2.11,test,fallacy,148,Insuffisance,7,1,3.2.11
+test-F148-4.1.12,test,fallacy,148,Insuffisance,7,1,4.1.12
+test-F149-2.2.5,test,fallacy,149,Insuffisance,5,1,2.2.5
+test-F149-6.2.4,test,fallacy,149,Insuffisance,5,1,6.2.4
+test-F150-2.1.1,test,fallacy,150,Insuffisance,5,0,2.1.1
+test-F150-4.2.4,test,fallacy,150,Insuffisance,5,0,4.2.4
+test-F151-1.3.2,test,fallacy,151,Insuffisance,6,1,1.3.2
+test-F151-3.1.4,test,fallacy,151,Insuffisance,6,1,3.1.4
+test-F152-2.2.5,test,fallacy,152,Insuffisance,4,1,2.2.5
+test-F152-3.2.5,test,fallacy,152,Insuffisance,4,1,3.2.5
+test-F153-4.3.6,test,fallacy,153,Insuffisance,3,0,4.3.6
+test-F153-7.3.5,test,fallacy,153,Insuffisance,3,0,7.3.5
+test-F154-4.3.6,test,fallacy,154,Insuffisance,4,0,4.3.6
+test-F154-5.2.4,test,fallacy,154,Insuffisance,4,0,5.2.4
+test-F155-1.2.1,test,fallacy,155,Insuffisance,5,1,1.2.1
+test-F155-1.3.2,test,fallacy,155,Insuffisance,5,1,1.3.2
+test-F156-2.1.10,test,fallacy,156,Insuffisance,4,0,2.1.10
+test-F156-3.2.1,test,fallacy,156,Insuffisance,4,0,3.2.1
+test-F157-1.3.3,test,fallacy,157,Insuffisance,5,1,1.3.3
+test-F157-7.2.12,test,fallacy,157,Insuffisance,5,1,7.2.12
+test-F158-3.2.11,test,fallacy,158,Insuffisance,4,0,3.2.11
+test-F158-6.1.3,test,fallacy,158,Insuffisance,4,0,6.1.3
+test-F159-3.2.1,test,fallacy,159,Insuffisance,5,1,3.2.1
+test-F159-7.2.12,test,fallacy,159,Insuffisance,5,1,7.2.12
+test-F160-3.2.11,test,fallacy,160,Insuffisance,5,0,3.2.11
+test-F160-7.2.11,test,fallacy,160,Insuffisance,5,0,7.2.11
+test-F161-1.3.3,test,fallacy,161,Insuffisance,6,1,1.3.3
+test-F161-3.2.1,test,fallacy,161,Insuffisance,6,1,3.2.1
+test-F162-2.2.5,test,fallacy,162,Insuffisance,5,0,2.2.5
+test-F162-7.3.5,test,fallacy,162,Insuffisance,5,0,7.3.5
+test-F163-1.2.1,test,fallacy,163,Insuffisance,6,1,1.2.1
+test-F163-7.2.2,test,fallacy,163,Insuffisance,6,1,7.2.2
+test-F164-3.1.4,test,fallacy,164,Insuffisance,6,1,3.1.4
+test-F164-3.2.11,test,fallacy,164,Insuffisance,6,1,3.2.11
+test-F165-2.2.5,test,fallacy,165,Insuffisance,3,0,2.2.5
+test-F165-5.1.5,test,fallacy,165,Insuffisance,3,0,5.1.5
+test-F166-2.1.1,test,fallacy,166,Insuffisance,4,1,2.1.1
+test-F166-4.2.4,test,fallacy,166,Insuffisance,4,1,4.2.4
+test-F167-1.3.3,test,fallacy,167,Insuffisance,4,0,1.3.3
+test-F167-5.1.5,test,fallacy,167,Insuffisance,4,0,5.1.5
+test-F168-2.1.10,test,fallacy,168,Insuffisance,5,1,2.1.10
+test-F168-7.2.12,test,fallacy,168,Insuffisance,5,1,7.2.12
+test-F169-3.2.5,test,fallacy,169,Insuffisance,4,0,3.2.5
+test-F169-6.2.4,test,fallacy,169,Insuffisance,4,0,6.2.4
+test-F170-1.3.3,test,fallacy,170,Insuffisance,5,0,1.3.3
+test-F170-6.1.3,test,fallacy,170,Insuffisance,5,0,6.1.3
+test-F171-2.2.5,test,fallacy,171,Insuffisance,6,1,2.2.5
+test-F171-2.2.8,test,fallacy,171,Insuffisance,6,1,2.2.8
+test-F172-1.2.1,test,fallacy,172,Insuffisance,4,0,1.2.1
+test-F172-3.2.11,test,fallacy,172,Insuffisance,4,0,3.2.11
+test-F173-4.3.9,test,fallacy,173,Insuffisance,5,1,4.3.9
+test-F173-5.2.4,test,fallacy,173,Insuffisance,5,1,5.2.4
+test-F174-6.2.4,test,fallacy,174,Insuffisance,5,1,6.2.4
+test-F174-7.2.11,test,fallacy,174,Insuffisance,5,1,7.2.11
+test-F1280-5.1.3,test,fallacy,1280,Obstruction,1,0,5.1.3
+test-F1280-6.1.3,test,fallacy,1280,Obstruction,1,0,6.1.3
+test-F1281-5.2.4,test,fallacy,1281,Obstruction,2,0,5.2.4
+test-F1281-6.1.3,test,fallacy,1281,Obstruction,2,0,6.1.3
+test-F1282-1.3.2,test,fallacy,1282,Obstruction,3,0,1.3.2
+test-F1282-6.1.3,test,fallacy,1282,Obstruction,3,0,6.1.3
+test-F1283-5.1.5,test,fallacy,1283,Obstruction,4,0,5.1.5
+test-F1283-7.3.5,test,fallacy,1283,Obstruction,4,0,7.3.5
+test-F1284-5.1.3,test,fallacy,1284,Obstruction,5,1,5.1.3
+test-F1284-5.1.5,test,fallacy,1284,Obstruction,5,1,5.1.5
+test-F1285-4.3.6,test,fallacy,1285,Obstruction,5,1,4.3.6
+test-F1285-7.2.11,test,fallacy,1285,Obstruction,5,1,7.2.11
+test-F1286-1.2.1,test,fallacy,1286,Obstruction,4,1,1.2.1
+test-F1286-2.1.1,test,fallacy,1286,Obstruction,4,1,2.1.1
+test-F1287-1.2.1,test,fallacy,1287,Obstruction,3,0,1.2.1
+test-F1287-3.2.11,test,fallacy,1287,Obstruction,3,0,3.2.11
+test-F1288-7.2.11,test,fallacy,1288,Obstruction,4,0,7.2.11
+test-F1288-7.3.5,test,fallacy,1288,Obstruction,4,0,7.3.5
+test-F1289-4.3.9,test,fallacy,1289,Obstruction,5,1,4.3.9
+test-F1289-5.1.3,test,fallacy,1289,Obstruction,5,1,5.1.3
+test-F1290-4.3.9,test,fallacy,1290,Obstruction,5,1,4.3.9
+test-F1290-7.2.12,test,fallacy,1290,Obstruction,5,1,7.2.12
+test-F1291-2.2.5,test,fallacy,1291,Obstruction,4,0,2.2.5
+test-F1291-6.2.4,test,fallacy,1291,Obstruction,4,0,6.2.4
+test-F1292-4.2.4,test,fallacy,1292,Obstruction,5,0,4.2.4
+test-F1292-4.3.6,test,fallacy,1292,Obstruction,5,0,4.3.6
+test-F1293-5.1.5,test,fallacy,1293,Obstruction,6,1,5.1.5
+test-F1293-7.3.5,test,fallacy,1293,Obstruction,6,1,7.3.5
+test-F1294-1.3.3,test,fallacy,1294,Obstruction,4,1,1.3.3
+test-F1294-5.1.3,test,fallacy,1294,Obstruction,4,1,5.1.3
+test-F1295-1.3.3,test,fallacy,1295,Obstruction,4,1,1.3.3
+test-F1295-3.2.5,test,fallacy,1295,Obstruction,4,1,3.2.5
+test-F1296-3.2.5,test,fallacy,1296,Obstruction,4,1,3.2.5
+test-F1296-7.3.5,test,fallacy,1296,Obstruction,4,1,7.3.5
+test-F1297-2.1.1,test,fallacy,1297,Obstruction,3,0,2.1.1
+test-F1297-7.2.11,test,fallacy,1297,Obstruction,3,0,7.2.11
+test-F1298-4.1.12,test,fallacy,1298,Obstruction,4,1,4.1.12
+test-F1298-4.3.6,test,fallacy,1298,Obstruction,4,1,4.3.6
+test-F1299-2.1.10,test,fallacy,1299,Obstruction,4,0,2.1.10
+test-F1299-2.2.8,test,fallacy,1299,Obstruction,4,0,2.2.8
+test-F1300-1.2.1,test,fallacy,1300,Obstruction,5,1,1.2.1
+test-F1300-3.2.5,test,fallacy,1300,Obstruction,5,1,3.2.5
+test-F1301-3.2.11,test,fallacy,1301,Obstruction,4,0,3.2.11
+test-F1301-7.3.5,test,fallacy,1301,Obstruction,4,0,7.3.5
+test-F1302-4.3.6,test,fallacy,1302,Obstruction,5,1,4.3.6
+test-F1302-5.1.3,test,fallacy,1302,Obstruction,5,1,5.1.3
+test-F1303-2.1.1,test,fallacy,1303,Obstruction,5,1,2.1.1
+test-F1303-4.1.12,test,fallacy,1303,Obstruction,5,1,4.1.12
+test-F1304-2.1.10,test,fallacy,1304,Obstruction,4,1,2.1.10
+test-F1304-7.3.5,test,fallacy,1304,Obstruction,4,1,7.3.5
+test-F1305-3.1.8,test,fallacy,1305,Obstruction,4,0,3.1.8
+test-F1305-7.2.12,test,fallacy,1305,Obstruction,4,0,7.2.12
+test-F1306-4.1.12,test,fallacy,1306,Obstruction,5,0,4.1.12
+test-F1306-7.2.12,test,fallacy,1306,Obstruction,5,0,7.2.12
+test-F1307-3.1.4,test,fallacy,1307,Obstruction,6,0,3.1.4
+test-F1307-5.1.3,test,fallacy,1307,Obstruction,6,0,5.1.3
+test-F1308-1.3.3,test,fallacy,1308,Obstruction,7,1,1.3.3
+test-F1308-7.2.2,test,fallacy,1308,Obstruction,7,1,7.2.2
+test-F1309-2.2.5,test,fallacy,1309,Obstruction,5,1,2.2.5
+test-F1309-7.2.12,test,fallacy,1309,Obstruction,5,1,7.2.12
+test-F1310-2.1.10,test,fallacy,1310,Obstruction,4,1,2.1.10
+test-F1310-3.1.4,test,fallacy,1310,Obstruction,4,1,3.1.4
+test-F1311-2.1.10,test,fallacy,1311,Obstruction,4,1,2.1.10
+test-F1311-3.2.1,test,fallacy,1311,Obstruction,4,1,3.2.1
+test-F1312-1.3.2,test,fallacy,1312,Obstruction,2,0,1.3.2
+test-F1312-3.2.5,test,fallacy,1312,Obstruction,2,0,3.2.5
+test-F1313-1.3.2,test,fallacy,1313,Obstruction,3,0,1.3.2
+test-F1313-2.1.10,test,fallacy,1313,Obstruction,3,0,2.1.10
+test-F1314-5.1.5,test,fallacy,1314,Obstruction,4,0,5.1.5
+test-F1314-7.3.5,test,fallacy,1314,Obstruction,4,0,7.3.5
+test-F1315-1.2.1,test,fallacy,1315,Obstruction,5,0,1.2.1
+test-F1315-7.3.5,test,fallacy,1315,Obstruction,5,0,7.3.5
+test-F1316-1.2.1,test,fallacy,1316,Obstruction,6,1,1.2.1
+test-F1316-7.2.2,test,fallacy,1316,Obstruction,6,1,7.2.2
+test-F1317-4.2.4,test,fallacy,1317,Obstruction,6,0,4.2.4
+test-F1317-7.2.2,test,fallacy,1317,Obstruction,6,0,7.2.2
+test-F1318-2.1.1,test,fallacy,1318,Obstruction,7,1,2.1.1
+test-F1318-2.2.8,test,fallacy,1318,Obstruction,7,1,2.2.8
+test-F1319-3.1.4,test,fallacy,1319,Obstruction,6,1,3.1.4
+test-F1319-4.1.12,test,fallacy,1319,Obstruction,6,1,4.1.12
+test-F1320-4.1.12,test,fallacy,1320,Obstruction,6,1,4.1.12
+test-F1320-5.1.5,test,fallacy,1320,Obstruction,6,1,5.1.5
+test-F1321-4.3.9,test,fallacy,1321,Obstruction,5,0,4.3.9
+test-F1321-7.3.5,test,fallacy,1321,Obstruction,5,0,7.3.5
+test-F1322-2.2.5,test,fallacy,1322,Obstruction,6,0,2.2.5
+test-F1322-5.1.3,test,fallacy,1322,Obstruction,6,0,5.1.3
+test-F1323-3.2.1,test,fallacy,1323,Obstruction,7,1,3.2.1
+test-F1323-7.2.12,test,fallacy,1323,Obstruction,7,1,7.2.12
+test-F1324-5.1.3,test,fallacy,1324,Obstruction,7,1,5.1.3
+test-F1324-7.2.2,test,fallacy,1324,Obstruction,7,1,7.2.2
+test-F1325-5.1.5,test,fallacy,1325,Obstruction,6,1,5.1.5
+test-F1325-6.1.3,test,fallacy,1325,Obstruction,6,1,6.1.3
+test-F1326-3.1.8,test,fallacy,1326,Obstruction,6,1,3.1.8
+test-F1326-5.1.3,test,fallacy,1326,Obstruction,6,1,5.1.3
+test-F1327-1.2.1,test,fallacy,1327,Obstruction,4,0,1.2.1
+test-F1327-7.2.2,test,fallacy,1327,Obstruction,4,0,7.2.2
+test-F1328-2.1.10,test,fallacy,1328,Obstruction,5,0,2.1.10
+test-F1328-7.2.12,test,fallacy,1328,Obstruction,5,0,7.2.12
+test-F1329-2.2.5,test,fallacy,1329,Obstruction,6,1,2.2.5
+test-F1329-7.3.5,test,fallacy,1329,Obstruction,6,1,7.3.5
+test-F1330-2.2.5,test,fallacy,1330,Obstruction,5,1,2.2.5
+test-F1330-7.2.2,test,fallacy,1330,Obstruction,5,1,7.2.2
+test-F1331-4.1.12,test,fallacy,1331,Obstruction,5,1,4.1.12
+test-F1331-4.3.9,test,fallacy,1331,Obstruction,5,1,4.3.9
+test-F1332-3.2.11,test,fallacy,1332,Obstruction,5,0,3.2.11
+test-F1332-6.1.3,test,fallacy,1332,Obstruction,5,0,6.1.3
+test-F1333-4.2.4,test,fallacy,1333,Obstruction,6,1,4.2.4
+test-F1333-6.2.4,test,fallacy,1333,Obstruction,6,1,6.2.4
+test-F1334-1.3.3,test,fallacy,1334,Obstruction,4,0,1.3.3
+test-F1334-4.1.12,test,fallacy,1334,Obstruction,4,0,4.1.12
+test-F1335-3.2.11,test,fallacy,1335,Obstruction,5,0,3.2.11
+test-F1335-4.3.6,test,fallacy,1335,Obstruction,5,0,4.3.6
+test-F1336-5.1.5,test,fallacy,1336,Obstruction,6,1,5.1.5
+test-F1336-7.2.11,test,fallacy,1336,Obstruction,6,1,7.2.11
+test-F1337-3.1.8,test,fallacy,1337,Obstruction,6,1,3.1.8
+test-F1337-7.2.11,test,fallacy,1337,Obstruction,6,1,7.2.11
+test-F1338-4.2.4,test,fallacy,1338,Obstruction,5,0,4.2.4
+test-F1338-4.3.9,test,fallacy,1338,Obstruction,5,0,4.3.9
+test-F1339-2.2.5,test,fallacy,1339,Obstruction,6,0,2.2.5
+test-F1339-4.3.9,test,fallacy,1339,Obstruction,6,0,4.3.9
+test-F1340-1.2.1,test,fallacy,1340,Obstruction,7,1,1.2.1
+test-F1340-6.2.4,test,fallacy,1340,Obstruction,7,1,6.2.4
+test-F1341-3.2.5,test,fallacy,1341,Obstruction,6,1,3.2.5
+test-F1341-5.1.5,test,fallacy,1341,Obstruction,6,1,5.1.5
+test-F1342-4.2.4,test,fallacy,1342,Obstruction,5,0,4.2.4
+test-F1342-6.1.3,test,fallacy,1342,Obstruction,5,0,6.1.3
+test-F1343-3.2.11,test,fallacy,1343,Obstruction,6,1,3.2.11
+test-F1343-7.2.12,test,fallacy,1343,Obstruction,6,1,7.2.12
+test-F1344-6.2.4,test,fallacy,1344,Obstruction,6,1,6.2.4
+test-F1344-7.3.5,test,fallacy,1344,Obstruction,6,1,7.3.5
+test-F1345-4.3.6,test,fallacy,1345,Obstruction,3,0,4.3.6
+test-F1345-4.3.9,test,fallacy,1345,Obstruction,3,0,4.3.9
+test-F1346-5.2.4,test,fallacy,1346,Obstruction,4,0,5.2.4
+test-F1346-7.2.11,test,fallacy,1346,Obstruction,4,0,7.2.11
+test-F1347-2.2.8,test,fallacy,1347,Obstruction,5,0,2.2.8
+test-F1347-7.3.5,test,fallacy,1347,Obstruction,5,0,7.3.5
+test-F1348-2.1.1,test,fallacy,1348,Obstruction,6,1,2.1.1
+test-F1348-2.2.8,test,fallacy,1348,Obstruction,6,1,2.2.8
+test-F1349-2.2.8,test,fallacy,1349,Obstruction,5,1,2.2.8
+test-F1349-4.1.12,test,fallacy,1349,Obstruction,5,1,4.1.12
+test-F1350-3.2.1,test,fallacy,1350,Obstruction,4,1,3.2.1
+test-F1350-4.3.9,test,fallacy,1350,Obstruction,4,1,4.3.9
+test-F1351-1.3.2,test,fallacy,1351,Obstruction,4,1,1.3.2
+test-F1351-2.2.5,test,fallacy,1351,Obstruction,4,1,2.2.5
+test-F1352-4.1.12,test,fallacy,1352,Obstruction,3,0,4.1.12
+test-F1352-7.2.11,test,fallacy,1352,Obstruction,3,0,7.2.11
+test-F1353-2.1.1,test,fallacy,1353,Obstruction,4,1,2.1.1
+test-F1353-2.1.10,test,fallacy,1353,Obstruction,4,1,2.1.10
+test-F1354-6.1.3,test,fallacy,1354,Obstruction,4,1,6.1.3
+test-F1354-7.2.2,test,fallacy,1354,Obstruction,4,1,7.2.2
+test-F1355-2.2.8,test,fallacy,1355,Obstruction,4,0,2.2.8
+test-F1355-5.1.3,test,fallacy,1355,Obstruction,4,0,5.1.3
+test-F1356-1.3.2,test,fallacy,1356,Obstruction,5,1,1.3.2
+test-F1356-3.2.11,test,fallacy,1356,Obstruction,5,1,3.2.11
+test-F1357-1.3.3,test,fallacy,1357,Obstruction,4,0,1.3.3
+test-F1357-7.2.2,test,fallacy,1357,Obstruction,4,0,7.2.2
+test-F1358-2.2.5,test,fallacy,1358,Obstruction,5,1,2.2.5
+test-F1358-3.2.1,test,fallacy,1358,Obstruction,5,1,3.2.1
+test-F1359-3.1.4,test,fallacy,1359,Obstruction,5,1,3.1.4
+test-F1359-3.1.8,test,fallacy,1359,Obstruction,5,1,3.1.8
+test-F1360-2.2.8,test,fallacy,1360,Obstruction,2,0,2.2.8
+test-F1360-4.1.12,test,fallacy,1360,Obstruction,2,0,4.1.12
+test-F1361-4.3.6,test,fallacy,1361,Obstruction,3,0,4.3.6
+test-F1361-7.2.11,test,fallacy,1361,Obstruction,3,0,7.2.11
+test-F1362-3.1.4,test,fallacy,1362,Obstruction,4,0,3.1.4
+test-F1362-4.2.4,test,fallacy,1362,Obstruction,4,0,4.2.4
+test-F1363-1.3.2,test,fallacy,1363,Obstruction,5,1,1.3.2
+test-F1363-3.2.5,test,fallacy,1363,Obstruction,5,1,3.2.5
+test-F1364-5.1.3,test,fallacy,1364,Obstruction,5,1,5.1.3
+test-F1364-6.2.4,test,fallacy,1364,Obstruction,5,1,6.2.4
+test-F1365-5.1.3,test,fallacy,1365,Obstruction,4,0,5.1.3
+test-F1365-5.1.5,test,fallacy,1365,Obstruction,4,0,5.1.5
+test-F1366-3.2.1,test,fallacy,1366,Obstruction,5,1,3.2.1
+test-F1366-7.2.2,test,fallacy,1366,Obstruction,5,1,7.2.2
+test-F1367-1.3.3,test,fallacy,1367,Obstruction,5,1,1.3.3
+test-F1367-3.1.8,test,fallacy,1367,Obstruction,5,1,3.1.8
+test-F1368-1.3.2,test,fallacy,1368,Obstruction,4,0,1.3.2
+test-F1368-7.2.12,test,fallacy,1368,Obstruction,4,0,7.2.12
+test-F1369-4.3.9,test,fallacy,1369,Obstruction,5,1,4.3.9
+test-F1369-5.1.5,test,fallacy,1369,Obstruction,5,1,5.1.5
+test-F1370-3.1.8,test,fallacy,1370,Obstruction,5,1,3.1.8
+test-F1370-3.2.5,test,fallacy,1370,Obstruction,5,1,3.2.5
+test-F1371-3.1.8,test,fallacy,1371,Obstruction,3,0,3.1.8
+test-F1371-5.1.5,test,fallacy,1371,Obstruction,3,0,5.1.5
+test-F1372-2.1.1,test,fallacy,1372,Obstruction,4,0,2.1.1
+test-F1372-2.2.8,test,fallacy,1372,Obstruction,4,0,2.2.8
+test-F1373-2.2.8,test,fallacy,1373,Obstruction,5,1,2.2.8
+test-F1373-4.3.9,test,fallacy,1373,Obstruction,5,1,4.3.9
+test-F1374-1.3.3,test,fallacy,1374,Obstruction,5,1,1.3.3
+test-F1374-7.2.11,test,fallacy,1374,Obstruction,5,1,7.2.11
+test-F1375-4.3.9,test,fallacy,1375,Obstruction,5,1,4.3.9
+test-F1375-7.2.2,test,fallacy,1375,Obstruction,5,1,7.2.2
+test-F1376-3.2.5,test,fallacy,1376,Obstruction,5,1,3.2.5
+test-F1376-7.2.11,test,fallacy,1376,Obstruction,5,1,7.2.11
+test-F1377-2.1.10,test,fallacy,1377,Obstruction,5,1,2.1.10
+test-F1377-6.1.3,test,fallacy,1377,Obstruction,5,1,6.1.3
+test-F1378-1.3.2,test,fallacy,1378,Obstruction,5,1,1.3.2
+test-F1378-2.1.1,test,fallacy,1378,Obstruction,5,1,2.1.1
+test-F1379-2.2.5,test,fallacy,1379,Obstruction,5,0,2.2.5
+test-F1379-3.1.8,test,fallacy,1379,Obstruction,5,0,3.1.8
+test-F1380-2.1.10,test,fallacy,1380,Obstruction,6,1,2.1.10
+test-F1380-7.2.11,test,fallacy,1380,Obstruction,6,1,7.2.11
+test-F1381-3.1.8,test,fallacy,1381,Obstruction,4,0,3.1.8
+test-F1381-7.2.12,test,fallacy,1381,Obstruction,4,0,7.2.12
+test-F1382-4.2.4,test,fallacy,1382,Obstruction,5,0,4.2.4
+test-F1382-6.1.3,test,fallacy,1382,Obstruction,5,0,6.1.3
+test-F1383-6.1.3,test,fallacy,1383,Obstruction,6,1,6.1.3
+test-F1383-7.3.5,test,fallacy,1383,Obstruction,6,1,7.3.5
+test-F1384-1.3.2,test,fallacy,1384,Obstruction,5,1,1.3.2
+test-F1384-4.3.6,test,fallacy,1384,Obstruction,5,1,4.3.6
+test-F1385-2.1.1,test,fallacy,1385,Obstruction,5,1,2.1.1
+test-F1385-3.1.4,test,fallacy,1385,Obstruction,5,1,3.1.4
+test-F1386-3.1.4,test,fallacy,1386,Obstruction,4,0,3.1.4
+test-F1386-3.2.5,test,fallacy,1386,Obstruction,4,0,3.2.5
+test-F1387-2.1.1,test,fallacy,1387,Obstruction,5,1,2.1.1
+test-F1387-5.2.4,test,fallacy,1387,Obstruction,5,1,5.2.4
+test-F1388-5.2.4,test,fallacy,1388,Obstruction,5,1,5.2.4
+test-F1388-6.2.4,test,fallacy,1388,Obstruction,5,1,6.2.4
+test-F1389-1.3.2,test,fallacy,1389,Obstruction,5,1,1.3.2
+test-F1389-7.2.11,test,fallacy,1389,Obstruction,5,1,7.2.11
+test-F1390-1.2.1,test,fallacy,1390,Obstruction,5,1,1.2.1
+test-F1390-7.2.12,test,fallacy,1390,Obstruction,5,1,7.2.12
+test-F1391-3.1.4,test,fallacy,1391,Obstruction,5,1,3.1.4
+test-F1391-3.2.5,test,fallacy,1391,Obstruction,5,1,3.2.5
+test-F1392-7.2.11,test,fallacy,1392,Obstruction,4,0,7.2.11
+test-F1392-7.2.12,test,fallacy,1392,Obstruction,4,0,7.2.12
+test-F1393-3.1.8,test,fallacy,1393,Obstruction,5,1,3.1.8
+test-F1393-4.2.4,test,fallacy,1393,Obstruction,5,1,4.2.4
+test-F1394-3.2.5,test,fallacy,1394,Obstruction,5,1,3.2.5
+test-F1394-4.1.12,test,fallacy,1394,Obstruction,5,1,4.1.12
+test-F1395-6.2.4,test,fallacy,1395,Obstruction,5,1,6.2.4
+test-F1395-7.2.12,test,fallacy,1395,Obstruction,5,1,7.2.12
+test-F1396-3.2.1,test,fallacy,1396,Obstruction,5,1,3.2.1
+test-F1396-7.2.11,test,fallacy,1396,Obstruction,5,1,7.2.11
+test-F1397-1.2.1,test,fallacy,1397,Obstruction,5,1,1.2.1
+test-F1397-7.3.5,test,fallacy,1397,Obstruction,5,1,7.3.5
+test-F1398-2.1.1,test,fallacy,1398,Obstruction,3,0,2.1.1
+test-F1398-4.3.6,test,fallacy,1398,Obstruction,3,0,4.3.6
+test-F1399-2.2.8,test,fallacy,1399,Obstruction,4,1,2.2.8
+test-F1399-7.3.5,test,fallacy,1399,Obstruction,4,1,7.3.5
+test-F1400-4.1.12,test,fallacy,1400,Obstruction,4,1,4.1.12
+test-F1400-7.3.5,test,fallacy,1400,Obstruction,4,1,7.3.5
+test-F1401-4.3.9,test,fallacy,1401,Obstruction,4,1,4.3.9
+test-F1401-7.2.2,test,fallacy,1401,Obstruction,4,1,7.2.2
+test-F1402-3.1.8,test,fallacy,1402,Obstruction,4,1,3.1.8
+test-F1402-6.1.3,test,fallacy,1402,Obstruction,4,1,6.1.3
+test-F1403-2.2.8,test,fallacy,1403,Obstruction,4,0,2.2.8
+test-F1403-4.3.9,test,fallacy,1403,Obstruction,4,0,4.3.9
+test-F1404-1.2.1,test,fallacy,1404,Obstruction,5,1,1.2.1
+test-F1404-7.2.12,test,fallacy,1404,Obstruction,5,1,7.2.12
+test-F1405-1.3.3,test,fallacy,1405,Obstruction,5,1,1.3.3
+test-F1405-3.2.5,test,fallacy,1405,Obstruction,5,1,3.2.5
+test-F887-1.3.2,test,fallacy,887,Tricherie,1,0,1.3.2
+test-F887-6.2.4,test,fallacy,887,Tricherie,1,0,6.2.4
+test-F888-2.2.8,test,fallacy,888,Tricherie,2,0,2.2.8
+test-F888-3.2.1,test,fallacy,888,Tricherie,2,0,3.2.1
+test-F889-2.2.8,test,fallacy,889,Tricherie,3,0,2.2.8
+test-F889-5.2.4,test,fallacy,889,Tricherie,3,0,5.2.4
+test-F890-3.1.8,test,fallacy,890,Tricherie,4,0,3.1.8
+test-F890-7.2.2,test,fallacy,890,Tricherie,4,0,7.2.2
+test-F891-2.2.8,test,fallacy,891,Tricherie,5,0,2.2.8
+test-F891-3.1.4,test,fallacy,891,Tricherie,5,0,3.1.4
+test-F892-2.1.1,test,fallacy,892,Tricherie,6,1,2.1.1
+test-F892-5.1.3,test,fallacy,892,Tricherie,6,1,5.1.3
+test-F893-3.2.11,test,fallacy,893,Tricherie,6,0,3.2.11
+test-F893-4.2.4,test,fallacy,893,Tricherie,6,0,4.2.4
+test-F894-2.2.8,test,fallacy,894,Tricherie,7,1,2.2.8
+test-F894-5.1.5,test,fallacy,894,Tricherie,7,1,5.1.5
+test-F895-2.1.1,test,fallacy,895,Tricherie,6,1,2.1.1
+test-F895-4.3.6,test,fallacy,895,Tricherie,6,1,4.3.6
+test-F896-1.2.1,test,fallacy,896,Tricherie,5,1,1.2.1
+test-F896-5.2.4,test,fallacy,896,Tricherie,5,1,5.2.4
+test-F897-4.2.4,test,fallacy,897,Tricherie,5,0,4.2.4
+test-F897-4.3.9,test,fallacy,897,Tricherie,5,0,4.3.9
+test-F898-5.1.5,test,fallacy,898,Tricherie,6,1,5.1.5
+test-F898-5.2.4,test,fallacy,898,Tricherie,6,1,5.2.4
+test-F899-1.2.1,test,fallacy,899,Tricherie,6,1,1.2.1
+test-F899-2.2.5,test,fallacy,899,Tricherie,6,1,2.2.5
+test-F900-3.2.1,test,fallacy,900,Tricherie,6,0,3.2.1
+test-F900-4.1.12,test,fallacy,900,Tricherie,6,0,4.1.12
+test-F901-2.2.5,test,fallacy,901,Tricherie,7,1,2.2.5
+test-F901-3.1.8,test,fallacy,901,Tricherie,7,1,3.1.8
+test-F902-3.2.5,test,fallacy,902,Tricherie,7,1,3.2.5
+test-F902-7.2.12,test,fallacy,902,Tricherie,7,1,7.2.12
+test-F903-3.2.1,test,fallacy,903,Tricherie,5,1,3.2.1
+test-F903-3.2.5,test,fallacy,903,Tricherie,5,1,3.2.5
+test-F904-2.1.1,test,fallacy,904,Tricherie,5,1,2.1.1
+test-F904-7.2.11,test,fallacy,904,Tricherie,5,1,7.2.11
+test-F905-5.1.5,test,fallacy,905,Tricherie,5,1,5.1.5
+test-F905-7.2.2,test,fallacy,905,Tricherie,5,1,7.2.2
+test-F906-5.1.5,test,fallacy,906,Tricherie,5,0,5.1.5
+test-F906-6.1.3,test,fallacy,906,Tricherie,5,0,6.1.3
+test-F907-1.2.1,test,fallacy,907,Tricherie,6,1,1.2.1
+test-F907-7.2.12,test,fallacy,907,Tricherie,6,1,7.2.12
+test-F908-3.2.5,test,fallacy,908,Tricherie,4,0,3.2.5
+test-F908-4.2.4,test,fallacy,908,Tricherie,4,0,4.2.4
+test-F909-5.1.3,test,fallacy,909,Tricherie,5,0,5.1.3
+test-F909-5.2.4,test,fallacy,909,Tricherie,5,0,5.2.4
+test-F910-3.2.5,test,fallacy,910,Tricherie,6,1,3.2.5
+test-F910-6.1.3,test,fallacy,910,Tricherie,6,1,6.1.3
+test-F911-2.2.5,test,fallacy,911,Tricherie,6,1,2.2.5
+test-F911-7.2.2,test,fallacy,911,Tricherie,6,1,7.2.2
+test-F912-5.2.4,test,fallacy,912,Tricherie,6,1,5.2.4
+test-F912-6.1.3,test,fallacy,912,Tricherie,6,1,6.1.3
+test-F913-2.2.5,test,fallacy,913,Tricherie,6,1,2.2.5
+test-F913-7.2.12,test,fallacy,913,Tricherie,6,1,7.2.12
+test-F914-3.2.11,test,fallacy,914,Tricherie,6,1,3.2.11
+test-F914-7.3.5,test,fallacy,914,Tricherie,6,1,7.3.5
+test-F915-1.2.1,test,fallacy,915,Tricherie,6,1,1.2.1
+test-F915-4.1.12,test,fallacy,915,Tricherie,6,1,4.1.12
+test-F916-1.3.2,test,fallacy,916,Tricherie,5,0,1.3.2
+test-F916-6.2.4,test,fallacy,916,Tricherie,5,0,6.2.4
+test-F917-4.3.6,test,fallacy,917,Tricherie,6,0,4.3.6
+test-F917-5.1.3,test,fallacy,917,Tricherie,6,0,5.1.3
+test-F918-1.3.3,test,fallacy,918,Tricherie,7,1,1.3.3
+test-F918-6.1.3,test,fallacy,918,Tricherie,7,1,6.1.3
+test-F919-2.2.5,test,fallacy,919,Tricherie,6,0,2.2.5
+test-F919-7.2.12,test,fallacy,919,Tricherie,6,0,7.2.12
+test-F920-4.3.9,test,fallacy,920,Tricherie,7,0,4.3.9
+test-F920-7.2.2,test,fallacy,920,Tricherie,7,0,7.2.2
+test-F921-1.3.3,test,fallacy,921,Tricherie,8,1,1.3.3
+test-F921-7.2.2,test,fallacy,921,Tricherie,8,1,7.2.2
+test-F922-1.3.2,test,fallacy,922,Tricherie,7,1,1.3.2
+test-F922-6.1.3,test,fallacy,922,Tricherie,7,1,6.1.3
+test-F923-1.3.2,test,fallacy,923,Tricherie,6,0,1.3.2
+test-F923-5.2.4,test,fallacy,923,Tricherie,6,0,5.2.4
+test-F924-4.2.4,test,fallacy,924,Tricherie,7,1,4.2.4
+test-F924-7.3.5,test,fallacy,924,Tricherie,7,1,7.3.5
+test-F925-1.2.1,test,fallacy,925,Tricherie,5,0,1.2.1
+test-F925-5.2.4,test,fallacy,925,Tricherie,5,0,5.2.4
+test-F926-4.3.6,test,fallacy,926,Tricherie,6,1,4.3.6
+test-F926-5.1.5,test,fallacy,926,Tricherie,6,1,5.1.5
+test-F927-1.2.1,test,fallacy,927,Tricherie,6,1,1.2.1
+test-F927-5.1.3,test,fallacy,927,Tricherie,6,1,5.1.3
+test-F928-2.1.1,test,fallacy,928,Tricherie,6,1,2.1.1
+test-F928-2.1.10,test,fallacy,928,Tricherie,6,1,2.1.10
+test-F929-2.2.8,test,fallacy,929,Tricherie,5,1,2.2.8
+test-F929-3.1.4,test,fallacy,929,Tricherie,5,1,3.1.4
+test-F930-1.2.1,test,fallacy,930,Tricherie,4,0,1.2.1
+test-F930-5.2.4,test,fallacy,930,Tricherie,4,0,5.2.4
+test-F931-2.1.1,test,fallacy,931,Tricherie,5,1,2.1.1
+test-F931-3.1.4,test,fallacy,931,Tricherie,5,1,3.1.4
+test-F932-3.1.4,test,fallacy,932,Tricherie,5,1,3.1.4
+test-F932-5.1.3,test,fallacy,932,Tricherie,5,1,5.1.3
+test-F933-4.3.6,test,fallacy,933,Tricherie,5,0,4.3.6
+test-F933-4.3.9,test,fallacy,933,Tricherie,5,0,4.3.9
+test-F934-1.2.1,test,fallacy,934,Tricherie,6,1,1.2.1
+test-F934-2.2.5,test,fallacy,934,Tricherie,6,1,2.2.5
+test-F935-3.1.8,test,fallacy,935,Tricherie,5,0,3.1.8
+test-F935-5.1.3,test,fallacy,935,Tricherie,5,0,5.1.3
+test-F936-3.2.11,test,fallacy,936,Tricherie,6,1,3.2.11
+test-F936-4.3.6,test,fallacy,936,Tricherie,6,1,4.3.6
+test-F937-1.3.3,test,fallacy,937,Tricherie,5,1,1.3.3
+test-F937-6.1.3,test,fallacy,937,Tricherie,5,1,6.1.3
+test-F938-3.1.8,test,fallacy,938,Tricherie,5,1,3.1.8
+test-F938-6.2.4,test,fallacy,938,Tricherie,5,1,6.2.4
+test-F939-4.3.9,test,fallacy,939,Tricherie,5,1,4.3.9
+test-F939-7.3.5,test,fallacy,939,Tricherie,5,1,7.3.5
+test-F940-3.1.4,test,fallacy,940,Tricherie,5,1,3.1.4
+test-F940-3.1.8,test,fallacy,940,Tricherie,5,1,3.1.8
+test-F941-4.1.12,test,fallacy,941,Tricherie,5,1,4.1.12
+test-F941-4.3.9,test,fallacy,941,Tricherie,5,1,4.3.9
+test-F942-3.2.5,test,fallacy,942,Tricherie,3,0,3.2.5
+test-F942-7.2.2,test,fallacy,942,Tricherie,3,0,7.2.2
+test-F943-2.1.10,test,fallacy,943,Tricherie,4,0,2.1.10
+test-F943-4.2.4,test,fallacy,943,Tricherie,4,0,4.2.4
+test-F944-3.2.5,test,fallacy,944,Tricherie,5,1,3.2.5
+test-F944-6.2.4,test,fallacy,944,Tricherie,5,1,6.2.4
+test-F945-4.1.12,test,fallacy,945,Tricherie,5,1,4.1.12
+test-F945-5.1.3,test,fallacy,945,Tricherie,5,1,5.1.3
+test-F946-2.2.5,test,fallacy,946,Tricherie,5,1,2.2.5
+test-F946-4.1.12,test,fallacy,946,Tricherie,5,1,4.1.12
+test-F947-5.1.5,test,fallacy,947,Tricherie,5,1,5.1.5
+test-F947-6.1.3,test,fallacy,947,Tricherie,5,1,6.1.3
+test-F948-2.1.10,test,fallacy,948,Tricherie,4,0,2.1.10
+test-F948-7.2.11,test,fallacy,948,Tricherie,4,0,7.2.11
+test-F949-3.1.4,test,fallacy,949,Tricherie,5,1,3.1.4
+test-F949-6.2.4,test,fallacy,949,Tricherie,5,1,6.2.4
+test-F950-1.3.3,test,fallacy,950,Tricherie,5,1,1.3.3
+test-F950-2.1.1,test,fallacy,950,Tricherie,5,1,2.1.1
+test-F951-4.3.6,test,fallacy,951,Tricherie,4,0,4.3.6
+test-F951-5.1.5,test,fallacy,951,Tricherie,4,0,5.1.5
+test-F952-1.3.2,test,fallacy,952,Tricherie,5,1,1.3.2
+test-F952-2.2.8,test,fallacy,952,Tricherie,5,1,2.2.8
+test-F953-2.2.5,test,fallacy,953,Tricherie,3,0,2.2.5
+test-F953-6.2.4,test,fallacy,953,Tricherie,3,0,6.2.4
+test-F954-4.3.9,test,fallacy,954,Tricherie,4,0,4.3.9
+test-F954-6.1.3,test,fallacy,954,Tricherie,4,0,6.1.3
+test-F955-6.2.4,test,fallacy,955,Tricherie,5,0,6.2.4
+test-F955-7.2.11,test,fallacy,955,Tricherie,5,0,7.2.11
+test-F956-7.2.12,test,fallacy,956,Tricherie,6,0,7.2.12
+test-F956-7.2.2,test,fallacy,956,Tricherie,6,0,7.2.2
+test-F957-1.3.2,test,fallacy,957,Tricherie,7,1,1.3.2
+test-F957-4.1.12,test,fallacy,957,Tricherie,7,1,4.1.12
+test-F958-4.2.4,test,fallacy,958,Tricherie,6,0,4.2.4
+test-F958-6.1.3,test,fallacy,958,Tricherie,6,0,6.1.3
+test-F959-4.3.6,test,fallacy,959,Tricherie,7,1,4.3.6
+test-F959-7.3.5,test,fallacy,959,Tricherie,7,1,7.3.5
+test-F960-2.1.10,test,fallacy,960,Tricherie,7,1,2.1.10
+test-F960-7.2.11,test,fallacy,960,Tricherie,7,1,7.2.11
+test-F961-2.2.5,test,fallacy,961,Tricherie,6,1,2.2.5
+test-F961-3.2.11,test,fallacy,961,Tricherie,6,1,3.2.11
+test-F962-4.3.9,test,fallacy,962,Tricherie,5,0,4.3.9
+test-F962-7.2.12,test,fallacy,962,Tricherie,5,0,7.2.12
+test-F963-2.1.10,test,fallacy,963,Tricherie,6,1,2.1.10
+test-F963-6.1.3,test,fallacy,963,Tricherie,6,1,6.1.3
+test-F964-3.2.1,test,fallacy,964,Tricherie,6,1,3.2.1
+test-F964-7.3.5,test,fallacy,964,Tricherie,6,1,7.3.5
+test-F965-3.2.1,test,fallacy,965,Tricherie,6,1,3.2.1
+test-F965-4.1.12,test,fallacy,965,Tricherie,6,1,4.1.12
+test-F966-1.2.1,test,fallacy,966,Tricherie,6,1,1.2.1
+test-F966-6.1.3,test,fallacy,966,Tricherie,6,1,6.1.3
+test-F967-4.2.4,test,fallacy,967,Tricherie,5,0,4.2.4
+test-F967-6.1.3,test,fallacy,967,Tricherie,5,0,6.1.3
+test-F968-5.1.3,test,fallacy,968,Tricherie,6,1,5.1.3
+test-F968-7.2.2,test,fallacy,968,Tricherie,6,1,7.2.2
+test-F969-3.1.8,test,fallacy,969,Tricherie,6,1,3.1.8
+test-F969-4.2.4,test,fallacy,969,Tricherie,6,1,4.2.4
+test-F970-3.1.8,test,fallacy,970,Tricherie,5,1,3.1.8
+test-F970-4.3.9,test,fallacy,970,Tricherie,5,1,4.3.9
+test-F971-3.2.5,test,fallacy,971,Tricherie,4,1,3.2.5
+test-F971-5.1.5,test,fallacy,971,Tricherie,4,1,5.1.5
+test-F972-3.2.11,test,fallacy,972,Tricherie,4,1,3.2.11
+test-F972-6.2.4,test,fallacy,972,Tricherie,4,1,6.2.4
+test-F973-2.1.1,test,fallacy,973,Tricherie,2,0,2.1.1
+test-F973-4.1.12,test,fallacy,973,Tricherie,2,0,4.1.12
+test-F974-5.1.3,test,fallacy,974,Tricherie,3,0,5.1.3
+test-F974-7.2.2,test,fallacy,974,Tricherie,3,0,7.2.2
+test-F975-3.1.4,test,fallacy,975,Tricherie,4,0,3.1.4
+test-F975-3.1.8,test,fallacy,975,Tricherie,4,0,3.1.8
+test-F976-3.1.4,test,fallacy,976,Tricherie,5,0,3.1.4
+test-F976-3.2.11,test,fallacy,976,Tricherie,5,0,3.2.11
+test-F977-1.3.3,test,fallacy,977,Tricherie,6,0,1.3.3
+test-F977-2.2.8,test,fallacy,977,Tricherie,6,0,2.2.8
+test-F978-3.2.1,test,fallacy,978,Tricherie,7,1,3.2.1
+test-F978-4.3.9,test,fallacy,978,Tricherie,7,1,4.3.9
+test-F979-3.1.8,test,fallacy,979,Tricherie,6,1,3.1.8
+test-F979-5.1.5,test,fallacy,979,Tricherie,6,1,5.1.5
+test-F980-2.2.8,test,fallacy,980,Tricherie,5,1,2.2.8
+test-F980-5.1.3,test,fallacy,980,Tricherie,5,1,5.1.3
+test-F981-5.2.4,test,fallacy,981,Tricherie,5,1,5.2.4
+test-F981-7.2.2,test,fallacy,981,Tricherie,5,1,7.2.2
+test-F982-2.2.5,test,fallacy,982,Tricherie,5,1,2.2.5
+test-F982-6.1.3,test,fallacy,982,Tricherie,5,1,6.1.3
+test-F983-4.3.6,test,fallacy,983,Tricherie,5,1,4.3.6
+test-F983-6.2.4,test,fallacy,983,Tricherie,5,1,6.2.4
+test-F984-1.2.1,test,fallacy,984,Tricherie,4,0,1.2.1
+test-F984-2.2.8,test,fallacy,984,Tricherie,4,0,2.2.8
+test-F985-5.1.5,test,fallacy,985,Tricherie,5,1,5.1.5
+test-F985-7.3.5,test,fallacy,985,Tricherie,5,1,7.3.5
+test-F986-1.2.1,test,fallacy,986,Tricherie,5,1,1.2.1
+test-F986-7.2.2,test,fallacy,986,Tricherie,5,1,7.2.2
+test-F987-2.2.8,test,fallacy,987,Tricherie,4,0,2.2.8
+test-F987-4.2.4,test,fallacy,987,Tricherie,4,0,4.2.4
+test-F988-3.1.8,test,fallacy,988,Tricherie,5,1,3.1.8
+test-F988-7.3.5,test,fallacy,988,Tricherie,5,1,7.3.5
+test-F989-3.2.11,test,fallacy,989,Tricherie,4,0,3.2.11
+test-F989-4.3.9,test,fallacy,989,Tricherie,4,0,4.3.9
+test-F990-3.1.4,test,fallacy,990,Tricherie,5,1,3.1.4
+test-F990-4.1.12,test,fallacy,990,Tricherie,5,1,4.1.12
+test-F991-1.2.1,test,fallacy,991,Tricherie,4,1,1.2.1
+test-F991-1.3.2,test,fallacy,991,Tricherie,4,1,1.3.2
+test-F992-1.3.2,test,fallacy,992,Tricherie,3,0,1.3.2
+test-F992-7.3.5,test,fallacy,992,Tricherie,3,0,7.3.5
+test-F993-1.2.1,test,fallacy,993,Tricherie,4,0,1.2.1
+test-F993-3.2.5,test,fallacy,993,Tricherie,4,0,3.2.5
+test-F994-3.2.5,test,fallacy,994,Tricherie,5,0,3.2.5
+test-F994-7.2.11,test,fallacy,994,Tricherie,5,0,7.2.11
+test-F995-3.1.8,test,fallacy,995,Tricherie,6,1,3.1.8
+test-F995-4.1.12,test,fallacy,995,Tricherie,6,1,4.1.12
+test-F996-4.3.6,test,fallacy,996,Tricherie,5,1,4.3.6
+test-F996-7.2.2,test,fallacy,996,Tricherie,5,1,7.2.2
+test-F997-3.2.5,test,fallacy,997,Tricherie,4,0,3.2.5
+test-F997-4.1.12,test,fallacy,997,Tricherie,4,0,4.1.12
+test-F998-1.2.1,test,fallacy,998,Tricherie,5,1,1.2.1
+test-F998-6.1.3,test,fallacy,998,Tricherie,5,1,6.1.3
+test-F999-4.1.12,test,fallacy,999,Tricherie,5,1,4.1.12
+test-F999-5.1.3,test,fallacy,999,Tricherie,5,1,5.1.3
+test-F1000-2.2.5,test,fallacy,1000,Tricherie,5,1,2.2.5
+test-F1000-3.1.8,test,fallacy,1000,Tricherie,5,1,3.1.8
+test-F1001-2.2.5,test,fallacy,1001,Tricherie,4,0,2.2.5
+test-F1001-4.3.9,test,fallacy,1001,Tricherie,4,0,4.3.9
+test-F1002-3.2.11,test,fallacy,1002,Tricherie,5,1,3.2.11
+test-F1002-5.1.5,test,fallacy,1002,Tricherie,5,1,5.1.5
+test-F1003-1.3.2,test,fallacy,1003,Tricherie,5,1,1.3.2
+test-F1003-4.2.4,test,fallacy,1003,Tricherie,5,1,4.2.4
+test-F1004-1.2.1,test,fallacy,1004,Tricherie,4,0,1.2.1
+test-F1004-3.2.5,test,fallacy,1004,Tricherie,4,0,3.2.5
+test-F1005-3.2.1,test,fallacy,1005,Tricherie,5,1,3.2.1
+test-F1005-3.2.11,test,fallacy,1005,Tricherie,5,1,3.2.11
+test-F1006-1.2.1,test,fallacy,1006,Tricherie,5,1,1.2.1
+test-F1006-3.2.5,test,fallacy,1006,Tricherie,5,1,3.2.5
+test-F1007-3.2.5,test,fallacy,1007,Tricherie,5,1,3.2.5
+test-F1007-5.2.4,test,fallacy,1007,Tricherie,5,1,5.2.4
+test-F1008-7.2.11,test,fallacy,1008,Tricherie,4,0,7.2.11
+test-F1008-7.2.12,test,fallacy,1008,Tricherie,4,0,7.2.12
+test-F1009-4.2.4,test,fallacy,1009,Tricherie,5,1,4.2.4
+test-F1009-7.2.2,test,fallacy,1009,Tricherie,5,1,7.2.2
+test-F1010-1.3.2,test,fallacy,1010,Tricherie,5,1,1.3.2
+test-F1010-4.3.6,test,fallacy,1010,Tricherie,5,1,4.3.6
+test-F1011-4.3.6,test,fallacy,1011,Tricherie,3,0,4.3.6
+test-F1011-6.2.4,test,fallacy,1011,Tricherie,3,0,6.2.4
+test-F1012-1.3.2,test,fallacy,1012,Tricherie,4,1,1.3.2
+test-F1012-5.1.5,test,fallacy,1012,Tricherie,4,1,5.1.5
+test-F1013-2.1.1,test,fallacy,1013,Tricherie,4,0,2.1.1
+test-F1013-3.1.4,test,fallacy,1013,Tricherie,4,0,3.1.4
+test-F1014-3.2.5,test,fallacy,1014,Tricherie,5,1,3.2.5
+test-F1014-4.3.6,test,fallacy,1014,Tricherie,5,1,4.3.6
+test-F1015-1.2.1,test,fallacy,1015,Tricherie,4,0,1.2.1
+test-F1015-5.2.4,test,fallacy,1015,Tricherie,4,0,5.2.4
+test-F1016-1.2.1,test,fallacy,1016,Tricherie,5,1,1.2.1
+test-F1016-3.1.4,test,fallacy,1016,Tricherie,5,1,3.1.4
+test-F1017-3.2.1,test,fallacy,1017,Tricherie,5,1,3.2.1
+test-F1017-5.1.5,test,fallacy,1017,Tricherie,5,1,5.1.5
+test-F1018-2.1.10,test,fallacy,1018,Tricherie,5,1,2.1.10
+test-F1018-6.1.3,test,fallacy,1018,Tricherie,5,1,6.1.3
+test-F1019-5.2.4,test,fallacy,1019,Tricherie,5,1,5.2.4
+test-F1019-7.2.12,test,fallacy,1019,Tricherie,5,1,7.2.12
+test-F1020-3.2.5,test,fallacy,1020,Tricherie,4,0,3.2.5
+test-F1020-5.1.3,test,fallacy,1020,Tricherie,4,0,5.1.3
+test-F1021-2.1.10,test,fallacy,1021,Tricherie,5,1,2.1.10
+test-F1021-6.2.4,test,fallacy,1021,Tricherie,5,1,6.2.4
+test-F1022-2.2.8,test,fallacy,1022,Tricherie,4,1,2.2.8
+test-F1022-3.1.4,test,fallacy,1022,Tricherie,4,1,3.1.4
+test-F1023-5.2.4,test,fallacy,1023,Tricherie,2,0,5.2.4
+test-F1023-6.1.3,test,fallacy,1023,Tricherie,2,0,6.1.3
+test-F1024-2.1.1,test,fallacy,1024,Tricherie,3,0,2.1.1
+test-F1024-7.2.2,test,fallacy,1024,Tricherie,3,0,7.2.2
+test-F1025-1.3.3,test,fallacy,1025,Tricherie,4,0,1.3.3
+test-F1025-4.3.6,test,fallacy,1025,Tricherie,4,0,4.3.6
+test-F1026-6.1.3,test,fallacy,1026,Tricherie,5,0,6.1.3
+test-F1026-7.2.11,test,fallacy,1026,Tricherie,5,0,7.2.11
+test-F1027-2.2.5,test,fallacy,1027,Tricherie,6,0,2.2.5
+test-F1027-3.1.8,test,fallacy,1027,Tricherie,6,0,3.1.8
+test-F1028-3.2.11,test,fallacy,1028,Tricherie,7,0,3.2.11
+test-F1028-4.3.6,test,fallacy,1028,Tricherie,7,0,4.3.6
+test-F1029-2.1.1,test,fallacy,1029,Tricherie,8,1,2.1.1
+test-F1029-3.1.4,test,fallacy,1029,Tricherie,8,1,3.1.4
+test-F1030-3.2.1,test,fallacy,1030,Tricherie,8,1,3.2.1
+test-F1030-3.2.11,test,fallacy,1030,Tricherie,8,1,3.2.11
+test-F1031-4.2.4,test,fallacy,1031,Tricherie,8,1,4.2.4
+test-F1031-6.2.4,test,fallacy,1031,Tricherie,8,1,6.2.4
+test-F1032-1.2.1,test,fallacy,1032,Tricherie,7,1,1.2.1
+test-F1032-3.1.4,test,fallacy,1032,Tricherie,7,1,3.1.4
+test-F1033-1.3.3,test,fallacy,1033,Tricherie,7,0,1.3.3
+test-F1033-3.2.5,test,fallacy,1033,Tricherie,7,0,3.2.5
+test-F1034-1.3.3,test,fallacy,1034,Tricherie,8,1,1.3.3
+test-F1034-6.2.4,test,fallacy,1034,Tricherie,8,1,6.2.4
+test-F1035-1.2.1,test,fallacy,1035,Tricherie,8,1,1.2.1
+test-F1035-2.2.8,test,fallacy,1035,Tricherie,8,1,2.2.8
+test-F1036-2.1.10,test,fallacy,1036,Tricherie,7,1,2.1.10
+test-F1036-5.1.3,test,fallacy,1036,Tricherie,7,1,5.1.3
+test-F1037-4.2.4,test,fallacy,1037,Tricherie,7,1,4.2.4
+test-F1037-4.3.6,test,fallacy,1037,Tricherie,7,1,4.3.6
+test-F1038-2.1.10,test,fallacy,1038,Tricherie,6,0,2.1.10
+test-F1038-3.2.11,test,fallacy,1038,Tricherie,6,0,3.2.11
+test-F1039-3.2.11,test,fallacy,1039,Tricherie,7,0,3.2.11
+test-F1039-5.1.3,test,fallacy,1039,Tricherie,7,0,5.1.3
+test-F1040-4.3.6,test,fallacy,1040,Tricherie,8,0,4.3.6
+test-F1040-7.2.2,test,fallacy,1040,Tricherie,8,0,7.2.2
+test-F1041-1.3.3,test,fallacy,1041,Tricherie,9,1,1.3.3
+test-F1041-3.1.4,test,fallacy,1041,Tricherie,9,1,3.1.4
+test-F1042-6.1.3,test,fallacy,1042,Tricherie,9,1,6.1.3
+test-F1042-7.2.2,test,fallacy,1042,Tricherie,9,1,7.2.2
+test-F1043-5.2.4,test,fallacy,1043,Tricherie,8,0,5.2.4
+test-F1043-7.2.2,test,fallacy,1043,Tricherie,8,0,7.2.2
+test-F1044-3.2.5,test,fallacy,1044,Tricherie,9,0,3.2.5
+test-F1044-4.1.12,test,fallacy,1044,Tricherie,9,0,4.1.12
+test-F1045-1.3.2,test,fallacy,1045,Tricherie,10,1,1.3.2
+test-F1045-5.1.5,test,fallacy,1045,Tricherie,10,1,5.1.5
+test-F1046-2.2.8,test,fallacy,1046,Tricherie,8,1,2.2.8
+test-F1046-6.1.3,test,fallacy,1046,Tricherie,8,1,6.1.3
+test-F1047-2.1.1,test,fallacy,1047,Tricherie,8,1,2.1.1
+test-F1047-3.1.8,test,fallacy,1047,Tricherie,8,1,3.1.8
+test-F1048-1.3.2,test,fallacy,1048,Tricherie,7,0,1.3.2
+test-F1048-2.2.5,test,fallacy,1048,Tricherie,7,0,2.2.5
+test-F1049-3.2.5,test,fallacy,1049,Tricherie,8,0,3.2.5
+test-F1049-5.1.3,test,fallacy,1049,Tricherie,8,0,5.1.3
+test-F1050-7.2.11,test,fallacy,1050,Tricherie,9,1,7.2.11
+test-F1050-7.3.5,test,fallacy,1050,Tricherie,9,1,7.3.5
+test-F1051-4.3.6,test,fallacy,1051,Tricherie,9,1,4.3.6
+test-F1051-6.1.3,test,fallacy,1051,Tricherie,9,1,6.1.3
+test-F1052-5.1.3,test,fallacy,1052,Tricherie,9,1,5.1.3
+test-F1052-5.2.4,test,fallacy,1052,Tricherie,9,1,5.2.4
+test-F1053-3.1.4,test,fallacy,1053,Tricherie,8,1,3.1.4
+test-F1053-4.2.4,test,fallacy,1053,Tricherie,8,1,4.2.4
+test-F1054-3.1.8,test,fallacy,1054,Tricherie,8,0,3.1.8
+test-F1054-3.2.11,test,fallacy,1054,Tricherie,8,0,3.2.11
+test-F1055-2.2.8,test,fallacy,1055,Tricherie,9,1,2.2.8
+test-F1055-4.1.12,test,fallacy,1055,Tricherie,9,1,4.1.12
+test-F1056-2.1.1,test,fallacy,1056,Tricherie,8,1,2.1.1
+test-F1056-5.1.3,test,fallacy,1056,Tricherie,8,1,5.1.3
+test-F1057-2.1.1,test,fallacy,1057,Tricherie,6,0,2.1.1
+test-F1057-5.2.4,test,fallacy,1057,Tricherie,6,0,5.2.4
+test-F1058-1.3.3,test,fallacy,1058,Tricherie,7,1,1.3.3
+test-F1058-4.2.4,test,fallacy,1058,Tricherie,7,1,4.2.4
+test-F1059-3.1.4,test,fallacy,1059,Tricherie,7,1,3.1.4
+test-F1059-4.3.6,test,fallacy,1059,Tricherie,7,1,4.3.6
+test-F1060-4.2.4,test,fallacy,1060,Tricherie,7,1,4.2.4
+test-F1060-5.1.5,test,fallacy,1060,Tricherie,7,1,5.1.5
+test-F1061-2.2.8,test,fallacy,1061,Tricherie,7,1,2.2.8
+test-F1061-7.2.11,test,fallacy,1061,Tricherie,7,1,7.2.11
+test-F1062-1.3.3,test,fallacy,1062,Tricherie,7,0,1.3.3
+test-F1062-3.2.5,test,fallacy,1062,Tricherie,7,0,3.2.5
+test-F1063-2.2.8,test,fallacy,1063,Tricherie,8,1,2.2.8
+test-F1063-6.2.4,test,fallacy,1063,Tricherie,8,1,6.2.4
+test-F1064-2.2.8,test,fallacy,1064,Tricherie,7,1,2.2.8
+test-F1064-3.1.4,test,fallacy,1064,Tricherie,7,1,3.1.4
+test-F1065-1.2.1,test,fallacy,1065,Tricherie,5,0,1.2.1
+test-F1065-6.1.3,test,fallacy,1065,Tricherie,5,0,6.1.3
+test-F1066-2.2.8,test,fallacy,1066,Tricherie,6,0,2.2.8
+test-F1066-6.2.4,test,fallacy,1066,Tricherie,6,0,6.2.4
+test-F1067-2.2.8,test,fallacy,1067,Tricherie,7,1,2.2.8
+test-F1067-7.2.12,test,fallacy,1067,Tricherie,7,1,7.2.12
+test-F1068-2.1.1,test,fallacy,1068,Tricherie,7,1,2.1.1
+test-F1068-6.1.3,test,fallacy,1068,Tricherie,7,1,6.1.3
+test-F1069-1.3.2,test,fallacy,1069,Tricherie,7,1,1.3.2
+test-F1069-2.1.10,test,fallacy,1069,Tricherie,7,1,2.1.10
+test-F1070-1.2.1,test,fallacy,1070,Tricherie,7,1,1.2.1
+test-F1070-4.1.12,test,fallacy,1070,Tricherie,7,1,4.1.12
+test-F1071-2.2.5,test,fallacy,1071,Tricherie,7,1,2.2.5
+test-F1071-6.1.3,test,fallacy,1071,Tricherie,7,1,6.1.3
+test-F1072-4.2.4,test,fallacy,1072,Tricherie,7,0,4.2.4
+test-F1072-4.3.9,test,fallacy,1072,Tricherie,7,0,4.3.9
+test-F1073-1.3.3,test,fallacy,1073,Tricherie,8,1,1.3.3
+test-F1073-3.2.5,test,fallacy,1073,Tricherie,8,1,3.2.5
+test-F1074-1.3.2,test,fallacy,1074,Tricherie,7,1,1.3.2
+test-F1074-3.2.1,test,fallacy,1074,Tricherie,7,1,3.2.1
+test-F1075-3.2.5,test,fallacy,1075,Tricherie,6,0,3.2.5
+test-F1075-5.2.4,test,fallacy,1075,Tricherie,6,0,5.2.4
+test-F1076-2.2.8,test,fallacy,1076,Tricherie,7,1,2.2.8
+test-F1076-4.3.6,test,fallacy,1076,Tricherie,7,1,4.3.6
+test-F1077-4.1.12,test,fallacy,1077,Tricherie,7,1,4.1.12
+test-F1077-7.2.12,test,fallacy,1077,Tricherie,7,1,7.2.12
+test-F1078-1.2.1,test,fallacy,1078,Tricherie,7,1,1.2.1
+test-F1078-2.1.10,test,fallacy,1078,Tricherie,7,1,2.1.10
+test-F1079-2.1.10,test,fallacy,1079,Tricherie,7,1,2.1.10
+test-F1079-5.2.4,test,fallacy,1079,Tricherie,7,1,5.2.4
+test-F1080-7.2.12,test,fallacy,1080,Tricherie,7,1,7.2.12
+test-F1080-7.3.5,test,fallacy,1080,Tricherie,7,1,7.3.5
+test-F1081-1.2.1,test,fallacy,1081,Tricherie,7,1,1.2.1
+test-F1081-5.1.5,test,fallacy,1081,Tricherie,7,1,5.1.5
+test-F1082-2.2.8,test,fallacy,1082,Tricherie,7,1,2.2.8
+test-F1082-5.1.5,test,fallacy,1082,Tricherie,7,1,5.1.5
+test-F1083-1.3.2,test,fallacy,1083,Tricherie,6,0,1.3.2
+test-F1083-2.1.10,test,fallacy,1083,Tricherie,6,0,2.1.10
+test-F1084-7.2.2,test,fallacy,1084,Tricherie,7,1,7.2.2
+test-F1084-7.3.5,test,fallacy,1084,Tricherie,7,1,7.3.5
+test-F1085-2.1.10,test,fallacy,1085,Tricherie,7,1,2.1.10
+test-F1085-2.2.8,test,fallacy,1085,Tricherie,7,1,2.2.8
+test-F1086-1.2.1,test,fallacy,1086,Tricherie,7,1,1.2.1
+test-F1086-5.1.5,test,fallacy,1086,Tricherie,7,1,5.1.5
+test-F1087-1.3.3,test,fallacy,1087,Tricherie,7,1,1.3.3
+test-F1087-3.2.11,test,fallacy,1087,Tricherie,7,1,3.2.11
+test-F1088-6.2.4,test,fallacy,1088,Tricherie,7,0,6.2.4
+test-F1088-7.2.2,test,fallacy,1088,Tricherie,7,0,7.2.2
+test-F1089-4.1.12,test,fallacy,1089,Tricherie,8,1,4.1.12
+test-F1089-5.2.4,test,fallacy,1089,Tricherie,8,1,5.2.4
+test-F1090-6.1.3,test,fallacy,1090,Tricherie,4,0,6.1.3
+test-F1090-7.2.2,test,fallacy,1090,Tricherie,4,0,7.2.2
+test-F1091-5.1.3,test,fallacy,1091,Tricherie,5,0,5.1.3
+test-F1091-7.2.12,test,fallacy,1091,Tricherie,5,0,7.2.12
+test-F1092-1.2.1,test,fallacy,1092,Tricherie,6,0,1.2.1
+test-F1092-1.3.3,test,fallacy,1092,Tricherie,6,0,1.3.3
+test-F1093-1.2.1,test,fallacy,1093,Tricherie,7,0,1.2.1
+test-F1093-3.2.5,test,fallacy,1093,Tricherie,7,0,3.2.5
+test-F1094-2.1.10,test,fallacy,1094,Tricherie,8,1,2.1.10
+test-F1094-6.2.4,test,fallacy,1094,Tricherie,8,1,6.2.4
+test-F1095-3.1.4,test,fallacy,1095,Tricherie,8,1,3.1.4
+test-F1095-7.2.11,test,fallacy,1095,Tricherie,8,1,7.2.11
+test-F1096-1.3.3,test,fallacy,1096,Tricherie,8,0,1.3.3
+test-F1096-2.2.5,test,fallacy,1096,Tricherie,8,0,2.2.5
+test-F1097-1.2.1,test,fallacy,1097,Tricherie,9,1,1.2.1
+test-F1097-7.2.12,test,fallacy,1097,Tricherie,9,1,7.2.12
+test-F1098-1.3.2,test,fallacy,1098,Tricherie,7,0,1.3.2
+test-F1098-4.2.4,test,fallacy,1098,Tricherie,7,0,4.2.4
+test-F1099-3.1.4,test,fallacy,1099,Tricherie,8,0,3.1.4
+test-F1099-3.2.11,test,fallacy,1099,Tricherie,8,0,3.2.11
+test-F1100-2.1.10,test,fallacy,1100,Tricherie,9,1,2.1.10
+test-F1100-5.1.5,test,fallacy,1100,Tricherie,9,1,5.1.5
+test-F1101-2.1.10,test,fallacy,1101,Tricherie,9,1,2.1.10
+test-F1101-7.2.2,test,fallacy,1101,Tricherie,9,1,7.2.2
+test-F1102-1.2.1,test,fallacy,1102,Tricherie,8,1,1.2.1
+test-F1102-4.1.12,test,fallacy,1102,Tricherie,8,1,4.1.12
+test-F1103-3.2.5,test,fallacy,1103,Tricherie,8,1,3.2.5
+test-F1103-4.2.4,test,fallacy,1103,Tricherie,8,1,4.2.4
+test-F1104-3.1.4,test,fallacy,1104,Tricherie,6,0,3.1.4
+test-F1104-7.2.11,test,fallacy,1104,Tricherie,6,0,7.2.11
+test-F1105-3.1.8,test,fallacy,1105,Tricherie,7,0,3.1.8
+test-F1105-3.2.1,test,fallacy,1105,Tricherie,7,0,3.2.1
+test-F1106-3.2.11,test,fallacy,1106,Tricherie,8,1,3.2.11
+test-F1106-7.2.12,test,fallacy,1106,Tricherie,8,1,7.2.12
+test-F1107-2.2.5,test,fallacy,1107,Tricherie,8,1,2.2.5
+test-F1107-2.2.8,test,fallacy,1107,Tricherie,8,1,2.2.8
+test-F1108-1.3.2,test,fallacy,1108,Tricherie,8,1,1.3.2
+test-F1108-2.2.8,test,fallacy,1108,Tricherie,8,1,2.2.8
+test-F1109-3.2.11,test,fallacy,1109,Tricherie,7,0,3.2.11
+test-F1109-7.3.5,test,fallacy,1109,Tricherie,7,0,7.3.5
+test-F1110-1.2.1,test,fallacy,1110,Tricherie,8,1,1.2.1
+test-F1110-6.2.4,test,fallacy,1110,Tricherie,8,1,6.2.4
+test-F1111-4.3.6,test,fallacy,1111,Tricherie,8,1,4.3.6
+test-F1111-5.1.5,test,fallacy,1111,Tricherie,8,1,5.1.5
+test-F1112-3.1.4,test,fallacy,1112,Tricherie,8,1,3.1.4
+test-F1112-7.2.12,test,fallacy,1112,Tricherie,8,1,7.2.12
+test-F1113-2.1.1,test,fallacy,1113,Tricherie,8,1,2.1.1
+test-F1113-7.3.5,test,fallacy,1113,Tricherie,8,1,7.3.5
+test-F1114-2.1.1,test,fallacy,1114,Tricherie,7,0,2.1.1
+test-F1114-4.1.12,test,fallacy,1114,Tricherie,7,0,4.1.12
+test-F1115-1.2.1,test,fallacy,1115,Tricherie,8,1,1.2.1
+test-F1115-5.1.5,test,fallacy,1115,Tricherie,8,1,5.1.5
+test-F1116-7.2.12,test,fallacy,1116,Tricherie,8,1,7.2.12
+test-F1116-7.3.5,test,fallacy,1116,Tricherie,8,1,7.3.5
+test-F1117-5.1.5,test,fallacy,1117,Tricherie,8,1,5.1.5
+test-F1117-7.2.2,test,fallacy,1117,Tricherie,8,1,7.2.2
+test-F1118-2.2.8,test,fallacy,1118,Tricherie,8,1,2.2.8
+test-F1118-6.1.3,test,fallacy,1118,Tricherie,8,1,6.1.3
+test-F1119-1.3.3,test,fallacy,1119,Tricherie,5,0,1.3.3
+test-F1119-3.1.4,test,fallacy,1119,Tricherie,5,0,3.1.4
+test-F1120-1.2.1,test,fallacy,1120,Tricherie,6,0,1.2.1
+test-F1120-3.2.11,test,fallacy,1120,Tricherie,6,0,3.2.11
+test-F1121-5.2.4,test,fallacy,1121,Tricherie,7,1,5.2.4
+test-F1121-6.2.4,test,fallacy,1121,Tricherie,7,1,6.2.4
+test-F1122-1.3.2,test,fallacy,1122,Tricherie,7,1,1.3.2
+test-F1122-1.3.3,test,fallacy,1122,Tricherie,7,1,1.3.3
+test-F1123-2.1.1,test,fallacy,1123,Tricherie,7,1,2.1.1
+test-F1123-3.1.4,test,fallacy,1123,Tricherie,7,1,3.1.4
+test-F1124-1.3.3,test,fallacy,1124,Tricherie,7,1,1.3.3
+test-F1124-7.2.12,test,fallacy,1124,Tricherie,7,1,7.2.12
+test-F1125-3.2.5,test,fallacy,1125,Tricherie,7,1,3.2.5
+test-F1125-6.2.4,test,fallacy,1125,Tricherie,7,1,6.2.4
+test-F1126-3.2.5,test,fallacy,1126,Tricherie,6,0,3.2.5
+test-F1126-5.1.3,test,fallacy,1126,Tricherie,6,0,5.1.3
+test-F1127-4.3.9,test,fallacy,1127,Tricherie,7,1,4.3.9
+test-F1127-7.2.12,test,fallacy,1127,Tricherie,7,1,7.2.12
+test-F1128-1.3.2,test,fallacy,1128,Tricherie,7,1,1.3.2
+test-F1128-4.1.12,test,fallacy,1128,Tricherie,7,1,4.1.12
+test-F1129-5.1.3,test,fallacy,1129,Tricherie,7,0,5.1.3
+test-F1129-5.1.5,test,fallacy,1129,Tricherie,7,0,5.1.5
+test-F1130-4.3.6,test,fallacy,1130,Tricherie,8,1,4.3.6
+test-F1130-5.1.5,test,fallacy,1130,Tricherie,8,1,5.1.5
+test-F1131-3.2.11,test,fallacy,1131,Tricherie,8,1,3.2.11
+test-F1131-5.1.5,test,fallacy,1131,Tricherie,8,1,5.1.5
+test-F1132-2.1.1,test,fallacy,1132,Tricherie,8,1,2.1.1
+test-F1132-3.2.1,test,fallacy,1132,Tricherie,8,1,3.2.1
+test-F1133-2.2.5,test,fallacy,1133,Tricherie,7,0,2.2.5
+test-F1133-4.1.12,test,fallacy,1133,Tricherie,7,0,4.1.12
+test-F1134-5.1.5,test,fallacy,1134,Tricherie,8,1,5.1.5
+test-F1134-7.2.11,test,fallacy,1134,Tricherie,8,1,7.2.11
+test-F1135-3.2.1,test,fallacy,1135,Tricherie,8,1,3.2.1
+test-F1135-7.2.12,test,fallacy,1135,Tricherie,8,1,7.2.12
+test-F1136-3.1.4,test,fallacy,1136,Tricherie,8,1,3.1.4
+test-F1136-4.3.6,test,fallacy,1136,Tricherie,8,1,4.3.6
+test-F1137-3.1.4,test,fallacy,1137,Tricherie,7,1,3.1.4
+test-F1137-4.1.12,test,fallacy,1137,Tricherie,7,1,4.1.12
+test-F1138-4.3.9,test,fallacy,1138,Tricherie,6,0,4.3.9
+test-F1138-6.1.3,test,fallacy,1138,Tricherie,6,0,6.1.3
+test-F1139-3.2.1,test,fallacy,1139,Tricherie,7,0,3.2.1
+test-F1139-4.3.9,test,fallacy,1139,Tricherie,7,0,4.3.9
+test-F1140-2.1.1,test,fallacy,1140,Tricherie,8,1,2.1.1
+test-F1140-6.2.4,test,fallacy,1140,Tricherie,8,1,6.2.4
+test-F1141-1.3.3,test,fallacy,1141,Tricherie,8,1,1.3.3
+test-F1141-7.3.5,test,fallacy,1141,Tricherie,8,1,7.3.5
+test-F1142-3.2.11,test,fallacy,1142,Tricherie,7,1,3.2.11
+test-F1142-7.2.11,test,fallacy,1142,Tricherie,7,1,7.2.11
+test-F1143-2.1.10,test,fallacy,1143,Tricherie,7,1,2.1.10
+test-F1143-5.2.4,test,fallacy,1143,Tricherie,7,1,5.2.4
+test-F1144-1.3.3,test,fallacy,1144,Tricherie,7,0,1.3.3
+test-F1144-7.2.12,test,fallacy,1144,Tricherie,7,0,7.2.12
+test-F1145-3.2.11,test,fallacy,1145,Tricherie,8,1,3.2.11
+test-F1145-4.3.9,test,fallacy,1145,Tricherie,8,1,4.3.9
+test-F1146-1.3.3,test,fallacy,1146,Tricherie,5,0,1.3.3
+test-F1146-6.1.3,test,fallacy,1146,Tricherie,5,0,6.1.3
+test-F1147-3.2.11,test,fallacy,1147,Tricherie,6,0,3.2.11
+test-F1147-5.1.5,test,fallacy,1147,Tricherie,6,0,5.1.5
+test-F1148-1.2.1,test,fallacy,1148,Tricherie,7,0,1.2.1
+test-F1148-2.1.10,test,fallacy,1148,Tricherie,7,0,2.1.10
+test-F1149-4.3.6,test,fallacy,1149,Tricherie,8,1,4.3.6
+test-F1149-5.2.4,test,fallacy,1149,Tricherie,8,1,5.2.4
+test-F1150-4.2.4,test,fallacy,1150,Tricherie,8,1,4.2.4
+test-F1150-7.2.11,test,fallacy,1150,Tricherie,8,1,7.2.11
+test-F1151-3.1.4,test,fallacy,1151,Tricherie,8,1,3.1.4
+test-F1151-4.1.12,test,fallacy,1151,Tricherie,8,1,4.1.12
+test-F1152-3.1.4,test,fallacy,1152,Tricherie,8,1,3.1.4
+test-F1152-7.2.12,test,fallacy,1152,Tricherie,8,1,7.2.12
+test-F1153-4.3.6,test,fallacy,1153,Tricherie,7,0,4.3.6
+test-F1153-6.1.3,test,fallacy,1153,Tricherie,7,0,6.1.3
+test-F1154-3.2.1,test,fallacy,1154,Tricherie,8,1,3.2.1
+test-F1154-5.1.5,test,fallacy,1154,Tricherie,8,1,5.1.5
+test-F1155-2.2.5,test,fallacy,1155,Tricherie,8,1,2.2.5
+test-F1155-4.2.4,test,fallacy,1155,Tricherie,8,1,4.2.4
+test-F1156-2.2.8,test,fallacy,1156,Tricherie,8,0,2.2.8
+test-F1156-4.3.9,test,fallacy,1156,Tricherie,8,0,4.3.9
+test-F1157-3.2.11,test,fallacy,1157,Tricherie,9,1,3.2.11
+test-F1157-7.2.2,test,fallacy,1157,Tricherie,9,1,7.2.2
+test-F1158-3.1.4,test,fallacy,1158,Tricherie,7,0,3.1.4
+test-F1158-6.2.4,test,fallacy,1158,Tricherie,7,0,6.2.4
+test-F1159-2.1.10,test,fallacy,1159,Tricherie,8,1,2.1.10
+test-F1159-3.2.11,test,fallacy,1159,Tricherie,8,1,3.2.11
+test-F1160-2.1.10,test,fallacy,1160,Tricherie,8,1,2.1.10
+test-F1160-6.1.3,test,fallacy,1160,Tricherie,8,1,6.1.3
+test-F1161-3.1.4,test,fallacy,1161,Tricherie,8,1,3.1.4
+test-F1161-4.2.4,test,fallacy,1161,Tricherie,8,1,4.2.4
+test-F1162-1.3.3,test,fallacy,1162,Tricherie,8,1,1.3.3
+test-F1162-5.1.5,test,fallacy,1162,Tricherie,8,1,5.1.5
+test-F1163-4.3.6,test,fallacy,1163,Tricherie,7,1,4.3.6
+test-F1163-7.2.12,test,fallacy,1163,Tricherie,7,1,7.2.12
+test-F1164-3.2.11,test,fallacy,1164,Tricherie,6,0,3.2.11
+test-F1164-4.3.9,test,fallacy,1164,Tricherie,6,0,4.3.9
+test-F1165-2.2.8,test,fallacy,1165,Tricherie,7,0,2.2.8
+test-F1165-6.2.4,test,fallacy,1165,Tricherie,7,0,6.2.4
+test-F1166-4.3.9,test,fallacy,1166,Tricherie,8,1,4.3.9
+test-F1166-7.2.2,test,fallacy,1166,Tricherie,8,1,7.2.2
+test-F1167-3.2.11,test,fallacy,1167,Tricherie,8,1,3.2.11
+test-F1167-6.2.4,test,fallacy,1167,Tricherie,8,1,6.2.4
+test-F1168-2.2.8,test,fallacy,1168,Tricherie,8,1,2.2.8
+test-F1168-4.3.6,test,fallacy,1168,Tricherie,8,1,4.3.6
+test-F1169-2.2.5,test,fallacy,1169,Tricherie,7,0,2.2.5
+test-F1169-2.2.8,test,fallacy,1169,Tricherie,7,0,2.2.8
+test-F1170-4.2.4,test,fallacy,1170,Tricherie,8,1,4.2.4
+test-F1170-5.1.5,test,fallacy,1170,Tricherie,8,1,5.1.5
+test-F1171-3.2.1,test,fallacy,1171,Tricherie,8,1,3.2.1
+test-F1171-5.2.4,test,fallacy,1171,Tricherie,8,1,5.2.4
+test-F1172-1.2.1,test,fallacy,1172,Tricherie,7,1,1.2.1
+test-F1172-1.3.3,test,fallacy,1172,Tricherie,7,1,1.3.3
+test-F1173-2.2.5,test,fallacy,1173,Tricherie,6,1,2.2.5
+test-F1173-3.1.8,test,fallacy,1173,Tricherie,6,1,3.1.8
+test-F1174-5.1.5,test,fallacy,1174,Tricherie,3,0,5.1.5
+test-F1174-7.3.5,test,fallacy,1174,Tricherie,3,0,7.3.5
+test-F1175-2.1.10,test,fallacy,1175,Tricherie,4,0,2.1.10
+test-F1175-7.3.5,test,fallacy,1175,Tricherie,4,0,7.3.5
+test-F1176-2.2.8,test,fallacy,1176,Tricherie,5,0,2.2.8
+test-F1176-4.3.6,test,fallacy,1176,Tricherie,5,0,4.3.6
+test-F1177-2.1.10,test,fallacy,1177,Tricherie,6,0,2.1.10
+test-F1177-4.3.6,test,fallacy,1177,Tricherie,6,0,4.3.6
+test-F1178-2.1.10,test,fallacy,1178,Tricherie,7,1,2.1.10
+test-F1178-5.1.3,test,fallacy,1178,Tricherie,7,1,5.1.3
+test-F1179-5.2.4,test,fallacy,1179,Tricherie,7,1,5.2.4
+test-F1179-6.1.3,test,fallacy,1179,Tricherie,7,1,6.1.3
+test-F1180-6.2.4,test,fallacy,1180,Tricherie,7,1,6.2.4
+test-F1180-7.3.5,test,fallacy,1180,Tricherie,7,1,7.3.5
+test-F1181-3.2.11,test,fallacy,1181,Tricherie,6,1,3.2.11
+test-F1181-5.1.5,test,fallacy,1181,Tricherie,6,1,5.1.5
+test-F1182-3.1.8,test,fallacy,1182,Tricherie,6,1,3.1.8
+test-F1182-3.2.11,test,fallacy,1182,Tricherie,6,1,3.2.11
+test-F1183-1.3.2,test,fallacy,1183,Tricherie,6,1,1.3.2
+test-F1183-2.2.5,test,fallacy,1183,Tricherie,6,1,2.2.5
+test-F1184-2.1.1,test,fallacy,1184,Tricherie,5,0,2.1.1
+test-F1184-7.2.12,test,fallacy,1184,Tricherie,5,0,7.2.12
+test-F1185-3.2.11,test,fallacy,1185,Tricherie,6,0,3.2.11
+test-F1185-7.2.12,test,fallacy,1185,Tricherie,6,0,7.2.12
+test-F1186-1.3.2,test,fallacy,1186,Tricherie,7,1,1.3.2
+test-F1186-2.2.5,test,fallacy,1186,Tricherie,7,1,2.2.5
+test-F1187-1.3.3,test,fallacy,1187,Tricherie,7,1,1.3.3
+test-F1187-7.2.2,test,fallacy,1187,Tricherie,7,1,7.2.2
+test-F1188-3.2.1,test,fallacy,1188,Tricherie,6,0,3.2.1
+test-F1188-3.2.5,test,fallacy,1188,Tricherie,6,0,3.2.5
+test-F1189-3.2.11,test,fallacy,1189,Tricherie,7,1,3.2.11
+test-F1189-4.1.12,test,fallacy,1189,Tricherie,7,1,4.1.12
+test-F1190-3.2.11,test,fallacy,1190,Tricherie,7,1,3.2.11
+test-F1190-7.3.5,test,fallacy,1190,Tricherie,7,1,7.3.5
+test-F1191-4.2.4,test,fallacy,1191,Tricherie,6,0,4.2.4
+test-F1191-6.1.3,test,fallacy,1191,Tricherie,6,0,6.1.3
+test-F1192-3.1.8,test,fallacy,1192,Tricherie,7,1,3.1.8
+test-F1192-6.2.4,test,fallacy,1192,Tricherie,7,1,6.2.4
+test-F1193-2.2.8,test,fallacy,1193,Tricherie,5,0,2.2.8
+test-F1193-4.3.6,test,fallacy,1193,Tricherie,5,0,4.3.6
+test-F1194-1.3.3,test,fallacy,1194,Tricherie,6,0,1.3.3
+test-F1194-3.2.5,test,fallacy,1194,Tricherie,6,0,3.2.5
+test-F1195-2.1.1,test,fallacy,1195,Tricherie,7,1,2.1.1
+test-F1195-6.2.4,test,fallacy,1195,Tricherie,7,1,6.2.4
+test-F1196-5.1.3,test,fallacy,1196,Tricherie,6,1,5.1.3
+test-F1196-7.2.11,test,fallacy,1196,Tricherie,6,1,7.2.11
+test-F1197-3.2.5,test,fallacy,1197,Tricherie,6,1,3.2.5
+test-F1197-7.3.5,test,fallacy,1197,Tricherie,6,1,7.3.5
+test-F1198-4.1.12,test,fallacy,1198,Tricherie,4,0,4.1.12
+test-F1198-6.2.4,test,fallacy,1198,Tricherie,4,0,6.2.4
+test-F1199-6.2.4,test,fallacy,1199,Tricherie,5,0,6.2.4
+test-F1199-7.2.11,test,fallacy,1199,Tricherie,5,0,7.2.11
+test-F1200-1.2.1,test,fallacy,1200,Tricherie,6,1,1.2.1
+test-F1200-5.1.3,test,fallacy,1200,Tricherie,6,1,5.1.3
+test-F1201-4.3.9,test,fallacy,1201,Tricherie,6,1,4.3.9
+test-F1201-5.1.3,test,fallacy,1201,Tricherie,6,1,5.1.3
+test-F1202-2.2.8,test,fallacy,1202,Tricherie,5,0,2.2.8
+test-F1202-3.1.4,test,fallacy,1202,Tricherie,5,0,3.1.4
+test-F1203-3.2.1,test,fallacy,1203,Tricherie,6,0,3.2.1
+test-F1203-6.2.4,test,fallacy,1203,Tricherie,6,0,6.2.4
+test-F1204-4.3.9,test,fallacy,1204,Tricherie,7,1,4.3.9
+test-F1204-6.1.3,test,fallacy,1204,Tricherie,7,1,6.1.3
+test-F1205-3.1.8,test,fallacy,1205,Tricherie,7,0,3.1.8
+test-F1205-7.2.2,test,fallacy,1205,Tricherie,7,0,7.2.2
+test-F1206-4.3.9,test,fallacy,1206,Tricherie,8,1,4.3.9
+test-F1206-6.1.3,test,fallacy,1206,Tricherie,8,1,6.1.3
+test-F1207-1.3.2,test,fallacy,1207,Tricherie,8,1,1.3.2
+test-F1207-3.2.11,test,fallacy,1207,Tricherie,8,1,3.2.11
+test-F1208-3.1.8,test,fallacy,1208,Tricherie,7,1,3.1.8
+test-F1208-3.2.11,test,fallacy,1208,Tricherie,7,1,3.2.11
+test-F1209-6.1.3,test,fallacy,1209,Tricherie,7,1,6.1.3
+test-F1209-6.2.4,test,fallacy,1209,Tricherie,7,1,6.2.4
+test-F1210-4.3.9,test,fallacy,1210,Tricherie,7,0,4.3.9
+test-F1210-7.2.2,test,fallacy,1210,Tricherie,7,0,7.2.2
+test-F1211-2.2.8,test,fallacy,1211,Tricherie,8,1,2.2.8
+test-F1211-3.2.1,test,fallacy,1211,Tricherie,8,1,3.2.1
+test-F1212-3.2.5,test,fallacy,1212,Tricherie,7,0,3.2.5
+test-F1212-7.2.12,test,fallacy,1212,Tricherie,7,0,7.2.12
+test-F1213-2.2.5,test,fallacy,1213,Tricherie,8,1,2.2.5
+test-F1213-4.3.9,test,fallacy,1213,Tricherie,8,1,4.3.9
+test-F1214-3.2.1,test,fallacy,1214,Tricherie,7,1,3.2.1
+test-F1214-3.2.11,test,fallacy,1214,Tricherie,7,1,3.2.11
+test-F1215-2.1.1,test,fallacy,1215,Tricherie,6,0,2.1.1
+test-F1215-7.2.11,test,fallacy,1215,Tricherie,6,0,7.2.11
+test-F1216-3.2.1,test,fallacy,1216,Tricherie,7,1,3.2.1
+test-F1216-7.2.12,test,fallacy,1216,Tricherie,7,1,7.2.12
+test-F1217-4.1.12,test,fallacy,1217,Tricherie,6,1,4.1.12
+test-F1217-7.2.11,test,fallacy,1217,Tricherie,6,1,7.2.11
+test-F1218-2.1.10,test,fallacy,1218,Tricherie,6,0,2.1.10
+test-F1218-7.2.11,test,fallacy,1218,Tricherie,6,0,7.2.11
+test-F1219-4.3.9,test,fallacy,1219,Tricherie,7,1,4.3.9
+test-F1219-6.2.4,test,fallacy,1219,Tricherie,7,1,6.2.4
+test-F1220-1.3.2,test,fallacy,1220,Tricherie,7,1,1.3.2
+test-F1220-5.2.4,test,fallacy,1220,Tricherie,7,1,5.2.4
+test-F1221-1.3.3,test,fallacy,1221,Tricherie,7,1,1.3.3
+test-F1221-7.2.2,test,fallacy,1221,Tricherie,7,1,7.2.2
+test-F1222-1.2.1,test,fallacy,1222,Tricherie,7,1,1.2.1
+test-F1222-4.2.4,test,fallacy,1222,Tricherie,7,1,4.2.4
+test-F1223-3.2.5,test,fallacy,1223,Tricherie,7,1,3.2.5
+test-F1223-6.2.4,test,fallacy,1223,Tricherie,7,1,6.2.4
+test-F1224-3.2.1,test,fallacy,1224,Tricherie,7,1,3.2.1
+test-F1224-3.2.5,test,fallacy,1224,Tricherie,7,1,3.2.5
+test-F1225-3.2.11,test,fallacy,1225,Tricherie,5,1,3.2.11
+test-F1225-5.2.4,test,fallacy,1225,Tricherie,5,1,5.2.4
+test-F1226-4.2.4,test,fallacy,1226,Tricherie,4,0,4.2.4
+test-F1226-6.1.3,test,fallacy,1226,Tricherie,4,0,6.1.3
+test-F1227-2.2.5,test,fallacy,1227,Tricherie,5,0,2.2.5
+test-F1227-3.2.5,test,fallacy,1227,Tricherie,5,0,3.2.5
+test-F1228-1.3.2,test,fallacy,1228,Tricherie,6,1,1.3.2
+test-F1228-2.2.5,test,fallacy,1228,Tricherie,6,1,2.2.5
+test-F1229-3.1.4,test,fallacy,1229,Tricherie,6,1,3.1.4
+test-F1229-4.2.4,test,fallacy,1229,Tricherie,6,1,4.2.4
+test-F1230-3.2.5,test,fallacy,1230,Tricherie,6,1,3.2.5
+test-F1230-5.2.4,test,fallacy,1230,Tricherie,6,1,5.2.4
+test-F1231-1.3.3,test,fallacy,1231,Tricherie,6,0,1.3.3
+test-F1231-2.2.5,test,fallacy,1231,Tricherie,6,0,2.2.5
+test-F1232-7.2.12,test,fallacy,1232,Tricherie,7,1,7.2.12
+test-F1232-7.3.5,test,fallacy,1232,Tricherie,7,1,7.3.5
+test-F1233-1.3.3,test,fallacy,1233,Tricherie,6,1,1.3.3
+test-F1233-7.2.11,test,fallacy,1233,Tricherie,6,1,7.2.11
+test-F1234-2.2.5,test,fallacy,1234,Tricherie,6,1,2.2.5
+test-F1234-3.2.5,test,fallacy,1234,Tricherie,6,1,3.2.5
+test-F1235-1.3.2,test,fallacy,1235,Tricherie,6,1,1.3.2
+test-F1235-4.3.6,test,fallacy,1235,Tricherie,6,1,4.3.6
+test-F1236-5.1.5,test,fallacy,1236,Tricherie,6,1,5.1.5
+test-F1236-6.2.4,test,fallacy,1236,Tricherie,6,1,6.2.4
+test-F1237-5.1.3,test,fallacy,1237,Tricherie,5,0,5.1.3
+test-F1237-5.1.5,test,fallacy,1237,Tricherie,5,0,5.1.5
+test-F1238-3.1.4,test,fallacy,1238,Tricherie,6,1,3.1.4
+test-F1238-5.2.4,test,fallacy,1238,Tricherie,6,1,5.2.4
+test-F1239-2.2.5,test,fallacy,1239,Tricherie,6,1,2.2.5
+test-F1239-7.3.5,test,fallacy,1239,Tricherie,6,1,7.3.5
+test-F1240-3.1.4,test,fallacy,1240,Tricherie,6,1,3.1.4
+test-F1240-3.2.11,test,fallacy,1240,Tricherie,6,1,3.2.11
+test-F1241-3.1.8,test,fallacy,1241,Tricherie,6,1,3.1.8
+test-F1241-7.3.5,test,fallacy,1241,Tricherie,6,1,7.3.5
+test-F1242-1.2.1,test,fallacy,1242,Tricherie,3,0,1.2.1
+test-F1242-4.2.4,test,fallacy,1242,Tricherie,3,0,4.2.4
+test-F1243-1.2.1,test,fallacy,1243,Tricherie,4,0,1.2.1
+test-F1243-7.3.5,test,fallacy,1243,Tricherie,4,0,7.3.5
+test-F1244-2.2.5,test,fallacy,1244,Tricherie,5,0,2.2.5
+test-F1244-5.2.4,test,fallacy,1244,Tricherie,5,0,5.2.4
+test-F1245-4.3.6,test,fallacy,1245,Tricherie,6,0,4.3.6
+test-F1245-6.1.3,test,fallacy,1245,Tricherie,6,0,6.1.3
+test-F1246-3.1.8,test,fallacy,1246,Tricherie,7,1,3.1.8
+test-F1246-4.2.4,test,fallacy,1246,Tricherie,7,1,4.2.4
+test-F1247-3.1.8,test,fallacy,1247,Tricherie,5,1,3.1.8
+test-F1247-7.2.2,test,fallacy,1247,Tricherie,5,1,7.2.2
+test-F1248-2.1.1,test,fallacy,1248,Tricherie,5,0,2.1.1
+test-F1248-6.1.3,test,fallacy,1248,Tricherie,5,0,6.1.3
+test-F1249-2.1.10,test,fallacy,1249,Tricherie,6,0,2.1.10
+test-F1249-7.2.12,test,fallacy,1249,Tricherie,6,0,7.2.12
+test-F1250-1.2.1,test,fallacy,1250,Tricherie,7,1,1.2.1
+test-F1250-7.2.2,test,fallacy,1250,Tricherie,7,1,7.2.2
+test-F1251-4.2.4,test,fallacy,1251,Tricherie,6,0,4.2.4
+test-F1251-4.3.6,test,fallacy,1251,Tricherie,6,0,4.3.6
+test-F1252-5.1.5,test,fallacy,1252,Tricherie,7,1,5.1.5
+test-F1252-7.2.2,test,fallacy,1252,Tricherie,7,1,7.2.2
+test-F1253-3.2.11,test,fallacy,1253,Tricherie,7,1,3.2.11
+test-F1253-6.2.4,test,fallacy,1253,Tricherie,7,1,6.2.4
+test-F1254-4.2.4,test,fallacy,1254,Tricherie,7,1,4.2.4
+test-F1254-4.3.9,test,fallacy,1254,Tricherie,7,1,4.3.9
+test-F1255-2.1.10,test,fallacy,1255,Tricherie,5,1,2.1.10
+test-F1255-7.2.2,test,fallacy,1255,Tricherie,5,1,7.2.2
+test-F1256-3.2.5,test,fallacy,1256,Tricherie,5,1,3.2.5
+test-F1256-7.2.2,test,fallacy,1256,Tricherie,5,1,7.2.2
+test-F1257-5.2.4,test,fallacy,1257,Tricherie,5,0,5.2.4
+test-F1257-6.1.3,test,fallacy,1257,Tricherie,5,0,6.1.3
+test-F1258-4.2.4,test,fallacy,1258,Tricherie,6,1,4.2.4
+test-F1258-7.2.11,test,fallacy,1258,Tricherie,6,1,7.2.11
+test-F1259-3.2.1,test,fallacy,1259,Tricherie,4,0,3.2.1
+test-F1259-4.1.12,test,fallacy,1259,Tricherie,4,0,4.1.12
+test-F1260-2.1.1,test,fallacy,1260,Tricherie,5,0,2.1.1
+test-F1260-5.1.5,test,fallacy,1260,Tricherie,5,0,5.1.5
+test-F1261-4.1.12,test,fallacy,1261,Tricherie,6,1,4.1.12
+test-F1261-7.3.5,test,fallacy,1261,Tricherie,6,1,7.3.5
+test-F1262-3.1.4,test,fallacy,1262,Tricherie,5,1,3.1.4
+test-F1262-4.1.12,test,fallacy,1262,Tricherie,5,1,4.1.12
+test-F1263-2.2.5,test,fallacy,1263,Tricherie,5,0,2.2.5
+test-F1263-4.3.9,test,fallacy,1263,Tricherie,5,0,4.3.9
+test-F1264-1.2.1,test,fallacy,1264,Tricherie,6,1,1.2.1
+test-F1264-2.2.5,test,fallacy,1264,Tricherie,6,1,2.2.5
+test-F1265-4.3.9,test,fallacy,1265,Tricherie,6,1,4.3.9
+test-F1265-7.2.12,test,fallacy,1265,Tricherie,6,1,7.2.12
+test-F1266-1.2.1,test,fallacy,1266,Tricherie,5,0,1.2.1
+test-F1266-6.1.3,test,fallacy,1266,Tricherie,5,0,6.1.3
+test-F1267-1.2.1,test,fallacy,1267,Tricherie,6,1,1.2.1
+test-F1267-7.2.12,test,fallacy,1267,Tricherie,6,1,7.2.12
+test-F1268-1.3.3,test,fallacy,1268,Tricherie,4,0,1.3.3
+test-F1268-5.2.4,test,fallacy,1268,Tricherie,4,0,5.2.4
+test-F1269-2.1.10,test,fallacy,1269,Tricherie,5,0,2.1.10
+test-F1269-4.1.12,test,fallacy,1269,Tricherie,5,0,4.1.12
+test-F1270-3.2.1,test,fallacy,1270,Tricherie,6,1,3.2.1
+test-F1270-7.2.12,test,fallacy,1270,Tricherie,6,1,7.2.12
+test-F1271-3.1.8,test,fallacy,1271,Tricherie,6,0,3.1.8
+test-F1271-3.2.5,test,fallacy,1271,Tricherie,6,0,3.2.5
+test-F1272-1.3.2,test,fallacy,1272,Tricherie,7,1,1.3.2
+test-F1272-4.2.4,test,fallacy,1272,Tricherie,7,1,4.2.4
+test-F1273-2.2.8,test,fallacy,1273,Tricherie,6,1,2.2.8
+test-F1273-7.2.11,test,fallacy,1273,Tricherie,6,1,7.2.11
+test-F1274-3.2.11,test,fallacy,1274,Tricherie,6,1,3.2.11
+test-F1274-7.2.2,test,fallacy,1274,Tricherie,6,1,7.2.2
+test-F1275-2.1.10,test,fallacy,1275,Tricherie,5,1,2.1.10
+test-F1275-5.2.4,test,fallacy,1275,Tricherie,5,1,5.2.4
+test-F1276-3.2.1,test,fallacy,1276,Tricherie,5,1,3.2.1
+test-F1276-7.2.2,test,fallacy,1276,Tricherie,5,1,7.2.2
+test-F1277-2.2.8,test,fallacy,1277,Tricherie,5,1,2.2.8
+test-F1277-3.2.1,test,fallacy,1277,Tricherie,5,1,3.2.1
+test-F1278-3.1.4,test,fallacy,1278,Tricherie,5,1,3.1.4
+test-F1278-5.1.5,test,fallacy,1278,Tricherie,5,1,5.1.5
+test-F1279-5.1.5,test,fallacy,1279,Tricherie,5,1,5.1.5
+test-F1279-5.2.4,test,fallacy,1279,Tricherie,5,1,5.2.4
+test-F1407-5.1.3,test,fallacy,1407,Tricherie,4,1,5.1.3
+test-F1407-7.2.11,test,fallacy,1407,Tricherie,4,1,7.2.11
+test-V1-4.3.6,test,virtue,1,Argument pertinent,1,0,4.3.6
+test-V1-7.2.2,test,virtue,1,Argument pertinent,1,0,7.2.2
+test-V2-3.1.8,test,virtue,2,Argument pertinent,2,0,3.1.8
+test-V2-7.3.5,test,virtue,2,Argument pertinent,2,0,7.3.5
+test-V3-2.2.8,test,virtue,3,Argument pertinent,3,0,2.2.8
+test-V3-3.2.1,test,virtue,3,Argument pertinent,3,0,3.2.1
+test-V4-4.3.6,test,virtue,4,Argument pertinent,4,1,4.3.6
+test-V4-7.2.2,test,virtue,4,Argument pertinent,4,1,7.2.2
+test-V5-3.2.5,test,virtue,5,Argument pertinent,4,1,3.2.5
+test-V5-5.1.5,test,virtue,5,Argument pertinent,4,1,5.1.5
+test-V6-1.3.3,test,virtue,6,Argument pertinent,3,0,1.3.3
+test-V6-4.2.4,test,virtue,6,Argument pertinent,3,0,4.2.4
+test-V7-2.1.1,test,virtue,7,Argument pertinent,4,1,2.1.1
+test-V7-3.1.8,test,virtue,7,Argument pertinent,4,1,3.1.8
+test-V8-1.3.3,test,virtue,8,Argument pertinent,4,1,1.3.3
+test-V8-4.2.4,test,virtue,8,Argument pertinent,4,1,4.2.4
+test-V9-1.3.3,test,virtue,9,Argument pertinent,4,1,1.3.3
+test-V9-7.2.2,test,virtue,9,Argument pertinent,4,1,7.2.2
+test-V10-2.1.1,test,virtue,10,Argument pertinent,4,1,2.1.1
+test-V10-4.1.12,test,virtue,10,Argument pertinent,4,1,4.1.12
+test-V11-3.1.8,test,virtue,11,Argument pertinent,3,1,3.1.8
+test-V11-3.2.1,test,virtue,11,Argument pertinent,3,1,3.2.1
+test-V12-3.2.11,test,virtue,12,Argument pertinent,2,0,3.2.11
+test-V12-5.1.3,test,virtue,12,Argument pertinent,2,0,5.1.3
+test-V13-1.3.2,test,virtue,13,Argument pertinent,3,0,1.3.2
+test-V13-3.2.11,test,virtue,13,Argument pertinent,3,0,3.2.11
+test-V14-1.2.1,test,virtue,14,Argument pertinent,4,0,1.2.1
+test-V14-6.2.4,test,virtue,14,Argument pertinent,4,0,6.2.4
+test-V15-3.2.1,test,virtue,15,Argument pertinent,5,1,3.2.1
+test-V15-4.2.4,test,virtue,15,Argument pertinent,5,1,4.2.4
+test-V16-1.3.3,test,virtue,16,Argument pertinent,5,1,1.3.3
+test-V16-2.2.5,test,virtue,16,Argument pertinent,5,1,2.2.5
+test-V17-1.2.1,test,virtue,17,Argument pertinent,5,0,1.2.1
+test-V17-2.2.5,test,virtue,17,Argument pertinent,5,0,2.2.5
+test-V18-2.1.10,test,virtue,18,Argument pertinent,6,1,2.1.10
+test-V18-4.3.9,test,virtue,18,Argument pertinent,6,1,4.3.9
+test-V19-4.3.6,test,virtue,19,Argument pertinent,5,1,4.3.6
+test-V19-7.2.12,test,virtue,19,Argument pertinent,5,1,7.2.12
+test-V20-1.3.3,test,virtue,20,Argument pertinent,4,1,1.3.3
+test-V20-5.1.5,test,virtue,20,Argument pertinent,4,1,5.1.5
+test-V21-4.3.9,test,virtue,21,Argument pertinent,4,0,4.3.9
+test-V21-7.2.12,test,virtue,21,Argument pertinent,4,0,7.2.12
+test-V22-1.2.1,test,virtue,22,Argument pertinent,5,0,1.2.1
+test-V22-3.1.8,test,virtue,22,Argument pertinent,5,0,3.1.8
+test-V23-2.1.10,test,virtue,23,Argument pertinent,6,1,2.1.10
+test-V23-7.3.5,test,virtue,23,Argument pertinent,6,1,7.3.5
+test-V24-2.2.5,test,virtue,24,Argument pertinent,4,1,2.2.5
+test-V24-3.1.4,test,virtue,24,Argument pertinent,4,1,3.1.4
+test-V25-1.2.1,test,virtue,25,Argument pertinent,3,1,1.2.1
+test-V25-2.2.8,test,virtue,25,Argument pertinent,3,1,2.2.8
+test-V26-3.2.11,test,virtue,26,Argument pertinent,3,0,3.2.11
+test-V26-5.2.4,test,virtue,26,Argument pertinent,3,0,5.2.4
+test-V27-3.1.4,test,virtue,27,Argument pertinent,4,1,3.1.4
+test-V27-4.3.9,test,virtue,27,Argument pertinent,4,1,4.3.9
+test-V28-4.3.9,test,virtue,28,Argument pertinent,2,0,4.3.9
+test-V28-5.2.4,test,virtue,28,Argument pertinent,2,0,5.2.4
+test-V29-3.2.5,test,virtue,29,Argument pertinent,3,1,3.2.5
+test-V29-7.3.5,test,virtue,29,Argument pertinent,3,1,7.3.5
+test-V30-5.1.5,test,virtue,30,Argument pertinent,3,1,5.1.5
+test-V30-6.1.3,test,virtue,30,Argument pertinent,3,1,6.1.3
+test-V31-4.1.12,test,virtue,31,Argument pertinent,3,0,4.1.12
+test-V31-4.3.9,test,virtue,31,Argument pertinent,3,0,4.3.9
+test-V32-5.1.5,test,virtue,32,Argument pertinent,4,1,5.1.5
+test-V32-6.1.3,test,virtue,32,Argument pertinent,4,1,6.1.3
+test-V33-3.2.1,test,virtue,33,Argument pertinent,4,1,3.2.1
+test-V33-6.1.3,test,virtue,33,Argument pertinent,4,1,6.1.3
+test-V152-5.1.5,test,virtue,152,Honnêteté intellectuelle,1,0,5.1.5
+test-V152-7.2.2,test,virtue,152,Honnêteté intellectuelle,1,0,7.2.2
+test-V153-3.2.1,test,virtue,153,Honnêteté intellectuelle,2,0,3.2.1
+test-V153-4.1.12,test,virtue,153,Honnêteté intellectuelle,2,0,4.1.12
+test-V154-4.1.12,test,virtue,154,Honnêteté intellectuelle,3,1,4.1.12
+test-V154-4.3.9,test,virtue,154,Honnêteté intellectuelle,3,1,4.3.9
+test-V155-2.2.8,test,virtue,155,Honnêteté intellectuelle,3,1,2.2.8
+test-V155-3.2.11,test,virtue,155,Honnêteté intellectuelle,3,1,3.2.11
+test-V156-1.3.2,test,virtue,156,Honnêteté intellectuelle,3,0,1.3.2
+test-V156-3.1.8,test,virtue,156,Honnêteté intellectuelle,3,0,3.1.8
+test-V157-2.1.1,test,virtue,157,Honnêteté intellectuelle,4,1,2.1.1
+test-V157-4.2.4,test,virtue,157,Honnêteté intellectuelle,4,1,4.2.4
+test-V158-3.1.4,test,virtue,158,Honnêteté intellectuelle,4,1,3.1.4
+test-V158-4.3.6,test,virtue,158,Honnêteté intellectuelle,4,1,4.3.6
+test-V159-1.3.2,test,virtue,159,Honnêteté intellectuelle,2,0,1.3.2
+test-V159-5.1.3,test,virtue,159,Honnêteté intellectuelle,2,0,5.1.3
+test-V160-3.1.4,test,virtue,160,Honnêteté intellectuelle,3,0,3.1.4
+test-V160-7.2.2,test,virtue,160,Honnêteté intellectuelle,3,0,7.2.2
+test-V161-5.1.5,test,virtue,161,Honnêteté intellectuelle,4,1,5.1.5
+test-V161-5.2.4,test,virtue,161,Honnêteté intellectuelle,4,1,5.2.4
+test-V162-2.1.10,test,virtue,162,Honnêteté intellectuelle,4,1,2.1.10
+test-V162-3.2.5,test,virtue,162,Honnêteté intellectuelle,4,1,3.2.5
+test-V163-2.2.8,test,virtue,163,Honnêteté intellectuelle,3,1,2.2.8
+test-V163-5.2.4,test,virtue,163,Honnêteté intellectuelle,3,1,5.2.4
+test-V164-1.3.2,test,virtue,164,Honnêteté intellectuelle,3,0,1.3.2
+test-V164-7.3.5,test,virtue,164,Honnêteté intellectuelle,3,0,7.3.5
+test-V165-3.1.4,test,virtue,165,Honnêteté intellectuelle,4,0,3.1.4
+test-V165-3.2.5,test,virtue,165,Honnêteté intellectuelle,4,0,3.2.5
+test-V166-2.1.1,test,virtue,166,Honnêteté intellectuelle,5,1,2.1.1
+test-V166-7.2.11,test,virtue,166,Honnêteté intellectuelle,5,1,7.2.11
+test-V167-2.1.10,test,virtue,167,Honnêteté intellectuelle,2,0,2.1.10
+test-V167-7.3.5,test,virtue,167,Honnêteté intellectuelle,2,0,7.3.5
+test-V168-1.3.2,test,virtue,168,Honnêteté intellectuelle,3,0,1.3.2
+test-V168-1.3.3,test,virtue,168,Honnêteté intellectuelle,3,0,1.3.3
+test-V169-7.2.11,test,virtue,169,Honnêteté intellectuelle,4,1,7.2.11
+test-V169-7.2.12,test,virtue,169,Honnêteté intellectuelle,4,1,7.2.12
+test-V170-4.2.4,test,virtue,170,Honnêteté intellectuelle,4,1,4.2.4
+test-V170-7.2.12,test,virtue,170,Honnêteté intellectuelle,4,1,7.2.12
+test-V171-4.2.4,test,virtue,171,Honnêteté intellectuelle,3,0,4.2.4
+test-V171-7.2.2,test,virtue,171,Honnêteté intellectuelle,3,0,7.2.2
+test-V172-2.2.5,test,virtue,172,Honnêteté intellectuelle,4,1,2.2.5
+test-V172-6.2.4,test,virtue,172,Honnêteté intellectuelle,4,1,6.2.4
+test-V173-4.1.12,test,virtue,173,Honnêteté intellectuelle,4,1,4.1.12
+test-V173-5.1.5,test,virtue,173,Honnêteté intellectuelle,4,1,5.1.5
+test-V174-3.1.4,test,virtue,174,Honnêteté intellectuelle,3,0,3.1.4
+test-V174-3.1.8,test,virtue,174,Honnêteté intellectuelle,3,0,3.1.8
+test-V175-6.1.3,test,virtue,175,Honnêteté intellectuelle,4,1,6.1.3
+test-V175-7.2.12,test,virtue,175,Honnêteté intellectuelle,4,1,7.2.12
+test-V176-2.2.5,test,virtue,176,Honnêteté intellectuelle,4,1,2.2.5
+test-V176-7.3.5,test,virtue,176,Honnêteté intellectuelle,4,1,7.3.5
+test-V177-1.3.2,test,virtue,177,Honnêteté intellectuelle,4,0,1.3.2
+test-V177-5.1.3,test,virtue,177,Honnêteté intellectuelle,4,0,5.1.3
+test-V178-5.1.5,test,virtue,178,Honnêteté intellectuelle,5,1,5.1.5
+test-V178-7.2.12,test,virtue,178,Honnêteté intellectuelle,5,1,7.2.12
+test-V79-1.3.2,test,virtue,79,Inférence maîtrisée,1,0,1.3.2
+test-V79-6.1.3,test,virtue,79,Inférence maîtrisée,1,0,6.1.3
+test-V80-3.1.8,test,virtue,80,Inférence maîtrisée,2,0,3.1.8
+test-V80-5.2.4,test,virtue,80,Inférence maîtrisée,2,0,5.2.4
+test-V81-4.3.9,test,virtue,81,Inférence maîtrisée,3,1,4.3.9
+test-V81-5.1.3,test,virtue,81,Inférence maîtrisée,3,1,5.1.3
+test-V82-4.1.12,test,virtue,82,Inférence maîtrisée,3,1,4.1.12
+test-V82-6.2.4,test,virtue,82,Inférence maîtrisée,3,1,6.2.4
+test-V83-3.1.8,test,virtue,83,Inférence maîtrisée,3,1,3.1.8
+test-V83-5.2.4,test,virtue,83,Inférence maîtrisée,3,1,5.2.4
+test-V84-2.1.1,test,virtue,84,Inférence maîtrisée,2,0,2.1.1
+test-V84-7.3.5,test,virtue,84,Inférence maîtrisée,2,0,7.3.5
+test-V85-2.1.1,test,virtue,85,Inférence maîtrisée,3,1,2.1.1
+test-V85-3.2.11,test,virtue,85,Inférence maîtrisée,3,1,3.2.11
+test-V86-2.1.10,test,virtue,86,Inférence maîtrisée,3,1,2.1.10
+test-V86-5.2.4,test,virtue,86,Inférence maîtrisée,3,1,5.2.4
+test-V87-5.1.3,test,virtue,87,Inférence maîtrisée,3,1,5.1.3
+test-V87-7.3.5,test,virtue,87,Inférence maîtrisée,3,1,7.3.5
+test-V88-4.3.6,test,virtue,88,Inférence maîtrisée,2,0,4.3.6
+test-V88-6.2.4,test,virtue,88,Inférence maîtrisée,2,0,6.2.4
+test-V89-4.2.4,test,virtue,89,Inférence maîtrisée,3,1,4.2.4
+test-V89-5.1.3,test,virtue,89,Inférence maîtrisée,3,1,5.1.3
+test-V90-2.1.1,test,virtue,90,Inférence maîtrisée,3,0,2.1.1
+test-V90-2.2.8,test,virtue,90,Inférence maîtrisée,3,0,2.2.8
+test-V91-1.3.2,test,virtue,91,Inférence maîtrisée,4,1,1.3.2
+test-V91-4.3.9,test,virtue,91,Inférence maîtrisée,4,1,4.3.9
+test-V92-4.2.4,test,virtue,92,Inférence maîtrisée,4,1,4.2.4
+test-V92-5.1.5,test,virtue,92,Inférence maîtrisée,4,1,5.1.5
+test-V93-3.2.5,test,virtue,93,Inférence maîtrisée,3,0,3.2.5
+test-V93-7.2.2,test,virtue,93,Inférence maîtrisée,3,0,7.2.2
+test-V94-3.2.11,test,virtue,94,Inférence maîtrisée,4,0,3.2.11
+test-V94-4.1.12,test,virtue,94,Inférence maîtrisée,4,0,4.1.12
+test-V95-3.2.11,test,virtue,95,Inférence maîtrisée,5,0,3.2.11
+test-V95-7.2.11,test,virtue,95,Inférence maîtrisée,5,0,7.2.11
+test-V96-2.1.10,test,virtue,96,Inférence maîtrisée,6,1,2.1.10
+test-V96-2.2.8,test,virtue,96,Inférence maîtrisée,6,1,2.2.8
+test-V97-2.1.10,test,virtue,97,Inférence maîtrisée,6,1,2.1.10
+test-V97-3.1.8,test,virtue,97,Inférence maîtrisée,6,1,3.1.8
+test-V98-4.1.12,test,virtue,98,Inférence maîtrisée,6,1,4.1.12
+test-V98-5.1.3,test,virtue,98,Inférence maîtrisée,6,1,5.1.3
+test-V99-2.1.1,test,virtue,99,Inférence maîtrisée,6,1,2.1.1
+test-V99-4.1.12,test,virtue,99,Inférence maîtrisée,6,1,4.1.12
+test-V100-1.3.2,test,virtue,100,Inférence maîtrisée,6,1,1.3.2
+test-V100-2.1.10,test,virtue,100,Inférence maîtrisée,6,1,2.1.10
+test-V101-1.3.2,test,virtue,101,Inférence maîtrisée,6,1,1.3.2
+test-V101-2.1.1,test,virtue,101,Inférence maîtrisée,6,1,2.1.1
+test-V102-2.2.8,test,virtue,102,Inférence maîtrisée,6,1,2.2.8
+test-V102-4.2.4,test,virtue,102,Inférence maîtrisée,6,1,4.2.4
+test-V103-4.2.4,test,virtue,103,Inférence maîtrisée,6,1,4.2.4
+test-V103-6.2.4,test,virtue,103,Inférence maîtrisée,6,1,6.2.4
+test-V104-2.2.5,test,virtue,104,Inférence maîtrisée,5,0,2.2.5
+test-V104-6.2.4,test,virtue,104,Inférence maîtrisée,5,0,6.2.4
+test-V105-1.3.2,test,virtue,105,Inférence maîtrisée,6,0,1.3.2
+test-V105-4.3.9,test,virtue,105,Inférence maîtrisée,6,0,4.3.9
+test-V106-6.1.3,test,virtue,106,Inférence maîtrisée,7,1,6.1.3
+test-V106-6.2.4,test,virtue,106,Inférence maîtrisée,7,1,6.2.4
+test-V107-3.2.5,test,virtue,107,Inférence maîtrisée,7,1,3.2.5
+test-V107-7.2.12,test,virtue,107,Inférence maîtrisée,7,1,7.2.12
+test-V108-2.1.10,test,virtue,108,Inférence maîtrisée,7,1,2.1.10
+test-V108-3.2.5,test,virtue,108,Inférence maîtrisée,7,1,3.2.5
+test-V109-4.3.9,test,virtue,109,Inférence maîtrisée,7,1,4.3.9
+test-V109-5.1.3,test,virtue,109,Inférence maîtrisée,7,1,5.1.3
+test-V110-1.3.3,test,virtue,110,Inférence maîtrisée,6,0,1.3.3
+test-V110-7.3.5,test,virtue,110,Inférence maîtrisée,6,0,7.3.5
+test-V111-2.2.5,test,virtue,111,Inférence maîtrisée,7,1,2.2.5
+test-V111-4.2.4,test,virtue,111,Inférence maîtrisée,7,1,4.2.4
+test-V112-2.2.8,test,virtue,112,Inférence maîtrisée,7,1,2.2.8
+test-V112-3.2.1,test,virtue,112,Inférence maîtrisée,7,1,3.2.1
+test-V113-4.1.12,test,virtue,113,Inférence maîtrisée,7,1,4.1.12
+test-V113-7.2.11,test,virtue,113,Inférence maîtrisée,7,1,7.2.11
+test-V114-3.1.8,test,virtue,114,Inférence maîtrisée,7,1,3.1.8
+test-V114-4.3.6,test,virtue,114,Inférence maîtrisée,7,1,4.3.6
+test-V115-3.2.1,test,virtue,115,Inférence maîtrisée,6,0,3.2.1
+test-V115-7.3.5,test,virtue,115,Inférence maîtrisée,6,0,7.3.5
+test-V116-1.2.1,test,virtue,116,Inférence maîtrisée,7,1,1.2.1
+test-V116-2.1.10,test,virtue,116,Inférence maîtrisée,7,1,2.1.10
+test-V117-1.3.2,test,virtue,117,Inférence maîtrisée,7,1,1.3.2
+test-V117-3.2.11,test,virtue,117,Inférence maîtrisée,7,1,3.2.11
+test-V118-3.2.11,test,virtue,118,Inférence maîtrisée,7,1,3.2.11
+test-V118-6.2.4,test,virtue,118,Inférence maîtrisée,7,1,6.2.4
+test-V119-3.1.8,test,virtue,119,Inférence maîtrisée,7,1,3.1.8
+test-V119-3.2.11,test,virtue,119,Inférence maîtrisée,7,1,3.2.11
+test-V120-4.3.9,test,virtue,120,Inférence maîtrisée,7,1,4.3.9
+test-V120-5.1.5,test,virtue,120,Inférence maîtrisée,7,1,5.1.5
+test-V121-4.2.4,test,virtue,121,Inférence maîtrisée,7,1,4.2.4
+test-V121-4.3.9,test,virtue,121,Inférence maîtrisée,7,1,4.3.9
+test-V122-1.3.3,test,virtue,122,Inférence maîtrisée,6,0,1.3.3
+test-V122-4.3.9,test,virtue,122,Inférence maîtrisée,6,0,4.3.9
+test-V123-3.1.8,test,virtue,123,Inférence maîtrisée,7,1,3.1.8
+test-V123-3.2.1,test,virtue,123,Inférence maîtrisée,7,1,3.2.1
+test-V124-1.2.1,test,virtue,124,Inférence maîtrisée,7,1,1.2.1
+test-V124-7.2.12,test,virtue,124,Inférence maîtrisée,7,1,7.2.12
+test-V125-3.2.11,test,virtue,125,Inférence maîtrisée,7,1,3.2.11
+test-V125-3.2.5,test,virtue,125,Inférence maîtrisée,7,1,3.2.5
+test-V126-3.1.8,test,virtue,126,Inférence maîtrisée,7,1,3.1.8
+test-V126-4.3.6,test,virtue,126,Inférence maîtrisée,7,1,4.3.6
+test-V127-1.3.2,test,virtue,127,Inférence maîtrisée,7,1,1.3.2
+test-V127-2.2.5,test,virtue,127,Inférence maîtrisée,7,1,2.2.5
+test-V128-1.3.2,test,virtue,128,Inférence maîtrisée,4,0,1.3.2
+test-V128-5.1.5,test,virtue,128,Inférence maîtrisée,4,0,5.1.5
+test-V129-1.3.3,test,virtue,129,Inférence maîtrisée,5,1,1.3.3
+test-V129-5.1.5,test,virtue,129,Inférence maîtrisée,5,1,5.1.5
+test-V130-3.1.8,test,virtue,130,Inférence maîtrisée,5,1,3.1.8
+test-V130-3.2.1,test,virtue,130,Inférence maîtrisée,5,1,3.2.1
+test-V131-2.1.1,test,virtue,131,Inférence maîtrisée,5,1,2.1.1
+test-V131-5.1.5,test,virtue,131,Inférence maîtrisée,5,1,5.1.5
+test-V132-4.2.4,test,virtue,132,Inférence maîtrisée,5,1,4.2.4
+test-V132-5.1.3,test,virtue,132,Inférence maîtrisée,5,1,5.1.3
+test-V133-5.1.3,test,virtue,133,Inférence maîtrisée,5,1,5.1.3
+test-V133-6.1.3,test,virtue,133,Inférence maîtrisée,5,1,6.1.3
+test-V134-5.1.3,test,virtue,134,Justesse lexicale,1,0,5.1.3
+test-V134-7.2.2,test,virtue,134,Justesse lexicale,1,0,7.2.2
+test-V135-7.2.11,test,virtue,135,Justesse lexicale,2,0,7.2.11
+test-V135-7.2.2,test,virtue,135,Justesse lexicale,2,0,7.2.2
+test-V136-1.2.1,test,virtue,136,Justesse lexicale,3,0,1.2.1
+test-V136-2.1.1,test,virtue,136,Justesse lexicale,3,0,2.1.1
+test-V137-6.1.3,test,virtue,137,Justesse lexicale,4,1,6.1.3
+test-V137-7.2.11,test,virtue,137,Justesse lexicale,4,1,7.2.11
+test-V138-3.2.1,test,virtue,138,Justesse lexicale,4,1,3.2.1
+test-V138-6.1.3,test,virtue,138,Justesse lexicale,4,1,6.1.3
+test-V139-2.1.1,test,virtue,139,Justesse lexicale,3,0,2.1.1
+test-V139-3.2.1,test,virtue,139,Justesse lexicale,3,0,3.2.1
+test-V140-4.1.12,test,virtue,140,Justesse lexicale,4,1,4.1.12
+test-V140-7.2.12,test,virtue,140,Justesse lexicale,4,1,7.2.12
+test-V141-1.2.1,test,virtue,141,Justesse lexicale,3,1,1.2.1
+test-V141-2.1.10,test,virtue,141,Justesse lexicale,3,1,2.1.10
+test-V142-3.1.8,test,virtue,142,Justesse lexicale,2,0,3.1.8
+test-V142-4.2.4,test,virtue,142,Justesse lexicale,2,0,4.2.4
+test-V143-3.2.5,test,virtue,143,Justesse lexicale,3,1,3.2.5
+test-V143-4.2.4,test,virtue,143,Justesse lexicale,3,1,4.2.4
+test-V144-4.3.6,test,virtue,144,Justesse lexicale,3,1,4.3.6
+test-V144-5.2.4,test,virtue,144,Justesse lexicale,3,1,5.2.4
+test-V145-3.2.5,test,virtue,145,Justesse lexicale,3,1,3.2.5
+test-V145-4.3.6,test,virtue,145,Justesse lexicale,3,1,4.3.6
+test-V146-4.3.6,test,virtue,146,Justesse lexicale,2,0,4.3.6
+test-V146-6.1.3,test,virtue,146,Justesse lexicale,2,0,6.1.3
+test-V147-2.1.10,test,virtue,147,Justesse lexicale,3,0,2.1.10
+test-V147-2.2.8,test,virtue,147,Justesse lexicale,3,0,2.2.8
+test-V148-2.1.1,test,virtue,148,Justesse lexicale,4,1,2.1.1
+test-V148-2.2.5,test,virtue,148,Justesse lexicale,4,1,2.2.5
+test-V149-2.1.10,test,virtue,149,Justesse lexicale,4,1,2.1.10
+test-V149-4.2.4,test,virtue,149,Justesse lexicale,4,1,4.2.4
+test-V150-3.2.1,test,virtue,150,Justesse lexicale,3,1,3.2.1
+test-V150-4.2.4,test,virtue,150,Justesse lexicale,3,1,4.2.4
+test-V151-3.2.5,test,virtue,151,Justesse lexicale,3,1,3.2.5
+test-V151-5.2.4,test,virtue,151,Justesse lexicale,3,1,5.2.4
+test-V34-2.2.8,test,virtue,34,Présentation intègre,1,0,2.2.8
+test-V34-7.3.5,test,virtue,34,Présentation intègre,1,0,7.3.5
+test-V35-3.1.8,test,virtue,35,Présentation intègre,2,0,3.1.8
+test-V35-6.2.4,test,virtue,35,Présentation intègre,2,0,6.2.4
+test-V36-2.1.1,test,virtue,36,Présentation intègre,3,0,2.1.1
+test-V36-7.2.12,test,virtue,36,Présentation intègre,3,0,7.2.12
+test-V37-3.2.11,test,virtue,37,Présentation intègre,4,1,3.2.11
+test-V37-5.1.3,test,virtue,37,Présentation intègre,4,1,5.1.3
+test-V38-2.2.5,test,virtue,38,Présentation intègre,4,0,2.2.5
+test-V38-3.1.8,test,virtue,38,Présentation intègre,4,0,3.1.8
+test-V39-4.1.12,test,virtue,39,Présentation intègre,5,1,4.1.12
+test-V39-7.2.12,test,virtue,39,Présentation intègre,5,1,7.2.12
+test-V40-1.3.2,test,virtue,40,Présentation intègre,5,1,1.3.2
+test-V40-2.2.5,test,virtue,40,Présentation intègre,5,1,2.2.5
+test-V41-2.1.10,test,virtue,41,Présentation intègre,5,1,2.1.10
+test-V41-7.3.5,test,virtue,41,Présentation intègre,5,1,7.3.5
+test-V42-4.1.12,test,virtue,42,Présentation intègre,4,1,4.1.12
+test-V42-7.3.5,test,virtue,42,Présentation intègre,4,1,7.3.5
+test-V43-4.2.4,test,virtue,43,Présentation intègre,3,0,4.2.4
+test-V43-7.3.5,test,virtue,43,Présentation intègre,3,0,7.3.5
+test-V44-1.2.1,test,virtue,44,Présentation intègre,4,1,1.2.1
+test-V44-4.2.4,test,virtue,44,Présentation intègre,4,1,4.2.4
+test-V45-5.2.4,test,virtue,45,Présentation intègre,4,0,5.2.4
+test-V45-7.2.2,test,virtue,45,Présentation intègre,4,0,7.2.2
+test-V46-2.1.10,test,virtue,46,Présentation intègre,5,1,2.1.10
+test-V46-2.2.5,test,virtue,46,Présentation intègre,5,1,2.2.5
+test-V47-3.1.4,test,virtue,47,Présentation intègre,4,1,3.1.4
+test-V47-7.2.12,test,virtue,47,Présentation intègre,4,1,7.2.12
+test-V48-5.1.3,test,virtue,48,Présentation intègre,3,0,5.1.3
+test-V48-6.2.4,test,virtue,48,Présentation intègre,3,0,6.2.4
+test-V49-3.2.11,test,virtue,49,Présentation intègre,4,0,3.2.11
+test-V49-7.2.2,test,virtue,49,Présentation intègre,4,0,7.2.2
+test-V50-7.2.11,test,virtue,50,Présentation intègre,5,1,7.2.11
+test-V50-7.2.12,test,virtue,50,Présentation intègre,5,1,7.2.12
+test-V51-4.2.4,test,virtue,51,Présentation intègre,2,0,4.2.4
+test-V51-5.2.4,test,virtue,51,Présentation intègre,2,0,5.2.4
+test-V52-3.2.11,test,virtue,52,Présentation intègre,3,1,3.2.11
+test-V52-7.2.11,test,virtue,52,Présentation intègre,3,1,7.2.11
+test-V53-2.1.1,test,virtue,53,Présentation intègre,3,1,2.1.1
+test-V53-4.3.6,test,virtue,53,Présentation intègre,3,1,4.3.6
+test-V54-3.2.5,test,virtue,54,Présentation intègre,3,1,3.2.5
+test-V54-5.2.4,test,virtue,54,Présentation intègre,3,1,5.2.4
+test-V55-2.2.5,test,virtue,55,Présentation intègre,2,0,2.2.5
+test-V55-3.2.1,test,virtue,55,Présentation intègre,2,0,3.2.1
+test-V56-4.2.4,test,virtue,56,Présentation intègre,3,1,4.2.4
+test-V56-5.1.3,test,virtue,56,Présentation intègre,3,1,5.1.3
+test-V57-5.2.4,test,virtue,57,Présentation intègre,3,1,5.2.4
+test-V57-7.2.2,test,virtue,57,Présentation intègre,3,1,7.2.2
+test-V58-4.2.4,test,virtue,58,Présentation intègre,3,1,4.2.4
+test-V58-4.3.6,test,virtue,58,Présentation intègre,3,1,4.3.6
+test-V59-2.2.5,test,virtue,59,Sens quantitatif,1,0,2.2.5
+test-V59-7.2.11,test,virtue,59,Sens quantitatif,1,0,7.2.11
+test-V60-3.1.8,test,virtue,60,Sens quantitatif,2,0,3.1.8
+test-V60-5.1.3,test,virtue,60,Sens quantitatif,2,0,5.1.3
+test-V61-4.1.12,test,virtue,61,Sens quantitatif,3,1,4.1.12
+test-V61-7.3.5,test,virtue,61,Sens quantitatif,3,1,7.3.5
+test-V62-4.2.4,test,virtue,62,Sens quantitatif,3,1,4.2.4
+test-V62-5.1.5,test,virtue,62,Sens quantitatif,3,1,5.1.5
+test-V63-4.3.6,test,virtue,63,Sens quantitatif,3,1,4.3.6
+test-V63-7.2.12,test,virtue,63,Sens quantitatif,3,1,7.2.12
+test-V64-3.2.11,test,virtue,64,Sens quantitatif,2,0,3.2.11
+test-V64-4.3.9,test,virtue,64,Sens quantitatif,2,0,4.3.9
+test-V65-2.2.8,test,virtue,65,Sens quantitatif,3,0,2.2.8
+test-V65-3.2.5,test,virtue,65,Sens quantitatif,3,0,3.2.5
+test-V66-2.1.10,test,virtue,66,Sens quantitatif,4,1,2.1.10
+test-V66-3.2.1,test,virtue,66,Sens quantitatif,4,1,3.2.1
+test-V67-1.3.3,test,virtue,67,Sens quantitatif,3,0,1.3.3
+test-V67-4.3.9,test,virtue,67,Sens quantitatif,3,0,4.3.9
+test-V68-2.1.10,test,virtue,68,Sens quantitatif,4,1,2.1.10
+test-V68-7.3.5,test,virtue,68,Sens quantitatif,4,1,7.3.5
+test-V69-3.2.11,test,virtue,69,Sens quantitatif,4,1,3.2.11
+test-V69-7.2.11,test,virtue,69,Sens quantitatif,4,1,7.2.11
+test-V70-1.3.2,test,virtue,70,Sens quantitatif,3,1,1.3.2
+test-V70-3.2.1,test,virtue,70,Sens quantitatif,3,1,3.2.1
+test-V71-2.1.1,test,virtue,71,Sens quantitatif,2,0,2.1.1
+test-V71-4.3.9,test,virtue,71,Sens quantitatif,2,0,4.3.9
+test-V72-1.3.2,test,virtue,72,Sens quantitatif,3,0,1.3.2
+test-V72-5.1.3,test,virtue,72,Sens quantitatif,3,0,5.1.3
+test-V73-1.3.3,test,virtue,73,Sens quantitatif,4,1,1.3.3
+test-V73-6.2.4,test,virtue,73,Sens quantitatif,4,1,6.2.4
+test-V74-1.2.1,test,virtue,74,Sens quantitatif,3,0,1.2.1
+test-V74-7.2.11,test,virtue,74,Sens quantitatif,3,0,7.2.11
+test-V75-3.2.5,test,virtue,75,Sens quantitatif,4,1,3.2.5
+test-V75-6.1.3,test,virtue,75,Sens quantitatif,4,1,6.1.3
+test-V76-3.2.1,test,virtue,76,Sens quantitatif,4,1,3.2.1
+test-V76-3.2.11,test,virtue,76,Sens quantitatif,4,1,3.2.11
+test-V77-3.1.8,test,virtue,77,Sens quantitatif,4,1,3.1.8
+test-V77-5.2.4,test,virtue,77,Sens quantitatif,4,1,5.2.4
+test-V78-1.3.3,test,virtue,78,Sens quantitatif,3,1,1.3.3
+test-V78-3.2.1,test,virtue,78,Sens quantitatif,3,1,3.2.1
+test-V179-1.3.3,test,virtue,179,Échange enrichissant,1,0,1.3.3
+test-V179-2.2.8,test,virtue,179,Échange enrichissant,1,0,2.2.8
+test-V180-3.1.8,test,virtue,180,Échange enrichissant,2,0,3.1.8
+test-V180-5.2.4,test,virtue,180,Échange enrichissant,2,0,5.2.4
+test-V181-3.1.4,test,virtue,181,Échange enrichissant,3,1,3.1.4
+test-V181-5.1.5,test,virtue,181,Échange enrichissant,3,1,5.1.5
+test-V182-1.2.1,test,virtue,182,Échange enrichissant,3,0,1.2.1
+test-V182-5.1.5,test,virtue,182,Échange enrichissant,3,0,5.1.5
+test-V183-2.2.8,test,virtue,183,Échange enrichissant,4,1,2.2.8
+test-V183-7.3.5,test,virtue,183,Échange enrichissant,4,1,7.3.5
+test-V184-2.1.1,test,virtue,184,Échange enrichissant,4,1,2.1.1
+test-V184-7.2.2,test,virtue,184,Échange enrichissant,4,1,7.2.2
+test-V185-6.1.3,test,virtue,185,Échange enrichissant,4,1,6.1.3
+test-V185-7.2.2,test,virtue,185,Échange enrichissant,4,1,7.2.2
+test-V186-5.1.5,test,virtue,186,Échange enrichissant,3,0,5.1.5
+test-V186-7.2.12,test,virtue,186,Échange enrichissant,3,0,7.2.12
+test-V187-6.2.4,test,virtue,187,Échange enrichissant,4,0,6.2.4
+test-V187-7.2.12,test,virtue,187,Échange enrichissant,4,0,7.2.12
+test-V188-3.1.4,test,virtue,188,Échange enrichissant,5,1,3.1.4
+test-V188-7.3.5,test,virtue,188,Échange enrichissant,5,1,7.3.5
+test-V189-6.1.3,test,virtue,189,Échange enrichissant,4,0,6.1.3
+test-V189-6.2.4,test,virtue,189,Échange enrichissant,4,0,6.2.4
+test-V190-4.3.9,test,virtue,190,Échange enrichissant,5,0,4.3.9
+test-V190-7.2.2,test,virtue,190,Échange enrichissant,5,0,7.2.2
+test-V191-1.3.2,test,virtue,191,Échange enrichissant,6,1,1.3.2
+test-V191-3.2.11,test,virtue,191,Échange enrichissant,6,1,3.2.11
+test-V192-2.1.10,test,virtue,192,Échange enrichissant,4,0,2.1.10
+test-V192-5.2.4,test,virtue,192,Échange enrichissant,4,0,5.2.4
+test-V193-5.1.5,test,virtue,193,Échange enrichissant,5,1,5.1.5
+test-V193-6.2.4,test,virtue,193,Échange enrichissant,5,1,6.2.4
+test-V194-3.1.8,test,virtue,194,Échange enrichissant,5,1,3.1.8
+test-V194-5.1.5,test,virtue,194,Échange enrichissant,5,1,5.1.5
+test-V195-3.2.5,test,virtue,195,Échange enrichissant,5,1,3.2.5
+test-V195-7.3.5,test,virtue,195,Échange enrichissant,5,1,7.3.5
+test-V196-3.2.11,test,virtue,196,Échange enrichissant,4,0,3.2.11
+test-V196-4.1.12,test,virtue,196,Échange enrichissant,4,0,4.1.12
+test-V197-3.1.4,test,virtue,197,Échange enrichissant,5,1,3.1.4
+test-V197-7.2.11,test,virtue,197,Échange enrichissant,5,1,7.2.11
+test-V198-2.1.1,test,virtue,198,Échange enrichissant,5,1,2.1.1
+test-V198-4.1.12,test,virtue,198,Échange enrichissant,5,1,4.1.12
+test-V199-3.2.1,test,virtue,199,Échange enrichissant,2,0,3.2.1
+test-V199-3.2.5,test,virtue,199,Échange enrichissant,2,0,3.2.5
+test-V200-1.2.1,test,virtue,200,Échange enrichissant,3,0,1.2.1
+test-V200-3.2.1,test,virtue,200,Échange enrichissant,3,0,3.2.1
+test-V201-7.2.11,test,virtue,201,Échange enrichissant,4,1,7.2.11
+test-V201-7.2.12,test,virtue,201,Échange enrichissant,4,1,7.2.12
+test-V202-7.2.2,test,virtue,202,Échange enrichissant,4,1,7.2.2
+test-V202-7.3.5,test,virtue,202,Échange enrichissant,4,1,7.3.5
+test-V203-3.1.8,test,virtue,203,Échange enrichissant,3,0,3.1.8
+test-V203-7.3.5,test,virtue,203,Échange enrichissant,3,0,7.3.5
+test-V204-1.3.2,test,virtue,204,Échange enrichissant,4,1,1.3.2
+test-V204-5.1.5,test,virtue,204,Échange enrichissant,4,1,5.1.5
+test-V205-2.1.1,test,virtue,205,Échange enrichissant,3,0,2.1.1
+test-V205-3.1.4,test,virtue,205,Échange enrichissant,3,0,3.1.4
+test-V206-2.1.10,test,virtue,206,Échange enrichissant,4,1,2.1.10
+test-V206-5.2.4,test,virtue,206,Échange enrichissant,4,1,5.2.4
+test-V207-2.1.1,test,virtue,207,Échange enrichissant,2,0,2.1.1
+test-V207-3.2.5,test,virtue,207,Échange enrichissant,2,0,3.2.5
+test-V208-2.2.5,test,virtue,208,Échange enrichissant,3,0,2.2.5
+test-V208-3.2.1,test,virtue,208,Échange enrichissant,3,0,3.2.1
+test-V209-3.2.11,test,virtue,209,Échange enrichissant,4,1,3.2.11
+test-V209-5.1.5,test,virtue,209,Échange enrichissant,4,1,5.1.5
+test-V210-4.2.4,test,virtue,210,Échange enrichissant,4,1,4.2.4
+test-V210-7.2.2,test,virtue,210,Échange enrichissant,4,1,7.2.2
+test-V211-3.2.1,test,virtue,211,Échange enrichissant,4,1,3.2.1
+test-V211-4.3.9,test,virtue,211,Échange enrichissant,4,1,4.3.9
+test-V212-1.3.3,test,virtue,212,Échange enrichissant,3,0,1.3.3
+test-V212-2.1.10,test,virtue,212,Échange enrichissant,3,0,2.1.10
+test-V213-2.2.5,test,virtue,213,Échange enrichissant,4,1,2.2.5
+test-V213-7.2.12,test,virtue,213,Échange enrichissant,4,1,7.2.12
+test-V214-3.1.8,test,virtue,214,Échange enrichissant,4,1,3.1.8
+test-V214-3.2.11,test,virtue,214,Échange enrichissant,4,1,3.2.11
+test-V215-1.3.2,test,virtue,215,Échange enrichissant,4,1,1.3.2
+test-V215-4.3.9,test,virtue,215,Échange enrichissant,4,1,4.3.9
+test-V216-3.1.4,test,virtue,216,Échange enrichissant,3,0,3.1.4
+test-V216-4.1.12,test,virtue,216,Échange enrichissant,3,0,4.1.12
+test-V217-2.2.8,test,virtue,217,Échange enrichissant,4,0,2.2.8
+test-V217-7.2.12,test,virtue,217,Échange enrichissant,4,0,7.2.12
+test-V218-2.1.1,test,virtue,218,Échange enrichissant,5,1,2.1.1
+test-V218-3.2.11,test,virtue,218,Échange enrichissant,5,1,3.2.11
+test-V219-3.1.4,test,virtue,219,Échange enrichissant,4,0,3.1.4
+test-V219-3.2.1,test,virtue,219,Échange enrichissant,4,0,3.2.1
+test-V220-1.2.1,test,virtue,220,Échange enrichissant,5,1,1.2.1
+test-V220-7.2.12,test,virtue,220,Échange enrichissant,5,1,7.2.12
+test-V221-1.2.1,test,virtue,221,Échange enrichissant,4,1,1.2.1
+test-V221-7.2.12,test,virtue,221,Échange enrichissant,4,1,7.2.12
+test-V222-1.3.2,test,virtue,222,Échange enrichissant,4,1,1.3.2
+test-V222-3.2.11,test,virtue,222,Échange enrichissant,4,1,3.2.11

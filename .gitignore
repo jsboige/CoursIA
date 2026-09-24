@@ -1094,3 +1094,6 @@ MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/cuda-detect-probe/
 
 # SL-14 aifeynman run artifacts (results/, train/test splits, NN models -- regenerable, local only)
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/_sl14_runs/
+
+# Livecoding video pipeline (#15604) : artefacts capture/PoC -- media regenerable, local only
+out/
