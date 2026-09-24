@@ -1,6 +1,6 @@
 # Stratégies QuantConnect — Descriptions Détaillées
 
-Descriptions par catégorie des 116 projets de trading algorithmique. Pour le tableau de performance résumé, voir [README.md](README.md).
+Descriptions par catégorie des projets de trading algorithmique. Pour le tableau de performance résumé, voir [README.md](README.md).
 
 > **Lecture vérifiée sous frais réels (#1630, 2018-2025).** Les Sharpes ci-dessous sont des valeurs **catalogue (pré-frais, fenêtres variables)**. La campagne #1630 a re-vérifié 36+ stratégies sous frais IBKR réels sur une fenêtre alignée 2018-2025 — plusieurs s'effondrent, d'autres tiennent :
 
