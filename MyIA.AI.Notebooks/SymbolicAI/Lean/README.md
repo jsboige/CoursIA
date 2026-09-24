@@ -166,8 +166,6 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 
 | 36 | [Lean-36-Structures-Finies-MUH](Lean-36-Structures-Finies-MUH.ipynb) | Compagnon **natif** (kernel `lean4-wsl`) du lake `tegmark_muh_lean` (Annexe A de Tegmark 2007, [arXiv:0704.0646](https://arxiv.org/abs/0704.0646), **sans dépendance Mathlib**) : la définition d'une structure finie importée et exécutée in-kernel — `Structure`/`Rel`/`RelSig` et le **produit dépendant** qui type la table de valeurs, l'encodage §c et la complexité §d évalués (`[1, 3]`, `H = 3`), les exemples du papier rendus en clair (table de C₃ complète `[[0,1,2],[1,2,0],[2,0,1]]` et sa diagonale `[0,2,1]`, C₂, NAND `[[1,1],[1,0]]`), puis `Aut(S)` fermé sous composition (`autId`/`autComp`, `#print axioms` = 0 axiome) ; **la frontière est exhibée par sa sortie** — `decideEq C₃ C₂` rend `true` alors que les structures diffèrent de cardinal, le module livrant un squelette énumératif **déclaré** et non l'algorithme halting du §1 ; 3 exercices vérifiables au noyau | 40 min |
 
-**Durée totale** : ~44h (somme des 61 lignes de la table, compagnon Search-03e compris ; les deux fourchettes « 1h30-2h » comptées à leur borne basse, 90 min)
-
 ## Acquis d'apprentissage
 
 A l'issue de la série, vous saurez :
