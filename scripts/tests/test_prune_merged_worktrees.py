@@ -795,6 +795,99 @@ class TestLookupPRForDetachedHead:
         )
 
 
+class TestDetachedHeadOnMain17684:
+    """#17684 : un HEAD detache ne recoit jamais la PR d'un commit ancetre.
+
+    Mesure fondatrice (ai-01, 2026-09-24) : la demeure de la tache
+    ``merge_ready`` (HEAD = un squash de main) classee REMOVE sur la PR de
+    ce squash, et une branche de revert classee REMOVE sur la PR qu'elle
+    revertait alors que sa propre PR etait OPEN.
+    """
+
+    def _detached_info(self):
+        return dict(
+            branch=None, ahead_count=0, untracked=[],
+            blocking_untracked=[], ignored_extra=[], tracked_modified=[],
+            has_source_dirty=False, has_submodules=False, is_current=False,
+        )
+
+    def test_detached_on_main_refused_without_lookup(self, monkeypatch):
+        monkeypatch.setattr(
+            pmw, "get_worktree_info", lambda *a: self._detached_info())
+        git_calls: list[tuple] = []
+
+        def fake_git(cwd, *args, **kwargs):
+            git_calls.append(args)
+            return _fake_proc(returncode=0)
+
+        def _no_lookup(*a, **k):
+            raise AssertionError(
+                "aucune PR ne porte une extraction de main : le lookup "
+                "ne doit pas etre appele")
+
+        monkeypatch.setattr(pmw, "run_git", fake_git)
+        monkeypatch.setattr(pmw, "lookup_pr_for_detached_head", _no_lookup)
+        s = pmw.diagnose_worktree("C:/fake/wt-merge-ready", "C:/elsewhere")
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "detached_on_main"
+        assert git_calls == [
+            ("merge-base", "--is-ancestor", "HEAD", pmw.MAIN_REF)]
+
+    def test_detached_off_main_goes_to_lookup(self, monkeypatch):
+        monkeypatch.setattr(
+            pmw, "get_worktree_info", lambda *a: self._detached_info())
+        # rc=1 : HEAD porte des commits propres
+        monkeypatch.setattr(
+            pmw, "run_git", lambda *a, **k: _fake_proc(returncode=1))
+        monkeypatch.setattr(
+            pmw, "lookup_pr_for_detached_head",
+            lambda wt: {"state": "OPEN", "number": 17632, "url": "u"})
+        s = pmw.diagnose_worktree("C:/fake/wt-17632", "C:/elsewhere")
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "pr_open:#17632"
+
+    def test_ancestry_error_is_not_on_main(self, monkeypatch):
+        # rc=128 (ref absente) : pas de conclusion « sur main », la voie de
+        # lookup restreinte decide (et rend None -> REFUSE).
+        monkeypatch.setattr(
+            pmw, "run_git", lambda *a, **k: _fake_proc(returncode=128))
+        assert pmw.detached_head_is_on_main("C:/fake") is False
+
+    def test_lookup_reads_only_commits_off_main(self, monkeypatch):
+        git_calls: list[tuple] = []
+
+        def fake_git(cwd, *args, **kwargs):
+            git_calls.append(args)
+            return _fake_proc(
+                returncode=0,
+                stdout="revert(docs,#16904): retrait de #17029\n",
+            )
+
+        monkeypatch.setattr(pmw, "run_git", fake_git)
+        monkeypatch.setattr(
+            pmw, "run_gh", lambda *a, **k: _fake_proc(json_payload=[]))
+        pmw.lookup_pr_for_detached_head("/tmp/fake")
+        assert git_calls, "le lookup doit lire les sujets de commit"
+        log_args = git_calls[0]
+        assert log_args[0] == "log"
+        assert f"{pmw.MAIN_REF}..HEAD" in log_args
+        assert "HEAD" not in log_args, (
+            "lire `HEAD` entier traverse main et attribue la PR d'un "
+            "commit ancetre")
+
+    def test_empty_range_returns_none_without_gh(self, monkeypatch):
+        # Plage origin/main..HEAD vide : aucun sujet propre, aucun appel gh
+        # -- jamais la PR du squash de main qui porte le HEAD.
+        monkeypatch.setattr(
+            pmw, "run_git", lambda *a, **k: _fake_proc(returncode=0, stdout=""))
+
+        def _no_gh(*a, **k):
+            raise AssertionError("aucun sujet propre : aucun appel gh")
+
+        monkeypatch.setattr(pmw, "run_gh", _no_gh)
+        assert pmw.lookup_pr_for_detached_head("/tmp/fake") is None
+
+
 def _fake_proc(returncode: int = 0, stdout: str = "", json_payload=None):
     """Construit un subprocess.CompletedProcess minimal pour stubbing."""
     import subprocess
