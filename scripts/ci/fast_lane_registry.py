@@ -1368,9 +1368,22 @@ TRANCHE12: list[Guard] = [
 # classe de collision que le renommage TRANCHE9 -> TRANCHE10 plus haut -- le
 # POSTERIEUR cede l'index, jamais l'inverse (deux affectations du meme nom se
 # remplaceraient silencieusement et un garde disparaitrait du registre).
+#
+# PROMOTION EN CLIQUET (#17044, 2026-09-24). Le garde naissait advisory : la
+# dette corpus heritee au cablage (109 findings) aurait rougi toute PR
+# touchant un carnet porteur, ce qui punit le voisin, pas l'auteur. Le
+# cliquet leve exactement cette objection sans renoncer au mandat user
+# 2026-09-20 (« une sortie de cellule a UNE cellule de lecture ; si elle en a
+# deja une, on la REECRIT, on n'en ajoute jamais une seconde ») : il ne
+# regarde QUE ce que la PR change -- lectures AJOUTEES (detect_added_readings)
+# ou compte de paires qui MONTE sur un carnet touche. Les 91 findings herites
+# restent donc grandfathered, et le cliquet ne rougit que l'augmentation.
+# Mesure avant cablage : 0/11 faux positifs sur les 11 dernieres PR notebook
+# mergees, controle positif fondateur 26+16 intact (organe
+# scripts/ci/check_17464_positive_control.py), self-test 5/5.
 TRANCHE14: list[Guard] = [
     Guard(
-        name="Split-reading-cells advisory (per-notebook, non-blocking)",
+        name="Split-reading ratchet (base vs PR)",
         source="split-reading-advisory.yml",
         paths=[
             "MyIA.AI.Notebooks/**/*.ipynb",
@@ -1378,14 +1391,17 @@ TRANCHE14: list[Guard] = [
             "scripts/tests/test_check_split_reading_cells.py",
             ".github/workflows/split-reading-advisory.yml",
         ],
-        iterate_paths=["MyIA.AI.Notebooks/**/*.ipynb"],
+        pre_argv=[
+            "python", "scripts/notebook_tools/check_split_reading_cells.py",
+            "--self-test",
+        ],
         argv=[
             "python", "scripts/notebook_tools/check_split_reading_cells.py",
-            "--json", "--fail-on-findings", "{changed_paths}",
+            "--base-ref", "{base_ref}", "--head", "HEAD",
+            "--json", "--fail-on-findings",
         ],
-        blocking=False,  # advisory : signale les paires scindees, ne rougit jamais
-        iterates_paths=True,
+        blocking=True,  # cliquet : rougit l'AJOUT de lecture scindee, jamais la dette heritee
+        needs_base=True,
         absorbed=True,
-        warn_rc=(1, 2),  # rc=2 = findings (signale sans bloquer) ; rc=1 = vacuue
     ),
 ]

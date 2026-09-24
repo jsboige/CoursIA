@@ -78,6 +78,16 @@ on:
       # adk-contracts job below runs them; this entry fires it when the track
       # sources move. Mirrored under pull_request: below.
       - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/**'
+      # #17580 fallacy-detection snapshot guard: resync des CSV/OWL sous
+      # Argument_Analysis/data/ doit declencher la garde d'integrite (le cas de
+      # #14578 ou la resync des CSV n'a pas touche le manifeste, et la garde a
+      # rougi 19 j en silence parce que scripts/** etait deja couvert mais pas
+      # le chemin des donnees). On inclut explicitement le chemin des donnees
+      # pour que la garde tire quand son sujet bouge, meme sans toucher a
+      # scripts/**. Mirrored under pull_request: ci-dessous.
+      - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/**'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/ontologies/**'
+      - 'scripts/fallacy_detection/**'
   pull_request:
     branches: [main]
     types: [opened, synchronize, edited, reopened]
@@ -108,6 +118,10 @@ on:
       - '.github/workflows/**'
       # #15058 ADK contracts (mirror of the push path above).
       - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/**'
+      # #17580 fallacy-detection snapshot guard (mirror of the push path above).
+      - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/**'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/ontologies/**'
+      - 'scripts/fallacy_detection/**'
   workflow_dispatch:
 
 permissions:
@@ -306,6 +320,7 @@ jobs:
             scripts/lean/tests \
             scripts/translation/tests \
             scripts/audit/tests \
+            scripts/fallacy_detection/tests \
             MyIA.AI.Notebooks/GameTheory/tests \
             MyIA.AI.Notebooks/QuantConnect/scripts/tests \
             MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_bg_tree_lock.py \

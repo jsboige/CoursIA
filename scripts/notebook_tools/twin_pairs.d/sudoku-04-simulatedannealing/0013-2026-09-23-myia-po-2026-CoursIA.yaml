@@ -1,0 +1,16 @@
+date: '2026-09-23'
+by: myia-po-2026:CoursIA
+python_sha: b5adcf217b8db9bf608d304b61d95a01062eaac6
+csharp_sha: 6d3ca331932fd51d9526f3c182abe3d63700fdd5
+content_python_sha: facf3b049e995d42f6326d7e9498990eb8c417c93b1b1a34e683ba81bd625569
+content_csharp_sha: 9cc526c9ffb9a71b94c2eb68cb73a9b54115cea32fd4bdbb2a5ae4f30ca5a5ad
+reason: >-
+  Re-attestation de parite -- PR #17303 (audit Hermes #17239, lane myia-po-2026:CoursIA).
+  Le cote Python a change de contenu : les constantes `T_SA_MS` / `T_BT_MS` de l'exercice
+  de la Section 11 derivent desormais de la liste capturee par la comparaison mesuree
+  (cellule `SimpleBacktracking`, Section 9) au lieu d'etre recopiees d'un run anterieur,
+  et la prose des cellules 24/37/46/49 est recalee sur les sorties du run committe. Le
+  notebook a ete re-execute en entier avant l'attestation (exec_ratchet CLEAN->CLEAN,
+  C.2 conforme, H.3 OK). Cote C# inchange. `parity_level: native-both` intacte : la
+  reparation est interne au notebook Python (valeurs pedagogiques et provenance des
+  durees), le moteur compare reste le meme. Le blob atteste ici est celui du HEAD de la PR.

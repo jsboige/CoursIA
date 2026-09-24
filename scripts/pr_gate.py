@@ -160,6 +160,12 @@ import os
 import re
 import subprocess
 import sys
+
+try:
+    import gh_identity
+except ImportError:  # charge via importlib dans les tests (hors scripts/)
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import gh_identity
 import time
 import traceback
 from datetime import datetime
@@ -1873,6 +1879,13 @@ def _optional_int(raw: str) -> "int | None":
 
 
 def main(argv: Iterable[str] | None = None) -> int:
+    # Warn-fort + poursuite : en CI, GH_TOKEN est pose par le runner (pin =
+    # no-op) ; le FAIL bruyant est porte par gh_identity --whoami et
+    # detect_shared_login.py (#17418 Phase A, transition B/C).
+    try:
+        gh_identity.pin_gh_token()
+    except gh_identity.GhIdentityError as exc:
+        print(f"GH-IDENTITY (WARN, poursuite sous compte actif): {exc}", file=sys.stderr)
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--repo", required=True, help="owner/name")
     parser.add_argument("--sha", required=True, help="head SHA of the PR")
