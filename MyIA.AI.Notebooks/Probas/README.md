@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: Probas
-pedagogical_count: 69
-breakdown: DecisionTheory=26, Infer=21, PyMC=19, Applications=2, root=1
-maturity: BETA=68, ALPHA=1
+pedagogical_count: 73
+breakdown: DecisionTheory=30, Infer=21, PyMC=19, Applications=3
+maturity: BETA=72, ALPHA=1
 -->
 
 > **À propos des décomptes** : le marqueur `CATALOG-STATUS` ci-dessus est la **source de vérité autoritative** pour les volumes (notebooks par sous-série, maturité). Il est régénéré chaque nuit par le workflow [`catalog-cron.yml`](../../.github/workflows/catalog-cron.yml) à 03:37 UTC sur `main` (commit par `github-actions[bot]`, livré par la PR permanente `chore/catalog-refresh-pending`). Pour les **décomptes par kernel** (C#/.NET vs Python vs Lean 4) au sein d'une sous-série — c'est-à-dire la répartition **technique** par interpréteur —, ce README reste autoritatif car la décomposition langagière par sous-série n'est pas dans le marqueur agrégé ; cette granularité est documentée ici par lecture directe des `metadata.kernelspec.language` des notebooks (`28 C# + 41 Python + 3 Lean 4 = 72 ✓` au 19/09/2026). Si vous observez un décalage entre ce marqueur et une phrase en prose de ce README, **fiez-vous au marqueur** ; la prose sera ré-alignée manuellement lors du prochain passage — sauf si le marqueur est lui-même en retard sur le disque (sa PR de régénération en attente de merge) : au 19/09/2026 c'est le cas, le marqueur affiche encore les comptes d'avant l'arrivée des notebooks DoWhy-3/4/5 (mergés les 12-14/09/2026) ; la prose ci-dessous est alors mesurée sur le disque et prend temporairement l'avance.
@@ -415,13 +415,13 @@ La causalité est traitée à **quatre endroits** du dépôt, chacun avec son mo
 
 | Notebook | Durée | Ce qu'il couvre |
 |----------|-------|-----------------|
-| [Do-Calculus-Bridge](DecisionTheory/Causal-Bridges/Do-Calculus-Bridge.ipynb) | ~55 min | Échelle de Pearl, trois règles du do-calculus, critères *backdoor* / *front-door* exécutés avec `dowhy`, Pearl (intervention) vs Hoel (émergence causale) |
-| [DoWhy-1 — Exiger un estimand](DecisionTheory/Causal-Bridges/DoWhy-1-Estimand-et-Intervention.ipynb) | ~45 min | Identification causale **nommée** via `dowhy` (backdoor, front-door, instrumentale) sur un cas complet ; sensibilité au graphe **mesurée** quand une hypothèse saute |
-| [DoWhy-2 — Le contrefactuel individuel](DecisionTheory/Causal-Bridges/DoWhy-2-Contrefactuel-Individuel.ipynb) | ~40 min | Troisième échelon de Pearl : `dowhy.gcm` (abduction-action-prédiction) sur **un individu** ; l'effet moyen nul cache une CATE linéaire ; fragilité du chiffre individuel à la spécification du mécanisme |
-| [DoWhy-3 — Le graphe qu'on n'a pas](DecisionTheory/Causal-Bridges/DoWhy-3-Decouverte-de-Structure.ipynb) | ~45 min | Découverte de structure via `causal-learn` (PC, GES, LiNGAM) : classes d'équivalence de Markov, verdict **CPDAG ambigu = résultat** ; l'ambiguïté se propage à l'estimand (3 extensions du même CPDAG → 3 estimands `dowhy`) |
-| [DoWhy-4 — Le confondeur non observé](DecisionTheory/Causal-Bridges/DoWhy-4-Sensibilite-Confounder-Cache.ipynb) | ~50 min | Sensibilité, pas certitude : robustness value de Cinelli-Hazlett (`linear-partial-R2`), **E-value natif** `dowhy`, bornes de Rosenbaum exactes (Γ*), courbe de bascule du confondeur simulé |
-| [DoWhy-5 — L'instrument faible](DecisionTheory/Causal-Bridges/DoWhy-5-Instrument-Faible.ipynb) | ~45 min | Variable instrumentale via `dowhy` (pipeline `identify` + `estimate(iv)` + `refute`) ; F-stat Staiger-Stock, biais IV vs OLS en Monte-Carlo, **verdict NON_IDENTIFIABLE** honnête sur exclusion violée |
-| [Quasi-Experimental](DecisionTheory/Causal-Bridges/Quasi-Experimental.ipynb) | ~50 min | Méthodes quasi-expérimentales (DiD, contrôle synthétique, RDD, variables instrumentales) sur données réalistes ; estimands et hypothèses d'identification explicités |
+| [CausalBridges-01 — Do-Calculus](DecisionTheory/Causal-Bridges/CausalBridges-01-Do-Calculus.ipynb) | ~55 min | Échelle de Pearl, trois règles du do-calculus, critères *backdoor* / *front-door* exécutés avec `dowhy`, Pearl (intervention) vs Hoel (émergence causale) |
+| [CausalBridges-02 — Exiger un estimand](DecisionTheory/Causal-Bridges/CausalBridges-02-Dowhy-Estimand-Intervention.ipynb) | ~45 min | Identification causale **nommée** via `dowhy` (backdoor, front-door, instrumentale) sur un cas complet ; sensibilité au graphe **mesurée** quand une hypothèse saute |
+| [CausalBridges-03 — Le contrefactuel individuel](DecisionTheory/Causal-Bridges/CausalBridges-03-Dowhy-Contrefactuel-Individuel.ipynb) | ~40 min | Troisième échelon de Pearl : `dowhy.gcm` (abduction-action-prédiction) sur **un individu** ; l'effet moyen nul cache une CATE linéaire ; fragilité du chiffre individuel à la spécification du mécanisme |
+| [CausalBridges-04 — Le graphe qu'on n'a pas](DecisionTheory/Causal-Bridges/CausalBridges-04-Dowhy-Decouverte-Structure.ipynb) | ~45 min | Découverte de structure via `causal-learn` (PC, GES, LiNGAM) : classes d'équivalence de Markov, verdict **CPDAG ambigu = résultat** ; l'ambiguïté se propage à l'estimand (3 extensions du même CPDAG → 3 estimands `dowhy`) |
+| [CausalBridges-05 — Le confondeur non observé](DecisionTheory/Causal-Bridges/CausalBridges-05-Dowhy-Sensibilite-Confounder.ipynb) | ~50 min | Sensibilité, pas certitude : robustness value de Cinelli-Hazlett (`linear-partial-R2`), **E-value natif** `dowhy`, bornes de Rosenbaum exactes (Γ*), courbe de bascule du confondeur simulé |
+| [CausalBridges-06 — L'instrument faible](DecisionTheory/Causal-Bridges/CausalBridges-06-Dowhy-Instrument-Faible.ipynb) | ~45 min | Variable instrumentale via `dowhy` (pipeline `identify` + `estimate(iv)` + `refute`) ; F-stat Staiger-Stock, biais IV vs OLS en Monte-Carlo, **verdict NON_IDENTIFIABLE** honnête sur exclusion violée |
+| [CausalBridges-07 — Quasi-Experimental](DecisionTheory/Causal-Bridges/CausalBridges-07-Quasi-Experimental.ipynb) | ~50 min | Méthodes quasi-expérimentales (DiD, contrôle synthétique, RDD, variables instrumentales) sur données réalistes ; estimands et hypothèses d'identification explicités |
 
 | Série | Moteur | Angle causal |
 |-------|--------|--------------|

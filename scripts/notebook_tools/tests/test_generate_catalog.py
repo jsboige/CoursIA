@@ -809,6 +809,154 @@ class TestRegistryEntryIsUsable:
         )
 
 
+# --- Registre des roles pedagogiques (#15080, critere 4) ---
+
+class TestPedagogicalRolesRegistry:
+    """Le champ pedagogical_role : un jugement editorial curé, pas une heuristique.
+
+    Fondation #15080 : le catalogue ne dit pas a quoi SERT un notebook. Un
+    corrige resolu est READY et inutilisable comme sujet ; un enonce sans
+    support peut etre un vrai sujet ouvert. Le registre whitelist porte la
+    decision humaine -- le loader doit echouer OUVERT (champ vide), jamais
+    deviner.
+    """
+
+    def setup_method(self):
+        import generate_catalog as gc
+        gc._load_pedagogical_roles_registry.cache_clear()
+
+    def test_le_registre_reel_porte_les_cinq_cites(self):
+        """Controle positif sur le fichier reel : le critere 4 de #15080 exige
+        le champ rempli pour AU MOINS les cinq notebooks lus firsthand."""
+        from generate_catalog import _load_pedagogical_roles_registry
+        reg = _load_pedagogical_roles_registry()
+        if not reg:
+            import pytest
+            pytest.skip("registre absent de cet arbre")
+        attendu = {
+            "GenAI/RAG-et-Memoire-Semantique/05-Stockage-Vectoriel.ipynb": "worked_solution",
+            "GenAI/Integrations-DotNet/CopilotSDK/01-GitHub-Copilot-SDK-Binding.ipynb": "open_subject",
+            "GenAI/RAG-et-Memoire-Semantique/05b-Stockage-Vectoriel-Serveur.ipynb": "method_demo",
+            "GenAI/Video/01-Foundation/01-1b-Video-Slideshow-Bonus.ipynb": "open_subject",
+            "GenAI/Texte/10e_LLamaSharp_DotNet_BakeOff.ipynb": "method_demo",
+        }
+        for path, role in attendu.items():
+            assert reg.get(path) == role, f"{path}: {reg.get(path)!r} != {role!r}"
+
+    def test_hors_vocabulaire_ecarte_avec_avertissement(self, tmp_path, capsys):
+        """Une valeur hors vocabulaire ferme n'entre JAMAIS au catalogue -- elle
+        est ecartee en le disant, pas silencieusement acceptee."""
+        import generate_catalog as gc
+        registry = tmp_path / "roles.md"
+        registry.write_text(
+            "```yaml\n"
+            "- notebook_path: Sujet/Ouvert.ipynb\n"
+            "  role: open_subject\n"
+            "- notebook_path: Casse/Vocabulaire.ipynb\n"
+            "  role: super_sujet  # hors vocabulaire\n"
+            "```",
+            encoding="utf-8",
+        )
+        monkey = pytest.MonkeyPatch()
+        monkey.setattr(gc, "PEDAGOGICAL_ROLES_REGISTRY_PATH", registry)
+        try:
+            reg = gc._load_pedagogical_roles_registry()
+        finally:
+            monkey.undo()
+        assert reg == {"Sujet/Ouvert.ipynb": "open_subject"}
+        assert "super_sujet" in capsys.readouterr().err
+
+    def test_registre_absent_fail_open(self, tmp_path):
+        """Registre absent -> dict vide -> champ \"\" partout (comme owner_logique
+        sans mapping). La generation ne leve pas."""
+        import generate_catalog as gc
+        monkey = pytest.MonkeyPatch()
+        monkey.setattr(
+            gc, "PEDAGOGICAL_ROLES_REGISTRY_PATH",
+            tmp_path / "inexistant.md",
+        )
+        try:
+            assert gc._load_pedagogical_roles_registry() == {}
+        finally:
+            monkey.undo()
+
+    def test_les_gabarits_de_schema_sont_ecartes_silencieusement(self, tmp_path, capsys):
+        """Le bloc YAML du schema (§2 du registre) vit dans le meme fichier que
+        les entrees : ses placeholders <...> ne sont pas des entrees, et leur
+        rejet ne pollue pas chaque generation d'un warning (pattern du registre
+        scientifique)."""
+        import generate_catalog as gc
+        registry = tmp_path / "roles.md"
+        registry.write_text(
+            "## Schema\n```yaml\n"
+            "- notebook_path: <chemin relatif depuis MyIA.AI.Notebooks/>\n"
+            "  role: <open_subject|worked_solution|method_demo>\n"
+            "```\n## Entrees\n```yaml\n"
+            "- notebook_path: Vrai/Notebook.ipynb\n"
+            "  role: method_demo\n"
+            "```",
+            encoding="utf-8",
+        )
+        monkey = pytest.MonkeyPatch()
+        monkey.setattr(gc, "PEDAGOGICAL_ROLES_REGISTRY_PATH", registry)
+        try:
+            reg = gc._load_pedagogical_roles_registry()
+        finally:
+            monkey.undo()
+        assert reg == {"Vrai/Notebook.ipynb": "method_demo"}
+        assert capsys.readouterr().err == ""
+
+    def test_cle_windows_normalisee_posix(self, tmp_path):
+        """Une cle ecrite avec des antislashs rejoigne la forme du catalogue
+        (POSIX, relative a MyIA.AI.Notebooks/)."""
+        import generate_catalog as gc
+        registry = tmp_path / "roles.md"
+        registry.write_text(
+            "```yaml\n"
+            "- notebook_path: GenAI\\Video\\nb.ipynb\n"
+            "  role: open_subject\n"
+            "```",
+            encoding="utf-8",
+        )
+        monkey = pytest.MonkeyPatch()
+        monkey.setattr(gc, "PEDAGOGICAL_ROLES_REGISTRY_PATH", registry)
+        try:
+            reg = gc._load_pedagogical_roles_registry()
+        finally:
+            monkey.undo()
+        assert list(reg) == ["GenAI/Video/nb.ipynb"]
+
+    def test_champ_present_et_resolu_dans_l_entree(self, tmp_path):
+        """Le wiring complet : analyze_notebook rend pedagogical_role pour un
+        notebook du registre, et \"\" pour un autre -- independant de status."""
+        import generate_catalog as gc
+        nb_dir = tmp_path / "MyIA.AI.Notebooks" / "GenAI"
+        nb_dir.mkdir(parents=True)
+        registry = tmp_path / "roles.md"
+        registry.write_text(
+            "```yaml\n"
+            "- notebook_path: GenAI/corrige.ipynb\n"
+            "  role: worked_solution\n"
+            "```",
+            encoding="utf-8",
+        )
+        monkey = pytest.MonkeyPatch()
+        monkey.setattr(gc, "NOTEBOOKS_DIR", tmp_path / "MyIA.AI.Notebooks")
+        monkey.setattr(gc, "PEDAGOGICAL_ROLES_REGISTRY_PATH", registry)
+        try:
+            for name in ("corrige.ipynb", "autre.ipynb"):
+                _write_nb(nb_dir / name)
+            entre = gc.analyze_notebook(nb_dir / "corrige.ipynb", pedagogical=True)
+            hors = gc.analyze_notebook(nb_dir / "autre.ipynb", pedagogical=True)
+        finally:
+            monkey.undo()
+        assert entre["pedagogical_role"] == "worked_solution"
+        assert hors["pedagogical_role"] == ""
+        # Independance semantique : les deux peuvent etre READY simultanement
+        # (c'est exactement la confusion que le champ repare, #15080 §3).
+        assert entre["status"] == hors["status"]
+
+
 # --- _is_exercise_stub ---
 
 class TestIsExerciseStub:

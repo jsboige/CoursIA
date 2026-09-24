@@ -36,8 +36,9 @@ PR, TOUT doit tenir sinon skip avec raison nommee :
    2 unknown, 3 blocked) sont des SKIPS nommes, pas des erreurs ;
 4. champ ``b0:`` du dossier ACCEPTE par le gate egale ``clear`` --
    grammaire du dossier relue via ``parse_dossier`` du gate lui-meme
-   (import, pas de duplication) ; le gate ne re-verifie pas b0, c'est
-   l'etape 5 qui le fait ;
+   (import, pas de duplication) ; depuis que le gate re-verifie une
+   claim ``b0: clear`` contre l'organe B.0, l'etape 5 fait double emploi
+   pour un READY : elle reste le filet si le gate change ;
 5. organe B.0 ``check_unaddressed_nits.py <PR>`` exit 0 -- code de
    retour capture DIRECTEMENT (subprocess.returncode, jamais a travers
    un pipe) ;
@@ -59,6 +60,12 @@ Comportement :
   ``gh auth token --user myia-ai-01``, resolu UNE fois au depart ;
   jamais ``gh auth switch``. Jeton irresolu -> exit 2.
 - Ordre : PR la plus ancienne d'abord (par numero).
+- Retenues : ``hold.txt`` a cote du journal (surchargeable
+  ``--hold-file``), une PR par ligne -- ``<numero> [motif]`` ; lignes
+  vides et commentaires ``# ...`` ignores. Une PR listee est sautee
+  (``hold:<motif>``) AVANT tout appel gh. Fichier absent = aucune
+  retenue ; fichier illisible ou ligne malformee -> exit 2 (on ne merge
+  pas sans savoir ce qui est retenu).
 - Journal : une ligne JSON par PR evaluee (ts UTC en Z, pr, head,
   verdict, reason, merged) dans
   ``%LOCALAPPDATA%/CoursIA/merge_ready/journal.jsonl`` (surchargeable
@@ -215,6 +222,50 @@ def utc_now_iso() -> str:
 def default_journal_path() -> Path:
     base = Path(os.environ.get("LOCALAPPDATA") or Path.home() / "AppData" / "Local")
     return base / "CoursIA" / "merge_ready" / "journal.jsonl"
+
+
+# Une retenue decidee par le coordinateur (collision, ordre de stack,
+# arbitrage en attente) est invisible au gate comme a B.0 : un dossier READY
+# ne dit pas que j'ai decide de merger. Avant ce fichier, les retenues
+# vivaient dans un hold.txt de scratchpad de SESSION, que cet organe ne
+# lisait pas -- un run --apply, ou la tache planifiee, les aurait ignorees.
+HOLD_LINE = re.compile(r"^(\d+)(?:\s+(.*))?$")
+
+
+def default_hold_path(journal_path: Path) -> Path:
+    """La retenue vit a cote du journal : meme machine, meme duree de vie."""
+    return journal_path.parent / "hold.txt"
+
+
+def load_holds(path: Path) -> dict[int, str]:
+    """Lit le fichier de retenues : ``{numero: motif}``.
+
+    Absent -> aucune retenue. Une ligne qui n'est ni vide, ni un commentaire,
+    ni ``<numero> [motif]`` est une erreur : ``#17530`` en tete de ligne se
+    lirait sinon comme un commentaire et la retenue tomberait en silence.
+    """
+    if not path.exists():
+        return {}
+    try:
+        text = path.read_text(encoding="utf-8-sig")
+    except OSError as exc:
+        raise CannotRunError(f"fichier de retenues {path} illisible : {exc}") from exc
+    holds: dict[int, str] = {}
+    for lineno, raw in enumerate(text.splitlines(), start=1):
+        line = raw.strip()
+        if not line:
+            continue
+        if line.startswith("#") and not re.match(r"#\s*\d", line):
+            continue
+        match = HOLD_LINE.match(line)
+        if match is None:
+            raise CannotRunError(
+                f"fichier de retenues {path}, ligne {lineno} malformee : {raw!r} "
+                "(attendu : <numero> [motif])"
+            )
+        reason = (match.group(2) or "").strip().lstrip("#-").strip()
+        holds[int(match.group(1))] = reason or "hold.txt"
+    return holds
 
 
 def has_preflight_comment(comments: list[dict]) -> bool:
@@ -660,7 +711,11 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
     journal_path = (
         args.journal if args.journal is not None else default_journal_path()
     )
+    hold_path = (
+        args.hold_file if args.hold_file is not None else default_hold_path(journal_path)
+    )
     try:
+        holds = load_holds(hold_path)
         token = resolve_token(active_runner)
     except CannotRunError as exc:
         print(f"merge_ready : impossible de demarrer -- {exc}", file=sys.stderr)
@@ -687,6 +742,16 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
         if merged_count >= args.max:
             stopped_reason = "max-merges-reached"
             break
+        if pr in holds:
+            held = PRVerdict(pr, None, "skipped", f"hold:{holds[pr]}", False)
+            results.append(held)
+            try:
+                append_journal(journal_path, held)
+            except UnexpectedError as exc:
+                stopped_reason = f"unexpected-error:{exc}"
+                exit_code = 1
+                break
+            continue
         try:
             view = fetch_pr_view(active_runner, pr, gh_env)
             decision = evaluate_pr(view, pr, active_runner, gh_env)
@@ -743,6 +808,12 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
             "chemin du journal JSONL (defaut "
             "%%LOCALAPPDATA%%/CoursIA/merge_ready/journal.jsonl)"
         ),
+    )
+    parser.add_argument(
+        "--hold-file",
+        type=Path,
+        default=None,
+        help="fichier de retenues (defaut : hold.txt a cote du journal)",
     )
     parser.add_argument(
         "--json",

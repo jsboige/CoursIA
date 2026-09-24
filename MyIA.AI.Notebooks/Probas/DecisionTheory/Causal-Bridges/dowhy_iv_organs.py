@@ -51,9 +51,9 @@ RandomState LOCAL par fonction, constantes en module documentees.
 References
 ----------
 
-- Notebook consommateur : ``DoWhy-5-Instrument-Faible.ipynb``.
+- Notebook consommateur : ``CausalBridges-06-Dowhy-Instrument-Faible.ipynb``.
 - Precedent IV from-scratch : cellule 40 de
-  ``Quasi-Experimental.ipynb`` (2SLS scalaire, instrument fort vs
+  ``CausalBridges-07-Quasi-Experimental.ipynb`` (2SLS scalaire, instrument fort vs
   faible, Sargan absent).
 - Regle Staiger-Stock F > 10 : Staiger & Stock (1997), "Instrumental
   Variables Regression with Weak Instruments", Econometrica 65.

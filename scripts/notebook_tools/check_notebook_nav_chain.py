@@ -28,8 +28,22 @@ Pour chaque serie S on calcule :
 - `entries(S)` : les notebooks de S sans **aucun lien entrant** (depuis n'importe
   ou dans le depot). Une serie pedagogique a **un** point d'entree : la premiere
   notebook. Deux entrees = un notebook que rien ne relie a la chaine.
-- `unreachable(S)` : les notebooks de S **non-entries** qu'aucune entree
-  n'atteint (ilot, cycle detache). Calcul par parcours en largeur.
+- `chain_starts(S)` : les non-entrees dont **tout lien entrant vient d'un
+  notebook qu'elles atteignent elles-memes**. Dans la forme canonique
+  mutualisee (#17277 : Suivant ET Precedent sur chaque paire), le PREMIER
+  notebook recoit le Precedent du deuxieme -- il a un lien entrant, donc
+  `entries` ne le voit pas, et la chaine principale parait « inatteignable »
+  (angle mort #17625, mesure sur QC-Py : 42 faux inatteignables). Un depart de
+  chaine rejoint la base du parcours : sa chaine est jugee navigable.
+- `independent_chain` : finding emis quand un depart de chaine n'est atteint
+  par AUCUNE entree. Le graphe ne peut pas decider si une composante mutualisee
+  deconnectee est « la serie principale » (QC-Py) ou « un ilot oublie »
+  (07 <-> 08) -- les deux formes sont isomorphes vues des liens. Le seeding
+  l'accepte comme navigable, mais la deconnection reste RAPPORTEE : la serie ne
+  devient jamais silencieuse sur ce cas.
+- `unreachable(S)` : les notebooks de S **non-entries** qu'aucune entree ni
+  depart de chaine n'atteint (ilot non mutualise, chaines cassees). Calcul par
+  parcours en largeur.
 - `wrapped` : les series ou **tout** notebook a un lien entrant (la chaine
   **boucle** : le « suivant » du dernier pointe le premier). C'est une
   convention legitime, pas un cas non jugeable — la serie est jugee depuis son
@@ -269,8 +283,13 @@ def analyse(inbound, outbound, series):
     Un finding est un couple (kind, key) ou `key` identifie la ligne :
       - `orphan_entry` : notebook sans lien entrant, dans une serie qui en a
         plus d'un (donc : rien ne mene a lui depuis la chaine) ;
-      - `unreachable`  : notebook non-entry qu'aucune entree n'atteint.
-    Une serie sans entree est declaree non jugeable, jamais saine.
+      - `independent_chain` : la serie porte au moins un depart de chaine
+        (forme mutualisee) qu'aucune entree n'atteint -- composante navigable
+        mais deconnectee (#17625). Cle = la serie, un finding par serie ;
+      - `unreachable`  : notebook non-entry qu'aucune entree ni depart de
+        chaine n'atteint.
+    Une serie sans entree (chaine bouclee) est jugee depuis son depart le plus
+    couvrant -- jamais declaree saine par defaut.
 
     Une serie n'est jugee que si elle **exhibe** une convention de navigation,
     c'est-a-dire au moins une arete INTERNE. Sans cela le dossier n'est pas une
@@ -297,9 +316,20 @@ def analyse(inbound, outbound, series):
                                "reason": "no_internal_nav_edge"})
             continue
         entries = sorted((nb for nb in members if not inbound.get(nb)), key=_rel)
+        chain_starts = []
+        reach_entries = set()
         if entries:
-            reach = _reachable_from(entries, outbound)
-            basis = entries
+            reach_entries = _reachable_from(entries, outbound)
+            # Departs de chaine (#17625) : non-entrees dont tout inbound vient
+            # d'un notebook qu'elles atteignent. Detectees par BFS individuel --
+            # le Precedent du 2e vers le 1er est l'exemple type.
+            for nb in sorted(members, key=_rel):
+                if not inbound.get(nb):
+                    continue
+                if inbound.get(nb) <= _reachable_from([nb], outbound):
+                    chain_starts.append(nb)
+            basis = list(entries) + chain_starts
+            reach = _reachable_from(basis, outbound)
         else:
             # Aucun notebook n'est sans lien entrant : la chaine **boucle** (le
             # « suivant » du dernier pointe le premier). C'est une convention de
@@ -321,6 +351,16 @@ def analyse(inbound, outbound, series):
             for nb in entries:
                 findings.append({"kind": "orphan_entry", "notebook": _rel(nb),
                                  "series": _rel(directory)})
+        # Un depart de chaine qu'aucune entree n'atteint : composante mutualisee
+        # deconnectee. Navigable en soi (seeding), mais deconnectee -- rapporte,
+        # un finding par serie (la cle baseline est la serie, pas chaque membre).
+        # NB : reach_entries couvre deja les departs de chaine rattaches a la
+        # partie atteignable (BFS transitif), la condition tient en un test.
+        independent_heads = [nb for nb in chain_starts if nb not in reach_entries]
+        if independent_heads:
+            findings.append({"kind": "independent_chain",
+                             "notebook": _rel(directory),
+                             "series": _rel(directory)})
         for nb in unreachable:
             findings.append({"kind": "unreachable", "notebook": _rel(nb),
                              "series": _rel(directory)})
@@ -330,6 +370,8 @@ def analyse(inbound, outbound, series):
             "entries": [_rel(nb) for nb in entries],
             "basis": [_rel(nb) for nb in basis],
             "wrapped": not entries,
+            "chain_starts": len(chain_starts),
+            "independent_chains": len(independent_heads),
             "unreachable": [_rel(nb) for nb in unreachable],
         })
     findings.sort(key=lambda f: (f["kind"], f["notebook"]))

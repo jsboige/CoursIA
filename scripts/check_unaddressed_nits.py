@@ -94,11 +94,18 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
 import unicodedata
 from datetime import datetime, timezone
+
+try:
+    import gh_identity
+except ImportError:  # charge via importlib dans les tests (hors scripts/)
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import gh_identity
 
 REPO = "jsboige/CoursIA"
 
@@ -4542,11 +4549,41 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
             # Voie 3 leve donc si le lift est voie nue (pas de prefixe
             # distinct), independamment du scope du nit (la garde
             # persona-vs-user est deja portee par voie 1).
+            #
+            # #17507 -- exception : sous `jsboige` (login partage), une
+            # levee voix nue NE leve PAS une reserve portant un marqueur
+            # persona. Voie 1 suppose lift_has_persona=True pour traiter
+            # le scope persona, mais un lift voie nue par une lane cross-
+            # poussee sous `jsboige` n'a pas voix sur la reserve `[Hermes]`
+            # d'une autre lane. La levee d'une reserve persona sous
+            # `jsboige` exige alors voie 1 (lift persona), override
+            # coordinateur nomme, ou re-review. Le discriminant reste sur
+            # le LOGIN : sous `clusterManager-Myia` (persona authentique),
+            # la voie 3 preserve son ancien comportement -- cf.
+            # `test_auteur_du_nit_leve_son_nit` (clusterManager-Myia leve
+            # SA reserve `[Hermes]` en voix nue, voie nue OK).
+            #
+            # Exception preservee : si le lift voie nue sous `jsboige`
+            # MENTIONNE explicitement sa propre reserve par un objet de
+            # close-the-loop (`mon concern`, `ma reserve`, `ma review`,
+            # `mon review`), c'est le self-close-the-loop legitime de
+            # l'auteur de la reserve persona sur sa propre review (cf.
+            # `test_12944_close_the_loop_leve_la_review_precedente` :
+            # Hermes self-bot `jsboige` ferme sa review REQUEST_CHANGES
+            # `[Hermes]` en voix nue "Mon concern est traite et ferme").
+            # Sans cette exception, voie 3 deviendrait incapable de
+            # fermer une review persona posee par le self-bot lui-meme.
             stripped_lift_role = stripped_lift
             lift_has_role = bool(_ROLE_PREFIX_RE.search(stripped_lift_role))
+            lift_self_closes_persona = bool(
+                re.search(r"(?i)\b(?:mon concern|ma reserve|ma review|mon review)\b",
+                          stripped_lift_role))
             if (lift_has_persona is False
                     and lift_has_lane is False
                     and lift_has_role is False
+                    and (lift_author != "jsboige"
+                         or nit_has_persona is False
+                         or lift_self_closes_persona)
                     and has_live_lift(lift_body or "")):
                 return True
             # Voie nue par meme login, sans discriminant de ROLE ni
@@ -5338,6 +5375,12 @@ def audit(limit: int, search: str | None = None) -> int:
 
 
 def main() -> int:
+    # Warn-fort + poursuite : le FAIL bruyant est porte par gh_identity
+    # --whoami et detect_shared_login.py (#17418 Phase A, transition B/C).
+    try:
+        gh_identity.pin_gh_token()
+    except gh_identity.GhIdentityError as exc:
+        print(f"GH-IDENTITY (WARN, poursuite sous compte actif): {exc}", file=sys.stderr)
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("pr", nargs="?", type=int, help="numero de PR (mode gate)")
