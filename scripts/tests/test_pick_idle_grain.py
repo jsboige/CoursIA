@@ -28,8 +28,14 @@ from merge_dwell import evaluate as _md_evaluate  # noqa: E402
 
 
 class _FakeCompleted:
-    def __init__(self, stdout):
+    # #17418 : main() epingle le jeton AVANT argparse (pin_gh_token ->
+    # resolve_gh_token lit .returncode/.stderr) -- le stand-in doit
+    # impersonifier un CompletedProcess complet, sinon tout appel main()
+    # sous ce fake leve AttributeError au lieu du comportement voulu.
+    def __init__(self, stdout, returncode=0, stderr=""):
         self.stdout = stdout
+        self.returncode = returncode
+        self.stderr = stderr
 
 
 def _patch_gh(monkeypatch, payloads, calls):
@@ -887,6 +893,12 @@ def _fake_transport(monkeypatch, *, graphql_ok=True, rest_ok=True,
                 # premier match rend « 100 » au lieu du numero de page.
                 page = int(cmd[2].rsplit("page=", 1)[1].split("&")[0])
             return _FakeCompleted(json.dumps((rest_pages or {}).get(page, [])))
+        if cmd[:3] == ["gh", "auth", "token"]:
+            # #17418 : echec PROPRE du pin sous transports morts -- le stand-in
+            # complet fait suivre a pin_gh_token son chemin GhIdentityError
+            # (attrapee par main, WARN stderr) au lieu d'un faux jeton "[]"
+            # qui ecrirait GH_TOKEN dans os.environ pour le reste du worker.
+            return _FakeCompleted("", returncode=1)
         # Tout autre appel (ardoise de lane, sondes) : liste vide, sans reseau.
         return _FakeCompleted("[]")
     monkeypatch.setattr(pig.subprocess, "run", fake_run)
