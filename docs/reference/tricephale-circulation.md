@@ -25,7 +25,7 @@ Tout cycle de coordination (adjoint comme coordinateur) :
 
 ## Pivot R3 — les deux clés co-egales restent co-egales *à l'intérieur* de la tricéphalie
 
-La R3 de [coordinator-discipline.md](coordinator-discipline.md) (« coordonner CHAQUE lane indépendamment ») parle des **deux dashboards du binôme coordinateur/titulaire** : `workspace-CoursIA` et `workspace-CoursIA-2`. Ces **deux-là sont co-egaux et se lisent ensemble** dans le tour `/coordinate` (le titulaire et le coordinateur partagent la responsabilité de chaque lane `CoursIA` et `CoursIA-2`).
+La R3 de [../../.claude/rules/coordinator-discipline.md](../../.claude/rules/coordinator-discipline.md) (« coordonner CHAQUE lane indépendamment ») parle des **deux dashboards du binôme coordinateur/titulaire** : `workspace-CoursIA` et `workspace-CoursIA-2`. Ces **deux-là sont co-egaux et se lisent ensemble** dans le tour `/coordinate` (le titulaire et le coordinateur partagent la responsabilité de chaque lane `CoursIA` et `CoursIA-2`).
 
 Le **troisième dashboard** — `workspace-CoursIA-3`, le secrétariat — n'est **pas** ajouté à cette liste de lecture binaire :
 
@@ -73,7 +73,7 @@ Les trois défauts muets à chercher en priorité dans un skill :
 
 ## Voir aussi
 
-- [coordinator-discipline.md](coordinator-discipline.md) — autorité et cadence du coordinateur
+- [../../.claude/rules/coordinator-discipline.md](../../.claude/rules/coordinator-discipline.md) — autorité et cadence du coordinateur
 - [proactive-coordination.md](proactive-coordination.md) — pool global, plancher de production, leçons ancrées
-- [lane-claim-protocol.md](lane-claim-protocol.md) — le claim vit sur l'issue
+- [../../.claude/rules/lane-claim-protocol.md](../../.claude/rules/lane-claim-protocol.md) — le claim vit sur l'issue
 - [variation-protocol.md](variation-protocol.md) — tag `Grain:` et merge-gate
