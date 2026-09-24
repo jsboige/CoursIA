@@ -77,10 +77,15 @@ L'analyse argumentative outillée s'inscrit dans plusieurs cas concrets où la d
 | Dung | [Dung_AF_Semantics](Argument_Analysis_Dung_AF_Semantics.ipynb) | Sémantiques grounded / preferred / stable reconstruites de zéro en pur Python (cas canonique où les trois divergent) | Fondation argumentation abstraite |
 | VAF | [Value_Based_AF](Argument_Analysis_Value_Based_AF.ipynb) | Argumentation basée sur les valeurs (Bench-Capon 2003) : chaque argument promeut une valeur, chaque audience ordonne les valeurs ; une attaque ne défait sa cible que si la valeur de l'attaquant est préférée — un même graphe produit des conclusions différentes selon l'audience — pur stdlib Python | Argumentation + préférences |
 | Toulmin | [Toulmin_Model](Argument_Analysis_Toulmin_Model.ipynb) | Modèle structurel informel de Toulmin (1958) : 6 composants (claim/data/warrant/backing/qualifier/rebuttal), audit de complétude, et pont computationnel vers Dung (rebuttals → attaques, le grounded tranche le débat) — pur stdlib Python | Argumentation informelle structurée |
+| Schemes | [Schemes_Walton](Argument_Analysis_Schemes_Walton.ipynb) | Les 10 schémas d'argumentation de Walton (table verbatim du moteur étudiant EPITA, distillation Triple Distillation) et leur classifieur lexical déterministe : paire de mots-clés accentués exigée, ordre canonique qui départage (`modus_ponens` en dernier, « donc » armant aussi `cause_effect`), questions critiques canoniques, échec bruyant (`None` honnête, jamais d'étiquette fabriquée) — pur stdlib | Argumentation informelle schématique |
 | Dial | [Dialogues_Protocolises](Argument_Analysis_Dialogues_Protocolises.ipynb) | Protocoles de dialogue Walton–Krabbe (inquiry/persuasion) comme machines à états sur 9 actes de parole : tables de transitions, terminaison par condition testable (compréhension mutuelle, capitulation, boucle), 5 divergences source documentées dont une condition de terminaison inatteignable (`_term_double_retract`) — pur stdlib Python | Protocoles d'échange / pragmatique |
+| KB | [Knowledge_Base](Argument_Analysis_Knowledge_Base.ipynb) | La mémoire d'un débat (distillation Triple Distillation du moteur étudiant EPITA) : population transitive (`add_argument` porte prémisses et conclusion), support/attaque par convention lexicale `¬`, cohérence = conflit ouvert P/`¬P`, `entails` = appartenance documentée (pas d'inférence — non-explosion mesurée, `¬¬P` distinct de `P`, écrasement par contenu) — pur stdlib Python | Mémoire de débat |
 | Rank | [Ranking_Semantics](Argument_Analysis_Ranking_Semantics.ipynb) | Sémantiques de classement (h-Categoriser, fardeau) en pur Python : force numérique départageant des arguments de même statut Dung | Argumentation graduée |
+| Orchestration | [Orchestration_Modes](Argument_Analysis_Orchestration_Modes.ipynb) | Comparer 7 modes d'orchestration par le budget (distillation Triple Distillation de l'instrument EPITA #1735) : 3 registres d'arrêt (filet du harnais / déclaration du mode / réalité des phases), asymétrie d'axes largeur-délégation-dialogue, budget calibré dérivé de la mesure — mesures committées, pur stdlib | Arbitrage d'architectures multi-agents |
 | Dated | [Dated_Graphs](Argument_Analysis_Dated_Graphs.ipynb) | Instrument $G_t^{arg} \to G_{t+1}^{arg}$ (Epic #13303, issue #13310) : corpus daté → graphe AIF conforme (critère d'inclusion C1–C3 écrit, exclusions publiées) → projection Dung ; deux mesures d'écart de familles différentes (Jaccard structurelle nœuds/attaques + Jaccard sémantique sur extensions grounded), **contrôle négatif** (plancher de bruit par split de la même période) publié à côté de tout écart, **contrôle positif** à magnitude attendue écrite avant mesure (attaque de racine : sortie directe + réhabilitation paradoxale de la victime + cascade) — pur Python + rdflib, validation synthétique uniquement ; **hypothèse monotone** posée, vérifiée par inclusion et violée délibérément (retrait d'un déchu vs d'un accepté : ce que voient les deux mesures) | Argumentation temporelle / mesure |
+| Obs | [Observatoire-1-Initiation](Argument_Analysis_Observatoire-1-Initiation.ipynb) | Cas 1 de l'Observatoire (Epic #13303, livré #16431) : Bumble « Opening Moves » (mars–avril 2024), DiD imparfait sur avis datés — instrument Dated_Graphs **rebranché, pas réécrit** (module `_dated_graphs_mod.py`), corpus Arctic Shift 4 bras × 2 fenêtres stratifiés mensuellement, extraction LLM Ollama (qwen2.5:7b-instruct-q4_K_M, température 0, échantillon complet), agrégats public-safe, plancher de bruit split-half chronologique — verdict sur quatre observations conjointes, plafond de preuve déclaré | Étude de cas / mesure empirique |
 | Route | [Multi_Backend_Routing](Argument_Analysis_Multi_Backend_Routing.ipynb) | Routage multi-backend « décider ou échouer bruyamment » : PL/Modal/Dung/FOL décidés par Tweety embarqué + sentinelle de contrat de livraison gardant les prouveurs externes (EProver/Mace4) — doctrine anti-théâtre / fail-loud | Raisonnement robuste |
+| Comm | [Communication_Channels](Argument_Analysis_Communication_Channels.ipynb) | Bus de communication multi-agents (distillation Triple Distillation du tronc EPITA) : format message à priorité inversée, contrat de canal fail-loud (#2161), routage sans routes mortes (#1571), corrélation requête-réponse — pur stdlib Python, déterministe | Communication multi-agents |
 | Matrix | [Formal_Richness_Matrix](Argument_Analysis_Formal_Richness_Matrix.ipynb) | Matrice de richesse formelle (FP-5) : classifier ce qu'un solveur *décide réellement* (principe *wiring* ≠ *output*), 4 classes de verdict (substantive / honest-absent / unavailable / théâtre), sentinelle anti-théâtre `fabricated_true` + diagnostic laggards — pur stdlib | Évaluation honnête / anti-théâtre |
 | Restit | [Restitution_3_Actes](Argument_Analysis_Restitution_3_Actes.ipynb) | Restitution honnête en 3 actes : scaffold déterministe pur stdlib (evidence réel-en-état, bande de verdict *gated*, gate de lisibilité §4, renderer *fail-loud*) + narration LLM **réelle** (SDK OpenAI, clé via `GenAI/.env`) *gated* — prompts conduits, callable injectable, fail-loud sans clé | Restitution / honnêteté |
 | Profil | [ArgumentProfile](Argument_Analysis_ArgumentProfile.ipynb) | Vue agrégée par argument (`ArgumentProfile`) : réunit les 5 dimensions (sophismes, qualité, contre-arguments, JTMS, formel) en une fiche exploitable, et trie un débat par force (arguments faibles / fallacieux). Démontre l'**indépendance des dimensions** (valide formellement ≠ non fallacieux). Auto-contenu, déterministe, sans LLM | Vue agrégée / multidimensionnelle |
@@ -88,6 +93,10 @@ L'analyse argumentative outillée s'inscrit dans plusieurs cas concrets où la d
 | CrossLinks | [Ontology_CrossLinks](Argument_Analysis_Ontology_CrossLinks.ipynb) | Complément CSV canonique Argumentum (`Cards/Fallacies/Argumentum Fallacies - Taxonomy.csv`, 1 408 lignes × 102 colonnes) : 8 colonnes `crossLink_*` (PredatesOn, Denounces, Leverages, Allows, Opposes, Inverts, Mirrors, IsRelatedTo — quasi-vides, 22 relations totales, 1,5% des sophismes ont ≥1 crossLink) + 70 mappings AIF (skos:broadMatch/closeMatch/narrowMatch, absents OWL) + 60 schemes Walton uniques (top : OppositeConsequences_Conflict 5 occurrences). Compare le gap OWL (10 976 NI) vs CSV (1 408 sophismes × 8 langues = 11 264 descriptions) — finding méthodologique : l'effort de curation upstream est porté sur la **taxonomie** (8 langues, 8 familles, 9 niveaux), pas sur les **liens transverses** | CSV canonique |
 | Ontology_Virtues | [Ontology_Virtues](Argument_Analysis_Ontology_Virtues.ipynb) | Pôle **positif** de l'axe argumentatif (`argumentum_virtues.owl`, 863 KB OWL2/XML) : thésaurus SKOS des **vertus** argumentatives, miroir des sophismes (`aif:goodTenorOf` vs `badTenorOf`). Pont regex→rdflib chargeant 2 639 triplets SKOS (rdflib et owlready2 échouent sur l'OWL/XML fonctionnel), 224 `skos:Concept` bilingues (prefLabel fr 223 / en 223), racine `validArgument`, 14 schemes de Walton rattachés — contraste ABox (sophismes = NamedIndividual + ObjectPropertyAssertion) vs thésaurus d'annotations SKOS (vertus) | Pôle vertus / SKOS |
 | UI | [UI_configuration](Argument_Analysis_UI_configuration.ipynb) | Interface utilisateur widgets | Interaction |
+| Recol | [Recollement_Lectures](Argument_Analysis_Recollement_Lectures.ipynb) | Lectures croisées de la série (récollement) | Consolidation |
+| Recol6 | [Recollement_Strate6](Argument_Analysis_Recollement_Strate6.ipynb) | Strate 6 du récollement | Consolidation |
+| Cards | [Argumentum_Cards](Argument_Analysis_Argumentum_Cards.ipynb) | Deck imprimable du jeu Argumentum (176 cartes depuis la taxonomie) | Production |
+| I2 | [I2_Contre_arguments_ASPIC](groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb) | Travail de groupe : contre-arguments ASPIC (sous-répertoire `groupe-I2-contre-arguments-aspic/`, production autonome) | Travail de groupe |
 | Exec | [Executor](Argument_Analysis_Executor.ipynb) | Orchestrateur principal | Exécution |
 
 ## Ce que chaque notebook apporte
@@ -104,10 +113,15 @@ L'analyse argumentative outillée s'inscrit dans plusieurs cas concrets où la d
 | **Dung_AF_Semantics** | Reconstruire les sémantiques grounded, preferred et stable de l'argumentation abstraite de Dung de zéro en pur Python (sans JVM) sur un cas où les trois divergent | 35 min |
 | **Value_Based_AF** | Étendre Dung par des valeurs et une audience (Bench-Capon 2003) : une attaque ne réussit que si la valeur de l'attaquant est préférée ; montrer qu'un même graphe en cycle produit trois conclusions distinctes selon l'audience — pur stdlib Python | 35 min |
 | **Toulmin_Model** | Déployer un argument en ses 6 composants Toulmin (claim/data/warrant/backing/qualifier/rebuttal), auditer sa complétude, et traduire un débat en cadre de Dung (rebuttals → attaques) pour voir quel claim survit — pur stdlib Python | 30 min |
+| **Schemes_Walton** | Reconnaître la forme stéréotypée d'un argument (autorité, analogie, cause à effet...) par un matcher lexical déterministe, prédire son départage par l'ordre canonique, et auditer un texte classé avec les questions critiques de Walton — pur stdlib Python | 30 min |
 | **Dialogues_Protocolises** | Lire deux protocoles de dialogue Walton–Krabbe comme des machines à états : neuf actes de parole, tables de transitions inquiry vs persuasion, terminaison par condition testable (compréhension mutuelle, capitulation, boucle), et une condition de terminaison inatteignable découverte dans le source — pur stdlib Python | 35 min |
+| **Knowledge_Base** | Construire et interroger la mémoire d'un débat : population transitive (un argument porte ses prémisses et sa conclusion), requêtes support/attaque par convention lexicale `¬`, détection du conflit ouvert, et les limites mesurées (pas d'inférence depuis une contradiction, `¬¬P` distinct de `P`, écrasement des propositions homonymes) — pur stdlib Python | 30 min |
 | **Ranking_Semantics** | Calculer la *force* numérique d'un argument (h-Categoriser par point fixe, fardeau par comparaison lexicographique) et départager des arguments que Dung déclare indistinctement rejetés — pur stdlib Python | 35 min |
+| **Orchestration_Modes** | Reconstruire les tableaux sous-budget/calibré d'un comparatif de 7 modes d'orchestration, nommer les 3 registres d'arrêt, et dériver un budget calibré — avec la limite mesurée de la projection linéaire (1081 s naïfs vs 600 s réels) | 30 min |
 | **Dated_Graphs** | Construire l'instrument de comparaison temporelle des graphes d'argumentation : critère d'inclusion écrit d'un énoncé, graphe AIF conforme sérialisé en RDF, projection Dung, deux mesures d'écart de familles différentes, plancher de bruit (contrôle négatif) publié avec chaque mesure, et contrôle positif dont la magnitude attendue est dérivée à la main avant l'exécution | 45 min |
+| **Observatoire-1-Initiation** | Conduire un cas empirique pré-inscrit de bout en bout : reprise de l'instrument Dated_Graphs sans réécriture (module dédié, garde anti-repli), corpus daté stratifié mensuellement, extraction LLM épinglée (modèle, température 0, schéma JSON), mesure via l'instrument avec plancher de bruit split-half chronologique, et plafond de preuve déclaré (DiD imparfait) | — |
 | **Restitution_3_Actes** | Séparer la *lisibilité* (confiée au LLM) de l'*honnêteté* (gardée par un scaffold déterministe) : extraction d'evidence, bande de verdict *gated* sur la couverture, gate de tissage anti-énumération (§4), renderer qui *nomme* les actes manquants, et narration LLM injectable *fail-loud* | 45 min |
+| **Communication_Channels** | Construire un bus de communication multi-agents : messages à priorité inversée, filtres fail-loud, routage sans routes mortes, corrélation requête-réponse — pur stdlib Python | 30 min |
 | **ArgumentProfile** | Construire la fiche agrégée d'un argument réunissant les 5 dimensions d'analyse (sophismes, qualité, contre-arguments, JTMS, formel), puis trier un débat entier par force — démontre l'indépendance des dimensions | 35 min |
 | **Ontology_AIF** | Charger l'ontologie Argumentum (OWL2/XML, 4,7 MB) via un parseur regex tolérant (rdflib échoue sur 37 axiom `ExactCardinality` mal formés), inventorier les 10 976 NamedIndividual + 4 183 ObjectPropertyAssertion, retrouver les schemes Walton dans les labels multilingues (Sign, Rule), et construire le sous-graphe du sophisme Equivoque (`semanticAmbiguity` + variantes) | 35 min |
 | **Ontology_CrossLinks** | Compléter la vue OWL par le CSV canonique Argumentum (1 408 lignes × 102 colonnes, 8 langues × 8 familles × 9 niveaux) : quantifier les 8 colonnes `crossLink_*` (PredatesOn 9, Denounces 1, Leverages 4, Allows 1, Opposes 2, Inverts 1, Mirrors 2, IsRelatedTo 2 — total 22, soit 1,5% de couverture par sophisme) et les 70 mappings AIF/Walton (`skos:broadMatch` 57, `skos:closeMatch` 10, `skos:narrowMatch` 3) ; démontrer empiriquement le gap OWL↔CSV (×7,8 en NamedIndividual par label multilingue) et la **sparsity structurelle** des relations transverses vs la richesse de l'arbre taxonomique | 30 min |
@@ -301,17 +315,20 @@ Le pipeline génère un rapport JSON dans `output/analysis_report.json` :
 
 ## Statistiques catalogue à jour
 
-Lecture `CATALOG-STATUS` byte-identique (l. 3-8) : la valeur canonique `pedagogical_count: 18` (et non un re-affichage dérivé) est la **source de vérité** ; le breakdown par sous-série ci-dessous ré-aligne la prose sur le marqueur canonique header (catalog-pr-hygiene R1 = marqueur canonique byte-identique, pas de re-affichage dérivé).
+Lecture `CATALOG-STATUS` byte-identique (l. 3-8) : la valeur canonique `pedagogical_count: 28`, `breakdown: Argument_Analysis=28`, `maturity: BETA=26, ALPHA=1, DRAFT=1` (et non un re-affichage dérivé) est la **source de vérité** ; le breakdown par sous-série ci-dessous ré-aligne la prose sur le marqueur canonique header (catalog-pr-hygiene R1 = marqueur canonique byte-identique, pas de re-affichage dérivé). **Écart disque ↔ catalogue signalé** : le répertoire compte **33** notebooks, dont **cinq** absents du catalogue au dernier passage du cron : `Communication_Channels`, `Dialogues_Protocolises`, `Knowledge_Base`, `Observatoire-1-Initiation` et `Schemes_Walton` — le cron `catalog-cron.yml` rattrapera ; on ne régénère PAS le catalogue sur cette branche.
 
 | Sous-série | Notebooks | Maturité | Contenu clé |
 |------------|-----------|----------|-------------|
-| **00-Setup** | 2 | PRODUCTION=2, BETA=0 | Chargement env (JDK 17 portable via `install_jdk_portable.py`, 76 JARs Tweety, démarrage JVM fail-loud + smoke test), config `OPENAI_API_KEY` + `GLOBAL_LLM_SERVICE` ; représenté par `Agentic-0-init` + `Agentic-0-init_agent` |
-| **01-Pipeline agentique (Agentic-N)** | 8 | PRODUCTION=4, BETA=4 | Pipeline principal 0 → 1 → 2 → 3 → 4 (capstone) → 5 (JTMS), agents legacy `*_agent` marqués BETA (semantic_kernel standalone, superseded par SK intégré dans Agentic-N) |
-| **02-Argumentation computationnelle** | 5 | PRODUCTION=5, BETA=0 | Dung AF sémantiques grounded/preferred/stable reconstruites de zéro, Ranking semantics (h-Categoriser + fardeau), Multi_Backend_Routing avec sentinelle « décider ou échouer bruyamment » (Tweety + prouveurs externes EProver/Mace4), Formal_Richness_Matrix anti-théâtre (4 classes de verdict), ArgumentProfile (modélisation d'arguments + attaques) |
-| **03-Restitution honnête** | 1 | PRODUCTION=1, BETA=0 | `Restitution_3_Actes` : scaffold déterministe pur stdlib (evidence réel-en-état, bande de verdict *gated*, gate de lisibilité §4) + narration LLM *gated* (SDK OpenAI, clé via `GenAI/.env`, prompts conduits, fail-loud sans clé) |
-| **04-Interface & widgets** | 1 | PRODUCTION=0, BETA=0, ALPHA=1 | `UI_configuration` : ipywidgets exploratoires (état alpha — interphase optionnelle, le pipeline reste utilisable sans via `Executor`) |
-| **05-Orchestration batch** | 1 | PRODUCTION=1, BETA=0 | `Executor` : point d'entrée unique Papermill/MCP, mode `BATCH_MODE=true` configurable via `.env`, sortie JSON `output/analysis_report.json` |
-| **Total** | **18** | **PRODUCTION=13, BETA=4, ALPHA=1** | Python 3.9+, kernel Python 3, JDK 17 portable (auto-install), TweetyProject Java/JPype, Semantic Kernel Python, OpenAI SDK, ontologies OWL (data/) |
+| **00-Setup** | 2 | BETA=2 | Chargement env (JDK 17 portable via `install_jdk_portable.py`, 76 JARs Tweety, démarrage JVM fail-loud + smoke test), config `OPENAI_API_KEY` + `GLOBAL_LLM_SERVICE` ; représenté par `Agentic-0-init` + `Agentic-0-init_agent` |
+| **01-Pipeline agentique (Agentic-N)** | 8 | BETA=8 | Pipeline principal 0 → 1 → 2 → 3 → 4 (capstone) → 5 (JTMS), compagnons legacy `*_agent` (superseded par SK intégré dans Agentic-N ; statut DEMO sur `0-init_agent` et `3-orchestration_agent`) |
+| **02-Argumentation computationnelle** | 8 | BETA=7, DRAFT=1 | Dung AF sémantiques grounded/preferred/stable, VAF Bench-Capon, Toulmin, Ranking (h-Categoriser + fardeau), Dated_Graphs (instrument $G_t^{arg} \to G_{t+1}^{arg}$), Multi_Backend_Routing « décider ou échouer bruyamment » (EProver/Mace4), Formal_Richness_Matrix anti-théâtre (DRAFT), ArgumentProfile (vue agrégée) |
+| **03-Restitution honnête** | 1 | BETA=1 | `Restitution_3_Actes` : scaffold déterministe pur stdlib (evidence réel-en-état, bande de verdict *gated*, gate de lisibilité §4) + narration LLM *gated* (SDK OpenAI, clé via `GenAI/.env`, statut DEMO — narration clé requise) |
+| **04-Interface & widgets** | 1 | BETA=1 | `UI_configuration` : ipywidgets exploratoires (interphase optionnelle, le pipeline reste utilisable sans via `Executor`) |
+| **05-Orchestration batch** | 1 | BETA=1 | `Executor` : point d'entrée unique Papermill/MCP, mode `BATCH_MODE=true` configurable via `.env`, sortie JSON `output/analysis_report.json` |
+| **06-Socle ontologique Argumentum** | 3 | ALPHA=1, BETA=2 | `Ontology_AIF` (OWL 4,7 MB, parseur regex tolérant — ALPHA), `Ontology_CrossLinks` (CSV canonique, crossLinks + mappings AIF), `Ontology_Virtues` (thésaurus SKOS des vertus) |
+| **07-Récollement & production** | 3 | BETA=3 | `Recollement_Lectures` (lectures croisées), `Recollement_Strate6` (strate 6 du récollement), `Argumentum_Cards` (deck imprimable 176 cartes) |
+| **08-Travail de groupe** | 1 | BETA=1 | `I2_Contre_arguments_ASPIC` (sous-répertoire `groupe-I2-contre-arguments-aspic/`, production autonome) |
+| **Total** | **28** | **BETA=26, ALPHA=1, DRAFT=1** | Python 3.9+, kernel Python 3, JDK 17 portable (auto-install), TweetyProject Java/JPype, Semantic Kernel Python, OpenAI SDK, ontologies OWL (data/) |
 
 > **Note d'audit §E (REWORK tranche 3 #5661 post-Wave-31+)** : la table **« Statistiques catalogue à jour »** a été re-alignée sur le marqueur canonique `CATALOG-STATUS` (l. 3-8, `pedagogical_count: 18`, `maturity: PRODUCTION=13, BETA=4, ALPHA=1`). Le re-affichage dérivé `pedagogical_count: 17` présent dans la version précédente était un **artefact de re-génération locale non canonique** (catalog-pr-hygiene R1 = JAMAIS régénérer un second marqueur sur la branche) ; la **source de vérité** reste le marqueur header. Le breakdown par sous-série passe de 17 → 18 par ajout explicite d'`ArgumentProfile` dans 02-Argumentation computationnelle (qui était omis, faussant le compte). Si un futur passage du cron `catalog-cron.yml` ré-aligne différemment, le résultat sera visible dans la CI par-PR `catalog-drift.yml` — **on ne re-génère PAS sur cette branche**.
 
@@ -319,7 +336,7 @@ Lecture `CATALOG-STATUS` byte-identique (l. 3-8) : la valeur canonique `pedagogi
 
 **Note PR-B #4960 PR-B (Ontology_CrossLinks ajouté — complément CSV canonique)** : le notebook `Argument_Analysis_Ontology_CrossLinks.ipynb` complète la fondation ontologique par le **CSV canonique** d'Argumentum (1 408 lignes × 102 colonnes, 8 langues × 8 familles × 9 niveaux). Trois findings structurels disclosed honnêtement : **(1)** les 8 colonnes `crossLink_*` (PredatesOn, Denounces, Leverages, Allows, Opposes, Inverts, Mirrors, IsRelatedTo) ne portent que **22 relations totales** = 1,5% de couverture par sophisme — l'arbre taxonomique est **structurellement plat en transverses** ; **(2)** les 3 colonnes `AIF_skos*` (DirectRef, ExceptionRef, MappingType) portent 70 mappings Walton repartis sur `skos:broadMatch` (57), `skos:closeMatch` (10), `skos:narrowMatch` (3) — uniquement présents dans le CSV, **absents de l'OWL** ; **(3)** gap OWL↔CSV mesuré : 10 976 NamedIndividual OWL ≈ 1 408 sophismes CSV × 8 langues = 11 264 descriptions (facteur ×7,8). Ajouts README : ligne dans la table « Notebooks » (l. 62bis après Ontology_AIF), entrée dédiée « Ce que chaque notebook apporte » (l. 81bis), 3 concepts clés dans la table « Concepts clés » (CrossLinks / Mappings AIF / Gap OWL↔CSV). **Le marqueur `CATALOG-STATUS` header reste byte-identique** à `pedagogical_count: 18` (R1 respectée) — la maturité détaillé sera re-alignée par un passage ultérieur du cron `catalog-cron.yml` ou par `catalog-drift.yml` sur PR dédiée.
 
-**Note explicite maturité mixte** : le statut BETA sur les 4 agents legacy (`*_agent`) reflète leur **supersession par le pipeline Agentic-N intégré** (Semantic Kernel absorbé dans `Agentic-3-orchestration` + `Agentic-4-capstone`), pas un défaut technique — les notebooks legacy restent fonctionnels et servent de référence historique. Le statut ALPHA sur `UI_configuration` marque une **exploration widgets** non bloquante : le pipeline de production ne dépend pas de l'UI, le mode batch via `Executor` suffit. La maturité **PRODUCTION=13** couvre l'intégralité du pipeline critique (extraction → formalisation → validation Tweety → orchestration → JTMS → Dung/Ranking → routing → matrice → restitution → batch), ce qui rend la série immédiatement opérationnelle pour des cas d'usage réels (modération, fact-checking, audit LLM).
+**Note explicite maturité mixte** : le marqueur canonique porte `BETA=26, ALPHA=1, DRAFT=1`. Le statut **ALPHA** sur `Ontology_AIF` reflète la fragilité du pont de parsing (37 axioms `ExactCardinality` mal formés côté upstream forçant le parseur regex tolérant), pas un défaut de la série. Le statut **DRAFT** sur `Formal_Richness_Matrix` marque une évaluation outillée encore en consolidation. Le statut **DEMO** du catalogue (`0-init_agent`, `3-orchestration_agent`, `Restitution_3_Actes`) marque des notebooks dont l'exécution complète exige une clé OpenAI ou se limite à une démonstration. Les compagnons `*_agent` restent fonctionnels et servent de référence historique (supersession par le pipeline Agentic-N intégré, pas un défaut technique — Semantic Kernel est absorbé dans `Agentic-3-orchestration` + `Agentic-4-capstone`).
 
 **Conformité C.1 (stubs sans erreur volontaire)** : tous les notebooks utilisent les patterns conformes (`pass` / `return None` / `print("Exercice à compléter")` / `result = None  # TODO étudiant`) — **jamais** `raise NotImplementedError` / `assert False` / `1/0` (règle C.1 user 2026-04-26). Le notebook s'exécute de bout en bout même avec les exercices non complétés (mode batch `COMPLETE_VALIDATED` dégradé en `PARTIAL_VALIDATED` sur stub, jamais en exception).
 
@@ -366,7 +383,7 @@ Lecture `CATALOG-STATUS` byte-identique (l. 3-8) : la valeur canonique `pedagogi
 
 Là où Planners (cycle 29) est le carrefour **simulation/proof intra-série** (Python ⇄ Lean 4 sur l'admissibilité d'heuristique, cycle 29) et SmartContracts (cycle 30) est le carrefour **trust/privacy inter-séries** (confiance + confidentialité + décision collective), Argument_Analysis est le carrefour **informel/formel anti-théâtre inter-couches** : la **lecture de texte** (couche LLM, floue/contextuelle), la **formalisation logique** (couche PL/FOL/Modal, médium), et la **vérification formelle** (couche Tweety/Lean, tranchante/certaine) doivent collaborer SANS que l'une simule ce que l'autre fait réellement. Cette doctrine — incarnée par `Restitution_3_Actes` (scaffold déterministe + LLM *gated*), `Multi_Backend_Routing` (sentinelle « décider ou échouer bruyamment »), `Formal_Richness_Matrix` (4 classes de verdict anti-théâtre), et le mode fail-loud de `Agentic-2-formal` — est **la doctrine anti-théâtre du dépôt** : aucun notebook ne fait passer une simulation pour un résultat, aucune sortie n'est maquée pour embellir un échec.
 
-Le pipeline 17 notebooks aligne l'évolution paradigmatique de l'argumentation computationnelle (1995 Dung AF → 2019 framework hybrides LLM + solveur) sur la **frontière de vérifiabilité** (extraction brute → taxonomie → formalisation → validation SAT → restitution grounded). Chaque notebook est un maillon de la chaîne *lire → formaliser → vérifier → restituer honnêtement*.
+La série — 33 notebooks sur disque, 28 au catalogue canonique — aligne l'évolution paradigmatique de l'argumentation computationnelle (1995 Dung AF → 2019 framework hybrides LLM + solveur) sur la **frontière de vérifiabilité** (extraction brute → taxonomie → formalisation → validation SAT → restitution grounded). Chaque notebook est un maillon de la chaîne *lire → formaliser → vérifier → restituer honnêtement*.
 
 ## Conclusion / Prochaines étapes
 
@@ -413,7 +430,7 @@ Le titre annonce l'analyse d'arguments. Mais le geste que cette série enseigne 
 - [Semantic Kernel Docs](https://learn.microsoft.com/en-us/semantic-kernel/)
 - [TweetyProject](https://tweetyproject.org/)
 
-## Ordre partiel et prérequis — mapping exhaustif (29/29, version consolidée)
+## Ordre partiel et prérequis — mapping exhaustif (33/33, version consolidée)
 
 Cette section pose un **ordre partiel** sur l'ensemble des notebooks du
 répertoire, fondé sur les déclarations de prérequis et les chaînes de
@@ -431,7 +448,13 @@ Le présent ordre est dérivé **lecture après lecture** des sections
 nommage.
 
 **Mesure du 2026-09-09 sur `main`** : **28 notebooks** `.ipynb` dans le
-répertoire (27 à la racine, 1 sous `groupe-I2-contre-arguments-aspic/`). Chaque
+répertoire (27 à la racine, 1 sous `groupe-I2-contre-arguments-aspic/`). Depuis
+cette mesure, **cinq arrivées** portent le répertoire à **33** (32 racine + 1
+sous `groupe-I2-contre-arguments-aspic/`) : `Observatoire-1-Initiation`
+(#16431), puis les quatre distillats Triple Distillation livrés le
+2026-09-22/23 — `Dialogues_Protocolises`, `Schemes_Walton`, `Knowledge_Base`,
+`Communication_Channels` — mesure re-vérifiée au 2026-09-23 (`git ls-tree` :
+27 → 32 à la racine, aucune disparition). Chaque
 notebook est balisé dans un des trois arcs ou déclaré hors-arc avec sa raison.
 La présente section consolide la version c.1030 (livrée par session antérieure)
 et le mapping exhaustif 28/28 (PR #15371) — les deux contributions sont
@@ -491,26 +514,30 @@ en référence.
 | `Argument_Analysis_Dung_AF_Semantics.ipynb` | **fondationnel** — sémantiques grounded/preferred/stable de Dung (1995) | aucun (point d'entrée de l'arc 3) |
 | `Argument_Analysis_Value_Based_AF.ipynb` | VAF de Bench-Capon (2003) — Dung enrichi par les valeurs | `Dung_AF_Semantics` |
 | `Argument_Analysis_Toulmin_Model.ipynb` | Modèle structurel informel de Toulmin (1958) — 6 composants | aucun (indépendant, pont computationnel vers Dung en fin de parcours) |
+| `Argument_Analysis_Schemes_Walton.ipynb` | Schémas d'argumentation de Walton (10 schémas stéréotypés, questions critiques) et classifieur lexical déterministe | aucun (indépendant ; niveau intermédiaire entre `Toulmin_Model` et `Dung_AF_Semantics`, cités en contexte) |
 | `Argument_Analysis_Dialogues_Protocolises.ipynb` | Protocoles Walton–Krabbe : inquiry/persuasion comme machines à états sur actes de parole | aucun (indépendant ; voisin de Toulmin_Model par la structure de l'échange, des Agentic par la multi-agentique) |
+| `Argument_Analysis_Knowledge_Base.ipynb` | Mémoire d'un débat : population transitive des propositions, requêtes support/attaque par négation lexicale `¬` | aucun (indépendant ; complète `Toulmin_Model`, `Schemes_Walton` et `Dialogues_Protocolises`, cités en contexte) |
 | `Argument_Analysis_Ranking_Semantics.ipynb` | Sémantiques graduées (h-Categoriser, fardeau) | `Dung_AF_Semantics` |
 | `Argument_Analysis_Dated_Graphs.ipynb` | Instrument $G_t^{arg} \to G_{t+1}^{arg}$ (Epic #13303, issue #13310) | `Dung_AF_Semantics` |
+| `Argument_Analysis_Observatoire-1-Initiation.ipynb` | Cas 1 de l'Observatoire (Epic #13303, livré #16431) : étude empirique DiD imparfait consommant l'instrument | `Dated_Graphs` |
 
 ```
 Dung_AF_Semantics ──→ Value_Based_AF
        │
        ├──→ Ranking_Semantics
        │
-       └──→ Dated_Graphs
+       └──→ Dated_Graphs ──→ Observatoire-1-Initiation
 
 Toulmin_Model  (indépendant, racine propre)
 ```
 
-### Hors-arc (13/28) — chaque notebook restant, avec sa raison
+### Hors-arc (14/33) — chaque notebook restant, avec sa raison
 
 | Notebook | Raison du hors-arc |
 |----------|--------------------|
 | `Argument_Analysis_Executor.ipynb` | **Transverse (infra)** : point d'entrée batch du pipeline complet (Papermill / MCP) — consomme l'arc 1 (parcours « 0 → 3 → Executor ») |
 | `Argument_Analysis_Multi_Backend_Routing.ipynb` | **Transverse (infra)** : routage multi-backend « décider ou échouer bruyamment », s'applique aux solveurs des arcs 1 et 3 |
+| `Argument_Analysis_Communication_Channels.ipynb` | **Transverse (infra)** : bus de communication multi-agents (contrat de canal fail-loud, routage sans routes mortes, corrélation requête-réponse) — pur stdlib Python, transversal aux arcs 1 et 2 |
 | `Argument_Analysis_Formal_Richness_Matrix.ipynb` | **Transverse (évaluation)** : matrice de richesse formelle (FP-5), classe les verdicts de n'importe quel solveur de la série |
 | `Argument_Analysis_Restitution_3_Actes.ipynb` | **Transverse (restitution)** : scaffold de restitution honnête (evidence + narration LLM *gated*), réutilisable par toute la série |
 | `Argument_Analysis_Recollement_Lectures.ipynb` | **Transverse (consolidation)** : lectures croisées de la série |
@@ -521,7 +548,7 @@ Toulmin_Model  (indépendant, racine propre)
 | `Argument_Analysis_Ontology_AIF.ipynb` | **Fondation (socle ontologique)** : lecture de l'OWL upstream (10 976 NamedIndividual, 4,7 MB) — outillage, pas un jalon d'apprentissage |
 | `Argument_Analysis_Ontology_CrossLinks.ipynb` | **Fondation (socle ontologique)** : CSV canonique complémentaire (1 408 lignes × 102 colonnes) |
 | `Argument_Analysis_Ontology_Virtues.ipynb` | **Fondation (socle ontologique)** : pôle vertus, thésaurus SKOS (2 639 triplets) |
-| `Argument_Analysis_I2_Contre_arguments_ASPIC.ipynb` | **Hors-arc (travail de groupe)** : sous-répertoire `groupe-I2-contre-arguments-aspic/`, production autonome (contre-arguments ASPIC), n'est pas un jalon de la progression |
+| `groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb` | **Hors-arc (travail de groupe)** : sous-répertoire `groupe-I2-contre-arguments-aspic/`, production autonome (contre-arguments ASPIC), n'est pas un jalon de la progression |
 
 ### Synthèse — comment lire la série
 
@@ -537,18 +564,20 @@ sont des **ordres partiels** :
 3. **L'arc 3 reste ouvert à tout moment** comme référence — `Dung_AF_Semantics`
    est explicitement cité par `2-formal §6`, et `5-jtms` cite Dung 1995 dans
    son introduction. Les **transverses** (`Executor`, `Multi_Backend_Routing`,
-   `Formal_Richness_Matrix`, `Restitution_3_Actes`, `Recollement_*`,
-   `ArgumentProfile`, `UI_configuration`) se croisent avec les arcs sans chaîne
+   `Communication_Channels`, `Formal_Richness_Matrix`, `Restitution_3_Actes`,
+   `Recollement_*`, `ArgumentProfile`, `UI_configuration`) se croisent avec les arcs sans chaîne
    de prérequis stricte — voir « Limites » ci-dessous.
 
 ### Arithmétique (résolution du désaccord 14 vs 15 de #15283)
 
 La discussion c.1030 opposait « 14 notebooks annoncés » (adjoint) à « 15
 balisés » (auteur de la PR). La mesure de référence est le répertoire :
-**28 notebooks sur `main`**, dont **15 balisés** par les arcs (6 + 4 + 5) et
-**13 hors-arc** documentés ci-dessus — la somme fait 28, sans trou ni double.
-Les transverses que la c.1030 déclarait hors-ordre (`Formal_Richness_Matrix`,
-`Recollement_*`, …) sont ici nommés un à un avec leur raison.
+**33 notebooks sur `main`** au 2026-09-23 — les cinq arrivées depuis la mesure
+du 2026-09-09 ont porté l'arc 3 de 5 à 9 — dont **19 balisés** par
+les arcs (6 + 4 + 9) et **14 hors-arc** documentés ci-dessus — la somme fait
+33, sans trou ni double. Les transverses que la c.1030 déclarait hors-ordre
+(`Formal_Richness_Matrix`, `Recollement_*`, …) sont ici nommés un à un avec
+leur raison.
 
 ### Limites de ce mapping
 
@@ -626,6 +655,8 @@ L'écart n'est pas propre à Argument_Analysis — contrôle positif sur les voi
 
 
 ---
+
+**Version 1.2.4** — 2026-09-23 — audit fichier ENTIER §E (issue #17453) : ajout d'`Observatoire-1-Initiation` (livré #16431, epic #16410) dans les tables « Notebooks » et « Ce que chaque notebook apporte » + arc 3 (prérequis `Dated_Graphs`, diagramme mis à jour) ; ajout des 4 notebooks manquants à la table « Notebooks » (`Recollement_Lectures`, `Recollement_Strate6`, `Argumentum_Cards`, `I2_Contre_arguments_ASPIC` — chemin sous-dossier corrigé) ; mapping exhaustif re-mesuré **33/33** (32 racine + 1 sous groupe-I2 — cinq arrivées depuis la mesure du 2026-09-09, re-vérifiées au `git ls-tree`), arithmétique **19 balisés (6+4+9) + 14 hors-arc**, `Communication_Channels` classé hors-arc (transverse infra) ; table « Statistiques catalogue à jour » ré-alignée sur le marqueur canonique `pedagogical_count: 28`, `maturity: BETA=26, ALPHA=1, DRAFT=1` (l'ancienne table sommait à 18 sur un vocabulaire PRODUCTION périmé), écart disque↔catalogue signalé (**5** notebooks non catalogués, nommés, rattrapage par le cron). Marqueur `CATALOG-STATUS` byte-identique, aucune régénération sur la branche. Tell readme-french-first R1 respecté (prose nouvelle en français).
 
 **Version 1.2.3** — 2026-09-10 — consolidation sans doublon de la section « Ordre partiel et prérequis » (PR #15371, suite au DM `msg-20260910T134004-9nsqfl` ai-01) : fusion de la livraison c.1030 (kernel/notebook prérequis détaillés, 15/28) avec le mapping exhaustif 28/28, en une seule section augmentée préservant le verdict renum (EPIC #5081, issue #14950) inchangé. Aucun notebook modifié, aucune décision de renum, marqueur `CATALOG-STATUS` byte-identique à `pedagogical_count: 18`. Tell readme-french-first R1 respectée (section rédigée en français). Tell catalog-pr-hygiene R1 respectée (catalogue inchangé).
 

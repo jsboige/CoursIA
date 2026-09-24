@@ -54,7 +54,6 @@ Pour chaque repertoire sans README, en commencant par les plus profonds :
 
    | Statistique | Valeur |
    |-------------|--------|
-   | Notebooks | X |
    | Kernel | [type] |
    | Duree estimee | ~Xh |
 
@@ -78,7 +77,7 @@ Pour chaque repertoire sans README, en commencant par les plus profonds :
 Pour chaque README existant, en remontant niveau par niveau :
 
 1. **Verifier la coherence** :
-   - Nombre de notebooks correct ?
+   - Tous les notebooks du dossier sont-ils presentes (section ou ligne de table) ?
    - Tous les fichiers references existent ?
    - Liens vers sous-repertoires a jour ?
 
@@ -89,19 +88,17 @@ Pour chaque README existant, en remontant niveau par niveau :
 
 3. **Corriger les erreurs** :
    - Liens brises
-   - Statistiques obsoletes
+   - Totaux ecrits a la main (nombre de notebooks, cellules) : les supprimer au profit du bloc `CATALOG-STATUS`, jamais les remettre a jour
    - Structure de repertoire changee
 
 ### Phase 4 : Consolidation README principal
 
 1. **Collecter les informations** de tous les README intermediaires :
-   - Statistiques totales (notebooks, durees)
    - Structure complete de l'arborescence
    - Technologies utilisees
 
 2. **Mettre a jour la cartographie** :
    - Section "Structure du depot"
-   - Tableaux statistiques globaux
    - Liens vers README intermediaires
 
 3. **Identifier les incoherences** :

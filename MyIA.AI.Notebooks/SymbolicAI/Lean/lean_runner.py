@@ -158,20 +158,75 @@ class LeanRunner:
         except:
             return False
 
+    # Binaire rejete par defaut : tout ce qui repond --version sans le
+    # prefixe canonique Lean 4 (`Lean (version 4...`). Notamment le CLI
+    # QuantConnect `lean` installe par `pip install lean` occupe souvent
+    # le PATH dans les venv Jupyter et repond sa propre banniere.
+    # See: issue #17597 (verification Lean 4 de Lean-9 morte en silence).
+    _LEAN4_VERSION_PREFIX = "Lean (version 4"
+
+    @classmethod
+    def _is_lean4_binary(cls, lean_path: str) -> bool:
+        """Run `lean --version` and verify the output announces Lean (version 4...).
+
+        Returns False if the binary is unreachable, errors, or answers with the
+        CLI QuantConnect banner. The check is intentionally a strict prefix
+        match on the first line, not a substring search on the full output —
+        otherwise a Lean 3 binary whose banner mentions "Lean 4" indirectly
+        could be accepted.
+        """
+        try:
+            result = subprocess.run(
+                [lean_path, "--version"],
+                capture_output=True, text=True, encoding="utf-8",
+                errors="replace", timeout=10,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            return False
+        if result.returncode != 0:
+            return False
+        first_line = (result.stdout or "").splitlines()[0:1]
+        if not first_line:
+            return False
+        return first_line[0].startswith(cls._LEAN4_VERSION_PREFIX)
+
     def _find_lean(self) -> str:
-        """Find the lean executable in PATH or common locations."""
-        # Try PATH first
+        """Find the Lean 4 executable in PATH or common locations.
+
+        The bare-name resolution (`shutil.which("lean")`) is not enough: on
+        a Jupyter kernel that has `pip install lean` (QuantConnect CLI),
+        `which("lean")` returns the QuantConnect wrapper, which produces the
+        CLI banner instead of the Lean 4 banner. The runner would then
+        happily execute commands against a binary that does not understand
+        Lean, and every verification would silently pass with garbage or
+        fail with the QC usage hint (issue #17597).
+
+        Each candidate is therefore probed via `lean --version` before being
+        accepted, and the search falls back to `~/.elan/bin` when the PATH
+        binary is not Lean 4.
+        """
+        # Try PATH first, but only accept the binary if it is really Lean 4.
         lean_path = shutil.which("lean")
-        if lean_path:
+        if lean_path and self._is_lean4_binary(lean_path):
             return lean_path
+        rejected_path = lean_path  # for the diagnostic message below
 
         # Try elan default location
         elan_bin = Path.home() / ".elan" / "bin"
-        if (elan_bin / "lean").exists():
-            return str(elan_bin / "lean")
-        if (elan_bin / "lean.exe").exists():
-            return str(elan_bin / "lean.exe")
+        for candidate in (elan_bin / "lean", elan_bin / "lean.exe"):
+            if candidate.exists() and self._is_lean4_binary(str(candidate)):
+                return str(candidate)
 
+        if rejected_path:
+            raise FileNotFoundError(
+                f"`lean` was found at {rejected_path} but it is not Lean 4 "
+                f"(the version output did not start with "
+                f"`{self._LEAN4_VERSION_PREFIX}`). Install Lean 4 via elan or "
+                f"uninstall the conflicting `lean` CLI from this Python "
+                f"environment:\n"
+                f"  elan default leanprover/lean4:stable\n"
+                f"  pip uninstall lean  # if it is the QuantConnect CLI"
+            )
         raise FileNotFoundError(
             "Lean executable not found. Please install Lean 4 via elan:\n"
             "  elan default leanprover/lean4:stable"
