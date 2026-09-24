@@ -57,7 +57,7 @@ python scripts/notebook_tools/extract_notebook_skeleton.py [target_path] --outpu
 3. **Determiner les sections a mettre a jour** :
    - Tableaux de notebooks (toujours mettre a jour)
    - Descriptions detaillees (si --full)
-   - **Jamais les totaux** (nombre de notebooks, cellules, comptes par langage) : ils relevent de la regeneration du catalogue (`CATALOG-STATUS`) ; une ligne de compte fausse se supprime au profit du renvoi au catalogue
+   - **Jamais les totaux** (nombre de notebooks, cellules, comptes par langage) : ils relevent de la regeneration du catalogue (`CATALOG-STATUS`, #9377) ; une ligne de compte fausse se supprime au profit du renvoi au catalogue
 
 ### Phase 3 : Generation du contenu
 
