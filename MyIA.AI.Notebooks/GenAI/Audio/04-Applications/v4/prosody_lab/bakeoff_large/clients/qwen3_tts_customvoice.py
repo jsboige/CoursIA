@@ -42,18 +42,23 @@ import torch
 
 
 DEFAULT_MODEL_ID = "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice"
-DEFAULT_SPEAKER = "Chelsie"
+DEFAULT_SPEAKER = "serena"  # Tell c.c.c.d.G.1 ★★★★ — vérif first-hand c.818, snake_case lowercase
 DEFAULT_LANGUAGE = "French"
 SAMPLE_RATE = 24000  # Qwen3-TTS 12 Hz output upsample to 24 kHz
 
 
 def get_supported_speakers() -> list[str]:
-    """Retourne la liste des voix premium supportées par le CustomVoice 1.7B."""
-    # Documentation README : 9 voix premium (Chelsie, Ethan, ..., Vivian)
-    # Charger dynamiquement via model.get_supported_speakers() si dispo, sinon fallback.
+    """Retourne la liste des voix premium supportées par le CustomVoice 1.7B.
+
+    Tell c.c.c.d.G.1 ★★★★ — vérif first-hand c.818 16:42Z :
+    model._validate_speakers(['Chelsie']) → ValueError "Unsupported speakers: ['Chelsie'].
+    Supported: ['aiden', 'dylan', 'eric', 'ono_anna', 'ryan', 'serena', 'sohee', 'uncle_fu', 'vivian']"
+    La doc README affichait des Capitalized names ('Chelsie', 'Ethan', etc.) qui ne sont PAS
+    les speaker_id réels du modèle 1.7B CustomVoice. Noms en snake_case/lowercase.
+    """
     return [
-        "Chelsie", "Ethan", "Serena", "Vivian",
-        "Ryan", "Aria", "Dylan", "Clara", "Mia",
+        "aiden", "dylan", "eric", "ono_anna",
+        "ryan", "serena", "sohee", "uncle_fu", "vivian",
     ]
 
 
