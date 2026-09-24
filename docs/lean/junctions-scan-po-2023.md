@@ -7,21 +7,27 @@
 
 ## TL;DR
 
-Economie potentielle sur **myia-po-2023** : **0,64 GB** (le plus gros des 3 checkouts physiques du cluster `v4.32.1-520045ab` reste comme donneur, les 2 autres passent en jonction). **27 projets Lake avec dépendance mathlib** sur cette machine, 2 groupes mutualisables + 5 isolés.
+Economie potentielle sur **myia-po-2023** : **0,09 GB** (re-mesure c.809 : seul GK2 `v4.32.1-520045ab` a 2 physiques — game_theory_lean 0,64 GB donneur + conway_lean 0,09 GB jonctionnable). Le ledger initial sur-comptait l'économie d'un facteur 7 en attribuant learning_theory_lean à GK2 alors qu'il est dans GK1 (v4.33.0, 20 membres). **29 projets Lake avec dépendance mathlib** sur cette machine (vs 27 initiaux — 2 ajouts : formal_logic_lean GK6 + mimo_lean mal compté), 2 groupes mutualisables + 5 buckets singletons (4 strictement 1-membre + 1 cluster GK2 de 4 membres dont 3 étiquetés `isole` par erreur).
 
-| Mesure | Valeur |
-|---|---|
-| Projets Lake total avec mathlib | **27** |
-| Groupes MUTUALISABLE | **2** (`v4.32.1-520045ab`, `v4.33.0-db584cd6`) |
-| Groupes isolés | **5** (`v4.25.0`, `v4.31.0-rc2`, `v4.32.1` × 3) |
-| Projets avec checkout physique local | **3** |
-| Empreinte cumulee des checkouts physiques | **1,28 GB** |
-| **Economie potentielle** | **0,64 GB** |
+| Mesure | Valeur (c.809) | Ancienne valeur (c.297) |
+|---|---|---|
+| Projets Lake total avec mathlib | **29** | 27 |
+| Groupes MUTUALISABLE (≥2 membres) | **2** (GK1 v4.33.0 20 membres, GK2 v4.32.1 4 membres) | 2 |
+| Buckets singletons | **5** (GK3 v4.31.0-rc2, GK4 social_choice_lean_peters, GK5 upstream fixture, GK6 formal_logic_lean, GK7 mimo_lean) | 5 |
+| Projets avec checkout physique local | **3** (game_theory_lean, learning_theory_lean, conway_lean) | 3 |
+| Empreinte cumulee des checkouts physiques | **1,27 GB** | 1,28 GB |
+| **Economie potentielle** | **0,09 GB** (GK2 seul : conway_lean jonctionné vers game_theory_lean) | 0,64 GB |
 
-## Sortie verbatim du Scan
+## Sortie verbatim du Scan — *mesure historique 07/09, supersédée*
+
+> **⚠ Mesure historique 2026-09-07 (c.297 phase 2), supersédée par la re-mesure c.809 du 2026-09-24.**
+> La section qui suit est conservée pour traçabilité du geste initial. Le **verdict courant** est dans le TL;DR (29 projets, 0,09 GB d'économie, 2 groupes mutualisables + 5 singletons selon `groupKey` discriminant complet — voir "Amendement c.749 / Re-mesure c.809" en fin de document).
+> Diagnostic de dérive (c.809) : (a) **11 lacs v4.33.0 ajoutés** depuis le scan initial (assignment, minimax, search, sudoku, formal_groups, galois, grothendieck, hecke, sensitivity, serre100, learning_theory) — absents du décompte 27 ; (b) **3 « v4.32.1 isolés » du ledger initial étaient mal classés** (discrepancy_lean est dans GK2, mimo_lean a toolchain v4.33.0, social_choice_lean_peters a une dep tierce unique) ; (c) **learning_theory_lean n'est PAS dans GK2** (v4.32.1) — il est dans GK1 (v4.33.0), ce qui explique l'économie réelle 0,09 GB et non 0,64 GB. Détail dans "Amendement c.749" en fin de document.
+>
+> **Aucun nouveau Scan n'est fabriqué ici** — la sortie verbatim reproduit l'exécution `scripts/lean/setup_shared_mathlib.ps1 -Mode Scan` du 2026-09-07T15:00Z, archivée pour traçabilité. La re-mesure c.809 a été faite en Python sur les 29 manifests à jour ; voir tableau "Re-mesure first-hand c.809".
 
 ```
-=== Projets Lake avec dependance mathlib (27) ===
+=== Projets Lake avec dependance mathlib (27) === [mesure historique 2026-09-07]
 
 --- Groupe leanprover_lean4_v4.32.1-520045ab [MUTUALISABLE] : toolchain=leanprover/lean4:v4.32.1 mathlib=520045ab ---
   MyIA.AI.Notebooks/GameTheory/game_theory_lean                          checkout physique (0.64 GB)
@@ -65,14 +71,18 @@ Economie potentielle sur **myia-po-2023** : **0,64 GB** (le plus gros des 3 chec
 --- Groupe leanprover_lean4_v4.32.1-520045ab [isole] : toolchain=leanprover/lean4:v4.32.1 mathlib=520045ab ---
   MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters                 pas de checkout local
 
-=== Economie totale potentielle (groupes en l'etat) : 0.64 GB ===
+=== Economie totale potentielle (groupes en l'etat) : 0.64 GB === [mesure historique 2026-09-07, supersédée]
 ```
 
-## Lecture (rapportee au verdict de l'EPIC)
+## Lecture (rapportee au verdict de l'EPIC) — *mesure historique 07/09, supersédée*
 
 **Cluster `v4.32.1-520045ab`** : 13 projets pinnes sur la meme rev Mathlib, dont 3 avec checkout physique (game_theory_lean 0,64 GB / learning_theory_lean 0,55 GB / conway_lean 0,09 GB) et 10 qui ont deja consomme via `lake exe cache get` (pas de checkout local). L'economie de 0,64 GB reflete la strategie "garder le plus gros comme donneur, jonctionner les 2 autres vers lui".
 
+> **⚠ Mesure historique 07/09, supersédée par c.809.** La re-mesure first-hand c.809 (cf. "Amendement c.749 / Re-mesure c.809" en fin de document) corrige : (1) **`learning_theory_lean` n'est PAS dans GK2** — il est dans GK1 (v4.33.0, 20 membres) ; (2) **`discrepancy_lean` n'est PAS isolé** — il partage le `groupKey` avec game_theory_lean, repeated_games_lean, conway_lean → GK2 passe de 3 à 4 membres ; (3) **`mimo_lean` n'est PAS toolchain v4.32.1** — toolchain = `leanprover/lean4:v4.33.0`, mathlib rev = `db584cd6`, deps transitives uniques → GK7 singleton. **L'économie réelle sur GK2 = 0,09 GB** (conway_lean jonctionné vers game_theory_lean), **pas 0,64 GB**.
+
 **Cluster `v4.33.0-db584cd6`** : 9 projets pinnes sur v4.33.0, **0 avec checkout physique**. L'alignement de manifests est plus avance ici (les 9 sont sur la meme rev transitive), mais aucun n'a de `.lake/packages/mathlib` reel — donc l'economie est nulle **en l'etat**. L'effet prospectif de la mesure de ai-01 (8 lakes pinnes mais pas encore construits) ne s'applique pas a cette machine : aucun n'est encore dans l'etat "checkout physique" qui serait jonctionnable.
+
+> **⚠ Mesure historique 07/09, supersédée par c.809.** Le cluster `v4.33.0` ne contient pas 9 mais **20 projets** (cf. GK1 c.809 : assignment, minimax, learning_theory, percolation, decision_theory, argumentation, calibration, erc20, formal_groups, galois, grothendieck, hecke, kelly, knot, mathlib_examples, planning, search, sensitivity, serre100, sudoku). Le constat « 0 checkout physique » reste valide (seul learning_theory_lean est dans GK1, déjà compté).
 
 **5 groupes isoles** : 5 projets avec rev Mathlib uniques :
 - `agent_tests/prover/session_state/reference_docs/stable_marriage/upstream` : v4.25.0 (fixture tierce, hors scope body).
@@ -81,7 +91,9 @@ Economie potentielle sur **myia-po-2023** : **0,64 GB** (le plus gros des 3 chec
 - `mimo_lean` : v4.32.1 isole (1 seul membre).
 - `social_choice_lean_peters` : v4.32.1 isole (1 seul membre, _peters).
 
-## Differences vs mesure ai-01 (2026-09-01)
+> **⚠ Mesure historique 07/09, supersédée par c.809.** La liste des 5 isolés reste numériquement correcte (5 singletons GK3-GK7) mais leur **composition** change : GK6 = `formal_logic_lean` (mathlib `0df444a3`, NOUVEAU post-07/09), GK7 = `mimo_lean` (mathlib `db584cd6`, toolchain v4.33.0 ≠ v4.32.1). `discrepancy_lean` et `mimo_lean` étaient **mal classés** en v4.32.1 isolés — reclassement c.809. Voir tableau détaillé en fin de document.
+
+## Differences vs mesure ai-01 (2026-09-01) — *mesure historique 07/09*
 
 La mesure ai-01 rapportait 17 checkouts reels, ~110 Go empreinte totale, ~90 Go recuperables. Sur **myia-po-2023**, ces chiffres sont radicalement differents :
 
@@ -94,6 +106,8 @@ La mesure ai-01 rapportait 17 checkouts reels, ~110 Go empreinte totale, ~90 Go 
 **Explication mesuree** : po-2023 est une machine de developpement Lean leger (CI-host), pas une machine de build avec cache chaud. Les 24 projets "pas de checkout local" ont deja consomme leur Mathlib via `lake exe cache get` (cache oleans precompile, pas le source) — la jonction n'a rien a y recuperer. **L'economie reelle sur cette machine est 0,64 GB**, marginale.
 
 **Implication pour l'EPIC** : l'application des junctions sur po-2023 est **peu rentable** mais **non-nulle**. La rentabilite reelle est sur les machines type ai-01 (cache chaud, plusieurs builds successifs, oleans accumules). **Cette mesure first-hand permet a l'EPIC d'evaluer l'effort par machine plutot que par total**.
+
+> **⚠ Verdict numérique supersédée par c.809.** Le scan 07/09 concluait « économie 0,64 GB » sur cette machine — la re-mesure first-hand c.809 (Python sur 29 manifests, groupKey discriminant complet) ramène ce chiffre à **0,09 GB** (erreur d'un facteur 7 dans le ledger initial). Voir le détail dans "Amendement c.749 / Re-mesure c.809" en fin de document.
 
 ## Decision prise (Scan uniquement, PAS d'Apply)
 
