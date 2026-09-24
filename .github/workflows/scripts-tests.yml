@@ -238,6 +238,11 @@ jobs:
           # fail_non_notebook test asserts the real nbformat NotJSONError text,
           # so the env must have nbconvert installed (rule F, not a skipif).
           pip install nbconvert
+          # pyjwt[crypto]: scripts/secrets/github_app_token.py signe le JWT d'App
+          # GitHub avec PyJWT, et ses deux controles positifs le verifient avec la
+          # cle publique (#17437). Declare ici plutot qu'un skip : sans lui, ces
+          # tests ne rendent jamais leur verdict dans l'organe qui les execute.
+          pip install "pyjwt[crypto]"
           # torch (CPU) is needed at collection time by the Sudoku/RRN test
           # modules under scripts/tests/ (they `import torch` at top level and
           # skip themselves at runtime when CUDA is absent). Without it those

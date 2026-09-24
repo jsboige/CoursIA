@@ -47,9 +47,7 @@ def keypair():
 
 def test_le_jwt_se_verifie_avec_la_cle_publique(mod, keypair):
     """CONTROLE POSITIF : une signature valide DOIT etre acceptee."""
-    # PyJWT n'est pas installe par le job CI `Scripts Tests (CPU)` : le test
-    # se saute la-bas et tourne sur les machines de lane, qui portent l'organe.
-    jwt = pytest.importorskip("jwt")
+    import jwt
 
     pem, pub = keypair
     token = mod.build_jwt("123456", pem, now=1_000_000)
@@ -70,9 +68,7 @@ def test_une_cle_pem_valide_est_acceptee(mod, keypair, tmp_path):
 
 def test_le_jwt_ne_depasse_pas_dix_minutes(mod, keypair):
     """GitHub refuse un JWT dont exp est a plus de 10 min : marge obligatoire."""
-    # PyJWT n'est pas installe par le job CI `Scripts Tests (CPU)` : le test
-    # se saute la-bas et tourne sur les machines de lane, qui portent l'organe.
-    jwt = pytest.importorskip("jwt")
+    import jwt
 
     pem, pub = keypair
     now = 1_000_000
