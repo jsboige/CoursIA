@@ -162,7 +162,7 @@ Les autres jumeaux C# de la sous-série CSP (N-Queens, GraphColoring, NurseSched
 | 5 | [App-13-TSP-Metaheuristics](Applications/Hybrid/App-13-TSP-Metaheuristics.ipynb) | ~50 min | TSP : SA, GA, ACO, OR-Tools routing | Classique |
 | 6 | [App-13b-TSP-Metaheuristics-CSharp](Applications/Hybrid/App-13b-TSP-Metaheuristics-CSharp.ipynb) | ~45 min | **Jumeau C#** — SA, GA, ACO from-scratch sur le même TSP, parité #4956 | Jumeau .NET |
 | 7 | [App-17-VRP-Logistics](Applications/Hybrid/App-17-VRP-Logistics.html) | ~60 min | Vehicle Routing : SA, GA, ACO, CP-SAT | Projet étudiant |
-| 8 | [App-17b-VRP-Logistics-Csharp](Applications/Hybrid/App-17b-VRP-Logistics-Csharp.ipynb) | ~55 min | **Jumeau C#** — VRP métaheuristiques .NET, parité #4956 | Jumeau .NET |
+| 8 | [App-17b-VRP-Logistics-CSharp](Applications/Hybrid/App-17b-VRP-Logistics-CSharp.ipynb) | ~55 min | **Jumeau C#** — VRP métaheuristiques .NET, parité #4956 | Jumeau .NET |
 | 8b | [App-17b-VRP-Logistics-Python](Applications/Hybrid/App-17b-VRP-Logistics-Python.ipynb) | ~45 min | **Twin Python du b** — VRP métaheuristiques from-scratch (numpy) + vérification OR-Tools, parité #4956 | Jumeau Python |
 | 9 | [App-18-HyperparameterTuning](Applications/Hybrid/App-18-HyperparameterTuning.html) | ~40 min | Optimisation ML : Bayésienne, GA, PSO, Optuna | Nouveau |
 | 10 | [App-18b-HyperparameterTuning-CSharp](Applications/Hybrid/App-18b-HyperparameterTuning-CSharp.html) | ~35 min | **Jumeau C#** — tuning GA/PSO from-scratch .NET, parité #4956 | Jumeau .NET |
@@ -244,15 +244,15 @@ La parité `.NET ⇄ Python` de la Partie 2 CSP a été portée par un **maratho
 
 | Notebook | PR | Cycle | Solver C# | verdict SOTA | Sortie noteworthy |
 |----------|----|----|-----------|-------------|-------------------|
-| **CSP-1-Fundamentals-Csharp** | [#5270](https://github.com/jsboige/CoursIA/pull/5270) | 14 (2026-07-03) | IKVM 8.15 + [Choco-solver](https://choco-solver.org/) 4.10.17 (DLL 12 MB) | **SOTA-OK** | Coloration de l'Australie 71 ms ; 8-Reines 102 ms |
-| **CSP-2-Consistency-Csharp** | [#5274](https://github.com/jsboige/CoursIA/pull/5274) | 15 (2026-07-04) | IKVM 8.15 + Choco-solver 4.10.17 | **SOTA-OK** | AC-3 custom C# + Choco AC-3 builtin ; audit table Choco ⇔ OR-Tools |
+| **CSP-1-Fundamentals-CSharp** | [#5270](https://github.com/jsboige/CoursIA/pull/5270) | 14 (2026-07-03) | IKVM 8.15 + [Choco-solver](https://choco-solver.org/) 4.10.17 (DLL 12 MB) | **SOTA-OK** | Coloration de l'Australie 71 ms ; 8-Reines 102 ms |
+| **CSP-2-Consistency-CSharp** | [#5274](https://github.com/jsboige/CoursIA/pull/5274) | 15 (2026-07-04) | IKVM 8.15 + Choco-solver 4.10.17 | **SOTA-OK** | AC-3 custom C# + Choco AC-3 builtin ; audit table Choco ⇔ OR-Tools |
 | **CSP-3-Csharp** | PRs antérieurs | antérieur | IKVM 8.15 + Choco 4.10.17 | **MERGED** | (palette reine / équidistance, base historique) |
-| **CSP-4-Scheduling-Csharp** | [#5067](https://github.com/jsboige/CoursIA/pull/5067) | tranche 1 cherry | IKVM 8.15 + Choco 4.10.17 (+ audit croisé OR-Tools) | **SOTA-OK** | Job-Shop / Nurse Scheduling en Choco `IntVar` / `Task` |
-| **CSP-5-Optimization-Csharp** | [#5018](https://github.com/jsboige/CoursIA/pull/5018) → [#5133](https://github.com/jsboige/CoursIA/pull/5133) (rebase) | antérieur | IKVM 8.15 + Choco 4.10.17 | **SOTA-OK** | Bin Packing / Knapsack / cardinalité en Choco |
-| **CSP-6-Hybridization-Csharp** | [#5275](https://github.com/jsboige/CoursIA/pull/5275) | 16 (2026-07-04) | [Google.OrTools](https://developers.google.com/optimization) 9.15.6755 NuGet | **SOTA-OK** | CP + ML 50 instances (98 % faisables) ; Portfolio multi-stratégies |
+| **CSP-4-Scheduling-CSharp** | [#5067](https://github.com/jsboige/CoursIA/pull/5067) | tranche 1 cherry | IKVM 8.15 + Choco 4.10.17 (+ audit croisé OR-Tools) | **SOTA-OK** | Job-Shop / Nurse Scheduling en Choco `IntVar` / `Task` |
+| **CSP-5-Optimization-CSharp** | [#5018](https://github.com/jsboige/CoursIA/pull/5018) → [#5133](https://github.com/jsboige/CoursIA/pull/5133) (rebase) | antérieur | IKVM 8.15 + Choco 4.10.17 | **SOTA-OK** | Bin Packing / Knapsack / cardinalité en Choco |
+| **CSP-6-Hybridization-CSharp** | [#5275](https://github.com/jsboige/CoursIA/pull/5275) | 16 (2026-07-04) | [Google.OrTools](https://developers.google.com/optimization) 9.15.6755 NuGet | **SOTA-OK** | CP + ML 50 instances (98 % faisables) ; Portfolio multi-stratégies |
 | **CSP-7-Csharp** | PRs antérieurs | antérieur | IKVM 8.15 + Choco 4.10.17 | **MERGED** | (global-cardinality, symétrie, base historique) |
-| **CSP-8-Temporal-Csharp** | [#5276](https://github.com/jsboige/CoursIA/pull/5276) | 17 (2026-07-04) | Google.OrTools 9.15.6755 | **SOTA-OK** | Allen 13 relations + STP Floyd-Warshall + TCSP ; CP-SAT optimal 0,0065 s |
-| **CSP-9-Distributed-Csharp** | [#5277](https://github.com/jsboige/CoursIA/pull/5277) | 18 (2026-07-04) | Algo distribué **Yokoo 1992** from-scratch (DisCSP) | **SOTA-OK** | AWC 62,0 msgs vs ABT 159,4 msgs à densité 0,5 (**2,5× plus efficace**) ; -58 % de fuite privacy |
+| **CSP-8-Temporal-CSharp** | [#5276](https://github.com/jsboige/CoursIA/pull/5276) | 17 (2026-07-04) | Google.OrTools 9.15.6755 | **SOTA-OK** | Allen 13 relations + STP Floyd-Warshall + TCSP ; CP-SAT optimal 0,0065 s |
+| **CSP-9-Distributed-CSharp** | [#5277](https://github.com/jsboige/CoursIA/pull/5277) | 18 (2026-07-04) | Algo distribué **Yokoo 1992** from-scratch (DisCSP) | **SOTA-OK** | AWC 62,0 msgs vs ABT 159,4 msgs à densité 0,5 (**2,5× plus efficace**) ; -58 % de fuite privacy |
 
 Les 9 binômes sont **tous mergés sur `main`** (vérifié disque au 2026-07-07 : `Part2-CSP/CSP-1-Csharp` à `CSP-9-Csharp` présents et gît-trackés). Le verdict SOTA-OK est documenté dans les PRs du marathon (règle [EPIC #3801](https://github.com/jsboige/CoursIA/issues/3801) — vrai outil, pas workaround dégradé) ; les 2 PRs les plus anciennes (CSP-3, CSP-7) ont été livrées avant la formalisation de la règle et n'ont pas de verdict écrit. Équilibre solvers final : **6 Choco via IKVM** (CSP-1/2/3/4/5/7), **2 OR-Tools CP-SAT natif .NET** (CSP-6/8), **1 from-scratch** (CSP-9, algorithme distribué Yokoo 1992).
 
@@ -324,7 +324,7 @@ Search/
 │   ├── Search-01-StateSpace.ipynb
 │   ├── Search-02-Uninformed.ipynb
 │   ├── Search-02b-NetworkX.ipynb
-│   ├── Search-02b-NetworkX-Csharp.ipynb   # Twin C# graphes from-scratch (BFS/DFS, Dijkstra, centralités, Ford-Fulkerson) (See #4956)
+│   ├── Search-02b-NetworkX-CSharp.ipynb   # Twin C# graphes from-scratch (BFS/DFS, Dijkstra, centralités, Ford-Fulkerson) (See #4956)
 │   ├── Search-02c-QuikGraph.ipynb
 │   ├── Search-03-Informed.ipynb
 │   ├── Search-04-LocalSearch.ipynb
@@ -392,7 +392,7 @@ Search/
 │       ├── App-13-TSP-Metaheuristics.ipynb
 │       ├── App-13b-TSP-Metaheuristics-CSharp.ipynb
 │       ├── App-17-VRP-Logistics.ipynb
-│       ├── App-17b-VRP-Logistics-Csharp.ipynb
+│       ├── App-17b-VRP-Logistics-CSharp.ipynb
 │       ├── App-17b-VRP-Logistics-Python.ipynb      # Twin Python du b — VRP métaheuristiques from-scratch (numpy) + vérification OR-Tools
 │       ├── App-18-HyperparameterTuning.ipynb
 │       ├── App-18b-HyperparameterTuning-CSharp.ipynb

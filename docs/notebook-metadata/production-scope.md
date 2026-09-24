@@ -42,7 +42,7 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 | GenAI Image — Foundation | EPF GenAI Bachelor 3A | `01-1-OpenAI-DALL-E-3.ipynb` | 5 | |
 | GenAI Audio — Foundation | EPF GenAI Bachelor 3A | `01-1-OpenAI-TTS-Intro.ipynb` | 5 | |
 | GenAI Video — Foundation | EPF GenAI Bachelor 3A | `01-1-Video-Operations-Basics.ipynb` | 5 | |
-| GenAI Texte (1-8) | EPF GenAI Bachelor 3A | `1_OpenAI_Intro.ipynb` | 8 | |
+| GenAI Texte (1-8) | EPF GenAI Bachelor 3A | `01_OpenAI_Intro.ipynb` | 8 | |
 | Search — Part 1 Foundations | EPITA Programmation par Contraintes | `Search-01-StateSpace.ipynb` | 13 | |
 | Search — Part 2 CSP | EPITA Programmation par Contraintes | `CSP-1-Fundamentals.ipynb` | 9 | |
 | Argument Analysis | EPITA IA Symbolique | `Argument_Analysis_Toulmin_Model.ipynb` | 4 | |

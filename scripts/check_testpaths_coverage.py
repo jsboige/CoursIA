@@ -48,6 +48,9 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
         "scripts/lean/tests",
         "scripts/translation/tests",
         "scripts/audit/tests",
+        # scripts/fallacy_detection/tests : dir entier (#17580) — la garde
+        # argumentum_snapshot (14 tests) devient un test de la collection.
+        "scripts/fallacy_detection/tests",
         "MyIA.AI.Notebooks/GameTheory/tests",
         "MyIA.AI.Notebooks/QuantConnect/scripts/tests",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_bg_tree_lock.py",

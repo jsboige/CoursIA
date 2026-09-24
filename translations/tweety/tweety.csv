@@ -1417,7 +1417,7 @@ MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb,62648150,markdown,fr,
 Le moteur causal de Tweety est **qualitatif** (booléen) : il ne calcule pas de probabilités numériques $P(y \mid do(x))$, mais décide si une conclusion *peut* / *doit* suivre causalement. Pour des estimations quantitatives (effets moyens, intervalles de confiance), il faudrait coupler le SCM à un estimateur bayésien ou à des données observationnelles (front-door / back-door adjustment). C'est une frontière de paradigme, pas un bug — le verdict SOTA est **SOTA-OK** pour le raisonnement qualitatif, avec cette borne explicite.
 
 ### Pour aller plus loin
-- **[Notebook-pont — du graphe causal au do-calculus](../../Probas/DecisionTheory/Causal-Bridges/Do-Calculus-Bridge.ipynb)** : l'armature formelle unifiée de Pearl (échelle + 3 règles du do-calculus) exécutée sur l'outil de référence `dowhy`, qui relie cette série à Infer-5, PyMC-5 et ICT-5.
+- **[Notebook-pont — du graphe causal au do-calculus](../../Probas/DecisionTheory/Causal-Bridges/CausalBridges-01-Do-Calculus.ipynb)** : l'armature formelle unifiée de Pearl (échelle + 3 règles du do-calculus) exécutée sur l'outil de référence `dowhy`, qui relie cette série à Infer-5, PyMC-5 et ICT-5.
 
 - **Judea Pearl**, *Causality: Models, Reasoning, and Inference* (Cambridge, 2009) — la référence formelle du do-calculus.
 - **Pearl & Mackenzie**, *The Book of Why* (2018) — version accessible, l'échelle causale.
@@ -1883,7 +1883,7 @@ l'implémentation from-scratch rend **visible** pourquoi l'intervention isole l'
 
 ### Pour aller plus loin
 
-- **[Notebook-pont — du graphe causal au do-calculus](../../Probas/DecisionTheory/Causal-Bridges/Do-Calculus-Bridge.ipynb)** : la chirurgie de graphe implémentée from-scratch ici (remplacer l'équation de `X` par une constante) est la **sémantique** du do-operator ; le pont en montre le **calcul** — l'échelle de causalité et les 3 règles de Pearl exécutées sur l'outil de référence `dowhy` (identification backdoor/front-door + estimation + réfutation), en **quantitatif** là où ce twin décide en booléen. Il relie cette série à Infer-5, PyMC-5 et ICT-5.",,,,,,,,93a6086885ca426d,,,,,,,,
+- **[Notebook-pont — du graphe causal au do-calculus](../../Probas/DecisionTheory/Causal-Bridges/CausalBridges-01-Do-Calculus.ipynb)** : la chirurgie de graphe implémentée from-scratch ici (remplacer l'équation de `X` par une constante) est la **sémantique** du do-operator ; le pont en montre le **calcul** — l'échelle de causalité et les 3 règles de Pearl exécutées sur l'outil de référence `dowhy` (identification backdoor/front-door + estimation + réfutation), en **quantitatif** là où ce twin décide en booléen. Il relie cette série à Infer-5, PyMC-5 et ICT-5.",,,,,,,,93a6086885ca426d,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-1-Setup.ipynb,a6835139,markdown,fr,f6299a8607020d74,"# Configuration et Installation TweetyProject
 
 **Navigation**: Index | [Suivant: Tweety-2-Basic-Logics](Tweety-2-Basic-Logics.ipynb)
