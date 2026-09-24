@@ -199,3 +199,124 @@ def test_run_wsl_handles_non_json_garbage_lines():
     assert result.success is True
     assert "warning: ignored" in result.output
     assert "ok" in result.output
+
+
+def test_run_wsl_heredoc_delimiter_is_per_invocation_random():
+    """Two back-to-back invocations must produce two different heredoc
+    delimiters — and the WSL subprocess command must contain neither the
+    static `LEANRUNNER_EOF` marker nor any other delimiter that could
+    be hit by an attacker-controlled notebook line (NanoClaw review
+    #17621 finding #1)."""
+    runner = _make_runner_with_wsl()
+
+    captured = []
+
+    def fake_run(*args, **kwargs):
+        a = args[0] if args else kwargs.get("args")
+        captured.append(a)
+        # The first wsl invocation per `_run_wsl` is the TMPDIR probe;
+        # return `/tmp` so the file path looks right.
+        if isinstance(a, list) and a and a[0] == "wsl" and len(a) >= 7 and "echo ${TMPDIR:-/tmp}" in a[-1]:
+            return _completed(stdout="/tmp\n")
+        return _completed(
+            stdout='{"severity":"information","data":"ok","pos":{"line":1,"column":0}}\n'
+        )
+
+    with patch("lean_runner.subprocess.run", side_effect=fake_run):
+        runner.run("theorem t : True := trivial")
+        runner.run("theorem t : True := trivial")
+
+    # Two invocations → two heredoc commands (each `cat > ... <<'EOM' ... EOM`).
+    # The heredoc body is the last positional arg of `subprocess.run`.
+    bash_cmds = [
+        a[-1] for a in captured
+        if isinstance(a, list) and a and a[0] == "wsl"
+        and len(a) >= 7 and "cat > " in a[-1]
+    ]
+    assert len(bash_cmds) >= 2, (
+        f"expected ≥2 heredoc commands, got {len(bash_cmds)}: {captured}"
+    )
+    # The static marker must be gone.
+    assert all("LEANRUNNER_EOF" not in cmd for cmd in bash_cmds), (
+        f"static marker leaked: {bash_cmds}"
+    )
+    # Every invocation carries a per-call marker, and they differ.
+    import re
+    markers = []
+    for cmd in bash_cmds:
+        markers.extend(re.findall(r"LEANRUNNER_EOM_[0-9a-f]{8}", cmd))
+    assert len(markers) >= 2, f"expected ≥2 EOM markers, got {markers}"
+    # The same marker appears twice within one invocation (open + close
+    # heredoc line), so check uniqueness of DISTINCT markers across all
+    # invocations — and that there is at least one per invocation.
+    distinct_markers = set(markers)
+    assert len(distinct_markers) >= 2, (
+        f"expected ≥2 distinct EOM markers across invocations, got {distinct_markers}"
+    )
+    # Per invocation, the marker is the same on both the open and close
+    # heredoc line (this is the whole point of the hardening: the
+    # attacker cannot split the heredoc because the marker is fixed).
+    for cmd in bash_cmds:
+        cmd_markers = re.findall(r"LEANRUNNER_EOM_[0-9a-f]{8}", cmd)
+        assert len(cmd_markers) == 2, (
+            f"expected exactly 2 occurrences of the marker per cmd "
+            f"(open + close), got {len(cmd_markers)}: {cmd_markers}"
+        )
+        assert cmd_markers[0] == cmd_markers[1], (
+            f"open/close markers differ within a single invocation: "
+            f"{cmd_markers}"
+        )
+
+
+def test_run_wsl_heredoc_delimiter_collision_is_refused():
+    """If the randomly-generated delimiter happens to occur as a line in
+    the wrapped code (astronomically unlikely but checked), the runner
+    must refuse with a failure LeanResult rather than letting the heredoc
+    close prematurely and execute the remainder as raw bash in WSL."""
+    import lean_runner
+    runner = _make_runner_with_wsl()
+
+    real_uuid = lean_runner.uuid.uuid4
+    seq = iter(["0123abcd"] * 100)  # force a deterministic collision marker
+
+    def fake_uuid4():
+        return type("U", (), {"hex": property(lambda self: next(seq))})()
+
+    # Patch uuid so we can force the marker into the user code.
+    monkey_marker = "LEANRUNNER_EOM_0123abcd"
+    user_code = f"-- prelude\n{monkey_marker}\n#eval 1 + 1\n"
+
+    with patch.object(lean_runner.uuid, "uuid4", side_effect=lambda: type(
+        "U", (), {"hex": property(lambda self: "0123abcd")}
+    )()):
+        with patch("lean_runner.subprocess.run", return_value=_completed()):
+            result = runner.run(user_code)
+
+    assert result.success is False
+    assert "Heredoc delimiter collision" in result.errors
+    assert result.exit_code == -1
+
+
+def test_check_wsl_available_does_not_require_repl():
+    """`_check_wsl_available` must accept a WSL where only `lean`
+    is installed (the WSL backend no longer uses `repl` since #17612).
+    It must NOT shell out to `which repl` and treat its absence as a
+    failure (NanoClaw review #17621 finding #2)."""
+    import lean_runner
+    runner = _make_runner_with_wsl()
+    seen_cmds = []
+
+    def fake_run(*args, **kwargs):
+        cmd_str = args[0] if args else kwargs.get("args")
+        if isinstance(cmd_str, list) and cmd_str and cmd_str[0] == "wsl":
+            seen_cmds.append(cmd_str[-1])
+        return _completed(stdout="/home/user/.elan/bin/lean\n")
+
+    with patch("lean_runner.subprocess.run", side_effect=fake_run):
+        ok = runner._check_wsl_available()
+
+    assert ok is True
+    # The shell command must not mention `repl`.
+    assert all("repl" not in c for c in seen_cmds), (
+        f"_check_wsl_available still probes for `repl`: {seen_cmds}"
+    )

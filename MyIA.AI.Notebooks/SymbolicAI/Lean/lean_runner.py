@@ -53,6 +53,7 @@ import os
 import shutil
 import json
 import platform
+import uuid
 from pathlib import Path
 from dataclasses import dataclass
 from typing import Optional, List, Literal
@@ -147,13 +148,19 @@ class LeanRunner:
         return Backend.SUBPROCESS
 
     def _check_wsl_available(self) -> bool:
-        """Check if WSL with lean4_jupyter is available."""
+        """Check if WSL with the standalone Lean compiler is available.
+
+        The WSL backend invokes `lean --json` against a lake project — it
+        no longer uses the `repl` binary (see issue #17612), so a working
+        `lean` install is sufficient. Requiring `which repl` here would
+        spuriously report a perfectly capable WSL as unavailable after
+        the user's `.elan/bin/repl` happens to be absent (e.g. elan did
+        not install the legacy REPL wrapper, or it was pruned).
+        """
         try:
             result = subprocess.run(
                 ["wsl", "-d", "Ubuntu", "--", "bash", "-c",
-                 "source ~/.lean4-venv/bin/activate 2>/dev/null && "
-                 "source ~/.elan/env 2>/dev/null && "
-                 "which lean && which repl"],
+                 "source ~/.elan/env 2>/dev/null && which lean"],
                 capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10
             )
             return result.returncode == 0
@@ -440,12 +447,31 @@ class LeanRunner:
 
         # Write the wrapped code into WSL via stdin heredoc to avoid
         # Windows/WSL quoting. The file is in WSL's own /tmp, so we
-        # can write it directly with `cat > file <<'LEOF' ... LEOF`.
+        # can write it directly with `cat > file <<'EOM' ... EOM`.
+        # Use a per-invocation random delimiter so that a user-supplied
+        # line that happens to match the marker cannot terminate the
+        # heredoc prematurely and have the rest of the code executed
+        # as raw bash in the WSL environment (NanoClaw review #17621
+        # finding #1, structural). 32 bits of randomness make an
+        # accidental collision with a verbatim line in user code
+        # astronomically unlikely; we still refuse if it ever matches
+        # (defence in depth).
+        eom = f"LEANRUNNER_EOM_{uuid.uuid4().hex[:8]}"
+        if eom in wrapped_code:
+            return LeanResult(
+                success=False, output="",
+                errors=(
+                    f"Heredoc delimiter collision: user-supplied code contains "
+                    f"the marker {eom!r}. Retry with different code (the marker "
+                    f"is randomised per invocation)."
+                ),
+                code=code, exit_code=-1, backend="wsl",
+            )
         heredoc = (
             f"cd {self.wsl_project_dir} && source ~/.elan/env && "
-            f"cat > {wsl_lean_path_for_cmd} <<'LEANRUNNER_EOF'\n"
+            f"cat > {wsl_lean_path_for_cmd} <<'{eom}'\n"
             f"{wrapped_code}\n"
-            f"LEANRUNNER_EOF\n"
+            f"{eom}\n"
             f"lean --json {wsl_lean_path_for_cmd}"
         )
 
