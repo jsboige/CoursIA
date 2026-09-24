@@ -101,11 +101,11 @@ La mesure ai-01 rapportait 17 checkouts reels, ~110 Go empreinte totale, ~90 Go 
 |---|---:|---:|
 | Projets avec checkout physique | 17 | **3** |
 | Empreinte cumulee | ~110 GB | **1,28 GB** |
-| Recuperable | ~90 GB | **0,64 GB** |
+| Recuperable | ~90 GB | **0,64 GB** *(mesure historique 07/09 — supersédée par c.809, voir verdict courant 0,09 GB)* |
 
-**Explication mesuree** : po-2023 est une machine de developpement Lean leger (CI-host), pas une machine de build avec cache chaud. Les 24 projets "pas de checkout local" ont deja consomme leur Mathlib via `lake exe cache get` (cache oleans precompile, pas le source) — la jonction n'a rien a y recuperer. **L'economie reelle sur cette machine est 0,64 GB**, marginale.
+**Explication mesuree (mesure historique 07/09, supersédée par c.809)** : po-2023 est une machine de developpement Lean leger (CI-host), pas une machine de build avec cache chaud. Les 24 projets "pas de checkout local" ont deja consomme leur Mathlib via `lake exe cache get` (cache oleans precompile, pas le source) — la jonction n'a rien a y recuperer. **L'economie historique constatee au 07/09 etait 0,64 GB** (verdict superséde par c.809 → 0,09 GB reel, voir Amendement c.749 / Re-mesure c.809).
 
-**Implication pour l'EPIC** : l'application des junctions sur po-2023 est **peu rentable** mais **non-nulle**. La rentabilite reelle est sur les machines type ai-01 (cache chaud, plusieurs builds successifs, oleans accumules). **Cette mesure first-hand permet a l'EPIC d'evaluer l'effort par machine plutot que par total**.
+**Implication pour l'EPIC** (mesure historique 07/09, à actualiser sur verdict c.809) : l'application des junctions sur po-2023 est **peu rentable** mais **non-nulle**. Avec le verdict c.809 ramenant l'économie de 0,64 → **0,09 GB**, la rentabilité sur po-2023 devient **encore plus marginale** (le risque irreversible ne se justifie plus sur cette machine legere ; voir Amendement c.749 / Re-mesure c.809). La rentabilite reelle est sur les machines type ai-01 (cache chaud, plusieurs builds successifs, oleans accumules). **Cette mesure first-hand permet a l'EPIC d'evaluer l'effort par machine plutot que par total**.
 
 > **⚠ Verdict numérique supersédée par c.809.** Le scan 07/09 concluait « économie 0,64 GB » sur cette machine — la re-mesure first-hand c.809 (Python sur 29 manifests, groupKey discriminant complet) ramène ce chiffre à **0,09 GB** (erreur d'un facteur 7 dans le ledger initial). Voir le détail dans "Amendement c.749 / Re-mesure c.809" en fin de document.
 
@@ -113,7 +113,7 @@ La mesure ai-01 rapportait 17 checkouts reels, ~110 Go empreinte totale, ~90 Go 
 
 Acceptance #13962 step 1 (Scan) est **accomplie pour myia-po-2023**. Steps 2-3-4 (Apply + anti-regression + mesure effectif) sont **gated par accord explicite dans le fil** (la prudence anti-irreversible du body tient : remplacer un checkout physique par une jonction **supprime** ~6,5 Go dont la reconstitution coute un `lake exe cache get` + build complet).
 
-**Position de la lane** : **Apply sur po-2023 NON recommande en l'etat** — l'economie de 0,64 GB ne justifie pas le risque irreversible sur cette machine legere. **Recommandation** : appliquer les junctions sur ai-01 et machines de build lourd d'abord, re-mesurer sur po-2023 quand le cluster v4.32.1 prendra du volume (par exemple apres l'ajout d'un nouveau lake pinne sur 520045ab).
+**Position de la lane (mesure historique 07/09, à actualiser sur verdict c.809)** : **Apply sur po-2023 NON recommande en l'etat** — l'economie historique constatee etait 0,64 GB (chiffre supersede par c.809 ; **l'economie reelle est 0,09 GB**, cf. Amendement c.749 / Re-mesure c.809), ce qui ne justifie pas le risque irreversible sur cette machine legere. **Recommandation** : appliquer les junctions sur ai-01 et machines de build lourd d'abord, re-mesurer sur po-2023 quand le cluster v4.32.1 prendra du volume (par exemple apres l'ajout d'un nouveau lake pinne sur 520045ab).
 
 ## Pas dans cette PR
 
