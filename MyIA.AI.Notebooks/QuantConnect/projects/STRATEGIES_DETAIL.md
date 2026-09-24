@@ -125,7 +125,7 @@ Stratégies ML/AI implémentées avec `sklearn` (compatible QC Cloud). Basées s
 - [RL-Portfolio](RL-Portfolio/) : Q-Learning allocation multi-asset
 - [Reinforcement-Learning-Trading](Reinforcement-Learning-Trading/) : DQN experience replay (book implementation)
 - [SVM-Wavelet-Forecasting](SVM-Wavelet-Forecasting/) : SVM + wavelet FX (local only)
-- [ML-Pairs-PCA-Selection](ML-Pairs-PCA-Selection/) : PCA pair selection (research only)
+- ~~ML-Pairs-PCA-Selection~~ → archivé 2026-05-29 (pas de main.py, concept couvert par [PCA-StatArbitrage](PCA-StatArbitrage/) ; docs/archive/qc-strategies-status.md)
 - [Clustering-Fundamentals-ML](Clustering-Fundamentals-ML/) : PCA + GBR fundamental ranking. Runtime Error.
 - [Stoploss-Volatility-ML](Stoploss-Volatility-ML/) : Lasso stop-loss optimization. BROKEN (CBOE data unavailable).
 - [TradingCosts-Optimization](TradingCosts-Optimization/) : DecisionTree crypto cost optimization. Quasi flat.
@@ -164,6 +164,37 @@ Références avancées clonées depuis la QC Cloud Library (avril 2026). Métriq
 ## Research (hors backtest)
 
 - **HMM-KMeans-Voting** : K-Means clustering custom (numpy pur) + HMM voting ensemble pour regime detection. Implémentation pédagogique sans sklearn. Research notebook uniquement.
+
+## Catalogue complémentaire (audit #17526, 2026-09-24)
+
+Projets présents sur le disque sans entrée dans les sections thématiques ci-dessus. Descriptions et statuts repris de l'inventaire best-guess [docs/qc/qc-strategies-status.md](../../../../docs/qc/qc-strategies-status.md) ; les fiches squelettes (README titre seul, pas de docstring) sont marquées telles quelles.
+
+- [CSharp-BTC-MACD-ADX](CSharp-BTC-MACD-ADX/) : BTC MACD + ADX adaptatif (C#, ID 30751067) — MaxDD catastrophique 72.7 %
+- [Cloud-MeanReversion-Sectors](Cloud-MeanReversion-Sectors/) : mean reversion secteurs — Needs-improvement / near-cash
+- [Cloud-RiskParity-Composite](Cloud-RiskParity-Composite/) : risk-parity inverse-vol multi-actifs (voisin de RiskParity) — Needs-improvement
+- [Cloud-SectorRotation-Momentum](Cloud-SectorRotation-Momentum/) : rotation sectorielle — BROKEN
+- [Cloud-VolTargeting](Cloud-VolTargeting/) : vol targeting — Needs-improvement / near-cash
+- [Congress-Trades-Copy](Congress-Trades-Copy/) : copie des transactions du Congrès US (fiche squelette)
+- [Corrective-AI](Corrective-AI/) : Corrective AI / meta-labeling (Ch08-02) — stub planifié, pas de main.py
+- [Ensemble-DLinear-TFT](Ensemble-DLinear-TFT/) : recherche DL ensemble DLinear + TFT — pas de main.py (research)
+- [Filing-Language-Stability](Filing-Language-Stability/) : recherche NLP stabilité du langage des filings (qc-research #20966)
+- [GlobalMacro-Regime](GlobalMacro-Regime/) : rotation macro par régime — PSR 16.7 % (plus haute de la cohorte, sous le seuil)
+- [GraphSAGE-MultiAsset-Ranking](GraphSAGE-MultiAsset-Ranking/) : recherche GNN ranking multi-actifs — pas de main.py (research)
+- [HAR-RV-J-Kelly](HAR-RV-J-Kelly/) : volatilité HAR-RV + Kelly (variante J) — Needs-improvement (Sharpe 0.531 aligné)
+- [HAR-RV-Kelly](HAR-RV-Kelly/) : volatilité HAR-RV + Kelly — Needs-improvement (Sharpe 0.146)
+- [LowBeta-Industries-QC](LowBeta-Industries-QC/) : vérification de l'article AFP « Low Beta Portfolios Across Industries » (qc-research #18469) — 3 bras QC Cloud 2010-2026, même harnais : bras article Sharpe 0.623 vs SPY 0.615, alpha CAPM 0.042 %/mois (t = 0.27) → **NO BEATS** (See #17500, projet livré par #17509)
+- [Mamba-Crypto-Ranking](Mamba-Crypto-Ranking/) : recherche DL Mamba ranking crypto — pas de main.py (research)
+- [MomentumRegime-AdaptiveWeights](MomentumRegime-AdaptiveWeights/) : momentum à poids adaptatifs par régime — Needs-improvement / near-cash
+- [OpeningRangeBreakout](OpeningRangeBreakout/) : opening range breakout « stocks in play » (fiche squelette)
+- [Portfolio-IBKR-Coinbase-Hybrid](Portfolio-IBKR-Coinbase-Hybrid/) : portefeuille hybride IBKR 50 % + Coinbase 50 % — Vivant
+- [RL-Options-Hedging](RL-Options-Hedging/) : RL couverture d'options (Ch07-01) — vérifié tranche 12 (backtests QC Cloud MCP)
+- [Research-Executor](Research-Executor/) : harness d'exécution de recherche (main.py + runner.ipynb + MockQB) — pas une stratégie
+- [Sparse-Index-Tracking-QC](Sparse-Index-Tracking-QC/) : réplication creuse d'indice (fiche squelette)
+- [TFT-Crypto-Ranking](TFT-Crypto-Ranking/) : recherche DL TFT ranking crypto — pas de main.py (research)
+- [Vol-Ensemble-Conservative](Vol-Ensemble-Conservative/) : ensemble volatilité conservateur — Needs-improvement (Sharpe 0.265)
+- [Vol-GARCH-Target](Vol-GARCH-Target/) : vol targeting GARCH — Needs-improvement (Sharpe 0.325)
+- [VolTarget-Momentum](VolTarget-Momentum/) : vol-target momentum — Needs-improvement (Sharpe 0.500)
+- [composite-c1-multiasset](composite-c1-multiasset/) : composite multi-actifs (jumeau de composite-c2-equityfactor) — Needs-improvement / near-cash
 
 ---
 
