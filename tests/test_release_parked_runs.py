@@ -49,7 +49,11 @@ def _load(monkeypatch, rows_by_probe, approve_ok=None):
             return types.SimpleNamespace(returncode=0 if ok else 1, stdout="{}", stderr="")
         raise AssertionError(f"commande inattendue : {cmd}")
 
-    rpr.subprocess.run = fake_run
+    # stubs injectes sur l'instance du module UNIQUEMENT : `rpr.subprocess` et
+    # `rpr.time` sont les singletons globaux -- les muter directement pollue
+    # tout le processus pytest (84 tests voisins touches au 1er passage, les
+    # fakes interceptant leurs appels git).
+    rpr.subprocess = types.SimpleNamespace(run=fake_run)
 
     def fake_sleep(seconds):
         # les sleeps de sonde sont >= 1 s, le stagger entre approbations vaut
@@ -59,7 +63,7 @@ def _load(monkeypatch, rows_by_probe, approve_ok=None):
         else:
             state["stagger_sleeps"] += 1
 
-    rpr.time.sleep = fake_sleep
+    rpr.time = types.SimpleNamespace(sleep=fake_sleep)
 
     monkeypatch.setenv("GITHUB_REPOSITORY", "jsboige/CoursIA")
     monkeypatch.setenv("BRANCH", "chore/test-pending")
