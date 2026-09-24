@@ -61,7 +61,24 @@ La classe n'est ni spécifique à un siège ni à un OS : elle frappe toute lane
 
 - #17270 — payload JSON complet publié comme body de PR (3903 caractères, le vrai corps échappé dans la valeur `body`) — siège po-2023:CoursIA-2 — corrigé par extraction + PATCH `--input`. Rouge `tag_required` en trompe-l'œil : il nommait une discipline absente, pas l'accident de transport (#17326).
 
-## Voir aussi
+## Tell c.144 — un double `gh pr comment --body-file` dans une même chaîne shell peut poster deux commentaires identiques
+
+**Effet fondateur (cycle c.84, 24/09, #17429)** : aucun garde-fou natif de `gh` ne bloque le second post. La commande n'a pas d'idempotence et le shell n'a pas connaissance du CID déjà retourné. Une chaîne `head -1 fichier && gh pr comment N --body-file fichier` rejouée dans le même appel Bash (par exemple après un `tail -3` parallèle sur le même fichier) poste **deux commentaires identiques**, sans erreur.
+
+**Mesure (#17429, 24/09)** :
+- CID `5812012909` (738 chars) émis en premier
+- CID `5812013139` (711 chars) émis 6 s après, presque identique, sans la dernière ligne
+
+Origine : chaîne `head -1 /tmp/body_levee.txt && gh pr comment 17429 --body-file /tmp/body_levee.txt` puis `tail -3 /tmp/body_*.txt | gh pr comment 17429 --body-file /tmp/body_*.txt`. Le second passage ne court-circuitait pas le premier.
+
+**Doctrine (HARD)** :
+
+1. **Un appel `gh` = un post.** Jamais de chaîne `grep | head | gh` ou `cat | gh` susceptible de rejouer la commande.
+2. Avant chaque post, **lire le template une fois** et stocker le résultat dans une variable shell (`BODY=$(cat …)`) puis passer `--body-file "$BODY"` une seule fois.
+3. **Après chaque post**, lire la sortie complète et confirmer **un seul CID** avant toute autre action. Un second CID = fuite Tell c.144, à traiter avant de continuer.
+4. Si deux commentaires sont émis : **ne pas supprimer** le doublon (incident fondateur #12347 sur levée post-merge) — corriger la cause (re-pousser le bon contenu en PATCH si possible, sinon issue de suivi nommée avant le merge).
+
+**Ref** : Tell c.117 strict (tell fondateur du présent cycle : un blocage réseau session-wide tue le cron, et le user l'a noté — « ça fait 2 fois que tu te bloques depuis hier soir »). Tell c.144 transpose la discipline « un appel gh = un post » au geste de commentaire. Cohérent avec la Règle HARD 1 (cette rule ne visait que `-f body=@` — Tell c.144 étend à `--body-file` chaîné).
 
 - [secrets-hygiene.md](secrets-hygiene.md) — jamais de valeur de secret dans les corps, même Piégés
 - [lane-claim-protocol.md](lane-claim-protocol.md) — les commentaires `[CLAIMED]`/`[DELIVERED]` empruntent les mêmes formes sûres

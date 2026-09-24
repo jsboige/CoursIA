@@ -72,6 +72,22 @@ Trois pièges méthodologiques ont produit de faux verdicts pendant la saga :
 - **Angle-mort structure** (G.9). 2 cycles de suite avec verdict antérieur incomplet = discipline forensic à durcir : lister EXPLICITEMENT propriétés vérifiées vs assumées. Un détecteur/outil couvre UNE classe de défaut ; ne pas assumer qu'il couvre TOUTES.
 - **Defense-by-construction > defense-by-revue**. La sortie du whack-a-mole vient de ce que la cure ne PEUT PAS produire les défauts (bornes dans le code), pas de ce qu'une revue les attrape après coup.
 
+## Tell c.140 — pathologie isolée #17609 : désaccentuation **markdown** non vue par le crible Tell c.109
+
+Le 5e point du crible de fond Tell c.109 (`detect_accent_stripping.py` + `tokenize NAME`) couvre **les cellules code** (identifiants, commentaires, docstrings, chaînes). Il ne lit pas la prose markdown — qui est pourtant la surface la plus lisible et la plus visible d'un notebook.
+
+**Mesure fondatrice (#17609, 23/09 23:17Z)** : READY `domain: pass` du titulaire, alors que la prose markdown cumulait **53 hits `[markdown]`** de désaccentuation (`donnée` → `donnee`, `année` → `annee`, `à` → `a`, etc.). Seuil sain < 30 hits. La ré-accentuation couvrait les cellules code via `restore_accents_canonical.py --check` mais pas la prose markdown. Aucun organe ne classait cette pathologie avant Tell c.140.
+
+**PR de réparation** : po-2027 a poussé `restore_accents_canonical.py` couvrant **markdown + code** (commit `4b7701d09c5e`, +45/−45). Dossier `[ADJOINT PREFLIGHT]` READY émis après vérif first-hand.
+
+**Doctrine (HARD)** :
+
+1. **Avant `domain: pass` sur PR d'accents**, mesurer le compte markdown via `python scripts/notebook_tools/detect_accent_stripping.py <base>..<head> --markdown` (étendre le filtre s'il n'accepte pas `--markdown`).
+2. **Seuil sain < 30 hits `[markdown]`**. Au-dessus : **bloquer le READY** + DM nominatif au porteur.
+3. **La levée exige une ré-exécution couvrant markdown + code**, pas un seul des deux. Une ré-accentuation qui ne couvre que les cellules code **laisse passer 100 % de la pathologie visible**.
+
+**Ref** : Tell c.109 (crible de fond, 5 points) — Tell c.140 ajoute que **le 5e point `tokenize NAME` est nécessaire mais insuffisant** : la prose markdown est la surface la plus visible et la moins protégée. Tell c.140 fondateur sur #17609 ; à reporter comme nouvelle entrée Tell c.140 dans la skill `adjoint-secretary`.
+
 ## Voir aussi
 
 - [scripts-reference.md](scripts-reference.md) — catalogue des scripts `scripts/notebook_tools/` (dont les outils ci-dessus)
