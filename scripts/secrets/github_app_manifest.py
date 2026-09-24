@@ -40,7 +40,7 @@ from pathlib import Path
 from typing import Callable
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SECRETS_DIR = REPO_ROOT / ".secrets" / "github-apps"
+KEY_DIR = REPO_ROOT / ".secrets" / "github-apps"
 REPO = "jsboige/CoursIA"
 REPO_URL = f"https://github.com/{REPO}"
 # Identifiants publics, lus par `gh api repos/jsboige/CoursIA` le 2026-09-22 ;
@@ -107,9 +107,9 @@ def install_url(slug: str) -> str:
     return f"https://github.com/apps/{slug}/installations/new/permissions?{query}"
 
 
-def lane_status(secrets_dir: Path = SECRETS_DIR) -> dict[str, bool]:
+def lane_status(key_dir: Path = KEY_DIR) -> dict[str, bool]:
     """Lane -> True si sa cle est deja deposee (App creee et convertie)."""
-    return {lane: (secrets_dir / f"{app_name(lane)}.pem").exists() for lane in LANES}
+    return {lane: (key_dir / f"{app_name(lane)}.pem").exists() for lane in LANES}
 
 
 def permission_mismatches(granted: dict) -> list[str]:
@@ -135,12 +135,12 @@ def is_git_ignored(path: Path) -> bool:
     return proc.returncode == 0
 
 
-def store(app: dict, secrets_dir: Path = SECRETS_DIR,
+def store(app: dict, key_dir: Path = KEY_DIR,
           ignored: Callable[[Path], bool] = is_git_ignored) -> Path:
     """Ecrit la cle privee et une fiche sans secret. Refuse d'ecraser, refuse hors gitignore."""
     slug = app["slug"]
-    secrets_dir.mkdir(parents=True, exist_ok=True)
-    pem_path = secrets_dir / f"{slug}.pem"
+    key_dir.mkdir(parents=True, exist_ok=True)
+    pem_path = key_dir / f"{slug}.pem"
     if not ignored(pem_path):
         raise RuntimeError(f"{pem_path} n'est pas ignore par git : cle non ecrite")
     fd = os.open(pem_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
@@ -156,7 +156,7 @@ def store(app: dict, secrets_dir: Path = SECRETS_DIR,
         "events": meta.get("events"),
         "created_at": meta.get("created_at"),
     }
-    (secrets_dir / f"{slug}.json").write_text(
+    (key_dir / f"{slug}.json").write_text(
         json.dumps(fiche, indent=2) + "\n", encoding="utf-8")
     return pem_path
 
@@ -195,10 +195,10 @@ def render_page(status: dict[str, bool], state: str, redirect_url: str) -> str:
             f"<ul>{perms}</ul></body></html>")
 
 
-def make_handler(state: str, redirect_url: str, secrets_dir: Path = SECRETS_DIR,
+def make_handler(state: str, redirect_url: str, key_dir: Path = KEY_DIR,
                  converter: Callable[[str], dict] = convert,
                  storer: Callable[[dict], Path] | None = None):
-    storer = storer or (lambda app: store(app, secrets_dir))
+    storer = storer or (lambda app: store(app, key_dir))
 
     class Handler(BaseHTTPRequestHandler):
         def _send(self, code: int, body: str) -> None:
@@ -215,7 +215,7 @@ def make_handler(state: str, redirect_url: str, secrets_dir: Path = SECRETS_DIR,
         def do_GET(self):
             url = urllib.parse.urlparse(self.path)
             if url.path == "/":
-                return self._send(200, render_page(lane_status(secrets_dir), state, redirect_url))
+                return self._send(200, render_page(lane_status(key_dir), state, redirect_url))
             if url.path != "/callback":
                 return self._send(404, "introuvable")
             query = urllib.parse.parse_qs(url.query)
@@ -249,25 +249,25 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--serve", action="store_true", help="page locale + callback de conversion")
     p.add_argument("--port", type=int, default=8765)
     p.add_argument("--no-browser", action="store_true")
-    p.add_argument("--secrets-dir", type=Path, default=SECRETS_DIR,
+    p.add_argument("--secrets-dir", dest="key_dir", type=Path, default=KEY_DIR,
                    help="depot des cles (defaut : .secrets/github-apps du clone)")
     args = p.parse_args(argv)
-    secrets_dir = args.secrets_dir.resolve()
+    key_dir = args.key_dir.resolve()
 
     redirect_url = f"http://localhost:{args.port}/callback"
     if args.print_manifest:
         print(json.dumps(build_manifest(args.print_manifest, redirect_url), indent=2))
         return 0
-    status = lane_status(secrets_dir)
+    status = lane_status(key_dir)
     for lane, done in status.items():
         print(f"{app_name(lane):24} {'cle deposee' if done else 'a creer'}")
     if not args.serve:
         return 0
-    if not is_git_ignored(secrets_dir / "probe.pem"):
-        print(f"REFUS : {secrets_dir} n'est pas ignore par git", file=sys.stderr)
+    if not is_git_ignored(key_dir / "probe.pem"):
+        print(f"REFUS : {key_dir} n'est pas ignore par git", file=sys.stderr)
         return 1
     state = secrets.token_urlsafe(32)
-    server = HTTPServer(("127.0.0.1", args.port), make_handler(state, redirect_url, secrets_dir))
+    server = HTTPServer(("127.0.0.1", args.port), make_handler(state, redirect_url, key_dir))
     print(f"Page : http://localhost:{args.port}/  (Ctrl+C pour arreter)")
     if not args.no_browser:
         webbrowser.open(f"http://localhost:{args.port}/")
