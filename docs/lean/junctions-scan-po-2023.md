@@ -130,6 +130,38 @@ Suite à la review structurelle NanoClaw du 2026-09-21 sur PR #17178 (CONCERNS s
 1. **Compte groupes isolés** : 4 → **5**. La verbatim du Scan rend bien 5 en-têtes `[isole]` (v4.25.0, v4.31.0-rc2, et **trois** v4.32.1 distincts : discrepancy_lean, mimo_lean, social_choice_lean_peters). Total 27 = 13 + 9 + **5** ✓.
 2. **L898 datée** : la mesure « 2 PRs MERGED, aucune OUVERTE » était exacte au 2026-09-07 — ajoutée la date dans le libellé pour qu'un lecteur ultérieur ne la lise pas comme l'état courant du dépôt.
 
-Réserve NanoClaw #2 (taxonomie des 3 v4.32.1 isolés qui partagent toolchain+mathlib avec le cluster mutualisable) **non corrigée dans ce doc** : la sortie verbatim du script `setup_shared_mathlib.ps1 -Mode Scan` ne porte **pas** le discriminant qui justifie le bucketing séparé. Les hypothèses sont (a) manifest pin différent dans `lake-manifest.json`, (b) résolution transitive via une dépendance tierce qui change la rev effective, (c) portée worktree bornée par #15577. Le script Scan ne lève pas cette information — elle vit dans `lake-manifest.json` de chaque projet, qui n'a pas été inspecté (hors scope d'un Scan). L'EPIC #4362 phase « regroupements » (#4365) **consomme** cette taxonomie pour prioriser Apply : si discrimination (a)-(c) confirme le bucketing, Apply peut procéder sur le cluster 13+3=16 sans risque ; sinon, les 3 rejoignent le cluster mutualisable et l'économie grimpe à 1,28-0,64 = 0,64 GB (les 3 sont « pas de checkout local », pas d'impact direct). Le suivi reste à coordonner avec le porteur de l'EPIC.
+Réserve NanoClaw #2 dissipée c.809 (mesure first-hand) : le discriminant manquant est le **`groupKey` complet** (toolchain + tous les packages transitifs triés, `scripts/lean/setup_shared_mathlib.ps1` lignes 152-153), **PAS** seulement toolchain+mathlib. Le script Scan produit donc un bucket `isole` non pas pour les projets « 1 seul membre » mais pour ceux dont **au moins une dep transitive tierce** diffère du bucket dominant.
+
+**Re-mesure first-hand c.809 (2026-09-24, Python sur 29 manifests)** :
+
+| GroupKey | Projets | Mathlib rev | Physiques | GB |
+|----------|---------|-------------|-----------|-----|
+| GK1 | **20** (assignment, minimax, learning_theory, percolation, decision_theory, argumentation, calibration, erc20, formal_groups, galois, grothendieck, hecke, kelly, knot, mathlib_examples, planning, search, sensitivity, serre100, sudoku) | `db584cd6` | 1 (learning_theory_lean) | 0,55 |
+| GK2 | **4** (game_theory, repeated_games, **discrepancy_lean**, conway_lean) | `520045ab` | 2 (game_theory_lean + conway_lean) | 0,73 |
+| GK3 | 1 (conway_cgt_lean) | `acbd8f07` | 0 | 0 |
+| GK4 | 1 (social_choice_lean_peters) | `520045ab` | 0 | 0 |
+| GK5 | 1 (upstream fixture tierce) | `1ccd71f8` | 0 | 0 |
+| GK6 | 1 (**formal_logic_lean**, NOUVEAU) | `0df444a3` | 0 | 0 |
+| GK7 | 1 (**mimo_lean**, mathlib `db584cd6` ≠ `520045ab` !) | `db584cd6` | 0 | 0 |
+
+**Total** : **29 projets** (vs 27 dans le ledger initial — **2 ajouts** : `formal_logic_lean` GK6 + `mimo_lean` mal compté en `v4.32.1` car le ledger n'a pas distingué toolchain= v4.33.0 vs mathlib rev).
+
+**Diagnostic sur les 3 « v4.32.1 isolés » du ledger initial** :
+
+- **`discrepancy_lean`** : EST dans **GK2** (cluster `v4.32.1-520045ab`, 4 membres). Manifest mathlib = `520045ab14e2`. Le bucket `isole` était une **erreur de classification** : discrepancy_lean partage le groupKey avec game_theory_lean, repeated_games_lean, conway_lean.
+- **`mimo_lean`** : toolchain = `leanprover/lean4:v4.33.0`, mathlib rev = `db584cd6`. Le ledger disait `v4.32.1 isole` — **deux erreurs en cascade** (mauvaise toolchain + mauvais bucket). Mimo_lean est en réalité dans GK7 (singleton, mathlib `db584cd6`, mais deps transitives uniques qui le séparent de GK1).
+- **`social_choice_lean_peters`** : GK4 (singleton), mathlib `520045ab` mais deps tierces `SocialChoiceLean` = `94a4c650` unique → pas mutualisable avec GK2.
+
+**Implication pour Apply** :
+
+- **GK2 (v4.32.1, 4 membres)** : 2 physiques (game_theory_lean 0,64 GB + conway_lean 0,09 GB). Économie potentielle = 0,09 GB (jonctionner conway_lean vers game_theory_lean). Le ledger initial disait 0,55 GB d'économie (learning_theory_lean) — **erreur** : learning_theory_lean est dans GK1, pas GK2.
+- **GK1 (v4.33.0, 20 membres)** : 1 physique (learning_theory_lean 0,55 GB). Économie GK1 = 0 (un seul physique, pas de cible de jonction). Le ledger initial rapportait 0 économique pour GK1 — **correct** sur ce point, mais pour la mauvaise raison (il sous-comptait 11 projets).
+- **Singletons (GK3-GK7)** : 0 économie (pas de cible de jonction).
+
+**Économie réelle totale** : **0,09 GB** (vs 0,64 GB annoncé dans le ledger initial — **erreur d'un facteur 7**).
+
+**Cause de la dérive du ledger** : le Scan original a été fait avec un état antérieur du dépôt (avant l'ajout de 11 lacs v4.33.0 et de formal_logic_lean). Le bucket `isole` du script Scan est techniquement correct (groupKey discriminant complet), mais **l'interprétation « 1 seul membre » est fausse** — c'est « groupKey unique ». Le commentaire « pas de mutualisation possible » était donc juste pour le discriminant mais trompeur pour le lecteur.
+
+**Recommandation pour l'EPIC** : la phase « regroupements » (#4365) doit **lire le `groupKey` complet** (pas seulement toolchain+mathlib) et **classifier en singletons/buckets selon groupKey**, pas selon une heuristique « 1 seul membre = isole ». Le script Scan est correct ; sa **lecture** était ambiguë.
 
 — myia-po-2023:CoursIA-2, c.297 phase 2 (post REPAIR P0 #15057) + c.749 REPAIR NanoClaw.
