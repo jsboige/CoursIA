@@ -215,9 +215,10 @@ jobs:
     #     the coursia pool -- the sweep starves on the SAME saturated parc it
     #     is meant to unblock, dying silently (no rollup ever goes red for a
     #     cancelled cron). The organ must survive what it watches: its own
-    #     health advisory already assumed ubuntu-latest. The container-run
-    #     mandate stays the rule for every OTHER workflow that can afford
-    #     the wait.
+    #     health advisory already assumed ubuntu-latest. No standing
+    #     routing rule follows from either measurement for the OTHER
+    #     workflows: the user's mandate is to balance for maximal
+    #     efficiency (#17397), decided on a fresh measurement each time.
     runs-on: ubuntu-latest
     # 25 min, contre 15 jusqu'ici (#15770, datapoint Hermes 2026-09-21 ;
     # garde au rebasage #17470 : le cout mesure ci-dessous est une propriete
