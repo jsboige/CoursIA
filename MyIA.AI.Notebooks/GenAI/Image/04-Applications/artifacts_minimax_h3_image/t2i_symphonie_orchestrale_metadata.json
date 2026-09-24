@@ -1,0 +1,19 @@
+{
+  "model": "image-01",
+  "intended_model": "MiniMax-H3",
+  "mode": "text_to_image",
+  "resolution": "1280x720",
+  "aspect_ratio": "16:9",
+  "prompt": "An oil painting of a full orchestra mid-performance: the conductor lifts the baton, strings rise, brass swells. Warm stage lighting, rich wood tones, deep shadows. No text, no watermarks. Style: Romantic painting, late 19th century European concert hall.",
+  "api_base_resp": {
+    "status_code": 0,
+    "status_msg": "success"
+  },
+  "image_url_signed": "http://hailuo-image-algeng-data-us.oss-us-east-1.aliyuncs.com/image_inference_output%2Ftalkie%2Fprod%2Fimg%2F2026-09-24%2F63298d82-8ff1-4c7e-adfd-9ade9e9f89dc_aigc.jpeg",
+  "signed_url_expires_hours": 24,
+  "downloaded_bytes": 428091,
+  "is_placeholder": false,
+  "verdict": "SOTA-OK",
+  "source": "API MiniMax cloud (image-01)",
+  "generated_at_utc": "2026-09-24"
+}
