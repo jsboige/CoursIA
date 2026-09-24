@@ -128,7 +128,16 @@ The conclusion: neither particle's response can be a function of the past.
 inductive Experimenter
   | alice
   | bob
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+/-- Manual `Fintype` instance (v4.33 migration, #16341): `deriving Fintype`
+    generates code expecting `List.Nodup` while v4.33 `Finset.mk` requires
+    `Finset.Nodup` (new wrapping type). -/
+instance : Fintype Experimenter where
+  elems := Finset.mk [Experimenter.alice, Experimenter.bob] (by decide)
+  complete := by
+    intro x
+    cases x <;> simp [Finset.mem_mk]
 
 /-- A two-particle deterministic model assigns a definite {0,1} outcome
     to each experimenter, hidden state, and measurement direction.
