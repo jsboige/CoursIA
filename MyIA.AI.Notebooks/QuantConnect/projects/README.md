@@ -1,6 +1,6 @@
 # QuantConnect Algorithmic Trading Projects
 
-**Catalogue de projets** de trading algorithmique sur QuantConnect Cloud. Chaque stratégie illustre un concept pédagogique ; les performances varient volontairement pour montrer ce qui survive au backtest réaliste. Le compte exact et le statut de chaque dossier sont portés par le catalogue régénéré (`CATALOG-STATUS`) et par `STRATEGIES_DETAIL.md` (113 fiches individuelles).
+**Catalogue de projets** de trading algorithmique sur QuantConnect Cloud. Chaque stratégie illustre un concept pédagogique ; les performances varient volontairement pour montrer ce qui survive au backtest réaliste. Le compte exact et le statut de chaque dossier sont portés par le catalogue régénéré (`CATALOG-STATUS`) et par `STRATEGIES_DETAIL.md`.
 
 > **Visiteur ?** Lire le [Quick Tour](../QUICK_TOUR.md) (2 min) pour comprendre l'ensemble.
 
