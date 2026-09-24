@@ -595,7 +595,7 @@ lemma sameClass_mergePair_iff {P : List (List Nat)} {x y u v : Nat} :
     rw [List.mem_append] at hD
     rcases hD with hkeep | hF
     · obtain ⟨hDP, hcond⟩ := List.mem_filter.mp hkeep
-      exact Or.inl ⟨D, hDP, hu, hv, hcond⟩
+      exact Or.inl ⟨D, hDP, hu, hv, by simpa using hcond⟩
     · have hDeq : D = (P.filter (fun C => C.contains x || C.contains y)).flatten.eraseDups :=
         List.mem_singleton.mp hF
       subst hDeq
@@ -618,7 +618,7 @@ lemma touches_mergePair_iff {P : List (List Nat)} {a b c d z : Nat} :
     rw [mergePair_eq, List.mem_append] at hE
     rcases hE with hkeep | hF
     · obtain ⟨hEP, hcond⟩ := List.mem_filter.mp hkeep
-      exact Or.inl ⟨E, hEP, hz, hcond, hcd⟩
+      exact Or.inl ⟨E, hEP, hz, by simpa using hcond, hcd⟩
     · have hEeq : E = (P.filter (fun C => C.contains a || C.contains b)).flatten.eraseDups :=
         List.mem_singleton.mp hF
       subst hEeq
@@ -701,7 +701,7 @@ lemma sameClass_two_merges_iff {P : List (List Nat)} {a b c d x y : Nat} :
     · rcases hinner with hGL | ⟨htabx, htaby⟩ | ⟨htcdx, htcdy⟩
       · have mk : ∀ z : Nat, (Touches P a b z ∨ Touches P c d z) →
             Touches (mergePair P a b) c d z := by
-          intro z (htab | ⟨C, hC, hzc, hcdz⟩)
+          rintro z (htab | ⟨C, hC, hzc, hcdz⟩)
           · exact touches_mergePair_iff.mpr (Or.inr ⟨htab, groupsLinked_iff.mp hGL⟩)
           · by_cases habC : (C.contains a || C.contains b) = true
             · exact touches_mergePair_iff.mpr (Or.inr ⟨⟨C, hC, hzc, habC⟩,
