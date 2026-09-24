@@ -52,10 +52,31 @@ la regle. La difference des en-tetes vides vient de la campagne #17021
 passait sous l'organe consecutive d'origine -- le veto user dit pourtant la
 meme regle.
 
-Codes de retour : 0 = aucun finding ; 1 = cible introuvable ou fichier designe
-illisible ; 2 = findings (avec --fail-on-findings). En mode dossier, un carnet
-illisible est **rapporte sur stderr et saute** : il n'interrompt pas le
-recensement et ne fait pas rougir le scan (cf #17044).
+Mode CLIQUET (#17044) : ``--base-ref <ref> [--head HEAD]`` compare chaque carnet
+modifie entre la base et la tete et rend le verdict du cliquet -- rouge
+seulement si la PR **augmente** ce que l'organe voit sur un carnet qu'elle
+touche :
+
+  - ``regressed`` = au moins une lecture AJOUTEE (mode diff, position-aware) OU
+    ``len(detect(head)) > len(detect(base))`` (le compte des paires consecutive).
+    Les findings deja sur ``main`` sont donc *grandfathered* : c'est un cliquet,
+    pas un plancher absolu.
+  - les renames sont resolus via ``--name-status -M`` (un carnet renomme est lu
+    a son ANCIEN chemin dans la base -- sans quoi le renommage passerait pour un
+    ajout et tous ses findings pour des augmentations) ;
+  - une base irresoluble est une ERREUR (rc=1), jamais un cliquet vide : lire un
+    carnet absent de la base comme « ajoute » ferait rougir la PR entiere sur un
+    probleme de fetch.
+
+``--self-test`` joue cinq controles, hors git et hors reseau : deux positifs
+(lecture empilee nommee ; lecture ajoutee SANS en-tete, invisible au detecteur
+consecutive) et trois negatifs (deux lectures fusionnees en une ; modification de
+code sans lecture ajoutee ; encart sans code execute au-dessus).
+
+Codes de retour : 0 = aucun finding ; 1 = cible introuvable, fichier designe
+illisible, ou base irresoluble ; 2 = findings (avec --fail-on-findings). En mode
+dossier, un carnet illisible est **rapporte sur stderr et saute** : il
+n'interrompt pas le recensement et ne fait pas rougir le scan (cf #17044).
 """
 
 from __future__ import annotations
@@ -63,6 +84,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
 import sys
 import unicodedata
 from collections import Counter
@@ -371,6 +393,16 @@ def detect_added_readings(head_nb: dict, base_nb: dict | None) -> list[dict]:
     base_counter: Counter[str] = Counter(base_srcs)
     head_counter: Counter[str] = Counter(head_srcs)
 
+    # #17044 -- les IDs de la base, consommes un a un. Le discriminant
+    # d'origine exigeait la MEME position pour reconnaitre une rewrite par son
+    # id ; une fusion (ou toute insertion/suppression au-dessus) decale les
+    # index, et la cellule reecrite repartait alors comme un AJOUT. Mesure sur
+    # 11 PR notebook mergees : 3 rouges, dont 2 PR de FUSION -- le remede
+    # prescrit par le mandat user -- toutes deux expliquees par ce decalage.
+    base_id_pool: Counter[str] = Counter(
+        c.get("id") for c in base_cells if c.get("id")
+    )
+
     findings: list[dict] = []
     for idx, src in enumerate(head_srcs):
         if head_counter[src] <= base_counter[src]:
@@ -383,27 +415,45 @@ def detect_added_readings(head_nb: dict, base_nb: dict | None) -> list[dict]:
 
         # Discriminant 0 : REWRITE (pas d'insertion). On considere qu'une
         # cellule est une REWRITE -- et NON un ajout -- quand au moins
-        # l'UN des deux signaux tient :
+        # l'UN des trois signaux tient :
         #   (a) meme position index-for-index ET meme source (meme
-        #       contenu exact) ;
-        #   (b) meme position index-for-index ET meme id de cellule
-        #       (attribue par Jupyter dans les exports -- les rewriting
-        #       preservent l'id, les insertions en ont un neuf ou
-        #       doublonne). Le ticket #17464 note que la campagne a
-        #       produit des cellules sans id ET des ids dupliques -- donc
-        #       l'id seul ne suffit pas, mais combine a la position il
-        #       tranche la majorite des cas de rewriting legitimes.
+        #       contenu exact -- ne mord que sur un doublon de source, une
+        #       revision par definition ne repasse pas ici) ;
+        #   (b) l'id de la cellule existe encore en base -- MEME a un autre
+        #       index (#17044). Une fusion retire ou insere des cellules
+        #       au-dessus, donc l'index se decale : exiger la meme position
+        #       faisait passer la rewrite pour un ajout. Le ticket #17464 note
+        #       que la campagne a produit des cellules sans id ET des ids
+        #       dupliques -- l'id est donc consomme une fois, ce qui borne les
+        #       doublons sans reouvrir la porte ;
+        #   (c) meme position ET les deux cellules sont des lectures : la tete
+        #       a revise celle qui occupait ce slot (#17044). Signal
+        #       topologique, indispensable sur les carnets SANS id (le corpus
+        #       en contient -- cf. les deux carnets du controle positif).
         # La regle user dit « fusionner / reecrire, pas empiler » : la
         # reecriture EST l'action prescrite. Ne pas la signaler.
         is_rewrite = False
-        if idx < len(base_cells) and base_cells[idx].get("cell_type") == "markdown":
-            if cell_source(base_cells[idx]) == src:
-                is_rewrite = True
-            else:
-                base_id = base_cells[idx].get("id")
-                head_id = cell.get("id")
-                if base_id and head_id and base_id == head_id:
-                    is_rewrite = True
+        head_id = cell.get("id")
+        if head_id and base_id_pool.get(head_id, 0) > 0:
+            base_id_pool[head_id] -= 1
+            is_rewrite = True
+        if (not is_rewrite and idx < len(base_cells)
+                and base_cells[idx].get("cell_type") == "markdown"
+                and cell_source(base_cells[idx]) == src):
+            is_rewrite = True
+        #   (c) meme position ET les DEUX cellules sont des lectures : la tete
+        #       a REVISE celle qui occupait ce slot (#17044). Le mandat prescrit
+        #       cette revision ; sans ce signal elle n'etait reconnue que sur
+        #       les carnets porteurs d'ids, donc le remede etait puni des que
+        #       les cellules n'en avaient pas (le corpus en contient : les deux
+        #       carnets du controle positif #17028 sont dans ce cas). Un
+        #       EMPILEMENT reel a cote n'est pas vu ici : la lecture empilee
+        #       arrive a un index ou la base porte autre chose (ou rien), et
+        #       le compte de paires, lui, monte.
+        if (not is_rewrite and idx < len(base_cells)
+                and is_reading_cell(base_cells[idx])
+                and is_reading_cell(cell)):
+            is_rewrite = True
         if is_rewrite:
             base_counter[src] += 1
             continue
@@ -432,6 +482,17 @@ def detect_added_readings(head_nb: dict, base_nb: dict | None) -> list[dict]:
                 if not already_had_md_after:
                     # premiere lecture legitime pour ce code -> ne pas signaler
                     bucket = None
+        # #17044 -- SECOND_READING apres une MARKDOWN : le bucket ne regardait
+        # que la topologie (md, md) et signalait donc tout encart insere entre
+        # deux cellules de prose (mesure : un bandeau « statut epistemique » en
+        # tete de notebook, #17484 -- aucun code au-dessus). La definition de
+        # l'issue est « deux cellules de lecture pour une MEME cellule de
+        # code » : sans code a sortie au-dessus, il n'y a rien a lire, donc pas
+        # de seconde lecture. Le cas fondateur reste capte -- ses paragraphes
+        # sans en-tete sont tous poses sous un code a sortie (mesure : 7/7).
+        if (bucket == "SECOND_READING" and prev_role == "md"
+                and not _reads_code_above(head_cells, idx)):
+            bucket = None
         # Filtre final : EXERCISE_READING_CANDIDATE -> EXERCISE_READING si
         # la cellule ressemble a une lecture (titre d'interpretation OU
         # prose > 80 chars apres la premiere ligne). On REJETTE les
@@ -457,6 +518,24 @@ def detect_added_readings(head_nb: dict, base_nb: dict | None) -> list[dict]:
         })
         base_counter[src] += 1
     return findings
+
+
+def _reads_code_above(cells: list[dict], idx: int) -> bool:
+    """Vrai si la cellule ``idx`` commente la sortie d'un code situe au-dessus.
+
+    Motif vise par l'issue #17044 : « deux cellules de lecture pour une MEME
+    cellule de code ». Une prose ajoutee dans une zone qui ne suit AUCUN code a
+    sortie (preamble d'un notebook, bandeau de statut, en-tete de section) n'est
+    pas une seconde lecture -- il n'y a rien a lire au-dessus.
+    """
+    for j in range(idx - 1, -1, -1):
+        c = cells[j]
+        if c.get("cell_type") != "code":
+            continue
+        if is_exercise_cell(c):
+            return False
+        return bool(c.get("execution_count") is not None or (c.get("outputs") or []))
+    return False
 
 
 def _bucket_for(prev_role: str, next_role: str) -> str | None:
@@ -494,6 +573,210 @@ def _read_nb(path: Path) -> dict:
     """Lecture tolerante : un carnet corrompu leve JSONDecodeError, handled
     par l'appelant (cf #17044)."""
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+# --- #17044 : mode CLIQUET -- delta base vs PR -------------------------------
+
+SKIP_PARTS = {".lake", "_output", ".ipynb_checkpoints", "node_modules", "_peters"}
+
+
+def _git(args: list[str], cwd: str | Path | None = None) -> str | None:
+    """Sortie stdout d'une commande git, ou None si elle echoue."""
+    try:
+        out = subprocess.run(
+            ["git", *args], cwd=cwd, capture_output=True,
+            encoding="utf-8", errors="replace", check=False,
+        )
+    except OSError:
+        return None
+    return out.stdout if out.returncode == 0 else None
+
+
+def resolve_base(base: str, head: str = "HEAD",
+                 cwd: str | Path | None = None) -> str | None:
+    """merge-base(base, head), ou None si la base est irresoluble.
+
+    Le point de comparaison est ``head``, pas le HEAD du depot : la lane passe
+    toujours ``HEAD``, mais rejouer une PR non encore mergee (controle
+    positif) exige de comparer a SA tete, pas a la branche courante.
+    """
+    out = _git(["merge-base", base, head], cwd=cwd)
+    if out and out.strip():
+        return out.strip()
+    # merge-base echoue aussi quand l'historique est superficiel ; on accepte
+    # alors la ref elle-meme, mais seulement si elle existe vraiment.
+    verify = _git(["rev-parse", "--verify", f"{base}^{{commit}}"], cwd=cwd)
+    return verify.strip() if verify and verify.strip() else None
+
+
+def changed_notebook_pairs(base: str, head: str = "HEAD",
+                           cwd: str | Path | None = None) -> list[tuple[str | None, str]]:
+    """(chemin en base, chemin en tete) pour chaque carnet touche.
+
+    ``--name-status -M`` : un rename sort en ``R<score>  ancien  nouveau``, et
+    c'est l'ANCIEN chemin qui porte le contenu de base. Le lire au nouveau
+    chemin rendrait ``None``, et le carnet renomme serait vu comme ajoute --
+    tous ses findings deviendraient des augmentations (#17044).
+    """
+    out = _git(["diff", "--name-status", "-M", base, head, "--", "*.ipynb"], cwd=cwd)
+    if out is None:
+        return []
+    pairs: list[tuple[str | None, str]] = []
+    for line in out.splitlines():
+        parts = line.split("\t")
+        if len(parts) < 2:
+            continue
+        status = parts[0].strip()
+        if status.startswith("D"):
+            continue  # carnet supprime : rien a comparer
+        if status.startswith("R") or status.startswith("C"):
+            if len(parts) < 3:
+                continue
+            base_path, head_path = parts[1], parts[2]
+        else:
+            base_path, head_path = parts[1], parts[1]
+        head_posix = head_path.strip().replace("\\", "/")
+        base_posix = base_path.strip().replace("\\", "/")
+        if SKIP_PARTS & set(Path(head_posix).parts):
+            continue
+        pairs.append((base_posix, head_posix))
+    return sorted(pairs, key=lambda p: p[1])
+
+
+def read_notebook_at(ref: str, path: str,
+                     cwd: str | Path | None = None) -> dict | None:
+    """Carnet JSON a une ref git (None = absent ou illisible)."""
+    raw = _git(["show", f"{ref}:{path}"], cwd=cwd)
+    if raw is None:
+        return None
+    try:
+        return json.loads(raw)
+    except ValueError:
+        return None
+
+
+def ratchet_rows(base_ref: str, head: str = "HEAD",
+                 cwd: str | Path | None = None) -> list[dict] | None:
+    """Lignes du cliquet : une par carnet touche. None = base irresoluble."""
+    base = resolve_base(base_ref, head, cwd=cwd)
+    if base is None:
+        return None
+    rows: list[dict] = []
+    for base_path, head_path in changed_notebook_pairs(base, head, cwd=cwd):
+        head_nb = read_notebook_at(head, head_path, cwd=cwd)
+        if head_nb is None:
+            continue  # illisible en tete : le recensement ne peut rien dire
+        base_nb = read_notebook_at(base, base_path, cwd=cwd) if base_path else None
+        base_total = len(detect(base_nb)) if base_nb is not None else 0
+        head_total = len(detect(head_nb))
+        added = detect_added_readings(head_nb, base_nb)
+        rows.append({
+            "notebook": head_path,
+            "base_total": base_total,
+            "head_total": head_total,
+            "delta": head_total - base_total,
+            "added": added,
+            "regressed": bool(added) or head_total > base_total,
+        })
+    return rows
+
+
+def _nb(cells: list[tuple[str, str, str | None]]) -> dict:
+    """Carnet minimal pour les controles : (cell_type, source, id).
+
+    Les cellules de code portent une sortie et un execution_count : c'est la
+    condition d'une lecture (« rien a lire » sinon, cf ``_reads_code_above``),
+    donc l'omettre rendrait les controles positifs vacues.
+    """
+    out = []
+    for t, s, i in cells:
+        c: dict = {"cell_type": t, "source": s}
+        if i:
+            c["id"] = i
+        if t == "code":
+            c["execution_count"] = 1
+            c["outputs"] = [{"output_type": "stream", "text": "1\n"}]
+        out.append(c)
+    return {"cells": out}
+
+
+def self_test() -> int:
+    """Controles positifs et negatifs du cliquet, sans git ni reseau."""
+    code = ("code", "print(1)", "c0")
+    lecture = ("markdown", "### Lecture\nLe total vaut 1.", "m1")
+    lecture_chiffree = ("markdown", "### Lecture chiffree\nLe total vaut 1, mesure.", "m2")
+    base = _nb([code, lecture])
+
+    checks: list[tuple[str, bool, str]] = []
+
+    # Positif 1 -- une lecture NOMMEE empilee derriere une lecture existante.
+    head = _nb([code, lecture, lecture_chiffree])
+    added = detect_added_readings(head, base)
+    checks.append((
+        "positif 1 lecture nommee empilee",
+        any(f["type"] == "SECOND_READING" for f in added)
+        and len(detect(head)) > len(detect(base)),
+        f"added={[f['type'] for f in added]} "
+        f"compte {len(detect(base))} -> {len(detect(head))}",
+    ))
+
+    # Positif 2 -- lecture ajoutee SANS en-tete apres un code qui en portait
+    # deja une : le compte consecutive ne bouge pas, le mode diff mord.
+    base2 = _nb([code, lecture])
+    head2 = _nb([
+        code,
+        lecture,
+        ("markdown", "Le total vaut 1, et c'est bien le total attendu ici.", "m3"),
+    ])
+    added2 = detect_added_readings(head2, base2)
+    checks.append((
+        "positif 2 lecture sans en-tete (invisible au consecutive)",
+        bool(added2) and len(detect(head2)) == len(detect(base2)),
+        f"added={[f['type'] for f in added2]} "
+        f"compte {len(detect(base2))} -> {len(detect(head2))}",
+    ))
+
+    # Negatif 1 -- deux lectures FUSIONNEES en une (le remede prescrit).
+    merged = ("markdown", "### Lecture\nLe total vaut 1, mesure et verifie.", "m1")
+    head3 = _nb([code, merged])
+    base3 = _nb([code, lecture, lecture_chiffree])
+    added3 = detect_added_readings(head3, base3)
+    checks.append((
+        "negatif 1 lectures fusionnees",
+        not added3 and len(detect(head3)) <= len(detect(base3)),
+        f"added={[f['type'] for f in added3]} "
+        f"compte {len(detect(base3))} -> {len(detect(head3))}",
+    ))
+
+    # Negatif 2 -- modification de code, aucune lecture ajoutee.
+    head4 = _nb([("code", "print(2)", "c0"), lecture])
+    added4 = detect_added_readings(head4, base)
+    checks.append((
+        "negatif 2 code modifie sans lecture ajoutee",
+        not added4 and len(detect(head4)) == len(detect(base)),
+        f"added={[f['type'] for f in added4]} "
+        f"compte {len(detect(base))} -> {len(detect(head4))}",
+    ))
+
+    # Negatif 3 -- encart de prose sans code a sortie au-dessus (preamble,
+    # bandeau de statut) : il n'y a rien a lire, ce n'est pas une seconde
+    # lecture (mesure : #17484, bandeau « statut epistemique »).
+    titre = ("markdown", "# Titre du carnet\n\nPublic : Decouverte.", "m0")
+    head5 = _nb([titre, ("markdown", "> **Statut epistemique** -- sans verdict a ce jour.", "m1")])
+    added5 = detect_added_readings(head5, _nb([titre]))
+    checks.append((
+        "negatif 3 encart sans code au-dessus",
+        not added5,
+        f"added={[f['type'] for f in added5]}",
+    ))
+
+    ok = True
+    for label, passed, detail in checks:
+        print(f"  {'PASS' if passed else 'ECHEC'}  {label} -- {detail}")
+        ok = ok and passed
+    print(f"self-test cliquet : {'PASS' if ok else 'ECHEC'} "
+          f"({sum(1 for _, p, _ in checks if p)}/{len(checks)})")
+    return 0 if ok else 1
 
 
 def scan_root(root: Path, as_json: bool, fail_on_findings: bool = False,
@@ -598,7 +881,59 @@ def main(argv: list[str] | None = None) -> int:
             "consecutive d'en-tetes)."
         ),
     )
+    ap.add_argument(
+        "--base-ref",
+        default=None,
+        help=(
+            "Ref git de BASE pour le mode CLIQUET (#17044) : l'organe resout "
+            "le merge-base, lit chaque carnet modifie a sa version de base, et "
+            "rougit seulement si la tete AUGMENTE ce qu'il voit (lecture "
+            "ajoutee, ou compte de paires superieur). Les findings deja sur la "
+            "base sont grandfathered."
+        ),
+    )
+    ap.add_argument("--head", default="HEAD",
+                    help="Ref git examinee en mode cliquet (defaut: HEAD)")
+    ap.add_argument(
+        "--self-test",
+        action="store_true",
+        help="Controles positif et negatif du cliquet, sans git ni reseau",
+    )
     args = ap.parse_args(argv)
+
+    if args.self_test:
+        return self_test()
+
+    if args.base_ref:
+        rows = ratchet_rows(args.base_ref, args.head)
+        if rows is None:
+            print(f"base irresoluble : {args.base_ref}", file=sys.stderr)
+            return 1
+        bad = [r for r in rows if r["regressed"]]
+        if args.as_json:
+            print(json.dumps({
+                "base_ref": args.base_ref, "head": args.head,
+                "changed": len(rows), "regressed": len(bad), "rows": rows,
+            }, ensure_ascii=False, indent=1))
+        else:
+            print(f"base {args.base_ref} | {len(rows)} carnet(s) modifie(s) | "
+                  f"{len(bad)} en regression")
+            for r in rows:
+                tag = "REGRESSED" if r["regressed"] else "OK"
+                delta = f"+{r['delta']}" if r["delta"] >= 0 else str(r["delta"])
+                print(f"  {tag:9s} {r['notebook']}  "
+                      f"paires {r['base_total']} -> {r['head_total']} ({delta})")
+                for f in r["added"]:
+                    print(f"      {f['type']:22s} cellules {f['cells']} "
+                          f"src[:120]={f.get('src_first_120', '')[:80]}")
+            if bad:
+                print("\nCliquet : la PR augmente les lectures scindees sur au "
+                      "moins un carnet qu'elle touche. Fusionner la lecture "
+                      "ajoutee dans la lecture existante (le mandat user : "
+                      "« si on rajoute une lecture, on modifie le paragraphe "
+                      "de lecture existant, on n'en rajoute pas un deuxieme »).")
+        return 2 if (args.fail_on_findings and bad) else 0
+
     target = Path(args.path)
     if not target.exists():
         print(f"introuvable : {target}", file=sys.stderr)

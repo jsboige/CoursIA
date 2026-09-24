@@ -32,6 +32,7 @@ import sys
 import time
 import unicodedata
 from collections import Counter
+from functools import lru_cache
 from pathlib import Path
 from urllib.parse import quote
 
@@ -1302,6 +1303,11 @@ def analyze_notebook(nb_path: Path, pedagogical: bool, git_meta: dict | None = N
         "sous_serie": sous_serie,
         "kernel": kernel,
         "status": status,
+        # Jugement editorial curé (registre, #15080 critere 4) : a quoi SERT le
+        # notebook pour un etudiant. Independant de `status` par construction --
+        # un corrige resolu est READY et inutilisable comme sujet ; un enonce
+        # sans support peut etre un vrai sujet ouvert.
+        "pedagogical_role": _load_pedagogical_roles_registry().get(rel_str, ""),
         "maturity": maturity,
         "editorial": editorial,
         "reproducibility": reproducibility,
@@ -1438,6 +1444,84 @@ def _load_scientific_review_registry() -> dict[str, dict]:
         return registry
     except (UnicodeDecodeError, ValueError):
         return {}
+
+
+# --- Registre des roles pedagogiques (#15080, critere 4) ----------------------
+#
+# Aucun champ du catalogue ne dit A QUOI SERT le notebook pour un etudiant.
+# `status: READY` signifie « s'execute proprement » et se lit a tort « pret a
+# etre confie a un etudiant » : un corrige entierement resolu est READY et
+# inutilisable comme sujet. Le role pedagogique est un jugement editorial --
+# pas derivable du fichier -- donc il vit dans un registre whitelist cure,
+# sur le pattern de scientific-review-registry.md (axe 3, c.997).
+PEDAGOGICAL_ROLES_REGISTRY_PATH = (
+    REPO_ROOT / "docs" / "notebook-metadata" / "pedagogical-roles-registry.md"
+)
+
+# Vocabulaire ferme (issue #15080 : « a minima : sujet ouvert / corrige /
+# demonstration de methode »). Valeurs machines anglaises, alignees sur le
+# vocabulaire du reste du catalogue (READY/DEMO/...).
+PEDAGOGICAL_ROLE_VOCAB = frozenset({"open_subject", "worked_solution", "method_demo"})
+
+
+@lru_cache(maxsize=1)
+def _load_pedagogical_roles_registry() -> dict[str, str]:
+    """Load the curated pedagogical-roles registry.
+
+    Returns a dict keyed by notebook path (POSIX, relative to
+    MyIA.AI.Notebooks/) with the role token as value. Fail-OPEN : registre
+    absent ou malforme -> dict vide (le champ vaut alors "" partout, comme
+    ``owner_logique`` sans mapping) ; une valeur hors vocabulaire est ecartee
+    avec un avertissement plutot que d'inventer un role non declare.
+    """
+    if not PEDAGOGICAL_ROLES_REGISTRY_PATH.exists():
+        return {}
+    entries: dict[str, str] = {}
+    try:
+        text = PEDAGOGICAL_ROLES_REGISTRY_PATH.read_text(encoding="utf-8")
+        for block in re.findall(r"```yaml\s*\n(.*?)```", text, re.DOTALL):
+            current: dict[str, str] = {}
+            for line in block.splitlines():
+                s = line.strip()
+                if not s or s.startswith("#"):
+                    continue
+                if s.startswith("- "):
+                    _flush_role_entry(current, entries)
+                    current = {}
+                    s = s[2:]
+                if ":" in s:
+                    key, _, value = s.partition(":")
+                    current[key.strip()] = value.strip().strip('"').strip("'")
+            _flush_role_entry(current, entries)
+        return entries
+    except (UnicodeDecodeError, ValueError) as exc:
+        print(f"Warning: pedagogical-roles registry illisible ({exc!r})", file=sys.stderr)
+        return {}
+
+
+def _flush_role_entry(current: dict[str, str], out: dict[str, str]) -> None:
+    """Valide une entree du registre des roles et l'ajoute si elle est saine.
+
+    Une entree sans ``notebook_path`` ou sans ``role``, ou dont le role sort du
+    vocabulaire ferme, est ecartee (avec avertissement pour le cas hors
+    vocabulaire) -- jamais devinee.
+    """
+    path = (current.get("notebook_path") or "").strip()
+    role = (current.get("role") or "").strip()
+    if not path or not role:
+        return
+    # Gabarit de schema (§2 du registre) : les placeholders <...> ne sont pas
+    # des entrees -- rejet silencieux, pattern de _registry_entry_is_usable.
+    if "<" in path or "<" in role:
+        return
+    if role not in PEDAGOGICAL_ROLE_VOCAB:
+        print(
+            f"Warning: pedagogical role hors vocabulaire ({role!r}) "
+            f"pour {path} -- entree ecartee",
+            file=sys.stderr,
+        )
+        return
+    out[path.replace("\\", "/")] = role
 
 
 # --- Tampon PRODUCTION (#14831, sign-off user 2026-09-21) --------------------

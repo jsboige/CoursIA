@@ -1101,3 +1101,6 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/_sl14_runs/
 # workaround relatif (#r "./_deps/QuikGraph.dll") — ne pas la committer.
 scripts/notebook_tools/probes/*_out.ipynb
 scripts/notebook_tools/probes/_deps/
+
+# Livecoding video pipeline (#15604) : artefacts capture/PoC -- media regenerable, local only
+out/

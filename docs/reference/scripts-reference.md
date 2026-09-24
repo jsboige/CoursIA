@@ -198,6 +198,7 @@ Pipeline d'audit qualité et de **matrice de coût** (EPIC #8056) + audit séman
 | `scripts/mcp-maintenance/` | Maintenance MCP (config, docs, scripts) — cf `README_MCP_MAINTENANCE.md` |
 | `scripts/validation/dispatch.py` + `matrix.yml` | Matrice de validation / dispatch |
 | `scripts/genai-stack/genai.py` | GenAI Docker (ComfyUI + Qwen) + validation — cf [docs/genai/genai-services.md](../genai/genai-services.md) |
+| `scripts/livecoding_video_pipeline.py` | **Pipeline livecoding-video #15604 (étapes 1 + 4)** : composition Strudel par template (`compose_strudel`, visuals `.scope()`/`.pianoroll()` opt-in) et capture navigateur `--capture` — pattern injecté par hash d'URL (`build_repl_url`, encodage `encodeURIComponent(base64)` observé sur le bouton share), clic play trusted (headed requis : clic JS ≠ user gesture, AudioContext live suspendu), gate checksum canvas avant enregistrement, `canvas.captureStream` + MediaRecorder (webm), **Export to WAV natif du REPL** (rendu offline du moteur strudel — aucun routage audio système VB-Cable), mux ffmpeg H.264/AAC. Tests : `scripts/tests/test_livecoding_video_pipeline.py`. Étapes 2/3/5/6 deferred avec claim par phase |
 | `scripts/repair_genai_notebooks.py`, `scripts/audit_genai_corruption.py` | Réparation / audit corruption GenAI |
 | `scripts/fix_robust_dotenv.py` | Robustesse chargement `.env` |
 | `scripts/scan_student_forks.py` | Scan des forks étudiants |

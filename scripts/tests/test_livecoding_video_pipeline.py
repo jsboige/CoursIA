@@ -1,16 +1,21 @@
-"""Tests du pipeline livecoding-video V0 narrow (#15604).
+"""Tests du pipeline livecoding-video (#15604).
 
-Ces tests verifient UNIQUEMENT l'etape 1 livree (composition Strudel)
-et l'orchestrateur scaffold (qui marque les autres etapes comme
-``deferred``). Verifier un verdict fake sur les etapes 2-6 = violer
-Tell c.1102 anti-stonewall : le test qui pretend qu'une capture
-navigateur a eu lieu quand elle n'a pas eu lieu est un test menteur.
+Etapes couvertes par ces tests : 1 (composition Strudel, heritage V0)
+et 4 (capture navigateur : logique PURE — encodage URL, calcul de
+cycles, commande ffmpeg, visuals, deferral). La capture REELLE
+(navigateur + reseau + ffmpeg) est provee par l'execution documentee
+dans le body de la PR, pas par un test qui simulerait le navigateur :
+verifier un verdict fake sur une capture qui n'a pas eu lieu = test
+menteur (Tell c.1102).
 """
 
 from __future__ import annotations
 
+import base64
 import subprocess
 import sys
+import urllib.parse
+from pathlib import Path
 
 import pytest
 
@@ -25,8 +30,12 @@ _FORBIDDEN_VOICE_TOKEN = _FORBIDDEN_PERSONAL + "_voice"
 from scripts.livecoding_video_pipeline import (
     STYLES,
     StrudelStyle,
+    build_repl_url,
     compose_strudel,
+    cycles_for_duration,
+    mux_ffmpeg,
     run_pipeline,
+    style_cps,
 )
 
 
@@ -105,9 +114,91 @@ class TestComposeStrudel:
             )
 
 
+class TestComposeStrudelVisuals:
+    """Etape 4 : les visuals REPL sont la condition de la capture video
+    (canvas noir sans eux, mesure c.580)."""
+
+    def test_sans_visuals_inchange(self):
+        script = compose_strudel(style_name="ambient", duration_seconds=60)
+        assert ".scope()" not in script and ".pianoroll()" not in script
+
+    def test_avec_visuals_cible_les_bonnes_voix(self):
+        script = compose_strudel(style_name="ambient", duration_seconds=60, visuals=True)
+        lines = [l for l in script.split("\n") if l.startswith("$:")]
+        # voix 1 (bass) porte .scope(), voix 2 (lead) porte .pianoroll()
+        assert lines[1].endswith(".scope()")
+        assert lines[2].endswith(".pianoroll()")
+        # les autres voix restent nues
+        assert ".scope()" not in lines[0] and ".pianoroll()" not in lines[0]
+        assert ".scope()" not in lines[3] and ".pianoroll()" not in lines[3]
+
+
+class TestBuildReplUrl:
+    """Encodage observe firsthand sur le bouton share du REPL (c.580) :
+    ``#`` + ``encodeURIComponent(base64(code))``. L'URI-encoding est
+    OBLIGATOIRE — un base64 brut avec ``+``/``=`` n'est pas charge."""
+
+    def test_roundtrip(self):
+        pattern = '$: s("bd*4")\n$: note("c2 e3").pianoroll()'
+        url = build_repl_url(pattern)
+        assert url.startswith("https://strudel.cc/#")
+        fragment = url.split("#", 1)[1]
+        assert "+" not in fragment and "=" not in fragment
+        decoded = base64.b64decode(urllib.parse.unquote(fragment)).decode("utf-8")
+        assert decoded == pattern
+
+    def test_encode_les_caracteres_reserves(self):
+        pattern = "a"  # base64 = 'YQ==' (padding '=')
+        url = build_repl_url(pattern)
+        fragment = url.split("#", 1)[1]
+        assert urllib.parse.unquote(fragment) == base64.b64encode(pattern.encode()).decode()
+
+
+class TestCyclesForDuration:
+    def test_ambient_30s(self):
+        # ambient : bpm 72 -> cps 0.6 ; 30 s -> 18 cycles exacts
+        assert cycles_for_duration(0.6, 30) == 18
+
+    def test_plafonne(self):
+        # 30.5 s a 0.6 cps = 18.3 -> 19 (ceil)
+        assert cycles_for_duration(0.6, 30.5) == 19
+
+    def test_rejette_invalide(self):
+        for cps, dur in [(0, 30), (-1, 30), (0.6, 0), (0.6, -5)]:
+            with pytest.raises(ValueError):
+                cycles_for_duration(cps, dur)
+
+
+class TestStyleCps:
+    def test_ambient(self):
+        assert abs(style_cps("ambient") - 0.6) < 1e-9
+
+    def test_rejette_style_inconnu(self):
+        with pytest.raises(ValueError):
+            style_cps("dubstep")
+
+
+class TestMuxFfmpeg:
+    def test_commande_canonique(self, tmp_path):
+        cmd = mux_ffmpeg(tmp_path / "v.webm", tmp_path / "a.wav", tmp_path / "out.mp4")
+        assert cmd[0] == "ffmpeg"
+        assert "-y" in cmd
+        assert cmd.count("-i") == 2
+        assert "-shortest" in cmd
+        # codecs explicites : video h264 yuv420p (compat lecteurs), audio aac
+        i_v = cmd.index("-c:v")
+        assert cmd[i_v + 1] == "libx264" and cmd[i_v + 2] == "-crf"
+        i_a = cmd.index("-c:a")
+        assert cmd[i_a + 1] == "aac"
+        assert cmd[-1].endswith("out.mp4")
+
+
 class TestRunPipeline:
     """L'orchestrateur marque les etapes non livrees comme ``deferred``
-    plutot que de pretendre les avoir executees (Tell c.1102)."""
+    plutot que de pretendre les avoir executees (Tell c.1102). Depuis
+    l'etape 4 (c.580), browser_capture/final_mix ne sont deferred QUE
+    sans ``capture=True`` — les tests ci-dessous couvrent le cas sans
+    capture ; la capture reelle est provee dans le body de la PR."""
 
     def test_step1_strudel_returned(self):
         result = run_pipeline(
@@ -120,8 +211,8 @@ class TestRunPipeline:
         assert "BPM=140" in result["strudel_script"]
 
     def test_steps_2_to_6_marked_deferred(self):
-        """Les etapes 2-6 sont deferred et la valeur exacte doit l'ecrire
-        HONNETEMENT (pas un faux succes)."""
+        """Les etapes non livrees sont deferred et la valeur exacte doit
+        l'ecrire HONNETEMENT (pas un faux succes)."""
         result = run_pipeline(
             style_name="ambient",
             duration_seconds=240,
@@ -132,14 +223,16 @@ class TestRunPipeline:
         assert result["browser_capture"].startswith("deferred")
         assert result["visualizer"].startswith("deferred")
         assert result["final_mix"].startswith("deferred")
-        assert "V0 narrow" in result["verdict"]
-        assert "c.574+" in result["verdict"]
+        # Le verdict reste explicite sur ce qui est livre vs deferred
+        # (adaptation c.580 : etape 4 livree, formulation V0 narrow
+        # remplacee par l'enumeration des etapes livrees/deferees).
+        assert "etape 4" in result["verdict"].lower()
+        assert "deferred" in result["verdict"].lower()
 
     def test_output_path_is_documented_not_created(self):
-        """V0 narrow ne cree PAS le fichier .mp4 final ; le path est
-        documente dans le verdict sans execution. Un test qui verifie
-        que le fichier existe apres run viole Tell c.1102 (pretendre
-        une sortie qu'on n'a pas produite)."""
+        """Sans capture, le pipeline ne cree PAS le fichier .mp4 final ;
+        le path est documente dans le verdict sans execution. Un test
+        qui verifie que le fichier existe apres run viole Tell c.1102."""
         result = run_pipeline(
             style_name="techno",
             duration_seconds=120,
@@ -150,9 +243,20 @@ class TestRunPipeline:
         # MAIS : pas d'effet de bord fichier (verrou c.1102).
         import os
         assert not os.path.exists("out/must_not_exist.mp4"), (
-            "V0 narrow ne doit PAS creer le fichier : c'est la V1+ qui "
-            "integre ffmpeg. Existence du fichier = usurpation c.1102."
+            "Sans --capture le pipeline ne doit PAS creer le fichier. "
+            "Existence du fichier = usurpation c.1102."
         )
+
+    def test_sans_capture_compose_sans_visuals(self):
+        """Hors capture, les visuals sont inutiles (canvas noir si non
+        observe) : le script reste le meme qu'en V0."""
+        result = run_pipeline(
+            style_name="ambient",
+            duration_seconds=60,
+            output_path="out/test.mp4",
+        )
+        assert ".pianoroll()" not in result["strudel_script"]
+        assert ".scope()" not in result["strudel_script"]
 
     def test_no_voice_cloning_legal_proof(self):
         """Aucune voix clonee de tiers (regle 02-2-XTTS-Voice-Cloning.ipynb
@@ -232,3 +336,14 @@ class TestCLIInvocation:
         assert "BPM=80" in result.stdout
         assert "strudel_script" not in result.stdout  # dans stdout c'est l'output reel
         assert "deferred" in result.stdout
+
+    def test_cli_help_documente_la_capture(self):
+        """L'option --capture (etape 4) doit etre documentee dans l'aide."""
+        result = subprocess.run(
+            [sys.executable, "scripts/livecoding_video_pipeline.py", "--help"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+        )
+        assert "--capture" in result.stdout
+        assert "--capture-seconds" in result.stdout
