@@ -84,6 +84,47 @@ attributions:
     correction: "Référence GNN+combinatorial: placeholder 'Graph Neural Networks for combinatorial optimization' (arxiv:2012.01806, lien mort) -> Cappart et al. 2021 (Combinatorial Optimization and Reasoning with Graph Neural Networks, arXiv:2102.09544, référence canonique)"
     date: "2026-08-24"
 
+  # ===== Passe 6 — rescan du 2026-09-24 (PR #17622) =====
+  - arxiv_id: "1706.00883"
+    notebook: "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-37-FLens-BeliefState.ipynb"
+    cell_index: 7
+    expected_citation: "### RRXOR (Riechers & Crutchfield 2017, arXiv:1706.00883)"
+    source_pr: "#17622"
+    correction: "Riechers-Crutchiefield annee: 2018 -> 2017 (v1 2017/06, aucune ref journal sur le record arXiv)"
+    date: "2026-09-24"
+
+  - arxiv_id: "1706.00883"
+    notebook: "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-37-FLens-BeliefState.ipynb"
+    cell_index: 17
+    expected_citation: "- **Riechers & Crutchfield 2017** — *Spectral Simplicity of Apparent Complexity, Part II*"
+    source_pr: "#17622"
+    correction: "Riechers-Crutchiefield annee: 2018 -> 2017 (cellule References, meme motif que cell 7)"
+    date: "2026-09-24"
+
+  - arxiv_id: "2406.11717"
+    notebook: "MyIA.AI.Notebooks/GenAI/PostTraining/PT_15_controle_interpretabilite.ipynb"
+    cell_index: 20
+    expected_citation: "- Arditi, A. et al. (2024). *Refusal in Language Models Is Mediated by a Single Direction.* arXiv:2406.11717."
+    source_pr: "#17622"
+    correction: "Arditi titre abrege 'Refusal in LLMs...' -> titre exact 'Refusal in Language Models Is Mediated by a Single Direction'"
+    date: "2026-09-24"
+
+  - arxiv_id: "2402.08787"
+    notebook: "MyIA.AI.Notebooks/GenAI/PostTraining/PT_15_controle_interpretabilite.ipynb"
+    cell_index: 20
+    expected_citation: "- Liu, S. et al. (2024). *Rethinking Machine Unlearning for Large Language Models.* arXiv:2402.08787."
+    source_pr: "#17622"
+    correction: "Initiale 1er auteur: Liu, J. -> Liu, S. (Liu, Sijia, mesure sur page abs)"
+    date: "2026-09-24"
+
+  - arxiv_id: "2509.22908"
+    notebook: "MyIA.AI.Notebooks/GenAI/PostTraining/PT_16_vericoding_formal_verification.ipynb"
+    cell_index: 24
+    expected_citation: "**Références** — Bursuc, S., Ehrenborg, T., Lin, S., et al. (13 auteurs, incl. M. Tegmark), *A Benchmark for Vericoding: Formally Verified Program Synthesis* (arXiv:2509.22908, 2025)"
+    source_pr: "#17622"
+    correction: "Titre et co-auteurs de prose inexistants ('Vericoding: LLMs for Formally Verified Code Generation' par Trimponas/Sato/Nikolic — aucun papier mesurable) -> vrai papier 'A Benchmark for Vericoding: Formally Verified Program Synthesis', Bursuc + 12 co-auteurs. Bursuc reste 1er auteur (garde anti-erreur-miroir #11163)"
+    date: "2026-09-24"
+
   # ===== Passe 5 — rescan du 2026-09-21 (PR #17296) =====
   - arxiv_id: "2301.05217"
     notebook: "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.9d-Features-Circulaires-Helice-Nombres.ipynb"
