@@ -63,7 +63,9 @@ lean_lib «GradientFlow» where
 théorie effective de la représentation (Tegmark & co) — R02 parallélogrammes
 du grokking + identités de conservation (App. F), R06 clustering par classe
 (décodeur injectif) + quantité conservée hyperbolique `dC/dt = 0` + contenu
-informationnel `b = log₂(n!/|Aut G|)`, R10 cercle des jours =
+informationnel `b = log₂(n!/|Aut G|)` sur groupes ET graphes (Section III :
+orbit-stabilizer + `descLength`, Eq. 16 : autonomie de la séparation, migrés
+du module dissous `GenEFT.lean` #17480), R10 cercle des jours =
 représentation irréductible 2D de `C₇`. Frère de `Perceptron`, `PacLearning`
 et `GradientFlow`. -/
 @[default_target]

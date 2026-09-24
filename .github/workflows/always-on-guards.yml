@@ -89,7 +89,7 @@ concurrency:
 
 jobs:
   always-on-guards:
-    name: "Always-on guards -- 15 organes, 1 checkout"
+    name: "Always-on guards -- 16 organes, 1 checkout"
     # Routage #14283 : premier consommateur GitHub-hosted du depot une fois
     # secret-scan bascule -- 2650 runs same-repo en 5 jours (2026-08-28 ->
     # 2026-09-02), timeout 25 min, aucun filtre `paths:`. Le pool Linux
@@ -208,7 +208,18 @@ jobs:
         run: |
           LIVE=""
           if [ -n "${PR_NUMBER:-}" ]; then
-            LIVE=$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER" --jq '.body // empty' 2>/dev/null || true)
+            # Le CODE DE SORTIE distingue panne et corps vide (#17197) --
+            # PAS la vacuite de la sortie. `gh api` ecrit le DOCUMENT
+            # D'ERREUR sur stdout en rc=1 (mesure 2026-09-21) :
+            #   {"message":"API rate limit exceeded for installation.","status":"403"}
+            # et `--jq` n'y est PAS applique. Tester `-n "$LIVE"` prenait
+            # donc ce document pour le corps de la PR : le repli ci-dessous
+            # ne se declenchait JAMAIS sur panne d'API -- exactement le cas
+            # pour lequel il est ecrit -- et les organes bloquants en
+            # tiraient un verdict de contenu (« Grain tag absent »,
+            # « perimeter assertion contradictoire ») sur un simple quota
+            # epuise. Quatre PRs bloquees ainsi le 2026-09-21.
+            LIVE=$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER" --jq '.body // empty' 2>/dev/null) || LIVE=""
           fi
           if [ -n "$LIVE" ]; then
             echo "[body-live] corps courant lu via API : ${#LIVE} chars (#15697)"
@@ -385,7 +396,7 @@ jobs:
 
           gh label create variation-light-cap-reached \
             --description "Lane ayant deja merge une LIGHT aujourd'hui (cap G-VAR-2 atteint)" \
-            --color B60205 --force 2>/dev/null || true
+            --color B60205 --force || true
 
           if [ "$CAP" = "True" ]; then
             gh pr edit "$PR_NUMBER" --add-label variation-light-cap-reached 2>/dev/null || true
@@ -542,7 +553,7 @@ jobs:
             else
               SIGVAL="${!SIGVAR:-False}"
             fi
-            gh label create "$LABEL" --description "$DESC" --color "$COLOR" --force 2>/dev/null || true
+            gh label create "$LABEL" --description "$DESC" --color "$COLOR" --force || true
             # #10341 : les signaux agreges ne labelisent pas une candidate
             # innocente ; la branche else retire aussi un label pose avant
             # que la lane ne croise le cap (idempotence symetrique).
@@ -583,18 +594,34 @@ jobs:
           La lane \\\`${LANE}\\\` voit ces signaux actifs sur les mergees du jour (UTC ${TODAY}) :${ACTIVE_LINES}
 
           G-VAR-2 plafonne a **max(1, grains_mergees_du_jour // 3) LIGHT par lane et par jour, toutes categories LIGHT confondues** -- un RATIO, pas un plafond plat ; le cap calcule du jour est dans le tally ci-dessus. G-VAR-3 interdit deux genres LIGHT consecutifs. Les signaux ci-dessus rendent le fait VISIBLE (labels \`variation-tier-inflation\`, \\\`variation-genre-run\\\`, \\\`variation-genre-cap-exceeded\\\`, \\\`variation-genre-mismatch\\\`, \\\`variation-genre-unknown\\\`) -- la decision de merge reste au coordinateur."
-            EXISTING_ID=$(gh pr view "$PR_NUMBER" --json comments --jq '.comments[] | select(.body | startswith("'"$MARK"'")) | .id' 2>/dev/null | head -1 || echo "")
+            # #17265 -- le rc de `gh` decide, jamais la vacuite de sa sortie :
+            # sous panne de quota `gh` ecrit son document d'erreur sur STDOUT en
+            # rc=1, et un repli DANS la substitution (`|| echo ""`) ne peut pas
+            # effacer un stdout deja ecrit -- EXISTING_ID valait le document, la
+            # branche PATCH etait prise, l'appel echouait, `|| true` l'avalait,
+            # et le commentaire n'etait jamais poste pendant que le ::notice:
+            # affirmait le contraire (les deux bras sont mesures sur la PR).
+            EXISTING_ID=$(gh pr view "$PR_NUMBER" --json comments --jq '.comments[] | select(.body | startswith("'"$MARK"'")) | .id' 2>/dev/null) || EXISTING_ID=""
+            EXISTING_ID=$(printf '%s\n' "$EXISTING_ID" | head -1)
+            POSTED=1
             if [ -n "$EXISTING_ID" ]; then
               gh api -X PATCH "repos/${GH_REPO}/issues/comments/${EXISTING_ID}" \
-                -f body="$BODY" 2>/dev/null || true
+                -f body="$BODY" 2>/dev/null || POSTED=0
             else
-              gh pr comment "$PR_NUMBER" --body "$BODY" 2>/dev/null || true
+              gh pr comment "$PR_NUMBER" --body "$BODY" 2>/dev/null || POSTED=0
             fi
-            echo "::notice::G-VAR-2/3-by-GENRE signale sur ${LANE} (tally ${TALLY})."
+            if [ "$POSTED" = "1" ]; then
+              echo "::notice::G-VAR-2/3-by-GENRE signale sur ${LANE} (tally ${TALLY})."
+            else
+              echo "::warning::G-VAR-2/3-by-GENRE NON signale sur ${LANE} (echec gh -- quota/API ?) : aucun commentaire n'a ete pose."
+            fi
           else
-            EXISTING_ID=$(gh pr view "$PR_NUMBER" --json comments --jq '.comments[] | select(.body | startswith("'"$MARK"'")) | .id' 2>/dev/null | head -1 || echo "")
+            # #17265 -- meme correctif : le rc de `gh` decide, pas la vacuite.
+            EXISTING_ID=$(gh pr view "$PR_NUMBER" --json comments --jq '.comments[] | select(.body | startswith("'"$MARK"'")) | .id' 2>/dev/null) || EXISTING_ID=""
+            EXISTING_ID=$(printf '%s\n' "$EXISTING_ID" | head -1)
             if [ -n "$EXISTING_ID" ]; then
-              gh api -X DELETE "repos/${GH_REPO}/issues/comments/${EXISTING_ID}" 2>/dev/null || true
+              gh api -X DELETE "repos/${GH_REPO}/issues/comments/${EXISTING_ID}" 2>/dev/null \
+                || echo "::warning::marqueur perime NON retire sur ${LANE} (echec gh -- quota/API ?) : il sera repris au prochain run."
             fi
             echo "Aucun signal actif pour ${LANE} aujourd'hui (tally ${TALLY})."
           fi
@@ -647,7 +674,7 @@ jobs:
           # en silence (check=False historique) -- longueur epinglee en dur ici.
           gh label create trivial-diff-advisory \
             --description "Diff trivial : grain META mecanique sans fournee ni exception ecrite (#15740)" \
-            --color C2A76D --force 2>/dev/null || true
+            --color C2A76D --force || true
           gh pr edit "$PR_NUMBER" --add-label trivial-diff-advisory 2>/dev/null || true
 
           MARK="<!-- trivial-diff-15740 -->"
@@ -704,7 +731,7 @@ jobs:
           fi
 
           mk_label() {
-            gh label create "$1" --description "$2" --color "$3" --force 2>/dev/null || true
+            gh label create "$1" --description "$2" --color "$3" --force || true
           }
           mk_label "lane-claim-absent" "Closing issue carries no claim at all (#10223)" "fbca04"
 
@@ -1029,8 +1056,8 @@ jobs:
 
           # Label advisory pour l'adjacence DEEP/MED (jugement coord).
           gh label create variation-adjacency-deep-med \
-            --description "Adjacence de genre DEEP/MED (hors liste LIGHT) : §2 l'autorise si substance distincte -- jugement au coordinateur" \
-            --color FEF2C0 --force 2>/dev/null || true
+            --description "Adjacence DEEP/MED hors LIGHT : §2 l'autorise si substance distincte (coordinateur)" \
+            --color FEF2C0 --force || true
           if [ "$ADJACENT" = "True" ]; then
             gh pr edit "$PR_NUMBER" --add-label variation-adjacency-deep-med 2>/dev/null || true
           else
@@ -1169,10 +1196,32 @@ jobs:
         continue-on-error: true
         run: |
           PR="${{ github.event.pull_request.number }}"
-          python scripts/check_pr_perimeter.py "$PR" --scan-thread || {
+          # Meme correctif que perimeter-review-guard.yml (#17273) : le script
+          # a TROIS issues, et `||` les ecrasait toutes dans le message de
+          # contradiction. Un `exit 2` (« je n'ai pas pu mesurer ») etait donc
+          # rendu comme un verdict de contenu -- quatre runs, quatre tetes,
+          # tous refuses par `API rate limit exceeded`, le 2026-09-21. Une
+          # lecture refusee est une NON-MESURE (#14292), pas une contradiction.
+          #
+          #   0 -> mesure faite (ou PERIMETRE NON MESURABLE nomme)
+          #   1 -> contradiction reelle : message et rouge inchanges
+          #   2 -> mesure impossible (echec non reconnu) : fail-closed conserve,
+          #        mais on dit ce qui s'est passe. Une signature transitoire
+          #        RECONNUE sort en 0 depuis l'organe et n'arrive pas ici.
+          #
+          # `continue-on-error: true` absorbe le code, PAS l'annotation : le
+          # message reste ce que lisent le picker et les humains.
+          if python scripts/check_pr_perimeter.py "$PR" --scan-thread; then
+            exit 0
+          else
+            rc=$?
+          fi
+          if [ "$rc" -eq 1 ]; then
             echo "::error::A perimeter assertion on this PR (body or review) contradicts the effective file list, or an exclusivity claim does not name a touched .github/workflows/** file. Truth source: gh pr view $PR --json files (#11268). Fix the assertion to enumerate the real files."
             exit 1
-          }
+          fi
+          echo "::error::le garde n'a PAS pu mesurer le perimetre de la PR $PR (rc=$rc) -- verdict UNKNOWN, ce n'est PAS une contradiction de perimetre. Aucune assertion n'a ete confrontee. Relancer ce job ; si l'echec se repete, la cause est amont (quota d'API partage par compte, cf #17229)."
+          exit 1
 
       # Porte de fast-lane-shadow.yml :: fast-lane. Le moteur emet un
       # check-run nomme par garde absorbe (API Checks) : la granularite
@@ -1319,6 +1368,23 @@ jobs:
 
           exit 1
 
+      # Couverture des chemins sensibles par une regle VERSIONNEE (#17441).
+      # Organe purement local (aucun appel gh, aucun jeton, aucune lecture de
+      # diff) : il interroge `git check-ignore -v` et regarde QUI gagne. Le
+      # defaut vise est muet -- un `.git/info/exclude` local masque un secret
+      # sur la machine qui l'a ecrit, et `git status` y reste propre ; sur tout
+      # autre clone la regle n'existe pas et le secret est propose au commit.
+      # Les deux situations sont indiscernables a l'oeil, d'ou l'organe.
+      #
+      # Mesure fondatrice : `.secrets/master.env` (les cles API de la flotte)
+      # puis, un mois plus tard au MEME endroit, les cles privees d'App GitHub
+      # sous `.secrets/github-apps/` -- une lecon sans detecteur n'a pas tenu.
+      - name: "Chemins sensibles ignores par une regle versionnee (#17441)"
+        id: secret_paths_ignored
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        run: python scripts/ci/check_secret_paths_ignored.py --repo .
+
       # -----------------------------------------------------------------
       # AGREGAT : la couleur du job. Un organe bloquant echoue -> rouge.
       # Les organes advisory ne figurent pas ici (ils sortent toujours 0 ;
@@ -1349,6 +1415,7 @@ jobs:
           check hot_subset   "${{ steps.hot_subset.outcome }}"
           check results_weight "${{ steps.results_weight.outcome }}"
           check grothendieck_umbrella "${{ steps.grothendieck_umbrella.outcome }}"
+          check secret_paths_ignored "${{ steps.secret_paths_ignored.outcome }}"
           if [ -n "$FAILED" ]; then
             echo "::error::Organes bloquants en echec :$FAILED (le detail est dans les steps correspondants ci-dessus)."
             exit 1
