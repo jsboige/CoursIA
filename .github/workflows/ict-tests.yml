@@ -340,7 +340,41 @@ jobs:
           # exact ; decomposition additive verifiee : 936 (main pur
           # @21dd39bec) + 11 humor_pairs (main) + 13 factor_geometry
           # (cette PR) = 960.
-          - suite-name: "ict/tests/ (59 package)"
+          #
+          # Floor 936 -> 972 (arbre EMPILE de #17164, case 17 STV #8182) :
+          # +15 items de ict/tests/test_stv_valence_symmetry.py (collecte
+          # isolee du fichier : 15 -- aucun parametrage, donc independant de
+          # l'interpreteur) sur la base **CI-mesuree 957** de l'arbre de
+          # #17159 (main + case 16), log run 35570193154 :
+          #   "Collected: 957 tests (floor: 936) for ict/tests/ (57 package)"
+          # Les 957 incluent deja les 10 items de case 16
+          # (test_tonic_alertness_gain.py) ET le drift ascendant silencieux
+          # accumule sur main ; 957 + 15 = 972 ferme l'arithmetique. Ce bump
+          # couvre donc les DEUX apports non rattrapes : si #17159 merge sans
+          # son propre relevement (sa PR n'en porte pas), la base #17164
+          # portera le floor correct sur l'arbre final.
+          # Label "(57 package)" -> "(60 package)" : 57 modules sur main au
+          # moment du bump, +1 drift main (58, compte Hermes deux voies API
+          # contents/git trees), +1 case 16 (sur main depuis le squash de
+          # #17159, 2026-09-22) et +1 case 17 (cette PR) = 60 fichiers
+          # test_*.py sur l'arbre final. Le libelle est cosmetique (le guard
+          # ne lit que le floor) et n'est reference nulle part -- "PR gate" est
+          # le seul contexte requis de la protection de main, verifie 2026-09-21.
+          #
+          # RE-MESURE au 3e absorb (2026-09-24, conflit de floor #16291) :
+          # main a encore avance sous le floor declare -- 63 fichiers
+          # test_*.py sur origin/main (arrivees post-972, dont
+          # test_humor_typology.py, sans relevement du floor main -- le guard
+          # n'y emet qu'un ::warning). L'arbre MERGE porte 64 fichiers
+          # (63 main + 1 factor_geometry de cette PR, diff verifie par
+          # comm des ls-tree) et collecte 1039 items : pytest --collect-only
+          # -q sur l'arbre merge exact, env CI (conda ict-py39, py3.9,
+          # pip install -e . du ICT-Series, 0 erreur de collection).
+          # Decomposition : 972 (floor main declare, base CI-mesuree) +
+          # 13 factor_geometry (cette PR, mesure isolee re-verifiee : 13) +
+          # drift ascendant main post-972 (humor_typology et suivants,
+          # non decompose -- la mesure fait foi) = 1039.
+          - suite-name: "ict/tests/ (64 package)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests
             test-args: .
             test-parallel: ""
@@ -359,7 +393,12 @@ jobs:
             # --collect-only sur l'arbre merge exact (re-mesure 2026-09-21 ;
             # humor_pairs ne porte qu'un skipif d'execution, la collecte
             # est independante de l'env).
-            test-floor: 960
+            # Floor 960 -> 972 (main, #17164 case 17 STV) puis 972 -> 1039
+            # (ce 3e absorb, 2026-09-24) : drift ascendant main post-972
+            # (dont test_humor_typology.py) + 13 factor_geometry -- la
+            # decomposition complete vit dans le bloc de commentaires
+            # ci-dessus, la mesure merge exacte fait foi.
+            test-floor: 1039
 
     steps:
       - uses: actions/checkout@v4

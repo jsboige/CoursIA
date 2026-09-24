@@ -64,6 +64,25 @@ def test_empty_body():
     assert not mod.classify_body(None)
 
 
+# --- non-cp1252 bodies: the organ must not crash on French punctuation (#17032) ---
+def test_classify_handles_non_cp1252_body():
+    """Regression #17032: the organ previously crashed on Windows cp1252 with
+    UnicodeDecodeError before even reaching classify_body. The defense is on
+    the subprocess side (encoding="utf-8" + errors="replace"), but classify_body
+    itself must accept any string that the upstream decode hands it, including
+    bodies containing U+2019 (curly apostrophe), U+2014 (em dash), U+00A0
+    (NBSP), U+2260 (not-equal), and accented Latin letters."""
+    body = "C'est l'égalité stricte : x ≠ y — voir aussi « résumé »."
+    # Negative: real prose, not a path-trap.
+    assert not mod.classify_body(body)
+    # A path-like body containing French punctuation, padded to > 100 chars to
+    # bypass the length floor (the trap detector floors at < 100 chars per the
+    # "silent failure" shape -- real file bodies are never that short).
+    long_body = "@" + body + " " + "/".join(f"d{i}" for i in range(20)) + "/body.md"
+    assert len(long_body) >= 100
+    assert not mod.classify_body(long_body)
+
+
 # --- scan wiring ---
 def test_scan_reports_id_user_and_url():
     comments = [

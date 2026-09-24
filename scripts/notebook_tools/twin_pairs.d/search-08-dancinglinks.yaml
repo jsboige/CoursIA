@@ -1,7 +1,7 @@
 - name: "Search-08 DancingLinks"
   family: Search/Part1-Foundations
   python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb
-  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks-Csharp.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks-CSharp.ipynb
   parity_level: semantic
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: |

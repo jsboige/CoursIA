@@ -187,6 +187,12 @@ import subprocess
 import sys
 from typing import Any, Callable
 
+try:
+    import gh_identity
+except ImportError:  # charge via importlib dans les tests (hors scripts/)
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import gh_identity
+
 REPO = "jsboige/CoursIA"
 
 # c.1115 voie 1 (msg-20260912T165428-k6rbfc, ai-01 spec) : klass `delivered`
@@ -2169,6 +2175,41 @@ def _hours_since(iso: str) -> float:
     return (NOW - dt.datetime.fromisoformat(iso.replace("Z", "+00:00"))).total_seconds() / 3600.0
 
 
+# #17474 : le meme raisonnement que POOL_FETCH_LIMIT, applique aux PRs -- et
+# la meme trappe. `gh pr list` rend du plus RECENT au plus ancien (mesure du
+# 2026-09-23 sur ce depot : `first=2026-09-23T13:29:52Z` #17565,
+# `last=2026-09-13T08:33:00Z` #15942), donc un plafond franchi ampute
+# exactement la traine : les PRs bloquees depuis plus de 24 h, que
+# `unattributed_blocked_prs` (file de reparation) et le compte WIP de lane
+# (Q41) existent pour voir. Le plafond est donc HAUT et SURVEILLE -- un
+# plafond atteint se dit au lieu d'inverser l'instrument en silence.
+# Cout : nul sous le plafond. `gh` pagine par 100 et s'arrete a l'epuisement
+# de la population comme au plafond, donc 158 ouvertes = 2 requetes, ici
+# comme avant.
+OPEN_PRS_FETCH_LIMIT = POOL_FETCH_LIMIT
+
+
+def _warn_open_prs_truncated(rendered: int, ceiling: int, remedy: str) -> None:
+    """La troncature se DIT : un plafond atteint ne se devine pas autrement.
+
+    Le listing rend du plus RECENT au plus ancien, et `gh` ne leve rien quand
+    le plafond mord. Sans ce message, la traine -- PRs bloquees de plus de
+    24 h, file de reparation et compte WIP de lane (Q41) -- est absente de la
+    mesure en silence, exactement ce que ces appelants existent pour voir. Le
+    garde reste utilisable (bloquer la lane serait pire) : on dit, on ne
+    bloque pas.
+    """
+    print(
+        f"[PRS TRONQUEES] {rendered} PRs rendues pour un plafond de "
+        f"{ceiling} : l'ouvert est probablement plus grand. "
+        "gh rend les plus RECENTES, donc la traine -- PRs bloquees de "
+        "plus de 24 h, file de reparation et compte WIP de lane -- est "
+        f"absente de cette mesure. {remedy} avant de "
+        "conclure quoi que ce soit de ce resultat.",
+        file=sys.stderr,
+    )
+
+
 def fetch_open_prs() -> list[dict]:
     """Toutes les PRs ouvertes, avec le corps (pour y lire le tag de lane).
 
@@ -2179,11 +2220,16 @@ def fetch_open_prs() -> list[dict]:
     """
     try:
         out = subprocess.run(
-            ["gh", "pr", "list", "--repo", REPO, "--state", "open", "--limit", "300",
+            ["gh", "pr", "list", "--repo", REPO, "--state", "open",
+             "--limit", str(OPEN_PRS_FETCH_LIMIT),
              "--json", "number,title,body,createdAt,isDraft,author,headRefName"],
             capture_output=True, text=True, encoding="utf-8", check=True, timeout=120,
         ).stdout
-        return json.loads(out)
+        prs = json.loads(out)
+        if len(prs) >= OPEN_PRS_FETCH_LIMIT:
+            _warn_open_prs_truncated(len(prs), OPEN_PRS_FETCH_LIMIT,
+                                     "Relever OPEN_PRS_FETCH_LIMIT")
+        return prs
     except Exception:  # noqa: BLE001 - on TENTE l'autre transport
         pass
     raw = [_pr_rest_to_gh_shape(it) for it in _rest_pages(
@@ -2194,6 +2240,13 @@ def fetch_open_prs() -> list[dict]:
         f"quota distinct. {len(raw)} PRs lues.",
         file=sys.stderr,
     )
+    # Le transport REST porte son PROPRE plafond (pages x page) : un plafond
+    # atteint s'y dit comme sur la voie GraphQL, sinon la bascule de #17038
+    # reintroduit la troncature muette par l'autre porte.
+    rest_ceiling = POOL_REST_PAGE * POOL_REST_MAX_PAGES
+    if len(raw) >= rest_ceiling:
+        _warn_open_prs_truncated(len(raw), rest_ceiling,
+                                 "Relever POOL_REST_MAX_PAGES")
     return raw
 
 
@@ -4387,6 +4440,14 @@ def main(argv: list[str] | None = None) -> int:
     for _stream in (sys.stdout, sys.stderr):
         if hasattr(_stream, "reconfigure"):
             _stream.reconfigure(encoding="utf-8", errors="replace")
+    # #17418 Phase A : epingle le jeton machine AVANT tout appel gh — les
+    # enfants (check_lane_claim, nits...) heritent via os.environ propage par
+    # _utf8_child_env(). Warn-fort + poursuite : le FAIL bruyant est porte
+    # par gh_identity --whoami et detect_shared_login.py (transition B/C).
+    try:
+        gh_identity.pin_gh_token()
+    except gh_identity.GhIdentityError as exc:
+        print(f"GH-IDENTITY (WARN, poursuite sous compte actif): {exc}", file=sys.stderr)
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--lane", default=None,

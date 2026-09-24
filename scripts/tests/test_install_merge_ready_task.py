@@ -31,6 +31,17 @@ def test_build_schtasks_toutes_les_20_minutes(tmp_path):
     assert "install_merge_ready_task.py" in tr and "--run" in tr
 
 
+def test_tr_quote_chaque_element_pas_la_ligne_entiere():
+    # Regression mesuree le 2026-09-24 : /TR "python.exe script.py --run ..."
+    # enregistrait la ligne ENTIERE comme nom d'executable ; la tache echouait
+    # a chaque tour avec 0x80070002 sans rien journaliser.
+    cmd = [r"C:\Program Files\Py\python.exe", r"D:\repo\x.py", "--run"]
+    line = imod.build_schtasks_install(cmd, 20)
+    tr = line[line.index("/TR") + 1]
+    assert tr == r'"C:\Program Files\Py\python.exe" D:\repo\x.py --run'
+    assert tr != '"' + " ".join(cmd) + '"'
+
+
 def test_dry_run_imprime_la_commande_sans_l_executer(tmp_path, capsys, monkeypatch):
     def boom(cmd, **kw):
         raise AssertionError(
@@ -86,6 +97,30 @@ def test_sync_repo_refuse_hors_main(tmp_path, monkeypatch):
     ok, msg = imod.sync_repo(tmp_path)
     assert not ok and "pas sur main" in msg
     assert not any("fetch" in c or "merge" in c for c in calls)
+
+
+def test_sync_repo_siege_detache_avance_sur_origin_main(tmp_path, monkeypatch):
+    # Le worktree dedie d'ai-01 ne peut pas porter `main` (tenue par le
+    # checkout principal) : il est detache, et c'est son etat nominal.
+    fake, calls = _scripted([("rev-parse", _Res(out="HEAD"))])
+    monkeypatch.setattr(imod, "_run", fake)
+    ok, _ = imod.sync_repo(tmp_path)
+    assert ok
+    assert any("fetch" in c for c in calls)
+    assert any("--is-ancestor" in c for c in calls)
+    assert any("checkout" in c and "--detach" in c for c in calls)
+    assert not any("--ff-only" in c for c in calls)
+
+
+def test_sync_repo_siege_detache_refuse_commits_locaux(tmp_path, monkeypatch):
+    # HEAD detache hors d'origin/main : des commits locaux seraient abandonnes.
+    fake, calls = _scripted(
+        [("rev-parse", _Res(out="HEAD")), ("--is-ancestor", _Res(rc=1))]
+    )
+    monkeypatch.setattr(imod, "_run", fake)
+    ok, msg = imod.sync_repo(tmp_path)
+    assert not ok and "is-ancestor" in msg
+    assert not any("checkout" in c for c in calls)
 
 
 def test_sync_repo_refuse_depot_modifie(tmp_path, monkeypatch):
