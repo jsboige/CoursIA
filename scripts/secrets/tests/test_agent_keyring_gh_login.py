@@ -233,8 +233,8 @@ def test_backend_en_clair_refuse_l_ecriture(mod, monkeypatch):
 def test_backend_natif_autorise_l_ecriture_et_est_atteste(mod, monkeypatch):
     kr = _backend_nomme("keyring.backends.Windows", "WinVaultKeyring")
     monkeypatch.setattr(mod, "_keyring", lambda: kr)
-    atteste = mod.write_passphrase("une-passphrase")
-    assert "WinVaultKeyring" in atteste
+    assert mod.write_passphrase("une-passphrase") is None
+    assert "WinVaultKeyring" in mod.assert_backend_is_native()
     assert len(kr.ecrit) == 1
 
 

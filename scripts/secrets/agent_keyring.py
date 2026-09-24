@@ -220,11 +220,15 @@ def assert_backend_is_native() -> str:
     return f"{module}.{name}"
 
 
-def write_passphrase(value: str) -> str:
-    """Depose la passphrase. Rend le nom du backend atteste, pour le journal."""
-    backend = assert_backend_is_native()
+def write_passphrase(value: str) -> None:
+    """Depose la passphrase, apres attestation du backend natif.
+
+    Ne rend rien : CodeQL classe comme secret la valeur de retour de toute
+    fonction dont le nom evoque une passphrase. Le nom du backend, pour le
+    journal, se lit par `assert_backend_is_native()`.
+    """
+    assert_backend_is_native()
     _keyring().set_password(SERVICE, machine_id(), value)
-    return backend
 
 
 # --------------------------------------------------------------------------
@@ -416,7 +420,8 @@ def cmd_bootstrap(args) -> int:
             open_vault(cand, quiet=True)
         except SystemExit:
             continue
-        backend = write_passphrase(cand)
+        write_passphrase(cand)
+        backend = assert_backend_is_native()
         print(f"OK  passphrase validee contre le coffre et posee pour '{machine_id()}'.")
         print(f"    source    : {source}")
         # Pas d'empreinte ici : le candidat vient du PDF (source « password »
