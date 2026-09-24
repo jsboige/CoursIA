@@ -1165,3 +1165,97 @@ def test_fingerprint_refusal_names_the_live_surface_landscape():
     assert "threads=2 (1 non resolus)" in msg
     assert "checks=1" in msg
     assert "reviews=2" in msg
+
+
+# --- b0 claim re-verified against the live B.0 organ -------------------------
+# Measured 2026-09-24: READY dossiers on #16955 and #16987 declared `b0: clear`
+# while check_unaddressed_nits.py exited 1. The gate answered exit 0 on both.
+
+
+def _ready_dossier(**changes: str):
+    snapshot = _snapshot(_body(**changes))
+    verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+    return verdict, dossier
+
+
+def _organ(blocked: bool, blocking: list | None = None):
+    calls = []
+
+    def probe(pr):
+        calls.append(pr)
+        return {"blocked": blocked, "blocking": blocking or []}
+
+    return probe, calls
+
+
+def test_b0_clear_refuted_by_organ_demotes_ready_and_names_the_remark():
+    verdict, dossier = _ready_dossier()
+    probe, calls = _organ(
+        True,
+        [{"kind": "concern", "author": "jsboige", "src": "review 2026-09-22"}],
+    )
+    verdict, errors, dossier = mod.refute_ready_b0(123, verdict, dossier, probe)
+    assert calls == [123]
+    assert verdict == "" and dossier is None
+    assert len(errors) == 1
+    assert "b0 claim 'clear' is contradicted" in errors[0]
+    assert "concern by jsboige via review 2026-09-22" in errors[0]
+
+
+def test_b0_clear_confirmed_by_organ_keeps_ready():
+    verdict, dossier = _ready_dossier()
+    probe, calls = _organ(False)
+    out = mod.refute_ready_b0(123, verdict, dossier, probe)
+    assert calls == [123]
+    assert out == (mod.VERDICT_READY, [], dossier)
+
+
+def test_b0_probe_not_paid_for_blocked_or_absent_dossier():
+    probe, calls = _organ(True, [{"kind": "k", "author": "a", "src": "s"}])
+    assert mod.refute_ready_b0(123, mod.VERDICT_BLOCKED, None, probe)[0] == mod.VERDICT_BLOCKED
+    assert mod.refute_ready_b0(123, "", None, probe) == ("", [], None)
+    assert calls == []
+
+
+def test_b0_contradictions_ignore_a_non_clear_claim_and_cap_the_list():
+    rows = [{"kind": f"k{i}", "author": "a", "src": "s"} for i in range(7)]
+    assert mod.b0_claim_contradictions("blocked", {"blocked": True, "blocking": rows}) == []
+    assert mod.b0_claim_contradictions("clear", None) == []
+    [error] = mod.b0_claim_contradictions("clear", {"blocked": True, "blocking": rows})
+    assert "7 unlifted remark(s)" in error and "(+2 more)" in error
+
+
+def test_b0_probe_failure_is_fail_closed(monkeypatch):
+    class Broken:
+        @staticmethod
+        def analyse_pr(pr):
+            raise ValueError("network down")
+
+    monkeypatch.setitem(sys.modules, "check_unaddressed_nits", Broken)
+    with pytest.raises(RuntimeError, match="B.0 organ could not measure PR #123"):
+        mod.probe_b0(123)
+
+
+def test_main_exits_no_dossier_when_organ_refutes_b0(monkeypatch, capsys):
+    snapshot = _snapshot(_body())
+    monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
+    monkeypatch.setattr(mod.gh_identity, "pin_gh_token", lambda: None)
+    monkeypatch.setattr(
+        mod,
+        "probe_b0",
+        lambda pr: {"blocked": True, "blocking": [{"kind": "nit", "author": "u", "src": "c"}]},
+    )
+    monkeypatch.setattr(sys, "argv", ["check_adjoint_prevalidation.py", "123"])
+    assert mod.main() == mod.EXIT_NO_DOSSIER
+    out = capsys.readouterr().out
+    assert "NO-DOSSIER" in out and "b0 claim 'clear' is contradicted" in out
+
+
+def test_main_exits_ready_when_organ_agrees(monkeypatch, capsys):
+    snapshot = _snapshot(_body())
+    monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
+    monkeypatch.setattr(mod.gh_identity, "pin_gh_token", lambda: None)
+    monkeypatch.setattr(mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []})
+    monkeypatch.setattr(sys, "argv", ["check_adjoint_prevalidation.py", "123"])
+    assert mod.main() == mod.EXIT_READY

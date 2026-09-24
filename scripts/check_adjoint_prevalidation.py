@@ -50,6 +50,13 @@ moves. GitHub does not expose a stateless audit trail for an event that is
 later deleted or reverted; this gate therefore certifies the current
 surfaces, not erased history.
 
+The `b0:` claim is re-verified the same way: when a dossier claims READY
+with `b0: clear`, the gate runs the B.0 organ (`check_unaddressed_nits.py`)
+and refuses the dossier if the organ still finds an unlifted remark, naming
+each one. A green gate therefore no longer hides a red B.0. It still does not
+dispense with reading the surfaces: the organ only sees its markers, and who
+lifted a remark, when, and on what substance are read by hand (CLAUDE.md §B.0).
+
 Exit codes -- dossier INTEGRITY and PR MERGEABILITY are two questions, and
 conflating them is what this gate used to do (#16800):
 
@@ -563,6 +570,78 @@ def check_claim_contradictions(
             + detail
         )
     return contradictions
+
+
+def b0_claim_contradictions(claim: str, result: dict[str, Any] | None) -> list[str]:
+    """Re-verify a dossier's ``b0: clear`` claim against the live B.0 organ.
+
+    The ``checks:`` claim has been re-verified since #16957; ``b0:`` was
+    still taken on faith, and a READY dossier could attest ``b0: clear`` on a
+    pull request the organ blocks. Measured on 2026-09-24: two READY dossiers
+    (#16955 and #16987) declared ``b0: clear`` while ``check_unaddressed_nits.py``
+    exited 1 on an unlifted Hermes reserve. Only the coordinator's separate B.0
+    run caught them, and the gate's ``exit 0`` looked like a green light. Like
+    the checks claim, the b0 claim is now compared with what the organ measures
+    at evaluation time, and every unlifted remark is named.
+
+    ``result`` is the dict returned by ``check_unaddressed_nits.analyse_pr``.
+    A claim other than ``clear`` is not refuted here, because a BLOCKED dossier
+    may say so.
+    """
+    if claim != "clear" or not result or not result.get("blocked"):
+        return []
+    blocking = list(result.get("blocking") or [])
+    named = "; ".join(
+        f"{row.get('kind', '?')} by {row.get('author', '?')} via {row.get('src', '?')}"
+        for row in blocking[:5]
+    )
+    if len(blocking) > 5:
+        named += f" (+{len(blocking) - 5} more)"
+    return [
+        "b0 claim 'clear' is contradicted by the live B.0 organ "
+        f"(check_unaddressed_nits.py): {len(blocking)} unlifted remark(s)"
+        + (f" -- {named}" if named else "")
+    ]
+
+
+def probe_b0(pr: int) -> dict[str, Any]:
+    """Run the B.0 organ on ``pr``. A failure to measure is fail-closed.
+
+    The import is lazy: ``check_unaddressed_nits`` imports this module, and
+    the probe runs only for a dossier that claims READY.
+    """
+    try:
+        import check_unaddressed_nits
+    except ImportError:  # charge via importlib dans les tests (hors scripts/)
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import check_unaddressed_nits
+    try:
+        return check_unaddressed_nits.analyse_pr(pr)
+    except Exception as exc:  # noqa: BLE001 -- any failure means "not measured"
+        raise RuntimeError(f"B.0 organ could not measure PR #{pr}: {exc}") from exc
+
+
+def refute_ready_b0(
+    pr: int,
+    verdict: str,
+    dossier: Dossier | None,
+    probe: Any = None,
+) -> tuple[str, list[str], Dossier | None]:
+    """Demote a READY verdict whose ``b0: clear`` claim the organ refutes.
+
+    The demotion is to "no dossier worth trusting" (exit 1), the same outcome
+    as a contradicted ``checks:`` claim: a dossier that attests a false
+    ``clear`` cannot be trusted on its other fields either. Only READY is
+    probed, so the organ adds no API cost to BLOCKED or absent dossiers.
+    """
+    if verdict != VERDICT_READY or dossier is None:
+        return verdict, [], dossier
+    refuted = b0_claim_contradictions(
+        dossier.fields.get("b0", ""), (probe or probe_b0)(pr)
+    )
+    if refuted:
+        return "", refuted, None
+    return verdict, [], dossier
 
 
 def carrying_lane(snapshot: dict[str, Any]) -> str | None:
@@ -1098,6 +1177,8 @@ def main() -> int:
             )
             return 0
         verdict, errors, dossier = evaluate_with_dossier(snapshot)
+        if not errors:
+            verdict, errors, dossier = refute_ready_b0(args.pr, verdict, dossier)
     except (
         RuntimeError,
         KeyError,
