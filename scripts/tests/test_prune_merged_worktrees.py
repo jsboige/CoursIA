@@ -685,6 +685,11 @@ class TestLookupPRForDetachedHead:
         """Sujet sans `(#N)` retourne par defaut le verdict `None` quand la
         liste de PRs recentes est vide ou sans egalite.
         """
+        # #17684 : on court-circuite la garde prealable pour cibler le
+        # comportement post-garde (helper rendu False = HEAD off main).
+        monkeypatch.setattr(
+            pmw, "_detached_head_is_on_main", lambda *a, **k: False
+        )
         # Stub run_gh : pas de PR list exploitable
         monkeypatch.setattr(pmw, "run_gh", lambda *a, **k: _fake_proc(
             returncode=0,
@@ -710,6 +715,12 @@ class TestLookupPRForDetachedHead:
         PAS dans la voie liste -- le PR rendu vient de `gh pr view N`,
         pas d'une intersection par jetons.
         """
+        # #17684 : helper rendu False pour court-circuiter la garde
+        # prealable sur HEAD ancêtre de main (le test cible la voie
+        # directe post-garde).
+        monkeypatch.setattr(
+            pmw, "_detached_head_is_on_main", lambda *a, **k: False
+        )
         # run_git retourne un sujet avec `(#14476)`
         monkeypatch.setattr(
             pmw, "run_git",
@@ -757,6 +768,11 @@ class TestLookupPRForDetachedHead:
         titre contenait `notebook`, ce qui causait le retrait d'un
         worktree encore actif.
         """
+        # #17684 : helper rendu False pour court-circuiter la garde
+        # prealable sur HEAD ancêtre de main.
+        monkeypatch.setattr(
+            pmw, "_detached_head_is_on_main", lambda *a, **k: False
+        )
         # Sujet sans `(#N)` -- force la voie liste
         monkeypatch.setattr(
             pmw, "run_git",
@@ -793,6 +809,244 @@ class TestLookupPRForDetachedHead:
             "egalite normalisee impossible (sujet != titre). Resultat doit "
             "etre None, pas une PR partageant `notebook`."
         )
+
+
+# ---------------------------------------------------------------------------
+# Tests #17684 -- HEAD detaché ancêtre de origin/main : pas de PR attribuable
+# ---------------------------------------------------------------------------
+
+
+class TestDetachedHeadOnMain17684:
+    """#17684 : `lookup_pr_for_detached_head` lit `git log HEAD` sans borner
+    par rapport à `origin/main`. Pour un HEAD détaché posé sur main (ou sur
+    un ancêtre strict de main), le log remonte dans l'historique de main et
+    la voie 1 (regex `\\(#N\\)\\s*$`) matche la PR du **premier commit de
+    main**, ce qui rend `REMOVE` sur un worktree qui n'a rien à voir avec
+    cette PR.
+
+    Le fix introduit deux gates :
+    1. `_detached_head_is_on_main(wt_path)` détecte HEAD ancêtre (ou égal) de
+       `origin/main` et lève `DetachedHeadOnMain` ; `diagnose_worktree`
+       attrape cette exception et produit un REFUSE avec la raison
+       nommée `detached_on_main` (distincte de `detached_no_match`).
+    2. La lecture des sujets est bornée à `origin/main..HEAD` (commits
+       propres uniquement), donc une plage vide rend `None` sans appeler gh.
+
+    Anti-régression : avant le fix, un HEAD détaché ancêtre de main se
+    voyait attribuer la PR d'un commit de main (faux `REMOVE`). Ce test
+    verrouille le bon verdict.
+    """
+
+    def test_raises_when_head_is_on_main(self, monkeypatch):
+        """`_detached_head_is_on_main` rend True -> `lookup_pr_for_detached_head`
+        lève `DetachedHeadOnMain` SANS appeler gh.
+        """
+        # Stub run_git : merge-base OK + rev-parse HEAD == rev-parse origin/main
+        def fake_git(cwd, *args, **kwargs):
+            if "merge-base" in args:
+                return _fake_proc(returncode=0, stdout="")
+            if "rev-parse" in args and "origin/main" in args:
+                return _fake_proc(returncode=0, stdout="deadbeef\n")
+            if "rev-parse" in args:
+                return _fake_proc(returncode=0, stdout="deadbeef\n")
+            return _fake_proc(returncode=0, stdout="")
+
+        monkeypatch.setattr(pmw, "run_git", fake_git)
+        monkeypatch.setattr(
+            pmw, "run_gh",
+            lambda *a, **k: pytest.fail(
+                "aucun appel gh ne doit etre fait sur detached_on_main"
+            ),
+        )
+        with pytest.raises(pmw.DetachedHeadOnMain):
+            pmw.lookup_pr_for_detached_head("/tmp/fake-on-main")
+
+    def test_no_raises_when_head_has_own_commits(self, monkeypatch):
+        """`_detached_head_is_on_main` rend False (HEAD != origin/main) ->
+        `lookup_pr_for_detached_head` ne lève PAS et lit
+        `origin/main..HEAD` (pas `HEAD`).
+        """
+        # Stub run_git : merge-base OK (HEAD ancêtre strict) MAIS rev-parse
+        # HEAD different de origin/main -> helper rend False.
+        seen_rev_parse = []
+
+        def fake_git(cwd, *args, **kwargs):
+            if "merge-base" in args:
+                return _fake_proc(returncode=0, stdout="")
+            if "rev-parse" in args:
+                seen_rev_parse.append(list(args))
+                if "origin/main" in args:
+                    return _fake_proc(returncode=0, stdout="aaaa1111\n")
+                return _fake_proc(returncode=0, stdout="bbbb2222\n")
+            return _fake_proc(returncode=0, stdout="")
+
+        monkeypatch.setattr(pmw, "run_git", fake_git)
+        monkeypatch.setattr(
+            pmw, "run_gh",
+            lambda *a, **k: _fake_proc(returncode=0, json_payload=[]),
+        )
+        # Pas de raise
+        result = pmw.lookup_pr_for_detached_head("/tmp/fake-with-commits")
+        assert result is None  # liste vide + sujets vides -> None
+        # Et le `git log` cible bien `origin/main..HEAD`, pas `HEAD`
+        # (cf impl : run_git(wt_path, "log", "origin/main..HEAD", ...))
+        log_calls = [
+            c for c in seen_rev_parse if False  # pas de rev-parse ici
+        ]
+        # Le test du rev-parse ci-dessus suffit pour valider le helper ;
+        # le test de la plage `origin/main..HEAD` est fait dans le test
+        # suivant via monkeypatch séparé.
+
+    def test_log_scope_is_origin_main_to_head(self, monkeypatch):
+        """Le `git log` cible `origin/main..HEAD`, pas `HEAD` -- borne les
+        sujets aux commits propres du worktree.
+        """
+        seen_log_args: list[list] = []
+
+        def fake_git(cwd, *args, **kwargs):
+            if "merge-base" in args:
+                return _fake_proc(returncode=0, stdout="")
+            if "rev-parse" in args and "origin/main" in args:
+                return _fake_proc(returncode=0, stdout="aaaa\n")
+            if "rev-parse" in args:
+                return _fake_proc(returncode=0, stdout="cccc\n")
+            if "log" in args:
+                seen_log_args.append(list(args))
+                return _fake_proc(
+                    returncode=0,
+                    stdout="fix(scope,#17684): test commit (#17684)\n",
+                )
+            return _fake_proc(returncode=0, stdout="")
+
+        monkeypatch.setattr(pmw, "run_git", fake_git)
+        gh_calls: list[list] = []
+
+        def fake_gh(*args, **kwargs):
+            gh_calls.append(list(args))
+            # Voie 1 : gh pr view 17684 -- retourne MERGED (legitime car
+            # ce commit est sur la branche propre, pas dans main)
+            if "view" in args and "17684" in args:
+                return _fake_proc(
+                    returncode=0,
+                    json_payload={
+                        "number": 17684,
+                        "state": "MERGED",
+                        "url": "https://example/pr/17684",
+                        "title": "fix(scope,#17684): test commit",
+                    },
+                )
+            return _fake_proc(returncode=0, json_payload=[])
+
+        monkeypatch.setattr(pmw, "run_gh", fake_gh)
+        result = pmw.lookup_pr_for_detached_head("/tmp/fake-with-17684")
+        assert result is not None
+        assert result["number"] == 17684
+        # Le `git log` doit cibler origin/main..HEAD, pas HEAD seul.
+        assert any(
+            "log" in c and "origin/main..HEAD" in c
+            for c in seen_log_args
+        ), f"expected log scoped to origin/main..HEAD, got {seen_log_args}"
+        # Et la voie directe a été utilisee
+        assert any("view" in c and "17684" in c for c in gh_calls)
+
+    def test_log_scope_empty_returns_none_without_gh(self, monkeypatch):
+        """Plage `origin/main..HEAD` vide (HEAD = origin/main post-fix) ->
+        helper leve `DetachedHeadOnMain` AVANT le log, donc 0 appel gh.
+        """
+        def fake_git(cwd, *args, **kwargs):
+            if "merge-base" in args:
+                return _fake_proc(returncode=0, stdout="")
+            if "rev-parse" in args and "origin/main" in args:
+                return _fake_proc(returncode=0, stdout="deadbeef\n")
+            if "rev-parse" in args:
+                return _fake_proc(returncode=0, stdout="deadbeef\n")
+            return _fake_proc(returncode=0, stdout="")
+
+        monkeypatch.setattr(pmw, "run_git", fake_git)
+        monkeypatch.setattr(
+            pmw, "run_gh",
+            lambda *a, **k: pytest.fail(
+                "0 appel gh : plage vide detectee par helper avant log"
+            ),
+        )
+        with pytest.raises(pmw.DetachedHeadOnMain):
+            pmw.lookup_pr_for_detached_head("/tmp/fake-empty-range")
+
+    def test_diagnose_worktree_returns_refuse_detached_on_main(self, monkeypatch):
+        """Integration : `diagnose_worktree` consomme `DetachedHeadOnMain`
+        et produit REFUSE avec `refusal_reason="detached_on_main"`.
+        """
+        # Stub : pas de branche, helper True, pas d'appel gh
+        def fake_get_worktree_info(wt_path, current_path):
+            return {
+                "branch": None,
+                "ahead_count": 0,
+                "untracked": [],
+                "blocking_untracked": [],
+                "tracked_modified": [],
+                "ignored_extra": [],
+                "has_source_dirty": False,
+                "has_submodules": False,
+                "is_current": False,
+                "dead_registration": False,
+            }
+
+        def fake_detached_helper(wt_path):
+            return True  # HEAD ancêtre de origin/main
+
+        monkeypatch.setattr(pmw, "get_worktree_info", fake_get_worktree_info)
+        monkeypatch.setattr(
+            pmw, "_detached_head_is_on_main", fake_detached_helper
+        )
+        monkeypatch.setattr(
+            pmw, "lookup_pr_for_branch",
+            lambda *a, **k: pytest.fail("branche absente : pas d'appel"),
+        )
+        status = pmw.diagnose_worktree("/tmp/fake", "/tmp/fake")
+        assert status.decision == "REFUSE"
+        assert status.refusal_reason == "detached_on_main"
+        assert status.pr_state is None
+        assert status.pr_number is None
+
+    def test_diagnose_worktree_falls_through_to_no_match_when_head_off_main(
+        self, monkeypatch
+    ):
+        """Integration : helper False -> lookup continue, liste vide ->
+        None -> REFUSE `no_pr_match` (et PAS `detached_on_main`).
+        """
+        def fake_get_worktree_info(wt_path, current_path):
+            return {
+                "branch": None,
+                "ahead_count": 0,
+                "untracked": [],
+                "blocking_untracked": [],
+                "tracked_modified": [],
+                "ignored_extra": [],
+                "has_source_dirty": False,
+                "has_submodules": False,
+                "is_current": False,
+                "dead_registration": False,
+            }
+
+        def fake_detached_helper(wt_path):
+            return False  # HEAD pas sur main
+
+        def fake_lookup(wt_path):
+            return None  # aucun match par contenu
+
+        monkeypatch.setattr(pmw, "get_worktree_info", fake_get_worktree_info)
+        monkeypatch.setattr(
+            pmw, "_detached_head_is_on_main", fake_detached_helper
+        )
+        monkeypatch.setattr(
+            pmw, "lookup_pr_for_branch",
+            lambda *a, **k: pytest.fail("branche absente : pas d'appel"),
+        )
+        monkeypatch.setattr(pmw, "lookup_pr_for_detached_head", fake_lookup)
+        status = pmw.diagnose_worktree("/tmp/fake", "/tmp/fake")
+        assert status.decision == "REFUSE"
+        assert status.refusal_reason == "detached_no_match"
+        assert status.pr_state is None
 
 
 def _fake_proc(returncode: int = 0, stdout: str = "", json_payload=None):

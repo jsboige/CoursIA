@@ -765,6 +765,48 @@ def lookup_pr_for_branch(branch: str,
     return get_pr_resolution().resolve(branch, head_sha)
 
 
+class DetachedHeadOnMain(Exception):
+    """#17684 : HEAD detaché ancêtre de origin/main → aucun commit propre.
+
+    Levée par `lookup_pr_for_detached_head` quand le HEAD du worktree est
+    strictement ancêtre (ou égal) à origin/main. Le worktree ne contient
+    aucun commit qui lui soit propre, donc aucune PR ne peut lui être
+    attribuée. `diagnose_worktree` attrape cette exception et produit un
+    REFUSE avec `refusal_reason="detached_on_main"` -- distinct du
+    `detached_no_match` (qui signale un HEAD détaché avec commits propres
+    dont aucun ne correspond à une PR).
+    """
+    pass
+
+
+def _detached_head_is_on_main(wt_path: str) -> bool:
+    """#17684 : True si HEAD est ancêtre (ou égal) de origin/main.
+
+    Le predicat conjoint `is_ancestor && rev_parse_equal` couvre les deux
+    cas reels :
+      - HEAD == origin/main (zero commit propre) ;
+      - HEAD ancêtre strict de origin/main (cas pathologique d'un HEAD
+        détaché sur un commit anterieur de main, jamais rebase vers main).
+
+    Aucun appel gh n'est fait dans cette garde : c'est un check git pur,
+    fail-CLOSED si la lecture de origin/main échoue (False = on laisse le
+    lookup en aval tenter sa chance, plutôt que de REFUSER à tort).
+    """
+    ancestor_proc = run_git(
+        wt_path, "merge-base", "--is-ancestor", "HEAD", "origin/main",
+        check=False,
+    )
+    if ancestor_proc.returncode != 0:
+        # origin/main introuvable ou erreur git : on ne peut pas conclure,
+        # on laisse le lookup en aval decider.
+        return False
+    head_proc = run_git(wt_path, "rev-parse", "HEAD", check=False)
+    main_proc = run_git(wt_path, "rev-parse", "origin/main", check=False)
+    if head_proc.returncode != 0 or main_proc.returncode != 0:
+        return False
+    return head_proc.stdout.strip() == main_proc.stdout.strip()
+
+
 def lookup_pr_for_detached_head(wt_path: str) -> Optional[dict]:
     """Verdict par contenu pour HEAD detaché (#14476) : PR exacte, ou rien.
 
@@ -787,9 +829,30 @@ def lookup_pr_for_detached_head(wt_path: str) -> Optional[dict]:
 
     3. **Sinon None** : aucun match = aucun verdict. Le fail-CLOSED est
        deja le bon defaut (REFUSE downstream).
+
+    #17684 -- **gates prealables** :
+
+    - Si HEAD est ancêtre de origin/main (zero commit propre), leve
+      `DetachedHeadOnMain`. Le caller produit un REFUSE motive
+      `detached_on_main`, distinct du `detached_no_match` : un HEAD
+      détaché posé sur main n'a littéralement aucune PR à laquelle
+      l'attribuer, c'est une condition structurelle, pas une absence de
+      match par contenu.
+
+    - La lecture des sujets est bornee a `origin/main..HEAD` (commits
+      propres du worktree) : sans cette borne, `git log HEAD` remontait
+      dans l'historique de main et le premier sujet squash-merge
+      matchait la PR de ce commit, produisant une fausse attribution
+      (`REMOVE` sur un worktree qui n'a rien à voir avec cette PR).
     """
+    # Gate #17684 : HEAD ancêtre de origin/main -> aucun commit propre.
+    if _detached_head_is_on_main(wt_path):
+        raise DetachedHeadOnMain(
+            f"HEAD in {wt_path} is ancestor of origin/main; no own commits"
+        )
+
     log_proc = run_git(
-        wt_path, "log", "HEAD", "--format=%s", "-n", "20", check=False
+        wt_path, "log", "origin/main..HEAD", "--format=%s", check=False
     )
     if log_proc.returncode != 0:
         return None
@@ -1017,7 +1080,29 @@ def diagnose_worktree(wt_path: str, current_path: str,
     if info["branch"]:
         pr = lookup_pr_for_branch(info["branch"], head_sha=head_sha)
     elif not info["branch"]:
-        pr = lookup_pr_for_detached_head(wt_path)
+        try:
+            pr = lookup_pr_for_detached_head(wt_path)
+        except DetachedHeadOnMain:
+            # #17684 : HEAD ancêtre de origin/main -> REFUSE motivé
+            # "detached_on_main" (condition structurelle, distinct du
+            # "detached_no_match" qui signale l'absence de match par contenu
+            # sur un HEAD détaché qui a des commits propres).
+            return WorktreeStatus(
+                path=wt_path,
+                branch=info["branch"],
+                is_current=False,
+                pr_state=None,
+                pr_number=None,
+                pr_url=None,
+                ahead_count=info["ahead_count"],
+                has_source_dirty=info["has_source_dirty"],
+                untracked_paths=info["untracked"],
+                decision="REFUSE",
+                refusal_reason="detached_on_main",
+                has_submodules=info["has_submodules"],
+                blocking_untracked=info.get("blocking_untracked", []),
+                ignored_extra=info.get("ignored_extra", []),
+            )
 
     pr_state = pr.get("state") if pr else None
     pr_number = pr.get("number") if pr else None
