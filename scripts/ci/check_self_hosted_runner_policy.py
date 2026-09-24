@@ -319,9 +319,12 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   vehicule workflow_dispatch-ONLY servant de cible d'identite au
     #   check-run absorbe par fast-lane (registre TRANCHE14) et de re-run
     #   manuel du recensement sur main. Detecteur de paires de cellules de
-    #   lecture scindees (check_split_reading_cells.py), advisory
-    #   pur-Python stdlib-only, jamais bloquant, aucun secret.
-    #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
+    #   lecture scindees (check_split_reading_cells.py), pur-Python
+    #   stdlib-only, aucun secret. Promu en cliquet BLOQUANT par #17044 : le
+    #   verdict de PR est rendu par le garde absorbe, PAS par ce workflow, qui
+    #   ne tourne jamais sur un pull_request (dispatch-only) -- l'entree reste
+    #   justifiee telle quelle. Rollback = revert de la PR (l'entree
+    #   disparait de l'allowlist).
     "split-reading-advisory.yml",
     "stale-base-warning.yml",
     # fin de chantier #14283 (feu vert ai-01 2026-09-02) : les jobs
