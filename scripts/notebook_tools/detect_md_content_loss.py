@@ -56,11 +56,16 @@ Pour chaque notebook compare entre sa base git (defaut origin/main) et sa tete
      disparait est une reparation), si aucun libelle de son lien ne survit
      en tete (retarget assumee), et si les cibles nouvelles gagnees en tete
      ne compensent pas les perdues (e3 bornee 1:1 : une barre qui perd 3
-     cibles vivantes et en gagne 1 n'est pas reconstruite). Dedoublonner
-     un bloc de navigation legacy duplique ne perd aucune cible -> vert
-     (#17392 : 7 instances -> 4, 4 cibles -> 3 ; la cible perdue, VIVANTE,
-     garde son libelle ``Index`` en tete -- excuse e2, arbitrage sur la
-     portee d'e2 en cours cote coordinateur).
+     cibles vivantes et en gagne 1 n'est pas reconstruite), et -- pour le
+     retarget e2 -- si aucun libelle de son lien n'a REELLEMENT ete deplace
+     (decision ai-01 2026-09-24, option a : un libelle n'excuse que si son
+     appariement libelle->cible a change ; un libelle generique ``Index``
+     qui survit sur une cible qu'il pointait deja en base n'est pas un
+     deplacement). Dedoublonner un bloc de navigation legacy duplique ne
+     perd aucune cible -> vert, mais la perte d'une cible vivante reste
+     SIGNALEE (a justifier dans le body de la PR qui la fait) : #17392,
+     7 instances -> 4, 4 cibles -> 3 -- la cible perdue (README de serie,
+     vivante) n'est plus excusee par le seul ``Index`` survivant.
 
   5. NE BLOQUE PAS LA REFORMULATION LEGITIME : le detecteur SIGNALE, la PR
      justifie en review (design #4). Sortie exploitable : fichier / cellule /
@@ -832,9 +837,12 @@ def _compare_motifs(base_counts: dict, head_counts: dict,
       (e1) la cible etait MORTE en base (fichier inexistant a la revision de
            base, verifie via ``nav_base_path``/``nav_base_ref``) -- sa
            disparition est une REPARATION, pas une perte ;
-      (e2) un libelle de son lien de base survit en tete pointant ailleurs --
-           le RETARGET est une re-cible assumee, l'affleurement de navigation
-           garde son etiquette ;
+      (e2) un libelle de son lien de base a REELLEMENT ete deplace : il
+           survit en tete pointant une cible qu'il ne pointait PAS deja
+           en base (appariement libelle->cible change ; decision ai-01
+           2026-09-24, option a). Un libelle generique qui survit sur une
+           cible qu'il pointait deja en base n'est PAS un deplacement --
+           la perte reste visible ;
       (e3) les cibles distinctes NOUVELLES gagnees en tete compensent les
            perdues (BORNEE 1:1 : N cibles gagnees n'excusent que N cibles
            perdues -- une seule cible nouvelle n'efface pas une hecatombe ;
@@ -861,9 +869,7 @@ def _compare_motifs(base_counts: dict, head_counts: dict,
     base_map: dict = base_counts.get("nav_map") or {}
     head_map: dict = head_counts.get("nav_map") or {}
     head_targets = set(head_map)
-    head_texts: set[str] = set()
-    for texts in head_map.values():
-        head_texts |= texts
+    base_pairs = {(lbl, t) for t, lbls in base_map.items() for lbl in lbls}
     gained = [t for t in head_targets if t not in base_map]
 
     lost_targets: list[str] = []
@@ -874,8 +880,15 @@ def _compare_motifs(base_counts: dict, head_counts: dict,
         if nav_base_path is not None and not _nav_target_live(tgt, nav_base_path, nav_base_ref):
             repaired_dead.append(tgt)
             continue
-        if base_map[tgt] & head_texts:
-            continue  # (e2) retarget : le libelle survit pointant ailleurs
+        # (e2) retarget, restreint aux libelles REELLEMENT deplaces (option
+        # a, decision ai-01 2026-09-24, c.5809336658) : le libelle du lien
+        # perdu n'excuse que s'il pointe en tete une cible qu'il ne pointait
+        # PAS deja en base. Un libelle generique (`Index`) qui survit sur
+        # une cible deja pointee en base n'est pas un deplacement -- la
+        # perte reste signalee, a justifier dans le body de la PR.
+        if any(lbl in head_map[t2] and (lbl, t2) not in base_pairs
+               for lbl in base_map[tgt] for t2 in head_map):
+            continue
         lost_targets.append(tgt)
 
     # (e3) reconstruction, BORNEE 1:1 : les cibles nouvelles n'excusent les

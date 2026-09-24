@@ -381,13 +381,15 @@ class TestNavLinkDistinctLiveTargets:
     """#17392 : l'identite d'un lien de navigation est sa CIBLE normalisee
     (ancre ignoree), pas son occurrence. Une cible de base absente de la tete
     n'est PERDUE que si trois excuses ecrites ne s'appliquent aucune :
-    (e1) cible MORTE en base (reparation), (e2) libelle survivant pointant
-    ailleurs (retarget), (e3) cibles nouvelles compensant les perdues a
+    (e1) cible MORTE en base (reparation), (e2) libelle REELLEMENT deplace
+    (appariement libelle->cible change ; un libelle generique qui survit
+    sur une cible deja pointee en base n'excuse pas -- decision ai-01
+    2026-09-24, option a), (e3) cibles nouvelles compensant les perdues a
     1:1 (reconstruction bornee). Cas fondateur : PR dedoublonnant un bloc
     de nav legacy -- 7 instances -> 4, 4 cibles -> 3 ; la cible perdue
-    (README de serie, VIVANT depuis 7e69518092) garde son libelle Index
-    en tete -> excuse e2. La portee exacte d'e2 (libelle generique vs
-    libelle reellement deplace) est en arbitrage coordinateur."""
+    (README de serie, VIVANT depuis 7e69518092) garde un libelle Index
+    en tete, mais SUR UNE CIBLE DEJA POINTEE EN BASE -> ROUGE : la perte
+    est visible, a justifier dans le body de la PR qui la fait."""
 
     def _lab6_fixture(self, tmp_path):
         # Reproduit la geometrie reelle de Lab6-First-Agent : dossier du
@@ -423,24 +425,31 @@ class TestNavLinkDistinctLiveTargets:
         _md("[Journee 3](../../README.md)"),
     )
 
-    def test_lab6_dedup_and_surviving_index_label_no_finding(self, tmp_path):
-        # CONTROLE NEGATIF (cas reel #17392) : base 7 instances / 4 cibles,
-        # tete 4 instances / 3 cibles. La cible disparue (README de serie)
-        # est VIVANTE en base -- e1 ne s'applique PAS ; le verdict propre
-        # passe par e2 : le libelle Index survit en tete (nav canonique).
-        # C'est le faux positif qui bloquait la PR.
+    def test_lab6_dedup_generic_surviving_label_still_signals(self, tmp_path):
+        # FIGE le cas reel #17392 (decision ai-01 2026-09-24, option a) :
+        # base 7 instances / 4 cibles, tete 4 instances / 3 cibles. La cible
+        # disparue (README de serie) est VIVANTE en base -- e1 ne s'applique
+        # PAS. Le libelle Index survit bien en tete, mais sur ../../README.md
+        # qu'il pointait DEJA en base (cellule 2) : l'appariement n'a pas
+        # change, ce n'est pas un deplacement -> e2 ne l'excuse PAS. La perte
+        # est SIGNALEE : la PR qui deplace vraiment ce lien le justifie dans
+        # son body.
         nb = self._lab6_fixture(tmp_path)
         findings = dml._compare_motifs(
             dml._collect_motifs(self._LAB6_BASE), dml._collect_motifs(self._LAB6_HEAD),
             nav_base_path=nb, nav_base_ref=None,
         )
-        assert all(f["kind"] != "LOST_NAV_LINKS" for f in findings), findings
+        nav = [f for f in findings if f["kind"] == "LOST_NAV_LINKS"]
+        assert len(nav) == 1, findings
+        assert nav[0]["lost_targets"] == ["../../../../README.md"]
+        assert nav[0]["repaired_dead_targets"] == []
 
     def test_lab6_case_end_to_end_scan(self, tmp_path):
         # Meme cas, via scan_notebook complet : la liveness passe par
         # path_exists_at_ref (ref git). Toutes les cibles sont vivantes
-        # (le README de serie est cree dans la fixture) ; le verdict propre
-        # repose sur e2, pas sur une mortalite de cible.
+        # (le README de serie est cree dans la fixture) ; le verdict ROUGE
+        # repose sur e2 restreinte (libelle non deplace), pas sur une
+        # mortalite de cible.
         nb = self._lab6_fixture(tmp_path)
         nb.write_text(json.dumps(self._LAB6_HEAD), encoding="utf-8")
         with mock.patch.object(dml, "read_notebook_at_ref",
@@ -449,7 +458,9 @@ class TestNavLinkDistinctLiveTargets:
              mock.patch.object(dml, "path_exists_at_ref",
                                return_value=True):
             r = dml.scan_notebook(nb, base_ref="MOCK_BASE", head_ref=None)
-        assert all(f["kind"] != "LOST_NAV_LINKS" for f in r["findings"]), r["findings"]
+        nav = [f for f in r["findings"] if f["kind"] == "LOST_NAV_LINKS"]
+        assert len(nav) == 1, r["findings"]
+        assert nav[0]["lost_targets"] == ["../../../../README.md"]
 
     def test_live_target_loss_still_signals(self, tmp_path):
         # CONTROLE POSITIF : une cible VIVANTE en base, absente de la tete,
@@ -500,6 +511,41 @@ class TestNavLinkDistinctLiveTargets:
         (extras / "Extras.ipynb").write_text("{}", encoding="utf-8")
         base = _nb(_md("[Index](../../README.md) [Notes](../../Extras/Extras.ipynb)"))
         head = _nb(_md("[Index](../../README.md) [Notes](../../README.md)"))
+        findings = dml._compare_motifs(
+            dml._collect_motifs(base), dml._collect_motifs(head),
+            nav_base_path=nb, nav_base_ref=None,
+        )
+        assert all(f["kind"] != "LOST_NAV_LINKS" for f in findings), findings
+
+    def test_e2_generic_label_on_kept_target_does_not_excuse(self, tmp_path):
+        # Le piege Lab6 en isole : le libelle Index survit en tete, mais sur
+        # une cible qu'il pointait DEJA en base -- l'appariement libelle->
+        # cible n'a pas change, ce n'est pas un deplacement. La perte de la
+        # cible vivante reste signalee (frontiere option a, ai-01 2026-09-24).
+        nb = self._lab6_fixture(tmp_path)
+        extras = tmp_path / "Track1-LangChain" / "Day3-Data-Agents" / "Extras"
+        extras.mkdir()
+        (extras / "Extras.ipynb").write_text("{}", encoding="utf-8")
+        base = _nb(_md("[Index](../../Extras/Extras.ipynb) [Index](../../README.md)"))
+        head = _nb(_md("[Index](../../README.md)"))
+        findings = dml._compare_motifs(
+            dml._collect_motifs(base), dml._collect_motifs(head),
+            nav_base_path=nb, nav_base_ref=None,
+        )
+        nav = [f for f in findings if f["kind"] == "LOST_NAV_LINKS"]
+        assert len(nav) == 1, findings
+        assert nav[0]["lost_targets"] == ["../../Extras/Extras.ipynb"]
+
+    def test_e2_label_repointed_to_new_target_excused(self, tmp_path):
+        # L'autre cote de la frontiere : le libelle du lien perdu pointe en
+        # tete une cible NOUVELLE pour lui (appariement change) -> deplacement
+        # REEL, excuse e2.
+        nb = self._lab6_fixture(tmp_path)
+        extras = tmp_path / "Track1-LangChain" / "Day3-Data-Agents" / "Extras"
+        extras.mkdir()
+        (extras / "Extras.ipynb").write_text("{}", encoding="utf-8")
+        base = _nb(_md("[Index](../../Extras/Extras.ipynb)"))
+        head = _nb(_md("[Index](../../README.md)"))
         findings = dml._compare_motifs(
             dml._collect_motifs(base), dml._collect_motifs(head),
             nav_base_path=nb, nav_base_ref=None,
