@@ -187,6 +187,12 @@ import subprocess
 import sys
 from typing import Any, Callable
 
+try:
+    import gh_identity
+except ImportError:  # charge via importlib dans les tests (hors scripts/)
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import gh_identity
+
 REPO = "jsboige/CoursIA"
 
 # c.1115 voie 1 (msg-20260912T165428-k6rbfc, ai-01 spec) : klass `delivered`
@@ -4387,6 +4393,14 @@ def main(argv: list[str] | None = None) -> int:
     for _stream in (sys.stdout, sys.stderr):
         if hasattr(_stream, "reconfigure"):
             _stream.reconfigure(encoding="utf-8", errors="replace")
+    # #17418 Phase A : epingle le jeton machine AVANT tout appel gh — les
+    # enfants (check_lane_claim, nits...) heritent via os.environ propage par
+    # _utf8_child_env(). Warn-fort + poursuite : le FAIL bruyant est porte
+    # par gh_identity --whoami et detect_shared_login.py (transition B/C).
+    try:
+        gh_identity.pin_gh_token()
+    except gh_identity.GhIdentityError as exc:
+        print(f"GH-IDENTITY (WARN, poursuite sous compte actif): {exc}", file=sys.stderr)
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--lane", default=None,
