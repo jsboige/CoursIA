@@ -10,6 +10,45 @@
 
 ---
 
+## Etat mesuré au 2026-09-24 — rejeu apparié trois bras (Epic #1454)
+
+> Ce bloc re-teste le claim économique ci-dessous (kelly_har_mu60 27/35) sous calibration du
+> biais de prévision, avec une conception trois bras qui sépare l'effet causal de l'offset du
+> changement d'échantillon de fit. Le verdict historique de 2026-05 est préservé intact plus bas :
+> il reste la référence de SON panel — les deux populations ne sont pas like-for-like et leurs
+> comptages (27/35 vs 32/35) ne se soustraient pas.
+
+**Protocole** : bras `hist_raw` (fit train complet ≡ chemin brut historique, bit-identique),
+`fit_raw` (fit train − 60 obs, sans offset) et `adjusted` (même fit, moins le biais train-tail
+estimé — ≡ chemin calibré). Mêmes dates OOS, mêmes cibles, walk-forward 5 folds, horizons
+{1,5,10,15,20}, frais 10 bps. **Provenance** : BTC/ETH fichiers locaux identiques au run
+historique ; les cinq autres actifs sont un fetch yfinance **live 2024-09-25→2026-09-24** (~724 j
+chacun), PAS le panel gelé de 2026-05. Sweep fail-closed 35/35, exit 0. Détail complet (tables,
+DM, divulgations) : section M11 du `REGISTRY.md`.
+
+**Ce que le rejeu établit** :
+
+1. **Couche prévision — INCONCLUSIVE au niveau cluster.** Le calibrage supprime le biais signé
+   (BTC : −0,43 → −0,004 en moyenne sur les horizons) mais la précision MSE ne suit pas
+   uniformément : DM causal (`adjusted` vs `fit_raw`) = 5 BEATS (tous BTC, p ≤ 3,5e-05) /
+   11 BEATEN (LTC 5/5, XRP 4/5) / 19 INCONCLUSIVE. L'offset train-tail est instable sur les
+   fenêtres ~724 j — cohérent avec M12/M16 cluster.
+2. **Couche économique — l'avantage Kelly est INVARIANT à la calibration.** mu60 gagne 32/35 dans
+   les TROIS bras (31/35 en apparié post-warmup, p binomial 1,7e-06), **0 bascule de signe du
+   delta entre bras sur les 35 combos** (idem mu120/mu250). L'avantage est porté par le
+   dimensionnement conditionné à la volatilité (plancher f = 0 en baisse), pas par des prévisions
+   débiaisées. Ce n'est PAS un claim §C : exécution au close prix uniquement via 10 bps de frais
+   (hypothèse déclarée), observation économique, jambe §C = verdict prévision ci-dessus.
+3. **Divulgations** : mu250 = 16/35 combos tout-cash (`avg_weight` = 0 sur les actifs ~724 j en
+   tendance baissière) — hors claim ; mu120 = 2/35 (DOT). Warmup mu60 = 60 j à poids nul, delta
+   apparié recalculé post-warmup sur dates identiques. L'oracle du bras débiaisé cible [i, i+h−1]
+   (l'historique utilisait [i+1, i+h] — conservé au bit près côté legacy).
+
+**Artefacts** : `scripts/results/m11_kelly_debiased/results_7asset_7x5.json` (375 637 octets) ;
+tests `scripts/tests/test_simulate_har_kelly_debias.py` (19) ; séries OOS 35 CSV hors dépôt.
+
+---
+
 ## Question answered
 
 > "Does the M11a HAR+Kelly BEATS verdict (14/21 combos at h=1/5/10) extend or break at longer horizons (h=15, 20)?"

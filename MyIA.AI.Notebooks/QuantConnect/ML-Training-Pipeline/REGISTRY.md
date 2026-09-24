@@ -158,6 +158,97 @@ Revalidation de la décomposition de sauts (Andersen-Bollerslev-Diebold 2007, J_
 - **Lecture vs Cycle 31** : le `BEATS` historique (p=7,9e-7, 64/84, calibration asymétrique de la seule baseline et pseudo-réplication par 4 seeds d'un OLS déterministe) **n'est pas confirmé** sous ce protocole — sans être définitivement réfuté (protocoles et fenêtres diffèrent ; cinq actifs ne portent que ~724 jours). Que l'asymétrie de calibration du Cycle 31 portait une part de son avantage, et que la calibration du biais soit instable sur fenêtres courtes, sont des **interprétations** cohérentes avec les biais signés ci-dessus, pas des démonstrations. Cohérent avec M16 cluster (#15861) : NO BEATS.
 - **Artefacts** : `scripts/results/m12_har_rv_j/results.json` (93 727 octets dans le blob Git — biais signés, p-values DM, preuves de folds 5/5/5 sur les trois côtés HAR/HAR-calibré/HRJ, manifeste données par actif) et `m12_har_rv_j_results.csv` (43 026 octets). Sweep réel 21/21, 0 échec, 220 s. Fiche technique : `docs/M12_HAR_RV_J.md` (historique Cycle 31 préservé) ; notebook réexécuté : `m12_har_rv_j_research.ipynb`.
 
+## M11 HAR-Kelly — rejeu débiaisé trois bras (2026-09-24) — Epic #1454
+
+Rejeu du claim économique M11 (kelly_har_mu60 27/35 face au buy-and-hold) sous **calibration du biais
+train-tail** (`_fit_har_with_train_calibration`, 60 observations), avec un protocole **trois bras
+appariés** qui isole l'effet causal de l'offset des effets du changement d'échantillon de fit :
+
+| Bras | Fit | Offset | Lecture |
+|---|---|---|---|
+| `hist_raw` | train complet | aucun | ≡ `walk_forward_har(calibrate_bias=False)` — lien bit-identique au M11 historique |
+| `fit_raw` | train − 60 obs | aucun | même échantillon de fit que le bras calibré, sans l'offset |
+| `adjusted` | train − 60 obs | − biais estimé | ≡ `walk_forward_har(calibrate_bias=True)` — bras calibré |
+
+Mêmes dates OOS, mêmes cibles, walk-forward expanding 5 folds (refit 22 j), horizons {1,5,10,15,20},
+sept actifs, frais 10 bps, `kelly-cap 1.0`, mu {60,120,250}. OLS déterministe :
+`n_seeds_effective = 1` par unité. Contrat fail-closed : 35/35 combos produits, 0 manquant,
+0 dégénéré, 0 doublon, exit 0. Les identités de bras sont épinglées par des tests
+(`scripts/tests/test_simulate_har_kelly_debias.py`, 19 tests) : `hist_raw`/`adjusted` bit-identiques
+aux chemins de référence de `walk_forward_har`, invariance des prévisions au RV futur, causalité du
+flux d'information (une perturbation de prévision à t ne change aucun rendement net antérieur),
+oracle recalé sur la fenêtre [i, i+h−1] dans le bras débiaisé uniquement (le bras historique reste
+reproductible au bit près).
+
+**Provenance (diffère du panel M11b de 2026-05)** : BTC Bitstamp local 2018-05-15→2024-08-09
+(2 278 j RV) ; ETH Binance local 2019-10-21→2023-12-15 (1 495) ; cinq actifs yfinance **live**
+2024-09-25→2026-09-24 (~724 chacun) — le panel remote n'est PAS celui du verdict historique, les
+deux populations ne sont pas like-for-like.
+
+### Couche prévision — le calibrage supprime le biais signé, pas uniformément la MSE
+
+Biais signés OOS moyens sur les cinq horizons :
+
+| Actif | hist_raw | fit_raw | adjusted |
+|---|---:|---:|---:|
+| BTC | −0,434 | −0,440 | **−0,004** |
+| ETH | −0,161 | −0,132 | −0,015 |
+| ADA | +0,093 | +0,164 | −0,004 |
+| DOT | +0,018 | +0,090 | −0,001 |
+| LTC | +0,051 | +0,132 | +0,054 |
+| SOL | +0,106 | +0,166 | +0,072 |
+| XRP | −0,045 | −0,004 | +0,026 |
+
+DM causal (`adjusted` vs `fit_raw`, `loss_fn="mse"`, même échantillon de fit — l'offset est la seule
+différence) : **5 BEATS / 11 BEATEN / 19 INCONCLUSIVE** sur 35. BTC BEATS aux cinq horizons
+(p = 3,5e-05 → < 5e-07) ; LTC BEATEN aux cinq (p ≤ 0,018) ; XRP BEATEN 4/5, SOL BEATEN h=20. L'offset
+train-tail est instable sur les fenêtres ~724 j : il corrige BTC en profondeur mais dégrade LTC/XRP
+(sur-correction — le biais signé change de signe). DM vs naive-30d : `adjusted` BEATS 35/35 — HAR
+domine la baseline naïve partout, calibration ou pas.
+
+**Verdict couche prévision : INCONCLUSIVE au niveau cluster** (dépendant de l'actif) — la
+suppression du biais signé n'est PAS un gain de précision uniforme. Le DM conflated
+(`adjusted` vs `hist_raw` : 5/24/6) confirme a posteriori que la comparaison naïve
+calibré-vs-historique aurait été trompeuse (le bras calibré hérite d'un fit sur moins de données).
+
+### Couche économique — l'avantage Kelly est invariant à la calibration du biais
+
+| kelly_har_mu60 (delta Sharpe vs buy_hold) | hist_raw | fit_raw | adjusted |
+|---|---:|---:|---:|
+| Victoires /35, protocole historique non apparié | 32 | 32 | 32 |
+| Victoires /35, apparié post-warmup (dates identiques) | 31 | 31 | 31 |
+| ΔSharpe médian | +0,358 | +0,359 | +0,382 |
+
+- **Aucune bascule de signe du delta entre bras sur les 35 combos** (mu60, mu120 et mu250 :
+  0/35 chacun). Le décalage causal `adjusted − fit_raw` est de médiane −0,010, max |0,069|.
+- mu60 : 32/35 non apparié (binomial exact unilatéral p = 2,1e-07), 31/35 apparié post-warmup
+  (p = 1,7e-06). Seul ETH est faible (2/5 non apparié).
+- **L'avantage économique n'est PAS porté par la correction du biais de prévision** : identique
+  avant/après calibration, il est porté par le dimensionnement conditionné à la volatilité
+  (exposure management long-only, plancher f = 0 en tendance baissière), pas par des prévisions
+  ponctuelles débiaisées.
+- **Divulgation zero-exposure** : mu250 = 16/35 combos tout-cash (`avg_weight` = 0 : ADA/DOT 5
+  chacun, SOL/LTC/XRP 2 chacun — le mu 250 j reste négatif sur toute la fenêtre ~724 j) ;
+  mu120 = 2/35 (DOT). Ces « victoires » contre un buy-and-hold négatif sont du cash, pas un edge :
+  mu250 est hors claim. vol_target_har : 21/17/19 selon le bras (deltas médians ≈ 0, 8/35 bascules
+  de signe entre bras) — pas d'avantage, cohérent avec l'historique.
+- **Ce n'est PAS un claim §C** : la couche économique (Sharpe + sign-test) est une observation
+  économique sous hypothèses déclarées — exécution au close quotidien prix uniquement via les
+  frais 10 bps (hypothèse déclarée, pas mesurée), warmup mu60 divulgué (60 j à poids nul) et delta
+  apparié recalculé post-warmup. La jambe §C (DM-MSE) de ce même run est le verdict INCONCLUSIVE
+  cluster ci-dessus.
+
+### Artefacts
+
+- `scripts/results/m11_kelly_debiased/results_7asset_7x5.json` (375 637 octets — 525 lignes
+  stratégie, stats forecast attribuées coin×horizon, DM, provenance, missing, problems)
+- Séries complètes (35 CSV : dates, cible log-RV, trois bras) : hors dépôt, scratchpad local
+  `m11_series_7x5_v2/`
+- Tests : `scripts/tests/test_simulate_har_kelly_debias.py` — 19 tests (identités de bras,
+  non-fuite temporelle, causalité du timing, oracle [i..i+h−1], validateur fail-closed,
+  attribution coin/horizon)
+- Run : `python scripts/simulate_har_kelly.py --debias --calibration-size 60 --horizons 1 5 10 15 20 --extra-coins LTC-USD XRP-USD ADA-USD DOT-USD --expect-coins BTC-USD ETH-USD SOL-USD LTC-USD XRP-USD ADA-USD DOT-USD --mu-windows 60 120 250 --target-vol 0.15 --kelly-cap 1.0 --fee-bps 10 --out-json scripts/results/m11_kelly_debiased/results_7asset_7x5.json`
+
 ## M4 DLinear-vol — entrée §C (2026-08-14) — issue #10908
 
 Première entrée du registre conforme **intégralement** au barème `pr-review-discipline.md` §C :
