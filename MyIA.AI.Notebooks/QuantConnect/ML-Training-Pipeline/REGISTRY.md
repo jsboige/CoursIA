@@ -201,7 +201,7 @@ Biais signés OOS moyens sur les cinq horizons :
 
 DM causal (`adjusted` vs `fit_raw`, `loss_fn="mse"`, même échantillon de fit — l'offset est la seule
 différence) : **5 BEATS / 11 BEATEN / 19 INCONCLUSIVE** sur 35. BTC BEATS aux cinq horizons
-(p = 3,5e-05 → < 5e-07) ; LTC BEATEN aux cinq (p ≤ 0,018) ; XRP BEATEN 4/5, SOL BEATEN h=20. L'offset
+(p = 3,5e-05 → < 5e-07) ; LTC BEATEN aux cinq (p ≤ 0,018) ; XRP BEATEN 5/5, SOL BEATEN h=20. L'offset
 train-tail est instable sur les fenêtres ~724 j : il corrige BTC en profondeur mais dégrade LTC/XRP
 (sur-correction — le biais signé change de signe). DM vs naive-30d : `adjusted` BEATS 35/35 — HAR
 domine la baseline naïve partout, calibration ou pas.
@@ -240,7 +240,7 @@ calibré-vs-historique aurait été trompeuse (le bras calibré hérite d'un fit
 
 ### Artefacts
 
-- `scripts/results/m11_kelly_debiased/results_7asset_7x5.json` (375 637 octets — 525 lignes
+- `scripts/results/m11_kelly_debiased/results_7asset_7x5.json` (361 939 octets — 525 lignes
   stratégie, stats forecast attribuées coin×horizon, DM, provenance, missing, problems)
 - Séries complètes (35 CSV : dates, cible log-RV, trois bras) : hors dépôt, scratchpad local
   `m11_series_7x5_v2/`

@@ -31,7 +31,7 @@ DM, divulgations) : section M11 du `REGISTRY.md`.
 1. **Couche prévision — INCONCLUSIVE au niveau cluster.** Le calibrage supprime le biais signé
    (BTC : −0,43 → −0,004 en moyenne sur les horizons) mais la précision MSE ne suit pas
    uniformément : DM causal (`adjusted` vs `fit_raw`) = 5 BEATS (tous BTC, p ≤ 3,5e-05) /
-   11 BEATEN (LTC 5/5, XRP 4/5) / 19 INCONCLUSIVE. L'offset train-tail est instable sur les
+   11 BEATEN (LTC 5/5, XRP 5/5, SOL h=20) / 19 INCONCLUSIVE. L'offset train-tail est instable sur les
    fenêtres ~724 j — cohérent avec M12/M16 cluster.
 2. **Couche économique — l'avantage Kelly est INVARIANT à la calibration.** mu60 gagne 32/35 dans
    les TROIS bras (31/35 en apparié post-warmup, p binomial 1,7e-06), **0 bascule de signe du
@@ -44,7 +44,7 @@ DM, divulgations) : section M11 du `REGISTRY.md`.
    apparié recalculé post-warmup sur dates identiques. L'oracle du bras débiaisé cible [i, i+h−1]
    (l'historique utilisait [i+1, i+h] — conservé au bit près côté legacy).
 
-**Artefacts** : `scripts/results/m11_kelly_debiased/results_7asset_7x5.json` (375 637 octets) ;
+**Artefacts** : `scripts/results/m11_kelly_debiased/results_7asset_7x5.json` (361 939 octets) ;
 tests `scripts/tests/test_simulate_har_kelly_debias.py` (19) ; séries OOS 35 CSV hors dépôt.
 
 ---
