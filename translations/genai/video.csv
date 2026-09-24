@@ -12752,7 +12752,7 @@ MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipyn
 - Packages : `requests`, `websocket-client`, `torch`, `Pillow`, `imageio`
 
 **Navigation :** [<< 03-2](03-2-Video-Workflow-Orchestration.ipynb) | [Index](../README.md) | [Suivant >>](../04-Applications/04-1-Educational-Video-Generation.ipynb)",,,,,,,,09db40f5cc40eed5,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,cell-params,code,fr,c7d8c9c5eea15524,"import os
+MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,cell-params,code,fr,c44e345a94921196,"import os
 
 # Parametres Papermill - JAMAIS modifier ce commentaire
 # Configuration notebook
@@ -12777,9 +12777,10 @@ fps_output = 8                       # FPS de sortie
 run_workflow = True                   # Executer le workflow
 save_as_mp4 = True                   # Sauvegarder en MP4
 save_results = True
-",,,,,,,,c7d8c9c5eea15524,,,,,,,,
+
+print(f""Config ComfyUI: mode={notebook_mode}, debug={debug_level}"")",,,,,,,,c44e345a94921196,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,h3ckl1tv0h9,markdown,fr,3413562569ea4c48,"On importe ensuite les bibliotheques necessaires pour interagir avec l'API ComfyUI : `requests` pour les appels REST, `websockets` pour le suivi en temps reel, et `json` pour la construction des workflows.",,,,,,,,3413562569ea4c48,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,cell-setup,code,fr,2d0294b025d3e6a4,"# Setup environnement et imports
+MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,cell-setup,code,fr,07ea863a9f12fb20,"# Setup environnement et imports
 import os
 import sys
 import json
@@ -12808,7 +12809,7 @@ for _ in range(10):
     env_path = current_path / "".env""
     if env_path.exists():
         load_dotenv(env_path)
-        print(f"".env charge depuis: {env_path}"")
+        print(f"".env charge depuis: {env_path.name}"")
         env_loaded = True
         break
     if current_path.name == ""GenAI"" or len(current_path.parts) <= 1:
@@ -12840,9 +12841,9 @@ print(f""Date : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"")
 print(f""Mode : {notebook_mode}"")
 print(f""ComfyUI URL : {comfyui_url}"")
 print(f""Workflow : {workflow_type}"")
-print(f""VideoHelperSuite : {enable_video_helper}"")",,,,,,,,2d0294b025d3e6a4,,,,,,,,
+print(f""VideoHelperSuite : {enable_video_helper}"")",,,,,,,,07ea863a9f12fb20,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,p8bll0kz2f,markdown,fr,91fd5baa8e92df8e,Les variables d'environnement et le token d'authentification ComfyUI sont charges depuis le fichier `.env`. On verifie ensuite la connectivite au service avant de soumettre des workflows.,,,,,,,,91fd5baa8e92df8e,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,cell-env,code,fr,175f804009f0376a,"# Chargement .env et verification de la connexion ComfyUI
+MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,cell-env,code,fr,bf5894a84a64097a,"# Chargement .env et verification de la connexion ComfyUI
 # Chargement robuste de la configuration .env
 from dotenv import load_dotenv
 import os
@@ -12853,7 +12854,7 @@ for _ in range(10):
     env_path = current_path / "".env""
     if env_path.exists():
         load_dotenv(env_path)
-        print(f"".env charge depuis: {env_path}"")
+        print(f"".env charge depuis: {env_path.name}"")
         env_loaded = True
         break
     if current_path.name == ""GenAI"" or len(current_path.parts) <= 1:
@@ -12863,7 +12864,9 @@ if not env_loaded:
     print(""WARNING: .env non trouve, utilisation variables environnement"")
 
 # Token d'authentification ComfyUI
-comfyui_token = os.environ.get('COMFYUI_AUTH_TOKEN', os.environ.get('COMFYUI_BEARER_TOKEN', ''))
+# COMFYUI_VIDEO_TOKEN d'abord : l'instance video a son propre jeton, les
+# noms generiques portent celui du stack qwen (mesure : 200 vs 401 sur :8189).
+comfyui_token = os.environ.get('COMFYUI_VIDEO_TOKEN', os.environ.get('COMFYUI_API_TOKEN', os.environ.get('COMFYUI_AUTH_TOKEN', '')))
 if comfyui_token:
     print(f""Token ComfyUI : configure"")
 else:
@@ -12938,7 +12941,7 @@ except Exception as e:
     run_workflow = False
 
 print(f""\nComfyUI disponible : {comfyui_available}"")
-print(f""Workflow active : {run_workflow}"")",,,,,,,,175f804009f0376a,,,,,,,,
+print(f""Workflow active : {run_workflow}"")",,,,,,,,bf5894a84a64097a,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,cell-section1-intro,markdown,fr,8bcaac4894bb6bd8,"## Section 1 : API ComfyUI et soumission de workflows
 
 ComfyUI expose une API REST et WebSocket pour piloter la generation.
@@ -13436,7 +13439,7 @@ print(f""  Chercheur/Dev Python : diffusers (controle total, scripts personnalis
 print(f""  Artiste/Designer : ComfyUI (interface visuelle, workflows partageables)"")
 print(f""  Production : ComfyUI API (GPU distant, file d'attente, monitoring)"")",,,,,,,,ae8f2e1199712c4d,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,wr2vd0mz0o,markdown,fr,463b8477de023eb2,"En mode interactif, l'utilisateur peut modifier les paramètres du workflow (prompt, pas de diffusion, resolution) et soumettre une nouvelle generation sans relancer tout le notebook.",,,,,,,,463b8477de023eb2,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,cell-interactive,code,fr,f3435e43975d3b7f,"# Mode interactif : modifier les parametres du workflow
+MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,cell-interactive,code,fr,71bbdd0b71a6786a,"# Mode interactif : modifier les parametres du workflow
 if notebook_mode == ""interactive"" and not skip_widgets:
     print(""\n--- MODE INTERACTIF ---"")
     print(""="" * 40)
@@ -13492,12 +13495,12 @@ if notebook_mode == ""interactive"" and not skip_widgets:
     except Exception as e:
         error_type = type(e).__name__
         if ""StdinNotImplemented"" in error_type or ""input"" in str(e).lower():
-            print(""\nMode interactif non disponible (execution automatisee)"")
+            print(""\nMode interactif ignore en execution automatisee (mode batch)"")
         else:
             print(f""\nErreur inattendue : {error_type} - {str(e)[:100]}"")
             print(""Passage a la suite du notebook"")
 else:
-    print(""\nMode batch - Interface interactive desactivee"")",,,,,,,,f3435e43975d3b7f,,,,,,,,
+    print(""\nMode batch - Interface interactive desactivee"")",,,,,,,,71bbdd0b71a6786a,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,73dhieicnau,markdown,fr,3c4823e3dc619be2,"La conclusion recapitule les différences entre l'approche ComfyUI (workflow graph JSON) et l'approche diffusers (code Python direct), pour guider le choix selon le contexte.",,,,,,,,3c4823e3dc619be2,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,cell-conclusion,markdown,fr,8a074c48aa06750f,"## Bonnes pratiques ComfyUI pour la video
 
@@ -13529,7 +13532,7 @@ MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipyn
 | HTTPS | Obligatoire pour les connexions distantes |
 | Timeouts | Configurer des timeouts raisonnables (5 min max) |
 | Validation | Verifier les outputs avant traitement |",,,,,,,,8a074c48aa06750f,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,2lmilt2pa36,markdown,fr,f20f432851e19fee,"---
+MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,2lmilt2pa36,markdown,fr,757474591ad8f085,"***
 
 ## Exercice : Workflow ComfyUI Personnalise
 
@@ -13560,7 +13563,7 @@ Créer un workflow ComfyUI complet pour un cas d'usage spécifique (ex: video pr
    - Ajuster les paramètres selon les résultats
    - Documenter les meilleures pratiques
 
-### Indices
+> **Indices :**
 
 - Workflows ComfyUI visuels : utiliser l'interface pour designer, exporter en JSON
 - Nodes essentiels : CheckpointLoader, CLIPTextEncode, KSampler, VAEDecode, VHS_VideoCombine
@@ -13630,9 +13633,9 @@ for p in my_prompts:
 - [ ] Analyse des résultats (temps, qualite)
 - [ ] Documentations des paramètres optimaux
 
----
-",,,,,,,,f20f432851e19fee,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,b7d9dd2f139,markdown,fr,aac9c322071e39b4,"## Exercice Avance : Integration Diffusers + ComfyUI
+***
+",,,,,,,,757474591ad8f085,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,b7d9dd2f139,markdown,fr,c69d0d42d91bcebb,"## Exercice Avance : Integration Diffusers + ComfyUI
 
 **Duree estimee :** 90-120 minutes
 
@@ -13661,7 +13664,7 @@ Créer un pipeline hybride combinant la flexibilite de code diffusers avec l'eco
    - Avantages/inconvenients
    - Cas d'usage ou cela a du sens
 
-### Indices
+> **Indices :**
 
 - Custom nodes ComfyUI : dossier `custom_nodes/` avec `__init__.py` et classe Node
 - Communication possible via : HTTP API, WebSocket, ou appels Python directs
@@ -13720,7 +13723,7 @@ class DiffusersProxyNode:
 - [ ] Analyse des avantages/limites
 - [ ] Documentation pour developpeurs
 
----",,,,,,,,aac9c322071e39b4,,,,,,,,
+***",,,,,,,,c69d0d42d91bcebb,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,p7w1qzc64a,code,fr,e0bd14f50f7fd209,"# TODO: Construire un workflow ComfyUI pour votre cas d'usage
 def build_my_workflow(prompt: str, negative: str, 
                       width: int, height: int, 
@@ -13776,60 +13779,40 @@ for p in my_prompts:
         print(f""Résultat: {result['success']}, Temps: {result.get('elapsed', 0):.1f}s"")
 ",,,,,,,,e0bd14f50f7fd209,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,4qpxhd2ymj5,markdown,fr,a522bb3c7834a233,La construction d'un second workflow alternatif permet de tester différentes architectures de nodes et de comparer les performances sur le même prompt.,,,,,,,,a522bb3c7834a233,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,735ykxgotxb,code,fr,e0bd14f50f7fd209,"# TODO: Construire un workflow ComfyUI pour votre cas d'usage
-def build_my_workflow(prompt: str, negative: str, 
-                      width: int, height: int, 
-                      frames: int, fps: int) -> Dict:
+MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,735ykxgotxb,code,fr,1227013b9f5f87b2,"# Second workflow alternatif : meme prompt, architecture de nodes differente.
+# Cette cellule ne redefinit ni build_my_workflow ni submit_and_monitor
+# (exercice precedent) : seule la construction varie, la soumission reutilise
+# la meme fonction.
+def build_alternate_workflow(prompt: str, negative: str,
+                             width: int, height: int,
+                             frames: int, fps: int) -> Dict:
     """"""
-    Workflow ComfyUI personnalisé.
-    
-    Nodes à inclure:
-    1. CheckpointLoader (chargement modèle)
-    2. CLIPTextEncode (prompt positif et négatif)
-    3. KSampler (génération)
-    4. VAEDecode (décodage)
-    5. VHS_VideoCombine (assemblage vidéo)
-    
-    Choisir:
-    - Modèle SD: v1-5, SDXL, ou custom
-    - Motion module AnimateDiff: v2 ou v3
-    - Sampler: euler, euler_ancestral, ddim
+    Variante d'architecture pour comparer les performances sur le meme prompt.
+
+    Differences volontaires par rapport a build_my_workflow :
+    - Sampler : ddim au lieu d'euler (convergence differente)
+    - Motion module : v2_sd15_mm.ckpt au lieu de v3_sd15_mm.ckpt
+    - CFG legerement plus bas (6.0) pour la coherence temporelle
+
+    Nodes a inclure : CheckpointLoader, CLIPTextEncode x2, KSampler,
+    VAEDecode, VHS_VideoCombine -- la topologie reste libre.
     """"""
     workflow = {}
-    
-    # TODO: Construire les nodes du workflow
+
+    # TODO: Construire les nodes de la variante
     # workflow[""1""] = {...}
-    
+
     return workflow
 
-# TODO: Implémenter la soumission et le monitoring
-def submit_and_monitor(workflow: Dict, server_url: str, 
-                      headers: Dict, timeout: int = 300) -> Dict:
-    """"""
-    Soumet le workflow et attend la completion.
-    
-    Retourne: {""success"": bool, ""outputs"": ..., ""elapsed"": ...}
-    """"""
-    # TODO: Soumission POST /prompt
-    # TODO: Monitoring GET /history/{id} ou WebSocket
-    # TODO: Téléchargement GET /view
-    pass
-
-# TODO: Tester sur 3 prompts de votre cas d'usage
-my_prompts = [
-    ""Votre prompt 1..."",
-    ""Votre prompt 2..."",
-    ""Votre prompt 3...""
-]
-
+# Comparaison : le meme prompt soumis a la variante (la soumission reutilise
+# submit_and_monitor de l'exercice precedent).
 for p in my_prompts:
-    wf = build_my_workflow(p, ""low quality"", 512, 512, 16, 8)
-    result = submit_and_monitor(wf, comfyui_url, headers)
-    if result is None:
-        print(f""ComfyUI non disponible pour: {p[:50]}..."")
+    wf_alt = build_alternate_workflow(p, ""low quality"", 512, 512, 16, 8)
+    result_alt = submit_and_monitor(wf_alt, comfyui_url, headers)
+    if result_alt is None:
+        print(f""Variante non soumise (submit_and_monitor non complete ou ComfyUI non disponible): {p[:50]}..."")
     else:
-        print(f""Résultat: {result['success']}, Temps: {result.get('elapsed', 0):.1f}s"")
-",,,,,,,,e0bd14f50f7fd209,,,,,,,,
+        print(f""Variante - Resultat: {result_alt['success']}, Temps: {result_alt.get('elapsed', 0):.1f}s"")",,,,,,,,1227013b9f5f87b2,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,dz11mxjao7v,markdown,fr,6d4e1379e0ac601b,"Pour exposer diffusers comme un node ComfyUI, on créé un proxy qui traduit les paramètres du workflow JSON vers les appels Python correspondants.",,,,,,,,6d4e1379e0ac601b,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,tw14kk40jo,code,fr,33f6384f8859f089,"# TODO: Créer un custom node ComfyUI pour diffusers
 class DiffusersProxyNode:
@@ -13869,7 +13852,7 @@ class DiffusersProxyNode:
 # TODO: Benchmark comparatif
 # Diffusers pur vs ComfyUI proxy
 # Mesurer: temps, VRAM, flexibilité",,,,,,,,33f6384f8859f089,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,96e0a40e,markdown,fr,eefec5b9f3353b5c,"---
+MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,96e0a40e,markdown,fr,d7b055a8f0789a37,"***
 
 ## Exercice : Exploration et Comparaison de Paramètres Workflow
 
@@ -13904,12 +13887,12 @@ Un balayage systématique permet de trouver les paramètres optimaux sans tatonn
    - Identifier les combinaisons optimales (qualite vs temps)
    - Documenter les observations dans un tableau recapitulatif
 
-### Indices
+> **Indices :**
 
 - Le KSampler est le node ""7"" dans le workflow de base : `workflow[""7""][""inputs""][""cfg""]`
 - Pour modifier le sampler : `workflow[""7""][""inputs""][""sampler_name""]`
 - Limiter le sweep a 9 combinaisons pour rester dans un temps raisonnable
-- Sauvegarder les images de chaque run avec un nom encode les paramètres",,,,,,,,eefec5b9f3353b5c,,,,,,,,
+- Sauvegarder les images de chaque run avec un nom encode les paramètres",,,,,,,,d7b055a8f0789a37,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,3e496c72,code,fr,92c307b3b0f3783b,"# TODO: Implementer le balayage systematique des parametres
 
 import copy  # Pour copier le workflow de base sans le modifier
@@ -20444,3 +20427,6 @@ MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-6-MiniMax-video-01-v1-Cloud-Vid
 **Navigation** : [<< 04-5 H3/v2 cloud](04-5-MiniMax-H3-Cloud-Video.ipynb) | [↑ Video Applications](README.md) | [↑ Video Series](../README.md)
 
 *MiniMax video-01 (v1) — Generation video par service cloud `/v1/video_generation`, modele `video-01` (Hailuo line, muet), plan-couvert UE.*",,,,,,,,179b687ee701a8fc,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,bec0f46c,code,fr,d8cfd07b7b0f3965,"# Parameters
+BATCH_MODE = ""true""
+",,,,,,,,d8cfd07b7b0f3965,,,,,,,,

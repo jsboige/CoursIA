@@ -217,6 +217,13 @@ jobs:
           # rattrape ici sur l'arbre merge (mesure 2026-09-16 ci-dessus,
           # header). Cette branche (xdist) n'apporte RIEN a tests/ non plus :
           # 1156 est la collection mesuree de l'arbre merge, le cliquet suit.
+          # Floor 1156 -> 1177 : +19 de DRIFT MAIN (origin/main@bf212573c0
+          # collecte 1175 -- mesure firsthand du 2026-09-21 sur un worktree
+          # detache a ce sha, pas une inference) + 2 items de CETTE branche
+          # (#16750 : les deux tests du garde de degenerescence inter-jeux,
+          # tests/test_sae_traces.py -- 12 items contre 10 sur main).
+          # Mesure de l'arbre merge : 1177 collectes, 1150 passes + 28 skips.
+          # Le cliquet suit la collection mesuree, jamais l'inverse.
           #
           # PARALLELISATION (#14598 levier b) -- cette jambe UNIQUEMENT.
           # Mesure de concentration sur la sonde `ict-tests-profile.yml`
@@ -258,7 +265,7 @@ jobs:
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series
             test-args: tests
             test-parallel: "-n 4 --dist loadscope"
-            test-floor: 1156
+            test-floor: 1177
           # ict/tests/ : 42 strates package (85 - 43 consolides dans tests/,
           # #9478) -> 686 items collectes = 670 (mesure 2x sur
           # origin/main@5302d974aa, CI-confirme run 34307798875) + 16 tests
@@ -320,11 +327,31 @@ jobs:
           # choix (test-parallel vide -- elle n'a pas ete mesuree par la
           # sonde, 6,85-8,35 min en CI, conftest.py + pytest.ini propres
           # en mode prepend, cf. #9387/#14598).
-          - suite-name: "ict/tests/ (57 package)"
+          #
+          # Floor 936 -> 972 (arbre EMPILE de #17164, case 17 STV #8182) :
+          # +15 items de ict/tests/test_stv_valence_symmetry.py (collecte
+          # isolee du fichier : 15 -- aucun parametrage, donc independant de
+          # l'interpreteur) sur la base **CI-mesuree 957** de l'arbre de
+          # #17159 (main + case 16), log run 35570193154 :
+          #   "Collected: 957 tests (floor: 936) for ict/tests/ (57 package)"
+          # Les 957 incluent deja les 10 items de case 16
+          # (test_tonic_alertness_gain.py) ET le drift ascendant silencieux
+          # accumule sur main ; 957 + 15 = 972 ferme l'arithmetique. Ce bump
+          # couvre donc les DEUX apports non rattrapes : si #17159 merge sans
+          # son propre relevement (sa PR n'en porte pas), la base #17164
+          # portera le floor correct sur l'arbre final.
+          # Label "(57 package)" -> "(60 package)" : 57 modules sur main au
+          # moment du bump, +1 drift main (58, compte Hermes deux voies API
+          # contents/git trees), +1 case 16 (sur main depuis le squash de
+          # #17159, 2026-09-22) et +1 case 17 (cette PR) = 60 fichiers
+          # test_*.py sur l'arbre final. Le libelle est cosmetique (le guard
+          # ne lit que le floor) et n'est reference nulle part -- "PR gate" est
+          # le seul contexte requis de la protection de main, verifie 2026-09-21.
+          - suite-name: "ict/tests/ (60 package)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests
             test-args: .
             test-parallel: ""
-            test-floor: 936
+            test-floor: 972
 
     steps:
       - uses: actions/checkout@v4

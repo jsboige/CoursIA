@@ -1,0 +1,15 @@
+date: '2026-09-21'
+by: myia-po-2027:CoursIA
+python_sha: 072f04c4e1bf03a650a3727204a201e97679e0de
+csharp_sha: 7c38a8b53ea79d85b1be351c36dc03a9a1bc891c
+content_python_sha: e0fa006bf2d7de6d5d2da1ba2e10279731ba29e53e3a83924a42097706f4f7bb
+content_csharp_sha: 07f2681a82de74004c5c5377115a6f302e5e392246e974709fd8e21c6cb3d32d
+reason: >-
+  Re-attestation de parite -- PR #17021 (fix pedagogie #13410, relay g59-search-1, lane
+  myia-po-2027:CoursIA), markdown-only. 9 lectures reancrees sur les sorties imprimees
+  du cote Python (App-1-NQueens.ipynb) : ajout de cellules markdown d'interpretation
+  apres les cellules de code. Diff = 184 insertions markdown (verifie firsthand :
+  aucune cellule code modifiee, outputs et execution_count byte-identiques, Golden-Set
+  CI 8/8). Cote C# (App-1b-NQueens-CSharp.ipynb) inchange. parity_level native-both
+  intacte : l'enrichissement de prose Python ne touche pas la parite moteur (OR-Tools
+  CP-SAT des deux cotes). Le blob atteste ici est celui du HEAD de la PR.

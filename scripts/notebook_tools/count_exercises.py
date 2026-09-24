@@ -346,7 +346,7 @@ STUB_PATTERNS = [
     # use `//`. A scaffolded C# exercise (class skeleton + `// TODO etudiant`
     # + multiple code lines) is a student stub, not a solution: without the
     # `//` form it escaped the `<= 1 effective code-line` rule and was
-    # silently under-counted (e.g. Search-11-Metaheuristics-Csharp cells
+    # silently under-counted (e.g. Search-11-Metaheuristics-CSharp cells
     # 24-26, each `// Exercice N` + `// TODO etudiant` + partial skeleton).
     re.compile(r"#\s*TODO", re.IGNORECASE),
     re.compile(r"//\s*TODO", re.IGNORECASE),
