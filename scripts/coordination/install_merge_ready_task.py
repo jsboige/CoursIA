@@ -87,13 +87,16 @@ def task_command(repo: Path) -> list[str]:
 def build_schtasks_install(cmd: list[str], interval_minutes: int) -> list[str]:
     """Ligne schtasks /Create : toutes les N minutes, contexte utilisateur
     courant (gh auth vit au niveau utilisateur), fenetre masquee."""
-    tr = " ".join(cmd)
+    # Quoter chaque element, jamais la ligne entiere : un /TR "python.exe script.py
+    # --run" enregistre la ligne comme NOM d'executable, et la tache echoue
+    # a chaque tour avec 0x80070002 (fichier introuvable) sans rien journaliser.
+    tr = subprocess.list2cmdline(cmd)
     return [
         "schtasks", "/Create", "/F",
         "/TN", TASK_NAME,
         "/SC", "MINUTE",
         "/MO", str(interval_minutes),
-        "/TR", f'"{tr}"',
+        "/TR", tr,
     ]
 
 

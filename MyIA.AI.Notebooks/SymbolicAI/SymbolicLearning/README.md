@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-SymbolicLearning
-pedagogical_count: 24
-breakdown: SymbolicLearning=24
-maturity: BETA=22, ALPHA=2
+pedagogical_count: 26
+breakdown: SymbolicLearning=26
+maturity: BETA=24, ALPHA=2
 -->
 
 ## Présentation
@@ -35,9 +35,9 @@ SL-14 ouvre un registre que la série n'avait pas encore visité : la **découve
 
 ## Prérequis et dépendances
 
-Les notebooks (~22h10 total — 16 Python + 8 jumeaux C# marathon parité #4956 + 1 compagnon Lean natif) se répartissent ainsi :
+Les notebooks (~22h50 total — 17 Python + 8 jumeaux C# marathon parité #4956 + 1 compagnon Lean natif) se répartissent ainsi :
 
-- **Track Python** : Python 3.10+ standard library suffit, sauf SL-3 (scikit-learn + numpy pour la comparaison RBL / information mutuelle), SL-4 (Popper + `janus_swi` + SWI-Prolog, kernel Linux/WSL), SL-6 (moteurs ILP réels : SWI-Prolog, Popper, Lernd), SL-7 (`torch` + `LTNtorch` pour les Logic Tensor Networks), SL-8 (`rdflib` + `clingo` pour les knowledge graphs et l'ASP), SL-12 (difflogic + torch), SL-12b (numpy + matplotlib pour la synthèse spectrale), SL-12b' (numpy seul CPU pour la reproduction Pavlov DLS), SL-13 (`torch` CPU + numpy pour le diagnostic DISCOVER) et SL-14 (conteneur Docker `aifeynman:sl14` — le paquet `aifeynman` figé en 2021 exige Python 3.9, NumPy < 2 et gfortran ; construction : `docker build -f assets/Dockerfile.aifeynman -t aifeynman:sl14 assets/`, puis exécution papermill dans le conteneur) ; SL-9 et SL-11 acceptent une clé OpenRouter optionnelle (fichier `.env`) pour des appels LLM réels, avec un simulateur déterministe en repli.
+- **Track Python** : Python 3.10+ standard library suffit, sauf SL-3 (scikit-learn + numpy pour la comparaison RBL / information mutuelle), SL-4 (Popper + `janus_swi` + SWI-Prolog, kernel Linux/WSL), SL-6 (moteurs ILP réels : SWI-Prolog, Popper, Lernd), SL-7 (`torch` + `LTNtorch` pour les Logic Tensor Networks), SL-8 (`rdflib` + `clingo` pour les knowledge graphs et l'ASP), SL-12 (difflogic + torch), SL-12b (numpy + matplotlib pour la synthèse spectrale), SL-12b' (numpy seul CPU pour la reproduction Pavlov DLS), SL-13 (`torch` CPU + numpy pour le diagnostic DISCOVER), SL-15 (`ortools` 9.15 + `scikit-learn` 1.6, CPU seul — CP-SAT joue l'oracle) et SL-14 (conteneur Docker `aifeynman:sl14` — le paquet `aifeynman` figé en 2021 exige Python 3.9, NumPy < 2 et gfortran ; construction : `docker build -f assets/Dockerfile.aifeynman -t aifeynman:sl14 assets/`, puis exécution papermill dans le conteneur) ; SL-9 et SL-11 acceptent une clé OpenRouter optionnelle (fichier `.env`) pour des appels LLM réels, avec un simulateur déterministe en repli.
 - **Compagnon Lean** : SL-1b s'exécute sur le kernel Lean 4 `lean4-wsl` (lake `learning_theory_lean`, Mathlib).
 - **Jumeaux C#** : les 8 jumeaux (.NET Interactive 1.4+, `Microsoft.dotnet-interactive`) sont des ré-implémentations from-scratch en C# pur des mêmes algorithmes, sans dépendance externe ML.
 - **Niveau requis** : une familiarité avec la logique propositionnelle suffit pour SL-1 à SL-6 et SL-10 ; SL-7, SL-9 et SL-11 supposent une intuition des réseaux de neurones et des LLMs.
@@ -91,11 +91,11 @@ Cette série montre que les deux approches ne s'opposent pas — elles se **comp
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 25 (16 Python canoniques + 8 jumeaux C# marathon parité #4956 + 1 compagnon Lean natif) |
-| Exercices (table de pioche) | 58 |
+| Notebooks | 26 (17 Python canoniques + 8 jumeaux C# marathon parité #4956 + 1 compagnon Lean natif) |
+| Exercices (table de pioche) | 61 |
 | Kernel | Python 3 + .NET Interactive (jumeaux C#) + lean4-wsl (compagnon Lean) + conteneur aifeynman:sl14 (SL-14) |
-| Durée estimée | ~1330 min (~22 h 10 : Python 14 h 40 + compagnon Lean 40 min + jumeaux C# 6 h 50) |
-| Prérequis | Python 3.10+ (standard library + sklearn + numpy pour SL-3 seulement ; SL-4 relève de SWI-Prolog/Popper via kernel Linux/WSL ; rdflib+clingo pour SL-8 ; torch+LTNtorch pour SL-7 ; difflogic+torch pour SL-12 ; numpy+matplotlib pour SL-12b ; numpy seul CPU pour SL-12b' ; torch CPU + numpy pour SL-13 ; conteneur Docker aifeynman:sl14 pour SL-14 ; clé OpenRouter optionnelle pour SL-9/SL-11) + .NET Interactive 1.4+ pour les 8 jumeaux C# + kernel lean4-wsl (lake `learning_theory_lean`) pour SL-1b |
+| Durée estimée | ~1370 min (~22 h 50 : Python 15 h 20 + compagnon Lean 40 min + jumeaux C# 6 h 50) |
+| Prérequis | Python 3.10+ (standard library + sklearn + numpy pour SL-3 seulement ; SL-4 relève de SWI-Prolog/Popper via kernel Linux/WSL ; rdflib+clingo pour SL-8 ; torch+LTNtorch pour SL-7 ; difflogic+torch pour SL-12 ; numpy+matplotlib pour SL-12b ; numpy seul CPU pour SL-12b' ; torch CPU + numpy pour SL-13 ; ortools + scikit-learn pour SL-15 ; conteneur Docker aifeynman:sl14 pour SL-14 ; clé OpenRouter optionnelle pour SL-9/SL-11) + .NET Interactive 1.4+ pour les 8 jumeaux C# + kernel lean4-wsl (lake `learning_theory_lean`) pour SL-1b |
 
 ## Parcours d'apprentissage
 
@@ -107,7 +107,7 @@ flowchart TD
     P2["<b>Phase 2 · Guidé par la connaissance</b><br/>SL-2/3 · EBL · RBL · déterminations<br/>la connaissance accélère"]
     P3["<b>Phase 3 · Programmes logiques</b><br/>SL-4/5 · FOIL · résolution inverse · Progol<br/>clauses Horn + récursion"]
     P4["<b>Phase 4 · Moteurs ILP réels</b><br/>SL-6 · Aleph · Metagol · Popper · ∂ILP<br/>4 machineries comparées"]
-    P5["<b>Phase 5 · Neuro-symbolique</b><br/>SL-7/8/9/13 · T-norms · KG mining · boucle LLM · diagnostic TPR<br/>différentiable + vérifiable + structurelle"]
+    P5["<b>Phase 5 · Neuro-symbolique</b><br/>SL-7/8/9/13/15 · T-norms · KG mining · boucle LLM · diagnostic TPR · conjectures/oracle<br/>différentiable + vérifiable + structurelle"]
     P6(("<b>Phase 6 · Capstone</b><br/>SL-10/11/12/12b/12b' · L* actif · pipeline 6 étages · portes differentiables · synthèse spectrale + reproduction Pavlov<br/>LLM ↔ logique en boucle"))
     P7["<b>Phase 7 · Découvrir l'équation</b><br/>SL-14 · AI Feynman · gradients + MDL + Pareto<br/>du réseau à la formule fermée"]
     P1 -->|"bruit + disjonction<br/>non représentables"| P2
@@ -136,9 +136,9 @@ Après avoir construit FOIL et Progol *de zéro*, SL-6 met quatre moteurs ILP **
 
 *Les quatre moteurs ILP (Aleph, Metagol, Popper, ∂ILP) sont comparés textuellement dans la cellule 21 du notebook — chacun y apprend le même concept `ancestor/2` par une machinerie distincte (recherche symbolique exacte, métarègles avec invention de prédicats, contraintes ASP, descente de gradient), et leurs clauses apprises, scores et temps sont tabulés. Aucune figure illustrative n'est embarquée ici : la comparaison vit dans le notebook, où chaque moteur peut être inspecté dans son contexte d'exécution.*
 
-### Phase 5 : Intégration neuro-symbolique (SL-7 à SL-9, et SL-13, ~185 min)
+### Phase 5 : Intégration neuro-symbolique (SL-7 à SL-9, SL-13 et SL-15, ~225 min)
 
-Cette phase explore les méthodes contemporaines à l'intersection du symbolique et du connexionniste. SL-7 introduit les T-norms différentiables, les prédicats neuronaux et les Logics Tensor Networks qui rendent la logique opérationnelle dans un gradient descent. SL-8 passe à l'échelle avec le rule mining réel sur des knowledge graphs construits avec rdflib (AMIE, complétion de graphes). SL-9 ferme la boucle avec LLMs : extraction de règles depuis du texte naturel, vérification symbolique des sorties, et boucles de rétroaction pour fiabiliser le raisonnement. **SL-13 complète la phase 5** en se demandant si la structure TPR (Tensor Product Representation, `sum_t role_pos(t) ⊗ filler_symbole(x_t)`) émerge *organiquement* dans un GRU 1-2 couches entraîné sur des tâches symboliques de séquence. Le diagnostic DISCOVER (McCoy et al., arXiv:2608.29530) procède par factorisation role × filler (ALS), réinjection dans le décodeur, constituent surgery et contrôle white-box TPR versus embeddings atomiques — sur architectures CPU petites, avec une conclusion *bornée* : la structure est approximative et fonctionnellement exploitée, mais pas une implémentation symbolique exacte.
+Cette phase explore les méthodes contemporaines à l'intersection du symbolique et du connexionniste. SL-7 introduit les T-norms différentiables, les prédicats neuronaux et les Logics Tensor Networks qui rendent la logique opérationnelle dans un gradient descent. SL-8 passe à l'échelle avec le rule mining réel sur des knowledge graphs construits avec rdflib (AMIE, complétion de graphes). SL-9 ferme la boucle avec LLMs : extraction de règles depuis du texte naturel, vérification symbolique des sorties, et boucles de rétroaction pour fiabiliser le raisonnement. **SL-13 complète la phase 5** en se demandant si la structure TPR (Tensor Product Representation, `sum_t role_pos(t) ⊗ filler_symbole(x_t)`) émerge *organiquement* dans un GRU 1-2 couches entraîné sur des tâches symboliques de séquence. Le diagnostic DISCOVER (McCoy et al., arXiv:2608.29530) procède par factorisation role × filler (ALS), réinjection dans le décodeur, constituent surgery et contrôle white-box TPR versus embeddings atomiques — sur architectures CPU petites, avec une conclusion *bornée* : la structure est approximative et fonctionnellement exploitée, mais pas une implémentation symbolique exacte. **SL-15 prolonge la boucle générateur/oracle de SL-9 sur un oracle d'optimisation réel** : un MLP entraîné à imiter les solutions sœurs propose des *conjectures* (fixations de variables) à CP-SAT sur la coloration de graphe, et le notebook mesure ce que le benchmark agrégé ne peut pas voir — le sort de **chaque conjecture prise isolément**. Verdict mesuré : le hint complet réduit la médiane de 18 % malgré ~25 % d'arêtes conflictuelles (42 sur ~168), mais chaque conjecture *individuelle* en fait ~63 % — **l'empilement dilue le signal** ; la boucle conjecture → réfutation → réparation est exécutée de bout en bout.
 
 ### Phase 6 : Apprentissage actif et capstone (SL-10 à SL-12b', ~295 min)
 
@@ -181,7 +181,7 @@ Pour les étudiants en informatique théorique : le cadre inductif général (SL
 
 Pour les professionnels du web sémantique et des données structurees : EBL, RBL, FOIL sur clauses Horn, puis application directe sur des knowledge graphs réels avec rdflib et AMIE. Presuppose une familiarité avec RDF/SPARQL.
 
-## Seance de restitution : la table de pioche (58 exercices)
+## Seance de restitution : la table de pioche (61 exercices)
 
 Modalite de la séance : chaque groupe choisit **un exercice** dans la table ci-dessous, le prépare, et le présente en séance. Resoudre l'exercice est le minimum attendu ; chaque exercice est assorti d'une **question-twist** (détaillée dans la cellule « Defi présentation » du notebook correspondant) qui fait partie intégrante de la présentation. Premier arrive, premier servi : annoncez votre choix pour éviter les doublons.
 
@@ -245,6 +245,9 @@ Modalite de la séance : chaque groupe choisit **un exercice** dans la table ci-
 | 56 | [SL-14](SL-14-AIFeynman-Discover-Equations.ipynb) | Ex. 1 — Rejet statistique anticipé (ν=10) | En combien de points un mauvais candidat meurt-il, et pourquoi ν=10 rend-il le test quasi immunisé aux faux positifs ? |
 | 57 | [SL-14](SL-14-AIFeynman-Discover-Equations.ipynb) | Ex. 2 — Addition relativiste récursive | La symétrie généralisée se déclenche deux fois de suite : jusqu'où peut-on empiler les vitesses ? |
 | 58 | [SL-14](SL-14-AIFeynman-Discover-Equations.ipynb) | Ex. 3 — Frontière de bruit | À quel niveau de bruit la forme relativiste disparaît-elle du front — et que mesure vraiment la table 3 du papier ? |
+| 59 | [SL-15](SL-15-LearnedConjectures-Solver.ipynb) | Ex. 1 — Top-k par confiance | Le hint complet ne rend que −18 % là où une fixation isolée vaut −63 % : quelle tête garder, et pourquoi la confiance du MLP n'est *pas* le juge du gain ? |
+| 60 | [SL-15](SL-15-LearnedConjectures-Solver.ipynb) | Ex. 2 — Réfutation des conjectures | Détecter les arêtes en conflit : comment une conjecture peut-elle être *fausse* au sens de l'oracle et pourtant *profitable* au solveur ? |
+| 61 | [SL-15](SL-15-LearnedConjectures-Solver.ipynb) | Ex. 3 — Réparation gloutonne | Retirer les fixations conflictuelles jusqu'à zéro conflit : le hint réparé conserve-t-il le gain, ou paie-t-il le coût de sa réparation ? |
 
 Note : dans SL-7, le premier exercice de la numérotation interne est un exemple guide ; les exercices à piocher sont Ex. 2 à Ex. 5.
 
@@ -276,6 +279,8 @@ Note : dans SL-7, le premier exercice de la numérotation interne est un exemple
 | 12b | [SL-12b - Synthèse Logique Spectrale](SL-12b-SpectralLogicSynthesis.ipynb) | Fourier booléen exact (FWHT), PTF ternaires, routage Sinkhorn, quantification + Metropolis/parallel tempering avec oracle exact (Pavlov arXiv 2601.13953) (See #14366) | 75 min |
 | 12b' | [SL-12b' - Reproduction Pavlov DLS (recherche)](SL-12b-PavlovDLS-Reproduction.ipynb) | Reproduction CPU Phase 1+2 de Pavlov (arXiv 2601.13953) : Walsh exacte, routeur linéaire signé vs Sinkhorn-constrained, mesure de séparation, verdict honnête (See #14366) | 25 min |
 | 13 | [SL-13 - DISCOVER léger : diagnostic TPR](SL-13-Discover-TPR.ipynb) | Diagnostic DISCOVER (McCoy et al. arXiv:2608.29530) sur GRU 1 couche : TPR par ALS (role × filler), réinjection décodeur, constituent surgery, white-box TPR vs embeddings atomiques, balayage capacité d_model ∈ {8,16,32,48}, régularisation L2,1 — conclusion bornée (structure approximative, pas exacte) (See #14366) | 25 min |
+| 14 | [SL-14 - AIFeynman : découvrir des équations](SL-14-AIFeynman-Discover-Equations.ipynb) | Régression symbolique AI Feynman 2.0 (Udrescu et al., NeurIPS 2020) sur l'énergie cinétique relativiste : symétries lues dans les gradients, front de Pareto complexité-précision, exécuté dans le conteneur `aifeynman:sl14` (See #14366) | 75 min |
+| 15 | [SL-15 - Conjectures apprises pour un vérificateur symbolique](SL-15-LearnedConjectures-Solver.ipynb) | Neural diving en doctrine SL : MLP de solutions sœurs → conjectures (fixations) offertes à CP-SAT ; décomposition par conjecture (300/300 aidantes, médiane −63 %), hint complet −18 % malgré ~25 % d'arêtes conflictuelles (42/~168), boucle conjecture → réfutation → réparation exécutée (42 conflits → 0), seconde famille couverture (hint −15,9 %, réparation coûteuse) (See #17605) | 40 min |
 
 ## Contenu détaillé
 

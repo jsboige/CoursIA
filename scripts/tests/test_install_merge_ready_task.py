@@ -31,6 +31,17 @@ def test_build_schtasks_toutes_les_20_minutes(tmp_path):
     assert "install_merge_ready_task.py" in tr and "--run" in tr
 
 
+def test_tr_quote_chaque_element_pas_la_ligne_entiere():
+    # Regression mesuree le 2026-09-24 : /TR "python.exe script.py --run ..."
+    # enregistrait la ligne ENTIERE comme nom d'executable ; la tache echouait
+    # a chaque tour avec 0x80070002 sans rien journaliser.
+    cmd = [r"C:\Program Files\Py\python.exe", r"D:\repo\x.py", "--run"]
+    line = imod.build_schtasks_install(cmd, 20)
+    tr = line[line.index("/TR") + 1]
+    assert tr == r'"C:\Program Files\Py\python.exe" D:\repo\x.py --run'
+    assert tr != '"' + " ".join(cmd) + '"'
+
+
 def test_dry_run_imprime_la_commande_sans_l_executer(tmp_path, capsys, monkeypatch):
     def boom(cmd, **kw):
         raise AssertionError(
