@@ -36,8 +36,9 @@ PR, TOUT doit tenir sinon skip avec raison nommee :
    2 unknown, 3 blocked) sont des SKIPS nommes, pas des erreurs ;
 4. champ ``b0:`` du dossier ACCEPTE par le gate egale ``clear`` --
    grammaire du dossier relue via ``parse_dossier`` du gate lui-meme
-   (import, pas de duplication) ; le gate ne re-verifie pas b0, c'est
-   l'etape 5 qui le fait ;
+   (import, pas de duplication) ; depuis que le gate re-verifie une
+   claim ``b0: clear`` contre l'organe B.0, l'etape 5 fait double emploi
+   pour un READY : elle reste le filet si le gate change ;
 5. organe B.0 ``check_unaddressed_nits.py <PR>`` exit 0 -- code de
    retour capture DIRECTEMENT (subprocess.returncode, jamais a travers
    un pipe) ;
