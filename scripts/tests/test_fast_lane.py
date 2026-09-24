@@ -295,13 +295,17 @@ def test_delta_placeholders_are_resolvable():
 def test_advisory_flags_match_the_source_workflows():
     """Le caractere advisory est une propriete du garde, pas du moteur.
 
-    `solution-leak-guard` et `prose-counts-guard` sont annonces advisory dans
-    l'en-tete de leur workflow ; les inverser ici ferait rougir la flotte sur
-    un stock que le depot a explicitement decide de ne pas bloquer.
+    `solution-leak-guard` est annonce advisory dans l'en-tete de son workflow ;
+    l'inverser ici ferait rougir la flotte sur un stock que le depot a
+    explicitement decide de ne pas bloquer. `prose-counts-guard` est passe
+    BLOQUANT (#17636, critere de sortie #9377) : son argv porte --strict et le
+    garde ne juge que les lignes AJOUTEES -- le stock de 65 notebooks ne fait
+    echouer personne, seule une PR qui rouvre la veine rougit.
     """
     by_name = {g.name: g for g in PILOT}
     assert by_name["solution-leak-guard"].blocking is False
-    assert by_name["prose-counts-guard"].blocking is False
+    assert by_name["prose-counts-guard"].blocking is True
+    assert "--strict" in by_name["prose-counts-guard"].argv
     assert by_name["banner-guard"].blocking is True
     assert by_name["pip-leak-guard"].blocking is True
     assert by_name["perimeter-review-guard"].blocking is True
