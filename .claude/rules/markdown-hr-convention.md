@@ -27,29 +27,42 @@ Dans une cellule markdown, le séparateur horizontal (`<hr>`) est rendu **à l'i
 
 ## Pourquoi cette règle
 
-Mesure first-hand sur 200 premiers notebooks de `MyIA.AI.Notebooks/` (c.763) :
+Mesure **re-corrigée first-hand sur l'ensemble du corpus (c.806, 2026-09-24)** sur 1406 notebooks :
 
-- Cellules avec `---` seul : 54
-- Cellules avec `***` (incl. `* * *`) : 326
-- Ratio : ~6:1 en faveur de `***`, ce qui traduit une **préférence éditoriale existante** dans le dépôt, **pas** une obligation de rendu.
+- Cellules avec `---` seul : 256
+- Cellules avec `***` (incl. `* * *`) : 3154
+- Ratio : **1 : 12.3** en faveur de `***`, ce qui traduit une **préférence éditoriale nette** dans le dépôt, **pas** une obligation de rendu. (Mesure antérieure c.763 : 54:326 sur 200 notebooks → l'écart avec la mesure complète vient de l'échantillonnage ; la mesure re-corrigée sur le corpus entier fait foi.)
 
-Le `Quarto Pages Deploy` (`.github/workflows/quarto-pages-deploy.yml`) traite les deux notations sans casse sur `main`. Le motif Quarto/YAML front-matter **n'est pas établi** (les 54 cellules `---` restantes en production ne déclenchent aucun rouge CI). Une PR d'enrichissement qui substitue `---` → `***` sans déclarer la modification commet deux fautes :
+Le `Quarto Pages Deploy` (`.github/workflows/quarto-pages-deploy.yml`) traite les quatre notations sans casse sur `main`. Le motif Quarto/YAML front-matter **n'est pas établi** (les 256 cellules `---` restantes en production ne déclenchent aucun rouge CI). Une PR d'enrichissement qui substitue `---` → `***` sans déclarer la modification commet deux fautes :
 
-1. **Claim C.3 rendu faux** : « cellules non modifiées restent byte-identiques à main » devient inexact pour 17+ cellules (mesure #14643).
+1. **Claim C.3 rendu faux** : « cellules non modifiées restent byte-identiques à main » devient inexact pour N+ cellules (N ≥ 17 confirmé sur #14643).
 2. **Pattern `reecriture-non-annoncee`** traqué par le dépôt (#14113/#14119), indépendamment de la bénignité du geste.
 
 ## Voies licites
 
 Une PR d'enrichissement peut **toujours** :
 
-- Ajouter de nouvelles cellules markdown portant `***` (préférence éditoriale du dépôt).
+- Ajouter de nouvelles cellules markdown portant `***` (préférence éditoriale du dépôt, ratio 12:1 mesuré).
 - Laisser intactes les cellules existantes, quelle que soit leur notation.
 - **Déclarer** un sweep de normalisation comme dans la voie (a) du ticket #14683 (PR dédiée narrow scope 1:1, partition par famille — même véhicule que #14209), avec son motif et sa preuve.
 
-## Détection
+## Détection — garde automatisée active
 
-- `git diff` filtré sur `^[-+](---|\*\*\*|___|\* \* \*)$` dans les fichiers `.ipynb` montre les substitutions brutes (les quatre notations CommonMark de `<hr>` couvertes — une substitution `* * *` → `***` passerait un filtre qui ne couvre que les deux premières).
-- Le label `reecriture-non-annoncee` est documenté dans le ticket (#14113/#14119) mais **n'a pas de workflow dédié** dans `.github/workflows/` au commit de cette PR. Les agents qui s'y fient doivent considérer qu'il documente un comportement souhaité, pas une garde automatisée active : la détection reste à la diligence du reviewer (NanoClaw trace les substitutions non déclarées dans les commentaires de review).
+La garde est portée par **`scripts/ci/check_hr_substitution.py`** (créée c.806, post-#17428) :
+
+- Parse le diff unifié d'une PR (`gh pr diff <N>`) ou de la working tree (`--self`).
+- Détecte les 4 notations CommonMark (`---`, `***`, `* * *`, `___`) en `+` ou `-` **uniquement** dans les fichiers `.ipynb` sous `MyIA.AI.Notebooks/`.
+- Regroupe par fichier et signale les **substitutions silencieuses** (au moins une ligne `+` ET une ligne `-` du même fichier, sans mention dans le body de la PR).
+- Heuristique de déclaration dans le body : chemin du fichier (relatif ou basename) **+** compteur (N ajouté/removed ou +X/−X) **+** mot-clé (`substitut`, `sweep`, `hr`, `notat`, `---`, `***`).
+- Verdict `exit 1` = `SILENT_SUBSTITUTION_DETECTED` ; `exit 0` = aucune substitution silencieuse (ou PR le déclare).
+
+```bash
+python scripts/ci/check_hr_substitution.py <PR_NUMBER>
+python scripts/ci/check_hr_substitution.py --self        # working tree only
+python scripts/ci/check_hr_substitution.py --json       # sortie machine
+```
+
+**Remarque** : une version antérieure de cette règle mentionnait un label `reecriture-non-annoncee` sans workflow dédié. **Elle est obsolète depuis c.806** : la garde est désormais outillée via `scripts/ci/check_hr_substitution.py`, à câbler dans `.github/workflows/always-on-guards.yml` ou un workflow dédié `hr-substitution-guard.yml` (PR de câblage à venir). La détection **n'est plus** à la diligence du seul reviewer — NanoClaw trace les substitutions non déclarées, et la garde les bloque en CI.
 
 ## Interdits
 
