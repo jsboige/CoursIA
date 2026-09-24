@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-Lean
-pedagogical_count: 52
-breakdown: Lean=52
-maturity: BETA=50, DRAFT=2
+pedagogical_count: 67
+breakdown: Lean=67
+maturity: BETA=65, DRAFT=2
 -->
 
 [← SemanticWeb](../SemanticWeb/README.md) | [↑ SymbolicAI](../README.md) | [Planners →](../Planners/README.md)
@@ -160,9 +160,11 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 29 | [Lean-29-Hecke-Operators-Native](Lean-29-Hecke-Operators-Native.ipynb) | Compagnon **natif** (kernel `lean4-wsl`) du lake `hecke_lean` (port pédagogique de `anthropics/fermats-last-theorem`, Apache-2.0, toolchain pinée `leanprover/lean4:v4.33.0`) : les opérateurs de Hecke T_p et U_p sur le demi-plan supérieur — représentants γ_{p,j} et partie diagonale, action de slash et ses deux comportements opposés, formule des coefficients a(np) + p^{k−1}·a(n/p) portée par `coeffHeckeT` — chaque déclaration interrogée par `#check`/`#print axioms` exécutés in-kernel (0 erreur), 3 exercices | 40 min |
 | 30 | [Lean-30-FormalGroups-Native](Lean-30-FormalGroups-Native.ipynb) | Compagnon **natif** (kernel `lean4-wsl`) du lake `formal_groups_lean` (port de `anthropics/fermats-last-theorem`, Apache-2.0, toolchain pinée `leanprover/lean4:v4.33.0`) : les groupes formels multivariés à travers les quatre modules `Basic`/`Hom`/`Additive`/`Iterates` — structure `MvFormalGroup` (neutre, partie linéaire, associativité), commutativité et substitution sûre, morphismes `Hom` et changement d'anneau, loi additive `addMv`, itérés `nthSeries`/`linearPart`/`FiniteHeight` — `#check`/`#print axioms` exécutés in-kernel (0 erreur), 3 exercices | 40 min |
 | 31 | [Lean-31-Euler-Navier-Stokes](Lean-31-Euler-Navier-Stokes.ipynb) | Reproduction pinée de `openai/NavierStokesAndEuler` : gates Euler et Navier–Stokes séparés, acceptation par le noyau Lean standard et `nanoda_lib`, confinement `landrun` vérifié fonctionnellement, onze sondes axiomatiques et quatre signatures de placeholders contrôlées exactement ; exposition distincte des chaînes Euler/BKM et des options (C)/(D), puis re-dérivation fail-closed des huit termes du verdict. **Enrichi (#16569)** : chronologie sourcée de la lignée et de la course (Córdoba–Martínez-Zoroa → Buckmaster–Alpöge → OpenAI, les deux récits du 6 septembre, réponses EMS/Clay/AMS/Tao, lecture à la lumière de la Déclaration de Leiden) et **GIFs animés** de l'écoulement (vortex 3D « spaghetti » orange/teal, plan méridien en vecteurs colorés à norme fixée, cascade infinie de couches Córdoba–Martínez-Zoroa, annulation fine des termes reliée au critère BKM), inspirés de l'exploration Wolfram Community citée et au-delà — kernel `python3`, 17 cellules code exécutées sans erreur, 3 exercices | 60 min |
+| 33 | [Lean-33-Distribution-Spaces](Lean-33-Distribution-Spaces.ipynb) | Compagnon **natif** (kernel `lean4-wsl`) du lake `calibration_lean` : le module `Calibration.Distribution` est importé et interrogé par `#check`/`#print axioms` — espaces de Schwartz, décroissance de toutes les dérivées mesurée par une famille de seminormes | 35 min |
 | 34 | [Lean-34-Calculabilite-et-Limites](Lean-34-Calculabilite-et-Limites.ipynb) | **Tranche E** de l'Epic #15066 : calculabilité, diagonalisation et limites — témoins exécutables (diagonale de l'arrêt bornée, point fixe diagonal sur chaînes) puis certification au noyau via le lake `formal_logic_lean` (Foundation piné `81810b9f` + ProvabilityLogic `01628c51`, `CONSUMER_PINNÉ`) : Church (`undecidability_first_order_logic`), arrêt→incomplétude (`incomplete_of_halting_problem`), Gödel I/II, Rosser, Tarski (`undefinability_of_truth`) et Löb — 4 énoncés soigneusement séparés, `#check`/`#print axioms` audités, prérequis L2/L3 de #15062 — kernel `python3`, 11 cellules code exécutées sans erreur, 3 exercices | 45 min |
+| 34b | [Lean-34b-FairBot-Loeb](Lean-34b-FairBot-Loeb.ipynb) | Approfondissement de Lean-34 : FairBot et le théorème de Löb appliqués au dilemme du prisonnier en un coup (Barasz et al. 2014), sur trois niveaux — témoin syntaxique de GameTheory-06e, interface modale L2 où Löb est postulé, module L3 `FormalLogic.FairBotLoeb` où Löb est un théorème de FFL. Cadres de Kripke montrant que Löb, et non D1-D3, fixe l'issue ; coopération avec soi et entre deux FairBots distincts, inexploitabilité, défection vraie mais non prouvable contre DefectBot, auditées par `#check`/`#print axioms` ; évaluateur modal GL des seize duels confronté aux théorèmes — kernel `python3`, 14 cellules code exécutées sans erreur, 3 exercices | 60 min |
 
-**Durée totale** : ~40h10min
+**Durée totale** : ~43h20min (somme des 60 lignes de la table, compagnon Search-03e compris ; les deux fourchettes « 1h30-2h » comptées à leur borne basse, 90 min)
 
 ## Acquis d'apprentissage
 
@@ -428,6 +430,7 @@ Lean/
 ├── Lean-11-TorchLean.ipynb         # Lean4 kernel - NN verification
 ├── Lean-11b-TorchLean-Python.ipynb  # Python kernel - Implémentation algorithmes
 ├── Lean-12-Sensitivity-Theorem.ipynb # Python kernel - théorème de sensibilité (Huang 2019, hypercube, signing matrix)
+├── Lean-12b-Lean-Sensitivity-Theorem.ipynb # Lean4 (WSL) kernel - companion natif du théorème de sensibilité (preuve 0-sorry du lake sensitivity_lean)
 ├── Lean-15-Grothendieck-Tribute.ipynb # Python kernel - hommage Grothendieck (langage grothendieckien Mathlib)
 ├── Lean-15b-Lean-Grothendieck.ipynb # Python kernel - atelier pratique Grothendieck (compagnon grothendieck_lean)
 ├── Lean-15c-Lean-Grothendieck-Companion.ipynb # Lean4 (WSL) kernel - companion formel natif grothendieck_lean (51 modules par leurs énoncés, Epic #11703)
@@ -468,7 +471,9 @@ Lean/
 ├── Lean-29-Hecke-Operators-Native.ipynb # Lean4 (WSL) kernel - opérateurs de Hecke T_p/U_p natifs (lake hecke_lean, #check/#print axioms in-kernel)
 ├── Lean-30-FormalGroups-Native.ipynb # Lean4 (WSL) kernel - groupes formels multivariés natifs (lake formal_groups_lean, modules Basic/Hom/Additive/Iterates)
 ├── Lean-31-Euler-Navier-Stokes.ipynb # Python kernel - reproduction pinée Euler/Navier–Stokes, double noyau, confinement, re-dérivation fail-closed, chronologie sourcée de la course Navier–Stokes et GIFs animés de l'écoulement
+├── Lean-33-Distribution-Spaces.ipynb # Lean4 (WSL) kernel - espaces de Schwartz natifs (lake calibration_lean, module Calibration.Distribution)
 ├── Lean-34-Calculabilite-et-Limites.ipynb # Python kernel - Tranche E Epic #15066 : arrêt, point fixe, Gödel I/II, Rosser, Tarski, Löb (lake formal_logic_lean CONSUMER_PINNÉ)
+├── Lean-34b-FairBot-Loeb.ipynb # Python kernel - FairBot par Löb (Barasz et al. 2014) : Löb postulé en L2, théorème en L3 (FormalLogic.FairBotLoeb), cadres de Kripke, combat modal GL
 ├── _run_lean_snippet.sh            # Helper WSL : run Lean snippet avec cache Mathlib
 ├── lean_runner.py                  # Module Python multi-backend
 ├── README.md
