@@ -290,6 +290,24 @@ _BOT_MARKER_GUARDS: tuple[str, ...] = (
     "<!-- trivial-diff-15740 -->",  # workflows idempotents
 )
 
+# #17039 -- Sous-ensemble STRICT canonique des marqueurs de reserve vivante
+# duplique depuis scripts/check_unaddressed_nits.py (CONCERN_MARKERS +
+# SEVERITY_GLYPHS + BLOCK_VERDICTS), restreint aux emissions formelles
+# stables (verdicts hermes/ai-01, glyphes, blocs en gras). Les marqueurs
+# de prose (ex. "avant merge", "a changer") sont exclus ici : la detection
+# de review-pose-reserve-neuve se limite aux signaux qui RE-EMETTENT un
+# constat, pas aux narrations qui le discutent. Refactor de centralisation
+# dans un module tiers : hors scope de #17039.
+_REVIEW_RESERVE_MARKERS: tuple[str, ...] = (
+    "CHANGES_REQUESTED",  # verdict hermes/ai-01 emission formelle
+    "REQUEST_CHANGES",  # alias semantique GitHub
+    "COMMENT_WITH_CONCERNS",  # prefixe de verdict hermes fondateur
+    "**BLOCKED**",  # verdict de revalidation B.0 (#12908)
+    "BLOCKED  PR",  # sortie pastee de l'organe B.0 (double espace)
+    "🟡",  # constat substantiel (severite, glyphe U+1F7E1)
+    "🔴",  # bloquant strict (severite, glyphe U+1F534)
+)
+
 
 def _comment_body_for_fingerprint(row: dict[str, Any]) -> str:
     """Corps a hacher : le marqueur seul pour un commentaire de bot marker-garde.
@@ -306,7 +324,34 @@ def _comment_body_for_fingerprint(row: dict[str, Any]) -> str:
     return body
 
 
-def _is_own_later_act(row: dict[str, Any], timestamp_key: str, neutral_after: str | None) -> bool:
+def _review_body_has_reserve_marker(body: str) -> bool:
+    """True quand le body d'une review porte un marqueur de reserve vivante.
+
+    #17039 acceptance 4 : le cas mixte (une review qui leve ET pose une
+    reserve) se resout cote EMISSION (consigne #16731 : ai-01 ne melange
+    jamais les deux dans une meme surface) -- le gate traite donc le mixte
+    comme perime, fail-CLOSED. Cette fonction implemente le predicat qui
+    dit : "cette review est, en substance, une reserve neuve, peu importe
+    la narration de levee autour". Marqueurs restreints aux emissions
+    formelles (verdicts hermes/ai-01, glyphes de severite, verdict de
+    revalidation B.0) -- la prose discutee (ex. "avant merge", "a
+    changer") reste hors du filet (cf commentaire _REVIEW_RESERVE_MARKERS).
+    """
+    if not body:
+        return False
+    for marker in _REVIEW_RESERVE_MARKERS:
+        if marker in body:
+            return True
+    return False
+
+
+def _is_own_later_act(
+    row: dict[str, Any],
+    timestamp_key: str,
+    neutral_after: str | None,
+    *,
+    row_kind: str = "comment",
+) -> bool:
     """True when the coordinator itself authored this surface after the dossier.
 
     The dossier attests that the adjoint read every surface existing when it was
@@ -321,11 +366,21 @@ def _is_own_later_act(row: dict[str, Any], timestamp_key: str, neutral_after: st
     A neutralisation scoped to ``COORDINATOR_LOGIN`` alone misses every
     coordinator action posted under the shared sign-in -- the very loop
     measured on #16840. We accept either login as the coordinator's voice.
+
+    #17039 -- ``row_kind`` precise le contrat de neutralisation :
+    - "comment" : neutralise inconditionnellement (comportement historique).
+    - "review" : neutralise UNIQUEMENT si la review ne porte aucun marqueur
+      de reserve (_review_body_has_reserve_marker). Une review du
+      coordinateur qui pose une reserve neuve (verdict CHANGES_REQUESTED,
+      glyphe 🟡/🔴, verdict **BLOCKED**) continue de perimer le dossier --
+      c'est precisement le travail d'une reserve.
     """
     if not neutral_after:
         return False
     author = _login(row)
     if author not in (COORDINATOR_LOGIN, SHARED_GITHUB_LOGIN):
+        return False
+    if row_kind == "review" and _review_body_has_reserve_marker(row.get("body") or ""):
         return False
     stamp = row.get(timestamp_key) or ""
     return bool(stamp) and stamp > neutral_after
@@ -337,7 +392,7 @@ def _attested_reviews(
     return [
         row
         for row in snapshot.get("reviews") or []
-        if not _is_own_later_act(row, "submittedAt", neutral_after)
+        if not _is_own_later_act(row, "submittedAt", neutral_after, row_kind="review")
     ]
 
 

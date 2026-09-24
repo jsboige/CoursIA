@@ -603,6 +603,13 @@ def _dossier_for(snapshot: dict, **changes: str) -> str:
 
 
 def test_coordinator_own_later_review_does_not_expire_the_dossier():
+    """#17039 acceptance CN1 : un commentaire de LEVEE pure (sans marqueur
+    de reserve) du coordinateur post-dossier NE perime PAS le dossier.
+
+    Le contrat : la review leve une reserve tierce (Hermes / ai-01) sans
+    poser de reserve neuve. _is_own_later_act(row, ..., row_kind="review")
+    neutralise la row -- le dossier reste integre et le verdict READY tient.
+    """
     base = _stamped_snapshot("")
     base["comments"].pop()
     snapshot = _stamped_snapshot(_dossier_for(base))
@@ -611,11 +618,68 @@ def test_coordinator_own_later_review_does_not_expire_the_dossier():
             "state": "APPROVED",
             "author": {"login": mod.COORDINATOR_LOGIN},
             "submittedAt": T1,
-            "body": "LIFT -- my own CHANGES_REQUESTED, re-measured at exact head.",
+            "body": "OVERRIDE -- je leve la reserve Hermes sur le head exact.",
         }
     )
     verdict, errors = mod.evaluate(snapshot)
     assert verdict == mod.VERDICT_READY, errors
+
+
+def test_coordinator_review_with_reserve_marker_still_expires():
+    """#17039 acceptance CN2 : une review du coordinateur portant un marqueur
+    de reserve (CHANGES_REQUESTED, glyphe, **BLOCKED**) PERIME le dossier,
+    meme si elle contient aussi un mot de levee en narration.
+
+    Le contrat : un reviewer (humain ou bot) qui EMET un marqueur de
+    reserve cree une surface nouvelle que l'adjoint n'a pas lue. La
+    neutralisation par _is_own_later_act ne s'applique pas, le dossier
+    perime. C'est l'acceptance 1 + 2 de #17039.
+    """
+    for marker in ("CHANGES_REQUESTED", "REQUEST_CHANGES", "COMMENT_WITH_CONCERNS", "🟡", "🔴", "**BLOCKED**", "BLOCKED  PR"):
+        base = _stamped_snapshot("")
+        base["comments"].pop()
+        snapshot = _stamped_snapshot(_dossier_for(base))
+        snapshot["reviews"].append(
+            {
+                "state": "COMMENTED",
+                "author": {"login": mod.COORDINATOR_LOGIN},
+                "submittedAt": T1,
+                "body": f"[Hermes] {marker} -- je leve ma propre reserve (mais le marqueur reste emis).",
+            }
+        )
+        # Le marqueur de reserve emis par le coordinateur post-dossier doit
+        # perimer le dossier : _is_own_later_act refuse la neutralisation
+        # (row_kind="review" + _review_body_has_reserve_marker -> True).
+        errors = _errors(snapshot)
+        assert any("discussion surfaces changed" in e for e in errors), marker
+
+
+def test_coordinator_review_with_pure_lift_does_not_expire():
+    """#17039 acceptance CN3 : une review de LEVEE pure (aucun marqueur de
+    reserve, ni verdict hermes ni glyphe ni **BLOCKED**) ne perime pas.
+
+    C'est le scenario fondateur du fix : ai-01 leve une reserve Hermes
+    via une review sans poser de reserve neuve, et le dossier reste
+    integre pour permettre le merge dans la meme passe.
+    """
+    for body in (
+        "[OVERRIDE] lane myia-ai-01:CoursIA -- Je leve la reserve Hermes.",
+        "Override : reserve levee au head exact.",
+        "Re-mesure a fresh head, plus de blocage.",
+    ):
+        base = _stamped_snapshot("")
+        base["comments"].pop()
+        snapshot = _stamped_snapshot(_dossier_for(base))
+        snapshot["reviews"].append(
+            {
+                "state": "APPROVED",
+                "author": {"login": mod.COORDINATOR_LOGIN},
+                "submittedAt": T1,
+                "body": body,
+            }
+        )
+        verdict, errors = mod.evaluate(snapshot)
+        assert verdict == mod.VERDICT_READY, (body, errors)
 
 
 def test_coordinator_own_later_comment_does_not_expire_the_dossier():
