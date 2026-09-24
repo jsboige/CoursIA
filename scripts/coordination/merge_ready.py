@@ -96,33 +96,32 @@ from typing import Protocol
 # grammaire du dossier. L'organe ne re-ecrit NI la grammaire du tag NI celle
 # du dossier.
 SCRIPTS_DIR = Path(__file__).resolve().parent.parent
-if str(SCRIPTS_DIR) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS_DIR))
+COORDINATION_DIR = Path(__file__).resolve().parent
+for _shared_dir in (SCRIPTS_DIR, COORDINATION_DIR):
+    if str(_shared_dir) not in sys.path:
+        sys.path.insert(0, str(_shared_dir))
 
 from grain_tag import TIERS, parse_grain_tag  # noqa: E402
 import check_adjoint_prevalidation as gate  # noqa: E402
+# Les campagnes gelees par veto user (#17040) ont une definition PARTAGEE avec
+# le gate d'entree (scripts/coordination/frozen_campaigns.py) : le gate ne
+# peut pas importer cet organe (cet organe importe deja le gate), les deux
+# importent le module -- un seul lecteur, meme discipline que grain_tag.
+from frozen_campaigns import (  # noqa: E402,F401
+    FROZEN_BRANCH_PREFIXES,
+    FROZEN_UMBRELLAS,
+    frozen_umbrella_exclusion,
+)
 
 REPO = "jsboige/CoursIA"
 COORDINATOR_USER = "myia-ai-01"
 GATE_PATH = SCRIPTS_DIR / "check_adjoint_prevalidation.py"
 NITS_PATH = SCRIPTS_DIR / "check_unaddressed_nits.py"
 
-# Parapluies GELES par un veto user : une PR qui s'en reclame (titre ou body)
-# sort du perimetre (b), quel que soit son dossier. Ni le gate d'entree ni B.0
-# ne lisent un veto pose sur une issue : l'organe le lit ici, fail-closed.
-# 13410 = campagne densite, gelee par le veto #17040 (mandat user 2026-09-20).
-# #17021 y a ete mergee le 2026-09-22 sur un dossier READY et un B.0 vert :
-# c'est l'incident qui fonde cette liste.
-# 11601 = densite QC round 2 (« 1200->2000+ »), gelee au meme titre le
-# 2026-09-23 (#11601 c.5786602361) : sa cible EST un seuil, ce que le point 4
-# de #17040 interdit.
-FROZEN_UMBRELLAS = {"13410": "17040", "11601": "17040"}
-
-# Branches d'une campagne gelee dont les PRs ne citent PAS le parapluie : les
-# relais g-XX de #13410 (`wt/vibe-g62-...`) n'ont #13410 ni dans le titre ni
-# dans le body. 17 d'entre eux etaient ouverts et invisibles au filtre
-# ci-dessus le 2026-09-23 (fermes au titre du veto, solde markdown net > 0).
-FROZEN_BRANCH_PREFIXES = {"wt/vibe-": "13410"}
+# Parapluies et branches de campagne GELES par un veto user, exemption des
+# redressements comprise : definition et historique portes par le module
+# PARTAGE scripts/coordination/frozen_campaigns.py (importe ci-dessus -- les
+# noms restent des attributs de cet organe pour ses appelants et ses tests).
 
 # Codes de retour DOCUMENTES des organes appeles. Tout autre rc est une
 # erreur inattendue -> arret du run, jamais de merge en aveugle.
@@ -295,26 +294,6 @@ def scope_exclusion(path: str) -> str | None:
         return f"scope:.github:{path}"
     if p == "CLAUDE.md" or p.endswith("/CLAUDE.md"):
         return f"scope:CLAUDE.md:{path}"
-    return None
-
-
-def frozen_umbrella_exclusion(
-    title: str | None, body: str | None, head_ref: str | None = None
-) -> str | None:
-    """Raison d'exclusion si la PR se reclame d'un parapluie gele, sinon None.
-
-    Une reference ``#<numero>`` dans le titre ou le body suffit (fail-closed :
-    une PR de redressement qui cite le parapluie sort aussi du perimetre et se
-    merge a la main). ``#134100`` ne vaut pas ``#13410``. Une branche d'une
-    famille gelee (``FROZEN_BRANCH_PREFIXES``) suffit aussi, meme muette.
-    """
-    for prefix, umbrella in FROZEN_BRANCH_PREFIXES.items():
-        if (head_ref or "").startswith(prefix):
-            return f"frozen:#{umbrella}(veto #{FROZEN_UMBRELLAS[umbrella]},branch {prefix}*)"
-    text = " ".join((title or "", body or ""))
-    for umbrella, veto in FROZEN_UMBRELLAS.items():
-        if re.search(rf"#{umbrella}(?!\d)", text):
-            return f"frozen:#{umbrella}(veto #{veto})"
     return None
 
 
