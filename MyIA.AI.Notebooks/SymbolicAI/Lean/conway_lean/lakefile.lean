@@ -13,7 +13,7 @@ package «conway» where
 -- dependency 'mathlib' changed` a CHAQUE lake build (bruit dans les logs du
 -- prover BG, et un `lake update` accidentel sauterait sur master).
 require mathlib from git
-  "https://github.com/leanprover-community/mathlib4.git" @ "v4.32.1"
+  "https://github.com/leanprover-community/mathlib4.git" @ "db584cd6d46c92f209a44c0f1c829460d327499d"
 
 @[default_target]
 lean_lib «Conway» where

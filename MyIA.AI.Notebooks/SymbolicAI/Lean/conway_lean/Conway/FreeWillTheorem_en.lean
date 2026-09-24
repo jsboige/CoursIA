@@ -128,7 +128,12 @@ The conclusion: neither particle's response can be a function of the past.
 inductive Experimenter
   | alice
   | bob
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+-- Manual instance: Mathlib db584cd6's `deriving Fintype` handler fails
+-- under full imports (v4.33.0 adaptation).
+instance : Fintype Experimenter :=
+  ⟨{Experimenter.alice, Experimenter.bob}, by intro x; cases x <;> simp⟩
 
 /-- A two-particle deterministic model assigns a definite {0,1} outcome
     to each experimenter, hidden state, and measurement direction.

@@ -114,7 +114,12 @@ La conclusion : la réponse d'aucune des deux particules ne peut être une fonct
 inductive Experimenter
   | alice
   | bob
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+-- Instance manuelle : le handler `deriving Fintype` de Mathlib db584cd6
+-- échoue sous imports complets (adaptation v4.33.0).
+instance : Fintype Experimenter :=
+  ⟨{Experimenter.alice, Experimenter.bob}, by intro x; cases x <;> simp⟩
 
 /-- Un modèle déterministe à deux particules associe un résultat {0,1} défini
     à chaque expérimentateur, état caché et direction de mesure.
