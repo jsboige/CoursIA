@@ -51,10 +51,14 @@ from .task import (
     Lot,
     lot_single_hop,
     lot_multi_hop,
+    lot_multi_hop_cot,
     evaluer_single_hop,
     evaluer_multi_hop,
+    evaluer_multi_hop_cot,
     entrainer,
     entrainer_multi_seed,
+    entrainer_cot,
+    entrainer_multi_seed_cot,
 )
 
 __all__ = [
@@ -69,8 +73,12 @@ __all__ = [
     "Lot",
     "lot_single_hop",
     "lot_multi_hop",
+    "lot_multi_hop_cot",
     "evaluer_single_hop",
     "evaluer_multi_hop",
+    "evaluer_multi_hop_cot",
     "entrainer",
     "entrainer_multi_seed",
+    "entrainer_cot",
+    "entrainer_multi_seed_cot",
 ]
