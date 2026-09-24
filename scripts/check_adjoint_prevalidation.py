@@ -607,15 +607,18 @@ def b0_claim_contradictions(claim: str, result: dict[str, Any] | None) -> list[s
 def probe_b0(pr: int) -> dict[str, Any]:
     """Run the B.0 organ on ``pr``. A failure to measure is fail-closed.
 
-    The import is lazy: ``check_unaddressed_nits`` imports this module, and
-    the probe runs only for a dossier that claims READY.
+    The import is lazy because the probe runs only for a dossier that claims
+    READY: BLOCKED and absent dossiers never load the organ. A failure to
+    import it is a failure to measure like any other -- it surfaces as
+    ``RuntimeError``, which ``main`` reports as UNKNOWN (exit 2), never as a
+    traceback.
     """
     try:
-        import check_unaddressed_nits
-    except ImportError:  # charge via importlib dans les tests (hors scripts/)
-        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-        import check_unaddressed_nits
-    try:
+        try:
+            import check_unaddressed_nits
+        except ImportError:  # charge via importlib dans les tests (hors scripts/)
+            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+            import check_unaddressed_nits
         return check_unaddressed_nits.analyse_pr(pr)
     except Exception as exc:  # noqa: BLE001 -- any failure means "not measured"
         raise RuntimeError(f"B.0 organ could not measure PR #{pr}: {exc}") from exc
@@ -1078,7 +1081,11 @@ def load_snapshot(pr: int) -> dict[str, Any]:
     # Fetched inside the before/after bracket: a check concluding during the
     # read bumps updatedAt and aborts the snapshot (transient UNKNOWN, the
     # caller retries), so the claim verification below never reads a state
-    # that was already stale when captured.
+    # that was already stale when captured. The B.0 probe (`probe_b0`) is NOT
+    # in this bracket: it runs after, and only on a READY dossier. A remark
+    # posted between the snapshot and the probe therefore makes the organ
+    # contradict a `b0: clear` claim -- a conservative refusal, which a rerun
+    # names as a changed discussion surface.
     snapshot["checkRuns"] = _head_check_runs(snapshot["headRefOid"])
     after = _pr_metadata(pr, with_rollup=True)
     if _metadata_identity(before) != _metadata_identity(after):

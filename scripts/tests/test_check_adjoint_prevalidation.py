@@ -1237,6 +1237,37 @@ def test_b0_probe_failure_is_fail_closed(monkeypatch):
         mod.probe_b0(123)
 
 
+
+def test_b0_probe_import_failure_is_fail_closed(monkeypatch):
+    """An organ that cannot even be imported is 'not measured' (UNKNOWN), not a traceback."""
+    import builtins
+
+    real_import = builtins.__import__
+
+    def refuse(name, *args, **kwargs):
+        if name == "check_unaddressed_nits":
+            raise ImportError("organ missing")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.delitem(sys.modules, "check_unaddressed_nits", raising=False)
+    monkeypatch.setattr(builtins, "__import__", refuse)
+    with pytest.raises(RuntimeError, match="B.0 organ could not measure PR #123"):
+        mod.probe_b0(123)
+
+
+def test_main_exits_unknown_when_organ_cannot_be_imported(monkeypatch, capsys):
+    snapshot = _snapshot(_body())
+    monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
+    monkeypatch.setattr(mod.gh_identity, "pin_gh_token", lambda: None)
+
+    def unmeasured(pr):
+        raise RuntimeError(f"B.0 organ could not measure PR #{pr}: organ missing")
+
+    monkeypatch.setattr(mod, "probe_b0", unmeasured)
+    monkeypatch.setattr(sys, "argv", ["check_adjoint_prevalidation.py", "123"])
+    assert mod.main() == mod.EXIT_UNKNOWN
+    assert "UNKNOWN" in capsys.readouterr().out
+
 def test_main_exits_no_dossier_when_organ_refutes_b0(monkeypatch, capsys):
     snapshot = _snapshot(_body())
     monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
