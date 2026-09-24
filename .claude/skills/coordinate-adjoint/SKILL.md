@@ -7,33 +7,11 @@ description: Cycle horaire du coordinateur adjoint myia-po-2025:CoursIA-2. Rédu
 
 Cycle de coordination adjoint du cluster CoursIA. Cette commande est réservée au slot `myia-po-2025:CoursIA-2` et ne doit jamais être remplacée par `/coordinate` ou `/continue`.
 
-## Tricéphalie — qui est qui, et le TROISIÈME dashboard (HARD)
-
-La coordination CoursIA est **tricéphale**. Chaque tête a une lane, un skill et un artefact :
-
-| Tête | Lane | Skill | Rôle |
-|---|---|---|---|
-| **Coordinateur** | `myia-ai-01:CoursIA` | `coordinate` | merge, clôture, arbitrage, politique de flotte |
-| **Titulaire** (= ce slot) | `myia-po-2025:CoursIA-2` | `coordinate-adjoint` | émet les dossiers `[ADJOINT PREFLIGHT]` exact-head que le coordinateur consomme |
-| **Secrétaire** | `myia-po-2026:CoursIA-3` | `adjoint-secretary` | **HUB DE CIRCULATION** : veille, DMs nominatifs, alertes conflits / quota / runners ; artefact **`workspace-CoursIA-3`** |
-
-**Le « secrétariat », c'est `myia-po-2026:CoursIA-3`** — la tierce tête, skill `adjoint-secretary`, artefact `workspace-CoursIA-3`. Quand le user ou ai-01 emploie ces mots, il n'y a rien à chercher : ne pas les reconnaître est un défaut de lecture, jamais une ambiguïté.
-
-**Ces clés sont des IDENTITÉS, pas une liste de lecture.** Ce qu'il faut lire se **découvre** (§Cycle, étape 1), jamais par une liste apprise par cœur : une skill qui sait d'avance quoi lire est **structurellement aveugle** à ce qu'elle n'anticipe pas — mesure fondatrice #17197, où `workspace-CoursIA (2)`, clé forkée, a porté 23 messages vivants jamais lus.
-
-**Doctrine du secrétaire (pivot c.88, 2026-09-22 09:34Z)** : fini les salves aveugles oldest-first (« cycle notaire », 6 % de conversion) ; place au **Niveau 1** — DMs nominatifs, dont le top des PRs mergeables vers ai-01 et **les `CHANGES_REQUESTED` des PRs de notre lane vers nous**. Niveau 2 : dossier `[ADJOINT PREFLIGHT]` seulement sur dispatch nominatif reçu. Niveau 3 (à éviter) : salves sans demande.
-
-**Critère de succès, mot pour mot** : « ai-01 ou titulaire peut merger ou travailler sur **plus de PRs à la fin du cycle qu'au début**. Sinon = cycle notaire = inacceptable. »
-
-**Le contrat de format est mesuré** : liste **nominative** (numéros en clair) = **100 %** de conversion · **cumul** non nommé = **28 %** · auto-tirage aveugle par ai-01 = **4 %**. Ne jamais rendre un compte là où il faut des noms.
-
-**Ce skill est sous contrôle de source** : il est versionné et se corrige **par PR, comme du code** — cf `coordinate` §« Amélioration continue des skills » (mandat user 2026-09-21). Si une mesure du cycle contredit ce fichier, le corriger **dans le même cycle**.
-
 ## Frontière d'autorité HARD
 
 L'adjoint peut :
 
-- lire les dashboards — **énumérés**, jamais une liste apprise par cœur — et les inboxes (voir §Tricéphalie) ;
+- lire les dashboards — **énumérés**, jamais une liste apprise par cœur — et les inboxes ;
 - répondre aux ASK des lanes `CoursIA-2` ;
 - publier des preflights publics uniquement en état `COMMENTED` ;
 - réparer un scope lorsque l'ownership est clair ;
@@ -50,8 +28,8 @@ Restent réservés à `myia-ai-01:CoursIA` :
 
 ## Cycle
 
-1. **Inbox DM — drainer EN PREMIER, et extraire, jamais survoler** : `roosync_messages(action:"inbox", status:"unread")`. Elle porte souvent le **DM nominatif qui change la priorité du cycle** (mesure : un lot nominatif d'ai-01 et deux corrections de doctrine ont dormi non lus pendant que deux cycles produisaient selon une doctrine périmée). C'est le canal de décision du coordinateur — il survit à la condensation du dashboard.
-2. **Dashboards (canal PRINCIPAL) — ENUMERER, jamais une liste apprise par cœur** : `roosync_dashboard(action:"list")`, puis `read` avec `section:"all"` sur **chaque clé dont le workspace déclaré est pertinent** — dont celles du **secrétariat** (`CoursIA-3`) et les moitiés forkées. Une skill qui sait d'avance quoi lire est **structurellement aveugle** à ce qu'elle n'anticipe pas (mesure fondatrice : #17197, `workspace-CoursIA (2)` — 23 messages vivants jamais lus). Une clé à suffixe ` (N)` dont le `workspace` déclaré **ne porte pas** ce suffixe est une **moitié de la même lane**, pas une lane voisine : la lire, et escalader la réparation (`action:"merge"`, cf dashboard `global`).
+1. **Inbox DM — drainer EN PREMIER, et extraire, jamais survoler** : `roosync_messages(action:"inbox", status:"unread", deep:true)` (sans `deep`, le compte de non-lus peut être un faux zéro). Elle porte souvent le **DM nominatif qui change la priorité du cycle** (mesure : un lot nominatif d'ai-01 et deux corrections de doctrine ont dormi non lus pendant que deux cycles produisaient selon une doctrine périmée). C'est le canal de décision du coordinateur — il survit à la condensation du dashboard.
+2. **Dashboards (canal PRINCIPAL) — ENUMERER, jamais une liste apprise par cœur** : `roosync_dashboard(action:"list")`, puis `read` avec `section:"all"` sur **chaque clé dont le workspace déclaré est pertinent** — dont celles du **secrétariat** (`workspace-CoursIA-3`, cf [tricephale-circulation.md](../../../docs/reference/tricephale-circulation.md)) et les moitiés forkées. Une skill qui sait d'avance quoi lire est **structurellement aveugle** à ce qu'elle n'anticipe pas (mesure fondatrice : #17197, `workspace-CoursIA (2)` — 23 messages vivants jamais lus). Une clé à suffixe ` (N)` dont le `workspace` déclaré **ne porte pas** ce suffixe est une **moitié de la même lane**, pas une lane voisine : la lire, et escalader la réparation (`action:"merge"`, cf dashboard `global`).
 3. Traiter d'abord les handovers, ASK et bloqueurs actifs.
 4. Lire les PRs ouvertes pertinentes : body complet, commentaires, reviews et diff avant tout preflight/commentaire.
 5. Préparer les décisions réservées à ai-01 sous forme de synthèse courte : PR, état vérifié, preuve, action recommandée.
