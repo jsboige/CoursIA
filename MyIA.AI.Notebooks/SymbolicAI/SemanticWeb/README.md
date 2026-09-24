@@ -51,14 +51,18 @@ La série propose délibérément deux stacks en parité (.NET ⇄ Python, marat
 | **RDF-Star** | Des métadonnées sur les triplets (provenance, confiance, annotations) | SW-10 |
 | **Graphe de connaissances** | Un RDF riche, visualisable, requêtable, ancré dans une ontologie | SW-11 |
 | **GraphRAG** | Un KG ancré dans un LLM pour du RAG structuré (anti-hallucination) | SW-12 |
+| **Raisonneurs OWL/RDFS** | Moteurs d'inférence (owlrl, HermiT, reasonable, Growl, StaticRdfsReasoner) — compromis Python/Java/Rust | SW-13 |
+| **Coup ontologique** | Extension de vocabulaire exécutable : triplets ajoutés, verdict pySHACL, delta owlrl, provenance RDF-star | SW-14 |
+| **Coup argumentatif** | Greffe AIF/Dung sur le pipeline : extension grounded basculée par le coup | SW-15 |
+| **Proof-Carrying Ontologies** | Ontologies dont les axiomes sont accompagnés de preuves Lean (PCO, déploiement certifiable) | SW-16 |
 
 ## Vue d'ensemble
 
 | Statistique | Valeur |
 |-------------|--------|
 | Notebooks .NET C# (dotNetRDF) | 12 (fondations SW-1..7, standards SW-8/9/10/11/13, setup RDF.Net) |
-| Notebooks Python (rdflib/pySHACL/owlready2/kglab) | 14 (miroirs SW-2b..7b, standards SW-8..13, extensions SW-14/15) |
-| Total | 26 notebooks (parité marathon #4956) |
+| Notebooks Python (rdflib/pySHACL/owlready2/kglab) | 15 (miroirs SW-2b..7b, standards SW-8..13, extensions SW-14/15/16) |
+| Total | 27 notebooks (parité marathon #4956) |
 | Durée totale | ~10h (parcours principal), +4h (twins optionnels) |
 | Langages | .NET C# + Python |
 | Niveau | Débutant à avancé |
@@ -70,7 +74,7 @@ La série propose délibérément deux stacks en parité (.NET ⇄ Python, marat
 ## Progression recommandée
 
 ### Parcours principal
-Suivez les notebooks **SW-1 à SW-15** dans l'ordre numérique pour une progression logique des concepts.
+Suivez les notebooks **SW-1 à SW-16** dans l'ordre numérique pour une progression logique des concepts.
 
 ### Sidetracks Python (optionnels)
 Les sidetracks marqués `b-Python` sont des notebooks complémentaires qui présentent l'équivalent Python des concepts .NET. Ils sont **optionnels** mais recommandés si vous souhaitez travailler avec Python plutôt qu'avec .NET.
@@ -260,6 +264,7 @@ Cette partie connecte le Web Sémantique avec l'IA moderne, notamment les LLMs e
 | 13 (C#) | **SW-13-Reasoners-CSharp** | 40 min | Jumeau .NET : raisonnement RDFS forward-chaining avec dotNetRDF (`StaticRdfsReasoner`) |
 | **Bonus** | **SW-14-Python-Coup-Ontologique** | 40 min | Le coup ontologique comme diff de graphe exécutable (extension, verdict SHACL, delta owlrl, provenance RDF-star) |
 | **Bonus** | **SW-15-Python-Coup-Argumentatif** | 45 min | Greffe AIF/Dung sur le pipeline de SW-14 : le coup argumentatif bascule l'extension grounded |
+| **Bonus** | **SW-16-Python-ProofCarryingOntologies** | 60 min | Preuves Lean sur les axiomes OWL (PCO) : déploiement certifiable, hashing de preuve, vérification indépendante |
 
 #### SW-11-Python-KnowledgeGraphs : Construction et Visualisation (55 min)
 
@@ -540,6 +545,7 @@ SemanticWeb/
 ├── SW-13-Reasoners-CSharp.ipynb     # Twin C# (marathon #4956 Prong B)
 ├── SW-14-Python-Coup-Ontologique.ipynb   # Bonus (enregistrement retroactif)
 ├── SW-15-Python-Coup-Argumentatif.ipynb  # Bonus (greffe AIF/Dung, #13567)
+├── SW-16-Python-ProofCarryingOntologies.ipynb   # Bonus (PCO : ontologies a preuves Lean, #16787)
 ├── movie_kg_interactive.html        # Livrable interactif SW-11 (pyvis)
 └── RDF.Net-Legacy/                  # Archive C# RDF.NET (pré-migration Python)
     ├── RDF.Net.ipynb                # Notebook .NET historique

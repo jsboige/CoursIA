@@ -2575,6 +2575,154 @@ def test_wait_loop_holds_a_superseded_cancel_until_its_successor_surfaces():
     assert len(polls) >= 2, "le `cancelled` supersede ne doit pas conclure au poll 1"
 
 
+# --- #17364 -- runner lost mid-step: annotate, never re-route ----------------
+#
+# Measured 2026-09-22 on the 16 blocked PRs of #17364: a self-hosted runner
+# that vanishes mid-step force-concludes its job `failure` with the running
+# step at `conclusion: null` and no logs uploaded. From the check-runs API
+# alone -- everything `classify` sees -- that red is byte-identical to a code
+# failure, and twelve lanes were told their code was broken when it had never
+# been measured. The annotation reads the job's steps and carries the
+# observation into the FAIL line. What these tests pin, by damage if wrong:
+#
+# 1. **Routing is untouched** -- an annotated entry still lands in the
+#    `failing checks` clause of `_split_bad` (#15693 three-state). A
+#    mis-routed entry would silently change the repair gesture the clause
+#    prescribes.
+# 2. **The verdict is untouched** -- exit 1 before, exit 1 after.
+# 3. **Enrichment failure is inert** -- a non-Actions check, a fetch error,
+#    or a fully-concluded job leaves the entry byte-identical. A diagnostic
+#    that could break the verdict is worse than no diagnostic.
+
+
+def _death_check(name="Scripts Tests (CPU)", job_id=4242):
+    return run(name, "failure", rid=job_id) | {
+        "details_url": f"https://github.com/o/r/actions/runs/99/job/{job_id}",
+    }
+
+
+def _death_job(step="Run tests"):
+    return {
+        "conclusion": "failure",
+        "steps": [
+            {"name": "Set up job", "conclusion": "success"},
+            {"name": step, "conclusion": None},
+            {"name": "Post Run actions/checkout@v4", "conclusion": None},
+        ],
+    }
+
+
+def test_runner_death_failure_is_annotated():
+    """The observed signature (job failure + null-conclusion steps) appends
+    the observation and the repair gesture to the real-red entry."""
+    checks = [_death_check()]
+    _pending, bad, _ok, _adv = pr_gate.classify(checks, "PR gate")
+    annotated = pr_gate._annotate_runner_deaths(
+        "o/r", bad, checks, fetch_job=lambda _p: _death_job()
+    )
+    (entry,) = annotated
+    assert entry.startswith("Scripts Tests (CPU) (failure")
+    assert 'runner lost mid-step at "Run tests"' in entry
+    assert "the code was never measured" in entry
+    assert "rerun the CHILD run" in entry
+
+
+def test_annotated_entry_still_routes_to_failing_checks():
+    """#15693 routing: the annotation must NOT turn the entry into an
+    unconcluded suffix -- it stays a real red with its own clause."""
+    checks = [_death_check()]
+    _pending, bad, _ok, _adv = pr_gate.classify(checks, "PR gate")
+    annotated = pr_gate._annotate_runner_deaths(
+        "o/r", bad, checks, fetch_job=lambda _p: _death_job()
+    )
+    failed, unconcluded = pr_gate._split_bad(annotated)
+    assert failed and not unconcluded
+    code, msg = pr_gate.verdict([], annotated, settled=True)
+    assert code == 1
+    assert msg.startswith("FAIL -- failing checks:")
+    assert "never concluded" not in msg
+
+
+def test_non_actions_check_is_left_unannotated():
+    """A legacy status or external check has no job to read -- the entry is
+    returned unchanged and no fetch is attempted."""
+    checks = [run("legacy/check", "failure", rid=1)]
+    _pending, bad, _ok, _adv = pr_gate.classify(checks, "PR gate")
+
+    def _boom(_p):
+        raise AssertionError("no job fetch may happen for a non-Actions check")
+
+    annotated = pr_gate._annotate_runner_deaths("o/r", bad, checks, fetch_job=_boom)
+    assert annotated == bad
+
+
+def test_fetch_error_leaves_entry_unchanged():
+    """The enrichment is diagnostic-only: a failing job lookup must not
+    raise and must not alter the verdict text."""
+    checks = [_death_check()]
+    _pending, bad, _ok, _adv = pr_gate.classify(checks, "PR gate")
+
+    def _gate_error(_p):
+        raise pr_gate.GateError("gh api exploded")
+
+    annotated = pr_gate._annotate_runner_deaths("o/r", bad, checks, fetch_job=_gate_error)
+    assert annotated == bad
+
+
+def test_fully_concluded_job_is_not_annotated():
+    """A normal code failure (every step concluded) must stay a plain red --
+    annotating it would assert a cause the gate has not established."""
+    checks = [_death_check()]
+    _pending, bad, _ok, _adv = pr_gate.classify(checks, "PR gate")
+    job = {
+        "conclusion": "failure",
+        "steps": [
+            {"name": "Set up job", "conclusion": "success"},
+            {"name": "Run tests", "conclusion": "failure"},
+        ],
+    }
+    annotated = pr_gate._annotate_runner_deaths(
+        "o/r", bad, checks, fetch_job=lambda _p: job
+    )
+    assert annotated == bad
+
+
+def test_annotation_reads_the_deduped_latest_job():
+    """Two same-name check-runs on the SHA: the entry carries the latest
+    one's conclusion, so the steps read must come from THAT job, not the
+    superseded twin (dedupe_latest parity with classify)."""
+    old = _death_check(job_id=111) | {"started_at": "2026-09-21T07:50:44Z"}
+    new = _death_check(job_id=222) | {"started_at": "2026-09-21T23:24:58Z"}
+    checks = [old, new]
+    _pending, bad, _ok, _adv = pr_gate.classify(checks, "PR gate")
+    seen = []
+
+    def fetch_job(path):
+        seen.append(path)
+        return _death_job(step="Audit tests collection floor (455)")
+
+    annotated = pr_gate._annotate_runner_deaths("o/r", bad, checks, fetch_job=fetch_job)
+    assert seen == ["repos/o/r/actions/jobs/222"], seen
+    assert 'at "Audit tests collection floor (455)"' in annotated[0]
+
+
+def test_wait_loop_fail_fast_carries_the_annotation():
+    """The production path (fetch -> classify -> verdict inside
+    wait_and_decide) must surface the annotation in its FAIL message."""
+    checks = [_death_check()]
+
+    def fetch(_repo, _sha):
+        return checks
+
+    code, msg = pr_gate.wait_and_decide(
+        "o/r", "sha", "PR gate", timeout_min=90, poll_sec=0,
+        settle_polls=2, sleep=lambda _s: None, fetch=fetch, now=_clock(),
+        fetch_job=lambda _p: _death_job(),
+    )
+    assert code == 1
+    assert 'runner lost mid-step at "Run tests"' in msg
+
+
 def test_wait_loop_still_fails_fast_on_a_cancel_with_no_successor():
     """Contrepartie, et garde-fou de la regle 3 : sans run de remplacement, le
     `cancelled` reste un rouge immediat -- on ne brule pas le budget."""

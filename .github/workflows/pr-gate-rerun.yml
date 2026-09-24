@@ -76,11 +76,13 @@ concurrency:
 jobs:
   resolve:
     name: Resolve the re-aggregation route (manual)
-    # Route vers la jambe Linux auto-hebergee (#13378 tranche 5, decision ai-01
-    # 2026-09-02) : garde Python pur, sans secret. La garde same-repo ci-dessous
-    # saute les PRs de fork (pr_gate.py compte `skipped` comme OK) : aucun code de
-    # fork n'atteint le runner. Retour arriere = revert de la PR.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Q35 etape 2 (#17397) : agregateur pur -- resolve/re-run du gate, aucun
+    # secret, docker, GPU ni toolchain locale. Re-agreger decide si une PR est
+    # mergeable : tant que ce travail tourne sur le parc local, il se degrade
+    # exactement quand la file qu'il doit debloquer grossit (saturation du
+    # 2026-09-22). La garde same-repo ci-dessous est conservee telle quelle --
+    # seul le runner change, aucune semantic de declenchement.
+    runs-on: ubuntu-latest
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     outputs:
       action: ${{ steps.resolve.outputs.action }}
@@ -155,7 +157,8 @@ jobs:
     name: Re-run the original PR gate (manual)
     needs: resolve
     if: needs.resolve.outputs.action == 'rerun'
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Q35 etape 2 (#17397) : idem resolve -- agregateur pur, ubuntu-latest.
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - name: Re-run the original run
@@ -175,7 +178,8 @@ jobs:
     name: Aggregate a gate-absent PR head (manual)
     needs: resolve
     if: needs.resolve.outputs.action == 'aggregate_absent'
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Q35 etape 2 (#17397) : idem resolve -- agregateur pur, ubuntu-latest.
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       # The aggregation script + the delivery canary both read the repo:

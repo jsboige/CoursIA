@@ -187,6 +187,12 @@ import subprocess
 import sys
 from typing import Any, Callable
 
+try:
+    import gh_identity
+except ImportError:  # charge via importlib dans les tests (hors scripts/)
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import gh_identity
+
 REPO = "jsboige/CoursIA"
 
 # c.1115 voie 1 (msg-20260912T165428-k6rbfc, ai-01 spec) : klass `delivered`
@@ -613,17 +619,89 @@ def cache_notice_lines(
     return lines
 
 
+# --- Transport (#17038) ----------------------------------------------------
+# Deux transports derriere `gh`, aux QUOTAS DISTINCTS : `gh issue list`,
+# `gh pr list` et les `--search` passent par GraphQL ; `gh api repos/...` par
+# REST. Mesure du 2026-09-20 (issue #17038) : 245 PRs balayees en REST pagine
+# pendant que le GraphQL du compte partage rendait 403. Un pool lu par un seul
+# transport meurt avec lui, et le zero qui en sort se lit comme un etat du
+# pool -- « picker muet », donc « veille ».
+POOL_REST_PAGE = 100
+# Plafond de pagination REST du listing de PRs (le GraphQL en demande 300).
+POOL_REST_MAX_PAGES = 4
+# rc distinct de « pool vide mesure » (0) et des arrets deliberes (1) : un
+# appelant doit pouvoir fail-closed sur « je n'ai pas pu lire ».
+RC_POOL_UNMEASURED = 3
+# Le `fallback` de l.1136 designe l'ELARGISSEMENT DU FILTRE quand la passe
+# etroite ne rend rien -- un fallback de SELECTION. Ce qui suit est un
+# fallback de TRANSPORT. Confondre les deux fait croire l'organe couvert.
+
+
+class TransportUnavailable(Exception):
+    """Les DEUX transports ont echoue : le tirage n'est pas mesure."""
+
+    def __init__(self, graphql: str, rest: str):
+        self.graphql = graphql
+        self.rest = rest
+        super().__init__(f"GraphQL={graphql} REST={rest}")
+
+
+def _rest_pages(path: str, *, max_pages: int = 10, timeout: int = 120) -> list[dict]:
+    """Liste paginee par REST -- l'autre quota, celui qui survit au 403 GraphQL."""
+    items: list[dict] = []
+    for page in range(1, max_pages + 1):
+        sep = "&" if "?" in path else "?"
+        out = subprocess.run(
+            ["gh", "api", f"{path}{sep}per_page={POOL_REST_PAGE}&page={page}"],
+            capture_output=True, text=True, encoding="utf-8", check=True,
+            timeout=timeout,
+        ).stdout
+        chunk = json.loads(out)
+        if not isinstance(chunk, list) or not chunk:
+            break
+        items.extend(chunk)
+        if len(chunk) < POOL_REST_PAGE:
+            break
+    return items
+
+
+def _issue_rest_to_gh_shape(it: dict) -> dict:
+    """Item REST `/issues` -> forme rendue par `gh issue list --json`.
+
+    REST rend du snake_case (`created_at`) la ou `gh` rend du camelCase
+    (`createdAt`) : `fetch_pool` lit la forme `gh`, donc la normalisation se
+    fait ICI et pas dans le builder du pool -- un seul point de traduction.
+    """
+    return {"number": it["number"], "title": it.get("title") or "",
+            "labels": it.get("labels") or [], "body": it.get("body") or "",
+            "createdAt": it.get("created_at") or "",
+            "updatedAt": it.get("updated_at") or ""}
+
+
+def _pr_rest_to_gh_shape(it: dict) -> dict:
+    """Item REST `/pulls` -> forme rendue par `gh pr list --json`."""
+    return {"number": it["number"], "title": it.get("title") or "",
+            "body": it.get("body") or "", "createdAt": it.get("created_at") or "",
+            "isDraft": bool(it.get("draft")),
+            "author": {"login": (it.get("user") or {}).get("login") or ""},
+            "headRefName": (it.get("head") or {}).get("ref") or ""}
+
+
 def fetch_pool(
     *,
     cache: PayloadCache | None = None,
     cache_mode: str = "off",
     cache_status: dict[str, dict[str, Any]] | None = None,
     probe: Callable[[], float | None] | None = _newest_remote_issue_update,
-) -> list[dict]:
+) -> tuple[list[dict], str | None]:
     """Une seule requete, limite haute -- c'est ce qui defait la troncature.
 
     Le plafond est haut ET surveille : aucun plafond ne se choisit une fois
     pour toutes, et celui-ci se fait franchir en silence par construction.
+
+    Rend ``(pool, read_error)`` (#17038). ``read_error`` a ``None`` des qu'UNE
+    voie a servi ; sinon il NOMME les deux transports tombes. Un pool vide
+    avec ``read_error`` n'est pas un pool vide -- cf `draw_verdict`.
     """
     command = [
         "gh", "issue", "list", "--repo", REPO, "--state", "open",
@@ -632,22 +710,46 @@ def fetch_pool(
     ]
 
     def fetch_raw() -> list[dict]:
-        out = subprocess.run(
-            command,
-            capture_output=True, text=True, encoding="utf-8", check=True,
-        ).stdout
-        return json.loads(out)
+        try:
+            out = subprocess.run(
+                command,
+                capture_output=True, text=True, encoding="utf-8", check=True,
+            ).stdout
+            return json.loads(out)
+        except Exception as exc:  # noqa: BLE001 - on TENTE l'autre transport
+            graphql_err = f"{type(exc).__name__}"
+        try:
+            # REST /issues rend AUSSI les PRs : `pull_request` les distingue.
+            raw = [_issue_rest_to_gh_shape(it)
+                   for it in _rest_pages(
+                       f"repos/{REPO}/issues?state=open&sort=created&direction=desc")
+                   if "pull_request" not in it]
+        except Exception as exc:  # noqa: BLE001 - les deux sont tombes
+            raise TransportUnavailable(graphql_err, f"{type(exc).__name__}") from exc
+        print(
+            f"[TRANSPORT] GraphQL indisponible ({graphql_err}) -- bascule REST, "
+            f"quota distinct. {len(raw)} issues lues. Le listing REST n'a pas "
+            "d'equivalent serveur pour `merged:>=` ni `N in:title,body` : les "
+            "filtres qui en dependent se degradent, et le disent plus bas.",
+            file=sys.stderr,
+        )
+        return raw
 
-    raw = _cached_payload(
-        "pool",
-        command,
-        fetch_raw,
-        cache=cache,
-        cache_mode=cache_mode,
-        ttl_seconds=POOL_CACHE_TTL_SECONDS,
-        cache_status=cache_status,
-        probe=probe,
-    )
+    try:
+        raw = _cached_payload(
+            "pool",
+            command,
+            fetch_raw,
+            cache=cache,
+            cache_mode=cache_mode,
+            ttl_seconds=POOL_CACHE_TTL_SECONDS,
+            cache_status=cache_status,
+            probe=probe,
+        )
+        read_error = None
+    except TransportUnavailable as exc:
+        return [], (f"GraphQL indisponible ({exc.graphql}), REST egalement "
+                    f"indisponible ({exc.rest})")
     if len(raw) >= POOL_FETCH_LIMIT:
         # Signature de la troncature : on a recu exactement ce qu'on a demande.
         # Le tirage reste possible et se poursuit -- bloquer la lane serait pire
@@ -698,7 +800,7 @@ def fetch_pool(
                 else "grain"
             ),
         })
-    return pool
+    return pool, read_error
 
 
 # Fenetre d'affluence : la MEME que celle du cap de veine (`vein_cap`, par
@@ -1168,6 +1270,24 @@ def print_delivered_signal_report(
     if (dropped or failed or cover_failed or inprogress
             or state.get("budget_hit")):
         print()
+
+
+def draw_verdict(pool_error: str | None) -> str:
+    """La phrase du verdict quand la lecture du pool n'a PAS abouti (#17038).
+
+    Un pool vide MESURE et un pool NON MESURE ne se disent pas avec le meme
+    vocabulaire : le premier est un etat du pool, le second un etat de
+    l'instrument. Les confondre est exactement le defaut -- la lane lit un
+    zero comme « rien a faire » et s'arrete sur un pool qu'elle n'a pas vu.
+    Rend une chaine vide quand la lecture a abouti (rien a dire).
+    """
+    if not pool_error:
+        return ""
+    return (f"TIRAGE NON MESURE : {pool_error}.\n"
+            f"   Aucune voie n'a lu le pool -- ce n'est PAS « aucun candidat ».\n"
+            f"   Ne pas conclure « pool vide » ni « veille » : re-mesurer\n"
+            f"   (`gh api rate_limit`) puis relancer. rc={RC_POOL_UNMEASURED} pour\n"
+            f"   que l'appelant fail-closed au lieu de lire un zero.")
 
 
 def print_empty_draw_notice(withheld: list, picks: list,
@@ -2055,14 +2175,79 @@ def _hours_since(iso: str) -> float:
     return (NOW - dt.datetime.fromisoformat(iso.replace("Z", "+00:00"))).total_seconds() / 3600.0
 
 
+# #17474 : le meme raisonnement que POOL_FETCH_LIMIT, applique aux PRs -- et
+# la meme trappe. `gh pr list` rend du plus RECENT au plus ancien (mesure du
+# 2026-09-23 sur ce depot : `first=2026-09-23T13:29:52Z` #17565,
+# `last=2026-09-13T08:33:00Z` #15942), donc un plafond franchi ampute
+# exactement la traine : les PRs bloquees depuis plus de 24 h, que
+# `unattributed_blocked_prs` (file de reparation) et le compte WIP de lane
+# (Q41) existent pour voir. Le plafond est donc HAUT et SURVEILLE -- un
+# plafond atteint se dit au lieu d'inverser l'instrument en silence.
+# Cout : nul sous le plafond. `gh` pagine par 100 et s'arrete a l'epuisement
+# de la population comme au plafond, donc 158 ouvertes = 2 requetes, ici
+# comme avant.
+OPEN_PRS_FETCH_LIMIT = POOL_FETCH_LIMIT
+
+
+def _warn_open_prs_truncated(rendered: int, ceiling: int, remedy: str) -> None:
+    """La troncature se DIT : un plafond atteint ne se devine pas autrement.
+
+    Le listing rend du plus RECENT au plus ancien, et `gh` ne leve rien quand
+    le plafond mord. Sans ce message, la traine -- PRs bloquees de plus de
+    24 h, file de reparation et compte WIP de lane (Q41) -- est absente de la
+    mesure en silence, exactement ce que ces appelants existent pour voir. Le
+    garde reste utilisable (bloquer la lane serait pire) : on dit, on ne
+    bloque pas.
+    """
+    print(
+        f"[PRS TRONQUEES] {rendered} PRs rendues pour un plafond de "
+        f"{ceiling} : l'ouvert est probablement plus grand. "
+        "gh rend les plus RECENTES, donc la traine -- PRs bloquees de "
+        "plus de 24 h, file de reparation et compte WIP de lane -- est "
+        f"absente de cette mesure. {remedy} avant de "
+        "conclure quoi que ce soit de ce resultat.",
+        file=sys.stderr,
+    )
+
+
 def fetch_open_prs() -> list[dict]:
-    """Toutes les PRs ouvertes, avec le corps (pour y lire le tag de lane)."""
-    out = subprocess.run(
-        ["gh", "pr", "list", "--repo", REPO, "--state", "open", "--limit", "300",
-         "--json", "number,title,body,createdAt,isDraft,author,headRefName"],
-        capture_output=True, text=True, encoding="utf-8", check=True, timeout=120,
-    ).stdout
-    return json.loads(out)
+    """Toutes les PRs ouvertes, avec le corps (pour y lire le tag de lane).
+
+    #17038 : meme bascule de transport que `fetch_pool` -- `gh pr list` passe
+    par GraphQL, `gh api repos/.../pulls` par REST. Le garde rouge attrape
+    deja l'echec (`unavailable`, fail-open et DIT) ; ce qui manquait est la
+    seconde voie, pour que l'echec cesse d'etre une fatalite.
+    """
+    try:
+        out = subprocess.run(
+            ["gh", "pr", "list", "--repo", REPO, "--state", "open",
+             "--limit", str(OPEN_PRS_FETCH_LIMIT),
+             "--json", "number,title,body,createdAt,isDraft,author,headRefName"],
+            capture_output=True, text=True, encoding="utf-8", check=True, timeout=120,
+        ).stdout
+        prs = json.loads(out)
+        if len(prs) >= OPEN_PRS_FETCH_LIMIT:
+            _warn_open_prs_truncated(len(prs), OPEN_PRS_FETCH_LIMIT,
+                                     "Relever OPEN_PRS_FETCH_LIMIT")
+        return prs
+    except Exception:  # noqa: BLE001 - on TENTE l'autre transport
+        pass
+    raw = [_pr_rest_to_gh_shape(it) for it in _rest_pages(
+        f"repos/{REPO}/pulls?state=open&sort=created&direction=desc",
+        max_pages=POOL_REST_MAX_PAGES)]
+    print(
+        f"[TRANSPORT] `gh pr list` (GraphQL) indisponible -- bascule REST, "
+        f"quota distinct. {len(raw)} PRs lues.",
+        file=sys.stderr,
+    )
+    # Le transport REST porte son PROPRE plafond (pages x page) : un plafond
+    # atteint s'y dit comme sur la voie GraphQL, sinon la bascule de #17038
+    # reintroduit la troncature muette par l'autre porte.
+    rest_ceiling = POOL_REST_PAGE * POOL_REST_MAX_PAGES
+    if len(raw) >= rest_ceiling:
+        _warn_open_prs_truncated(len(raw), rest_ceiling,
+                                 "Relever POOL_REST_MAX_PAGES")
+    return raw
 
 
 def fetch_pr_states(numbers: list[int]) -> dict[int, dict]:
@@ -4255,6 +4440,14 @@ def main(argv: list[str] | None = None) -> int:
     for _stream in (sys.stdout, sys.stderr):
         if hasattr(_stream, "reconfigure"):
             _stream.reconfigure(encoding="utf-8", errors="replace")
+    # #17418 Phase A : epingle le jeton machine AVANT tout appel gh — les
+    # enfants (check_lane_claim, nits...) heritent via os.environ propage par
+    # _utf8_child_env(). Warn-fort + poursuite : le FAIL bruyant est porte
+    # par gh_identity --whoami et detect_shared_login.py (transition B/C).
+    try:
+        gh_identity.pin_gh_token()
+    except gh_identity.GhIdentityError as exc:
+        print(f"GH-IDENTITY (WARN, poursuite sous compte actif): {exc}", file=sys.stderr)
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--lane", default=None,
@@ -4476,11 +4669,20 @@ def main(argv: list[str] | None = None) -> int:
     # et elle doit pouvoir etre posee sur un grain STEERE, chemin par lequel
     # arrive l'essentiel du travail (mesure du 2026-08-29).
     if args.admissible is not None:
-        pool = fetch_pool(
+        pool, pool_error = fetch_pool(
             cache=payload_cache,
             cache_mode=effective_cache_mode,
             cache_status=cache_status,
         )
+        # #17038 : ce mode repond « ce grain-ci est-il consommable maintenant ? ».
+        # Sur un pool non lu, la seule reponse honnete est « je n'ai pas mesure » --
+        # `1` dit deja « absente du pool », et le confondre ferait lire une panne
+        # de transport comme une issue fermee.
+        unmeasured = draw_verdict(pool_error)
+        if unmeasured:
+            print(unmeasured)
+            print()
+            return RC_POOL_UNMEASURED
         series, issue_to_family, series_err = fetch_series_visits(
             cache=payload_cache,
             cache_mode=effective_cache_mode,
@@ -4594,11 +4796,26 @@ def main(argv: list[str] | None = None) -> int:
         print(f"(garde rouge/WIP indisponible : {backlog['unavailable']} -- tirage rendu sans verification)")
         print()
 
-    pool = fetch_pool(
+    pool, pool_error = fetch_pool(
         cache=payload_cache,
         cache_mode=effective_cache_mode,
         cache_status=cache_status,
     )
+    # #17038 : « je n'ai pas pu lire » n'est pas « aucun candidat ». Le dire,
+    # et sortir avec un rc DEDIE avant tout tirage -- sans pool il n'y a pas
+    # de tirage a rendre, et le vocabulaire de l'epuisement (« FILE LOCALE
+    # EPUISEE ») serait un mensonge sur un pool qu'on n'a jamais vu.
+    unmeasured = draw_verdict(pool_error)
+    if unmeasured:
+        if args.json:
+            print(json.dumps(
+                {"lane": args.lane, "mode": "unmeasured",
+                 "draw": "non mesure", "transport_error": pool_error,
+                 "rc": RC_POOL_UNMEASURED}, ensure_ascii=False, indent=2))
+        else:
+            print(unmeasured)
+            print()
+        return RC_POOL_UNMEASURED
     visits, visits_err = fetch_visits(
         cache=payload_cache,
         cache_mode=effective_cache_mode,
