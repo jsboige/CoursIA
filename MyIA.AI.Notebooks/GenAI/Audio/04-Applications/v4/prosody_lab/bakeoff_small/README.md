@@ -45,26 +45,38 @@ Fallback (GDrive inaccessible) : `outputs/bakeoff_small/` à côté de ce dossie
 
 | Client | Import | Load (CUDA) | Generate | Mesures prosody | WER |
 |---|---|---|---|---|---|
-| Chatterbox MTL V3 | ✅ | ✅ | ✅ (smoke OK) | ✅ | ✅ |
+| Chatterbox MTL V3 | ✅ | ✅ (3.07 GB VRAM FP16) | ✅ | ✅ | ✅ |
 | Kyutai tts-1.6b | ⚠️ pkg absent | — | — | — | — |
 | pocket-tts | ⚠️ pkg absent | — | — | — | — |
 | Fun-CosyVoice 3.0 | ⚠️ pkg absent | — | — | — | — |
 
-**Seul Chatterbox est mesurable de bout en bout à ce jour.** Les 3
-autres clients exposent un skeleton `warm()` qui retourne `None` avec
-un log explicite tant que les packages manquent (`moshi` / `pocket-tts`
-/ CosyVoice). L'installation de chaque package se fait via
-`pip install moshi-tts`, `pip install pocket-tts`, ou
-`git+https://github.com/FunAudioLLM/CosyVoice`.
+## Mesures Chatterbox Multilingual V3 (first-hand, 2026-09-24)
+
+Pipeline : `ChatterboxMultilingualTTS.from_pretrained("cuda")` + `generate(text, language_id="fr")` à 24 kHz mono.
+
+| Extrait | WER | ST range | CV | Velocity st/s | n_syll | motion st/syll | flat% | Verdict global | Verdict syllable |
+|---|---|---|---|---|---|---|---|---|---|
+| A narration (451 chars) | 0.418 | 15.47 st | 0.296 | 33.15 | 51 | 6.05 | 8.0% | EXPRESSIVE | INSUFFICIENT |
+| B dialogue (423 chars) | 0.250 | 15.87 st | 0.33 | 23.61 | 63 | 2.94 | 33.9% | EXPRESSIVE | EXPRESSIVE |
+
+**Constats** :
+- Contour global (ST range, velocity) sort **EXPRESSIVE** sur les deux extraits — le modèle module effectivement.
+- Syllable motion : 6.05 st/syll sur A (fort), 2.94 sur B (moyen). Mais flat% élevé sur B (33.9 %) indique des passages syllabe-à-syllabe monotones dans le dialogue.
+- WER 0.418 sur A est élevé — l'hypothèse Whisper-tiny déraille dès la 2e phrase ("dès l'embeau d'armée en déroute à fait traverser" au lieu de "des lambeaux d'armée en déroute avaient traversé"). À vérifier si c'est (a) Chatterbox qui produit mal, ou (b) Whisper-tiny qui hallucine sur audio Chatterbox.
+
+**Fichiers WAV + JSON mesurable dans `results/chatterbox_mtl_v3/`** :
+- `A__chatterbox_mtl_v3.wav` (835 KB, 17.4 s)
+- `B__chatterbox_mtl_v3.wav` (1.01 MB, 21.0 s)
+- `bake_results.json` (métriques + WER + transcription partielle)
 
 ## Acceptance (issue #17586 Phase A0)
 
-- [ ] Chatterbox mesuré sur A + B (1 WAV + 1 JSON + WER)
-- [ ] Kyutai installé + mesuré sur A + B
-- [ ] pocket-tts installé + mesuré sur A + B
-- [ ] Fun-CosyVoice installé + mesuré sur A + B
-- [ ] Tableau comparatif `prosody_metrics` × `WER` × vitesse de rendu
-- [ ] 1 ligne par modèle postée en commentaire sur #17586
+- [x] Chatterbox Multilingual V3 mesuré sur A + B (WAV + JSON + WER)
+- [ ] Kyutai tts-1.6b installé + mesuré (`pip install moshi-tts` ou `git+https://github.com/kyutai-labs/delayed-streams-modeling`)
+- [ ] pocket-tts installé + mesuré (`pip install pocket-tts`)
+- [ ] Fun-CosyVoice 3.0 installé + mesuré (`git+https://github.com/FunAudioLLM/CosyVoice`)
+- [x] Tableau comparatif partiel (Chatterbox seul pour cette PR)
+- [x] 1 ligne Chatterbox postée sur #17586
 
 ## Hors scope
 
@@ -73,3 +85,9 @@ un log explicite tant que les packages manquent (`moshi` / `pocket-tts`
 - Tuning d'hyperparamètres au-delà du mode expressif par défaut.
 - Comparaison avec les modèles >8 GB (Qwen VoiceDesign 7B, Higgs v3,
   Kokoro 82M, OpenAI gpt-4o-mini-tts) — c'est le scope `bench.py` parent.
+
+## Notes techniques
+
+- `torchcodec 0.16.0` (la cible officielle de `torchaudio.save` Chatterbox) demande torch 2.6.x — incompatible avec notre torch 2.13.0+cu126. Solution : `soundfile.write` (libsndfile, indépendant de torch).
+- Le forcing EOS Chatterbox coupe le sampling au token 435/1000 (A) ou 526/1000 (B) — repetition detection ou long_tail, pas une fin de phrase. Le WAV produit est incomplet (le texte source a plus de mots que ce qui est prononcé).
+- VRAM Chatterbox Multilingual : 3.07 GB FP16 sur RTX 4060 8 GB. Reste 5 GB libre pour les 3 autres modèles séquentiellement.

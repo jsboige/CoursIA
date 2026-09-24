@@ -44,12 +44,16 @@ class ChatterboxClient:
                 log.warning("chatterbox load failed: %s", exc)
                 return None
         try:
-            import torchaudio as ta  # noqa: E402
+            import io  # noqa: E402
+            import soundfile as sf  # noqa: E402
             wav = self._model.generate(text, language_id=lang)
-            # chatterbox returns torch.Tensor at sr=24000 by convention
-            ta.save("/tmp/_bake_chatterbox.wav", wav, 24000)
-            with open("/tmp/_bake_chatterbox.wav", "rb") as f:
-                return f.read()
+            # chatterbox returns torch.Tensor at sr=24000 by convention.
+            # Write via soundfile (libsndfile) -- torchaudio 2.11 + torchcodec 0.16
+            # require torch 2.6.x which we don't ship; soundfile is independent.
+            wav_np = wav.squeeze(0).detach().cpu().numpy() if hasattr(wav, "squeeze") else wav
+            buf = io.BytesIO()
+            sf.write(buf, wav_np, 24000, format="WAV", subtype="PCM_16")
+            return buf.getvalue()
         except Exception as exc:
             log.warning("chatterbox generate failed: %s", exc)
             return None
