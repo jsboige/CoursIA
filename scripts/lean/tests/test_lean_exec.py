@@ -1177,14 +1177,16 @@ def test_wsl_path_mangling_and_translation_form(monkeypatch):
     po-2026 2026-09-14), cwd traduit via --cd, threads exportes dans le
     shell de login, arguments shlex-quotes.
 
-    L'hote est **force** des deux cotes : ``backend_command`` ne traduit que
-    depuis Windows (``os.name == "nt"``) et rend la commande telle quelle
-    ailleurs. Sans ce forcage, l'epingle n'affirmait sa forme que sur un poste
-    Windows et **rougissait sur la CI Linux**, ou l'appel non force rendait
-    ``["lake", "build", ...]`` — mesuree sur la jambe ``Scripts Tests (CPU)``
-    du 2026-09-23 (1 failed, 15209 passed). Les deux branches de l'hote sont
-    desormais epinglees, sur n'importe quelle machine."""
-    monkeypatch.setattr(le.os, "name", "nt")
+    L'hote est **force** des deux cotes via ``_host_is_windows`` (porte
+    unique du cote-hote, l.981 du module) : ``backend_command`` ne traduit
+    que depuis Windows et rend la commande telle quelle ailleurs. Sans ce
+    forcage, l'epingle n'affirmait sa forme que sur un poste Windows et
+    **rougissait sur la CI Linux** (jambe ``Scripts Tests (CPU)`` du
+    2026-09-23, 1 failed / 15209 passed). On ne patche PAS ``os.name`` :
+    le patch global fait choisir ``WindowsPath`` a tout ``Path()`` pendant
+    le test, non instantiable sous Linux — INTERNALERROR, worker xdist
+    mort (mesure CI 18:26Z) — d'ou la porte dediee patchable."""
+    monkeypatch.setattr(le, "_host_is_windows", lambda: True)
     saved = le.wsl_path_of
     try:
         le.wsl_path_of = lambda p: "/mnt/c/dev/proj"
@@ -1206,7 +1208,7 @@ def test_wsl_path_mangling_and_translation_form(monkeypatch):
         assert cmd3 == ["lake", "build"] and env3["LEAN_NUM_THREADS"] == "3"
         # Hote POSIX, backend wsl demande : wsl.exe n'existe pas la-bas, donc
         # commande rendue telle quelle — c'est cette branche que la CI exerce.
-        monkeypatch.setattr(le.os, "name", "posix")
+        monkeypatch.setattr(le, "_host_is_windows", lambda: False)
         cmd4, _ = le.backend_command(["lake", "build"], "wsl", {})
         assert cmd4 == ["lake", "build"], cmd4
     finally:

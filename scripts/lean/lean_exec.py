@@ -969,6 +969,15 @@ def wsl_path_of(win_path) -> str | None:
     return None
 
 
+def _host_is_windows() -> bool:
+    """Porte unique du cote-hote de la traduction WSL. Les tests forcent
+    cette porte, jamais ``os.name`` : patcher ``os.name`` globalement fait
+    choisir ``WindowsPath`` a tout ``Path()`` construit pendant le patch,
+    que pathlib refuse d'instantier sous Linux (worker xdist mort, mesure
+    CI 2026-09-23 18:26Z, INTERNALERROR NotImplementedError)."""
+    return os.name == "nt"
+
+
 def backend_command(
     cmd: list[str], backend: str, env: dict,
 ) -> tuple[list[str], dict]:
@@ -978,7 +987,7 @@ def backend_command(
     explicite dans le shell de login. Echec de traduction = OSError (le
     demandeur refuse, pas de repli silencieux en natif qui viserait le cache
     du mauvais backend)."""
-    if backend != "wsl" or os.name != "nt":
+    if backend != "wsl" or not _host_is_windows():
         return cmd, env
     wsl_cwd = wsl_path_of(Path.cwd())
     if not wsl_cwd:
