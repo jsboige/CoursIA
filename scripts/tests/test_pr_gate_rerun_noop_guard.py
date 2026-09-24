@@ -109,11 +109,22 @@ def test_absent_leg_never_posts_beside_an_existing_gate_check_run():
     """Garde structurale anti-jumeau (#11519) : la route aggregate_absent
     n'est prise QUE si aucun check-run « PR gate » n'existe deja sur la tete.
     Sans elle, un POST pourrait se poser a cote d'un verdict existant et
-    l'AND de GitHub garderait la PR bloquee."""
-    text = WORKFLOW.read_text(encoding="utf-8")
-    assert "refusing to POST beside it (#11519 twin)" in text, (
-        "la garde anti-jumeau du resolve a disparu : la jambe absent pourrait "
-        "creer le doublon que #11519 documente"
+    l'AND de GitHub garderait la PR bloquee. #17680 : la route vit desormais
+    dans scripts/ci/pr_gate_route.py -- la garde a demenage avec elle."""
+    route_script = (
+        Path(__file__).resolve().parents[2] / "scripts" / "ci" / "pr_gate_route.py"
+    )
+    assert "refusing to POST beside it (#11519 twin)" in route_script.read_text(
+        encoding="utf-8"
+    ), (
+        "la garde anti-jumeau du resolve a disparu du script de route : la "
+        "jambe absent pourrait creer le doublon que #11519 documente"
+    )
+    # Le workflow doit bien appeler CE script (sinon la garde testee n'est
+    # pas celle qui s'execute).
+    assert "scripts/ci/pr_gate_route.py" in str(_load().get("jobs", {})), (
+        "le resolve n'appelle plus pr_gate_route.py : la garde anti-jumeau "
+        "testee dans le script n'est pas celle qui tourne"
     )
 
 
