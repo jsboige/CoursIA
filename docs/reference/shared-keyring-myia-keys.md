@@ -44,9 +44,11 @@ sous-commande « affiche-moi la clé ».
 
 **`get` refuse d'écrire dans un fichier que git ne prouve pas ignoré.** « Non suivi » ne suffit
 pas : un fichier peut n'être ignoré que par `.git/info/exclude`, **local au clone et non
-versionné**, donc pas ignoré chez le voisin. L'organe interroge `git check-ignore -v`, qui **nomme
-la source gagnante**, et refuse (`EXIT_UNKNOWN`) quand il n'a pas pu mesurer plutôt que de
-supposer. `--allow-unignored` existe et se justifie dans le body de la PR qui l'emploie.
+versionné**, donc pas ignoré chez le voisin. L'organe emprunte la mesure de l'organe de couverture
+des secrets (`scripts/ci/check_secret_paths_ignored.py`, #17442) : `git check-ignore -v --no-index`
+**nomme la source gagnante**. Une source locale au clone (`.git/info/exclude`, `core.excludesFile`)
+est refusée en la nommant, un motif de négation `!` gagnant compte comme « non ignoré », et l'organe
+refuse (`EXIT_UNKNOWN`) quand il n'a pas pu mesurer plutôt que de supposer. `--allow-unignored` existe et se justifie dans le body de la PR qui l'emploie.
 
 **La nature du secret se tranche sur la FORME, jamais sur le nom de l'entrée.** Un titre
 `github ai-01` ne prouve pas que l'entrée contient un PAT. `secret_kind()` rend `vide` / `jeton` /
@@ -148,24 +150,18 @@ les machines portant des **grains CoursIA**, et que web1 travaille sur `roo-exte
 trousseau, la population pertinente est « toute machine de la flotte », et elle est plus large.
 Un document fait autorité sur **la population qu'il décrit**, pas au-delà.
 
-## Le trou fermé au passage — `/.secrets/`
+## Le trou `.secrets/` — fermé par #17442
 
 `.gitignore` énumérait des fichiers de secrets un par un, et **`.secrets/master.env` — la source
 unique désignée par `secrets-hygiene.md` — n'y figurait pas**. Il ne devait son exclusion qu'à
 `.git/info/exclude`, local à un clone et non versionné : sur toute autre machine, un `git add -A`
 l'aurait stagé.
 
-Le répertoire entier est désormais ignoré de façon versionnée. Contrôle positif, sur un dépôt
-frais ne portant que ce `.gitignore` :
-
-```
-clone frais -> rc=0  .gitignore:383:/.secrets/   .secrets/master.env
-apres 'git add -A' : ['A  .gitignore']
-```
-
-Avant le correctif, le même test rendait `NON IGNORE`. La leçon générale : **un test d'ignorance
-lancé dans ce clone mesure ce clone, pas le dépôt** — et une énumération est par construction
-aveugle au fichier qu'on ajoutera demain.
+Cette PR portait d'abord son propre correctif ; #17442 l'a livré entre-temps, avec une garde CI
+(`scripts/ci/check_secret_paths_ignored.py`) qui sépare une source versionnée d'une source locale.
+L'organe du trousseau réutilise cette mesure pour `get` au lieu d'en tenir une seconde. La leçon
+générale reste : **un test d'ignorance lancé dans ce clone mesure ce clone, pas le dépôt** — et une
+énumération est par construction aveugle au fichier qu'on ajoutera demain.
 
 ## Voir aussi
 

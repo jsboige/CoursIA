@@ -484,22 +484,41 @@ def _git_tracked(path: Path) -> bool:
         return False
 
 
-def _git_ignored(path: Path) -> bool | None:
-    """True/False si git tranche, None si on n'a pas pu mesurer.
+def _git_ignored(path: Path) -> tuple[str, str | None] | None:
+    """(statut, source) d'ignorance de `path`, ou None si on n'a pas pu mesurer.
 
     « Non suivi » ne suffit PAS : un fichier neuf n'est pas suivi et reste
-    parfaitement stageable. Ce qui protege, c'est d'etre *ignore*. Et
-    l'ignorance peut venir de `.git/info/exclude`, qui est LOCAL au clone et
-    non versionne -- donc vraie ici et fausse sur la machine d'a cote.
+    parfaitement stageable. Ce qui protege, c'est d'etre *ignore* -- et par une
+    regle qui VOYAGE avec le depot. `.git/info/exclude` et le `core.excludesFile`
+    sont locaux au clone : vrais ici, faux sur la machine d'a cote.
+
+    Statut : "VERSIONNEE" (source = un .gitignore suivi), "LOCALE" (source locale
+    au clone), "NON_IGNORE". La mesure est celle de l'organe de couverture
+    des secrets (`scripts/ci/check_secret_paths_ignored.py`, #17442) : on la
+    reutilise au lieu d'en maintenir une seconde.
     """
+    ci_dir = str(Path(__file__).resolve().parents[1] / "ci")
+    if ci_dir not in sys.path:
+        sys.path.insert(0, ci_dir)
     try:
-        res = subprocess.run(["git", "check-ignore", "-q", str(path)],
-                             capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=15)
-        if res.returncode in (0, 1):
-            return res.returncode == 0
+        import check_secret_paths_ignored as couverture
+
+        top = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True,
+                             text=True, encoding="utf-8", errors="replace", timeout=15)
+        if top.returncode != 0:
+            return None
+        racine = Path(top.stdout.strip()).resolve()
+        rel = os.path.relpath(path.resolve(), racine)
+        if rel.startswith(".."):
+            return None  # hors du depot : git ne tranche pas, on ne suppose rien
+        verdict = couverture.verdict_chemin(rel.replace("\\", "/"), racine,
+                                            couverture.fichiers_suivis(racine))
+    except Exception:  # noqa: BLE001 -- tout echec de mesure est fail-closed
         return None
-    except Exception:
-        return None
+    # Un motif `!` qui gagne DE-ignore le chemin : ce n'est pas une protection.
+    if str(verdict.get("motif") or "").startswith("!"):
+        return "NON_IGNORE", verdict.get("source")
+    return verdict["statut"], verdict.get("source")
 
 
 def cmd_get(args) -> int:
@@ -517,11 +536,18 @@ def cmd_get(args) -> int:
     if _git_tracked(target):
         print(f"DEFECT: {target} est SUIVI PAR GIT -- refus d'y ecrire un secret.", file=sys.stderr)
         return EXIT_DEFECT
-    ignored = _git_ignored(target)
-    if ignored is None:
+    mesure = _git_ignored(target)
+    if mesure is None:
         print(f"UNKNOWN: impossible de savoir si {target} est ignore par git -- refus fail-closed.", file=sys.stderr)
         return EXIT_UNKNOWN
-    if not ignored and not args.allow_unignored:
+    ignored, source = mesure
+    if ignored == "LOCALE" and not args.allow_unignored:
+        print(f"DEFECT: {target} n'est ignore que par une regle LOCALE a ce clone ({source}) -- "
+              "refus d'y ecrire un secret.", file=sys.stderr)
+        print("  Sur une autre machine, ce chemin serait stageable par `git add .`.", file=sys.stderr)
+        print("  Ajouter le chemin au .gitignore VERSIONNE, ou --allow-unignored.", file=sys.stderr)
+        return EXIT_DEFECT
+    if ignored == "NON_IGNORE" and not args.allow_unignored:
         print(f"DEFECT: {target} n'est PAS ignore par git -- refus d'y ecrire un secret.", file=sys.stderr)
         print("  Un fichier neuf n'est pas 'suivi', mais il reste stageable par `git add .`.", file=sys.stderr)
         print("  Ajouter le chemin au .gitignore VERSIONNE (pas .git/info/exclude, qui est local", file=sys.stderr)

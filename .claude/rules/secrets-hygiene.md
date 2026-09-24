@@ -44,28 +44,6 @@ Les secrets **partages** (HF, OpenAI, Anthropic, Civitai, API keys par service, 
 
 Detail complet (inventaire, rotation, règle restart, incident fondateur) : [docs/genai/secrets-management.md](../../docs/genai/secrets-management.md).
 
-## Trousseau partage `MyIA-Keys` — un coffre KeePass sur GDrive, une passphrase par machine
-
-Les identifiants de **comptes** de la flotte (GitHub par lane) vivent dans le coffre partage
-`MyIA-Keys.kdbx` (`.shared-state/` RooSync). L'organe d'acces est
-[`scripts/secrets/agent_keyring.py`](../../scripts/secrets/agent_keyring.py) — **aucune
-sous-commande n'imprime un secret par defaut** : une valeur est tubee vers son consommateur, ou
-rendue masquee.
-
-- **La passphrase se pose par machine** (`bootstrap`), dans le gestionnaire d'identifiants Windows.
-  DPAPI est lie au profil : **ni exportable, ni interrogeable a distance** — donc aucune machine ne
-  peut verifier qu'une autre a bootstrappe. La preuve cross-machine est une **empreinte publiee**
-  (`doctor`), PBKDF2 a sel public fixe, que chaque lane compare a la reference du dashboard `global`.
-  Empreinte differente = **ne rien ecrire dans le coffre**, et le signaler.
-- **Le coffre porte aujourd'hui des mots de passe de compte, PAS des PAT** — ce n'est donc pas
-  encore un canal de distribution de jetons. `verify` le mesure ; `gh-login` refuse avant d'appeler
-  `gh`, parce qu'un `--with-token` sur un mot de passe echoue avec un message sans rapport.
-- **Ne jamais recopier la passphrase sur un chemin partage.** Le PDF d'urgence est une voie de
-  rattrapage, pas un lieu de stockage.
-
-Detail (sous-commandes, gardes, empreinte, critere de retrait du PDF, population des 7 machines) :
-[docs/reference/shared-keyring-myia-keys.md](../../docs/reference/shared-keyring-myia-keys.md).
-
 ## Transmission d'un secret — canal RooSync prive (fusion 2026-08-21)
 
 **Statut** : ACTIF. Decision user 2026-07-02, reaffirmee en session directe 2026-07-03.
@@ -112,5 +90,4 @@ Recits fondateurs (blocage Kokoro/OWUI 2026-07-02→03, quorum 2026-07-14) et no
 - [.claude/rules/git-workflow.md](git-workflow.md) — no direct main push
 - [docs/env-python-reparation.md](../../docs/reference/env-python-reparation.md) — env discipline (regle F)
 - [docs/genai/secrets-management.md](../../docs/genai/secrets-management.md) — centralisation master.env + render
-- [docs/reference/shared-keyring-myia-keys.md](../../docs/reference/shared-keyring-myia-keys.md) — trousseau partage, organe d'acces, bootstrap DPAPI par machine
 - [docs/reference/secrets-and-coord-detail.md](../../docs/reference/secrets-and-coord-detail.md) — detail : incidents, triage A/B/C (§1.6), recits RooSync (§3)
