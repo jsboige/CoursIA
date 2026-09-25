@@ -9,7 +9,7 @@ réexécuté — il est préservé comme provenance historique.
 
 | Notebook | Verdict | Superseded by | Verdict recorded in |
 |---|---|---|---|
-| `04-14-VoiceLeading-RenduGenAI.ipynb` | OBSOLETE (consolidation **#13741**) — sibling pédagogique minimal (9 cellules, 51 520 octets), archivé pour éliminer le doublon de slot 04-14 ; le contenu reste préservé | [`../04-Applications/04-14-VoiceLeading-Rendu-GenAI.ipynb`](../04-Applications/04-14-VoiceLeading-Rendu-GenAI.ipynb) (notebook canonique, version complète) | Note de consolidation #13741 en tête du [README de `04-Applications/`](../04-Applications/README.md) ; ce registre |
+| `04-14-VoiceLeading-RenduGenAI.ipynb` | OBSOLETE (consolidation **#13741**) — sibling pédagogique minimal (51 520 octets), archivé pour éliminer le doublon de slot 04-14 ; le contenu reste préservé | [`../04-Applications/04-14-VoiceLeading-Rendu-GenAI.ipynb`](../04-Applications/04-14-VoiceLeading-Rendu-GenAI.ipynb) (notebook canonique, version complète) | Note de consolidation #13741 en tête du [README de `04-Applications/`](../04-Applications/README.md) ; ce registre |
 
 ## Disposition par section
 
@@ -22,7 +22,7 @@ relié à son devenir.
 |---|---|---|
 | Titre et cadrage « Du Voice-Leading CP-SAT à l'Audio MusicGen » (md 0) | Reformulé en « Voice Leading Rendu GenAI — donner un spectre aux accords réparés », avec liens de navigation de série (md 0 du notebook courant) | Comparaison cellule à cellule des deux notebooks sur `main` (2026-09-25) |
 | Lecture des spectrogrammes / interprétation pédagogique (md 1) | Développé en section « 1. Le problème du rendu : des hauteurs ne sont pas un son » | idem |
-| Cellules de code (7) | Reprises et étendues à 13 cellules de code dans le notebook canonique (28 cellules markdown d'enrichissement en plus) | Comptes mesurés le 2026-09-25 : 9 cellules (2 md / 7 code) → 41 cellules (28 md / 13 code) ; la note #13741 en annonçait 27 à sa date, l'enrichissement a continué depuis |
+| Cellules de code | Reprises et étendues dans le notebook canonique, qui ajoute en plus un enrichissement markdown (cadrage pédagogique, lecture des spectrogrammes) | Comparaison cellule à cellule des deux notebooks sur `main` (2026-09-25) ; la note #13741 décrit le périmètre de sa date, l'enrichissement a continué depuis |
 
 ## Vérifications faites à la mise au standard (2026-09-25)
 
