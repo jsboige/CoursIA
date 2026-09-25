@@ -35,7 +35,7 @@ utilité/décision.
 ³ `percolation_lean` vit sous `Applications/Percolation/percolation_lean/` (créé
 directement là, #14927 — absent de cet inventaire jusqu'ici). **13 fichiers `.lean`** au
 comptage de l'instrument canonique (`count_code_sorry.py --lake …` : `files: 13`,
-`distinct_code_sorry: 0`, `naive_sorry: 0`, aucun vacuous) — soit 6 modules FR (5 imbriqués
+`distinct_code_sorry: 0`, `naive_sorry: 0`, aucun vacuous) — soit les modules FR (5 imbriqués
 + l'agrégateur racine `Percolation.lean`), 6 miroirs `_en` (5 imbriqués + `Percolation_en`),
 et le `lakefile.lean`. La CI dédiée `lean-percolation.yml` porte
 `sorry-baseline: "0"` / `sorry-filter-mode: real` (dernier run `success`
@@ -164,7 +164,7 @@ documenté historiquement — a été supprimé du dépôt.)*
 - **Couverture** : cet inventaire couvre les **deux** lakes de `Probas/` —
   `decision_theory_lean` (racine série) et `percolation_lean`
   (`Applications/Percolation/`, intégré ici par P3 de #14873 ; le Total historique
-  « 2 sorry / 13 modules / 2 notebooks » datait d'avant #14927).
+  « `2 sorry / 13 modules / 2 notebooks` » datait d'avant #14927).
 - **Honnêteté des jalons ouverts (G.3/G.9)** : `decision_theory_lean` documente ses jalons
   non atteints (existence Herstein–Milnor, caractérisation multi-tickets complète,
   théorème de Gittins) **explicitement comme OPEN / INTRINSIC** — jamais masqués en
