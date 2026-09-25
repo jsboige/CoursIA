@@ -10,10 +10,24 @@ upstream n'est vende ni adapte ici.
 Modules consommateurs :
 - `FormalLogic.Bridge` — pilote Tranche A (#15520) : laboratoire propositionnel,
   validité/preuve/contre-modèle sur les mêmes formules que le notebook ;
+- `FormalLogic.FolBridge` — Tranche B (#16877) : micro-théorie FOL (socrate/platon)
+  partagée avec `Tweety-02d-FOL-Lab-Lean.ipynb` — conséquences sémantiques certifiées
+  et contre-modèle fini à deux éléments sur la sémantique FFL des structures ;
 - `FormalLogic.GLBridge` — pilote Tranche F (#15916) : schéma de Löb, contrôle
   négatif par contre-modèle fini, point fixe de de Jongh–Sambin et interprétation
   arithmétique sous les conditions de Hilbert–Bernays–Löb.
+- `FormalLogic.ModalBridge` — pilote Tranche C (#15066) : logiques modales via
+  `ModalLogic` (fork compat 4.33.1) — `K` valide sur tout cadre, contre-modèles
+  finis de `T`/`4`/`5` sur cadres témoins génériques, duaux diamant de `T`/`4`
+  sur les cadres S4 de Fin74.
+- `FormalLogic.FairBotLoeb` — niveau L3 de l'EPIC #15062 : FairBot × FairBot
+  déduit du théorème de Löb **prouvé** par FFL (`ProvabilityAbstraction.löb_theorem`),
+  sans champ postulé, instancié sur la prouvabilité standard de `𝗣𝗔` ; paire de
+  FairBots de codes distincts par `exclusiveMultifixedpoint`.
 -/
 
 import FormalLogic.Bridge
+import FormalLogic.FolBridge
 import FormalLogic.GLBridge
+import FormalLogic.ModalBridge
+import FormalLogic.FairBotLoeb

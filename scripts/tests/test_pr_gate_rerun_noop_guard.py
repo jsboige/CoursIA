@@ -66,3 +66,65 @@ def test_rerun_recipe_keeps_run_rerun():
     assert "gh run rerun" in str(data.get("jobs", {})), (
         "la recette de re-run (#11519) a disparu du job reaggregate"
     )
+
+
+# ---------------------------------------------------------------------------
+# #16624 -- la jambe gate-absent et le message de skip VEridique
+# ---------------------------------------------------------------------------
+
+
+def test_false_skip_message_is_gone():
+    """Demande 2 de #16624 : l'ancien skip affirmait « the gate will run on its
+    own » pour une tete sans run pull_request -- FAUX pour la population
+    retarget (aucun push, aucun synchronize, et un close/reopen bot est inert
+    par anti-recursion). Le message doit rester absent du workflow."""
+    assert "the gate will run on its own" not in WORKFLOW.read_text(encoding="utf-8"), (
+        "le message de skip mensonger est de retour : une tete sans run "
+        "pull_request ne verra JAMAIS le gate partir seule (retarget, #16624)"
+    )
+
+
+def test_absent_leg_posts_via_pr_gate_py_only():
+    """La jambe gate-absent agrege via scripts/pr_gate.py --post-check-run --
+    le verdict est CALCULE par le meme moteur que le gate reel, jamais asserte
+    -- et la permission checks:write nécessaire au POST est déclarée."""
+    data = _load()
+    assert data.get("permissions", {}).get("checks") == "write", (
+        "checks:write absente -- le POST du verdict sur la tete de PR "
+        "echouerait silencieusement (#16624)"
+    )
+    jobs = data.get("jobs", {})
+    assert "aggregate_absent" in jobs, (
+        "la jambe aggregate_absent manque : la population gate-absent n'a "
+        "rien a re-run et rien ne la rattrape (#16624 demande 3)"
+    )
+    text = str(jobs["aggregate_absent"])
+    assert "--post-check-run" in text and "scripts/pr_gate.py" in text, (
+        "la jambe absent doit passer par pr_gate.py --post-check-run (verdict "
+        "calcule), pas par un verdict asserte"
+    )
+
+
+def test_absent_leg_never_posts_beside_an_existing_gate_check_run():
+    """Garde structurale anti-jumeau (#11519) : la route aggregate_absent
+    n'est prise QUE si aucun check-run « PR gate » n'existe deja sur la tete.
+    Sans elle, un POST pourrait se poser a cote d'un verdict existant et
+    l'AND de GitHub garderait la PR bloquee."""
+    text = WORKFLOW.read_text(encoding="utf-8")
+    assert "refusing to POST beside it (#11519 twin)" in text, (
+        "la garde anti-jumeau du resolve a disparu : la jambe absent pourrait "
+        "creer le doublon que #11519 documente"
+    )
+
+
+def test_resolve_routes_rerun_and_absent():
+    """La structure a trois jambes : resolve decide, rerun rejoue l'original,
+    aggregate_absent POSTe sur une tete orpheline -- les deux dernieres
+    bornees par needs.resolve.outputs.action."""
+    data = _load()
+    jobs = data.get("jobs", {})
+    assert "resolve" in jobs and "rerun" in jobs
+    assert jobs["rerun"].get("if") == "needs.resolve.outputs.action == 'rerun'"
+    assert jobs["aggregate_absent"].get("if") == (
+        "needs.resolve.outputs.action == 'aggregate_absent'"
+    )

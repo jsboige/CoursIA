@@ -2,7 +2,7 @@
 
 **Statut** : protocole bloquant pour l'EPIC #13303 (Observatoire des formes relationnelles — témoins externes pour humour, désir, attachement). Ce grain **ne mesure rien**. Il écrit le contrat que toute mesure ultérieure sous #13303 doit respecter pour être réfutable.
 
-**Outillage de référence** (livré, ne pas reconstruire) : [`Quasi-Experimental.ipynb`](../../Probas/DecisionTheory/Causal-Bridges/Quasi-Experimental.ipynb) — différence-en-différences, contrôle synthétique, régression sur discontinuité, variables instrumentales.
+**Outillage de référence** (livré, ne pas reconstruire) : [`CausalBridges-07-Quasi-Experimental.ipynb`](../../Probas/DecisionTheory/Causal-Bridges/CausalBridges-07-Quasi-Experimental.ipynb) — différence-en-différences, contrôle synthétique, régression sur discontinuité, variables instrumentales.
 
 **Sister issues** : #13303 (EPIC parent), #12680 (humour), #12682 (désir), #12683 (attachement).
 
@@ -104,7 +104,7 @@ Sans pré-inscription, **toute mesure post hoc peut être racontée**. Le cas su
 
 L'outillage méthodologique est déjà livré dans :
 
-[`../../Probas/DecisionTheory/Causal-Bridges/Quasi-Experimental.ipynb`](../../Probas/DecisionTheory/Causal-Bridges/Quasi-Experimental.ipynb)
+[`../../Probas/DecisionTheory/Causal-Bridges/CausalBridges-07-Quasi-Experimental.ipynb`](../../Probas/DecisionTheory/Causal-Bridges/CausalBridges-07-Quasi-Experimental.ipynb)
 
 Ce notebook porte : différence-en-différences, contrôle synthétique (SyntheticDiD), régression sur discontinuité (RDD), variables instrumentales (IV/2SLS). **Le protocole y renvoie ; il ne réimplémente rien.** Si une méthode manque pour un cas ultérieur, c'est une issue sur ce notebook, pas ici.
 
@@ -116,7 +116,7 @@ Ce notebook porte : différence-en-différences, contrôle synthétique (Synthet
 2. [ ] Au moins un exemple de **refus** (un cas qui ne passe pas la pré-inscription, et pourquoi) est documenté.
 3. [ ] Le document nomme au moins un cas candidat **et le laisse non mesuré** : la sélection des 2-3 cas datables est un grain séparé, qui citera celui-ci.
 4. [ ] **Aucune donnée n'est collectée dans ce grain.** Un livrable contenant des mesures est hors scope, même s'il est bon.
-5. [ ] Le renvoi vers `Quasi-Experimental.ipynb` est un **lien vérifiable** (chemin correct, fichier présent), pas une mention.
+5. [ ] Le renvoi vers `CausalBridges-07-Quasi-Experimental.ipynb` est un **lien vérifiable** (chemin correct, fichier présent), pas une mention.
 
 ---
 
@@ -134,4 +134,4 @@ Ce notebook porte : différence-en-différences, contrôle synthétique (Synthet
 - #12680 — humour (cas 1)
 - #12682 — désir (cas 2)
 - #12683 — attachement (cas 3)
-- #12445 — livraison de l'outillage (Quasi-Experimental.ipynb, MERGED)
+- #12445 — livraison de l'outillage (CausalBridges-07-Quasi-Experimental.ipynb, MERGED)
