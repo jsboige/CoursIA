@@ -1,6 +1,6 @@
 ---
 name: readme-updater
-description: Update README files for notebook series (structure tables, navigation links, statistics). Use after adding or modifying notebooks in a series.
+description: Update README files for notebook series (notebook presentation, structure tables, navigation links; totals are left to the catalogue regeneration). Use after adding or modifying notebooks in a series.
 tools: Read, Glob, Grep, Bash, Write, Edit
 model: haiku
 memory: user
@@ -40,8 +40,6 @@ python scripts/notebook_tools/extract_notebook_skeleton.py [target_path] --outpu
 ```
 
 2. **Analyser le resultat** pour identifier :
-   - Nombre de notebooks
-   - Cellules totales (markdown/code)
    - Sections principales par notebook
    - Kernels utilises
    - Duree estimee
@@ -59,16 +57,16 @@ python scripts/notebook_tools/extract_notebook_skeleton.py [target_path] --outpu
 3. **Determiner les sections a mettre a jour** :
    - Tableaux de notebooks (toujours mettre a jour)
    - Descriptions detaillees (si --full)
-   - Compteurs (total cellules, duree)
+   - **Jamais les totaux** (nombre de notebooks, cellules, comptes par langage) : ils relevent de la regeneration du catalogue (`CATALOG-STATUS`, #9377) ; une ligne de compte fausse se supprime au profit du renvoi au catalogue
 
 ### Phase 3 : Generation du contenu
 
 #### Format du tableau principal
 
 ```markdown
-| # | Notebook | Kernel | Cellules | Duree | Contenu |
-|---|----------|--------|----------|-------|---------|
-| 1 | [Name](Name.ipynb) | Python | 45 | ~30 min | Description courte |
+| # | Notebook | Kernel | Duree | Contenu |
+|---|----------|--------|-------|---------|
+| 1 | [Name](Name.ipynb) | Python | ~30 min | Description courte |
 ```
 
 #### Format des descriptions detaillees
@@ -81,7 +79,6 @@ Pour chaque notebook :
 **Titre du notebook**
 
 - **Kernel**: Python / .NET C# / Lean 4
-- **Cellules**: X (MD: Y, Code: Z)
 - **Duree**: ~N min
 - **Prerequis**: Notebook(s) precedent(s)
 
@@ -107,7 +104,6 @@ Pour chaque notebook :
    - La structure generale du document
 3. **Mettre a jour** :
    - Les tableaux avec les nouvelles donnees
-   - Les compteurs de cellules/durees
    - Les descriptions si modifiees
 
 ## Criteres de qualite
@@ -123,16 +119,17 @@ Description courte de la serie.
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | N |
-| Cellules totales | X |
-| Duree estimee | ~Yh |
+| Langages | [kernels] |
+| Niveau | [debutant a avance] |
+
+(Pas de total de notebooks ni de cellules : le decompte vit dans le bloc `CATALOG-STATUS`, regenere automatiquement.)
 
 ## Structure
 
 ### Partie 1 : [Theme]
 
-| # | Notebook | Kernel | Cellules | Duree | Contenu |
-|---|----------|--------|----------|-------|---------|
+| # | Notebook | Kernel | Duree | Contenu |
+|---|----------|--------|-------|---------|
 ...
 
 ### Partie 2 : [Theme]

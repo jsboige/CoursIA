@@ -1,0 +1,19 @@
+{
+ "projectId": 36387308,
+ "backtests": {
+  "repro_article_s0": "817916ba0e48d3973ae88c9387fd357b",
+  "spy": "0954672fe2c495ad83478b7979f95e73",
+  "article_s0": "84878335112b3c7da6eb7c223e4f8db5",
+  "article_s1": "355fedaa71f6f1de9fe2e642d7cbf0b1",
+  "article_s7": "e946511bd912a08c8f037dce1cced00b",
+  "article_s42": "163cad694dc3cb6aadc1d16e2c9249df",
+  "article_s99": "7a0fc5cf76484b2b4c282130e15d7a17",
+  "fixed_s0": "89a6383615de5650463319a032ae2c15",
+  "fixed_s1": "8a56f6451c37443c75eda752d9778da4",
+  "fixed_s7": "68c9d24b19b0e7d7ab79efddcc8d5640",
+  "fixed_s42": "d50c1918efcb4abca311b3d17e3cb675",
+  "fixed_s99": "60ba64278e72239d1d6ddb8de76a6578",
+  "static_article": "2478f6ab6efc9a24cf6f6944a1cf8505",
+  "static_fixed": "59a2c7c1af475d6be1999e127e3e4cbd"
+ }
+}

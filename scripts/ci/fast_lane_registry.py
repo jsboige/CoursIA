@@ -138,7 +138,8 @@ NOTEBOOK_GLOBS = ["**/*.ipynb"]
 #   - pip-leak-guard      : bloquant, delta HEAD-vs-base
 #   - solution-leak-guard : ADVISORY, delta HEAD-vs-base (verifie qu'un
 #                           advisory ne peut pas rougir par accident)
-#   - prose-counts-guard  : advisory, diff-range direct
+#   - prose-counts-guard  : bloquant (#17636), diff-range direct, lignes
+#                           AJOUTEES seules (le stock #9377 ne rougit pas)
 #   - perimeter-review    : bloquant, appelle l'API GitHub (a besoin de
 #                           GH_TOKEN, pas seulement de l'arbre)
 #   - bare-cross-dir-load-gate : bloquant, EXECUTION PAR FICHIER (Pattern 1)
@@ -198,8 +199,10 @@ PILOT: list[Guard] = [
         source="prose-counts-guard.yml",
         paths=["**/*.ipynb", "**/*.md"],
         argv=["python", "scripts/notebook_tools/check_prose_quantitative_claims.py",
-              "--diff", "{base_ref}...HEAD"],
-        blocking=False,          # ADVISORY tant que #9377 n'est pas resorbe
+              "--diff", "{base_ref}...HEAD", "--strict"],
+        blocking=True,           # BLOQUANT #17636 : critere de sortie #9377 ;
+                                 # le stock ne rougit personne (lignes AJOUTEES
+                                 # seules), une PR qui rouvre la veine rougit
         needs_base=True,
     ),
     Guard(
@@ -1368,9 +1371,22 @@ TRANCHE12: list[Guard] = [
 # classe de collision que le renommage TRANCHE9 -> TRANCHE10 plus haut -- le
 # POSTERIEUR cede l'index, jamais l'inverse (deux affectations du meme nom se
 # remplaceraient silencieusement et un garde disparaitrait du registre).
+#
+# PROMOTION EN CLIQUET (#17044, 2026-09-24). Le garde naissait advisory : la
+# dette corpus heritee au cablage (109 findings) aurait rougi toute PR
+# touchant un carnet porteur, ce qui punit le voisin, pas l'auteur. Le
+# cliquet leve exactement cette objection sans renoncer au mandat user
+# 2026-09-20 (« une sortie de cellule a UNE cellule de lecture ; si elle en a
+# deja une, on la REECRIT, on n'en ajoute jamais une seconde ») : il ne
+# regarde QUE ce que la PR change -- lectures AJOUTEES (detect_added_readings)
+# ou compte de paires qui MONTE sur un carnet touche. Les 91 findings herites
+# restent donc grandfathered, et le cliquet ne rougit que l'augmentation.
+# Mesure avant cablage : 0/11 faux positifs sur les 11 dernieres PR notebook
+# mergees, controle positif fondateur 26+16 intact (organe
+# scripts/ci/check_17464_positive_control.py), self-test 5/5.
 TRANCHE14: list[Guard] = [
     Guard(
-        name="Split-reading-cells advisory (per-notebook, non-blocking)",
+        name="Split-reading ratchet (base vs PR)",
         source="split-reading-advisory.yml",
         paths=[
             "MyIA.AI.Notebooks/**/*.ipynb",
@@ -1378,14 +1394,60 @@ TRANCHE14: list[Guard] = [
             "scripts/tests/test_check_split_reading_cells.py",
             ".github/workflows/split-reading-advisory.yml",
         ],
-        iterate_paths=["MyIA.AI.Notebooks/**/*.ipynb"],
+        pre_argv=[
+            "python", "scripts/notebook_tools/check_split_reading_cells.py",
+            "--self-test",
+        ],
         argv=[
             "python", "scripts/notebook_tools/check_split_reading_cells.py",
-            "--json", "--fail-on-findings", "{changed_paths}",
+            "--base-ref", "{base_ref}", "--head", "HEAD",
+            "--json", "--fail-on-findings",
         ],
-        blocking=False,  # advisory : signale les paires scindees, ne rougit jamais
-        iterates_paths=True,
+        blocking=True,  # cliquet : rougit l'AJOUT de lecture scindee, jamais la dette heritee
+        needs_base=True,
         absorbed=True,
-        warn_rc=(1, 2),  # rc=2 = findings (signale sans bloquer) ; rc=1 = vacuue
+    ),
+]
+
+# ---------------------------------------------------------------------------
+# TRANCHE 15 -- garde natif anti-invocation-directe lake (#15666, T4).
+#
+# L'epic #15666 impose un organe canonique d'exécution Lean
+# (``scripts/lean/lean_exec.py`` : admission machine-wide fail-closed, budget
+# min-des-sources, backend epingle par lake) et exige pour sa tranche T4 :
+# « un garde CI qui refuse toute nouvelle invocation directe de
+# ``lake build``/``lake env lean`` dans du code d'orchestration hors
+# allowlist documentée ». Le défaut fondateur (2026-09-12 : ~30 processus
+# ``lean.exe`` à 95 % du CPU, DriveFS et Claudish étouffés) est réintroduit
+# par CHAQUE voie directe qui échappe au budget commun -- ce garde ferme la
+# porte d'entrée, l'allowlist documente la dette de migration (ratchet
+# descendant : une entrée devenue stérile est signalée, jamais ignorée).
+#
+# Détection AST (pas grep) : docstrings, sondes ``which``, tests
+# d'appartenance et prose d'erreur ne comptent pas. Calibration mesurée sur
+# le corpus : 6 fichiers en dette, 0 faux positif -- chaque classe de FP
+# rencontrée a son négatif dans test_check_lake_direct_invocation.py.
+# ---------------------------------------------------------------------------
+# Renomme TRANCHE12 -> TRANCHE15 au merge : les PR #16645 (link-label),
+# #17031 (split-reading) puis #17485 (dedupe TRANCHE13) ont pris
+# TRANCHE12/TRANCHE13/TRANCHE14 sur main entre-temps.
+# Regle registry : le POSTERIEUR cede l'index (cf renommage TRANCHE9 -> TRANCHE10).
+TRANCHE15: list[Guard] = [
+    Guard(
+        name="lake-direct-invocation-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**/*.py",
+            "scripts/lean/check_lake_direct_invocation.py",
+            "scripts/lean/lake_direct_allowlist.json",
+            "scripts/lean/tests/test_check_lake_direct_invocation.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/lean/check_lake_direct_invocation.py",
+            "--all", "--check",
+        ],
+        blocking=True,
     ),
 ]
