@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: QuantConnect
-pedagogical_count: 110
-breakdown: Python=55, projects=49, ML-Training-Pipeline=4, kelly_lean=2
-maturity: BETA=61, DRAFT=36, ALPHA=12, TEMPLATE=1
+pedagogical_count: 113
+breakdown: Python=58, projects=49, ML-Training-Pipeline=4, kelly_lean=2
+maturity: BETA=63, DRAFT=37, ALPHA=12, TEMPLATE=1
 -->
 
 > **Note éditoriale — counts kernels par sous-série** : Le marqueur CATALOG-STATUS agrégé ci-dessus reste **autoritatif** pour la décomposition par **sous-série** (Python / projects / ML-Training-Pipeline / kelly_lean). En revanche, pour les décomptes par **kernel** (Python vs Lean 4) **au sein** d'une sous-série — c'est-à-dire la répartition technique par interpréteur —, **ce README reste autoritatif** car la décomposition langagière par sous-série n'est pas dans le marqueur agrégé. Cette granularité est documentée ici par lecture directe des `metadata.kernelspec.language` des notebooks :
@@ -356,6 +356,7 @@ Voir [partner-course-quant-trading/README.md](partner-course-quant-trading/READM
 - **[docs/PAPER_TRADING_ARCHITECTURE.md](docs/PAPER_TRADING_ARCHITECTURE.md)** / **[docs/PAPER_TO_LIVE_TRANSITION.md](docs/PAPER_TO_LIVE_TRANSITION.md)** : Paper trading
 - **[docs/PROCEDURE_DEPLOIEMENT.md](docs/PROCEDURE_DEPLOIEMENT.md)** : Procédure de déploiement
 - **[docs/PROTOCOLE_VEILLE.md](docs/PROTOCOLE_VEILLE.md)** : Protocole de veille du socle RNCP41881 (typologie, grille qualité, registre traçable — #16239)
+- **[docs/GRILLE_PREUVES.md](docs/GRILLE_PREUVES.md)** : Grille de preuves du projet collectif RNCP41881 (mapping compétence→artefact, exigences minimales, vérification individuelle en soutenance — #16239)
 - **[docs/audits/](docs/audits/)** : Rapports d'audit historiques (AUDIT_QC_CLOUD, AUDIT_QC_ORG, VALIDATION-REPORT, AUDIT_RAPPORT)
 
 ### Bibliothèques partagées

@@ -49,10 +49,17 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import prune_merged_worktrees as pmw  # noqa: E402
+from _gh_availability import (  # noqa: E402
+    skip_if_gh_exhausted,
+    skip_if_output_rate_limited,
+)
 
 
 # CWD cible pour les tests subprocess (Windows path natif)
@@ -788,6 +795,99 @@ class TestLookupPRForDetachedHead:
         )
 
 
+class TestDetachedHeadOnMain17684:
+    """#17684 : un HEAD detache ne recoit jamais la PR d'un commit ancetre.
+
+    Mesure fondatrice (ai-01, 2026-09-24) : la demeure de la tache
+    ``merge_ready`` (HEAD = un squash de main) classee REMOVE sur la PR de
+    ce squash, et une branche de revert classee REMOVE sur la PR qu'elle
+    revertait alors que sa propre PR etait OPEN.
+    """
+
+    def _detached_info(self):
+        return dict(
+            branch=None, ahead_count=0, untracked=[],
+            blocking_untracked=[], ignored_extra=[], tracked_modified=[],
+            has_source_dirty=False, has_submodules=False, is_current=False,
+        )
+
+    def test_detached_on_main_refused_without_lookup(self, monkeypatch):
+        monkeypatch.setattr(
+            pmw, "get_worktree_info", lambda *a: self._detached_info())
+        git_calls: list[tuple] = []
+
+        def fake_git(cwd, *args, **kwargs):
+            git_calls.append(args)
+            return _fake_proc(returncode=0)
+
+        def _no_lookup(*a, **k):
+            raise AssertionError(
+                "aucune PR ne porte une extraction de main : le lookup "
+                "ne doit pas etre appele")
+
+        monkeypatch.setattr(pmw, "run_git", fake_git)
+        monkeypatch.setattr(pmw, "lookup_pr_for_detached_head", _no_lookup)
+        s = pmw.diagnose_worktree("C:/fake/wt-merge-ready", "C:/elsewhere")
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "detached_on_main"
+        assert git_calls == [
+            ("merge-base", "--is-ancestor", "HEAD", pmw.MAIN_REF)]
+
+    def test_detached_off_main_goes_to_lookup(self, monkeypatch):
+        monkeypatch.setattr(
+            pmw, "get_worktree_info", lambda *a: self._detached_info())
+        # rc=1 : HEAD porte des commits propres
+        monkeypatch.setattr(
+            pmw, "run_git", lambda *a, **k: _fake_proc(returncode=1))
+        monkeypatch.setattr(
+            pmw, "lookup_pr_for_detached_head",
+            lambda wt: {"state": "OPEN", "number": 17632, "url": "u"})
+        s = pmw.diagnose_worktree("C:/fake/wt-17632", "C:/elsewhere")
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "pr_open:#17632"
+
+    def test_ancestry_error_is_not_on_main(self, monkeypatch):
+        # rc=128 (ref absente) : pas de conclusion « sur main », la voie de
+        # lookup restreinte decide (et rend None -> REFUSE).
+        monkeypatch.setattr(
+            pmw, "run_git", lambda *a, **k: _fake_proc(returncode=128))
+        assert pmw.detached_head_is_on_main("C:/fake") is False
+
+    def test_lookup_reads_only_commits_off_main(self, monkeypatch):
+        git_calls: list[tuple] = []
+
+        def fake_git(cwd, *args, **kwargs):
+            git_calls.append(args)
+            return _fake_proc(
+                returncode=0,
+                stdout="revert(docs,#16904): retrait de #17029\n",
+            )
+
+        monkeypatch.setattr(pmw, "run_git", fake_git)
+        monkeypatch.setattr(
+            pmw, "run_gh", lambda *a, **k: _fake_proc(json_payload=[]))
+        pmw.lookup_pr_for_detached_head("/tmp/fake")
+        assert git_calls, "le lookup doit lire les sujets de commit"
+        log_args = git_calls[0]
+        assert log_args[0] == "log"
+        assert f"{pmw.MAIN_REF}..HEAD" in log_args
+        assert "HEAD" not in log_args, (
+            "lire `HEAD` entier traverse main et attribue la PR d'un "
+            "commit ancetre")
+
+    def test_empty_range_returns_none_without_gh(self, monkeypatch):
+        # Plage origin/main..HEAD vide : aucun sujet propre, aucun appel gh
+        # -- jamais la PR du squash de main qui porte le HEAD.
+        monkeypatch.setattr(
+            pmw, "run_git", lambda *a, **k: _fake_proc(returncode=0, stdout=""))
+
+        def _no_gh(*a, **k):
+            raise AssertionError("aucun sujet propre : aucun appel gh")
+
+        monkeypatch.setattr(pmw, "run_gh", _no_gh)
+        assert pmw.lookup_pr_for_detached_head("/tmp/fake") is None
+
+
 def _fake_proc(returncode: int = 0, stdout: str = "", json_payload=None):
     """Construit un subprocess.CompletedProcess minimal pour stubbing."""
     import subprocess
@@ -1349,23 +1449,65 @@ class TestToleratedCleanup14619:
 class TestEndToEnd:
     """Tests subprocess reels. Aucun mock : on execute le script sur
     le worktree de test, et on vérifie que le verdict correspond a ce
-    qu'on sait du repo."""
+    qu'on sait du repo.
+
+    Ces tests invoquent le vrai `gh` (resolution PR des worktrees) : quand le
+    budget GraphQL du compte est epuise, la sortie est vide et le verdict
+    n'est PAS mesurable — skip honnete plutot que rouge trompeur (#17201).
+    """
+
+    @pytest.fixture(autouse=True)
+    def _require_gh_budget(self):
+        skip_if_gh_exhausted()
 
     def test_dry_run_exits_1_when_refusals(self):
         """po-2027 a 4 worktrees refuses (main + 3 PR open). Exit 1.
 
         CI : skip si scanned=0 OU si aucun worktree main n'est présent
         (checkout shallow sans worktree main séparé, refs/remotes/pull/N/merge).
+
+        #17292 : la précondition annoncée ci-dessus doit être évaluée AVANT
+        d'être nécessaire. Le test faisait `json.loads(proc.stdout)` d'abord :
+        toute panne de l'outil (stdout vide) sortait donc en
+        `JSONDecodeError: Expecting value: line 1 column 1` — un message qui
+        n'accuse rien, alors que le script avait écrit son diagnostic sur
+        stderr et que `capture_output=True` venait de l'avaler. Ce rouge a
+        bloqué des PRs de plusieurs lanes le 2026-09-21 sans que le log CI
+        porte la cause.
         """
-        import pytest
         proc = subprocess.run(
             [sys.executable, "scripts/ci/prune_merged_worktrees.py",
              "--path", TEST_CWD, "--json"],
             capture_output=True, text=True, encoding="utf-8",
             cwd=TEST_CWD,
         )
-        # Exit 0 ou 1 (selon qu'il y a des refus observes)
-        assert proc.returncode in (0, 1), f"unexpected exit: {proc.returncode}"
+        skip_if_output_rate_limited(proc.stdout + proc.stderr)
+        stderr = (proc.stderr or "").strip()
+        # rc=2 a DEUX saveurs, et les confondre est le defaut d'origine :
+        #  - l'outil NOMME son incapacite d'enumerer ici (environment) : c'est la
+        #    precondition annoncee par ce test -> skip, motif compris ;
+        #  - l'outil a PLANTE (#17292) -> echec dur, traceback compris. Un
+        #    plantage n'est pas une precondition, et le skipper le rendrait
+        #    invisible pour toujours.
+        # #17229 (union) : le budget GraphQL epuise est une TROISIEME saveur --
+        # elle n'est ni une precondition d'environnement ni un plantage, et
+        # elle se saute AVANT ces deux branches (le skip ci-dessus), sinon le
+        # rc=2 d'un appel gh refuse serait lu comme un plantage de l'outil.
+        if proc.returncode == 2:
+            if "echec inattendu" in stderr:
+                pytest.fail(f"le script a plante (rc=2), ce n'est pas une precondition :\n{stderr[:1500]}")
+            pytest.skip(f"le script declare ne pas pouvoir enumerer ici : {stderr[:400]}")
+        # Exit 0 ou 1 (selon qu'il y a des refus observes). Depuis #17292, `1`
+        # ne peut plus signifier « l'outil a plante » : une panne inattendue
+        # sort par 2 avec son traceback.
+        assert proc.returncode in (0, 1), (
+            f"unexpected exit: {proc.returncode}\nstderr: {stderr[:800]}"
+        )
+        assert proc.stdout.strip(), (
+            "contrat --json rompu : stdout vide alors que rc="
+            f"{proc.returncode} -- le script doit publier son JSON, ou nommer "
+            f"son echec (rc=2). stderr: {stderr[:800]}"
+        )
         out = json.loads(proc.stdout)
         if out["scanned"] == 0:
             pytest.skip("no worktree present (CI checkout shallow)")
@@ -1389,9 +1531,9 @@ class TestEndToEnd:
             capture_output=True, text=True, encoding="utf-8",
             cwd=TEST_CWD,
         )
+        skip_if_output_rate_limited(proc.stdout + proc.stderr)
         out = json.loads(proc.stdout)
         if out["scanned"] == 0:
-            import pytest
             pytest.skip("no worktree present (CI checkout shallow)")
         for s in out["statuses"]:
             if s["branch"] == "main":
@@ -1406,6 +1548,7 @@ class TestEndToEnd:
             capture_output=True, text=True, encoding="utf-8",
             cwd=TEST_CWD,
         )
+        skip_if_output_rate_limited(proc.stdout + proc.stderr)
         out = json.loads(proc.stdout)
         for key in ("scanned", "removable", "refused", "skipped_current",
                     "dry_run", "statuses"):
@@ -1426,6 +1569,7 @@ class TestEndToEnd:
             cwd=TEST_CWD,
         )
         text = proc.stdout
+        skip_if_output_rate_limited(text + proc.stderr)
         assert "total=" in text, "text output must include total counter"
         assert "removable=" in text
         assert "refused=" in text
@@ -1442,7 +1586,6 @@ class TestEndToEnd:
         """
         import os
         if os.environ.get("RUN_DESTRUCTIVE_TESTS") != "1":
-            import pytest
             pytest.skip("destructive test (--apply) skipped unless RUN_DESTRUCTIVE_TESTS=1")
         proc = subprocess.run(
             [sys.executable, "scripts/ci/prune_merged_worktrees.py",
@@ -1450,6 +1593,7 @@ class TestEndToEnd:
             capture_output=True, text=True, encoding="utf-8",
             cwd=TEST_CWD,
         )
+        skip_if_output_rate_limited(proc.stdout + proc.stderr)
         # pas d'erreur gh/git -> exit != 2
         assert proc.returncode != 2, f"stderr: {proc.stderr}"
         # Au moins 1 ligne REFUSE dans la sortie (le run reel)
@@ -1610,3 +1754,97 @@ class TestEndToEndHermetic14693:
         assert not ok, "git ne peut PAS retirer un worktree a sous-modules"
         assert "submodule" in stderr.lower(), stderr
         assert wt.exists(), "le worktree REFUSE reste sur disque"
+
+
+class TestErrorContract:
+    """#17292 — `rc=1` doit signifier « refus observes », JAMAIS « l'outil a plante ».
+
+    Sans ce contrat, un appelant qui teste `rc in (0, 1)` — c'est exactement ce
+    que fait l'E2E subprocess ci-dessus — accepte indistinctement une decision
+    de l'outil et un traceback. C'est ce qui a transforme une panne du runner en
+    `JSONDecodeError` sur des PRs de plusieurs lanes le 2026-09-21.
+    """
+
+    def test_unexpected_exception_leaves_by_the_documented_error_code(self, monkeypatch):
+        """Une exception que `main()` ne rattrape pas sort en 2, pas en 1."""
+        def boom():
+            raise ValueError("panne simulee : ni RuntimeError ni OSError connue")
+
+        monkeypatch.setattr(pmw, "list_worktrees", boom)
+        monkeypatch.setattr(sys, "argv", ["prune_merged_worktrees.py"])
+        assert pmw.run() == 2
+
+    def test_runtime_error_still_leaves_by_two(self, monkeypatch):
+        """Le chemin d'erreur nomme garde son code : la reparation ne le deplace pas."""
+        def boom():
+            raise RuntimeError("git introuvable")
+
+        monkeypatch.setattr(pmw, "list_worktrees", boom)
+        monkeypatch.setattr(sys, "argv", ["prune_merged_worktrees.py"])
+        assert pmw.run() == 2
+
+    def test_broken_pipe_is_not_an_error(self, monkeypatch):
+        """`| head` ferme le pipe : ce n'est pas une panne de l'outil.
+
+        Sans ce cas, `BrokenPipeError` — un `OSError`, donc un `Exception` —
+        serait reclasse en « echec inattendu » et le diagnostic afficherait une
+        erreur qui n'existe pas.
+        """
+        class _Closable:
+            def close(self):
+                pass
+
+        def boom():
+            raise BrokenPipeError(32, "Broken pipe")
+
+        monkeypatch.setattr(pmw, "main", boom)
+        monkeypatch.setattr(sys, "stdout", _Closable())
+        assert pmw.run() == 0
+
+    def test_run_returns_the_verdict_of_main(self, monkeypatch):
+        """Le delegue transporte la decision, il ne la reecrit pas."""
+        for code in (0, 1, 2):
+            monkeypatch.setattr(pmw, "main", lambda c=code: c)
+            assert pmw.run() == code
+
+    def test_a_crash_prints_the_traceback_and_a_distinct_marker(self, monkeypatch, capsys):
+        """Le plantage doit etre DISTINGUABLE d'une incapacite nommee.
+
+        Les deux sortent en 2. Si le plantage ne portait pas de marqueur propre,
+        l'appelant ne pourrait que skipper -- et un plantage skippe est un
+        plantage qu'on ne verra jamais. Le marqueur est ce qui rend le critere 3
+        (#17292) applicable : le motif remonte, et il n'est pas classe
+        « precondition ».
+        """
+        def boom():
+            raise ValueError("panne simulee")
+
+        monkeypatch.setattr(pmw, "list_worktrees", boom)
+        monkeypatch.setattr(sys, "argv", ["prune_merged_worktrees.py"])
+        assert pmw.run() == 2
+        err = capsys.readouterr().err
+        assert "echec inattendu" in err, "le marqueur de plantage a disparu"
+        assert "Traceback" in err, "le traceback n'est pas remonte"
+
+    def test_a_named_inability_is_not_marked_as_a_crash(self, monkeypatch, capsys):
+        """Controle negatif : une incapacite nommee ne porte PAS le marqueur."""
+        def boom():
+            raise RuntimeError("git introuvable")
+
+        monkeypatch.setattr(pmw, "list_worktrees", boom)
+        monkeypatch.setattr(sys, "argv", ["prune_merged_worktrees.py"])
+        assert pmw.run() == 2
+        err = capsys.readouterr().err
+        assert "git introuvable" in err, "le motif nomme a disparu"
+        assert "echec inattendu" not in err
+
+    def test_entry_point_calls_run_not_main(self):
+        """L'invariant qui rend le contrat effectif : `__main__` passe par run().
+
+        Un `sys.exit(main())` reintroduit ici rendrait tout ce qui precede
+        inoperant — les tests ci-dessus appelleraient `run()` directement et
+        resteraient verts pendant que le script, lui, ne l'utiliserait plus.
+        """
+        source = Path(pmw.__file__).read_text(encoding="utf-8")
+        assert "sys.exit(run())" in source
+        assert "sys.exit(main())" not in source

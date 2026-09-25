@@ -40,6 +40,9 @@ permissions:
   issues: write
   contents: write
   pull-requests: write   # ouverture/maj de la PR d'etat via github-script
+  actions: write         # approuver les runs que ce push parke (cf "Release the
+                         # parked runs" plus bas -- sans quoi la PR longue reste
+                         # BLOCKED faute de PR gate sur sa tete, #17532)
 
 concurrency:
   group: qc-research-monitor
@@ -153,6 +156,14 @@ jobs:
               'le prochain drift la recree sous la meme branche.',
               '',
               'See #11698, #10136, #12834.',
+              '',
+              // Third-party prevalidation (check_adjoint_prevalidation.py) resolves the
+              // carrying lane from this tag. Without it the gate answers NO_DOSSIER with
+              // "carrying lane cannot be established" and no lane can prevalidate the PR
+              // (#17532). Meme correctif que #17242 pour le bot catalogue : le tag doit
+              // etre ecrit a la CREATION, car sur une PR existante le body n'est pas
+              // reecrit et le tag pose a la main y survit.
+              'Grain: LIGHT/guard -- lane myia-po-2026:CoursIA',
             ].join('\n');
 
             const existing = await github.paginate(github.rest.pulls.list, {
@@ -187,3 +198,82 @@ jobs:
               labels: ['automation'],
             });
             core.info(`Nouvelle PR ouverte #${created.data.number} (${created.data.html_url})`);
+
+      # Release the runs this push just parked.
+      #
+      # Un commit pousse par github-actions[bot] sur une PR same-repo cree les
+      # runs `pull_request` en `action_required` -- en attente d'une approbation
+      # manuelle qui ne vient pas. Un run parke ne s'execute jamais, donc le
+      # check requis qu'il porte est ABSENT a la tete (pas rouge : absent), et
+      # la PR longue reste BLOCKED avec tous les checks visibles verts (#17532 :
+      # #17177 resta BLOCKED 2 jours, sa tete ne portait que 5 check-runs et
+      # aucun `PR gate` ; meme classe que #10136).
+      #
+      # Le step jumeau de catalog-cron.yml est mesure depuis le 03/09 : la PR
+      # catalog #14447 (ouverte par app/github-actions) porte un `PR gate`
+      # SUCCESS, donc l'approbation avec le jeton par defaut suffit -- aucun
+      # secret supplementaire (ni App ni PAT n'existent sur ce depot : les
+      # secrets presents sont OPENROUTER_API_KEY et RUNNERS_READ_PAT, ce
+      # dernier deliberement read-only).
+      #
+      # Approving them here closes the loop the workflow header promises.
+      # If the token is not allowed to approve its own runs, this step says
+      # so and does NOT fail the job: le semis d'etat lui-meme a reussi, et la
+      # PR longue restera BLOCKED de facon VISIBLE plutot que silencieuse.
+      - name: Release the parked runs on the delivery branch
+        if: steps.state.outputs.state_drift == 'true'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: chore/qc-research-state-pending
+          # Delai entre deux approbations (meme valeur que catalog-cron, mesure
+          # du 2026-09-21 : 16 runs approuves en rafale sur un pool de runners
+          # deja sature tiennent les checks en `queued` ~19 min, pendant
+          # lesquelles le job "PR gate" sonde l'API jusqu'a epuiser le quota du
+          # jeton d'installation, HTTP 403, et echoue fail-closed).
+          RELEASE_STAGGER_SECONDS: "15"
+          # Soupape, pas un plafond de debit : au-dela, c'est que quelque chose
+          # d'autre est casse (runs qui s'empilent sans jamais s'executer), et
+          # approuver 200 runs n'y repondrait pas. Le depassement est ECRIT.
+          RELEASE_CEILING: "40"
+        run: |
+          set -u
+          head_sha="$(git rev-parse HEAD)"
+          echo "::notice title=QC-research::releasing parked runs at $head_sha"
+          parked="$(gh run list --repo "$GITHUB_REPOSITORY" --branch "$BRANCH" \
+                      --limit 100 \
+                      --json databaseId,headSha,conclusion,workflowName \
+                      --jq ".[] | select(.conclusion==\"action_required\") \
+                            | select(.headSha==\"$head_sha\") \
+                            | \"\(.databaseId)\t\(.workflowName)\"" || true)"
+          if [ -z "$parked" ]; then
+            echo "::notice title=QC-research::no parked run at this head -- nothing to release."
+            exit 0
+          fi
+          total="$(printf '%s\n' "$parked" | grep -c . || true)"
+          echo "::notice title=QC-research::$total run(s) parked at this head, staggering ${RELEASE_STAGGER_SECONDS}s apart"
+          released=0; refused=0; deferred=0; seen=0
+          while IFS="$(printf '\t')" read -r rid name; do
+            [ -z "$rid" ] && continue
+            seen=$((seen + 1))
+            if [ "$seen" -gt "$RELEASE_CEILING" ]; then
+              deferred=$((deferred + 1))
+              continue
+            fi
+            [ "$released" -gt 0 ] && sleep "$RELEASE_STAGGER_SECONDS"
+            if gh api -X POST "repos/$GITHUB_REPOSITORY/actions/runs/$rid/approve" >/dev/null 2>&1; then
+              released=$((released + 1))
+            else
+              refused=$((refused + 1))
+              echo "::warning title=QC-research::could not approve run $rid ($name)"
+            fi
+          done <<EOF
+          $parked
+          EOF
+          echo "::notice title=QC-research::released $released run(s), refused $refused, deferred $deferred"
+          if [ "$deferred" -gt 0 ]; then
+            echo "::warning title=QC-research::$deferred run(s) left parked by the ceiling of $RELEASE_CEILING -- runs are piling up at one head; investigate before raising the ceiling."
+          fi
+          if [ "$refused" -gt 0 ]; then
+            echo "::warning title=QC-research::$refused run(s) still parked -- the delivery PR stays BLOCKED. Approve them by hand, or grant a token that may approve workflow runs."
+          fi

@@ -28,7 +28,10 @@ from demote_md_asides import (
     _matches_target,
     _re_emit_in_format,
     _resolve_dir,
+    detect_notebook,
+    find_split_callouts,
     fix_notebook,
+    is_split_callout_run,
 )
 
 
@@ -418,6 +421,205 @@ class TestFixNotebook:
         n, err = fix_notebook(nb_path)
         assert err is None
         assert n == 0
+
+
+# ---------------------------------------------------------------------------
+# Block-wise demotion (#17143)
+# ---------------------------------------------------------------------------
+
+
+class TestBlockWiseDemotion:
+    """#17143 -- the demotion unit is the block, not the line.
+
+    An aside whose continuation is written as further ``# `` lines is ONE
+    aside. Demoting each line separately appends a `` :`` mid-sentence and
+    bolds a fragment. Only the head may be bolded and keep the `` :``.
+    """
+
+    def test_multi_line_run_becomes_one_callout(self):
+        src = [
+            "# Indices\n",
+            "# Etape 1 : charger les donnees\n",
+            "# Etape 2 : entrainer\n",
+        ]
+        new, count = _demote_all_headings(src)
+        # ONE demoted heading: the continuations are folded, not counted.
+        assert count == 1
+        assert new == [
+            "> **Indices :**\n",
+            "> Etape 1 : charger les donnees\n",
+            "> Etape 2 : entrainer\n",
+        ]
+
+    def test_continuation_lines_are_not_bolded_and_get_no_colon(self):
+        """The defect's two visible tells: bold mid-sentence, appended ` :`."""
+        src = ["### Étapes\n", "### Etape 1 : ouvrir le fichier\n"]
+        new, count = _demote_all_headings(src)
+        assert count == 1
+        assert new[1] == "> Etape 1 : ouvrir le fichier\n"
+        assert "**" not in new[1]
+        assert not new[1].rstrip("\n").endswith(" :")
+
+    def test_continuation_no_longer_remains_a_heading(self):
+        """Without the fold the continuation stayed an `# ` heading (stray title)."""
+        src = ["### Indices\n", "### Utilisez la recursivite\n"]
+        new, count = _demote_all_headings(src)
+        assert count == 1
+        assert all(not line.lstrip().startswith("#") for line in new)
+
+    def test_blank_line_stops_the_run(self):
+        src = ["### Indices\n", "\n", "# Etape 1\n"]
+        new, count = _demote_all_headings(src)
+        assert new == ["> **Indices :**\n", "\n", "# Etape 1\n"]
+
+    def test_different_level_heading_is_not_swallowed(self):
+        """A real nested section must survive untouched."""
+        src = ["### Indices\n", "## Section suivante\n", "Body.\n"]
+        new, count = _demote_all_headings(src)
+        assert count == 1
+        assert new == ["> **Indices :**\n", "## Section suivante\n", "Body.\n"]
+
+    def test_second_target_heading_gets_its_own_callout(self):
+        """Two adjacent target headings are two asides, not one block."""
+        src = ["### Indices\n", "### Étapes\n"]
+        new, count = _demote_all_headings(src)
+        assert count == 2
+        assert new == ["> **Indices :**\n", "> **Étapes :**\n"]
+
+    def test_terminator_without_newline_is_preserved(self):
+        """A block that ended without a newline must not gain one."""
+        new, count = _demote_all_headings(["### Indices"])
+        assert count == 1
+        assert new == ["> **Indices :**"]
+
+    def test_continuation_keeps_its_own_text_on_deeper_prefix(self):
+        """Fold only honours the SAME prefix (here `##`)."""
+        src = ["## Notes techniques\n", "## Corps de la note\n"]
+        new, count = _demote_all_headings(src)
+        assert count == 1
+        assert new == ["> **Notes techniques :**\n", "> Corps de la note\n"]
+
+
+# ---------------------------------------------------------------------------
+# Split-callout detection (#17143)
+# ---------------------------------------------------------------------------
+
+# Verbatim instance from MyIA.AI.Notebooks/ML/DataScienceWithAgents/
+# 03-DeepLearning/3.9e-Compression-Quantization-SOTA.ipynb cell 22, as it
+# stood on origin/fix/16472-g2-residu-b2 (repaired by d9dee0ee28).
+BROKEN_CELL_22 = [
+    "> **Indice : from torch.ao.quantization.quantize_fx import prepare_qat_fx "
+    "— la calibration :**\n",
+    "> est remplacee par l'entrainement lui-meme (les faux-quantifieurs "
+    "collectent les echelles).\n",
+    "> **Etape 1 : preparer le modele (meme QConfigMapping). Etape 2 : "
+    "1 epoch de SGD (lr faible, 1e-2).**\n",
+    "> **Etape 3 : convert_fx puis evaluate — comparer l'ecart a celui du "
+    "MinMax du §4.**\n",
+]
+
+
+class TestIsSplitCalloutRun:
+    """Discriminator: mixed run (>=1 appended ` :` AND >=1 bare prose line)."""
+
+    def test_verbatim_broken_run_is_flagged(self):
+        assert is_split_callout_run(BROKEN_CELL_22) is True
+
+    def test_single_line_is_never_flagged(self):
+        assert is_split_callout_run(["> **Indices :**\n"]) is False
+
+    def test_legit_bullet_callout_is_not_flagged(self):
+        """Head + bullet list — the shape that over-triggered detector #2."""
+        run = [
+            "> **Bonnes pratiques :**\n",
+            "> - Preferez referencer des sous-repertoires spécifiques\n",
+            "> - Pour un gros projet, combinez avec un fichier CLAUDE.md\n",
+        ]
+        assert is_split_callout_run(run) is False
+
+    def test_legit_fenced_code_callout_is_not_flagged(self):
+        """Head + fenced code block — measured false positive on origin/main."""
+        run = [
+            "> **Preuve de compilation du lake (execution reelle) :**\n",
+            "> ```\n",
+            "> $ cd lean_game_defs_ext && lake build Bayesian\n",
+            "> ```\n",
+        ]
+        assert is_split_callout_run(run) is False
+
+    def test_term_list_is_not_flagged(self):
+        """All lines appended-colon = a term list, not a split sentence."""
+        run = ["> **Indices :**\n", "> **Étapes :**\n"]
+        assert is_split_callout_run(run) is False
+
+    def test_run_without_appended_colon_is_not_flagged(self):
+        run = ["> **Titre**\n", "> Corps de la carte.\n"]
+        assert is_split_callout_run(run) is False
+
+    def test_find_split_callouts_walks_the_source(self):
+        src = ["## Exercice\n", "\n"] + BROKEN_CELL_22 + ["\n", "Corps.\n"]
+        expected = [line.rstrip("\n") for line in BROKEN_CELL_22]
+        assert find_split_callouts(src) == [expected]
+
+
+class TestDetectNotebook:
+    """Read-only scan of a notebook."""
+
+    def _write_nb(self, path: Path, cells: list[dict]) -> Path:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        nb = {"cells": cells, "metadata": {}, "nbformat": 4, "nbformat_minor": 5}
+        path.write_text(json.dumps(nb), encoding="utf-8")
+        return path
+
+    def test_reports_cell_index_and_counts(self, tmp_path):
+        nb = self._write_nb(tmp_path / "a.ipynb", [
+            {"cell_type": "markdown", "source": ["# Titre\n"], "metadata": {}},
+            {"cell_type": "markdown", "source": BROKEN_CELL_22, "metadata": {}},
+        ])
+        findings, err = detect_notebook(nb)
+        assert err is None
+        assert len(findings) == 1
+        assert findings[0]["cell"] == 1
+        assert findings[0]["run_length"] == 4
+        # Measured on the real block: only the head carries the appended
+        # colon (line 3 ends with `.**`, not ` :**`). The defect is that the
+        # run is MIXED, not that every line is colon-terminated.
+        assert findings[0]["appended_colons"] == 1
+        assert findings[0]["lines"] == [line.rstrip("\n") for line in BROKEN_CELL_22]
+
+    def test_clean_notebook_yields_nothing(self, tmp_path):
+        nb = self._write_nb(tmp_path / "clean.ipynb", [
+            {"cell_type": "markdown",
+             "source": ["> **Bonnes pratiques :**\n", "> - item\n"],
+             "metadata": {}},
+        ])
+        findings, err = detect_notebook(nb)
+        assert err is None
+        assert findings == []
+
+    def test_detection_does_not_write(self, tmp_path):
+        nb = self._write_nb(tmp_path / "b.ipynb", [
+            {"cell_type": "markdown", "source": BROKEN_CELL_22, "metadata": {}},
+        ])
+        before = nb.read_bytes()
+        detect_notebook(nb)
+        assert nb.read_bytes() == before
+
+    def test_parse_error_is_reported(self, tmp_path):
+        bad = tmp_path / "bad.ipynb"
+        bad.write_text("not json", encoding="utf-8")
+        findings, err = detect_notebook(bad)
+        assert findings == []
+        assert err is not None and "parse" in err
+
+    def test_code_cells_are_ignored(self, tmp_path):
+        nb = self._write_nb(tmp_path / "c.ipynb", [
+            {"cell_type": "code", "source": BROKEN_CELL_22,
+             "outputs": [], "execution_count": 1},
+        ])
+        findings, err = detect_notebook(nb)
+        assert err is None
+        assert findings == []
 
 
 # ---------------------------------------------------------------------------
