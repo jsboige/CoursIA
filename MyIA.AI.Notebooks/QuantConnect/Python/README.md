@@ -56,7 +56,7 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-12b-Backtest-Validity | EXÉCUTÉ | |
 | QC-Py-13-Alpha-Models | NON EXÉCUTÉ | |
 | QC-Py-14-Portfolio-Construction-Execution | NON EXÉCUTÉ | |
-| QC-Py-14b-Liquidity-Execution-Costs | EXÉCUTÉ | CPU local (yfinance/pandas/numpy), 10/10 cellules code, 4 figures |
+| QC-Py-14b-Liquidity-Execution-Costs | EXÉCUTÉ | CPU local (yfinance/pandas/numpy), cellules exécutées, figures committées |
 | QC-Py-15-Parameter-Optimization | NON EXÉCUTÉ | |
 | QC-Py-16-Alternative-Data | NON EXÉCUTÉ | |
 | QC-Py-17-Sentiment-Analysis | NON EXÉCUTÉ | |
