@@ -44,7 +44,7 @@ Les **verdicts de cycle** d'audit et les **décisions de suivi** ne vivent plus 
 | PyMC/PyMC-03-Factor-Graphs.ipynb | 18 (10+8) | « Implémenter le problème Murder Mystery (**MBML Ch.1**) » @ cell 0 (intro Objectifs). **Variante assumée** : 3 suspects Clue/Cluedo (Scarlet/Mustard/Peacock) au lieu de 2 (Auburn/Grey MBML original) — adaptation pédagogique justifiée par l'explaining away |
 | PyMC/PyMC-04-Bayesian-Networks.ipynb | 26 (15+11) | WetGrass/Sprinkler (111 hits) ; « Lauritzen & Spiegelhalter (1988) » — Springer canonique |
 | PyMC/PyMC-05-Causal-Inference.ipynb | 30 (16+14) | Pearl + `pm.do` — do-calculus (MBML Chap.7) non attribué |
-| PyMC/PyMC-06-Debugging.ipynb | 43 (30+13) | Debugging pur MCMC |
+| PyMC/PyMC-02b-Debugging-Python.ipynb | 43 (30+13) | Debugging pur MCMC |
 | PyMC/PyMC-07-Skills-IRT.ipynb | 33 (19+14) | IRT (33 hits) ; « Origine de la méthode : Rasch (1960) + Birnbaum (1968) + Lord (1980) + Junker-Sijtsma DINA » — pedigree académique explicite **complet**, mais **0 mention MBML** (mesuré). L'asymétrie notée au c.803 s'est **inversée** depuis #8530 : c'est désormais le jumeau PyMC qui ne relie pas au chapitre MBML Ch.2, pendant qu'Infer-7 le cite |
 | **PyMC/PyMC-08-TrueSkill.ipynb** | 30 (17+13) | **Section 7 bis reproduit explicitement les formules fermées V(t)/W(t)/τ²** + cell 2 cite « Herbrich, Minka & Graepel (2007), TrueSkill(TM): A Bayesian Skill Rating System (NeurIPS / Microsoft Research Cambridge) ». **Substance MBML Ch.3 complète + bonus algorithmique** |
 | PyMC/PyMC-09-Classification.ipynb | 22 (12+10) | « Herbrich » 2 hits (MBML Chap.4 BPM) sans mention explicite |

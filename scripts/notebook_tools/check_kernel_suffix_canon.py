@@ -32,25 +32,26 @@ Sur les seuls notebooks AJOUTES par la revision, deux choses :
 
 CE QU'IL NE MESURE PAS, ET POURQUOI LA LISTE EST COURTE
 -------------------------------------------------------
-`KERNEL_LANG_SUFFIXES` ne contient que `-csharp` et `-python`, parce que ce sont
-les deux seuls suffixes dont la mesure montre qu'ils NOMMENT le noyau :
+`KERNEL_LANG_SUFFIXES` couvre les quatre suffixes qui NOMMENT le noyau depuis
+l'arbitrage mainteneur 25/09 (#17784 / #16231 c.5829840595) :
 
     -Csharp / -CSharp  130 fichiers  -> 130 x kernelspec `.net-csharp`
     -Python             44 fichiers  -> 41 x `python3`, 2 x `coursia-ml-training`,
                                         1 x `.net-csharp` (le defaut ci-dessus)
-    -Lean                4 fichiers  -> 2 x `python3`, 1 x `lean4-wsl`,
-                                        1 x `lean4-wsl-perc`
+    -Lean                              -> kernelspec `lean4*`
+    -Lean-Python                       -> kernelspec `python3*` PILOTANT Lean
+                                        (subprocess lake/lean, LeanDojo, REPL)
 
-`-Lean` est donc **exclu** : dans ce depot il marque le CONTENU, pas le moteur.
-Le pendant reellement Lean d'un notebook porte `-Native`
-(`Lean-16d-Conway-Game-of-Life-Lean-Native.ipynb` -> `lean4-wsl`), et 2 des 4
-`-Lean` tournent sous `python3`. Declarer `lean` comme famille de noyau
-injecterait un faux positif dans une famille de ~50 notebooks -- et un garde qui
-crie a tort est un garde qu'on desactive. `-FSharp` est exclu pour une raison
-distincte : aucun kernelspec F# n'existe dans l'arbre (17 noyaux distincts,
-aucun `fsharp`) et `.net-csharp` est partage par les langages .NET, donc une
-famille F# deduite du suffixe produirait un faux positif au premier notebook F#.
-Ces deux exclusions sont des decisions mesurees, pas des oublis.
+L'exclusion mesuree de `-Lean` ("marque le contenu, pas le moteur") restait
+vraie pour l'ancien nommage ; la decision de nommage l'inverse : le suffixe est
+desormais TOUJOURS present et TOUJOURS dernier, `-Lean` nomme un notebook
+execute par Lean, `-Lean-Python` un notebook Python qui pilote Lean. Les ~50
+notebooks de `SymbolicAI/Lean` prennent leur suffixe canonique par les passes
+phase 2 de #16231 (outil `rename_notebooks.py`), et ce garde ne jugeant que
+les AJOUTS, l'heritage ne rougit pas -- c'est le perimetre delta qui rend
+l'arbitrage appliquable sans vague rouge. `-FSharp` reste exclu : aucun
+kernelspec F# n'existe dans l'arbre et `.net-csharp` est partage par les
+langages .NET. Exclusion mesuree, pas un oublie.
 
 Ce qu'il ne mesure toujours PAS : le contenu, l'index de position (c'est
 `check_duplicate_notebook_index.py`), la reservation d'un slot contre les PR
@@ -73,6 +74,12 @@ Usage
     python scripts/notebook_tools/check_kernel_suffix_canon.py --base origin/main --json
     python scripts/notebook_tools/check_kernel_suffix_canon.py --scan-all
     python scripts/notebook_tools/check_kernel_suffix_canon.py --self-test
+    python scripts/notebook_tools/check_kernel_suffix_canon.py --base origin/main --require-suffix
+
+CLIQUET #17784 : par defaut un notebook AJOUTE sans suffixe de noyau est liste
+en advisory (rc inchange) ; `--require-suffix` en fait une violation. Phase
+advisory d'abord, mesure des faux positifs, blocage ensuite (flip dans
+fast_lane_registry).
 
 Sortie : 0 = aucun defaut introduit ; 1 = defaut ; 2 = erreur d'invocation.
 Le denombrement des fichiers examines et la ventilation par etat sont TOUJOURS
@@ -101,8 +108,18 @@ from naming_canon import KERNEL_LANG_SUFFIXES  # noqa: E402
 
 CONFIG_PATH = Path(__file__).resolve().parent / "kernel_suffix_canon.json"
 
-# Casse canonique par famille, telle que #15489 la nomme (`CSharp` / `Python`).
-KERNEL_CANONICAL = {"csharp": "CSharp", "python": "Python"}
+# Casse canonique par famille de SUFFIXE, telle que #15489 la nomme
+# (`CSharp` / `Python`) et que l'arbitrage 25/09 l'etend (`Lean`,
+# `Lean-Python`).
+KERNEL_CANONICAL = {"csharp": "CSharp", "python": "Python",
+                    "lean": "Lean", "lean-python": "Lean-Python"}
+
+# Quelles familles de NOYAU un suffixe peut nommer sans mentir. Cas non trivial :
+# `-Lean-Python` nomme un notebook PYTHON qui pilote Lean (subprocess lake/lean,
+# LeanDojo, REPL -- cf rename_notebooks.py) : son kernelspec est `python3*`, et
+# c'est COHERENT. Un kernelspec `lean4*` n'a pas besoin de suffixe compose.
+SUFFIX_KERNEL_COMPAT = {"csharp": {"csharp"}, "python": {"python"},
+                        "lean": {"lean"}, "lean-python": {"python"}}
 
 # Environnements Python du depot dont le nom ne commence pas par `python`.
 # Mesures dans l'arbre, pas supposes : `coursia-ml-training` (27 notebooks),
@@ -213,16 +230,18 @@ def read_kernelspec(abs_path: Path) -> tuple[str | None, bool]:
 
 
 def classify(path: str, name: str, kernelspec: str | None, meta_present: bool,
-             config: dict) -> dict:
+             config: dict, enforce_suffix: bool = False) -> dict:
     """Etat d'un notebook ajoute. `verdict` = "violation" | "ok" | "info"."""
     stem = name[:-len(".ipynb")] if name.lower().endswith(".ipynb") else name
     raw = raw_kernel_suffix(stem)
 
     if raw is None:
-        # Sans suffixe de noyau il n'y a rien a juger -- ce n'est pas une faute.
-        # Les `-Lean` tombent ici, conformement a la mesure (le suffixe y marque
-        # le contenu, pas le moteur).
-        return {"file": path, "state": "no_kernel_suffix", "verdict": "info"}
+        # Sans suffixe de noyau il n'y a rien a juger -- ce n'est pas une faute
+        # de CE garde. Depuis l'arbitrage 25/09 (#17784/#16231) le suffixe est
+        # cense etre toujours present : le cliquet `--require-suffix` en fait
+        # une violation sur demande (advisory d'abord, bloquant ensuite).
+        verdict = "violation" if enforce_suffix else "info"
+        return {"file": path, "state": "no_kernel_suffix", "verdict": verdict}
 
     # L'exception est lue APRES la presence d'un suffixe : declarer une exception
     # sur un fichier sans suffixe de noyau n'a pas de sens et ne doit pas creer
@@ -243,16 +262,18 @@ def classify(path: str, name: str, kernelspec: str | None, meta_present: bool,
                 "kernelspec": kernelspec}
 
     got_case = raw.lstrip("-_")
+    suffix_fam = got_case.lower()
 
-    # 1. Le suffixe contredit le noyau : defaut factuel, hors adoption. Le
-    #    message ne prescrit pas de suffixe (la famille reelle peut n'en avoir
-    #    aucun de canonique, cf `-Lean`/`-Native`) : il nomme les deux versions.
-    if got_case.lower() != fam:
+    # 1. Le suffixe contredit le noyau : defaut factuel, hors adoption. La
+    #    compatibilite se lit par SUFFIXE (`-Lean-Python` + noyau python est
+    #    legitime, c'est un notebook qui PILOTE Lean) : une table a double
+    #    entree, pas une egalite naive. Le message nomme les deux versions.
+    if fam not in SUFFIX_KERNEL_COMPAT.get(suffix_fam, set()):
         return {"file": path, "state": "kernel_mismatch", "verdict": "violation",
                 "suffix": raw, "kernelspec": kernelspec}
 
     # 2. Casse hors canon : defaut seulement dans une serie qui a adopte.
-    want = KERNEL_CANONICAL[fam]
+    want = KERNEL_CANONICAL[suffix_fam]
     if got_case != want:
         adoption = is_adopted(path, config.get("adopted", []))
         if adoption is not None:
@@ -332,12 +353,13 @@ def notebooks_in_tree(root: Path, sub: str = "MyIA.AI.Notebooks") -> list[str]:
                   for p in base.rglob("*.ipynb") if p.is_file())
 
 
-def examine(paths: list[str], config: dict) -> list[dict]:
+def examine(paths: list[str], config: dict, enforce_suffix: bool = False) -> list[dict]:
     root = repo_root()
     out = []
     for rel in paths:
         ks, meta = read_kernelspec(root / rel)
-        out.append(classify(rel, os.path.basename(rel), ks, meta, config))
+        out.append(classify(rel, os.path.basename(rel), ks, meta, config,
+                            enforce_suffix=enforce_suffix))
     return out
 
 
@@ -358,10 +380,14 @@ def _detail(r: dict) -> str:
 _SUFFIX_CASES = [
     ("-CSharp", "-CSharp"), ("-Csharp", "-Csharp"), ("-csharp", "-csharp"),
     ("-Python", "-Python"), ("-python", "-python"),
-    # Hors canon de noyau : `-Lean` marque le contenu (mesure), `_en` est un
-    # sibling i18n (#4980). Les deux doivent ressortir None -- c'est la
-    # contre-epreuve des deux exclusions mesurees.
-    ("-Lean", None), ("-FSharp", None), ("_en", None), ("-Native", None),
+    # Depuis l'arbitrage 25/09 (#17784/#16231) : `-Lean` et `-Lean-Python` sont
+    # des suffixes de noyau (l'ancienne exclusion mesuree est inversee par
+    # decision de nommage, cf naming_canon.py). `_en` reste un sibling i18n
+    # (#4980), `-Native` reste une queue legacy (resorbee par
+    # rename_notebooks.py au profit de `-Lean`).
+    ("-Lean", "-Lean"), ("-Lean-Python", "-Lean-Python"),
+    ("-lean-python", "-lean-python"),
+    ("-FSharp", None), ("_en", None), ("-Native", None),
     ("", None),
 ]
 _FAMILY_CASES = [
@@ -410,6 +436,10 @@ def main(argv: list[str] | None = None) -> int:
                     help="census de tout l'arbre au lieu du delta (mesure de "
                          "baseline ; sort en 1 si l'arbre porte des ecarts, y "
                          "compris herites)")
+    ap.add_argument("--require-suffix", action="store_true",
+                    help="cliquet #17784 : un notebook AJOUTE sans suffixe de "
+                         "noyau est une violation (sinon : ligne advisory, "
+                         "rc inchangé -- phase advisory avant blocage)")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--self-test", action="store_true")
     a = ap.parse_args(argv)
@@ -430,7 +460,11 @@ def main(argv: list[str] | None = None) -> int:
             return 2
         source = "%s...%s" % (a.base, a.head)
 
-    results = examine(paths, config)
+    # Le census (--scan-all) reste un denombrement : le cliquet ne juge que le
+    # DELTA. Appliquer --require-suffix a l'arbre entier rougirait sur ~86 % du
+    # corpus herite -- exactement la vague que le perimetre delta evite.
+    results = examine(paths, config,
+                      enforce_suffix=a.require_suffix and not a.scan_all)
     violations = [r for r in results if r["verdict"] == "violation"]
     by_state: dict[str, int] = {}
     for r in results:
@@ -452,12 +486,20 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     print("etats : " + ", ".join("%s=%d" % kv for kv in sorted(by_state.items())))
     for r in results:
-        # `no_kernel_suffix` est l'etat par defaut du corpus (86 %) : le lister
-        # noierait les etats qui, eux, demandent un regard. Il reste denombre
-        # ci-dessus, donc "rien a juger" ne se confond pas avec "rien regarde".
-        if r["verdict"] != "ok" and r["state"] != "no_kernel_suffix":
+        # `no_kernel_suffix` est l'etat par defaut du corpus herite (86 %) : le
+        # lister en bulk noierait les etats qui, eux, demandent un regard. Sur
+        # le DELTA il porte le cliquet #17784 (suffixe desormais cense etre
+        # toujours present) : chaque ajout concerne est liste en advisory, et
+        # devient violation sous `--require-suffix`.
+        if r["state"] == "no_kernel_suffix" and r["verdict"] != "violation":
+            if not a.scan_all:
+                print("   [advisory:no_kernel_suffix] %s (cliquet #17784 : le "
+                      "suffixe de noyau est cense etre present)"
+                      % r["file"])
+            continue
+        if r["verdict"] != "ok":
             print("   [%s] %s%s" % (r["state"], r["file"], _detail(r)))
-    if by_state.get("no_kernel_suffix"):
+    if by_state.get("no_kernel_suffix") and a.scan_all:
         print("   (no_kernel_suffix : %d fichier(s) sans suffixe de noyau -- "
               "aucun moteur annonce, rien a juger, non listes)"
               % by_state["no_kernel_suffix"])
