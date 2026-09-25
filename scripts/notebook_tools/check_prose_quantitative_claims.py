@@ -95,7 +95,8 @@ Usage
     # Toutes les classes flaggables (artifact + machine + env + stochastic)
     python check_prose_quantitative_claims.py --all --class all
 
-    # Bloquant (une fois le stock vide)
+    # Bloquant -- contrat CI actif depuis #17636 (seules les lignes AJOUTEES
+    # sont jugees : le stock #9377 ne fait echouer aucune PR)
     python check_prose_quantitative_claims.py --diff origin/main...HEAD --strict
 """
 
