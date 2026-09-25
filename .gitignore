@@ -1129,7 +1129,6 @@ scripts/notebook_tools/probes/_deps/
 
 # Livecoding video pipeline (#15604) : artefacts capture/PoC -- media regenerable, local only
 out/
-
 # Claude Code session scratchpads (per-machine, per-cycle dashboard drafts, PR body drafts, notebook backups)
 /.claude/scratchpad/
 
