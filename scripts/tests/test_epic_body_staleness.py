@@ -292,3 +292,80 @@ def test_cli_rejects_nonpositive_limit(capsys):
 
     assert exc.value.code == 2
     assert "--pr-limit must be positive" in capsys.readouterr().err
+
+
+def test_open_issue_probe_widens_past_a_full_reply(monkeypatch):
+    """Regression: a corpus larger than the first probe used to mean no measure.
+
+    At 506 open issues the analyzer raised on every run and reported nothing.
+    A reply that fills the request is not exhaustion, so the probe widens.
+    """
+    asked = []
+
+    def fake_gh(args):
+        limit = int(args[args.index("--limit") + 1])
+        asked.append(limit)
+        count = limit if limit <= 500 else 506
+        return [
+            {"number": n, "title": f"issue {n}", "labels": [], "body": ""}
+            for n in range(count)
+        ]
+
+    monkeypatch.setattr(_MODULE, "_gh_json", fake_gh)
+
+    rows = _MODULE._fetch_open_issues("example/repo")
+
+    assert asked == [_MODULE.OPEN_ISSUE_PROBE_START, 1000]
+    assert len(rows) == 506
+
+
+def test_open_issue_probe_stops_at_a_short_reply(monkeypatch):
+    asked = []
+
+    def fake_gh(args):
+        asked.append(int(args[args.index("--limit") + 1]))
+        return [{"number": 1, "title": "issue", "labels": [], "body": ""}]
+
+    monkeypatch.setattr(_MODULE, "_gh_json", fake_gh)
+
+    assert len(_MODULE._fetch_open_issues("example/repo")) == 1
+    assert asked == [_MODULE.OPEN_ISSUE_PROBE_START]
+
+
+def test_open_issue_probe_refuses_at_the_ceiling(monkeypatch):
+    """Every reply full: refuse loudly instead of calling the corpus complete."""
+
+    def fake_gh(args):
+        limit = int(args[args.index("--limit") + 1])
+        return [
+            {"number": n, "title": f"issue {n}", "labels": [], "body": ""}
+            for n in range(limit)
+        ]
+
+    monkeypatch.setattr(_MODULE, "_gh_json", fake_gh)
+
+    with pytest.raises(RuntimeError) as exc:
+        _MODULE._fetch_open_issues("example/repo")
+
+    assert str(_MODULE.OPEN_ISSUE_PROBE_CEILING) in str(exc.value)
+
+
+def test_open_issue_probe_rejects_a_payload_that_is_not_a_list(monkeypatch):
+    """An unread corpus is not an empty one: `null` must not read as zero issues."""
+    monkeypatch.setattr(_MODULE, "_gh_json", lambda args: None)
+
+    with pytest.raises(RuntimeError) as exc:
+        _MODULE._fetch_open_issues("example/repo")
+
+    assert "NoneType" in str(exc.value)
+
+
+def test_list_open_epics_keeps_only_epics(monkeypatch):
+    rows = [
+        {"number": 1, "title": "[EPIC] X", "labels": [], "body": ""},
+        {"number": 2, "title": "plain issue", "labels": [], "body": ""},
+        {"number": 3, "title": "Tracker", "labels": [{"name": "EPIC"}], "body": ""},
+    ]
+    monkeypatch.setattr(_MODULE, "_gh_json", lambda args: rows)
+
+    assert [epic.number for epic in _MODULE.list_open_epics("example/repo")] == [1, 3]
