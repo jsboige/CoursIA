@@ -138,7 +138,8 @@ NOTEBOOK_GLOBS = ["**/*.ipynb"]
 #   - pip-leak-guard      : bloquant, delta HEAD-vs-base
 #   - solution-leak-guard : ADVISORY, delta HEAD-vs-base (verifie qu'un
 #                           advisory ne peut pas rougir par accident)
-#   - prose-counts-guard  : advisory, diff-range direct
+#   - prose-counts-guard  : bloquant (#17636), diff-range direct, lignes
+#                           AJOUTEES seules (le stock #9377 ne rougit pas)
 #   - perimeter-review    : bloquant, appelle l'API GitHub (a besoin de
 #                           GH_TOKEN, pas seulement de l'arbre)
 #   - bare-cross-dir-load-gate : bloquant, EXECUTION PAR FICHIER (Pattern 1)
@@ -198,8 +199,10 @@ PILOT: list[Guard] = [
         source="prose-counts-guard.yml",
         paths=["**/*.ipynb", "**/*.md"],
         argv=["python", "scripts/notebook_tools/check_prose_quantitative_claims.py",
-              "--diff", "{base_ref}...HEAD"],
-        blocking=False,          # ADVISORY tant que #9377 n'est pas resorbe
+              "--diff", "{base_ref}...HEAD", "--strict"],
+        blocking=True,           # BLOQUANT #17636 : critere de sortie #9377 ;
+                                 # le stock ne rougit personne (lignes AJOUTEES
+                                 # seules), une PR qui rouvre la veine rougit
         needs_base=True,
     ),
     Guard(
@@ -342,8 +345,8 @@ PILOT: list[Guard] = [
             "scripts/notebook_tools/check_kernel_suffix_canon.py",
             "scripts/notebook_tools/kernel_suffix_canon.json",
             # Liste partagee des suffixes de noyau : l'en retirer un rend le
-            # garde muet sur cette famille, l'y ajouter rouvre les exclusions
-            # mesurees (`-Lean` marque le contenu, pas le moteur).
+            # garde muet sur cette famille. Depuis l'arbitrage 25/09
+            # (#17784/#16231) elle porte -lean et -lean-python comme noyaux.
             "scripts/notebook_tools/naming_canon.py",
         ],
         argv=["python", "scripts/notebook_tools/check_kernel_suffix_canon.py",
@@ -351,6 +354,11 @@ PILOT: list[Guard] = [
         blocking=True,
         needs_base=True,
     ),
+    # Cliquet #17784, phase ADVISORY : le meme organe liste en advisory les
+    # notebooks AJOUTES sans suffixe de noyau (grammaire #16231 : le suffixe
+    # est desormais cense etre toujours present). Le passage bloquant se fait
+    # en ajoutant --require-suffix a l'argv ci-dessus, APRES mesure des faux
+    # positifs -- pas en durcissant le garde par defaut.
     # Defaut 4 de #15489 (suite du meme claim de lane) : un slot peut etre libre
     # sur `main` et deja tenu ailleurs. Deux trous mesures ont fonde ce garde --
     # deux notebooks neufs au MEME index dans une MEME revision (l'organe frere
@@ -1251,5 +1259,200 @@ TRANCHE11: list[Guard] = [
         blocking=False,
         needs_base=True,
         absorbed=True,
+    ),
+]
+
+# ---------------------------------------------------------------------------
+# TRANCHE 13 -- reading-anchor advisory (#16695).
+#
+# Garde NATIF absorbant le workflow d'origine (needs_base=True, delta vs base,
+# self-test pre-control #11685). Advisory non bloquant a zero FP mesure.
+# ---------------------------------------------------------------------------
+TRANCHE13: list[Guard] = [
+    Guard(
+        name="Reading-anchor advisory (lecture sans output, #16695)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**.ipynb",
+            "scripts/notebook_tools/check_reading_anchor.py",
+            "scripts/notebook_tools/tests/test_check_reading_anchor.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        pre_argv=[
+            "python", "scripts/notebook_tools/check_reading_anchor.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_reading_anchor.py",
+            "--base", "{base_ref}",
+            "--head", "HEAD",
+            "--fail", "--json",
+        ],
+        blocking=False,
+        needs_base=True,
+        absorbed=True,
+    ),
+]
+
+# ---------------------------------------------------------------------------
+# TRANCHE 12 -- link-label agreement advisory (#16645).
+#
+# Garde NATIF : comme TRANCHE6/9/11, il n'absorbe aucun workflow d'origine --
+# il ferme une classe de defaut (le predicat "le LIBELLE nomme un notebook
+# different de la CIBLE", cf incident fondateur #13645 et la discussion
+# #15867 sur le scope decks). Aucune absorption possible parce qu'aucun
+# workflow dedie n'existait pour ce script au moment de l'issue #16645.
+#
+# Pourquoi advisory, pas bloquant : la dette repo-wide mesuree au cablage
+# est de 0 finding sur main (scan 2198 fichiers, cf body #16645 "0 desaccord
+# / 2182 fichiers"). Demarrer en blocking serait strict sur du vide ; un
+# garde qui protege un invariant deja tenu demarre ADVISORY pour calibration
+# avant promotion (cf TRANCHE11 source-collapse qui suivait la meme voie).
+# Cout CI : ~5 s par scan global (`scripts/notebook_tools/check_link_label_agreement.py
+# --fail` rend 0 en 4-5 s sur 2198 fichiers mesures le 2026-09-20) -- dans
+# le budget de la voie rapide.
+#
+# Forme moteur : scan global simple, sans base (le script compare libelle a
+# cible dans chaque document, ne confronte pas a une base). Meme contrat
+# que TRANCHE1 forme 1 (check-links), en advisory.
+#
+# Le nom porte `advisory` pour que le filtre pr_gate (`is_advisory` matche
+# le mot-cle dans le nom de check-run) le traite comme tel et ne le compte
+# jamais comme defaut bloquant. Le check-run apparait en `neutral` sur la
+# PR -- signal visible, jamais rougissant.
+# ---------------------------------------------------------------------------
+TRANCHE12: list[Guard] = [
+    Guard(
+        name="Link-label agreement (per-notebook, advisory)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "MyIA.AI.Notebooks/**/README.md",
+            "docs/**/*.md",
+            "slides/**/slides.md",
+            "scripts/notebook_tools/check_link_label_agreement.py",
+            "scripts/notebook_tools/tests/test_check_link_label_agreement.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_link_label_agreement.py",
+            "--fail",
+        ],
+        blocking=False,  # advisory : signale le desaccord label/cible, ne rougit jamais
+        absorbed=True,
+    ),
+]
+
+
+# TRANCHE 13 -- cellules de lecture scindees « Lecture » + « Lecture
+# chiffree » (#16762, parapluie user). Forme moteur : iterate_paths
+# per-notebook, MEME CABINE que TRANCHE6/7 (rc=2 findings sur
+# --fail-on-findings, rc=1 illisible/vacuue).
+#
+# Origine : nit user sur #16554 (2026-09-17) -- « Pourquoi Lecture puis
+# Lecture chiffree. Il aurait fallu fusionner les 2, pas rajouter une
+# interpretation derriere une autre avec recouvrement partiel ». L'organe a
+# ete livre par le recensement #16786 ; cette tranche le cable. Mandat user
+# 2026-09-20 (body #13410 section STOP) : « Une sortie de cellule a UNE
+# cellule de lecture. Si elle en a deja une, on la REECRIT. On n'en ajoute
+# jamais une seconde. »
+#
+# Pourquoi advisory, pas bloquant : la dette corpus heritee mesuree au
+# cablage est de 109 findings sur origin/main @545d9ec639 (98 generic_pair,
+# 8 separated_by_code, 3 named_split -- ces derniers fusionnes par la PR
+# soeur #17025). Un garde bloquant rougirait chaque PR touchant un notebook
+# porteur de dette heritee. Passage en blocking a trancher par le
+# coordinateur apres resorption de la dette par serie (precedent TRANCHE6
+# #14325, TRANCHE7).
+# ---------------------------------------------------------------------------
+#
+# Renomme TRANCHE12 -> TRANCHE14 au merge de #17031 : la PR soeur #16645
+# (link-label agreement) a pris TRANCHE12 sur main entre-temps, et TRANCHE13
+# etait deja pris par reading-anchor (#16695) -- la premiere version de ce
+# renommage reutilisait TRANCHE13 et le second binding ecrasait le premier :
+# reading-anchor disparaissait du registre et Scripts Tests rougissait sur
+# toute PR (test_tranche13_reading_anchor_advisory_guard_is_wired). Meme
+# classe de collision que le renommage TRANCHE9 -> TRANCHE10 plus haut -- le
+# POSTERIEUR cede l'index, jamais l'inverse (deux affectations du meme nom se
+# remplaceraient silencieusement et un garde disparaitrait du registre).
+#
+# PROMOTION EN CLIQUET (#17044, 2026-09-24). Le garde naissait advisory : la
+# dette corpus heritee au cablage (109 findings) aurait rougi toute PR
+# touchant un carnet porteur, ce qui punit le voisin, pas l'auteur. Le
+# cliquet leve exactement cette objection sans renoncer au mandat user
+# 2026-09-20 (« une sortie de cellule a UNE cellule de lecture ; si elle en a
+# deja une, on la REECRIT, on n'en ajoute jamais une seconde ») : il ne
+# regarde QUE ce que la PR change -- lectures AJOUTEES (detect_added_readings)
+# ou compte de paires qui MONTE sur un carnet touche. Les 91 findings herites
+# restent donc grandfathered, et le cliquet ne rougit que l'augmentation.
+# Mesure avant cablage : 0/11 faux positifs sur les 11 dernieres PR notebook
+# mergees, controle positif fondateur 26+16 intact (organe
+# scripts/ci/check_17464_positive_control.py), self-test 5/5.
+TRANCHE14: list[Guard] = [
+    Guard(
+        name="Split-reading ratchet (base vs PR)",
+        source="split-reading-advisory.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/check_split_reading_cells.py",
+            "scripts/tests/test_check_split_reading_cells.py",
+            ".github/workflows/split-reading-advisory.yml",
+        ],
+        pre_argv=[
+            "python", "scripts/notebook_tools/check_split_reading_cells.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_split_reading_cells.py",
+            "--base-ref", "{base_ref}", "--head", "HEAD",
+            "--json", "--fail-on-findings",
+        ],
+        blocking=True,  # cliquet : rougit l'AJOUT de lecture scindee, jamais la dette heritee
+        needs_base=True,
+        absorbed=True,
+    ),
+]
+
+# ---------------------------------------------------------------------------
+# TRANCHE 15 -- garde natif anti-invocation-directe lake (#15666, T4).
+#
+# L'epic #15666 impose un organe canonique d'exécution Lean
+# (``scripts/lean/lean_exec.py`` : admission machine-wide fail-closed, budget
+# min-des-sources, backend epingle par lake) et exige pour sa tranche T4 :
+# « un garde CI qui refuse toute nouvelle invocation directe de
+# ``lake build``/``lake env lean`` dans du code d'orchestration hors
+# allowlist documentée ». Le défaut fondateur (2026-09-12 : ~30 processus
+# ``lean.exe`` à 95 % du CPU, DriveFS et Claudish étouffés) est réintroduit
+# par CHAQUE voie directe qui échappe au budget commun -- ce garde ferme la
+# porte d'entrée, l'allowlist documente la dette de migration (ratchet
+# descendant : une entrée devenue stérile est signalée, jamais ignorée).
+#
+# Détection AST (pas grep) : docstrings, sondes ``which``, tests
+# d'appartenance et prose d'erreur ne comptent pas. Calibration mesurée sur
+# le corpus : 6 fichiers en dette, 0 faux positif -- chaque classe de FP
+# rencontrée a son négatif dans test_check_lake_direct_invocation.py.
+# ---------------------------------------------------------------------------
+# Renomme TRANCHE12 -> TRANCHE15 au merge : les PR #16645 (link-label),
+# #17031 (split-reading) puis #17485 (dedupe TRANCHE13) ont pris
+# TRANCHE12/TRANCHE13/TRANCHE14 sur main entre-temps.
+# Regle registry : le POSTERIEUR cede l'index (cf renommage TRANCHE9 -> TRANCHE10).
+TRANCHE15: list[Guard] = [
+    Guard(
+        name="lake-direct-invocation-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**/*.py",
+            "scripts/lean/check_lake_direct_invocation.py",
+            "scripts/lean/lake_direct_allowlist.json",
+            "scripts/lean/tests/test_check_lake_direct_invocation.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/lean/check_lake_direct_invocation.py",
+            "--all", "--check",
+        ],
+        blocking=True,
     ),
 ]

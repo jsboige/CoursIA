@@ -119,14 +119,6 @@ class Mess3_ObsCoupled:
         return out
 
 
-# Alias historique : l'ancien nom ``Mess3`` est preserve pour ne pas casser
-# les imports existants, mais il designe maintenant le banc DEPRECIE
-# (gaussien, observation couplee). Le nouveau banc canonique s'appelle
-# ``Mess3`` aussi mais precede l'ancien dans ce fichier ; voir :class:`Mess3`
-# ci-dessous.
-Mess3 = Mess3_ObsCoupled  # noqa: F811 — alias de compatibilite, voir NOTE ci-dessus
-
-
 @dataclass(frozen=True)
 class Mess3Canonical:
     """Mess3 canonique (Marzen & Crutchfield 2017) : POMDP a 3 etats
@@ -231,18 +223,119 @@ class Mess3Canonical:
         return out
 
 
+# Alias canonique (#16225) : ``Mess3`` designe le generateur CONFORME a la
+# litterature -- alphabet discret ternaire qui ne revele pas l'etat cache.
+# Le banc gaussien historique reste disponible sous son nom explicite
+# ``Mess3_ObsCoupled`` pour les comparaisons de probe sur signaux continus.
+Mess3 = Mess3Canonical  # noqa: F811 — un seul generateur Mess3 par defaut
+
+
 @dataclass(frozen=True)
 class RRXOR:
-    """XOR recursif : bits iid ``b_t``, observation ``y_t = b_{t-1} XOR b_t``.
+    """RRXOR (Riechers & Crutchfield 2018, arXiv:1706.00883v1, Fig. 4).
 
-    Etat cache au pas t : la paire ``(b_{t-1}, b_t)``, 4 etats ordonnes
-    ``00, 01, 10, 11``. L'observation etant deterministe dans l'etat, le
-    belief exact apres observation vit sur les 2 etats coherents avec
-    ``y_t``, uniformes (les entrees sont iid uniformes).
+    Le processus repete trois etapes : (i) un 0 ou 1 equiprobable ``r1``,
+    (ii) un autre 0 ou 1 equiprobable ``r2``, (iii) le XOR des deux derniers
+    symboles ``r1 XOR r2``. Correlations par paires nulles, spectre plat :
+    toute la structure vit dans la contrainte de triplet.
+
+    L'epsilon-machine compte **5 etats causaux** et est **Mealy** : les
+    emissions vivent sur les aretes, pas dans les etats. Etats ordonnes :
+
+    - ``0`` = G (phase de reset, va emettre ``r1``),
+    - ``1`` = A0, ``2`` = A1 (memorise ``r1``),
+    - ``3`` = X0, ``4`` = X1 (memorise ``r1 XOR r2``, va emettre le XOR).
+
+    Aretes : ``G -(r1, 1/2)-> A_{r1}`` ; ``A_{r1} -(r2, 1/2)-> X_{r1 XOR r2}`` ;
+    ``X_v -(v, 1)-> G``. La MSP depuis le prior stationnaire compte 36
+    croyances distinctes (31 transitoires + 5 recurrentes, cf. p. 17 de
+    l'article) : le regime transitoire resout l'ambiguite de phase du
+    processus periodise d'ordre 3.
+
+    Note : la version anterieure de cette classe modelisait
+    ``y_t = b_{t-1} XOR b_t`` sur bits iid -- un processus **iid** (les XOR
+    adjacents de bits iid sont independants), sans aucune structure. Le banc
+    ne meritait pas son nom ; cette version est conforme a la litterature.
+    """
+
+    n_states: int = 5
+    name: str = "rrxor"
+
+    def edge_tensor(self) -> Array:
+        """Tenseur W[s, s', y] = P(transiter s -> s' en emettant y) (Mealy)."""
+        w = np.zeros((5, 5, 2))
+        w[0, 1, 0] = 0.5; w[0, 2, 1] = 0.5          # G -> A_{r1}
+        w[1, 3, 0] = 0.5; w[1, 4, 1] = 0.5          # A0 -> X_{0 XOR r2}
+        w[2, 4, 0] = 0.5; w[2, 3, 1] = 0.5          # A1 -> X_{1 XOR r2}
+        w[3, 0, 0] = 1.0                            # X0 emet 0 -> G
+        w[4, 0, 1] = 1.0                            # X1 emet 1 -> G
+        return w
+
+    def transition_matrix(self) -> Array:
+        """T[s, s'] = somme des emissions de l'arete (machine agregnee)."""
+        return self.edge_tensor().sum(axis=2)
+
+    def stationary(self) -> Array:
+        """Distribution stationnaire : (1/3 sur G, 1/6 sur chaque autre etat)."""
+        out = np.full(5, 1.0 / 6.0)
+        out[0] = 1.0 / 3.0
+        return out
+
+    def sample(self, n: int, seed: int) -> Tuple[Array, Array]:
+        """Echantillonne n symboles ; retourne (etats d'arrivee par pas, observations)."""
+        if n < 1:
+            raise ProcessError("RRXOR.sample attend n >= 1")
+        rng = np.random.default_rng(seed)
+        states = np.empty(n, dtype=np.int64)
+        obs = np.empty(n, dtype=np.int64)
+        s = 0  # G
+        for k in range(n):
+            if s == 0:                                # emet r1
+                y = int(rng.integers(0, 2))
+                s = 1 + y                             # A_{r1}
+            elif s in (1, 2):                         # emet r2
+                y = int(rng.integers(0, 2))
+                s = 3 + ((1 if s == 2 else 0) ^ y)    # X_{r1 XOR r2}
+            else:                                     # X : emet le XOR memorise
+                y = s - 3
+                s = 0
+            obs[k] = y
+            states[k] = s
+        return states, obs
+
+    def beliefs(self, obs: Array) -> Array:
+        """Filtration forward exacte sur les aretes (Mealy).
+
+        ``out[k] = P(s_k | y_0..y_k)`` ou ``s_k`` est l'etat d'arrivee du
+        symbole ``y_k`` ; mise a jour ``b <- normaliser(b @ W[:, :, y])``
+        depuis le prior stationnaire sur l'etat emetteur initial.
+        """
+        if obs.ndim != 1 or not np.all(np.isin(obs, (0, 1))):
+            raise ProcessError("RRXOR.beliefs attend une serie binaire 1D")
+        w = self.edge_tensor()
+        b = self.stationary()
+        out = np.empty((len(obs), 5))
+        for k in range(len(obs)):
+            v = b @ w[:, :, int(obs[k])]
+            b = v / v.sum()
+            out[k] = b
+        return out
+
+
+@dataclass(frozen=True)
+class RRXOR_Iid:
+    """RRXOR legacy : bits iid ``b_t``, observation ``y_t = b_{t-1} XOR b_t``.
+
+    DEPRECIE : les XOR adjacents de bits iid sont eux-memes iid -- ce banc
+    ne portait AUCUNE structure et ne meritait pas le nom RRXOR (cf.
+    :class:`RRXOR`, conforme a Riechers & Crutchfield 2018). Conserve pour
+    la REPRODUCTIBILITE de la batterie d'intervention (#15480/#16230) et du
+    pilote ICT-40, calibres sur ce banc ; toute nouvelle etude doit utiliser
+    :class:`RRXOR`.
     """
 
     n_states: int = 4
-    name: str = "rrxor"
+    name: str = "rrxor_iid"
 
     def transition_matrix(self) -> Array:
         """T[(a,b) -> (b,c)] = 1/2 pour c dans {0,1} : le bit frais est iid uniforme."""
@@ -273,13 +366,9 @@ class RRXOR:
         return states, obs
 
     def beliefs(self, obs: Array) -> Array:
-        """Filtration forward exacte sur les 4 etats ; observation binaire deterministe.
-
-        Le premier pas n'a pas d'observation antecedente : prior stationnaire
-        (l'etat (b_{-1}, b_0) n'est jamais observable via y_0 seul).
-        """
+        """Filtration forward exacte sur les 4 etats ; observation binaire deterministe."""
         if obs.ndim != 1 or not np.all(np.isin(obs, (0, 1))):
-            raise ProcessError("RRXOR.beliefs attend une serie binaire 1D")
+            raise ProcessError("RRXOR_Iid.beliefs attend une serie binaire 1D")
         t = self.transition_matrix()
         e = self.emission_matrix()
         prior = self.stationary()

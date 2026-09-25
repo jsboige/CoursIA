@@ -59,7 +59,7 @@ Le parcours suit une progression unique, portée en parallèle par les deux mote
 2. **Structure de décision** — On passe des choix isolés aux décisions structurées : critères multiples (MAUT), diagrammes d'influence (nœuds de chance / décision / utilité), et surtout la **valeur de l'information** (EVPI, EVSI) — combien vaut un test avant de l'acheter.
 3. **Robustesse & séquentiel** — Décision sous incertitude sévère (Minimax, regret) puis passage au temps : processus de décision markoviens (MDP), équation de Bellman, itération valeur/politique.
 4. **Bandits** — L'arbitrage exploration/exploitation : Thompson Sampling (posterior Beta-Bernoulli calculé par le moteur), comparé à ε-greedy et UCB1. C'est ici qu'intervient le **second notebook Lean** ([DecInfer-09](DecInfer/DecInfer-09-Lean-Gittins.ipynb)) : l'indice de Gittins et les identités d'escompte géométrique.
-5. **Pont causal (capstone)** — [Do-Calculus-Bridge](Causal-Bridges/Do-Calculus-Bridge.ipynb) fédère les quatre traitements de la causalité disséminés dans le dépôt (Tweety logique, Infer.NET, PyMC, émergence causale PyPhi) autour de l'**échelle de Pearl** (association → intervention → contrefactuel) et du **do-calculus**, exécutés sur l'outil de référence [`dowhy`](https://www.pywhy.org/dowhy/). Une décision optimale suppose de savoir ce que l'on *cause*, pas seulement ce que l'on *observe*.
+5. **Pont causal (capstone)** — [CausalBridges-01 — Do-Calculus](Causal-Bridges/CausalBridges-01-Do-Calculus.ipynb) fédère les quatre traitements de la causalité disséminés dans le dépôt (Tweety logique, Infer.NET, PyMC, émergence causale PyPhi) autour de l'**échelle de Pearl** (association → intervention → contrefactuel) et du **do-calculus**, exécutés sur l'outil de référence [`dowhy`](https://www.pywhy.org/dowhy/). Une décision optimale suppose de savoir ce que l'on *cause*, pas seulement ce que l'on *observe*.
 
 ## Structure et contenu
 
@@ -73,7 +73,7 @@ Douze notebooks Python (`DecPyMC-1..12`) qui rejouent les mêmes concepts par é
 
 ### `Causal-Bridges/` — le capstone causal (dowhy)
 
-Quatre notebooks-ponts, dont [Do-Calculus-Bridge](Causal-Bridges/Do-Calculus-Bridge.ipynb) en tête, qui relient l'arc décision au reste du dépôt par la question causale : le do-calculus (Do-Calculus-Bridge), l'identification nommée d'estimands (DoWhy-1), le contrefactuel individuel (DoWhy-2) et les méthodes quasi-expérimentales (Quasi-Experimental). Exécutés sur `dowhy` (kernel `coursia-ml-training`). **Détail** : [`Causal-Bridges/README.md`](Causal-Bridges/README.md).
+Quatre notebooks-ponts, dont [CausalBridges-01 — Do-Calculus](Causal-Bridges/CausalBridges-01-Do-Calculus.ipynb) en tête, qui relient l'arc décision au reste du dépôt par la question causale : le do-calculus (CausalBridges-01), l'identification nommée d'estimands (CausalBridges-02), le contrefactuel individuel (CausalBridges-03) et les méthodes quasi-expérimentales (CausalBridges-07). Exécutés sur `dowhy` (kernel `coursia-ml-training`). **Détail** : [`Causal-Bridges/README.md`](Causal-Bridges/README.md).
 
 ### `decision_theory_lean` — la couche de certification (hors compte notebooks)
 

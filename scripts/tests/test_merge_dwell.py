@@ -546,10 +546,15 @@ def test_le_verdict_ne_dit_jamais_d_attendre():
 
 
 def _git_version_supported():
-    """`git merge-tree --write-tree` demande Git >= 2.38 (CR 2026-09-16)."""
+    """`git merge-tree --write-tree` demande Git >= 2.38 (CR 2026-09-16).
+
+    #17448 : passe par ``_GIT`` (fige au module) -- un ``git`` nu serait
+    re-resolu via le PATH *au moment de l'appel*, sensible a toute pollution
+    (CreateProcess lit le PATH du process APPELANT, cf #17186/#17172).
+    """
     try:
         out = subprocess.run(
-            ["git", "--version"], capture_output=True, text=True,
+            [_GIT, "--version"], capture_output=True, text=True,
             encoding="utf-8", errors="replace"
         ).stdout
     except OSError:
@@ -564,6 +569,40 @@ def _git_version_supported():
     return (major, minor) >= (2, 38)
 
 
+def test_git_version_supported_immune_to_path_pollution(tmp_path, monkeypatch):
+    """#17448, controle negatif : un faux git en tete de PATH ne change pas le
+    verdict de ``_git_version_supported`` -- la resolution est figee au module
+    (_GIT, chemin absolu), pas refaite par appel.
+
+    Faux sous Windows : CreateProcess ne resout JAMAIS un ``.bat`` pour un nom
+    nu, le faux doit etre un ``.exe``. Une copie de ``where.exe`` nommee
+    ``git.exe`` repond n'importe quoi a ``--version`` : le parse echoue, le
+    verdict tombe a False -- si l'appel passait par le PATH pollue.
+    Pre-fix (``git`` nu) : rouge. Post-fix (_GIT fige) : vert.
+    """
+    expected = _git_version_supported()  # mesure AVANT pollution du PATH
+    fake_dir = tmp_path / "fakebin"
+    fake_dir.mkdir()
+    if os.name == "nt":
+        where_exe = Path(os.environ["SystemRoot"]) / "System32" / "where.exe"
+        shutil.copy(where_exe, fake_dir / "git.exe")
+    else:
+        fake = fake_dir / "git"
+        fake.write_text('#!/bin/sh\necho "git version 1.9.0"\n', encoding="utf-8")
+        fake.chmod(0o755)
+    monkeypatch.setenv("PATH", str(fake_dir) + os.pathsep + os.environ["PATH"])
+    assert _git_version_supported() == expected
+
+
+# Resolution git FIGEE au module (#17172/#17448) : resoudre "git" via le PATH a
+# chaque appel rend la suite sensible a toute pollution ulterieure de
+# os.environ["PATH"] par un test anterieur -- le discriminateur observe
+# (git qui interprete file:///C:/ en /C:/, POSIX) disparait des qu'on
+# fige le binaire. Le module est importe (collected) avant toute
+# execution de test : la resolution est faite sur un PATH propre.
+_GIT = shutil.which("git") or "git"
+
+
 def _git(cwd, *args, env=None):
     e = {
         "GIT_AUTHOR_NAME": "test", "GIT_AUTHOR_EMAIL": "test@local",
@@ -572,7 +611,7 @@ def _git(cwd, *args, env=None):
     if env:
         e.update(env)
     return subprocess.run(
-        ["git", *args], cwd=str(cwd), env={**os.environ, **e},
+        [_GIT, *args], cwd=str(cwd), env={**os.environ, **e},
         capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
 
@@ -759,3 +798,43 @@ def test_cr_20260916_repo_complet_sans_merge_base_reste_fail_closed():
     )
     assert ok is False
     assert "fetch" not in calls, "un depot complet sans merge-base ne fetch pas"
+
+
+def test_git_helper_immune_to_path_pollution(tmp_path, monkeypatch):
+    """#17172 -- non-regression : le helper _git doit utiliser le binaire
+    resolu a l'import (_GIT, chemin absolu), pas re-resoudre ``git`` dans le
+    PATH courant. Un test anterieur qui pollue ``os.environ["PATH"]`` avec un
+    bin/ factice en tete ne doit pas detourner les topologies reelles (le
+    discriminateur observe : un git qui interprete ``file:///C:/`` en
+    ``/C:/``).
+
+    Windows (reserve B.0, mesure sur poste natif) : CreateProcess n'appende
+    que ``.exe`` pour un nom nu -- un ``git.bat`` factice est INVISIBLE pour
+    ``subprocess(["git", ...])`` et le test restait vert pre-fix. Le faux
+    mesurable est une copie de ``where.exe`` nommee ``git.exe`` : vrai ``.exe``
+    en tete du PATH, il EST choisi par l'appel nu (la recherche CreateProcess
+    lit le PATH du processus APPELANT, que monkeypatch.setenv mute -- pas
+    celui de ``env=`` passe a l'enfant) et echoue (rc!=0, stdout vide).
+    Pre-fix : rouge. Post-fix : _GIT fige a l'import sous PATH propre, le
+    vrai git repond."""
+    marker = tmp_path / "fake_git_called"
+    bindir = tmp_path / "bin"
+    bindir.mkdir()
+    if os.name == "nt":
+        fake = bindir / "git.exe"
+        shutil.copy(
+            Path(os.environ.get("SystemRoot", r"C:\Windows")) / "System32" / "where.exe",
+            fake,
+        )
+    else:
+        fake = bindir / "git"
+        fake.write_text("#!/bin/sh\ntouch '" + str(marker) + "'\nexit 1\n", encoding="utf-8")
+        fake.chmod(fake.stat().st_mode | 0o111)
+    monkeypatch.setenv("PATH", str(bindir) + os.pathsep + os.environ.get("PATH", ""))
+    r = _git(tmp_path, "--version")
+    assert r.returncode == 0, r.stderr
+    # Windows : le faux (where.exe copie) repond rc!=0 avec stdout vide --
+    # la signature du VRAI git fait foi. POSIX : le faux ecrit un marqueur.
+    assert "git version" in r.stdout, "stdout != vrai git : {!r}".format(r.stdout[:80])
+    assert not marker.exists(), "le git factice du PATH pollue a ete appele"
+    assert Path(_GIT).name.lower().startswith("git"), _GIT
