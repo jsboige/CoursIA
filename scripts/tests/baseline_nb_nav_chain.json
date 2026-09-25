@@ -1632,7 +1632,7 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Dated_Graphs.ipynb",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Obs-01-Graphes-Dates-Python.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis"
     },
     {
@@ -1657,32 +1657,32 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Observatoire-1-Initiation.ipynb",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Obs-02-Initiation-Python.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Recollement_Lectures.ipynb",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Obs-03-Recollement-Lectures-Python.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Recollement_Strate6.ipynb",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Obs-04-Recollement-Strate6-Python.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis"
     },
     {

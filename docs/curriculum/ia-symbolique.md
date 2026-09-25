@@ -48,19 +48,19 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 11 | [ArgumentProfile : la fiche d'identité…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08e-Argument-Profile-Python.ipynb) | BETA | Oui |
 | 12 | [Argumentum : la carte de sophisme, du nœud de taxonomie…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-02b-Argumentum-Cards-Python.ipynb) | BETA | Oui |
 | 13 | [Le bus de communication multi-agents — le contrat,…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-07b-Communication-Channels-Python.ipynb) | BETA | Oui |
-| 14 | [Graphes d'argumentation datés — l'instrument $G_t^{arg}…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Dated_Graphs.ipynb) | BETA | Oui |
+| 14 | [Graphes d'argumentation datés — l'instrument $G_t^{arg}…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Obs-01-Graphes-Dates-Python.ipynb) | BETA | Oui |
 | 15 | [Dialogues protocolisés : inquiry et persuasion…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-04-Dialogues-Protocolises-Python.ipynb) | BETA | Oui |
 | 16 | [Argumentation abstraite de Dung — sémantiques grounded,…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-03-Dung-AF-Semantics-Python.ipynb) | BETA | Oui |
 | 17 | [Analyse rhétorique collaborative par agents IA —…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb) | BETA | Non |
 | 18 | [La base de connaissances d'un débat — propositions,…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-04b-Knowledge-Base-Python.ipynb) | BETA | Oui |
 | 19 | [Routage multi-backend : décider ou échouer bruyamment](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05b-Multi-Backend-Routing-Python.ipynb) | BETA | Oui |
-| 20 | [Observatoire des formes relationnelles — Cas 1](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Observatoire-1-Initiation.ipynb) | BETA | Oui |
-| 21 | [Ontologie AIF.owl — l'architecture Argumentum des…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb) | ALPHA | Oui |
-| 22 | [Liens croisés crossLink et attaques AIF du CSV…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb) | BETA | Oui |
-| 23 | [Ontologie des vertus argumentatives — le pôle miroir…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb) | BETA | Oui |
+| 20 | [Observatoire des formes relationnelles — Cas 1](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Obs-02-Initiation-Python.ipynb) | BETA | Oui |
+| 21 | [Ontologie AIF.owl — l'architecture Argumentum des…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb) | ALPHA | Oui |
+| 22 | [Liens croisés crossLink et attaques AIF du CSV…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb) | BETA | Oui |
+| 23 | [Ontologie des vertus argumentatives — le pôle miroir…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb) | BETA | Oui |
 | 24 | [Argumentation graduée — sémantiques de classement…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-03c-Ranking-Semantics-Python.ipynb) | BETA | Oui |
-| 25 | [Strate 6 : le banc de recollement](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Recollement_Lectures.ipynb) | BETA | Oui |
-| 26 | [Strate 6 : le recollement sur lectures réellement…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Recollement_Strate6.ipynb) | BETA | Oui |
+| 25 | [Strate 6 : le banc de recollement](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Obs-03-Recollement-Lectures-Python.ipynb) | BETA | Oui |
+| 26 | [Strate 6 : le recollement sur lectures réellement…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Obs-04-Recollement-Strate6-Python.ipynb) | BETA | Oui |
 | 27 | [Restitution en 3 actes — scaffold déterministe,…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08d-Restitution-3-Actes-Python.ipynb) | BETA | Non |
 | 28 | [Reconnaître un schéma d'argumentation — la table de…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-01b-Schemes-Walton-Python.ipynb) | BETA | Oui |
 | 29 | [Le modèle de Toulmin (1958)](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-01-Toulmin-Model-Python.ipynb) | BETA | Oui |

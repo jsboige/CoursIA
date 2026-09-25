@@ -1410,7 +1410,7 @@ layout: default
 
 <img src="./images/img_023.png" style="position:absolute; top:50px; right:20px; width:300px;" alt="Argument mining structure" />
 
-*Notebooks : [Argument_Analysis_Ontology_AIF](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb) (ontologie AIF+) · [Argument_Analysis_Toulmin_Model](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-01-Toulmin-Model-Python.ipynb) · [Argument_Analysis_Agentic-1-informal](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-02-Fallacies-Detection-Python.ipynb) (reconstruction depuis le texte).*
+*Notebooks : [Argumentation-Onto-01-AIF-OWL2-Python](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb) (ontologie AIF+) · [Argument_Analysis_Toulmin_Model](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-01-Toulmin-Model-Python.ipynb) · [Argument_Analysis_Agentic-1-informal](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-02-Fallacies-Detection-Python.ipynb) (reconstruction depuis le texte).*
 
 ---
 layout: default
