@@ -37,13 +37,18 @@ import pytest
 # Le runner WSL self-hosted du CI (myia-ai-01-wsl-4) tombe en RLIMIT_NPROC
 # quand pytest-xdist lance plusieurs sous-processes git en parallele
 # (fork() -> "Resource temporarily unavailable"). Le test lui-meme est
-# lineaire et n'a aucun interet a etre parallelise : on declare la
-# classe ``serial`` pour que pytest-xdist l'isole, et on force
+# lineaire et n'a aucun interet a etre parallelise ; on force
 # ``GIT_OPTIONAL_LOCKS=0`` pour reduire les forks internes de git
 # (sideband demultiplexer, rev-list worker, pack-objects helper).
 os.environ.setdefault("GIT_OPTIONAL_LOCKS", "0")
+# La marque ``xdist_group(name="serial-git")`` a ete retiree (#17628) : elle
+# n'etait operante que sous ``--dist loadgroup``, or aucun job ne l'utilise
+# (le job ``Scripts Tests (CPU)`` passe ``--dist loadscope``, et ``pytest.ini``
+# ne pose aucun ``--dist`` par defaut) -- sous loadscope la marque est inerte.
+# L'isolation qu'elle visait est desormais obtenue autrement : la suite tourne
+# dans une etape sequentielle dediee du job (voir ``scripts-tests.yml``), donc
+# plus aucun worker xdist ne la partage avec les autres suites.
 pytestmark = [
-    pytest.mark.xdist_group(name="serial-git"),
     # Sous xdist loadscope (--dist loadscope -n 4), les autres suites
     # ``scripts/tests/*`` partagent le worker et le cumul de subprocess git
     # (l'organe lui-meme appelle ``git ...`` via subprocess) sature

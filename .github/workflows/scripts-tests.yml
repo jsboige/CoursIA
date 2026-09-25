@@ -368,6 +368,29 @@ jobs:
         # test_kuhn_poker_cfr.py:64-75) make module ORDER non-reproducible --
         # no test currently depends on it.
 
+      - name: Session hygiene tests, sequential (5)
+        # Ces 5 tests ne tournaient JAMAIS en CI (#17628). Leur `skipif` de
+        # module saute des que `CI=true` ET `RUNNER_OS=Linux` ET
+        # `PYTEST_XDIST_WORKER` est pose -- or le pool n'a que des runners
+        # Linux self-hosted WSL, et l'etape precedente lance tout sous
+        # `-n 4 --dist loadscope` : la condition matchait donc TOUT run de ce
+        # job. Mesure du 2026-09-24 (job 107202539829) : `14989 passed,
+        # 103 skipped` -- le vert ne prouvait pas que ces 5 avaient tourne.
+        #
+        # Le skipif autorise deja le run sequentiel (`PYTEST_XDIST_WORKER`
+        # absent). Aucun changement du test : cette etape relance le fichier
+        # SEUL et SANS `-n`, ce qui desamorce la saturation RLIMIT_NPROC du
+        # cumul de subprocess git sous xdist (cause reelle du skip, #17496 /
+        # commit b8a633f153) tout en rendant la couverture a l'organe
+        # `scripts/coordination/session_hygiene.py` (#16736).
+        #
+        # `if: always()` comme les etapes de plancher voisines : meme si la
+        # suite principale est rouge, on veut le verdict NOMME de ces 5 tests
+        # plutot qu'un silence.
+        if: always()
+        run: |
+          python -m pytest scripts/tests/test_session_hygiene.py -q --tb=short
+
       - name: Audit tests collection floor (455)
         # Companion guard of the audit re-cabling (family 2 of #14615), same
         # two-signal semantics as the GameTheory floor (#14614) and the dotnet
