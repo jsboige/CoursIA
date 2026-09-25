@@ -1,0 +1,14 @@
+date: '2026-09-25'
+by: myia-po-2025:CoursIA
+python_sha: 61ba3e60f4a72d0d03065fbe3f994aedd61d7006
+csharp_sha: 665f03c0859003fb294b6fce43a1880d80aac556
+content_python_sha: 6a9c7b9bd42afc9544f8c871422a02c08db4a9e79d1ab95d32c42a45413f640a
+content_csharp_sha: 3801c5682f502680fc2c0a36fd348f3b66f14ab1c48d5e5047520d9698bec29d
+reason: 'Demotion HINT-AS-HEADING -> callout blockquote (sweep #16472, fournee g2-residu-petits-domaines)
+  : 1 ligne(s) markdown cote Python, texte identique au mot pres (seul le marqueur
+  change). Code, outputs et execution_count byte-identiques a la base, verifie cellule
+  par cellule. Cote C# : byte-identique a origin/main (0 ligne dans le diff de la
+  PR) et le scanner ne releve 0 finding sur ce jumeau -- la pathologie n''existe que
+  du cote Python, donc aucune demotion symetrique n''est disponible. Axe de parite
+  (moteur, paradigme, modelisation) intact : l''asymetrie porte sur la forme du marqueur
+  markdown, jamais sur le contenu pedagogique.'
