@@ -4,4 +4,4 @@ python_sha: 9d9a872b6617a6e954ab48f6d2d6bdd94f33e7fa
 csharp_sha: ceffb360ee1444a002a2160eb189b731ee857859
 content_python_sha: c9daafb8f58cc96f008af2932377f4391cfa04663d7c100dd85cc3af7fd3d174
 content_csharp_sha: 773d75b9e0105cd909eca6fdcffc33ece722d3f33ec7bc65fca55966da6ef3fd
-reason: 'G4a #14873 : header Precedent re-pointe vers PyMC-05 (slot 06 vacue par le renommage, precedent Infer-6) + 2 separateurs hr convertis par l'auto-fixer pre-commit. Markdown-only, cote Python seul.'
+reason: 'G4a #14873 : header Precedent re-pointe vers PyMC-05 (slot 06 vacue par le renommage, precedent Infer-6) + 2 separateurs hr convertis par l''auto-fixer pre-commit. Markdown-only, cote Python seul.'
