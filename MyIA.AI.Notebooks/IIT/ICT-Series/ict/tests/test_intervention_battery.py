@@ -47,7 +47,7 @@ import numpy as np
 import pytest
 
 from ict import intervention_battery as ib
-from ict.bench_factorise import FactoredBench, Mess3, RRXOR
+from ict.bench_factorise import FactoredBench, Mess3_ObsCoupled, RRXOR_Iid
 
 # Budget CPU commente : 16 seeds x (SAE 250 pas sur (490, 12) + 2 bras x 8
 # interventions x mesureurs lstsq minuscules + verdicts) ~ 2-4 s total (le
@@ -65,7 +65,12 @@ def _batterie() -> ib.BatteryResult:
     de fixture -- convention de la serie)."""
     global _BATTERIE
     if _BATTERIE is None:
-        bench = FactoredBench(Mess3(), RRXOR(), name="mess3xrrxor")
+        bench = FactoredBench(Mess3_ObsCoupled(), RRXOR_Iid(), name="mess3xrrxor")
+        # Batterie = test de MECANISME, epinglee au banc de sa calibration
+        # (#15480/#16230) : gaussien obs-couple x RRXOR_Iid, les DEUX
+        # generateurs legacy explicites (#16225 renomme Mess3 et reecrit
+        # RRXOR ; recalibrer la batterie sur les generateurs conformes est
+        # un grain SEPARE, porteur : batterie d'intervention).
         _BATTERIE = ib.run_battery(
             bench, seeds=SEEDS, n=N, sae_kwargs=SAE_KWARGS, top_m_flens=5
         )
@@ -302,7 +307,7 @@ def test_verdicts_complets():
 # --------------------------------------------------------------------------- #
 
 def test_determinisme():
-    bench = FactoredBench(Mess3(), RRXOR(), name="mess3xrrxor")
+    bench = FactoredBench(Mess3_ObsCoupled(), RRXOR_Iid(), name="mess3xrrxor")
     r1 = ib.run_battery(bench, seeds=(0, 1), n=300,
                         sae_kwargs=SAE_KWARGS, top_m_flens=5)
     r2 = ib.run_battery(bench, seeds=(0, 1), n=300,

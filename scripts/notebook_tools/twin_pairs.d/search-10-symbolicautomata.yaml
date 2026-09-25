@@ -1,7 +1,7 @@
 - name: "Search-10 SymbolicAutomata"
   family: Search/Part1-Foundations
   python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb
-  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb
   parity_level: surface
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: |

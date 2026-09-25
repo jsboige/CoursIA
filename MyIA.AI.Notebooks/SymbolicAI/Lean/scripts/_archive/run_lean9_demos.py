@@ -189,7 +189,7 @@ print("Plugins: OK (stubs)")
 # ===== Agent Factory =====
 def _create_sk_agents(plugins: Dict[str, Any], state: ProofState) -> Dict[str, Any]:
     kernel = Kernel()
-    model = os.getenv("OPENAI_CHAT_MODEL_ID", "gpt-4o-mini")
+    model = os.getenv("OPENAI_CHAT_MODEL_ID", "gpt-5-mini")
 
     service = OpenAIChatCompletion(
         service_id="openai",

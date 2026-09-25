@@ -2,6 +2,7 @@
 from AlgorithmImports import *
 
 from statsmodels.tsa.regime_switching.markov_regression import MarkovRegression
+import numpy as np
 import pandas as pd
 # endregion
 
@@ -34,6 +35,20 @@ class MarkovRegimeDetection(QCAlgorithm):
     - start_year/end_year parameters (defaults preserve 2015-2026) enable
       IS/OOS and sub-period runs without code forks
 
+    Version 1.3 (#17589, consolidating research article #18811):
+    - Optional drawdown-regime gold hedge, gated by the parameter arm
+      (default 'markov' = the v1.2 strategy, strictly unchanged)
+    - arm='article': faithful port of the article (GMMHMM, 2 states,
+      3 mixture components, on the weekly SPY drawdown and its first
+      difference; GLD weight = probability of the "high" state next week,
+      SPY takes the rest), its state labeling included
+    - arm='fixed': same model and sizing, the deep-drawdown state is the
+      one whose mixture-weighted mean drawdown is the lowest
+    - arm='spy' (buy-and-hold) and arm='static' (constant GLD weight on
+      the same weekly schedule) are the two controls
+    - seed parameter (default 0 = the article's random_state), start_date /
+      end_date parameters (default = the article's 2019-2024 window)
+
     Version 1.0 - Binary Regime Switching:
     - Binary allocation: SPY in low volatility regime, TLT in high volatility
     - Monthly rebalance schedule
@@ -54,6 +69,13 @@ class MarkovRegimeDetection(QCAlgorithm):
     """
 
     def initialize(self):
+        # v1.3 (#17589): every other arm leaves before the v1.2 setup, which
+        # stays byte-for-byte the default path.
+        self._arm = self.get_parameter('arm', 'markov')
+        if self._arm != 'markov':
+            self._initialize_gold_hedge()
+            return
+
         self.set_start_date(int(self.get_parameter('start_year', 2015)), 1, 1)
         self.set_end_date(int(self.get_parameter('end_year', 2026)), 1, 1)
         self.set_cash(100_000)
@@ -239,7 +261,151 @@ class MarkovRegimeDetection(QCAlgorithm):
         except Exception as e:
             self.log(f"Model fitting error: {e}")
 
+    # ------------------------------------------------------------------
+    # v1.3 (#17589): drawdown-regime gold hedge, article #18811
+    # ------------------------------------------------------------------
+
+    _GOLD_HEDGE_ARMS = ('article', 'fixed', 'spy', 'static')
+
+    def _initialize_gold_hedge(self):
+        """Weekly SPY/GLD allocation driven by a drawdown regime (article #18811).
+
+        article : faithful port of the article's rebalance, its state
+                  labeling included (mixture component 1, comparison as
+                  written)
+        fixed   : same model and sizing; the deep-drawdown state is the one
+                  whose mixture-weighted mean drawdown is the lowest
+        spy     : SPY buy-and-hold, same account and schedule
+        static  : constant GLD weight (parameter static_gld) on the same
+                  weekly schedule -- separates the timing from a plain
+                  gold allocation
+
+        Account, resolution, seeder, schedule and window defaults are the
+        article's, so that arm='article' with default parameters replays it.
+        """
+        if self._arm not in self._GOLD_HEDGE_ARMS:
+            raise ValueError(f"arm inconnu : {self._arm}")
+        from hmmlearn.hmm import GMMHMM
+        self._gmmhmm = GMMHMM
+        np.random.seed(70)  # module-level seed of the article (GMMHMM uses random_state)
+
+        end = datetime.strptime(self.get_parameter('end_date', '2025-01-01'), '%Y-%m-%d')
+        start_text = self.get_parameter('start_date', '')
+        # Article window: end minus 6 x 365 days, exactly as its code computes it.
+        start = datetime.strptime(start_text, '%Y-%m-%d') if start_text else end - timedelta(6 * 365)
+        self.set_start_date(start)
+        self.set_end_date(end)
+        self.set_cash(1_000_000)
+        self.set_security_initializer(BrokerageModelSecurityInitializer(
+            self.brokerage_model, FuncSecuritySeeder(self.get_last_known_prices)))
+
+        self._history_lookback = self.get_parameter('history_lookback', 50)
+        self._drawdown_lookback = self.get_parameter('drawdown_lookback', 20)
+        self._seed = self.get_parameter('seed', 0)
+        # Default = mean realized GLD weight of the article arm, 5 seeds, 2008-01 -> 2026-08
+        # (0.545, measures/monthly_returns.csv); the fixed arm is compared at 0.450.
+        self._static_gld = self.get_parameter('static_gld', 0.545)
+
+        self._spy = self.add_equity("SPY", Resolution.MINUTE).symbol
+        self._gld = self.add_equity("GLD", Resolution.MINUTE).symbol
+        self.set_benchmark(self._spy)
+        self.schedule.on(
+            self.date_rules.week_start(self._spy),
+            self.time_rules.after_market_open(self._spy, 1),
+            self._rebalance_gold
+        )
+
+        # Diagnostics of the regime model, published as runtime statistics.
+        self._fits = 0
+        self._failures = 0
+        self._label_agree = 0
+
+        # Monthly measure, identical in every arm (read back by bench_drawdown_hmm.py).
+        self._month = None
+        self._month_value = None
+        self._month_spy = None
+        self._month_gld = None
+        self._gldw_samples = []
+        self._net_samples = []
+        self.schedule.on(self.date_rules.every_day(self._spy), self.time_rules.midnight, self._sample)
+
+    def _rebalance_gold(self):
+        """Weekly rebalance. The article and fixed arms differ only by the state labeling."""
+        if self._arm == 'spy':
+            self.set_holdings([PortfolioTarget(self._gld, 0), PortfolioTarget(self._spy, 1)])
+            return
+        if self._arm == 'static':
+            self.set_holdings([PortfolioTarget(self._gld, self._static_gld),
+                               PortfolioTarget(self._spy, 1 - self._static_gld)])
+            return
+
+        history = self.history(self._spy, self._history_lookback * 5, Resolution.DAILY).unstack(0).close.resample('W').last()
+        drawdown = history.rolling(self._drawdown_lookback).apply(lambda a: (a.iloc[-1] - a.max()) / a.max()).dropna()
+        try:
+            inputs = np.concatenate([
+                drawdown[[self._spy]].iloc[1:].values,
+                drawdown[[self._spy]].diff().iloc[1:].values
+            ], axis=1)
+            model = self._gmmhmm(n_components=2, n_mix=3, covariance_type='tied',
+                                 n_iter=100, random_state=self._seed).fit(inputs)
+            current_regime_prob = model.predict_proba(inputs)[-1]
+
+            # Article labeling: drawdown mean of mixture component 1 of each
+            # state (component order is arbitrary at each fit), compared as
+            # written -- the state with the HIGHER mean, i.e. the shallower
+            # drawdown since drawdowns are <= 0, is labeled "high".
+            article_high = 1 if model.means_[0][1][0] < model.means_[1][1][0] else 0
+            # Fixed labeling: mixture-weighted mean drawdown of each state;
+            # the deep-drawdown state is the lowest one.
+            state_drawdown = (model.weights_ * model.means_[:, :, 0]).sum(axis=1)
+            deep = int(np.argmin(state_drawdown))
+            high_regime = article_high if self._arm == 'article' else deep
+
+            next_prob_zero = current_regime_prob @ model.transmat_[:, 0]
+            next_prob_high = round(next_prob_zero if high_regime == 0 else 1 - next_prob_zero, 2)
+            self.set_holdings([PortfolioTarget(self._gld, next_prob_high),
+                               PortfolioTarget(self._spy, 1 - next_prob_high)])
+            self._fits += 1
+            self._label_agree += int(article_high == deep)
+        except Exception:
+            # The article swallows every failure (bare except: pass) and keeps
+            # last week's positions; the port keeps the behavior but counts it.
+            self._failures += 1
+
+    def _sample(self):
+        """Daily sample (previous close) and a monthly record at each month change."""
+        value = self.portfolio.total_portfolio_value
+        spy_price = self.securities[self._spy].price
+        gld_price = self.securities[self._gld].price
+        month = (self.time.year, self.time.month)
+        if (self._month is not None and month != self._month
+                and self._month_value and self._month_spy and self._month_gld):
+            self.plot('Monthly', 'ret', value / self._month_value - 1)
+            self.plot('Monthly', 'spy', spy_price / self._month_spy - 1)
+            self.plot('Monthly', 'gld', gld_price / self._month_gld - 1)
+            if self._net_samples:
+                self.plot('Monthly', 'netexp', float(np.mean(self._net_samples)))
+                self.plot('Monthly', 'gldw', float(np.mean(self._gldw_samples)))
+            self._net_samples = []
+            self._gldw_samples = []
+        if month != self._month:
+            self._month = month
+            self._month_value = value
+            self._month_spy = spy_price
+            self._month_gld = gld_price
+        if value > 0:
+            invested = [h.holdings_value for h in self.portfolio.values() if h.invested]
+            self._net_samples.append(float(sum(invested)) / value)
+            self._gldw_samples.append(float(self.portfolio[self._gld].holdings_value) / value)
+
     def on_end_of_algorithm(self):
+        if self._arm != 'markov':
+            self.set_runtime_statistic('Fits', str(self._fits))
+            self.set_runtime_statistic('Fit failures', str(self._failures))
+            self.set_runtime_statistic('Label agreement', str(self._label_agree))
+            self.log(f"Gold hedge v1.3 arm={self._arm} seed={self._seed}: fits={self._fits}, "
+                     f"failures={self._failures}, article label = deep state on {self._label_agree} fits")
+            return
         final_value = self.portfolio.total_portfolio_value
         returns = (final_value - 100000) / 100000
         self.log(f"Markov Regime Detection v1.1: Final=${final_value:,.0f}, Return={returns:.2%}")
