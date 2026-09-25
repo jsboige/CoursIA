@@ -33,6 +33,7 @@ Le premier notebook couvre le spectre fondamental : construction de graphes caus
 | 3 | [IIT-03-CoarseGrainingMacroPhi](IIT-03-CoarseGrainingMacroPhi.ipynb) | Module `pyphi.macro` : information efficace (Hoel), énumération des regroupements, comparaison Φ micro/macro, causal emergence | 45-60 min |
 | 4 | [IIT-04-Le-Probleme-de-Frontiere](IIT-04-Le-Probleme-de-Frontiere.ipynb) | Le problème de frontière : faire varier le découpage du même substrat, maximiseur de Φ, complexe majeur (`major_complex`), double dissociation Φ vs EI | 45-60 min |
 | 5 | [IIT-05-Lentilles-et-Dissociations](IIT-05-Lentilles-et-Dissociations.ipynb) | Six théories de la conscience (GWT, GNW, FEP, AST, SMT, HOT) comme mesures exécutables sur un même substrat : dissociation accès vs autoréférence, orthogonalité AST/SMT, contre-claim FEP | 60-75 min |
+| 6 | [IIT-06-L-Objet-qui-a-Mordu-IIT](IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb) | L'échange Aaronson/Tononi (2014) exécuté : Vandermonde et le hack W en Φ_DM sur F_p, grille/ligne/feedforward en Φ 3.0 (PyPhi), les deux positions citées avec leurs grades | 75-90 min |
 
 ## Parcours recommandés
 
@@ -50,6 +51,9 @@ Notebook 4 (Le problème de frontière)
     |
     v
 Notebook 5 (Les lentilles de conscience)
+    |
+    v
+Notebook 6 (L'objet qui a mordu IIT)
 ```
 
 | Objectif | Parcours |
@@ -60,6 +64,7 @@ Notebook 5 (Les lentilles de conscience)
 | Focus emergence & échelle | Notebook 1 + Notebook 3 (causal emergence de Hoel) |
 | Focus frontières & dissociation | Notebook 1 + Notebook 4 (Φ vs EI selon le découpage, complexe majeur) |
 | Focus théories rivales | Notebook 1 + Notebook 5 (six lentilles, contre-claims exécutés) |
+| Focus controverse fondatrice | Notebook 1 + Notebook 6 (l'objection Aaronson exécutée, la réponse assumée mesurée) |
 
 ### Parcours d'apprentissage
 
@@ -82,6 +87,10 @@ Le quatrième notebook pose la question d'avant toute analyse de recollement : q
 **Phase 5 : Les lentilles de conscience (~75 min, notebook 5)**
 
 Le cinquième notebook quitte la mesure de $\Phi$ pour la **comparaison des théories** : six modèles de la conscience (GWT de Baars, GNW de Dehaene, FEP de Friston, AST de Graziano, SMT de Metzinger, HOT de Rosenthal) deviennent des mesures exécutables sur un même substrat jouet, chacune soumise à la discipline des cinq champs (source primaire, objet formel, claim exact, contre-claim, mesure falsifiable) — une lentille sans contre-claim ou sans mesure est incomplète et retirée. Trois bancs de dissociation : l'accès sans autoréférence (trois lentilles mesurent OUI, trois NON sur le même substrat), l'orthogonalité AST/SMT (capacité structurelle vs accès fonctionnel — traces non corrélées), et le contre-claim FEP exécuté (un substrat à précision maximale n'est « conscient » que pour les lentilles prédictives). Les 3 exercices mesurent chaque dissociation sur le substrat, jamais en prose.
+
+**Phase 6 : L'objet qui a mordu IIT (~90 min, notebook 6)**
+
+Le sixième notebook exécute l'échange Aaronson/Tononi de mai 2014 des deux côtés de la frontière entre formalisations. En jambe $\Phi_{DM}$ (l'implémentation NumPy de la définition visée par l'objection, sur corps finis $\mathbb{F}_p$) : la matrice de Vandermonde rend $\Phi$ **indéfini** (égalité normalisée maximale sur toutes les bipartitions), le « hack » W obtient son minimum unique et un $\Phi = (n/2)\log_2 p$ — la moitié du contenu informationnel total —, l'identité mesure 0, la croissance est linéaire. En jambe PyPhi ($\Phi$ d'IIT 3.0) : la grille de Tononi à portes majorité mesure positivement à l'état tout éteint (le scénario assumé existe), la tendance ligne < anneau < grille soutient l'argument du mur et de la corde à petite échelle, et la grille **XOR** porte le $\Phi$ maximal de la table pendant que le réseau « riche » hétérogène mesure zéro — la dissociation intégration/richesse comportementale, mesurée dans IIT 3.0 lui-même. Les deux positions sont citées avec leurs grades (l'essai firsthand de Tononi, archivé au gisement, y corrige même le souvenir de Porto Rico rapporté par Aaronson) ; les 4 exercices font varier corps, permutations, fermeture de boucle et bruit.
 
 ## Prérequis
 
@@ -225,6 +234,19 @@ flowchart TD
 | Exercice 3 | Contre-claim exécuté : la lentille FEP sort de son domaine (précision maximale ≠ conscience) |
 | Conclusion | Les lentilles comme instruments de dissociation, pas comme théories unifiées — limites honnêtement documentées |
 
+### IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb
+
+| Section | Contenu |
+|---------|---------|
+| Le débat | L'échange Aaronson/Tononi (mai 2014) : les deux positions citées et graduées — ce qui est mesurable sur machine, ce qui ne l'est pas |
+| Φ_DM : Vandermonde | Toutes sous-matrices de rang plein → valeur normalisée maximale sur toutes les bipartitions → Φ **indéfini** (mesuré sur instance n=8, F_1009) |
+| Φ_DM : le hack W | Lignes de Vandermonde dupliquées → minimum unique à la bipartition naturelle, Φ = (n/2)·log₂p = 50 % du contenu total ; identité : Φ = 0 ; croissance linéaire jusqu'à n=16 |
+| PyPhi : ligne/anneau/feedforward | ring3 (1,875, référence IIT-01), ring4 XOR bipartite (0 — linéarité GF(2)), feedforward à sources de bruit (0) |
+| PyPhi : la famille n=6 | Grille majorité de Tononi à l'état tout éteint : Φ > 0 (scénario assumé mesuré) ; ligne < anneau < grille ; grille XOR : Φ **maximal** de la table ; réseau hétérogène « riche » : 0 |
+| Sobriété | Φ exact aux tailles mesurées seulement (explosion combinatoire au-delà de ~8 nœuds) ; la conscience n'est mesurée par aucune jambe |
+| L'après | Relance Griffith, fertilité pour PyPhi/IIT 4.0, le test falsifiable proposé par Tononi (doubler une grille corticale) |
+| Exercices | Identité/permutation en Φ_DM, W à autre échelle, ligne vs anneau n=5 en PyPhi, grille bruitée |
+
 ## Théorie IIT
 
 La Théorie de l'Information Intégrée (IIT) propose une approche mathématique de la conscience :
@@ -331,6 +353,7 @@ IIT/
 ├── IIT-03-CoarseGrainingMacroPhi.ipynb # Notebook 3 : coarse-graining & échelle du Φ
 ├── IIT-04-Le-Probleme-de-Frontiere.ipynb # Notebook 4 : qui décide des bords — Φ vs EI selon la frontière
 ├── IIT-05-Lentilles-et-Dissociations.ipynb # Notebook 5 : six théories de la conscience comme bancs de dissociation
+├── IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb # Notebook 6 : l'échange Aaronson/Tononi exécuté (Φ_DM + PyPhi)
 ├── ICT-Series/                 # Extension expérimentale ICT (Epic #4588) — voir son README
 │   ├── ICT-0-Framing.md        # Cadrage de la série ICT
 │   ├── ICT-0-Annexe-IntegratedComplexityTheory.md  # Annexe théorique (complexité intégrée)
@@ -474,7 +497,7 @@ Voir la licence du repository principal.
 
 <!-- CATALOG-STATUS
 series: IIT
-pedagogical_count: 72
-breakdown: ICT-Series=67, root=5
-maturity: BETA=63, DRAFT=8, ALPHA=1
+pedagogical_count: 87
+breakdown: ICT-Series=82, root=5
+maturity: BETA=75, DRAFT=11, ALPHA=1
 -->

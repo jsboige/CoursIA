@@ -279,6 +279,37 @@ credentials). La méthode `_carry_forecast(front_close, deferred_close)`
 reste l'interface prévue — l'appelant futur (lane QC équipée) n'a qu'à passer
 les deux closes réelles.
 
+**Addendum 2026-09-22 (semis #17320, tranche 2) — le stub ci-dessus est
+remplacé par la formule Carver #11 exacte.** Le port de la stratégie #11
+(*Combined Carry and Trend*, article QC #16001, parent direct de notre #13)
+est engagé sur ce projet (verdict de catégorie : CONSOLIDATION — lecture
+analytique 5-axes et acceptance dans l'issue #17320). La tranche 2 livre :
+
+- `carry_forecast.py` — module **pur numpy** (patron `breadth_multiplier.py`,
+  REPAIR-8 c.1115 : pas de duplication formule test/production) implémentant
+  la formule exacte de l'article : `(near − further)` annualisé par l'écart
+  d'expiry (`round(days/30)` mois), risk-ajusté, lissé EWMA sur les spans
+  5/20/60/120 (`min_periods=span` : un span sans historique est omis),
+  scalé par le scalaire Carver **30** (p.216), capé ±20 ;
+- `tests/test_carry_forecast.py` — 15 tests CPU (exemple dollar/an de
+  l'article, contango/backwardation, gap nul → None, cap symétrique,
+  `min_periods`, décroissance géométrique d'un choc ancien, sémantique
+  `ewm(span, adjust=True)` sur constante et 2 points) ;
+- dans `main_carver13.py`, le stub c.1107 (ratio front/deferred,
+  annualisation ×4 « mild ») est **remplacé** par `_annualized_carry(near,
+  further, near_exp, further_exp)` + `_carry_forecast(history)` qui
+  délèguent au module pur — **toujours pas appelés depuis `_rebalance`**
+  (`CARVER_CARRY_WEIGHT = 0.0` inchangé) : l'activation du blend 60/40 est
+  la tranche 3, avec les closes et expirys réels de la chain API QC Cloud
+  et les backtests dev/OOS ≥ 2016-2026 de l'acceptance #17320.
+
+La phrase historique ci-dessus (« passer les deux closes réelles ») décrivait
+l'interface du stub ratio-based ; la formule Carver-true exige **aussi les
+deux expirys** (l'annualisation en dépend). Le choix FDM-Table-52-vs-breadth
+et l'harmonisation des scalaires trend (approximation sqrt du #13 vs
+Table 29) sont explicitement reportés à la tranche 3, à trancher sur
+mesure (acceptance #17320).
+
 ### Note Tell c.1069 strict — FDM requalifié en breadth multiplier (c.1109 REPAIR-3 + c.1111 REPAIR-5)
 
 Le préflight adjoint po-2025 (`msg-20260911T043805-i7tl0g` pour c.1109,
@@ -441,6 +472,84 @@ quand la cible est proche de la position actuelle.
   QC Cloud) — le caractère sign-invariant n'est plus seulement documenté, il est
   **protégé par un test**. Préflight adjoint habilité n°3 : QC demeure suspendu
   jusqu'au nouveau head.
+
+## Sonde 16652 : divergence cache vs bulk frais (invalideur manquant du cache 16076)
+
+Issue #16652 (fille de #16076). Le gain de performance du cache 16076
+(fenêtres glissantes seedées par un bulk `history()`, étendues par `on_data`,
+invalidées sur changement de contrat mappé) est livré, mais l'écart de
+neutralité documenté avec re-baseline n'a pas d'invalideur identifié. La
+sonde `probe_cache_vs_bulk_16652.py` compare, chaque jour de rebalance et
+pour chaque ticker servi depuis le cache (c.-à-d. NON re-fetché par
+l'invalideur production), la fenêtre cachée à un bulk frais.
+
+**Méthode** : sous-classe `CarverThirteenCacheProbe(CarverThirteen)` — le
+bras production n'est pas modifié, la sonde n'observe (hook
+`_stale_tickers` : après décision production, comparaison du cache contre
+bulk frais, exclusivement sur les tickers servis du cache). La forme de la
+divergence discrimine les hypothèses : `full-window` (re-scale BACKWARDS_RATIO
+sans changement `Mapped` détecté), `head` (décalage de bord de fenêtre),
+`tail` (barres on_data ≠ barres bulk récentes — normalisation live ou
+désalignement de calendrier), `middle` (révision de données), `length-only`
+(dérive de cadence par symbole).
+
+**Exécution** : projet QC dédié `FuturesTrend-Carver13-Probe16652` (36719632),
+créé pour ne pas toucher au projet de mesure 36488678 — règle du projet :
+seul `main.py` d'un projet est exécuté, un bras séparé exige un projet
+séparé. Le `main.py` du projet sonde porte la classe probe ;
+`main_carver13.py` y est le portage **au contenu du bras cloud mesuré**
+(univers 18 instruments post-#16064, instrumentation `_t_hist`/`_t_fc`,
+`raise RuntimeError` final) — à noter que `main_carver13.py` du repo est
+stale par rapport à ce bras (univers 19/SB, horloges `_hist_s`) : la sonde
+a volontairement sondé le bras qui a couru.
+
+### Faits mesurés (runs 2026-09-19, projet 36719632)
+
+- Run 1 `0f906bb8` (sonde v1, self.log) : 1433 orders, Sharpe −0.231,
+  −96.638 %, MaxDD 98.2 %, wall 869.8 s ; compteurs production
+  `history_calls=888 cache_served=1876` (888+1876 = 2764 rebalances
+  completes). Parité vs bras mesure `dc766352` (2026-09-13 : 1447 orders,
+  −96.16 %, MaxDD 98.0 %) : −14 orders sur 6 jours d'ecart de data, coherent
+  du piege day-advance (cf [[qc-backtest-dataset-day-advance-confound]]) ;
+  le chemin sonde n'ecrit ni dans `_roll_cache` ni dans les orders.
+- **Decouverte instrumentale (run 1)** : le stockage logs QC (free tier)
+  plafonne a **100 kb/backtest**, consomme des le 2016-02-18 par ~550 lignes
+  engine-level « Order Error : Insufficient buying power » (non
+  supprimables depuis l'algo). Toutes les lignes `PROBE16652` (2016-2026)
+  ont ete dropees serveur-side — l'onglet Logs du rapport ne retient que la
+  premiere journee. La voie honnete = le canal payload du bras production
+  lui-meme : le `raise RuntimeError(payload)` final est retourne **verbatim
+  par l'API** (le mecanisme REPAIR-9). Sonde v2 : compteurs + histogramme
+  de patterns + 8 premiers exemples DIV prependes au payload.
+- Run 2 `24b322ef` (sonde v2, payload carrier) : metriques **bit-identiques**
+  au run 1 (1433 orders, Sharpe −0.231, −96.638 %, MaxDD 98.2 %) — preuve
+  de determinisme read-only de la sonde entre v1/v2. Payload :
+  `compared_days=2763 divergent_days=448 (16.2 %) divergent_ticks=913
+  patterns={head: 581, length-only: 320, tail: 12}` — **zero** `full-window`,
+  **zero** `middle`. Premieres divergences : 2016-01-11, tickers 6E/6B/6J
+  (pattern `tail`, n_bad 1→3 bars sur 584-586, max_rel jusqu'a 4.65e-02,
+  mapping stable `map=X/X`, days_since_fetch 1-6).
+
+### Verdict
+
+**L'hypothese de l'invalideur manquant est REFUTEE sur les donnees du jour.**
+Aucune divergence `full-window` (re-scale BACKWARDS_RATIO sans flip `Mapped`)
+ni `middle` (revision de donnees) n'est observee : il n'y a **pas d'evenement
+d'invalidation manque a attraper**. 98.7 % des 913 divergences ticker-jour
+sont `head` (581, decalage du bord ancien de fenetre) et `length-only` (320,
+derive de longueur par symbole) — l'ecart de **conventions de calendrier**
+entre le chemin `on_data` (deque alimentee au fil des barres, barre en
+formation incluse selon le flux) et le chemin `history()` (calendrier bulk) ;
+les 12 `tail` restantes sont des ecarts de valeur de derniere barre
+(6E/6B/6J debut 2016, mapping stable) — la classe B de la sonde #16076.
+Le compte de 448 jours divergents reproduit **exactement** la sonde #16076
+(run `b1c14d1c`, 2026-09-15) sur un autre jour de data : corroboration
+croisee. Conclusion identique au hardening #16076 refute : le residuel n'est
+pas rattrapable par un meilleur invalideur ; le corriger exigerait de
+**repliquer les conventions de calendrier du bulk** dans la construction du
+cache (inclusion de barre en formation), mecanisme distinct — a inscrire en
+follow-up seulement si la neutralite exacte cache-vs-bulk devient un critere
+(impact mesure ~1 % d'orders, cf l'ecart 1447/1461 documente en 16076).
 
 ## Références
 

@@ -115,13 +115,13 @@ jobs:
           fi
 
           ensure_label() {
-            gh label create "$1" --description "$2" --color "$3" --force 2>/dev/null || true
+            gh label create "$1" --description "$2" --color "$3" --force || true
           }
           set_label() { gh pr edit "$PR_NUMBER" --add-label "$1" || true; }
           unset_label() { gh pr edit "$PR_NUMBER" --remove-label "$1" 2>/dev/null || true; }
 
           ensure_label "$LABEL_DEACCENT" \
-            "Un notebook modifie introduit une desaccentuation auto-flaggee (#14325, registre TRANCHE6)" "C4A64C"
+            "Un notebook modifie introduit une desaccentuation signalee — auto ou lexique (#14325/#17623, registre TRANCHE6)" "C4A64C"
           ensure_label "$LABEL_DEACCENT_BLOCKED" \
             "Un notebook modifie est a prose non francaise et n'est pas analyse (#14325)" "BFD4F2"
 
@@ -134,9 +134,10 @@ jobs:
             [ -z "$nb" ] && continue
             [ -f "$nb" ] || continue
             # Le detecteur rend rc=2 sur `--fail-on-findings` quand une forme
-            # auto est introduite ; on capture la sortie dans tous les cas pour
-            # distinguer les 4 cas (clean / blocked-language / candidates /
-            # error).
+            # auto OU lexique (#17623 : repli dictionnaire ACCENT_PAIRS, sans
+            # jumeau interne) est introduite ; on capture la sortie dans tous
+            # les cas pour distinguer les 4 cas (clean / blocked-language /
+            # candidates / error).
             out=$(python scripts/notebook_tools/detect_markdown_deaccent.py \
                     --json --fail-on-findings "$nb" 2>&1) && rc=0 || rc=$?
             if [ "$rc" -eq 0 ]; then
@@ -149,7 +150,7 @@ jobs:
               echo "$out" >> "$GITHUB_STEP_SUMMARY"
               echo '```' >> "$GITHUB_STEP_SUMMARY"
               echo "</details>" >> "$GITHUB_STEP_SUMMARY"
-              echo "::notice title=Markdown deaccent advisory::$nb introduit des candidats auto ; voir resume."
+              echo "::notice title=Markdown deaccent advisory::$nb introduit des candidats (auto/lexique) ; voir resume."
             elif [ "$rc" -eq 1 ]; then
               # rc=1 = vacuous scan / fichier non trouve. Traite comme
               # "non applicable" sans bloquer.
@@ -169,7 +170,7 @@ jobs:
           if [ "$ANY_AUTO" -gt 0 ]; then
             set_label "$LABEL_DEACCENT"
             echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "FIX: un ou plusieurs notebooks introduisent des candidats auto de desaccentuation (cf #14325, registre TRANCHE6). Voir le detail par notebook ci-dessus. La relecture peut justifier la forme nue (code, citation verbatim, libelle de figure) ou demander une cure locale." >> "$GITHUB_STEP_SUMMARY"
+            echo "FIX: un ou plusieurs notebooks introduisent des candidats (auto/lexique) de desaccentuation (cf #14325/#17623, registre TRANCHE6). Voir le detail par notebook ci-dessus. La relecture peut justifier la forme nue (code, citation verbatim, libelle de figure) ou demander une cure locale." >> "$GITHUB_STEP_SUMMARY"
           else
             unset_label "$LABEL_DEACCENT"
             echo "RESULT: aucune desaccentuation auto introduite par cette PR (advisory)." >> "$GITHUB_STEP_SUMMARY"

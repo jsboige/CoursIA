@@ -11,6 +11,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from scan_enrich_quality import (  # noqa: E402
     scan_anchors,
@@ -148,6 +150,33 @@ class TestHrefs:
         cells = [_md("Voir [l'annexe](../Other/target.ipynb) pour la suite.")]
         f = scan_href(nb, cells, tmp_path)
         assert _cats(f) == {"HREF_MISSING"} and f[0]["severity"] == "HIGH"
+
+    # #17187 : une formule modale dans un code-span n'est pas un lien markdown
+    # -- mesure sur #17122 (8 FP HREF_MISSING, verdict Hermes po-2026).
+    def test_modal_formula_in_codespan_is_silent(self, tmp_path):
+        (tmp_path / "Series").mkdir()
+        nb = tmp_path / "Series" / "nb.ipynb"
+        table = ("| Formule | Lecture |\n"
+                 "|---|---|\n"
+                 "| `[]((p => q)) => []((q))` | ce qui est necessaire est suffisant |\n"
+                 "| `<>(p` | possible en p |\n"
+                 "| `[](p => q) => <>((p` | combine |")
+        f = scan_href(nb, [_md(table)], tmp_path)
+        assert f == []
+
+    def test_link_inside_fence_is_silent(self, tmp_path):
+        (tmp_path / "Series").mkdir()
+        nb = tmp_path / "Series" / "nb.ipynb"
+        fenced = "Exemple :\n```lean\n-- voir [annexe](../Other/target.ipynb)\n```"
+        f = scan_href(nb, [_md(fenced)], tmp_path)
+        assert f == []
+
+    def test_real_link_beside_codespan_still_fires(self, tmp_path):
+        (tmp_path / "Series").mkdir()
+        nb = tmp_path / "Series" / "nb.ipynb"
+        cells = [_md("Formule `[]((p => q))` et lien casse [annexe](../Other/target.ipynb).")]
+        f = scan_href(nb, cells, tmp_path)
+        assert _cats(f) == {"HREF_MISSING"} and f[0]["evidence"] == "../Other/target.ipynb"
 
     def test_existing_relative_href_is_silent(self, tmp_path):
         (tmp_path / "Series").mkdir()
@@ -340,3 +369,46 @@ class TestCiGate:
                         [_md("# Titre"), _code("1+1"), _md("interp de code[9]")])
         assert enrich_quality_ci.main(["--base", "NONE", "--head", str(head),
                                        "--repo-root", str(tmp_path)]) == 1
+
+    def test_resolve_base_accepts_none_literal(self, tmp_path):
+        """Issue #17424: --base NONE means brand-new notebook, no baseline."""
+        from enrich_quality_ci import resolve_base, BaseNotResolvedError
+        assert resolve_base(None, "/some/head.ipynb", tmp_path) is None
+        assert resolve_base("", "/some/head.ipynb", tmp_path) == ""
+        assert resolve_base("NONE", "/some/head.ipynb", tmp_path) == "NONE"
+
+    def test_resolve_base_accepts_existing_path(self, tmp_path):
+        """Issue #17424: an extracted file path passes through unchanged."""
+        from enrich_quality_ci import resolve_base
+        real = tmp_path / "base.ipynb"
+        real.write_text("{}")
+        assert resolve_base(str(real), "/some/head.ipynb", tmp_path) == str(real)
+
+    def test_resolve_base_rejects_git_rev(self, tmp_path):
+        """Issue #17424: --base HEAD / --base HEAD~1 / etc. must fail loudly.
+
+        Previously these silently rendered an empty base, fabricating
+        new-REGRESSION verdicts for findings that pre-existed in base.
+        """
+        from enrich_quality_ci import resolve_base, BaseNotResolvedError
+        head = _nb_file(tmp_path / "head.ipynb",
+                        [_md("# Titre"), _code("1+1"), _md("interp de code[9]")])
+        with pytest.raises(BaseNotResolvedError) as excinfo:
+            resolve_base("HEAD", str(head), tmp_path)
+        assert "HEAD" in str(excinfo.value)
+        assert "17424" in str(excinfo.value)
+        with pytest.raises(BaseNotResolvedError):
+            resolve_base("HEAD~1", str(head), tmp_path)
+        with pytest.raises(BaseNotResolvedError):
+            resolve_base("origin/main", str(head), tmp_path)
+
+    def test_main_fails_loudly_on_unresolved_base(self, tmp_path, capsys):
+        """Issue #17424: rc=2 distinct from REGRESSION=1 so CI can branch."""
+        head = _nb_file(tmp_path / "head.ipynb",
+                        [_md("# Titre"), _code("1+1"), _md("interp de code[9]")])
+        rc = enrich_quality_ci.main(["--base", "HEAD", "--head", str(head),
+                                     "--repo-root", str(tmp_path)])
+        assert rc == 2
+        err = capsys.readouterr().err
+        assert "HEAD" in err
+        assert "17424" in err

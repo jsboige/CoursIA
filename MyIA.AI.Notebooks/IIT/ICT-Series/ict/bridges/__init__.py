@@ -5,7 +5,7 @@ Greffe 5 tranche 2/3 (issue #13903, Epic #4588) -- **cross-engine verification**
 Organes natifs reellement presents dans le depot (inventaire first-hand c.293) :
 
 - ``Quasi-Experimental.make_panel_did`` et ``Quasi-Experimental.iv_replay``
-  dans ``Probas/DecisionTheory/Causal-Bridges/Quasi-Experimental.ipynb``
+  dans ``Probas/DecisionTheory/Causal-Bridges/CausalBridges-07-Quasi-Experimental.ipynb``
 - ``PyMC-05.enumerate_scm`` et ``PyMC-05.p_y_given_m_x``
   dans ``Probas/PyMC/PyMC-05-Causal-Inference.ipynb``
 
@@ -27,7 +27,7 @@ natifs, faute de cible importable. L'etat reel, adaptateur par adaptateur :
 
 - :mod:`~ict.bridges.quasi_experimental` -- **cablage canonique**. Importe
   ``make_panel_did``, ``panel_did_two_by_two`` et ``iv_replay`` depuis
-  ``causal_organs``, le module qui vit a cote de ``Quasi-Experimental.ipynb``
+  ``causal_organs``, le module qui vit a cote de ``CausalBridges-07-Quasi-Experimental.ipynb``
   et que le notebook lui-meme consomme (PR #14076, #14092). Verrouille par
   ``ict/tests/test_bridges_canonical_wiring.py`` : identite d'objet,
   ``__module__``, absence de redefinition dans la source.
