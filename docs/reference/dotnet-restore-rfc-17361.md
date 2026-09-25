@@ -62,6 +62,27 @@ de commande.
 
 La mesure discriminante c.760 (probe E) **réfute** l'hypothèse initiale « `file.dll` réinitialise le `PackageRestoreContext` » : un `#r "nuget:"` après un `#r "file.dll"` a levé `ArgumentException` à chacune des 3 exécutions de c.760. **Mais** la re-production a échoué sur les 2 re-tentatives du 2026-09-23 (c.803 cache chaud, c.807 cache froid) : le bug est **non déterministe**. La recommandation reste néanmoins **univoque et défensive** : **préchargement complet seul** (tous les packages NuGet en `.dll` locaux, via `./_deps/` relatif et le helper `scripts/ci/dotnet_preload_packages.py`), pas de mix `file.dll` + `nuget` dans la même session kernel — quand l'exception se produit, elle tue la cellule sans contournement runtime.
 
+## Pilot du livrable 3 : le remplacement n'est PAS équivalent (mesuré 2026-09-25)
+
+Le livrable 3 (« convertir `#r "nuget:"` en `#r` local ») suppose que les deux formes sont interchangeables. **Elles ne le sont pas.** Mesure sur `MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb` — le notebook du dépôt le plus exposé au bug (3 restores NuGet dans une seule cellule, cellule 3 : `IKVM`, `IKVM.Image`, `IKVM.Image.runtime.win-x64`), exécuté sur po-2024 avec le kernel `.net-csharp` et le pin cluster `1.0.617701` :
+
+| Bras | Cellule 3 (les `#r`) | Résultat | Diagnostic |
+|---|---|---|---|
+| **0 — original** | 3 × `#r "nuget:"` | **19/19 OK**, 0 erreur, 14,1 s | — |
+| **A — converti** | 3 × `#r "./_deps/…"` (helper) | **16/19**, 3 erreurs (cellules 32, 34, 37) | `IKVM.Runtime.InternalException: Could not locate ikvm home path` |
+| **C — mixte** | `IKVM` local + les 2 packages image en `nuget:` | **15/19**, 4 erreurs (cellule 3 *et* 32-37) | `IKVM.Image.targets(45,9): error MSB4036: Tâche "IkvmResolveNearestRuntimeIdentifier" introuvable` |
+
+Le bras C est celui qui explique les deux autres : les trois `#r` ne sont pas de simples **références**, ce sont eux qui font restaurer à `Microsoft.DotNet.Interactive.PackageManagement` l'**arbre IKVM complet** (`IKVM.MSBuild` fournit la tâche MSBuild que `IKVM.Image.targets` invoque ; l'image `any/any` + `win-x64` fournit le home que `IKVM.Runtime` cherche au premier type `java.*`). Retirer ou scinder les `#r` casse ce graphe : le bras C échoue **dès la cellule 3** sur la tâche MSBuild manquante, le bras A va plus loin mais échoue au premier appel Java faute de home.
+
+Deux conséquences pour le livrable 3, dans cet ordre :
+
+1. **Il est réfuté pour la famille IKVM** — et cette famille est justement celle qui porte le plus de restores par cellule (Choco, Tweety, RDF.Net).
+2. **`IKVM.Image` et `IKVM.Image.runtime.win-x64` ne sont pas exprimables en `#r` local du tout** : leurs dossiers `lib/<tfm>/` ne contiennent qu'un `_._`, la convention NuGet « ce TFM est compatible, mais ce package n'apporte aucune assembly ». Le helper le dit correctement (`aucune assembly dans …/lib`), ce qui n'est pas un défaut de l'outil mais la limite du remplacement.
+
+S'y ajoute un coût de distribution, indépendant du bug : `_deps/` est **gitignore**, donc un notebook committé en `#r "./_deps/X.dll"` casse pour quiconque clone — un échec **déterministe** (« fichier introuvable ») en échange d'un bug **non déterministe**.
+
+**Décision qui en découle** : le helper reste un **outil de réparation à la demande** — à invoquer quand l'exception se produit, sur le notebook concerné — et **non** une convention à généraliser aux notebooks pédagogiques. Le bras 0 montre au passage une 4ᵉ non-reproduction du bug : 3 restores dans une cellule, tous réussis (corrobore c.803 et c.807, après les 3 repros de c.760).
+
 ## Cause racine (out-of-scope)
 
 Bug interne dans `Microsoft.DotNet.Interactive.PackageManagement.PackageRestoreResult..ctor` : lève `ArgumentException` si `succeeded=false` est passé avec `errors=null` ou vide. C'est un état que le code ne devrait jamais produire — probablement une race condition dans `RestoreAsync()`. Hypothèse **renforcée** par c.807 : la même séquence de commandes échouait le 2026-09-22 et réussit le 2026-09-23 (y compris à cache froid) — le facteur variable est le **chemin/timing interne du restore**, pas la séquence des `#r` ; une race sur un restore concurrent (latence réseau, résolution, écriture cache) reste l'explication la plus cohérente.
@@ -80,6 +101,6 @@ Bug interne dans `Microsoft.DotNet.Interactive.PackageManagement.PackageRestoreR
 ## Livrables possibles (par ordre de coût)
 
 1. **MAINTENU** : ce RFC documente le bug et la workaround pour les pairs.
-2. **LIVRÉ (outillage)** : `scripts/ci/dotnet_preload_packages.py` + `scripts/tests/test_dotnet_preload_packages.py` (41 cas) + entrée `.gitignore` de `_deps/`. La **convention** `.net-csharp` qui l'accompagne reste à écrire — elle dépend du livrable 3 (l'audit décide quels notebooks passent en `#r` local).
-3. **MOYEN TERME** : audit complet de tous les notebooks `.net-csharp` pour convertir les `#r "nuget:"` en `#r "file.dll"`.
+2. **LIVRÉ (outillage)** : `scripts/ci/dotnet_preload_packages.py` + `scripts/tests/test_dotnet_preload_packages.py` (41 cas) + entrée `.gitignore` de `_deps/`. Usage retenu (cf pilot) : **réparation à la demande** sur un notebook qui a effectivement levé l'exception, **pas** une convention à généraliser.
+3. **MOYEN TERME — RÉFUTÉ par la mesure** (pilot du 2026-09-25, section dédiée) : convertir tous les `.net-csharp` en `#r` local n'est pas un remplacement équivalent (les `#r "nuget:"` portent le graphe de restauration dont dépendent `IKVM.MSBuild` et le home JVM), et `_deps/` étant gitignore, la conversion rendrait le notebook déterministiquement cassé pour tout clone. **Ne pas lancer cet audit comme conversion de masse.** Le geste utile restant : convertir au cas par cas, **quand** l'exception s'est effectivement produite sur ce notebook.
 4. **LONG TERME** : fix upstream + bump version cluster.
