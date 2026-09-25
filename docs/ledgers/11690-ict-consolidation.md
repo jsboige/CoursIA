@@ -22,7 +22,7 @@ Une ligne par notebook, cinq colonnes : **Intention** (ce que le cadrage `ICT-0-
 | 2 | Le moule 26→30 | cinq notebooks (26-30), 8 code chacun, 18-25 cellules | **LU** (strand 2, 2026-09-19) |
 | 3 | 18 / 18b / 19 / 19b | asymétrie qui s'inverse entre paires | **LU** (strand 3, 2026-09-19) |
 | 4 | ICT-25 | tri des négatifs, désordre de sections établi | **LU** (tranche 1, 2026-08-24) |
-| 5 | GWT / SAE + non numérotés | alimente #7260 (renumérotation) | **LU 2/3 tranches** (1 SAE + 3 non-numérotés, 2026-09-19 ; tranche 2 GWT en revue #16821) |
+| 5 | GWT / SAE + non numérotés | alimente #7260 (renumérotation) | **LU 3/3 tranches** (lectures du 2026-09-19 ; posées au ledger par #16814, #16821, #16827 — rang complet, 100 % des strands) |
 
 Les accrétions `-b/-c/-d` se tranchent dans le strand où elles tombent.
 
