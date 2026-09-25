@@ -305,7 +305,7 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 
 > **Note** : l'arc **théorie de la décision** PyMC (12 notebooks) vit dans [`DecisionTheory/DecPyMC/`](DecisionTheory/DecPyMC/README.md) (renommés `DecPyMC-1..12`), voir tableau dédié ci-dessous.
 
-## Série Infer.NET (corpus bayésien 1-20 + accretions 1b/2b · 8 notebooks d'arc décision C# + 2 Lean 4)
+## Série Infer.NET (corpus bayésien + accretions 1b/2b · arc décision C# et companions Lean 4)
 
 La série C#/.NET se scinde en deux arcs : le **corpus bayésien** (socle numéroté 1-19 plus les accretions 1b et 2b dans [`Infer/`](Infer/README.md), et l'application autonome *Quotients et fibres* dans [`Applications/`](Applications/)) et l'**arc théorie de la décision** ([`DecisionTheory/DecInfer/`](DecisionTheory/DecInfer/README.md)) qui mixe deux kernels — des notebooks **C#** (utilité espérée, EVPI, MDPs, bandits, Thompson Sampling DecInfer-10) et des notebooks **Lean 4** (DecInfer-02 utilité espérée vNM et DecInfer-09 indice de Gittins, formalisation des lemmes). L'ensemble `DecisionTheory/` réunit les DecInfer (arc C# et companions Lean), leurs miroirs Python [`DecisionTheory/DecPyMC/`](DecisionTheory/DecPyMC/README.md), et les notebooks du pont causal [`DecisionTheory/Causal-Bridges/`](DecisionTheory/Causal-Bridges/README.md) — plus le lake compagnon Lean [`decision_theory_lean`](decision_theory_lean/) et le harnais VoI cross-engine [`DecisionTheory/voi/`](DecisionTheory/voi/README.md) (tous deux hors compte notebooks). La documentation détaillée de chaque notebook, les patterns Infer.NET avancés et les exercices corrigés vivent dans ces README.
 
@@ -418,6 +418,7 @@ Ce que le pont ajoute par rapport aux quatre notebooks pris isolément :
 | Notebook | Kernel | Contenu | Durée |
 | -------- | ------- | ------- | ----- |
 | [Pyro_RSA_Hyperbole](Applications/Pyro_RSA_Hyperbole.ipynb) | Python 3 | Rational Speech Acts, hyperboles | 30 min |
+| [Infer-20-Quotients-et-Fibres-Python](Applications/Infer-20-Quotients-et-Fibres-Python.ipynb) | Python 3 | Quotients, fibres et recollement : ce qui survit à la projection | 30 min |
 
 ### Pyro_RSA_Hyperbole.ipynb
 
@@ -428,6 +429,15 @@ Application avancée à la linguistique pragmatique :
 - Question Under Discussion (QUD)
 
 *L'entrée du corpus bayésien C#, `Infer-1b` (accrétion du premier modèle), vit dans [`Infer/`](Infer/README.md) et y est documentée.*
+
+### Infer-20-Quotients-et-Fibres-Python.ipynb
+
+Protocole de **représentation** — et non d'inférence : deux observations d'un même phénomène latent, comparées autrement que par « laquelle est la plus proche de la vérité ». Quatre temps (deux représentations, mesures d'information commune sur l'intersection, quotient `Q`, fibres), le temps 4 n'étant atteint que si le temps 3 a produit un quotient opérationnel :
+
+- Information conditionnelle mesurée pour de vrai : KL discrète (`scipy.special.rel_entr`) et entropies de Shannon, graine fixée, **sans Infer.NET** (le sujet sort de la famille inférentielle stricte) ;
+- Garde-fou Ruzsa et critère d'acceptation hérité de de Finetti : un quotient décoratif ne passe pas ;
+- 2 exercices vérifiables — vos deux représentations et leur information commune ; raffiner le quotient et démasquer un quotient déguisé ;
+- Ex-20 du corpus [`Infer/`](Infer/README.md), désormais **application autonome** : kernel Python propre, dossier d'accueil `Applications/`.
 
 ### Percolation (sous-dossier [`Applications/Percolation/`](Applications/Percolation/README.md))
 
