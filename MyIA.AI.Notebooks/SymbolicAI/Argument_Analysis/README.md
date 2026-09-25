@@ -86,10 +86,10 @@ L'analyse argumentative outillée s'inscrit dans plusieurs cas concrets où la d
 | 08c | [Argumentation-08c-UI-Configuration-Python](Argumentation-08c-UI-Configuration-Python.ipynb) | Interface utilisateur widgets | Interaction |
 | 08d | [Argumentation-08d-Restitution-3-Actes-Python](Argumentation-08d-Restitution-3-Actes-Python.ipynb) | Restitution honnête en 3 actes : scaffold déterministe pur stdlib (evidence réel-en-état, bande de verdict *gated*, gate de lisibilité §4, renderer *fail-loud*) + narration LLM **réelle** (SDK OpenAI, clé via `GenAI/.env`) *gated* — prompts conduits, callable injectable, fail-loud sans clé | Restitution / honnêteté |
 | 08e | [Argumentation-08e-Argument-Profile-Python](Argumentation-08e-Argument-Profile-Python.ipynb) | Vue agrégée par argument (`ArgumentProfile`) : réunit les 5 dimensions (sophismes, qualité, contre-arguments, JTMS, formel) en une fiche exploitable, et trie un débat par force (arguments faibles / fallacieux). Démontre l'**indépendance des dimensions** (valide formellement ≠ non fallacieux). Auto-contenu, déterministe, sans LLM | Vue agrégée / multidimensionnelle |
-| 0* | [Agentic-0-init_agent](Argument_Analysis_Agentic-0-init_agent.ipynb) | *(legacy)* Configuration LLM/OpenAI (semantic_kernel) | Setup |
-| 1* | [Agentic-1-informal_agent](Argument_Analysis_Agentic-1-informal_agent.ipynb) | *(legacy)* Agent analyse informelle | Détection d'arguments |
-| 2* | [Agentic-2-pl_agent](Argument_Analysis_Agentic-2-pl_agent.ipynb) | *(legacy)* Agent logique propositionnelle | Formalisation |
-| 3* | [Agentic-3-orchestration_agent](Argument_Analysis_Agentic-3-orchestration_agent.ipynb) | *(legacy)* Orchestration multi-agents (semantic_kernel) | Coordination |
+| 0* | [Agentic-0-init_agent](_archive/Argument_Analysis_Agentic-0-init_agent.ipynb) | *(legacy, archivé)* Configuration LLM/OpenAI (semantic_kernel) | Setup |
+| 1* | [Agentic-1-informal_agent](_archive/Argument_Analysis_Agentic-1-informal_agent.ipynb) | *(legacy, archivé)* Agent analyse informelle | Détection d'arguments |
+| 2* | [Agentic-2-pl_agent](_archive/Argument_Analysis_Agentic-2-pl_agent.ipynb) | *(legacy, archivé)* Agent logique propositionnelle | Formalisation |
+| 3* | [Agentic-3-orchestration_agent](_archive/Argument_Analysis_Agentic-3-orchestration_agent.ipynb) | *(legacy, archivé)* Orchestration multi-agents (semantic_kernel) | Coordination |
 | Obs-01 | [Obs-01-Graphes-Dates](Argumentation-Obs-01-Graphes-Dates-Python.ipynb) | Instrument $G_t^{arg} \to G_{t+1}^{arg}$ (Epic #13303, issue #13310) : corpus daté → graphe AIF conforme (critère d'inclusion C1–C3 écrit, exclusions publiées) → projection Dung ; deux mesures d'écart de familles différentes (Jaccard structurelle nœuds/attaques + Jaccard sémantique sur extensions grounded), **contrôle négatif** (plancher de bruit par split de la même période) publié à côté de tout écart, **contrôle positif** à magnitude attendue écrite avant mesure (attaque de racine : sortie directe + réhabilitation paradoxale de la victime + cascade) — pur Python + rdflib, validation synthétique uniquement ; **hypothèse monotone** posée, vérifiée par inclusion et violée délibérément (retrait d'un déchu vs d'un accepté : ce que voient les deux mesures) | Argumentation temporelle / mesure |
 | Obs-02 | [Obs-02-Initiation](Argumentation-Obs-02-Initiation-Python.ipynb) | Cas 1 de l'Observatoire (Epic #13303, livré #16431) : Bumble « Opening Moves » (mars–avril 2024), DiD imparfait sur avis datés — instrument Obs-01 **rebranché, pas réécrit** (module `_dated_graphs_mod.py`), corpus Arctic Shift 4 bras × 2 fenêtres stratifiés mensuellement, extraction LLM Ollama (qwen2.5:7b-instruct-q4_K_M, température 0, échantillon complet), agrégats public-safe, plancher de bruit split-half chronologique — verdict sur quatre observations conjointes, plafond de preuve déclaré | Étude de cas / mesure empirique |
 | Obs-03 | [Obs-03-Recollement-Lectures](Argumentation-Obs-03-Recollement-Lectures-Python.ipynb) | Lectures croisées de la série (récollement) | Consolidation |
@@ -608,6 +608,18 @@ Voir la licence du repository principal.
 ## Renumérotation — verdict (EPIC #5081, issue #14950)
 
 Cette section consigne la proposition d'analyse reçue du workspace partenaire `myia-ai-01:2025-Epita-Intelligence-Symbolique` au titre de la mission de distillation (issue [#14950](https://github.com/jsboige/CoursIA/issues/14950)). La proposition est **owner-decision** : aucun `git mv`, aucune PR de renommage exécutée à ce stade. La consignation ci-dessous sert de **mémo pour arbitrage ultérieur**, conformément à la doctrine `.claude/rules/notebook-accretion-numbering.md` §3 (« le verdict par défaut est aucune renum »).
+
+> **État mesuré au 2026-09-25 — ce qui a changé depuis la rédaction de cette section.**
+> La section ci-dessous est conservée intacte : elle est datée de sa rédaction, pas de sa lecture. Deux de ses lignes de verdict sont aujourd'hui **caduques par les faits**, sans qu'aucune renumérotation `*` → `b` n'ait été exécutée :
+>
+> | Ce que la section dit | Ce qui est mesuré au 2026-09-25 |
+> |---|---|
+> | `Argument_Analysis_Agentic-<N>` : aucune renumérotation | l'arc principal a été renommé `Argumentation-NN` sous l'issue [#17547](https://github.com/jsboige/CoursIA/issues/17547) (décision coordinateur 2026-09-24, PRs 1/3 et 2/3 livrées) |
+> | 4 compagnons `*_agent` : normaliser `*` → `b` | **caduc** — les 4 carnets sont **archivés** dans [`_archive/`](_archive/README.md) (PR 3/3 de #17547), avec l'inventaire capacité par capacité de ce qu'ils portaient. Aucun renommage à appliquer : ils sortent de l'arc actif |
+> | notebooks à mnémonique : aucune renum | inchangé |
+> | « Collision slot 2 — décision owner requise » (plus bas) | **résolue par l'archivage** : `Argument_Analysis_Agentic-2-pl_agent` quitte la racine de la série ; le slot 2 n'est plus porté que par `Argumentation-05-Formal-Verification-Python.ipynb` |
+>
+> La proposition `*` → `b` n'est **pas** rejetée sur le fond : elle est devenue sans objet pour ces quatre carnets. Le paragraphe « Indépendant de la renumérotation » (headings) et la mesure repo-wide hors Argument_Analysis restent valides tels quels.
 
 ### Verdict par branche
 

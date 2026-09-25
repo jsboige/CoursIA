@@ -1602,12 +1602,12 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-0-init_agent.ipynb",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/_archive/Argument_Analysis_Agentic-0-init_agent.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-3-orchestration_agent.ipynb",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/_archive/Argument_Analysis_Agentic-3-orchestration_agent.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis"
     },
     {

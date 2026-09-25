@@ -1,5 +1,5 @@
 notebook,cell_id,cell_type,src_lang,src_hash,text_fr,text_en,text_es,text_ar,text_fa,text_zh,text_ru,text_pt,hash_fr,hash_en,hash_es,hash_ar,hash_fa,hash_zh,hash_ru,hash_pt,translate_policy
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb,0bf685b2,markdown,fr,8a063116f4d1011f,"# Argument_Analysis_Agentic-0-init : configuration de l'environnement (JVM Tweety reelle, fail-loud)
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb,0bf685b2,markdown,fr,1c22fe00043a0d3c,"# Configuration de l'environnement (JVM Tweety réelle, fail-loud)
 
 **Navigation** : [README](./README.md) | [1-informal >>](./Argumentation-02-Fallacies-Detection-Python.ipynb)
 
@@ -15,8 +15,8 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-00-Setup-Tweety-Pyt
 
 Ce notebook d'initialisation verifie que l'environnement d'exécution formel est operationnel : Python, la passerelle JPype vers la JVM, le JDK 17 portable et les jars de TweetyProject. Il se termine par un **smoke test** qui interroge le vrai solveur propositionnel Tweety (un modus ponens meteorologique). C'est la porte d'entree de la serie : une fois ce rung valide, les rungs 1 a 4 s'appuient sur un socle formel reel.
 
-> **Note anti-theatre** : cette serie **refuse le mode degrade**. Si la JVM ou Tweety est absent, le notebook echoue bruyamment (le smoke test de la section 5 ne peut pas charger les classes Tweety via JPype) plutot que de simuler un raisonnement formel. Un solveur formel simule par un LLM n'est PAS un solveur formel (mandat EPITA #2137). Cette cellule d'init est donc le verrou qui garantit que les rungs suivants tournent sur du vrai.",,,,,,,,8a063116f4d1011f,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb,6857c071,markdown,fr,c71a905175353942,"## 1. Pourquoi un rung d'initialisation
+> **Note anti-theatre** : cette serie **refuse le mode degrade**. Si la JVM ou Tweety est absent, le notebook echoue bruyamment (le smoke test de la section 5 ne peut pas charger les classes Tweety via JPype) plutot que de simuler un raisonnement formel. Un solveur formel simule par un LLM n'est PAS un solveur formel (mandat EPITA #2137). Cette cellule d'init est donc le verrou qui garantit que les rungs suivants tournent sur du vrai.",,,,,,,,1c22fe00043a0d3c,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb,6857c071,markdown,fr,3293083d07558adc,"## 1. Pourquoi un rung d'initialisation
 
 Les notebooks précédents (1-informal, 3-orchestration, 4-capstone) restent deliberement **déterministes et pur Python** : ils n'ont pas besoin de la JVM pour s'executer. Le rung **2-formal**, lui, invoque le vrai solveur Tweety (logiques propositionnelle, du premier ordre, modale, argumentation de Dung) via un pont Python-Java (JPype). Ce rung 0-init est le **detecteur de fumee** de ce socle Java : il verifie chaque composant et produit un temoin d'exécution (`JVM_OK = True`) que les notebooks suivants peuvent reutiliser.
 
@@ -30,8 +30,8 @@ Les notebooks précédents (1-informal, 3-orchestration, 4-capstone) restent del
 
 ### Ce que ce rung ne fait pas
 
-- Pas d'appel LLM ni de `semantic_kernel` (le legacy `0-init_agent.ipynb` couvrait la configuration LLM/OpenAI ; ce compact se concentre sur le socle formel).
-- Pas d'extraction informelle ni de detection de sophismes (rung 1).",,,,,,,,c71a905175353942,,,,,,,,
+- Pas d'appel LLM ni de `semantic_kernel` (le legacy [`0-init_agent.ipynb`](./_archive/Argument_Analysis_Agentic-0-init_agent.ipynb) couvrait la configuration LLM/OpenAI ; ce compact se concentre sur le socle formel).
+- Pas d'extraction informelle ni de detection de sophismes (rung 1).",,,,,,,,3293083d07558adc,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb,dd5c4831,markdown,fr,08e08c330285af8d,"## 2. Verification Python : la passerelle JPype
 
 `jpype` est la passerelle qui permet a Python d'invoquer des classes Java (Tweety est une bibliotheque JVM). Sans elle, aucun pont vers la JVM n'est possible.
@@ -96,12 +96,12 @@ print(f"""")
 print(f""JVM operationnelle : {jpype.isJVMStarted()}"")
 print(f""Classpath Tweety charge depuis : {TWEETY_DIR / 'libs'}"")
 print(f""Amorcage shim reussi : {JVM_OK}"")",,,,,,,,da0388ff26fcaa04,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb,d40c28c0,markdown,fr,9d601d8d296b6cd1,"## 5. Smoke test : un modus ponens meteorologique resolu par le vrai Tweety
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb,d40c28c0,markdown,fr,b9b0c7b592767f25,"## 5. Smoke test : un modus ponens meteorologique resolu par le vrai Tweety
 
 Pour prouver que la JVM ne tourne pas a vide, on interroge le vrai `SimplePlReasoner` de Tweety sur un modus ponens trivial : « s'il pleut, le sol est mouille ; il pleut ; donc le sol est mouille ». Le solveur doit repondre `True` pour `wet` et `False` pour `!wet`. C'est le **temoin d'exécution** : si ce smoke test passe, le socle formel est operationnel pour les rungs suivants.
 
 > Pattern identique au rung [2-formal](./Argumentation-05-Formal-Verification-Python.ipynb), recycle ici comme preuve que l'environnement est pret.
-",,,,,,,,9d601d8d296b6cd1,,,,,,,,
+",,,,,,,,b9b0c7b592767f25,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb,9e03a613,code,fr,662c73c864c1768f,"import jpype
 JClass = jpype.JClass
 
@@ -133,7 +133,7 @@ SMOKE_OK = entails_wet and not entails_not_wet
 # charger les classes Tweety sans JVM demarree -- le mode degrade reste interdit.
 print(f"""")
 print(f""SMOKE_OK = {SMOKE_OK} : socle formel operationnel pour les rungs suivants."")",,,,,,,,662c73c864c1768f,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb,10fccb75,markdown,fr,cdb5fee7988f312b,"## 6. Recapitulatif de l'environnement
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb,10fccb75,markdown,fr,537c4d334485315f,"## 6. Recapitulatif de l'environnement
 
 | Composant | Rôle | Etat |
 |-----------|------|------|
@@ -152,11 +152,11 @@ L'environnement formel est **pret**. Les rungs suivants peuvent maintenant invoq
 
 ### Le mode degrade est interdit
 
-Si un jour ce notebook echoue au smoke test (les classes Tweety sont introuvables via JPype, signe que la JVM ou les jars sont absents), **ne contournez pas** en simulant le solveur avec un LLM. La valeur pedagogique de la serie repose sur le fait que le formel est REEL. Reinstallez le JDK portable et les jars, puis re-executez ce notebook jusqu'a `SMOKE_OK = True`.",,,,,,,,cdb5fee7988f312b,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb,b6607392,markdown,fr,66ca65a7dac6e843,"### Exercice (optionnel) : etendre le smoke test a la logique du premier ordre
+Si un jour ce notebook echoue au smoke test (les classes Tweety sont introuvables via JPype, signe que la JVM ou les jars sont absents), **ne contournez pas** en simulant le solveur avec un LLM. La valeur pedagogique de la serie repose sur le fait que le formel est REEL. Reinstallez le JDK portable et les jars, puis re-executez ce notebook jusqu'a `SMOKE_OK = True`.",,,,,,,,537c4d334485315f,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb,b6607392,markdown,fr,f38c0fdc998e5896,"### Exercice (optionnel) : etendre le smoke test a la logique du premier ordre
 
 Le smoke test ci-dessus couvre la logique propositionnelle (PL). Etendez-le a un syllogisme en **logique du premier ordre (FOL)** avec le vrai `SimpleFolReasoner` : par exemple « Tous les oiseaux volent ; Tweety est un oiseau ; donc Tweety vole ». Reutilisez le pattern FOL du rung [2-formal](./Argumentation-05-Formal-Verification-Python.ipynb) (pre-declaration de signature obligatoire : `parser.setSignature(sig)`). Ajoutez un flag `FOL_SMOKE_OK` et verifiez qu'il vaut `True`.
-",,,,,,,,66ca65a7dac6e843,,,,,,,,
+",,,,,,,,f38c0fdc998e5896,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb,4531cec4,code,fr,01a8560df7ee4fac,"# Exercice optionnel -- a completer
 # TODO etudiant : smoke test FOL avec SimpleFolReasoner (syllogisme oiseau/vole).
 # Indice : pre-declarer la signature (Sort, Constant, Predicate) AVANT parser.setSignature(sig).
@@ -575,9 +575,9 @@ Ce rung a pose les **fondations taxonomiques** de la detection de sophismes : on
 
 - [2-formal](./Argumentation-05-Formal-Verification-Python.ipynb) : une fois un argument identifie, verifier sa **validite logique** avec le raisonneur Tweety (PL, FOL, modal, argumentation de Dung).
 - [3-orchestration](./Argumentation-07-Orchestration-Python.ipynb) : remplacer la table mots-cles par un LLM qui extrait la structure informative, puis deleguer la verification a Tweety.",,,,,,,,03a9419df4c86764,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-header,markdown,fr,b9531c020ca7d7cc,"# Argument_Analysis_Agentic-2-formal : Verification Logique Formelle avec Tweety
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-header,markdown,fr,73cf21253641bffc,"# Vérification logique formelle avec Tweety
 
-**Navigation** : [<< 1-informal](./Argument_Analysis_Agentic-1-informal_agent.ipynb) | [README](./README.md) | [3-orchestration >>](./Argumentation-07-Orchestration-Python.ipynb)
+**Navigation** : [<< 1-informal](./_archive/Argument_Analysis_Agentic-1-informal_agent.ipynb) | [README](./README.md) | [3-orchestration >>](./Argumentation-07-Orchestration-Python.ipynb)
 
 | Champ | Valeur |
 |-------|--------|
@@ -604,10 +604,10 @@ A la fin de ce notebook, vous saurez :
 - Bases de logique formelle (propositions, quantificateurs, modus ponens)
 - Python 3.10+ ; le package `jpype` installe
 
-> **Note anti-theatre** : ce rung utilise **exclusivement le vrai raisonneur Java Tweety** via JPype. Aucune sortie n'est simulee. Si la JVM est absente, la cellule echoue explicitement (principe **fail-loud**) plutot que d'afficher un faux résultat. C'est le mandat coeur de l'Epic #2137 : la logique formelle se prouve, elle ne se raconte pas.",,,,,,,,b9531c020ca7d7cc,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-intro,markdown,fr,11eaafe18c2a0993,"## 1. Introduction : pourquoi la verification formelle ?
+> **Note anti-theatre** : ce rung utilise **exclusivement le vrai raisonneur Java Tweety** via JPype. Aucune sortie n'est simulee. Si la JVM est absente, la cellule echoue explicitement (principe **fail-loud**) plutot que d'afficher un faux résultat. C'est le mandat coeur de l'Epic #2137 : la logique formelle se prouve, elle ne se raconte pas.",,,,,,,,73cf21253641bffc,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-intro,markdown,fr,1d0f27fe1cbf3671,"## 1. Introduction : pourquoi la verification formelle ?
 
-Dans le rung [1-informal](./Argument_Analysis_Agentic-1-informal_agent.ipynb), un LLM a extrait la **structure informelle** d'un argument (premisses, conclusion, schema). Mais un LLM peut halluciner un lien logique : il affirme ""donc"" la conclusion alors que l'entaillement ne tient pas formellement.
+Dans le rung [1-informal](./_archive/Argument_Analysis_Agentic-1-informal_agent.ipynb) *(chaine LLM archivee dans `_archive/`)*, un LLM a extrait la **structure informelle** d'un argument (premisses, conclusion, schema). Mais un LLM peut halluciner un lien logique : il affirme ""donc"" la conclusion alors que l'entaillement ne tient pas formellement.
 
 Le rung present **delegue la preuve a un solveur formel** : on encode l'argument dans un formalisme logique (PL, FOL, modal), puis on demande a un raisonneur certify de dire si la conclusion est bien une consequence logique des premisses.
 
@@ -621,8 +621,8 @@ Le rung present **delegue la preuve a un solveur formel** : on encode l'argument
 
 L'ancien materiel EPITA admettait un **mode degrade** ou le LLM simulait le résultat d'une requête PL (`if not jvm_ready: print(""simulated result ..."")`). **Ce mode est interdit dans cette serie.** Un résultat simule n'est pas une preuve : c'est du theatre qui s'affiche comme de la logique. Ce notebook echoue bruyamment si la JVM est absente, plutot que de mentir.
 
-**Confidentialite** : tous les exemples sont **synthetiques et neutres** (meteo : ""Si il pleut, alors le sol est mouille"" ; oiseaux : Tweety / pingouins ; syllogismes classiques de Socrate). Aucun corpus EPITA, aucun nom, aucun `raw_text`.",,,,,,,,11eaafe18c2a0993,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-jvm-intro,markdown,fr,3ef002bc349f4fb6,"## 2. Demarrage de la JVM Tweety (prealable obligatoire)
+**Confidentialite** : tous les exemples sont **synthetiques et neutres** (meteo : ""Si il pleut, alors le sol est mouille"" ; oiseaux : Tweety / pingouins ; syllogismes classiques de Socrate). Aucun corpus EPITA, aucun nom, aucun `raw_text`.",,,,,,,,1d0f27fe1cbf3671,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-jvm-intro,markdown,fr,58d57a197c5c3fd8,"## 2. Demarrage de la JVM Tweety (prealable obligatoire)
 
 La cellule ci-dessous importe la shim `argumentation_lib` (couche de decouplage vendorsee pour la serie Argument_Analysis), puis appelle `initialize_jvm()` — le point d'entree **canonique et idempotent** (la JVM n'est demarree qu'une fois par processus, memoisee ensuite). Cette fonction localise `SymbolicAI/Tweety/`, l'ajoute au `sys.path`, s'y deplace (car `init_tweety` cherche `libs/` et `jdk-17-portable/` relativement au cwd), puis appelle `init_tweety()` qui :
 
@@ -632,7 +632,7 @@ La cellule ci-dessous importe la shim `argumentation_lib` (couche de decouplage 
 
 Si l'initialisation echoue, on `raise RuntimeError` immediatement. **Aucun fallback silencieux.**
 
-> **Pourquoi une shim ?** Centraliser le demarrage JVM dans `argumentation_lib.initialize_jvm()` evite de dupliquer la logique de localisation (cwd-relative) dans chaque rung de la serie. Les rungs [1-informal](./Argument_Analysis_Agentic-1-informal_agent.ipynb) et [3-orchestration](./Argumentation-07-Orchestration-Python.ipynb) reutilisent le même point d'entree ; ce rung (formel direct) en est l'usage le plus bas niveau.",,,,,,,,3ef002bc349f4fb6,,,,,,,,
+> **Pourquoi une shim ?** Centraliser le demarrage JVM dans `argumentation_lib.initialize_jvm()` evite de dupliquer la logique de localisation (cwd-relative) dans chaque rung de la serie. Les rungs [1-informal](./_archive/Argument_Analysis_Agentic-1-informal_agent.ipynb) et [3-orchestration](./Argumentation-07-Orchestration-Python.ipynb) reutilisent le même point d'entree ; ce rung (formel direct) en est l'usage le plus bas niveau.",,,,,,,,58d57a197c5c3fd8,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-jvm-code,code,fr,f68b71cf0668ac48,"# Cellule [2] - Demarrage JVM Tweety via la shim argumentation_lib (anti-theatre : fail-loud)
 #
 # initialize_jvm() (voir argumentation_lib/_jvm_compat.py) est le point d'entree
@@ -685,7 +685,7 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verificat
 | `JVM operationnelle : True` | `jpype.isJVMStarted()` confirme l'etat |
 
 > **Que signifie fail-loud ici ?** Si la JVM n'avait pas demarre, la cellule aurait leve `RuntimeError` et le notebook se serait arrete. C'est exactement l'inverse d'un `if not jvm_ready: print(""simulated: True"")` qui aurait laisse croire que le modus ponens est valide alors que rien n'a ete calcule.",,,,,,,,af1077dd95d712ca,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-pl-intro,markdown,fr,6f0da8ab1f91f5e7,"## 3. Logique propositionnelle (PL)
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-pl-intro,markdown,fr,f7a2cebba08172cf,"## 3. Logique propositionnelle (PL)
 
 La logique propositionnelle manipule des **propositions atomiques** (`rain`, `wet`) reliees par des connecteurs. Un **belief set** est un ensemble de formules considerées comme vraies ; on demande ensuite au raisonneur si une formule cible est **entailed** (consequence logique) par le belief set.
 
@@ -695,13 +695,13 @@ La logique propositionnelle manipule des **propositions atomiques** (`rain`, `we
 |-----------|------|--------|
 | `!` | negation | `!rain` (non rain) |
 | `&&` | conjonction (et) | `rain && wind` |
-| `||` | disjonction (ou) | `rain || snow` |
+| `\|\|` | disjonction (ou) | `rain \|\| snow` |
 | `=>` | implication | `rain => wet` (si rain alors wet) |
 | `<=>` | equivalence | `rain <=> wet` |
 
 > On evite l'opérateur `>>` (redondant avec `=>`, source de confusion). Les atomes sont en minuscules.
 
-**Demo** : le modus ponens meteorologique. Premisses : `rain => wet` (s'il pleut, le sol est mouille) et `rain` (il pleut). Conclusion cible : `wet` (le sol est mouille).",,,,,,,,6f0da8ab1f91f5e7,,,,,,,,
+**Demo** : le modus ponens meteorologique. Premisses : `rain => wet` (s'il pleut, le sol est mouille) et `rain` (il pleut). Conclusion cible : `wet` (le sol est mouille).",,,,,,,,f7a2cebba08172cf,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-pl-demo,code,fr,b465ffc371fb6878,"# Cellule [5] - PL : modus ponens meteorologique avec le vrai SimplePlReasoner
 import jpype
 JClass = jpype.JClass
@@ -736,17 +736,17 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verificat
 1. Le `SimplePlReasoner` decide via SAT solving ; la reponse est exacte (sound & complete pour PL).
 2. Résultat `False` sur `!wet` ne veut **pas** dire que `wet` est faux — cela signifie que le belief set n'entraine pas `!wet`. La distinction entail/non-entail est centrale en logique formelle.
 3. Si on retirait `rain` du belief set, ni `wet` ni `!wet` ne serait entailed (le système serait agnostique).",,,,,,,,4e8328f93e54c637,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-pl-ex1-intro,markdown,fr,9939d0c8081e7a5b,"### Exercice 1 (PL) : teste un autre schema d'inference
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-pl-ex1-intro,markdown,fr,8e253c7162073ebe,"### Exercice 1 (PL) : teste un autre schema d'inference
 
 **Contexte** : on vient de voir le modus ponens (`p`, `p=>q` |- `q`). Un autre schema classique est le **modus tollens** : si `p=>q` est vrai et `q` est faux, alors `p` doit etre faux.
 
 **Objectif** : dans la cellule ci-dessous, croyez `rain => wet` et `!wet`, puis interrogez le belief set pour savoir si `!rain` est entailed. Affichez le résultat booléen.
 
 **Indices** :
-- # Étape 1 : créer un nouveau `PlBeliefSet` vide
-- # Étape 2 : ajouter les deux formules `rain => wet` et `!wet`
-- # Étape 3 : construire la requête `!rain` et l'executer via `reasoner.query(...)`
-- # Étape 4 : convertir le résultat Java en `bool(...)` puis l'afficher",,,,,,,,9939d0c8081e7a5b,,,,,,,,
+- **Étape 1** : créer un nouveau `PlBeliefSet` vide
+- **Étape 2** : ajouter les deux formules `rain => wet` et `!wet`
+- **Étape 3** : construire la requête `!rain` et l'executer via `reasoner.query(...)`
+- **Étape 4** : convertir le résultat Java en `bool(...)` puis l'afficher",,,,,,,,8e253c7162073ebe,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-pl-ex1,code,fr,2f5b67f7e1634c06,"# Exercice 1 (PL) : modus tollens
 # TODO etudiant : croyez {rain => wet, !wet} et verifiez si !rain est entailed.
 # Etape 1 : nouveau belief set
@@ -816,17 +816,17 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verificat
 3. Le `SimpleFolReasoner` decide l'entaillement via un theorem prover (herbrandisation + resolution) ; la reponse est exacte sur ce fragment.
 
 > **Lien avec l'agent LLM** : dans le pipeline complet (rung 3), c'est le LLM qui propose `forall X: (Bird(X) => Fly(X))` a partir du texte ""Tous les oiseaux volent"". Mais la preuve que Tweety vole est deleguee a Tweety — pas au LLM. C'est la frontiere nette entre extraction informelle et verification formelle.",,,,,,,,686127bf02bc71f4,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-fol-ex2-intro,markdown,fr,e34ccbea1668d3c7,"### Exercice 2 (FOL) : le syllogisme de Socrates
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-fol-ex2-intro,markdown,fr,dacf9829d88800d0,"### Exercice 2 (FOL) : le syllogisme de Socrates
 
 **Contexte** : syllogisme classique — ""Tous les hommes sont mortels. Socrate est un homme. Donc Socrate est mortel.""
 
 **Objectif** : declarer une signature FOL (un sort, une constante `socrates`, deux predicats `Human` et `Mortal`), construire le belief set, et verifier que `Mortal(socrates)` est entailed.
 
 **Indices** :
-- # Étape 1 : declarer le sort `person`, la constante `socrates`, les predicats `Human/1` et `Mortal/1`
-- # Étape 2 : ajouter `Human(socrates)` et `forall X: (Human(X) => Mortal(X))`
-- # Étape 3 : requête `Mortal(socrates)`
-- # Étape 4 : afficher le booléen (attendu : True)",,,,,,,,e34ccbea1668d3c7,,,,,,,,
+- **Étape 1** : declarer le sort `person`, la constante `socrates`, les predicats `Human/1` et `Mortal/1`
+- **Étape 2** : ajouter `Human(socrates)` et `forall X: (Human(X) => Mortal(X))`
+- **Étape 3** : requête `Mortal(socrates)`
+- **Étape 4** : afficher le booléen (attendu : True)",,,,,,,,dacf9829d88800d0,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-fol-ex2,code,fr,e60e950b838a16b1,"# Exercice 2 (FOL) : syllogisme de Socrates
 # TODO etudiant : declarer la signature puis interroger Mortal(socrates).
 # Etape 1 : signature (sort person, constante socrates, predicats Human/1, Mortal/1)
@@ -898,7 +898,7 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verificat
 | `q` | False | Sans T, le monde ""courant"" n'est pas forcement among les mondes accessibles |
 
 > **Aparku honnete** : la logique modale est un domaine vaste (systèmes K, T, S4, S5, sementique de Kripke). Ce notebook donne uniquement le gout des opérateurs `[]` / `<>`. Pour aller plus loin : la [documentation Tweety sur `MlReasoner`](https://tweetyproject.org/api/org/tweetyproject/logics/ml/reasoner/SimpleMlReasoner.html) et l'ouvrage de Hughes & Cresswell, *A New Introduction to Modal Logic*.",,,,,,,,85cef74d994a81b8,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-fol-ex3-intro,markdown,fr,18c28e837f35b796,"### Exercice 3 (FOL ouvert) : votre propre mini-théorie
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-fol-ex3-intro,markdown,fr,f559a84753f05550,"### Exercice 3 (FOL ouvert) : votre propre mini-théorie
 
 **Contexte** : vous avez maintenant tous les outils pour modeliser un mini-domaine en FOL.
 
@@ -907,10 +907,10 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verificat
 **Exemple de depart (a adapter)** : ""Toute voiture est un vehicule. Toute moto est un vehicule. ma_voiture est une voiture. Donc ma_voiture est un vehicule.""
 
 **Indices** :
-- # Étape 1 : choisir un sort (ex : `thing`), declarer 1-2 constantes, 2 predicats
-- # Étape 2 : ecrire 1 fait concret + 1 règle `forall X: (...)`
-- # Étape 3 : construire la requête sur la constante
-- # Étape 4 : afficher le booléen avec un `print` explicatif",,,,,,,,18c28e837f35b796,,,,,,,,
+- **Étape 1** : choisir un sort (ex : `thing`), declarer 1-2 constantes, 2 predicats
+- **Étape 2** : ecrire 1 fait concret + 1 règle `forall X: (...)`
+- **Étape 3** : construire la requête sur la constante
+- **Étape 4** : afficher le booléen avec un `print` explicatif",,,,,,,,f559a84753f05550,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-fol-ex3,code,fr,230ae7f11218c748,"# Exercice 3 (FOL) : votre propre mini-theorie
 # TODO etudiant : modelisez un petit domaine en FOL et verifiez un entaillement.
 # Etape 1 : signature (sort, constante(s), predicats)
@@ -970,7 +970,7 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verificat
 Ce résultat correspond a la construction pas-a-pas : `a` est accepte parce qu'aucun argument ne l'attaque ; `b` est rejete parce que `a` (accepte) l'attaque ; `c` est reinstaure parce que son seul attaquant (`b`) est rejete.
 
 > **Aparku honnete** : la théorie de Dung est considerablement plus riche (sémantiques preferred, stable, complete ; AAF probabilistes ; bipolar argumentation ; ASPIC+ pour construire les arguments). Ce notebook ne fait qu'effleurer la sémantique grounded. Pour approfondir : [Tweety arg.dung package](https://tweetyproject.org/api/org/tweetyproject/arg/dung/package-summary.html) et Dung, *On the Acceptability of Arguments and its Fundamental Rôle in Nonmonotonic Reasoning, Logic Programming and n-Person Games*, AIJ 1995. Pour une introduction systématique aux sémantiques preferred, stable et complete (dont l'approche par etiquetages de Caminada), voir Baroni, Caminada & Giacomin, *An Introduction to Argumentation Semantics*, The Knowledge Engineering Review 26(4), 2011.",,,,,,,,15e07ac39c76ed72,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-conclusion,markdown,fr,b34f377307bb2546,"## 7. Conclusion et recapitulatif
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-conclusion,markdown,fr,3699c567358ab347,"## 7. Conclusion et recapitulatif
 
 Ce rung a delegue la **preuve logique** a un vrai raisonneur Java (Tweety via JPype) plutot qu'a un LLM. Chaque cellule de code a produit un résultat certifie par le solveur — jamais simule.
 
@@ -978,7 +978,7 @@ Ce rung a delegue la **preuve logique** a un vrai raisonneur Java (Tweety via JP
 
 | Formalisme | Ce qu'il prouve | Classes Tweety cles | Contrainte principale |
 |------------|-----------------|---------------------|------------------------|
-| **PL** | Entaillement propositionnel (modus ponens, tollens) | `PlParser`, `SimplePlReasoner`, `PlBeliefSet` | Syntaxe BNF `!` `&&` `||` `=>` ; eviter `>>` |
+| **PL** | Entaillement propositionnel (modus ponens, tollens) | `PlParser`, `SimplePlReasoner`, `PlBeliefSet` | Syntaxe BNF `!` `&&` `\|\|` `=>` ; eviter `>>` |
 | **FOL** | Entaillement quantifie (syllogismes) | `FolParser`, `FolSignature`, `SimpleFolReasoner` | **Pre-declaration obligatoire** de Sort/Constant/Predicate |
 | **Modal** | Axiome K (`[]`/`<>`) | `MlParser`, `MlBeliefSet`, `SimpleMlReasoner` | Argument entre parentheses : `[](p)` ; logique K (pas de T) |
 | **Dung** | Extension grounded d'un graphe d'attaque | `DungTheory`, `Attack`, `SimpleGroundedReasoner` | Construction du graphe avant le `getModels` |
@@ -996,7 +996,7 @@ Ce rung a delegue la **preuve logique** a un vrai raisonneur Java (Tweety via JP
 ### Prochaines étapes
 
 - [3-orchestration](./Argumentation-07-Orchestration-Python.ipynb) : orchestration multi-agents ou un ProjectManagerAgent delegue au PL/FOL Agent (ce rung) et a l'Informal Agent (rung 1).
-- Pour la modelisation FOL avancee (defeasible, ASPIC+), consulter les packages `org.tweetyproject.arg.delp` et `org.tweetyproject.arg.aspic`.",,,,,,,,b34f377307bb2546,,,,,,,,
+- Pour la modelisation FOL avancee (defeasible, ASPIC+), consulter les packages `org.tweetyproject.arg.delp` et `org.tweetyproject.arg.aspic`.",,,,,,,,3699c567358ab347,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-07-Orchestration-Python.ipynb,aa3o-header,markdown,fr,5f52ddb8e02f30d2,"# Argument_Analysis_Agentic-3-orchestration : deux paradigmes d'orchestration
 
 **Navigation** : [<< 2-formal](./Argumentation-05-Formal-Verification-Python.ipynb) | [README](./README.md) | [UI_configuration >>](./Argumentation-08c-UI-Configuration-Python.ipynb)
@@ -3251,7 +3251,7 @@ l'acceptabilité argumentative.
 - **Argumentation structurée** : le formalisme abstrait de Dung ignore le contenu des
   arguments. ASPIC+, ABA et DeLP (accessibles via Tweety) reconstruisent la relation
   d'attaque à partir d'une logique sous-jacente — la série [Tweety](../Tweety/) les explore.",,,,,,,,7f0d3af2550830ae,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,10996590,markdown,fr,c4d48dc3e31708ac,"# 🚀 Analyse Rhétorique Collaborative par Agents IA - Exécuteur Principal
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,10996590,markdown,fr,0870c9991b81551b,"# Analyse rhétorique collaborative par agents IA — exécuteur principal
 
 
 [Retour au README](../README.md) | [Précédent : Orchestration](./Argumentation-07-Orchestration-Python.ipynb)
@@ -3260,17 +3260,16 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python
 
 **Structure Modulaire:**
 1.  `Argumentation-08c-UI-Configuration-Python.ipynb` : Gère l'interface utilisateur pour sélectionner/préparer le texte à analyser (incluant sources prédéfinies, URL, fichier, texte direct, et extraction) et charge/sauvegarde la configuration des sources.
-2.  `Argumentation-00-Setup-Tweety-Python.ipynb`: Configuration initiale (dépendances, LLM, JVM), définition de l'état partagé (`RhetoricalAnalysisState`) et du gestionnaire d'état (`StateManagerPlugin`).
-3.  `Argument_Analysis_Agentic-1-informal_agent.ipynb`: Définition de l'`InformalAnalysisAgent`.
-4.  `Argument_Analysis_Agentic-2-pl_agent.ipynb`: Définition du `PropositionalLogicAgent`.
-5.  `Argumentation-07-Orchestration-Python.ipynb`: Définition des stratégies d'orchestration et de la fonction principale `run_analysis_conversation`.
+2.  `Argumentation-00-Setup-Tweety-Python.ipynb`: Configuration initiale de l'environnement (dépendances, JVM/Tweety).
+3.  `argumentation_lib` (shim de série): état partagé (`RhetoricalAnalysisState`), pont Semantic Kernel (`StateManagerPlugin`) et orchestration (`AnalysisRunner`) — chargés directement par ce notebook. Les carnets legacy `*_agent` qui portaient ces définitions sont archivés dans [`_archive/`](./_archive/README.md).
+4.  `Argumentation-07-Orchestration-Python.ipynb`: paradigmes d'orchestration déterministes (référence pédagogique du rung).
 
 **Prérequis:**
 * Un fichier `.env` à la racine contenant les clés API, configurations LLM, et la clé de chiffrement `TEXT_CONFIG_KEY`.
 * Un environnement Java Development Kit (JDK >= 11) correctement installé et configuré (`JAVA_HOME`).
 * Les dépendances Python installées (`ipywidgets`, `requests`, `jupyter-ui-poll`, `python-dotenv`, `semantic-kernel`, `pandas`, `jpype1`, `cryptography`).
 * Les JARs Tweety placés dans le dossier `libs/`.
-* Le fichier `extract_sources.json.gz.enc` (s'il existe déjà) contenant les définitions des sources.",,,,,,,,c4d48dc3e31708ac,,,,,,,,
+* Le fichier `extract_sources.json.gz.enc` (s'il existe déjà) contenant les définitions des sources.",,,,,,,,0870c9991b81551b,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,63m99jijcx4,markdown,fr,7b6470b15f317c33,"## Présentation générale du système
 
 ### Objectifs pédagogiques
@@ -3332,12 +3331,12 @@ Le fichier `.env` centralise toutes les configurations sensibles et paramètres 
 | `BATCH_TEXT` | Texte personnalisé pour mode batch (optionnel) |
 
 > **Note de sécurité**: Le fichier `.env` ne doit jamais être versionné avec Git. Utilisez `.env.example` comme template.",,,,,,,,c0e035f428545553,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,c8c82597,code,fr,46ba3e8ea6f4249b,"# Charger les variables d'environnement (résolution de chemin robuste)
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,c8c82597,code,fr,f3cf04f09ca23438,"# Charger les variables d'environnement (résolution de chemin robuste)
 # CRITIQUE 1 : find_dotenv() dépend du CWD courant,
 # qui peut differer de Argument_Analysis/ (Papermill, MCP Jupyter, CI changent
 # le working directory). On localise Argument_Analysis/ par walk-up depuis le
-# CWD, puis on s'y positionne (os.chdir) pour que tous les %run relatifs, le
-# dossier libs/ (JARs Tweety), data/ et extract_sources.json.gz.enc résolvent
+# CWD, puis on s'y positionne (os.chdir) pour que les chemins relatifs
+# (libs/ JARs Tweety, data/, extract_sources.json.gz.enc) résolvent
 # correctement quel que soit le point de départ.
 import os
 from pathlib import Path
@@ -3368,7 +3367,7 @@ os.chdir(str(AA_DIR))  # %run relatifs + libs/ + data/ résolvent depuis ici
 loaded_env = load_dotenv(AA_DIR / "".env"", override=True)
 
 print(f""CWD -> {os.getcwd()}"")
-print(f"".env chargé: {loaded_env}"")  # True si le .env a été trouvé et chargé",,,,,,,,46ba3e8ea6f4249b,,,,,,,,
+print(f"".env chargé: {loaded_env}"")  # True si le .env a été trouvé et chargé",,,,,,,,f3cf04f09ca23438,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,e6olkjrtk9p,markdown,fr,aad70f31789c4319,"### Interprétation du résultat
 
 **Sortie attendue**: `.env chargé: True`
@@ -3381,7 +3380,7 @@ Si vous obtenez `False`, cela signifie:
 1. Copier `.env.example` vers `.env`
 2. Remplir les valeurs manquantes (clés API)
 3. Relancer cette cellule",,,,,,,,aad70f31789c4319,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,b76958om00a,markdown,fr,c82843b55b4557e4,"### Vérification des dépendances
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,b76958om00a,markdown,fr,1d70b08ae7b9b4c2,"### Vérification des dépendances
 
 Avant de continuer, assurez-vous que les dépendances suivantes sont satisfaites:
 
@@ -3393,7 +3392,7 @@ pip install ipywidgets requests jupyter-ui-poll  # Pour mode interactif
 
 **Dépendances système**:
 - **JDK 11+** (pour Tweety via JPype): `JAVA_HOME` doit être configuré
-- **Bibliothèque Tweety**: JARs dans `libs/` (téléchargement automatique via `Tweety-1-Setup.ipynb`)
+- **Bibliothèque Tweety**: JARs dans `libs/` (téléchargement automatique via `Tweety-01-Setup-Python.ipynb`)
 
 **Fichiers requis**:
 
@@ -3403,11 +3402,11 @@ pip install ipywidgets requests jupyter-ui-poll  # Pour mode interactif
 | `libs/*.jar` | Bibliothèque Tweety Java | Téléchargement auto |
 | `data/logical_fallacies_taxonomy.json` | Taxonomie sophismes | Fourni |
 
-> **Astuce**: Si JPype échoue à s'initialiser, le système basculera en mode ""fallback"" (sans logique formelle). L'analyse informelle fonctionnera toujours.",,,,,,,,c82843b55b4557e4,,,,,,,,
+> **Astuce**: Si JPype échoue à s'initialiser, le système basculera en mode ""fallback"" (sans logique formelle). L'analyse informelle fonctionnera toujours.",,,,,,,,1d70b08ae7b9b4c2,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,41046be8,markdown,fr,c4092a2d8d147087,"## 2. Chargement de l'Interface Utilisateur
 
 Exécution du notebook `UI_Configuration.ipynb` pour définir la fonction `configure_analysis_task()`. C'est ce notebook qui contient désormais toute la logique de l'interface graphique, du cache fichier et de la gestion de la configuration chiffrée.",,,,,,,,c4092a2d8d147087,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,8b3b3380,code,fr,8615dba3e0e9e803,"# Mode batch contrôlé par variable d'environnement
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,8b3b3380,code,fr,a79667e25e04c196,"# Mode batch contrôlé par variable d'environnement
 # Si BATCH_MODE=true dans .env, on skip l'UI interactive (widgets bloquants)
 import os
 BATCH_MODE = os.getenv(""BATCH_MODE"", ""false"").lower() in (""true"", ""1"", ""yes"")
@@ -3435,7 +3434,7 @@ else:
         print(""ERREUR CRITIQUE : La fonction configure_analysis_task n'a pas été définie par UI_Configuration.ipynb !"")
     else:
         print(""Fonction configure_analysis_task trouvée."")
-",,,,,,,,8615dba3e0e9e803,,,,,,,,
+",,,,,,,,a79667e25e04c196,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,2m4gumr177r,markdown,fr,396b11a867a5c62a,"### Modes d'exécution: Batch vs Interactif
 
 Le notebook supporte deux modes d'exécution distincts:
@@ -3455,17 +3454,17 @@ Les widgets Jupyter (`ipywidgets`) utilisent des boucles de polling bloquantes i
 Le mode batch permet de contourner ces limitations en sautant le chargement de `UI_configuration.ipynb` et en utilisant directement un texte source.
 
 > **Note technique**: En mode batch, le texte est fourni via `BATCH_TEXT` (variable d'environnement) ou via le texte d'exemple enrichi défini dans la cellule suivante.",,,,,,,,396b11a867a5c62a,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,ex-aa4-config-md,markdown,fr,d45c948a7b44094f,"### Exercice 1 : Gestion de configuration avec fallback
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,ex-aa4-config-md,markdown,fr,03cea870c80f7de3,"### Exercice 1 : Gestion de configuration avec fallback
 
 L'Executor lit des variables d'environnement pour configurer l'analyse. Implementez un mécanisme de fallback robuste.
 
 **Objectif** : Ecrire `get_config_with_fallback`.
 
 **Indices** :
-- # Étape 1 : Utiliser `os.getenv(key)` pour lire la variable
-- # Étape 2 : Verifier si le résultat est `None` ou une chaîne vide
-- # Étape 3 : Retourner la valeur par defaut si la variable est absente
-- # Étape 4 : Tester avec une variable qui n'existe pas",,,,,,,,d45c948a7b44094f,,,,,,,,
+- **Étape 1** : Utiliser `os.getenv(key)` pour lire la variable
+- **Étape 2** : Verifier si le résultat est `None` ou une chaîne vide
+- **Étape 3** : Retourner la valeur par defaut si la variable est absente
+- **Étape 4** : Tester avec une variable qui n'existe pas",,,,,,,,03cea870c80f7de3,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,ex-aa4-config-code,code,fr,3c8e8ad528e22770,"# Exercice 1 : Gestion de configuration avec fallback
 # TODO etudiant: ecrivez une fonction qui lit une variable d'environnement
 # et retourne une valeur par defaut si absente.
@@ -3591,97 +3590,101 @@ Le texte d'exemple enrichi contient intentionnellement plusieurs sophismes pour 
 | Pente glissante | ""Les écologistes veulent nous ramener à l'âge de pierre"" |
 
 > **Conseil pédagogique**: Le texte d'exemple est conçu pour tester la robustesse de l'analyse rhétorique multi-agents. Utilisez-le pour comprendre comment les agents détectent les arguments fallacieux.",,,,,,,,501a9bba005d0203,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,183031e3,markdown,fr,deb2e808bfb0c466,"## 4. Chargement des Définitions des Agents et de l'Orchestration
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,183031e3,markdown,fr,c2fb96478bb2c9aa,"## 4. Chargement des Définitions des Agents et de l'Orchestration
 
-### Architecture modulaire par notebooks
+### Architecture modulaire : la shim `argumentation_lib`
 
-Le système est structuré en **4 notebooks enfants** chargés dynamiquement via `%run`:
+L'état partagé, le pont Semantic Kernel et l'orchestration sont fournis par la **shim de série `argumentation_lib`** (vendoring du cœur d'analyse, cf `argumentation_lib/_runner.py`) :
 
-**Avantages de cette architecture**:
-1. **Séparation des responsabilités**: Chaque agent dans son propre fichier
-2. **Réutilisabilité**: Les agents peuvent être chargés individuellement
-3. **Maintenabilité**: Modification d'un agent sans toucher aux autres
-4. **Testabilité**: Tests unitaires par agent
+| Élément chargé | Origine |
+|---|---|
+| `RhetoricalAnalysisState` | `argumentation_lib/_shared_state.py` |
+| `StateManagerPlugin` | `argumentation_lib/_state_manager_plugin.py` |
+| `AnalysisRunner` (pipeline 3 phases) | `argumentation_lib/_runner.py` |
 
-**Ordre de chargement critique**:
+Les quatre carnets legacy `Argument_Analysis_Agentic-*_agent.ipynb` qui portaient ces définitions (bootstrap Semantic Kernel, agents LLM, stratégies d'orchestration) sont **archivés** dans [`_archive/`](./_archive/README.md) — leur inventaire capacité par capacité y est consigné. La greffe de ce notebook sur la shim supprime le dernier consommateur vivant de cette chaîne.
+
+**Ordre de chargement** :
 
 ```
-0-init.ipynb           (État + Config LLM + JVM)
+argumentation_lib (état + orchestration)
     ↓
-1-informal_agent.ipynb (Dépend de RhetoricalAnalysisState)
+kernel LLM construit ici depuis .env (service `global_llm_service`)
     ↓
-2-pl_agent.ipynb       (Dépend de RhetoricalAnalysisState + JVM)
-    ↓
-3-orchestration.ipynb  (Dépend de tous les agents)
+AnalysisRunner(kernel, service_id, state) → run()
 ```
 
-> **Note technique**: `%run` exécute le notebook dans le namespace courant. Toutes les variables définies dans les notebooks enfants (classes, fonctions) deviennent disponibles ici.",,,,,,,,deb2e808bfb0c466,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,7674a98e,code,fr,bc2f59b7f94d41ba,"# Executer les notebooks enfants pour charger les definitions
-# Seulement si un texte a ete prepare avec succes
-#
-# CRITIQUE 2 : les notebooks enfants (notamment
-# 0-init_agent.ipynb) font leur propre os.chdir(TWEETY_DIR) pour localiser les
-# JARs. Ce chdir ""fuit"" hors du %run et corrompt le CWD pour les %run suivants
-# (relatifs a Argument_Analysis/) : 1-informal_agent.ipynb etait cherche dans
-# SymbolicAI/Tweety/ et introuvable. On re-ancre le CWD sur AA_DIR avant CHAQUE
-# %run pour garantir que les chemins relatifs resolvent quel que soit l'endroit
-# ou l'enfant s'est positionne.
-#
-# CRITIQUE 3 : la chaine %run doit etre COHERENTE.
-# Les notebooks ""rungs"" recents (0-init.ipynb, 3-orchestration.ipynb) ne
-# construisent NI le service OpenAI NI run_analysis_conversation -- or la
-# cellule 18 appelle run_analysis_conversation() et les agents charges sont les
-# versions _agent (InformalAnalysisAgent, PropositionalLogicAgent). On charge
-# donc la chaine LEGACY ""_agent"" auto-coherente : 0-init_agent (JVM + service
-# OpenAI + kernel) -> 1-informal_agent (InformalAnalysisAgent) ->
-# 2-pl_agent (PropositionalLogicAgent) -> 3-orchestration_agent
-# (run_analysis_conversation). Cette chaine definit TOUT ce dont la cellule 18
-# a besoin.
+> **Note technique** : le kernel est **injecté** par ce notebook ; la shim ne lit ni secret ni nom de modèle (elle ne connaît pas `.env`).",,,,,,,,c2fb96478bb2c9aa,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,7674a98e,code,fr,631b98030076eab7,"# Charger les définitions depuis la shim argumentation_lib.
+# Remplace la chaîne legacy %run des carnets *_agent (archivés) : la shim vendore
+# l'état partagé, le pont SK et l'orchestration ; le kernel LLM est construit ici
+# depuis .env (mêmes variables que la chaîne archivée : OPENAI_API_KEY,
+# OPENAI_CHAT_MODEL_ID, OPENAI_ENDPOINT, OPENAI_ORG_ID).
 if 'texte_pour_analyse' in locals() and texte_pour_analyse:
     print(""Chargement des definitions des agents et de l'orchestration..."")
     try:
-        os.chdir(str(AA_DIR))
-        %run ./Argument_Analysis_Agentic-0-init_agent.ipynb
-        os.chdir(str(AA_DIR))
-        %run ./Argument_Analysis_Agentic-1-informal_agent.ipynb
-        os.chdir(str(AA_DIR))
-        %run ./Argument_Analysis_Agentic-2-pl_agent.ipynb
-        os.chdir(str(AA_DIR))
-        %run ./Argument_Analysis_Agentic-3-orchestration_agent.ipynb
-        os.chdir(str(AA_DIR))
-        print(""[OK] Definitions chargees."")
-        if 'run_analysis_conversation' not in locals():
-            print(""[ERREUR CRITIQUE] La fonction run_analysis_conversation n'a pas ete definie apres l'execution des notebooks agents !"")
+        from argumentation_lib import UnifiedAnalysisState, get_analysis_runner
+        from semantic_kernel import Kernel
+        from semantic_kernel.connectors.ai.open_ai import (
+            OpenAIChatCompletion,
+            AzureChatCompletion,
+        )
+
+        _api_key = os.getenv(""OPENAI_API_KEY"")
+        _model_id = os.getenv(""OPENAI_CHAT_MODEL_ID"")
+        _endpoint = os.getenv(""OPENAI_ENDPOINT"")
+        _org_id = os.getenv(""OPENAI_ORG_ID"")
+
+        llm_kernel = Kernel()
+        if _endpoint:
+            llm_kernel.add_service(AzureChatCompletion(
+                service_id=""global_llm_service"",
+                deployment_name=_model_id,
+                endpoint=_endpoint,
+                api_key=_api_key,
+            ))
+            print(f""[OK] Service LLM Azure configure (deploiement: {_model_id})."")
+        else:
+            llm_kernel.add_service(OpenAIChatCompletion(
+                service_id=""global_llm_service"",
+                ai_model_id=_model_id,
+                api_key=_api_key,
+                org_id=_org_id,
+            ))
+            print(f""[OK] Service LLM OpenAI configure (modele: {_model_id})."")
+
+        AnalysisRunner = get_analysis_runner()
+        local_state = UnifiedAnalysisState(texte_pour_analyse)
+        analysis_runner = AnalysisRunner(llm_kernel, ""global_llm_service"", local_state)
+        print(""[OK] Definitions chargees (shim argumentation_lib)."")
     except Exception as e_run:
-        print(""[ERREUR] Une erreur est survenue lors de l'execution des notebooks enfants : "" + str(e_run))
+        print(""[ERREUR] Une erreur est survenue lors du chargement des definitions : "" + str(e_run))
         import traceback
         traceback.print_exc()
         # Empecher la suite si le chargement echoue
         texte_pour_analyse = None
-        os.chdir(str(AA_DIR))
+        analysis_runner = None
 else:
-    print(""Skipping agent definition loading because no text was prepared."")
-",,,,,,,,bc2f59b7f94d41ba,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,rh30f4ohrsa,markdown,fr,02c577a7def4f2b5,"### Architecture modulaire chargée
+    print(""Skipping agent definition loading because no text was prepared."")",,,,,,,,631b98030076eab7,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,rh30f4ohrsa,markdown,fr,9ee25f7cba4ebf29,"### Architecture chargée
 
-**Notebooks chargés et leurs responsabilités**:
+**Composants et responsabilités** :
 
-| Notebook | Composants définis | Rôle |
+| Composant | Origine | Rôle |
 |----------|-------------------|------|
-| `Agentic-0-init.ipynb` | `RhetoricalAnalysisState`, `StateManagerPlugin`, kernel SK | État partagé, configuration LLM, JVM Tweety |
-| `Agentic-1-informal_agent.ipynb` | `InformalAnalysisAgent` | Analyse arguments et sophismes (taxonomie) |
-| `Agentic-2-pl_agent.ipynb` | `PropositionalLogicAgent`, `PropositionalLogicPlugin` | Formalisation en logique propositionnelle |
-| `Agentic-3-orchestration.ipynb` | `run_analysis_conversation()` | Orchestration collaborative des agents |
+| `RhetoricalAnalysisState` | `argumentation_lib/_shared_state.py` | État partagé (`raw_text`, arguments, sophismes, belief sets, conclusion) |
+| `StateManagerPlugin` | `argumentation_lib/_state_manager_plugin.py` | Pont entre l'état et le kernel Semantic Kernel |
+| `AnalysisRunner` | `argumentation_lib/_runner.py` | Pipeline 3 phases : informel → formel → synthèse |
+| kernel `global_llm_service` | construit par ce notebook (`.env`) | Service LLM (OpenAI ou Azure) |
 
-**Architecture technique**:
+**Architecture technique** :
 
 ```
 ┌─────────────────────────────────────────────────┐
 │  Semantic Kernel (orchestration)                │
 │  ┌──────────────┐  ┌────────────────────────┐  │
-│  │ Informal     │  │ Propositional Logic    │  │
-│  │ Analysis     │─▶│ Agent (Tweety/JPype)   │  │
-│  │ Agent        │  │                        │  │
+│  │ Informal     │  │ Logic                  │  │
+│  │ Agent (LLM)  │─▶│ Agent (LLM)            │  │
 │  └──────────────┘  └────────────────────────┘  │
 │         │                     │                 │
 │         └─────────┬───────────┘                 │
@@ -3694,8 +3697,8 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python
 └─────────────────────────────────────────────────┘
 ```
 
-> **Note d'implémentation**: L'état partagé (`RhetoricalAnalysisState`) permet aux agents de communiquer leurs résultats via un contexte commun plutôt que par messages directs.",,,,,,,,02c577a7def4f2b5,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,6b60ae64,markdown,fr,7f31ed94ed07cd49,"## 5. Exécution de l'Analyse Collaborative
+> **Différence avec la chaîne archivée** : l'agent formel de la shim est LLM-only (pas de plugin Tweety) ; la vérification formelle outillée est le rung [`Argumentation-05`](./Argumentation-05-Formal-Verification-Python.ipynb). La chaîne déterministe équivalente (paradigmes A/B, routage PM) est le rung [`Argumentation-07`](./Argumentation-07-Orchestration-Python.ipynb).",,,,,,,,9ee25f7cba4ebf29,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,6b60ae64,markdown,fr,c0cf82fe7253b8fb,"## 5. Exécution de l'Analyse Collaborative
 
 ### Orchestration asynchrone avec Semantic Kernel
 
@@ -3706,38 +3709,40 @@ Cette cellule lance le processus d'analyse multi-agents. L'orchestration fonctio
 | Composant | Rôle |
 |-----------|------|
 | `nest_asyncio.apply()` | Permet `await` dans Jupyter (normalement synchrone) |
-| `run_analysis_conversation(texte)` | Fonction d'orchestration principale |
+| `AnalysisRunner.run()` | Pipeline d'orchestration principal (shim `argumentation_lib`) |
 | `local_state` | Objet `RhetoricalAnalysisState` retourné |
 
 **Étapes d'exécution internes**:
 
-1. **Initialisation**: Création kernel SK, chargement plugins
-2. **Tour 1 - Analyse informelle**: Agent LLM identifie arguments/sophismes
-3. **Tour 2 - Formalisation**: Agent PL traduit en logique, exécute requêtes
-4. **Synthèse**: Génération conclusion basée sur analyse hybride
-5. **Retour**: État final JSON avec tous les résultats
+1. **Initialisation**: Kernel SK construit depuis `.env`, `StateManagerPlugin` enregistré
+2. **Phase 1 - Analyse informelle**: Agent LLM identifie arguments/sophismes
+3. **Phase 2 - Analyse formelle**: Agent LLM traduit en logique et journalise les requêtes
+4. **Phase 3 - Synthèse**: Génération de la conclusion
+5. **Retour**: État partagé (`RhetoricalAnalysisState`) portant tous les résultats
 
-> **Note performance**: L'exécution prend 90-150s selon la complexité du texte et la latence des API OpenAI/Anthropic. Surveillez les logs pour suivre la progression.",,,,,,,,7f31ed94ed07cd49,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,689bf30e,code,fr,b07695c49e646723,"import nest_asyncio
+> **Note performance**: L'exécution prend 90-150s selon la complexité du texte et la latence des API OpenAI/Anthropic. Surveillez les logs pour suivre la progression.",,,,,,,,c0cf82fe7253b8fb,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,689bf30e,code,fr,8ba4aa6f87e78c54,"import nest_asyncio
 import asyncio
 
-# Lancer seulement si on a obtenu un texte valide ET que les définitions sont chargées
-if 'texte_pour_analyse' in locals() and texte_pour_analyse and 'run_analysis_conversation' in locals():
-    print(""\n🚀 Lancement de l'exécution asynchrone de l'analyse..."")
+# Lancer seulement si on a obtenu un texte valide ET que les definitions sont chargees
+if 'analysis_runner' in locals() and analysis_runner is not None:
+    print(""\nLancement de l'execution asynchrone de l'analyse..."")
     nest_asyncio.apply()
     try:
-        # Passer le texte préparé
-        local_state = await run_analysis_conversation(texte_pour_analyse)
-        print(""\n🏁 Analyse terminée."")
+        analysis_result = await analysis_runner.run()
+        print(""\nAnalyse terminee."")
+        print(f""  Phases executees : {[p.get('name') for p in analysis_result.get('phases', [])]}"")
+        if analysis_result.get('conclusion'):
+            print(""  Conclusion finale : disponible dans l'etat partage."")
     except Exception as e_analysis:
-        print(f""\n❌ Une erreur est survenue pendant l'exécution de l'analyse : {e_analysis}"")
+        print(f""\nUne erreur est survenue pendant l'execution de l'analyse : {e_analysis}"")
         import traceback
         traceback.print_exc()
 
 elif 'texte_pour_analyse' not in locals() or not texte_pour_analyse:
-    print(""\n Analyse non lancée : aucun texte n'a été préparé ou une erreur est survenue avant."")
-else: # Implique que run_analysis_conversation n'a pas été chargée
-     print(""\n Analyse non lancée : la fonction d'orchestration n'a pas pu être chargée."")",,,,,,,,b07695c49e646723,,,,,,,,
+    print(""\nAnalyse non lancee : aucun texte n'a ete prepare ou une erreur est survenue avant."")
+else:  # Implique que l'orchestrateur n'a pas ete charge
+    print(""\nAnalyse non lancee : l'orchestrateur n'a pas pu etre charge."")",,,,,,,,8ba4aa6f87e78c54,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,j4vej6eunq,markdown,fr,7b285d4566298e8d,"### Interprétation du processus d'analyse
 
 **Étapes d'exécution observables**:
@@ -3769,17 +3774,17 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python
 | `Final state:` | Affichage JSON de l'état final |
 
 > **Note de performance**: En mode batch, l'exécution complète prend quelques minutes (durée machine-dépendante : latence API LLM et complexité du texte ; plage typique donnée ci-dessus) sur le texte d'exemple enrichi.",,,,,,,,7b285d4566298e8d,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,ex-aa4-count-md,markdown,fr,389cd8d616a08210,"### Exercice 2 : Compter les sophismes dans un rapport
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,ex-aa4-count-md,markdown,fr,fe1d9caecfcaa0c2,"### Exercice 2 : Compter les sophismes dans un rapport
 
 Après une analyse collaborative, le rapport contient une liste de sophismes detectes. Ecrivez une fonction pour les compter.
 
 **Objectif** : Implementer `count_fallacies`.
 
 **Indices** :
-- # Étape 1 : Parser la chaîne JSON avec `json.loads`
-- # Étape 2 : Acceder a la cle `fallacies` (peut etre imbriquee)
-- # Étape 3 : Compter les éléments de la liste
-- # Étape 4 : Retourner 0 si la cle est absente",,,,,,,,389cd8d616a08210,,,,,,,,
+- **Étape 1** : Parser la chaîne JSON avec `json.loads`
+- **Étape 2** : Acceder a la cle `fallacies` (peut etre imbriquee)
+- **Étape 3** : Compter les éléments de la liste
+- **Étape 4** : Retourner 0 si la cle est absente",,,,,,,,fe1d9caecfcaa0c2,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,ex-aa4-count-code,code,fr,03ee303757d7b4f2,"# Exercice 2 : Compter les sophismes dans un rapport JSON
 # TODO etudiant: ecrivez une fonction qui extrait le nombre de sophismes
 # d'un rapport d'analyse.
@@ -4111,17 +4116,17 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python
 > - Métriques de qualité d'analyse
 > - Comparaison entre versions du système
 > - Documentation des résultats d'analyse",,,,,,,,361532f388d51c1a,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,ex-aa4-status-md,markdown,fr,4b5abb997c5d1891,"### Exercice 3 : Mapper un score de confiance a un statut
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,ex-aa4-status-md,markdown,fr,b1f08b913fcbf5cc,"### Exercice 3 : Mapper un score de confiance a un statut
 
 Le rapport de validation attribue des scores de confiance aux analyses. Convertissez ces scores en labels comprehensibles.
 
 **Objectif** : Implementer `confidence_to_status`.
 
 **Indices** :
-- # Étape 1 : Définir les seuils : >0.8 = VALIDATED, 0.5-0.8 = UNCERTAIN, <0.5 = LOW
-- # Étape 2 : Comparer le score aux seuils avec des `if/elif/else`
-- # Étape 3 : Retourner le label correspondant
-- # Étape 4 : Gerer les cas extremes (score < 0 ou > 1)",,,,,,,,4b5abb997c5d1891,,,,,,,,
+- **Étape 1** : Définir les seuils : >0.8 = VALIDATED, 0.5-0.8 = UNCERTAIN, <0.5 = LOW
+- **Étape 2** : Comparer le score aux seuils avec des `if/elif/else`
+- **Étape 3** : Retourner le label correspondant
+- **Étape 4** : Gerer les cas extremes (score < 0 ou > 1)",,,,,,,,b1f08b913fcbf5cc,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,ex-aa4-status-code,code,fr,190340a48775e9e6,"# Exercice 3 : Mapper un score de confiance a un statut
 # TODO etudiant: ecrivez une fonction qui classifie un score de confiance
 # en categories: VALIDATED (>0.8), UNCERTAIN (0.5-0.8), LOW (<0.5).
@@ -4136,7 +4141,7 @@ for s in [0.95, 0.65, 0.3]:
     print(f""Score {s}: {confidence_to_status(s)}"")
 print(""Exercice a completer"")
 ",,,,,,,,190340a48775e9e6,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,7abbf986,markdown,fr,5e4a312d43e131c6,"## 6. Résultats et Conclusion
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,7abbf986,markdown,fr,c0ed4f6a4509d561,"## 6. Résultats et Conclusion
 
 Vérifiez les logs et l'état final JSON affichés par l'exécution précédente pour voir le résultat de l'analyse collaborative.
 
@@ -4172,7 +4177,7 @@ Le système combine deux approches complémentaires:
 - Exécute requêtes de cohérence et d'implication
 - Output: Preuves formelles ou contre-exemples
 
-> **Avantage de l'approche hybride**: La combinaison LLM + logique formelle permet à la fois la compréhension contextuelle (LLM) et la rigueur mathématique (logique).",,,,,,,,5e4a312d43e131c6,,,,,,,,
+> **Avantage de l'approche hybride**: La combinaison LLM + logique formelle permet à la fois la compréhension contextuelle (LLM) et la rigueur mathématique (logique).",,,,,,,,c0ed4f6a4509d561,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,a7a37b89,markdown,fr,e192c4f686a51810,"## 7. Pistes d'Amélioration Futures
 
 ### Améliorations techniques

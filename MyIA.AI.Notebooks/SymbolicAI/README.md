@@ -456,13 +456,13 @@ Pipeline d'analyse argumentative multi-agents avec **Semantic Kernel** et LLMs. 
 | # | Notebook | Role |
 |---|----------|------|
 | 0 | [Argumentation-00-Setup-Tweety-Python](Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb) | Configuration LLM, JPype/Tweety, ProjectManagerAgent |
-| 1 | [Agentic-1-informal_agent](Argument_Analysis/Argument_Analysis_Agentic-1-informal_agent.ipynb) | InformalAnalysisAgent, détection sophismes |
-| 2 | [Agentic-2-pl_agent](Argument_Analysis/Argument_Analysis_Agentic-2-pl_agent.ipynb) | PropositionalLogicAgent, formalisation PL |
+| 1 | [Agentic-1-informal_agent](Argument_Analysis/_archive/Argument_Analysis_Agentic-1-informal_agent.ipynb) | *(legacy, archivé)* InformalAnalysisAgent, détection sophismes |
+| 2 | [Agentic-2-pl_agent](Argument_Analysis/_archive/Argument_Analysis_Agentic-2-pl_agent.ipynb) | *(legacy, archivé)* PropositionalLogicAgent, formalisation PL |
 | 3 | [Argumentation-07-Orchestration-Python](Argument_Analysis/Argumentation-07-Orchestration-Python.ipynb) | Orchestration multi-agents |
 | 4 | [Argumentation-08b-Executor-Python](Argument_Analysis/Argumentation-08b-Executor-Python.ipynb) | Pipeline complet, rapport JSON |
 | 5 | [Argumentation-08c-UI-Configuration-Python](Argument_Analysis/Argumentation-08c-UI-Configuration-Python.ipynb) | Interface widgets ipywidgets |
 
-> Vue partielle (pipeline Agentic historique). La série compte **28 notebooks** (10 Agentic : 7 sources + 3 traces `_agent` ; 17 analytiques ; 1 groupe-I2 contre-arguments ASPIC) — la structure complète est dans le [README de la sous-série](Argument_Analysis/README.md).
+> Vue partielle (pipeline Agentic historique). Ses carnets `*_agent` sont **archivés** dans [`Argument_Analysis/_archive/`](Argument_Analysis/_archive/README.md) — l'inventaire de ce qu'ils portaient et de ce qui les supplante y est consigné. La structure complète de la série et ses comptes sont dans le [README de la sous-série](Argument_Analysis/README.md) et le catalogue.
 
 Documentation complète : [Argument_Analysis/README.md](Argument_Analysis/README.md)
 
