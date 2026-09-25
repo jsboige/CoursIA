@@ -99,6 +99,7 @@ Un lake Lean n'est ni un numero ni une lettre : c'est l'outillage d'un notebook.
 - La table du parcours principal ne nomme **aucun** lake.
 - Un lake apparait d'abord dans l'approfondissement du notebook qui le consomme (colonne « Ce qu'il ajoute » ou « Prerequis en plus »).
 - Il apparait ensuite dans **une seule** section « Formalisations Lean », placee sous « Pour aller plus loin ». Cette section renvoie a l'inventaire `LEAN_INVENTORY.md` de la serie quand il existe, et ne le recopie pas.
+- Le lake d'une sous-serie vit dans le dossier de la sous-serie et se presente dans son README a elle. La serie mere le cite dans sa section « Formalisations Lean », et son capstone peut l'executer ou le citer (#4362).
 
 #### Descriptions detaillees (optionnelles)
 
@@ -142,7 +143,7 @@ Ce README suit le principe des parcours a plusieurs vitesses du depot ([choisir 
 
 ## Sous-series
 
-(Prefixe, notebook pont depuis la serie mere, et sa propre table au meme format.)
+(Dossier de la sous-serie, notebook d'escalier (capstone) qui la presente depuis le parcours principal, et sa propre table au meme format. La ligne du capstone dans la table du parcours principal renvoie a la sous-serie.)
 
 ## Installation
 
@@ -167,6 +168,7 @@ Ce README suit le principe des parcours a plusieurs vitesses du depot ([choisir 
 - [ ] Chaque section porte son niveau de lecture, et la matiere de niveau Recherche est placee apres le parcours principal
 - [ ] « Comment lire ce README » s'ouvre sur le rappel du principe, avec le lien vers la section racine `#choisir-sa-vitesse-de-lecture`
 - [ ] Aucun lake Lean dans la table du parcours principal ; les lakes sont presentes sous l'approfondissement qui les consomme et dans la seule section « Formalisations Lean »
+- [ ] Chaque sous-serie a son escalier : une ligne du parcours principal (idealement son capstone) qui la presente et y renvoie
 - [ ] Les liens vers les notebooks sont corrects (format: `texte` + `(chemin.ipynb)`)
 - [ ] Les durees estimees sont coherentes
 - [ ] Les kernels sont correctement identifies
