@@ -9,7 +9,7 @@ réexécuté — il est préservé comme provenance historique.
 
 | Notebook | Verdict | Superseded by | Verdict recorded in |
 |---|---|---|---|
-| `04-14-VoiceLeading-RenduGenAI.ipynb` | OBSOLETE (consolidation **#13741**) — sibling pédagogique minimal (9 cellules, 51 Ko), archivé pour éliminer le doublon de slot 04-14 ; le contenu reste préservé | [`../04-Applications/04-14-VoiceLeading-Rendu-GenAI.ipynb`](../04-Applications/04-14-VoiceLeading-Rendu-GenAI.ipynb) (notebook canonique, version complète) | Note de consolidation #13741 en tête du [README de `04-Applications/`](../04-Applications/README.md) ; ce registre |
+| `04-14-VoiceLeading-RenduGenAI.ipynb` | OBSOLETE (consolidation **#13741**) — sibling pédagogique minimal (9 cellules, 51 520 octets), archivé pour éliminer le doublon de slot 04-14 ; le contenu reste préservé | [`../04-Applications/04-14-VoiceLeading-Rendu-GenAI.ipynb`](../04-Applications/04-14-VoiceLeading-Rendu-GenAI.ipynb) (notebook canonique, version complète) | Note de consolidation #13741 en tête du [README de `04-Applications/`](../04-Applications/README.md) ; ce registre |
 
 ## Disposition par section
 
