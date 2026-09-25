@@ -209,7 +209,7 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 11 | [Infer-19 — Analyse de survie / fiabilite bayesienne :…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-19-Survival-Analysis.ipynb) | BETA | Oui |
 | 12 | [Infer-1b : Introduction a Infer.NET](../../MyIA.AI.Notebooks/Probas/Infer/Infer-1b-Premiers-Modeles.ipynb) | BETA | Oui |
 | 13 | [Infer-2-Gaussian-Mixtures : Distributions Gaussiennes…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-2-Gaussian-Mixtures.ipynb) | BETA | Oui |
-| 14 | [Infer-20 — Quotients, fibres et recollement : ce qui…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-20-Quotients-et-Fibres.ipynb) | BETA | Oui |
+| 14 | [Infer-20 — Quotients, fibres et recollement : ce qui…](../../MyIA.AI.Notebooks/Probas/Applications/Infer-20-Quotients-et-Fibres-Python.ipynb) | BETA | Oui |
 | 15 | [Infer-2b-Debugging-Bonnes-Pratiques : Troubleshooting…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb) | BETA | Oui |
 | 16 | [Infer-3-Factor-Graphs : Graphes de Facteurs et…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-3-Factor-Graphs.ipynb) | BETA | Oui |
 | 17 | [Infer-4-Bayesian-Networks : Reseaux Bayesiens…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-4-Bayesian-Networks.ipynb) | BETA | Oui |
