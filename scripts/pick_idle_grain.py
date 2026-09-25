@@ -200,14 +200,13 @@ REPO = "jsboige/CoursIA"
 # commentaire. Le sweep quotidien retracte le label sur activite de commentaire
 # (le marqueur lui-meme en fait partie), donc certaines LIVRE-urn restent
 # invisibles au seul filtre labels. Trois formes employees par les lanes
-# (mesure #17263 c.754, Tell c.534 L1 ★★ fondateur, Tell c.488 ★★★
-# audit-reassessment) :
+# (mesure #17263 c.754, cf. .claude/rules/audit-reassessment.md) :
 #   - `[INFO] candidate-delivered`        (canonique, fermante `]`)
 #   - `[INFO candidate-delivered]`        (espace au lieu de `]`)
 #   - `[INFO] lane <machine:workspace> -- <sujet> -- candidate-delivered <suite>`
 #                                       (annonce, le mot n'est pas immediatement
 #                                       apres `[INFO` mais sur la meme ligne)
-# Forme etroite Tell c.488 ★★★ : la 3e alternative exige `candidate-delivered`
+# Forme etroite : la 3e alternative exige `candidate-delivered`
 # borne par `\b` (mot complet) sur la MEME ligne qu'un `[INFO]` en tete, pour
 # eviter qu'une mention discursive du mecanisme (n'importe ou dans un
 # commentaire) fausse l'exclusion. La 1re et 2e formes restent matchees par la
@@ -216,14 +215,12 @@ REPO = "jsboige/CoursIA"
 # `livré(e)`, ou `verification first-hand`) SUR LA MEME LIGNE que
 # `[INFO]` et avant `candidate-delivered` -- sinon une mention discursive du
 # mecanisme (cf. test anti-FP `test_marker_no_match_discursive_mention`)
-# serait classee a tort comme marqueur de livraison. Forme etroite Tell
-# c.488 ★★★ fondateur.
+# serait classee a tort comme marqueur de livraison.
 #
 # Ancrage en debut de ligne (`^\s*` + MULTILINE) : evite les mentions
 # incidentes du type "sans [INFO] candidate-delivered" ou "[INFO] absent
 # dans ce fil", ou la sous-chaîne `[INFO] candidate-delivered` est presente
-# mais n'est pas l'en-tête du commentaire. Tell c.488 ★★★ fondateur du
-# pattern anti-FP.
+# mais n'est pas l'en-tête du commentaire.
 _DELIVERED_MARKER_RE = re.compile(
     r"(?:"
     r"^\s*\[INFO\]\s+candidate-delivered"
@@ -1143,7 +1140,7 @@ def open_cover_signal(issue_number: int) -> str | None:
 
     TRI-ETAT, meme doctrine que ``has_delivered_signal`` : ``""`` = aucune
     PR ouverte couvrante ; une descriptor-string (``"PR #12519 [draft]
-    (+1 autre(s) : #12530)"``) = au moins une PR ouverte cite l'issue ;
+    (+1 autre(s) : #12530)"``) = au moins une PR ouverte cite ``#N`` ;
     ``None`` = la requete a echoue (reseau, 403, payload illisible) et
     l'appelant doit tirer quand meme EN LE DISANT.
 
@@ -1158,14 +1155,27 @@ def open_cover_signal(issue_number: int) -> str | None:
         out = subprocess.run(
             ["gh", "pr", "list", "--repo", REPO, "--state", "all",
              "--limit", "20", "--search", f"{issue_number} in:title,body",
-             "--json", "number,state,isDraft"],
+             "--json", "number,state,isDraft,title,body"],
             capture_output=True, text=True, encoding="utf-8", check=True,
             timeout=30,
         ).stdout
         prs = json.loads(out)
     except Exception:  # noqa: BLE001 - sonde best-effort ; l'echec est DIT
         return None
-    opened = [pr for pr in prs if pr.get("state") == "OPEN"]
+    # Post-filtre `#N\b` (#17760, arbitrage ai-01 2026-09-25) : la recherche
+    # GitHub matche un NOMBRE NU en sous-chaine -- 11703 apparie c.1170301
+    # ou #1170391 -- et les petits numeros des EPICs se retrouvent faux
+    # couverts (10/91 mesures, 11 %). Une PR ouverte ne couvre l'issue QUE
+    # si son titre ou son body citent `#N` borne par un mot. GitHub ne peut
+    # pas faire ce discriminant cote serveur ; quand le filtre ne trouve
+    # pas d'ancre, le candidat est CONSERVE, jamais ecarte.
+    anchor = re.compile(rf"#{issue_number}\b")
+    opened = [
+        pr for pr in prs
+        if pr.get("state") == "OPEN"
+        and anchor.search((pr.get("title") or "") + "\n" +
+                          (pr.get("body") or ""))
+    ]
     if not opened:
         return ""
     first = min(opened, key=lambda pr: pr["number"])
@@ -1940,7 +1950,7 @@ def recent_delivery(picks: list[dict]) -> dict[int, str]:
             notes[n] = f"(recherche PR indisponible: {type(exc).__name__})"
             continue
         if not prs:
-            # c.1115 voie 1 (Tell c.1060-L1 reformule ai-01) : pas de PR
+            # c.1115 voie 1 : pas de PR
             # couvrante, mais le label `candidate-delivered` peut etre absent
             # alors que le marqueur `[INFO] candidate-delivered` est present
             # en commentaire (sweep 05:37Z retracte sur activite). Cout : 1
