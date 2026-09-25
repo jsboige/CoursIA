@@ -339,6 +339,34 @@ def _comment_body_for_fingerprint(row: dict[str, Any]) -> str:
     return body
 
 
+# #17818 : la PREMIERE POSE d'un commentaire consultatif de bot marker-garde
+# apres le dossier. #16931 avait neutralise la reecriture en place, mais une
+# pose neuve comptait comme commentaire etranger : l'arrivee d'une PR voisine
+# (qui declenche l'organe PR-PATH-COLLISION sur les README partages) perimait
+# le dossier sans que le fond de la PR bouge. Mesure 2026-09-25 : dossiers de
+# #17781 et #17797 perimes a 13:02Z par la pose consultative du bot seul.
+# Ces quatre organes sont consultatifs par construction (« l'organe rend
+# visible, il ne bloque pas »). Le login mesure est "github-actions[bot]"
+# (suffixe [bot] reserve aux comptes d'app GitHub : un humain ne peut pas le
+# porter) et l'AUTEUR compte, pas le texte seul -- un tiers qui recopie le
+# marqueur perime toujours le dossier.
+BOT_ADVISORY_LOGIN = "github-actions[bot]"
+
+
+def _is_bot_advisory_pose(row: dict[str, Any]) -> bool:
+    """True pour la premiere pose d'un commentaire consultatif de bot marker-garde.
+
+    Neutralise la row dans le decompte des commentaires posterieurs au
+    dossier. Predicate conjonctif : auteur ET marqueur en tete de corps -- la
+    disparition du commentaire, une edition humaine (marqueur deplace) ou un
+    tiers recopiant le marqueur restent detectes.
+    """
+    if _login(row) != BOT_ADVISORY_LOGIN:
+        return False
+    body = row.get("body") or ""
+    return any(body.startswith(marker) for marker in _BOT_MARKER_GUARDS)
+
+
 def _review_body_has_reserve_marker(author: str, body: str) -> bool:
     """True quand, en substance, cette review pose une reserve vivante.
 
@@ -908,11 +936,14 @@ def evaluate_with_dossier(
     errors = [*errors, *validate_dossier(dossier, snapshot)]
     # A dossier is a snapshot. Any later comment invalidates it, including a
     # reply that claims the PR is still ready -- unless the coordinator itself
-    # wrote it, which it cannot be unaware of (see _is_own_later_act).
+    # wrote it, which it cannot be unaware of (see _is_own_later_act), or it
+    # is the first pose of a consultative marker-guarded bot comment, which
+    # attests nothing about the PR's substance (see _is_bot_advisory_pose).
     foreign = [
         row
         for row in comments[dossier.comment_index + 1:]
         if not _is_own_later_act(row, "createdAt", dossier.created_at)
+        and not _is_bot_advisory_pose(row)
     ]
     if foreign:
         errors.append(

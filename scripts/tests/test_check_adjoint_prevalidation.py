@@ -798,6 +798,66 @@ def test_any_other_author_still_expires_the_dossier():
         assert any("discussion changed after dossier" in e for e in errors), login
 
 
+# --- #17818 : premiere pose d'un commentaire consultatif de bot marker-garde --
+
+
+def test_first_pose_of_bot_advisory_comment_does_not_expire_the_dossier():
+    """#17818 acceptance (positive control) : un dossier integre, puis la
+    premiere pose du commentaire consultatif PR-PATH-COLLISION par
+    ``github-actions[bot]`` -- le verdict reste lisible. Mesure fondatrice :
+    les dossiers de #17781 et #17797 perimes a 13:02Z par cette seule pose,
+    l'arrivee d'une PR voisine sur les memes READMEs declenchant l'organe.
+    """
+    for marker in (
+        "<!-- PR-PATH-COLLISION:START -->\n## Path-collision (organ #1)\npaire: X / Y",
+        "<!-- variation-genre-signals -->\ngenre: lean",
+        "<!-- gvar2-light-cap -->\ncap: 1/1",
+        "<!-- trivial-diff-15740 -->\ntrivial: yes",
+    ):
+        base = _stamped_snapshot("")
+        base["comments"].pop()
+        snapshot = _stamped_snapshot(_dossier_for(base))
+        pose = _comment(marker, login="github-actions[bot]")
+        pose["createdAt"] = T1
+        snapshot["comments"].append(pose)
+        verdict, errors = mod.evaluate(snapshot)
+        assert verdict == mod.VERDICT_READY, (marker.splitlines()[0], errors)
+
+
+def test_human_comment_after_dossier_still_expires_it():
+    """#17818 acceptance (negative control) : un commentaire humain posterieur
+    perime toujours le dossier -- la neutralisation ne s'elargit pas aux tiers.
+    """
+    base = _stamped_snapshot("")
+    base["comments"].pop()
+    snapshot = _stamped_snapshot(_dossier_for(base))
+    human = _comment("une remarque de fond sur le scope", login="clusterManager-Myia")
+    human["createdAt"] = T1
+    snapshot["comments"].append(human)
+    errors = _errors(snapshot)
+    assert any("discussion changed after dossier" in e for e in errors)
+
+
+def test_copied_marker_by_other_author_still_expires_the_dossier():
+    """#17818 acceptance (negative control) : l'AUTEUR compte, pas le texte
+    seul. Un tiers qui recopie le marqueur PR-PATH-COLLISION en tete de son
+    commentaire perime le dossier -- le suffixe ``[bot]`` est reserve aux
+    comptes d'app GitHub, un humain ne peut pas le porter.
+    """
+    for login in ("myia-po-2023", "jsboige-bot-impersonator", "clusterManager-Myia"):
+        base = _stamped_snapshot("")
+        base["comments"].pop()
+        snapshot = _stamped_snapshot(_dossier_for(base))
+        copied = _comment(
+            "<!-- PR-PATH-COLLISION:START -->\ncorps recopie par un tiers",
+            login=login,
+        )
+        copied["createdAt"] = T1
+        snapshot["comments"].append(copied)
+        errors = _errors(snapshot)
+        assert any("discussion changed after dossier" in e for e in errors), login
+
+
 def test_shared_login_lift_does_not_expire_dossier():
     """#16883 CN4-bis: a coordinator lift posted under SHARED_GITHUB_LOGIN
     (the merged-account mandate, every lane signs ``jsboige``) is
