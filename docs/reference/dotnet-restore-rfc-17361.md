@@ -34,12 +34,20 @@ L'hypothèse « cache chaud explique la non-reproduction » est **réfutée** pa
 
 **Précharger** les packages NuGet en assemblies locales (résolution + copie par helper Python), puis référencer par `#r "file.dll"` dans les notebooks :
 
-```python
-# scripts/ci/dotnet_preload_packages.py — TODO: à implémenter
-# - Lit une liste de packages (ex: ikvm, quikgraph, csvhelper)
-# - Pour chaque : nuget restore -> copie .dll dans .dotnet_packages/<pkg>/<ver>/
-# - Émet un manifest .NET-packages.json avec paths résolus
+```bash
+# scripts/ci/dotnet_preload_packages.py — LIVRÉ (livrable 2)
+# Lit une liste de packages, résout le cache NuGet global (ou le peuple par
+# `dotnet restore` s'il est absent), copie les .dll dans `_deps/` et émet
+# `_deps/.NET-packages.json` avec les lignes `#r` prêtes à coller.
+python scripts/ci/dotnet_preload_packages.py QuikGraph==2.5.0 CsvHelper==33.0.1 IKVM
 ```
+
+La copie est **à plat** dans `_deps/` — et non dans `.dotnet_packages/<pkg>/<ver>/`
+comme l'esquissait la première rédaction de ce RFC : `#r` est résolu au parse-time
+et exige un littéral relatif au notebook, dont la forme mesurée (c.790) est
+`./_deps/<Dll>.dll`. Les dépendances transitives ne sont **pas** résolues — un
+package qui en déclare (IKVM par exemple) doit les lister lui-même sur la ligne
+de commande.
 
 ```csharp
 // Dans un notebook .NET, au lieu de :
@@ -52,7 +60,7 @@ L'hypothèse « cache chaud explique la non-reproduction » est **réfutée** pa
 // (DLL copiée au préalable depuis le cache NuGet vers _deps/, gitignore)
 ```
 
-La mesure discriminante c.760 (probe E) **réfute** l'hypothèse initiale « `file.dll` réinitialise le `PackageRestoreContext` » : un `#r "nuget:"` après un `#r "file.dll"` a levé `ArgumentException` à chacune des 3 exécutions de c.760. **Mais** la re-production a échoué sur les 2 re-tentatives du 2026-09-23 (c.803 cache chaud, c.807 cache froid) : le bug est **non déterministe**. La recommandation reste néanmoins **univoque et défensive** : **préchargement complet seul** (tous les packages NuGet en `.dll` locaux, via `./_deps/` relatif en attendant le helper `dotnet_preload_packages.py`), pas de mix `file.dll` + `nuget` dans la même session kernel — quand l'exception se produit, elle tue la cellule sans contournement runtime.
+La mesure discriminante c.760 (probe E) **réfute** l'hypothèse initiale « `file.dll` réinitialise le `PackageRestoreContext` » : un `#r "nuget:"` après un `#r "file.dll"` a levé `ArgumentException` à chacune des 3 exécutions de c.760. **Mais** la re-production a échoué sur les 2 re-tentatives du 2026-09-23 (c.803 cache chaud, c.807 cache froid) : le bug est **non déterministe**. La recommandation reste néanmoins **univoque et défensive** : **préchargement complet seul** (tous les packages NuGet en `.dll` locaux, via `./_deps/` relatif et le helper `scripts/ci/dotnet_preload_packages.py`), pas de mix `file.dll` + `nuget` dans la même session kernel — quand l'exception se produit, elle tue la cellule sans contournement runtime.
 
 ## Cause racine (out-of-scope)
 
@@ -72,6 +80,6 @@ Bug interne dans `Microsoft.DotNet.Interactive.PackageManagement.PackageRestoreR
 ## Livrables possibles (par ordre de coût)
 
 1. **MAINTENU** : ce RFC documente le bug et la workaround pour les pairs.
-2. **COURT TERME** : `scripts/ci/dotnet_preload_packages.py` (helper ~50 lignes) + convention `.net-csharp` notebooks.
+2. **LIVRÉ (outillage)** : `scripts/ci/dotnet_preload_packages.py` + `scripts/tests/test_dotnet_preload_packages.py` (41 cas) + entrée `.gitignore` de `_deps/`. La **convention** `.net-csharp` qui l'accompagne reste à écrire — elle dépend du livrable 3 (l'audit décide quels notebooks passent en `#r` local).
 3. **MOYEN TERME** : audit complet de tous les notebooks `.net-csharp` pour convertir les `#r "nuget:"` en `#r "file.dll"`.
 4. **LONG TERME** : fix upstream + bump version cluster.
