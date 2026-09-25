@@ -616,7 +616,7 @@ Cette section consigne la proposition d'analyse reçue du workspace partenaire `
 > |---|---|
 > | `Argument_Analysis_Agentic-<N>` : aucune renumérotation | l'arc principal a été renommé `Argumentation-NN` sous l'issue [#17547](https://github.com/jsboige/CoursIA/issues/17547) (décision coordinateur 2026-09-24, PRs 1/3 et 2/3 livrées) |
 > | 4 compagnons `*_agent` : normaliser `*` → `b` | **caduc** — les 4 carnets sont **archivés** dans [`_archive/`](_archive/README.md) (PR 3/3 de #17547), avec l'inventaire capacité par capacité de ce qu'ils portaient. Aucun renommage à appliquer : ils sortent de l'arc actif |
-> | 14 notebooks à mnémonique : aucune renum | inchangé |
+> | notebooks à mnémonique : aucune renum | inchangé |
 > | « Collision slot 2 — décision owner requise » (plus bas) | **résolue par l'archivage** : `Argument_Analysis_Agentic-2-pl_agent` quitte la racine de la série ; le slot 2 n'est plus porté que par `Argumentation-05-Formal-Verification-Python.ipynb` |
 >
 > La proposition `*` → `b` n'est **pas** rejetée sur le fond : elle est devenue sans objet pour ces quatre carnets. Le paragraphe « Indépendant de la renumérotation » (headings) et la mesure repo-wide hors Argument_Analysis restent valides tels quels.
