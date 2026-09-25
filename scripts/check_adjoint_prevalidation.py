@@ -107,9 +107,11 @@ from typing import Any
 
 try:
     import gh_identity
+    import check_unaddressed_nits
 except ImportError:  # charge via importlib dans les tests (hors scripts/)
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    import gh_identity
+    import gh_identity  # type: ignore[no-redef]
+    import check_unaddressed_nits  # type: ignore[no-redef]
 
 # Campagnes gelees par veto user (#17040) : definition PARTAGEE avec
 # merge_ready dans scripts/coordination/frozen_campaigns.py. Ce gate ne peut
@@ -313,6 +315,14 @@ _BOT_MARKER_GUARDS: tuple[str, ...] = (
     "<!-- trivial-diff-15740 -->",  # workflows idempotents
 )
 
+# #17039 -- Le predicat de "reserve vivante" n'est pas une liste de tokens :
+# il est confie a scripts/check_unaddressed_nits.classify (meme semantique
+# que B.0, encagement inclus). Reduire la detection a une seconde liste
+# duplique CONCERN_MARKERS + SEVERITY_GLYPHS + BLOCK_VERDICTS tout en
+# ignorant l'encagement, ce qui faisait perimer une levee ecrite dans la
+# forme sure (le dos de la PR note que la duplication est une dette --
+# dette reglee). Pas de second marqueur-statique ici.
+
 
 def _comment_body_for_fingerprint(row: dict[str, Any]) -> str:
     """Corps a hacher : le marqueur seul pour un commentaire de bot marker-garde.
@@ -329,7 +339,40 @@ def _comment_body_for_fingerprint(row: dict[str, Any]) -> str:
     return body
 
 
-def _is_own_later_act(row: dict[str, Any], timestamp_key: str, neutral_after: str | None) -> bool:
+def _review_body_has_reserve_marker(author: str, body: str) -> bool:
+    """True quand, en substance, cette review pose une reserve vivante.
+
+    #17039 (et la revue de ai-01 sur #17693) : le predicat n'est pas une
+    liste de tokens en dur. Il est delegue a ``check_unaddressed_nits.classify``
+    -- la meme semantique que B.0, encagement inclus : une levee qui nomme le
+    verdict qu'elle leve, encage (`backticks`, `« »`, bloc de code), reste
+    neutre ; la meme phrase avec le token nu perime le dossier. C'est la
+    forme prevue par ``pr-review-discipline.md`` ("repondre a une reserve --
+    la forme sure", #17071) ; la centralisation ferme la boucle que la
+    duplication avait rouverte cote gate (#16840 fondateur).
+
+    Le cas mixte (une review qui leve ET pose une reserve) reste resolu
+    cote EMISSION (consigne #16731 : le coordinateur ne melange jamais les
+    deux sur la meme surface) : ``classify`` rend la valeur observee, pas
+    une moyenne. Un verdict nu emetteur reste un verdict nu ; un narrateur
+    encage reste un narrateur.
+    """
+    if not body:
+        return False
+    try:
+        verdict = check_unaddressed_nits.classify(author, body)
+    except Exception:
+        return False  # fail-CLOSED sur dependance externe : on neutralise, on ne perime pas
+    return verdict is not None
+
+
+def _is_own_later_act(
+    row: dict[str, Any],
+    timestamp_key: str,
+    neutral_after: str | None,
+    *,
+    row_kind: str = "comment",
+) -> bool:
     """True when the coordinator itself authored this surface after the dossier.
 
     The dossier attests that the adjoint read every surface existing when it was
@@ -344,11 +387,22 @@ def _is_own_later_act(row: dict[str, Any], timestamp_key: str, neutral_after: st
     A neutralisation scoped to ``COORDINATOR_LOGIN`` alone misses every
     coordinator action posted under the shared sign-in -- the very loop
     measured on #16840. We accept either login as the coordinator's voice.
+
+    #17039 -- ``row_kind`` precise le contrat de neutralisation :
+    - "comment" : neutralise inconditionnellement (comportement historique).
+    - "review" : neutralise UNIQUEMENT si la review NE pose PAS une reserve
+      vivante. La detection est confiee a ``check_unaddressed_nits.classify``
+      (voir commentaire de la fonction) -- un verdict Hermes nu, un glyphe
+      🟡/🔴, un verdict **BLOCKED**, ou tout verdict qui resistre a
+      l'encagement continuera de perimer le dossier. Une levee ecrite dans
+      la forme sure (verdict encage) reste neutre.
     """
     if not neutral_after:
         return False
     author = _login(row)
     if author not in (COORDINATOR_LOGIN, SHARED_GITHUB_LOGIN):
+        return False
+    if row_kind == "review" and _review_body_has_reserve_marker(author, row.get("body") or ""):
         return False
     stamp = row.get(timestamp_key) or ""
     return bool(stamp) and stamp > neutral_after
@@ -360,7 +414,7 @@ def _attested_reviews(
     return [
         row
         for row in snapshot.get("reviews") or []
-        if not _is_own_later_act(row, "submittedAt", neutral_after)
+        if not _is_own_later_act(row, "submittedAt", neutral_after, row_kind="review")
     ]
 
 

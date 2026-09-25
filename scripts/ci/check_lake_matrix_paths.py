@@ -17,7 +17,11 @@ Ce garde verifie, fail-CLOSED (exit 1) :
      mort = garde muette) ;
   3. aucun lake du manifeste ne garde son dispatcher historique
      ``lean-<lake>.yml`` : les deux declencheurs ensemble produiraient un
-     DOUBLE build du meme lake sur la meme PR.
+     DOUBLE build du meme lake sur la meme PR. Le nom de fichier ne suffit
+     pas (#17336 : ``lean-serre.yml`` couvrait ``serre100_lean``) -- le
+     critere effectif est le RECROISEMENT des ``on.paths`` de tout workflow
+     ``lean-*.yml`` avec les chemins du manifeste (paires preexistantes
+     connues : ``KNOWN_DOUBLE_TRIGGERS``, cf #17374).
 """
 
 from __future__ import annotations
@@ -33,6 +37,15 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_MANIFEST = REPO_ROOT / "scripts" / "lean" / "ci_lakes.json"
 DEFAULT_WORKFLOW = (REPO_ROOT / ".github" / "workflows" /
                     "lean-ci-matrix.yml")
+
+# Dettes mesurees a l'introduction du check par recroisement (#17336, issue
+# #17374) : paires wrapper x lake manifeste PREEXISTANTES sur main. Elles ne
+# rougissent pas le garde tant que #17374 ne les a pas tranchees -- vider
+# cette liste revient a rendre le garde strict.
+KNOWN_DOUBLE_TRIGGERS = {
+    ("lean-asymmetric-information.yml", "gamedefsext"),
+    ("lean-social-choice.yml", "gametheory"),
+}
 
 
 def workflow_paths(doc: dict, event: str) -> set[str]:
@@ -67,6 +80,43 @@ def main(argv: list[str] | None = None) -> int:
                 f"lake {lake['lake']}: le dispatcher historique "
                 f"{legacy.name} existe encore ALORS que le lake est au "
                 f"manifeste -- double declencheur = double build")
+
+    # Recroisement de chemins (lecons #17336) : le check par nom de fichier
+    # ci-dessus rate les wrappers historiques dont le nom ne derive pas du
+    # lake (lean-serre.yml couvrait serre100_lean). Le vrai critere d'un
+    # double declencheur : TOUT workflow lean-*.yml (hors le dispatcher
+    # lui-meme et hors workflows sans declencheur de chemins -- les
+    # reutilisables) dont le on.paths touche un chemin du manifeste.
+    for wf_file in sorted((args.repo_root / ".github" / "workflows").glob("lean-*.yml")):
+        if wf_file.name == args.workflow.name:
+            continue
+        try:
+            other = yaml.safe_load(wf_file.read_text(encoding="utf-8"))
+        except yaml.YAMLError:
+            errors.append(
+                f"workflow {wf_file.name}: YAML illisible -- illisible = aveugle")
+            continue
+        other_paths = (workflow_paths(other, "push")
+                       | workflow_paths(other, "pull_request"))
+        if not other_paths:
+            continue
+        for lake in manifest["lakes"]:
+            if (wf_file.name, lake["lake"]) in KNOWN_DOUBLE_TRIGGERS:
+                continue
+            # Seuls les chemins PROPRES au lake (sous son project-path)
+            # comptent : les self-cover partages (agent_tests/lean_server.py
+            # etc.) apparaissent legitiment dans tout wrapper porteant un
+            # gate B.3 -- un re-declenchement sur fichier de gate est la
+            # couverture #8712, pas un double build du lake.
+            lake_specific = {p for p in lake["paths"]
+                             if p.startswith(lake["project-path"])}
+            overlap = other_paths & lake_specific
+            if overlap:
+                errors.append(
+                    f"lake {lake['lake']}: {wf_file.name} se declenche aussi "
+                    f"sur {sorted(overlap)} -- double declencheur = double "
+                    f"build (si dette connue, l'inscrire dans "
+                    f"KNOWN_DOUBLE_TRIGGERS avec son issue)")
 
     for p in sorted(push | pr):
         if p.startswith((".github/", "scripts/")) and not (args.repo_root / p).exists():

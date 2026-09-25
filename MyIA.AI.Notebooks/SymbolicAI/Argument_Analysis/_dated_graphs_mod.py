@@ -14,8 +14,8 @@
 # **Substrat — s'y brancher, ne pas le refaire :**
 # 
 # - [Argument_Analysis_Ontology_AIF.ipynb](Argument_Analysis_Ontology_AIF.ipynb) : l'ontologie AIF, schéma de nœuds/liens dans lequel un graphe daté doit s'exprimer ;
-# - [Argument_Analysis_Dung_AF_Semantics.ipynb](Argument_Analysis_Dung_AF_Semantics.ipynb) : les sémantiques de Dung, ce qu'« être accepté » veut dire à une date donnée ;
-# - [Argument_Analysis_Ranking_Semantics.ipynb](Argument_Analysis_Ranking_Semantics.ipynb) : les sémantiques graduelles, utiles quand l'acceptation binaire écrase la variation (exercice 3).
+# - [Argumentation-03-Dung-AF-Semantics-Python.ipynb](Argumentation-03-Dung-AF-Semantics-Python.ipynb) : les sémantiques de Dung, ce qu'« être accepté » veut dire à une date donnée ;
+# - [Argumentation-03c-Ranking-Semantics-Python.ipynb](Argumentation-03c-Ranking-Semantics-Python.ipynb) : les sémantiques graduelles, utiles quand l'acceptation binaire écrase la variation (exercice 3).
 # 
 # **Le piège central** : deux graphes construits depuis deux échantillons différents diffèrent *toujours*.
 # Une mesure d'écart $d(G_t, G_{t+1}) > 0$ ne dit donc rien tant qu'on ne connaît pas l'écart produit par
@@ -266,14 +266,14 @@ print(rdf_t.serialize(format="turtle")[:520])
 #   des attaques, cf. AF bipolaires de Cayrol–Lagasquie–Schmid) est **hors scope** : documentée comme limite.
 # 
 # Les définitions de l'acceptation (admissible, *grounded*) sont **reprises telles quelles du substrat**
-# [Dung_AF_Semantics](Argument_Analysis_Dung_AF_Semantics.ipynb) (cellules 2 à 10) — sémantique inchangée,
+# [Argumentation-03-Dung-AF-Semantics](Argumentation-03-Dung-AF-Semantics-Python.ipynb) (cellules 2 à 10) — sémantique inchangée,
 # reproduite ici pour l'auto-contenance du notebook.
 # 
 
 # In[4]:
 
 
-# --- Reprise du substrat Argument_Analysis_Dung_AF_Semantics.ipynb (cellules 2-10) ---
+# --- Reprise du substrat Argumentation-03-Dung-AF-Semantics-Python.ipynb (cellules 2-10) ---
 
 class AF:
     """Cadre d'argumentation abstrait de Dung : <args, attacks>."""
@@ -738,7 +738,7 @@ distribution_ex2 = None  # TODO etudiant : plancher_aleatoire(corpus_t)
 # 
 # **Contexte.** L'acceptation binaire de Dung écrase la variation : un argument marginalement attaqué
 # et un argument submergé sont « dehors » pareillement. Les **sémantiques de classement** du substrat
-# [Ranking_Semantics](Argument_Analysis_Ranking_Semantics.ipynb) (h-Categoriser, fardeau) donnent à chaque
+# [Argumentation-03c-Ranking-Semantics](Argumentation-03c-Ranking-Semantics-Python.ipynb) (h-Categoriser, fardeau) donnent à chaque
 # argument une *force* numérique — une troisième mesure d'écart, graduée, peut voir des déplacements
 # invisibles à $d_{sem}$.
 # 
