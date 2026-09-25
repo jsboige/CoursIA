@@ -1,4 +1,4 @@
-# learning_theory_lean — Learning theory (Perceptron / Novikoff + PAC / Valiant + GradientFlow), Lean 4
+# learning_theory_lean — Learning theory (Perceptron / Novikoff + PAC / Valiant + GradientFlow + EffectiveTheory), Lean 4
 
 Lake Lean 4 (Mathlib) à la racine de la série **ML**, mutualisant des résultats
 fondamentaux de **théorie de l'apprentissage** sous un même umbrella généraliste
@@ -25,6 +25,30 @@ fondamentaux de **théorie de l'apprentissage** sous un même umbrella général
    blocs *résiduels* `h ↦ h + f h` la voit **minorée** par `(1-c) ^ n` (survie,
    ancre `3e-5 < 0,6 ^ 20`) — le raccourci identité (He et al. 2015) rend
    géométriquement improbable ce que la pile plain tue géométriquement.
+4. **Module `EffectiveTheory`** — digestion #16741/arc B (issue #16752) :
+   théorie effective de la représentation (corpus Tegmark R02/R06/R10) —
+   R02 *Grokking* : δ-parallélogrammes (Déf. 1), Prop. 1 (perte nulle ⟹
+   `i + j = m + n`), Prop. 2 (décodeur injectif ⟹ formation) et les deux
+   identités de l'appendice F portant les lois de conservation
+   `C = Σ E k` / `Z₀ = Σ E k²` ; R06 *GenEFT* : Théorème 1 (décodeur
+   injectif ⟹ clustering par classe) + quantité conservée hyperbolique
+   `C = a₂²/(2η_A) − c²/η_x` (`dC/dt = 0`, preuve calculatoire) +
+   contenu informationnel `b = log₂(n!/|Aut G|)` (ancres : groupe trivial
+   `b = 0`, groupe à deux éléments `b = 1`) + **Statics sur graphes**
+   (Section III : re-labellage par `Equiv.Perm (Fin n)`, pont
+   `mem_aut_iff` stabilisateur = automorphismes, orbit-stabilizer
+   `card_orbit_mul_card_aut` `|orbite|·|Aut G| = n!`, longueur de
+   description `descLength`/`descLength_eq` `b = log₂(n!/|Aut G|)`) +
+   **Eq. 16** `rel_eqn_autonomous` (forçage common-mode s'annule dans
+   `x₁ − x₂` : séparation autonome) — migrés du module dissous
+   `GenEFT.lean` (#17480) ; R10 *circle of days* : la
+   représentation de `C₇ = ZMod 7` (`rotation_cyclicSeven`) est
+   **irréductible** (`circleOfDays_irreducible` — aucune droite stable, le
+   discriminant `4(cos²(2π/7) − 1) < 0` exclut toute valeur propre
+   réelle). S'y ajoute le module frère **`GrokkingLemmas`** (recadrage
+   #16752) : conservation de `C` le long du flot de `ℓ₀` sans hypothèse,
+   invariance de l'hyperplan centré le long du flot effectif, lemmes
+   génériques de calcul différentiel.
 
 C'est le **premier lake Lean de la série ML** (aucun lake Lean en ML auparavant,
 roadmap #4038 Tier 2). La preuve de Novikoff est **géométrique élémentaire** :
@@ -41,15 +65,20 @@ argument ERM dans `ERM`).
 
 ## Statut
 
-- **Toolchain** : `leanprover/lean4:v4.32.1` + Mathlib4 (`v4.32.1`)
+- **Toolchain** : `leanprover/lean4:v4.33.0` + Mathlib4 (`db584cd6`)
 - **Sorry** : **0** sur tout le module (comptage code-only, voir § Modules).
   Côté Perceptron, la borne `novikoff_mistake_bound` (`n · γ² ≤ R²`), le Lemme A
   d'alignement (`⟪wₖ, u⟫ ≥ kγ`) et le Lemme B de norme (`‖wₖ‖² ≤ kR²`) sont
   entièrement prouvés, ainsi que le **serrage** `novikoff_bound_is_sharp` (témoin
   sur `ℂ` atteignant l'égalité `n·γ² = R²`). Côté PacLearning, les deux bornes
-  phares `PacFiniteBound` (Valiant) et `Agnostic` sont 0-sorry.
+  phares `PacFiniteBound` (Valiant) et `Agnostic` sont 0-sorry. Côté
+  EffectiveTheory, Props 1-2 (`prop1_zeroLoss`, `prop2_injectiveDecoder`),
+  les identités de l'appendice F (`loss0_grad_sum_zero`,
+  `loss0_grad_dot_self`) et les lois de conservation
+  (`flow_sumsq0_constant`, `flow_deriv_sum_apply` ; côté `GrokkingLemmas` :
+  `C_conserved_l0`, `meanZero_invariant`, `Z0_conserved`) sont 0-sorry.
 - **Build** : `lake build Perceptron` / `lake build PacLearning` /
-  `lake build GradientFlow` (dépend de Mathlib4)
+  `lake build GradientFlow` / `lake build EffectiveTheory` (dépend de Mathlib4)
 
 ## Ce qui est formalisé
 
@@ -161,19 +190,40 @@ des docstrings « 0-sorry »). Chaque fichier FR possède un **sibling anglais**
 | `GradientFlow/Residual.lean` | 0 | Bloc résiduel `residualBlock` (`h ↦ h + f h`, He et al. 2015) + pile `residualStack` : lemme central (`residualStack_deriv_bound` via l'anti-inégalité triangulaire), **minoration** `abs_deriv_residualStack_ge` (`(1-c) ^ n ≤ \|g'\|`), ancre jumelle `three_fifths_pow_twenty_gt` (`3e-5 < 0,6 ^ 20`). |
 | `GradientFlow.lean` | 0 | Imports parapluie + **grille de digestion 10 points** (énoncé, provenance He/Veit, nouveauté, dépendances, trivial/neuf, friction, chemin de découverte, limites, raccord corpus, transmission). |
 
+### Module `EffectiveTheory` (digestion #16741 — corpus Tegmark R02/R06/R10)
+
+Addition modulaire jouet sur `Fin p` : le modèle `M = (Dec, R)` plonge chaque
+entier `k` en `E k` ; l'entraînement à perte nulle exige `Dec (E i + E j) =
+Y (i + j)` pour toute paire. Le papier (arXiv:2205.10343) explique le grokking
+par la dynamique de ces plongements sous la perte effective `ℓ_eff = ℓ₀/Z₀`.
+
+| Fichier | sorry | Contenu |
+|---------|-------|---------|
+| `EffectiveTheory/Grokking.lean` | 0 | R02 : Déf. 1 δ-parallélogrammes, Prop. 1 `prop1_zeroLoss` (perte nulle ⟹ `i + j = m + n`), Prop. 2 `prop2_injectiveDecoder` (décodeur injectif ⟹ formation), App. F : identités `loss0_grad_sum_zero` / `loss0_grad_dot_self` (Euler degré 2) + lois de conservation du flot `flow_sumsq0_constant` (`Z₀` inconditionnel), `flow_sum_constant_of_zero_loss` (`C` sur le régime post-grokking). |
+| `EffectiveTheory/GrokkingLemmas.lean` | 0 | **Recadrage #16752** (delta propre du grain, porté du cadre `EuclideanSpace ℝ ι` vers `Fin p → ℝ`) : `C_conserved_l0` (`C = Σ E k` conservée le long du flot de `ℓ₀`, **sans hypothèse** — via l'identité 1 de l'appendice F), `meanZero_invariant` (l'hyperplan centré `C = 0` est invariant le long du flot effectif : `dC/dt = κ·C`, facteur intégrant `exp(−∫κ)`), et lemmes génériques `hasDerivAt_line` / `euler_zero_homogeneous` / `fderiv_of_translateInvariant` / `eq_of_hasDerivAt_zero` / `Z0_conserved` (cadre préhilbertien quelconque, indépendant de `Fin p → ℝ`). |
+| `EffectiveTheory/Repons.lean` | 0 | R06 : Théorème 1 `clustering_iff_injective_decoder` (décodeur injectif + perte nulle ⟹ clustering par classe exact, témoin `k = i`), Eq. 11 `conservedHyperbola_deriv_zero` (`d/dt (a₂²/2η_A − c²/η_x) = 0`, anéantissement mutuel), **Eq. 16 `rel_eqn_autonomous`** (forçage common-mode s'annule dans `x₁ − x₂` : ressort de Hooke autonome) — ce dernier migré de `GenEFT.lean` (#17480). |
+| `EffectiveTheory/InfoBits.lean` | 0 | R06 : `infoBits G = log₂(n!/|Aut G|)` + ancres (trivial `b = 0`, deux éléments `b = 1`, `C₇` `b = log₂ 840`) ; **Statics graphes (Section III, migrées de `GenEFT.lean` #17480)** : re-labellage `permSmul` + instance `MulAction` de `Equiv.Perm (Fin n)` sur `SimpleGraph (Fin n)`, pont `mem_aut_iff` (stabilisateur ↔ automorphismes : adjacence préservée dans les deux sens), orbit-stabilizer `card_orbit_mul_card_aut` (`\|orbite\|·\|Aut G\| = n!`), longueur de description `descLength` + forme quotient `descLength_eq` (`b = log₂(n!/\|Aut G\|)`, éq. 4). |
+| `EffectiveTheory/CircleOfDays.lean` | 0 | R10 : la rotation des jours comme représentation de `C₇ = ZMod 7` (`rotation_cyclicSeven`) et son **irréductibilité** `circleOfDays_irreducible` (aucune droite stable : le discriminant `4(cos²(2π/7) − 1) < 0` exclut toute valeur propre réelle). |
+| `EffectiveTheory.lean` | 0 | Imports parapluie + cartographie du corpus (R02 `88CE88DB` / R06 `B589C4EF` / R10 `7DEAC929`). |
+
 ### i18n FR/EN
 
 Chaque module est doublé d'un **sibling anglais** `Foo_en.lean` (namespace
-`PacLearning` ↔ `PacLearning_en`, `Perceptron` ↔ `Perceptron_en`, imports
+`PacLearning` ↔ `PacLearning_en`, `Perceptron` ↔ `Perceptron_en`,
+`GradientFlow` ↔ `GradientFlow_en`,
+`EffectiveTheory.GrokkingLemmas` ↔ `EffectiveTheory.GrokkingLemmas_en`
+(le reste d'`EffectiveTheory` attend son twin, #17481), imports
 `_en`-suffixés, **byte-identical hors docstrings/commentaires**) — livré sous
-l'Epic **#4980** (Option A, pattern sibling-pair ratifié 2026-07-04). Les 18
-fichiers `_en` couvrent l'intégralité des 18 modules feuilles + agrégateurs :
+l'Epic **#4980** (Option A, pattern sibling-pair ratifié 2026-07-04). Les 22
+fichiers `_en` couvrent PacLearning, Perceptron, GradientFlow et
+`GrokkingLemmas` :
 
 `PacLearning_en.lean`, `PacLearning/{Agnostic,BernoulliMGF,Concentration,Data,
 ERM,Hoeffding,MGF,PacFiniteBound,Sample,SampleExpect,UniformConcentration,
 UnionBound}_en.lean`, `Perceptron_en.lean`,
 `Perceptron/{Convergence,Data,Perceptron,Tightness}_en.lean`,
-`GradientFlow_en.lean`, `GradientFlow/{Plain,Residual}_en.lean`.
+`GradientFlow_en.lean`, `GradientFlow/{Plain,Residual}_en.lean`,
+`EffectiveTheory/GrokkingLemmas_en.lean`.
 
 **Conséquence** : les futurs raffinements doivent conserver la symétrie FR/EN
 (les deux fichiers évoluent ensemble ou pas du tout). La CI `check_i18n_siblings`
@@ -186,6 +236,7 @@ vérifie l'absence de drift (164/166 byte-identical, 0 orphan cluster-wide au
 # Depuis ce répertoire (WSL recommandé)
 lake build Perceptron    # théorème de Novikoff
 lake build PacLearning   # cadre PAC (modèle + propriétés élémentaires)
+lake build EffectiveTheory # corpus Tegmark : grokking + conservation + R06/R10
 # Dépend de Mathlib4 — le premier build est lourd, les builds suivants utilisent le cache
 ```
 
@@ -224,11 +275,16 @@ déclaration dans un notebook :
   Recognition*, arXiv:1512.03385 (2015) — le raccourci identité.
 - A. Veit, M. Wilber & S. Belongie, *Residual Networks Behave Like Ensembles of
   Relatively Shallow Networks*, arXiv:1605.06431 (2016) — la lecture ensembliste.
+- Z. Liu, E. J. Michaud & M. Tegmark, *Towards Understanding Grokking — An
+  Effective Theory of Representation Learning*, arXiv:2205.10343 (2022) —
+  parallélogrammes de représentation (Partie 3) et lois de conservation
+  (Appendice F).
 
 ## Voir aussi
 
 - **Issue #4051** — création du lake + module Perceptron (roadmap Lean #4038, Tier 2 « first ML theorem »)
 - **Issue #4293** — renommage `perceptron_lean → learning_theory_lean` + module PacLearning (mutualisation, cf `decision_theory_lean`)
 - **EPIC #13106** — digestion : le module `GradientFlow` en est la tranche « forme formalisation » (grille 10 points dans `GradientFlow.lean`)
+- **Issue #16752 / EPIC #16741** — module `EffectiveTheory` : base `Grokking.lean` (#16794) + module frère `GrokkingLemmas.lean` (recadrage ai-01 2026-09-23 : delta propre du grain R02, arc « ouverte, responsable, prouvable, explicable »)
 - **`ML/`** — série Machine Learning (ML.NET C#, Data Science with Agents Python)
 - **Epic #2651** — prose pédagogique README

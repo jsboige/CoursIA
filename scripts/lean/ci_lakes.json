@@ -233,6 +233,19 @@
         "MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters/lakefile.toml",
         "MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters/lean-toolchain"
       ]
+    },
+    {
+      "lake": "tegmarkmuh",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean",
+      "display-name": "tegmark_muh_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lakefile.toml",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lean-toolchain"
+      ]
     }
   ]
 }

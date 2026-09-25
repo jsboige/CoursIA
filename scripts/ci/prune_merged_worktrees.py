@@ -49,6 +49,9 @@ Critères de retrait (cf issue #14195 acceptance) :
 4. **Worktree sans branche (HEAD détaché)** : verdict par contenu. Si
    `git log origin/main --grep "<branch_topic>"` trouve un commit dont le
    sujet correspond (le squash a efface l'ascendance) : REMOVE ; sinon REFUSE.
+   Un HEAD détaché **ancêtre de `origin/main`** n'a aucun commit propre,
+   donc aucune PR : REFUSE (`reason=detached_on_main`, #17684). Seuls les
+   sujets de `origin/main..HEAD` sont lus pour attribuer une PR.
 5. **Worktree avec residu untracked non tolere** : REFUSE, cause nommee
    (`reason=untolerated_untracked:<n>`, #14619 point 2). Pouvoir de refus
    git (#14509) : `git worktree remove` sans `--force` refuse TOUT
@@ -162,6 +165,7 @@ import re
 import shutil
 import subprocess
 import sys
+import traceback
 from pathlib import Path
 from typing import Optional
 
@@ -764,6 +768,30 @@ def lookup_pr_for_branch(branch: str,
     return get_pr_resolution().resolve(branch, head_sha)
 
 
+# Reference de l'integration : un HEAD detache qui en est ancetre n'a
+# aucun commit propre, donc aucune PR attribuable (#17684).
+MAIN_REF = "origin/main"
+
+
+def detached_head_is_on_main(wt_path: str) -> bool:
+    """Vrai si le HEAD detache est un ancetre de ``origin/main`` (#17684).
+
+    Un tel worktree ne porte aucun commit propre : c'est une extraction de
+    main (demeure d'un organe planifie, lecture de review), pas le travail
+    d'une PR. Les sujets ``(#N)`` de son historique sont ceux de main, et
+    les resoudre attribue au worktree la PR d'un commit ancetre -- mesure :
+    la demeure de la tache ``merge_ready`` classee REMOVE sur une PR MERGED
+    qui n'avait rien a voir avec elle.
+
+    Echec git (ref absente, depot sans remote) -> False : la voie de lookup,
+    restreinte a ``origin/main..HEAD``, rend alors None, donc REFUSE.
+    """
+    proc = run_git(
+        wt_path, "merge-base", "--is-ancestor", "HEAD", MAIN_REF, check=False
+    )
+    return proc.returncode == 0
+
+
 def lookup_pr_for_detached_head(wt_path: str) -> Optional[dict]:
     """Verdict par contenu pour HEAD detaché (#14476) : PR exacte, ou rien.
 
@@ -786,9 +814,17 @@ def lookup_pr_for_detached_head(wt_path: str) -> Optional[dict]:
 
     3. **Sinon None** : aucun match = aucun verdict. Le fail-CLOSED est
        deja le bon defaut (REFUSE downstream).
+
+    Les sujets lus sont ceux des commits PROPRES au HEAD
+    (``origin/main..HEAD``), jamais son historique entier : les 20 derniers
+    sujets de ``HEAD`` traversent main des le premier commit partage, et la
+    voie 1 resolvait alors la PR d'un commit ancetre (#17684 -- une branche
+    de revert attribuee a la PR qu'elle revertait, MERGED, donc REMOVE,
+    alors que sa propre PR etait OPEN).
     """
     log_proc = run_git(
-        wt_path, "log", "HEAD", "--format=%s", "-n", "20", check=False
+        wt_path, "log", f"{MAIN_REF}..HEAD", "--format=%s", "-n", "20",
+        check=False,
     )
     if log_proc.returncode != 0:
         return None
@@ -1015,7 +1051,26 @@ def diagnose_worktree(wt_path: str, current_path: str,
     pr = None
     if info["branch"]:
         pr = lookup_pr_for_branch(info["branch"], head_sha=head_sha)
-    elif not info["branch"]:
+    elif detached_head_is_on_main(wt_path):
+        # Extraction de main (demeure d'organe, lecture de review) : aucune
+        # PR ne la porte, le critere « PR MERGED » ne s'y applique pas.
+        return WorktreeStatus(
+            path=wt_path,
+            branch=info["branch"],
+            is_current=False,
+            pr_state=None,
+            pr_number=None,
+            pr_url=None,
+            ahead_count=info["ahead_count"],
+            has_source_dirty=info["has_source_dirty"],
+            untracked_paths=info["untracked"],
+            decision="REFUSE",
+            refusal_reason="detached_on_main",
+            has_submodules=info["has_submodules"],
+            blocking_untracked=info.get("blocking_untracked", []),
+            ignored_extra=info.get("ignored_extra", []),
+        )
+    else:
         pr = lookup_pr_for_detached_head(wt_path)
 
     pr_state = pr.get("state") if pr else None
@@ -1375,5 +1430,42 @@ def main() -> int:
     return 0
 
 
+def run() -> int:
+    """`main()` avec le contrat d'erreur garanti (#17292).
+
+    `main()` ne rattrape que `RuntimeError` (l.1277-1299) : toute autre
+    exception s'echappait, et Python rend alors **1** en n'ecrivant rien sur
+    stdout. Or `1` est deja le code documente « des refus ont ete observes » :
+    l'appelant ne pouvait donc pas distinguer « l'outil a tourne et refuse » de
+    « l'outil n'a pas pu tourner ». Mesure : c'est exactement le couple
+    (`rc ∈ {0,1}`, stdout vide) qui a rougi `Scripts Tests (CPU)` sur des PRs de
+    plusieurs lanes le 2026-09-21, et que l'E2E lisait comme un
+    `JSONDecodeError: Expecting value: line 1 column 1`.
+
+    Ici une panne inattendue sort par le code d'erreur **documente** du script
+    (2), traceback sur stderr : `1` redevient non ambigu.
+    """
+    try:
+        return main()
+    except BrokenPipeError:
+        # Le consommateur a ferme le pipe (`| head`, `| jq -e` qui sort tot) :
+        # ce n'est PAS un echec de l'outil, et l'ecrire sur stderr serait un
+        # diagnostic faux. On ferme stdout pour que l'interpreteur ne re-tente
+        # pas d'y ecrire au shutdown, puis on sort sans code d'erreur.
+        try:
+            sys.stdout.close()
+        except OSError:
+            pass
+        return 0
+    except Exception:
+        traceback.print_exc()
+        print(
+            "ERROR: echec inattendu, pas une decision de l'outil "
+            "(voir le traceback ci-dessus)",
+            file=sys.stderr,
+        )
+        return 2
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(run())

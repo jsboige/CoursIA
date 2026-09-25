@@ -895,7 +895,7 @@ class TestQuartoClosureDependency:
         r = subprocess.run(
             [sys.executable, str(script), "--closure", "--quarto-yml", str(yml),
              str(tmp_path)],
-            capture_output=True, text=True, env=env, cwd=tmp_path,
+            capture_output=True, text=True, encoding="utf-8", env=env, cwd=tmp_path,
         )
         assert r.returncode == 2, (r.stdout, r.stderr)
         assert "pyyaml" in r.stderr
@@ -909,10 +909,99 @@ class TestQuartoClosureDependency:
         r = subprocess.run(
             [sys.executable, str(script), "--closure", "--quarto-yml", str(yml),
              str(tmp_path)],
-            capture_output=True, text=True, cwd=tmp_path,
+            capture_output=True, text=True, encoding="utf-8", cwd=tmp_path,
         )
         assert r.returncode == 0, (r.stdout, r.stderr)
         assert "--closure: render-list=1" in r.stderr
+
+
+class TestHeadingContinuation:
+    """Tests de la règle `heading_continuation` introduite par PR #17005/#17009.
+
+    Le défaut : un `#` + non-espace en début de ligne de CONTINUATION de puce
+    / blockquote (2+ espaces d'indentation, pas de marqueur de conteneur sur
+    la même ligne) est rendu comme un heading géant par Jupyter / VSCode /
+    nbviewer. La règle `_CONTINUATION_HEADING_RE = ^\\s{2,}(#{1,6})[^\\s#]`
+    ferme cet angle mort (disjoint de `_HEADING_RE` et `_CONTAINER_HEADING_RE`).
+    """
+
+    @staticmethod
+    def _mk_cell(source_lines):
+        return {"cell_type": "markdown", "metadata": {}, "source": source_lines}
+
+    @staticmethod
+    def _write_notebook(tmp_path, md_cells):
+        nb = {
+            "cells": [TestHeadingContinuation._mk_cell(src) for src in md_cells],
+            "metadata": {},
+            "nbformat": 4,
+            "nbformat_minor": 5,
+        }
+        p = tmp_path / "fixture.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        return p
+
+    def test_continuation_heading_pilote_reference(self, tmp_path):
+        """Pilote : cellule #16888 cell-015 avant-fix — continuation `  #15520)`."""
+        src = [
+            "- ouverture de la puce\n",
+            "  #15520) — le `#` en début de continuation est rendu comme heading\n",
+        ]
+        nb_path = self._write_notebook(tmp_path, [src])
+        r = subprocess.run(
+            [sys.executable, str(Path(detect_markdown_rendering.__file__).resolve()),
+             "--json", str(nb_path)],
+            capture_output=True, text=True, encoding="utf-8", cwd=tmp_path,
+        )
+        assert r.returncode == 0, (r.stdout, r.stderr)
+        data = json.loads(r.stdout)
+        findings = data.get("findings", [])
+        hc = [f for f in findings if f.get("rule") == "heading_continuation"]
+        assert len(hc) == 1, f"expected 1 heading_continuation finding, got {len(hc)}: {findings}"
+
+    def test_continuation_heading_clean_post_fix(self, tmp_path):
+        """Après rewrap `c34d5e88d` : la cellule propre ne fire plus."""
+        src = [
+            "- ouverture de la puce\n",
+            "  reference `#15520` — référence inline, pas un heading\n",
+        ]
+        nb_path = self._write_notebook(tmp_path, [src])
+        r = subprocess.run(
+            [sys.executable, str(Path(detect_markdown_rendering.__file__).resolve()),
+             "--json", str(nb_path)],
+            capture_output=True, text=True, encoding="utf-8", cwd=tmp_path,
+        )
+        assert r.returncode == 0, (r.stdout, r.stderr)
+        data = json.loads(r.stdout)
+        findings = data.get("findings", [])
+        hc = [f for f in findings if f.get("rule") == "heading_continuation"]
+        assert len(hc) == 0, f"expected 0 findings, got {findings}"
+
+    def test_continuation_heading_no_false_positive_legit_heading(self, tmp_path):
+        """4 contrôles négatifs : top-level heading, in-list opener, fenced code, `## ` indent."""
+        cells = [
+            # Top-level heading (catch par `_HEADING_RE`, pas continuation)
+            ["## Top-level heading\n"],
+            # In-list opener (catch par `_CONTAINER_HEADING_RE`, pas continuation)
+            ["- # Heading in list\n"],
+            # Fenced code avec `#` au début — pas un heading du tout
+            ["```python\n",
+             "    # comment in code\n",
+             "```\n"],
+            # `## ` indenté 2 espaces — déjà couvert par `_HEADING_RE` (espace après `#`)
+            ["  ## Heading with leading spaces\n"],
+        ]
+        nb_path = self._write_notebook(tmp_path, cells)
+        r = subprocess.run(
+            [sys.executable, str(Path(detect_markdown_rendering.__file__).resolve()),
+             "--json", str(nb_path)],
+            capture_output=True, text=True, encoding="utf-8", cwd=tmp_path,
+        )
+        assert r.returncode == 0, (r.stdout, r.stderr)
+        data = json.loads(r.stdout)
+        findings = data.get("findings", [])
+        hc = [f for f in findings if f.get("rule") == "heading_continuation"]
+        assert len(hc) == 0, f"expected 0 heading_continuation, got {findings}"
 
 
 if __name__ == "__main__":

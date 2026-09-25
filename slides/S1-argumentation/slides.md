@@ -26,7 +26,10 @@ layout: cover
 
 # Histoire de l'argumentation
 
-<!-- Image: images/aristotle_bust.jpg -->
+<div style="position:absolute; top:84px; right:40px; width:160px; text-align:center;">
+<img src="./images/aristotle_bust.jpg" alt="Buste en marbre d'Aristote, copie romaine d'après un bronze de Lysippe, musée du Louvre" style="width:160px;" />
+<p style="font-size:11px; line-height:1.3; margin:4px 0 0; color:#555;">Aristote, buste du Louvre</p>
+</div>
 
 - **Importance dans l'histoire de la pensée humaine**
   - Mécanisme par lequel les idées sont exprimées, discutées et évaluées
@@ -127,7 +130,10 @@ layout: cover
 
 # Qu'est-ce qu'un argument ?
 
-<!-- Image: images/ethos_pathos_logos.png -->
+<div style="position:absolute; top:84px; right:30px; width:220px; text-align:center;">
+<img src="./images/ethos_pathos_logos.png" alt="Triangle divisé en trois zones : logos, pathos et ethos, les trois éléments d'un argument" style="width:220px;" />
+<p style="font-size:11px; line-height:1.3; margin:4px 0 0; color:#555;">Les trois leviers d'Aristote : <b>logos</b> (les raisons), <b>ethos</b> (la crédibilité de l'orateur), <b>pathos</b> (l'émotion de l'auditoire)</p>
+</div>
 
 - **Une proposition supportée par d'autres propositions**
   - **Prémisses** : Les raisons
@@ -147,9 +153,30 @@ layout: cover
 ---
 
 
+# Le modèle de Toulmin (1958)
+
+- **Données** (*fact*) : le fait avancé
+- **Conclusion**, modulée<br>par un **qualificateur** (*probably*)
+- **Garantie** (*warrant*) : la règle<br>qui autorise le passage
+- **Fondement** (*backing*) : ce qui<br>rend la garantie crédible
+- **Réfutation** (*rebuttal*) : l'exception<br>qui suspendrait la conclusion
+- En forme standard, la garantie<br>est souvent la **prémisse implicite**
+
+<div style="position:absolute; top:84px; right:24px; width:480px; text-align:center;">
+<img src="./images/toulmin_model.gif" alt="Schéma de Toulmin : un fait (peau claire, taches de rousseur, journée au soleil) mène probablement à une conclusion (coup de soleil grave), par une garantie appuyée sur un fondement (peu de mélanine), sous réserve d'une réfutation (les parents ne brûlent jamais)" style="width:480px;" />
+<p style="font-size:11px; line-height:1.3; margin:4px 0 0; color:#555;">Rick a la peau claire et a passé la journée au soleil : il aura <em>probablement</em> un coup de soleil, sauf si l'exception de ses parents s'applique.</p>
+</div>
+
+
+---
+
+
 # Déduction vs Induction et Arguments particuliers
 
-<!-- Image: images/inductive_deductive.png -->
+<div style="position:absolute; top:92px; right:24px; width:440px; text-align:center;">
+<img src="./images/inductive_deductive.png" alt="Schéma de la méthode scientifique : l'induction remonte des observations vers la théorie, la déduction descend de la théorie vers des hypothèses testées par l'expérience" style="width:440px;" />
+<p style="font-size:11px; line-height:1.3; margin:4px 0 0; color:#555;"><b>Induction</b> : des observations vers la théorie. <b>Déduction</b> : de la théorie vers des hypothèses que l'expérience peut réfuter.</p>
+</div>
 
 - **Déduction vs Induction**
   - **Déduction** → nécessité logique
@@ -235,7 +262,14 @@ layout: cover
 
 # Qu'est-ce qu'un argument fallacieux ?
 
-<!-- Image: images/fallacy_ad_hominem.png -->
+<div style="position:absolute; top:128px; right:230px; width:150px; text-align:center;">
+<img src="./images/fallacy_ad_hominem.png" alt="Icône du sophisme ad hominem : une cible pointée sur une personne plutôt que sur son argument" style="width:150px;" />
+<p style="font-size:11px; line-height:1.3; margin:4px 0 0; color:#555;"><b>Ad hominem</b> : prémisse non pertinente, on vise la personne</p>
+</div>
+<div style="position:absolute; top:128px; right:36px; width:176px; text-align:center;">
+<img src="./images/circular_reasoning.png" alt="Raisonnement circulaire : si A alors B, et si B alors A, deux flèches formant une boucle" style="width:176px;" />
+<p style="font-size:11px; line-height:1.3; margin:4px 0 0; color:#555;"><b>Raisonnement circulaire</b> : faille structurelle, la conclusion est déjà une prémisse</p>
+</div>
 
 - **La violation de l'un des critères définissant un bon argument**
   - Faille structurelle
@@ -282,7 +316,10 @@ layout: two-cols
 
 # Dénoncer un argument fallacieux
 
-<!-- Image: images/fallacy_straw_man.png -->
+<div style="position:absolute; top:90px; right:60px; width:220px; text-align:center;">
+<img src="./images/fallacy_straw_man.png" alt="Icône du sophisme de l'homme de paille : un épouvantail" style="width:220px;" />
+<p style="font-size:11px; line-height:1.3; margin:4px 0 0; color:#555;"><b>Homme de paille</b> : réfuter une caricature de la thèse adverse. La reconstruction fidèle en forme standard le désamorce.</p>
+</div>
 
 - **Autodestruction par reconstruction en forme standard**
 - **Méthode du contre-exemple absurde**
@@ -330,7 +367,10 @@ layout: two-cols
 
 # Analyse d'un débat (1/2)
 
-<!-- Image: images/debate_pyramid.png -->
+<div style="position:absolute; top:76px; right:36px; width:360px; text-align:center;">
+<img src="./images/debate_pyramid.png" alt="Pyramide du débat à sept niveaux, de l'insulte à la base jusqu'à la réfutation du point central au sommet, en passant par l'ad hominem, la réponse au ton, la contradiction, le contre-argument et la réfutation" style="width:360px;" />
+<p style="font-size:11px; line-height:1.3; margin:4px 0 0; color:#555;">Pyramide du débat, d'après la hiérarchie du désaccord de Paul Graham (2008)</p>
+</div>
 
 - **Comprendre le contexte et le but du débat**
   - Tenir compte des spécificités et enjeux
@@ -460,8 +500,6 @@ layout: two-cols
 
 # Règles d'inférence
 
-<!-- Image: images/modus_barbara.png -->
-
 - **Objectif de l'inférence logique**
   - Vérifier qu'un énoncé est une conséquence de la KB, i.e. un théorème
 - **Inférence par la preuve**
@@ -528,6 +566,14 @@ layout: two-cols
   - **∀x** : Pour chaque x
 - **Règles**
   - (∃x) student(x) ∧ smart(x) = "Il y a un étudiant intelligent"
+- **Syllogisme Barbara** (Aristote)
+  - ∀x (M(x) → P(x)), ∀x (S(x) → M(x)) ⊢ ∀x (S(x) → P(x))
+  - « Tout M est P, or tout S est M, donc tout S est P »
+
+<div style="position:absolute; top:88px; right:40px; width:270px; text-align:center;">
+<img src="./images/modus_barbara.png" alt="Syllogisme Barbara : formules quantifiées et diagrammes de Venn où les zones vides sont noircies, montrant que tout S est P" style="width:270px;" />
+<p style="font-size:11px; line-height:1.3; margin:4px 0 0; color:#555;">Barbara en diagrammes de Venn : noircir les zones vides des deux prémisses laisse vide la zone S hors P</p>
+</div>
 
 
 ---
@@ -583,13 +629,18 @@ layout: two-cols
 
 # Logiques argumentatives
 
-<!-- Image: images/ibis_argument_graph.png -->
+<div style="position:absolute; top:80px; right:36px; width:360px; text-align:center;">
+<img src="./images/ibis_argument_graph.png" alt="Graphe IBIS : une question suscite des positions, des arguments soutiennent ou contestent chaque position" style="width:360px;" />
+<p style="font-size:11px; line-height:1.3; margin:4px 0 0; color:#555;">Graphe IBIS : question, positions, arguments pour (<em>supports</em>) et contre (<em>objects-to</em>)</p>
+</div>
 
 - **Extension des logiques appliquées à l'argumentation**
   - Analyse de la structure, la validité, la force des arguments
 - **Logique argumentative abstraite (de Dung)**
-  - Modèle sous forme de graphe (Nœuds = arguments, arrêtes = attaques)
-  - Notion d'ensembles stable / extensions (pas d'attaques internes)
+  - Modèle sous forme de graphe<br>(nœuds = arguments, arêtes = attaques)
+  - Notion d'ensembles stables / extensions<br>(pas d'attaques internes)
+- **Graphes structurés : IBIS** (Kunz et Rittel, 1970)
+  - Question → positions → arguments<br>pour ou contre chaque position
 
 
 ---
@@ -803,6 +854,29 @@ layout: section
 - Damer, T. E. Attacking Faulty Reasoning : A Practical Guide to Fallacy-free Arguments
 - Maxwell, E. A. Fallacies in Mathematics
 - Walton, Douglas. Informal Logic : A Handbook for Critical Argument
+
+
+---
+layout: dense
+---
+
+
+# Crédits des images
+
+Images issues de Wikimedia Commons, rendues en PNG (sauf mention).
+
+| Image | Source | Auteur | Licence |
+|---|---|---|---|
+| Buste d'Aristote | [Aristoteles Louvre.jpg](https://commons.wikimedia.org/wiki/File:Aristoteles_Louvre.jpg) | Eric Gaba (Sting) | CC BY-SA 2.5 |
+| Logos, ethos, pathos (recadré) | [Three elements of an argument.svg](https://commons.wikimedia.org/wiki/File:Three_elements_of_an_argument.svg) | Nanodudek | CC BY-SA 3.0 |
+| Modèle de Toulmin (GIF) | [Toulmin Argumentation Example.gif](https://commons.wikimedia.org/wiki/File:Toulmin_Argumentation_Example.gif) | Chiswick Chap | CC BY-SA 3.0 |
+| Induction et déduction | [Inductive and deductive reasoning in the scientific method.svg](https://commons.wikimedia.org/wiki/File:Inductive_and_deductive_reasoning_in_the_scientific_method.svg) | Thebiologyprimer | CC BY-SA 4.0 |
+| Ad hominem | [Ad Hominem Fallacy Icon.svg](https://commons.wikimedia.org/wiki/File:Ad_Hominem_Fallacy_Icon.svg) | SkepticalScience, SVG SilentSpike | CC BY-SA 4.0 |
+| Raisonnement circulaire | [Circular reasoning.svg](https://commons.wikimedia.org/wiki/File:Circular_reasoning.svg) (version antérieure) | Michel Bakni | CC BY-SA 4.0 |
+| Homme de paille | [Straw Man Fallacy Icon Black.svg](https://commons.wikimedia.org/wiki/File:Straw_Man_Fallacy_Icon_Black.svg) | SkepticalScience | CC BY-SA 4.0 |
+| Pyramide du débat | [The Debate Pyramid v2 Detailed Default Bold Text.svg](https://commons.wikimedia.org/wiki/File:The_Debate_Pyramid_v2_Detailed_Default_Bold_Text.svg) | JasonCarswell | CC BY-SA 4.0 |
+| Syllogisme Barbara | [Modus Barbara.svg](https://commons.wikimedia.org/wiki/File:Modus_Barbara.svg) | Tilman Piesk (Watchduck) | Domaine public |
+| Graphe IBIS | [Issue-based information system (IBIS) rhetorical rules diagram.svg](https://commons.wikimedia.org/wiki/File:Issue-based_information_system_(IBIS)_rhetorical_rules_diagram.svg) | Biogeographist | CC0 |
 
 
 ---

@@ -827,3 +827,188 @@ def test_cli_append_from_observation_file(tmp_path, capsys):
     assert json.loads(line.removeprefix(dl.ENVELOPE_PREFIX))["observation_id"] == (
         observation["observation_id"]
     )
+# --- gpu-reservation: the second kind, keyed on the device -------------------
+#
+# The device ledger shares the reducer, so what is pinned here is what the
+# DECLARATION buys: its own entity shape (a hold is not an issue), its own field
+# kinds (a lane is not free text, a deadline is on the same clock as
+# ``observed_at``), its own terminal value, and a summary that answers the only
+# question a CPU lane has -- which devices are held, and by whom.
+
+
+def gpu_obs(
+    machine: str = "myia-po-2023",
+    gpu_index: int = 1,
+    *,
+    actor: str = "myia-po-2023:CoursIA",
+    observed_at: str = "2026-09-17T19:00:00Z",
+    confidence: str = "high",
+    evidence: str = "nvidia-smi + run 35834006364",
+    **fields,
+) -> dict:
+    return {
+        "schema": dl.OBSERVATION_SCHEMA,
+        "ledger": dl.GPU_RESERVATION,
+        "actor": actor,
+        "observed_at": observed_at,
+        "confidence": confidence,
+        "evidence": evidence,
+        "entity": {"machine": machine, "gpu_index": gpu_index},
+        "fields": dict(fields),
+    }
+
+
+def held(**overrides) -> dict:
+    fields = {
+        "state": "held",
+        "holder": "myia-po-2023:CoursIA",
+        "workload": "PPO walk-forward",
+        "started_at": "2026-09-17T18:00:00+00:00",
+        "expected_end": "2026-09-17T22:00:00Z",
+        "issue": "jsboige/CoursIA#16737",
+    }
+    fields.update(overrides)
+    return gpu_obs(**fields)
+
+
+def test_gpu_row_key_is_the_device_not_a_repo():
+    """The row identity is ``<machine>#gpu<n>``: sharing issue-debt's key would
+    merge two machines' holds on the same index into one row."""
+    observation = dl.parse_observation(held(), dl.GPU_RESERVATION)
+    assert observation["entity"] == {"machine": "myia-po-2023", "gpu_index": 1}
+    assert dl.entity_key(observation["entity"]) == "myia-po-2023#gpu1"
+    other = dl.parse_observation(held(machine="myia-ai-01"), dl.GPU_RESERVATION)
+    assert dl.entity_key(other["entity"]) == "myia-ai-01#gpu1"
+
+
+def test_gpu_index_zero_is_valid_and_negative_is_refused():
+    """Device indices are 0-based: refusing 0 would refuse the first card."""
+    zero = dl.parse_observation(held(gpu_index=0), dl.GPU_RESERVATION)
+    assert dl.entity_key(zero["entity"]) == "myia-po-2023#gpu0"
+    with pytest.raises(dl.ObservationError) as excinfo:
+        dl.parse_observation(held(gpu_index=-1), dl.GPU_RESERVATION)
+    assert excinfo.value.reason == "entity_mismatch"
+
+
+def test_gpu_entity_refuses_an_issue_shaped_key():
+    """An issue entity on the device ledger is a producer wiring the wrong kind:
+    it must be rejected, never silently reduced to a phantom hold."""
+    raw = held()
+    raw["entity"] = {"repo": "jsboige/CoursIA", "issue": 16737}
+    with pytest.raises(dl.ObservationError) as excinfo:
+        dl.parse_observation(raw, dl.GPU_RESERVATION)
+    assert excinfo.value.reason == "entity_mismatch"
+    assert "repo" in excinfo.value.detail and "issue" in excinfo.value.detail
+
+
+def test_gpu_timestamps_normalise_to_the_ledger_clock():
+    """A hold reads on the same clock as ``observed_at``: an offset stamp is
+    normalised, a naive one is refused (it would read local time as UTC)."""
+    observation = dl.parse_observation(held(), dl.GPU_RESERVATION)
+    assert observation["fields"]["started_at"] == "2026-09-17T18:00:00Z"
+    with pytest.raises(dl.ObservationError) as excinfo:
+        dl.parse_observation(held(expected_end="2026-09-17T22:00:00"), dl.GPU_RESERVATION)
+    assert excinfo.value.reason == "naive_timestamp"
+
+
+def test_gpu_holder_must_be_a_lane_and_issue_a_reference():
+    """``holder`` is a lane, ``issue`` is ``owner/repo#N``: free text in either
+    would make the occupancy unreadable by the lane that has to claim next."""
+    with pytest.raises(dl.ObservationError) as excinfo:
+        dl.parse_observation(held(holder="myia po 2023"), dl.GPU_RESERVATION)
+    assert excinfo.value.reason == "invalid_field_value"
+    with pytest.raises(dl.ObservationError) as excinfo:
+        dl.parse_observation(held(issue="16737"), dl.GPU_RESERVATION)
+    assert excinfo.value.reason == "invalid_field_value"
+
+
+def test_gpu_released_is_terminal():
+    """``released`` retires the row exactly as ``closed`` does for an issue: what
+    the ledger reports is the current holder, not the history of the device."""
+    live = reduce_it(dl.GPU_RESERVATION, [held()])
+    assert row_of(live, "myia-po-2023#gpu1")["historical"] is False
+    released = reduce_it(dl.GPU_RESERVATION, [held(state="released")])
+    assert row_of(released, "myia-po-2023#gpu1")["historical"] is True
+    assert released.summary["rows"] == {
+        "total": 1, "live": 0, "historical": 1, "incomplete": 0, "stale": 0
+    }
+
+
+def test_gpu_summary_answers_occupancy_per_machine():
+    """The summary is read by a lane deciding whether to claim: it carries the
+    per-machine hold counts, the holders, and the holds whose state is stale."""
+    result = reduce_it(
+        dl.GPU_RESERVATION,
+        [
+            held(gpu_index=0, machine="myia-ai-01"),
+            held(gpu_index=1, machine="myia-ai-01", holder="myia-ai-01:CoursIA"),
+            held(gpu_index=2, machine="myia-po-2027", state="stale"),
+        ],
+    )
+    summary = result.summary
+    assert summary["state"] == {"held": 2, "stale": 1}
+    assert summary["held_by_machine"] == {"myia-ai-01": 2}
+    assert summary["holders"] == ["myia-ai-01:CoursIA", "myia-po-2023:CoursIA"]
+    assert summary["stale_holds"] == ["myia-po-2027#gpu2"]
+
+
+def test_gpu_status_text_names_the_holds():
+    result = reduce_it(dl.GPU_RESERVATION, [held()])
+    text = result.status_text
+    assert "[LEDGER] gpu-reservation" in text
+    assert "held_by_machine: myia-po-2023 1" in text
+    assert "myia-po-2023#gpu1 held holder myia-po-2023:CoursIA" in text
+
+
+def test_a_gpu_observation_never_reduces_into_the_issue_journal():
+    """The kinds never cross: a journal declaring issue-debt rejects a device
+    observation with its reason instead of folding it as a phantom issue."""
+    # ``journal`` parses under the target ledger, so the cross-kind envelope is
+    # built by hand: the point is what the REDUCER does with it.
+    normalized = dl.parse_observation(held(), dl.GPU_RESERVATION)
+    export = {
+        "schema": dl.EXPORT_SCHEMA,
+        "ledger": dl.ISSUE_DEBT,
+        "messages": [
+            {
+                "messageId": "msg-0",
+                "author": normalized["actor"],
+                "createdAt": normalized["observed_at"],
+                "content": dl.envelope_line(normalized),
+            }
+        ],
+    }
+    result = dl.reduce_ledger(ledger=dl.ISSUE_DEBT, export=export, now=NOW)
+    assert result.summary["rows"]["total"] == 0
+    assert [item["reason"] for item in result.snapshot["rejections"]] == ["ledger_mismatch"]
+
+
+def test_schema_document_declares_each_kind_with_its_own_shape():
+    """The generated contract is what a producer reads: a kind listed with another
+    kind's fields (or row key) would document a shape the reducer refuses."""
+    doc = dl.schema_document()
+    gpu = doc["ledgers"][dl.GPU_RESERVATION]
+    assert gpu["entity_keys"] == ["machine", "gpu_index"]
+    assert gpu["row_key"] == "<machine>#gpu<n>"
+    assert gpu["terminal_values"] == {"state": ["released"]}
+    names = {field["name"] for field in gpu["fields"]}
+    assert names == {"state", "holder", "workload", "started_at", "expected_end", "issue"}
+    issue_names = {field["name"] for field in doc["ledgers"][dl.ISSUE_DEBT]["fields"]}
+    assert "eat_hours" in issue_names and "eat_hours" not in names
+
+
+def test_cli_append_parses_the_device_entity(capsys):
+    assert dl.main(["append", "--ledger", dl.GPU_RESERVATION, "--entity", "myia-po-2023#gpu1",
+                    "--fields-json", '{"state": "held", "holder": "myia-po-2023:CoursIA"}']) == 0
+    line = capsys.readouterr().out.splitlines()[0]
+    envelope = json.loads(line.removeprefix(dl.ENVELOPE_PREFIX))
+    assert envelope["entity"] == {"machine": "myia-po-2023", "gpu_index": 1}
+    assert dl.entity_key(envelope["entity"]) == "myia-po-2023#gpu1"
+
+
+def test_cli_append_refuses_an_issue_entity_on_the_device_ledger(capsys):
+    """The CLI reports the refusal (exit 1) instead of tracebacking out of an
+    organ the fleet runs on a cron."""
+    assert dl.main(["append", "--ledger", dl.GPU_RESERVATION, "--entity", "jsboige/CoursIA#16737",
+                    "--fields-json", '{"state": "held"}']) == 1
+    assert "INVALID_ENTITY" in capsys.readouterr().err

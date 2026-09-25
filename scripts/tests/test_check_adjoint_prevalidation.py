@@ -1,8 +1,11 @@
 """Causal tests for the adjoint prevalidation entry gate (#16442)."""
 
 import importlib.util
+import json
 import sys
 from pathlib import Path
+
+import pytest
 
 HERE = Path(__file__).resolve().parent
 CHECK_PATH = HERE.parent / "check_adjoint_prevalidation.py"
@@ -191,6 +194,43 @@ def test_qualifying_third_party_lane_satisfies_gate():
         assert errors == [], lane
 
 
+def test_secretary_lane_can_attest_although_it_carries_nothing():
+    """The secretary lane emits dossiers and carries no pull request.
+
+    That asymmetry is exactly why its absence from `QUALIFYING_LANES` was
+    invisible: a carrying lane left out of the set still shows up as a stalled
+    author, while a pure emitter left out simply produces nothing, and the
+    fleet reads the silence as "no dossier was prepared". Measured 2026-09-21:
+    `myia-po-2026:CoursIA-3` had written its dashboard one minute earlier,
+    carried 0 of the last 60 pull requests, and appeared in 0 files under
+    `scripts/` -- while the repository held 0 dossiers and 307 open PRs.
+
+    `myia-po-2023:CoursIA-2` is the mirror case: it carries #16259 but could
+    not attest for anyone.
+    """
+    for lane in ("myia-po-2026:CoursIA-3", "myia-po-2023:CoursIA-2"):
+        ready, errors = mod.evaluate(_snapshot(_body(lane=lane)))
+        assert ready, (lane, errors)
+        assert errors == [], lane
+
+
+def test_every_qualifying_lane_is_accepted_end_to_end():
+    """No entry of the set may be accepted by name yet rejected in practice.
+
+    Guards against a lane added to the frozenset while some other check keeps
+    refusing it -- the set would claim a capability the gate does not grant.
+    The fixture's own carrying lane is excluded and asserted refused instead:
+    that refusal is the self-attestation guard doing its job, not a gap.
+    """
+    carrier = "myia-po-2026:CoursIA"
+    assert carrier in mod.QUALIFYING_LANES
+    for lane in sorted(mod.QUALIFYING_LANES - {carrier}):
+        ready, errors = mod.evaluate(_snapshot(_body(lane=lane)))
+        assert ready, (lane, errors)
+    _, errors = mod.evaluate(_snapshot(_body(lane=carrier)))
+    assert any(e.startswith("self-prevalidation refused") for e in errors), errors
+
+
 def test_lane_carrying_the_pr_cannot_prevalidate_itself():
     """Self-attestation is refused: the `Grain:` tag names the carrying lane."""
     carrier = "myia-po-2027:CoursIA"
@@ -310,6 +350,86 @@ def test_unresolved_thread_cannot_be_ready():
     snapshot["threads"] = [{"isResolved": False}]
     errors = _errors(snapshot)
     assert "READY requires zero unresolved threads" in errors
+
+
+def test_empty_diff_cannot_be_ready():
+    """A PR changing zero files has nothing to squash -- READY is refuted.
+
+    Positive control, taken from the measured instance: #16975 and #16976 each
+    carried an INTACT dossier declaring `diff-files: 0` with `verdict: READY`,
+    so the gate returned 0 and authorised merging a pull request that delivered
+    nothing. The dossier is self-consistent with the live PR -- every count
+    matches -- which is why no staleness check could catch it.
+    """
+    live = _base_snapshot()
+    live["changedFiles"] = 0
+    live["additions"] = 0
+    live["deletions"] = 0
+    dossier = _body(
+        **{"diff-files": "0", "diff-additions": "0", "diff-deletions": "0"}
+    )
+    live["comments"].append(_comment(dossier))
+    verdict, errors = mod.evaluate(live)
+    assert "READY requires a non-empty diff: 0 files changed" in errors
+    assert verdict == "", errors
+
+
+def test_blocked_dossier_tolerates_an_empty_diff():
+    """An empty diff refutes READY, never BLOCKED.
+
+    Same asymmetry as the draft and unresolved-thread legs: an empty diff is a
+    reason a PR is NOT mergeable, and attesting it is precisely a BLOCKED
+    dossier's job. Refusing it there would deny the coordinator the attested
+    motive it dispatches from.
+    """
+    live = _base_snapshot()
+    live["changedFiles"] = 0
+    live["additions"] = 0
+    live["deletions"] = 0
+    dossier = _body(
+        verdict="BLOCKED", b0="blocked", checks="BLOCKED", scope="fail",
+        domain="fail",
+        **{"diff-files": "0", "diff-additions": "0", "diff-deletions": "0"},
+    )
+    live["comments"].append(_comment(dossier))
+    verdict, errors = mod.evaluate(live)
+    assert verdict == mod.VERDICT_BLOCKED, errors
+
+
+def test_two_line_fix_is_still_ready():
+    """Negative control: the #15740 counter-example must keep passing.
+
+    « une correction de 2 lignes d'un bug critique serait acceptable » -- the
+    new leg measures absence, not smallness. A one-file, two-line diff is as
+    READY as a large one.
+    """
+    live = _base_snapshot()
+    live["changedFiles"] = 1
+    live["additions"] = 1
+    live["deletions"] = 1
+    dossier = _body(
+        **{"diff-files": "1", "diff-additions": "1", "diff-deletions": "1"}
+    )
+    live["comments"].append(_comment(dossier))
+    verdict, errors = mod.evaluate(live)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_absent_diff_stat_never_reads_as_an_empty_diff():
+    """Missing data must not decide (#14849) -- and here it already cannot.
+
+    The new leg tests equality with 0, so `None` does not trip it. But the
+    state is unreachable anyway: `validate_dossier` indexes `changedFiles`
+    directly, and `main` catches `KeyError` among the fail-closed exceptions,
+    reporting UNKNOWN (rc=2). Absent stats therefore become "I could not
+    measure", never "the diff is empty" -- which is the distinction that
+    matters, because rc=2 refuses while a fabricated `empty` would accuse.
+    """
+    live = _base_snapshot()
+    live.pop("changedFiles")
+    live["comments"].append(_comment(_body()))
+    with pytest.raises(KeyError):
+        mod.evaluate(live)
 
 
 def test_comment_after_dossier_invalidates_it():
@@ -510,8 +630,16 @@ def test_coordinator_own_later_comment_does_not_expire_the_dossier():
 
 
 def test_any_other_author_still_expires_the_dossier():
-    """The negative control: neutrality is for the coordinator ALONE."""
-    for login in ("jsboige", "clusterManager-Myia", "lcetinsoy"):
+    """The negative control: neutrality is for the coordinator ALONE.
+
+    Since #16883 the coordinator voice is recognised under BOTH
+    ``COORDINATOR_LOGIN`` (``myia-ai-01``) and ``SHARED_GITHUB_LOGIN``
+    (``jsboige``) -- the merged-account mandate means every coordinator
+    action reaches the API under ``jsboige``. A genuinely foreign author
+    (a worker lane that did NOT carry the dossier, or a bot) must still
+    expire the dossier.
+    """
+    for login in ("clusterManager-Myia", "lcetinsoy", "myia-po-2024", "dependabot"):
         base = _stamped_snapshot("")
         base["comments"].pop()
         snapshot = _stamped_snapshot(_dossier_for(base))
@@ -521,12 +649,59 @@ def test_any_other_author_still_expires_the_dossier():
         errors = _errors(snapshot)
         assert any("discussion changed after dossier" in e for e in errors), login
 
-        snapshot2 = _stamped_snapshot(_dossier_for(base))
-        snapshot2["reviews"].append(
-            {"state": "CHANGES_REQUESTED", "author": {"login": login},
-             "submittedAt": T1, "body": "new reserve"}
-        )
-        assert _errors(snapshot2), login
+
+def test_shared_login_lift_does_not_expire_dossier():
+    """#16883 CN4-bis: a coordinator lift posted under SHARED_GITHUB_LOGIN
+    (the merged-account mandate, every lane signs ``jsboige``) is
+    recognised as the coordinator's voice. The dossier stays intact and
+    its READY verdict still passes the gate.
+    """
+    base = _stamped_snapshot("")
+    base["comments"].pop()
+    snapshot = _stamped_snapshot(_dossier_for(base))
+    own = _comment("Lifting the stale PREFLIGHT_HOLD.", login=mod.SHARED_GITHUB_LOGIN)
+    own["createdAt"] = T1
+    snapshot["comments"].append(own)
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_shared_login_anterior_comment_does_not_neutralise():
+    """#16883 CN2-bis: a SHARED_GITHUB_LOGIN comment written BEFORE the
+    dossier is part of the surfaces the dossier attested. The adjoint
+    already saw it; the dossier stays intact. (The neutrality only fires
+    on later rows, never on attested ones.)
+    """
+    snapshot = _base_snapshot()
+    anterior = _comment("pre-dossier coordinator remark", login=mod.SHARED_GITHUB_LOGIN)
+    anterior["createdAt"] = T0
+    snapshot["comments"].insert(0, anterior)
+    dossier_body = _dossier_for(snapshot)
+    dossier = _comment(dossier_body)
+    dossier["createdAt"] = T0
+    snapshot["comments"].append(dossier)
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_fingerprint_includes_lift_surface():
+    """The fingerprint (#16957) covers every comment -- coordinator or not.
+    A lift that lands between the dossier and the gate re-evaluation
+    changes the hash; that is the dossier attesting the new surface.
+    Neutralisation is only at evaluate time, never at stamp time.
+    """
+    base = _stamped_snapshot("")
+    base["comments"].pop()
+    snapshot_at_stamp = _stamped_snapshot(_dossier_for(base))
+    fp_at_stamp = mod.surfaces_fingerprint(snapshot_at_stamp)
+
+    snapshot_after_lift = json.loads(json.dumps(snapshot_at_stamp))
+    lift = _comment("LIFT -- shared login", login=mod.SHARED_GITHUB_LOGIN)
+    lift["createdAt"] = T1
+    snapshot_after_lift["comments"].append(lift)
+
+    fp_after_lift = mod.surfaces_fingerprint(snapshot_after_lift)
+    assert fp_after_lift != fp_at_stamp
 
 
 def test_coordinator_review_BEFORE_the_dossier_must_still_be_attested():
@@ -755,3 +930,363 @@ def test_template_renders_the_emitting_lane_not_a_borrowed_name():
 def test_template_lane_defaults_to_the_adjoint():
     """The adjoint stays the canonical emitter: the default is unchanged."""
     assert f"lane: {mod.ADJOINT_LANE}" in mod.render_template(_base_snapshot())
+
+
+# ------------------------------------------- the attested reason, exposed (#17290)
+#
+# On exit 3 the dossier is INTACT -- that is what the code means -- so `errors`
+# is [] by construction. The rule then tells the coordinator to "dispatch from
+# the dossier's stated reason" while publishing none of it, and re-parsing the
+# dossier comment by hand is the only way out. Measured cost: 13 PRs at rc=3 in
+# one cycle, 6 of them with a reason that was already dead.
+#
+# Exposing it must not weaken the gate: a REFUSED dossier is not a fainter
+# dossier, and must publish nothing at all.
+
+
+def test_blocking_fields_name_checks_on_a_checks_blocked_dossier():
+    """Controle positif 1 : `checks: BLOCKED`, `b0: clear` -> ["checks"]."""
+    snapshot = _snapshot(_body(verdict="BLOCKED", checks="BLOCKED"))
+    verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+    assert (verdict, errors) == (mod.VERDICT_BLOCKED, [])
+    assert mod.blocking_fields(dossier) == ["checks"]
+
+
+def test_blocking_fields_name_b0_on_a_b0_blocked_dossier():
+    """Controle positif 2 : `b0: blocked`, `checks: latest-wins-green` -> ["b0"].
+
+    The two reasons send the work to DIFFERENT places -- a dead `checks` goes to
+    the adjoint for a `--template`, a real `b0` goes to the carrying lane for a
+    lift sentence. Telling them apart is the whole point of the exposure.
+    """
+    snapshot = _snapshot(_body(verdict="BLOCKED", b0="blocked"))
+    verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+    assert (verdict, errors) == (mod.VERDICT_BLOCKED, [])
+    assert mod.blocking_fields(dossier) == ["b0"]
+
+
+def test_blocking_fields_are_listed_in_the_contract_order():
+    """A dossier blocked on every field orders them the way the contract does."""
+    snapshot = _snapshot(
+        _body(verdict="BLOCKED", checks="BLOCKED", b0="blocked", scope="fail",
+              domain="fail")
+    )
+    _, _, dossier = mod.evaluate_with_dossier(snapshot)
+    assert mod.blocking_fields(dossier) == ["checks", "b0", "scope", "domain"]
+
+
+def test_a_blocked_dossier_can_name_no_blocking_field():
+    """Honesty edge: the contract ALLOWS a blocked dossier with clear fields.
+
+    `validate_dossier` constrains `checks`/`b0`/`scope`/`domain` only when the
+    dossier claims READY. An honest blocked dossier may therefore declare them
+    all at their READY value and carry its reason in prose. Reporting [] then is
+    the true answer -- inventing a field to fill the silence would fabricate the
+    very reason this issue exists to publish.
+    """
+    snapshot = _snapshot(_body(verdict="BLOCKED"))
+    verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+    assert (verdict, errors) == (mod.VERDICT_BLOCKED, [])
+    assert mod.blocking_fields(dossier) == []
+
+
+def test_ready_result_publishes_the_dossier_with_no_blocker():
+    """Acceptance: rc=0 carries the same block, with `blocking_fields: []`."""
+    snapshot = _snapshot(_body())
+    verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+    result = mod.build_result(123, snapshot, verdict, errors, dossier)
+    assert result["verdict"] == mod.VERDICT_READY
+    assert result["ready"] is True
+    assert result["blocking_fields"] == []
+    assert result["dossier"]["checks"] == "latest-wins-green"
+
+
+def test_blocked_result_publishes_the_dossier_and_its_blocker():
+    """Acceptance: rc=3 exposes the parsed dossier and a non-empty blocker."""
+    snapshot = _snapshot(_body(verdict="BLOCKED", checks="BLOCKED"))
+    verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+    result = mod.build_result(123, snapshot, verdict, errors, dossier)
+    assert result["verdict"] == mod.VERDICT_BLOCKED
+    assert result["blocking_fields"] == ["checks"]
+    assert result["dossier"]["lane"] == "myia-po-2025:CoursIA-2"
+    assert result["dossier"]["head"] == HEAD
+    assert result["dossier"]["comment_index"] == 1
+
+
+def test_a_refused_dossier_is_not_published_at_all():
+    """Controle NEGATIF -- the exposure must not launder a refused dossier.
+
+    A dossier whose fingerprint no longer covers the live surfaces is refused
+    (rc=1). If the payload published its parsed fields anyway, a referee reading
+    the JSON would see a lane, a head and a verdict for a PR the gate just
+    rejected -- exactly the confusion the refusal exists to prevent.
+    """
+    snapshot = _snapshot(_body())
+    snapshot["title"] = "mutated after the stamp"
+    verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+    assert verdict == "" and dossier is None
+    assert errors, "a perimed fingerprint must still be refused"
+    result = mod.build_result(123, snapshot, verdict, errors, dossier)
+    assert result["verdict"] == "NO_DOSSIER"
+    assert "dossier" not in result
+    assert "blocking_fields" not in result
+
+
+def test_dossier_payload_publishes_every_read_field():
+    """Acceptance: "tous les champs lus" -- the whole contract, not a subset.
+
+    Publishing a curated handful would leave the next consumer re-parsing the
+    comment for the field that was left out, which is the defect itself.
+    """
+    dossier, parse_errors = mod.parse_dossier(_body(), 1, "jsboige", T0)
+    assert parse_errors == []
+    payload = mod.dossier_payload(dossier)
+    assert mod.REQUIRED_FIELDS <= set(payload)
+    assert payload["author"] == "jsboige"
+    assert payload["created_at"] == T0
+
+
+def test_result_is_json_serializable():
+    """`--json` must actually serialize: a Dossier is not a dict."""
+    snapshot = _snapshot(_body(verdict="BLOCKED", b0="blocked"))
+    verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+    result = mod.build_result(123, snapshot, verdict, errors, dossier)
+    decoded = json.loads(json.dumps(result, ensure_ascii=False))
+    assert decoded["dossier"]["b0"] == "blocked"
+
+
+def test_evaluate_keeps_its_two_tuple_shape():
+    """The gate's historical view is unchanged: no caller moves under it."""
+    verdict, errors = mod.evaluate(_snapshot(_body()))
+    assert (verdict, errors) == (mod.VERDICT_READY, [])
+
+# --- #16931 : reecriture en place d'un bot marker-garde = fingerprint STABLE --
+
+
+def test_marker_guarded_bot_rewrite_keeps_the_fingerprint():
+    """Un bot qui re-edite son commentaire en place ne perime plus le dossier.
+
+    Mesure fondatrice (2026-09-20) : le dossier de #16907 a ete perime 26 min
+    apres sa pose par une reecriture `PR-PATH-COLLISION` du bot -- le compte
+    de commentaires etait exact, seul le hash bougeait. Le corps d'un
+    commentaire dont la premiere ligne est un marqueur HTML connu est hache
+    sur ce marqueur SEUL : la presence du commentaire compte, sa
+    re-implementation interne non.
+    """
+    base = _base_snapshot()
+    v1 = dict(base)
+    v1["comments"] = [_comment("<!-- PR-PATH-COLLISION:START -->\n"
+                               "paires fortes: #123/#456 (chevauchent)",
+                               "github-actions[bot]")]
+    v2 = dict(base)
+    v2["comments"] = [_comment("<!-- PR-PATH-COLLISION:START -->\n"
+                               "paires fortes: #123/#789 (re-scan apres push)",
+                               "github-actions[bot]")]
+    assert mod.surfaces_fingerprint(v1) == mod.surfaces_fingerprint(v2)
+
+
+def test_marker_guarded_variation_signals_and_cap_also_stable():
+    """Les 3 marqueurs mesures sont neutralises, pas seulement le fondateur."""
+    base = _base_snapshot()
+    for marker in ("<!-- variation-genre-signals -->",
+                   "<!-- gvar2-light-cap -->",
+                   "<!-- trivial-diff-15740 -->"):
+        a = dict(base, comments=[_comment(marker + "\ncontenu v1", "github-actions[bot]")])
+        b = dict(base, comments=[_comment(marker + "\ncontenu v2 totalement different",
+                                          "github-actions[bot]")])
+        assert mod.surfaces_fingerprint(a) == mod.surfaces_fingerprint(b), marker
+
+
+def test_marker_guarded_bot_comment_presence_still_counts():
+    """Ajouter ou retirer le commentaire garde change toujours le hash."""
+    base = _base_snapshot()
+    with_bot = dict(base, comments=list(base["comments"]) + [
+        _comment("<!-- PR-PATH-COLLISION:START -->\npaires: aucune",
+                 "github-actions[bot]")])
+    assert mod.surfaces_fingerprint(base) != mod.surfaces_fingerprint(with_bot)
+
+
+def test_human_edit_of_the_same_body_still_changes_the_fingerprint():
+    """Fail-closed symetrique : un contenu qui n'est PAS un bot garde change.
+
+    Le refus « discussion surfaces changed » reste le verdict nominal quand un
+    commentaire humain est edite : l'allowlist ne couvre que les corps qui
+    COMMENCENT par le marqueur, et le marqueur seul est hache -- tout le
+    contenu humain, partout ailleurs, continue de perimer le dossier.
+    """
+    base = _base_snapshot()
+    v1 = dict(base, comments=[_comment("reserve: verifier le diff", "jsboige")])
+    v2 = dict(base, comments=[_comment("reserve: verifier le diff, corrige", "jsboige")])
+    assert mod.surfaces_fingerprint(v1) != mod.surfaces_fingerprint(v2)
+    # Marqueur non plus a l'offset 0 = edition humaine d'un corps de bot :
+    v3 = dict(base, comments=[_comment("edit: <!-- PR-PATH-COLLISION:START -->\n...",
+                                       "jsboige")])
+    v4 = dict(base, comments=[_comment("edit2: <!-- PR-PATH-COLLISION:START -->\n...",
+                                       "jsboige")])
+    assert mod.surfaces_fingerprint(v3) != mod.surfaces_fingerprint(v4)
+
+
+def test_fingerprint_refusal_names_the_live_surface_landscape():
+    """Le refus d'empreinte est exploitable : il nomme OU chercher (#16931 defaut 3).
+
+    Deux hachages opaques forcent une re-fabrication en aveugle. Le refus doit
+    reporter le PAYSAGE des surfaces live (compte + dernier commentaire/review
+    + threads non resolus), pour que la lane identifie la divergence sans
+    refaire toute la lecture B.0. L'empreinte divergente reste un REFUS
+    (fail-closed preserve) — seul le diagnostic est ajoute.
+    """
+    base = _base_snapshot()
+    # Snapshot dont la fingerprint ne reproduit pas celle du dossier
+    # (un commentaire humain edite, cf test precedent).
+    live = dict(base)
+    live["comments"] = [
+        {"author": {"login": "jsboige"}, "createdAt": "2026-09-19T20:00:00Z",
+         "body": "un commentaire edite apres le dossier"}
+    ]
+    live["threads"] = [{"isResolved": True}, {"isResolved": False}]
+    # Dossier calcule sur le snapshot de base, compare au live divergent.
+    dossier_fields = {
+        "schema": "1", "lane": mod.ADJOINT_LANE, "pr": "123", "head": HEAD,
+        "complete": "true", "body": "read", "comments-reviewed": "1",
+        "reviews-reviewed": "2", "threads-reviewed": "1",
+        "threads-unresolved": "0",
+        "surfaces-sha256": mod.surfaces_fingerprint(base, 1, None),
+        "diff-files": "3", "diff-additions": "42", "diff-deletions": "7",
+        "checks": "latest-wins-green", "b0": "clear", "scope": "pass",
+        "domain": "pass", "verdict": "READY",
+    }
+    dossier = mod.Dossier(dossier_fields, 1, mod.SHARED_GITHUB_LOGIN, "2026-09-19T19:00:00Z")
+    errors = mod.validate_dossier(dossier, live)
+    fingerprint_errors = [e for e in errors if "discussion surfaces changed" in e]
+    assert fingerprint_errors, f"no fingerprint error in: {errors}"
+    msg = fingerprint_errors[0]
+    # Nomme le paysage live : dernier commentaire et sa date, threads, checks.
+    assert "dernier commentaire: jsboige 2026-09-19T20:00:00Z" in msg
+    assert "threads=2 (1 non resolus)" in msg
+    assert "checks=1" in msg
+    assert "reviews=2" in msg
+
+
+# --- b0 claim re-verified against the live B.0 organ -------------------------
+# Measured 2026-09-24: READY dossiers on #16955 and #16987 declared `b0: clear`
+# while check_unaddressed_nits.py exited 1. The gate answered exit 0 on both.
+
+
+def _ready_dossier(**changes: str):
+    snapshot = _snapshot(_body(**changes))
+    verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+    return verdict, dossier
+
+
+def _organ(blocked: bool, blocking: list | None = None):
+    calls = []
+
+    def probe(pr):
+        calls.append(pr)
+        return {"blocked": blocked, "blocking": blocking or []}
+
+    return probe, calls
+
+
+def test_b0_clear_refuted_by_organ_demotes_ready_and_names_the_remark():
+    verdict, dossier = _ready_dossier()
+    probe, calls = _organ(
+        True,
+        [{"kind": "concern", "author": "jsboige", "src": "review 2026-09-22"}],
+    )
+    verdict, errors, dossier = mod.refute_ready_b0(123, verdict, dossier, probe)
+    assert calls == [123]
+    assert verdict == "" and dossier is None
+    assert len(errors) == 1
+    assert "b0 claim 'clear' is contradicted" in errors[0]
+    assert "concern by jsboige via review 2026-09-22" in errors[0]
+
+
+def test_b0_clear_confirmed_by_organ_keeps_ready():
+    verdict, dossier = _ready_dossier()
+    probe, calls = _organ(False)
+    out = mod.refute_ready_b0(123, verdict, dossier, probe)
+    assert calls == [123]
+    assert out == (mod.VERDICT_READY, [], dossier)
+
+
+def test_b0_probe_not_paid_for_blocked_or_absent_dossier():
+    probe, calls = _organ(True, [{"kind": "k", "author": "a", "src": "s"}])
+    assert mod.refute_ready_b0(123, mod.VERDICT_BLOCKED, None, probe)[0] == mod.VERDICT_BLOCKED
+    assert mod.refute_ready_b0(123, "", None, probe) == ("", [], None)
+    assert calls == []
+
+
+def test_b0_contradictions_ignore_a_non_clear_claim_and_cap_the_list():
+    rows = [{"kind": f"k{i}", "author": "a", "src": "s"} for i in range(7)]
+    assert mod.b0_claim_contradictions("blocked", {"blocked": True, "blocking": rows}) == []
+    assert mod.b0_claim_contradictions("clear", None) == []
+    [error] = mod.b0_claim_contradictions("clear", {"blocked": True, "blocking": rows})
+    assert "7 unlifted remark(s)" in error and "(+2 more)" in error
+
+
+def test_b0_probe_failure_is_fail_closed(monkeypatch):
+    class Broken:
+        @staticmethod
+        def analyse_pr(pr):
+            raise ValueError("network down")
+
+    monkeypatch.setitem(sys.modules, "check_unaddressed_nits", Broken)
+    with pytest.raises(RuntimeError, match="B.0 organ could not measure PR #123"):
+        mod.probe_b0(123)
+
+
+
+def test_b0_probe_import_failure_is_fail_closed(monkeypatch):
+    """An organ that cannot even be imported is 'not measured' (UNKNOWN), not a traceback."""
+    import builtins
+
+    real_import = builtins.__import__
+
+    def refuse(name, *args, **kwargs):
+        if name == "check_unaddressed_nits":
+            raise ImportError("organ missing")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.delitem(sys.modules, "check_unaddressed_nits", raising=False)
+    monkeypatch.setattr(builtins, "__import__", refuse)
+    with pytest.raises(RuntimeError, match="B.0 organ could not measure PR #123"):
+        mod.probe_b0(123)
+
+
+def test_main_exits_unknown_when_organ_cannot_be_imported(monkeypatch, capsys):
+    snapshot = _snapshot(_body())
+    monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
+    monkeypatch.setattr(mod.gh_identity, "pin_gh_token", lambda: None)
+
+    def unmeasured(pr):
+        raise RuntimeError(f"B.0 organ could not measure PR #{pr}: organ missing")
+
+    monkeypatch.setattr(mod, "probe_b0", unmeasured)
+    monkeypatch.setattr(sys, "argv", ["check_adjoint_prevalidation.py", "123"])
+    assert mod.main() == mod.EXIT_UNKNOWN
+    assert "UNKNOWN" in capsys.readouterr().out
+
+def test_main_exits_no_dossier_when_organ_refutes_b0(monkeypatch, capsys):
+    snapshot = _snapshot(_body())
+    monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
+    monkeypatch.setattr(mod.gh_identity, "pin_gh_token", lambda: None)
+    monkeypatch.setattr(
+        mod,
+        "probe_b0",
+        lambda pr: {"blocked": True, "blocking": [{"kind": "nit", "author": "u", "src": "c"}]},
+    )
+    monkeypatch.setattr(sys, "argv", ["check_adjoint_prevalidation.py", "123"])
+    assert mod.main() == mod.EXIT_NO_DOSSIER
+    out = capsys.readouterr().out
+    assert "NO-DOSSIER" in out and "b0 claim 'clear' is contradicted" in out
+
+
+def test_main_exits_ready_when_organ_agrees(monkeypatch, capsys):
+    snapshot = _snapshot(_body())
+    monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
+    monkeypatch.setattr(mod.gh_identity, "pin_gh_token", lambda: None)
+    monkeypatch.setattr(mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []})
+    monkeypatch.setattr(sys, "argv", ["check_adjoint_prevalidation.py", "123"])
+    assert mod.main() == mod.EXIT_READY
