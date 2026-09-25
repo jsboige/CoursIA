@@ -42,6 +42,11 @@ en 0.36.0 : mesure firsthand —
   d'exécution au `VAELoader` (`size mismatch for WanVAE`, conv 4D du
   checkpoint contre conv 5D vidéo attendue) — le routeur de classe VAE de
   0.36.0 ne connaît pas `qwen_image_2.1_vae` ;
+- le contournement par le VAE 1.x est mesuré **mort** : avec
+  `qwen_image_vae.safetensors`, le chargeur rend
+  `Could not detect model type of qwen_image_2.1_int8_convrot.safetensors` —
+  c'est le **détecteur de checkpoint diffusion** de 0.36.0 qui ne classe pas
+  le fichier 2.1 INT8, donc aucun VAE ne sauve la paire ;
 - `GET /object_info` : `TextEncodeQwenImage21` absent.
 
 Débloquer la série entière = mettre à jour le service vers 0.37.0 ou plus
