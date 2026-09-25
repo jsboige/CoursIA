@@ -205,7 +205,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 25 | [Z3-Python-16e — Meal-Planner : l'optimisation (du SAT à…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16e-Meal-Planner-Optimize-Python.ipynb) | BETA | Oui |
 | 26 | [Z3-Python 18 — Sudoku 4x4 : comparaison des modes Array…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-18-Sudoku-Modes-Python.ipynb) | BETA | Oui |
 | 27 | [13. UNSAT cores : expliquer l'insatisfiabilite (le '…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb) | BETA | Oui |
-| 28 | [Z3-Python 17 — Théorie des tableaux : Select, Store et…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-17-Array-Theory.ipynb) | BETA | Oui |
+| 28 | [Z3-Python 17 — Théorie des tableaux : Select, Store et…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-17-Array-Theory-Python.ipynb) | BETA | Oui |
 | 29 | [LINQ to Z3 - Résolution de Contraintes Déclarative](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb) | BETA | Oui |
 | 30 | [Sudoku : Théorème Explicite vs Modèle Implicite par…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/02_Sudoku_Theorem_vs_Array.ipynb) | BETA | Oui |
 | 31 | [Sudoku 4x4 : comparaison des modes Array et Constants](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/03_Sudoku_Modes_Comparison.ipynb) | BETA | Oui |
