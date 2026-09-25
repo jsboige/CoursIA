@@ -1,125 +1,229 @@
 # -*- coding: utf-8 -*-
-"""Mécanismes de gouvernance multi-agents — distillation du sous-projet EPITA 2.1.6.
+"""Gouvernance multi-agents : scrutins, protocoles de consensus, choix social.
 
-Provenance : `2.1.6_multiagent_governance_prototype` du dépôt étudiant
-`jsboigeEpita/2025-Epita-Intelligence-Symbolique` (~1390 lignes Python + 16
-scénarios JSON). Mandat Triple Distillation (EPIC #4960) : porter l'essence
-vivante « sans le bruit d'une année de régressions et d'itérations ».
+Provenance (re-fondation 2026-09-25, option 1 ai-01 sur #17353) :
+- **tronc** `argumentation_analysis/agents/core/governance/` du dépôt EPITA —
+  `governance_methods.py` (137 l.), `social_choice.py` (344 l.),
+  `governance_agent.py` (270 l.), `metrics.py` (118 l.).
+  Module vivant : dernier fix 2026-09-24 (#2576 — les métriques de consensus
+  nomment ce qu'elles ne peuvent pas calculer au lieu d'un 0.0 ou un None).
+- **sas** `docs/coursia_contrib/governance_voting_methods.ipynb` (19 cellules,
+  2026-07-15) : le cadre pédagogique (scénario club, duels, paradoxe de
+  Condorcet, manipulation de Borda / Gibbard-Satterthwaite).
+- Généalogie : `2.1.6_multiagent_governance_prototype` (projet étudiant,
+  juin 2025) — le tronc en est « Adapted from » et le corrigé ; ce module
+  documente les deltas cœur ↔ prototype.
 
-Partie vivante retenue :
-- `governance/methods.py` : 7 méthodes de vote/consensus (majorité, pluralité,
-  Borda, Condorcet avec repli Borda, vote quadratique, consensus byzantin,
-  consensus Raft).
-- `agents/base_agent.py` : personnalités (stubborn / flexible / strategic /
-  random) + préférences ordonnées + confiance inter-agents.
-- `governance/simulation.py` : formation de coalitions par confiance > 0.8,
-  vote par blocs, détection de conflits.
-- `metrics/metrics.py` : taux de consensus, Gini/justice, satisfaction moyenne,
-  stabilité.
-- `scénarios/*.json` : banc de 16 scénarios étiquetés — 6 distillés ici.
+.. warning::
+    Erreur de catégorie #1981 (le tronc l'interdit nommément) : « 7 méthodes
+    de vote » est **faux**. La surface consolidée =
 
-Partie NON portée (bruit, cf. divergences) : la médiation de
-`conflict_resolution.py` (probabilités de succès codées en dur 0.8/0.5/0.7),
-le Q-learning epsilon-greedy de `base_agent`, le CLI/runner, la visualisation
-matplotlib, les couches BDI/Reactive (stubs de protocole vides).
+    - **5 scrutins** d'agrégation de préférences : `majority_voting`,
+      `plurality_voting` (alias), `borda_count`, `condorcet_method`,
+      `quadratic_voting` ;
+    - **2 protocoles** de tolérance aux pannes (*pas* des scrutins, ne se
+      comparent pas à Borda) : `byzantine_consensus`, `raft_consensus` ;
+    - **8 fonctions de choix social formel** (profils de préférences) :
+      `approval_voting`, `stv`, `copeland`, `kemeny_young`,
+      `kemeny_young_safe`, `schulze`, `condorcet_winner`, `pairwise_matrix`.
 
-Divergences documentées (mesurées sur le source, pas supposition) :
-1. `simulate_governance` du source assigne `method_fn = GOVERNANCE_METHODS[method]`
-   puis ne l'appelle JAMAIS : les 7 méthodes sont du code mort dans la boucle
-   de simulation (le gagnant sort d'un tally de blocs par préférence du leader).
-   L'organe les branche réellement : `simulate_vote` applique la méthode.
-2. `quadratic_voting` du source n'implémente PAS le coût quadratique annoncé
-   (aucune somme de carrés) : un agent "flexible" coupe juste son budget en
-   budget//2 + reste, un autre met tout sur son premier choix. Porté tel quel,
-   avec l'exercice 1 du notebook = implémenter le vrai vote quadratique
-   (coût = somme des carrés des voix, allocation optimale = racine carrée).
-3. `byzantine_consensus` du source désigne les byzantins comme les n PREMIERS
-   agents (`agents[:n]`, tranche déterministe), pas un tirage. Porté fidèle.
-4. La voie `update_memory` du `base_agent` source référence `options` hors de
-   sa portée : NameError dès le deuxième appel, que le contexte porte
-   "options" ou non (l'appel à `update_q` passe `options` sans condition ;
-   mesuré sur le source). La satisfaction est recalculée ici proprement à
-   partir des préférences.
-5. La médiation à probabilités fixes n'est pas portée (pseudo-mécanisme) ;
-   seule `detect_conflicts` (paires d'agents à positions différentes) l'est.
-6. `condorcet_method` conserve le repli Borda du source (comportement standard
-   en l'absence de vainqueur de Condorcet — le notebook le démontre sur le
-   scénario du cycle).
+    Total = **15 algorithmes**, pas un seul compteur interchangeable.
 
-Module pur : stdlib uniquement, aucune dépendance (numpy du source remplacé par
-`random.Random` injecté, donc seedable et déterministe).
+Deltas tronc ↔ prototype étudiant 2.1.6 (mesurés sur le source, pas supposés) :
+
+1. `quadratic_voting` **conserve le défaut du prototype** (inchangé dans le
+   tronc) : aucune somme de carrés — un agent `flexible` coupe son budget en
+   deux, les autres mettent tout sur leur premier choix. Porté fidèle ;
+   l'exercice 1 du notebook = implémenter le vrai vote quadratique.
+2. Le tronc n'a pas de boucle de simulation de coalitions par confiance > 0.8
+   (la `Simulation` du prototype, avec son `simulate_governance` au
+   `method_fn` jamais appelé) : elle n'est **pas portée**. Le tronc garde les
+   personnalités et la confiance dans `Agent.decide`/`negotiate`.
+3. `metrics.py` du tronc traite les 3 formes de `votes` (#1273 : liste,
+   tally map, per-agent map) et nomme les non-calculables (#2576) — le
+   prototype retournait 0.0 ou None silencieusement.
+4. `social_choice.py` (couche formelle : STV, Copeland, Kemeny-Young,
+   Schulze) est **absent du prototype** — c'est l'ajout du cœur.
+5. Le Q-learning epsilon-greedy et les archétypes BDI/Reactive de
+   `governance_agent.py` sont portés, la `Simulation` non.
+
+Module pur : stdlib uniquement (`random` injecté, déterministe ; `numpy`
+du tronc remplacé par `random.Random`).
 """
 
 from __future__ import annotations
 
+import itertools
 import random
 from collections import Counter
-from itertools import permutations
-from math import factorial
+from typing import Any, Dict, List, Optional, Tuple
 
-# ---------------------------------------------------------------------------
-# Agent a personnalité
-# ---------------------------------------------------------------------------
+# ─────────────────────────────────────────────────────────────────────────
+# Agents (port de governance_agent.py — personnalités, confiance, Q-learning)
+# ─────────────────────────────────────────────────────────────────────────
+
+PERSONALITIES = ["stubborn", "flexible", "strategic", "random"]
 
 
-class GovernanceAgent:
-    """Agent de vote avec personnalité, préférences ordonnées et confiance.
+class Agent:
+    """Agent de vote : personnalité, préférences ordonnées, confiance, Q-learning.
 
-    Port simplifié du `Agent` de `agents/base_agent.py` : la personnalité
-    gouverne le vote sincère, la confiance gouverne les coalitions.
+    Port du `Agent` de `agents/core/governance/governance_agent.py`.
+    La personnalité gouverne le vote sincère (`decide`) ; la confiance et
+    les coalitions gouvernent la négociation (`negotiate`).
     """
 
-    def __init__(self, name, personality, préférences, trust=None):
+    def __init__(self, name, personality, preferences, rng=None):
         self.name = name
         self.personality = personality  # stubborn | flexible | strategic | random
-        self.preferences = list(préférences)
-        self.trust = dict(trust or {})
-        self.rng = random.Random(0)  # reseedable depuis l'extérieur
+        self.preferences = list(preferences)
+        self.trust: Dict[str, float] = {}
+        self.coalition: Optional[str] = None
+        self.memory: List[Dict[str, Any]] = []
+        self.satisfaction_history: List[float] = []
+        self.q_table: Dict[Tuple, float] = {}
+        self.epsilon = 0.1
+        self.alpha = 0.5
+        self.gamma = 0.9
+        self.rng = rng or random.Random(0)
 
-    def decide(self, options, context=None, rng=None):
-        """Vote sincère selon la personnalité (port de Agent.decide, sans Q-learning)."""
-        ctx = context or {}
-        rng = rng or self.rng
-        if ctx.get("coalition_leader") and self.coalition_id:
-            return ctx["coalition_leader"]
+    def _state(self, options):
+        return (self.preferences[0] if self.preferences else "none",
+                self.coalition or "none")
+
+    def choose_action(self, options):
+        """Epsilon-greedy sur la Q-table (port du tronc)."""
+        if self.rng.random() < self.epsilon:
+            return self.rng.choice(options)
+        state = self._state(options)
+        qv = [self.q_table.get((state, o), 0.0) for o in options]
+        mx = max(qv)
+        return self.rng.choice([o for o, q in zip(options, qv) if q == mx])
+
+    def update_q(self, options, action, reward, next_options):
+        """Mise à jour Q-learning (port du tronc)."""
+        state = self._state(options)
+        ns = self._state(next_options)
+        nxt = max([self.q_table.get((ns, o), 0.0) for o in next_options] or [0.0])
+        old = self.q_table.get((state, action), 0.0)
+        self.q_table[(state, action)] = old + self.alpha * (reward + self.gamma * nxt - old)
+
+    def decide(self, options, context=None):
+        """Décision principale selon la personnalité (port du tronc)."""
+        if context and self.coalition and "coalition_leader" in context:
+            return context["coalition_leader"]
+        if len(self.satisfaction_history) >= 3 and                 (sum(self.satisfaction_history[-3:]) / 3) < 0.3:
+            if self.personality == "stubborn":
+                self.personality = "flexible"
         if self.personality == "stubborn":
             return self.preferences[0]
         if self.personality == "flexible":
-            hint = ctx.get("majority_hint")
-            if hint in options:
-                return hint
+            if context and context.get("majority_hint") in options:
+                return context["majority_hint"]
             return self.preferences[0]
         if self.personality == "strategic":
-            likely = ctx.get("likely_winner")
-            if likely in self.preferences and self.trust and max(self.trust.values()) > 0.7:
-                return likely
+            if context and "likely_winner" in context and self.trust:
+                likely = context["likely_winner"]
+                if likely in self.preferences and max(self.trust.values()) > 0.7:
+                    return likely
             return self.preferences[1] if len(self.preferences) > 1 else self.preferences[0]
-        return rng.choice(sorted(options))
+        return self.choose_action(options)
 
-    coalition_id = None  # posé par form_coalitions
+    def update_memory(self, decision, outcome, context=None):
+        """Historique + satisfaction + Q-learning (port du tronc, options portée)."""
+        self.memory.append({"decision": decision, "outcome": outcome, "context": context})
+        sat = (1.0 - self.preferences.index(outcome) / max(1, len(self.preferences) - 1)
+               if outcome in self.preferences else 0.0)
+        self.satisfaction_history.append(sat)
+        if len(self.memory) > 1:
+            prev = self.memory[-2]
+            prev_opts = (prev["context"] or {}).get("options", [])
+            if prev_opts:
+                self.update_q(prev_opts, prev["decision"], sat, [])
+        if context and "proposed_by" in context:
+            p = context["proposed_by"]
+            if p != self.name:
+                self.trust[p] = min(1.0, self.trust.get(p, 0.5) + 0.1)
+
+    def negotiate(self, options, context=None):
+        """Négociation : coalition / propose / accept / argue (port du tronc)."""
+        if self.trust and max(self.trust.values()) > 0.8:
+            return ("form_coalition", max(self.trust, key=self.trust.get))
+        if self.personality == "stubborn":
+            return ("propose", self.preferences[0])
+        if self.personality == "flexible":
+            if context and context.get("proposed") in self.preferences[:2]:
+                return ("accept", context["proposed"])
+            return ("propose", self.preferences[0])
+        if self.personality == "strategic":
+            if context and "proposed" in context and context["proposed"] != self.preferences[0]:
+                return ("argue", self.preferences[1] if len(self.preferences) > 1
+                        else self.preferences[0])
+            return ("propose", self.preferences[0])
+        return ("propose", self.rng.choice(options))
+
+    def propose_argument(self, option, reason):
+        return {"agent": self.name, "option": option, "reason": reason}
+
+    def receive_argument(self, argument):
+        if self.personality == "flexible" and argument["option"] in self.preferences:
+            idx = self.preferences.index(argument["option"])
+            if idx > 0:
+                self.preferences.pop(idx)
+                self.preferences.insert(0, argument["option"])
 
 
-# ---------------------------------------------------------------------------
-# Methodes de vote (port de governance/methods.py)
-# ---------------------------------------------------------------------------
+class BDIAgent(Agent):
+    """Agent croyances-désirs-intentions (port du tronc)."""
+
+    def __init__(self, name, personality, preferences, rng=None):
+        super().__init__(name, personality, preferences, rng)
+        self.beliefs, self.desires, self.intentions = set(), set(), set()
+
+    def decide(self, options, context=None):
+        for i in self.intentions:
+            if i in options:
+                return i
+        return super().decide(options, context)
 
 
-def majority_voting(agents, options, context=None, rng=None):
-    """Majorité : chaque agent vote son premier choix, le plus voté gagne."""
-    votes = [a.decide(options, context, rng) for a in agents]
-    winner, _ = Counter(votes).most_common(1)[0]
-    return winner
+class ReactiveAgent(Agent):
+    """Agent réactif à règles (port du tronc)."""
+
+    def __init__(self, name, personality, preferences, rng=None):
+        super().__init__(name, personality, preferences, rng)
+        self.rules = []
+
+    def add_rule(self, condition, action):
+        self.rules.append((condition, action))
+
+    def decide(self, options, context=None):
+        for condition, action in self.rules:
+            if condition(context):
+                return action(options, context)
+        return super().decide(options, context)
 
 
-def plurality_voting(agents, options, context=None, rng=None):
-    """Pluralité : identique à la majorité pour un vainqueur unique (port fidèle)."""
-    return majority_voting(agents, options, context, rng)
+# ─────────────────────────────────────────────────────────────────────────
+# Section 1 — les 5 scrutins (agrégation de préférences)
+# ─────────────────────────────────────────────────────────────────────────
 
 
-def borda_count(agents, options, context=None, rng=None):
-    """Borda : n-1 points au premier rang, n-2 au deuxième... le total max gagne."""
-    scores = {o: 0 for o in options}
+def majority_voting(agents, options, context=None):
+    """Scrutin majoritaire à un tour : chaque agent vote son 1er choix."""
+    votes = [a.decide(options, context) for a in agents]
+    return Counter(votes).most_common(1)[0][0]
+
+
+def plurality_voting(agents, options, context=None):
+    """Alias de majority_voting (scrutin à un vainqueur)."""
+    return majority_voting(agents, options, context)
+
+
+def borda_count(agents, options, context=None):
+    """Score de Borda : n-1 au 1er choix, n-2 au 2e, etc."""
     n = len(options)
+    scores = {o: 0 for o in options}
     for a in agents:
         for i, o in enumerate(a.preferences):
             if o in scores:
@@ -127,324 +231,282 @@ def borda_count(agents, options, context=None, rng=None):
     return max(scores, key=scores.get)
 
 
-def condorcet_method(agents, options, context=None, rng=None):
-    """Condorcet : duels pairwise ; vainqueur qui bat tous les autres, sinon repli Borda."""
+def condorcet_method(agents, options, context=None):
+    """Vainqueur de Condorcet (gagne tous ses duels) ou repli Borda."""
     n = len(options)
-    pairwise_wins = {o: 0 for o in options}
+    wins = {o: 0 for o in options}
     for o1 in options:
         for o2 in options:
             if o1 == o2:
                 continue
-            o1_wins = sum(
-                a.preferences.index(o1) < a.preferences.index(o2) for a in agents
-            )
-            if o1_wins > len(agents) - o1_wins:
-                pairwise_wins[o1] += 1
+            o1_w = sum(a.preferences.index(o1) < a.preferences.index(o2)
+                       for a in agents if o1 in a.preferences and o2 in a.preferences)
+            if o1_w > len(agents) - o1_w:
+                wins[o1] += 1
     for o in options:
-        if pairwise_wins[o] == n - 1:
+        if wins[o] == n - 1:
             return o
-    return borda_count(agents, options, context, rng)
+    return borda_count(agents, options, context)
 
 
-def quadratic_voting(agents, options, context=None, rng=None):
-    """Vote "quadratique" du SOURCE (divergence 2) : budget coupé ou tout-misé.
+def quadratic_voting(agents, options, context=None):
+    """Vote quadratique (défaut du prototype conservé, delta n° 1).
 
-    Le source annonce un coût en somme de carrés mais ne l'implémente pas :
-    un agent flexible coupe son budget en deux sur ses deux premiers choix,
-    les autres mettent tout sur leur premier choix. L'exercice 1 du notebook
-    fait implémenter le vrai vote quadratique.
+    .. warning::
+        N'implémente PAS le coût quadratique annoncé (aucune somme de
+        carrés) : un agent `flexible` coupe son budget en deux, les autres
+        mettent tout sur leur premier choix. Le tronc l'a conservé tel
+        quel ; l'exercice du notebook = implémenter le vrai vote
+        quadratique (coût = somme des carrés des voix).
     """
     budget = (context or {}).get("quadratic_budget", 9)
     votes = {o: 0 for o in options}
     for a in agents:
+        alloc = [0] * len(options)
+        top = a.preferences[0] if a.preferences else options[0]
         if a.personality == "flexible" and len(options) > 1:
-            votes[options[0]] += budget // 2
-            votes[options[1]] += budget - (budget // 2)
+            ti = options.index(top) if top in options else 0
+            second = a.preferences[1] if len(a.preferences) > 1 else options[0]
+            si = options.index(second) if second in options else 0
+            alloc[ti] = budget // 2
+            alloc[si] = budget - budget // 2
         else:
-            votes[a.preferences[0]] += budget
+            ti = options.index(top) if top in options else 0
+            alloc[ti] = budget
+        for i, o in enumerate(options):
+            votes[o] += alloc[i]
     return max(votes, key=votes.get)
 
 
-def byzantine_consensus(agents, options, context=None, rng=None):
-    """Consensus byzantin : une fraction vote aléatoire (les n PREMIERS agents — divergence 3)."""
-    rng = rng or random.Random(0)
-    ratio = (context or {}).get("byzantine_ratio", 0.2)
-    n_byz = int(len(agents) * ratio)
-    votes = [a.decide(options, context, rng) for a in agents[n_byz:]]
-    votes += [rng.choice(sorted(options)) for _ in agents[:n_byz]]
-    winner, _ = Counter(votes).most_common(1)[0]
-    return winner
-
-
-def raft_consensus(agents, options, context=None, rng=None):
-    """Raft : un leader tiré au sort propose, majorité d'acceptations requise (top-2)."""
-    rng = rng or random.Random(0)
-    leader = rng.choice(sorted(agents, key=lambda a: a.name))
-    proposal = leader.decide(options, context, rng)
-    acceptances = 1
-    for a in agents:
-        if a is not leader and proposal in a.preferences[:2]:
-            acceptances += 1
-    if acceptances > len(agents) // 2:
-        return proposal
-    return majority_voting(agents, options, context, rng)
-
-
-GOVERNANCE_METHODS = {
+SCRUTINS = {
     "majority": majority_voting,
     "plurality": plurality_voting,
     "borda": borda_count,
     "condorcet": condorcet_method,
     "quadratic": quadratic_voting,
+}
+
+
+# ─────────────────────────────────────────────────────────────────────────
+# Section 2 — les 2 protocoles de tolérance aux pannes (PAS des scrutins)
+# ─────────────────────────────────────────────────────────────────────────
+
+
+def byzantine_consensus(agents, options, context=None, rng=None):
+    """Consensus byzantin : une fraction d'agents vote au hasard.
+
+    Protocole de tolérance aux pannes, **pas** un scrutin : ne se compare
+    pas à Borda (erreur de catégorie #1981). Le tronc désigne les
+    byzantins comme les n PREMIERS agents (tranche déterministe) — porté
+    fidèle.
+    """
+    ratio = (context or {}).get("byzantine_ratio", 0.2)
+    rng = rng or random.Random(0)
+    n_b = int(len(agents) * ratio)
+    honest = agents[n_b:]
+    votes = [a.decide(options, context) for a in honest]
+    votes += [rng.choice(options) for _ in range(n_b)]
+    return Counter(votes).most_common(1)[0][0]
+
+
+def raft_consensus(agents, options, context=None, rng=None):
+    """Raft : élection d'un leader + proposition ; majorité ou repli majoritaire.
+
+    Protocole de tolérance aux pannes, **pas** un scrutin (#1981).
+    """
+    rng = rng or random.Random(0)
+    leader = rng.choice(agents)
+    proposal = leader.decide(options, context)
+    accept = 1
+    for a in agents:
+        if a is leader:
+            continue
+        if proposal in a.preferences[:2]:
+            accept += 1
+    return proposal if accept > len(agents) // 2 else majority_voting(agents, options, context)
+
+
+PROTOCOLES = {
     "byzantine": byzantine_consensus,
     "raft": raft_consensus,
 }
 
 
-# ---------------------------------------------------------------------------
-# Coalitions, conflits, manipulation (port de governance/simulation.py)
-# ---------------------------------------------------------------------------
+# ─────────────────────────────────────────────────────────────────────────
+# Section 3 — le choix social formel (profils de préférences)
+# ─────────────────────────────────────────────────────────────────────────
+#
+# Fonctions sur des profils de bulletins ordonnés (List[List[str]]),
+# indépendantes de la classe Agent. Ajout du cœur — absent du prototype.
 
 
-def form_coalitions(agents, trust_threshold=0.8):
-    """Coalitions par confiance : un agent rejoint le premier partenaire à confiance > seuil.
-
-    Port de la boucle de coalition de `simulate_governance` (le source fait
-    confiance > 0.8 en dur) : chaque coalition vote la préférence de son leader.
-    """
-    unassigned = list(agents)
-    coalitions = []
-    for a in agents:
-        a.coalition_id = None
-    i = 0
-    while i < len(unassigned):
-        agent = unassigned[i]
-        partners = [p for p in unassigned[i + 1:] if agent.trust.get(p.name, 0) > trust_threshold]
-        coalition = [agent] + partners
-        cid = f"coalition_{len(coalitions) + 1}"
-        for p in coalition:
-            p.coalition_id = cid
-        coalitions.append(coalition)
-        for p in partners:
-            unassigned.remove(p)
-        i += 1
-    return coalitions
+def approval_voting(ballots, options, approval_threshold=2):
+    """Approval voting : chaque électeur approuve ses k premiers choix."""
+    counts = {o: 0 for o in options}
+    for b in ballots:
+        for c in b[:approval_threshold]:
+            if c in counts:
+                counts[c] += 1
+    return (max(counts, key=counts.get) if counts else None), counts
 
 
-def detect_conflicts(positions):
-    """Conflits : chaque paire d'agents à positions différentes (port fidèle)."""
-    names = list(positions.keys())
-    conflicts = []
-    for i in range(len(names)):
-        for j in range(i + 1, len(names)):
-            if positions[names[i]] != positions[names[j]]:
-                conflicts.append({"agents": [names[i], names[j]]})
-    return conflicts
+def stv(ballots, options, seats=1):
+    """Vote unique transférable (IRV pour 1 siège) : quota de Droop + transfert."""
+    remaining = set(options)
+    active = [list(b) for b in ballots]
+    winners, rounds = [], []
+    quota = len(ballots) // (seats + 1) + 1
+    while remaining and len(winners) < seats:
+        first = Counter()
+        for b in active:
+            for c in b:
+                if c in remaining:
+                    first[c] += 1
+                    break
+        if not first:
+            break
+        info = {"counts": dict(first), "remaining": sorted(remaining)}
+        elected = [c for c, n in first.items() if n >= quota]
+        if elected:
+            for c in elected:
+                winners.append(c)
+                remaining.discard(c)
+            info["elected"] = elected
+            rounds.append(info)
+            continue
+        if len(remaining) <= seats - len(winners):
+            winners.extend(sorted(remaining))
+            info["elected"] = sorted(remaining)
+            rounds.append(info)
+            break
+        lowest = min(first, key=first.get)
+        remaining.discard(lowest)
+        info["eliminated"] = lowest
+        rounds.append(info)
+    return winners, rounds
 
 
-def apply_manipulation(agents, manipulation_type, target=None, rng=None):
-    """Manipulation du vote (port de simulate_manipulation, voie decide rebind).
-
-    'strategic' : chaque agent vote son 2e choix.
-    'false_coalition' : la moitié des agents vote la cible.
-    'bribery' : le retour est une copie où n agents votent la cible (n = budget).
-    """
-    import copy
-
-    rng = rng or random.Random(0)
-    copies = [copy.deepcopy(a) for a in agents]
-    if manipulation_type == "strategic":
-        for a in copies:
-            if len(a.preferences) > 1:
-                a.personality = "stubborn"
-                a.preferences = [a.preferences[1], a.preferences[0]] + a.preferences[2:]
-    elif manipulation_type == "false_coalition":
-        t = target or a.preferences[0]
-        for a in copies[: len(copies) // 2]:
-            a.personality = "stubborn"
-            a.preferences = [t] + [p for p in a.preferences if p != t]
-    return copies
+def _pref_count(ballots, a, b):
+    """Nombre de bulletins préférant a à b (a absent = derrière)."""
+    n = 0
+    for ballot in ballots:
+        ia = ballot.index(a) if a in ballot else len(ballot)
+        ib = ballot.index(b) if b in ballot else len(ballot)
+        if ia < ib:
+            n += 1
+    return n
 
 
-def shapley_value(member_names, payoff_func):
-    """Valeur de Shapley d'une coalition (port fidèle, permutations factorielles)."""
-    n = len(member_names)
-    if n == 0:
-        return {}
-    values = {m: 0.0 for m in member_names}
-    for perm in permutations(member_names):
-        prev = set()
-        for m in perm:
-            marginal = payoff_func(prev | {m}) - payoff_func(prev)
-            values[m] += marginal / factorial(n)
-            prev.add(m)
-    return values
+def copeland(ballots, options):
+    """Copeland : score = duels gagnés - duels perdus."""
+    scores = {o: 0 for o in options}
+    for a in options:
+        for b in options:
+            if a == b:
+                continue
+            aw, bw = _pref_count(ballots, a, b), _pref_count(ballots, b, a)
+            if aw > bw:
+                scores[a] += 1
+            elif bw > aw:
+                scores[a] -= 1
+    return (max(scores, key=scores.get) if scores else None), scores
 
 
-# ---------------------------------------------------------------------------
-# Métriques (port de metrics/metrics.py, numpy retiré)
-# ---------------------------------------------------------------------------
+_MAX_KEMENY_CANDIDATES = 8
 
 
-def satisfaction_of(agent, winner):
-    """Satisfaction d'un agent : 1 - rang du vainqueur dans ses préférences, normalisé."""
-    if winner not in agent.preferences:
-        return 0.0
-    denom = max(1, len(agent.preferences) - 1)
-    return 1.0 - agent.preferences.index(winner) / denom
+def kemeny_young(ballots, options):
+    """Kemeny-Young : classement minimisant le désaccord total (O(n!), ≤ 8)."""
+    if len(options) > _MAX_KEMENY_CANDIDATES:
+        raise ValueError(
+            f"Kemeny-Young impraticable pour {len(options)} candidats "
+            f"(max {_MAX_KEMENY_CANDIDATES}) — utiliser kemeny_young_safe (#971)."
+        )
+    pairwise = {(a, b): _pref_count(ballots, a, b)
+                for a in options for b in options if a != b}
+    best_rank, best_score = None, -1
+    for perm in itertools.permutations(options):
+        score = sum(pairwise.get((perm[i], perm[j]), 0)
+                    for i in range(len(perm)) for j in range(i + 1, len(perm)))
+        if score > best_score:
+            best_score, best_rank = score, list(perm)
+    return best_rank, best_score
 
 
-def consensus_rate(result):
-    """Fraction des votes alignés sur le vainqueur."""
-    votes, winner = result["votes"], result["winner"]
-    return votes.count(winner) / len(votes) if votes else 0.0
+def kemeny_young_safe(ballots, options):
+    """Kemeny-Young avec repli Copeland au-delà de 8 candidats (#971)."""
+    if len(options) <= _MAX_KEMENY_CANDIDATES:
+        ranking, score = kemeny_young(ballots, options)
+        return ranking, score, False
+    _, cs = copeland(ballots, options)
+    return sorted(options, key=lambda o: cs.get(o, 0), reverse=True), -1, True
 
 
-def gini(values):
-    """Coefficient de Gini (formule du source, en Python pur, epsilon inclus)."""
-    vals = sorted(float(v) for v in values)
-    n = len(vals)
-    if n == 0:
-        return 0.0
-    vals = [v - min(0.0, vals[0]) + 1e-8 for v in vals]
-    total = sum(vals)
-    if total <= 0:
-        return 0.0
-    weighted = sum((2 * i - n - 1) * v for i, v in enumerate(vals, start=1))
-    return weighted / (n * total)
+def schulze(ballots, options):
+    """Schulze (Beatpath) : plus fort chemin entre toutes les paires."""
+    n = len(options)
+    idx = {o: i for i, o in enumerate(options)}
+    d = [[0] * n for _ in range(n)]
+    for ballot in ballots:
+        for i, a in enumerate(ballot):
+            if a not in idx:
+                continue
+            for b in ballot[i + 1:]:
+                if b in idx:
+                    d[idx[a]][idx[b]] += 1
+    p = [[0] * n for _ in range(n)]
+    for i in range(n):
+        for j in range(n):
+            if i != j and d[i][j] > d[j][i]:
+                p[i][j] = d[i][j]
+    for k in range(n):
+        for i in range(n):
+            if i == k:
+                continue
+            for j in range(n):
+                if j in (i, k):
+                    continue
+                p[i][j] = max(p[i][j], min(p[i][k], p[k][j]))
+    scores = {o: 0 for o in options}
+    for i in range(n):
+        for j in range(n):
+            if i != j and p[i][j] > p[j][i]:
+                scores[options[i]] += 1
+    winner = max(scores, key=scores.get) if scores else None
+    paths = {options[i]: {options[j]: p[i][j] for j in range(n) if i != j}
+             for i in range(n)}
+    return winner, paths
 
 
-def fairness_index(result):
-    """Justice = 1 - Gini des satisfactions."""
-    return 1.0 - gini(result["satisfaction"])
+def condorcet_winner(ballots, options):
+    """Vainqueur de Condorcet s'il existe (gagne tous ses duels)."""
+    for c in options:
+        if all(c == o or _pref_count(ballots, c, o) > _pref_count(ballots, o, c)
+               for o in options):
+            return c
+    return None
 
 
-def mean_satisfaction(result):
-    """Satisfaction moyenne du collectif."""
-    return sum(result["satisfaction"]) / len(result["satisfaction"]) if result["satisfaction"] else 0.0
+def pairwise_matrix(ballots, options):
+    """Matrice des préférences pairwise à partir des bulletins."""
+    matrix = {a: {b: 0 for b in options if b != a} for a in options}
+    for ballot in ballots:
+        for i, a in enumerate(ballot):
+            if a not in matrix:
+                continue
+            for b in ballot[i + 1:]:
+                if b in matrix.get(a, {}):
+                    matrix[a][b] += 1
+    return matrix
 
 
-def stability(winners):
-    """Stabilite : 1 si un seul vainqueur sur la serie, 0 sinon (port fidele)."""
-    return 1.0 if len(set(winners)) == 1 else 0.0
-
-
-# ---------------------------------------------------------------------------
-# Simulation (corrigée : la méthode est APPELÉE — divergence 1)
-# ---------------------------------------------------------------------------
-
-
-def simulate_vote(agents, options, method, context=None, seed=0):
-    """Applique RÉELLEMENT la méthode de vote, puis mesure votes et satisfactions.
-
-    Divergence 1 : le source n'appelait jamais sa méthode ; ici chaque méthode
-    de GOVERNANCE_METHODS tourne sur les memes agents.
-    """
-    rng = random.Random(seed)
-    method_fn = GOVERNANCE_METHODS[method]
-    winner = method_fn(agents, options, context, rng)
-    votes = [a.decide(options, context, rng) for a in agents]
-    satisfaction = [satisfaction_of(a, winner) for a in agents]
-    positions = {a.name: v for a, v in zip(agents, votes)}
-    return {
-        "method": method,
-        "winner": winner,
-        "votes": votes,
-        "satisfaction": satisfaction,
-        "agent_names": [a.name for a in agents],
-        "conflicts": detect_conflicts(positions),
-    }
-
-
-def summarize(result):
-    """Résume une simulation : consensus, justice, satisfaction."""
-    return {
-        "consensus_rate": round(consensus_rate(result), 3),
-        "fairness": round(fairness_index(result), 3),
-        "satisfaction": round(mean_satisfaction(result), 3),
-    }
-
-
-# ---------------------------------------------------------------------------
-# Banc de scénarios (6 des 16 du source, distillés)
-# ---------------------------------------------------------------------------
-
-SCENARIOS = {
-    "dictatorship": {
-        "description": "Un agent stratégique impose sa volonté face à des préférences diverses.",
-        "options": ["A", "B", "C"],
-        "agents": [
-            ("D1", "strategic", ["A", "B", "C"]),
-            ("O1", "stubborn", ["B", "C", "A"]),
-            ("O2", "flexible", ["C", "A", "B"]),
-            ("O3", "random", ["B", "A", "C"]),
-            ("O4", "stubborn", ["C", "B", "A"]),
-        ],
-    },
-    "cyclic_majority": {
-        "description": "Cycle de Condorcet : A bat B, B bat C, C bat A — aucun vainqueur net.",
-        "options": ["A", "B", "C"],
-        "agents": [
-            ("V1", "stubborn", ["A", "B", "C"]),
-            ("V2", "stubborn", ["B", "C", "A"]),
-            ("V3", "stubborn", ["C", "A", "B"]),
-        ],
-    },
-    "spoiler_candidate": {
-        "description": "Un candidat similaire divise un bloc : l'adversaire l'emporte.",
-        "options": ["Gauche", "Centre", "Droite"],
-        "agents": [
-            ("G1", "stubborn", ["Gauche", "Centre", "Droite"]),
-            ("G2", "stubborn", ["Centre", "Gauche", "Droite"]),
-            ("D1", "stubborn", ["Droite", "Centre", "Gauche"]),
-        ],
-    },
-    "strategic_bloc": {
-        "description": "Un bloc discipliné affronte des votes dispersés.",
-        "options": ["A", "B", "C"],
-        "agents": [
-            ("B1", "stubborn", ["A", "B", "C"]),
-            ("B2", "stubborn", ["A", "C", "B"]),
-            ("B3", "stubborn", ["A", "B", "C"]),
-            ("S1", "stubborn", ["B", "C", "A"]),
-            ("S2", "stubborn", ["C", "B", "A"]),
-        ],
-    },
-    "byzantine_noise": {
-        "description": "Une fraction d'agents vote au hasard : robustesse du consensus.",
-        "options": ["A", "B", "C"],
-        "agents": [
-            ("H1", "stubborn", ["A", "B", "C"]),
-            ("H2", "stubborn", ["A", "C", "B"]),
-            ("H3", "stubborn", ["A", "B", "C"]),
-            ("Z1", "random", ["B", "A", "C"]),
-            ("Z2", "random", ["C", "B", "A"]),
-        ],
-    },
-    "project_funding": {
-        "description": "Choix de budget : préférences ordonnées sur trois projets.",
-        "options": ["Route", "Ecole", "Clinique"],
-        "agents": [
-            ("M1", "stubborn", ["Route", "Ecole", "Clinique"]),
-            ("M2", "stubborn", ["Ecole", "Clinique", "Route"]),
-            ("M3", "flexible", ["Clinique", "Ecole", "Route"]),
-            ("M4", "flexible", ["Ecole", "Route", "Clinique"]),
-        ],
-    },
+SOCIAL_CHOICE = {
+    "approval": approval_voting,
+    "stv": stv,
+    "copeland": copeland,
+    "kemeny_young": kemeny_young,
+    "kemeny_young_safe": kemeny_young_safe,
+    "schulze": schulze,
+    "condorcet_winner": condorcet_winner,
+    "pairwise_matrix": pairwise_matrix,
 }
-
-
-def build_agents(scenario_name, trust=None):
-    """Matérialise les agents d'un scénario (tuples -> GovernanceAgent)."""
-    sc = SCENARIOS[scenario_name]
-    return [GovernanceAgent(n, p, prefs, (trust or {}).get(n)) for n, p, prefs in sc["agents"]]
-
-
-def method_counts():
-    """Inventaire de l'organe (pour tests purs, sans exécution)."""
-    return {
-        "methods": len(GOVERNANCE_METHODS),
-        "method_keys": sorted(GOVERNANCE_METHODS.keys()),
-        "scenarios": len(SCENARIOS),
-        "scenario_names": sorted(SCENARIOS.keys()),
-    }
