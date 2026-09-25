@@ -51,7 +51,7 @@ KOKORO_VOICE = "af_bella"
 
 # Qwen TTS config (via gateway)
 QWEN_PORT = 8196
-QWEN_VOICE = "Chelsie"
+QWEN_VOICE = "serena"  # Tell c.c.c.d.G.1 ★★★★ — snake_case lowercase, get_supported_speakers()
 
 # Chatterbox config (skip if not running)
 CHATTERBOX_PORT = 8198

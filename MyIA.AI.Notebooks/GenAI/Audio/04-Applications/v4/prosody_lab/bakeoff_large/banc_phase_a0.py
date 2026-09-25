@@ -4,7 +4,7 @@ Usage (depuis la racine du dépôt ou worktree) :
     export PATH="/c/ProgramData/sox-portable/sox-14.4.2:$PATH"
     _runtime/venv-qwen3tts/Scripts/python.exe bakeoff_large/banc_phase_a0.py \\
         --client qwen3_tts_customvoice \\
-        --speaker Chelsie \\
+        --speaker serena \\
         --language French \\
         --instruct "voix posée, débit lent, ton narratif" \\
         --out-root runs/run-20260924-143012/A0-bakeoff/qwen3_tts_customvoice

@@ -6,7 +6,7 @@ style contrôlable via instructions NL).
 Installation (env propre, règle F) :
     py -3.12 -m venv _runtime/venv-qwen3tts
     _runtime/venv-qwen3tts/Scripts/python.exe -m pip install qwen-tts
-    _runtime/venv-qwen3tts/Scripts/python.exe -m pip install torch==2.8.0 torchaudio==2.8.0 --index-url https://download.pytorch.org/whl/cu126
+    _runtime/venv-qwen3tts/Scripts/python.exe -m pip install torch==2.14.0 torchaudio==2.14.0 --index-url https://download.pytorch.org/whl/cu126
 
 Dépendance native :
     sox (https://sourceforge.net/projects/sox/files/sox/14.4.2/) — extrait dans
@@ -17,13 +17,13 @@ Interface uniforme (cf. __init__.py) :
         text    : str — texte à synthétiser
         out_wav : str — chemin absolu .wav de sortie (24 kHz mono)
         language: str — 'French' (défaut), autres 9 langues supportées
-        speaker : str — voix premium (cf. get_supported_speakers()), défaut 'Chelsie'
+        speaker : str — voix premium (cf. get_supported_speakers()), défaut 'serena' (snake_case, voir get_supported_speakers())
         instruct: str — instruction NL de style (ex: "voix posée, débit lent, ton narratif")
         kwargs  : generation kwargs HF Transformers (max_new_tokens, top_p, temperature, etc.)
         Returns : dict avec sample_rate, duration_s, rtf, vram_peak_gb, n_frames
 
 CLI :
-    python clients/qwen3_tts_customvoice.py --text "..." --out <wav> [--language French] [--speaker Chelsie] [--instruct "..."] [--device cuda]
+    python clients/qwen3_tts_customvoice.py --text "..." --out <wav> [--language French] [--speaker serena] [--instruct "..."] [--device cuda]
 
 Tell c.c.c.d.sota-not-workaround Prong A : organ-first = qwen-tts 0.1.1 (paquet PyPI officiel Qwen).
 Pas de réimplémentation locale du wrapper transformers.

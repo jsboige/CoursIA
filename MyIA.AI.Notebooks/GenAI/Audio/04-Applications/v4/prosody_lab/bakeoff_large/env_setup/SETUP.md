@@ -34,14 +34,14 @@ _runtime/venv-qwen3tts/Scripts/python.exe -m pip install --upgrade pip
 ### torch CUDA (CUDA 12.6)
 
 ```bash
-_runtime/venv-qwen3tts/Scripts/python.exe -m pip install torch==2.8.0 torchaudio==2.8.0 --index-url https://download.pytorch.org/whl/cu126
+_runtime/venv-qwen3tts/Scripts/python.exe -m pip install torch==2.14.0 torchaudio==2.14.0 --index-url https://download.pytorch.org/whl/cu126
 ```
 
 Vérif :
 
 ```bash
 _runtime/venv-qwen3tts/Scripts/python.exe -c "import torch; print(torch.__version__, torch.cuda.is_available())"
-# 2.8.0+cu126 True
+# 2.14.0+cu126 True
 ```
 
 ### qwen-tts 0.1.1 + dépendances
