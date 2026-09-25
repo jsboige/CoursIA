@@ -583,9 +583,12 @@ def test_open_cover_signal_est_tri_etat(monkeypatch):
             self.stdout = payload
 
     opened = json.dumps([
-        {"number": 12530, "state": "OPEN", "isDraft": False},
-        {"number": 12519, "state": "OPEN", "isDraft": True},
-        {"number": 12400, "state": "CLOSED", "isDraft": False}])
+        {"number": 12530, "state": "OPEN", "isDraft": False,
+         "title": "fix(knot): L576", "body": "See #12504."},
+        {"number": 12519, "state": "OPEN", "isDraft": True,
+         "title": "#12504 patrol", "body": ""},
+        {"number": 12400, "state": "CLOSED", "isDraft": False,
+         "title": " vieux sujet 12504", "body": ""}])
     monkeypatch.setattr(pig.subprocess, "run",
                         lambda *a, **kw: _Proc(opened))
     assert open_cover_signal(12504) == (
@@ -602,3 +605,43 @@ def test_open_cover_signal_est_tri_etat(monkeypatch):
 
     monkeypatch.setattr(pig.subprocess, "run", boom)
     assert open_cover_signal(12504) is None
+
+
+def test_open_cover_signal_exige_l_ancre_diese(monkeypatch):
+    """#17760 : la recherche GitHub rend un NOMBRE NU en sous-chaine. Une PR
+    ouverte qui ne cite pas `#N` borne par un mot ne couvre PAS -- le
+    candidat est conserve. Controles de l'arbitrage ai-01 : le positif
+    (ancre presente -> descriptor) et le negatif (sous-chaine seule -> vide).
+    """
+    class _Proc:
+        def __init__(self, payload):
+            self.stdout = payload
+
+    # Cas mesure (classe dominante : EPICs au petit numero) : le numero
+    # n'apparait qu'en sous-chaine d'identifiants plus grands, jamais ancre.
+    bare = json.dumps([
+        {"number": 17428, "state": "OPEN", "isDraft": False,
+         "title": "fix(knot): patrol L576 branches orphelines",
+         "body": "mesures c.1170301 et #1170391 citees pour contexte"}])
+    monkeypatch.setattr(pig.subprocess, "run", lambda *a, **kw: _Proc(bare))
+    assert open_cover_signal(11703) == ""
+
+    # Nombre nu dans le titre : pas plus couvrant que dans le body.
+    title_bare = json.dumps([
+        {"number": 17428, "state": "OPEN", "isDraft": False,
+         "title": "fix 11703 patrol", "body": ""}])
+    monkeypatch.setattr(pig.subprocess, "run",
+                        lambda *a, **kw: _Proc(title_bare))
+    assert open_cover_signal(11703) == ""
+
+    # Controle positif : l'ancre bornee couvre, et seul le PR ancre compte
+    # dans le descriptor (le voisin sous-chaine est ecarte du compte).
+    anchored = json.dumps([
+        {"number": 17428, "state": "OPEN", "isDraft": False,
+         "title": "fix(knot): patrol L576",
+         "body": "mesure c.1668201 pour contexte"},
+        {"number": 17452, "state": "OPEN", "isDraft": False,
+         "title": "feat(picker)", "body": "See #16682."}])
+    monkeypatch.setattr(pig.subprocess, "run",
+                        lambda *a, **kw: _Proc(anchored))
+    assert open_cover_signal(16682) == "PR #17452"
