@@ -11,7 +11,10 @@ structurellement invisible a toute lecture textuelle. C'est la classe
 Trois mesures, dans cet ordre :
 
 1. **Lakes couverts** -- les workflows qui APPELLENT le gate comme job
-   (``uses: .../lean-axiom.yml@<ref>``). Le critere est l'**appel**, pas la
+   (``uses: .../lean-axiom.yml@<ref>``, ou l'action composite
+   ``./.github/actions/lean-axiom`` de la jambe matricielle B.3 -- dans ce
+   cas le ``project-path: ${{ matrix.… }}`` se resout via le manifeste).
+   Le critere est l'**appel**, pas la
    mention : un workflow peut citer ``lean-axiom.yml`` dans son ``on.paths``
    au titre du *self-cover* (un changement du gate doit relancer la CI du
    lake) sans jamais l'appeler comme job. Un ``grep -l 'lean-axiom'`` seul
@@ -81,6 +84,17 @@ _PROJECT_PATH_RE = re.compile(r"^\s*project-path:\s*(\S+)", re.M)
 _JOBS_KEY_RE = re.compile(r"^jobs:\s*(?:#.*)?$")
 _JOB_KEY_RE = re.compile(r"^([A-Za-z0-9_.-]+):")
 
+# La jambe matricielle B.3 (#17336) appelle le gate via l'ACTION COMPOSITE
+# ``./.github/actions/lean-axiom`` -- pas le workflow reutilisable -- et lui
+# passe des ``project-path: ${{ matrix.project-path }}`` (expressions, non
+# lisibles textuellement). C'est un appel du gate comme les autres ; la
+# RESOLUTION des expressions vers le manifeste vit dans ``covered_lakes_by_job``
+# (couche ref), pas dans ce scan pur. #17370 a supprime le dispatcher
+# ``lean-serre.yml`` en reroutant serre100 par cette jambe : sans cette seconde
+# ancre, la suppression se lisait comme un « lost gate » alors que la couverture
+# etait reelle.
+_GATE_ACTION_CALL_RE = re.compile(r"^\s*-?\s*uses:\s*\S*actions/lean-axiom\b", re.M)
+
 
 def _git(*args: str) -> str:
     """Run git with MSYS path conversion disabled (see module docstring)."""
@@ -140,7 +154,7 @@ def gate_calls(workflow_text: str) -> list[tuple[str, list[str]]]:
     """
     out = []
     for job_name, body in iter_jobs(workflow_text):
-        if _GATE_CALL_RE.search(body):
+        if _GATE_CALL_RE.search(body) or _GATE_ACTION_CALL_RE.search(body):
             out.append((job_name, _PROJECT_PATH_RE.findall(body)))
     return out
 
@@ -181,6 +195,32 @@ def _workflow_bodies(ref: str) -> dict[str, str]:
 
 
 @functools.lru_cache(maxsize=None)
+def _matrix_gated_paths(ref: str) -> frozenset[str]:
+    """Project-paths gates par la jambe matricielle B.3, au ``ref``.
+
+    Source de verite : le manifeste ``ci_lakes.json`` -- la matrice du job
+    ``ci-matrix`` de ``lean-build.yml`` est generee depuis ses entrees, et le
+    step ``Proof integrity`` ne tourne que ``if: matrix.axiom-target-modules
+    != ''`` : une entree y recoit le gate ssi cette cle est non vide. Un
+    ``project-path: ${{ matrix.project-path }}`` est donc exactement un renvoi
+    vers cette lecture. Manifeste absent ou illisible au ``ref`` : ensemble
+    vide -- la couverture non prouvable n'est pas creditee (fail-CLOSED : un
+    faux negatif reste visible dans le rapport, un faux positif non).
+    """
+    raw = _git("show", f"{ref}:{MANIFEST}")
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        return frozenset()
+    lakes = data.get("lakes", []) if isinstance(data, dict) else data
+    return frozenset(
+        lk["project-path"] for lk in lakes
+        if isinstance(lk, dict) and lk.get("project-path")
+        and lk.get("axiom-target-modules")
+    )
+
+
+@functools.lru_cache(maxsize=None)
 def covered_lakes_by_job(ref: str) -> dict[str, dict[str, list[str]]]:
     """Map workflow filename -> ``{job: project-paths gated}``, at ``ref``.
 
@@ -188,6 +228,11 @@ def covered_lakes_by_job(ref: str) -> dict[str, dict[str, list[str]]]:
     the *coverage* set, not the set of files that merely mention it. The job
     dimension is kept (rather than flattened immediately) because it is what
     makes the pairing auditable in the report.
+
+    A ``project-path:`` that is a ``${{ ... }}`` expression cannot be read
+    textually : it is the matrix form, and the manifest is what it resolves
+    to (see ``_matrix_gated_paths``). The expression token is dropped and the
+    manifest's gated paths are credited to that job.
     """
     out: dict[str, dict[str, list[str]]] = {}
     for name, body in _workflow_bodies(ref).items():
@@ -195,7 +240,14 @@ def covered_lakes_by_job(ref: str) -> dict[str, dict[str, list[str]]]:
             continue  # the gate itself is not a caller
         calls = gate_calls(body)
         if calls:
-            out[name] = {job: paths for job, paths in calls}
+            jobs: dict[str, list[str]] = {}
+            for job, paths in calls:
+                if any(p.startswith("${{") for p in paths):
+                    literal = [p for p in paths if not p.startswith("${{")]
+                    jobs[job] = literal + sorted(_matrix_gated_paths(ref))
+                else:
+                    jobs[job] = paths
+            out[name] = jobs
     return out
 
 

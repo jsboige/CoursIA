@@ -16,8 +16,10 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from check_axiom_gate_coverage import (  # noqa: E402
+    _matrix_gated_paths,
     calls_gate,
     classify_deleted,
+    covered_lakes_by_job,
     deleted_dispatchers,
     filewide_project_paths,
     gate_project_paths,
@@ -82,6 +84,77 @@ class TestCallsGate:
 
     def test_unrelated_reusable_workflow_is_not_the_gate(self):
         assert calls_gate("    uses: ./.github/workflows/lean-build.yml@main\n") is False
+
+    def test_composite_action_call_is_a_call(self):
+        """Jambe matricielle B.3 (#17336) : le step ``Proof integrity`` de
+        lean-build.yml appelle l'ACTION COMPOSITE, pas le workflow."""
+        text = (
+            "jobs:\n"
+            "  ci-matrix:\n"
+            "    strategy:\n"
+            "      matrix:\n"
+            "        include: []\n"
+            "    steps:\n"
+            "      - name: Proof integrity (${{ matrix.display-name }})\n"
+            "        if: matrix.axiom-target-modules != ''\n"
+            "        uses: ./.github/actions/lean-axiom\n"
+            "        with:\n"
+            "          project-path: ${{ matrix.project-path }}\n"
+        )
+        assert calls_gate(text) is True
+
+    def test_unrelated_composite_action_is_not_the_gate(self):
+        """Le discriminator est le nom : ``actions/lean-build`` n'est pas le gate."""
+        text = (
+            "jobs:\n"
+            "  ci:\n"
+            "    steps:\n"
+            "      - uses: ./.github/actions/lean-build\n"
+        )
+        assert calls_gate(text) is False
+
+
+class TestMatrixGatedPaths:
+    """Resolution matricielle : expression ``${{ }}`` -> manifeste (B.3)."""
+
+    def test_expression_project_path_is_not_a_literal_lake(self):
+        """Pourquoi la resolution vit au niveau ref : le token ``${{`` n'est
+        pas un chemin -- le crediter tel quel fausserait l'appariement."""
+        text = (
+            "jobs:\n"
+            "  ci-matrix:\n"
+            "    steps:\n"
+            "      - uses: ./.github/actions/lean-axiom\n"
+            "        with:\n"
+            "          project-path: ${{ matrix.project-path }}\n"
+        )
+        paths = gate_project_paths(text)
+        assert paths and all(p.startswith("${{") for p in paths)
+
+    def test_credited_paths_carry_the_axiom_key(self):
+        """Invariant (pas de liste figee) : tout path credite par la jambe
+        matricielle correspond a une entree du manifeste dont
+        ``axiom-target-modules`` est non vide -- la condition ``if:`` du step."""
+        gated = _matrix_gated_paths(_REF)
+        if not gated:
+            pytest.skip(f"aucune entree matricielle gated au ref {_REF}")
+        entries = {lk.get("project-path"): lk for lk in matrix_lakes(_REF)}
+        for p in gated:
+            assert p in entries, f"{p} credite hors manifeste"
+            assert entries[p].get("axiom-target-modules"), (
+                f"{p} credite sans axiom-target-modules -- le step ne tournerait pas"
+            )
+
+    def test_matrix_job_expression_resolves_to_manifest(self):
+        """Le job matriciel de lean-build.yml credite EXACTEMENT les entrees
+        gated du manifeste -- ni plus (sur-declaration), ni moins (le faux
+        « lost gate » post-#17370 que ce fix ferme)."""
+        build = covered_lakes_by_job(_REF).get("lean-build.yml", {})
+        matrix_jobs = {j for j in build if j.startswith("ci-matrix")}
+        if not matrix_jobs:
+            pytest.skip(f"lean-build.yml sans job matriciel au ref {_REF}")
+        for job in matrix_jobs:
+            assert set(build[job]) == set(_matrix_gated_paths(_REF))
 
 
 class TestGateProjectPaths:
@@ -355,9 +428,16 @@ class TestScopingHoldsOnTheRealRef:
 
     def test_scoping_may_discard_but_never_invents(self, report):
         filewide = filewide_project_paths(_REF)
+        # La resolution matricielle (B.3) sort du fichier : un
+        # ``project-path: ${{ matrix.… }}`` se resout via le manifeste, et ce
+        # chemin n'apparait nulle part textuellement dans lean-build.yml. Il
+        # n'est donc pas couvert par l'invariant textuel -- il a le sien
+        # (TestMatrixGatedPaths.test_matrix_job_expression_resolves_to_manifest :
+        # exactement les entrees gated du manifeste, ni plus ni moins).
+        resolved = set(_matrix_gated_paths(_REF))
         for wf, paths in report["gate_callers"].items():
-            assert set(paths) <= set(filewide[wf]), (
-                f"{wf}: job-scoped scan credited {sorted(set(paths) - set(filewide[wf]))} "
+            assert set(paths) <= set(filewide[wf]) | resolved, (
+                f"{wf}: job-scoped scan credited {sorted(set(paths) - set(filewide[wf]) - resolved)} "
                 "which no project-path: of that file carries"
             )
 
