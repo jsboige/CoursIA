@@ -90,7 +90,7 @@ déplace une ligne, elle ne réécrit pas un total :
 | `slides/S4-trading-algorithmique/_archive/` | ✅ | ✅ (registre — une ligne par fichier archivé) |
 | `docker-configurations/_archive-20251125/` | ✅ | non audité |
 
-**Plan d'application** : tranches ciblées successives (cf umbrella #13749), une PR par tranche, seuils < 3000 lignes / < 15 fichiers / ≤ 4 features / 1 domaine (Tell c.692-L1 strict anti-composite + G.4 PR-review A).
+**Plan d'application** : tranches ciblées successives (cf umbrella #13749), une PR par tranche, dans les seuils d'anti-composite de la [§A du review](../../.claude/rules/pr-review-discipline.md) (cf G.4).
 
 ## Cas particuliers
 
