@@ -94,14 +94,16 @@ Le protocole ne mord que si `ai-01` cesse de merger passivement. À chaque passe
 
 Le HOLD est **attaché à la candidate**, jamais à la cadence de sa lane. Il ne sanctionne jamais l'idle ([coordinator-discipline.md](coordinator-discipline.md) R0/R4) et ne bloque jamais un nouveau grain **DEEP de contenu** : toujours accompagné d'un grain nommé du pool, en **double canal** (DM inbox + `[DISPATCH→inbox]` dashboard). HOLD sans remplacement, ou HOLD pour réduire les dispatchs, = échec coordinateur.
 
-## 4. Obligation de provisionnement — ce qui lie ai-01 (HARD)
+## 4. Provisionnement d'exception — ce qui lie ai-01 (HARD)
 
-La cause racine est **autant** un défaut de provisionnement qu'un réflexe de facilité worker. Chaque cycle `/coordinate`, `ai-01` :
+La cause racine est **autant** un défaut de provisionnement qu'un réflexe de facilité worker. Le provisionnement est une **exception nommée** : le coordinateur provisionne **quand il a une raison nommée** (sécheresse mesurée, dette de batch-close, veine à équilibrer), pas par quota de lane ni à chaque cycle — un quota par lane à tous les cycles rendrait le steering structurellement toujours premier sur le tirage, ce que la règle 5 de [proactive-coordination.md](proactive-coordination.md) interdit. Quand il provisionne, `ai-01` :
 
-0. **Le tirage est la voie par défaut** (règle 5 de [proactive-coordination.md](proactive-coordination.md)) : une lane sans steering **tire** et n'attend rien. Le provisionnement reste dû comme **exception nommée** — et doit être le plus équilibré possible : un steering qui répète le genre du cycle précédent fait pire que le tirage.
-1. **Provisionne ≥1 grain DEEP de CONTENU par lane**, **groundé firsthand** (`gh issue view`), varié en genre d'une lane à l'autre. Un provisionnement `MED`, ou uniquement `guard`/`tooling`/`docs`, ne satisfait pas l'obligation. Corollaires mesurés (agréger les **GENRES** des merges récents, pas seulement leurs tiers ; un batch-close de famille crée une dette de provisionnement) : [détail §9](../../docs/reference/variation-protocol-detail.md).
-2. **Varie la loterie** — le coordinateur applique G-VAR-3 à son propre dispatch.
-3. **Dissocie admission et production** : les candidates en HOLD, `DWELL`, review ou attente de merge ne diminuent jamais le provisionnement. La queue d'admission se résorbe par une piste de digestion parallèle ; elle n'applique aucune backpressure globale aux producteurs.
+0. **Le tirage est la voie par défaut** : une lane sans steering **tire** et n'attend rien. Un steering nommé s'ajoute au tirage quand il est déjà là (mécanisme never-empty, règle 7) — et doit être le plus équilibré possible : un steering qui répète le genre du cycle précédent fait pire que le tirage.
+1. **Provisionne sur sa raison nommée**, **groundé firsthand** (`gh issue view`), varié en genre d'une lane à l'autre.
+2. **Agrège les GENRES des merges récents avant de provisionner**, pas seulement leurs tiers — le tirage ne voit pas l'historique de genres de la flotte ([détail §9](../../docs/reference/variation-protocol-detail.md)).
+3. **Un batch-close de famille crée une dette de provisionnement**, à honorer dans le même cycle.
+4. **Varie la loterie** — le coordinateur applique G-VAR-3 à son propre dispatch.
+5. **Dissocie admission et production** : les candidates en HOLD, `DWELL`, review ou attente de merge ne diminuent jamais le provisionnement dû. La queue d'admission se résorbe par une piste de digestion parallèle ; elle n'applique aucune backpressure globale aux producteurs.
 
 Sous-provisionner puis merger la monoculture qui en résulte est **le** manquement que ce protocole corrige. Ralentir la production pour accommoder la digestion en est un autre.
 
