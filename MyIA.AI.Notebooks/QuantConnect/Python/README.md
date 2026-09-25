@@ -56,6 +56,7 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-12b-Backtest-Validity | EXÉCUTÉ | |
 | QC-Py-13-Alpha-Models | NON EXÉCUTÉ | |
 | QC-Py-14-Portfolio-Construction-Execution | NON EXÉCUTÉ | |
+| QC-Py-14b-Liquidity-Execution-Costs | EXÉCUTÉ | CPU local (yfinance/pandas/numpy), cellules exécutées, figures committées |
 | QC-Py-15-Parameter-Optimization | NON EXÉCUTÉ | |
 | QC-Py-16-Alternative-Data | NON EXÉCUTÉ | |
 | QC-Py-17-Sentiment-Analysis | NON EXÉCUTÉ | |
@@ -171,6 +172,7 @@ Chaque notebook de la série rend visible un geste quantitatif distinct, dans un
 | [QC-Py-12b-Backtest-Validity](QC-Py-12b-Backtest-Validity.ipynb) | Erreur-type du Sharpe (Lo 2002), signification statistique du backtest |
 | [QC-Py-13-Alpha-Models](QC-Py-13-Alpha-Models.ipynb) | Framework Alpha, signaux, combinaison |
 | [QC-Py-14-Portfolio-Construction-Execution](QC-Py-14-Portfolio-Construction-Execution.ipynb) | Construction portefeuille, exécution |
+| [QC-Py-14b-Liquidity-Execution-Costs](QC-Py-14b-Liquidity-Execution-Costs.ipynb) | Liquidité et coûts d'exécution : proxys (ADV, Amihud, Corwin-Schultz), loi racine, capacité, stress COVID réel (#16239) |
 | [QC-Py-15-Parameter-Optimization](QC-Py-15-Parameter-Optimization.ipynb) | Optimization, grid search, walk-forward |
 | [QC-Py-16-Alternative-Data](QC-Py-16-Alternative-Data.ipynb) | données alternatives, sentiment, fundamentals |
 | [QC-Py-17-Sentiment-Analysis](QC-Py-17-Sentiment-Analysis.ipynb) | NLP, analyse sentiment, signaux textuels |
