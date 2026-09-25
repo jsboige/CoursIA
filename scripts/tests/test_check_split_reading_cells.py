@@ -859,6 +859,54 @@ def test_diff_exempte_reecriture_en_place_d_une_lecture():
     assert findings == []
 
 
+def test_diff_exempte_reecriture_en_place_d_une_cellule_sans_id_non_lecture():
+    """#17747 -- revision en place d'une cellule markdown SANS id et NON
+    classee lecture (titre « Exercice 3 ») : ce n'est pas un ajout.
+
+    Mesure fondatrice (OR-tools-Stiegler, tranche SymbolicAI de #17498) : un
+    simple echappement de `$` (``39,66 $`` -> ``39,66 \\$``) dans cette
+    cellule suffisait a la faire passer pour un ajout -- les trois signaux
+    REWRITE manquaient (source modifiee, pas d'id, pas deux lectures) -- et le
+    cliquet rougissait le geste que le mandat user PRESCRIT : « si on rajoute
+    une lecture, on modifie le paragraphe de lecture existant ».
+    """
+    base = nb(
+        code("solver.Solve();"),
+        md("### Exercice 3 : Analyse de sensibilite du regime optimal\n"
+           "La solution optimale indique 5 aliments pour un cout de 39,66 $/an."),
+    )
+    head = nb(
+        code("solver.Solve();"),
+        md("### Exercice 3 : Analyse de sensibilite du regime optimal\n"
+           "La solution optimale indique 5 aliments pour un cout de 39,66 \\$/an."),
+    )
+    assert detect_added_readings(head, base) == []
+
+
+def test_diff_mord_si_l_empilement_remplace_le_slot_voisin():
+    """Controle NEGATIF de #17747 : le signal de revision ne couvre QUE le
+    slot qu'il occupe. Un empilement qui pousse une lecture la ou la base
+    portait du code reste rouge, meme si la cellule du dessus a ete revisee
+    en place dans la meme PR -- sinon le signal serait un robinet ouvert.
+    """
+    base = nb(
+        code("print(1)"),
+        md("### Analyse du resultat\nAncienne formulation."),
+        code("print(2)"),
+    )
+    head = nb(
+        code("print(1)"),
+        md("### Analyse du resultat\nNouvelle formulation."),
+        md("### Lecture chiffree : le score atteint 0.94"),
+        code("print(2)"),
+    )
+    findings = detect_added_readings(head, base)
+    # La revision du slot 1 est exemptee ; la lecture empilee au slot 2 (ou la
+    # base portait du code) reste signalee.
+    assert len(findings) == 1
+    assert findings[0]["cells"] == [2]
+
+
 def test_diff_mute_si_ordre_inchange_et_contenu_identique():
     """Une PR qui ne touche PAS au notebook ne signale rien (sanity check)."""
     base = head = nb(code("print(1)"))

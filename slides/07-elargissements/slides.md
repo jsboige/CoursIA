@@ -431,7 +431,7 @@ layout: dense
   - Eviter la confusion entre outils et entites conscientes
 - **Question ouverte**
   - Si une IA simule la souffrance, a-t-on le droit de la faire souffrir?
-  - *Modèle d'argumentation pour structurer ce type de débat : [Argument_Analysis_Toulmin_Model](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Toulmin_Model.ipynb) — claim / data / warrant / backing / qualifier / rebuttal, le debat redevient falsifiable.*
+  - *Modèle d'argumentation pour structurer ce type de débat : [Argument_Analysis_Toulmin_Model](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-01-Toulmin-Model-Python.ipynb) — claim / data / warrant / backing / qualifier / rebuttal, le debat redevient falsifiable.*
 
 ---
 
@@ -445,7 +445,7 @@ layout: dense
   - Grilles de securite IA (AI Safety Gridworlds)
   - AI Safety Levels (ASLs)
   - Modelisation par graphes d'arguments (Dung 1995)
-    - *Notebook : [Argument_Analysis_Dung_AF_Semantics](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Dung_AF_Semantics.ipynb) — extensions de valeurs, semantiques preferred/stable/complete, application au value alignment multi-criteres.*
+    - *Notebook : [Argument_Analysis_Dung_AF_Semantics](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-03-Dung-AF-Semantics-Python.ipynb) — extensions de valeurs, semantiques preferred/stable/complete, application au value alignment multi-criteres.*
 
 </div>
 
@@ -787,8 +787,8 @@ des cibles **directement citees dans les slides ci-dessus** (chemins relatifs au
   - [IIT-01-IntroToPyPhi](../../MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb) — calcul exact de Phi sur systemes booleens
   - [ICT-24-WorkspaceIgnition](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb) — ignition du workspace global (GWT)
 - **Argumentation formelle et debat structure**
-  - [Argument_Analysis_Dung_AF_Semantics](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Dung_AF_Semantics.ipynb) — semantiques de Dung, value alignment
-  - [Argument_Analysis_Toulmin_Model](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Toulmin_Model.ipynb) — modele de Toulmin, debat falsifiable
+  - [Argument_Analysis_Dung_AF_Semantics](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-03-Dung-AF-Semantics-Python.ipynb) — semantiques de Dung, value alignment
+  - [Argument_Analysis_Toulmin_Model](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-01-Toulmin-Model-Python.ipynb) — modele de Toulmin, debat falsifiable
 - **Privacy, chiffrement et vote verifiable**
   - [SC-16-Homomorphic-Encryption](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-16-Homomorphic-Encryption.ipynb) — Paillier, vote sur chiffres homomorphes
   - [SC-17-E2E-Verifiable-Voting](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-17-E2E-Verifiable-Voting.ipynb) — preuves individuelles + universelles
