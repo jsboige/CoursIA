@@ -1105,6 +1105,13 @@ MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/cuda-detect-probe/
 # SL-14 aifeynman run artifacts (results/, train/test splits, NN models -- regenerable, local only)
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/_sl14_runs/
 
+# PR #17422 — probes directory artifacts (papermill _out, _deps DLL mirror).
+# `_out` n'est pas couvert par `*_output.ipynb` au-dessus (suffixe distinct).
+# `_deps/` héberge la copie locale de QuikGraph.dll pour la mesure c.790 du
+# workaround relatif (#r "./_deps/QuikGraph.dll") — ne pas la committer.
+scripts/notebook_tools/probes/*_out.ipynb
+scripts/notebook_tools/probes/_deps/
+
 # Livecoding video pipeline (#15604) : artefacts capture/PoC -- media regenerable, local only
 out/
 
