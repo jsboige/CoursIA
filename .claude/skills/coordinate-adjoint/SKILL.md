@@ -106,6 +106,7 @@ La proposition `act_kind` est donc **mise en attente mesurée**, pas ajoutée au
 - **Un dossier tiers à la même tête rend le mien inutile** : avant de poster, vérifier le **dernier commentaire**. Si un `[ADJOINT PREFLIGHT]` intact d'une autre lane porte déjà la tête vive, poster le mien le périme sans rien apporter (mesuré c.73 sur #17835) — vérifier que le gate rend déjà 0, et passer le relais à ai-01.
 - **`NO-DOSSIER` a deux lectures** : « aucun dossier » (il en faut un) et « dossier existant devenu invalide » (head ≠ tête vive, ou surfaces modifiées). Un dossier dont la tête n'est plus vive compte comme **nit non levé** — la sortie est de **ré-émettre**, pas d'argumenter (§B.0). Lire `errors[]`, jamais `head -1`.
 - **Ledger : poster `d["content"]` avec `messageId = observation_id`** — l'idempotence du CLI est portée par cet id ; un id dérivé à la main crée un doublon silencieux.
+- **Une note postée APRÈS le dossier lui est invisible** : `_strip_adjoint_dossier` coupe le corps **jusqu'à sa fin**, donc un commentaire — ou un `CHANGES_REQUESTED` — collé après un bloc dossier ne compte pas comme réserve et l'organe rend `rc=0`. Le pire des deux mondes : perdue pour le gate, lue par l'humain. Une observation qui ne doit ni lever ni réserver se poste dans un commentaire **séparé, AVANT** le dossier.
 
 ## Lire un rouge avant de le nommer — tells c.43-c.44
 
