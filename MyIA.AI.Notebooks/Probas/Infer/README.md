@@ -56,6 +56,7 @@ Le trait distinctif d'Infer.NET : le modèle déclaratif est **compilé** (via R
 | 5 | [Infer-5-Causal-Inference](Infer-5-Causal-Inference.ipynb) | 65 min | do-calculus, backdoor/front-door, paradoxe de Simpson |
 | 7 | [Infer-7-Skills-IRT](Infer-7-Skills-IRT.ipynb) | 60 min | IRT, DINA, many-to-many — *MBML Ch.2* « Assessing People's Skills » |
 | 8 | [Infer-8-TrueSkill](Infer-8-TrueSkill.ipynb) | 55 min | Ranking, online learning, équipes — *MBML Ch.3* « Meeting Your Match » |
+| 8b | [Infer-8b-TrueSkill-Formules-Fermees](Infer-08b-TrueSkill-Formules-Fermees-CSharp.ipynb) | 20 min | Formes fermées V(t)/W(t) de Herbrich-Minka-Graepel 2007, vérification exacte contre le moteur EP |
 | 9 | [Infer-9-Classification](Infer-9-Classification.ipynb) | 50 min | BPM, régression logistique, A/B, calibration hors échantillon (Brier/AUC/fiabilité) |
 | 10 | [Infer-10-Model-Selection](Infer-10-Model-Selection.ipynb) | 45 min | Evidence, Bayes factors, ARD |
 | 11 | [Infer-11-Topic-Models](Infer-11-Topic-Models.ipynb) | 60 min | LDA, documents-topics-mots |
@@ -377,6 +378,31 @@ Les notebooks 4-6 couvrent les modèles bayésiens classiques : réseaux, compé
 | Update | μ_new ∝ surprise | Plus grande si upset |
 
 **Applications** : Classement Xbox Live, tournois esports, matchmaking équilibré
+
+---
+
+### Infer-8b : TrueSkill — Formules Fermées
+
+**Durée** : 20 min | **Prérequis** : [Infer-8-TrueSkill](Infer-8-TrueSkill.ipynb)
+
+**Objectifs** :
+
+- Dériver les fonctions de troncature V(t) et W(t) (cas à 2 joueurs)
+- Implémenter la mise à jour closed-form — O(1) par match, sans inférence compilée
+- Vérifier numériquement la cohérence exacte avec le moteur EP d'Infer.NET
+- Comprendre le terme de dynamique τ² (équilibre contraction / regrowth)
+
+**Concepts clés** :
+
+| Composant | Formule | Description |
+|-----------|---------|-------------|
+| Troncature | V(t) = φ(t)/Φ(t) | Ratio densité/CDF de la Gaussienne réduite |
+| Troncature | W(t) = V(t)(V(t)+t) | Contraction de la variance |
+| Mise à jour | μ' = μ ± (σ²/c)·V(t) | Déplacement du skill, signé gagnant/perdant |
+| Variance | σ'² = σ²(1 − (σ²/c²)·W(t)) | Contraction bornée par le ratio σ²/c² |
+| Dynamique | σ² ← σ² + τ² | Régrowth entre matchs : l'incertitude d'un inactif remonte |
+
+**Applications** : Vélocité de production Xbox Live — la lettre isole la contribution algorithmique du papier (Herbrich, Minka & Graepel, NeurIPS 2007) que le moteur EP d'Infer-8 calcule sous le capot.
 
 ---
 
