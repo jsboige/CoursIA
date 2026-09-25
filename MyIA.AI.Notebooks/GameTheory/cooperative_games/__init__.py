@@ -80,7 +80,19 @@ from .assistance_games import (
     paperclip_vs_coordination_comparison,
     PaperclipGameResult,
     OffSwitchGameResult,
-    OffSwitchMetaUncertainResult
+    OffSwitchMetaUncertainResult,
+    # Assistance Games 2026 (Ananthakrishnan et al., arXiv:2607.08012)
+    run_assistance_game,
+    run_assistance_multiseed,
+    compare_assistance_algorithms,
+    POLAResult,
+    AssistanceState,
+    _human_signaler,
+    _pola_robot,
+    _greedy_robot,
+    _random_robot,
+    _stackelberg_action,
+    _stackelberg_value,
 )
 
 __version__ = "1.0.0"
@@ -139,4 +151,16 @@ __all__ = [
     "PaperclipGameResult",
     "OffSwitchGameResult",
     "OffSwitchMetaUncertainResult",
+    # Assistance Games 2026 (Ananthakrishnan et al., arXiv:2607.08012)
+    "run_assistance_game",
+    "run_assistance_multiseed",
+    "compare_assistance_algorithms",
+    "POLAResult",
+    "AssistanceState",
+    "_human_signaler",
+    "_pola_robot",
+    "_greedy_robot",
+    "_random_robot",
+    "_stackelberg_action",
+    "_stackelberg_value",
 ]
