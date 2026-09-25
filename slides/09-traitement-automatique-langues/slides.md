@@ -71,6 +71,7 @@ layout: default
 | Token, BPE, vocabulaire | [04-Tokenisation-From-Scratch](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/04-Tokenisation-From-Scratch.ipynb) |
 | Lemmes, POS, dépendances, NER | [01_TAL_Du_Mot_Aux_Dependances](../../MyIA.AI.Notebooks/NLP/01_TAL_Du_Mot_Aux_Dependances.ipynb) |
 | n-grammes, perplexité, lissage | [02_NGrammes_Modeles_De_Langue](../../MyIA.AI.Notebooks/NLP/02_NGrammes_Modeles_De_Langue.ipynb) — gap comblé (#16235/#16246) |
+| HMM, décodage de Viterbi (étiquetage POS) | [05-HMM-Viterbi](../../MyIA.AI.Notebooks/NLP/05-HMM-Viterbi.ipynb) — gap comblé (#17695) |
 | IR : métriques, reranking, HyDE · recherche hybride | [02-Retrieval-Avance](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/02-Retrieval-Avance.ipynb) · [08-KernelMemory-Hybrid-Search](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/08-KernelMemory-Hybrid-Search.ipynb) |
 | Embeddings (skip-gram) · vectoriel serveur (HNSW) | [03-Embeddings-From-Scratch](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/03-Embeddings-From-Scratch.ipynb) · [05b-Stockage-Vectoriel-Serveur](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/05b-Stockage-Vectoriel-Serveur.ipynb) |
 | Automates finis, transducteurs | sous-module [SMT/Automata](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Automata/) (C#) |
@@ -627,7 +628,7 @@ layout: section
 | Transformers, LLMs | [11_Quantization](../../MyIA.AI.Notebooks/GenAI/Texte/11_Quantization.ipynb) · [13_Agentic_Orchestration](../../MyIA.AI.Notebooks/GenAI/Texte/13_Agentic_Orchestration.ipynb) |
 | Bots conversationnels | [03-Chat-Streaming-QA-OWUI](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/03-chat-streaming/03-Chat-Streaming-QA-OWUI.ipynb) · [configurer-chatbots-par-l-api](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/03-Functional/03-1-Chatbots/configurer-chatbots-par-l-api.ipynb) |
 
-**Gaps restants après la migration NLP** : HMM/Viterbi (`Probas/Infer/*` couvre l'inférence probabiliste, pas l'alignement de séquences). Les gaps mesurés ci-dessus — n-grammes/perplexité/lissage (zéro occurrence dans l'ancien 23_TAL), CRF, CYK/PCFG constituant — sont comblés par la série [`MyIA.AI.Notebooks/NLP/`](../../MyIA.AI.Notebooks/NLP/README.md) (02/03/04).
+**Gaps restants après la migration NLP** : aucun — HMM/Viterbi, dernier gap mesuré, est comblé par [05-HMM-Viterbi](../../MyIA.AI.Notebooks/NLP/05-HMM-Viterbi.ipynb) (#17695). Les gaps mesurés ci-dessus — n-grammes/perplexité/lissage (zéro occurrence dans l'ancien 23_TAL), CRF, CYK/PCFG constituant — sont comblés par la série [`MyIA.AI.Notebooks/NLP/`](../../MyIA.AI.Notebooks/NLP/README.md) (02/03/04/05).
 
 > **Note** : les lignes « n-grammes → 23_TAL » et « HMM, Viterbi → Probas/Infer/* »
 > des versions antérieures étaient des **labels menteurs** par excès d'optimisme —

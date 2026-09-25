@@ -19,19 +19,37 @@ ce qui en fait un banc discriminant pour l'emergence causale multi-echelle.
 
 **Pont preuve <-> mesure** : le calcul de trajectoire implemente ici (simulation
 naive pas-a-pas, toroidale) est l'exact pendant Python de la branche « naive »
-du theoreme ``hashlife_correct`` formalise en Lean dans la track ``conway_lean``
-(``MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/HashlifeCorrectness.lean``).
-Ce theoreme — desormais **prouve sans sorry** sur ``main`` (chaine P4
-``p4_succ_membership`` + pont de localite BR1-BR3 + BR4a ``one_jump_toGrid_correct``
-(PR #10919) + ``p5_large_n_jumpN`` decharge par induction sur le fuel et
-re-signature trajectoire b3' (PR #11007), ``hashlife_correctN`` re-signee) —
-garantit que l'evaluation **Hashlife** (quadtree memoise, sauts temporels
-``2^k``) calcule la *meme chose* que la simulation naive pas-a-pas. Les longues
-trajectoires exportees depuis ce module heritent donc d'une garantie de
-correction : l'acceleration Hashlife, si on l'employait, ne changerait rien au
-film produit (c'est precisement ce que dit le theoreme), et la calibration
-ci-dessous verifie que la dynamique Python respecte les constantes canoniques
-des patterns (periodes et deplacements).
+du theoreme ``evolveHashlifeFastAtN_correct_uncond`` formalise en Lean dans la
+track ``conway_lean``
+(``MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/HashlifeCorrectness.lean``
+l. 7202, PR #11781 commit ``c5df96d5b0`` 2026-08-19, tracker #6724). Ce
+theoreme — **prouve sans hypothese, non-vacuous** sur ``main`` (chaine
+``evolveHashlifeFastAtN_correct one_jumpAt_correct``, ou ``one_jumpAt_correct``
+est PROVED sous re-signature trajectoire b3' par PR #11781 le 2026-08-19) —
+garantit que l'evaluation Hashlife a moteur decouple ``evolveHashlifeFastAtN``
+(variante introduite par #11161, chaque appel prenant un ``n`` quelconque)
+calcule la *meme chose* que la simulation naive pas-a-pas :
+``evolveHashlifeFastAtN n g = evolve n g``.
+
+Note sur ``hashlife_correct`` : le theoreme historique du meme fichier (l. 6373)
+est **vacuously true** des que le saut s'exerce : son hypothese
+``BoxAssezGrand g n`` est cappee a ``n <= 2`` sur grilles non-vides
+(``boxAssezGrand_nonempty_le_two``, l. 6382), tandis que la garde de saut du
+Hashlife exige ``n >= jumpSize >= 8``. Les deux ensembles sont disjoints
+(``p5_large_n_hyps_unsat``) ; la preuve est honnete (chaine P2-P4 fermee,
+PRs #10919 et #11007), mais la garantie est vide dans le regime du saut
+(docstring ``hashlife_correct`` mise a jour par commit ``eacb29b98c``
+2026-09-24, fix #17570). C'est pourquoi
+``evolveHashlifeFastAtN_correct_uncond`` (non-vacuous) est cite comme source
+de la garantie de correction des trajectoires exportees ;
+``hashlife_correct`` n'est mentionne que pour nommer sa vacuite.
+
+Les longues trajectoires exportees depuis ce module heritent donc d'une
+garantie de correction non-vacuous : l'acceleration Hashlife, si on l'employait,
+ne changerait rien au film produit (c'est precisement ce que dit le
+``evolveHashlifeFastAtN_correct_uncond``), et la calibration ci-dessous verifie
+que la dynamique Python respecte les constantes canoniques des patterns
+(periodes et deplacements).
 
 Numpy uniquement (voisinage vectorise via ``numpy.roll``, bords periodiques),
 comme le reste du package leger ``ict``.

@@ -328,6 +328,7 @@ jobs:
             MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/tests \
             scripts/secrets/tests \
             scripts/quantconnect/tests \
+            MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis \
             GradeBookApp \
             -n 4 --dist loadscope --tb=short -q
         # Chien de garde xdist (#16288) : quand un worker meurt (`[gwN] node
@@ -439,6 +440,22 @@ jobs:
           if [ -z "$N" ] || [ "$N" -eq 0 ]; then echo "::error::--collect-only returned no tests — the collection crashed (distinct from a coverage drop)."; exit 1; fi
           if [ "$N" -lt "$GRADEBOOK_TESTS_FLOOR" ]; then echo "::error::Coverage regression: $N tests collected, floor=$GRADEBOOK_TESTS_FLOOR."; exit 1; fi
           echo "OK: $N tests collected (floor=$GRADEBOOK_TESTS_FLOOR)."
+
+      - name: Argument_Analysis tests collection floor (174)
+        # Meme semantique a deux signaux que les floors audit (455), secrets
+        # (148) et GradeBook (15) : une collection cassee (import manquant au
+        # module level, crash de collection) rend 0 test collecte au lieu d'un
+        # compte -- c'est un probleme d'installation, PAS une baisse de
+        # couverture. La suite est stdlib (effets de bord mockes), donc aucune
+        # dep a ajouter au pip install du job.
+        if: always()
+        env:
+          ARGUMENT_ANALYSIS_TESTS_FLOOR: 174
+        run: |
+          N=$(python -m pytest MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis --collect-only -q 2>/dev/null | tail -1 | grep -oE '[0-9]+ tests collected' | grep -oE '^[0-9]+')
+          if [ -z "$N" ] || [ "$N" -eq 0 ]; then echo "::error::--collect-only returned no tests — the collection crashed (distinct from a coverage drop)."; exit 1; fi
+          if [ "$N" -lt "$ARGUMENT_ANALYSIS_TESTS_FLOOR" ]; then echo "::error::Coverage regression: $N tests collected, floor=$ARGUMENT_ANALYSIS_TESTS_FLOOR."; exit 1; fi
+          echo "OK: $N tests collected (floor=$ARGUMENT_ANALYSIS_TESTS_FLOOR)."
 
   adk-contracts:
     name: ADK runtime contracts (18)

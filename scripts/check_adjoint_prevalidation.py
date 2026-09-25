@@ -50,6 +50,13 @@ moves. GitHub does not expose a stateless audit trail for an event that is
 later deleted or reverted; this gate therefore certifies the current
 surfaces, not erased history.
 
+The `b0:` claim is re-verified the same way: when a dossier claims READY
+with `b0: clear`, the gate runs the B.0 organ (`check_unaddressed_nits.py`)
+and refuses the dossier if the organ still finds an unlifted remark, naming
+each one. A green gate therefore no longer hides a red B.0. It still does not
+dispense with reading the surfaces: the organ only sees its markers, and who
+lifted a remark, when, and on what substance are read by hand (CLAUDE.md §B.0).
+
 Exit codes -- dossier INTEGRITY and PR MERGEABILITY are two questions, and
 conflating them is what this gate used to do (#16800):
 
@@ -72,6 +79,11 @@ requirement, `surfaces-sha256` included. What it drops are the checks that
 refute a READY *claim* (green checks, clear B.0, no unresolved thread, not a
 draft) -- those are reasons a pull request is blocked, not reasons to distrust
 the dossier that says so.
+
+Cas FROZEN (rc 3 aussi) : un dossier READY portant une PR d'une campagne
+gelee par un veto user (#17040) reste refuse -- ni le dossier ni B.0 ne
+lisent un veto pose sur une issue. Le gate le lit au verdict via le module
+partage ``frozen_campaigns`` (dispatch a la lane auteure, pas de merge).
 
 One surface author is neutral: the coordinator itself, and only for rows it
 wrote AFTER the dossier. Otherwise the act the gate authorises -- reading the
@@ -98,6 +110,17 @@ try:
 except ImportError:  # charge via importlib dans les tests (hors scripts/)
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import gh_identity
+
+# Campagnes gelees par veto user (#17040) : definition PARTAGEE avec
+# merge_ready dans scripts/coordination/frozen_campaigns.py. Ce gate ne peut
+# pas importer merge_ready (merge_ready importe deja ce gate), les deux
+# importent le module : un seul lecteur du veto, jamais deux qui derivent.
+_COORDINATION_DIR = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "coordination"
+)
+if _COORDINATION_DIR not in sys.path:
+    sys.path.insert(0, _COORDINATION_DIR)
+from frozen_campaigns import frozen_umbrella_exclusion  # noqa: E402
 
 REPO = "jsboige/CoursIA"
 # The adjoint remains the canonical emitter: `--template` renders its lane, and
@@ -565,6 +588,81 @@ def check_claim_contradictions(
     return contradictions
 
 
+def b0_claim_contradictions(claim: str, result: dict[str, Any] | None) -> list[str]:
+    """Re-verify a dossier's ``b0: clear`` claim against the live B.0 organ.
+
+    The ``checks:`` claim has been re-verified since #16957; ``b0:`` was
+    still taken on faith, and a READY dossier could attest ``b0: clear`` on a
+    pull request the organ blocks. Measured on 2026-09-24: two READY dossiers
+    (#16955 and #16987) declared ``b0: clear`` while ``check_unaddressed_nits.py``
+    exited 1 on an unlifted Hermes reserve. Only the coordinator's separate B.0
+    run caught them, and the gate's ``exit 0`` looked like a green light. Like
+    the checks claim, the b0 claim is now compared with what the organ measures
+    at evaluation time, and every unlifted remark is named.
+
+    ``result`` is the dict returned by ``check_unaddressed_nits.analyse_pr``.
+    A claim other than ``clear`` is not refuted here, because a BLOCKED dossier
+    may say so.
+    """
+    if claim != "clear" or not result or not result.get("blocked"):
+        return []
+    blocking = list(result.get("blocking") or [])
+    named = "; ".join(
+        f"{row.get('kind', '?')} by {row.get('author', '?')} via {row.get('src', '?')}"
+        for row in blocking[:5]
+    )
+    if len(blocking) > 5:
+        named += f" (+{len(blocking) - 5} more)"
+    return [
+        "b0 claim 'clear' is contradicted by the live B.0 organ "
+        f"(check_unaddressed_nits.py): {len(blocking)} unlifted remark(s)"
+        + (f" -- {named}" if named else "")
+    ]
+
+
+def probe_b0(pr: int) -> dict[str, Any]:
+    """Run the B.0 organ on ``pr``. A failure to measure is fail-closed.
+
+    The import is lazy because the probe runs only for a dossier that claims
+    READY: BLOCKED and absent dossiers never load the organ. A failure to
+    import it is a failure to measure like any other -- it surfaces as
+    ``RuntimeError``, which ``main`` reports as UNKNOWN (exit 2), never as a
+    traceback.
+    """
+    try:
+        try:
+            import check_unaddressed_nits
+        except ImportError:  # charge via importlib dans les tests (hors scripts/)
+            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+            import check_unaddressed_nits
+        return check_unaddressed_nits.analyse_pr(pr)
+    except Exception as exc:  # noqa: BLE001 -- any failure means "not measured"
+        raise RuntimeError(f"B.0 organ could not measure PR #{pr}: {exc}") from exc
+
+
+def refute_ready_b0(
+    pr: int,
+    verdict: str,
+    dossier: Dossier | None,
+    probe: Any = None,
+) -> tuple[str, list[str], Dossier | None]:
+    """Demote a READY verdict whose ``b0: clear`` claim the organ refutes.
+
+    The demotion is to "no dossier worth trusting" (exit 1), the same outcome
+    as a contradicted ``checks:`` claim: a dossier that attests a false
+    ``clear`` cannot be trusted on its other fields either. Only READY is
+    probed, so the organ adds no API cost to BLOCKED or absent dossiers.
+    """
+    if verdict != VERDICT_READY or dossier is None:
+        return verdict, [], dossier
+    refuted = b0_claim_contradictions(
+        dossier.fields.get("b0", ""), (probe or probe_b0)(pr)
+    )
+    if refuted:
+        return "", refuted, None
+    return verdict, [], dossier
+
+
 def carrying_lane(snapshot: dict[str, Any]) -> str | None:
     """Return the lane that carries this pull request, from its `Grain:` tag.
 
@@ -961,6 +1059,10 @@ def _pr_metadata(pr: int, *, with_rollup: bool) -> dict[str, Any]:
         "isDraft": row.get("draft"),
         "baseRefName": (row.get("base") or {}).get("ref"),
         "headRefOid": (row.get("head") or {}).get("sha"),
+        # Rides for the frozen-campaign check only (merge_ready reads it via
+        # the same shared module). NOT in the fingerprint payload, which uses
+        # explicit keys -- adding this field must not change surfaces-sha256.
+        "headRefName": (row.get("head") or {}).get("ref"),
         "updatedAt": row.get("updated_at"),
         "changedFiles": row.get("changed_files"),
         "additions": row.get("additions"),
@@ -999,7 +1101,11 @@ def load_snapshot(pr: int) -> dict[str, Any]:
     # Fetched inside the before/after bracket: a check concluding during the
     # read bumps updatedAt and aborts the snapshot (transient UNKNOWN, the
     # caller retries), so the claim verification below never reads a state
-    # that was already stale when captured.
+    # that was already stale when captured. The B.0 probe (`probe_b0`) is NOT
+    # in this bracket: it runs after, and only on a READY dossier. A remark
+    # posted between the snapshot and the probe therefore makes the organ
+    # contradict a `b0: clear` claim -- a conservative refusal, which a rerun
+    # names as a changed discussion surface.
     snapshot["checkRuns"] = _head_check_runs(snapshot["headRefOid"])
     after = _pr_metadata(pr, with_rollup=True)
     if _metadata_identity(before) != _metadata_identity(after):
@@ -1098,6 +1204,8 @@ def main() -> int:
             )
             return 0
         verdict, errors, dossier = evaluate_with_dossier(snapshot)
+        if not errors:
+            verdict, errors, dossier = refute_ready_b0(args.pr, verdict, dossier)
     except (
         RuntimeError,
         KeyError,
@@ -1124,10 +1232,34 @@ def main() -> int:
         print(json.dumps(result, ensure_ascii=False) if args.json else f"UNKNOWN -- {exc}")
         return EXIT_UNKNOWN
 
-    ready = verdict == VERDICT_READY
+    # Veto user sur campagne gelee (#17040) : un dossier READY n'autorise pas
+    # a merger une PR gelee. Le veto ne vit sur AUCUNE surface que le dossier
+    # couvre -- le gate le lit au moment de se prononcer, via le module
+    # partage frozen_campaigns (meme lecteur que merge_ready). Applique
+    # seulement au verdict READY : un dossier refuse ou BLOCKED est deja non
+    # mergeable, le gel n'y ajoute rien.
+    frozen_reason = None
+    if verdict == VERDICT_READY:
+        frozen_reason = frozen_umbrella_exclusion(
+            snapshot.get("title"),
+            snapshot.get("body"),
+            snapshot.get("headRefName"),
+        )
+    ready = verdict == VERDICT_READY and frozen_reason is None
     result = build_result(args.pr, snapshot, verdict, errors, dossier)
+    if frozen_reason is not None:
+        # Le dossier reste intact et publie : ce que le gate refuse est le
+        # MERGE, pas la lecture de la PR -- meme action documentee que rc=3.
+        result["ready"] = False
+        result["verdict"] = "FROZEN"
+        result["frozen"] = frozen_reason
     if args.json:
         print(json.dumps(result, ensure_ascii=False))
+    elif frozen_reason is not None:
+        print(
+            f"FROZEN -- PR #{args.pr} belongs to a frozen campaign "
+            f"({frozen_reason}); do not merge, dispatch to the lane author."
+        )
     elif ready:
         print(f"READY -- PR #{args.pr} prevalidated by adjoint at {snapshot['headRefOid']}")
     elif verdict == VERDICT_BLOCKED:
@@ -1145,6 +1277,8 @@ def main() -> int:
         print(f"NO-DOSSIER -- PR #{args.pr} is not adjoint-prevalidated")
         for error in errors:
             print(f"  - {error}")
+    if frozen_reason is not None:
+        return EXIT_BLOCKED_WITH_SUBSTANCE
     if ready:
         return EXIT_READY
     if verdict == VERDICT_BLOCKED:

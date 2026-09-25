@@ -1165,3 +1165,261 @@ def test_fingerprint_refusal_names_the_live_surface_landscape():
     assert "threads=2 (1 non resolus)" in msg
     assert "checks=1" in msg
     assert "reviews=2" in msg
+
+
+# --- Campagnes gelees par veto user (#17040) ----------------------------------
+
+# Titres reels (2026-09-23/24) : le second repare les degats de la campagne
+# densite et cite le parapluie dans son body -- l'exemption se lit sur le
+# titre seul (module partage frozen_campaigns).
+FROZEN_TITLE = "Densite Lab13-Web-Search-SOTA (#13410)"
+REDRESSEMENT_TITLE = (
+    "fix(semanticweb,#17066): redressement critique de SW-4-CSharp-SPARQL "
+    "-- reference de campagne"
+)
+
+
+def _snapshot_with(
+    title: str | None = None,
+    pr_body: str | None = None,
+    head_ref: str | None = None,
+    **dossier_changes: str,
+) -> dict:
+    """Snapshot a titre/body/branche libres, atteste par un dossier SUR CES
+    surfaces-là : ``surfaces-sha256`` couvre titre et body, la fingerprint se
+    prend donc APRES mutation (head_ref n'est pas hashe, cf test ci-dessous).
+    """
+    snapshot = _base_snapshot()
+    if title is not None:
+        snapshot["title"] = title
+    if pr_body is not None:
+        snapshot["body"] = pr_body
+    if head_ref is not None:
+        snapshot["headRefName"] = head_ref
+    fields = dict(dossier_changes)
+    fields["surfaces-sha256"] = mod.surfaces_fingerprint(snapshot)
+    snapshot["comments"].append(_comment(_body(**fields)))
+    return snapshot
+
+
+def _run_main(monkeypatch, snapshot: dict, *extra_args: str) -> int:
+    """``main()`` sur un snapshot fige : argv patche, ``GH_TOKEN`` pose
+    (``pin_gh_token`` ne touche alors pas au reseau), snapshot substitue."""
+    monkeypatch.setattr(
+        sys, "argv", ["check_adjoint_prevalidation.py", "123", *extra_args]
+    )
+    monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
+    # Depuis #17698 le gate re-mesure un `b0: clear` contre l'organe B.0 :
+    # ces tests portent sur le gel, l'organe est donc fige d'accord.
+    monkeypatch.setattr(mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []})
+    monkeypatch.setenv("GH_TOKEN", "tok-fake-gate-test")
+    return mod.main()
+
+
+def test_ready_dossier_on_frozen_campaign_returns_rc3(monkeypatch, capsys):
+    """Un dossier READY n'autorise pas a merger une PR gelee (#17021).
+
+    Le veto ne vit sur aucune surface que le dossier couvre : le gate le lit
+    au verdict et rend rc=3 -- l'action documentee (ne pas merger, dispatcher
+    a la lane auteure), pas un rc inedit.
+    """
+    snapshot = _snapshot_with(title=FROZEN_TITLE, head_ref="feature/densite-13")
+    rc = _run_main(monkeypatch, snapshot)
+    assert rc == mod.EXIT_BLOCKED_WITH_SUBSTANCE
+    out = capsys.readouterr().out
+    assert out.startswith(
+        "FROZEN -- PR #123 belongs to a frozen campaign "
+        "(frozen:#13410(veto #17040)); do not merge, dispatch to the lane author."
+    )
+
+
+def test_ready_dossier_frozen_json_payload(monkeypatch, capsys):
+    """Mode --json : ready faux, verdict FROZEN, raison nommee -- et le
+    dossier reste publie (le gate refuse le MERGE, pas la lecture)."""
+    snapshot = _snapshot_with(title=FROZEN_TITLE)
+    rc = _run_main(monkeypatch, snapshot, "--json")
+    assert rc == mod.EXIT_BLOCKED_WITH_SUBSTANCE
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["ready"] is False
+    assert payload["verdict"] == "FROZEN"
+    assert payload["frozen"] == "frozen:#13410(veto #17040)"
+    assert payload["dossier"]["verdict"] == "READY"
+
+
+def test_ready_redressement_citing_the_umbrella_stays_rc0(monkeypatch, capsys):
+    """Redressement : le titre exempte du gel, meme quand le body cite
+    #13410 -- sinon la PR qui REPARE les degats ne serait plus mergeable."""
+    snapshot = _snapshot_with(
+        title=REDRESSEMENT_TITLE,
+        pr_body=_base_snapshot()["body"] + "\n\nSee #13410 (campagne densite).",
+    )
+    rc = _run_main(monkeypatch, snapshot)
+    assert rc == mod.EXIT_READY
+    assert capsys.readouterr().out.startswith("READY -- PR #123")
+
+
+def test_ready_dossier_on_wt_vibe_branch_returns_rc3(monkeypatch, capsys):
+    """Relais de campagne : la branche gelee suffit, sans citation aucune --
+    et sans exemption (ce sont des relais, jamais des redressements)."""
+    snapshot = _snapshot_with(head_ref="wt/vibe-g77-search-26")
+    rc = _run_main(monkeypatch, snapshot)
+    assert rc == mod.EXIT_BLOCKED_WITH_SUBSTANCE
+    assert "frozen:#13410(veto #17040,branch wt/vibe-*)" in capsys.readouterr().out
+
+
+def test_blocked_dossier_on_frozen_campaign_keeps_its_own_message(
+    monkeypatch, capsys
+):
+    """Le gel ne re-ecrit pas un verdict BLOCKED : deja non mergeable, il
+    garde son message propre (l'exemption READY-only du check)."""
+    snapshot = _snapshot_with(title=FROZEN_TITLE, verdict="BLOCKED", b0="blocked")
+    rc = _run_main(monkeypatch, snapshot)
+    assert rc == mod.EXIT_BLOCKED_WITH_SUBSTANCE
+    assert capsys.readouterr().out.startswith("BLOCKED-WITH-SUBSTANCE")
+
+
+def test_no_dossier_on_frozen_campaign_keeps_rc1(monkeypatch, capsys):
+    """Sans dossier digne de confiance : rc=1 inchange, le gel n'y ajoute
+    rien (la PR est deja non mergeable par absence de dossier)."""
+    snapshot = _base_snapshot()
+    snapshot["title"] = FROZEN_TITLE
+    snapshot["headRefName"] = "feature/densite-13"
+    rc = _run_main(monkeypatch, snapshot)
+    assert rc == mod.EXIT_NO_DOSSIER
+    assert capsys.readouterr().out.startswith("NO-DOSSIER")
+
+
+def test_headrefname_does_not_change_the_fingerprint():
+    """headRefName est lu pour le gel mais PAS hashe : un dossier stampe
+    avant l'ajout du champ reste valide (surfaces-sha256 inchangee)."""
+    snapshot = _snapshot_with(title=FROZEN_TITLE)
+    before = mod.surfaces_fingerprint(snapshot)
+    snapshot["headRefName"] = "wt/vibe-g77-search-26"
+    assert mod.surfaces_fingerprint(snapshot) == before
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY
+
+
+# --- b0 claim re-verified against the live B.0 organ -------------------------
+# Measured 2026-09-24: READY dossiers on #16955 and #16987 declared `b0: clear`
+# while check_unaddressed_nits.py exited 1. The gate answered exit 0 on both.
+
+
+def _ready_dossier(**changes: str):
+    snapshot = _snapshot(_body(**changes))
+    verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+    return verdict, dossier
+
+
+def _organ(blocked: bool, blocking: list | None = None):
+    calls = []
+
+    def probe(pr):
+        calls.append(pr)
+        return {"blocked": blocked, "blocking": blocking or []}
+
+    return probe, calls
+
+
+def test_b0_clear_refuted_by_organ_demotes_ready_and_names_the_remark():
+    verdict, dossier = _ready_dossier()
+    probe, calls = _organ(
+        True,
+        [{"kind": "concern", "author": "jsboige", "src": "review 2026-09-22"}],
+    )
+    verdict, errors, dossier = mod.refute_ready_b0(123, verdict, dossier, probe)
+    assert calls == [123]
+    assert verdict == "" and dossier is None
+    assert len(errors) == 1
+    assert "b0 claim 'clear' is contradicted" in errors[0]
+    assert "concern by jsboige via review 2026-09-22" in errors[0]
+
+
+def test_b0_clear_confirmed_by_organ_keeps_ready():
+    verdict, dossier = _ready_dossier()
+    probe, calls = _organ(False)
+    out = mod.refute_ready_b0(123, verdict, dossier, probe)
+    assert calls == [123]
+    assert out == (mod.VERDICT_READY, [], dossier)
+
+
+def test_b0_probe_not_paid_for_blocked_or_absent_dossier():
+    probe, calls = _organ(True, [{"kind": "k", "author": "a", "src": "s"}])
+    assert mod.refute_ready_b0(123, mod.VERDICT_BLOCKED, None, probe)[0] == mod.VERDICT_BLOCKED
+    assert mod.refute_ready_b0(123, "", None, probe) == ("", [], None)
+    assert calls == []
+
+
+def test_b0_contradictions_ignore_a_non_clear_claim_and_cap_the_list():
+    rows = [{"kind": f"k{i}", "author": "a", "src": "s"} for i in range(7)]
+    assert mod.b0_claim_contradictions("blocked", {"blocked": True, "blocking": rows}) == []
+    assert mod.b0_claim_contradictions("clear", None) == []
+    [error] = mod.b0_claim_contradictions("clear", {"blocked": True, "blocking": rows})
+    assert "7 unlifted remark(s)" in error and "(+2 more)" in error
+
+
+def test_b0_probe_failure_is_fail_closed(monkeypatch):
+    class Broken:
+        @staticmethod
+        def analyse_pr(pr):
+            raise ValueError("network down")
+
+    monkeypatch.setitem(sys.modules, "check_unaddressed_nits", Broken)
+    with pytest.raises(RuntimeError, match="B.0 organ could not measure PR #123"):
+        mod.probe_b0(123)
+
+
+
+def test_b0_probe_import_failure_is_fail_closed(monkeypatch):
+    """An organ that cannot even be imported is 'not measured' (UNKNOWN), not a traceback."""
+    import builtins
+
+    real_import = builtins.__import__
+
+    def refuse(name, *args, **kwargs):
+        if name == "check_unaddressed_nits":
+            raise ImportError("organ missing")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.delitem(sys.modules, "check_unaddressed_nits", raising=False)
+    monkeypatch.setattr(builtins, "__import__", refuse)
+    with pytest.raises(RuntimeError, match="B.0 organ could not measure PR #123"):
+        mod.probe_b0(123)
+
+
+def test_main_exits_unknown_when_organ_cannot_be_imported(monkeypatch, capsys):
+    snapshot = _snapshot(_body())
+    monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
+    monkeypatch.setattr(mod.gh_identity, "pin_gh_token", lambda: None)
+
+    def unmeasured(pr):
+        raise RuntimeError(f"B.0 organ could not measure PR #{pr}: organ missing")
+
+    monkeypatch.setattr(mod, "probe_b0", unmeasured)
+    monkeypatch.setattr(sys, "argv", ["check_adjoint_prevalidation.py", "123"])
+    assert mod.main() == mod.EXIT_UNKNOWN
+    assert "UNKNOWN" in capsys.readouterr().out
+
+def test_main_exits_no_dossier_when_organ_refutes_b0(monkeypatch, capsys):
+    snapshot = _snapshot(_body())
+    monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
+    monkeypatch.setattr(mod.gh_identity, "pin_gh_token", lambda: None)
+    monkeypatch.setattr(
+        mod,
+        "probe_b0",
+        lambda pr: {"blocked": True, "blocking": [{"kind": "nit", "author": "u", "src": "c"}]},
+    )
+    monkeypatch.setattr(sys, "argv", ["check_adjoint_prevalidation.py", "123"])
+    assert mod.main() == mod.EXIT_NO_DOSSIER
+    out = capsys.readouterr().out
+    assert "NO-DOSSIER" in out and "b0 claim 'clear' is contradicted" in out
+
+
+def test_main_exits_ready_when_organ_agrees(monkeypatch, capsys):
+    snapshot = _snapshot(_body())
+    monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
+    monkeypatch.setattr(mod.gh_identity, "pin_gh_token", lambda: None)
+    monkeypatch.setattr(mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []})
+    monkeypatch.setattr(sys, "argv", ["check_adjoint_prevalidation.py", "123"])
+    assert mod.main() == mod.EXIT_READY

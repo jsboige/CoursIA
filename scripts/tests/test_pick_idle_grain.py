@@ -28,8 +28,14 @@ from merge_dwell import evaluate as _md_evaluate  # noqa: E402
 
 
 class _FakeCompleted:
-    def __init__(self, stdout):
+    # #17418 : main() epingle le jeton AVANT argparse (pin_gh_token ->
+    # resolve_gh_token lit .returncode/.stderr) -- le stand-in doit
+    # impersonifier un CompletedProcess complet, sinon tout appel main()
+    # sous ce fake leve AttributeError au lieu du comportement voulu.
+    def __init__(self, stdout, returncode=0, stderr=""):
         self.stdout = stdout
+        self.returncode = returncode
+        self.stderr = stderr
 
 
 def _patch_gh(monkeypatch, payloads, calls):
@@ -887,6 +893,12 @@ def _fake_transport(monkeypatch, *, graphql_ok=True, rest_ok=True,
                 # premier match rend « 100 » au lieu du numero de page.
                 page = int(cmd[2].rsplit("page=", 1)[1].split("&")[0])
             return _FakeCompleted(json.dumps((rest_pages or {}).get(page, [])))
+        if cmd[:3] == ["gh", "auth", "token"]:
+            # #17418 : echec PROPRE du pin sous transports morts -- le stand-in
+            # complet fait suivre a pin_gh_token son chemin GhIdentityError
+            # (attrapee par main, WARN stderr) au lieu d'un faux jeton "[]"
+            # qui ecrirait GH_TOKEN dans os.environ pour le reste du worker.
+            return _FakeCompleted("", returncode=1)
         # Tout autre appel (ardoise de lane, sondes) : liste vide, sans reseau.
         return _FakeCompleted("[]")
     monkeypatch.setattr(pig.subprocess, "run", fake_run)
@@ -2014,6 +2026,84 @@ def test_13420_le_plus_recent_gagne_sur_les_anciens():
                   "state": "PENDING", "isRequired": True,
                   "startedAt": _iso_ago(0.2)})
     assert pig.file_saturation_cause(state, age_hours=120, threshold_hours=24) is None
+
+
+# --- #16889 : fold canonique par nom -- les deux sens de #16765 -------------
+#
+# drop_superseded delegue desormais a check_run_state.fold_latest (#16782) :
+# une seule jambe par nom, la plus recente. Mesure #16765 sur #16232 : le
+# rollup GraphQL rend les jambes d'un meme nom dans un ordre non chronologique
+# (FAILURE/CANCELLED/SUCCESS d'un meme head). L'ancien filtre local ne couvrait
+# qu'un sens (rouge perime sous vert recent) ; le vert ou PENDING perime d'un
+# rerun restait dans la liste, lu comme jambe courante.
+
+
+def _state_legs(legs, rollup_state="FAILURE"):
+    """Rollup a jambes brutes explicites -- meme nom plusieurs fois = rerun."""
+    return {
+        "number": 1, "mergeable": "MERGEABLE",
+        "reviews": {"nodes": []},
+        "commits": {"nodes": [{"commit": {"statusCheckRollup": {
+            "state": rollup_state,
+            "contexts": {"nodes": legs}}}}]},
+    }
+
+
+def test_16889_sens1_rouge_perime_sous_vert_recent_candidate_servie():
+    """FAILURE ancien puis SUCCESS recent du meme nom : la PR n'est PAS en
+    echec -- le picker la sert comme candidate au lieu de la ranger en file
+    de reparation pour un check deja vert (#11916, les deux sens #16765)."""
+    legs = [
+        {"name": "Lint", "conclusion": "FAILURE", "isRequired": True,
+         "startedAt": "2026-09-20T00:00:00Z"},
+        {"name": "Lint", "conclusion": "SUCCESS", "isRequired": True,
+         "startedAt": "2026-09-22T00:00:00Z"},
+    ]
+    assert pig._has_failed_check(_state_legs(legs)) is False
+
+
+def test_16889_sens2_rouge_recent_sous_vert_perime_candidate_ecartee():
+    """SUCCESS ancien puis FAILURE recent du meme nom : l'etat courant est le
+    rouge -- la PR part en file de reparation, pas en tirage (second sens
+    #16765 : le vert perime ne fait plus croire a la maturite)."""
+    legs = [
+        {"name": "Lint", "conclusion": "SUCCESS", "isRequired": True,
+         "startedAt": "2026-09-20T00:00:00Z"},
+        {"name": "Lint", "conclusion": "FAILURE", "isRequired": True,
+         "startedAt": "2026-09-22T00:00:00Z"},
+    ]
+    assert pig._has_failed_check(_state_legs(legs)) is True
+
+
+def test_16889_rouges_dupliques_dun_rerun_dedoublonnes_dans_les_causes():
+    """Deux FAILURE du meme nom (run rouge, rerun encore rouge) : sans fold
+    les DEUX jambes restaient (l'ancien filtre ne perdait que les rouges
+    ANTERIEURS a un vert) et blocking_causes listait le meme check deux
+    fois ; le fold n'en lit qu'une -- la derniere."""
+    legs = [
+        {"name": "Lint", "conclusion": "FAILURE", "isRequired": True,
+         "startedAt": "2026-09-20T00:00:00Z"},
+        {"name": "Lint", "conclusion": "FAILURE", "isRequired": True,
+         "startedAt": "2026-09-22T00:00:00Z"},
+    ]
+    causes = pig.blocking_causes(_state_legs(legs, rollup_state="FAILURE"))
+    assert len([c for c in causes if "Lint" in c]) == 1
+
+
+def test_16889_saturation_compte_les_noms_pas_les_jambes():
+    """Vert perime + rerun PENDING du meme nom : la saturation compte les
+    NOMS requis, pas les jambes -- sans fold le compte gonflait (2 checks
+    annonces pour 1 reel)."""
+    legs = [
+        {"name": "PR gate", "conclusion": "SUCCESS", "isRequired": True,
+         "startedAt": _iso_ago(50)},
+        {"name": "PR gate", "conclusion": None, "state": "PENDING",
+         "isRequired": True, "startedAt": _iso_ago(49)},
+    ]
+    state = _state_legs(legs, rollup_state="PENDING")
+    cause = pig.file_saturation_cause(state, age_hours=120, threshold_hours=24)
+    assert cause is not None
+    assert "1 check(s) requis" in cause
 
 
 def test_file_saturation_not_detected_when_a_check_is_success():
