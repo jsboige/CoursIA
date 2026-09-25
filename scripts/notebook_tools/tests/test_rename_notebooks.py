@@ -455,5 +455,134 @@ class TestPropose(unittest.TestCase):
             self.assertIn("S-03-Gamma-Lean-Python", table)
 
 
+class TestReview17801Guards(unittest.TestCase):
+    """Controles positifs des trois points de la review ai-01 (#17801,
+    review 5316644366) : chacun FABRIQUE le defaut constate, puis verifie que
+    l'outil le ferme au lieu de le reproduire."""
+
+    def _serie_repo(self, repo: Path, files: list[tuple[str, dict]]) -> None:
+        _init_repo(repo)
+        for rel, nb in files:
+            _write_nb(repo, rel, nb)
+        _git(repo, "add", "-A")
+        _git(repo, "commit", "-qm", "serie")
+
+    def test_1_apply_refuses_dirty_tree(self):
+        """>--apply` sur un arbre non propre : refus rc=1, RIEN committe.
+        Un scratch/un body de PR en cours ne doit jamais partir dans le commit
+        de referents d'un renommage."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo)
+            (repo / "scratch.txt").write_text("wip d'une autre session",
+                                              encoding="utf-8")
+            tsv = Path(str(repo) + ".table.tsv")
+            tsv.write_text(f"{OLD}\t{NEW}\n", encoding="utf-8")
+            cwd = os.getcwd()
+            os.chdir(repo)
+            try:
+                rc = rn.main(["--mapping", str(tsv), "--apply"])
+            finally:
+                os.chdir(cwd)
+            self.assertEqual(rc, 1)
+            # aucun commit cree, la tete n'a pas bouge
+            self.assertEqual(_git(repo, "rev-parse", "HEAD").strip(), base)
+            self.assertTrue((repo / OLD).is_file())
+            self.assertFalse((repo / NEW).exists())
+
+    def test_2_lean_tail_python_kernel_without_proof_goes_to_arbitrate(self):
+        """`-Lean` sous python3 SANS preuve : A TRANCHER, jamais un -Python
+        silencieux qui effacerait l'information de pilotage (l'inverse exact
+        du garde check_kernel_suffix_canon de cette meme PR)."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            self._serie_repo(repo, [
+                ("MyIA.AI.Notebooks/S/S-01-FOL-Lab-Lean.ipynb",
+                 _nb([_md("lab"), _code("print('aucun appel lake')")])),
+            ])
+            table = rn.propose("MyIA.AI.Notebooks/S", repo)
+            self.assertIn("`MyIA.AI.Notebooks/S/S-01-FOL-Lab-Lean.ipynb` | "
+                          "`MyIA.AI.Notebooks/S/S-01-FOL-Lab-Lean.ipynb`", table)
+            self.assertIn("A TRANCHER", table)
+            self.assertIn("sans preuve", table)
+            self.assertNotIn("S-01-FOL-Lab-Python", table)
+
+    def test_2b_run_wsl_lake_build_string_counts_as_proof(self):
+        """`run_wsl(f"cd ... && lake build X")` : le pilotage indirect via
+        chaine de commande compte comme preuve citee (defaut mesure par ai-01
+        sur Tweety-02d/3b/5d/5e, invisibles aux quatre motifs d'origine)."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            self._serie_repo(repo, [
+                ("MyIA.AI.Notebooks/S/S-01-FOL-Lab-Lean.ipynb",
+                 _nb([_md("lab"),
+                      _code('run_wsl(f"cd {to_wsl(LAKE_DIR)} && '
+                            'lake build FormalLogic.FolBridge")')])),
+            ])
+            table = rn.propose("MyIA.AI.Notebooks/S", repo)
+            self.assertIn("`MyIA.AI.Notebooks/S/S-01-FOL-Lab-Lean-Python.ipynb`",
+                          table)
+            self.assertIn("cell 1", table)
+            self.assertIn("lake build", table)
+
+    def test_3_non_canonical_target_falls_to_arbitrate(self):
+        """Une cible qui ne satisfait pas elle-meme la grammaire (mot de noyau
+        en infixe, ou pas de prefixe de serie) tombe en A TRANCHER : la livrer
+        promettrait un SECOND renommage."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            self._serie_repo(repo, [
+                # prefixe Z3 suivi de Python puis du numero : STEM_RE ne matche
+                # pas, l'ancien code se bornait a apposer le suffixe.
+                ("MyIA.AI.Notebooks/Z3/Z3-Python-13-UnsatCores.ipynb",
+                 _nb([_md("x")])),
+                # pas de prefixe, separateur _ : hors grammaire.
+                ("MyIA.AI.Notebooks/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb",
+                 _nb([_md("x")], kernelspec=".net-csharp")),
+            ])
+            table = rn.propose("MyIA.AI.Notebooks/Z3", repo)
+            table += rn.propose("MyIA.AI.Notebooks/Z3-Linq2Z3", repo)
+            self.assertNotIn("Z3-Python-13-UnsatCores-Python", table)
+            self.assertNotIn("01_Linq2Z3_Intro-CSharp", table)
+            self.assertEqual(table.count("A TRANCHER"), 2)
+            self.assertIn("non canonique", table)
+
+    def test_4_commit_messages_cite_source_no_hardcoded_attribution(self):
+        """Les commits citent la SOURCE de la table (--mapping), sans co-auteur
+        ni reference d'issue codes en dur : la lane qui execute n'est pas
+        toujours ce modele, la table ne vient pas toujours de la meme issue."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            _init_repo(repo)
+            _write(repo, "MyIA.AI.Notebooks/S/README.md",
+                   f"La serie ouvre par [{OLD}]({OLD}).")
+            _git(repo, "add", "-A")
+            _git(repo, "commit", "-qm", "referents")
+            tsv = Path(str(repo) + ".table.tsv")
+            tsv.write_text(f"{OLD}\t{NEW}\n", encoding="utf-8")
+            cwd = os.getcwd()
+            os.chdir(repo)
+            try:
+                with mock.patch.object(rn, "run_organs", return_value=0):
+                    rc = rn.main(["--mapping", str(tsv), "--apply",
+                                 "--lane", "test-lane"])
+            finally:
+                os.chdir(cwd)
+            self.assertEqual(rc, 0)
+            log = _git(repo, "log", "--format=%B", "-2")
+            self.assertIn(str(tsv), log)          # source citee
+            self.assertNotIn("Claude", log)       # pas de co-auteur code en dur
+            self.assertNotIn("#17784", log)       # pas d'issue codee en dur
+
+    def test_5_rebase_helper_absent_ledger_is_friendly(self):
+        """Registre absent : message clair, rc 0, aucune trace d'erreur."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            _init_repo(repo)
+            self.assertFalse((repo / rn.LEDGER_RELPATH).exists())
+            rc = rn.rebase_helper(apply=False, repo=repo)
+            self.assertEqual(rc, 0)
+
+
 if __name__ == "__main__":
     unittest.main()

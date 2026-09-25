@@ -93,7 +93,17 @@ LEAN_DRIVE_RES = (
     re.compile(r'\brun_lake\s*\('),
     re.compile(r'\bfrom\s+lean_dojo\b|\blean_dojo\b|LeanDojo\.'),
     re.compile(r'lean4_repl|LeanREPL|repl_mode', re.I),
+    # Appel lake/lean DANS une chaine de commande (f-string incluse) : le
+    # pilotage reel est souvent indirect -- `run_wsl(f"cd {dir} && lake build
+    # X")` passe le binaire dans une variable, seul le litteral temoigne
+    # (mesure ai-01 : Tweety-02d/3b/5d/5e invisibles aux quatre motifs ci-dessus).
+    re.compile(r'["\'][^"\']*\blake\s+(?:build|env|exe|check)\b', re.S),
+    re.compile(r'["\'][^"\']*\blean\s+--run\b', re.S),
 )
+
+# Un nom qui porte une de ces queues pretend piloter Lean ; sous noyau Python
+# SANS preuve citee, la cible ne se devine pas (review #17801 point 2).
+LEAN_CLAIM_TAILS = LEAN_LEGACY_TAILS
 
 # Exclusions EXPLICITES (I4) : jamais devinees par heuristique.
 EXCLUDED_BASENAMES = {"research.ipynb"}
@@ -226,6 +236,31 @@ def canonical_target(filename: str, kernel_suffix: str) -> str:
     return f"{prefix}-{num.zfill(2)}{accr}-{body}-{_cap(kernel_suffix)}.ipynb"
 
 
+# Mot de noyau en INFIXE de titre : la grammaire l'exclut (le suffixe seul nomme
+# le noyau). Une cible qui en porte un sera renommee une seconde fois -- review
+# #17801 point 3 : elle tombe en A TRANCHER au lieu d'etre proposee.
+_KERNEL_INFIX_RE = re.compile(r"[-_](?:lean|python|csharp)(?=[-_]|$)", re.I)
+_FINAL_KERNEL_RE = re.compile(r"[-_]+(?:lean-python|lean|python|csharp)$", re.I)
+
+
+def target_violation(new_name: str) -> str | None:
+    """Pourquoi la cible calculee ne satisfait PAS elle-meme la grammaire.
+
+    Renvoie None si la cible est canonique (STEM_RE + noyau en dernier, jamais
+    en infixe), sinon la raison. Une cible non canonique promet un SECOND
+    renommage : la ligne de la table doit tomber en A TRANCHER, pas etre livree.
+    """
+    stem = re.sub(r"\.ipynb$", "", new_name, flags=re.I)
+    m = STEM_RE.match(stem)
+    if not m:
+        return "hors grammaire de serie (prefixe absent, index en tete ou separateur _)"
+    core = _FINAL_KERNEL_RE.sub("", m.group("title"))
+    core = PART_RE.sub("", core)
+    if _KERNEL_INFIX_RE.search(core):
+        return "mot de noyau en infixe du titre"
+    return None
+
+
 def is_excluded(rel: str) -> bool:
     parts = rel.split("/")
     name = parts[-1]
@@ -292,7 +327,24 @@ def propose(series_dir: str, repo: Path | None = None) -> str:
                 final = "lean-python"
                 proof = f"cell {d[0]} : `{d[1]}`"
         parent, name = rel.rsplit("/", 1) if "/" in rel else ("", rel)
+        stem = re.sub(r"\.ipynb$", "", name, flags=re.I)
+        if suffix == "python" and final == "python" \
+                and stem.lower().endswith(LEAN_CLAIM_TAILS):
+            # Le nom ACTUEL pretend piloter Lean ; sans preuve citee, apposer
+            # -Python effacerait l'information et promettrait un second
+            # renommage -- l'inverse du garde kernel_suffix de cette meme PR
+            # (review #17801 point 2). On ne devine pas : on tranche.
+            rows.append(Row(rel, rel, ks, "?", "A TRANCHER",
+                            "portait -Lean sous noyau python sans preuve de "
+                            "pilotage : trancher -Lean-Python (preuve a citer) "
+                            "ou -Python"))
+            continue
         new_name = canonical_target(name, final)
+        viol = target_violation(new_name)
+        if viol:
+            rows.append(Row(rel, rel, ks, final, "A TRANCHER",
+                            f"cible non canonique : {viol}"))
+            continue
         new_rel = f"{parent}/{new_name}" if parent else new_name
         verdict = "CONFORME" if new_rel == rel else "RENOMMAGE"
         rows.append(Row(rel, new_rel, ks, final, verdict, proof))
@@ -748,6 +800,12 @@ def main(argv: list[str] | None = None) -> int:
     if exist:
         print("CIBLES DEJA PRESENTES :", exist)
         return 1
+    for old, new in pairs:
+        viol = target_violation(new)
+        if viol:
+            # La table est humaine, on execute ; mais une cible non canonique
+            # promet un second renommage -- le dire, ne pas le taire.
+            print(f"AVERTISSEMENT : {old} -> {new} : {viol} (second renommage attendu)")
 
     forms_list = [ref_forms(old, new) for old, new in pairs]
     plan = scan_referents(forms_list, repo)
@@ -762,28 +820,42 @@ def main(argv: list[str] | None = None) -> int:
                          capture_output=True, text=True, encoding="utf-8",
                          errors="replace", check=True).stdout.strip()
 
-    # commit 1 : git mv seuls (R100 visibles, aucun contenu modifie)
+    # Garde d'arbre propre (review #17801 point 1) : un renommage ne committe
+    # QUE ses propres fichiers. Tout le reste (scratch, sortie papermill, body
+    # de PR, WIP d'une autre session) partirait dans le commit de referents.
+    dirty = subprocess.run(["git", "status", "--porcelain"], cwd=repo,
+                           capture_output=True, text=True, encoding="utf-8",
+                           errors="replace").stdout.strip()
+    if dirty:
+        print("ARBRE NON PROPRE -- refus d'appliquer. Committer ou retirer avant :")
+        print(dirty[:600])
+        return 1
+
+    # commit 1 : git mv seuls (R100 visibles, aucun contenu modifie) -- chemins
+    # NOMMES, jamais un commit qui attrape l'index entier.
+    move_paths: list[str] = []
     for old, new in pairs:
         (repo / new).parent.mkdir(parents=True, exist_ok=True)
         subprocess.run(["git", "mv", old, new], cwd=repo, check=True)
+        move_paths += [old, new]
     msg1 = (f"rename(#16231): git mv purs ({len(pairs)} notebooks)\n\n"
-            f"Table : #17784, pilotee par rename_notebooks.py.\n\n"
-            f"Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>")
-    subprocess.run(["git", "commit", "-m", msg1], cwd=repo, check=True)
+            f"Table : {a.mapping}, pilotee par rename_notebooks.py.")
+    subprocess.run(["git", "commit", "-m", msg1, "--", *move_paths],
+                   cwd=repo, check=True)
 
-    # commit 2 : referents par surface, au texte
+    # commit 2 : referents par surface, au texte -- add et commit nommes.
     done = {}
     for rel in sorted(plan.rewrites):
         n = rewrite_file(repo / rel, forms_list)
         if n:
             done[rel] = n
     append_ledger(pairs, a.lane, repo)
+    touched2 = sorted(done) + [LEDGER_RELPATH]
     msg2 = (f"rename(#16231): referents reecrits par surface ({len(done)} fichiers)\n\n"
             f"Cellules de code citees : jamais reecrites (re-execution C.2 due).\n"
-            f"Sorties commitees : jamais touchees.\n\n"
-            f"Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>")
-    subprocess.run(["git", "add", "-A"], cwd=repo, check=True)
-    r = subprocess.run(["git", "commit", "-m", msg2], cwd=repo,
+            f"Sorties commitees : jamais touchees.")
+    subprocess.run(["git", "add", "--", *touched2], cwd=repo, check=True)
+    r = subprocess.run(["git", "commit", "-m", msg2, "--", *touched2], cwd=repo,
                        capture_output=True, text=True, encoding="utf-8",
                        errors="replace")
     if r.returncode != 0:
