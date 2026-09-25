@@ -24,6 +24,11 @@ Modules consommateurs :
   déduit du théorème de Löb **prouvé** par FFL (`ProvabilityAbstraction.löb_theorem`),
   sans champ postulé, instancié sur la prouvabilité standard de `𝗣𝗔` ; paire de
   FairBots de codes distincts par `exclusiveMultifixedpoint`.
+- `FormalLogic.ModalZoo` — Tranche G (#15066) : zoo modal certifié sur le sous-cube
+  `K`, `KD`, `KT`, `KTB`, `K4`, `S4`, `KD45`, `S5` — profil exact d'axiomes de
+  chaque système (preuve de Hilbert dans un sens, contre-modèle de Kripke fini dans
+  l'autre), ordre `⪯` équivalent à l'inclusion des profils, diagramme de Hasse
+  (11 couvertures, 7 paires incomparables) certifié et exporté en JSON.
 -/
 
 import FormalLogic.Bridge
@@ -31,3 +36,4 @@ import FormalLogic.FolBridge
 import FormalLogic.GLBridge
 import FormalLogic.ModalBridge
 import FormalLogic.FairBotLoeb
+import FormalLogic.ModalZoo
