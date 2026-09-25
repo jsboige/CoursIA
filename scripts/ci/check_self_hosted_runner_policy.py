@@ -168,7 +168,6 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   Aucun trigger pull_request -> aucune garde same-repo requise (tranche
     #   4 #14283, meme profil que pr-gate-stale-sweep). Rollback = revert de
     #   la PR (l'entree disparait de l'allowlist).
-    "adjacency-stale-sweep.yml",
     "ascii-flowchart-advisory.yml",
     "candidate-delivered-advisory.yml",
     "catalog-cron.yml",
@@ -208,7 +207,6 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     # repliee comme etape du sweep ci-dessous (design-gate ai-01 : "meme
     # population, meme requete ; seule la branche de remediation differe.
     # Ne pas creer un troisieme organe").
-    "pr-gate-sweep-health-advisory.yml",
     "pr-path-collision-advisory.yml",
     # queue-ghost-watch.yml (#14367, owner myia-po-2023:CoursIA-2) : sonde cron
     #   04:17 UTC (offset anti-stampede, hors-:00) sur les 18 zombies QUEUED
@@ -227,7 +225,6 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "review-coverage-advisory.yml",
     "slides-build-advisory.yml",
     "slow-lane.yml",
-    "stale-guard-red-sweep.yml",
     "translation-parity.yml",
     "twin-parity-cron.yml",
     "twin-parity-drift-audit.yml",
@@ -305,7 +302,6 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "notebook-validation.yml",
     "owui-playwright-check.yml",
     "perimeter-review-guard.yml",
-    "pr-gate-rerun.yml",
     "regression-guard.yml",
     "render-volume-delta-advisory.yml",
     # registre TRANCHE7 (demande user 2026-09-05, owner myia-po-2023:CoursIA)
@@ -318,14 +314,17 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "repeated-prose-advisory.yml",
     "scripts-tests.yml",
     "series-naming-gate.yml",
-    # registre TRANCHE13 (issue #16762, owner myia-po-2023:CoursIA) : meme
+    # registre TRANCHE14 (issue #16762, owner myia-po-2023:CoursIA) : meme
     #   profil que repeated-prose-advisory.yml (TRANCHE7) ci-dessus --
     #   vehicule workflow_dispatch-ONLY servant de cible d'identite au
-    #   check-run absorbe par fast-lane (registre TRANCHE13) et de re-run
+    #   check-run absorbe par fast-lane (registre TRANCHE14) et de re-run
     #   manuel du recensement sur main. Detecteur de paires de cellules de
-    #   lecture scindees (check_split_reading_cells.py), advisory
-    #   pur-Python stdlib-only, jamais bloquant, aucun secret.
-    #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
+    #   lecture scindees (check_split_reading_cells.py), pur-Python
+    #   stdlib-only, aucun secret. Promu en cliquet BLOQUANT par #17044 : le
+    #   verdict de PR est rendu par le garde absorbe, PAS par ce workflow, qui
+    #   ne tourne jamais sur un pull_request (dispatch-only) -- l'entree reste
+    #   justifiee telle quelle. Rollback = revert de la PR (l'entree
+    #   disparait de l'allowlist).
     "split-reading-advisory.yml",
     "stale-base-warning.yml",
     # fin de chantier #14283 (feu vert ai-01 2026-09-02) : les jobs
@@ -393,6 +392,23 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   tranche 1 #13378). Rollback = revert de la PR (l'entree disparait de
     #   l'allowlist).
     "notebook-latex-control-chars.yml",
+    # #17380 (owner myia-po-2023:CoursIA) : garde advisory sur la syntaxe
+    #   math non rendable des cellules markdown -- 4 classes (delimiteurs
+    #   LaTeX purs \(..\)/\[..\], dollars impairs par paragraphe, commandes
+    #   LaTeX nues hors scopes, scopes que KaTeX refuse). Reponse au
+    #   commentaire user du 2026-09-22 sur IIT-06 : le notebook mesurait
+    #   propre (62/62 scopes rendables), la cause etait le visualiseur --
+    #   l'organe rend la question mesurable a l'echelle du corpus.
+    #   pull_request/push filtrant **.ipynb + detecteur + workflow ; jambe
+    #   KaTeX active en CI via npm install katex --no-save (node requis par
+    #   le runner ephemeral, saut dite a voix haute sinon, #14849) ;
+    #   occurrences = ::warning:: + exit 0 (jamais bloquant), exit 2 =
+    #   warning UNKNOWN nomme + exit 1. Aucun secret, aucun GITHUB_TOKEN
+    #   cote job, garde same-repo parenthesee au niveau job (#13874).
+    #   Runner = jambe Linux containerisee (LINUX_RUNNER_LABELS, meme
+    #   profil que notebook-latex-control-chars). Rollback = revert de la
+    #   PR (l'entree disparait de l'allowlist).
+    "notebook-math-render.yml",
     # #14532 item 1 (owner myia-po-2026:CoursIA-2) : garde PR pure-Python sur
     #   les disparitions de section au plan des notebooks pedagogiques.
     #   workflow_dispatch-only ce cycle (anti-panic-deploiement, idem

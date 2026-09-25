@@ -94,11 +94,18 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
 import unicodedata
 from datetime import datetime, timezone
+
+try:
+    import gh_identity
+except ImportError:  # charge via importlib dans les tests (hors scripts/)
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import gh_identity
 
 REPO = "jsboige/CoursIA"
 
@@ -4542,11 +4549,41 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
             # Voie 3 leve donc si le lift est voie nue (pas de prefixe
             # distinct), independamment du scope du nit (la garde
             # persona-vs-user est deja portee par voie 1).
+            #
+            # #17507 -- exception : sous `jsboige` (login partage), une
+            # levee voix nue NE leve PAS une reserve portant un marqueur
+            # persona. Voie 1 suppose lift_has_persona=True pour traiter
+            # le scope persona, mais un lift voie nue par une lane cross-
+            # poussee sous `jsboige` n'a pas voix sur la reserve `[Hermes]`
+            # d'une autre lane. La levee d'une reserve persona sous
+            # `jsboige` exige alors voie 1 (lift persona), override
+            # coordinateur nomme, ou re-review. Le discriminant reste sur
+            # le LOGIN : sous `clusterManager-Myia` (persona authentique),
+            # la voie 3 preserve son ancien comportement -- cf.
+            # `test_auteur_du_nit_leve_son_nit` (clusterManager-Myia leve
+            # SA reserve `[Hermes]` en voix nue, voie nue OK).
+            #
+            # Exception preservee : si le lift voie nue sous `jsboige`
+            # MENTIONNE explicitement sa propre reserve par un objet de
+            # close-the-loop (`mon concern`, `ma reserve`, `ma review`,
+            # `mon review`), c'est le self-close-the-loop legitime de
+            # l'auteur de la reserve persona sur sa propre review (cf.
+            # `test_12944_close_the_loop_leve_la_review_precedente` :
+            # Hermes self-bot `jsboige` ferme sa review REQUEST_CHANGES
+            # `[Hermes]` en voix nue "Mon concern est traite et ferme").
+            # Sans cette exception, voie 3 deviendrait incapable de
+            # fermer une review persona posee par le self-bot lui-meme.
             stripped_lift_role = stripped_lift
             lift_has_role = bool(_ROLE_PREFIX_RE.search(stripped_lift_role))
+            lift_self_closes_persona = bool(
+                re.search(r"(?i)\b(?:mon concern|ma reserve|ma review|mon review)\b",
+                          stripped_lift_role))
             if (lift_has_persona is False
                     and lift_has_lane is False
                     and lift_has_role is False
+                    and (lift_author != "jsboige"
+                         or nit_has_persona is False
+                         or lift_self_closes_persona)
                     and has_live_lift(lift_body or "")):
                 return True
             # Voie nue par meme login, sans discriminant de ROLE ni
@@ -5119,12 +5156,42 @@ FIELDS = ("number,title,body,mergedAt,author,comments,reviews,commits,url,"
 LIST_FIELDS = "number,title,mergedAt,url,comments,reviews,author"
 
 
-def _print_unevaluated(result: dict) -> None:
-    """Imprimer verbatim ce que l'organe n'a pas evalue (#13512).
+def _ok_line(pr: int, result: dict) -> str:
+    """La ligne de verdict, avec sa reserve DANS la ligne (#13512, #13779).
 
     `OK -- aucun nit non leve` repond « aucune phrase de levee ne manque », et
     RIEN D'AUTRE : un commentaire que `classify` n'a pas su lire n'est pas un
-    commentaire absent. Le dire est tout l'organe.
+    commentaire absent. `_print_unevaluated` le dit -- mais il le dit SOUS la
+    ligne, et c'est la LIGNE qui circule : un agent qui rapporte « organe OK sur
+    #N » cite le verdict, pas le bloc. Un `OK` cite sans sa reserve certifie
+    alors exactement le silence que cet organe refuse de certifier, et la
+    promesse de #13779 (« cesser de certifier le silence ») s'arrete a la
+    frontiere du stdout.
+
+    Mesure fondatrice (2026-09-21, arbitrage ai-01) : `check_unaddressed_nits.py`
+    rendait `rc=0` -- et sa ligne `OK` a ete citee -- sur deux PRs dont les
+    reserves vivaient dans le bloc « NON EVALUE(S) ». Un `rc=0` n'est pas une
+    dispense de lecture, mais rien ne le rappelait la ou le verdict se lit.
+
+    Le compte qui voyage est le TOTAL non evalue, jamais le sous-ensemble
+    affiche -- meme regle que l'en-tete de `_print_unevaluated`. Quand il n'y a
+    rien a relire, la ligne reste celle d'avant, octet pour octet.
+    """
+    total = result.get("unevaluated_total") or 0
+    if not total:
+        return f"OK  PR #{pr} — aucun nit non leve."
+    return (
+        f"OK  PR #{pr} — aucun nit non leve parmi les commentaires evalues ; "
+        f"{total} commentaire(s) NON EVALUE(S) — lire le bloc A RELIRE ci-dessous."
+    )
+
+
+def _print_unevaluated(result: dict) -> None:
+    """Imprimer verbatim ce que l'organe n'a pas evalue (#13512).
+
+    La ligne de verdict porte desormais le compte (`_ok_line`) ; ce bloc reste
+    le detail -- le propos est le meme : ce que l'organe n'a pas su classer, il
+    l'imprime.
     """
     rows = result.get("unevaluated") or []
     if not rows:
@@ -5235,7 +5302,7 @@ def gate(pr: int, as_json: bool) -> int:
     if as_json:
         print(json.dumps(result, indent=1, ensure_ascii=False))
     elif not result["blocked"]:
-        print(f"OK  PR #{pr} — aucun nit non leve.")
+        print(_ok_line(pr, result))
         _print_sha_notes(result)
         _print_unevaluated(result)
     else:
@@ -5308,6 +5375,12 @@ def audit(limit: int, search: str | None = None) -> int:
 
 
 def main() -> int:
+    # Warn-fort + poursuite : le FAIL bruyant est porte par gh_identity
+    # --whoami et detect_shared_login.py (#17418 Phase A, transition B/C).
+    try:
+        gh_identity.pin_gh_token()
+    except gh_identity.GhIdentityError as exc:
+        print(f"GH-IDENTITY (WARN, poursuite sous compte actif): {exc}", file=sys.stderr)
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("pr", nargs="?", type=int, help="numero de PR (mode gate)")
