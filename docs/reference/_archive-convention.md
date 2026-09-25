@@ -84,7 +84,7 @@ Exception : si un dossier `_archive/` ne contient que des **données** (pas de s
 | `scripts/sudoku/_archive/` | ❌ | tranche 4 |
 | `slides/S4-trading-algorithmique/_archive/` | ❌ | tranche 4 |
 
-**Plan d'application** : tranches ciblées successives (cf umbrella #13749), une PR par tranche, seuils < 3000 lignes / < 15 fichiers / ≤ 4 features / 1 domaine (règle anti-composite [§A du review](../../.claude/rules/pr-review-discipline.md), cf G.4).
+**Plan d'application** : tranches ciblées successives (cf umbrella #13749), une PR par tranche, dans les seuils d'anti-composite de la [§A du review](../../.claude/rules/pr-review-discipline.md) (cf G.4).
 
 ## Cas particuliers
 
