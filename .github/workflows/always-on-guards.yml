@@ -134,6 +134,9 @@ jobs:
       # GITHUB_ENV exporte par cette etape, lui coupant la parole).
       PR_AUTHOR: ${{ github.event.pull_request.user.login }}
       IS_FORK: ${{ github.event.pull_request.head.repo.fork }}
+      # #17713 -- tete de PR (nom de branche), consomme par variation_tag_required
+      # pour exempter les sessions cloud du mainteneur (`claude/*` + `Hors flotte`).
+      HEAD_REF: ${{ github.event.pull_request.head.ref }}
 
     steps:
       # ------------------------------------------------------------------
@@ -774,11 +777,19 @@ jobs:
 
           printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
 
+          # #17713 -- exemption : une PR dont la branche commence par `claude/`
+          # ET dont le body porte "Hors flotte" est une session cloud du
+          # mainteneur, exempte du tag Grain: par `CLAUDE.md` ('A qui ce fichier
+          # s'adresse'). On passe HEAD_REF au script qui applique l'exemption
+          # (les DEUX conditions doivent etre reunies -- un renommage de
+          # branche seul ne suffit pas).
+          HEAD_REF="${HEAD_REF:-}"
+
           # Capturer le RC via &&/|| (exempt d'errexit) -- jamais une
           # commande suivie d'un RC=$? en ligne separee : sous bash -e elle
           # meurt au block path meme, avant l'affectation.
           python3 scripts/ci/variation_tag_required.py \
-            --body-file /tmp/pr_body.txt > /tmp/verdict.json 2>/tmp/verdict.err && RC=0 || RC=$?
+            --body-file /tmp/pr_body.txt --head-ref "$HEAD_REF" > /tmp/verdict.json 2>/tmp/verdict.err && RC=0 || RC=$?
 
           if [ -s /tmp/verdict.err ]; then
             echo "--- helper stderr ---"

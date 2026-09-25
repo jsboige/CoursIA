@@ -1167,6 +1167,139 @@ def test_fingerprint_refusal_names_the_live_surface_landscape():
     assert "reviews=2" in msg
 
 
+# --- Campagnes gelees par veto user (#17040) ----------------------------------
+
+# Titres reels (2026-09-23/24) : le second repare les degats de la campagne
+# densite et cite le parapluie dans son body -- l'exemption se lit sur le
+# titre seul (module partage frozen_campaigns).
+FROZEN_TITLE = "Densite Lab13-Web-Search-SOTA (#13410)"
+REDRESSEMENT_TITLE = (
+    "fix(semanticweb,#17066): redressement critique de SW-4-CSharp-SPARQL "
+    "-- reference de campagne"
+)
+
+
+def _snapshot_with(
+    title: str | None = None,
+    pr_body: str | None = None,
+    head_ref: str | None = None,
+    **dossier_changes: str,
+) -> dict:
+    """Snapshot a titre/body/branche libres, atteste par un dossier SUR CES
+    surfaces-là : ``surfaces-sha256`` couvre titre et body, la fingerprint se
+    prend donc APRES mutation (head_ref n'est pas hashe, cf test ci-dessous).
+    """
+    snapshot = _base_snapshot()
+    if title is not None:
+        snapshot["title"] = title
+    if pr_body is not None:
+        snapshot["body"] = pr_body
+    if head_ref is not None:
+        snapshot["headRefName"] = head_ref
+    fields = dict(dossier_changes)
+    fields["surfaces-sha256"] = mod.surfaces_fingerprint(snapshot)
+    snapshot["comments"].append(_comment(_body(**fields)))
+    return snapshot
+
+
+def _run_main(monkeypatch, snapshot: dict, *extra_args: str) -> int:
+    """``main()`` sur un snapshot fige : argv patche, ``GH_TOKEN`` pose
+    (``pin_gh_token`` ne touche alors pas au reseau), snapshot substitue."""
+    monkeypatch.setattr(
+        sys, "argv", ["check_adjoint_prevalidation.py", "123", *extra_args]
+    )
+    monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
+    # Depuis #17698 le gate re-mesure un `b0: clear` contre l'organe B.0 :
+    # ces tests portent sur le gel, l'organe est donc fige d'accord.
+    monkeypatch.setattr(mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []})
+    monkeypatch.setenv("GH_TOKEN", "tok-fake-gate-test")
+    return mod.main()
+
+
+def test_ready_dossier_on_frozen_campaign_returns_rc3(monkeypatch, capsys):
+    """Un dossier READY n'autorise pas a merger une PR gelee (#17021).
+
+    Le veto ne vit sur aucune surface que le dossier couvre : le gate le lit
+    au verdict et rend rc=3 -- l'action documentee (ne pas merger, dispatcher
+    a la lane auteure), pas un rc inedit.
+    """
+    snapshot = _snapshot_with(title=FROZEN_TITLE, head_ref="feature/densite-13")
+    rc = _run_main(monkeypatch, snapshot)
+    assert rc == mod.EXIT_BLOCKED_WITH_SUBSTANCE
+    out = capsys.readouterr().out
+    assert out.startswith(
+        "FROZEN -- PR #123 belongs to a frozen campaign "
+        "(frozen:#13410(veto #17040)); do not merge, dispatch to the lane author."
+    )
+
+
+def test_ready_dossier_frozen_json_payload(monkeypatch, capsys):
+    """Mode --json : ready faux, verdict FROZEN, raison nommee -- et le
+    dossier reste publie (le gate refuse le MERGE, pas la lecture)."""
+    snapshot = _snapshot_with(title=FROZEN_TITLE)
+    rc = _run_main(monkeypatch, snapshot, "--json")
+    assert rc == mod.EXIT_BLOCKED_WITH_SUBSTANCE
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["ready"] is False
+    assert payload["verdict"] == "FROZEN"
+    assert payload["frozen"] == "frozen:#13410(veto #17040)"
+    assert payload["dossier"]["verdict"] == "READY"
+
+
+def test_ready_redressement_citing_the_umbrella_stays_rc0(monkeypatch, capsys):
+    """Redressement : le titre exempte du gel, meme quand le body cite
+    #13410 -- sinon la PR qui REPARE les degats ne serait plus mergeable."""
+    snapshot = _snapshot_with(
+        title=REDRESSEMENT_TITLE,
+        pr_body=_base_snapshot()["body"] + "\n\nSee #13410 (campagne densite).",
+    )
+    rc = _run_main(monkeypatch, snapshot)
+    assert rc == mod.EXIT_READY
+    assert capsys.readouterr().out.startswith("READY -- PR #123")
+
+
+def test_ready_dossier_on_wt_vibe_branch_returns_rc3(monkeypatch, capsys):
+    """Relais de campagne : la branche gelee suffit, sans citation aucune --
+    et sans exemption (ce sont des relais, jamais des redressements)."""
+    snapshot = _snapshot_with(head_ref="wt/vibe-g77-search-26")
+    rc = _run_main(monkeypatch, snapshot)
+    assert rc == mod.EXIT_BLOCKED_WITH_SUBSTANCE
+    assert "frozen:#13410(veto #17040,branch wt/vibe-*)" in capsys.readouterr().out
+
+
+def test_blocked_dossier_on_frozen_campaign_keeps_its_own_message(
+    monkeypatch, capsys
+):
+    """Le gel ne re-ecrit pas un verdict BLOCKED : deja non mergeable, il
+    garde son message propre (l'exemption READY-only du check)."""
+    snapshot = _snapshot_with(title=FROZEN_TITLE, verdict="BLOCKED", b0="blocked")
+    rc = _run_main(monkeypatch, snapshot)
+    assert rc == mod.EXIT_BLOCKED_WITH_SUBSTANCE
+    assert capsys.readouterr().out.startswith("BLOCKED-WITH-SUBSTANCE")
+
+
+def test_no_dossier_on_frozen_campaign_keeps_rc1(monkeypatch, capsys):
+    """Sans dossier digne de confiance : rc=1 inchange, le gel n'y ajoute
+    rien (la PR est deja non mergeable par absence de dossier)."""
+    snapshot = _base_snapshot()
+    snapshot["title"] = FROZEN_TITLE
+    snapshot["headRefName"] = "feature/densite-13"
+    rc = _run_main(monkeypatch, snapshot)
+    assert rc == mod.EXIT_NO_DOSSIER
+    assert capsys.readouterr().out.startswith("NO-DOSSIER")
+
+
+def test_headrefname_does_not_change_the_fingerprint():
+    """headRefName est lu pour le gel mais PAS hashe : un dossier stampe
+    avant l'ajout du champ reste valide (surfaces-sha256 inchangee)."""
+    snapshot = _snapshot_with(title=FROZEN_TITLE)
+    before = mod.surfaces_fingerprint(snapshot)
+    snapshot["headRefName"] = "wt/vibe-g77-search-26"
+    assert mod.surfaces_fingerprint(snapshot) == before
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY
+
+
 # --- b0 claim re-verified against the live B.0 organ -------------------------
 # Measured 2026-09-24: READY dossiers on #16955 and #16987 declared `b0: clear`
 # while check_unaddressed_nits.py exited 1. The gate answered exit 0 on both.

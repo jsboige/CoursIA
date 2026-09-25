@@ -11,7 +11,7 @@ Cycle de coordination adjoint du cluster CoursIA. Cette commande est réservée 
 
 L'adjoint peut :
 
-- lire les deux dashboards et les inboxes ;
+- lire les dashboards — **énumérés**, jamais une liste apprise par cœur — et les inboxes ;
 - répondre aux ASK des lanes `CoursIA-2` ;
 - publier des preflights publics uniquement en état `COMMENTED` ;
 - réparer un scope lorsque l'ownership est clair ;
@@ -28,8 +28,8 @@ Restent réservés à `myia-ai-01:CoursIA` :
 
 ## Cycle
 
-1. Lire `workspace-CoursIA` puis `workspace-CoursIA-2`, chacun avec `section: "all"`.
-2. Lire l'inbox RooSync non lue de `myia-po-2025:CoursIA-2` et les messages pertinents pour la coordination.
+1. **Inbox DM — drainer EN PREMIER, et extraire, jamais survoler** : `roosync_messages(action:"inbox", status:"unread", deep:true)` (sans `deep`, le compte de non-lus peut être un faux zéro). Elle porte souvent le **DM nominatif qui change la priorité du cycle** (mesure : un lot nominatif d'ai-01 et deux corrections de doctrine ont dormi non lus pendant que deux cycles produisaient selon une doctrine périmée). C'est le canal de décision du coordinateur — il survit à la condensation du dashboard.
+2. **Dashboards (canal PRINCIPAL) — ENUMERER, jamais une liste apprise par cœur** : `roosync_dashboard(action:"list")`, puis `read` avec `section:"all"` sur **chaque clé dont le workspace déclaré est pertinent** — dont celles du **secrétariat** (`workspace-CoursIA-3`, cf [tricephale-circulation.md](../../../docs/reference/tricephale-circulation.md)) et les moitiés forkées. Une skill qui sait d'avance quoi lire est **structurellement aveugle** à ce qu'elle n'anticipe pas (mesure fondatrice : #17197, `workspace-CoursIA (2)` — 23 messages vivants jamais lus). Une clé à suffixe ` (N)` dont le `workspace` déclaré **ne porte pas** ce suffixe est une **moitié de la même lane**, pas une lane voisine : la lire, et escalader la réparation (`action:"merge"`, cf dashboard `global`).
 3. Traiter d'abord les handovers, ASK et bloqueurs actifs.
 4. Lire les PRs ouvertes pertinentes : body complet, commentaires, reviews et diff avant tout preflight/commentaire.
 5. Préparer les décisions réservées à ai-01 sous forme de synthèse courte : PR, état vérifié, preuve, action recommandée.

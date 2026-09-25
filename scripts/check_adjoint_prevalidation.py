@@ -80,6 +80,11 @@ refute a READY *claim* (green checks, clear B.0, no unresolved thread, not a
 draft) -- those are reasons a pull request is blocked, not reasons to distrust
 the dossier that says so.
 
+Cas FROZEN (rc 3 aussi) : un dossier READY portant une PR d'une campagne
+gelee par un veto user (#17040) reste refuse -- ni le dossier ni B.0 ne
+lisent un veto pose sur une issue. Le gate le lit au verdict via le module
+partage ``frozen_campaigns`` (dispatch a la lane auteure, pas de merge).
+
 One surface author is neutral: the coordinator itself, and only for rows it
 wrote AFTER the dossier. Otherwise the act the gate authorises -- reading the
 pull request, then lifting one's own reserve -- expires the dossier the gate
@@ -105,6 +110,17 @@ try:
 except ImportError:  # charge via importlib dans les tests (hors scripts/)
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import gh_identity
+
+# Campagnes gelees par veto user (#17040) : definition PARTAGEE avec
+# merge_ready dans scripts/coordination/frozen_campaigns.py. Ce gate ne peut
+# pas importer merge_ready (merge_ready importe deja ce gate), les deux
+# importent le module : un seul lecteur du veto, jamais deux qui derivent.
+_COORDINATION_DIR = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "coordination"
+)
+if _COORDINATION_DIR not in sys.path:
+    sys.path.insert(0, _COORDINATION_DIR)
+from frozen_campaigns import frozen_umbrella_exclusion  # noqa: E402
 
 REPO = "jsboige/CoursIA"
 # The adjoint remains the canonical emitter: `--template` renders its lane, and
@@ -1043,6 +1059,10 @@ def _pr_metadata(pr: int, *, with_rollup: bool) -> dict[str, Any]:
         "isDraft": row.get("draft"),
         "baseRefName": (row.get("base") or {}).get("ref"),
         "headRefOid": (row.get("head") or {}).get("sha"),
+        # Rides for the frozen-campaign check only (merge_ready reads it via
+        # the same shared module). NOT in the fingerprint payload, which uses
+        # explicit keys -- adding this field must not change surfaces-sha256.
+        "headRefName": (row.get("head") or {}).get("ref"),
         "updatedAt": row.get("updated_at"),
         "changedFiles": row.get("changed_files"),
         "additions": row.get("additions"),
@@ -1212,10 +1232,34 @@ def main() -> int:
         print(json.dumps(result, ensure_ascii=False) if args.json else f"UNKNOWN -- {exc}")
         return EXIT_UNKNOWN
 
-    ready = verdict == VERDICT_READY
+    # Veto user sur campagne gelee (#17040) : un dossier READY n'autorise pas
+    # a merger une PR gelee. Le veto ne vit sur AUCUNE surface que le dossier
+    # couvre -- le gate le lit au moment de se prononcer, via le module
+    # partage frozen_campaigns (meme lecteur que merge_ready). Applique
+    # seulement au verdict READY : un dossier refuse ou BLOCKED est deja non
+    # mergeable, le gel n'y ajoute rien.
+    frozen_reason = None
+    if verdict == VERDICT_READY:
+        frozen_reason = frozen_umbrella_exclusion(
+            snapshot.get("title"),
+            snapshot.get("body"),
+            snapshot.get("headRefName"),
+        )
+    ready = verdict == VERDICT_READY and frozen_reason is None
     result = build_result(args.pr, snapshot, verdict, errors, dossier)
+    if frozen_reason is not None:
+        # Le dossier reste intact et publie : ce que le gate refuse est le
+        # MERGE, pas la lecture de la PR -- meme action documentee que rc=3.
+        result["ready"] = False
+        result["verdict"] = "FROZEN"
+        result["frozen"] = frozen_reason
     if args.json:
         print(json.dumps(result, ensure_ascii=False))
+    elif frozen_reason is not None:
+        print(
+            f"FROZEN -- PR #{args.pr} belongs to a frozen campaign "
+            f"({frozen_reason}); do not merge, dispatch to the lane author."
+        )
     elif ready:
         print(f"READY -- PR #{args.pr} prevalidated by adjoint at {snapshot['headRefOid']}")
     elif verdict == VERDICT_BLOCKED:
@@ -1233,6 +1277,8 @@ def main() -> int:
         print(f"NO-DOSSIER -- PR #{args.pr} is not adjoint-prevalidated")
         for error in errors:
             print(f"  - {error}")
+    if frozen_reason is not None:
+        return EXIT_BLOCKED_WITH_SUBSTANCE
     if ready:
         return EXIT_READY
     if verdict == VERDICT_BLOCKED:
