@@ -90,24 +90,38 @@ Pour chaque notebook compare entre sa base git (defaut origin/main) et sa tete
      le seul a avoir vu les 6 cellules "titre seul" de #12850. Un artefact
      sans sibling FR retombe sur la comparaison mono-langue standard.
 
-  8. JUSTIFICATION PAR-CELLULE (#13491) : un garde qui dit "justifie en
+  8. JUSTIFICATION PAR BODY (#13491, #17727) : un garde qui dit "justifie en
      review" sans rien lire laisse la bande intermediaire (4 % < ratio < 75 %)
      sans porte. Le detecteur accepte un drapeau ``--pr-body-file <f>``
      pointant vers le body de la PR, et y cherche des marqueurs de la forme
 
          md-content-loss: reecriture assumee -- <notebook> cell <N> : <raison>
+         md-content-loss: navigation assumee -- <notebook> target <cible> : <raison>
 
-     Chaque ligne MATCHEE supprime de la sortie le finding ``TRUNCATED_CELL``
-     qui porte le meme couple ``(notebook, cell_idx)`` -- et UNIQUEMENT
-     celui-la. Un marker malforme (mauvais notebook, mauvaise cellule, ou
-     non-trouve : pas de finding a cette cle) reste inerte ; un marker qui
-     pointe vers une cellule intacte n'invalide rien. Les autres categories
-     de findings (``LOST_MOTIF``, ``LOST_NAV_LINKS``,
-     ``FRONTMATTER_COST_DIVERGENCE``) ne sont pas couvertes par ce dispositif
-     -- une perte de structuration n'est pas couverte par une reecriture
-     assumee de cellule tronquee. La trace de la decision reste dans le
-     body PR, lisible par un auditeur ulterieur -- c'est la propriete que la
-     baseline fichier ne donne pas avec la meme qualite.
+     Le premier supprime de la sortie le finding ``TRUNCATED_CELL`` qui porte
+     le meme couple ``(notebook, cell_idx)`` -- et UNIQUEMENT celui-la. Le
+     second supprime le finding ``LOST_NAV_LINKS`` quand TOUTES ses cibles
+     perdues sont nommees par un marker (une cible par marker) ; si une seule
+     cible perdue reste non nommee, le finding RESTE bloquant, reduit a ces
+     cibles-la (justification partielle : la porte couvre ce qu'elle nomme,
+     pas le finding entier). La cible se compare en IDENTITE canonique
+     (``_nav_target_identity`` : ancre retiree, chemin normalise) -- c'est
+     exactement la cle de ``lost_targets``, et ``../../README.md`` y est
+     distinct de ``../../../../README.md`` : c'est ce cas-la (#17392, deux
+     « Index » divergents) que la justification doit nommer, pas moyenner.
+
+     Un marker malforme (mauvais notebook, mauvaise cellule, mauvaise cible,
+     ou non-trouve : pas de finding a cette cle) reste inerte ; un marker qui
+     pointe vers une cellule ou une cible intacte n'invalide rien ; une raison
+     vide n'est pas un marker valide. Les autres categories de findings
+     (``LOST_MOTIF``, ``STRUCTURE_DRIFT``, ``FRONTMATTER_COST_DIVERGENCE``) ne
+     sont pas couvertes par ce dispositif -- une perte de structuration n'est
+     pas couverte par une reecriture assumee de cellule tronquee, et la
+     disparition TOTALE des liens de navigation est classee ``LOST_MOTIF``
+     (motif ``nav_links``), hors de la porte keyee sur une cible. La trace de
+     la decision reste dans le body PR, lisible par un auditeur ulterieur --
+     c'est la propriete que la baseline fichier ne donne pas avec la meme
+     qualite.
 
   9. EXEMPT LES ARTEFACTS DE RUN GENERES (#15349) : un notebook dont le
      markdown est une SORTIE non deterministe d'un agent/LLM
@@ -126,7 +140,7 @@ Usage
     python detect_md_content_loss.py NB.ipynb --base origin/main --head origin/fix/ma-branche --check
     # sortie machine
     python detect_md_content_loss.py NB.ipynb --json
-    # CI gate avec justification par-cellule (#13491)
+    # CI gate avec justification par body (#13491 cellules, #17727 navigation)
     python detect_md_content_loss.py NB.ipynb --check --pr-body-file /tmp/pr-body.md
 
 Exit codes
@@ -135,10 +149,11 @@ Exit codes
          notebook NOUVEAU (absent a la base : rien a comparer -> exempt) ou un
          artefact de run genere (markdown non deterministe, #15349)
     1 -- une ou plusieurs pertes detectees (--check). Les findings ``TRUNCATED_CELL``
-         pour lesquels un marker de body valide a ete trouve sont SUPPRIMES
-         du verdict et la sortie les mentionne comme
-         ``TRUNCATED_CELL_JUSTIFIED_BY_BODY`` (transparence : la PR a
-         assumee la reecriture, le garde ne masque rien).
+         et ``LOST_NAV_LINKS`` pour lesquels un marker de body valide a ete
+         trouve sont SUPPRIMES du verdict et la sortie les mentionne comme
+         ``TRUNCATED_CELL_JUSTIFIED_BY_BODY`` /
+         ``LOST_NAV_LINKS_JUSTIFIED_BY_BODY`` (transparence : la PR a
+         assume la reecriture ou la re-cible, le garde ne masque rien).
     2 -- erreur (notebook EXISTANT illisible, ref git introuvable). Un notebook
          absent a la base (nouveau fichier) ne declenche PAS rc=2 : il est exempt.
 
@@ -149,6 +164,7 @@ Voir aussi
 - scan_md_hierarchy / check_notebook_navlinks -- gardes existants (volume-aveugles)
 - Issue #8655 -- cahier des charges + 3 cas reels
 - Issue #13491 -- justification par cellule (option (a) du choix de porte)
+- Issue #17727 -- justification par body des cibles de navigation perdues
 - Issue #15349 -- artefacts de run generes (exemption content-loss)
 - Registre #3966 -- le rollout demotion-de-titres dont provient le defaut
 """
@@ -1148,29 +1164,89 @@ def _parse_pr_body_markers(pr_body: str, notebook_path: Path) -> set[int]:
     nb_name = notebook_path.name
     justified: set[int] = set()
     for m in PAT.finditer(pr_body):
-        nb_token = m.group("nb").rstrip("/").rstrip(":")
-        # Le token dans le marker est compare au basename OU au chemin se
-        # terminant par /basename -- le cwd du CI runner peut varier, et un
-        # reviewer peut citer `MyIA.AI.Notebooks/.../notebook.ipynb` ou
-        # simplement `notebook.ipynb` (deux formes valides).
-        if nb_token != nb_name and not nb_token.endswith("/" + nb_name):
+        if not _marker_nb_token_matches(m.group("nb"), nb_name):
             continue
         justified.add(int(m.group("cell")))
     return justified
 
 
-def _apply_body_justifications(findings: list[dict], justified_cells: set[int]) -> list[dict]:
-    """Supprime les findings ``TRUNCATED_CELL`` justifies par le body, en gardant une trace.
+def _marker_nb_token_matches(nb_token: str, notebook_name: str) -> bool:
+    """Le token notebook d'un marker designe-t-il CE notebook ?
 
-    Chaque finding ``TRUNCATED_CELL`` sur une cellule justifiee est remplace
-    par un finding de meme cle de cellule mais de kind
-    ``TRUNCATED_CELL_JUSTIFIED_BY_BODY`` : la sortie n'est pas masquee (un
-    auditeur en review voit ce qui s'est passe), seul le verdict binaire du
-    ``--check`` le rend vert. Les autres categories de findings restent
-    intactes (la justification par cellule ne couvre pas les pertes de
-    structuration).
+    Le token est compare au basename OU au chemin se terminant par
+    ``/basename`` -- le cwd du CI runner peut varier, et un reviewer peut citer
+    ``MyIA.AI.Notebooks/.../notebook.ipynb`` ou simplement ``notebook.ipynb``
+    (deux formes valides). Le ``/`` et le ``:`` finaux sont retires : un marker
+    colle a la ponctuation de la phrase reste lisible. Les deux formes de
+    marker (#13491 cellules, #17727 navigation) partagent ce predicat : deux
+    copies divergeraient au premier amendement.
     """
-    if not justified_cells:
+    token = nb_token.rstrip("/").rstrip(":")
+    return token == notebook_name or token.endswith("/" + notebook_name)
+
+
+def _parse_pr_body_nav_markers(pr_body: str, notebook_path: Path) -> set[str]:
+    """Parse les markers ``md-content-loss: navigation assumee -- <nb> target <cible> : <raison>``.
+
+    Retourne l'ensemble des CIBLES de navigation JUSTIFIES pour CE notebook,
+    sous leur IDENTITE canonique (``_nav_target_identity`` : ancre retiree,
+    chemin normalise). C'est exactement le format des ``lost_targets`` du
+    finding ``LOST_NAV_LINKS`` (#17392) : la porte s'ouvre sur la meme cle que
+    celle que le garde mesure, et ``../../README.md`` y reste distinct de
+    ``../../../../README.md``.
+
+    Memes tolerances que le marker par cellule : ``--`` ou em-dash, accent du
+    mot-cle, chemin du notebook compare en suffixe. Un marker est valide si
+    TOUT est present : mot-cle ``md-content-loss``, token ``navigation
+    assumee``, chemin ou basename du notebook, token ``target <cible>``, et une
+    raison non vide -- un marker sans raison ne justifie rien. Les backticks et
+    guillemets qui encadrent la cible (un auteur cite volontiers un chemin en
+    code inline) sont retires : c'est une decoration, pas la cible.
+
+    .. note::
+       Cette fonction est exportee pour les tests unitaires. Elle NE lit ni le
+       notebook ni la ref git : c'est une regex sur le body de la PR.
+    """
+    if not pr_body:
+        return set()
+    NB_TAIL_RE = r"[^\s:]+"
+    PAT = re.compile(
+        r"^md-content-loss\s*:\s*navigation\s+assum[eé]+\s*(?:--|—)\s*"
+        r"(?P<nb>" + NB_TAIL_RE + r")"
+        r"\s+target\s+(?P<target>[^\s:]+)"
+        r"\s*:\s*(?P<reason>\S.*?)$",
+        re.MULTILINE,
+    )
+    nb_name = notebook_path.name
+    justified: set[str] = set()
+    for m in PAT.finditer(pr_body):
+        if not _marker_nb_token_matches(m.group("nb"), nb_name):
+            continue
+        justified.add(_nav_target_identity(m.group("target").strip("`\"'")))
+    return justified
+
+
+def _apply_body_justifications(findings: list[dict], justified_cells: set[int],
+                               justified_nav_targets: set[str] | None = None) -> list[dict]:
+    """Supprime les findings justifies par le body, en gardant une trace.
+
+    ``justified_cells`` couvre ``TRUNCATED_CELL`` (#13491) : chaque finding sur
+    une cellule justifiee devient ``TRUNCATED_CELL_JUSTIFIED_BY_BODY``.
+    ``justified_nav_targets`` couvre ``LOST_NAV_LINKS`` (#17727) : un finding
+    dont TOUTES les cibles perdues sont nommees devient
+    ``LOST_NAV_LINKS_JUSTIFIED_BY_BODY`` ; s'il reste une cible non nommee, le
+    finding RESTE ``LOST_NAV_LINKS`` -- bloquant -- reduit aux cibles
+    restantes, les cibles couvertes restant visibles dans
+    ``justified_targets``. Un finding sans ``lost_targets`` (aucune cle a
+    opposer au marker) n'est jamais couvert : fail-closed.
+
+    La sortie n'est pas masquee (un auditeur en review voit ce qui s'est
+    passe), seul le verdict binaire du ``--check`` ignore les JUSTIFIED. Les
+    autres categories de findings restent intactes (la justification par
+    cellule ou par cible ne couvre pas les pertes de structuration).
+    """
+    justified_nav_targets = justified_nav_targets or set()
+    if not justified_cells and not justified_nav_targets:
         return findings
     out: list[dict] = []
     for f in findings:
@@ -1178,9 +1254,38 @@ def _apply_body_justifications(findings: list[dict], justified_cells: set[int]) 
             f2 = dict(f)
             f2["kind"] = "TRUNCATED_CELL_JUSTIFIED_BY_BODY"
             out.append(f2)
+        elif f.get("kind") == "LOST_NAV_LINKS" and justified_nav_targets:
+            out.append(_justify_nav_finding(f, justified_nav_targets))
         else:
             out.append(f)
     return out
+
+
+def _justify_nav_finding(finding: dict, justified_targets: set[str]) -> dict:
+    """Applique une justification par cible a un finding ``LOST_NAV_LINKS``.
+
+    Justification PARTIELLE : le finding n'est retire que si chaque cible
+    perdue est nommee par un marker. Sinon il reste bloquant, reduit aux
+    cibles restantes -- declarer une seule de ses cibles n'exempte pas le
+    finding entier. ``delta`` est re-ancree sur les cibles restantes
+    (upstream : ``delta == len(lost_targets)``).
+    """
+    lost = finding.get("lost_targets") or []
+    if not lost:
+        # Aucune cible connue : pas de cle a opposer au marker -> fail-closed,
+        # le finding reste tel quel.
+        return finding
+    remaining = [t for t in lost if t not in justified_targets]
+    covered = [t for t in lost if t in justified_targets]
+    if not remaining:
+        f2 = dict(finding)
+        f2["kind"] = "LOST_NAV_LINKS_JUSTIFIED_BY_BODY"
+        return f2
+    f2 = dict(finding)
+    f2["lost_targets"] = remaining
+    f2["delta"] = len(remaining)
+    f2["justified_targets"] = covered
+    return f2
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -1246,28 +1351,35 @@ def main(argv: list[str] | None = None) -> int:
         print(f"ERROR: {result['error']}", file=sys.stderr)
         return 2
 
-    # Justification par-cellule depuis le body de la PR (#13491, option (a)).
+    # Justification par body de la PR (#13491 cellules, #17727 navigation).
     # Le body est lu une fois (cf bloc de resolution ci-dessus) et parse en
-    # un ensemble de cell_idx justifies pour CE notebook. Les findings
-    # TRUNCATED_CELL sur ces cellules sont convertis en
-    # TRUNCATED_CELL_JUSTIFIED_BY_BODY (trace preservee, le verdict binaire
-    # --check passe a 0). Marker absent, malforme, ou visant une autre
-    # cellule/ce notebook n'a aucun effet (comportement actuel preserve :
-    # cf Acceptance 1 du cahier des charges).
+    # un ensemble de cell_idx et de cibles de navigation justifies pour CE
+    # notebook. Les findings TRUNCATED_CELL / LOST_NAV_LINKS couverts sont
+    # convertis en *_JUSTIFIED_BY_BODY (trace preservee, le verdict binaire
+    # --check passe a 0 ; une cible de navigation non nommee laisse le
+    # finding bloquant pour les cibles restantes). Marker absent, malforme,
+    # ou visant une autre cellule/cible/ce notebook n'a aucun effet
+    # (comportement actuel preserve : cf Acceptance 1 du cahier des charges).
     if pr_body is not None:
         justified = _parse_pr_body_markers(pr_body, args.notebook)
-        if justified:
-            result["findings"] = _apply_body_justifications(result["findings"], justified)
+        justified_targets = _parse_pr_body_nav_markers(pr_body, args.notebook)
+        if justified or justified_targets:
+            result["findings"] = _apply_body_justifications(
+                result["findings"], justified, justified_targets,
+            )
             # Recompte utile : les JUSTIFIED restent visibles en sortie
             # machine (transparence), mais le verdict --check ignore
             # les JUSTIFIED_BY_BODY : le marqueur est la PORTE assumee par
             # l'auteur, pas une dispense systematique.
             result["stats"]["findings_count"] = sum(
                 1 for f in result["findings"]
-                if f.get("kind") not in ("TRUNCATED_CELL_JUSTIFIED_BY_BODY",)
+                if not str(f.get("kind", "")).endswith("JUSTIFIED_BY_BODY")
             )
             result["stats"]["findings_count_with_justified"] = len(result["findings"])
-            result["stats"]["justified_by_body_cells"] = sorted(justified)
+            if justified:
+                result["stats"]["justified_by_body_cells"] = sorted(justified)
+            if justified_targets:
+                result["stats"]["justified_by_body_targets"] = sorted(justified_targets)
 
     if args.json:
         print(json.dumps(result, ensure_ascii=False, indent=2))
@@ -1296,6 +1408,10 @@ def main(argv: list[str] | None = None) -> int:
         if st.get("justified_by_body_cells"):
             print(f"[JUSTIFIED_BY_BODY] cellules {st['justified_by_body_cells']} "
                   f"-- reecritures assumees par marqueur de body (#13491).")
+        if st.get("justified_by_body_targets"):
+            print(f"[JUSTIFIED_BY_BODY] cibles de navigation "
+                  f"{st['justified_by_body_targets']} -- pertes assumees par "
+                  f"marqueur de body (#17727).")
         if fins:
             print("\n[FINDINGS]")
             for f in fins:
@@ -1320,9 +1436,16 @@ def main(argv: list[str] | None = None) -> int:
                           f"vivante(s) perdue(s) ({f['before_count']} -> "
                           f"{f['after_count']} cibles distinctes) : "
                           f"{', '.join(f.get('lost_targets', []))}")
+                    if f.get("justified_targets"):
+                        print(f"      (cible(s) deja assumee(s) par le body : "
+                              f"{', '.join(f['justified_targets'])})")
                     if f.get("repaired_dead_targets"):
                         print(f"      (cibles mortes en base reparées, ignorées : "
                               f"{', '.join(f['repaired_dead_targets'])})")
+                elif f["kind"] == "LOST_NAV_LINKS_JUSTIFIED_BY_BODY":
+                    print(f"  - {f['kind']}: cible(s) "
+                          f"{', '.join(f.get('lost_targets', []))} perdue(s) et "
+                          f"assumee(s) par marqueur de body (#17727).")
                 elif f["kind"] == "FRONTMATTER_COST_DIVERGENCE":
                     print(f"  - cell {f['cell_idx']} {f['kind']}: le bloc cost du "
                           f"frontmatter a disparu sans migration equivalente ; "
