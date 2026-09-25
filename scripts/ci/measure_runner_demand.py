@@ -434,6 +434,36 @@ def _runtime_percentiles(values: list[float]) -> dict:
     }
 
 
+def _ratio_by_quantile(solo: list[float], shared: list[float]) -> dict:
+    """Rapport partage/seul a chaque quantile rapporte -- pas au seul median.
+
+    Le median ne tranche pas la question qui compte pour un budget de timeout :
+    la co-residence degrade-t-elle les jobs LONGS ? Un rapport median proche de 1
+    peut coexister avec une queue qui double, et c'est la queue qui fait mourir un
+    job au timeout. Le rapport est donc rendu a p50, p90 et max, pour que le
+    verdict de queue soit dans l'artefact au lieu d'etre a recalculer a la main
+    depuis les deux blocs de percentiles.
+
+    L'effectif des deux populations reste publie a cote (`solo_jobs`,
+    `shared_jobs`) : un p90 tire de cinq jobs n'est pas un p90, et un rapport de
+    queue sur une population mince ne doit pas se lire comme une mesure.
+    """
+    ratios: dict[str, float | None] = {}
+    for name, quantile in (("p50", 0.5), ("p90", 0.9)):
+        low, high = _percentile(solo, quantile), _percentile(shared, quantile)
+        ratios[name] = (
+            round(high / low, 3)
+            if low and high is not None and low > 0
+            else None
+        )
+    low = max(solo) if solo else None
+    high = max(shared) if shared else None
+    ratios["max"] = (
+        round(high / low, 3) if low and high is not None and low > 0 else None
+    )
+    return ratios
+
+
 def _coresidence(records: list[dict]) -> dict:
     """Croise la duree d'un job avec le nombre de jobs qui tournent sur son hote.
 
@@ -536,8 +566,6 @@ def _coresidence(records: list[dict]) -> dict:
             "runtime_by_concurrency": groups,
         })
 
-    solo_p50 = _percentile(solo, 0.5)
-    shared_p50 = _percentile(shared, 0.5)
     return {
         "method": (
             "hote prefixe du runner_name (`<hote>-<n>`) ; par job, "
@@ -548,6 +576,7 @@ def _coresidence(records: list[dict]) -> dict:
             "la concurrence est une borne inferieure : les jobs hors fenetre de collecte sont invisibles",
             "l'hote est presume du nom du runner ; un nom sans suffixe numerique n'est pas attribue",
             "une correlation n'est pas une cause : une duree plus longue en concurrence peut venir du job lui-meme",
+            "le rapport partage/seul confronte deux populations d'effectifs tres differents : les quantiles de queue (p90, max) ne se lisent qu'avec `solo_jobs` et `shared_jobs` a cote",
         ],
         "hosts": rendered,
         "summary": {
@@ -558,11 +587,7 @@ def _coresidence(records: list[dict]) -> dict:
             "shared_jobs": len(shared),
             "solo_runtime_minutes": _runtime_percentiles(solo),
             "shared_runtime_minutes": _runtime_percentiles(shared),
-            "shared_over_solo_p50_ratio": (
-                round(shared_p50 / solo_p50, 3)
-                if solo_p50 and shared_p50 is not None and solo_p50 > 0
-                else None
-            ),
+            "shared_over_solo_runtime_ratio": _ratio_by_quantile(solo, shared),
         },
     }
 
