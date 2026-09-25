@@ -4,23 +4,34 @@ Check Z3-Python notebook navigation consistency (stale-navigation sweep).
 
 Pourquoi cet outil existe
 -------------------------
-9 occurrences du pattern stale-navigation ont ete mesurees manuellement sur
-la serie Z3-Python entre c.853 et c.863 (audits Z3-04/05/06/09/10/11/16/16b/17/18,
-partition Hermes #17073 sur issue #17419). Defauts observes :
-  - absence : cellule [0] n'a pas de fleche vers suivant alors que le notebook NN+1 existe
-  - saut    : cellule [0] a fleche vers NN-3 qui saute les notebooks intermediaires
-  - inverse : cellule [0] a fleche (->) au lieu de (<-) pour le precedent
+La classe d'erreur « stale-navigation pattern » (cellule [0] d'un notebook qui
+pointe vers un autre notebook avec un lien cassé, sauté ou inversé) a été
+identifiée transversalement sur la série Z3-Python lors des audits Z3-04/05/06
+/09/10/11/16/16b/17/18 (issue #17419, partition Hermes #17073). Défauts observés :
+  - absence : cellule [0] n'a pas de flèche vers suivant alors que le notebook
+              NN+1 existe
+  - saut    : cellule [0] a flèche vers NN-3 qui saute les notebooks intermédiaires
+  - inverse : cellule [0] a flèche (->) au lieu de (<-) pour le précédent
   - 404     : lien markdown vers un notebook inexistant
 
 `check_notebook_navlinks.py` couvre les 404 (cible absente), pas la navigation
-incoherente (cible presente mais mal chainee ou de mauvais sens). Ce tool
-ferme la classe d'erreur Tell c.c.c.d.c856-L1 ★ fondateur transversal.
+incohérente (cible présente mais mal chaînée ou de mauvais sens). Cet outil
+ferme la classe stale-navigation-pattern sur la série Z3-Python.
 
-Conventions supportees (Z3-Python) :
-  - Z3-01 a Z3-06 : `<<` / `>>` ASCII (style heredoc navigation)
-  - Z3-08+        : `←` / `→` Unicode
+Conventions de nommage (Z3-API) -- périmètre Python :
+  - `Z3-NN-...-Python.ipynb` : convention dominante (19 fichiers)
+  - `Z3-Python-NN-...ipynb`  : convention inverse, 2 fichiers (Z3-13 / Z3-17)
+  - `Z3-NNb-...ipynb`         : sous-numéros (16b/16c/16d/16e), kernelspec Python
+  - `Z3-NNb-...-Linq.ipynb`   : 3ᵉ convention, kernelspec Python malgré suffix -Linq
+                                (ex. Z3-01b-Style-Declaratif-Linq, mesuré kernelspec=python)
+  - `Z3-NN-...-CSharp.ipynb`  : kernelspec C#/.NET, **exclus du périmètre**
 
-Sortie : tableau par notebook avec type de defaut, sortie non-zero si findings.
+Le critère discriminant **fiable** est le `kernelspec.language` du notebook
+(Python vs C#), pas le nom de fichier : un notebook sans `-Python` suffix
+peut être Python (kernelspec décide). Le glob initial couvrait la convention
+dominante seulement et ratait 3 notebooks (mesure 2026-09-25, 19 vs 22).
+
+Sortie : tableau par notebook avec type de défaut, sortie non-zero si findings.
 
 Usage :
     python scripts/notebook_tools/check_z3_navigation.py
@@ -35,14 +46,19 @@ import re
 import sys
 from pathlib import Path
 
-# Regex pour extraire numero + sous-numero (Z3-01, Z3-16b, Z3-16c)
-NOTEBOOK_RE = re.compile(r"Z3-(\d+)([a-z])?-")
-# Lien markdown vers un notebook Z3
-LINK_RE = re.compile(r"\[([^\]]+)\]\((Z3-(\d+)([a-z])?-[^)]+\.ipynb)\)")
+# Regex pour extraire numero + sous-numero.
+# Couvre 3 conventions de nommage Z3-Python :
+#   - dominante : Z3-NN (Z3-01, Z3-12, Z3-16b, Z3-16c)
+#   - inverse   : Z3-Python-NN (Z3-Python-13, Z3-Python-17)
+#   - sous-num  : Z3-NNb (Z3-01b, Z3-16b)
+# Le suffixe `-Python` est optionnel ; les sous-numeros lettres sont captures.
+NOTEBOOK_RE = re.compile(r"Z3-(?:Python-)?(\d+)([a-z])?(?:-[A-Za-z0-9._-]*)?")
+# Lien markdown vers un notebook Z3 (memes conventions)
+LINK_RE = re.compile(r"\[([^\]]+)\]\((Z3-(?:Python-)?(\d+)([a-z])?-[^)]+\.ipynb)\)")
 # Fleches Unicode (Z3-08+)
-ARROW_RE = re.compile(r"(←|→)\s*\[?([^\]\n]*?Z3-(\d+)([a-z])?)?\]?")
+ARROW_RE = re.compile(r"(←|→)\s*\[?([^\]\n]*?Z3-(?:Python-)?(\d+)([a-z])?)?\]?")
 # Fleches ASCII (Z3-01 a Z3-06) : << / >> dans un lien markdown
-ASCII_ARROW_RE = re.compile(r"(<<|>>)\s*\[?([^\]\n]*?Z3-(\d+)([a-z])?)?\]?")
+ASCII_ARROW_RE = re.compile(r"(<<|>>)\s*\[?([^\]\n]*?Z3-(?:Python-)?(\d+)([a-z])?)?\]?")
 
 
 def parse_notebook_number(name: str) -> tuple[int, str]:
@@ -54,11 +70,29 @@ def parse_notebook_number(name: str) -> tuple[int, str]:
 
 
 def list_z3_python_notebooks(z3_dir: Path) -> list[Path]:
-    """Liste les notebooks Z3-Python du dossier, tries par numero."""
+    """Liste les notebooks Z3-Python du dossier, tries par numero.
+
+    Critere discriminant : kernelspec.language == 'python'.
+    Couvre les 4 conventions de nommage : dominante (`-Python` suffix),
+    inverse (`Z3-Python-NN`), sous-numeros (`Z3-NNb`), et 3ᵉ convention
+    (`Z3-NNb-...-Linq` avec kernelspec Python malgre suffix -Linq).
+    Les notebooks C# (.NET-CSharp) sont exclus.
+    """
     if not z3_dir.exists():
         return []
-    notebooks = list(z3_dir.glob("Z3-*-Python.ipynb"))
-    return sorted(notebooks, key=lambda p: parse_notebook_number(p.name))
+    import nbformat
+    candidates = list(z3_dir.glob("Z3-*.ipynb"))
+    python_nb = []
+    for p in candidates:
+        try:
+            nb = nbformat.read(str(p), as_version=4)
+            lang = nb.metadata.get("kernelspec", {}).get("language", "")
+            if lang == "python":
+                python_nb.append(p)
+        except Exception:
+            # Notebook illisible / non-nbformat : on l'ignore (read-only).
+            continue
+    return sorted(python_nb, key=lambda p: parse_notebook_number(p.name))
 
 
 def extract_cell0_links(notebook: Path) -> dict:
@@ -83,14 +117,14 @@ def extract_cell0_links(notebook: Path) -> dict:
             suf = m.group(4) or ""
             arrows.append({"direction": direction, "num": num, "suf": suf, "raw": m.group(0)})
     # Fleches dans le TEXTE d'un lien markdown (ex: "[Z3-Python-08 ->](Z3-08-...)")
-    TEXT_ARROW_RE = re.compile(r"\[([^\]]*?)(←|→)([^\]]*?)\]\((Z3-(\d+)([a-z])?-[^)]+\.ipynb)\)")
+    TEXT_ARROW_RE = re.compile(r"\[([^\]]*?)(←|→)([^\]]*?)\]\((Z3-(?:Python-)?(\d+)([a-z])?-[^)]+\.ipynb)\)")
     for m in TEXT_ARROW_RE.finditer(src):
         direction = m.group(2)
         num = int(m.group(5))
         suf = m.group(6) or ""
         arrows.append({"direction": direction, "num": num, "suf": suf, "raw": m.group(0)})
     # ASCII (<< / >>) -- equivalent semantique : << = back, >> = forward
-    ASCII_ARROW_V2 = re.compile(r"(<<|>>)([^\n]*?Z3-(\d+)([a-z]?))")
+    ASCII_ARROW_V2 = re.compile(r"(<<|>>)([^\n]*?Z3-(?:Python-)?(\d+)([a-z]?))")
     for m in ASCII_ARROW_V2.finditer(src):
         direction_ascii = m.group(1)
         num = int(m.group(3))
@@ -228,7 +262,7 @@ def main():
                 for fd in f["findings"]:
                     print(f"    [{fd['type']}] {fd['detail']}")
             print()
-            print("FAIL: navigation stale detectee (Tell c.c.c.d.c856-L1 ★ fondateur transversal)")
+            print("FAIL: navigation stale detectee (cf docstring -- stale-navigation-pattern)")
             sys.exit(1)
         else:
             print("OK: navigation coherente sur tous les Z3-Python")
