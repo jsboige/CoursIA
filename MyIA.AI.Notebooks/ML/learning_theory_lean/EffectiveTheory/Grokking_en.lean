@@ -486,4 +486,4 @@ theorem flow_sum_constant_of_zero_loss (P : Finset ((Fin p × Fin p) × (Fin p �
 
 end Flow
 
-end LearningTheory.EffectiveTheory
+end LearningTheory.EffectiveTheory_en

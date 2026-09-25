@@ -142,4 +142,4 @@ theorem rel_eqn_autonomous (x₁ x₂ : ℝ → E) (F : E →L[ℝ] E) (g : ℝ 
 
 end Dynamics
 
-end LearningTheory.EffectiveTheory
+end LearningTheory.EffectiveTheory_en

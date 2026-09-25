@@ -217,4 +217,4 @@ theorem circleOfDays_irreducible
           simp [Module.finrank_fin_fun])
       exact le_antisymm le_top (by rw [← htop]; exact hle)
 
-end LearningTheory.EffectiveTheory
+end LearningTheory.EffectiveTheory_en

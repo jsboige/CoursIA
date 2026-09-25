@@ -249,4 +249,4 @@ theorem descLength_eq (G : SimpleGraph (Fin n))
 
 end Statics
 
-end LearningTheory.EffectiveTheory
+end LearningTheory.EffectiveTheory_en
