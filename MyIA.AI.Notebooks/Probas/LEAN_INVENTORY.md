@@ -15,7 +15,8 @@ n'entrent pas dans ce compte).
 | Lake | Toolchain | sorry (production) | Modules | Notebook câblé | Classe | Suivi |
 |------|-----------|--------------------:|--------:|---------------:|--------|-------|
 | `decision_theory_lean` | v4.32.1 | 2¹ | 13 (3 libs) | 2² | PEDA/REF | #4049, #4050, #4039 |
-| **Total** | — | **2** | **13** | **2** | — | — |
+| `percolation_lean`³ | v4.33.0 | **0** | 6 (1 lib) | 1⁴ | PEDA/REF | #14871, #14927 |
+| **Total** | — | **2** | **19** | **3** | — | — |
 
 ¹ Les 2 `sorry` (real-mode) de `decision_theory_lean` sont **tous** dans
 `Gittins/GittinsTheorem.lean` (théorème d'optimalité de l'index de Gittins — l'opérateur
@@ -30,6 +31,18 @@ pédagogique. Historique : 5 sorry à la création, déchargés à **2** (baseli
 (Lean Expected Utility) et **DecInfer-09** (Lean Gittins — preuves en cellules Lean).
 La série Infer « Decision » (.NET Interactive) reste le companion conceptuel
 utilité/décision.
+
+³ `percolation_lean` vit sous `Applications/Percolation/percolation_lean/` (créé
+directement là, #14927 — absent de cet inventaire jusqu'ici). **13 fichiers `.lean`** au
+comptage de l'instrument canonique (`count_code_sorry.py --lake …` : `files: 13`,
+`distinct_code_sorry: 0`, `naive_sorry: 0`, aucun vacuous) — soit 6 modules FR (5 imbriqués
++ l'agrégateur racine `Percolation.lean`), 6 miroirs `_en` (5 imbriqués + `Percolation_en`),
+et le `lakefile.lean`. La CI dédiée `lean-percolation.yml` porte
+`sorry-baseline: "0"` / `sorry-filter-mode: real` (dernier run `success`
+2026-09-24T23:31:21Z).
+
+⁴ Un notebook câblé : **`Applications/Percolation/Percolation-Lean.ipynb`** (compagnon
+exécutable du lake — cf. [`Applications/Percolation/README.md`](Applications/Percolation/README.md)).
 
 *(Historique : `Infer/gittins_lean`, stub non-buildable documenté ici autrefois, a été
 **supprimé du dépôt** — la formalisation réelle de Gittins vit dans
@@ -113,17 +126,45 @@ Index de Gittins pour les bandits manchots à escompte géométrique.
 
 ---
 
+### 2. percolation_lean — PEDAGOGIQUE / REFERENCE (1 lib)
+
+**Objectif** : formalisation du noyau fini de la percolation de liens sur tore fini
+(Diskin–Easo–Radhakrishnan–Sudakov–Tassion, arXiv:2603.03257) — support Lean de
+l'application Percolation.
+
+- **Toolchain** : v4.33.0 · **Dépendance** : Mathlib4 (pin `db584cd6`)
+- **lib** (`lean_lib`) : `Percolation` (globs `Percolation.*` + `Percolation_en`, convention
+  i18n #4980 — même template que `decision_theory_lean`)
+- **sorry (production)** : **0** — lake entièrement prouvé (instrument canonique :
+  `distinct_code_sorry: 0` ; CI `lean-percolation.yml` baseline 0 real-mode, run vert).
+- **Modules FR** (5 imbriqués + agrégateur racine, docstrings citées) :
+  - `Basic.lean` — module d'amorce du noyau fini (définitions de base) ;
+  - `Connectivity.lean` — connexité (tranche 2) ;
+  - `Components.lean` — composantes et frontière (tranche 3) ;
+  - `Examples.lean` — un exemple calculable (tranche 3, acceptation 3) ;
+  - `Boundary.lean` — frontière isopérimétrique (tranche 4, le plus riche : 17
+    théorèmes/lemmes au grep) ;
+  - `Percolation.lean` — agrégateur racine.
+- **Notebook câblé** : `Applications/Percolation/Percolation-Lean.ipynb` (compagnon
+  exécutable, cf. #14871 / #14927).
+
+---
+
 ## Classes (taxonomie Epic #4038)
 
 | Classe | Définition | Lakes |
 |--------|-----------|-------|
-| **PEDA/REF** | Pédagogique / formalisation de référence | decision_theory_lean |
+| **PEDA/REF** | Pédagogique / formalisation de référence | decision_theory_lean, percolation_lean |
 
 *(La classe SCAFFOLD n'a plus de représentant : `Infer/gittins_lean` — stub non-buildable
 documenté historiquement — a été supprimé du dépôt.)*
 
 ## Notes transverses
 
+- **Couverture** : cet inventaire couvre les **deux** lakes de `Probas/` —
+  `decision_theory_lean` (racine série) et `percolation_lean`
+  (`Applications/Percolation/`, intégré ici par P3 de #14873 ; le Total historique
+  « 2 sorry / 13 modules / 2 notebooks » datait d'avant #14927).
 - **Honnêteté des jalons ouverts (G.3/G.9)** : `decision_theory_lean` documente ses jalons
   non atteints (existence Herstein–Milnor, caractérisation multi-tickets complète,
   théorème de Gittins) **explicitement comme OPEN / INTRINSIC** — jamais masqués en
