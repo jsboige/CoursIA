@@ -95,9 +95,11 @@ from typing import Any
 
 try:
     import gh_identity
+    import check_unaddressed_nits
 except ImportError:  # charge via importlib dans les tests (hors scripts/)
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    import gh_identity
+    import gh_identity  # type: ignore[no-redef]
+    import check_unaddressed_nits  # type: ignore[no-redef]
 
 REPO = "jsboige/CoursIA"
 # The adjoint remains the canonical emitter: `--template` renders its lane, and
@@ -290,23 +292,13 @@ _BOT_MARKER_GUARDS: tuple[str, ...] = (
     "<!-- trivial-diff-15740 -->",  # workflows idempotents
 )
 
-# #17039 -- Sous-ensemble STRICT canonique des marqueurs de reserve vivante
-# duplique depuis scripts/check_unaddressed_nits.py (CONCERN_MARKERS +
-# SEVERITY_GLYPHS + BLOCK_VERDICTS), restreint aux emissions formelles
-# stables (verdicts hermes/ai-01, glyphes, blocs en gras). Les marqueurs
-# de prose (ex. "avant merge", "a changer") sont exclus ici : la detection
-# de review-pose-reserve-neuve se limite aux signaux qui RE-EMETTENT un
-# constat, pas aux narrations qui le discutent. Refactor de centralisation
-# dans un module tiers : hors scope de #17039.
-_REVIEW_RESERVE_MARKERS: tuple[str, ...] = (
-    "CHANGES_REQUESTED",  # verdict hermes/ai-01 emission formelle
-    "REQUEST_CHANGES",  # alias semantique GitHub
-    "COMMENT_WITH_CONCERNS",  # prefixe de verdict hermes fondateur
-    "**BLOCKED**",  # verdict de revalidation B.0 (#12908)
-    "BLOCKED  PR",  # sortie pastee de l'organe B.0 (double espace)
-    "🟡",  # constat substantiel (severite, glyphe U+1F7E1)
-    "🔴",  # bloquant strict (severite, glyphe U+1F534)
-)
+# #17039 -- Le predicat de "reserve vivante" n'est pas une liste de tokens :
+# il est confie a scripts/check_unaddressed_nits.classify (meme semantique
+# que B.0, encagement inclus). Reduire la detection a une seconde liste
+# duplique CONCERN_MARKERS + SEVERITY_GLYPHS + BLOCK_VERDICTS tout en
+# ignorant l'encagement, ce qui faisait perimer une levee ecrite dans la
+# forme sure (le dos de la PR note que la duplication est une dette --
+# dette reglee). Pas de second marqueur-statique ici.
 
 
 def _comment_body_for_fingerprint(row: dict[str, Any]) -> str:
@@ -324,25 +316,31 @@ def _comment_body_for_fingerprint(row: dict[str, Any]) -> str:
     return body
 
 
-def _review_body_has_reserve_marker(body: str) -> bool:
-    """True quand le body d'une review porte un marqueur de reserve vivante.
+def _review_body_has_reserve_marker(author: str, body: str) -> bool:
+    """True quand, en substance, cette review pose une reserve vivante.
 
-    #17039 acceptance 4 : le cas mixte (une review qui leve ET pose une
-    reserve) se resout cote EMISSION (consigne #16731 : ai-01 ne melange
-    jamais les deux dans une meme surface) -- le gate traite donc le mixte
-    comme perime, fail-CLOSED. Cette fonction implemente le predicat qui
-    dit : "cette review est, en substance, une reserve neuve, peu importe
-    la narration de levee autour". Marqueurs restreints aux emissions
-    formelles (verdicts hermes/ai-01, glyphes de severite, verdict de
-    revalidation B.0) -- la prose discutee (ex. "avant merge", "a
-    changer") reste hors du filet (cf commentaire _REVIEW_RESERVE_MARKERS).
+    #17039 (et la revue de ai-01 sur #17693) : le predicat n'est pas une
+    liste de tokens en dur. Il est delegue a ``check_unaddressed_nits.classify``
+    -- la meme semantique que B.0, encagement inclus : une levee qui nomme le
+    verdict qu'elle leve, encage (`backticks`, `« »`, bloc de code), reste
+    neutre ; la meme phrase avec le token nu perime le dossier. C'est la
+    forme prevue par ``pr-review-discipline.md`` ("repondre a une reserve --
+    la forme sure", #17071) ; la centralisation ferme la boucle que la
+    duplication avait rouverte cote gate (#16840 fondateur).
+
+    Le cas mixte (une review qui leve ET pose une reserve) reste resolu
+    cote EMISSION (consigne #16731 : le coordinateur ne melange jamais les
+    deux sur la meme surface) : ``classify`` rend la valeur observee, pas
+    une moyenne. Un verdict nu emetteur reste un verdict nu ; un narrateur
+    encage reste un narrateur.
     """
     if not body:
         return False
-    for marker in _REVIEW_RESERVE_MARKERS:
-        if marker in body:
-            return True
-    return False
+    try:
+        verdict = check_unaddressed_nits.classify(author, body)
+    except Exception:
+        return False  # fail-CLOSED sur dependance externe : on neutralise, on ne perime pas
+    return verdict is not None
 
 
 def _is_own_later_act(
@@ -369,18 +367,19 @@ def _is_own_later_act(
 
     #17039 -- ``row_kind`` precise le contrat de neutralisation :
     - "comment" : neutralise inconditionnellement (comportement historique).
-    - "review" : neutralise UNIQUEMENT si la review ne porte aucun marqueur
-      de reserve (_review_body_has_reserve_marker). Une review du
-      coordinateur qui pose une reserve neuve (verdict CHANGES_REQUESTED,
-      glyphe 🟡/🔴, verdict **BLOCKED**) continue de perimer le dossier --
-      c'est precisement le travail d'une reserve.
+    - "review" : neutralise UNIQUEMENT si la review NE pose PAS une reserve
+      vivante. La detection est confiee a ``check_unaddressed_nits.classify``
+      (voir commentaire de la fonction) -- un verdict Hermes nu, un glyphe
+      🟡/🔴, un verdict **BLOCKED**, ou tout verdict qui resistre a
+      l'encagement continuera de perimer le dossier. Une levee ecrite dans
+      la forme sure (verdict encage) reste neutre.
     """
     if not neutral_after:
         return False
     author = _login(row)
     if author not in (COORDINATOR_LOGIN, SHARED_GITHUB_LOGIN):
         return False
-    if row_kind == "review" and _review_body_has_reserve_marker(row.get("body") or ""):
+    if row_kind == "review" and _review_body_has_reserve_marker(author, row.get("body") or ""):
         return False
     stamp = row.get(timestamp_key) or ""
     return bool(stamp) and stamp > neutral_after

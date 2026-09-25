@@ -626,16 +626,35 @@ def test_coordinator_own_later_review_does_not_expire_the_dossier():
 
 
 def test_coordinator_review_with_reserve_marker_still_expires():
-    """#17039 acceptance CN2 : une review du coordinateur portant un marqueur
-    de reserve (CHANGES_REQUESTED, glyphe, **BLOCKED**) PERIME le dossier,
-    meme si elle contient aussi un mot de levee en narration.
+    """#17039 acceptance CN2 (refactor #17693) : une review du coordinateur
+    qui POSE une reserve vivante perime le dossier, meme si elle contient
+    aussi un mot de levee en narration.
 
-    Le contrat : un reviewer (humain ou bot) qui EMET un marqueur de
-    reserve cree une surface nouvelle que l'adjoint n'a pas lue. La
-    neutralisation par _is_own_later_act ne s'applique pas, le dossier
-    perime. C'est l'acceptance 1 + 2 de #17039.
+    Le contrat : un reviewer (humain ou bot) qui EMET un verdict formel
+    SUIVI d'une mention concrete cree une surface nouvelle que l'adjoint
+    n'a pas lue. La neutralisation par _is_own_later_act ne s'applique pas,
+    le dossier perime. Le predicat de "verdict vivant" est maintenant
+    delegue a ``check_unaddressed_nits.classify`` (meme semantique que
+    B.0, encagement inclus), au lieu d'une liste de tokens en dur.
+
+    Cas choisis : un verdict formel precede d'une mention concrete
+    ("trouve corrige", "trou", "nit serre") qui resiste a l'encagement du
+    narrateur de levee autour. Ces phrases illustrent le cas mixte de
+    l'acceptance 2 -- l'EMISSION d'un verdict nu survit a la narration
+    d'une levee AVANT ou APRES.
     """
-    for marker in ("CHANGES_REQUESTED", "REQUEST_CHANGES", "COMMENT_WITH_CONCERNS", "🟡", "🔴", "**BLOCKED**", "BLOCKED  PR"):
+    # Chaque corps : un verdict formel precede d'une mention concrete.
+    # La narration de levee QUI SUIT ne neutralise pas l'emission (test
+    # fondateur #17693 -- le predicat n'absorbe pas une reserve emise en
+    # amont, meme si le reviewer dit "je leve plus tard").
+    cases = [
+        ("**CHANGES_REQUESTED** : trouver corrigé puis je leve.", "CHANGES_REQUESTED"),
+        ("**BLOCKED** par vérif head ne passe pas, lever sera quand corrigé.", "**BLOCKED**"),
+        ("🟡 nit serré sur la sortie, plus de reserve.", "🟡"),
+        ("🔴 run red, je laisse pour plus tard.", "🔴"),
+        ("COMMENT_WITH_CONCERNS je vois un soucis.", "COMMENT_WITH_CONCERNS"),
+    ]
+    for body, marker_label in cases:
         base = _stamped_snapshot("")
         base["comments"].pop()
         snapshot = _stamped_snapshot(_dossier_for(base))
@@ -644,28 +663,93 @@ def test_coordinator_review_with_reserve_marker_still_expires():
                 "state": "COMMENTED",
                 "author": {"login": mod.COORDINATOR_LOGIN},
                 "submittedAt": T1,
-                "body": f"[Hermes] {marker} -- je leve ma propre reserve (mais le marqueur reste emis).",
+                "body": body,
             }
         )
         # Le marqueur de reserve emis par le coordinateur post-dossier doit
         # perimer le dossier : _is_own_later_act refuse la neutralisation
         # (row_kind="review" + _review_body_has_reserve_marker -> True).
         errors = _errors(snapshot)
-        assert any("discussion surfaces changed" in e for e in errors), marker
+        assert any("discussion surfaces changed" in e for e in errors), (marker_label, body, errors)
+
+
+def test_caged_verdict_stays_neutral_but_naked_verdict_expires():
+    """Test de controle demande par ai-01 (revue #5309199712 sur #17693) :
+    la MEME phrase, encagee vs nue, change la decision.
+
+    Cas fondateur : le commentaire de levee de ai-01 sur #17693 nommait
+    `COMMENT_WITH_CONCERNS` encage (forme sure prescrite par
+    ``pr-review-discipline.md`` -- "repondre a une reserve"). L'ancien
+    predicat (recherche `in` sur tokens en dur) perimait le dossier sur
+    cette forme : le geste qui DEBLOQUE la PR cree un nit de plus a son
+    propre nom, regime absorbant #17071.
+
+    La centralisation via ``classify`` ferme la boucle : verdict encage =
+    neutre, token nu = dossier perime. Meme phrase, deux issues.
+    """
+    # Meme phrase, encagee (neutre, le dossier survit) et nue (BOT-CONCERN,
+    # dossier perime). On utilise un cas qui n'a pas d'ouverture "leve"/"override"
+    # au cas ou B.0 neutraliserait trop vite.
+    pairs = [
+        # Cas Hermes CHANGES_REQUESTED
+        ("Sur le head frais, `CHANGES_REQUESTED` se confirme : raise exception capturee.",
+         "Sur le head frais, CHANGES_REQUESTED se confirme : raise exception capturee."),
+        # Cas REQUEST_CHANGES
+        ("Le preflight `REQUEST_CHANGES` est valide au head.",
+         "Le preflight REQUEST_CHANGES est valide au head."),
+        # Cas glyphe (encage vs nu -- le glyphe est un caractere unicode,
+        # l'encagement revient aux backticks autour du token si texte)
+        ("Constat : `🟡` puis levee plus tard.",
+         "Constat : 🟡 puis levee plus tard."),
+    ]
+    for caged, naked in pairs:
+        # ---- Variante encagee : NE perime PAS ----
+        base = _stamped_snapshot("")
+        base["comments"].pop()
+        snapshot = _stamped_snapshot(_dossier_for(base))
+        snapshot["reviews"].append({
+            "state": "COMMENTED",
+            "author": {"login": mod.COORDINATOR_LOGIN},
+            "submittedAt": T1,
+            "body": caged,
+        })
+        verdict, errors = mod.evaluate(snapshot)
+        assert verdict == mod.VERDICT_READY, ("caged should be neutral", caged, errors)
+
+        # ---- Variante nue (meme phrase, sans les backticks) : PERIME ----
+        base = _stamped_snapshot("")
+        base["comments"].pop()
+        snapshot = _stamped_snapshot(_dossier_for(base))
+        snapshot["reviews"].append({
+            "state": "COMMENTED",
+            "author": {"login": mod.COORDINATOR_LOGIN},
+            "submittedAt": T1,
+            "body": naked,
+        })
+        errors = _errors(snapshot)
+        assert any("discussion surfaces changed" in e for e in errors), ("naked should expire", naked, errors)
 
 
 def test_coordinator_review_with_pure_lift_does_not_expire():
-    """#17039 acceptance CN3 : une review de LEVEE pure (aucun marqueur de
-    reserve, ni verdict hermes ni glyphe ni **BLOCKED**) ne perime pas.
+    """#17039 acceptance CN3 (refactor #17693) : une review de LEVEE pure
+    ne perime pas, et le predicat reste coherente avec B.0.
 
     C'est le scenario fondateur du fix : ai-01 leve une reserve Hermes
     via une review sans poser de reserve neuve, et le dossier reste
-    integre pour permettre le merge dans la meme passe.
+    integre pour permettre le merge dans la meme passe. Le predicat est
+    maintenant ``check_unaddressed_nits.classify`` : chaque cas ci-dessous
+    est verifie NEUTRE par classify avant l'integration au test (les
+    phrases qui ne le sont pas en sont exclues -- "plus de blocage" tout
+    seul est lu comme un constat de blocage par classify et reste
+    correctement hors de CN3).
     """
     for body in (
         "[OVERRIDE] lane myia-ai-01:CoursIA -- Je leve la reserve Hermes.",
         "Override : reserve levee au head exact.",
-        "Re-mesure a fresh head, plus de blocage.",
+        "Re-mesure au head frais, la reserve Hermes est levee.",
+        "Au head frais verifie je leve la reserve.",
+        "Approuve : la reserve est levee au head exact.",
+        "LGTM au head exact.",
     ):
         base = _stamped_snapshot("")
         base["comments"].pop()
