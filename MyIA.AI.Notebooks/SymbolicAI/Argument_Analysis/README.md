@@ -385,7 +385,7 @@ Lecture `CATALOG-STATUS` byte-identique (l. 3-8) : la valeur canonique `pedagogi
 
 Là où Planners (cycle 29) est le carrefour **simulation/proof intra-série** (Python ⇄ Lean 4 sur l'admissibilité d'heuristique, cycle 29) et SmartContracts (cycle 30) est le carrefour **trust/privacy inter-séries** (confiance + confidentialité + décision collective), Argument_Analysis est le carrefour **informel/formel anti-théâtre inter-couches** : la **lecture de texte** (couche LLM, floue/contextuelle), la **formalisation logique** (couche PL/FOL/Modal, médium), et la **vérification formelle** (couche Tweety/Lean, tranchante/certaine) doivent collaborer SANS que l'une simule ce que l'autre fait réellement. Cette doctrine — incarnée par `Restitution_3_Actes` (scaffold déterministe + LLM *gated*), `Multi_Backend_Routing` (sentinelle « décider ou échouer bruyamment »), `Formal_Richness_Matrix` (4 classes de verdict anti-théâtre), et le mode fail-loud de `05` — est **la doctrine anti-théâtre du dépôt** : aucun notebook ne fait passer une simulation pour un résultat, aucune sortie n'est maquée pour embellir un échec.
 
-La série — 34 notebooks sur disque, 28 au catalogue canonique — aligne l'évolution paradigmatique de l'argumentation computationnelle (1995 Dung AF → 2019 framework hybrides LLM + solveur) sur la **frontière de vérifiabilité** (extraction brute → taxonomie → formalisation → validation SAT → restitution grounded). Chaque notebook est un maillon de la chaîne *lire → formaliser → vérifier → restituer honnêtement*.
+La série — tout notebook du répertoire, dont une part encore non cataloguée (rattrapage par le cron `catalog-cron.yml`) — aligne l'évolution paradigmatique de l'argumentation computationnelle (1995 Dung AF → 2019 framework hybrides LLM + solveur) sur la **frontière de vérifiabilité** (extraction brute → taxonomie → formalisation → validation SAT → restitution grounded). Chaque notebook est un maillon de la chaîne *lire → formaliser → vérifier → restituer honnêtement*.
 
 ## Conclusion / Prochaines étapes
 
@@ -575,7 +575,7 @@ sont des **ordres partiels** :
 
 La discussion c.1030 opposait « 14 notebooks annoncés » (adjoint) à « 15
 balisés » (auteur de la PR). La mesure de référence est le répertoire :
-**34 notebooks sur cette branche** au 2026-09-25 — les 33 de `main` (mesure
+celle de cette branche au 2026-09-25 — les 33 de `main` (mesure
 du 2026-09-23, cinq arrivées depuis le 2026-09-09 ayant porté l'arc 3 de 5
 à 9) plus `Gouvernance_Multi_Agents` apportée par la présente PR — dont
 **20 balisés** par les arcs (6 + 4 + 10, l'arc 3 accueillant la gouvernance
