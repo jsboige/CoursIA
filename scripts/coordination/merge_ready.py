@@ -66,8 +66,15 @@ Comportement :
   (``hold:<motif>``) AVANT tout appel gh. Fichier absent = aucune
   retenue ; fichier illisible ou ligne malformee -> exit 2 (on ne merge
   pas sans savoir ce qui est retenu).
+- Review : la disposition de review est CLASSEE a la tete que la ligne
+  declare (``approved-exact-head`` / ``approval-not-on-head`` /
+  ``no-approval``, point 1 de #17672) depuis les ``reviews`` de la meme
+  vue -- l'oid de review y figure, aucun appel supplementaire. Le
+  dossier hache cet oid sans le comparer a la tete ; c'est cette
+  comparaison qui manquait. Elle informe, elle ne bloque pas : le
+  dossier READY a la tete exacte reste le contrat d'entree.
 - Journal : une ligne JSON par PR evaluee (ts UTC en Z, pr, head,
-  verdict, reason, merged) dans
+  verdict, reason, merged, review) dans
   ``%LOCALAPPDATA%/CoursIA/merge_ready/journal.jsonl`` (surchargeable
   ``--journal``), plus un resume humain sur stdout ; ``--json`` pour la
   sortie machine.
@@ -103,6 +110,17 @@ if str(SCRIPTS_DIR) not in sys.path:
 from grain_tag import TIERS, parse_grain_tag  # noqa: E402
 import check_adjoint_prevalidation as gate  # noqa: E402
 
+# Le canon d'emission du verdict de review vit dans scripts/ci/ : le jeton de
+# review du cluster ne peut poster que des COMMENT (#16926), donc le verdict
+# reel s'ecrit ``VERDICT: <token>`` dans le CORPS de la voix. Importe, jamais
+# recopie -- une regex locale divergerait en silence du canon qui gouverne le
+# triage du pool.
+CI_DIR = SCRIPTS_DIR / "ci"
+if str(CI_DIR) not in sys.path:
+    sys.path.insert(0, str(CI_DIR))
+
+import pool_review_verdicts as review_canon  # noqa: E402
+
 REPO = "jsboige/CoursIA"
 COORDINATOR_USER = "myia-ai-01"
 GATE_PATH = SCRIPTS_DIR / "check_adjoint_prevalidation.py"
@@ -130,6 +148,31 @@ FROZEN_BRANCH_PREFIXES = {"wt/vibe-": "13410"}
 GATE_DOCUMENTED_RC = frozenset({0, 1, 2, 3})  # ready / no-dossier / unknown / blocked
 GATE_RC_REASONS = {1: "gate:no-dossier", 2: "gate:unknown", 3: "gate:blocked"}
 NITS_DOCUMENTED_RC = frozenset({0, 1})  # clear / blocked
+
+# --- disposition de review classsee a la tete evaluee (point 1 de #17672) ------
+# Le dossier HACHE l'oid de chaque review dans son empreinte
+# (``check_adjoint_prevalidation._fingerprint_payload``) sans le CLASSER : rien
+# ne dit si l'approbation porte sur le commit qui va etre merge. Trois etats,
+# toujours lus a la tete que la ligne de journal declare :
+#   ``approved-exact-head``  une voix approbatrice gouverne CETTE tete ;
+#   ``approval-not-on-head`` une approbation existe dans la fenetre lue, mais
+#                            elle ne couvre pas la tete evaluee (tete avancee
+#                            depuis l'approbation, ou voix posterieure qui n'approuve
+#                            pas) ;
+#   ``no-approval``          aucune approbation lue.
+# Les deux surfaces du canon sont lues : l'etat REEL de l'API (APPROVED, quand un
+# humain review) et le verdict type du CORPS en COMMENT -- la seule surface dont
+# dispose le jeton du cluster. Lire la seule premiere classerait « sans
+# approbation » des PR revues, le faux compte que #16926 a deja puni deux fois.
+APPROVED_EXACT_HEAD = "approved-exact-head"
+APPROVAL_NOT_ON_HEAD = "approval-not-on-head"
+NO_APPROVAL = "no-approval"
+NOT_EVALUATED = "not-evaluated"  # ligne d'un run interrompu avant evaluation
+
+#: Ce qui vaut approbation : l'etat REEL ``APPROVED``, ou le verdict type
+#: ``LGTM`` emis en corps de voix (``VERDICT_RE`` du canon ne type que LGTM et
+#: CONCERNS -- les deux etats reels suffisent au reste).
+APPROVING_VOICES = frozenset({"APPROVED", "LGTM"})
 
 MAX_MERGES_DEFAULT = 15
 PR_LIST_LIMIT = 500  # le pool ouvert mesure ~220 PRs ; au-dela, ordre ancien d'abord
@@ -202,6 +245,9 @@ class PRVerdict:
     verdict: str  # skipped | would-merge | merged | merge-failed | run-error
     reason: str | None
     merged: bool
+    #: Disposition de review classee a ``head`` (point 1 de #17672) ; une ligne
+    #: ecrite avant evaluation (erreur inattendue) porte ``not-evaluated``.
+    review: str = NOT_EVALUATED
 
     def journal_dict(self) -> dict:
         return {
@@ -211,6 +257,7 @@ class PRVerdict:
             "verdict": self.verdict,
             "reason": self.reason,
             "merged": self.merged,
+            "review": self.review,
         }
 
 
@@ -393,11 +440,18 @@ def list_open_prs(runner: Runner, gh_env: dict[str, str]) -> list[int]:
     return numbers
 
 
-PR_VIEW_FIELDS = "number,title,isDraft,body,headRefName,headRefOid,files,changedFiles,comments"
+#: ``reviews`` est lu par la MEME commande que le reste : la disposition de
+#: review se classe sans appel supplementaire (l'oid de review y figure, mesure
+#: du 2026-09-25 : ``gh pr view --json reviews`` rend ``commit.oid``).
+PR_VIEW_FIELDS = (
+    "number,title,isDraft,body,headRefName,headRefOid,files,changedFiles,"
+    "comments,reviews"
+)
 
 
 def fetch_pr_view(runner: Runner, pr: int, gh_env: dict[str, str]) -> dict:
-    """Une vue par PR : brouillon, body (tag Grain), tete, fichiers, commentaires."""
+    """Une vue par PR : brouillon, body (tag Grain), tete, fichiers, commentaires,
+    reviews (disposition de review classee a la tete, point 1 de #17672)."""
     res = runner.run(
         ["gh", "pr", "view", str(pr), "--repo", REPO, "--json", PR_VIEW_FIELDS],
         env=gh_env,
@@ -410,6 +464,49 @@ def fetch_pr_view(runner: Runner, pr: int, gh_env: dict[str, str]) -> dict:
     if not isinstance(view, dict):
         raise UnexpectedError(f"gh pr view {pr} : la reponse n'est pas un objet")
     return view
+
+
+def _review_voice_state(review: dict) -> str | None:
+    """L'etat REEL d'une review, ou le verdict type de son corps (canal COMMENT).
+
+    Meme lecture a deux surfaces que le canon (``REAL_STATES`` puis
+    ``VERDICT_RE``), pour la meme raison : le jeton du cluster ne peut poster que
+    des COMMENT, son verdict vit donc dans le corps (#16926). Une voix sans
+    verdict type n'est pas une approbation -- un commentaire de lane, de CI ou
+    un ``COMMENTED`` muet ne dit rien de la disposition.
+    """
+    state = str(review.get("state") or "")
+    if state in review_canon.REAL_STATES:
+        return state
+    match = review_canon.VERDICT_RE.search(str(review.get("body") or ""))
+    return match.group(1) if match else None
+
+
+def review_disposition(view: dict, head: str) -> str:
+    """La disposition de review, CLASSEE a la tete evaluee (point 1 de #17672).
+
+    La tete gouverne : une approbation posee sur un commit anterieur ne couvre
+    pas le commit qui va etre merge, et c'est cette difference que le dossier
+    n'exprime pas (il hache l'oid de review sans le comparer). La voix qui
+    gouverne une tete est la PLUS RECENTE des voix posees sur cette tete
+    (latest-wins, la discipline du canon) : une approbation suivie, sur la meme
+    tete, d'une voix qui n'approuve pas, n'est plus une approbation.
+
+    Fonction pure : la vue est deja fetchee, aucun appel supplementaire.
+    """
+    reviews = [row for row in (view.get("reviews") or []) if isinstance(row, dict)]
+    at_head = [
+        row
+        for row in reviews
+        if str(((row.get("commit") or {}).get("oid")) or "") == head
+    ]
+    if at_head:
+        latest = max(at_head, key=lambda row: str(row.get("submittedAt") or ""))
+        if _review_voice_state(latest) in APPROVING_VOICES:
+            return APPROVED_EXACT_HEAD
+    if any(_review_voice_state(row) in APPROVING_VOICES for row in reviews):
+        return APPROVAL_NOT_ON_HEAD
+    return NO_APPROVAL
 
 
 def precheck_dossier(view: dict) -> str | None:
@@ -589,10 +686,18 @@ def evaluate_pr(
     Les controles bon marche (brouillon, commentaire, perimetre, tag) passent
     AVANT le gate couteux ; le gate avant les organes B.0 ; le REST en
     dernier, juste avant le merge, pour minimiser la fenetre de course.
+
+    La disposition de review (point 1 de #17672) est classee pour TOUTE PR
+    evaluee, skip compris, et reportee a la tete que la ligne declare : la tete
+    de la vue pour un skip, la tete du gate pour un would-merge -- celle que le
+    merge epingle, l'etape 6 ayant deja refuse une tete qui a bouge depuis.
     """
 
+    view_head = str(view.get("headRefOid") or "")
+    disposition = review_disposition(view, view_head)
+
     def skip(reason: str) -> PRVerdict:
-        return PRVerdict(pr, str(view.get("headRefOid") or ""), "skipped", reason, False)
+        return PRVerdict(pr, view_head, "skipped", reason, False, disposition)
 
     # 1. prefiltre bon marche.
     if view.get("isDraft"):
@@ -638,7 +743,9 @@ def evaluate_pr(
         return skip(f"mergeable-state:{state or 'absent'}")
     if live_head != gate_head:
         return skip("head-moved")
-    return PRVerdict(pr, gate_head, "would-merge", None, False)
+    return PRVerdict(
+        pr, gate_head, "would-merge", None, False, review_disposition(view, gate_head)
+    )
 
 
 # --- journal -------------------------------------------------------------------
@@ -659,9 +766,12 @@ def append_journal(path: Path, verdict: PRVerdict) -> None:
 
 def _describe(verdict: PRVerdict) -> str:
     if verdict.verdict == "merged":
-        return f"PR #{verdict.pr} MERGED ({verdict.head})"
+        return f"PR #{verdict.pr} MERGED ({verdict.head}) [review: {verdict.review}]"
     if verdict.verdict == "would-merge":
-        return f"PR #{verdict.pr} WOULD MERGE ({verdict.head}) [dry-run]"
+        return (
+            f"PR #{verdict.pr} WOULD MERGE ({verdict.head}) [dry-run] "
+            f"[review: {verdict.review}]"
+        )
     if verdict.verdict == "merge-failed":
         return f"PR #{verdict.pr} MERGE ECHOUE : {verdict.reason}"
     if verdict.verdict == "run-error":
@@ -693,9 +803,20 @@ def emit_output(
     merged = sum(1 for v in results if v.merged)
     would = sum(1 for v in results if v.verdict == "would-merge")
     skipped = sum(1 for v in results if v.verdict == "skipped")
+    # La disposition de review ne se compte que sur les candidates au merge :
+    # c'est la que « approbation a la tete exacte » ou « ailleurs » decide.
+    candidates = [v for v in results if v.verdict in ("merged", "would-merge")]
+    at_head = sum(1 for v in candidates if v.review == APPROVED_EXACT_HEAD)
+    off_head = sum(1 for v in candidates if v.review == APPROVAL_NOT_ON_HEAD)
     print(
         f"bilan : {len(results)} evaluee(s), {merged} merge(s), "
         f"{would} would-merge, {skipped} skip(s)"
+        + (
+            f", candidates : {at_head} approved-exact-head, "
+            f"{off_head} approval-not-on-head"
+            if candidates
+            else ""
+        )
     )
     if stopped_reason:
         print(f"arret : {stopped_reason}")
@@ -761,14 +882,17 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
                         merge_pr(active_runner, pr, decision.head or "", gh_env)
                     except MergeFailedError as exc:
                         failed = PRVerdict(
-                            pr, decision.head, "merge-failed", str(exc), False
+                            pr, decision.head, "merge-failed", str(exc), False,
+                            decision.review,
                         )
                         results.append(failed)
                         append_journal(journal_path, failed)
                         stopped_reason = f"merge-failed:PR-{pr}"
                         exit_code = 1
                         break
-                    decision = PRVerdict(pr, decision.head, "merged", None, True)
+                    decision = PRVerdict(
+                        pr, decision.head, "merged", None, True, decision.review
+                    )
                 merged_count += 1
             results.append(decision)
             append_journal(journal_path, decision)
