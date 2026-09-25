@@ -92,6 +92,14 @@ Une sous-section par palier qui porte des lettres, dans l'ordre des numeros :
 | 02b | [Titre](Serie-02b-X.ipynb) | Ce que la lettre apporte au palier | Notebooks ou notions a connaitre en plus | Licence |
 ```
 
+#### Formalisations Lean (lakes) : jamais une etape du parcours
+
+Un lake Lean n'est ni un numero ni une lettre : c'est l'outillage d'un notebook. Le lecteur du parcours principal ne doit jamais le croiser.
+
+- La table du parcours principal ne nomme **aucun** lake.
+- Un lake apparait d'abord dans l'approfondissement du notebook qui le consomme (colonne « Ce qu'il ajoute » ou « Prerequis en plus »).
+- Il apparait ensuite dans **une seule** section « Formalisations Lean », placee sous « Pour aller plus loin ». Cette section renvoie a l'inventaire `LEAN_INVENTORY.md` de la serie quand il existe, et ne le recopie pas.
+
 #### Descriptions detaillees (optionnelles)
 
 Si le README en porte, elles suivent le meme ordre : numeros nus d'abord, puis les approfondissements par palier. Format par notebook : titre, kernel, prerequis, contenu, concepts cles.
@@ -118,6 +126,8 @@ Paragraphe d'ouverture (niveau Decouverte) : ce que la serie enseigne, a qui, av
 
 ## Comment lire ce README
 
+Ce README suit le principe des parcours a plusieurs vitesses du depot ([choisir sa vitesse de lecture](<chemin-relatif-vers-la-racine>/README.md#choisir-sa-vitesse-de-lecture)).
+
 - Vous decouvrez le sujet : lisez le **Parcours principal**, dans l'ordre des numeros.
 - Vous voulez creuser un palier : ouvrez sa section dans **Approfondissements**.
 - Vous cherchez la recherche en cours : **Sous-series** et **Pour aller plus loin**.
@@ -140,7 +150,7 @@ Paragraphe d'ouverture (niveau Decouverte) : ce que la serie enseigne, a qui, av
 
 ## Pour aller plus loin
 
-(Niveau Recherche : notes techniques, statut de maturite, formalisations, references pointues.)
+(Niveau Recherche : notes techniques, statut de maturite, references pointues. Les lakes Lean y ont leur unique section « Formalisations Lean ».)
 
 ## Ressources
 
@@ -155,6 +165,8 @@ Paragraphe d'ouverture (niveau Decouverte) : ce que la serie enseigne, a qui, av
 - [ ] Tous les notebooks sont listes dans au moins un tableau
 - [ ] La table du parcours principal ne contient que des numeros nus ; chaque lettre du dossier figure sous « Approfondissements »
 - [ ] Chaque section porte son niveau de lecture, et la matiere de niveau Recherche est placee apres le parcours principal
+- [ ] « Comment lire ce README » s'ouvre sur le rappel du principe, avec le lien vers la section racine `#choisir-sa-vitesse-de-lecture`
+- [ ] Aucun lake Lean dans la table du parcours principal ; les lakes sont presentes sous l'approfondissement qui les consomme et dans la seule section « Formalisations Lean »
 - [ ] Les liens vers les notebooks sont corrects (format: `texte` + `(chemin.ipynb)`)
 - [ ] Les durees estimees sont coherentes
 - [ ] Les kernels sont correctement identifies
