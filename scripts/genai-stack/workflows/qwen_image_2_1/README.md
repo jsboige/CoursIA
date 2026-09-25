@@ -18,23 +18,36 @@ Analyse mécanique (`cnr_id` + type par nœud) — `core` = nœud natif ComfyUI 
 
 | Workflow | Nœuds non-core ou nouveaux | Exécutable sur l'instance ? |
 |---|---|---|
-| `text2image` | — (100 % core) | oui, architecture identique à 01-5b |
-| `text2image_rgba` | — (100 % core, VAE alpha) | oui (variante sortie RGBA) |
-| `ref2image` | `TextEncodeQwenImage21`, `LoadImage` | à valider : `TextEncodeQwenImage21` exige un core ≥ version supportant Qwen-Image 2.1 |
-| `image_edit` | `TextEncodeQwenImage21`, `GetImageSize`, `ResizeImageMaskNode` | à valider (idem + nœuds utilitaires) |
-| `image_edit_local` | idem `image_edit` | à valider |
-| `image_edit_local_mask` | idem + `MaskToImage`, `PreviewImage` | à valider |
+| `text2image` | — (100 % core) | bloqué : le VAE 2.1 est routé en classe WanVAE (erreur mesurée, voir « État mesuré ») |
+| `text2image_rgba` | — (100 % core, VAE alpha) | bloqué (idem) |
+| `ref2image` | `TextEncodeQwenImage21`, `LoadImage` | bloqué : `TextEncodeQwenImage21` absent de `/object_info` (mesuré) |
+| `image_edit` | `TextEncodeQwenImage21`, `GetImageSize`, `ResizeImageMaskNode` | bloqué (idem) |
+| `image_edit_local` | idem `image_edit` | bloqué (idem) |
+| `image_edit_local_mask` | idem + `MaskToImage`, `PreviewImage` | bloqué (idem) |
 | `image_edit_openpose` | idem + `OpenposePreprocessor` (pack controlnet_aux) | non sans custom node |
-| `image_edit_upscale` | idem `image_edit` | à valider |
-| `outpainting` | `TextEncodeQwenImage21`, `LoadImage` | à valider |
-| `panorama` | idem + `PanoramaPreview` | à valider |
-| `subject_extraction` | idem `image_edit` | à valider |
+| `image_edit_upscale` | idem `image_edit` | bloqué (idem) |
+| `outpainting` | `TextEncodeQwenImage21`, `LoadImage` | bloqué (idem) |
+| `panorama` | idem + `PanoramaPreview` | bloqué (idem) |
+| `subject_extraction` | idem `image_edit` | bloqué (idem) |
 | `layer_decomposition` | `ComfyMath*`, `Switch`, boucles, `TextGenerate`, subgraph | non sans custom nodes (ComfyMath, Logic Utils) |
 
-La colonne « à valider » se tranche par `GET /object_info` sur l'instance
-(chaque nom de la colonne doit y figurer). Les workflows 100 % core
-(`text2image`, `text2image_rgba`) s'exécutent sur le même ensemble de nœuds
-que les notebooks Qwen-Image-Edit existants (`01-5`, `01-5b`).
+### État mesuré (2026-09-25, instance `comfyui-qwen`)
+
+Le support natif de Qwen-Image 2.1 (nœud `TextEncodeQwenImage21`, détection
+du VAE via `modelspec.architecture: qwen_image_2.1_vae`) a été ajouté à
+l'éditeur dans la version 0.37.0. L'instance hébergeant le palier INT8 tourne
+en 0.36.0 : mesure firsthand —
+
+- `POST /prompt` du workflow `text2image` : validation acceptée, puis erreur
+  d'exécution au `VAELoader` (`size mismatch for WanVAE`, conv 4D du
+  checkpoint contre conv 5D vidéo attendue) — le routeur de classe VAE de
+  0.36.0 ne connaît pas `qwen_image_2.1_vae` ;
+- `GET /object_info` : `TextEncodeQwenImage21` absent.
+
+Débloquer la série entière = mettre à jour le service vers 0.37.0 ou plus
+récent, puis redémarrer. Les workflows 100 % core redeviennent alors
+exécutables sur le même ensemble de nœuds que les notebooks Qwen-Image-Edit
+existants (`01-5`, `01-5b`).
 
 ## Réglages de référence (extraits des JSON)
 
