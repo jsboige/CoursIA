@@ -119,7 +119,9 @@ def coverage(runs: Mapping[tuple[str, str], dict]) -> dict:
         "artifacts": files,
         "count": len(files),
         "models": models,
-        "steps": sorted({artifact.get("steps") for artifact in runs.values()}),
+        "steps": sorted(
+            {artifact.get("steps") for artifact in runs.values() if artifact.get("steps")}
+        ),
         "note": "aucune serie implicite : seuls les artefacts listes sont stratifies",
     }
 
@@ -128,7 +130,11 @@ def coverage(runs: Mapping[tuple[str, str], dict]) -> dict:
 
 
 def seed_map(artifact: Mapping, metric: str) -> dict[int, float]:
-    """Valeurs par graine, ordonnees par numero de graine."""
+    """Valeurs par graine, ordonnees par numero de graine.
+
+    Une graine dupliquee leve : elle s'ecraserait en silence, et le refus
+    n°2 verrait alors des jeux de graines coherents en apparence.
+    """
     try:
         rows = artifact["seeds"]
     except (KeyError, TypeError) as exc:  # pragma: no cover - artefact malforme
@@ -140,6 +146,10 @@ def seed_map(artifact: Mapping, metric: str) -> dict[int, float]:
                 f"graine {row.get('seed')} sans la grandeur {metric!r}"
             )
         values[int(row["seed"])] = float(row[metric])
+    if len(values) != len(rows):
+        raise StratificationError(
+            f"graine dupliquee : {len(rows)} enregistrements pour {len(values)} graines"
+        )
     if not values:
         raise StratificationError(f"aucune graine pour la grandeur {metric!r}")
     return values

@@ -15,6 +15,9 @@ Ce que ces tests protegent, dans l'ordre du module :
 6. **Une taille declaree sans artefact sort en ``provisional``** avec sa raison.
 7. **Les nombres publies par la matrice sont reproduits** -- le controle de
    falsifiabilite porte sur les artefacts reels committes dans ``runs/``.
+8. **Un artefact malforme ne fausse pas la mesure** -- un artefact sans clef
+   ``steps`` ne casse pas la couverture, et une graine dupliquee leve au lieu
+   de s'ecraser en silence sous l'appariement.
 
 numpy non requis : statistiques standard + pytest, CPU uniquement.
 """
@@ -33,6 +36,7 @@ from ict.stratification import (
     PUBLISHED_HACK_LATE_SLOPE,
     StratificationError,
     control_published,
+    coverage,
     load_runs,
     locate_crossover,
     paired_delta,
@@ -100,6 +104,20 @@ def test_paired_delta_refuses_unpaired_seed_sets(tmp_path):
     )
     with pytest.raises(StratificationError, match="non appariees"):
         paired_delta(load_runs(runs_dir), LATE, "7B")
+
+
+def test_seed_map_refuses_a_duplicated_seed(tmp_path):
+    """Une graine dupliquee s'ecraserait en silence et tromperait le refus n°2.
+
+    Sans ce garde, un artefact de 4 enregistrements pour 3 graines rend un jeu
+    de graines d'apparence coherente : l'appariement ``Np - N`` comparerait
+    alors une graine a elle-meme sans que rien ne le signale.
+    """
+    path = write_artifact(tmp_path, "N", "7B", {0: 0.4, 1: 0.5, 42: 0.6})
+    artifact = json.loads(path.read_text(encoding="utf-8"))
+    artifact["seeds"].append(dict(artifact["seeds"][0]))
+    with pytest.raises(StratificationError, match="dupliquee"):
+        seed_map(artifact, LATE)
 
 
 def test_paired_delta_is_per_seed_and_reports_signs(tmp_path):
@@ -269,3 +287,23 @@ def test_published_slope_matches_the_committed_artifacts():
     for size, published in PUBLISHED_HACK_LATE_SLOPE.items():
         computed = size_row(runs, LATE, size)["arms"]["N"]["mean"]
         assert computed == pytest.approx(published, abs=5e-4), size
+
+
+# --- 8. artefact malforme ---------------------------------------------------
+
+
+def test_coverage_survives_an_artifact_without_steps(tmp_path):
+    """Le tri des ``steps`` filtre les clefs absentes, comme celui des modeles.
+
+    Sans le filtre, un artefact sans clef ``steps`` mettait ``None`` dans
+    l'ensemble et ``sorted`` levait un ``TypeError`` : la couverture tombait sur
+    un artefact malforme au lieu de rapporter ce qu'elle couvre.
+    """
+    runs_dir = build(tmp_path, {"7B": {"N": {0: 0.4}, "Np": {0: 0.5}}})
+    stripped = runs_dir / "ict25a_Np_7B.json"
+    artifact = json.loads(stripped.read_text(encoding="utf-8"))
+    del artifact["steps"]
+    stripped.write_text(json.dumps(artifact), encoding="utf-8")
+    report = coverage(load_runs(runs_dir))
+    assert report["count"] == 2
+    assert report["steps"] == [120]
