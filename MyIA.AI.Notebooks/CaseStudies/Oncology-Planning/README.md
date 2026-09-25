@@ -191,4 +191,3 @@ Ce sujet a été conçu pour combiner :
 - Modèle Pyro (Définition) : 4 pts
 - Inférence & Décision : 4 pts
 - Qualité du code & Bonus : 2 pts
-# Trivial retrigger commit by myia-po-2026:CoursIA-2 to re-run the failing guard with the new body justifications.
