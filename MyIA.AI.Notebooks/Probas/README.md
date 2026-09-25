@@ -134,7 +134,7 @@ Suivez le même modèle dans les deux stacks pour comparer les approches :
 | Crowdsourcing | Infer-13 | PyMC-13 | Worker models EP vs MCMC agrégation |
 | Séquences (HMM) | Infer-14 | PyMC-14 | Forward-backward exact (chaîne sans boucle) vs échantillonné |
 | Recommenders | Infer-15 | PyMC-15 | Factorisation bayésienne statique vs MCMC |
-| Debugging | Infer-2b | PyMC-6 | ShowFactorGraph vs trace plot diagnostics |
+| Debugging | Infer-2b | PyMC-02b | ShowFactorGraph vs trace plot diagnostics |
 | Causal Inference | Infer-5 | PyMC-5 | do-calculus message passing vs pm.do MCMC |
 | Modèles hiérarchiques | Infer-12 | PyMC-12 | Pooling partiel, shrinkage EP vs paramétrisation non-centrée NUTS (funnel) |
 
@@ -170,7 +170,7 @@ Si vous préférez Python au C#, commencez par **PyMC-01-Setup** (introduction s
 
 #### Parcours PyMC complet (31 notebooks, ~21h)
 
-Les notebooks PyMC portent les modèles Infer.NET en Python avec PyMC et l'échantillonnage NUTS : le corpus bayésien dans `PyMC/`, **numéroté 1:1 avec son jumeau Infer** — à deux asymétries près : le debugging vit côté Infer en accretion `Infer-2b` (le numéro 6 n'existe qu'en PyMC), et `Infer-20` (quotients et fibres) n'a pas de jumeau PyMC — (fondations 1-3 ; modèles classiques 4-13 dont l'inférence causale en 5 et les modèles hiérarchiques en 12 ; séquences 14, recommandation 15 et frontières 16-19 : processus gaussien épars, filtre de Kalman, change-point, analyse de survie), et le cœur de l'arc décision dans `DecisionTheory/DecPyMC/` (12 notebooks renumérotés 1-12, dont la jambe actuarielle 8-12). Ils constituent un excellent complément pour comparer les approches d'inférence (message passing vs MCMC) et rejoindre l'écosystème Python data science. La progression suit la même structure pédagogique en 3 phases que la série Infer.NET.
+Les notebooks PyMC portent les modèles Infer.NET en Python avec PyMC et l'échantillonnage NUTS : le corpus bayésien dans `PyMC/`, **numéroté 1:1 avec son jumeau Infer** — à une asymétrie près : `Infer-20` (quotients et fibres) n'a pas de jumeau PyMC (le debugging vit en accrétion `2b` des deux côtés) — (fondations 1-3 ; modèles classiques 4-13 dont l'inférence causale en 5 et les modèles hiérarchiques en 12 ; séquences 14, recommandation 15 et frontières 16-19 : processus gaussien épars, filtre de Kalman, change-point, analyse de survie), et le cœur de l'arc décision dans `DecisionTheory/DecPyMC/` (12 notebooks renumérotés 1-12, dont la jambe actuarielle 8-12). Ils constituent un excellent complément pour comparer les approches d'inférence (message passing vs MCMC) et rejoindre l'écosystème Python data science. La progression suit la même structure pédagogique en 3 phases que la série Infer.NET.
 
 ## Quel stack choisir ?
 
@@ -347,7 +347,7 @@ Les **28 notebooks Infer.NET C#** (corpus bayésien et accretions + 8 de l'arc d
 
 ## Série PyMC (19 corpus notebooks, Python + 12 extraits DecisionTheory/DecPyMC)
 
-Port Python des modèles Infer.NET, utilisant l'échantillonnage MCMC (NUTS) au lieu du message passing. Permet de comparer les deux approches d'inférence sur des modèles identiques. La série `PyMC/` suit la même numérotation linéaire 1-19 que la série Infer (asymétrie du debugging : PyMC-6 répond à l'accrétion Infer-2b ; `Infer-20`, kernel Python propre au dossier `Infer/`, n'a pas de jumeau) — fondations 1-3, modèles classiques 4-13 (réseaux bayésiens, inférence causale, debugging, IRT, TrueSkill, classification, sélection de modèles, topic models, modèles hiérarchiques, crowdsourcing), puis frontières 14-19 (séquences/HMM, recommandation, processus gaussien épars, filtre de Kalman, change-point, analyse de survie) ; l'apport pédagogique de chacun est détaillé dans le [tableau de la série PyMC](#série-pymc) ci-dessus. Le cœur de l'arc décision vit dans `DecisionTheory/DecPyMC/` (12 notebooks renumérotés 1-12, dont la jambe actuarielle 8-12).
+Port Python des modèles Infer.NET, utilisant l'échantillonnage MCMC (NUTS) au lieu du message passing. Permet de comparer les deux approches d'inférence sur des modèles identiques. La série `PyMC/` suit la même numérotation que la série Infer (le numéro 6 n'existe pas — le debugging vit en accrétion `PyMC-02b` jumelle de `Infer-2b` ; `Infer-20`, kernel Python propre au dossier `Infer/`, n'a pas de jumeau) — fondations 1-3, modèles classiques 4-13 (réseaux bayésiens, inférence causale, IRT, TrueSkill, classification, sélection de modèles, topic models, modèles hiérarchiques, crowdsourcing), puis frontières 14-19 (séquences/HMM, recommandation, processus gaussien épars, filtre de Kalman, change-point, analyse de survie) ; l'apport pédagogique de chacun est détaillé dans le [tableau de la série PyMC](#série-pymc) ci-dessus. Le cœur de l'arc décision vit dans `DecisionTheory/DecPyMC/` (12 notebooks renumérotés 1-12, dont la jambe actuarielle 8-12).
 
 ### Phase 1 — Fondations (notebooks 1-3, ~2h)
 
@@ -362,7 +362,7 @@ Port Python des modèles Infer.NET, utilisant l'échantillonnage MCMC (NUTS) au 
 | # | Notebook | Sujet |
 |---|----------|-------|
 | 4 | [PyMC-04-Bayesian-Networks](PyMC/PyMC-04-Bayesian-Networks.ipynb) | Réseaux bayésiens, CPTs |
-| 6 | [PyMC-06-Debugging](PyMC/PyMC-06-Debugging.ipynb) | Troubleshooting MCMC, diagnostics NUTS, bonnes pratiques |
+| 2b | [PyMC-02b-Debugging-Python](PyMC/PyMC-02b-Debugging-Python.ipynb) | Troubleshooting MCMC, diagnostics NUTS, bonnes pratiques |
 | 7 | [PyMC-07-Skills-IRT](PyMC/PyMC-07-Skills-IRT.ipynb) | Item Response Theory, modèles de compétences |
 | 8 | [PyMC-08-TrueSkill](PyMC/PyMC-08-TrueSkill.ipynb) | Classement, TrueSkill |
 | 9 | [PyMC-09-Classification](PyMC/PyMC-09-Classification.ipynb) | Classification bayésienne, calibration mesurée |
@@ -601,7 +601,7 @@ Chaque notebook de la série Probas utilise un **unique kernel** : `.NET (C#)` p
 
 - Augmentez `target_energy` et `adapt_delta` (défaut 0.8 → essai 0.95).
 - Vérifiez le `R-hat` (devrait être < 1.01 pour toutes les variables).
-- Consultez [PyMC-06-Debugging](PyMC/PyMC-06-Debugging.ipynb) pour des diagnostics détaillés (trace plots, effective sample size, tree depth).
+- Consultez [PyMC-02b-Debugging-Python](PyMC/PyMC-02b-Debugging-Python.ipynb) pour des diagnostics détaillés (trace plots, effective sample size, tree depth).
 
 ## Ressources
 
