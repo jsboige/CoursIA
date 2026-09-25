@@ -90,18 +90,38 @@ are the ones that survive measurement (see "criterion 1" below):
 
 Criterion 1 of the issue ("the number of source items without a trailing
 newline, last excluded, INCREASES") is REFUTED BY MEASUREMENT and is NOT
-implemented. That count is a property of the SERIALIZATION GRANULARITY, not
-of correctness: ``GenAI/Texte/21_LoRA_FineTuning.ipynb`` cell ``69b296cb``
-on ``main`` is serialized CHARACTER BY CHARACTER (``['#', ' ', 'P', ...]``,
-820 items), reports 802 unterminated items, and is perfectly healthy --
-``ast.parse`` yields 10 statements and its output is real. Repo-wide
-histogram over the 11 970 code cells of the 953 Python notebooks of ``main``:
-``{0: 11970, 1: 1, 802: 1}``. A detector whose firing depends on which tool
-serialized the cell would flag legitimate re-serializations, so the signal is
-dropped rather than shipped with a threshold -- and the fold cases it was
-meant to catch are already covered twice: a fold whose first line is CODE
-loses its syntax and is caught by the BLOCKING sibling above; a fold whose
-first line is a comment is caught here by EMPTIED.
+implemented as a count. That count is a property of the SERIALIZATION
+GRANULARITY, not of correctness: ``GenAI/Texte/21_LoRA_FineTuning.ipynb``
+cell ``69b296cb`` on ``main`` is serialized CHARACTER BY CHARACTER
+(``['#', ' ', 'P', ...]``, 820 items), reports 802 unterminated items,
+and is perfectly healthy -- ``ast.parse`` yields 10 statements and its
+output is real. Repo-wide histogram over the 11 970 code cells of the
+953 Python notebooks of ``main``: ``{0: 11970, 1: 1, 802: 1}``. A detector
+whose firing depends on which tool serialized the cell would flag
+legitimate re-serializations, so the COUNT is dropped rather than shipped
+with a threshold.
+
+Issue #17468 is the OTHER end of the same observation: the unterminated
+COUNT refutes criterion 1, but the DELTA between base and head does not
+refute it. The kernel-independent repair shape is a re-emission of items
+WITHOUT their trailing ``\n`` -- PR #16951 ``Lean-3-Propositions-Proofs``
+cell ``f7e3a1f8`` (base ``b53d7e0a40``, head ``3f8a1d6e6f``) loses 0 ->
+1467 items without ``\n``, nbformat joins them into ONE line, the cell
+becomes a single-line comment. VOLUME stays silent (chars pass through);
+STRUCTURE stays silent (Lean is not Python; the AST pass is off). The
+two mechanisms above already cover folds whose FIRST line is code or a
+comment, but a fold whose first line is a comment AND whose kernel is
+non-Python was structurally invisible: a Lean cell with a fold lives
+in the dead zone between VOLUME and STRUCTURE.
+
+The kernel-independent criterion fires on the DELTA of the unterminated
+count, with a floor (UNTERMINATED_DELTA_FLOOR = 4) calibrated against
+the ``main`` sweep: no healthy code cell carries more than 1
+unterminated item, so a delta >= 4 is the smallest value that excludes
+the legitimate single-line tail. The per-character serializer's 802
+unterminated items on base AND head yield a delta of 0 and stay silent;
+the founding shape's 1467 unterminated items on head and 0 on base
+yield a delta of 1467 and fire.
 
 Two measured traps shape the ORPHAN OUTPUT predicate, both found by sweeping
 ``main`` before writing it:
@@ -211,6 +231,20 @@ MIN_MOVED_LINE_CHARS = 4
 # output-side sibling (Sudoku-06 #15144 purged 21 CS8632 warnings).
 DIAGNOSTIC_LINE_FRACTION = 0.8
 
+# Kernel-independent collapse signal (#17468): the count of source items that
+# do NOT end with a newline, in a code cell's `source` LIST (not the joined
+# string), base vs head. A repair that re-emits items without their trailing
+# \n -- nbformat then joins the lines into ONE, turning the cell into a
+# single-line comment -- is the founding shape (PR #16951: 0 -> 1467 on
+# Lean-3). The criterion is the DELTA of that count, not the count itself:
+# a per-character serializer (`GenAI/Texte/21_LoRA_FineTuning.ipynb` cell
+# 69b296cb on main: 803 unterminated items, healthy) sees base == head and
+# stays silent. The threshold is calibrated against a sweep of main: no
+# healthy code cell has more than 1 unterminated item, so a delta >= 4 is
+# the smallest that excludes the legitimate single-line unterminated item.
+UNTERMINATED_DELTA_FLOOR = 4
+
+
 # Diagnostic-shaped lines (removed-text classification). CS#### is the C#
 # compiler; the warning family covers Python and both spellings of the French
 # "warning : CS####".
@@ -255,6 +289,26 @@ def _normalize(text):
 def _cell_chars(cell):
     """Source volume of one code cell, in characters."""
     return len(_cell_source(cell))
+
+
+def _unterminated_count(cell):
+    """Number of source items of a cell's `source` LIST that lack a trailing
+    newline. Returns 0 when ``source`` is a plain string (the serializer has
+    already collapsed it -- the test is then meaningless, which is exactly
+    why the criterion is a diff against the base).
+
+    The point is the serialization GRANULARITY of the head, not its content:
+    a `\\n`-terminated re-emission reads cleanly to nbformat; a non-terminated
+    one joins items into a single line whose first character wins as the cell
+    body. The founding case (#16951, head `c3f0630c8`) re-emitted 1467 items
+    without `\\n`, against a base of 0 -- the join collapsed the whole cell.
+    """
+    if not cell:
+        return 0
+    src = cell.get("source", "")
+    if not isinstance(src, list):
+        return 0
+    return sum(1 for s in src if not s.endswith("\n"))
 
 
 def _code_cells(nb):
@@ -412,7 +466,26 @@ def analyze(base_nb, head_nb):
             if b_body is not None and b_body > 0 and h_body == 0 and no_magic:
                 structural.append("emptied")
 
+        # KERNEL-INDEPENDENT source-collapse signal (#17468): the delta of the
+        # unterminated-item count on a code cell's `source` LIST. The founding
+        # shape (PR #16951 Lean-3) re-emits items WITHOUT their trailing `\n`,
+        # and nbformat joins them into one line -- a single-line comment cell
+        # is invisible to VOLUME (it can pass through unchanged in volume)
+        # and to STRUCTURE (a Python-less Lean cell never reaches the AST
+        # pass). The DELTA, not the count, discriminates a repair from a
+        # per-character serializer: `main`'s `21_LoRA_FineTuning.ipynb` cell
+        # `69b296cb` carries 803 unterminated items and stays healthy, so
+        # base == head and the criterion stays silent there. The threshold
+        # is calibrated against a sweep: no healthy code cell of `main` has
+        # more than 1 unterminated item, so a delta >= 4 is the smallest
+        # that excludes the legitimate single-line tail.
         signals = (["magnitude"] if volume is not None else []) + structural
+        b_unterm = _unterminated_count(b_cell) if b_cell is not None else 0
+        h_unterm = _unterminated_count(h_cell)
+        unterm_delta = h_unterm - b_unterm
+        if unterm_delta >= UNTERMINATED_DELTA_FLOOR:
+            signals.append("unterminated-items")
+
         if not signals:
             continue
 
@@ -433,9 +506,15 @@ def analyze(base_nb, head_nb):
         # the base->head RELATION: it therefore arbitrates only the
         # comparative signals. `orphan-output` claims something about the head
         # CELL alone (an asserted result no statement can produce) and is true
-        # whatever happened to the code, so it is never suppressed.
+        # whatever happened to the code, so it is never suppressed. The same
+        # logic holds for `unterminated-items` (#17468): it is a HEAD-side
+        # fact -- a list of items lacking a trailing `\n` -- that survives
+        # the base->head comparative exemption unchanged. Without this
+        # exemption carve-out, a moved-block rewrite would silence a real
+        # signal on the cell the move LEFT BEHIND.
         if exempt:
-            signals = [s for s in signals if s == "orphan-output"]
+            signals = [s for s in signals
+                       if s in ("orphan-output", "unterminated-items")]
 
         finding = {
             "cell": key, "base": b_chars, "head": h_chars,
@@ -446,10 +525,18 @@ def analyze(base_nb, head_nb):
             "moved_fraction": round(moved_frac, 2),
             "signals": signals,
             "base_body": b_body, "head_body": h_body,
+            "base_unterminated": b_unterm,
+            "head_unterminated": h_unterm,
+            "unterminated_delta": unterm_delta,
         }
-        finding["kind"] = exempt if not signals else (
-            "structure" if any(s in ("emptied", "orphan-output")
-                               for s in signals) else "magnitude")
+        if exempt:
+            finding["kind"] = exempt
+        elif any(s in ("emptied", "orphan-output") for s in signals):
+            finding["kind"] = "structure"
+        elif "unterminated-items" in signals and len(signals) == 1:
+            finding["kind"] = "unterminated"
+        else:
+            finding["kind"] = "magnitude"
         findings.append(finding)
 
     regressed = (not added) and any(
@@ -623,23 +710,94 @@ def self_test(cwd=None):
         failures.append("per-char serialization flagged (%d unterminated)"
                         % unterminated)
 
-    # 16. the moved exemption does NOT silence ORPHAN-OUTPUT: the block
-    #     reappears in cell "b", so EMPTIED is exempted, but cell "a" still
-    #     asserts a result no statement of its own can produce.
+    # 16. the moved exemption does NOT silence ORPHAN-OUTPUT or
+    #     UNTERMINATED-ITEMS: the block reappears in cell "b", so EMPTIED
+    #     is exempted; both orphan-output (cell-a asserts a result no
+    #     statement of its own produces) and unterminated-items (the fold
+    #     kept its per-line LIST shape without `\n`) survive because they
+    #     are HEAD-side facts, not comparative base->head relations. The
+    #     fixture mirrors the #16110 incident's LIST shape so the
+    #     unterminated signal actually fires -- unlike a string-source
+    #     variant which has nothing for `_unterminated_count` to count.
+    folded_lines = [s for s in moved_block.split("\n")]
     r = _analyze(
         [("a", moved_block), ("b", "court = 1")],
-        [("a", "# " + moved_block.replace("\n", ""), out_stream),
+        [("a", ["# "] + folded_lines, out_stream),
          ("b", moved_block)])
-    if not (r["cells"] and r["cells"][0]["kind"] == "structure"):
-        failures.append("orphan output silenced by the moved exemption")
-    elif r["cells"][0]["signals"] != ["orphan-output"]:
-        failures.append("emptied survived the moved exemption (%r)"
-                        % r["cells"][0]["signals"])
+    if not r["cells"]:
+        failures.append("orphan/unterminated silenced by the moved exemption")
+    else:
+        f0 = r["cells"][0]
+        sig = f0["signals"]
+        if "orphan-output" not in sig:
+            failures.append("orphan-output dropped by moved exemption (%r)"
+                            % sig)
+        if "unterminated-items" not in sig:
+            failures.append("unterminated-items dropped by moved exemption"
+                            " (%r)" % sig)
+        if f0["kind"] != "exempt-moved":
+            failures.append("moved exemption not applied (kind=%r)" % f0["kind"])
 
     # 17. an added notebook is still never judged, structural criteria
     #     included: the boundary is the notebook, not the signal.
     if _analyze([], [("a", "# rien\n", out_stream)], added=True)["cells"]:
         failures.append("added notebook judged by the structural pass")
+
+    # 18. KERNEL-INDEPENDENT signal (#17468) fires on the founding shape:
+    #     a re-emission of base items WITHOUT their trailing `\n`. nbformat
+    #     then joins the items into ONE line -- a single-line comment cell
+    #     is invisible to VOLUME (the char count passes through unchanged)
+    #     and to STRUCTURE (the source is non-Python; the AST pass is off).
+    #     The discriminant is the DELTA, not the count, so the per-character
+    #     refute at test #15 stays in force.
+    base_items = [s + "\n" for s in big.split("\n")]
+    head_items = [s for s in big.split("\n")]
+    r = _analyze([("a", base_items)], [("a", head_items)])
+    if not (r["cells"] and r["cells"][0]["kind"] == "unterminated"):
+        failures.append("kernel-independent founding case not flagged: %r"
+                        % [f["kind"] for f in r["cells"]])
+    else:
+        f0 = r["cells"][0]
+        if f0["signals"] != ["unterminated-items"]:
+            failures.append("kernel-independent founding case signals=%r"
+                            % f0["signals"])
+        if f0["head_unterminated"] - f0["base_unterminated"] < 4:
+            failures.append("kernel-independent founding case delta too small")
+    if not r["regressed"]:
+        failures.append("kernel-independent finding did not regress")
+
+    # 19. refute criterion 1 by DELTA, not by count (#17468): a per-character
+    #     rewrite of the SAME cell carries 800+ unterminated items, but base
+    #     and head see the same items -- the DELTA is 0, the criterion stays
+    #     silent. This is the discriminate from #16110's criterion 1 (count).
+    perchar = list(big)
+    if _analyze([("a", perchar)], [("a", perchar)])["cells"]:
+        failures.append("per-char rewrite flagged as unterminated")
+
+    # 20. a healthy base with a single unterminated item (the legitimate
+    #     last-line-of-cell shape) and a head with the same shape stays
+    #     silent: the delta is 0.
+    healthy_base = ["ligne_1 = 1\n", "ligne_2 = 2\n", "ligne_3 = 3"]
+    healthy_head = ["ligne_1 = 1\n", "ligne_2 = 2\n", "ligne_3 = 3"]
+    if _analyze([("a", healthy_base)], [("a", healthy_head)])["cells"]:
+        failures.append("healthy unterminated-1 cell flagged")
+
+    # 21. a delta strictly BELOW the floor stays silent (calibration pin):
+    #     three unterminated items picked up is below the measured floor of 4.
+    near = ["ligne_%d = %d\n" % (i, i) for i in range(10)]
+    near[5] = near[5][:-1]  # drop the \n on one item
+    near[6] = near[6][:-1]
+    near[7] = near[7][:-1]
+    # base has all 10 items properly terminated (0 unterminated); head has 3.
+    base_clean = [s for s in near]
+    head_drop = [s for s in near]
+    # construct a base where the same 3 items ARE terminated, leaving 0
+    base_clean[5] = base_clean[5] + "\n" if not base_clean[5].endswith("\n") else base_clean[5]
+    base_clean[6] = base_clean[6] + "\n" if not base_clean[6].endswith("\n") else base_clean[6]
+    base_clean[7] = base_clean[7] + "\n" if not base_clean[7].endswith("\n") else base_clean[7]
+    # head leaves the 3 items unterminated: delta = 3, below floor.
+    if _analyze([("a", base_clean)], [("a", head_drop)])["cells"]:
+        failures.append("delta=3 flagged (below floor of 4)")
 
     # Replay the founding case (#15901 / #15862): the organ MUST fire on the
     # cell that motivated it.
@@ -764,6 +922,13 @@ def main(argv=None):
                           + str(f["base_body"]) + " -> " + str(f["head_body"])
                           + ", " + str(f["base"]) + " -> " + str(f["head"])
                           + " chars (" + _format_delta(f) + ")")
+                elif f["kind"] == "unterminated":
+                    print("  UNTERMINATED: cell " + str(f["cell"])
+                          + " unterminated items "
+                          + str(f["base_unterminated"]) + " -> "
+                          + str(f["head_unterminated"])
+                          + " (delta " + str(f["unterminated_delta"])
+                          + ", floor " + str(UNTERMINATED_DELTA_FLOOR) + ")")
         if bad:
             print("\nAdvisory, not a gate. MAGNITUDE: a cell lost at least "
                   + str(LOSS_FLOOR) + " characters and "
@@ -781,6 +946,21 @@ def main(argv=None):
                   " notebook-cell-source-parses guard cannot see it). Either"
                   " way the committed output is no longer backed by code:"
                   " restore the source or drop the output.")
+            print("UNTERMINATED (#17468) is the KERNEL-INDEPENDENT end of the"
+                  " same family: a code cell's `source` LIST picked up at"
+                  " least " + str(UNTERMINATED_DELTA_FLOOR) + " items without"
+                  " a trailing newline relative to the base. nbformat joins"
+                  " those items into ONE line -- a single-line comment cell"
+                  " is invisible to VOLUME (it can pass through unchanged in"
+                  " volume) and to STRUCTURE (a non-Python kernel never"
+                  " reaches the AST pass). The discriminant is the DELTA, not"
+                  " the count: a per-character serializer (`main`'s"
+                  " 21_LoRA_FineTuning cell `69b296cb` carries 803"
+                  " unterminated items and stays healthy) sees base == head"
+                  " and stays silent. If the items moved to another cell or"
+                  " were a per-character rewrite, the organ exempts it"
+                  " mechanically -- otherwise justify the rewriting in the PR"
+                  " body or restore the trailing newlines.")
     return 1 if bad else 0
 
 
