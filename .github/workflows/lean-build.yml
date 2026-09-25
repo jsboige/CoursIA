@@ -338,3 +338,22 @@ jobs:
         display-name: ${{ matrix.display-name }}
         sorry-baseline: ${{ matrix.sorry-baseline }}
         sorry-filter-mode: ${{ matrix.sorry-filter-mode }}
+    # Proof integrity (B.3) sur le chemin matriciel (#17336, template de
+    # l'EPIC #17287) : opt-in par cle du manifeste -- une entree SANS
+    # `axiom-target-modules` s'interpole en '' et le step est saute (les 19
+    # lakes existants gardent leur comportement exact). Le composite tourne
+    # dans le MEME workspace que le build ci-dessus : elan est deja sur PATH
+    # (export GITHUB_PATH du composite lean-build) et le lake est deja
+    # construit -- le pass d'axiomes chevauche le cache du build au lieu de
+    # recompiler sous une seconde cle (le cout du workflow autonome).
+    # `matrix.axiom-*` absent = '' -> valeur par defaut du composite via `||`.
+    - name: Proof integrity (${{ matrix.display-name }})
+      if: matrix.axiom-target-modules != ''
+      uses: ./.github/actions/lean-axiom
+      with:
+        project-path: ${{ matrix.project-path }}
+        display-name: ${{ matrix.display-name }}
+        target-modules: ${{ matrix.axiom-target-modules }}
+        allow-axioms: ${{ matrix.axiom-allow-axioms || '' }}
+        fail-on-sorry: ${{ matrix.axiom-fail-on-sorry || 'true' }}
+        include-i18n-siblings: ${{ matrix.axiom-include-i18n-siblings || 'false' }}

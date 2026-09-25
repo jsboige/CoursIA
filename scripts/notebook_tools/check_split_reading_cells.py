@@ -426,10 +426,10 @@ def detect_added_readings(head_nb: dict, base_nb: dict | None) -> list[dict]:
         #       que la campagne a produit des cellules sans id ET des ids
         #       dupliques -- l'id est donc consomme une fois, ce qui borne les
         #       doublons sans reouvrir la porte ;
-        #   (c) meme position ET les deux cellules sont des lectures : la tete
-        #       a revise celle qui occupait ce slot (#17044). Signal
-        #       topologique, indispensable sur les carnets SANS id (le corpus
-        #       en contient -- cf. les deux carnets du controle positif).
+        #   (c) meme position ET les deux cellules sont markdown : la tete
+        #       a revise celle qui occupait ce slot (#17044, etendu #17747).
+        #       Signal topologique, indispensable sur les carnets SANS id (le
+        #       corpus en contient -- cf. les deux carnets du controle positif).
         # La regle user dit « fusionner / reecrire, pas empiler » : la
         # reecriture EST l'action prescrite. Ne pas la signaler.
         is_rewrite = False
@@ -441,8 +441,8 @@ def detect_added_readings(head_nb: dict, base_nb: dict | None) -> list[dict]:
                 and base_cells[idx].get("cell_type") == "markdown"
                 and cell_source(base_cells[idx]) == src):
             is_rewrite = True
-        #   (c) meme position ET les DEUX cellules sont des lectures : la tete
-        #       a REVISE celle qui occupait ce slot (#17044). Le mandat prescrit
+        #   (c) meme position ET les DEUX cellules sont MARKDOWN : la tete a
+        #       REVISE celle qui occupait ce slot (#17044). Le mandat prescrit
         #       cette revision ; sans ce signal elle n'etait reconnue que sur
         #       les carnets porteurs d'ids, donc le remede etait puni des que
         #       les cellules n'en avaient pas (le corpus en contient : les deux
@@ -450,9 +450,19 @@ def detect_added_readings(head_nb: dict, base_nb: dict | None) -> list[dict]:
         #       EMPILEMENT reel a cote n'est pas vu ici : la lecture empilee
         #       arrive a un index ou la base porte autre chose (ou rien), et
         #       le compte de paires, lui, monte.
+        #
+        #       Le signal ne depend PAS de la classification lecture/exercice
+        #       (#17747) : une revision de prose en place n'est pas un
+        #       empilement, quel que soit le titre. Exiger « les deux sont des
+        #       lectures » rouvrait sur les carnets SANS id le faux positif que
+        #       #17044 avait ferme pour les lectures. Mesure fondatrice : un
+        #       simple echappement de `$` (``39,66 $`` -> ``39,66 \$``) dans
+        #       une cellule sans id titree « ### Exercice 3 » suffisait a la
+        #       faire passer pour un ajout, et le cliquet rougissait le geste
+        #       que le mandat PRESCRIT.
         if (not is_rewrite and idx < len(base_cells)
-                and is_reading_cell(base_cells[idx])
-                and is_reading_cell(cell)):
+                and base_cells[idx].get("cell_type") == "markdown"
+                and cell.get("cell_type") == "markdown"):
             is_rewrite = True
         if is_rewrite:
             base_counter[src] += 1
