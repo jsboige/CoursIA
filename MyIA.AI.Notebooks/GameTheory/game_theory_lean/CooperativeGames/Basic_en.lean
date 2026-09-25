@@ -567,8 +567,8 @@ lemma marginalVector_dominates (h : G.Convex) :
       have hpref_succ :
           (prefixCoalition (enumIndex i) ∪ {i} : Finset N) =
             prefixCoalition (enumIndex i + 1) := by
-        have heq : (Fintype.equivFin N).symm ⟨enumIndex i, hi_idx_lt⟩ = i := by
-          unfold enumIndex; simp
+        have heq : (Fintype.equivFin N).symm ⟨enumIndex i, hi_idx_lt⟩ = i :=
+          (Fintype.equivFin N).symm_apply_apply i
         rw [prefixCoalition_succ_eq (enumIndex i) hi_idx_lt, heq]
       have hmv_i : G.marginalVector i =
           G.v (prefixCoalition (enumIndex i) ∪ {i}) -
