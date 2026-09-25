@@ -3163,6 +3163,22 @@ def is_automation_vehicle(pr: dict) -> bool:
     return author in AUTOMATION_AUTHORS and bool(AUTOMATION_BRANCH_RE.match(branch))
 
 
+# #17713 — PRs HORS FLOTTE exclues de la file d'orphelines. Une PR pilotee
+# depuis l'exterieur du cluster (tete `claude/*`) porte la mention
+# « Hors flotte » dans son body des lors qu'elle ne suit pas le protocole de
+# flotte : c'est la MEME exemption que le gate `tag_required` (#17715,
+# `variation_tag_required.py`), appliquee ici a l'entree du routage -- sans
+# elle le sweep quotidien renverrait une lane sur une PR qui n'appartient a
+# aucune. Predicat ETROIT : les DEUX conditions (tete `claude/*` ET marqueur
+# present) ; une PR de flotte, ou une `claude/*` sans marqueur, restent
+# visibles (controles negatifs). Les deux sites doivent rester alignes : le
+# jour ou l'exemption bouge, elle bouge aux deux entrances.
+def is_out_of_fleet_pr(pr: dict) -> bool:
+    """Vrai si la PR est hors flotte (tete `claude/*` ET marqueur « Hors flotte »)."""
+    head_ref = pr.get("headRefName") or ""
+    return head_ref.startswith("claude/") and "Hors flotte" in (pr.get("body") or "")
+
+
 def unattributed_blocked_prs(prs: list[dict] | None = None) -> list[dict]:
     """PRs ouvertes bloquees sans tag `Grain:` lisible, AVEC leur route.
 
@@ -3182,13 +3198,20 @@ def unattributed_blocked_prs(prs: list[dict] | None = None) -> list[dict]:
     disposition ne leur est valide. Le predicat est PARTAGE avec `red_backlog`
     (un `unattributed_blocked_prs` → le garde « reparer son rouge ») — ce qui est
     ici souhaite, aucune lane ne devant etre renvoyee sur le vehicule du bot.
+
+    Les PRs HORS FLOTTE (tete `claude/*` ET marqueur « Hors flotte », #17713)
+    sont exclues de meme : aucune lane n'est destinataire d'une PR pilotee
+    depuis l'exterieur du cluster, et le gate `tag_required` les exempte deja
+    (#17715) — router l'une d'elles rejouerait la contradiction que #17713
+    ferme.
     """
     if prs is None:
         prs = fetch_open_prs()
     untagged = [pr for pr in prs
                 if not pr.get("isDraft")
                 and parse_grain_tag(pr.get("body") or "") is None
-                and not is_automation_vehicle(pr)]
+                and not is_automation_vehicle(pr)
+                and not is_out_of_fleet_pr(pr)]
     untagged_states = fetch_pr_states([pr["number"] for pr in untagged]) if untagged else {}
     out = []
     for pr in untagged:
