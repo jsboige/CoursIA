@@ -16,6 +16,19 @@ partition Hermes #17073 sur issue #17419). Defauts observes :
 incoherente (cible presente mais mal chainee ou de mauvais sens). Ce tool
 ferme la classe d'erreur Tell c.c.c.d.c856-L1 ★ fondateur transversal.
 
+Conventions Z3-Python (fichiers reellement presents au 2026-09-25) :
+  - `Z3-01` a `Z3-06` + `Z3-08` a `Z3-16e` + `Z3-18`    : 20 notebooks `Z3-NN-...-Python.ipynb`
+  - `Z3-Python-13-UnsatCores.ipynb`, `Z3-Python-17-Array-Theory.ipynb` : 2 notebooks
+    en convention `Z3-Python-NN-...ipynb` (numerotes dans la serie Python)
+  - `Z3-01b-Style-Declaratif-Linq.ipynb` : kernelspec python, en `Z3-NN-...ipynb`
+    (sans suffixe `-Python`) — kernelspec python confirme first-hand
+  - Total actuel : 22 notebooks Python (kernelspec `language == "python"`).
+
+Filtrage : on filtre sur `kernelspec.language == "python"` (pas sur le nom du
+fichier) pour eviter les faux negatifs `Z3-Python-13/17` et le faux positif
+`Z3-01b`. Les notebooks `C#` et `Linq2Z3` (C# runtime, kernelspec C# ou absent)
+sont exclus par le filtre kernelspec.
+
 Conventions supportees (Z3-Python) :
   - Z3-01 a Z3-06 : `<<` / `>>` ASCII (style heredoc navigation)
   - Z3-08+        : `←` / `→` Unicode
@@ -35,18 +48,26 @@ import re
 import sys
 from pathlib import Path
 
-# Regex pour extraire numero + sous-numero (Z3-01, Z3-16b, Z3-16c)
-NOTEBOOK_RE = re.compile(r"Z3-(\d+)([a-z])?-")
-# Lien markdown vers un notebook Z3
-LINK_RE = re.compile(r"\[([^\]]+)\]\((Z3-(\d+)([a-z])?-[^)]+\.ipynb)\)")
+# Regex pour extraire numero + sous-numero. Match les deux conventions :
+# - `Z3-NN-...` (Z3-01, Z3-16b, Z3-16c)
+# - `Z3-Python-NN-...` (Z3-Python-13-UnsatCores)
+NOTEBOOK_RE = re.compile(r"Z3-(?:Python-)?(\d+)([a-z])?-")
+# Lien markdown vers un notebook Z3 (les deux conventions)
+LINK_RE = re.compile(r"\[([^\]]+)\]\((Z3-(?:Python-)?(\d+)([a-z])?-[^)]+\.ipynb)\)")
 # Fleches Unicode (Z3-08+)
-ARROW_RE = re.compile(r"(←|→)\s*\[?([^\]\n]*?Z3-(\d+)([a-z])?)?\]?")
+ARROW_RE = re.compile(r"(←|→)\s*\[?([^\]\n]*?Z3-(?:Python-)?(\d+)([a-z])?)?\]?")
 # Fleches ASCII (Z3-01 a Z3-06) : << / >> dans un lien markdown
-ASCII_ARROW_RE = re.compile(r"(<<|>>)\s*\[?([^\]\n]*?Z3-(\d+)([a-z])?)?\]?")
+ASCII_ARROW_RE = re.compile(r"(<<|>>)\s*\[?([^\]\n]*?Z3-(?:Python-)?(\d+)([a-z])?)?\]?")
 
 
 def parse_notebook_number(name: str) -> tuple[int, str]:
-    """Extrait (num, suffix) du nom de fichier. Z3-16b-Meal-... -> (16, 'b')."""
+    """Extrait (num, suffix) du nom de fichier.
+
+    Supporte les deux conventions :
+      - Z3-16b-Meal-...-Python.ipynb  -> (16, 'b')
+      - Z3-Python-13-UnsatCores.ipynb -> (13, '')
+      - Z3-01b-Style-Declaratif-Linq.ipynb -> (1, 'b')  [kernelspec python]
+    """
     m = NOTEBOOK_RE.search(name)
     if not m:
         return (0, "")
@@ -54,11 +75,29 @@ def parse_notebook_number(name: str) -> tuple[int, str]:
 
 
 def list_z3_python_notebooks(z3_dir: Path) -> list[Path]:
-    """Liste les notebooks Z3-Python du dossier, tries par numero."""
+    """Liste les notebooks Z3-Python du dossier, filtres par kernelspec python.
+
+    Filtre kernelspec lang=python (Tell c.c.c.d.F strict fondateur : on regarde
+    l'autorite — pas le nom du fichier). Capture les deux conventions de nommage :
+      - `Z3-NN-...-Python.ipynb`
+      - `Z3-Python-NN-...ipynb`
+    Exclut automatiquement les notebooks C# (kernelspec language="C#").
+    """
     if not z3_dir.exists():
         return []
-    notebooks = list(z3_dir.glob("Z3-*-Python.ipynb"))
-    return sorted(notebooks, key=lambda p: parse_notebook_number(p.name))
+    import nbformat
+    # Glob elargi : tous les Z3-*, on filtre ensuite par kernelspec
+    candidates = list(z3_dir.glob("Z3-*.ipynb"))
+    python_nb = []
+    for p in candidates:
+        try:
+            nb = nbformat.read(str(p), as_version=4)
+            ks = nb.metadata.get("kernelspec", {}) if nb.metadata else {}
+            if ks.get("language", "") == "python":
+                python_nb.append(p)
+        except Exception:
+            continue
+    return sorted(python_nb, key=lambda p: parse_notebook_number(p.name))
 
 
 def extract_cell0_links(notebook: Path) -> dict:
@@ -83,14 +122,14 @@ def extract_cell0_links(notebook: Path) -> dict:
             suf = m.group(4) or ""
             arrows.append({"direction": direction, "num": num, "suf": suf, "raw": m.group(0)})
     # Fleches dans le TEXTE d'un lien markdown (ex: "[Z3-Python-08 ->](Z3-08-...)")
-    TEXT_ARROW_RE = re.compile(r"\[([^\]]*?)(←|→)([^\]]*?)\]\((Z3-(\d+)([a-z])?-[^)]+\.ipynb)\)")
+    TEXT_ARROW_RE = re.compile(r"\[([^\]]*?)(←|→)([^\]]*?)\]\((Z3-(?:Python-)?(\d+)([a-z])?-[^)]+\.ipynb)\)")
     for m in TEXT_ARROW_RE.finditer(src):
         direction = m.group(2)
         num = int(m.group(5))
         suf = m.group(6) or ""
         arrows.append({"direction": direction, "num": num, "suf": suf, "raw": m.group(0)})
     # ASCII (<< / >>) -- equivalent semantique : << = back, >> = forward
-    ASCII_ARROW_V2 = re.compile(r"(<<|>>)([^\n]*?Z3-(\d+)([a-z]?))")
+    ASCII_ARROW_V2 = re.compile(r"(<<|>>)([^\n]*?Z3-(?:Python-)?(\d+)([a-z]?))")
     for m in ASCII_ARROW_V2.finditer(src):
         direction_ascii = m.group(1)
         num = int(m.group(3))
