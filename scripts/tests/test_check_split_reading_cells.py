@@ -50,6 +50,7 @@ donc gardees. C'est le cout assume d'une fusion de deux suites, pas un doublon
 involontaire.
 """
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -293,49 +294,8 @@ def test_named_second_cible_la_forme_chiffree():
 # --- 3 bis. Bornes connues, epinglees en xfail strict ------------------------
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "#17134 : le `\\b` place apres `interpre` fait echouer la reconnaissance de "
-        "« Interpretation » -- le titre d'interpretation dominant du corpus "
-        "(133 paires invisibles dans 78 carnets, mesure 2026-09-21)."
-    ),
-)
-def test_borne_connue_interpretation_nue_est_invisible():
-    """`### Interpretation` est un en-tete d'interpretation au sens de la docstring de l'organe.
-
-    Ce test ECHOUE aujourd'hui. Il rend le defaut visible sans rougir la suite, et
-    passera en XPASS (donc en echec) le jour du fix #17134 : retirer le marqueur
-    alors, pas l'ajuster.
-
-    L'assertion sur `detect` doit etre une **esperance reelle**, pas un
-    placeholder : c'est elle qui portera le XPASS. Deux titres consecutifs tous
-    deux d'interpretation donnent exactement UN finding, de type `generic_pair`
-    (« Interpretation » ne matche pas `NAMED_FIRST_RE`, qui exige `lecture`) --
-    et rien de plus : la variante a deux pas n'est pas atteinte, il n'y a aucune
-    cellule de code ici.
-    """
-    assert is_interpretation_title(cell_title("### Interpretation\nconvergence nette."))
-    findings = detect(nb(
-        md("### Interpretation\nConvergence nette vers l'optimum."),
-        md("### Interpretation\nLe score atteint 0.94."),
-    ))
-    assert len(findings) == 1
-    assert findings[0]["type"] == "generic_pair"
-    assert findings[0]["cells"] == [0, 1]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "Borne connue (meme famille que #17134) : `cell_title` s'arrete sur la premiere "
-        "ligne non vide, donc une cellule qui ouvre sur la ligne de separation `***` rend "
-        "un titre vide -- elle est invisible au detecteur meme si son en-tete est une lecture. "
-        "Cas rencontre a chaque repli de conclusion de la campagne #17066."
-    ),
-)
-def test_borne_connue_cellule_ouvrant_sur_separateur_est_invisible():
-    assert cell_title("***\n\n## Lecture du resultat") == "Lecture du resultat"
 
 
 # --- 4. Interface CLI : 0 = clean, 1 = fichier illisible, 2 = findings --------
@@ -588,6 +548,84 @@ def test_fichier_illisible_rc1_sans_traceback(tmp_path, capsys):
     out, err = capsys.readouterr()
     assert rc == 1
     assert "ERREUR lecture" in err
+# --- #17134 : les deux bornes qui rendaient des familles entieres invisibles --
+
+
+@pytest.mark.parametrize("title", [
+    "### Interpretation",              # le titre nu -- forme dominante du corpus
+    "### Interpretation des resultats",
+    "### Interprétation",              # accentue : deaccent() le ramene a la meme racine
+    "### Interprétation : prérequis",
+    "### Interpretation — les ecarts",
+    "### Interpretation:",
+    "### Interpretations croisees",    # pluriel, sans espace apres la racine
+])
+def test_interpretation_est_reconnue(title):
+    """#17134 borne (a) : le `\\b` apres `interpre` faisait echouer TOUTE la
+    famille `Interpretation ...`, parce que la racine est un PREFIXE et non un
+    mot entier. Mesure sur le corpus : 133 `generic_pair` dans 78 carnets
+    etaient invisibles (plus 3 `separated_by_code`)."""
+    assert is_interpretation_title(cell_title(title + "\nconvergence nette."))
+
+
+@pytest.mark.parametrize("title", [
+    "### Introduction",
+    "### Resultats",
+    "### Discussion",
+    "### Exercice 1",
+    "### Mise en place du modele",
+    "### Comparaison des modeles",
+])
+def test_retrait_du_backslash_b_n_elargit_pas(title):
+    """Le correctif retire la frontiere de mot : il ne doit PAS elargir le
+    vocabulaire reconnu. Ces en-tetes ne sont pas des lectures."""
+    assert not is_interpretation_title(cell_title(title + "\nDu texte."))
+
+
+def test_racine_en_milieu_de_titre_non_reconnue():
+    """Le match reste ancre en `^` : une racine au milieu d'un titre n'en fait
+    pas un en-tete de lecture."""
+    for title in ["### Une analyse du resultat", "### Notre interpretation du score",
+                  "### La lecture des courbes"]:
+        assert not is_interpretation_title(cell_title(title + "\nDu texte."))
+
+
+def test_borne_a_bout_en_bout_paire_generique():
+    """Les deux cellules de #17134 : deux `### Interpretation` consecutives."""
+    nb = {"cells": [
+        code("print(model.score)"),
+        md("### Interpretation\nConvergence nette vers l'optimum."),
+        md("### Interpretation\nLe score atteint 0.94, convergence nette."),
+    ]}
+    hits = detect(nb)
+    assert [h["type"] for h in hits] == ["generic_pair"]
+    assert hits[0]["cells"] == [1, 2]
+
+
+def test_cell_title_traverse_la_ligne_de_separation():
+    """#17134 borne (b) : `***` est non vide et ne porte aucun titre. La
+    fonction s'y arretait et rendait "", donc la cellule entiere etait invisible
+    meme quand son en-tete etait une lecture."""
+    assert cell_title("***\n\n## Lecture du resultat") == "Lecture du resultat"
+    assert cell_title("---\n### Analyse") == "Analyse"
+    assert cell_title("***\n***\n\n### Lecture") == "Lecture"
+    # Un titre qui suit la ligne de separation est bien reconnu comme lecture.
+    assert is_interpretation_title(cell_title("***\n\n## Interpretation des ecarts"))
+    # Et une cellule qui ne porte AUCUN titre rend toujours "" (contrat existant).
+    assert cell_title("") == ""
+    assert cell_title("***\n\n***") == ""
+
+
+def test_borne_b_bout_en_bout_paire_generique():
+    """Une cellule qui ouvre sur un separateur participe a la paire."""
+    nb = {"cells": [
+        md("***\n\n## Lecture du resultat\nLa courbe converge apres 200 episodes."),
+        md("### Interprétation des ecarts\nLa courbe converge apres 200 episodes, "
+           "et le modele apprend la valeur."),
+    ]}
+    hits = detect(nb)
+    assert [h["type"] for h in hits] == ["generic_pair"]
+    assert hits[0]["titles"][0] == "Lecture du resultat"
 
 
 # =============================================================================
@@ -785,12 +823,24 @@ def test_diff_mute_si_reecriture_au_meme_endroit_avec_meme_source():
     assert detect_added_readings(head, base) == []
 
 
-def test_diff_signale_reecriture_avec_nouveau_contenu():
+def test_diff_exempte_reecriture_en_place_d_une_lecture():
     """Une PR qui REECRIT une lecture au meme slot mais avec un contenu
     different : pedagiquement c'est acceptable (l'organe n'a pas vocation a
     juger la qualite du contenu), mais le delta topologique EST un ajout
     (nouvelle prose). L'organe le signale comme SECOND_READING pour
     attirer l'attention -- le merge-gate coordonnateur tranche en lecture.
+
+    CONTRAT SUPERSEDE PAR #17044 (ce test s'appelait
+    ``test_diff_signale_reecriture_avec_nouveau_contenu``). Sous un
+    detecteur ADVISORY, signaler la revision attirait l'attention sans rien
+    bloquer. Sous un CLIQUET BLOQUANT, la meme regle rougit le geste que le
+    mandat user PRESCRIT : « si on rajoute une lecture, on modifie le
+    paragraphe de lecture existant ». Mesure firsthand sur #17028 (au
+    merge-base) : les 2 findings de ce type etaient exactement deux revisions
+    en place -- « ### Interpretation : PyGAD sur Rastrigin » devenu
+    « ### Lecture** : PyGAD minimise... », meme slot. Le gate punissait le
+    remede, ce pourquoi le discriminant topologique (meme position, deux
+    lectures) les eteint.
     """
     base = nb(
         code("print(1)"),
@@ -802,12 +852,11 @@ def test_diff_signale_reecriture_avec_nouveau_contenu():
     )
     findings = detect_added_readings(head, base)
     # Multiset diff : +1 ajout (Nouvelle formulation), -1 retrait (Ancienne)
-    # net = 0, MAIS le second walk voit l'ajout comme 'new source' au meme
-    # slot -- le REWRITE-same-content ne fire pas -> passe au verdict
-    # topologique -> SECOND_READING (prev=code_with_output, le code en base
-    # etait suivi d'une md -> already_had_md_after=True).
-    assert len(findings) == 1
-    assert findings[0]["type"] == "SECOND_READING"
+    # net = 0. Le discriminant 0 voit la cellule de base AU MEME SLOT, elle
+    # aussi lecture -> REVISION, donc pas d'ajout : c'est la carve prescrite.
+    # L'empilement reel -- une lecture qui arrive a un index ou la base n'en
+    # portait pas -- reste rouge (test_cliquet_mord_si_la_lecture_arrive_APRES).
+    assert findings == []
 
 
 def test_diff_mute_si_ordre_inchange_et_contenu_identique():
@@ -924,3 +973,313 @@ def test_diff_reading_before_code_ne_mord_pas_si_code_sans_sortie():
     # Le code n'a pas d'output -> is_exercise_cell = False (pas de marker)
     # mais il n'a pas non plus de sortie utile -> devrait etre ignore.
     assert detect_added_readings(head, base) == []
+
+
+# --- 4. Delta #17087 (rebase post-#17135) : les trois cas non couverts --------
+
+
+def test_titres_reels_accentues_sont_reconnus():
+    """Les carnets reels ecrivent « Lecture chiffrée du résultat » AVEC accents :
+    deaccent() fait partie du chemin de detection, et toute la suite ci-dessus
+    ne fabrique que des titres desaccentues -- le chemin accentue etait mort
+    s'il regressait (delta #17087, non couvert par #17135)."""
+    findings = detect(nb(
+        md("### Lecture du résultat\nConvergence nette vers l'optimum."),
+        md("### Lecture chiffrée du résultat\nLe score atteint 0.94 en 40 itérations."),
+    ))
+    assert len(findings) == 1
+    assert findings[0]["type"] == "named_split"
+
+
+def test_source_string_sans_liste_supportee():
+    """nbformat admet ``source`` comme str OU liste de str. Les carnets ecrits
+    a la main (et certains exports) laissent la forme str : le detecteur doit
+    digerer les deux -- la suite existante ne fabrique que des listes."""
+    a = {"cell_type": "markdown", "source": "### Lecture du resultat", "metadata": {}}
+    b = {"cell_type": "markdown", "source": "### Lecture chiffree du resultat",
+         "metadata": {}}
+    findings = detect(nb(a, b))
+    assert len(findings) == 1
+    assert findings[0]["type"] == "named_split"
+
+
+def test_convention_le_titre_compte_dans_la_mesure():
+    """Corps disjoints ; le seul mot partage est le mot-TITRE « lecture »,
+    present dans les deux sources. Jaccard = 1/8 = 0.125, containment des
+    rares = 1/4 = 0.25. Epingle la convention : la mesure porte le titre,
+    pas seulement le corps -- les bodies cites (#17040) citent ces chiffres."""
+    a = md("### Lecture\nalpha beta gamma")
+    b = md("### Lecture chiffree\ndelta epsilon zeta")
+    findings = detect(nb(a, b))
+    assert findings[0]["jaccard"] == 0.125
+    assert findings[0]["rare_containment"] == 0.25
+
+
+# --- 6. Cliquet #17044 : base vs PR ------------------------------------------
+#
+# Le cliquet ne juge QUE le delta : la dette heritee est grandfathered, et le
+# remede prescrit (fusionner) ne doit jamais rougir -- « un gate qui punit le
+# remede est pire que pas de gate ». Les trois mecanismes de faux positif
+# mesures sur les 11 dernieres PR notebook mergees (3/11 avant correctif,
+# 0/11 apres) sont epingles ci-dessous ; chacun est DECISIF : le retirer
+# rallume le rouge qu'il eteint.
+
+from check_split_reading_cells import (  # noqa: E402
+    changed_notebook_pairs,
+    ratchet_rows,
+)
+
+SCRIPT = str(Path(__file__).resolve().parents[1] / "notebook_tools"
+             / "check_split_reading_cells.py")
+
+
+def _run(repo, *args):
+    out = subprocess.run(
+        ["git", *args], cwd=str(repo), capture_output=True, text=True,
+        encoding="utf-8", errors="replace", check=True,
+    )
+    return out.stdout.strip()
+
+
+def _repo(tmp_path):
+    """Depot git jetable : hooks et signature desarmes, fins de ligne fixes."""
+    repo = tmp_path / "cliquet"
+    repo.mkdir()
+    _run(repo, "init", "-q")
+    for k, v in (("user.email", "tests@localhost"), ("user.name", "tests"),
+                 ("commit.gpgsign", "false"), ("core.hooksPath", "no-hooks"),
+                 ("core.autocrlf", "false")):
+        _run(repo, "config", k, v)
+    return repo
+
+
+def _commit(repo, files, message):
+    """Ecrit ``files`` puis commite. Une valeur ``None`` SUPPRIME le chemin.
+
+    La suppression est ce qui distingue un renommage d'un ajout : sans elle,
+    l'ancien chemin survit dans l'arbre et git rend ``A`` (le test du
+    renommage serait alors vacue).
+    """
+    for rel, payload in files.items():
+        target = repo / rel
+        if payload is None:
+            target.unlink()
+            continue
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(json.dumps(payload), encoding="utf-8")
+    _run(repo, "add", "-A")
+    _run(repo, "commit", "-q", "-m", message)
+    return _run(repo, "rev-parse", "HEAD")
+
+
+def _with_id(cell, cid):
+    return {**cell, "id": cid}
+
+
+NB = "MyIA.AI.Notebooks/Probas/Demo.ipynb"
+CASCADE = nb(
+    code("print(1)"),
+    _with_id(md("### Lecture du resultat\nA"), "c1"),
+    _with_id(md("### Analyse de la sortie\nB"), "c2"),
+    _with_id(md("### Commentaire final\nC"), "c3"),
+)
+
+
+def test_cliquet_mord_sur_une_lecture_ajoutee(tmp_path):
+    """End-to-end : premiere lecture en base, seconde empilee en tete -> rc=2.
+
+    C'est le mandat user 2026-09-20 lui-meme (« on n'en ajoute jamais une
+    seconde »), et la raison d'etre du passage advisory -> bloquant.
+    """
+    repo = _repo(tmp_path)
+    base = _commit(repo, {NB: nb(
+        code("print(1)"),
+        _with_id(md("### Lecture du resultat\nConvergence nette."), "c1"),
+    )}, "base")
+    head = _commit(repo, {NB: nb(
+        code("print(1)"),
+        _with_id(md("### Lecture du resultat\nConvergence nette."), "c1"),
+        md("### Lecture chiffree\nLe score atteint 0.94 en 40 iterations."),
+    )}, "tete")
+    rows = ratchet_rows(base, head, cwd=str(repo))
+    assert [r["regressed"] for r in rows] == [True]
+    assert rows[0]["base_total"] == 0 and rows[0]["head_total"] == 1
+    proc = subprocess.run(
+        [sys.executable, str(SCRIPT), "--base-ref", base, "--head", head,
+         "--json", "--fail-on-findings"],
+        cwd=str(repo), capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
+    )
+    assert proc.returncode == 2, proc.stdout + proc.stderr
+    assert json.loads(proc.stdout)["regressed"] == 1
+
+
+def test_cliquet_ne_rougit_pas_la_dette_heritee(tmp_path):
+    """Critere 3 de #17044 : un carnet qui portait DEJA sa cascade reste vert.
+
+    La PR ne touche que la cellule de code ; les trois lectures sont intactes.
+    Un plancher absolu aurait rougi ici, et c'est ce qui avait motive
+    l'advisory -- le cliquet leve l'objection sans renoncer au mandat.
+    """
+    repo = _repo(tmp_path)
+    base = _commit(repo, {NB: CASCADE}, "base")
+    head = _commit(repo, {NB: nb(
+        code("print(42)"),
+        _with_id(md("### Lecture du resultat\nA"), "c1"),
+        _with_id(md("### Analyse de la sortie\nB"), "c2"),
+        _with_id(md("### Commentaire final\nC"), "c3"),
+    )}, "tete")
+    (row,) = ratchet_rows(base, head, cwd=str(repo))
+    assert row["regressed"] is False
+    # 1 paire : « Lecture ... » + « Analyse de la sortie ... ». La troisieme
+    # cellule (« Commentaire final ») n'est pas un en-tete d'interpretation --
+    # un encart de conclusion ne forme pas de paire.
+    assert row["base_total"] == row["head_total"] == 1
+
+
+def test_cliquet_ne_punit_pas_la_fusion_d_une_cascade(tmp_path):
+    """Mecanisme A (decalage d'index) -- mesure sur #17564 et #17553.
+
+    La fusion CONSERVE la cellule (son id de base) et reecrit sa source ; une
+    insertion au-dessus decale les index. Sous le discriminant d'origine
+    (meme index ET meme source), la rewrite etait indiscernable d'un ajout, et
+    le cliquet rougissait les DEUX PR de fusion -- exactement le remede
+    prescrit par le mandat.
+
+    La topologie est choisie pour que SEUL l'id tranche : la cellule de tete
+    arrive au-dela de la base (le signal topologique ne peut pas mordre), et
+    le code qu'elle suit existe en base, deja suivi d'une lecture -- sans le
+    signal d'id, le discriminant « code_with_output » la classe en
+    SECOND_READING et le test rougit (mesure : sans ce signal, #17564 rend
+    2 carnets en regression).
+    """
+    repo = _repo(tmp_path)
+    base = _commit(repo, {NB: nb(
+        _with_id(code("print(2)"), "k1"),
+        _with_id(md("### Lecture du resultat\nA"), "c1"),
+    )}, "base")
+    head = _commit(repo, {NB: nb(
+        code("print(0.5)"),
+        _with_id(code("print(2)"), "k1"),
+        _with_id(md("### Lecture du resultat\nA et B fusionnes"), "c1"),
+    )}, "tete")
+    (row,) = ratchet_rows(base, head, cwd=str(repo))
+    assert row["added"] == []
+    assert row["regressed"] is False
+
+
+def test_cliquet_ne_punit_pas_la_fusion_sans_ids(tmp_path):
+    """Mecanisme C -- la meme fusion, sur un carnet SANS id de cellule.
+
+    Le corpus en contient (les deux carnets du controle positif #17028 ont des
+    cellules sans id), et la carve du mandat y restait punie : sans id, la
+    revision en place n'etait reconnue que par « meme source », condition qui
+    ne peut pas mordre sur une revision -- une source identique ne traverse
+    jamais le diff de multiset. Le discriminant retenu est donc topologique :
+    meme position, et les DEUX cellules sont des lectures.
+
+    Mesure sur #17028 (au merge-base) : les 2 findings que ce signal eteint
+    sont exactement deux revisions en place (« ### Interpretation : PyGAD sur
+    Rastrigin » -> « ### Lecture** : PyGAD minimise... »), meme slot.
+    """
+    repo = _repo(tmp_path)
+    base = _commit(repo, {NB: nb(
+        code("print(1)"),
+        md("### Interpretation : hill-climber vs AG"),
+    )}, "base")
+    head = _commit(repo, {NB: nb(
+        code("print(1)"),
+        md("### Lecture : le hill-climber echoue sur le piege"),
+    )}, "tete")
+    (row,) = ratchet_rows(base, head, cwd=str(repo))
+    assert row["added"] == []
+    assert row["regressed"] is False
+
+
+def test_cliquet_mord_si_la_lecture_arrive_APRES(tmp_path):
+    """Controle NEGATIF du mecanisme C : l'empilement reel reste rouge.
+
+    La lecture empilee arrive a un index ou la base ne portait PAS de lecture
+    (ou rien) : le signal topologique ne l'exempte donc pas. Sans ce controle,
+    le mecanisme C pourrait etre un robinet ouvert -- il ne l'est pas.
+    """
+    repo = _repo(tmp_path)
+    base = _commit(repo, {NB: nb(
+        code("print(1)"),
+        md("### Interpretation : hill-climber vs AG"),
+    )}, "base")
+    head = _commit(repo, {NB: nb(
+        code("print(1)"),
+        md("### Interpretation : hill-climber vs AG"),
+        md("### Lecture chiffree : le score atteint 0.94"),
+    )}, "tete")
+    (row,) = ratchet_rows(base, head, cwd=str(repo))
+    assert [f["type"] for f in row["added"]] == ["SECOND_READING"]
+    assert row["regressed"] is True
+
+
+def test_cliquet_exempte_un_encart_sans_code_execute_au_dessus(tmp_path):
+    """Mecanisme B (banniere) -- mesure sur #17484.
+
+    Une md qui suit une autre md dont le code amont n'a NI execution_count NI
+    sortie n'est pas une lecture : il n'y a rien a lire. Sans le filtre, toute
+    PR inserant un encart sous une cellule en echec (banniere « program is not
+    installed ») rougissait.
+    """
+    repo = _repo(tmp_path)
+    code_muet = {"cell_type": "code", "source": ["print(1)"],
+                 "outputs": [], "execution_count": None}
+    base = _commit(repo, {NB: nb(
+        code_muet,
+        _with_id(md("### Lecture du resultat\nA"), "c1"),
+    )}, "base")
+    head = _commit(repo, {NB: nb(
+        code_muet,
+        _with_id(md("### Lecture du resultat\nA"), "c1"),
+        md("### Analyse de la sortie\nB"),
+    )}, "tete")
+    assert detect_added_readings(nb(
+        code_muet,
+        _with_id(md("### Lecture du resultat\nA"), "c1"),
+        md("### Analyse de la sortie\nB"),
+    ), nb(code_muet, _with_id(md("### Lecture du resultat\nA"), "c1"))) == []
+
+
+def test_cliquet_renomme_lit_le_contenu_de_base(tmp_path):
+    """Mecanisme C (renommage) : ``--name-status -M`` sort l'ANCIEN chemin.
+
+    Lire la base au nouveau chemin rendrait None : base_total tomberait a 0 et
+    TOUTES les paires du carnet renomme seraient vues comme ajoutees. Le test
+    est decisif : sans la paire (ancien, nouveau), ce carnet rougit.
+    """
+    repo = _repo(tmp_path)
+    base = _commit(repo, {NB: CASCADE}, "base")
+    head = _commit(repo, {"MyIA.AI.Notebooks/Probas/Renomme.ipynb": CASCADE,
+                          NB: None}, "renommage")
+    pairs = changed_notebook_pairs(base, head, cwd=str(repo))
+    assert pairs == [(NB, "MyIA.AI.Notebooks/Probas/Renomme.ipynb")]
+    (row,) = ratchet_rows(base, head, cwd=str(repo))
+    # Sans la paire (ancien, nouveau), la base serait illisible au nouveau
+    # chemin -> base_total = 0 et head_total = 1 : le carnet renomme rougirait.
+    assert row["base_total"] == row["head_total"] == 1
+    assert row["regressed"] is False
+
+
+def test_cliquet_base_irresoluble_rend_rc1(tmp_path):
+    """Une base qui n'existe pas ne doit pas rendre un quitus muet.
+
+    Rendre 0 sur une base irresoluble ferait passer la garde pour un verdict
+    vert alors qu'elle n'a RIEN compare -- le fail-loud est la seule sortie
+    honnete (meme contrat que le rc=1 du recensement).
+    """
+    repo = _repo(tmp_path)
+    _commit(repo, {NB: CASCADE}, "base")
+    assert ratchet_rows("refs/heads/inexistante", "HEAD", cwd=str(repo)) is None
+    proc = subprocess.run(
+        [sys.executable, str(SCRIPT), "--base-ref", "refs/heads/inexistante",
+         "--head", "HEAD", "--fail-on-findings"],
+        cwd=str(repo), capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
+    )
+    assert proc.returncode == 1
+    assert "irresoluble" in (proc.stdout + proc.stderr)

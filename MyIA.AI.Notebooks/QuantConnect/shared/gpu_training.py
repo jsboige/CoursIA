@@ -67,7 +67,8 @@ def get_gpu_temp(index: Optional[int] = None) -> int:
         result = subprocess.run(
             ['nvidia-smi', '--query-gpu=temperature.gpu',
              '--format=csv,noheader,nounits'],
-            capture_output=True, text=True, timeout=5
+            capture_output=True, text=True, encoding='utf-8', errors='replace',
+            timeout=5
         )
         lines = [l.strip() for l in result.stdout.strip().splitlines() if l.strip()]
         if not lines:

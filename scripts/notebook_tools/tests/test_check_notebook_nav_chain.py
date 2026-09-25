@@ -221,17 +221,49 @@ class TestAnalyse:
         assert ("orphan_entry", "07.ipynb") in kinds
         assert not any(k == "unreachable" for k, _ in kinds)
 
-    def test_detached_cycle_is_unreachable(self, tmp_path):
+    def test_detached_mutual_cycle_stays_red_as_independent_chain(self, tmp_path):
         # 01 -> 02, et un cycle detache 07 <-> 08 : les deux ont un lien entrant
-        # (donc aucune entree), et aucune entree ne les atteint -> inatteignables.
+        # (donc aucune entree), et aucune entree ne les atteint.
+        # #17625 : une composante mutualisee est JUGE navigable depuis son
+        # depart (07 et 08 ne sont plus « unreachable »), mais la deconnection
+        # reste RAPPORTEE -- un ilot oublie et la forme QC-Py sont isomorphes
+        # vus des liens, le garde ne peut pas les departager : il signale.
         _, p = _chain(tmp_path, ["01", "02", "07", "08"],
                       {"01": ["02"], "07": ["08"], "08": ["07"]})
         inbound, outbound, series = cnc.build_graph(list(p.values()))
         r = cnc.analyse(inbound, outbound, series)
         kinds = {(f["kind"], f["notebook"].split("/")[-1]) for f in r["findings"]}
-        assert ("unreachable", "07.ipynb") in kinds
-        assert ("unreachable", "08.ipynb") in kinds
+        assert ("independent_chain", "Serie") in kinds  # jamais silencieux
+        assert not any(k == "unreachable" for k, _ in kinds)
         assert not any(k == "orphan_entry" for k, _ in kinds)
+
+    def test_mutual_arc_with_side_entries_qcpy_shape(self, tmp_path):
+        # LA FORME FONDATRICE de l'angle mort (#17625, QC-Py) : arc principal
+        # mutualise 01<->02<->03 (01 recoit le Precedent de 02 -> plus une
+        # « entree ») + deux entrees laterales sans lien entrant. Avant le fix :
+        # les 3 de l'arc etaient « unreachable ». Apres : l'arc est couvert par
+        # son depart de chaine ; restent les entrees laterales (orphan_entry,
+        # signal reel) et la deconnection (independent_chain).
+        _, p = _chain(tmp_path, ["C1", "D1", "01", "02", "03"],
+                      {"01": ["02"], "02": ["01", "03"], "03": ["02"]})
+        inbound, outbound, series = cnc.build_graph(list(p.values()))
+        r = cnc.analyse(inbound, outbound, series)
+        kinds = {(f["kind"], f["notebook"].split("/")[-1]) for f in r["findings"]}
+        assert not any(k == "unreachable" for k, _ in kinds)  # l'arc est couvert
+        assert ("independent_chain", "Serie") in kinds
+        assert ("orphan_entry", "C1.ipynb") in kinds
+        assert ("orphan_entry", "D1.ipynb") in kinds
+
+    def test_mutual_subchain_hanging_off_entry_is_quiet(self, tmp_path):
+        # Sous-chaine mutualisee RATTACHEE a la chaine principale : 01 -> 02,
+        # 02 <-> 03. Le depart de chaine 03 est atteint depuis l'entree 01 ->
+        # ni unreachable ni independent_chain : serie saine.
+        _, p = _chain(tmp_path, ["01", "02", "03"],
+                      {"01": ["02"], "02": ["03"], "03": ["02"]})
+        inbound, outbound, series = cnc.build_graph(list(p.values()))
+        r = cnc.analyse(inbound, outbound, series)
+        assert r["findings"] == []
+        assert r["series"][0]["chain_starts"] == 1  # 03, rattache -> silencieux
 
     def test_wrapped_chain_is_judged_not_excluded(self, tmp_path):
         # 01 -> 02 -> 03 -> 01 : AUCUNE entree. Convention legitime (le « suivant »

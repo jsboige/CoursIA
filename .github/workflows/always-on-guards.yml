@@ -89,7 +89,7 @@ concurrency:
 
 jobs:
   always-on-guards:
-    name: "Always-on guards -- 15 organes, 1 checkout"
+    name: "Always-on guards -- 16 organes, 1 checkout"
     # Routage #14283 : premier consommateur GitHub-hosted du depot une fois
     # secret-scan bascule -- 2650 runs same-repo en 5 jours (2026-08-28 ->
     # 2026-09-02), timeout 25 min, aucun filtre `paths:`. Le pool Linux
@@ -1368,6 +1368,23 @@ jobs:
 
           exit 1
 
+      # Couverture des chemins sensibles par une regle VERSIONNEE (#17441).
+      # Organe purement local (aucun appel gh, aucun jeton, aucune lecture de
+      # diff) : il interroge `git check-ignore -v` et regarde QUI gagne. Le
+      # defaut vise est muet -- un `.git/info/exclude` local masque un secret
+      # sur la machine qui l'a ecrit, et `git status` y reste propre ; sur tout
+      # autre clone la regle n'existe pas et le secret est propose au commit.
+      # Les deux situations sont indiscernables a l'oeil, d'ou l'organe.
+      #
+      # Mesure fondatrice : `.secrets/master.env` (les cles API de la flotte)
+      # puis, un mois plus tard au MEME endroit, les cles privees d'App GitHub
+      # sous `.secrets/github-apps/` -- une lecon sans detecteur n'a pas tenu.
+      - name: "Chemins sensibles ignores par une regle versionnee (#17441)"
+        id: secret_paths_ignored
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        run: python scripts/ci/check_secret_paths_ignored.py --repo .
+
       # -----------------------------------------------------------------
       # AGREGAT : la couleur du job. Un organe bloquant echoue -> rouge.
       # Les organes advisory ne figurent pas ici (ils sortent toujours 0 ;
@@ -1398,6 +1415,7 @@ jobs:
           check hot_subset   "${{ steps.hot_subset.outcome }}"
           check results_weight "${{ steps.results_weight.outcome }}"
           check grothendieck_umbrella "${{ steps.grothendieck_umbrella.outcome }}"
+          check secret_paths_ignored "${{ steps.secret_paths_ignored.outcome }}"
           if [ -n "$FAILED" ]; then
             echo "::error::Organes bloquants en echec :$FAILED (le detail est dans les steps correspondants ci-dessus)."
             exit 1

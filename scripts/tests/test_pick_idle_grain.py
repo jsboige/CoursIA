@@ -28,8 +28,14 @@ from merge_dwell import evaluate as _md_evaluate  # noqa: E402
 
 
 class _FakeCompleted:
-    def __init__(self, stdout):
+    # #17418 : main() epingle le jeton AVANT argparse (pin_gh_token ->
+    # resolve_gh_token lit .returncode/.stderr) -- le stand-in doit
+    # impersonifier un CompletedProcess complet, sinon tout appel main()
+    # sous ce fake leve AttributeError au lieu du comportement voulu.
+    def __init__(self, stdout, returncode=0, stderr=""):
         self.stdout = stdout
+        self.returncode = returncode
+        self.stderr = stderr
 
 
 def _patch_gh(monkeypatch, payloads, calls):
@@ -525,12 +531,15 @@ def test_blocked_awaiting_review_is_not_a_red():
     assert pig.blocking_causes(_state(checks=[("PR gate", "SUCCESS", True)])) == []
 
 
-def _patch_backlog(monkeypatch, prs, states, nits=None):
-    monkeypatch.setattr(pig, "fetch_open_prs", lambda: prs)
+def _neutralize_organs(monkeypatch, states, nits=None):
+    """Les organes reseau du garde rouge, neutralises par DEFAUT.
+
+    Sans cela chaque test partirait sur le reseau interroger des numeros de PR
+    fictifs (mesure : 2,9 s pour trois numeros), et la suite deviendrait non
+    deterministe sans jamais rougir. #17474 : partage avec les tests qui
+    laissent le VRAI `fetch_open_prs` courir derriere un faux `gh`.
+    """
     monkeypatch.setattr(pig, "fetch_pr_states", lambda nums: {n: states[n] for n in nums if n in states})
-    # Neutraliser l'organe B.0 par DEFAUT : sans cela chaque test partirait sur
-    # le reseau interroger des numeros de PR fictifs (mesure : 2,9 s pour trois
-    # numeros), et la suite deviendrait non deterministe sans jamais rougir.
     monkeypatch.setattr(pig, "unaddressed_review_points", lambda nums: dict(nits or {}))
     # L721 : l'ardoise de lane ajoute un fetch gh dans main() AVANT le garde
     # rouge -- meme neutralisation par defaut, meme raison (reseau +
@@ -543,6 +552,11 @@ def _patch_backlog(monkeypatch, prs, states, nits=None):
     # selon que le check est vert ou rouge sur `main` le jour du run, sans
     # qu'aucune ligne de code n'ait bouge. Les tests de #17154 la re-patchent.
     monkeypatch.setattr(pig, "fetch_main_head_probe", lambda *a, **k: None)
+
+
+def _patch_backlog(monkeypatch, prs, states, nits=None):
+    monkeypatch.setattr(pig, "fetch_open_prs", lambda: prs)
+    _neutralize_organs(monkeypatch, states, nits)
 
 
 def _pr(n, lane, age_hours, *, draft=False):
@@ -879,6 +893,12 @@ def _fake_transport(monkeypatch, *, graphql_ok=True, rest_ok=True,
                 # premier match rend « 100 » au lieu du numero de page.
                 page = int(cmd[2].rsplit("page=", 1)[1].split("&")[0])
             return _FakeCompleted(json.dumps((rest_pages or {}).get(page, [])))
+        if cmd[:3] == ["gh", "auth", "token"]:
+            # #17418 : echec PROPRE du pin sous transports morts -- le stand-in
+            # complet fait suivre a pin_gh_token son chemin GhIdentityError
+            # (attrapee par main, WARN stderr) au lieu d'un faux jeton "[]"
+            # qui ecrirait GH_TOKEN dans os.environ pour le reste du worker.
+            return _FakeCompleted("", returncode=1)
         # Tout autre appel (ardoise de lane, sondes) : liste vide, sans reseau.
         return _FakeCompleted("[]")
     monkeypatch.setattr(pig.subprocess, "run", fake_run)
@@ -932,6 +952,38 @@ def test_pr_list_bascule_rest_et_normalise_la_forme(monkeypatch, capsys):
                     "createdAt": "2026-09-01T00:00:00Z", "isDraft": False,
                     "author": {"login": "jsboige"}, "headRefName": "feature/x"}]
     assert "bascule REST" in capsys.readouterr().err
+
+
+def test_truncation_rest_est_dite_comme_celle_de_graphql(monkeypatch, capsys):
+    """#17474 -- le transport REST porte son propre plafond : il se dit aussi.
+
+    La bascule de #17038 a ouvert une seconde porte au meme defaut : un plafond
+    atteint y est muet tout autant, `_rest_pages` s'arrete a
+    `POOL_REST_MAX_PAGES` sans rien lever, et le listing rend du plus recent au
+    plus ancien -- la traine disparait donc par cette porte-la sans un mot. Le
+    plafond est atteint ici pour de vrai (pages pleines jusqu'a epuisement du
+    quota), pas simule par un drapeau.
+    """
+    pages = {p: [dict(_REST_PULL, number=p * 1000 + i)
+                 for i in range(pig.POOL_REST_PAGE)]
+             for p in range(1, pig.POOL_REST_MAX_PAGES + 1)}
+    _fake_transport(monkeypatch, pr_graphql_ok=False, rest_pages=pages)
+    prs = pig.fetch_open_prs()
+    assert len(prs) == pig.POOL_REST_PAGE * pig.POOL_REST_MAX_PAGES
+    err = capsys.readouterr().err
+    assert "bascule REST" in err
+    assert "[PRS TRONQUEES]" in err
+    assert "POOL_REST_MAX_PAGES" in err, (
+        "le remede nomme doit etre celui du transport REST, pas celui de la "
+        "voie GraphQL")
+
+    # Controle NEGATIF : un plafond qui n'a pas mordu ne se dit pas. Sans lui,
+    # un avertissement inconditionnel passerait le test ci-dessus.
+    capsys.readouterr()
+    monkeypatch.setattr(pig, "POOL_REST_MAX_PAGES", pig.POOL_REST_MAX_PAGES + 1)
+    prs = pig.fetch_open_prs()
+    assert len(prs) == 400
+    assert "[PRS TRONQUEES]" not in capsys.readouterr().err
 
 
 def test_les_deux_transports_morts_ne_se_disent_pas_pool_vide(monkeypatch):
@@ -1976,6 +2028,84 @@ def test_13420_le_plus_recent_gagne_sur_les_anciens():
     assert pig.file_saturation_cause(state, age_hours=120, threshold_hours=24) is None
 
 
+# --- #16889 : fold canonique par nom -- les deux sens de #16765 -------------
+#
+# drop_superseded delegue desormais a check_run_state.fold_latest (#16782) :
+# une seule jambe par nom, la plus recente. Mesure #16765 sur #16232 : le
+# rollup GraphQL rend les jambes d'un meme nom dans un ordre non chronologique
+# (FAILURE/CANCELLED/SUCCESS d'un meme head). L'ancien filtre local ne couvrait
+# qu'un sens (rouge perime sous vert recent) ; le vert ou PENDING perime d'un
+# rerun restait dans la liste, lu comme jambe courante.
+
+
+def _state_legs(legs, rollup_state="FAILURE"):
+    """Rollup a jambes brutes explicites -- meme nom plusieurs fois = rerun."""
+    return {
+        "number": 1, "mergeable": "MERGEABLE",
+        "reviews": {"nodes": []},
+        "commits": {"nodes": [{"commit": {"statusCheckRollup": {
+            "state": rollup_state,
+            "contexts": {"nodes": legs}}}}]},
+    }
+
+
+def test_16889_sens1_rouge_perime_sous_vert_recent_candidate_servie():
+    """FAILURE ancien puis SUCCESS recent du meme nom : la PR n'est PAS en
+    echec -- le picker la sert comme candidate au lieu de la ranger en file
+    de reparation pour un check deja vert (#11916, les deux sens #16765)."""
+    legs = [
+        {"name": "Lint", "conclusion": "FAILURE", "isRequired": True,
+         "startedAt": "2026-09-20T00:00:00Z"},
+        {"name": "Lint", "conclusion": "SUCCESS", "isRequired": True,
+         "startedAt": "2026-09-22T00:00:00Z"},
+    ]
+    assert pig._has_failed_check(_state_legs(legs)) is False
+
+
+def test_16889_sens2_rouge_recent_sous_vert_perime_candidate_ecartee():
+    """SUCCESS ancien puis FAILURE recent du meme nom : l'etat courant est le
+    rouge -- la PR part en file de reparation, pas en tirage (second sens
+    #16765 : le vert perime ne fait plus croire a la maturite)."""
+    legs = [
+        {"name": "Lint", "conclusion": "SUCCESS", "isRequired": True,
+         "startedAt": "2026-09-20T00:00:00Z"},
+        {"name": "Lint", "conclusion": "FAILURE", "isRequired": True,
+         "startedAt": "2026-09-22T00:00:00Z"},
+    ]
+    assert pig._has_failed_check(_state_legs(legs)) is True
+
+
+def test_16889_rouges_dupliques_dun_rerun_dedoublonnes_dans_les_causes():
+    """Deux FAILURE du meme nom (run rouge, rerun encore rouge) : sans fold
+    les DEUX jambes restaient (l'ancien filtre ne perdait que les rouges
+    ANTERIEURS a un vert) et blocking_causes listait le meme check deux
+    fois ; le fold n'en lit qu'une -- la derniere."""
+    legs = [
+        {"name": "Lint", "conclusion": "FAILURE", "isRequired": True,
+         "startedAt": "2026-09-20T00:00:00Z"},
+        {"name": "Lint", "conclusion": "FAILURE", "isRequired": True,
+         "startedAt": "2026-09-22T00:00:00Z"},
+    ]
+    causes = pig.blocking_causes(_state_legs(legs, rollup_state="FAILURE"))
+    assert len([c for c in causes if "Lint" in c]) == 1
+
+
+def test_16889_saturation_compte_les_noms_pas_les_jambes():
+    """Vert perime + rerun PENDING du meme nom : la saturation compte les
+    NOMS requis, pas les jambes -- sans fold le compte gonflait (2 checks
+    annonces pour 1 reel)."""
+    legs = [
+        {"name": "PR gate", "conclusion": "SUCCESS", "isRequired": True,
+         "startedAt": _iso_ago(50)},
+        {"name": "PR gate", "conclusion": None, "state": "PENDING",
+         "isRequired": True, "startedAt": _iso_ago(49)},
+    ]
+    state = _state_legs(legs, rollup_state="PENDING")
+    cause = pig.file_saturation_cause(state, age_hours=120, threshold_hours=24)
+    assert cause is not None
+    assert "1 check(s) requis" in cause
+
+
 def test_file_saturation_not_detected_when_a_check_is_success():
     """Faux-positif a eviter : un SUCCESS + des PENDING n'est PAS de la
     file-saturation. La PR a au moins un verdict defini ; elle est en cours
@@ -2611,6 +2741,12 @@ def test_14704_cli_accepts_repeated_and_csv_prev_genres(monkeypatch, capsys) -> 
     """Les deux formes CLI alimentent le meme ensemble de genres de session."""
     class _R:
         stdout = "[]"
+        stderr = ""
+        # #17418 : main() epingle le jeton AVANT argparse -- le fake doit
+        # impersonifier un CompletedProcess complet (returncode requis) pour
+        # que pin_gh_token() suive son chemin d'echec propre (GhIdentityError
+        # attrapee par main, WARN stderr) au lieu d'un AttributeError.
+        returncode = 1
 
     monkeypatch.setattr(pig.subprocess, "run", lambda *args, **kwargs: _R())
     rc = pig.main([
@@ -2640,6 +2776,9 @@ def test_14591_volet_a_cli_integration_prev_genre_autoload(tmp_path, monkeypatch
     # toucher au pool reel.
     class _R:
         stdout = "[]"
+        stderr = ""
+        # #17418 : cf. test_14704 -- returncode requis par pin_gh_token().
+        returncode = 1
     def fake_run(cmd, **kw):
         return _R()
     monkeypatch.setattr(pig.subprocess, "run", fake_run)
@@ -2709,6 +2848,90 @@ def test_orphan_report_neg2_human_on_chore_pending_stays(monkeypatch):
         _untagged_pr(9, author="jsboige", branch="chore/x-pending"),
     ], {9: red})
     assert [r["number"] for r in pig.unattributed_blocked_prs()] == [9]
+
+
+# --- #17474 : le plafond de `fetch_open_prs` amputait la traine -------------
+# `gh pr list` rend du plus RECENT au plus ancien (mesure firsthand du
+# 2026-09-23 sur ce depot : #17565 `2026-09-23T13:29:52Z` en tete, #15942
+# `2026-09-13T08:33:00Z` en queue pour 158 ouvertes), donc un plafond franchi
+# fait disparaitre les PRs les plus ANCIENNES -- exactement celles que la file
+# de reparation et le compte WIP de lane (Q41) existent pour voir. Le faux `gh`
+# ci-dessous reproduit ce mode d'echec plutot que de le supposer : il tronque
+# la population au `--limit` DEMANDE, comme le vrai.
+
+
+def _fake_gh_pr_list(monkeypatch, population):
+    """Faux `gh pr list` : les plus recentes de `population`, tronquees au plafond.
+
+    `population` est ordonnee du plus recent au plus ancien, comme ce que rend
+    le vrai `gh`.
+    """
+    calls = []
+
+    def fake_run(cmd, **kwargs):
+        calls.append(cmd)
+        limit = int(cmd[cmd.index("--limit") + 1])
+        return _FakeCompleted(json.dumps(population[:limit]))
+
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+    return calls
+
+
+def _tagged_pr(n):
+    """PR ouverte taggee par une lane -- hors des deux volets du garde rouge."""
+    return {"number": n, "title": f"pr {n}",
+            "body": "Grain: MED/guard -- lane myia-po-2026:CoursIA\n",
+            "createdAt": "2026-09-20T00:00:00Z", "isDraft": False,
+            "author": {"login": "jsboige"}, "headRefName": f"feature/{n}"}
+
+
+def test_open_prs_fetch_limit_no_longer_the_old_300(monkeypatch):
+    """Le plafond demande a `gh` est celui du pool, et il est surveille."""
+    calls = _fake_gh_pr_list(monkeypatch, [_tagged_pr(1)])
+    prs = pig.fetch_open_prs()
+    assert prs == [_tagged_pr(1)]
+    limit = int(calls[0][calls[0].index("--limit") + 1])
+    assert limit == pig.OPEN_PRS_FETCH_LIMIT >= pig.POOL_FETCH_LIMIT
+
+
+def test_open_prs_truncation_is_said_not_silent(monkeypatch, capsys):
+    """Sous le plafond : rien de dit. Au plafond : la troncature se dit."""
+    monkeypatch.setattr(pig, "OPEN_PRS_FETCH_LIMIT", 4)
+    _fake_gh_pr_list(monkeypatch, [_tagged_pr(n) for n in (5, 4, 2)])
+    pig.fetch_open_prs()
+    assert capsys.readouterr().err == "", "aucun avertissement sous le plafond"
+
+    monkeypatch.setattr(pig, "OPEN_PRS_FETCH_LIMIT", 3)
+    _fake_gh_pr_list(monkeypatch, [_tagged_pr(n) for n in (5, 4, 3, 2)])
+    pig.fetch_open_prs()
+    err = capsys.readouterr().err
+    assert "[PRS TRONQUEES]" in err
+    assert "3 PRs rendues pour un plafond de 3" in err
+    assert "OPEN_PRS_FETCH_LIMIT" in err
+
+
+def test_the_oldest_blocked_orphan_survives_the_cap(monkeypatch):
+    """#17474, faux negatif : la traine reste vue par la file de reparation.
+
+    La population porte 320 PRs taggees (invisibles au garde rouge) et, en
+    queue -- donc la plus ANCIENNE --, une orpheline bloquee. Le controle de
+    falsification est dans le test : au plafond historique de 300, la meme
+    fixture ne voit RIEN, ce qui prouve que le test mord sur le defaut et non
+    sur un faux `gh` complaisant.
+    """
+    population = [_tagged_pr(10_000 - i) for i in range(320)] + [_untagged_pr(17)]
+    red = {17: _state(checks=[("PR gate", "FAILURE", True)])}
+    _fake_gh_pr_list(monkeypatch, population)
+    _neutralize_organs(monkeypatch, red)
+
+    monkeypatch.setattr(pig, "OPEN_PRS_FETCH_LIMIT", 300)
+    assert pig.unattributed_blocked_prs() == [], (
+        "au plafond de 300 la traine doit etre invisible -- sinon la fixture "
+        "ne reproduit pas la troncature reelle"
+    )
+
+    monkeypatch.setattr(pig, "OPEN_PRS_FETCH_LIMIT", pig.POOL_FETCH_LIMIT)
+    assert [r["number"] for r in pig.unattributed_blocked_prs()] == [17]
 
 
 # --- #15139 : delegation a l'organe check_unaddressed_nits -----------------
