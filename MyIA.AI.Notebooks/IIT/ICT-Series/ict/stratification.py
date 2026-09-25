@@ -1,11 +1,13 @@
 """Stratification inter-tailles des runs ICT-25a (#17740, volet 1).
 
-La matrice des dissociations publie aujourd'hui, pour ICT-25a, deux nombres :
-la pente de ``hack_late`` par taille (0.222 -> 0.444 -> 0.942, bras N) et
-l'ecart ``Np - N`` par graine aux trois tailles. Ces nombres vivaient dans la
+La matrice des dissociations publie, pour ICT-25a, deux nombres : la pente de
+``hack_late`` par taille (0.2271 -> 0.4396 -> 0.9375, bras N) et l'ecart
+``Np - N`` par graine aux trois tailles. Ces nombres vivaient dans la
 prose, sans organe de recalcul : rien ne les rattachait aux artefacts
 committes, et un run regenere aurait fait deriver la matrice sans que rien ne
-rougisse. Ce module rend la claim falsifiable en la recalculant depuis
+rougisse -- c'est exactement ce qui s'est produit au palier 32B (#17724), qui a
+porte les artefacts de trois a quatre graines (0/1/7/42) et fait deriver les six
+nombres publies. Ce module rend la claim falsifiable en la recalculant depuis
 ``runs/ict25a_*.json``, et il etend la stratification aux grandeurs que la
 matrice ne portait pas (``reward_late``, ``mc_late``) avec leur dispersion
 inter-graines -- l'acceptance demande *chaque* grandeur rapportee par les runs,
@@ -19,15 +21,17 @@ Trois refus explicites, qui sont le contenu du module :
    fonction n'agrege les tailles entre elles -- il n'y a pas d'appel possible
    par erreur.
 2. **Aucun appariement silencieux.** ``Np - N`` est un ecart *par graine* (les
-   deux bras partagent 0/1/42) ; si les jeux de graines different, le module
+   deux bras partagent 0/1/7/42) ; si les jeux de graines different, le module
    leve au lieu d'apparier au hasard ou de comparer des moyennes.
 3. **Aucun verdict de significativite sous 4 graines.** La batterie ML du
-   depot exige >= 4 graines ; ces artefacts en portent 3 (0/1/42). Le verdict
-   rendu est donc descriptif, et le dit dans la sortie.
+   depot exige >= 4 graines ; ces artefacts en portent 4 (0/1/7/42) depuis
+   #17724, donc le seuil est atteint -- mais le seuil est *necessaire*, pas
+   suffisant : la conjonction edge >= 2 sigma et Diebold-Mariano n'est pas
+   evaluee par ce module, et la sortie le dit.
 
-Une taille declaree dont l'artefact n'est pas sur ``main`` (la tranche 32B,
-livree par #17724) sort en ``provisional`` : le module refuse d'en tirer une
-conclusion plutot que de la melanger aux tailles mesurees.
+Une taille declaree dont l'artefact n'est pas dans ``runs/`` sort en
+``provisional`` : le module refuse d'en tirer une conclusion plutot que de la
+melanger aux tailles mesurees.
 """
 
 from __future__ import annotations
@@ -41,12 +45,18 @@ from typing import Iterable, Mapping, Sequence
 
 # --- Constantes de protocole ------------------------------------------------
 
-#: Tailles mesurees par les artefacts committes dans ``runs/``.
-MEASURED_SIZES: tuple[str, ...] = ("1.5B", "7B", "14B")
+#: Tailles sur lesquelles les claims publiees sont enoncees : la matrice publie
+#: pour ICT-25a la chaine ``0.2271 -> 0.4396 -> 0.9375`` et les ecarts ``Np-N``
+#: sur ces trois tailles, et rien pour 32B. 32B est mesure par les artefacts
+#: commis (palier livre par #17724) et sort de ce perimetre : ni dans le
+#: controle de falsifiabilite, ni dans les claims de palier et de crossover,
+#: tant que la matrice ne publie pas ses nombres.
+CLAIMED_SIZES: tuple[str, ...] = ("1.5B", "7B", "14B")
 
-#: Tailles annoncees par la campagne : 32B est livre par #17724 et n'est pas
-#: encore sur ``main``. Declaree ici pour qu'elle ne soit jamais implicitement
-#: fondue dans les tailles mesurees.
+#: Tailles annoncees par la campagne, 32B compris -- mesure depuis #17724.
+#: Declaree ici pour qu'une taille sans artefact ne soit jamais implicitement
+#: fondue dans les tailles mesurees : elle sort en ``provisional`` avec sa
+#: raison, au lieu de compter pour un zero.
 DECLARED_SIZES: tuple[str, ...] = ("1.5B", "7B", "14B", "32B")
 
 #: Bras compares. ``N`` = sans prefixe, ``Np`` = prefixe informe-mais-interdit.
@@ -63,13 +73,16 @@ METRICS: tuple[str, ...] = ("hack_early", "hack_late", "reward_late", "mc_late")
 MIN_SEEDS_FOR_SIGNIFICANCE = 4
 
 #: Nombres publies par ``docs/ict/dissociations-matrix.md`` pour ICT-25a, avec
-#: leur tolerance (la matrice les cite a trois decimales).
+#: leur tolerance. La matrice les cite a quatre decimales : les artefacts
+#: portent quatre graines (0/1/7/42) depuis #17724, et ces valeurs sont la
+#: moyenne ``hack_late`` du bras N et l'ecart ``Np-N`` graine par graine
+#: recalcules sur les quatre.
 PUBLISHED_TOLERANCE = 5e-4
-PUBLISHED_HACK_LATE_SLOPE = {"1.5B": 0.222, "7B": 0.444, "14B": 0.942}
+PUBLISHED_HACK_LATE_SLOPE = {"1.5B": 0.2271, "7B": 0.4396, "14B": 0.9375}
 PUBLISHED_NP_MINUS_N_DELTA = {
-    "1.5B": (0.033, 0.008, -0.008),
-    "7B": (0.050, 0.158, 0.067),
-    "14B": (-0.133, -0.117, -0.158),
+    "1.5B": (0.0333, 0.0083, -0.0333, -0.0083),
+    "7B": (0.0500, 0.1583, 0.1333, 0.0667),
+    "14B": (-0.1333, -0.1167, -0.2167, -0.1583),
 }
 
 DEFAULT_RUNS_DIR = Path(__file__).resolve().parents[1] / "runs"
@@ -93,10 +106,14 @@ def load_artifact(path: Path) -> dict:
 
 def load_runs(
     runs_dir: Path,
-    sizes: Sequence[str] = MEASURED_SIZES,
+    sizes: Sequence[str] = DECLARED_SIZES,
     arms: Sequence[str] = ARMS,
 ) -> dict[tuple[str, str], dict]:
     """Charge les artefacts presents, clef ``(bras, taille)``.
+
+    Le defaut est la campagne entiere declaree (32B compris) : un chargeur
+    rend ce qui existe, et c'est la *lecture* qui restreint -- ``stratify()``
+    nomme les tailles, ``control_published()`` se limite a ``CLAIMED_SIZES``.
 
     Un artefact absent n'est pas une erreur de lecture : il n'est simplement
     pas rendu. C'est ``stratify()`` qui declare explicitement les tailles
@@ -229,13 +246,13 @@ def plateaus(runs: Mapping[tuple[str, str], dict], metric: str, arm: str = "N") 
     « paliers a intervalles disjoints » ne tient pas.
     """
     intervals: dict[str, list[float]] = {}
-    for size in MEASURED_SIZES:
+    for size in CLAIMED_SIZES:
         artifact = runs.get((arm, size))
         if artifact is None:
             continue
         values = seed_map(artifact, metric)
         intervals[size] = [round(min(values.values()), 6), round(max(values.values()), 6)]
-    order = [size for size in MEASURED_SIZES if size in intervals]
+    order = [size for size in CLAIMED_SIZES if size in intervals]
     disjoint = all(
         intervals[order[index]][1] < intervals[order[index + 1]][0]
         for index in range(len(order) - 1)
@@ -252,7 +269,7 @@ def locate_crossover(deltas_by_size: Mapping[str, dict]) -> dict:
     """
     measured = {
         size: deltas_by_size[size]
-        for size in MEASURED_SIZES
+        for size in CLAIMED_SIZES
         if size in deltas_by_size
     }
     signed = {
@@ -260,7 +277,7 @@ def locate_crossover(deltas_by_size: Mapping[str, dict]) -> dict:
         for size, row in measured.items()
         if row["sign"] in {"+", "-"}
     }
-    order = [size for size in MEASURED_SIZES if size in signed]
+    order = [size for size in CLAIMED_SIZES if size in signed]
     crossover = None
     for index in range(len(order) - 1):
         lower, upper = order[index], order[index + 1]
@@ -310,8 +327,8 @@ def stratify(
             sizes[size] = {
                 "status": "provisional",
                 "reason": (
-                    "aucun artefact dans runs/ : tranche non encore sur main "
-                    "(32B livre par #17724), aucune conclusion tiree"
+                    f"aucun artefact dans runs/ pour la taille {size!r} : "
+                    "tranche non mesuree, aucune conclusion tiree"
                 ),
             }
             continue
@@ -353,7 +370,9 @@ def stratify(
                 f"{min(seed_counts)} graine(s) par cellule, sous le seuil de "
                 f"{MIN_SEEDS_FOR_SIGNIFICANCE} de la batterie ML du depot"
                 if seed_counts and min(seed_counts) < MIN_SEEDS_FOR_SIGNIFICANCE
-                else "seuil de graines atteint"
+                else "seuil de graines atteint -- necessaire, non suffisant : "
+                "la conjonction edge >= 2 sigma et Diebold-Mariano p < 0.05 "
+                "n'est pas evaluee par ce module"
             )
         ),
     }
@@ -384,10 +403,10 @@ def control_published(runs_dir: Path = DEFAULT_RUNS_DIR, tolerance: float = PUBL
     nombres publies viennent de ``docs/ict/dissociations-matrix.md`` (lignes
     ICT-25a bras N et contraste Np).
     """
-    runs = load_runs(runs_dir, sizes=MEASURED_SIZES, arms=ARMS)
+    runs = load_runs(runs_dir, sizes=CLAIMED_SIZES, arms=ARMS)
     rows: list[dict] = []
 
-    for size in MEASURED_SIZES:
+    for size in CLAIMED_SIZES:
         artifact = runs.get(("N", size))
         if artifact is None:
             rows.append({"size": size, "check": "hack_late_mean_N", "status": "MISSING"})
@@ -405,7 +424,7 @@ def control_published(runs_dir: Path = DEFAULT_RUNS_DIR, tolerance: float = PUBL
             }
         )
 
-    for size in MEASURED_SIZES:
+    for size in CLAIMED_SIZES:
         if ("N", size) not in runs or ("Np", size) not in runs:
             rows.append({"size": size, "check": "delta_np_minus_n", "status": "MISSING"})
             continue

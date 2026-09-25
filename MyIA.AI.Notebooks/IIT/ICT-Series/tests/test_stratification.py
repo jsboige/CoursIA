@@ -11,10 +11,13 @@ Ce que ces tests protegent, dans l'ordre du module :
 4. **Le crossover est localise par un changement de signe consistant**, et une
    taille dont les graines se contredisent est declaree ``mixed`` au lieu
    d'etre lissee.
-5. **Aucun verdict de significativite sous 4 graines** (batterie ML du depot).
+5. **Aucun verdict de significativite sous 4 graines** (batterie ML du depot),
+   et le seuil atteint est declare *necessaire, non suffisant* -- la
+   conjonction edge >= 2 sigma et Diebold-Mariano n'est pas evaluee ici.
 6. **Une taille declaree sans artefact sort en ``provisional``** avec sa raison.
 7. **Les nombres publies par la matrice sont reproduits** -- le controle de
-   falsifiabilite porte sur les artefacts reels committes dans ``runs/``.
+   falsifiabilite porte sur les artefacts reels committes dans ``runs/``, qui
+   portent quatre graines (0/1/7/42) depuis #17724 et couvrent 32B.
 8. **Un artefact malforme ne fausse pas la mesure** -- un artefact sans clef
    ``steps`` ne casse pas la couverture, et une graine dupliquee leve au lieu
    de s'ecraser en silence sous l'appariement.
@@ -31,7 +34,7 @@ import pytest
 from ict.stratification import (
     DEFAULT_RUNS_DIR,
     DECLARED_SIZES,
-    MEASURED_SIZES,
+    CLAIMED_SIZES,
     MIN_SEEDS_FOR_SIGNIFICANCE,
     PUBLISHED_HACK_LATE_SLOPE,
     StratificationError,
@@ -155,7 +158,7 @@ def test_stratify_does_not_aggregate_across_sizes(tmp_path):
     assert report["aggregation"].startswith("aucune")
     for forbidden in ("overall", "mean", "total", "all_sizes"):
         assert forbidden not in report["sizes"]
-    assert set(report["sizes"]) & set(MEASURED_SIZES)
+    assert set(report["sizes"]) & set(CLAIMED_SIZES)
 
 
 # --- 4. crossover -----------------------------------------------------------
@@ -188,7 +191,7 @@ def test_mixed_sign_size_is_not_lissed_into_a_crossover():
 
 
 def test_no_crossover_when_signs_agree():
-    deltas = {size: {"sign": "+"} for size in MEASURED_SIZES}
+    deltas = {size: {"sign": "+"} for size in CLAIMED_SIZES}
     crossover = locate_crossover(deltas)
     assert crossover["crossover"] is None
     assert "aucun changement de signe" in crossover["verdict"]
@@ -210,11 +213,20 @@ def test_no_significance_claim_below_four_seeds(tmp_path):
 
 
 def test_significance_claim_is_reachable_at_the_threshold(tmp_path):
+    """Le seuil atteint est declare necessaire, pas suffisant.
+
+    Les artefacts reels portent 4 graines depuis #17724 : le booleen passe a
+    ``True``. La sortie doit dire dans le meme mouvement que la conjonction
+    (edge >= 2 sigma ET Diebold-Mariano) n'est pas evaluee ici -- sinon le
+    champ se lirait comme un verdict de significativite.
+    """
     seeds = {seed: 0.4 for seed in range(4)}
     runs_dir = build(tmp_path, {"7B": {"N": dict(seeds), "Np": dict(seeds)}})
     significance = stratify(runs_dir)["significance"]
     assert significance["claim"] is True
     assert significance["seeds_observed"] == [4]
+    assert "necessaire, non suffisant" in significance["reason"]
+    assert "Diebold-Mariano" in significance["reason"]
 
 
 # --- 6. provisional ---------------------------------------------------------
@@ -228,7 +240,9 @@ def test_provisional_size_carries_a_reason_and_no_verdict(tmp_path):
         assert entry["status"] == "provisional"
         assert set(entry) == {"status", "reason"}
         assert entry["reason"]
-    assert report["sizes"]["32B"]["reason"].count("17724") == 1
+        # la raison nomme la taille concernee : elle reste localisable quand la
+        # couverture bouge (32B a cesse d'etre provisional au palier #17724)
+        assert size in entry["reason"]
 
 
 def test_plateaus_report_disjoint_intervals(tmp_path):
@@ -255,19 +269,39 @@ def test_plateaus_report_disjoint_intervals(tmp_path):
 # --- 7. controle de falsifiabilite sur les artefacts reels ------------------
 
 
-def test_real_artifacts_are_present_and_carry_three_seeds():
-    """Documente la couverture reelle : 2 bras x 3 tailles, 3 graines chacune."""
+def test_real_artifacts_are_present_and_carry_four_seeds():
+    """Documente la couverture reelle : 2 bras x 4 tailles, 4 graines chacune.
+
+    Le palier 32B (#17724) a porte les artefacts de trois a quatre graines en
+    ajoutant la graine 7, et ajoute la tranche 32B : la couverture reelle est
+    ce que ce test fige, pour qu'une campagne qui bouge se voie ici.
+    """
     runs = load_runs(DEFAULT_RUNS_DIR)
     assert sorted(runs) == [
         ("N", "1.5B"),
         ("N", "14B"),
+        ("N", "32B"),
         ("N", "7B"),
         ("Np", "1.5B"),
         ("Np", "14B"),
+        ("Np", "32B"),
         ("Np", "7B"),
     ]
     seeds = {tuple(sorted(seed_map["seed"] for seed_map in artifact["seeds"])) for artifact in runs.values()}
-    assert seeds == {(0, 1, 42)}
+    assert seeds == {(0, 1, 7, 42)}
+
+
+def test_real_32b_is_measured_not_provisional():
+    """32B est mesure depuis #17724 : il ne sort plus en ``provisional``.
+
+    Tant que ses artefacts n'etaient pas sur ``main``, la taille sortait en
+    ``provisional`` avec sa raison. Le test fige la bascule -- et la raison,
+    elle, nomme toujours la taille, donc la meme assertion reste vraie pour
+    une tranche encore absente.
+    """
+    sizes = stratify(DEFAULT_RUNS_DIR)["sizes"]
+    assert sizes["32B"]["status"] == "measured"
+    assert sizes["32B"]["delta_np_minus_n"][LATE]["sign"] == "-"
 
 
 def test_published_matrix_numbers_are_reproduced():
@@ -279,7 +313,7 @@ def test_published_matrix_numbers_are_reproduced():
     """
     report = control_published(DEFAULT_RUNS_DIR)
     assert report["status"] == "MATCH", report["drifted"]
-    assert len(report["rows"]) == 2 * len(MEASURED_SIZES)
+    assert len(report["rows"]) == 2 * len(CLAIMED_SIZES)
 
 
 def test_published_slope_matches_the_committed_artifacts():
