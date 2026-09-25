@@ -375,12 +375,23 @@ MigrationBackup/
 .env.*.local
 .env.docker
 
+# Coffre local de secrets : master.env, cles privees des GitHub Apps de lane (#17437).
+# Ignore en entier par la regle versionnee, pas seulement par un .git/info/exclude local.
+.secrets/
+
 # HuggingFace tokens (Phase 29 - ÉTAPE 24F)
 .secrets/.env.huggingface
 .secrets/.env.huggingface.backup
 
 # Tokens API backup (SÉCURITÉ CRITIQUE)
 .secrets/qwen-api-user.token.backup
+
+# Répertoire de secrets à la racine — RÈGLE DE RÉPERTOIRE (SÉCURITÉ CRITIQUE).
+# Les entrées nominatives ci-dessus ne couvrent que les fichiers déjà connus au moment
+# où on les a ajoutées. master.env et les clés privées d'App GitHub n'étaient masqués
+# que par .git/info/exclude — local, non versionné — donc protégés sur UN clone, pas
+# sur le dépôt. Garde : scripts/ci/check_secret_paths_ignored.py
+.secrets/
 
 # Scripts secrets directory (SÉCURITÉ CRITIQUE)
 scripts/.secrets/
@@ -1091,3 +1102,14 @@ MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/cuda-detect-probe/
 
 # Claude Code machine-local state (registre arbitrations user - coordinator-discipline Regle 7, roo-extensions#3677)
 .claude/local/
+# SL-14 aifeynman run artifacts (results/, train/test splits, NN models -- regenerable, local only)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/_sl14_runs/
+
+# Livecoding video pipeline (#15604) : artefacts capture/PoC -- media regenerable, local only
+out/
+
+# Claude Code session scratchpads (per-machine, per-cycle dashboard drafts, PR body drafts, notebook backups)
+/.claude/scratchpad/
+
+# Lane-local runtime artefacts (forge validation, image outputs, intermediate probes)
+/_runtime/

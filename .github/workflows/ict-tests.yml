@@ -327,11 +327,78 @@ jobs:
           # choix (test-parallel vide -- elle n'a pas ete mesuree par la
           # sonde, 6,85-8,35 min en CI, conftest.py + pytest.ini propres
           # en mode prepend, cf. #9387/#14598).
-          - suite-name: "ict/tests/ (57 package)"
+          # ET test_confabulation_ignition.py (cette PR, #8182,
+          # +16 -- floor porte a 886, derivation au test-floor ci-dessous).
+          # ET test_factor_geometry.py (cette PR, #15943) : +13 items du
+          # module apparie de l'extraction F-Lens (mesure isolee du
+          # fichier : 13 items).
+          # RE-MESURE au 2e absorb (2026-09-21) : origin/main a avance de
+          # 21dd39bec a f8f34c424 -- arrivee de test_humor_pairs.py sur
+          # main (+11 items, +1 fichier, verifie par collecte isolee).
+          # Le label passe a 59 et le floor a 960 : mesure ls test_*.py |
+          # wc -l (59) et pytest --collect-only -q (960) sur l'arbre MERGE
+          # exact ; decomposition additive verifiee : 936 (main pur
+          # @21dd39bec) + 11 humor_pairs (main) + 13 factor_geometry
+          # (cette PR) = 960.
+          #
+          # Floor 936 -> 972 (arbre EMPILE de #17164, case 17 STV #8182) :
+          # +15 items de ict/tests/test_stv_valence_symmetry.py (collecte
+          # isolee du fichier : 15 -- aucun parametrage, donc independant de
+          # l'interpreteur) sur la base **CI-mesuree 957** de l'arbre de
+          # #17159 (main + case 16), log run 35570193154 :
+          #   "Collected: 957 tests (floor: 936) for ict/tests/ (57 package)"
+          # Les 957 incluent deja les 10 items de case 16
+          # (test_tonic_alertness_gain.py) ET le drift ascendant silencieux
+          # accumule sur main ; 957 + 15 = 972 ferme l'arithmetique. Ce bump
+          # couvre donc les DEUX apports non rattrapes : si #17159 merge sans
+          # son propre relevement (sa PR n'en porte pas), la base #17164
+          # portera le floor correct sur l'arbre final.
+          # Label "(57 package)" -> "(60 package)" : 57 modules sur main au
+          # moment du bump, +1 drift main (58, compte Hermes deux voies API
+          # contents/git trees), +1 case 16 (sur main depuis le squash de
+          # #17159, 2026-09-22) et +1 case 17 (cette PR) = 60 fichiers
+          # test_*.py sur l'arbre final. Le libelle est cosmetique (le guard
+          # ne lit que le floor) et n'est reference nulle part -- "PR gate" est
+          # le seul contexte requis de la protection de main, verifie 2026-09-21.
+          #
+          # RE-MESURE au 3e absorb (2026-09-24, conflit de floor #16291) :
+          # main a encore avance sous le floor declare -- 63 fichiers
+          # test_*.py sur origin/main (arrivees post-972, dont
+          # test_humor_typology.py, sans relevement du floor main -- le guard
+          # n'y emet qu'un ::warning). L'arbre MERGE porte 64 fichiers
+          # (63 main + 1 factor_geometry de cette PR, diff verifie par
+          # comm des ls-tree) et collecte 1039 items : pytest --collect-only
+          # -q sur l'arbre merge exact, env CI (conda ict-py39, py3.9,
+          # pip install -e . du ICT-Series, 0 erreur de collection).
+          # Decomposition : 972 (floor main declare, base CI-mesuree) +
+          # 13 factor_geometry (cette PR, mesure isolee re-verifiee : 13) +
+          # drift ascendant main post-972 (humor_typology et suivants,
+          # non decompose -- la mesure fait foi) = 1039.
+          - suite-name: "ict/tests/ (64 package)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests
             test-args: .
             test-parallel: ""
-            test-floor: 936
+            # Floor 846 -> 870 -> 886 : +24 items case 5bis #15798 (main,
+            # ict/tests/test_attention_schema_causal.py) PUIS +16 items
+            # case 15 confabulation ignition #8182 (cette PR,
+            # ict/tests/test_confabulation_ignition.py) -- 870 main pur
+            # + 16 = 886 ; decomposition verifiee par run isole du fichier
+            # (16 passed, aucun parametrize -- collection == run).
+            # Fichier sans parametrize, imports numpy+stdlib uniquement,
+            # py3.9-safe (typing.Dict, pas de PEP 604 ni walrus).
+            # Floor 886 -> 960 : +13 items extraction F-Lens #15943 (cette
+            # PR) puis +11 items test_humor_pairs.py arrives sur main
+            # (entre 21dd39bec et f8f34c424) -- 936 main pur
+            # (origin/main@21dd39bec) + 13 + 11 = 960, collecte pytest
+            # --collect-only sur l'arbre merge exact (re-mesure 2026-09-21 ;
+            # humor_pairs ne porte qu'un skipif d'execution, la collecte
+            # est independante de l'env).
+            # Floor 960 -> 972 (main, #17164 case 17 STV) puis 972 -> 1039
+            # (ce 3e absorb, 2026-09-24) : drift ascendant main post-972
+            # (dont test_humor_typology.py) + 13 factor_geometry -- la
+            # decomposition complete vit dans le bloc de commentaires
+            # ci-dessus, la mesure merge exacte fait foi.
+            test-floor: 1039
 
     steps:
       - uses: actions/checkout@v4

@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-#!/usr/bin/env python3
-"""Tests for ``scripts/coordination/debt_ledger.py`` -- the shared issue-debt ledger.
+"""Tests for ``scripts/coordination/debt_ledger.py`` -- the shared debt ledger.
 
 The ledger is an append-only journal carried by a DEDICATED RooSync workspace
 dashboard; the reducer is the only place where the journal is folded into state,
-and it must be trustworthy on four properties that are each a real fleet failure
+and it must be trustworthy on five properties that are each a real fleet failure
 mode:
 
   * two lanes observing the same entity at the same instant never clobber each
@@ -13,6 +12,8 @@ mode:
     journal yields the same state (idempotency, not "mostly idempotent");
   * a malformed observation is REJECTED with its reason rather than silently
     merged into a phantom field;
+  * an export whose adjacency the dashboard has condensed away still folds from
+    the checkpoint without re-deriving or losing state;
   * the summary carries the EAT (issue debt) metrics the cycle decides on, and
     follow-ups are tracked as named issues or explicit waivers.
 
@@ -59,7 +60,7 @@ def issue_obs(
     }
 
 
-def journal(ledger: str, observations) -> dict:
+def journal(ledger: str, observations, *, kind: str = "full", archives=None) -> dict:
     messages = []
     for index, obs in enumerate(observations):
         normalized = dl.parse_observation(obs, ledger)
@@ -74,6 +75,7 @@ def journal(ledger: str, observations) -> dict:
     return {
         "schema": dl.EXPORT_SCHEMA,
         "ledger": ledger,
+        "window": {"kind": kind, "archives": list(archives or [])},
         "messages": messages,
     }
 
@@ -99,10 +101,11 @@ def row_of(snapshot, key: str) -> dict:
 
 
 def state_of(snapshot) -> dict:
-    """The state that must survive a re-fold: each row's values and verdict."""
+    """The state that must survive a re-fold: per row, its values and verdict."""
     snapshot = getattr(snapshot, "snapshot", snapshot)
     return {
-        row["key"]: (row["fields"], row["historical"]) for row in snapshot["rows"]
+        row["key"]: (row["fields"], row["historical"])
+        for row in snapshot["rows"]
     }
 
 
@@ -181,9 +184,6 @@ def test_merge_order_is_actor_then_digest_and_never_filesystem_order():
     assert state_of(forward) == state_of(backward)
 
 
-# --- PR head rule ------------------------------------------------------------
-
-
 # --- idempotency -------------------------------------------------------------
 
 
@@ -207,7 +207,98 @@ def test_refolding_the_same_journal_is_byte_identical():
     assert dl.canonical_json(first.snapshot) == dl.canonical_json(second.snapshot)
 
 
+def test_incremental_refold_of_the_same_events_preserves_rows_exactly():
+    """Archive-aware: the checkpoint fold must not inflate or drift the rows."""
+    observations = [
+        issue_obs(issue=1, observed_at="2026-09-17T18:00:00Z",
+                  state_class="open-blocked", eat_hours=4.0),
+        issue_obs(issue=2, observed_at="2026-09-17T18:30:00Z",
+                  state_class="open-actionable", remaining_atomic_prs=2,
+                  closeability="closeable-now"),
+    ]
+    full = reduce_it(dl.ISSUE_DEBT, observations)
+    incremental = dl.reduce_ledger(
+        ledger=dl.ISSUE_DEBT,
+        export=journal(dl.ISSUE_DEBT, observations, kind="incremental", archives=["arch-1"]),
+        prior_snapshot=full.snapshot,
+        now=NOW,
+    )
+    assert incremental.snapshot["rows"] == full.snapshot["rows"]
+    assert incremental.summary["state_class"] == full.summary["state_class"]
+
+
 # --- archive-aware checkpoint contract ---------------------------------------
+
+
+def test_incremental_window_without_checkpoint_fails_closed():
+    export = journal(dl.ISSUE_DEBT, [issue_obs(state_class="open-blocked")], kind="incremental")
+    with pytest.raises(dl.LedgerError) as excinfo:
+        dl.reduce_ledger(ledger=dl.ISSUE_DEBT, export=export, now=NOW)
+    assert excinfo.value.reason == "MISSING_CHECKPOINT"
+
+
+def test_undeclared_window_is_treated_as_incremental():
+    export = journal(dl.ISSUE_DEBT, [issue_obs(state_class="open-blocked")])
+    del export["window"]
+    with pytest.raises(dl.LedgerError) as excinfo:
+        dl.reduce_ledger(ledger=dl.ISSUE_DEBT, export=export, now=NOW)
+    assert excinfo.value.reason == "MISSING_CHECKPOINT"
+
+
+def test_archive_fold_carries_state_when_the_journal_is_condensed_away():
+    """The whole point of the checkpoint: a condensed journal loses nothing."""
+    full = reduce_it(
+        dl.ISSUE_DEBT,
+        [
+            issue_obs(issue=1, state_class="open-blocked", eat_hours=4.0,
+                      followup={"kind": "issue", "repo": "jsboige/CoursIA", "number": 16100}),
+            issue_obs(issue=2, state_class="closed", closeability="unknown"),
+        ],
+    )
+    # Next cycle the dashboard has archived both messages: the tail is empty.
+    tail = dl.reduce_ledger(
+        ledger=dl.ISSUE_DEBT,
+        export=journal(dl.ISSUE_DEBT, [], kind="incremental", archives=["arch-2026-09-01"]),
+        prior_snapshot=full.snapshot,
+        now=NOW,
+    )
+    assert state_of(tail.snapshot) == state_of(full.snapshot)
+    assert tail.snapshot["checkpoint"]["window"]["archives"] == ["arch-2026-09-01"]
+
+
+def test_an_older_export_cannot_regress_state():
+    observations = [issue_obs(state_class="open-actionable", eat_hours=2.0,
+                              observed_at="2026-09-17T19:00:00Z")]
+    newer = reduce_it(dl.ISSUE_DEBT, observations)
+    stale = dl.reduce_ledger(
+        ledger=dl.ISSUE_DEBT,
+        export=journal(
+            dl.ISSUE_DEBT,
+            [issue_obs(state_class="open-blocked", eat_hours=9.0,
+                       observed_at="2026-09-17T08:00:00Z")],
+            kind="incremental",
+        ),
+        prior_snapshot=newer.snapshot,
+        now=NOW,
+    )
+    row = row_of(stale.snapshot, "jsboige/CoursIA#15545")
+    assert row["fields"]["state_class"] == "open-actionable"
+    assert row["fields"]["eat_hours"] == 2.0
+    assert any("export_older_than_checkpoint" in warning for warning in stale.warnings)
+
+
+def test_checkpoint_ledger_mismatch_is_fatal():
+    issue_snapshot = reduce_it(dl.ISSUE_DEBT, [issue_obs(state_class="open-blocked")]).snapshot
+    foreign = dict(issue_snapshot, ledger="another-ledger")
+    with pytest.raises(dl.LedgerError) as excinfo:
+        dl.reduce_ledger(
+            ledger=dl.ISSUE_DEBT,
+            export=journal(dl.ISSUE_DEBT, [issue_obs(state_class="open-blocked")],
+                           kind="incremental"),
+            prior_snapshot=foreign,
+            now=NOW,
+        )
+    assert excinfo.value.reason == "CHECKPOINT_LEDGER_MISMATCH"
 
 
 def test_replayed_observation_is_counted():
@@ -215,7 +306,7 @@ def test_replayed_observation_is_counted():
     first = reduce_it(dl.ISSUE_DEBT, [observation])
     second = dl.reduce_ledger(
         ledger=dl.ISSUE_DEBT,
-        export=journal(dl.ISSUE_DEBT, [observation]),
+        export=journal(dl.ISSUE_DEBT, [observation], kind="incremental"),
         prior_snapshot=first.snapshot,
         now=NOW,
     )
@@ -302,10 +393,76 @@ def test_a_corrupt_config_degrades_to_the_compiled_in_workspace():
         ledger=dl.ISSUE_DEBT,
         export=journal(dl.ISSUE_DEBT, [issue_obs(state_class="open-blocked")]),
         now=NOW,
-        config={"ledgers": {dl.ISSUE_DEBT: "not-an-object"}},
+        config={"ledgers": {"issue-debt": "not-an-object"}},
     )
     assert result.snapshot["workspace"] == "CoursIA-issue-debt-ledger"
     assert result.summary["workspace"] == "CoursIA-issue-debt-ledger"
+
+
+def test_a_producer_shaped_export_is_adapted_not_refused():
+    """The real `roosync_dashboard read` envelope, with the REAL field names.
+
+    Field names matter here: the transport writes ``{id, timestamp, author:
+    {machineId, workspace}, content}``, not ``messageId``/``createdAt``/``machine``.
+    A producer-shape test written with invented keys passes on a parser that
+    would refuse every observation the fleet actually posts.
+    """
+    observation = authorless_envelope(
+        drop=("actor", "observed_at"), issue=42, state_class="open-blocked", eat_hours=2.0
+    )
+    export = {
+        "success": True,
+        "data": {
+            "intercom": {
+                "section": "status",
+                "messages": [
+                    {"id": "msg-77",
+                     "timestamp": "2026-09-17T19:00:00Z",
+                     "author": {"machineId": "myia-ai-01", "workspace": "CoursIA"},
+                     "content": observation},
+                    {"id": "msg-78",
+                     "timestamp": "2026-09-17T19:05:00Z",
+                     "author": {"machineId": "myia-ai-01", "workspace": "CoursIA"},
+                     "content": "[LEDGER] issue-debt @ 2026-09-17T19:05:00Z | rows 3 live"},
+                ],
+            }
+        },
+    }
+    result = dl.reduce_ledger(
+        ledger=dl.ISSUE_DEBT,
+        export=dict(export, window={"kind": "full", "archives": []}),
+        now=NOW,
+    )
+    row = row_of(result, "jsboige/CoursIA#42")
+    assert row["fields"]["state_class"] == "open-blocked"
+    assert row["provenance"]["eat_hours"]["actor"] == "myia-ai-01:CoursIA"
+    assert row["provenance"]["eat_hours"]["observed_at"] == "2026-09-17T19:00:00Z"
+    assert row["provenance"]["eat_hours"]["message_id"] == "msg-77"
+    assert result.snapshot["checkpoint"]["window"]["messages"] == 2
+    # Dashboard prose is not a malformed observation: it is ignored, not red.
+    assert result.snapshot["rejections"] == []
+    assert result.summary["window"]["ignored"] == 1
+
+
+def test_producer_shape_still_fails_closed_on_an_undeclared_window():
+    """The adapter finds the journal; it never guesses the coverage."""
+    observation = dl.parse_observation(issue_obs(state_class="open-blocked"), dl.ISSUE_DEBT)
+    export = {
+        "data": {"intercom": {"messages": [
+            {"messageId": "m1", "author": {"machine": "a", "workspace": "b"},
+             "createdAt": "2026-09-17T19:00:00Z", "content": dl.envelope_line(observation)},
+        ]}},
+    }
+    with pytest.raises(dl.LedgerError) as excinfo:
+        dl.reduce_ledger(ledger=dl.ISSUE_DEBT, export=export, now=NOW)
+    assert excinfo.value.reason == "MISSING_CHECKPOINT"
+    window, records, rejections = dl.parse_journal_export(
+        dict(export, window={"kind": "incremental", "archives": ["arch-a"]}), dl.ISSUE_DEBT
+    )
+    assert window["path"] == "data.intercom.messages"
+    assert window["kind"] == "incremental"
+    assert window["archives"] == ["arch-a"]
+    assert len(records) == 1 and rejections == []
 
 
 def test_a_message_that_declares_itself_an_observation_still_rejects():
@@ -356,6 +513,15 @@ def test_an_unrecognised_author_shape_is_a_rejection_not_a_crash():
     assert [item["reason"] for item in result.snapshot["rejections"]] == ["missing_actor"]
 
 
+def test_an_export_declaring_another_format_is_refused():
+    """A future encoding must not be silently misread as this one."""
+    export = dict(journal(dl.ISSUE_DEBT, [issue_obs(state_class="open-blocked")]),
+                  format="yaml")
+    with pytest.raises(dl.LedgerError) as excinfo:
+        dl.reduce_ledger(ledger=dl.ISSUE_DEBT, export=export, now=NOW)
+    assert excinfo.value.reason == "UNSUPPORTED_EXPORT_FORMAT"
+
+
 def test_unknown_ledger_is_refused():
     with pytest.raises(dl.LedgerError) as excinfo:
         dl.reduce_ledger(ledger="release-notes", export=[], now=NOW)
@@ -366,19 +532,18 @@ def test_unknown_ledger_is_refused():
 
 
 def test_closed_rows_remain_historical():
-    """A closed issue stops being live debt but never leaves the ledger."""
-    snapshot = reduce_it(
+    issue_snapshot = reduce_it(
         dl.ISSUE_DEBT,
         [
             issue_obs(issue=1, state_class="closed"),
             issue_obs(issue=2, state_class="open-blocked"),
         ],
     )
-    rows = {row["key"]: row for row in snapshot.snapshot["rows"]}
+    rows = {row["key"]: row for row in issue_snapshot.snapshot["rows"]}
     assert rows["jsboige/CoursIA#1"]["historical"] is True
     assert rows["jsboige/CoursIA#2"]["historical"] is False
-    assert snapshot.snapshot["counts"]["historical"] == 1
-    assert snapshot.summary["state_class"] == {"open-blocked": 1}
+    assert issue_snapshot.snapshot["counts"]["historical"] == 1
+    assert issue_snapshot.summary["state_class"] == {"open-blocked": 1}
 
 
 # --- baseline ----------------------------------------------------------------
@@ -465,12 +630,13 @@ def test_a_corrupt_prior_snapshot_never_crashes_the_fold():
     }
     result = dl.reduce_ledger(
         ledger=dl.ISSUE_DEBT,
-        export=journal(dl.ISSUE_DEBT, [issue_obs(issue=1, state_class="closed")]),
+        export=journal(dl.ISSUE_DEBT, [issue_obs(issue=1, state_class="closed")], kind="incremental"),
         prior_snapshot=corrupt,
         now=NOW,
     )
     row = row_of(result, "jsboige/CoursIA#1")
     assert row["fields"]["state_class"] == "closed"
+    assert any("checkpoint_newest_unreadable" in warning for warning in result.warnings)
 
 
 # --- summary: EAT metrics ----------------------------------------------------
@@ -525,12 +691,9 @@ def test_summary_counts_missing_fields_as_incomplete():
     assert snapshot.summary["rows"]["incomplete"] == 1
 
 
-# --- summary: PR metrics -----------------------------------------------------
-
-
 def test_status_text_is_bounded_by_status_max_rows():
     observations = [
-        issue_obs(issue=100 + index, state_class="open-actionable", eat_hours=float(index))
+        issue_obs(issue=100 + index, state_class="open-blocked", eat_hours=float(index))
         for index in range(30)
     ]
     snapshot = reduce_it(dl.ISSUE_DEBT, observations, config={"status_max_rows": 5})
@@ -699,6 +862,102 @@ def test_cli_append_prints_the_mcp_call_and_writes_nothing_by_default(tmp_path, 
     assert list(tmp_path.iterdir()) == []
 
 
+def test_cli_window_full_wraps_a_list_export(tmp_path):
+    """A bare list is the natural hand-made export; the flag must cover it."""
+    observation = dl.parse_observation(issue_obs(state_class="open-blocked"), dl.ISSUE_DEBT)
+    events = tmp_path / "events.json"
+    events.write_text(json.dumps([
+        {"messageId": "m1", "author": "ai-01", "createdAt": "2026-09-17T19:00:00Z",
+         "content": dl.envelope_line(observation)},
+    ]), encoding="utf-8")
+    state_dir = tmp_path / "state"
+    assert dl.main(["reduce", "--ledger", dl.ISSUE_DEBT, "--events", str(events),
+                    "--state-dir", str(state_dir), FROZEN]) == 1
+    assert dl.main(["reduce", "--ledger", dl.ISSUE_DEBT, "--events", str(events),
+                    "--state-dir", str(state_dir), "--window-full", FROZEN]) == 0
+    snapshot = json.loads(
+        (state_dir / dl.ISSUE_DEBT / "snapshots" / "snapshot.json").read_text(encoding="utf-8")
+    )
+    assert snapshot["checkpoint"]["window"]["kind"] == "full"
+    assert snapshot["rows"][0]["fields"]["state_class"] == "open-blocked"
+
+
+def test_cli_window_full_does_not_override_an_explicit_declaration(tmp_path):
+    events = tmp_path / "events.json"
+    events.write_text(json.dumps(journal(dl.ISSUE_DEBT, [issue_obs(state_class="closed")],
+                                         kind="incremental")), encoding="utf-8")
+    state_dir = tmp_path / "state"
+    # An export that SAYS it is a tail is still a tail: the flag is for the
+    # exports that say nothing, never a way to talk the reducer out of a fact.
+    assert dl.main(["reduce", "--ledger", dl.ISSUE_DEBT, "--events", str(events),
+                    "--state-dir", str(state_dir), "--window-full", FROZEN]) == 1
+
+
+def test_cli_window_full_does_not_shadow_a_nested_incremental_window(tmp_path):
+    """The producer may wrap coverage under data; the override must see it."""
+    observation = dl.parse_observation(issue_obs(state_class="closed"), dl.ISSUE_DEBT)
+    events = tmp_path / "events.json"
+    events.write_text(json.dumps({
+        "success": True,
+        "data": {
+            "window": {"kind": "incremental", "archives": ["archive-1"]},
+            "intercom": {"messages": [{
+                "id": "m1",
+                "timestamp": "2026-09-17T19:00:00Z",
+                "author": {"machineId": "myia-ai-01", "workspace": "CoursIA"},
+                "content": dl.envelope_line(observation),
+            }]},
+        },
+    }), encoding="utf-8")
+    state_dir = tmp_path / "state"
+    assert dl.main(["reduce", "--ledger", dl.ISSUE_DEBT, "--events", str(events),
+                    "--state-dir", str(state_dir), "--window-full", FROZEN]) == 1
+    assert not (state_dir / dl.ISSUE_DEBT / "snapshots" / "snapshot.json").exists()
+
+
+def test_parser_refuses_unknown_window_kind_and_invalid_archives():
+    base = journal(dl.ISSUE_DEBT, [issue_obs(state_class="closed")])
+    base["window"] = {"kind": "mystery", "archives": []}
+    with pytest.raises(dl.LedgerError, match="UNSUPPORTED_WINDOW_KIND"):
+        dl.parse_journal_export(base, dl.ISSUE_DEBT)
+    base["window"] = {"kind": "full", "archives": "not-a-list"}
+    with pytest.raises(dl.LedgerError, match="UNSUPPORTED_WINDOW_KIND"):
+        dl.parse_journal_export(base, dl.ISSUE_DEBT)
+
+
+def test_stray_deep_window_is_not_a_coverage_declaration():
+    """A stray ``window`` nested past ``data`` (e.g. UI pagination state) is not
+    the producer's coverage declaration. Reading it (key-by-key walk) would
+    treat a condensed tail as a FULL export and rebuild state from a fragment;
+    the documented paths are the root and ``data`` only."""
+    observation = dl.parse_observation(issue_obs(state_class="closed"), dl.ISSUE_DEBT)
+    stray = journal(dl.ISSUE_DEBT, [observation])
+    del stray["window"]
+    stray["data"] = {
+        "intercom": {
+            "messages": [],
+            # deep stray: pagination metadata that merely shares the key name
+            "window": {"kind": "full", "archives": []},
+        },
+    }
+    window, records, rejections = dl.parse_journal_export(stray, dl.ISSUE_DEBT)
+    assert window["kind"] == "incremental"  # no declaration read: fail-closed tail
+    assert window["archives"] == []
+    assert len(records) == 1 and rejections == []  # root journal still parsed
+
+
+def test_stray_deep_format_is_ignored_but_a_declared_format_is_enforced():
+    observation = dl.parse_observation(issue_obs(state_class="closed"), dl.ISSUE_DEBT)
+    base = journal(dl.ISSUE_DEBT, [observation])
+    base["data"] = {"intercom": {"messages": [], "format": "yaml"}}
+    window, _, _ = dl.parse_journal_export(base, dl.ISSUE_DEBT)  # stray ignored
+    assert window["kind"] == base["window"]["kind"]
+    declared = journal(dl.ISSUE_DEBT, [observation])
+    declared["data"] = {"format": "yaml"}  # DOCUMENTED path: enforced
+    with pytest.raises(dl.LedgerError, match="UNSUPPORTED_EXPORT_FORMAT"):
+        dl.parse_journal_export(declared, dl.ISSUE_DEBT)
+
+
 def test_cli_malformed_fields_json_is_a_controlled_error(tmp_path, capsys):
     for bad in ("{not json", "[1, 2]", '"a string"'):
         exit_code = dl.main([
@@ -712,10 +971,10 @@ def test_cli_malformed_fields_json_is_a_controlled_error(tmp_path, capsys):
 
 def test_cli_append_json_descriptor_and_spool_out_dir(tmp_path, capsys):
     exit_code = dl.main([
-        "append", "--ledger", dl.ISSUE_DEBT, "--entity", "jsboige/CoursIA#16001",
+        "append", "--ledger", dl.ISSUE_DEBT, "--entity", "jsboige/CoursIA#15545",
         "--actor", "myia-po-2025:CoursIA-2",
-        "--observed-at", "2026-09-17T19:00:00Z", "--evidence", "gh issue view 16001",
-        "--fields-json", json.dumps({"state_class": "open-actionable", "eat_hours": 3.0}),
+        "--observed-at", "2026-09-17T19:00:00Z", "--evidence", "gh issue view 15545",
+        "--fields-json", json.dumps({"state_class": "open-blocked", "eat_hours": 4.0}),
         "--json", "--out-dir", str(tmp_path / "spool"),
     ])
     captured = capsys.readouterr()
@@ -767,7 +1026,7 @@ def test_cli_reduce_writes_snapshot_summary_and_status(tmp_path, capsys):
 
 def test_cli_reduce_dry_run_writes_nothing(tmp_path):
     events = tmp_path / "events.json"
-    events.write_text(json.dumps(journal(dl.ISSUE_DEBT, [issue_obs(state_class="open-blocked")])),
+    events.write_text(json.dumps(journal(dl.ISSUE_DEBT, [issue_obs(state_class="closed")])),
                       encoding="utf-8")
     state_dir = tmp_path / "state"
     assert dl.main(["reduce", "--ledger", dl.ISSUE_DEBT, "--events", str(events),
@@ -804,6 +1063,24 @@ def test_cli_reduce_without_events_on_an_incremental_journal_is_a_fatal_error(tm
     assert "MISSING_INPUT" in capsys.readouterr().err
 
 
+def test_cli_window_full_allows_a_cold_start(tmp_path):
+    """Bootstrap: the very first reduce declares the export complete on purpose."""
+    export = journal(dl.ISSUE_DEBT, [issue_obs(state_class="open-blocked")])
+    del export["window"]
+    events = tmp_path / "events.json"
+    events.write_text(json.dumps(export), encoding="utf-8")
+    assert dl.main(["reduce", "--ledger", dl.ISSUE_DEBT, "--events", str(events),
+                    "--state-dir", str(tmp_path / "state"), FROZEN]) == 1
+    assert dl.main(["reduce", "--ledger", dl.ISSUE_DEBT, "--events", str(events),
+                    "--state-dir", str(tmp_path / "state"), "--window-full", FROZEN]) == 0
+    snapshot = json.loads(
+        (tmp_path / "state" / dl.ISSUE_DEBT / "snapshots" / "snapshot.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert snapshot["checkpoint"]["window"]["kind"] == "full"
+
+
 def test_cli_reduce_stdout_writes_nothing(tmp_path, capsys):
     events = tmp_path / "events.json"
     events.write_text(json.dumps(journal(dl.ISSUE_DEBT, [issue_obs(state_class="closed")])),
@@ -827,3 +1104,192 @@ def test_cli_append_from_observation_file(tmp_path, capsys):
     assert json.loads(line.removeprefix(dl.ENVELOPE_PREFIX))["observation_id"] == (
         observation["observation_id"]
     )
+# --- gpu-reservation: the second kind, keyed on the device -------------------
+#
+# The device ledger shares the reducer, so what is pinned here is what the
+# DECLARATION buys: its own entity shape (a hold is not an issue), its own field
+# kinds (a lane is not free text, a deadline is on the same clock as
+# ``observed_at``), its own terminal value, and a summary that answers the only
+# question a CPU lane has -- which devices are held, and by whom.
+
+
+def gpu_obs(
+    machine: str = "myia-po-2023",
+    gpu_index: int = 1,
+    *,
+    actor: str = "myia-po-2023:CoursIA",
+    observed_at: str = "2026-09-17T19:00:00Z",
+    confidence: str = "high",
+    evidence: str = "nvidia-smi + run 35834006364",
+    **fields,
+) -> dict:
+    return {
+        "schema": dl.OBSERVATION_SCHEMA,
+        "ledger": dl.GPU_RESERVATION,
+        "actor": actor,
+        "observed_at": observed_at,
+        "confidence": confidence,
+        "evidence": evidence,
+        "entity": {"machine": machine, "gpu_index": gpu_index},
+        "fields": dict(fields),
+    }
+
+
+def held(**overrides) -> dict:
+    fields = {
+        "state": "held",
+        "holder": "myia-po-2023:CoursIA",
+        "workload": "PPO walk-forward",
+        "started_at": "2026-09-17T18:00:00+00:00",
+        "expected_end": "2026-09-17T22:00:00Z",
+        "issue": "jsboige/CoursIA#16737",
+    }
+    fields.update(overrides)
+    return gpu_obs(**fields)
+
+
+def test_gpu_row_key_is_the_device_not_a_repo():
+    """The row identity is ``<machine>#gpu<n>``: sharing issue-debt's key would
+    merge two machines' holds on the same index into one row."""
+    observation = dl.parse_observation(held(), dl.GPU_RESERVATION)
+    assert observation["entity"] == {"machine": "myia-po-2023", "gpu_index": 1}
+    assert dl.entity_key(observation["entity"]) == "myia-po-2023#gpu1"
+    other = dl.parse_observation(held(machine="myia-ai-01"), dl.GPU_RESERVATION)
+    assert dl.entity_key(other["entity"]) == "myia-ai-01#gpu1"
+
+
+def test_gpu_index_zero_is_valid_and_negative_is_refused():
+    """Device indices are 0-based: refusing 0 would refuse the first card."""
+    zero = dl.parse_observation(held(gpu_index=0), dl.GPU_RESERVATION)
+    assert dl.entity_key(zero["entity"]) == "myia-po-2023#gpu0"
+    with pytest.raises(dl.ObservationError) as excinfo:
+        dl.parse_observation(held(gpu_index=-1), dl.GPU_RESERVATION)
+    assert excinfo.value.reason == "entity_mismatch"
+
+
+def test_gpu_entity_refuses_an_issue_shaped_key():
+    """An issue entity on the device ledger is a producer wiring the wrong kind:
+    it must be rejected, never silently reduced to a phantom hold."""
+    raw = held()
+    raw["entity"] = {"repo": "jsboige/CoursIA", "issue": 16737}
+    with pytest.raises(dl.ObservationError) as excinfo:
+        dl.parse_observation(raw, dl.GPU_RESERVATION)
+    assert excinfo.value.reason == "entity_mismatch"
+    assert "repo" in excinfo.value.detail and "issue" in excinfo.value.detail
+
+
+def test_gpu_timestamps_normalise_to_the_ledger_clock():
+    """A hold reads on the same clock as ``observed_at``: an offset stamp is
+    normalised, a naive one is refused (it would read local time as UTC)."""
+    observation = dl.parse_observation(held(), dl.GPU_RESERVATION)
+    assert observation["fields"]["started_at"] == "2026-09-17T18:00:00Z"
+    with pytest.raises(dl.ObservationError) as excinfo:
+        dl.parse_observation(held(expected_end="2026-09-17T22:00:00"), dl.GPU_RESERVATION)
+    assert excinfo.value.reason == "naive_timestamp"
+
+
+def test_gpu_holder_must_be_a_lane_and_issue_a_reference():
+    """``holder`` is a lane, ``issue`` is ``owner/repo#N``: free text in either
+    would make the occupancy unreadable by the lane that has to claim next."""
+    with pytest.raises(dl.ObservationError) as excinfo:
+        dl.parse_observation(held(holder="myia po 2023"), dl.GPU_RESERVATION)
+    assert excinfo.value.reason == "invalid_field_value"
+    with pytest.raises(dl.ObservationError) as excinfo:
+        dl.parse_observation(held(issue="16737"), dl.GPU_RESERVATION)
+    assert excinfo.value.reason == "invalid_field_value"
+
+
+def test_gpu_released_is_terminal():
+    """``released`` retires the row exactly as ``closed`` does for an issue: what
+    the ledger reports is the current holder, not the history of the device."""
+    live = reduce_it(dl.GPU_RESERVATION, [held()])
+    assert row_of(live, "myia-po-2023#gpu1")["historical"] is False
+    released = reduce_it(dl.GPU_RESERVATION, [held(state="released")])
+    assert row_of(released, "myia-po-2023#gpu1")["historical"] is True
+    assert released.summary["rows"] == {
+        "total": 1, "live": 0, "historical": 1, "incomplete": 0, "stale": 0
+    }
+
+
+def test_gpu_summary_answers_occupancy_per_machine():
+    """The summary is read by a lane deciding whether to claim: it carries the
+    per-machine hold counts, the holders, and the holds whose state is stale."""
+    result = reduce_it(
+        dl.GPU_RESERVATION,
+        [
+            held(gpu_index=0, machine="myia-ai-01"),
+            held(gpu_index=1, machine="myia-ai-01", holder="myia-ai-01:CoursIA"),
+            held(gpu_index=2, machine="myia-po-2027", state="stale"),
+        ],
+    )
+    summary = result.summary
+    assert summary["state"] == {"held": 2, "stale": 1}
+    assert summary["held_by_machine"] == {"myia-ai-01": 2}
+    assert summary["holders"] == ["myia-ai-01:CoursIA", "myia-po-2023:CoursIA"]
+    assert summary["stale_holds"] == ["myia-po-2027#gpu2"]
+
+
+def test_gpu_status_text_names_the_holds():
+    result = reduce_it(dl.GPU_RESERVATION, [held()])
+    text = result.status_text
+    assert "[LEDGER] gpu-reservation" in text
+    assert "held_by_machine: myia-po-2023 1" in text
+    assert "myia-po-2023#gpu1 held holder myia-po-2023:CoursIA" in text
+
+
+def test_a_gpu_observation_never_reduces_into_the_issue_journal():
+    """The kinds never cross: a journal declaring issue-debt rejects a device
+    observation with its reason instead of folding it as a phantom issue."""
+    # ``journal`` parses under the target ledger, so the cross-kind envelope is
+    # built by hand: the point is what the REDUCER does with it.
+    normalized = dl.parse_observation(held(), dl.GPU_RESERVATION)
+    # Fenetre declaree "full" : l'export synthetique contient tout le journal,
+    # et le contrat archive-aware (absent = incremental fail-closed) ne doit pas
+    # court-circuiter le rejet cross-kind que ce test mesure.
+    export = {
+        "schema": dl.EXPORT_SCHEMA,
+        "ledger": dl.ISSUE_DEBT,
+        "window": {"kind": "full"},
+        "messages": [
+            {
+                "messageId": "msg-0",
+                "author": normalized["actor"],
+                "createdAt": normalized["observed_at"],
+                "content": dl.envelope_line(normalized),
+            }
+        ],
+    }
+    result = dl.reduce_ledger(ledger=dl.ISSUE_DEBT, export=export, now=NOW)
+    assert result.summary["rows"]["total"] == 0
+    assert [item["reason"] for item in result.snapshot["rejections"]] == ["ledger_mismatch"]
+
+
+def test_schema_document_declares_each_kind_with_its_own_shape():
+    """The generated contract is what a producer reads: a kind listed with another
+    kind's fields (or row key) would document a shape the reducer refuses."""
+    doc = dl.schema_document()
+    gpu = doc["ledgers"][dl.GPU_RESERVATION]
+    assert gpu["entity_keys"] == ["machine", "gpu_index"]
+    assert gpu["row_key"] == "<machine>#gpu<n>"
+    assert gpu["terminal_values"] == {"state": ["released"]}
+    names = {field["name"] for field in gpu["fields"]}
+    assert names == {"state", "holder", "workload", "started_at", "expected_end", "issue"}
+    issue_names = {field["name"] for field in doc["ledgers"][dl.ISSUE_DEBT]["fields"]}
+    assert "eat_hours" in issue_names and "eat_hours" not in names
+
+
+def test_cli_append_parses_the_device_entity(capsys):
+    assert dl.main(["append", "--ledger", dl.GPU_RESERVATION, "--entity", "myia-po-2023#gpu1",
+                    "--fields-json", '{"state": "held", "holder": "myia-po-2023:CoursIA"}']) == 0
+    line = capsys.readouterr().out.splitlines()[0]
+    envelope = json.loads(line.removeprefix(dl.ENVELOPE_PREFIX))
+    assert envelope["entity"] == {"machine": "myia-po-2023", "gpu_index": 1}
+    assert dl.entity_key(envelope["entity"]) == "myia-po-2023#gpu1"
+
+
+def test_cli_append_refuses_an_issue_entity_on_the_device_ledger(capsys):
+    """The CLI reports the refusal (exit 1) instead of tracebacking out of an
+    organ the fleet runs on a cron."""
+    assert dl.main(["append", "--ledger", dl.GPU_RESERVATION, "--entity", "jsboige/CoursIA#16737",
+                    "--fields-json", '{"state": "held"}']) == 1
+    assert "INVALID_ENTITY" in capsys.readouterr().err
