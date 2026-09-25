@@ -28,9 +28,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -51,6 +53,18 @@ ORGAN_PATHS = [
 ]
 
 RED, AMBER, GREEN = "RED", "AMBER", "GREEN"
+
+# Organes planifies LOCAUX (#17748). Une tache Windows survit a la disparition de son
+# siege : mesure du 2026-09-25, le worktree D:\CoursIA-wt-merge-ready purge, la tache
+# `merge_ready` s'est declenchee toutes les 20 min avec LastTaskResult=2 -- python ne
+# trouvait plus le script -- sans ecrire une ligne de journal. 2 h 20 sans merge
+# automatique, et rien ne rougissait : la tache etait « prete », le journal se taisait.
+# (nom, dossier d'etat sous %LOCALAPPDATA%\CoursIA, intervalle nominal en minutes)
+SCHEDULED_ORGANS = [
+    ("merge_ready", "merge_ready", 20),
+]
+# Un journal plus vieux que ce nombre d'intervalles = organe muet.
+SILENT_INTERVALS = 3
 
 
 @dataclass
@@ -299,6 +313,62 @@ def check_stash(root: Path) -> list[Check]:
     return [Check("stash", GREEN, f"{n} entree(s) de stash", data={"count": n})]
 
 
+def _launcher_repo(launcher: Path) -> Path | None:
+    """Siege (--repo) nomme par le lanceur VBS de la tache, ou None s'il n'en nomme pas."""
+    m = re.search(r'--repo\s+([^"\s]+)', launcher.read_text(encoding="utf-8", errors="replace"))
+    return Path(m.group(1)) if m else None
+
+
+def check_scheduled_organs(local_appdata: Path | None = None, now: float | None = None) -> list[Check]:
+    """Vivacite des organes planifies installes sur CETTE machine (#17748).
+
+    Deux predicats, dans l'ordre ou la panne se produit : le siege que nomme le
+    lanceur existe, puis le journal avance. Un organe non installe ici est GREEN :
+    ce n'est pas une panne, c'est une autre machine.
+    """
+    if local_appdata is None:
+        local_appdata = Path(os.environ.get("LOCALAPPDATA", str(Path.home() / "AppData" / "Local")))
+    now = time.time() if now is None else now
+    checks = []
+    for name, sub, interval in SCHEDULED_ORGANS:
+        label = f"organe-planifie:{name}"
+        state = local_appdata / "CoursIA" / sub
+        launcher = state / "run_hidden.vbs"
+        if not launcher.exists():
+            checks.append(Check(label, GREEN, "non installe sur cette machine"))
+            continue
+        repo = _launcher_repo(launcher)
+        if repo is not None and not repo.exists():
+            checks.append(
+                Check(
+                    label,
+                    RED,
+                    f"siege {repo} absent : la tache se declenche et meurt avant d'ouvrir son journal",
+                    f"git worktree add --detach {repo} origin/main",
+                    {"repo": str(repo)},
+                )
+            )
+            continue
+        logs = sorted((state / "logs").glob("*.log"), key=lambda f: f.stat().st_mtime)
+        if not logs:
+            checks.append(Check(label, AMBER, "installe, mais aucun journal : jamais tourne ?", data={"repo": str(repo)}))
+            continue
+        age_min = int((now - logs[-1].stat().st_mtime) // 60)
+        if age_min > SILENT_INTERVALS * interval:
+            checks.append(
+                Check(
+                    label,
+                    RED,
+                    f"journal muet depuis {age_min} min (intervalle nominal {interval} min)",
+                    "schtasks /Query /TN CoursIA\\" + name + " /V /FO LIST  (Last Result, Task To Run)",
+                    {"age_min": age_min, "log": str(logs[-1])},
+                )
+            )
+        else:
+            checks.append(Check(label, GREEN, f"journal ecrit il y a {age_min} min", data={"age_min": age_min}))
+    return checks
+
+
 # Items que ce script ne PEUT pas mesurer (ils vivent cote MCP). On les rappelle nommement
 # plutot que de laisser croire qu'un vert ici vaut hygiene complete.
 MANUAL_REMINDERS = [
@@ -323,6 +393,7 @@ def main() -> int:
     checks += check_organs(root)
     checks += check_untracked_secrets(root)
     checks += check_stash(root)
+    checks += check_scheduled_organs()
 
     reds = [c for c in checks if c.level == RED]
     ambers = [c for c in checks if c.level == AMBER]
