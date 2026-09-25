@@ -2795,10 +2795,10 @@ def test_14591_volet_a_cli_integration_prev_genre_autoload(tmp_path, monkeypatch
     assert "guard|tooling" in captured
 
 
-def _untagged_pr(n, *, author="jsboige", branch="feature/foo"):
+def _untagged_pr(n, *, author="jsboige", branch="feature/foo", body="pas de tag\n"):
     """PR synthetique untagged non-draft, pour `unattributed_blocked_prs`."""
     created = (pig.NOW - pig.dt.timedelta(hours=10)).strftime("%Y-%m-%dT%H:%M:%SZ")
-    return {"number": n, "title": f"pr {n}", "body": "pas de tag\n",
+    return {"number": n, "title": f"pr {n}", "body": body,
             "createdAt": created, "isDraft": False,
             "author": {"login": author}, "headRefName": branch}
 
@@ -2848,6 +2848,41 @@ def test_orphan_report_neg2_human_on_chore_pending_stays(monkeypatch):
         _untagged_pr(9, author="jsboige", branch="chore/x-pending"),
     ], {9: red})
     assert [r["number"] for r in pig.unattributed_blocked_prs()] == [9]
+
+
+def test_is_out_of_fleet_pr_requires_both_conditions():
+    """#17713 : tete `claude/*` ET marqueur « Hors flotte », pas l'une sans l'autre."""
+    assert pig.is_out_of_fleet_pr({
+        "headRefName": "claude/fix-x", "body": "note\nHors flotte\n"}) is True
+    assert pig.is_out_of_fleet_pr({
+        "headRefName": "claude/fix-x", "body": "pas de marqueur\n"}) is False
+    assert pig.is_out_of_fleet_pr({
+        "headRefName": "feature/x", "body": "Hors flotte\n"}) is False
+
+
+def test_out_of_fleet_excluded_from_orphans_report(monkeypatch):
+    """#17713 : une PR hors flotte bloquee sort de la file d'orphelines."""
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [
+        _untagged_pr(11, branch="claude/fix-x", body="contexte\nHors flotte\n"),
+    ], {11: red})
+    assert pig.unattributed_blocked_prs() == []
+
+
+def test_orphan_report_neg1_claude_head_without_marker_stays(monkeypatch):
+    """Controle negatif 1 : une tete `claude/*` SANS marqueur reste listee."""
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [_untagged_pr(12, branch="claude/fix-x")], {12: red})
+    assert [r["number"] for r in pig.unattributed_blocked_prs()] == [12]
+
+
+def test_orphan_report_neg2_marker_on_fleet_branch_stays(monkeypatch):
+    """Controle negatif 2 : le marqueur sur une branche de flotte reste listee."""
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [
+        _untagged_pr(13, branch="feature/x", body="Hors flotte\n"),
+    ], {13: red})
+    assert [r["number"] for r in pig.unattributed_blocked_prs()] == [13]
 
 
 # --- #17474 : le plafond de `fetch_open_prs` amputait la traine -------------
