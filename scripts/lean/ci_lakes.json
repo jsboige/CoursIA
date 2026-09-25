@@ -246,6 +246,21 @@
         "MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lakefile.toml",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lean-toolchain"
       ]
+    },
+    {
+      "lake": "serre100",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean",
+      "display-name": "serre100_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py"
+      ]
     }
   ]
 }
