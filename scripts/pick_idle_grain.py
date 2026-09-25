@@ -315,6 +315,16 @@ from gh_payload_cache import PayloadCache, cache_key  # noqa: E402
 # resout 8 des 11 genres hors-enumeration du corpus, dont 2 CONTENU.
 from variation_light_cap import canonicalize_genre  # noqa: E402
 
+# Fold CANONIQUE des jambes de check par nom (#16889, residuel nomme de #16782).
+# Le rollup GraphQL rend les jambes d'un meme nom dans un ordre non
+# chronologique (mesure #16765 sur #16232 : FAILURE/CANCELLED/SUCCESS d'un
+# meme head) -- le fold chronologique est le travail du lecteur, et ce
+# lecteur est le helper de check_run_state, jamais une cle locale : drop_
+# superseded derivait deja sa propre cle depuis #11916 et couvrait un seul
+# des deux sens (rouge perime sous vert recent), laissant le vert perime
+# et le PENDING perime d'un rerun dans la liste lue comme jambes courantes.
+from check_run_state import fold_latest  # noqa: E402
+
 # Enumeration CLOSE de variation-protocol.md, partitionnee CONTENU / META.
 CONTENU = {
     "lean", "qc", "training", "genai",
@@ -2345,42 +2355,32 @@ def fetch_main_head_probe(organ_cache: dict | None = None) -> dict | None:
             "names": {(c.get("name") or c.get("context") or "?") for c in contexts}}
 
 
-def _ctx_stamp(ctx: dict) -> str:
-    """Horodatage comparable d'un contexte. Chaine vide si le run n'a rien rendu."""
-    return ctx.get("completedAt") or ctx.get("createdAt") or ctx.get("startedAt") or ""
-
-
 def drop_superseded(contexts: list[dict]) -> list[dict]:
-    """Retire les echecs PERIMES : un rouge anterieur au dernier vert du meme nom.
+    """Etat COURANT par nom de check : le fold canonique check_run_state.fold_latest.
 
-    Le discriminant est TEMPOREL, jamais nominal, et les deux erreurs symetriques
-    sont documentees : dedupliquer par nom seul masque un rouge vivant emis par un
-    workflow jumeau (#11894), ne pas dedupliquer du tout en fabrique de faux
-    (#12054, 9 rouges pour 0 reel). La regle qui tranche les deux : un echec
-    ANTERIEUR au dernier non-echec du meme nom est de l'histoire ; un echec
-    CONTEMPORAIN ou posterieur est un jumeau vivant, on le garde.
+    Une seule jambe par nom -- la plus recente (cle started_at puis id,
+    #11416 : un rerun cree une entree fraiche). Le discriminant reste
+    TEMPOREL, jamais nominal seul, et les deux erreurs symetriques
+    historiques tombent du meme coup : dedupliquer par nom seul masquait un
+    rouge vivant (#11894), ne pas dedupliquer fabriquait de faux rouges
+    (#12054, 9 rouges pour 0 reel) ; la cle temporelle tranche.
 
-    Mesure du 2026-08-22 sur #11916 : `Require genre diversity vs prev:` porte un
-    FAILURE du 20/08 et un SUCCESS du 22/08 sur le meme head. Sans ce filtre le
-    garde renvoyait la lane reparer un check deja vert.
+    Les deux sens de #16765/#16889 sont couverts :
+    - un rouge ANTERIEUR au vert recent du meme nom disparait : la lane n'est
+      pas renvoyee reparer un check deja vert (mesure 2026-08-22 sur #11916 :
+      `Require genre diversity vs prev:` FAILURE du 20/08 + SUCCESS du 22/08
+      sur le meme head) ;
+    - un vert ou PENDING ANTERIEUR a un rouge recent du meme nom disparait
+      aussi : l'etat courant est le seul lu -- plus de PENDING perime lu
+      comme check en vol (fausse file-saturation) ni de vert perime comptant
+      pour la maturite.
+
+    Les jambes rendues portent les champs bruts (isRequired, databaseId,
+    startedAt) enrichis des champs canoniques minuscules par fold_latest.
+    Les consommateurs relisent conclusion/state via .upper() : insensible a
+    la casse normalisee.
     """
-    newest_ok: dict[str, str] = {}
-    for ctx in contexts:
-        verdict = (ctx.get("conclusion") or ctx.get("state") or "").upper()
-        if verdict in CHECK_FAILED:
-            continue
-        name = ctx.get("name") or ctx.get("context") or "?"
-        stamp = _ctx_stamp(ctx)
-        if stamp > newest_ok.get(name, ""):
-            newest_ok[name] = stamp
-    kept = []
-    for ctx in contexts:
-        verdict = (ctx.get("conclusion") or ctx.get("state") or "").upper()
-        name = ctx.get("name") or ctx.get("context") or "?"
-        if verdict in CHECK_FAILED and _ctx_stamp(ctx) < newest_ok.get(name, ""):
-            continue  # rouge anterieur au dernier vert du meme nom : perime
-        kept.append(ctx)
-    return kept
+    return list(fold_latest(contexts).values())
 
 
 def is_aggregator_check(name: str) -> bool:
@@ -3163,6 +3163,22 @@ def is_automation_vehicle(pr: dict) -> bool:
     return author in AUTOMATION_AUTHORS and bool(AUTOMATION_BRANCH_RE.match(branch))
 
 
+# #17713 — PRs HORS FLOTTE exclues de la file d'orphelines. Une PR pilotee
+# depuis l'exterieur du cluster (tete `claude/*`) porte la mention
+# « Hors flotte » dans son body des lors qu'elle ne suit pas le protocole de
+# flotte : c'est la MEME exemption que le gate `tag_required` (#17715,
+# `variation_tag_required.py`), appliquee ici a l'entree du routage -- sans
+# elle le sweep quotidien renverrait une lane sur une PR qui n'appartient a
+# aucune. Predicat ETROIT : les DEUX conditions (tete `claude/*` ET marqueur
+# present) ; une PR de flotte, ou une `claude/*` sans marqueur, restent
+# visibles (controles negatifs). Les deux sites doivent rester alignes : le
+# jour ou l'exemption bouge, elle bouge aux deux entrances.
+def is_out_of_fleet_pr(pr: dict) -> bool:
+    """Vrai si la PR est hors flotte (tete `claude/*` ET marqueur « Hors flotte »)."""
+    head_ref = pr.get("headRefName") or ""
+    return head_ref.startswith("claude/") and "Hors flotte" in (pr.get("body") or "")
+
+
 def unattributed_blocked_prs(prs: list[dict] | None = None) -> list[dict]:
     """PRs ouvertes bloquees sans tag `Grain:` lisible, AVEC leur route.
 
@@ -3182,13 +3198,20 @@ def unattributed_blocked_prs(prs: list[dict] | None = None) -> list[dict]:
     disposition ne leur est valide. Le predicat est PARTAGE avec `red_backlog`
     (un `unattributed_blocked_prs` → le garde « reparer son rouge ») — ce qui est
     ici souhaite, aucune lane ne devant etre renvoyee sur le vehicule du bot.
+
+    Les PRs HORS FLOTTE (tete `claude/*` ET marqueur « Hors flotte », #17713)
+    sont exclues de meme : aucune lane n'est destinataire d'une PR pilotee
+    depuis l'exterieur du cluster, et le gate `tag_required` les exempte deja
+    (#17715) — router l'une d'elles rejouerait la contradiction que #17713
+    ferme.
     """
     if prs is None:
         prs = fetch_open_prs()
     untagged = [pr for pr in prs
                 if not pr.get("isDraft")
                 and parse_grain_tag(pr.get("body") or "") is None
-                and not is_automation_vehicle(pr)]
+                and not is_automation_vehicle(pr)
+                and not is_out_of_fleet_pr(pr)]
     untagged_states = fetch_pr_states([pr["number"] for pr in untagged]) if untagged else {}
     out = []
     for pr in untagged:

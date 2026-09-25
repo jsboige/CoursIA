@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: Probas
-pedagogical_count: 69
-breakdown: DecisionTheory=26, Infer=21, PyMC=19, Applications=2, root=1
-maturity: BETA=68, ALPHA=1
+pedagogical_count: 73
+breakdown: DecisionTheory=30, Infer=21, PyMC=19, Applications=3
+maturity: BETA=72, ALPHA=1
 -->
 
 > **À propos des décomptes** : le marqueur `CATALOG-STATUS` ci-dessus est la **source de vérité autoritative** pour les volumes (notebooks par sous-série, maturité). Il est régénéré chaque nuit par le workflow [`catalog-cron.yml`](../../.github/workflows/catalog-cron.yml) à 03:37 UTC sur `main` (commit par `github-actions[bot]`, livré par la PR permanente `chore/catalog-refresh-pending`). Pour les **décomptes par kernel** (C#/.NET vs Python vs Lean 4) au sein d'une sous-série — c'est-à-dire la répartition **technique** par interpréteur —, ce README reste autoritatif car la décomposition langagière par sous-série n'est pas dans le marqueur agrégé ; cette granularité est documentée ici par lecture directe des `metadata.kernelspec.language` des notebooks (`28 C# + 41 Python + 3 Lean 4 = 72 ✓` au 19/09/2026). Si vous observez un décalage entre ce marqueur et une phrase en prose de ce README, **fiez-vous au marqueur** ; la prose sera ré-alignée manuellement lors du prochain passage — sauf si le marqueur est lui-même en retard sur le disque (sa PR de régénération en attente de merge) : au 19/09/2026 c'est le cas, le marqueur affiche encore les comptes d'avant l'arrivée des notebooks DoWhy-3/4/5 (mergés les 12-14/09/2026) ; la prose ci-dessous est alors mesurée sur le disque et prend temporairement l'avance.
@@ -637,7 +637,7 @@ Cette série ancre mathématiquement ses résultats phares dans un assistant de 
 | QC ↔ Probas              | `kelly_lean`                     | Fraction risquée `f* = μ−σ²/2` sous log-bienveillance (`0 sorry`)                  | [`Kelly_companion.ipynb`](../QuantConnect/kelly_lean/Kelly_companion.ipynb)                                           |
 | GameTheory ↔ Probas      | `game_theory_lean` (Arrow)       | Impossibilité d'Arrow (5 axiomes ⇒ dictature)                                     | [`01-Arrow-Impossibility-Theorem.ipynb`](../GameTheory/SocialChoice/01-Arrow-Impossibility-Theorem.ipynb)                                          |
 | Search ↔ Probas          | `search_lean`                    | Consistance heuristique `h ≤ h*` ⇒ optimalité `A*`                                 | hub Search (cf [`search_lean/`](../Search/search_lean/))                                     |
-| SymbolicAI ↔ Probas      | `argumentation_lean`             | Extension Dung (`grounded`/`preferred`/`stable`) par cadre formel                 | [`Argument_Analysis_Dung_AF_Semantics.ipynb`](../SymbolicAI/Argument_Analysis/Argument_Analysis_Dung_AF_Semantics.ipynb)                               |
+| SymbolicAI ↔ Probas      | `argumentation_lean`             | Extension Dung (`grounded`/`preferred`/`stable`) par cadre formel                 | [`Argumentation-03-Dung-AF-Semantics-Python.ipynb`](../SymbolicAI/Argument_Analysis/Argumentation-03-Dung-AF-Semantics-Python.ipynb)                               |
 
 ```mermaid
 flowchart LR

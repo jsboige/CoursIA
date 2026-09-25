@@ -7,6 +7,7 @@ check_coverage. Uses synthetic catalog entries.
 import json
 import sys
 from pathlib import Path
+from typing import ClassVar
 
 import pytest
 
@@ -219,6 +220,83 @@ def _run_main(monkeypatch, tmp_path, argv):
     monkeypatch.setattr(gp, "CATALOG_PATH", tmp_path / "catalog.json")
     monkeypatch.setattr(gp, "PARCOURS_DIR", tmp_path / "curriculum")
     monkeypatch.setattr(sys, "argv", ["generate_parcours.py", *argv])
+
+
+class TestCompileParcours:
+    manifest: ClassVar[dict] = {
+        "branches": [
+            {"id": "search", "notebooks": ["Search/Part1/Search-1.ipynb"]},
+            {"id": "sudoku", "notebooks": ["Sudoku/Sudoku-01.ipynb"],
+             "prerequisites": ["search"]},
+        ],
+        "accretions": [
+            {"id": "csp", "branch": "search",
+             "notebooks": ["Search/Part2/CSP-1.ipynb"]},
+        ],
+    }
+
+    def test_speed_run_excludes_accretion_and_orders_prerequisites(self):
+        compiled = gp.compile_parcours(SAMPLE_ENTRIES, self.manifest, ["sudoku", "search"])
+        assert [group["id"] for group in compiled["groups"]] == ["search", "sudoku"]
+        assert compiled["duration_minutes"] is None
+        assert compiled["known_duration_minutes"] == 0
+        assert compiled["groups"][0]["notebooks"][0]["execution_constraints"]["requires_gpu"] is None
+
+    def test_selected_accretion_preserves_catalog_metadata(self):
+        entries = [dict(e) for e in SAMPLE_ENTRIES]
+        entries[0]["duree_estimee"] = "45min"
+        entries[1]["duree_estimee"] = "1h30"
+        compiled = gp.compile_parcours(entries, self.manifest, ["search"], ["csp"])
+        assert [group["id"] for group in compiled["groups"]] == ["search", "csp"]
+        assert compiled["duration_minutes"] == 135
+        assert compiled["groups"][1]["notebooks"][0]["duration_minutes"] == 90
+        assert compiled["groups"][1]["prerequisites"] == ["search"]
+
+    @pytest.mark.parametrize("branches,accretions", [
+        (["unknown"], []), (["search", "search"], []),
+        (["search"], ["unknown"]), (["sudoku"], ["csp"]),
+        (["search"], ["csp", "csp"]), ([], []),
+    ])
+    def test_invalid_selection_is_rejected(self, branches, accretions):
+        with pytest.raises(ValueError):
+            gp.compile_parcours(SAMPLE_ENTRIES, self.manifest, branches, accretions)
+
+    def test_missing_catalog_path_is_rejected(self):
+        with pytest.raises(ValueError, match="absent from catalog"):
+            gp.compile_parcours([], self.manifest, ["search"])
+
+    def test_duplicate_path_and_cycle_are_rejected(self):
+        manifest = {"branches": [
+            {"id": "a", "notebooks": ["Search/Part1/Search-1.ipynb"],
+             "prerequisites": ["b"]},
+            {"id": "b", "notebooks": ["Search/Part1/Search-1.ipynb"],
+             "prerequisites": ["a"]},
+        ]}
+        with pytest.raises(ValueError, match="cycle"):
+            gp.compile_parcours(SAMPLE_ENTRIES, manifest, ["a", "b"])
+        manifest["branches"][1]["prerequisites"] = []
+        with pytest.raises(ValueError, match="selected twice"):
+            gp.compile_parcours(SAMPLE_ENTRIES, manifest, ["a", "b"])
+
+    @pytest.mark.parametrize("manifest", [
+        None,
+        {"branches": "not a list"},
+        {"branches": [{"id": "search", "notebooks": [1]}]},
+        {"branches": [{"id": "search", "notebooks": ["Search/Part1/Search-1.ipynb"],
+                       "prerequisites": "other"}]},
+    ])
+    def test_malformed_manifest_is_rejected(self, manifest):
+        with pytest.raises((ValueError, TypeError)):
+            gp.compile_parcours(SAMPLE_ENTRIES, manifest, ["search"])
+
+    def test_cli_composes_without_writing_pages(self, monkeypatch, tmp_path, capsys):
+        _run_main(monkeypatch, tmp_path, ["--manifest", str(tmp_path / "manifest.json"),
+                                           "--branch", "search"])
+        (tmp_path / "catalog.json").write_text(json.dumps(SAMPLE_ENTRIES), encoding="utf-8")
+        (tmp_path / "manifest.json").write_text(json.dumps(self.manifest), encoding="utf-8")
+        gp.main()
+        assert json.loads(capsys.readouterr().out)["groups"][0]["id"] == "search"
+        assert not (tmp_path / "curriculum").exists()
 
 
 class TestFailClosedWrite:

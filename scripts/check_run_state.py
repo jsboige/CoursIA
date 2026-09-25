@@ -71,7 +71,11 @@ def normalize_leg(entry: dict) -> dict:
     return {
         "name": entry.get("name") or entry.get("context") or "?",
         "conclusion": (entry.get("conclusion") or entry.get("state") or "").lower(),
-        "started_at": entry.get("started_at") or entry.get("startedAt") or "",
+        # StatusContext n'expose QUE createdAt : sans ce repli, toutes ses
+        # jambes seraient a clee vide et departagees par l'ordre de liste --
+        # exactement le defaut non chronologique que le fold existe pour fermer.
+        "started_at": (entry.get("started_at") or entry.get("startedAt")
+                       or entry.get("createdAt") or ""),
         "id": entry.get("id") or 0,
         "details_url": entry.get("details_url") or entry.get("detailsUrl") or "",
     }
@@ -80,14 +84,22 @@ def normalize_leg(entry: dict) -> dict:
 def fold_latest(legs: list[dict]) -> dict[str, dict]:
     """Derniere jambe par nom, semantique dedupe_latest (clee started_at puis
     id, monotones au niveau check-run -- #11416 : un rerun cree une entree
-    fraiche d'id ET de started_at plus grands)."""
+    fraiche d'id ET de started_at plus grands).
+
+    La jambe rendue est la jambe BRUTE enrichie des champs canoniques
+    (name/conclusion/started_at/id/details_url ecrasent les formes brutes) :
+    un consommateur qui lit isRequired ou databaseId sur une jambe du rollup
+    GraphQL les retrouve intactes -- la normalisation n'ote plus d'information
+    qu'elle n'en ajoute (#16889)."""
     best: dict[str, tuple[tuple, dict]] = {}
     for index, raw in enumerate(legs):
         leg = normalize_leg(raw)
         key = (leg.get("started_at") or "", leg.get("id") or 0, index)
         current = best.get(leg["name"])
         if current is None or key >= current[0]:
-            best[leg["name"]] = (key, leg)
+            merged = dict(raw)
+            merged.update(leg)
+            best[leg["name"]] = (key, merged)
     return {name: leg for name, (_, leg) in best.items()}
 
 

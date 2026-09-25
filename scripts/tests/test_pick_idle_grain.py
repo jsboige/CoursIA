@@ -2028,6 +2028,84 @@ def test_13420_le_plus_recent_gagne_sur_les_anciens():
     assert pig.file_saturation_cause(state, age_hours=120, threshold_hours=24) is None
 
 
+# --- #16889 : fold canonique par nom -- les deux sens de #16765 -------------
+#
+# drop_superseded delegue desormais a check_run_state.fold_latest (#16782) :
+# une seule jambe par nom, la plus recente. Mesure #16765 sur #16232 : le
+# rollup GraphQL rend les jambes d'un meme nom dans un ordre non chronologique
+# (FAILURE/CANCELLED/SUCCESS d'un meme head). L'ancien filtre local ne couvrait
+# qu'un sens (rouge perime sous vert recent) ; le vert ou PENDING perime d'un
+# rerun restait dans la liste, lu comme jambe courante.
+
+
+def _state_legs(legs, rollup_state="FAILURE"):
+    """Rollup a jambes brutes explicites -- meme nom plusieurs fois = rerun."""
+    return {
+        "number": 1, "mergeable": "MERGEABLE",
+        "reviews": {"nodes": []},
+        "commits": {"nodes": [{"commit": {"statusCheckRollup": {
+            "state": rollup_state,
+            "contexts": {"nodes": legs}}}}]},
+    }
+
+
+def test_16889_sens1_rouge_perime_sous_vert_recent_candidate_servie():
+    """FAILURE ancien puis SUCCESS recent du meme nom : la PR n'est PAS en
+    echec -- le picker la sert comme candidate au lieu de la ranger en file
+    de reparation pour un check deja vert (#11916, les deux sens #16765)."""
+    legs = [
+        {"name": "Lint", "conclusion": "FAILURE", "isRequired": True,
+         "startedAt": "2026-09-20T00:00:00Z"},
+        {"name": "Lint", "conclusion": "SUCCESS", "isRequired": True,
+         "startedAt": "2026-09-22T00:00:00Z"},
+    ]
+    assert pig._has_failed_check(_state_legs(legs)) is False
+
+
+def test_16889_sens2_rouge_recent_sous_vert_perime_candidate_ecartee():
+    """SUCCESS ancien puis FAILURE recent du meme nom : l'etat courant est le
+    rouge -- la PR part en file de reparation, pas en tirage (second sens
+    #16765 : le vert perime ne fait plus croire a la maturite)."""
+    legs = [
+        {"name": "Lint", "conclusion": "SUCCESS", "isRequired": True,
+         "startedAt": "2026-09-20T00:00:00Z"},
+        {"name": "Lint", "conclusion": "FAILURE", "isRequired": True,
+         "startedAt": "2026-09-22T00:00:00Z"},
+    ]
+    assert pig._has_failed_check(_state_legs(legs)) is True
+
+
+def test_16889_rouges_dupliques_dun_rerun_dedoublonnes_dans_les_causes():
+    """Deux FAILURE du meme nom (run rouge, rerun encore rouge) : sans fold
+    les DEUX jambes restaient (l'ancien filtre ne perdait que les rouges
+    ANTERIEURS a un vert) et blocking_causes listait le meme check deux
+    fois ; le fold n'en lit qu'une -- la derniere."""
+    legs = [
+        {"name": "Lint", "conclusion": "FAILURE", "isRequired": True,
+         "startedAt": "2026-09-20T00:00:00Z"},
+        {"name": "Lint", "conclusion": "FAILURE", "isRequired": True,
+         "startedAt": "2026-09-22T00:00:00Z"},
+    ]
+    causes = pig.blocking_causes(_state_legs(legs, rollup_state="FAILURE"))
+    assert len([c for c in causes if "Lint" in c]) == 1
+
+
+def test_16889_saturation_compte_les_noms_pas_les_jambes():
+    """Vert perime + rerun PENDING du meme nom : la saturation compte les
+    NOMS requis, pas les jambes -- sans fold le compte gonflait (2 checks
+    annonces pour 1 reel)."""
+    legs = [
+        {"name": "PR gate", "conclusion": "SUCCESS", "isRequired": True,
+         "startedAt": _iso_ago(50)},
+        {"name": "PR gate", "conclusion": None, "state": "PENDING",
+         "isRequired": True, "startedAt": _iso_ago(49)},
+    ]
+    state = _state_legs(legs, rollup_state="PENDING")
+    cause = pig.file_saturation_cause(state, age_hours=120, threshold_hours=24)
+    assert cause is not None
+    assert "1 check(s) requis" in cause
+
+
 def test_file_saturation_not_detected_when_a_check_is_success():
     """Faux-positif a eviter : un SUCCESS + des PENDING n'est PAS de la
     file-saturation. La PR a au moins un verdict defini ; elle est en cours
@@ -2717,10 +2795,10 @@ def test_14591_volet_a_cli_integration_prev_genre_autoload(tmp_path, monkeypatch
     assert "guard|tooling" in captured
 
 
-def _untagged_pr(n, *, author="jsboige", branch="feature/foo"):
+def _untagged_pr(n, *, author="jsboige", branch="feature/foo", body="pas de tag\n"):
     """PR synthetique untagged non-draft, pour `unattributed_blocked_prs`."""
     created = (pig.NOW - pig.dt.timedelta(hours=10)).strftime("%Y-%m-%dT%H:%M:%SZ")
-    return {"number": n, "title": f"pr {n}", "body": "pas de tag\n",
+    return {"number": n, "title": f"pr {n}", "body": body,
             "createdAt": created, "isDraft": False,
             "author": {"login": author}, "headRefName": branch}
 
@@ -2770,6 +2848,41 @@ def test_orphan_report_neg2_human_on_chore_pending_stays(monkeypatch):
         _untagged_pr(9, author="jsboige", branch="chore/x-pending"),
     ], {9: red})
     assert [r["number"] for r in pig.unattributed_blocked_prs()] == [9]
+
+
+def test_is_out_of_fleet_pr_requires_both_conditions():
+    """#17713 : tete `claude/*` ET marqueur « Hors flotte », pas l'une sans l'autre."""
+    assert pig.is_out_of_fleet_pr({
+        "headRefName": "claude/fix-x", "body": "note\nHors flotte\n"}) is True
+    assert pig.is_out_of_fleet_pr({
+        "headRefName": "claude/fix-x", "body": "pas de marqueur\n"}) is False
+    assert pig.is_out_of_fleet_pr({
+        "headRefName": "feature/x", "body": "Hors flotte\n"}) is False
+
+
+def test_out_of_fleet_excluded_from_orphans_report(monkeypatch):
+    """#17713 : une PR hors flotte bloquee sort de la file d'orphelines."""
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [
+        _untagged_pr(11, branch="claude/fix-x", body="contexte\nHors flotte\n"),
+    ], {11: red})
+    assert pig.unattributed_blocked_prs() == []
+
+
+def test_orphan_report_neg1_claude_head_without_marker_stays(monkeypatch):
+    """Controle negatif 1 : une tete `claude/*` SANS marqueur reste listee."""
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [_untagged_pr(12, branch="claude/fix-x")], {12: red})
+    assert [r["number"] for r in pig.unattributed_blocked_prs()] == [12]
+
+
+def test_orphan_report_neg2_marker_on_fleet_branch_stays(monkeypatch):
+    """Controle negatif 2 : le marqueur sur une branche de flotte reste listee."""
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [
+        _untagged_pr(13, branch="feature/x", body="Hors flotte\n"),
+    ], {13: red})
+    assert [r["number"] for r in pig.unattributed_blocked_prs()] == [13]
 
 
 # --- #17474 : le plafond de `fetch_open_prs` amputait la traine -------------
