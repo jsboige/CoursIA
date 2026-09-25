@@ -49,6 +49,9 @@ Critères de retrait (cf issue #14195 acceptance) :
 4. **Worktree sans branche (HEAD détaché)** : verdict par contenu. Si
    `git log origin/main --grep "<branch_topic>"` trouve un commit dont le
    sujet correspond (le squash a efface l'ascendance) : REMOVE ; sinon REFUSE.
+   Un HEAD détaché **ancêtre de `origin/main`** n'a aucun commit propre,
+   donc aucune PR : REFUSE (`reason=detached_on_main`, #17684). Seuls les
+   sujets de `origin/main..HEAD` sont lus pour attribuer une PR.
 5. **Worktree avec residu untracked non tolere** : REFUSE, cause nommee
    (`reason=untolerated_untracked:<n>`, #14619 point 2). Pouvoir de refus
    git (#14509) : `git worktree remove` sans `--force` refuse TOUT
@@ -162,6 +165,7 @@ import re
 import shutil
 import subprocess
 import sys
+import traceback
 from pathlib import Path
 from typing import Optional
 
@@ -235,6 +239,9 @@ class WorktreeStatus:
     # Champ #14195 (additif) : checkout disparu, enregistrement orphelin.
     # Porte la decision REMOVE *et* le passage a `--force` a l'apply.
     dead_registration: bool = False
+    # Champ #17771 (additif) : REMOVE motive par contenu deja integre a
+    # main (tete ancetre de origin/main), sans PR rattachable.
+    content_on_main: bool = False
 
     def to_dict(self) -> dict:
         return dataclasses.asdict(self)
@@ -764,6 +771,81 @@ def lookup_pr_for_branch(branch: str,
     return get_pr_resolution().resolve(branch, head_sha)
 
 
+# Reference de l'integration : un HEAD detache qui en est ancetre n'a
+# aucun commit propre, donc aucune PR attribuable (#17684).
+MAIN_REF = "origin/main"
+
+
+def head_is_ancestor_of_main(wt_path: str) -> bool:
+    """Vrai si HEAD (attache ou detache) est un ancetre de ``origin/main``.
+
+    Echec git (ref absente, depot sans remote) -> False : la voie de lookup,
+    restreinte a ``origin/main..HEAD``, rend alors None, donc REFUSE.
+    """
+    proc = run_git(
+        wt_path, "merge-base", "--is-ancestor", "HEAD", MAIN_REF, check=False
+    )
+    return proc.returncode == 0
+
+
+def detached_head_is_on_main(wt_path: str) -> bool:
+    """Vrai si le HEAD detache est un ancetre de ``origin/main`` (#17684).
+
+    Un tel worktree ne porte aucun commit propre : c'est une extraction de
+    main (demeure d'un organe planifie, lecture de review), pas le travail
+    d'une PR. Les sujets ``(#N)`` de son historique sont ceux de main, et
+    les resoudre attribue au worktree la PR d'un commit ancetre -- mesure :
+    la demeure de la tache ``merge_ready`` classee REMOVE sur une PR MERGED
+    qui n'avait rien a voir avec elle.
+    """
+    return head_is_ancestor_of_main(wt_path)
+
+
+def remote_head_for_head(wt_path: str, branch: str,
+                         head_sha: str) -> Optional[str]:
+    """Nom court de la branche distante qui porte exactement HEAD (#17771).
+
+    Cas mesure : un worktree branche localement sous un nom different de la
+    tete de PR (checkout `pr-123`, renommage local). La resolution par le
+    nom local echoue alors que la PR existe. Deux voies, de la plus precise
+    a la plus large :
+
+    1. l'upstream explicite ``<branche>@{u}`` (hors ``*/main``) : le lien
+       de push est la preuve la plus directe que la branche distante porte
+       la meme histoire ;
+    2. une branche ``origin/*`` dont le TIP est exactement ``head_sha``
+       (scan ``for-each-ref``, ``origin/main`` et ``origin/HEAD`` exclus) :
+       apres un checkout detache re-branche, seul le contenu parle encore.
+
+    Retourne None si aucune voie ne resolve : l'appelant retombe sur la
+    REFUSE conservatrice (ou le predicat content_on_main).
+    """
+    upstream_proc = run_git(
+        wt_path, "rev-parse", "--abbrev-ref", "--symbolic-full-name",
+        f"{branch}@{{u}}", check=False,
+    )
+    if upstream_proc.returncode == 0:
+        upstream = upstream_proc.stdout.strip()
+        if upstream and not upstream.endswith("/main"):
+            return upstream.split("/", 1)[1] if "/" in upstream else upstream
+    refs_proc = run_git(
+        wt_path, "for-each-ref", "refs/remotes/origin",
+        "--format=%(refname:short) %(objectname)", check=False,
+    )
+    if refs_proc.returncode != 0:
+        return None
+    for line in refs_proc.stdout.splitlines():
+        parts = line.split()
+        if len(parts) != 2:
+            continue
+        name, tip = parts
+        if name in ("origin/main", "origin/HEAD"):
+            continue
+        if tip == head_sha:
+            return name.split("/", 1)[1] if "/" in name else name
+    return None
+
+
 def lookup_pr_for_detached_head(wt_path: str) -> Optional[dict]:
     """Verdict par contenu pour HEAD detaché (#14476) : PR exacte, ou rien.
 
@@ -786,9 +868,17 @@ def lookup_pr_for_detached_head(wt_path: str) -> Optional[dict]:
 
     3. **Sinon None** : aucun match = aucun verdict. Le fail-CLOSED est
        deja le bon defaut (REFUSE downstream).
+
+    Les sujets lus sont ceux des commits PROPRES au HEAD
+    (``origin/main..HEAD``), jamais son historique entier : les 20 derniers
+    sujets de ``HEAD`` traversent main des le premier commit partage, et la
+    voie 1 resolvait alors la PR d'un commit ancetre (#17684 -- une branche
+    de revert attribuee a la PR qu'elle revertait, MERGED, donc REMOVE,
+    alors que sa propre PR etait OPEN).
     """
     log_proc = run_git(
-        wt_path, "log", "HEAD", "--format=%s", "-n", "20", check=False
+        wt_path, "log", f"{MAIN_REF}..HEAD", "--format=%s", "-n", "20",
+        check=False,
     )
     if log_proc.returncode != 0:
         return None
@@ -1015,7 +1105,34 @@ def diagnose_worktree(wt_path: str, current_path: str,
     pr = None
     if info["branch"]:
         pr = lookup_pr_for_branch(info["branch"], head_sha=head_sha)
-    elif not info["branch"]:
+        if pr is None:
+            # #17771 predicat 1 : la branche locale porte un nom different
+            # de la tete de PR. On resout la PR par la branche distante qui
+            # porte exactement HEAD (upstream explicite, puis tip exact
+            # origin/*). Pas de PR de ce cote non plus -> on continue.
+            remote_head = remote_head_for_head(wt_path, info["branch"], head_sha)
+            if remote_head:
+                pr = lookup_pr_for_branch(remote_head, head_sha=head_sha)
+    elif detached_head_is_on_main(wt_path):
+        # Extraction de main (demeure d'organe, lecture de review) : aucune
+        # PR ne la porte, le critere « PR MERGED » ne s'y applique pas.
+        return WorktreeStatus(
+            path=wt_path,
+            branch=info["branch"],
+            is_current=False,
+            pr_state=None,
+            pr_number=None,
+            pr_url=None,
+            ahead_count=info["ahead_count"],
+            has_source_dirty=info["has_source_dirty"],
+            untracked_paths=info["untracked"],
+            decision="REFUSE",
+            refusal_reason="detached_on_main",
+            has_submodules=info["has_submodules"],
+            blocking_untracked=info.get("blocking_untracked", []),
+            ignored_extra=info.get("ignored_extra", []),
+        )
+    else:
         pr = lookup_pr_for_detached_head(wt_path)
 
     pr_state = pr.get("state") if pr else None
@@ -1058,6 +1175,34 @@ def diagnose_worktree(wt_path: str, current_path: str,
             has_submodules=info["has_submodules"],
             blocking_untracked=info.get("blocking_untracked", []),
             ignored_extra=info.get("ignored_extra", []),
+        )
+
+    # Predicat 5 (#17771) : contenu deja integre a main. Aucune PR
+    # rattachable (ni par nom local, ni par tete distante), mais HEAD est
+    # un ancetre de origin/main : chaque commit du worktree est deja sur
+    # main. Les gardes en amont garantissent deja les deux autres
+    # conditions de l'issue -- 0 commit non pousse (sinon
+    # ``unpushed_commits`` serait sorti) et aucune edition source non
+    # committee ni untracked non tolere (sinon ``uncommitted_source_changes``
+    # / ``untolerated_untracked`` seraient sortis). Le worktree ne porte
+    # plus rien que main ne contienne deja.
+    if info["branch"] and head_is_ancestor_of_main(wt_path):
+        return WorktreeStatus(
+            path=wt_path,
+            branch=info["branch"],
+            is_current=False,
+            pr_state=None,
+            pr_number=None,
+            pr_url=None,
+            ahead_count=info["ahead_count"],
+            has_source_dirty=info["has_source_dirty"],
+            untracked_paths=info["untracked"],
+            decision="REMOVE",
+            refusal_reason=None,
+            has_submodules=info["has_submodules"],
+            blocking_untracked=info.get("blocking_untracked", []),
+            ignored_extra=info.get("ignored_extra", []),
+            content_on_main=True,
         )
 
     # Pas de PR trouvee : HEAD detaché sans correspondance, ou branche
@@ -1212,6 +1357,8 @@ def render_text(
                 f"pr=#{s.pr_number}({s.pr_state})"
                 if s.pr_state and s.pr_number else ""
             )
+            if not pr_part and s.content_on_main:
+                pr_part = "content_on_main"
             if dry_run:
                 lines.append(
                     f"WOULD REMOVE {s.path}  {branch_part}  {pr_part}"
@@ -1375,5 +1522,42 @@ def main() -> int:
     return 0
 
 
+def run() -> int:
+    """`main()` avec le contrat d'erreur garanti (#17292).
+
+    `main()` ne rattrape que `RuntimeError` (l.1277-1299) : toute autre
+    exception s'echappait, et Python rend alors **1** en n'ecrivant rien sur
+    stdout. Or `1` est deja le code documente « des refus ont ete observes » :
+    l'appelant ne pouvait donc pas distinguer « l'outil a tourne et refuse » de
+    « l'outil n'a pas pu tourner ». Mesure : c'est exactement le couple
+    (`rc ∈ {0,1}`, stdout vide) qui a rougi `Scripts Tests (CPU)` sur des PRs de
+    plusieurs lanes le 2026-09-21, et que l'E2E lisait comme un
+    `JSONDecodeError: Expecting value: line 1 column 1`.
+
+    Ici une panne inattendue sort par le code d'erreur **documente** du script
+    (2), traceback sur stderr : `1` redevient non ambigu.
+    """
+    try:
+        return main()
+    except BrokenPipeError:
+        # Le consommateur a ferme le pipe (`| head`, `| jq -e` qui sort tot) :
+        # ce n'est PAS un echec de l'outil, et l'ecrire sur stderr serait un
+        # diagnostic faux. On ferme stdout pour que l'interpreteur ne re-tente
+        # pas d'y ecrire au shutdown, puis on sort sans code d'erreur.
+        try:
+            sys.stdout.close()
+        except OSError:
+            pass
+        return 0
+    except Exception:
+        traceback.print_exc()
+        print(
+            "ERROR: echec inattendu, pas une decision de l'outil "
+            "(voir le traceback ci-dessus)",
+            file=sys.stderr,
+        )
+        return 2
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(run())

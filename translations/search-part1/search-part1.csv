@@ -2265,7 +2265,7 @@ Ce notebook a pose les fondements de la recherche dans les espaces d'etats : la 
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,nav-footer,markdown,fr,1135e33d8b931e8d,"***
 
 **Navigation** : [Index](../README.md) | [Suivant >>](Search-2-Uninformed.ipynb)",,,,,,,,1135e33d8b931e8d,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb,1b2fe231-df48-4cf9-8103-51c13128d979,markdown,fr,349b1fac8f0fd0a5,"<< [Search-9-LinearProgramming](Search-9-LinearProgramming.ipynb) | [Index](../README.md) | [App-1-NQueens](../Applications/CSP/App-1-NQueens.ipynb) >>
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,1b2fe231-df48-4cf9-8103-51c13128d979,markdown,fr,349b1fac8f0fd0a5,"<< [Search-9-LinearProgramming](Search-9-LinearProgramming.ipynb) | [Index](../README.md) | [App-1-NQueens](../Applications/CSP/App-1-NQueens.ipynb) >>
 
 # Search-10 (C#) : Automates Finis Classiques — jumeau .NET (tranche 1)
 
@@ -2297,7 +2297,7 @@ Cette version .NET est livrée en **deux tranches** :
 
 ### Durée estimée : 45 minutes
 ",,,,,,,,349b1fac8f0fd0a5,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb,3f8b2b57-6876-436c-b5ba-a712307aa313,markdown,fr,354613b37c927f5b,"## 1. Introduction aux Automates
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,3f8b2b57-6876-436c-b5ba-a712307aa313,markdown,fr,354613b37c927f5b,"## 1. Introduction aux Automates
 
 ### 1.1 Qu'est-ce qu'un automate ?
 
@@ -2325,7 +2325,7 @@ transitions, on termine dans un état final.
 Les deux formalismes ont la même puissance d'expression (tout NFA est convertible en DFA équivalent),
 mais le NFA est souvent plus compact pour spécifier un langage.
 ",,,,,,,,354613b37c927f5b,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb,db383a36-5da4-4b60-925b-b7b4811415fb,markdown,fr,4ff358211df46d75,"### 1.3 Exemple introductif — Reconnaissance de ""ab""
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,db383a36-5da4-4b60-925b-b7b4811415fb,markdown,fr,4ff358211df46d75,"### 1.3 Exemple introductif — Reconnaissance de ""ab""
 
 Soit le langage $L = \{ w \in \{a,b\}^* : w \text{ contient le facteur } ab \}$.
 Construisons un NFA qui le reconnaît :
@@ -2338,7 +2338,7 @@ Le non-déterminisme apparaît en $q_0$ : sur `a`, on peut **rester** en $q_0$ (
 plus loin) **ou** passer en $q_1` (tenter le facteur ici). C'est cette liberté qui rend le NFA
 plus concis que le DFA équivalent.
 ",,,,,,,,4ff358211df46d75,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb,f637c881-d705-427b-80a7-fae497ef4df9,code,fr,d31703e9de961563,"// Imports + structures communes : classes DFA et NFA (""hand-rolled"").
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,f637c881-d705-427b-80a7-fae497ef4df9,code,fr,d31703e9de961563,"// Imports + structures communes : classes DFA et NFA (""hand-rolled"").
 // Conformement a la section 7 du notebook Python (""Notre approche alternative""),
 // on construit les automates a la main : c'est l'objectif pedagogique meme.
 using System;
@@ -2420,7 +2420,7 @@ $@""Bibliotheques definies :
   - DFA  : automate deterministe (Delta : (etat, symbole) -> etat)
   - NFA  : automate non deterministe (Delta : (etat, symbole) -> ensemble d'etats)
 Environnement pret."".Display();",,,,,,,,d31703e9de961563,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb,3c14ad21-b825-4e46-bae2-5e522d4a828d,markdown,fr,1846ef838083eb53,"## 2. Automates Finis en C#
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,3c14ad21-b825-4e46-bae2-5e522d4a828d,markdown,fr,1846ef838083eb53,"## 2. Automates Finis en C#
 
 ### 2.2 Création d'un NFA — Reconnaissance de ""ab""
 
@@ -2428,7 +2428,7 @@ Implémentons le NFA de la §1.3. Le non-déterminisme se traduit en C# par un *
 pour la transition `('q0', 'a')` = `{'q0', 'q1'}` : sur un `a` en $q_0$, l'automate peut **soit**
 rester en $q_0` **soit** passer en $q_1`.
 ",,,,,,,,1846ef838083eb53,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb,eb299818-47f2-439c-9722-02e33e10087a,code,fr,81d8e47fdc2039ad,"// NFA pour reconnaissance du facteur ""ab""
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,eb299818-47f2-439c-9722-02e33e10087a,code,fr,81d8e47fdc2039ad,"// NFA pour reconnaissance du facteur ""ab""
 var nfaAb = new NFA(
     states: new HashSet<string> { ""q0"", ""q1"", ""q2"" },
     alphabet: new HashSet<char> { 'a', 'b' },
@@ -2451,7 +2451,7 @@ sb.AppendLine(new string('-', 20));
 foreach (var w in testWords)
     sb.AppendLine($""{w,-8} {(nfaAb.Accepts(w) ? ""OUI"" : ""non""),-12}"");
 sb.ToString().Display();",,,,,,,,81d8e47fdc2039ad,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb,063b7601-ec88-46a5-86a2-43f4aadae0a2,markdown,fr,2be0ca1ed2600083,"**Interprétation : NFA pour reconnaissance de ""ab""**
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,063b7601-ec88-46a5-86a2-43f4aadae0a2,markdown,fr,2be0ca1ed2600083,"**Interprétation : NFA pour reconnaissance de ""ab""**
 
 - `ab`, `aab`, `abab` → **acceptés** : ils contiennent le facteur `ab`.
 - `a`, `b`, `ba`, `aa` → **rejetés** : aucun ne contient `ab`.
@@ -2460,13 +2460,13 @@ Le non-déterminisme (deux cibles pour `('q0','a')`) est résolu par l'explorati
 **tous les chemins** (`EpsilonClosureStep` cumule les cibles). Le mot est accepté dès qu'**un** chemin
 se termine en $q_2$.
 ",,,,,,,,2be0ca1ed2600083,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb,b3446074-6802-40b0-8fd0-e72762bd586f,markdown,fr,2a1c2116a4c758ca,"### 2.3 Création d'un DFA — Mots avec un nombre pair de 'a'
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,b3446074-6802-40b0-8fd0-e72762bd586f,markdown,fr,2a1c2116a4c758ca,"### 2.3 Création d'un DFA — Mots avec un nombre pair de 'a'
 
 Le langage $L = \{ w \in \{a,b\}^* : w \text{ contient un nombre pair de } a \}$ se code
 naturellement par un DFA à **deux états** : $q_{even}$ (pair, final) et $q_{odd}$ (impair).
 Sur `a` on change de parité, sur `b` on ne change pas.
 ",,,,,,,,2a1c2116a4c758ca,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb,061d2bfa-feed-416b-8ce0-62cd8c840620,code,fr,1292aaa4ba533ab5,"// DFA pour nombre pair de 'a'
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,061d2bfa-feed-416b-8ce0-62cd8c840620,code,fr,1292aaa4ba533ab5,"// DFA pour nombre pair de 'a'
 var dfaEvenA = new DFA(
     states: new HashSet<string> { ""q_even"", ""q_odd"" },
     alphabet: new HashSet<char> { 'a', 'b' },
@@ -2490,12 +2490,12 @@ foreach (var w in testWordsDfa) {
     sb2.AppendLine($""{(w == """" ? ""(vide)"" : w),-8} {na,-4} {(dfaEvenA.Accepts(w) ? ""OUI"" : ""non""),-12}"");
 }
 sb2.ToString().Display();",,,,,,,,1292aaa4ba533ab5,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb,8ba25e3b-822d-4f8a-bcfa-9b7d8bb9a24e,markdown,fr,8a38dfb6a2185a70,"**Interprétation : DFA nombre pair de 'a'**
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,8ba25e3b-822d-4f8a-bcfa-9b7d8bb9a24e,markdown,fr,8a38dfb6a2185a70,"**Interprétation : DFA nombre pair de 'a'**
 
 Le mot vide `""""` est accepté (zéro `a`, zéro est pair). `aaa` (3 `a`) est rejeté, `aa` (2) accepté.
 Ce DFA est **minimal** : deux états suffisent car seule la parité du compte de `a` importe.
 ",,,,,,,,8a38dfb6a2185a70,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb,54108984-9b99-4e5c-9db9-c3adf859f389,markdown,fr,a2a792bf26097a1d,"### Exercice : NFA pour mots se terminant par ""ba""
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,54108984-9b99-4e5c-9db9-c3adf859f389,markdown,fr,a2a792bf26097a1d,"### Exercice : NFA pour mots se terminant par ""ba""
 
 Construisez un NFA reconnaissant le langage $L = \{ w \in \{a,b\}^* : w \text{ se termine par } ba \}$.
 
@@ -2506,14 +2506,14 @@ Construisez un NFA reconnaissant le langage $L = \{ w \in \{a,b\}^* : w \text{ s
   suffixe `ba` final).
 - *Étape 3* : testez avec `ba`, `aba`, `bba` (acceptés) et `ab`, `aa`, `bb` (rejetés).
 ",,,,,,,,a2a792bf26097a1d,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb,c2d7c2a6-9401-49c1-a011-7d7c19c4027b,code,fr,56eeec7f64bf055f,"// Exercice : NFA pour mots se terminant par ""ba""
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,c2d7c2a6-9401-49c1-a011-7d7c19c4027b,code,fr,56eeec7f64bf055f,"// Exercice : NFA pour mots se terminant par ""ba""
 // TODO etudiant : construire le NFA et le stocker dans 'nfaBa'.
 // Etape 1 : definir etats / alphabet / transitions / initial / finals
 // Etape 2 : caser le non-determinisme sur 'b' (le b peut etre debut de suffixe OU non)
 // Etape 3 : tester ba / aba / bba (acceptes) vs ab / aa / bb (rejetes)
 NFA nfaBa = null;  // TODO etudiant : remplacer par la solution NFA
 Console.WriteLine(""Exercice a completer : NFA pour mots se terminant par 'ba'"");",,,,,,,,56eeec7f64bf055f,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb,5078b1b7-59fe-4fa3-ad05-f73b807f9127,markdown,fr,554726392d1e9e3e,"### 2.4 Opérations sur les automates
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,5078b1b7-59fe-4fa3-ad05-f73b807f9127,markdown,fr,554726392d1e9e3e,"### 2.4 Opérations sur les automates
 
 Les langages reconnus par des automates sont **clos** par les opérations ensemblistes :
 
@@ -2527,7 +2527,7 @@ Le **complément** est immédiat sur un DFA **complet** (toutes les transitions 
 inverse simplement l'ensemble des états finaux (méthode `DFA.Complement()` ci-dessus). L'union et
 l'intersection passent par le **produit cartésien** de deux automates.
 ",,,,,,,,554726392d1e9e3e,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb,2a088629-843b-4bac-b22b-ab843472d4bf,code,fr,31a03730c46740ed,"// Demonstration : complement du DFA ""pair de a"".
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,2a088629-843b-4bac-b22b-ab843472d4bf,code,fr,31a03730c46740ed,"// Demonstration : complement du DFA ""pair de a"".
 // L_complement = mots a nombre IMPAIR de 'a'.
 var dfaOddA = dfaEvenA.Complement();
 
@@ -2580,7 +2580,7 @@ sb3.AppendLine(""\nVerification coherence : L1 n L2 == L1 logique AND L2 sur cha
 bool coherent = testWordsOp.All(w => dfaInter.Accepts(w) == (dfaEvenA.Accepts(w) && dfaEndsB.Accepts(w)));
 sb3.AppendLine($""Coherence produit cartesien : {(coherent ? ""OK (intersection = AND logique)"" : ""ECHEC"")}"");
 sb3.ToString().Display();",,,,,,,,31a03730c46740ed,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb,a7b9dd2d-02a3-4342-9ba8-bebac2426985,markdown,fr,8ac70ddfd50045f5,"**Interprétation : opérations sur les automates**
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,a7b9dd2d-02a3-4342-9ba8-bebac2426985,markdown,fr,8ac70ddfd50045f5,"**Interprétation : opérations sur les automates**
 
 - L'**intersection** par produit cartésien donne exactement le ET logique mot à mot (vérifié :
   `Coherence OK`). C'est la construction standard de fermeture des langages réguliers.
@@ -2599,7 +2599,7 @@ Plus précisément, un DFA à $k$ états ne peut pas distinguer deux mots qui pa
 sur un alphabet potentiellement infini (entiers, par exemple). Ce sera l'objet de la **tranche 2**
 (avec `Microsoft.Z3`).
 ",,,,,,,,8ac70ddfd50045f5,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb,7243aa33-9df1-4a4c-91e4-f387197c2fc8,markdown,fr,8083784d7f601a0f,"***
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,7243aa33-9df1-4a4c-91e4-f387197c2fc8,markdown,fr,8083784d7f601a0f,"***
 
 ## 3. Introduction aux Automates Symboliques
 
@@ -2631,7 +2631,7 @@ $P(v)$ est **vrai** (sat) ou **faux** (unsat). On utilise le solveur comme un «
 | **Décision** | lookup dans `Dictionary` | solveur SMT (Z3) : `sat`/`unsat` |
 | **Cas d'usage** | mots sur $\{a,b\}$ | intervalles, parité, propriétés arithmétiques |
 ",,,,,,,,8083784d7f601a0f,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb,91914c88-fb90-4f6e-92d5-515d81072508,markdown,fr,2fefc8757f36883d,"## 4. Automates Symboliques avec Z3
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,91914c88-fb90-4f6e-92d5-515d81072508,markdown,fr,2fefc8757f36883d,"## 4. Automates Symboliques avec Z3
 
 ### 4.1 Installation et importation de Microsoft.Z3
 
@@ -2639,7 +2639,7 @@ Z3 est le solveur SMT de Microsoft Research. En .NET, on l'obtient via le packag
 `Microsoft.Z3` (version 4.12.2, dernière publiée). La cellule suivante restore le package
 et importe l'espace de noms.
 ",,,,,,,,2fefc8757f36883d,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb,4dc984fd-3317-4383-9fd8-e46d9ba6c3af,code,fr,0235ed4131d9da08,"// Restoration du package NuGet Microsoft.Z3 (solveur SOT de Microsoft Research).
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,4dc984fd-3317-4383-9fd8-e46d9ba6c3af,code,fr,0235ed4131d9da08,"// Restoration du package NuGet Microsoft.Z3 (solveur SOT de Microsoft Research).
 // Version 4.12.2 = derniere publiee sur NuGet (4.13+ n'existe pas encore en package).
 #r ""nuget: Microsoft.Z3, 4.12.2""
 using Microsoft.Z3;
@@ -2655,13 +2655,13 @@ Types de variables disponibles :
   - BitVecExpr : Vecteurs de bits (taille fixe)
   - BoolExpr : Booleens (formules logiques)
   - RealExpr : Nombres reels"".Display();",,,,,,,,0235ed4131d9da08,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb,fd9ed1af-0b0d-4752-b685-d5c9a00708c5,markdown,fr,6d5806b6913197e5,"### 4.2 Prédicats Symboliques avec Z3
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,fd9ed1af-0b0d-4752-b685-d5c9a00708c5,markdown,fr,6d5806b6913197e5,"### 4.2 Prédicats Symboliques avec Z3
 
 Construisons des prédicats sur une variable entière `x`. Z3 représente chaque prédicat comme
 un arbre de syntaxe abstraite (`BoolExpr`) — on peut le **composer** (`MkAnd`, `MkOr`, `MkNot`)
 et le **vérifier** contre une valeur via un solver.
 ",,,,,,,,6d5806b6913197e5,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb,0b8b42f6-e164-4172-9fe6-0d90466698d6,code,fr,7eedd12d62027622,"// Predicats symboliques avec Z3 sur une variable entiere x.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,0b8b42f6-e164-4172-9fe6-0d90466698d6,code,fr,7eedd12d62027622,"// Predicats symboliques avec Z3 sur une variable entiere x.
 var x = ctx.MkIntConst(""x"");
 
 var preds = new (BoolExpr expr, string desc)[] {
@@ -2696,14 +2696,14 @@ foreach (int v in new[] { -5, 0, 10, 50, 100, 150 }) {
     sbP.AppendLine($""  x = {v,-4} -> {st}  {(st == Status.SATISFIABLE ? ""(accepte)"" : ""(rejete)"")}"");
 }
 sbP.ToString().Display();",,,,,,,,7eedd12d62027622,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb,30ab4762-d2d8-4f9c-9cf3-51a69404f3cd,markdown,fr,2783e3506abe0a8b,"**Interprétation : Prédicats symboliques avec Z3**
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,30ab4762-d2d8-4f9c-9cf3-51a69404f3cd,markdown,fr,2783e3506abe0a8b,"**Interprétation : Prédicats symboliques avec Z3**
 
 Chaque prédicat est un `BoolExpr` — un **arbre**, pas un booléen. Pour savoir s'il est vrai
 pour une valeur donnée, on ajoute au solver le prédicat **et** la contrainte `x == v`, puis on
 appelle `solver.Check()` : `TRUE` (sat) = le prédicat est satisfait, `FALSE` (unsat) = non.
 C'est exactement le mécanisme qu'un automate symbolique utilisera pour décider les transitions.
 ",,,,,,,,2783e3506abe0a8b,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb,d88dd21a-178a-4e26-b5b5-b46eeb5c3b69,markdown,fr,8c2e119cd445d045,"### 4.3 Classe `SymbolicAutomaton`
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,d88dd21a-178a-4e26-b5b5-b46eeb5c3b69,markdown,fr,8c2e119cd445d045,"### 4.3 Classe `SymbolicAutomaton`
 
 Portons la classe `SymbolicAutomaton` du notebook Python. Chaque transition est étiquetée par
 un **prédicat Z3** (fabriqué à partir du `Context` et de la variable d'entrée `x`). La méthode
@@ -2715,7 +2715,7 @@ satisfait par `input` — si oui, on passe à l'état cible (et on s'arrête si 
 > un `BoolExpr` et son `Context` d'origine, et permet de réutiliser la même fabrique pour toutes
 > les valeurs testées.
 ",,,,,,,,8c2e119cd445d045,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb,cd24edd2-d299-4b43-a3d2-0719ebed59d6,code,fr,70ecdb2e55802c8a,"// Automate symbolique : transitions etiquetees par des predicats Z3 (fabriques).
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,cd24edd2-d299-4b43-a3d2-0719ebed59d6,code,fr,70ecdb2e55802c8a,"// Automate symbolique : transitions etiquetees par des predicats Z3 (fabriques).
 // Une fabrique (Context, x) -> BoolExpr est reconstruite a chaque Accepts, ce qui evite
 // le couplage entre un BoolExpr et son Context d'origine (piage classique Z3 .NET).
 public sealed class SymbolicAutomaton {
@@ -2775,12 +2775,12 @@ public sealed class SymbolicAutomaton {
 }
 
 ""Classe SymbolicAutomaton definie (transitions = predicats Z3, Accepts via solveur SMT)."".Display();",,,,,,,,70ecdb2e55802c8a,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb,95ff9a96-1557-4e2b-aa65-ff09be95f550,markdown,fr,ac43917ac215c970,"### 4.4 Exemple 1 : Automate de Plage [10, 100]
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,95ff9a96-1557-4e2b-aa65-ff09be95f550,markdown,fr,ac43917ac215c970,"### 4.4 Exemple 1 : Automate de Plage [10, 100]
 
 Construisons l'automate à 2 états qui accepte les entiers de l'intervalle $[10, 100]$.
 Transition unique $q_0 \to q_1$ étiquetée par le prédicat `10 <= x <= 100`.
 ",,,,,,,,ac43917ac215c970,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb,6ef13c4c-9693-4c79-9fb0-3842f9a62415,code,fr,b7c1df8c46c3d1a4,"// Automate symbolique pour l'intervalle [10, 100]
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,6ef13c4c-9693-4c79-9fb0-3842f9a62415,code,fr,b7c1df8c46c3d1a4,"// Automate symbolique pour l'intervalle [10, 100]
 var autoRange = new SymbolicAutomaton(ctx)
     .AddState(""q0"", isInitial: true)
     .AddState(""q1"", isFinal: true)
@@ -2795,7 +2795,7 @@ sbR.AppendLine(new string('-', 22));
 foreach (int v in new[] { -10, 0, 9, 10, 50, 100, 101, 500 })
     sbR.AppendLine($""{v,-8} {(autoRange.Accepts(v) ? ""OUI"" : ""non""),-12}"");
 sbR.ToString().Display();",,,,,,,,b7c1df8c46c3d1a4,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb,ac3d54ad-441d-4769-b849-3a80ab31aaa7,markdown,fr,998f0a91c3c55b17,"**Interprétation : Automate de Plage**
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,ac3d54ad-441d-4769-b849-3a80ab31aaa7,markdown,fr,998f0a91c3c55b17,"**Interprétation : Automate de Plage**
 
 - `10`, `50`, `100` → acceptés (bornes incluses, `<=` et `>=`).
 - `9`, `101`, `0`, `-10`, `500` → rejetés (hors intervalle).
@@ -2803,13 +2803,13 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipy
 Le solveur Z3 a **décidé** chaque transition en vérifiant la satisfiabilité de
 `(10 <= x <= 100) AND (x == v)` — l'automate n'énumère jamais l'ensemble infini des entiers.
 ",,,,,,,,998f0a91c3c55b17,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb,ee5b50f3-629d-4d82-ab20-1b87626afe41,markdown,fr,80b4a59dafab6a57,"### 4.5 Exemple 2 : Automate pour Nombres Pairs
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,ee5b50f3-629d-4d82-ab20-1b87626afe41,markdown,fr,80b4a59dafab6a57,"### 4.5 Exemple 2 : Automate pour Nombres Pairs
 
 L'automate « nombre pair » ($x \bmod 2 = 0$) se construit en chaînanant deux prédicats :
 $q_0 \to q_1$ sur `x >= 0` (positif), puis $q_1 \to q_2$ sur `x mod 2 = 0` (pair). L'état final
 $q_2$ exige donc **à la fois** la positivité **et** la parité.
 ",,,,,,,,80b4a59dafab6a57,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb,b8278199-29b9-40d7-921b-c4510780ff18,code,fr,8dbec7d4a337529c,"// Automate symbolique pour nombres pairs positifs
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,b8278199-29b9-40d7-921b-c4510780ff18,code,fr,8dbec7d4a337529c,"// Automate symbolique pour nombres pairs positifs
 var autoEven = new SymbolicAutomaton(ctx)
     .AddState(""q0"", isInitial: true)
     .AddState(""q1"")
@@ -2825,7 +2825,7 @@ sbE.AppendLine(new string('-', 22));
 foreach (int v in new[] { -4, -2, 0, 1, 2, 3, 4, 7, 8, 100, 101 })
     sbE.AppendLine($""{v,-8} {(autoEven.Accepts(v) ? ""OUI"" : ""non""),-12}"");
 sbE.ToString().Display();",,,,,,,,8dbec7d4a337529c,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb,445dc32a-5710-48df-b0c1-0023d981a3d9,markdown,fr,57d6607622f4deb6,"**Interprétation : Nombres pairs**
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,445dc32a-5710-48df-b0c1-0023d981a3d9,markdown,fr,57d6607622f4deb6,"**Interprétation : Nombres pairs**
 
 - `0, 2, 4, 8, 100` → acceptés (positifs **et** pairs).
 - `-2, -4` → rejetés : pairs mais **négatifs** (échouent le premier prédicat `x >= 0`).
@@ -2834,12 +2834,12 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipy
 Cet exemple montre la **composition de prédicats** le long d'un chemin — l'équivalent symbolique
 d'un DFA à plusieurs états, mais où chaque transition exprime une propriété arithmétique.
 ",,,,,,,,57d6607622f4deb6,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb,f33e9fdf-45ce-4a06-ae3b-0e31241861af,markdown,fr,e1bc767e6237fc42,"### 4.6 Exemple 3 : Automate pour Nombres Positifs Multiples de 5
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,f33e9fdf-45ce-4a06-ae3b-0e31241861af,markdown,fr,e1bc767e6237fc42,"### 4.6 Exemple 3 : Automate pour Nombres Positifs Multiples de 5
 
 Même structure, mais le prédicat final est `x mod 5 = 0`. Démontre que l'automate symbolique
 gère **n'importe quelle propriété décidable par Z3** — pas seulement les intervalles.
 ",,,,,,,,e1bc767e6237fc42,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb,d8fdab0e-02ca-44db-9f4d-60834bb94086,code,fr,bb4c9046f7c62160,"// Automate symbolique : multiples de 5 positifs
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,d8fdab0e-02ca-44db-9f4d-60834bb94086,code,fr,bb4c9046f7c62160,"// Automate symbolique : multiples de 5 positifs
 var autoMult5 = new SymbolicAutomaton(ctx)
     .AddState(""q0"", isInitial: true)
     .AddState(""q1"")
@@ -2855,7 +2855,7 @@ sbM.AppendLine(new string('-', 22));
 foreach (int v in new[] { -10, 0, 3, 5, 10, 12, 15, 20, 23, 100 })
     sbM.AppendLine($""{v,-8} {(autoMult5.Accepts(v) ? ""OUI"" : ""non""),-12}"");
 sbM.ToString().Display();",,,,,,,,bb4c9046f7c62160,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb,dddea215-2f54-42b7-b857-43353d92cad9,markdown,fr,cef33ddbbca3586a,"### Exercice : Automate pour multiples de 7 dans un intervalle
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,dddea215-2f54-42b7-b857-43353d92cad9,markdown,fr,cef33ddbbca3586a,"### Exercice : Automate pour multiples de 7 dans un intervalle
 
 Construisez un automate symbolique à 3 états qui accepte les entiers $x$ tels que
 $20 \le x \le 100$ **et** $x$ est multiple de 7 (i.e. $x \bmod 7 = 0$).
@@ -2867,7 +2867,7 @@ $20 \le x \le 100$ **et** $x$ est multiple de 7 (i.e. $x \bmod 7 = 0$).
 - *Étape 3* : transition $q_1 \to q_2$ sur la divisibilité par 7 (`MkEq(MkMod(x, 7), 0)`).
 - *Étape 4* : testez — `21, 35, 49, 70, 98` doivent être acceptés ; `14, 20, 25, 105` rejetés.
 ",,,,,,,,cef33ddbbca3586a,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb,8958aab6-cac4-4624-b675-2ca31aa07bce,code,fr,4b5c704fb9718f83,"// Exercice : automate pour multiples de 7 dans [20, 100]
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,8958aab6-cac4-4624-b675-2ca31aa07bce,code,fr,4b5c704fb9718f83,"// Exercice : automate pour multiples de 7 dans [20, 100]
 // TODO etudiant : construire l'automate 'autoMult7' avec la classe SymbolicAutomaton.
 // Etape 1 : 3 etats en chaine (q0 initial, q1 intermediaire, q2 final)
 // Etape 2 : q0 -> q1 sur (20 <= x <= 100)
@@ -2875,7 +2875,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipy
 // Etape 4 : tester 21/35/49/70/98 (acceptes) vs 14/20/25/105 (rejetes)
 SymbolicAutomaton autoMult7 = null;  // TODO etudiant : remplacer par la solution
 Console.WriteLine(""Exercice a completer : automate pour multiples de 7 dans [20, 100]"");",,,,,,,,4b5c704fb9718f83,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb,faeb3046-d35b-4515-8bcf-90b2fd267d58,markdown,fr,d5bad847ea43ae5f,"### 4.7 Opérations sur Automates Symboliques
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,faeb3046-d35b-4515-8bcf-90b2fd267d58,markdown,fr,d5bad847ea43ae5f,"### 4.7 Opérations sur Automates Symboliques
 
 Comme les automates finis, les automates symboliques sont **clos par opérations ensemblistes**.
 La clé : les prédicats Z3 se combinent avec `MkAnd` (intersection), `MkOr` (union), `MkNot`
@@ -2887,7 +2887,7 @@ sans réécrire la logique de divisibilité — juste en combinant les prédicat
 Vérifions par solver qu'un entier satisfait « multiple de 3 **ou** multiple de 5 » pour
 quelques valeurs — l'approche symbolique évite d'énumérer les multiples.
 ",,,,,,,,d5bad847ea43ae5f,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb,1235e540-0ce3-4d4a-ad66-5096011e0089,code,fr,8711a43936200503,"// Operations sur predicats : union (OR) de divisibilites.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,1235e540-0ce3-4d4a-ad66-5096011e0089,code,fr,8711a43936200503,"// Operations sur predicats : union (OR) de divisibilites.
 var xV = ctx.MkIntConst(""x"");
 var mult3 = ctx.MkEq(ctx.MkMod(xV, ctx.MkInt(3)), ctx.MkInt(0));
 var mult5 = ctx.MkEq(ctx.MkMod(xV, ctx.MkInt(5)), ctx.MkInt(0));
@@ -2909,7 +2909,7 @@ foreach (int v in new[] { 1, 3, 5, 7, 9, 10, 15, 20, 30, 23 }) {
 }
 sbO.AppendLine(""\nVerification : '3 ET 5' = multiples de 15 uniquement (15, 30). 'non-3' = complement."");
 sbO.ToString().Display();",,,,,,,,8711a43936200503,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb,4b751f0a-6ec3-49d0-b71d-155c5115863b,markdown,fr,1f0d083d0ef1c183,"**Interprétation : Opérations symboliques**
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,4b751f0a-6ec3-49d0-b71d-155c5115863b,markdown,fr,1f0d083d0ef1c183,"**Interprétation : Opérations symboliques**
 
 - **Union** (`MkOr`) : « mult3 OU mult5 » accepte 3, 5, 9, 10, 15, 20, 30 — tout multiple de l'un ou l'autre.
 - **Intersection** (`MkAnd`) : « mult3 ET mult5 » n'accepte que 15, 30 — les multiples de **15** (ppcm).
@@ -2927,7 +2927,7 @@ Ces combinaisons sont **exactes** et **automatiques** : Z3 décide chaque cas sa
 > modèles plus riches (système de porte, mini-Sudoku) au-dessus de la classe `SymbolicAutomaton`
 > introduite ici.
 ",,,,,,,,1f0d083d0ef1c183,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb,66c05503,markdown,fr,7f0f024ecc6aed80,"### Exercice (capstone) : Automate symbolique pour nombres premiers avec 30
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,66c05503,markdown,fr,7f0f024ecc6aed80,"### Exercice (capstone) : Automate symbolique pour nombres premiers avec 30
 
 Cet exercice de synthèse mobilise les **opérations sur prédicats** de la §4.7 (complément et
 conjonction). Construisez un automate symbolique à 2 états qui accepte les entiers $x \ge 1$
@@ -2947,7 +2947,7 @@ conjonction). Construisez un automate symbolique à 2 états qui accepte les ent
 > équivalente au complément de l'union $\neg(\mathrm{div2} \vee \mathrm{div3})$ (loi de De Morgan) —
 > les deux formulations donnent le même automate. Utilisez `MkNot`, `MkAnd`, `MkOr` selon
 > votre préférence.",,,,,,,,7f0f024ecc6aed80,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb,da94b5e3,code,fr,7891fbb511c47970,"// Exercice (capstone) : automate symbolique pour nombres premiers avec 30 (coprimes a 30)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,da94b5e3,code,fr,7891fbb511c47970,"// Exercice (capstone) : automate symbolique pour nombres premiers avec 30 (coprimes a 30)
 // TODO etudiant : construire l'automate 'autoCoprime30' avec la classe SymbolicAutomaton.
 // Etape 1 : 2 etats (q0 initial, q1 final)
 // Etape 2 : predicats div2 = (x mod 2 = 0), div3 = (x mod 3 = 0), div5 = (x mod 5 = 0)
@@ -2956,7 +2956,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipy
 // Etape 4 : tester {1,7,11,13,17,19,23,29} (acceptes) vs {2,3,5,6,10,15,30} (rejetes)
 SymbolicAutomaton autoCoprime30 = null;  // TODO etudiant : remplacer par la solution
 Console.WriteLine(""Exercice a completer : automate pour nombres premiers avec 30"");",,,,,,,,7891fbb511c47970,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb,808d1734-2307-4aff-8eb9-aff5cf972b81,markdown,fr,96af9ad6a1afb587,"***
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,808d1734-2307-4aff-8eb9-aff5cf972b81,markdown,fr,96af9ad6a1afb587,"***
 
 ## Bilan (tranches 1 + 2)
 
@@ -4935,7 +4935,7 @@ Cette approche ouvre des applications de **verification de proprietes** : portes
 - de Moura, L. & Bjorner, N. (2008). Z3: An Efficient SMT Solver. TACAS 2008, LNCS 4963:337-340.
 
 ",,,,,,,,22e8316ad04555fc,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb,434b7647,markdown,fr,312e349ded7488a8,"# Search-11 (C#) : Métaheuristiques — Optimisation par essaim, recuit et evolution
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb,434b7647,markdown,fr,312e349ded7488a8,"# Search-11 (C#) : Métaheuristiques — Optimisation par essaim, recuit et evolution
 
 **Navigation** : [<< Search-10 SymbolicAutomata](Search-10-SymbolicAutomata.ipynb) | [Index Part 1](../README.md) | [Search-11b Métaheuristiques (Deep)](Search-11b-Metaheuristiques-Deep.ipynb) >>
 
@@ -4947,7 +4947,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb
 
 **Pourquoi un jumeau C# ?** Le notebook Python original s'appuie sur la librairie **`mealpy`** (PSO, ABC, SA, BRO, GWO, WOA, GA, DE) et `numpy`/`matplotlib` pour comparer des métaheuristiques sur des fonctions de benchmark. Ce jumeau reimplemente les **algorithmes majeurs depuis zero** en **C# .NET 9 (coeur BCL pur, 0 NuGet pour le from-scratch)** : essaim particulaire (PSO), recuit simule (SA), algorithme génétique (GA). Une **Tranche 2** (§10) confronte ensuite ce coeur from-scratch à la librairie SOTA **GeneticSharp**, pour une **parité lib-vs-lib** avec le jumeau Python `mealpy`. Les fonctions de benchmark (Sphere, Rastrigin, Rosenbrock, Ackley) sont codees explicitement, ainsi que la convergence, l'analyse de paramètres et un exemple d'optimisation de profit. Les graphiques `matplotlib` sont remplacés par des tables et traces ASCII. Les deux notebooks derivent les mêmes optima (f=0 sur les benchmarks, profit max sur l'exemple entreprise).
 ",,,,,,,,312e349ded7488a8,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb,ac53d855,markdown,fr,be67e0d22594f6fb,"## 1. Introduction aux métaheuristiques
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb,ac53d855,markdown,fr,be67e0d22594f6fb,"## 1. Introduction aux métaheuristiques
 
 Une **métaheuristique** est une stratégie d'optimisation generique qui guide une recherche dans un espace de solutions trop vaste pour une exploration exhaustive. Contrairement aux méthodes exactes (programmation lineaire, branch-and-bound), elle ne garantit pas l'optimalite mais trouve de bonnes solutions en temps raisonnable sur des problemes reels (dimension elevee, multimodalite, non-differentiabilite).
 
@@ -4961,11 +4961,11 @@ On classifie les métaheuristiques par inspiration :
 - **Physique** : recuit simule (SA) — refroidissement thermique.
 - **Humain** : brownian, teaching-learning.
 ",,,,,,,,be67e0d22594f6fb,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb,051a5aa5,markdown,fr,939facc33feba66a,"## 2. Fonctions de benchmark
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb,051a5aa5,markdown,fr,939facc33feba66a,"## 2. Fonctions de benchmark
 
 On teste les métaheuristiques sur 4 fonctions classiques dont l'optimum global est connu. Elles couvrent les principaux pieges (unimodalite, multimodalite, vallee etroite, plateaux).
 ",,,,,,,,939facc33feba66a,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb,667cd988,code,fr,5348401db461d352,"// Fonctions de benchmark classiques. Toutes ont un optimum global f=0.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb,667cd988,code,fr,5348401db461d352,"// Fonctions de benchmark classiques. Toutes ont un optimum global f=0.
 using System.Linq;
 
 // Sphere : unimodale, convexe. Optimum x*=[0,...,0], f=0.
@@ -5012,7 +5012,7 @@ double[] zero = new double[5];
 double[] one = Enumerable.Repeat(1.0, 5).ToArray();
 Console.WriteLine($""\nVerif : Sphere(0)={Sphere(zero):F6}  Rastrigin(0)={Rastrigin(zero):F6}  Rosenbrock(1)={Rosenbrock(one):F6}  Ackley(0)={Ackley(zero):F6}  (tous attendus ~0)"");
 ",,,,,,,,5348401db461d352,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb,da4a2fb8,markdown,fr,fa883f2005d24cda,"## 3. Particle Swarm Optimization (PSO)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb,da4a2fb8,markdown,fr,fa883f2005d24cda,"## 3. Particle Swarm Optimization (PSO)
 
 Inspiré du comportement collectif des bancs de poissons / vols d'oiseaux. Chaque particule est une solution candidate qui se déplace dans l'espace selon sa vitesse. À chaque itération, la vitesse combine trois termes :
 - **Inertie** (`w`) : tendance à conserver sa direction.
@@ -5026,7 +5026,7 @@ x(t+1) = x(t) + v(t+1)
 
 Paramètres standards : `w=0.9`, `c1=c2=2.0`.
 ",,,,,,,,fa883f2005d24cda,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb,94147613,code,fr,a7b183c6a020eeb4,"// PSO (Particle Swarm Optimization) from-scratch.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb,94147613,code,fr,a7b183c6a020eeb4,"// PSO (Particle Swarm Optimization) from-scratch.
 public class PSO
 {
     public int Dim;
@@ -5093,7 +5093,7 @@ public class PSO
 
 Console.WriteLine(""PSO implemente."");
 ",,,,,,,,a7b183c6a020eeb4,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb,9c7c0280,code,fr,b49c4ffec2b903a0,"// PSO sur Rastrigin (dim=10, multimodale difficile).
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb,9c7c0280,code,fr,b49c4ffec2b903a0,"// PSO sur Rastrigin (dim=10, multimodale difficile).
 var pso = new PSO(dim: 10, lb: -5.12, ub: 5.12, f: Rastrigin, popSize: 50, epochs: 300, seed: 42);
 var (sol, fit, ms) = pso.Solve();
 Console.WriteLine(""PSO sur Rastrigin (dim=10, 300 epochs, 50 particules) :"");
@@ -5102,11 +5102,11 @@ Console.WriteLine($""  Objectif : {fit:F6}"");
 Console.WriteLine($""  Temps : {ms:F1} ms"");
 Console.WriteLine($""  Optimal attendu : [0,...,0], f=0"");
 ",,,,,,,,b49c4ffec2b903a0,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb,7f536404,markdown,fr,b078e7c07ae31460,"### Convergence PSO
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb,7f536404,markdown,fr,b078e7c07ae31460,"### Convergence PSO
 
 Plus le nombre d'epochs augmente, plus l'essaim affine sa solution. Sur Rastrigin (multimodale), on observe une décroissance rapide puis un plateau — caractéristique de l'équilibre exploration/exploitation.
 ",,,,,,,,b078e7c07ae31460,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb,b34d90b0,code,fr,7f643e966b83acd5,"// Convergence : UN seul run PSO, on enregistre le gbest aux epochs [10,20,50,100,200].
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb,b34d90b0,code,fr,7f643e966b83acd5,"// Convergence : UN seul run PSO, on enregistre le gbest aux epochs [10,20,50,100,200].
 // (La vraie courbe de convergence = trajectoire du meilleur trouvé, forcement decroissante.)
 int[] checkpoints = { 10, 20, 50, 100, 200 };
 int totalEp = checkpoints[^1];
@@ -5155,7 +5155,7 @@ for (int it = 1; it <= totalEp; it++)
 }
 Console.WriteLine(""\nLa fitness gbest decroit monotone : exploration globale rapide, puis raffinement fin du bassin optimal."");
 ",,,,,,,,7f643e966b83acd5,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb,a947499d,markdown,fr,6209f4fade5289f3,"## 4. Simulated Annealing (SA)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb,a947499d,markdown,fr,6209f4fade5289f3,"## 4. Simulated Annealing (SA)
 
 Inspiré du recuit métallurgique : un métal chauffé puis refroidi lentement atteint un état d'énergie minimale. À haute température, le système accepte facilement des solutions dégradées (exploration) ; à basse température, il devient glouton (exploitation).
 
@@ -5165,7 +5165,7 @@ L'acceptation d'une solution voisine de coût `Δ = f(voisin) - f(courant)` :
 
 La température décroît selon un schéma de refroidissement (`T = T0 · α^it`, `α < 1`).
 ",,,,,,,,6209f4fade5289f3,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb,1e96380c,code,fr,6196bbf47770bc43,"// Simulated Annealing (recuit simule) from-scratch.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb,1e96380c,code,fr,6196bbf47770bc43,"// Simulated Annealing (recuit simule) from-scratch.
 public class SA
 {
     public int Dim; public double Lb, Ub;
@@ -5225,7 +5225,7 @@ public class SA
 
 Console.WriteLine(""SA implemente."");
 ",,,,,,,,6196bbf47770bc43,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb,c1c09331,code,fr,b0d51b04a0a33efb,"// SA sur Ackley (dim=10, multimodale avec plateaux).
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb,c1c09331,code,fr,b0d51b04a0a33efb,"// SA sur Ackley (dim=10, multimodale avec plateaux).
 var sa = new SA(dim: 10, lb: -32.0, ub: 32.0, f: Ackley, epochs: 30000, tempInit: 50.0, alpha: 0.9997, stepSize: 3.0, seed: 42);
 var (solSA, fitSA, msSA) = sa.Solve();
 Console.WriteLine(""SA sur Ackley (dim=10, 30000 itérations) :"");
@@ -5234,7 +5234,7 @@ Console.WriteLine($""  Objectif : {fitSA:F6}"");
 Console.WriteLine($""  Temps : {msSA:F1} ms"");
 Console.WriteLine($""  Optimal attendu : [0,...,0], f=0"");
 ",,,,,,,,b0d51b04a0a33efb,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb,34c24168,markdown,fr,a030df8e0f9638f3,"## 5. Genetic Algorithm (GA)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb,34c24168,markdown,fr,a030df8e0f9638f3,"## 5. Genetic Algorithm (GA)
 
 Inspiré de la sélection naturelle. Une population de solutions évolue par :
 - **Sélection** : les meilleurs individus sont plus susceptibles de se reproduire (tournoi).
@@ -5243,7 +5243,7 @@ Inspiré de la sélection naturelle. Une population de solutions évolue par :
 
 Paramètres : taille de population, probabilité de croisement `pc`, probabilité de mutation `pm`.
 ",,,,,,,,a030df8e0f9638f3,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb,ca37d6c7,code,fr,3100c26e950ed9ce,"// Genetic Algorithm from-scratch : sélection par tournoi, croisement arithmetique, mutation gaussienne.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb,ca37d6c7,code,fr,3100c26e950ed9ce,"// Genetic Algorithm from-scratch : sélection par tournoi, croisement arithmetique, mutation gaussienne.
 public class GA
 {
     public int Dim; public double Lb, Ub;
@@ -5316,7 +5316,7 @@ public class GA
 
 Console.WriteLine(""GA implemente."");
 ",,,,,,,,3100c26e950ed9ce,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb,7f15778e,code,fr,cfe73cae7901ad02,"// GA sur Rosenbrock (dim=10, vallee etroite).
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb,7f15778e,code,fr,cfe73cae7901ad02,"// GA sur Rosenbrock (dim=10, vallee etroite).
 var ga = new GA(dim: 10, lb: -5.0, ub: 5.0, f: Rosenbrock, popSize: 50, epochs: 200, seed: 42);
 var (solGA, fitGA, msGA) = ga.Solve();
 Console.WriteLine(""GA sur Rosenbrock (dim=10, 200 generations) :"");
@@ -5325,11 +5325,11 @@ Console.WriteLine($""  Objectif : {fitGA:F6}"");
 Console.WriteLine($""  Temps : {msGA:F1} ms"");
 Console.WriteLine($""  Optimal attendu : [1,...,1], f=0"");
 ",,,,,,,,cfe73cae7901ad02,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb,299a1710,markdown,fr,04b35d91ab0590a3,"## 6. Benchmark comparatif
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb,299a1710,markdown,fr,04b35d91ab0590a3,"## 6. Benchmark comparatif
 
 On compare PSO, SA et GA sur les 4 fonctions de benchmark (dim=10), en mesurant la fitness finale atteinte. Chaque algorithme a ses forces : PSO excelle sur les multimodales « structurées », SA explore bien les plateaux, GA est robuste sur les vallées.
 ",,,,,,,,04b35d91ab0590a3,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb,30dcd02d,code,fr,2a54c594f7e11a6e,"// Benchmark comparatif : PSO vs SA vs GA sur les 4 fonctions (dim=10).
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb,30dcd02d,code,fr,2a54c594f7e11a6e,"// Benchmark comparatif : PSO vs SA vs GA sur les 4 fonctions (dim=10).
 var benchmarks = new (string name, Func<double[],double> f, double lb, double ub)[]
 {
     (""Sphere"", Sphere, -10.0, 10.0),
@@ -5348,11 +5348,11 @@ foreach (var (name, f, lb, ub) in benchmarks)
 }
 Console.WriteLine(""\nTendances : Sphere (unimodale) = facile pour tous ; Rastrigin/Ackley (multimodales) = PSO souvent au-dessus ; Rosenbrock (vallee) = GA robuste."");
 ",,,,,,,,2a54c594f7e11a6e,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb,09b2a7bd,markdown,fr,70221a9474439ac8,"## 7. Analyse de paramètres — impact de la taille de population
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb,09b2a7bd,markdown,fr,70221a9474439ac8,"## 7. Analyse de paramètres — impact de la taille de population
 
 La taille de population est un compromis : trop petite = convergence prématurée (minimum local) ; trop grande = lenteur. On mesure la fitness finale et le temps de calcul pour PSO sur Rastrigin avec différentes tailles.
 ",,,,,,,,70221a9474439ac8,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb,18c09e06,code,fr,30bdd9af5d931438,"// Impact de la taille de population sur PSO (Rastrigin, dim=10).
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb,18c09e06,code,fr,30bdd9af5d931438,"// Impact de la taille de population sur PSO (Rastrigin, dim=10).
 // 5 seeds par taille, on reporte la meilleure fitness (robuste au bruit stochastique).
 int[] popSizes = { 10, 30, 50, 100 };
 int[] seedsPA = { 0, 42, 123, 456, 789 };
@@ -5371,7 +5371,7 @@ foreach (int pop in popSizes)
 }
 Console.WriteLine(""\nUne population plus large ameliore la meilleure fitness atteinte (plus d'exploration), au prix du temps (lineaire en popSize)."");
 ",,,,,,,,30bdd9af5d931438,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb,8acb0bde,markdown,fr,0cbddba960419650,"## 8. Exemple guide : optimisation de profit entreprise
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb,8acb0bde,markdown,fr,0cbddba960419650,"## 8. Exemple guide : optimisation de profit entreprise
 
 Une entreprise maximise un profit `P(x,y) = 50x + 80y - x² - 2y² - xy` sous contraintes `x,y ∈ [0,20]`. On dérive analytiquement l'optimum (annulation du gradient) :
 - `∂P/∂x = 50 - 2x - y = 0`
@@ -5379,7 +5379,7 @@ Une entreprise maximise un profit `P(x,y) = 50x + 80y - x² - 2y² - xy` sous co
 
 D'où `x ≈ 17.143`, `y ≈ 15.714`, `P ≈ 1057.1`. On vérifie que PSO retrouve ce même optimum (en minimisant `-P`).
 ",,,,,,,,0cbddba960419650,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb,8062a3c9,code,fr,6125b5071866edc1,"// Exemple guide : maximiser profit = 50x + 80y - x^2 - 2y^2 - xy.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb,8062a3c9,code,fr,6125b5071866edc1,"// Exemple guide : maximiser profit = 50x + 80y - x^2 - 2y^2 - xy.
 // On minimise l'oppose (convention metaheuristique).
 static double ProfitNeg(double[] sol)
 {
@@ -5448,11 +5448,11 @@ Console.WriteLine();
 Console.WriteLine($""PSO : meilleur profit = {psoBestMM:F2}, moyenne = {psoSumMM/seedsMM.Length:F2}"");
 Console.WriteLine($""SA  : meilleur profit = {saBestMM:F2}, moyenne = {saSumMM/seedsMM.Length:F2}"");
 ",,,,,,,,6125b5071866edc1,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb,9b8f4429,markdown,fr,a404aadd9f240386,"## 9. Exemple guide : recuit simule pour le TSP
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb,9b8f4429,markdown,fr,a404aadd9f240386,"## 9. Exemple guide : recuit simule pour le TSP
 
 Le Voyageur de Commerce (TSP) consiste à trouver le tour le plus court visitant toutes les villes une fois. C'est un problème d'optimisation **combinatoire** (l'espace est l'ensemble des permutations). Le recuit simulé est bien adapté : le voisinage = échange de deux villes dans le tour.
 ",,,,,,,,a404aadd9f240386,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb,f58a08dc,code,fr,1c1fe48a7128fdaa,"// TSP par recuit simule (solution = permutation des villes, voisinage = 2-opt : inversion de segment).
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb,f58a08dc,code,fr,1c1fe48a7128fdaa,"// TSP par recuit simule (solution = permutation des villes, voisinage = 2-opt : inversion de segment).
 // 15 villes aleatoires (seed fixee pour reproductibilite).
 var rngTsp = new Random(42);
 int nVilles = 15;
@@ -5499,11 +5499,11 @@ Console.WriteLine();
 Console.WriteLine(""Le voisinage 2-opt (inversion de segment) est le standard pour le TSP : il remodele localement"");
 Console.WriteLine(""le tour pour eliminer les arenes croisees, la ou un simple swap de 2 villes est trop faible."");
 ",,,,,,,,1c1fe48a7128fdaa,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb,cfa6cfa0,markdown,fr,c1d5f6ca202415a8,"## 11. Exercices
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb,cfa6cfa0,markdown,fr,c1d5f6ca202415a8,"## 11. Exercices
 
 Trois exercices pour approfondir : ABC (4e métaheuristique majeure), schedules d'inertie PSO, et une 5e fonction de benchmark (Schwefel, fameuse pour son optimum global loin du centre).
 ",,,,,,,,c1d5f6ca202415a8,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb,4b9a9b16,code,fr,2cd36455929c7dfe,"// Exercice 1 : Artificial Bee Colony (ABC).
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb,4b9a9b16,code,fr,2cd36455929c7dfe,"// Exercice 1 : Artificial Bee Colony (ABC).
 // ABC modelise le butinage des abeilles : employees (exploitent une source),
 // onlookers (choisissent selon la qualite), scouts (explorent de nouvelles sources).
 public class ABC
@@ -5520,7 +5520,7 @@ public class ABC
 }
 Console.WriteLine(""Exercice 1 a completer : implementez ABC et comparez-le a PSO sur Rastrigin."");
 ",,,,,,,,2cd36455929c7dfe,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb,3ef799df,code,fr,1ca41309ed1d0804,"// Exercice 2 : Comparer différents schedules d'inertie pour PSO.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb,3ef799df,code,fr,1ca41309ed1d0804,"// Exercice 2 : Comparer différents schedules d'inertie pour PSO.
 // Le schedule par defaut est lineaire decroissant (wMax=0.9 -> wMin=0.4).
 // TODO etudiant : testez (a) inertie constante w=0.7, (b) decroissance exponentielle w=wMax*exp(-3*it/epochs)
 // et comparez la fitness finale sur Rastrigin.
@@ -5528,7 +5528,7 @@ double fitConstant = 0.0;      // TODO etudiant : PSO avec w fixe
 double fitExponential = 0.0;   // TODO etudiant : PSO avec w exponentiel
 Console.WriteLine($""Exercice 2 a completer : fitness w=lineaire(?) vs w=constante({fitConstant}) vs w=exponentiel({fitExponential})."");
 ",,,,,,,,1ca41309ed1d0804,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb,3443558b,code,fr,cc9e76b0b8b11d0f,"// Exercice 3 : Ajouter la fonction de Schwefel et l'optimiser.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb,3443558b,code,fr,cc9e76b0b8b11d0f,"// Exercice 3 : Ajouter la fonction de Schwefel et l'optimiser.
 // Schwefel : f(x) = 418.9829*n - sum(x_i * sin(sqrt(|x_i|))), x in [-500, 500].
 // Particularite : l'optimum global est loin du centre (x_i = 420.9687), defie les algorithmes
 // qui convergent vers le centre (comme beaucoup de variants PSO mal reglees).
@@ -5541,7 +5541,7 @@ static double Schwefel(double[] x)
 double fitSchwefel = 0.0;  // TODO etudiant : optimiser Schwefel dim=10 avec PSO, bornes [-500,500]
 Console.WriteLine($""Exercice 3 a completer : Schwefel(420.9687,...)={Schwefel(Enumerable.Repeat(420.9687,5).ToArray()):F4} (attendu ~0), optimiser en dim=10 : {fitSchwefel} (a completer)."");
 ",,,,,,,,cc9e76b0b8b11d0f,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb,7efb4dec,markdown,fr,31ae8410c996f68e,"## Conclusion et resume
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb,7efb4dec,markdown,fr,31ae8410c996f68e,"## Conclusion et resume
 
 Ce jumeau C# a reimplemente **from scratch** (coeur BCL pur, 0 NuGet) les métaheuristiques majeures du notebook Python `mealpy`, puis les a confrontées à la librairie SOTA **GeneticSharp** (Tranche 2, §10) :
 
@@ -7732,7 +7732,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part
 ",,,,,,,,64339026106619e2,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep.ipynb,s11c01,markdown,fr,d73622ea1b4d2cc3,"# Search-11b : Métaheuristiques d'optimisation (C# / .NET) — Tranche 1 : Recuit simulé
 
-**Navigation** : [<< Search-10 SymbolicAutomata](Search-10-SymbolicAutomata-Csharp.ipynb) | [Index](../README.md)
+**Navigation** : [<< Search-10 SymbolicAutomata](Search-10-SymbolicAutomata-CSharp.ipynb) | [Index](../README.md)
 
 **Twin .NET du notebook [Search-11-Metaheuristics](Search-11-Metaheuristics.ipynb) (Python/MEALPy).** Ce notebook est le port fidèle en C#/.NET, **implémentant les métaheuristiques from-scratch**.
 
@@ -23273,7 +23273,7 @@ La couverture exacte modelise naturellement le **Sudoku** (chaque cellule, ligne
 **Suite** : [Search-9 - Programmation lineaire](Search-9-LinearProgramming.ipynb) | [Retour au sommaire](../README.md)",,,,,,,,2098e32f00e13b80,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-9-LinearProgramming-Csharp.ipynb,s9c01,markdown,fr,335a95a08fc3908c,"# Search-9 : Programmation Linéaire et Simplexe (C# / .NET)
 
-**Navigation** : [<< Search-8 Dancing Links](Search-8-DancingLinks-Csharp.ipynb) | [Index](../README.md) | [Search-10 SymbolicAutomata >>](Search-10-SymbolicAutomata-Csharp.ipynb)
+**Navigation** : [<< Search-8 Dancing Links](Search-8-DancingLinks-Csharp.ipynb) | [Index](../README.md) | [Search-10 SymbolicAutomata >>](Search-10-SymbolicAutomata-CSharp.ipynb)
 
 **Twin .NET du notebook [Search-9-LinearProgramming](Search-9-LinearProgramming.ipynb) (Python/PuLP).** Ce notebook est le port fidèle en C#/.NET utilisant **Google OrTools** (`Google.OrTools.LinearSolver`) — le solveur SOTA de Google, natif sur NuGet.
 
@@ -27190,13 +27190,13 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,c33f42e5,ma
 Dijkstra **confirme** ici l'itineraire via Paris (1075 km) : le choix fait a la main etait deja optimal sur ce graphe. C'est le cas le moins spectaculaire d'une verification -- mais c'est precisement le sens de la demarche : elle separe ce qui est *prouve* par un parcours systematique de ce qui est seulement *suppose*.
 
 La **centralite d'intermediarite** ajoute une information que la recherche seule ne fournit pas : ce sont **Lyon et Marseille** (0.422) qui portent le trafic sud-nord -- quasi tous les plus courts chemins entre le sud et le nord passent par l'une des deux --, Paris n'arrivant qu'en troisieme position (0.267). C'est une mesure de role *structurel* dans le graphe entier, pas un cout de trajet : un parcours depuis un unique depart ne la voit jamais.",,,,,,,,93bc54c657501ea5,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb,multiseed-intro-c840,markdown,fr,a88df7f90b92ab6d,"### Variabilite stochastique — pourquoi un seul run ne suffit pas
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb,multiseed-intro-c840,markdown,fr,a88df7f90b92ab6d,"### Variabilite stochastique — pourquoi un seul run ne suffit pas
 
 La cellule precedente trace la decroissance de `gbest` pour **un seul run** (seed 42) : la courbe est monotone, ce qui suggere une convergence ""propre"". C'est trompeur. PSO est **stochastique** : l'initialisation de l'essaim et les tirages aleatoires (`r1`, `r2`) changent a chaque execution. Sur Rastrigin (paysage **multimodal**, crible d'optima locaux), deux executions peuvent converger vers des bassins **differents** — l'une proche de l'optimum global (f->0), l'autre piegee dans un optimum local (f=5 a 30).
 
 La conclusion robuste n'est donc jamais ""PSO a trouve f=2.3"", mais ""PSO trouve f=2.3 **en moyenne sur N seeds**, avec un ecart-type de X"". C'est pourquoi toute etude serieuse de metaheuristique reporte **mean +/- std sur plusieurs seeds** — un standard en optimisation stochastique (et la convention multi-seed exige des notebooks ML/trading, cf. regle de revue section C).
 ",,,,,,,,a88df7f90b92ab6d,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb,multiseed-pso-c840,code,fr,4e3ee6272c4f4675,"// Multi-seed : 8 runs PSO independants sur Rastrigin (meme config que cellule 6).
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb,multiseed-pso-c840,code,fr,4e3ee6272c4f4675,"// Multi-seed : 8 runs PSO independants sur Rastrigin (meme config que cellule 6).
 // On releve la fitness finale de chaque seed pour reveler la variabilite cachee par un run unique.
 int[] seedsMS = { 1, 2, 3, 4, 5, 6, 7, 8 };
 var finals = new List<double>();
@@ -27218,7 +27218,7 @@ Console.WriteLine($""Moyenne = {mean:F3}   Ecart-type = {std:F3}   [min {finals.
 Console.WriteLine($""\nL'ecart-type ({std:F2}) confirme la dispersion : un seul run (seed 42 ci-dessus)"");
 Console.WriteLine(""ne representative pas la distribution reelle des issues. D'ou l'obligation du multi-seed."");
 ",,,,,,,,4e3ee6272c4f4675,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb,c01e6a2c,markdown,fr,10bdde9ba4bcfd89,"### Lecture du contraste : quand le métaheuristique devient nécessaire
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb,c01e6a2c,markdown,fr,10bdde9ba4bcfd89,"### Lecture du contraste : quand le métaheuristique devient nécessaire
 
 La cellule ci-dessus oppose **deux paysages sur le même thème** (maximiser un profit d'entreprise) pour montrer précisément *quand* PSO et SA apportent quelque chose qu'une méthode classique ne pourrait pas.
 
@@ -27245,12 +27245,12 @@ Le terme sinusoïdal grave **une grille d'une quinzaine de maxima locaux** aux b
 PSO est **plus robuste** sur ce paysage accidenté : son essaim de 30 particules explore plusieurs bassins en parallèle, ce qui lui permet de revenir du bassin sous-optimal vers le global dans la plupart des cas. SA, qui marche pas à pas depuis un seul point de départ, se laisse plus souvent enfermer dans un bassin local — sa capacité d'échappement (accepter un mouvement défavorable selon une probabilité qui décroît avec la température) ne suffit pas toujours quand le refroidissement est trop rapide.
 
 > **À retenir.** Aucun des deux algorithmes n'est infaillible : même PSO rate l'optimum global sur un seed (`456` → `1170,81`). C'est exactement **pourquoi on exécute plusieurs seeds** et qu'on rapporte meilleure + moyenne (et non un seul tirage, qui pourrait être chanceux ou malchanceux) — la même discipline que pour l'étude de la taille de population plus haut dans ce notebook. Sur un paysage *unimodal*, cette précaution est superflue (l'optimum analytique tranche) ; sur un paysage *multimodal*, elle devient **la condition même d'une conclusion fiable**. C'est tout l'intérêt d'un métaheuristique : non pas remplacer l'analyse quand elle suffit, mais **prendre le relais là où elle échoue**.",,,,,,,,10bdde9ba4bcfd89,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb,search11-tr2-md-header,markdown,fr,9ee4c44a780435f1,"## 10. Tranche 2 : la même chose avec une librairie SOTA
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb,search11-tr2-md-header,markdown,fr,9ee4c44a780435f1,"## 10. Tranche 2 : la même chose avec une librairie SOTA
 
 Les sections précédentes ont construit PSO, SA et GA **from scratch** pour en exposer la mécanique interne. Dans la pratique, on s'appuie rarement sur du code maison : on utilise une **librairie éprouvée**, exactement comme le jumeau Python de ce notebook le fait avec **MEALPy**. Côté .NET, l'équivalent de référence pour les algorithmes évolutifs est **GeneticSharp** — la librairie C# open-source la plus utilisée pour l'évolutionnaire, et d'ailleurs le socle sur lequel notre `MetaGeneticSharp` du cours avancé (Partie 4) est construite.
 
 Cette **tranche 2** reprend les **quatre mêmes fonctions de benchmark** que le §6 (Sphere, Rastrigin, Rosenbrock, Ackley ; dim=10, 200 générations) et les résout avec GeneticSharp, puis compare objectif final et temps de calcul avec notre GA maison. C'est la **parité lib-vs-lib** : le GA from-scratch d'un côté, la librairie SOTA de l'autre, sur les mêmes instances.",,,,,,,,9ee4c44a780435f1,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb,search11-tr2-code-solve,code,fr,3f0be6df6e3b05a9,"// Tranche 2 : GeneticSharp (librairie SOTA C#) sur les 4 fonctions du benchmark (memes instances qu'au §6).
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb,search11-tr2-code-solve,code,fr,3f0be6df6e3b05a9,"// Tranche 2 : GeneticSharp (librairie SOTA C#) sur les 4 fonctions du benchmark (memes instances qu'au §6).
 // dim=10, 50 individus, 200 generations, seed 42 -> directement comparable au GA from-scratch.
 #r ""nuget: GeneticSharp""
 using GeneticSharp;
@@ -27312,7 +27312,7 @@ double gsSphere     = RunGS(""Sphere"",     Sphere,     -10.0, 10.0);
 double gsRastrigin  = RunGS(""Rastrigin"",  Rastrigin,  -5.12, 5.12);
 double gsRosenbrock = RunGS(""Rosenbrock"", Rosenbrock, -5.0,  5.0);
 double gsAckley     = RunGS(""Ackley"",     Ackley,     -32.0, 32.0);",,,,,,,,3f0be6df6e3b05a9,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb,search11-tr2-code-compare,code,fr,42a55de75b9168ba,"// Comparaison lib-vs-lib : GA from-scratch (§5) vs GeneticSharp (Tranche 2) sur les 4 fonctions.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb,search11-tr2-code-compare,code,fr,42a55de75b9168ba,"// Comparaison lib-vs-lib : GA from-scratch (§5) vs GeneticSharp (Tranche 2) sur les 4 fonctions.
 // On relance le GA from-scratch (seed 42, meme budget) pour un comparatif cote-a-cote.
 double ScratchGA(Func<double[],double> f, double lb, double ub)
     => new GA(dim: 10, lb: lb, ub: ub, f: f, popSize: 50, epochs: 200, seed: 42).Solve().fitness;
@@ -27329,7 +27329,7 @@ Console.WriteLine(""Les deux GA retombent vers f=0 sur Sphere (convexe, facile).
 Console.WriteLine(""difficiles, l'ecart reflege le codage : le from-scratch (genes continus, croisement"");
 Console.WriteLine(""arithmetique, mutation gaussienne) vs GeneticSharp (genes binaires, flip-bit) -- deux"");
 Console.WriteLine(""designs de GA legitimes, chacun avec ses forces selon le paysage."");",,,,,,,,42a55de75b9168ba,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb,search11-tr2-md-interp,markdown,fr,050f1535b083e851,"### Lecture : from-scratch vs librairie SOTA
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb,search11-tr2-md-interp,markdown,fr,050f1535b083e851,"### Lecture : from-scratch vs librairie SOTA
 
 Les deux approches attaquent **les quatre mêmes instances** (Sphere, Rastrigin, Rosenbrock, Ackley ; dim=10, 200 générations, graine 42) avec un budget comparable, mais par des voies différentes :
 

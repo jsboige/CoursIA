@@ -5,7 +5,7 @@ package percolation_lean where
   leanOptions := #[⟨`autoImplicit, false⟩, ⟨`pp.unicode.fun, true⟩]
 
 require mathlib from git
-  "https://github.com/leanprover-community/mathlib4.git" @ "v4.32.1"
+  "https://github.com/leanprover-community/mathlib4.git" @ "db584cd6d46c92f209a44c0f1c829460d327499d"
 
 -- Convention i18n EPIC #4980 : `globs` (et non `roots`) pour que `lake build`
 -- auto-découvre les siblings `_en` (miroir EN, namespace `Percolation`_en).

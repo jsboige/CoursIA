@@ -11,7 +11,7 @@ Cycle de coordination adjoint du cluster CoursIA. Cette commande est réservée 
 
 L'adjoint peut :
 
-- lire les deux dashboards et les inboxes ;
+- lire les dashboards — **énumérés**, jamais une liste apprise par cœur — et les inboxes ;
 - répondre aux ASK des lanes `CoursIA-2` ;
 - publier des preflights publics uniquement en état `COMMENTED` ;
 - réparer un scope lorsque l'ownership est clair ;
@@ -28,8 +28,8 @@ Restent réservés à `myia-ai-01:CoursIA` :
 
 ## Cycle
 
-1. Lire `workspace-CoursIA` puis `workspace-CoursIA-2`, chacun avec `section: "all"`.
-2. Lire l'inbox RooSync non lue de `myia-po-2025:CoursIA-2` et les messages pertinents pour la coordination.
+1. **Inbox DM — drainer EN PREMIER, et extraire, jamais survoler** : `roosync_messages(action:"inbox", status:"unread", deep:true)` (sans `deep`, le compte de non-lus peut être un faux zéro). Elle porte souvent le **DM nominatif qui change la priorité du cycle** (mesure : un lot nominatif d'ai-01 et deux corrections de doctrine ont dormi non lus pendant que deux cycles produisaient selon une doctrine périmée). C'est le canal de décision du coordinateur — il survit à la condensation du dashboard.
+2. **Dashboards (canal PRINCIPAL) — ENUMERER, jamais une liste apprise par cœur** : `roosync_dashboard(action:"list")`, puis `read` avec `section:"all"` sur **chaque clé dont le workspace déclaré est pertinent** — dont celles du **secrétariat** (`workspace-CoursIA-3`, cf [tricephale-circulation.md](../../../docs/reference/tricephale-circulation.md)) et les moitiés forkées. Une skill qui sait d'avance quoi lire est **structurellement aveugle** à ce qu'elle n'anticipe pas (mesure fondatrice : #17197, `workspace-CoursIA (2)` — 23 messages vivants jamais lus). Une clé à suffixe ` (N)` dont le `workspace` déclaré **ne porte pas** ce suffixe est une **moitié de la même lane**, pas une lane voisine : la lire, et escalader la réparation (`action:"merge"`, cf dashboard `global`).
 3. Traiter d'abord les handovers, ASK et bloqueurs actifs.
 4. Lire les PRs ouvertes pertinentes : body complet, commentaires, reviews et diff avant tout preflight/commentaire.
 5. Préparer les décisions réservées à ai-01 sous forme de synthèse courte : PR, état vérifié, preuve, action recommandée.
@@ -102,6 +102,15 @@ La proposition `act_kind` est donc **mise en attente mesurée**, pas ajoutée au
 - **Le gate ne lit pas l'état de merge** : un dossier READY exige la vérification `mergeable` côté attestant (CONFLICTING → BLOCKED conflit ; UNKNOWN → HOLD re-mesure).
 - **Fenêtre rate-limited** : après un refus GraphQL (`rate limit already exceeded` avec buckets pleins = limite secondaire), le fallback REST `gh api repos/.../issues/N/comments --input payload.json` passe (payload `{"body": "..."}` construit hors shell — la forme `-f body=` est interdite, `gh-posting-hygiene` HARD 1) — mais le template doit être **régénéré après** la fenêtre, jamais réutilisé.
 - **Dossier posé EN DERNIER** : toute prose postée après le dossier le périmé (surfaces-sha256).
+
+## Lire un rouge avant de le nommer — tells c.43-c.44
+
+- **Rouge fabriqué par la limite de débit de l'installation** : quand l'App GitHub épuise son quota d'installation, les jobs qui lisent le body par l'API reçoivent le texte d'erreur à la place du `PR_BODY`. `tag_required` et `perimeter` rougissent, et le bot `vtr-required-block` poste « Grain tag obligatoire » sur un body qui porte bien son tag. Signe : le summary du check-run contient `rate limit exceeded for installation`. Geste : relancer le job, **jamais** corriger le body. Mesuré sur #17180, #16782 et #17048.
+- **Un rerun rejoue le merge ref d'origine** : `gh run rerun` rejoue l'état de `main` du run initial. Un check qui attend un correctif mergé depuis (egress #17276, corrigé par #17479) reste rouge au rerun ; il faut un synchronize de la PR après le merge du correctif. Nommer ce geste à la lane, pas un rerun de plus.
+- **Un rouge venu de `main` n'est pas un défaut de la PR** : une entrée dupliquée dans `scripts/ci/fast_lane_registry.py` (`TRANCHE13`, correctif #17485) rougit toutes les têtes. Avant de nommer une réparation, vérifier que le même check est rouge sur une PR sans rapport.
+- **Collision sémantique entre PRs textuellement propres** : deux PRs sur le même notebook peuvent rester `MERGEABLE` et donner, une fois fusionnées, deux lectures pour une même sortie. Mesure : `git merge-tree --write-tree origin/main <tête>`, puis relire les cellules voisines **dans l'arbre fusionné**, pas dans la tête seule. Mesuré sur #16518 × #16930 : la tête était juste, le résultat du merge portait les doublons.
+- **Une levée qui contient un marqueur n'est pas créditée** : l'organe B.0 reclasse en réserve une phrase de levée qui porte « avant merge » ou un autre `CONCERN_MARKERS`. Dans l'autre sens, un commentaire qui met à jour une réserve encore ouverte évite les `LIFT_MARKERS` (« levée », « résolu », « est clos », « dissipé », « Merged »), sinon il l'éteint. Mesuré sur #16924 (levée Hermes 5784477551, non créditée).
+- **Un dossier READY peut mourir sans geste de la lane** : `scripts/ci/update_stale_pr_branches.py` met à jour toute PR `behind_by>0` sans écarter celles qui portent un dossier valide. Il n'est câblé à aucun workflow de `main` à ce jour ; #16924 et #16936 proposent son cron. Parade : re-gater juste avant la synthèse, et ne lister READY que ce qui rend encore 0.
 
 ## Amélioration continue (mandat user 2026-09-21)
 

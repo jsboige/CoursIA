@@ -69,14 +69,15 @@ layout: default
 | Concept | Owner dans le dépôt |
 |---|---|
 | Token, BPE, vocabulaire | [04-Tokenisation-From-Scratch](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/04-Tokenisation-From-Scratch.ipynb) |
-| Lemmes, POS, dépendances, NER | [23_TAL_Du_Mot_Aux_Dependances](../../MyIA.AI.Notebooks/GenAI/Texte/23_TAL_Du_Mot_Aux_Dependances.ipynb) |
-| n-grammes, perplexité, lissage | **GAP** — pas de notebook dédié (23_TAL ne les couvre pas) |
+| Lemmes, POS, dépendances, NER | [01_TAL_Du_Mot_Aux_Dependances](../../MyIA.AI.Notebooks/NLP/01_TAL_Du_Mot_Aux_Dependances.ipynb) |
+| n-grammes, perplexité, lissage | [02_NGrammes_Modeles_De_Langue](../../MyIA.AI.Notebooks/NLP/02_NGrammes_Modeles_De_Langue.ipynb) — gap comblé (#16235/#16246) |
+| HMM, décodage de Viterbi (étiquetage POS) | [05-HMM-Viterbi](../../MyIA.AI.Notebooks/NLP/05-HMM-Viterbi.ipynb) — gap comblé (#17695) |
 | IR : métriques, reranking, HyDE · recherche hybride | [02-Retrieval-Avance](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/02-Retrieval-Avance.ipynb) · [08-KernelMemory-Hybrid-Search](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/08-KernelMemory-Hybrid-Search.ipynb) |
 | Embeddings (skip-gram) · vectoriel serveur (HNSW) | [03-Embeddings-From-Scratch](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/03-Embeddings-From-Scratch.ipynb) · [05b-Stockage-Vectoriel-Serveur](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/05b-Stockage-Vectoriel-Serveur.ipynb) |
 | Automates finis, transducteurs | sous-module [SMT/Automata](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Automata/) (C#) |
-| CRF / structured prediction · parsing CFG/PCFG, CYK | **GAP** — pas de notebook dédié ; le parsing du dépôt est dépendanciel (23_TAL), pas constituant |
+| CRF / structured prediction · parsing CFG/PCFG, CYK | [03_CRF_Etiquetage_Sequentiel](../../MyIA.AI.Notebooks/NLP/03_CRF_Etiquetage_Sequentiel.ipynb) · [04_PCFG_CYK_Parsing](../../MyIA.AI.Notebooks/NLP/04_PCFG_CYK_Parsing.ipynb) — gaps comblés (#16252/#16253) |
 | Sémantique, graphes de connaissances | [SW-11-Python-KnowledgeGraphs](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb) · [SW-13-Python-Reasoners](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb) |
-| Fouille d'arguments, sophismes | [AA-1-informal](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-1-informal.ipynb) · [AA-5-jtms](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-5-jtms.ipynb) |
+| Fouille d'arguments, sophismes | [AA-1-informal](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-02-Fallacies-Detection-Python.ipynb) · [AA-5-jtms](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-06-JTMS-Python.ipynb) |
 | Reconnaissance de la parole | [01-2-OpenAI-Whisper-STT](../../MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb) · [01-4-Whisper-Local](../../MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb) |
 | Attention (MHA, MQA, GQA, SWA) | [TV-00b-Attention-Variants](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00b-Attention-Variants-from-scratch.ipynb) |
 | Agents conversationnels | [03-Chat-Streaming-QA-OWUI](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/03-chat-streaming/03-Chat-Streaming-QA-OWUI.ipynb) · [configurer-chatbots](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/03-Functional/03-1-Chatbots/configurer-chatbots-par-l-api.ipynb) |
@@ -114,7 +115,7 @@ layout: default
 **Perplexité** : mesure standard de qualité d'un modèle de langue (plus c'est bas,
 mieux c'est). Un modèle triviale (uniforme) donne une perplexité ≈ taille du vocabulaire.
 
-*Notebooks : [04-Tokenisation-From-Scratch](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/04-Tokenisation-From-Scratch.ipynb) (le token construit à la main : BPE, la taille de vocabulaire comme hyperparamètre) · [23_TAL_Du_Mot_Aux_Dependances](../../MyIA.AI.Notebooks/GenAI/Texte/23_TAL_Du_Mot_Aux_Dependances.ipynb) (mots vs BPE comparés frontalement sur corpus français)*
+*Notebooks : [04-Tokenisation-From-Scratch](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/04-Tokenisation-From-Scratch.ipynb) (le token construit à la main : BPE, la taille de vocabulaire comme hyperparamètre) · [01_TAL_Du_Mot_Aux_Dependances](../../MyIA.AI.Notebooks/NLP/01_TAL_Du_Mot_Aux_Dependances.ipynb) (mots vs BPE comparés frontalement sur corpus français)*
 
 ---
 
@@ -129,9 +130,9 @@ mieux c'est). Un modèle triviale (uniforme) donne une perplexité ≈ taille du
 
 **Modèle bigramme** : P("the cat") = P("the") × P("cat" | "the").
 
-> **Gap du dépôt** : aucun notebook n'implémente les modèles n-grammes, la
-> perplexité ni le lissage — les notebooks de tokenisation s'arrêtent au token,
-> pas à la distribution sur les séquences. Piste de notebook atomique.
+> **Notebook d'appui** : [02_NGrammes_Modeles_De_Langue](../../MyIA.AI.Notebooks/NLP/02_NGrammes_Modeles_De_Langue.ipynb)
+> implémente les modèles n-grammes, la perplexité et le lissage (gap comblé
+> #16235/#16246).
 
 ---
 
@@ -219,7 +220,7 @@ $$P(\text{spam} | \text{message}) \propto P(\text{message} | \text{spam}) P(\tex
 **Pattern Hearst** : « NP such as NP (, NP)* ((and|or) NP)? » extrait des
 hyperonymes (sous-catégories) depuis le web.
 
-*Notebooks : [23_TAL_Du_Mot_Aux_Dependances](../../MyIA.AI.Notebooks/GenAI/Texte/23_TAL_Du_Mot_Aux_Dependances.ipynb) (§5 : entités nommées sur corpus juridique et technique français, avec mesure contre un jeu d'or) · sous-module [SMT/Automata](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Automata/) (automates finis et transducteurs exécutables en C#)*
+*Notebooks : [01_TAL_Du_Mot_Aux_Dependances](../../MyIA.AI.Notebooks/NLP/01_TAL_Du_Mot_Aux_Dependances.ipynb) (§5 : entités nommées sur corpus juridique et technique français, avec mesure contre un jeu d'or) · sous-module [SMT/Automata](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Automata/) (automates finis et transducteurs exécutables en C#)*
 
 ---
 
@@ -347,7 +348,7 @@ vs.
 
 **Solution** : stocker les résultats intermédiaires → **Chart parsing**, **CYK**.
 
-*Notebooks : [23_TAL_Du_Mot_Aux_Dependances](../../MyIA.AI.Notebooks/GenAI/Texte/23_TAL_Du_Mot_Aux_Dependances.ipynb) (§4 : **dépendances syntaxiques** sur corpus français — étiquettes `nsubj`/`obj`/`obl:mod`/`det`, le jeu de relations d'Universal Dependencies — l'autre grande tradition du parsing, où l'arbre porte les relations de tête à subordonné plutôt que les syntagmes) · CYK/PCFG constituant : gap du dépôt confirmé (aucun notebook, mesures au mot près)*
+*Notebooks : [01_TAL_Du_Mot_Aux_Dependances](../../MyIA.AI.Notebooks/NLP/01_TAL_Du_Mot_Aux_Dependances.ipynb) (§4 : **dépendances syntaxiques** sur corpus français — étiquettes `nsubj`/`obj`/`obl:mod`/`det`, le jeu de relations d'Universal Dependencies — l'autre grande tradition du parsing, où l'arbre porte les relations de tête à subordonné plutôt que les syntagmes) · CYK/PCFG constituant : comblé par [04_PCFG_CYK_Parsing](../../MyIA.AI.Notebooks/NLP/04_PCFG_CYK_Parsing.ipynb) (CFG explicite → CNF, Viterbi-CYK avec backpointers, mesures au mot près)*
 
 *Figure historique (Chart parsing)* : extrait du PPTX original 2018.
 
@@ -433,7 +434,7 @@ image: ./images/slide_24_img_765dfaa8.png
 
 **Applications** : détection de sophismes, journalisme automatisé, aide à la décision.
 
-*Notebooks : [AA-1-informal](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-1-informal.ipynb) (détection de sophismes par taxonomie : 7 familles, descente dans la ramification) · [AA-2-formal](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-2-formal.ipynb) (l'analyse formelle : graphes d'arguments et acceptabilité) · [AA-5-jtms](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-5-jtms.ipynb) (Truth Maintenance System : rétractation et cascade non-monotone sur les justifications IN/OUT)*
+*Notebooks : [AA-1-informal](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-02-Fallacies-Detection-Python.ipynb) (détection de sophismes par taxonomie : 7 familles, descente dans la ramification) · [AA-2-formal](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb) (l'analyse formelle : graphes d'arguments et acceptabilité) · [AA-5-jtms](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-06-JTMS-Python.ipynb) (Truth Maintenance System : rétractation et cascade non-monotone sur les justifications IN/OUT)*
 
 *Figure historique (AIF / RDF)* : extrait du PPTX original 2018.
 
@@ -616,18 +617,18 @@ layout: section
 | Concept historique | Notebook moderne |
 |---|---|
 | Token, BPE | [04-Tokenisation-From-Scratch](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/04-Tokenisation-From-Scratch.ipynb) |
-| Lemmes, POS, dépendances, NER | [23_TAL_Du_Mot_Aux_Dependances](../../MyIA.AI.Notebooks/GenAI/Texte/23_TAL_Du_Mot_Aux_Dependances.ipynb) |
+| Lemmes, POS, dépendances, NER | [01_TAL_Du_Mot_Aux_Dependances](../../MyIA.AI.Notebooks/NLP/01_TAL_Du_Mot_Aux_Dependances.ipynb) |
 | Automates finis, transducteurs | sous-module [SMT/Automata](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Automata/) |
 | IR : métriques, reranking | [02-Retrieval-Avance](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/02-Retrieval-Avance.ipynb) · [08-KernelMemory-Hybrid-Search](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/08-KernelMemory-Hybrid-Search.ipynb) |
 | Embeddings, sémantique vectorielle | [03-Embeddings-From-Scratch](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/03-Embeddings-From-Scratch.ipynb) · [05b-Stockage-Vectoriel-Serveur](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/05b-Stockage-Vectoriel-Serveur.ipynb) |
 | Sémantique, graphes | [SW-11-Python-KnowledgeGraphs](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb) · [SW-13-Python-Reasoners](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb) |
-| Fouille d'arguments, sophismes | [AA-1-informal](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-1-informal.ipynb) · [AA-5-jtms](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-5-jtms.ipynb) |
+| Fouille d'arguments, sophismes | [AA-1-informal](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-02-Fallacies-Detection-Python.ipynb) · [AA-5-jtms](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-06-JTMS-Python.ipynb) |
 | Reconnaissance de la parole | [01-2-OpenAI-Whisper-STT](../../MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb) · [01-4-Whisper-Local](../../MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb) · [04-2-Transcription-Pipeline](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-2-Transcription-Pipeline.ipynb) |
 | RNN, LSTM, seq2seq, attention | [TV-00b-Attention-Variants](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00b-Attention-Variants-from-scratch.ipynb) · [10b_Inference_Mechanics](../../MyIA.AI.Notebooks/GenAI/Texte/10b_Inference_Mechanics.ipynb) |
 | Transformers, LLMs | [11_Quantization](../../MyIA.AI.Notebooks/GenAI/Texte/11_Quantization.ipynb) · [13_Agentic_Orchestration](../../MyIA.AI.Notebooks/GenAI/Texte/13_Agentic_Orchestration.ipynb) |
 | Bots conversationnels | [03-Chat-Streaming-QA-OWUI](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/03-chat-streaming/03-Chat-Streaming-QA-OWUI.ipynb) · [configurer-chatbots-par-l-api](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/03-Functional/03-1-Chatbots/configurer-chatbots-par-l-api.ipynb) |
 
-**Gaps confirmés par mesure** : n-grammes/perplexité/lissage (zéro occurrence dans 23_TAL) · HMM/Viterbi (`Probas/Infer/*` couvre l'inférence probabiliste, pas l'alignement de séquences) · CRF · CYK/PCFG constituant (le parsing du dépôt est dépendanciel).
+**Gaps restants après la migration NLP** : aucun — HMM/Viterbi, dernier gap mesuré, est comblé par [05-HMM-Viterbi](../../MyIA.AI.Notebooks/NLP/05-HMM-Viterbi.ipynb) (#17695). Les gaps mesurés ci-dessus — n-grammes/perplexité/lissage (zéro occurrence dans l'ancien 23_TAL), CRF, CYK/PCFG constituant — sont comblés par la série [`MyIA.AI.Notebooks/NLP/`](../../MyIA.AI.Notebooks/NLP/README.md) (02/03/04/05).
 
 > **Note** : les lignes « n-grammes → 23_TAL » et « HMM, Viterbi → Probas/Infer/* »
 > des versions antérieures étaient des **labels menteurs** par excès d'optimisme —

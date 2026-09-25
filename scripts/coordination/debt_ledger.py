@@ -1,14 +1,23 @@
 #!/usr/bin/env python3
-r"""debt_ledger.py -- the shared issue-debt ledger (local artifact half).
+r"""debt_ledger.py -- the shared debt ledgers (local artifact half).
+
+Two kinds share this machinery: ``issue-debt`` (one row per issue, keyed
+``owner/repo#N``) and ``gpu-reservation`` (one row per device hold, keyed
+``<machine>#gpu<n>``, #16737). A kind declares its entity, its fields and its
+terminal value; everything below is per-kind dispatch over those declarations.
 
 WHY
 ===
 
-The fleet re-derived its issue debt from scratch every cycle, by reading
-dashboards, inboxes and GitHub: re-deriving is what makes a 4 h cadence
-expensive, and nothing survives a session boundary except prose. This module is
-the UTILITY half of the fix: schema, reducer, CLI, tests. It knows nothing about
-GitHub and nothing about RooSync, and it never writes to the shared filesystem.
+The fleet keeps a ledger that was, until now, re-derived from scratch every
+cycle by reading dashboards, inboxes and GitHub: the ISSUES that owe work
+("issue debt"). Re-deriving is what makes a 4 h cadence expensive -- every cycle
+re-reads the issue's surfaces and re-learns what the previous cycle already
+knew -- and nothing survives a session boundary except prose.
+
+This module is the UTILITY half of that fix: schemas, reducer, CLI, tests. It
+knows nothing about GitHub and nothing about RooSync, and it never writes to the
+shared filesystem.
 
 TRANSPORT -- read this before wiring anything
 =============================================
@@ -18,15 +27,17 @@ mount: no locking, no compare-and-swap, so two lanes writing the same file is
 last-write-wins -- a multi-writer ledger there would silently LOSE observations,
 which is the exact class of loss the ledger exists to prevent.
 
-The transport is a DEDICATED RooSync workspace dashboard (``LEDGER_WORKSPACES``).
+The transport is a DEDICATED RooSync workspace dashboard, one per ledger kind
+(``LEDGER_WORKSPACES``): ``CoursIA-issue-debt-ledger`` for ``issue-debt``.
+
 Each OBSERVATION is one append-only dashboard message: ``content`` is a one-line
 JSON envelope, ``[OBS] {...}``. Messages are never edited, so the journal is
 append-only by construction; a stable ``observation_id`` (content-derived, see
 ``observation_id_for``) makes a replay detectable instead of harmful.
 
 The SNAPSHOT is written by ai-01 ALONE, into the ``status`` section of that
-dashboard, through the dashboard ``update``/``replace`` action -- never by a
-second writer, and never as an append (a snapshot is a derived value, not an
+dedicated dashboard, through the dashboard ``update``/``replace`` action -- never
+by a second writer, and never as an append (a snapshot is a derived value, not an
 event). Reducers other than ai-01 produce snapshots locally for review.
 
 WHAT LANDS ON DISK (local artifacts only)
@@ -54,31 +65,53 @@ compatible observation wins, provenance and history are preserved.
 
   1. the baseline (seed observations, supersedable like any other);
   2. the PRIOR SNAPSHOT, folded field by field with each field's original
-     provenance -- whatever the dashboard has since condensed out of its journal
-     is already folded here, at its ORIGINAL timestamp, so nothing is re-derived
-     and nothing is lost;
-  3. the journal, read as a FLAT message list:
-     ``{"ledger": ..., "messages": [{"id": ..., "timestamp": ..., "content":
-     "[OBS] {...}"}, ...]}``, or a bare list of such messages. Dashboard prose
-     (an ai-01 status snapshot, a human note) is IGNORED and counted -- only
-     content that declares itself an observation (``[OBS]``) and then fails to
-     parse is a rejection.
+     provenance -- this is what makes the reducer ARCHIVE-AWARE: when the
+     dashboard condenses and rotates old messages into archives, the state those
+     messages carried is already folded, so nothing is re-derived and nothing is
+     lost;
+  3. the exported journal (``roosync_dashboard read`` output) with its ``window``
+     declaration.
 
-The journal this phase reads is the SHAPE the ledger speaks. Reading a real
-``roosync_dashboard read`` export as it comes off the wire -- it nests the
-journal under ``data.intercom.messages`` and wraps the author in an object --
-and the declared-coverage (``window``) contract that governs how much of a
-condensed journal an export really carries, arrive with the shared transport.
-Until then a journal is a COMPLETE local file, and the reducer treats it as one.
+The export is read in the PRODUCER'S shape, not in a shape invented here: a
+RooSync read nests the journal (``data.intercom.messages``) and its messages are
+``{id, timestamp, author: {machineId, workspace}, content}`` -- the machine key is
+``machineId``, and the adapter normalises it into a ``machineId:workspace`` lane
+(``machine_id``/``machine``/``host`` are accepted as fallbacks). Dashboard prose
+(an ai-01 status snapshot, a human note) is IGNORED and counted -- only content
+that declares itself an observation (``[OBS]``) and then fails to parse is a
+rejection.
+
+ARCHIVE-AWARE CHECKPOINT CONTRACT
+=================================
+
+An export DECLARES what it covers::
+
+    {"window": {"kind": "full" | "incremental", "archives": [...]}}
+
+  * ``full``        -- the export claims to contain the whole journal; a prior
+                       snapshot is optional.
+  * ``incremental`` -- a tail export (the normal case once the dashboard has
+                       condensed); THE PRIOR SNAPSHOT IS MANDATORY.
+  * absent          -- treated as ``incremental``. Fail-closed: an export that
+                       does not say what it covers is not trusted to rebuild
+                       state from nothing.
+
+Folding an incremental export without a checkpoint raises ``MISSING_CHECKPOINT``
+rather than quietly emitting a snapshot built from the tail alone. An export
+OLDER than the checkpoint is not fatal (its observations lose on ``observed_at``)
+but it is surfaced as a warning -- a stale export must never regress state.
 
 CLI
 ===
 
 ::
 
-    python scripts/coordination/debt_ledger.py init   [--ledger both] [--apply]
+    python scripts/coordination/debt_ledger.py init   [--apply]
     python scripts/coordination/debt_ledger.py append --ledger issue-debt ...
-    python scripts/coordination/debt_ledger.py reduce --ledger issue-debt --events journal.json
+    python scripts/coordination/debt_ledger.py init   [--apply]
+    python scripts/coordination/debt_ledger.py append --ledger issue-debt ...
+    python scripts/coordination/debt_ledger.py append --ledger gpu-reservation --entity 'po-2023#gpu1' ...
+    python scripts/coordination/debt_ledger.py reduce --ledger issue-debt --events export.json
 
 Dry-run defaults: ``init`` writes nothing without ``--apply`` (it creates state,
 so it is opt-in); ``append`` prints the envelope and writes nothing unless
@@ -117,13 +150,15 @@ CONFIG_SCHEMA = "debt-ledger-config/v1"
 SCHEMA_DOC_VERSION = "debt-ledger-schema/v1"
 
 ISSUE_DEBT = "issue-debt"
-LEDGERS: tuple[str, ...] = (ISSUE_DEBT,)
+GPU_RESERVATION = "gpu-reservation"
+LEDGERS: tuple[str, ...] = (ISSUE_DEBT, GPU_RESERVATION)
 
-#: The DEDICATED dashboard for this ledger kind: a ledger never shares a
+#: The DEDICATED dashboards. One per ledger kind: a ledger never shares a
 #: dashboard with another kind, so a condensation of one never truncates the
 #: other's journal.
 LEDGER_WORKSPACES: dict[str, str] = {
     ISSUE_DEBT: "CoursIA-issue-debt-ledger",
+    GPU_RESERVATION: "CoursIA-gpu-reservation-ledger",
 }
 
 #: Tag prefix of a one-line observation envelope posted as dashboard content.
@@ -150,8 +185,6 @@ CLOSEABILITY_VALUES: tuple[str, ...] = (
     "not-closeable",
     "unknown",
 )
-
-
 DEPENDENCY_KINDS: tuple[str, ...] = ("issue", "pr", "external")
 FOLLOWUP_KINDS: tuple[str, ...] = ("issue", "waiver", "none")
 
@@ -160,10 +193,13 @@ TERMINAL_ISSUE_STATE: frozenset[str] = frozenset({"closed"})
 #: Entity fields per ledger. ``repo`` is always the first component of the key.
 ENTITY_FIELDS: dict[str, tuple[str, ...]] = {
     ISSUE_DEBT: ("repo", "issue"),
+    GPU_RESERVATION: ("machine", "gpu_index"),
 }
 
 _REPO_RE = re.compile(r"^[\w.-]+/[\w.-]+$")
+_MACHINE_RE = re.compile(r"^[A-Za-z0-9._-]+$")
 _ACTOR_RE = re.compile(r"^[A-Za-z0-9._-]+(:[A-Za-z0-9._-]+)?$")
+_ISSUE_REF_RE = re.compile(r"^[\w.-]+/[\w.-]+#\d+$")
 
 
 @dataclass(frozen=True)
@@ -173,7 +209,6 @@ class FieldSpec:
     ``kind`` selects both the validator and the normalisation applied before the
     observation id is computed (so a re-append of the same raw file is
     byte-identical, see ``canonical_json``).
-
     """
 
     name: str
@@ -218,16 +253,55 @@ ISSUE_DEBT_FIELDS: tuple[FieldSpec, ...] = (
 )
 
 
+GPU_RESERVATION_STATES: tuple[str, ...] = ("held", "released", "stale")
+
+GPU_RESERVATION_FIELDS: tuple[FieldSpec, ...] = (
+    FieldSpec(
+        "state",
+        "enum",
+        values=GPU_RESERVATION_STATES,
+        description="'held' while the workload runs, 'released' when it ends; released is terminal.",
+    ),
+    FieldSpec(
+        "holder",
+        "lane",
+        description="The lane holding the device ('machine:workspace').",
+    ),
+    FieldSpec(
+        "workload",
+        "text",
+        description="What is running on the device, in one line.",
+    ),
+    FieldSpec(
+        "started_at",
+        "utc-timestamp",
+        description="When the hold began (UTC ISO-8601, normalised).",
+    ),
+    FieldSpec(
+        "expected_end",
+        "utc-timestamp",
+        description="When the hold is expected to end; the basis for a stale-hold sweep.",
+    ),
+    FieldSpec(
+        "issue",
+        "issue-ref",
+        description="The execution issue this hold serves ('owner/repo#N'), when one exists.",
+    ),
+)
+
 LEDGER_FIELD_SPECS: dict[str, dict[str, FieldSpec]] = {
     ISSUE_DEBT: {spec.name: spec for spec in ISSUE_DEBT_FIELDS},
+    GPU_RESERVATION: {spec.name: spec for spec in GPU_RESERVATION_FIELDS},
 }
 
 #: Terminal values, per ledger, keyed by the field that carries the verdict.
 TERMINAL_VALUES: dict[str, tuple[str, str]] = {
     ISSUE_DEBT: ("state_class", "closed"),
+    GPU_RESERVATION: ("state", "released"),
 }
 TERMINAL_SETS: dict[str, frozenset[str]] = {
     ISSUE_DEBT: TERMINAL_ISSUE_STATE,
+    GPU_RESERVATION: frozenset({"released"}),
 }
 
 #: Top-level keys allowed in an observation envelope. Anything else is a
@@ -435,16 +509,7 @@ def _require_str(value: Any, where: str) -> str:
     return _collapse(value)
 
 
-def _validate_entity(raw: Any, ledger: str) -> dict[str, Any]:
-    if not isinstance(raw, dict):
-        raise ObservationError("entity_mismatch", "entity must be an object")
-    expected = set(ENTITY_FIELDS[ledger])
-    unknown = sorted(set(raw) - expected)
-    missing = sorted(expected - set(raw))
-    if unknown:
-        raise ObservationError("entity_mismatch", f"unknown entity key(s): {', '.join(unknown)}")
-    if missing:
-        raise ObservationError("entity_mismatch", f"missing entity key(s): {', '.join(missing)}")
+def _validate_issue_entity(raw: dict[str, Any]) -> dict[str, Any]:
     repo = raw["repo"]
     if not isinstance(repo, str) or not _REPO_RE.match(repo.strip()):
         raise ObservationError("entity_mismatch", f"repo={repo!r} is not 'owner/name'")
@@ -456,8 +521,57 @@ def _validate_entity(raw: Any, ledger: str) -> dict[str, Any]:
     return entity
 
 
+def _validate_gpu_entity(raw: dict[str, Any]) -> dict[str, Any]:
+    machine = raw["machine"]
+    if not isinstance(machine, str) or not _MACHINE_RE.match(machine.strip()):
+        raise ObservationError("entity_mismatch", f"machine={machine!r} is not a machine name")
+    # 0-based: a device index is not a number you count from one.
+    index = raw["gpu_index"]
+    if isinstance(index, bool) or not isinstance(index, int) or index < 0:
+        raise ObservationError(
+            "entity_mismatch", f"gpu_index={index!r} is not a non-negative int"
+        )
+    return {"machine": machine.strip(), "gpu_index": index}
+
+
+#: One entity validator per ledger -- the entity IS the row identity, so a kind
+#: without its own validator would validate every row against another kind's shape.
+ENTITY_VALIDATORS: dict[str, Any] = {
+    ISSUE_DEBT: _validate_issue_entity,
+    GPU_RESERVATION: _validate_gpu_entity,
+}
+
+#: How the row key reads in the generated schema, per ledger.
+ENTITY_KEY_FORMATS: dict[str, str] = {
+    ISSUE_DEBT: "owner/repo#N",
+    GPU_RESERVATION: "<machine>#gpu<n>",
+}
+
+
+def _validate_entity(raw: Any, ledger: str) -> dict[str, Any]:
+    if not isinstance(raw, dict):
+        raise ObservationError("entity_mismatch", "entity must be an object")
+    expected = set(ENTITY_FIELDS[ledger])
+    unknown = sorted(set(raw) - expected)
+    missing = sorted(expected - set(raw))
+    if unknown:
+        raise ObservationError("entity_mismatch", f"unknown entity key(s): {', '.join(unknown)}")
+    if missing:
+        raise ObservationError("entity_mismatch", f"missing entity key(s): {', '.join(missing)}")
+    validator = ENTITY_VALIDATORS.get(ledger)
+    if validator is None:  # pragma: no cover - every declared ledger has one
+        raise LedgerError("UNKNOWN_ENTITY_KIND", ledger)
+    return validator(raw)
+
+
 def entity_key(entity: dict[str, Any]) -> str:
-    """``owner/repo#N`` -- the row identity. A head is NOT part of the row key."""
+    """The row identity: ``owner/repo#N``, or ``<machine>#gpu<n>``.
+
+    A head is NOT part of the row key. The dispatch is on the entity's own shape,
+    which ``_validate_entity`` has already reduced to exactly one kind's fields.
+    """
+    if "machine" in entity:
+        return f"{entity['machine']}#gpu{entity['gpu_index']}"
     number = entity.get("issue", entity.get("pr"))
     return f"{entity['repo']}#{number}"
 
@@ -567,6 +681,23 @@ def normalize_field_value(spec: FieldSpec, value: Any, entity: dict[str, Any]) -
         return round(float(value), 3)
     if spec.kind == "text":
         return _require_str(value, spec.name)
+    if spec.kind == "lane":
+        if not isinstance(value, str) or not _ACTOR_RE.match(value.strip()):
+            raise ObservationError(
+                "invalid_field_value",
+                f"{spec.name}={value!r} is not a lane ('machine:workspace')",
+            )
+        return value.strip()
+    if spec.kind == "utc-timestamp":
+        # Same clock rules as ``observed_at``: naive and non-UTC stamps are refused,
+        # and the stored value is the normalised UTC rendering.
+        return format_utc(parse_utc_timestamp(value, where=spec.name))
+    if spec.kind == "issue-ref":
+        if not isinstance(value, str) or not _ISSUE_REF_RE.match(value.strip()):
+            raise ObservationError(
+                "invalid_field_value", f"{spec.name}={value!r} is not 'owner/repo#N'"
+            )
+        return value.strip()
     if spec.kind == "dependencies":
         return _validate_dependencies(value, entity)
     if spec.kind == "followup":
@@ -704,10 +835,6 @@ class Record:
     message_id: str | None
     source: str
     fields: dict[str, Any] = dataclass_field(default_factory=dict)
-    head_sha: str | None = None
-    head_transition: bool = False
-    status: str = "live"
-    reason: str = ""
 
     def sort_key(self) -> tuple[datetime, str, str]:
         return (self.observed_at, self.actor, self.observation_id)
@@ -725,8 +852,6 @@ def record_from_observation(observation: dict[str, Any], source: str) -> Record:
         message_id=observation.get("message_id"),
         source=source,
         fields=dict(observation["fields"]),
-        head_sha=observation["entity"].get("head_sha"),
-        head_transition=bool(observation.get("head_transition", False)),
     )
 
 
@@ -740,7 +865,6 @@ def _provenance_entry(
     observation_id: str,
     message_id: str | None,
     source: str,
-    head_sha: str | None,
 ) -> dict[str, Any]:
     entry = {
         "value": value,
@@ -753,8 +877,6 @@ def _provenance_entry(
     }
     if message_id is not None:
         entry["message_id"] = message_id
-    if head_sha is not None:
-        entry["head_sha"] = head_sha
     return entry
 
 
@@ -772,7 +894,6 @@ def records_from_snapshot(snapshot: dict[str, Any], ledger: str) -> list[Record]
             entity = _validate_entity(row.get("entity"), ledger)
         except ObservationError:
             continue  # a corrupt row is dropped, never allowed to poison the fold
-        key = entity_key(entity)
         for name, entries in (row.get("history") or {}).items():
             spec = LEDGER_FIELD_SPECS[ledger].get(name)
             if spec is None or not isinstance(entries, list):
@@ -788,12 +909,6 @@ def records_from_snapshot(snapshot: dict[str, Any], ledger: str) -> list[Record]
                     "confidence": entry.get("confidence", "medium"),
                     "evidence": entry.get("evidence", "snapshot"),
                     "entity": dict(entity),
-                    # A folded entry is an OBSERVATION, never a declaration: were
-                    # it flagged as a head transition, a head this reducer
-                    # already REFUSED would come back as a declared rewind on
-                    # every re-fold -- the ledger would drift toward the stale
-                    # view instead of holding the refusal.
-                    "head_transition": False,
                     "fields": {name: entry["value"]},
                 }
                 try:
@@ -853,11 +968,16 @@ def records_from_baseline(baseline: dict[str, Any], ledger: str) -> list[Record]
 # 7. JOURNAL EXPORT -- messages in, observations out
 # ---------------------------------------------------------------------------
 
-_MESSAGE_LIST_KEYS = ("messages", "entries", "events", "items", "journal")
+_MESSAGE_LIST_KEYS = ("messages", "entries", "events", "items", "journal", "content")
 _MESSAGE_ID_KEYS = ("messageId", "message_id", "id", "uuid")
 _MESSAGE_AUTHOR_KEYS = ("author", "actor", "lane", "from", "sender")
 _MESSAGE_TIME_KEYS = ("createdAt", "created_at", "observedAt", "observed_at", "timestamp", "ts")
 _MESSAGE_CONTENT_KEYS = ("content", "body", "message", "text")
+#: How deep the adapter walks the producer envelope. A RooSync read wraps its
+#: payload (``data.intercom.messages``), so a top-level-only reader sees
+#: "no messages" on a perfectly good export -- the shape is the producer's, and
+#: the adapter's job is to find the journal in it, not to demand one shape.
+_EXPORT_WALK_DEPTH = 3
 
 
 def _first_present(source: dict[str, Any], keys: Iterable[str]) -> Any:
@@ -867,26 +987,43 @@ def _first_present(source: dict[str, Any], keys: Iterable[str]) -> Any:
     return None
 
 
-def _message_list(raw: Any) -> tuple[list[Any], str]:
-    """``(messages, path)`` -- the journal a flat export carries.
+#: Descriptor declarations live at the DOCUMENTED paths only: the root of the
+#: export and its ``data`` envelope. A key-by-key BFS would also read any stray
+#: ``window``/``format`` nested deeper (e.g. a UI pagination window inside the
+#: payload) in place of the producer's own declaration -- more permissive than
+#: the README contract, and silent about it.
+def _declared_at(raw: Any, keys: Iterable[str]) -> Any:
+    data_envelope = raw.get("data") if isinstance(raw, dict) else None
+    for source in (raw, data_envelope):
+        if isinstance(source, dict):
+            found = _first_present(source, keys)
+            if found is not None:
+                return found
+    return None
 
-    A flat export is what this phase reads: a list of messages, or an object
-    holding one under a known list key. Walking a PRODUCER envelope (a RooSync
-    read nests its journal under ``data.intercom``) is the adapter's job and
-    lands with the shared transport, so this one does not guess -- it refuses a
-    shape it cannot read rather than reporting "no messages" on a good export.
-    """
+
+def _message_list(raw: Any) -> tuple[list[Any], str]:
+    """``(messages, path)`` -- the journal inside whatever envelope wraps it."""
     if isinstance(raw, list):
         return raw, "<list>"
-    if isinstance(raw, dict):
+    queue: list[tuple[Any, str, int]] = [(raw, "", 0)]
+    while queue:
+        node, path, level = queue.pop(0)
+        if not isinstance(node, dict):
+            continue
         for key in _MESSAGE_LIST_KEYS:
-            value = raw.get(key)
+            value = node.get(key)
             if isinstance(value, list):
-                return value, key
+                return value, f"{path}.{key}".lstrip(".")
+        if level >= _EXPORT_WALK_DEPTH:
+            continue
+        for key, value in node.items():
+            if isinstance(value, dict):
+                queue.append((value, f"{path}.{key}".lstrip("."), level + 1))
     raise LedgerError(
         "UNSUPPORTED_EXPORT_SHAPE",
-        "a flat journal must be a list of messages, or an object holding one under "
-        f"{'/'.join(_MESSAGE_LIST_KEYS)}",
+        "export must be a list of messages, or an object wrapping one under "
+        f"{'/'.join(_MESSAGE_LIST_KEYS)} (a RooSync read nests them under data.intercom)",
     )
 
 
@@ -919,7 +1056,7 @@ def _actor_from(value: Any) -> str | None:
 
 
 def parse_journal_export(raw: Any, ledger: str) -> tuple[dict[str, Any], list[Record], list[dict]]:
-    """Parse a flat journal into ``(window, records, rejections)``."""
+    """Parse an export into ``(window, records, rejections)``."""
     window_declared: dict[str, Any] = {}
     if isinstance(raw, dict):
         declared = raw.get("schema")
@@ -934,8 +1071,32 @@ def parse_journal_export(raw: Any, ledger: str) -> tuple[dict[str, Any], list[Re
                 "EXPORT_LEDGER_MISMATCH",
                 f"export ledger={declared_ledger!r} but target is {ledger!r}",
             )
+        declared_format = _declared_at(raw, ("format", "content_format"))
+        if declared_format is not None and declared_format != ENVELOPE_FORMAT:
+            raise LedgerError(
+                "UNSUPPORTED_EXPORT_FORMAT",
+                f"export format={declared_format!r} (this reducer reads {ENVELOPE_FORMAT!r})",
+            )
+        window_declared = _declared_at(raw, ("window",))
+        if isinstance(window_declared, dict):
+            window_declared = dict(window_declared)
+        else:
+            window_declared = {}
+    # Fail-closed: an export that does not declare what it covers is treated as a
+    # TAIL, because assuming 'full' would let a condensed journal rebuild state
+    # from a fragment and silently drop everything the archives hold. This holds
+    # for a producer-shaped export too: the adapter finds the journal, it never
+    # guesses the coverage.
+    kind = window_declared.get("kind", "incremental")
+    if kind not in ("full", "incremental"):
+        raise LedgerError("UNSUPPORTED_WINDOW_KIND", f"window.kind={kind!r}")
+    archives = window_declared.get("archives") or []
+    if not isinstance(archives, list) or any(not isinstance(item, str) for item in archives):
+        raise LedgerError("UNSUPPORTED_WINDOW_KIND", "window.archives must be a list of strings")
     messages, path = _message_list(raw)
     window = {
+        "kind": kind,
+        "archives": [str(item) for item in archives],
         "messages": len(messages),
         "path": path,
     }
@@ -1009,7 +1170,7 @@ def _merge_row(
     history: dict[str, Any] = {}
     truncated: dict[str, int] = {}
 
-    for name, spec in specs.items():
+    for name in specs:
         # One contribution per OBSERVATION, not per occurrence: the checkpoint
         # fold and the journal re-read describe the same observation, and the
         # journal copy (seen last) wins so the richer provenance survives.
@@ -1021,20 +1182,18 @@ def _merge_row(
         if not contributions:
             continue
         contributions.sort(key=Record.sort_key)
-        winner = contributions[-1] if contributions else None
-        if winner is not None:
-            fields[name] = winner.fields[name]
-            provenance[name] = _provenance_entry(
-                value=winner.fields[name],
-                observed_at=format_utc(winner.observed_at),
-                actor=winner.actor,
-                confidence=winner.confidence,
-                evidence=winner.evidence,
-                observation_id=winner.observation_id,
-                message_id=winner.message_id,
-                source=winner.source,
-                head_sha=winner.head_sha,
-            )
+        winner = contributions[-1]
+        fields[name] = winner.fields[name]
+        provenance[name] = _provenance_entry(
+            value=winner.fields[name],
+            observed_at=format_utc(winner.observed_at),
+            actor=winner.actor,
+            confidence=winner.confidence,
+            evidence=winner.evidence,
+            observation_id=winner.observation_id,
+            message_id=winner.message_id,
+            source=winner.source,
+        )
         entries = []
         for record in contributions:
             entry = _provenance_entry(
@@ -1046,7 +1205,6 @@ def _merge_row(
                 observation_id=record.observation_id,
                 message_id=record.message_id,
                 source=record.source,
-                head_sha=record.head_sha,
             )
             entry["applied"] = record is winner
             entry["reason"] = "applied" if record is winner else "superseded"
@@ -1059,11 +1217,10 @@ def _merge_row(
     key = entity_key(entity)
     verdict_field, _terminal = TERMINAL_VALUES[ledger]
     verdict = fields.get(verdict_field)
-    entity_out = dict(entity)
     row: dict[str, Any] = {
         "key": key,
         "ledger": ledger,
-        "entity": entity_out,
+        "entity": dict(entity),
         "historical": verdict in TERMINAL_SETS[ledger],
         "fields": fields,
         "provenance": provenance,
@@ -1119,7 +1276,7 @@ def reduce_ledger(
                 f"prior snapshot ledger={prior_ledger!r} but target is {ledger!r}",
             )
 
-    window: dict[str, Any] = {"messages": 0}
+    window: dict[str, Any] = {"kind": "full", "archives": [], "messages": 0}
     journal_records: list[Record] = []
     rejections: list[dict[str, Any]] = []
     warnings: list[str] = []
@@ -1132,7 +1289,32 @@ def reduce_ledger(
     if baseline is not None:
         baseline_records = records_from_baseline(baseline, ledger)
 
+    # --- archive-aware checkpoint contract (fail-closed) ---------------------
+    if window["kind"] == "incremental" and prior_snapshot is None:
+        raise LedgerError(
+            "MISSING_CHECKPOINT",
+            "an incremental window does not carry the whole journal: the prior "
+            "snapshot is mandatory (pass --snapshot, or --window-full if the "
+            "export really is complete)",
+        )
     checkpoint = (prior_snapshot or {}).get("checkpoint") or {}
+    if checkpoint:
+        previous_newest = checkpoint.get("events", {}).get("newest_observed_at")
+        export_newest = max(
+            (record.observed_at for record in journal_records), default=None
+        )
+        if previous_newest and export_newest is not None:
+            try:
+                previous_dt = parse_utc_timestamp(previous_newest, where="checkpoint.newest")
+            except ObservationError:
+                previous_dt = None  # a corrupt checkpoint stamp cannot gate the fold
+                warnings.append("checkpoint_newest_unreadable: ignored for ordering")
+            if previous_dt is not None and export_newest < previous_dt:
+                warnings.append(
+                    f"export_older_than_checkpoint: newest event {format_utc(export_newest)} "
+                    f"is older than the folded checkpoint {previous_newest}; older "
+                    "observations lose on observed_at and cannot regress state"
+                )
 
     snapshot_records: list[Record] = []
     if prior_snapshot is not None:
@@ -1190,6 +1372,8 @@ def reduce_ledger(
         "ledger": ledger,
         "folded_at": format_utc(moment),
         "window": {
+            "kind": window["kind"],
+            "archives": window["archives"],
             "messages": window.get("messages", 0),
             "ignored": window.get("ignored", 0),
             "path": window.get("path"),
@@ -1268,6 +1452,38 @@ def _live_rows(rows: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
     return [row for row in rows if not row["historical"]]
 
 
+def _row_counts(rows: Sequence[dict[str, Any]], live: Sequence[dict[str, Any]]) -> dict[str, int]:
+    """The row census every ledger summary carries, whatever its fields mean."""
+    return {
+        "total": len(rows),
+        "live": len(live),
+        "historical": len(rows) - len(live),
+        "incomplete": sum(1 for row in live if row["missing_fields"]),
+        "stale": sum(1 for row in live if row.get("stale")),
+    }
+
+
+def _summarize_gpu_reservation(rows: Sequence[dict[str, Any]]) -> dict[str, Any]:
+    live = _live_rows(rows)
+    held_by_machine: dict[str, int] = {}
+    for row in live:
+        if row["fields"].get("state") == "held":
+            machine = str(row["entity"].get("machine", "?"))
+            held_by_machine[machine] = held_by_machine.get(machine, 0) + 1
+    holders = sorted(
+        {str(row["fields"]["holder"]) for row in live if row["fields"].get("holder")}
+    )
+    return {
+        "rows": _row_counts(rows, live),
+        "state": _counts(row["fields"].get("state") for row in live),
+        "held_by_machine": dict(sorted(held_by_machine.items())),
+        "holders": holders,
+        # A hold whose deadline has passed is the row the weekly sweep must chase:
+        # the state is the producer's to set, this list only surfaces them.
+        "stale_holds": sorted(row["key"] for row in live if row["fields"].get("state") == "stale"),
+    }
+
+
 def _summarize_issue_debt(rows: Sequence[dict[str, Any]]) -> dict[str, Any]:
     live = _live_rows(rows)
     eat_by_class: dict[str, float] = {}
@@ -1297,13 +1513,7 @@ def _summarize_issue_debt(rows: Sequence[dict[str, Any]]) -> dict[str, Any]:
             if dependency.get("kind") == "external":
                 external_edges += 1
     return {
-        "rows": {
-            "total": len(rows),
-            "live": len(live),
-            "historical": len(rows) - len(live),
-            "incomplete": sum(1 for row in live if row["missing_fields"]),
-            "stale": sum(1 for row in live if row.get("stale")),
-        },
+        "rows": _row_counts(rows, live),
         "state_class": _counts(row["fields"].get("state_class") for row in live),
         "closeability": _counts(row["fields"].get("closeability") for row in live),
         "closeable_now": sorted(
@@ -1338,6 +1548,13 @@ def _summarize_issue_debt(rows: Sequence[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+#: One summariser per ledger: the census is shared, the meaning of a field is not.
+_SUMMARIZERS: dict[str, Any] = {
+    ISSUE_DEBT: _summarize_issue_debt,
+    GPU_RESERVATION: _summarize_gpu_reservation,
+}
+
+
 def _summarize(
     ledger: str,
     rows: Sequence[dict[str, Any]],
@@ -1348,13 +1565,14 @@ def _summarize(
     now: datetime,
     replayed: int,
 ) -> dict[str, Any]:
-    detail = _summarize_issue_debt(rows)
+    detail = _SUMMARIZERS[ledger](rows)
     summary: dict[str, Any] = {
         "schema": SUMMARY_SCHEMA,
         "ledger": ledger,
         "workspace": _workspace_of(config, ledger),
         "generated_at": format_utc(now),
         "window": {
+            "kind": window["kind"],
             "messages": window.get("messages", 0),
             "ignored": window.get("ignored", 0),
             "path": window.get("path"),
@@ -1383,7 +1601,7 @@ def _status_text(
         f"[LEDGER] {ledger} @ {snapshot['generated_at']} | "
         f"events {checkpoint['consumed_total']} (+{snapshot['checkpoint']['folded']['journal_records']}) "
         f"| rows {counts['live']} live / {counts['historical']} historical "
-        f"| messages {summary['window']['messages']}"
+        f"| window {summary['window']['kind']}"
     ]
     if ledger == ISSUE_DEBT:
         eat = summary["eat_hours"]
@@ -1414,6 +1632,34 @@ def _status_text(
                 f"eat {float(row['fields'].get('eat_hours', 0) or 0):.2f}h "
                 f"prs {int(row['fields'].get('remaining_atomic_prs', 0) or 0)} "
                 f"close {row['fields'].get('closeability', '?')}"
+            )
+    if ledger == GPU_RESERVATION:
+        lines.append(
+            "state: " + (", ".join(f"{k} {v}" for k, v in summary["state"].items()) or "-")
+        )
+        held = summary["held_by_machine"]
+        lines.append(
+            "held_by_machine: "
+            + (", ".join(f"{k} {v}" for k, v in held.items()) or "-")
+        )
+        lines.append(
+            f"holders: {len(summary['holders'])} | "
+            f"stale holds {len(summary['stale_holds'])} | stale rows {counts['stale']}"
+        )
+        # Live holds first, then by deadline: the row a reader must act on is on top.
+        ranked = sorted(
+            _live_rows(snapshot["rows"]),
+            key=lambda row: (
+                str(row["fields"].get("expected_end") or "~"),
+                row["key"],
+            ),
+        )
+        for row in ranked[:max_rows]:
+            lines.append(
+                f"  {row['key']} {row['fields'].get('state', '?')} "
+                f"holder {row['fields'].get('holder', '?')} "
+                f"-> {row['fields'].get('expected_end', '?')} "
+                f"{row['fields'].get('workload', '')}".rstrip()
             )
     if len(_live_rows(snapshot["rows"])) > max_rows:
         lines.append(f"  ... {len(_live_rows(snapshot['rows'])) - max_rows} more live rows")
@@ -1640,12 +1886,17 @@ def schema_document() -> dict[str, Any]:
                 "section via update/replace; nothing is ever written to $ROOSYNC_SHARED_PATH"
             ),
             "envelope_prefix": ENVELOPE_PREFIX,
+            "windows": {
+                "full": "export claims the whole journal; prior snapshot optional",
+                "incremental": "tail export; prior snapshot MANDATORY (fail-closed if absent)",
+                "absent": "treated as incremental (fail-closed)",
+            },
         },
         "ledgers": {
             ledger: {
                 "workspace": LEDGER_WORKSPACES[ledger],
                 "entity_keys": list(ENTITY_FIELDS[ledger]),
-                "row_key": "owner/repo#N",
+                "row_key": ENTITY_KEY_FORMATS[ledger],
                 "terminal_values": {TERMINAL_VALUES[ledger][0]: sorted(TERMINAL_SETS[ledger])},
                 "fields": [
                     {
@@ -1654,7 +1905,7 @@ def schema_document() -> dict[str, Any]:
                         "values": list(spec.values),
                         "description": spec.description,
                     }
-                    for spec in ISSUE_DEBT_FIELDS
+                    for spec in LEDGER_FIELD_SPECS[ledger].values()
                 ],
             }
             for ledger in LEDGERS
@@ -1767,11 +2018,17 @@ def _read_json(path: Path) -> Any:
         raise LedgerError("INVALID_JSON", f"{path}: {exc}") from exc
 
 
-def _parse_entity_argument(raw: str) -> tuple[str, int]:
+def _parse_entity_argument(raw: str, ledger: str) -> dict[str, Any]:
+    """Parse ``--entity`` into the ledger's entity object."""
+    if ledger == GPU_RESERVATION:
+        match = re.match(r"^\s*([A-Za-z0-9._-]+)\s*#\s*gpu\s*(\d+)\s*$", raw, re.IGNORECASE)
+        if not match:
+            raise LedgerError("INVALID_ENTITY", f"{raw!r} is not '<machine>#gpu<n>'")
+        return {"machine": match.group(1), "gpu_index": int(match.group(2))}
     match = re.match(r"^\s*([\w.-]+/[\w.-]+)\s*#\s*(\d+)\s*$", raw)
     if not match:
         raise LedgerError("INVALID_ENTITY", f"{raw!r} is not 'owner/repo#N'")
-    return match.group(1), int(match.group(2))
+    return {"repo": match.group(1), "issue": int(match.group(2))}
 
 
 def _loads_object(text: str, *, where: str) -> dict[str, Any]:
@@ -1785,8 +2042,34 @@ def _loads_object(text: str, *, where: str) -> dict[str, Any]:
     return parsed
 
 
+def _declare_full_window(export: Any, ledger: str) -> Any:
+    """``--window-full`` on anything an export can legitimately be.
+
+    A bare LIST is the most natural hand-made export ("here are the messages"),
+    and it used to fall through the wrapper untouched -- so the flag documented
+    as "declare this complete" silently did nothing and the fold still failed
+    closed with MISSING_CHECKPOINT.
+    """
+    if isinstance(export, list):
+        return {
+            "schema": EXPORT_SCHEMA,
+            "ledger": ledger,
+            "window": {"kind": "full", "archives": []},
+            "messages": export,
+        }
+    if isinstance(export, dict):
+        # Use the same bounded envelope walk as parse_journal_export. Looking
+        # only at export["window"] lets --window-full inject a top-level FULL
+        # declaration that shadows an explicit nested INCREMENTAL declaration
+        # (for example data.window), rebuilding state from a condensed tail.
+        declared = _declared_at(export, ("window",))
+        if not isinstance(declared, dict):
+            return {**export, "window": {"kind": "full", "archives": []}}
+    return export
+
+
 def _cli_init(args: argparse.Namespace) -> int:
-    ledgers = list(LEDGERS) if args.ledger == "both" else [args.ledger]
+    ledgers = [args.ledger]
     state_dir = Path(args.state_dir) if args.state_dir else default_state_dir()
     planned = init_ledger_tree(
         state_dir, ledgers=ledgers, dry_run=not args.apply, now=parse_utc_timestamp(args.now, where="--now") if args.now else None
@@ -1814,8 +2097,6 @@ def _cli_append(args: argparse.Namespace) -> int:
             raise LedgerError(
                 "MISSING_INPUT", "append needs --observation-file, or --entity with --fields-json"
             )
-        repo, number = _parse_entity_argument(args.entity)
-        entity: dict[str, Any] = {"repo": repo, "issue": number}
         raw = {
             "schema": OBSERVATION_SCHEMA,
             "ledger": args.ledger,
@@ -1823,7 +2104,7 @@ def _cli_append(args: argparse.Namespace) -> int:
             "observed_at": args.observed_at or format_utc(utcnow()),
             "confidence": args.confidence,
             "evidence": args.evidence,
-            "entity": entity,
+            "entity": _parse_entity_argument(args.entity, args.ledger),
             "head_transition": False,
             "fields": _loads_object(args.fields_json, where="--fields-json"),
         }
@@ -1887,6 +2168,8 @@ def _cli_reduce(args: argparse.Namespace) -> int:
         export = _read_json(Path(args.events))
     elif not args.no_events:
         raise LedgerError("MISSING_INPUT", "reduce needs --events <journal export>")
+    if args.window_full:
+        export = _declare_full_window(export, args.ledger)
     baseline_path = Path(args.baseline) if args.baseline else base / "baseline.json"
     baseline = _read_json(baseline_path) if baseline_path.exists() else None
     config = None
@@ -1947,7 +2230,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="debt_ledger.py",
         description=(
-            "Reducer for the shared append-only issue-debt ledger. Observations travel "
+            "Reducer for the shared append-only debt ledgers "
+            "(issue-debt, gpu-reservation). Observations travel "
             "as append-only dashboard messages; this tool only ever writes LOCAL "
             "artifacts."
         ),
@@ -1961,14 +2245,16 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     init = sub.add_parser("init", parents=[common], help="create the local ledger tree")
-    init.add_argument("--ledger", choices=[*LEDGERS, "both"], default="both")
+    init.add_argument("--ledger", choices=list(LEDGERS), default=ISSUE_DEBT)
     init.add_argument("--apply", action="store_true", help="write (default is dry-run)")
     init.set_defaults(func=_cli_init)
 
     append = sub.add_parser("append", parents=[common], help="build one observation envelope")
     append.add_argument("--ledger", choices=list(LEDGERS), required=True)
     append.add_argument("--observation-file", help="read a full observation envelope from JSON")
-    append.add_argument("--entity", help="'owner/repo#N'")
+    append.add_argument(
+        "--entity", help="'owner/repo#N', or '<machine>#gpu<n>' for gpu-reservation"
+    )
     append.add_argument("--actor", default=os.environ.get("COURSIA_LEDGER_ACTOR", "ai-01"))
     append.add_argument("--observed-at", help="UTC ISO-8601; defaults to now")
     append.add_argument("--confidence", choices=list(CONFIDENCE_LEVELS), default="medium")
@@ -1993,6 +2279,11 @@ def build_parser() -> argparse.ArgumentParser:
     reduce_.add_argument("--no-summary", action="store_true")
     reduce_.add_argument("--no-status", action="store_true")
     reduce_.add_argument("--no-events", action="store_true", help="fold the checkpoint alone")
+    reduce_.add_argument(
+        "--window-full",
+        action="store_true",
+        help="declare the export complete when it omits `window`",
+    )
     reduce_.add_argument("--dry-run", action="store_true")
     reduce_.add_argument("--stdout", action="store_true")
     reduce_.add_argument("--fail-on-rejections", action="store_true")

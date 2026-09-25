@@ -66,6 +66,9 @@ on:
 permissions:
   contents: write
   pull-requests: write   # open/update the refresh PR via github-script
+  actions: write         # approve the runs this push parks (see "Release the
+                         # parked runs" below -- without this the delivery PR
+                         # stays BLOCKED forever)
 
 concurrency:
   group: catalog-cron-main
@@ -183,16 +186,33 @@ jobs:
           # (measured firsthand, see #10421 acceptance note).
           #
           # Even after the `[skip ci]` removal, the bot push still
-          # produces a head that the `PR gate` doesn't accept: that gate
-          # runs on `pull_request` events, and a push with `GITHUB_TOKEN`
-          # never emits one (GitHub anti-recursion guard). The result is
-          # a head with 5 default-Setup CodeQL checks (all green) and no
-          # repo-owned check, which `mergeStateStatus` reports as
-          # `BLOCKED`. See #11202 -- the cause is `GITHUB_TOKEN`, not
-          # `[skip ci]`, and removing the latter only fixed the
-          # symbolic half. The empty-commit wake-up gesture
-          # (carved out below, alongside the "agents are forbidden"
-          # sentence) is the canonical fix on the consumer side.
+          # produces a head that `mergeStateStatus` reports as `BLOCKED`,
+          # carrying 5 default-Setup CodeQL checks (all green) and no
+          # repo-owned check.
+          #
+          # CORRECTED 2026-09-21 -- the recorded cause was wrong, and it
+          # cost 8 days of stale catalog on main. #11202 concluded that
+          # "a push with GITHUB_TOKEN never emits a pull_request event
+          # (GitHub anti-recursion guard)", so the repo-owned workflows
+          # simply never start. Measurement refutes it: they DO start.
+          #
+          #   gh run list --branch chore/catalog-refresh-pending --limit 60
+          #   -> 40 runs, event=pull_request, conclusion=action_required
+          #
+          # The runs are created and then PARKED awaiting manual approval.
+          # A parked run is neither green nor red: it never executed, so
+          # the required check it carries does not exist at the head, and
+          # the PR sits `BLOCKED` with nothing red to explain it. That is
+          # a different defect with a different fix -- the runs have to be
+          # APPROVED, which the step below now does. The "empty-commit
+          # wake-up" that #11202 designated as canonical is a manual
+          # gesture that nobody performed on 8 consecutive days; it is
+          # kept documented but it is no longer the remedy.
+          #
+          # The standing witness is `scripts/ci/check_catalog_freshness.py`
+          # (`--delivery`), which counts the parked runs and the age of the
+          # delivery PR. A cron that succeeds while main freezes is silent
+          # by construction; that organ is what makes it loud.
           #
           # The push MUST be a force-with-lease, and that is not a shortcut:
           # this job re-roots the branch on fresh main every run
@@ -307,3 +327,43 @@ jobs:
               labels: ['catalog-refresh', 'automation'],
             });
             core.info(`Opened new PR #${created.data.number} (${created.data.html_url})`);
+
+      # Release the runs this push just parked.
+      #
+      # A same-repo push by github-actions[bot] creates the `pull_request`
+      # workflow runs and leaves them in `action_required` -- waiting for a
+      # manual approval that, measured over 8 consecutive days, never came.
+      # A parked run never executes, so the required check it carries is
+      # ABSENT at the head (not failing -- absent), and the delivery PR stays
+      # `BLOCKED` with every visible check green. That is the whole reason
+      # main's catalog went 9 days stale while this workflow reported
+      # `success` every morning.
+      #
+      # Approving them here closes the loop the workflow header promises.
+      # If the token is not allowed to approve its own runs, this step says
+      # so and does NOT fail the job: the catalog refresh itself succeeded,
+      # and `check_catalog_freshness.py --delivery` is the organ that will
+      # keep the unfinished delivery visible rather than silent.
+      - name: Release the parked runs on the delivery branch
+        if: steps.drift.outputs.drift_detected == 'true'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: chore/catalog-refresh-pending
+          # Delai entre deux approbations. Mesure du 2026-09-21 : 16 runs
+          # approuves en rafale sur un pool de runners deja sature ont tenu les
+          # checks en `queued` 19 minutes, pendant lesquelles le job "PR gate"
+          # a sonde l'API toutes les ~31 s jusqu'a epuiser le quota du jeton
+          # d'installation (HTTP 403) -- et il echoue fail-closed. Le debit
+          # total ne change pas ; ce qui change est le taux d'ARRIVEE, donc le
+          # nombre de runs simultanement en file pendant que le gate sonde.
+          RELEASE_STAGGER_SECONDS: "15"
+          # Soupape, pas un plafond de debit : au-dela, c'est que quelque chose
+          # d'autre est casse (runs qui s'empilent sans jamais s'executer), et
+          # approuver 200 runs n'y repondrait pas. Le depassement est ECRIT.
+          RELEASE_CEILING: "40"
+          # Fenetre de sonde (x 15 s) : laisser GitHub creer les runs du head.
+          RELEASE_SETTLE_POLLS: "8"
+        # Implementation partagee avec qc-research-monitor.yml :
+        # scripts/ci/release_parked_runs.py (#17668).
+        run: python3 scripts/ci/release_parked_runs.py --tag Catalog

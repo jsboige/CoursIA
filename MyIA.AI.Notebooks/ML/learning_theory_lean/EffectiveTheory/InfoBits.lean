@@ -27,8 +27,20 @@ Contenu formalisé :
      groupe), `b = log₂(7!/6) = log₂ 840` — les automorphismes d'un cyclique
      d'ordre `n` sont au nombre de φ(n) (`IsCyclic.card_mulAut`), donc les
      6 rotations de C₇ rabattent l'étiquetage de log₂ 6 ≈ 2,58 bits.
+3. **Statics sur graphes — Section III de GenEFT** : le re-labellage des
+   `n` nœuds d'un graphe est l'action naturelle de `Equiv.Perm (Fin n)` sur
+   `SimpleGraph (Fin n)` (instances `permSmul`, `MulAction`) ; le pont
+   `mem_aut_iff` identifie le stabilisateur au groupe d'automorphismes
+   usuels (préservation de l'adjacence dans les deux sens) ;
+   **orbit-stabilizer** `card_orbit_mul_card_aut` donne `|orbite| · |Aut G|
+   = n!`, d'où la longueur de description `descLength G = log₂ |orbite|` et
+   sa forme quotient `descLength_eq` : `b = log₂ (n! / |Aut G|)` (éq. 4 du
+   papier) — la contrepartie « graphe » de la définition `infoBits` groupe.
+   Migration depuis le module dissous `GenEFT.lean` (#17480, arbitrage
+   c.38 : dissolution, pas de module parallèle).
 
-Dépendances : Mathlib uniquement (`MulAut`, `Fintype.card`, `Real.log2`).
+Dépendances : Mathlib uniquement (`MulAut`, `Fintype.card`, `Real.log2`,
+`SimpleGraph`, `MulAction`, `Real.logb`).
 -/
 
 namespace LearningTheory.EffectiveTheory
@@ -116,5 +128,127 @@ theorem infoBits_cyclicSeven :
     exact h
   have hd : ((7 : ℕ).factorial : ℝ) / ((6 : ℕ) : ℝ) = 840 := by norm_num
   simp only [infoBits, hcard, hAut, hd]
+
+/-! ## Statics sur graphes — re-labellage, automorphismes, description length
+
+Section III de GenEFT : le re-labellage des `n` nœuds d'un graphe est l'action
+naturelle de `Equiv.Perm (Fin n)` sur `SimpleGraph (Fin n)` ; les graphes « de
+même structure » sont exactement l'orbite, et orbit-stabilizer donne
+`|orbite| · |Aut G| = n!` — encoder `G` revient à choisir un point dans une
+orbite de taille `n! / |Aut G|`, d'où `b = log₂ (n! / |Aut G|)`. Migré du
+module dissous `GenEFT.lean` (#17480). -/
+
+section Statics
+
+variable {n : ℕ}
+
+/-- Le **re-labellage** d'un graphe par une permutation `σ` des sommets :
+l'arête `i—j` existe dans `σ • G` ssi `σ⁻¹ i — σ⁻¹ j` existe dans `G`.
+C'est l'action naturelle du groupe symétrique sur les structures de graphe. -/
+instance permSmul : SMul (Equiv.Perm (Fin n)) (SimpleGraph (Fin n)) where
+  smul σ G :=
+    { Adj := fun i j => G.Adj (σ.symm i) (σ.symm j)
+      symm := by
+        apply Std.Symm.mk
+        intro i j h
+        exact G.symm.symm (σ.symm i) (σ.symm j) h
+      loopless := by
+        apply Std.Irrefl.mk
+        intro i h
+        exact G.loopless.irrefl (σ.symm i) h }
+
+/-- `Equiv.Perm (Fin n)` agit sur les graphes sur `Fin n` par re-labellage :
+le groupe symétrique effectue les renommages de sommets. -/
+instance : MulAction (Equiv.Perm (Fin n)) (SimpleGraph (Fin n)) where
+  one_smul G := by
+    ext i j
+    have hone : ∀ x, (1 : Equiv.Perm (Fin n)).symm x = x := by
+      intro x
+      rw [show ((1 : Equiv.Perm (Fin n)).symm) = 1 from inv_one]
+      exact Equiv.Perm.one_apply x
+    show G.Adj ((1 : Equiv.Perm (Fin n)).symm i) ((1 : Equiv.Perm (Fin n)).symm j) ↔ G.Adj i j
+    rw [hone i, hone j]
+  mul_smul σ τ G := by
+    ext i j
+    have hst : ∀ x, (σ * τ).symm x = τ.symm (σ.symm x) := by
+      intro x
+      rw [show (σ * τ).symm = τ.symm * σ.symm from mul_inv_rev σ τ]
+      simp [Equiv.Perm.mul_apply]
+    show G.Adj ((σ * τ).symm i) ((σ * τ).symm j) ↔
+      G.Adj (τ.symm (σ.symm i)) (τ.symm (σ.symm j))
+    rw [hst i, hst j]
+
+/-- **Pont avec la définition usuelle** : une permutation est dans le
+stabilisateur (l'« automate » du graphe, `Aut G`) **ssi** elle préserve
+l'adjacence dans les deux sens — le stabilisateur du re-labellage EST le
+groupe d'automorphismes du graphe. -/
+theorem mem_aut_iff {G : SimpleGraph (Fin n)} (σ : Equiv.Perm (Fin n)) :
+    σ ∈ MulAction.stabilizer (Equiv.Perm (Fin n)) G ↔
+      ∀ i j, G.Adj i j ↔ G.Adj (σ i) (σ j) := by
+  constructor
+  · intro h i j
+    have hsmul : σ • G = G := h
+    constructor
+    · intro hij
+      have h3 : (σ • G).Adj (σ i) (σ j) := by
+        show G.Adj (σ.symm (σ i)) (σ.symm (σ j))
+        simpa using hij
+      rw [hsmul] at h3
+      exact h3
+    · intro hij
+      -- l'égalité de graphes σ • G = G transportée au couple (σ i, σ j)
+      have hAdjeq : (σ • G).Adj = G.Adj := SimpleGraph.ext_iff.mp hsmul
+      have h4 : (σ • G).Adj (σ i) (σ j) := by rw [hAdjeq]; exact hij
+      have h5 : (σ • G).Adj (σ i) (σ j) ↔ G.Adj i j := by
+        show G.Adj (σ.symm (σ i)) (σ.symm (σ j)) ↔ G.Adj i j
+        simp
+      exact h5.mp h4
+  · intro h
+    show σ • G = G
+    ext i j
+    show G.Adj (σ.symm i) (σ.symm j) ↔ G.Adj i j
+    simpa using h (σ.symm i) (σ.symm j)
+
+/-- **Orbit-stabilizer pour les graphes** (Section III du papier) : le nombre
+de graphes de même structure que `G` (son orbite sous re-labellage) fois le
+nombre d'automorphismes de `G` (son stabilisateur) égale `n!`. Encoder la
+structure, c'est choisir un point de l'orbite. -/
+theorem card_orbit_mul_card_aut (G : SimpleGraph (Fin n))
+    [Fintype (MulAction.orbit (Equiv.Perm (Fin n)) G)]
+    [Fintype ↥(MulAction.stabilizer (Equiv.Perm (Fin n)) G)] :
+    Fintype.card (MulAction.orbit (Equiv.Perm (Fin n)) G) *
+      Fintype.card (MulAction.stabilizer (Equiv.Perm (Fin n)) G) =
+        Fintype.card (Equiv.Perm (Fin n)) := by
+  exact MulAction.card_orbit_mul_card_stabilizer_eq_card_group
+    (G := Equiv.Perm (Fin n)) G
+
+/-- La **longueur de description** du graphe `G` (éq. 4 du papier) : le log
+en base 2 de la taille de l'orbite de re-labellage, `b = log₂ (n! / |Aut G|)`.
+C'est le nombre de bits du « plus court programme » qui produit `G` à
+structure près. -/
+noncomputable def descLength (G : SimpleGraph (Fin n))
+    [Fintype (MulAction.orbit (Equiv.Perm (Fin n)) G)] : ℝ :=
+  Real.logb 2 (Fintype.card (MulAction.orbit (Equiv.Perm (Fin n)) G))
+
+/-- `descLength` sous forme de quotient : `b = log₂ (n! / |Aut G|)` — la
+forme utilisée dans le papier (Section III). -/
+theorem descLength_eq (G : SimpleGraph (Fin n))
+    [Fintype (MulAction.orbit (Equiv.Perm (Fin n)) G)]
+    [Fintype ↥(MulAction.stabilizer (Equiv.Perm (Fin n)) G)] :
+    descLength G =
+      Real.logb 2 (Fintype.card (Equiv.Perm (Fin n)) /
+        Fintype.card (MulAction.stabilizer (Equiv.Perm (Fin n)) G)) := by
+  have h := card_orbit_mul_card_aut G
+  -- le stabilisateur contient l'identité, donc est non vide et de cardinal > 0
+  have hcardpos : 0 < Fintype.card (MulAction.stabilizer (Equiv.Perm (Fin n)) G) :=
+    Fintype.card_pos_iff.2 ⟨⟨1, one_smul _ G⟩⟩
+  have haut : (Fintype.card (MulAction.stabilizer (Equiv.Perm (Fin n)) G) : ℝ) ≠ 0 :=
+    ne_of_gt (by exact_mod_cast hcardpos)
+  unfold descLength
+  congr 1
+  rw [eq_div_iff haut]
+  exact_mod_cast h
+
+end Statics
 
 end LearningTheory.EffectiveTheory

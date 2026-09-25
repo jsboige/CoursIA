@@ -50,6 +50,13 @@ moves. GitHub does not expose a stateless audit trail for an event that is
 later deleted or reverted; this gate therefore certifies the current
 surfaces, not erased history.
 
+The `b0:` claim is re-verified the same way: when a dossier claims READY
+with `b0: clear`, the gate runs the B.0 organ (`check_unaddressed_nits.py`)
+and refuses the dossier if the organ still finds an unlifted remark, naming
+each one. A green gate therefore no longer hides a red B.0. It still does not
+dispense with reading the surfaces: the organ only sees its markers, and who
+lifted a remark, when, and on what substance are read by hand (CLAUDE.md §B.0).
+
 Exit codes -- dossier INTEGRITY and PR MERGEABILITY are two questions, and
 conflating them is what this gate used to do (#16800):
 
@@ -73,6 +80,11 @@ refute a READY *claim* (green checks, clear B.0, no unresolved thread, not a
 draft) -- those are reasons a pull request is blocked, not reasons to distrust
 the dossier that says so.
 
+Cas FROZEN (rc 3 aussi) : un dossier READY portant une PR d'une campagne
+gelee par un veto user (#17040) reste refuse -- ni le dossier ni B.0 ne
+lisent un veto pose sur une issue. Le gate le lit au verdict via le module
+partage ``frozen_campaigns`` (dispatch a la lane auteure, pas de merge).
+
 One surface author is neutral: the coordinator itself, and only for rows it
 wrote AFTER the dossier. Otherwise the act the gate authorises -- reading the
 pull request, then lifting one's own reserve -- expires the dossier the gate
@@ -86,11 +98,31 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import subprocess
 import sys
 from dataclasses import dataclass
 from typing import Any
+
+try:
+    import gh_identity
+    import check_unaddressed_nits
+except ImportError:  # charge via importlib dans les tests (hors scripts/)
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import gh_identity  # type: ignore[no-redef]
+    import check_unaddressed_nits  # type: ignore[no-redef]
+
+# Campagnes gelees par veto user (#17040) : definition PARTAGEE avec
+# merge_ready dans scripts/coordination/frozen_campaigns.py. Ce gate ne peut
+# pas importer merge_ready (merge_ready importe deja ce gate), les deux
+# importent le module : un seul lecteur du veto, jamais deux qui derivent.
+_COORDINATION_DIR = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "coordination"
+)
+if _COORDINATION_DIR not in sys.path:
+    sys.path.insert(0, _COORDINATION_DIR)
+from frozen_campaigns import frozen_umbrella_exclusion  # noqa: E402
 
 REPO = "jsboige/CoursIA"
 # The adjoint remains the canonical emitter: `--template` renders its lane, and
@@ -135,6 +167,20 @@ EXIT_READY = 0
 EXIT_NO_DOSSIER = 1
 EXIT_UNKNOWN = 2
 EXIT_BLOCKED_WITH_SUBSTANCE = 3
+# The four contract fields that must sit at their READY value for a dossier to
+# claim the pull request is mergeable (see validate_dossier, which enforces them
+# exactly when `verdict: READY`). Their COMPLEMENT on an intact dossier is the
+# attested reason -- and it is what the gate used to throw away: the rule tells
+# the coordinator to "dispatch from the dossier's stated reason" (#17290) while
+# exit 3 published an `errors: []` that is empty BY CONSTRUCTION, the dossier
+# being intact. Order is the contract's own, so two dossiers blocked for the
+# same reason render identically and the dispatch is groupable.
+BLOCKING_FIELDS = (
+    ("checks", ("latest-wins-green",)),
+    ("b0", ("clear",)),
+    ("scope", ("pass",)),
+    ("domain", ("pass", "not-applicable")),
+)
 # Conclusions that do not refute `checks: latest-wins-green`. `skipped` and
 # `neutral` are not failures; anything else completed (failure, timed_out,
 # cancelled, action_required, startup_failure, stale...) does (#16957).
@@ -251,7 +297,82 @@ def _login(row: dict[str, Any]) -> str:
     return (row.get("author") or {}).get("login", "")
 
 
-def _is_own_later_act(row: dict[str, Any], timestamp_key: str, neutral_after: str | None) -> bool:
+# #16931 : bots marker-gardes qui RE-EDITENT leur commentaire en place
+# (PATCH, pas nouveau post) derriere un marqueur HTML invisible. Le compte de
+# commentaires ne bouge pas mais le corps change -> le sha256 change -> le
+# gate refuse avec "discussion surfaces changed" pour une cause qui n'a rien
+# change au fond de la PR. Mesure 2026-09-20 : dossier #16907 perime 26 min
+# apres sa pose par une reecriture PR-PATH-COLLISION. Ces commentaires sont
+# haches sur leur MARQUEUR SEUL : un humain qui edite le meme corps (le
+# marqueur ne sera plus a l'offset 0) reste detecte, et la presence/absence
+# du commentaire compte toujours -- seule la re-implementation interne du bot
+# est neutralisee. La liste vit dans le code (jamais le dossier : il pourrait
+# etre fabrique avec une allowlist elargie).
+_BOT_MARKER_GUARDS: tuple[str, ...] = (
+    "<!-- PR-PATH-COLLISION:",  # scripts/check_pr_path_collisions.py (START/END/RESOLVED)
+    "<!-- variation-genre-signals -->",  # always-on-guards.yml / variation-light-genre.yml
+    "<!-- gvar2-light-cap -->",  # always-on-guards.yml / variation-tag-guard.yml
+    "<!-- trivial-diff-15740 -->",  # workflows idempotents
+)
+
+# #17039 -- Le predicat de "reserve vivante" n'est pas une liste de tokens :
+# il est confie a scripts/check_unaddressed_nits.classify (meme semantique
+# que B.0, encagement inclus). Reduire la detection a une seconde liste
+# duplique CONCERN_MARKERS + SEVERITY_GLYPHS + BLOCK_VERDICTS tout en
+# ignorant l'encagement, ce qui faisait perimer une levee ecrite dans la
+# forme sure (le dos de la PR note que la duplication est une dette --
+# dette reglee). Pas de second marqueur-statique ici.
+
+
+def _comment_body_for_fingerprint(row: dict[str, Any]) -> str:
+    """Corps a hacher : le marqueur seul pour un commentaire de bot marker-garde.
+
+    Un corps qui COMMENCE par un marqueur connu est reduit a ce marqueur : la
+    reecriture en place (seul le contenu change) ne perime plus le dossier,
+    alors que l'apparition, la disparition ou une edition humaine (marqueur
+    deplace) continuent de le faire.
+    """
+    body = row.get("body") or ""
+    for marker in _BOT_MARKER_GUARDS:
+        if body.startswith(marker):
+            return marker
+    return body
+
+
+def _review_body_has_reserve_marker(author: str, body: str) -> bool:
+    """True quand, en substance, cette review pose une reserve vivante.
+
+    #17039 (et la revue de ai-01 sur #17693) : le predicat n'est pas une
+    liste de tokens en dur. Il est delegue a ``check_unaddressed_nits.classify``
+    -- la meme semantique que B.0, encagement inclus : une levee qui nomme le
+    verdict qu'elle leve, encage (`backticks`, `« »`, bloc de code), reste
+    neutre ; la meme phrase avec le token nu perime le dossier. C'est la
+    forme prevue par ``pr-review-discipline.md`` ("repondre a une reserve --
+    la forme sure", #17071) ; la centralisation ferme la boucle que la
+    duplication avait rouverte cote gate (#16840 fondateur).
+
+    Le cas mixte (une review qui leve ET pose une reserve) reste resolu
+    cote EMISSION (consigne #16731 : le coordinateur ne melange jamais les
+    deux sur la meme surface) : ``classify`` rend la valeur observee, pas
+    une moyenne. Un verdict nu emetteur reste un verdict nu ; un narrateur
+    encage reste un narrateur.
+    """
+    if not body:
+        return False
+    try:
+        verdict = check_unaddressed_nits.classify(author, body)
+    except Exception:
+        return False  # fail-CLOSED sur dependance externe : on neutralise, on ne perime pas
+    return verdict is not None
+
+
+def _is_own_later_act(
+    row: dict[str, Any],
+    timestamp_key: str,
+    neutral_after: str | None,
+    *,
+    row_kind: str = "comment",
+) -> bool:
     """True when the coordinator itself authored this surface after the dossier.
 
     The dossier attests that the adjoint read every surface existing when it was
@@ -259,10 +380,29 @@ def _is_own_later_act(row: dict[str, Any], timestamp_key: str, neutral_after: st
     coordinator is unaware of -- it wrote it. Neutralising exactly those rows is
     what lets the coordinator lift its own reserve and still merge, without
     weakening the gate: a row from any other author still expires the dossier.
+
+    Note (#16883): the coordinator account ``myia-ai-01`` and the shared worker
+    sign-in ``jsboige`` both author coordinator-side actions on this gate's
+    only consumer (cf. lane-claim protocol and the merged-account mandate).
+    A neutralisation scoped to ``COORDINATOR_LOGIN`` alone misses every
+    coordinator action posted under the shared sign-in -- the very loop
+    measured on #16840. We accept either login as the coordinator's voice.
+
+    #17039 -- ``row_kind`` precise le contrat de neutralisation :
+    - "comment" : neutralise inconditionnellement (comportement historique).
+    - "review" : neutralise UNIQUEMENT si la review NE pose PAS une reserve
+      vivante. La detection est confiee a ``check_unaddressed_nits.classify``
+      (voir commentaire de la fonction) -- un verdict Hermes nu, un glyphe
+      🟡/🔴, un verdict **BLOCKED**, ou tout verdict qui resistre a
+      l'encagement continuera de perimer le dossier. Une levee ecrite dans
+      la forme sure (verdict encage) reste neutre.
     """
     if not neutral_after:
         return False
-    if _login(row) != COORDINATOR_LOGIN:
+    author = _login(row)
+    if author not in (COORDINATOR_LOGIN, SHARED_GITHUB_LOGIN):
+        return False
+    if row_kind == "review" and _review_body_has_reserve_marker(author, row.get("body") or ""):
         return False
     stamp = row.get(timestamp_key) or ""
     return bool(stamp) and stamp > neutral_after
@@ -274,7 +414,7 @@ def _attested_reviews(
     return [
         row
         for row in snapshot.get("reviews") or []
-        if not _is_own_later_act(row, "submittedAt", neutral_after)
+        if not _is_own_later_act(row, "submittedAt", neutral_after, row_kind="review")
     ]
 
 
@@ -288,10 +428,16 @@ def _integer(fields: dict[str, str], key: str, errors: list[str]) -> int | None:
 
 def _fingerprint_payload(
     snapshot: dict[str, Any],
-    comment_limit: int | None,
-    neutral_after: str | None,
-    include_checks: bool,
+    comment_limit: int | None = None,
+    neutral_after: str | None = None,
+    include_checks: bool = False,
 ) -> dict[str, Any]:
+    """Payload canonique de la fingerprint — factorise pour le diagnostic.
+
+    Partage entre ``surfaces_fingerprint`` (hachage) et
+    ``_first_divergent_surface`` (nommage de la surface divergente, #16931) :
+    une seule construction, jamais deux qui derivent.
+    """
     comments = snapshot.get("comments") or []
     if comment_limit is not None:
         comments = comments[:comment_limit]
@@ -313,7 +459,7 @@ def _fingerprint_payload(
                 "id": row.get("id"),
                 "author": author(row),
                 "createdAt": row.get("createdAt"),
-                "body": row.get("body") or "",
+                "body": _comment_body_for_fingerprint(row),
             }
             for row in comments
         ],
@@ -345,6 +491,56 @@ def _digest(payload: dict[str, Any]) -> str:
         payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")
     ).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
+
+
+def _first_divergent_surface(
+    snapshot: dict[str, Any],
+    comment_limit: int | None,
+    neutral_after: str | None,
+) -> str:
+    """Nomme la premiere surface qui a diverge entre dossier et live.
+
+    Le sha256 est opaque par construction ; le diagnostic, lui, peut lire les
+    deux ensembles de surfaces : il identifie quelle section (corps de PR /
+    commentaire n / review n / threads / checks) a change. Best-effort et
+    deterministe : la premiere divergence dans l'ordre de construction du
+    payload. Le compte de surfaces ne change pas sur une reecriture en place
+    (meme cardinalite) ; si les longueurs different, la surface d'index hors
+    portee est nommee.
+    """
+    # L'empreinte declaree du dossier n'est pas decomposable ; le diagnostic
+    # compare donc le payload live A LUI-MEME section par section n'a pas de
+    # sens. Ce qu'on peut faire : hacher CHAQUE section separement et
+    # reporter laquelle, re-hachee depuis le dossier, divergerait — mais le
+    # dossier ne porte qu'un seul sha. Le diagnostic utile et honnete est
+    # structurel : cardinalites et horodatages des surfaces LIVE, pour que la
+    # lane sache OU chercher sans refabriquer en aveugle.
+    # Adaptation post-#16957 : le digest vivant exclut les checks (course
+    # refermee par #16957) ; le diagnostic les re-inclut — il decrit le
+    # paysage live, pas le digest.
+    payload = _fingerprint_payload(
+        snapshot, comment_limit, neutral_after, include_checks=True
+    )
+    comments = payload["comments"]
+    reviews = payload["reviews"]
+    parts = [f"comments={len(comments)}", f"reviews={len(reviews)}"]
+    if comments:
+        last = comments[-1]
+        parts.append(
+            "dernier commentaire: "
+            f"{last.get('author') or '?'} {last.get('createdAt') or '?'}"
+        )
+    if reviews:
+        last_r = reviews[-1]
+        parts.append(
+            "derniere review: "
+            f"{last_r.get('author') or '?'} {last_r.get('submittedAt') or '?'}"
+        )
+    threads = payload["threads"]
+    unresolved = sum(1 for t in threads if not t.get("isResolved", False))
+    parts.append(f"threads={len(threads)} ({unresolved} non resolus)")
+    parts.append(f"checks={len(payload['checks'])}")
+    return ", ".join(parts)
 
 
 def surfaces_fingerprint(
@@ -446,6 +642,81 @@ def check_claim_contradictions(
     return contradictions
 
 
+def b0_claim_contradictions(claim: str, result: dict[str, Any] | None) -> list[str]:
+    """Re-verify a dossier's ``b0: clear`` claim against the live B.0 organ.
+
+    The ``checks:`` claim has been re-verified since #16957; ``b0:`` was
+    still taken on faith, and a READY dossier could attest ``b0: clear`` on a
+    pull request the organ blocks. Measured on 2026-09-24: two READY dossiers
+    (#16955 and #16987) declared ``b0: clear`` while ``check_unaddressed_nits.py``
+    exited 1 on an unlifted Hermes reserve. Only the coordinator's separate B.0
+    run caught them, and the gate's ``exit 0`` looked like a green light. Like
+    the checks claim, the b0 claim is now compared with what the organ measures
+    at evaluation time, and every unlifted remark is named.
+
+    ``result`` is the dict returned by ``check_unaddressed_nits.analyse_pr``.
+    A claim other than ``clear`` is not refuted here, because a BLOCKED dossier
+    may say so.
+    """
+    if claim != "clear" or not result or not result.get("blocked"):
+        return []
+    blocking = list(result.get("blocking") or [])
+    named = "; ".join(
+        f"{row.get('kind', '?')} by {row.get('author', '?')} via {row.get('src', '?')}"
+        for row in blocking[:5]
+    )
+    if len(blocking) > 5:
+        named += f" (+{len(blocking) - 5} more)"
+    return [
+        "b0 claim 'clear' is contradicted by the live B.0 organ "
+        f"(check_unaddressed_nits.py): {len(blocking)} unlifted remark(s)"
+        + (f" -- {named}" if named else "")
+    ]
+
+
+def probe_b0(pr: int) -> dict[str, Any]:
+    """Run the B.0 organ on ``pr``. A failure to measure is fail-closed.
+
+    The import is lazy because the probe runs only for a dossier that claims
+    READY: BLOCKED and absent dossiers never load the organ. A failure to
+    import it is a failure to measure like any other -- it surfaces as
+    ``RuntimeError``, which ``main`` reports as UNKNOWN (exit 2), never as a
+    traceback.
+    """
+    try:
+        try:
+            import check_unaddressed_nits
+        except ImportError:  # charge via importlib dans les tests (hors scripts/)
+            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+            import check_unaddressed_nits
+        return check_unaddressed_nits.analyse_pr(pr)
+    except Exception as exc:  # noqa: BLE001 -- any failure means "not measured"
+        raise RuntimeError(f"B.0 organ could not measure PR #{pr}: {exc}") from exc
+
+
+def refute_ready_b0(
+    pr: int,
+    verdict: str,
+    dossier: Dossier | None,
+    probe: Any = None,
+) -> tuple[str, list[str], Dossier | None]:
+    """Demote a READY verdict whose ``b0: clear`` claim the organ refutes.
+
+    The demotion is to "no dossier worth trusting" (exit 1), the same outcome
+    as a contradicted ``checks:`` claim: a dossier that attests a false
+    ``clear`` cannot be trusted on its other fields either. Only READY is
+    probed, so the organ adds no API cost to BLOCKED or absent dossiers.
+    """
+    if verdict != VERDICT_READY or dossier is None:
+        return verdict, [], dossier
+    refuted = b0_claim_contradictions(
+        dossier.fields.get("b0", ""), (probe or probe_b0)(pr)
+    )
+    if refuted:
+        return "", refuted, None
+    return verdict, [], dossier
+
+
 def carrying_lane(snapshot: dict[str, Any]) -> str | None:
     """Return the lane that carries this pull request, from its `Grain:` tag.
 
@@ -538,8 +809,16 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
         snapshot, dossier.comment_index, dossier.created_at
     )
     if f.get("surfaces-sha256") not in {live_fingerprint, legacy_fingerprint}:
+        # #16931 defaut 3 (mesure 16928) : deux hachages opaques sont
+        # inexploitables — la lane refabrique le dossier EN AVEUGLE. Le refus
+        # nomme la surface divergente, comme check_unaddressed_nits --json
+        # nomme deja ignored_overrides[].why.
+        divergent = _first_divergent_surface(
+            snapshot, dossier.comment_index, dossier.created_at
+        )
         errors.append(
             "discussion surfaces changed or were not fully attested: "
+            f"surface divergente = {divergent}; "
             f"dossier={f.get('surfaces-sha256', '?')}, live={live_fingerprint} "
             "(legacy stamps whose checks moved need one --template re-stamp)"
         )
@@ -574,19 +853,41 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
             errors.append("draft pull request cannot be READY")
         if integers.get("threads-unresolved") not in {None, 0}:
             errors.append("READY requires zero unresolved threads")
+        # A pull request that changes zero files has nothing to squash, whatever
+        # its genre, domain or author. This is not a judgement on smallness --
+        # `check_trivial_diff.py` owns that, and deliberately lets a two-line
+        # critical fix through (#15740). It is the absence of a deliverable.
+        # Measured on #16975/#16976 (2026-09-22): both carried an INTACT dossier
+        # declaring `diff-files: 0` and `verdict: READY`, so the gate returned 0
+        # and authorised a merge that would have closed a grain having delivered
+        # nothing (G.3). Only B.0, holding an unrelated morphological reserve,
+        # happened to stop it. A dossier asserting READY over an empty diff is
+        # self-contradictory, which is exactly what "no dossier worth trusting"
+        # means -- hence the existing rc=1 path, not a new one. A BLOCKED dossier
+        # over an empty diff stays intact: it attests, correctly, non-mergeability.
+        if snapshot.get("changedFiles") == 0:
+            errors.append("READY requires a non-empty diff: 0 files changed")
     return errors
 
 
-def evaluate(snapshot: dict[str, Any]) -> tuple[str, list[str]]:
+def evaluate_with_dossier(
+    snapshot: dict[str, Any],
+) -> tuple[str, list[str], Dossier | None]:
     """Select the newest candidate and return a fail-closed verdict.
 
     Returns one of ``VERDICT_READY`` (intact dossier claiming the PR is
     mergeable), ``VERDICT_BLOCKED`` (intact dossier attesting it is not) or
-    ``""`` (no dossier worth trusting). Separating dossier integrity from PR
-    mergeability is the whole point: making the right to READ depend on the
-    state of MERGEABILITY meant the coordinator could only ever open the pull
-    requests that were already fine -- never the oldest ones, which are old
-    precisely because they are blocked.
+    ``""`` (no dossier worth trusting), plus the dossier that produced the
+    verdict -- ``None`` whenever the verdict is ``""``. Separating dossier
+    integrity from PR mergeability is the whole point: making the right to READ
+    depend on the state of MERGEABILITY meant the coordinator could only ever
+    open the pull requests that were already fine -- never the oldest ones,
+    which are old precisely because they are blocked.
+
+    The third element is what makes the verdict ACTIONABLE. On
+    ``VERDICT_BLOCKED`` the ``errors`` list is empty by construction -- the
+    dossier is intact, that is what exit 3 means -- so the reason the gate read
+    has to travel separately or not at all (#17290).
     """
     comments = snapshot.get("comments") or []
     candidates: list[tuple[Dossier, list[str]]] = []
@@ -601,7 +902,7 @@ def evaluate(snapshot: dict[str, Any]) -> tuple[str, list[str]]:
             candidates.append((dossier, parse_errors))
 
     if not candidates:
-        return "", ["no [ADJOINT PREFLIGHT] dossier comment found"]
+        return "", ["no [ADJOINT PREFLIGHT] dossier comment found"], None
 
     dossier, errors = candidates[-1]
     errors = [*errors, *validate_dossier(dossier, snapshot)]
@@ -618,8 +919,74 @@ def evaluate(snapshot: dict[str, Any]) -> tuple[str, list[str]]:
             "discussion changed after dossier: a fresh adjoint preflight is required"
         )
     if errors:
-        return "", errors
-    return dossier.fields.get("verdict", ""), []
+        return "", errors, None
+    return dossier.fields.get("verdict", ""), [], dossier
+
+
+def evaluate(snapshot: dict[str, Any]) -> tuple[str, list[str]]:
+    """The verdict and the reason, without the dossier (the historical shape).
+
+    Kept as the callers' view so the gate's contract does not move under them;
+    ``evaluate_with_dossier`` is the same computation plus what #17290 exposes.
+    """
+    verdict, errors, _ = evaluate_with_dossier(snapshot)
+    return verdict, errors
+
+
+def blocking_fields(dossier: Dossier) -> list[str]:
+    """The attested fields that are NOT at their READY value -- the reason.
+
+    A ``BLOCKED`` dossier may legitimately have none of them: `validate_dossier`
+    constrains these four only when the dossier CLAIMS ready, so an honest
+    blocked dossier can declare `checks: latest-wins-green` and carry its reason
+    in prose. This returns ``[]`` then -- it names the fields that block, and
+    never invents one to fill the silence.
+    """
+    fields = dossier.fields
+    return [
+        key for key, ready_values in BLOCKING_FIELDS
+        if fields.get(key, "") not in ready_values
+    ]
+
+
+def dossier_payload(dossier: Dossier) -> dict[str, Any]:
+    """Every field the gate READ, plus where it read it.
+
+    This publishes what `parse_dossier` already parsed: the dossier contract
+    itself is unchanged, no field is added to what an emitting lane must write.
+    """
+    payload: dict[str, Any] = dict(dossier.fields)
+    payload["author"] = dossier.author
+    payload["created_at"] = dossier.created_at
+    payload["comment_index"] = dossier.comment_index
+    return payload
+
+
+def build_result(
+    pr: int,
+    snapshot: dict[str, Any],
+    verdict: str,
+    errors: list[str],
+    dossier: Dossier | None,
+) -> dict[str, Any]:
+    """The ``--json`` payload, built without touching the network.
+
+    The `dossier` block rides ONLY with a verdict the gate accepted. A refused
+    dossier must keep reading as refused: exposing the attested reason must not
+    make a PR whose fingerprint is broken look prevalidated -- the negative
+    control of #17290.
+    """
+    result: dict[str, Any] = {
+        "pr": pr,
+        "head": snapshot["headRefOid"],
+        "ready": verdict == VERDICT_READY,
+        "verdict": verdict or "NO_DOSSIER",
+        "errors": errors,
+    }
+    if dossier is not None and verdict:
+        result["dossier"] = dossier_payload(dossier)
+        result["blocking_fields"] = blocking_fields(dossier)
+    return result
 
 
 def review_threads(pr: int) -> list[dict[str, Any]]:
@@ -726,16 +1093,45 @@ def _head_check_runs(head_sha: str) -> list[dict[str, Any]]:
         page += 1
 
 
-def _pr_metadata(pr: int) -> dict[str, Any]:
-    fields = (
-        "number,title,body,state,isDraft,baseRefName,headRefOid,updatedAt,"
-        "changedFiles,additions,deletions,statusCheckRollup"
-    )
-    data = gh_json([
-        "pr", "view", str(pr), "--repo", REPO, "--json", fields,
-    ])
-    if not isinstance(data, dict):
+def _pr_metadata(pr: int, *, with_rollup: bool) -> dict[str, Any]:
+    # Scalar fields come from REST (`repos/.../pulls/N`) so the shared GraphQL
+    # quota only pays for the check rollup below. Keys keep the exact shape
+    # `gh pr view --json` produced, so fingerprints and the identity bracket
+    # stay byte-compatible with dossiers stamped before this change.
+    row = gh_json(["api", f"repos/{REPO}/pulls/{pr}"])
+    if not isinstance(row, dict):
         raise RuntimeError("pull request response is not an object")
+    state = row.get("state") or ""
+    data: dict[str, Any] = {
+        "number": row.get("number"),
+        "title": row.get("title"),
+        "body": row.get("body") or "",
+        # REST renders state lowercase and folds MERGED into "closed";
+        # `gh pr view` rendered uppercase with a distinct MERGED state, and
+        # the fingerprint payload hashes this field verbatim.
+        "state": "MERGED" if row.get("merged") else state.upper(),
+        "isDraft": row.get("draft"),
+        "baseRefName": (row.get("base") or {}).get("ref"),
+        "headRefOid": (row.get("head") or {}).get("sha"),
+        # Rides for the frozen-campaign check only (merge_ready reads it via
+        # the same shared module). NOT in the fingerprint payload, which uses
+        # explicit keys -- adding this field must not change surfaces-sha256.
+        "headRefName": (row.get("head") or {}).get("ref"),
+        "updatedAt": row.get("updated_at"),
+        "changedFiles": row.get("changed_files"),
+        "additions": row.get("additions"),
+        "deletions": row.get("deletions"),
+    }
+    if with_rollup:
+        # The check rollup has no REST equivalent, so it stays on GraphQL
+        # as a single-field query instead of the former twelve-field one.
+        rollup = gh_json([
+            "pr", "view", str(pr), "--repo", REPO,
+            "--json", "statusCheckRollup",
+        ])
+        if not isinstance(rollup, dict):
+            raise RuntimeError("pull request response is not an object")
+        data["statusCheckRollup"] = rollup.get("statusCheckRollup")
     return data
 
 
@@ -751,7 +1147,7 @@ def _metadata_identity(data: dict[str, Any]) -> str:
 
 
 def load_snapshot(pr: int) -> dict[str, Any]:
-    before = _pr_metadata(pr)
+    before = _pr_metadata(pr, with_rollup=True)
     snapshot = dict(before)
     snapshot["comments"] = _issue_comments(pr)
     snapshot["reviews"] = _reviews(pr)
@@ -759,9 +1155,13 @@ def load_snapshot(pr: int) -> dict[str, Any]:
     # Fetched inside the before/after bracket: a check concluding during the
     # read bumps updatedAt and aborts the snapshot (transient UNKNOWN, the
     # caller retries), so the claim verification below never reads a state
-    # that was already stale when captured.
+    # that was already stale when captured. The B.0 probe (`probe_b0`) is NOT
+    # in this bracket: it runs after, and only on a READY dossier. A remark
+    # posted between the snapshot and the probe therefore makes the organ
+    # contradict a `b0: clear` claim -- a conservative refusal, which a rerun
+    # names as a changed discussion surface.
     snapshot["checkRuns"] = _head_check_runs(snapshot["headRefOid"])
-    after = _pr_metadata(pr)
+    after = _pr_metadata(pr, with_rollup=True)
     if _metadata_identity(before) != _metadata_identity(after):
         raise RuntimeError("pull request changed while prevalidation snapshot was read")
     return snapshot
@@ -806,6 +1206,14 @@ def render_template(snapshot: dict[str, Any], lane: str = ADJOINT_LANE) -> str:
 
 
 def main() -> int:
+    # Warn-fort + poursuite (pas d'abort) : l'echec BRUYANT est porte par le
+    # helper, gh_identity --whoami et detect_shared_login.py ; fermer l'organe
+    # sur une lane sans compte machine (#17418 Phase B/C) arreterait les
+    # dossiers pendant la transition.
+    try:
+        gh_identity.pin_gh_token()
+    except gh_identity.GhIdentityError as exc:
+        print(f"GH-IDENTITY (WARN, poursuite sous compte actif): {exc}", file=sys.stderr)
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("pr", type=int, help="pull request number")
     parser.add_argument("--json", action="store_true", help="emit machine-readable output")
@@ -818,7 +1226,9 @@ def main() -> int:
     parser.add_argument(
         "--fingerprint",
         action="store_true",
-        help="print the live discussion fingerprint for a new dossier",
+        help="print the live discussion fingerprint for a new dossier "
+        "(compute it LAST, after every body edit and comment you intend "
+        "to write -- any later human surface invalidates it, cf #16931)",
     )
     parser.add_argument(
         "--template",
@@ -847,7 +1257,9 @@ def main() -> int:
                 file=sys.stderr,
             )
             return 0
-        verdict, errors = evaluate(snapshot)
+        verdict, errors, dossier = evaluate_with_dossier(snapshot)
+        if not errors:
+            verdict, errors, dossier = refute_ready_b0(args.pr, verdict, dossier)
     except (
         RuntimeError,
         KeyError,
@@ -857,25 +1269,51 @@ def main() -> int:
         UnicodeError,
         json.JSONDecodeError,
     ) as exc:
+        errors = [f"UNKNOWN: {exc}"]
+        # #17418 Phase A : un rc=2 par rate-limit ne doit plus se lire comme
+        # « pas de dossier » (rc=1). La banniere nomme la cause et la
+        # remediation — c'est la confusion des deux qui a coute ~3 h de merge.
+        if gh_identity.is_rate_limit_error(str(exc)):
+            banner = gh_identity.rate_limit_banner(str(exc))
+            print(banner, file=sys.stderr)
+            errors.append(banner)
         result = {
             "pr": args.pr,
             "ready": False,
             "verdict": "UNKNOWN",
-            "errors": [f"UNKNOWN: {exc}"],
+            "errors": errors,
         }
         print(json.dumps(result, ensure_ascii=False) if args.json else f"UNKNOWN -- {exc}")
         return EXIT_UNKNOWN
 
-    ready = verdict == VERDICT_READY
-    result = {
-        "pr": args.pr,
-        "head": snapshot["headRefOid"],
-        "ready": ready,
-        "verdict": verdict or "NO_DOSSIER",
-        "errors": errors,
-    }
+    # Veto user sur campagne gelee (#17040) : un dossier READY n'autorise pas
+    # a merger une PR gelee. Le veto ne vit sur AUCUNE surface que le dossier
+    # couvre -- le gate le lit au moment de se prononcer, via le module
+    # partage frozen_campaigns (meme lecteur que merge_ready). Applique
+    # seulement au verdict READY : un dossier refuse ou BLOCKED est deja non
+    # mergeable, le gel n'y ajoute rien.
+    frozen_reason = None
+    if verdict == VERDICT_READY:
+        frozen_reason = frozen_umbrella_exclusion(
+            snapshot.get("title"),
+            snapshot.get("body"),
+            snapshot.get("headRefName"),
+        )
+    ready = verdict == VERDICT_READY and frozen_reason is None
+    result = build_result(args.pr, snapshot, verdict, errors, dossier)
+    if frozen_reason is not None:
+        # Le dossier reste intact et publie : ce que le gate refuse est le
+        # MERGE, pas la lecture de la PR -- meme action documentee que rc=3.
+        result["ready"] = False
+        result["verdict"] = "FROZEN"
+        result["frozen"] = frozen_reason
     if args.json:
         print(json.dumps(result, ensure_ascii=False))
+    elif frozen_reason is not None:
+        print(
+            f"FROZEN -- PR #{args.pr} belongs to a frozen campaign "
+            f"({frozen_reason}); do not merge, dispatch to the lane author."
+        )
     elif ready:
         print(f"READY -- PR #{args.pr} prevalidated by adjoint at {snapshot['headRefOid']}")
     elif verdict == VERDICT_BLOCKED:
@@ -884,10 +1322,17 @@ def main() -> int:
             f"{snapshot['headRefOid']} attesting it is NOT mergeable."
         )
         print("  Do not open its surfaces: dispatch from the dossier's stated reason.")
+        attested = ", ".join(
+            f"{key}={dossier.fields.get(key, '')}" for key, _ in BLOCKING_FIELDS
+        )
+        blocked = ",".join(blocking_fields(dossier)) or "none named by the contract"
+        print(f"  attested reason: {attested} (blocking: {blocked})")
     else:
         print(f"NO-DOSSIER -- PR #{args.pr} is not adjoint-prevalidated")
         for error in errors:
             print(f"  - {error}")
+    if frozen_reason is not None:
+        return EXIT_BLOCKED_WITH_SUBSTANCE
     if ready:
         return EXIT_READY
     if verdict == VERDICT_BLOCKED:

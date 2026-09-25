@@ -4,21 +4,21 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI
-pedagogical_count: 268
-breakdown: Lean=52, SMT=46, Tweety=34, SmartContracts=31, Argument_Analysis=28, SemanticWeb=27, Planners=25, SymbolicLearning=24, root=1
-maturity: BETA=258, ALPHA=6, DRAFT=4
+pedagogical_count: 294
+breakdown: Lean=67, SMT=46, Tweety=36, Argument_Analysis=33, SmartContracts=31, SemanticWeb=28, SymbolicLearning=26, Planners=25, Geometry=1, root=1
+maturity: BETA=282, ALPHA=8, DRAFT=4
 -->
 
-> **Note sur les comptes.** Le bloc ci-dessus est un marqueur autoritatif : `<!-- CATALOG-STATUS -->` est régénéré quotidiennement par la CI (`.github/workflows/catalog-cron.yml`, 03:37 UTC) sur `main` — pour toute vérification courante du nombre de notebooks et de la maturité, **le catalogue fait foi**. La prose pédagogique ci-dessous mentionne des chiffres précis (ex. « 12 notebooks Python », « 8 jumeaux C# ») qui peuvent dériver localement ; la table « Audit Qualité » (§E) au bas de ce fichier et les READMEs de chaque sous-série ([Tweety](Tweety/README.md), [Lean](Lean/README.md), [SemanticWeb](SemanticWeb/README.md), [Planners](Planners/README.md), [SmartContracts](SmartContracts/README.md), [Argument_Analysis](Argument_Analysis/README.md), [SymbolicLearning](SymbolicLearning/README.md)) sont les sources canoniques pour les détails de chaque sous-série.
+> **Note sur les comptes.** Le bloc ci-dessus est un marqueur autoritatif : `<!-- CATALOG-STATUS -->` est régénéré quotidiennement par la CI (`.github/workflows/catalog-cron.yml`, 03:37 UTC) sur `main` — pour toute vérification courante du nombre de notebooks et de la maturité, **le catalogue fait foi**. La prose pédagogique ci-dessous mentionne des chiffres précis (ex. « 12 notebooks Python », « 8 jumeaux C# ») qui peuvent dériver localement ; la table « Audit Qualité » (§E) au bas de ce fichier et les READMEs de chaque sous-série ([Tweety](Tweety/README.md), [Lean](Lean/README.md), [SemanticWeb](SemanticWeb/README.md), [Planners](Planners/README.md), [SmartContracts](SmartContracts/README.md), [Argument_Analysis](Argument_Analysis/README.md), [SymbolicLearning](SymbolicLearning/README.md), [Geometry](Geometry/README.md)) sont les sources canoniques pour les détails de chaque sous-série.
 
 L'intelligence artificielle n'est pas qu'apprentissage automatique et réseaux de neurones. Une grande partie de l'IA classique repose sur le **raisonnement symbolique** : représenter la connaissance sous forme de propositions, de règles et de structures logiques, puis dériver mécaniquement de nouvelles conclusions. C'est cette tradition — des systèmes experts des années 80 aux assistants de preuve modernes comme Lean 4 — que cette série explore en profondeur.
 
-Vous y découvrirez huit domaines complémentaires qui, ensemble, couvrent le **cycle complet du raisonnement vérifiable** à l'ère des LLMs : **représenter** la connaissance (Tweety pour les logiques formelles et l'argumentation, SemanticWeb pour le web de données RDF/SPARQL/OWL), **prouver** quand la certitude est exigée (Lean 4 et le vérificateur de preuves Mathlib4 — y compris les théorèmes phares 2026 : Sendov, *Analysis I* Tao, PFR, MIMO, M₂₃), **décider sous contraintes** (SMT / Z3, le solveur industriel de référence, en API impérative Python et en binding déclaratif C# via Z3.Linq), **agir dans le monde réel** (Planners pour la planification PDDL/CP-SAT, SmartContracts pour la logique vérifiable sur blockchain), **apprendre à partir de connaissances** plutôt que de données (SymbolicLearning, AIMA ch. 19), et **relier ce pipeline aux LLMs** (Argument Analysis, jette un pont exploitable entre sémantique formelle et IA générative). Chaque sous-série est autonome et peut être suivie isolément, mais elles sont traversées par un **fil rouge** : du formalisme pur à la vérification certifiée, jusqu'au moment où le symbolique et le neuronal cessent d'être deux camps et deviennent deux couches d'un même système fiable. La carte mermaid ci-dessous matérialise les ponts entre ces domaines — nœuds colorés selon leur rôle (fondations, applications, ponts neuro-symboliques).
+Vous y découvrirez neuf domaines complémentaires qui, ensemble, couvrent le **cycle complet du raisonnement vérifiable** à l'ère des LLMs : **représenter** la connaissance (Tweety pour les logiques formelles et l'argumentation, SemanticWeb pour le web de données RDF/SPARQL/OWL), **prouver** quand la certitude est exigée (Lean 4 et le vérificateur de preuves Mathlib4 — y compris les théorèmes phares 2026 : Sendov, *Analysis I* Tao, PFR, MIMO, M₂₃), **décider sous contraintes** (SMT / Z3, le solveur industriel de référence, en API impérative Python et en binding déclaratif C# via Z3.Linq), **démontrer automatiquement** en géométrie (Geometry : de la vérification numérique probabiliste aux bases de Gröbner et à la méthode de Wu, jusqu'au pont formel vers Lean), **agir dans le monde réel** (Planners pour la planification PDDL/CP-SAT, SmartContracts pour la logique vérifiable sur blockchain), **apprendre à partir de connaissances** plutôt que de données (SymbolicLearning, AIMA ch. 19), et **relier ce pipeline aux LLMs** (Argument Analysis, jette un pont exploitable entre sémantique formelle et IA générative). Chaque sous-série est autonome et peut être suivie isolément, mais elles sont traversées par un **fil rouge** : du formalisme pur à la vérification certifiée, jusqu'au moment où le symbolique et le neuronal cessent d'être deux camps et deviennent deux couches d'un même système fiable. La carte mermaid ci-dessous matérialise les ponts entre ces domaines — nœuds colorés selon leur rôle (fondations, applications, ponts neuro-symboliques).
 
-**Carte de la famille** — les huit sous-séries et leurs ponts (formalismes fondamentaux → applications → ponts neuro-symboliques). Lecture de la carte : les **flèches pleines** (`-->`) marquent un pont conceptuel direct (la sous-série aval **consomme** ou **généralise** l'amont) ; les **flèches pointillées** (`-.->`) marquent un pont par **companion** (un notebook natif dans une autre série qui formalise la théorie). Trois classes visuelles séparent les rôles :
+**Carte de la famille** — les neuf sous-séries et leurs ponts (formalismes fondamentaux → applications → ponts neuro-symboliques). Lecture de la carte : les **flèches pleines** (`-->`) marquent un pont conceptuel direct (la sous-série aval **consomme** ou **généralise** l'amont) ; les **flèches pointillées** (`-.->`) marquent un pont par **companion** (un notebook natif dans une autre série qui formalise la théorie). Trois classes visuelles séparent les rôles :
 
 - **Fondations** (bleu) : les formalismes de base du raisonnement symbolique — Tweety, SemanticWeb, Lean.
-- **Applications** (vert) : les séries qui **exploitent** les formalismes dans le monde réel — SMT, Planners, SmartContracts.
+- **Applications** (vert) : les séries qui **exploitent** les formalismes dans le monde réel — SMT, Planners, SmartContracts, Geometry.
 - **Ponts neuro-symboliques** (ambre) : les séries qui **relient** le symbolique au génératif — Argument Analysis, SymbolicLearning.
 
 ```mermaid
@@ -31,6 +31,7 @@ flowchart TD
     SC["SmartContracts<br/>Blockchain + crypto<br/>(Solidity, DeFi, ZK)"]
     AA["Argument Analysis<br/>Pont LLM (sophismes, SK)"]
     SL["SymbolicLearning<br/>Apprentissage symbolique (AIMA 19)"]
+    GEO["Geometry<br/>Preuve automatique<br/>(polynomes, Groebner, Wu)"]
 
     %% Ponts conceptuels (flesches pleines = consommation / généralisation)
     TW -->|"generalise en representation"| SW
@@ -45,13 +46,14 @@ flowchart TD
     LEAN -.->|"planning_lean (h-add)"| PL
     LEAN -.->|"sensitivity_lean (Huang 2019)"| SC
     TW -.->|"induction logique (FOIL)"| SL
+    GEO -.->|"pont formel (Geometry-05)"| LEAN
 
     %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
     classDef found fill:#e8f0fe,stroke:#1a73e8,color:#174ea6
     classDef app fill:#e6f4ea,stroke:#188038,color:#137333
     classDef bridge fill:#fef7e0,stroke:#f9ab00,color:#856404
     class TW,SW,LEAN found
-    class SMT,PL,SC app
+    class SMT,PL,SC,GEO app
     class AA,SL bridge
 ```
 
@@ -85,6 +87,10 @@ Si vous vous intéressez au croisement IA symbolique / IA neuronale, la série A
 
 La série SymbolicLearning (21 notebooks : 12 Python + 8 jumeaux C# from-scratch BCL-only + 1 companion natif Lean SL-1b) suit le chapitre 19 d'AIMA : induction pure (Version Space), apprentissage guidé par la connaissance (EBL, RBL), programmation logique inductive (FOIL, résolution inverse, Progol), apprentissage actif d'automates (L* d'Angluin), puis intégration neuro-symbolique jusqu'à un capstone LLM + knowledge graph. Elle ne requiert que Python standard pour l'essentiel et peut être suivie indépendamment des autres phases.
 
+### Parcours alternatif : Preuve automatique en géométrie (Geometry, en ouverture)
+
+La série Geometry (programme gradué, Epic #17544) ouvre la **démonstration automatique** de théorèmes géométriques : le fil rouge (milieu de l'hypoténuse équidistant des trois sommets) est d'abord vérifié numériquement (Schwartz–Zippel), puis démontré exactement par bases de Gröbner, puis par la méthode de Wu — avant un pont vers Lean. Le notebook d'entrée [Geometry-01](Geometry/Geometry-01-From-Figure-To-Equation.ipynb) (public Découverte, ~30 min) ne suppose que la géométrie du lycée et Python de base.
+
 ---
 
 ## Quick Start
@@ -99,7 +105,8 @@ La série SymbolicLearning (21 notebooks : 12 Python + 8 jumeaux C# from-scratch
 | **Planners** | `Planners/00-Environment/Planners-0-Setup.ipynb` | `pip install ortools unified_planning` |
 | **SmartContracts** | `SmartContracts/00-Foundations/SC-0-Cypherpunk-Origins.ipynb` | `pip install py-solc-x web3` |
 | **SymbolicLearning** | `SymbolicLearning/SL-1-LogicalLearning.ipynb` | Python 3.10+ standard library, aucune installation |
-| **Argument Analysis** | `Argument_Analysis/Argument_Analysis_Agentic-0-init.ipynb` | `pip install semantic-kernel jpype1` + `.env` |
+| **Argument Analysis** | `Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb` | `pip install semantic-kernel jpype1` + `.env` |
+| **Geometry** | `Geometry/Geometry-01-From-Figure-To-Equation.ipynb` | `pip install sympy numpy matplotlib` (venv projet déjà configuré) |
 | **SMT / Z3** | `SMT/Z3-API/Z3-01-Introduction-Python.ipynb` (Python) ou `SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb` (C#) | `pip install z3-solver` (Python) ; pour C# `dotnet add package Z3.Linq` |
 
 **Pour commencer sans rien installer** : les notebooks Python (Tweety, Planners, SemanticWeb Python, SmartContracts) ne nécessitent que `pip install jupyter ipykernel` + les packages listes ci-dessus.
@@ -303,7 +310,7 @@ La série joue un rôle charnière dans la famille SymbolicAI : elle **consomme*
 | 16c | [Z3-Python-16c-Meal-Planner-Patient-Capstone](SMT/Z3-API/Z3-16c-Meal-Planner-Patient-Capstone-Python.ipynb) | Python | Profil patient, contraintes médicales, capstone | 3 |
 | 16d | [Z3-Python-16d-Meal-Planner-Convergence-Scale](SMT/Z3-API/Z3-16d-Meal-Planner-Convergence-Scale-Python.ipynb) | Python | Convergence à l'échelle, temps de réponse, bench | 3 |
 | 16e | [Z3-Python-16e-Meal-Planner-Optimize](SMT/Z3-API/Z3-16e-Meal-Planner-Optimize-Python.ipynb) | Python | Optimisation multi-critères, Pareto, compromis | 3 |
-| 17 | [Z3-Python-17-Array-Theory](SMT/Z3-API/Z3-Python-17-Array-Theory.ipynb) | Python | Array theory avancée, axiomes, modèles | 3 |
+| 17 | [Z3-17-Array-Theory-Python](SMT/Z3-API/Z3-17-Array-Theory-Python.ipynb) | Python | Array theory avancée, axiomes, modèles | 3 |
 | 18 | [Z3-Python-18-Sudoku-Modes](SMT/Z3-API/Z3-18-Sudoku-Modes-Python.ipynb) | Python | Sudoku modes étendus (diagonal, jigsaw, killer) | 3 |
 | **Z3-Linq2Z3 (C# déclaratif)** |   |   |   |   |
 | 1 | [01_Linq2Z3_Intro](SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb) | .NET C# | SMT avec LINQ, Z3.Linq, Missionnaires et Cannibales | 3 |
@@ -448,12 +455,12 @@ Pipeline d'analyse argumentative multi-agents avec **Semantic Kernel** et LLMs. 
 
 | # | Notebook | Role |
 |---|----------|------|
-| 0 | [Agentic-0-init](Argument_Analysis/Argument_Analysis_Agentic-0-init.ipynb) | Configuration LLM, JPype/Tweety, ProjectManagerAgent |
+| 0 | [Argumentation-00-Setup-Tweety-Python](Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb) | Configuration LLM, JPype/Tweety, ProjectManagerAgent |
 | 1 | [Agentic-1-informal_agent](Argument_Analysis/Argument_Analysis_Agentic-1-informal_agent.ipynb) | InformalAnalysisAgent, détection sophismes |
 | 2 | [Agentic-2-pl_agent](Argument_Analysis/Argument_Analysis_Agentic-2-pl_agent.ipynb) | PropositionalLogicAgent, formalisation PL |
-| 3 | [Agentic-3-orchestration](Argument_Analysis/Argument_Analysis_Agentic-3-orchestration.ipynb) | Orchestration multi-agents |
-| 4 | [Executor](Argument_Analysis/Argument_Analysis_Executor.ipynb) | Pipeline complet, rapport JSON |
-| 5 | [UI_configuration](Argument_Analysis/Argument_Analysis_UI_configuration.ipynb) | Interface widgets ipywidgets |
+| 3 | [Argumentation-07-Orchestration-Python](Argument_Analysis/Argumentation-07-Orchestration-Python.ipynb) | Orchestration multi-agents |
+| 4 | [Argumentation-08b-Executor-Python](Argument_Analysis/Argumentation-08b-Executor-Python.ipynb) | Pipeline complet, rapport JSON |
+| 5 | [Argumentation-08c-UI-Configuration-Python](Argument_Analysis/Argumentation-08c-UI-Configuration-Python.ipynb) | Interface widgets ipywidgets |
 
 > Vue partielle (pipeline Agentic historique). La série compte **28 notebooks** (10 Agentic : 7 sources + 3 traces `_agent` ; 17 analytiques ; 1 groupe-I2 contre-arguments ASPIC) — la structure complète est dans le [README de la sous-série](Argument_Analysis/README.md).
 
@@ -488,6 +495,22 @@ Série de **21 notebooks** (12 Python + 8 jumeaux C# from-scratch BCL-only + 1 c
 > **Jumeaux C# from-scratch** (BCL-only, marathon parité #4956) : SL-1/2/3/4/5/8/10-Csharp + SL-6-ModernILP-Csharp (FOIL relationnel sur `ancestor/2`, mergé 07/07) — mêmes algorithmes réimplémentés sans dépendance externe, pour comparer les écosystèmes.
 
 Documentation complète : [SymbolicLearning/README.md](SymbolicLearning/README.md)
+
+---
+
+## Geometry - Preuve Automatique en Géométrie
+
+Série en ouverture (Epic #17544, première volée 01-02-03 en cours de livraison) : la **démonstration automatique** de théorèmes de géométrie élémentaire par l'algèbre des polynômes. Un théorème fil rouge — le milieu de l'hypoténuse équidistant des trois sommets — est traversé par des méthodes de plus en plus fortes.
+
+### Structure détaillée
+
+| # | Notebook | Contenu | Exercices | Prérequis |
+|---|----------|---------|-----------|-----------|
+| 01 | [Geometry-01-From-Figure-To-Equation](Geometry/Geometry-01-From-Figure-To-Equation.ipynb) | Hypothèses/conclusion en polynômes, vérification numérique sur 10 000 figures, témoin négatif, Schwartz–Zippel et preuve probabiliste | 3 | Géométrie lycée, Python |
+
+> Les positions 02 (Gröbner, `sympy.groebner`), 03 (méthode de Wu, reprise de #17511), 03b (décomposition de Ritt), 04/04b (DD+AR, IMO-AG-30) et 05 (pont formel Lean) sont cadrées dans l'Epic #17544 et se livrent par volées — le chemin principal ne suppose jamais un notebook non encore publié.
+
+Documentation complète : [Geometry/README.md](Geometry/README.md)
 
 ---
 
@@ -561,8 +584,8 @@ SymbolicAI/
 │   └── README.md
 │
 ├── Argument_Analysis/         # Analyse argumentative (28 notebooks : 10 Agentic + 17 analytiques + 1 groupe-I2 ASPIC ; sources Argumentum verbatim EPIC #4960)
-│   ├── Argument_Analysis_Agentic-0-init.ipynb ... UI_configuration.ipynb
-│   ├── Argument_Analysis_ArgumentProfile.ipynb ... Restitution_3_Actes.ipynb
+│   ├── Argumentation-00-Setup-Tweety-Python.ipynb ... UI_configuration.ipynb
+│   ├── Argumentation-08e-Argument-Profile-Python.ipynb ... Restitution_3_Actes.ipynb
 │   │   # 12 modules Argumentum/EPITA-IS verbatim port EPIC #4960 MERGED
 │   ├── Argumentum/                          # submodule source verbatim
 │   ├── groupe-I2-contre-arguments-aspic/    # I2_Contre_arguments_ASPIC.ipynb (sous-dossier)
@@ -572,6 +595,10 @@ SymbolicAI/
 │   ├── SL-1-LogicalLearning.ipynb ... SL-12-DifferentiableLogicGateNetworks.ipynb
 │   ├── SL-*-Csharp.ipynb       # Jumeaux from-scratch BCL-only (marathon #4956)
 │   ├── reference/             # Notes AIMA ch. 19
+│   └── README.md
+│
+├── Geometry/                  # Preuve automatique en géométrie (série en ouverture, Epic #17544)
+│   ├── Geometry-01-From-Figure-To-Equation.ipynb   # Découverte : figure -> polynômes, Schwartz-Zippel
 │   └── README.md
 │
 ├── SMT/                       # Solveurs SMT (Satisfiability Modulo Theories) — 46 notebooks (cf. marqueur CATALOG-STATUS)
@@ -746,10 +773,11 @@ Le setup est entièrement automatisé via `Tweety-01-Setup-Python.ipynb` :
 | SymbolicLearning (AIMA ch. 19 + SL-12 differentiable logic gates) | 21 | 21 (100%) | 0 | Excellent |
 | SMT/Z3-Linq2Z3 (C# Linq2Z3) | 18 | 18 (100%) | 0 | Excellent |
 | SMT/Z3-API (Python + 6 jumeaux C#) | 28 | 28 (100%, 22 Python + 6 C# jumeaux) | 0 | Excellent |
+| Geometry (ouverture 23/09, Epic #17544) | 1 | 1 (100%, Geometry-01 avec 3 exercices) | 0 | Série en ouverture |
 
 **Total** : le compte courant des notebooks pédagogiques **fait foi dans le bloc `<!-- CATALOG-STATUS -->` ci-dessus** (régénéré quotidiennement par `.github/workflows/catalog-cron.yml`) ; en date du 4 septembre 2026 il s'établit à **262** (y compris `root=1` : OR-tools-Stiegler, et le probe IKVM compté dans Tweety=34), hors les 4 fichiers `_archive/` (Fast-Downward-Legacy, 2 précurseurs EML SymbolicLearning, `Tweety.ipynb` legacy). Les notebooks sans exercices sont uniquement : les setups (SC-1-Setup-Foundry), les notebooks de projet (SC-26-Final-Project), la référence historique RDF.Net-Legacy, les deux dérivés Lean sans cellules d'exercice (Lean-16i, Lean-20b), l'artefact `_agent` et le groupe-I2 d'Argument Analysis, et le probe IKVM (non pédagogique).
 
-> **Note (04/09, réconciliation fichier-entier — See #3973)** : décompositions vérifiées sur disque : **Tweety 34** = 14 Python + 18 C# + 1 Lean (Tweety-5b) + 1 probe ; **Lean 49** = 19 preuves natives (3 `lean4` + 16 `lean4-wsl`) + 30 companions Python (25 `python3` + 4 `python3-wsl` + 1 `global-3.13`) ; **SemanticWeb 27** = 13 C# (incl. RDF.Net-Legacy) + 14 Python (SW-14/15 ajoutés après la réconciliation c.1297) ; **Planners 25** = 15 Python + 9 C# jumeaux + 1 Lean (Planners-5b) ; **SmartContracts 31** = 30 Python + 1 `lean4-wsl` (SC-7c) ; **Argument_Analysis 28** = 10 Agentic (7 sources + 3 artefacts `_agent.ipynb`) + 17 analytiques + 1 groupe-I2 ; **SymbolicLearning 21** = 12 Python + 8 C# jumeaux + 1 Lean (SL-1b) ; **SMT 46** = 28 Z3-API (22 Python + 6 C# jumeaux) + 18 Z3-Linq2Z3 ; root = 1. Réconciliation précédente : 15 août 2026 (c.118, total 230). Pour les comptes courants, le marqueur `<!-- CATALOG-STATUS -->` fait foi.
+> **Note (04/09, réconciliation fichier-entier — See #3973)** : décompositions vérifiées sur disque : **Tweety 34** = 14 Python + 18 C# + 1 Lean (Tweety-5b) + 1 probe ; **Lean 49** = 19 preuves natives (3 `lean4` + 16 `lean4-wsl`) + 30 companions Python (25 `python3` + 4 `python3-wsl` + 1 `global-3.13`) ; **SemanticWeb 27** = 13 C# (incl. RDF.Net-Legacy) + 14 Python (SW-14/15 ajoutés après la réconciliation c.1297) ; **Planners 25** = 15 Python + 9 C# jumeaux + 1 Lean (Planners-5b) ; **SmartContracts 31** = 30 Python + 1 `lean4-wsl` (SC-7c) ; **Argument_Analysis 28** = 10 Agentic (7 sources + 3 artefacts `_agent.ipynb`) + 17 analytiques + 1 groupe-I2 ; **SymbolicLearning 21** = 12 Python + 8 C# jumeaux + 1 Lean (SL-1b) ; **SMT 46** = 28 Z3-API (22 Python + 6 C# jumeaux) + 18 Z3-Linq2Z3 ; root = 1. Réconciliation précédente : 15 août 2026 (c.118, total 230). Ajout 23 septembre 2026 : **Geometry 1** = Geometry-01-From-Figure-To-Equation (série en ouverture, Epic #17544 ; le catalogue la comptera à sa prochaine régénération). Pour les comptes courants, le marqueur `<!-- CATALOG-STATUS -->` fait foi.
 
 ### Problèmes connus (juillet 2026)
 

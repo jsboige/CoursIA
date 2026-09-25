@@ -341,3 +341,84 @@ def test_13232_metadata_dependent_guard_has_no_paths_filter(wf, why):
         "ne poste aucun check-run. Reduire le fan-out par `types:` ou "
         "`concurrency`, jamais par `paths:`. Cf #13232."
     )
+
+
+# --- #17713 : exemption `claude/*` + `Hors flotte` -------------------------
+#
+# Une session Claude Code cloud du mainteneur ouvre une PR sous le prefixe
+# `claude/` et declare `Hors flotte` dans le body. `CLAUDE.md` ('A qui ce
+# fichier s'adresse') exempte explicitement ces sessions du protocole de
+# variation -- le garde Grain-tag doit donc laisser passer ces PR. Les DEUX
+# conditions sont requises (un simple renommage de branche ne suffit pas,
+# et un marqueur `Hors flotte` sans prefixe `claude/` n'exempte pas non plus
+# -- une lane de la flotte ne peut pas sortir du protocole en usurpant le
+# marqueur).
+
+
+def test_17713_claude_head_with_hors_flote_is_exempt():
+    """Branch `claude/*` + body `Hors flotte` -> required_pass True."""
+    body = "Fix mineur.\n\n**Hors flotte** -- session cloud du mainteneur.\n"
+    v = vtr.check(body, head_ref="claude/curious-river-1f")
+    assert v["required_pass"] is True
+    assert "17713" in v["reason"]
+
+
+def test_17713_claude_head_without_hors_flote_still_blocked():
+    """Branch `claude/*` sans marqueur body -> toujours bloque."""
+    body = "Fix mineur. Pas de marqueur."
+    v = vtr.check(body, head_ref="claude/curious-river-1f")
+    assert v["required_pass"] is False
+
+
+def test_17713_fleet_branch_with_hors_flote_still_blocked():
+    """Branche de la flotte + body `Hors flotte` -> toujours bloque.
+
+    Une lane de la flotte ne peut pas sortir du protocole de variation en
+    usurpant le marqueur : seule la conjonction `claude/*` + `Hors flotte`
+    exempte.
+    """
+    body = "Fix.\n\n**Hors flotte** -- tentative d'exemption par lane flotte."
+    v = vtr.check(body, head_ref="fix/17713-fausse-exemption")
+    assert v["required_pass"] is False
+
+
+def test_17713_no_head_ref_blocks_even_with_hors_flote():
+    """Sans head_ref (CLI legacy / appel depuis un autre job), le marqueur
+    body seul n'exempte pas -- la garde reste fail-closed."""
+    body = "Fix.\n\n**Hors flotte** -- mais sans head_ref."
+    v = vtr.check(body)  # pas de head_ref
+    assert v["required_pass"] is False
+
+
+def test_17713_cli_head_ref_arg_propagates():
+    """End-to-end CLI : --head-ref propage et l'exemption tient."""
+    fixture = Path(__file__).resolve().parent / "_vtr_fixture_17713.md"
+    fixture.write_text(
+        "Fix.\n\n**Hors flotte** -- session cloud du mainteneur.\n",
+        encoding="utf-8",
+    )
+    try:
+        proc = subprocess.run(
+            [
+                sys.executable,
+                "scripts/ci/variation_tag_required.py",
+                "--body-file",
+                str(fixture),
+                "--head-ref",
+                "claude/curious-river-1f",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+            encoding="utf-8",
+            errors="replace",
+        )
+        assert proc.returncode == 0, (
+            f"expected exit 0 (exempt), got {proc.returncode}; "
+            f"stderr={proc.stderr!r}"
+        )
+        verdict = json.loads(proc.stdout)
+        assert verdict["required_pass"] is True
+        assert "17713" in verdict["reason"]
+    finally:
+        fixture.unlink(missing_ok=True)
