@@ -30,7 +30,7 @@ proprietaire), toucher au dashboard vivant, modifier le format d'archive
 existant. Cet outil est **un detecteur + un marqueur**, pas un moteur de
 resume.
 
-**Tell c.974 strict § SOTA** : l'outil s'appuie sur le format verbatim
+**§ SOTA** (cf. `.claude/rules/sota-not-workaround.md`) : l'outil s'appuie sur le format verbatim
 existant (pas de workaround degrade), aucune reinvention du frontmatter,
 lecture regex stricte. Le verdict de fallback (`llmGenerated: false` ET
 `fallbackTruncation: true`) est implemente tel que documente dans le body
