@@ -14,11 +14,30 @@ Les notebooks utilisent Python, C# avec .NET Interactive et Lean 4. De nombreux 
 
 ## Commencer ici
 
-Trois chemins permettent d'entrer dans le dépôt sans parcourir tout le catalogue :
+### Choisir sa vitesse de lecture
 
-1. **Suivre un parcours narratif** : [PARCOURS.md](PARCOURS.md) présente trois itinéraires certifiés (accéléré GenAI, IA symbolique, lecture AIMA), avec public, durée et sortie concrète. Les cinq pages catalogue qui listent les notebooks par domaine y sont repositionnées comme **vues du catalogue**, pas comme parcours.
-2. **Choisir une série** : chaque README de série présente son objectif, son ordre de lecture, ses prérequis et ses notebooks.
-3. **Préparer l'environnement** : pour exécuter immédiatement, commencer par [Mise en route](#mise-en-route), puis ouvrir le notebook `Setup` ou `Environment` de la série choisie.
+Une série ne se lit pas comme une liste de fichiers à parcourir en entier. La numérotation de ses notebooks distingue **trois vitesses de lecture**, et chacun choisit la sienne, série par série :
+
+| Vitesse | Ce qu'on lit | Comment le reconnaître |
+|---|---|---|
+| **Parcours principal** | les notebooks à **numéro nu** (`01`, `02`, `03`…), dans l'ordre | chacun porte un concept et ne suppose que ce qui le précède ; mis bout à bout, ils couvrent l'essentiel de la série |
+| **Approfondissement** | les notebooks à **lettre** d'un palier (`02b`, `02c`…) | une lettre creuse le palier dont elle porte le numéro : formalisation, variante, résultat plus récent. On l'ouvre pour aller plus loin sur ce palier, pas pour avancer dans la série |
+| **Recherche** | les **sous-séries** et les sections « Pour aller plus loin » des READMEs | une sous-série a son propre préfixe, son propre arc et un notebook pont depuis sa série mère |
+
+Pour un premier passage, lisez les numéros nus d'une série sans ouvrir une seule lettre. Revenez ensuite aux lettres des paliers qui vous ont retenu. Les jumeaux Python, C# et Lean d'un même notebook partagent son numéro : choisissez l'implémentation, pas le contenu.
+
+Les READMEs de série adoptent progressivement cette organisation. D'abord la table du parcours principal, où chaque palier renvoie à ses approfondissements ; puis les approfondissements, décrits palier par palier ; enfin la matière de recherche. Chaque section y annonce son public : Découverte, Licence ou Recherche.
+
+### Choisir son principe de navigation
+
+Quatre façons d'entrer dans le dépôt, sans parcourir tout le catalogue :
+
+1. **Par série, à sa vitesse** : ouvrir le README d'une série (voir [Séries de notebooks](#séries-de-notebooks)) et suivre son parcours principal. C'est le mode de lecture par défaut.
+2. **Par itinéraire narratif** : [PARCOURS.md](PARCOURS.md) présente trois itinéraires certifiés qui traversent plusieurs séries (accéléré GenAI, IA symbolique, lecture AIMA), avec leur public, leur durée et leur sortie concrète. Les cinq pages du catalogue qui listent les notebooks par domaine y sont présentées comme des **vues du catalogue**, pas comme des parcours.
+3. **Par contrainte d'infrastructure** : [`parcours.qmd`](parcours.qmd) propose trois niveaux d'équipement : local sobre (Python seul), .NET et Lean, puis GenAI complet (Docker et GPU).
+4. **Par inventaire** : le [catalogue](COURSE_CATALOG.generated.md) liste tout, avec les statuts et la maturité.
+
+Pour exécuter immédiatement, commencer par [Mise en route](#mise-en-route), puis ouvrir le notebook `Setup` ou `Environment` de la série choisie.
 
 Le répertoire [docs/](docs/README.md) rassemble ensuite les références d'infrastructure, de validation et de contribution.
 
@@ -133,7 +152,7 @@ Cette cohérence permet de lire le dépôt horizontalement — suivre une techni
 
 ## Philosophie pédagogique
 
-Chaque série fournit son propre point d'entrée : un README donne l'ordre de lecture et le notebook de mise en route prépare l'environnement. Les notebooks introduisent leurs prérequis au moment où ils deviennent utiles, plutôt que de supposer un long cours préalable.
+Chaque série fournit son propre point d'entrée : son README donne le parcours principal et ses approfondissements (voir [Choisir sa vitesse de lecture](#choisir-sa-vitesse-de-lecture)), et le notebook de mise en route prépare l'environnement. Les notebooks introduisent leurs prérequis au moment où ils deviennent utiles, plutôt que de supposer un long cours préalable.
 
 Les approches **multi-paradigmes** sont privilégiées. Le Sudoku est résolu par backtracking, contraintes, métaheuristiques et réseaux de neurones ; les jeux sont simulés en Python puis formalisés en Lean 4. Garder le problème fixe rend visibles les compromis entre garantie, performance, interprétabilité et généralisation.
 
@@ -243,7 +262,7 @@ Une strate plus récente étend le vocabulaire stratégique lui-même : les **je
 
 **L'agrégation des préférences -- choix social et impossibilités** -- Une sous-série dédiée, [SocialChoice](MyIA.AI.Notebooks/GameTheory/SocialChoice/README.md), prolonge le bloc sur l'agrégation collective et l'éclaire sous trois angles à la fois. Le théorème d'impossibilité d'Arrow y apparaît contre-intuitif quand on le simule, inévitable quand on le prouve en Lean, et franchement insatisfiable quand on l'encode en problème SAT résolu par Z3 -- trois façons de saisir un même résultat. S'y ajoutent le paradoxe libéral de Sen, les méthodes de vote classiques (Condorcet, Borda, Copeland) et le modèle spatial de Downs. C'est le pont le plus direct vers la gouvernance on-chain étudiée dans SmartContracts, où un vote de DAO n'est qu'une règle d'agrégation soumise aux mêmes impossibilités.
 
-Au-delà du tableau noir, ces résultats structurent l'économie numérique : les enchères VCG fondent la publicité en ligne de Google et Meta à l'échelle de milliards de transactions par jour, l'algorithme de Gale-Shapley affecte étudiants aux écoles et internes aux hôpitaux -- un mécanisme couronné par le prix Nobel d'économie 2012 -- et la Counterfactual Regret Minimization a permis aux machines de battre les meilleurs joueurs de poker. GameTheory est ainsi un carrefour : elle prolonge la théorie de la décision de **Probas** vers l'interaction stratégique, alimente le **RL** par son volet multi-agent, irrigue **SmartContracts** par le vote vérifiable et la gouvernance, et partage avec **SymbolicAI** l'exigence de la preuve vérifiée par la machine.
+Au-delà du tableau noir, ces résultats structurent l'économie numérique : les enchères VCG fondent la publicité en ligne, à l'échelle de milliards de transactions par jour, l'algorithme de Gale-Shapley affecte étudiants aux écoles et internes aux hôpitaux -- un mécanisme couronné par le prix Nobel d'économie 2012 -- et la Counterfactual Regret Minimization a permis aux machines de battre les meilleurs joueurs de poker. GameTheory est ainsi un carrefour : elle prolonge la théorie de la décision de **Probas** vers l'interaction stratégique, alimente le **RL** par son volet multi-agent, irrigue **SmartContracts** par le vote vérifiable et la gouvernance, et partage avec **SymbolicAI** l'exigence de la preuve vérifiée par la machine.
 
 Python (Nashpy, OpenSpiel, Z3), C# et Lean 4 | [README détaillé](MyIA.AI.Notebooks/GameTheory/README.md)
 
