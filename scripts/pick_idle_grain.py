@@ -1143,7 +1143,7 @@ def open_cover_signal(issue_number: int) -> str | None:
 
     TRI-ETAT, meme doctrine que ``has_delivered_signal`` : ``""`` = aucune
     PR ouverte couvrante ; une descriptor-string (``"PR #12519 [draft]
-    (+1 autre(s) : #12530)"``) = au moins une PR ouverte cite l'issue ;
+    (+1 autre(s) : #12530)"``) = au moins une PR ouverte cite ``#N`` ;
     ``None`` = la requete a echoue (reseau, 403, payload illisible) et
     l'appelant doit tirer quand meme EN LE DISANT.
 
@@ -1158,14 +1158,27 @@ def open_cover_signal(issue_number: int) -> str | None:
         out = subprocess.run(
             ["gh", "pr", "list", "--repo", REPO, "--state", "all",
              "--limit", "20", "--search", f"{issue_number} in:title,body",
-             "--json", "number,state,isDraft"],
+             "--json", "number,state,isDraft,title,body"],
             capture_output=True, text=True, encoding="utf-8", check=True,
             timeout=30,
         ).stdout
         prs = json.loads(out)
     except Exception:  # noqa: BLE001 - sonde best-effort ; l'echec est DIT
         return None
-    opened = [pr for pr in prs if pr.get("state") == "OPEN"]
+    # Post-filtre `#N\b` (#17760, arbitrage ai-01 2026-09-25) : la recherche
+    # GitHub matche un NOMBRE NU en sous-chaine -- 11703 apparie c.1170301
+    # ou #1170391 -- et les petits numeros des EPICs se retrouvent faux
+    # couverts (10/91 mesures, 11 %). Une PR ouverte ne couvre l'issue QUE
+    # si son titre ou son body citent `#N` borne par un mot. GitHub ne peut
+    # pas faire ce discriminant cote serveur ; quand le filtre ne trouve
+    # pas d'ancre, le candidat est CONSERVE, jamais ecarte.
+    anchor = re.compile(rf"#{issue_number}\b")
+    opened = [
+        pr for pr in prs
+        if pr.get("state") == "OPEN"
+        and anchor.search((pr.get("title") or "") + "\n" +
+                          (pr.get("body") or ""))
+    ]
     if not opened:
         return ""
     first = min(opened, key=lambda pr: pr["number"])
