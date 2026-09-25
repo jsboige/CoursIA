@@ -8429,14 +8429,14 @@ spy = qb.add_equity(""SPY"", Resolution.DAILY).symbol
 
 print(f""Universe: {len(tickers)} sector ETFs + SPY"")
 print(f""Tickers: {', '.join(tickers)}"")",,,,,,,,876b683f9b597ad2,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/01-ML-RandomForest/research.ipynb,cell-70d7edfe,markdown,fr,a5de36d663d748d9,"## 1. Exploration des données sectorielles
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/01-ML-RandomForest/research.ipynb,cell-70d7edfe,markdown,fr,b57efbe05e2c9891,"## 1. Exploration des données sectorielles
 
 L'univers de travail couvre 9 ETFs sectoriels U.S. (XLK, XLF, XLV, XLE, XLY, XLP, XLI, XLU, XLRE) plus SPY comme benchmark. La fenêtre temporelle est de 10 ans (2016-2024, soit 2520 jours de bourse) — une profondeur suffisante pour capturer les régimes bull/bear 2018-2019, COVID-2020, et la hausse 2023-2024.
 
-Le téléchargement via `qb.history(..., 2520, Resolution.DAILY)` produit un DataFrame multi-index (25200 lignes × 5 colonnes OHLCV sur 10 symboles) qu'on déstack en matrice close-prices 10 colonnes pour les analyses de performance et de corrélation.
+Le téléchargement via `qb.history(..., 2520, Resolution.DAILY)` produit un DataFrame multi-index (5 colonnes OHLCV sur 10 symboles) qu'on déstack en matrice close-prices 10 colonnes pour les analyses de performance et de corrélation.
 ","## 1. Exploration of Sector Data
 
-Download of 10 years of historical data (2015-2024) and analysis of correlations and relative performance.",,,,,,,a5de36d663d748d9,01206fb6375c62cf,,,,,,,
+Download of 10 years of historical data (2015-2024) and analysis of correlations and relative performance.",,,,,,,b57efbe05e2c9891,01206fb6375c62cf,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/01-ML-RandomForest/research.ipynb,cell-99971972,code,fr,5656113db982975a,"# Download 10 years of daily data
 history = qb.history(list(symbols.values()) + [spy], 2520, Resolution.DAILY)
 print(f""Data shape: {history.shape}"")
