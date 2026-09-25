@@ -50,7 +50,7 @@ La série illustre ce fil rouge sur plusieurs notebooks, chacun sur un cas non-c
 - [PyMC-6-Expert-Systems](../DecisionTheory/DecPyMC/DecPyMC-6-Expert-Systems.ipynb) — recette de référence : paramétrisation **non-centrée** (offsets de Neal) qui évite le funnel et stabilise la convergence.
 - [PyMC-12-Modeles-Hierarchiques](PyMC-12-Modeles-Hierarchiques.ipynb) — traitement dédié : partial pooling bayésien sur 8 classes, shrinkage visible (les classes clairsemées se rétractent vers `mu`), comparaison centered vs non-centered et divergence NUTS comme diagnostic géométrique du funnel.
 
-> **Leçon technique récurrente** : sur ces modèles, la **paramétrisation non-centrée** `θ = μ + σ · z` (avec `z ~ Normal(0,1)`) est souvent indispensable. Elle découple l'estimation de la moyenne de celle de la dispersion et évite le *funnel de Neal* — une pathologie géométrique qui piège l'échantillonneur quand la dispersion inter-groupes est faible. Le réflexe naïf « augmenter `target_accept` » **aggrave** alors les divergences ; c'est la reparamétrisation, pas la tolérance, qui débloque la convergence. Voir [PyMC-06-Debugging](PyMC-06-Debugging.ipynb) pour les diagnostics associés.
+> **Leçon technique récurrente** : sur ces modèles, la **paramétrisation non-centrée** `θ = μ + σ · z` (avec `z ~ Normal(0,1)`) est souvent indispensable. Elle découple l'estimation de la moyenne de celle de la dispersion et évite le *funnel de Neal* — une pathologie géométrique qui piège l'échantillonneur quand la dispersion inter-groupes est faible. Le réflexe naïf « augmenter `target_accept` » **aggrave** alors les divergences ; c'est la reparamétrisation, pas la tolérance, qui débloque la convergence. Voir [PyMC-02b-Debugging-Python](PyMC-02b-Debugging-Python.ipynb) pour les diagnostics associés.
 
 ## Objectifs d'apprentissage
 
@@ -80,7 +80,7 @@ Le notebook [PyMC-7 — IRT](PyMC-07-Skills-IRT.ipynb) construit un modèle de r
 
 ### Diagnostic du mélange des chaînes MCMC
 
-Le notebook [PyMC-6 — Debugging](PyMC-06-Debugging.ipynb) traite les pannes de convergence. Sur un modèle hiérarchique 8-pièces (paramétrisation non-centrée), les trace plots des hyperparamètres `hyper_mean` et `hyper_sigma` montrent que les 4 chaînes MCMC se mélangent correctement : la densité postérieure (KDE à gauche) est unimodale et régulière, la trace (à droite) oscille sans drift visible. Ce diagnostic **purement visuel** (KDE + trace) est le premier réflexe avant d'inspecter R-hat et ESS — il détecte en un coup d'œil les chaînes figées ou les divergences.
+Le notebook [PyMC-02b — Debugging](PyMC-02b-Debugging-Python.ipynb) traite les pannes de convergence. Sur un modèle hiérarchique 8-pièces (paramétrisation non-centrée), les trace plots des hyperparamètres `hyper_mean` et `hyper_sigma` montrent que les 4 chaînes MCMC se mélangent correctement : la densité postérieure (KDE à gauche) est unimodale et régulière, la trace (à droite) oscille sans drift visible. Ce diagnostic **purement visuel** (KDE + trace) est le premier réflexe avant d'inspecter R-hat et ESS — il détecte en un coup d'œil les chaînes figées ou les divergences.
 
 <img src="assets/readme/pymc13-mcmc-diagnostics.png" width="720" alt="Diagnostics MCMC : vérification visuelle du mélange des chaînes via KDE postérieure et trace plot pour les hyperparamètres.">
 
@@ -130,7 +130,7 @@ Ces corrections sont **éditoriales** (prose, pas de modification des figures su
 | 10 | [PyMC-13-Crowdsourcing](PyMC-13-Crowdsourcing.ipynb) | 55 min | Workers, communautés, agrégation de labels |
 | 11 | [PyMC-14-Sequences](PyMC-14-Sequences.ipynb) | 65 min | HMM, mélange `NormalMixture`, séries temporelles |
 | 12 | [PyMC-15-Recommenders](PyMC-15-Recommenders.ipynb) | 60 min | Factorisation de matrices, recommandation |
-| 13 | [PyMC-06-Debugging](PyMC-06-Debugging.ipynb) | 45 min | Troubleshooting, diagnostics NUTS, convergence |
+| 13 | [PyMC-02b-Debugging-Python](PyMC-02b-Debugging-Python.ipynb) | 45 min | Troubleshooting, diagnostics NUTS, convergence |
 | 14 | [PyMC-05-Causal-Inference](PyMC-05-Causal-Inference.ipynb) | 65 min | do-calculus de Pearl, `pm.do`, backdoor/front-door, paradoxe de Simpson, contrefactuel |
 | 15 | [PyMC-16-Sparse-Gaussian-Process](PyMC-16-Sparse-Gaussian-Process.ipynb) | 75 min | Processus gaussiens (prior sur fonctions), noyau RBF, classification GP logit, frontière non linéaire, length-scale apprise, GP scalable HSGP exécuté (mur $O(N^3)$, budgets de bases, N=1200) |
 | 16 | [PyMC-12-Modeles-Hierarchiques](PyMC-12-Modeles-Hierarchiques.ipynb) | 50 min | Partial pooling, shrinkage, paramétrisation non-centrée, divergences/funnel |
@@ -251,7 +251,7 @@ conda install -c conda-forge pymc
 - Augmenter `target_accept` : `pm.sample(target_accept=0.95)` (défaut 0.8)
 - Utiliser `init="advi"` pour une initialisation plus robuste
 - Réduire `draws` et `tune` (ex. 500/500 au lieu de 1000/1000) si la compilation C (PyTensor) est disponible mais le temps de calcul reste prohibitif
-- Consulter [PyMC-06-Debugging](PyMC-06-Debugging.ipynb) pour les diagnostics complets
+- Consulter [PyMC-02b-Debugging-Python](PyMC-02b-Debugging-Python.ipynb) pour les diagnostics complets
 
 ### ArviZ affiche des divergences
 
@@ -259,7 +259,7 @@ Les divergences indiquent que l'échantillonneur n'a pas exploré correctement c
 
 1. `az.plot_trace(trace)` -> vérifier le mélange des chaînes
 2. `az.summary(trace)` -> vérifier que `r_hat < 1.05` et `ess_bulk > 400`
-3. Reparamétriser le modèle (centrage, log-transform ; paramétrisation centered vs non-centered — voir [PyMC-02-Gaussian-Mixtures](PyMC-02-Gaussian-Mixtures.ipynb) et [PyMC-06-Debugging](PyMC-06-Debugging.ipynb))
+3. Reparamétriser le modèle (centrage, log-transform ; paramétrisation centered vs non-centered — voir [PyMC-02-Gaussian-Mixtures](PyMC-02-Gaussian-Mixtures.ipynb) et [PyMC-02b-Debugging-Python](PyMC-02b-Debugging-Python.ipynb))
 4. Augmenter le nombre de tirages : `pm.sample(draws=4000, tune=2000)`
 
 ### Erreur "SamplingError: Initial evaluation of model failed"
@@ -314,7 +314,7 @@ Ce port Python est le pendant de la série [Infer.NET](../Infer/) (C# / .NET Int
 
 Cette série vous a fait passer des **fondamentaux de l'inférence bayésienne** (priors, postérieurs, échantillonnage NUTS avec [PyMC-01-Setup](PyMC-01-Setup.ipynb) à [PyMC-03-Factor-Graphs](PyMC-03-Factor-Graphs.ipynb)) à des **modèles relationnels avancés** (réseaux bayésiens, IRT, TrueSkill, LDA, HMM, recommandation — notebooks 4 à 12), en suivant le même chemin que la série [Infer.NET](../Infer/) mais avec un **moteur d'inférence radicalement différent**. Trois acquis clés :
 
-- **Lire et diagnostiquer une chaîne MCMC** — `pm.sample()` ne suffit pas ; ArviZ (`r_hat < 1.05`, `ess_bulk > 400`, trace plots, divergences) est devenu votre réflexe systématique, et [PyMC-06-Debugging](PyMC-06-Debugging.ipynb) votre référence pour les pannes de convergence.
+- **Lire et diagnostiquer une chaîne MCMC** — `pm.sample()` ne suffit pas ; ArviZ (`r_hat < 1.05`, `ess_bulk > 400`, trace plots, divergences) est devenu votre réflexe systématique, et [PyMC-02b-Debugging-Python](PyMC-02b-Debugging-Python.ipynb) votre référence pour les pannes de convergence.
 - **Choisir le bon moteur selon le modèle** — vous savez désormais **quand** l'échantillonnage MCMC (PyMC/NUTS, piloté par gradient, flexible sur presque tout modèle continu) est préférable au **message passing** sur graphe de facteurs (Infer.NET/EP, rapide sur les modèles conjugués et structurés), et inversement. Arbitrer entre ces deux familles d'algorithmes est une compétence de praticien.
 - **Relier inférence et décision** — la sous-série [DecisionTheory/DecPyMC/](../DecisionTheory/DecPyMC/README.md) (notebooks 1 à 12 : utilité espérée, EVPI/EVSI, MDPs, bandits, jambe actuarielle) ferme la boucle : un posterior n'est pas une fin, c'est l'**input** d'une politique de décision optimale sous incertitude.
 

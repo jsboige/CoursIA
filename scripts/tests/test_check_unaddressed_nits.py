@@ -3097,6 +3097,66 @@ def test_13316_self_lift_jsboige_sur_sa_propre_reserve_leve():
     assert run([own_nit, own_lift])["blocked"] is False
 
 
+# --- #17507 : voie 3 (lift voix nue par meme login) leveait une reserve
+# persona sous `jsboige` (login partage) sans la nommer -- Voie 1 suppose
+# lift_has_persona=True pour traiter le scope persona, mais le cas
+# `not lift_has_persona and nit_has_persona` n'etait pas couvert. Reproduction :
+# PR #16924, review 5258813293 `[Hermes]` (jsboige, 20/09) + commentaire adjoint
+# voix nue (jsboige, myia-po-2025:CoursIA-2) `Je leve mon point du commentaire
+# 5788054957.` -- avant fix, la reserve Hermes etait eteinte par un lift voix
+# nue qui ne la nomme pas.
+
+
+def test_17507_voix_nue_jsboige_ne_leve_pas_reserve_persona():
+    """Critere 1 #17507 (positif) : sous `jsboige`, reserve `[Hermes]` suivie
+    d'une levee voix nue qui nomme un AUTRE commentaire -- la reserve Hermes
+    RESTE bloquante (voie 3 bloquee par `nit_has_persona`)."""
+    hermes_review = {
+        "author": {"login": "jsboige"}, "state": "COMMENTED",
+        "submittedAt": at(10),
+        "body": "[Hermes] COMMENT_WITH_CONCERNS -- la voie 3 leve sans "
+                "discriminer le scope de la reserve.",
+    }
+    adjoint_voice_lift = {
+        "author": {"login": "jsboige"}, "createdAt": at(12),
+        "body": "Je leve mon point du commentaire 5788054957.",
+    }
+    data = {
+        "number": 16924, "title": "t", "author": {"login": "jsboige"},
+        "comments": [adjoint_voice_lift], "reviews": [hermes_review],
+        "commits": [{"committedDate": at(20)}],
+    }
+    result = mod.analyse(data, [], MERGED)
+    assert result["blocked"] is True, (
+        f"attendu: reserve Hermes bloquee sous jsboige par lift voix nue ; "
+        f"observe: {result.get('blocking')}")
+    assert any("[Hermes]" in b.get("excerpt", "")
+               for b in result["blocking"])
+
+
+def test_17507_voix_nue_jsboige_leve_reserve_voix_nue_user():
+    """Critere 2 #17507 (negatif preserve) : sous `jsboige`, reserve voix nue
+    user suivie d'une levee voix nue par meme login -- la voie 3 PRESERVE son
+    ancien comportement (lift voie nue OK sur reserve voie nue)."""
+    user_nit = {"author": {"login": "jsboige"}, "createdAt": at(10),
+                "body": "Concern: la voie 3 leve sans scope reserve."}
+    voice_lift = {"author": {"login": "jsboige"}, "createdAt": at(12),
+                  "body": "Reserve levee apres correction du scope."}
+    assert run([user_nit, voice_lift])["blocked"] is False
+
+
+def test_17507_voix_nue_clusterManager_leve_sa_reserve_persona():
+    """Critere 3 #17507 (anti-regression #14850) : sous `clusterManager-Myia`
+    (persona authentique, PAS login partage), la voie 3 preserve son ancien
+    comportement -- clusterManager-Myia leve SA reserve `[Hermes]` par voix
+    nue. La garde `lift_author == "jsboige"` ne mord pas ici."""
+    assert run([HERMES_NIT, {
+        "author": {"login": "clusterManager-Myia"},
+        "createdAt": at(12),
+        "body": "Reserve levee.",
+    }])["blocked"] is False
+
+
 def test_13316_replay_12737_reel():
     """Critère 3 : replay du cas réel #12737 (timestamps réels) — réserve
     myia-ai-01 02:37:04Z, « overrides » jsboige 02:40:01Z et 02:41:06Z : la
