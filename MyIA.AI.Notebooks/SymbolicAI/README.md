@@ -105,7 +105,7 @@ La série Geometry (programme gradué, Epic #17544) ouvre la **démonstration au
 | **Planners** | `Planners/00-Environment/Planners-0-Setup.ipynb` | `pip install ortools unified_planning` |
 | **SmartContracts** | `SmartContracts/00-Foundations/SC-0-Cypherpunk-Origins.ipynb` | `pip install py-solc-x web3` |
 | **SymbolicLearning** | `SymbolicLearning/SL-1-LogicalLearning.ipynb` | Python 3.10+ standard library, aucune installation |
-| **Argument Analysis** | `Argument_Analysis/Argument_Analysis_Agentic-0-init.ipynb` | `pip install semantic-kernel jpype1` + `.env` |
+| **Argument Analysis** | `Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb` | `pip install semantic-kernel jpype1` + `.env` |
 | **Geometry** | `Geometry/Geometry-01-From-Figure-To-Equation.ipynb` | `pip install sympy numpy matplotlib` (venv projet déjà configuré) |
 | **SMT / Z3** | `SMT/Z3-API/Z3-01-Introduction-Python.ipynb` (Python) ou `SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb` (C#) | `pip install z3-solver` (Python) ; pour C# `dotnet add package Z3.Linq` |
 
@@ -310,7 +310,7 @@ La série joue un rôle charnière dans la famille SymbolicAI : elle **consomme*
 | 16c | [Z3-Python-16c-Meal-Planner-Patient-Capstone](SMT/Z3-API/Z3-16c-Meal-Planner-Patient-Capstone-Python.ipynb) | Python | Profil patient, contraintes médicales, capstone | 3 |
 | 16d | [Z3-Python-16d-Meal-Planner-Convergence-Scale](SMT/Z3-API/Z3-16d-Meal-Planner-Convergence-Scale-Python.ipynb) | Python | Convergence à l'échelle, temps de réponse, bench | 3 |
 | 16e | [Z3-Python-16e-Meal-Planner-Optimize](SMT/Z3-API/Z3-16e-Meal-Planner-Optimize-Python.ipynb) | Python | Optimisation multi-critères, Pareto, compromis | 3 |
-| 17 | [Z3-Python-17-Array-Theory](SMT/Z3-API/Z3-Python-17-Array-Theory.ipynb) | Python | Array theory avancée, axiomes, modèles | 3 |
+| 17 | [Z3-17-Array-Theory-Python](SMT/Z3-API/Z3-17-Array-Theory-Python.ipynb) | Python | Array theory avancée, axiomes, modèles | 3 |
 | 18 | [Z3-Python-18-Sudoku-Modes](SMT/Z3-API/Z3-18-Sudoku-Modes-Python.ipynb) | Python | Sudoku modes étendus (diagonal, jigsaw, killer) | 3 |
 | **Z3-Linq2Z3 (C# déclaratif)** |   |   |   |   |
 | 1 | [01_Linq2Z3_Intro](SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb) | .NET C# | SMT avec LINQ, Z3.Linq, Missionnaires et Cannibales | 3 |
@@ -455,12 +455,12 @@ Pipeline d'analyse argumentative multi-agents avec **Semantic Kernel** et LLMs. 
 
 | # | Notebook | Role |
 |---|----------|------|
-| 0 | [Agentic-0-init](Argument_Analysis/Argument_Analysis_Agentic-0-init.ipynb) | Configuration LLM, JPype/Tweety, ProjectManagerAgent |
+| 0 | [Argumentation-00-Setup-Tweety-Python](Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb) | Configuration LLM, JPype/Tweety, ProjectManagerAgent |
 | 1 | [Agentic-1-informal_agent](Argument_Analysis/Argument_Analysis_Agentic-1-informal_agent.ipynb) | InformalAnalysisAgent, détection sophismes |
 | 2 | [Agentic-2-pl_agent](Argument_Analysis/Argument_Analysis_Agentic-2-pl_agent.ipynb) | PropositionalLogicAgent, formalisation PL |
-| 3 | [Agentic-3-orchestration](Argument_Analysis/Argument_Analysis_Agentic-3-orchestration.ipynb) | Orchestration multi-agents |
-| 4 | [Executor](Argument_Analysis/Argument_Analysis_Executor.ipynb) | Pipeline complet, rapport JSON |
-| 5 | [UI_configuration](Argument_Analysis/Argument_Analysis_UI_configuration.ipynb) | Interface widgets ipywidgets |
+| 3 | [Argumentation-07-Orchestration-Python](Argument_Analysis/Argumentation-07-Orchestration-Python.ipynb) | Orchestration multi-agents |
+| 4 | [Argumentation-08b-Executor-Python](Argument_Analysis/Argumentation-08b-Executor-Python.ipynb) | Pipeline complet, rapport JSON |
+| 5 | [Argumentation-08c-UI-Configuration-Python](Argument_Analysis/Argumentation-08c-UI-Configuration-Python.ipynb) | Interface widgets ipywidgets |
 
 > Vue partielle (pipeline Agentic historique). La série compte **28 notebooks** (10 Agentic : 7 sources + 3 traces `_agent` ; 17 analytiques ; 1 groupe-I2 contre-arguments ASPIC) — la structure complète est dans le [README de la sous-série](Argument_Analysis/README.md).
 
@@ -584,8 +584,8 @@ SymbolicAI/
 │   └── README.md
 │
 ├── Argument_Analysis/         # Analyse argumentative (28 notebooks : 10 Agentic + 17 analytiques + 1 groupe-I2 ASPIC ; sources Argumentum verbatim EPIC #4960)
-│   ├── Argument_Analysis_Agentic-0-init.ipynb ... UI_configuration.ipynb
-│   ├── Argument_Analysis_ArgumentProfile.ipynb ... Restitution_3_Actes.ipynb
+│   ├── Argumentation-00-Setup-Tweety-Python.ipynb ... UI_configuration.ipynb
+│   ├── Argumentation-08e-Argument-Profile-Python.ipynb ... Restitution_3_Actes.ipynb
 │   │   # 12 modules Argumentum/EPITA-IS verbatim port EPIC #4960 MERGED
 │   ├── Argumentum/                          # submodule source verbatim
 │   ├── groupe-I2-contre-arguments-aspic/    # I2_Contre_arguments_ASPIC.ipynb (sous-dossier)
