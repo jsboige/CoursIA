@@ -345,8 +345,8 @@ PILOT: list[Guard] = [
             "scripts/notebook_tools/check_kernel_suffix_canon.py",
             "scripts/notebook_tools/kernel_suffix_canon.json",
             # Liste partagee des suffixes de noyau : l'en retirer un rend le
-            # garde muet sur cette famille, l'y ajouter rouvre les exclusions
-            # mesurees (`-Lean` marque le contenu, pas le moteur).
+            # garde muet sur cette famille. Depuis l'arbitrage 25/09
+            # (#17784/#16231) elle porte -lean et -lean-python comme noyaux.
             "scripts/notebook_tools/naming_canon.py",
         ],
         argv=["python", "scripts/notebook_tools/check_kernel_suffix_canon.py",
@@ -354,6 +354,11 @@ PILOT: list[Guard] = [
         blocking=True,
         needs_base=True,
     ),
+    # Cliquet #17784, phase ADVISORY : le meme organe liste en advisory les
+    # notebooks AJOUTES sans suffixe de noyau (grammaire #16231 : le suffixe
+    # est desormais cense etre toujours present). Le passage bloquant se fait
+    # en ajoutant --require-suffix a l'argv ci-dessus, APRES mesure des faux
+    # positifs -- pas en durcissant le garde par defaut.
     # Defaut 4 de #15489 (suite du meme claim de lane) : un slot peut etre libre
     # sur `main` et deja tenu ailleurs. Deux trous mesures ont fonde ce garde --
     # deux notebooks neufs au MEME index dans une MEME revision (l'organe frere

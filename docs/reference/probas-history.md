@@ -42,7 +42,7 @@ L'objectif du portage (intent original, 2024) : **rendre la série accessible au
 | 3 | Factor Graphs | Message passing, inférence exacte | PyMC | **Absorbé** (`PyMC-03-Factor-Graphs.ipynb`) |
 | 4 | Bayesian Networks | DAG, conditional probability | pgmpy | **Absorbé** (`PyMC-04-Bayesian-Networks.ipynb`, `pgmpy` corespondance) |
 | 5 | Causal Inference | do-calculus, contrefactuels | PyMC + DoWhy | **Absorbé** (`PyMC-05-Causal-Inference.ipynb`) |
-| 6 | Debugging | Diagnostic des chaînes MCMC | PyMC | **Absorbé** (`PyMC-06-Debugging.ipynb`) |
+| 6 | Debugging | Diagnostic des chaînes MCMC | PyMC | **Absorbé** (`PyMC-02b-Debugging-Python.ipynb`, ex-06) |
 | 7 | Skills / IRT | Item Response Theory | PyMC | **Absorbé** (`PyMC-07-Skills-IRT.ipynb`) |
 | 8 | TrueSkill | Matchmaking, ratings | PyMC | **Absorbé** (`PyMC-08-TrueSkill.ipynb`) |
 | 9 | Classification | Modèles discriminatifs | PyMC | **Absorbé** (`PyMC-09-Classification.ipynb`) |
