@@ -439,6 +439,21 @@ docker-compose.test.yml
 *.backup_*
 .env.backup_*
 
+# Sauvegardes d'env suffixees (.env.bak, .env.bak-<horodatage>, .env.sauvegarde, ...).
+# Les motifs ci-dessus couvrent .backup/.backup_* mais PAS le suffixe .bak : un
+# `.env.bak-20260912T1404Z` portant un token en clair restait non-ignore, donc a un
+# `git add -A` pres d'etre commite. Regle : le secret vit dans un fichier gitignore
+# (.claude/rules/secrets-hygiene.md) — encore faut-il que le motif l'attrape.
+*.env.bak*
+.env.bak*
+**/.env.bak*
+*.env.sav*
+.env.sav*
+**/.env.sav*
+*.env.sauv*
+.env.sauv*
+**/.env.sauv*
+
 # JDK Portable - Exclure tout le répertoire au lieu de lister chaque fichier
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/jdk-17-portable/
 .vscode/
@@ -1102,9 +1117,20 @@ MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/cuda-detect-probe/
 
 # Claude Code machine-local state (registre arbitrations user - coordinator-discipline Regle 7, roo-extensions#3677)
 .claude/local/
-
 # SL-14 aifeynman run artifacts (results/, train/test splits, NN models -- regenerable, local only)
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/_sl14_runs/
 
+# PR #17422 — probes directory artifacts (papermill _out, _deps DLL mirror).
+# `_out` n'est pas couvert par `*_output.ipynb` au-dessus (suffixe distinct).
+# `_deps/` héberge la copie locale de QuikGraph.dll pour la mesure c.790 du
+# workaround relatif (#r "./_deps/QuikGraph.dll") — ne pas la committer.
+scripts/notebook_tools/probes/*_out.ipynb
+scripts/notebook_tools/probes/_deps/
+
 # Livecoding video pipeline (#15604) : artefacts capture/PoC -- media regenerable, local only
 out/
+# Claude Code session scratchpads (per-machine, per-cycle dashboard drafts, PR body drafts, notebook backups)
+/.claude/scratchpad/
+
+# Lane-local runtime artefacts (forge validation, image outputs, intermediate probes)
+/_runtime/

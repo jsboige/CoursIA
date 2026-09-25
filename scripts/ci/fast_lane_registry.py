@@ -138,7 +138,8 @@ NOTEBOOK_GLOBS = ["**/*.ipynb"]
 #   - pip-leak-guard      : bloquant, delta HEAD-vs-base
 #   - solution-leak-guard : ADVISORY, delta HEAD-vs-base (verifie qu'un
 #                           advisory ne peut pas rougir par accident)
-#   - prose-counts-guard  : advisory, diff-range direct
+#   - prose-counts-guard  : bloquant (#17636), diff-range direct, lignes
+#                           AJOUTEES seules (le stock #9377 ne rougit pas)
 #   - perimeter-review    : bloquant, appelle l'API GitHub (a besoin de
 #                           GH_TOKEN, pas seulement de l'arbre)
 #   - bare-cross-dir-load-gate : bloquant, EXECUTION PAR FICHIER (Pattern 1)
@@ -198,8 +199,10 @@ PILOT: list[Guard] = [
         source="prose-counts-guard.yml",
         paths=["**/*.ipynb", "**/*.md"],
         argv=["python", "scripts/notebook_tools/check_prose_quantitative_claims.py",
-              "--diff", "{base_ref}...HEAD"],
-        blocking=False,          # ADVISORY tant que #9377 n'est pas resorbe
+              "--diff", "{base_ref}...HEAD", "--strict"],
+        blocking=True,           # BLOQUANT #17636 : critere de sortie #9377 ;
+                                 # le stock ne rougit personne (lignes AJOUTEES
+                                 # seules), une PR qui rouvre la veine rougit
         needs_base=True,
     ),
     Guard(
@@ -342,8 +345,8 @@ PILOT: list[Guard] = [
             "scripts/notebook_tools/check_kernel_suffix_canon.py",
             "scripts/notebook_tools/kernel_suffix_canon.json",
             # Liste partagee des suffixes de noyau : l'en retirer un rend le
-            # garde muet sur cette famille, l'y ajouter rouvre les exclusions
-            # mesurees (`-Lean` marque le contenu, pas le moteur).
+            # garde muet sur cette famille. Depuis l'arbitrage 25/09
+            # (#17784/#16231) elle porte -lean et -lean-python comme noyaux.
             "scripts/notebook_tools/naming_canon.py",
         ],
         argv=["python", "scripts/notebook_tools/check_kernel_suffix_canon.py",
@@ -351,6 +354,11 @@ PILOT: list[Guard] = [
         blocking=True,
         needs_base=True,
     ),
+    # Cliquet #17784, phase ADVISORY : le meme organe liste en advisory les
+    # notebooks AJOUTES sans suffixe de noyau (grammaire #16231 : le suffixe
+    # est desormais cense etre toujours present). Le passage bloquant se fait
+    # en ajoutant --require-suffix a l'argv ci-dessus, APRES mesure des faux
+    # positifs -- pas en durcissant le garde par defaut.
     # Defaut 4 de #15489 (suite du meme claim de lane) : un slot peut etre libre
     # sur `main` et deja tenu ailleurs. Deux trous mesures ont fonde ce garde --
     # deux notebooks neufs au MEME index dans une MEME revision (l'organe frere
