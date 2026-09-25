@@ -33,6 +33,30 @@ export COURSIA_RUNNER_NAME_PREFIX="myia-po-2024-linux-docker"
 export COURSIA_RUNNER_STATE_DIR="/var/lib/coursia-runner"
 export COURSIA_RUNNER_TOOLCACHE_VOLUME="coursia-runner-toolcache"
 
+# BUDGET MEMOIRE AGREGE DE LA CI SUR CETTE MACHINE, en Go -- declare, pas subi.
+# supervise.sh le lit dans l'environnement ; faute de declaration il retombe sur
+# 12 en le SIGNALANT desormais a chaque demarrage. Le declarer ici est ce qui le
+# rend auditable : la valeur effective vit dans un fichier que l'operateur ouvre,
+# pas dans un defaut de shell que personne ne lit.
+#
+# 42 POUR po-2024 (arbitrage user 2026-09-21, mission ai-01
+# msg-20260921T203652-qxg3en) : la VM WSL est passee de 24 032 a 40 110 Mo
+# (.wslconfig memory=40GB). Le nombre est le PLAFOND D'ADMISSION, egal a la
+# somme des caps declares des trois jambes (8x1536 docker + 12x1536 waiters +
+# 2x6144 lean = 43 008 Mo) : sous l'ancien 12 Go, la garde refusait des slots
+# sains -- les 2 slots lean ne demarraient JAMAIS tant que les autres familles
+# etaient en vol. Les vrais murs restent les caps par conteneur (docker
+# --memory) et le plafond vmmem de la VM ; l'hote garde sa moitie au-dela de
+# la VM, comme `MemoryHigh` de coursia-ci.slice sur les machines qui deployent
+# la slice (po-2024 ne la deploie pas : ici le budget n'a pas de mur kernel
+# derriere lui).
+#
+# LES TROIS JAMBES DOIVENT ANNONCER LE MEME NOMBRE. `assert_memory_budget`
+# somme les conteneurs label `coursia-ci=1` de TOUTES les familles : deux jambes
+# qui divergeraient refuseraient leurs slots l'une contre l'autre, et le message
+# d'erreur ne nommerait pas la divergence -- il parlerait de memoire en vol.
+export COURSIA_RUNNER_BUDGET_GB=42
+
 # #15095 : echec immediat si le demon du socket epingle ne repond pas --
 # AVANT tout demarrage de slot et tout fetch de registration token (gh).
 # Sans cette garde, un daemon arrete + Restart=always = le superviseur

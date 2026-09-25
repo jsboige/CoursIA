@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-Texte
-pedagogical_count: 30
-breakdown: Texte=30
-maturity: BETA=28, ALPHA=1, DRAFT=1
+pedagogical_count: 34
+breakdown: Texte=34
+maturity: BETA=32, ALPHA=1, DRAFT=1
 -->
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Semantic Kernel](../SemanticKernel/README.md)
@@ -115,16 +115,11 @@ Le fil rouge est volontairement discriminant : enseigner au modèle un **format 
 |---|----------|-------------|-------|
 | 21 | `21_LoRA_FineTuning.ipynb` | **QLoRA** (NF4 4-bit + double quant, bf16) sur Qwen2.5-0.5B-Instruct : fil rouge = format balisé `[T]/[D]/[E]` que le base échoue à produire ; adaptateurs LoRA via `peft` + `bitsandbytes` + `trl` + `datasets`, GPU CUDA requis (pont PostTraining / #10247) | 75 min |
 | 22 | `22_Evaluating_Generated_Text.ipynb` | Évaluation des sorties générées : **BLEU** (précision n-gram avec clipping) et **ROUGE** (rappel) construits à la main et mesurés — deux métriques lexicales aveugles au sens — puis **juge LLM** avec protocole anti-biais (paire évaluée dans les deux ordres à T=0, ne tranche que si les deux passes coïncident), 3 exercices C.1 | — |
+| 22b | `22b_Profil_Cognitif_CHC.ipynb` | Approfondit le 22 : on évalue le **générateur** plutôt que sa sortie. **Profil cognitif CHC** (Hendrycks et al., 2025) mesuré par une mini-batterie à correction mécanique sur 8 domaines (mémoire de travail générée, stockage long terme, hallucinations, fluence, vitesse...) sur 4 modèles réels (Qwen3.5-0.8B local + 3 API), avec IC bootstrap ; profil « jagged » vs score agrégé ; **contortions de capacité** mesurées (carnet de mémoire réinjecté, RAG) ; types d'IA stratégiques et cube **A×G×I** du *Singapore Consensus* 2026, 3 exercices C.1 | — |
 
 ### Tier 7 : Analyse linguistique (TAL)
 
-Les tiers précédents traitent le langage **côté modèle** (prompts, RAG, fine-tuning). Ce tier exécute la seconde tradition — le **traitement automatique du langage classique** — sur un corpus français fil rouge à deux domaines (fables de La Fontaine, registre RGPD) : tokenisation en mots, lemmatisation, morphosyntaxe, dépendances syntaxiques, entités nommées, puis **comparaison frontale avec la tokenisation BPE** du notebook [`RAG-et-Memoire-Semantique/04`](../RAG-et-Memoire-Semantique/04-Tokenisation-From-Scratch.ipynb) sur le même corpus. Analyse d'erreurs mesurée contre des jeux d'or annotés à la main (lemmes 8/8, NER 2/5), cas d'usage borné : recherche lemmatisée.
-
-| # | Notebook | Description | Durée |
-|---|----------|-------------|-------|
-| 23 | `23_TAL_Du_Mot_Aux_Dependances.ipynb` | Pipeline **spaCy** `fr_core_news_sm` (CPU) : lemmes/POS/morphologie, arcs de dépendance + tripleaux SVO (displacy), NER avec rendu surligné, comparaison mots/lemmes/BPE (60 fusions) sur le corpus exact du NB-04, analyse d'erreurs contre gold (lemmes 8/8, NER 2/5 : dates manquées, ORG/PER instables), recherche lemmatisée vs surface | 60 min |
-| 25 | `25_CRF_Etiquetage_Sequentiel.ipynb` | **CRF linéaire from scratch** sur corpus NER français BIO : émissions, transitions, log-partition forward/backward, NLL et Viterbi ; gradient vérifié numériquement, baseline token-wise, témoin `sklearn-crfsuite`, métriques token/entité, ablation et analyse d'erreurs | 75 min |
-| 26 | `26_PCFG_CYK_Parsing.ipynb` | **Parsing PCFG/CYK from scratch** (CPU) : CFG française explicite convertie en CNF bornée avec préservation des probabilités, recognizer CYK en table triangulaire visualisée, probabilités MLE sur mini-treebank embarqué (biais d'attachement mesuré), Viterbi + backpointers avec reconstruction de l'arbre, ambiguïté mesurée (2 dérivations, 89,7 %/10,3 %, meilleure derivation vs probabilité totale inside distinguées), témoin **NLTK** en concordance exacte, cas positifs/négatifs/ambigu, 3 exercices C.1 | 55 min |
+Les notebooks TAL classiques (23–26 : pipeline spaCy, n-grammes, CRF, PCFG/CYK) ont migré vers leur série dédiée : [`MyIA.AI.Notebooks/NLP/`](../../NLP/README.md) (EPIC [#16271](https://github.com/jsboige/CoursIA/issues/16271)). Cette série-ci reste centrée sur l'ingénierie des LLM — prompts, RAG, fine-tuning, scaling — et renvoie à la série NLP pour la tradition symbolique/probabiliste du traitement des langues.
 
 ## Prérequis
 

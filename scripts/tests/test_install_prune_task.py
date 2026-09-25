@@ -121,6 +121,14 @@ class TestTaskConstruction:
         i = line.index("/ST")
         assert line[i + 1] == "03:17"
 
+    def test_tr_quote_chaque_element_pas_la_ligne_entiere(self):
+        # Regression : /TR "python.exe script.py --run" enregistrait la ligne
+        # ENTIERE comme nom d'executable -> 0x80070002 a chaque tour.
+        cmd = [r"C:\Program Files\Py\python.exe", r"D:\repo\x.py", "--run"]
+        tr = ipt.build_schtasks_install(cmd, "03:17")[-1]
+        assert tr == r'"C:\Program Files\Py\python.exe" D:\repo\x.py --run'
+        assert tr != '"' + " ".join(cmd) + '"'
+
     def test_nom_de_tache_namespaced(self):
         assert "CoursIA" in ipt.TASK_NAME
 

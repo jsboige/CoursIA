@@ -1,5 +1,9 @@
 # INDEX — Archives docs/
 
+> **⚠️ ARCHIVE — contenu figé, liens non maintenus.**
+>
+> Les documents listed ici sont **figés à dessein** depuis leur date d'archivage. Les liens internes cassés (~580 attendus, mesurés 2026-08) sont **assumés** et non réparés : corriger un lien d'archive modifierait le snapshot historique que ces documents capturent. Pour le contenu **actif**, voir [`docs/README.md`](../README.md).
+
 **Archive le** : 2026-06 (docs-reorg S3, See #2456).
 **Theme** : Documents archives du repertoire `docs/` — investigations closes, audits datats, references historiques.
 
