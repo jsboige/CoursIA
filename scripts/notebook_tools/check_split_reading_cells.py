@@ -52,6 +52,24 @@ la regle. La difference des en-tetes vides vient de la campagne #17021
 passait sous l'organe consecutive d'origine -- le veto user dit pourtant la
 meme regle.
 
+Carve-out #17777 (decision ai-01 2026-09-25, « option a ») : deux formes
+canoniques du depot n'ont jamais ete des lectures, et le mode diff les
+signalait :
+
+  - l'**enonce d'exercice** ``## Exercice N`` place a cote de son stub
+    (enonce visible, stub separe, compte par ``count_exercises``) -- il tombait
+    dans ``READING_BEFORE_CODE`` quand il precede son stub, dans
+    ``EXERCISE_READING`` quand il suit le stub precedent. Replier ces enonces
+    en commentaires ``#`` degraderait la lecture pour satisfaire l'organe :
+    c'est l'option ecartee. Le carve-out ne s'applique PAS a une interpretation
+    deguisee sous un titre d'exercice (en-tete d'interpretation dissimule, ou
+    citation d'une sortie) -- elle reste signalee ;
+  - l'**en-tete de section** (``## 2. Tests statistiques``, ``## Conclusion``,
+    meme suivi de plusieurs paragraphes) n'est pas une « lecture deja
+    presente » : la premiere lecture posee derriere un code qui n'en avait pas
+    est le geste prescrit, pas un doublonnage. Le discriminant est le titre,
+    pas la longueur du corps. ``is_reading_or_prose`` le porte.
+
 Mode CLIQUET (#17044) : ``--base-ref <ref> [--head HEAD]`` compare chaque carnet
 modifie entre la base et la tete et rend le verdict du cliquet -- rouge
 seulement si la PR **augmente** ce que l'organe voit sur un carnet qu'elle
@@ -111,6 +129,31 @@ NAMED_FIRST_RE = re.compile(r"^lecture\b", re.IGNORECASE)
 
 # Heuristique cellule d'exercice : un stub TODO sans sortie ni execution_count.
 EXERCISE_TOKENS = ("TODO", "A completer", "à compléter", "Exercice")
+
+# Carve-out #17777 (decision ai-01 2026-09-25) : l'enonce d'exercice
+# (`## Exercice N`) place a cote de son stub est la **forme canonique du
+# depot** -- enonce visible, stub separe, compte par `count_exercises`.
+# L'organe ne doit donc pas le compter comme une lecture : sans ce carve-out
+# il tombe dans READING_BEFORE_CODE (l'enonce precede son propre stub) ou dans
+# EXERCISE_READING (il suit le stub precedent quand les paires enonce|stub
+# s'enchainent). Replier les enonces en commentaires `#` degraderait la
+# lecture pour satisfaire l'organe -- l'option ecartee par la decision.
+#
+# Deux garde-fous distinguent l'enonce d'une **interpretation deguisee sous un
+# titre d'exercice** : un en-tete d'interpretation dissimule dans le corps, et
+# la citation d'une sortie -- le vocabulaire de l'interpretation, pas celui de
+# l'enonce.
+EXERCISE_STATEMENT_TITLE_RE = re.compile(r"^#{1,6}\s*exercice\b", re.IGNORECASE)
+HIDDEN_INTERPRETATION_HEADING_RE = re.compile(
+    r"^#{1,6}\s*(lecture|interpre|interpret|analyse)", re.IGNORECASE
+)
+OUTPUT_CITATION_RE = re.compile(
+    r"\b(?:l[ae]s?|une?|cette?)\s+(?:sorties?|outputs?|prints?|affichages?)\b"
+    r"|\bl\s*['’]\s*(?:sortie|output|affichage)\b"
+    r"|\bcomme\s+le\s+montre\s+(?:la|le|l['’])"
+    r"|\b(?:on\s+observe|on\s+voit|on\s+lit)\b",
+    re.IGNORECASE,
+)
 
 
 def deaccent(s: str) -> str:
@@ -248,6 +291,75 @@ def is_exercise_cell(cell: dict) -> bool:
         or "exercice a terminer" in out_text_deac
         or "a completer" in out_text_deac
     )
+
+
+def is_reading_or_prose(cell: dict) -> bool:
+    """Vrai si la cellule md **commente une sortie** : une lecture titree
+    (Lecture / Interpretation / Analyse) ou un paragraphe non titre.
+
+    Le complement est ce que la decision #17777 nomme « un en-tete de
+    section » : une cellule dont le titre est un titre d'organisation
+    (``## 2. Tests statistiques``, ``## Conclusion``, ``## References``) --
+    elle structure le parcours, elle ne commente rien. Le discriminant est le
+    **titre**, pas la longueur du corps : ``## 3. Bootstrap et IC95`` suivi de
+    trois paragraphes reste un titre de section.
+
+    Le mode diff s'en sert pour savoir si un code avait **deja** une lecture
+    derriere lui : sinon, l'ajout d'une lecture est le geste PRESCRIT par le
+    mandat, pas un doublonnage.
+    """
+    if cell.get("cell_type") != "markdown":
+        return False
+    if is_reading_cell(cell):
+        return True
+    src = cell_source(cell).strip()
+    if not src:
+        return False
+    return not src.split("\n", 1)[0].lstrip().startswith("#")
+
+
+def is_exercise_statement(cell: dict, cells: list[dict], idx: int) -> bool:
+    """Vrai si ``cells[idx]`` est un **enonce d'exercice** au sens de la forme
+    canonique du depot : un titre `## Exercice N` adjacent a son stub.
+
+    Quatre conditions, toutes necessaires (#17777, decision ai-01
+    2026-09-25 « option a, le carve-out d'organe ») :
+
+      1. la premiere ligne non vide est un en-tete `Exercice ...` ;
+      2. la cellule precedente **ou** suivante est un stub d'exercice
+         (``is_exercise_cell``) -- l'enonce vit a cote de son stub ;
+      3. aucun en-tete d'interpretation n'est dissimule dans le corps
+         (un `### Lecture :` sous le titre d'exercice) ;
+      4. le corps ne cite pas de sortie (``OUTPUT_CITATION_RE``) : citer une
+         sortie est le geste de l'interpretation, pas celui de l'enonce.
+
+    Les conditions 3 et 4 sont les garde-fous du controle negatif de la
+    decision : « une interpretation deguisee sous un titre d'exercice » reste
+    signalee.
+    """
+    if cell.get("cell_type") != "markdown":
+        return False
+    lines = cell_source(cell).splitlines()
+    k = next((i for i, line in enumerate(lines) if line.strip()), None)
+    if k is None:
+        return False
+    if not EXERCISE_STATEMENT_TITLE_RE.match(lines[k].strip()):
+        return False
+    prev_cell = cells[idx - 1] if idx > 0 else None
+    next_cell = cells[idx + 1] if idx + 1 < len(cells) else None
+    if not any(
+        c is not None and is_exercise_cell(c) for c in (prev_cell, next_cell)
+    ):
+        return False
+    body = lines[k + 1:]
+    has_hidden_heading = any(
+        HIDDEN_INTERPRETATION_HEADING_RE.match(line.strip())
+        for line in body if line.strip()
+    )
+    cites_output = bool(
+        OUTPUT_CITATION_RE.search(deaccent("\n".join(body)).lower())
+    )
+    return not (has_hidden_heading or cites_output)
 
 
 def overlap_metrics(nb: dict, i: int, j: int) -> dict:
@@ -468,6 +580,16 @@ def detect_added_readings(head_nb: dict, base_nb: dict | None) -> list[dict]:
             base_counter[src] += 1
             continue
 
+        # Carve-out #17777 (decision ai-01 2026-09-25) : un enonce d'exercice
+        # adjacent a son stub n'est pas une lecture. Sans ce filtre il tombe
+        # dans READING_BEFORE_CODE (l'enonce precede son propre stub) ou dans
+        # EXERCISE_READING (il suit le stub precedent quand les paires
+        # enonce|stub s'enchainent) -- mesure sur #17777 : 11 findings sur 3
+        # carnets, tous des enonces.
+        if is_exercise_statement(cell, head_cells, idx):
+            base_counter[src] += 1
+            continue
+
         prev_role, next_role = _classify_context(head_cells, idx)
         bucket = _bucket_for(prev_role, next_role)
         # Discriminant SECOND_READING : si prev_role == "code_with_output",
@@ -484,9 +606,18 @@ def detect_added_readings(head_nb: dict, base_nb: dict | None) -> list[dict]:
             if prev_cell is not None:
                 prev_src = cell_source(prev_cell)
                 prev_positions = base_code_positions.get(prev_src, [])
+                # #17777 -- un en-tete de section n'est pas une « lecture deja
+                # presente » : un code suivi d'un titre d'organisation
+                # (`## 2. Tests statistiques`, `## Conclusion`) n'a pas encore
+                # de lecture, et la PR qui en ajoute une fait le geste PRESCRIT
+                # par le mandat, pas un doublonnage. Mesure fondatrice :
+                # 2 findings sur Oversight-Scaling-Laws-Statistics (cellules 7
+                # et 13), tous deux des premieres lectures posees sous un titre
+                # de section -- la seconde avec trois paragraphes de corps, ce
+                # qui ruine tout discriminant par la longueur.
                 already_had_md_after = any(
                     (i + 1 < len(base_cells)
-                     and base_cells[i + 1].get("cell_type") == "markdown")
+                     and is_reading_or_prose(base_cells[i + 1]))
                     for i in prev_positions
                 )
                 if not already_had_md_after:
