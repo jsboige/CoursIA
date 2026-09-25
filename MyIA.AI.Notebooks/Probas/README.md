@@ -388,7 +388,7 @@ Port Python des modèles Infer.NET, utilisant l'échantillonnage MCMC (NUTS) au 
 
 ## Pont causal — les quatre séries causales réunies
 
-La causalité est traitée à **quatre endroits** du dépôt, chacun avec son moteur et son angle propre. Le pont causal [`DecisionTheory/Causal-Bridges/`](DecisionTheory/Causal-Bridges/README.md) — **8 notebooks Python** — fournit l'**armature formelle commune** : l'échelle de Pearl (observation / intervention / contrefactuel), les trois règles du do-calculus et les méthodes quasi-expérimentales, exécutées sur l'outil de référence [`dowhy`](https://www.pywhy.org/dowhy/) (installé et lancé réellement, pas de réimplémentation jouet) avant de renvoyer à chaque série pour l'instanciation par son moteur :
+La causalité est traitée à **quatre endroits** du dépôt, chacun avec son moteur et son angle propre. Le pont causal [`DecisionTheory/Causal-Bridges/`](DecisionTheory/Causal-Bridges/README.md) — **notebooks Python** — fournit l'**armature formelle commune** : l'échelle de Pearl (observation / intervention / contrefactuel), les trois règles du do-calculus et les méthodes quasi-expérimentales, exécutées sur l'outil de référence [`dowhy`](https://www.pywhy.org/dowhy/) (installé et lancé réellement, pas de réimplémentation jouet) avant de renvoyer à chaque série pour l'instanciation par son moteur :
 
 | Notebook | Durée | Ce qu'il couvre |
 |----------|-------|-----------------|
