@@ -45,7 +45,7 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-03-Data-Management | NON EXÉCUTÉ | |
 | QC-Py-04-Research-Workflow | NON EXÉCUTÉ | |
 | QC-Py-05-Universe-Selection | NON EXÉCUTÉ | |
-| QC-Py-05b-FScore-Piotroski | EXÉCUTÉ | CPU local (yfinance/numpy/scipy), 9/9 cellules code, données réelles 14 titres |
+| QC-Py-05b-FScore-Piotroski | EXÉCUTÉ | CPU local (yfinance/numpy/scipy), cellules code exécutées, données réelles 14 titres |
 | QC-Py-06-Options-Trading | NON EXÉCUTÉ | |
 | QC-Py-06b-Derivatives-Valuation-From-Scratch | EXÉCUTÉ | CPU local (numpy/scipy), 13/13 cellules code, 3 figures |
 | QC-Py-07-Futures-Forex | NON EXÉCUTÉ | |
