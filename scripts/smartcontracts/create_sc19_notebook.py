@@ -1,4 +1,4 @@
-"""Generate SC-19-Ripple-XRP.ipynb - Temporary script, delete after use."""
+"""Generate SC-19-Ripple-XRP-Python.ipynb - Temporary script, delete after use."""
 import json
 import os
 
@@ -29,9 +29,9 @@ cells = []
 
 # === HEADER ===
 cells.append(md(
-"# SC-19-Ripple-XRP - Protocole Ripple et XRP Ledger\n"
+"# SC-19-Ripple-XRP-Python - Protocole Ripple et XRP Ledger\n"
 "\n"
-"**Navigation** : [Index](../README.md) | [<< Vyper](SC-18-Vyper.ipynb) | [Bitcoin >>](SC-20-Bitcoin-Scripting.ipynb)\n"
+"**Navigation** : [Index](../README.md) | [<< Vyper](SC-18-Vyper-Python.ipynb) | [Bitcoin >>](SC-20-Bitcoin-Scripting-Python.ipynb)\n"
 "\n"
 "---\n"
 "\n"
@@ -801,7 +801,7 @@ cells.append(md(
 "\n"
 "---\n"
 "\n"
-"**Notebook suivant** : [SC-20-Bitcoin-Scripting](SC-20-Bitcoin-Scripting.ipynb) - Le langage Script de Bitcoin", "summary"))
+"**Notebook suivant** : [SC-20-Bitcoin-Scripting-Python](SC-20-Bitcoin-Scripting-Python.ipynb) - Le langage Script de Bitcoin", "summary"))
 
 
 # === BUILD NOTEBOOK ===
@@ -833,7 +833,7 @@ output_dir = os.path.join(
 )
 os.makedirs(output_dir, exist_ok=True)
 
-output_path = os.path.join(output_dir, "SC-19-Ripple-XRP.ipynb")
+output_path = os.path.join(output_dir, "SC-19-Ripple-XRP-Python.ipynb")
 with open(output_path, 'w', encoding='utf-8', newline='\n') as f:
     json.dump(notebook, f, ensure_ascii=False, indent=1)
     f.write('\n')

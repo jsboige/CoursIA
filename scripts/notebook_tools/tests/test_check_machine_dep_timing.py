@@ -853,7 +853,7 @@ def test_silence_protocol_constant_settle_delay_residu2() -> None:
     """Residu 2 #10169 : constante de protocole = domain_quantity, pas wallclock.
 
     Un ``settle_delay`` de canal de paiement (consensus) ne derive pas d'une
-    machine a l'autre -- c'est un parametre du domaine. Cas reel SC-19-Ripple-XRP
+    machine a l'autre -- c'est un parametre du domaine. Cas reel SC-19-Ripple-XRP-Python
     cell[30] : « Le ``settle_delay`` est crucial... attendre 3600 secondes ».
     """
     nb = _make_nb([
@@ -879,7 +879,7 @@ def test_silence_protocol_constant_settle_delay_residu2() -> None:
 def test_silence_protocol_block_time_residu2() -> None:
     """Residu 2 #10169 : temps de bloc Ethereum = constante de protocole.
 
-    Cas reel SC-23-Cross-Chain : « 12 blocs Ethereum ... ». Le temps de bloc
+    Cas reel SC-23-Cross-Chain-Python : « 12 blocs Ethereum ... ». Le temps de bloc
     est un parametre de consensus, pas une duree machine.
     """
     nb = _make_nb([

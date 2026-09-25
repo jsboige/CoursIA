@@ -1,6 +1,6 @@
 # 00-Foundations - Origines Cypherpunk et Environnement
 
-**Navigation** : [Sommaire de la série](../README.md) | [SC-3 Solidity Basics >>](../01-Solidity-Foundation/SC-3-Solidity-Basics.ipynb)
+**Navigation** : [Sommaire de la série](../README.md) | [SC-3 Solidity Basics >>](../01-Solidity-Foundation/SC-03-Solidity-Basics-Python.ipynb)
 
 La sous-série d'ouverture des SmartContracts (SC-0 a SC-2b) pose les deux socles sur lesquels toute la série reposera : le **pourquoi** (les primitives cryptographiques qui font qu'une blockchain tient) et le **comment** (l'environnement de développement). On commence par remonter aux origines cypherpunk -- hachage, arbres de Merkle, preuve de travail, signatures, tables de hachage distribuées -- pour comprendre *pourquoi* une chaîne est immuable et résistante à la falsification. On installe ensuite **Foundry** (`forge`, `cast`, `anvil`), la trousse à outils de référence, puis on connecte **web3.py** + **py-solc-x** a `anvil` pour compiler, déployer et appeler un premier contrat Solidity entièrement depuis Python. Le compagnon **SC-2b** retourne ensuite le point de vue : au lieu d'un compte unique qui joue tous les rôles, trois acteurs à clé délibèrent par contrat -- et l'on voit une institution produire un résultat litigieux sans violer aucune règle.
 
@@ -12,10 +12,10 @@ A l'issue de cette phase (~2h50), l'environnement est opérationnel et le patter
 
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
-| 0 | [SC-0-Cypherpunk-Origins](SC-0-Cypherpunk-Origins.ipynb) | ~60 min | Mouvement cypherpunk, primitives cryptographiques (hash, signatures, PoW), mini-blockchain Python, arbre de Merkle, DHT/Kademlia |
-| 1 | [SC-1-Setup-Foundry](SC-1-Setup-Foundry.ipynb) | ~30 min | Installation Foundry (forge/cast/anvil), vérification Solidity, premier projet, compilation + test d'un contrat simple |
-| 2 | [SC-2-Setup-Web3py](SC-2-Setup-Web3py.ipynb) | ~40 min | web3.py + py-solc-x, connexion a anvil, compiler/déployer/appeler un contrat depuis Python, pattern réutilisable |
-| 2b | [SC-2b-Bac-ASable-Institutionnel](SC-2b-Bac-ASable-Institutionnel.ipynb) | ~40 min | Bac a sable institutionnel : acteurs a cles BIP44, contrat Deliberation (quorum, anti-double-vote, cloture en blocs), journal d'evenements pandas, rejouabilite par mnemonic, echec institutionnel licite |
+| 0 | [SC-00-Cypherpunk-Origins-Python](SC-00-Cypherpunk-Origins-Python.ipynb) | ~60 min | Mouvement cypherpunk, primitives cryptographiques (hash, signatures, PoW), mini-blockchain Python, arbre de Merkle, DHT/Kademlia |
+| 1 | [SC-01-Setup-Foundry-Python](SC-01-Setup-Foundry-Python.ipynb) | ~30 min | Installation Foundry (forge/cast/anvil), vérification Solidity, premier projet, compilation + test d'un contrat simple |
+| 2 | [SC-02-Setup-Web3py-Python](SC-02-Setup-Web3py-Python.ipynb) | ~40 min | web3.py + py-solc-x, connexion a anvil, compiler/déployer/appeler un contrat depuis Python, pattern réutilisable |
+| 2b | [SC-02b-Bac-ASable-Institutionnel-Python](SC-02b-Bac-ASable-Institutionnel-Python.ipynb) | ~40 min | Bac a sable institutionnel : acteurs a cles BIP44, contrat Deliberation (quorum, anti-double-vote, cloture en blocs), journal d'evenements pandas, rejouabilite par mnemonic, echec institutionnel licite |
 
 ---
 
@@ -70,7 +70,7 @@ Cette sous-série d'ouverture vous a posé les **deux socles** sur lesquels tout
 ### Prochaines étapes
 
 - **Solidity par la pratique** : la suite immédiate est [01-Solidity-Foundation](../01-Solidity-Foundation/README.md) (SC-3 Solidity Basics et au-delà), qui exploite l'environnement désormais opérationnel pour écrire de vrais contrats — variables, fonctions, modifiers, événements, héritage.
-- **Approfondir les primitives** : [SC-0-Cypherpunk-Origins](SC-0-Cypherpunk-Origins.ipynb) mérite d'être repris après avoir écrit des contrats en Solidity — la théorie du hachage et de Merkle prend tout son sens quand on manipule `keccak256` et le stockage d'un contrat.
+- **Approfondir les primitives** : [SC-00-Cypherpunk-Origins-Python](SC-00-Cypherpunk-Origins-Python.ipynb) mérite d'être repris après avoir écrit des contrats en Solidity — la théorie du hachage et de Merkle prend tout son sens quand on manipule `keccak256` et le stockage d'un contrat.
 - **La série dans son ensemble** : le [sommaire SmartContracts](../README.md) cartographie les sept sous-séries (Foundations, Solidity Fondements, Solidity Avancé, Foundry-Testing, Privacy/Cryptography, Alternative-Chains, Real-World) — cette sous-série n'est que le seuil.
 
 ### Le fil rouge
@@ -81,4 +81,4 @@ L'ouverture propose un changement de regard sur les smart contracts : ne plus le
 
 ## Navigation
 
-[<- Sommaire SmartContracts](../README.md) | [SC-3 Solidity Basics ->](../01-Solidity-Foundation/SC-3-Solidity-Basics.ipynb)
+[<- Sommaire SmartContracts](../README.md) | [SC-3 Solidity Basics ->](../01-Solidity-Foundation/SC-03-Solidity-Basics-Python.ipynb)

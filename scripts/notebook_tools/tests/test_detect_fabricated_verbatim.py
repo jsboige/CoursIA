@@ -38,7 +38,7 @@ l'enonce de #14324) :
        en elidant la ligne qui porte reellement le decompte
        (« JVM demarree avec 42 JARs »).
 
-  PR #14128 (SC-7c-ERC20-Lean-Native-Companion.ipynb, SHA 5e5c5f1dc)
+  PR #14128 (SC-07c-ERC20-Lean.ipynb, SHA 5e5c5f1dc)
     -- 5 signatures Lean « verbatim » sur 11 cellules qui omettent toutes
        le `{n : ℕ}` de debut. La sortie REELLE du `#check` rend
          `{n : ℕ} (f : ERC20.Address n -> Nat) ...`

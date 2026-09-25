@@ -261,37 +261,37 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | [SC-0-Cypherpunk-Origins - Les origines Cypherpunk de la…](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/00-Foundations/SC-0-Cypherpunk-Origins.ipynb) | BETA | Oui |
-| 2 | [SC-1-Setup-Foundry - Environnement Smart Contracts](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/00-Foundations/SC-1-Setup-Foundry.ipynb) | BETA | Oui |
-| 3 | [SC-2-Setup-Web3py - Python et la Blockchain](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/00-Foundations/SC-2-Setup-Web3py.ipynb) | BETA | Oui |
-| 4 | [SC-2b - Bac a sable institutionnel : des acteurs, pas…](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/00-Foundations/SC-2b-Bac-ASable-Institutionnel.ipynb) | BETA | Non |
-| 5 | [SC-3-Solidity-Basics - Fondements de Solidity](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/SC-3-Solidity-Basics.ipynb) | BETA | Oui |
-| 6 | [SC-4-Functions-State - Fonctions et État](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/SC-4-Functions-State.ipynb) | BETA | Oui |
-| 7 | [SC-5-Inheritance - Heritage et Interfaces](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/SC-5-Inheritance.ipynb) | BETA | Oui |
-| 8 | [SC-6-Errors-Events - Erreurs et Événements](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/SC-6-Errors-Events.ipynb) | BETA | Oui |
-| 9 | [SC-10-Account-Abstraction - ERC-4337 v0.9](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-10-Account-Abstraction.ipynb) | BETA | Oui |
-| 10 | [SC-11-LLM-Assisted - Développement Smart Contracts…](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-11-LLM-Assisted.ipynb) | BETA | Non |
-| 11 | [SC-7-Token-Standards - Standards de Tokens](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-7-Token-Standards.ipynb) | BETA | Oui |
+| 1 | [SC-00-Cypherpunk-Origins-Python - Les origines Cypherpunk de la…](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/00-Foundations/SC-00-Cypherpunk-Origins-Python.ipynb) | BETA | Oui |
+| 2 | [SC-01-Setup-Foundry-Python - Environnement Smart Contracts](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/00-Foundations/SC-01-Setup-Foundry-Python.ipynb) | BETA | Oui |
+| 3 | [SC-02-Setup-Web3py-Python - Python et la Blockchain](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/00-Foundations/SC-02-Setup-Web3py-Python.ipynb) | BETA | Oui |
+| 4 | [SC-2b - Bac a sable institutionnel : des acteurs, pas…](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/00-Foundations/SC-02b-Bac-ASable-Institutionnel-Python.ipynb) | BETA | Non |
+| 5 | [SC-03-Solidity-Basics-Python - Fondements de Solidity](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/SC-03-Solidity-Basics-Python.ipynb) | BETA | Oui |
+| 6 | [SC-04-Functions-State-Python - Fonctions et État](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/SC-04-Functions-State-Python.ipynb) | BETA | Oui |
+| 7 | [SC-05-Inheritance-Python - Heritage et Interfaces](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/SC-05-Inheritance-Python.ipynb) | BETA | Oui |
+| 8 | [SC-06-Errors-Events-Python - Erreurs et Événements](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/SC-06-Errors-Events-Python.ipynb) | BETA | Oui |
+| 9 | [SC-10-Account-Abstraction-Python - ERC-4337 v0.9](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-10-Account-Abstraction-Python.ipynb) | BETA | Oui |
+| 10 | [SC-11-LLM-Assisted-Python - Développement Smart Contracts…](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-11-LLM-Assisted-Python.ipynb) | BETA | Non |
+| 11 | [SC-07-Token-Standards-Python - Standards de Tokens](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-07-Token-Standards-Python.ipynb) | BETA | Oui |
 | 12 | [SC-7b : ERC-20 + Lean — vérification formelle de…](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-7b-ERC20-Lean-Verification-Companion.ipynb) | BETA | Non |
-| 13 | [SC-7c : ERC-20 — compagnon natif Lean (kernel…](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-7c-ERC20-Lean-Native-Companion.ipynb) | ALPHA | Non |
-| 14 | [SC-8-DeFi-Primitives - Primitives DeFi](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-8-DeFi-Primitives.ipynb) | BETA | Oui |
-| 15 | [SC-9-DAO-Governance - Gouvernance DAO](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-9-DAO-Governance.ipynb) | BETA | Oui |
-| 16 | [SC-12-Foundry-Testing - Tests avec Foundry](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/03-Foundry-Testing/SC-12-Foundry-Testing.ipynb) | BETA | Non |
-| 17 | [SC-13-Fuzz-Invariants - Fuzz Testing](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/03-Foundry-Testing/SC-13-Fuzz-Invariants.ipynb) | BETA | Oui |
-| 18 | [SC-14-Formal-Vérification - Vérification Formelle](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/03-Foundry-Testing/SC-14-Formal-Verification.ipynb) | BETA | Non |
-| 19 | [SC-15-Zero-Knowledge-Proofs - Preuves a Divulgation…](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-15-Zero-Knowledge-Proofs.ipynb) | BETA | Oui |
-| 20 | [SC-16-Homomorphic-Encryption - Chiffrement…](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-16-Homomorphic-Encryption.ipynb) | BETA | Oui |
-| 21 | [SC-17-E2E-Verifiable-Voting - Vote Electronique…](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-17-E2E-Verifiable-Voting.ipynb) | BETA | Oui |
-| 22 | [SC-18-Vyper - Smart Contracts en Python-like](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/05-Alternative-Chains/SC-18-Vyper.ipynb) | BETA | Oui |
-| 23 | [SC-19-Ripple-XRP - Protocole Ripple et XRP Ledger](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/05-Alternative-Chains/SC-19-Ripple-XRP.ipynb) | BETA | Oui |
-| 24 | [SC-20-Bitcoin-Scripting - Bitcoin, UTXO et Scripts](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/05-Alternative-Chains/SC-20-Bitcoin-Scripting.ipynb) | BETA | Non |
-| 25 | [SC-21-Move-Sui - Move sur Sui](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/05-Alternative-Chains/SC-21-Move-Sui.ipynb) | BETA | Oui |
-| 26 | [SC-22-Solana-Anchor - Solana avec Anchor](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/05-Alternative-Chains/SC-22-Solana-Anchor.ipynb) | BETA | Oui |
-| 27 | [SC-23-Cross-Chain - Interoperabilite Cross-Chain](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/06-Real-World/SC-23-Cross-Chain.ipynb) | BETA | Oui |
-| 28 | [SC-24 : Deploiement sur Testnets](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/06-Real-World/SC-24-Testnet-Deploy.ipynb) | BETA | Oui |
-| 29 | [SC-25 : Deploiement Mainnet (L2)](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/06-Real-World/SC-25-Mainnet-Deploy.ipynb) | BETA | Oui |
-| 30 | [SC-26 : Projet Final - DApp Complete](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/06-Real-World/SC-26-Final-Project.ipynb) | BETA | Oui |
-| 31 | [SC-27 : Dette d'irréversibilité — la boucle de…](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/06-Real-World/SC-27-Dette-Irreversibilite.ipynb) | BETA | Oui |
+| 13 | [SC-7c : ERC-20 — compagnon natif Lean (kernel…](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-07c-ERC20-Lean.ipynb) | ALPHA | Non |
+| 14 | [SC-08-DeFi-Primitives-Python - Primitives DeFi](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-08-DeFi-Primitives-Python.ipynb) | BETA | Oui |
+| 15 | [SC-09-DAO-Governance-Python - Gouvernance DAO](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-09-DAO-Governance-Python.ipynb) | BETA | Oui |
+| 16 | [SC-12-Foundry-Testing-Python - Tests avec Foundry](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/03-Foundry-Testing/SC-12-Foundry-Testing-Python.ipynb) | BETA | Non |
+| 17 | [SC-13-Fuzz-Invariants-Python - Fuzz Testing](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/03-Foundry-Testing/SC-13-Fuzz-Invariants-Python.ipynb) | BETA | Oui |
+| 18 | [SC-14-Formal-Vérification - Vérification Formelle](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/03-Foundry-Testing/SC-14-Formal-Verification-Python.ipynb) | BETA | Non |
+| 19 | [SC-15-Zero-Knowledge-Proofs-Python - Preuves a Divulgation…](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-15-Zero-Knowledge-Proofs-Python.ipynb) | BETA | Oui |
+| 20 | [SC-16-Homomorphic-Encryption-Python - Chiffrement…](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-16-Homomorphic-Encryption-Python.ipynb) | BETA | Oui |
+| 21 | [SC-17-E2E-Verifiable-Voting-Python - Vote Electronique…](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-17-E2E-Verifiable-Voting-Python.ipynb) | BETA | Oui |
+| 22 | [SC-18-Vyper-Python - Smart Contracts en Python-like](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/05-Alternative-Chains/SC-18-Vyper-Python.ipynb) | BETA | Oui |
+| 23 | [SC-19-Ripple-XRP-Python - Protocole Ripple et XRP Ledger](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/05-Alternative-Chains/SC-19-Ripple-XRP-Python.ipynb) | BETA | Oui |
+| 24 | [SC-20-Bitcoin-Scripting-Python - Bitcoin, UTXO et Scripts](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/05-Alternative-Chains/SC-20-Bitcoin-Scripting-Python.ipynb) | BETA | Non |
+| 25 | [SC-21-Move-Sui-Python - Move sur Sui](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/05-Alternative-Chains/SC-21-Move-Sui-Python.ipynb) | BETA | Oui |
+| 26 | [SC-22-Solana-Anchor-Python - Solana avec Anchor](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/05-Alternative-Chains/SC-22-Solana-Anchor-Python.ipynb) | BETA | Oui |
+| 27 | [SC-23-Cross-Chain-Python - Interoperabilite Cross-Chain](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/06-Real-World/SC-23-Cross-Chain-Python.ipynb) | BETA | Oui |
+| 28 | [SC-24 : Deploiement sur Testnets](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/06-Real-World/SC-24-Testnet-Deploy-Python.ipynb) | BETA | Oui |
+| 29 | [SC-25 : Deploiement Mainnet (L2)](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/06-Real-World/SC-25-Mainnet-Deploy-Python.ipynb) | BETA | Oui |
+| 30 | [SC-26 : Projet Final - DApp Complete](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/06-Real-World/SC-26-Final-Project-Python.ipynb) | BETA | Oui |
+| 31 | [SC-27 : Dette d'irréversibilité — la boucle de…](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/06-Real-World/SC-27-Dette-Irreversibilite-Python.ipynb) | BETA | Oui |
 
 ## SymbolicAI/SymbolicLearning (26 notebooks)
 

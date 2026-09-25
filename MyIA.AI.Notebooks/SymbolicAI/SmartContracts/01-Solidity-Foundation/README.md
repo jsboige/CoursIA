@@ -1,6 +1,6 @@
 # 01-Solidity-Foundation - Fondements du langage Solidity
 
-**Navigation** : [Sommaire de la série](../README.md) | [<< SC-2 Setup Web3py](../00-Foundations/SC-2-Setup-Web3py.ipynb) | [SC-7 Token Standards >>](../02-Solidity-Advanced/SC-7-Token-Standards.ipynb)
+**Navigation** : [Sommaire de la série](../README.md) | [<< SC-2 Setup Web3py](../00-Foundations/SC-02-Setup-Web3py-Python.ipynb) | [SC-7 Token Standards >>](../02-Solidity-Advanced/SC-07-Token-Standards-Python.ipynb)
 
 Cette première sous-série de code Solidity (SC-3 a SC-6) pose les fondamentaux du langage : structure d'un contrat, types et variables, fonctions et état (data locations, visibilite, modifiers), héritage et interfaces, puis erreurs et events. Aucune ligne de Solidity serieuse ne peut être ecrite sans ces quatres notebooks. Chaque concept est illustre par un contrat compile et déployé réellement sur `anvil` (le noeud local de test fourni par Foundry) -- pas de simulation, les adresses et les receipts dans les outputs sont authentiques.
 
@@ -10,10 +10,10 @@ Cette première sous-série de code Solidity (SC-3 a SC-6) pose les fondamentaux
 
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
-| 3 | [SC-3-Solidity-Basics](SC-3-Solidity-Basics.ipynb) | 40 min | Structure de contrat, types valeur, variables d'état, conversions |
-| 4 | [SC-4-Functions-State](SC-4-Functions-State.ipynb) | 45 min | Data locations (storage/memory/calldata), visibilite, modifiers (view/pure/payable) |
-| 5 | [SC-5-Inheritance](SC-5-Inheritance.ipynb) | 35 min | Héritage simple et multiple, interfaces, abstract/override |
-| 6 | [SC-6-Errors-Events](SC-6-Errors-Events.ipynb) | 30 min | `require`/`revert`/`assert`, custom errors (0.8.4+), events |
+| 3 | [SC-03-Solidity-Basics-Python](SC-03-Solidity-Basics-Python.ipynb) | 40 min | Structure de contrat, types valeur, variables d'état, conversions |
+| 4 | [SC-04-Functions-State-Python](SC-04-Functions-State-Python.ipynb) | 45 min | Data locations (storage/memory/calldata), visibilite, modifiers (view/pure/payable) |
+| 5 | [SC-05-Inheritance-Python](SC-05-Inheritance-Python.ipynb) | 35 min | Héritage simple et multiple, interfaces, abstract/override |
+| 6 | [SC-06-Errors-Events-Python](SC-06-Errors-Events-Python.ipynb) | 30 min | `require`/`revert`/`assert`, custom errors (0.8.4+), events |
 
 **Total** : 4 notebooks, ~2h30.
 
@@ -45,7 +45,7 @@ Solidity supporte l'héritage multiple avec le mot-clé `is`, les interfaces pou
 
 | Notebook | Fondations requises | Dépendances |
 |----------|---------------------|-------------|
-| SC-3 Solidity-Basics | [SC-2 Setup Web3py](../00-Foundations/SC-2-Setup-Web3py.ipynb) | `web3`, `py-solc-x` |
+| SC-3 Solidity-Basics | [SC-2 Setup Web3py](../00-Foundations/SC-02-Setup-Web3py-Python.ipynb) | `web3`, `py-solc-x` |
 | SC-4 Functions-State | SC-3 complète | idem |
 | SC-5 Inheritance | SC-3 + SC-4 complètes | idem |
 | SC-6 Errors-Events | SC-3 + SC-4 + SC-5 complètes | idem |
@@ -96,12 +96,12 @@ Cette première sous-série de code Solidity vous a posé les **quatre piliers**
 - **L'héritage et l'abstraction** (SC-5) — l'héritage multiple via `is`, les interfaces, les contrats `abstract` et l'`override`. Cette étape prépare directement aux standards ERC de la sous-série suivante.
 - **Les erreurs et l'observabilité** (SC-6) — `require` (conditions d'entrée), `revert` (erreurs complexes), `assert` (invariants internes), les custom errors économes en gas depuis 0.8.4, et les events pour le logging hors-chaîne.
 
-Chaque concept est illustré par un contrat compilé et déployé **réellement** sur `anvil` — les adresses et receipts dans les outputs sont authentiques, et le pattern `compile -> deploy -> call` hérité de [SC-2](../00-Foundations/SC-2-Setup-Web3py.ipynb) est celui repris dans toute la suite.
+Chaque concept est illustré par un contrat compilé et déployé **réellement** sur `anvil` — les adresses et receipts dans les outputs sont authentiques, et le pattern `compile -> deploy -> call` hérité de [SC-2](../00-Foundations/SC-02-Setup-Web3py-Python.ipynb) est celui repris dans toute la suite.
 
 ### Prochaines étapes
 
 - **Standards et cas d'usage réels** : la suite immédiate est [02-Solidity-Advanced](../02-Solidity-Advanced/README.md) (SC-7 à SC-11), qui construit sur ces fondamentaux — ERC-20/721/1155, primitives DeFi, gouvernance DAO, account abstraction, assistance LLM.
-- **Revenir aux fondations** : si la théorie du gas et des data locations (SC-4) reste abstraite, reprenez [SC-0-Cypherpunk-Origins](../00-Foundations/SC-0-Cypherpunk-Origins.ipynb) — comprendre *pourquoi* une blockchain fait payer chaque opération éclaire le modèle économique de la EVM.
+- **Revenir aux fondations** : si la théorie du gas et des data locations (SC-4) reste abstraite, reprenez [SC-00-Cypherpunk-Origins-Python](../00-Foundations/SC-00-Cypherpunk-Origins-Python.ipynb) — comprendre *pourquoi* une blockchain fait payer chaque opération éclaire le modèle économique de la EVM.
 - **La série dans son ensemble** : le [sommaire SmartContracts](../README.md) cartographie les sept sous-séries — celle-ci n'est que le socle du langage.
 
 ### Le fil rouge

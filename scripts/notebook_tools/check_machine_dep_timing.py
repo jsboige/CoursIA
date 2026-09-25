@@ -373,7 +373,7 @@ def _is_detached_approximate(line: str, match_start: int) -> bool:
     Le ``MACHINE_RE`` accolé ``~2 min`` est deja gere (le ``~?`` optionnel
     inclus dans le match -> ``snippet.startswith('~')`` -> skip). Ce helper
     couvre la forme avec espace, ou le ``~`` (ou ``≈``) precede le chiffre
-    d'une espace -- cas reel SC-23-Cross-Chain : « 12 blocs Ethereum ~ 2 min »
+    d'une espace -- cas reel SC-23-Cross-Chain-Python : « 12 blocs Ethereum ~ 2 min »
     (residu 2 #10169). Conforme au mandat #9434 : ordre de grandeur, pas
     mesure precise -> on ne signale pas.
     """

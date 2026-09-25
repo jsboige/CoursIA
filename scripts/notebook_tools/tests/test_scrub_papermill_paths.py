@@ -72,10 +72,10 @@ def test_find_defects_flags_absolute_output_and_input(tmp_path):
 
 
 def test_scrub_replaces_absolute_with_basename_and_preserves_rest(tmp_path):
-    p = tmp_path / "SC-1-Setup-Foundry.ipynb"
+    p = tmp_path / "SC-01-Setup-Foundry-Python.ipynb"
     pm = {
         "output_path": "C:/Users/jsboi/AppData/Local/Temp/sc1_output.ipynb",
-        "input_path": "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/00-Foundations/SC-1-Setup-Foundry.ipynb",
+        "input_path": "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/00-Foundations/SC-01-Setup-Foundry-Python.ipynb",
         "duration": 2.305612,
         "version": "2.6.0",
         "exception": None,
@@ -89,7 +89,7 @@ def test_scrub_replaces_absolute_with_basename_and_preserves_rest(tmp_path):
 
     after = p.read_text(encoding="utf-8")
     nb = json.loads(after)
-    assert nb["metadata"]["papermill"]["output_path"] == "SC-1-Setup-Foundry.ipynb"
+    assert nb["metadata"]["papermill"]["output_path"] == "SC-01-Setup-Foundry-Python.ipynb"
     # input_path was already relative -> untouched
     assert nb["metadata"]["papermill"]["input_path"] == pm["input_path"]
     # duration preserved exactly (no float coercion)
@@ -98,7 +98,7 @@ def test_scrub_replaces_absolute_with_basename_and_preserves_rest(tmp_path):
     # Everything outside the output_path substring is byte-identical.
     assert before.replace(
         "C:/Users/jsboi/AppData/Local/Temp/sc1_output.ipynb",
-        "SC-1-Setup-Foundry.ipynb",
+        "SC-01-Setup-Foundry-Python.ipynb",
     ) == after
 
 
