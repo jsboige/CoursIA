@@ -762,7 +762,7 @@ Le setup est entièrement automatisé via `Tweety-01-Setup-Python.ipynb` :
 
 ## Audit Qualité (septembre 2026 — §E whole-file)
 
-### Couverture exercices (réconciliation disque ↔ marqueur ↔ prose, mise à jour 4 septembre 2026)
+### Couverture exercices (réconciliation disque ↔ marqueur ↔ prose, mise à jour 25 septembre 2026)
 
 | Série | Notebooks | Avec exercices | Sans exercices | Status |
 |-------|-----------|----------------|----------------|--------|
@@ -777,9 +777,7 @@ Le setup est entièrement automatisé via `Tweety-01-Setup-Python.ipynb` :
 | SMT/Z3-API (Python + 6 jumeaux C#) | 28 | 28 (100%, 22 Python + 6 C# jumeaux) | 0 | Excellent |
 | Geometry (ouverture 23/09, Epic #17544) | 2 | 2 (100%, Geometry-01/02 avec 3 exercices chacun) | 0 | Volée 01-02 livrée, 03-05 en préparation |
 
-**Total** : le compte courant des notebooks pédagogiques **fait foi dans le bloc `<!-- CATALOG-STATUS -->` ci-dessus** (régénéré quotidiennement par `.github/workflows/catalog-cron.yml`) ; en date du 4 septembre 2026 il s'établit à **262** (y compris `root=1` : OR-tools-Stiegler, et le probe IKVM compté dans Tweety=34), hors les 4 fichiers `_archive/` (Fast-Downward-Legacy, 2 précurseurs EML SymbolicLearning, `Tweety.ipynb` legacy). Les notebooks sans exercices sont uniquement : les setups (SC-1-Setup-Foundry), les notebooks de projet (SC-26-Final-Project), la référence historique RDF.Net-Legacy, les deux dérivés Lean sans cellules d'exercice (Lean-16i, Lean-20b), l'artefact `_agent` et le groupe-I2 d'Argument Analysis, et le probe IKVM (non pédagogique).
-
-> **Note (25/09, audit fichier-entier — See #17510)** : décompositions vérifiées sur disque : **Tweety 34** = 14 Python + 18 C# + 1 Lean (Tweety-5b) + 1 probe ; **Lean 67** = 19 preuves natives (3 `lean4` + 16 `lean4-wsl`) + 48 companions Python (kernel mixte python3/python3-wsl/global-3.13 — voir § Lean / Structure détaillée) ; **SemanticWeb 28** = 13 C# (incl. RDF.Net-Legacy) + 15 Python ; **Planners 26** = 16 Python + 9 C# jumeaux + 1 Lean (Planners-5b) ; **SmartContracts 31** = 30 Python + 1 `lean4-wsl` (SC-7c) ; **Argument_Analysis 34** = 10 Agentic (7 sources + 3 artefacts `_agent.ipynb`) + 23 analytiques + 1 groupe-I2 ; **SymbolicLearning 30** = 12 Python + 8 C# jumeaux + 1 Lean (SL-1b) + ajouts récents (SL-13+) ; **SMT 46** = 28 Z3-API (22 Python + 6 C# jumeaux) + 18 Z3-Linq2Z3 ; **Geometry 2** = Geometry-01 (figure → équation, Schwartz–Zippel) + Geometry-02 (équation → preuve, Gröbner + saturation, Epic #17544) ; root = 1. **Note** : le bloc `<!-- CATALOG-STATUS -->` reste byte-identique à `main` (régénération quotidienne via `catalog-cron.yml`, ne se met pas à jour à la main — PR-review E règle) ; la table §E ci-dessus reflète la vérité disque au moment de cet audit, le catalogue se resynchronisera au prochain cron.
+**Total** : le compte courant des notebooks pédagogiques **fait foi dans le bloc `<!-- CATALOG-STATUS -->` ci-dessus** (régénéré quotidiennement par `.github/workflows/catalog-cron.yml`) ; le catalogue est la source de vérité — il se resynchronise au prochain cron, et la table §E ci-dessus est un instantané daté. Les notebooks sans exercices sont uniquement : les setups (SC-1-Setup-Foundry), les notebooks de projet (SC-26-Final-Project), la référence historique RDF.Net-Legacy, les deux dérivés Lean sans cellules d'exercice (Lean-16i, Lean-20b), l'artefact `_agent` et le groupe-I2 d'Argument Analysis, et le probe IKVM (non pédagogique).
 
 ### Problèmes connus (juillet 2026)
 
