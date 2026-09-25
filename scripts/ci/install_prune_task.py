@@ -86,13 +86,16 @@ def task_command(repo: Path) -> list[str]:
 def build_schtasks_install(cmd: list[str], time: str) -> list[str]:
     """Ligne schtasks /Create : quotidienne, contexte utilisateur courant
     (gh auth vit au niveau utilisateur), fenêtre masquee."""
-    tr = " ".join(cmd)
+    # Quoter chaque element, jamais la ligne entiere : un /TR "python.exe script.py
+    # --run" enregistre la ligne comme NOM d'executable, et la tache echoue
+    # a chaque tour avec 0x80070002 (fichier introuvable) sans rien journaliser.
+    tr = subprocess.list2cmdline(cmd)
     return [
         "schtasks", "/Create", "/F",
         "/TN", TASK_NAME,
         "/SC", "DAILY",
         "/ST", time,
-        "/TR", f'"{tr}"',
+        "/TR", tr,
     ]
 
 
@@ -171,8 +174,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--run", action="store_true",
                    help="mode interne (invoque par la tache planifiee)")
     p.add_argument("--repo", type=Path,
-                   default=Path(r"C:\dev\CoursIA"),
-                   help="checkout principal du depot (defaut C:\\dev\\CoursIA)")
+                   default=Path(r"D:\Dev\CoursIA-2"),
+                   help="checkout principal du depot (defaut D:\\Dev\\CoursIA-2)")
     p.add_argument("--time", default="03:17",
                    help="heure quotidienne HH:MM (defaut 03:17, hors heures ouvrables)")
     args = p.parse_args(argv)

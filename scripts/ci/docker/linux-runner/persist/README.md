@@ -27,10 +27,20 @@ n'a pas ete remplacee. Un `git pull` ne deploie pas `persist/`.
 | `ai-01/coursia-runner.service` | **ai-01** | `/etc/systemd/system/coursia-runner.service` | **a deployer** (corrige, cf. correction 3) -- **jamais seul**, cf. correction 4 |
 | `ai-01/coursia-runner.service.d/10-sizing.conf` | **ai-01** | `/etc/systemd/system/coursia-runner.service.d/10-sizing.conf` | **deploye et vivant** -- necessaire mais **pas suffisant** : il borne la memoire et laisse le CPU au defaut (cf. corrections 4 et 5) |
 | `ai-01/coursia-runner-start.sh` | **ai-01** | `/usr/local/bin/coursia-runner-start.sh` | **a deployer** (corrige, cf. correction 3) |
+| `po-2026/pool.sh` | **po-2026** | `/home/jesse/CoursIA-runners-p0/pool.sh` (WSL Ubuntu) | **deploye et vivant** -- superviseur du pool, **8 slots** et **borne depuis le 2026-09-22** (cf. `po-2026/README.md`) |
+| `po-2026/run-pool-po2026.sh` | **po-2026** (hote Windows) | `C:\dev\CoursIA-runners-p0\run-pool-po2026.sh` | **deploye et vivant** -- lanceur de la tache planifiee, porte la borne CPU/memoire. **Attention : ce fichier vit sous `C:\dev\...`, pas sous `D:\Dev\CoursIA-runners-p0\`** (cf. `po-2026/README.md`) |
+| `po-2026/README.md` | -- | -- | **document** : architecture, dimensionnement, piege du verrou |
 
 Le sous-repertoire `ai-01/` existe parce que les deux machines ont des fichiers
 **homonymes et incompatibles**. Les melanger a plat, comme c'etait le cas, revient
 a laisser croire qu'il n'y en a qu'un.
+
+Le sous-repertoire `po-2026/` existe pour une raison differente : cette machine est
+la seule du parc dont la chaine de runners ne passe **ni par Docker ni par une unite
+systemd**. Ses fichiers ne sont homonymes d'aucun autre, mais la table ci-dessus,
+lue comme une description du parc, laissait croire que le parc se resume a des
+conteneurs et des unites -- et c'est exactement ce qui a rendu son absence de borne
+invisible. Detail, mesures et bornes : `po-2026/README.md`.
 
 ## Le contexte d'image epingle -- un vivant sans fichier dans le depot (#16134)
 
@@ -148,16 +158,27 @@ premiere ligne de CI -- sans aucun plafond, sur le meme disque que l'interactif.
 C'est la raison d'etre des bornes ci-dessous, et la raison pour laquelle elles sont
 posees **avant** le redemarrage du parc, pas apres.
 
-## Les trois bornes, et laquelle borne quoi
+## Les quatre bornes, et laquelle borne quoi
 
 Elles ne sont pas redondantes : chacune couvre ce que les autres ne peuvent pas
 voir.
 
 | Borne | Ou elle vit | Ce qu'elle borne | Ce qu'elle ne peut pas borner |
 |---|---|---|---|
-| `coursia-ci.slice` | `/etc/systemd/system/` + `cgroup-parent` du daemon | la **somme** de tous les conteneurs : `CPUQuota=800%`, `IOWriteBandwidthMax` | rien en dessous : elle ne distingue pas un slot glouton d'une famille entiere |
+| `coursia-ci.slice` | `/etc/systemd/system/` + `cgroup-parent` du daemon | la **somme** de tous les conteneurs : `CPUQuota=800%`, `MemoryHigh`/`MemoryMax`/`MemorySwapMax`, `IOWriteBandwidthMax` | rien en dessous : elle ne distingue pas un slot glouton d'une famille entiere |
 | `--device-write-bps` / `--device-read-bps` | drapeaux passes par `supervise.sh` a chaque `docker run` | **un** conteneur | la somme : 12 conteneurs conformes un a un saturent quand meme le disque |
 | `COURSIA_RUNNER_CPU_BUDGET` | verification dans `supervise.sh` au demarrage | la **somme des demandes** de vCPU entre familles, **avant** de lancer quoi que ce soit | l'usage reel : c'est un refus de demarrage, pas un plafond kernel |
+| `COURSIA_RUNNER_BUDGET_GB` | **declare par le wrapper de CHAQUE machine** (les trois jambes, meme nombre) | la **somme des memoires** en vol **plus** la demande, toutes familles, avant de lancer un slot | la memoire reellement consommee ensuite, et le page cache de la VM : c'est un refus de demarrage, pas un plafond kernel |
+
+**`COURSIA_RUNNER_BUDGET_GB` est la seule borne de ressource qui n'est PAS inerte
+par defaut**, et c'est pour cela qu'elle doit etre ecrite : elle ne peut pas valoir
+0 (le garde compare une somme EN VOL a ce budget -- 0 refuserait tous les slots de
+toutes les machines), donc son defaut 12 **gouverne**. Tant qu'aucun wrapper ne
+l'ecrit, la valeur effective n'existe dans aucun fichier que l'operateur ouvre.
+Le superviseur la **signale** desormais a chaque demarrage quand elle manque ; un
+avertissement `[budget] AVERTISSEMENT` dans le journal du service veut dire que
+cette machine n'a pas declare son budget, pas que quelque chose est casse.
+
 
 Le budget agrege est **applique par defaut du daemon** (`cgroup-parent` dans
 `daemon.json`), pas par un drapeau du superviseur -- et le superviseur le
@@ -445,7 +466,7 @@ de succes du garde (l.444, `budget CPU inter-familles : N / M vCPU`) est
 
 **Ce que « sans un mot » ne veut PAS dire -- et je l'avais d'abord ecrit trop
 fort.** Declaration n'est pas consommation, et il y a **deux** bornes, pas une :
-la table « Les trois bornes » ci-dessus le dit deja de `COURSIA_RUNNER_CPU_BUDGET`
+la table « Les quatre bornes » ci-dessus le dit deja de `COURSIA_RUNNER_CPU_BUDGET`
 -- « c'est un refus de demarrage, pas un plafond kernel ». Le plafond kernel,
 lui, c'est `coursia-ci.slice` (`CPUQuota=800%`, soit `cpu.max 800000 100000`),
 et il etait **arme et actif tout du long** : mesure du 2026-09-08, la slice

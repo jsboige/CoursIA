@@ -32,7 +32,7 @@ sys.path.insert(0, str(CI_DIR))
 import fast_lane  # noqa: E402
 from fast_lane_registry import (  # noqa: E402
     FAST_LANE_NATIVE, PILOT, TRANCHE1, TRANCHE2, TRANCHE3, TRANCHE4,
-    TRANCHE5, TRANCHE8, Guard,
+    TRANCHE5, TRANCHE8, TRANCHE12, TRANCHE13, TRANCHE14, Guard,
 )
 
 
@@ -295,13 +295,17 @@ def test_delta_placeholders_are_resolvable():
 def test_advisory_flags_match_the_source_workflows():
     """Le caractere advisory est une propriete du garde, pas du moteur.
 
-    `solution-leak-guard` et `prose-counts-guard` sont annonces advisory dans
-    l'en-tete de leur workflow ; les inverser ici ferait rougir la flotte sur
-    un stock que le depot a explicitement decide de ne pas bloquer.
+    `solution-leak-guard` est annonce advisory dans l'en-tete de son workflow ;
+    l'inverser ici ferait rougir la flotte sur un stock que le depot a
+    explicitement decide de ne pas bloquer. `prose-counts-guard` est passe
+    BLOQUANT (#17636, critere de sortie #9377) : son argv porte --strict et le
+    garde ne juge que les lignes AJOUTEES -- le stock de 65 notebooks ne fait
+    echouer personne, seule une PR qui rouvre la veine rougit.
     """
     by_name = {g.name: g for g in PILOT}
     assert by_name["solution-leak-guard"].blocking is False
-    assert by_name["prose-counts-guard"].blocking is False
+    assert by_name["prose-counts-guard"].blocking is True
+    assert "--strict" in by_name["prose-counts-guard"].argv
     assert by_name["banner-guard"].blocking is True
     assert by_name["pip-leak-guard"].blocking is True
     assert by_name["perimeter-review-guard"].blocking is True
@@ -1196,8 +1200,149 @@ def test_tranche5_identity_byte_check_passes():
     r = _sp.run(
         ["python", "scripts/ci/check_absorbed_check_run_identity.py", "--check"],
         capture_output=True, text=True, cwd=Path(__file__).resolve().parents[2],
+        encoding="utf-8", errors="replace",
     )
     assert r.returncode == 0, (
         f"identity byte-check a echoue (rc={r.returncode}) : \n"
         f"stdout={r.stdout}\nstderr={r.stderr}"
     )
+
+
+def test_tranche12_link_label_agreement_advisory():
+    """#16645 : link-label agreement (le libelle nomme un notebook different de
+    la cible, incident fondateur #13645 + extension scope decks #15867).
+    Advisory jamais bloquant : la dette repo-wide mesuree au cablage est de 0
+    finding sur main (scan 2198 fichiers), promouvoir blocking serait strict
+    sur du vide -- on demarre en advisory pour calibration avant promotion."""
+    assert len(TRANCHE12) == 1
+    guard = TRANCHE12[0]
+    # Identite et clause de surface : check-run advisory (le nom porte
+    # `advisory` pour que `pr_gate.is_advisory` matche, voir TRANCHE6/11).
+    assert guard.name == "Link-label agreement (per-notebook, advisory)"
+    assert "advisory" in guard.name
+    # Garde natif : aucun workflow d'origine a absorber (issue #16645 precise
+    # que le script n'avait aucun workflow dedie -- d'ou la tranche de
+    # cablage plutot qu'une absorption).
+    assert guard.source == FAST_LANE_NATIVE
+    assert guard.absorbed is True
+    # ADVISORY : la voie rapide ne rougit JAMAIS sur ce garde. Le caractere
+    # report-only doit survivre a l'absorption (cf TRANCHE3 test pattern).
+    assert guard.blocking is False
+    # Pas de base : le script compare libelle a cible dans chaque document,
+    # pas a une version de reference. Meme contrat que check-links (TRANCHE1
+    # forme 1).
+    assert guard.needs_base is False
+    # Pas iteratif : le script scanne tous les globs en une seule invocation
+    # (SCAN_GLOBS + DECK_GLOB), il n'accepte pas de path unique en argument.
+    # La voie rapide lance argv tel quel, sans {changed_paths}.
+    assert guard.iterates_paths is False
+    assert "{changed_paths}" not in guard.argv
+    # --fail pour transformer le verdict "0 desaccord" en rc=0 / N desaccord
+    # en rc=1. Le moteur agrege en neutral via blocking=False.
+    assert "--fail" in guard.argv
+    # Le scanner lui-meme + ses tests + le registre figurent dans paths, sinon
+    # une revision qui touche le script ou le registre ne rejouerait pas le
+    # garde dont elle change la portee (clause #15489, voir TRANCHE4 et 11).
+    expected_paths = {
+        "scripts/notebook_tools/check_link_label_agreement.py",
+        "scripts/notebook_tools/tests/test_check_link_label_agreement.py",
+        "scripts/ci/fast_lane_registry.py",
+    }
+    for needle in expected_paths:
+        assert needle in guard.paths, (
+            f"{needle} absent des paths : une edition ne rejouerait pas le "
+            f"garde dont elle change la portee"
+        )
+    # Le scope inclut decks (l'extension #15867) : sans `slides/**/slides.md`
+    # dans paths, un deck-only PR comme #15865 (17 liens morts) ne lancerait
+    # jamais le garde.
+    assert "slides/**/slides.md" in guard.paths
+
+
+def test_tranche13_reading_anchor_advisory_guard_is_wired():
+    """Tranche 13 = garde d'ancrage de lecture (#16695), advisory bloquant a
+    zero FP mesure. Contrat : native, absorbe, non bloquant (#15327), delta vs
+    base, self-test pre-control (lecon #11685), et le detecteur DOIT exister
+    et tirer sur ses controles positifs (un organe qui ne dit jamais rien est
+    indiscernable d'un organe debranche).
+    """
+    assert len(TRANCHE13) == 1, (
+        "la tranche 13 documente 1 seul garde (reading-anchor) ; si le nombre "
+        "change, ce test et le registre suivent"
+    )
+    guard = TRANCHE13[0]
+    assert guard.name == "Reading-anchor advisory (lecture sans output, #16695)"
+    assert guard.source == FAST_LANE_NATIVE
+    assert guard.absorbed, f"{guard.name} doit porter absorbed=True"
+    assert not guard.blocking, (
+        f"{guard.name} est advisory (precedent check_output_collapse #15327) : "
+        f"promotion au bloquant seulement apres FP mesure a zero sur un lot reel"
+    )
+    assert guard.needs_base, f"{guard.name} est un delta vs base (cellules AJOUTEES)"
+    assert guard.pre_argv and guard.pre_argv[-1] == "--self-test", (
+        f"{guard.name} doit se pre-controler par --self-test (lecon #11685)"
+    )
+    assert "{base_ref}" in " ".join(guard.argv), (
+        f"{guard.name} doit recevoir la base de la PR"
+    )
+    assert "--fail" in guard.argv and "--json" in guard.argv
+    for needle in (
+        "**.ipynb",
+        "scripts/notebook_tools/check_reading_anchor.py",
+        "scripts/notebook_tools/tests/test_check_reading_anchor.py",
+        "scripts/ci/fast_lane_registry.py",
+    ):
+        assert needle in guard.paths, f"{needle} doit figurer dans les paths"
+    # Le detecteur existe ET tire : self-test rc=0 avec controles positifs.
+    r = subprocess.run(
+        ["python", "scripts/notebook_tools/check_reading_anchor.py", "--self-test"],
+        capture_output=True, text=True, cwd=Path(__file__).resolve().parents[2],
+        encoding="utf-8", errors="replace",
+    )
+    assert r.returncode == 0, f"self-test du detecteur en echec : {r.stdout}"
+    assert "positif" in r.stdout and "PASS" in r.stdout
+
+
+def test_tranche14_split_reading_guard_is_wired():
+    """Tranche 14 = garde split-reading-cells (#16762/#17031), cliquet #17044.
+
+    Cable a l'origine comme deuxieme TRANCHE13, il ecrasait silencieusement
+    le garde reading-anchor de #16704 (redefinition Python) : le postieur
+    cede l'index (cf. registre, commentaire TRANCHE14).
+
+    Forme CLIQUET depuis #17044 : ratchet autonome (le script fait son propre
+    diff base...HEAD -- d'ou `{base_ref}` et `needs_base`), self-test en
+    PRE-CONTROLE, et `blocking=True`. La bascule advisory -> bloquant ne tient
+    que parce que le cliquet ne regarde QUE l'ajout : un plancher absolu aurait
+    rougi les 91 findings herites de toute PR touchant un carnet porteur.
+    """
+    assert len(TRANCHE14) == 1
+    guard = TRANCHE14[0]
+    assert guard.name == "Split-reading ratchet (base vs PR)"
+    assert guard.blocking, "cliquet #17044 : l'AJOUT de lecture scindee doit rougir"
+    assert guard.needs_base, f"{guard.name} compare HEAD a la base"
+    assert guard.absorbed, f"{guard.name} doit porter absorbed=True"
+    assert "--self-test" in " ".join(guard.pre_argv)
+    assert "{base_ref}" in guard.argv, "ratchet autonome : la lane fournit la base"
+    assert "--json" in guard.argv and "--fail-on-findings" in guard.argv
+    # Forme ratchet : plus d'iteration par chemin (le script choisit lui-meme
+    # les carnets du diff), donc plus de {changed_paths} ni de warn_rc.
+    assert not guard.iterates_paths
+    assert "{changed_paths}" not in guard.argv
+    assert not guard.warn_rc
+
+
+def test_both_reading_guards_alive_after_tranche14_split():
+    """Controle du bug de collision : les DEUX gardes vivent dans DEUX tranches.
+
+    La redefinition silencieuse de TRANCHE13 par #17031 faisait disparaitre
+    reading-anchor du registre sans aucun message (le nom pointait sur la
+    seule liste split-reading). Ce controle aurait ete rouge le jour du
+    merge : il epingle les DEUX noms, distincts, un garde par tranche.
+    """
+    assert len(TRANCHE13) == 1 and len(TRANCHE14) == 1
+    assert TRANCHE13[0].name != TRANCHE14[0].name
+    assert {g.name for g in TRANCHE13 + TRANCHE14} == {
+        "Reading-anchor advisory (lecture sans output, #16695)",
+        "Split-reading ratchet (base vs PR)",
+    }

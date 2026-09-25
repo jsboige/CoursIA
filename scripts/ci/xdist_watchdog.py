@@ -101,6 +101,31 @@ PROGRESS_RE = re.compile(r"\[\s?\d+%\]")
 
 VERDICT_PREFIX = "XDIST-WATCHDOG"
 
+# Prefixe qui fait du verdict une ANNOTATION du check-run, pas seulement une
+# ligne de log. C'est la seule surface par laquelle un lecteur -- humain ou
+# organe -- peut distinguer une mort de session d'un rouge de contenu : quand
+# le garde tue, l'etape `Run tests` conclut `failure` avec l'annotation
+# generique "Process completed with exit code 1.", et
+# `classify_job_deaths.py` retourne `REAL_STEP_FAILURE` des qu'une etape a
+# conclu `failure`, AVANT de lire la moindre annotation.
+#
+# Mesure 2026-09-21 (job 106258931264, workflow "Scripts Tests (CPU)") : la
+# legibilite TIENT -- le check-run porte 8 annotations `XDIST-WATCHDOG`,
+# verbatim "XDIST-WATCHDOG: workers morts : gw1". L'organe de triage lit ce
+# job comme une mort de parc (signature `Fatal Python error: Aborted` au log,
+# aucun `short test summary`), donc par le log -- mais l'annotation est ce que
+# voit quiconque n'a que le check-run sous les yeux.
+#
+# Pourquoi `##[error]` et non `::error::` : le runner GitHub accepte les deux.
+# `##[error]` est la forme heritee (Azure DevOps), et elle annote bel et bien
+# -- verifie sur le job ci-dessus, ou elle a produit les 8 annotations. Le
+# formuler ici pour eviter la "correction" qui consiste a basculer sur
+# `::error::` en croyant reparer un dialecte inerte : la mesure dit que les
+# deux fonctionnent, donc la bascule serait un changement sans effet.
+# En revanche une TROISIEME forme (par ex. `[error]` ou `#error`) n'annoterait
+# rien : c'est ce que `test_le_prefixe_est_un_dialecte_du_runner_github` borne.
+ANNOTATION_PREFIX = "##[error]"
+
 EXIT_BLOCKED = 3  # distinct des exits pytest usuels pour le triage post-mortem
 
 
@@ -280,13 +305,13 @@ def _verdict_blocked(state: _StreamState, idle: float, idle_limit: float,
         "aucun marqueur gwN (node down / replacing crashed worker) vu -- " \
         "blocage hors de la classe mesuree dans #16288, fenetre de silence " \
         "a investiguer telle quelle"
-    emit(f"##[error]{VERDICT_PREFIX}: BLOQUE -- silence de sortie depuis "
+    emit(f"{ANNOTATION_PREFIX}{VERDICT_PREFIX}: BLOQUE -- silence de sortie depuis "
          f"{idle:.0f} s (limite {idle_limit:.0f} s), mur du job non atteint")
-    emit(f"##[error]{VERDICT_PREFIX}: derniere progression pytest : "
+    emit(f"{ANNOTATION_PREFIX}{VERDICT_PREFIX}: derniere progression pytest : "
          f"\"{progress}\" ; {state.line_count} lignes ({state.byte_count} "
          f"octets) emises au total ; wall du wrapper {wall:.0f} s")
-    emit(f"##[error]{VERDICT_PREFIX}: workers morts : {workers}")
-    emit(f"##[error]{VERDICT_PREFIX}: zero octet emis pendant la fenetre "
+    emit(f"{ANNOTATION_PREFIX}{VERDICT_PREFIX}: workers morts : {workers}")
+    emit(f"{ANNOTATION_PREFIX}{VERDICT_PREFIX}: zero octet emis pendant la fenetre "
          f"(ni ligne ni fragment) -- le master etait vivant mais "
          f"n'attendait pas du travail, signature #16288 ; kill du groupe "
          f"de processus")
