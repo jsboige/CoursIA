@@ -78,7 +78,9 @@ Notation étudiants : moteur générique = [GradeBookApp/configs/README.md](Grad
 
 **Coordination cross-machine = RooSync uniquement.** Dashboard workspace CoursIA + messages directs. GitHub = code, **jamais** de `*_TEST_REPORT.md` / `*_COORDINATION.md` / rapports d'audit dans le repo.
 
-**Tour de coordination type** : (1) lire le dashboard **complet** (`Read` sur le fichier persisté si tronqué), (2) inbox RooSync non-lus, (3) heartbeat cluster, (4) sans mission assignée : envoyer un message à ai-01, ne pas attendre passivement.
+**Trois têtes de coordination** : le coordinateur `myia-ai-01:CoursIA`, le titulaire `myia-po-2025:CoursIA-2` et le secrétaire `myia-po-2026:CoursIA-3`, dont l'artefact est le dashboard `workspace-CoursIA-3` (« le secrétariat », « le troisième dashboard »). Rôles et circulation : [tricephale-circulation.md](docs/reference/tricephale-circulation.md).
+
+**Tour de coordination type** : (1) **drainer l'inbox RooSync** (`status:"unread", deep:true` — sans `deep`, le compte de non-lus peut être un faux zéro) — elle porte souvent le **DM nominatif qui change la priorité du cycle** ; (2) **énumérer** les dashboards (`roosync_dashboard(action:"list")`) puis lire en `section:"all"` **chaque clé pertinente**, en entier (`Read` sur le fichier persisté si tronqué) — jamais une liste apprise par cœur, qui serait **structurellement aveugle** à une clé forkée (mesure fondatrice #17197 : `workspace-CoursIA (2)`, 23 messages vivants jamais lus) ; (3) heartbeat cluster ; (4) sans mission assignée : envoyer un message à ai-01, ne pas attendre passivement.
 
 **Reporting dashboard** : poster au minimum début/livraison/fin de session. > 30 min sans post = signe d'isolement. Posts `[INFO]` courts > silence.
 

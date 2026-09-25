@@ -1,0 +1,16 @@
+# Suivi des sous-modules : Dependabot ouvre une PR de bump du gitlink des que la
+# branche declaree dans .gitmodules (`branch =`) avance. Mandat user du 2026-09-23 :
+# le sous-module pointe toujours vers l'etat le plus recent.
+# Perimetre volontairement restreint aux deux sous-modules concernes par ce mandat.
+version: 2
+updates:
+  - package-ecosystem: "gitsubmodule"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    allow:
+      - dependency-name: "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3.Linq"
+      - dependency-name: "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum"
+    commit-message:
+      prefix: "chore(submodule)"
+    open-pull-requests-limit: 2
