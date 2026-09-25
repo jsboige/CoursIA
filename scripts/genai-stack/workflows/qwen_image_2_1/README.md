@@ -50,6 +50,6 @@ que les notebooks Qwen-Image-Edit existants (`01-5`, `01-5b`).
 
 Téléchargés le 2026-09-25 depuis
 `https://comfyui.nomadoor.net/workflows/basic-workflows/qwen-image-2-1/<nom>.json`
-(12 fichiers, checksums dans l'historique Git). Toute adaptation locale
+— checksums dans l'historique Git. Toute adaptation locale
 (substitution de nœuds custom → core) se fait **en copie déclarée**, jamais
 en réécriture des originaux — ils sont la référence de l'éditeur.
