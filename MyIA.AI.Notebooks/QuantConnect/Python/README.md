@@ -45,6 +45,7 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-03-Data-Management | NON EXÉCUTÉ | |
 | QC-Py-04-Research-Workflow | NON EXÉCUTÉ | |
 | QC-Py-05-Universe-Selection | NON EXÉCUTÉ | |
+| QC-Py-05b-FScore-Piotroski | EXÉCUTÉ | CPU local (yfinance/numpy/scipy), cellules code exécutées, données réelles 14 titres |
 | QC-Py-06-Options-Trading | NON EXÉCUTÉ | |
 | QC-Py-06b-Derivatives-Valuation-From-Scratch | EXÉCUTÉ | CPU local (numpy/scipy), 13/13 cellules code, 3 figures |
 | QC-Py-07-Futures-Forex | NON EXÉCUTÉ | |
@@ -156,6 +157,7 @@ Chaque notebook de la série rend visible un geste quantitatif distinct, dans un
 | Notebook | Contenu |
 |----------|---------|
 | [QC-Py-05-Universe-Selection](QC-Py-05-Universe-Selection.ipynb) | Univers dynamiques, filtres fondamentaux |
+| [QC-Py-05b-FScore-Piotroski](QC-Py-05b-FScore-Piotroski.ipynb) | F-Score de Piotroski : les 9 sous-scores sur données réelles, convention de datation article vs papier 2000, critique de liquidité, variance small-univers mesurée (#17770) |
 | [QC-Py-06-Options-Trading](QC-Py-06-Options-Trading.ipynb) | Chaînes d'options, greeks, stratégies couvertes |
 | [QC-Py-06b-Derivatives-Valuation-From-Scratch](QC-Py-06b-Derivatives-Valuation-From-Scratch.ipynb) | Complément from-scratch de QC-Py-29 : les trois moteurs reconstruits à la main, put américain, asiatique arithmétique, variables de contrôle (#16239) |
 | [QC-Py-07-Futures-Forex](QC-Py-07-Futures-Forex.ipynb) | Contrats à terme, devises, hedging |
