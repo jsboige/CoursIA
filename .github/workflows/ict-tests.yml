@@ -374,7 +374,7 @@ jobs:
           # 13 factor_geometry (cette PR, mesure isolee re-verifiee : 13) +
           # drift ascendant main post-972 (humor_typology et suivants,
           # non decompose -- la mesure fait foi) = 1039.
-          - suite-name: "ict/tests/ (64 package)"
+          - suite-name: "ict/tests/ (65 package)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests
             test-args: .
             test-parallel: ""
@@ -398,7 +398,16 @@ jobs:
             # (dont test_humor_typology.py) + 13 factor_geometry -- la
             # decomposition complete vit dans le bloc de commentaires
             # ci-dessus, la mesure merge exacte fait foi.
-            test-floor: 1039
+            # Floor 1039 -> 1054 : +15 items test_probes.py (cette PR #13564,
+            # organe ict/probes.py -- sondes MM / LR / MM-IID / PCA extraites
+            # d'ICT-43, reserve de #16897). Fichier sans parametrize
+            # (15 tests = 15 items), imports numpy + ict uniquement, py3.9-safe
+            # (annotations en chaine via __future__). Mesure :
+            # pytest --collect-only -q depuis ict/tests/ sur l'arbre de la PR,
+            # 65 fichiers test_*.py, 1054 items (py3.11 local ; le CI py3.9
+            # ne change pas la collection, aucun parametrize ni skip de
+            # collecte dans le fichier).
+            test-floor: 1054
 
     steps:
       - uses: actions/checkout@v4
