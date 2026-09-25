@@ -85,7 +85,7 @@ Ce document. Lecture first-hand Causal-Bridges/README.md + Do-Calculus-Bridge.ip
 ### Cycle 3 (c.657) — re-vérification, amend éventuel, push + PR
 
 - Re-exécution Papermill de bout en bout (règle C.2, outputs cohérents).
-- Sweep B.0 : pre-commit, validators, scope < 3000 lignes ([CLAUDE.md § G.4](../../CLAUDE.md) composite split).
+- Sweep B.0 : pre-commit, validators, scope conforme au critère composite ([CLAUDE.md § G.4](../../CLAUDE.md)).
 - Push single-lane --force-with-lease OK.
 - PR avec tag `Grain: DEEP/notebook-python — lane myia-po-2023:CoursIA-2 — prev: LIGHT/observation #16666` (R1/G-VAR-1 HELD tenu — DEEP/notebook-python = deuxième grain DEEP après #16665 cadrage lean).
 

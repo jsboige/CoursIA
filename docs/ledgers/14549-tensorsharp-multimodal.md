@@ -82,7 +82,7 @@ c.257 a procédé à la première investigation de l'axe multimodal TensorSharp 
 - fenêtre cron 30 min vs download GGUF ~7-8 min/5 GB.
 - restitution findings honnête ≠ no-op — narrow transversal documenté.
 - ledger autonome > JSON adossé — quand un JSON est retiré par arbitrage (audit-cross-source-distillation HARD 1), **les valeurs verbatim migrent dans le ledger** (timestamps, mesures, architecture), pas un pointeur mort. La PR doit pouvoir être lue et arbitrée sans ouvrir un fichier externe.
-- **6 zero conformité** : 0 PR composite, 0 merge worker, 0 push branche d'autrui, 0 commit main (worktree), 0 secret imprimé (FORGE_PASSWORD du .env NON imprimés, GPU IDs publics OK), 0 hand-edit cellule (0 notebook touché), 0 catalogue touché.
+- **6 zero conformité** : 0 PR composite, 0 merge worker, 0 push branche d'autrui, 0 commit main (worktree), 0 secret imprimé (FORGE_PASSWORD du .env NON imprimés, GPU IDs publics OK), 0 hand-edit cellule (aucun notebook touché), 0 catalogue touché.
 
 ## c.259 — Réparation suite à relecture adjoint po-2025 + arbitrage ai-01
 
@@ -873,7 +873,7 @@ PR `feature/14549-wan-video-c446` (depuis worktree `D:/Dev/CoursIA-14549-c446-wa
 ### Tells / apprentissages c.446-bis
 
 - **(★★ NEW ★★ L3 fondateur)** : **VAE decode monolithique ≥ 23.9 GB cudaMalloc** = constant TensorSharp `WanVae.DecodeNative:229`, indépendante du nombre de frames. C'est un **invariant de défaut**, pas un dépassement configurable. Recovery = patch upstream `DecodeNative` ou libérer cuda[0] avant VAE decode via `--stream-weights` (décharge DiT après denoise, non testé hors-scope c.446-bis). honnêteté référentielle = documenter le plafond atteignable plutôt que maquiller.
-- **(★) sostenue c.446-bis** : `.pth → .safetensors` conversion locale résout le `.Load:102` Wan 2.2 (196 clés legacy plat, +2 vs Wan 2.1). Pattern reproductible : si vendor upstream ne fournit pas safetensors, conversion locale = voie mécanique (5 lignes Python + `safetensors.torch.save_file`).
+- **(★) sostenue c.446-bis** : `.pth → .safetensors` conversion locale résout le `.Load:102` Wan 2.2 (196 clés legacy plat, +2 vs Wan 2.1). Pattern reproductible : si vendor upstream ne fournit pas safetensors, conversion locale = voie mécanique (un court snippet Python + `safetensors.torch.save_file`).
 - **(★) anti-stonewall ×4ᵉ** : 4ᵉ sonde convergente c.446-bis (DiT fuse Kijai Wan 2.1 ✓ c.445 → VAE Wan 2.2 `.pth` `NotSupportedException` ✓ c.446 Run A → VAE Wan 2.2 safetensors legacy plat charge ✓ c.446 Run A2 → VAE decode OOM cudaMalloc monolithique ✓ c.446 Run A2/A3) — 4 itérations convergentes, sortie mesurée avant verdict, pas claim ex-ante.
 - **(★) inspection `safe_open(keys)` sustained** : `.pth → .safetensors` conversion validée par lecture source `WanVaeWeights.cs` + inventaire 196 clés legacy plat (vs Wan 2.1 = 194, naming identique).
 - **(★)** : Wan 2.2 5B TI2V = **`RECOVERABLE-LOCAL`**, pas `SOTA-OK` (pas de MP4) ni `INTRINSIC` (pas une impossibilité physique).
