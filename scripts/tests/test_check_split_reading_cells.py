@@ -913,23 +913,90 @@ def test_diff_mute_si_ordre_inchange_et_contenu_identique():
     assert detect_added_readings(head, base) == []
 
 
-def test_diff_compte_correctement_les_doublons_de_sources():
-    """Si la meme cellule source apparait 1 fois en base et 2 fois en head,
-    la premiere en head est vue comme un REWRITE (meme position dans base,
-    meme cellule type markdown) et la seconde complete le budget multiset.
-    Le resultat net : 0 added. Pedagogiquement le doublon de lecture
-    passe inapercu -- c'est un bord connu du multiset-diff sans regarder
-    le contenu. Mitige par une regle metier : l'organe reste sur le delta
-    POSITION/SOURCE strict, et laisse le contenu (Jaccard, recouvrement) a
-    l'organe detect_repeated_prose qui mord ici verbatim.
+def test_diff_compte_le_doublon_de_source_comme_une_seconde_lecture():
+    """La meme cellule source 1 fois en base, 2 fois en head : le compte par
+    sortie monte (1 -> 2), c'est un SECOND_READING (#17044, decision ai-01
+    c.5836401913).
+
+    Ce cas etait l'angle mort declare du mode diff : le multiset de sources ne
+    voyait pas le doublon (la source existait deja en base), donc la cellule de
+    tete repartait comme non ajoutee et le rapport etait MUET. Le compte par
+    sortie ferme ce trou -- il ne diffe plus les sources, il compare le nombre
+    de lectures rattachees a la meme sortie.
+
+    Le VERDICT du cliquet, lui, ne change pas : les deux lectures titrees
+    consecutives forment une paire (`detect`), donc ``head_total > base_total``
+    rougissait deja ce carnet. Ce qui change est que le rapport designe
+    desormais la cellule en cause au lieu de laisser un rouge sans constat.
     """
     src = "### Lecture doublee\nMeme source, deux positions."
     base = nb(code("print(1)"), md(src))
     head = nb(code("print(1)"), md(src), md(src))
-    # Ici, l'organe DIFF ne signale rien (doublon a meme position -- vu
-    # comme rewrite). detect_repeated_prose mord verbatim sur le doublon,
-    # c'est son canal.
-    assert detect_added_readings(head, base) == []
+    findings = detect_added_readings(head, base)
+    assert [f["type"] for f in findings] == ["SECOND_READING"]
+    assert findings[0]["cells"] == [1]
+    # Mesure du verdict, sur le meme couple : la paire consecutive rougissait
+    # deja ce carnet avant ce changement.
+    assert len(detect(base)) == 0 and len(detect(head)) == 1
+
+
+def test_diff_le_compte_par_sortie_prime_sur_la_topologie_positionnelle():
+    """Une lecture ajoutee sous une sortie qui en portait deja est un
+    SECOND_READING, MEME si sa place la fait ressembler a une lecture
+    introductive (#17044, decision ai-01 c.5836401913).
+
+    Le compte est la definition du constat, la topologie ne fait que le nommer.
+    Sans cette primaute, la cellule posee devant la cellule de code SUIVANTE
+    sortait en READING_BEFORE_CODE, et le constat retombait alors sur la
+    **revision en place** qui l'accompagne -- designer comme le defaut le geste
+    que le mandat prescrit.
+    """
+    base = nb(
+        code("print(1)"),
+        md("### Analyse du resultat\nAncienne formulation."),
+        code("print(2)"),
+    )
+    head = nb(
+        code("print(1)"),
+        md("### Analyse du resultat\nNouvelle formulation."),
+        md("### Lecture chiffree : le score atteint 0.94"),
+        code("print(2)"),
+    )
+    findings = detect_added_readings(head, base)
+    assert [f["type"] for f in findings] == ["SECOND_READING"]
+    assert findings[0]["cells"] == [2]
+
+
+def test_diff_une_fusion_n_absout_pas_une_lecture_ajoutee_ailleurs():
+    """Critere 3 de la decision #17044 : compter PAR SORTIE, c'est ne pas
+    blanchir toute la PR des qu'une de ses sorties a ete fusionnee.
+
+    Deux sorties, deux gestes opposes : la premiere fusionne ses deux lectures
+    (le remede prescrit -- doit rester VERTE), la seconde en gagne une (le
+    defaut -- doit rester ROUGE). Un verdict par carnet, ou un discriminant par
+    recouvrement de mots, confondrait les deux.
+    """
+    base = nb(
+        code("print(1)"),
+        md("### Lecture\nA1."),
+        md("### Lecture chiffree\nA2."),
+        md("## 4. Suite du parcours"),
+        code("print(2)"),
+        md("### Lecture\nB1."),
+    )
+    head = nb(
+        code("print(1)"),
+        md("### Lecture\nA1 et A2 fusionnes."),
+        md("## 4. Suite du parcours"),
+        code("print(2)"),
+        md("### Lecture\nB1."),
+        md("### Lecture chiffree\nB2 ajoutee."),
+    )
+    findings = detect_added_readings(head, base)
+    # Rien sur la sortie 1 (compte 2 -> 1 : c'est la fusion), un constat nomme
+    # sur la sortie 2 (compte 1 -> 2).
+    assert [f["type"] for f in findings] == ["SECOND_READING"]
+    assert findings[0]["cells"] == [5]
 
 
 def test_diff_lecture_avant_exercice_est_reading_before_code():
