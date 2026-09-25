@@ -1,64 +1,67 @@
-"""Regles symboliques de detection de sophismes en francais.
+"""Règles symboliques de détection de sophismes en français.
 
-Organe pur (aucune dependance hors stdlib) issu de la distillation du
-sous-projet EPITA ``2.3.2-detection-sophismes`` (depot
-``jsboigeEpita/2025-Epita-Intelligence-Symbolique``, fichiers
-``symbolic_rules.py`` et ``argument_mining_rules.py``, audit de maturite
-R887 du 2026-08-30 : partie vivante = les regles et le dataset, le moteur
-CamemBERT finetune 1,8 Go etant archaeologique et hors perimetre).
+Organe pur (aucune dépendance hors stdlib). Il porte l'étage symbolique de la
+détection de sophismes **tel qu'il vit dans le cœur du dépôt EPITA**
+(``argumentation_analysis/adapters/french_fallacy_adapter.py``,
+``_SYMBOLIC_FALLACY_RULES`` : 5 clés, 13 motifs). Le sous-projet étudiant
+``2.3.2-detection-sophismes`` (``jsboigeEpita/2025-Epita-Intelligence-Symbolique``,
+fichiers ``symbolic_rules.py`` et ``argument_mining_rules.py``) reste en
+généalogie : les règles y ont d'abord existé, la consolidation du cœur en a
+retenu une partie et corrigé une autre (G4 #1186).
 
-Contenu porte fidelement (divergences documentees plus bas) :
+Contenu porté — 13 motifs / 5 clés, identiques au cœur :
 
-- ``FALLACY_RULES`` : 6 cles / 5 familles de sophismes, 15 motifs de
-  tokens au format spaCy Matcher --
-  AD_HOMINEM_DIRECT (3), PENTE_GLISSANTE (3), GENERALISATION_HATIVE (2),
-  APPEL_A_LA_TRADITION (3), ARGUMENT_D_AUTORITE_SIMPLE (1),
-  ARGUMENT_D_AUTORITE_GENERAL (3).
-- ``CLAIM_PATTERNS`` : 2 motifs de claim (assertion marquee).
-- ``PREMISE_PATTERNS`` : 3 motifs de premisse (support marque).
+- ``FALLACY_RULES`` : AD_HOMINEM_DIRECT (3), PENTE_GLISSANTE (3),
+  GENERALISATION_HATIVE (2), APPEL_A_LA_TRADITION (3), ARGUMENT_AUTORITE (2).
+- ``CLAIM_PATTERNS`` : 2 motifs de claim ; ``PREMISE_PATTERNS`` : 2 motifs de
+  prémisse.
+- ``justify_fallacy()`` : justification française par famille (G5 #1186),
+  *fail-loud* (#1019) — ``None`` plutôt qu'une justification fabriquée. Les quatre
+  gabarits hérités couvrent **3 des 5 familles** de cet organe : la pente
+  glissante et l'appel à la tradition n'en ont pas et rendent ``None`` (mesuré,
+  section des limites du notebook).
 
-L'API ``matcher_rules()`` rend des motifs directement consommables par
-``spacy.matcher.Matcher`` ; l'API ``detect_fallacies()`` construit le
-Matcher si spaCy est disponible (le modele francais doit etre installe :
-``python -m spacy download fr_core_news_sm``).
+Ce que la re-fondation a changé par rapport à la première distillation :
 
-Divergences documentees vis-a-vis du source (convention distillation) :
+1. **Deux motifs retirés.** ``[NOUN] (le) dire`` et ``[PROPN] dire`` reposaient
+   sur une simple paire sujet-verbe, sans marqueur d'autorité ; le cœur ne les a
+   pas retenus. Leur clé ``ARGUMENT_D_AUTORITE_GENERAL`` disparaît avec eux —
+   les deux motifs restants partagent ``ARGUMENT_AUTORITE``.
+2. **Un motif de prémisse retiré.** ``les/des NOUN montrer/indiquer que``,
+   absent du cœur.
+3. **Deux réparations G4 (#1186) adoptées.** Elles viennent du cœur, qui les a
+   restaurées depuis le projet étudiant en corrigeant ce qui les empêchait de
+   mordre sur du texte réel :
+   - *ad hominem, motif 2* : le slot de ponctuation optionnel ``IS_PUNCT?``
+     manquait — « Pierre est malhonnête, donc son argument est faux. » ne
+     matchait jamais, la virgule s'intercalant entre l'adjectif et le
+     connecteur ;
+   - *généralisation hâtive, motif 1* : un slot ``NOUN`` surnuméraire précédait
+     ``exemples``, qui est lui-même le nom — le motif était immatchable.
 
-1. Les cles accentuees du source (``GÉNÉRALISATION_HÂTIVE``,
-   ``APPEL_À_LA_TRADITION``, ``ARGUMENT_D_AUTORITÉ_*``) sont conservees
-   telles quelles : elles sont l'identite de la regle, pas de la prose.
-2. Les specs de tokens nues ``{"OP": "+"}`` des motifs de mining (sans
-   autre attribut) sont ecrites en jokers explicites
-   ``{"TEXT": {"REGEX": ".*"}}`` avec le meme operateur. Choix de
-   lisibilite, pas contrainte de spaCy : spaCy 3.8.16 accepte la spec
-   nue, avec ou sans ``Matcher(validate=True)``, et les deux formes
-   rendent les memes matches (mesure du 2026-09-23). Semantique inchangee.
-3. Les comptes mesures ici (15 motifs sophismes, 2+3 motifs mining)
-   divergent des comptes annonces par l'audit R887 (13 et 6) : les
-   nombres ci-dessous sont recomptes sur le source charge, fichier par
-   fichier ; l'ecart est consigne, pas silencieux. Le 13 coincide avec
-   la consolidation du coeur Epita (``argumentation_analysis/adapters/
-   french_fallacy_adapter.py``, ``_SYMBOLIC_FALLACY_RULES`` : 5 cles,
-   13 motifs, origin/main ``f246e200b``), qui a retire les motifs
-   d'autorite ``[NOUN] (le) dire`` et ``[PROPN] dire`` ainsi que le
-   motif de premisse ``les/des NOUN montrer/indiquer que`` ; le 6 du
-   minage ne correspond ni au source (2+3) ni au coeur (2+2).
-4. ``mine_claims_premises`` deduplique les matches par position de
-   debut (plus long match conserve) : le joker ``OP: "+"`` du source,
-   applique a une spec ``TEXT`` quelconque, fait rendre au Matcher
-   toutes les longueurs possibles (matches en cascade imbriques).
-   Semantique du marqueur conservee, bruit d'affichage supprime.
+   Le notebook mesure ces deux réparations : dormants avant, vivants après.
+4. **Clés non accentuées.** ``GENERALISATION_HATIVE``, ``APPEL_A_LA_TRADITION``,
+   ``ARGUMENT_AUTORITE`` sont désormais nommées comme dans le cœur. La première
+   distillation conservait les accents du source étudiant ; un identifiant
+   accentué est un risque de régression (cure #2876).
 
-Le mapping famille -> etiquette pedagogique (``FALLACY_LABELS``) et
-l'index famille -> cles (``FAMILY_KEYS``) sont ajoutes par la
-distillation : le source repetait l'etiquette dans chaque motif.
+Divergences conservées, mesurées dans le notebook :
+
+- Les specs de tokens nues ``{"OP": "+"}`` des motifs de minage sont écrites en
+  jokers explicites ``{"TEXT": {"REGEX": ".*"}}``. Choix de lisibilité : spaCy
+  3.8.16 accepte les deux formes, avec ou sans ``Matcher(validate=True)``, et
+  elles rendent les mêmes matches (mesure du 2026-09-23).
+- ``mine_claims_premises`` déduplique par position de début (plus long match
+  conservé) : le joker ``OP: "+"`` fait rendre au Matcher toutes les longueurs
+  imbriquées depuis le même point de départ.
+
+L'API ``detect_fallacies()`` construit le Matcher si spaCy est disponible (le
+modèle français doit être installé : ``python -m spacy download fr_core_news_sm``).
 """
 
 from __future__ import annotations
 
-# Etiquettes pedagogiques par famille (fusion AUTORITE_SIMPLE/GENERAL
-# dans une meme famille : le source les separe en deux cles mais les
-# etiquette identiquement).
+# Étiquettes pédagogiques par famille.
 FALLACY_LABELS = {
     "AD_HOMINEM": "Attaque personnelle (Ad Hominem)",
     "PENTE_GLISSANTE": "Pente glissante (Slippery Slope)",
@@ -70,12 +73,9 @@ FALLACY_LABELS = {
 FAMILY_KEYS = {
     "AD_HOMINEM": ["AD_HOMINEM_DIRECT"],
     "PENTE_GLISSANTE": ["PENTE_GLISSANTE"],
-    "GENERALISATION_HATIVE": ["GÉNÉRALISATION_HÂTIVE"],
-    "APPEL_A_LA_TRADITION": ["APPEL_À_LA_TRADITION"],
-    "ARGUMENT_D_AUTORITE": [
-        "ARGUMENT_D_AUTORITÉ_SIMPLE",
-        "ARGUMENT_D_AUTORITÉ_GÉNÉRAL",
-    ],
+    "GENERALISATION_HATIVE": ["GENERALISATION_HATIVE"],
+    "APPEL_A_LA_TRADITION": ["APPEL_A_LA_TRADITION"],
+    "ARGUMENT_D_AUTORITE": ["ARGUMENT_AUTORITE"],
 }
 
 FALLACY_RULES = {
@@ -92,7 +92,7 @@ FALLACY_RULES = {
             ],
             "FALLACY_TYPE": "Attaque personnelle (Ad Hominem)",
         },
-        # Discredit generalise : "On ne peut pas faire confiance à [GROUPE]"
+        # Discrédit généralisé : "On ne peut pas faire confiance à [GROUPE]"
         {
             "PATTERN": [
                 {"LOWER": "on"},
@@ -107,12 +107,16 @@ FALLACY_RULES = {
             ],
             "FALLACY_TYPE": "Attaque personnelle (Ad Hominem)",
         },
-        # Attaque de caractere : "[Nom] est [adjectif], donc son argument est faux."
+        # Attaque de caractère : "[Nom] est [adjectif], donc son argument est faux."
+        # G4 (#1186) : le slot de ponctuation optionnel manquait, la virgule
+        # s'intercale dans « Pierre est malhonnête, donc … » et le motif ne
+        # matchait jamais — le cœur l'a restauré avec cette correction.
         {
             "PATTERN": [
                 {"POS": "PROPN"},
                 {"LEMMA": "être"},
                 {"POS": "ADJ"},
+                {"IS_PUNCT": True, "OP": "?"},
                 {"LOWER": {"IN": ["donc", "alors"]}},
                 {"POS": "DET"},
                 {"POS": "NOUN"},
@@ -135,7 +139,7 @@ FALLACY_RULES = {
             ],
             "FALLACY_TYPE": "Pente glissante (Slippery Slope)",
         },
-        # Chaine de consequences negatives : "Cela mènera inévitablement à..."
+        # Chaîne de conséquences négatives : "Cela mènera inévitablement à..."
         {
             "PATTERN": [
                 {"LOWER": "cela"},
@@ -158,7 +162,7 @@ FALLACY_RULES = {
             "FALLACY_TYPE": "Pente glissante (Slippery Slope)",
         },
     ],
-    "GÉNÉRALISATION_HÂTIVE": [
+    "GENERALISATION_HATIVE": [
         # "[QUANTIFICATEUR] [GROUPE] sont [ADJECTIF]."
         {
             "PATTERN": [
@@ -169,7 +173,10 @@ FALLACY_RULES = {
             ],
             "FALLACY_TYPE": "Généralisation hâtive (Hasty Generalization)",
         },
-        # "Sur la base de [petit nombre] exemples..."
+        # Moteur : "Sur la base de [petit nombre] exemples..."
+        # G4 (#1186) : un slot NOUN surnuméraire précédait "exemples", qui est
+        # lui-même le nom — le motif ne matchait jamais. Le cœur l'a restauré
+        # sans ce slot.
         {
             "PATTERN": [
                 {"LOWER": "sur"},
@@ -177,13 +184,12 @@ FALLACY_RULES = {
                 {"LOWER": "base"},
                 {"LOWER": "de"},
                 {"POS": "NUM"},
-                {"POS": "NOUN"},
                 {"LOWER": "exemples"},
             ],
             "FALLACY_TYPE": "Généralisation hâtive (Hasty Generalization)",
         },
     ],
-    "APPEL_À_LA_TRADITION": [
+    "APPEL_A_LA_TRADITION": [
         # "Nous avons toujours fait comme ça."
         {
             "PATTERN": [
@@ -196,7 +202,13 @@ FALLACY_RULES = {
             ],
             "FALLACY_TYPE": "Appel à la tradition (Appeal to Tradition)",
         },
-        # "C'est la tradition."
+        # "Depuis toujours..."
+        {
+            "PATTERN": [{"LOWER": "depuis"}, {"LOWER": "toujours"}],
+            "FALLACY_TYPE": "Appel à la tradition (Appeal to Tradition)",
+        },
+        # G4 (#1186) : "C'est la tradition." — appel nu, restauré du projet
+        # étudiant par le cœur.
         {
             "PATTERN": [
                 {"LOWER": "c'"},
@@ -206,14 +218,9 @@ FALLACY_RULES = {
             ],
             "FALLACY_TYPE": "Appel à la tradition (Appeal to Tradition)",
         },
-        # "Depuis toujours..."
-        {
-            "PATTERN": [{"LOWER": "depuis"}, {"LOWER": "toujours"}],
-            "FALLACY_TYPE": "Appel à la tradition (Appeal to Tradition)",
-        },
     ],
-    "ARGUMENT_D_AUTORITÉ_SIMPLE": [
-        # "[EXPERT/SOURCE] a dit que [PROPOSITION], donc c'est vrai."
+    "ARGUMENT_AUTORITE": [
+        # "[GROUPE] dit que [PROPOSITION], donc [CONCLUSION]."
         {
             "PATTERN": [
                 {"POS": "NOUN", "OP": "+"},
@@ -222,17 +229,6 @@ FALLACY_RULES = {
                 {"TEXT": {"REGEX": ".*"}},
                 {"LOWER": {"IN": ["donc", "alors"]}},
                 {"TEXT": {"REGEX": ".*"}},
-            ],
-            "FALLACY_TYPE": "Argument d'autorité (Appeal to Authority)",
-        }
-    ],
-    "ARGUMENT_D_AUTORITÉ_GÉNÉRAL": [
-        # "[GROUPE] disent que [PROPOSITION]"
-        {
-            "PATTERN": [
-                {"POS": "NOUN", "OP": "+"},
-                {"LEMMA": "le", "OP": "?"},
-                {"LEMMA": "dire"},
             ],
             "FALLACY_TYPE": "Argument d'autorité (Appeal to Authority)",
         },
@@ -246,15 +242,10 @@ FALLACY_RULES = {
             ],
             "FALLACY_TYPE": "Argument d'autorité (Appeal to Authority)",
         },
-        # "[Personne célèbre] a dit..."
-        {
-            "PATTERN": [{"POS": "PROPN"}, {"LEMMA": "dire"}],
-            "FALLACY_TYPE": "Argument d'autorité (Appeal to Authority)",
-        },
     ],
 }
 
-# --- Argument mining : claims et premisses (source argument_mining_rules.py) ---
+# --- Argument mining : claims et prémisses ---
 
 CLAIM_PATTERNS = [
     # "Je pense que...", "Nous croyons que..."
@@ -294,30 +285,79 @@ PREMISE_PATTERNS = [
             {"TEXT": {"REGEX": ".*"}, "OP": "+"},
         ]
     },
-    # "Les faits montrent que...", "Des études indiquent que..."
+]
+
+# --- G5 (#1186) : justification française par famille de sophisme ---
+#
+# Un gabarit spécifique par famille, au lieu d'une ligne générique pour tout.
+# Le projet étudiant émettait ces justifications verbatim ; le cœur les a
+# restaurées. Chaque gabarit porte les sous-chaînes de familles qu'il couvre :
+# la résolution se fait par clé directe OU par sous-chaîne de famille, car
+# l'étiquette d'une détection peut venir d'un étage non symbolique (NLI, LLM)
+# dont le vocabulaire diffère.
+FALLACY_JUSTIFICATIONS_FR = [
     {
-        "PATTERN": [
-            {"LOWER": {"IN": ["les", "des"]}},
-            {"POS": "NOUN"},
-            {"LEMMA": {"IN": ["montrer", "indiquer"]}},
-            {"LOWER": "que"},
-            {"TEXT": {"REGEX": ".*"}, "OP": "+"},
-        ]
+        "template": (
+            "L'argument attaque la personne ou le caractère de l'adversaire "
+            "plutôt que de réfuter son argument."
+        ),
+        "matches": ["Attaque personnelle", "Ad hominem", "Obstruction"],
+    },
+    {
+        "template": (
+            "Une conclusion générale est tirée à partir d'un échantillon trop "
+            "limité ou non représentatif."
+        ),
+        "matches": ["Généralisation", "Erreur mathématique"],
+    },
+    {
+        "template": (
+            "L'argument s'appuie sur l'opinion d'une figure d'autorité ou sur "
+            "l'émotion sans fournir de preuves suffisantes pour étayer "
+            "l'affirmation."
+        ),
+        "matches": ["autorité", "Influence", "Appel à l'émotion"],
+    },
+    {
+        "template": (
+            "L'argument tente de discréditer une source ou une affirmation sans "
+            "aborder le fond de la question, ou s'appuie sur des idées reçues "
+            "sans les remettre en question."
+        ),
+        "matches": ["crédibilité", "Préjugé", "Insuffisance"],
     },
 ]
 
 
-def _wildcard(op: str = "+") -> dict:
-    """Spec de token joker, equivalent de la spec nue ``{"OP": op}``.
+def justify_fallacy(fallacy_type: str) -> str | None:
+    """Rend la justification française par famille d'un type de sophisme.
 
-    Forme explicite retenue pour la lisibilite ; spaCy accepte aussi la
-    spec nue (divergence 2 documentee en en-tete de module).
+    Ordre de résolution : (1) correspondance directe sur l'une des
+    sous-chaînes ``matches`` (insensible à la casse), (2) aucune
+    correspondance → ``None``. *Fail-loud* (#1019) : une famille inconnue rend
+    ``None``, jamais une justification générique fabriquée.
+    """
+    if not fallacy_type:
+        return None
+    needle = fallacy_type.lower()
+    for entry in FALLACY_JUSTIFICATIONS_FR:
+        for token in entry["matches"]:
+            if token.lower() in needle:
+                return entry["template"]
+    return None
+
+
+def _wildcard(op: str = "+") -> dict:
+    """Spec de token joker, équivalent de la spec nue ``{"OP": op}``.
+
+    Forme explicite retenue pour la lisibilité ; spaCy accepte aussi la spec
+    nue (divergence documentée en en-tête de module).
     """
     return {"TEXT": {"REGEX": ".*"}, "OP": op}
 
 
 def rule_counts() -> dict:
-    """Comptes mesures des motifs (sophismes, claims, premisses)."""
+    """Comptes mesurés des motifs (sophismes, claims, prémisses, gabarits)."""
     fallacy = sum(len(v) for v in FALLACY_RULES.values())
     return {
         "families": len(FALLACY_LABELS),
@@ -325,11 +365,12 @@ def rule_counts() -> dict:
         "fallacy_motifs": fallacy,
         "claim_motifs": len(CLAIM_PATTERNS),
         "premise_motifs": len(PREMISE_PATTERNS),
+        "justification_templates": len(FALLACY_JUSTIFICATIONS_FR),
     }
 
 
 def validate_patterns() -> list[str]:
-    """Verifie que chaque motif porte au moins un attribut hors OP.
+    """Vérifie que chaque motif porte au moins un attribut hors OP.
 
     Rend la liste des descriptions invalides (vide = tout est valide).
     """
@@ -345,12 +386,12 @@ def validate_patterns() -> list[str]:
 
 
 def detect_fallacies(text: str, nlp=None) -> list[dict]:
-    """Detecte les sophismes de ``text`` par motifs symboliques.
+    """Détecte les sophismes de ``text`` par motifs symboliques.
 
-    Rend une liste de detections ``{"key", "label", "pattern_index",
-    "start", "end", "excerpt"}`` ordonnee par position. Necessite spaCy
-    et un modele francais (``fr_core_news_sm`` ou plus) ; le parametre
-    ``nlp`` permet d'injecter un pipeline deja charge.
+    Rend une liste de détections ``{"key", "label", "pattern_index", "start",
+    "end", "excerpt", "justification"}`` ordonnée par position. Nécessite spaCy
+    et un modèle français (``fr_core_news_sm`` ou plus) ; le paramètre ``nlp``
+    permet d'injecter un pipeline déjà chargé.
     """
     if nlp is None:
         import spacy  # import tardif : l'organe reste importable sans spaCy
@@ -375,21 +416,24 @@ def detect_fallacies(text: str, nlp=None) -> list[dict]:
                 "start": start,
                 "end": end,
                 "excerpt": doc[start:end].text,
+                # G5 (#1186) : justification par famille, None quand la famille
+                # n'a pas de gabarit (fail-loud #1019, jamais fabriquée).
+                "justification": justify_fallacy(FALLACY_LABELS.get(family, key)),
             }
         )
     return sorted(results, key=lambda r: (r["start"], r["end"]))
 
 
 def mine_claims_premises(text: str, nlp=None) -> dict:
-    """Extrait claims et premisses marquees de ``text`` par motifs.
+    """Extrait claims et prémisses marquées de ``text`` par motifs.
 
-    Rend ``{"claims": [...], "premises": [...]}`` avec pour chaque
-    extraction ``{"start", "end", "excerpt"}``.
+    Rend ``{"claims": [...], "premises": [...]}`` avec pour chaque extraction
+    ``{"start", "end", "excerpt"}``.
     """
 
     def run(matcher, doc):
-        # Divergence 4 : plus long match par position de debut (le joker
-        # OP:"+" du source rend toutes les longueurs imbriquees).
+        # Le joker OP:"+" du source rend toutes les longueurs imbriquées :
+        # on conserve le plus long match par position de début.
         par_debut: dict[int, tuple[int, int]] = {}
         for _, s, e in matcher(doc):
             if s not in par_debut or (e - s) > (par_debut[s][1] - par_debut[s][0]):
