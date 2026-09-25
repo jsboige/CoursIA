@@ -113,6 +113,14 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lean-toolchain'
+      # serre100_lean (#17336)
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/lean-toolchain'
+      # Self-cover B.3 herite du wrapper lean-serre.yml supprime (#17336) :
+      # le moteur d'axiomes change -> le gate axiom de serre100 rejoue.
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
       # self-cover du gate (#8712) : un changement du gate lance le gate
       - '.github/workflows/lean-ci-matrix.yml'
       - '.github/workflows/lean-build.yml'
@@ -120,6 +128,8 @@ on:
       - 'scripts/lean/ci_lakes.json'
       - 'scripts/lean/lake_matrix_dispatch.py'
       - 'scripts/ci/check_lake_matrix_paths.py'
+      - '.github/actions/lean-axiom/action.yml'
+      - 'scripts/lean/axiom_check_step.py'
   pull_request:
     branches: [main]
     types: [opened, synchronize, edited, reopened]
@@ -202,12 +212,22 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lean-toolchain'
+      # serre100_lean (#17336)
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/lean-toolchain'
+      # Self-cover B.3 herite du wrapper lean-serre.yml supprime (#17336) :
+      # le moteur d'axiomes change -> le gate axiom de serre100 rejoue.
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
       - '.github/workflows/lean-ci-matrix.yml'
       - '.github/workflows/lean-build.yml'
       - '.github/actions/lean-build/action.yml'
       - 'scripts/lean/ci_lakes.json'
       - 'scripts/lean/lake_matrix_dispatch.py'
       - 'scripts/ci/check_lake_matrix_paths.py'
+      - '.github/actions/lean-axiom/action.yml'
+      - 'scripts/lean/axiom_check_step.py'
   workflow_dispatch:
 
 permissions:
