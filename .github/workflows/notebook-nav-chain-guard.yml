@@ -1,0 +1,55 @@
+name: Notebook Nav-Chain Guard
+
+# CI gate for nav-chain REACHABILITY: every notebook of a series must be
+# reachable through the series navigation chain (nav edges in notebook cells
+# + series index). Checker: check_notebook_nav_chain.py (PR #17285).
+#
+# Blocking on the NEW only, on the model of notebook-navlink-check.yml: the
+# findings already recorded in scripts/tests/baseline_nb_nav_chain.json are
+# the assumed debt (the ~450-finding backlog, #17284 -- rollout per series,
+# not in one shot) and do NOT block; a NEW finding introduced by a PR fails
+# the gate (exit 1). Renames/moves update the baseline entry for the old
+# path in the same PR (precedent #17819).
+#
+# Trigger includes MyIA.AI.Notebooks/**/README.md because removing an
+# incoming link from a series index can orphan a notebook without touching
+# any .ipynb.
+
+on:
+  pull_request:
+    paths:
+      - '**/*.ipynb'
+      - 'MyIA.AI.Notebooks/**/README.md'
+      - 'scripts/notebook_tools/check_notebook_nav_chain.py'
+      - 'scripts/tests/baseline_nb_nav_chain.json'
+      - '.github/workflows/notebook-nav-chain-guard.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: notebook-nav-chain-guard-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-nav-chain:
+    # Route vers la jambe Linux auto-hebergee (#13378 tranche 1, decision ai-01
+    # 2026-09-01) : garde Python pur, sans secret ni usage du GITHUB_TOKEN. La garde
+    # same-repo ci-dessous saute les PRs de fork (pr_gate.py compte `skipped` comme
+    # OK) : aucun code de fork n'atteint le runner. Retour arriere = revert de la PR.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      # La jambe Linux conteneurisee n'expose pas de `python` systeme (job
+      # 100021313259, exit 127) : l'interprete vient de setup-python, comme
+      # dans les autres gardes de la tranche 1.
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Check notebook nav chain
+        run: python scripts/notebook_tools/check_notebook_nav_chain.py --check
