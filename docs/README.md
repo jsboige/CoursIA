@@ -266,7 +266,17 @@ Notes de suivi de cycle par série (transitions architecturales et narratives).
 | Fichier | Description |
 |---------|-------------|
 | [suivis/iit-ict-transition.md](suivis/iit-ict-transition.md) | Transition IIT → ICT, pivot série ICT-Series (#4588, #5081) |
-| [suivis/singapore-consensus-audit.md](suivis/singapore-consensus-audit.md) | Audit du cluster selon les 10 principes agentic du Singapore Consensus (R11 companion, P1-P10, #16757) |
+
+## Cadrage épistémique (docs/cadrage/)
+
+Documents qui positionnent le dépôt face à un texte externe (déclarations, manifestes, consensus) ou face à un courant de pensée qui irrigue plusieurs séries. Règle d'agrégation par **communauté interlocutrice** (cf #17525) ; le nom du document porte sa **relation** (`-lens`, `-dialogue`, `-position`, `-self-audit`, `-armature`).
+
+| Fichier | Description |
+|---------|-------------|
+| [cadrage/README.md](cadrage/README.md) | Index agrégateur (tableau par communauté, veilles, règles d'agrégation) — l'entrée canonique de la famille |
+| [cadrage/singapore-consensus-self-audit.md](cadrage/singapore-consensus-self-audit.md) | Audit du cluster selon les 10 principes agentic du Singapore Consensus (R11 companion, P1-P10, #16757) |
+
+Les autres documents de cadrage vivent au premier niveau de `docs/` (Grothendieckian lens, Leiden position, Magnifica Humanitas dialogue) — ils migreront dans `docs/cadrage/` par tranches successives (#17525).
 
 ## CI & workflows (docs/ci/)
 
@@ -325,6 +335,7 @@ docs/
                      + pré-enregistrements grade T (protocoles scellés avant mesure)
   ledgers/           Ledgers d'audit cumulatifs par Epic (#3801, #10466, #10678, #11690, #12204)
   suivis/            Suivis de cycle (transitions de série)
+  cadrage/           Documents épistémiques de cadrage — index par communauté interlocutrice (#17525)
   grothendieckian-lens.md  Clé de lecture transversale du dépôt
   PARCOURS.md        Schéma maturité 3 axes (éditorial / reproductibilité / revue) — #8051
   archive/           Documents inactifs (ex-_archives)
