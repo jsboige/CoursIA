@@ -195,3 +195,131 @@ def test_classify_post_merge_comment_is_ambiguous(monkeypatch):
     row = classify_one("o/r", {"number": 10600, "title": "workflow-path-filter-audit"})
     assert row["verdict"] == "AMBIGUOUS"
     assert "AFTER latest merge" in row["reason"]
+
+
+# --- #17956 : verdict CONTAINER (issue-conteneurs) -------------------------
+
+def test_classify_partition_title_is_container(monkeypatch):
+    # Mesure 2026-09-26 : 7 des 29 READY du crible etaient des partitions
+    # d'audit de serie. Le titre porte le signal -- aucune requete gh n'est
+    # meme necessaire (court-circuit avant l'analyse des PRs).
+    row = classify_one("o/r", {"number": 17073,
+                               "title": "[Audit #17073] Serie GameTheory — partition Hermes"})
+    assert row["verdict"] == "CONTAINER"
+    assert "tranche" in row["reason"]
+
+
+def test_classify_partition_beats_ready_evidence(monkeypatch):
+    # La propriete d'acceptance : une partition avec le profil EXACT d'un
+    # READY (PR unique mergee, silence) reste CONTAINER -- l'ordre des
+    # verifications place le conteneur AVANT toute analyse de merge.
+    mapping = {
+        ("api", "repos/o/r/issues/17073/timeline", "--paginate"): [
+            _timeline_event(17754, "2026-09-20T10:00:00Z"),
+        ],
+        ("search", "issues", "--json", "number", "--limit", "20"): [],
+        ("issue", "view", "17073", "--repo", "o/r", "--json", "comments",
+         "--jq", ".comments[-1].createdAt"): "",
+    }
+    _stub_subprocess(monkeypatch, mapping)
+    row = classify_one("o/r", {"number": 17073,
+                               "title": "Serie Probas — partition par notebooks"})
+    assert row["verdict"] == "CONTAINER"
+
+
+def test_classify_tasklist_body_is_container(monkeypatch):
+    # Signal task-list : ne vit que dans le body. Le --jq .body rend une
+    # SCALAR JSON string -- le stub l'echoit verbatim avec ses quotes.
+    mapping = {
+        ("issue", "view", "17900", "--repo", "o/r", "--json", "body",
+         "--jq", ".body"): '"Tranches:\\n\\n- [x] #17070 GameTheory\\n- [ ] #17071 Lean\\n"',
+    }
+    _stub_subprocess(monkeypatch, mapping)
+    row = classify_one("o/r", {"number": 17900,
+                               "title": "Fermer la dette de rendu des notebooks"})
+    assert row["verdict"] == "CONTAINER"
+    assert "task list" in row["reason"]
+
+
+def test_classify_epic_title_is_container(monkeypatch):
+    # verifier_cleanup n'a pas de verdict epic distinct : la classe est
+    # pliee dans CONTAINER (meme predicat partage, issue_containers.py).
+    row = classify_one("o/r", {"number": 17903, "title": "EPIC: rollout nav-chain"})
+    assert row["verdict"] == "CONTAINER"
+
+
+def test_classify_acceptance_checkboxes_are_not_container(monkeypatch):
+    # Controle negatif : des checkboxes d'acceptance sans reference d'issue
+    # ne font pas un conteneur -- la feuille livree reste READY-eligible.
+    # Le body est requete mais ne porte aucun #N sur ligne de tache.
+    mapping = {
+        ("issue", "view", "17902", "--repo", "o/r", "--json", "body",
+         "--jq", ".body"): '"Acceptance:\\n\\n- [x] le SVG saffiche\\n- [ ] tests verts\\n"',
+        ("api", "repos/o/r/issues/17902/timeline", "--paginate"): [
+            _timeline_event(17904, "2026-09-20T10:00:00Z"),
+        ],
+        ("search", "issues", "--json", "number", "--limit", "20"): [],
+        ("issue", "view", "17902", "--repo", "o/r", "--json", "comments",
+         "--jq", ".comments[-1].createdAt"): "",
+    }
+    _stub_subprocess(monkeypatch, mapping)
+    row = classify_one("o/r", {"number": 17902,
+                               "title": "Corriger le rendu SVG de la cellule 12"})
+    assert row["verdict"] == "READY"
+
+
+# --- #17956 : coherence labeler <-> closure pass (meme corpus, meme refs) ---
+
+def test_container_corpus_never_candidate_and_never_ready(monkeypatch):
+    # Contrainte 1 du dispatch #17956 : une issue-conteneur ne doit PAS
+    # recevoir l'etiquette (candidate_delivered) ET ne doit pas etre
+    # READY (verifier_cleanup). Les deux organes partagent le predicat --
+    # ce test alimente le MEME corpus + les MEMES refs declarees a chacun
+    # et exige la coherence des deux cotes, plus le cas sain (feuille) qui
+    # reste candidate/READY des deux cotes.
+    from candidate_delivered import classify as cd_classify
+    import json as _json
+
+    def _jstr(s):
+        return _json.dumps(s)
+
+    declared_ref = [{"pr_number": 17754, "merged_at": "2026-09-20T10:00:00Z",
+                     "body": "Grain: DEEP/notebook-python -- See #{n} (tranche)."}]
+    timeline = [_timeline_event(17754, "2026-09-20T10:00:00Z")]
+
+    corpus = [
+        # (number, title, body, expected_verifier, expected_labeler)
+        (17073, "[Audit #17073] Serie GameTheory — partition Hermes",
+         "27 notebooks.", "CONTAINER", "container"),
+        (17903, "EPIC: rollout nav-chain", "", "CONTAINER", "epic"),
+        (17900, "Fermer la dette de rendu des notebooks",
+         "Tranches:\n\n- [x] #17070 A\n- [ ] #17071 B\n", "CONTAINER", "container"),
+        (17902, "Corriger le rendu SVG de la cellule 12",
+         "Acceptance:\n\n- [x] SVG\n", "READY", "candidate"),
+    ]
+    for n, title, body, want_verifier, want_labeler in corpus:
+        mapping = {
+            ("api", f"repos/o/r/issues/{n}/timeline", "--paginate"): timeline,
+            ("search", "issues", "--json", "number", "--limit", "20"): [],
+            ("issue", "view", str(n), "--repo", "o/r", "--json", "body",
+             "--jq", ".body"): _jstr(body),
+            ("issue", "view", str(n), "--repo", "o/r", "--json", "comments",
+             "--jq", ".comments[-1].createdAt"): "null",
+        }
+        _stub_subprocess(monkeypatch, mapping)
+        row = classify_one("o/r", {"number": n, "title": title})
+        assert row["verdict"] == want_verifier, (n, row["verdict"])
+
+        issue = {"title": title, "number": n, "labels": [],
+                 "created_at": "2026-08-01T00:00:00Z",
+                 "body": body,
+                 "comments": []}
+        refs = [{"pr_number": r["pr_number"], "merged_at": r["merged_at"],
+                 "body": r["body"].format(n=n)} for r in declared_ref]
+        verdict, _ = cd_classify(issue, refs)
+        assert verdict == want_labeler, (n, verdict)
+
+        # La propriete de coherence, verifiee sur CHAQUE fixture : conteneur
+        # pour l'un => jamais etiquetable par l'autre.
+        if want_verifier == "CONTAINER":
+            assert verdict != "candidate", n

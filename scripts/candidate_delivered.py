@@ -38,6 +38,14 @@ ADVISORY, never auto-close (#10466 "Ce que l'organe ne doit pas faire"):
     robust signal (covers #1454 "[EPIC]", #3801 "EPIC:", #10355/#4362 label
     EPIC). This exclusion rule is written here per acceptance #3 (the motif is
     in the workflow, not patched by hand).
+  - Issue CONTAINERS are excluded (#17956): an audit-partition title
+    (``[Audit #N] Serie ... — partition``) or a body task list naming >= 2
+    sub-issues tracks MANY targets -- one merged PR delivers one tranche at
+    most, so "merged + silent" is the NORMAL state of a container, never
+    close-ready evidence (measured 2026-09-26 crible: 7 of 29 READY verdicts
+    were partition audits, 7 of 7 wrong). The predicate lives in
+    ``issue_containers.py`` and is shared with ``verifier_cleanup.py`` so the
+    labeler and the closure pass cannot drift (#17956 constraint 1).
   - An OPEN PR referencing the issue means work in flight -- excluded as
     ``in_flight`` (#11100): the correct `See #N` syntax for a partial delivery
     must not produce the "probably delivered" label. Measured on #10984
@@ -111,6 +119,8 @@ import subprocess
 import sys
 import time
 from typing import Iterable
+
+import issue_containers
 
 LABEL_DEFAULT = "candidate-delivered"
 LABEL_COLOR = "5319e7"  # purple -- "delivered, awaiting close triage"
@@ -218,6 +228,9 @@ def classify(
     Returns:
         ``(verdict, detail)`` where verdict is one of:
         ``"epic"``         -- excluded (EPIC by title/label)
+        ``"container"``    -- excluded (audit partition / sub-issue task list,
+                              #17956 -- one merged PR delivers one tranche at
+                              most, silence proves nothing)
         ``"retracted"``    -- a human removed the label: verdict stands (#14307)
         ``"no_delivery"``  -- no merged PR references it, or every merged PR
                               references it only contextually (no delivery
@@ -230,6 +243,15 @@ def classify(
     labels = issue.get("labels", []) or []
     if is_epic(title, labels):
         return ("epic", f"EPIC by title/label: {title!r}")
+
+    # #17956: same shape-exclusion class as EPIC -- a container (audit
+    # partition, sub-issue task list) is excluded BEFORE any reference
+    # heuristic, because "merged + silent" is its normal mid-rollout state.
+    # Shares the predicate with verifier_cleanup.py (issue_containers.py) so
+    # the label decision and the closure verdict cannot diverge.
+    if issue_containers.looks_container(title, labels, issue.get("body")):
+        return ("container",
+                f"container (partition/task list): {title!r}")
 
     # #14307: a human retraction pre-empts the reference heuristic entirely.
     # It sits before in_flight/active/candidate because it is not evidence
@@ -314,19 +336,22 @@ def list_open_issues(repo: str) -> list[dict]:
 
 
 def issue_detail(repo: str, number: int) -> dict:
-    """Comments (createdAt + body) for one issue.
+    """Comments (createdAt + body) and issue body for one issue.
 
-    The body is needed by ``classify`` to recognise the protocol's
+    The comment bodies are needed by ``classify`` to recognise the protocol's
     ``[INFO] candidate-delivered`` attestations (#17759 mecanisme B): a
     comment without a body key reads as ordinary activity (fail-safe).
+    The ISSUE body feeds the container predicate (#17956) -- a task list
+    naming >= 2 sub-issues is only visible there.
     """
     raw = _gh_json([
         "issue", "view", str(number), "--repo", repo,
-        "--json", "createdAt,comments",
+        "--json", "createdAt,comments,body",
     ])
     d = raw or {}
     return {
         "created_at": d.get("createdAt", ""),
+        "body": d.get("body") or "",
         "comments": [{"created_at": c.get("createdAt", ""),
                       "body": c.get("body") or ""}
                      for c in (d.get("comments") or [])],
@@ -578,6 +603,7 @@ def main(argv: list[str] | None = None) -> int:
             "title": issue.get("title", ""),
             "labels": [lab.get("name", "") for lab in (issue.get("labels") or [])],
             "created_at": detail["created_at"],
+            "body": detail.get("body", ""),
             "comments": detail["comments"],
         }
         verdict, why = classify(enriched, refs, label_events)
@@ -608,6 +634,12 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"  #{number:<6} retracted  {why}")
         elif verdict == "epic":
             print(f"  #{number:<6} EPIC       excluded  ({enriched['title'][:50]})")
+        elif verdict == "container":
+            if labeled:  # posed under the shape-blind sweep -- retract (#17956)
+                remove_label(repo, number, args.label, args.dry_run)
+                print(f"  #{number:<6} container  {why}  (label retracted)")
+            else:
+                print(f"  #{number:<6} container  {why}")
         elif verdict == "no_delivery":
             if labeled:
                 # A label can survive a predicate change: posed under the old

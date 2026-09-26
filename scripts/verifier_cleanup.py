@@ -21,6 +21,14 @@ needed to decide ``close / keep / triage``:
                   ``permanent`` (per c.301 L2 ★ on #10918). These are
                   deliberately re-opened slots for periodic reports; the
                   label here is an advisory false-positive.
+  - CONTAINER   : the issue is a container of many work targets (audit
+                  partition title ``[Audit #N] ... partition``, EPIC by
+                  title/label, or a task list naming >= 2 sub-issues -- cf
+                  ``issue_containers.py``, #17956). One merged PR delivers at
+                  most one tranche of it, so it NEVER reaches READY.
+                  Measured 2026-09-26: 7 of 29 READY verdicts were partition
+                  audits of series -- the dominant failure class of the
+                  crible (ai-01 constat on #17956).
   - AMBIGUOUS   : multiple merged PRs reference the issue, or activity after
                   the latest merge, or body criteria not all met. Hand off to
                   a verifier with the evidence attached.
@@ -53,6 +61,8 @@ import json
 import subprocess
 import sys
 from typing import Any
+
+import issue_containers
 
 LABEL = "candidate-delivered"
 
@@ -140,6 +150,15 @@ def get_open_pr_refs(repo: str, number: int) -> list[int]:
     return [int(item["number"]) for item in (out or []) if item.get("number")]
 
 
+def get_issue_body(repo: str, number: int) -> str:
+    """Body of the issue (empty string on failure -- title signals decide then)."""
+    body = _gh_json([
+        "issue", "view", str(number), "--repo", repo,
+        "--json", "body", "--jq", ".body",
+    ])
+    return str(body) if body else ""
+
+
 def get_last_comment_date(repo: str, number: int) -> str | None:
     """Return ISO date of the last comment on the issue, or None."""
     comments = _gh_json([
@@ -176,6 +195,26 @@ def classify_one(repo: str, issue: dict) -> dict:
         return {
             "number": number, "title": title, "verdict": "REGISTRY",
             "evidence": evidence, "reason": "title carries registry/permanent marker",
+        }
+
+    # CONTAINER precedes any PR analysis: a container NEVER reaches READY,
+    # whatever the merge evidence -- one merged PR delivers one tranche of a
+    # 27-82 notebook partition (#17956).
+    labels = [lab.get("name") or "" for lab in (issue.get("labels") or [])]
+    if issue_containers.looks_container(title, labels):
+        return {
+            "number": number, "title": title, "verdict": "CONTAINER",
+            "evidence": evidence,
+            "reason": "container (audit partition / EPIC / sub-issue task list) -- "
+                      "one PR delivers one tranche at most",
+        }
+    body = get_issue_body(repo, number)
+    if issue_containers.looks_container(title, labels, body):
+        return {
+            "number": number, "title": title, "verdict": "CONTAINER",
+            "evidence": evidence,
+            "reason": "container by body task list naming sub-issues -- "
+                      "one PR delivers one tranche at most",
         }
 
     events = get_issue_timeline(repo, number)
