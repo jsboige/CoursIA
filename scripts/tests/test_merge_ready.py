@@ -67,6 +67,7 @@ def default_view(
     body: str | None = None,
     comments: list[dict] | None = None,
     title: str = "fix(x): une PR ordinaire",
+    reviews: list[dict] | None = None,
 ) -> dict:
     return {
         "number": pr,
@@ -79,6 +80,25 @@ def default_view(
         "comments": comments
         if comments is not None
         else [{"body": dossier_body()}],
+        "reviews": reviews if reviews is not None else [],
+    }
+
+
+def review_row(
+    *,
+    state: str = "APPROVED",
+    oid: str = HEAD,
+    submitted: str = "2026-09-25T03:00:00Z",
+    body: str = "",
+    login: str = "clusterManager-Myia",
+) -> dict:
+    """Forme de ``gh pr view --json reviews`` (l'oid de review est sur ``commit``)."""
+    return {
+        "author": {"login": login},
+        "state": state,
+        "body": body,
+        "submittedAt": submitted,
+        "commit": {"oid": oid},
     }
 
 
@@ -505,11 +525,17 @@ def test_journal_ligne_par_pr(tmp_path):
     assert journal.is_file()
     assert len(lines) == 2
     for row in lines:
-        assert set(row.keys()) == {"ts", "pr", "head", "verdict", "reason", "merged"}
+        assert set(row.keys()) == {
+            "ts", "pr", "head", "verdict", "reason", "merged", "review",
+        }
         assert re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z", row["ts"])
         assert isinstance(row["pr"], int)
         assert row["merged"] is True and row["verdict"] == "merged"
         assert row["reason"] is None
+        # Une ligne mergee porte la disposition CLASSEE, pas « non evaluee » :
+        # le verdict terminal est reconstruit apres le merge, il doit heriter de
+        # la classification faite avant.
+        assert row["review"] == mr.NO_APPROVAL
     assert [row["pr"] for row in lines] == [401, 402]  # ancienne d'abord
 
 
@@ -684,6 +710,99 @@ def test_hold_file_override(tmp_path):
     assert rc == 0
     assert lines[-1]["reason"] == "hold:ordre de stack"
 
+
+# --- disposition de review classee a la tete evaluee (point 1 de #17672) ---------
+
+
+def test_disposition_approbation_a_la_tete():
+    view = default_view(reviews=[review_row(oid=HEAD)])
+    assert mr.review_disposition(view, HEAD) == mr.APPROVED_EXACT_HEAD
+
+
+def test_disposition_approbation_sur_une_tete_ancienne():
+    # L'approbation existe, mais elle porte sur un commit anterieur : elle ne
+    # couvre pas le commit qui va etre merge.
+    view = default_view(reviews=[review_row(oid=HEAD_MOVED)])
+    assert mr.review_disposition(view, HEAD) == mr.APPROVAL_NOT_ON_HEAD
+
+
+def test_disposition_verdict_en_corps_compte_a_la_tete():
+    # Le jeton de review du cluster ne peut poster que des COMMENT : son
+    # approbation vit dans le CORPS de la voix, pas dans l'etat de l'API (#16926).
+    view = default_view(
+        reviews=[
+            review_row(
+                state="COMMENTED",
+                oid=HEAD,
+                body=(
+                    "**[Hermes]** — VERDICT: LGTM "
+                    "(contrainte token CoursIA : COMMENT only, #15511)"
+                ),
+            )
+        ]
+    )
+    assert mr.review_disposition(view, HEAD) == mr.APPROVED_EXACT_HEAD
+
+
+def test_disposition_voix_posterieure_non_approbatrice_retire_l_approbation():
+    # Latest-wins sur la tete : une approbation suivie, sur la MEME tete, d'une
+    # voix qui n'approuve pas ne gouverne plus.
+    view = default_view(
+        reviews=[
+            review_row(oid=HEAD, submitted="2026-09-25T03:00:00Z"),
+            review_row(
+                state="COMMENTED",
+                oid=HEAD,
+                submitted="2026-09-25T04:00:00Z",
+                body="VERDICT: CONCERNS (test rouge depuis le dernier push)",
+            ),
+        ]
+    )
+    assert mr.review_disposition(view, HEAD) == mr.APPROVAL_NOT_ON_HEAD
+
+
+def test_disposition_sans_approbation_lue():
+    assert mr.review_disposition(default_view(), HEAD) == mr.NO_APPROVAL
+    # Une voix qui ne type pas de verdict n'est pas une approbation.
+    view = default_view(reviews=[review_row(state="COMMENTED")])
+    assert mr.review_disposition(view, HEAD) == mr.NO_APPROVAL
+
+
+def test_deux_prs_qui_ne_different_que_par_la_tete_de_l_approbation(tmp_path):
+    """Le defaut vise : a tout le reste egal, l'organe ne distinguait pas une PR
+    approuvee a la tete de la PR approuvee sur un commit anterieur."""
+    views = {
+        201: default_view(pr=201, reviews=[review_row(oid=HEAD)]),
+        202: default_view(pr=202, reviews=[review_row(oid=HEAD_MOVED)]),
+    }
+    rc, lines, _ = run_organ(tmp_path, ScriptedRunner(prs=(201, 202), views=views))
+    assert rc == 0
+    assert [row["verdict"] for row in lines] == ["would-merge", "would-merge"]
+    reste = [
+        {k: row[k] for k in ("head", "verdict", "reason", "merged")} for row in lines
+    ]
+    assert reste[0] == reste[1]
+    assert lines[0]["review"] == mr.APPROVED_EXACT_HEAD
+    assert lines[1]["review"] == mr.APPROVAL_NOT_ON_HEAD
+
+
+def test_un_skip_porte_la_disposition_de_la_tete_evaluee(tmp_path):
+    views = {201: default_view(pr=201, draft=True, reviews=[review_row(oid=HEAD)])}
+    rc, lines, _ = run_organ(tmp_path, ScriptedRunner(prs=(201,), views=views))
+    assert rc == 0
+    assert lines[-1]["reason"] == "draft"
+    assert lines[-1]["review"] == mr.APPROVED_EXACT_HEAD
+
+
+def test_le_bilan_compte_les_candidates_par_disposition(tmp_path, capsys):
+    views = {
+        201: default_view(pr=201, reviews=[review_row(oid=HEAD)]),
+        202: default_view(pr=202, reviews=[review_row(oid=HEAD_MOVED)]),
+    }
+    run_organ(tmp_path, ScriptedRunner(prs=(201, 202), views=views))
+    out = capsys.readouterr().out
+    assert "candidates : 1 approved-exact-head, 1 approval-not-on-head" in out
+    assert "[review: approved-exact-head]" in out
 
 # --- 5bis. collision d'index twin-pairs -----------------------------------------
 
