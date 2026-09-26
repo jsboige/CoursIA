@@ -81,11 +81,11 @@ NAV_UPDATES = {
     # SC-1 -> SC-3
     "SC-1-Solidity-Basics.ipynb": {
         "old_title": "SC-1-Solidity-Basics",
-        "new_title": "SC-3-Solidity-Basics",
+        "new_title": "SC-03-Solidity-Basics-Python",
         "old_nav": "[<< Setup](../00-Environment/SC-0-Setup.ipynb)",
-        "new_nav": "[<< Setup Web3py](../00-Foundations/SC-2-Setup-Web3py.ipynb)",
+        "new_nav": "[<< Setup Web3py](../00-Foundations/SC-02-Setup-Web3py-Python.ipynb)",
         "old_next": "[Functions >>](SC-2-Functions-State.ipynb)",
-        "new_next": "[Functions >>](SC-4-Functions-State.ipynb)",
+        "new_next": "[Functions >>](SC-04-Functions-State-Python.ipynb)",
     },
 }
 

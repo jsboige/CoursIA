@@ -103,7 +103,7 @@ La série Geometry (programme gradué, Epic #17544) ouvre la **démonstration au
 | **Lean** | `Lean/Lean-1-Setup.ipynb` | `wsl -d Ubuntu -- bash -c "jupyter notebook Lean-1-Setup.ipynb"` |
 | **SemanticWeb** | `SemanticWeb/SW-1-CSharp-Setup.ipynb` (.NET) ou `SW-2b-Python-RDFBasics.ipynb` (Python) | `pip install rdflib pySHACL` |
 | **Planners** | `Planners/00-Environment/Planners-0-Setup.ipynb` | `pip install ortools unified_planning` |
-| **SmartContracts** | `SmartContracts/00-Foundations/SC-0-Cypherpunk-Origins.ipynb` | `pip install py-solc-x web3` |
+| **SmartContracts** | `SmartContracts/00-Foundations/SC-00-Cypherpunk-Origins-Python.ipynb` | `pip install py-solc-x web3` |
 | **SymbolicLearning** | `SymbolicLearning/SL-1-LogicalLearning.ipynb` | Python 3.10+ standard library, aucune installation |
 | **Argument Analysis** | `Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb` | `pip install semantic-kernel jpype1` + `.env` |
 | **Geometry** | `Geometry/Geometry-01-From-Figure-To-Equation.ipynb` | `pip install sympy numpy matplotlib` (venv projet déjà configuré) |
@@ -770,19 +770,19 @@ Le setup est entièrement automatisé via `Tweety-01-Setup-Python.ipynb` :
 | Lean (proofs natifs + companions Python) | 49 | 47 (96%) | 2 (Lean-16i-Translateur-Life + Lean-20b-PFR-Primitives-Transportables) | Très bon |
 | SemanticWeb (C# + Python) | 27 | 26 (12 C# + 14 Python) | 1 (RDF.Net-Legacy, référence historique) | Très bon |
 | Planners (PDDL classique + neuro-symbolique) | 25 | 25 (100%, y compris Planners-0-Setup — exercice de vérification d'environnement) | 0 ; archive Fast-Downward-Legacy hors compte | Très bon |
-| SmartContracts | 31 | 29 (94%) | 2 (SC-1-Setup-Foundry + SC-26-Final-Project) | Très bon |
+| SmartContracts | 31 | 29 (94%) | 2 (SC-01-Setup-Foundry-Python + SC-26-Final-Project-Python) | Très bon |
 | Argument Analysis (Argumentum + Agentic demo) | 28 | 26 | 2 (1 artefact `_agent` + groupe-I2) | N/A (projet) |
 | SymbolicLearning (AIMA ch. 19 + SL-12 differentiable logic gates) | 21 | 21 (100%) | 0 | Excellent |
 | SMT/Z3-Linq2Z3 (C# Linq2Z3) | 18 | 18 (100%) | 0 | Excellent |
 | SMT/Z3-API (Python + 6 jumeaux C#) | 28 | 28 (100%, 22 Python + 6 C# jumeaux) | 0 | Excellent |
 | Geometry (ouverture 23/09, Epic #17544) | 2 | 2 (100%, Geometry-01/02 avec 3 exercices chacun) | 0 | Volée 01-02 livrée, 03-05 en préparation |
 
-**Total** : le compte courant des notebooks pédagogiques **fait foi dans le bloc `<!-- CATALOG-STATUS -->` ci-dessus** (régénéré quotidiennement par `.github/workflows/catalog-cron.yml`) ; le catalogue est la source de vérité — il se resynchronise au prochain cron, et la table §E ci-dessus est un instantané daté. Les notebooks sans exercices sont uniquement : les setups (SC-1-Setup-Foundry), les notebooks de projet (SC-26-Final-Project), la référence historique RDF.Net-Legacy, les deux dérivés Lean sans cellules d'exercice (Lean-16i, Lean-20b), l'artefact `_agent` et le groupe-I2 d'Argument Analysis, et le probe IKVM (non pédagogique).
+**Total** : le compte courant des notebooks pédagogiques **fait foi dans le bloc `<!-- CATALOG-STATUS -->` ci-dessus** (régénéré quotidiennement par `.github/workflows/catalog-cron.yml`) ; le catalogue est la source de vérité — il se resynchronise au prochain cron, et la table §E ci-dessus est un instantané daté. Les notebooks sans exercices sont uniquement : les setups (SC-01-Setup-Foundry-Python), les notebooks de projet (SC-26-Final-Project-Python), la référence historique RDF.Net-Legacy, les deux dérivés Lean sans cellules d'exercice (Lean-16i, Lean-20b), l'artefact `_agent` et le groupe-I2 d'Argument Analysis, et le probe IKVM (non pédagogique).
 
 ### Problèmes connus (juillet 2026)
 
 - **Lean-11-TorchLean** : code cells sans outputs (kernel lean4 natif, timeouts PyTorch IBP sur certaines plateformes GPU-only)
-- **SmartContracts** : SC-21-Move-Sui nécessite compilation Sui CLI (warning sur Windows natif)
+- **SmartContracts** : SC-21-Move-Sui-Python nécessite compilation Sui CLI (warning sur Windows natif)
 - **Argument Analysis EPITA-IS verbatim port** : imports peuvent échouer (lazy accessors, échec d'import → symbole non-instantiable aujourd'hui)
 - **Tweety `_probes`** : `Tweety-IKVM-Init-Probe.ipynb` est un probe de diagnostic IKVM, non pédagogique
 - **SymbolicLearning SL-12** : DifferentiableLogicGateNetworks livré récemment (PR #5375), kernels DiffLogic en cours de stabilisation

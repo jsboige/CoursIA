@@ -329,9 +329,9 @@ layout: dense
   - Federated learning (modèle sans base de données centralisee)
   - Deep learning confidentiel
   - Chiffrement homomorphe (calcul sur données chiffrées, sans déchiffrement)
-    - *Notebook : [SC-16-Homomorphic-Encryption](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-16-Homomorphic-Encryption.ipynb) — Paillier, vote sur chiffres homomorphes, scénario bulletin dans l'urne.*
+    - *Notebook : [SC-16-Homomorphic-Encryption-Python](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-16-Homomorphic-Encryption-Python.ipynb) — Paillier, vote sur chiffres homomorphes, scénario bulletin dans l'urne.*
   - Vote vérifiable de bout en bout (end-to-end voter verifiability)
-    - *Notebook : [SC-17-E2E-Verifiable-Voting](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-17-E2E-Verifiable-Voting.ipynb) — preuves individuelles + universelles, conformité électorale.*
+    - *Notebook : [SC-17-E2E-Verifiable-Voting-Python](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-17-E2E-Verifiable-Voting-Python.ipynb) — preuves individuelles + universelles, conformité électorale.*
   - Augmentation
 
 </v-clicks>
@@ -790,8 +790,8 @@ des cibles **directement citees dans les slides ci-dessus** (chemins relatifs au
   - [Argument_Analysis_Dung_AF_Semantics](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-03-Dung-AF-Semantics-Python.ipynb) — semantiques de Dung, value alignment
   - [Argument_Analysis_Toulmin_Model](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-01-Toulmin-Model-Python.ipynb) — modele de Toulmin, debat falsifiable
 - **Privacy, chiffrement et vote verifiable**
-  - [SC-16-Homomorphic-Encryption](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-16-Homomorphic-Encryption.ipynb) — Paillier, vote sur chiffres homomorphes
-  - [SC-17-E2E-Verifiable-Voting](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-17-E2E-Verifiable-Voting.ipynb) — preuves individuelles + universelles
+  - [SC-16-Homomorphic-Encryption-Python](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-16-Homomorphic-Encryption-Python.ipynb) — Paillier, vote sur chiffres homomorphes
+  - [SC-17-E2E-Verifiable-Voting-Python](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-17-E2E-Verifiable-Voting-Python.ipynb) — preuves individuelles + universelles
 
 Series complementaires (autres thematiques couvertes par le depot) :
 

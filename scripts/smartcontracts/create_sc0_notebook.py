@@ -1,4 +1,4 @@
-"""Generate SC-0-Cypherpunk-Origins.ipynb - Temporary script, delete after use."""
+"""Generate SC-00-Cypherpunk-Origins-Python.ipynb - Temporary script, delete after use."""
 import json
 import os
 
@@ -29,9 +29,9 @@ cells = []
 
 # === HEADER ===
 cells.append(md(
-"# SC-0-Cypherpunk-Origins - Les origines Cypherpunk de la blockchain\n"
+"# SC-00-Cypherpunk-Origins-Python - Les origines Cypherpunk de la blockchain\n"
 "\n"
-"**Navigation** : [Index](../README.md) | [Setup Foundry >>](SC-1-Setup-Foundry.ipynb)\n"
+"**Navigation** : [Index](../README.md) | [Setup Foundry >>](SC-01-Setup-Foundry-Python.ipynb)\n"
 "\n"
 "---\n"
 "\n"
@@ -825,7 +825,7 @@ cells.append(md(
 "\n"
 "---\n"
 "\n"
-"**Notebook suivant** : [SC-1-Setup-Foundry](SC-1-Setup-Foundry.ipynb) - Installation de l'environnement de developpement",
+"**Notebook suivant** : [SC-01-Setup-Foundry-Python](SC-01-Setup-Foundry-Python.ipynb) - Installation de l'environnement de developpement",
 "summary"))
 
 # === BUILD NOTEBOOK ===
@@ -853,7 +853,7 @@ notebook = {
 
 output_path = os.path.join(
     "d:", os.sep, "CoursIA", "MyIA.AI.Notebooks", "SymbolicAI",
-    "SmartContracts", "00-Foundations", "SC-0-Cypherpunk-Origins.ipynb"
+    "SmartContracts", "00-Foundations", "SC-00-Cypherpunk-Origins-Python.ipynb"
 )
 with open(output_path, 'w', encoding='utf-8', newline='\n') as f:
     json.dump(notebook, f, ensure_ascii=False, indent=1)

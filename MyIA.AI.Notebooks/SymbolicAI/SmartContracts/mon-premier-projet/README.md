@@ -1,6 +1,6 @@
 # Mon Premier Projet Foundry — Counter
 
-Projet Foundry créé dans le cadre du notebook [SC-1-Setup-Foundry](../00-Foundations/SC-1-Setup-Foundry.ipynb). Premier contrat Solidity avec tests unitaires.
+Projet Foundry créé dans le cadre du notebook [SC-01-Setup-Foundry-Python](../00-Foundations/SC-01-Setup-Foundry-Python.ipynb). Premier contrat Solidity avec tests unitaires.
 
 ## Contrat : Counter.sol
 

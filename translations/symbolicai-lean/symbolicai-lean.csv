@@ -32767,11 +32767,11 @@ d'arrivée naturel. Une noix de plus à grignoter.
 via cache), Python 3 avec `sympy`. Durée d'exécution : ~2 min une fois le lake construit.",,,,,,,,0d630e5c00aeb724,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-24-ERC20-Invariant-Companion.ipynb,85857942,markdown,fr,6e8129c1b5070505,"# Lean-24 : ERC-20 sous Lean 4 — l'invariant de conservation prouvé
 
-**Navigation** : [Index](README.md) | [Lean-23 (Galois) <<](Lean-23-Galois-Probleme-Inverse-M23.ipynb) | [SC-7 SmartContract (Solidity ERC-20) >>](../SmartContracts/02-Solidity-Advanced/SC-7-Token-Standards.ipynb)
+**Navigation** : [Index](README.md) | [Lean-23 (Galois) <<](Lean-23-Galois-Probleme-Inverse-M23.ipynb) | [SC-7 SmartContract (Solidity ERC-20) >>](../SmartContracts/02-Solidity-Advanced/SC-07-Token-Standards-Python.ipynb)
 
 Ce notebook presente le lake **`erc20_lean`** de ce dépot (issue #4047, livrable phase 1) : le port formel de l'**invariant de conservation d'un jeton ERC-20** en Lean 4 avec Mathlib. La propriété foncière d'un jeton fongible — aucun token ne peut être créé ou détruit par un `transfer` (seuls `mint`/`burn` le font, symétriquement sur l'offre) — est ici prouvée **mécaniquement** sur une machine à états finie de **trois transitions gardées**.
 
-Le scénario pédagogique complet : dans `[SC-7-Token-Standards.ipynb](../SmartContracts/02-Solidity-Advanced/SC-7-Token-Standards.ipynb)` on **déploie** un jeton ERC-20 sur anvil (Foundry) et on observe les transitions `transfer`/`mint`/`approve` qui font bouger les soldes. La question que ce lake répond : *ces transitions violent-elles jamais l'invariant `Σ balances = totalSupply` ?* La réponse est non, et la preuve Lean 4 de cette propriété est l'objet de cette leçon.
+Le scénario pédagogique complet : dans `[SC-07-Token-Standards-Python.ipynb](../SmartContracts/02-Solidity-Advanced/SC-07-Token-Standards-Python.ipynb)` on **déploie** un jeton ERC-20 sur anvil (Foundry) et on observe les transitions `transfer`/`mint`/`approve` qui font bouger les soldes. La question que ce lake répond : *ces transitions violent-elles jamais l'invariant `Σ balances = totalSupply` ?* La réponse est non, et la preuve Lean 4 de cette propriété est l'objet de cette leçon.
 
 | Module | Rôle |
 |--------|------|
@@ -33113,7 +33113,7 @@ for (b_src, b_dst, ts, amt) in grille:
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-24-ERC20-Invariant-Companion.ipynb,99003934,markdown,fr,d782c2ba950afb55,"**Lecture de la grille.** Le modèle est à **deux adresses** : `src` et `dst` représentent l'univers des détenteurs (pas d'autres soldes dans la grille). À chaque transfert accepté, le `total_supply_new` reste à `total_supply` (l'offre ne change pas dans un `transfer`) — c'est le pivot de l'invariant de conservation pour cette transition. La colonne `somme_balances_new` (= `balance_src_new + balance_dst_new`) reste égale à la somme initiale avant le transfert : c'est **la vérification numérique de l'invariant** dans ce modèle à 2 adresses (l'invariant global `Σ balances == totalSupply` n'est pas observable directement sans l'offre initiale, mais on **reconstitue l'offre totale** comme `somme_balances_new + autres détenteurs` ; le `transfer_no_underflow` du lac formalise la garde côté `src`, qui rend la transition réversible). Les cas où `balance_src < amount` retournent `REVERT` (la garde bloque, et l'état antérieur est préservé) ; c'est la même propriété côté Solidity (le `require(_balances[from] >= amount)` de la cellule 11 de SC-7). Le cas-frontière `(10, 0, 100, 11)` est rejeté — `10 < 11`, la garde bloque.",,,,,,,,d782c2ba950afb55,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-24-ERC20-Invariant-Companion.ipynb,9b11f3b3,markdown,fr,6cd47cea031b53d2,"## 3. Le pont SmartContract × erc20_lean
 
-`[SC-7-Token-Standards.ipynb](../SmartContracts/02-Solidity-Advanced/SC-7-Token-Standards.ipynb)` déploie un ERC-20 sur anvil et observe `SimpleERC20.balanceOf(addr)`. La cellule 11 de SC-7 montre :
+`[SC-07-Token-Standards-Python.ipynb](../SmartContracts/02-Solidity-Advanced/SC-07-Token-Standards-Python.ipynb)` déploie un ERC-20 sur anvil et observe `SimpleERC20.balanceOf(addr)`. La cellule 11 de SC-7 montre :
 
 ```solidity
 require(_balances[msg.sender] >= amount, ""ERC20: insufficient balance"");
@@ -33127,7 +33127,7 @@ Ce **même comportement** est encodé dans `ERC20/Ops.lean` (la définition de `
 | Source de vérité | Fichier | Vérification |
 |------------------|---------|--------------|
 | Spec ERC-20 | EIP-20 (Vogelsteller/Buterin, 2015) | Standard Ethereum |
-| Comportement runtime | `SmartContracts/02-Solidity-Advanced/SC-7-Token-Standards.ipynb` (déploiement anvil) | Tests Foundry/web3py |
+| Comportement runtime | `SmartContracts/02-Solidity-Advanced/SC-07-Token-Standards-Python.ipynb` (déploiement anvil) | Tests Foundry/web3py |
 | **Garantie formelle** | `SmartContracts/erc20_lean/ERC20/Invariant.lean` (lake `erc20_lean`) | Vérification mécanique Lean 4 |
 
 Les trois sources se recoupent : la spec définit le contrat, l'exécution observe le comportement, la preuve démontre que ce comportement *ne peut pas* violer l'invariant `Σ balances = totalSupply` sur aucune séquence arbitraire d'opérations atteignables. C'est l'apport des méthodes formelles au-delà du testing : on n'a pas observé 10 000 cas, on a **démontré tous les cas**.",,,,,,,,6cd47cea031b53d2,,,,,,,,
@@ -33210,7 +33210,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-24-ERC20-Invariant-Companion.ipynb,5e1ba4
 - **Issue #4038** — Roadmap SmartContracts du dépot.
 - **EIP-20** (F. Vogelsteller, V. Buterin, 2015) — *ERC-20 Token Standard*, Ethereum.
 - **K. Bhargavan et al.**, *Formal Verification of Smart Contracts*, WPCE 2016 — l'usage pionnier des méthodes formelles sur les smart contracts Bitcoin/Ethereum.
-- **`SC-7-Token-Standards.ipynb`** (`SmartContracts/02-Solidity-Advanced/`) — le pendant Solidity : déploiement réel sur anvil, mécanisme d'allowance (`approve` + `transferFrom`), patterns OpenZeppelin.
+- **`SC-07-Token-Standards-Python.ipynb`** (`SmartContracts/02-Solidity-Advanced/`) — le pendant Solidity : déploiement réel sur anvil, mécanisme d'allowance (`approve` + `transferFrom`), patterns OpenZeppelin.
 - **Lake `erc20_lean`** (`MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean/`) — la version Lean 4 + Mathlib : `ERC20/State.lean` (modèle), `ERC20/Ops.lean` (transitions), `ERC20/Invariant.lean` (préservation).
 - **EPIC #4980** — convention i18n Lean (aggrégateur bilingue inline FR-EN dans `ERC20.lean`, sibling pair dans `ERC20_en.lean`).
 - **Rule C.6** (mandat user 2026-08-19) — préférence pour un compagnon kernel `lean4-wsl` à côté du notebook Python ; le pattern actuel (subprocess `lake env lean`) reste mergeable, le kernel Lean natif est une suite à explorer.

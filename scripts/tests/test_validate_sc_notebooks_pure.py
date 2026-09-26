@@ -71,10 +71,10 @@ class TestSourceText:
 
 class TestIsNavCell:
     def test_prev_link(self):
-        assert is_nav_cell("[<< Setup Foundry](SC-1-Setup-Foundry.ipynb)") is True
+        assert is_nav_cell("[<< Setup Foundry](SC-01-Setup-Foundry-Python.ipynb)") is True
 
     def test_next_link(self):
-        assert is_nav_cell("[Setup Web3py >>](SC-2-Setup-Web3py.ipynb)") is True
+        assert is_nav_cell("[Setup Web3py >>](SC-02-Setup-Web3py-Python.ipynb)") is True
 
     def test_both_links(self):
         text = "[<< Setup Foundry](SC-1.ipynb) | [Setup Web3py >>](SC-2.ipynb)"
@@ -213,11 +213,11 @@ class TestCellInfo:
 class TestNotebookValidation:
     def test_construction(self):
         val = NotebookValidation(
-            name="SC-0-Cypherpunk-Origins",
+            name="SC-00-Cypherpunk-Origins-Python",
             path="/path/to/notebook.ipynb",
             profile="standalone"
         )
-        assert val.name == "SC-0-Cypherpunk-Origins"
+        assert val.name == "SC-00-Cypherpunk-Origins-Python"
         assert val.profile == "standalone"
         assert val.errors == []
         assert val.warnings == []

@@ -1,6 +1,6 @@
 # 06-Real-World - SmartContracts en Production
 
-**Navigation** : [Sommaire de la série](../README.md) | [<< SC-22 Solana & Anchor](../05-Alternative-Chains/SC-22-Solana-Anchor.ipynb)
+**Navigation** : [Sommaire de la série](../README.md) | [<< SC-22 Solana & Anchor](../05-Alternative-Chains/SC-22-Solana-Anchor-Python.ipynb)
 
 La dernière sous-série SmartContracts (SC-23 a SC-27) fait le passage de la théorie au déploiement réel. On quitte le bac a sable `anvil` local pour affronter des réseaux publics : testnets Ethereum/XRP, mainnets L2 (Base, Polygon), ponts cross-chain Chainlink CCIP, et un projet capstone qui combine vote, chiffrement homomorphique, preuve ZKP et tests Foundry. L'épilogue SC-27 referme la boucle en **revenant au bac à sable** : la boucle de gouvernance y est déroulée et **mesurée** (gas par étape, quorum, timelock, coût du retour arrière, verrous sans rollback).
 
@@ -12,11 +12,11 @@ Ces notebooks supposent que les clés API et private keys sont lues depuis l'env
 
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
-| 23 | [SC-23-Cross-Chain](SC-23-Cross-Chain.ipynb) | ~45 min | Interoperabilite, Chainlink CCIP, bridge simple, sécurité cross-chain |
-| 24 | [SC-24-Testnet-Deploy](SC-24-Testnet-Deploy.ipynb) | ~50 min | Sepolia via Alchemy/Infura, faucet, déploiement + interaction testnet, XRP Testnet via xrpl-py |
-| 25 | [SC-25-Mainnet-Deploy](SC-25-Mainnet-Deploy.ipynb) | ~40 min | Choix L2 (Base/Polygon/Arbitrum), estimation de cout, déploiement mainnet, checklist sécurité, vérification explorateur |
-| 26 | [SC-26-Final-Project](SC-26-Final-Project.ipynb) | ~90 min | Capstone : vote Solidity + chiffrement Paillier + preuve ZKP + déploiement anvil/testnet + tests Foundry |
-| 27 | [SC-27-Dette-Irreversibilite](SC-27-Dette-Irreversibilite.ipynb) | ~45 min | Épilogue mesuré : boucle gouvernance (proposition→vote→timelock→exécution) avec coûts gas réels, retour arrière, table de dette paramètre/logique/migration, verrou du brûlage |
+| 23 | [SC-23-Cross-Chain-Python](SC-23-Cross-Chain-Python.ipynb) | ~45 min | Interoperabilite, Chainlink CCIP, bridge simple, sécurité cross-chain |
+| 24 | [SC-24-Testnet-Deploy-Python](SC-24-Testnet-Deploy-Python.ipynb) | ~50 min | Sepolia via Alchemy/Infura, faucet, déploiement + interaction testnet, XRP Testnet via xrpl-py |
+| 25 | [SC-25-Mainnet-Deploy-Python](SC-25-Mainnet-Deploy-Python.ipynb) | ~40 min | Choix L2 (Base/Polygon/Arbitrum), estimation de cout, déploiement mainnet, checklist sécurité, vérification explorateur |
+| 26 | [SC-26-Final-Project-Python](SC-26-Final-Project-Python.ipynb) | ~90 min | Capstone : vote Solidity + chiffrement Paillier + preuve ZKP + déploiement anvil/testnet + tests Foundry |
+| 27 | [SC-27-Dette-Irreversibilite-Python](SC-27-Dette-Irreversibilite-Python.ipynb) | ~45 min | Épilogue mesuré : boucle gouvernance (proposition→vote→timelock→exécution) avec coûts gas réels, retour arrière, table de dette paramètre/logique/migration, verrou du brûlage |
 
 Le capstone SC-26 ne présente pas un concept nouveau : il **assemble les briques acquises** dans les sous-séries précédentes en une DApp de vote complète. Ce diagramme en fait la synthèse — chaque brique pointe vers son notebook d'origine :
 
@@ -89,7 +89,7 @@ Sans ces variables, les notebooks tournent en mode degrade et les outputs commit
 
 | Série | Lien | Relation |
 |-------|------|----------|
-| [05-Alternative-Chains](../05-Alternative-Chains/SC-22-Solana-Anchor.ipynb) | Precedent | Solana, Move, Vyper, XRP -- les blockchains abordees dans SC-24/25 |
+| [05-Alternative-Chains](../05-Alternative-Chains/SC-22-Solana-Anchor-Python.ipynb) | Precedent | Solana, Move, Vyper, XRP -- les blockchains abordees dans SC-24/25 |
 | [03-Foundry-Testing](../03-Foundry-Testing/) | Tests | SC-26 capstone utilise forge/anvil |
 | [04-Privacy-Cryptography](../04-Privacy-Cryptography/) | Crypto | SC-26 réutilise Paillier (SC-16-17) et ZKP (SC-15) |
 | [SmartContracts parent](../README.md) | Vue d'ensemble | Progression complète SC-0..SC-27 |
@@ -132,7 +132,7 @@ Ces notebooks supposent des clés API et private keys lues depuis l'environnemen
 
 ### Prochaines étapes
 
-- **Le retour aux fondamentaux** : après ce capstone, la série est complète. Le meilleur approfondissement est de reprendre un notebook fondateur ([SC-0](../00-Foundations/SC-0-Cypherpunk-Origins.ipynb) ou [SC-3](../01-Solidity-Foundation/SC-3-Solidity-Basics.ipynb)) — les primitives et la syntaxe se comprennent autrement une fois qu'on a déployé et sécurisé un système réel.
+- **Le retour aux fondamentaux** : après ce capstone, la série est complète. Le meilleur approfondissement est de reprendre un notebook fondateur ([SC-0](../00-Foundations/SC-00-Cypherpunk-Origins-Python.ipynb) ou [SC-3](../01-Solidity-Foundation/SC-03-Solidity-Basics-Python.ipynb)) — les primitives et la syntaxe se comprennent autrement une fois qu'on a déployé et sécurisé un système réel.
 - **Au-delà des smart contracts** : [SymbolicAI/Lean](../../Lean/README.md) prolonge l'idéal de vérification (cf SC-14) vers la preuve mathématique ; [GameTheory/SocialChoice](../../../GameTheory/SocialChoice/README.md) approfondit les fondations théoriques du vote (cf SC-9/SC-17, capstone SC-26).
 - **La série dans son ensemble** : le [sommaire SmartContracts](../README.md) cartographie les sept sous-séries — celle-ci clôt le parcours SC-0 → SC-27.
 

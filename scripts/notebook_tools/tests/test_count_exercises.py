@@ -232,7 +232,7 @@ class TestCodeCellOnlyExercise:
         ``# Etape`` scaffold whose only "exercice" word lives in a print
         statement. The comment-aware ``_code_cell_mentions_exercise`` misses it;
         the broadened full-source scan in pass-2 must catch it (genuine case:
-        SC-26-Final-Project Parties 2/3/4, reported 0 for 3 real stubs).
+        SC-26-Final-Project-Python Parties 2/3/4, reported 0 for 3 real stubs).
         """
         nb = _write_nb(
             tmp_path / "print_marker.ipynb",
@@ -1249,7 +1249,7 @@ class TestCorpusScope:
         for stem, expect in [
             ("Lean-1-Setup", "setup"),
             ("Sudoku-00-Environment-Csharp", "setup"),
-            ("SC-1-Setup-Foundry", "setup"),
+            ("SC-01-Setup-Foundry-Python", "setup"),
             ("Argument_Analysis_Agentic-0-init_agent", "setup"),
             ("Lean-3-Propositions-Proofs", "lean"),
             ("GameTheory-11b-Lean-BayesianGamesExt", "lean"),

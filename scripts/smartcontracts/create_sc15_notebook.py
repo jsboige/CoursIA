@@ -1,4 +1,4 @@
-"""Generate SC-15-Zero-Knowledge-Proofs.ipynb - Temporary script, delete after use."""
+"""Generate SC-15-Zero-Knowledge-Proofs-Python.ipynb - Temporary script, delete after use."""
 import json
 import os
 
@@ -32,9 +32,9 @@ cells = []
 
 # === HEADER ===
 cells.append(md(
-"# SC-15-Zero-Knowledge-Proofs - Preuves a Divulgation Nulle\n"
+"# SC-15-Zero-Knowledge-Proofs-Python - Preuves a Divulgation Nulle\n"
 "\n"
-"**Navigation** : [Index](../README.md) | [<< Formal Verification](../03-Foundry-Testing/SC-11-Formal-Verification.ipynb) | [Homomorphic Encryption >>](SC-16-Homomorphic-Encryption.ipynb)\n"
+"**Navigation** : [Index](../README.md) | [<< Formal Verification](../03-Foundry-Testing/SC-11-Formal-Verification.ipynb) | [Homomorphic Encryption >>](SC-16-Homomorphic-Encryption-Python.ipynb)\n"
 "\n"
 "---\n"
 "\n"
@@ -1061,7 +1061,7 @@ cells.append(md(
 "\n"
 "---\n"
 "\n"
-"**Notebook suivant** : [SC-16-Homomorphic-Encryption](SC-16-Homomorphic-Encryption.ipynb) - Chiffrement homomorphe",
+"**Notebook suivant** : [SC-16-Homomorphic-Encryption-Python](SC-16-Homomorphic-Encryption-Python.ipynb) - Chiffrement homomorphe",
 "summary"))
 
 # === BUILD NOTEBOOK ===
@@ -1089,7 +1089,7 @@ notebook = {
 
 output_path = os.path.join(
     "d:", os.sep, "CoursIA", "MyIA.AI.Notebooks", "SymbolicAI",
-    "SmartContracts", "04-Privacy-Cryptography", "SC-15-Zero-Knowledge-Proofs.ipynb"
+    "SmartContracts", "04-Privacy-Cryptography", "SC-15-Zero-Knowledge-Proofs-Python.ipynb"
 )
 with open(output_path, 'w', encoding='utf-8', newline='\n') as f:
     json.dump(notebook, f, ensure_ascii=False, indent=1)

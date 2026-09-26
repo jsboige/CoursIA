@@ -1,6 +1,6 @@
 # 05-Alternative-Chains - Au-dela d'Ethereum : Vyper, XRP, Bitcoin, Move et Solana
 
-**Navigation** : [Sommaire de la série](../README.md) | [<< SC-17 E2E Vérifiable Voting](../04-Privacy-Cryptography/SC-17-E2E-Verifiable-Voting.ipynb) | [SC-23 Cross-Chain >>](../06-Real-World/SC-23-Cross-Chain.ipynb)
+**Navigation** : [Sommaire de la série](../README.md) | [<< SC-17 E2E Vérifiable Voting](../04-Privacy-Cryptography/SC-17-E2E-Verifiable-Voting-Python.ipynb) | [SC-23 Cross-Chain >>](../06-Real-World/SC-23-Cross-Chain-Python.ipynb)
 
 Cette cinquieme sous-série (SC-18 a SC-22) élargit le horizon au-dela de la EVM Ethereum : **Vyper** (le Solidity « sécurisé par design »), le **XRP Ledger** (consensus UNL, trust lines, DEX), **Bitcoin Script** (le langage a pile de Bitcoin et son modèle UTXO), **Move/Sui** (la programmation orientée ressources), et **Solana/Anchor** (Rust, PDAs, CPIs). Chaque notebook confronte le modèle mental Ethereum a un paradigme différent. La signature pédagogique de cette sous-série est particulière : plusieurs langages (Vyper, Bitcoin Script, Move, Rust) y sont présentes comme chaînes de caractères pour illustration, avec des sorties documentées honnêtement selon que le CLI correspondant est installe ou non.
 
@@ -10,11 +10,11 @@ Cette cinquieme sous-série (SC-18 a SC-22) élargit le horizon au-dela de la EV
 
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
-| 18 | [SC-18-Vyper](SC-18-Vyper.ipynb) | 45 min | Philosophie Vyper vs Solidity, syntaxe, contrats de stockage et token, déploiement web3.py |
-| 19 | [SC-19-Ripple-XRP](SC-19-Ripple-XRP.ipynb) | 45 min | XRP Ledger, consensus UNL, comptes/transactions `xrpl-py`, trust lines, DEX, payment channels, Hooks |
-| 20 | [SC-20-Bitcoin-Scripting](SC-20-Bitcoin-Scripting.ipynb) | 50 min | Modèle UTXO, Bitcoin Script (langage a pile), mini-interpréteur Python, multisig, timelock, P2SH |
-| 21 | [SC-21-Move-Sui](SC-21-Move-Sui.ipynb) | 40 min | Langage Move, modèle objet de Sui, module Move, abilities (key/store/copy/drop) |
-| 22 | [SC-22-Solana-Anchor](SC-22-Solana-Anchor.ipynb) | 45 min | Architecture Solana, framework Anchor (Rust), PDAs, CPIs |
+| 18 | [SC-18-Vyper-Python](SC-18-Vyper-Python.ipynb) | 45 min | Philosophie Vyper vs Solidity, syntaxe, contrats de stockage et token, déploiement web3.py |
+| 19 | [SC-19-Ripple-XRP-Python](SC-19-Ripple-XRP-Python.ipynb) | 45 min | XRP Ledger, consensus UNL, comptes/transactions `xrpl-py`, trust lines, DEX, payment channels, Hooks |
+| 20 | [SC-20-Bitcoin-Scripting-Python](SC-20-Bitcoin-Scripting-Python.ipynb) | 50 min | Modèle UTXO, Bitcoin Script (langage a pile), mini-interpréteur Python, multisig, timelock, P2SH |
+| 21 | [SC-21-Move-Sui-Python](SC-21-Move-Sui-Python.ipynb) | 40 min | Langage Move, modèle objet de Sui, module Move, abilities (key/store/copy/drop) |
+| 22 | [SC-22-Solana-Anchor-Python](SC-22-Solana-Anchor-Python.ipynb) | 45 min | Architecture Solana, framework Anchor (Rust), PDAs, CPIs |
 
 **Total** : 5 notebooks, ~3h45.
 
@@ -73,8 +73,8 @@ L'**architecture Solana** (accounts, programs) et le framework **Anchor** (Rust)
 | Série | Lien | Relation |
 |-------|------|----------|
 | [SmartContracts (parent)](../README.md) | Vue d'ensemble | Contexte, parcours global, glossaire |
-| [04-Privacy-Cryptography](../04-Privacy-Cryptography/SC-15-Zero-Knowledge-Proofs.ipynb) | Predecesseur | SC-15..17 (ZKP, chiffrement homomorphe, vote vérifiable) |
-| [06-Real-World](../06-Real-World/SC-23-Cross-Chain.ipynb) | Suite | SC-23..26 (cross-chain, déploiement public, capstone) |
+| [04-Privacy-Cryptography](../04-Privacy-Cryptography/SC-15-Zero-Knowledge-Proofs-Python.ipynb) | Predecesseur | SC-15..17 (ZKP, chiffrement homomorphe, vote vérifiable) |
+| [06-Real-World](../06-Real-World/SC-23-Cross-Chain-Python.ipynb) | Suite | SC-23..26 (cross-chain, déploiement public, capstone) |
 
 ---
 
