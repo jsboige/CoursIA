@@ -6,5 +6,6 @@
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Z3 EST le moteur SOTA, branche NATIVEMENT des deux cotes : Microsoft.Z3 (NuGet officiel) et pyz3 sont les deux bindings de la meme lib C++ Z3 sous-jacente (pas un pont intermediaire type IKVM/PythonNet). Parite firsthand sur Tactic('simplify') cellule 1 des deux notebooks : meme output SMT-LIB canonique — C# '(not (<= x 0))' == Python 'Not(x <= 0)' et C# '(= y (+ 5 x))' == Python 'y == 1 + x'. Aucune asymetrie de machinerie a corriger."
   known_differences:
+    - "PR #17059 (redressement densite #17040) : cote Python seul edite, markdown seul -- retrait de la cellule de campagne `### Lecture chiffree : la paire XOR/AND rendue par le solveur`. Les 14 cellules de code et leurs sorties sont byte-identiques a la base ; le binding pyz3 est inchange."
     - "Python : pyz3 (Tactic('simplify'), Then(), With()). C# : Microsoft.Z3 .NET (Tactic(ctx, ...))."
     - "Concept demontre (simplify elimine une redondance, ctx-solver-simplify la garde) verifie firsthand cote Python (NB-03 CLEAN)."
