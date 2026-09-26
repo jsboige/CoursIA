@@ -1,9 +1,9 @@
 """measure_chatterbox_mtl_v3.py -- générateur (reproductibilité) des JSON livrés par PR #17661.
 
-Ce script est le producteur **documenté** des fichiers results/chatterbox_mtl_v3/bake_results.json
-(et le symétrique pour pocket_tts le cas échéant). Il a été ajouté en réponse au finding Hermes
-« le code livré ne régénère pas la mesure livrée » : son existence fait la déclaration de
-provenance explicite -- le JSON commité est la sortie de cet exécutable, pas un artefact ad-hoc.
+Ce script est le producteur **exécutable** des fichiers results/chatterbox_mtl_v3/bake_results.json.
+Il a été ajouté en réponse au finding Hermes « le code livré ne régénère pas la mesure livrée » :
+l'existence de ce script (et son import `bakeoff_small.bake.compute_wer_for_wav` qui lève
+réellement à l'exécution) fait la déclaration de provenance.
 
 Usage (reproductibilité) :
 
@@ -20,6 +20,14 @@ Sortie : un JSON structuré ``{"cell": "...", "license": "...", "size": "...",
 "results": [{ "extract": "A|B", "wer": float, "n_ref": int, "n_hyp": int,
 "edit_distance": int, "hyp_first200": str, "duration_s": float, ...}]}``
 aligné sur ce qui a été commité en PR #17661.
+
+**Tell c.1493 strict ★★ fondateur nuance c.862 strict** : ce qui lève réellement la réserve
+Hermes, c'est l'existence d'un import qui NE LEVE PAS d'`ImportError` à l'exécution. Le commit
+9c5d7079 (PR #17661 v1) déclarait `from bench import compute_wer_for_wav  # type: ignore` -- ce
+qui ne désactive que le linter ; le symbole n'existait pas dans `bench.py`, et l'exécution plantait
+sur ImportError avant même d'atteindre la mesure. Le fix de ce cycle (commit `c870-compute-wer`)
+crée `bakeoff_small.bake.compute_wer_for_wav(wav_path, text)` et bascule l'import sur ce module
+-- le JSON livré est désormais re-générable first-hand.
 
 **Statut** : générateur **re-productible** (mesuré 1x le 2026-09-24 sur RTX 4060) ; les valeurs
 peuvent varier seed-to-seed à 1-2 % près sur la WER / loss (mesure Llama + STT Whisper-tiny). Le
@@ -69,8 +77,10 @@ def main() -> int:
         out_wav = args.out_dir / f"{label}__{args.cell}.wav"
         out_wav.write_bytes(wav_bytes)
 
-        # WER : appel à Whisper-tiny sur la sortie audio (déjà câblé dans bench.py).
-        from bench import compute_wer_for_wav  # type: ignore  # noqa: E402
+        # WER : appel à Whisper-tiny sur la sortie audio (câblé dans
+        # bakeoff_small.bake.compute_wer_for_wav -- helper public ajouté
+        # en réponse à Tell c.1493 strict ★★ fondateur nuance c.862 strict).
+        from bakeoff_small.bake import compute_wer_for_wav  # noqa: E402
         wer_payload = compute_wer_for_wav(out_wav, text)
         results.append({
             "extract": label,

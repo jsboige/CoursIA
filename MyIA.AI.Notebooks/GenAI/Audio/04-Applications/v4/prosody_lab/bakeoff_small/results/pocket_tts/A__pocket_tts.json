@@ -21,5 +21,7 @@
     "s_span": 6.45,
     "s_verdict": "INSUFFICIENT"
   },
-  "wer": null
+  "wer": null,
+  "producer": "measure_pocket_tts.py (PR #17661 c.870)",
+  "wer_explanation": "Whisper-tiny non charge au run CPU c.805 -- WER non mesurable hors GPU. Pour une mesure WER, basculer sur --device cuda."
 }

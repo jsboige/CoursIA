@@ -78,6 +78,80 @@ def _measure(path: str, label: str) -> dict[str, Any]:
     }
 
 
+def compute_wer_for_wav(wav_path: Path, text: str) -> dict[str, Any]:
+    """Compute WER + prosody payload for a single WAV.
+
+    Public API consumed by measure_chatterbox_mtl_v3.py (and any future
+    measure_<cell>.py). Combines _transcribe (Whisper-tiny on cuda),
+    _wer (Levenshtein on token sequences), _measure (prosody_metrics +
+    syllable_pitch). Returns a flat dict aligned on the bake_results.json
+    schema committed in PR #17661.
+
+    Args:
+        wav_path: Path to the rendered WAV (16 kHz mono PCM expected by
+            Whisper-tiny; higher-rate files are resampled by librosa).
+        text: Reference transcription (the extract text). Lower-cased
+            and stripped by _wer.
+
+    Returns:
+        dict with keys {wer, n_ref, n_hyp, edit_distance, hyp_first200,
+        duration_s, g_st_range, g_cv, g_velocity, g_verdict, n_syll,
+        s_motion, s_flat_pct, s_span, s_verdict}. All numeric fields may
+        be None if their instrument failed (graceful degradation -- the
+        caller decides whether to abort or partial-emit).
+
+    Tell c.1493 strict ★★ fondateur nuance c.862 strict : this function is
+    the REAL producer referenced by measure_chatterbox_mtl_v3.py line 73.
+    Prior to this commit, the import was a Catholic declaration (# type:
+    ignore + # noqa: E402) on a symbol that did not exist -- the script
+    would have raised ImportError at runtime, not a lint failure.
+    """
+    label = wav_path.stem  # e.g. "A__chatterbox_mtl_v3"
+    log.info("[compute_wer_for_wav] %s (%.1f KB)",
+             wav_path.name, wav_path.stat().st_size / 1024)
+
+    # 1) Whisper-tiny transcription (loads the pipeline ONCE per call -- the
+    #    measure_<cell>.py scripts are designed to invoke this once per
+    #    extract, so the pipeline reload cost is acceptable; if batched
+    #    becomes a concern, lift the pipeline into a module-level cache).
+    try:
+        hyp = _transcribe(wav_path)
+    except Exception as exc:
+        log.warning("[compute_wer_for_wav] transcription failed: %s", exc)
+        return {"wer": None, "error": str(exc), "hyp_first200": None,
+                "duration_s": None}
+
+    # 2) WER vs reference text.
+    wer = _wer(text, hyp)
+    hyp_first200 = hyp[:200] if hyp else None
+
+    # 3) Prosody + syllable pitch (instruments from bench.py / prosody_lab).
+    try:
+        m = _measure(str(wav_path), label)
+    except Exception as exc:
+        log.warning("[compute_wer_for_wav] prosody measure failed: %s", exc)
+        m = {"label": label, "path": str(wav_path), "duration_s": None}
+
+    # 4) Flat payload aligned on the schema committed in PR #17661.
+    return {
+        "wer": wer["wer"],
+        "n_ref": wer["n_ref"],
+        "n_hyp": wer["n_hyp"],
+        "edit_distance": wer["edit_distance"],
+        "hyp_first200": hyp_first200,
+        "duration_s": m.get("duration_s"),
+        "g_st_range": m.get("g_st_range"),
+        "g_cv": m.get("g_cv"),
+        "g_velocity": m.get("g_velocity"),
+        "g_verdict": m.get("g_verdict"),
+        "n_syll": m.get("n_syll"),
+        "s_motion": m.get("s_motion"),
+        "s_flat_pct": m.get("s_flat_pct"),
+        "s_span": m.get("s_span"),
+        "s_verdict": m.get("s_verdict"),
+    }
+
+
 def _wer(reference: str, hypothesis: str) -> dict[str, Any]:
     """Plain word error rate. Tells c.1493: WER is a metric, not the discriminator."""
     ref = reference.strip().lower().split()
