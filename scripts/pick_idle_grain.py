@@ -200,14 +200,13 @@ REPO = "jsboige/CoursIA"
 # commentaire. Le sweep quotidien retracte le label sur activite de commentaire
 # (le marqueur lui-meme en fait partie), donc certaines LIVRE-urn restent
 # invisibles au seul filtre labels. Trois formes employees par les lanes
-# (mesure #17263 c.754, Tell c.534 L1 ★★ fondateur, Tell c.488 ★★★
-# audit-reassessment) :
+# (mesure #17263 c.754, cf. .claude/rules/audit-reassessment.md) :
 #   - `[INFO] candidate-delivered`        (canonique, fermante `]`)
 #   - `[INFO candidate-delivered]`        (espace au lieu de `]`)
 #   - `[INFO] lane <machine:workspace> -- <sujet> -- candidate-delivered <suite>`
 #                                       (annonce, le mot n'est pas immediatement
 #                                       apres `[INFO` mais sur la meme ligne)
-# Forme etroite Tell c.488 ★★★ : la 3e alternative exige `candidate-delivered`
+# Forme etroite : la 3e alternative exige `candidate-delivered`
 # borne par `\b` (mot complet) sur la MEME ligne qu'un `[INFO]` en tete, pour
 # eviter qu'une mention discursive du mecanisme (n'importe ou dans un
 # commentaire) fausse l'exclusion. La 1re et 2e formes restent matchees par la
@@ -216,14 +215,12 @@ REPO = "jsboige/CoursIA"
 # `livré(e)`, ou `verification first-hand`) SUR LA MEME LIGNE que
 # `[INFO]` et avant `candidate-delivered` -- sinon une mention discursive du
 # mecanisme (cf. test anti-FP `test_marker_no_match_discursive_mention`)
-# serait classee a tort comme marqueur de livraison. Forme etroite Tell
-# c.488 ★★★ fondateur.
+# serait classee a tort comme marqueur de livraison.
 #
 # Ancrage en debut de ligne (`^\s*` + MULTILINE) : evite les mentions
 # incidentes du type "sans [INFO] candidate-delivered" ou "[INFO] absent
 # dans ce fil", ou la sous-chaîne `[INFO] candidate-delivered` est presente
-# mais n'est pas l'en-tête du commentaire. Tell c.488 ★★★ fondateur du
-# pattern anti-FP.
+# mais n'est pas l'en-tête du commentaire.
 _DELIVERED_MARKER_RE = re.compile(
     r"(?:"
     r"^\s*\[INFO\]\s+candidate-delivered"
@@ -1953,7 +1950,7 @@ def recent_delivery(picks: list[dict]) -> dict[int, str]:
             notes[n] = f"(recherche PR indisponible: {type(exc).__name__})"
             continue
         if not prs:
-            # c.1115 voie 1 (Tell c.1060-L1 reformule ai-01) : pas de PR
+            # c.1115 voie 1 : pas de PR
             # couvrante, mais le label `candidate-delivered` peut etre absent
             # alors que le marqueur `[INFO] candidate-delivered` est present
             # en commentaire (sweep 05:37Z retracte sur activite). Cout : 1
