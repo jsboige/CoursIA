@@ -18,6 +18,7 @@ n'y existe pas encore, et pourquoi.
 | [`Complexity-02-P-NP-Reduction.ipynb`](Complexity-02-P-NP-Reduction.ipynb) | Découverte | — | — (socle) | Vérifier contre trouver sur le Sudoku (324 lectures contre des centaines de milliers d'appels) et sur subset-sum ; programmation dynamique **pseudo-polynomiale** mesurée ; définitions de P et NP ; réduction subset-sum → Partition **exécutée de bout en bout** (transformer, résoudre, retraduire le certificat) et testée sur 400 instances ; le mur exponentiel face à une machine mille fois plus rapide | Français |
 | [`Complexity-03-TimeHierarchy.ipynb`](Complexity-03-TimeHierarchy.ipynb) | Licence | — | — (socle) | Budgets imbriqués, inclusion contre séparation stricte, diagonale finie et limites d'une simulation bornée ; trois exercices exécutables | Français |
 | [`Complexity-03b-HartmanisStearns-TimeHierarchy.ipynb`](Complexity-03b-HartmanisStearns-TimeHierarchy.ipynb) | Recherche | approfondissement de **03 — Plus de temps, plus de problèmes** | Juris Hartmanis & Richard E. Stearns (prix Turing 1993, « On the Computational Complexity of Algorithms », 1965) | Machines de Turing multi-rubans simulées avec comptage exact des pas ; trois croissances mesurées ($n \log n$, $n^2$, $2^n$) ; subset-sum comme séparatrice honnête (force brute vs programmation dynamique, compteurs déterministes) ; diagonalisation budgétée sur une famille finie ; théorème de hiérarchie en temps $\mathrm{TIME}(f) \subsetneq \mathrm{TIME}(f \log f)$ ; encart sur le **gap Mathlib** (aucune couche `Computability/Complexity` : pas de $\mathrm{TIME}(f)$, pas de machine universelle avec overhead temporel, pas de théorème de hiérarchie) | Français |
+| [`Complexity-03c-ComplexityZoo-Navigation-Python.ipynb`](Complexity-03c-ComplexityZoo-Navigation-Python.ipynb) | Recherche | approfondissement de **03 — Plus de temps, plus de problèmes** | Scott Aaronson (fondateur du Complexity Zoo, 2004 — plus de 500 classes répertoriées) ; Theodore Baker, John Gill, Robert Solovay (*Relativizations of the P=?NP Question*, 1975) | La chaîne $L \subseteq NL \subseteq P \subseteq NP$ **tournée sur instances** : atteignabilité décidée deux fois — vérificateur à 2 mots de mémoire (certificat lu une fois, accord sur 4 tailles, faux témoin amputé refusé) contre DFS dont la pile explore ~$n/3$ sommets ; 2-SAT (Kosaraju, linéaire, $n=800$) contre 3-SAT (DPLL, densité-seuil $4{,}267n$) : facteurs de croissance **mesurés** par variable (~1,10× en noeuds, ~1,16× en temps), 20 certificats sur 20 vérifiés en polynomial ; **Baker–Gill–Solovay exécuté** — monde A : oracle diagonal, 4 machines vaincues par basculement d'un seul témoin, le côté NP exhaustif confirme $L_O$ sur chaque stade ; monde B : l'oracle QBF donne $P^B = NP^B$ en une requête — la barrière de relativisation vue du jouet ; carte du Zoo à 8 arêtes classées Mesuré/Cité/Ouvert (+ carte mermaid) ; encart **gap Mathlib** : `Computability/` couvre la calculabilité, mais aucune classe à bornage — le Zoo est absent | Français |
 | [`Complexity-04-OnlineAlgorithms-Python.ipynb`](Complexity-04-OnlineAlgorithms-Python.ipynb) | Licence | — | — (socle) | Louer ou acheter des skis : balayage des seuils, pire rapport $2 - 1/B$ atteint exactement au seuil $T = B$, puis distribution randomisée dont le pire rapport **converge vers $e/(e-1) \approx 1{,}58198$** ; pagination : Belady hors ligne contre LRU et FIFO — rapport tendant vers $k$ sur le motif cyclique ($4{,}84$ à $k=5$), retombant à $1{,}47$ sur requêtes aléatoires ; secrétaire : fraction d'observation balayée, sommet **plat** autour de $1/e$ (indiscernable de $0{,}4$ à $0{,}003$ près) ; quatre énoncés séparés Mesuré/Cité ; trois exercices exécutables | Français |
 | [`Complexity-04b-OnlineConjectures-Secretary-KServer.ipynb`](Complexity-04b-OnlineConjectures-Secretary-KServer.ipynb) | Recherche | approfondissement de **04 — Décider sans connaître la suite** | Sahil Singla & Christian Coester, Elias Koutsoupias, Marek Zbysiński (les deux preprints de septembre 2026 : conjecture du secrétaire matroïdal 2007 et conjecture k-server ~1990, tombées à 24 h d'écart) | Baseline $1/e$ du secrétaire classique mesurée par Monte Carlo ($n$ = 20/100/1000) ; deux matroïdes à oracle d'indépendance (uniforme, graphique) avec optimum offline exact et compétitivité de deux stratégies online ; **work function algorithm implémenté exactement** (DP sur les $\binom{m}{2}$ configurations) : sur le cycle $C_5$, ratio WFA 1,67 sous la borne $k=2$ quand greedy explose (20 à 60 requêtes, 160 à 480 — non compétitif) ; tableau du double visage randomisation/déterminisme ; trois niveaux épistémiques Mesuré/Cité/Absent (prudence « preuve annoncée ») ; encart **gap Mathlib** (matroïdes présents, compétitivité/k-server/work functions absents) | Français |
 | [`Complexity-05-AaronsonArkhipov-PermanenteBosonSampling.ipynb`](Complexity-05-AaronsonArkhipov-PermanenteBosonSampling.ipynb) | Recherche | deviendra **05b**, approfondissement du futur 05 *Compter est plus dur que vérifier* | Scott Aaronson & Alex Arkhipov (*The Computational Complexity of Linear Optics*, 2011 — la permanente comme frontière quantique) | La définition $n!$ **exécutée** avec comptes canoniques, vérifiée contre l'énumération brute des couplages parfaits (perm(0/1)) ; **Ryser vectorisé réemployé de Sudoku-15** (`batch_perm8`, généralisé à toute taille) contre Gauss instrumenté : comptes exacts par formules fermées validées par instrumentation — à $n=20$, définition $4{,}9 \times 10^{19}$ opérations contre 5 149 pour Gauss, Ryser/det ≈ $1{,}6 \times 10^4$ en temps à $n=16$ ; #P-difficulté (Valiant 1979) maintenue au niveau **Cité**, FPRAS non négatif (Jerrum–Sinclair–Vigoda) en exception qui désigne les signes ; **BosonSampling jouet** : unitaire Haar (QR, Mezzadri), loi $\lvert\mathrm{perm}\rvert^2$ exacte sur 56/924/12 870 sorties, TV(échantillon, exact) → 0, coût d'énumération extrapolé jusqu'à ~1 an à 1 TFLOP/s pour $(20, 40)$ ; encart **gap Mathlib** — premier verdict **positif** de la série : `Matrix.permanent` existe (114 lignes, forme $n!$) face à un dossier `Determinant/` entier, mais ni Ryser ni couche complexité | Français |
@@ -27,17 +28,18 @@ n'y existe pas encore, et pourquoi.
 
 La série se lit de haut en bas : chaque notebook principal ne suppose que ceux qui le
 précèdent. Les notebooks d'hommage, écrits pour un lecteur déjà familier du domaine,
-deviennent des **approfondissements** (suffixe `b`) : chacun se greffe sur un notebook
+deviennent des **approfondissements** (suffixe `b`, puis `c` quand le palier en compte déjà un) : chacun se greffe sur un notebook
 principal de niveau licence qui en pose d'abord les notions.
 
 | Position | Notebook principal | Public | Approfondissement |
 |---|---|---|---|
 | 01 | Compter des pas | Découverte | — |
 | 02 | Vérifier ou trouver : P, NP, certificat, réduction | Découverte | — |
-| 03 | [Plus de temps, plus de problèmes](Complexity-03-TimeHierarchy.ipynb) | Licence | [03b — Hartmanis–Stearns](Complexity-03b-HartmanisStearns-TimeHierarchy.ipynb) |
+| 03 | [Plus de temps, plus de problèmes](Complexity-03-TimeHierarchy.ipynb) | Licence | [03b — Hartmanis–Stearns](Complexity-03b-HartmanisStearns-TimeHierarchy.ipynb), [03c — Zoo et oracles](Complexity-03c-ComplexityZoo-Navigation-Python.ipynb) |
 | 04 | [Décider sans connaître la suite](Complexity-04-OnlineAlgorithms-Python.ipynb) | Licence | [04b — conjectures online](Complexity-04b-OnlineConjectures-Secretary-KServer.ipynb) |
 | 05 | Compter est plus dur que vérifier *(à venir)* | Licence | 05b — Aaronson–Arkhipov (aujourd'hui 05) |
 | 06 | Simuler un circuit quantique classiquement *(à venir)* | Licence | 06b — Aaronson–Gottesman (aujourd'hui 06) |
+| 07 | La chaîne des inclusions : L, NL, P, NP *(à venir)* | Licence | — |
 
 ## Position dans le dépôt
 
@@ -65,6 +67,13 @@ construit la machine qui *réfute* — le simulateur stabilisateur comme
 instrument de méthode. C'est aussi le premier notebook de la série à croiser
 trois moteurs (port pédagogique, état complet, stim), chacun validant les
 deux autres.
+
+Le notebook 03c referme la boucle **côté carte** : les précédents mesuraient des
+points (hiérarchie, permanente, simulation) ; celui-ci navigue le tableau entier —
+chaque arête d'inclusion porte son témoin exécutable, chaque arête ouverte porte sa
+raison visible (les mondes d'oracles de Baker–Gill–Solovay, construits et exécutés),
+et le gap Mathlib devient structurel : la calculabilité est formalisée, la complexité
+pas encore.
 
 ## Prérequis
 
