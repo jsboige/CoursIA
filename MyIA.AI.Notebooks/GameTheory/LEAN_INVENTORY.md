@@ -58,7 +58,7 @@ Note : `SymbolicAI/Lean/examples/llm_assisted_proof.lean` (2 sorry) est un exemp
 | `RepeatedGames/` (4 FR + 4 `_en`) | 1 (stretch) | `grim_trigger_sustains_iff` (théorème-phare, 0 sorry) ; `folk_theorem_discounted` / `folk_theorem_boundary` portent 1 sorry stretch (#4880) |
 | `Swaps/` (FR-only) | 0 | `Table`, générateurs adjacents, certificat de chemin, `distance_dilemme_chicken` |
 
-**Compilation** : `lake build` — SUCCESS. CI : `lean-ci-matrix.yml` (clé `gametheory`), `lean-social-choice.yml`.
+**Compilation** : `lake build` — SUCCESS. CI : `lean-ci-matrix.yml` (clé `gametheory`, qui couvre aussi `SocialChoice/`).
 
 **Preuves clés** :
 - `gale_shapley_stable` — PR #1194 ; `exists_isManOptimal` (honnête, via poids minimal sur le demi-treillis des jointures) ; `woman_pessimal` — PR #1521 ; `meetSpouse_injective` / `joinSpouse_injective` — PR #1522
@@ -97,7 +97,7 @@ MechanismDesign, SortedListCounting) ont été absorbés byte-identique dans
 **Statut (historique, préservé dans le home canonique)** : COMPLET, 0 sorry — impossibilité
 d'Arrow (Geanakoplos 2005), paradoxe libéral de Sen, électeur médian / Split Cycle / clones,
 véracité Vickrey + contre-exemple au premier prix (#1469). Build repris par
-`.github/workflows/lean-social-choice.yml` sur `game_theory_lean`.
+`.github/workflows/lean-ci-matrix.yml` (clé `gametheory`) sur `game_theory_lean`.
 
 ---
 
