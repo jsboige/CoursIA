@@ -93,16 +93,40 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import grain_tag as gt  # noqa: E402
 
 
-def check(body: str | None) -> dict:
+def check(body: str | None, head_ref: str | None = None) -> dict:
     """Return the blocking verdict for a PR body.
 
     See module docstring §2. The signature is preserved as a pure function so
     unit tests can pin each branch without going through the CLI.
+
+    `head_ref` is the PR head branch (e.g. ``claude/foo-bar-xyz``). When both
+    (a) it starts with the ``claude/`` prefix AND (b) the body declares
+    ``Hors flotte``, the PR is exempt from the Grain-tag requirement -- cf.
+    #17713: a Claude Code session opened from the maintainer's cloud
+    environment writes no `Grain:` tag, and ``CLAUDE.md`` ('À qui ce fichier
+    s'adresse') explicitly exempts such sessions from the variation protocol.
     """
     if body is None or body.strip() == "":
         return {
             "required_pass": False,
             "reason": "PR body is empty",
+            "tier": None,
+            "genre": None,
+            "lane": None,
+        }
+
+    # #17713 -- exemption : session cloud du mainteneur (branche `claude/*`).
+    # Les deux conditions doivent etre reunies : un simple renommage de
+    # branche ne suffit pas, et un marqueur `Hors flotte` sans prefixe
+    # `claude/` n'exempte pas non plus (cf acceptance #17713 point 1).
+    if (
+        head_ref
+        and head_ref.startswith("claude/")
+        and "Hors flotte" in body
+    ):
+        return {
+            "required_pass": True,
+            "reason": "exempt by #17713 (claude/* + 'Hors flotte' in body)",
             "tier": None,
             "genre": None,
             "lane": None,
@@ -146,6 +170,14 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="read the PR body from stdin (terminated by EOF)",
     )
+    p.add_argument(
+        "--head-ref",
+        metavar="REF",
+        default=None,
+        help="PR head branch (e.g. 'claude/foo-bar-xyz'). When it starts with "
+        "'claude/' and the body declares 'Hors flotte', the Grain-tag "
+        "requirement is waived (#17713).",
+    )
     args = p.parse_args(argv)
 
     if args.body_file:
@@ -169,7 +201,7 @@ def main(argv: list[str] | None = None) -> int:
     else:
         body = sys.stdin.read()
 
-    verdict = check(body)
+    verdict = check(body, head_ref=args.head_ref)
     print(json.dumps(verdict))
     return 0 if verdict["required_pass"] else 1
 

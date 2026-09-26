@@ -138,7 +138,8 @@ NOTEBOOK_GLOBS = ["**/*.ipynb"]
 #   - pip-leak-guard      : bloquant, delta HEAD-vs-base
 #   - solution-leak-guard : ADVISORY, delta HEAD-vs-base (verifie qu'un
 #                           advisory ne peut pas rougir par accident)
-#   - prose-counts-guard  : advisory, diff-range direct
+#   - prose-counts-guard  : bloquant (#17636), diff-range direct, lignes
+#                           AJOUTEES seules (le stock #9377 ne rougit pas)
 #   - perimeter-review    : bloquant, appelle l'API GitHub (a besoin de
 #                           GH_TOKEN, pas seulement de l'arbre)
 #   - bare-cross-dir-load-gate : bloquant, EXECUTION PAR FICHIER (Pattern 1)
@@ -198,8 +199,10 @@ PILOT: list[Guard] = [
         source="prose-counts-guard.yml",
         paths=["**/*.ipynb", "**/*.md"],
         argv=["python", "scripts/notebook_tools/check_prose_quantitative_claims.py",
-              "--diff", "{base_ref}...HEAD"],
-        blocking=False,          # ADVISORY tant que #9377 n'est pas resorbe
+              "--diff", "{base_ref}...HEAD", "--strict"],
+        blocking=True,           # BLOQUANT #17636 : critere de sortie #9377 ;
+                                 # le stock ne rougit personne (lignes AJOUTEES
+                                 # seules), une PR qui rouvre la veine rougit
         needs_base=True,
     ),
     Guard(
@@ -208,6 +211,21 @@ PILOT: list[Guard] = [
         paths=[],                # sans filtre : porte sur le corps de la PR
         argv=["python", "scripts/check_pr_perimeter.py", "{pr_number}",
               "--scan-thread"],
+        blocking=True,
+    ),
+    # Issue #14683 : garde substitution hr silencieuse. L'organe
+    # `scripts/ci/check_hr_substitution.py` detecte les 4 notations CommonMark
+    # (`---`, `***`, `* * *`, `___`) en `+`/`-` sur les `.ipynb` et exige une
+    # declaration explicite dans le body. Aucun workflow d'origine -> source
+    # FAST_LANE_NATIVE. Le script ne sort que rc=0/1 (pas de rc=2 reserve), donc
+    # pas besoin de `warn_rc` ici ; un incident `gh` (rate-limit, timeout)
+    # remonte en rc=1 et fait rougir la PR -- c'est l'intention : un depot
+    # sans verdict est un depot sans garde.
+    Guard(
+        name="hr-substitution-guard",
+        source=FAST_LANE_NATIVE,
+        paths=["**/*.ipynb"],
+        argv=["python", "scripts/ci/check_hr_substitution.py", "{pr_number}"],
         blocking=True,
     ),
     # -- extension pilote (5 -> 9) ------------------------------------------
@@ -342,8 +360,8 @@ PILOT: list[Guard] = [
             "scripts/notebook_tools/check_kernel_suffix_canon.py",
             "scripts/notebook_tools/kernel_suffix_canon.json",
             # Liste partagee des suffixes de noyau : l'en retirer un rend le
-            # garde muet sur cette famille, l'y ajouter rouvre les exclusions
-            # mesurees (`-Lean` marque le contenu, pas le moteur).
+            # garde muet sur cette famille. Depuis l'arbitrage 25/09
+            # (#17784/#16231) elle porte -lean et -lean-python comme noyaux.
             "scripts/notebook_tools/naming_canon.py",
         ],
         argv=["python", "scripts/notebook_tools/check_kernel_suffix_canon.py",
@@ -351,6 +369,11 @@ PILOT: list[Guard] = [
         blocking=True,
         needs_base=True,
     ),
+    # Cliquet #17784, phase ADVISORY : le meme organe liste en advisory les
+    # notebooks AJOUTES sans suffixe de noyau (grammaire #16231 : le suffixe
+    # est desormais cense etre toujours present). Le passage bloquant se fait
+    # en ajoutant --require-suffix a l'argv ci-dessus, APRES mesure des faux
+    # positifs -- pas en durcissant le garde par defaut.
     # Defaut 4 de #15489 (suite du meme claim de lane) : un slot peut etre libre
     # sur `main` et deja tenu ailleurs. Deux trous mesures ont fonde ce garde --
     # deux notebooks neufs au MEME index dans une MEME revision (l'organe frere
@@ -1403,5 +1426,48 @@ TRANCHE14: list[Guard] = [
         blocking=True,  # cliquet : rougit l'AJOUT de lecture scindee, jamais la dette heritee
         needs_base=True,
         absorbed=True,
+    ),
+]
+
+# ---------------------------------------------------------------------------
+# TRANCHE 15 -- garde natif anti-invocation-directe lake (#15666, T4).
+#
+# L'epic #15666 impose un organe canonique d'exécution Lean
+# (``scripts/lean/lean_exec.py`` : admission machine-wide fail-closed, budget
+# min-des-sources, backend epingle par lake) et exige pour sa tranche T4 :
+# « un garde CI qui refuse toute nouvelle invocation directe de
+# ``lake build``/``lake env lean`` dans du code d'orchestration hors
+# allowlist documentée ». Le défaut fondateur (2026-09-12 : ~30 processus
+# ``lean.exe`` à 95 % du CPU, DriveFS et Claudish étouffés) est réintroduit
+# par CHAQUE voie directe qui échappe au budget commun -- ce garde ferme la
+# porte d'entrée, l'allowlist documente la dette de migration (ratchet
+# descendant : une entrée devenue stérile est signalée, jamais ignorée).
+#
+# Détection AST (pas grep) : docstrings, sondes ``which``, tests
+# d'appartenance et prose d'erreur ne comptent pas. Calibration mesurée sur
+# le corpus : 6 fichiers en dette, 0 faux positif -- chaque classe de FP
+# rencontrée a son négatif dans test_check_lake_direct_invocation.py.
+# ---------------------------------------------------------------------------
+# Renomme TRANCHE12 -> TRANCHE15 au merge : les PR #16645 (link-label),
+# #17031 (split-reading) puis #17485 (dedupe TRANCHE13) ont pris
+# TRANCHE12/TRANCHE13/TRANCHE14 sur main entre-temps.
+# Regle registry : le POSTERIEUR cede l'index (cf renommage TRANCHE9 -> TRANCHE10).
+TRANCHE15: list[Guard] = [
+    Guard(
+        name="lake-direct-invocation-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**/*.py",
+            "scripts/lean/check_lake_direct_invocation.py",
+            "scripts/lean/lake_direct_allowlist.json",
+            "scripts/lean/tests/test_check_lake_direct_invocation.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/lean/check_lake_direct_invocation.py",
+            "--all", "--check",
+        ],
+        blocking=True,
     ),
 ]

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests de l'organe d'execution Lean confine (T1, issue #15666).
+"""Tests de l'organe d'execution Lean confine (T1+T2, issue #15666).
 
 Discriminants exiges par le cahier des charges §6 et le dispatch P0 :
 
@@ -14,6 +14,22 @@ Discriminants exiges par le cahier des charges §6 et le dispatch P0 :
   sans Lean.
 - ``test_positive_control_real_lake`` : une compilation ciblee REELLE
   (``lake env lean``) passe sous le budget et publie ses metriques.
+
+Discriminants T2 (admission raffinee — lease/file/budget) :
+
+- ``test_compute_granted_min_of_sources`` : le parallelisme accorde est le
+  MINIMUM des budgets CPU/RAM/commit, porte disque incluse, contrainte
+  serrante NOMMEE.
+- ``test_fail_closed_missing_telemetry_source`` : telemetrie manquante =
+  refus fail-closed nommant la source (pression SIMULEE, pas reelle).
+- ``test_tree_lease_same_tree_second_refused_then_released`` : UN SEUL
+  acteur par arbre, refus actionnable, lease libere en fin de run.
+- ``test_tree_lease_stale_autobroken`` / ``test_tree_lease_foreign_host_never_broken`` :
+  peremption reprise de tree_lock (meme-host pid mort uniquement).
+- ``test_queue_wait_admits_after_release`` / ``test_queue_timeout_refuses`` /
+  ``test_queue_full_refuses`` : file bornee observable, refus explicites.
+- ``test_status_shows_queue_and_tree_leases`` : observabilite de la file et
+  des leases.
 
 Les tests d'admission et de confinement tournent avec des enfants Python
 (sleepers) : ils ne dependent pas du toolchain Lean. Le controle positif, lui,
@@ -32,6 +48,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from contextlib import contextmanager
 from pathlib import Path
 
 import pytest
@@ -528,6 +545,848 @@ def test_positive_control_real_lake():
             f"population_before={res['population_before']} "
             f"cmd={res.get('cmd_effective')}"
         )
+
+
+# ---------------------------------------------------------------------------
+# T2 : budget au minimum des sources, fail-closed telemetrie
+# ---------------------------------------------------------------------------
+
+_T2_KNOBS = (
+    "LEAN_EXEC_RESERVE_CORES", "LEAN_EXEC_MEM_PER_JOB_MB",
+    "LEAN_EXEC_COMMIT_PER_JOB_MB", "LEAN_EXEC_MIN_FREE_GB",
+)
+
+
+def _plenty_resources() -> dict:
+    return {
+        "cpu": {"ok": True, "logical_cores": 16},
+        "ram": {"ok": True, "avail_mb": 32768},
+        "commit": {"ok": True, "avail_mb": 49152},
+        "disk": {"ok": True, "free_gb": 100.0},
+    }
+
+
+def test_compute_granted_min_of_sources():
+    """Le parallelisme accorde est le MIN des budgets CPU/RAM/commit, et la
+    porte disque refuse (spec #15666 §2) — chacune des sources doit pouvoir
+    etre la contrainte serrante, nommee dans le detail."""
+    saved = {k: os.environ.get(k) for k in _T2_KNOBS}
+    try:
+        os.environ["LEAN_EXEC_RESERVE_CORES"] = "2"
+        os.environ["LEAN_EXEC_MEM_PER_JOB_MB"] = "2048"
+        os.environ["LEAN_EXEC_COMMIT_PER_JOB_MB"] = "3072"
+        os.environ["LEAN_EXEC_MIN_FREE_GB"] = "2"
+        plenty = _plenty_resources()
+        granted, detail = le.compute_granted(4, plenty, 0)
+        assert granted == 4 and detail["binding"] is None, (granted, detail)
+
+        low_ram = {**plenty, "ram": {"ok": True, "avail_mb": 2048}}
+        granted, detail = le.compute_granted(4, low_ram, 0)
+        assert granted == 1 and detail["binding"] == "ram", (granted, detail)
+
+        low_commit = {**plenty, "commit": {"ok": True, "avail_mb": 3072}}
+        granted, detail = le.compute_granted(4, low_commit, 0)
+        assert granted == 1 and detail["binding"] == "commit", (granted, detail)
+
+        # Population active mangee par le budget CPU : 16 - 2 - 14 = 0.
+        granted, detail = le.compute_granted(4, plenty, 14)
+        assert granted == 0 and detail["binding"] == "cpu", (granted, detail)
+
+        low_disk = {**plenty, "disk": {"ok": True, "free_gb": 1.0}}
+        granted, detail = le.compute_granted(4, low_disk, 0)
+        assert granted == 0 and detail["binding"] == "disk", (granted, detail)
+    finally:
+        for k, v in saved.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+
+
+def test_commit_nonbinding_under_heuristic_overcommit():
+    """Regression CI (#16098, run 34799567581) : sur un runner Linux en
+    overcommit heuristique (vm.overcommit_memory 0 ou 1), CommitLimit -
+    Committed_AS est NEGATIF a l'etat sain — le noyau alloue au-dela sans
+    refuser. La valeur reste mesuree et publiee, mais seule cpu/ram serre
+    l'admission : un headroom commit negatif non contraignant ne doit pas
+    vetoyer tout run (11 tests rouges sur les runners, 0 en local)."""
+    saved = {k: os.environ.get(k) for k in _T2_KNOBS}
+    try:
+        os.environ["LEAN_EXEC_RESERVE_CORES"] = "2"
+        os.environ["LEAN_EXEC_MEM_PER_JOB_MB"] = "2048"
+        os.environ["LEAN_EXEC_COMMIT_PER_JOB_MB"] = "3072"
+        os.environ["LEAN_EXEC_MIN_FREE_GB"] = "2"
+        plenty = _plenty_resources()
+        heuristic = {
+            **plenty,
+            "commit": {"ok": True, "avail_mb": -6144, "binding": False},
+        }
+        granted, detail = le.compute_granted(4, heuristic, 0)
+        assert granted == 4 and detail["binding"] is None, (granted, detail)
+        assert detail["commit"] == -2, detail
+        assert detail["commit_binding"] is False, detail
+    finally:
+        for k, v in saved.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+
+
+def test_commit_binding_under_strict_overcommit():
+    """Symetrique du precedent : sous overcommit strict (vm.overcommit_memory=2,
+    ou Windows via GlobalMemoryStatusEx), le meme headroom negatif REFUSE —
+    la contrainte commit est alors reelle et doit rester serrante."""
+    saved = {k: os.environ.get(k) for k in _T2_KNOBS}
+    try:
+        os.environ["LEAN_EXEC_RESERVE_CORES"] = "2"
+        os.environ["LEAN_EXEC_MEM_PER_JOB_MB"] = "2048"
+        os.environ["LEAN_EXEC_COMMIT_PER_JOB_MB"] = "3072"
+        os.environ["LEAN_EXEC_MIN_FREE_GB"] = "2"
+        plenty = _plenty_resources()
+        strict = {
+            **plenty,
+            "commit": {"ok": True, "avail_mb": -6144, "binding": True},
+        }
+        granted, detail = le.compute_granted(4, strict, 0)
+        assert granted == 0 and detail["binding"] == "commit", (granted, detail)
+        assert detail["commit_binding"] is True, detail
+    finally:
+        for k, v in saved.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+
+
+def test_commit_binding_truth_table():
+    """Review #16098 (CONCERNS Hermes) : le fix CI (`strict = mode == 2`)
+    mettait le mode ILLISIBLE (None) dans la branche advisory — l'inverse du
+    fail-closed promis par la docstring de ``_overcommit_mode``. Trois etats
+    distincts, pas deux : None = contraignant (l'organe serre quand il ne
+    peut pas savoir), 0 et 1 = advisory (headroom negatif sain documente),
+    2 = contraignant. NB : ``!= 1`` (suggestion litterale de la review)
+    rendrait le mode 0 contraignant et recasserait les runners sains en
+    heuristique — la table ci-dessous est le contrat."""
+    assert le._commit_binding(None) is True, "illisible -> fail-closed"
+    assert le._commit_binding(0) is False, "heuristique -> advisory"
+    assert le._commit_binding(1) is False, "always -> advisory"
+    assert le._commit_binding(2) is True, "strict -> contraignant"
+
+
+@pytest.mark.skipif(os.name == "nt", reason="branche /proc/meminfo = POSIX")
+def test_measure_resources_commit_binding_through_real_path():
+    """Le chemin INTEGRAL ``measure_resources`` -> ``_overcommit_mode``, sans
+    flag ``binding`` injecte — l'angle mort pointe par la review #16098 : les
+    tests T2 existants injectaient le drapeau directement, le chemin de
+    decision n'etait jamais exerce. Headroom commit NEGATIF sur les quatre
+    modes : seul None et 2 serrent l'admission."""
+    saved_mode = le._overcommit_mode
+    saved_mi = le._proc_meminfo_mb
+    saved_state = os.environ.get("LEAN_EXEC_STATE_DIR")
+    saved = {k: os.environ.get(k) for k in _T2_KNOBS}
+    try:
+        with tempfile.TemporaryDirectory() as td:
+            os.environ["LEAN_EXEC_STATE_DIR"] = str(Path(td) / "s")
+            os.environ["LEAN_EXEC_RESERVE_CORES"] = "2"
+            os.environ["LEAN_EXEC_MEM_PER_JOB_MB"] = "2048"
+            os.environ["LEAN_EXEC_COMMIT_PER_JOB_MB"] = "3072"
+            os.environ["LEAN_EXEC_MIN_FREE_GB"] = "2"
+            le._proc_meminfo_mb = lambda: {
+                "MemAvailable": 32768,
+                "CommitLimit": 6144, "Committed_AS": 9216,  # -3072 Mo
+            }
+
+            le._overcommit_mode = lambda: None
+            res = le.measure_resources()
+            assert res["commit"]["binding"] is True, res["commit"]
+            assert res["commit"]["avail_mb"] == -3072, res["commit"]
+            granted, detail = le.compute_granted(4, res, 0)
+            assert granted == 0 and detail["binding"] == "commit", (
+                granted, detail)
+
+            le._overcommit_mode = lambda: 2
+            res = le.measure_resources()
+            assert res["commit"]["binding"] is True, res["commit"]
+
+            for mode in (0, 1):
+                le._overcommit_mode = lambda m=mode: m
+                res = le.measure_resources()
+                assert res["commit"]["binding"] is False, (mode, res["commit"])
+                granted, detail = le.compute_granted(4, res, 0)
+                assert granted == 4 and detail["binding"] is None, (
+                    mode, granted, detail)
+    finally:
+        le._overcommit_mode = saved_mode
+        le._proc_meminfo_mb = saved_mi
+        for k, v in saved.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+        if saved_state is None:
+            os.environ.pop("LEAN_EXEC_STATE_DIR", None)
+        else:
+            os.environ["LEAN_EXEC_STATE_DIR"] = saved_state
+
+
+def test_fail_closed_missing_telemetry_source():
+    """Fail-closed par source : une telemetrie manquante refuse le run en
+    NOMMANT la source (spec #15666 §2), jamais de lancement optimiste.
+    Pression SIMULEE (telemetrie patchee), pas une vraie saturation —
+    exigence explicite du cahier des charges §6."""
+    saved_state = os.environ.get("LEAN_EXEC_STATE_DIR")
+    saved_measure = le.measure_resources
+    with tempfile.TemporaryDirectory() as td:
+        os.environ["LEAN_EXEC_STATE_DIR"] = str(Path(td) / "s")
+
+        def _broken_ram():
+            res = saved_measure()
+            res["ram"] = {"ok": False}
+            return res
+
+        le.measure_resources = _broken_ram
+        try:
+            rc = le.run_command(SLEEP_CMD, timeout_s=10, as_json=True)
+            assert rc == le.EXIT_REFUSED, rc
+            res = json.loads(
+                (le.state_dir() / "last_run.json").read_text("utf-8"))
+            assert "telemetry unavailable" in res["reason"], res["reason"]
+            assert "ram" in res["reason"], res["reason"]
+        finally:
+            le.measure_resources = saved_measure
+            if saved_state is None:
+                os.environ.pop("LEAN_EXEC_STATE_DIR", None)
+            else:
+                os.environ["LEAN_EXEC_STATE_DIR"] = saved_state
+
+
+def test_granted_jobs_reported_and_thread_capped():
+    """Le run admis publie le budget detaille ; LEAN_NUM_THREADS jamais au
+    dela du granted (demande explicite respectee en dessous)."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        rc = _run(state, ["run", "--json", "--",
+                          PY, "-c", "import os; print(os.environ.get('LEAN_NUM_THREADS'))"],
+                  timeout=60, LEAN_EXEC_JOBS=1)
+        assert rc.returncode == le.EXIT_OK, rc.stdout + rc.stderr
+        res = _last(state)
+        assert res["granted_jobs"] == 1, res.get("granted_jobs")
+        assert res["budgets"]["requested"] == 1
+        assert "1" in (rc.stdout or ""), rc.stdout
+
+
+# ---------------------------------------------------------------------------
+# T2 : lease par arbre — second etage d'admission (reprise tree_lock)
+# ---------------------------------------------------------------------------
+
+def _lake_fixture(td: Path, name: str = "t2lake") -> Path:
+    proj = td / name
+    proj.mkdir(parents=True, exist_ok=True)
+    (proj / "lakefile.toml").write_text(
+        'name = "t2"\nversion = "0.1.0"\n', encoding="utf-8")
+    return proj
+
+
+@contextmanager
+def _state_env(state: Path):
+    """LEAN_EXEC_STATE_DIR pose pour le PRESENT processus : tree_lease_path
+    et queue_dir calculent alors dans le state isole du test, pas dans le
+    %LOCALAPPDATA% reel de la machine (piege des 4 premiers echecs)."""
+    saved = os.environ.get("LEAN_EXEC_STATE_DIR")
+    os.environ["LEAN_EXEC_STATE_DIR"] = str(state)
+    try:
+        yield
+    finally:
+        if saved is None:
+            os.environ.pop("LEAN_EXEC_STATE_DIR", None)
+        else:
+            os.environ["LEAN_EXEC_STATE_DIR"] = saved
+
+
+def test_tree_lease_same_tree_second_refused_then_released():
+    """Discriminant : UN SEUL acteur par arbre, vu machine-wide. Le refus du
+    second demandeur est ACTIONNABLE (pid/host/caller du holder), et le
+    lease est libere a la fin du premier run."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        proj = _lake_fixture(Path(td))
+        with _state_env(state):
+            lease = le.tree_lease_path(proj.resolve())
+        cap = dict(LEAN_EXEC_CAP=8, LEAN_EXEC_BUDGET=1,
+                   LEAN_EXEC_FORCE_BACKENDS="native")
+        first = subprocess.Popen(
+            [PY, LEAN_EXEC, "run", "--json", "--caller", "t2-first", "--",
+             *SLEEP_CMD],
+            env=_env(state, **cap), cwd=str(proj),
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+        deadline = time.monotonic() + 30.0
+        while time.monotonic() < deadline and not lease.exists():
+            time.sleep(0.05)
+        assert lease.exists(), "le lease du 1er run n'est pas apparu sous 30 s"
+
+        second = _run(state, ["run", "--json", "--caller", "t2-second", "--",
+                              *SLEEP_CMD], cwd=proj, timeout=60, **cap)
+        assert second.returncode == le.EXIT_REFUSED, second.returncode
+        refused = json.loads(second.stdout[second.stdout.index("{"):])
+        reason = refused.get("reason") or ""
+        assert "tree" in reason, reason
+        assert "t2-first" in reason, reason  # refus actionnable
+        assert first.wait(timeout=60) == 0
+
+        deadline = time.monotonic() + 15.0
+        while time.monotonic() < deadline and lease.exists():
+            time.sleep(0.1)
+        assert not lease.exists(), "lease non libere apres la fin du 1er run"
+
+
+def test_tree_lease_stale_autobroken():
+    """Peremption reprise de tree_lock.py:139 : holder du MEME host au pid
+    mort => break visible (TREE_LEASE_BROKEN), puis acquisition."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        proj = _lake_fixture(Path(td))
+        with _state_env(state):
+            lease = le.tree_lease_path(proj.resolve())
+        lease.parent.mkdir(parents=True, exist_ok=True)
+        lease.write_text(json.dumps({
+            "pid": 999999999, "host": le.host_id(), "tree": str(proj),
+            "cmd": ["lake", "build"], "caller": "dead-holder",
+            "budget": 1, "started_epoch": 0.0,
+        }), encoding="utf-8")
+        rc = _run(state, ["run", "--json", "--",
+                          PY, "-c", "print('ok')"], cwd=proj, timeout=60,
+                  LEAN_EXEC_CAP=8, LEAN_EXEC_FORCE_BACKENDS="native")
+        assert rc.returncode == le.EXIT_OK, rc.stdout + rc.stderr
+        assert "TREE_LEASE_BROKEN" in rc.stderr, rc.stderr
+        assert "stale" in rc.stderr, rc.stderr
+
+
+def test_tree_lease_foreign_host_never_broken():
+    """Reprise tree_lock.py:138 : un holder d'un host etranger n'est JAMAIS
+    auto-casse (pids non comparables entre namespaces)."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        proj = _lake_fixture(Path(td))
+        with _state_env(state):
+            lease = le.tree_lease_path(proj.resolve())
+        lease.parent.mkdir(parents=True, exist_ok=True)
+        lease.write_text(json.dumps({
+            "pid": 1, "host": "autre-machine/nt", "tree": str(proj),
+            "cmd": ["lake", "build"], "caller": "etranger",
+            "budget": 1, "started_epoch": 0.0,
+        }), encoding="utf-8")
+        rc = _run(state, ["run", "--json", "--",
+                          PY, "-c", "print('ok')"], cwd=proj, timeout=60,
+                  LEAN_EXEC_CAP=8, LEAN_EXEC_FORCE_BACKENDS="native")
+        assert rc.returncode == le.EXIT_REFUSED, rc.returncode
+        refused = json.loads(rc.stdout[rc.stdout.index("{"):])
+        reason = refused.get("reason") or ""
+        assert "tree" in reason and "autre-machine" in reason, reason
+        assert lease.exists(), "un lease etranger ne doit pas etre auto-casse"
+
+
+# ---------------------------------------------------------------------------
+# T2 : file bornee observable
+# ---------------------------------------------------------------------------
+
+def _wait_for(condition, timeout_s: float = 30.0, what: str = "condition"):
+    deadline = time.monotonic() + timeout_s
+    while time.monotonic() < deadline:
+        if condition():
+            return
+        time.sleep(0.05)
+    assert condition(), f"{what} non atteinte sous {timeout_s} s"
+
+
+def test_queue_wait_admits_after_release():
+    """--wait : le demandeur attend en file, est admis quand le cap se
+    libere, et publie son temps d'attente."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        cap = dict(LEAN_EXEC_CAP=1, LEAN_EXEC_BUDGET=1)
+        first = subprocess.Popen(
+            [PY, LEAN_EXEC, "run", "--json", "--timeout", "12", "--",
+             PY, "-c", "import time; time.sleep(3)"],
+            env=_env(state, **cap), cwd=str(td),
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+        runs = state / "runs"
+        _wait_for(lambda: len(list(runs.glob("*.json"))) >= 1, what="1er run enregistre")
+
+        second = _run(state, ["run", "--json", "--wait", "25", "--",
+                              PY, "-c", "print('ok')"], timeout=120, **cap)
+        assert first.wait(timeout=60) == 0
+        assert second.returncode == le.EXIT_OK, second.stdout + second.stderr
+        res = _last(state)
+        assert res["status"] == "ok", res
+        assert res.get("queue_wait_s", 0.0) >= 0.5, res
+
+
+def test_queue_timeout_refuses():
+    """Delai de file depasse = refus explicite 'wait timeout' (jamais
+    d'attente infinie)."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        cap = dict(LEAN_EXEC_CAP=1, LEAN_EXEC_BUDGET=1)
+        first = subprocess.Popen(
+            [PY, LEAN_EXEC, "run", "--json", "--timeout", "10", "--",
+             PY, "-c", "import time; time.sleep(30)"],
+            env=_env(state, **cap), cwd=str(td),
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+        runs = state / "runs"
+        _wait_for(lambda: len(list(runs.glob("*.json"))) >= 1, what="1er run enregistre")
+
+        second = _run(state, ["run", "--json", "--wait", "2", "--",
+                              PY, "-c", "print('ok')"], timeout=60, **cap)
+        assert second.returncode == le.EXIT_REFUSED, second.returncode
+        refused = json.loads(second.stdout[second.stdout.index("{"):])
+        assert "wait timeout" in (refused.get("reason") or ""), \
+            refused.get("reason")
+        assert first.wait(timeout=60) == le.EXIT_TIMEOUT
+
+
+def test_queue_full_refuses():
+    """File bornee : queue_max atteint = refus explicite du 3e demandeur,
+    jamais de croissance silencieuse de la file."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        cap = dict(LEAN_EXEC_CAP=1, LEAN_EXEC_BUDGET=1,
+                   LEAN_EXEC_QUEUE_MAX=1)
+        first = subprocess.Popen(
+            [PY, LEAN_EXEC, "run", "--json", "--timeout", "20", "--",
+             PY, "-c", "import time; time.sleep(8)"],
+            env=_env(state, **cap), cwd=str(td),
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+        runs = state / "runs"
+        _wait_for(lambda: len(list(runs.glob("*.json"))) >= 1, what="1er run enregistre")
+        second = subprocess.Popen(
+            [PY, LEAN_EXEC, "run", "--json", "--wait", "25", "--",
+             PY, "-c", "print('ok')"],
+            env=_env(state, **cap), cwd=str(td),
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+        queue = state / "queue"
+        _wait_for(lambda: len(list(queue.glob("*.json"))) >= 1,
+                  what="2e demandeur en file")
+
+        third = _run(state, ["run", "--json", "--wait", "1", "--",
+                             PY, "-c", "print('ok')"], timeout=60, **cap)
+        assert third.returncode == le.EXIT_REFUSED, third.returncode
+        refused = json.loads(third.stdout[third.stdout.index("{"):])
+        assert "queue full" in (refused.get("reason") or ""), \
+            refused.get("reason")
+        assert first.wait(timeout=60) == 0
+        assert second.wait(timeout=60) == 0
+
+
+def test_status_shows_queue_and_tree_leases():
+    """Observabilite (spec #15666 §1) : status expose la file et les leases
+    d'arbre tenus."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        proj = _lake_fixture(Path(td))
+        with _state_env(state):
+            lease = le.tree_lease_path(proj.resolve())
+            qdir = le.queue_dir()
+        lease.parent.mkdir(parents=True, exist_ok=True)
+        lease.write_text(json.dumps({
+            "pid": os.getpid(), "host": le.host_id(), "tree": str(proj),
+            "cmd": ["lake", "build"], "caller": "t2-status",
+            "budget": 1, "started_epoch": time.time(),
+        }), encoding="utf-8")
+        qdir.mkdir(parents=True, exist_ok=True)
+        (qdir / "probe.json").write_text(json.dumps({
+            "pid": os.getpid(), "host": le.host_id(),
+            "cmd": ["lake", "build"], "caller": "t2-queue-probe",
+            "since_epoch": time.time(),
+        }), encoding="utf-8")
+
+        rc = _run(state, ["status", "--json"], timeout=60)
+        payload = json.loads(rc.stdout[rc.stdout.index("{"):])
+        assert any(
+            e.get("caller") == "t2-queue-probe" for e in payload["queue"]
+        ), payload["queue"]
+        assert any(
+            t.get("caller") == "t2-status" for t in payload["tree_leases"]
+        ), payload["tree_leases"]
+
+
+# ---------------------------------------------------------------------------
+# T3 : backend epingle par lake — premier-ecrivain proprietaire
+# ---------------------------------------------------------------------------
+
+def _registry(state: Path) -> dict:
+    path = state / "backends.json"
+    if not path.exists():
+        return {}
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def test_backend_first_writer_pins_and_second_run_reuses():
+    """Premier run d'un lake sans epingle : le defaut de politique est pose
+    ET enregistre (premier-ecrivain proprietaire). Le second run REUTILISE
+    l'epingle sans la re-decider."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        proj = _lake_fixture(Path(td), "t3lake")
+        cap = dict(LEAN_EXEC_CAP=8, LEAN_EXEC_BUDGET=1,
+                   LEAN_EXEC_FORCE_BACKENDS="native")
+        first = _run(state, ["run", "--json", "--", PY, "-c", "print('ok')"],
+                     cwd=proj, timeout=90, **cap)
+        assert first.returncode == 0, first.stderr
+        out = json.loads(first.stdout[first.stdout.index("{"):])
+        assert out["lean_backend"] == "native", out
+        assert "default-policy" in out["backend_detail"], out["backend_detail"]
+        assert out["child_exit_code"] == 0
+        reg = _registry(state)
+        assert len(reg) == 1, reg
+        key = next(iter(reg))
+        assert le._lake_key(proj) == key, (key, le._lake_key(proj))
+        assert reg[key]["backend"] == "native"
+        assert reg[key]["origin"] == "default-policy"
+        assert _last(state)["lean_backend"] == "native"
+
+        second = _run(state, ["run", "--json", "--", PY, "-c", "print('ok')"],
+                      cwd=proj, timeout=90, **cap)
+        out2 = json.loads(second.stdout[second.stdout.index("{"):])
+        assert out2["lean_backend"] == "native"
+        assert out2["backend_detail"].startswith("epingle="), \
+            out2["backend_detail"]
+        # L'epingle ne se re-ecrit pas : meme horodatage qu'au premier run.
+        assert _registry(state)[key] == reg[key]
+
+
+def test_backend_mismatch_refused_without_repin():
+    """Le piege mesure (lean_server.py:86-89) : viser l'autre backend sans
+    --repin = refus ACTIONNABLE, jamais une bascule implicite."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        proj = _lake_fixture(Path(td), "t3lake")
+        cap = dict(LEAN_EXEC_CAP=8, LEAN_EXEC_BUDGET=1,
+                   LEAN_EXEC_FORCE_BACKENDS="native,wsl")
+        first = _run(state, ["run", "--json", "--", PY, "-c", "print('ok')"],
+                     cwd=proj, timeout=90, **cap)
+        assert first.returncode == 0
+        reg_before = _registry(state)
+
+        second = _run(state, ["run", "--json", "--backend", "wsl", "--",
+                              PY, "-c", "print('ok')"],
+                      cwd=proj, timeout=90, **cap)
+        assert second.returncode == le.EXIT_REFUSED, second.returncode
+        out = json.loads(second.stdout[second.stdout.index("{"):])
+        reason = out["reason"] or ""
+        assert "--repin" in reason, reason
+        assert ".lake/build" in reason, reason
+        assert "Mathlib" in reason or "recompilation" in reason, reason
+        # Fail-closed : le registre n'a pas bouge.
+        assert _registry(state) == reg_before
+
+
+def test_backend_repin_refused_while_cache_present():
+    """--repin avec .lake/build encore la = refus : l'organe ne purge
+    JAMAIS un cache lui-meme (la purge verifiee est la porte du repin)."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        proj = _lake_fixture(Path(td), "t3lake")
+        cap = dict(LEAN_EXEC_CAP=8, LEAN_EXEC_BUDGET=1,
+                   LEAN_EXEC_FORCE_BACKENDS="native,wsl")
+        first = _run(state, ["run", "--json", "--", PY, "-c", "print('ok')"],
+                     cwd=proj, timeout=90, **cap)
+        assert first.returncode == 0
+        reg_before = _registry(state)
+        (proj / ".lake" / "build").mkdir(parents=True)
+
+        rc = _run(state, ["run", "--json", "--backend", "wsl", "--repin",
+                          "--", PY, "-c", "print('ok')"],
+                  cwd=proj, timeout=90, **cap)
+        assert rc.returncode == le.EXIT_REFUSED, rc.returncode
+        out = json.loads(rc.stdout[rc.stdout.index("{"):])
+        assert "purge" in (out["reason"] or ""), out["reason"]
+        assert "JAMAIS" in out["reason"], out["reason"]
+        assert _registry(state) == reg_before
+
+
+def test_backend_repin_succeeds_after_purge():
+    """Cache purge + --repin = re-epinglage enregistre, puis execution sur
+    le nouveau backend. L'epingle initiale est posee directement dans le
+    registre (wsl) pour garder le test deterministe : seule la bascule
+    wsl->native passe par l'organe, et native s'execute sans traduction."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        proj = _lake_fixture(Path(td), "t3lake")
+        with _state_env(state):
+            le.save_backends({le._lake_key(proj): {
+                "backend": "wsl", "pinned_at": "2026-09-14T00:00:00Z",
+                "origin": "fixture",
+            }})
+        cap = dict(LEAN_EXEC_CAP=8, LEAN_EXEC_BUDGET=1,
+                   LEAN_EXEC_FORCE_BACKENDS="native")
+        rc = _run(state, ["run", "--json", "--backend", "native", "--repin",
+                          "--", PY, "-c", "print('ok')"],
+                  cwd=proj, timeout=90, **cap)
+        assert rc.returncode == 0, rc.stderr
+        out = json.loads(rc.stdout[rc.stdout.index("{"):])
+        assert out["lean_backend"] == "native"
+        assert "repin wsl->native" in out["backend_detail"], \
+            out["backend_detail"]
+        entry = _registry(state)[le._lake_key(proj)]
+        assert entry["backend"] == "native"
+        assert "apres purge" in entry["origin"], entry
+
+
+def test_backend_none_available_fail_closed():
+    """Aucun backend disponible (surcharge vide) = refus immediat, pas de
+    repli silencieux."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        proj = _lake_fixture(Path(td), "t3lake")
+        rc = _run(state, ["run", "--json", "--", PY, "-c", "print('ok')"],
+                  cwd=proj, timeout=90,
+                  LEAN_EXEC_CAP=8, LEAN_EXEC_BUDGET=1,
+                  LEAN_EXEC_FORCE_BACKENDS="")
+        assert rc.returncode == le.EXIT_REFUSED, rc.returncode
+        out = json.loads(rc.stdout[rc.stdout.index("{"):])
+        assert "aucun backend" in (out["reason"] or ""), out["reason"]
+        assert _registry(state) == {}
+
+
+def test_backend_no_lake_root_runs_native_without_pin():
+    """Hors de tout lake : rien a epingler, backend natif, registre vide."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        plain = Path(td) / "plain"
+        plain.mkdir()
+        rc = _run(state, ["run", "--json", "--", PY, "-c", "print('ok')"],
+                  cwd=plain, timeout=90,
+                  LEAN_EXEC_CAP=8, LEAN_EXEC_BUDGET=1,
+                  LEAN_EXEC_FORCE_BACKENDS="")
+        assert rc.returncode == 0, rc.stderr
+        out = json.loads(rc.stdout[rc.stdout.index("{"):])
+        assert out["lean_backend"] == "native"
+        assert "no lake root" in out["backend_detail"], out["backend_detail"]
+        assert _registry(state) == {}
+
+
+def test_wsl_path_mangling_and_translation_form(monkeypatch):
+    """Forme pure de la traduction WSL : tout appel d'outil Linux passe par
+    bash -lc (l'argv direct de wsl.exe mange les backslashes, mesure
+    po-2026 2026-09-14), cwd traduit via --cd, threads exportes dans le
+    shell de login, arguments shlex-quotes.
+
+    L'hote est **force** des deux cotes via ``_host_is_windows`` (porte
+    unique du cote-hote, l.981 du module) : ``backend_command`` ne traduit
+    que depuis Windows et rend la commande telle quelle ailleurs. Sans ce
+    forcage, l'epingle n'affirmait sa forme que sur un poste Windows et
+    **rougissait sur la CI Linux** (jambe ``Scripts Tests (CPU)`` du
+    2026-09-23, 1 failed / 15209 passed). On ne patche PAS ``os.name`` :
+    le patch global fait choisir ``WindowsPath`` a tout ``Path()`` pendant
+    le test, non instantiable sous Linux — INTERNALERROR, worker xdist
+    mort (mesure CI 18:26Z) — d'ou la porte dediee patchable."""
+    monkeypatch.setattr(le, "_host_is_windows", lambda: True)
+    saved = le.wsl_path_of
+    try:
+        le.wsl_path_of = lambda p: "/mnt/c/dev/proj"
+        cmd, env = le.backend_command(
+            ["lake", "build", "--out", "a b.olean"],
+            "wsl", {"LEAN_NUM_THREADS": "3"})
+        assert cmd[:4] == ["wsl.exe", "--cd", "/mnt/c/dev/proj", "--"]
+        assert cmd[4:7] == ["bash", "-lc", cmd[6]]
+        shell = cmd[6]
+        assert shell.startswith("export LEAN_NUM_THREADS=3;"), shell
+        assert "'a b.olean'" in shell, shell  # espace = shlex.quote
+        assert shell.endswith("lake build --out 'a b.olean'"), shell
+        # Sans threads declares : pas d'export prepended.
+        cmd2, _ = le.backend_command(["lake", "build"], "wsl", {})
+        assert cmd2[6] == "lake build", cmd2[6]
+        # Backend natif : pas de traduction du tout.
+        cmd3, env3 = le.backend_command(
+            ["lake", "build"], "native", {"LEAN_NUM_THREADS": "3"})
+        assert cmd3 == ["lake", "build"] and env3["LEAN_NUM_THREADS"] == "3"
+        # Hote POSIX, backend wsl demande : wsl.exe n'existe pas la-bas, donc
+        # commande rendue telle quelle — c'est cette branche que la CI exerce.
+        monkeypatch.setattr(le, "_host_is_windows", lambda: False)
+        cmd4, _ = le.backend_command(["lake", "build"], "wsl", {})
+        assert cmd4 == ["lake", "build"], cmd4
+    finally:
+        le.wsl_path_of = saved
+
+
+def test_lake_key_normalizes_case_and_separators():
+    r"""C:/Dev/X, c:\dev\x et c:/dev/x designent le MEME lake pour
+    l'epinglage (sinon deux jeux d'epingles par lake selon l'appelant)."""
+    assert le._lake_key(Path("C:/Dev/X")) == le._lake_key(Path("c:/dev/x"))
+    if os.name == "nt":
+        assert le._lake_key(Path(r"C:\Dev\X")) == le._lake_key(
+            Path("C:/Dev/X"))
+
+
+def test_backends_cli_report():
+    """Sous-commande backends : registre, sondes (surchargees en test) et
+    la note de politique mesuree, verifiables sans aucune sonde reelle."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        proj = _lake_fixture(Path(td), "t3lake")
+        with _state_env(state):
+            le.save_backends({le._lake_key(proj): {
+                "backend": "wsl", "pinned_at": "2026-09-14T00:00:00Z",
+                "origin": "fixture",
+            }})
+        rc = _run(state, ["backends", "--json"], timeout=60,
+                  LEAN_EXEC_FORCE_BACKENDS="native,wsl")
+        assert rc.returncode == 0, rc.stderr
+        payload = json.loads(rc.stdout[rc.stdout.index("{"):])
+        assert payload["pinned_lakes"] == 1
+        assert le._lake_key(proj) in payload["registry"], payload["registry"]
+        assert payload["probes"]["native"]["available"] is True
+        assert "forced" in payload["probes"]["native"]["source"]
+        assert payload["default_backend_order"] == list(
+            le.DEFAULT_BACKEND_ORDER)
+        assert "MESURE" in payload["default_policy_note"]
+        # status expose aussi le compte d'epingles.
+        st = _run(state, ["status", "--json"], timeout=60)
+        stp = json.loads(st.stdout[st.stdout.index("{"):])
+        assert stp["pinned_lakes"] == 1, stp.get("pinned_lakes")
+
+
+# ---------------------------------------------------------------------------
+# Review #16160 (19/09) : les 4 defauts, un test de regression par chemin
+# ---------------------------------------------------------------------------
+
+def test_tree_lease_released_when_backend_translation_fails():
+    """Defaut 1 : backend_command leve OSError quand la traduction WSL
+    echoue (wslpath). Sans relai, l'OSError fuit hors de _attempt -- la
+    boucle externe ne capte que TimeoutError -- et le tree lease reste
+    pose sans proprietaire vivant : le tree reste verrouille pour toutes
+    les lanes. Le relai doit refuser ET rendre le lease."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        proj = _lake_fixture(Path(td), "t3lake")
+        sentinel = proj / "lease.sentinel"
+        released: list[Path | None] = []
+        saved = (le.acquire_tree_lease, le.release_tree_lease,
+                 le.backend_command)
+        cwd = os.getcwd()
+        try:
+            le.acquire_tree_lease = (
+                lambda root, cmd, caller, budget: (sentinel, None))
+            le.release_tree_lease = (
+                lambda p: released.append(p))
+            def _boom(cmd, backend, env):
+                raise OSError("wslpath a echoue (simulation)")
+            le.backend_command = _boom
+            os.chdir(proj)
+            with _state_env(state):
+                os.environ["LEAN_EXEC_FORCE_BACKENDS"] = "wsl"
+                rc = le.run_command(
+                    [PY, "-c", "print('never run')"],
+                    cap_override=8, budget_override=1, as_json=True)
+        finally:
+            os.chdir(cwd)
+            (le.acquire_tree_lease, le.release_tree_lease,
+             le.backend_command) = saved
+            os.environ.pop("LEAN_EXEC_FORCE_BACKENDS", None)
+        assert rc == le.EXIT_REFUSED, rc
+        assert released == [sentinel], released
+        last = _last(state)
+        assert last["reason"].startswith("backend translation failed"), \
+            last["reason"]
+
+
+def test_kill_switch_wsl_off_refuses_pinned_wsl():
+    """Defaut 2 : le kill-switch LEAN_EXEC_WSL=off doit sortir une machine
+    DEJA epinglee wsl. Avant le fix, le fast-path de preflight_backends
+    rendait [pinned] sans sonder et l'epingle court-circuitait
+    l'interrupteur."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        proj = _lake_fixture(Path(td), "t3lake")
+        with _state_env(state):
+            le.save_backends({le._lake_key(proj): {
+                "backend": "wsl", "pinned_at": "2026-09-14T00:00:00Z",
+                "origin": "fixture",
+            }})
+        rc = _run(state, ["run", "--json", "--", PY, "-c", "print('ok')"],
+                  cwd=proj, timeout=90,
+                  LEAN_EXEC_CAP=8, LEAN_EXEC_BUDGET=1, LEAN_EXEC_WSL="off")
+        assert rc.returncode == le.EXIT_REFUSED, (
+            rc.returncode, rc.stdout, rc.stderr)
+        out = json.loads(rc.stdout[rc.stdout.index("{"):])
+        reason = out["reason"] or ""
+        assert "epingle=wsl" in reason, reason
+        assert "indisponible" in reason, reason
+        # Fail-closed : l'epingle n'est ni modifiee ni detruite.
+        assert _registry(state)[le._lake_key(proj)]["backend"] == "wsl"
+
+
+def test_auto_pin_refused_with_orphan_cache():
+    """Defaut 3 : premier epinglage auto sur un lake dont .lake/build
+    existe SANS epingle connue = refus actionnable (origine du cache
+    inconnue, l'organe ne tranche pas ni ne purge). Apres purge, la
+    politique par defaut s'applique normalement."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        proj = _lake_fixture(Path(td), "t3lake")
+        (proj / ".lake" / "build").mkdir(parents=True)
+        cap = dict(LEAN_EXEC_CAP=8, LEAN_EXEC_BUDGET=1,
+                   LEAN_EXEC_FORCE_BACKENDS="native")
+        rc = _run(state, ["run", "--json", "--", PY, "-c", "print('ok')"],
+                  cwd=proj, timeout=90, **cap)
+        assert rc.returncode == le.EXIT_REFUSED, (
+            rc.returncode, rc.stdout, rc.stderr)
+        out = json.loads(rc.stdout[rc.stdout.index("{"):])
+        reason = out["reason"] or ""
+        assert "sans epingle connue" in reason, reason
+        assert "--backend" in reason, reason
+        # Fail-closed : aucune epingle posee par-dessus le cache orphelin.
+        assert _registry(state) == {}
+        # Purge = la porte : l'auto-epinglage redevient legal.
+        shutil.rmtree(proj / ".lake")
+        rc2 = _run(state, ["run", "--json", "--", PY, "-c", "print('ok')"],
+                   cwd=proj, timeout=90, **cap)
+        assert rc2.returncode == 0, rc2.stderr
+        out2 = json.loads(rc2.stdout[rc2.stdout.index("{"):])
+        assert out2["lean_backend"] == "native", out2
+        assert _registry(state)[le._lake_key(proj)]["origin"] == \
+            "default-policy"
+
+
+def test_unreadable_registry_fail_closed_not_overwritten():
+    """Defaut 4 : registre PRESENT mais illisible (JSON corrompu) != registre
+    vide. Le run doit refuser en nommant le registre, et le fichier doit
+    rester BYTE-IDENTIQUE (l'ancien comportement {} laissait save_backends
+    re-ecrire par-dessus un registre non lu -- patron #16281)."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        proj = _lake_fixture(Path(td), "t3lake")
+        state.mkdir(parents=True)
+        corrupt = '{"backend": "wsl", "pinned_at": '  # JSON tronque
+        (state / "backends.json").write_text(corrupt, encoding="utf-8")
+        # Unite : load_backends leve, absent rend {}.
+        with _state_env(state):
+            with pytest.raises(ValueError):
+                le.load_backends()
+        rc = _run(state, ["run", "--json", "--", PY, "-c", "print('ok')"],
+                  cwd=proj, timeout=90,
+                  LEAN_EXEC_CAP=8, LEAN_EXEC_BUDGET=1,
+                  LEAN_EXEC_FORCE_BACKENDS="native")
+        assert rc.returncode == le.EXIT_REFUSED, (
+            rc.returncode, rc.stdout, rc.stderr)
+        out = json.loads(rc.stdout[rc.stdout.index("{"):])
+        assert "registre backends illisible" in (out["reason"] or ""), \
+            out["reason"]
+        # Le registre corrompu n'a pas ete ecrase.
+        assert (state / "backends.json").read_text(
+            encoding="utf-8") == corrupt
+        # Diagnostic : backends report nomme l'erreur au lieu de compter 0.
+        rep = _run(state, ["backends", "--json"], timeout=60,
+                   LEAN_EXEC_FORCE_BACKENDS="native")
+        payload = json.loads(rep.stdout[rep.stdout.index("{"):])
+        assert payload["registry_error"] is not None, payload
+        assert payload["pinned_lakes"] == 0, payload
 
 
 # ---------------------------------------------------------------------------

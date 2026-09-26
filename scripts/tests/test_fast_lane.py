@@ -292,16 +292,63 @@ def test_delta_placeholders_are_resolvable():
             assert "/tmp/b.json" in resolved and "/tmp/h.json" in resolved
 
 
+def test_no_blocking_guard_is_read_as_advisory_by_pr_gate():
+    """Un garde BLOQUANT ne doit pas etre classe advisory par `pr_gate`.
+
+    `pr_gate` range en advisory tout check-run dont le nom de job contient
+    `advisory`, OU dont le workflow d'origine sur disque porte `advisory` dans
+    son `name:` (`derive_advisory_jobs`). Un garde absorbe garde son workflow
+    d'origine comme cible d'identite (`job.name == Guard.name`) : si ce
+    workflow s'appelle encore « ... advisory » apres la promotion du garde en
+    bloquant, `pr_gate` range son rouge dans le seau advisory. Le merge reste
+    bloque par le job agrege de la voie rapide, mais le resume du gate nomme
+    ce job opaque au lieu du vrai garde, et classe le vrai garde comme un
+    simple signal. Mesure du 2026-09-26 : `Split-reading ratchet (base vs PR)`,
+    promu bloquant par #17044, sorti de `split-reading-advisory.yml` (workflow
+    `Split-reading advisory`) -- seule instance sur 40 gardes.
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    import fast_lane_registry
+    import pr_gate
+
+    advisory_jobs = pr_gate.derive_advisory_jobs()
+    assert advisory_jobs, "roster advisory vide : le controle serait aveugle"
+
+    guards = {}
+    for value in vars(fast_lane_registry).values():
+        if isinstance(value, list) and value and all(
+                isinstance(item, Guard) for item in value):
+            for guard in value:
+                guards[guard.name] = guard
+    assert len(guards) >= 30, f"registre lu partiellement : {len(guards)}"
+
+    misread = sorted(
+        name for name, guard in guards.items()
+        if guard.blocking and pr_gate._is_advisory_name(name, advisory_jobs))
+    assert misread == [], (
+        "gardes bloquants classes advisory par pr_gate (renommer le `name:` "
+        f"du workflow d'origine) : {misread}")
+
+    # controle positif : un garde advisory reste bien reconnu comme tel
+    advisory = [name for name, guard in guards.items() if not guard.blocking
+                and pr_gate._is_advisory_name(name, advisory_jobs)]
+    assert advisory, "aucun garde advisory reconnu : le predicat est muet"
+
+
 def test_advisory_flags_match_the_source_workflows():
     """Le caractere advisory est une propriete du garde, pas du moteur.
 
-    `solution-leak-guard` et `prose-counts-guard` sont annonces advisory dans
-    l'en-tete de leur workflow ; les inverser ici ferait rougir la flotte sur
-    un stock que le depot a explicitement decide de ne pas bloquer.
+    `solution-leak-guard` est annonce advisory dans l'en-tete de son workflow ;
+    l'inverser ici ferait rougir la flotte sur un stock que le depot a
+    explicitement decide de ne pas bloquer. `prose-counts-guard` est passe
+    BLOQUANT (#17636, critere de sortie #9377) : son argv porte --strict et le
+    garde ne juge que les lignes AJOUTEES -- le stock de 65 notebooks ne fait
+    echouer personne, seule une PR qui rouvre la veine rougit.
     """
     by_name = {g.name: g for g in PILOT}
     assert by_name["solution-leak-guard"].blocking is False
-    assert by_name["prose-counts-guard"].blocking is False
+    assert by_name["prose-counts-guard"].blocking is True
+    assert "--strict" in by_name["prose-counts-guard"].argv
     assert by_name["banner-guard"].blocking is True
     assert by_name["pip-leak-guard"].blocking is True
     assert by_name["perimeter-review-guard"].blocking is True

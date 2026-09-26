@@ -1,0 +1,8 @@
+{
+  "MyIA.AI.Notebooks/GenAI/PostTraining/verifiers/lean_rlvr_verifier.py": "Verifieur de recompense RLVR : lance 'lake env lean --stdin' pour verifier les preuves des generations. Dette de migration #15666 : a router vers lean_exec (admission + budget) quand l'organe exposera un mode stdin.",
+  "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py": "Voie nommee par l'epic #15666 : _resolve_lake_command construit ['lake', ...] / lake.exe et subprocess.run lance build et lean --stdin avec timeout=600, sans budget machine-wide. Migration prioritaire.",
+  "MyIA.AI.Notebooks/SymbolicAI/Lean/lean_notebook_utils.py": "Voie nommee par l'epic #15666 : run_lake / run_lean_snippet passent par WSL 'bash -lc' avec fragment 'cd ... && lake {args}' hors de tout budget commun. Migration prioritaire.",
+  "scripts/lean/po2026_recover_build.py": "Outil de recuperation post-incident (rechauffe de cache + build unique avec LAKE_JOBS=2). Lanceur volontairement autonome : a reevaluer au moment de la migration des voies principales.",
+  "scripts/lean/setup_native_lean4_import.py": "Installation du REPL natif : fragments shell d'installation/export PATH qui lancent lake en WSL. One-shot d'infrastructure, hors boucle de validation repetee.",
+  "scripts/notebook_tools/hopf_s6_reproduction.py": "Reproduction ponctuelle Hopf-S6 : 'cd {p} && lake build <cible>' x3. Reproduction archivee, a migrer ou retirer a la prochaine utilisation."
+}

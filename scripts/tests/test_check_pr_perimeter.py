@@ -14,6 +14,12 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from _gh_availability import (  # noqa: E402
+    skip_if_gh_exhausted,
+    skip_if_output_rate_limited,
+)
 
 from check_pr_perimeter import (  # noqa: E402
     BaselineMove,
@@ -2191,6 +2197,11 @@ def test_founding_incident_11227_criteria_met_on_main():
     )
     if auth_probe.returncode != 0:
         pytest.skip("gh CLI present but unauthenticated")
+    # A shared account budget (GraphQL) can be exhausted while `auth status`
+    # is perfectly green: the scan then returns exit 2 with an empty body.
+    # That is not a regression of the tool -- skip instead of a false red
+    # (#17201 triage: this test was the 5th intermittent red of the class).
+    skip_if_gh_exhausted()
     # Run against PR #11227 with the exact phrase from the founder review.
     # The script will reach out to gh API; if the PR is missing or
     # permissions fail, it returns non-zero AND stdout/stderr lack the
@@ -2205,6 +2216,9 @@ def test_founding_incident_11227_criteria_met_on_main():
         encoding="utf-8", errors="replace",
     )
     output = proc.stdout + proc.stderr
+    # Budget may die between the probe above and this run: the scan then
+    # reports the refusal instead of a verdict. Same class, same remedy.
+    skip_if_output_rate_limited(output)
     # The tool surfaces the FAIL either in stdout (normal) or via a
     # non-zero exit. A green pass without the founding assertion listed
     # is a regression -- assert at least one of the founder signatures.

@@ -140,6 +140,32 @@ def test_tie_break_id_puis_ordre_quand_started_at_identiques():
     assert fold_latest(legs_sans_id)["X"]["conclusion"] == "success"
 
 
+def test_fold_latest_preserve_les_champs_bruts_de_la_jambe():
+    """#16889 : la jambe rendue est la BRUTE enrichie des champs canoniques --
+    un consommateur qui lit isRequired ou databaseId sur une jambe du rollup
+    GraphQL les retrouve intacts. La normalisation n'ote plus d'information
+    qu'elle n'en ajoute."""
+    leg = {"name": "PR gate", "conclusion": "FAILURE", "isRequired": True,
+           "databaseId": 424242, "startedAt": "2026-09-22T00:00:00Z"}
+    folded = fold_latest([leg])["PR gate"]
+    assert folded["isRequired"] is True          # champ brut preserve
+    assert folded["databaseId"] == 424242        # champ brut preserve
+    assert folded["conclusion"] == "failure"     # champ canonique normalise
+    assert folded["started_at"] == "2026-09-22T00:00:00Z"
+
+
+def test_normalize_leg_replie_createdat_pour_les_status_contexts():
+    """StatusContext (commit status) n'expose QUE createdAt : sans repli,
+    toutes ses jambes seraient a clee vide et departagees par l'ordre de
+    liste -- le defaut non chronologique que le fold ferme (#16889)."""
+    sc = {"context": "continuous-integration/drone", "state": "SUCCESS",
+          "createdAt": "2026-09-22T01:00:00Z"}
+    leg = normalize_leg(sc)
+    assert leg["name"] == "continuous-integration/drone"
+    assert leg["conclusion"] == "success"
+    assert leg["started_at"] == "2026-09-22T01:00:00Z"
+
+
 def test_main_exit_codes_sans_reseau(monkeypatch, capsys):
     """--sha avec collect moque : 0 = latest tout vert (fondateur), 1 = rouge
     dans la vue latest, 2 = erreur d'instrument."""
@@ -162,3 +188,16 @@ def test_main_exit_codes_sans_reseau(monkeypatch, capsys):
         raise RuntimeError("gh api ... -> 1: not found")
     monkeypatch.setattr(m, "collect", boom)
     assert m.main(["--sha", "ab"]) == 2
+
+
+def test_collect_reads_every_page(monkeypatch):
+    """#17807 : 110 jambes au head, une lecture a une page en voyait 100."""
+    import scripts.check_run_state as m
+    seen = []
+
+    def fake_run_gh(args):
+        seen.append(args)
+        return ""
+    monkeypatch.setattr(m, "_run_gh", fake_run_gh)
+    m.collect(sha="ab")
+    assert "--paginate" in seen[0]

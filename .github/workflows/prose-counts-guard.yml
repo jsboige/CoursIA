@@ -10,10 +10,16 @@ name: prose-counts-guard
 # « re-drift post #6914 ».
 #
 # Le guard ne juge que les lignes AJOUTEES : le stock existant (#9377) ne fait
-# echouer personne. ADVISORY tant que le stock n'est pas resorbe -- il ne peut
-# donc pas rougir aujourd'hui, et c'est assume : son role immediat est de poser
-# le label sur les PR qui rouvrent la veine, pas de bloquer la flotte. Le
-# passage en `--strict` est conditionne au critere de sortie de #9377.
+# echouer personne. BLOQUANT depuis #17636 (critere de sortie de #9377 : « le
+# guard est passe en bloquant », mandat user 2026-08-04) -- la seconde moitie
+# du critere (stock a 0) se resorbe separemment, par tranches de serie. Une PR
+# qui ajoute un compteur quantitatif en prose rougit ; l'echec du check-run
+# EST le signalement, visible sans ouvrir les logs.
+#
+# Historique #17636 : la phase advisory etait MUE -- le checker rendait rc=0
+# avec ses findings noyes dans le log, le workflow ne posait aucun label (il
+# n'a jamais eu la permission `issues: write`), et le commentaire d'origine
+# promettait ce label. #17029 a fusionne ainsi, revertee par #17632.
 
 on:
   pull_request:
@@ -59,4 +65,4 @@ jobs:
           # fetch est depth=1, donc legal, et tient en quelques Ko.
           git fetch --depth=1 origin "${{ github.base_ref }}" -q
           python scripts/notebook_tools/check_prose_quantitative_claims.py \
-            --diff "origin/${{ github.base_ref }}...HEAD"
+            --diff "origin/${{ github.base_ref }}...HEAD" --strict

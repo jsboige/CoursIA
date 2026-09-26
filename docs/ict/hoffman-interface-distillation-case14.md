@@ -25,7 +25,7 @@ Case 12 (PR #14544) a montré qu'à N=8, M=2, compression **bit0**, la dissociat
 
 Case 13 (PR #14548) teste la **prédiction d'escalade monotone** à N=16, compression bit0 : **RÉFUTATION** (null 0/16). Cause structurelle : à fibre cardinal 8, symétrie intra-fibre restaurée → `E[f(W)|x]` identique pour les deux x.
 
-Case 14 teste **l'hypothèse 2** du verdict case 13 (Tell c.896-L1 ★★★) : le **relâchement du setup** (compression non-canonique bit2 au lieu de bit0) peut-il restaurer la dissociation FBT à N=8 ?
+Case 14 teste **l'hypothèse 2** du verdict case 13 : le **relâchement du setup** (compression non-canonique bit2 au lieu de bit0) peut-il restaurer la dissociation FBT à N=8 ?
 
 ## Toy implémenté (`ict/hoffman_interface_toy_n8_relaxed.py`)
 
@@ -126,7 +126,7 @@ Case 14-bis adoptera le design case 12 (deux territoires concurrents, payoff int
 
 4. **Le verdict suit le pré-enregistrement (en le falsifiant instrumentalement)** : la mesure donne gap ≤ 0.05 sur 8/8 paysages, alors que le pré-enregistrement annonçait gap ≥ 0.60 sur 2/8 paysages. **Cause identifiée** : bug instrumental dans `play_round`.
 
-5. **Le scratchpad de pré-enregistrement documente la révision des prédictions** (Tell c.898-L1 ★★★ : code = pré-enreg). Trois corrections sur les symétries intra-fibre ont été faites après mesure effective, et consignées dans la section "Note de révision" du scratchpad AVANT le verdict final.
+5. **Le scratchpad de pré-enregistrement documente la révision des prédictions** (le code et les prédictions sont pré-enregistrés avant la mesure). Trois corrections sur les symétries intra-fibre ont été faites après mesure effective, et consignées dans la section "Note de révision" du scratchpad AVANT le verdict final.
 
 ## Limites assumées (grade C)
 
