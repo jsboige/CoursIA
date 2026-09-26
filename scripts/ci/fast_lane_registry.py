@@ -1174,8 +1174,7 @@ TRANCHE9: list[Guard] = [
 #
 # Renomme TRANCHE9 -> TRANCHE10 pour eviter la collision avec l'interval-kind
 # mergé sur main via PR #15624 (3342d97342, 2026-09-12T02:57:59+02:00 -- anterieur
-# a ce rebase). Collision signalee par le rebase c.1090 (Tell c.1065-L3 ★★
-# fondateur `rebase-vers-une-cible-NOMMEE-herite-de-sa-peremption`).
+# a ce rebase). Collision signalee par le rebase c.1090.
 #
 # Ce garde verifie la PRESENCE + le TYPE de `outputs` sur chaque cellule
 # code. `outputs: []` est PASS (la forme canonique d'une cellule non executee
