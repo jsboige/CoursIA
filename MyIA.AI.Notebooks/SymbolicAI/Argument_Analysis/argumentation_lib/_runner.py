@@ -25,6 +25,7 @@ from semantic_kernel.agents.group_chat.agent_group_chat import AgentGroupChat
 from semantic_kernel.contents.chat_message_content import ChatMessageContent
 from semantic_kernel.contents.utils.author_role import AuthorRole
 from semantic_kernel.contents.chat_history import ChatHistory
+from semantic_kernel.functions.kernel_arguments import KernelArguments
 
 from argumentation_lib._shared_state import RhetoricalAnalysisState
 from argumentation_lib._state_manager_plugin import StateManagerPlugin
@@ -110,6 +111,33 @@ Rédigez une conclusion finale complète.
 # Agent builders — direct instantiation, no factory needed
 # ---------------------------------------------------------------------------
 
+
+def _resolve_service(kernel: Kernel, llm_service_id: str):
+    """Return the chat-completion service registered under ``llm_service_id``.
+
+    Semantic Kernel >= 1.30 dropped the ``service_id=`` keyword of
+    ``ChatCompletionAgent`` (renamed ``service=``, expecting an instance) —
+    the vendored builder was pinned to SK 1.x ≤ 1.29 and never exercised
+    until this repair. Resolve the instance the Executor registered as
+    ``global_llm_service``.
+    """
+    return kernel.get_service(llm_service_id)
+
+
+def _state_arguments(state: RhetoricalAnalysisState) -> KernelArguments:
+    """Render the state snapshot for the prompts' ``{{$analysis_state}}`` token.
+
+    ``AgentGroupChat.invoke`` (SK 1.44) ne transporte pas de KernelArguments :
+    le token des prompts vendangés restait non résolu. Les agents portent la
+    snapshot à leur construction (état de début de phase).
+    """
+    return KernelArguments(
+        analysis_state=json.dumps(
+            state.get_state_snapshot(summarize=True), ensure_ascii=False
+        )
+    )
+
+
 def create_pm_agent(
     kernel: Kernel,
     llm_service_id: str,
@@ -123,7 +151,8 @@ def create_pm_agent(
         kernel=kernel,
         name="ProjectManagerAgent",
         instructions=PROMPT_DEFINE_TASKS,
-        service_id=llm_service_id,
+        service=_resolve_service(kernel, llm_service_id),
+        arguments=_state_arguments(state),
     )
     _logger.info("PM agent created with StateManagerPlugin.")
     return agent
@@ -144,7 +173,8 @@ def create_informal_agent(
         kernel=kernel,
         name="InformalAgent",
         instructions=PROMPT_INFORMAL_ANALYSIS,
-        service_id=llm_service_id,
+        service=_resolve_service(kernel, llm_service_id),
+        arguments=_state_arguments(state),
     )
     _logger.info("Informal agent created.")
     return agent
@@ -164,7 +194,8 @@ def create_logic_agent(
         kernel=kernel,
         name="LogicAgent",
         instructions=PROMPT_LOGIC_ANALYSIS,
-        service_id=llm_service_id,
+        service=_resolve_service(kernel, llm_service_id),
+        arguments=_state_arguments(state),
     )
     _logger.info("Logic agent created.")
     return agent
@@ -237,8 +268,12 @@ class AnalysisRunner:
             )
         )
 
+        # SK 1.44 : ChatHistoryChannel.invoke lit messages[-1] et lève
+        # IndexError sur un canal vide — chaque phase doit amorcer une
+        # history USER (le texte à analyser), sinon aucune n'a lieu.
         group_chat = AgentGroupChat(
             agents=[pm, informal],
+            chat_history=phase1_history,
         )
 
         try:
@@ -267,9 +302,21 @@ class AnalysisRunner:
             self.kernel, self.llm_service_id, self.state
         )
 
+        phase2_history = ChatHistory()
+        phase2_history.add_message(
+            ChatMessageContent(
+                role=AuthorRole.USER,
+                content=(
+                    "Poursuivez l'analyse : traduisez en logique propositionnelle "
+                    f"les arguments identifiés.\n\n{self.state.raw_text}"
+                ),
+            )
+        )
+
         try:
             group_chat2 = AgentGroupChat(
                 agents=[pm, logic],
+                chat_history=phase2_history,
             )
             turn_count = 0
             async for response in group_chat2.invoke():
@@ -296,12 +343,25 @@ class AnalysisRunner:
             kernel=self.kernel,
             name="SynthesisAgent",
             instructions=PROMPT_SYNTHESIS,
-            service_id=self.llm_service_id,
+            service=_resolve_service(self.kernel, self.llm_service_id),
+            arguments=_state_arguments(self.state),
+        )
+
+        phase3_history = ChatHistory()
+        phase3_history.add_message(
+            ChatMessageContent(
+                role=AuthorRole.USER,
+                content=(
+                    "Rédigez la synthèse finale de l'analyse argumentative en "
+                    f"vous appuyant sur l'état courant.\n\n{self.state.raw_text}"
+                ),
+            )
         )
 
         try:
             group_chat3 = AgentGroupChat(
                 agents=[pm, synthesis_agent],
+                chat_history=phase3_history,
             )
             turn_count = 0
             async for response in group_chat3.invoke():

@@ -1574,3 +1574,40 @@ def test_cliquet_base_irresoluble_rend_rc1(tmp_path):
     )
     assert proc.returncode == 1
     assert "irresoluble" in (proc.stdout + proc.stderr)
+
+
+def test_cliquet_exempte_la_convention_archive(tmp_path):
+    """Renommage vers ``_archive/`` avec banniere tombstone : pas de ligne.
+
+    La convention `_archive/` (docs/reference/_archive-convention.md) pose une
+    banniere markdown en tete de chaque carnet archive : par construction elle
+    precede une cellule code, ce qui declenche READING_BEFORE_CODE. Sans
+    exemption, archiver un carnet rougirait le cliquet -- vecu #17721 sur
+    ``Argument_Analysis_Agentic-0-init_agent.ipynb``. Controle decisif : sans
+    le skip, ce renommage produit exactement une ligne regressed.
+    """
+    code_out = {"cell_type": "code", "source": ["# Parameters\nBATCH_MODE = \"true\"\n"],
+                "outputs": [{"output_type": "stream", "name": "stdout",
+                             "text": ["ok\n"]}], "execution_count": 1}
+    archive_shape = nb(
+        md("> **Archive (convention `_archive/`, 2026-09)**\n"
+           "> - **Date d'archivage** : 2026-09-25\n"
+           "> - **Verdict enregistre dans** le body de la PR d'archivage."),
+        code_out,
+    )
+    repo = _repo(tmp_path)
+    base = _commit(repo, {NB: nb(code("print(1)"))}, "base")
+    head = _commit(repo, {
+        "MyIA.AI.Notebooks/Probas/_archive/Demo.ipynb": archive_shape,
+        NB: None,
+    }, "archivage")
+    # Sans l'exemption, la banniere tombstone rouge : une ligne regressed=True.
+    assert ratchet_rows(base, head, cwd=str(repo)) == []
+    proc = subprocess.run(
+        [sys.executable, str(SCRIPT), "--base-ref", base, "--head", head,
+         "--json", "--fail-on-findings"],
+        cwd=str(repo), capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
+    )
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert json.loads(proc.stdout)["regressed"] == 0

@@ -865,6 +865,12 @@ def ratchet_rows(base_ref: str, head: str = "HEAD",
         return None
     rows: list[dict] = []
     for base_path, head_path in changed_notebook_pairs(base, head, cwd=cwd):
+        if "/_archive/" in f"/{head_path}":
+            # Convention `_archive/` (docs/reference/_archive-convention.md) :
+            # chaque carnet archive porte une banniere tombstone en tete de
+            # fichier -- markdown avant code par construction. La regle
+            # pedagogique ne s'applique plus a un carnet sorti du parcours.
+            continue
         head_nb = read_notebook_at(head, head_path, cwd=cwd)
         if head_nb is None:
             continue  # illisible en tete : le recensement ne peut rien dire
