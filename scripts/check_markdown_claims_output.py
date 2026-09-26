@@ -200,19 +200,49 @@ def _normalize_output_text(out_text: str) -> str:
     )
 
 
+_LIT_MARKERS = (
+    "## bibliographie", "## references", "## pour aller plus loin",
+    "## further reading", "## sources", "## liens",
+    "## webographie", "## ressources complementaires",
+)
+
+
+def _lit_marker_pos(source: str) -> int:
+    """Return the byte offset of the FIRST literature header in source, or -1.
+
+    The header must sit on its own line (preceded by start-of-string or newline).
+    This avoids false positives like a Markdown link whose anchor happens to read
+    '...see sources for...' mid-sentence.
+    """
+    s_lower = source.lower()
+    best = -1
+    for marker in _LIT_MARKERS:
+        i = 0
+        while True:
+            j = s_lower.find(marker, i)
+            if j < 0:
+                break
+            at_line_start = (j == 0) or s_lower[j - 1] == "\n"
+            if at_line_start and (best < 0 or j < best):
+                best = j
+            i = j + 1
+    return best
+
+
 def _lit_skip(source: str) -> bool:
-    """Tell: a markdown cell is a literature block (long prose) vs a quantitative
-    interpolation cell. We DON'T skip on length alone: c.290 pathologie sat in
-    cells of length ~3000 chars (the cell with '## ~0,09 %'). Instead, we
-    skip on EXPLICIT literature headers -- the convention is a heading, not
-    a length."""
-    s = source.lower()
-    for marker in ("## bibliographie", "## references", "## pour aller plus loin",
-                   "## further reading", "## sources", "## liens",
-                   "## webographie", "## ressources complementaires"):
-        if marker in s:
-            return True
-    return False
+    """Tell: is THIS markdown cell purely a literature block?
+
+    The literature exemption only applies when the bibliography header opens the
+    cell (#17830). If a pedagogical cell ends with a `## Sources` tail, the
+    pedagogical portion must still be scanned -- c.290-style false negatives
+    hide there. Cells under 200 chars whose header sits within the first 80
+    chars of content (after leading whitespace) qualify as lit-only.
+    """
+    pos = _lit_marker_pos(source)
+    if pos < 0:
+        return False
+    head = source[:pos].strip()
+    return len(head) < 200
 
 
 def _is_md_heading_line(line: str) -> bool:
@@ -1118,14 +1148,23 @@ def check_notebook(path: Path) -> dict:
             )
         )
 
-        # The literature heuristic suppresses only noisy numeric extraction.
-        # Explicit claim-check contracts remain checkable in long prose cells.
-        if _lit_skip(src):
-            skipped_lit += 1
-            continue
+        # The literature heuristic suppresses only NOISY numeric extraction in
+        # cells that ARE bibliography blocks. A pedagogical cell that ends with
+        # a `## Sources` tail (#17830) still needs its prose scanned -- c.290-
+        # style false negatives hide there. We scan only the pre-bibliography
+        # region and skip the cell only when the marker opens it within the
+        # first 200 chars of stripped content.
+        scan_src = src
+        lit_pos = _lit_marker_pos(src)
+        if lit_pos >= 0:
+            head = src[:lit_pos].strip()
+            if len(head) < 200:
+                skipped_lit += 1
+                continue
+            scan_src = src[:lit_pos]
         # Drop heading lines + table-headers + code fences from the prose
         # we scan (structurals are not quantitative claims).
-        prose = CLAIM_CHECK_RE.sub("", _strip_md_structure(src))
+        prose = CLAIM_CHECK_RE.sub("", _strip_md_structure(scan_src))
         if not prev_code_idxs:
             skipped_no_prev += 1
             continue
