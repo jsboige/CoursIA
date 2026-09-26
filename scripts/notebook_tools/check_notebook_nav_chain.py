@@ -123,7 +123,6 @@ from check_notebook_navlinks import (  # noqa: E402
     REPO_ROOT,
     _iter_notebooks,
     _resolve_target,
-    _should_skip,
 )
 
 BASELINE_PATH = REPO_ROOT / "scripts" / "tests" / "baseline_nb_nav_chain.json"
@@ -496,6 +495,15 @@ def _select_report(report, series_filter):
     }
 
 
+def _filter_broken_nav(broken_nav, series_filter):
+    """Filtre les 404 de nav par serie. `f["notebook"]` est repo-relatif POSIX
+    (cf. `scan_broken_nav`) : on calcule la serie en `Path.parent.as_posix()`
+    directement, sans repasser par `_rel` (qui lèverait `ValueError` sur un
+    chemin deja relatif)."""
+    return [f for f in broken_nav
+            if Path(f["notebook"]).parent.as_posix() in series_filter]
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Verifie que chaque notebook d'une serie est ATTEIGNABLE "
@@ -550,7 +558,11 @@ def main(argv=None):
     # applique a la selection de rapport comme pour le graphe.
     broken_nav = scan_broken_nav(notebooks)
     if series_filter is not None:
-        broken_nav = [f for f in broken_nav if _rel(Path(f["notebook"]).parent) in series_filter]
+        # `f["notebook"]` est déjà repo-relatif POSIX (cf. scan_broken_nav), donc
+        # `_rel(Path(...).parent)` appelait `relative_to(REPO_ROOT)` sur un chemin
+        # déjà relatif et levait `ValueError` au premier 404 + filtre. On
+        # travaille directement sur la chaîne repo-relative.
+        broken_nav = _filter_broken_nav(broken_nav, series_filter)
     report["findings"].extend(broken_nav)
     report["findings"].sort(key=lambda f: (f["kind"], f.get("notebook", "")))
 

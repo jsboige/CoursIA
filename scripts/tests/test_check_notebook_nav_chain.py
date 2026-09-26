@@ -155,6 +155,40 @@ class TestScanBrokenNav:
         )
 
 
+class TestFilterBrokenNav:
+    """`_filter_broken_nav` applique un filtre de serie sur les 404. Le bug
+    fondateur (#17826, revue ai-01 5325070282) : `_rel(Path(f["notebook"]).parent)`
+    levait `ValueError` au premier 404 + filtre, parce que `f["notebook"]` est
+    déjà repo-relatif. Le fix : `Path(f["notebook"]).parent.as_posix()`."""
+
+    def test_filter_includes_matching_series(self):
+        findings = [
+            {"kind": "link_404", "notebook": "Foo/A.ipynb", "target": "B.ipynb"},
+            {"kind": "link_404", "notebook": "Bar/B.ipynb", "target": "X.ipynb"},
+        ]
+        out = nav_chain._filter_broken_nav(findings, {"Foo"})
+        assert out == [findings[0]]
+
+    def test_filter_with_empty_filter_excludes_all(self):
+        findings = [
+            {"kind": "link_404", "notebook": "Foo/A.ipynb", "target": "B.ipynb"},
+        ]
+        assert nav_chain._filter_broken_nav(findings, set()) == []
+
+    def test_does_not_raise_on_repo_relative_path(self):
+        """Le bug fondateur : avant le fix, ce code levait `ValueError`
+        ('MyIA.AI.Notebooks\\\\Foo' is not in the subpath of 'D:\\\\...')."""
+        findings = [
+            {"kind": "link_404",
+             "notebook": "MyIA.AI.Notebooks/Foo/A.ipynb",
+             "target": "B.ipynb"},
+        ]
+        # Si le fix est casse, le `_rel(Path(f["notebook"]).parent)` original
+        # leve ValueError. La fonction pure ne doit pas y toucher.
+        out = nav_chain._filter_broken_nav(findings, {"MyIA.AI.Notebooks/Foo"})
+        assert out == findings
+
+
 class TestFindingKeys:
     """Cle de baseline 3-tuple (kind, notebook, target) -- discriminante pour link_404."""
 
