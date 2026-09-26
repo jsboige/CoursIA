@@ -9,6 +9,19 @@ fichiers ``symbolic_rules.py`` et ``argument_mining_rules.py``) reste en
 généalogie : les règles y ont d'abord existé, la consolidation du cœur en a
 retenu une partie et corrigé une autre (G4 #1186).
 
+**Nature de ce qui est repris — déclaration exigée par la liste « bruit »**
+(décision coordinateur du 2026-09-26, portée par le corps de l'épic #4960).
+Ce que cet organe tient du dépôt tiers est une **extraction de données** — la
+table de règles elle-même — et **non un import de code** : il n'importe rien de
+``adapters/``, ``mocks/`` ni de l'orchestration, et sa seule dépendance est
+spaCy, en import tardif (l'organe reste importable sans elle). La table est
+**re-déclarée ici en données** parce que l'étage dont elle vient n'est **pas
+consolidé dans le tronc de CoursIA** : ``argumentation_analysis/`` y est absent
+— mesuré sur ``main``, où ``_SYMBOLIC_FALLACY_RULES`` n'existe nulle part — et
+cet étage ne vit que dans le dépôt tiers. C'est précisément la condition mise à
+l'extraction de données : elle est admise quand l'en-tête du module consommateur
+la déclare comme consolidation d'un étage que le tronc n'a pas consolidé.
+
 Contenu porté — 13 motifs / 5 clés, identiques au cœur :
 
 - ``FALLACY_RULES`` : AD_HOMINEM_DIRECT (3), PENTE_GLISSANTE (3),
