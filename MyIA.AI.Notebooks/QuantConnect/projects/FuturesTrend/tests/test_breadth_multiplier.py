@@ -10,7 +10,7 @@ requiert **pas** QC Cloud : il importe uniquement `breadth_multiplier`
 Pré-requis : `numpy` (>= 1.21). Le runner GH Actions par défaut ne porte
 PAS numpy — voir MEMORY `scipy-matplotlib-pip-install-ci-runner.md`.
 
-Tell c.15069 strict filet `delivered` : ce test protège le caractère
+filet `delivered` : ce test protège le caractère
 sign-invariant que seul une docstring ne protégeait pas avant REPAIR-7
 c.1113 (préflight adjoint po-2025 habilité n°3
 `msg-20260911T063424-qnc0q9`).
@@ -158,6 +158,6 @@ class TestBreadthMultiplierPreservesSignInWeight(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    # PYTHONIOENCODING utf-8 (Tell c.1067 strict)
+    # PYTHONIOENCODING utf-8
     os.environ.setdefault("PYTHONIOENCODING", "utf-8")
     unittest.main(verbosity=2)
