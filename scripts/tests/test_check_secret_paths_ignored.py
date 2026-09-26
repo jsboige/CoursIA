@@ -138,3 +138,32 @@ def test_hors_depot_rend_unknown_pas_un_vert(mod, tmp_path):
     """« je n'ai pas pu mesurer » ne se confond jamais avec « rien a signaler »."""
     with pytest.raises(mod.MesureImpossible):
         mod.analyser(tmp_path / "pas-un-depot", SONDES, CONTROLES)
+
+
+def test_une_negation_gagnante_designore_le_secret(mod, tmp_path):
+    """Une regle `!motif` gagnante rend `check-ignore` rc=0 (mesure issue #17708)
+    mais INCLUT le fichier au lieu de l'exclure : sans le tri du motif, le secret
+    serait classe VERSIONNEE -- vert sur un fichier stageable. Controle positif :
+    le meme depot sans la negation passe au vert (le repertoire reste ignore)."""
+    r = _depot(tmp_path / "negation", regle_versionnee=True, regle_locale=False)
+    # git ne peut re-inclure un fichier d'un repertoire exclu qu'avec des regles
+    # de contenu : on re-ecrit le .gitignore en `.secrets/*` + exception `!...`,
+    # forme qui devient reelle si la regle de repertoire est un jour raffinee.
+    (r / ".gitignore").write_text(".secrets/*\n!.secrets/sonde\n", encoding="utf-8")
+    subprocess.run(["git", "add", ".gitignore"], cwd=r, check=True)
+    subprocess.run(["git", "commit", "-qm", "negation"], cwd=r, check=True)
+    rapport = mod.analyser(r, SONDES, CONTROLES)
+    assert rapport["verdict"] == "DEFAUT"
+    assert rapport["sensibles"][0]["statut"] == "NON_IGNORE"
+
+
+def test_sans_la_negation_le_depot_reste_vert(mod, tmp_path):
+    """Controle positif de la paire : `.secrets/*` seul (sans `!`) reste CLEAN,
+    donc le DEFAUT ci-dessus vient bien du `!`, pas d'un bruit du motif `*`."""
+    r = _depot(tmp_path / "sans-negation", regle_versionnee=True, regle_locale=False)
+    (r / ".gitignore").write_text(".secrets/*\n", encoding="utf-8")
+    subprocess.run(["git", "add", ".gitignore"], cwd=r, check=True)
+    subprocess.run(["git", "commit", "-qm", "sans-negation"], cwd=r, check=True)
+    rapport = mod.analyser(r, SONDES, CONTROLES)
+    assert rapport["verdict"] == "CLEAN"
+    assert rapport["sensibles"][0]["statut"] == "VERSIONNEE"

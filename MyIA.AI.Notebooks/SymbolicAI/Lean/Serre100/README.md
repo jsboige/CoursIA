@@ -25,3 +25,13 @@ Le geste « distillation » : prendre un énoncé ou une construction centrale d
 ## Voie décorélée
 
 L'EPIC #16334 comporte aussi une voie décorélée du programme de l'anniversaire (pont Serre–Grothendieck avec le lake `SymbolicAI/Lean/grothendieck_lean`) : cohomologie de Čech calculée, Yoneda calculé, `SerreMap.lean`.
+
+
+## Sources primaires
+
+Deux témoignages filmés de J.-P. Serre, transcrits intégralement (Whisper large-v3-turbo, transcription automatique — noms propres corrigés dans les citations : Artin, Weil, Bombieri, Cartier), alimentent les carnets 03, 04 et 07 :
+
+- **« Plaisir des mathématiques »** — J.-P. Serre, Institut Henri Poincaré, 2026 (YouTube `tNtoTzGltak`) — le contre-exemple de Bombieri à la conjecture d'Artin (11:05), cité dans 07.
+- **« À propos de la correspondance Grothendieck-Serre »** — dialogue J.-P. Serre / Alain Connes, Fondation Hugot du Collège de France, 2019 (YouTube `pOv-ygSynRI`) — Tohoku et les axiomes (07:05), la montée H0-H1-H2 (12:36), le conducteur (17:57), citées dans 03, 04 et 07.
+
+Transcriptions complètes (timestampées) : `G:\Mon Drive\MyIA\IA\Bibliographie IA\NumberTheory\` — hors dépôt, conformément à la convention bibliographique.

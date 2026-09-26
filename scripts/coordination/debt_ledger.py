@@ -1838,6 +1838,42 @@ def spool_path(spool_dir: Path, observation: dict[str, Any]) -> Path:
     return spool_dir / f"{observation['observation_id']}.json"
 
 
+def spool_status(spool_dir: Path) -> dict[str, dict[str, Any]]:
+    """Count pending envelopes by their contents, never by filename."""
+    oldest: dict[str, datetime | None] = {ledger: None for ledger in LEDGERS}
+    counts = dict.fromkeys(LEDGERS, 0)
+    if spool_dir.exists():
+        for path in spool_dir.glob("*.json"):
+            if path.name.startswith(".superseded-"):
+                continue
+            try:
+                observation = parse_envelope(path.read_text(encoding="utf-8"))
+            except (OSError, UnicodeError, ObservationError) as exc:
+                raise LedgerError("INVALID_SPOOL", f"{path}: {exc}") from exc
+            if not isinstance(observation, dict):
+                raise LedgerError("INVALID_SPOOL", f"{path}: envelope must be a JSON object")
+            ledger = observation.get("ledger")
+            if ledger not in counts or not observation.get("observation_id"):
+                raise LedgerError("INVALID_SPOOL", f"{path}: missing ledger or observation_id")
+            try:
+                moment = parse_utc_timestamp(observation.get("observed_at"))
+            except ObservationError:
+                try:
+                    moment = datetime.fromtimestamp(path.stat().st_mtime, timezone.utc)
+                except OSError as exc:
+                    raise LedgerError("UNREADABLE_INPUT", f"{path}: {exc}") from exc
+            counts[ledger] += 1
+            if oldest[ledger] is None or moment < oldest[ledger]:
+                oldest[ledger] = moment
+    return {
+        ledger: {
+            "pending": counts[ledger],
+            "oldest_observed_at": format_utc(oldest[ledger]) if oldest[ledger] else None,
+        }
+        for ledger in LEDGERS
+    }
+
+
 def spool_observation(spool_dir: Path, observation: dict[str, Any]) -> tuple[Path, bool]:
     """Write an envelope into the local outbox; ``(path, created)``.
 
@@ -2155,6 +2191,20 @@ def _cli_append(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cli_spool_status(args: argparse.Namespace) -> int:
+    if args.out_dir:
+        status = spool_status(Path(args.out_dir))
+    else:
+        state_dir = Path(args.state_dir) if args.state_dir else default_state_dir()
+        status = {
+            ledger: spool_status(state_dir / ledger / "spool")[ledger]
+            for ledger in LEDGERS
+        }
+    for ledger, row in status.items():
+        print(f"{ledger}: pending={row['pending']} oldest_observed_at={row['oldest_observed_at'] or '-'}")
+    return 0
+
+
 def _cli_reduce(args: argparse.Namespace) -> int:
     state_dir = Path(args.state_dir) if args.state_dir else default_state_dir()
     assert_local_output(state_dir, what="state directory")
@@ -2267,6 +2317,11 @@ def build_parser() -> argparse.ArgumentParser:
     append.add_argument("--dry-run", action="store_true", help="print only (the default)")
     append.add_argument("--quiet", action="store_true")
     append.set_defaults(func=_cli_append)
+
+    spool = sub.add_parser("spool", parents=[common], help="inspect the local observation outbox")
+    spool.add_argument("--status", action="store_true", required=True, help="count pending envelopes")
+    spool.add_argument("--out-dir", help="inspect the same local spool dir used by append")
+    spool.set_defaults(func=_cli_spool_status)
 
     reduce_ = sub.add_parser("reduce", parents=[common], help="fold journal + checkpoint")
     reduce_.add_argument("--ledger", choices=list(LEDGERS), required=True)

@@ -10,49 +10,57 @@ Ils consomment **exactement** le palier INT8 hébergé par #17266 :
 dans [`scripts/genai-stack/commands/models.py`](../../commands/models.py).
 
 Consommation : l'instance hébergée `comfyui-qwen`
-(`https://qwen-image-edit.myia.io`, auth `COMFYUI_AUTH_TOKEN`).
+(`https://qwen-image-edit.myia.io`). L'API est protégée par **ComfyUI-Login** :
+`Authorization: Bearer <jeton>`, le jeton étant la **première ligne du fichier
+de mot de passe** du service — le hash bcrypt, pas le mot de passe en clair.
+C'est exactement ce que produit `GenAIAuthManager.get_auth_header()` côté
+dépôt (`scripts/genai-stack/core/auth_manager.py`), qui est donc la bonne voie
+pour un client de ce dépôt.
 
-## Couverture des nœuds par workflow
+## Exécutabilité réelle (mesuré le 2026-09-25, instance `comfyui-qwen`)
 
-Analyse mécanique (`cnr_id` + type par nœud) — `core` = nœud natif ComfyUI :
+L'instance tourne en **ComfyUI 0.37.2** : le support natif de Qwen-Image 2.1
+(nœud `TextEncodeQwenImage21`, détection `qwen_image_2.1_vae`) y est présent —
+`/object_info` publie 981 nœuds. La mesure précédente, prise en 0.36.0, est
+**périmée** : le blocage qu'elle décrivait (VAE routé en classe WanVAE,
+`TextEncodeQwenImage21` absent) est levé par la montée de version.
 
-| Workflow | Nœuds non-core ou nouveaux | Exécutable sur l'instance ? |
+Ces JSON sont au format **UI**. Les soumettre à `POST /prompt` exige une
+conversion UI → API, portée par
+[`WorkflowManager.convert_ui_to_api`](../../core/comfyui_client.py) : elle
+prend `object_info` en argument et **refuse** tout appariement qu'elle ne peut
+pas établir, plutôt que de produire un graphe faux en silence.
+
+| Workflow | Conversion UI→API | Exécutable sur l'instance ? |
 |---|---|---|
-| `text2image` | — (100 % core) | bloqué : le VAE 2.1 est routé en classe WanVAE (erreur mesurée, voir « État mesuré ») |
-| `text2image_rgba` | — (100 % core, VAE alpha) | bloqué (idem) |
-| `ref2image` | `TextEncodeQwenImage21`, `LoadImage` | bloqué : `TextEncodeQwenImage21` absent de `/object_info` (mesuré) |
-| `image_edit` | `TextEncodeQwenImage21`, `GetImageSize`, `ResizeImageMaskNode` | bloqué (idem) |
-| `image_edit_local` | idem `image_edit` | bloqué (idem) |
-| `image_edit_local_mask` | idem + `MaskToImage`, `PreviewImage` | bloqué (idem) |
-| `image_edit_openpose` | idem + `OpenposePreprocessor` (pack controlnet_aux) | non sans custom node |
-| `image_edit_upscale` | idem `image_edit` | bloqué (idem) |
-| `outpainting` | `TextEncodeQwenImage21`, `LoadImage` | bloqué (idem) |
-| `panorama` | idem + `PanoramaPreview` | bloqué (idem) |
-| `subject_extraction` | idem `image_edit` | bloqué (idem) |
-| `layer_decomposition` | `ComfyMath*`, `Switch`, boucles, `TextGenerate`, subgraph | non sans custom nodes (ComfyMath, Logic Utils) |
+| `text2image` | oui (10 nœuds) | **oui — prouvé par une génération**, voir ci-dessous |
+| `text2image_rgba` | oui (10 nœuds) | oui — 10 nœuds, tous présents |
+| `ref2image` | oui (12 nœuds) | oui — `LoadImage` et `TextEncodeQwenImage21` présents |
+| `outpainting` | oui (10 nœuds) | oui — mêmes nœuds que `ref2image` |
+| `image_edit`, `image_edit_local`, `image_edit_local_mask`, `image_edit_upscale`, `subject_extraction` | **non** | nœuds présents, mais `ResizeImageMaskNode` porte un **combo dynamique** (`resize_type`) dont les sous-widgets ne sont pas déclarés par `/object_info` |
+| `image_edit_openpose` | non | idem, plus `OpenposePreprocessor` absent (pack controlnet_aux) |
+| `panorama` | non | `PanoramaPreview` absent de l'instance |
+| `layer_decomposition` | non | `Reroute` + subgraph, `ComfyMath*`, `Switch` |
 
-### État mesuré (2026-09-25, instance `comfyui-qwen`)
+### Preuve de génération
 
-Le support natif de Qwen-Image 2.1 (nœud `TextEncodeQwenImage21`, détection
-du VAE via `modelspec.architecture: qwen_image_2.1_vae`) a été ajouté à
-l'éditeur dans la version 0.37.0. L'instance hébergeant le palier INT8 tourne
-en 0.36.0 : mesure firsthand —
+`qwen_image_2_1_text2image.json` **tel que versionné**, converti contre
+l'`object_info` vivant puis soumis :
 
-- `POST /prompt` du workflow `text2image` : validation acceptée, puis erreur
-  d'exécution au `VAELoader` (`size mismatch for WanVAE`, conv 4D du
-  checkpoint contre conv 5D vidéo attendue) — le routeur de classe VAE de
-  0.36.0 ne connaît pas `qwen_image_2.1_vae` ;
-- le contournement par le VAE 1.x est mesuré **mort** : avec
-  `qwen_image_vae.safetensors`, le chargeur rend
-  `Could not detect model type of qwen_image_2.1_int8_convrot.safetensors` —
-  c'est le **détecteur de checkpoint diffusion** de 0.36.0 qui ne classe pas
-  le fichier 2.1 INT8, donc aucun VAE ne sauve la paire ;
-- `GET /object_info` : `TextEncodeQwenImage21` absent.
+- `prompt_id` `0d28b37a-6d7f-4e94-9b72-fd0af38496d5`, statut `success` en **330 s** ;
+- sortie `ComfyUI_00013_.png`, **1664 × 2496** (4,2 MP), 5 109 070 octets ;
+- pile réellement chargée (relevée dans `/history`) :
+  `UNETLoader` → `qwen_image_2.1_int8_convrot.safetensors`,
+  `CLIPLoader` → `qwen3vl_8b_int8_convrot.safetensors` (`type: qwen_image`),
+  `VAELoader` → `qwen_image_2.1_vae_bf16.safetensors` ; `KSampler` 25 steps,
+  `cfg 1.0`, `euler` / `simple` — les réglages de référence, inchangés.
 
-Débloquer la série entière = mettre à jour le service vers 0.37.0 ou plus
-récent, puis redémarrer. Les workflows 100 % core redeviennent alors
-exécutables sur le même ensemble de nœuds que les notebooks Qwen-Image-Edit
-existants (`01-5`, `01-5b`).
+La conversion traite le widget d'upload de `LoadImage` (valeur en fin de liste,
+sans équivalent API). Restent non supportés les sous-widgets du combo dynamique
+de `ResizeImageMaskNode`, qui s'intercalent **au milieu** des autres widgets :
+rien ne permet de les apparier sans les deviner, donc les sept workflows qui
+l'utilisent sont refusés nommément.
+
 
 ## Réglages de référence (extraits des JSON)
 

@@ -364,57 +364,6 @@ jobs:
           RELEASE_CEILING: "40"
           # Fenetre de sonde (x 15 s) : laisser GitHub creer les runs du head.
           RELEASE_SETTLE_POLLS: "8"
-        run: |
-          set -u
-          head_sha="$(git rev-parse HEAD)"
-          echo "::notice title=Catalog::releasing parked runs at $head_sha"
-          # Les runs `pull_request` du head n'existent pas encore a l'instant du
-          # push : GitHub les cree quelques secondes plus tard. Mesure du
-          # 2026-09-24 : push 08:47:03Z, requete 08:47:07-13Z -> "no parked
-          # run", runs crees 08:47:12Z puis gares -> PR de livraison BLOCKED.
-          # On sonde jusqu'a un compte non nul ET stable sur deux sondes, dans
-          # une fenetre bornee (RELEASE_SETTLE_POLLS x 15 s).
-          parked=""; prev=-1
-          for _poll in $(seq 1 "$RELEASE_SETTLE_POLLS"); do
-            sleep 15
-            parked="$(gh run list --repo "$GITHUB_REPOSITORY" --branch "$BRANCH" \
-                        --limit 100 \
-                        --json databaseId,headSha,conclusion,workflowName \
-                        --jq ".[] | select(.conclusion==\"action_required\") \
-                              | select(.headSha==\"$head_sha\") \
-                              | \"\(.databaseId)\t\(.workflowName)\"" || true)"
-            n="$(printf '%s\n' "$parked" | grep -c . || true)"
-            if [ "$n" -gt 0 ] && [ "$n" -eq "$prev" ]; then break; fi
-            prev="$n"
-          done
-          if [ -z "$parked" ]; then
-            echo "::notice title=Catalog::no parked run at this head -- nothing to release."
-            exit 0
-          fi
-          total="$(printf '%s\n' "$parked" | grep -c . || true)"
-          echo "::notice title=Catalog::$total run(s) parked at this head, staggering ${RELEASE_STAGGER_SECONDS}s apart"
-          released=0; refused=0; deferred=0; seen=0
-          while IFS="$(printf '\t')" read -r rid name; do
-            [ -z "$rid" ] && continue
-            seen=$((seen + 1))
-            if [ "$seen" -gt "$RELEASE_CEILING" ]; then
-              deferred=$((deferred + 1))
-              continue
-            fi
-            [ "$released" -gt 0 ] && sleep "$RELEASE_STAGGER_SECONDS"
-            if gh api -X POST "repos/$GITHUB_REPOSITORY/actions/runs/$rid/approve" >/dev/null 2>&1; then
-              released=$((released + 1))
-            else
-              refused=$((refused + 1))
-              echo "::warning title=Catalog::could not approve run $rid ($name)"
-            fi
-          done <<EOF
-          $parked
-          EOF
-          echo "::notice title=Catalog::released $released run(s), refused $refused, deferred $deferred"
-          if [ "$deferred" -gt 0 ]; then
-            echo "::warning title=Catalog::$deferred run(s) left parked by the ceiling of $RELEASE_CEILING -- this is NOT normal throughput. Runs are piling up at one head; investigate before raising the ceiling."
-          fi
-          if [ "$refused" -gt 0 ]; then
-            echo "::warning title=Catalog::$refused run(s) still parked -- the delivery PR will stay BLOCKED. Approve them by hand, or grant a token that may approve workflow runs. check_catalog_freshness.py --delivery reports this state."
-          fi
+        # Implementation partagee avec qc-research-monitor.yml :
+        # scripts/ci/release_parked_runs.py (#17668).
+        run: python3 scripts/ci/release_parked_runs.py --tag Catalog

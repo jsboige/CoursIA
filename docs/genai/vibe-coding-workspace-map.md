@@ -21,7 +21,7 @@ Le périmètre Vibe-Coding + séries GenAI voisines couvre **9 workspaces logiqu
 | **SemanticKernel** (≈ sk-agent côté MCP) | `MyIA.AI.Notebooks/GenAI/SemanticKernel/` | 143 | SDK | 10+ notebooks Python + .NET Interactive ; multi-modalité, MCP, agents |
 | **LivresAgités** | `MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/04-Cas-Usage-livresagites/` | 1 parcours | cas d'usage | Terrain d'observation pour AI-Engine |
 | **sk-agent (MCP)** | `docs/reference/slide-analyzer-sk-agent.md` + `slides/analysis/sk-agent-vision-compare-20260419.md` | 2 | MCP / doc transverse | Vision + multi-agent ; aussi listé dans `Vibe-Coding/docs/CLUSTER-ORCHESTRATION.md` l.50 |
-| **Zoo** | (aucun) | — | n'existe pas | Tell c.988 ★ sustained. Confusion probable entre `RooVeterinaryInc.roo-cline` (extension officielle) et `ZooCodeOrganization.zoo-code` (fork) |
+| **Zoo** | (aucun) | — | n'existe pas | Confusion probable entre `RooVeterinaryInc.roo-cline` (extension officielle) et `ZooCodeOrganization.zoo-code` (fork) |
 
 ## Carte par catégories
 
@@ -124,5 +124,5 @@ find docker-configurations/services/vllm-zimage -type f | wc -l
 - Issue parente #14525 : https://github.com/jsboige/CoursIA/issues/14525
 - `Vibe-Coding/README.md` l.13-19 : structure actuelle annoncée (4 sous-dossiers, `analyzers/` absent)
 - `GenAI/README.md` l.51, l.53 : liens transverses vers les séries natives
-- Tell c.14947 ★★★ : 0 byte production touchée (audit read-only)
-- Tell c.1502 strict : lane ne merge pas, lane ne réorganise pas à elle seule
+- 0 byte de production touchée (audit read-only)
+- [Coordination & Git §A](../../CLAUDE.md) : la lane ne merge pas, ne réorganise pas le dépôt à elle seule

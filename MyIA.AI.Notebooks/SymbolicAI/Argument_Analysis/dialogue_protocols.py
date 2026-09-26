@@ -6,6 +6,31 @@ Provenance : `1_2_7_argumentation_dialogique/local_db_arg` du dépôt étudiant
 (EPIC #4960) : porter l'essence vivante « sans le bruit d'une année de
 régressions et d'itérations ».
 
+État du tronc amont (mesuré le 2026-09-26, `origin/main` = `2ad73f2e65`)
+-----------------------------------------------------------------------
+
+Le tronc EPITA avait **déjà** adapté ce même vocabulaire depuis ce même dossier
+étudiant : `argumentation_analysis/agents/core/debate/protocols.py`, dont le
+docstring dit « Adapted from `1_2_7_argumentation_dialogique/local_db_arg/src/` »
+(premier commit 2026-02-27 `b41b01d96`, dernier 2026-09-17 `e848eebd6`). Il en
+conserve `DialogueType`, `SpeechAct`, `Proposition`, `FormalArgument` et
+`DialogueMove` — exactement les types portés ici.
+
+Il a en revanche **retiré** les trois classes de protocole que ce module porte —
+`DialogueProtocol`, `InquiryProtocol`, `PersuasionProtocol` — par #2137
+(2026-09-17), motivé « dead twins — the living workflow path for formal dialogue
+is the JVM `logic/dialogue_handler.py` ». Le registre de dérive de l'amont le
+documente en ligne **D-3** (`docs/reports/DRIFT_REGISTER.md`), et le commentaire
+laissé dans le source nomme ses seuls utilisateurs : « exercised only by tests
+and **the CoursIA teaching notebooks** ».
+
+Conséquence, à dire plutôt qu'à laisser deviner : la machine à états de ce module
+n'est couverte par **aucun** organe du tronc, qui l'a mise à la retraite faute
+d'appelant de production. Elle reste vivante ici pour une autre raison — c'est du
+**contenu pédagogique exécutable sans JVM**, là où le chemin vivant de l'amont est
+un pont `jpype` vers Tweety. Ce module n'est donc pas « le moteur » de la maison :
+c'est la seule implémentation vivante de cette abstraction, assumée comme telle.
+
 Partie vivante retenue (qualification issuecomment-5770146198) :
 - `core/models.py` : types de dialogue **Walton-Krabbe** (6) et 9 actes de
   parole formalisés (CLAIM, QUESTION, CHALLENGE, ARGUE, CONCEDE, RETRACT,

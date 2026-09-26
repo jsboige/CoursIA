@@ -451,9 +451,9 @@ CoursIA/
 ### Prérequis
 
 - Python 3.10+ avec pip
-- .NET 9.0+ SDK (pour notebooks C# — .NET 10 LTS validé en local)
+- .NET 9.0 SDK (notebooks C#) **et** .NET 10 SDK : `dotnet restore MyIA.CoursIA.sln` échoue sans le SDK 10, cinq projets de la solution ciblant `net10.0` (Aspire, démo Vibe-Coding)
 - VS Code avec extensions Python, Jupyter, .NET Interactive
-- WSL (pour Lean et certains outils SymbolicAI)
+- WSL sous Windows uniquement (pour Lean et certains outils SymbolicAI) ; sous Linux ou macOS, voir [setup-linux-macos.md](docs/reference/setup-linux-macos.md)
 - Docker + GPU (optionnel, pour GenAI avancé)
 
 ### Installation rapide

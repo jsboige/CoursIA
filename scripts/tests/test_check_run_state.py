@@ -188,3 +188,16 @@ def test_main_exit_codes_sans_reseau(monkeypatch, capsys):
         raise RuntimeError("gh api ... -> 1: not found")
     monkeypatch.setattr(m, "collect", boom)
     assert m.main(["--sha", "ab"]) == 2
+
+
+def test_collect_reads_every_page(monkeypatch):
+    """#17807 : 110 jambes au head, une lecture a une page en voyait 100."""
+    import scripts.check_run_state as m
+    seen = []
+
+    def fake_run_gh(args):
+        seen.append(args)
+        return ""
+    monkeypatch.setattr(m, "_run_gh", fake_run_gh)
+    m.collect(sha="ab")
+    assert "--paginate" in seen[0]

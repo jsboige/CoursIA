@@ -297,6 +297,109 @@ def test_run_wsl_heredoc_delimiter_collision_is_refused():
     assert result.exit_code == -1
 
 
+def test_run_wsl_benign_warning_is_exposed_not_counted_as_error():
+    """Minor 3a (NanoClaw review #17621): the parser computed `saw_warning`
+    and never read it — dead variable. A non-fatal warning must now be
+    addressable via `result.warnings` instead of only being interleaved
+    into `output`, where a caller cannot tell it from an information
+    message without re-parsing the text. It must stay non-fatal and must
+    NOT land in `errors`."""
+    runner = _make_runner_with_wsl()
+    stdout = "\n".join([
+        '{"severity":"information","data":"info line","pos":{"line":1,"column":0}}',
+        '{"severity":"warning","data":"unused variable `x`","pos":{"line":2,"column":0}}',
+    ])
+    with patch("lean_runner.subprocess.run", return_value=_completed(stdout=stdout)):
+        result = runner.run("theorem t : True := trivial")
+
+    assert result.success is True
+    assert result.warnings == ["unused variable `x`"]
+    assert result.errors == ""
+    # The warning is still visible in the human-readable output.
+    assert "unused variable `x`" in result.output
+
+    # Counter-proof: a `sorry` is NOT a warning. It is routed to `errors`
+    # and fails the call, so it must never inflate `warnings`.
+    stdout_sorry = (
+        '{"severity":"warning","kind":"hasSorry","data":"declaration '
+        'uses `sorry`","pos":{"line":3,"column":8}}\n'
+    )
+    with patch("lean_runner.subprocess.run", return_value=_completed(stdout=stdout_sorry)):
+        sorry_result = runner.run("theorem t : True := by sorry")
+
+    assert sorry_result.success is False
+    assert sorry_result.warnings == []
+    assert "sorry" in sorry_result.errors.lower()
+
+    # The failure paths keep the field present and empty (never None).
+    with patch("lean_runner.subprocess.run", return_value=_completed()):
+        empty_result = runner.run("theorem t : True := trivial")
+    assert empty_result.warnings == []
+
+
+def test_run_wsl_exit_code_is_parser_verdict_not_process_rc():
+    """Minor 3c (NanoClaw review #17621): `exit_code=0 if success else 1`
+    is synthetic — `lean`'s own return code is ignored. That is a
+    defensible parser verdict, but it must not be read as a process exit
+    status. This test pins the semantics from both sides."""
+    runner = _make_runner_with_wsl()
+
+    # A `lean` process that exits 1 while the JSON payload carries no
+    # error: the call succeeds and exit_code is 0 — if the field tracked
+    # the subprocess, it would carry the process's 1 here.
+    stdout = '{"severity":"information","data":"ok","pos":{"line":1,"column":0}}\n'
+    with patch("lean_runner.subprocess.run", return_value=_completed(stdout=stdout, returncode=1)):
+        clean = runner.run("theorem t : True := trivial")
+    assert clean.success is True
+    assert clean.exit_code == 0, (
+        "exit_code must be the parser verdict, not the `lean` process rc"
+    )
+
+    # The converse: a clean process rc with a `sorry` in the payload
+    # yields the failure verdict 1.
+    stdout_sorry = (
+        '{"severity":"warning","kind":"hasSorry","data":"declaration '
+        'uses `sorry`","pos":{"line":3,"column":8}}\n'
+    )
+    with patch("lean_runner.subprocess.run", return_value=_completed(stdout=stdout_sorry, returncode=0)):
+        sorry = runner.run("theorem t : True := by sorry")
+    assert sorry.success is False
+    assert sorry.exit_code == 1
+
+    # 3c's actual deliverable is the documentation: the two behaviour
+    # assertions above already held before the fix (they pin semantics
+    # that were correct but undocumented), so the contract must be
+    # stated on the field itself.
+    result_doc = LeanResult.__doc__ or ""
+    assert "PARSER VERDICT" in result_doc
+    assert "never be read as a process status" in result_doc
+
+
+def test_run_wsl_docs_state_where_the_temp_file_actually_goes():
+    """Minor 3b (NanoClaw review #17621): the `_run_wsl` docstring claimed
+    the user code is written to a temp file INSIDE the lake project, while
+    the code writes it to WSL's `${TMPDIR:-/tmp}` and uses the lake
+    project only as the cwd of the `lean` invocation. A reader trusting
+    the old wording looks for the file in the wrong place — or, worse,
+    "fixes" the code to match the comment. The same false claim sat in
+    the DEFAULT_WSL_PROJECT_DIR comment and in the stale "convert Windows
+    path to WSL path" comment above the TMPDIR probe, hence the source
+    scan below."""
+    import lean_runner
+    doc = LeanRunner._run_wsl.__doc__ or ""
+    src = Path(lean_runner.__file__).read_text(encoding="utf-8")
+
+    # The false claim is gone from every site.
+    assert "temp file inside the lake project" not in src
+    assert "temp file inside this project" not in src
+    assert "Convert Windows path to WSL path" not in src
+    # The corrected wording states the real location and the real role of
+    # the project dir.
+    assert "TMPDIR" in doc
+    assert "NOT inside the lake project" in doc
+    assert "cwd" in src
+
+
 def test_check_wsl_available_does_not_require_repl():
     """`_check_wsl_available` must accept a WSL where only `lean`
     is installed (the WSL backend no longer uses `repl` since #17612).

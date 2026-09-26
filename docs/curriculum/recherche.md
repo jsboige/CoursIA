@@ -302,7 +302,7 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 3 | [PyMC-3 : Graphes de Facteurs et Inference Discrete](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-03-Factor-Graphs.ipynb) | BETA | Oui |
 | 4 | [PyMC-4 : Reseaux Bayesiens](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb) | BETA | Oui |
 | 5 | [PyMC-05-Causal-Inference : Inference Causale et…](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb) | BETA | Oui |
-| 6 | [PyMC-06-Debugging : Troubleshooting et Bonnes Pratiques](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb) | BETA | Oui |
+| 2b | [PyMC-02b-Debugging-Python : Troubleshooting et Bonnes Pratiques](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-02b-Debugging-Python.ipynb) | BETA | Oui |
 | 7 | [PyMC-7 : Modèles de Competences (IRT et DINA)](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-Skills-IRT.ipynb) | BETA | Oui |
 | 8 | [PyMC-8 : TrueSkill - Classement et Apprentissage en…](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-TrueSkill.ipynb) | BETA | Oui |
 | 9 | [PyMC-9 : Classification Bayesienne et Tests A/B](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-09-Classification.ipynb) | BETA | Oui |

@@ -95,10 +95,10 @@ attributions:
 
   - arxiv_id: "1706.00883"
     notebook: "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-37-FLens-BeliefState.ipynb"
-    cell_index: 17
+    cell_index: 18
     expected_citation: "- **Riechers & Crutchfield 2017** — *Spectral Simplicity of Apparent Complexity, Part II*"
     source_pr: "#17622"
-    correction: "Riechers-Crutchiefield annee: 2018 -> 2017 (cellule References, meme motif que cell 7)"
+    correction: "Riechers-Crutchiefield annee: 2018 -> 2017 (cellule References, meme motif que cell 7) ; cell_index 17 -> 18 le 2026-09-25 : #17807 a insere la cellule d'import canonique arc A, decalant d'un rang les cellules suivantes (citation verifiee presente en cellule 18)"
     date: "2026-09-24"
 
   - arxiv_id: "2406.11717"

@@ -42,7 +42,7 @@ Conventions (portees des notebooks sources) :
   global -- deux appels sur les memes donnees rendent des sorties identiques
   au bit pres.
 * La source verifiee de cette factorisation est ICT-43
-  (``ICT-43-GeometryOfTruth.ipynb``, #16897). Le probing d'ICT-42 n'existe ni
+  (``ICT-44-GeometryOfTruth-Python.ipynb``, #16897). Le probing d'ICT-42 n'existe ni
   sur ``main`` ni sur sa branche crosscoder (#16749) : l'organe est ecrit pour
   l'accueillir tel quel (memes conventions, memes cles ``MM`` / ``LR`` /
   ``MMIID``) le jour ou il sera extrait a son tour.

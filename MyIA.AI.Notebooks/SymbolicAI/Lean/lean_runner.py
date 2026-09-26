@@ -55,7 +55,7 @@ import json
 import platform
 import uuid
 from pathlib import Path
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional, List, Literal
 from enum import Enum
 
@@ -69,13 +69,26 @@ class Backend(Enum):
 
 @dataclass
 class LeanResult:
-    """Result of executing Lean code"""
+    """Result of executing Lean code.
+
+    `exit_code` is the PARSER VERDICT, not the return code of the `lean`
+    process: 0 = every goal proved, 1 = an error or a `sorry` was detected,
+    -1 = the runner itself failed (timeout, exception, refused heredoc). No
+    backend propagates the compiler's own exit status here, so this field
+    must never be read as a process status.
+
+    `warnings` exposes the non-fatal diagnostics the backend could tell
+    apart from informational output. Only the `--json` WSL backend
+    populates it, and a `sorry` is routed to `errors` (failing the call)
+    rather than counted here.
+    """
     success: bool
     output: str
     errors: str
     code: str
     exit_code: int
     backend: str = "subprocess"
+    warnings: List[str] = field(default_factory=list)
 
 
 class LeanRunner:
@@ -89,9 +102,10 @@ class LeanRunner:
     - auto: Automatically select best available backend
     """
 
-    # Default WSL lake project used as the cwd for the `lean --json` invocation.
-    # The user code is wrapped with `import Init.Prelude` and written to a
-    # temp file inside this project so the standalone Lean compiler can
+    # Default WSL lake project used as the cwd of the `lean --json` invocation.
+    # It is the cwd, NOT the location of the temp file: `_run_wsl` writes the
+    # wrapped code to WSL's `${TMPDIR:-/tmp}` and borrows this project only for
+    # its toolchain and oleans, which is what lets the standalone Lean compiler
     # resolve OfNat, Nat, True, rfl, trivial, etc. (the `repl` binary does
     # NOT load Init.Prelude automatically — see issue #17612).
     # See: ~/lean-projects/notebook_context (lakefile.lean + lean-toolchain).
@@ -474,15 +488,19 @@ class LeanRunner:
         '+' / '*'"), and even a simple `theorem t : True := trivial` did
         not resolve. Issue #17612 documented this firsthand.
 
-        Fix: write the user code to a temp file inside the lake project
-        (`self.wsl_project_dir`, default `~/lean-projects/notebook_context`)
-        with `import Init.Prelude` prepended, and invoke the standalone
-        Lean compiler in `--json` mode. This loads the prelude correctly
-        and emits structured JSON messages (severity=error/warning/info)
-        that we parse to build the LeanResult. The temp file is removed
-        after execution.
+        Fix: write the user code with `import Init.Prelude` prepended to a
+        file in WSL's own `${TMPDIR:-/tmp}` — NOT inside the lake project:
+        `cd {self.wsl_project_dir}` (default `~/lean-projects/notebook_context`)
+        only scopes the `lean` invocation, which is what gives the compiler
+        the project's toolchain and oleans. Invoke the standalone Lean
+        compiler in `--json` mode. This loads the prelude correctly and
+        emits structured JSON messages (severity=error/warning/info) that
+        we parse to build the LeanResult. The temp file is removed after
+        execution.
         """
-        # Convert Windows path to WSL path (e.g. C:\Users\foo -> /mnt/c/Users/foo).
+        # Probe WSL's own temp directory (default /tmp) so the file is written
+        # where WSL's tooling expects it — no Windows/WSL path translation is
+        # involved, the path is used verbatim inside WSL.
         wsl_tmpdir = subprocess.run(
             ["wsl", "-d", "Ubuntu", "--", "bash", "-c", "echo ${TMPDIR:-/tmp}"],
             capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10
@@ -545,7 +563,7 @@ class LeanRunner:
             outputs = []
             errors = []
             saw_error = False
-            saw_warning = False
+            warnings_found: List[str] = []
             if result.stdout.strip():
                 for line in result.stdout.splitlines():
                     stripped = line.strip()
@@ -571,7 +589,7 @@ class LeanRunner:
                                 errors.append(data)
                                 saw_error = True
                             else:
-                                saw_warning = True
+                                warnings_found.append(data)
                                 outputs.append(data)
                         else:
                             outputs.append(data)
@@ -593,7 +611,8 @@ class LeanRunner:
                 errors="\n".join(errors).strip(),
                 code=code,
                 exit_code=0 if success else 1,
-                backend="wsl"
+                backend="wsl",
+                warnings=warnings_found,
             )
 
         except subprocess.TimeoutExpired:

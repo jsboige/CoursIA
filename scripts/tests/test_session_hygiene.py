@@ -37,13 +37,18 @@ import pytest
 # Le runner WSL self-hosted du CI (myia-ai-01-wsl-4) tombe en RLIMIT_NPROC
 # quand pytest-xdist lance plusieurs sous-processes git en parallele
 # (fork() -> "Resource temporarily unavailable"). Le test lui-meme est
-# lineaire et n'a aucun interet a etre parallelise : on declare la
-# classe ``serial`` pour que pytest-xdist l'isole, et on force
+# lineaire et n'a aucun interet a etre parallelise ; on force
 # ``GIT_OPTIONAL_LOCKS=0`` pour reduire les forks internes de git
 # (sideband demultiplexer, rev-list worker, pack-objects helper).
 os.environ.setdefault("GIT_OPTIONAL_LOCKS", "0")
+# La marque ``xdist_group(name="serial-git")`` a ete retiree (#17628) : elle
+# n'etait operante que sous ``--dist loadgroup``, or aucun job ne l'utilise
+# (le job ``Scripts Tests (CPU)`` passe ``--dist loadscope``, et ``pytest.ini``
+# ne pose aucun ``--dist`` par defaut) -- sous loadscope la marque est inerte.
+# L'isolation qu'elle visait est desormais obtenue autrement : la suite tourne
+# dans une etape sequentielle dediee du job (voir ``scripts-tests.yml``), donc
+# plus aucun worker xdist ne la partage avec les autres suites.
 pytestmark = [
-    pytest.mark.xdist_group(name="serial-git"),
     # Sous xdist loadscope (--dist loadscope -n 4), les autres suites
     # ``scripts/tests/*`` partagent le worker et le cumul de subprocess git
     # (l'organe lui-meme appelle ``git ...`` via subprocess) sature
@@ -134,6 +139,38 @@ def _make_mini_repo(tmp_path: Path, name: str = "repo") -> Path:
     _run(
         "push", "-u", "origin", "main", "--quiet", cwd=repo,
     )
+
+    return repo
+
+
+def _make_mini_repo_sans_origin_main(tmp_path: Path, name: str = "repo-sans-main") -> Path:
+    """Depot jetable ou ``origin/main`` **n'existe pas** (clone qui n'a jamais fetche main).
+
+    La branche est poussee avec son upstream : rien n'attend d'etre pousse, donc la seule
+    mesure qui reste est le diff contre ``origin/main`` -- et elle **echoue** (``fatal:
+    ambiguous argument``). C'est le cas du nit (b) de #17496 : un echec de mesure ne doit
+    pas etre publie comme un constat.
+    """
+    origin = tmp_path / f"{name}-origin.git"
+    repo = tmp_path / name
+
+    _run("init", "--bare", "--initial-branch=main", "--quiet", str(origin))
+    _run("init", "--initial-branch=main", "--quiet", str(repo))
+    _run("config", "user.email", "test@example.com", cwd=repo)
+    _run("config", "user.name", "test", cwd=repo)
+    _run("config", "commit.gpgsign", "false", cwd=repo)
+    _run("remote", "add", "origin", str(origin), cwd=repo)
+
+    (repo / "README.md").write_text("# Test\n", encoding="utf-8")
+    _run("add", "README.md", cwd=repo)
+    _run("commit", "-m", "init", "--quiet", cwd=repo)
+    # On pousse la BRANCHE seulement : origin/main n'est jamais cree, ni localement
+    # (aucun fetch) ni sur le depot nu.
+    _run("checkout", "-b", "feature/parquee", "--quiet", cwd=repo)
+    (repo / "extra.md").write_text("extra\n", encoding="utf-8")
+    _run("add", "extra.md", cwd=repo)
+    _run("commit", "-m", "add extra", "--quiet", cwd=repo)
+    _run("push", "-u", "origin", "feature/parquee", "--quiet", cwd=repo)
 
     return repo
 
@@ -331,3 +368,38 @@ def test_third_pair_pre_consolidation_predicate_reproduces(tmp_path):
         f"branche multi-fichiers divergente doit etre AMBER (en cours), "
         f"organe a retourne {c.level}: {c.detail}"
     )
+
+
+# ---------------------------------------------------------------------------
+# nit (b) de #17496 : un echec de MESURE n'est pas un constat
+# ---------------------------------------------------------------------------
+
+
+def test_origin_main_absent_rend_amber_mesure_impossible(tmp_path):
+    """Sans ``origin/main`` le diff echoue : AMBER nomme, jamais le RED « parkee ».
+
+    Controle de falsification du nit (b) de #17496. Avant le correctif, ce cas rendait
+    un RED « parke sans raison » : ``git()`` rend une chaine vide sur echec, donc un
+    ``git diff`` en erreur (ici ``fatal: ambiguous argument 'origin/main...'``, rc=128)
+    etait lu comme « la branche ne livre plus rien » -- une accusation fabriquee par
+    l'instrument, pas un fait sur l'arbre.
+
+    Le controle positif jumeau est ``test_squash_merged_branch_is_classified_parked`` :
+    quand la mesure REUSSIT et que le contenu est identique, le RED reste rendu. Les deux
+    tests ensemble interdisent de « corriger » ce defaut en adoucissant tout en AMBER.
+    """
+    repo = _make_mini_repo_sans_origin_main(tmp_path)
+
+    checks = session_hygiene.check_branch(repo)
+    assert len(checks) == 1, f"un seul check 'branche' attendu, vu {len(checks)}"
+    c = checks[0]
+    assert c.name == "branche"
+    assert c.level == session_hygiene.AMBER, (
+        f"un echec de mesure ne doit pas etre publie comme un constat, "
+        f"organe a rendu {c.level}: {c.detail}"
+    )
+    assert "mesure impossible" in c.detail, (
+        f"le verdict doit NOMMER la mesure qui a echoue, vu : {c.detail}"
+    )
+    assert "diff" in c.detail
+    assert c.data.get("mesure_impossible") is True

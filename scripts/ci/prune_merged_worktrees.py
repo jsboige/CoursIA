@@ -239,6 +239,9 @@ class WorktreeStatus:
     # Champ #14195 (additif) : checkout disparu, enregistrement orphelin.
     # Porte la decision REMOVE *et* le passage a `--force` a l'apply.
     dead_registration: bool = False
+    # Champ #17771 (additif) : REMOVE motive par contenu deja integre a
+    # main (tete ancetre de origin/main), sans PR rattachable.
+    content_on_main: bool = False
 
     def to_dict(self) -> dict:
         return dataclasses.asdict(self)
@@ -773,6 +776,18 @@ def lookup_pr_for_branch(branch: str,
 MAIN_REF = "origin/main"
 
 
+def head_is_ancestor_of_main(wt_path: str) -> bool:
+    """Vrai si HEAD (attache ou detache) est un ancetre de ``origin/main``.
+
+    Echec git (ref absente, depot sans remote) -> False : la voie de lookup,
+    restreinte a ``origin/main..HEAD``, rend alors None, donc REFUSE.
+    """
+    proc = run_git(
+        wt_path, "merge-base", "--is-ancestor", "HEAD", MAIN_REF, check=False
+    )
+    return proc.returncode == 0
+
+
 def detached_head_is_on_main(wt_path: str) -> bool:
     """Vrai si le HEAD detache est un ancetre de ``origin/main`` (#17684).
 
@@ -782,14 +797,53 @@ def detached_head_is_on_main(wt_path: str) -> bool:
     les resoudre attribue au worktree la PR d'un commit ancetre -- mesure :
     la demeure de la tache ``merge_ready`` classee REMOVE sur une PR MERGED
     qui n'avait rien a voir avec elle.
-
-    Echec git (ref absente, depot sans remote) -> False : la voie de lookup,
-    restreinte a ``origin/main..HEAD``, rend alors None, donc REFUSE.
     """
-    proc = run_git(
-        wt_path, "merge-base", "--is-ancestor", "HEAD", MAIN_REF, check=False
+    return head_is_ancestor_of_main(wt_path)
+
+
+def remote_head_for_head(wt_path: str, branch: str,
+                         head_sha: str) -> Optional[str]:
+    """Nom court de la branche distante qui porte exactement HEAD (#17771).
+
+    Cas mesure : un worktree branche localement sous un nom different de la
+    tete de PR (checkout `pr-123`, renommage local). La resolution par le
+    nom local echoue alors que la PR existe. Deux voies, de la plus precise
+    a la plus large :
+
+    1. l'upstream explicite ``<branche>@{u}`` (hors ``*/main``) : le lien
+       de push est la preuve la plus directe que la branche distante porte
+       la meme histoire ;
+    2. une branche ``origin/*`` dont le TIP est exactement ``head_sha``
+       (scan ``for-each-ref``, ``origin/main`` et ``origin/HEAD`` exclus) :
+       apres un checkout detache re-branche, seul le contenu parle encore.
+
+    Retourne None si aucune voie ne resolve : l'appelant retombe sur la
+    REFUSE conservatrice (ou le predicat content_on_main).
+    """
+    upstream_proc = run_git(
+        wt_path, "rev-parse", "--abbrev-ref", "--symbolic-full-name",
+        f"{branch}@{{u}}", check=False,
     )
-    return proc.returncode == 0
+    if upstream_proc.returncode == 0:
+        upstream = upstream_proc.stdout.strip()
+        if upstream and not upstream.endswith("/main"):
+            return upstream.split("/", 1)[1] if "/" in upstream else upstream
+    refs_proc = run_git(
+        wt_path, "for-each-ref", "refs/remotes/origin",
+        "--format=%(refname:short) %(objectname)", check=False,
+    )
+    if refs_proc.returncode != 0:
+        return None
+    for line in refs_proc.stdout.splitlines():
+        parts = line.split()
+        if len(parts) != 2:
+            continue
+        name, tip = parts
+        if name in ("origin/main", "origin/HEAD"):
+            continue
+        if tip == head_sha:
+            return name.split("/", 1)[1] if "/" in name else name
+    return None
 
 
 def lookup_pr_for_detached_head(wt_path: str) -> Optional[dict]:
@@ -1051,6 +1105,14 @@ def diagnose_worktree(wt_path: str, current_path: str,
     pr = None
     if info["branch"]:
         pr = lookup_pr_for_branch(info["branch"], head_sha=head_sha)
+        if pr is None:
+            # #17771 predicat 1 : la branche locale porte un nom different
+            # de la tete de PR. On resout la PR par la branche distante qui
+            # porte exactement HEAD (upstream explicite, puis tip exact
+            # origin/*). Pas de PR de ce cote non plus -> on continue.
+            remote_head = remote_head_for_head(wt_path, info["branch"], head_sha)
+            if remote_head:
+                pr = lookup_pr_for_branch(remote_head, head_sha=head_sha)
     elif detached_head_is_on_main(wt_path):
         # Extraction de main (demeure d'organe, lecture de review) : aucune
         # PR ne la porte, le critere « PR MERGED » ne s'y applique pas.
@@ -1113,6 +1175,34 @@ def diagnose_worktree(wt_path: str, current_path: str,
             has_submodules=info["has_submodules"],
             blocking_untracked=info.get("blocking_untracked", []),
             ignored_extra=info.get("ignored_extra", []),
+        )
+
+    # Predicat 5 (#17771) : contenu deja integre a main. Aucune PR
+    # rattachable (ni par nom local, ni par tete distante), mais HEAD est
+    # un ancetre de origin/main : chaque commit du worktree est deja sur
+    # main. Les gardes en amont garantissent deja les deux autres
+    # conditions de l'issue -- 0 commit non pousse (sinon
+    # ``unpushed_commits`` serait sorti) et aucune edition source non
+    # committee ni untracked non tolere (sinon ``uncommitted_source_changes``
+    # / ``untolerated_untracked`` seraient sortis). Le worktree ne porte
+    # plus rien que main ne contienne deja.
+    if info["branch"] and head_is_ancestor_of_main(wt_path):
+        return WorktreeStatus(
+            path=wt_path,
+            branch=info["branch"],
+            is_current=False,
+            pr_state=None,
+            pr_number=None,
+            pr_url=None,
+            ahead_count=info["ahead_count"],
+            has_source_dirty=info["has_source_dirty"],
+            untracked_paths=info["untracked"],
+            decision="REMOVE",
+            refusal_reason=None,
+            has_submodules=info["has_submodules"],
+            blocking_untracked=info.get("blocking_untracked", []),
+            ignored_extra=info.get("ignored_extra", []),
+            content_on_main=True,
         )
 
     # Pas de PR trouvee : HEAD detaché sans correspondance, ou branche
@@ -1267,6 +1357,8 @@ def render_text(
                 f"pr=#{s.pr_number}({s.pr_state})"
                 if s.pr_state and s.pr_number else ""
             )
+            if not pr_part and s.content_on_main:
+                pr_part = "content_on_main"
             if dry_run:
                 lines.append(
                     f"WOULD REMOVE {s.path}  {branch_part}  {pr_part}"
@@ -1329,17 +1421,34 @@ def main() -> int:
     args = p.parse_args()
 
     cwd = args.path or "."
+
+    # Resolution du chemin canonique de l'analyse (pour comparaison is_current).
+    # Mesuree AVANT le chdir ci-dessous : un --path relatif se resout contre le
+    # cwd d'appel, pas contre lui-meme.
+    try:
+        current_path = str(Path(cwd).resolve())
+    except OSError:
+        current_path = cwd
+
+    # `--path` est le cwd de l'ANALYSE, pas un filtre -- contrat porte par
+    # l'en-tete (`--path /c/dev/CoursIA-X`) et par le help ci-dessus. Or les
+    # trois appels `run_git(".")` (worktree list, cle de cache par remote
+    # origin, worktree remove) resolvent `.` contre le cwd REEEL du processus.
+    # Sans ce chdir, l'organe lance depuis un autre dossier -- le cas de la
+    # tache planifiee, dont le cwd est System32 -- sort en rc=2 sur
+    # `fatal: not a git repository` et ne purge jamais rien (#17904).
+    if args.path:
+        try:
+            os.chdir(current_path)
+        except OSError as e:
+            print(f"ERROR: --path inutilisable ({args.path}): {e}", file=sys.stderr)
+            return 2
+
     try:
         worktrees = list_worktrees()
     except RuntimeError as e:
         print(f"ERROR: {e}", file=sys.stderr)
         return 2
-
-    # Resolution du chemin canonique du CWD (pour comparaison is_current)
-    try:
-        current_path = str(Path(cwd).resolve())
-    except OSError:
-        current_path = cwd
 
     statuses: list[WorktreeStatus] = []
     for wt in worktrees:

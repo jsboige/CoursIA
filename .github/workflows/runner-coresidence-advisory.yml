@@ -35,10 +35,14 @@ name: Runner co-residence advisory
 # serait indiscernable d'un refus de lecture (meme discipline que
 # check_runner_starvation.py, #13378).
 #
-# FENETRE : 6 h par defaut. Le jeton de workflow plafonne a 1000 requetes par
-# heure et par depot ; le depot tire ~60-80 runs par heure, soit ~500 appels
-# pour 6 h. Une fenetre plus large doit etre demandee explicitement, en
-# sachant qu'elle peut rendre `BROKEN INSTRUMENT`.
+# FENETRE : 1 h par defaut. Le jeton de workflow plafonne a 1000 requetes par
+# heure et par depot ; la constante de conception etait « ~60-80 runs par
+# heure, soit ~500 appels pour 6 h ». Ce rythme a ete remesure depuis :
+# 1 433 runs sur 6 h le 2026-09-11 (~240/h), puis 781 runs sur une heure le
+# 2026-09-23 (~780/h). A ce rythme une fenetre de 6 h exige ~4 700 appels,
+# au-dela du plafond : elle rend `BROKEN INSTRUMENT` (exit 2), pas une mesure.
+# 1 h est le maximum qui tient sous le plafond ; elargir demande de remesurer
+# le rythme du depot d'abord (docs/ci/self-hosted-runners.md).
 
 on:
   # Mardi 04:20 UTC : apres le slow-lane (02:30) et hors du pic de push
@@ -48,9 +52,9 @@ on:
   workflow_dispatch:
     inputs:
       hours:
-        description: "Taille de la fenetre mesuree, en heures"
+        description: "Taille de la fenetre mesuree, en heures (1 = maximum qui tient sous le plafond de 1000 requetes/h au rythme mesure)"
         required: false
-        default: "6"
+        default: "1"
       runner_inventory:
         description: "Collecter aussi l'inventaire des runners (exige le PAT)"
         required: false
@@ -88,7 +92,7 @@ jobs:
           # jeton du workflow, qui fera rendre `unavailable` a l'inventaire au
           # lieu de le fabriquer.
           GH_TOKEN: ${{ secrets.RUNNERS_READ_PAT || github.token }}
-          HOURS: ${{ inputs.hours || '6' }}
+          HOURS: ${{ inputs.hours || '1' }}
           WANT_INVENTORY: ${{ inputs.runner_inventory || 'true' }}
         run: |
           set -uo pipefail
@@ -96,7 +100,7 @@ jobs:
           import datetime as d
           import os
           now = d.datetime.now(d.timezone.utc)
-          hours = int(os.environ.get("HOURS", "6"))
+          hours = int(os.environ.get("HOURS", "1"))
           print("SINCE=" + (now - d.timedelta(hours=hours)).strftime("%Y-%m-%dT%H:%M:%SZ"))
           print("UNTIL=" + now.strftime("%Y-%m-%dT%H:%M:%SZ"))
           PY
@@ -125,15 +129,20 @@ jobs:
           raw = json.loads(pathlib.Path("/tmp/coresidence.json").read_text(encoding="utf-8"))
           a = raw.get("analysis", {})
           summary = a.get("co_residence", {}).get("summary", {})
+          solo = summary.get("solo_runtime_minutes", {})
+          shared = summary.get("shared_runtime_minutes", {})
+          ratio = summary.get("shared_over_solo_runtime_ratio", {})
           inv = a.get("runners_inventory", {})
           window = a.get("window", {})
           lines = [
               f"fenetre : {window.get('since')} -> {window.get('until')} ({window.get('hours')} h)",
               f"jobs places : {summary.get('jobs_placed')} | non attribues : {summary.get('jobs_unplaced')}",
               f"jobs seuls : {summary.get('solo_jobs')} | en concurrence : {summary.get('shared_jobs')}",
-              f"p50 seul : {summary.get('solo_runtime_minutes', {}).get('p50')} min"
-              f" | p50 partage : {summary.get('shared_runtime_minutes', {}).get('p50')} min"
-              f" | ratio : {summary.get('shared_over_solo_p50_ratio')}",
+              f"p50 seul : {solo.get('p50')} min | p50 partage : {shared.get('p50')} min",
+              f"queue (p90 / max) -- seul : {solo.get('p90')} / {solo.get('max')} min"
+              f" | partage : {shared.get('p90')} / {shared.get('max')} min",
+              f"rapport partage/seul -- p50 : {ratio.get('p50')} | p90 : {ratio.get('p90')} | max : {ratio.get('max')}"
+              " (lire les effectifs ci-dessus : un quantile de queue sur une population mince n'est pas une mesure)",
               f"hotes observes : {summary.get('hosts')}",
               f"inventaire runners : {inv.get('availability')}"
               + (f" ({inv.get('total_runners')} runners)" if inv.get("availability") == "measured" else f" -- {inv.get('detail')}"),

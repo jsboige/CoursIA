@@ -13,9 +13,13 @@ Base-vs-head findings (classes (b) MD_REWRITE / MD_SURVIVAL_LOW and (c)
 DIACRITICS_LOSS) only exist when a --base is given and are inherently
 relative to it, so they always count as new.
 
-A finding's identity is its (category, message) pair. Messages embed the
-anchor index / href / shared tokens / survival counts, so they are specific
-enough that moving a defect around does not mask a newly introduced one.
+A finding's identity is its (category, message) pair, EXCEPT where the message
+embeds descriptive STATE rather than the defect -- see ``_identity``. Messages
+embed the anchor index / href / shared tokens / survival counts, so they are
+specific enough that moving a defect around does not mask a newly introduced
+one; the exception exists because an ANCHOR_OOR message also embeds the head's
+code-cell count and whether the absolute cell at that index is markdown, and
+those flip when a PR merely inserts or removes cells (#17875).
 
 Body marker (#17744, symmetric to #13491/#14532): an ANNOUNCED rewrite --
 the deliverable of Epic #14442's D3 grains, which deliberately rewrite
@@ -53,15 +57,50 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from scan_enrich_quality import scan_notebook  # noqa: E402
 
 
-def high_signatures(nb_path: str | None, base_path: str | None, repo_root: Path) -> set[tuple[str, str]]:
-    """Set of (category, message) for HIGH findings of a notebook, or empty."""
+def _identity(finding: dict) -> str:
+    """Position-invariant identity of a HIGH finding.
+
+    The message is the human report, not necessarily the identity. The
+    ``ANCHOR_OOR`` message reads::
+
+        code[12] exceeds the 12 code cell(s) of the head layout (absolute cell
+        12 is out of notebook); anchors must index the head's code cells, ...
+
+    Two fragments of it are descriptive STATE, not the defect: the head's
+    code-cell count (``12``) and ``abs_state``. Both move when a PR inserts or
+    removes cells -- and ``abs_state`` flips ``markdown`` -> ``out of notebook``
+    as soon as the absolute index stops landing on a markdown cell. Keying the
+    base-vs-head difference on the raw message therefore reports a PRE-EXISTING
+    dangling anchor as NEW, which is the opposite of this module's contract.
+
+    Measured on #17064 (2026-09-26, issue #17875): base and head both carried
+    the same five ``ANCHOR_OOR``, anchor values ``{12, 14, 16, 18, 22}``; only
+    ``abs_state`` differed, and the gate printed "5 new HIGH finding(s)".
+
+    The defect here IS the unresolvable anchor, so the token (``evidence``,
+    e.g. ``code[12]``) is the identity. A genuinely new dangling anchor still
+    registers as new; only the carrier cell's position stops mattering.
+    """
+    if finding.get("category") == "ANCHOR_OOR":
+        return f"{finding['category']}:{finding.get('evidence', '')}"
+    return f"{finding['category']}:{finding['message']}"
+
+
+def high_signatures(nb_path: str | None, base_path: str | None, repo_root: Path) -> dict[str, tuple[str, str]]:
+    """Map identity -> (category, message) for HIGH findings of a notebook, or empty.
+
+    A dict (not a set) so callers can print the human message while the
+    base-vs-head difference keys on ``_identity``. Two findings sharing an
+    identity collapse to one, which is the intended dedup.
+    """
     if not nb_path or nb_path == "NONE" or not Path(nb_path).exists():
-        return set()
+        return {}
     rep = scan_notebook(Path(nb_path), base=Path(base_path) if base_path else None,
                         repo_root=repo_root)
     if rep.get("error"):
-        return set()
-    return {(f["category"], f["message"]) for f in rep["findings"] if f["severity"] == "HIGH"}
+        return {}
+    return {_identity(f): (f["category"], f["message"])
+            for f in rep["findings"] if f["severity"] == "HIGH"}
 
 
 # Base-vs-head rewrite-signature categories (#17744): these only exist when a
@@ -157,7 +196,7 @@ def regressions(base_path: str | None, head_path: str | None, repo_root: Path) -
     # on it, relative checks ((b)/(c)) cannot apply to it.
     base = high_signatures(base_path, None, repo_root)
     head = high_signatures(head_path, base_path, repo_root)
-    return sorted(head - base)
+    return sorted(head[k] for k in head.keys() - base.keys())
 
 
 def main(argv=None) -> int:

@@ -1,8 +1,8 @@
 - name: Probas-2b Debugging
   family: Probas/Infer.NET-PyMC
-  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-02b-Debugging-Python.ipynb
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb
-  numbering_exception: 'Renommage #13753 : jumeau C# reclassifie Infer-6-Debugging -> Infer-2b-Debugging-Bonnes-Pratiques (accretion transversale, compagnon sequentiel de Infer-2-Gaussian-Mixtures dans l''arc Infer) ; le jumeau Python reste PyMC-06-Debugging (position 06 dans l''arc PyMC). Divergence deliberee parite-de-role (debogage de modeles probabilistes dans les deux stacks) pas par numero : C# base=2b vs Python base=06.'
+  numbering_exception: 'RESOLUE par G4a #14873 (arbitrage c.5830481267, 2026-09-25) : renommage PyMC-06-Debugging -> PyMC-02b-Debugging-Python ; la parite de numero est retablie (2b cote C# comme cote Python). Historique : renommage #13753 cote C# seul (Infer-6 -> Infer-2b) avait laisse le jumeau Python en position 06, divergence documentee depuis.'
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib cite par owner #10382 (\"PyMC vs Infer, 2 moteurs qui brillent\") : C# = Microsoft Infer.NET (Microsoft.ML.Probabilistic, NuGet officiel, native .NET, inférence variationnelle EP/VMP) et Python = PyMC (pip pymc, native Python, NUTS/HMC + ADVI). Chaque cote atteint le moteur SOTA de son ecosysteme probabiliste -- ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML.Probabilistic refs + execution_count, Python pymc imports."
