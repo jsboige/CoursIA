@@ -187,6 +187,12 @@ import subprocess
 import sys
 from typing import Any, Callable
 
+try:
+    import gh_identity
+except ImportError:  # charge via importlib dans les tests (hors scripts/)
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import gh_identity
+
 REPO = "jsboige/CoursIA"
 
 # c.1115 voie 1 (msg-20260912T165428-k6rbfc, ai-01 spec) : klass `delivered`
@@ -194,14 +200,13 @@ REPO = "jsboige/CoursIA"
 # commentaire. Le sweep quotidien retracte le label sur activite de commentaire
 # (le marqueur lui-meme en fait partie), donc certaines LIVRE-urn restent
 # invisibles au seul filtre labels. Trois formes employees par les lanes
-# (mesure #17263 c.754, Tell c.534 L1 ★★ fondateur, Tell c.488 ★★★
-# audit-reassessment) :
+# (mesure #17263 c.754, cf. .claude/rules/audit-reassessment.md) :
 #   - `[INFO] candidate-delivered`        (canonique, fermante `]`)
 #   - `[INFO candidate-delivered]`        (espace au lieu de `]`)
 #   - `[INFO] lane <machine:workspace> -- <sujet> -- candidate-delivered <suite>`
 #                                       (annonce, le mot n'est pas immediatement
 #                                       apres `[INFO` mais sur la meme ligne)
-# Forme etroite Tell c.488 ★★★ : la 3e alternative exige `candidate-delivered`
+# Forme etroite : la 3e alternative exige `candidate-delivered`
 # borne par `\b` (mot complet) sur la MEME ligne qu'un `[INFO]` en tete, pour
 # eviter qu'une mention discursive du mecanisme (n'importe ou dans un
 # commentaire) fausse l'exclusion. La 1re et 2e formes restent matchees par la
@@ -210,14 +215,12 @@ REPO = "jsboige/CoursIA"
 # `livré(e)`, ou `verification first-hand`) SUR LA MEME LIGNE que
 # `[INFO]` et avant `candidate-delivered` -- sinon une mention discursive du
 # mecanisme (cf. test anti-FP `test_marker_no_match_discursive_mention`)
-# serait classee a tort comme marqueur de livraison. Forme etroite Tell
-# c.488 ★★★ fondateur.
+# serait classee a tort comme marqueur de livraison.
 #
 # Ancrage en debut de ligne (`^\s*` + MULTILINE) : evite les mentions
 # incidentes du type "sans [INFO] candidate-delivered" ou "[INFO] absent
 # dans ce fil", ou la sous-chaîne `[INFO] candidate-delivered` est presente
-# mais n'est pas l'en-tête du commentaire. Tell c.488 ★★★ fondateur du
-# pattern anti-FP.
+# mais n'est pas l'en-tête du commentaire.
 _DELIVERED_MARKER_RE = re.compile(
     r"(?:"
     r"^\s*\[INFO\]\s+candidate-delivered"
@@ -308,6 +311,16 @@ from gh_payload_cache import PayloadCache, cache_key  # noqa: E402
 # serait accusee de secheresse. Mesure du 2026-08-31 : la canonicalisation
 # resout 8 des 11 genres hors-enumeration du corpus, dont 2 CONTENU.
 from variation_light_cap import canonicalize_genre  # noqa: E402
+
+# Fold CANONIQUE des jambes de check par nom (#16889, residuel nomme de #16782).
+# Le rollup GraphQL rend les jambes d'un meme nom dans un ordre non
+# chronologique (mesure #16765 sur #16232 : FAILURE/CANCELLED/SUCCESS d'un
+# meme head) -- le fold chronologique est le travail du lecteur, et ce
+# lecteur est le helper de check_run_state, jamais une cle locale : drop_
+# superseded derivait deja sa propre cle depuis #11916 et couvrait un seul
+# des deux sens (rouge perime sous vert recent), laissant le vert perime
+# et le PENDING perime d'un rerun dans la liste lue comme jambes courantes.
+from check_run_state import fold_latest  # noqa: E402
 
 # Enumeration CLOSE de variation-protocol.md, partitionnee CONTENU / META.
 CONTENU = {
@@ -613,17 +626,89 @@ def cache_notice_lines(
     return lines
 
 
+# --- Transport (#17038) ----------------------------------------------------
+# Deux transports derriere `gh`, aux QUOTAS DISTINCTS : `gh issue list`,
+# `gh pr list` et les `--search` passent par GraphQL ; `gh api repos/...` par
+# REST. Mesure du 2026-09-20 (issue #17038) : 245 PRs balayees en REST pagine
+# pendant que le GraphQL du compte partage rendait 403. Un pool lu par un seul
+# transport meurt avec lui, et le zero qui en sort se lit comme un etat du
+# pool -- « picker muet », donc « veille ».
+POOL_REST_PAGE = 100
+# Plafond de pagination REST du listing de PRs (le GraphQL en demande 300).
+POOL_REST_MAX_PAGES = 4
+# rc distinct de « pool vide mesure » (0) et des arrets deliberes (1) : un
+# appelant doit pouvoir fail-closed sur « je n'ai pas pu lire ».
+RC_POOL_UNMEASURED = 3
+# Le `fallback` de l.1136 designe l'ELARGISSEMENT DU FILTRE quand la passe
+# etroite ne rend rien -- un fallback de SELECTION. Ce qui suit est un
+# fallback de TRANSPORT. Confondre les deux fait croire l'organe couvert.
+
+
+class TransportUnavailable(Exception):
+    """Les DEUX transports ont echoue : le tirage n'est pas mesure."""
+
+    def __init__(self, graphql: str, rest: str):
+        self.graphql = graphql
+        self.rest = rest
+        super().__init__(f"GraphQL={graphql} REST={rest}")
+
+
+def _rest_pages(path: str, *, max_pages: int = 10, timeout: int = 120) -> list[dict]:
+    """Liste paginee par REST -- l'autre quota, celui qui survit au 403 GraphQL."""
+    items: list[dict] = []
+    for page in range(1, max_pages + 1):
+        sep = "&" if "?" in path else "?"
+        out = subprocess.run(
+            ["gh", "api", f"{path}{sep}per_page={POOL_REST_PAGE}&page={page}"],
+            capture_output=True, text=True, encoding="utf-8", check=True,
+            timeout=timeout,
+        ).stdout
+        chunk = json.loads(out)
+        if not isinstance(chunk, list) or not chunk:
+            break
+        items.extend(chunk)
+        if len(chunk) < POOL_REST_PAGE:
+            break
+    return items
+
+
+def _issue_rest_to_gh_shape(it: dict) -> dict:
+    """Item REST `/issues` -> forme rendue par `gh issue list --json`.
+
+    REST rend du snake_case (`created_at`) la ou `gh` rend du camelCase
+    (`createdAt`) : `fetch_pool` lit la forme `gh`, donc la normalisation se
+    fait ICI et pas dans le builder du pool -- un seul point de traduction.
+    """
+    return {"number": it["number"], "title": it.get("title") or "",
+            "labels": it.get("labels") or [], "body": it.get("body") or "",
+            "createdAt": it.get("created_at") or "",
+            "updatedAt": it.get("updated_at") or ""}
+
+
+def _pr_rest_to_gh_shape(it: dict) -> dict:
+    """Item REST `/pulls` -> forme rendue par `gh pr list --json`."""
+    return {"number": it["number"], "title": it.get("title") or "",
+            "body": it.get("body") or "", "createdAt": it.get("created_at") or "",
+            "isDraft": bool(it.get("draft")),
+            "author": {"login": (it.get("user") or {}).get("login") or ""},
+            "headRefName": (it.get("head") or {}).get("ref") or ""}
+
+
 def fetch_pool(
     *,
     cache: PayloadCache | None = None,
     cache_mode: str = "off",
     cache_status: dict[str, dict[str, Any]] | None = None,
     probe: Callable[[], float | None] | None = _newest_remote_issue_update,
-) -> list[dict]:
+) -> tuple[list[dict], str | None]:
     """Une seule requete, limite haute -- c'est ce qui defait la troncature.
 
     Le plafond est haut ET surveille : aucun plafond ne se choisit une fois
     pour toutes, et celui-ci se fait franchir en silence par construction.
+
+    Rend ``(pool, read_error)`` (#17038). ``read_error`` a ``None`` des qu'UNE
+    voie a servi ; sinon il NOMME les deux transports tombes. Un pool vide
+    avec ``read_error`` n'est pas un pool vide -- cf `draw_verdict`.
     """
     command = [
         "gh", "issue", "list", "--repo", REPO, "--state", "open",
@@ -632,22 +717,46 @@ def fetch_pool(
     ]
 
     def fetch_raw() -> list[dict]:
-        out = subprocess.run(
-            command,
-            capture_output=True, text=True, encoding="utf-8", check=True,
-        ).stdout
-        return json.loads(out)
+        try:
+            out = subprocess.run(
+                command,
+                capture_output=True, text=True, encoding="utf-8", check=True,
+            ).stdout
+            return json.loads(out)
+        except Exception as exc:  # noqa: BLE001 - on TENTE l'autre transport
+            graphql_err = f"{type(exc).__name__}"
+        try:
+            # REST /issues rend AUSSI les PRs : `pull_request` les distingue.
+            raw = [_issue_rest_to_gh_shape(it)
+                   for it in _rest_pages(
+                       f"repos/{REPO}/issues?state=open&sort=created&direction=desc")
+                   if "pull_request" not in it]
+        except Exception as exc:  # noqa: BLE001 - les deux sont tombes
+            raise TransportUnavailable(graphql_err, f"{type(exc).__name__}") from exc
+        print(
+            f"[TRANSPORT] GraphQL indisponible ({graphql_err}) -- bascule REST, "
+            f"quota distinct. {len(raw)} issues lues. Le listing REST n'a pas "
+            "d'equivalent serveur pour `merged:>=` ni `N in:title,body` : les "
+            "filtres qui en dependent se degradent, et le disent plus bas.",
+            file=sys.stderr,
+        )
+        return raw
 
-    raw = _cached_payload(
-        "pool",
-        command,
-        fetch_raw,
-        cache=cache,
-        cache_mode=cache_mode,
-        ttl_seconds=POOL_CACHE_TTL_SECONDS,
-        cache_status=cache_status,
-        probe=probe,
-    )
+    try:
+        raw = _cached_payload(
+            "pool",
+            command,
+            fetch_raw,
+            cache=cache,
+            cache_mode=cache_mode,
+            ttl_seconds=POOL_CACHE_TTL_SECONDS,
+            cache_status=cache_status,
+            probe=probe,
+        )
+        read_error = None
+    except TransportUnavailable as exc:
+        return [], (f"GraphQL indisponible ({exc.graphql}), REST egalement "
+                    f"indisponible ({exc.rest})")
     if len(raw) >= POOL_FETCH_LIMIT:
         # Signature de la troncature : on a recu exactement ce qu'on a demande.
         # Le tirage reste possible et se poursuit -- bloquer la lane serait pire
@@ -698,7 +807,7 @@ def fetch_pool(
                 else "grain"
             ),
         })
-    return pool
+    return pool, read_error
 
 
 # Fenetre d'affluence : la MEME que celle du cap de veine (`vein_cap`, par
@@ -1031,7 +1140,7 @@ def open_cover_signal(issue_number: int) -> str | None:
 
     TRI-ETAT, meme doctrine que ``has_delivered_signal`` : ``""`` = aucune
     PR ouverte couvrante ; une descriptor-string (``"PR #12519 [draft]
-    (+1 autre(s) : #12530)"``) = au moins une PR ouverte cite l'issue ;
+    (+1 autre(s) : #12530)"``) = au moins une PR ouverte cite ``#N`` ;
     ``None`` = la requete a echoue (reseau, 403, payload illisible) et
     l'appelant doit tirer quand meme EN LE DISANT.
 
@@ -1046,14 +1155,27 @@ def open_cover_signal(issue_number: int) -> str | None:
         out = subprocess.run(
             ["gh", "pr", "list", "--repo", REPO, "--state", "all",
              "--limit", "20", "--search", f"{issue_number} in:title,body",
-             "--json", "number,state,isDraft"],
+             "--json", "number,state,isDraft,title,body"],
             capture_output=True, text=True, encoding="utf-8", check=True,
             timeout=30,
         ).stdout
         prs = json.loads(out)
     except Exception:  # noqa: BLE001 - sonde best-effort ; l'echec est DIT
         return None
-    opened = [pr for pr in prs if pr.get("state") == "OPEN"]
+    # Post-filtre `#N\b` (#17760, arbitrage ai-01 2026-09-25) : la recherche
+    # GitHub matche un NOMBRE NU en sous-chaine -- 11703 apparie c.1170301
+    # ou #1170391 -- et les petits numeros des EPICs se retrouvent faux
+    # couverts (10/91 mesures, 11 %). Une PR ouverte ne couvre l'issue QUE
+    # si son titre ou son body citent `#N` borne par un mot. GitHub ne peut
+    # pas faire ce discriminant cote serveur ; quand le filtre ne trouve
+    # pas d'ancre, le candidat est CONSERVE, jamais ecarte.
+    anchor = re.compile(rf"#{issue_number}\b")
+    opened = [
+        pr for pr in prs
+        if pr.get("state") == "OPEN"
+        and anchor.search((pr.get("title") or "") + "\n" +
+                          (pr.get("body") or ""))
+    ]
     if not opened:
         return ""
     first = min(opened, key=lambda pr: pr["number"])
@@ -1168,6 +1290,24 @@ def print_delivered_signal_report(
     if (dropped or failed or cover_failed or inprogress
             or state.get("budget_hit")):
         print()
+
+
+def draw_verdict(pool_error: str | None) -> str:
+    """La phrase du verdict quand la lecture du pool n'a PAS abouti (#17038).
+
+    Un pool vide MESURE et un pool NON MESURE ne se disent pas avec le meme
+    vocabulaire : le premier est un etat du pool, le second un etat de
+    l'instrument. Les confondre est exactement le defaut -- la lane lit un
+    zero comme « rien a faire » et s'arrete sur un pool qu'elle n'a pas vu.
+    Rend une chaine vide quand la lecture a abouti (rien a dire).
+    """
+    if not pool_error:
+        return ""
+    return (f"TIRAGE NON MESURE : {pool_error}.\n"
+            f"   Aucune voie n'a lu le pool -- ce n'est PAS « aucun candidat ».\n"
+            f"   Ne pas conclure « pool vide » ni « veille » : re-mesurer\n"
+            f"   (`gh api rate_limit`) puis relancer. rc={RC_POOL_UNMEASURED} pour\n"
+            f"   que l'appelant fail-closed au lieu de lire un zero.")
 
 
 def print_empty_draw_notice(withheld: list, picks: list,
@@ -1810,7 +1950,7 @@ def recent_delivery(picks: list[dict]) -> dict[int, str]:
             notes[n] = f"(recherche PR indisponible: {type(exc).__name__})"
             continue
         if not prs:
-            # c.1115 voie 1 (Tell c.1060-L1 reformule ai-01) : pas de PR
+            # c.1115 voie 1 : pas de PR
             # couvrante, mais le label `candidate-delivered` peut etre absent
             # alors que le marqueur `[INFO] candidate-delivered` est present
             # en commentaire (sweep 05:37Z retracte sur activite). Cout : 1
@@ -2055,14 +2195,79 @@ def _hours_since(iso: str) -> float:
     return (NOW - dt.datetime.fromisoformat(iso.replace("Z", "+00:00"))).total_seconds() / 3600.0
 
 
+# #17474 : le meme raisonnement que POOL_FETCH_LIMIT, applique aux PRs -- et
+# la meme trappe. `gh pr list` rend du plus RECENT au plus ancien (mesure du
+# 2026-09-23 sur ce depot : `first=2026-09-23T13:29:52Z` #17565,
+# `last=2026-09-13T08:33:00Z` #15942), donc un plafond franchi ampute
+# exactement la traine : les PRs bloquees depuis plus de 24 h, que
+# `unattributed_blocked_prs` (file de reparation) et le compte WIP de lane
+# (Q41) existent pour voir. Le plafond est donc HAUT et SURVEILLE -- un
+# plafond atteint se dit au lieu d'inverser l'instrument en silence.
+# Cout : nul sous le plafond. `gh` pagine par 100 et s'arrete a l'epuisement
+# de la population comme au plafond, donc 158 ouvertes = 2 requetes, ici
+# comme avant.
+OPEN_PRS_FETCH_LIMIT = POOL_FETCH_LIMIT
+
+
+def _warn_open_prs_truncated(rendered: int, ceiling: int, remedy: str) -> None:
+    """La troncature se DIT : un plafond atteint ne se devine pas autrement.
+
+    Le listing rend du plus RECENT au plus ancien, et `gh` ne leve rien quand
+    le plafond mord. Sans ce message, la traine -- PRs bloquees de plus de
+    24 h, file de reparation et compte WIP de lane (Q41) -- est absente de la
+    mesure en silence, exactement ce que ces appelants existent pour voir. Le
+    garde reste utilisable (bloquer la lane serait pire) : on dit, on ne
+    bloque pas.
+    """
+    print(
+        f"[PRS TRONQUEES] {rendered} PRs rendues pour un plafond de "
+        f"{ceiling} : l'ouvert est probablement plus grand. "
+        "gh rend les plus RECENTES, donc la traine -- PRs bloquees de "
+        "plus de 24 h, file de reparation et compte WIP de lane -- est "
+        f"absente de cette mesure. {remedy} avant de "
+        "conclure quoi que ce soit de ce resultat.",
+        file=sys.stderr,
+    )
+
+
 def fetch_open_prs() -> list[dict]:
-    """Toutes les PRs ouvertes, avec le corps (pour y lire le tag de lane)."""
-    out = subprocess.run(
-        ["gh", "pr", "list", "--repo", REPO, "--state", "open", "--limit", "300",
-         "--json", "number,title,body,createdAt,isDraft,author,headRefName"],
-        capture_output=True, text=True, encoding="utf-8", check=True, timeout=120,
-    ).stdout
-    return json.loads(out)
+    """Toutes les PRs ouvertes, avec le corps (pour y lire le tag de lane).
+
+    #17038 : meme bascule de transport que `fetch_pool` -- `gh pr list` passe
+    par GraphQL, `gh api repos/.../pulls` par REST. Le garde rouge attrape
+    deja l'echec (`unavailable`, fail-open et DIT) ; ce qui manquait est la
+    seconde voie, pour que l'echec cesse d'etre une fatalite.
+    """
+    try:
+        out = subprocess.run(
+            ["gh", "pr", "list", "--repo", REPO, "--state", "open",
+             "--limit", str(OPEN_PRS_FETCH_LIMIT),
+             "--json", "number,title,body,createdAt,isDraft,author,headRefName"],
+            capture_output=True, text=True, encoding="utf-8", check=True, timeout=120,
+        ).stdout
+        prs = json.loads(out)
+        if len(prs) >= OPEN_PRS_FETCH_LIMIT:
+            _warn_open_prs_truncated(len(prs), OPEN_PRS_FETCH_LIMIT,
+                                     "Relever OPEN_PRS_FETCH_LIMIT")
+        return prs
+    except Exception:  # noqa: BLE001 - on TENTE l'autre transport
+        pass
+    raw = [_pr_rest_to_gh_shape(it) for it in _rest_pages(
+        f"repos/{REPO}/pulls?state=open&sort=created&direction=desc",
+        max_pages=POOL_REST_MAX_PAGES)]
+    print(
+        f"[TRANSPORT] `gh pr list` (GraphQL) indisponible -- bascule REST, "
+        f"quota distinct. {len(raw)} PRs lues.",
+        file=sys.stderr,
+    )
+    # Le transport REST porte son PROPRE plafond (pages x page) : un plafond
+    # atteint s'y dit comme sur la voie GraphQL, sinon la bascule de #17038
+    # reintroduit la troncature muette par l'autre porte.
+    rest_ceiling = POOL_REST_PAGE * POOL_REST_MAX_PAGES
+    if len(raw) >= rest_ceiling:
+        _warn_open_prs_truncated(len(raw), rest_ceiling,
+                                 "Relever POOL_REST_MAX_PAGES")
+    return raw
 
 
 def fetch_pr_states(numbers: list[int]) -> dict[int, dict]:
@@ -2160,42 +2365,32 @@ def fetch_main_head_probe(organ_cache: dict | None = None) -> dict | None:
             "names": {(c.get("name") or c.get("context") or "?") for c in contexts}}
 
 
-def _ctx_stamp(ctx: dict) -> str:
-    """Horodatage comparable d'un contexte. Chaine vide si le run n'a rien rendu."""
-    return ctx.get("completedAt") or ctx.get("createdAt") or ctx.get("startedAt") or ""
-
-
 def drop_superseded(contexts: list[dict]) -> list[dict]:
-    """Retire les echecs PERIMES : un rouge anterieur au dernier vert du meme nom.
+    """Etat COURANT par nom de check : le fold canonique check_run_state.fold_latest.
 
-    Le discriminant est TEMPOREL, jamais nominal, et les deux erreurs symetriques
-    sont documentees : dedupliquer par nom seul masque un rouge vivant emis par un
-    workflow jumeau (#11894), ne pas dedupliquer du tout en fabrique de faux
-    (#12054, 9 rouges pour 0 reel). La regle qui tranche les deux : un echec
-    ANTERIEUR au dernier non-echec du meme nom est de l'histoire ; un echec
-    CONTEMPORAIN ou posterieur est un jumeau vivant, on le garde.
+    Une seule jambe par nom -- la plus recente (cle started_at puis id,
+    #11416 : un rerun cree une entree fraiche). Le discriminant reste
+    TEMPOREL, jamais nominal seul, et les deux erreurs symetriques
+    historiques tombent du meme coup : dedupliquer par nom seul masquait un
+    rouge vivant (#11894), ne pas dedupliquer fabriquait de faux rouges
+    (#12054, 9 rouges pour 0 reel) ; la cle temporelle tranche.
 
-    Mesure du 2026-08-22 sur #11916 : `Require genre diversity vs prev:` porte un
-    FAILURE du 20/08 et un SUCCESS du 22/08 sur le meme head. Sans ce filtre le
-    garde renvoyait la lane reparer un check deja vert.
+    Les deux sens de #16765/#16889 sont couverts :
+    - un rouge ANTERIEUR au vert recent du meme nom disparait : la lane n'est
+      pas renvoyee reparer un check deja vert (mesure 2026-08-22 sur #11916 :
+      `Require genre diversity vs prev:` FAILURE du 20/08 + SUCCESS du 22/08
+      sur le meme head) ;
+    - un vert ou PENDING ANTERIEUR a un rouge recent du meme nom disparait
+      aussi : l'etat courant est le seul lu -- plus de PENDING perime lu
+      comme check en vol (fausse file-saturation) ni de vert perime comptant
+      pour la maturite.
+
+    Les jambes rendues portent les champs bruts (isRequired, databaseId,
+    startedAt) enrichis des champs canoniques minuscules par fold_latest.
+    Les consommateurs relisent conclusion/state via .upper() : insensible a
+    la casse normalisee.
     """
-    newest_ok: dict[str, str] = {}
-    for ctx in contexts:
-        verdict = (ctx.get("conclusion") or ctx.get("state") or "").upper()
-        if verdict in CHECK_FAILED:
-            continue
-        name = ctx.get("name") or ctx.get("context") or "?"
-        stamp = _ctx_stamp(ctx)
-        if stamp > newest_ok.get(name, ""):
-            newest_ok[name] = stamp
-    kept = []
-    for ctx in contexts:
-        verdict = (ctx.get("conclusion") or ctx.get("state") or "").upper()
-        name = ctx.get("name") or ctx.get("context") or "?"
-        if verdict in CHECK_FAILED and _ctx_stamp(ctx) < newest_ok.get(name, ""):
-            continue  # rouge anterieur au dernier vert du meme nom : perime
-        kept.append(ctx)
-    return kept
+    return list(fold_latest(contexts).values())
 
 
 def is_aggregator_check(name: str) -> bool:
@@ -2978,6 +3173,22 @@ def is_automation_vehicle(pr: dict) -> bool:
     return author in AUTOMATION_AUTHORS and bool(AUTOMATION_BRANCH_RE.match(branch))
 
 
+# #17713 — PRs HORS FLOTTE exclues de la file d'orphelines. Une PR pilotee
+# depuis l'exterieur du cluster (tete `claude/*`) porte la mention
+# « Hors flotte » dans son body des lors qu'elle ne suit pas le protocole de
+# flotte : c'est la MEME exemption que le gate `tag_required` (#17715,
+# `variation_tag_required.py`), appliquee ici a l'entree du routage -- sans
+# elle le sweep quotidien renverrait une lane sur une PR qui n'appartient a
+# aucune. Predicat ETROIT : les DEUX conditions (tete `claude/*` ET marqueur
+# present) ; une PR de flotte, ou une `claude/*` sans marqueur, restent
+# visibles (controles negatifs). Les deux sites doivent rester alignes : le
+# jour ou l'exemption bouge, elle bouge aux deux entrances.
+def is_out_of_fleet_pr(pr: dict) -> bool:
+    """Vrai si la PR est hors flotte (tete `claude/*` ET marqueur « Hors flotte »)."""
+    head_ref = pr.get("headRefName") or ""
+    return head_ref.startswith("claude/") and "Hors flotte" in (pr.get("body") or "")
+
+
 def unattributed_blocked_prs(prs: list[dict] | None = None) -> list[dict]:
     """PRs ouvertes bloquees sans tag `Grain:` lisible, AVEC leur route.
 
@@ -2997,13 +3208,20 @@ def unattributed_blocked_prs(prs: list[dict] | None = None) -> list[dict]:
     disposition ne leur est valide. Le predicat est PARTAGE avec `red_backlog`
     (un `unattributed_blocked_prs` → le garde « reparer son rouge ») — ce qui est
     ici souhaite, aucune lane ne devant etre renvoyee sur le vehicule du bot.
+
+    Les PRs HORS FLOTTE (tete `claude/*` ET marqueur « Hors flotte », #17713)
+    sont exclues de meme : aucune lane n'est destinataire d'une PR pilotee
+    depuis l'exterieur du cluster, et le gate `tag_required` les exempte deja
+    (#17715) — router l'une d'elles rejouerait la contradiction que #17713
+    ferme.
     """
     if prs is None:
         prs = fetch_open_prs()
     untagged = [pr for pr in prs
                 if not pr.get("isDraft")
                 and parse_grain_tag(pr.get("body") or "") is None
-                and not is_automation_vehicle(pr)]
+                and not is_automation_vehicle(pr)
+                and not is_out_of_fleet_pr(pr)]
     untagged_states = fetch_pr_states([pr["number"] for pr in untagged]) if untagged else {}
     out = []
     for pr in untagged:
@@ -4255,6 +4473,14 @@ def main(argv: list[str] | None = None) -> int:
     for _stream in (sys.stdout, sys.stderr):
         if hasattr(_stream, "reconfigure"):
             _stream.reconfigure(encoding="utf-8", errors="replace")
+    # #17418 Phase A : epingle le jeton machine AVANT tout appel gh — les
+    # enfants (check_lane_claim, nits...) heritent via os.environ propage par
+    # _utf8_child_env(). Warn-fort + poursuite : le FAIL bruyant est porte
+    # par gh_identity --whoami et detect_shared_login.py (transition B/C).
+    try:
+        gh_identity.pin_gh_token()
+    except gh_identity.GhIdentityError as exc:
+        print(f"GH-IDENTITY (WARN, poursuite sous compte actif): {exc}", file=sys.stderr)
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--lane", default=None,
@@ -4476,11 +4702,20 @@ def main(argv: list[str] | None = None) -> int:
     # et elle doit pouvoir etre posee sur un grain STEERE, chemin par lequel
     # arrive l'essentiel du travail (mesure du 2026-08-29).
     if args.admissible is not None:
-        pool = fetch_pool(
+        pool, pool_error = fetch_pool(
             cache=payload_cache,
             cache_mode=effective_cache_mode,
             cache_status=cache_status,
         )
+        # #17038 : ce mode repond « ce grain-ci est-il consommable maintenant ? ».
+        # Sur un pool non lu, la seule reponse honnete est « je n'ai pas mesure » --
+        # `1` dit deja « absente du pool », et le confondre ferait lire une panne
+        # de transport comme une issue fermee.
+        unmeasured = draw_verdict(pool_error)
+        if unmeasured:
+            print(unmeasured)
+            print()
+            return RC_POOL_UNMEASURED
         series, issue_to_family, series_err = fetch_series_visits(
             cache=payload_cache,
             cache_mode=effective_cache_mode,
@@ -4594,11 +4829,26 @@ def main(argv: list[str] | None = None) -> int:
         print(f"(garde rouge/WIP indisponible : {backlog['unavailable']} -- tirage rendu sans verification)")
         print()
 
-    pool = fetch_pool(
+    pool, pool_error = fetch_pool(
         cache=payload_cache,
         cache_mode=effective_cache_mode,
         cache_status=cache_status,
     )
+    # #17038 : « je n'ai pas pu lire » n'est pas « aucun candidat ». Le dire,
+    # et sortir avec un rc DEDIE avant tout tirage -- sans pool il n'y a pas
+    # de tirage a rendre, et le vocabulaire de l'epuisement (« FILE LOCALE
+    # EPUISEE ») serait un mensonge sur un pool qu'on n'a jamais vu.
+    unmeasured = draw_verdict(pool_error)
+    if unmeasured:
+        if args.json:
+            print(json.dumps(
+                {"lane": args.lane, "mode": "unmeasured",
+                 "draw": "non mesure", "transport_error": pool_error,
+                 "rc": RC_POOL_UNMEASURED}, ensure_ascii=False, indent=2))
+        else:
+            print(unmeasured)
+            print()
+        return RC_POOL_UNMEASURED
     visits, visits_err = fetch_visits(
         cache=payload_cache,
         cache_mode=effective_cache_mode,

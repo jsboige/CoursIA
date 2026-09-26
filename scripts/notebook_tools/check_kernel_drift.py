@@ -7,8 +7,11 @@ when the underlying computation is mathematically equivalent. Three
 classes observed:
 
   - Kernel change: ``metadata.kernelspec.name`` or
-    ``metadata.language_info.version`` differs (Python 3.11 -> 3.13).
-    Outputs may format ``repr(np.float64(0.9999999999999999))`` instead
+    ``metadata.language_info.version`` differs at major.minor level
+    (Python 3.11 -> 3.13). Patch-only drift (3.13.3 -> 3.13.15) is NOT
+    flagged: the venv patch evolves under the canonical interpreter and
+    never changes repr() semantics (#17371). Outputs may format
+    ``repr(np.float64(0.9999999999999999))`` instead
     of ``[1.0, 1.0, ...]`` even when the cell computes the same values.
   - Float format drift: NumPy 1.x prints ``[1.0, 1.0, 1.0]``; NumPy 2.x
     prints ``[1.0, 0.9999999999999999, 1.0]``. The values are within
@@ -171,13 +174,40 @@ def kernel_info(nb):
     }
 
 
+def _version_prefix(version):
+    """Truncate a language version to its major.minor components (#17371).
+
+    Patch-level drift (3.13.3 -> 3.13.15) is systemic: the project venv
+    evolves under the lane's canonical interpreter, so any fresh
+    re-execution of a notebook whose base stamp is older drifts on the
+    patch component alone (measured 2026-09-22 on #16858: base 3.13.3,
+    venv 3.13.15, 10/10 cells, 0 error). A patch bump does not change
+    repr() semantics; a kernel swap or a major/minor change does. Versions
+    with fewer than two components ("", "3") are returned verbatim. A JSON
+    ``"version": null`` (valid nbformat, which the ``.get("version", "")``
+    default does not cover) is read as the empty version rather than
+    crashing: the guard must emit a finding, never a traceback.
+    """
+    text = str(version or "")
+    parts = text.split(".")
+    return ".".join(parts[:2]) if len(parts) >= 2 else text
+
+
 def diff_kernel(base_info, head_info):
-    """Return a list of human-readable kernel-version drift strings."""
+    """Return a list of human-readable kernel-version drift strings.
+
+    #17371: ``language_info.version`` is compared at major.minor level —
+    patch-only drift is not a kernel regression. The full versions are
+    still shown in the message for diagnosis.
+    """
     diffs = []
-    if base_info["language_version"] != head_info["language_version"]:
+    base_ver = _version_prefix(base_info["language_version"])
+    head_ver = _version_prefix(head_info["language_version"])
+    if base_ver != head_ver:
         diffs.append(
             f"language_info.version: {base_info['language_version']!r} -> "
-            f"{head_info['language_version']!r}"
+            f"{head_info['language_version']!r} "
+            f"(major.minor {base_ver} -> {head_ver})"
         )
     if base_info["kernelspec_name"] != head_info["kernelspec_name"]:
         diffs.append(
@@ -198,12 +228,21 @@ def body_has_derive_exemption(body):
     tolerates the unaccented 'derive' (covers authors who type the header
     without the accent, a common shortcut when reviewing on a non-French
     keyboard layout).
+
+    Fix v3 (suffix form, cas vecu #17220): also tolerate a trailing
+    parenthetical qualifier, e.g. '## Diagnostic derive (C.4)' -- the exact
+    form used in the PR body of #17220, whose exemption silently failed to
+    fire because
+    the strict end-of-line anchor rejected the '(C.4)' suffix (measured
+    firsthand 2026-09-21: kernel_diffs downgraded nowhere, guard red on a
+    3.13.7 -> 3.13.15 patch drift that the C.4 section was documenting).
     """
     if not body:
         return False
-    # Case-insensitive header, optional whitespace, optional accent on 'e'.
+    # Case-insensitive header, optional whitespace, optional accent on 'e',
+    # optional trailing parenthetical qualifier such as '(C.4)'.
     pattern = re.compile(
-        r"^##\s*Diagnostic\s*d[ée]rive\s*$",
+        r"^##\s*Diagnostic\s*d[ée]rive(?:\s*\([^)]*\))?\s*$",
         re.MULTILINE | re.IGNORECASE,
     )
     return bool(pattern.search(body))
@@ -317,6 +356,56 @@ def _diff_signatures_ordinal(base_sig, head_sig):
     return diffs
 
 
+# Artefacts qui portent un environnement EPINGLE pour une serie. pyproject.toml
+# d'abord : il porte l'intention (requires-python, dependances) la ou un
+# requirements.txt peut n'etre qu'une liste d'install.
+_ENV_ARTIFACT_NAMES = ("pyproject.toml", "requirements.txt")
+
+# Niveaux remontes depuis le dossier du notebook. Borne volontaire : au-dela on
+# nommerait un artefact qui ne couvre plus la serie (racine du depot), c'est-a-
+# dire un chemin qui a l'apparence d'une reponse et n'en est pas une.
+_ENV_WALK_LEVELS = 3
+
+_REQUIRES_PYTHON_RE = re.compile(r"""requires-python\s*=\s*["']([^"']+)["']""")
+_NUMPY_PIN_RE = re.compile(r"numpy\s*([<>=!~][0-9A-Za-z.,<>=!~*]*)")
+
+
+def canonical_env_hint(nb_path, root="."):
+    """Nomme l'environnement epingle qui couvre ce notebook, s'il existe (#17185).
+
+    Le garde nommait les CAUSES du drift (« un autre interpreteur, 3.11 ->
+    3.13 », « NumPy 1.x -> 2.x ») sans jamais dire OU est l'environnement a
+    rejouer. Pour une serie qui epingle le sien, le verdict renvoyait donc la
+    lane a sa propre introspection : elle re-executait avec son env local, ce
+    qui reproduisait exactement le drift signale. Le constat de #17185 impute
+    ce drift a une absence d'env canonique -- la serie ICT en a un, epingle et
+    documente (cf `IIT/ICT-Series/pyproject.toml`) ; ce qui manquait est le
+    POINTEUR vers lui au moment ou la lane lit le verdict.
+
+    Rend un dict ``{artifact, requires_python?, numpy_pin?}``, ou None quand
+    aucun artefact n'est trouve : l'absence est une information, pas un silence
+    a combler par un chemin suppose.
+    """
+    parents = [p for p in Path(nb_path).parents if p.as_posix() != "."]
+    for parent in parents[:_ENV_WALK_LEVELS]:
+        for name in _ENV_ARTIFACT_NAMES:
+            rel = parent / name
+            try:
+                text = (Path(root) / rel).read_text(encoding="utf-8",
+                                                    errors="replace")
+            except OSError:
+                continue
+            hint = {"artifact": rel.as_posix()}
+            requires_python = _REQUIRES_PYTHON_RE.search(text)
+            if requires_python:
+                hint["requires_python"] = requires_python.group(1)
+            numpy_pin = _NUMPY_PIN_RE.search(text)
+            if numpy_pin:
+                hint["numpy_pin"] = f"numpy{numpy_pin.group(1)}"
+            return hint
+    return None
+
+
 def _run(args_obj):
     """Core logic shared between CLI and tests. Returns dict or prints."""
     base = resolve_base(args_obj.base_ref)
@@ -379,6 +468,26 @@ def _run(args_obj):
                         "drift consistent with a NumPy 1.x -> 2.x upgrade or "
                         "a cmath precision change; values are within 1 ULP "
                         "but byte-text differs"
+                    )
+                # #17185 : les deux causes ci-dessus nomment le MECANISME du
+                # drift, aucune ne dit OU est l'environnement a rejouer. Une
+                # serie qui epingle le sien obtient ici le pointeur vers son
+                # artefact, pour que « aligner l'env » ne se lise pas comme une
+                # introspection a faire soi-meme.
+                env_hint = canonical_env_hint(nb_path)
+                if env_hint:
+                    detail = [f"the series pins a canonical environment at "
+                              f"`{env_hint['artifact']}`"]
+                    if env_hint.get("requires_python"):
+                        detail.append(
+                            f"requires-python {env_hint['requires_python']}")
+                    if env_hint.get("numpy_pin"):
+                        detail.append(env_hint["numpy_pin"])
+                    causes.append(
+                        " / ".join(detail)
+                        + "; re-executing under that environment keeps the "
+                          "committed repr stable, whereas a local interpreter "
+                          "reproduces this drift"
                     )
                 finding["probable_causes"] = causes
             findings.append(finding)

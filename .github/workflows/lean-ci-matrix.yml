@@ -100,6 +100,9 @@ on:
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lean-toolchain'
+      # Contrat certifie SocialChoice (herite du wrapper lean-social-choice.yml
+      # supprime, #17374) : le manifeste certifie est un declencheur du lake.
+      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/CERTIFIED.txt'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/lakefile.toml'
@@ -113,6 +116,20 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lean-toolchain'
+      # serre100_lean (#17336)
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/lean-toolchain'
+      # Self-cover B.3 herite du wrapper lean-serre.yml supprime (#17336) :
+      # le moteur d'axiomes change -> le gate axiom de serre100 rejoue.
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
+      # Self-cover du contrat certifie herite du wrapper lean-social-choice.yml
+      # supprime (#17374) : l'instrument ou son test change -> la jambe
+      # certifiee de gametheory rejoue.
+      - 'scripts/lean/check_certified_sorry.py'
+      - 'scripts/lean/count_code_sorry.py'
+      - 'scripts/tests/test_check_certified_sorry.py'
       # self-cover du gate (#8712) : un changement du gate lance le gate
       - '.github/workflows/lean-ci-matrix.yml'
       - '.github/workflows/lean-build.yml'
@@ -120,6 +137,8 @@ on:
       - 'scripts/lean/ci_lakes.json'
       - 'scripts/lean/lake_matrix_dispatch.py'
       - 'scripts/ci/check_lake_matrix_paths.py'
+      - '.github/actions/lean-axiom/action.yml'
+      - 'scripts/lean/axiom_check_step.py'
   pull_request:
     branches: [main]
     types: [opened, synchronize, edited, reopened]
@@ -189,6 +208,9 @@ on:
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lean-toolchain'
+      # Contrat certifie SocialChoice (herite du wrapper lean-social-choice.yml
+      # supprime, #17374) : le manifeste certifie est un declencheur du lake.
+      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/CERTIFIED.txt'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/lakefile.toml'
@@ -202,12 +224,28 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lean-toolchain'
+      # serre100_lean (#17336)
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/lean-toolchain'
+      # Self-cover B.3 herite du wrapper lean-serre.yml supprime (#17336) :
+      # le moteur d'axiomes change -> le gate axiom de serre100 rejoue.
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
+      # Self-cover du contrat certifie herite du wrapper lean-social-choice.yml
+      # supprime (#17374) : l'instrument ou son test change -> la jambe
+      # certifiee de gametheory rejoue.
+      - 'scripts/lean/check_certified_sorry.py'
+      - 'scripts/lean/count_code_sorry.py'
+      - 'scripts/tests/test_check_certified_sorry.py'
       - '.github/workflows/lean-ci-matrix.yml'
       - '.github/workflows/lean-build.yml'
       - '.github/actions/lean-build/action.yml'
       - 'scripts/lean/ci_lakes.json'
       - 'scripts/lean/lake_matrix_dispatch.py'
       - 'scripts/ci/check_lake_matrix_paths.py'
+      - '.github/actions/lean-axiom/action.yml'
+      - 'scripts/lean/axiom_check_step.py'
   workflow_dispatch:
 
 permissions:

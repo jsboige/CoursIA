@@ -54,11 +54,11 @@ Réparation env Python (règle F : installer le kernel/env, jamais contourner).
 
 Setup environnement, validation notebooks, slash commands.
 
-### [Curriculum](../curriculum/ia-classique.md) et [Curriculum GenAI](../curriculum/genai.md)
+### [Curriculum](curriculum/ia-classique.md) et [Curriculum GenAI](curriculum/genai.md)
 
 Plans d'apprentissage par école (ECE, ESGF, EPITA, EPF), scope pédagogique.
 
-### [Grothendieckian lens](../grothendieckian-lens.md)
+### [Grothendieckian lens](grothendieckian-lens.md)
 
 Perspective unificatrice sur les séries du dépôt, à la Grothendieck.
 
@@ -66,7 +66,7 @@ Perspective unificatrice sur les séries du dépôt, à la Grothendieck.
 
 Prover iteration history, intractable diagnosis, LLM endpoints.
 
-### [QC](../qc/quantconnect.md)
+### [QC](qc/quantconnect.md)
 
 Backtests, MCP Docker, structure, livre référence (*Hands-On AI Trading*).
 
@@ -74,6 +74,6 @@ Backtests, MCP Docker, structure, livre référence (*Hands-On AI Trading*).
 
 Si vous venez d'arriver et cherchez à **apprendre** (pas à contribuer) :
 
-1. [PARCOURS](../../parcours.qmd) — trois parcours certifiés selon votre niveau
-2. [README.md](../../README.md) — vue d'ensemble du dépôt
-3. [Catalogue](../../COURSE_CATALOG.generated.md) — inventaire exhaustif et à jour
+1. [PARCOURS](../parcours.qmd) — trois parcours certifiés selon votre niveau
+2. [README.md](../README.md) — vue d'ensemble du dépôt
+3. [Catalogue](../COURSE_CATALOG.generated.md) — inventaire exhaustif et à jour

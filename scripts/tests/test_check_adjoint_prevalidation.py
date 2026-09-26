@@ -283,6 +283,62 @@ def test_non_shared_github_author_cannot_satisfy_gate():
     assert any(error.startswith("comment author must") for error in errors)
 
 
+# --- #17791 : PR hors flotte (session cloud du mainteneur) -------------------
+#
+# Miroir de l'exemption `tag_required` (#17713/#17715, variation_tag_required.py) :
+# branche `claude/*` ET marqueur « Hors flotte » dans le body. Une telle PR n'est
+# porte par AUCUNE lane de la flotte, donc tout dossier d'une lane qualifiante
+# est tiers par construction -- le refus « carrying lane cannot be established »
+# y est une impasse structurelle, pas une garantie.
+
+
+def test_out_of_fleet_pr_accepts_qualifying_dossier_without_grain_tag():
+    """claude/* + « Hors flotte » : un dossier de lane qualifiante est tiers."""
+    snapshot = _snapshot_with_body(
+        "Session cloud du mainteneur. **Hors flotte**", lane="myia-po-2023:CoursIA"
+    )
+    snapshot["headRefName"] = "claude/affectionate-mccarthy-6dvuea"
+    ready, errors = mod.evaluate(snapshot)
+    assert ready, errors
+    assert errors == []
+
+
+def test_claude_branch_without_marker_is_still_refused():
+    """Le prefixe seul n'exempte pas : sans le marqueur, le refus est intact."""
+    snapshot = _snapshot_with_body(
+        "Session cloud du mainteneur.", lane="myia-po-2023:CoursIA"
+    )
+    snapshot["headRefName"] = "claude/affectionate-mccarthy-6dvuea"
+    errors = _errors(snapshot)
+    assert any(
+        error.startswith("carrying lane cannot be established") for error in errors
+    )
+
+
+def test_fleet_branch_with_marker_is_still_refused():
+    """Recopier le marqueur sur une branche de flotte ne sort pas de la regle."""
+    snapshot = _snapshot_with_body(
+        "Session cloud du mainteneur. **Hors flotte**", lane="myia-po-2023:CoursIA"
+    )
+    snapshot["headRefName"] = "feature/renamed-to-escape"
+    errors = _errors(snapshot)
+    assert any(
+        error.startswith("carrying lane cannot be established") for error in errors
+    )
+
+
+def test_self_prevalidation_refusal_survives_the_exemption_next_door():
+    """Une PR de flotte taguee reste refusee en self-attestation : l'exemption
+    hors flotte n'ouvre aucune echappatoire a cote."""
+    carrier = "myia-po-2023:CoursIA"
+    snapshot = _snapshot_with_body(
+        "Grain: DEEP/lean -- lane %s -- prev: MED" % carrier, lane=carrier
+    )
+    snapshot["headRefName"] = "feature/ordinary-fleet-branch"
+    errors = _errors(snapshot)
+    assert any(error.startswith("self-prevalidation refused") for error in errors)
+
+
 def test_blocked_preflight_is_a_valid_dossier_but_never_ready():
     """An honest BLOCKED dossier must be distinguishable from an absent one.
 
@@ -603,6 +659,13 @@ def _dossier_for(snapshot: dict, **changes: str) -> str:
 
 
 def test_coordinator_own_later_review_does_not_expire_the_dossier():
+    """#17039 acceptance CN1 : un commentaire de LEVEE pure (sans marqueur
+    de reserve) du coordinateur post-dossier NE perime PAS le dossier.
+
+    Le contrat : la review leve une reserve tierce (Hermes / ai-01) sans
+    poser de reserve neuve. _is_own_later_act(row, ..., row_kind="review")
+    neutralise la row -- le dossier reste integre et le verdict READY tient.
+    """
     base = _stamped_snapshot("")
     base["comments"].pop()
     snapshot = _stamped_snapshot(_dossier_for(base))
@@ -611,11 +674,152 @@ def test_coordinator_own_later_review_does_not_expire_the_dossier():
             "state": "APPROVED",
             "author": {"login": mod.COORDINATOR_LOGIN},
             "submittedAt": T1,
-            "body": "LIFT -- my own CHANGES_REQUESTED, re-measured at exact head.",
+            "body": "OVERRIDE -- je leve la reserve Hermes sur le head exact.",
         }
     )
     verdict, errors = mod.evaluate(snapshot)
     assert verdict == mod.VERDICT_READY, errors
+
+
+def test_coordinator_review_with_reserve_marker_still_expires():
+    """#17039 acceptance CN2 (refactor #17693) : une review du coordinateur
+    qui POSE une reserve vivante perime le dossier, meme si elle contient
+    aussi un mot de levee en narration.
+
+    Le contrat : un reviewer (humain ou bot) qui EMET un verdict formel
+    SUIVI d'une mention concrete cree une surface nouvelle que l'adjoint
+    n'a pas lue. La neutralisation par _is_own_later_act ne s'applique pas,
+    le dossier perime. Le predicat de "verdict vivant" est maintenant
+    delegue a ``check_unaddressed_nits.classify`` (meme semantique que
+    B.0, encagement inclus), au lieu d'une liste de tokens en dur.
+
+    Cas choisis : un verdict formel precede d'une mention concrete
+    ("trouve corrige", "trou", "nit serre") qui resiste a l'encagement du
+    narrateur de levee autour. Ces phrases illustrent le cas mixte de
+    l'acceptance 2 -- l'EMISSION d'un verdict nu survit a la narration
+    d'une levee AVANT ou APRES.
+    """
+    # Chaque corps : un verdict formel precede d'une mention concrete.
+    # La narration de levee QUI SUIT ne neutralise pas l'emission (test
+    # fondateur #17693 -- le predicat n'absorbe pas une reserve emise en
+    # amont, meme si le reviewer dit "je leve plus tard").
+    cases = [
+        ("**CHANGES_REQUESTED** : trouver corrigé puis je leve.", "CHANGES_REQUESTED"),
+        ("**BLOCKED** par vérif head ne passe pas, lever sera quand corrigé.", "**BLOCKED**"),
+        ("🟡 nit serré sur la sortie, plus de reserve.", "🟡"),
+        ("🔴 run red, je laisse pour plus tard.", "🔴"),
+        ("COMMENT_WITH_CONCERNS je vois un soucis.", "COMMENT_WITH_CONCERNS"),
+    ]
+    for body, marker_label in cases:
+        base = _stamped_snapshot("")
+        base["comments"].pop()
+        snapshot = _stamped_snapshot(_dossier_for(base))
+        snapshot["reviews"].append(
+            {
+                "state": "COMMENTED",
+                "author": {"login": mod.COORDINATOR_LOGIN},
+                "submittedAt": T1,
+                "body": body,
+            }
+        )
+        # Le marqueur de reserve emis par le coordinateur post-dossier doit
+        # perimer le dossier : _is_own_later_act refuse la neutralisation
+        # (row_kind="review" + _review_body_has_reserve_marker -> True).
+        errors = _errors(snapshot)
+        assert any("discussion surfaces changed" in e for e in errors), (marker_label, body, errors)
+
+
+def test_caged_verdict_stays_neutral_but_naked_verdict_expires():
+    """Test de controle demande par ai-01 (revue #5309199712 sur #17693) :
+    la MEME phrase, encagee vs nue, change la decision.
+
+    Cas fondateur : le commentaire de levee de ai-01 sur #17693 nommait
+    `COMMENT_WITH_CONCERNS` encage (forme sure prescrite par
+    ``pr-review-discipline.md`` -- "repondre a une reserve"). L'ancien
+    predicat (recherche `in` sur tokens en dur) perimait le dossier sur
+    cette forme : le geste qui DEBLOQUE la PR cree un nit de plus a son
+    propre nom, regime absorbant #17071.
+
+    La centralisation via ``classify`` ferme la boucle : verdict encage =
+    neutre, token nu = dossier perime. Meme phrase, deux issues.
+    """
+    # Meme phrase, encagee (neutre, le dossier survit) et nue (BOT-CONCERN,
+    # dossier perime). On utilise un cas qui n'a pas d'ouverture "leve"/"override"
+    # au cas ou B.0 neutraliserait trop vite.
+    pairs = [
+        # Cas Hermes CHANGES_REQUESTED
+        ("Sur le head frais, `CHANGES_REQUESTED` se confirme : raise exception capturee.",
+         "Sur le head frais, CHANGES_REQUESTED se confirme : raise exception capturee."),
+        # Cas REQUEST_CHANGES
+        ("Le preflight `REQUEST_CHANGES` est valide au head.",
+         "Le preflight REQUEST_CHANGES est valide au head."),
+        # Cas glyphe (encage vs nu -- le glyphe est un caractere unicode,
+        # l'encagement revient aux backticks autour du token si texte)
+        ("Constat : `🟡` puis levee plus tard.",
+         "Constat : 🟡 puis levee plus tard."),
+    ]
+    for caged, naked in pairs:
+        # ---- Variante encagee : NE perime PAS ----
+        base = _stamped_snapshot("")
+        base["comments"].pop()
+        snapshot = _stamped_snapshot(_dossier_for(base))
+        snapshot["reviews"].append({
+            "state": "COMMENTED",
+            "author": {"login": mod.COORDINATOR_LOGIN},
+            "submittedAt": T1,
+            "body": caged,
+        })
+        verdict, errors = mod.evaluate(snapshot)
+        assert verdict == mod.VERDICT_READY, ("caged should be neutral", caged, errors)
+
+        # ---- Variante nue (meme phrase, sans les backticks) : PERIME ----
+        base = _stamped_snapshot("")
+        base["comments"].pop()
+        snapshot = _stamped_snapshot(_dossier_for(base))
+        snapshot["reviews"].append({
+            "state": "COMMENTED",
+            "author": {"login": mod.COORDINATOR_LOGIN},
+            "submittedAt": T1,
+            "body": naked,
+        })
+        errors = _errors(snapshot)
+        assert any("discussion surfaces changed" in e for e in errors), ("naked should expire", naked, errors)
+
+
+def test_coordinator_review_with_pure_lift_does_not_expire():
+    """#17039 acceptance CN3 (refactor #17693) : une review de LEVEE pure
+    ne perime pas, et le predicat reste coherente avec B.0.
+
+    C'est le scenario fondateur du fix : ai-01 leve une reserve Hermes
+    via une review sans poser de reserve neuve, et le dossier reste
+    integre pour permettre le merge dans la meme passe. Le predicat est
+    maintenant ``check_unaddressed_nits.classify`` : chaque cas ci-dessous
+    est verifie NEUTRE par classify avant l'integration au test (les
+    phrases qui ne le sont pas en sont exclues -- "plus de blocage" tout
+    seul est lu comme un constat de blocage par classify et reste
+    correctement hors de CN3).
+    """
+    for body in (
+        "[OVERRIDE] lane myia-ai-01:CoursIA -- Je leve la reserve Hermes.",
+        "Override : reserve levee au head exact.",
+        "Re-mesure au head frais, la reserve Hermes est levee.",
+        "Au head frais verifie je leve la reserve.",
+        "Approuve : la reserve est levee au head exact.",
+        "LGTM au head exact.",
+    ):
+        base = _stamped_snapshot("")
+        base["comments"].pop()
+        snapshot = _stamped_snapshot(_dossier_for(base))
+        snapshot["reviews"].append(
+            {
+                "state": "APPROVED",
+                "author": {"login": mod.COORDINATOR_LOGIN},
+                "submittedAt": T1,
+                "body": body,
+            }
+        )
+        verdict, errors = mod.evaluate(snapshot)
+        assert verdict == mod.VERDICT_READY, (body, errors)
 
 
 def test_coordinator_own_later_comment_does_not_expire_the_dossier():
@@ -930,6 +1134,136 @@ def test_template_renders_the_emitting_lane_not_a_borrowed_name():
 def test_template_lane_defaults_to_the_adjoint():
     """The adjoint stays the canonical emitter: the default is unchanged."""
     assert f"lane: {mod.ADJOINT_LANE}" in mod.render_template(_base_snapshot())
+
+
+# ------------------------------------------- the attested reason, exposed (#17290)
+#
+# On exit 3 the dossier is INTACT -- that is what the code means -- so `errors`
+# is [] by construction. The rule then tells the coordinator to "dispatch from
+# the dossier's stated reason" while publishing none of it, and re-parsing the
+# dossier comment by hand is the only way out. Measured cost: 13 PRs at rc=3 in
+# one cycle, 6 of them with a reason that was already dead.
+#
+# Exposing it must not weaken the gate: a REFUSED dossier is not a fainter
+# dossier, and must publish nothing at all.
+
+
+def test_blocking_fields_name_checks_on_a_checks_blocked_dossier():
+    """Controle positif 1 : `checks: BLOCKED`, `b0: clear` -> ["checks"]."""
+    snapshot = _snapshot(_body(verdict="BLOCKED", checks="BLOCKED"))
+    verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+    assert (verdict, errors) == (mod.VERDICT_BLOCKED, [])
+    assert mod.blocking_fields(dossier) == ["checks"]
+
+
+def test_blocking_fields_name_b0_on_a_b0_blocked_dossier():
+    """Controle positif 2 : `b0: blocked`, `checks: latest-wins-green` -> ["b0"].
+
+    The two reasons send the work to DIFFERENT places -- a dead `checks` goes to
+    the adjoint for a `--template`, a real `b0` goes to the carrying lane for a
+    lift sentence. Telling them apart is the whole point of the exposure.
+    """
+    snapshot = _snapshot(_body(verdict="BLOCKED", b0="blocked"))
+    verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+    assert (verdict, errors) == (mod.VERDICT_BLOCKED, [])
+    assert mod.blocking_fields(dossier) == ["b0"]
+
+
+def test_blocking_fields_are_listed_in_the_contract_order():
+    """A dossier blocked on every field orders them the way the contract does."""
+    snapshot = _snapshot(
+        _body(verdict="BLOCKED", checks="BLOCKED", b0="blocked", scope="fail",
+              domain="fail")
+    )
+    _, _, dossier = mod.evaluate_with_dossier(snapshot)
+    assert mod.blocking_fields(dossier) == ["checks", "b0", "scope", "domain"]
+
+
+def test_a_blocked_dossier_can_name_no_blocking_field():
+    """Honesty edge: the contract ALLOWS a blocked dossier with clear fields.
+
+    `validate_dossier` constrains `checks`/`b0`/`scope`/`domain` only when the
+    dossier claims READY. An honest blocked dossier may therefore declare them
+    all at their READY value and carry its reason in prose. Reporting [] then is
+    the true answer -- inventing a field to fill the silence would fabricate the
+    very reason this issue exists to publish.
+    """
+    snapshot = _snapshot(_body(verdict="BLOCKED"))
+    verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+    assert (verdict, errors) == (mod.VERDICT_BLOCKED, [])
+    assert mod.blocking_fields(dossier) == []
+
+
+def test_ready_result_publishes_the_dossier_with_no_blocker():
+    """Acceptance: rc=0 carries the same block, with `blocking_fields: []`."""
+    snapshot = _snapshot(_body())
+    verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+    result = mod.build_result(123, snapshot, verdict, errors, dossier)
+    assert result["verdict"] == mod.VERDICT_READY
+    assert result["ready"] is True
+    assert result["blocking_fields"] == []
+    assert result["dossier"]["checks"] == "latest-wins-green"
+
+
+def test_blocked_result_publishes_the_dossier_and_its_blocker():
+    """Acceptance: rc=3 exposes the parsed dossier and a non-empty blocker."""
+    snapshot = _snapshot(_body(verdict="BLOCKED", checks="BLOCKED"))
+    verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+    result = mod.build_result(123, snapshot, verdict, errors, dossier)
+    assert result["verdict"] == mod.VERDICT_BLOCKED
+    assert result["blocking_fields"] == ["checks"]
+    assert result["dossier"]["lane"] == "myia-po-2025:CoursIA-2"
+    assert result["dossier"]["head"] == HEAD
+    assert result["dossier"]["comment_index"] == 1
+
+
+def test_a_refused_dossier_is_not_published_at_all():
+    """Controle NEGATIF -- the exposure must not launder a refused dossier.
+
+    A dossier whose fingerprint no longer covers the live surfaces is refused
+    (rc=1). If the payload published its parsed fields anyway, a referee reading
+    the JSON would see a lane, a head and a verdict for a PR the gate just
+    rejected -- exactly the confusion the refusal exists to prevent.
+    """
+    snapshot = _snapshot(_body())
+    snapshot["title"] = "mutated after the stamp"
+    verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+    assert verdict == "" and dossier is None
+    assert errors, "a perimed fingerprint must still be refused"
+    result = mod.build_result(123, snapshot, verdict, errors, dossier)
+    assert result["verdict"] == "NO_DOSSIER"
+    assert "dossier" not in result
+    assert "blocking_fields" not in result
+
+
+def test_dossier_payload_publishes_every_read_field():
+    """Acceptance: "tous les champs lus" -- the whole contract, not a subset.
+
+    Publishing a curated handful would leave the next consumer re-parsing the
+    comment for the field that was left out, which is the defect itself.
+    """
+    dossier, parse_errors = mod.parse_dossier(_body(), 1, "jsboige", T0)
+    assert parse_errors == []
+    payload = mod.dossier_payload(dossier)
+    assert mod.REQUIRED_FIELDS <= set(payload)
+    assert payload["author"] == "jsboige"
+    assert payload["created_at"] == T0
+
+
+def test_result_is_json_serializable():
+    """`--json` must actually serialize: a Dossier is not a dict."""
+    snapshot = _snapshot(_body(verdict="BLOCKED", b0="blocked"))
+    verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+    result = mod.build_result(123, snapshot, verdict, errors, dossier)
+    decoded = json.loads(json.dumps(result, ensure_ascii=False))
+    assert decoded["dossier"]["b0"] == "blocked"
+
+
+def test_evaluate_keeps_its_two_tuple_shape():
+    """The gate's historical view is unchanged: no caller moves under it."""
+    verdict, errors = mod.evaluate(_snapshot(_body()))
+    assert (verdict, errors) == (mod.VERDICT_READY, [])
+
 # --- #16931 : reecriture en place d'un bot marker-garde = fingerprint STABLE --
 
 
@@ -1035,3 +1369,261 @@ def test_fingerprint_refusal_names_the_live_surface_landscape():
     assert "threads=2 (1 non resolus)" in msg
     assert "checks=1" in msg
     assert "reviews=2" in msg
+
+
+# --- Campagnes gelees par veto user (#17040) ----------------------------------
+
+# Titres reels (2026-09-23/24) : le second repare les degats de la campagne
+# densite et cite le parapluie dans son body -- l'exemption se lit sur le
+# titre seul (module partage frozen_campaigns).
+FROZEN_TITLE = "Densite Lab13-Web-Search-SOTA (#13410)"
+REDRESSEMENT_TITLE = (
+    "fix(semanticweb,#17066): redressement critique de SW-4-CSharp-SPARQL "
+    "-- reference de campagne"
+)
+
+
+def _snapshot_with(
+    title: str | None = None,
+    pr_body: str | None = None,
+    head_ref: str | None = None,
+    **dossier_changes: str,
+) -> dict:
+    """Snapshot a titre/body/branche libres, atteste par un dossier SUR CES
+    surfaces-là : ``surfaces-sha256`` couvre titre et body, la fingerprint se
+    prend donc APRES mutation (head_ref n'est pas hashe, cf test ci-dessous).
+    """
+    snapshot = _base_snapshot()
+    if title is not None:
+        snapshot["title"] = title
+    if pr_body is not None:
+        snapshot["body"] = pr_body
+    if head_ref is not None:
+        snapshot["headRefName"] = head_ref
+    fields = dict(dossier_changes)
+    fields["surfaces-sha256"] = mod.surfaces_fingerprint(snapshot)
+    snapshot["comments"].append(_comment(_body(**fields)))
+    return snapshot
+
+
+def _run_main(monkeypatch, snapshot: dict, *extra_args: str) -> int:
+    """``main()`` sur un snapshot fige : argv patche, ``GH_TOKEN`` pose
+    (``pin_gh_token`` ne touche alors pas au reseau), snapshot substitue."""
+    monkeypatch.setattr(
+        sys, "argv", ["check_adjoint_prevalidation.py", "123", *extra_args]
+    )
+    monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
+    # Depuis #17698 le gate re-mesure un `b0: clear` contre l'organe B.0 :
+    # ces tests portent sur le gel, l'organe est donc fige d'accord.
+    monkeypatch.setattr(mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []})
+    monkeypatch.setenv("GH_TOKEN", "tok-fake-gate-test")
+    return mod.main()
+
+
+def test_ready_dossier_on_frozen_campaign_returns_rc3(monkeypatch, capsys):
+    """Un dossier READY n'autorise pas a merger une PR gelee (#17021).
+
+    Le veto ne vit sur aucune surface que le dossier couvre : le gate le lit
+    au verdict et rend rc=3 -- l'action documentee (ne pas merger, dispatcher
+    a la lane auteure), pas un rc inedit.
+    """
+    snapshot = _snapshot_with(title=FROZEN_TITLE, head_ref="feature/densite-13")
+    rc = _run_main(monkeypatch, snapshot)
+    assert rc == mod.EXIT_BLOCKED_WITH_SUBSTANCE
+    out = capsys.readouterr().out
+    assert out.startswith(
+        "FROZEN -- PR #123 belongs to a frozen campaign "
+        "(frozen:#13410(veto #17040)); do not merge, dispatch to the lane author."
+    )
+
+
+def test_ready_dossier_frozen_json_payload(monkeypatch, capsys):
+    """Mode --json : ready faux, verdict FROZEN, raison nommee -- et le
+    dossier reste publie (le gate refuse le MERGE, pas la lecture)."""
+    snapshot = _snapshot_with(title=FROZEN_TITLE)
+    rc = _run_main(monkeypatch, snapshot, "--json")
+    assert rc == mod.EXIT_BLOCKED_WITH_SUBSTANCE
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["ready"] is False
+    assert payload["verdict"] == "FROZEN"
+    assert payload["frozen"] == "frozen:#13410(veto #17040)"
+    assert payload["dossier"]["verdict"] == "READY"
+
+
+def test_ready_redressement_citing_the_umbrella_stays_rc0(monkeypatch, capsys):
+    """Redressement : le titre exempte du gel, meme quand le body cite
+    #13410 -- sinon la PR qui REPARE les degats ne serait plus mergeable."""
+    snapshot = _snapshot_with(
+        title=REDRESSEMENT_TITLE,
+        pr_body=_base_snapshot()["body"] + "\n\nSee #13410 (campagne densite).",
+    )
+    rc = _run_main(monkeypatch, snapshot)
+    assert rc == mod.EXIT_READY
+    assert capsys.readouterr().out.startswith("READY -- PR #123")
+
+
+def test_ready_dossier_on_wt_vibe_branch_returns_rc3(monkeypatch, capsys):
+    """Relais de campagne : la branche gelee suffit, sans citation aucune --
+    et sans exemption (ce sont des relais, jamais des redressements)."""
+    snapshot = _snapshot_with(head_ref="wt/vibe-g77-search-26")
+    rc = _run_main(monkeypatch, snapshot)
+    assert rc == mod.EXIT_BLOCKED_WITH_SUBSTANCE
+    assert "frozen:#13410(veto #17040,branch wt/vibe-*)" in capsys.readouterr().out
+
+
+def test_blocked_dossier_on_frozen_campaign_keeps_its_own_message(
+    monkeypatch, capsys
+):
+    """Le gel ne re-ecrit pas un verdict BLOCKED : deja non mergeable, il
+    garde son message propre (l'exemption READY-only du check)."""
+    snapshot = _snapshot_with(title=FROZEN_TITLE, verdict="BLOCKED", b0="blocked")
+    rc = _run_main(monkeypatch, snapshot)
+    assert rc == mod.EXIT_BLOCKED_WITH_SUBSTANCE
+    assert capsys.readouterr().out.startswith("BLOCKED-WITH-SUBSTANCE")
+
+
+def test_no_dossier_on_frozen_campaign_keeps_rc1(monkeypatch, capsys):
+    """Sans dossier digne de confiance : rc=1 inchange, le gel n'y ajoute
+    rien (la PR est deja non mergeable par absence de dossier)."""
+    snapshot = _base_snapshot()
+    snapshot["title"] = FROZEN_TITLE
+    snapshot["headRefName"] = "feature/densite-13"
+    rc = _run_main(monkeypatch, snapshot)
+    assert rc == mod.EXIT_NO_DOSSIER
+    assert capsys.readouterr().out.startswith("NO-DOSSIER")
+
+
+def test_headrefname_does_not_change_the_fingerprint():
+    """headRefName est lu pour le gel mais PAS hashe : un dossier stampe
+    avant l'ajout du champ reste valide (surfaces-sha256 inchangee)."""
+    snapshot = _snapshot_with(title=FROZEN_TITLE)
+    before = mod.surfaces_fingerprint(snapshot)
+    snapshot["headRefName"] = "wt/vibe-g77-search-26"
+    assert mod.surfaces_fingerprint(snapshot) == before
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY
+
+
+# --- b0 claim re-verified against the live B.0 organ -------------------------
+# Measured 2026-09-24: READY dossiers on #16955 and #16987 declared `b0: clear`
+# while check_unaddressed_nits.py exited 1. The gate answered exit 0 on both.
+
+
+def _ready_dossier(**changes: str):
+    snapshot = _snapshot(_body(**changes))
+    verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+    return verdict, dossier
+
+
+def _organ(blocked: bool, blocking: list | None = None):
+    calls = []
+
+    def probe(pr):
+        calls.append(pr)
+        return {"blocked": blocked, "blocking": blocking or []}
+
+    return probe, calls
+
+
+def test_b0_clear_refuted_by_organ_demotes_ready_and_names_the_remark():
+    verdict, dossier = _ready_dossier()
+    probe, calls = _organ(
+        True,
+        [{"kind": "concern", "author": "jsboige", "src": "review 2026-09-22"}],
+    )
+    verdict, errors, dossier = mod.refute_ready_b0(123, verdict, dossier, probe)
+    assert calls == [123]
+    assert verdict == "" and dossier is None
+    assert len(errors) == 1
+    assert "b0 claim 'clear' is contradicted" in errors[0]
+    assert "concern by jsboige via review 2026-09-22" in errors[0]
+
+
+def test_b0_clear_confirmed_by_organ_keeps_ready():
+    verdict, dossier = _ready_dossier()
+    probe, calls = _organ(False)
+    out = mod.refute_ready_b0(123, verdict, dossier, probe)
+    assert calls == [123]
+    assert out == (mod.VERDICT_READY, [], dossier)
+
+
+def test_b0_probe_not_paid_for_blocked_or_absent_dossier():
+    probe, calls = _organ(True, [{"kind": "k", "author": "a", "src": "s"}])
+    assert mod.refute_ready_b0(123, mod.VERDICT_BLOCKED, None, probe)[0] == mod.VERDICT_BLOCKED
+    assert mod.refute_ready_b0(123, "", None, probe) == ("", [], None)
+    assert calls == []
+
+
+def test_b0_contradictions_ignore_a_non_clear_claim_and_cap_the_list():
+    rows = [{"kind": f"k{i}", "author": "a", "src": "s"} for i in range(7)]
+    assert mod.b0_claim_contradictions("blocked", {"blocked": True, "blocking": rows}) == []
+    assert mod.b0_claim_contradictions("clear", None) == []
+    [error] = mod.b0_claim_contradictions("clear", {"blocked": True, "blocking": rows})
+    assert "7 unlifted remark(s)" in error and "(+2 more)" in error
+
+
+def test_b0_probe_failure_is_fail_closed(monkeypatch):
+    class Broken:
+        @staticmethod
+        def analyse_pr(pr):
+            raise ValueError("network down")
+
+    monkeypatch.setitem(sys.modules, "check_unaddressed_nits", Broken)
+    with pytest.raises(RuntimeError, match="B.0 organ could not measure PR #123"):
+        mod.probe_b0(123)
+
+
+
+def test_b0_probe_import_failure_is_fail_closed(monkeypatch):
+    """An organ that cannot even be imported is 'not measured' (UNKNOWN), not a traceback."""
+    import builtins
+
+    real_import = builtins.__import__
+
+    def refuse(name, *args, **kwargs):
+        if name == "check_unaddressed_nits":
+            raise ImportError("organ missing")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.delitem(sys.modules, "check_unaddressed_nits", raising=False)
+    monkeypatch.setattr(builtins, "__import__", refuse)
+    with pytest.raises(RuntimeError, match="B.0 organ could not measure PR #123"):
+        mod.probe_b0(123)
+
+
+def test_main_exits_unknown_when_organ_cannot_be_imported(monkeypatch, capsys):
+    snapshot = _snapshot(_body())
+    monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
+    monkeypatch.setattr(mod.gh_identity, "pin_gh_token", lambda: None)
+
+    def unmeasured(pr):
+        raise RuntimeError(f"B.0 organ could not measure PR #{pr}: organ missing")
+
+    monkeypatch.setattr(mod, "probe_b0", unmeasured)
+    monkeypatch.setattr(sys, "argv", ["check_adjoint_prevalidation.py", "123"])
+    assert mod.main() == mod.EXIT_UNKNOWN
+    assert "UNKNOWN" in capsys.readouterr().out
+
+def test_main_exits_no_dossier_when_organ_refutes_b0(monkeypatch, capsys):
+    snapshot = _snapshot(_body())
+    monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
+    monkeypatch.setattr(mod.gh_identity, "pin_gh_token", lambda: None)
+    monkeypatch.setattr(
+        mod,
+        "probe_b0",
+        lambda pr: {"blocked": True, "blocking": [{"kind": "nit", "author": "u", "src": "c"}]},
+    )
+    monkeypatch.setattr(sys, "argv", ["check_adjoint_prevalidation.py", "123"])
+    assert mod.main() == mod.EXIT_NO_DOSSIER
+    out = capsys.readouterr().out
+    assert "NO-DOSSIER" in out and "b0 claim 'clear' is contradicted" in out
+
+
+def test_main_exits_ready_when_organ_agrees(monkeypatch, capsys):
+    snapshot = _snapshot(_body())
+    monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
+    monkeypatch.setattr(mod.gh_identity, "pin_gh_token", lambda: None)
+    monkeypatch.setattr(mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []})
+    monkeypatch.setattr(sys, "argv", ["check_adjoint_prevalidation.py", "123"])
+    assert mod.main() == mod.EXIT_READY

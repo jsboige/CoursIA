@@ -17,13 +17,17 @@ name: Split-reading advisory
 # cellule a UNE cellule de lecture. Si elle en a deja une, on la REECRIT.
 # On n'en ajoute jamais une seconde. »
 #
-# Advisory, jamais bloquant : la dette corpus heritee au cablage est de
-# 109 findings (98 generic_pair, 8 separated_by_code, 3 named_split — ces
-# derniers fusionnes par la PR soeur #17025). Un garde bloquant rougirait
-# chaque PR touchant un notebook porteur de dette heritee. Le passage
-# eventuel en blocking sera tranche par le coordinateur apres resorption
-# de la dette par serie (precedent : deaccent TRANCHE6 #14325,
-# repeated-prose TRANCHE7).
+# CLIQUET BLOQUANT depuis #17044 (2026-09-24). La dette corpus heritee au
+# cablage (109 findings : 98 generic_pair, 8 separated_by_code, 3 named_split,
+# ces derniers fusionnes par la PR soeur #17025) reste GRANDFATHERED : le
+# cliquet ne juge que ce que la PR change -- lectures ajoutees ou compte de
+# paires qui monte sur un carnet touche. Un garde a plancher absolu aurait
+# rougi chaque PR touchant un carnet porteur, ce qui punit le voisin et non
+# l'auteur ; c'est cette objection qui avait motive l'advisory, et le cliquet
+# la leve sans renoncer au mandat. Mesure avant cablage : 0/11 faux positifs
+# sur les 11 dernieres PR notebook mergees (controle positif fondateur 26+16
+# intact). Ce job reste workflow_dispatch-only : il ne rend AUCUN verdict de
+# PR -- c'est le garde absorbe (registre TRANCHE14) qui le fait.
 #
 # Wiring : scripts/ci/fast_lane_registry.py :: TRANCHE14.
 # Identite : Guard.name == job.name (cf check_absorbed_check_run_identity.py).
@@ -41,7 +45,7 @@ concurrency:
 
 jobs:
   split-reading-advisory:
-    name: "Split-reading-cells advisory (per-notebook, non-blocking)"
+    name: "Split-reading ratchet (base vs PR)"
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'workflow_dispatch'
 

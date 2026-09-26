@@ -11,7 +11,7 @@ Cycle de coordination adjoint du cluster CoursIA. Cette commande est réservée 
 
 L'adjoint peut :
 
-- lire les deux dashboards et les inboxes ;
+- lire les dashboards — **énumérés**, jamais une liste apprise par cœur — et les inboxes ;
 - répondre aux ASK des lanes `CoursIA-2` ;
 - publier des preflights publics uniquement en état `COMMENTED` ;
 - réparer un scope lorsque l'ownership est clair ;
@@ -28,8 +28,8 @@ Restent réservés à `myia-ai-01:CoursIA` :
 
 ## Cycle
 
-1. Lire `workspace-CoursIA` puis `workspace-CoursIA-2`, chacun avec `section: "all"`.
-2. Lire l'inbox RooSync non lue de `myia-po-2025:CoursIA-2` et les messages pertinents pour la coordination.
+1. **Inbox DM — drainer EN PREMIER, et extraire, jamais survoler** : `roosync_messages(action:"inbox", status:"unread", deep:true)` (sans `deep`, le compte de non-lus peut être un faux zéro). Elle porte souvent le **DM nominatif qui change la priorité du cycle** (mesure : un lot nominatif d'ai-01 et deux corrections de doctrine ont dormi non lus pendant que deux cycles produisaient selon une doctrine périmée). C'est le canal de décision du coordinateur — il survit à la condensation du dashboard. **Mais un timeout de `deep:true` n'est pas un « 0 non-lu »** : le scan plein-pool dépend du transport et expire (mesuré le 25/09 : timeout à 120 s), auquel cas seule la tranche récente est lue — le dire dans le rapport plutôt que d'écrire « inbox vide ».
+2. **Dashboards (canal PRINCIPAL) — ENUMERER, jamais une liste apprise par cœur** : `roosync_dashboard(action:"list")`, puis `read` avec `section:"all"` sur **chaque clé dont le workspace déclaré est pertinent** — dont celles du **secrétariat** (`workspace-CoursIA-3`, cf [tricephale-circulation.md](../../../docs/reference/tricephale-circulation.md)) et les moitiés forkées. Une skill qui sait d'avance quoi lire est **structurellement aveugle** à ce qu'elle n'anticipe pas (mesure fondatrice : #17197, `workspace-CoursIA (2)` — 23 messages vivants jamais lus). Une clé à suffixe ` (N)` dont le `workspace` déclaré **ne porte pas** ce suffixe est une **moitié de la même lane**, pas une lane voisine : la lire, et escalader la réparation (`action:"merge"`, cf dashboard `global`).
 3. Traiter d'abord les handovers, ASK et bloqueurs actifs.
 4. Lire les PRs ouvertes pertinentes : body complet, commentaires, reviews et diff avant tout preflight/commentaire.
 5. Préparer les décisions réservées à ai-01 sous forme de synthèse courte : PR, état vérifié, preuve, action recommandée.
@@ -44,7 +44,7 @@ Restent réservés à `myia-ai-01:CoursIA` :
 
 Chaque `[ADJOINT PREFLIGHT]`, `[ADJOINT VERIFIED]` et `[ADJOINT CLOSE]` publié est AUSSI journalisé comme observation `[OBS]` via le CLI — jamais dérivé à la main (l'`observation_id` dérive du contenu par le CLI ; une dérivation maison casse l'idempotence silencieusement).
 
-### Schéma réel (vérifié firsthand c.8)
+### Schéma réel (vérifié firsthand sur `debt_ledger.py`)
 
 - **Ledger unique** : `issue-debt` (le seul déclaré dans `LEDGERS`). **Pas de `pr-actions`** — la forme de cette section évolue quand la phase B (#16575) ajoute éventuellement d'autres `LEDGERS`.
 - **Fields autorisés** (rejet bruyant sinon) :
@@ -81,9 +81,9 @@ python scripts/coordination/debt_ledger.py reduce --ledger issue-debt \
   --events <journal-export.json> --state-dir <LOCALAPPDATA>\CoursIA\debt-ledgers
 ```
 
-### Proposition B — arbitrage ai-01 c.31 (NON avec motif)
+### Proposition B — arbitrage ai-01 (NON avec motif)
 
-**L'arbitrage (B) rendu par ai-01 c.31 22:31Z est NON.** Motif : « Une information reconstituable au pliage n'est pas une information perdue, c'est une information moins commode. Ajouter un champ avant que le ledger ait servi une seule fois, c'est ajouter de la flexibilité dont on n'a pas encore besoin — et c'est un PR de plus sur le chemin critique de la décongèstion. »
+**L'arbitrage (B) rendu par ai-01 est NON.** Motif : « Une information reconstituable au pliage n'est pas une information perdue, c'est une information moins commode. Ajouter un champ avant que le ledger ait servi une seule fois, c'est ajouter de la flexibilité dont on n'a pas encore besoin — et c'est un PR de plus sur le chemin critique de la décongèstion. »
 
 **Comment faire changer d'avis** : utiliser le ledger 2 cycles, revenir avec la **mesure** (« sur N observations, j'ai dû rouvrir le pliage M fois pour retrouver le type »), pas une intuition. ai-01 écrira le champ lui-même le cas échéant. Une mesure, pas une intuition — et ce sera un oui.
 
@@ -91,10 +91,10 @@ La proposition `act_kind` est donc **mise en attente mesurée**, pas ajoutée au
 
 ### Erreurs déjà commises à ne pas reproduire
 
-- **c.7** : cette section disait `--ledger pr-actions` + `kind` + `audited_head_sha` — drift silencieux. Le code aurait rejeté à chaque cycle avec `unknown_field`. Corrigé c.8 par lecture firsthand de `debt_ledger.py` ligne par ligne.
-- **En c.6/c.7** : 33 `[ADJOINT CLOSE]` publiés sur GitHub n'ont **pas** été traduits en observations ledger valides (le CLI était absent de main, et la skill disait du faux). Backfill = geste ultérieur, après merge phase A — pas un skip silencieux.
+- **Dérive de schéma** : cette section disait `--ledger pr-actions` + `kind` + `audited_head_sha` — drift silencieux. Le code aurait rejeté à chaque cycle avec `unknown_field`. Corrigé par lecture firsthand de `debt_ledger.py` ligne par ligne.
+- **Journalisation manquée** : 33 `[ADJOINT CLOSE]` publiés sur GitHub n'ont **pas** été traduits en observations ledger valides (le CLI était absent de main, et la skill disait du faux). Backfill = geste ultérieur, après merge phase A — pas un skip silencieux.
 
-## Émission de dossiers — garde-fous obligatoires (tells c.12-c.15)
+## Émission de dossiers — garde-fous obligatoires
 
 - **Instrument de mesure des checks (arbitrage ai-01 2026-09-21 + RECTIF 12:09Z)** : lire `commits/<sha>/check-runs` — **jamais** `actions/runs` (un `attempt=2` y garde l'ancien id plus petit : organe `dedupe_latest`, `scripts/pr_gate.py` l.537, mesure #11416). Dédup **obligatoire** (17 noms dupliqués mesurés sur #16263) par clé canonique `(started_at, id)` dans cet ordre — jamais `created_at`, jamais `id` seul — et **paginer** (`--paginate` : total_count 101 > per_page 100 mesuré sur #16263).
 - **DWELL = minuteur, pas un défaut de contenu** : un rouge `PR gate: DWELL -- ... ecoule a <HH:MM>Z. Rien a corriger dans le code` ne se répare PAS par push (chaque push ré-arme le plancher 120 min depuis la nouvelle tête) ; un dossier BLOCKED qui le nomme est un livrable valide, le merge suit l'échéance. `gh pr update-branch` ne ré-arme PAS le plancher depuis #16149. Corollaire : `statusCheckRollup` ment sur ~20 % des candidates (mesuré ai-01 2026-09-21) — ne jamais en faire un verdict.
@@ -102,6 +102,23 @@ La proposition `act_kind` est donc **mise en attente mesurée**, pas ajoutée au
 - **Le gate ne lit pas l'état de merge** : un dossier READY exige la vérification `mergeable` côté attestant (CONFLICTING → BLOCKED conflit ; UNKNOWN → HOLD re-mesure).
 - **Fenêtre rate-limited** : après un refus GraphQL (`rate limit already exceeded` avec buckets pleins = limite secondaire), le fallback REST `gh api repos/.../issues/N/comments --input payload.json` passe (payload `{"body": "..."}` construit hors shell — la forme `-f body=` est interdite, `gh-posting-hygiene` HARD 1) — mais le template doit être **régénéré après** la fenêtre, jamais réutilisé.
 - **Dossier posé EN DERNIER** : toute prose postée après le dossier le périmé (surfaces-sha256).
+- **Auto-attestation refusée (HARD)** : le gate refuse un dossier dont la `lane` est **celle de la PR porteuse**, lue dans son tag `Grain:` — une lane ne peut pas attester la PR qu'elle porte. Contre-exemple mesuré : #17422 accepté (porteuse tierce) vs #17051 refusé (porteuse = la mienne), même cycle. Conséquence d'action : une PR verte sans dossier dont la lane porteuse est la mienne **n'est prévalidable que par ai-01** — la nommer pour lui, ne pas la contourner.
+- **Un dossier tiers à la même tête rend le mien inutile** : avant de poster, vérifier le **dernier commentaire**. Si un `[ADJOINT PREFLIGHT]` intact d'une autre lane porte déjà la tête vive, poster le mien le périme sans rien apporter (mesuré sur #17835) — vérifier que le gate rend déjà 0, et passer le relais à ai-01.
+- **`NO-DOSSIER` a deux lectures** : « aucun dossier » (il en faut un) et « dossier existant devenu invalide » (head ≠ tête vive, ou surfaces modifiées). Un dossier dont la tête n'est plus vive compte comme **nit non levé** — la sortie est de **ré-émettre**, pas d'argumenter (§B.0). Lire `errors[]`, jamais `head -1`.
+- **Ledger : poster `d["content"]` avec `messageId = observation_id`** — l'idempotence du CLI est portée par cet id ; un id dérivé à la main crée un doublon silencieux.
+- **Une note postée APRÈS le dossier lui est invisible** : `_strip_adjoint_dossier` coupe le corps **jusqu'à sa fin**, donc un commentaire — ou un `CHANGES_REQUESTED` — collé après un bloc dossier ne compte pas comme réserve et l'organe rend `rc=0`. Le pire des deux mondes : perdue pour le gate, lue par l'humain. Une observation qui ne doit ni lever ni réserver se poste dans un commentaire **séparé, AVANT** le dossier.
+
+## Lire un rouge avant de le nommer
+
+- **Rouge fabriqué par la limite de débit de l'installation** : quand l'App GitHub épuise son quota d'installation, les jobs qui lisent le body par l'API reçoivent le texte d'erreur à la place du `PR_BODY`. `tag_required` et `perimeter` rougissent, et le bot `vtr-required-block` poste « Grain tag obligatoire » sur un body qui porte bien son tag. Signe : le summary du check-run contient `rate limit exceeded for installation`. Geste : relancer le job, **jamais** corriger le body. Mesuré sur #17180, #16782 et #17048.
+- **Un rerun rejoue le merge ref d'origine** : `gh run rerun` rejoue l'état de `main` du run initial. Un check qui attend un correctif mergé depuis (egress #17276, corrigé par #17479) reste rouge au rerun ; il faut un synchronize de la PR après le merge du correctif. Nommer ce geste à la lane, pas un rerun de plus.
+- **Un rouge venu de `main` n'est pas un défaut de la PR** : une entrée dupliquée dans `scripts/ci/fast_lane_registry.py` (`TRANCHE13`, correctif #17485) rougit toutes les têtes. Avant de nommer une réparation, vérifier que le même check est rouge sur une PR sans rapport.
+- **Collision sémantique entre PRs textuellement propres** : deux PRs sur le même notebook peuvent rester `MERGEABLE` et donner, une fois fusionnées, deux lectures pour une même sortie. Mesure : `git merge-tree --write-tree origin/main <tête>`, puis relire les cellules voisines **dans l'arbre fusionné**, pas dans la tête seule. Mesuré sur #16518 × #16930 : la tête était juste, le résultat du merge portait les doublons.
+- **Une levée qui contient un marqueur n'est pas créditée** : l'organe B.0 reclasse en réserve une phrase de levée qui porte « avant merge » ou un autre `CONCERN_MARKERS`. Dans l'autre sens, un commentaire qui met à jour une réserve encore ouverte évite les `LIFT_MARKERS` (« levée », « résolu », « est clos », « dissipé », « Merged »), sinon il l'éteint. Mesuré sur #16924 (levée Hermes 5784477551, non créditée).
+- **Un dossier READY peut mourir sans geste de la lane** : `scripts/ci/update_stale_pr_branches.py` met à jour toute PR `behind_by>0` sans écarter celles qui portent un dossier valide. Il n'est câblé à aucun workflow de `main` à ce jour ; #16924 et #16936 proposent son cron. Parade : re-gater juste avant la synthèse, et ne lister READY que ce qui rend encore 0.
+- **Rouge transitoire (quota/API) — la classe la plus coûteuse à confondre avec un défaut** : sur `Always-on guards`, un **failure suivi d'un success à tête identique et sans aucun commit** est un rouge d'infrastructure, pas un défaut de PR. Signature : le log porte `::warning:: (echec gh -- quota/API ?)`. Contre-mesure : rejouer l'organe **localement** sur les mêmes entrées (ici `variation_prev_guard.py --body-file … --commits-file … --current-pr …` rend `guard_pass: true`) ; s'il passe, ne rien réparer. Mesure fondatrice : #17846, failure 19:02:41Z → success 19:19:06Z sans changement de code.
+- **`PR gate` est un COMPOSITE, il se lit dans son propre log** : le même nom de jambe rend soit un **minuteur** (`DWELL -- … ecoule a <ts>. Rien a corriger dans le code`), soit un **vrai échec** (`FAIL -- failing checks: <name> (failure)`). `mergeStateStatus: BLOCKED` n'implique donc **aucun** défaut de substance — nommer la jambe sans avoir lu son log impute au code un problème de calendrier.
+- **Un libellé de jambe figé sous-déclare la couverture** : `arXiv attributions registry (7 entrees)` est une **chaîne en dur** dans le workflow (l.62) alors que le registre en porte **13** (mesuré). Ne jamais déduire la couverture d'un nom de check : lire ses `paths:` et son commentaire. Corollaire d'action : une PR qui **répare** un test peut n'être validée par **aucune** jambe si les `paths:` du workflow n'incluent pas le fichier réparé — c'est un suivi structurel à ouvrir, pas un blocage de la PR.
 
 ## Amélioration continue (mandat user 2026-09-21)
 

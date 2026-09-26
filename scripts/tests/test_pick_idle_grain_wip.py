@@ -69,7 +69,7 @@ def _patch_draw(monkeypatch):
     `fetch_merged_grains` (secheresse de substance) est un appel gh de
     plus, neutralise pour la meme raison.
     """
-    monkeypatch.setattr(pig, "fetch_pool", lambda **k: [])
+    monkeypatch.setattr(pig, "fetch_pool", lambda **k: ([], None))
     monkeypatch.setattr(pig, "fetch_visits", lambda *a, **k: ({}, None))
     monkeypatch.setattr(pig, "fetch_series_visits", lambda **k: ([], {}, None))
     monkeypatch.setattr(pig, "fetch_merged", lambda *a, **k: ([], None))

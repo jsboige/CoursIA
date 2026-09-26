@@ -55,7 +55,7 @@ if str(_PARENT_DIR) not in sys.path:
 import dowhy_discovery_organs as ddo
 
 # Chemin du notebook consommateur (relatif a ce test).
-NB_PATH = _PARENT_DIR / "DoWhy-3-Decouverte-de-Structure.ipynb"
+NB_PATH = _PARENT_DIR / "CausalBridges-04-Dowhy-Decouverte-Structure.ipynb"
 
 # Le CPDAG canonique du monde par defaut (mesure, 20/20 seeds a alpha=0.01).
 # Convention du module : les aretes non orientees sont rendues en tuple TRIE.
