@@ -42,6 +42,14 @@ PR, TOUT doit tenir sinon skip avec raison nommee :
 5. organe B.0 ``check_unaddressed_nits.py <PR>`` exit 0 -- code de
    retour capture DIRECTEMENT (subprocess.returncode, jamais a travers
    un pipe) ;
+5bis. si la PR touche ``scripts/notebook_tools/twin_pairs.d/`` : organe
+   ``check_twin_index_collisions.py --base origin/main --head <tete>``
+   exit 0, apres ``git fetch origin main pull/<N>/head``. Deux PRs au
+   meme index sont chacune CLEAN contre ``main`` ; la seconde fait
+   rougir ``main`` des que la premiere est mergee. La relecture a lieu
+   PR par PR, contre le ``main`` du moment, donc apres les merges deja
+   faits dans ce run. Collision -> skip ; fetch ou organe illisible ->
+   skip fail-closed ;
 6. REST ``repos/jsboige/CoursIA/pulls/<N>`` : ``mergeable_state`` ==
    ``clean`` (jusqu'a 12 relectures a 10 s d'intervalle pendant ``unknown`` --
    apres un merge les PRs soeurs passent ``unknown``), et ``head.sha``
@@ -53,9 +61,15 @@ PR, TOUT doit tenir sinon skip avec raison nommee :
 Comportement :
 - DRY-RUN par defaut (imprime ce qui serait merge et pourquoi chaque
   autre PR est skippee) ; ``--apply`` merge reellement. ``--max N``
-  (defaut 15) plafonne les merges par run (disjoncteur) ; le run
-  S'ARRETE sur la premiere erreur inattendue (rc d'un outil hors codes
-  documents, erreur d'API) -- jamais de merge en aveugle.
+  (defaut 15) plafonne les merges par run (disjoncteur). Une erreur
+  inattendue ATTRIBUABLE A UNE PR (reponse d'outil illisible, rc hors
+  contrat pour cette seule PR) est journalisee ``run-error`` pour elle et
+  le balayage CONTINUE (#17672 point 3 : une PR bizarre ne gele plus
+  l'evaluation des suivantes) ; une erreur de PORTEE GENERALE -- jeton
+  refuse, quota d'API, reseau injoignable, cf ``PASS_WIDE_ERROR_MARKERS``
+  -- ARRETE le run, car la repeter sur chaque PR restante ne dirait rien
+  de plus. ``rc=1`` est rendu des qu'une PR a erreur, isolee ou non, et le
+  bilan nomme leur nombre. Jamais de merge en aveugle.
 - Jeton : chaque sous-processus gh recoit ``GH_TOKEN`` epingle depuis
   ``gh auth token --user myia-ai-01``, resolu UNE fois au depart ;
   jamais ``gh auth switch``. Jeton irresolu -> exit 2.
@@ -118,6 +132,9 @@ REPO = "jsboige/CoursIA"
 COORDINATOR_USER = "myia-ai-01"
 GATE_PATH = SCRIPTS_DIR / "check_adjoint_prevalidation.py"
 NITS_PATH = SCRIPTS_DIR / "check_unaddressed_nits.py"
+TWIN_PATH = SCRIPTS_DIR / "notebook_tools" / "check_twin_index_collisions.py"
+TWIN_REGISTRY_PREFIX = "scripts/notebook_tools/twin_pairs.d/"
+REPO_ROOT = SCRIPTS_DIR.parent
 
 # Parapluies et branches de campagne GELES par un veto user, exemption des
 # redressements comprise : definition et historique portes par le module
@@ -146,11 +163,52 @@ class CannotRunError(Exception):
 
 
 class UnexpectedError(Exception):
-    """Erreur inattendue d'un outil ou de l'API -- le run doit s'arreter."""
+    """Erreur inattendue d'un outil ou de l'API, non prevue par le contrat.
+
+    Depuis #17672 (point 3), elle n'arrete plus le run par principe : le
+    balayage distingue une erreur **attribuable a la PR** en cours (reponse
+    illisible pour elle, rc hors contrat pour elle) -- journalisee
+    ``run-error`` et le balayage continue -- d'une erreur de **portee
+    generale** (jeton, quota, reseau), qui arrete tout (cf
+    ``is_pass_wide``). Un ECHEC DE MERGE garde son propre disjoncteur
+    (``MergeFailedError``) : il ne se confond pas avec ces deux cas.
+    """
 
 
 class MergeFailedError(Exception):
     """La commande de merge a echoue -- arret du run (disjoncteur)."""
+
+
+# Marqueurs d'une erreur de PORTEE GENERALE : ce qui frappe tous les appels de
+# la meme facon ne doit pas etre isole par PR, sinon une panne de jeton ou de
+# quota se lit comme une collection de ``run-error`` attribuees a des PRs
+# innocentes (#17672, point 3). Liste volontairement courte et litterale : un
+# texte non reconnu fait ISOLER l'erreur (le balayage continue, rc=1, la PR
+# est nommee), jamais l'inverse -- arreter le run sur un motif devine rendrait
+# le balayage dependant d'une devinette.
+PASS_WIDE_ERROR_MARKERS = (
+    "bad credentials",
+    "requires authentication",
+    "rate limit",
+    "http 401",
+    "http 403",
+    "could not resolve host",
+    "no such host",
+    "connection refused",
+    "connection reset",
+    "timed out",
+)
+
+
+def is_pass_wide(exc: BaseException) -> bool:
+    """L'erreur frappe-t-elle TOUTE la passe (jeton, quota, reseau) ou une seule PR ?
+
+    Le texte cherche est celui que les appels gh renseignent avec le stderr de
+    l'outil (cf ``fetch_pr_view``, ``run_gate``), donc un refus d'authentification
+    ou un quota epuise y figure tel que gh l'a ecrit.
+    """
+    text = str(exc).lower()
+    return any(marker in text for marker in PASS_WIDE_ERROR_MARKERS)
 
 
 # --- runner injectable --------------------------------------------------------
@@ -512,6 +570,40 @@ def run_nits(runner: Runner, pr: int, gh_env: dict[str, str]) -> int:
     return res.returncode
 
 
+def twin_collision_reason(
+    runner: Runner, pr: int, head: str, files: list[dict]
+) -> str | None:
+    """Etape 5bis : collision d'index twin-pairs contre le ``main`` du moment.
+
+    Ne coute rien aux PRs qui ne touchent pas le registre twin. Pour les
+    autres, un fetch puis l'organe partage : ``None`` si l'organe rend 0,
+    un motif de skip sinon. L'organe rend 1 sur collision, 2 quand il n'a
+    pas pu lire deux revisions -- et « je n'ai pas pu lire » n'est pas
+    « c'est propre » : skip, jamais merge.
+    """
+    touched = any(
+        str((row or {}).get("path") or "").startswith(TWIN_REGISTRY_PREFIX)
+        for row in files
+    )
+    if not touched:
+        return None
+    fetch = runner.run(
+        ["git", "-C", str(REPO_ROOT), "fetch", "--quiet", "origin", "main",
+         f"pull/{pr}/head"]
+    )
+    if fetch.returncode != 0:
+        return "twin-collision-unreadable:fetch"
+    res = runner.run(
+        [sys.executable, str(TWIN_PATH), "--repo", str(REPO_ROOT),
+         "--base", "origin/main", "--head", head]
+    )
+    if res.returncode == 0:
+        return None
+    if res.returncode == 1:
+        return "twin-index-collision"
+    return f"twin-collision-unreadable:rc={res.returncode}"
+
+
 def mergeable_state_and_head(
     runner: Runner, pr: int, gh_env: dict[str, str]
 ) -> tuple[str, str]:
@@ -563,7 +655,7 @@ def merge_pr(runner: Runner, pr: int, head: str, gh_env: dict[str, str]) -> None
 def evaluate_pr(
     view: dict, pr: int, runner: Runner, gh_env: dict[str, str]
 ) -> PRVerdict:
-    """Applique dans l'ordre les 6 controles pre-merge. Tout echec = skip nomme.
+    """Applique dans l'ordre les controles pre-merge (1 a 6, 5bis compris). Tout echec = skip nomme.
 
     Les controles bon marche (brouillon, commentaire, perimetre, tag) passent
     AVANT le gate couteux ; le gate avant les organes B.0 ; le REST en
@@ -611,6 +703,10 @@ def evaluate_pr(
     # 5. organe B.0 (re-verification reelle).
     if run_nits(runner, pr, gh_env) != 0:
         return skip("b0-organ-blocked")
+    # 5bis. collision d'index twin contre le main du moment.
+    reason = twin_collision_reason(runner, pr, gate_head, view.get("files") or [])
+    if reason is not None:
+        return skip(reason)
     # 6. REST : mergeable + tete.
     state, live_head = mergeable_state_and_head(runner, pr, gh_env)
     if state != "clean":
@@ -672,9 +768,14 @@ def emit_output(
     merged = sum(1 for v in results if v.merged)
     would = sum(1 for v in results if v.verdict == "would-merge")
     skipped = sum(1 for v in results if v.verdict == "skipped")
+    errored = sum(1 for v in results if v.verdict == "run-error")
     print(
         f"bilan : {len(results)} evaluee(s), {merged} merge(s), "
         f"{would} would-merge, {skipped} skip(s)"
+        # Une erreur isolee ne s'annonce par aucune ligne « arret » : sans ce
+        # compte, un run qui a continue malgre une PR en erreur se lirait comme
+        # un run propre (#17672 point 3).
+        + (f", {errored} erreur(s) isolee(s)" if errored else "")
     )
     if stopped_reason:
         print(f"arret : {stopped_reason}")
@@ -755,9 +856,17 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
             errored = PRVerdict(pr, None, "run-error", str(exc), False)
             results.append(errored)
             append_journal(journal_path, errored)
-            stopped_reason = f"unexpected-error:{exc}"
             exit_code = 1
-            break
+            if is_pass_wide(exc):
+                # Toute la passe est touchee : repeter l'echec sur chacune des
+                # PRs restantes ne dirait rien de plus.
+                stopped_reason = f"unexpected-error:{exc}"
+                break
+            # Erreur attribuable a CETTE PR : elle est nommee et journalisee,
+            # le balayage continue (#17672 point 3). `stopped_reason` reste
+            # None -- le run ne s'est PAS arrete, l'ecrire ici serait un
+            # constat faux (le bilan, lui, compte les erreurs isolees).
+            continue
 
     emit_output(args, results, stopped_reason, exit_code)
     return exit_code

@@ -1,0 +1,72 @@
+{
+  "description": "Parcours Actuariat : le socle conserve DecPyMC-1 à DecPyMC-12 dans leur ordre pédagogique, sans réduire la décision sous incertitude aux seules applications d'assurance. Les détours restent optionnels et indépendants ; ils enseignent des méthodes transférables, non des prérequis actuariels universels.",
+  "branches": [
+    {
+      "id": "fondations-probabilistes",
+      "description": "PyMC : mise en route, réseaux bayésiens et hiérarchie avant les axiomes de décision DecPyMC-1 à 3. Le prérequis relève de la modélisation probabiliste, sans confondre les séries.",
+      "notebooks": [
+        "Probas/PyMC/PyMC-01-Setup.ipynb",
+        "Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb",
+        "Probas/PyMC/PyMC-12-Modeles-Hierarchiques.ipynb",
+        "Probas/DecisionTheory/DecPyMC/DecPyMC-1-Utility-Foundations.ipynb",
+        "Probas/DecisionTheory/DecPyMC/DecPyMC-2-Utility-Money.ipynb",
+        "Probas/DecisionTheory/DecPyMC/DecPyMC-3-Multi-Attribute.ipynb"
+      ]
+    },
+    {
+      "id": "decision-sous-incertitude",
+      "description": "DecPyMC-4 à 7 : réseaux de décision, valeur de l'information, systèmes experts et décisions séquentielles, avant les cas d'assurance.",
+      "prerequisites": ["fondations-probabilistes"],
+      "notebooks": [
+        "Probas/DecisionTheory/DecPyMC/DecPyMC-4-Decision-Networks.ipynb",
+        "Probas/DecisionTheory/DecPyMC/DecPyMC-5-Value-Information.ipynb",
+        "Probas/DecisionTheory/DecPyMC/DecPyMC-6-Expert-Systems.ipynb",
+        "Probas/DecisionTheory/DecPyMC/DecPyMC-7-Sequential.ipynb"
+      ]
+    },
+    {
+      "id": "actuariat",
+      "description": "DecPyMC-8 à 12 : crédibilité, tarification, ruine, valeur de l'information en souscription et fréquence-sévérité hiérarchique. Aucun chapitre de la série canonique n'est élagué.",
+      "prerequisites": ["decision-sous-incertitude"],
+      "notebooks": [
+        "Probas/DecisionTheory/DecPyMC/DecPyMC-8-Actuarial-Credibility.ipynb",
+        "Probas/DecisionTheory/DecPyMC/DecPyMC-9-Prime-Pure-Chargement.ipynb",
+        "Probas/DecisionTheory/DecPyMC/DecPyMC-10-Ruine-Lundberg.ipynb",
+        "Probas/DecisionTheory/DecPyMC/DecPyMC-11-Valeur-Info-Souscription.ipynb",
+        "Probas/DecisionTheory/DecPyMC/DecPyMC-12-Freq-Sev-Hierarchique.ipynb"
+      ]
+    },
+    {
+      "id": "theorie-des-jeux",
+      "description": "Prolongement Python après l'actuariat : étudier la valeur de Shapley et la stabilité du cœur sur les jeux coopératifs, approfondir la valeur d'un groupe fusionné, puis analyser l'antisélection en assurance avec les contrats concurrents de Rothschild–Stiglitz. Les premiers exemples de coopération ne sont pas des modèles d'assurance ; le jeu d'aéroport appartient au jumeau C# non retenu. Ces notebooks ne modélisent pas la réassurance ; la formalisation Lean du screening relève d'un parcours distinct avec changement de noyau explicite.",
+      "prerequisites": ["actuariat"],
+      "notebooks": [
+        "GameTheory/GameTheory-15-CooperativeGames.ipynb",
+        "GameTheory/GameTheory-15f-Shapley-Groupes.ipynb",
+        "GameTheory/GameTheory-17b-Asymmetric-Information.ipynb"
+      ]
+    }
+  ],
+  "accretions": [
+    {
+      "id": "series-temporelles",
+      "description": "Détour méthodologique cross-series : séries classiques, filtrage de Kalman et ruptures de régime. Ces notebooks n'estiment pas automatiquement un risque d'assurance.",
+      "branch": "actuariat",
+      "notebooks": [
+        "ML/ML.Net/ML-5b-Series-Temporelles-Classiques-Python.ipynb",
+        "Probas/PyMC/PyMC-17-Kalman-Filter.ipynb",
+        "Probas/PyMC/PyMC-18-Change-Point.ipynb"
+      ]
+    },
+    {
+      "id": "validation-hors-echantillon",
+      "description": "Détour cross-series : séparation et validation, calibration des probabilités, puis validité temporelle du backtest. Le notebook QuantConnect illustre la méthode ; il ne valide aucun modèle actuariel à lui seul.",
+      "branch": "actuariat",
+      "notebooks": [
+        "ML/DataScienceWithAgents/02-ML-Cours/2.5-Biais-Variance-CV-ROC.ipynb",
+        "ML/DataScienceWithAgents/02-ML-Cours/2.5b-Calibration-Probabilites.ipynb",
+        "QuantConnect/Python/QC-Py-12b-Backtest-Validity.ipynb"
+      ]
+    }
+  ]
+}

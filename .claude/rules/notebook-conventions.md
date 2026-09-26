@@ -13,6 +13,7 @@ paths: MyIA.AI.Notebooks/**/*.ipynb
 - Insertions multiples : travailler BAS vers HAUT (evite index shift)
 - Re-read le notebook apres chaque edit (indices changent)
 - `git diff` apres modifs : enrichissement = insertions > deletions
+- Ne pas substituer un séparateur horizontal par un autre (`---`, `***`, `* * *`, `___`) dans une cellule existante sans le déclarer dans le body de la PR ; organe : `scripts/ci/check_hr_substitution.py` (#14683).
 
 ## Structure pedagogique
 

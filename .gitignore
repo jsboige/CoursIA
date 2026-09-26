@@ -439,6 +439,21 @@ docker-compose.test.yml
 *.backup_*
 .env.backup_*
 
+# Sauvegardes d'env suffixees (.env.bak, .env.bak-<horodatage>, .env.sauvegarde, ...).
+# Les motifs ci-dessus couvrent .backup/.backup_* mais PAS le suffixe .bak : un
+# `.env.bak-20260912T1404Z` portant un token en clair restait non-ignore, donc a un
+# `git add -A` pres d'etre commite. Regle : le secret vit dans un fichier gitignore
+# (.claude/rules/secrets-hygiene.md) — encore faut-il que le motif l'attrape.
+*.env.bak*
+.env.bak*
+**/.env.bak*
+*.env.sav*
+.env.sav*
+**/.env.sav*
+*.env.sauv*
+.env.sauv*
+**/.env.sauv*
+
 # JDK Portable - Exclure tout le répertoire au lieu de lister chaque fichier
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/jdk-17-portable/
 .vscode/
@@ -1112,9 +1127,14 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/_sl14_runs/
 scripts/notebook_tools/probes/*_out.ipynb
 scripts/notebook_tools/probes/_deps/
 
+# #17361 — le helper `scripts/ci/dotnet_preload_packages.py` depose son mirror
+# d'assemblies A COTE du notebook qui les reference (`#r "./_deps/X.dll"`).
+# Tout dossier `_deps/`, a n'importe quelle profondeur, est un artefact
+# regenerable (copie du cache NuGet) — aucun n'est suivi dans le depot.
+_deps/
+
 # Livecoding video pipeline (#15604) : artefacts capture/PoC -- media regenerable, local only
 out/
-
 # Claude Code session scratchpads (per-machine, per-cycle dashboard drafts, PR body drafts, notebook backups)
 /.claude/scratchpad/
 
