@@ -35,6 +35,15 @@
         "Probas/DecisionTheory/DecPyMC/DecPyMC-11-Valeur-Info-Souscription.ipynb",
         "Probas/DecisionTheory/DecPyMC/DecPyMC-12-Freq-Sev-Hierarchique.ipynb"
       ]
+    },
+    {
+      "id": "theorie-des-jeux",
+      "description": "Prolongement après l'actuariat : partager des coûts communs avec Shapley et vérifier la stabilité des coalitions dans le jeu d'aéroport, puis étudier l'antisélection en assurance avec les contrats concurrents de Rothschild–Stiglitz et l'anticipation des retraits de contrats. Ces notebooks ne modélisent pas la réassurance.",
+      "prerequisites": ["actuariat"],
+      "notebooks": [
+        "GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb",
+        "GameTheory/GameTheory-17b-Asymmetric-Information.ipynb"
+      ]
     }
   ],
   "accretions": [

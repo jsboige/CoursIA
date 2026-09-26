@@ -325,14 +325,15 @@ class TestActuariatManifest:
         manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
         compiled = gp.compile_parcours(
             catalog, manifest,
-            ["fondations-probabilistes", "decision-sous-incertitude", "actuariat"],
+            ["fondations-probabilistes", "decision-sous-incertitude", "actuariat",
+             "theorie-des-jeux"],
             accretions,
         )
         ids = [group["id"] for group in compiled["groups"]]
-        assert ids[:3] == ["fondations-probabilistes", "decision-sous-incertitude",
-                           "actuariat"]
-        assert ids[3:] == accretions
-        expected_duration = 555
+        assert ids[:4] == ["fondations-probabilistes", "decision-sous-incertitude",
+                           "actuariat", "theorie-des-jeux"]
+        assert ids[4:] == accretions
+        expected_duration = 645
         if "series-temporelles" in accretions:
             expected_duration += 90
         if "validation-hors-echantillon" in accretions:
@@ -340,12 +341,17 @@ class TestActuariatManifest:
         assert compiled["duration_minutes"] == expected_duration
         assert compiled["known_duration_minutes"] == expected_duration
         assert [len(group["notebooks"]) for group in compiled["groups"]] == [
-            6, 4, 5, *([3] * len(accretions))
+            6, 4, 5, 2, *([3] * len(accretions))
+        ]
+        assert compiled["groups"][3]["prerequisites"] == ["actuariat"]
+        assert [notebook["path"] for notebook in compiled["groups"][3]["notebooks"]] == [
+            "GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb",
+            "GameTheory/GameTheory-17b-Asymmetric-Information.ipynb",
         ]
         assert all(notebook["execution_constraints"] for group in compiled["groups"]
                    for notebook in group["notebooks"])
         assert all(group["prerequisites"] == ["actuariat"]
-                   for group in compiled["groups"][3:])
+                   for group in compiled["groups"][4:])
         if "validation-hors-echantillon" in accretions:
             detour = next(group for group in compiled["groups"]
                           if group["id"] == "validation-hors-echantillon")
