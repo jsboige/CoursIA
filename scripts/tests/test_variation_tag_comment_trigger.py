@@ -80,8 +80,33 @@ def test_comment_job_exists_and_filters_to_prs_and_bots():
     assert "github.event.issue.pull_request" in cond, (
         "le job doit se limiter aux commentaires de PR (issue_comment fire aussi sur les issues)"
     )
-    assert "github.event.comment.user.login != 'github-actions[bot]'" in cond, (
-        "anti-boucle absent : le commentaire bloquant du chemin pull_request (github-actions[bot]) redeclencherait ce job a l'infini"
+    assert "github.event.comment.user.login == 'myia-ai-01'" in cond, (
+        "garde d'auteur absente : un commentaire d'une lane qui cite le marqueur, ou le "
+        "commentaire bloquant de github-actions[bot] (anti-boucle #11782), relancerait ce job"
+    )
+
+
+def test_comment_job_author_gate_matches_guard():
+    """Le if: du job et le garde Python doivent designer le MEME ensemble d'auteurs.
+
+    Le garde ne credite que COORDINATOR_LOGINS. Un if: plus large fait tourner
+    le job pour un override que le garde rejettera (rouge perime sur la tete de
+    la PR) ; un if: plus etroit rendrait muet un override que le garde
+    accepterait. L'egalite est la seule forme sure.
+    """
+    import re
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
+    from variation_adjacency_guard import COORDINATOR_LOGINS
+
+    cond = str(_load()["jobs"][COMMENT_JOB].get("if", ""))
+    gated = set(re.findall(r"github\.event\.comment\.user\.login == '([^']+)'", cond))
+    assert gated == set(COORDINATOR_LOGINS), (
+        f"if: du job {sorted(gated)} != COORDINATOR_LOGINS {sorted(COORDINATOR_LOGINS)}"
+    )
+    assert "!= 'github-actions[bot]'" not in cond, (
+        "l'egalite stricte subsume deja l'anti-boucle : la garder en double masquerait un elargissement futur"
     )
 
 
