@@ -59,6 +59,19 @@ Chaque `[ADJOINT PREFLIGHT]`, `[ADJOINT VERIFIED]` et `[ADJOINT CLOSE]` publié 
 - **Préconditions** : (i) `git ls-tree -r origin/main | grep debt_ledger` rend du code → phase A mergée ; (ii) le dashboard `CoursIA-issue-debt-ledger` existe côté roosync. Tant qu'une manque : `ledger: N/A (phase A non mergée)` dans le rapport — pas de skip silencieux.
 - **Outil** : `python scripts/coordination/debt_ledger.py init --state-dir <LOCALAPPDATA>\CoursIA\debt-ledgers --apply` (jamais sous `$ROOSYNC_SHARED_PATH` ou dans le repo).
 
+### Le spool n'est pas un post — 26 observations ont dormi huit jours (mesure du 2026-09-26)
+
+`debt_ledger.py append --out-dir …` **spool** l'enveloppe et **imprime l'instruction** de post. Il ne poste pas, et **aucun organe ne mesure l'écart**. La phrase « journalisé comme observation `[OBS]` via le CLI » couvre donc **deux gestes dont un seul était fait** — c'est la source du trou ci-dessous, et elle est d'**organe**, pas de vigilance : le CLI dit « spooled », jamais « journalisé ».
+
+Mesure du 2026-09-26 : le spool local portait **26** fichiers `obs-*.json` du 18/09 au 26/09, jamais postés — dont **21** en `state_class: closed` datés du 18/09, la forme d'un backfill de clôtures. Les **25** enveloppes valides sont désormais postées et relues (25/25 des deux côtés, `totalMessages` 810 → 835). **Le solde du backfill n'est pas établi pour autant** : 21 ≠ 33, et rien ne dit que ces 21 sont les mêmes que les 33. Ne pas lire ce drain comme l'achèvement de la mission enregistrée.
+
+**Lecture de cycle, en attendant un `spool --status`** (compte + plus ancien) : compter les `obs-*.json` du spool (hors `.superseded-*`) et poster ce qui reste — l'append est **idempotent par `messageId`**, donc rejouer ne coûte rien. Quatre pièges du même geste, tous mesurés :
+
+- **L'id se lit dans le CONTENU, jamais dans le nom du fichier.** Deux fichiers portaient `obs-obs-<hex>.json` quand leur contenu déclare `observation_id = obs-<hex>` ; or `debt_ledger.py` l.1838 dérive le nom **de** l'id (`f"{observation_id}.json"`), donc ces deux-là ne viennent pas de ce chemin. Un id pris au nom de fichier pose un `messageId` que rien ne dédoublonnera.
+- **`messageId = observation_id` dédoublonne par CONTENU, pas par entité.** Deux passages sur la même PR avec une chaîne `evidence` différente produisent deux ids, donc **deux observations** de la même entité à la même heure. Mesuré sur #17836 : `8fd6b8ed89…` complet contre `8fd6b8ed` tronqué. Un `evidence` plus court n'est pas une observation plus légère — c'est une seconde observation.
+- **L'append concurrent est sûr ; le `messageCount` qu'il rend ne l'est pas.** Un lot de cinq appends parallèles a rendu 34, 35, 36, **36**, 37 : un relevé périmé sur une écriture concurrente, **pas** une perte (l'énumération des ids du markdown canonique rend 25/25, et les sept appends suivants sont monotones). Le décompte n'est pas une preuve de sérialisation — **l'énumération des ids** l'est.
+- **Un `[FORK SUSPECTÉ]` peut être une latence, pas un fork.** Le même lot l'a levé sur **une** écriture sur cinq, les deux suivantes étant propres. Le contrôle décisif n'est pas de re-poster — l'idempotence absorberait le doublon **en silence** — mais de comparer les ids du markdown canonique à ceux d'une relecture par l'outil.
+
 ### Forme CLI réelle
 
 ```bash
