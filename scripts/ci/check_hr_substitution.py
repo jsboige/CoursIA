@@ -38,8 +38,13 @@ HR_RE = re.compile(r"^([ \t]*)(?:---|\*\*\*|\* \* \*|___)[ \t]*$")
 # - le caractere - au début du diff est ajoute (nouveau) ou retire (supprime)
 # - supporte `+++---` (diff prefix `+++` puis `+---` ligne ajoutee) et
 #   `+++` (ligne ajoutee vide), et ` ---` ligne retiree avec prefixe espace
+# Groupe 1 = la notation hr ellememe (`---`, `***`, `* * *`, `___`) ; sans
+# groupe capturant, `m.group(1)` levait IndexError (Tell c.1493 strict
+# fondateur nuance c.862 strict : bug latent qui rendait l'organe non
+# executable au premier diff notebook contenant une HR -- bloque par le
+# cablage CI `blocking=True` de la PR #17428).
 DIFF_HR_LINE_RE = re.compile(
-    r"^[+-]{1,2}\s*(?:---|\*\*\*|\* \* \*|___)\s*$"
+    r"^[+-]{1,2}\s*(---|\*\*\*|\* \* \*|___)\s*$"
 )
 
 

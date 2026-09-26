@@ -35,20 +35,22 @@ def _diff(*lines: str) -> str:
 def test_detect_4_notations_commommark():
     """`---`, `***`, `* * *`, `___` sont toutes detectees comme hr lines.
 
-    Controle fondateur c.806 : la regex etendue `^[+-]{1,2}\\s*(?:---|\\*\\*\\*|
+    Controle fondateur c.806 : la regex etendue `^[+-]{1,2}\\s*(---|\\*\\*\\*|
     \\* \\* \\*|___)\\s*$` couvre les 4 formes. Les 2 dernieres
     (`* * *`, `___`) etaient silencieuses dans la version d'avant #17428.
 
     Tell c.1493 fondateur nuance : bug latent dans `detect_hr_substitutions`
-    ligne 113 (`m.group(1).replace(...)`) -- la regex est non-capturante, donc
-    group(1) leve IndexError. Les tests ci-dessous *doivent* etre bleus une
-    fois le bug corrige ; on capture l'erreur pour ne pas crasher pytest.
+    ligne 113 (`m.group(1).replace(...)`) -- la regex etait non-capturante,
+    donc group(1) levait IndexError. **Deuxieme bug revele par le fix** :
+    l'assertion `notations == ["---", "***", "* * *", "___"]` etait dans le
+    mauvais ordre (le `sorted()` rend l'ordre ASCII ou `*` precede `-`).
+    On utilise `set()` pour ne pas dependre de l'ordre.
     """
     diff = _diff("+---", "-***", "+* * *", "-___")
     try:
         findings = mod.detect_hr_substitutions(diff)
-        notations = sorted({f["notation"] for f in findings})
-        assert notations == ["---", "***", "* * *", "___"], notations
+        notations = {f["notation"] for f in findings}
+        assert notations == {"---", "***", "* * *", "___"}, notations
     except IndexError as exc:
         import pytest
         pytest.skip(f"BUG check_hr_substitution.py:113 group(1) -- {exc}")
