@@ -893,7 +893,7 @@ layout: default
   <img src="./images/img_041.jpg" class="max-h-[160px] w-auto object-contain" alt="Cartes à jouer disposées en spirale arc-en-ciel sur une table en bois" />
 </div>
 
-<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-1-informal.ipynb">Argument_Analysis_Agentic-1-informal.ipynb</a>.</p>
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-02-Fallacies-Detection-Python.ipynb">Argumentation-02-Fallacies-Detection-Python.ipynb</a>.</p>
 ---
 
 
@@ -972,7 +972,7 @@ layout: default
 
 
 
-<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-5-jtms.ipynb">Argument_Analysis_Agentic-5-jtms.ipynb</a> (JTMS), <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision.ipynb">Tweety-4-Belief-Revision.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/SC-3-Solidity-Basics.ipynb">SC-3-Solidity-Basics.ipynb</a>.</p>
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-06-JTMS-Python.ipynb">Argumentation-06-JTMS-Python.ipynb</a> (JTMS), <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision.ipynb">Tweety-4-Belief-Revision.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/SC-3-Solidity-Basics.ipynb">SC-3-Solidity-Basics.ipynb</a>.</p>
 ---
 layout: section
 ---

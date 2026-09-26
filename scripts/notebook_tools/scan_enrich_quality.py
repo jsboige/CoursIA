@@ -105,7 +105,7 @@ _ANCHOR_RE = re.compile(r"\bcode\[(\d+)\]")
 
 # --- TODO / exercise markers (class h) --------------------------------------
 
-_TODO_RE = re.compile(r"(TODO[_ ]etudiant|TODO[_ ]student|à compléter|a completer|\bsorry\b)", re.I)
+_TODO_RE = re.compile(r"(TODO[_ ]étudiant|TODO[_ ]etudiant|TODO[_ ]student|à compléter|a completer|\bsorry\b)", re.I)
 
 # A fenced block line that reads like implementation, not like a skeleton.
 # Skeletons end on `;` / `{` / `...` and carry no body; solutions have
