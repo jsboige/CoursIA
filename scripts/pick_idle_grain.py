@@ -3753,6 +3753,19 @@ def build_orphans_comment(orphans: list[dict]) -> str:
     return "\n".join(lines)
 
 
+def rest_comment_id(comment: dict) -> int:
+    """Id REST numerique d'un commentaire rendu par `gh issue view --json`.
+
+    Leve ValueError si l'URL ne le porte pas : un PATCH sur un id devine
+    ecrirait ailleurs ou echouerait en silence.
+    """
+    m = re.search(r"#issuecomment-(\d+)$", comment.get("url") or "")
+    if not m:
+        raise ValueError(f"id REST introuvable dans l'URL du commentaire : "
+                         f"{comment.get('url')!r}")
+    return int(m.group(1))
+
+
 def upsert_orphans_comment(number: int, body: str) -> None:
     """Un seul commentaire marker-guarde par issue, mis a jour sur place."""
     comments = json.loads(subprocess.run(
@@ -3760,8 +3773,13 @@ def upsert_orphans_comment(number: int, body: str) -> None:
          "--json", "comments"],
         capture_output=True, text=True, encoding="utf-8", check=True, timeout=60,
     ).stdout)
-    cid = next((c["id"] for c in (comments.get("comments") or [])
-                if ORPHANS_MARKER_START in (c.get("body") or "")), None)
+    # `gh issue view --json comments` rend l'`id` GraphQL (`IC_kw...`), que
+    # l'endpoint REST `issues/comments/{id}` refuse en 404 : le PATCH echouait
+    # a chaque balayage depuis le premier (29/08), et le commentaire restait
+    # fige. L'id numerique REST se lit dans l'URL (`#issuecomment-<n>`).
+    marked = next((c for c in (comments.get("comments") or [])
+                   if ORPHANS_MARKER_START in (c.get("body") or "")), None)
+    cid = rest_comment_id(marked) if marked is not None else None
     if cid is not None:
         subprocess.run(
             ["gh", "api", f"repos/{REPO}/issues/comments/{cid}",
