@@ -20,8 +20,8 @@ Bibliography archived under `G:\Mon Drive\MyIA\IA\Bibliography IA\GameTheory\`:
 - MathOverflow 357433 archived as HTML in `Technical Web Docs/`
 Paywalled papers (Bowditch/Máthé/Kloster, Cambridge Core + Elsevier
 ScienceDirect) could not be archived locally due to lack of auth
-access; their DOIs are referenced in the literature block below
-(`## REFERENCE LITERATURE` of the module doc).
+access; their DOIs are referenced in the module-doc block
+(`## REFERENCE LITERATURE`) at the end of the file.
 
 ACCESSIBILITY NOTE (Epic #1452/#1453): the FULL win theorem is an infinite-game /
 non-termination statement with no Lean precedent — research-grade, NOT a tractable
@@ -31,14 +31,11 @@ Angel's move-set (a Chebyshev ball), where the power-1 Angel is exactly a chess
 king. Homage to a MathOverflow contribution on Conway's pursuit-evasion results
 (post 357433).
 
-All sorries in this file have been removed (ai-01 review of
-2026-09-26, PR #17756). The pseudo-declaration `True` by `sorry`
-that carried the win-theorem statement (intractable in Lean 4
-v4.33.0 local, class `INTRINSIC`) was withdrawn from both
-siblings; its content (statement, reasons for non-port, literature)
-is preserved in the doc block below for documentary traceability.
-The other theorems in this file (combinatorial setup) remain
-verified (Epic #1453, #1651).
+All `sorry` in this file have been removed. The trailing module-doc block
+documents the impossibility of porting the win theorem (EPIC #1452/#1453),
+the reference literature, and the follow-up issue #17666; the content is
+preserved for documentary traceability. The other theorems in this file
+(combinatorial setup) remain verified (Epic #1453, #1651).
 -/
 
 /-

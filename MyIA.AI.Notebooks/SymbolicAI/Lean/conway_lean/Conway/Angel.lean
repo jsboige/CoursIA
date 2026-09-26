@@ -22,8 +22,8 @@ Bibliographie archivee dans `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\` 
 - MathOverflow 357433 archive en HTML dans `Technical Web Docs/`
 Les papiers paywalles (Bowditch/Mathe/Kloster, Cambridge Core +
 Elsevier ScienceDirect) n'ont pas pu etre archives en local faute
-d'acces auth ; leurs DOI sont references dans le bloc litteraire
-ci-dessous (`## LITTERATURE DE REFERENCE` du module doc).
+d'acces auth ; leurs DOI sont references dans le bloc doc-module
+(`## LITTERATURE DE REFERENCE`) en fin de fichier.
 
 NOTE D'ACCESSIBILITE (Epic #1452/#1453) : le THEOREME complet de
 victoire est un enonce de jeu infini / non-terminaison sans precedent
@@ -34,14 +34,11 @@ de l'Ange (une boule de Chebyshev), ou l'Ange de pouvoir 1 est
 exactement un roi des echecs. Hommage a une contribution MathOverflow
 sur les resultats de poursuite de Conway (post 357433).
 
-Tous les sorries de ce fichier ont ete elimines (revue ai-01 du
-2026-09-26, PR #17756). La pseudo-declaration `True` par `sorry`
-qui portait l'enonce du theoreme de victoire (intractable en
-Lean 4 v4.33.0 local, classe `INTRINSIC`) a ete retirees des deux
-siblings ; son contenu (enonce, motifs du non-port, litterature)
-est conserve dans le bloc doc ci-dessous pour traçabilite
-documentaire. Les autres theoremes de ce fichier (setup
-combinatoire) restent verifies (Epic #1453, #1651).
+Tous les `sorry` de ce fichier ont ete elimines. Le **bloc doc-module** de
+fin de fichier documente l'impossibilite du port du theoreme de victoire
+(EPIC #1452/#1453), la litterature de reference, et l'issue de suivi
+#17666 ; le contenu est conserve pour traçabilite documentaire. Les
+autres theoremes (setup combinatoire) restent verifies (Epic #1453, #1651).
 -/
 
 /-
