@@ -157,6 +157,29 @@ Ces deux champs permettent de calculer `reproducibility = REPRODUCED` (cohérenc
 - [x] **#3** Métadonnée d'exécution horodatée (`last_success_sha` + `executed_at`) branchée sur le forensic scan.
 - [ ] **#4** Pilote sur 2 familles (Sudoku + GenAI) → phase 2, c.764+.
 
+## Points d'entrée des séries (catalogue de navigation)
+
+Cette section donne un **lien direct vers le README de chaque série** depuis `docs/PARCOURS.md`. Elle offre aux lecteurs un point d'entrée humain vers les 10 séries sans `README.md` dans le catalogue de premier niveau.
+
+> **À noter** : `scripts/notebook_tools/check_notebook_nav_chain.py` ne lit que les liens intra-`notebook` (`*.ipynb` ↔ `*.ipynb` avec mot-clé de navigation) — il ne détecte pas les liens vers les `README.md`. Les `independent_chain` que cette section référence restent donc visibles au détecteur. La correction complète exigerait des liens depuis des notebooks de séries voisines (hub d'aiguillage), hors du périmètre « catalogue/README ».
+
+Les liens sont relatifs à la racine du dépôt (depuis `docs/`, remonter d'un niveau : `../`).
+
+> **Caveat** : la ligne **Search — Applications / CSP** pointe `../MyIA.AI.Notebooks/Search/Applications/README.md` (README parent) — `Search/Applications/CSP/README.md` n'existe pas comme fichier indépendant (vérifié 2026-09-26). Le détecteur considère `Applications/CSP` comme racine de série `independent_chain` ; un README dédié serait une PR séparée, hors du périmètre de ce grain.
+
+| Série | Domaine | Point d'entrée |
+|-------|---------|----------------|
+| **GenAI — Image / examples** | génération d'images (Stable Diffusion, Qwen, ComfyUI) | [`../MyIA.AI.Notebooks/GenAI/Image/examples/README.md`](../MyIA.AI.Notebooks/GenAI/Image/examples/README.md) |
+| **GenAI — Semantic Kernel** | orchestration d'agents .NET, Microsoft.SemanticKernel | [`../MyIA.AI.Notebooks/GenAI/SemanticKernel/README.md`](../MyIA.AI.Notebooks/GenAI/SemanticKernel/README.md) |
+| **ML — ML.NET (C#)** | machine learning .NET (régression, classification, recommandation) | [`../MyIA.AI.Notebooks/ML/ML.Net/README.md`](../MyIA.AI.Notebooks/ML/ML.Net/README.md) |
+| **Probas — Infer.NET** | programmation probabiliste bayésienne en C# | [`../MyIA.AI.Notebooks/Probas/Infer/README.md`](../MyIA.AI.Notebooks/Probas/Infer/README.md) |
+| **RL — Reinforcement Learning** | apprentissage par renforcement, PPO, bandits | [`../MyIA.AI.Notebooks/RL/README.md`](../MyIA.AI.Notebooks/RL/README.md) |
+| **Search — Applications / CSP** | satisfaction de contraintes (N-Queens, Sudoku, planning) | [`../MyIA.AI.Notebooks/Search/Applications/README.md`](../MyIA.AI.Notebooks/Search/Applications/README.md) |
+| **Search — Partie 1 — Fondations** | algorithmes de recherche (BFS, DFS, A*, métaheuristiques) | [`../MyIA.AI.Notebooks/Search/Part1-Foundations/README.md`](../MyIA.AI.Notebooks/Search/Part1-Foundations/README.md) |
+| **SymbolicAI — Lean** | vérification formelle Lean 4, prouveurs interactifs | [`../MyIA.AI.Notebooks/SymbolicAI/Lean/README.md`](../MyIA.AI.Notebooks/SymbolicAI/Lean/README.md) |
+| **SymbolicAI — Planners / 02-Classical** | planification classique PDDL, Fast Downward | [`../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/README.md`](../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/README.md) |
+| **SymbolicAI — SMT / Z3-API** | solveur SMT Z3, API Python | [`../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/README.md`](../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/README.md) |
+
 ## Liens
 
 - **Issue [#8051](https://github.com/jsboige/CoursIA/issues/8051)** — décomposer `maturity` en 3 axes.
