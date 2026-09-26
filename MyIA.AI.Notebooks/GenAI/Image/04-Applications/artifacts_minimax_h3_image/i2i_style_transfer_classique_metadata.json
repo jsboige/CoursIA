@@ -1,6 +1,5 @@
 {
   "model": "image-01",
-  "intended_model": "MiniMax-H3",
   "mode": "image_to_image",
   "resolution": "1280x720",
   "aspect_ratio": "16:9",
@@ -16,5 +15,6 @@
   "verdict": "SOTA-OK",
   "source": "API MiniMax cloud (image-01)",
   "generated_at_utc": "2026-09-24",
-  "reference_filename": "i2i_input_classic_reference.png"
+  "reference_filename": "i2i_input_classic_reference.png",
+  "family_brand": "MiniMax-H3"
 }

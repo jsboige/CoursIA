@@ -213,6 +213,21 @@ PILOT: list[Guard] = [
               "--scan-thread"],
         blocking=True,
     ),
+    # Issue #14683 : garde substitution hr silencieuse. L'organe
+    # `scripts/ci/check_hr_substitution.py` detecte les 4 notations CommonMark
+    # (`---`, `***`, `* * *`, `___`) en `+`/`-` sur les `.ipynb` et exige une
+    # declaration explicite dans le body. Aucun workflow d'origine -> source
+    # FAST_LANE_NATIVE. Le script ne sort que rc=0/1 (pas de rc=2 reserve), donc
+    # pas besoin de `warn_rc` ici ; un incident `gh` (rate-limit, timeout)
+    # remonte en rc=1 et fait rougir la PR -- c'est l'intention : un depot
+    # sans verdict est un depot sans garde.
+    Guard(
+        name="hr-substitution-guard",
+        source=FAST_LANE_NATIVE,
+        paths=["**/*.ipynb"],
+        argv=["python", "scripts/ci/check_hr_substitution.py", "{pr_number}"],
+        blocking=True,
+    ),
     # -- extension pilote (5 -> 9) ------------------------------------------
     # Pattern 1 : execute une fois par chemin matchant (boucle bash d'origine
     # absorbee). Le placeholder `{changed_paths}` est substitue par un chemin
