@@ -1,0 +1,27 @@
+{
+  "extract": "A",
+  "cell": "pocket_tts",
+  "size": "100M",
+  "license": "Apache-2.0",
+  "render_s": 21.7,
+  "wav_path": "D:\\dev\\CoursIA-17586\\MyIA.AI.Notebooks\\GenAI\\Audio\\04-Applications\\v4\\prosody_lab\\outputs\\bakeoff_small\\pocket_tts\\A__pocket_tts.wav",
+  "wav_bytes": 180524,
+  "metrics": {
+    "label": "A__pocket_tts",
+    "path": "outputs/bakeoff_small/pocket_tts/A__pocket_tts.wav",
+    "duration_s": 3.76,
+    "sr": 24000,
+    "g_st_range": 12.98,
+    "g_cv": 0.189,
+    "g_velocity": 20.42,
+    "g_verdict": "EXPRESSIVE",
+    "n_syll": 10,
+    "s_motion": 2.41,
+    "s_flat_pct": 33.3,
+    "s_span": 6.45,
+    "s_verdict": "INSUFFICIENT"
+  },
+  "wer": null,
+  "producer": "measure_pocket_tts.py (PR #17661 c.870)",
+  "wer_explanation": "Whisper-tiny non charge au run CPU c.805 -- WER non mesurable hors GPU. Pour une mesure WER, basculer sur --device cuda."
+}
