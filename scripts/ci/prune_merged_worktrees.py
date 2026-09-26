@@ -1421,17 +1421,34 @@ def main() -> int:
     args = p.parse_args()
 
     cwd = args.path or "."
+
+    # Resolution du chemin canonique de l'analyse (pour comparaison is_current).
+    # Mesuree AVANT le chdir ci-dessous : un --path relatif se resout contre le
+    # cwd d'appel, pas contre lui-meme.
+    try:
+        current_path = str(Path(cwd).resolve())
+    except OSError:
+        current_path = cwd
+
+    # `--path` est le cwd de l'ANALYSE, pas un filtre -- contrat porte par
+    # l'en-tete (`--path /c/dev/CoursIA-X`) et par le help ci-dessus. Or les
+    # trois appels `run_git(".")` (worktree list, cle de cache par remote
+    # origin, worktree remove) resolvent `.` contre le cwd REEEL du processus.
+    # Sans ce chdir, l'organe lance depuis un autre dossier -- le cas de la
+    # tache planifiee, dont le cwd est System32 -- sort en rc=2 sur
+    # `fatal: not a git repository` et ne purge jamais rien (#17904).
+    if args.path:
+        try:
+            os.chdir(current_path)
+        except OSError as e:
+            print(f"ERROR: --path inutilisable ({args.path}): {e}", file=sys.stderr)
+            return 2
+
     try:
         worktrees = list_worktrees()
     except RuntimeError as e:
         print(f"ERROR: {e}", file=sys.stderr)
         return 2
-
-    # Resolution du chemin canonique du CWD (pour comparaison is_current)
-    try:
-        current_path = str(Path(cwd).resolve())
-    except OSError:
-        current_path = cwd
 
     statuses: list[WorktreeStatus] = []
     for wt in worktrees:
