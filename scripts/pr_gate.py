@@ -1036,6 +1036,39 @@ def _is_transient_api_error(exc: BaseException) -> bool:
     return any(marker in text for marker in TRANSIENT_API_MARKERS)
 
 
+# --- installation-quota family (#17681) ---------------------------------------
+#
+# The #17262 markers lump every "rate limit"/403 together, but the burst
+# measured on 2026-09-24 is a different animal: `rate limit exceeded for
+# installation` is the GitHub App INSTALLATION quota -- exhausted server-side,
+# shared by every job running on GITHUB_TOKEN and every local session holding
+# the app token, and reset hourly on GitHub's side. A hiccup-sized 30 s x 5
+# retry cannot cross that window (#17681: 7 required-check FAILURES in 3 min,
+# all constituents green). The retry COUNT stays capped as before; what
+# changes is the SPACING: an escalating schedule that rides out a minutes-long
+# burst inside the SAME absolute deadline, never extending `--timeout-min`.
+# Rule 1 is untouched -- a state still unreadable at the bound still ends in
+# FAIL naming the quota family, so an infrastructure outage is never hunted
+# as a content defect (and never flips to a pass).
+INSTALLATION_QUOTA_MARKERS = (
+    # Verbatim production signature, #17262/#17681:
+    #   gh: API rate limit exceeded for installation. (HTTP 403)
+    "rate limit exceeded for installation",
+)
+INSTALLATION_QUOTA_BACKOFF_SEC = (30.0, 120.0, 300.0, 600.0, 900.0)
+
+
+def _is_installation_quota_error(exc: BaseException) -> bool:
+    """True for the GitHub App installation-quota 403 family (#17681).
+
+    A strict subset of the transient family, recognised by the *measured*
+    signature only: an unknown 403 stays on the generic transient path
+    (5 x poll_sec) rather than inheriting the long backoff unearned.
+    """
+    text = str(exc).lower()
+    return any(marker in text for marker in INSTALLATION_QUOTA_MARKERS)
+
+
 def _gh_api_post(path: str, fields: dict[str, str]) -> dict:
     """Call `gh api -X POST <path>` with one `-f key=value` per field.
 
@@ -1609,20 +1642,52 @@ def wait_and_decide(
             if not _is_transient_api_error(exc):
                 raise
             transient_reads += 1
+            now_ts = now()
             if (
                 transient_reads > MAX_CONSECUTIVE_TRANSIENT_RETRIES
-                or now() >= deadline
+                or now_ts >= deadline
             ):
+                # #17681 -- name the family so a quota-exhaustion FAIL is
+                # legible as infrastructure, never read as a check verdict.
+                # The verdict direction is unchanged: rule 1, never a pass.
+                family = (
+                    "installation-quota read failure"
+                    if _is_installation_quota_error(exc)
+                    else "transient read failure"
+                )
                 raise GateError(
-                    f"{exc} -- {transient_reads} transient read failure(s) in a "
-                    "row: the check state stayed unreadable (rule 1)"
+                    f"{exc} -- {transient_reads} {family}(s) in a row: "
+                    "the check state stayed unreadable (rule 1)"
                 ) from exc
-            print(
-                f"[pr-gate] transient API error, retry {transient_reads}/"
-                f"{MAX_CONSECUTIVE_TRANSIENT_RETRIES} in {poll_sec:.0f}s: {exc}",
-                flush=True,
-            )
-            sleep(poll_sec)
+            if _is_installation_quota_error(exc):
+                # #17681 -- a shared hourly quota is not crossed by 30 s
+                # retries: escalate the spacing, but never sleep past the
+                # absolute deadline. An unreadable state at the deadline
+                # still fails rather than becoming a check verdict.
+                stage = min(
+                    transient_reads - 1,
+                    len(INSTALLATION_QUOTA_BACKOFF_SEC) - 1,
+                )
+                wait_sec = min(
+                    INSTALLATION_QUOTA_BACKOFF_SEC[stage],
+                    max(deadline - now_ts, 0.0),
+                )
+                print(
+                    f"[pr-gate] installation-quota 403 (GitHub App quota, "
+                    "shared, hourly reset -- not a check verdict), backoff "
+                    f"retry {transient_reads}/"
+                    f"{MAX_CONSECUTIVE_TRANSIENT_RETRIES} in "
+                    f"{wait_sec:.0f}s: {exc}",
+                    flush=True,
+                )
+            else:
+                wait_sec = poll_sec
+                print(
+                    f"[pr-gate] transient API error, retry {transient_reads}/"
+                    f"{MAX_CONSECUTIVE_TRANSIENT_RETRIES} in {poll_sec:.0f}s: {exc}",
+                    flush=True,
+                )
+            sleep(wait_sec)
             # Deliberately NOT touching quiet_streak: a failed read is not a
             # quiet poll, and counting it as one would let an outage settle the
             # wait into a PASS -- the one direction rule 1 forbids.

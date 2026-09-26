@@ -30,7 +30,17 @@ would pass every other test in this file.
 The final FAIL rendering is exercised by ``test_pr_gate.py`` (it monkeypatches
 ``wait_and_decide`` to raise ``GateError`` and asserts ``code == 1``); this file
 therefore asserts at the ``wait_and_decide`` boundary and names the cause, and
-does not duplicate that composition.
+does not duplicate that composition -- except once, for #17681, where the
+exhausted-quota FAIL is pinned at the ``main`` boundary as well.
+
+#17681 extends this file without reopening #17262: `rate limit exceeded for
+installation` is a FAMILY of its own inside the transient set -- the GitHub App
+installation quota, exhausted server-side, shared, hourly reset -- so its retry
+SPACING escalates (30/120/300/600/900 s) instead of the hiccup cadence,
+clamped to the same absolute deadline. The verdict direction is untouched:
+exhaustion still raises, ``main`` still renders the rule-1 FAIL (exit 1), and
+the family is named in the message so an infrastructure outage is never hunted
+as a content defect.
 
 Run: python -m pytest scripts/tests/test_pr_gate_transient_retry.py
 """
@@ -45,10 +55,18 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import pr_gate  # noqa: E402
 from pr_gate import GateError  # noqa: E402
 
-# Verbatim shape of the four production failures (see issue #17262).
+# Verbatim shape of the four production failures (see issue #17262). This IS
+# the #17681 installation-quota signature: the quota family of the transient
+# set, exercised by the #17262 tests through this same fixture.
 RATE_LIMIT = (
     "gh api repos/o/r/commits/sha/check-runs?per_page=100&page=1 failed "
     "(exit 1): gh: API rate limit exceeded for installation. (HTTP 403)"
+)
+# A transient error WITHOUT the quota signature: the generic family, whose
+# retry spacing stays the hiccup cadence (poll_sec).
+GENERIC_5XX = (
+    "gh api repos/o/r/commits/sha/check-runs?per_page=100&page=1 failed "
+    "(exit 1): gh: Server Error (HTTP 503)"
 )
 NOT_FOUND = (
     "gh api repos/o/r/commits/deadbeef/check-runs failed (exit 1): "
@@ -132,9 +150,11 @@ def test_acceptance_1_a_hickup_still_reaches_the_true_verdict(capsys):
     assert len(calls) == 3
     # A retry must be VISIBLE. Every defect in this family was a silence that
     # read like a verdict; a retry reported only in a green PR's logs is still
-    # a retry nobody can audit.
+    # a retry nobody can audit. RATE_LIMIT is the #17681 quota signature, so
+    # the retry line names the quota family, not the generic transient one.
     out = capsys.readouterr().out
-    assert "transient API error" in out
+    assert "installation-quota 403" in out
+    assert "not a check verdict" in out
     assert "rate limit exceeded" in out
 
 
@@ -153,9 +173,13 @@ def test_acceptance_2_an_unreadable_state_still_fails_naming_the_cause():
         _wait(fetch)
     message = str(excinfo.value)
     assert "rate limit exceeded" in message, "the cause must still be named"
-    assert "transient read failure" in message, (
-        "the verdict must say the state stayed unreadable, not blame the PR"
+    # RATE_LIMIT is the #17681 quota signature: the failure names the quota
+    # family so the red is legible as infrastructure, and still says the state
+    # stayed unreadable rather than blaming the PR.
+    assert "installation-quota read failure" in message, (
+        "the verdict must name the quota family, not a generic transient"
     )
+    assert "stayed unreadable" in message
     assert len(calls) == pr_gate.MAX_CONSECUTIVE_TRANSIENT_RETRIES + 1
 
 
@@ -281,3 +305,138 @@ def test_the_cap_counts_consecutive_failures_not_a_lifetime_total():
     assert calls.count(1) > pr_gate.MAX_CONSECUTIVE_TRANSIENT_RETRIES, (
         "the scenario must actually exceed the cap in total"
     )
+
+
+# --- #17681 -- the installation-quota family is distinct ---------------------
+#
+# The quota 403 keeps the #17262 semantics (transient, retried, rule 1 on
+# exhaustion); what changes is the SPACING and the NAMING. All sleeps are
+# captured, never real: no test in this file blocks.
+
+
+@pytest.mark.parametrize(
+    "text,expected,why",
+    [
+        (RATE_LIMIT, True, "the measured #17681 burst signature"),
+        (
+            "gh api /x failed (exit 1): (HTTP 403)",
+            False,
+            "a bare 403 is generic transient, not the installation quota",
+        ),
+        (GENERIC_5XX, False, "upstream 5xx is not the installation quota"),
+    ],
+)
+def test_installation_quota_signature_is_recognised_strictly(text, expected, why):
+    assert pr_gate._is_installation_quota_error(GateError(text)) is expected, why
+    if expected:
+        # strict subset: every quota error is transient, never the converse
+        assert pr_gate._is_transient_api_error(GateError(text))
+
+
+def test_quota_backoff_escalates_instead_of_the_hiccup_cadence():
+    """The five waits span 32.5 minutes without extending the deadline."""
+    calls, sleeps = [], []
+    elapsed = [0.0]
+
+    def fetch(_repo, _sha):
+        calls.append(1)
+        raise GateError(RATE_LIMIT)
+
+    def sleep(seconds):
+        sleeps.append(seconds)
+        elapsed[0] += seconds
+
+    with pytest.raises(GateError):
+        pr_gate.wait_and_decide(
+            "o/r", "sha", "PR gate", timeout_min=45, poll_sec=30,
+            settle_polls=2, sleep=sleep, fetch=fetch, now=lambda: elapsed[0],
+        )
+    assert len(calls) == pr_gate.MAX_CONSECUTIVE_TRANSIENT_RETRIES + 1
+    assert sleeps == [30.0, 120.0, 300.0, 600.0, 900.0]
+    assert elapsed[0] == 1950.0 < 45 * 60
+
+
+def test_quota_recovery_after_minutes_uses_real_check_state():
+    elapsed = [0.0]
+    calls = []
+
+    def fetch(_repo, _sha):
+        calls.append(elapsed[0])
+        if elapsed[0] < 1000:
+            raise GateError(RATE_LIMIT)
+        return [run("Lean CI", "success")]
+
+    def sleep(seconds):
+        elapsed[0] += seconds
+
+    code, message = pr_gate.wait_and_decide(
+        "o/r", "sha", "PR gate", timeout_min=45, poll_sec=30,
+        settle_polls=2, sleep=sleep, fetch=fetch, now=lambda: elapsed[0],
+    )
+    assert code == 0, message
+    assert calls[:5] == [0.0, 30.0, 150.0, 450.0, 1050.0]
+    assert len(calls) == 6, "success needs a second real quiet poll"
+
+
+def test_quota_backoff_never_sleeps_past_the_absolute_deadline():
+    """A clock advanced by sleep exposes real deadline overruns."""
+    calls, sleeps = [], []
+    elapsed = [0.0]
+
+    def fetch(_repo, _sha):
+        calls.append(1)
+        raise GateError(RATE_LIMIT)
+
+    def sleep(seconds):
+        sleeps.append(seconds)
+        elapsed[0] += seconds
+
+    with pytest.raises(GateError):
+        pr_gate.wait_and_decide(
+            "o/r", "sha", "PR gate", timeout_min=0.2, poll_sec=30,
+            settle_polls=2, sleep=sleep, fetch=fetch, now=lambda: elapsed[0],
+        )
+    assert sleeps == [12.0], "the first backoff is clamped to the deadline"
+    assert elapsed[0] == 12.0
+    assert len(calls) == 2, "the deadline permits only one retry"
+
+
+def test_generic_transient_keeps_the_hiccup_cadence_and_message():
+    """Only the quota signature earns the long backoff: a 503 without the
+    `for installation` marker keeps the historical spacing and message."""
+    calls, sleeps = [], []
+
+    def fetch(_repo, _sha):
+        calls.append(1)
+        raise GateError(GENERIC_5XX)
+
+    with pytest.raises(GateError) as excinfo:
+        pr_gate.wait_and_decide(
+            "o/r", "sha", "PR gate", timeout_min=45, poll_sec=30,
+            settle_polls=2, sleep=sleeps.append, fetch=fetch, now=_clock(),
+        )
+    assert "transient read failure" in str(excinfo.value)
+    assert sleeps == [30, 30, 30, 30, 30]
+
+
+def test_exhausted_quota_is_a_failure_never_a_pass(monkeypatch, capsys):
+    """THE #17681 control, at the ``main`` boundary.
+
+    The complaint of #17681 is the MECHANISM of the failure (a hiccup-sized
+    retry burning out on an hourly quota), not its existence: flipping the
+    exhausted-quota verdict to a pass would break rule 1. This pins that an
+    exhausted quota still ends in FAIL exit 1, with the quota family named so
+    nobody hunts a content defect -- and no green either."""
+    def exhausted(*_args, **_kwargs):
+        raise pr_gate.GateError(
+            f"{RATE_LIMIT} -- 6 installation-quota read failure(s) in a row: "
+            "the check state stayed unreadable (rule 1)"
+        )
+
+    monkeypatch.setattr(pr_gate, "wait_and_decide", exhausted)
+    assert pr_gate.main(["--repo", "o/r", "--sha", "deadbeef"]) == 1
+    captured = capsys.readouterr()
+    assert "installation-quota read failure" in captured.err, (
+        "the FAIL annotation must name the quota family"
+    )
+    assert "cannot establish check state" in captured.err
