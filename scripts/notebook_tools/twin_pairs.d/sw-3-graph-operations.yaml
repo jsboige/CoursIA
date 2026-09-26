@@ -6,5 +6,7 @@
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib (#10382, comme PyMC/Infer.NET) : C# = dotNetRDF 3.2.1 (NuGet officiel `#r \"nuget: dotNetRDF, 3.2.1\"` + espaces VDS.RDF.*, native .NET) et Python = rdflib (from rdflib import *, native Python). Chaque cote atteint le moteur SOTA de son ecosysteme -- ni pont intermediaire (IKVM/PythonNet) ni reimplementation from-scratch. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# VDS.RDF refs + execution_count, Python rdflib imports."
   known_differences:
+    - 'PR #17056 (redressement densite #17040) : cote PYTHON seul edite -- markdown 34 -> 29 cellules (retrait des lectures redondantes de la campagne, conservees une seule fois et re-ancrees). attestation firsthand : code source ET outputs byte-identiques des deux cotes (aucune re-execution due, C.2), jumeau C# intact -- la parite native-both est preservee, seule la prose a evolue.'
+    - "PR #17647 (volet 2 #17636, prose-counts) : cote C# seul edite -- resorption de 3 compteurs de lignes manuels en markdown (mesure supprimee, predicat garde). Jumeau Python intact, machinerie lib-vs-lib inchangee."
     - "Socle commun : parcours de graphe RDF, iteration des triplets, gestionnaires de parsing (handlers)."
     - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Parsing.Handlers`, iterate via `Graph.Triples`). Python = `rdflib` (`rdflib.collection`, `rdflib.parser`, iteration via `graph` set semantics)."

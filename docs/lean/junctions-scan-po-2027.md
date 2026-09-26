@@ -133,7 +133,7 @@ Nuance de portée (#15568) : « vide » qualifie le worktree mesuré, pas la mac
 
 - **Mode Scan exécuté** : `pwsh scripts/lean/setup_shared_mathlib.ps1 -Mode Scan` rendu verbatim (cf. section dédiée).
 - **Discrimination manifest-identity confirmée** : 7 groupes distincts alors que 22 lacs partagent toolchain+Mathlib rev. Preuve : `discrepancy_lean`, `mimo_lean`, `social_choice_lean_peters` partagent `v4.32.1 + 520045ab` avec le groupe 13 mais restent isolés — leurs deps transitives (`batteries`, `aesop`, `plausible` ou autres) différent. La clé de groupe `"$toolchain|$($pairs -join ';')"` (`setup_shared_mathlib.ps1:119-123`) trie **plus strictement** qu'une simple rev-Mathlib.
-- **Tell c.808 ★★★ valide** : mesure genuine (deux passes, sortie byte-identique au premier passage, ScriptPowerShell + grep manifest-identity + check `.lake/packages/` absent). Pas de `fake-work` : aucun Apply bâclé, aucune projection d'économie fictive, aucune modification du script qui aurait pu masquer un défaut.
+- **Mesure genuine** (deux passes, sortie byte-identique au premier passage, ScriptPowerShell + grep manifest-identity + check `.lake/packages/` absent). Pas de `fake-work` : aucun Apply bâclé, aucune projection d'économie fictive, aucune modification du script qui aurait pu masquer un défaut.
 
 ## Référence croisée
 

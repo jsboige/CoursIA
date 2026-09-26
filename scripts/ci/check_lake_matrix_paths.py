@@ -39,13 +39,13 @@ DEFAULT_WORKFLOW = (REPO_ROOT / ".github" / "workflows" /
                     "lean-ci-matrix.yml")
 
 # Dettes mesurees a l'introduction du check par recroisement (#17336, issue
-# #17374) : paires wrapper x lake manifeste PREEXISTANTES sur main. Elles ne
-# rougissent pas le garde tant que #17374 ne les a pas tranchees -- vider
-# cette liste revient a rendre le garde strict.
-KNOWN_DOUBLE_TRIGGERS = {
-    ("lean-asymmetric-information.yml", "gamedefsext"),
-    ("lean-social-choice.yml", "gametheory"),
-}
+# #17374) : paires wrapper x lake manifeste PREEXISTANTES sur main. Les deux
+# paires ont ete tranchees par #17374 (retrait des chemins gamedefsext du
+# wrapper asymmetric ; migration du contrat certifie + B.3 de
+# lean-social-choice.yml dans la matrice, wrapper supprime) -- la liste est
+# VIDE depuis : le garde est strict. Une nouvelle paire s'inscrit ici TEMPORAIREMENT,
+# avec son issue, en attendant son trancher.
+KNOWN_DOUBLE_TRIGGERS: set[tuple[str, str]] = set()
 
 
 def workflow_paths(doc: dict, event: str) -> set[str]:

@@ -89,7 +89,7 @@ La série SymbolicLearning (21 notebooks : 12 Python + 8 jumeaux C# from-scratch
 
 ### Parcours alternatif : Preuve automatique en géométrie (Geometry, en ouverture)
 
-La série Geometry (programme gradué, Epic #17544) ouvre la **démonstration automatique** de théorèmes géométriques : le fil rouge (milieu de l'hypoténuse équidistant des trois sommets) est d'abord vérifié numériquement (Schwartz–Zippel), puis démontré exactement par bases de Gröbner, puis par la méthode de Wu — avant un pont vers Lean. Le notebook d'entrée [Geometry-01](Geometry/Geometry-01-From-Figure-To-Equation.ipynb) (public Découverte, ~30 min) ne suppose que la géométrie du lycée et Python de base.
+La série Geometry (programme gradué, Epic #17544) ouvre la **démonstration automatique** de théorèmes géométriques : le fil rouge (milieu de l'hypoténuse équidistant des trois sommets) est d'abord vérifié numériquement (Schwartz–Zippel), puis démontré exactement par bases de Gröbner, puis par la méthode de Wu — avant un pont vers Lean. Le notebook d'entrée [Geometry-01](Geometry/Geometry-01-From-Figure-To-Equation.ipynb) (public Découverte, ~30 min) ne suppose que la géométrie du lycée et Python de base. Le second [Geometry-02](Geometry/Geometry-02-From-Equation-To-Proof.ipynb) (public Licence) ajoute l'idéal des hypothèses, la base de Gröbner et le traitement des **non-dégénérescences** (saturation) — il consomme Geometry-01 et introduit l'algèbre polynomiale en cours de route.
 
 ---
 
@@ -310,7 +310,7 @@ La série joue un rôle charnière dans la famille SymbolicAI : elle **consomme*
 | 16c | [Z3-Python-16c-Meal-Planner-Patient-Capstone](SMT/Z3-API/Z3-16c-Meal-Planner-Patient-Capstone-Python.ipynb) | Python | Profil patient, contraintes médicales, capstone | 3 |
 | 16d | [Z3-Python-16d-Meal-Planner-Convergence-Scale](SMT/Z3-API/Z3-16d-Meal-Planner-Convergence-Scale-Python.ipynb) | Python | Convergence à l'échelle, temps de réponse, bench | 3 |
 | 16e | [Z3-Python-16e-Meal-Planner-Optimize](SMT/Z3-API/Z3-16e-Meal-Planner-Optimize-Python.ipynb) | Python | Optimisation multi-critères, Pareto, compromis | 3 |
-| 17 | [Z3-Python-17-Array-Theory](SMT/Z3-API/Z3-Python-17-Array-Theory.ipynb) | Python | Array theory avancée, axiomes, modèles | 3 |
+| 17 | [Z3-17-Array-Theory-Python](SMT/Z3-API/Z3-17-Array-Theory-Python.ipynb) | Python | Array theory avancée, axiomes, modèles | 3 |
 | 18 | [Z3-Python-18-Sudoku-Modes](SMT/Z3-API/Z3-18-Sudoku-Modes-Python.ipynb) | Python | Sudoku modes étendus (diagonal, jigsaw, killer) | 3 |
 | **Z3-Linq2Z3 (C# déclaratif)** |   |   |   |   |
 | 1 | [01_Linq2Z3_Intro](SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb) | .NET C# | SMT avec LINQ, Z3.Linq, Missionnaires et Cannibales | 3 |
@@ -500,15 +500,16 @@ Documentation complète : [SymbolicLearning/README.md](SymbolicLearning/README.m
 
 ## Geometry - Preuve Automatique en Géométrie
 
-Série en ouverture (Epic #17544, première volée 01-02-03 en cours de livraison) : la **démonstration automatique** de théorèmes de géométrie élémentaire par l'algèbre des polynômes. Un théorème fil rouge — le milieu de l'hypoténuse équidistant des trois sommets — est traversé par des méthodes de plus en plus fortes.
+Série en ouverture (Epic #17544, volée 01-02 livrée, 03-05 en préparation) : la **démonstration automatique** de théorèmes de géométrie élémentaire par l'algèbre des polynômes. Un théorème fil rouge — le milieu de l'hypoténuse équidistant des trois sommets — est traversé par des méthodes de plus en plus fortes.
 
 ### Structure détaillée
 
 | # | Notebook | Contenu | Exercices | Prérequis |
 |---|----------|---------|-----------|-----------|
 | 01 | [Geometry-01-From-Figure-To-Equation](Geometry/Geometry-01-From-Figure-To-Equation.ipynb) | Hypothèses/conclusion en polynômes, vérification numérique sur 10 000 figures, témoin négatif, Schwartz–Zippel et preuve probabiliste | 3 | Géométrie lycée, Python |
+| 02 | [Geometry-02-From-Equation-To-Proof](Geometry/Geometry-02-From-Equation-To-Proof.ipynb) | Idéal des hypothèses, base de Gröbner (`sympy.groebner`), certificat d'appartenance de la conclusion, traitement des **non-dégénérescences** par saturation | 3 | Geometry-01, algèbre polynomiale |
 
-> Les positions 02 (Gröbner, `sympy.groebner`), 03 (méthode de Wu, reprise de #17511), 03b (décomposition de Ritt), 04/04b (DD+AR, IMO-AG-30) et 05 (pont formel Lean) sont cadrées dans l'Epic #17544 et se livrent par volées — le chemin principal ne suppose jamais un notebook non encore publié.
+> Les positions 03 (méthode de Wu, reprise de #17511), 03b (décomposition de Ritt), 04/04b (DD+AR, IMO-AG-30) et 05 (pont formel Lean) sont cadrées dans l'Epic #17544 et se livrent par volées — le chemin principal ne suppose jamais un notebook non encore publié.
 
 Documentation complète : [Geometry/README.md](Geometry/README.md)
 
@@ -597,8 +598,9 @@ SymbolicAI/
 │   ├── reference/             # Notes AIMA ch. 19
 │   └── README.md
 │
-├── Geometry/                  # Preuve automatique en géométrie (série en ouverture, Epic #17544)
+├── Geometry/                  # Preuve automatique en géométrie (volée 01-02, Epic #17544)
 │   ├── Geometry-01-From-Figure-To-Equation.ipynb   # Découverte : figure -> polynômes, Schwartz-Zippel
+│   ├── Geometry-02-From-Equation-To-Proof.ipynb    # Licence : Gröbner + saturation (non-dégénérescences)
 │   └── README.md
 │
 ├── SMT/                       # Solveurs SMT (Satisfiability Modulo Theories) — 46 notebooks (cf. marqueur CATALOG-STATUS)
@@ -760,7 +762,7 @@ Le setup est entièrement automatisé via `Tweety-01-Setup-Python.ipynb` :
 
 ## Audit Qualité (septembre 2026 — §E whole-file)
 
-### Couverture exercices (réconciliation disque ↔ marqueur ↔ prose, mise à jour 4 septembre 2026)
+### Couverture exercices (réconciliation disque ↔ marqueur ↔ prose, mise à jour 25 septembre 2026)
 
 | Série | Notebooks | Avec exercices | Sans exercices | Status |
 |-------|-----------|----------------|----------------|--------|
@@ -773,11 +775,9 @@ Le setup est entièrement automatisé via `Tweety-01-Setup-Python.ipynb` :
 | SymbolicLearning (AIMA ch. 19 + SL-12 differentiable logic gates) | 21 | 21 (100%) | 0 | Excellent |
 | SMT/Z3-Linq2Z3 (C# Linq2Z3) | 18 | 18 (100%) | 0 | Excellent |
 | SMT/Z3-API (Python + 6 jumeaux C#) | 28 | 28 (100%, 22 Python + 6 C# jumeaux) | 0 | Excellent |
-| Geometry (ouverture 23/09, Epic #17544) | 1 | 1 (100%, Geometry-01 avec 3 exercices) | 0 | Série en ouverture |
+| Geometry (ouverture 23/09, Epic #17544) | 2 | 2 (100%, Geometry-01/02 avec 3 exercices chacun) | 0 | Volée 01-02 livrée, 03-05 en préparation |
 
-**Total** : le compte courant des notebooks pédagogiques **fait foi dans le bloc `<!-- CATALOG-STATUS -->` ci-dessus** (régénéré quotidiennement par `.github/workflows/catalog-cron.yml`) ; en date du 4 septembre 2026 il s'établit à **262** (y compris `root=1` : OR-tools-Stiegler, et le probe IKVM compté dans Tweety=34), hors les 4 fichiers `_archive/` (Fast-Downward-Legacy, 2 précurseurs EML SymbolicLearning, `Tweety.ipynb` legacy). Les notebooks sans exercices sont uniquement : les setups (SC-1-Setup-Foundry), les notebooks de projet (SC-26-Final-Project), la référence historique RDF.Net-Legacy, les deux dérivés Lean sans cellules d'exercice (Lean-16i, Lean-20b), l'artefact `_agent` et le groupe-I2 d'Argument Analysis, et le probe IKVM (non pédagogique).
-
-> **Note (04/09, réconciliation fichier-entier — See #3973)** : décompositions vérifiées sur disque : **Tweety 34** = 14 Python + 18 C# + 1 Lean (Tweety-5b) + 1 probe ; **Lean 49** = 19 preuves natives (3 `lean4` + 16 `lean4-wsl`) + 30 companions Python (25 `python3` + 4 `python3-wsl` + 1 `global-3.13`) ; **SemanticWeb 27** = 13 C# (incl. RDF.Net-Legacy) + 14 Python (SW-14/15 ajoutés après la réconciliation c.1297) ; **Planners 25** = 15 Python + 9 C# jumeaux + 1 Lean (Planners-5b) ; **SmartContracts 31** = 30 Python + 1 `lean4-wsl` (SC-7c) ; **Argument_Analysis 28** = 10 Agentic (7 sources + 3 artefacts `_agent.ipynb`) + 17 analytiques + 1 groupe-I2 ; **SymbolicLearning 21** = 12 Python + 8 C# jumeaux + 1 Lean (SL-1b) ; **SMT 46** = 28 Z3-API (22 Python + 6 C# jumeaux) + 18 Z3-Linq2Z3 ; root = 1. Réconciliation précédente : 15 août 2026 (c.118, total 230). Ajout 23 septembre 2026 : **Geometry 1** = Geometry-01-From-Figure-To-Equation (série en ouverture, Epic #17544 ; le catalogue la comptera à sa prochaine régénération). Pour les comptes courants, le marqueur `<!-- CATALOG-STATUS -->` fait foi.
+**Total** : le compte courant des notebooks pédagogiques **fait foi dans le bloc `<!-- CATALOG-STATUS -->` ci-dessus** (régénéré quotidiennement par `.github/workflows/catalog-cron.yml`) ; le catalogue est la source de vérité — il se resynchronise au prochain cron, et la table §E ci-dessus est un instantané daté. Les notebooks sans exercices sont uniquement : les setups (SC-1-Setup-Foundry), les notebooks de projet (SC-26-Final-Project), la référence historique RDF.Net-Legacy, les deux dérivés Lean sans cellules d'exercice (Lean-16i, Lean-20b), l'artefact `_agent` et le groupe-I2 d'Argument Analysis, et le probe IKVM (non pédagogique).
 
 ### Problèmes connus (juillet 2026)
 
@@ -879,6 +879,7 @@ La famille SymbolicAI est couverte sur **trois stacks** selon les formalismes (E
 | **Argument Analysis** | ● (24 sources, hors 3 artefacts `_agent` et 1 groupe-I2) | — | — | Pipeline SK multi-agents + port verbatim EPITA-IS Argumentum (couches Python) |
 | **SymbolicLearning** | ● (12) | ◐ (8 jumeaux) | ◐ (1, SL-1b) | AIMA ch. 19 induction pure + ILP + neuro-symbolique ; jumeaux from-scratch BCL-only dont SL-6c FOIL |
 | **SMT / Z3** (Z3-Linq2Z3 + Z3-API) | ● (22) | ● (24) | — | Z3-Python API complète + 6 jumeaux C# (#4956) + Z3.Linq DSL C# 18 nb (missionnaires, cryptarithms, sudoku) |
+| **Geometry** (Epic #17544) | ● (2) | — | — | Preuve automatique en géométrie : figure → polynômes (Schwartz–Zippel), équation → preuve (Gröbner + saturation) |
 
 Légende : ● couverture large ; ◐ couverture partielle / companion ; — absent.
 
