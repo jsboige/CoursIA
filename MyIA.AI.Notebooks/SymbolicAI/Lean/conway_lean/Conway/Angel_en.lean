@@ -8,16 +8,17 @@ distance `k`; the Devil eats one square per turn. Does the Angel of some power
 `k` evade capture forever? Conway laid out the initial results and the problem
 sparked the field; it was settled in 2007 by three complementary papers:
 Bowditch (power 4), Máthé (power 2), Kloster (power 2, alternative proof).
-Gács also proved that the Angel of infinite power wins. — the Angel of
-power ≥ 2 wins.
+Gács also proved that the Angel of **finite but arbitrarily large**
+power wins (explicit construction with constant 36 over k). — the
+Angel of power ≥ 2 wins.
 
 Bibliography archived under `G:\Mon Drive\MyIA\IA\Bibliography IA\GameTheory\`:
 - `2007 - Gacs - The Angel Wins.pdf` (arXiv:0706.2817v1, verified)
 - MathOverflow 357433 archived as HTML in `Technical Web Docs/`
 Paywalled papers (Bowditch/Máthé/Kloster, Cambridge Core + Elsevier
-ScienceDirect) could not be archived locally due to lack of auth access;
-their DOIs are referenced in the docstring of `angel_k_ge_2_wins_devil`
-below.
+ScienceDirect) could not be archived locally due to lack of auth
+access; their DOIs are referenced in the literature block below
+(`## REFERENCE LITERATURE` of the module doc).
 
 ACCESSIBILITY NOTE (Epic #1452/#1453): the FULL win theorem is an infinite-game /
 non-termination statement with no Lean precedent — research-grade, NOT a tractable
@@ -27,10 +28,14 @@ Angel's move-set (a Chebyshev ball), where the power-1 Angel is exactly a chess
 king. Homage to a MathOverflow contribution on Conway's pursuit-evasion results
 (post 357433).
 
-One INTRINSIC-assumed `sorry` on the k ≥ 2 win theorem; see docstring
-`angel_k_ge_2_wins_devil` for justification and reference literature.
-The other theorems in this file (combinatorial setup) remain verified
-(Epic #1453, #1651).
+All sorries in this file have been removed (ai-01 review of
+2026-09-26, PR #17756). The pseudo-declaration `True` by `sorry`
+that carried the win-theorem statement (intractable in Lean 4
+v4.33.0 local, class `INTRINSIC`) was withdrawn from both
+siblings; its content (statement, reasons for non-port, literature)
+is preserved in the doc block below for documentary traceability.
+The other theorems in this file (combinatorial setup) remain
+verified (Epic #1453, #1651).
 -/
 
 /-

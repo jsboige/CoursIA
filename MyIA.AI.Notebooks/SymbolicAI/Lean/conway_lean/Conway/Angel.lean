@@ -10,15 +10,17 @@ indefiniment ? Conway a pose les resultats initiaux et le probleme a
 ouvert tout un champ ; il fut resolu en 2007 par trois articles
 complementaires : Bowditch (pouvoir 4), Mathe (pouvoir 2), Kloster
 (pouvoir 2, preuve alternative). Gacs a egalement demontre que
-l'Ange de pouvoir infini gagne. -- l'Ange de pouvoir ≥ 2 gagne.
+l'Ange de pouvoir **fini mais arbitrairement grand** gagne
+(construction explicite a constante 36 sur k). -- l'Ange de
+pouvoir ≥ 2 gagne.
 
 Bibliographie archivee dans `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\` :
 - `2007 - Gacs - The Angel Wins.pdf` (arXiv:0706.2817v1, verifie)
 - MathOverflow 357433 archive en HTML dans `Technical Web Docs/`
 Les papiers paywalles (Bowditch/Mathe/Kloster, Cambridge Core +
 Elsevier ScienceDirect) n'ont pas pu etre archives en local faute
-d'acces auth ; leurs DOI sont references dans l'en-tete de
-`angel_k_ge_2_wins_devil` ci-dessous.
+d'acces auth ; leurs DOI sont references dans le bloc litteraire
+ci-dessous (`## LITTERATURE DE REFERENCE` du module doc).
 
 NOTE D'ACCESSIBILITE (Epic #1452/#1453) : le THEOREME complet de
 victoire est un enonce de jeu infini / non-terminaison sans precedent
@@ -29,10 +31,14 @@ de l'Ange (une boule de Chebyshev), ou l'Ange de pouvoir 1 est
 exactement un roi des echecs. Hommage a une contribution MathOverflow
 sur les resultats de poursuite de Conway (post 357433).
 
-Un sorry assumé INTRINSIC sur le theoreme de victoire k≥ 2 ; voir
-docstring `angel_k_ge_2_wins_devil` pour la justification et la
-litterature de reference. Les autres theoremes de ce fichier
-(setup combinatoire) restent verifies (Epic #1453, #1651).
+Tous les sorries de ce fichier ont ete elimines (revue ai-01 du
+2026-09-26, PR #17756). La pseudo-declaration `True` par `sorry`
+qui portait l'enonce du theoreme de victoire (intractable en
+Lean 4 v4.33.0 local, classe `INTRINSIC`) a ete retirees des deux
+siblings ; son contenu (enonce, motifs du non-port, litterature)
+est conserve dans le bloc doc ci-dessous pour traçabilite
+documentaire. Les autres theoremes de ce fichier (setup
+combinatoire) restent verifies (Epic #1453, #1651).
 -/
 
 /-
