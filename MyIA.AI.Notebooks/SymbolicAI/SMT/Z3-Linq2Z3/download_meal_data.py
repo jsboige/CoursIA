@@ -91,6 +91,9 @@ RECIPEML_ZIP_URL = (
     + "id_/http://dsquirrel.tripod.com/xmlzips/RecipeMLArchive{:05d}.zip"
 )
 RECIPEML_BATCHES = 110  # 110 batches x 100 recettes ~= 11 000
+# Marqueur ecrit a la FIN d'une passe RecipeML complete : distingue un corpus COMPLET
+# d'un corpus tronque par une interruption (cf. _recipeml_present).
+RECIPEML_DONE = ".complete"
 
 ALL_AREAS = ["Ciqual", *FORK_AREAS, "RecipeML"]
 
@@ -123,6 +126,18 @@ def _dir_size(path: Path) -> int:
 def _ciqual_present(dest: Path) -> bool:
     ciqual = dest / "Ciqual"
     return all((ciqual / name).exists() for name in CIQUAL_2025_FILES)
+
+
+def _recipeml_present(dest: Path) -> bool:
+    """Presence du corpus RecipeML : le marqueur de fin de passe, pas le dossier.
+
+    Un simple `(dest / "RecipeML").exists()` rendait un corpus TRONQUE (passe interrompue)
+    indiscernable d'un corpus complet -- le second appel annoncait « Corpus deja complet »
+    et ne telechargeait rien, laissant le carnet 07 reconstruire un cache ampute en silence.
+    On exige donc la preuve qu'une passe est allee au bout, comme `_ciqual_present` exige
+    la presence des quatre fichiers nommes plutot que celle du dossier `Ciqual/`.
+    """
+    return (dest / "RecipeML" / RECIPEML_DONE).exists()
 
 
 def download_ciqual(dest: Path) -> None:
@@ -178,26 +193,32 @@ def download_fork(dest: Path, areas: list[str]) -> None:
             print(f"  [ok] {area} -> {count} element(s) ({_human(_dir_size(dest / area))})")
 
 
-def download_recipeml(dest: Path, limit: int | None) -> None:
+def download_recipeml(dest: Path, limit: int | None, force: bool = False) -> None:
     """Recupere la "Squirrel's RecipeML Archive" (~11k recettes) via Wayback.
 
     Telecharge les zips `RecipeMLArchive#####.zip` snapshotes sur archive.org et
     extrait les XML dans `RecipeML/RecipeMLArchive#####/`. `limit` borne le nombre
     de batches (subsets-first).
+
+    Reprise : un batch dont le dossier porte deja des XML est saute, donc une passe
+    interrompue se poursuit la ou elle s'etait arretee. Le marqueur `RECIPEML_DONE`
+    n'est ecrit qu'apres une passe allee jusqu'au bout.
     """
     rml = dest / "RecipeML"
     rml.mkdir(parents=True, exist_ok=True)
     n = RECIPEML_BATCHES if limit is None else min(limit, RECIPEML_BATCHES)
     print(f"RecipeML (Squirrel's Archive via Wayback {WAYBACK_TS}) : {n} batch(es)")
-    total = 0
+    total = sum(1 for _ in rml.rglob("*.xml"))  # recettes deja sur disque (reprise incluse)
     for i in range(1, n + 1):
+        outdir = rml / f"RecipeMLArchive{i:05d}"
+        if not force and any(outdir.glob("*.xml")):
+            continue
         url = RECIPEML_ZIP_URL.format(i)
         try:
             with urllib.request.urlopen(url, timeout=120) as resp:  # noqa: S310 (URL fixe Wayback)
                 data = resp.read()
             with zipfile.ZipFile(io.BytesIO(data)) as zf:
                 members = [m for m in zf.namelist() if m.lower().endswith(".xml")]
-                outdir = rml / f"RecipeMLArchive{i:05d}"
                 outdir.mkdir(exist_ok=True)
                 for m in members:
                     (outdir / Path(m).name).write_bytes(zf.read(m))
@@ -207,6 +228,15 @@ def download_recipeml(dest: Path, limit: int | None) -> None:
             continue
         if i % 10 == 0 or i == n:
             print(f"  ... {i}/{n} batches, {total} recettes")
+    # Marqueur de fin de passe : exige que CHAQUE batch porte des XML, pas seulement
+    # que la boucle soit allee jusqu'au bout. Un batch en echec reseau silencieux
+    # (try/except -> continue) ne doit pas couronner un corpus incomplet -- sinon
+    # la reprise suivante voit `[skip] RecipeML deja present` sur un corpus ampute,
+    # exactement le piege que ce marqueur est cense supprimer.
+    if n == RECIPEML_BATCHES and all(
+        any((rml / f"RecipeMLArchive{i:05d}").glob("*.xml")) for i in range(1, n + 1)
+    ):
+        (rml / RECIPEML_DONE).write_text("", encoding="utf-8")
     print(f"  [ok] RecipeML -> {total} recettes ({_human(_dir_size(rml))})")
 
 
@@ -221,7 +251,7 @@ def download(dest: Path, areas: list[str], force: bool, recipeml_limit: int | No
     if do_ciqual and _ciqual_present(dest) and not force:
         print(f"[skip] Ciqual deja present ({_human(_dir_size(dest / 'Ciqual'))}) - --force pour ecraser")
         do_ciqual = False
-    if do_recipeml and (dest / "RecipeML").exists() and not force:
+    if do_recipeml and _recipeml_present(dest) and not force:
         print(f"[skip] RecipeML deja present ({_human(_dir_size(dest / 'RecipeML'))}) - --force pour ecraser")
         do_recipeml = False
     kept = []
@@ -242,7 +272,7 @@ def download(dest: Path, areas: list[str], force: bool, recipeml_limit: int | No
     if fork_to_fetch:
         download_fork(dest, fork_to_fetch)
     if do_recipeml:
-        download_recipeml(dest, recipeml_limit)
+        download_recipeml(dest, recipeml_limit, force)
 
     print(f"\nCorpus disponible dans : {dest.resolve()}")
     print(f"Taille totale : {_human(_dir_size(dest))}")

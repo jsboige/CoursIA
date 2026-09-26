@@ -144,7 +144,7 @@ Le champ `scientific_reviewed_by` est dans `CURATED_GIT_FIELDS` (l.949 de `gener
 Les 3 entrées suivantes posent le **pilote fondateur** sur les 3 contre-exemples mesurés (FINAL+EXECUTED+UNREVIEWED → bloqués en BETA) :
 
 ```yaml
-# Pilote fondateur c.997/c.1022 — evidence_pr pointe désormais sur des PRs MERGÉES (Tell c.745 sustained §B.2 levée)
+# Pilote fondateur — evidence_pr pointe désormais sur des PRs MERGÉES (vérification first-hand, objection §B.2 levée)
 # Vérification first-hand c.1022 : `git log origin/main --oneline -- <notebook>` → PRs MERGED réelles qui touchent chaque notebook.
 - notebook_path: Sudoku/Sudoku-11-Choco-Csharp.ipynb
   confidence: established

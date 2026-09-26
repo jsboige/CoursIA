@@ -72,7 +72,7 @@ L'analyse argumentative outillée s'inscrit dans plusieurs cas concrets où la d
 | 03 | [Argumentation-03-Dung-AF-Semantics-Python](Argumentation-03-Dung-AF-Semantics-Python.ipynb) | Sémantiques grounded / preferred / stable reconstruites de zéro en pur Python (cas canonique où les trois divergent) | Fondation argumentation abstraite |
 | 03b | [Argumentation-03b-Value-Based-AF-Python](Argumentation-03b-Value-Based-AF-Python.ipynb) | Argumentation basée sur les valeurs (Bench-Capon 2003) : chaque argument promeut une valeur, chaque audience ordonne les valeurs ; une attaque ne défait sa cible que si la valeur de l'attaquant est préférée — un même graphe produit des conclusions différentes selon l'audience — pur stdlib Python | Argumentation + préférences |
 | 03c | [Argumentation-03c-Ranking-Semantics-Python](Argumentation-03c-Ranking-Semantics-Python.ipynb) | Sémantiques de classement (h-Categoriser, fardeau) en pur Python : force numérique départageant des arguments de même statut Dung | Argumentation graduée |
-| 04 | [Argumentation-04-Dialogues-Protocolises-Python](Argumentation-04-Dialogues-Protocolises-Python.ipynb) | Protocoles de dialogue Walton–Krabbe (inquiry/persuasion) comme machines à états sur 9 actes de parole : tables de transitions, terminaison par condition testable (compréhension mutuelle, capitulation, boucle), 5 divergences source documentées dont une condition de terminaison inatteignable (`_term_double_retract`) — pur stdlib Python | Protocoles d'échange / pragmatique |
+| 04 | [Argumentation-04-Dialogues-Protocolises-Python](Argumentation-04-Dialogues-Protocolises-Python.ipynb) | Protocoles de dialogue Walton–Krabbe (inquiry/persuasion) comme machines à états sur 9 actes de parole : tables de transitions, terminaison par condition testable (compréhension mutuelle, capitulation, boucle), validation sur fixture partagée (9 transitions + 7 historiques, `data/dialogue_protocols_examples.json`), jonction classifieur Walton (01b) → `FormalArgument.scheme` (04b), propriétés mesurées du moteur dont une condition de terminaison inatteignable (`_term_double_retract`) — pur stdlib Python | Protocoles d'échange / pragmatique |
 | 04b | [Argumentation-04b-Knowledge-Base-Python](Argumentation-04b-Knowledge-Base-Python.ipynb) | La mémoire d'un débat (distillation Triple Distillation du moteur étudiant EPITA) : population transitive (`add_argument` porte prémisses et conclusion), support/attaque par convention lexicale `¬`, cohérence = conflit ouvert P/`¬P`, `entails` = appartenance documentée (pas d'inférence — non-explosion mesurée, `¬¬P` distinct de `P`, écrasement par contenu) — pur stdlib Python | Mémoire de débat |
 | 05 | [Argumentation-05-Formal-Verification-Python](Argumentation-05-Formal-Verification-Python.ipynb) | Logique formelle réelle (PL + FOL + Modal + Dung via Tweety) | Formalisation |
 | 05b | [Argumentation-05b-Multi-Backend-Routing-Python](Argumentation-05b-Multi-Backend-Routing-Python.ipynb) | Routage multi-backend « décider ou échouer bruyamment » : PL/Modal/Dung/FOL décidés par Tweety embarqué + sentinelle de contrat de livraison gardant les prouveurs externes (EProver/Mace4) — doctrine anti-théâtre / fail-loud | Raisonnement robuste |
@@ -97,6 +97,8 @@ L'analyse argumentative outillée s'inscrit dans plusieurs cas concrets où la d
 | Onto-01 | [Onto-01-AIF-OWL2](Argumentation-Onto-01-AIF-OWL2-Python.ipynb) | Socle ontologique Argumentum (`argumentum_fallacies.owl`, 4,7 MB OWL2/XML) : parseur regex tolérant (37 axiom `ExactCardinality` mal formés bloquent rdflib), inventaire 10 976 NamedIndividual + 1 305 ClassAssertion (skos:Concept dominant) + 4 183 ObjectPropertyAssertion, recherche des schemes Walton dans les labels, sous-graphe autour de l'Equivoque — lien entre la série et l'ontologie upstream Argumentum | Socle ontologique |
 | Onto-02 | [Onto-02-CrossLinks-CSV](Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb) | Complément CSV canonique Argumentum (`Cards/Fallacies/Argumentum Fallacies - Taxonomy.csv`) : 8 colonnes `crossLink_*` (PredatesOn, Denounces, Leverages, Allows, Opposes, Inverts, Mirrors, IsRelatedTo — quasi-vides, 22 relations totales, 1,5% des sophismes ont ≥1 crossLink) + 70 mappings AIF (skos:broadMatch/closeMatch/narrowMatch, absents OWL) + 60 schemes Walton uniques (top : OppositeConsequences_Conflict 5 occurrences). Compare le gap OWL (10 976 NI) vs CSV (1 408 sophismes × 8 langues = 11 264 descriptions) — finding méthodologique : l'effort de curation upstream est porté sur la **taxonomie** (8 langues, 8 familles, 9 niveaux), pas sur les **liens transverses** | CSV canonique |
 | Onto-03 | [Onto-03-Vertus-SKOS](Argumentation-Onto-03-Vertus-SKOS-Python.ipynb) | Pôle **positif** de l'axe argumentatif (`argumentum_virtues.owl`, 863 KB OWL2/XML) : thésaurus SKOS des **vertus** argumentatives, miroir des sophismes (`aif:goodTenorOf` vs `badTenorOf`). Pont regex→rdflib chargeant 2 639 triplets SKOS (rdflib et owlready2 échouent sur l'OWL/XML fonctionnel), 224 `skos:Concept` bilingues (prefLabel fr 223 / en 223), racine `validArgument`, 14 schemes de Walton rattachés — contraste ABox (sophismes = NamedIndividual + ObjectPropertyAssertion) vs thésaurus d'annotations SKOS (vertus) | Pôle vertus / SKOS |
+| Gouv | [Gouvernance_Multi_Agents](Argument_Analysis_Gouvernance_Multi_Agents.ipynb) | Gouvernance multi-agents (distillation du cœur EPITA — tronc `agents/core/governance/` + sas `governance_voting_methods`, sous-grain 2 #4960) : organe pur `governance_methods.py` — **15 algorithmes** (5 scrutins : majorité/plurality/Borda/Condorcet/quadratique · 2 protocoles : byzantin/Raft · 8 fonctions de choix social : approval/STV/Copeland/Kemeny-Young/Schulze...), correction #1981 (« 7 méthodes » = erreur de catégorie), métriques justice Gini/satisfaction, duels pairwise, paradoxe de Condorcet, manipulation Borda/Gibbard-Satterthwaite — pur stdlib Python, deltas tronc↔prototype documentés | Choix collectif |
+| FallRules | [Fallacy_Rules_Symboliques](Argument_Analysis_Fallacy_Rules_Symboliques.ipynb) | Étage symbolique de la détection de sophismes **tel qu'il vit dans le cœur EPITA** (`_SYMBOLIC_FALLACY_RULES`, sous-grain 1 #4960) : organe pur `fallacy_rules.py` 13 motifs / 5 familles + minage claim/prémisse + 4 gabarits de justification par famille (G5), vrai moteur `fr_core_news_sm`, **rappel mesuré 4/9** avec diagnostic token-table des échecs (virgule PUNCT, déterminant insérés, POS modèle-dépendant — « incompétent » VERB sous sm), **démonstration des deux réparations G4 #1186** (motifs dormants → 0→1 match) et 3 exercices de réparation de motif | Détection d'arguments |
 | I2 | [I2_Contre_arguments_ASPIC](groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb) | Travail de groupe : contre-arguments ASPIC (sous-répertoire `groupe-I2-contre-arguments-aspic/`, production autonome) | Travail de groupe |
 
 ## Ce que chaque notebook apporte
@@ -120,12 +122,14 @@ L'analyse argumentative outillée s'inscrit dans plusieurs cas concrets où la d
 | **07c** | Reconstruire les tableaux sous-budget/calibré d'un comparatif de 7 modes d'orchestration, nommer les 3 registres d'arrêt, et dériver un budget calibré — avec la limite mesurée de la projection linéaire (1081 s naïfs vs 600 s réels) | 30 min |
 | **Obs-01-Graphes-Dates** | Construire l'instrument de comparaison temporelle des graphes d'argumentation : critère d'inclusion écrit d'un énoncé, graphe AIF conforme sérialisé en RDF, projection Dung, deux mesures d'écart de familles différentes, plancher de bruit (contrôle négatif) publié avec chaque mesure, et contrôle positif dont la magnitude attendue est dérivée à la main avant l'exécution | 45 min |
 | **Obs-02-Initiation** | Conduire un cas empirique pré-inscrit de bout en bout : reprise de l'instrument Obs-01 sans réécriture (module dédié, garde anti-repli), corpus daté stratifié mensuellement, extraction LLM épinglée (modèle, température 0, schéma JSON), mesure via l'instrument avec plancher de bruit split-half chronologique, et plafond de preuve déclaré (DiD imparfait) | — |
+| **Gouvernance_Multi_Agents** | Comparer les scrutins d'agrégation sur les mêmes préférences (majorité vs Borda, duels pairwise, cycle de Condorcet), mesurer justice de Gini et satisfaction, puis distinguer des protocoles de tolérance aux pannes (bruit byzantin, Raft) et le choix social formel (STV, Copeland, Kemeny-Young, Schulze) — correction #1981, pur stdlib Python | 35 min |
 | **08d** | Séparer la *lisibilité* (confiée au LLM) de l'*honnêteté* (gardée par un scaffold déterministe) : extraction d'evidence, bande de verdict *gated* sur la couverture, gate de tissage anti-énumération (§4), renderer qui *nomme* les actes manquants, et narration LLM injectable *fail-loud* | 45 min |
 | **07b** | Construire un bus de communication multi-agents : messages à priorité inversée, filtres fail-loud, routage sans routes mortes, corrélation requête-réponse — pur stdlib Python | 30 min |
 | **08e** | Construire la fiche agrégée d'un argument réunissant les 5 dimensions d'analyse (sophismes, qualité, contre-arguments, JTMS, formel), puis trier un débat entier par force — démontre l'indépendance des dimensions | 35 min |
 | **Onto-01-AIF-OWL2** | Charger l'ontologie Argumentum (OWL2/XML, 4,7 MB) via un parseur regex tolérant (rdflib échoue sur 37 axiom `ExactCardinality` mal formés), inventorier les 10 976 NamedIndividual + 4 183 ObjectPropertyAssertion, retrouver les schemes Walton dans les labels multilingues (Sign, Rule), et construire le sous-graphe du sophisme Equivoque (`semanticAmbiguity` + variantes) | 35 min |
 | **Onto-02-CrossLinks-CSV** | Compléter la vue OWL par le CSV canonique Argumentum (8 langues × 8 familles × 9 niveaux) : quantifier les 8 colonnes `crossLink_*` (PredatesOn 9, Denounces 1, Leverages 4, Allows 1, Opposes 2, Inverts 1, Mirrors 2, IsRelatedTo 2 — total 22, soit 1,5% de couverture par sophisme) et les 70 mappings AIF/Walton (`skos:broadMatch` 57, `skos:closeMatch` 10, `skos:narrowMatch` 3) ; démontrer empiriquement le gap OWL↔CSV (×7,8 en NamedIndividual par label multilingue) et la **sparsity structurelle** des relations transverses vs la richesse de l'arbre taxonomique | 30 min |
 | **Onto-03-Vertus-SKOS** | Charger le pôle **positif** de la taxonomie Argumentum (`argumentum_virtues.owl`, thésaurus SKOS) via un pont regex→rdflib (rdflib et owlready2 échouent sur l'OWL/XML fonctionnel) : construire 2 639 triplets SKOS sur 224 concepts, inventorier les prédicats SKOS (prefLabel / definition / broader / topConceptOf), contraster le paradigme ABox des sophismes (NamedIndividual + ObjectPropertyAssertion) avec le thésaurus d'annotations des vertus, extraire les libellés bilingues FR/EN et relier chaque vertu à ses schemes de Walton via `aif:goodTenorOf` | 35 min |
+| **Fallacy_Rules_Symboliques** | Porter l'étage symbolique du cœur (organe 13 motifs spaCy Matcher / 5 familles + 4 gabarits de justification), mesurer son rappel réel sur un corpus annoté (4/9 sur `fr_core_news_sm`), diagnostiquer token par token pourquoi les motifs syntaxiques échouent (virgule, déterminant, tag POS modèle-dépendant) et démontrer les deux réparations G4 qui rendent vivants des motifs dormants | 35 min |
 | **08c** | Créer une interface interactive (ipywidgets) pour piloter le pipeline en mode exploratoire | 30 min |
 | **08b** | Exécuter le pipeline complet en mode batch (Papermill/MCP) avec configuration .env | 20 min |
 
@@ -315,7 +319,7 @@ Le pipeline génère un rapport JSON dans `output/analysis_report.json` :
 
 ## Statistiques catalogue à jour
 
-Lecture `CATALOG-STATUS` byte-identique (l. 3-8) : la valeur canonique `pedagogical_count: 28`, `breakdown: Argument_Analysis=28`, `maturity: BETA=26, ALPHA=1, DRAFT=1` (et non un re-affichage dérivé) est la **source de vérité** ; le breakdown par sous-série ci-dessous ré-aligne la prose sur le marqueur canonique header (catalog-pr-hygiene R1 = marqueur canonique byte-identique, pas de re-affichage dérivé). **Écart disque ↔ catalogue signalé** : le répertoire compte **33** notebooks, dont **cinq** absents du catalogue au dernier passage du cron : `07b` (Communication Channels), `04` (Dialogues Protocolises), `04b` (Knowledge Base), `Obs-02-Initiation` et `01b` — le cron `catalog-cron.yml` rattrapera ; on ne régénère PAS le catalogue sur cette branche.
+Lecture `CATALOG-STATUS` byte-identique (l. 3-8) : la valeur canonique `pedagogical_count: 28`, `breakdown: Argument_Analysis=28`, `maturity: BETA=26, ALPHA=1, DRAFT=1` (et non un re-affichage dérivé) est la **source de vérité** ; le breakdown par sous-série ci-dessous ré-aligne la prose sur le marqueur canonique header (catalog-pr-hygiene R1 = marqueur canonique byte-identique, pas de re-affichage dérivé). **Écart disque ↔ catalogue signalé** : la série a été renommée en deux temps (arc principal `Argumentation-NN`, PR 1/3 #17718 ; sous-séries `Onto-`/`Obs-` + archive Agentic, PR 2/3) et les ajouts récents (`Gouvernance_Multi_Agents`, `Fallacy_Rules_Symboliques`) ne sont pas encore reflétés — le catalogue liste encore les noms pré-renommage ; le cron `catalog-cron.yml` rattrapera post-merge. On ne régénère PAS le catalogue sur cette branche.
 
 | Sous-série | Notebooks | Maturité | Contenu clé |
 |------------|-----------|----------|-------------|
@@ -383,7 +387,7 @@ Lecture `CATALOG-STATUS` byte-identique (l. 3-8) : la valeur canonique `pedagogi
 
 Là où Planners (cycle 29) est le carrefour **simulation/proof intra-série** (Python ⇄ Lean 4 sur l'admissibilité d'heuristique, cycle 29) et SmartContracts (cycle 30) est le carrefour **trust/privacy inter-séries** (confiance + confidentialité + décision collective), Argument_Analysis est le carrefour **informel/formel anti-théâtre inter-couches** : la **lecture de texte** (couche LLM, floue/contextuelle), la **formalisation logique** (couche PL/FOL/Modal, médium), et la **vérification formelle** (couche Tweety/Lean, tranchante/certaine) doivent collaborer SANS que l'une simule ce que l'autre fait réellement. Cette doctrine — incarnée par `Restitution_3_Actes` (scaffold déterministe + LLM *gated*), `Multi_Backend_Routing` (sentinelle « décider ou échouer bruyamment »), `Formal_Richness_Matrix` (4 classes de verdict anti-théâtre), et le mode fail-loud de `05` — est **la doctrine anti-théâtre du dépôt** : aucun notebook ne fait passer une simulation pour un résultat, aucune sortie n'est maquée pour embellir un échec.
 
-La série — 33 notebooks sur disque, 28 au catalogue canonique — aligne l'évolution paradigmatique de l'argumentation computationnelle (1995 Dung AF → 2019 framework hybrides LLM + solveur) sur la **frontière de vérifiabilité** (extraction brute → taxonomie → formalisation → validation SAT → restitution grounded). Chaque notebook est un maillon de la chaîne *lire → formaliser → vérifier → restituer honnêtement*.
+La série — tout notebook du répertoire, dont une part encore non cataloguée (rattrapage par le cron `catalog-cron.yml`) — aligne l'évolution paradigmatique de l'argumentation computationnelle (1995 Dung AF → 2019 framework hybrides LLM + solveur) sur la **frontière de vérifiabilité** (extraction brute → taxonomie → formalisation → validation SAT → restitution grounded). Chaque notebook est un maillon de la chaîne *lire → formaliser → vérifier → restituer honnêtement*.
 
 ## Conclusion / Prochaines étapes
 
@@ -430,7 +434,7 @@ Le titre annonce l'analyse d'arguments. Mais le geste que cette série enseigne 
 - [Semantic Kernel Docs](https://learn.microsoft.com/en-us/semantic-kernel/)
 - [TweetyProject](https://tweetyproject.org/)
 
-## Ordre partiel et prérequis — mapping exhaustif (33/33, version consolidée)
+## Ordre partiel et prérequis — mapping exhaustif (34/34, version consolidée)
 
 Cette section pose un **ordre partiel** sur l'ensemble des notebooks du
 répertoire, fondé sur les déclarations de prérequis et les chaînes de
@@ -512,6 +516,7 @@ en référence.
 | Notebook | Rôle dans la série | Prérequis Notebook dans l'arc |
 |----------|--------------------|-------------------------------|
 | `Argumentation-03-Dung-AF-Semantics-Python.ipynb` | **fondationnel** — sémantiques grounded/preferred/stable de Dung (1995) | aucun (point d'entrée de l'arc 3) |
+| `Argument_Analysis_Fallacy_Rules_Symboliques.ipynb` | Étage symbolique de la détection de sophismes (consolidation du cœur EPITA, #4960) — organe `fallacy_rules.py` + vrai moteur spaCy | aucun (indépendant ; nécessite `pip install spacy && python -m spacy download fr_core_news_sm`) |
 | `Argumentation-03b-Value-Based-AF-Python.ipynb` | VAF de Bench-Capon (2003) — Dung enrichi par les valeurs | `03` |
 | `Argumentation-01-Toulmin-Model-Python.ipynb` | Modèle structurel informel de Toulmin (1958) — 6 composants | aucun (indépendant, pont computationnel vers Dung en fin de parcours) |
 | `Argumentation-01b-Schemes-Walton-Python.ipynb` | Schémas d'argumentation de Walton (10 schémas stéréotypés, questions critiques) et classifieur lexical déterministe | aucun (indépendant ; niveau intermédiaire entre `01` et `03`, cités en contexte) |
@@ -520,6 +525,7 @@ en référence.
 | `Argumentation-03c-Ranking-Semantics-Python.ipynb` | Sémantiques graduées (h-Categoriser, fardeau) | `03` |
 | `Argumentation-Obs-01-Graphes-Dates-Python.ipynb` | Instrument $G_t^{arg} \to G_{t+1}^{arg}$ (Epic #13303, issue #13310) | `03` |
 | `Argumentation-Obs-02-Initiation-Python.ipynb` | Cas 1 de l'Observatoire (Epic #13303, livré #16431) : étude empirique DiD imparfait consommant l'instrument | `Obs-01-Graphes-Dates` |
+| `Argument_Analysis_Gouvernance_Multi_Agents.ipynb` | Gouvernance multi-agents (distillation du cœur EPITA, #4960) — scrutins / protocoles de consensus / choix social formel (#1981) | aucun (indépendant ; voisin d'`Argumentation-07-Orchestration` par la question — décider à plusieurs vs orchestrer le travail — pas par le code) |
 
 ```
 Dung_AF_Semantics ──→ Value_Based_AF
@@ -531,7 +537,7 @@ Dung_AF_Semantics ──→ Value_Based_AF
 Toulmin_Model  (indépendant, racine propre)
 ```
 
-### Hors-arc (14/33) — chaque notebook restant, avec sa raison
+### Hors-arc (14/34) — chaque notebook restant, avec sa raison
 
 | Notebook | Raison du hors-arc |
 |----------|--------------------|
@@ -572,10 +578,12 @@ sont des **ordres partiels** :
 
 La discussion c.1030 opposait « 14 notebooks annoncés » (adjoint) à « 15
 balisés » (auteur de la PR). La mesure de référence est le répertoire :
-**33 notebooks sur `main`** au 2026-09-23 — les cinq arrivées depuis la mesure
-du 2026-09-09 ont porté l'arc 3 de 5 à 9 — dont **19 balisés** par
-les arcs (6 + 4 + 9) et **14 hors-arc** documentés ci-dessus — la somme fait
-33, sans trou ni double. Les transverses que la c.1030 déclarait hors-ordre
+celle de cette branche au 2026-09-25 — les 33 de `main` (mesure
+du 2026-09-23, cinq arrivées depuis le 2026-09-09 ayant porté l'arc 3 de 5
+à 9) plus `Gouvernance_Multi_Agents` apportée par la présente PR — dont
+**20 balisés** par les arcs (6 + 4 + 10, l'arc 3 accueillant la gouvernance
+comme théorie parallèle) et **14 hors-arc** documentés ci-dessus — la somme
+fait 34, sans trou ni double. Les transverses que la c.1030 déclarait hors-ordre
 (`Formal_Richness_Matrix`, `Recollement_*`, …) sont ici nommés un à un avec
 leur raison.
 
@@ -667,6 +675,8 @@ L'écart n'est pas propre à Argument_Analysis — contrôle positif sur les voi
 
 
 ---
+
+**Version 1.2.5** — 2026-09-25 — intégration `Gouvernance_Multi_Agents` (PR #17353, sous-grain 2 #4960) : ligne dans les tables « Notebooks » et « Ce que chaque notebook apporte », entrée arc 3 (indépendante, prérequis aucun, voisine d'`Agentic-3-orchestration` par la question — décider à plusieurs vs orchestrer le travail) ; mapping re-mesuré **34/34**, arithmétique **20 balisés (6+4+10) + 14 hors-arc** ; reprise des lignes renommées `Argumentation-NN` du merge `main` (#17718). Marqueur `CATALOG-STATUS` byte-identique, aucune régénération sur la branche. Tell readme-french-first R1 respecté (prose nouvelle en français).
 
 **Version 1.2.4** — 2026-09-23 — audit fichier ENTIER §E (issue #17453) : ajout d'`Observatoire-1-Initiation` (livré #16431, epic #16410) dans les tables « Notebooks » et « Ce que chaque notebook apporte » + arc 3 (prérequis `Dated_Graphs`, diagramme mis à jour) ; ajout des 4 notebooks manquants à la table « Notebooks » (`Recollement_Lectures`, `Recollement_Strate6`, `Argumentum_Cards`, `I2_Contre_arguments_ASPIC` — chemin sous-dossier corrigé) ; mapping exhaustif re-mesuré **33/33** (32 racine + 1 sous groupe-I2 — cinq arrivées depuis la mesure du 2026-09-09, re-vérifiées au `git ls-tree`), arithmétique **19 balisés (6+4+9) + 14 hors-arc**, `Communication_Channels` classé hors-arc (transverse infra) ; table « Statistiques catalogue à jour » ré-alignée sur le marqueur canonique `pedagogical_count: 28`, `maturity: BETA=26, ALPHA=1, DRAFT=1` (l'ancienne table sommait à 18 sur un vocabulaire PRODUCTION périmé), écart disque↔catalogue signalé (**5** notebooks non catalogués, nommés, rattrapage par le cron). Marqueur `CATALOG-STATUS` byte-identique, aucune régénération sur la branche. Tell readme-french-first R1 respecté (prose nouvelle en français).
 

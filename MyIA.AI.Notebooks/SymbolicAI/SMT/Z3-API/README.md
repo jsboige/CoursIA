@@ -73,7 +73,7 @@ Une série sœur existe en C# : [SymbolicAI/Z3-Linq2Z3/](../Z3-Linq2Z3/README.md
 | 16c | [Meal-Planner : capstone patient](Z3-16c-Meal-Planner-Patient-Capstone-Python.ipynb) | Capstone (compagnon du 16) : restrictions nutritionnelles (énergie bornée, protéines min, lipides max), menu multi-jours, port du C# `08_Meal_Planner_Patient_Capstone` | ~40 min | BETA |
 | 16d | [Meal-Planner : convergence à l'échelle](Z3-16d-Meal-Planner-Convergence-Scale-Python.ipynb) | Convergence (compagnon du 16) : l'encodage décide de la tractabilité — index+disjonction explose, `Array` insoluble (`unknown`), one-hot pseudo-booléen (`PbEq`/`PbLe`/`PbGe`) passe à l'échelle | ~45 min | BETA |
 | 16e | [Meal-Planner : optimisation](Z3-16e-Meal-Planner-Optimize-Python.ipynb) | Optimisation (compagnon du 16) : du SAT à l'OPT — `minimize`/`maximize`, `add_soft` (MaxSAT souple), multi-objectif natif (`pareto`/`box`), glouton vs optimum global | ~45 min | BETA |
-| 17 | [Théorie des tableaux](Z3-Python-17-Array-Theory.ipynb) | `Array` sort, `Select`/`Store`, axiomes de McCarthy (read-over-write) vérifiés comme théorèmes, tableau trié / égalité de tableaux | ~30 min | PRODUCTION |
+| 17 | [Théorie des tableaux](Z3-17-Array-Theory-Python.ipynb) | `Array` sort, `Select`/`Store`, axiomes de McCarthy (read-over-write) vérifiés comme théorèmes, tableau trié / égalité de tableaux | ~30 min | PRODUCTION |
 | 18 | [Sudoku 4×4 : modes Array vs Constants](Z3-18-Sudoku-Modes-Python.ipynb) | Même Sudoku 4×4 encodé deux fois (variables `Int` par cellule vs `Array(Int, Int)`), comparaison des deux modes d'encodage | ~30 min | PRODUCTION |
 
 ### Fil pédagogique

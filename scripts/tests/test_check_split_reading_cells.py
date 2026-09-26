@@ -913,23 +913,90 @@ def test_diff_mute_si_ordre_inchange_et_contenu_identique():
     assert detect_added_readings(head, base) == []
 
 
-def test_diff_compte_correctement_les_doublons_de_sources():
-    """Si la meme cellule source apparait 1 fois en base et 2 fois en head,
-    la premiere en head est vue comme un REWRITE (meme position dans base,
-    meme cellule type markdown) et la seconde complete le budget multiset.
-    Le resultat net : 0 added. Pedagogiquement le doublon de lecture
-    passe inapercu -- c'est un bord connu du multiset-diff sans regarder
-    le contenu. Mitige par une regle metier : l'organe reste sur le delta
-    POSITION/SOURCE strict, et laisse le contenu (Jaccard, recouvrement) a
-    l'organe detect_repeated_prose qui mord ici verbatim.
+def test_diff_compte_le_doublon_de_source_comme_une_seconde_lecture():
+    """La meme cellule source 1 fois en base, 2 fois en head : le compte par
+    sortie monte (1 -> 2), c'est un SECOND_READING (#17044, decision ai-01
+    c.5836401913).
+
+    Ce cas etait l'angle mort declare du mode diff : le multiset de sources ne
+    voyait pas le doublon (la source existait deja en base), donc la cellule de
+    tete repartait comme non ajoutee et le rapport etait MUET. Le compte par
+    sortie ferme ce trou -- il ne diffe plus les sources, il compare le nombre
+    de lectures rattachees a la meme sortie.
+
+    Le VERDICT du cliquet, lui, ne change pas : les deux lectures titrees
+    consecutives forment une paire (`detect`), donc ``head_total > base_total``
+    rougissait deja ce carnet. Ce qui change est que le rapport designe
+    desormais la cellule en cause au lieu de laisser un rouge sans constat.
     """
     src = "### Lecture doublee\nMeme source, deux positions."
     base = nb(code("print(1)"), md(src))
     head = nb(code("print(1)"), md(src), md(src))
-    # Ici, l'organe DIFF ne signale rien (doublon a meme position -- vu
-    # comme rewrite). detect_repeated_prose mord verbatim sur le doublon,
-    # c'est son canal.
-    assert detect_added_readings(head, base) == []
+    findings = detect_added_readings(head, base)
+    assert [f["type"] for f in findings] == ["SECOND_READING"]
+    assert findings[0]["cells"] == [1]
+    # Mesure du verdict, sur le meme couple : la paire consecutive rougissait
+    # deja ce carnet avant ce changement.
+    assert len(detect(base)) == 0 and len(detect(head)) == 1
+
+
+def test_diff_le_compte_par_sortie_prime_sur_la_topologie_positionnelle():
+    """Une lecture ajoutee sous une sortie qui en portait deja est un
+    SECOND_READING, MEME si sa place la fait ressembler a une lecture
+    introductive (#17044, decision ai-01 c.5836401913).
+
+    Le compte est la definition du constat, la topologie ne fait que le nommer.
+    Sans cette primaute, la cellule posee devant la cellule de code SUIVANTE
+    sortait en READING_BEFORE_CODE, et le constat retombait alors sur la
+    **revision en place** qui l'accompagne -- designer comme le defaut le geste
+    que le mandat prescrit.
+    """
+    base = nb(
+        code("print(1)"),
+        md("### Analyse du resultat\nAncienne formulation."),
+        code("print(2)"),
+    )
+    head = nb(
+        code("print(1)"),
+        md("### Analyse du resultat\nNouvelle formulation."),
+        md("### Lecture chiffree : le score atteint 0.94"),
+        code("print(2)"),
+    )
+    findings = detect_added_readings(head, base)
+    assert [f["type"] for f in findings] == ["SECOND_READING"]
+    assert findings[0]["cells"] == [2]
+
+
+def test_diff_une_fusion_n_absout_pas_une_lecture_ajoutee_ailleurs():
+    """Critere 3 de la decision #17044 : compter PAR SORTIE, c'est ne pas
+    blanchir toute la PR des qu'une de ses sorties a ete fusionnee.
+
+    Deux sorties, deux gestes opposes : la premiere fusionne ses deux lectures
+    (le remede prescrit -- doit rester VERTE), la seconde en gagne une (le
+    defaut -- doit rester ROUGE). Un verdict par carnet, ou un discriminant par
+    recouvrement de mots, confondrait les deux.
+    """
+    base = nb(
+        code("print(1)"),
+        md("### Lecture\nA1."),
+        md("### Lecture chiffree\nA2."),
+        md("## 4. Suite du parcours"),
+        code("print(2)"),
+        md("### Lecture\nB1."),
+    )
+    head = nb(
+        code("print(1)"),
+        md("### Lecture\nA1 et A2 fusionnes."),
+        md("## 4. Suite du parcours"),
+        code("print(2)"),
+        md("### Lecture\nB1."),
+        md("### Lecture chiffree\nB2 ajoutee."),
+    )
+    findings = detect_added_readings(head, base)
+    # Rien sur la sortie 1 (compte 2 -> 1 : c'est la fusion), un constat nomme
+    # sur la sortie 2 (compte 1 -> 2).
+    assert [f["type"] for f in findings] == ["SECOND_READING"]
+    assert findings[0]["cells"] == [5]
 
 
 def test_diff_lecture_avant_exercice_est_reading_before_code():
@@ -1021,6 +1088,182 @@ def test_diff_reading_before_code_ne_mord_pas_si_code_sans_sortie():
     # Le code n'a pas d'output -> is_exercise_cell = False (pas de marker)
     # mais il n'a pas non plus de sortie utile -> devrait etre ignore.
     assert detect_added_readings(head, base) == []
+
+
+# --- 5quater. Carve-out #17777 : enonces d'exercice et titres de section ------
+#
+# Decision ai-01 2026-09-25, « option a, le carve-out d'organe » : le mode diff
+# signalait deux formes canoniques du depot. Trois controles sont exiges par la
+# decision -- un positif (le cas #17777, 11 findings -> 0) et deux negatifs qui
+# DOIVENT rester rouges (deux lectures reelles empilees ; une interpretation
+# deguisee sous un titre d'exercice). Le second volet de la decision -- un
+# en-tete de section n'est pas une lecture deja presente -- est epingle plus bas.
+
+
+def _enonce(n):
+    """Enonce d'exercice, forme canonique du depot : un titre `## Exercice N`
+    suivi d'un corps qui demande quelque chose a l'etudiant."""
+    return md(
+        f"## Exercice {n} : implémenter la variante\n\n"
+        f"Implémentez la variante {n} et vérifiez que la valeur retournée "
+        f"correspond au cas de référence décrit ci-dessus."
+    )
+
+
+def test_carveout_enonces_17777_donnent_zero_finding():
+    """CONTROLE POSITIF (decision #17777) : la forme `enonce | stub` repetee --
+    celle des trois carnets Oversight-Scaling-Laws -- ne produit aucun finding.
+
+    Avant le carve-out, la meme forme donnait 11 findings : 9 EXERCISE_READING
+    (l'enonce suit le stub precedent) et 3 READING_BEFORE_CODE (il precede son
+    propre stub). Mesure firsthand au head `93ac0e5cd7` de #17777.
+    """
+    base = nb(code("print(1)"))
+    head = nb(
+        code("print(1)"),
+        _enonce(1), _stub_exercise(),
+        _enonce(2), _stub_exercise(),
+        _enonce(3), _stub_exercise(),
+    )
+    assert detect_added_readings(head, base) == []
+
+
+def test_carveout_enonce_isole_devant_son_stub():
+    """L'enonce devant son propre stub, sans stub precedent : le bucket
+    topologique d'origine le classait READING_BEFORE_CODE."""
+    base = nb(_stub_exercise())
+    head = nb(_enonce(1), _stub_exercise())
+    assert detect_added_readings(head, base) == []
+
+
+def test_carveout_ne_couvre_pas_un_titre_de_section():
+    """Le carve-out ne vise QUE les titres d'exercice : un titre d'organisation
+    (`## Conclusion`) ajoute devant un stub reste signale. Sans ce garde-fou,
+    elargir le carve-out a « toute md avant un stub » aurait suffi -- et aurait
+    ouvert la porte aux transitions deguisees."""
+    base = nb(_stub_exercise())
+    head = nb(md("## Conclusion\nUne phrase de cloture."), _stub_exercise())
+    findings = detect_added_readings(head, base)
+    assert len(findings) == 1
+    assert findings[0]["type"] == "READING_BEFORE_CODE"
+
+
+def test_controle_negatif_interpretation_deguisee_sous_titre_exercice():
+    """CONTROLE NEGATIF (decision #17777) : une interpretation deguisee sous un
+    titre d'exercice -- une prose qui CITE une sortie -- reste signalee, meme
+    adjacente a un stub. C'est le garde-fou de sortie du carve-out : le
+    vocabulaire de l'interpretation (« la sortie ») n'est pas celui de
+    l'enonce."""
+    base = nb(_stub_exercise())
+    head = nb(
+        _stub_exercise(),
+        md("## Exercice 2 : lecture du résultat\n\nLa sortie ci-dessus montre "
+           "que la valeur atteint 0.94, ce qui confirme la tendance attendue."),
+    )
+    findings = detect_added_readings(head, base)
+    assert len(findings) == 1
+    assert findings[0]["type"] == "EXERCISE_READING"
+
+
+def test_controle_negatif_interpretation_deguisee_devant_du_code():
+    """Meme deguisement, mais devant une cellule de code a sortie : la
+    topologie suffit deja (READING_BEFORE_CODE), et le carve-out ne doit pas
+    l'eteindre -- la cellule n'est adjacente a aucun stub."""
+    base = nb(code("print(1)"))
+    head = nb(
+        md("## Exercice 1 : lecture du résultat\n\nLa sortie ci-dessus montre "
+           "que le total vaut 1, mesure."),
+        code("print(1)"),
+    )
+    findings = detect_added_readings(head, base)
+    assert len(findings) == 1
+    assert findings[0]["type"] == "READING_BEFORE_CODE"
+
+
+def test_controle_negatif_deux_lectures_reelles_empilees():
+    """CONTROLE NEGATIF (decision #17777) : deux lectures reelles empilees
+    apres une meme cellule de code restent signalees -- c'est le defaut nomme
+    par le mandat #13410, et le carve-out ne doit pas l'absorber."""
+    base = nb(code("print(1)"), md("### Lecture\nLe total vaut 1."))
+    head = nb(
+        code("print(1)"),
+        md("### Lecture\nLe total vaut 1."),
+        md("### Lecture chiffree\nLe total vaut 1, mesure sur 100 tirages."),
+    )
+    findings = detect_added_readings(head, base)
+    assert len(findings) == 1
+    assert findings[0]["type"] == "SECOND_READING"
+
+
+def test_carveout_titre_de_section_n_est_pas_une_lecture_deja_presente():
+    """Seconde moitie de la decision #17777 : `## 3. Bootstrap et IC95` suivi de
+    paragraphes reste un TITRE DE SECTION. Un code suivi d'un titre de section
+    n'a pas encore de lecture -- en ajouter une est le geste prescrit par le
+    mandat, pas un doublonnage.
+
+    Forme mesuree : Oversight-Scaling-Laws-Statistics, cellules 7 et 13 de la
+    tete de #17777. Le discriminant est le TITRE, pas la longueur du corps :
+    la cellule de base de la 13 porte trois paragraphes de prose, et un
+    discriminant par la longueur la laissait passer pour une lecture.
+
+    La topologie compte : la lecture ajoutee est posee a un index ou la BASE
+    porte du code, sinon le discriminant de reecriture en place (#17747) la
+    reconnait comme une revision et le test ne prouverait rien.
+    """
+    section = md(
+        "## 3. Bootstrap et IC95\n\nLes estimations ponctuelles se lisent sur "
+        "l'echelle du probleme, et la section suivante en tire la consequence "
+        "methodologique attendue par le protocole."
+    )
+    section2 = md("## 4. Meta-analyse\n\nLa prediction NSO se confronte ici a "
+                  "l'observation Wargames sur le meme jeu de scenarios.")
+    base = nb(code("print(1)"), section, code("print(2)"), section2)
+    head = nb(
+        code("print(1)"),
+        md("### Lecture du résultat\nLe total vaut 1."),
+        section,
+        code("print(2)"),
+        md("### Lecture chiffree\nLe total vaut 2, mesure sur 100 tirages."),
+        section2,
+    )
+    assert detect_added_readings(head, base) == []
+
+
+def test_carveout_lecture_reelle_en_base_compte_toujours():
+    """Garde-fou du controle precedent : une VRAIE lecture en base (titre
+    d'interpretation) compte toujours comme « lecture deja presente ». Le
+    carve-out ne doit pas ouvrir la porte au doublonnage qu'il ignore."""
+    base = nb(code("print(1)"), md("### Lecture\nLe total vaut 1."))
+    head = nb(
+        code("print(1)"),
+        md("### Lecture du résultat\nLe total vaut 1."),
+        md("### Lecture chiffree\nLe total vaut 1, mesure sur 100 tirages."),
+    )
+    findings = detect_added_readings(head, base)
+    assert len(findings) == 1
+    assert findings[0]["type"] == "SECOND_READING"
+
+
+def test_carveout_paragraphe_sans_titre_compte_comme_lecture():
+    """Un paragraphe NON TITRE sous un code est la signature de la campagne
+    #13410 (prose ajoutee sans en-tete) : il compte comme lecture deja
+    presente, meme si `is_reading_cell` ne le voit pas. Le carve-out du titre
+    de section ne doit pas le blanchir au passage -- c'est la borne qui separe
+    « le code n'avait pas de lecture » de « le code avait une prose »."""
+    prose = "Le total vaut 1, et c'est le total attendu par la specification."
+    base = nb(code("print(1)"), md("## 2. Tests\n\nUne section de base."),
+              code("print(2)"), md(prose))
+    head = nb(
+        code("print(1)"),
+        md("### Lecture du résultat\nLe total vaut 1."),
+        md("## 2. Tests\n\nUne section de base."),
+        code("print(2)"),
+        md("### Lecture chiffree\nLe total vaut 2, mesure."),
+        md(prose),
+    )
+    findings = detect_added_readings(head, base)
+    assert len(findings) == 1
+    assert findings[0]["type"] == "SECOND_READING"
 
 
 # --- 4. Delta #17087 (rebase post-#17135) : les trois cas non couverts --------

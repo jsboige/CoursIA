@@ -32,6 +32,14 @@ AXIOM_SELF_COVER = [
     ".github/actions/lean-axiom/action.yml",
     "scripts/lean/axiom_check_step.py",
 ]
+# Self-cover du contrat certifie herite du wrapper lean-social-choice.yml
+# supprime (#17374) : l'instrument, le compteur canonique et le test pinneur
+# sont des fichiers du gate.
+CERTIFIED_SELF_COVER = [
+    "scripts/lean/check_certified_sorry.py",
+    "scripts/lean/count_code_sorry.py",
+    "scripts/tests/test_check_certified_sorry.py",
+]
 
 
 def _manifest():
@@ -115,3 +123,68 @@ def test_serre100_historical_wrapper_is_gone():
     """
     assert not (REPO / ".github/workflows/lean-serre.yml").exists(), (
         "le wrapper historique de serre100 est revenu -- double build")
+
+
+def test_gametheory_entry_carries_axiom_and_certified_keys():
+    """#17374: gametheory's B.3 pass and SocialChoice certified contract
+    migrated from the deleted wrapper into the manifest. The exact target
+    list is pinned against CERTIFIED.txt by
+    test_check_certified_sorry.py::test_workflow_targets_match_manifest --
+    here we pin the KEYS and the trigger surface, the two joints a silent
+    edit could break."""
+    entry = next(e for e in _manifest()["lakes"] if e["lake"] == "gametheory")
+    assert entry["axiom-target-modules"].startswith("SocialChoice."), (
+        "gametheory lost its B.3 target list")
+    assert entry["axiom-fail-on-sorry"] == "true"
+    assert entry["certified-subdir"] == "SocialChoice"
+    for p in (["MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/"
+               "CERTIFIED.txt"] + CERTIFIED_SELF_COVER):
+        assert p in entry["paths"], (
+            f"gametheory manifest entry lost gate trigger {p}")
+
+
+def test_certified_step_is_gated_on_the_manifest_key():
+    """The certified contract runs only for manifest entries carrying
+    `certified-subdir` -- the other lakes keep their exact behaviour (step
+    skipped), and a lake WITH the key cannot silently lose its contract."""
+    doc = yaml.safe_load(
+        (REPO / ".github/workflows/lean-build.yml").read_text(encoding="utf-8"))
+    steps = doc["jobs"]["ci-matrix"]["steps"]
+    cert = [s for s in steps
+            if "check_certified_sorry.py" in s.get("run", "")]
+    assert len(cert) == 1, "exactly one certified-contract step in the matrix job"
+    assert cert[0]["if"] == "matrix.certified-subdir != ''"
+    assert "${{ matrix.certified-subdir }}" in cert[0]["run"]
+
+
+def test_certified_gate_files_are_self_covered():
+    """A change to the certified rule must re-run the gate (lecon #8712):
+    the three gate files sit in BOTH trigger unions of the dispatcher."""
+    doc = yaml.safe_load(
+        (REPO / ".github/workflows/lean-ci-matrix.yml").read_text(encoding="utf-8"))
+    on = doc.get("on") or doc.get(True)
+    for event in ("push", "pull_request"):
+        paths = on[event]["paths"]
+        for p in CERTIFIED_SELF_COVER + [
+            "MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/"
+            "CERTIFIED.txt",
+        ]:
+            assert p in paths, f"{p} missing from on.paths[{event}]"
+
+
+def test_social_choice_historical_wrapper_is_gone():
+    """#17374: lean-social-choice.yml was gametheory's pre-migration
+    dispatcher -- with the lake in the manifest it was a DOUBLE trigger
+    (matrix leg + wrapper build/axiom). The migration contract: a manifest
+    lake keeps no wrapper."""
+    assert not (REPO / ".github/workflows/lean-social-choice.yml").exists(), (
+        "le wrapper historique de gametheory est revenu -- double build")
+
+
+def test_guard_double_trigger_allowlist_is_empty():
+    """The recroisement guard is STRICT since #17374 tranched both pairs:
+    KNOWN_DOUBLE_TRIGGERS must stay empty -- a new pair is a temporary,
+    issue-cited debt, never a permanent fixture."""
+    sys.path.insert(0, str(REPO / "scripts/ci"))
+    import check_lake_matrix_paths
+    assert check_lake_matrix_paths.KNOWN_DOUBLE_TRIGGERS == set()
