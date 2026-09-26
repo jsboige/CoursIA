@@ -846,6 +846,11 @@ def test_a_stale_lock_is_reclaimed(tmp_path):
 
 
 def test_cli_append_prints_the_mcp_call_and_writes_nothing_by_default(tmp_path, capsys):
+    """Without ``--state-dir`` initialised, ``append`` now refuses -- the spool is the
+    documented local outbox, and a missing spool is what an uninitialised state-dir
+    means (a state-dir the agent has never built). The agent has to either run
+    ``init --apply`` first or pass ``--dry-run`` / ``--out`` / ``--out-dir`` to
+    bypass the spool. See #17927."""
     exit_code = dl.main([
         "append", "--ledger", dl.ISSUE_DEBT, "--entity", "jsboige/CoursIA#15545",
         "--actor", "myia-po-2025:CoursIA-2", "--observed-at", "2026-09-17T19:00:00Z",
@@ -854,12 +859,56 @@ def test_cli_append_prints_the_mcp_call_and_writes_nothing_by_default(tmp_path, 
         "--state-dir", str(tmp_path),
     ])
     captured = capsys.readouterr()
+    assert exit_code == 1
+    assert "UNINITIALISED_STATE_DIR" in captured.err
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_cli_append_writes_to_state_dir_spool_after_init(tmp_path, capsys):
+    """When ``init --apply`` has run on the state-dir, ``append`` without explicit
+    output flags writes the envelope into the local spool. The spool is the
+    documented local recovery path (#17927)."""
+    state_dir = tmp_path / "state"
+    assert dl.main(["init", "--state-dir", str(state_dir), "--ledger", dl.ISSUE_DEBT,
+                    "--apply"]) == 0
+    exit_code = dl.main([
+        "append", "--ledger", dl.ISSUE_DEBT, "--entity", "jsboige/CoursIA#15545",
+        "--actor", "myia-po-2025:CoursIA-2", "--observed-at", "2026-09-17T19:00:00Z",
+        "--evidence", "gh issue view 15545", "--confidence", "high",
+        "--fields-json", json.dumps({"state_class": "open-blocked", "eat_hours": 4.0}),
+        "--state-dir", str(state_dir),
+    ])
+    captured = capsys.readouterr()
     assert exit_code == 0
-    envelope = json.loads(captured.out.splitlines()[0].removeprefix(dl.ENVELOPE_PREFIX).strip())
+    assert "spooled" in captured.err
+    spool = state_dir / dl.ISSUE_DEBT / "spool"
+    spool_files = list(spool.iterdir())
+    assert len(spool_files) == 1
+    payload = spool_files[0].read_text(encoding="utf-8").strip()
+    assert payload.startswith("[OBS] ")
+    envelope = json.loads(payload[len("[OBS] "):])
     assert envelope["ledger"] == dl.ISSUE_DEBT
     assert envelope["fields"] == {"state_class": "open-blocked", "eat_hours": 4.0}
-    assert "CoursIA-issue-debt-ledger" in captured.err
-    assert list(tmp_path.iterdir()) == []
+
+
+def test_cli_append_dry_run_remains_a_noop_after_init(tmp_path, capsys):
+    """``--dry-run`` stays a no-op even when the state-dir has been initialised:
+    the agent must be able to inspect the envelope without committing it."""
+    state_dir = tmp_path / "state"
+    assert dl.main(["init", "--state-dir", str(state_dir), "--ledger", dl.ISSUE_DEBT,
+                    "--apply"]) == 0
+    exit_code = dl.main([
+        "append", "--ledger", dl.ISSUE_DEBT, "--entity", "jsboige/CoursIA#15545",
+        "--actor", "myia-po-2025:CoursIA-2", "--observed-at", "2026-09-17T19:00:00Z",
+        "--evidence", "gh issue view 15545", "--confidence", "high",
+        "--fields-json", json.dumps({"state_class": "open-blocked", "eat_hours": 4.0}),
+        "--state-dir", str(state_dir),
+        "--dry-run",
+    ])
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    spool = state_dir / dl.ISSUE_DEBT / "spool"
+    assert list(spool.iterdir()) == []
 
 
 def test_cli_window_full_wraps_a_list_export(tmp_path):
@@ -1093,13 +1142,20 @@ def test_cli_reduce_stdout_writes_nothing(tmp_path, capsys):
 
 
 def test_cli_append_from_observation_file(tmp_path, capsys):
+    """``--observation-file`` round-trips a prebuilt observation through the CLI
+    and writes it to the state-dir spool (after init). Without init the CLI
+    refuses with UNINITIALISED_STATE_DIR (see #17927)."""
+    state_dir = tmp_path / "state"
+    assert dl.main(["init", "--state-dir", str(state_dir), "--ledger", dl.ISSUE_DEBT,
+                    "--apply"]) == 0
     observation = dl.parse_observation(
         issue_obs(state_class="open-actionable", eat_hours=1.0), dl.ISSUE_DEBT
     )
     path = tmp_path / "obs.json"
     path.write_text(json.dumps(observation), encoding="utf-8")
+    capsys.readouterr()  # discard init's stdout/stderr so we read the append alone
     assert dl.main(["append", "--ledger", dl.ISSUE_DEBT, "--observation-file", str(path),
-                    "--state-dir", str(tmp_path / "state")]) == 0
+                    "--state-dir", str(state_dir)]) == 0
     line = capsys.readouterr().out.splitlines()[0]
     assert json.loads(line.removeprefix(dl.ENVELOPE_PREFIX))["observation_id"] == (
         observation["observation_id"]
@@ -1278,9 +1334,10 @@ def test_schema_document_declares_each_kind_with_its_own_shape():
     assert "eat_hours" in issue_names and "eat_hours" not in names
 
 
-def test_cli_append_parses_the_device_entity(capsys):
+def test_cli_append_parses_the_device_entity(tmp_path, capsys):
     assert dl.main(["append", "--ledger", dl.GPU_RESERVATION, "--entity", "myia-po-2023#gpu1",
-                    "--fields-json", '{"state": "held", "holder": "myia-po-2023:CoursIA"}']) == 0
+                    "--fields-json", '{"state": "held", "holder": "myia-po-2023:CoursIA"}',
+                    "--state-dir", str(tmp_path), "--dry-run"]) == 0
     line = capsys.readouterr().out.splitlines()[0]
     envelope = json.loads(line.removeprefix(dl.ENVELOPE_PREFIX))
     assert envelope["entity"] == {"machine": "myia-po-2023", "gpu_index": 1}

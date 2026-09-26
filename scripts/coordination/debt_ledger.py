@@ -2127,9 +2127,9 @@ def _cli_append(args: argparse.Namespace) -> int:
     created = None
     out_path = None
     if args.dry_run:
-        # The default: build and print. Appending cannot write shared state at
-        # all -- posting the envelope is the agent's MCP call -- so the only
-        # local side effect is opt-in via --out/--out-dir.
+        # --dry-run: build and print, never write. The dry-run mode is what
+        # makes ``append`` safe to call during agent reasoning -- the agent
+        # gets the envelope and the MCP descriptor without side effects.
         pass
     elif args.out:
         out_path = Path(args.out)
@@ -2140,6 +2140,23 @@ def _cli_append(args: argparse.Namespace) -> int:
         out_path = Path(args.out_dir)
         assert_local_output(out_path, what="--out-dir")
         out_path, created = spool_observation(out_path, observation)
+    else:
+        # Default path: write into the state-dir's ledger spool when ``init``
+        # has run on this state-dir. The spool is the local outbox
+        # documented in ``init_ledger_tree``; without it, an append cannot be
+        # recovered -- #17927 found that leaving the default to "write
+        # nothing" silently broke the local recovery path, so a state-dir that
+        # has not been initialised is now refused with a distinct exit code
+        # rather than silently producing an unsaved observation.
+        default_spool = state_dir / args.ledger / "spool"
+        if not default_spool.is_dir():
+            raise LedgerError(
+                "UNINITIALISED_STATE_DIR",
+                f"state-dir {state_dir} has no {args.ledger}/spool/ -- "
+                "run `debt_ledger.py init --apply --state-dir <dir>` first, "
+                "or pass --dry-run / --out / --out-dir explicitly",
+            )
+        out_path, created = spool_observation(default_spool, observation)
     if not args.quiet:
         if args.json:
             print(json.dumps(payload, ensure_ascii=False, indent=2))
