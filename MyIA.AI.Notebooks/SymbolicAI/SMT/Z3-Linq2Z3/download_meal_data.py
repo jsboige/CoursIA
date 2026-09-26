@@ -228,7 +228,14 @@ def download_recipeml(dest: Path, limit: int | None, force: bool = False) -> Non
             continue
         if i % 10 == 0 or i == n:
             print(f"  ... {i}/{n} batches, {total} recettes")
-    if n == RECIPEML_BATCHES:
+    # Marqueur de fin de passe : exige que CHAQUE batch porte des XML, pas seulement
+    # que la boucle soit allee jusqu'au bout. Un batch en echec reseau silencieux
+    # (try/except -> continue) ne doit pas couronner un corpus incomplet -- sinon
+    # la reprise suivante voit `[skip] RecipeML deja present` sur un corpus ampute,
+    # exactement le piege que ce marqueur est cense supprimer.
+    if n == RECIPEML_BATCHES and all(
+        any((rml / f"RecipeMLArchive{i:05d}").glob("*.xml")) for i in range(1, n + 1)
+    ):
         (rml / RECIPEML_DONE).write_text("", encoding="utf-8")
     print(f"  [ok] RecipeML -> {total} recettes ({_human(_dir_size(rml))})")
 
