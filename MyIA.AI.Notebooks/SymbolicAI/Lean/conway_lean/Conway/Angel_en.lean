@@ -12,11 +12,11 @@ Gács proves that an Angel of **sufficiently large finite** power wins
 (abstract and introduction: "if J is sufficiently large then the angel
 has a strategy such that the devil will never capture her",
 arXiv:0706.2817 p.1) — wording quoted from the archived
-`2007 - Gacs - The Angel Wins.pdf` in the shared bibliography. The
+`2007 - Gács - The Angel Wins.pdf` in the shared bibliography. The
 paper does not give a specific numeric power.
 
 Bibliography archived under `G:\Mon Drive\MyIA\IA\Bibliography IA\GameTheory\`:
-- `2007 - Gacs - The Angel Wins.pdf` (arXiv:0706.2817v1, verified)
+- `2007 - Gács - The Angel Wins.pdf` (arXiv:0706.2817v1, verified)
 - MathOverflow 357433 archived as HTML in `Technical Web Docs/`
 Paywalled papers (Bowditch/Máthé/Kloster, Cambridge Core + Elsevier
 ScienceDirect) could not be archived locally due to lack of auth
@@ -124,13 +124,13 @@ Archived under `G:\Mon Drive\MyIA\IA\Bibliography IA\`:
 - **Máthé (2007)** "The Angel of Power 2 Wins", Combinatorics, Probability and
   Computing 16(3):363-374, DOI:10.1017/s0963548306008303 — Cambridge Core paywall.
   Canonical stub archived locally (DOI + Crossref abstract):
-  `2007 - Mathe - The Angel of Power 2 Wins.placeholder.md`.
+  `2007 - Máthé - The Angel of Power 2 Wins.placeholder.md`.
 - **Kloster (2007)** "A solution to the Angel Problem", Theoretical Computer Science
   389(1-2):266-277, DOI:10.1016/j.tcs.2007.08.006 — Elsevier paywall.
   Canonical stub archived locally (DOI + Crossref abstract):
   `2007 - Kloster - A Solution to the Angel Problem.placeholder.md`.
 - **Gács (2007)** "The Angel Wins", arXiv:0706.2817v1, archived locally:
-  `2007 - Gacs - The Angel Wins.pdf`. Verified pypdf first page
+  `2007 - Gács - The Angel Wins.pdf`. Verified pypdf first page
   (28 pages, 362933 bytes, arXiv:0706.2817v1, Peter Gács).
 - **MathOverflow post 357433** (2021, archive) "reference request - Conway's lesser-known
   results", archived locally:
