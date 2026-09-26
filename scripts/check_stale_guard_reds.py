@@ -115,7 +115,7 @@ PYTEST_RC = {0: "GREEN", 1: "RED", 2: "SKIPPED", 3: "SKIPPED", 4: "SKIPPED", 5: 
 
 
 def _run_gh(args: list[str]) -> str:
-    proc = subprocess.run(["gh", *args], capture_output=True, text=True)
+    proc = subprocess.run(["gh", *args], capture_output=True, text=True, encoding="utf-8", errors="replace")
     if proc.returncode != 0:
         raise RuntimeError(f"gh {' '.join(args[:3])}... -> {proc.returncode}: {proc.stderr[:200]}")
     return proc.stdout
@@ -145,6 +145,7 @@ def collect(repo: str) -> dict:
     def checks_on(sha: str) -> list:
         if sha not in checks_cache:
             out = _run_gh(["api", f"repos/{repo}/commits/{sha}/check-runs?per_page=100",
+                           "--paginate",
                            "--jq", ".check_runs[] | {name, status, conclusion, details_url}"])
             checks_cache[sha] = [json.loads(l) for l in out.splitlines() if l.strip()]
         return checks_cache[sha]
@@ -458,7 +459,7 @@ def remeasure_pr(repo: str, pr_number: int, run_id: str, repo_dir: str) -> dict:
         return {"verdict": "SKIPPED", "reason": "aucun node ID pytest dans le log (organe non-pytest ?)"}
 
     def _git(*a: str, timeout: int = 120) -> None:
-        p = subprocess.run(["git", "-C", repo_dir, *a], capture_output=True, text=True, timeout=timeout)
+        p = subprocess.run(["git", "-C", repo_dir, *a], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout)
         if p.returncode != 0:
             raise RuntimeError(f"git {a[0]}: {p.stderr.strip()[:120]}")
 
@@ -466,14 +467,14 @@ def remeasure_pr(repo: str, pr_number: int, run_id: str, repo_dir: str) -> dict:
         _git("sparse-checkout", "disable", timeout=30)
         _git("fetch", "-q", "origin", f"refs/pull/{pr_number}/merge")
         merge_sha = subprocess.run(["git", "-C", repo_dir, "rev-parse", "FETCH_HEAD"],
-                                   capture_output=True, text=True, timeout=30).stdout.strip()
+                                   capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30).stdout.strip()
         _git("checkout", "-q", "FETCH_HEAD")
         p = subprocess.run([sys.executable, "-m", "pip", "install", "-q", *REMEASURE_DEPS],
-                           capture_output=True, text=True, timeout=180)
+                           capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=180)
         if p.returncode != 0:
             return {"verdict": "SKIPPED", "reason": f"pip install echoue: {p.stderr.strip()[:80]}"}
         t = subprocess.run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", *nodes],
-                           cwd=repo_dir, capture_output=True, text=True, timeout=600)
+                           cwd=repo_dir, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=600)
     except (RuntimeError, subprocess.TimeoutExpired, OSError) as e:
         return {"verdict": "SKIPPED", "reason": f"rejeu interrompu: {str(e)[:80]}"}
     verdict = PYTEST_RC.get(t.returncode, "SKIPPED")

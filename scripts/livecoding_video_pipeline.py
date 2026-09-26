@@ -414,7 +414,7 @@ def capture_repl_session(
     import subprocess
 
     cmd = mux_ffmpeg(video_webm, audio_wav, final_mp4)
-    proc = subprocess.run(cmd, capture_output=True, text=True)
+    proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
     if proc.returncode != 0:
         raise RuntimeError(f"ffmpeg a echoue ({proc.returncode}) : {proc.stderr[-800:]}")
 
