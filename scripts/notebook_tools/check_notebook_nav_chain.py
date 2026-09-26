@@ -123,6 +123,7 @@ from check_notebook_navlinks import (  # noqa: E402
     REPO_ROOT,
     _iter_notebooks,
     _resolve_target,
+    _should_skip,
 )
 
 BASELINE_PATH = REPO_ROOT / "scripts" / "tests" / "baseline_nb_nav_chain.json"
@@ -237,6 +238,64 @@ def nav_edges(nb_path: Path):
             seen.add(r)
             uniq.append(r)
     return uniq
+
+
+def broken_nav_links(nb_path: Path):
+    """Liens de nav d'un notebook dont la cible .ipynb est ABSENTE (404).
+
+    Meme portee trois-niveaux que `_looks_nav` : on ne retourne que les liens
+    RECONNUS comme navigation (mot-cle dans le texte, sur la ligne, ou cellule
+    `## Navigation`), sinon on confondrait un 404 de prose et un 404 de nav.
+    Un lien de prose est deja le metier de check_notebook_navlinks.py.
+
+    Retourne une liste de dicts {text, target} -- un par lien casse.
+    """
+    try:
+        with open(nb_path, encoding="utf-8") as f:
+            nb = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return []
+    out = []
+    for cell in nb.get("cells", []):
+        if cell.get("cell_type") != "markdown":
+            continue
+        src = cell.get("source", [])
+        text_lines = src if isinstance(src, str) else "".join(src)
+        cell_is_nav = "navigation" in text_lines.lower()
+        for line in text_lines.splitlines():
+            for m in LINK_PATTERN.finditer(line):
+                text, target = m.group(1), m.group(2)
+                if not _looks_nav(text, target, line, cell_is_nav):
+                    continue
+                resolved = _resolve_target(nb_path, target)
+                if resolved.suffix.lower() != ".ipynb":
+                    continue
+                if resolved.is_file():
+                    continue
+                out.append({"text": text, "target": target})
+    return out
+
+
+def scan_broken_nav(notebooks) -> list:
+    """Scanne tous les notebooks du set et rapporte les 404 de nav.
+
+    Les liens casses du Z3-08 sweep d'origine (un seul exemple fondateur :
+    `Z3-01b-Style-Declaratif-Linq` pointe depuis Z3-08 sans exister dans la
+    serie Python) etaient ajustes par un organe dedie Z3-only -- doublon
+    structurel de check_notebook_navlinks.py, qui couvrait deja le 404
+    universel sans discrimination nav. La discrimination nav est ce qui
+    manquait ; elle vit ici.
+    """
+    findings = []
+    for nb in sorted(notebooks, key=_rel):
+        for bl in broken_nav_links(nb):
+            findings.append({
+                "kind": "link_404",
+                "notebook": _rel(nb),
+                "target": bl["target"],
+                "text": bl["text"],
+            })
+    return findings
 
 
 def build_graph(notebooks):
@@ -380,8 +439,14 @@ def analyse(inbound, outbound, series):
 
 
 def _finding_keys(report):
-    """Cles de baseline : (kind, notebook). Le message est du confort, pas la cle."""
-    return {(f["kind"], f["notebook"]) for f in report["findings"]}
+    """Cles de baseline : (kind, notebook, identifiant discrimant). Le message
+    est du confort, pas la cle. `identifiant` = target pour link_404 (plusieurs
+    liens casses possibles par notebook), vide sinon (kind+notebook suffit)."""
+    keys = set()
+    for f in report["findings"]:
+        ident = f.get("target", "")
+        keys.add((f["kind"], f["notebook"], ident))
+    return keys
 
 
 def _write_baseline(report):
@@ -399,7 +464,11 @@ def _write_baseline(report):
 
 
 def _load_baseline():
-    """Charge les cles du baseline, ou set() si absent/illisible."""
+    """Charge les cles du baseline, ou set() si absent/illisible.
+
+    Format-compatible avec les baselines anciens : si un baseline n'a que
+    (kind, notebook) on retombe sur cette cle (target vide).
+    """
     if not BASELINE_PATH.is_file():
         return set()
     try:
@@ -407,7 +476,11 @@ def _load_baseline():
             data = json.load(f)
     except (OSError, json.JSONDecodeError):
         return set()
-    return {(f["kind"], f["notebook"]) for f in data.get("findings", [])}
+    keys = set()
+    for f in data.get("findings", []):
+        ident = f.get("target", "")
+        keys.add((f["kind"], f["notebook"], ident))
+    return keys
 
 
 def _select_report(report, series_filter):
@@ -472,6 +545,14 @@ def main(argv=None):
 
     inbound, outbound, series = build_graph(notebooks)
     report = _select_report(analyse(inbound, outbound, series), series_filter)
+    # Scan des 404 de nav : s'execute APRES le graphe (les liens casses ne sont
+    # pas des noeuds du graphe, mais bien des findings a rapporter). Filtre
+    # applique a la selection de rapport comme pour le graphe.
+    broken_nav = scan_broken_nav(notebooks)
+    if series_filter is not None:
+        broken_nav = [f for f in broken_nav if _rel(Path(f["notebook"]).parent) in series_filter]
+    report["findings"].extend(broken_nav)
+    report["findings"].sort(key=lambda f: (f["kind"], f.get("notebook", "")))
 
     if args.baseline:
         path = _write_baseline(report)
@@ -488,8 +569,9 @@ def main(argv=None):
         if new:
             if not args.quiet:
                 print(f"FAIL: {len(new)} NEW finding(s) vs baseline:")
-                for kind, notebook in new:
-                    print(f"  [{kind}] {notebook}")
+                for kind, notebook, target in new:
+                    extra = f" -> {target}" if target else ""
+                    print(f"  [{kind}] {notebook}{extra}")
             return 1
         if fixed and not args.quiet:
             print(f"INFO: {len(fixed)} finding(s) resolus depuis le baseline "
@@ -531,11 +613,16 @@ def main(argv=None):
         else:
             orphan = [f for f in findings if f["kind"] == "orphan_entry"]
             unreach = [f for f in findings if f["kind"] == "unreachable"]
+            link_404 = [f for f in findings if f["kind"] == "link_404"]
             print(f"FOUND {len(findings)} finding(s) "
                   f"({len(orphan)} entree(s) orpheline(s), "
-                  f"{len(unreach)} notebook(s) inatteignable(s)):")
+                  f"{len(unreach)} notebook(s) inatteignable(s), "
+                  f"{len(link_404)} lien(s) de nav casse(s)):")
             for f in findings:
-                print(f"  [{f['kind']}] {f['notebook']}  (serie {f['series']})")
+                if f["kind"] == "link_404":
+                    print(f"  [link_404] {f['notebook']} -> {f.get('target', '?')}")
+                else:
+                    print(f"  [{f['kind']}] {f['notebook']}  (serie {f['series']})")
     return 1 if findings else 0
 
 
