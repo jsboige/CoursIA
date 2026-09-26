@@ -59,7 +59,7 @@ concurrency:
 
 jobs:
   arxiv-attributions:
-    name: "arXiv attributions registry (7 entrees)"
+    name: "arXiv attributions registry"
     # Routage #14283 tranche 3 (decision ai-01 2026-09-02) : jambe Linux
     # auto-hebergee. Le `if:` ci-dessous est la garde anti-fork exigee par
     # scripts/ci/check_self_hosted_runner_policy.py ; un `runs-on` STATIQUE la
