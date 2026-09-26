@@ -54,21 +54,21 @@ import Mathlib.Data.Finset.Prod
 
 namespace Conway
 
-/-- Distance de Chebyshev (coup de roi) sur le reseau entier. -/
+/-- Distance de Chebyshev (coup de roi) sur le réseau entier. -/
 def chebyshev (a b : ℤ × ℤ) : ℤ :=
   max (|a.1 - b.1|) (|a.2 - b.2|)
 
-/-- Cases qu'un Ange de pouvoir `k` peut atteindre depuis `p` : le carre Chebyshev
-    (2k+1)×(2k+1) autour de `p`, `p` lui-meme exclu (l'Ange doit bouger). -/
+/-- Cases qu'un Ange de pouvoir `k` peut atteindre depuis `p` : le carré Chebyshev
+    (2k+1)×(2k+1) autour de `p`, `p` lui-même exclu (l'Ange doit bouger). -/
 def angelMoves (k : ℕ) (p : ℤ × ℤ) : Finset (ℤ × ℤ) :=
   ((Finset.Icc (p.1 - (k : ℤ)) (p.1 + (k : ℤ))) ×ˢ
    (Finset.Icc (p.2 - (k : ℤ)) (p.2 + (k : ℤ)))).erase p
 
--- L'Ange de pouvoir 1 est exactement un roi d'echecs (8 coups) ; le pouvoir 2 en a 24.
+-- L'Ange de pouvoir 1 est exactement un roi d'échecs (8 coups) ; le pouvoir 2 en a 24.
 #eval (angelMoves 1 (0, 0)).card   -- 8
 #eval (angelMoves 2 (0, 0)).card   -- 24
 
-/-- Ancre prouvee : la distance de Chebyshev d'une case a elle-meme vaut 0. -/
+/-- Ancre prouvée : la distance de Chebyshev d'une case à elle-même vaut 0. -/
 theorem chebyshev_self (a : ℤ × ℤ) : chebyshev a a = 0 := by
   simp [chebyshev]
 
@@ -82,7 +82,7 @@ theorem angelMoves2_card : (angelMoves 2 (0, 0)).card = 24 := by
 
 /-- CALIBRATION (arithmetique Finset.card, moyen) : un Ange de pouvoir `k` depuis
     n'importe quelle case a exactement `(2k+1)^2 - 1` coups — le cœur combinatoire du
-    setup du probleme de l'Ange (`card_erase_of_mem` + `card_product` + `Int.card_Icc`). -/
+    setup du problème de l'Ange (`card_erase_of_mem` + `card_product` + `Int.card_Icc`). -/
 theorem angelMoves_card (k : ℕ) (p : ℤ × ℤ) :
     (angelMoves k p).card = (2 * k + 1) ^ 2 - 1 := by
   simp [angelMoves, Finset.card_product, Int.card_Icc]
