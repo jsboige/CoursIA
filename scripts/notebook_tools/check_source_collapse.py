@@ -104,24 +104,28 @@ with a threshold.
 Issue #17468 is the OTHER end of the same observation: the unterminated
 COUNT refutes criterion 1, but the DELTA between base and head does not
 refute it. The kernel-independent repair shape is a re-emission of items
-WITHOUT their trailing ``\n`` -- PR #16951 ``Lean-3-Propositions-Proofs``
-cell ``f7e3a1f8`` (base ``b53d7e0a40``, head ``3f8a1d6e6f``) loses 0 ->
-1467 items without ``\n``, nbformat joins them into ONE line, the cell
-becomes a single-line comment. VOLUME stays silent (chars pass through);
+WITHOUT their trailing ``\n``: nbformat then joins them into ONE line, the
+cell becomes a single-line comment. VOLUME stays silent (chars pass through);
 STRUCTURE stays silent (Lean is not Python; the AST pass is off). The
 two mechanisms above already cover folds whose FIRST line is code or a
 comment, but a fold whose first line is a comment AND whose kernel is
 non-Python was structurally invisible: a Lean cell with a fold lives
-in the dead zone between VOLUME and STRUCTURE.
+in the dead zone between VOLUME and STRUCTURE. The DELTA discriminates
+the repair shape from a healthy per-character serializer without
+requiring the founding PR to be cited (no measured instance of the
+0 -> N shape survives on `main` -- the founding case lives outside the
+depot and is named in #17468 as a class, not a PR).
 
 The kernel-independent criterion fires on the DELTA of the unterminated
 count, with a floor (UNTERMINATED_DELTA_FLOOR = 4) calibrated against
 the ``main`` sweep: no healthy code cell carries more than 1
 unterminated item, so a delta >= 4 is the smallest value that excludes
-the legitimate single-line tail. The per-character serializer's 802
-unterminated items on base AND head yield a delta of 0 and stay silent;
-the founding shape's 1467 unterminated items on head and 0 on base
-yield a delta of 1467 and fire.
+the legitimate single-line tail. The per-character serializer's 803
+unterminated items on base AND head (``GenAI/Texte/21_LoRA_FineTuning.ipynb``
+cell ``69b296cb`` -- 820 lines, 803 unterminated, verified by first-hand
+``python -c "..."`` measurement on ``main``) yield a delta of 0 and
+stay silent. The founding shape (0 -> N) yields a delta of N and fires
+when N >= 4.
 
 Two measured traps shape the ORPHAN OUTPUT predicate, both found by sweeping
 ``main`` before writing it:
@@ -235,13 +239,14 @@ DIAGNOSTIC_LINE_FRACTION = 0.8
 # do NOT end with a newline, in a code cell's `source` LIST (not the joined
 # string), base vs head. A repair that re-emits items without their trailing
 # \n -- nbformat then joins the lines into ONE, turning the cell into a
-# single-line comment -- is the founding shape (PR #16951: 0 -> 1467 on
-# Lean-3). The criterion is the DELTA of that count, not the count itself:
-# a per-character serializer (`GenAI/Texte/21_LoRA_FineTuning.ipynb` cell
-# 69b296cb on main: 803 unterminated items, healthy) sees base == head and
-# stays silent. The threshold is calibrated against a sweep of main: no
-# healthy code cell has more than 1 unterminated item, so a delta >= 4 is
-# the smallest that excludes the legitimate single-line unterminated item.
+# single-line comment -- is the founding shape. The criterion is the DELTA
+# of that count, not the count itself: a per-character serializer
+# (`GenAI/Texte/21_LoRA_FineTuning.ipynb` cell 69b296cb on main: 820 lines,
+# 803 unterminated items, healthy, verified by first-hand measurement) sees
+# base == head and stays silent. The threshold is calibrated against a sweep
+# of main: no healthy code cell has more than 1 unterminated item, so a
+# delta >= 4 is the smallest that excludes the legitimate single-line
+# unterminated item.
 UNTERMINATED_DELTA_FLOOR = 4
 
 
@@ -300,8 +305,8 @@ def _unterminated_count(cell):
     The point is the serialization GRANULARITY of the head, not its content:
     a `\\n`-terminated re-emission reads cleanly to nbformat; a non-terminated
     one joins items into a single line whose first character wins as the cell
-    body. The founding case (#16951, head `c3f0630c8`) re-emitted 1467 items
-    without `\\n`, against a base of 0 -- the join collapsed the whole cell.
+    body. The founding shape (0 -> N) re-emits N items without `\\n` against
+    a base of 0 -- the join collapses the whole cell.
     """
     if not cell:
         return 0
@@ -468,14 +473,15 @@ def analyze(base_nb, head_nb):
 
         # KERNEL-INDEPENDENT source-collapse signal (#17468): the delta of the
         # unterminated-item count on a code cell's `source` LIST. The founding
-        # shape (PR #16951 Lean-3) re-emits items WITHOUT their trailing `\n`,
+        # shape re-emits items WITHOUT their trailing `\n`,
         # and nbformat joins them into one line -- a single-line comment cell
         # is invisible to VOLUME (it can pass through unchanged in volume)
         # and to STRUCTURE (a Python-less Lean cell never reaches the AST
         # pass). The DELTA, not the count, discriminates a repair from a
         # per-character serializer: `main`'s `21_LoRA_FineTuning.ipynb` cell
         # `69b296cb` carries 803 unterminated items and stays healthy, so
-        # base == head and the criterion stays silent there. The threshold
+        # base == head and the criterion stays silent there (verified by
+        # first-hand measurement of the cell on `main`). The threshold
         # is calibrated against a sweep: no healthy code cell of `main` has
         # more than 1 unterminated item, so a delta >= 4 is the smallest
         # that excludes the legitimate single-line tail.
