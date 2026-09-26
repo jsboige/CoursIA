@@ -989,6 +989,68 @@ def test_cli_append_json_descriptor_and_spool_out_dir(tmp_path, capsys):
     ] == descriptor["observation_id"]
 
 
+def test_cli_spool_status_counts_append_and_ignores_superseded(tmp_path, capsys):
+    spool = tmp_path / "spool"
+    for ledger, entity, fields, stamp in (
+        (dl.ISSUE_DEBT, "jsboige/CoursIA#15545", '{"state_class":"open-blocked"}', "2026-09-17T19:00:00Z"),
+        (dl.ISSUE_DEBT, "jsboige/CoursIA#15546", '{"state_class":"closed"}', "2026-09-17T18:00:00Z"),
+        (dl.GPU_RESERVATION, "myia-po-2023#gpu1", '{"state":"released"}', "2026-09-17T17:00:00Z"),
+    ):
+        assert dl.main([
+            "append", "--ledger", ledger, "--entity", entity,
+            "--observed-at", stamp, "--evidence", "test", "--fields-json", fields,
+            "--out-dir", str(spool),
+        ]) == 0
+    capsys.readouterr()
+    observations = list(spool.glob("*.json"))
+    assert len(observations) == 3
+    (spool / ".superseded-old.json").write_text(observations[0].read_text(encoding="utf-8"), encoding="utf-8")
+    observations[0].rename(spool / "arbitrary-filename.json")
+    assert dl.main(["spool", "--status", "--out-dir", str(spool)]) == 0
+    output = capsys.readouterr().out
+    assert "issue-debt: pending=2 oldest_observed_at=2026-09-17T18:00:00Z" in output
+    assert "gpu-reservation: pending=1 oldest_observed_at=2026-09-17T17:00:00Z" in output
+
+
+def test_cli_spool_status_empty_and_mtime_fallback(tmp_path, capsys):
+    spool = tmp_path / "empty-spool"
+    assert dl.main(["spool", "--status", "--out-dir", str(spool)]) == 0
+    assert capsys.readouterr().out.count("pending=0 oldest_observed_at=-") == len(dl.LEDGERS)
+    spool.mkdir()
+    observation = dl.parse_observation(issue_obs(state_class="open-blocked"), dl.ISSUE_DEBT)
+    observation.pop("observed_at")
+    path = spool / "independent-name.json"
+    path.write_text(dl.envelope_line(observation), encoding="utf-8")
+    assert dl.main(["spool", "--status", "--out-dir", str(spool)]) == 0
+    assert "issue-debt: pending=1 oldest_observed_at=" in capsys.readouterr().out
+
+
+def test_cli_spool_status_reads_default_init_tree(tmp_path, capsys):
+    state_dir = tmp_path / "state"
+    assert dl.main(["init", "--state-dir", str(state_dir), "--apply", FROZEN]) == 0
+    capsys.readouterr()
+    assert dl.main([
+        "append", "--ledger", dl.ISSUE_DEBT, "--entity", "jsboige/CoursIA#15545",
+        "--observed-at", "2026-09-17T19:00:00Z", "--evidence", "test",
+        "--fields-json", '{"state_class":"open-blocked"}',
+        "--state-dir", str(state_dir),
+        "--out-dir", str(state_dir / dl.ISSUE_DEBT / "spool"),
+    ]) == 0
+    capsys.readouterr()
+    assert dl.main(["spool", "--status", "--state-dir", str(state_dir)]) == 0
+    output = capsys.readouterr().out
+    assert "issue-debt: pending=1 oldest_observed_at=2026-09-17T19:00:00Z" in output
+    assert "gpu-reservation: pending=0 oldest_observed_at=-" in output
+
+
+def test_cli_spool_status_refuses_malformed_envelope(tmp_path, capsys):
+    spool = tmp_path / "spool"
+    spool.mkdir()
+    (spool / "bad.json").write_text("[OBS] []", encoding="utf-8")
+    assert dl.main(["spool", "--status", "--out-dir", str(spool)]) == 1
+    assert "INVALID_SPOOL" in capsys.readouterr().err
+
+
 def test_cli_reduce_writes_snapshot_summary_and_status(tmp_path, capsys):
     events = tmp_path / "events.json"
     events.write_text(
