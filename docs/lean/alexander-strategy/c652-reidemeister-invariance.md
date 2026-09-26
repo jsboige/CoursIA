@@ -8,8 +8,8 @@
 `isRenameOf`/`isDoubleRenameOf`, `Reidemeister3Connected` existe, unités
 `±t^k`.
 **Statut :** cadrage stratégique + analyse first-hand, **PAS de code de preuve
-soumis** — Tell c.L750 ★★ fondateur OOM Mathlib Windows (Lean exited 143),
-migrer WSL Ubuntu (Tell c.F règle environnement).
+soumis** — OOM Mathlib sous Windows (Lean exited 143),
+migrer WSL Ubuntu ([règle F](../../../CLAUDE.md) : réparer l'environnement, jamais contourner).
 
 ## 1. Cible
 
@@ -182,11 +182,11 @@ theorem alexanderSigned_invariant_under_R1 {d₁ d₂ : KnotDiagram}
   kink-internes non partagées (`n+1`, `n+3`) et une ligne `i` réécrite ;
 - Argument de nullité du mineur 2×2 (rang inchangé).
 
-**Estimation honnête Tell c.G.2 ★★★★** : ces preuves prendront **plusieurs
+**Estimation honnête ([G.2](../../../CLAUDE.md))** : ces preuves prendront **plusieurs
 heures** de travail de preuve, idéalement avec un iter prover BG pour la
 manipulation tactique. Un cycle cron 30 min ne suffit pas.
 
-## 6. Tell c.L750 ★★ fondateur — pivot WSL Ubuntu
+## 6. Pivot WSL Ubuntu — l'incident OOM fondateur
 
 Le `lake build` initial (téléchargement Mathlib + knot_lean) a **OOM-killé**
 Windows (4 occurrences, `Lean exited with code 143`) :
@@ -196,7 +196,7 @@ Windows (4 occurrences, `Lean exited with code 143`) :
 error: Lean exited with code 143
 ```
 
-C'est le symptôme documenté Tell c.L750 ★★★ #3 : « `INTERNAL PANIC: out of
+C'est le 3ᵉ symptôme documenté : « `INTERNAL PANIC: out of
 memory` à ~95 % de Mathlib sur runner Windows = infra, pas un verdict Lean.
 Migrer sur **WSL Ubuntu dès la 1ʳᵉ occurrence** — un `.lake` Windows
 OOM-killé produit 0 olean et n'est pas réutilisable. »
@@ -213,7 +213,7 @@ OOM-killé produit 0 olean et n'est pas réutilisable. »
 
 | Cycle | Livrable |
 |---|---|
-| c.652 (courant) | **Cadrage stratégique** (ce document) + claim posé + DM ai-01 pour demande cross-lane po-2026 WSL. **Pas de code** (`sorry` non résolu interdit Tell c.564 strict). |
+| c.652 (courant) | **Cadrage stratégique** (ce document) + claim posé + DM ai-01 pour demande cross-lane po-2026 WSL. **Pas de code** (`sorry` non résolu interdit, [anti-régression](../../../.claude/rules/anti-regression.md)). |
 | c.653+ | (à planifier après décision ai-01 sur env WSL partagé) Preuve R3 triviale (~10 lignes) + théorèmes principaux R1, R2 déclarés dans Reidemeister.lean avec preuves à compléter. |
 | (multi-cycle) | Preuve R1 connecté complète avec manipulation matricielle (~30-50 lignes). |
 | (multi-cycle) | Preuve R2 complète avec rang inchangé (~30-50 lignes). |
@@ -221,15 +221,15 @@ OOM-killé produit 0 olean et n'est pas réutilisable. »
 
 ## 8. Conformité tells c.652
 
-- Tell c.1502 ××109ᵉ counter maintenu : 0 merge / 0 close d'autrui.
-- Tell c.564 ★★★ ×136ᵈ strict réponse écrite nominative (DM ai-01 v19).
-- Tell c.566 ★★★★ JAMAIS rerun/re-push ripe merge post-DWELL respecté.
-- Tell c.11900 ××54ᵈ narrow-cache hostile sustained Tell c.15793 ×54ᵈ R1/G-VAR-1 HELD Tell c.650-L1 ★ LIVRÉ #16663 tient G-VAR-1.
-- Tell c.L750 ★★★ fondateur pivot WSL Ubuntu acquis.
-- Tell c.642-L77 ★★★ fondateur infrastructure bloquante Tell c.F règle env.
-- Tell c.1356 ★★★ preflight first-hand ×106ᵈ sustained (lecture complète Reidemeister.lean + Conway.lean).
-- Tell c.G.2 ★★★★ métriques honnêtes : analyse + plan, pas de « DONE » sans preuve.
-- Tell c.15793 ×54ᵈ R1/G-VAR-1 HELD Tell c.15726 voie L3 update-branch stale-guard-red acquis.
-- Tell c.L740 ★ cron `51dd3e19` 17,47 * * * armé maintenu.
+- [Coordination & Git §A](../../../CLAUDE.md) : 0 merge / 0 close d'autrui.
+- Réponse écrite nominative au DM ai-01 (v19).
+- Jamais de rerun/re-push d'un ripe merge post-DWELL.
+- #16663 livré ; G-VAR-1 tenu.
+- Pivot WSL Ubuntu acquis (incident OOM fondateur).
+- Infrastructure bloquante documentée ([règle F](../../../CLAUDE.md)).
+- Preflight first-hand : lecture complète de Reidemeister.lean + Conway.lean.
+- [G.2](../../../CLAUDE.md) métriques honnêtes : analyse + plan, pas de « DONE » sans preuve.
+- Voie L3 `update-branch` (stale-guard-red) acquise.
+- Cron `51dd3e19` 17,47 * * * armé maintenu.
 
 — po-2023 c.652, 2026-09-18

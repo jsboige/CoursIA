@@ -10,7 +10,9 @@ S'applique a **tout agent** qui envisage de renommer, renumeroter ou requalifier
 
 ## 1. Le fait qui gouverne : le canonique est ce qui n'a PAS de lettre
 
-Convention de nommage : `<Prefixe>-<num><lettre?>-<Titre>.ipynb` — **la lettre est collee au numero**, sans separateur.
+Convention de nommage : `<Prefixe>-<NN><lettre?>-<Titre>[-Part<N>]-<Noyau>[_<langue>].ipynb` — **la lettre est collee au numero**, sans separateur.
+
+**Le suffixe de noyau est obligatoire et toujours dernier** (avant l'eventuel suffixe i18n) : `-Python`, `-CSharp`, `-Lean`, ou `-Lean-Python` pour un notebook Python qui pilote reellement Lean (sous-processus `lake`/`lean`, REPL, lecture d'un lake). Le titre ne repete ni le prefixe ni le noyau (`Lean-12b-Sensitivity-Theorem-Lean`, pas `Lean-12b-Lean-Sensitivity-Theorem-Lean`). Arbitrage du mainteneur du 2026-09-25 ; sequence de mise en conformite et partition par serie : #16231 ; outil de renommage et cliquet sur les noms ajoutes : #17784. Tout notebook **ajoute** suit deja cette grammaire.
 
 ```python
 ID_IN_NAME_RE = re.compile(r"^(?P<pre>.+?)[-_](?P<num>\d{1,3})(?P<let>[a-z])?[-_]", re.I)
@@ -99,9 +101,9 @@ Le sweep n'est pas « chercher l'ancien nom ». Six surfaces cassent, et cinq on
 
 Deux residus supplementaires se traitent dans la meme tranche : les cles orphelines de `pedagogy_density_baseline.json` (#13815) et la liste de rendu Quarto (#13931).
 
-## 7. Twins C#/Python d'une meme serie — meme identifiant, suffixe de langage seul
+## 7. Twins C#/Python d'une meme serie — meme identifiant, suffixe de noyau seul
 
-Deux notebooks jumeaux **d'une meme serie** (meme concept, deux implementations) portent le **meme identifiant** `Prefixe-num(lettre)` ; seul le suffixe de langage les distingue (`-Csharp`). La variante C# ni ne decremente ni ne decale l'accretion : elle partage le slot de son jumeau Python. Des fichiers qui s'echangent leurs corrections (campagnes de parite #12208, retroportage #15461) ne peuvent pas porter deux accretions differentes.
+Deux notebooks jumeaux **d'une meme serie** (meme concept, deux implementations) portent le **meme identifiant** `Prefixe-num(lettre)` ; seul le suffixe de noyau les distingue (`-Python` / `-CSharp`). La variante C# ni ne decremente ni ne decale l'accretion : elle partage le slot de son jumeau Python. Des fichiers qui s'echangent leurs corrections (campagnes de parite #12208, retroportage #15461) ne peuvent pas porter deux accretions differentes.
 
 Ratifie par #15486 (origine : review user de #15437). La convention etait deja dominante partout (GameTheory `02`-`17`, Search `02b`/`03b`-`03d`, SocialChoice) ; l'unique deviation mesuree — `GameTheory-02d-...-Csharp` — a ete corrigee par renommage avant merge (#15437, commit f74fd9864c : `02d` -> `02c`).
 

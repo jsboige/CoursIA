@@ -14,7 +14,7 @@ Notebooks dans `SymbolicAI/SemanticWeb/`, `SymbolicAI/SmartContract/`, `Search/`
 
 | Prerequis | Version | Verification |
 |-----------|---------|-------------|
-| .NET SDK | 8.0 + 9.0 (10.0 optionnel) | `dotnet --list-sdks` |
+| .NET SDK | 8.0 + 9.0 + 10.0 (10.0 requis par `dotnet restore MyIA.CoursIA.sln` : cinq projets `net10.0`) | `dotnet --list-sdks` |
 | dotnet-interactive | **1.0.617701** (verifie sur ai-01, cf ci-dessous) | `dotnet interactive --version` |
 | Jupyter kernels `.net-csharp`, `.net-fsharp`, `.net-powershell` | auto-installes | `jupyter kernelspec list` |
 
@@ -266,6 +266,7 @@ Incident 2026-05-06 : training MoE tenté directement sur Python 3.14 système :
 | lean4-wsl | Lean 4 (v4.11.0 WSL) | `notebook_tools.py execute` (non re-mesure c.10024 ; laisser en l'etat si doute) |
 | python3-wsl | Python (WSL 3.12) | wsl_papermill.py |
 | smartcontracts | Python | Papermill |
+| python3-lean | Python 3.13.x (CPython canonique série Lean, cf #17476) | Papermill |
 
 **Écart de compte non résolu** : l'intitulé annonce « 10 registered », la table en liste **9**. Non re-mesurable en l'état — po-2025 est **CONFIRMÉ non joignable** firsthand (#9976 : `HTTP 000` + 100 % de perte ping, LAN physiquement disjoint). Ni le 10 ni le 9 ne sont corrigés ici : un relevé `jupyter kernelspec list` tranchera au retour de la machine. Ne pas citer l'un des deux comme mesuré.
 

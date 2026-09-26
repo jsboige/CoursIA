@@ -53,9 +53,15 @@ PR, TOUT doit tenir sinon skip avec raison nommee :
 Comportement :
 - DRY-RUN par defaut (imprime ce qui serait merge et pourquoi chaque
   autre PR est skippee) ; ``--apply`` merge reellement. ``--max N``
-  (defaut 15) plafonne les merges par run (disjoncteur) ; le run
-  S'ARRETE sur la premiere erreur inattendue (rc d'un outil hors codes
-  documents, erreur d'API) -- jamais de merge en aveugle.
+  (defaut 15) plafonne les merges par run (disjoncteur). Une erreur
+  inattendue ATTRIBUABLE A UNE PR (reponse d'outil illisible, rc hors
+  contrat pour cette seule PR) est journalisee ``run-error`` pour elle et
+  le balayage CONTINUE (#17672 point 3 : une PR bizarre ne gele plus
+  l'evaluation des suivantes) ; une erreur de PORTEE GENERALE -- jeton
+  refuse, quota d'API, reseau injoignable, cf ``PASS_WIDE_ERROR_MARKERS``
+  -- ARRETE le run, car la repeter sur chaque PR restante ne dirait rien
+  de plus. ``rc=1`` est rendu des qu'une PR a erreur, isolee ou non, et le
+  bilan nomme leur nombre. Jamais de merge en aveugle.
 - Jeton : chaque sous-processus gh recoit ``GH_TOKEN`` epingle depuis
   ``gh auth token --user myia-ai-01``, resolu UNE fois au depart ;
   jamais ``gh auth switch``. Jeton irresolu -> exit 2.
@@ -97,33 +103,32 @@ from typing import Protocol
 # grammaire du dossier. L'organe ne re-ecrit NI la grammaire du tag NI celle
 # du dossier.
 SCRIPTS_DIR = Path(__file__).resolve().parent.parent
-if str(SCRIPTS_DIR) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS_DIR))
+COORDINATION_DIR = Path(__file__).resolve().parent
+for _shared_dir in (SCRIPTS_DIR, COORDINATION_DIR):
+    if str(_shared_dir) not in sys.path:
+        sys.path.insert(0, str(_shared_dir))
 
 from grain_tag import TIERS, parse_grain_tag  # noqa: E402
 import check_adjoint_prevalidation as gate  # noqa: E402
+# Les campagnes gelees par veto user (#17040) ont une definition PARTAGEE avec
+# le gate d'entree (scripts/coordination/frozen_campaigns.py) : le gate ne
+# peut pas importer cet organe (cet organe importe deja le gate), les deux
+# importent le module -- un seul lecteur, meme discipline que grain_tag.
+from frozen_campaigns import (  # noqa: E402,F401
+    FROZEN_BRANCH_PREFIXES,
+    FROZEN_UMBRELLAS,
+    frozen_umbrella_exclusion,
+)
 
 REPO = "jsboige/CoursIA"
 COORDINATOR_USER = "myia-ai-01"
 GATE_PATH = SCRIPTS_DIR / "check_adjoint_prevalidation.py"
 NITS_PATH = SCRIPTS_DIR / "check_unaddressed_nits.py"
 
-# Parapluies GELES par un veto user : une PR qui s'en reclame (titre ou body)
-# sort du perimetre (b), quel que soit son dossier. Ni le gate d'entree ni B.0
-# ne lisent un veto pose sur une issue : l'organe le lit ici, fail-closed.
-# 13410 = campagne densite, gelee par le veto #17040 (mandat user 2026-09-20).
-# #17021 y a ete mergee le 2026-09-22 sur un dossier READY et un B.0 vert :
-# c'est l'incident qui fonde cette liste.
-# 11601 = densite QC round 2 (« 1200->2000+ »), gelee au meme titre le
-# 2026-09-23 (#11601 c.5786602361) : sa cible EST un seuil, ce que le point 4
-# de #17040 interdit.
-FROZEN_UMBRELLAS = {"13410": "17040", "11601": "17040"}
-
-# Branches d'une campagne gelee dont les PRs ne citent PAS le parapluie : les
-# relais g-XX de #13410 (`wt/vibe-g62-...`) n'ont #13410 ni dans le titre ni
-# dans le body. 17 d'entre eux etaient ouverts et invisibles au filtre
-# ci-dessus le 2026-09-23 (fermes au titre du veto, solde markdown net > 0).
-FROZEN_BRANCH_PREFIXES = {"wt/vibe-": "13410"}
+# Parapluies et branches de campagne GELES par un veto user, exemption des
+# redressements comprise : definition et historique portes par le module
+# PARTAGE scripts/coordination/frozen_campaigns.py (importe ci-dessus -- les
+# noms restent des attributs de cet organe pour ses appelants et ses tests).
 
 # Codes de retour DOCUMENTES des organes appeles. Tout autre rc est une
 # erreur inattendue -> arret du run, jamais de merge en aveugle.
@@ -147,11 +152,52 @@ class CannotRunError(Exception):
 
 
 class UnexpectedError(Exception):
-    """Erreur inattendue d'un outil ou de l'API -- le run doit s'arreter."""
+    """Erreur inattendue d'un outil ou de l'API, non prevue par le contrat.
+
+    Depuis #17672 (point 3), elle n'arrete plus le run par principe : le
+    balayage distingue une erreur **attribuable a la PR** en cours (reponse
+    illisible pour elle, rc hors contrat pour elle) -- journalisee
+    ``run-error`` et le balayage continue -- d'une erreur de **portee
+    generale** (jeton, quota, reseau), qui arrete tout (cf
+    ``is_pass_wide``). Un ECHEC DE MERGE garde son propre disjoncteur
+    (``MergeFailedError``) : il ne se confond pas avec ces deux cas.
+    """
 
 
 class MergeFailedError(Exception):
     """La commande de merge a echoue -- arret du run (disjoncteur)."""
+
+
+# Marqueurs d'une erreur de PORTEE GENERALE : ce qui frappe tous les appels de
+# la meme facon ne doit pas etre isole par PR, sinon une panne de jeton ou de
+# quota se lit comme une collection de ``run-error`` attribuees a des PRs
+# innocentes (#17672, point 3). Liste volontairement courte et litterale : un
+# texte non reconnu fait ISOLER l'erreur (le balayage continue, rc=1, la PR
+# est nommee), jamais l'inverse -- arreter le run sur un motif devine rendrait
+# le balayage dependant d'une devinette.
+PASS_WIDE_ERROR_MARKERS = (
+    "bad credentials",
+    "requires authentication",
+    "rate limit",
+    "http 401",
+    "http 403",
+    "could not resolve host",
+    "no such host",
+    "connection refused",
+    "connection reset",
+    "timed out",
+)
+
+
+def is_pass_wide(exc: BaseException) -> bool:
+    """L'erreur frappe-t-elle TOUTE la passe (jeton, quota, reseau) ou une seule PR ?
+
+    Le texte cherche est celui que les appels gh renseignent avec le stderr de
+    l'outil (cf ``fetch_pr_view``, ``run_gate``), donc un refus d'authentification
+    ou un quota epuise y figure tel que gh l'a ecrit.
+    """
+    text = str(exc).lower()
+    return any(marker in text for marker in PASS_WIDE_ERROR_MARKERS)
 
 
 # --- runner injectable --------------------------------------------------------
@@ -296,26 +342,6 @@ def scope_exclusion(path: str) -> str | None:
         return f"scope:.github:{path}"
     if p == "CLAUDE.md" or p.endswith("/CLAUDE.md"):
         return f"scope:CLAUDE.md:{path}"
-    return None
-
-
-def frozen_umbrella_exclusion(
-    title: str | None, body: str | None, head_ref: str | None = None
-) -> str | None:
-    """Raison d'exclusion si la PR se reclame d'un parapluie gele, sinon None.
-
-    Une reference ``#<numero>`` dans le titre ou le body suffit (fail-closed :
-    une PR de redressement qui cite le parapluie sort aussi du perimetre et se
-    merge a la main). ``#134100`` ne vaut pas ``#13410``. Une branche d'une
-    famille gelee (``FROZEN_BRANCH_PREFIXES``) suffit aussi, meme muette.
-    """
-    for prefix, umbrella in FROZEN_BRANCH_PREFIXES.items():
-        if (head_ref or "").startswith(prefix):
-            return f"frozen:#{umbrella}(veto #{FROZEN_UMBRELLAS[umbrella]},branch {prefix}*)"
-    text = " ".join((title or "", body or ""))
-    for umbrella, veto in FROZEN_UMBRELLAS.items():
-        if re.search(rf"#{umbrella}(?!\d)", text):
-            return f"frozen:#{umbrella}(veto #{veto})"
     return None
 
 
@@ -693,9 +719,14 @@ def emit_output(
     merged = sum(1 for v in results if v.merged)
     would = sum(1 for v in results if v.verdict == "would-merge")
     skipped = sum(1 for v in results if v.verdict == "skipped")
+    errored = sum(1 for v in results if v.verdict == "run-error")
     print(
         f"bilan : {len(results)} evaluee(s), {merged} merge(s), "
         f"{would} would-merge, {skipped} skip(s)"
+        # Une erreur isolee ne s'annonce par aucune ligne « arret » : sans ce
+        # compte, un run qui a continue malgre une PR en erreur se lirait comme
+        # un run propre (#17672 point 3).
+        + (f", {errored} erreur(s) isolee(s)" if errored else "")
     )
     if stopped_reason:
         print(f"arret : {stopped_reason}")
@@ -776,9 +807,17 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
             errored = PRVerdict(pr, None, "run-error", str(exc), False)
             results.append(errored)
             append_journal(journal_path, errored)
-            stopped_reason = f"unexpected-error:{exc}"
             exit_code = 1
-            break
+            if is_pass_wide(exc):
+                # Toute la passe est touchee : repeter l'echec sur chacune des
+                # PRs restantes ne dirait rien de plus.
+                stopped_reason = f"unexpected-error:{exc}"
+                break
+            # Erreur attribuable a CETTE PR : elle est nommee et journalisee,
+            # le balayage continue (#17672 point 3). `stopped_reason` reste
+            # None -- le run ne s'est PAS arrete, l'ecrire ici serait un
+            # constat faux (le bilan, lui, compte les erreurs isolees).
+            continue
 
     emit_output(args, results, stopped_reason, exit_code)
     return exit_code

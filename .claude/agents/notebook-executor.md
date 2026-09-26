@@ -565,7 +565,7 @@ Task(
     prompt="""
     Agent notebook-executor.
 
-    Notebook: MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Executor.ipynb
+    Notebook: MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb
     Mode: full
     Kernel: python3
     Env vars: {"BATCH_MODE": "true"}
