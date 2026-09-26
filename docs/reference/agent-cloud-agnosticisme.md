@@ -28,11 +28,13 @@ Le compte GitHub est partagé avec la flotte : une PR de cette session se reconn
 
 ## Circulation
 
-Pour économiser les tokens de la session, **la flotte porte ses PRs jusqu'au merge**, comme les siennes :
+La session **produit** les PRs ; **la flotte les porte jusqu'au merge**, comme les siennes (mandat du mainteneur : économie de tokens, charge mentale retirée au mainteneur) :
 
+- la session **s'abonne aux événements** de ses PRs (CI, reviews, commentaires) : le suivi ne repose plus sur le mainteneur ;
 - l'adjoint prévalide (`[ADJOINT PREFLIGHT]`), ai-01 merge ; `scripts/coordination/merge_ready.py` s'applique aux PRs hors harnais ;
-- une lane peut rafraîchir la branche (`update-branch`) ou y pousser une correction mécanique, en nommant le script et le commit (règle 0 de [proactive-coordination.md](../../.claude/rules/proactive-coordination.md)) ;
-- la session ne surveille pas ses PRs en continu : elle relit leur état au tour suivant, intègre ce qui a changé — corrections de la flotte, décisions, remède meilleur que le sien — puis enchaîne sur la PR suivante.
+- **réparation déléguée** : sur un check rouge ou une réserve, la session poste le diagnostic sur la PR (ce qui échoue, pourquoi, correctif proposé) puis ouvre une **issue de réparation** qui renvoie à la PR — le pool d'issues est le canal où les lanes tirent leur travail. Elle ne corrige elle-même que lorsque le correctif est plus court que l'issue ;
+- une lane peut rafraîchir la branche (`update-branch`) ou y pousser la correction, en nommant le script et le commit (règle 0 de [proactive-coordination.md](../../.claude/rules/proactive-coordination.md)) ;
+- à chaque tour, la session intègre ce qui a changé — corrections de la flotte, décisions, remède meilleur que le sien — puis enchaîne sur la PR suivante.
 
 ## Ce que la session ne fait pas
 
