@@ -12,12 +12,12 @@ module-set réel du disque (issue #13138). Comptes `sorry` mesurés avec l'instr
 
 | Répertoire | Toolchain | sorry (production) | Modules | Statut |
 |-----------|-----------|--------------------|---------|--------|
-| `game_theory_lean` | v4.32.1 | 1 (stretch Folk, #4880) | StableMarriage + CooperativeGames + SocialChoice + RepeatedGames + Swaps (49 `.lean` FR+EN) | COMPLET (EPIC #4365) |
-| `lean_game_defs` | v4.32.1 | 0 | 12 (6 FR + 6 `_en`) | COMPLET (defs partagés) |
-| `lean_game_defs_ext` | v4.32.1 | 0 | Bayesian/* 24 (12 FR + 12 `_en`) + 2 umbrellas | COMPLET |
-| `minimax_lean` | v4.32.1 | 0 | ZeroSum + Concavity + SionApplication (+ `_en`) | COMPLET |
-| `assignment_lean` | v4.32.1 | 0 | Definitions / Duality / KuhnMunkres / Optimality (+ `_en`) | COMPLET (#12598) |
-| `asymmetric_information_lean` | v4.32.1 | 0 | Lemons / Signaling / Screening / MiyazakiWilson / BayesianLink (+ `_en`) | COMPLET (Epic #12844) |
+| `game_theory_lean` | v4.33.0 | 1 (stretch Folk, #4880) | StableMarriage + CooperativeGames + SocialChoice + RepeatedGames + Swaps (49 `.lean` FR+EN) | COMPLET (EPIC #4365) |
+| `lean_game_defs` | v4.33.0 | 0 | 12 (6 FR + 6 `_en`) | COMPLET (defs partagés) |
+| `lean_game_defs_ext` | v4.33.0 | 0 | Bayesian/* 24 (12 FR + 12 `_en`) + 2 umbrellas | COMPLET |
+| `minimax_lean` | v4.33.0 | 0 | ZeroSum + Concavity + SionApplication (+ `_en`) | COMPLET |
+| `assignment_lean` | v4.33.0 | 0 | Definitions / Duality / KuhnMunkres / Optimality (+ `_en`) | COMPLET (#12598) |
+| `asymmetric_information_lean` | v4.33.0 | 0 | Lemons / Signaling / Screening / MiyazakiWilson / BayesianLink (+ `_en`) | COMPLET (Epic #12844) |
 | `social_choice_lean_peters` | v4.32.1 | 0 | PetersTour (+ `_en`) | Référence seule |
 | `conway_cgt_lean` | v4.31.0-rc2 | 0 | CGTTour (+ `_en`) | Tour de référence |
 
@@ -48,7 +48,7 @@ Note : `SymbolicAI/Lean/examples/llm_assisted_proof.lean` (2 sorry) est un exemp
 
 **Objectif** : formaliser le curriculum GameTheory — jeux coopératifs (Shapley, cœur), mariage stable de Gale-Shapley, choix social (Arrow, Sen, électeur médian), jeux répétés (théorème folk), chemins d'échange sur jeux ordinaux 2×2.
 
-**Toolchain** : v4.32.1 | **Dépendances** : Mathlib4
+**Toolchain** : v4.33.0 | **Dépendances** : Mathlib4
 
 | Groupe de modules | sorry | Contenu |
 |--------------|-------|---------|
@@ -58,7 +58,7 @@ Note : `SymbolicAI/Lean/examples/llm_assisted_proof.lean` (2 sorry) est un exemp
 | `RepeatedGames/` (4 FR + 4 `_en`) | 1 (stretch) | `grim_trigger_sustains_iff` (théorème-phare, 0 sorry) ; `folk_theorem_discounted` / `folk_theorem_boundary` portent 1 sorry stretch (#4880) |
 | `Swaps/` (FR-only) | 0 | `Table`, générateurs adjacents, certificat de chemin, `distance_dilemme_chicken` |
 
-**Compilation** : `lake build` — SUCCESS. CI : `lean-game-theory.yml`, `lean-social-choice.yml`.
+**Compilation** : `lake build` — SUCCESS. CI : `lean-ci-matrix.yml` (clé `gametheory`, qui couvre aussi `SocialChoice/`).
 
 **Preuves clés** :
 - `gale_shapley_stable` — PR #1194 ; `exists_isManOptimal` (honnête, via poids minimal sur le demi-treillis des jointures) ; `woman_pessimal` — PR #1521 ; `meetSpouse_injective` / `joinSpouse_injective` — PR #1522
@@ -97,7 +97,7 @@ MechanismDesign, SortedListCounting) ont été absorbés byte-identique dans
 **Statut (historique, préservé dans le home canonique)** : COMPLET, 0 sorry — impossibilité
 d'Arrow (Geanakoplos 2005), paradoxe libéral de Sen, électeur médian / Split Cycle / clones,
 véracité Vickrey + contre-exemple au premier prix (#1469). Build repris par
-`.github/workflows/lean-social-choice.yml` sur `game_theory_lean`.
+`.github/workflows/lean-ci-matrix.yml` (clé `gametheory`) sur `game_theory_lean`.
 
 ---
 
@@ -105,7 +105,7 @@ véracité Vickrey + contre-exemple au premier prix (#1469). Build repris par
 
 **Objectif** : projet de référence important DominikPeters/SocialChoiceLean comme dépendance Lake.
 
-**Toolchain** : v4.32.1 (convergé avec le parc depuis #12134, 2026-08-21) | **Dépendances** : Mathlib4 (`520045ab`), SocialChoiceLean `94a4c650` (revs effectives du `lake-manifest.json`)
+**Toolchain** : v4.32.1 (pin effectif ; **hors cible du parc** depuis #14773 — dependance amont `SocialChoiceLean` incompatible 4.33, cf. `social_choice_lean_peters/README.md §Statut`) | **Dépendances** : Mathlib4 (`520045ab`), SocialChoiceLean `94a4c650` (revs effectives du `lake-manifest.json`)
 
 | Fichier | sorry | Description |
 |------|-------|-------------|
@@ -127,7 +127,7 @@ byte-identique dans [`game_theory_lean/RepeatedGames/`](game_theory_lean/Repeate
 Ce répertoire est conservé comme **coquille archive** : `package`, `require mathlib`,
 manifest et documentation restent présents, mais la `lean_lib` est neutralisée dans le
 `lakefile.lean` (ses globs matchaient 0 fichier depuis le déménagement). Certification et
-build repris par `game_theory_lean` (`.github/workflows/lean-game-theory.yml`).
+build repris par `game_theory_lean` (`.github/workflows/lean-ci-matrix.yml`, clé `gametheory`).
 
 **Statut (historique, préservé dans le home canonique)** : `grim_trigger_sustains_iff`
 (préserve un Nash parfait en sous-jeux ssi δ ≥ seuil) prouvé intégralement, 0 sorry. Le théorème
@@ -139,7 +139,7 @@ Folk (`folk_theorem_discounted`) porte 1 sorry stretch, toléré au titre de #48
 
 **Objectif** : formaliser le cadre minimax des jeux à somme nulle à deux joueurs — bilinéarité des paiements, concavité, et application du minimax de Sion.
 
-**Toolchain** : v4.32.1 | **Dépendances** : Mathlib4
+**Toolchain** : v4.33.0 | **Dépendances** : Mathlib4
 
 | Fichier | sorry | Description |
 |------|-------|-------------|
@@ -157,7 +157,7 @@ Folk (`folk_theorem_discounted`) porte 1 sorry stretch, toléré au titre de #48
 
 **Objectif** : définitions de types partagées pour la théorie des jeux (jeux sous forme normale, jeux bayésiens, jeux combinatoires, choix social, regret) — la couche fondation réutilisée par les notebooks GT Lean. Autonome (Lean core seul, zéro dépendance Mathlib).
 
-**Toolchain** : v4.32.1 | **Dépendances** : Lean core (sans Mathlib)
+**Toolchain** : v4.33.0 | **Dépendances** : Lean core (sans Mathlib)
 
 | Fichier (FR + jumeau `_en`) | sorry | Description |
 |---------------------------|-------|-------------|
@@ -168,9 +168,9 @@ Folk (`folk_theorem_discounted`) porte 1 sorry stretch, toléré au titre de #48
 | `LeanGameDefs/SocialChoice.lean` | 0 | primitives de choix social (`dictatorship_satisfies_pareto`, `dictatorship_satisfies_iia`) |
 | `LeanGameDefs/Regret.lean` | 0 | définitions regret / CFR |
 
-**Compilation** : `lake build LeanGameDefs` — SUCCESS (CI `lean-game-defs.yml` + `lean-game-defs-ext.yml`) | **COMPLET : 0 sorry, sans Mathlib**
+**Compilation** : `lake build LeanGameDefs` — SUCCESS (CI `lean-ci-matrix.yml`, clés `gamedefs` + `gamedefsext`) | **COMPLET : 0 sorry, sans Mathlib**
 
-**Statut** : lake autonome depuis #2752 (`lakefile.toml`, `lean-toolchain` pinné v4.32.1, `lake-manifest.json`, CI dédiée). Couche de définitions infrastructurelle (2 théorèmes vérifiant les axiomes de dictature), support des notebooks GT Lean. `lean_game_defs_ext` (suivant) l'étend avec des preuves de design de mécanismes bayésiens.
+**Statut** : lake autonome depuis #2752 (`lakefile.toml`, `lean-toolchain` pinné v4.33.0, `lake-manifest.json`, CI dédiée). Couche de définitions infrastructurelle (2 théorèmes vérifiant les axiomes de dictature), support des notebooks GT Lean. `lean_game_defs_ext` (suivant) l'étend avec des preuves de design de mécanismes bayésiens.
 
 ---
 
@@ -178,7 +178,7 @@ Folk (`folk_theorem_discounted`) porte 1 sorry stretch, toléré au titre de #48
 
 **Objectif** : jeux bayésiens & design de mécanismes — véracité Vickrey, équilibre bayésien de Nash, enchères, réputation, jeu fictif, regret. Extension de `lean_game_defs` (définitions partagées), sans Mathlib.
 
-**Toolchain** : v4.32.1 | **Dépendances** : Lean core (sans Mathlib)
+**Toolchain** : v4.33.0 | **Dépendances** : Lean core (sans Mathlib)
 
 | Fichier (FR + jumeau `_en`) | sorry | Description |
 |---------------------------|-------|-------------|
@@ -218,7 +218,7 @@ Folk (`folk_theorem_discounted`) porte 1 sorry stretch, toléré au titre de #48
 
 **Objectif** : squelette de correction de l'algorithme d'affectation de Kuhn-Munkres (hongrois) — lake compagnon du notebook GameTheory-23-Munkres-Assignment, hommage à James R. Munkres (1930-2026). Issue #12598 (1/3). Le primal (matrice de coûts, couplage parfait, valeur), le dual (potentiels, faisabilité, **dualité faible**), le certificat d'optimalité à écart nul, et les invariants structurels de l'algorithme (graphe d'égalité, **invariant de sortie**, **le serrage hongrois préserve la faisabilité duale**). Terminaison et complexité O(n³) volontairement hors scope.
 
-**Toolchain** : v4.32.1 | **Dépendances** : Mathlib4
+**Toolchain** : v4.33.0 | **Dépendances** : Mathlib4
 
 | Fichier (FR + jumeau `_en`) | sorry | Description |
 |---------------------------|-------|-------------|
@@ -240,7 +240,7 @@ Folk (`folk_theorem_discounted`) porte 1 sorry stretch, toléré au titre de #48
 
 **Objectif** : formaliser les modèles fondateurs de l'asymétrie d'information — compagnon des notebooks GT-17. Epic #12844 (première livraison, portée bornée conforme à l'audit canonique c.475).
 
-**Toolchain** : v4.32.1 | **Dépendances** : Lean core + `lean_game_defs_ext.Bayesian` (sans dépendance Mathlib)
+**Toolchain** : v4.33.0 | **Dépendances** : Lean core + `lean_game_defs_ext.Bayesian` (sans dépendance Mathlib)
 
 | Fichier (FR + jumeau `_en`) | sorry | Description |
 |---------------------------|-------|-------------|
