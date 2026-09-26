@@ -117,16 +117,24 @@ Not a tactical step — a system-borne impossibility:
 Archived under `G:\Mon Drive\MyIA\IA\Bibliography IA\`:
 
 - **Bowditch (2007)** "The Angel Game in the Plane", Combinatorics, Probability and
-  Computing 16(3):349-362, DOI:10.1017/s0963548306008297 — Cambridge Core paywall,
-  not archived locally.
+  Computing 16(3):349-362, DOI:10.1017/s0963548306008297 — Cambridge Core paywall.
+  Canonical stub archived locally (DOI + Crossref abstract, no PDF copy:
+  Cambridge copyright):
+  `2007 - Bowditch - The Angel Game in the Plane.placeholder.md`.
 - **Máthé (2007)** "The Angel of Power 2 Wins", Combinatorics, Probability and
-  Computing 16(3):363-374, DOI:10.1017/s0963548306008303 — Cambridge Core paywall,
-  not archived locally.
+  Computing 16(3):363-374, DOI:10.1017/s0963548306008303 — Cambridge Core paywall.
+  Canonical stub archived locally (DOI + Crossref abstract):
+  `2007 - Mathe - The Angel of Power 2 Wins.placeholder.md`.
 - **Kloster (2007)** "A solution to the Angel Problem", Theoretical Computer Science
-  389(1-2):266-277, DOI:10.1016/j.tcs.2007.08.006 — Elsevier paywall, not archived.
+  389(1-2):266-277, DOI:10.1016/j.tcs.2007.08.006 — Elsevier paywall.
+  Canonical stub archived locally (DOI + Crossref abstract):
+  `2007 - Kloster - A Solution to the Angel Problem.placeholder.md`.
 - **Gács (2007)** "The Angel Wins", arXiv:0706.2817v1, archived locally:
   `2007 - Gacs - The Angel Wins.pdf`. Verified pypdf first page
   (28 pages, 362933 bytes, arXiv:0706.2817v1, Peter Gács).
+- **MathOverflow post 357433** (2021, archive) "reference request - Conway's lesser-known
+  results", archived locally:
+  `Technical Web Docs/2021 - MathOverflow 357433 - reference request - Conways lesser-known results.html`.
 
 ## TRACKING ISSUE
 
