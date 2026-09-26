@@ -83,42 +83,54 @@ theorem angelMoves_card (k : ℕ) (p : ℤ × ℤ) :
   rw [hx, hy]
   rw [pow_two]
 
-/--
-  **INTRINSIC THEOREM**: for every power `k ≥ 2`, the Angel wins against the Devil
-  on the `ℤ²` grid — the Angel evades capture forever.
+/-!
+# Flag-bearer INTRINSIC theorem -- Angel k ≥ 2 vs Devil (EPIC #1453)
 
-  **STATEMENT**: `∀ k ≥ 2, ∀ stateInit, the Angel has a winning strategy.`
+This block documents the **impossibility of porting** the Angel victory
+theorem (power `k ≥ 2`) against the Devil into Lean. It stands in for the
+`theorem` without producing one: no statement in the lake (the `Conway_en`
+section stays formally empty on this point), no real `sorry`.
 
-  **STATUS**: `sorry` assumed `INTRINSIC` (sota-not-workaround §F, user mandate
-  2026-06-21). Not a tactical step — a system-borne impossibility:
+## INTENDED STATEMENT
 
-  1. **Game model**: `Stream' (GameState × ℕ)` (infinite turn-by-turn dynamics)
-     has no Mathlib 4 representative (`Game` does not exist in Mathlib standard).
-  2. **Winning strategy**: encoding Máthé's strategy (power 2) or Bowditch's
-     strategy (power 4) requires several pages of subtle mathematics — zones,
-     progressive invasion, boundedness of Devil's advance. No known Lean port.
-  3. **Model soundness**: mathematicians took 11 years (1996–2007) for the
-     paper proof; translation into proof assistants remains research.
+`∀ k ≥ 2, ∀ stateInit, the Angel has a winning strategy on the ℤ² grid.`
 
-  **REFERENCE LITERATURE** (archived under `G:\Mon Drive\MyIA\IA\Bibliography IA\`):
-  - **Bowditch (2007)** "The Angel Game in the Plane", Combinatorics, Probability and
-    Computing 16(3):349-362, DOI:10.1017/s0963548306008297 — Cambridge Core paywall,
-    not archived locally.
-  - **Máthé (2007)** "The Angel of Power 2 Wins", Combinatorics, Probability and
-    Computing 16(3):363-374, DOI:10.1017/s0963548306008303 — Cambridge Core paywall,
-    not archived locally.
-  - **Kloster (2007)** "A solution to the Angel Problem", Theoretical Computer Science
-    389(1-2):266-277, DOI:10.1016/j.tcs.2007.08.006 — Elsevier paywall, not archived.
-  - **Gács (2007)** "The Angel Wins", arXiv:0706.2817v1, archived locally:
-    `2007 - Gacs - The Angel Wins.pdf`. Verified pypdf first page (28 pages, 362933 bytes,
-    arXiv:0706.2817v1, Peter Gács).
+## REASONS FOR NOT PORTING (sota-not-workaround §F, user mandate 2026-06-21)
 
-  **Issue context**: see `jsboige/CoursIA#17666`. The canonical bibliography is
-  incomplete (3 paywalled papers); the `sorry` is raised as an honest flag-bearer
-  (the header says "we want it, we cannot carry it now"). A reopen is possible if
-  one of the 3 papers is obtained in OA via an institutional channel.
+Not a tactical step — a system-borne impossibility:
+
+1. **Game model**: `Stream' (GameState × ℕ)` (infinite turn-by-turn dynamics)
+   has no Mathlib 4 representative (`Game` does not exist in Mathlib standard).
+2. **Winning strategy**: encoding Máthé's strategy (power 2) or Bowditch's
+   strategy (power 4) requires several pages of subtle mathematics — zones,
+   progressive invasion, boundedness of Devil's advance. No known Lean port.
+3. **Model soundness**: mathematicians took 11 years (1996–2007) for the
+   paper proof; translation into proof assistants remains research.
+
+## REFERENCE LITERATURE
+
+Archived under `G:\Mon Drive\MyIA\IA\Bibliography IA\`:
+
+- **Bowditch (2007)** "The Angel Game in the Plane", Combinatorics, Probability and
+  Computing 16(3):349-362, DOI:10.1017/s0963548306008297 — Cambridge Core paywall,
+  not archived locally.
+- **Máthé (2007)** "The Angel of Power 2 Wins", Combinatorics, Probability and
+  Computing 16(3):363-374, DOI:10.1017/s0963548306008303 — Cambridge Core paywall,
+  not archived locally.
+- **Kloster (2007)** "A solution to the Angel Problem", Theoretical Computer Science
+  389(1-2):266-277, DOI:10.1016/j.tcs.2007.08.006 — Elsevier paywall, not archived.
+- **Gács (2007)** "The Angel Wins", arXiv:0706.2817v1, archived locally:
+  `2007 - Gacs - The Angel Wins.pdf`. Verified pypdf first page
+  (28 pages, 362933 bytes, arXiv:0706.2817v1, Peter Gács).
+
+## TRACKING ISSUE
+
+`jsboige/CoursIA#17666` — canonical bibliography incomplete (3 paywalled papers).
+A reopen is possible if one of the 3 papers is obtained in OA via an institutional
+channel. **No `theorem` is produced until the statement is realizable in Mathlib 4**
+(the pseudo-declaration `True` `by sorry` was removed at the ai-01 review on
+2026-09-26, see PR #17756; the content is kept here for documentary
+traceability).
 -/
-theorem angel_k_ge_2_wins_devil : ∀ k : ℕ, k ≥ 2 → True := by
-  sorry
 
 end Conway_en

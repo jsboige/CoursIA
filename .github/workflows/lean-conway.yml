@@ -99,14 +99,18 @@ jobs:
     with:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
       display-name: conway_lean
-      # PR #17756: angel_k_ge_2_wins_devil (INTRINSIC, sota-not-workaround §F,
-      # sota-not-workaround verdict documented in body PR + docstring theorem)
-      # raises distinct_code_sorry from 1 to 2 in this lake. Bump baseline
-      # in lockstep — lean-build.yml bidirectional gate, anti-regression §D,
-      # mandate user 2026-09-22 §A Gouvernance: CI normative changes ship on
-      # the same PR as the sorry they permit (otherwise gate stays rouge and
-      # lane blocks the merge she justifies).
-      sorry-baseline: "2"
+      # PR #17756 reprise (ai-01 review 2026-09-26) : la pseudo-declaration
+      # `angel_k_ge_2_wins_devil : ∀ k : ℕ, k ≥ 2 → True := by sorry` a été
+      # retirée. Son contenu (statut INTRINSIC, biblio, contexte issue #17666)
+      # est conservé en commentaire de module `/-! ... -/` au même emplacement
+      # dans Angel.lean + Angel_en.lean. Le `sorry` réel disparaît : lake retombe
+      # à 1 `distinct_code_sorry` (HashlifeMarginFragment.lean framework sorry,
+      # baseline historique). Bump baseline 2→1 en lockstep — lean-build.yml
+      # bidirectional gate, anti-regression §D, mandate user 2026-09-22 §A
+      # Gouvernance : CI normative changes ship on the same PR as the sorry
+      # they remove (otherwise gate stays rouge and lane blocks the merge she
+      # justifies).
+      sorry-baseline: "1"
       sorry-filter-mode: real
 
   # c.8133 (#8782 reconciliation): the blocking gate's allow-axioms list was
