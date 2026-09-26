@@ -123,7 +123,7 @@ def residual_reds(legs: list[dict]) -> list[dict]:
 
 
 def _run_gh(args: list[str]) -> str:
-    proc = subprocess.run(["gh", *args], capture_output=True, text=True)
+    proc = subprocess.run(["gh", *args], capture_output=True, text=True, encoding="utf-8", errors="replace")
     if proc.returncode != 0:
         raise RuntimeError(f"gh {' '.join(args[:4])}... -> {proc.returncode}: "
                            f"{proc.stderr[:200]}")
@@ -140,7 +140,10 @@ def collect(pr: int | None = None, sha: str | None = None) -> tuple[str, list[di
     source fiable : commits/<head>/check-runs, tri par started_at, dernier par
     nom fait foi."""
     sha = sha or _head_sha(pr)
+    # --paginate : au-dela de 100 jambes (110 mesurees sur #17807), la page 2
+    # porte des jambes -- `PR gate` compris -- qu'une lecture a une page ne voit pas.
     rows = _run_gh(["api", f"repos/{REPO}/commits/{sha}/check-runs?per_page=100",
+                    "--paginate",
                     "--jq", ".check_runs[] | {name, conclusion, started_at, id, "
                     "details_url} | tojson"])
     legs = [json.loads(line) for line in rows.splitlines() if line.strip()]
