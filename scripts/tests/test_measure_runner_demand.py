@@ -406,7 +406,38 @@ def test_coresidence_ratio_is_none_when_nothing_is_shared():
     snap = snapshot([with_jobs(run(1, dt(0), name="W"), [job_on(51, "h-1", 0, 5)])])
     summary = mod.analyze(snap)["co_residence"]["summary"]
     assert summary["shared_jobs"] == 0
-    assert summary["shared_over_solo_p50_ratio"] is None
+    assert summary["shared_over_solo_runtime_ratio"] == {
+        "p50": None,
+        "p90": None,
+        "max": None,
+    }
+
+
+def test_coresidence_ratio_reports_the_tail_not_only_the_median():
+    # Le median peut dire « aucune degradation » alors que la queue double --
+    # et c'est la queue qui fait mourir un job au timeout. Le rapport doit donc
+    # porter p90 et max, sinon la question « la co-residence coute-t-elle sur les
+    # jobs longs ? » n'est pas repondue par l'artefact.
+    jobs = [
+        # Seuls : trois jobs de 10 min qui ne se recouvrent pas.
+        job_on(61, "h-1", 0, 10),
+        job_on(62, "h-2", 20, 10),
+        job_on(63, "h-3", 40, 10),
+        # En concurrence : deux jobs de 10 min et un de 40 min, tous commencant
+        # au meme instant -- chacun voit donc un pic de concurrence de 3.
+        job_on(64, "h-4", 60, 10),
+        job_on(65, "h-5", 60, 10),
+        job_on(66, "h-6", 60, 40),
+    ]
+    snap = snapshot([with_jobs(run(1, dt(0), name="W"), jobs)])
+    summary = mod.analyze(snap)["co_residence"]["summary"]
+    assert summary["solo_jobs"] == 3
+    assert summary["shared_jobs"] == 3
+    ratio = summary["shared_over_solo_runtime_ratio"]
+    # Le median est identique (10 min des deux cotes) : c'est la queue qui parle.
+    assert ratio["p50"] == 1.0
+    assert ratio["p90"] == 3.4
+    assert ratio["max"] == 4.0
 
 
 # --- Inventaire des runners (moitie statique) --------------------------------
