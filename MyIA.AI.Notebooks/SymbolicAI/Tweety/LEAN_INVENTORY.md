@@ -13,7 +13,7 @@ l'instrument canonique `scripts/lean/count_code_sorry.py --lake <root> --json` (
 
 | Répertoire | Toolchain | sorry (production) | Modules | Statut |
 |-----------|-----------|--------------------|---------|--------|
-| `argumentation_lean` | v4.32.1 | 0 | `Argumentation/{Basic, Fundamental, Grounded, Characteristic, Extensions}` (5 FR + 5 `_en`) + umbrella `Argumentation.lean` | COMPLET |
+| `argumentation_lean` | v4.33.0 | 0 | `Argumentation/{Basic, Fundamental, Grounded, Characteristic, Extensions}` (5 FR + 5 `_en`) + umbrella `Argumentation.lean` | COMPLET |
 
 ---
 
@@ -25,7 +25,7 @@ l'instrument canonique `scripts/lean/count_code_sorry.py --lake <root> --json` (
 les extensions canoniques (admissible, complète, grounded, preferred, stable), lemme fondamental
 et fonction caractéristique, au-dessus de Mathlib.
 
-**Toolchain** : v4.32.1 | **Dépendances** : Mathlib4
+**Toolchain** : v4.33.0 | **Dépendances** : Mathlib4
 
 | Groupe de modules | sorry | Contenu |
 |--------------|-------|---------|
@@ -36,8 +36,8 @@ et fonction caractéristique, au-dessus de Mathlib.
 | `Argumentation/Extensions` (FR + `_en`) | 0 | hiérarchie des extensions : `Admissible`, `Complete`, `grounded`, `Preferred` |
 | `Argumentation.lean` (umbrella) | 0 | imports agrégés du lake |
 
-**Câblage CI** : caller workflow [`lean-argumentation.yml`](../../../.github/workflows/lean-argumentation.yml)
-(push `main`, paths `MyIA.AI.Notebooks/SymbolicAI/Tweety/argumentation_lean/**.lean` + `lakefile.*`), pipeline `standalone-tactic`.
+**Câblage CI** : matrice [`lean-ci-matrix.yml`](../../../.github/workflows/lean-ci-matrix.yml)
+(clé `argumentation` dans `scripts/lean/ci_lakes.json` ; push `main`, paths `MyIA.AI.Notebooks/SymbolicAI/Tweety/argumentation_lean/**.lean` + `lakefile.*`), pipeline `real`.
 
 **Notebook câblé** : `Tweety-5b-Lean-Argumentation.ipynb` (kernel `lean4-wsl`, importe
 `Argumentation.*`) — companion conceptuel Tweety-5.

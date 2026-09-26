@@ -12,7 +12,7 @@ de l'Epic [#4038](https://github.com/jsboige/CoursIA/issues/4038) + vérificatio
 
 | Lake | Toolchain | sorry (production) | Modules | Notebook câblé | Classe | Suivi |
 |------|-----------|--------------------:|--------:|---------------:|--------|-------|
-| `erc20_lean` | v4.32.1 | 0 | 4 | 2¹ | PEDA/REF (blockchain) | #4047, #4038 |
+| `erc20_lean` | v4.33.0 | 0 | 4 | 2¹ | PEDA/REF (blockchain) | #4047, #4038 |
 | **Total** | — | **0** | **4** | **2** | — | — |
 
 ¹ Deux notebooks câblés sous `SymbolicAI/Lean/` : **Lean-24** (ERC20 Invariant
@@ -30,12 +30,12 @@ Solidity — convention sibling-lake). Premier lake Lean de la série SmartContr
 tous les comptes est toujours égale au `totalSupply`. Formalisation des méthodes formelles
 appliquées à la blockchain (roadmap #4038 Tier 1, #4047).
 
-- **Toolchain** : v4.32.1 · **Dépendance** : Mathlib4
+- **Toolchain** : v4.33.0 · **Dépendance** : Mathlib4
 - **lib** : `ERC20` (`globs := #[.submodules \`ERC20]`)
 - **Modules** : `ERC20/State.lean`, `ERC20/Ops.lean`, `ERC20/Invariant.lean` + umbrella
   `ERC20.lean`
 - **sorry (production)** : **0** (real-mode). CI verte sur main
-  (`lean-erc20.yml`, dernier run main 2026-08-18).
+  (`lean-ci-matrix.yml`, clé `erc20`).
 
 #### Théorèmes prouvés (0 sorry)
 
@@ -68,5 +68,5 @@ Axiomes `[propext, Classical.choice, Quot.sound]` (Mathlib standard, **pas de `s
 - **WDAC workaround** (RECOVERABLE-LOCAL) : `lake exe cache get` bloqué → copie wholesale
   des oleans d'un lake frère compatible. Cf.
   `lean-wdac-olean-wholesale-copy`.
-- CI : `.github/workflows/lean-erc20.yml` (`sorry-filter-mode: real`, baseline `"0"` ;
+- CI : `.github/workflows/lean-ci-matrix.yml` (clé `erc20` ; `sorry-filter-mode: real`, baseline `"0"` ;
   bascule mode #11688).

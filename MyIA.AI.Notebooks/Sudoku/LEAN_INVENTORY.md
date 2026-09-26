@@ -13,7 +13,7 @@ hors `_en` ; bascule #11688 — historiquement `standalone-tactic` ; les mention
 
 | Lake | Toolchain | sorry (production) | Modules | Notebook câblé | Classe | Suivi |
 |------|-----------|--------------------:|--------:|---------------:|--------|-------|
-| `sudoku_lean` | v4.32.1 | 0 | 4 | 1¹ | PEDA/REF | #4055, #4038 |
+| `sudoku_lean` | v4.33.0 | 0 | 4 | 1¹ | PEDA/REF | #4055, #4038 |
 | **Total** | — | **0** | **4** | **1** | — | — |
 
 ¹ Notebook câblé : **Sudoku-19-Lean-Propagation.ipynb** (propagation des règles en
@@ -30,12 +30,12 @@ par contraintes .NET C# — convention sibling-lake).
 et hidden single. Premier lake Lean de la série Sudoku (roadmap #4038 Tier 3, #4055). Modèle
 abstrait de contraintes (grille 9×9 = instance, pas un cas spécial).
 
-- **Toolchain** : v4.32.1 · **Dépendance** : Mathlib4
+- **Toolchain** : v4.33.0 · **Dépendance** : Mathlib4
 - **lib** : `Sudoku` (`globs := #[.submodules \`Sudoku]`)
 - **Modules** : `Sudoku/Basic.lean`, `Sudoku/Propagation.lean`, `Sudoku/ExactCover.lean` +
   umbrella `Sudoku.lean`
 - **sorry (production)** : **0** (real-mode). CI verte sur main
-  (`lean-sudoku.yml`, dernier run 2026-08-18).
+  (`lean-ci-matrix.yml`, clé `sudoku`).
 
 #### Théorèmes prouvés (0 sorry)
 
@@ -71,5 +71,5 @@ Prop/Fintype ; **pas de `sorryAx`**).
 - **WDAC workaround** (RECOVERABLE-LOCAL) : `lake exe cache get` bloqué → copie wholesale
   `cp -r sibling/.lake` + `lake-manifest.json` d'un lake frère compatible. Cf.
   `lean-wdac-olean-wholesale-copy`.
-- CI : `.github/workflows/lean-sudoku.yml` (`sorry-filter-mode: real`, baseline `"0"` ;
+- CI : `.github/workflows/lean-ci-matrix.yml` (clé `sudoku` ; `sorry-filter-mode: real`, baseline `"0"` ;
   bascule mode #11688).
