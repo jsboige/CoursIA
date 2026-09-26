@@ -357,3 +357,26 @@ jobs:
         allow-axioms: ${{ matrix.axiom-allow-axioms || '' }}
         fail-on-sorry: ${{ matrix.axiom-fail-on-sorry || 'true' }}
         include-i18n-siblings: ${{ matrix.axiom-include-i18n-siblings || 'false' }}
+    # Contrat certifie (#17374, herite du wrapper lean-social-choice.yml
+    # supprime) : opt-in par cle `certified-subdir` du manifeste -- une entree
+    # sans la cle saute le step (comportement exact des autres lakes). Porte
+    # par le job ubuntu du build, ce gate textuel coute quelques secondes et
+    # n'ajoute PAS de job : la jambe autonome self-hostee du wrapper
+    # (#14283 tranche 3c) n'a plus de raison d'etre une jambe separee.
+    - name: Certified modules contract (${{ matrix.display-name }})
+      if: matrix.certified-subdir != ''
+      run: |
+        python -m pip install --quiet pytest
+        # Rapport honnete lake-wide (advisory) : le lecteur du log voit le
+        # total REEL du lake (dont le stretch sorry de RepeatedGames/Folk.lean,
+        # hors du sous-dossier certifie), pas seulement le zero certifie.
+        python "scripts/lean/count_code_sorry.py" \
+          --lake "${{ matrix.project-path }}" --no-vacuous || true
+        python "scripts/lean/check_certified_sorry.py" \
+          --repo "$GITHUB_WORKSPACE" \
+          --lake "${{ matrix.project-path }}" \
+          --subdir "${{ matrix.certified-subdir }}"
+        # Controles positifs du gate lui-meme : un lot entier qui passe est
+        # aussi ce que produit un gate de-branche -- la difference se fait sur
+        # les controles positifs, pas sur le vert.
+        python -m pytest "scripts/tests/test_check_certified_sorry.py" -q
