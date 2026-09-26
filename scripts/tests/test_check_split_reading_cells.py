@@ -1331,3 +1331,78 @@ def test_cliquet_base_irresoluble_rend_rc1(tmp_path):
     )
     assert proc.returncode == 1
     assert "irresoluble" in (proc.stdout + proc.stderr)
+
+
+# =============================================================================
+# #17917 -- le discriminant SECOND_READING apres code compare des NOMBRES.
+# Le test d'origine posait une question booleenne (« la base avait-elle une
+# markdown derriere ce code ? ») : une FUSION de deux lectures en une seule
+# cellule de tete y repondait OUI et repartait classee seconde lecture, alors
+# que le compte de lectures BAISSE. Ces deux controles sont le couple
+# positif/negatif de la nouvelle regle ; ils portent des cellules SANS id,
+# parce que c'est la seule forme ou les signaux de reecriture ne mordent pas
+# (avec un id herite, le discriminant REWRITE absorbe le cas en amont).
+# =============================================================================
+
+
+def test_diff_extinction_fusion_de_lectures_sans_id_17917():
+    """FUSION : le compte de lectures qui suivent le code BAISSE (3 -> 2).
+
+    Forme mesuree sur #17062 (GameTheory-08-CombinatorialGames-Csharp c18 :
+    3 -> 2 ; 08c c6 : 2 -> 2 ; 08c c21 : 3 -> 2), ou la contenance prouvait
+    que chaque cellule de tete absorbait DEUX sources de base. Le carnet
+    08-Csharp portait de plus `base_total == head_total == 0` : le
+    recensement ne voyait aucune paire dans AUCUNE des deux versions pendant
+    que le mode diff declarait une seconde lecture -- les deux organes se
+    contredisaient sur le meme carnet. Fusionner est l'action PRESCRITE par
+    le mandat de densite : la rougir punissait le remede.
+    """
+    base = nb(
+        md("# Titre du carnet\n\nUn preamble, aucune lecture."),
+        code("print(1)"),
+        md("### Lecture A\nLe total vaut 1."),
+        md("### Lecture B\nLe total vaut 1, mesure."),
+        md("### Lecture C\nBornes de la mesure."),
+    )
+    head = nb(
+        code("print(1)"),
+        md("### Lecture A+B\nLe total vaut 1, mesure et verifie : les deux "
+           "paragraphes de lecture de base sont fusionnes ici."),
+        md("### Lecture D\nBornes de la mesure, completees."),
+        md("# Titre du carnet\n\nUn preamble, aucune lecture."),
+    )
+    # Le code (idx 0 en tete) etait suivi de 3 markdown en base, de 2 en tete.
+    assert detect_added_readings(head, base) == []
+
+
+def test_diff_mord_quand_le_compte_de_lectures_monte_sans_id_17917():
+    """Controle NEGATIF de la regle : un vrai empilement fait MONTER le compte.
+
+    Meme forme que ci-dessus (cellules sans id, cellule de code decalee, donc
+    aucun signal de reecriture), mais la tete porte QUATRE lectures la ou la
+    base en portait TROIS. Le discriminant par comptage doit continuer a
+    mordre : c'est ce qui montre que l'extinction ci-dessus n'est pas un
+    quitus general.
+
+    Sur `origin/main` (fenetre de 500 commits), six lignes
+    ``SECOND_READING`` apres code survivent au correctif et toutes portent un
+    compte qui monte (1 -> 2, ou 2 -> 3).
+    """
+    base = nb(
+        md("# Titre du carnet\n\nUn preamble, aucune lecture."),
+        code("print(1)"),
+        md("### Lecture A\nLe total vaut 1."),
+        md("### Lecture B\nLe total vaut 1, mesure."),
+        md("### Lecture C\nBornes de la mesure."),
+    )
+    head = nb(
+        code("print(1)"),
+        md("### Lecture A\nLe total vaut 1, reecrit."),
+        md("### Lecture B\nLe total vaut 1, mesure."),
+        md("### Lecture C\nBornes de la mesure."),
+        md("### Lecture D\nLimites cumulees, ajoutee."),
+        md("# Titre du carnet\n\nUn preamble, aucune lecture."),
+    )
+    findings = detect_added_readings(head, base)
+    assert [f["type"] for f in findings] == ["SECOND_READING"]
+    assert findings[0]["prev_role"] == "code_with_output"

@@ -68,10 +68,12 @@ touche :
     carnet absent de la base comme « ajoute » ferait rougir la PR entiere sur un
     probleme de fetch.
 
-``--self-test`` joue cinq controles, hors git et hors reseau : deux positifs
+``--self-test`` joue sept controles, hors git et hors reseau : trois positifs
 (lecture empilee nommee ; lecture ajoutee SANS en-tete, invisible au detecteur
-consecutive) et trois negatifs (deux lectures fusionnees en une ; modification de
-code sans lecture ajoutee ; encart sans code execute au-dessus).
+consecutive ; lectures empilees dont le compte MONTE, cellules sans id) et
+quatre negatifs (deux lectures fusionnees en une ; modification de code sans
+lecture ajoutee ; encart sans code execute au-dessus ; fusion de lectures dont
+le compte BAISSE, cellules sans id -- la forme mesuree sur #17062).
 
 Codes de retour : 0 = aucun finding ; 1 = cible introuvable, fichier designe
 illisible, ou base irresoluble ; 2 = findings (avec --fail-on-findings). En mode
@@ -339,6 +341,22 @@ def _classify_context(cells: list[dict], idx: int) -> tuple[str, str]:
     return role(prev), role(nxt)
 
 
+def _md_run_after(cells: list[dict], code_idx: int) -> int:
+    """Nombre de cellules markdown qui suivent IMMEDIATEMENT ``code_idx``.
+
+    C'est le « nombre de lectures qui suivent cette cellule de code » du
+    discriminant #17917 : une fusion de deux lectures en une seule cellule
+    fait BAISSER ce nombre (2 -> 1), un empilement reel le fait MONTER
+    (1 -> 2). Un booleen ne distinguait pas les deux.
+    """
+    n = 0
+    j = code_idx + 1
+    while j < len(cells) and cells[j].get("cell_type") == "markdown":
+        n += 1
+        j += 1
+    return n
+
+
 def detect_added_readings(head_nb: dict, base_nb: dict | None) -> list[dict]:
     """Mode DIFF (#17464) : signale les cellules markdown **ajoutees** dans une PR
     dont la position viole la regle user « une sortie = une lecture ».
@@ -355,16 +373,16 @@ def detect_added_readings(head_nb: dict, base_nb: dict | None) -> list[dict]:
                                        (lecture ajoutee derriere une lecture
                                        deja presente)
                                      OU prev_role == "code_with_output"
-                                        ET la cellule de code en question
-                                        etait **elle-meme deja precede d'une
-                                        lecture en base** (sinon : ajout
-                                        legitime d'une premiere lecture pour
-                                        un nouveau code)
+                                        ET le nombre de lectures qui suivent
+                                        ce code **augmente** par rapport a la
+                                        base (#17917)
 
     Le discriminant pour ``SECOND_READING`` apres code : on regarde en base
-    la cellule qui precede le meme code (identifiee par egalite de source).
-    Si en base cette cellule de code etait deja suivie d'une lecture markdown,
-    l'ajout est un doublonnage ; sinon, c'est la premiere lecture legitime.
+    la cellule de code de meme source, et on compare le **nombre** de
+    cellules markdown qui la suivent, base contre tete. Une fusion (2 -> 1)
+    ou une reecriture (1 -> 1) ne sont pas des ajouts ; seul un compte qui
+    MONTE signale un empilement. Une base sans lecture derriere ce code
+    (0 -> 1) reste la premiere lecture legitime.
 
     Sortie : liste de dicts ``{type, cells, src_first_120, prev_role,
     next_role, prev_src_last_60, next_src_first_60}``.
@@ -471,26 +489,39 @@ def detect_added_readings(head_nb: dict, base_nb: dict | None) -> list[dict]:
         prev_role, next_role = _classify_context(head_cells, idx)
         bucket = _bucket_for(prev_role, next_role)
         # Discriminant SECOND_READING : si prev_role == "code_with_output",
-        # verifier en base si ce code etait **deja suivi** d'une cellule
-        # markdown (au sens large du ticket user : « deja suivie d'au moins
-        # une cellule markdown » -- la distinction lecture vs transition
-        # est tranchee par la pedagogie, pas par le format).
-        # Si la base avait deja une md derriere ce code, ajouter une md
-        # supplementaire derriere est un doublonnage. Si la base n'avait
-        # rien derriere ce code (markdown), c'est la premiere lecture
-        # legitime (et NON une violation).
+        # comparer le **nombre** de cellules markdown qui suivent ce code
+        # entre base et tete (#17917). Le discriminant d'origine posait une
+        # question BOOLEENNE -- « la base avait-elle au moins une md derriere
+        # ce code ? » -- et signalait donc toute md ajoutee derriere un code
+        # deja commente, y compris quand la tete **fusionne** deux lectures
+        # en une seule cellule : le nombre de lectures baisse, et l'organe
+        # rougit le geste que le mandat de densite PRESCRIT.
+        #
+        # Mesure fondatrice (#17062, merge-base d35bac75e5, tete 99e3a7a836) :
+        # trois cellules signalees, `n_base -> n_head` = 3 -> 2 (08-Csharp
+        # c18), 2 -> 2 (08c c6), 3 -> 2 (08c c21) ; la contenance confirme
+        # que chaque cellule de tete absorbe DEUX sources de base. Le carnet
+        # 08-Csharp portait de plus `base_total == head_total == 0` -- le
+        # recensement ne voyait aucune paire dans AUCUNE des deux versions
+        # pendant que le mode diff declarait une seconde lecture : les deux
+        # organes se contredisaient sur le meme carnet.
+        #
+        # Regle : signaler seulement si le nombre AUGMENTE. `n_base == 0`
+        # reste la premiere lecture legitime d'un code jusque-la muet.
         if bucket == "SECOND_READING" and prev_role == "code_with_output":
             prev_cell = head_cells[idx - 1] if idx > 0 else None
             if prev_cell is not None:
                 prev_src = cell_source(prev_cell)
                 prev_positions = base_code_positions.get(prev_src, [])
-                already_had_md_after = any(
-                    (i + 1 < len(base_cells)
-                     and base_cells[i + 1].get("cell_type") == "markdown")
-                    for i in prev_positions
+                n_base = max(
+                    (_md_run_after(base_cells, i) for i in prev_positions),
+                    default=0,
                 )
-                if not already_had_md_after:
-                    # premiere lecture legitime pour ce code -> ne pas signaler
+                n_head = _md_run_after(head_cells, idx - 1)
+                if n_base == 0 or n_head <= n_base:
+                    # premiere lecture legitime pour ce code, ou fusion /
+                    # reecriture qui ne fait pas MONTER le compte -> rien a
+                    # signaler (grandfathered).
                     bucket = None
         # #17044 -- SECOND_READING apres une MARKDOWN : le bucket ne regardait
         # que la topologie (md, md) et signalait donc tout encart insere entre
@@ -778,6 +809,56 @@ def self_test() -> int:
         "negatif 3 encart sans code au-dessus",
         not added5,
         f"added={[f['type'] for f in added5]}",
+    ))
+
+    # Positif 3 (#17917) -- le compte de lectures qui suivent un code MONTE.
+    # Cellules SANS id : le signal de reecriture par id est indisponible, et
+    # le decalage fait tomber la cellule ajoutee sur un index ou la base porte
+    # une cellule de CODE -- donc aucun des signaux de reecriture ne mord.
+    # C'est le seul chemin qui atteint le discriminant par comptage.
+    preamble = ("markdown", "# Titre du carnet\n\nPublic : Decouverte.", None)
+    lect_a = ("markdown", "### Lecture A\nLe total vaut 1.", None)
+    lect_b = ("markdown", "### Lecture B\nLe total vaut 1, mesure.", None)
+    lect_c = ("markdown", "### Lecture C\nBornes de la mesure.", None)
+    base6 = _nb([preamble, code, lect_a, lect_b, lect_c])
+    head6 = _nb([
+        code,
+        ("markdown", "### Lecture A\nLe total vaut 1, reecrit.", None),
+        ("markdown", "### Lecture B\nLe total vaut 1, mesure.", None),
+        ("markdown", "### Lecture C\nBornes de la mesure.", None),
+        ("markdown", "### Lecture D\nLimites cumulees, ajoutee.", None),
+        preamble,
+    ])
+    added6 = detect_added_readings(head6, base6)
+    checks.append((
+        "positif 3 compte de lectures qui monte (sans id)",
+        any(f["type"] == "SECOND_READING" for f in added6),
+        f"added={[(f['type'], f['cells']) for f in added6]} "
+        f"compte {_md_run_after(base6['cells'], 1)} -> "
+        f"{_md_run_after(head6['cells'], 0)}",
+    ))
+
+    # Negatif 4 (#17917) -- FUSION : le compte de lectures qui suivent un code
+    # BAISSE (3 -> 2). Meme forme que le faux positif mesure sur #17062 : les
+    # cellules n'ont pas d'id, l'index de la cellule de code se decale, et la
+    # cellule de tete absorbe deux lectures de base. Un booleen (« la base
+    # avait-elle une md derriere ce code ? ») la signalait ; le comptage non.
+    lect_d = ("markdown", "### Lecture D\nBornes de la mesure, completees.", None)
+    base7 = _nb([preamble, code, lect_a, lect_b, lect_c])
+    head7 = _nb([
+        code,
+        ("markdown", "### Lecture A+B\nLe total vaut 1, mesure et verifie : "
+                     "les deux paragraphes de base sont fusionnes ici.", None),
+        lect_d,
+        preamble,
+    ])
+    added7 = detect_added_readings(head7, base7)
+    checks.append((
+        "negatif 4 fusion, compte qui baisse (sans id, #17062)",
+        not added7,
+        f"added={[(f['type'], f['cells']) for f in added7]} "
+        f"compte {_md_run_after(base7['cells'], 1)} -> "
+        f"{_md_run_after(head7['cells'], 0)}",
     ))
 
     ok = True
