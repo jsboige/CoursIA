@@ -207,8 +207,12 @@ def assert_backend_is_native() -> str:
     ne cree pas de nouvelle exposition, alors qu'ecrire dedans en cree une. La
     fonction rend le nom du backend, pour qu'un rapport puisse l'attester au
     lieu de l'affirmer.
+
+    `_keyring()` rend le MODULE `keyring`, dont le type est `module` : c'est le
+    backend actif (`keyring.get_keyring()`) qu'il faut nommer, sinon le test
+    refuse tous les backends, natifs compris.
     """
-    kr = _keyring()
+    kr = _keyring().get_keyring()
     name = type(kr).__name__
     module = type(kr).__module__
     if name not in _ACCEPTED_BACKENDS or module.startswith("keyrings.alt"):
