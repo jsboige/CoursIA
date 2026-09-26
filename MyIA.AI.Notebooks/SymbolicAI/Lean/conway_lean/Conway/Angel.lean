@@ -7,9 +7,22 @@ Le probleme de l'Ange (Conway, 1996) : sur la grille entiere infinie
 quelle case a distance de Chebyshev (coup de roi) `k` ; le Diable mange
 une case par tour. L'Ange de pouvoir k donne-t-il la chasse
 indefiniment ? Conway a pose les resultats initiaux et le probleme a
-ouvert tout un champ ; il fut finalement resolu en 2006 (Bowditch :
-pouvoir 4 ; Kloster et Mathe : pouvoir 2 ; Gacs) -- l'Ange de pouvoir
-≥ 2 gagne.
+ouvert tout un champ ; il fut resolu en 2007 par trois articles
+complementaires : Bowditch (pouvoir 4), Mathe (pouvoir 2), Kloster
+(pouvoir 2, preuve alternative). Gacs demontre qu'un Ange de pouvoir
+**fini suffisamment grand** gagne (resume et introduction : « if J is
+sufficiently large then the angel has a strategy such that the devil
+will never capture her », arXiv:0706.2817 p.1) -- formulation citee
+d'apres l'archive `2007 - Gacs - The Angel Wins.pdf` du gisement
+partage. Le papier ne donne pas de puissance numerique precise.
+
+Bibliographie archivee dans `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\` :
+- `2007 - Gacs - The Angel Wins.pdf` (arXiv:0706.2817v1, verifie)
+- MathOverflow 357433 archive en HTML dans `Technical Web Docs/`
+Les papiers paywalles (Bowditch/Mathe/Kloster, Cambridge Core +
+Elsevier ScienceDirect) n'ont pas pu etre archives en local faute
+d'acces auth ; leurs DOI sont references dans le bloc doc-module
+(`## LITTERATURE DE REFERENCE`) en fin de fichier.
 
 NOTE D'ACCESSIBILITE (Epic #1452/#1453) : le THEOREME complet de
 victoire est un enonce de jeu infini / non-terminaison sans precedent
@@ -20,7 +33,11 @@ de l'Ange (une boule de Chebyshev), ou l'Ange de pouvoir 1 est
 exactement un roi des echecs. Hommage a une contribution MathOverflow
 sur les resultats de poursuite de Conway (post 357433).
 
-Tous les `sorry` ont ete elimines (Epic #1453, #1651).
+Tous les `sorry` de ce fichier ont ete elimines. Le **bloc doc-module** de
+fin de fichier documente l'impossibilite du port du theoreme de victoire
+(EPIC #1452/#1453), la litterature de reference, et l'issue de suivi
+#17666 ; le contenu est conserve pour traçabilite documentaire. Les
+autres theoremes (setup combinatoire) restent verifies (Epic #1453, #1651).
 -/
 
 /-
@@ -73,5 +90,63 @@ theorem angelMoves_card (k : ℕ) (p : ℤ × ℤ) :
   have hy : (p.2 + (k : ℤ) + 1 - (p.2 - (k : ℤ))).toNat = 2 * k + 1 := by omega
   rw [hx, hy]
   rw [pow_two]
+
+/-!
+# Theoreme porte-drapeau INTRINSIC -- Ange k ≥ 2 vs Diable (EPIC #1453)
+
+Ce bloc documente **l'impossibilite de port** Lean du theoreme de victoire de
+l'Ange de pouvoir `k ≥ 2` contre le Diable. Il tient lieu de `theorem` sans le
+produire : pas d'enonce dans le lac (la section `Conway` reste formellement
+vide sur ce point), pas de `sorry` reel.
+
+## ENONCE INTENTIONNEL
+
+`∀ k ≥ 2, ∀ stateInit, l'Ange a une strategie gagnante sur la grille ℤ².`
+
+## MOTIFS DU NON-PORT (sota-not-workaround §F, mandat user 2026-06-21)
+
+Pas une etape tactique -- une impossibilite portee par le systeme :
+
+1. **Modele de jeu** : `Stream' (GameState × ℕ)` (dynamique tour-par-tour infinie)
+   n'a pas de representant Mathlib 4 (`Game` n'existe pas dans Mathlib standard).
+2. **Strategie gagnante** : encoder la strategie de Mathe (pouvoir 2) ou Bowditch
+   (pouvoir 4) necessite plusieurs pages de maths subtiles -- zones, envahissement
+   progressif, bornitude de l'avancee du Diable. Pas de port Lean connu.
+3. **Soundness du modele** : les mathematiciens ont pris 11 ans (1996-2007) pour la
+   preuve papier ; la traduction en assistant de preuve reste recherche.
+
+## LITTERATURE DE REFERENCE
+
+Archivee dans `G:\Mon Drive\MyIA\IA\Bibliographie IA\` :
+
+- **Bowditch (2007)** "The Angel Game in the Plane", Combinatorics, Probability and
+  Computing 16(3):349-362, DOI:10.1017/s0963548306008297 -- paywall Cambridge Core.
+  Stub canonique archivé en local (DOI + abstract Crossref, pas de copie
+  PDF : droits Cambridge) :
+  `2007 - Bowditch - The Angel Game in the Plane.placeholder.md`.
+- **Mathe (2007)** "The Angel of Power 2 Wins", Combinatorics, Probability and
+  Computing 16(3):363-374, DOI:10.1017/s0963548306008303 -- paywall Cambridge Core.
+  Stub canonique archivé en local (DOI + abstract Crossref) :
+  `2007 - Mathe - The Angel of Power 2 Wins.placeholder.md`.
+- **Kloster (2007)** "A solution to the Angel Problem", Theoretical Computer Science
+  389(1-2):266-277, DOI:10.1016/j.tcs.2007.08.006 -- paywall Elsevier.
+  Stub canonique archivé en local (DOI + abstract Crossref) :
+  `2007 - Kloster - A Solution to the Angel Problem.placeholder.md`.
+- **Gacs (2007)** "The Angel Wins", arXiv:0706.2817v1, archive en local :
+  `2007 - Gacs - The Angel Wins.pdf`. Verifie pypdf premiere page
+  (28 pages, 362933 octets, arXiv:0706.2817v1, Peter Gacs).
+- **MathOverflow post 357433** (2021, archive) "reference request - Conway's lesser-known
+  results", archive en local :
+  `Technical Web Docs/2021 - MathOverflow 357433 - reference request - Conways lesser-known results.html`.
+
+## ISSUE DE SUIVI
+
+`jsboige/CoursIA#17666` -- bibliographie canonique incomplete (3 papiers paywalles).
+Reouverture possible si l'un des 3 papiers est obtenu en OA via une voie
+institutionnelle. **Pas de `theorem` produit tant que l'enonce n'est pas
+realisable dans Mathlib 4** (la pseudo-declaration `True` par `sorry` a ete
+retiree a la revue ai-01 du 2026-09-26, voir PR #17756 ; le contenu est
+conserve ici pour traçabilite documentaire).
+-/
 
 end Conway
