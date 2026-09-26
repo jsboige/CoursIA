@@ -58,19 +58,26 @@ theorem godementHomApp_add {F G : X.Presheaf AddCommGrpCat.{u}} (φ : F ⟶ G)
     (U : Opens X) (s t : godementSection F U) :
     godementHomApp φ U (s + t) = godementHomApp φ U s + godementHomApp φ U t := by
   funext x
-  exact map_add ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} (x : X)).map φ) (s x) (t x)
+  change (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} (x : X)).map φ (s x + t x)
+      = (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} (x : X)).map φ (s x)
+        + (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} (x : X)).map φ (t x)
+  exact map_add
+    (ConcreteCategory.hom ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} (x : X)).map φ))
+    (s x) (t x)
 
 /-- `C⁰` preserve le zero. -/
 theorem godementHomApp_zero {F G : X.Presheaf AddCommGrpCat.{u}} (φ : F ⟶ G)
     (U : Opens X) : godementHomApp φ U (0 : godementSection F U) = 0 := by
   funext x
-  exact map_zero ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} (x : X)).map φ)
+  exact map_zero
+    (ConcreteCategory.hom ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} (x : X)).map φ))
 
 /-- `C⁰(𝟙 F) = 𝟙 (C⁰F)` : `stalkFunctor` est un foncteur, son `map_id` suffit. -/
 theorem godementHomApp_id (F : X.Presheaf AddCommGrpCat.{u}) (U : Opens X)
     (s : godementSection F U) : godementHomApp (𝟙 F) U s = s := by
   funext x
-  rw [godementHomApp, Functor.map_id]
+  change (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} (x : X)).map (𝟙 F) (s x) = s x
+  rw [CategoryTheory.Functor.map_id]
   rfl
 
 /-- `C⁰(φ ≫ ψ) = C⁰ψ ∘ C⁰φ` : meme raison, `Functor.map_comp`. -/
@@ -78,7 +85,10 @@ theorem godementHomApp_comp {F G H : X.Presheaf AddCommGrpCat.{u}} (φ : F ⟶ G
     (ψ : G ⟶ H) (U : Opens X) (s : godementSection F U) :
     godementHomApp (φ ≫ ψ) U s = godementHomApp ψ U (godementHomApp φ U s) := by
   funext x
-  rw [godementHomApp, godementHomApp, godementHomApp, Functor.map_comp]
+  change (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} (x : X)).map (φ ≫ ψ) (s x)
+      = (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} (x : X)).map ψ
+          ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} (x : X)).map φ (s x))
+  rw [CategoryTheory.Functor.map_comp]
   rfl
 
 /-- `C⁰φ` est un morphisme de prefaisceaux. La naturalite est **definitionnelle** :
@@ -92,21 +102,23 @@ noncomputable def godementMapHom {F G : X.Presheaf AddCommGrpCat.{u}} (φ : F �
         map_zero' := godementHomApp_zero φ U.unop
         map_add' := godementHomApp_add φ U.unop }
   naturality U V f := by
-    ext s x
+    ext s
     rfl
 
 /-- `C⁰` preserve l'identite. -/
 theorem godementMapHom_id (F : X.Presheaf AddCommGrpCat.{u}) :
     godementMapHom (𝟙 F) = 𝟙 (godementPresheaf F) := by
-  ext U s x
-  exact congrFun (godementHomApp_id F U.unop s) x
+  ext U s
+  funext x
+  exact congrFun (godementHomApp_id F U s) x
 
 /-- `C⁰` preserve la composition. -/
 theorem godementMapHom_comp {F G H : X.Presheaf AddCommGrpCat.{u}} (φ : F ⟶ G)
     (ψ : G ⟶ H) :
     godementMapHom (φ ≫ ψ) = godementMapHom φ ≫ godementMapHom ψ := by
-  ext U s x
-  exact congrFun (godementHomApp_comp φ ψ U.unop s) x
+  ext U s
+  funext x
+  exact congrFun (godementHomApp_comp φ ψ U s) x
 
 /-- **`C⁰` est un endofoncteur** de la categorie des prefaisceaux de groupes abeliens
 sur `X`. C'est le prerequis qui manquait pour iterer la construction sur les noyaux
@@ -123,8 +135,9 @@ a l'action d'un morphisme. C'est `Presheaf.stalkFunctor_map_germ_apply` — le g
 morphisme est le morphisme des germes. -/
 theorem toGodement_naturality {F G : X.Presheaf AddCommGrpCat.{u}} (φ : F ⟶ G) :
     toGodement F ≫ godementMapHom φ = φ ≫ toGodement G := by
-  ext U s x
-  exact TopCat.Presheaf.stalkFunctor_map_germ_apply U.unop (x : X) x.2 φ s
+  ext U s
+  funext x
+  exact TopCat.Presheaf.stalkFunctor_map_germ_apply U (x : X) x.2 φ s
 
 /-- **L'unite de Godement est naturelle** : `toGodement` est une transformation
 naturelle de l'identite vers l'endofoncteur `C⁰`. Avec `C⁰` fonctoriel, l'unite
@@ -133,6 +146,7 @@ de Godement `0 → F → C⁰F → C⁰(K) → ⋯`. -/
 noncomputable def toGodementNatTrans :
     𝟭 (X.Presheaf AddCommGrpCat.{u}) ⟶ godementFunctor (X := X) where
   app F := toGodement F
-  naturality F G φ := toGodement_naturality φ
+  naturality F G φ := by
+    exact (toGodement_naturality φ).symm
 
 end Grothendieck
