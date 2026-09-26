@@ -982,10 +982,19 @@ jobs:
     # `event_name != 'issue_comment' || contains(...)` censee dans l'issue
     # laisserait AUSSI entrer les evenements pull_request dans ce job chemin-
     # commentaire (doublon du job pull_request, acceptance 3 de #11782).
+    #
+    # Garde d'auteur : seul le coordinateur entre. Le garde Python ne credite
+    # que COORDINATOR_LOGINS (variation_adjacency_guard.py) ; tout autre auteur
+    # qui CITE le marqueur (une lane qui rend compte d'un override, un dossier
+    # qui le mentionne) faisait tourner ce job pour rien, et le check-run qu'il
+    # posait restait rouge perime sur la tete de la PR jusqu'a un rerun manuel.
+    # Filtrer ici, au if: de job, coute zero runner. L'egalite stricte
+    # subsume l'anti-boucle github-actions[bot] (#11782). Les deux listes
+    # doivent rester egales : test_comment_job_author_gate_matches_guard.
     if: >-
       github.event_name == 'issue_comment' &&
       github.event.issue.pull_request &&
-      github.event.comment.user.login != 'github-actions[bot]' &&
+      github.event.comment.user.login == 'myia-ai-01' &&
       contains(github.event.comment.body, '[G-VAR-3 OVERRIDE]')
     runs-on: ubuntu-latest
     permissions:
