@@ -859,7 +859,7 @@ project:
     - "MyIA.AI.Notebooks/Probas/Infer/Infer-15-Recommenders.ipynb"
     - "MyIA.AI.Notebooks/Probas/Infer/Infer-17-Kalman-Filter.ipynb"
     - "MyIA.AI.Notebooks/Probas/Infer/Infer-2-Gaussian-Mixtures.ipynb"
-    - "MyIA.AI.Notebooks/Probas/Infer/Infer-20-Quotients-et-Fibres.ipynb"
+    - "MyIA.AI.Notebooks/Probas/Applications/Infer-20-Quotients-et-Fibres-Python.ipynb"
     - "MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb"
     - "MyIA.AI.Notebooks/Probas/Infer/Infer-4-Bayesian-Networks.ipynb"
     - "MyIA.AI.Notebooks/Probas/Infer/Infer-5-Causal-Inference.ipynb"

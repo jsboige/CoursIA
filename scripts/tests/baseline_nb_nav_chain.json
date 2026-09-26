@@ -1092,11 +1092,6 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Probas/Infer/Infer-20-Quotients-et-Fibres.ipynb",
-      "series": "MyIA.AI.Notebooks/Probas/Infer"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb",
       "series": "MyIA.AI.Notebooks/Probas/PyMC"
     },
