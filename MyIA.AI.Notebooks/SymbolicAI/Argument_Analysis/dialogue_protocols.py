@@ -1,10 +1,30 @@
 # -*- coding: utf-8 -*-
-"""Protocoles de dialogue multi-agents — distillation du sous-projet EPITA 1_2_7.
+"""Protocoles de dialogue multi-agents — machine à états Walton-Krabbe, seule
+implémentation vivante, exécutable sans JVM (EPIC #4960).
 
-Provenance : `1_2_7_argumentation_dialogique/local_db_arg` du dépôt étudiant
+Généalogie : `1_2_7_argumentation_dialogique/local_db_arg` du dépôt étudiant
 `jsboigeEpita/2025-Epita-Intelligence-Symbolique`. Mandat Triple Distillation
 (EPIC #4960) : porter l'essence vivante « sans le bruit d'une année de
 régressions et d'itérations ».
+
+**Pourquoi il n'y a rien à distiller du tronc sur ce sujet** — et c'est ce fait
+qui fonde ce port, mesuré sur le dépôt du tronc lui-même :
+
+- le tronc a **adapté** ce vocabulaire, il ne l'a pas inventé
+  (`argumentation_analysis/agents/core/debate/protocols.py`, en-tête :
+  « Adapted from 1_2_7_argumentation_dialogique/local_db_arg/src/ ») ;
+- puis il a **retiré** les trois classes de protocole — `DialogueProtocol`,
+  `InquiryProtocol`, `PersuasionProtocol` — en **#2137**, qualifiées de « dead
+  twins », la voie vivante du dialogue formel y étant le
+  `logic/dialogue_handler.py` **JVM**. Le carnet du sas qui les mettait en
+  scène survit comme artefact d'enseignement, mais ne peut plus être
+  ré-exécuté contre ce code (garde de round-trip du tronc : le carnet « can no
+  longer be re-run against this code », ses tests de rejeu étant partis avec
+  les classes).
+
+Ce port est donc **la seule implémentation vivante** de cette machine à états,
+et il est **exécutable sans JVM** : module pur, stdlib uniquement, déterministe
+par construction (aucun aléatoire dans le source porté).
 
 Partie vivante retenue (qualification issuecomment-5770146198) :
 - `core/models.py` : types de dialogue **Walton-Krabbe** (6) et 9 actes de
@@ -44,8 +64,9 @@ Divergences documentées (mesurées sur le source) :
    même nature que la simulation 2.1.6 qui n'appelait jamais ses méthodes
    de vote (cf governance_methods.py, divergence 1).
 
-Module pur : stdlib uniquement, déterministe par construction (aucun
-aléatoire dans le source porté).
+Le caractère pur est vérifié, pas déclaré : le module n'importe que la stdlib
+(`__future__`, `dataclasses`, `enum`). Garde de structure :
+`tests/test_dialogue_protocols.py` (13 tests, sans JVM).
 """
 
 from __future__ import annotations
