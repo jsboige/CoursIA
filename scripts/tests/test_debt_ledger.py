@@ -137,6 +137,47 @@ def test_observation_id_mismatch_is_refused():
     assert excinfo.value.reason == "observation_id_mismatch"
 
 
+# --- the ledger stays an ISSUE ledger (#17956 point 6) ------------------------
+
+
+def test_observation_whose_entity_is_a_pr_is_refused():
+    """The colonized form: entity.issue carries a PR number, evidence cites it.
+
+    Issues and PRs share one number space, so a ``/pull/<N>`` URL for the
+    entity's own N proves the entity is a PR -- its state belongs to its
+    exact-head dossier, not to issue-debt (the ledger was colonized by
+    #17921/#17939/#17835/#17940 before this guard).
+    """
+    colonized = issue_obs(
+        issue=17921,
+        evidence="https://github.com/jsboige/CoursIA/pull/17921#issuecomment-5847000000",
+        state_class="open-actionable",
+    )
+    with pytest.raises(dl.ObservationError) as excinfo:
+        dl.parse_observation(colonized, dl.ISSUE_DEBT)
+    assert excinfo.value.reason == "entity_is_pr"
+
+
+def test_pull_url_for_another_number_does_not_refuse_the_issue():
+    """A PR cited as EVIDENCE for an issue is legitimate; only the entity's own
+    number being a pull request refuses the observation."""
+    legitimate = issue_obs(
+        issue=17956,
+        evidence="gh issue view 17956 ; delivery PR https://github.com/jsboige/CoursIA/pull/17985",
+        state_class="open-blocked",
+    )
+    assert dl.parse_observation(legitimate, dl.ISSUE_DEBT)["entity"]["issue"] == 17956
+
+
+def test_issue_url_evidence_still_passes():
+    plain = issue_obs(
+        issue=15545,
+        evidence="https://github.com/jsboige/CoursIA/issues/15545",
+        state_class="open-actionable",
+    )
+    assert dl.parse_observation(plain, dl.ISSUE_DEBT)["entity"]["issue"] == 15545
+
+
 # --- concurrency -------------------------------------------------------------
 
 

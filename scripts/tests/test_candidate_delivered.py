@@ -556,11 +556,14 @@ def test_title_only_refs_ancrage_et_portee():
 def test_issue_detail_garde_le_body_des_commentaires(monkeypatch):
     # Le wiring doit transporter le body jusqu'a classify (mecanisme B) :
     # sans lui, toute attestation lue comme activite.
+    # Le body de l'ISSUE est aussi transporte (#17956) : le predicat container
+    # (task list nommant des sous-issues) ne vit que la.
     import candidate_delivered as cd
 
     def fake_gh_json(args):
-        assert args[-1] == "createdAt,comments"
+        assert args[-1] == "createdAt,comments,body"
         return {"createdAt": "2026-09-01T00:00:00Z",
+                "body": "- [ ] #101\n- [ ] #102\n",
                 "comments": [{"createdAt": "2026-09-20T00:00:00Z",
                               "body": "[INFO] candidate-delivered preuve"}]}
 
@@ -568,6 +571,70 @@ def test_issue_detail_garde_le_body_des_commentaires(monkeypatch):
     d = cd.issue_detail("jsboige/CoursIA", 15689)
     assert d["comments"][0]["body"].startswith("[INFO] candidate-delivered")
     assert d["comments"][0]["created_at"] == "2026-09-20T00:00:00Z"
+    assert d["body"] == "- [ ] #101\n- [ ] #102\n"
+
+
+# --- #17956 : exclusion des issues-conteneurs (partition / task list) ---
+
+def test_audit_partition_title_excluded_as_container():
+    # Mesure 2026-09-26 : 7 des 29 READY du crible etaient des partitions
+    # d'audit de serie -- "mergee + silencieuse" est l'etat NORMAL d'une
+    # partition en cours de rollout (une PR par tranche), jamais une preuve
+    # de livraison complete. Le titre porte le signal.
+    issue = _issue(title="[Audit #17073] Serie GameTheory — partition Hermes",
+                   number=17073, comments=["2026-08-10T09:00:00Z"])
+    issue["body"] = "27 notebooks a auditer."
+    refs = [{"pr_number": 17754, "merged_at": "2026-08-11T20:00:20Z",
+             "body": "Grain: DEEP/notebook-python -- See #17073 (tranche 9 defauts)."}]
+    verdict, why = classify(issue, refs)
+    assert verdict == "container"
+    assert "partition" in why
+
+
+def test_subissue_tasklist_body_excluded_as_container():
+    # Le signal task-list ne vit que dans le BODY : une liste de taches qui
+    # NOMME des sous-issues (>= 2 numeros distincts) est un conteneur meme
+    # si le titre est sobre.
+    issue = _issue(title="Fermer la dette de rendu des notebooks",
+                   number=17900, comments=["2026-08-10T09:00:00Z"])
+    issue["body"] = "Tranches:\n\n- [x] #17070 GameTheory\n- [ ] #17071 Lean\n- [ ] #17072 QC\n"
+    refs = [{"pr_number": 17901, "merged_at": "2026-08-11T20:00:20Z",
+             "body": "See #17900."}]
+    verdict, _ = classify(issue, refs)
+    assert verdict == "container"
+
+
+def test_container_title_signal_fires_without_body_key():
+    # Compat arriere : les appelants qui ne transportent pas le body (tests
+    # existants, tout appel direct de classify) gardent le signal titre --
+    # le predicat recoit body=None et seule la task-list est inertee.
+    issue = _issue(title="Serie Probas — partition par notebooks", number=17074)
+    refs = [{"pr_number": 1, "merged_at": "2026-08-11T20:00:20Z", "body": "See #17074."}]
+    verdict, _ = classify(issue, refs)
+    assert verdict == "container"
+
+
+def test_acceptance_checkboxes_without_subissues_are_not_container():
+    # Controle negatif mesure (#10466) : les checkboxes d'ACCEPTANCE d'une
+    # feuille (ex #10143, 4 cases) ne nomment pas d'issues -- une feuille
+    # livree ne doit pas devenir container. Ici sans refs mergees la
+    # verdict reste no_delivery, pas container.
+    issue = _issue(title="Corriger le rendu SVG de la cellule 12", number=17902)
+    issue["body"] = ("Acceptance:\n\n- [ ] le SVG s'affiche\n"
+                     "- [ ] pas de banniere outil\n- [x] tests verts\n")
+    refs = []
+    verdict, _ = classify(issue, refs)
+    assert verdict == "no_delivery"
+
+
+def test_epic_verdict_wins_over_container():
+    # Ordre : le verdict epic (preexistant, suivi par le run log et les
+    # incidents) reste rendu pour les EPIC ; container ne couvre que
+    # partition + task-list.
+    issue = _issue(title="EPIC: rollout des guards nav-chain", number=17903)
+    refs = [{"pr_number": 1, "merged_at": "2026-08-11T20:00:20Z", "body": "See #17903."}]
+    verdict, _ = classify(issue, refs)
+    assert verdict == "epic"
 
 
 if __name__ == "__main__":
