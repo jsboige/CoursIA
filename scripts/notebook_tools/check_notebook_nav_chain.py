@@ -28,8 +28,22 @@ Pour chaque serie S on calcule :
 - `entries(S)` : les notebooks de S sans **aucun lien entrant** (depuis n'importe
   ou dans le depot). Une serie pedagogique a **un** point d'entree : la premiere
   notebook. Deux entrees = un notebook que rien ne relie a la chaine.
-- `unreachable(S)` : les notebooks de S **non-entries** qu'aucune entree
-  n'atteint (ilot, cycle detache). Calcul par parcours en largeur.
+- `chain_starts(S)` : les non-entrees dont **tout lien entrant vient d'un
+  notebook qu'elles atteignent elles-memes**. Dans la forme canonique
+  mutualisee (#17277 : Suivant ET Precedent sur chaque paire), le PREMIER
+  notebook recoit le Precedent du deuxieme -- il a un lien entrant, donc
+  `entries` ne le voit pas, et la chaine principale parait « inatteignable »
+  (angle mort #17625, mesure sur QC-Py : 42 faux inatteignables). Un depart de
+  chaine rejoint la base du parcours : sa chaine est jugee navigable.
+- `independent_chain` : finding emis quand un depart de chaine n'est atteint
+  par AUCUNE entree. Le graphe ne peut pas decider si une composante mutualisee
+  deconnectee est « la serie principale » (QC-Py) ou « un ilot oublie »
+  (07 <-> 08) -- les deux formes sont isomorphes vues des liens. Le seeding
+  l'accepte comme navigable, mais la deconnection reste RAPPORTEE : la serie ne
+  devient jamais silencieuse sur ce cas.
+- `unreachable(S)` : les notebooks de S **non-entries** qu'aucune entree ni
+  depart de chaine n'atteint (ilot non mutualise, chaines cassees). Calcul par
+  parcours en largeur.
 - `wrapped` : les series ou **tout** notebook a un lien entrant (la chaine
   **boucle** : le « suivant » du dernier pointe le premier). C'est une
   convention legitime, pas un cas non jugeable — la serie est jugee depuis son
@@ -225,6 +239,64 @@ def nav_edges(nb_path: Path):
     return uniq
 
 
+def broken_nav_links(nb_path: Path):
+    """Liens de nav d'un notebook dont la cible .ipynb est ABSENTE (404).
+
+    Meme portee trois-niveaux que `_looks_nav` : on ne retourne que les liens
+    RECONNUS comme navigation (mot-cle dans le texte, sur la ligne, ou cellule
+    `## Navigation`), sinon on confondrait un 404 de prose et un 404 de nav.
+    Un lien de prose est deja le metier de check_notebook_navlinks.py.
+
+    Retourne une liste de dicts {text, target} -- un par lien casse.
+    """
+    try:
+        with open(nb_path, encoding="utf-8") as f:
+            nb = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return []
+    out = []
+    for cell in nb.get("cells", []):
+        if cell.get("cell_type") != "markdown":
+            continue
+        src = cell.get("source", [])
+        text_lines = src if isinstance(src, str) else "".join(src)
+        cell_is_nav = "navigation" in text_lines.lower()
+        for line in text_lines.splitlines():
+            for m in LINK_PATTERN.finditer(line):
+                text, target = m.group(1), m.group(2)
+                if not _looks_nav(text, target, line, cell_is_nav):
+                    continue
+                resolved = _resolve_target(nb_path, target)
+                if resolved.suffix.lower() != ".ipynb":
+                    continue
+                if resolved.is_file():
+                    continue
+                out.append({"text": text, "target": target})
+    return out
+
+
+def scan_broken_nav(notebooks) -> list:
+    """Scanne tous les notebooks du set et rapporte les 404 de nav.
+
+    Les liens casses du Z3-08 sweep d'origine (un seul exemple fondateur :
+    `Z3-01b-Style-Declaratif-Linq` pointe depuis Z3-08 sans exister dans la
+    serie Python) etaient ajustes par un organe dedie Z3-only -- doublon
+    structurel de check_notebook_navlinks.py, qui couvrait deja le 404
+    universel sans discrimination nav. La discrimination nav est ce qui
+    manquait ; elle vit ici.
+    """
+    findings = []
+    for nb in sorted(notebooks, key=_rel):
+        for bl in broken_nav_links(nb):
+            findings.append({
+                "kind": "link_404",
+                "notebook": _rel(nb),
+                "target": bl["target"],
+                "text": bl["text"],
+            })
+    return findings
+
+
 def build_graph(notebooks):
     """Construit le graphe et indexe les series.
 
@@ -269,8 +341,13 @@ def analyse(inbound, outbound, series):
     Un finding est un couple (kind, key) ou `key` identifie la ligne :
       - `orphan_entry` : notebook sans lien entrant, dans une serie qui en a
         plus d'un (donc : rien ne mene a lui depuis la chaine) ;
-      - `unreachable`  : notebook non-entry qu'aucune entree n'atteint.
-    Une serie sans entree est declaree non jugeable, jamais saine.
+      - `independent_chain` : la serie porte au moins un depart de chaine
+        (forme mutualisee) qu'aucune entree n'atteint -- composante navigable
+        mais deconnectee (#17625). Cle = la serie, un finding par serie ;
+      - `unreachable`  : notebook non-entry qu'aucune entree ni depart de
+        chaine n'atteint.
+    Une serie sans entree (chaine bouclee) est jugee depuis son depart le plus
+    couvrant -- jamais declaree saine par defaut.
 
     Une serie n'est jugee que si elle **exhibe** une convention de navigation,
     c'est-a-dire au moins une arete INTERNE. Sans cela le dossier n'est pas une
@@ -297,9 +374,20 @@ def analyse(inbound, outbound, series):
                                "reason": "no_internal_nav_edge"})
             continue
         entries = sorted((nb for nb in members if not inbound.get(nb)), key=_rel)
+        chain_starts = []
+        reach_entries = set()
         if entries:
-            reach = _reachable_from(entries, outbound)
-            basis = entries
+            reach_entries = _reachable_from(entries, outbound)
+            # Departs de chaine (#17625) : non-entrees dont tout inbound vient
+            # d'un notebook qu'elles atteignent. Detectees par BFS individuel --
+            # le Precedent du 2e vers le 1er est l'exemple type.
+            for nb in sorted(members, key=_rel):
+                if not inbound.get(nb):
+                    continue
+                if inbound.get(nb) <= _reachable_from([nb], outbound):
+                    chain_starts.append(nb)
+            basis = list(entries) + chain_starts
+            reach = _reachable_from(basis, outbound)
         else:
             # Aucun notebook n'est sans lien entrant : la chaine **boucle** (le
             # « suivant » du dernier pointe le premier). C'est une convention de
@@ -321,6 +409,16 @@ def analyse(inbound, outbound, series):
             for nb in entries:
                 findings.append({"kind": "orphan_entry", "notebook": _rel(nb),
                                  "series": _rel(directory)})
+        # Un depart de chaine qu'aucune entree n'atteint : composante mutualisee
+        # deconnectee. Navigable en soi (seeding), mais deconnectee -- rapporte,
+        # un finding par serie (la cle baseline est la serie, pas chaque membre).
+        # NB : reach_entries couvre deja les departs de chaine rattaches a la
+        # partie atteignable (BFS transitif), la condition tient en un test.
+        independent_heads = [nb for nb in chain_starts if nb not in reach_entries]
+        if independent_heads:
+            findings.append({"kind": "independent_chain",
+                             "notebook": _rel(directory),
+                             "series": _rel(directory)})
         for nb in unreachable:
             findings.append({"kind": "unreachable", "notebook": _rel(nb),
                              "series": _rel(directory)})
@@ -330,6 +428,8 @@ def analyse(inbound, outbound, series):
             "entries": [_rel(nb) for nb in entries],
             "basis": [_rel(nb) for nb in basis],
             "wrapped": not entries,
+            "chain_starts": len(chain_starts),
+            "independent_chains": len(independent_heads),
             "unreachable": [_rel(nb) for nb in unreachable],
         })
     findings.sort(key=lambda f: (f["kind"], f["notebook"]))
@@ -338,8 +438,14 @@ def analyse(inbound, outbound, series):
 
 
 def _finding_keys(report):
-    """Cles de baseline : (kind, notebook). Le message est du confort, pas la cle."""
-    return {(f["kind"], f["notebook"]) for f in report["findings"]}
+    """Cles de baseline : (kind, notebook, identifiant discrimant). Le message
+    est du confort, pas la cle. `identifiant` = target pour link_404 (plusieurs
+    liens casses possibles par notebook), vide sinon (kind+notebook suffit)."""
+    keys = set()
+    for f in report["findings"]:
+        ident = f.get("target", "")
+        keys.add((f["kind"], f["notebook"], ident))
+    return keys
 
 
 def _write_baseline(report):
@@ -357,7 +463,11 @@ def _write_baseline(report):
 
 
 def _load_baseline():
-    """Charge les cles du baseline, ou set() si absent/illisible."""
+    """Charge les cles du baseline, ou set() si absent/illisible.
+
+    Format-compatible avec les baselines anciens : si un baseline n'a que
+    (kind, notebook) on retombe sur cette cle (target vide).
+    """
     if not BASELINE_PATH.is_file():
         return set()
     try:
@@ -365,7 +475,11 @@ def _load_baseline():
             data = json.load(f)
     except (OSError, json.JSONDecodeError):
         return set()
-    return {(f["kind"], f["notebook"]) for f in data.get("findings", [])}
+    keys = set()
+    for f in data.get("findings", []):
+        ident = f.get("target", "")
+        keys.add((f["kind"], f["notebook"], ident))
+    return keys
 
 
 def _select_report(report, series_filter):
@@ -379,6 +493,15 @@ def _select_report(report, series_filter):
         "not_judged": [s for s in report["not_judged"] if s["series"] in keep],
         "series": [s for s in report["series"] if s["series"] in keep],
     }
+
+
+def _filter_broken_nav(broken_nav, series_filter):
+    """Filtre les 404 de nav par serie. `f["notebook"]` est repo-relatif POSIX
+    (cf. `scan_broken_nav`) : on calcule la serie en `Path.parent.as_posix()`
+    directement, sans repasser par `_rel` (qui lèverait `ValueError` sur un
+    chemin deja relatif)."""
+    return [f for f in broken_nav
+            if Path(f["notebook"]).parent.as_posix() in series_filter]
 
 
 def main(argv=None):
@@ -430,6 +553,18 @@ def main(argv=None):
 
     inbound, outbound, series = build_graph(notebooks)
     report = _select_report(analyse(inbound, outbound, series), series_filter)
+    # Scan des 404 de nav : s'execute APRES le graphe (les liens casses ne sont
+    # pas des noeuds du graphe, mais bien des findings a rapporter). Filtre
+    # applique a la selection de rapport comme pour le graphe.
+    broken_nav = scan_broken_nav(notebooks)
+    if series_filter is not None:
+        # `f["notebook"]` est déjà repo-relatif POSIX (cf. scan_broken_nav), donc
+        # `_rel(Path(...).parent)` appelait `relative_to(REPO_ROOT)` sur un chemin
+        # déjà relatif et levait `ValueError` au premier 404 + filtre. On
+        # travaille directement sur la chaîne repo-relative.
+        broken_nav = _filter_broken_nav(broken_nav, series_filter)
+    report["findings"].extend(broken_nav)
+    report["findings"].sort(key=lambda f: (f["kind"], f.get("notebook", "")))
 
     if args.baseline:
         path = _write_baseline(report)
@@ -446,8 +581,9 @@ def main(argv=None):
         if new:
             if not args.quiet:
                 print(f"FAIL: {len(new)} NEW finding(s) vs baseline:")
-                for kind, notebook in new:
-                    print(f"  [{kind}] {notebook}")
+                for kind, notebook, target in new:
+                    extra = f" -> {target}" if target else ""
+                    print(f"  [{kind}] {notebook}{extra}")
             return 1
         if fixed and not args.quiet:
             print(f"INFO: {len(fixed)} finding(s) resolus depuis le baseline "
@@ -489,11 +625,16 @@ def main(argv=None):
         else:
             orphan = [f for f in findings if f["kind"] == "orphan_entry"]
             unreach = [f for f in findings if f["kind"] == "unreachable"]
+            link_404 = [f for f in findings if f["kind"] == "link_404"]
             print(f"FOUND {len(findings)} finding(s) "
                   f"({len(orphan)} entree(s) orpheline(s), "
-                  f"{len(unreach)} notebook(s) inatteignable(s)):")
+                  f"{len(unreach)} notebook(s) inatteignable(s), "
+                  f"{len(link_404)} lien(s) de nav casse(s)):")
             for f in findings:
-                print(f"  [{f['kind']}] {f['notebook']}  (serie {f['series']})")
+                if f["kind"] == "link_404":
+                    print(f"  [link_404] {f['notebook']} -> {f.get('target', '?')}")
+                else:
+                    print(f"  [{f['kind']}] {f['notebook']}  (serie {f['series']})")
     return 1 if findings else 0
 
 

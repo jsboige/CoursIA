@@ -273,10 +273,26 @@ def _collector_row(number=1, base="main", draft=False, author="jsboige",
 
 def _collector_output(rows, check_run_names=("PR gate",)):
     """`list_open_prs` sur un flux gh simule -- aucun appel reseau."""
-    with mock.patch("pr_gate_missing._gh_rows", lambda args: rows), \
-         mock.patch("pr_gate_missing._gh_json",
-                    lambda args: list(check_run_names)):
+    def fake_rows(args):
+        if "/check-runs" in args[1]:
+            return list(check_run_names)
+        return rows
+    with mock.patch("pr_gate_missing._gh_rows", fake_rows):
         return list_open_prs("jsboige/CoursIA")
+
+
+def test_collector_reads_every_check_run_page():
+    # #17807 portait 110 jambes : `PR gate` vivait en page 2, et une lecture a
+    # une seule page le declarait absent.
+    calls = []
+
+    def fake_rows(args):
+        calls.append(args)
+        return ["PR gate"] if "/check-runs" in args[1] else [_collector_row(17807)]
+    with mock.patch("pr_gate_missing._gh_rows", fake_rows):
+        list_open_prs("jsboige/CoursIA")
+    check_calls = [a for a in calls if "/check-runs" in a[1]]
+    assert check_calls and all("--paginate" in a for a in check_calls)
 
 
 def test_collector_output_excludes_non_main_base():

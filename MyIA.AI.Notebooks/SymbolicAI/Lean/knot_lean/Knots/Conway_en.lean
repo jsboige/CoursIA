@@ -358,6 +358,56 @@ def arcPartition (d : KnotDiagram) : List (List Nat) :=
   let pairs := d.crossings.map (fun c => (c.e2, c.e4))
   pairs.foldl (fun P p => mergePair P p.1 p.2) singles
 
+/-- Class merging is symmetric: folding on `(x, y)` or `(y, x)` yields the
+    same partition. First building block of R3 invariance (issue #16650):
+    the surgery rewrites the over-crossing pairs of the triangle with
+    orientations that differ between the two diagrams, and the reindexing
+    argument requires that the orientation of a pair leaves the resulting
+    partition unchanged. -/
+theorem mergePair_symm (P : List (List Nat)) (x y : Nat) :
+    mergePair P x y = mergePair P y x := by
+  simp [mergePair, Bool.and_comm, Bool.or_comm]
+
+/-- The take/cons/drop split restores the list: the pure-list reading
+    of the neighbourhood of index `i`, proved by induction on the list. -/
+theorem take_cons_drop_eq {α : Type _} (l : List α) (i : Nat)
+    (hi : i < l.length) :
+    l.take i ++ [l.get ⟨i, hi⟩] ++ l.drop (i + 1) = l := by
+  induction l generalizing i with
+  | nil => exact absurd hi (Nat.not_lt_zero i)
+  | cons a as ih =>
+    rcases i with _ | n
+    · have hget0 : (a :: as).get ⟨0, hi⟩ = a := rfl
+      rw [hget0, List.take_zero, List.nil_append]
+      simp [List.drop_succ_cons]
+    · have hn : n < as.length := by simpa using hi
+      have hget : (a :: as).get ⟨n + 1, hi⟩ = as.get ⟨n, hn⟩ := rfl
+      rw [List.take_succ_cons, List.drop_succ_cons, hget, List.cons_append]
+      exact congrArg (fun t => a :: t) (ih n hn)
+
+/-- The `arcPartition` fold is insensitive to the orientation of a single
+    pair: reversing the pair at position `i` leaves the produced partition
+    unchanged. This is the fold-level translation of `mergePair_symm` — the
+    connected R3 surgery rewrites the triangle pairs with orientations that
+    differ between the two diagrams, and this lemma absorbs those
+    differences (issue #16650, second brick). -/
+theorem foldl_mergePair_swap (pairs : List (Nat × Nat)) (i : Nat)
+    (hi : i < pairs.length) (P₀ : List (List Nat)) :
+    (pairs.take i ++ [(pairs.get ⟨i, hi⟩).swap] ++ pairs.drop (i + 1)).foldl
+        (fun P p => mergePair P p.1 p.2) P₀
+      = pairs.foldl (fun P p => mergePair P p.1 p.2) P₀ := by
+  have hmid : ∀ (m : Nat × Nat),
+      (pairs.take i ++ [m] ++ pairs.drop (i + 1)).foldl
+          (fun P p => mergePair P p.1 p.2) P₀
+        = (pairs.take i ++ [m.swap] ++ pairs.drop (i + 1)).foldl
+            (fun P p => mergePair P p.1 p.2) P₀ := by
+    intro m
+    obtain ⟨a, b⟩ := m
+    simp only [List.foldl_append, List.foldl_cons, List.foldl_nil,
+      Prod.swap_prod_mk]
+    rw [mergePair_symm]
+  rw [← hmid, take_cons_drop_eq pairs i hi]
+
 /-! #### The Fox fact: the over-strand pair shares one arc class
 
 The docstring of `alexanderEntry` claims that "every row sums to zero".
@@ -462,6 +512,274 @@ lemma sameClass_foldl_of_mem {pairs : List (Nat × Nat)} {P : List (List Nat)}
           (fun r hr => ⟨covered_mergePair (hcover r (List.mem_cons.mpr (Or.inr hr))).1,
                         covered_mergePair (hcover r (List.mem_cons.mpr (Or.inr hr))).2⟩)
           q hqs
+
+/-! ### Commutation of two merges — the `SameClass` reformulation
+
+The `arcPartition` fold applies the over-strand pairs in crossing order.
+`foldl_mergePair_swap` (above) shows that an adjacent swap of pairs
+preserves the list up to a `take`/`drop` — this is not list equality: the
+order of appearance inside the merged class differs (counterexample
+`P = [[1,3],[2],[4]]`, pairs `(1,2)` then `(3,4)`: the giant class is
+`[4,1,3,2]` in one order and `[2,1,3,4]` in the other — issue #16650).
+What does commute exactly is the underlying equivalence relation: two
+labels share a final class in one application order iff they share one in
+the other. The theorem `mergePair_mergePair_comm_equiv` establishes this
+through a complete characterization of `SameClass` after two merges
+(`sameClass_two_merges_iff`), whose shape is invariant under swapping the
+two groups.
+-/
+
+/-- `z` lives in a class of `P` carrying `x` or `y`: exactly the condition
+of landing in the merged class of `mergePair P x y`. -/
+def Touches (P : List (List Nat)) (x y z : Nat) : Prop :=
+  ∃ C ∈ P, z ∈ C ∧ ((C.contains x || C.contains y) = true)
+
+/-- A single class of `P` carries a label of group `{a, b}` and a label of
+group `{c, d}`: the two merges then produce one single class instead of
+two separate ones. -/
+def GroupsLinked (P : List (List Nat)) (a b c d : Nat) : Prop :=
+  ∃ C ∈ P, ((C.contains a || C.contains b) = true) ∧
+    ((C.contains c || C.contains d) = true)
+
+/-- A class "hit", read as memberships. -/
+lemma hit_iff_mem {C : List Nat} {x y : Nat} :
+    ((C.contains x || C.contains y) = true) ↔ (x ∈ C ∨ y ∈ C) := by
+  rw [Bool.or_eq_true, List.contains_iff_mem, List.contains_iff_mem]
+
+/-- Membership in the merged class, characterized on `P`. -/
+lemma mem_fused_iff {P : List (List Nat)} {x y z : Nat} :
+    z ∈ (P.filter (fun C => C.contains x || C.contains y)).flatten.eraseDups ↔
+      Touches P x y z := by
+  rw [List.mem_eraseDups, List.mem_flatten]
+  constructor
+  · rintro ⟨C, hC, hz⟩
+    obtain ⟨hCP, hcond⟩ := List.mem_filter.mp hC
+    exact ⟨C, hCP, hz, hcond⟩
+  · rintro ⟨C, hC, hz, hcond⟩
+    exact ⟨C, List.mem_filter.mpr ⟨hC, hcond⟩, hz⟩
+
+/-- `GroupsLinked` reads from group `{a, b}`: some class then carries `c`
+or `d`. -/
+lemma groupsLinked_iff {P : List (List Nat)} {a b c d : Nat} :
+    GroupsLinked P a b c d ↔ (Touches P a b c ∨ Touches P a b d) := by
+  constructor
+  · rintro ⟨C, hC, hab, hcd⟩
+    rw [hit_iff_mem] at hcd
+    rcases hcd with hc | hd
+    · exact Or.inl ⟨C, hC, hc, hab⟩
+    · exact Or.inr ⟨C, hC, hd, hab⟩
+  · rintro (⟨C, hC, hc, hab⟩ | ⟨C, hC, hd, hab⟩)
+    · exact ⟨C, hC, hab, by rw [hit_iff_mem]; exact Or.inl hc⟩
+    · exact ⟨C, hC, hab, by rw [hit_iff_mem]; exact Or.inr hd⟩
+
+/-- `GroupsLinked` is symmetric in the swap of the two groups. -/
+lemma groupsLinked_symm {P : List (List Nat)} {a b c d : Nat} :
+    GroupsLinked P a b c d ↔ GroupsLinked P c d a b := by
+  constructor <;> rintro ⟨C, hC, h1, h2⟩ <;> exact ⟨C, hC, h2, h1⟩
+
+/-- When the groups are not linked, the merged class of group `{a, b}`
+carries neither `c` nor `d`. -/
+lemma not_mem_fused_of_not_linked {P : List (List Nat)} {a b c d : Nat}
+    (h : ¬ GroupsLinked P a b c d) :
+    ¬ (c ∈ (P.filter (fun C => C.contains a || C.contains b)).flatten.eraseDups ∨
+       d ∈ (P.filter (fun C => C.contains a || C.contains b)).flatten.eraseDups) :=
+  fun hmem => h (groupsLinked_iff.mpr
+    (hmem.elim (fun hc => Or.inl (mem_fused_iff.mp hc))
+               (fun hd => Or.inr (mem_fused_iff.mp hd))))
+
+/-- `SameClass` after one merge, characterized on the original partition:
+a common class left intact, or two labels both caught by the merge. -/
+lemma sameClass_mergePair_iff {P : List (List Nat)} {x y u v : Nat} :
+    SameClass (mergePair P x y) u v ↔
+      (∃ C ∈ P, u ∈ C ∧ v ∈ C ∧ ¬((C.contains x || C.contains y) = true)) ∨
+      (Touches P x y u ∧ Touches P x y v) := by
+  rw [mergePair_eq]
+  constructor
+  · rintro ⟨D, hD, hu, hv⟩
+    rw [List.mem_append] at hD
+    rcases hD with hkeep | hF
+    · obtain ⟨hDP, hcond⟩ := List.mem_filter.mp hkeep
+      exact Or.inl ⟨D, hDP, hu, hv, by simpa using hcond⟩
+    · have hDeq : D = (P.filter (fun C => C.contains x || C.contains y)).flatten.eraseDups :=
+        List.mem_singleton.mp hF
+      subst hDeq
+      exact Or.inr ⟨mem_fused_iff.mp hu, mem_fused_iff.mp hv⟩
+  · rintro (⟨C, hC, hu, hv, hcond⟩ | ⟨hu, hv⟩)
+    · exact ⟨C, by rw [List.mem_append]; exact Or.inl (keep_filter hC hcond), hu, hv⟩
+    · exact ⟨_, by rw [List.mem_append]; exact Or.inr (List.mem_singleton.mpr rfl),
+        mem_fused_iff.mpr hu, mem_fused_iff.mpr hv⟩
+
+/-- `Touches` through a first merge `{a, b}`: either an intact class
+(outside group `{a, b}`) carrying `c` or `d`, or the merged class of group
+`{a, b}` itself. -/
+lemma touches_mergePair_iff {P : List (List Nat)} {a b c d z : Nat} :
+    Touches (mergePair P a b) c d z ↔
+      (∃ C ∈ P, z ∈ C ∧ ¬((C.contains a || C.contains b) = true) ∧
+        ((C.contains c || C.contains d) = true)) ∨
+      (Touches P a b z ∧ (Touches P a b c ∨ Touches P a b d)) := by
+  constructor
+  · rintro ⟨E, hE, hz, hcd⟩
+    rw [mergePair_eq, List.mem_append] at hE
+    rcases hE with hkeep | hF
+    · obtain ⟨hEP, hcond⟩ := List.mem_filter.mp hkeep
+      exact Or.inl ⟨E, hEP, hz, by simpa using hcond, hcd⟩
+    · have hEeq : E = (P.filter (fun C => C.contains a || C.contains b)).flatten.eraseDups :=
+        List.mem_singleton.mp hF
+      subst hEeq
+      rw [hit_iff_mem] at hcd
+      rcases hcd with hc | hd
+      · exact Or.inr ⟨mem_fused_iff.mp hz, Or.inl (mem_fused_iff.mp hc)⟩
+      · exact Or.inr ⟨mem_fused_iff.mp hz, Or.inr (mem_fused_iff.mp hd)⟩
+  · rintro (⟨C, hC, hz, hcond, hcd⟩ | ⟨hz, hcd⟩)
+    · exact ⟨C, by rw [mergePair_eq, List.mem_append]; exact Or.inl (keep_filter hC hcond),
+        hz, hcd⟩
+    · refine ⟨(P.filter (fun C => C.contains a || C.contains b)).flatten.eraseDups,
+        by rw [mergePair_eq, List.mem_append]; exact Or.inr (List.mem_singleton.mpr rfl),
+        mem_fused_iff.mpr hz, ?_⟩
+      rw [hit_iff_mem]
+      rcases hcd with hc | hd
+      · exact Or.inl (mem_fused_iff.mpr hc)
+      · exact Or.inr (mem_fused_iff.mpr hd)
+
+/-- Complete characterization of `SameClass` after two merges `{a, b}`
+then `{c, d}`, read on the original partition `P`. Only three routes:
+(i) a common class — a class is never split; or (ii) `x` and `y` caught
+by the merges, with either linked groups (one single giant class), or `x`
+and `y` caught by the same group. The shape is invariant under swapping
+the two groups — this is what yields the commutation. -/
+lemma sameClass_two_merges_iff {P : List (List Nat)} {a b c d x y : Nat} :
+    SameClass (mergePair (mergePair P a b) c d) x y ↔
+      (∃ C ∈ P, x ∈ C ∧ y ∈ C) ∨
+      ((Touches P a b x ∨ Touches P c d x) ∧ (Touches P a b y ∨ Touches P c d y) ∧
+        (GroupsLinked P a b c d ∨ (Touches P a b x ∧ Touches P a b y) ∨
+          (Touches P c d x ∧ Touches P c d y))) := by
+  rw [sameClass_mergePair_iff]
+  constructor
+  · rintro (⟨E, hE, hx, hy, hncd⟩ | ⟨hTx, hTy⟩)
+    · rw [mergePair_eq, List.mem_append] at hE
+      rcases hE with hkeep | hF
+      · obtain ⟨hEP, _⟩ := List.mem_filter.mp hkeep
+        exact Or.inl ⟨E, hEP, hx, hy⟩
+      · have hEeq : E = (P.filter (fun C => C.contains a || C.contains b)).flatten.eraseDups :=
+          List.mem_singleton.mp hF
+        subst hEeq
+        have htabx : Touches P a b x := mem_fused_iff.mp hx
+        have htaby : Touches P a b y := mem_fused_iff.mp hy
+        exact Or.inr ⟨Or.inl htabx, Or.inl htaby, Or.inr (Or.inl ⟨htabx, htaby⟩)⟩
+    · rw [touches_mergePair_iff] at hTx hTy
+      rcases hTx with hKx | ⟨htabx, hGLx⟩
+      · rcases hTy with hKy | ⟨htaby, hGLy⟩
+        · obtain ⟨C, hC, hxc, _, hcd⟩ := hKx
+          obtain ⟨D, hD, hyc, _, hcd2⟩ := hKy
+          have htcdx : Touches P c d x := ⟨C, hC, hxc, hcd⟩
+          have htcdy : Touches P c d y := ⟨D, hD, hyc, hcd2⟩
+          exact Or.inr ⟨Or.inr htcdx, Or.inr htcdy, Or.inr (Or.inr ⟨htcdx, htcdy⟩)⟩
+        · obtain ⟨C, hC, hxc, _, hcd⟩ := hKx
+          exact Or.inr ⟨Or.inr ⟨C, hC, hxc, hcd⟩, Or.inl htaby,
+            Or.inl (groupsLinked_iff.mpr hGLy)⟩
+      · rcases hTy with hKy | ⟨htaby, hGLy⟩
+        · obtain ⟨D, hD, hyc, _, hcd2⟩ := hKy
+          exact Or.inr ⟨Or.inl htabx, Or.inr ⟨D, hD, hyc, hcd2⟩,
+            Or.inl (groupsLinked_iff.mpr hGLx)⟩
+        · exact Or.inr ⟨Or.inl htabx, Or.inl htaby, Or.inl (groupsLinked_iff.mpr hGLx)⟩
+  · rintro (hI | ⟨hx, hy, hinner⟩)
+    · obtain ⟨C, hC, hxc, hyc⟩ := hI
+      by_cases hab : (C.contains a || C.contains b) = true
+      · by_cases hGL : GroupsLinked P a b c d
+        · exact Or.inr
+            ⟨touches_mergePair_iff.mpr (Or.inr ⟨⟨C, hC, hxc, hab⟩, groupsLinked_iff.mp hGL⟩),
+             touches_mergePair_iff.mpr (Or.inr ⟨⟨C, hC, hyc, hab⟩, groupsLinked_iff.mp hGL⟩)⟩
+        · left
+          refine ⟨(P.filter (fun C => C.contains a || C.contains b)).flatten.eraseDups,
+            by rw [mergePair_eq, List.mem_append]; exact Or.inr (List.mem_singleton.mpr rfl),
+            mem_fused_iff.mpr ⟨C, hC, hxc, hab⟩, mem_fused_iff.mpr ⟨C, hC, hyc, hab⟩, ?_⟩
+          rw [hit_iff_mem]
+          exact not_mem_fused_of_not_linked hGL
+      · by_cases hcd : (C.contains c || C.contains d) = true
+        · exact Or.inr
+            ⟨touches_mergePair_iff.mpr (Or.inl ⟨C, hC, hxc, hab, hcd⟩),
+             touches_mergePair_iff.mpr (Or.inl ⟨C, hC, hyc, hab, hcd⟩)⟩
+        · left
+          exact ⟨C, by rw [mergePair_eq, List.mem_append]; exact Or.inl (keep_filter hC hab),
+            hxc, hyc, hcd⟩
+    · rcases hinner with hGL | ⟨htabx, htaby⟩ | ⟨htcdx, htcdy⟩
+      · have mk : ∀ z : Nat, (Touches P a b z ∨ Touches P c d z) →
+            Touches (mergePair P a b) c d z := by
+          rintro z (htab | ⟨C, hC, hzc, hcdz⟩)
+          · exact touches_mergePair_iff.mpr (Or.inr ⟨htab, groupsLinked_iff.mp hGL⟩)
+          · by_cases habC : (C.contains a || C.contains b) = true
+            · exact touches_mergePair_iff.mpr (Or.inr ⟨⟨C, hC, hzc, habC⟩,
+                groupsLinked_iff.mp ⟨C, hC, habC, hcdz⟩⟩)
+            · exact touches_mergePair_iff.mpr (Or.inl ⟨C, hC, hzc, habC, hcdz⟩)
+        exact Or.inr ⟨mk x hx, mk y hy⟩
+      · by_cases hGL : GroupsLinked P a b c d
+        · exact Or.inr
+            ⟨touches_mergePair_iff.mpr (Or.inr ⟨htabx, groupsLinked_iff.mp hGL⟩),
+             touches_mergePair_iff.mpr (Or.inr ⟨htaby, groupsLinked_iff.mp hGL⟩)⟩
+        · left
+          refine ⟨(P.filter (fun C => C.contains a || C.contains b)).flatten.eraseDups,
+            by rw [mergePair_eq, List.mem_append]; exact Or.inr (List.mem_singleton.mpr rfl),
+            mem_fused_iff.mpr htabx, mem_fused_iff.mpr htaby, ?_⟩
+          rw [hit_iff_mem]
+          exact not_mem_fused_of_not_linked hGL
+      · obtain ⟨C, hC, hxc, hcdx⟩ := htcdx
+        obtain ⟨D, hD, hyc, hcdy⟩ := htcdy
+        by_cases habC : (C.contains a || C.contains b) = true
+        · have hGLC : GroupsLinked P a b c d := ⟨C, hC, habC, hcdx⟩
+          by_cases habD : (D.contains a || D.contains b) = true
+          · exact Or.inr
+              ⟨touches_mergePair_iff.mpr (Or.inr ⟨⟨C, hC, hxc, habC⟩,
+                 groupsLinked_iff.mp hGLC⟩),
+               touches_mergePair_iff.mpr (Or.inr ⟨⟨D, hD, hyc, habD⟩,
+                 groupsLinked_iff.mp ⟨D, hD, habD, hcdy⟩⟩)⟩
+          · exact Or.inr
+              ⟨touches_mergePair_iff.mpr (Or.inr ⟨⟨C, hC, hxc, habC⟩,
+                 groupsLinked_iff.mp hGLC⟩),
+               touches_mergePair_iff.mpr (Or.inl ⟨D, hD, hyc, habD, hcdy⟩)⟩
+        · by_cases habD : (D.contains a || D.contains b) = true
+          · exact Or.inr
+              ⟨touches_mergePair_iff.mpr (Or.inl ⟨C, hC, hxc, habC, hcdx⟩),
+               touches_mergePair_iff.mpr (Or.inr ⟨⟨D, hD, hyc, habD⟩,
+                 groupsLinked_iff.mp ⟨D, hD, habD, hcdy⟩⟩)⟩
+          · exact Or.inr
+              ⟨touches_mergePair_iff.mpr (Or.inl ⟨C, hC, hxc, habC, hcdx⟩),
+               touches_mergePair_iff.mpr (Or.inl ⟨D, hD, hyc, habD, hcdy⟩)⟩
+
+/-- The characterizing shape of `sameClass_two_merges_iff` is invariant
+under swapping the two groups. -/
+lemma sameClass_two_merges_comm_form {P : List (List Nat)} {a b c d x y : Nat} :
+    ((∃ C ∈ P, x ∈ C ∧ y ∈ C) ∨
+      ((Touches P a b x ∨ Touches P c d x) ∧ (Touches P a b y ∨ Touches P c d y) ∧
+        (GroupsLinked P a b c d ∨ (Touches P a b x ∧ Touches P a b y) ∨
+          (Touches P c d x ∧ Touches P c d y)))) ↔
+    ((∃ C ∈ P, x ∈ C ∧ y ∈ C) ∨
+      ((Touches P c d x ∨ Touches P a b x) ∧ (Touches P c d y ∨ Touches P a b y) ∧
+        (GroupsLinked P c d a b ∨ (Touches P c d x ∧ Touches P c d y) ∨
+          (Touches P a b x ∧ Touches P a b y)))) := by
+  constructor
+  · rintro (hI | ⟨hx, hy, hL | hab | hcd⟩)
+    · exact Or.inl hI
+    · exact Or.inr ⟨hx.symm, hy.symm, Or.inl (groupsLinked_symm.mp hL)⟩
+    · exact Or.inr ⟨hx.symm, hy.symm, Or.inr (Or.inr hab)⟩
+    · exact Or.inr ⟨hx.symm, hy.symm, Or.inr (Or.inl hcd)⟩
+  · rintro (hI | ⟨hx, hy, hL | hcd | hab⟩)
+    · exact Or.inl hI
+    · exact Or.inr ⟨hx.symm, hy.symm, Or.inl (groupsLinked_symm.mpr hL)⟩
+    · exact Or.inr ⟨hx.symm, hy.symm, Or.inr (Or.inr hcd)⟩
+    · exact Or.inr ⟨hx.symm, hy.symm, Or.inr (Or.inl hab)⟩
+
+/-- **Commutation of two merges**: the application order of pairs `{a, b}`
+then `{c, d}` does not change the "share a class" relation. The produced
+lists differ (order of appearance inside the merged class — the
+counterexample documented on issue #16650), but the partition seen as an
+equivalence relation is the same. This is the correct reformulation of
+the sought commutation lemma: commutation lives at the `SameClass` level,
+not at list equality. -/
+theorem mergePair_mergePair_comm_equiv (P : List (List Nat)) (a b c d x y : Nat) :
+    SameClass (mergePair (mergePair P a b) c d) x y ↔
+    SameClass (mergePair (mergePair P c d) a b) x y := by
+  rw [sameClass_two_merges_iff, sameClass_two_merges_comm_form,
+      ← sameClass_two_merges_iff (a := c) (b := d) (c := a) (d := b)]
 
 /-- Every label of the range `1..n` is covered by the initial singletons. -/
 lemma covered_singles {n z : Nat} (h1 : 1 ≤ z) (h2 : z ≤ n) :

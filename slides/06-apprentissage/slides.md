@@ -2409,7 +2409,7 @@ layout: dense
 
 <!-- Pipeline SFT → RM → PPO : fondement d'InstructGPT (2022), ChatGPT, Claude 1 -->
 
-<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/FineTuning/FT-04-RLHF-DPO.ipynb">FT-04-RLHF-DPO.ipynb</a> (pipeline complet SFT → RM).</p>
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/FineTuning/FT-04-RLHF-DPO-Python.ipynb">FT-04-RLHF-DPO-Python.ipynb</a> (pipeline complet SFT → RM).</p>
 
 
 ---

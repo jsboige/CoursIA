@@ -28,9 +28,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -51,6 +53,18 @@ ORGAN_PATHS = [
 ]
 
 RED, AMBER, GREEN = "RED", "AMBER", "GREEN"
+
+# Organes planifies LOCAUX (#17748). Une tache Windows survit a la disparition de son
+# siege : mesure du 2026-09-25, le worktree D:\CoursIA-wt-merge-ready purge, la tache
+# `merge_ready` s'est declenchee toutes les 20 min avec LastTaskResult=2 -- python ne
+# trouvait plus le script -- sans ecrire une ligne de journal. 2 h 20 sans merge
+# automatique, et rien ne rougissait : la tache etait « prete », le journal se taisait.
+# (nom, dossier d'etat sous %LOCALAPPDATA%\CoursIA, intervalle nominal en minutes)
+SCHEDULED_ORGANS = [
+    ("merge_ready", "merge_ready", 20),
+]
+# Un journal plus vieux que ce nombre d'intervalles = organe muet.
+SILENT_INTERVALS = 3
 
 
 @dataclass
@@ -77,6 +91,38 @@ def git(*args: str, cwd: Path | None = None) -> str:
     except (OSError, subprocess.SubprocessError):
         return ""
     return out.stdout.strip() if out.returncode == 0 else ""
+
+
+def git_rc(*args: str, cwd: Path | None = None) -> tuple[int, str, str]:
+    """git + code retour + stderr : pour les mesures ou l'ECHEC doit se distinguer du VIDE.
+
+    Le helper ``git()`` rend une chaine vide dans les deux cas, ce qui est juste quand
+    l'absence de sortie EST le fait mesure (« pas de stash », « aucune divergence »). C'est
+    faux des qu'un verdict en depend : une mesure impossible publiee comme un constat
+    fabrique une accusation (nit (b) de #17496 — un ``git diff`` en erreur se lisait comme
+    « la branche ne livre rien », donc « parkee sans raison »).
+
+    Rend ``(rc, stdout strippe, stderr strippe)`` ; ``rc = -1`` quand la commande n'a pas
+    pu etre lancee du tout.
+    """
+    try:
+        out = subprocess.run(
+            ["git", *args],
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=60,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        return -1, "", str(exc)
+    return out.returncode, out.stdout.strip(), out.stderr.strip()
+
+
+def _premiere_ligne(err: str) -> str:
+    """Premiere ligne d'un stderr git, bornee : c'est elle qui nomme la panne."""
+    return err.splitlines()[0][:160] if err else "(sans message)"
 
 
 def repo_root() -> Path:
@@ -155,11 +201,31 @@ def check_branch(root: Path) -> list[Check]:
         # Le test juste compare les ETATS FINAUX, restreint aux fichiers que la branche
         # touche : si le blob de la branche est identique a celui de main partout ou elle a
         # ecrit, elle ne livre plus rien.
-        touched = git("diff", "--name-only", f"origin/main...{branch}", cwd=root).splitlines()
-        if touched:
-            delivers = git("diff", "--stat", "origin/main", branch, "--", *touched, cwd=root)
+        # Mesure, et non lecture : un diff en ERREUR (origin/main absent, objet corrompu,
+        # credential) rend une sortie vide comme un diff sans difference. Les confondre
+        # publierait « parkee sans raison » sur un arbre qu'on n'a pas su mesurer.
+        rc_touch, touched_out, err_touch = git_rc(
+            "diff", "--name-only", f"origin/main...{branch}", cwd=root
+        )
+        delivers = ""
+        mesure_impossible = ""
+        if rc_touch != 0:
+            mesure_impossible = (
+                f"git diff --name-only origin/main...{branch} a echoue "
+                f"(rc={rc_touch}, {_premiere_ligne(err_touch)})"
+            )
         else:
-            delivers = ""
+            touched = touched_out.splitlines()
+            if touched:
+                rc_stat, delivers, err_stat = git_rc(
+                    "diff", "--stat", "origin/main", branch, "--", *touched, cwd=root
+                )
+                if rc_stat != 0:
+                    mesure_impossible = (
+                        f"git diff --stat origin/main {branch} a echoue "
+                        f"(rc={rc_stat}, {_premiere_ligne(err_stat)})"
+                    )
+                    delivers = ""
 
         has_upstream = bool(git("rev-parse", "--abbrev-ref", "@{u}", cwd=root))
         if not has_upstream:
@@ -167,22 +233,35 @@ def check_branch(root: Path) -> list[Check]:
         else:
             unpushed = git("log", "--oneline", "@{u}..HEAD", cwd=root)
 
-        level = RED if (not delivers and not unpushed) else AMBER
-        why = (
-            "son contenu est deja integralement sur origin/main (diff trois-points vide) "
-            "et rien n'attend d'etre pousse : l'arbre est parke sans raison"
-            if level == RED
-            else f"{behind_n} commits de retard"
-            + (f", {len(unpushed.splitlines())} non pousse(s)" if unpushed and has_upstream else "")
-            + ("" if has_upstream else ", branche jamais poussee")
-        )
+        if mesure_impossible:
+            level = AMBER
+            why = (
+                f"mesure impossible : {mesure_impossible} — le verdict « parke sans "
+                "raison » est suspendu : un echec de mesure n'est pas une preuve d'absence"
+            )
+        else:
+            level = RED if (not delivers and not unpushed) else AMBER
+            why = (
+                "son contenu est deja integralement sur origin/main (les fichiers qu'elle "
+                "touche y portent le meme blob) et rien n'attend d'etre pousse : "
+                "l'arbre est parke sans raison"
+                if level == RED
+                else f"{behind_n} commits de retard"
+                + (f", {len(unpushed.splitlines())} non pousse(s)" if unpushed and has_upstream else "")
+                + ("" if has_upstream else ", branche jamais poussee")
+            )
         checks.append(
             Check(
                 "branche",
                 level,
                 f"sur '{branch}' — {why}",
                 "git checkout main && git pull --ff-only",
-                {"branch": branch, "behind": behind_n, "unpushed": bool(unpushed)},
+                {
+                    "branch": branch,
+                    "behind": behind_n,
+                    "unpushed": bool(unpushed),
+                    "mesure_impossible": bool(mesure_impossible),
+                },
             )
         )
     return checks
@@ -299,6 +378,62 @@ def check_stash(root: Path) -> list[Check]:
     return [Check("stash", GREEN, f"{n} entree(s) de stash", data={"count": n})]
 
 
+def _launcher_repo(launcher: Path) -> Path | None:
+    """Siege (--repo) nomme par le lanceur VBS de la tache, ou None s'il n'en nomme pas."""
+    m = re.search(r'--repo\s+([^"\s]+)', launcher.read_text(encoding="utf-8", errors="replace"))
+    return Path(m.group(1)) if m else None
+
+
+def check_scheduled_organs(local_appdata: Path | None = None, now: float | None = None) -> list[Check]:
+    """Vivacite des organes planifies installes sur CETTE machine (#17748).
+
+    Deux predicats, dans l'ordre ou la panne se produit : le siege que nomme le
+    lanceur existe, puis le journal avance. Un organe non installe ici est GREEN :
+    ce n'est pas une panne, c'est une autre machine.
+    """
+    if local_appdata is None:
+        local_appdata = Path(os.environ.get("LOCALAPPDATA", str(Path.home() / "AppData" / "Local")))
+    now = time.time() if now is None else now
+    checks = []
+    for name, sub, interval in SCHEDULED_ORGANS:
+        label = f"organe-planifie:{name}"
+        state = local_appdata / "CoursIA" / sub
+        launcher = state / "run_hidden.vbs"
+        if not launcher.exists():
+            checks.append(Check(label, GREEN, "non installe sur cette machine"))
+            continue
+        repo = _launcher_repo(launcher)
+        if repo is not None and not repo.exists():
+            checks.append(
+                Check(
+                    label,
+                    RED,
+                    f"siege {repo} absent : la tache se declenche et meurt avant d'ouvrir son journal",
+                    f"git worktree add --detach {repo} origin/main",
+                    {"repo": str(repo)},
+                )
+            )
+            continue
+        logs = sorted((state / "logs").glob("*.log"), key=lambda f: f.stat().st_mtime)
+        if not logs:
+            checks.append(Check(label, AMBER, "installe, mais aucun journal : jamais tourne ?", data={"repo": str(repo)}))
+            continue
+        age_min = int((now - logs[-1].stat().st_mtime) // 60)
+        if age_min > SILENT_INTERVALS * interval:
+            checks.append(
+                Check(
+                    label,
+                    RED,
+                    f"journal muet depuis {age_min} min (intervalle nominal {interval} min)",
+                    "schtasks /Query /TN CoursIA\\" + name + " /V /FO LIST  (Last Result, Task To Run)",
+                    {"age_min": age_min, "log": str(logs[-1])},
+                )
+            )
+        else:
+            checks.append(Check(label, GREEN, f"journal ecrit il y a {age_min} min", data={"age_min": age_min}))
+    return checks
+
+
 # Items que ce script ne PEUT pas mesurer (ils vivent cote MCP). On les rappelle nommement
 # plutot que de laisser croire qu'un vert ici vaut hygiene complete.
 MANUAL_REMINDERS = [
@@ -323,6 +458,7 @@ def main() -> int:
     checks += check_organs(root)
     checks += check_untracked_secrets(root)
     checks += check_stash(root)
+    checks += check_scheduled_organs()
 
     reds = [c for c in checks if c.level == RED]
     ambers = [c for c in checks if c.level == AMBER]

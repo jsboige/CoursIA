@@ -128,18 +128,17 @@ class TestWorkflowValidate:
 
 class TestConvertUiToApi:
     def test_skips_reroute_nodes(self):
-        """Reroute nodes are filtered out. KSampler node is processed but
-        convert_ui_to_api is a placeholder that never populates api_workflow
-        (pass statement at L245). Result is always {} for non-Reroute/Note nodes."""
+        """`Reroute` est un aiguillage purement frontend : il n'apparait pas
+        dans le graphe API. Les autres noeuds sont convertis."""
         workflow = {
             "nodes": [
                 {"type": "Reroute", "id": 1},
                 {"type": "KSampler", "id": 2},
             ]
         }
-        result = WorkflowManager.convert_ui_to_api(workflow)
-        # Placeholder implementation: api_node created but never added to dict
-        assert len(result) == 0
+        result = WorkflowManager.convert_ui_to_api(workflow, {})
+        assert list(result) == ["2"]
+        assert result["2"]["class_type"] == "KSampler"
 
     def test_skips_note_nodes(self):
         workflow = {
@@ -147,17 +146,17 @@ class TestConvertUiToApi:
                 {"type": "Note", "id": 1},
             ]
         }
-        result = WorkflowManager.convert_ui_to_api(workflow)
-        assert len(result) == 0
+        result = WorkflowManager.convert_ui_to_api(workflow, {})
+        assert result == {}
 
     def test_empty_workflow(self):
         workflow = {"nodes": []}
-        result = WorkflowManager.convert_ui_to_api(workflow)
+        result = WorkflowManager.convert_ui_to_api(workflow, {})
         assert result == {}
 
     def test_no_nodes_key(self):
         workflow = {}
-        result = WorkflowManager.convert_ui_to_api(workflow)
+        result = WorkflowManager.convert_ui_to_api(workflow, {})
         assert result == {}
 
 

@@ -10,7 +10,7 @@ S'applique a **toute PR touchant `*.lean`** + au **coordinateur ai-01** pour BG 
 
 Avant CHAQUE merge Lean : `lake build <module>` LOCAL par ai-01. Le claim "lake build SUCCESS Xs" dans le body PR n'est **PAS suffisant** (trust mais verifie). Pas d'env Lean local : dispatcher po-2026 avec build log complet + compte de `sorry` **reel** avant/apres (`count_code_sorry.py`, cf [pr-review-discipline](pr-review-discipline.md) B.1 — jamais `grep -c sorry`, qui sur-compte la prose d'un facteur 23) + diff sur defs partagees.
 
-**CI != Lake build local** : `lean-social-choice.yml` ne build PAS Voting.lean. CI SUCCESS != module compile.
+**CI != Lake build local** : la jambe matricielle de `gametheory` build le lake entier depuis #17374, mais le principe tient — CI SUCCESS != `lake build` local vérifié par ai-01 avant merge.
 
 **Incident source** : 2026-05-10 merge #866 sur claim non-verifie → revert #885, 1 cycle perdu.
 

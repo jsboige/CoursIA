@@ -2,7 +2,7 @@
   "model": "Qwen/Qwen2.5-1.5B-Instruct",
   "arm": "N",
   "steps": 120,
-  "gpu": "NVIDIA GeForce RTX 4090",
+  "gpu": "NVIDIA GeForce RTX 3090",
   "seeds": [
     {
       "arm": "N",
@@ -35,6 +35,22 @@
       "mc_late": 0.35,
       "reward_early": 0.7333333333333333,
       "reward_late": 0.7416666666666667
+    },
+    {
+      "arm": "N",
+      "model": "Qwen/Qwen2.5-1.5B-Instruct",
+      "seed": 7,
+      "steps": 120,
+      "train_s": 1475.626796722412,
+      "vram_load_gb": 0.517302784,
+      "vram_peak_gb": 0.939454976,
+      "n_records": 240,
+      "hack_early": 0.16666666666666666,
+      "hack_late": 0.24166666666666667,
+      "mc_early": 0.30833333333333335,
+      "mc_late": 0.31666666666666665,
+      "reward_early": 0.5833333333333334,
+      "reward_late": 0.7
     },
     {
       "arm": "N",

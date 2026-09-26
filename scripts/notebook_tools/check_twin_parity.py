@@ -1488,12 +1488,26 @@ def _write_audit_file(registry_dir: Path, name: str, audit: dict,
     return path
 
 
+def audit_index(filename: str) -> str:
+    """Cle de tri d'un fichier d'audit : le prefixe ``NNNN`` avant le premier
+    tiret (``0007-2026-09-08-myia-po-2024-CoursIA.yaml`` -> ``0007``).
+
+    C'EST LA GRANDEUR QUE LE GARDE D'INTEGRITE TESTE : `idx = name.split("-",
+    1)[0]`, unicite par paire (`test_twin_registry_integrity.py`,
+    `test_audit_index_unique_and_no_identical_duplicates_per_pair`). Toute
+    lecture qui doit predire ce verdict passe par ICI -- une derivation
+    reecrite ailleurs finit par diverger de la definition testee, et un
+    instrument qui mesure une autre grandeur que le garde rend un vert faux.
+    """
+    return str(filename).split("-", 1)[0]
+
+
 def _next_audit_index(d: Path) -> int:
     """Max des index NNNN existants + 1 -- jamais len()+1 : un trou ou un
     doublon herite ferait re-emettre un index deja pris (l'index est la cle
     de tri du journal, #14911/#15345)."""
-    idxs = [int(f.name.split("-", 1)[0]) for f in d.glob("*.yaml")
-            if f.name.split("-", 1)[0].isdigit()]
+    idxs = [int(audit_index(f.name)) for f in d.glob("*.yaml")
+            if audit_index(f.name).isdigit()]
     return max(idxs, default=0) + 1
 
 

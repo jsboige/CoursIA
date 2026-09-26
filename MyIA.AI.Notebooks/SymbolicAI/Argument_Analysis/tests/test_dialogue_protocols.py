@@ -92,5 +92,36 @@ class TestMachineEtats(unittest.TestCase):
         self.assertTrue(self.per.is_terminal_state(trace))
 
 
+class TestFixturePartagee(unittest.TestCase):
+    """Garde aller-retour sur la fixture partagee (design du carnet de reference sas).
+
+    data/dialogue_protocols_examples.json : 9 transitions + 7 terminaisons,
+    exemples synthetiques domaine public. Le moteur doit rendre exactement
+    les verdicts consignes.
+    """
+
+    def setUp(self):
+        import json
+        from pathlib import Path
+        chemin = Path(__file__).resolve().parent.parent / "data" / "dialogue_protocols_examples.json"
+        self.examples = json.loads(chemin.read_text(encoding="utf-8"))
+        self.protos = {"inquiry": d.InquiryProtocol(), "persuasion": d.PersuasionProtocol()}
+
+    def test_neuf_transitions(self):
+        for ex in self.examples["transitions"]:
+            proto = self.protos[ex["dialogue"]]
+            got = proto.is_valid_move(d.SpeechAct[ex["from"]], d.SpeechAct[ex["to"]])
+            self.assertEqual(got, ex["allowed"], ex)
+
+    def test_sept_terminaisons(self):
+        def historique(acts):
+            return [d.DialogueMove(speaker=f"loc{i % 2}", act=d.SpeechAct[a], content="-")
+                    for i, a in enumerate(acts)]
+        for ex in self.examples["terminations"]:
+            proto = self.protos[ex["dialogue"]]
+            got = proto.is_terminal_state(historique(ex["acts"]))
+            self.assertEqual(got, ex["terminal"], ex)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

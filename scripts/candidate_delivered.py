@@ -68,6 +68,24 @@ ADVISORY, never auto-close (#10466 "Ce que l'organe ne doit pas faire"):
     The bot's OWN retractions (``active`` / ``in_flight``) are hysteresis,
     not verdicts, and do NOT stick; a human who re-poses the label by hand
     hands control back to the sweep.
+  - The protocol's ``[INFO] candidate-delivered`` attestation comments do
+    NOT count as post-merge activity (#17759, mecanisme B, arbitrage ai-01
+    2026-09-25). The protocol PRESCRIBES that comment
+    (proactive-coordination.md R5), so counting it destroyed the silence
+    precondition on exactly the issues the label was missing: no label ->
+    lane must attest -> the attestation makes the issue ``active`` -> no
+    label (measured #15689: delivered 2026-09-14, two attestations, still
+    unlabeled). ONLY a comment whose body STARTS with the marker is ignored;
+    any other comment (discussion, contradiction, quote of the marker)
+    still reads as active, and the human retraction path (#14307) is
+    untouched -- retraction stays possible.
+  - ``no_delivery`` issues whose merged PR carries ``#N`` anchored in its
+    TITLE are counted and named in the run log (#17759, partie additive):
+    the repo's canonical ``type(scope,#N):`` title form is invisible to the
+    body-only delivery marker -- 19 issues on a 250-PR sample. A REPORT,
+    never a label: the title channel stays CLOSED for labelling (arbitrage
+    ai-01 -- it would re-open #15060's contextual-mention false positives,
+    e.g. #17713 <- #17715, a partial delivery).
 
 The classification core (``classify``) is a PURE function -- no network -- so it
 is unit-tested with fixtures in ``scripts/tests/test_candidate_delivered.py``.
@@ -144,6 +162,22 @@ def _is_bot(actor: str) -> bool:
     rather than towards re-posing the label.
     """
     return (actor or "").endswith("[bot]")
+
+
+# Attestation marker of the lane protocol (proactive-coordination.md R5),
+# same string as pick_idle_grain.DELIVERED_COMMENT_MARKER. A comment whose
+# body STARTS with it is the remedy the protocol prescribes, not activity:
+# counting it in ``last_activity`` destroyed the silence precondition
+# (#17759 mecanisme B -- the loop closed on #15689, two attestations, still
+# unlabeled). STARTS-WITH only: a quote or a discussion of the marker is an
+# ordinary comment and still reads as active; a comment without a body key
+# (old fixtures, unreadable payloads) also reads as active -- fail-safe,
+# never label on unreadable data.
+_INFO_MARKER_RE = re.compile(r"^\s*\[INFO\] candidate-delivered\b")
+
+
+def _is_protocol_attestation(comment: dict) -> bool:
+    return bool(_INFO_MARKER_RE.search(comment.get("body") or ""))
 
 
 def human_retraction(label_events: list[dict] | None) -> dict | None:
@@ -238,9 +272,15 @@ def classify(
                 f"(no See/Part of/Closes/Fixes marker in their body) -- not a delivery")
 
     # ISO 8601 timestamps sort lexicographically; string max is correct.
+    # #17759 mecanisme B: the protocol's `[INFO] candidate-delivered`
+    # attestations are the REMEDY the protocol prescribes, not activity --
+    # they do not break the silence precondition. Anything else still does.
     latest_merge = max(r["merged_at"] for r in declared)
 
-    comment_dates = [c["created_at"] for c in (issue.get("comments") or []) if c.get("created_at")]
+    comment_dates = [
+        c["created_at"] for c in (issue.get("comments") or [])
+        if c.get("created_at") and not _is_protocol_attestation(c)
+    ]
     last_activity = max(comment_dates + [issue.get("created_at", "")])
 
     if last_activity and last_activity > latest_merge:
@@ -274,7 +314,12 @@ def list_open_issues(repo: str) -> list[dict]:
 
 
 def issue_detail(repo: str, number: int) -> dict:
-    """Comments + createdAt for one issue."""
+    """Comments (createdAt + body) for one issue.
+
+    The body is needed by ``classify`` to recognise the protocol's
+    ``[INFO] candidate-delivered`` attestations (#17759 mecanisme B): a
+    comment without a body key reads as ordinary activity (fail-safe).
+    """
     raw = _gh_json([
         "issue", "view", str(number), "--repo", repo,
         "--json", "createdAt,comments",
@@ -282,8 +327,25 @@ def issue_detail(repo: str, number: int) -> dict:
     d = raw or {}
     return {
         "created_at": d.get("createdAt", ""),
-        "comments": [{"created_at": c.get("createdAt", "")} for c in (d.get("comments") or [])],
+        "comments": [{"created_at": c.get("createdAt", ""),
+                      "body": c.get("body") or ""}
+                     for c in (d.get("comments") or [])],
     }
+
+
+def title_only_refs(merged_refs: list[dict], number: int) -> list[int]:
+    """Merged PRs whose TITLE carries ``#number`` anchored -- report only.
+
+    The A-mechanism blind class (#17759): the repo's canonical
+    ``type(scope,#N):`` title form is invisible to the body-only
+    ``delivery_marker``, so those issues classify ``no_delivery`` in
+    silence. This names the population for the coordinator's log; it NEVER
+    feeds a labelling decision (arbitrage ai-01 2026-09-25: the title
+    channel stays closed -- #15060's contextual-mention false positives).
+    """
+    anchor = re.compile(rf"#{number}\b")
+    return [r["pr_number"] for r in merged_refs
+            if r.get("merged_at") and anchor.search(r.get("title") or "")]
 
 
 def _parse_cross_ref_events(events: list[dict]) -> list[dict]:
@@ -346,20 +408,25 @@ def _parse_label_events(events: list[dict], label: str) -> list[dict]:
 
 
 def _with_merged_pr_bodies(
-    repo: str, refs: list[dict], cache: dict[int, str],
+    repo: str, refs: list[dict], cache: dict[int, tuple[str, str]],
 ) -> list[dict]:
-    """Attach the CURRENT body of each merged PR to its ref (delivery-marker gate).
+    """Attach the CURRENT body and title of each merged PR to its ref.
+
+    Body = the delivery-marker gate (#15060). Title = the ``no_delivery``
+    title-only REPORT (#17759) -- never a labelling decision. The per-run
+    ``cache`` holds ``(body, title)`` tuples so a PR referenced by several
+    issues costs one REST call.
 
     A cross-referenced event is posed when the body FIRST mentions the issue
     and is never retracted when the mention later disappears -- #15149's
     cross-ref on #15060 survived a body amend that removed every mention.
     The current body is the only faithful signal of what the merged PR
-    DELIVERED, so the driver reads it once per PR number (the per-run
-    ``cache`` makes a PR referenced by several issues cost one REST call).
+    DELIVERED, so the driver reads it once per PR number.
 
-    A body that cannot be fetched (PR deleted, gh hiccup) reads as ``""`` --
-    NOT declared -- which is fail-safe: the sweep is advisory, and a ref it
-    cannot verify must not produce a candidate label.
+    A body that cannot be fetched (PR deleted, gh hiccup) reads as ``""``
+    (and its title as ``""``) -- NOT declared -- which is fail-safe: the
+    sweep is advisory, and a ref it cannot verify must not produce a
+    candidate label.
     """
     out = []
     for r in refs:
@@ -369,13 +436,18 @@ def _with_merged_pr_bodies(
             if pr not in cache:
                 try:
                     raw = _gh_json(
-                        ["pr", "view", str(pr), "--repo", repo, "--json", "body"],
+                        ["pr", "view", str(pr), "--repo", repo,
+                         "--json", "body,title"],
                     )
                 except RuntimeError:
                     raw = None
                 body = (raw or {}).get("body") if isinstance(raw, dict) else None
-                cache[pr] = (body if isinstance(body, str) else "") or ""
-            r["body"] = cache[pr]
+                title = (raw or {}).get("title") if isinstance(raw, dict) else None
+                cache[pr] = (
+                    (body if isinstance(body, str) else "") or "",
+                    (title if isinstance(title, str) else "") or "",
+                )
+            r["body"], r["title"] = cache[pr]
         out.append(r)
     return out
 
@@ -481,10 +553,11 @@ def main(argv: list[str] | None = None) -> int:
 
     counts = {"candidate": 0, "active": 0, "in_flight": 0, "no_delivery": 0,
               "epic": 0, "retracted": 0}
+    title_only_issues = 0
     print(f"[candidate-delivered] repo={repo} mode={'dry-run' if args.dry_run else 'apply'} "
           f"open_issues={len(issues)} label={args.label}")
 
-    body_cache: dict[int, str] = {}
+    body_cache: dict[int, tuple[str, str]] = {}
 
     for issue in issues:
         number = issue["number"]
@@ -543,12 +616,30 @@ def main(argv: list[str] | None = None) -> int:
                 # retraction is hysteresis, never a verdict (#14307).
                 remove_label(repo, number, args.label, args.dry_run)
                 print(f"  #{number:<6} no_delivery {why}  (label retracted)")
-            # else: quiet -- the common case, no merged PR declares it
+            else:
+                # #17759 partie additive : nommer la classe aveugle du
+                # marqueur -- la PR mergee porte #N dans le TITRE (forme
+                # canonique du depot), invisible au gate body-only. Un
+                # RAPPORT pour le coordinateur, jamais un label (le canal
+                # titre reste ferme, arbitrage ai-01 2026-09-25).
+                ton = title_only_refs(
+                    [r for r in refs if r.get("merged_at") and r.get("is_pr")],
+                    number)
+                if ton:
+                    title_only_issues += 1
+                    prs = ", ".join(f"#{p}" for p in ton)
+                    print(f"  #{number:<6} no_delivery {why}\n"
+                          f"           TITLE-ONLY: PR(s) {prs} portent #{number} "
+                          f"dans le titre -- rapport #17759, pas un label")
 
         if args.sleep:
             time.sleep(args.sleep)
 
     print(f"[candidate-delivered] done: {counts}")
+    if title_only_issues:
+        print(f"[candidate-delivered] title-only refs: {title_only_issues} issue(s) "
+              f"no_delivery dont la PR mergee porte #N dans le titre "
+              f"-- rapport #17759, pas un label")
     return 0
 
 

@@ -4,552 +4,379 @@
 
 <!-- CATALOG-STATUS
 series: GameTheory
-pedagogical_count: 101
-breakdown: root=93, SocialChoice=8
-maturity: BETA=94, ALPHA=4, DRAFT=3
+pedagogical_count: 108
+breakdown: root=98, SocialChoice=10
+maturity: BETA=99, DRAFT=5, ALPHA=4
 -->
 
-La théorie des jeux est le langage mathématique de la stratégie. Elle modélise les situations où des agents rationnels prennent des décisions dont le résultat dépend des choix des autres : enchères, négociations commerciales, élections, poker, guerre commerciale, allocation de ressources. Cette dualité entre coopération et compétition est omniprésente en économie, en sciences politiques et en informatique (mécanismes de vote, smart contracts, réseaux). Le prix Nobel d'économie a été décerné à des théoriciens des jeux à sept reprises entre 1994 et 2020 — c'est un domaine vivant et influent.
+La théorie des jeux est le langage mathématique de la stratégie. Elle modélise les situations où des agents rationnels prennent des décisions dont le résultat dépend des choix des autres : enchères, négociations, élections, poker, allocation de ressources. Cette tension entre coopération et compétition traverse l'économie, les sciences politiques et l'informatique (mécanismes de vote, contrats, réseaux), et le prix Nobel d'économie a récompensé des théoriciens des jeux à sept reprises entre 1994 et 2020.
 
-Cette série vous forme sur deux axes complémentaires. Le premier est **pratique** : simuler des jeux avec Nashpy et OpenSpiel, calculer des équilibres de Nash, organiser des tournois itératifs (dilemme du prisonnier, Axelrod), et explorer les algorithmes modernes (CFR, Deep CFR). Le second est **formel** : prouver des résultats en Lean 4 — existence de Nash (Brouwer/Kakutani), théorème d'Arrow, valeur de Shapley. À la fin, vous maîtriserez aussi bien la théorie des jeux coopératifs (Shapley, Core) que non-coopératifs (Nash, SPE), et vous saurez formaliser ces résultats dans un assistant de preuve.
+La série se lit sur deux axes complémentaires. Le premier est **pratique** : simuler des jeux avec Nashpy et OpenSpiel, calculer des équilibres, organiser des tournois itérés, explorer les algorithmes modernes (CFR). Le second est **formel** : prouver des résultats en Lean 4, de l'existence d'équilibres au théorème d'Arrow et à la valeur de Shapley. Le parcours principal couvre les jeux non coopératifs (Nash, minimax, équilibre parfait en sous-jeux) comme les jeux coopératifs (Shapley, Core).
 
-**À qui s'adresse cette série** : étudiants en économie, informatique et mathématiques appliquées. Le fil Python s'exécute nativement avec Nashpy, NumPy, SciPy et Z3 ; seuls GT-13 et GT-17 demandent l'environnement WSL OpenSpiel. Les side tracks Lean (`2b`, `4b`, `5b`, `8b`, `8d`, `11b`, `15b`, `17c`, `17d`) utilisent le kernel Lean 4 sous WSL ; les side tracks `c` restent des notebooks Python natifs. Aucun prérequis en théorie des jeux : les concepts sont introduits progressivement depuis les matrices de gains. Une familiarité avec l'algèbre linéaire et les probabilités de base est utile.
+**À qui s'adresse cette série** : étudiants en économie, informatique et mathématiques appliquées. Aucun prérequis en théorie des jeux : les concepts sont introduits depuis les matrices de gains. Une familiarité avec l'algèbre linéaire et les probabilités de base est utile. Le parcours principal s'exécute en Python natif, à l'exception des notebooks 13 et 17 qui demandent l'environnement OpenSpiel sous WSL.
+
+## Comment lire ce README
+
+Ce README suit le principe des parcours à plusieurs vitesses du dépôt ([choisir sa vitesse de lecture](../../README.md#choisir-sa-vitesse-de-lecture)).
+
+- **Vous découvrez le sujet** : lisez le [Parcours principal](#parcours-principal), les notebooks à numéro nu de 01 à 17, dans l'ordre. Il se suffit à lui-même.
+- **Vous voulez creuser un palier** : ouvrez la section de ce palier dans [Approfondissements](#approfondissements). Une lettre (`04b`, `04c`…) creuse le palier dont elle porte le numéro : formalisation Lean, variante, résultat plus récent. Elle ne fait pas avancer dans la série.
+- **Vous cherchez la matière de recherche** : la [sous-série SocialChoice](#sous-série-socialchoice), les [extensions](#extensions-au-delà-du-parcours) numérotées au-delà de 17, et [Pour aller plus loin](#pour-aller-plus-loin), qui regroupe les notes techniques et les formalisations Lean.
+
+Chaque ligne des tables annonce son public : **Découverte**, **Licence** ou **Recherche**. Pour exécuter les notebooks, voir [Installation](#installation).
+
+### Lire un nom de fichier
+
+Un nom de notebook porte toute l'information utile, toujours dans le même ordre :
+
+```
+GameTheory-<NN><lettre?>-<Titre>[-Part<N>]-<Noyau>.ipynb
+```
+
+| Élément | Exemple | Ce qu'il dit |
+|---|---|---|
+| `<NN>` | `04` | le palier, sur deux chiffres |
+| `<lettre>` | `04b` | un approfondissement de ce palier ; absente sur le parcours principal |
+| `-Part<N>` | `-Part2` | la suite d'un notebook découpé en tranches |
+| `<Noyau>` | `-Python`, `-CSharp`, `-Lean`, `-Lean-Python` | le noyau d'exécution ; `-Lean-Python` désigne un notebook Python qui pilote réellement Lean (lecture d'un lake, appel à `lake`) |
+
+Les jumeaux Python, C# et Lean d'un même notebook partagent son numéro : on choisit l'implémentation, pas le contenu. La série n'applique pas encore partout le suffixe de noyau. La passe de renommage de la série mettra chaque nom en conformité ; d'ici là, la colonne **Noyau** des tables fait foi.
 
 ## Pourquoi cette série
 
-La théorie des jeux occupe une position charnière dans le curriculum d'IA. Elle est le **point de rencontre** entre l'optimisation (maximiser son gain), la logique (raisonner sur les croyances d'autrui) et l'informatique (algorithmes de résolution, formalisation en assistant de preuve). Aucune autre discipline ne combine ces trois dimensions avec autant de profondeur mathématique et d'applications concrètes.
+La théorie des jeux est le **point de rencontre** entre l'optimisation (maximiser son gain), la logique (raisonner sur les croyances d'autrui) et l'informatique (algorithmes de résolution, formalisation en assistant de preuve).
 
-Cette série est construite sur une **dualité délibérée simulation/preuve** :
+La série est construite sur une **dualité délibérée simulation/preuve** :
 
-- **Simulation (Python)** : calculer des équilibres de Nash, simuler des tournois itérés, entraîner des agents CFR. On *voit* la théorie en action — les équilibres émergent des interactions répétées, la coopération émerge de l'égoïsme même. L'expérience numérique ancre l'intuition.
-- **Preuve formelle (Lean 4)** : prouver l'existence de Nash (Brouwer/Kakutani), l'impossibilité d'Arrow, les axiomes de Shapley. On *certifie* les résultats — aucun `sorry` dans les théorèmes majeurs. La machine vérifie ce que l'intuition avait suggéré.
+- **Simulation (Python)** : calculer des équilibres, simuler des tournois itérés, entraîner des agents CFR. On *voit* la théorie en action : les équilibres émergent des interactions répétées, la coopération émerge de l'égoïsme même.
+- **Preuve formelle (Lean 4)** : prouver l'existence d'équilibres, l'impossibilité d'Arrow, les axiomes de Shapley. On *certifie* les résultats : la machine vérifie ce que l'intuition avait suggéré.
 
-Les deux approches se nourrissent mutuellement. Le notebook Python montre *pourquoi* l'équilibre de Nash est plausible ; le notebook Lean prouve *qu'il existe forcément*. Le notebook SocialChoice/01 montre qu'Arrow est *contre-intuitif* ; `Arrow.lean` prouve qu'il est *inévitable*.
+Le notebook Python montre *pourquoi* l'équilibre de Nash est plausible ; le notebook Lean montre *pourquoi il existe forcément*. Le notebook Arrow de la sous-série SocialChoice montre que le théorème est *contre-intuitif* ; `Arrow.lean` prouve qu'il est *inévitable*.
 
-**Parité .NET** : la série dispose d'un ensemble substantiel de **jumeaux C# (.NET Interactive)** couvrant tout le fil principal — du calcul d'équilibres (Nash pur/mixte par élimination de Gauss en GT-4, simplexe de Dantzig en GT-5) aux jeux répétés (IPD + Folk Theorem en GT-6/6c), jeux combinatoires (Sprague-Grundy, Wythoff en GT-8/8c), information incomplète (CFR sur Kuhn Poker en GT-13), jeux coopératifs (Shapley/Banzhaf en GT-15/15c), conception de mécanismes (Vickrey/VCG/Gale-Shapley en GT-16) jusqu'au **choix social** (méthodes de vote et paradoxe de Condorcet en SC-03). Chaque jumeau implémente les algorithmes **from-scratch en C# pur** (BCL .NET 9, zéro dépendance externe, matplotlib → rendu ASCII/console), démontrant que la théorie se code sans librairie dédiée. Marathon parité .NET ⇄ Python (#4956), EPIC #3801 Prong B — voir le tableau « Ce que chaque notebook apporte » pour la liste exhaustive.
+**Parité .NET** : chaque notebook du parcours principal, à partir de 02, a un **jumeau C#** (.NET Interactive) qui réimplémente ses algorithmes sans librairie dédiée, en BCL .NET seule : élimination de Gauss pour Nash mixte, simplexe de Dantzig pour le minimax, CFR sur le poker de Kuhn, Shapley et Banzhaf, Vickrey, VCG et Gale-Shapley. La théorie se code sans boîte noire (marathon de parité #4956).
 
-Au-delà de la théorie classique, cette série couvre les **applications contemporaines** qui utilisent la théorie des jeux en production : enchères VCG pour la publicité en ligne (milliards de transactions/jour), systèmes de matching (Gale-Shapley pour les affectations étudiant-hôpital), IA de poker (Libratus/Pluribus), et gouvernance on-chain (DAO, vote vérifiable).
+### Où la théorie des jeux sert
+
+- **Enchères** (notebooks 11 et 16) : les mécanismes VCG et leurs dérivés fondent les enchères publicitaires en ligne et les ventes de fréquences télécom orchestrées par les États.
+- **Marchés d'appariement** (notebooks 15 et 16) : l'algorithme de Gale-Shapley affecte des élèves aux écoles, des internes aux hôpitaux, et organise les dons d'organes par échanges croisés (prix Nobel d'économie 2012).
+- **Poker et bluff optimal** (notebook 13) : Counterfactual Regret Minimization a permis à des programmes de battre les meilleurs joueurs humains au Texas Hold'em, première résolution d'un jeu majeur à information imparfaite.
+- **Vote et gouvernance** (sous-série SocialChoice) : le théorème d'Arrow et les méthodes de Condorcet ou de Borda éclairent le choix d'un mode de scrutin, du vote citoyen à la gouvernance on-chain.
+- **Coopération et évolution** (notebook 06) : le tournoi d'Axelrod et les dynamiques de réplication modélisent l'émergence de la coopération en biologie, en relations internationales et dans les protocoles pair-à-pair.
+- **Crédibilité et dissuasion** (notebooks 10 à 12) : induction arrière, réputation et signaling formalisent la crédibilité des menaces, de la politique monétaire à la stratégie concurrentielle.
+- **Assurance et information asymétrique** (approfondissement 17b) : Akerlof, Spence et Rothschild-Stiglitz formalisent la tarification quand l'assuré connaît son risque mieux que l'assureur, et pourquoi un marché peut s'effondrer en « marché des citrons ».
 
 ## Objectifs d'apprentissage
 
-À l'issue de cette série, vous serez capable de :
+À l'issue du parcours principal, vous serez capable de :
 
-1. **Modéliser** une interaction stratégique sous forme normale ou extensive, et y lire dominance, meilleure réponse, ensembles d'information et menaces crédibles
-2. **Calculer** des équilibres : Nash pur et mixte (Lemke-Howson), minimax et dualité LP, équilibre parfait en sous-jeux
-3. **Simuler** des dynamiques d'apprentissage et d'évolution : tournois Axelrod, **processus de Moran (stochastic finite-population fixation)**, replicator dynamics, CFR/Deep CFR, NFSP/PSRO
-4. **Analyser** la coopération : Shapley, Core, Bondareva-Shapley ; concevoir un mécanisme incitatif (révélation, VCG)
-5. **Raisonner** sur l'agrégation collective : Arrow, Sen, Condorcet/Borda/Copeland, encodage SAT/Z3
-6. **Formaliser** ces résultats en Lean 4 — du point fixe de Brouwer à l'axiomatique de Shapley et à la preuve d'Arrow
+1. **Modéliser** une interaction stratégique sous forme normale ou extensive, et y lire dominance, meilleure réponse, ensembles d'information et menaces crédibles.
+2. **Calculer** des équilibres : Nash pur et mixte (Lemke-Howson), minimax et dualité LP en jeux à somme nulle, équilibre parfait en sous-jeux par induction arrière et avant.
+3. **Simuler** des dynamiques d'apprentissage et d'évolution : tournois itérés à la Axelrod, dynamique du réplicateur, processus de Moran en population finie, apprentissage multi-agent (CFR, NFSP, PSRO).
+4. **Analyser** la coopération : valeur de Shapley, Core, condition de Bondareva-Shapley ; concevoir un mécanisme incitatif (principe de révélation, VCG).
 
-## Parcours d'apprentissage
+Les approfondissements et la sous-série SocialChoice ajoutent deux compétences :
 
-Les figures qui ponctuent ce parcours sont extraites des sorties réelles des notebooks (EPIC #5654) ; chacune est réintégrée en regard du concept qu'elle illustre, et sa provenance exacte (notebook et cellule) est documentée dans `assets/readme/MANIFEST.md`.
+5. **Raisonner** sur l'agrégation collective : impossibilité d'Arrow, théorème de Sen, méthodes de Condorcet, Borda et Copeland, et leur encodage SAT résolu par Z3.
+6. **Formaliser** ces résultats en Lean 4 et saisir ce que « prouver » veut dire dans un assistant de preuve.
 
-### Phase 1 : Jeux statiques et équilibres (Notebooks 1-6 + side tracks b/c, ~9h05)
+Chaque notebook suit la même trame : introduction motivée, plan ancré, exemples exécutés, exercices corrigés, pensée pour un travail en autonomie.
 
-Le parcours commence par le setup (Nashpy, OpenSpiel) et les jeux sous forme normale (matrices de gains, dominance, meilleure réponse). Le notebook 3 (Topology2x2) classifie les jeux 2x2 selon la table périodique de Robinson-Goforth, une perspective géométrique unique. Les notebooks 4-4b-4c plongent dans l'équilibre de Nash : calcul en stratégies pures et mixtes, algorithme de Lemke-Howson, et preuve formelle d'existence via Brouwer et Kakutani en Lean 4. Le notebook 5 (ZeroSum) démontre le théorème minimax et la dualité LP. Le notebook 6 (EvolutionTrust) montre comment la coopération émerge dans les tournois itérés (Axelrod, replicator dynamics) **et le processus de Moran stochastique** : la dynamique de population FINIE en Axelrod diverge souvent de l'intuition mean-field, et le drift génétique peut fixer des stratégies sous-optimales (Defector 28 % / Grudger 24 % / TitForTat 12 % sur 25 graines). Son companion **6c** (RepeatedGames-FolkTheorem) formalise cette intuition : horizon fini → effondrement par induction arrière, horizon infini → grim trigger, condition de crédibilité $\delta \geq (T-R)/(T-P)$, Folk Theorem (tout paiement faisable et individuellement rationnel est soutenable comme SPNE pour $\delta$ assez proche de 1). Son prolongement **6d** (Sympathie-vs-Engagement) construit le protocole qui identifie ce qui porte la coopération quand la menace est retirée : statique comparative sur les gains d'autrui à gains propres gelés — la pente du taux de coopération sépare sympathie (réponse aux gains d'autrui, `alpha` mesuré) et engagement (règle insensible). À l'issue de cette phase, vous comprenez les trois piliers : Nash, minimax, et évolution. Les deux figures suivantes, toutes deux bâties sur l'exemple canonique du Dilemme du Prisonnier, illustrent les deux gestes fondateurs de cette phase : **représenter** un jeu, puis le **résoudre**.
+## Parcours principal
+
+Les notebooks à numéro nu forment le parcours principal. Chacun porte un concept et ne suppose que ce qui le précède. La colonne **Pour approfondir** renvoie aux lettres du palier, décrites dans [Approfondissements](#approfondissements) ; on peut toutes les ignorer au premier passage.
+
+Les figures qui ponctuent le parcours sont extraites des sorties réelles des notebooks ; leur provenance exacte (notebook et cellule) est documentée dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
+
+### Phase 1 : jeux statiques et équilibres (01 à 06)
+
+On apprend à représenter un jeu sous forme normale, puis à le résoudre : dominance, meilleure réponse, équilibre de Nash pur et mixte, théorème minimax. La phase se termine sur l'évolution : comment la coopération émerge d'un tournoi itéré. À l'issue, les trois piliers sont en place : Nash, minimax et évolution.
+
+| # | Notebook | Ce qu'on y apprend | Durée | Public | Pour approfondir |
+|---|----------|--------------------|-------|--------|------------------|
+| 01 | Mise en route — [Python](GameTheory-01-Setup.ipynb) | Installation de Nashpy et OpenSpiel, premier dilemme du prisonnier | 20 min | Découverte | — |
+| 02 | Forme normale — [Python](GameTheory-02-NormalForm.ipynb) ([suite](GameTheory-02-NormalForm-Part2-Python.ipynb)) · [C#](GameTheory-02-NormalForm-Csharp.ipynb) ([suite](GameTheory-02-NormalForm-Csharp-Part2.ipynb)) | Matrices de gains, dominance, meilleure réponse ; la suite énumère les supports mixtes d'un jeu N×N | 45 min | Découverte | [02b](GameTheory-02b-Lean-Definitions.ipynb) · [02c](GameTheory-02c-Travelers-Dilemma.ipynb) |
+| 03 | Topologie des jeux 2×2 — [Python](GameTheory-03-Topology2x2.ipynb) · [C#](GameTheory-03-Topology2x2-Csharp.ipynb) | La table périodique de Robinson-Goforth : classer tous les jeux 2×2 ordinaux et dériver leur quotient | 80 min | Licence | [03a](GameTheory-03a-Chemins-de-Swaps.ipynb) · [03b](GameTheory-03b-Chambres-et-Murs.ipynb) · [03c](GameTheory-03c-Le-Joueur-LLM.ipynb) · [03d](GameTheory-03d-Plan-de-deformation.ipynb) · [03e](GameTheory-03e-Meta-Actions-Tarifees.ipynb) · [03h](GameTheory-03h-Deux-Especes-de-Fleches.ipynb) |
+| 04 | Équilibre de Nash — [Python](GameTheory-04-NashEquilibrium.ipynb) · [C#](GameTheory-04-NashEquilibrium-Csharp.ipynb) | Nash pur et mixte, Lemke-Howson, analyse paramétrique | 60 min | Découverte | [04b](GameTheory-04b-Lean-NashExistence.ipynb) · [04c](GameTheory-04c-NashExistence-Python.ipynb) · [04d](GameTheory-04d-Marchandage-Asymetrique.ipynb) · [04e](GameTheory-04e-Reflective-Oracles.ipynb) · [04f](GameTheory-04f-Theories-Decision-Predicteur.ipynb) |
+| 05 | Jeux à somme nulle — [Python](GameTheory-05-ZeroSum-Minimax.ipynb) · [C#](GameTheory-05-ZeroSum-Minimax-Csharp.ipynb) | Théorème minimax de von Neumann, programmation linéaire primal/dual | 40 min | Découverte | [05b](GameTheory-05b-Lean-Minimax.ipynb) |
+| 06 | Évolution de la confiance — [Python](GameTheory-06-EvolutionTrust.ipynb) · [C#](GameTheory-06-EvolutionTrust-Csharp.ipynb) | Tournoi d'Axelrod, tit-for-tat, dynamique du réplicateur, processus de Moran en population finie | 65 min | Découverte | [06b](GameTheory-06b-Lean-RepeatedGames.ipynb) · [06c](GameTheory-06c-RepeatedGames-FolkTheorem.ipynb) · [06d](GameTheory-06d-Sympathie-vs-Engagement.ipynb) · [06e](GameTheory-06e-Open-Source-Game-Theory.ipynb) · [06f](GameTheory-06f-Bounded-Agents-Python.ipynb) · [06f bis](GameTheory-06f-Bounded-Proofs-Reasoning-Costs.ipynb) · [06g](GameTheory-06g-Bounded-Agents-Lean.ipynb) · [06g bis](GameTheory-06g-Simulation-Based-Program-Equilibria.ipynb) · [06h](GameTheory-06h-Transparent-Institutions.ipynb) |
+
+Les deux figures suivantes, bâties sur le Dilemme du Prisonnier, illustrent les deux gestes fondateurs de cette phase : **représenter** un jeu, puis le **résoudre**.
 
 ![Matrice de gains 2×2 du Dilemme du Prisonnier ; la case (Défaire, Défaire) = (1, 1) est encadrée en bleu comme unique équilibre de Nash.](assets/readme/gt1-setup.png)
 
-*`GameTheory-01-Setup` — représenter un jeu sous forme normale : la matrice des gains du Dilemme du Prisonnier. Chaque case porte le couple (gain Ligne, gain Colonne) ; la case (Défaire, Défaire) = (1, 1), encadrée en bleu, est l'unique équilibre de Nash — bien que (Coopérer, Coopérer) = (3, 3) soit collectivement supérieur.*
+*`GameTheory-01-Setup` — représenter un jeu sous forme normale : la matrice des gains du Dilemme du Prisonnier. Chaque case porte le couple (gain Ligne, gain Colonne) ; la case (Défaire, Défaire) = (1, 1), encadrée en bleu, est l'unique équilibre de Nash, bien que (Coopérer, Coopérer) = (3, 3) soit collectivement supérieur.*
 
 ![Le même jeu résolu par la méthode des meilleures réponses : soulignements bleus (joueur Ligne), rouges (joueur Colonne), case verte à leur intersection.](assets/readme/gt2-normalform.png)
 
-*`GameTheory-02-NormalForm` — résoudre un jeu : on souligne la meilleure réponse de chaque joueur (bleu = joueur Ligne, rouge = joueur Colonne). La seule case où les deux soulignements coïncident (en vert) est l'équilibre de Nash — la lecture graphique de la dominance vue à gauche.*
+*`GameTheory-02-NormalForm` — résoudre un jeu : on souligne la meilleure réponse de chaque joueur (bleu = joueur Ligne, rouge = joueur Colonne). La seule case où les deux soulignements coïncident (en vert) est l'équilibre de Nash.*
 
-### Phase 2 : Jeux dynamiques et information incomplète (Notebooks 7-12 + side tracks b/c, ~7h45)
+### Phase 2 : jeux dynamiques et information incomplète (07 à 12)
 
-La Phase 2 enrichit le modèle avec le temps et l'incertitude. Les notebooks 7-9 couvrent les jeux extensifs (arbres de jeu, ensembles d'information), les jeux combinatoires (Nim, Sprague-Grundy, avec formalisation Lean), et l'induction arrière (mille-pattes, escalade) — prolongée par les approfondissements Stackelberg (**9b** l'engagement, **9c** les security games à capteur imparfait). Les notebooks 10-12 abordent les concepts subtils : induction avant et sous-jeux parfaits, jeux bayésiens (information incomplète, types, croyances), et jeux de réputation (signaling, engagement). Cette phase présuppose la Phase 1 (Nash, matrices de gains).
+Le modèle s'enrichit du temps et de l'incertitude : arbres de jeu et ensembles d'information, jeux combinatoires, induction arrière puis avant, jeux bayésiens et jeux de réputation. Cette phase présuppose la phase 1.
+
+| # | Notebook | Ce qu'on y apprend | Durée | Public | Pour approfondir |
+|---|----------|--------------------|-------|--------|------------------|
+| 07 | Forme extensive — [Python](GameTheory-07-ExtensiveForm.ipynb) · [C#](GameTheory-07-ExtensiveForm-Csharp.ipynb) | Arbres de jeu, ensembles d'information, stratégies comportementales | 50 min | Licence | — |
+| 08 | Jeux combinatoires — [Python](GameTheory-08-CombinatorialGames.ipynb) · [C#](GameTheory-08-CombinatorialGames-Csharp.ipynb) | Positions P/N, Nim, valeurs de Grundy, théorème de Sprague-Grundy | 55 min | Licence | [08b](GameTheory-08b-Lean-CombinatorialGames.ipynb) · [08c](GameTheory-08c-CombinatorialGames-Python.ipynb) · [08d](GameTheory-08d-Lean-CGT-Native.ipynb) |
+| 09 | Induction arrière — [Python](GameTheory-09-BackwardInduction.ipynb) · [C#](GameTheory-09-BackwardInduction-Csharp.ipynb) | Induction arrière, mille-pattes, escalade, engagement | 55 min | Licence | [09b](GameTheory-09b-Commitment-Stackelberg.ipynb) · [09c](GameTheory-09c-Stackelberg-SecurityGame.ipynb) |
+| 10 | Induction avant et SPE — [Python](GameTheory-10-ForwardInduction-SPE.ipynb) · [C#](GameTheory-10-ForwardInduction-SPE-Csharp.ipynb) | Équilibre parfait en sous-jeux, menaces crédibles, induction avant | 60 min | Licence | — |
+| 11 | Jeux bayésiens — [Python](GameTheory-11-BayesianGames.ipynb) · [C#](GameTheory-11-BayesianGames-Csharp.ipynb) | Types privés, croyances, équilibre bayésien | 55 min | Licence | [11b](GameTheory-11b-Lean-BayesianGamesExt.ipynb) |
+| 12 | Jeux de réputation — [Python](GameTheory-12-ReputationGames.ipynb) · [C#](GameTheory-12-ReputationGames-Csharp.ipynb) | Signaling, cheap talk, réputation (Kreps-Wilson) | 50 min | Licence | — |
 
 ![Arbre d'un jeu séquentiel (choix Out/In puis Stag/Hare) et raisonnement d'induction avant menant au SPE (In, Stag, Stag) → (4, 4).](assets/readme/gt10-spe.png)
 
 *`GameTheory-10-ForwardInduction-SPE` — l'induction avant sur la forme extensive. L'ensemble d'information de J2 (ellipse pointillée) l'empêche de distinguer les deux nœuds ; mais en jouant « In » plutôt que l'option extérieure « Out » (garantie de 2), J1 révèle son intention de jouer Stag. Ce raisonnement « brûle » l'équilibre (Hare, Hare) et sélectionne le sous-jeu parfait (In, Stag, Stag) de valeur (4, 4).*
 
-### Phase 3 : Frontières — algorithmes, coopération, mécanismes (Notebooks 13-17 + sous-série SocialChoice + side tracks b/c, ~10h30)
+### Phase 3 : algorithmes, coopération, mécanismes, apprentissage (13 à 17)
 
-La Phase 3 couvre les sujets avancés et les applications. Le notebook 13 (CFR) introduit Counterfactual Regret Minimization et ses variantes (MCCFR, Deep CFR), au cœur du poker AI moderne. Le notebook 14 (Differential Games) explore les jeux continus (Stackelberg, boucle ouverte/fermée). Les notebooks 15-15b-15c couvrent la théorie coopérative : valeur de Shapley (avec axiomes formels en Lean), Core, Bondareva-Shapley. Le notebook 16 et la sous-série [SocialChoice/](SocialChoice/) constituent le bloc le plus riche : design de mécanismes (révélation, VCG), choix social (Arrow, Gibbard-Satterthwaite, Sen en Lean), et encodage SAT/Z3 des impossibilités. Le notebook 17 (Multi-Agent RL) relie la théorie des jeux à l'apprentissage par renforcement (NFSP, PSRO, AlphaZero). Le companion **17b** (Asymmetric-Information, EPIC #12844) traite l'information asymétrique dans sa forme actuarielle : les quatre modèles fondateurs d'Akerlof (point fixe de participation, marché des citrons), Spence (signal coûteux), Rothschild-Stiglitz (screening assurantiel) et Wilson/Miyazaki (règle anticipative bornée). Son extension formelle **17c** (Lean-Lemons-Certificat) exécute en direct le certificat du lake `asymmetric_information_lean` : seuil de pooling exact (`poolingTenable_iff_cross`), monotonie, clôture axiomatique minimale — et rejoue la spirale de prix d'Akerlof dans le langage même du certificat. Son jumeau **17d** (Lean-Screening-Signaling) exécute les quatre autres modules du lake : non-existence Rothschild-Stiglitz par cream-skimming (`cream_skim_breaks_nash`), bornes de l'intervalle séparateur de Spence et minimalité de Riley, trame 0/1/plusieurs des équilibres anticipatoires de Wilson-Miyazaki, et pont bayésien certifié (`bridgeStrategy_isBNE`, `decide`) vers le lake amont `lean_game_defs_ext`. Les trois figures suivantes échantillonnent cette phase : l'apprentissage d'un équilibre en information imparfaite (CFR), la stabilité coopérative (Core et Shapley), et la convergence d'agents en auto-apprentissage.
+La dernière phase ouvre les frontières de la discipline : CFR pour les jeux à information imparfaite, jeux différentiels, théorie coopérative, conception de mécanismes, apprentissage multi-agent. Le palier 16 sert aussi d'escalier vers la [sous-série SocialChoice](#sous-série-socialchoice), consacrée à l'agrégation des préférences.
+
+| # | Notebook | Ce qu'on y apprend | Durée | Public | Pour approfondir |
+|---|----------|--------------------|-------|--------|------------------|
+| 13 | Information imparfaite et CFR — [Python (WSL)](GameTheory-13-ImperfectInfo-CFR.ipynb) · [C#](GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb) | Counterfactual Regret Minimization, MCCFR, Deep CFR sur le poker | 70 min | Licence | [13b](GameTheory-13b-Safe-Subgame-Solving.ipynb) · [13c](GameTheory-13c-Safe-Subgame-Solving-Csharp.ipynb) · [13d](GameTheory-13d-Optimistic-CFR.ipynb) |
+| 14 | Jeux différentiels — [Python](GameTheory-14-DifferentialGames.ipynb) · [C#](GameTheory-14-DifferentialGames-Csharp.ipynb) | Jeux en temps continu, boucle ouverte et fermée, Stackelberg, poursuite-évasion | 60 min | Licence | — |
+| 15 | Jeux coopératifs — [Python](GameTheory-15-CooperativeGames.ipynb) · [C#](GameTheory-15-CooperativeGames-Csharp.ipynb) | Valeur de Shapley, Core, condition de Bondareva-Shapley | 65 min | Licence | [15b](GameTheory-15b-Lean-CooperativeGames.ipynb) · [15c](GameTheory-15c-CooperativeGames-Python.ipynb) · [15d](GameTheory-15d-Mobius-Coalitions.ipynb) · [15e](GameTheory-15e-Coalition-Power-SMT.ipynb) · [15f](GameTheory-15f-Shapley-Groupes.ipynb) |
+| 16 | Conception de mécanismes — [Python](GameTheory-16-MechanismDesign.ipynb) · [C#](GameTheory-16-MechanismDesign-Csharp.ipynb) | Principe de révélation, VCG et la non-monotonie de son revenu, appariement stable de Gale-Shapley | 65 min | Licence | [16b](GameTheory-16b-Automated-Mechanism-Design.ipynb) · [16c](GameTheory-16c-Extraction-de-Revenu-DSIC-IR.ipynb) · [16d](GameTheory-16d-Echange-de-Reins.ipynb) · [16e](GameTheory-16e-LLM-Players-Othman-Sandholm.ipynb) · sous-série [SocialChoice](SocialChoice/README.md) |
+| 17 | Apprentissage multi-agent — [Python (WSL)](GameTheory-17-MultiAgent-RL.ipynb) · [C#](GameTheory-17-MultiAgent-RL-Csharp.ipynb) | Self-play, fictitious play, NFSP, PSRO, introduction à AlphaZero | 55 min | Licence | [17b](GameTheory-17b-Asymmetric-Information.ipynb) · [17c](GameTheory-17c-Lean-Lemons-Certificat.ipynb) · [17c bis](GameTheory-17c-Market-to-Balance-Sheet.ipynb) · [17d](GameTheory-17d-Lean-Screening-Signaling.ipynb) |
+
+Les trois figures suivantes échantillonnent cette phase : l'apprentissage d'un équilibre en information imparfaite, la stabilité coopérative, la convergence d'agents en auto-apprentissage.
 
 ![CFR sur le poker de Kuhn : à gauche la valeur du jeu converge vers le Nash −0,0556 en 10 000 itérations, à droite les probabilités de mise par carte (J/Q/K) rejoignent le Nash théorique (étoiles).](assets/readme/gt13-cfr.png)
 
-*`GameTheory-13-ImperfectInfo-CFR` — le Counterfactual Regret Minimization sur le poker de Kuhn. À gauche, la moyenne mobile (rouge) de l'utilité de J1 converge vers la valeur de Nash du jeu (−0,0556, pointillé vert) malgré le bruit par itération. À droite, les probabilités de mise apprises pour chaque carte (J/Q/K) rejoignent les étoiles du Nash théorique — l'algorithme reconstruit le bluff optimal sans jamais connaître la stratégie adverse.*
+*`GameTheory-13-ImperfectInfo-CFR` — le Counterfactual Regret Minimization sur le poker de Kuhn. À gauche, la moyenne mobile (rouge) de l'utilité de J1 converge vers la valeur de Nash du jeu (−0,0556, pointillé vert) malgré le bruit par itération. À droite, les probabilités de mise apprises pour chaque carte (J/Q/K) rejoignent les étoiles du Nash théorique : l'algorithme reconstruit le bluff optimal sans jamais connaître la stratégie adverse.*
 
 ![Simplexe des allocations d'un jeu coopératif à 3 firmes (v(N) = 9) : le Core en vert, la valeur de Shapley marquée d'une étoile rouge au centre.](assets/readme/gt15-shapley.png)
 
-*`GameTheory-15-CooperativeGames` — la répartition d'une valeur commune v(N) = 9 entre trois firmes A, B, C. Chaque point du triangle est un partage ; les points verts forment le **Core** (les partages qu'aucune coalition ne peut contester), et l'étoile rouge est la **valeur de Shapley** — ici confortablement à l'intérieur du Core, donc stable.*
+*`GameTheory-15-CooperativeGames` — la répartition d'une valeur commune v(N) = 9 entre trois firmes A, B, C. Chaque point du triangle est un partage ; les points verts forment le **Core** (les partages qu'aucune coalition ne peut contester), et l'étoile rouge est la **valeur de Shapley**, ici à l'intérieur du Core, donc stable.*
 
 ![Apprentissage multi-agent sur Pierre-Feuille-Ciseaux : à gauche l'exploitabilité (le self-play naïf oscille, le fictitious play décroît), à droite les fréquences convergent vers le Nash uniforme.](assets/readme/gt17-marl.png)
 
-*`GameTheory-17-MultiAgent-RL` — deux dynamiques d'apprentissage sur Pierre-Feuille-Ciseaux. À gauche (échelle log), le self-play naïf reste exploitable en oscillant, tandis que le fictitious play voit son exploitabilité décroître régulièrement. À droite, les fréquences Rock/Paper/Scissors du fictitious play convergent vers le Nash uniforme (1/3, 1/3, 1/3, pointillé) — la convergence de Robinson (1951) en action.*
+*`GameTheory-17-MultiAgent-RL` — deux dynamiques d'apprentissage sur Pierre-Feuille-Ciseaux. À gauche (échelle log), le self-play naïf reste exploitable en oscillant, tandis que le fictitious play voit son exploitabilité décroître régulièrement. À droite, les fréquences du fictitious play convergent vers le Nash uniforme (1/3, 1/3, 1/3) : la convergence de Robinson (1951) en action.*
+
+### Concepts clés du parcours
+
+| Concept | Description | Palier |
+|---------|-------------|--------|
+| **Équilibre de Nash** | Profil de stratégies où aucun joueur ne gagne à dévier unilatéralement | 04 |
+| **Minimax** | Stratégie qui minimise la perte maximale, en jeu à somme nulle | 05 |
+| **Processus de Moran** | Dynamique stochastique en population finie : la dérive peut fixer une stratégie sous-optimale, ce que la dynamique du réplicateur, déterministe, ne fait pas | 06 |
+| **Positions P/N** | Positions perdantes (*Previous*) et gagnantes (*Next*) d'un jeu combinatoire | 08 |
+| **Sprague-Grundy** | Théorème qui ramène tout jeu combinatoire impartial à un tas de Nim | 08 |
+| **SPE** | Équilibre parfait en sous-jeux : un Nash crédible dans chaque sous-jeu | 09-10 |
+| **CFR** | Counterfactual Regret Minimization : convergence vers Nash en information imparfaite | 13 |
+| **Valeur de Shapley** | Répartition équitable des gains d'un jeu coopératif | 15 |
+| **Core** | Ensemble des allocations qu'aucune coalition ne peut contester | 15 |
+| **VCG** | Mécanisme où dire la vérité est une stratégie dominante | 16 |
+| **Théorème d'Arrow** | Impossibilité d'une agrégation parfaite des préférences | SocialChoice |
+| **Information asymétrique** | Un agent connaît son type mieux que l'autre : contre-sélection, signal coûteux, screening | 17b |
+| **Méta-action tarifée** | Réécrire ses propres préférences déclarées au prix d'échelons de rang : changer les règles a un coût, un seuil de migration et ses propres équilibres | 03e |
+
+## Approfondissements
+
+Une lettre creuse le palier dont elle porte le numéro. On l'ouvre pour aller plus loin sur ce palier, pas pour avancer dans la série : chaque table ci-dessous suppose le notebook du palier déjà lu, et signale les prérequis en plus quand il y en a. Les paliers 01, 07, 10, 12 et 14 n'en portent pas.
+
+### Autour de 02 — forme normale
+
+| Lettre | Notebook | Ce qu'il ajoute | Noyau | Public |
+|--------|----------|-----------------|-------|--------|
+| 02b | [Définitions en Lean](GameTheory-02b-Lean-Definitions.ipynb) | Formaliser un jeu 2×2, les stratégies mixtes et la définition de Nash en Lean 4 | Lean | Licence |
+| 02c | Dilemme du voyageur — [Python](GameTheory-02c-Travelers-Dilemma.ipynb) · [C#](GameTheory-02c-Travelers-Dilemma-Csharp.ipynb) | Basu (1994) : l'élimination itérée des stratégies dominées mène à (2, 2), que contredit le comportement humain ; le bonus r* = 1 où le paradoxe se dissout | Python · C# | Licence |
+
+### Autour de 03 — géométrie ordinale des jeux
+
+Ces lettres prolongent la table périodique du 03 en une géométrie de l'espace des jeux : murs, distances, déformations, méta-actions. Lire 03b avant 03a et 03h, qui s'appuient sur ses murs ; 03e fait la synthèse.
+
+| Lettre | Notebook | Ce qu'il ajoute | Noyau | Public |
+|--------|----------|-----------------|-------|--------|
+| 03b | [Chambres et murs](GameTheory-03b-Chambres-et-Murs.ipynb) | Les jeux stricts comme chambres d'un arrangement, les égalités comme murs : incidence mur/chambre, graphe des chambres, swaps en longueurs de Coxeter | Python | Recherche |
+| 03a | [Chemins de swaps](GameTheory-03a-Chemins-de-Swaps.ipynb) | À quelle distance sont deux jeux : parcours en largeur, théorème de décomposition, certificat Lean indépendant du plus court chemin | Python | Licence |
+| 03h | [Deux espèces de flèches](GameTheory-03h-Deux-Especes-de-Fleches.ipynb) | Le théorème fini du chemin minimal : quand un swap traverse un mur ; la conjecture naïve réfutée, la condition exacte vérifiée | Python | Recherche |
+| 03c | [Le joueur LLM](GameTheory-03c-Le-Joueur-LLM.ipynb) | Un modèle de langage placé dans la table périodique et confronté à ses transformations ordinales | Python | Licence |
+| 03d | [Plan de déformation](GameTheory-03d-Plan-de-deformation.ipynb) | Biens publics non linéaires et déformation continue de l'espace stratégique | Python | Licence |
+| 03e | [Méta-actions tarifées](GameTheory-03e-Meta-Actions-Tarifees.ipynb) | Changer les règles comme action payante : coût en échelons de rang, seuil de migration, méta-jeu ; puis le parcours complet, du jeu nommé au coût de la méta-action | Python | Recherche |
 
-### Au-delà du round-robin : processus de Moran en population FINIE (GameTheory-6)
+### Autour de 04 — existence et nature de l'équilibre
 
-Le round-robin déterministe du notebook `GameTheory-06-EvolutionTrust` donne une hiérarchie stable où Grudger et TitForTat dominent. La **dynamique de Moran** (librairie [`axelrod`](https://github.com/Axelrod-Python/Axelrod), Knight et al. *JORS* 2016) modélise un régime écologique différent : une population **finie** où chaque étape copie un joueur proportionnellement à son fitness puis en élimine un uniformément au hasard. Le §7bis du notebook exécute cette dynamique sur 25 graines :
+| Lettre | Notebook | Ce qu'il ajoute | Noyau | Public |
+|--------|----------|-----------------|-------|--------|
+| 04b | [Existence de Nash en Lean](GameTheory-04b-Lean-NashExistence.ipynb) | Le cadre de la preuve d'existence formalisé en Lean 4 : simplexe, convexité, point fixe de Brouwer ; quelques étapes d'arithmétique flottante y restent admises | Lean | Licence |
+| 04c | Point fixe discriminant — [Python](GameTheory-04c-NashExistence-Python.ipynb) · [C#](GameTheory-04c-NashExistence-Csharp.ipynb) | Brouwer rendu testable : la carte `perturbed_br` déplace un profil non équilibré et laisse fixe l'équilibre (voir [Pour aller plus loin](#pour-aller-plus-loin)) | Python · C# | Licence |
+| 04d | [Marchandage asymétrique](GameTheory-04d-Marchandage-Asymetrique.ipynb) | Point de désaccord, faisceau de dépendance, contre-exemple au principe du moindre intérêt | Python | Licence |
+| 04e | [Oracles réflexifs](GameTheory-04e-Reflective-Oracles.ipynb) | Fallenstein, Taylor et Christiano (2015) : un agent qui raisonne sur un modèle de lui-même, l'écart CDT/EDT, un Nash réflexivement cohérent | Python | Recherche |
+| 04f | [Théories de la décision face à un prédicteur](GameTheory-04f-Theories-Decision-Predicteur.ipynb) | EDT, CDT et UDT sur Newcomb, la lésion de Fisher et d'autres problèmes dans un seul cadre générique ; 2TDT-1CDT ; inattention rationnelle | Python | Recherche |
+
+### Autour de 05 — minimax
 
-| Stratégie | Fixations sur 25 graines (axe 2 % = barre de fréquence) |
-|---|---|
-| **Defector** | **7/25 (28 %)** — single-trajectory seed=42 |
-| **Grudger** | 6/25 (24 %) |
-| Win-Stay Lose-Shift | 4/25 (16 %) |
-| Random (p=0,5) | 3/25 (12 %) |
-| **Tit For Tat** | **3/25 (12 %)** — loin du « toujours domine » |
-| Cooperator | 2/25 (8 %) |
+| Lettre | Notebook | Ce qu'il ajoute | Noyau | Public |
+|--------|----------|-----------------|-------|--------|
+| 05b | [Minimax en Lean](GameTheory-05b-Lean-Minimax.ipynb) | Le théorème de von Neumann prouvé sans `sorry` dans le lake `minimax_lean` (via Sion), vérifié dans le noyau Lean | Lean | Licence |
+
+### Autour de 06 — jeux répétés, agents transparents et bornés
+
+06c est le prolongement naturel du 06. Les lettres 06e à 06h forment un chantier sur les agents dont le programme est lisible ou le calcul borné, à lire dans l'ordre. Les lettres 06f et 06g sont chacune portées par deux notebooks ; la passe de renommage leur donnera des lettres distinctes.
 
-Le résultat contredit l'intuition « moraliste » du round-robin : TitForTat, dominateur en tableau, ne se fixe que dans 12 % des trajectoires.
+| Lettre | Notebook | Ce qu'il ajoute | Noyau | Public |
+|--------|----------|-----------------|-------|--------|
+| 06c | Folk Theorem — [Python](GameTheory-06c-RepeatedGames-FolkTheorem.ipynb) · [C#](GameTheory-06c-RepeatedGames-FolkTheorem-Csharp.ipynb) | Horizon fini et effondrement par induction arrière, horizon infini et grim trigger, condition δ ≥ (T−R)/(T−P), Folk Theorem | Python · C# | Licence |
+| 06b | [Jeux répétés en Lean](GameTheory-06b-Lean-RepeatedGames.ipynb) | Compagnon formel du 06c : les modules du lake `game_theory_lean/RepeatedGames` lus et exécutés, dont `grim_trigger_sustains_iff` prouvé sans `sorry` | Python, lit Lean | Licence |
+| 06d | [Sympathie contre engagement](GameTheory-06d-Sympathie-vs-Engagement.ipynb) | Séparer empiriquement sympathie et engagement par statique comparative sur les gains d'autrui (prérequis en plus : 06c) | Python | Recherche |
+| 06e | [Open-source game theory](GameTheory-06e-Open-Source-Game-Theory.ipynb) | Des programmes lisibles l'un par l'autre : l'engagement vérifiable change l'équilibre du dilemme | Python | Recherche |
+| 06f | [Agents bornés](GameTheory-06f-Bounded-Agents-Python.ipynb) | Agents-programmes à budget de calcul explicite : ce que le plafond fait aux équilibres atteignables | Python | Recherche |
+| 06f bis | [Preuves bornées](GameTheory-06f-Bounded-Proofs-Reasoning-Costs.ipynb) | À borne de calcul donnée, quelles propriétés restent prouvables : le coût du raisonnement comme paramètre du jeu | Python | Recherche |
+| 06g | [Agents bornés en Lean](GameTheory-06g-Bounded-Agents-Lean.ipynb) | La borne de raisonnement formalisée et exécutée en Lean | Lean | Recherche |
+| 06g bis | [Équilibres par simulation](GameTheory-06g-Simulation-Based-Program-Equilibria.ipynb) | Équilibres de programmes qui se simulent mutuellement | Python | Recherche |
+| 06h | [Institutions transparentes](GameTheory-06h-Transparent-Institutions.ipynb) | La transparence du code comme mécanisme d'engagement institutionnel | Python | Recherche |
+
+### Autour de 08 — jeux combinatoires
+
+| Lettre | Notebook | Ce qu'il ajoute | Noyau | Public |
+|--------|----------|-----------------|-------|--------|
+| 08b | [Jeux combinatoires en Lean](GameTheory-08b-Lean-CombinatorialGames.ipynb) | Jeux combinatoires formels, Nim et Sprague-Grundy en Lean | Lean | Licence |
+| 08c | Variantes — [Python](GameTheory-08c-CombinatorialGames-Python.ipynb) · [C#](GameTheory-08c-CombinatorialGames-Csharp.ipynb) | Périodicité des valeurs de Grundy, Wythoff, jeux composites, Chomp | Python · C# | Licence |
+| 08d | [Bibliothèque canonique en Lean](GameTheory-08d-Lean-CGT-Native.ipynb) | La même théorie exécutée depuis `vihdzp/combinatorial-games` (lake `conway_cgt_lean`) : jeux, surréels, nimbers | Lean | Recherche |
 
-**Pourquoi** : le Moran process est **stochastique** sur population finie. La **dérive génétique** (genetic drift) peut fixer une stratégie sous-optimale simplement par fluctuation d'échantillonnage, indépendamment de son fitness — c'est la distinction canonique entre replicator dynamics **mean-field déterministe** (§5) et Moran **fini stochastique** (§7bis).
+### Autour de 09 — engagement et Stackelberg
 
-**À retenir** :
-1. **Population FINIE ≠ champ moyen.** Le passage à la limite $N \to \infty$ du Moran process converge vers le replicator dynamics, mais à $N$ fini (typiquement 3-100 en écologie/comportement/biological evolution), le bruit d'échantillonnage domine quand $|f_A - f_B| \lesssim 1/N$ — d'où la victoire du Defector pur (fitness intermédiaire mais gagnée par drift) sur TitForTat (fitness plus élevée, fixée moins souvent).
-2. **Lire la sortie, pas l'intuition.** La sortie réelle du §7bis — Defector 28 %, TitForTat 12 % — explicite pourquoi la hiérarchie du IPD round-robin ne survit pas au passage en population finie : ce que le tableau annonce, la trajectoire stochastique le dément.
-3. **Lecture écologique.** Le Moran process est l'outil de référence en evolutionary game theory (Nowak 2006 *Evolutionary Dynamics*) : sans lui, l'analyse des jeux évolutifs reste aveugle à la littérature post-Axelrod sur les populations finies réelles.
+| Lettre | Notebook | Ce qu'il ajoute | Noyau | Public |
+|--------|----------|-----------------|-------|--------|
+| 09b | [Engagement et Stackelberg](GameTheory-09b-Commitment-Stackelberg.ipynb) | L'engagement contraignant qui transforme la meilleure réponse d'autrui, l'annonce révocable dissoute par induction arrière, le seuil de crédibilité | Python | Licence |
+| 09c | [Security game](GameTheory-09c-Stackelberg-SecurityGame.ipynb) | Le défenseur s'engage, l'attaquant observe avec bruit : robustesse du patrouilleur à un capteur imparfait | Python | Licence |
+
+### Autour de 11 — jeux bayésiens
 
-### Point fixe discriminant : pourquoi `regret=0` définit l'équilibre (GameTheory-4c)
+| Lettre | Notebook | Ce qu'il ajoute | Noyau | Public |
+|--------|----------|-----------------|-------|--------|
+| 11b | [Vickrey en Lean](GameTheory-11b-Lean-BayesianGamesExt.ipynb) | Le théorème de Vickrey (enchère au second prix : dire la vérité est dominant) prouvé sans `sorry` dans le lake `lean_game_defs_ext` | Lean | Licence |
 
-La carte `perturbed_br` du notebook `GameTheory-04c-NashExistence-Python` (side-track Python du 4b Lean) illustre numériquement le théorème du point fixe de Brouwer appliqué à Matching Pennies : si `x*` est un point fixe de `perturbed_br`, alors la **carte n'en bouge pas** — c'est-à-dire que le vecteur de **regret** y est identiquement nul. Tester cette propriété **uniquement à l'équilibre de Nash `(0.5, 0.5)` serait tautologique** : à l'équilibre, le regret est `0` par définition, la perturbation `ε` est un no-op et la carte renvoie l'identité — « `(0.5, 0.5)` est point fixe » serait vrai par construction, sans exercer la machinerie regret/perturbation.
+### Autour de 13 — résolution de sous-jeux
 
-Le notebook lève la tautologie par un contraste à deux seeds qui rend visible *pourquoi* l'équilibre est un point fixe :
+| Lettre | Notebook | Ce qu'il ajoute | Noyau | Public |
+|--------|----------|-----------------|-------|--------|
+| 13b | [Résolution sûre de sous-jeux](GameTheory-13b-Safe-Subgame-Solving.ipynb) | Recoller un sous-jeu résolu à part : un mauvais recollement produit un témoin adversarial explicite | Python | Recherche |
+| 13c | [Résolution sûre, jumeau C#](GameTheory-13c-Safe-Subgame-Solving-Csharp.ipynb) | Jumeau C# du 13b : reproduction, audit des poids de chemin, meilleure réponse énumérée ; la loi survit, les valeurs absolues non | C# | Recherche |
+| 13d | [CFR optimiste](GameTheory-13d-Optimistic-CFR.ipynb) | OFTRL stable-prédictif : la variante qui stabilise la convergence par prédiction | Python | Recherche |
 
-| Seed | Vecteur de regret | `perturbed_br` renvoie | Fixed point ? |
-|---|---|---|---|
-| `(0.8, 0.2)` (non-équilibre) | `[0.24, 0]` (non-nul) | `[0.8047, 0.1953]` ≠ entrée | **Non** — la carte déplace activement le point |
-| `(0.5, 0.5)` (équilibre de Nash) | `[0, 0]` (nul) | `(0.5, 0.5)` = entrée | **Oui** — par définition, le seul point fixe |
-
-Tester **uniquement** `(0.5, 0.5)` revient à tester `f(x*) = x*` après avoir choisi `x*` par définition : sans seed non-équilibre, on ne distingue jamais le « point fixe » du « point arbitraire où le regret est nul par accident ». La convergence joueur par joueur depuis un départ non-équilibre, montrée ailleurs dans le notebook, fait déjà la moitié du travail ; le contraste ci-dessus amène le test single-cell au même standard de discrimination.
-
-**À retenir** :
-1. **`regret ≡ 0 ⟺ fixed point`** (par définition du regret-based no-regret learning, voir Hart & Mas-Colell 2000 *Simple Adaptive Strategies*). Brouwer appliqué à `perturbed_br` n'a rien de magique : c'est exactement le critère de no-regret qui définit la convergence vers Nash.
-2. **Anti-tautologie systématique.** Pour tout test de point fixe / optimalité / convergence, exiger **au moins un seed non-équilibre** qui doit être déplacé. Sans cela, le test ne prouve rien qu'une lecture de la définition ne donne déjà.
-3. **Lien avec le Lean 4b.** Le `Brouwer/Kakutani` prouvé formellement dans `GameTheory-04b-Lean-NashExistence` (lake `minimax_lean` côté Sion, sans `sorry`) **garantit l'existence** d'un tel point fixe ; le 4c-Python **l'illustre numériquement** par une carte `perturbed_br` concrète sur Matching Pennies — la preuve formelle et la simulation numérique se complètent sans se substituer.
-
-## Progression recommandée
-
-### Découvreur (fondements statiques, ~5h)
-
-Commencez par les notebooks 1 (Setup) et 2 (NormalForm) pour comprendre les matrices de gains et la dominance stratégique. Le notebook 4 (NashEquilibrium) introduit le concept central de la série : l'équilibre de Nash, pur et mixte. Le notebook 5 (ZeroSum-Minimax) complète avec le théorème minimax de Von Neumann et la programmation linéaire. Ces quatre notebooks suffisent pour comprendre les bases de la théorie des jeux non-coopératifs.
-
-### Praticien (jeux dynamiques et Lean, ~10h)
-
-Poursuivez avec les jeux dynamiques : notebook 7 (formes extensives), 9 (induction arrière), 10 (induction avant et SPE). Le notebook 6 (EvolutionTrust) offre une pause rafraîchissante avec le tournoi d'Axelrod. Les side tracks Lean (2b, 4b) vous initient à la formalisation des résultats en assistant de preuve. À ce stade, vous êtes capable de modéliser des interactions stratégiques complexes et de les vérifier formellement.
-
-### Expert (applications avancées et choix social, ~19h)
-
-Les notebooks 13 (CFR), 15 (jeux coopératifs, Shapley), et 16 (design de mécanismes, Arrow) ouvrent les frontières de la discipline. La sous-série [SocialChoice/](SocialChoice/) (10 notebooks dont 3 twins C#) approfondit les théorèmes d'Arrow et de Gibbard-Satterthwaite via Lean, SAT et Z3. Le notebook 17 (Multi-Agent RL) fait le pont avec l'apprentissage par renforcement.
-
-### Parcours alternatifs
-
-#### Parcours formalisation Lean uniquement (~4h)
-
-Si vous venez de la série [SymbolicAI/Lean](../SymbolicAI/Lean/README.md) et voulez voir la théorie des jeux sous l'angle formel :
-
-1. **2b** (Lean Definitions) : Game2x2, stratégies mixtes
-2. **4b** (Nash Existence) : Brouwer, Kakutani, preuve d'existence
-3. **8b** (Combinatorial Games) : PGame Mathlib, Nim, Sprague-Grundy — et **8d** : la même théorie exécutée depuis la bibliothèque canonique post-Mathlib (`conway_cgt_lean`)
-4. **15b** (Cooperative Games) : Axiomes Shapley, Core
-5. **SC-02** (SocialChoice Formal) : Arrow, Sen, Median Voter en Lean
-
-Ce parcours suppose une familiarité avec Lean 4 (tactiques basiques, types inductifs). Les notebooks Python correspondants (2, 4, 8, 15, SC-01) fournissent l'intuition mais ne sont pas des prérequis.
-
-#### Parcours applications réelles (~6h)
-
-Si vous préférez les cas d'usage aux fondements théoriques :
-
-1. **5** (ZeroSum) : programmation linéaire, dualité, trading
-2. **6** (EvolutionTrust) : émergence de la coopération, biologie
-3. **13** (CFR) : poker AI, regret minimization
-4. **16** (MechanismDesign) : enchères VCG, allocation de ressources, et le piège de la non-monotonie du revenu (Conitzer-Sandholm)
-5. **SC-03** (Voting) : Condorcet, Borda, modèles électoraux
-
-#### Parcours information asymétrique et assurance (~4h30)
-
-Si vous venez d'un métier de l'assurance, de la banque ou de la régulation et cherchez comment la théorie des jeux modélise le fait qu'un agent en sait plus que l'autre — le client sur son risque, l'emprunteur sur sa solvabilité, le vendeur sur sa qualité :
-
-1. **11** (BayesianGames) : types privés, croyances, équilibre bayésien — la fondation de l'information incomplète (~55 min)
-2. **12** (ReputationGames) : signaling, cheap talk — le geste du signal coûteux et de l'engagement (~50 min)
-3. **16** (MechanismDesign) : principe de révélation, VCG — la conception d'un contrat sous contrainte d'incitation (~65 min)
-4. **17b** (Asymmetric-Information) : les quatre modèles fondateurs — **Akerlof** (contre-sélection, marché des citrons), **Spence** (signal coûteux), **Rothschild-Stiglitz** (screening assurantiel), **Wilson/Miyazaki** (règle anticipative bornée) (~1h30)
-5. **17c** (Lean-Lemons-Certificat) : le certificat formel du lake `asymmetric_information_lean` exécuté en direct — falaise du seuil de pooling à π = 75 % décidée, monotonie, spirale de prix des trois régimes (~45 min)
-6. **17d** (Lean-Screening-Signaling) : les quatre autres modules du même lake exécutés nativement — `cream_skim_breaks_nash` (non-existence RS), bornes de l'intervalle séparateur et minimalité de Riley, trame 0/1/plusieurs de Wilson-Miyazaki, pont `isBNE` vers le lake amont (~45 min)
-
-Ce parcours se lit sans imposer les phases 1-3 complètes : le notebook 11 introduit seul la notion de type privé, et 17b s'appuie principalement sur cette intuition bayésienne. À l'issue, vous saurez reconnaître et classifier un problème de tarification en information asymétrique — et pourquoi un marché peut s'effondrer en « marché des citrons ».
-
-#### Parcours informatique théorique (~5h)
-
-Si votre intérêt est l'algorithmique et la complexité :
-
-1. **2** (NormalForm) : matrices de gains, dominance
-2. **4** (NashEquilibrium) : Lemke-Howson, PPAD-complétude
-3. **8** (CombinatorialGames) : Sprague-Grundy, nimbers
-4. **13** (CFR) : contre-factual regret, convergence
-5. **SC-04** (SAT/Z3) : encodage de théorèmes en SAT, UNSAT proofs
-
-## Structure
-
-La série s'articule autour d'un **fil principal** qui suit la maturation historique de la discipline — des jeux statiques (matrices de gains, Nash, minimax) vers les jeux dynamiques (formes extensives, induction, information incomplète) puis les frontières contemporaines (CFR pour le poker, mécanismes, choix social, RL multi-agent). Ce fil est doublé de deux fils transversaux optionnels : un **fil de formalisation Lean 4** (side tracks *b*), qui prouve mécaniquement les grands théorèmes au lieu de seulement les illustrer, et un **fil Python d'approfondissement** (side tracks *c*) pour les variantes et visualisations avancées. Après GT-17, la **strate 7** ajoute des extensions autonomes numérotées selon leur chantier plutôt que comme une quatrième progression linéaire ; les suffixes littéraux `3a` à `3f` prolongent ainsi GT-3 autour de la géométrie ordinale des jeux. La sous-série **[SocialChoice/](SocialChoice/)** prolonge le bloc « agrégation des préférences » avec une étude dédiée d'Arrow, Sen et des méthodes de vote, en confrontant preuve formelle, simulation et encodage SAT/Z3.
-
-Chaque notebook principal renvoie vers ses side tracks ; ceux-ci se lisent indépendamment et ne sont jamais des prérequis du fil principal.
-
-```mermaid
-flowchart TD
-    subgraph FIL["<b>Fil principal</b> — maturation historique"]
-        direction LR
-        P1["<b>Phase 1</b><br/>Notebooks 1-6<br/>statiques : Nash, minimax"]
-        P2["<b>Phase 2</b><br/>Notebooks 7-12<br/>dynamiques : induction, info. incomplète"]
-        P3["<b>Phase 3</b><br/>Notebooks 13-17<br/>frontières : CFR, mécanismes, RL"]
-        P1 --> P2 --> P3
-    end
-    LEAN["<b>Fil transversal Lean (b)</b><br/>2b · 4b · 5b · 8b · 8d · 11b · 15b · 17c · 17d<br/>preuve formelle des grands théorèmes"]
-    PYC["<b>Fil transversal Python (c)</b><br/>4c · 6c · 8c · 15c<br/>variantes &amp; visualisations"]
-    SC["<b>Sous-série SocialChoice</b><br/>SC-01 → SC-04<br/>Arrow · Sen · vote · SAT/Z3"]
-    FIL -.->|"formalise"| LEAN
-    FIL -.->|"approfondit"| PYC
-    FIL -.->|"prolonge (choix social)"| SC
-```
-
-### Partie 1 : Fondations et Jeux statiques (Notebooks 1-6)
-
-| # | Notebook | Kernel | Contenu | Durée |
-|---|----------|--------|---------|-------|
-| 1 | [GameTheory-01-Setup](GameTheory-01-Setup.ipynb) | Python | Installation Nashpy, OpenSpiel, vérification | 20 min |
-| 2 | [GameTheory-02-NormalForm](GameTheory-02-NormalForm.ipynb) | Python | Matrices de gains, dominance, best response | 45 min |
-| 2 (suite) | [GameTheory-02-NormalForm-Part2-Python](GameTheory-02-NormalForm-Part2-Python.ipynb) | Python | Support enumeration mixte N×N from-scratch et vérification Nashpy | 50 min |
-| 2 (C#) | [GameTheory-02-NormalForm-Csharp](GameTheory-02-NormalForm-Csharp.ipynb) | C# (.NET) | Jumeau C# : forme normale et équilibres de Nash from-scratch | 45 min |
-| 2 (C#, suite) | [GameTheory-02-NormalForm-Csharp-Part2](GameTheory-02-NormalForm-Csharp-Part2.ipynb) | C# (.NET) | Suite du jumeau C# : support enumeration et jeux N×N | 50 min |
-| 2b | [GameTheory-02b-Lean-Definitions](GameTheory-02b-Lean-Definitions.ipynb) | Lean 4 | Formalisation Game2x2, stratégies, Nash | 45 min |
-| 2c | [GameTheory-02c-Travelers-Dilemma](GameTheory-02c-Travelers-Dilemma.ipynb) | Python | Le dilemme du voyageur (Basu 1994) : annonce $2–$100, la compagnie paie le montant le plus bas, +$2 au moins-disant / −$2 au plus-disant — l'élimination itérée des stratégies strictement dominées converge vers l'unique équilibre (2,2), que contredisent les comportements humains (~$100), et la sensibilité au bonus révèle le seuil r* = 1 où le paradoxe se dissout (contre-claim : robustesse du paradoxe au bonus mineur) | 45 min |
-| 2c (C#) | [GameTheory-02c-Travelers-Dilemma-Csharp](GameTheory-02c-Travelers-Dilemma-Csharp.ipynb) | C# (.NET) | **Jumeau C# de 2c** (maturation Chantier 5) : paiement, meilleure réponse, élimination itérée (domination faible), seuil r* = 1 et contre-claim de fragilité re-dérivés dans un second moteur — parité numérique complète avec 2c, mais un défaut hérité trouvé : les formulations « strictement dominées » et « unique équilibre dès r ≥ 1 » ne passent pas la re-dérivation (r = 1 : équilibres multiples), corrigées dans le twin et trackées pour 2c par #15461 | 40 min |
-| 3 | [GameTheory-03-Topology2x2](GameTheory-03-Topology2x2.ipynb) | Python | Classification Robinson-Goforth, table périodique, **dérivation du quotient 144** (action libre du renommage, signatures 18/108/18, 78 de Rapoport-Guyer — absorbé depuis l'ex-03g, chantier #16231) | 80 min |
-| 3 (C#) | [GameTheory-03-Topology2x2-Csharp](GameTheory-03-Topology2x2-Csharp.ipynb) | C# (.NET) | **Jumeau C#** — topologie ordinale from-scratch : permutations, swaps de rangs, BFS swap-path, Nash, classification des 576 jeux (parité #4956) | 50 min |
-| 3a | [GameTheory-03a-Chemins-de-Swaps](GameTheory-03a-Chemins-de-Swaps.ipynb) | Python + Lean | Plus courts chemins de swaps sur les 576 jeux : BFS générateur et certificat Lean indépendant | 45 min |
-| 3b | [GameTheory-03b-Chambres-et-Murs](GameTheory-03b-Chambres-et-Murs.ipynb) | Python | Chambres et murs (Bruns-Kimmich) : les 576 jeux stricts comme chambres d'un arrangement, les égalités comme murs de codimension — 75 ordres faibles, incidence double-face mur/chambre, BFS connexe diamètre 6, swaps en longueurs de Coxeter, make_tie/break_tie duales (chantier 4 #12207, versant D2) | 45 min |
-| 3c | [GameTheory-03c-Le-Joueur-LLM](GameTheory-03c-Le-Joueur-LLM.ipynb) | Python | Joueur LLM placé dans le tableau périodique et confronté à des transformations ordinales | 45 min |
-| 3d | [GameTheory-03d-Plan-de-deformation](GameTheory-03d-Plan-de-deformation.ipynb) | Python | Biens publics non linéaires et plan de déformation de l'espace stratégique | 45 min |
-| 3e | [GameTheory-03e-Meta-Actions-Tarifees](GameTheory-03e-Meta-Actions-Tarifees.ipynb) | Python | Méta-actions tarifées **+ parcours complet** (absorbe l'ex-03f, fusion #16231 chantier C) : marches 1-3 (NE/BR sur les 576 jeux, 72 injouables, coût en échelons de rang, seuil de migration 56→16→8→4 %, méta-jeu 4x4, 4 échecs de coordination dur) puis intégration §4-8 (chemin BFS vérifié, murs, tarifs, parcours complet PD→CERF — chantier 4 #12207, versants D4 + intégration) | 90 min |
-| 3h | [GameTheory-03h-Deux-Especes-de-Fleches](GameTheory-03h-Deux-Especes-de-Fleches.ipynb) | Python | Deux espèces de flèches : le théorème fini du chemin minimal de swaps (un swap R(a,b) traverse un mur ssi colonne {a,b} ET mur habité — conjecture naïve réfutée sur 288 désaccords, condition vérifiée 3456/3456, comptage 432/576 dérivé) | 60 min |
-| 4 | [GameTheory-04-NashEquilibrium](GameTheory-04-NashEquilibrium.ipynb) | Python | Nash pur/mixte, Lemke-Howson, analyse paramétrique, marchandage asymétrique §8 : faisceau de dépendance multi-composantes et point de désaccord — le principe du moindre intérêt réfuté comme loi, conservé comme effet partiel (#12682) ; aperçu intégré — **deep-dive autonome en 4d** (#14442) | 60 min |
-| 4 (C#) | [GameTheory-04-NashEquilibrium-Csharp](GameTheory-04-NashEquilibrium-Csharp.ipynb) | .NET (C#) | Twin C# du 4 : **NE pur (best-response mutuelle) + mixte 2x2 (indifférence) + support enumeration from-scratch (élimination de Gauss)**, Matching Pennies/BoS/Stag Hunt/PD/RPS (See #4956) | 50 min |
-| 4b | [GameTheory-04b-Lean-NashExistence](GameTheory-04b-Lean-NashExistence.ipynb) | Lean 4 | Brouwer, Kakutani, preuve existence Nash | 55 min |
-| 4c | [GameTheory-04c-NashExistence-Python](GameTheory-04c-NashExistence-Python.ipynb) | Python | **Point fixe Brouwer discriminant** — `perturbed_br` (regret ⇒ déplacement), contraste à deux seeds non-équilibre/équilibre, anti-tautologie | 35 min |
-| 4c | [GameTheory-04c-NashExistence-Csharp](GameTheory-04c-NashExistence-Csharp.ipynb) | C# (.NET) | **Jumeau C#** — Brouwer point fixe + Matching Pennies, from-scratch, parité #4956 | 45 min |
-| 4d | [GameTheory-04d-Marchandage-Asymetrique](GameTheory-04d-Marchandage-Asymetrique.ipynb) | Python | **Marchandage asymétrique (strate-7)** — point de désaccord (Nash 1950), faisceau de dépendance multi-composantes (#12682), contre-exemple au principe du moindre intérêt, robustesse au générateur de poids (endogène/exogène/constant, #13313) et dissociation (#14442 tranche D1) | 40 min |
-| 4e | [GameTheory-04e-Reflective-Oracles](GameTheory-04e-Reflective-Oracles.ipynb) | Python | **Oracles réflexifs** — Fallenstein/Taylor/Christiano 2015 (arXiv 1508.04145) : boucle / contradiction diagonale sur Matching Pennies déterministe, requête `(M,p)` et menteur probabiliste (orbite de période 2 → unique point cohérent q = 1/2), théorèmes 3.1 (encodage d'utilités en requête, écart CDT/EDT strict) / 4.1 (Nash par déviations unilatérales) / 5.1 (restriction finie-fermée-bornée mesurée, jeu auxiliaire Nashpy, 2/49 équilibres réflexivement cohérents) démontrés numériquement, **vérificateur indépendant + contre-épreuves rejetées**, **frontière explicite résultat fini ↔ oracle universel** (#14450) | 60 min |
-| 4f | [GameTheory-04f-Theories-Decision-Predicteur](GameTheory-04f-Theories-Decision-Predicteur.ipynb) | Python | **Théories de la décision face à un prédicteur** — seuil EDT exact de Newcomb (p* = 1001/2000) et simulation « why ain'cha rich? », lésion de Fisher en exact et par modèle causal `dowhy.gcm`, défense du chatouillement, réduction de la CCDT à EDT (Mohajeri 2023), EDT/CDT/UDT sur six problèmes dans **un seul cadre générique**, 2TDT-1CDT de Wei Dai (seuils exacts, simulation d'agents, dynamique du réplicateur bistable), inattention rationnelle par Blahut-Arimoto (contraction non monotone du support, borne de la politique constante, contre-épreuve SLSQP), **frontière explicite** face aux sept problèmes ouverts de Dai (#17543) | 75 min |
-| 5 | [GameTheory-05-ZeroSum-Minimax](GameTheory-05-ZeroSum-Minimax.ipynb) | Python | Théorème minimax, LP primal/dual, Von Neumann | 40 min |
-| 5 (C#) | [GameTheory-05-ZeroSum-Minimax-Csharp](GameTheory-05-ZeroSum-Minimax-Csharp.ipynb) | .NET (C#) | Twin C# du 5 : **simplexe from-scratch** (Dantzig, règle de Bland) + dualité LP, Matching Pennies/RPS/Blotto (See #4956) | 45 min |
-| 5b | [GameTheory-05b-Lean-Minimax](GameTheory-05b-Lean-Minimax.ipynb) | Lean 4 | Companion **natif** (kernel Lean) : preuve formelle 0-sorry de von Neumann dans le lake `minimax_lean` (Sion), `#check` + `#print axioms` in-kernel — voir [#4054](https://github.com/jsboige/CoursIA/issues/4054) (création du lake) et `LEAN_INVENTORY.md` du dossier | 45 min |
-| 6 | [GameTheory-06-EvolutionTrust](GameTheory-06-EvolutionTrust.ipynb) | Python | Tournoi Axelrod, tit-for-tat, **processus de Moran stochastique (fixation finie, 25 graines)**, replicator dynamics | 65 min |
-| 6 (C#) | [GameTheory-06-EvolutionTrust-Csharp](GameTheory-06-EvolutionTrust-Csharp.ipynb) | .NET (C#) | Twin C# du 6 : **moteur IPD + tournoi Axelrod + replicator dynamics from-scratch** (BCL .NET 9, 0 NuGet), 7 stratégies (TitForTat/Grudger/Pavlov/...), Euler ODE (See #4956) | 55 min |
-| 6b | [GameTheory-06b-Lean-RepeatedGames](GameTheory-06b-Lean-RepeatedGames.ipynb) | Lean (lecture) | Compagnon **lake** du 6c : les 7 modules noirs de `game_theory_lean` dévoilés par extraction réelle — Stage (PD forcé par le type), Discounting (seuil $\delta^*$ `coop_ge_deviate_iff`), **`grim_trigger_sustains_iff` 0 sorry #4880**, Folk STRETCH (1 sorry assumé, bord réparé), ConeKernel Bondareva-Farkas, infra SocialChoice ; re-mesure visibilité noirs 7→0 (See #11703) | 35 min |
-| 6c | [GameTheory-06c-RepeatedGames-FolkTheorem](GameTheory-06c-RepeatedGames-FolkTheorem.ipynb) | Python | Compagnon **formel** de GT-6 : horizon fini (effondrement par induction arrière), horizon infini, grim trigger, condition $\delta \geq (T-R)/(T-P)$, Folk Theorem (tout paiement IR faisable est SPNE pour $\delta$ assez proche de 1) | 45 min |
-| 6c (C#) | [GameTheory-06c-RepeatedGames-FolkTheorem-Csharp](GameTheory-06c-RepeatedGames-FolkTheorem-Csharp.ipynb) | .NET (C#) | Twin C# du 6c : **grim trigger + tit-for-tat + Folk Theorem from-scratch** (BCL .NET 9, 0 NuGet), série géométrique $\sum \delta^t g = g/(1-\delta)$, condition de crédibilité $\delta^* = (T-R)/(T-P) = 0.5$, comparaison des seuils grim vs TFT ($2/3$), ensemble faisable & IR en ASCII — parité bit-par-bit avec le Python (See #4956) | 45 min |
-| 6d | [GameTheory-06d-Sympathie-vs-Engagement](GameTheory-06d-Sympathie-vs-Engagement.ipynb) | Python | Protocole consolidé d'identification du résidu de GT-06c §7d : statique comparative sur les gains d'autrui à gains propres gelés — pente ± IC, `alpha` par MLE profilée, contrôle IRLS + bootstrap sur graines, engagement pur et bruité à 95 %, cellule discriminante, verdict « non identifié » et trois exercices avec variantes de puissance (See #13042, #13737) | 45 min |
-| 6e | [GameTheory-06e-Open-Source-Game-Theory](GameTheory-06e-Open-Source-Game-Theory.ipynb) | Python | Transparence des programmes et issue du dilemme : open-source game theory — programmes lisibles, engagement vérifiable et son effet sur l'équilibre coopératif | 45 min |
-| 6f | [GameTheory-06f-Bounded-Agents-Python](GameTheory-06f-Bounded-Agents-Python.ipynb) | Python | Agents-programmes à budget explicite (compagnon Python) : agents bornés en calcul/mémoire et l'effet du plafond sur les équilibres atteignables | 50 min |
-| 6f (bis) | [GameTheory-06f-Bounded-Proofs-Reasoning-Costs](GameTheory-06f-Bounded-Proofs-Reasoning-Costs.ipynb) | Python | Preuves bornées et coût du raisonnement : à borne de calcul donnée, quelles propriétés restent prouvables — le coût du théorème comme paramètre | 40 min |
-| 6g | [GameTheory-06g-Bounded-Agents-Lean](GameTheory-06g-Bounded-Agents-Lean.ipynb) | Lean 4 (WSL) | Agents à budget explicite, companion Lean natif : la borne de raisonnement formalisée et exécutée | 40 min |
-| 6g (bis) | [GameTheory-06g-Simulation-Based-Program-Equilibria](GameTheory-06g-Simulation-Based-Program-Equilibria.ipynb) | Python | Équilibres de jeux-programmes fondés sur la simulation : l'équilibre lu à travers des programmes qui se sonnent mutuellement | 40 min |
-| 6h | [GameTheory-06h-Transparent-Institutions](GameTheory-06h-Transparent-Institutions.ipynb) | Python | Programmes transparents comme institutions : CUPOD et dispositifs où la transparence du code devient un mécanisme d'engagement | 55 min |
-
-### Partie 2 : Jeux dynamiques et raisonnement stratégique (Notebooks 7-12)
-
-| # | Notebook | Kernel | Contenu | Durée |
-|---|----------|--------|---------|-------|
-| 7 | [GameTheory-07-ExtensiveForm](GameTheory-07-ExtensiveForm.ipynb) | Python | Arbres de jeu, infosets, stratégies | 50 min |
-| 7 (C#) | [GameTheory-07-ExtensiveForm-Csharp](GameTheory-07-ExtensiveForm-Csharp.ipynb) | .NET (C#) | Twin C# du 7 : **arbre de jeu + infosets + noeuds de nature from-scratch** + conversion forme extensive→normale (See #4956) | 50 min |
-| 8 | [GameTheory-08-CombinatorialGames](GameTheory-08-CombinatorialGames.ipynb) | Python | Positions P/N, Nim, Grundy, Sprague-Grundy | 55 min |
-| 8 (C#) | [GameTheory-08-CombinatorialGames-Csharp](GameTheory-08-CombinatorialGames-Csharp.ipynb) | .NET (C#) | Twin C# du 8 : **classification P/N + nim-sum (Bouton) + mex + Grundy DP + Sprague-Grundy** from-scratch, BCL .NET 9 (See #4956) | 45 min |
-| 8b | [GameTheory-08b-Lean-CombinatorialGames](GameTheory-08b-Lean-CombinatorialGames.ipynb) | Lean 4 | PGame mathlib, Nim formel | 50 min |
-| 8c | [GameTheory-08c-CombinatorialGames-Python](GameTheory-08c-CombinatorialGames-Python.ipynb) | Python | Approfondissement jeux combinatoires | 40 min |
-| 8c (C#) | [GameTheory-08c-CombinatorialGames-Csharp](GameTheory-08c-CombinatorialGames-Csharp.ipynb) | .NET (C#) | Twin C# du 8c : **périodicité Grundy (Guy 1996) + Wythoff (Beatty/nombre d'or) + jeux composites (Sprague-Grundy) + Chomp (Gale)** from-scratch, BCL .NET 9 (See #4956) | 40 min |
-| 8d | [GameTheory-08d-Lean-CGT-Native](GameTheory-08d-Lean-CGT-Native.ipynb) | Lean 4 (WSL) | Compagnon natif du lake `conway_cgt_lean` : `IGame`/`Game`, surréels, nimbers, **Sprague-Grundy exécuté** depuis `vihdzp/combinatorial-games` (post-Mathlib #35550) | 40 min |
-| 9 | [GameTheory-09-BackwardInduction](GameTheory-09-BackwardInduction.ipynb) | Python | Induction arrière, mille-pattes, escalade | 55 min |
-| 9 (C#) | [GameTheory-09-BackwardInduction-Csharp](GameTheory-09-BackwardInduction-Csharp.ipynb) | .NET (C#) | Twin C# du 9 : induction arrière from-scratch, Entry/Centipede/War-of-Attrition/Chain-Store (See #4956) | 40 min |
-| 9b | [GameTheory-09b-Commitment-Stackelberg](GameTheory-09b-Commitment-Stackelberg.ipynb) | Python | Stackelberg : la performativité sans mystère — l'engagement contraignant qui **transforme la meilleure réponse d'autrui** (action sous-optimale à l'équilibre simultané, delta +2 mesuré), l'annonce révocable dissoute par induction à rebours (cheap talk), et le seuil de crédibilité **s\* = écart de tentation** (caution minimale calculée) | 40 min |
-| 9c | [GameTheory-09c-Stackelberg-SecurityGame](GameTheory-09c-Stackelberg-SecurityGame.ipynb) | Python | Stackelberg Security Game : patrouille à capteur imparfait et signaling — le leader défend, le follower attaque sous observation bruitée, la robustesse du patrouilleur au bruit mesurée (issue #13295) | 45 min |
-| 10 | [GameTheory-10-ForwardInduction-SPE](GameTheory-10-ForwardInduction-SPE.ipynb) | Python | Induction avant, SPE, menaces crédibles | 60 min |
-| 10 (C#) | [GameTheory-10-ForwardInduction-SPE-Csharp](GameTheory-10-ForwardInduction-SPE-Csharp.ipynb) | .NET (C#) | Twin C# du 10 : SPE/backward-induction from-scratch, menaces crédibles, trembling-hand (ε), forward induction (Cho-Kreps), burn money (See #4956) | 60 min |
-| 11 | [GameTheory-11-BayesianGames](GameTheory-11-BayesianGames.ipynb) | Python | Jeux bayésiens, information incomplète | 55 min |
-| 11 (C#) | [GameTheory-11-BayesianGames-Csharp](GameTheory-11-BayesianGames-Csharp.ipynb) | C# (.NET) | Twin .NET de 11 (marathon #4956) : jeux bayésiens from-scratch (BCL seule), Cournot résolu analytiquement (déterminant = 6, indépendant du prior) | 65 min |
-| 11b | [GameTheory-11b-Lean-BayesianGamesExt](GameTheory-11b-Lean-BayesianGamesExt.ipynb) | Lean 4 | Companion natif : théorème de Vickrey (enchère au second prix) prouvé 0-sorry dans le lake `lean_game_defs_ext` (module Bayesian, sans Mathlib) | 50 min |
-| 12 | [GameTheory-12-ReputationGames](GameTheory-12-ReputationGames.ipynb) | Python | Jeux de réputation, signaling | 50 min |
-| 12 (C#) | [GameTheory-12-ReputationGames-Csharp](GameTheory-12-ReputationGames-Csharp.ipynb) | C# (.NET) | Twin .NET de 12 (marathon #4956) : chain-store (Selten) + Crawford-Sobel cheap talk + Kreps-Wilson réputation (Bayes) + KMRW PD répété + PBE, from-scratch (BCL seule) | 55 min |
-
-### Partie 3 : Algorithmes et applications avancées (Notebooks 13-17)
-
-| # | Notebook | Kernel | Contenu | Durée |
-|---|----------|--------|---------|-------|
-| 13 | [GameTheory-13-ImperfectInfo-CFR](GameTheory-13-ImperfectInfo-CFR.ipynb) | Python | CFR vanilla, MCCFR, Deep CFR | 70 min |
-| 13 (C#) | [GameTheory-13-ImperfectInfo-CFR-Csharp](GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb) | .NET (C#) | Twin C# du 13 : CFR/CFR+ regret-matching from-scratch sur Kuhn Poker (récursion contrefactuelle, reach probabilities) (See #4956) | 60 min |
-| 13b | [GameTheory-13b-Safe-Subgame-Solving](GameTheory-13b-Safe-Subgame-Solving.ipynb) | Python | Safe subgame solving : le mauvais recollement produit un témoin adversarial explicite | 45 min |
-| 13c | [GameTheory-13c-Safe-Subgame-Solving-Csharp](GameTheory-13c-Safe-Subgame-Solving-Csharp.ipynb) | .NET (C#) | Twin C# du 13b : reproduction, audit des poids de chemin (double comptage 'pp'/'bp'), énumération corrigée, best-response énumérée — la loi survit, les EV absolus non (See #12208) | 40 min |
-| 13d | [GameTheory-13d-Optimistic-CFR](GameTheory-13d-Optimistic-CFR.ipynb) | Python | Optimistic CFR (OFTRL stable-prédictif) : la variante optimiste qui stabilise la convergence par prédiction — compagnon du 13 | 35 min |
-| 14 | [GameTheory-14-DifferentialGames](GameTheory-14-DifferentialGames.ipynb) | Python | Boucle ouverte/fermée, Stackelberg | 60 min |
-| 14 (C#) | [GameTheory-14-DifferentialGames-Csharp](GameTheory-14-DifferentialGames-Csharp.ipynb) | .NET (C#) | Twin C# du 14 : **RK4 from-scratch** (remplace scipy.solve_ivp), **Riccati couplée backward** pour LQ feedback, Cournot/Stackelberg closed-form, poursuite-evasion (Isaacs) modelisée en RK4 (See #4956) | 60 min |
-| 15 | [GameTheory-15-CooperativeGames](GameTheory-15-CooperativeGames.ipynb) | Python | Shapley, Core, Bondareva-Shapley | 65 min |
-| 15 (C#) | [GameTheory-15-CooperativeGames-Csharp](GameTheory-15-CooperativeGames-Csharp.ipynb) | .NET (C#) | Twin C# du 15 : Shapley (permutations), Banzhaf (swing), core, convexité, airport game from-scratch (See #4956) | 65 min |
-| 15b | [GameTheory-15b-Lean-CooperativeGames](GameTheory-15b-Lean-CooperativeGames.ipynb) | Lean 4 | Axiomes Shapley formels, Core | 55 min |
-| 15c | [GameTheory-15c-CooperativeGames-Python](GameTheory-15c-CooperativeGames-Python.ipynb) | Python | Exemples avancés (Glove Game, politique) | 40 min |
-| 15c (C#) | [GameTheory-15c-CooperativeGames-Csharp](GameTheory-15c-CooperativeGames-Csharp.ipynb) | .NET (C#) | Twin C# du 15c : Shapley (permutations), Banzhaf (swing), Core vide (majorité 3-joueurs), Mini-ONU, convexité from-scratch (See #4956) | 40 min |
-| 15d | [GameTheory-15d-Mobius-Coalitions](GameTheory-15d-Mobius-Coalitions.ipynb) | Python | Décomposition de Möbius sur le treillis des coalitions et dividendes d'interaction | 45 min |
-| 15e | [GameTheory-15e-Coalition-Power-SMT](GameTheory-15e-Coalition-Power-SMT.ipynb) | Python | Pouvoir coalitionnel : calcul exhaustif, encodage SMT borné et preuve — prolonge Shapley/Banzhaf par la force du solveur | 50 min |
-| 15f | [GameTheory-15f-Shapley-Groupes](GameTheory-15f-Shapley-Groupes.ipynb) | Python | Valeur de Shapley de groupe (Flores-Molina-Tejada 2019) : évaluer une équipe comme une unité — jeu fusionné, théorème 2, réseau florentin exact et Monte Carlo sur le club de karaté | 50 min |
-| 16 | [GameTheory-16-MechanismDesign](GameTheory-16-MechanismDesign.ipynb) | Python | Principe de révélation, VCG (non-monotonie du revenu, Conitzer-Sandholm), matching | 65 min |
-| 16 (C#) | [GameTheory-16-MechanismDesign-Csharp](GameTheory-16-MechanismDesign-Csharp.ipynb) | .NET (C#) | Twin C# du 16 : **enchères Vickrey 1er/2nd prix + VCG (règle de Clarke) + Gale-Shapley (stable matching) + double auction** from-scratch, BCL .NET 9 (See #4956) | 50 min |
-| 16b | [GameTheory-16b-Automated-Mechanism-Design](GameTheory-16b-Automated-Mechanism-Design.ipynb) | Python | Automated Mechanism Design : synthèse et vérification d'un mécanisme sous contraintes | 35 min |
-| 16c | [GameTheory-16c-Extraction-de-Revenu-DSIC-IR](GameTheory-16c-Extraction-de-Revenu-DSIC-IR.ipynb) | Python | La dimension paiement que le designer n'a jamais cherchée : extraction de revenu sous contraintes DSIC/IR — ce que VCG laisse sur la table | 35 min |
-| 16d | [GameTheory-16d-Echange-de-Reins](GameTheory-16d-Echange-de-Reins.ipynb) | Python | L'échange de reins : de la valeur humaine à l'état institutionnel — graphe de compatibilité, cycles vs chaînes (donneurs altruistes), arbitrage cardinalité/équité dissocié par le code, pont cross-domain vers les lakes Lean | 35 min || 16e | [GameTheory-16e-LLM-Players-Othman-Sandholm](GameTheory-16e-LLM-Players-Othman-Sandholm.ipynb) | Python | Pilote — joueurs LLM hétérogènes sur le mécanisme d'Othman-Sandholm : des agents de langage dans un design de mécanisme | 60 min |
-| SC-01 | [SocialChoice/01-Arrow-Impossibility-Theorem](SocialChoice/01-Arrow-Impossibility-Theorem.ipynb) | Python | Arrow : preuve formelle vs simulation | 45 min |
-| SC-01 (C#) | [SocialChoice/01-Arrow-Impossibility-Theorem-Csharp](SocialChoice/01-Arrow-Impossibility-Theorem-Csharp.ipynb) | .NET (C#) | Twin C# du SC-01 : **théorème d'Arrow from-scratch** (BCL .NET 9, 0 NuGet), preuve déterministe par énumération des profils de préférences (See #4956) | 45 min |
-| SC-02 | [SocialChoice/01b-Lean-SocialChoice-Formal](SocialChoice/01b-Lean-SocialChoice-Formal.ipynb) | Lean 4 + Python | Arrow, Sen, Électeur Médian, tour Peters | 70 min |
-| SC-03 | [SocialChoice/03-Voting-Methods](SocialChoice/03-Voting-Methods.ipynb) | Python | Condorcet, Borda, Copeland, modèle Downs | 45 min |
-| SC-03 (C#) | [SocialChoice/03-Voting-Methods-Csharp](SocialChoice/03-Voting-Methods-Csharp.ipynb) | .NET (C#) | Twin C# du SC-03 : **Plurality/Borda/Copeland/Condorcet/IRV from-scratch** (BCL .NET 9, 0 NuGet), paradoxe de Condorcet (cycle A>B>C), théorème d'Arrow (violation IIA démontrée déterministement), théorème de l'électeur median (See #4956) | 45 min |
-| SC-04 | [SocialChoice/04-Computational-Aggregation-SAT-Z3](SocialChoice/04-Computational-Aggregation-SAT-Z3.ipynb) | Python | Arrow encodé en SAT + Z3, UNSAT, relaxation | 60 min |
-| SC-05 | [SocialChoice/05-Gibbard-Satterthwaite](SocialChoice/05-Gibbard-Satterthwaite.ipynb) | Python | Gibbard-Satterthwaite : manipulation comme témoin — une règle manipulable s'il existe un profil et un électeur qui, avec un bulletin insincère, obtient un résultat strictement préféré ; le témoin d'exploitation est exhibé par le code, pas postulé | 30 min |
-| SC-06 | [SocialChoice/06-Mobius-Aggregation-Pouvoir-Manipulation](SocialChoice/06-Mobius-Aggregation-Pouvoir-Manipulation.ipynb) | Python | Décomposition de Möbius de l'agrégation et pouvoir de manipulation — les dividendes d'interaction appliqués au vote | 30 min |
-| SC-07 | [SocialChoice/07-Committees-Core](SocialChoice/07-Committees-Core.ipynb) | Python | Committees et Core : comités stables et cœur d'un jeu de comité — la stabilité collective au-delà du matching binaire | 45 min |
-| SC-04 (C#) | [SocialChoice/04-Computational-Aggregation-SAT-Z3-Csharp](SocialChoice/04-Computational-Aggregation-SAT-Z3-Csharp.ipynb) | .NET (C#) | Twin C# du SC-04 : **solveur SAT DPLL from-scratch** (BCL .NET 9, 0 NuGet), Arrow encodé en CNF → preuve UNSAT (See #4956) | 60 min |
-| 17 | [GameTheory-17-MultiAgent-RL](GameTheory-17-MultiAgent-RL.ipynb) | Python | NFSP, PSRO, AlphaZero intro | 55 min |
-| 17 (C#) | [GameTheory-17-MultiAgent-RL-Csharp](GameTheory-17-MultiAgent-RL-Csharp.ipynb) | .NET (C#) | Twin C# du 17 : **Self-Play naif (cycle R-P-S)**, **Fictitious Play** (BR vs frequence empirique, convergence Robinson 1951), **exploitabilite**, **NFSP table-based** (Q-values + memoire, caveat convergence G.1), **PSRO** (population + meta-Nash) from-scratch, BCL .NET 9, **courbes d'exploitabilite SVG inline** (Self-Play naif oscille, FP -> 0 Robinson 1951, NFSP chute puis plafonne) via `SvgChartHelper.Overlay` zero-CDN [#6855] (See #4956) | 50 min |
-| 17b | [GameTheory-17b-Asymmetric-Information](GameTheory-17b-Asymmetric-Information.ipynb) | Python | Information asymétrique : **Akerlof** (point fixe de participation à prix unique, marché des citrons), **Spence** (signal coûteux), **Rothschild-Stiglitz** (screening assurantiel), **Wilson/Miyazaki** (règle anticipative bornée) — 9 exercices, EPIC #12844 | 1h30 |
-| 17c | [GameTheory-17c-Lean-Lemons-Certificat](GameTheory-17c-Lean-Lemons-Certificat.ipynb) | Lean 4 (WSL) | Companion **natif** du lake `asymmetric_information_lean` : certificat d'Akerlof exécuté en direct — `poolingTenable_iff_cross` (seuil exact par produit croisé), `poolingTenable_mono` (plancher), `#print axioms` (`[propext, Quot.sound]`), balayage du prior (falaise à π = 75 %) et spirale de prix des trois régimes (pooling / lemons-only / no-trade) — 3 exercices (#13200) | 45 min |
-| 17d | [GameTheory-17d-Lean-Screening-Signaling](GameTheory-17d-Lean-Screening-Signaling.ipynb) | Lean 4 (WSL) | Companion **natif** du lake `asymmetric_information_lean` : les quatre modules restants exécutés — Screening RS (`cream_skim_breaks_nash`, témoin chiffré −500/−5500/10000), Signaling Spence (bornes IC, intervalle [3,6], minimalité de Riley), MiyazakiWilson (trame 0/1/plusieurs, invariance −2000→−6000 vs −2500→+500), BayesianLink (`bridgeStrategy_isBNE` par `decide`) — 3 exercices (#13854) | 45 min |
-| 17c (Market) | [GameTheory-17c-Market-to-Balance-Sheet](GameTheory-17c-Market-to-Balance-Sheet.ipynb) | Python | Du marché au bilan : le pont théorie des jeux ↔ théorie de la décision — l'équilibre de marché lu comme bilan d'espérances | 40 min |
-
-### Partie 4 : Strate 7 — extensions du vocabulaire stratégique (notebooks 18+)
-
-La vague « strate 7 » étend la série au-delà du fil historique : chaque notebook y isole un geste qui **modifie l'espace des jeux** (abstraction, extension de vocabulaire) plutôt qu'une solution dans un jeu donné. Sa numérotation est volontairement non séquentielle : les numéros `18`, `19` et `20` à `24` désignent des grains autonomes livrés en parallèle, tandis que les suffixes littéraux `3a` à `3h` forment un chantier rattaché à GT-3 et à la géométrie ordinale de Robinson-Goforth. Ils ne sont donc ni des décimales ni des étapes à lire dans l'ordre de leur merge.
-
-| # | Notebook | Kernel | Contenu | Durée |
-|---|----------|--------|---------|-------|
-| 18 | [GameTheory-18-Open-Games-et-Lentilles](GameTheory-18-Open-Games-et-Lentilles.ipynb) | Python | Open games et lentilles : une représentation locale qui modifie le contexte global dont elle est issue | 45 min |
-| 18b | [GameTheory-18b-Casser-la-Composition](GameTheory-18b-Casser-la-Composition.ipynb) | Python | Casser la composition : où la meilleure réponse composée échoue — contre-exemples à la compositionnalité des équilibres d'open games | 40 min |
-| 19 | [GameTheory-19-Abstraction-a-Dette](GameTheory-19-Abstraction-a-Dette.ipynb) | Python | Abstraction à dette mesurable : quantifier ce que perd une représentation simplifiée | 35 min |
-| 20 | [GameTheory-20-Chemin-Minimal-Robinson-Goforth](GameTheory-20-Chemin-Minimal-Robinson-Goforth.ipynb) | Python | Chemin minimal Robinson-Goforth : témoin construit par le générateur puis vérifié indépendamment | 45 min |
-| 20b | [GameTheory-20b-Chemin-Minimal-Temoins-Impossibilite](GameTheory-20b-Chemin-Minimal-Temoins-Impossibilite.ipynb) | Python | Le témoin d'impossibilité : un chemin minimal qui ne peut PAS exister — la borne négative du chantier, exhibée par le code | 45 min |
-| 20c | [GameTheory-20c-Chemin-Minimal-3x2-Ordinal](GameTheory-20c-Chemin-Minimal-3x2-Ordinal.ipynb) | Python | Le chemin minimal sur un second substrat : jeux ordinaux 3×2 — la robustesse du théorème testée hors des jeux 2×2 stricts | 45 min |
-| 21 | [GameTheory-21-Loi-II-Translateur-Life](GameTheory-21-Loi-II-Translateur-Life.ipynb) | Python | Loi II : synthèse d'un translateur Life et certificat d'impossibilité lorsque la traduction échoue | 45 min |
-| 22 | [GameTheory-22-Ensembles-Limites-Poincare-Bendixson](GameTheory-22-Ensembles-Limites-Poincare-Bendixson.ipynb) | Python | Ensembles limites : Poincaré-Bendixson en dimension 2 — les trois issues (point fixe, orbite périodique, cycle hétéroclinique) exécutées sur Prisonnier / Matching Pennies / RPS et classées par un détecteur mécanique (module compagnon + 16 tests), le mur $w = l$ de la famille RPS vérifié par linéarisation $(l-w)/6$ et relié aux chambres/murs du 3b, l'échec du théorème au-delà du plan comme conclusion (Czechowski-Piliouras 2021) | 45 min |
-| 23 | [GameTheory-23-Munkres-Assignment](GameTheory-23-Munkres-Assignment.ipynb) | Python | Kuhn-Munkres en hommage à James Munkres († 2026) : l'affectation optimale from scratch en arithmétique entière exacte (arbre hongrois BFS, resserrement dual), confrontée à SciPy (50/50 instances identiques) et certifiée par le triple test LP (faisabilité duale, gap nul, arêtes d'égalité), le pont Shapley-Shubik (cœur = polytope dual, 254 coalitions testées, 0 violations), et le contraste Gale-Shapley (stabilité qui se paie +3 sur instance divergente seedée) | 45 min |
-| 23b | [GameTheory-23b-Lean-Assignment-Native](GameTheory-23b-Lean-Assignment-Native.ipynb) | Lean 4 (WSL) | Le lake `assignment_lean` par son certificat (companion natif) : dualité et optimalité Kuhn-Munkres exécutées en Lean | 45 min |
-| 24 | [GameTheory-24-Humour-Banc](GameTheory-24-Humour-Banc.ipynb) | Python | Banc de calibration : humour, forme partagée vs stimulus — matrice de confusion du partage de forme (2 axes : rire, recadrage). Inclut la délimitation honnête du scope vs le compagnon 24b (passage à l'échelle, comparaison LLM, circularité, paires minimales) — la matrice de préservation est déposée comme contrat pour la tranche RECOVERABLE-MACHINE | 50 min |
-| 24b | [GameTheory-24b-Humour-Banc-Dur](GameTheory-24b-Humour-Banc-Dur.ipynb) | Python | Banc humour — passer à l'échelle : le compagnon dur du 24 (passage à l'échelle, comparaison LLM, circularité, paires minimales) | 50 min |
-| 25 | [GameTheory-25-Bayesian-Persuasion](GameTheory-25-Bayesian-Persuasion.ipynb) | Python | Persuasion bayésienne : la concavification évaluée par **deux méthodes indépendantes** — programme linéaire sur la loi jointe (état × message, contrainte d'obéissance) et enveloppe concave sur une grille du simplexe — qui doivent concorder, l'accord étant **asserté** et non affiché. Trois instances dont un contrôle négatif : optimum non partitionnel du procureur/juge (0,6 contre 0,3 en divulgation complète), préférences alignées où la transparence **est** optimale, et un cas à trois états où la monotonie de la grille est mesurée **conditionnelle** à la divisibilité des pas (le couple 4/5 redescend, et c'est asserté) | 45 min |
-
-Les huit extensions `3a` à `3h` figurent dans la Partie 1, au voisinage du notebook GT-3 qu'elles prolongent. Elles couvrent respectivement les chemins de swaps, les chambres et murs, le joueur LLM, le plan de déformation, les méta-actions tarifées, le parcours complet, la dérivation quotient et les deux espèces de flèches.
-
-**Durée totale des tableaux** : ~88h en parcourant chaque ligne une fois, jumeaux C# et sous-série SocialChoice compris. Un parcours Python sans jumeaux C# ni side tracks Lean est sensiblement plus court.
-
-## Concepts clés
-
-| Concept | Description |
-|---------|-------------|
-| **Équilibre de Nash** | Profil de stratégies où aucun joueur ne gagne à dévier unilatéralement |
-| **Minimax** | Stratégie qui minimise la perte maximale (jeux à somme nulle) |
-| **Positions P/N** | Positions perdantes (Previous) et gagnantes (Next) en jeux combinatoires |
-| **Sprague-Grundy** | Théorème unifiant l'analyse des jeux combinatoires impartiaux |
-| **CFR** | Counterfactual Regret Minimization - convergence vers Nash |
-| **SPE** | Subgame Perfect Equilibrium - Nash crédible dans tout sous-jeu |
-| **Valeur de Shapley** | Répartition équitable des gains en jeu coopératif |
-| **Core** | Ensemble des allocations stables en jeu coopératif |
-| **Théorème d'Arrow** | Impossibilité d'agrégation parfaite des préférences |
-| **Processus de Moran** | Dynamique stochastique d'évolution en population FINIE (Axelrod) — fixation d'une stratégie par dérive génétique, distincte du replicator déterministe mean-field |
-| **Stochastic finite-population fixation** | À population finie, le bruit d'échantillonnage peut fixer des stratégies sous-optimales (Defector 28 % sur 25 graines Moran, alors qu'il est dominé en round-robin) |
-| **Méta-action tarifée (strate 7)** | Réécrire ses propres préférences déclarées au prix d'échelons de rang — l'action de changer les règles a un coût, un seuil de migration et ses propres équilibres (GT-3c) |
-| **Information asymétrique** | Le preneur d'assurance connaît son risque mieux que l'assureur (type privé) — les 4 modèles fondateurs en GT-17b : Akerlof (contre-sélection, citrons), Spence (signal coûteux), Rothschild-Stiglitz (screening assurantiel), Wilson/Miyazaki (règle anticipative) |
-
-## Ce que chaque notebook apporte
-
-Chaque notebook introduit un concept ou un modèle spécifique. Le tableau ci-dessous résume en une ligne l'apport pédagogique de chacun.
-
-### Fil principal (Python)
-
-| # | Notebook | Apport pédagogique |
-|---|----------|-------------------|
-| 1 | Setup | Installation Nashpy/OpenSpiel, premier dilemme du prisonnier |
-| 2 | NormalForm | Matrices de gains, dominance, meilleure réponse, équilibre pur |
-| 2c | Travelers-Dilemma | Le dilemme du voyageur (Basu 1994) : l'élimination itérée mène à (2,2), que contredit le comportement humain ; au seuil r* = 1 le paradoxe se dissout |
-| 3 | Topology2x2 | Classification géométrique des 144 jeux 2x2 (Robinson-Goforth) |
-| 3a | Chemins-de-Swaps | BFS sur les 576 jeux et certificat Lean indépendant d'un plus court chemin |
-| 3b | Chambres-et-Murs | Les égalités comme objets géométriques : murs de codimension, incidence double-face, BFS du graphe des chambres |
-| 3c | Le-Joueur-LLM | Comportement d'un joueur LLM soumis aux transformations ordinales du tableau périodique |
-| 3d | Plan-de-deformation | Biens publics non linéaires et déformation continue de l'espace stratégique |
-| 3e | Meta-Actions-Tarifees | Changer les règles comme action payante : seuil de migration, méta-jeu et évasion du Dilemme par équilibre |
-| 3f | Parcours-Complet | Synthèse du chantier GT-3, du jeu nommé au coût de la méta-action |
-| 3h | Deux-Especes-de-Fleches | Théorème fini du chemin minimal de swaps : préserver le monde vs le transformer (conjecture naïve réfutée, condition exacte) |
-| 4 | NashEquilibrium | Nash mixte, Lemke-Howson, analyse paramétrique, support enumeration |
-| 5 | ZeroSum-Minimax | Théorème minimax, dualité LP, programmation linéaire pour jeux |
-| 6 | EvolutionTrust | Tournoi Axelrod, tit-for-tat, **processus de Moran (stochastic fixation finie vs replicator mean-field)**, émergence coopération |
-| 6b | Lean-RepeatedGames | Compagnon lake du 6c : extraction des 7 modules noirs de `game_theory_lean` (Stage, Discounting, GrimTrigger 0-sorry #4880, Folk STRETCH, ConeKernel, SortedListCounting, _SmokeTest), pont numérique $\delta^*$ avec le 6c |
-| 6c | RepeatedGames-FolkTheorem | Compagnon formel de GT-6 : Folk Theorem (horizon fini vs infini), condition de crédibilité du grim trigger $\delta \geq (T-R)/(T-P)$, comparaison grim trigger vs tit-for-tat (seuil de patience), ensemble faisable et IR |
-| 6e | Open-Source-Game-Theory | Transparence des programmes et issue du dilemme : l'engagement lisible change l'équilibre |
-| 6f | Bounded-Agents (×2) | Agents-programmes à budget explicite et preuves bornées : le coût du raisonnement comme paramètre du jeu |
-| 6g | Program-Equilibria (×2) | Équilibres de jeux-programmes par simulation, et leur formalisation Lean en companion natif |
-| 6h | Transparent-Institutions | Programmes transparents comme institutions (CUPOD) : la transparence du code comme mécanisme d'engagement |
-| 7 | ExtensiveForm | Arbres de jeu, ensembles d'information, stratégies comportementales |
-| 8 | CombinatorialGames | Positions P/N, Nim, Grundy values, théorème Sprague-Grundy |
-| 9 | BackwardInduction | Induction arrière, mille-pattes, escalade, engagement |
-| 9b | Commitment-Stackelberg | La performativité sans mystère : l'engagement contraignant transforme la meilleure réponse d'autrui (seuil de crédibilité s\* mesuré) |
-| 9c | Stackelberg-SecurityGame | Security game à capteur imparfait : le leader défend, le follower attaque sous observation bruitée — robustesse du patrouilleur mesurée |
-| 10 | ForwardInduction-SPE | Induction avant, sous-jeux parfaits, menaces crédibles |
-| 11 | BayesianGames | Types, croyances, équilibre bayésien, information incomplète |
-| 12 | ReputationGames | Signaling, engagement, réputation, cheap talk |
-| 13 | ImperfectInfo-CFR | CFR vanilla, MCCFR, Deep CFR, poker AI |
-| 13b | Safe-Subgame-Solving | Recollement sûr d'un sous-jeu et témoin adversarial en cas de mauvaise frontière |
-| 13d | Optimistic-CFR | OFTRL stable-prédictif : la variante optimiste du CFR qui stabilise la convergence par prédiction |
-| 14 | DifferentialGames | Jeux continus, Stackelberg, boucle ouverte/fermée |
-| 15 | CooperativeGames | Valeur de Shapley, Core, Bondareva-Shapley |
-| 15d | Mobius-Coalitions | Décomposition de Möbius du jeu de coalition et dividendes d'interaction |
-| 15e | Coalition-Power-SMT | Pouvoir coalitionnel : calcul exhaustif, encodage SMT borné et preuve |
-| 15f | Shapley-Groupes | Valeur de Shapley de groupe : le meilleur binôme n'est pas celui des deux meilleurs individus (exact sur 2^15 coalitions, Monte Carlo au-delà) |
-| 16 | MechanismDesign | Principe de révélation, VCG (incl. non-monotonie du revenu), matching, enchères |
-| 16b | Automated-Mechanism-Design | Synthèse d'un mécanisme sous contraintes et vérification de ses propriétés |
-| 16c | Extraction-de-Revenu | La dimension paiement que le designer n'a jamais cherchée : extraction de revenu sous DSIC/IR |
-| 16d | Echange-de-Reins | L'échange rénal bout en bout : valeurs → contraintes → mécanisme ; cycles et chaînes sur le graphe de compatibilité ; cardinalité ≠ équité (dissociation mesurée) |
-| 16e | LLM-Players-Othman-Sandholm | Pilote : joueurs LLM hétérogènes dans un design de mécanisme |
-| 17 | MultiAgent-RL | NFSP, PSRO, AlphaZero intro, lien vers RL |
-| 17b | Asymmetric-Information | Les 4 modèles fondateurs de l'information asymétrique : Akerlof (marché des citrons), Spence (signal coûteux), Rothschild-Stiglitz (screening assurantiel), Wilson/Miyazaki (règle anticipative) |
-| 17c | Lean-Lemons-Certificat | Le certificat Lean du lake `asymmetric_information_lean` exécuté : seuil de pooling exact, monotonie, spirale de prix Akerlof |
-| 17d | Lean-Screening-Signaling | Les quatre autres modules du lake exécutés : screening RS, signal Spence/Riley, équilibres anticipatoires Wilson-Miyazaki, pont bayésien `isBNE` |
-| 17c (Market) | Market-to-Balance-Sheet | Du marché au bilan : le pont théorie des jeux ↔ théorie de la décision |
-| 18 | Open-Games-et-Lentilles | Représentation locale et rétroaction sur le contexte global |
-| 18b | Casser-la-Composition | Contre-exemples à la compositionnalité des équilibres d'open games |
-| 19 | Abstraction-a-Dette | Dette d'abstraction rendue mesurable plutôt que laissée implicite |
-| 20 | Chemin-Minimal-Robinson-Goforth | Témoin de chemin minimal construit puis vérifié par un composant indépendant |
-| 20b | Temoins-Impossibilite | Le témoin d'impossibilité : un chemin minimal qui ne peut pas exister, exhibé par le code |
-| 20c | Chemin-Minimal-3x2-Ordinal | Le chemin minimal sur un second substrat : jeux ordinaux 3×2 |
-| 21 | Loi-II-Translateur-Life | Translateur Life synthétisé et impossibilité certifiée lorsque la traduction échoue |
-| 22 | Ensembles-Limites-Poincare-Bendixson | Points fixes, orbites et cycles hétérocliniques classés mécaniquement en dimension 2 |
-| 23 | Munkres-Assignment | Affectation Kuhn-Munkres certifiée par faisabilité duale et gap nul |
-| 23b | Lean-Assignment-Native | Le lake `assignment_lean` par son certificat : dualité et optimalité exécutées en Lean |
-| 24 | Humour-Banc | Banc de calibration : matrice de confusion du partage de forme (rire vs stimulus) |
-| 24b | Humour-Banc-Dur | Passer à l'échelle : comparaison LLM, circularité, paires minimales |
-
-### Side tracks Lean 4 (formalisation)
-
-| # | Notebook | Apport pédagogique |
-|---|----------|-------------------|
-| 2b | Lean-Definitions | Formalisation Game2x2, stratégies mixtes, Nash en Lean |
-| 4b | Lean-NashExistence | Brouwer, Kakutani, preuve existence Nash |
-| 5b | Lean-Minimax | Théorème minimax (von Neumann/Sion) prouvé 0-sorry, lake `minimax_lean` |
-| 8b | Lean-CombinatorialGames | PGame Mathlib, Nim formel, Sprague-Grundy |
-| 11b | Lean-BayesianGamesExt | Théorème de Vickrey (enchère au second prix) prouvé 0-sorry, lake `lean_game_defs_ext` |
-| 15b | Lean-CooperativeGames | Axiomes Shapley formels, Core, Bondareva-Shapley |
-| 8d | Lean-CGT-Native | CGT exécutée depuis la bibliothèque canonique post-Mathlib (`conway_cgt_lean`) |
-| 17c | Lean-Lemons-Certificat | Certificat Akerlof du lake `asymmetric_information_lean` exécuté (`#check`, `decide`, `#print axioms`), seuil de pooling exact + spirale de prix |
-| 17d | Lean-Screening-Signaling | Screening Rothschild-Stiglitz, signal Spence/Riley, équilibres anticipatoires Miyazaki-Wilson et pont bayésien du lake `asymmetric_information_lean` exécutés nativement (`#check`, `#eval`, `decide`) |
-| 6g | Lean-Bounded-Agents | Agents à budget explicite : la borne de raisonnement formalisée (companion natif) |
-| 23b | Lean-Assignment-Native | Dualité et optimalité Kuhn-Munkres du lake `assignment_lean` exécutées en Lean |
-
-### Side tracks Python (approfondissement)
-
-| # | Notebook | Apport pédagogique |
-|---|----------|-------------------|
-| 4c | NashExistence-Python | Point fixe Brouwer **discriminant** (`regret ≡ 0 ⟺ fixed point`, contraste à deux seeds non-équilibre/équilibre, anti-tautologie) — visualisation convergence Nash via `perturbed_br` |
-| 4d | Marchandage-Asymetrique | Marchandage asymétrique (strate-7) : point de désaccord, faisceau de dépendance multi-composantes, contre-exemple au principe du moindre intérêt |
-| 4e | Reflective-Oracles | Oracles réflexifs (Faltenstein et al. 2015) : boucle diagonale sur Matching Pennies déterministe, CDT/EDT et équilibre de Nash cohérents |
-| 4f | Theories-Decision-Predicteur | EDT, CDT, CCDT et UDT face à un prédicteur : Newcomb, Fisher (`dowhy`), six problèmes dans un cadre générique, 2TDT-1CDT de Wei Dai, inattention rationnelle (Blahut-Arimoto) |
-| 6c | RepeatedGames-FolkTheorem | Compagnon formel de GT-6 : horizon fini vs infini, condition de crédibilité du grim trigger $\delta \geq (T-R)/(T-P)$, Folk Theorem |
-| 6d | Sympathie-vs-Engagement | Statique comparative sur les gains d'autrui : séparer empiriquement sympathie (pente croissante, alpha mesuré) et engagement (pente plate + marque de règle) — l'identification que le classifieur à alpha posé de 6c §7d ne peut pas faire |
-| 8c | CombinatorialGames-Python | Variantes avancées (Wythoff, Chomp), visualisations |
-| 15c | CooperativeGames-Python | Exemples avancés (Glove Game, politique française) |
-
-### Sous-série SocialChoice (10 notebooks dont 3 twins C#)
-
-| # | Notebook | Apport pédagogique |
-|---|----------|-------------------|
-| SC-01 | Arrow-Impossibility | Preuve d'Arrow (Geonakoplos), simulation, interprétation |
-| SC-02 | Lean-SocialChoice | Arrow + Sen + Median Voter + Peters en Lean, 0 sorry |
-| SC-03 | Voting-Methods | Condorcet, Borda, Copeland, modèle Downs, paradoxe élection |
-| SC-04 | Computational-Aggregation | Arrow encodé en SAT + Z3, UNSAT, relaxation partielle |
-| SC-05 | Gibbard-Satterthwaite | Manipulation comme témoin : la manipulabilité exhibée par le code, pas postulée (ex-GT-22) |
-
-## Applications du monde réel
-
-La théorie des jeux n'est pas qu'un objet académique : ses résultats structurent des pans entiers de l'économie numérique et des politiques publiques. Quelques exemples directement liés aux notebooks de la série :
-
-- **Enchères et enchères de spectre** (notebooks 11 et 16) — les mécanismes VCG et leurs dérivés fondent les enchères publicitaires de Google et Meta (des milliards de transactions/jour) ainsi que les ventes de fréquences télécom orchestrées par les États, où le design du mécanisme se chiffre en milliards.
-- **Marchés d'appariement** (notebooks 15 et 16) — l'algorithme de Gale-Shapley et la valeur de Shapley sont au cœur de l'affectation des étudiants aux écoles (New York, Boston), des internes aux hôpitaux (NRMP), et des dons d'organes par échanges croisés ; prix Nobel d'économie 2012 (Roth & Shapley).
-- **IA de poker et bluff optimal** (notebook 13, CFR) — Counterfactual Regret Minimization a permis à Libratus et Pluribus de battre les meilleurs joueurs humains au Texas Hold'em, première résolution d'un jeu majeur à information imparfaite.
-- **Systèmes de vote et gouvernance** (sous-série SocialChoice) — le théorème d'Arrow et les méthodes de Condorcet/Borda éclairent le choix d'un mode de scrutin, du vote citoyen aux DAO blockchain (cf. cross-series SmartContracts).
-- **Coopération et évolution** (notebook 6) — le tournoi d'Axelrod, les dynamiques de replication (replicator mean-field déterministe) **et le processus de Moran stochastique (population FINIE)** modélisent l'émergence de la coopération en biologie, en relations internationales et dans les protocoles de réseaux pair-à-pair. La fixation observée dans une population Moran réelle diverge souvent de l'optimum mean-field (Defector bat TitForTat 28 % vs 12 % sur 25 graines).
-- **Régulation et dissuasion** (notebooks 10-12) — l'induction arrière, les jeux de réputation et le signaling formalisent la crédibilité des menaces, des banques centrales (politique monétaire) à la stratégie concurrentielle.
-- **Assurance, banque et information asymétrique** (notebook 17b) — le screening de Rothschild-Stiglitz, le signal coûteux de Spence et le point fixe de participation d'Akerlof formalisent la tarification quand l'assuré connaît son risque mieux que l'assureur : comment fixer un contrat discriminant, pourquoi la concurrence peut détruire un équilibre séparateur, et comment un marché s'effondre en « marché des citrons » (la non-tarification à l'équilibre de Rothschild-Stiglitz).
-
-### Pont vers les Preuves Formelles (Lean 4) — différenciant CoursIA
-
-GameTheory occupe une place à part dans la couche Lean : c'est la famille qui aligne le plus directement simulation numérique et preuve formelle. Le Niveau 3 promet de « prouver ce qu'on a calculé » ; cette série tient la promesse par **sept lakes game-théoriques en propre** — dont les phares cartographiés ci-dessous, plus `lean_game_defs` (types partagés) — et le lake de référence externe `social_choice_lean_peters` (toolchains détaillées dans [LEAN_INVENTORY.md](LEAN_INVENTORY.md), réconcilié 2026-08-26 ; harmonisation Mathlib #4362 ; branchés sur les notebooks qui les enseignent ou les utilisent). Cartographie inter-familles :
-
-| Famille | Lake phare | Théorème | Branchement notebook |
-| --- | --- | --- | --- |
-| **GameTheory** (choix social) | `game_theory_lean` (SocialChoice) | Théorème d'impossibilité d'Arrow + caractérisation Sen + valeur de Shapley (résolu 0 sorry) | Notebooks 16b (Arrow), Argument_Analysis |
-| **GameTheory** (équilibres) | `minimax_lean` (Sion) | Existence d'un équilibre en stratégies mixtes via point fixe (Brouwer-Sion) | GameTheory-05b-Lean-Minimax (companion natif) |
-| **GameTheory** (design) | `lean_game_defs_ext` | Vickrey (enchère au second prix = stratégie dominante), théorème de révélation | GameTheory-11b-Lean-BayesianGamesExt |
-| **GameTheory** (coopératif) | `game_theory_lean` (CooperativeGames) | Bondareva-Shapley résolu 0 sorry (#3954), Core non-vide sous balanced | Notebooks 15-15b (coopératif, valeur de Shapley) |
-| **GameTheory** (matching) | `game_theory_lean` (StableMarriage) | Gale-Shapley : existence + optimalité côté proposant | Notebooks 16-2 (matching, Gale-Shapley) |
-| **GameTheory** (jeux répétés) | `game_theory_lean` (RepeatedGames — home canonique post-#6146, l'ancien lake `repeated_games_lean/` est coquille archive) | Stratégie grim-trigger **certifiée 0 sorry** (cf #4880) ; stretch restant : théorème Folk complet (`Folk.lean`, 1 sorry assumé) | Notebooks 6c (dérivation à la main) + 6b (compagnon lake, visibilité #11703) |
-| **GameTheory** (jeux combinatoires) | `conway_cgt_lean` | Visite guidée (`#check`) de la théorie des jeux combinatoires (Conway CGT) | Notebooks 8/8b/8d (CombinatorialGames, Sprague-Grundy, compagnon natif 8d) |
-| **GameTheory** (affectation) | `assignment_lean` | Dualité faible + certificat d'optimalité à gap nul de la méthode hongroise (Kuhn-Munkres, #12598) | GameTheory-23-Munkres-Assignment |
-| **GameTheory** (information asymétrique) | `asymmetric_information_lean` | Akerlof (lemons : seuil de pooling exact + monotonie), Spence (signaling), Rothschild-Stiglitz (screening), Wilson-Miyazaki — 0 sorry, gates CI | GameTheory-17c (companion natif) + 17b (simulation Python) |
-| **Search** (cross-famille) | `search_lean` (cf. `#4048`) | Consistance + heuristique admissible = optimalité | Search-13 (A*), branchement par preuve de correction |
-| **QuantConnect** (cross-famille) | `kelly_lean` (cf. `#4052`) | Kelly `g(f) ≤ g(f*)` + unicité | QC-Py-10 Risk Management, branchement par fraction risquée |
-
-```mermaid
-flowchart LR
-    subgraph SIM["Notebooks GameTheory (simulation)"]
-        N1["Arrow Vote social"]
-        N2["Minimax Sion"]
-        N3["Vickrey Bayesian"]
-        N4["Shapley Core"]
-        N5["Gale-Shapley matching"]
-        N6["Repeated games grim"]
-    end
-    subgraph LEAN["Lakes Lean 4 (preuve)"]
-        L1["game_theory_lean/SocialChoice<br/>impossibilité"]
-        L2["minimax_lean<br/>Sion"]
-        L3["lean_game_defs_ext<br/>Vickrey"]
-        L4["game_theory_lean/CooperativeGames<br/>0 sorry #3954"]
-        L5["game_theory_lean<br/>StableMarriage (Gale-Shapley)"]
-        L6["game_theory_lean/RepeatedGames<br/>grim_trigger"]
-    end
-    N1 -. "impossibilité prouvée" .-> L1
-    N2 -. "existence point fixe" .-> L2
-    N3 -. "stratégie dominante" .-> L3
-    N4 -. "balanced ⟹ Core non-vide" .-> L4
-    N5 -. "optimalité proposant" .-> L5
-    N6 -. "stabilité sous menace" .-> L6
-    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
-    style L1 fill:#e8f5e9,color:#1b5e20
-    style L2 fill:#e8f5e9,color:#1b5e20
-    style L3 fill:#e8f5e9,color:#1b5e20
-    style L4 fill:#e8f5e9,color:#1b5e20
-    style L5 fill:#e8f5e9,color:#1b5e20
-    style L6 fill:#e8f5e9,color:#1b5e20
-```
-
-Le pipeline complet relie les **notebooks** (qui motivent — Lemke-Howson, Axelrod, Folk Theorem, Gale-Shapley via `game_theory_lean`) aux **lakes** (qui prouvent — Arrow résolu 0 sorry, Bondareva-Shapley résolu 0 sorry #3954, von Neumann/Sion, Vickrey, Gale-Shapley existence et optimalité côté proposant, grim-trigger). Sans la couche Lean, ces résultats seraient des théorèmes réputés « standard » mais jamais démontrés ; avec elle, la justification est **formellement garantie** — pas seulement admise. La spécificité GameTheory : la simulation (Lemke-Howson numérique, OpenSpiel CFR, Axelrod tournois) précède la preuve, mais les deux faces du même raisonnement sont également outillées.
-
-> **Consolidation des lakes (EPIC #4365)** : les anciens lakes standalone `cooperative_games_lean/` (**Supprimé**, rm #6587 — contenu Basic/ConeKernel/Shapley préservé byte-identique sous `game_theory_lean/CooperativeGames/`), `stable_marriage_lean/` (**Supprimé**, PR #5971 — absorbé sous `game_theory_lean/StableMarriage/`), `social_choice_lean/` (absorbé #6058 — tombstone docs seulement, coquille lake **retirée**) et `repeated_games_lean/` (absorbé #6146 — coquille archive conservée, `lean_lib` neutralisée) ne sont plus des projets Lake indépendants. Les sept lakes en propre actuels : `game_theory_lean` (multi-module : CooperativeGames + StableMarriage + SocialChoice + RepeatedGames + Swaps), `lean_game_defs`, `lean_game_defs_ext`, `minimax_lean`, `assignment_lean`, `asymmetric_information_lean`, `conway_cgt_lean` — plus le lake de référence externe `social_choice_lean_peters` (DominikPeters, toolchain v4.32.1, Peters `94a4c650` / Mathlib `520045ab`). Statut détaillé par lake : cf [LEAN_INVENTORY.md](LEAN_INVENTORY.md).
-
-Pour aller plus loin : [EPIC #4038](https://github.com/jsboige/CoursIA/issues/4038) (Roadmap Lean — un théorème-phare par série), [hub QuantConnect ↔ `kelly_lean`](../QuantConnect/README.md) (PR #5047), [hub central P0 ↔ Lean inter-familles](../README.md) (PR #5049), [hub SymbolicAI Lean](../SymbolicAI/Lean/README.md).
-
-## Prerequisites
-
-- Connaissances de base en logique et mathématiques
-- Familiarité avec Python (numpy, matplotlib)
-- Pour notebooks Lean (b) : Installation Lean 4 + kernel WSL (voir série Lean)
-- Pour notebooks 13-17 : APIs optionnelles (OpenAI pour AlphaZero)
+### Autour de 15 — coalitions et pouvoir
+
+| Lettre | Notebook | Ce qu'il ajoute | Noyau | Public |
+|--------|----------|-----------------|-------|--------|
+| 15b | [Jeux coopératifs en Lean](GameTheory-15b-Lean-CooperativeGames.ipynb) | Axiomes de Shapley, Core et Bondareva-Shapley formels (lake `game_theory_lean/CooperativeGames`) | Lean | Licence |
+| 15c | Exemples avancés — [Python](GameTheory-15c-CooperativeGames-Python.ipynb) · [C#](GameTheory-15c-CooperativeGames-Csharp.ipynb) | Jeu des gants, Core vide en majorité simple, indices de pouvoir | Python · C# | Licence |
+| 15d | [Möbius sur les coalitions](GameTheory-15d-Mobius-Coalitions.ipynb) | Décomposition de Möbius sur le treillis des coalitions, dividendes d'interaction | Python | Recherche |
+| 15e | [Pouvoir coalitionnel et SMT](GameTheory-15e-Coalition-Power-SMT.ipynb) | Calcul exhaustif, encodage SMT borné et preuve | Python | Recherche |
+| 15f | [Shapley de groupe](GameTheory-15f-Shapley-Groupes.ipynb) | Évaluer une équipe comme une unité : le meilleur binôme n'est pas celui des deux meilleurs individus | Python | Recherche |
+
+### Autour de 16 — mécanismes
+
+| Lettre | Notebook | Ce qu'il ajoute | Noyau | Public |
+|--------|----------|-----------------|-------|--------|
+| 16c | [Extraction de revenu](GameTheory-16c-Extraction-de-Revenu-DSIC-IR.ipynb) | Le revenu sous contraintes d'incitation (DSIC) et de participation (IR) : ce que VCG laisse sur la table | Python | Licence |
+| 16d | [Échange de reins](GameTheory-16d-Echange-de-Reins.ipynb) | Graphe de compatibilité, cycles et chaînes de donneurs, arbitrage entre cardinalité et équité | Python | Licence |
+| 16b | [Conception automatique de mécanismes](GameTheory-16b-Automated-Mechanism-Design.ipynb) | Synthétiser un mécanisme sous contraintes, puis vérifier ses propriétés | Python | Recherche |
+| 16e | [Joueurs LLM](GameTheory-16e-LLM-Players-Othman-Sandholm.ipynb) | Pilote : des agents de langage hétérogènes joueurs d'un mécanisme d'Othman-Sandholm | Python | Recherche |
+
+L'agrégation des préférences (Arrow, vote, manipulation) se poursuit dans la [sous-série SocialChoice](#sous-série-socialchoice).
+
+### Autour de 17 — information asymétrique
+
+17b ne demande, en plus du 17, que le palier 11 (types privés).
+
+| Lettre | Notebook | Ce qu'il ajoute | Noyau | Public |
+|--------|----------|-----------------|-------|--------|
+| 17b | [Information asymétrique](GameTheory-17b-Asymmetric-Information.ipynb) | Les modèles fondateurs : Akerlof (marché des citrons), Spence (signal coûteux), Rothschild-Stiglitz (screening), Wilson-Miyazaki | Python | Licence |
+| 17c | [Certificat d'Akerlof en Lean](GameTheory-17c-Lean-Lemons-Certificat.ipynb) | Le certificat du lake `asymmetric_information_lean` exécuté : seuil de pooling exact, monotonie, spirale de prix | Lean | Recherche |
+| 17d | [Screening et signaling en Lean](GameTheory-17d-Lean-Screening-Signaling.ipynb) | Les autres modules du même lake : non-existence de Rothschild-Stiglitz, intervalle séparateur de Spence et minimalité de Riley, Wilson-Miyazaki, pont bayésien | Lean | Recherche |
+| 17c bis | [Du marché au bilan](GameTheory-17c-Market-to-Balance-Sheet.ipynb) | L'équilibre de marché lu comme un bilan d'espérances : le pont vers la théorie de la décision | Python | Licence |
+
+La lettre 17c est portée par deux notebooks ; la passe de renommage leur donnera des lettres distinctes.
+
+## Parcours transverses
+
+Quatre itinéraires qui traversent paliers et lettres pour un public précis.
+
+**Formalisation Lean** (~4h) — pour qui vient de la série [SymbolicAI/Lean](../SymbolicAI/Lean/README.md). Familiarité avec Lean 4 supposée (tactiques de base, types inductifs) ; les notebooks Python correspondants donnent l'intuition sans être des prérequis.
+
+1. **02b** : jeu 2×2, stratégies mixtes, Nash
+2. **04b** : Brouwer et le cadre de l'existence de Nash
+3. **05b** : von Neumann par Sion, sans `sorry`
+4. **08b**, puis **08d** : jeux combinatoires, puis la bibliothèque canonique
+5. **15b** : axiomes de Shapley, Core
+6. **SocialChoice 01b** : Arrow, Sen, électeur médian
+
+**Applications** (~6h) — pour qui préfère les cas d'usage aux fondements.
+
+1. **05** : programmation linéaire, dualité
+2. **06** : émergence de la coopération
+3. **13** : poker, minimisation du regret
+4. **16** : enchères VCG, allocation, et le piège de la non-monotonie du revenu
+5. **SocialChoice 03** : Condorcet, Borda, modèles électoraux
+
+**Information asymétrique et assurance** (~4h30) — pour l'assurance, la banque ou la régulation : un agent en sait plus que l'autre (le client sur son risque, l'emprunteur sur sa solvabilité, le vendeur sur sa qualité).
+
+1. **11** : types privés, croyances, équilibre bayésien
+2. **12** : signaling, cheap talk
+3. **16** : principe de révélation, contrat sous contrainte d'incitation
+4. **17b** : Akerlof, Spence, Rothschild-Stiglitz, Wilson-Miyazaki
+5. **17c** puis **17d** : les mêmes modèles certifiés dans le lake `asymmetric_information_lean`
+
+**Informatique théorique** (~5h) — pour l'algorithmique et la complexité.
+
+1. **02** : matrices de gains, dominance
+2. **04** : Lemke-Howson, PPAD-complétude
+3. **08** : Sprague-Grundy, nimbers
+4. **13** : regret contrefactuel, convergence
+5. **SocialChoice 04** : théorèmes encodés en SAT, preuves d'insatisfiabilité
+
+## Sous-série SocialChoice
+
+Le dossier [SocialChoice/](SocialChoice/README.md) traite l'agrégation des préférences : Arrow, Sen, méthodes de vote, encodage SAT/Z3, manipulation, comités. Son README porte son propre parcours et ses propres approfondissements.
+
+Depuis le parcours principal, on y entre après le palier 16. Aucun notebook d'escalier ne la présente encore depuis la série mère : le palier 16 en tient lieu. Ses formalisations vivent pour l'instant dans les lakes de la série mère (`game_theory_lean/SocialChoice`, et le lake de référence `social_choice_lean_peters`).
+
+| # | Notebook | Ce qu'on y apprend | Noyau | Public |
+|---|----------|--------------------|-------|--------|
+| 01 | Théorème d'Arrow — [Python](SocialChoice/01-Arrow-Impossibility-Theorem.ipynb) · [C#](SocialChoice/01-Arrow-Impossibility-Theorem-Csharp.ipynb) | L'impossibilité d'Arrow, par la preuve et par la simulation | Python · C# | Licence |
+| 01b | [Choix social formel en Lean](SocialChoice/01b-Lean-SocialChoice-Formal.ipynb) | Arrow, Sen et l'électeur médian en Lean, et une visite du lake de référence de D. Peters | Lean | Recherche |
+| 03 | Méthodes de vote — [Python](SocialChoice/03-Voting-Methods.ipynb) · [C#](SocialChoice/03-Voting-Methods-Csharp.ipynb) | Condorcet, Borda, Copeland, modèle de Downs, paradoxes électoraux | Python · C# | Découverte |
+| 04 | Agrégation par SAT et Z3 — [Python (WSL)](SocialChoice/04-Computational-Aggregation-SAT-Z3.ipynb) · [C#](SocialChoice/04-Computational-Aggregation-SAT-Z3-Csharp.ipynb) | Arrow encodé en SAT, preuve d'insatisfiabilité, relaxations | Python · C# | Licence |
+| 05 | [Gibbard-Satterthwaite](SocialChoice/05-Gibbard-Satterthwaite.ipynb) | La manipulation comme témoin : la manipulabilité exhibée par le code, pas postulée | Python | Licence |
+| 06 | [Möbius, pouvoir et manipulation](SocialChoice/06-Mobius-Aggregation-Pouvoir-Manipulation.ipynb) | Dividendes de Harsanyi, poids contre pouvoir, manipulation pondérée | Python | Recherche |
+| 07 | [Comités et Core](SocialChoice/07-Committees-Core.ipynb) | Élections de comité par approbation : core, quotas, certificats de paiement | Python | Recherche |
+
+## Extensions au-delà du parcours
+
+Les notebooks numérotés de 18 à 25 ne prolongent pas le parcours principal. Ce sont des extensions autonomes : chacune isole un geste qui modifie l'espace des jeux (composition, abstraction, témoin d'impossibilité) plutôt qu'une solution dans un jeu donné. Leur numéro nu est un héritage de leur livraison, pas une étape du parcours ; leur rattachement aux paliers est à l'étude avec la gradation de la série (#15615).
+
+| # | Notebook | Ce qu'on y apprend | Noyau | Public |
+|---|----------|--------------------|-------|--------|
+| 18 | [Open games et lentilles](GameTheory-18-Open-Games-et-Lentilles.ipynb) | Une représentation locale qui modifie le contexte global dont elle est issue | Python | Recherche |
+| 18b | [Casser la composition](GameTheory-18b-Casser-la-Composition.ipynb) | Contre-exemples à la compositionnalité des équilibres d'open games | Python | Recherche |
+| 19 | [Abstraction à dette](GameTheory-19-Abstraction-a-Dette.ipynb) | Mesurer ce que perd une représentation simplifiée | Python | Recherche |
+| 20 | [Chemin minimal](GameTheory-20-Chemin-Minimal-Robinson-Goforth.ipynb) | Un témoin de chemin minimal construit par un générateur, vérifié par un composant indépendant | Python | Recherche |
+| 20b | [Témoins d'impossibilité](GameTheory-20b-Chemin-Minimal-Temoins-Impossibilite.ipynb) | Le chemin minimal qui ne peut pas exister, exhibé par le code | Python | Recherche |
+| 20c | [Jeux ordinaux 3×2](GameTheory-20c-Chemin-Minimal-3x2-Ordinal.ipynb) | Le même théorème testé sur un second substrat | Python | Recherche |
+| 21 | [Translateur Life](GameTheory-21-Loi-II-Translateur-Life.ipynb) | Synthèse d'un translateur du jeu de la vie, et certificat d'impossibilité quand la traduction échoue | Python | Recherche |
+| 22 | [Ensembles limites](GameTheory-22-Ensembles-Limites-Poincare-Bendixson.ipynb) | Poincaré-Bendixson en dimension 2 : point fixe, orbite périodique ou cycle hétérocline, classés mécaniquement, et l'échec du théorème au-delà du plan | Python | Recherche |
+| 23 | [Affectation de Kuhn-Munkres](GameTheory-23-Munkres-Assignment.ipynb) | L'affectation optimale en arithmétique entière exacte, certifiée par dualité LP, et le pont vers le cœur de Shapley-Shubik | Python | Licence |
+| 23b | [Affectation en Lean](GameTheory-23b-Lean-Assignment-Native.ipynb) | Dualité et optimalité de Kuhn-Munkres exécutées depuis le lake `assignment_lean` | Lean | Recherche |
+| 24 | [Banc humour](GameTheory-24-Humour-Banc.ipynb) | Banc de calibration : forme partagée contre stimulus, matrice de confusion | Python | Recherche |
+| 24b | [Banc humour, passage à l'échelle](GameTheory-24b-Humour-Banc-Dur.ipynb) | Comparaison de modèles de langage, circularité, paires minimales | Python | Recherche |
+| 25 | [Persuasion bayésienne](GameTheory-25-Bayesian-Persuasion.ipynb) | La concavification évaluée par deux méthodes indépendantes (programme linéaire et enveloppe concave) dont l'accord est vérifié, avec un contrôle négatif | Python | Recherche |
 
 ## Installation
 
-### Installation rapide (Python natif — tous les notebooks Python hors GT-13 et GT-17)
+Le noyau de chaque notebook figure dans la colonne **Noyau** des tables et dans ses métadonnées.
+
+### Python natif (la plupart des notebooks)
 
 ```bash
 pip install -r MyIA.AI.Notebooks/GameTheory/requirements.txt
-# Note: open_spiel échouera sur Windows (nécessite WSL) - c'est normal pour la majorité des notebooks
+# open_spiel échoue sous Windows : c'est attendu, seuls les notebooks marqués WSL en ont besoin
 ```
 
-### Notebooks nécessitant WSL (Windows uniquement)
+### Python sous WSL (OpenSpiel : notebooks 13 et 17)
 
-GT-13 (CFR/OpenSpiel) et GT-17 (Multi-Agent RL) nécessitent le kernel `Python (GameTheory WSL + OpenSpiel)` :
+OpenSpiel ne compile pas nativement sous Windows. Les notebooks marqués **WSL** utilisent le kernel `Python (GameTheory WSL + OpenSpiel)` :
 
 ```bash
 # 1. Dans WSL Ubuntu
@@ -563,14 +390,14 @@ cd D:\CoursIA\MyIA.AI.Notebooks\GameTheory\scripts
 .\setup_wsl_kernel.ps1
 ```
 
-### Notebooks Lean 4 (2b, 4b, 5b, 8b, 8d, 11b, 15b, 17c)
+### Lean 4 (notebooks marqués Lean)
 
-Ces notebooks nécessitent le kernel `Lean 4 (WSL)` :
+Les notebooks marqués **Lean** utilisent le kernel `Lean 4 (WSL)` :
 
 ```bash
 # 1. Dans WSL Ubuntu
 cd /mnt/d/CoursIA/MyIA.AI.Notebooks/GameTheory/scripts
-bash setup_wsl_lean4.sh    # installe elan + Lean 4 + REPL + lean4_jupyter
+bash setup_wsl_lean4.sh    # installe elan, Lean 4, le REPL et lean4_jupyter
 ```
 
 ```powershell
@@ -579,534 +406,258 @@ cd D:\CoursIA\MyIA.AI.Notebooks\GameTheory\scripts
 .\setup_lean4_kernel.ps1   # enregistre le kernel lean4-wsl
 ```
 
-### Vérification
+### C# (jumeaux .NET)
+
+Les jumeaux C# s'exécutent avec .NET Interactive (.NET 9) :
+
+```bash
+dotnet tool install --global Microsoft.dotnet-interactive
+dotnet interactive jupyter install
+```
+
+### Vérification et configuration
 
 ```bash
 jupyter kernelspec list
-# Doit montrer : python3, gametheory-wsl (optionnel), lean4-wsl (optionnel)
+# doit montrer python3, et selon vos besoins gametheory-wsl, lean4-wsl, .net-csharp
 ```
 
-Pour les détails et le dépannage, voir [install_wsl_kernel.md](install_wsl_kernel.md).
+Détails et dépannage : [install_wsl_kernel.md](install_wsl_kernel.md). Les clés d'API sont optionnelles (`cp .env.example .env`, puis compléter).
 
-### Configuration API (optionnel)
-
-```bash
-cp .env.example .env
-# Éditer .env et ajouter les clés API si nécessaire
-```
-
-## Quick Start
+### Premier lancement
 
 ```bash
-# 1. Installer les dépendances Python natives (tous sauf GT-13 et GT-17)
 pip install -r MyIA.AI.Notebooks/GameTheory/requirements.txt
-
-# 2. Premier notebook
-jupyter notebook GameTheory-01-Setup.ipynb
-
-# 3. Puis GameTheory-02 (formes normales, matrices de gains)
+jupyter notebook MyIA.AI.Notebooks/GameTheory/GameTheory-01-Setup.ipynb
+# puis GameTheory-02-NormalForm, et la suite du parcours principal
 ```
 
-Pour les notebooks Lean (2b, 4b, 5b, 8b, 8d, 11b, 15b, 17c) : installer le kernel `Lean 4 (WSL)` via `scripts/setup_wsl_lean4.sh`.
-Pour GT-13/17 (OpenSpiel) : installer le kernel `GameTheory WSL` via `scripts/setup_wsl_openspiel.sh`. Les autres notebooks Python, y compris les extensions 3a-3f, 13b, 15d, 16b et 18-27, utilisent l'environnement Python natif.
+## FAQ et dépannage
 
----
+### J'ai un Windows, puis-je suivre toute la série ?
 
-## FAQ / Troubleshooting
+Oui. Tout le Python tourne nativement sous Windows (Nashpy, NumPy, SciPy, Matplotlib, Z3), sauf les notebooks marqués WSL, qui demandent OpenSpiel. Les notebooks Lean demandent aussi WSL, pour le kernel `lean4-wsl`. Les scripts d'installation sont dans `scripts/` (voir [Installation](#installation)).
 
-### J'ai un Windows, est-ce que je peux suivre toute la série ?
+### Quel est le prérequis mathématique minimum ?
 
-Oui. Tous les notebooks Python tournent nativement sur Windows (Nashpy, NumPy, SciPy, Matplotlib, Z3), à l'exception de GT-13 (CFR/OpenSpiel) et GT-17 (Multi-Agent RL), qui nécessitent WSL car OpenSpiel ne compile pas nativement sous Windows. Les side tracks Lean (2b, 4b, 5b, 8b, 8d, 11b, 15b, 17c) nécessitent aussi WSL pour le kernel `lean4-wsl`. Les side tracks `c` et les extensions 3a-3f, 13b, 15d, 16b et 18-27 restent du Python natif. Les scripts d'installation sont dans `scripts/` (voir section Installation).
+Algèbre linéaire de base (produit matrice-vecteur) et probabilités (espérance, loi uniforme). Les concepts de théorie des jeux sont introduits depuis zéro.
 
-### Quel est le pré-requis mathématique minimum ?
+### Faut-il faire les notebooks Lean ?
 
-Algèbre linéaire de base (multiplication de matrices, vecteurs) et probabilités (espérance, loi uniforme). Les concepts de théorie des jeux (Nash, minimax, Shapley) sont introduits progressivement depuis zéro. Aucun prérequis en théorie des jeux n'est nécessaire.
+Non. Ce sont des approfondissements, jamais des prérequis du parcours principal. Ils s'adressent à qui veut comprendre ce que « prouver » veut dire dans un assistant de preuve. Si vous n'avez jamais touché à Lean, commencez par la série [SymbolicAI/Lean](../SymbolicAI/Lean/README.md).
 
-### Faut-il faire les notebooks Lean (side tracks b) ?
+### Quelle différence entre Nash pur et Nash mixte ?
 
-Non. Les side tracks Lean sont optionnels et indépendants. Ils sont destinés aux étudiants qui veulent comprendre ce que signifie « prouver » un résultat mathématique dans un assistant de preuve. Le fil principal (Python) suffit pour maîtriser les concepts. Si vous n'avez jamais touché à Lean, commencez par la série [SymbolicAI/Lean](../SymbolicAI/Lean/README.md).
+Un équilibre **pur** est un choix déterministe : chaque joueur choisit une seule stratégie. Un équilibre **mixte** autorise les probabilités : chaque joueur randomise entre plusieurs stratégies. Le notebook 04 couvre les deux et montre que tout jeu fini a au moins un équilibre mixte (Nash, 1951).
 
-### Quelle est la différence entre Nash pur et Nash mixte ?
+### Je suis bloqué sur un exercice Lean
 
-Un équilibre de Nash **pur** est un choix déterministe (chaque joueur choisit une seule stratégie). Un équilibre de Nash **mixte** autorise les probabilités (chaque joueur randomise entre plusieurs stratégies avec certaines probabilités). Le notebook 4 (NashEquilibrium) couvre les deux cas et montre que tout jeu fini a au moins un équilibre de Nash mixte (théorème de Nash, 1951).
+Vérifiez d'abord votre environnement avec [Lean-1-Setup](../SymbolicAI/Lean/Lean-1-Setup.ipynb). La référence est [Theorem Proving in Lean 4](https://lean-lang.org/theorem_proving_in_lean4/). Les exercices de cette série n'exigent que les tactiques introduites dans les notebooks, pas une connaissance détaillée de Mathlib.
 
-### Je suis bloqué sur un exercice Lean, où trouver de l'aide ?
+### open_spiel échoue à l'installation sous Windows
 
-Consultez d'abord le notebook [Lean-1-Setup](../SymbolicAI/Lean/Lean-1-Setup.ipynb) pour vérifier votre environnement. La documentation Lean 4 officielle ([Theorem Proving in Lean 4](https://lean-lang.org/theorem_proving_in_lean4/)) est la référence principale. Les exercices Lean de cette série sont conçus pour être accessibles avec les tactiques introduites dans les notebooks ; il n'est pas nécessaire de connaître Mathlib en détail.
-
-### open_spiel échoue à l'installation sur Windows
-
-OpenSpiel ne compile pas nativement sur Windows. C'est attendu — seuls les notebooks 13 (CFR) et 17 (Multi-Agent RL) en ont besoin. Pour tous les autres notebooks Python, installez les dépendances natives depuis `requirements.txt` ; le sous-ensemble minimal courant est :
+C'est attendu : seuls les notebooks 13 et 17 en ont besoin. Pour tous les autres, installez les dépendances de `requirements.txt` ; le sous-ensemble minimal courant est :
 
 ```bash
 pip install nashpy z3-solver matplotlib numpy
 ```
 
-Pour GT-13/17 : utilisez le kernel `gametheory-wsl` (WSL Ubuntu) via `scripts/setup_wsl_openspiel.sh`.
+### Le kernel lean4-wsl ne démarre pas
 
-### Le kernel lean4-wsl ne démarre pas (timeout)
+Le premier démarrage via WSL peut prendre de 30 à 60 secondes. Si le kernel échoue :
 
-Le premier démarrage du kernel Lean 4 via WSL peut prendre 30-60 secondes (cold start). Si le kernel timeout :
-
-1. Vérifiez que WSL Ubuntu est opérationnel : `wsl -d Ubuntu -- echo OK`
+1. Vérifiez que WSL répond : `wsl -d Ubuntu -- echo OK`
 2. Vérifiez le wrapper : `wsl -d Ubuntu -- test -f ~/.lean4-kernel-wrapper.py && echo OK`
-3. Relancez le kernel. Si ça persiste, voir [wsl-kernels.md](../../.claude/rules/wsl-kernels.md) pour le diagnostic complet.
+3. Relancez le kernel. Si l'échec persiste, voir [wsl-kernels.md](../../.claude/rules/wsl-kernels.md).
 
 ### Nashpy retourne plusieurs équilibres
 
-C'est normal : un jeu peut avoir plusieurs équilibres de Nash (en stratégies pures et/ou mixtes). Nashpy les retourne tous. Le notebook 4 explique comment les interpréter et filtrer (équilibres Pareto-dominants, équilibre en stratégies pures privilégié).
+C'est normal : un jeu peut avoir plusieurs équilibres, purs ou mixtes, et Nashpy les retourne tous. Le notebook 04 explique comment les interpréter et les départager.
 
-### Les calculs d'équilibres sont très lents
+### Les calculs d'équilibres sont lents
 
-La complexité croît exponentiellement avec le nombre de stratégies. Pour les jeux 3x3 et au-delà, Lemke-Howson peut être lent. Alternatives :
+La complexité croît vite avec le nombre de stratégies. Pour les petits jeux, `nashpy` avec `method="support-enumeration"` suffit ; pour les grands, le notebook 13 approche l'équilibre par itération (CFR). Vérifiez aussi que les lignes et les colonnes de la matrice de gains ne sont pas inversées.
 
-- Utilisez `nashpy` avec l'option `method="support-enumeration"` pour les petits jeux
-- Pour les grands jeux, le notebook 13 (CFR) approche l'équilibre par itération
-- Vérifiez que vous n'avez pas une inversion de lignes/colonnes dans la matrice de gains
+### Z3 retourne UNSAT trop vite
 
-### Z3/SAT retourne UNSAT trop rapidement
+Si l'encodage SAT d'Arrow (SocialChoice 04) semble trivial, vérifiez le nombre de votants et d'alternatives : l'impossibilité apparaît à partir de 3 alternatives et 2 votants. En dessous, le solveur trouve une règle satisfaisante.
 
-Si l'encodage SAT d'Arrow (SC-04) semble trivial, vérifiez que le nombre de votants et d'alternatives est suffisant dans vos paramètres. L'impossibilité d'Arrow émerge à partir de 3 alternatives et 2 votants — en dessous, le solveur peut trouver une satisfaction.
+### Un lake Lean ne se construit pas
 
-### Les projets Lake Lean ne buildent pas
-
-Chaque sous-dossier Lake (`conway_cgt_lean/`, `game_theory_lean/`, `minimax_lean/`, `repeated_games_lean/`, `social_choice_lean_peters/`, `lean_game_defs/`, `lean_game_defs_ext/`) est un projet Lake indépendant. Note : `social_choice_lean/` n'est PAS un projet Lake actif (contenu absorbé sous `game_theory_lean/SocialChoice/` post-EPIC #4365 PR #6058, `lean_lib` neutralisé). Pour builder SocialChoice :
+Chaque lake du dossier est un projet Lake indépendant, avec sa propre toolchain (`lean-toolchain`). Pour construire le module SocialChoice :
 
 ```bash
 cd MyIA.AI.Notebooks/GameTheory/game_theory_lean
 lake build SocialChoice
 ```
 
-Assurez-vous que `lean --version` correspond à la toolchain spécifiée dans `lean-toolchain` (généralement `stable`). Si les dépendances échouent, essayez `lake exe cache get` puis `lake build`.
+Vérifiez que `lean --version` correspond à la toolchain du lake ; si les dépendances échouent, lancez `lake exe cache get` puis `lake build`. Les lakes actifs sont listés dans [Formalisations Lean](#formalisations-lean).
 
-## Conclusion / Prochaines étapes
+## Après la série
 
-### Ce que vous avez appris
+- **Approfondir la formalisation** : la série [SymbolicAI/Lean](../SymbolicAI/Lean/README.md) prolonge les approfondissements Lean. Elle développe les compétences de preuve (tactiques, types inductifs, Mathlib) qui sous-tendent `Arrow.lean`, `Shapley.lean` et les preuves d'existence d'équilibres.
+- **Apprendre plutôt que calculer** : la série [RL](../RL/README.md) reprend la théorie des jeux sous l'angle de l'apprentissage, où les stratégies d'équilibre ne sont plus calculées mais apprises par interaction. La série [Search](../Search/README.md) partage les arbres de jeu, le minimax et l'induction arrière.
+- **Concevoir des règles** : la [sous-série SocialChoice](SocialChoice/README.md) et le palier 16 ouvrent sur la conception de mécanismes, c'est-à-dire concevoir des règles qui poussent des agents égoïstes vers un résultat collectivement souhaitable. La série [SmartContracts](../SymbolicAI/SmartContracts/README.md) prolonge ces mécanismes en gouvernance on-chain.
+- **Une tension à méditer** : reprenez le notebook 06 et le tournoi d'Axelrod, où la coopération *émerge* de l'égoïsme ; puis confrontez-le au théorème d'Arrow, qui montre que certaines agrégations parfaites sont *impossibles*. L'émergence optimiste face à l'impossibilité démontrée : c'est la tension vivante de la série.
 
-Cette série vous a fait traverser le **langage mathématique de la stratégie** — la modélisation des situations où le résultat d'une décision dépend des choix des autres, de l'enchère à la négociation commerciale, de l'élection au poker. L'arc pédagogique :
+La théorie des jeux déplace la question de la décision : non plus « quelle est la meilleure action ? », mais **« quelle est la meilleure action, sachant que les autres, aussi rationnels que moi, raisonnent de même ? »**. La série donne le formalisme (formes normale et extensive, Nash, SPE, minimax, Shapley), la double validation (simulation numérique et preuve formelle) et le sens des applications (enchères, appariement, poker, vote).
 
-- **Le geste fondateur** — modéliser une interaction stratégique sous forme normale (matrices de gains, dominance, meilleure réponse) ou extensive (arbres, ensembles d'information, menaces crédibles), puis y lire la *rationalité* : qu'est-ce qu'un agent peut déduire des croyances d'autrui ? Cette formalisation est le socle commun, du dilemme du prisonnier au design de mécanismes.
-- **La double dualité, délibérément juxtaposée** — d'abord **simulation *vs* preuve** : le notebook Python *montre pourquoi* l'équilibre de Nash est plausible (il émerge des interactions répétées), tandis que le notebook Lean *certifie qu'il existe forcément* (Brouwer/Kakutani, Arrow, Shapley — 0 `sorry` sur les théorèmes majeurs). Ensuite **coopératif *vs* non-coopératif** : d'un côté Nash, minimax et SPE (que joue chaque agent égoïste), de l'autre Shapley, Core et Bondareva-Shapley (comment répartir équitablement la valeur collective). Les deux approches se nourrissent mutuellement.
-- **L'instrument** — Nashpy et OpenSpiel pour la simulation (Lemke-Howson, CFR/Deep CFR, tournois Axelrod, *replicator dynamics*), Z3 pour encoder les impossibilités en SAT, et Lean 4 pour la preuve formelle vérifiée par la machine — du point fixe de Brouwer à l'axiomatique de Shapley et à la preuve d'Arrow.
-- **La finesse** — que la théorie des jeux n'est pas qu'un objet académique mais structure l'économie numérique et les politiques publiques : les mécanismes VCG fondent les enchères publicitaires (des milliards de transactions/jour) et les ventes de spectres télécom ; Gale-Shapley est au cœur de l'affectation étudiants-hôpitaux (prix Nobel 2012) ; CFR a permis à Libratus/Pluribus de résoudre le poker ; le théorème d'Arrow éclaire le choix d'un mode de scrutin, des élections citoyennes aux DAO blockchain.
+## Pour aller plus loin
 
-La thèse est puissante et honnêtement présentée : la théorie des jeux occupe une *position charnière* — point de rencontre entre l'optimisation (maximiser son gain), la logique (raisonner sur les croyances d'autrui) et l'informatique (algorithmes de résolution, formalisation en assistant de preuve) — et aucune autre discipline ne combine ces trois dimensions avec autant de profondeur mathématique et d'applications concrètes.
+Cette partie réunit la matière de niveau **Recherche** : notes techniques sur des résultats précis du parcours, formalisations Lean, liens avec les autres séries, organisation du dossier.
 
-### Prochaines étapes
+### Processus de Moran : la population finie (palier 06)
 
-- **Approfondir la formalisation** : la série [SymbolicAI/Lean](../SymbolicAI/Lean/README.md) est le prolongement naturel des side tracks Lean (*b*) — elle développe les compétences de preuve (tactiques, types inductifs, Mathlib) qui sous-tendent `Arrow.lean`, `Shapley.lean` et la preuve d'existence de Nash via Brouwer/Kakutani. L'inventaire complet des toolchains, builds et `sorry` résiduels est dans [LEAN_INVENTORY.md](LEAN_INVENTORY.md).
-- **Élargir à l'apprentissage et à la recherche** : [RL](../RL/README.md) (Multi-Agent RL, notebook 17 : NFSP, PSRO, AlphaZero) reprend la théorie des jeux sous l'angle de l'apprentissage — où les stratégies d'équilibre ne sont plus calculées mais *apprises* par interaction ; [Search](../README.md) (Minimax, MCTS) partage les arbres de jeu et l'induction arrière.
-- **Franchir le cap applications** : la sous-série [SocialChoice/](SocialChoice/) (Arrow, Sen, voting, SAT/Z3) et le notebook 16 (MechanismDesign : VCG, matching) ouvrent sur le *design de mécanismes* — comment concevoir des règles d'interaction qui poussent les agents égoïstes vers des résultats collectivement souhaitables. Le pont vers [SmartContracts](../SymbolicAI/SmartContracts/README.md) relie ces mécanismes à la gouvernance on-chain (DAO, vote vérifiable).
-- Pour la pratique : reprenez le notebook 6 (EvolutionTrust) et le tournoi d'Axelrod — comment la coopération *émerge-t-elle* de l'égoïsme même ? Puis confrontez cette intuition au notebook SC-01, où la preuve d'Arrow montre que certaines formes d'agrégation parfaite sont *mathématiquement impossibles*. C'est la tension vivante de la série : l'émergence optimiste *vs* l'impossibilité démontrée.
+Le round-robin déterministe du notebook 06 donne une hiérarchie stable où Grudger et TitForTat dominent. La **dynamique de Moran** (librairie [`axelrod`](https://github.com/Axelrod-Python/Axelrod), Knight et al., *JORS* 2016) modélise un autre régime : une population **finie** où chaque étape copie un joueur proportionnellement à son fitness puis en élimine un uniformément au hasard. Le §7bis du notebook exécute cette dynamique sur 25 graines :
 
-### Le fil rouge
+| Stratégie | Fixations sur 25 graines |
+|---|---|
+| **Defector** | **7/25 (28 %)** |
+| **Grudger** | 6/25 (24 %) |
+| Win-Stay Lose-Shift | 4/25 (16 %) |
+| Random (p = 0,5) | 3/25 (12 %) |
+| **Tit For Tat** | **3/25 (12 %)** |
+| Cooperator | 2/25 (8 %) |
 
-La théorie des jeux propose un changement de regard sur la décision : ne plus demander « quelle est la meilleure action ? » mais **« quelle est la meilleure action sachant que les autres agents, tout aussi rationnels que moi, raisonnent de même ? »**. La série vous a donné le formalisme (formes normale et extensive, Nash/SPE/minimax/Shapley), la double validation (simulation numérique *et* preuve formelle vérifiée), et le sens des applications (enchères, matching, poker, vote) pour transformer une interaction stratégique en un équilibre analysable — en gardant à l'esprit que cette discipline, couronnée de sept prix Nobel d'économie entre 1994 et 2020, reste l'un des cadres les plus puissants pour penser la coopération, la compétition et la conception des règles du jeu.
+TitForTat, dominant au tableau du round-robin, ne se fixe que dans 12 % des trajectoires. Le processus de Moran est **stochastique** : la **dérive** peut fixer une stratégie sous-optimale par simple fluctuation d'échantillonnage, indépendamment de son fitness. C'est la distinction canonique entre dynamique du réplicateur **en champ moyen, déterministe** (§5) et processus de Moran **fini, stochastique** (§7bis).
 
----
+1. **Population finie n'est pas champ moyen.** Quand $N \to \infty$, le processus de Moran converge vers la dynamique du réplicateur ; à $N$ fini, le bruit d'échantillonnage domine dès que $|f_A - f_B| \lesssim 1/N$.
+2. **Lire la sortie, pas l'intuition.** Ce que le tableau du round-robin annonce, la trajectoire stochastique le dément.
+3. **Lecture écologique.** Le processus de Moran est l'outil de référence de la théorie évolutionnaire des jeux (Nowak, *Evolutionary Dynamics*, 2006).
 
-## Navigation et Side Tracks
+### Point fixe discriminant : pourquoi `regret = 0` définit l'équilibre (approfondissement 04c)
 
-Les **side tracks** approfondissent les concepts du notebook principal :
+La carte `perturbed_br` du notebook 04c illustre le point fixe de Brouwer sur Matching Pennies : un point fixe de `perturbed_br` est un profil où le vecteur de **regret** est nul. Tester cette propriété **seulement** à l'équilibre `(0.5, 0.5)` serait tautologique : le regret y est nul par définition, la perturbation ne fait rien, et « `(0.5, 0.5)` est point fixe » est vrai par construction.
 
-| Track | Type | Description |
-|-------|------|-------------|
-| **b** | Lean 4 | Formalisation mathématique, preuves formelles |
-| **c** | Python | Approfondissement, exemples avancés, visualisations |
-| **SC** | Mixte | Sous-série [SocialChoice/](SocialChoice/) : Arrow, Sen, SAT, Z3 (**10 notebooks** : SC-01 à SC-07 + 3 jumeaux C#) |
+Le notebook lève la tautologie par un contraste à deux points de départ :
 
-**Organisation** :
-- Chaque notebook principal inclut des liens vers ses side tracks
-- Les side tracks sont optionnels et peuvent être étudiés indépendamment
-- Progression recommandée : notebook principal, puis side track b (formalisation), puis c (applications)
+| Départ | Vecteur de regret | `perturbed_br` renvoie | Point fixe ? |
+|---|---|---|---|
+| `(0.8, 0.2)` (non équilibre) | `[0.24, 0]` | `[0.8047, 0.1953]` ≠ départ | **Non** : la carte déplace le point |
+| `(0.5, 0.5)` (équilibre de Nash) | `[0, 0]` | `(0.5, 0.5)` = départ | **Oui** |
 
-## Acquis d'apprentissage
+1. **Regret nul équivaut à point fixe** (apprentissage sans regret, Hart et Mas-Colell 2000) : appliqué à `perturbed_br`, Brouwer n'a rien de magique, c'est le critère qui définit la convergence vers Nash.
+2. **Anti-tautologie.** Tout test de point fixe, d'optimalité ou de convergence exige au moins un point de départ non équilibré, qui doit être déplacé.
+3. **Lien avec le 04b.** Le notebook Lean 04b pose le cadre formel de l'existence (simplexe, convexité, point fixe) ; le 04c l'illustre numériquement. Preuve et simulation se complètent sans se substituer.
 
-À l'issue de la série, vous êtes capable de :
+### Formalisations Lean
 
-- **Modéliser** une interaction stratégique sous forme normale ou extensive, et y lire dominance, meilleure réponse, ensembles d'information et menaces crédibles.
-- **Calculer** des équilibres : Nash pur et mixte (Lemke-Howson), minimax et dualité LP en jeux à somme nulle, équilibre parfait en sous-jeux par induction arrière et avant.
-- **Simuler** des dynamiques d'apprentissage et d'évolution : tournois itérés à la Axelrod, *replicator dynamics*, et apprentissage multi-agent moderne (CFR/Deep CFR, NFSP, PSRO).
-- **Analyser** la coopération : valeur de Shapley, Core, et conditions de stabilité (Bondareva-Shapley) ; concevoir un mécanisme incitatif (principe de révélation, VCG).
-- **Raisonner** sur l'agrégation collective : impossibilité d'Arrow, théorème de Sen, méthodes de Condorcet/Borda/Copeland, et leur encodage en problème SAT résolu par Z3.
-- **Formaliser** ces résultats en Lean 4 et saisir ce que « prouver » veut dire dans un assistant de preuve — du point fixe de Brouwer/Kakutani pour Nash à l'axiomatique de Shapley et à la preuve d'Arrow.
+La série aligne simulation numérique et preuve formelle : les notebooks motivent (Lemke-Howson, Axelrod, Gale-Shapley), les lakes prouvent. L'inventaire complet (toolchains, statut de build, `sorry` résiduels) est tenu dans [LEAN_INVENTORY.md](LEAN_INVENTORY.md) ; la table ci-dessous ne sert qu'à retrouver, pour chaque lake, les notebooks qui l'enseignent ou le consomment.
 
-Chaque notebook adopte la même trame pédagogique — introduction motivée, plan ancré, exemples exécutés et exercices corrigés — pensée pour un travail en autonomie. Les side tracks Lean (*b*) et la sous-série SocialChoice vont jusqu'au degré « preuve formelle vérifiée par la machine » : les résultats principaux sont prouvés sans `sorry` (l'inventaire complet des toolchains, du statut de build et des `sorry` résiduels intractables est tenu dans [LEAN_INVENTORY.md](LEAN_INVENTORY.md)).
+| Lake | Ce qu'il prouve | Notebooks |
+|------|-----------------|-----------|
+| `game_theory_lean` (module SocialChoice) | Impossibilité d'Arrow, caractérisation de Sen | SocialChoice 01b |
+| `game_theory_lean` (module CooperativeGames) | Bondareva-Shapley sans `sorry` (#3954), Core non vide sous équilibrage | 15, 15b |
+| `game_theory_lean` (module StableMarriage) | Gale-Shapley : existence et optimalité côté proposant | 15b, 16 |
+| `game_theory_lean` (module RepeatedGames) | Grim trigger certifié sans `sorry` (#4880) ; le Folk Theorem complet reste ouvert (`Folk.lean`) | 06b, 06c |
+| `game_theory_lean` (module Swaps) | Certificat du plus court chemin de swaps | 03a |
+| `minimax_lean` | Théorème minimax de von Neumann, via Sion | 05b |
+| `lean_game_defs`, `lean_game_defs_ext` | Types de jeux partagés ; Vickrey sans `sorry` | 02b, 08b, 11b, 17d |
+| `conway_cgt_lean` | Visite de la théorie des jeux combinatoires de Conway (`vihdzp/combinatorial-games`) | 08d |
+| `assignment_lean` | Dualité faible et optimalité à gap nul de Kuhn-Munkres (#12598) | 23, 23b |
+| `asymmetric_information_lean` | Akerlof (seuil de pooling exact), Spence, Rothschild-Stiglitz, Wilson-Miyazaki | 17b, 17c, 17d |
+| `social_choice_lean_peters` | Lake de référence externe (D. Peters, MIT) : Gibbard-Satterthwaite, Split Cycle et d'autres règles | SocialChoice 01b, 07 |
 
-## Statut de maturité
+Les anciens lakes autonomes du choix social, des jeux coopératifs, du mariage stable et des jeux répétés ont été absorbés dans `game_theory_lean` (#4365) ; `social_choice_lean/` et `repeated_games_lean/` ne restent que comme coquilles documentaires. Au niveau du dépôt, voir le [hub SymbolicAI/Lean](../SymbolicAI/Lean/README.md) et la feuille de route Lean ([#4038](https://github.com/jsboige/CoursIA/issues/4038)).
 
-| # | Notebook | Cellules | Exercices | Statut |
-|---|----------|----------|-----------|--------|
-| 1 | Setup | ~15 | - | **COMPLET** |
-| 2 | NormalForm | ~25 | 3 | **COMPLET** |
-| 2b | Lean-Definitions | ~25 | 3 | **COMPLET** |
-| 2c | Travelers-Dilemma | 32 | 2 | **COMPLET** |
-| 3 | Topology2x2 | ~30 | 3 | **COMPLET** |
-| 3a | Chemins-de-Swaps | 33 | 3 | **NOUVEAU** (strate 7) |
-| 3b | Chambres-et-Murs | ~38 | 3 | **NOUVEAU** (chantier 4 #12207) |
-| 3c | Le-Joueur-LLM | 22 | 3 | **NOUVEAU** (strate 7) |
-| 3d | Plan-de-deformation | 15 | 3 | **NOUVEAU** (strate 7) |
-| 3e | Meta-Actions-Tarifees | ~30 | 3 | **NOUVEAU** (chantier 4 #12207) |
-| 3f | Parcours-Complet | 29 | 3 | **NOUVEAU** (strate 7) |
-| 3h | Deux-Especes-de-Fleches | 30 | 0 | **NOUVEAU** (chantier GT-3) |
-| 4 | NashEquilibrium | ~35 | 3 | **COMPLET** |
-| 4b | Lean-NashExistence | ~20 | 3 | **COMPLET** |
-| 4c | NashExistence-Python | ~20 | 2 | **COMPLET** |
-| 4d | Marchandage-Asymetrique | 21 | 0 | **NOUVEAU** (strate 7) |
-| 4e | Reflective-Oracles | 39 | 13 | **COMPLET** |
-| 4f | Theories-Decision-Predicteur | 63 | 4 | **NOUVEAU** (#17543) |
-| 5 | ZeroSum-Minimax | ~25 | 3 | **COMPLET** |
-| 5b | Lean-Minimax | ~20 | 3 | **COMPLET** |
-| 6 | EvolutionTrust | ~40 | 3 | **COMPLET** |
-| 6b | Lean-RepeatedGames | 30 | 3 | **NOUVEAU** |
-| 6c | RepeatedGames-FolkTheorem | ~30 | 3 | **NOUVEAU** |
-| 6d | Sympathie-vs-Engagement | 37 | 3 | **NOUVEAU** |
-| 6e | Open-Source-Game-Theory | 33 | 5 | **NOUVEAU** (chantier transparence) |
-| 6f | Bounded-Agents-Python | 34 | 3 | **NOUVEAU** (chantier transparence) |
-| 6f | Bounded-Proofs-Reasoning-Costs | 24 | 2 | **NOUVEAU** (chantier transparence) |
-| 6g | Bounded-Agents-Lean | 25 | 3 | **NOUVEAU** (chantier transparence) |
-| 6g | Simulation-Based-Program-Equilibria | 24 | 3 | **NOUVEAU** (chantier transparence) |
-| 6h | Transparent-Institutions | 39 | 3 | **NOUVEAU** (chantier transparence) |
-| 7 | ExtensiveForm | ~30 | 3 | **COMPLET** |
-| 8 | CombinatorialGames | ~17 | 3 | **NOUVEAU** |
-| 8b | Lean-CombinatorialGames | ~25 | 3 | **COMPLET** |
-| 8c | CombinatorialGames-Python | ~25 | 3 | **COMPLET** |
-| 9 | BackwardInduction | ~35 | 3 | **COMPLET** |
-| 9b | Commitment-Stackelberg | 25 | 3 | **NOUVEAU** |
-| 9c | Stackelberg-SecurityGame | 14 | 0 | **NOUVEAU** |
-| 10 | ForwardInduction-SPE | ~35 | 3 | **COMPLET** |
-| 11 | BayesianGames | ~30 | 3 | **COMPLET** |
-| 11b | Lean-BayesianGamesExt | ~35 | - | **COMPLET** |
-| 12 | ReputationGames | ~30 | 3 | **COMPLET** |
-| 13 | ImperfectInfo-CFR | ~45 | 3 | **COMPLET** |
-| 13b | Safe-Subgame-Solving | 16 | 3 | **NOUVEAU** |
-| 13c | Safe-Subgame-Solving-Csharp | 24 | 3 | **COMPLET** |
-| 13d | Optimistic-CFR | 17 | 2 | **NOUVEAU** |
-| 14 | DifferentialGames | ~35 | 3 | **COMPLET** |
-| 15 | CooperativeGames | ~40 | 3 | **COMPLET** |
-| 15b | Lean-CooperativeGames | ~30 | 3 | **COMPLET** |
-| 15c | CooperativeGames-Python | ~25 | 3 | **COMPLET** |
-| 15d | Mobius-Coalitions | 26 | 4 | **NOUVEAU** |
-| 15e | Coalition-Power-SMT | 35 | 3 | **NOUVEAU** |
-| 15f | Shapley-Groupes | 44 | 4 | **NOUVEAU** |
-| 16 | MechanismDesign | ~40 | 3 | **COMPLET** |
-| 16b | Automated-Mechanism-Design | 9 | 3 | **NOUVEAU** |
-| 16c | Extraction-de-Revenu-DSIC-IR | 23 | 3 | **NOUVEAU** |
-| 16d | Echange-de-Reins | 25 | 5 | **NOUVEAU** (strate 7) |
-| 16e | LLM-Players-Othman-Sandholm | 42 | 1 | **NOUVEAU** |
-| SC-01 | Arrow-Impossibility-Theorem | ~38 | 3 | **COMPLET** |
-| SC-02 | Lean-SocialChoice-Formal | ~55 | 3 | **COMPLET** |
-| SC-03 | Voting-Methods | ~43 | 3 | **COMPLET** |
-| SC-04 | Computational-Aggregation-SAT-Z3 | ~66 | 2 | **COMPLET** |
-| 17 | MultiAgent-RL | ~35 | 3 | **COMPLET** |
-| 17b | Asymmetric-Information | 26 | 9 | **NOUVEAU** (EPIC #12844) |
-| 17c | Lean-Lemons-Certificat | 36 | 3 | **NOUVEAU** |
-| 17c | Market-to-Balance-Sheet | 27 | 4 | **NOUVEAU** |
-| 17d | Lean-Screening-Signaling | 29 | 3 | **NOUVEAU** |
-| 18 | Open-Games-et-Lentilles | 16 | 3 | **NOUVEAU** (strate 7) |
-| 18b | Casser-la-Composition | 25 | 3 | **NOUVEAU** (strate 7) |
-| 19 | Abstraction-a-Dette | 10 | 3 | **NOUVEAU** (strate 7) |
-| 20 | Chemin-Minimal-Robinson-Goforth | 35 | 3 | **NOUVEAU** (strate 7) |
-| 20b | Chemin-Minimal-Temoins-Impossibilite | 30 | 3 | **NOUVEAU** (strate 7) |
-| 20c | Chemin-Minimal-3x2-Ordinal | 32 | 3 | **NOUVEAU** (strate 7) |
-| 21 | Loi-II-Translateur-Life | 22 | 3 | **NOUVEAU** (strate 7) |
-| 22 | Ensembles-Limites-Poincare-Bendixson | 27 | 3 | **NOUVEAU** (strate 7) |
-| 23 | Munkres-Assignment | 28 | 3 | **NOUVEAU** (strate 7) |
-| 23b | Lean-Assignment-Native | 39 | 0 | **NOUVEAU** (strate 7) |
-| 24 | Humour-Banc | 18 | 0 | **NOUVEAU** (strate 7) |
-| 24b | Humour-Banc-Dur | 42 | 0 | **NOUVEAU** (strate 7) |
-| SC-06 | Mobius-Aggregation-Pouvoir-Manipulation | 18 | 0 | **NOUVEAU** |
-| SC-07 | Committees-Core | 28 | 4 | **NOUVEAU** |
+### Liens avec les autres séries
 
-**Jumeaux C#** : le tableau ci-dessus liste les notebooks Python/Lean de référence. Chaque notebook du fil principal (GT-2 à GT-17, plus 4c/6c/8c/15c et SC-01/SC-03/SC-04) dispose en outre d'un **jumeau C#** (`*-Csharp.ipynb`, 23 jumeaux distincts — 24 fichiers `.ipynb` en comptant la tranche `Part2` du GT-2) livré par le marathon parité #4956 — algorithmes from-scratch en BCL .NET 9, voir la section « Parité .NET » en tête de fichier.
+| Cette série | Série liée | Pont |
+|-------------|------------|------|
+| Lakes Lean (Arrow, Sen, Shapley, Vickrey) | [SymbolicAI/Lean](../SymbolicAI/Lean/README.md) | Même toolchain WSL, Mathlib partagée |
+| Apprentissage multi-agent (NFSP, PSRO) | [RL](../RL/README.md) | Stratégies d'équilibre apprises par interaction plutôt que calculées |
+| Arbres de jeu, induction arrière, minimax | [Search](../Search/README.md) | Même structure d'arbre, du minimax à MCTS |
+| Mécanismes VCG, appariement de Gale-Shapley | [SymbolicAI/SmartContracts](../SymbolicAI/SmartContracts/README.md) | La conception de mécanismes se prolonge en gouvernance on-chain |
+| Encodage SAT/Z3 d'Arrow | [SymbolicAI/SMT](../SymbolicAI/SMT/README.md) | Même solveur Z3 |
 
-Tous les notebooks incluent :
-- Navigation header/footer avec liens
-- Plan avec liens ancres
-- Tableaux recapitulatifs
-- Exercices avec solutions complètes
+### Organisation du dossier
 
-## Ressources externes
+```
+GameTheory/
+├── GameTheory-*.ipynb             # parcours principal, approfondissements, extensions
+├── SocialChoice/                  # sous-série Choix social (son propre README)
+├── assets/readme/                 # figures du README et leur MANIFEST
+├── game_theory_utils.py           # utilitaires partagés
+├── limit_sets.py                  # détecteur d'ensembles limites (extension 22)
+├── cooperative_games/             # Shapley, Core, valeur de groupe, exemples
+├── trust_simulation/              # stratégies, tournoi d'Axelrod, visualisation
+├── examples/                      # scripts autonomes (dilemme, CFR sur Kuhn, VCG, Stackelberg...)
+├── tests/                         # tests unitaires des modules Python
+├── scripts/                       # installation des kernels WSL (OpenSpiel, Lean)
+├── game_theory_lean/              # lake multi-module (voir Formalisations Lean)
+├── minimax_lean/  assignment_lean/  asymmetric_information_lean/  conway_cgt_lean/
+├── lean_game_defs/  lean_game_defs_ext/  social_choice_lean_peters/
+├── repeated_games_lean/  social_choice_lean/     # coquilles documentaires (absorbées)
+├── LEAN_INVENTORY.md              # inventaire des lakes
+├── install_wsl_kernel.md          # installation des kernels WSL
+└── requirements.txt
+```
+
+Les tests unitaires des modules Python :
+
+```bash
+cd MyIA.AI.Notebooks/GameTheory
+python -m pytest tests/ -v
+python examples/prisoners_dilemma.py
+```
+
+Pour valider ou exécuter un notebook : `python scripts/notebook_tools/notebook_tools.py validate <chemin>` et `... execute <chemin>`, depuis la racine du dépôt.
+
+### Comptes et maturité
+
+Le bloc `CATALOG-STATUS` en tête de ce fichier fait foi pour le nombre de notebooks et leur maturité. Il est régénéré automatiquement sur `main` ; le [catalogue](../../COURSE_CATALOG.generated.md) donne le détail notebook par notebook.
+
+## Ressources
 
 ### Références académiques
 
 | Référence | Couverture |
 |-----------|------------|
-| Osborne & Rubinstein, *A Course in Game Theory* (1994) | Textbook de référence, notebooks 1-12 |
-| Russell & Norvig, *AIMA* 4e ed., ch. 17-18 | Cadre général jeux et mécanismes |
-| Nash, "Non-Cooperative Games" (1951) | Notebook 4, équilibre de Nash |
-| Von Neumann, "Zur Theorie der Gesellschaftsspiele" (1928) | Notebook 5, minimax |
-| Axelrod, "The Evolution of Cooperation" (1984) | Notebook 6, tournoi iterated PD |
-| Conway, Berlekamp & Guy, *Winning Ways* (1982) | Notebooks 8, 8b, 8c |
-| Geanakoplos, "Three Brief Proofs of Arrow's Impossibility Theorem" (2005) | SC-01, `Arrow.lean` |
-| Sen, "Collective Choice and Social Welfare" (1970) | SC-02, `Sen.lean` |
-| Shapley, "A Value for n-Person Games" (1953) | Notebook 15, Shapley.lean |
-| Roth, "The Shapley Value: Essays in Honor of Lloyd S. Shapley" (1988) | Cooperative games |
-| Osborne, *An Introduction to Game Theory* (2004) | Alternative textbook |
+| Osborne & Rubinstein, *A Course in Game Theory* (1994) | Manuel de référence, paliers 01 à 12 |
+| Osborne, *An Introduction to Game Theory* (2004) | Manuel alternatif |
+| Russell & Norvig, *AIMA*, 4e éd., ch. 17-18 | Cadre général des jeux et des mécanismes |
+| Nash, « Non-Cooperative Games » (1951) | Palier 04 |
+| von Neumann, « Zur Theorie der Gesellschaftsspiele » (1928) | Palier 05 |
+| Axelrod, *The Evolution of Cooperation* (1984) | Palier 06 |
+| Conway, Berlekamp & Guy, *Winning Ways* (1982) | Palier 08 |
+| Shapley, « A Value for n-Person Games » (1953) | Palier 15, `Shapley.lean` |
+| Roth (dir.), *The Shapley Value* (1988) | Jeux coopératifs |
+| Geanakoplos, « Three Brief Proofs of Arrow's Impossibility Theorem » (2005) | SocialChoice 01, `Arrow.lean` |
+| Sen, *Collective Choice and Social Welfare* (1970) | SocialChoice 01b, `Sen.lean` |
 
-### Théorie des jeux
-- [Game Theory (Stanford Encyclopedia)](https://plato.stanford.edu/entries/game-theory/)
-- [Evolution of Trust - Nicky Case](https://ncase.me/trust/)
-- [Robinson & Goforth - Topology of 2x2 Games](https://www.mdpi.com/2073-4336/6/4/495)
+### En ligne
 
-### Jeux combinatoires
-- [Winning Ways for Your Mathematical Plays - Conway, Berlekamp, Guy](https://www.akpeters.com/WinningWays/)
-- [Lessons in Play - Albert, Nowakowski, Wolfe](https://www.routledge.com/Lessons-in-Play/Albert-Nowakowski-Wolfe/p/book/9781568812779)
+- [Game Theory (Stanford Encyclopedia of Philosophy)](https://plato.stanford.edu/entries/game-theory/)
+- [The Evolution of Trust (Nicky Case)](https://ncase.me/trust/)
+- [Robinson & Goforth, Topology of 2x2 Games](https://www.mdpi.com/2073-4336/6/4/495)
 - [Sprague-Grundy Theorem (Wikipedia)](https://en.wikipedia.org/wiki/Sprague%E2%80%93Grundy_theorem)
+- [Lessons in Play (Albert, Nowakowski, Wolfe)](https://www.routledge.com/Lessons-in-Play/Albert-Nowakowski-Wolfe/p/book/9781568812779)
 
-### Bibliothèques Python
-- [Nashpy Documentation](https://nashpy.readthedocs.io/)
-- [OpenSpiel Documentation](https://openspiel.readthedocs.io/)
-- [OpenSpiel Algorithms](https://openspiel.readthedocs.io/en/latest/algorithms.html)
+### Bibliothèques
 
-### Formalisations Lean
-- [math-xmum/Brouwer](https://github.com/math-xmum/Brouwer) - Nash existence
+- [Nashpy](https://nashpy.readthedocs.io/)
+- [OpenSpiel](https://openspiel.readthedocs.io/) et [ses algorithmes](https://openspiel.readthedocs.io/en/latest/algorithms.html)
+
+### Formalisations Lean externes
+
+- [math-xmum/Brouwer](https://github.com/math-xmum/Brouwer) : existence de Nash
 - [MixedMatched/formalizing-game-theory](https://github.com/MixedMatched/formalizing-game-theory)
-- [mathlib4 PGame](https://leanprover-community.github.io/mathlib4_docs/Mathlib/SetTheory/PGame/Basic.html)
-- [asouther4/lean-social-choice](https://github.com/asouther4/lean-social-choice) - Arrow (Lean 3, source originale)
-- [DominikPeters/SocialChoiceLean](https://github.com/DominikPeters/SocialChoiceLean) - Gibbard-Satterthwaite, Split Cycle, 15+ règles (Lean 4, MIT)
-
-## Structure des fichiers
-
-```
-GameTheory/
-├── GameTheory-01-Setup.ipynb                        # Fil historique Python 1→17, extensions et jumeaux ci-dessous
-├── GameTheory-02-NormalForm.ipynb
-├── GameTheory-02-NormalForm-Part2-Python.ipynb      #   Tranche 2 du Python NormalForm — support enumeration mixte NxN from-scratch (numpy) + vérification nashpy
-├── GameTheory-02-NormalForm-Csharp.ipynb            # Jumeau C# (.NET Interactive, parité #4956) — forme normale + Nash from-scratch (Tranche 1)
-├── GameTheory-02-NormalForm-Csharp-Part2.ipynb      #   Tranche 2 du jumeau C# NormalForm
-├── GameTheory-02c-Travelers-Dilemma.ipynb           # Dilemme du voyageur (Basu 1994) : paradoxe de l'élimination itérée, seuil r* = 1
-├── GameTheory-03-Topology2x2.ipynb
-├── GameTheory-03-Topology2x2-Csharp.ipynb           # Jumeau C# — classification ordinale 2×2 from-scratch
-├── GameTheory-03a-Chemins-de-Swaps.ipynb            # Extensions littérales 3a→3f de la géométrie ordinale
-├── GameTheory-03b-Chambres-et-Murs.ipynb
-├── GameTheory-03c-Le-Joueur-LLM.ipynb
-├── GameTheory-03d-Plan-de-deformation.ipynb
-├── GameTheory-03e-Meta-Actions-Tarifees.ipynb
-├── GameTheory-04-NashEquilibrium.ipynb
-├── GameTheory-04-NashEquilibrium-Csharp.ipynb       # Jumeau C# — NE pur/mixte + support enum (Gauss) from-scratch (marathon #4956)
-├── GameTheory-05-ZeroSum-Minimax.ipynb
-├── GameTheory-05-ZeroSum-Minimax-Csharp.ipynb       # Jumeau C# — simplexe from-scratch (marathon #4956)
-├── GameTheory-06-EvolutionTrust.ipynb
-├── GameTheory-06-EvolutionTrust-Csharp.ipynb        # Jumeau C# — tournoi d'Axelrod from-scratch
-├── GameTheory-07-ExtensiveForm.ipynb
-├── GameTheory-07-ExtensiveForm-Csharp.ipynb         # Jumeau C# — arbre de jeu + infosets from-scratch (marathon #4956)
-├── GameTheory-08-CombinatorialGames.ipynb
-├── GameTheory-08-CombinatorialGames-Csharp.ipynb    # Jumeau C# — P/N + nim-sum (Bouton) + mex + Grundy DP + Sprague-Grundy (marathon #4956)
-├── GameTheory-09-BackwardInduction.ipynb
-├── GameTheory-09-BackwardInduction-Csharp.ipynb     # Jumeau C# — induction arrière + sous-jeux
-├── GameTheory-10-ForwardInduction-SPE.ipynb
-├── GameTheory-10-ForwardInduction-SPE-Csharp.ipynb # Jumeau C# — SPE/backward-induction + trembling-hand + forward induction + burn money (marathon #4956)
-├── GameTheory-11-BayesianGames.ipynb
-├── GameTheory-11-BayesianGames-Csharp.ipynb        # Jumeau C# — jeux bayésiens & croyances (marathon #4956)
-├── GameTheory-12-ReputationGames.ipynb
-├── GameTheory-12-ReputationGames-Csharp.ipynb      # Jumeau C# — réputation (Kreps-Wilson + KMRW + Crawford-Sobel) from-scratch (marathon #4956)
-├── GameTheory-13-ImperfectInfo-CFR.ipynb
-├── GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb    # Jumeau C# — CFR/CFR+ regret-matching from-scratch (marathon #4956)
-├── GameTheory-13b-Safe-Subgame-Solving.ipynb       # Recollement sûr et témoin adversarial
-├── GameTheory-13c-Safe-Subgame-Solving-Csharp.ipynb # Twin C# du 13b — reproduction + audit + BR énumérée (maturation #12208)
-├── GameTheory-13d-Optimistic-CFR.ipynb             # OFTRL stable-prédictif — compagnon du 13
-├── GameTheory-14-DifferentialGames.ipynb
-├── GameTheory-14-DifferentialGames-Csharp.ipynb    # Jumeau C# — jeux différentiels : RK4 + Riccati from-scratch, pursuit-evasion (marathon #4956)
-├── GameTheory-15-CooperativeGames.ipynb
-├── GameTheory-15-CooperativeGames-Csharp.ipynb     # Jumeau C# — Shapley + Banzhaf + core + convexité + airport game from-scratch (marathon #4956)
-├── GameTheory-16-MechanismDesign.ipynb
-├── GameTheory-16-MechanismDesign-Csharp.ipynb      # Jumeau C# — Vickrey + VCG (Clarke) + Gale-Shapley + double auction (marathon #4956)
-├── GameTheory-17-MultiAgent-RL.ipynb
-├── GameTheory-17-MultiAgent-RL-Csharp.ipynb        # Jumeau C# — Self-Play, FP, NFSP, PSRO
-├── GameTheory-02b-Lean-Definitions.ipynb            # Side tracks b — formalisation Lean 4 (9 notebooks : 2b, 4b, 5b, 8b, 8d, 11b, 15b, 17c, 17d)
-├── GameTheory-04b-Lean-NashExistence.ipynb
-├── GameTheory-05b-Lean-Minimax.ipynb
-├── GameTheory-08b-Lean-CombinatorialGames.ipynb
-├── GameTheory-11b-Lean-BayesianGamesExt.ipynb
-├── GameTheory-08d-Lean-CGT-Native.ipynb
-├── GameTheory-15b-Lean-CooperativeGames.ipynb
-├── GameTheory-17c-Lean-Lemons-Certificat.ipynb       # Companion natif du lake asymmetric_information_lean
-├── GameTheory-17d-Lean-Screening-Signaling.ipynb     # Les 4 autres modules du lake exécutés — visibilité #11703
-├── GameTheory-04c-NashExistence-Python.ipynb        # Side tracks c — approfondissement (Python 4c, 6c, 6d, 8c, 15c)
-├── GameTheory-04c-NashExistence-Csharp.ipynb        #   Jumeau C# (.NET Interactive) — Brouwer point fixe + Matching Pennies (parité #4956)
-├── GameTheory-04d-Marchandage-Asymetrique.ipynb     # Side track strate-7 — marchandage asymétrique, dissociation du §8 GT-04 (#14442 tranche D1)
-├── GameTheory-04e-Reflective-Oracles.ipynb          # Oracles réflexifs — écart CDT/EDT, Nash réflexivement cohérent (#14450)
-├── GameTheory-04f-Theories-Decision-Predicteur.ipynb  # Newcomb, Fisher, UDT, 2TDT-1CDT, inattention rationnelle (#17543)
-├── GameTheory-06b-Lean-RepeatedGames.ipynb          # Compagnon lean (lecture) du 6c — lake game_theory_lean dévoilé, visibilité #11703
-├── GameTheory-06c-RepeatedGames-FolkTheorem.ipynb
-├── GameTheory-06c-RepeatedGames-FolkTheorem-Csharp.ipynb  #   Jumeau C# — grim trigger/TFT/Folk Theorem from-scratch (parité #4956)
-├── GameTheory-06d-Sympathie-vs-Engagement.ipynb    #   Protocole consolidé : MLE + IRLS/bootstrap, engagement pur/bruité, exercices de puissance #13042 #13737
-├── GameTheory-06e-Open-Source-Game-Theory.ipynb    # Chantier transparence : open-source game theory
-├── GameTheory-06f-Bounded-Agents-Python.ipynb      # Chantier agents bornés : compagnon Python
-├── GameTheory-06f-Bounded-Proofs-Reasoning-Costs.ipynb  # Preuves bornées et coût du raisonnement
-├── GameTheory-06g-Bounded-Agents-Lean.ipynb        # Chantier agents bornés : companion Lean
-├── GameTheory-06g-Simulation-Based-Program-Equilibria.ipynb  # Équilibres par simulation
-├── GameTheory-06h-Transparent-Institutions.ipynb   # Programmes transparents comme institutions
-├── GameTheory-08c-CombinatorialGames-Python.ipynb
-├── GameTheory-08c-CombinatorialGames-Csharp.ipynb   #   Jumeau C# — Wythoff/Chomp/périodicité Grundy from-scratch (parité #4956)
-├── GameTheory-15c-CooperativeGames-Python.ipynb
-├── GameTheory-15c-CooperativeGames-Csharp.ipynb    #   Jumeau C# — Shapley (permutations) + Banzhaf + Core vide (majorité) + Mini-ONU + convexité from-scratch (parité #4956)
-├── GameTheory-15d-Mobius-Coalitions.ipynb          # Décomposition de Möbius sur le treillis des coalitions
-├── GameTheory-15e-Coalition-Power-SMT.ipynb        # Pouvoir coalitionnel : calcul, SMT borné, preuve
-├── GameTheory-15f-Shapley-Groupes.ipynb            # Valeur de Shapley de groupe : évaluer une équipe
-├── GameTheory-16c-Extraction-de-Revenu-DSIC-IR.ipynb  # Extraction de revenu DSIC/IR
-├── GameTheory-16e-LLM-Players-Othman-Sandholm.ipynb   # Pilote : joueurs LLM sur mécanisme Othman-Sandholm
-├── GameTheory-16b-Automated-Mechanism-Design.ipynb # Synthèse automatique de mécanismes
-├── GameTheory-18-Open-Games-et-Lentilles.ipynb     # Strate 7 : open games et lentilles
-├── GameTheory-19-Abstraction-a-Dette.ipynb         # Strate 7 : dette d'abstraction mesurable
-├── GameTheory-03h-Deux-Especes-de-Fleches.ipynb    # Chantier 2x2 : morphismes, deux espèces de flèches
-├── GameTheory-09b-Commitment-Stackelberg.ipynb     # Famille GT-09 : engagement contraignant
-├── GameTheory-09c-Stackelberg-SecurityGame.ipynb   # Famille GT-09 : security game à capteur imparfait
-├── GameTheory-16d-Echange-de-Reins.ipynb           # Famille GT-16 : cycles et chaînes d'échange
-├── GameTheory-20-Chemin-Minimal-Robinson-Goforth.ipynb
-├── GameTheory-21-Loi-II-Translateur-Life.ipynb
-├── GameTheory-22-Ensembles-Limites-Poincare-Bendixson.ipynb
-├── GameTheory-23-Munkres-Assignment.ipynb
-├── GameTheory-17c-Market-to-Balance-Sheet.ipynb    # Pont théorie des jeux ↔ théorie de la décision
-├── GameTheory-18b-Casser-la-Composition.ipynb      # Contre-exemples à la composition des open games
-├── GameTheory-20b-Chemin-Minimal-Temoins-Impossibilite.ipynb  # Témoin d'impossibilité du chemin minimal
-├── GameTheory-20c-Chemin-Minimal-3x2-Ordinal.ipynb # Chemin minimal sur jeux ordinaux 3×2
-├── GameTheory-23b-Lean-Assignment-Native.ipynb     # Companion natif du lake assignment_lean
-├── GameTheory-24-Humour-Banc.ipynb                 # Banc de calibration : humour, forme partagée vs stimulus
-├── GameTheory-24b-Humour-Banc-Dur.ipynb            # Compagnon dur du banc humour (échelle, LLM)
-├── GameTheory-25-Bayesian-Persuasion.ipynb         # Persuasion bayésienne : concavification contre programme linéaire
-├── SocialChoice/                                   # Sous-série Choix Social (10 notebooks : 7 pères Python + 3 twins C#, parité #4956)
-│   ├── 01-Arrow-Impossibility-Theorem.ipynb
-│   ├── 01-Arrow-Impossibility-Theorem-Csharp.ipynb
-│   ├── 01b-Lean-SocialChoice-Formal.ipynb
-│   ├── 03-Voting-Methods.ipynb
-│   ├── 03-Voting-Methods-Csharp.ipynb
-│   ├── 04-Computational-Aggregation-SAT-Z3.ipynb
-│   ├── 04-Computational-Aggregation-SAT-Z3-Csharp.ipynb
-│   ├── 05-Gibbard-Satterthwaite.ipynb
-│   ├── 06-Mobius-Aggregation-Pouvoir-Manipulation.ipynb
-│   ├── 07-Committees-Core.ipynb
-│   └── README.md
-├── README.md
-├── LEAN_INVENTORY.md                       # Inventaire Lean (toolchains + sorry)
-├── install_wsl_kernel.md                   # Install kernel WSL
-├── requirements.txt                        # 16 deps Python (nashpy/scipy/z3/etc.)
-├── .env.example
-├── game_theory_utils.py           # Utilitaires partages
-├── cooperative_games/             # Module jeux cooperatifs
-│   ├── __init__.py
-│   ├── shapley.py                 # Valeur de Shapley
-│   ├── core.py                    # Core, Bondareva-Shapley
-│   ├── assistance_games.py        # Jeux d'assistance (veto, etc.)
-│   ├── coalition_games.py         # Jeux de coalition
-│   ├── group_value.py             # Valeur de Shapley de groupe (Flores-Molina-Tejada 2019)
-│   └── french_politics.py         # Politique française (exemples)
-├── trust_simulation/              # Module Evolution of Trust
-│   ├── strategies.py              # Tit-for-tat, hawks, doves, etc.
-│   ├── tournament.py              # Tournoi Axelrod
-│   └── visualization.py           # Animations populations
-├── conway_cgt_lean/               # Projet Lake jeux combinatoires — visite de vihdzp/combinatorial-games (toolchain v4.31.0-rc2)
-├── minimax_lean/                  # Projet Lake minimax (Sion, cf #4054)
-├── assignment_lean/               # Projet Lake affectation — dualité + optimalité Kuhn-Munkres (#12598)
-├── asymmetric_information_lean/   # Projet Lake asymétrie d'information — Akerlof/Spence/RS/MWS (Epic #12844)
-├── repeated_games_lean/           # Coquille archive — jeux répétés absorbés dans game_theory_lean/RepeatedGames/ (#6146)
-├── social_choice_lean/            # Tombstone docs — choix social absorbé dans game_theory_lean/SocialChoice/ (#6058)
-├── social_choice_lean_peters/     # Projet Lake référence DominikPeters (0 sorry, toolchain v4.32.1, Peters 94a4c650)
-├── game_theory_lean/              # Projet Lake multi-module (5 modules : CooperativeGames, RepeatedGames, SocialChoice, StableMarriage, Swaps — EPIC #4365)
-├── lean_game_defs/                # Projet Lake : types Lean partagés (lakefile.toml)
-├── lean_game_defs_ext/            # Projet Lake : types étendus (Vickrey 0 sorry, Bayesian — lakefile.toml)
-├── scripts/                       # Scripts d'installation (WSL Lean, OpenSpiel)
-├── examples/
-│   ├── prisoners_dilemma.py
-│   ├── topology_2x2_periodic_table.py
-│   ├── kuhn_poker_cfr.py
-│   ├── vcg_auction.py
-│   ├── centipede_game.py          # Centipede game
-│   ├── stackelberg_leader_follower.py  # Stackelberg
-│   ├── stag_hunt_forward_induction.py  # Stag hunt + SPE
-│   └── arrow_simple.lean
-└── tests/
-    ├── test_assistance_games.py
-    ├── test_centipede_game.py
-    ├── test_cooperative_core.py
-    ├── test_extensive_form.py
-    ├── test_fictitious_play.py
-    ├── test_french_politics.py
-    ├── test_group_value.py
-    ├── test_kuhn_poker_cfr.py
-    ├── test_lean_definitions.py
-    ├── test_limit_sets.py
-    ├── test_nash_computation.py
-    ├── test_phase3.py
-    ├── test_prisoners_dilemma.py
-    ├── test_shapley.py
-    ├── test_stackelberg.py
-    ├── test_stackelberg_asymmetric.py
-    ├── test_stag_hunt_forward_induction.py
-    ├── test_strategies.py
-    ├── test_topology_2x2.py
-    ├── test_trust_simulation.py
-    ├── test_validate_lean_setup.py
-    └── test_vcg_auction.py
-```
-
-## Tests
-
-```bash
-# Exécuter tous les tests unitaires
-cd MyIA.AI.Notebooks/GameTheory
-python -m pytest tests/ -v
-
-# Exécuter les exemples Python
-python examples/prisoners_dilemma.py
-python examples/kuhn_poker_cfr.py
-python examples/vcg_auction.py
-```
-
-## Validation
-
-```bash
-# Vérifier la structure des notebooks
-python scripts/verify_notebooks.py MyIA.AI.Notebooks/GameTheory --quick
-
-# Exécution complète (mode batch)
-BATCH_MODE=true python scripts/verify_notebooks.py MyIA.AI.Notebooks/GameTheory
-```
-
-## Statistiques catalogue à jour
-
-Le marqueur `CATALOG-STATUS` en tête de fichier **fait foi pour les comptes et la maturité** — il est régénéré quotidiennement par le cron `catalog-cron.yml` sur `main`, jamais à la main sur une branche (règle `catalog-pr-hygiene`). La composition structurelle de la série est la suivante :
-
-| Sous-série | Composition | Paradigmes dominants |
-|------------|-----------|----------------------|
-| Racine | Fil principal GT-1 à GT-17 en **binômes Python ⇄ C#** (marathon #4956), side tracks `b` Lean (2b, 4b, 5b, 8b, 8d, 11b, 15b, 17c), approfondissements `c`, extensions 3a-3h et strate 7 GT-18 à GT-24 (+ compagnons b/c) | Nashpy/OpenSpiel/Z3 (Python), BCL from-scratch (C#), Lean 4 (side tracks `b`) |
-| Sous-série [SocialChoice/](SocialChoice/) | SC-01 à SC-07, dont SC-01 (Arrow) et SC-03 (Voting) en binômes Python ⇄ C# | Lean 4 (Arrow, Sen) + SAT/Z3 (UNSAT) + simulation Condorcet/Borda |
-
-Les side tracks Lean (2b, 4b, 5b, 8b, 8d, 11b, 15b, 17c) prouvent les grands théorèmes (Nash via Brouwer/Kakutani, minimax via Sion, Vickrey, PGame/Sprague-Grundy, axiomes Shapley) avec **0 `sorry` sur les théorèmes majeurs** (cf [LEAN_INVENTORY.md](LEAN_INVENTORY.md) ; harmonisation Mathlib en cours, #4362). Les `student/` éventuels portent des stubs conformes (règle C.1 — `pass` / `return None` / `print("Exercice à compléter")` / jamais `raise NotImplementedError`) et restent exécutables end-to-end. Dépendances Python : voir `MyIA.AI.Notebooks/requirements.txt` à la racine (nashpy, networkx, numpy, matplotlib, z3-solver).
-
-## Écosystème MCP et parenté cross-lane
-
-Cette série mobilise plusieurs couches de l'écosystème MCP du cluster, et entretient des parentés transversales fortes avec d'autres familles du dépôt :
-
-**Outils d'infrastructure MCP** :
-
-1. **MCP Jupyter** (`mcp__jupyter-papermill__*`) — exécution cell-by-cell des notebooks Python (Nashpy, OpenSpiel, Z3). Note bug #835 : JAMAIS appel naïf (re-exécution = `nbconvert --execute` Bash `timeout`-wrap).
-2. **WSL Lean 4 kernel** (`scripts/notebook_tools/wsl_papermill.py --kernel lean4-wsl`) — exécution INSIDE WSL pour les side tracks `b` (cf `.claude/rules/wsl-kernels.md`). Wrapper Python `~/.lean4-kernel-wrapper.py` (v5) gère la conversion Windows→WSL paths et permissions NTFS. L'ancien wrapper bash est **OBSOLÈTE**.
-3. **Validation pre-commit** (`.pre-commit-config.yaml`) — gitleaks + notebook validator bloquent les PRs qui dégraderaient les contrats inter-séries (notamment les stubs C.1 et les outputs C.2).
-
-**Parenté cross-lane** (cross-liens inter-séries actifs) :
-
-| Cette série | Symétrie dans | Pont pédagogique |
-|-------------|---------------|------------------|
-| Lean 4 (Arrow, Sen, Shapley, Vickrey) | [SymbolicAI/Lean](../SymbolicAI/Lean/README.md) | Même toolchain WSL, partage de Mathlib ; notebooks `game_theory_lean/SocialChoice` prouvent ce que `social_choice_lean_peters` référence (D. Peters, MIT) |
-| Multi-Agent RL (NFSP, PSRO, AlphaZero) | [RL](../RL/README.md) | Stratégies d'équilibre *apprises* par interaction plutôt que calculées (cf notebook 17) |
-| Arbres de jeu, induction arrière, MCTS | [Search](../README.md) | Minimax (notebook 5) ↔ CSP-8-Temporal (Allen), P/N positions ↔ `Search-9-SatPlan-Symbolic` |
-| Mécanismes VCG, matching Gale-Shapley | [SymbolicAI/SmartContracts](../SymbolicAI/SmartContracts/README.md) | Gouvernance on-chain (DAO, vote vérifiable) ; le design de mécanismes se prolonge en smart contracts |
-| Encodage SAT/Z3 d'Arrow | [SymbolicAI/SMT/Z3-Linq2Z3](../SymbolicAI/SMT/Z3-Linq2Z3/README.md) | Outil Z3 partagé ; notebook SC-04 exploite la même API que NB-06 (witness generation Automata) |
-
-**Effet de composition** : GameTheory sert de **carrefour** entre simulation numérique (Nashpy, OpenSpiel, Z3) et formalisation (Lean 4). Toute avancée d'une série partenaire enrichit potentiellement les notebooks GameTheory — par exemple, un nouveau théorème prouvé en Lean côté SymbolicAI/Lean peut être cité depuis [LEAN_INVENTORY.md](LEAN_INVENTORY.md) ou ouvrir un nouveau side track `b`. Le pipeline complet relie les **notebooks** (qui motivent — Lemke-Howson, Axelrod, Gale-Shapley) aux **lakes** (qui prouvent — Arrow, Bondareva-Shapley, Gale-Shapley existence et optimalité côté proposant), avec **7 lakes game-théoriques en propre** (plus le lake de référence externe `social_choice_lean_peters`) et **0 sorry sur les théorèmes majeurs**.
+- [mathlib4, jeux combinatoires](https://leanprover-community.github.io/mathlib4_docs/Mathlib/SetTheory/PGame/Basic.html)
+- [asouther4/lean-social-choice](https://github.com/asouther4/lean-social-choice) : Arrow (Lean 3, source originale)
+- [DominikPeters/SocialChoiceLean](https://github.com/DominikPeters/SocialChoiceLean) : Gibbard-Satterthwaite, Split Cycle (Lean 4, MIT)
 
 ## Licence
 
-Voir la licence du repository principal.
+Voir la licence du dépôt principal.
 
 ---
 
-*Version 1.4.3 — Septembre 2026 (2026-09-22) — déchronologisation du parcours (tranche D2 #14442 : les résultats restent, les récits de livraison partent) et re-synchronisation des tables sur le disque : chantier transparence GT-06e-06h, GT-13d, GT-15e, GT-16c/16d/16e, GT-17c-Market, GT-18b, GT-20b/20c, GT-23b, GT-24b, SC-06/07 ; renumérotation 20-28 alignée sur les fichiers.*
+*Version 1.5.0 — Septembre 2026 (2026-09-25) — réorganisation en parcours à plusieurs vitesses (#3973) : parcours principal à numéros nus, approfondissements présentés palier par palier, sous-série SocialChoice et extensions 18-25 séparées du parcours, grammaire des noms de fichiers expliquée au lecteur, formalisations Lean réunies en une section. Les sections de statut et de statistiques renvoient désormais au catalogue.*
 
-*Version 1.4.2 — Août 2026 (2026-08-26) — réconciliation inventaire Lean #13138 : toolchains effectives (peters v4.32.1 / Peters 94a4c650, conway v4.31.0-rc2), statuts tombstone `repeated_games_lean` (#6146) et `social_choice_lean` (#6058), ajout des lakes `assignment_lean` (#12598) et `asymmetric_information_lean` (Epic #12844), `game_theory_lean` passé à 5 modules (+Swaps #12222).*
+*Version 1.4.3 — Septembre 2026 (2026-09-22) — déchronologisation du parcours (tranche D2 #14442 : les résultats restent, les récits de livraison partent) et re-synchronisation des tables sur le disque.*
 
-*Version 1.4.1 — Juillet 2026 (2026-07-16) — reconciliation EPIC #4365 : retrait des références aux lakes supprimés `cooperative_games_lean` (rm #6587) et `stable_marriage_lean` (PR #5971), absorbés dans `game_theory_lean` ; comptes lakes mis à jour (7 en propre + peters).*
+*Version 1.4.2 — Août 2026 (2026-08-26) — réconciliation de l'inventaire Lean #13138 : toolchains effectives, statuts des coquilles `repeated_games_lean` (#6146) et `social_choice_lean` (#6058), ajout des lakes `assignment_lean` (#12598) et `asymmetric_information_lean` (Epic #12844).*
 
-*Version 1.4.0 — Juillet 2026 (2026-07-07) — passe ascendante feuilles→hub : intégration du marathon parité C# #4956 (binômes GT-2..17 + SocialChoice), 7 lakes en propre + peters, grim-trigger certifié, comptes délégués au marqueur CATALOG-STATUS.*
+*Version 1.4.1 — Juillet 2026 (2026-07-16) — réconciliation EPIC #4365 : retrait des lakes supprimés `cooperative_games_lean` et `stable_marriage_lean`, absorbés dans `game_theory_lean`.*
+
+*Version 1.4.0 — Juillet 2026 (2026-07-07) — passe ascendante feuilles vers hub : intégration du marathon de parité C# #4956, comptes délégués au marqueur CATALOG-STATUS.*
