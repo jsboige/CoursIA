@@ -122,8 +122,8 @@ Règle stricte : GPU 2 **doit etre occupee 24/7** par un training BG longue dure
 
 | GPU | Role | Etat normal |
 |-----|------|-------------|
-| GPU 0 RTX 4090 | vLLM `medium` (Swift-1.5-Qwen3.8-27B AWQ, TP=2 avec GPU 1) | ~20-24 GB VRAM occupee 24/7 |
-| GPU 1 RTX 4090 | vLLM `medium` (TP=2 avec GPU 0) | ~23-24 GB VRAM occupee 24/7 |
+| GPU 0 RTX 4090 | vLLM `medium` (Swift-1.5-Qwen3.8-27B AWQ, TP=2 avec GPU 1) | ~20-24 GB VRAM occupee 24/7 (mesure `nvidia-smi` 2026-09-26 19:12Z : 20746 MiB / 24564 MiB, 71 %) |
+| GPU 1 RTX 4090 | vLLM `medium` (TP=2 avec GPU 0) | ~19-24 GB VRAM occupee 24/7 (mesure `nvidia-smi` 2026-09-26 19:12Z : 19522 MiB / 24564 MiB, 75 %) |
 | GPU 2 RTX 4090 | **Training BG ou experience lourde reservee au ledger** (24 GB) | DOIT toujours etre occupee (training BG ou experience) |
 
 **Alias vLLM** :
