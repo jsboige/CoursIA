@@ -91,11 +91,11 @@ Conséquence : une économie **trans-worktree** n'est pas ce que cet instrument 
 
 - **V1 narrow** : lecture seule, rapport de mesure, pas de modification du script de production, pas d'Apply, pas de manipulation de `.lake/`.
 - **Aucun fichier de code touché** — seulement ce rapport `docs/lean/cluster-junctions-c857.md`.
-- **Pas de MEMORY addition** : `MEMORY.md` à 17498/17500 bytes, Tell c.423-L1 ★★ strict.
+- **Pas de MEMORY addition** : `MEMORY.md` à 17498/17500 bytes (cap proche, pas d'ajout).
 
 ## Hors périmètre (à traiter en cycles séparés)
 
-- **`lake update` sur un lac parent** : hors fenêtre cycle worker (clone Mathlib4 multi-minutes, Tell c.850-L2 ★★, bloqueur multi-cycle). Bloqueur connu, déjà tracé via #14178.
+- **`lake update` sur un lac parent** : hors fenêtre cycle worker (clone Mathlib4 multi-minutes, bloqueur multi-cycle). Bloqueur connu, déjà tracé via #14178.
 - **Alignement manifests (#2611 étape 2)** : investigation hors-scan, demande de regarder un par un les 3 lacs isolés qui partagent toolchain+rev. Substance distincte, grain séparé.
 - **Nettoyage du checkout orphelin `mimo_lean` 1.18 GB** : action manuelle de l'opérateur sur le worktree source (pas un Apply).
 
@@ -111,5 +111,5 @@ Conséquence : une économie **trans-worktree** n'est pas ce que cet instrument 
 - Issue #2611 — alignement manifests (étape 2)
 - Issue #14178 — Mathlib cache absent worktree (bloqueur amorçage)
 - `scripts/lean/setup_shared_mathlib.ps1` — instrument de scan/apply/rollback
-- `cycles-850-detail.md` — Tell c.850-L2 ★★ bloqueur clone Mathlib
+- `cycles-850-detail.md` — bloqueur clone Mathlib (détail par cycle)
 - `cycles-855-detail.md` — observation antérieure checkout `mimo_lean` 1.18 GB (worktree-local, hors scope)
