@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: IIT-ICT-Series
-pedagogical_count: 82
-breakdown: ICT-Series=82
-maturity: BETA=70, DRAFT=11, ALPHA=1
+pedagogical_count: 84
+breakdown: ICT-Series=84
+maturity: BETA=72, DRAFT=11, ALPHA=1
 -->
 
 [← IIT](../README.md) | [↑ Notebooks](../../README.md) | [→ Probas](../../Probas/README.md)
