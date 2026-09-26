@@ -38,10 +38,11 @@
     },
     {
       "id": "theorie-des-jeux",
-      "description": "Prolongement après l'actuariat : partager des coûts communs avec Shapley et vérifier la stabilité des coalitions dans le jeu d'aéroport, puis étudier l'antisélection en assurance avec les contrats concurrents de Rothschild–Stiglitz et l'anticipation des retraits de contrats. Ces notebooks ne modélisent pas la réassurance.",
+      "description": "Prolongement Python après l'actuariat : étudier la valeur de Shapley et la stabilité du cœur sur les jeux coopératifs, approfondir la valeur d'un groupe fusionné, puis analyser l'antisélection en assurance avec les contrats concurrents de Rothschild–Stiglitz. Les premiers exemples de coopération ne sont pas des modèles d'assurance ; le jeu d'aéroport appartient au jumeau C# non retenu. Ces notebooks ne modélisent pas la réassurance ; la formalisation Lean du screening relève d'un parcours distinct avec changement de noyau explicite.",
       "prerequisites": ["actuariat"],
       "notebooks": [
-        "GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb",
+        "GameTheory/GameTheory-15-CooperativeGames.ipynb",
+        "GameTheory/GameTheory-15f-Shapley-Groupes.ipynb",
         "GameTheory/GameTheory-17b-Asymmetric-Information.ipynb"
       ]
     }
