@@ -252,6 +252,7 @@ Pour l'état formel détaillé des modules support (preuves résolues vs `sorry`
 | 22 | Galois-Probleme-Inverse-M23 | ~25 | 3 | 0 | **NOUVEAU** (exécution Lean + sympy) |
 | 23 | ERC20-Invariant-Companion | ~21 | 3 | 0 | **NOUVEAU** (lecture statique Python du lake) |
 | 23b | Lean-ERC20-Native-Companion | ~30 | 2 | - | **NOUVEAU** (kernel `lean4-wsl`) |
+| 24b | Confiance-Preuves-Native | ~10 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`, lake `mathlib_examples`, piste Dougherty/von Hippel #14468) |
 | 24 | Calibration-Native-Companion | ~27 | 0 | - | **NOUVEAU** (kernel `lean4-wsl`) |
 | 25 | Coherence-et-Temoin | ~21 | 3 | 0 | **NOUVEAU** (kernel python3, miroir exact du lake) |
 | 26 | Munkres-Tribute | ~9 | 3 | 0 | **NOUVEAU** (hommage, kernel `lean4-wsl`) |
@@ -261,7 +262,6 @@ Pour l'état formel détaillé des modules support (preuves résolues vs `sorry`
 | 30 | FormalGroups-Native | ~33 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`, lake `formal_groups_lean`) |
 | 31 | Euler-Navier-Stokes | 34 | 3 | 0 | **NOUVEAU** (kernel `python3`, reproduction pinée et double noyau) |
 | 34 | Calculabilite-et-Limites | 19 | 3 | 0 | **NOUVEAU** (kernel `python3` + lake `formal_logic_lean`, Tranche E Epic #15066) |
-| 35 | Confiance-Preuves-Native | ~10 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`, lake `mathlib_examples`, piste Dougherty/von Hippel #14468) |
 
 Tous les notebooks incluent :
 - Navigation header/footer avec liens vers notebooks précédent/suivant
