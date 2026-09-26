@@ -1,4 +1,4 @@
-name: Split-reading advisory
+name: Split-reading ratchet (identity, manual dispatch)
 
 # Source d'identite pour la garde absorbee par fast-lane-shadow (registre
 # TRANCHE14 (ex-TRANCHE12 du registre avant renommage), issue #16762 — parapluie user « fusionner, pas empiler »).

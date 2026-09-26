@@ -208,8 +208,16 @@ def test_le_jeton_passe_par_l_environnement_pas_par_la_config(mod, monkeypatch):
 # ---------------------------------------------------------------------------
 
 class _FauxBackend:
+    """Tient les deux roles que l'organe attend de `_keyring()` : le MODULE
+    `keyring` (`get_keyring`, `set_password` au niveau module) et le backend
+    actif qu'il rend. Un faux qui ne jouait que le backend a masque le defaut
+    du 26/09 : l'organe lisait le type du module, que ce faux n'avait pas."""
+
     def __init__(self):
         self.ecrit = []
+
+    def get_keyring(self):
+        return self
 
     def set_password(self, service, user, value):
         self.ecrit.append((service, user, value))

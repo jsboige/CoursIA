@@ -42,6 +42,14 @@ PR, TOUT doit tenir sinon skip avec raison nommee :
 5. organe B.0 ``check_unaddressed_nits.py <PR>`` exit 0 -- code de
    retour capture DIRECTEMENT (subprocess.returncode, jamais a travers
    un pipe) ;
+5bis. si la PR touche ``scripts/notebook_tools/twin_pairs.d/`` : organe
+   ``check_twin_index_collisions.py --base origin/main --head <tete>``
+   exit 0, apres ``git fetch origin main pull/<N>/head``. Deux PRs au
+   meme index sont chacune CLEAN contre ``main`` ; la seconde fait
+   rougir ``main`` des que la premiere est mergee. La relecture a lieu
+   PR par PR, contre le ``main`` du moment, donc apres les merges deja
+   faits dans ce run. Collision -> skip ; fetch ou organe illisible ->
+   skip fail-closed ;
 6. REST ``repos/jsboige/CoursIA/pulls/<N>`` : ``mergeable_state`` ==
    ``clean`` (jusqu'a 12 relectures a 10 s d'intervalle pendant ``unknown`` --
    apres un merge les PRs soeurs passent ``unknown``), et ``head.sha``
@@ -124,6 +132,9 @@ REPO = "jsboige/CoursIA"
 COORDINATOR_USER = "myia-ai-01"
 GATE_PATH = SCRIPTS_DIR / "check_adjoint_prevalidation.py"
 NITS_PATH = SCRIPTS_DIR / "check_unaddressed_nits.py"
+TWIN_PATH = SCRIPTS_DIR / "notebook_tools" / "check_twin_index_collisions.py"
+TWIN_REGISTRY_PREFIX = "scripts/notebook_tools/twin_pairs.d/"
+REPO_ROOT = SCRIPTS_DIR.parent
 
 # Parapluies et branches de campagne GELES par un veto user, exemption des
 # redressements comprise : definition et historique portes par le module
@@ -559,6 +570,40 @@ def run_nits(runner: Runner, pr: int, gh_env: dict[str, str]) -> int:
     return res.returncode
 
 
+def twin_collision_reason(
+    runner: Runner, pr: int, head: str, files: list[dict]
+) -> str | None:
+    """Etape 5bis : collision d'index twin-pairs contre le ``main`` du moment.
+
+    Ne coute rien aux PRs qui ne touchent pas le registre twin. Pour les
+    autres, un fetch puis l'organe partage : ``None`` si l'organe rend 0,
+    un motif de skip sinon. L'organe rend 1 sur collision, 2 quand il n'a
+    pas pu lire deux revisions -- et « je n'ai pas pu lire » n'est pas
+    « c'est propre » : skip, jamais merge.
+    """
+    touched = any(
+        str((row or {}).get("path") or "").startswith(TWIN_REGISTRY_PREFIX)
+        for row in files
+    )
+    if not touched:
+        return None
+    fetch = runner.run(
+        ["git", "-C", str(REPO_ROOT), "fetch", "--quiet", "origin", "main",
+         f"pull/{pr}/head"]
+    )
+    if fetch.returncode != 0:
+        return "twin-collision-unreadable:fetch"
+    res = runner.run(
+        [sys.executable, str(TWIN_PATH), "--repo", str(REPO_ROOT),
+         "--base", "origin/main", "--head", head]
+    )
+    if res.returncode == 0:
+        return None
+    if res.returncode == 1:
+        return "twin-index-collision"
+    return f"twin-collision-unreadable:rc={res.returncode}"
+
+
 def mergeable_state_and_head(
     runner: Runner, pr: int, gh_env: dict[str, str]
 ) -> tuple[str, str]:
@@ -610,7 +655,7 @@ def merge_pr(runner: Runner, pr: int, head: str, gh_env: dict[str, str]) -> None
 def evaluate_pr(
     view: dict, pr: int, runner: Runner, gh_env: dict[str, str]
 ) -> PRVerdict:
-    """Applique dans l'ordre les 6 controles pre-merge. Tout echec = skip nomme.
+    """Applique dans l'ordre les controles pre-merge (1 a 6, 5bis compris). Tout echec = skip nomme.
 
     Les controles bon marche (brouillon, commentaire, perimetre, tag) passent
     AVANT le gate couteux ; le gate avant les organes B.0 ; le REST en
@@ -658,6 +703,10 @@ def evaluate_pr(
     # 5. organe B.0 (re-verification reelle).
     if run_nits(runner, pr, gh_env) != 0:
         return skip("b0-organ-blocked")
+    # 5bis. collision d'index twin contre le main du moment.
+    reason = twin_collision_reason(runner, pr, gate_head, view.get("files") or [])
+    if reason is not None:
+        return skip(reason)
     # 6. REST : mergeable + tete.
     state, live_head = mergeable_state_and_head(runner, pr, gh_env)
     if state != "clean":

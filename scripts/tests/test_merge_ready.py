@@ -99,6 +99,8 @@ class ScriptedRunner:
         pulls: list[dict] | None = None,
         merge_rc: int = 0,
         gate_stderr: str = "",
+        fetch_rc: int = 0,
+        twin_rc: int = 0,
     ):
         self.token = token
         self.token_rc = token_rc
@@ -112,6 +114,8 @@ class ScriptedRunner:
         # stderr du gate : c'est lui qui porte un motif de portee generale
         # (jeton refuse, quota) quand le gate echoue POUR TOUTE la passe.
         self.gate_stderr = gate_stderr
+        self.fetch_rc = fetch_rc
+        self.twin_rc = twin_rc
         self.calls: list[tuple[list[str], dict | None]] = []
         self.sleeps: list[float] = []
 
@@ -163,6 +167,10 @@ class ScriptedRunner:
             return mr.RunResult(self.gate_rc, payload, self.gate_stderr)
         if len(c) > 1 and "check_unaddressed_nits.py" in c[1]:
             return mr.RunResult(self.nits_rc, "", "")
+        if c[:1] == ["git"] and "fetch" in c:
+            return mr.RunResult(self.fetch_rc, "", "")
+        if len(c) > 1 and "check_twin_index_collisions.py" in c[1]:
+            return mr.RunResult(self.twin_rc, "", "")
         raise AssertionError("commande non scriptee : " + " ".join(c))
 
     def sleep(self, seconds: float) -> None:
@@ -675,3 +683,61 @@ def test_hold_file_override(tmp_path):
     )
     assert rc == 0
     assert lines[-1]["reason"] == "hold:ordre de stack"
+
+
+# --- 5bis. collision d'index twin-pairs -----------------------------------------
+
+TWIN_FILE = "scripts/notebook_tools/twin_pairs.d/sw-5-linked-data/0012-2026-09-25-lane.yaml"
+
+
+def test_twin_organ_not_called_when_registry_untouched(tmp_path):
+    """Une PR hors registre twin ne paie ni fetch ni organe."""
+    runner = ScriptedRunner()
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert rc == 0
+    assert lines[0]["verdict"] == "would-merge"
+    assert not any("check_twin_index_collisions.py" in f for f in runner.flat())
+    assert not any(cmd[:1] == ["git"] for cmd in runner.cmds())
+
+
+def test_twin_collision_skips(tmp_path):
+    view = default_view(files=("src/a.py", TWIN_FILE))
+    runner = ScriptedRunner(views={123: view}, twin_rc=1)
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert rc == 0
+    assert lines[0]["verdict"] == "skipped"
+    assert lines[0]["reason"] == "twin-index-collision"
+
+
+def test_twin_clean_merges_and_compares_the_gated_head(tmp_path):
+    view = default_view(files=(TWIN_FILE,))
+    runner = ScriptedRunner(views={123: view}, twin_rc=0)
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "would-merge"
+    twin = [c for c in runner.cmds() if len(c) > 1 and "check_twin_index_collisions.py" in c[1]]
+    assert len(twin) == 1
+    assert twin[0][twin[0].index("--head") + 1] == HEAD
+    assert twin[0][twin[0].index("--base") + 1] == "origin/main"
+    # le fetch precede l'organe : le main compare est celui du moment
+    flat = runner.flat()
+    fetch_at = next(i for i, f in enumerate(flat) if f.startswith("git ") and " fetch " in f)
+    twin_at = next(i for i, f in enumerate(flat) if "check_twin_index_collisions.py" in f)
+    assert fetch_at < twin_at
+    assert "pull/123/head" in flat[fetch_at]
+
+
+def test_twin_organ_unreadable_is_fail_closed(tmp_path):
+    view = default_view(files=(TWIN_FILE,))
+    runner = ScriptedRunner(views={123: view}, twin_rc=2)
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "skipped"
+    assert lines[0]["reason"] == "twin-collision-unreadable:rc=2"
+
+
+def test_twin_fetch_failure_is_fail_closed(tmp_path):
+    view = default_view(files=(TWIN_FILE,))
+    runner = ScriptedRunner(views={123: view}, fetch_rc=128)
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "skipped"
+    assert lines[0]["reason"] == "twin-collision-unreadable:fetch"
+    assert not any("check_twin_index_collisions.py" in f for f in runner.flat())
