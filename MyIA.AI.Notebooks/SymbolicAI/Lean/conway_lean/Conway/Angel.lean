@@ -8,18 +8,18 @@ quelle case a distance de Chebyshev (coup de roi) `k` ; le Diable mange
 une case par tour. L'Ange de pouvoir k donne-t-il la chasse
 indefiniment ? Conway a pose les resultats initiaux et le probleme a
 ouvert tout un champ ; il fut resolu en 2007 par trois articles
-complementaires : Bowditch (pouvoir 4), Máthé (pouvoir 2), Kloster
-(pouvoir 2, preuve alternative). Gács demontre qu'un Ange de pouvoir
+complementaires : Bowditch (pouvoir 4), Mathe (pouvoir 2), Kloster
+(pouvoir 2, preuve alternative). Gacs demontre qu'un Ange de pouvoir
 **fini suffisamment grand** gagne (resume et introduction : « if J is
 sufficiently large then the angel has a strategy such that the devil
 will never capture her », arXiv:0706.2817 p.1) -- formulation citee
-d'apres l'archive `2007 - Gács - The Angel Wins.pdf` du gisement
+d'apres l'archive `2007 - Gacs - The Angel Wins.pdf` du gisement
 partage. Le papier ne donne pas de puissance numerique precise.
 
 Bibliographie archivee dans `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\` :
-- `2007 - Gács - The Angel Wins.pdf` (arXiv:0706.2817v1, verifie)
+- `2007 - Gacs - The Angel Wins.pdf` (arXiv:0706.2817v1, verifie)
 - MathOverflow 357433 archive en HTML dans `Technical Web Docs/`
-Les papiers paywalles (Bowditch/Máthé/Kloster, Cambridge Core +
+Les papiers paywalles (Bowditch/Mathe/Kloster, Cambridge Core +
 Elsevier ScienceDirect) n'ont pas pu etre archives en local faute
 d'acces auth ; leurs DOI sont references dans le bloc doc-module
 (`## LITTERATURE DE REFERENCE`) en fin de fichier.
@@ -109,7 +109,7 @@ Pas une etape tactique -- une impossibilite portee par le systeme :
 
 1. **Modele de jeu** : `Stream' (GameState × ℕ)` (dynamique tour-par-tour infinie)
    n'a pas de representant Mathlib 4 (`Game` n'existe pas dans Mathlib standard).
-2. **Strategie gagnante** : encoder la strategie de Máthé (pouvoir 2) ou Bowditch
+2. **Strategie gagnante** : encoder la strategie de Mathe (pouvoir 2) ou Bowditch
    (pouvoir 4) necessite plusieurs pages de maths subtiles -- zones, envahissement
    progressif, bornitude de l'avancee du Diable. Pas de port Lean connu.
 3. **Soundness du modele** : les mathematiciens ont pris 11 ans (1996-2007) pour la
@@ -124,17 +124,17 @@ Archivee dans `G:\Mon Drive\MyIA\IA\Bibliographie IA\` :
   Stub canonique archivé en local (DOI + abstract Crossref, pas de copie
   PDF : droits Cambridge) :
   `2007 - Bowditch - The Angel Game in the Plane.placeholder.md`.
-- **Máthé (2007)** "The Angel of Power 2 Wins", Combinatorics, Probability and
+- **Mathe (2007)** "The Angel of Power 2 Wins", Combinatorics, Probability and
   Computing 16(3):363-374, DOI:10.1017/s0963548306008303 -- paywall Cambridge Core.
   Stub canonique archivé en local (DOI + abstract Crossref) :
-  `2007 - Máthé - The Angel of Power 2 Wins.placeholder.md`.
+  `2007 - Mathe - The Angel of Power 2 Wins.placeholder.md`.
 - **Kloster (2007)** "A solution to the Angel Problem", Theoretical Computer Science
   389(1-2):266-277, DOI:10.1016/j.tcs.2007.08.006 -- paywall Elsevier.
   Stub canonique archivé en local (DOI + abstract Crossref) :
   `2007 - Kloster - A Solution to the Angel Problem.placeholder.md`.
-- **Gács (2007)** "The Angel Wins", arXiv:0706.2817v1, archive en local :
-  `2007 - Gács - The Angel Wins.pdf`. Verifie pypdf premiere page
-  (28 pages, 362933 octets, arXiv:0706.2817v1, Peter Gács).
+- **Gacs (2007)** "The Angel Wins", arXiv:0706.2817v1, archive en local :
+  `2007 - Gacs - The Angel Wins.pdf`. Verifie pypdf premiere page
+  (28 pages, 362933 octets, arXiv:0706.2817v1, Peter Gacs).
 - **MathOverflow post 357433** (2021, archive) "reference request - Conway's lesser-known
   results", archive en local :
   `Technical Web Docs/2021 - MathOverflow 357433 - reference request - Conways lesser-known results.html`.
