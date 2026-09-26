@@ -188,7 +188,7 @@ jupyter kernelspec list  # doit afficher pymc-env
 
 ## Prérequis
 
-- Python 3.10+ (3.12 recommandé)
+- Python 3.12+ : PyMC 6 et ArviZ 1.x, dont les notebooks suivent l'API, ne s'installent pas sur une version antérieure (pip s'y replie sur ArviZ 0.x)
 - Connaissance de base en probabilités et statistiques
 - Familiarité avec Python et Jupyter notebooks
 - Optionnel : avoir suivi la série [Infer.NET](../Infer/) pour la comparaison message passing vs MCMC
