@@ -44,7 +44,7 @@ Restent réservés à `myia-ai-01:CoursIA` :
 
 Chaque `[ADJOINT PREFLIGHT]`, `[ADJOINT VERIFIED]` et `[ADJOINT CLOSE]` publié est AUSSI journalisé comme observation `[OBS]` via le CLI — jamais dérivé à la main (l'`observation_id` dérive du contenu par le CLI ; une dérivation maison casse l'idempotence silencieusement).
 
-### Schéma réel (vérifié firsthand c.8)
+### Schéma réel (vérifié firsthand sur `debt_ledger.py`)
 
 - **Ledger unique** : `issue-debt` (le seul déclaré dans `LEDGERS`). **Pas de `pr-actions`** — la forme de cette section évolue quand la phase B (#16575) ajoute éventuellement d'autres `LEDGERS`.
 - **Fields autorisés** (rejet bruyant sinon) :
@@ -81,9 +81,9 @@ python scripts/coordination/debt_ledger.py reduce --ledger issue-debt \
   --events <journal-export.json> --state-dir <LOCALAPPDATA>\CoursIA\debt-ledgers
 ```
 
-### Proposition B — arbitrage ai-01 c.31 (NON avec motif)
+### Proposition B — arbitrage ai-01 (NON avec motif)
 
-**L'arbitrage (B) rendu par ai-01 c.31 22:31Z est NON.** Motif : « Une information reconstituable au pliage n'est pas une information perdue, c'est une information moins commode. Ajouter un champ avant que le ledger ait servi une seule fois, c'est ajouter de la flexibilité dont on n'a pas encore besoin — et c'est un PR de plus sur le chemin critique de la décongèstion. »
+**L'arbitrage (B) rendu par ai-01 est NON.** Motif : « Une information reconstituable au pliage n'est pas une information perdue, c'est une information moins commode. Ajouter un champ avant que le ledger ait servi une seule fois, c'est ajouter de la flexibilité dont on n'a pas encore besoin — et c'est un PR de plus sur le chemin critique de la décongèstion. »
 
 **Comment faire changer d'avis** : utiliser le ledger 2 cycles, revenir avec la **mesure** (« sur N observations, j'ai dû rouvrir le pliage M fois pour retrouver le type »), pas une intuition. ai-01 écrira le champ lui-même le cas échéant. Une mesure, pas une intuition — et ce sera un oui.
 
@@ -91,13 +91,13 @@ La proposition `act_kind` est donc **mise en attente mesurée**, pas ajoutée au
 
 ### Erreurs déjà commises à ne pas reproduire
 
-- **c.7** : cette section disait `--ledger pr-actions` + `kind` + `audited_head_sha` — drift silencieux. Le code aurait rejeté à chaque cycle avec `unknown_field`. Corrigé c.8 par lecture firsthand de `debt_ledger.py` ligne par ligne.
-- **En c.6/c.7** : 33 `[ADJOINT CLOSE]` publiés sur GitHub n'ont **pas** été traduits en observations ledger valides (le CLI était absent de main, et la skill disait du faux). Backfill = geste ultérieur, après merge phase A — pas un skip silencieux.
+- **Dérive de schéma** : cette section disait `--ledger pr-actions` + `kind` + `audited_head_sha` — drift silencieux. Le code aurait rejeté à chaque cycle avec `unknown_field`. Corrigé par lecture firsthand de `debt_ledger.py` ligne par ligne.
+- **Journalisation manquée** : 33 `[ADJOINT CLOSE]` publiés sur GitHub n'ont **pas** été traduits en observations ledger valides (le CLI était absent de main, et la skill disait du faux). Backfill = geste ultérieur, après merge phase A — pas un skip silencieux.
 - **`spool` n'est pas une sous-commande** : le CLI en déclare **trois** (`init`, `append`, `reduce`). Le *spool* est le **répertoire** désigné par le flag `append --out-dir` (défaut local `%LOCALAPPDATA%\CoursIA\debt-ledgers\<ledger>\spool\`). Une demande de « `spool --status` » se traite donc par un **audit du répertoire**, pas par un refus : compter les enveloppes, et recouper chacune contre les surfaces du dashboard.
 - **Un dashboard a TROIS surfaces, et « absent de l'intercom vivant » ne dit rien des deux autres** : l'intercom vivant, l'**archive de condensation**, et le fichier Drive. Mesuré le 2026-09-26 : une enveloppe spoolée (`obs-5e28f86031aaae2e`) que j'avais déclarée « jamais postée » était en fait **postée puis archivée** par la condensation de 02:36:41Z — l'archive la portait, entière, avec son `observation_id`. Avant de conclure « jamais postée », lire l'archive (`action:"read_archive"`). Même classe que « un `find` qui ne rend rien n'est pas une absence » : un instrument muet ne mesure pas une absence, il mesure son propre silence.
 - **Ne pas récupérer par acquittement ce qu'on n'a pas vérifié** : la conclusion « 1 enveloppe manquante » a produit un append de récupération qui s'est avéré un **doublon** d'un message déjà archivé (et qui a levé un `[FORK SUSPECTÉ]` en pure perte). Le contrôle qui l'aurait évitée coûtait un appel : `read_archive` **avant** de re-poster — la règle de l'organe lui-même (« relire le canonique avant tout retry ») nomme l'intercom, mais le canonique inclut l'archive.
 
-## Émission de dossiers — garde-fous obligatoires (tells c.12-c.15)
+## Émission de dossiers — garde-fous obligatoires
 
 - **Instrument de mesure des checks (arbitrage ai-01 2026-09-21 + RECTIF 12:09Z)** : lire `commits/<sha>/check-runs` — **jamais** `actions/runs` (un `attempt=2` y garde l'ancien id plus petit : organe `dedupe_latest`, `scripts/pr_gate.py` l.537, mesure #11416). Dédup **obligatoire** (17 noms dupliqués mesurés sur #16263) par clé canonique `(started_at, id)` dans cet ordre — jamais `created_at`, jamais `id` seul — et **paginer** (`--paginate` : total_count 101 > per_page 100 mesuré sur #16263).
 - **DWELL = minuteur, pas un défaut de contenu** : un rouge `PR gate: DWELL -- ... ecoule a <HH:MM>Z. Rien a corriger dans le code` ne se répare PAS par push (chaque push ré-arme le plancher 120 min depuis la nouvelle tête) ; un dossier BLOCKED qui le nomme est un livrable valide, le merge suit l'échéance. `gh pr update-branch` ne ré-arme PAS le plancher depuis #16149 ; en revanche une **résolution de conflit** (merge de `main` dont l'arbre diffère de l'auto-merge des parents) le **ré-arme** — mesuré le 2026-09-26 sur #17800, où la résolution d'ai-01 a repoussé la stabilisation de `PR gate` de 2 h. C'est ce qui produit la forme la plus déroutante : `PR gate` **reste en vol longtemps après que tout le reste est vert**, parce qu'il attend l'échéance *puis* juge — son `started_at` récent n'est pas un signe de lenteur de la PR. Corollaire : `statusCheckRollup` ment sur ~20 % des candidates (mesuré ai-01 2026-09-21) — ne jamais en faire un verdict.
@@ -113,7 +113,7 @@ La proposition `act_kind` est donc **mise en attente mesurée**, pas ajoutée au
 - **Ledger : poster `d["content"]` avec `messageId = observation_id`** — l'idempotence du CLI est portée par cet id ; un id dérivé à la main crée un doublon silencieux.
 - **Une note postée APRÈS le dossier lui est invisible** : `_strip_adjoint_dossier` coupe le corps **jusqu'à sa fin**, donc un commentaire — ou un `CHANGES_REQUESTED` — collé après un bloc dossier ne compte pas comme réserve et l'organe rend `rc=0`. Le pire des deux mondes : perdue pour le gate, lue par l'humain. Une observation qui ne doit ni lever ni réserver se poste dans un commentaire **séparé, AVANT** le dossier.
 
-## Lire un rouge avant de le nommer — tells c.43-c.44
+## Lire un rouge avant de le nommer
 
 - **Rouge fabriqué par la limite de débit de l'installation** : quand l'App GitHub épuise son quota d'installation, les jobs qui lisent le body par l'API reçoivent le texte d'erreur à la place du `PR_BODY`. `tag_required` et `perimeter` rougissent, et le bot `vtr-required-block` poste « Grain tag obligatoire » sur un body qui porte bien son tag. Signe : le summary du check-run contient `rate limit exceeded for installation`. Geste : relancer le job, **jamais** corriger le body. Mesuré sur #17180, #16782 et #17048.
 - **Un rerun rejoue le merge ref d'origine** : `gh run rerun` rejoue l'état de `main` du run initial. Un check qui attend un correctif mergé depuis (egress #17276, corrigé par #17479) reste rouge au rerun ; il faut un synchronize de la PR après le merge du correctif. Nommer ce geste à la lane, pas un rerun de plus.
