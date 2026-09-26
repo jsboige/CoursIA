@@ -9,11 +9,11 @@ distance `k`; the Devil eats one square per turn. Does the Angel of some power
 sparked the field; it was settled in 2007 by three complementary papers:
 Bowditch (power 4), Máthé (power 2), Kloster (power 2, alternative proof).
 Gács proves that an Angel of **sufficiently large finite** power wins
-(Theorem 1: "for sufficiently large J, the angel has a strategy such
-that the devil will never capture her", arXiv:0706.2817 p.1) — wording
-quoted from the archived `2007 - Gacs - The Angel Wins.pdf` in the
-shared bibliography. The paper does not give a specific numeric power.
-— the Angel of power ≥ 2 wins.
+(abstract and introduction: "if J is sufficiently large then the angel
+has a strategy such that the devil will never capture her",
+arXiv:0706.2817 p.1) — wording quoted from the archived
+`2007 - Gacs - The Angel Wins.pdf` in the shared bibliography. The
+paper does not give a specific numeric power.
 
 Bibliography archived under `G:\Mon Drive\MyIA\IA\Bibliography IA\GameTheory\`:
 - `2007 - Gacs - The Angel Wins.pdf` (arXiv:0706.2817v1, verified)

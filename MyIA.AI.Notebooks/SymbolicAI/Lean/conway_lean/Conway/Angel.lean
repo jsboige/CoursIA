@@ -10,12 +10,11 @@ indefiniment ? Conway a pose les resultats initiaux et le probleme a
 ouvert tout un champ ; il fut resolu en 2007 par trois articles
 complementaires : Bowditch (pouvoir 4), Mathe (pouvoir 2), Kloster
 (pouvoir 2, preuve alternative). Gacs demontre qu'un Ange de pouvoir
-**fini suffisamment grand** gagne (theoreme 1 : « for sufficiently
-large J, the angel has a strategy such that the devil will never
-capture her », arXiv:0706.2817 p.1) -- formulation citee d'apres
-l'archive `2007 - Gacs - The Angel Wins.pdf` du gisement partage.
-Le papier ne donne pas de puissance numerique precise. -- l'Ange
-de pouvoir ≥ 2 gagne.
+**fini suffisamment grand** gagne (resume et introduction : « if J is
+sufficiently large then the angel has a strategy such that the devil
+will never capture her », arXiv:0706.2817 p.1) -- formulation citee
+d'apres l'archive `2007 - Gacs - The Angel Wins.pdf` du gisement
+partage. Le papier ne donne pas de puissance numerique precise.
 
 Bibliographie archivee dans `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\` :
 - `2007 - Gacs - The Angel Wins.pdf` (arXiv:0706.2817v1, verifie)
