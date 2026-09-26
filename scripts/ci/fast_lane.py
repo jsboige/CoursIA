@@ -510,11 +510,22 @@ def main(argv: list[str] | None = None) -> int:
     blocking_failed = False
     for guard in selected:
         rc, log = results.get(guard.name, (0, "(aucune sortie)"))
-        if rc in guard.warn_rc:
+        # #17941 : un rc de warn_rc arriving ici est un incident du GARDE
+        # (Pattern 0 : gh/git en echec avant toute analyse) -- ni une faute
+        # de la PR ni un quitus vert. Les gardes Pattern 1 ont deja absorbe
+        # leurs warn_rc fichier-par-fichier dans run_iter (skip de fichier,
+        # ils n'atteignent pas ce point avec un rc warn). Emission en neutral
+        # -- pr_gate compte neutral comme vert (CONCLUSION_OK), le check-run
+        # porte donc un etat DISTINCT et lisible sans bloquer la PR.
+        incident = rc != 0 and rc in guard.warn_rc
+        if incident:
             rc = 0  # meme mapping que conclusion_for : un seul verdict
         effective_shadow = args.shadow and not guard.absorbed
         conclusion = conclusion_for(guard, rc, shadow=effective_shadow)
-        if rc == 0:
+        if incident:
+            conclusion = "neutral"
+            title = ("verdict inconnu -- incident du garde, rien n'a ete analyse")
+        elif rc == 0:
             title = "OK"
         elif guard.blocking:
             title = ("echec (ombre : non bloquant)" if effective_shadow
