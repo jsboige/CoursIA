@@ -118,6 +118,9 @@ class ScriptedRunner:
         nits_rc: int = 0,
         pulls: list[dict] | None = None,
         merge_rc: int = 0,
+        gate_stderr: str = "",
+        fetch_rc: int = 0,
+        twin_rc: int = 0,
     ):
         self.token = token
         self.token_rc = token_rc
@@ -128,6 +131,11 @@ class ScriptedRunner:
         self.nits_rc = nits_rc
         self.pulls = pulls or [{"mergeable_state": "clean", "head": {"sha": HEAD}}]
         self.merge_rc = merge_rc
+        # stderr du gate : c'est lui qui porte un motif de portee generale
+        # (jeton refuse, quota) quand le gate echoue POUR TOUTE la passe.
+        self.gate_stderr = gate_stderr
+        self.fetch_rc = fetch_rc
+        self.twin_rc = twin_rc
         self.calls: list[tuple[list[str], dict | None]] = []
         self.sleeps: list[float] = []
 
@@ -176,9 +184,13 @@ class ScriptedRunner:
                     "errors": [],
                 }
             )
-            return mr.RunResult(self.gate_rc, payload, "")
+            return mr.RunResult(self.gate_rc, payload, self.gate_stderr)
         if len(c) > 1 and "check_unaddressed_nits.py" in c[1]:
             return mr.RunResult(self.nits_rc, "", "")
+        if c[:1] == ["git"] and "fetch" in c:
+            return mr.RunResult(self.fetch_rc, "", "")
+        if len(c) > 1 and "check_twin_index_collisions.py" in c[1]:
+            return mr.RunResult(self.twin_rc, "", "")
         raise AssertionError("commande non scriptee : " + " ".join(c))
 
     def sleep(self, seconds: float) -> None:
@@ -436,14 +448,62 @@ def test_max_arrete_le_run(tmp_path):
     assert [row["pr"] for row in lines] == [101]
 
 
-def test_erreur_inattendue_arrete_le_run(tmp_path):
-    # rc 5 du gate : hors codes documents {0,1,2,3} -> arret, exit 1, et la
-    # PR suivante n'est pas touchee.
-    runner = ScriptedRunner(prs=(201, 202), gate_rc=5)
+def test_erreur_de_portee_generale_arrete_le_run(tmp_path):
+    # #17672 point 3 : le fail-closed est PRESERVE pour ce qui frappe toute la
+    # passe -- ici un jeton refuse dans le gate (marqueur « bad credentials »).
+    # rc 5 du gate : hors codes documents {0,1,2,3} -> arret, exit 1, et la PR
+    # suivante n'est pas touchee : la repeter ne dirait rien de plus.
+    runner = ScriptedRunner(
+        prs=(201, 202), gate_rc=5, gate_stderr="gh: Bad credentials (HTTP 401)"
+    )
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
     assert rc == 1
     assert lines[-1]["verdict"] == "run-error"
     assert not any("202" in flat for flat in runner.flat())
+
+
+def test_erreur_dune_pr_est_isolee_et_le_balayage_continue(tmp_path, capsys):
+    """#17672 point 3 : une erreur attribuable a UNE PR ne gele plus les autres.
+
+    Falsification : avant le correctif, le `break` de la boucle emportait le
+    balayage entier -- la PR suivante n'etait meme pas evaluee et le run
+    s'arretait sur la premiere PR mal formee. Ici la vue de 201 est illisible
+    (`gh pr view 201 : la reponse n'est pas un objet`), 202 est une PR normale.
+    """
+    runner = ScriptedRunner(prs=(201, 202), views={201: ["pas", "un", "objet"]})
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+
+    assert rc == 1, "une erreur isolee reste un incident : rc=1"
+    assert [row["pr"] for row in lines] == [201, 202]
+    assert lines[0]["verdict"] == "run-error"
+    assert "n'est pas un objet" in lines[0]["reason"], lines[0]["reason"]
+    # La PR SUIVANTE est bien evaluee puis mergee : c'est tout l'objet du point 3.
+    assert lines[1]["verdict"] == "merged", lines[1]
+    assert any("202" in flat for flat in runner.flat())
+
+    out = capsys.readouterr().out
+    # Le run ne s'est PAS arrete : publier « arret » serait un constat faux.
+    assert "arret :" not in out
+    # ...mais l'erreur isolee doit etre visible, sinon elle disparait du rapport.
+    assert "1 erreur(s) isolee(s)" in out, out
+
+
+def test_is_pass_wide_classe_par_le_texte_de_l_outil():
+    # Classification pure, sans boucle : un motif reconnu = portee generale ;
+    # tout le reste = attribuable a la PR (donc isole). Le sens de l'erreur par
+    # defaut compte : un texte inconnu ne doit JAMAIS arreter le balayage.
+    assert mr.is_pass_wide(
+        mr.UnexpectedError("gh pr view 9 rc=1 : API rate limit exceeded")
+    )
+    assert mr.is_pass_wide(
+        mr.UnexpectedError("gh pr list rc=1 : could not resolve host: api.github.com")
+    )
+    assert not mr.is_pass_wide(
+        mr.UnexpectedError("gate PR 9 rc=5 hors contrat : (sans message)")
+    )
+    assert not mr.is_pass_wide(
+        mr.UnexpectedError("gh pr view 9 : la reponse n'est pas un objet")
+    )
 
 
 def test_merge_echoue_arrete_le_run(tmp_path):
@@ -743,3 +803,60 @@ def test_le_bilan_compte_les_candidates_par_disposition(tmp_path, capsys):
     out = capsys.readouterr().out
     assert "candidates : 1 approved-exact-head, 1 approval-not-on-head" in out
     assert "[review: approved-exact-head]" in out
+
+# --- 5bis. collision d'index twin-pairs -----------------------------------------
+
+TWIN_FILE = "scripts/notebook_tools/twin_pairs.d/sw-5-linked-data/0012-2026-09-25-lane.yaml"
+
+
+def test_twin_organ_not_called_when_registry_untouched(tmp_path):
+    """Une PR hors registre twin ne paie ni fetch ni organe."""
+    runner = ScriptedRunner()
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert rc == 0
+    assert lines[0]["verdict"] == "would-merge"
+    assert not any("check_twin_index_collisions.py" in f for f in runner.flat())
+    assert not any(cmd[:1] == ["git"] for cmd in runner.cmds())
+
+
+def test_twin_collision_skips(tmp_path):
+    view = default_view(files=("src/a.py", TWIN_FILE))
+    runner = ScriptedRunner(views={123: view}, twin_rc=1)
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert rc == 0
+    assert lines[0]["verdict"] == "skipped"
+    assert lines[0]["reason"] == "twin-index-collision"
+
+
+def test_twin_clean_merges_and_compares_the_gated_head(tmp_path):
+    view = default_view(files=(TWIN_FILE,))
+    runner = ScriptedRunner(views={123: view}, twin_rc=0)
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "would-merge"
+    twin = [c for c in runner.cmds() if len(c) > 1 and "check_twin_index_collisions.py" in c[1]]
+    assert len(twin) == 1
+    assert twin[0][twin[0].index("--head") + 1] == HEAD
+    assert twin[0][twin[0].index("--base") + 1] == "origin/main"
+    # le fetch precede l'organe : le main compare est celui du moment
+    flat = runner.flat()
+    fetch_at = next(i for i, f in enumerate(flat) if f.startswith("git ") and " fetch " in f)
+    twin_at = next(i for i, f in enumerate(flat) if "check_twin_index_collisions.py" in f)
+    assert fetch_at < twin_at
+    assert "pull/123/head" in flat[fetch_at]
+
+
+def test_twin_organ_unreadable_is_fail_closed(tmp_path):
+    view = default_view(files=(TWIN_FILE,))
+    runner = ScriptedRunner(views={123: view}, twin_rc=2)
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "skipped"
+    assert lines[0]["reason"] == "twin-collision-unreadable:rc=2"
+
+
+def test_twin_fetch_failure_is_fail_closed(tmp_path):
+    view = default_view(files=(TWIN_FILE,))
+    runner = ScriptedRunner(views={123: view}, fetch_rc=128)
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "skipped"
+    assert lines[0]["reason"] == "twin-collision-unreadable:fetch"
+    assert not any("check_twin_index_collisions.py" in f for f in runner.flat())

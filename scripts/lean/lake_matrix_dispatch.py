@@ -36,6 +36,11 @@ GATE_SELF_COVER = [
     ".github/workflows/lean-ci-matrix.yml",
     ".github/workflows/lean-build.yml",
     ".github/actions/lean-build/action.yml",
+    # Jambe B.3 matricielle (#17336) : le composite d'axiomes et le script
+    # partage qu'il invoque sont des fichiers du gate -- un changement de la
+    # regle d'axiomes doit relancer le gate (meme lecon #8712).
+    ".github/actions/lean-axiom/action.yml",
+    "scripts/lean/axiom_check_step.py",
     "scripts/lean/ci_lakes.json",
     "scripts/lean/lake_matrix_dispatch.py",
     "scripts/ci/check_lake_matrix_paths.py",

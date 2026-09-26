@@ -33,11 +33,13 @@ ou regarder ; il ne dit pas quoi couper.
 Mode DIFF (#17464) : ``detect_added_readings`` signale les cellules markdown
 INSEREES dans une PR qui violent la regle user « une sortie = une lecture » :
 
-  - ``SECOND_READING``      : cellule markdown ajoutee juste avant ou apres
-                              une lecture existante (les bases de la campagne
-                              #13410 ajoutaient des paragraphes *sans en-tete*
-                              derives de la lecture -- invisibles au detecteur
-                              consecutive) ;
+  - ``SECOND_READING``      : cellule markdown ajoutee sous une sortie de code
+                              qui porte **plus de lectures en tete qu'en base**
+                              (les bases de la campagne #13410 ajoutaient des
+                              paragraphes *sans en-tete* derives de la lecture --
+                              invisibles au detecteur consecutive). Le constat
+                              est un **compte par sortie**, pas un jugement par
+                              cellule : voir la decision #17044 ci-dessous ;
   - ``READING_BEFORE_CODE`` : cellule markdown ajoutee directement devant une
                               cellule de code AVEC sortie (la lecture doit
                               suivre la sortie, pas la preceder) ;
@@ -52,15 +54,52 @@ la regle. La difference des en-tetes vides vient de la campagne #17021
 passait sous l'organe consecutive d'origine -- le veto user dit pourtant la
 meme regle.
 
+Decision #17044 (ai-01, c.5836401913) : le cliquet **compte**, il ne diffe pas
+les sources. Un ``SECOND_READING`` n'existe que si le nombre de lectures
+rattachees a une MEME sortie de code augmente entre la base et la tete ; la
+sortie est identifiee par la source de sa cellule de code. Une cellule markdown
+dont la source est neuve n'est pas, a elle seule, un ajout. Trois
+discriminants topologiques accumules avant cette decision (revision au meme
+slot, id de base encore present, « premiere lecture legitime ») sont retires :
+chacun ne couvrait qu'une variante du meme geste, et le dernier *avalait une
+addition reelle* -- une lecture posee a un slot ou la base portait deja de la
+markdown etait classee en revision meme quand le compte montait (#17062, 6
+sites). Un 4e discriminant « fusion par absorption » (recouvrement de mots) a
+ete ecarte : il ajoutait un seuil de plus a un empilement qui avait deja rate
+deux fois cette classe.
+
+Carve-out #17777 (decision ai-01 2026-09-25, « option a ») : deux formes
+canoniques du depot n'ont jamais ete des lectures, et le mode diff les
+signalait :
+
+  - l'**enonce d'exercice** ``## Exercice N`` place a cote de son stub
+    (enonce visible, stub separe, compte par ``count_exercises``) -- il tombait
+    dans ``READING_BEFORE_CODE`` quand il precede son stub, dans
+    ``EXERCISE_READING`` quand il suit le stub precedent. Replier ces enonces
+    en commentaires ``#`` degraderait la lecture pour satisfaire l'organe :
+    c'est l'option ecartee. Le carve-out ne s'applique PAS a une interpretation
+    deguisee sous un titre d'exercice (en-tete d'interpretation dissimule, ou
+    citation d'une sortie) -- elle reste signalee ;
+  - l'**en-tete de section** (``## 2. Tests statistiques``, ``## Conclusion``,
+    meme suivi de plusieurs paragraphes) n'est pas une « lecture deja
+    presente » : la premiere lecture posee derriere un code qui n'en avait pas
+    est le geste prescrit, pas un doublonnage. Le discriminant est le titre,
+    pas la longueur du corps. ``is_reading_or_prose`` le porte -- c'est le
+    predicat que le releve par sortie (#17044) consomme aussi.
+
 Mode CLIQUET (#17044) : ``--base-ref <ref> [--head HEAD]`` compare chaque carnet
 modifie entre la base et la tete et rend le verdict du cliquet -- rouge
 seulement si la PR **augmente** ce que l'organe voit sur un carnet qu'elle
 touche :
 
-  - ``regressed`` = au moins une lecture AJOUTEE (mode diff, position-aware) OU
-    ``len(detect(head)) > len(detect(base))`` (le compte des paires consecutive).
-    Les findings deja sur ``main`` sont donc *grandfathered* : c'est un cliquet,
-    pas un plancher absolu.
+  - ``regressed`` = au moins un CONSTAT nomme. Le constat est lui-meme
+    l'augmentation : pour ``SECOND_READING``, le nombre de lectures rattachees a
+    une MEME sortie de code monte entre la base et la tete (decision #17044,
+    c.5836401913) ; pour les deux autres buckets, la place de la cellule ajoutee.
+    Le compte des paires consecutives n'est plus un verdict -- une hausse qui ne
+    vient d'aucune sortie (encarts, transitions) n'est pas une violation. Les
+    findings deja sur ``main`` sont donc *grandfathered* : c'est un cliquet, pas
+    un plancher absolu.
   - les renames sont resolus via ``--name-status -M`` (un carnet renomme est lu
     a son ANCIEN chemin dans la base -- sans quoi le renommage passerait pour un
     ajout et tous ses findings pour des augmentations) ;
@@ -68,10 +107,11 @@ touche :
     carnet absent de la base comme « ajoute » ferait rougir la PR entiere sur un
     probleme de fetch.
 
-``--self-test`` joue cinq controles, hors git et hors reseau : deux positifs
+``--self-test`` joue six controles, hors git et hors reseau : trois positifs
 (lecture empilee nommee ; lecture ajoutee SANS en-tete, invisible au detecteur
-consecutive) et trois negatifs (deux lectures fusionnees en une ; modification de
-code sans lecture ajoutee ; encart sans code execute au-dessus).
+consecutive ; fusion blanche **plus** une lecture ajoutee sur une AUTRE sortie)
+et trois negatifs (deux lectures fusionnees en une ; modification de code sans
+lecture ajoutee ; encart sans code execute au-dessus).
 
 Codes de retour : 0 = aucun finding ; 1 = cible introuvable, fichier designe
 illisible, ou base irresoluble ; 2 = findings (avec --fail-on-findings). En mode
@@ -111,6 +151,31 @@ NAMED_FIRST_RE = re.compile(r"^lecture\b", re.IGNORECASE)
 
 # Heuristique cellule d'exercice : un stub TODO sans sortie ni execution_count.
 EXERCISE_TOKENS = ("TODO", "A completer", "à compléter", "Exercice")
+
+# Carve-out #17777 (decision ai-01 2026-09-25) : l'enonce d'exercice
+# (`## Exercice N`) place a cote de son stub est la **forme canonique du
+# depot** -- enonce visible, stub separe, compte par `count_exercises`.
+# L'organe ne doit donc pas le compter comme une lecture : sans ce carve-out
+# il tombe dans READING_BEFORE_CODE (l'enonce precede son propre stub) ou dans
+# EXERCISE_READING (il suit le stub precedent quand les paires enonce|stub
+# s'enchainent). Replier les enonces en commentaires `#` degraderait la
+# lecture pour satisfaire l'organe -- l'option ecartee par la decision.
+#
+# Deux garde-fous distinguent l'enonce d'une **interpretation deguisee sous un
+# titre d'exercice** : un en-tete d'interpretation dissimule dans le corps, et
+# la citation d'une sortie -- le vocabulaire de l'interpretation, pas celui de
+# l'enonce.
+EXERCISE_STATEMENT_TITLE_RE = re.compile(r"^#{1,6}\s*exercice\b", re.IGNORECASE)
+HIDDEN_INTERPRETATION_HEADING_RE = re.compile(
+    r"^#{1,6}\s*(lecture|interpre|interpret|analyse)", re.IGNORECASE
+)
+OUTPUT_CITATION_RE = re.compile(
+    r"\b(?:l[ae]s?|une?|cette?)\s+(?:sorties?|outputs?|prints?|affichages?)\b"
+    r"|\bl\s*['’]\s*(?:sortie|output|affichage)\b"
+    r"|\bcomme\s+le\s+montre\s+(?:la|le|l['’])"
+    r"|\b(?:on\s+observe|on\s+voit|on\s+lit)\b",
+    re.IGNORECASE,
+)
 
 
 def deaccent(s: str) -> str:
@@ -250,6 +315,75 @@ def is_exercise_cell(cell: dict) -> bool:
     )
 
 
+def is_reading_or_prose(cell: dict) -> bool:
+    """Vrai si la cellule md **commente une sortie** : une lecture titree
+    (Lecture / Interpretation / Analyse) ou un paragraphe non titre.
+
+    Le complement est ce que la decision #17777 nomme « un en-tete de
+    section » : une cellule dont le titre est un titre d'organisation
+    (``## 2. Tests statistiques``, ``## Conclusion``, ``## References``) --
+    elle structure le parcours, elle ne commente rien. Le discriminant est le
+    **titre**, pas la longueur du corps : ``## 3. Bootstrap et IC95`` suivi de
+    trois paragraphes reste un titre de section.
+
+    Le mode diff s'en sert pour savoir si un code avait **deja** une lecture
+    derriere lui : sinon, l'ajout d'une lecture est le geste PRESCRIT par le
+    mandat, pas un doublonnage.
+    """
+    if cell.get("cell_type") != "markdown":
+        return False
+    if is_reading_cell(cell):
+        return True
+    src = cell_source(cell).strip()
+    if not src:
+        return False
+    return not src.split("\n", 1)[0].lstrip().startswith("#")
+
+
+def is_exercise_statement(cell: dict, cells: list[dict], idx: int) -> bool:
+    """Vrai si ``cells[idx]`` est un **enonce d'exercice** au sens de la forme
+    canonique du depot : un titre `## Exercice N` adjacent a son stub.
+
+    Quatre conditions, toutes necessaires (#17777, decision ai-01
+    2026-09-25 « option a, le carve-out d'organe ») :
+
+      1. la premiere ligne non vide est un en-tete `Exercice ...` ;
+      2. la cellule precedente **ou** suivante est un stub d'exercice
+         (``is_exercise_cell``) -- l'enonce vit a cote de son stub ;
+      3. aucun en-tete d'interpretation n'est dissimule dans le corps
+         (un `### Lecture :` sous le titre d'exercice) ;
+      4. le corps ne cite pas de sortie (``OUTPUT_CITATION_RE``) : citer une
+         sortie est le geste de l'interpretation, pas celui de l'enonce.
+
+    Les conditions 3 et 4 sont les garde-fous du controle negatif de la
+    decision : « une interpretation deguisee sous un titre d'exercice » reste
+    signalee.
+    """
+    if cell.get("cell_type") != "markdown":
+        return False
+    lines = cell_source(cell).splitlines()
+    k = next((i for i, line in enumerate(lines) if line.strip()), None)
+    if k is None:
+        return False
+    if not EXERCISE_STATEMENT_TITLE_RE.match(lines[k].strip()):
+        return False
+    prev_cell = cells[idx - 1] if idx > 0 else None
+    next_cell = cells[idx + 1] if idx + 1 < len(cells) else None
+    if not any(
+        c is not None and is_exercise_cell(c) for c in (prev_cell, next_cell)
+    ):
+        return False
+    body = lines[k + 1:]
+    has_hidden_heading = any(
+        HIDDEN_INTERPRETATION_HEADING_RE.match(line.strip())
+        for line in body if line.strip()
+    )
+    cites_output = bool(
+        OUTPUT_CITATION_RE.search(deaccent("\n".join(body)).lower())
+    )
+    return not (has_hidden_heading or cites_output)
+
+
 def overlap_metrics(nb: dict, i: int, j: int) -> dict:
     """Jaccard mots pleins + containment mots rares entre cellules i et j."""
     words = {ci: content_words(t) for ci, t in markdown_cells(nb)}
@@ -339,6 +473,97 @@ def _classify_context(cells: list[dict], idx: int) -> tuple[str, str]:
     return role(prev), role(nxt)
 
 
+def _output_key_above(cells: list[dict], idx: int) -> str | None:
+    """Source de la cellule de code dont ``cells[idx]`` commente la sortie.
+
+    La sortie est identifiee par la **source de sa cellule de code** (#17044,
+    decision ai-01 c.5836401913). La remontee s'arrete a la premiere cellule de
+    code : c'est elle, et elle seule, que la lecture commente. ``None`` s'il n'y
+    a rien a lire -- aucun code au-dessus, code d'exercice, ou code jamais
+    execute.
+    """
+    for j in range(idx - 1, -1, -1):
+        c = cells[j]
+        if c.get("cell_type") != "code":
+            continue
+        if is_exercise_cell(c):
+            return None
+        if c.get("execution_count") is not None or (c.get("outputs") or []):
+            return cell_source(c)
+        return None
+    return None
+
+
+def readings_by_output(nb: dict) -> Counter[str]:
+    """Nombre de lectures rattachees a chaque sortie de code du carnet.
+
+    C'est ce compte, et lui seul, que le mode diff compare entre la base et la
+    tete (#17044, decision c.5836401913) : une cellule markdown dont la source
+    est neuve n'est pas, a elle seule, un ajout -- une fusion, une revision ou
+    un deplacement laissent ce compte inchange.
+    """
+    cells = nb.get("cells", [])
+    counts: Counter[str] = Counter()
+    for i, c in enumerate(cells):
+        if not is_reading_or_prose(c):
+            continue
+        key = _output_key_above(cells, i)
+        if key is not None:
+            counts[key] += 1
+    return counts
+
+
+def increased_outputs(base_nb: dict | None, head_nb: dict) -> dict[str, int]:
+    """Sorties dont le nombre de lectures AUGMENTE de la base a la tete.
+
+    Une sortie absente de la base est ignoree : elle n'a pas de compte
+    anterieur auquel comparer, et la premiere lecture posee sous un code neuf
+    est le geste que le mandat PRESCRIT, pas un doublonnage. C'est ce qui
+    distingue « ajouter une lecture » de « rendre une sortie a sa lecture ».
+    """
+    if base_nb is None:
+        return {}
+    base_readings = readings_by_output(base_nb)
+    head_readings = readings_by_output(head_nb)
+    return {
+        key: head_readings[key] - n
+        for key, n in base_readings.items()
+        if head_readings.get(key, 0) > n
+    }
+
+
+def _finding(kind: str, cells: list[dict], idx: int) -> dict:
+    """Constat nomme pour la cellule ``idx``, avec son contexte immediat."""
+    prev_role, next_role = _classify_context(cells, idx)
+    prev = cells[idx - 1] if idx > 0 else None
+    nxt = cells[idx + 1] if idx + 1 < len(cells) else None
+    prev_src = cell_source(prev)[-60:] if prev is not None else ""
+    nxt_src = cell_source(nxt)[:60] if nxt is not None else ""
+    return {
+        "type": kind,
+        "cells": [idx],
+        "src_first_120": cell_source(cells[idx])[:120].replace("\n", " | "),
+        "prev_role": prev_role,
+        "next_role": next_role,
+        "prev_src_last_60": prev_src.replace("\n", " | "),
+        "next_src_first_60": nxt_src.replace("\n", " | "),
+    }
+
+
+def _attached_sources(nb: dict, key: str) -> set[str]:
+    """Sources des cellules qu'une base rattache a la sortie ``key``.
+
+    Sert a distinguer, dans le releve final, la cellule que la tete a fait
+    ENTRER sur cette sortie (sa source n'y etait pas rattachee en base) du
+    doublon byte-identique et de la revision deplacee.
+    """
+    cells = nb.get("cells", [])
+    return {
+        cell_source(c) for i, c in enumerate(cells)
+        if _output_key_above(cells, i) == key
+    }
+
+
 def detect_added_readings(head_nb: dict, base_nb: dict | None) -> list[dict]:
     """Mode DIFF (#17464) : signale les cellules markdown **ajoutees** dans une PR
     dont la position viole la regle user « une sortie = une lecture ».
@@ -347,27 +572,41 @@ def detect_added_readings(head_nb: dict, base_nb: dict | None) -> list[dict]:
       1. Si ``base_nb`` est None, retourne une liste vide.
       2. Diff par multiset de sources (entre par sources, pas par id -- la
          campagne a produit des cellules sans id et des ids dupliques).
-      3. Pour chaque cellule ajoutee qui est markdown, classifier via le
+      3. Une cellule qui REVISE en place celle qui occupait le meme slot n'est
+         pas un ajout : le mandat prescrit cette revision (« si on rajoute une
+         lecture, on modifie le paragraphe existant »). Trois signaux l'exemptent
+         -- id conserve (meme decale), source identique au meme index, ou deux
+         cellules markdown au meme index.
+      4. Pour chaque cellule ajoutee qui est markdown, classifier via le
          **contexte HEAD** :
            - ``EXERCISE_READING``    prev_role == "exercise"
            - ``READING_BEFORE_CODE`` next_role == "code_with_output"
-           - ``SECOND_READING``      prev_role == "md"
-                                       (lecture ajoutee derriere une lecture
-                                       deja presente)
-                                     OU prev_role == "code_with_output"
-                                        ET la cellule de code en question
-                                        etait **elle-meme deja precede d'une
-                                        lecture en base** (sinon : ajout
-                                        legitime d'une premiere lecture pour
-                                        un nouveau code)
+           - ``SECOND_READING``      la sortie que la cellule commente porte
+                                     **plus de lectures en tete qu'en base**
 
-    Le discriminant pour ``SECOND_READING`` apres code : on regarde en base
-    la cellule qui precede le meme code (identifiee par egalite de source).
-    Si en base cette cellule de code etait deja suivie d'une lecture markdown,
-    l'ajout est un doublonnage ; sinon, c'est la premiere lecture legitime.
+    Le discriminant de ``SECOND_READING`` est un **compte par sortie**, pas un
+    jugement par cellule (#17044, decision ai-01 c.5836401913) : on releve, pour
+    chaque sortie (identifiee par la source de sa cellule de code), le nombre de
+    lectures qui la suivent, en base et en tete. Le constat n'existe que si ce
+    compte MONTE. Une fusion de deux lectures en une, un deplacement, une
+    revision laissent le compte inchange ; une sortie absente de la base est
+    ignoree (sa premiere lecture est le geste prescrit). Les deux filtres
+    topologiques que ce compte remplace -- « premiere lecture legitime apres un
+    code », « encart sans code execute au-dessus » -- sont subsumes : aucune de
+    ces formes ne fait monter le compte, alors que chacun d'eux laissait passer
+    une addition REELLE posee a cote d'une revision.
+
+    Le compte prime sur la place : une lecture ajoutee sous une sortie qui en
+    portait deja est un ``SECOND_READING`` **meme si** sa position la fait
+    ressembler a une lecture introductive. Sans cette primaute le constat
+    retombait sur la revision en place qui l'accompagne, c'est-a-dire sur le
+    geste que le mandat prescrit.
+
+    Les deux autres buckets restent **positionnels** : la place d'une cellule
+    ajoutee y est jugee comme avant, exemptions de revision comprises.
 
     Sortie : liste de dicts ``{type, cells, src_first_120, prev_role,
-    next_role, prev_src_last_60, next_src_first_60}``.
+    next_role, prev_src_last_60, next_src_first_60}``, triee par position.
     """
     if base_nb is None:
         return []
@@ -376,34 +615,25 @@ def detect_added_readings(head_nb: dict, base_nb: dict | None) -> list[dict]:
     base_srcs = [cell_source(c) for c in base_cells]
     head_srcs = [cell_source(c) for c in head_cells]
 
-    # Pour le discriminant SECOND_READING : index par source de toutes les
-    # cellules de base dont la source est DU CODE A SORTIE UTILE, et map
-    # "ce code etait-il deja suivi d'une cellule de LECTURE" (pas
-    # n'importe quelle markdown -- un "Conclusion" terminal n'est pas une
-    # lecture au sens de la regle, meme s'il suit une cellule de code).
-    base_code_positions: dict[str, list[int]] = {}
-    for i, src in enumerate(base_srcs):
-        c = base_cells[i]
-        if c.get("cell_type") == "code":
-            ec = c.get("execution_count")
-            outs = c.get("outputs") or []
-            if (ec is not None or outs) and not is_exercise_cell(c):
-                base_code_positions.setdefault(src, []).append(i)
-
     base_counter: Counter[str] = Counter(base_srcs)
     head_counter: Counter[str] = Counter(head_srcs)
-
-    # #17044 -- les IDs de la base, consommes un a un. Le discriminant
-    # d'origine exigeait la MEME position pour reconnaitre une rewrite par son
-    # id ; une fusion (ou toute insertion/suppression au-dessus) decale les
-    # index, et la cellule reecrite repartait alors comme un AJOUT. Mesure sur
-    # 11 PR notebook mergees : 3 rouges, dont 2 PR de FUSION -- le remede
-    # prescrit par le mandat user -- toutes deux expliquees par ce decalage.
+    # Les ids de la base, consommes un a un : une cellule dont l'id vit encore a
+    # ete revisee, meme si une fusion a decale son index (#17044).
     base_id_pool: Counter[str] = Counter(
         c.get("id") for c in base_cells if c.get("id")
     )
 
+    # #17044 -- budget de lectures ajoutees, par sortie. C'est ce dictionnaire,
+    # et lui seul, qui autorise un SECOND_READING ; chaque unite est consommee
+    # une fois, par une cellule nommee dans le constat.
+    excess = increased_outputs(base_nb, head_nb)
+
     findings: list[dict] = []
+    # Cellules ajoutees qui se disputent le budget d'une meme sortie : le
+    # verdict se tranche apres la boucle, quand toutes sont connues.
+    pending: dict[str, list[int]] = {}
+    reported: set[int] = set()
+
     for idx, src in enumerate(head_srcs):
         if head_counter[src] <= base_counter[src]:
             base_counter[src] += 1
@@ -413,86 +643,58 @@ def detect_added_readings(head_nb: dict, base_nb: dict | None) -> list[dict]:
             base_counter[src] += 1
             continue
 
-        # Discriminant 0 : REWRITE (pas d'insertion). On considere qu'une
-        # cellule est une REWRITE -- et NON un ajout -- quand au moins
-        # l'UN des trois signaux tient :
-        #   (a) meme position index-for-index ET meme source (meme
-        #       contenu exact -- ne mord que sur un doublon de source, une
-        #       revision par definition ne repasse pas ici) ;
-        #   (b) l'id de la cellule existe encore en base -- MEME a un autre
-        #       index (#17044). Une fusion retire ou insere des cellules
-        #       au-dessus, donc l'index se decale : exiger la meme position
-        #       faisait passer la rewrite pour un ajout. Le ticket #17464 note
-        #       que la campagne a produit des cellules sans id ET des ids
-        #       dupliques -- l'id est donc consomme une fois, ce qui borne les
-        #       doublons sans reouvrir la porte ;
-        #   (c) meme position ET les deux cellules sont des lectures : la tete
-        #       a revise celle qui occupait ce slot (#17044). Signal
-        #       topologique, indispensable sur les carnets SANS id (le corpus
-        #       en contient -- cf. les deux carnets du controle positif).
-        # La regle user dit « fusionner / reecrire, pas empiler » : la
-        # reecriture EST l'action prescrite. Ne pas la signaler.
+        # Revision en place, pas insertion (cf. etape 3 du docstring) :
+        #   (a) l'id de la cellule vit encore en base -- meme a un autre index,
+        #       ce qu'une fusion provoque systematiquement ;
+        #   (b)/(c) le meme index portait DEJA du markdown en base : la tete a
+        #       revise ce slot. Le signal ne depend pas de la classification
+        #       lecture/exercice, sinon un simple echappement de `$` dans une
+        #       cellule sans id suffisait a la faire passer pour un ajout
+        #       (OR-tools-Stiegler, #17747) et le cliquet rougissait le geste
+        #       que le mandat prescrit.
+        # (b) (source identique au meme index) est un cas particulier de (c)
+        # des lors que la cellule de tete est markdown, ce que le test ci-dessus
+        # a deja etabli.
         is_rewrite = False
         head_id = cell.get("id")
         if head_id and base_id_pool.get(head_id, 0) > 0:
             base_id_pool[head_id] -= 1
             is_rewrite = True
         if (not is_rewrite and idx < len(base_cells)
-                and base_cells[idx].get("cell_type") == "markdown"
-                and cell_source(base_cells[idx]) == src):
-            is_rewrite = True
-        #   (c) meme position ET les DEUX cellules sont des lectures : la tete
-        #       a REVISE celle qui occupait ce slot (#17044). Le mandat prescrit
-        #       cette revision ; sans ce signal elle n'etait reconnue que sur
-        #       les carnets porteurs d'ids, donc le remede etait puni des que
-        #       les cellules n'en avaient pas (le corpus en contient : les deux
-        #       carnets du controle positif #17028 sont dans ce cas). Un
-        #       EMPILEMENT reel a cote n'est pas vu ici : la lecture empilee
-        #       arrive a un index ou la base porte autre chose (ou rien), et
-        #       le compte de paires, lui, monte.
-        if (not is_rewrite and idx < len(base_cells)
-                and is_reading_cell(base_cells[idx])
-                and is_reading_cell(cell)):
+                and base_cells[idx].get("cell_type") == "markdown"):
             is_rewrite = True
         if is_rewrite:
             base_counter[src] += 1
             continue
 
+        # Carve-out #17777 (decision ai-01 2026-09-25) : un enonce d'exercice
+        # adjacent a son stub n'est pas une lecture. Sans ce filtre il tombe
+        # dans READING_BEFORE_CODE (l'enonce precede son propre stub) ou dans
+        # EXERCISE_READING (il suit le stub precedent quand les paires
+        # enonce|stub s'enchainent) -- mesure sur #17777 : 11 findings sur 3
+        # carnets, tous des enonces.
+        if is_exercise_statement(cell, head_cells, idx):
+            base_counter[src] += 1
+            continue
+
         prev_role, next_role = _classify_context(head_cells, idx)
+        key = _output_key_above(head_cells, idx)
+        # Le COMPTE prime sur la topologie (#17044, decision c.5836401913). Une
+        # cellule rattachee a une sortie qui porte plus de lectures qu'en base
+        # EST une seconde lecture, quoi qu'en dise sa place : posee devant la
+        # cellule de code SUIVANTE, la topologie seule la lirait comme une
+        # lecture introductive, alors qu'elle commente la sortie du dessus.
+        if key is not None and excess.get(key, 0) > 0:
+            pending.setdefault(key, []).append(idx)
+            base_counter[src] += 1
+            continue
         bucket = _bucket_for(prev_role, next_role)
-        # Discriminant SECOND_READING : si prev_role == "code_with_output",
-        # verifier en base si ce code etait **deja suivi** d'une cellule
-        # markdown (au sens large du ticket user : « deja suivie d'au moins
-        # une cellule markdown » -- la distinction lecture vs transition
-        # est tranchee par la pedagogie, pas par le format).
-        # Si la base avait deja une md derriere ce code, ajouter une md
-        # supplementaire derriere est un doublonnage. Si la base n'avait
-        # rien derriere ce code (markdown), c'est la premiere lecture
-        # legitime (et NON une violation).
-        if bucket == "SECOND_READING" and prev_role == "code_with_output":
-            prev_cell = head_cells[idx - 1] if idx > 0 else None
-            if prev_cell is not None:
-                prev_src = cell_source(prev_cell)
-                prev_positions = base_code_positions.get(prev_src, [])
-                already_had_md_after = any(
-                    (i + 1 < len(base_cells)
-                     and base_cells[i + 1].get("cell_type") == "markdown")
-                    for i in prev_positions
-                )
-                if not already_had_md_after:
-                    # premiere lecture legitime pour ce code -> ne pas signaler
-                    bucket = None
-        # #17044 -- SECOND_READING apres une MARKDOWN : le bucket ne regardait
-        # que la topologie (md, md) et signalait donc tout encart insere entre
-        # deux cellules de prose (mesure : un bandeau « statut epistemique » en
-        # tete de notebook, #17484 -- aucun code au-dessus). La definition de
-        # l'issue est « deux cellules de lecture pour une MEME cellule de
-        # code » : sans code a sortie au-dessus, il n'y a rien a lire, donc pas
-        # de seconde lecture. Le cas fondateur reste capte -- ses paragraphes
-        # sans en-tete sont tous poses sous un code a sortie (mesure : 7/7).
-        if (bucket == "SECOND_READING" and prev_role == "md"
-                and not _reads_code_above(head_cells, idx)):
-            bucket = None
+        if bucket == "SECOND_READING":
+            # Topologie de seconde lecture, mais aucune sortie en deficit :
+            # il n'y a rien a signaler (premiere lecture legitime sous un code
+            # neuf, encart sans code a sortie au-dessus, revision en place).
+            base_counter[src] += 1
+            continue
         # Filtre final : EXERCISE_READING_CANDIDATE -> EXERCISE_READING si
         # la cellule ressemble a une lecture (titre d'interpretation OU
         # prose > 80 chars apres la premiere ligne). On REJETTE les
@@ -503,39 +705,39 @@ def detect_added_readings(head_nb: dict, base_nb: dict | None) -> list[dict]:
         if bucket is None:
             base_counter[src] += 1
             continue
-        prev = head_cells[idx - 1] if idx > 0 else None
-        nxt = head_cells[idx + 1] if idx + 1 < len(head_cells) else None
-        prev_src = (cell_source(prev)[-60:] if prev is not None else "")
-        nxt_src = (cell_source(nxt)[:60] if nxt is not None else "")
-        findings.append({
-            "type": bucket,
-            "cells": [idx],
-            "src_first_120": src[:120].replace("\n", " | "),
-            "prev_role": prev_role,
-            "next_role": next_role,
-            "prev_src_last_60": prev_src.replace("\n", " | "),
-            "next_src_first_60": nxt_src.replace("\n", " | "),
-        })
+        findings.append(_finding(bucket, head_cells, idx))
+        reported.add(idx)
         base_counter[src] += 1
-    return findings
 
-
-def _reads_code_above(cells: list[dict], idx: int) -> bool:
-    """Vrai si la cellule ``idx`` commente la sortie d'un code situe au-dessus.
-
-    Motif vise par l'issue #17044 : « deux cellules de lecture pour une MEME
-    cellule de code ». Une prose ajoutee dans une zone qui ne suit AUCUN code a
-    sortie (preamble d'un notebook, bandeau de statut, en-tete de section) n'est
-    pas une seconde lecture -- il n'y a rien a lire au-dessus.
-    """
-    for j in range(idx - 1, -1, -1):
-        c = cells[j]
-        if c.get("cell_type") != "code":
+    # Le releve est par SORTIE, pas par cellule : plusieurs cellules peuvent se
+    # disputer un meme budget, et celle qui a fait monter le compte n'est pas
+    # toujours celle que les exemptions de revision ont laissee passer. Trois
+    # rangs, dans cet ordre :
+    #   1. les ajouts francs -- la source n'existait nulle part en base ;
+    #   2. les cellules dont la source n'etait PAS rattachee a cette sortie en
+    #      base : c'est le deplacement qui les y a fait entrer, et c'est lui qui
+    #      a mis la sortie en deficit. C'est le geste a nommer ;
+    #   3. les autres (doublon byte-identique, revision deplacee), dans l'ordre
+    #      du document.
+    # Le cliquet ne rend jamais rouge sans constat nomme.
+    for key, remaining in excess.items():
+        if remaining <= 0:
             continue
-        if is_exercise_cell(c):
-            return False
-        return bool(c.get("execution_count") is not None or (c.get("outputs") or []))
-    return False
+        held = _attached_sources(base_nb, key)
+        pend = pending.get(key, [])
+        attached = [
+            i for i, c in enumerate(head_cells)
+            if i not in reported and i not in pend
+            and _output_key_above(head_cells, i) == key
+        ]
+        moved = [i for i in attached if cell_source(head_cells[i]) not in held]
+        rest = [i for i in attached if cell_source(head_cells[i]) in held]
+        for idx in (pend + moved + rest)[:remaining]:
+            findings.append(_finding("SECOND_READING", head_cells, idx))
+            reported.add(idx)
+
+    findings.sort(key=lambda f: f["cells"][0])
+    return findings
 
 
 def _bucket_for(prev_role: str, next_role: str) -> str | None:
@@ -676,7 +878,13 @@ def ratchet_rows(base_ref: str, head: str = "HEAD",
             "head_total": head_total,
             "delta": head_total - base_total,
             "added": added,
-            "regressed": bool(added) or head_total > base_total,
+            # Le verdict EST le constat (#17044, decision c.5836401913) : le
+            # cliquet compte les lectures par sortie, il ne diffe plus les
+            # sources. Les deux totaux restent rendus, mais pour l'information
+            # -- une hausse de paires qui ne vient d'aucune sortie (encarts,
+            # transitions) n'est pas une violation. Corollaire : jamais de rouge
+            # sans constat nomme, ce que la consommation du budget garantit.
+            "regressed": bool(added),
         })
     return rows
 
@@ -685,7 +893,7 @@ def _nb(cells: list[tuple[str, str, str | None]]) -> dict:
     """Carnet minimal pour les controles : (cell_type, source, id).
 
     Les cellules de code portent une sortie et un execution_count : c'est la
-    condition d'une lecture (« rien a lire » sinon, cf ``_reads_code_above``),
+    condition d'une lecture (« rien a lire » sinon, cf ``_output_key_above``),
     donc l'omettre rendrait les controles positifs vacues.
     """
     out = []
@@ -768,6 +976,33 @@ def self_test() -> int:
         "negatif 3 encart sans code au-dessus",
         not added5,
         f"added={[f['type'] for f in added5]}",
+    ))
+
+    # Positif 3 -- critere 3 de la decision #17044 : une fusion reste VERTE,
+    # mais une lecture ajoutee sur une AUTRE sortie reste ROUGE. Le cliquet
+    # compte par sortie : il ne blanchit pas la PR entiere des qu'une de ses
+    # sorties a ete fusionnee, et il ne rougit pas la fusion elle-meme.
+    # `suite` est inchange entre les deux cotes : sans elle, la lecture
+    # fusionnee deviendrait adjacente a la cellule de code suivante et serait
+    # signalee READING_BEFORE_CODE -- un autre constat, qui masquerait celui
+    # qu'on veut eprouver.
+    a1 = ("markdown", "### Lecture\nA1.", "a1")
+    a2 = ("markdown", "### Lecture chiffree\nA2.", "a2")
+    fused = ("markdown", "### Lecture\nA1 et A2 fusionnes.", "a1")
+    suite = ("markdown", "## 4. Suite du parcours", "h1")
+    b1 = ("markdown", "### Lecture\nB1.", "b1")
+    b2 = ("markdown", "### Lecture chiffree\nB2 ajoutee.", "b2")
+    code2 = ("code", "print(2)", "c1")
+    base6 = _nb([code, a1, a2, suite, code2, b1])
+    head6 = _nb([code, fused, suite, code2, b1, b2])
+    added6 = detect_added_readings(head6, base6)
+    checks.append((
+        "positif 3 fusion verte + lecture ajoutee sur une autre sortie rouge",
+        [f["type"] for f in added6] == ["SECOND_READING"]
+        and added6[0]["cells"] == [5],
+        f"added={[(f['type'], f['cells']) for f in added6]} "
+        f"compte par sortie {dict(readings_by_output(base6))} -> "
+        f"{dict(readings_by_output(head6))}",
     ))
 
     ok = True

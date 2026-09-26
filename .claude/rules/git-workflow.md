@@ -109,6 +109,7 @@ python scripts/ci/prune_merged_worktrees.py --json      # sortie structuree pour
 ```bash
 python scripts/ci/install_prune_task.py --install   # garde : REFUSE tant que le fix #14476 n'est pas merge
 python scripts/ci/install_prune_task.py --status    # etat de la tache
+python scripts/ci/install_prune_task.py --install --dry-run  # afficher argv schtasks sans installer
 ```
 
 **Critères de retrait (cf issue #14195 acceptance)** :

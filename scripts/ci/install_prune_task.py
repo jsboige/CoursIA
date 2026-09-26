@@ -12,6 +12,7 @@ Modes :
     --install [--repo PATH] [--time HH:MM]   cree la tache planifiee (idempotent)
     --status                                  etat de la tache
     --uninstall                               supprime la tache
+    --dry-run (--install | --uninstall)       affiche argv schtasks sans l'executer
     --run                                     execute la purge (invoqué PAR la tache) :
                                               journal horodate, jamais de couleur/TTY
 
@@ -108,14 +109,19 @@ def task_exists() -> bool:
     return _run(["schtasks", "/Query", "/TN", TASK_NAME]).returncode == 0
 
 
-def cmd_install(repo: Path, time: str) -> int:
+def cmd_install(repo: Path, time: str, dry_run: bool = False) -> int:
     ok, msg = check_prune_fix_present(repo)
     if not ok:
         print(f"REFUSE : {msg}", file=sys.stderr)
         return 2
     print(f"garde OK : {msg}")
+    command = build_schtasks_install(task_command(repo), time)
+    if dry_run:
+        print(f"schtasks argv : {command!r}")
+        print(f"schtasks commande : {subprocess.list2cmdline(command)}")
+        return 0
     LOG_DIR.mkdir(parents=True, exist_ok=True)
-    proc = _run(build_schtasks_install(task_command(repo), time))
+    proc = _run(command)
     if proc.returncode != 0:
         print(f"schtasks /Create echoue (rc={proc.returncode}) : "
               f"{proc.stdout.strip()} {proc.stderr.strip()}", file=sys.stderr)
@@ -137,8 +143,13 @@ def cmd_status() -> int:
     return 0
 
 
-def cmd_uninstall() -> int:
-    proc = _run(["schtasks", "/Delete", "/TN", TASK_NAME, "/F"])
+def cmd_uninstall(dry_run: bool = False) -> int:
+    command = ["schtasks", "/Delete", "/TN", TASK_NAME, "/F"]
+    if dry_run:
+        print(f"schtasks argv : {command!r}")
+        print(f"schtasks commande : {subprocess.list2cmdline(command)}")
+        return 0
+    proc = _run(command)
     if proc.returncode != 0:
         print(f"suppression echouee : {proc.stdout.strip()} "
               f"{proc.stderr.strip()}", file=sys.stderr)
@@ -171,6 +182,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--install", action="store_true")
     p.add_argument("--status", action="store_true")
     p.add_argument("--uninstall", action="store_true")
+    p.add_argument("--dry-run", action="store_true",
+                   help="affiche la commande schtasks sans l'executer (install/uninstall)")
     p.add_argument("--run", action="store_true",
                    help="mode interne (invoque par la tache planifiee)")
     p.add_argument("--repo", type=Path,
@@ -180,13 +193,15 @@ def main(argv: list[str] | None = None) -> int:
                    help="heure quotidienne HH:MM (defaut 03:17, hors heures ouvrables)")
     args = p.parse_args(argv)
 
+    if args.dry_run and (args.install == args.uninstall or args.status or args.run):
+        p.error("--dry-run requiert exactement --install ou --uninstall")
     repo = args.repo.resolve()
     if args.install:
-        return cmd_install(repo, args.time)
+        return cmd_install(repo, args.time, dry_run=args.dry_run)
     if args.status:
         return cmd_status()
     if args.uninstall:
-        return cmd_uninstall()
+        return cmd_uninstall(dry_run=args.dry_run)
     if args.run:
         return cmd_run(repo)
     p.print_help()
