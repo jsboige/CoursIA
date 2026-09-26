@@ -177,7 +177,15 @@ Le dossier s'appelle encore `Argument_Analysis/`, mais la série s'appelle Argum
 
 ### Geometry — démontrer en géométrie
 
-Un même théorème (le milieu de l'hypoténuse est équidistant des trois sommets) est d'abord vérifié numériquement (01, Découverte), puis démontré exactement par bases de Gröbner (02, Licence). Viennent ensuite la méthode de Wu, le raisonnement du géomètre (DD+AR) et un pont formel vers Lean. Le programme gradué (Epic #17544) et son état sont tenus dans le [README de la série Geometry](Geometry/README.md).
+Un même théorème, le milieu de l'hypoténuse équidistant des trois sommets, traverse des méthodes de plus en plus fortes.
+
+- **Parcours léger** — 01 à 03 :
+  - [01](Geometry/Geometry-01-From-Figure-To-Equation.ipynb) (Découverte) : on vérifie le théorème numériquement (Schwartz–Zippel) ;
+  - [02](Geometry/Geometry-02-From-Equation-To-Proof.ipynb) (Licence) : on le démontre exactement par bases de Gröbner, en traitant les non-dégénérescences par saturation ;
+  - [03](Geometry/Geometry-03-Wu-Method-Python.ipynb) (Licence) : on le redémontre par la méthode de Wu, qui fait apparaître ces conditions explicitement.
+- **Pour approfondir** — [03b](Geometry/Geometry-03b-Ritt-Decomposition-Python.ipynb) : le théorème du papillon et la décomposition de Ritt, avec le bord dégénéré où l'énoncé est muet et non faux.
+- **À venir** — le raisonnement du géomètre (DD+AR) et un pont formel vers Lean.
+- [README de la série Geometry](Geometry/README.md) : programme gradué (Epic #17544) et état.
 
 ### Hors série
 
@@ -299,7 +307,7 @@ La famille est couverte sur trois piles, selon les formalismes. La table dit **o
 | SmartContracts | ● | — | ◐ | Solidity et Foundry pilotés depuis Python ; invariant ERC-20 en Lean (7c) |
 | Argumentation | ● | — | — | pipeline Semantic Kernel multi-agents, port des sources Argumentum |
 | SymbolicLearning | ● | ◐ | ◐ | AIMA ch. 19 ; jumeaux C# ; compagnon Lean (1b) |
-| Geometry | ● | — | prévu | Gröbner et Wu en sympy ; pont formel vers Lean au programme |
+| Geometry | ● | — | prévu | Gröbner, Wu et Ritt en sympy ; pont formel vers Lean au programme |
 
 Légende : ● couverture large ; ◐ couverture partielle ou compagnon ; — absent.
 

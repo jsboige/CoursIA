@@ -161,6 +161,19 @@ def _write_workflow(path: Path, push_paths: list[str], pr_paths: list[str]):
     return path
 
 
+def _materialize_gate_files(root: Path, paths: list[str]):
+    """Le garde verifie l'existence sur disque des self-covers ``.github/`` et
+    ``scripts/`` references par l'union. Depuis #17374 le manifeste lui-meme
+    porte de tels chemins (gate certifie de gametheory) : une fixture dont
+    l'union derive du manifeste doit les materialiser, sinon le rouge vient
+    du mauvais contrat."""
+    for p in paths:
+        if p.startswith((".github/", "scripts/")):
+            f = root / p
+            f.parent.mkdir(parents=True, exist_ok=True)
+            f.write_text("", encoding="utf-8")
+
+
 def test_guard_green_on_repo_files():
     rc = subprocess.call([sys.executable, str(GUARD)])
     assert rc == 0, "le garde doit etre vert sur l'etat livre du depot"
@@ -194,6 +207,7 @@ def test_guard_red_when_only_pr_block_covers(tmp_path, manifest):
 
 def test_guard_red_when_legacy_dispatcher_still_present(tmp_path, manifest):
     all_paths = [p for l in manifest["lakes"] for p in l["paths"]]
+    _materialize_gate_files(tmp_path, all_paths)
     wf = _write_workflow(tmp_path / "wf.yml", all_paths, all_paths)
     legacy = tmp_path / ".github" / "workflows" / "lean-sudoku.yml"
     legacy.parent.mkdir(parents=True)
@@ -210,6 +224,7 @@ def test_guard_red_on_path_overlap_with_foreign_filename(tmp_path, manifest):
     derive PAS du lake (lean-serre.yml couvrait serre100_lean). Le critere
     effectif = recroisement des on.paths, independant du nom de fichier."""
     all_paths = [p for l in manifest["lakes"] for p in l["paths"]]
+    _materialize_gate_files(tmp_path, all_paths)
     wf = _write_workflow(tmp_path / "wf.yml", all_paths, all_paths)
     serre_path = next(p for l in manifest["lakes"]
                       if l["lake"] == "serre100" for p in l["paths"])
@@ -231,10 +246,12 @@ def test_guard_red_on_path_overlap_with_foreign_filename(tmp_path, manifest):
     assert rc == 1
 
 
-def test_guard_green_on_allowlisted_known_pair(tmp_path, manifest):
-    """Les dettes preexistantes (#17374) ne rougissent pas main : la paire
-    allowlistee passe, le garde reste actionnable sur le reste."""
+def test_guard_red_on_tranched_pair_since_17374(tmp_path, manifest):
+    """#17374 a tranche les deux paires historiques : l'allowlist est VIDE et
+    le garde est strict -- le recroisement qui etait tolere (wrapper
+    asymmetric x gamedefsext) rougit maintenant."""
     all_paths = [p for l in manifest["lakes"] for p in l["paths"]]
+    _materialize_gate_files(tmp_path, all_paths)
     wf = _write_workflow(tmp_path / "wf.yml", all_paths, all_paths)
     gamedefsext = next(l for l in manifest["lakes"]
                        if l["lake"] == "gamedefsext")
@@ -252,15 +269,47 @@ def test_guard_green_on_allowlisted_known_pair(tmp_path, manifest):
         [sys.executable, str(GUARD),
          "--manifest", str(REPO_ROOT / "scripts" / "lean" / "ci_lakes.json"),
          "--workflow", str(wf), "--repo-root", str(tmp_path)])
+    assert rc == 1
+
+
+def test_guard_allowlist_mechanism_silences_a_declared_pair(
+        tmp_path, manifest, monkeypatch):
+    """L'allowlist est vide depuis #17374, mais le MECANISME demeure : une
+    paire declaree (dette temporaire citee par son issue) ne rougit pas le
+    garde. La constante est patchee in-process -- sur disque elle reste vide
+    (pinned par test_axiom_matrix_wiring)."""
+    all_paths = [p for l in manifest["lakes"] for p in l["paths"]]
+    _materialize_gate_files(tmp_path, all_paths)
+    wf = _write_workflow(tmp_path / "wf.yml", all_paths, all_paths)
+    gamedefsext = next(l for l in manifest["lakes"]
+                       if l["lake"] == "gamedefsext")
+    wrapper = tmp_path / ".github" / "workflows" / "lean-asymmetric-information.yml"
+    wrapper.parent.mkdir(parents=True, exist_ok=True)
+    wrapper.write_text(
+        "name: Lean Asymmetric Information CI\n"
+        "on:\n"
+        "  push:\n"
+        f"    paths: ['{gamedefsext['paths'][0]}']\n"
+        "  pull_request:\n"
+        f"    paths: ['{gamedefsext['paths'][0]}']\n",
+        encoding="utf-8")
+    guard = _load(GUARD, "check_lake_matrix_paths_under_test")
+    monkeypatch.setattr(
+        guard, "KNOWN_DOUBLE_TRIGGERS",
+        {("lean-asymmetric-information.yml", "gamedefsext")})
+    rc = guard.main([
+        "--manifest", str(REPO_ROOT / "scripts" / "lean" / "ci_lakes.json"),
+        "--workflow", str(wf), "--repo-root", str(tmp_path)])
     assert rc == 0
 
 
 def test_guard_green_on_full_coverage_with_fake_repo(tmp_path, manifest):
     all_paths = [p for l in manifest["lakes"] for p in l["paths"]]
+    _materialize_gate_files(tmp_path, all_paths)
     wf = _write_workflow(tmp_path / "wf.yml", all_paths, all_paths)
-    # Pas de dispatcher legacy, et les self-cover references par le workflow
-    # fixture n'existent pas -- mais la fixture n'en porte pas, donc rien
-    # a verifier : vert.
+    # Pas de dispatcher legacy ; les self-covers .github/scripts references
+    # par l'union (le manifeste en porte depuis #17374) sont materialises
+    # par la fixture : vert.
     rc = subprocess.call(
         [sys.executable, str(GUARD),
          "--manifest", str(REPO_ROOT / "scripts" / "lean" / "ci_lakes.json"),
