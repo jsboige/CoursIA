@@ -6,7 +6,7 @@ Qwen VoiceDesign / Higgs / Kokoro / OpenAI) : ici on vise **un seul
 modèle à la fois en VRAM**, swap entre cellules, mesures via les mêmes
 instruments `prosody_metrics` + `syllable_pitch`.
 
-## Modèles ciblés (4 cellules)
+## Modèles ciblés
 
 | ID | Modèle | Taille | Licence | HF |
 |---|---|---|---|---|
@@ -76,7 +76,7 @@ Pipeline : `ChatterboxMultilingualTTS.from_pretrained("cuda")` + `generate(text,
 - [ ] pocket-tts installé + mesuré (`pip install pocket-tts`) — banc CPU first-hand livré (résultats A + B dans `results/pocket_tts/`, `wer: null` documenté par `wer_explanation` : Whisper-tiny non chargé au run CPU c.805 ; re-générable via `measure_pocket_tts.py` créé c.870)
 - [ ] Fun-CosyVoice 3.0 installé + mesuré (`git+https://github.com/FunAudioLLM/CosyVoice`) — verdict **RECOVERABLE-MACHINE** (4.5 GB total + clone branche 3.0 manuel)
 - [x] Tableau comparatif partiel (Chatterbox seul pour cette PR)
-- [x] 1 ligne Chatterbox postée sur #17586
+- [x] Commentaire Chatterbox posté sur #17586
 
 ## Hors scope
 
