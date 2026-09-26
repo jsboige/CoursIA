@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: ML
-pedagogical_count: 117
-breakdown: DataScienceWithAgents=94, ML.Net=23
-maturity: BETA=107, ALPHA=7, DRAFT=3
+pedagogical_count: 119
+breakdown: DataScienceWithAgents=96, ML.Net=23
+maturity: BETA=109, ALPHA=6, DRAFT=4
 -->
 
 > **À propos des décomptes** : le marqueur `CATALOG-STATUS` ci-dessus est la **source de vérité autoritative** pour les volumes (notebooks par sous-série, maturité). Il est régénéré chaque nuit par le workflow [`catalog-cron.yml`](../../.github/workflows/catalog-cron.yml) à 03:37 UTC sur `main` (commit `[skip ci]` par `github-actions[bot]`). Si vous observez un décalage entre ce marqueur et une phrase en prose de ce README — par exemple si une sous-série a reçu de nouveaux notebooks mergés après la dernière régénération —, **fiez-vous au marqueur** ; la prose sera ré-alignée manuellement lors du prochain passage. Pour les **décomptes par kernel** (Python vs C#/.NET) au sein d'une sous-série, ce README reste autoritatif car la décomposition langagière par sous-série n'est pas dans le marqueur agrégé.
