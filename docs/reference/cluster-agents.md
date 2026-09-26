@@ -25,7 +25,7 @@ Section de reference pour le routage inter-machines des endpoints partages. La p
 
 | Endpoint | Port | Hote qui heberge | LAN address | Joignable depuis |
 |----------|------|------------------|-------------|------------------|
-| vLLM `medium` (Qwen3.5-35B-A3B-GPTQ-Int4, TP=2 GPU 0+1) | `5002` | `myia-ai-01` | `192.168.0.47:5002` (`0.0.0.0:5002` via Docker Desktop, `remote=Any` Private + Public, cle = `VLLM_API_KEY`) | **ai-01** (mesure : `401` en 0.0026 s depuis `127.0.0.1` et `192.168.0.47`). **po-2024** : mesuree 2026-08-23 → `HTTP 401` en 0.003 s (hote `192.168.0.49`) — **CONFIRME joignable**, meme plage LAN `192.168.0.x`. **po-2023** : mesuree 2026-08-26 → `HTTP 401` en 0.0036 s (hote `192.168.0.46`, ping < 1 ms 0 % perte) — **CONFIRME joignable**. **po-2026** : mesuree 2026-08-26 → `HTTP 401` en 0.004 s (hote `192.168.0.51`, ping 3/3 < 1 ms) — **CONFIRME joignable**, meme plage LAN. **po-2025** : **CONFIRME NON joignable** firsthand ([#9976](https://github.com/jsboige/CoursIA/issues/9976) §3, 2026-08-10) — `HTTP 000` (timeout 5 s) + `100%` ping loss depuis l'hote Windows `172.24.44.185`. LAN physiquement disjoint, pas un artefact WSL. Option (a) adoptee : po-2025 utilise un fournisseur externe (OpenRouter, [#6949](https://github.com/jsboige/CoursIA/issues/6949)). **po-2027** : **CONFIRME NON joignable** firsthand (2026-08-25) — `HTTP 000` (timeout 6.0 s puis 5.0 s au re-test) + `100%` ping loss vers `.47` **et** vers `.49` depuis l'hote Wi-Fi `192.168.0.28` : **/24 entier non joignable**. Le numbering /24 identique n'est PAS une preuve d'appartenance LAN (mesure, pas inference — cf Note LAN). Hors perimetre de la regle de routage, comme po-2025. Voir §Regle de routage |
+| vLLM `medium` (`ukisai/Swift-1.5-Qwen3.8-27b-W4A16-AWQ`, dense 27B, servi sous l'alias `qwen3.6-35b-a3b`, TP=2 GPU 0+1) | `5002` | `myia-ai-01` | `192.168.0.47:5002` (`0.0.0.0:5002` via Docker Desktop, `remote=Any` Private + Public, cle = `VLLM_API_KEY`) | **ai-01** (mesure : `401` en 0.0026 s depuis `127.0.0.1` et `192.168.0.47`). **po-2024** : mesuree 2026-08-23 → `HTTP 401` en 0.003 s (hote `192.168.0.49`) — **CONFIRME joignable**, meme plage LAN `192.168.0.x`. **po-2023** : mesuree 2026-08-26 → `HTTP 401` en 0.0036 s (hote `192.168.0.46`, ping < 1 ms 0 % perte) — **CONFIRME joignable**. **po-2026** : mesuree 2026-08-26 → `HTTP 401` en 0.004 s (hote `192.168.0.51`, ping 3/3 < 1 ms) — **CONFIRME joignable**, meme plage LAN. **po-2025** : **CONFIRME NON joignable** firsthand ([#9976](https://github.com/jsboige/CoursIA/issues/9976) §3, 2026-08-10) — `HTTP 000` (timeout 5 s) + `100%` ping loss depuis l'hote Windows `172.24.44.185`. LAN physiquement disjoint, pas un artefact WSL. Option (a) adoptee : po-2025 utilise un fournisseur externe (OpenRouter, [#6949](https://github.com/jsboige/CoursIA/issues/6949)). **po-2027** : **CONFIRME NON joignable** firsthand (2026-08-25) — `HTTP 000` (timeout 6.0 s puis 5.0 s au re-test) + `100%` ping loss vers `.47` **et** vers `.49` depuis l'hote Wi-Fi `192.168.0.28` : **/24 entier non joignable**. Le numbering /24 identique n'est PAS une preuve d'appartenance LAN (mesure, pas inference — cf Note LAN). Hors perimetre de la regle de routage, comme po-2025. Voir §Regle de routage |
 | vLLM `mini` (OmniCoder-9B-AWQ-4bit) | `5001` | `myia-ai-01` | `192.168.0.47:5001` (deprecated, meme interface que `5002`) | idem `5002` ; port a verifier avant tout test (deprecated, peut etre ferme) |
 | GenAI `musicgen` (service local) | `8192` | `myia-po-2023` | `localhost:8192` (conteneur Docker, wake-on-demand via [genai-service.py](../../MyIA.AI.Notebooks/GenAI/shared/helpers/genai_service.py)) | **po-2023** uniquement (validation reverse-proxy publique via `xx.myia.io` par po-2026, cf [docs/genai/genai-services.md](../genai/genai-services.md)) |
 | GenAI autres services Image/Audio/Video (8 conteneurs) | `8188`-`8196` (cf [genai-services.md](../genai/genai-services.md)) | `myia-po-2023` | `localhost:<port>` + reverse-proxy `xx.myia.io` | **po-2023** localhost ; tout agent via `xx.myia.io` (auth bearer) |
@@ -122,13 +122,15 @@ Règle stricte : GPU 2 **doit etre occupee 24/7** par un training BG longue dure
 
 | GPU | Role | Etat normal |
 |-----|------|-------------|
-| GPU 0 RTX 4090 | vLLM `medium` (Qwen3.6-35B-A3B-GPTQ-Int4, TP=2 avec GPU 1) | ~23-24 GB VRAM occupee 24/7 |
+| GPU 0 RTX 4090 | vLLM `medium` (Swift-1.5-Qwen3.8-27B AWQ, TP=2 avec GPU 1) | ~20-24 GB VRAM occupee 24/7 |
 | GPU 1 RTX 4090 | vLLM `medium` (TP=2 avec GPU 0) | ~23-24 GB VRAM occupee 24/7 |
-| GPU 2 RTX 4090 | **vLLM `mini` + Training BG ai-01 dedie** | DOIT toujours etre occupee par training BG |
+| GPU 2 RTX 4090 | **Training BG ou experience lourde reservee au ledger** (24 GB) | DOIT toujours etre occupee (training BG ou experience) |
 
 **Alias vLLM** :
 - `mini` : OmniCoder-9B-AWQ-4bit, GPU 2, port 5001, deprecated
-- `medium` : Qwen3.5-35B-A3B-GPTQ-Int4, GPU 0+1 TP=2, port 5002
+- `medium` : `ukisai/Swift-1.5-Qwen3.8-27b-W4A16-AWQ` (dense 27B, generation Qwen3.8), GPU 0+1 TP=2, port 5002
+
+**Piege de l'alias** : le modele est servi sous `--served-model-name qwen3.6-35b-a3b`, nom herite d'un ancien MoE 35B-A3B garde pour la compatibilite des clients. **Le nom servi ne dit pas quel modele tourne** : cette page a decrit un MoE pendant que GPU 0+1 servaient un dense 27B. La verite se lit dans `docker inspect myia_vllm-medium-swift15-27b` (argument `--model`), jamais dans `/v1/models`.
 
 **Anti-patterns interdits sur ai-01** :
 - Diagnostiquer GPU 0/1 VRAM ~24GB comme "zombie processes" ou "memory leak" - c'est vLLM, occupation normale
@@ -140,6 +142,21 @@ A chaque reveil de session ai-01 :
 2. Si GPU 2 memory.used < 500 MiB -> lancer immediatement un training BG (queue ci-dessous)
 3. Si training BG tourne deja -> laisser, NE PAS killer pour relancer
 4. Cible : trainings >= 8h (sweep multi-seed, walk-forward M8 re-run, GARCH Phase 1, HMM/PyMC)
+
+## Capacite GPU disposable de la flotte (mandat user 2026-09-26)
+
+Le registre des GPU se gere **activement** : une experience qui a besoin de VRAM cherche la machine qui peut la donner, et se reserve dans le ledger `gpu-reservation` (ligne `<machine>#gpu<n>`) **avant** de charger quoi que ce soit, avec une echeance. Le tableau ci-dessous est la capacite **declaree** ; chaque ligne se confirme par la mesure de la lane proprietaire (fil `global` du 2026-09-26).
+
+| Machine | VRAM disposable | Usage et condition |
+|---|---|---|
+| ai-01 GPU 2 (RTX 4090) | 24 GB | la plupart des grosses experiences ; mesuree **vide** le 2026-09-26 13:47Z (45 MiB, 0 %) |
+| ai-01 GPU 0+1 | modele servi | Swift-1.5 27B = **modele par defaut des experiences LLM lourdes** qui n'exigent pas les modeles SOTA du depot ; reservation ponctuelle possible, **annoncee a l'avance sur le dashboard `global`** avec une heure de reprise (elle coupe le modele de la flotte) |
+| po-2023 (3080 + eGPU 3090) | 24 GB sur demande | la liste des modeles live ou hiberes sur ses deux GPU est a revoir |
+| po-2024 (RTX 3070) | 8 GB en continu | — |
+| po-2025 (3080 Ti laptop) | ~16 GB, experiences legeres | sous garde thermique (section suivante) ; deja sollicitee par claudish et les lanes « sol » |
+| po-2026 (RTX 3080) | a mesurer | l'embedder n'a peut-etre pas besoin de toute la VRAM qu'il tient |
+
+**Au-dela d'une carte** : un modele trop grand pour 24 GB (70B quantifie, par exemple) peut tourner sur GPU 2 avec une partie des couches dechargee en memoire CPU. C'est tres lent, mais la plage est genereuse. Cette voie passe **avant** toute reservation de GPU 0+1.
 
 ## po-2025 - contrainte thermique RTX 3080 Ti (incident 2026-04-28)
 
