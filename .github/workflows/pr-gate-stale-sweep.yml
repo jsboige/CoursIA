@@ -976,10 +976,23 @@ jobs:
               echo "[stale-sweep] (dry-run) would re-run #$NUM ($SHA) via run $RUN_ID"
             else
               echo "[stale-sweep] re-running gate for #$NUM ($SHA) -- run $RUN_ID"
-              # `|| echo`: one PR whose re-run is refused must not abort the loop
-              # nor redden a sweep whose other re-runs landed.
-              gh run rerun "$RUN_ID" --repo "$REPO" \
-                || echo "[stale-sweep] re-run refused for #$NUM (non-fatal)"
+              # A refused re-run must not abort the loop nor redden a sweep
+              # whose other re-runs landed. #17680: the refusal is the
+              # dead-queued signature (the API rejects re-running a
+              # non-completed run) -- the run sits `queued` with an empty job
+              # list forever (#17099: 19h30). Dispatch the manual harness:
+              # its route (scripts/ci/pr_gate_route.py) cancels a stale
+              # queued attempt, waits for `completed`, then re-runs. Harmless
+              # on the other refusal cause (flipped to in_progress between
+              # read and rerun): the route sees a fresh in-flight run and
+              # skips. The harness is concurrency-grouped per PR, so repeated
+              # refusals cannot stampede.
+              if ! gh run rerun "$RUN_ID" --repo "$REPO"; then
+                echo "[stale-sweep] re-run refused for #$NUM (run $RUN_ID not completed) -- dispatching PR gate (re-aggregate) to revive it (#17680)"
+                gh workflow run pr-gate-rerun.yml --repo "$REPO" \
+                  -f pr_number="$NUM" -f head_sha="$SHA" \
+                  || echo "[stale-sweep] revive dispatch refused for #$NUM (non-fatal)"
+              fi
             fi
             if [ "${RANK:-1}" = "0" ]; then m=$((m + 1)); else i=$((i + 1)); fi
           done < /tmp/candidates.txt

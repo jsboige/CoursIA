@@ -1127,6 +1127,12 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/_sl14_runs/
 scripts/notebook_tools/probes/*_out.ipynb
 scripts/notebook_tools/probes/_deps/
 
+# #17361 — le helper `scripts/ci/dotnet_preload_packages.py` depose son mirror
+# d'assemblies A COTE du notebook qui les reference (`#r "./_deps/X.dll"`).
+# Tout dossier `_deps/`, a n'importe quelle profondeur, est un artefact
+# regenerable (copie du cache NuGet) — aucun n'est suivi dans le depot.
+_deps/
+
 # Livecoding video pipeline (#15604) : artefacts capture/PoC -- media regenerable, local only
 out/
 # Claude Code session scratchpads (per-machine, per-cycle dashboard drafts, PR body drafts, notebook backups)

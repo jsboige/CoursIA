@@ -5,6 +5,12 @@ une boute livrée = une ligne mise à jour ici). Source : issue #12823.
 Paper de référence : Bansal–Jiang, *Decoupling via Affine Spectral-Independence:
 Beck-Fiala and Komlós Bounds Beyond Banaszczyk* (arXiv:2508.03961, 2025).
 
+**Voie de preuve élémentaire (réaudit 2026-09-25)** : Karingula–Lovett,
+*An elementary proof of the Komlós conjecture* (arXiv:2609.20979, v1 17/09/2026,
+v2 22/09/2026 ; ECCC TR26-188), constante `36` — ni transformée de Banaszczyk,
+ni variation totale directionnelle. Réaudit de la ligne P3 et découpage en
+boutes `k1..k5` ci-dessous ; issue de suivi : #17845.
+
 ## Invariants du lake (HARD)
 
 - **0 `sorry`** — anti-régression D. Une boute non finie reste en branche,
@@ -46,7 +52,7 @@ Beck-Fiala and Komlós Bounds Beyond Banaszczyk* (arXiv:2508.03961, 2025).
 | p1a | Moments de la somme de Rademacher colorée : `expect_rademacherSum_eq_zero` (`E[Z] = 0`), `expect_rademacherSum_sq` (`E[Z²] = ∑ (c i)²`), corollaire coloration (`E[Z²] = n`) + briques `sampleExpect_coord_mul_coord` (factorisation 2-coordonnées, extension kernel), `prod_two_special`, `fairCoin`/`boolSign` | brique P2 | **PROUVÉ** (p1a, 08-25) | uniformité en `c` établie ; p1b = 4ᵉ moment + Paley–Zygmund |
 | p3 (union bound) | `colorOf` (encodage booléen → coloration ; `Fin n → ℤ` n'est PAS un Fintype, les colorations sont dénombrées comme IMAGE des `2^n` booléens), `indicator_bUnion_le_sum` (indicatrice d'union ≤ somme d'indicatrices, `Finset.induction_on`), `familyExpect_sum_finset` (linéarité Finset), `familyProb_union_le` (union bound en probabilité via `sampleExpect_mono`), `card_colorings_le` (≤ 2^n par `Finset.card_image_le`), `exists_of_familyProb_pos` (probabilité > 0 ⇒ témoin), et le théorème d'application `exists_family_beats_all_colorings` : pour n ≥ 1 il existe une famille de 12n tirages battant TOUTES les colorations (ℙ[échec] ≤ 2^n·(11/12)^(12n) < 1, numérie par induction `(2·(11/12)^12)^t < 1`) | brique P2 | **PROUVÉ** (p3, 08-26) | le second passage probabiliste (existentiel) est complet ; reste p4 contrôle de degré (`hoeffding_upper_tail`) + assemblage final ErdosSpencerLB |
 | p4 (contrôle du degré + assemblage) | `rademacherSum_eq_two_sub` (identité Z = 2·(somme des coords vraies) − somme totale, pont alea signé ↔ sommes d'ensembles), `blockOf`/`drawSet`/`pairFamily` (bloc de t = k/12 points via `Fin.castLEEmb`, tirage → coordonnées vraies, FAMILLE APPARIÉE (drawSet, bloc \\ drawSet)), `blockOf_sum`/`drawSet_sum`/`drawSet_subset`, `drawSet_mem`/`compDraw_mem`, `degree_pairFamily_le` (degré ≤ m par injection vers `Finset.range m` : chaque paire est disjointe donc un point apparaît au plus une fois par tirage), et le THÉORÈME FINAL `erdos_spencer_lb_explicit` : ∀ n k ≥ 1, k ≤ n → ∃ F, maxDegree F ≤ k ∧ ∀ C coloration, Nat.sqrt k ≤ 14 * discrepancy F C — petit k < 12 singletons, gros k = 12 tirages par bloc de k/12 points, triangulaire \|Z\| ≤ \|x\| + \|x−s\| ≤ 2·disc, k ≤ 23t ≤ 184·disc² | brique P2 | **PROUVÉ** (p4, 08-26, axiomes [propext, Classical.choice, Quot.sound]) | **P2 EST ASSEMBLÉ** à constante explicite √k/14 ; la forme optimiste √k/2 (`ErdosSpencerLB`) reste une `Prop` OUVERTE (obstruction structurelle : Paley–Zygmund force m ≥ 12t tirages, degré force m ≤ k — documenté dans le statut du module) |
-| P3 | Banaszczyk 1998 / formes fortes des papiers 2025 **et 2026** | aspiration | **NON ENGAGÉ** — exige SDP + dualité, indépendance spectrale affine, brownien discret guidé, concentration matricielle : **aucun de cet étage n'existe dans Mathlib** (vérifié 2026-08-24). **Réaudité 2026-09-13** contre le Mathlib pinné (`520045ab`, v4.32.1) : le contournement proposé par arXiv:2609.11189 ne supprime pas l'obstruction, il la **déplace** — sa route exige la *variation totale directionnelle* d'une densité sur convexe ouvert et la *transformée de Banaszczyk* préservée sous translation, deux notions **absentes du même Mathlib** (`Banaszczyk` : 0 occurrence ; `totalVariation` n'existe que pour les mesures signées ; la théorie BV de Mathlib concerne la dérivabilité a.e. des fonctions de `ℝ`). Ce que ce papier rapproche, ce sont les *socles* : gaussiennes (`Probability/Distributions/Gaussian/*`) et `ConvexBody` (`Analysis/Convex/Body.lean`) sont présents ; le **pont** manque. Documenté, jamais promis. | — |
+| P3 | Banaszczyk 1998 / formes fortes des papiers 2025 **et 2026** | aspiration | **NON ENGAGÉ** — exige SDP + dualité, indépendance spectrale affine, brownien discret guidé, concentration matricielle : **aucun de cet étage n'existe dans Mathlib** (vérifié 2026-08-24). **Réaudité 2026-09-13** contre le Mathlib pinné (`520045ab`, v4.32.1) : le contournement proposé par arXiv:2609.11189 ne supprime pas l'obstruction, il la **déplace** — sa route exige la *variation totale directionnelle* d'une densité sur convexe ouvert et la *transformée de Banaszczyk* préservée sous translation, deux notions **absentes du même Mathlib** (`Banaszczyk` : 0 occurrence ; `totalVariation` n'existe que pour les mesures signées ; la théorie BV de Mathlib concerne la dérivabilité a.e. des fonctions de `ℝ`). Ce que ce papier rapproche, ce sont les *socles* : gaussiennes (`Probability/Distributions/Gaussian/*`) et `ConvexBody` (`Analysis/Convex/Body.lean`) sont présents ; le **pont** manque. Documenté, jamais promis. **Réaudité 2026-09-25** : la voie **élémentaire** de Karingula–Lovett (arXiv:2609.20979, constante `36`) **supprime** cet étage au lieu de le déplacer — sa mécanique est discrète (distance de décalage `Δ`, opérateur de scission `T_v`, induction sur `n` et `d`) à une seule exception, l'estimation de la densité-tente, qui se fait par FTC sur segments + Cauchy–Schwarz `L²` et **non** par de la théorie BV. Balayage des prérequis sur le checkout Mathlib local (`v4.32.0`) : famille **`norm_image_sub_le` présente** (dont `Analysis/Calculus/IntervalIntegral/DistLEIntegral.lean`), `totalVariation` toujours cantonné aux mesures vectorielles (`VectorMeasure/Decomposition/*`) — mais le papier n'en a plus besoin. Réserve de portée : ce balayage porte sur un checkout **voisin** (`v4.32.0`), pas sur le pin du lake (`520045ab`) — à re-vérifier avant la première boute `.lean`. Une formalisation Lean 4 tierce de cette preuve existe déjà (mise à jour du 2026-09-25 ci-dessous). | — |
 | probe-15944 (réduction, cas régulier) | `komlos_oracle_imp_beck_fiala_regular` (`Komlos.lean` + sibling `_en`) : tout oracle de Komlós **réel** (colonnes unitaires, sommes de lignes `≤ C` en valeur absolue) implique `disc ≤ 2⌈C⌉₊ · Nat.sqrt k` pour toute famille **régulière** (chaque élément dans exactement `k` parties). Scaling uniforme `1/√k` licite car tous degrés égaux ; conversion `ℝ → ℕ` par `√k ≤ Nat.sqrt k + 1`. | brique P3 (pont) | **PROUVÉ** (2026-09-17) | Première brique du pont vers l'oracle du preprint 2026 : avec `C = 3√(2π)` (borne annoncée arXiv:2609.11189, non revue), les familles de degré exactement `t` admettent `disc ≤ 16√t` — **conditionnellement** au preprint. Cas général bloqué par deux obstructions mesurées : degrés hétérogènes (le scaling par colonne `1/√(deg j)` rend la somme colorée pondérée non factorisable — la réduction connue exige la coloration partielle itérée) et l'énoncé `ℚ` de `KomlosConjecture` (scaling irrationnel ; la forme réelle est le pont naturel). |
 
 ### Statut épistémique — mise à jour 2026-09-13
@@ -63,6 +69,65 @@ Trois réserves, qui sont la raison pour laquelle la colonne « Statut » ci-des
 
 Fait notable, cité verbatim depuis l'abstract : *« The proof was discovered by the Odin Automatic AI Research Agent. »*
 
+### Statut épistémique — mise à jour 2026-09-25 (voie élémentaire)
+
+**arXiv:2609.20979** — *An elementary proof of the Komlós conjecture*
+(S. Karingula, S. Lovett ; v1 17/09, v2 22/09/2026 ; ECCC TR26-188). Théorème 1.2 :
+pour `v_1 … v_n ∈ ℝ^d` avec `‖v_i‖₂ ≤ 1`, il existe `ε_i ∈ {−1,1}` tels que
+`‖Σ ε_i v_i‖_∞ ≤ 36`. Prix assumé de l'élémentarité : `36` contre
+`3√(2π) ≈ 7,52` (papier de #15944), les auteurs déclarant ne pas optimiser.
+
+La preuve se décompose en **six pièces**, aucune n'exigeant un étage absent de
+Mathlib :
+
+| # | Pièce | Contenu |
+|---|-------|---------|
+| 1 | Def 1.3 | distance de décalage `Δ(P,u) = d_TV(P, P+u) = ½ Σ_x \|P(x) − P(x−u)\|` |
+| 2 | Def 3.1 | opérateur de **scission** discret `T_v` : `(T_vP)(x,0) = ½max{P(x+v),P(x−v)}`, `(x,1) = ½min{…}` — remplace le réarrangement continu de Guo–Fang–Lu |
+| 3 | Claim 3.2 | monotonie `Δ(T_vP, (u,0)) ≤ Δ(P,u)` |
+| 4 | Lemme 1.4 | `Δ(P, 6v_i) ≤ 1/3` ⟹ signes tels que `μ(P) + Σ ε_i v_i ∈ conv(supp P)` — induction simultanée sur `n` **et** `d` |
+| 5 | Lemme 4.1 | densité-tente `F = f²`, `f = Π_k b(x_k)`, `b(t) = (1/12)max{6−\|t\|,0}` : `∫(f(·+v) − f)² ≤ ‖v‖₂²/12` (FTC sur segments + Cauchy–Schwarz), d'où `TV ≤ ‖v‖₂/√12` |
+| 6 | Lemme 1.5 + Thm | discrétisation sur la grille `N⁻¹ℤ^d` (l'arrondi ne fait pas monter la TV) ⟹ `P` fini supporté sur `[−6,6]^d` ; assemblage `Σ ε_i v_i ∈ [−36,36]^d`, constante `36 = 6 × 6` |
+
+**Ce que cela change pour les énoncés nommés du lake** — un changement de
+nature, pas de degré :
+
+- `KomlosConjecture` est posé sur **ℚ** : le papier traite les entrées
+  rationnelles par sa voie **finie** (Lemme 1.5 + pigeonhole), donc la jambe
+  d'approximation réelle **n'est pas nécessaire** pour décharger l'énoncé du
+  lake. Témoin plausible `C = 36 : ℚ` (marge à établir à la boute).
+- `KomlosBansalJiangWeak` (`C·log² n`) devient un **corollaire gratuit** d'une
+  constante explicite (pour `n ≥ 2`, `(log₂ n)² ≥ 1`).
+- `komlos_oracle_imp_beck_fiala_regular` (PROUVÉ, probe #15944) devient
+  **instanciable inconditionnellement** : Beck–Fiala régulier à
+  `2·⌈36⌉·√k = 72√k`.
+- Le corollaire Beck–Fiala du papier (constante `36√t`) a la forme exacte de
+  `BeckFialaConjecture`, et **impliquerait `BansalJiangLargeDegree`** (dont
+  l'hypothèse `k ≥ log² n` devient un cas particulier). **Non acquis** : le
+  mécanisme du corollaire pour les **degrés hétérogènes** reste à confronter au
+  texte — c'est précisément le point où l'obstruction documentée (itération de
+  coloration partielle) doit être réexaminée.
+
+**Corroboration machine** : une formalisation **Lean 4 de cette preuve existe
+déjà**, par Dahia (référence [11] du papier ; enregistrée sur Palomar le
+18/09/2026), dépôt `github.com/gdahia/Komlos` (Apache-2.0) — modules
+`ShiftDistance`, `Split`, `Pullback`, `SignedSums`, `Tent`, `Grid`, `Cube`,
+`Transport`, `NearInvariant`, `GridCase`, `Approximation`, `Main`, `BeckFiala`,
+et `Solution.lean` exposant `Komlos.exists_sign_forall_abs_sum_apply_le` /
+`Hypergraph.discrepancy_incidenceMatrix_le`. Elle annonce `36` et `36·√t`, et
+**0 `sorry`** hors les `Challenge.lean` (énoncés-trous). Écart déclaré par ses
+auteurs : le passage aux vecteurs réels donne `36 + η` pour tout `η > 0`, pas
+`36` exact en une étape. Statut de cette mention : **RAPPORTÉ** (page du dépôt
+lue, non recompilée ici) — avant tout pont, vérifier licence, pin Mathlib et
+absence de `sorry` **par build**.
+
+**Les trois réserves du 2026-09-13 restent valides** pour les énoncés **du
+lake** : v2 non revue par les pairs, argument existentiel, énoncés non verbatim
+(`ℚ`/`ℝ`, `Nat.sqrt`/`√`, strict/non strict). Une formalisation tierce est une
+corroboration plus forte qu'un preprint ordinaire, **pas** une revue — et
+aucune preuve formelle n'est engagée ici. Ne pas écrire « résolue » pour
+`KomlosConjecture` tant qu'il n'est pas déchargé.
+
 ## Découpage de la noix (P1) — grignotage multi-cycles
 
 Mandat user 2026-08-24 : « grignoter la noix de preuve la plus dure dans la
@@ -70,6 +135,34 @@ durée par petits bôuts ». Chaque boute `b1..b4` est un grain **claimable
 séparément**, commité **seulement si elle build** (0 sorry intermédiaire) ;
 une boute non finie reste en branche. Ordre : `b1` → `b2` → `b3` → `b4`
 (les dépendances sont linéaires ; `b4` assemble).
+
+## Voie élémentaire (Karingula–Lovett) — découpage multi-cycles
+
+Mêmes règles que P1 : une boute = un grain **claimable séparément**, commité
+**seulement si elle build** (0 `sorry` intermédiaire) ; boute non finie =
+branche, jamais `main`. Issue de suivi : #17845.
+
+| Boute | Contenu | Nature | Dépend de |
+|-------|---------|--------|-----------|
+| **k0** | Registre : ce document + `README.md` — papier enregistré (constante `36`), ligne P3 réauditée, statut épistémique corrigé | docs seules (aucun build Lean requis) | — |
+| **k1** | `Δ` + opérateur de scission `T_v` + Claim 3.2 (monotonie) | fini (style p1a–p4) | — |
+| **k2** | **Lemme 1.4** — induction simultanée sur `n` et `d` (la noix de cette voie) | fini + induction | k1 |
+| **k3** | Lemme 4.1 — densité-tente, FTC sur segments, Cauchy–Schwarz `L²`, `TV ≤ ‖v‖₂/√12` | analyse | `norm_image_sub_le` (re-vérifier au pin) |
+| **k4** | Lemme 1.5 — discrétisation sur la grille, cas rationnel | fini | k3 |
+| **k5** | Assemblage Thm 1.2 sur `ℚ` (témoin `36`) + corollaires (`KomlosBansalJiangWeak`, Beck–Fiala régulier `72√k`) + notebooks `Search-09c`/`Search-09d` (ligne « course aux bornes » du 22/09/2026) | assemblage | k2, k4 |
+
+**Deux routes, non exclusives** — à trancher au premier cycle d'implémentation :
+
+- **(a) pont vers la formalisation tierce** (`gdahia/Komlos`) : chemin le plus
+  court vers « `KomlosConjecture` devient un `theorem` », au prix d'une
+  dépendance externe (pin Mathlib du dépôt, licence, écart `36 + η`).
+- **(b) re-distillation boute par boute** : la vocation du lake (distillation
+  pédagogique multi-cycles, i18n #4980), en utilisant la formalisation tierce
+  comme **oracle de confiance** pour débloquer et comparer chaque boute — le
+  rôle qui manquait pour la voie Guo–Fang–Lu.
+
+Recommandation : **(b)** comme fond, **(a)** comme oracle ; `k0` est de toute
+façon le premier geste et ne risque rien (docs seules).
 
 ## Note d'honnêteté (G.3)
 
