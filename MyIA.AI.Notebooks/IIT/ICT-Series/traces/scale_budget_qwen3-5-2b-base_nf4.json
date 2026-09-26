@@ -1,0 +1,43 @@
+{
+  "meta": {
+    "rung": "R1",
+    "model": "Qwen/Qwen3.5-2B-Base",
+    "mode": "nf4",
+    "generation": "Qwen3.5",
+    "max_gpu_gib": null,
+    "layer_frac": 0.5,
+    "layer": 12,
+    "n_layers": 24,
+    "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+    "total_vram_gib": 16.0,
+    "n_statements": 24,
+    "n_tokens": 194,
+    "tf32": false,
+    "seed": 42,
+    "nominal_params_e9": 2.0,
+    "measured_params_e9": 1.195,
+    "sae_coverage": "Qwen/SAE-Res-Qwen3.5-2B-Base-W32K-L0_50",
+    "measured": true
+  },
+  "load_seconds": 5.93,
+  "load_footprint_alloc_gib": 1.668,
+  "load_footprint_reserved_gib": 3.426,
+  "pass_seconds": 15.41,
+  "seconds_per_statement": 0.6421,
+  "throughput": {
+    "statements_per_hour": 5606.7,
+    "tokens_per_second": 12.59,
+    "note": "extrapolation lineaire de la passe mesuree -- base du verdict de faisabilite de la voie (a) (echelon >= 70B quantifie + debordement CPU sur GPU 2)"
+  },
+  "model_peak_alloc_gib": 1.703,
+  "model_peak_reserved_gib": 3.451,
+  "sae": {
+    "available": true,
+    "repo": "Qwen/SAE-Res-Qwen3.5-2B-Base-W32K-L0_50",
+    "layer": 12,
+    "k": 50,
+    "seconds": 0.87,
+    "peak_alloc_gib": 2.18,
+    "peak_reserved_gib": 3.951
+  }
+}
