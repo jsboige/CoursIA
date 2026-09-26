@@ -283,6 +283,62 @@ def test_non_shared_github_author_cannot_satisfy_gate():
     assert any(error.startswith("comment author must") for error in errors)
 
 
+# --- #17791 : PR hors flotte (session cloud du mainteneur) -------------------
+#
+# Miroir de l'exemption `tag_required` (#17713/#17715, variation_tag_required.py) :
+# branche `claude/*` ET marqueur « Hors flotte » dans le body. Une telle PR n'est
+# porte par AUCUNE lane de la flotte, donc tout dossier d'une lane qualifiante
+# est tiers par construction -- le refus « carrying lane cannot be established »
+# y est une impasse structurelle, pas une garantie.
+
+
+def test_out_of_fleet_pr_accepts_qualifying_dossier_without_grain_tag():
+    """claude/* + « Hors flotte » : un dossier de lane qualifiante est tiers."""
+    snapshot = _snapshot_with_body(
+        "Session cloud du mainteneur. **Hors flotte**", lane="myia-po-2023:CoursIA"
+    )
+    snapshot["headRefName"] = "claude/affectionate-mccarthy-6dvuea"
+    ready, errors = mod.evaluate(snapshot)
+    assert ready, errors
+    assert errors == []
+
+
+def test_claude_branch_without_marker_is_still_refused():
+    """Le prefixe seul n'exempte pas : sans le marqueur, le refus est intact."""
+    snapshot = _snapshot_with_body(
+        "Session cloud du mainteneur.", lane="myia-po-2023:CoursIA"
+    )
+    snapshot["headRefName"] = "claude/affectionate-mccarthy-6dvuea"
+    errors = _errors(snapshot)
+    assert any(
+        error.startswith("carrying lane cannot be established") for error in errors
+    )
+
+
+def test_fleet_branch_with_marker_is_still_refused():
+    """Recopier le marqueur sur une branche de flotte ne sort pas de la regle."""
+    snapshot = _snapshot_with_body(
+        "Session cloud du mainteneur. **Hors flotte**", lane="myia-po-2023:CoursIA"
+    )
+    snapshot["headRefName"] = "feature/renamed-to-escape"
+    errors = _errors(snapshot)
+    assert any(
+        error.startswith("carrying lane cannot be established") for error in errors
+    )
+
+
+def test_self_prevalidation_refusal_survives_the_exemption_next_door():
+    """Une PR de flotte taguee reste refusee en self-attestation : l'exemption
+    hors flotte n'ouvre aucune echappatoire a cote."""
+    carrier = "myia-po-2023:CoursIA"
+    snapshot = _snapshot_with_body(
+        "Grain: DEEP/lean -- lane %s -- prev: MED" % carrier, lane=carrier
+    )
+    snapshot["headRefName"] = "feature/ordinary-fleet-branch"
+    errors = _errors(snapshot)
+    assert any(error.startswith("self-prevalidation refused") for error in errors)
+
+
 def test_blocked_preflight_is_a_valid_dossier_but_never_ready():
     """An honest BLOCKED dossier must be distinguishable from an absent one.
 

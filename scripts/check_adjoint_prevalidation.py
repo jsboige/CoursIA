@@ -760,6 +760,21 @@ def carrying_lane(snapshot: dict[str, Any]) -> str | None:
     return match.group(1) if match else None
 
 
+def is_out_of_fleet(snapshot: dict[str, Any]) -> bool:
+    """True when the pull request is carried by no fleet lane at all.
+
+    Both conditions, mirroring the `tag_required` exemption (#17713/#17715,
+    `variation_tag_required.py`): the head branch starts with ``claude/`` AND
+    the body declares « Hors flotte ». Either alone is not out of fleet -- a
+    fleet lane renaming its branch or copying the marker stays inside the
+    third-party rule (#17791 acceptance 3).
+    """
+    head_ref = snapshot.get("headRefName") or ""
+    return head_ref.startswith("claude/") and "Hors flotte" in (
+        snapshot.get("body") or ""
+    )
+
+
 def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
     """Validate a parsed dossier against one live PR snapshot."""
     f = dossier.fields
@@ -807,6 +822,13 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
         errors.append(
             f"lane must be one of the qualifying cluster lanes, got {dossier_lane!r}"
         )
+    elif is_out_of_fleet(snapshot):
+        # #17791 -- a maintainer cloud session (`claude/*` + « Hors flotte »)
+        # carries no fleet lane: CLAUDE.md ('À qui ce fichier s'adresse') exempts
+        # it from the Grain tag, so the third-party rule has no carrier to
+        # compare against. Every qualifying lane is third-party by construction,
+        # and the self-attestation check below is unreachable for it.
+        pass
     else:
         carrier = carrying_lane(snapshot)
         if carrier is None:
@@ -1013,6 +1035,7 @@ def build_result(
         "ready": verdict == VERDICT_READY,
         "verdict": verdict or "NO_DOSSIER",
         "errors": errors,
+        "out_of_fleet": is_out_of_fleet(snapshot),
     }
     if dossier is not None and verdict:
         result["dossier"] = dossier_payload(dossier)
@@ -1347,6 +1370,11 @@ def main() -> int:
         )
     elif ready:
         print(f"READY -- PR #{args.pr} prevalidated by adjoint at {snapshot['headRefOid']}")
+        if is_out_of_fleet(snapshot):
+            print(
+                "  note: hors-flotte PR (claude/* + 'Hors flotte'): no fleet "
+                "lane carries it, any qualifying lane is third-party (#17791)"
+            )
     elif verdict == VERDICT_BLOCKED:
         print(
             f"BLOCKED-WITH-SUBSTANCE -- PR #{args.pr} has an intact adjoint dossier at "
