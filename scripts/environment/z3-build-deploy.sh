@@ -15,6 +15,12 @@
 # Result: a fresh checkout with --recurse-submodules + .NET SDK runs every
 # SMT/Z3-Linq2Z3 notebook self-contained.
 #
+# Linux: the Microsoft.Z3 NuGet package ships native libz3 only for win-x64 and
+# osx-x64, so the build output (and the .deploy/ committed in the fork) holds a
+# Windows libz3.dll that Linux cannot load (DllNotFoundException 'libz3'). On
+# Linux the script therefore also fetches libz3.so from the official z3-solver
+# wheel of the SAME Z3 version as the Microsoft.Z3 package reference (#17654).
+#
 # Decision: ai-01 [DECISION COORD] 2026-06-13, option (b) refined.
 # See: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/05_Nested_Arrays_2D.ipynb (cell 1)
 
@@ -53,7 +59,16 @@ if ! command -v dotnet >/dev/null 2>&1; then
 fi
 
 # --- idempotency check -----------------------------------------------------------------
-required_dlls=("Z3.Linq.dll" "Microsoft.Z3.dll" "libz3.dll" "ExpressionUtils.dll")
+# Native solver per OS, and the Z3 version pinned by the wrapper csproj (the
+# managed Microsoft.Z3.dll and the native library must come from the same release).
+Z3_VERSION="$(sed -n 's/.*Include="Microsoft\.Z3" Version="\([0-9.]*\)".*/\1/p' "$CSPROJ" | head -1)"
+if [[ -z "$Z3_VERSION" ]]; then
+    echo "ERROR: Microsoft.Z3 PackageReference version not found in $CSPROJ"
+    exit 1
+fi
+NATIVE_LIB="libz3.dll"
+[[ "$(uname -s)" == "Linux" ]] && NATIVE_LIB="libz3.so"
+required_dlls=("Z3.Linq.dll" "Microsoft.Z3.dll" "$NATIVE_LIB" "ExpressionUtils.dll")
 if [[ -d "$DEPLOY_DIR" && "$FORCE" != "1" ]]; then
     missing=()
     for d in "${required_dlls[@]}"; do
@@ -105,7 +120,7 @@ if [[ ! -d "$NUGET_ROOT" ]]; then
     exit 1
 fi
 
-Z3_MANAGED="$NUGET_ROOT/microsoft.z3/4.12.2/lib/netstandard2.0/Microsoft.Z3.dll"
+Z3_MANAGED="$NUGET_ROOT/microsoft.z3/$Z3_VERSION/lib/netstandard2.0/Microsoft.Z3.dll"
 EXPR_UTILS="$NUGET_ROOT/miaplaza.expressionutils/1.2.0/lib/netstandard2.0/ExpressionUtils.dll"
 
 for dep in "$Z3_MANAGED:Microsoft.Z3.dll" "$EXPR_UTILS:ExpressionUtils.dll"; do
@@ -118,6 +133,31 @@ for dep in "$Z3_MANAGED:Microsoft.Z3.dll" "$EXPR_UTILS:ExpressionUtils.dll"; do
         exit 1
     fi
 done
+
+# 3. Linux only: native libz3.so from the z3-solver wheel of the same Z3 release
+#    (the Microsoft.Z3 NuGet package has no linux-x64 native asset).
+if [[ "$NATIVE_LIB" == "libz3.so" ]]; then
+    WHEEL_DIR="$(mktemp -d)"
+    trap 'rm -rf "$WHEEL_DIR"' EXIT
+    WHEEL_PLATFORM="manylinux2014_$(uname -m)"
+    echo "Fetching libz3.so from z3-solver==$Z3_VERSION.0 ($WHEEL_PLATFORM)..."
+    if ! python3 -m pip download "z3-solver==$Z3_VERSION.0" --no-deps --only-binary=:all: \
+            --platform "$WHEEL_PLATFORM" -d "$WHEEL_DIR" -q; then
+        echo "ERROR: could not download z3-solver==$Z3_VERSION.0 for $WHEEL_PLATFORM (python3 -m pip required)."
+        exit 1
+    fi
+    python3 - "$WHEEL_DIR" "$DEPLOY_DIR/libz3.so" <<'PY'
+import glob
+import sys
+import zipfile
+
+wheel = glob.glob(sys.argv[1] + "/z3_solver-*.whl")[0]
+with zipfile.ZipFile(wheel) as zf:
+    member = next(n for n in zf.namelist() if n.endswith("/libz3.so"))
+    with open(sys.argv[2], "wb") as out:
+        out.write(zf.read(member))
+PY
+fi
 
 # --- verify ----------------------------------------------------------------------------
 echo ""

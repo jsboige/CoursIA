@@ -43,7 +43,7 @@ MetaGeneticSharp vise le point que les autres n'occupent pas : **l'expressivité
 
 ## Notebooks
 
-Cette partie se compose de trente-cinq notebooks .NET Interactive (C#), hébergés dans ce répertoire et consommant le sous-module voisin [`MetaGeneticSharp/`](../MetaGeneticSharp/) :
+Cette partie se compose de notebooks .NET Interactive (C#), hébergés dans ce répertoire et consommant le sous-module voisin [`MetaGeneticSharp/`](../MetaGeneticSharp/), complétés par les notebooks Python MGS-17b et MGS-20 :
 
 | # | Notebook | Concept clé | Primitives introduites | Durée |
 |---|----------|-------------|------------------------|-------|
@@ -70,6 +70,7 @@ Cette partie se compose de trente-cinq notebooks .NET Interactive (C#), héberg�
 | 17b | [MGS-17b-Empirical-Algorithm-Selection](MGS-17b-Empirical-Algorithm-Selection.ipynb) | **Distillation Theodore Deguest L4 EPITA SCIA 2026** — squelette : cadre theorique (Rice 1976, Wolpert 1996, Smith-Miles 2009) + setup env execute | introduction, attribution, plan en 4 tranches (cadre / protocole 3 terrains / Pareto+discriminant / ponts series) ; noyau execute via kernel `coursia-ml-training` ; PR Theodore Deguest [jsboigeEpita/2026-Epita-Intelligence-Symbolique#42](https://github.com/jsboigeEpita/2026-Epita-Intelligence-Symbolique/pull/42) | ~30 min (tranches 1+2+3 livrees ; tranche 4 benchmarks reels Theodore par ai-01 ou lane GPU) |
 | 18 | [MGS-18-CecBanc](MGS-18-CecBanc.ipynb) | **Consolidation du banc CEC** — shift+rotate combinés (le protocole standard de dé-biais) | décorateurs composés `RotatedFitness(ShiftedFitness(inner, offset), M)` (Givens orthogonale) ; banc à 4 variantes (plain/shifted/rotated/combined), étend `CenterBiasBenchmark` ; 8 optimiseurs sous shift+rotate sur Ackley+Rosenbrock ; les biais isolés (WOA central MGS-10, GA axe MGS-12) se composent — effet sub-additif ou super-additif selon le paysage | ~50 min |
 | 19 | [MGS-19-MetropolisReinsertion](MGS-19-MetropolisReinsertion.ipynb) | **Recuit simulé décomposé** — l'opérateur de Metropolis débranché de SA et greffé seul sur un GA | `MetropolisReinsertion` isolé du compound `SimulatedAnnealing` et injecté via `MetaGeneticAlgorithm.Reinsertion` ; banc 5 configs (pairwise greedy contrôle, 3 températures Metropolis, élitiste référence) sur Sphere/Rastrigin/Ackley + limite frozen ; verdict honnête **négatif** — l'acceptation `exp(Δ/T)` détachée du couplage perturbation+acceptation ne porte pas le bénéfice du recuit | ~45 min |
+| 20 | [MGS-20-Langage-de-Composition](MGS-20-Langage-de-Composition.ipynb) | **Langage de composition** — décrire le comportement voulu, puis rechercher la composition d'opérateurs qui le réalise | mini-DSL (primitives + combinateurs) et boucle évolutionnaire paramétrique sur les compositions ; notebook Python | — |
 | 21 | [MGS-21-Representation-vs-Algorithme](MGS-21-Representation-vs-Algorithme.ipynb) | **Représentation × algorithme : le plan croisé Sudoku** — quel facteur pèse le plus ? | deux représentations (R1 vecteur continu + décodage arrondi, R2 grille à permutations de lignes via l'algèbre de swaps) × deux moteurs (PSO composé, GA permutation), budget ~8 000 évaluations, 4 graines {0,1,7,42}, critère de verdict pré-enregistré ; verdict en deux temps — la représentation domine la colonne PSO (−39 conflits vs −34,5/−6 pour l'algorithme), comparable sur la colonne GA ; 4/4 résolutions en R2/GA, aucune en R1 ; cause mesurée : 100 % des candidats R1 décodés tombent hors de l'espace admissible | ~40 min |
 | 22 → 31 | [Campagne **MGS vs mealpy**](MGS-vs-mealpy/README.md) — **10 notebooks** (PSO, DE, SA, WOA, EO, FBI, BBPSO, GA, Scatter Search, synthèse) | **Confrontation externe systématique** — la même expérience (protocole apparié Sudoku-Easy[0], budget ~8 000 évals, graines {0,1,7,42}, déterminisme 8/8 ou 12/12), deux bibliothèques (MGS C# .NET 9 vs mealpy 3.0.2 Python/NumPy via PythonNet dans le kernel .NET), un verdict quantitatif. Chaque paire isole un mécanisme (sélection greedy vs réinsertion de population, bruit A1 N(0,1) vs uniforme, écart d'ancrage, ablation de couche mémétique) et tranche sur la question « le moteur ou la stratégie ? » | voir [table des paires](MGS-vs-mealpy/README.md#table-des-paires) | |
 
@@ -77,7 +78,7 @@ Les 8 figures MGS-7b (heatmaps de la projection N-D des paysages Sphere/Rastrigi
 
 ### Applications spécialisées
 
-Les notebooks d'application GA (détection de bords, optimisation de portefeuille — variants PyGAD Python et GeneticSharp C#) sont rassemblés dans la section [`Applications/Hybrid/`](../Applications/README.md) : **App-9 / App-9b** (EdgeDetection) et **App-10 / App-10b** (Portfolio). La série MGS numérotée (MGS-1 à MGS-19, MGS-21, plus la trilogie de ponts MGS-7b/7c/7d de projection N-D ; MGS-20, langage de composition, est en préparation) constitue le cœur propre à la Partie 4. La **campagne MGS vs mealpy** (MGS-22 à MGS-31, 10 notebooks comparatifs) vit dans la sous-série dédiée [`MGS-vs-mealpy/`](MGS-vs-mealpy/README.md), avec son sommaire, son protocole commun et sa synthèse croisée.
+Les notebooks d'application GA (détection de bords, optimisation de portefeuille — variants PyGAD Python et GeneticSharp C#) sont rassemblés dans la section [`Applications/Hybrid/`](../Applications/README.md) : **App-9 / App-9b** (EdgeDetection) et **App-10 / App-10b** (Portfolio). La série MGS numérotée (MGS-1 à MGS-21, plus la trilogie de ponts MGS-7b/7c/7d de projection N-D) constitue le cœur propre à la Partie 4. La **campagne MGS vs mealpy** (MGS-22 à MGS-31, 10 notebooks comparatifs) vit dans la sous-série dédiée [`MGS-vs-mealpy/`](MGS-vs-mealpy/README.md), avec son sommaire, son protocole commun et sa synthèse croisée.
 
 La série suit un fil continu plutôt qu'un catalogue : on **reconstruit** les composés publiés depuis leurs primitives (MGS-5), on les **confronte** honnêtement (MGS-6, MGS-7), puis on apprend à *voir* le paysage (MGS-8, MGS-9), à *mesurer* ses biais (MGS-10 à MGS-14), à le *quantifier* (MGS-15), à *raisonner* sur le choix de l'algorithme (MGS-16), de ses paramètres (MGS-17), du protocole d'évaluation (MGS-18), la démontabilité d'un composé (MGS-19) — et enfin à *questionner la représentation elle-même* (MGS-21 : le croisement représentation × algorithme montre que le choix de l'espace peut dominer le choix du moteur). Le déroulé notebook par notebook figure dans le « Parcours détaillé » plus bas, et la Conclusion reprend les enseignements transversaux. Feuille de route du fork : [ROADMAP.md](https://github.com/jsboige/MetaGeneticSharp/blob/main/ROADMAP.md).
 
@@ -101,30 +102,30 @@ flowchart LR
 
 ## Configuration requise
 
-Le kernel `dotnet-interactive` installé (**1.0.707101**, hôte .NET moderne) **charge nativement les assemblies `net9.0`** — vérifié par exécution : MGS-6 (qui référence `MetaGeneticSharp.Extensions` net9.0), MGS-18, MGS-19 et MGS-21 s'exécutent verts sur ce kernel. Les notebooks MGS se répartissent sur deux TFM :
+Le kernel `dotnet-interactive` **charge nativement les assemblies `net9.0`** du fork : vérifié sur la version épinglée du dépôt (**1.0.617701**, cf. [kernels-runtime.md](../../../docs/reference/kernels-runtime.md)) avec MGS-01 et MGS-06 sous Linux, et auparavant sur 1.0.707101 avec MGS-6, MGS-18, MGS-19 et MGS-21. Tous les chargements `#r` sont relatifs (`../MetaGeneticSharp/src/...`) et visent des DLL `net9.0` produites par un `dotnet build` du fork :
 
-- **MGS-1 à MGS-5** (Introduction, Composition, Eukaryote, Islands, Compound) ne consomment que `MetaGeneticSharp.Domain` + `Infrastructure` + `GeneticSharp`. Ils référencent les **DLL `net8.0`**, chargées par rétro-compat sur le kernel actuel (qui supporte net8.0/net9.0/net10).
-- **MGS-6 à MGS-9** (Benchmarks, TSP, Landscape, Everest) dépendent en plus de `MetaGeneticSharp.Extensions` (SkiaSharp / `System.Drawing.Common`). Ils référencent les DLL `net9.0` et **s'exécutent sur le kernel actuel** (MGS-6 vérifié vert). *Sur l'ancien kernel 1.0.552801 (hôte net8.0-only), ils restaient bloqués* (follow-up historique désormais non requis sur le kernel actuel).
+- `src/MetaGeneticSharp.Domain/bin/Debug/net9.0/` — `MetaGeneticSharp.Domain`, `Infrastructure` et `GeneticSharp` ;
+- `src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/` — les mêmes, plus `MetaGeneticSharp.Extensions`, SkiaSharp et `System.Drawing.Common`, pour les notebooks graphiques ;
+- `src/MetaGeneticSharp.Domain/bin/Release/net9.0/` — seulement pour [Search-05](../Part1-Foundations/Search-05-GeneticAlgorithms-CSharp.ipynb) (Partie 1), d'où le build `Release` ci-dessous.
 
 Règle : pas de contournement, installer l'environnement complet :
 
-```powershell
-# 1. .NET SDK (9.0 requis pour le fork source ; 8.0/10.0 optionnels)
+```bash
+# 1. .NET SDK 9.0 (cible du fork)
 dotnet --version
 
-# 2. dotnet-interactive (kernel Jupyter pour C#, hôte .NET moderne >= 1.0.707101)
-dotnet tool install --global Microsoft.dotnet-interactive
+# 2. dotnet-interactive, à la version épinglée du dépôt
+dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.617701
 dotnet interactive jupyter install
 
-# 3. Sous-modules + build du fork (les notebooks chargent les DLL par #r absolu)
+# 3. Sous-module, depuis la racine du dépôt (--recursive : il contient GeneticSharp), puis build
+git submodule update --init --recursive MyIA.AI.Notebooks/Search/MetaGeneticSharp
 cd MyIA.AI.Notebooks/Search/MetaGeneticSharp
-git submodule update --init --recursive
-dotnet build                      # build net9.0 (fork source ; DLLs pour MGS-6..18)
+dotnet build                      # bin/Debug/net9.0 : notebooks MGS
+dotnet build -c Release           # bin/Release/net9.0 : Search-05
 ```
 
-> **Bins `net8.0` pour MGS-1..5.** Le fork est actuellement single-TFM `net9.0`, donc `-p:TargetFramework=net8.0` échoue (le `project.assets.json` restauré ne contient que la cible net9.0). Pour produire `Domain` + `Infrastructure` en `net8.0` (référencés par MGS-1..5, chargés par rétro-compat sur le kernel actuel), il faut soit retargeter temporairement le `.csproj` en `net8.0` puis `dotnet build`, soit — solution propre — multi-targeter le fork en `<TargetFrameworks>net8.0;net9.0</TargetFrameworks>` (follow-up sur le fork, `Extensions`/SkiaSharp restant net9.0-only). Les bins référencés par MGS-1..5 doivent exister sous `src/MetaGeneticSharp.Domain/bin/Debug/net8.0/`.
-
-Les notebooks chargent les DLL via `#r "c:/dev/MetaGeneticSharp/..."` (chemin du checkout de travail du fork). **MGS-1..5** pointent sur `src/MetaGeneticSharp.Domain/bin/Debug/net8.0/` (4 DLL : GeneticSharp.Domain, GeneticSharp.Infrastructure.Framework, MetaGeneticSharp.Domain, MetaGeneticSharp.Infrastructure) ; **MGS-6..14** pointent sur `src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/` (Extensions + SkiaSharp + System.Drawing.Common) ; **MGS-21..28** pointent sur `src/MetaGeneticSharp.Domain/bin/Debug/net9.0/` (GeneticSharp.Infrastructure.Framework + MetaGeneticSharp.Infrastructure + MetaGeneticSharp.Domain, chemins relatifs `../MetaGeneticSharp/...`).
+> **Limite connue sous Linux** ([#17654](https://github.com/jsboige/CoursIA/issues/17654)). Deux causes, mesurées sur un clone vierge : (1) MGS-08, MGS-09, MGS-11, MGS-13 et MGS-14 écrivent leurs `#r` avec des séparateurs `\` (`..\MetaGeneticSharp\...`), que Linux ne reconnaît pas (`CS0006: Metadata file ... could not be found`, mesuré sur MGS-08) ; (2) les notebooks graphiques MGS-04, MGS-08, MGS-09, MGS-11, MGS-13, MGS-14 et MGS-15 préchargent le natif SkiaSharp depuis `runtimes/win-*/native/libSkiaSharp.dll`, et le build du fork ne produit aucun `libSkiaSharp.so` (pas de référence à `SkiaSharp.NativeAssets.Linux`) : `DllNotFoundException`, mesuré sur MGS-04 et MGS-15. Les autres notebooks MGS ne sont pas concernés (MGS-01 et MGS-06 passent).
 
 **Reproductibilité.** Les résultats numériques de MGS-1 à MGS-9 sont **stochastiques** (le RNG du framework n'y est pas seedé) : les outputs committés sont une exécution valide, les valeurs varient d'une exécution à l'autre. À partir de MGS-10, les bancs sont seedés pour devenir **reproduisibles** :
 
@@ -270,7 +271,7 @@ MGS-16/17 répondaient au No-Free-Lunch en changeant *d'algorithme* ou *de param
 
 **Verdict honnête en deux temps (G.9)** : sur la colonne PSO, la représentation domine — la médiane passe de 45,0 à 6,0 conflits (−39), davantage que le meilleur effet algorithme ne le rapproche (−34,5) ; sur la colonne GA, les deux facteurs pèsent du même ordre (10,5 → 0,0 côté représentation, ×4,3 côté algorithme) — et seule leur **combinaison** R2×GA résout : **4/4 graines à 0 conflit**, aucune cellule R1 ne s'approchant de la solution (minimum 4). La cellule de **cause** explique pourquoi l'écart est structurel et non dynamique : 200 candidats R1 sur 200 (100 %) tombent hors de l'espace admissible après décodage (l'arrondi est une projection discontinue qui détruit l'information de proximité), contre 0/200 pour R2 par construction ; un candidat R1 aléatoire part à 67,9 conflits en moyenne contre 37,4 en R2 — les conflits de lignes que R2 rend *impossibles*, R1 les porte presque tous dès le tirage. C'est la version mesurée du geste « changer de représentation plutôt qu'insister » : avant de régler `w`, `c1` ou `c2`, demander ce que le décodage détruit. Trois exercices prolongent (rejouer le croisement sur une seconde grille, recuit simulé sur les deux représentations, diversité effective par grille décodée distincte).
 
-> Numérotation : MGS-20 (langage de composition, [#12224](https://github.com/jsboige/CoursIA/issues/12224)) est en préparation — MGS-21 a été livré indépendamment car le plan croisé ne dépend pas du langage de composition.
+> Numérotation : MGS-21 a été livré avant MGS-20 (langage de composition, [#12224](https://github.com/jsboige/CoursIA/issues/12224)), car le plan croisé ne dépend pas du langage de composition.
 
 ## Conventions
 
@@ -311,7 +312,7 @@ Les métaheuristiques reconstruites dans cette partie suivent les articles fonda
 
 ### Ce que vous avez appris
 
-Cette quatrième partie a changé la question : non plus *« quelle métaheuristique choisir »* (Parties 1-2), mais *« comment construire et combiner des métaheuristiques à partir de primitives »*. L'arc pédagogique, porté par trente-cinq notebooks C# .NET 9 au-dessus de [MetaGeneticSharp](https://github.com/jsboige/MetaGeneticSharp), démontre la thèse **composants > métaphores** :
+Cette quatrième partie a changé la question : non plus *« quelle métaheuristique choisir »* (Parties 1-2), mais *« comment construire et combiner des métaheuristiques à partir de primitives »*. L'arc pédagogique, porté par les notebooks C# .NET 9 de la série au-dessus de [MetaGeneticSharp](https://github.com/jsboige/MetaGeneticSharp), démontre la thèse **composants > métaphores** :
 
 - **Le moteur autonome** (MGS-1, MGS-2) — un `MetaGeneticAlgorithm` qui pilote l'évolution sans dépendre de la classe `GeneticAlgorithm` amont, et la grammaire fluente (`Match`, `Container`, `Scoped`) qui permet d'assembler une métaheuristique en quelques lignes déclaratives lisibles. C'est le socle : tout le reste compose au-dessus.
 - **La structuration de population** (MGS-3, MGS-4) — le modèle eucaryote (sous-populations spécialisées portées par des chromosomes composites) et le modèle insulaire (îles migratoires) : deux configurations qu'aucune bibliothèque monolithique grand public n'offre directement, et qui deviennent naturelles une fois la composition maîtrisée.
