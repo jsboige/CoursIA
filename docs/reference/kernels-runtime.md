@@ -14,7 +14,7 @@ Notebooks dans `SymbolicAI/SemanticWeb/`, `SymbolicAI/SmartContract/`, `Search/`
 
 | Prerequis | Version | Verification |
 |-----------|---------|-------------|
-| .NET SDK | 8.0 + 9.0 (10.0 optionnel) | `dotnet --list-sdks` |
+| .NET SDK | 8.0 + 9.0 + 10.0 (10.0 requis par `dotnet restore MyIA.CoursIA.sln` : cinq projets `net10.0`) | `dotnet --list-sdks` |
 | dotnet-interactive | **1.0.617701** (verifie sur ai-01, cf ci-dessous) | `dotnet interactive --version` |
 | Jupyter kernels `.net-csharp`, `.net-fsharp`, `.net-powershell` | auto-installes | `jupyter kernelspec list` |
 

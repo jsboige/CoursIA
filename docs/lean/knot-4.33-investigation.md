@@ -2,7 +2,7 @@
 
 **Date :** 2026-09-12
 **Lane :** `myia-po-2027:CoursIA-2`
-**Investigation :** Tell c.745 strict first-hand
+**Investigation :** vérification first-hand ([G.1](../../CLAUDE.md))
 **Contexte :** rollout #14773 (migrer 27 lakes vers Lean/Mathlib 4.33). knot_lean échoue au `lake build Knots` ; investigation c.1117 (worktree précédent rolled back, claim parent #14773 [RELEASED], issue #15829 ouverte pour reprise).
 
 ---
@@ -13,7 +13,7 @@ knot_lean échoue en Mathlib 4.33.0 avec deux erreurs de compilation `Decidable`
 
 **Cause documentée** : `bb5364cb2f` — `fix: remove DecidableEq Prop instance` — convertit `LinearOrder Prop` et `CompleteLinearOrder Prop` en `def`s (au lieu d'`instance`), supprimant l'instance `DecidableEq Prop` globale qui causait des diamants avec `instDecidableEqOfIff`.
 
-**Fix proposé** : réécrire les 3 instances `Decidable` de `Knots/Invariant.lean` (lignes 253, 262, 277) en `inferInstanceAs` explicite vers les sous-instances concrètes (`And.decidable`, `Nat.decLe`, `List.decidableBAll`, `TriColor.decEq`), sans `sorry` ni `native_decide` (Tell c.D anti-régression strict).
+**Fix proposé** : réécrire les 3 instances `Decidable` de `Knots/Invariant.lean` (lignes 253, 262, 277) en `inferInstanceAs` explicite vers les sous-instances concrètes (`And.decidable`, `Nat.decLe`, `List.decidableBAll`, `TriColor.decEq`), sans `sorry` ni `native_decide` ([anti-régression](../../.claude/rules/anti-regression.md)).
 
 **Pattern compagnon de référence** : `docs/lean/decidable_instance_propagation.md` (PR #9780, myia-po-2026) — exactement le même pattern que pour `supportInMargin` au-dessus de `BoxAssezGrandN`.
 
@@ -123,7 +123,7 @@ instance IsTricolorable.decidable (d : KnotDiagram) :
 
 ### Étape 4 — Parité FR/EN
 
-`Knots/Invariant_en.lean` (lignes ~219 et ~2180 équivalentes) doit recevoir la même réécriture, byte-identique modulo le namespace `_en` et les imports siblings. Vérification par `scripts/lean/check_i18n_siblings.py --all` (Tell c.589 voie 3 + EPIC #4980 strict).
+`Knots/Invariant_en.lean` (lignes ~219 et ~2180 équivalentes) doit recevoir la même réécriture, byte-identique modulo le namespace `_en` et les imports siblings. Vérification par `scripts/lean/check_i18n_siblings.py --all` (EPIC #4980, sibling `_en` byte-identique).
 
 ### Étape 5 — Vérification locale
 
@@ -144,7 +144,7 @@ python scripts/lean/count_code_sorry.py --json  # distinct_code_sorry inchangé 
 
 ---
 
-## Périmètre strict (Tell c.D anti-régression)
+## Périmètre strict ([anti-régression](../../.claude/rules/anti-regression.md))
 
 - **Inchangé** : énoncés de théorèmes, lemmes, signatures, organisation du module, preuves
 - **Modifié** : 3 instances `Decidable` (Invariant.lean + Invariant_en.lean) ≈ 6 lignes
@@ -162,7 +162,7 @@ python scripts/lean/count_code_sorry.py --json  # distinct_code_sorry inchangé 
 - PR #9780 — application concrète du pattern compagnon (`supportInMargin`)
 - `docs/lean/decidable_instance_propagation.md` — pattern de référence (myia-po-2026)
 - Mémoire `lean-decidable-instance-not-propagated-through-def-prop` — incident fondateur (c.939)
-- Tell c.589 voie 3 strict — anti-régression Lean
+- [Anti-régression Lean](../../.claude/rules/anti-regression.md)
 
 — lane myia-po-2027:CoursIA-2 c.1119
 
@@ -200,7 +200,7 @@ Les modules `Knots.MathlibPrerequisites` et `Knots.MathlibPrerequisites_en` ont 
 
 **Contexte** : la tâche background `b3i6dklcr` lancée c.1119 visait à capturer la sortie de `lake update` sur le worktree bumpé en v4.32.1 (baseline pré-4.33.0) pour vérifier la chaîne Knots → Knots.Invariant. Sortie capturée et analysée c.1120.
 
-**Tell c.745 ★★★ first-hand** : sortie `b3i6dklcr.output` lue verbatim. **Tell c.1069 strict honnêteté référentielle** : aucune fabrication ; transcription exacte des warnings et de l'erreur.
+**First-hand** : sortie `b3i6dklcr.output` lue verbatim. **Honnêteté référentielle** : aucune fabrication ; transcription exacte des warnings et de l'erreur.
 
 ### Constat verbatim (extrait représentatif)
 
@@ -223,7 +223,7 @@ error: mathlib: failed to fetch cache
 
 ### Constat méthodologique
 
-- **Aucune nouvelle info Knots.Invariant** : Knots.Invariant n'est toujours pas atteint par le build (v4.32.1 baseline = même chaîne FAIL que v4.33.0 bumpé). La reproduction baseline n'a **pas eu lieu** — Tell c.745 ★★★ first-hand confirme.
+- **Aucune nouvelle info Knots.Invariant** : Knots.Invariant n'est toujours pas atteint par le build (v4.32.1 baseline = même chaîne FAIL que v4.33.0 bumpé). La reproduction baseline n'a **pas eu lieu** — vérification first-hand confirme.
 - **Le diagnostic `bb5364cb2f` reste valide** comme hypothèse documentée (commit Mathlib le plus suspect). Sa confirmation first-hand reste à faire dans un environnement Lean 4.33.0 stable.
 - **Le fix `inferInstanceAs`** reste la bonne approche indépendamment du défaut d'environnement.
 
@@ -231,7 +231,7 @@ error: mathlib: failed to fetch cache
 
 Le warning « Dependency Mathlib uses a different lean-toolchain » est documenté dans `lake update` c.1119 (addendum c.1119 ligne 173-183). La sortie `b3i6dklcr` confirme que la baseline v4.32.1 souffre du **même problème** : cache Mathlib v4.32.1 non joignable, 13 fichiers absents, build s'arrête avant Knots.Invariant.
 
-**Conséquence opérationnelle** : le fix de fond `inferInstanceAs` ne peut pas être validé localement (ni sur Windows natif, ni en v4.32.1 baseline). La validation **doit passer par le runner CI Linux pool `coursia-lean`** (Tell c.14773 Phases 4-5, déjà câblé par po-2023 tranches 2-3 #15831 + #15832). Une PR fix de fond devrait :
+**Conséquence opérationnelle** : le fix de fond `inferInstanceAs` ne peut pas être validé localement (ni sur Windows natif, ni en v4.32.1 baseline). La validation **doit passer par le runner CI Linux pool `coursia-lean`** (déjà câblé par po-2023, tranches 2-3 #15831 + #15832). Une PR fix de fond devrait :
 1. Modifier `Knots/Invariant.lean` + `Knots/Invariant_en.lean` (~6 lignes) avec `inferInstanceAs` explicite
 2. Pousser sur la branche `fix/15829-knot-4.33-invariant-inferinstance`
 3. Déclencher le CI `lean-knot.yml` (pool `coursia-lean`, après merge des PRs po-2023 #15831 + #15832)

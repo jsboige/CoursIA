@@ -114,7 +114,7 @@ EP converge sans diverger mais **inverse à la fois l'assignation des composante
 
 ### Phase 3 : Décision bayésienne (arc autonome, ~7h)
 
-La seconde moitié passe de l'inférence à la décision : comment choisir une action quand on ne connaît que des probabilités ? Chez **Infer.NET**, cet arc a été extrait dans [`DecisionTheory/DecInfer/`](DecisionTheory/DecInfer/README.md) (renumérotés 1-10) : les notebooks 1-4 posent les fondations (axiomes de l'utilité, fonctions mono- et multi-attributs), les notebooks 5-8 appliquent aux réseaux de décision, valeur de l'information, systèmes experts robustes et processus décisionnels de Markov (MDPs) — qui relient cette série à [RL](../RL/). Le compagnon DecInfer-09 (kernel Lean 4 via WSL) formalise les identités d'escompte géométrique de l'indice de Gittins dans le lake [`decision_theory_lean`](decision_theory_lean/) — placé directement sous `Probas/` (hors de toute sous-série) pour être visible des deux pistes (Infer.NET / PyMC) ; le théorème d'optimalité y est énoncé, sa preuve complète exigeant une formalisation des MDP qui manque encore à Mathlib. Le notebook DecInfer-10 (Thompson Sampling) clôt l'arc sur les bandits bayésiens en pratique. Côté PyMC, le cœur de cet arc est reproduit dans [`DecisionTheory/DecPyMC/`](DecisionTheory/DecPyMC/) (renumérotés, dont la jambe actuarielle 8-12).
+La seconde moitié passe de l'inférence à la décision : comment choisir une action quand on ne connaît que des probabilités ? Chez **Infer.NET**, cet arc a été extrait dans [`DecisionTheory/DecInfer/`](DecisionTheory/DecInfer/README.md) (renumérotés 1-10, accretion Lean 2b) : les notebooks 1-4 posent les fondations (axiomes de l'utilité, fonctions mono- et multi-attributs), les notebooks 5-8 appliquent aux réseaux de décision, valeur de l'information, systèmes experts robustes et processus décisionnels de Markov (MDPs) — qui relient cette série à [RL](../RL/). Le compagnon DecInfer-09 (kernel Lean 4 via WSL) formalise les identités d'escompte géométrique de l'indice de Gittins dans le lake [`decision_theory_lean`](decision_theory_lean/) — placé directement sous `Probas/` (hors de toute sous-série) pour être visible des deux pistes (Infer.NET / PyMC) ; le théorème d'optimalité y est énoncé, sa preuve complète exigeant une formalisation des MDP qui manque encore à Mathlib. Le notebook DecInfer-10 (Thompson Sampling) clôt l'arc sur les bandits bayésiens en pratique. Côté PyMC, le cœur de cet arc est reproduit dans [`DecisionTheory/DecPyMC/`](DecisionTheory/DecPyMC/) (renumérotés, dont la jambe actuarielle 8-12).
 
 ### Parcours alternatifs
 
@@ -277,7 +277,7 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 | 18 | Change-Point | `DiscreteUniform` + `switch`, détection de rupture bayésienne |
 | 19 | Survival Analysis | Exponentiel conjugué (Gamma), Weibull `k` inféré, sélection LOO |
 
-> **Note** : l'arc **théorie de la décision** (10 notebooks) vit désormais dans [`DecisionTheory/DecInfer/`](DecisionTheory/DecInfer/README.md) (renumérotation 1-10), voir tableau dédié ci-dessous.
+> **Note** : l'arc **théorie de la décision** vit désormais dans [`DecisionTheory/DecInfer/`](DecisionTheory/DecInfer/README.md) (renumérotation 1-10), voir tableau dédié ci-dessous.
 
 ### Série PyMC
 
@@ -307,7 +307,7 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 
 ## Série Infer.NET (corpus bayésien + accretions 1b/2b · arc décision C# et companions Lean 4)
 
-La série C#/.NET se scinde en deux arcs : le **corpus bayésien** (socle numéroté 1-19 plus les accretions 1b et 2b dans [`Infer/`](Infer/README.md), et l'application autonome *Quotients et fibres* dans [`Applications/`](Applications/)) et l'**arc théorie de la décision** ([`DecisionTheory/DecInfer/`](DecisionTheory/DecInfer/README.md)) qui mixe deux kernels — des notebooks **C#** (utilité espérée, EVPI, MDPs, bandits, Thompson Sampling DecInfer-10) et des notebooks **Lean 4** (DecInfer-02 utilité espérée vNM et DecInfer-09 indice de Gittins, formalisation des lemmes). L'ensemble `DecisionTheory/` réunit les DecInfer (arc C# et companions Lean), leurs miroirs Python [`DecisionTheory/DecPyMC/`](DecisionTheory/DecPyMC/README.md), et les notebooks du pont causal [`DecisionTheory/Causal-Bridges/`](DecisionTheory/Causal-Bridges/README.md) — plus le lake compagnon Lean [`decision_theory_lean`](decision_theory_lean/) et le harnais VoI cross-engine [`DecisionTheory/voi/`](DecisionTheory/voi/README.md) (tous deux hors compte notebooks). La documentation détaillée de chaque notebook, les patterns Infer.NET avancés et les exercices corrigés vivent dans ces README.
+La série C#/.NET se scinde en deux arcs : le **corpus bayésien** (socle numéroté 1-19 plus les accretions 1b et 2b dans [`Infer/`](Infer/README.md), et l'application autonome *Quotients et fibres* dans [`Applications/`](Applications/)) et l'**arc théorie de la décision** ([`DecisionTheory/DecInfer/`](DecisionTheory/DecInfer/README.md)) qui mixe deux kernels — des notebooks **C#** (utilité espérée, EVPI, MDPs, bandits, Thompson Sampling DecInfer-10) et des notebooks **Lean 4** (DecInfer-02 utilité espérée vNM, DecInfer-02b cohérence de de Finetti et DecInfer-09 indice de Gittins, formalisation des lemmes). L'ensemble `DecisionTheory/` réunit les DecInfer (arc C# et companions Lean), leurs miroirs Python [`DecisionTheory/DecPyMC/`](DecisionTheory/DecPyMC/README.md), et les notebooks du pont causal [`DecisionTheory/Causal-Bridges/`](DecisionTheory/Causal-Bridges/README.md) — plus le lake compagnon Lean [`decision_theory_lean`](decision_theory_lean/) et le harnais VoI cross-engine [`DecisionTheory/voi/`](DecisionTheory/voi/README.md) (tous deux hors compte notebooks). La documentation détaillée de chaque notebook, les patterns Infer.NET avancés et les exercices corrigés vivent dans ces README.
 
 ### Progression
 
@@ -318,9 +318,9 @@ La série C#/.NET se scinde en deux arcs : le **corpus bayésien** (socle numér
 | **Frontières bayésiennes** | 14-19 | Séquences (HMM), recommandation, GP sparse, filtre de Kalman, change-point, survie | 4,5h |
 | **Géométrie catégorique** | [Applications/](Applications/) (ex-20) | Quotients, fibres, recollement — ce qui survit à la projection | — |
 | **Accretions** | 1b, 2b | Premier modèle ; debugging, bonnes pratiques | 1h |
-| **Décision (arc autonome)** | [DecisionTheory/DecInfer/ 1-10](DecisionTheory/DecInfer/README.md) | Théorie de la décision bayésienne + preuve Lean de Gittins | 7h |
+| **Décision (arc autonome)** | [DecisionTheory/DecInfer/ 1-10 + accretion 2b](DecisionTheory/DecInfer/README.md) | Théorie de la décision bayésienne + preuves Lean (vNM, de Finetti, Gittins) | 7h |
 
-Les notebooks Infer.NET C# (corpus bayésien et accretions, arc décision) et les notebooks Lean 4 de l'arc décision sont détaillés individuellement dans [*Ce que chaque notebook apporte*](#ce-que-chaque-notebook-apporte) ci-dessous (apport pédagogique par notebook) ; le contenu exhaustif — patterns avancés, exercices corrigés — vit dans [Infer/README.md](Infer/README.md), [DecisionTheory/DecInfer/README.md](DecisionTheory/DecInfer/README.md) et [DecisionTheory/DecPyMC/README.md](DecisionTheory/DecPyMC/README.md).
+Les **notebooks Infer.NET C#** (corpus bayésien et accretions + arc décision) et les **notebooks Lean 4** de l'arc décision sont détaillés individuellement dans [*Ce que chaque notebook apporte*](#ce-que-chaque-notebook-apporte) ci-dessous (apport pédagogique par notebook) ; le contenu exhaustif — patterns avancés, exercices corrigés — vit dans [Infer/README.md](Infer/README.md), [DecisionTheory/DecInfer/README.md](DecisionTheory/DecInfer/README.md) et [DecisionTheory/DecPyMC/README.md](DecisionTheory/DecPyMC/README.md).
 
 ## Série PyMC (19 corpus notebooks, Python + 12 extraits DecisionTheory/DecPyMC)
 
@@ -414,6 +414,8 @@ Ce que le pont ajoute par rapport aux quatre notebooks pris isolément :
 3. la distinction explicite entre **causalité interventionniste** (Pearl : quel est l'effet d'une intervention sur `X` dans un graphe fixé ?) et **émergence causale** (Hoel : quelle échelle de description porte le plus de causalité ?) — deux réponses complémentaires à la question causale.
 
 ## Applications standalone (dossier [`Applications/`](Applications/))
+
+Les applications autonomes sont aujourd'hui toutes en kernel Python ; si un notebook .NET rejoint `Applications/`, la section se scinde par technologie (une sous-section par kernel), sur le modèle de la division théorie de la décision.
 
 | Notebook | Kernel | Contenu | Durée |
 | -------- | ------- | ------- | ----- |
@@ -591,7 +593,7 @@ La visualisation des factor graphs nécessite **Graphviz installé**. Si `dot` n
 
 ### Kernels : un par sous-série, jamais mélangés
 
-Chaque notebook de la série Probas utilise un **unique kernel** : `.NET (C#)` pour le corpus `Infer/` et l'arc `DecisionTheory/DecInfer/` (arc C#) ; `Python 3` pour `PyMC/`, `Pyro_RSA`, `DecisionTheory/DecPyMC/`, `Applications/Percolation/Percolation-Supercritique` et `Applications/Infer-20-Quotients-et-Fibres-Python` ; `coursia-ml-training` pour les notebooks du pont causal qui l'exigent ; **Lean 4** (WSL) pour `DecInfer-02`, `DecInfer-09` et `Percolation-Lean`. Aucun notebook ne mélange les kernels. (Historiquement, `Infer-1b` avait été rédigé en mode polyglot .NET Interactive avec des cellules `#kernel` par langage ; ce n'est plus le cas — il est aujourd'hui un notebook C#/.NET.)
+Chaque notebook de la série Probas utilise un **unique kernel** : `.NET (C#)` pour le corpus `Infer/` et l'arc `DecisionTheory/DecInfer/` (arc C#) ; `Python 3` pour `PyMC/`, `Pyro_RSA`, `DecisionTheory/DecPyMC/`, `Applications/Percolation/Percolation-Supercritique` et `Applications/Infer-20-Quotients-et-Fibres-Python` ; `coursia-ml-training` pour les notebooks du pont causal qui l'exigent ; **Lean 4** (WSL) pour `DecInfer-02`, `DecInfer-02b`, `DecInfer-09` et `Percolation-Lean`. Aucun notebook ne mélange les kernels. (Historiquement, `Infer-1b` avait été rédigé en mode polyglot .NET Interactive avec des cellules `#kernel` par langage ; ce n'est plus le cas — il est aujourd'hui un notebook C#/.NET.)
 
 ### PyMC : échantillonnage très lent ou divergence NUTS
 
