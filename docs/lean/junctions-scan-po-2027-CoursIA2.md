@@ -179,8 +179,8 @@ Prochaine etape conditionnelle :
 - **2 checkouts physiques = 13.53 Go** recuperables par Apply (search_lean candidat jonction simple ; mimo_lean necessite investigation `slt 0b1020a4`).
 - **9 jonctions actives verifiees firsthand** (c.629, `fsutil reparsepoint query`) : toutes v4.32.1 vers `D:\dev\CoursIA-2\.mathlib-cache\leanprover_lean4_v4.32.1-520045ab\mathlib`. Le rapport c.1205 annonçait 8 v4.32.1 + 1 v4.33.0 ; la verif re-mesure a montre kelly_lean cible v4.32.1 (pas v4.33.0 comme le scan le rangeait par manifest).
 - **Aucun orphelin** v4.31.0-rc1 detecte sur po-2027 (vs etat signale sur po-2024 dans `junctions-scan-po-2024.md`).
-- **Tell c.808 ★★★** : mesure genuine (deux passes du script, sortie byte-identique au premier passage).
-- **Tell c.488 strict audit-reassessment** (c.629) : relecture du rapport suite a CHANGES_REQUESTED ai-01 (c.626) — fix docs-only appliques. Synthese finale : `LP ×2 corriees, FP ×0 retenu`.
+- **Mesure genuine** : deux passes du script, sortie byte-identique au premier passage.
+- **Audit reassessment** ([protocole](../../.claude/rules/audit-reassessment.md)) : relecture du rapport suite à CHANGES_REQUESTED ai-01 — fix docs-only appliqués. Synthèse finale : `LP ×2 corrigées, FP ×0 retenu`.
 
 ## References
 
@@ -192,3 +192,85 @@ Prochaine etape conditionnelle :
 - MEMORY `lean-warm-mathlib-junction-build.md` (po-2027 junctions warm-Mathlib pattern ; junction vers warm Mathlib d'un lake frere ; `count_sorry --repo` requis)
 - MEMORY `lean_kernel_broken.md` (REPL cassé en lean4-wsl mais `lake build` natif OK)
 - c.1203 (premier scan po-2027 manuel — 9 jonctions verifiees) ; c.1205 (rapport Scan present, ce document)
+
+## V3 — Datation precise des 9 jonctions 520045ab (c.724)
+
+C.724 — investigation `share-state.json` du store `.mathlib-cache/` pour reconcilier
+l'etat V2 (9 jonctions actives, datation inconnue) avec le narratif c.1059 (V1 narrow
+annoncait 0 jonction le 10/09) et l'absence de poses hors-Apply documentees sur
+po-2027 (contrairement a po-2024 ou PR #15972 a date 4 poses manuelles).
+
+### Source de verite
+
+`D:\dev\CoursIA-2\.mathlib-cache\share-state.json` — fichier unique de l'outillage
+`setup_shared_mathlib.ps1` (seule ecriture de fichier du script, l.337).
+`LastWriteTime` filesystem = **2026-09-14T00:22:37+02:00**, soit **3 minutes 45
+secondes apres** `createdAt` declare. Les 9 membres ont ete poses **simultanement**
+par un seul `Invoke-Apply` (logique du script : enregistrement post-Apply).
+
+### Champs autoritatifs
+
+```json
+{
+  "groupId": "leanprover_lean4_v4.32.1-520045ab",
+  "toolchain": "leanprover/lean4:v4.32.1",
+  "mathlibRev": "520045ab14e26149ee970e2e617ca04b09bde5d6",
+  "createdAt": "2026-09-14T00:18:52.9763479+02:00",
+  "members": [
+    ...
+    {"relPath": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean",
+     "isDonor": true},
+    ...
+  ]
+}
+```
+
+`isDonor: true` est sur `conway_lean` uniquement — c'est le **membre donneur**,
+celui dont le checkout Mathlib pre-existant a ete **promu** cible du store
+(et non jonctionne). Les 8 autres ont ete **jonctionnes** vers cette cible.
+`hadBackup: false` partout — pas de `.bak-2611` residuel, Apply mene a terme
+sans rollback.
+
+### Reconciliation avec les narratifs anterieurs
+
+| Source | Date | Lecture | Reel |
+|---|---|---|---|
+| Rapport V1 narrow c.1059 | 2026-09-10 | 0 jonction sur worktree CoursIA | OK (worktree CoursIA != clone principal CoursIA-2) |
+| Rapport V2 c.1205 | 2026-09-16 | 9 jonctions actives sur po-2027 CoursIA-2 | OK (mesure post-Apply, cf ci-dessous) |
+| Claim initial #16034 | 2026-09-13 | "Apply jonctions NTFS po-2027" — non livre | **Apply execute 14/09 00:18 par une autre lane (auteur non identifie ici)** |
+| Scan c.724 (ce cycle) | 2026-09-20 | 9 jonctions (5 dans cluster principal + 4 v4.33.0 manifest-vers-v4.32.1) | OK, identique a V2 |
+
+L'Apply 14/09 a donc ete realise **entre** le claim du 13/09 et le scan du 16/09.
+Le claim initial #16034 est **OBSOLETE** au sens strict : la livraison est faite,
+mais **par une autre lane** que `myia-po-2027:CoursIA-2`. L'acceptance §1 (Scan
+manifest-identique) etait deja livree (PR #16375 c.629) ; l'acceptance §2 (Apply
+jonctions) a ete livree par tierce partie ; l'acceptance §3 (anti-regression
+HARD) et §4 (mesure espace) restent dues — pas de trace d'un run `lake build`
+post-Apply par la lane qui a execute l'Apply.
+
+### Recommandations
+
+1. **Identifier l'auteur de l'Apply 14/09** : `git reflog` du store, logs
+   d'execution du script, ou recherche PR mergée entre 13/09 et 14/09 touchant
+   `setup_shared_mathlib.ps1` ou `share-state.json`. Sans cela, l'attribution
+   reste floue.
+
+2. **Verifier l'anti-regression §3** : pour chacune des 9 lanes jonctionnees,
+   `lake build SUCCESS` post-Apply et `count_code_sorry.py --json` →
+   `distinct_code_sorry` inchange. C'est un test qui n'a pas ete documente
+   comme execute.
+
+3. **Clore le claim #16034** : la livraison a ete faite par tierce partie,
+   la valeur ajout de cette lane est desormais la **documentation** (ce
+   rapport) et le **suivi** de l'anti-regression §3.
+
+4. **Delta restant** : seul `search_lean` reste candidat Apply (6.9 Go, risque
+   faible). Le rapport V2 §Conclusion search_lean documente la faisabilite.
+
+### Datation alternative (si `share-state.json` n'etait pas autoritatif)
+
+Les sources secondaires (toutes rapportees par V2) ne permettent pas de dater
+precisement : la jonction elle-meme n'ecrit pas de log (cf c.1059 V1 narrow
+note Portee). L'absence de poses manuelles documentees sur po-2027 (vs 4
+documentees sur po-2024 par PR #15972) accroit la probabilite que toutes les 9
+aient ete posees par l'Apply 14/09 — `share-state.json` est la source de verite.

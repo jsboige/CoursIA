@@ -10,6 +10,12 @@ pettingzoo[classic]>=1.24.0    # Multi-agent environments — notebook 6 (IQL, P
 # Environments
 highway-env>=1.8               # Highway driving environment (Notebook 3)
 
+# Post-training SOTA (rlpt_0d, rlpt_0e, rlpt_0f) : bras trl compares aux boucles maison
+trl>=1.10                      # RewardTrainer, DPOTrainer, GRPOTrainer (PPOTrainer retire en 1.10)
+transformers>=5.12
+datasets>=5.0
+tokenizers>=0.21
+
 # Data / Visualization
 pandas>=2.0                    # Tableaux de resultats Q-Learning — notebook 4
 moviepy>=1.0                   # Video recording of agent behavior

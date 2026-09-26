@@ -45,7 +45,7 @@ Le commentaire ai-01 sur #15574 a écrit deux nombres qui restent à mesurer dep
 
 **Ce que ce sous-grain livre** : caractéristiques OS-level reproductibles + le **plafond Docker WSL2** = 16 vCPU / 23.47 GiB, qui borne mécaniquement le nombre de jobs CI concurrents **quand un hôte physique accueille le daemon docker par défaut**. Si GitHub Actions monte un conteneur éphémère **dans** WSL2 plutôt que dans une VM dédiée, le plafond mesurable ici est la borne supérieure.
 
-**Ce que ce sous-grain reporte** : les deux nombres API-dépendants que ai-01 a nommés explicitement. Pas de **fabrication** (Tell c.15790 §6 + Tell c.1133-L1 ★★ fondateur) : pas de mesure, pas de chiffre dans la sortie JSON.
+**Ce que ce sous-grain reporte** : les deux nombres API-dépendants que ai-01 a nommés explicitement. Pas de **fabrication** ([G.2](../../CLAUDE.md) métriques honnêtes) : pas de mesure, pas de chiffre dans la sortie JSON.
 
 ## Lien avec narrow-cache hostile c.1181-c.1197
 

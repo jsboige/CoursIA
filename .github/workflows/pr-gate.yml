@@ -151,7 +151,16 @@ jobs:
     # exactly this pattern (same-repo guard -> fromJSON coursia-waiter,
     # fallback ubuntu-latest); any other expression remains a fail-closed
     # DYNAMIC_RUNS_ON violation. Rollback of this leg = revert of this PR.
-    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","coursia-waiter"]') || 'ubuntu-latest' }}
+    # Un gate ne depend pas du parc qu'il mesure (#17397). Ce job est un
+    # agregateur pur -- aucun secret, docker, GPU, Lean, .NET, notebook, conda
+    # ni WSL -- et il decide si une PR est mergeable. Tant qu'il tournait sur
+    # `coursia-waiter`, il degradait exactement quand la file qu'il doit
+    # debloquer grossissait : sur le cycle du 2026-09-22, `PR gate` figure
+    # parmi les checks fautifs d'une vingtaine des 27 candidates refusees pour
+    # rouge CI, alors que la cause etait la saturation du parc local.
+    # Les PRs de fork y allaient deja : la condition ne faisait que priver les
+    # PRs internes de cette immunite.
+    runs-on: ubuntu-latest
     # Above the script's own budget, so the script prints its verdict
     # instead of the runner killing it mid-poll (a runner-killed job reports
     # `cancelled`, which is far less legible than "timed out waiting for X").
@@ -232,8 +241,9 @@ jobs:
       # aussi les fichiers de la racine, ce qui suffit au reste du job.
       #
       # Perimetre requis, mesure : pr_gate.py n importe que la stdlib plus
-      # yaml en import paresseux, et son seul chemin est
-      # DEFAULT_WORKFLOWS_DIR = <repo>/.github/workflows, que
+      # yaml en import paresseux et scripts/gh_identity.py (#17418 Phase A,
+      # epinglage du jeton machine — in-come par le cone), et son seul
+      # chemin est DEFAULT_WORKFLOWS_DIR = <repo>/.github/workflows, que
       # derive_always_on_jobs et derive_advisory_jobs globent (canari regle 8).
       - uses: actions/checkout@v4
         with:

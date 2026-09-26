@@ -6,6 +6,7 @@
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Bascule verdict (registre #10382, axe 5 #10459) : l'annexe axelrod PythonNet (cellule code 36, execution_count=16, `#r nuget pythonnet 3.1.0`) est installée et exécutée dans le notebook commité. Résolution CPython Windows/Linux/macOS et dépendances natives Conda Windows validées ; parity_level semantic préservé (gel #11200)."
   known_differences:
+    - "PR #17062 (redressement densite #17040, lane myia-po-2025:CoursIA-2) : cote C# seul edite, markdown seul -- retrait de 3 cellules de campagne `**Lecture ancree :**` qui doublonnaient une interpretation pre-existante ; les 16 cellules de code et leurs sorties sont byte-identiques a la base."
     - "Socle pedagogique commun : Dilemme du Prisonnier Itere (IPD), tournoi d'Axelrod, strategies classiques (TitForTat, Pavlov, Generous TitForTat), dynamique evolutive (processus de Moran), emergence de la cooperation."
     - "Idiomes framework : Python = `numpy` + `matplotlib` + `matplotlib.animation` (viz dynamique du tournoi round-robin + courbes de Moran). C# = cœur `System.*` + moteur IPD from-scratch (T=5/R=3/P=1/S=0), complété par une annexe `pythonnet` 3.1.0 qui invoque le vrai moteur axelrod."
     - "Asymetrie pedagogique : Python utilise matplotlib.animation pour la viz dynamique (gif-like) du tournoi + process de Moran ; le C# travaille en pur System.* sans viz dynamique (asci-art + tableaux). Meme socle theorique (Axelrod + Moran), leviers de demonstration differents (viz riche cote Python, code from-scratch minimaliste cote C#)."

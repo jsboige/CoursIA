@@ -138,29 +138,50 @@ class TestMess3AliasToLegacy:
         legacy (obs couplee a l'etat). C'est un alias de compatibilite ;
         le banc NON-Dirac est :class:`Mess3Canonical` (DEPRECIE pour
         la geometrie de croyance)."""
-        assert Mess3 is Mess3_ObsCoupled
+        assert Mess3 is Mess3Canonical
 
 
 class TestRRXOR:
-    def test_emission_matrix_is_deterministic(self):
-        """RRXOR : y = b_{t-1} XOR b_t est deterministe.
-        La matrice d'emission E[i, y] = 1.0 si y = a XOR b (etat i = 2a+b)."""
-        r = RRXOR()
-        E = r.emission_matrix()
-        assert E.shape == (4, 2)
-        # etat 00 -> y=0 ; etat 01 -> y=1 ; etat 10 -> y=1 ; etat 11 -> y=0
-        np.testing.assert_allclose(E[0], [1.0, 0.0], atol=1e-10)
-        np.testing.assert_allclose(E[1], [0.0, 1.0], atol=1e-10)
-        np.testing.assert_allclose(E[2], [0.0, 1.0], atol=1e-10)
-        np.testing.assert_allclose(E[3], [1.0, 0.0], atol=1e-10)
+    """RRXOR conforme a la litterature (Riechers & Crutchfield 2018,
+    arXiv:1706.00883v1, Fig. 4) : machine Mealy a 5 etats causaux,
+    emissions sur les aretes, triplets (r1, r2, r1 XOR r2)."""
 
-    def test_stationary_is_uniform(self):
+    def test_edge_tensor_rows_stochastic(self):
+        """Chaque etat emet exactement une loi sur (fille, symbole)."""
+        r = RRXOR()
+        W = r.edge_tensor()
+        assert W.shape == (5, 5, 2)
+        np.testing.assert_allclose(W.sum(axis=(1, 2)), np.ones(5), atol=1e-12)
+
+    def test_edge_tensor_xor_edges_deterministic(self):
+        """Les aretes X -> G portent le XOR memorise, de facon deterministe."""
+        r = RRXOR()
+        W = r.edge_tensor()
+        # X0 -> G emet 0 ; X1 -> G emet 1 (probabilite 1)
+        np.testing.assert_allclose(W[3, 0, 0], 1.0, atol=1e-12)
+        np.testing.assert_allclose(W[4, 0, 1], 1.0, atol=1e-12)
+        np.testing.assert_allclose(W[3, :, :].sum(), 1.0, atol=1e-12)
+        np.testing.assert_allclose(W[4, :, :].sum(), 1.0, atol=1e-12)
+
+    def test_stationary_third_on_reset(self):
+        """Stationnaire : 1/3 sur G (phase de reset), 1/6 sur chaque autre."""
         r = RRXOR()
         s = r.stationary()
-        np.testing.assert_allclose(s, np.full(4, 0.25), atol=1e-10)
+        np.testing.assert_allclose(s, np.array([1/3, 1/6, 1/6, 1/6, 1/6]), atol=1e-12)
+        np.testing.assert_allclose(s @ r.transition_matrix(), s, atol=1e-12)
 
     def test_beliefs_sum_to_one(self):
         r = RRXOR()
         obs = np.array([0, 1, 0, 1, 1])
         b = r.beliefs(obs)
         np.testing.assert_allclose(b.sum(axis=1), np.ones(5), atol=1e-8)
+
+    def test_beliefs_two_zeros_then_prediction(self):
+        """Controle litterature : P(y3 = 0 | (0, 0)) = 2/3 -- le filtre
+        Mealy doit reproduire l'enumeration directe (l'ancien banc iid
+        donnait 1/2)."""
+        r = RRXOR()
+        b = r.beliefs(np.array([0, 0]))
+        W = r.edge_tensor()
+        p0 = float((b[-1] @ W[:, :, 0]).sum())
+        assert p0 == pytest.approx(2.0 / 3.0, abs=1e-10)

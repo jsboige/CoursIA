@@ -70,15 +70,15 @@ Les neuf notebooks de cette partie existent en **binôme bilingue** : une versio
 
 | # | Python (OR-Tools CP-SAT) | .NET (C#) | Solveur .NET |
 |---|--------------------------|-----------|--------------|
-| 1 | [CSP-1-Fundamentals](CSP-1-Fundamentals.html) | [CSP-1-Fundamentals-Csharp](CSP-1-Fundamentals-Csharp.html) | Choco-solver via IKVM |
-| 2 | [CSP-2-Consistency](CSP-2-Consistency.html) | [CSP-2-Consistency-Csharp](CSP-2-Consistency-Csharp.html) | Choco-solver via IKVM (propagation native) |
-| 3 | [CSP-3-Advanced](CSP-3-Advanced.html) | [CSP-3-Advanced-Csharp](CSP-3-Advanced-Csharp.ipynb) | Choco-solver via IKVM |
-| 4 | [CSP-4-Scheduling](CSP-4-Scheduling.html) | [CSP-4-Scheduling-Csharp](CSP-4-Scheduling-Csharp.html) | OR-Tools CP-SAT natif (+ section Choco comparative) |
-| 5 | [CSP-5-Optimization](CSP-5-Optimization.html) | [CSP-5-Optimization-Csharp](CSP-5-Optimization-Csharp.html) | Choco-solver via IKVM (contrainte globale `binPacking`) |
-| 6 | [CSP-6-Hybridization](CSP-6-Hybridization.html) | [CSP-6-Hybridization-Csharp](CSP-6-Hybridization-Csharp.html) | OR-Tools CP-SAT natif (LCG, CP+SAT) |
-| 7 | [CSP-7-Soft](CSP-7-Soft.html) | [CSP-7-Soft-Csharp](CSP-7-Soft-Csharp.html) | Choco-solver via IKVM (réification `reifyWith` / `ifThen`) |
-| 8 | [CSP-8-Temporal](CSP-8-Temporal.html) | [CSP-8-Temporal-Csharp](CSP-8-Temporal-Csharp.html) | OR-Tools CP-SAT natif (IntervalVar temporels) |
-| 9 | [CSP-9-Distributed](CSP-9-Distributed.html) | [CSP-9-Distributed-Csharp](CSP-9-Distributed-Csharp.html) | ABT multi-agent (port from scratch, Yokoo 1992) |
+| 1 | [CSP-1-Fundamentals](CSP-1-Fundamentals.html) | [CSP-1-Fundamentals-CSharp](CSP-1-Fundamentals-CSharp.html) | Choco-solver via IKVM |
+| 2 | [CSP-2-Consistency](CSP-2-Consistency.html) | [CSP-2-Consistency-CSharp](CSP-2-Consistency-CSharp.html) | Choco-solver via IKVM (propagation native) |
+| 3 | [CSP-3-Advanced](CSP-3-Advanced.html) | [CSP-3-Advanced-CSharp](CSP-3-Advanced-CSharp.ipynb) | Choco-solver via IKVM |
+| 4 | [CSP-4-Scheduling](CSP-4-Scheduling.html) | [CSP-4-Scheduling-CSharp](CSP-4-Scheduling-CSharp.html) | OR-Tools CP-SAT natif (+ section Choco comparative) |
+| 5 | [CSP-5-Optimization](CSP-5-Optimization.html) | [CSP-5-Optimization-CSharp](CSP-5-Optimization-CSharp.html) | Choco-solver via IKVM (contrainte globale `binPacking`) |
+| 6 | [CSP-6-Hybridization](CSP-6-Hybridization.html) | [CSP-6-Hybridization-CSharp](CSP-6-Hybridization-CSharp.html) | OR-Tools CP-SAT natif (LCG, CP+SAT) |
+| 7 | [CSP-7-Soft](CSP-7-Soft.html) | [CSP-7-Soft-CSharp](CSP-7-Soft-CSharp.html) | Choco-solver via IKVM (réification `reifyWith` / `ifThen`) |
+| 8 | [CSP-8-Temporal](CSP-8-Temporal.html) | [CSP-8-Temporal-CSharp](CSP-8-Temporal-CSharp.html) | OR-Tools CP-SAT natif (IntervalVar temporels) |
+| 9 | [CSP-9-Distributed](CSP-9-Distributed.html) | [CSP-9-Distributed-CSharp](CSP-9-Distributed-CSharp.html) | ABT multi-agent (port from scratch, Yokoo 1992) |
 
 > **Quel solveur .NET pour quel terrain ?** CSP-4 (ordonnancement `IntervalVar`, `NoOverlap`, `Cumulative`), CSP-6 (Lazy Clause Generation, CP+SAT) et CSP-8 (intervalles temporels) sont routés vers **OR-Tools CP-SAT natif** — le terrain où CP-SAT excelle, cf. *vrai outil SOTA pour le problème* (#3801). Les binômes 1, 2, 3, 5 et 7 illustrent **Choco via IKVM** comme levier de parité .NET pour une lib Java — y compris `binPacking`, contrainte globale dont la propagation surpasse la linéarisation BoolVar manuelle. CSP-9 (DisCSP) n'a pas de solveur off-the-shelf : l'algorithme ABT (Yokoo 1992) y est porté **from scratch** en C# multi-agent.
 

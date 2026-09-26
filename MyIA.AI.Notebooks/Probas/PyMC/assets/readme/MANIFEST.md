@@ -43,7 +43,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## pymc13-mcmc-diagnostics.png
 
-- **Source** : notebook `PyMC-06-Debugging.ipynb` (cellule 21, output 6)
+- **Source** : notebook `PyMC-02b-Debugging-Python.ipynb` (cellule 21, output 6)
 - **Description visuelle** : Figure ArviZ grille 2×2 (1189×413, fond blanc quasi-pur) avec **title général centré** « Trace plots : verifier le melange des chaines ». 4 panneaux : ligne 1 « hyper_mean » avec à gauche une **densité KDE bleue** (overlay 4 chaînes en pointillés + courbe pleine, axe X -10 à 17, pic ~5) + à droite un **trace plot** (axe X 0-2000 samples, axe Y -10 à 20, oscillation dense bleue semi-transparente autour de 5 + rug plot noir en bas marquant les samples) ; ligne 2 « hyper_sigma » symétrique (densité KDE à gauche, axe X 0.0-17.5, pic ~2, queue étalée vers 7+ ; trace plot à droite, axe Y 0-15, oscillations 0-10). Pas de panneau numérique R-hat/ESS visible. Stats RGB PIL : moyenne (233.16, 237.48, 240.46), std (55.07, 47.46, 44.17) — **B plus haut que R** (240 vs 233), std modéré typique d'une grille 2×2 sur fond pâle avec beaucoup de pixels bleus (KDE + trace dense). Cohérent avec un **diagnostic MCMC ArviZ `plot_trace` standard** (densité KDE + trace, **pas de R-hat/ESS numérique**).
 - **Alt-text (FR)** : Diagnostics MCMC : vérification visuelle du mélange des chaînes via KDE postérieure et trace plot pour les hyperparamètres.
 - **Poids** : 142.1 KB (PIL optimisé)

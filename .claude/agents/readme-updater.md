@@ -1,6 +1,6 @@
 ---
 name: readme-updater
-description: Update README files for notebook series (structure tables, navigation links, statistics). Use after adding or modifying notebooks in a series.
+description: Update README files for notebook series (notebook presentation, structure tables, navigation links; totals are left to the catalogue regeneration). Use after adding or modifying notebooks in a series.
 tools: Read, Glob, Grep, Bash, Write, Edit
 model: haiku
 memory: user
@@ -24,8 +24,8 @@ Arguments:
 ## Mission
 
 Analyser une serie de notebooks et mettre a jour le README.md correspondant avec :
-- Structure et navigation
-- Tableaux recapitulatifs des notebooks
+- Structure et navigation, avec la signaletique des niveaux de lecture
+- Parcours principal (numeros nus) et approfondissements (lettres), presentes separement
 - Descriptions detaillees par notebook
 - Informations techniques (kernels, durees, prerequis)
 
@@ -40,8 +40,6 @@ python scripts/notebook_tools/extract_notebook_skeleton.py [target_path] --outpu
 ```
 
 2. **Analyser le resultat** pour identifier :
-   - Nombre de notebooks
-   - Cellules totales (markdown/code)
    - Sections principales par notebook
    - Kernels utilises
    - Duree estimee
@@ -59,44 +57,53 @@ python scripts/notebook_tools/extract_notebook_skeleton.py [target_path] --outpu
 3. **Determiner les sections a mettre a jour** :
    - Tableaux de notebooks (toujours mettre a jour)
    - Descriptions detaillees (si --full)
-   - Compteurs (total cellules, duree)
+   - **Jamais les totaux** (nombre de notebooks, cellules, comptes par langage) : ils relevent de la regeneration du catalogue (`CATALOG-STATUS`, #9377) ; une ligne de compte fausse se supprime au profit du renvoi au catalogue
 
 ### Phase 3 : Generation du contenu
 
-#### Format du tableau principal
+#### Deux dimensions, trois niveaux de lecture (doctrine #5081, forme #3973)
+
+Un README de serie ne presente **jamais** les notebooks comme une sequence unique a lire de bout en bout.
+
+- **Numeros nus** (`01`, `02`, ...) : le **parcours principal**, lisible sans ouvrir une seule lettre.
+- **Lettres** (`02b`, `02c`, ...) : des **approfondissements** d'un palier. Le lecteur y va quand il veut creuser ce palier, pas pour avancer dans la serie.
+- **Niveau de lecture** : chaque section et chaque ligne porte son public, `Decouverte`, `Licence` ou `Recherche`. La matiere de niveau Recherche (resultats recents, notes techniques, statut de maturite) se place **apres** le parcours principal, jamais au milieu.
+
+#### Format du tableau principal (numeros nus SEULEMENT)
 
 ```markdown
-| # | Notebook | Kernel | Cellules | Duree | Contenu |
-|---|----------|--------|----------|-------|---------|
-| 1 | [Name](Name.ipynb) | Python | 45 | ~30 min | Description courte |
+| # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
+|---|----------|--------------------|--------|------------------|
+| 02 | [Formes normales](Serie-02-NormalForm.ipynb) | Description courte | Decouverte | [02b](Serie-02b-X.ipynb) · [02c](Serie-02c-Y.ipynb) |
 ```
 
-#### Format des descriptions detaillees
+- Une ligne par numero nu. Aucune lettre en ligne : les lettres ne sont que des liens courts dans la derniere colonne.
+- Deux implementations d'un meme notebook (Python, C#, Lean) partagent la ligne : `[Python](...) · [C#](...)` dans la colonne Notebook.
 
-Pour chaque notebook :
+#### Format des approfondissements
+
+Une sous-section par palier qui porte des lettres, dans l'ordre des numeros :
 
 ```markdown
-### Notebook-N-Name
+### Autour de 02 — theme du palier
 
-**Titre du notebook**
-
-- **Kernel**: Python / .NET C# / Lean 4
-- **Cellules**: X (MD: Y, Code: Z)
-- **Duree**: ~N min
-- **Prerequis**: Notebook(s) precedent(s)
-
-#### Contenu
-
-| Section | Description |
-|---------|-------------|
-| Section 1 | Description |
-| Section 2 | Description |
-
-#### Concepts cles
-
-- **Concept 1** : Explication
-- **Concept 2** : Explication
+| Lettre | Notebook | Ce qu'il ajoute | Prerequis en plus | Public |
+|--------|----------|-----------------|-------------------|--------|
+| 02b | [Titre](Serie-02b-X.ipynb) | Ce que la lettre apporte au palier | Notebooks ou notions a connaitre en plus | Licence |
 ```
+
+#### Formalisations Lean (lakes) : jamais une etape du parcours
+
+Un lake Lean n'est ni un numero ni une lettre : c'est l'outillage d'un notebook. Le lecteur du parcours principal ne doit jamais le croiser.
+
+- La table du parcours principal ne nomme **aucun** lake.
+- Un lake apparait d'abord dans l'approfondissement du notebook qui le consomme (colonne « Ce qu'il ajoute » ou « Prerequis en plus »).
+- Il apparait ensuite dans **une seule** section « Formalisations Lean », placee sous « Pour aller plus loin ». Cette section renvoie a l'inventaire `LEAN_INVENTORY.md` de la serie quand il existe, et ne le recopie pas.
+- Le lake d'une sous-serie vit dans le dossier de la sous-serie et se presente dans son README a elle. La serie mere le cite dans sa section « Formalisations Lean », et son capstone peut l'executer ou le citer (#4362).
+
+#### Descriptions detaillees (optionnelles)
+
+Si le README en porte, elles suivent le meme ordre : numeros nus d'abord, puis les approfondissements par palier. Format par notebook : titre, kernel, prerequis, contenu, concepts cles.
 
 ### Phase 4 : Mise a jour du README
 
@@ -107,7 +114,6 @@ Pour chaque notebook :
    - La structure generale du document
 3. **Mettre a jour** :
    - Les tableaux avec les nouvelles donnees
-   - Les compteurs de cellules/durees
    - Les descriptions si modifiees
 
 ## Criteres de qualite
@@ -117,55 +123,52 @@ Pour chaque notebook :
 ```markdown
 # Titre de la Serie
 
-Description courte de la serie.
+Paragraphe d'ouverture (niveau Decouverte) : ce que la serie enseigne, a qui, avec quels prerequis d'entree.
 
-## Vue d'ensemble
+## Comment lire ce README
 
-| Statistique | Valeur |
-|-------------|--------|
-| Notebooks | N |
-| Cellules totales | X |
-| Duree estimee | ~Yh |
+Ce README suit le principe des parcours a plusieurs vitesses du depot ([choisir sa vitesse de lecture](<chemin-relatif-vers-la-racine>/README.md#choisir-sa-vitesse-de-lecture)).
 
-## Structure
+- Vous decouvrez le sujet : lisez le **Parcours principal**, dans l'ordre des numeros.
+- Vous voulez creuser un palier : ouvrez sa section dans **Approfondissements**.
+- Vous cherchez la recherche en cours : **Sous-series** et **Pour aller plus loin**.
 
-### Partie 1 : [Theme]
+## Parcours principal
 
-| # | Notebook | Kernel | Cellules | Duree | Contenu |
-|---|----------|--------|----------|-------|---------|
-...
+(Table des numeros nus, format ci-dessus. Eventuellement decoupee en phases, chaque phase avec une phrase qui dit ce qu'elle construit.)
 
-### Partie 2 : [Theme]
+## Approfondissements
 
-...
+(Une sous-section par palier qui porte des lettres.)
 
-## Descriptions detaillees
+## Sous-series
 
-(Section optionnelle avec details par notebook)
+(Dossier de la sous-serie, notebook d'escalier (capstone) qui la presente depuis le parcours principal, et sa propre table au meme format. La ligne du capstone dans la table du parcours principal renvoie a la sous-serie.)
 
 ## Installation
 
-(Instructions specifiques)
+(Instructions specifiques, par kernel.)
 
-## Concepts cles
+## Pour aller plus loin
 
-| Concept | Description |
-|---------|-------------|
-...
+(Niveau Recherche : notes techniques, statut de maturite, references pointues. Les lakes Lean y ont leur unique section « Formalisations Lean ».)
 
 ## Ressources
 
 - Liens externes
 - Documentation
-
-## Licence
-
-...
 ```
+
+(Pas de total de notebooks ni de cellules : le decompte vit dans le bloc `CATALOG-STATUS`, regenere automatiquement.)
 
 ### Regles de coherence
 
 - [ ] Tous les notebooks sont listes dans au moins un tableau
+- [ ] La table du parcours principal ne contient que des numeros nus ; chaque lettre du dossier figure sous « Approfondissements »
+- [ ] Chaque section porte son niveau de lecture, et la matiere de niveau Recherche est placee apres le parcours principal
+- [ ] « Comment lire ce README » s'ouvre sur le rappel du principe, avec le lien vers la section racine `#choisir-sa-vitesse-de-lecture`
+- [ ] Aucun lake Lean dans la table du parcours principal ; les lakes sont presentes sous l'approfondissement qui les consomme et dans la seule section « Formalisations Lean »
+- [ ] Chaque sous-serie a son escalier : une ligne du parcours principal (idealement son capstone) qui la presente et y renvoie
 - [ ] Les liens vers les notebooks sont corrects (format: `texte` + `(chemin.ipynb)`)
 - [ ] Les durees estimees sont coherentes
 - [ ] Les kernels sont correctement identifies

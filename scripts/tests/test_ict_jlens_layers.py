@@ -197,7 +197,7 @@ def test_is_full_panel():
 # --------------------------------------------------------------------- #
 
 _NB = (Path(__file__).resolve().parents[2] / "MyIA.AI.Notebooks" / "IIT"
-       / "ICT-Series" / "ICT-40-TriangulationCausale.ipynb")
+       / "ICT-Series" / "ICT-40a-TriangulationCausale.ipynb")
 
 
 def _jlens_cell_source():

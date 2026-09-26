@@ -55,7 +55,7 @@ if str(_PARENT_DIR) not in sys.path:
 import dowhy_discovery_organs as ddo
 
 # Chemin du notebook consommateur (relatif a ce test).
-NB_PATH = _PARENT_DIR / "DoWhy-3-Decouverte-de-Structure.ipynb"
+NB_PATH = _PARENT_DIR / "CausalBridges-04-Dowhy-Decouverte-Structure.ipynb"
 
 # Le CPDAG canonique du monde par defaut (mesure, 20/20 seeds a alpha=0.01).
 # Convention du module : les aretes non orientees sont rendues en tuple TRIE.
@@ -312,8 +312,11 @@ def test_notebook_cellule_dgp_byte_identique_module():
 
 
 def test_notebook_cellule_pc_consomme_lorgane():
-    """La cellule PC (index 6) reference ddo.executer_pc."""
-    src = _lire_cellule(NB_PATH, 6)
+    """La cellule PC (index 7) reference ddo.executer_pc.
+
+    Note: index +1 depuis enrichissement markdown pedagogique (cellule 6 = intro markdown).
+    """
+    src = _lire_cellule(NB_PATH, 7)
     assert "ddo.executer_pc" in src
     assert "alpha=0.01" in src, (
         "le notebook motive alpha=0.01 pour PC (v-structure robuste 20/20)"

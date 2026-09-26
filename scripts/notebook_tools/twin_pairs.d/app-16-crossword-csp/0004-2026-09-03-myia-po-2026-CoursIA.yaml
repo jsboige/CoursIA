@@ -7,5 +7,5 @@ content_csharp_sha: d907f3d29190e7c73fcbeaff09749bc83dd432cb7680309e0d9c6c09a759
 reason: 'Re-attestation apres PR #14134 (App-16 Crossword CSP enrich Python) : markdown-only
   — 5 nouvelles cellules md (16->21), 0 changement de cellule code ; signature sha256
   des (source, execution_count, outputs) des 12 cellules code byte-identique base->HEAD
-  (0ccd53430085da89). Cote C# App-16-Crossword-CSP-Csharp.ipynb non touche. parity_level
+  (0ccd53430085da89). Cote C# App-16-Crossword-CSP-CSharp.ipynb non touche. parity_level
   native-both intacte.'

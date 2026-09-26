@@ -15,7 +15,8 @@ teste (docstring + imports) — sur les quatre axes qui fondent l'issue :
 et deux temoins sur le reel :
   - controle positif RETROACTIF : le scanner applique a l'etat PRE-a6720c7286
     (consolidation de la 3e paire) doit la voir — skip si l'historique git est
-    absent (clone shallow en CI) ;
+    absent (clone shallow en CI) ou si ses blobs ne sont pas materialisables
+    (fetch promisor en echec sur un clone partiel blob:none) ;
   - non-regression a l'etat courant : les modules extract ne sont PLUS en paire.
 
 Tous les tests de fixture sont hermetiques (tmp_path, aucun dependance reseau
@@ -213,29 +214,61 @@ def _commit_exists(rev: str) -> bool:
     return proc.returncode == 0
 
 
+class PromisorObjectUnavailable(RuntimeError):
+    """Blob absent d'un clone partiel, que le fetch promisor n'a pas pu ramener.
+
+    Ce n'est pas un verdict sur le scanner : c'est l'infrastructure de checkout
+    qui ne peut pas materialiser l'arbre historique (remote injoignable, quota
+    d'installation sature). Le test doit alors se declarer non jouable, pas
+    rougir -- un rouge d'infra sur un check REQUIS gele la merge de toute la
+    flotte.
+    """
+
+
+def _run_git(args: list, env: dict) -> str:
+    """Lance git et, en cas d'echec, remonte la cause dans l'erreur.
+
+    `check=True, capture_output=True` ne laissait dans le log CI que
+    « returned non-zero exit status 128 » : la cause reelle (un fetch promisor
+    en echec) etait invisible, et le rouge se lisait comme une regression du
+    scanner. Mesure du 2026-09-21 : c'est exactement ce qui a fait passer ce
+    rouge pour un defaut herite de la base pendant plusieurs heures.
+    """
+    proc = subprocess.run(
+        ["git", "-C", str(REPO_ROOT), *args],
+        check=False, env=env, capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
+    )
+    if proc.returncode != 0:
+        detail = (proc.stderr or proc.stdout or "").strip()
+        if "promisor remote" in detail:
+            raise PromisorObjectUnavailable(detail)
+        raise RuntimeError(f"git {' '.join(args)} -> exit {proc.returncode}\n{detail}")
+    return proc.stdout
+
+
 def _extract_scripts_tree(ref: str, dest: Path) -> None:
     """Extrait scripts/ au ref donne dans dest/scripts/, sans toucher l'index du clone.
 
-    `git archive` ne recupere pas a la demande les blobs manquants d'un clone
-    partiel blob:none (exit 128 mesure sur le runner CI, workdir promisor
-    frais) ; read-tree + checkout-index passent par le magasin d'objets
-    fetch-aware -- le meme chemin que la materialisation initiale du
-    checkout d'actions/checkout.
+    Sur un clone partiel `blob:none` (celui des workflows du depot :
+    `fetch-depth: 0` + `filter: blob:none`), `read-tree` suffit -- les arbres
+    sont presents -- mais les **blobs** de l'etat historique ne le sont pas.
+    `checkout-index` est bien fetch-aware (mesure : 2364 fichiers extraits d'un
+    clone blob:none dont le remote repond), mais quand ce fetch promisor
+    **echoue** il sort en 128 :
+
+        fatal: could not fetch <sha> from promisor remote
+
+    D'ou `PromisorObjectUnavailable`, que l'appelant traduit en test non
+    jouable. Les autres echecs git restent des echecs durs.
     """
     index = dest / "_extract_idx"
     env = {**os.environ, "GIT_INDEX_FILE": str(index)}
-    subprocess.run(
-        ["git", "-C", str(REPO_ROOT), "read-tree", ref + ":scripts"],
-        check=True, env=env, capture_output=True, text=True,
-        encoding="utf-8", errors="replace",
-    )
+    _run_git(["read-tree", ref + ":scripts"], env)
     prefix = (dest / "scripts").as_posix() + "/"
-    subprocess.run(
-        ["git", "-C", str(REPO_ROOT), "checkout-index", "-a", "--prefix=" + prefix],
-        check=True, env=env, capture_output=True, text=True,
-        encoding="utf-8", errors="replace",
-    )
+    _run_git(["checkout-index", "-a", "--prefix=" + prefix], env)
     index.unlink(missing_ok=True)
+
 
 @pytest.mark.skipif(
     not _commit_exists(PRE_CONSOLIDATION),
@@ -249,7 +282,13 @@ def test_retroactive_control_sees_third_pair_pre_consolidation(tmp_path):
     extracteurs) a cote des deux suites canoniques — invisible a toute cle de
     basename.
     """
-    _extract_scripts_tree(PRE_CONSOLIDATION, tmp_path)
+    try:
+        _extract_scripts_tree(PRE_CONSOLIDATION, tmp_path)
+    except PromisorObjectUnavailable as exc:
+        pytest.skip(
+            "blobs historiques non materialisables (fetch promisor en echec) : "
+            f"controle retroactif non jouable -- {exc}"
+        )
 
     result = scanner.scan(tmp_path)
     pairs = _pairs_by_module(result)

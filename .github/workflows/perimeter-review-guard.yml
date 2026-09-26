@@ -125,7 +125,28 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           PR="${{ github.event.pull_request.number }}"
-          python scripts/check_pr_perimeter.py "$PR" --scan-thread || {
+          # The organ has THREE outcomes, and the wrapper used to collapse
+          # them into one (`|| { echo <contradiction>; exit 1; }`): any
+          # non-zero code, exit 2 included, was spelled as a perimeter
+          # contradiction. A refused read then told the author their
+          # assertion contradicts their files -- a verdict that was never
+          # measured (measured 2026-09-21: four runs, four heads, all
+          # `API rate limit exceeded`).
+          #
+          #   0 -> checked (or a named PERIMETRE NON MESURABLE, #14292)
+          #   1 -> a real contradiction: keep the message and the red
+          #   2 -> could NOT measure (unrecognised transport failure):
+          #        fail-closed is preserved, but say what actually happened.
+          #        A transient, RECOGNISED signature exits 0 from the organ
+          #        itself and never reaches here.
+          if python scripts/check_pr_perimeter.py "$PR" --scan-thread; then
+            exit 0
+          else
+            rc=$?
+          fi
+          if [ "$rc" -eq 1 ]; then
             echo "::error::A perimeter assertion on this PR (body or review) contradicts the effective file list, or an exclusivity claim does not name a touched .github/workflows/** file. Truth source: gh pr view $PR --json files (#11268). Fix the assertion to enumerate the real files."
             exit 1
-          }
+          fi
+          echo "::error::le garde n'a PAS pu mesurer le perimetre de la PR $PR (rc=$rc) -- verdict UNKNOWN, ce n'est PAS une contradiction de perimetre. Aucune assertion n'a ete confrontee. Relancer ce job ; si l'echec se repete, la cause est amont (quota d'API partage par compte, cf #17229)."
+          exit 1

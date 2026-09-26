@@ -1,0 +1,69 @@
+NOTICE — CoursIA `data/argumentum_scenarii_cards.csv`
+==============================================================================
+
+Ce fichier est une copie verbatim du fichier amont d'Argumentum
+`Cards/Scenarii/Argumentum Scenarii - Cards.csv` au commit de sous-module
+**0ab05d66576a1007c3952a67e2dd1eaf8f9b502c** (le pin de
+`MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum` sur `main` au
+moment de la copie, 2026-09-23).
+
+Dépôt source      : https://github.com/ArgumentumGames/Argumentum
+Chemin source     : `Cards/Scenarii/Argumentum Scenarii - Cards.csv`
+SHA1 source       : 9f20eb808a1d22c9c1a5dd1b96460b0d6a23db60 (blob git)
+SHA-256           : 46bf5d62f5930eab3be13c3476ef93b547c54135129bc4514b32213ec457a288
+Licence amont     : GNU Lesser General Public License v3 (LGPL-3.0),
+                    fichier `LICENSE` au commit épinglé.
+
+Copie verbatim
+--------------
+
+Identique octet pour octet au fichier amont au commit épinglé : même contenu,
+même encodage (UTF-8 sans BOM), mêmes fins de ligne (CRLF sur les 168 lignes :
+un en-tête + 167 scénarii), 557 564 octets. Aucune modification CoursIA. La
+règle `-text` du `.gitattributes` racine empêche git de normaliser les fins de
+ligne : le blob stocké reste égal au blob amont.
+`scripts/fallacy_detection/cartesian_dataset_builder.py` refuse de charger le
+fichier si son SHA1 de blob diffère de celui ci-dessus.
+
+Raison de la copie
+------------------
+
+La Phase 2 de l'EPIC #10355 (issue #17578) construit son dataset comme le
+produit cartésien Scénarii × taxonomies Argumentum, sur décision owner du
+2026-08-22 : « CoursIA a besoin de tout le matériel, toute les taxonomies en
+entier (pas juste les cartes), ainsi que tous les scenarii pour faire le
+produit cartésien ». Les deux taxonomies sont déjà copiées dans
+`MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/` avec leurs propres
+NOTICE ; ce fichier est la troisième source.
+
+Licence — deux marques, la plus stricte s'applique
+--------------------------------------------------
+
+1. Le dépôt amont est distribué sous **LGPL-3.0** (son fichier `LICENSE`).
+   Conformément à la section 4 de la LGPL v3, les textes de la LGPL et de la
+   GPL-3 sont attachés à ce dépôt dans
+   `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/` :
+     - `LICENSE-LGPL-3.0.txt` — sha256 e3a994d82e644b03a792a930f574002658412f62407f5fee083f2555c5f23118
+     - `LICENSE-GPL-3.0.txt`  — sha256 3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986
+2. Les cartes Scénarii imprimées portent aussi une marque **Creative Commons
+   BY-NC-SA** : le gabarit de face au commit épinglé
+   (`Cards/Scenarii/Argumentum_Scenarii_Face_fr.json`) affiche les icônes cc,
+   by, nc (dollar) et sa (flèche de retour), suivies de la colonne `CCby`, qui
+   vaut `Argumentum` sur les 167 lignes.
+
+Tant que l'owner n'a pas précisé laquelle des deux marques régit le contenu
+textuel des scénarii, CoursIA applique la lecture la plus stricte à ce fichier
+et à tout ce qui en dérive (splits de la Phase 2, textes générés) :
+**attribution « Argumentum », usage non commercial, partage dans les mêmes
+conditions**. La colonne `CCby` est conservée telle quelle et doit suivre tout
+dataset dérivé.
+
+Resynchronisation
+-----------------
+
+Recopier le fichier depuis le sous-module à son nouveau pin (`git show
+<pin>:"Cards/Scenarii/Argumentum Scenarii - Cards.csv"`), puis mettre à jour
+le commit, le SHA1 et le SHA-256 ci-dessus, ainsi que
+`SCENARII_UPSTREAM_COMMIT` et `SCENARII_BLOB_SHA1` dans le constructeur. Ne
+jamais éditer le CSV à la main : le constructeur le refuserait, et la copie
+cesserait d'être verbatim.

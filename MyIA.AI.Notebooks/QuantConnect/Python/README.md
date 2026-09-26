@@ -1,8 +1,8 @@
 <!-- CATALOG-STATUS
 series: QuantConnect-Python
-pedagogical_count: 55
-breakdown: Python=55
-maturity: DRAFT=31, BETA=16, ALPHA=8
+pedagogical_count: 58
+breakdown: Python=58
+maturity: DRAFT=32, BETA=18, ALPHA=8
 -->
 
 # QuantConnect Python Notebooks
@@ -45,6 +45,7 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-03-Data-Management | NON EXÉCUTÉ | |
 | QC-Py-04-Research-Workflow | NON EXÉCUTÉ | |
 | QC-Py-05-Universe-Selection | NON EXÉCUTÉ | |
+| QC-Py-05b-FScore-Piotroski | EXÉCUTÉ | CPU local (yfinance/numpy/scipy), cellules code exécutées, données réelles 14 titres |
 | QC-Py-06-Options-Trading | NON EXÉCUTÉ | |
 | QC-Py-06b-Derivatives-Valuation-From-Scratch | EXÉCUTÉ | CPU local (numpy/scipy), 13/13 cellules code, 3 figures |
 | QC-Py-07-Futures-Forex | NON EXÉCUTÉ | |
@@ -56,6 +57,7 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-12b-Backtest-Validity | EXÉCUTÉ | |
 | QC-Py-13-Alpha-Models | NON EXÉCUTÉ | |
 | QC-Py-14-Portfolio-Construction-Execution | NON EXÉCUTÉ | |
+| QC-Py-14b-Liquidity-Execution-Costs | EXÉCUTÉ | CPU local (yfinance/pandas/numpy), cellules exécutées, figures committées |
 | QC-Py-15-Parameter-Optimization | NON EXÉCUTÉ | |
 | QC-Py-16-Alternative-Data | NON EXÉCUTÉ | |
 | QC-Py-17-Sentiment-Analysis | NON EXÉCUTÉ | |
@@ -155,6 +157,7 @@ Chaque notebook de la série rend visible un geste quantitatif distinct, dans un
 | Notebook | Contenu |
 |----------|---------|
 | [QC-Py-05-Universe-Selection](QC-Py-05-Universe-Selection.ipynb) | Univers dynamiques, filtres fondamentaux |
+| [QC-Py-05b-FScore-Piotroski](QC-Py-05b-FScore-Piotroski.ipynb) | F-Score de Piotroski : les 9 sous-scores sur données réelles, convention de datation article vs papier 2000, critique de liquidité, variance small-univers mesurée (#17770) |
 | [QC-Py-06-Options-Trading](QC-Py-06-Options-Trading.ipynb) | Chaînes d'options, greeks, stratégies couvertes |
 | [QC-Py-06b-Derivatives-Valuation-From-Scratch](QC-Py-06b-Derivatives-Valuation-From-Scratch.ipynb) | Complément from-scratch de QC-Py-29 : les trois moteurs reconstruits à la main, put américain, asiatique arithmétique, variables de contrôle (#16239) |
 | [QC-Py-07-Futures-Forex](QC-Py-07-Futures-Forex.ipynb) | Contrats à terme, devises, hedging |
@@ -171,6 +174,7 @@ Chaque notebook de la série rend visible un geste quantitatif distinct, dans un
 | [QC-Py-12b-Backtest-Validity](QC-Py-12b-Backtest-Validity.ipynb) | Erreur-type du Sharpe (Lo 2002), signification statistique du backtest |
 | [QC-Py-13-Alpha-Models](QC-Py-13-Alpha-Models.ipynb) | Framework Alpha, signaux, combinaison |
 | [QC-Py-14-Portfolio-Construction-Execution](QC-Py-14-Portfolio-Construction-Execution.ipynb) | Construction portefeuille, exécution |
+| [QC-Py-14b-Liquidity-Execution-Costs](QC-Py-14b-Liquidity-Execution-Costs.ipynb) | Liquidité et coûts d'exécution : proxys (ADV, Amihud, Corwin-Schultz), loi racine, capacité, stress COVID réel (#16239) |
 | [QC-Py-15-Parameter-Optimization](QC-Py-15-Parameter-Optimization.ipynb) | Optimization, grid search, walk-forward |
 | [QC-Py-16-Alternative-Data](QC-Py-16-Alternative-Data.ipynb) | données alternatives, sentiment, fundamentals |
 | [QC-Py-17-Sentiment-Analysis](QC-Py-17-Sentiment-Analysis.ipynb) | NLP, analyse sentiment, signaux textuels |

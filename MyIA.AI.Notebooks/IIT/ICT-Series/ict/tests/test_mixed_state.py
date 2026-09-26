@@ -6,8 +6,10 @@ sur l'arbre des sequences d'observations possibles (arXiv:2405.15943 §2.2).
 Ces tests verifient que :
 - la MSP du banc :class:`Mess3Canonical` (non-Dirac) croit en 3^k
   croyances distinctes jusqu'a profondeur k=3 (1, 3, 9, 27),
-- la MSP du banc :class:`RRXOR` plafonne a 2 croyances (alphabet binaire,
-  observation deterministe y = a XOR b),
+- la MSP du banc :class:`RRXOR` conforme (Riechers & Crutchfield 2018,
+  arXiv:1706.00883v1) compte **36** croyances distinctes en union :
+  31 transitoires + 5 recurrentes (les Diracs causaux) -- la valeur
+  exacte de la litterature (p. 17, Fig. 7),
 - les invariants canoniques (somme=1 par ligne, entropie non-croissante
   par profondeur, concordance avec la filtration forward) tiennent.
 """
@@ -46,14 +48,60 @@ class TestMSPMess3Canonical:
 
 
 class TestMSPRRXOR:
-    """RRXOR : alphabet binaire (y = XOR de 2 bits) -> 2 croyances
-    distinctes apres la premiere observation. La MSP ne croît pas avec k."""
+    """RRXOR conforme (Riechers & Crutchfield 2018) : S-MSP de 36 croyances.
 
-    def test_two_beliefs_per_depth_after_first(self):
-        msp = msp_rrxor(max_depth=5)
-        assert msp.n_distinct(0) == 1
-        for d in range(1, 5):
-            assert msp.n_distinct(d) == 2, f"depth {d} != 2"
+    L'union des croyances distinctes depuis le prior stationnaire vaut 36 :
+    31 transitoires (resolution de l'ambiguite de phase de la modulation
+    periodique d'ordre 3) + 5 recurrentes (les Diracs sur les etats causaux).
+    Valeur de litterature : arXiv:1706.00883v1, p. 17, Fig. 7."""
+
+    def test_union_is_36_literature_value(self):
+        """Le critere d'acceptation de l'issue #16225 : 36 croyances."""
+        msp = msp_rrxor()
+        assert msp.n_distinct_total() == 36
+
+    def test_five_recurrent_diracs_reached(self):
+        """Les 5 Diracs causaux sont des croyances de la MSP (recurrentes)."""
+        msp = msp_rrxor()
+        keys = {_round_belief(b) for level in msp.nodes for b in level}
+        for i in range(5):
+            e = np.zeros(5)
+            e[i] = 1.0
+            assert _round_belief(e) in keys, f"Dirac {i} absent de la MSP"
+
+    def test_growth_then_closure(self):
+        """Croissance 1, 2, 4, 8, 12 par profondeur puis fermeture : plus
+        aucune croyance nouvelle apres profondeur 7 (regime synchronise)."""
+        msp = msp_rrxor(max_depth=10)
+        per_level = [msp.n_distinct(d) for d in range(msp.depth)]
+        assert per_level[:5] == [1, 2, 4, 8, 12]
+        # fermeture : le cardinal par niveau se stabilise
+        assert per_level[7] == per_level[8] == per_level[9]
+        assert msp.n_distinct_total() == 36
+
+    def test_distinct_beliefs_same_next_token(self):
+        """Dissociation de la litterature : des croyances DISTINCTES partagent
+        la meme distribution next-token (arXiv:2405.15943 §3.2 -- c'est ce qui
+        fonde la separation belief/next-token que ICT-37 mesure)."""
+        r = RRXOR()
+        msp = msp_rrxor()
+        Wsum = r.edge_tensor().sum(axis=1)  # Wsum[s, y] = P(y | etat s)
+
+        def next_token_dist(b):
+            return tuple(np.round(b @ Wsum, 8))
+
+        groups = {}
+        for level in msp.nodes:
+            for b in level:
+                groups.setdefault(next_token_dist(b), []).append(_round_belief(b))
+        # 36 croyances pour moins de 36 predictions : la carte belief ->
+        # next-token est non injective
+        assert len(groups) < msp.n_distinct_total()
+        # cas explicite : prior stationnaire et les deux croyances de
+        # profondeur 1 (apres obs 0 et apres obs 1) -- trois croyances
+        # distinctes, meme prediction (1/2, 1/2)
+        uniform = groups.get((0.5, 0.5), [])
+        assert len({tuple(b) for b in uniform}) >= 3
 
 
 class TestMSPInvariants:

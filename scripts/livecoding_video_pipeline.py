@@ -1,14 +1,17 @@
 """V0 narrow du pipeline livecoding-video (issue #15604, homage a une voix tierce).
 
-**Scope V0 narrow** (c.573, fenetre 30 min) :
-Cette V0 livre UNIQUEMENT l'etape 1 du pipeline (composition Strudel
-multi-pistes) et le squelette de l'orchestrateur. Les etapes 2 a 6
-(narration LLM, TTS, capture navigateur Playwright, visualizer, mixage
-ffmpeg) sont **documentation-ONLY** dans ce fichier : elles listent
-l'API prevue, le verdict SOTA attendu, et les risques identifies, mais
-ne sont pas implementees. C'est une V0 *honestement incomplete* (HARD
-Tell c.1102 : pas de pipeline squelette qui pretend faire la capture
-quand il ne fait que composer).
+**Scope** (V0 c.573 + etape 4 c.580) :
+Etape 1 (composition Strudel multi-pistes) livree en V0. Etape 4
+(capture navigateur) livree ensuite : le REPL strudel.cc est pilote
+par Playwright headed — pattern injecte par hash d'URL, visuals
+declares dans le code (``.pianoroll()`` / ``.scope()``), audio exporte
+par le moteur offline NATIF du REPL (Export to WAV, aucune
+instrumentation WebAudio, aucun routage systeme VB-Cable), video
+capturee par ``canvas.captureStream`` + MediaRecorder, mux ffmpeg.
+Les etapes restantes (2 narration LLM, 3 TTS, 5 visualizer custom,
+6 mixage ffmpeg complet) restent documentation-ONLY (HARD Tell
+c.1102 : pas de pipeline squelette qui pretend faire ce qu'il ne
+fait pas).
 
 **Etats cles** (cf issue #15604 et c.446 demucs Phase A deferree) :
 - Composition Strudel via template parametrable (PAS de LLM libre en
@@ -22,9 +25,10 @@ quand il ne fait que composer).
   `MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-5-LiveCoding-LLM-Music.ipynb`.
 - Etape 3 TTS Kokoro/FishAudio : `scripts/audiobook_pipeline.py`
   deja disponible, integration differee a un cycle c.574+.
-- Etape 4 capture Playwright sur `https://strudel.cc/` : necessite
-  verification routage audio Windows (VB-Cable/BlackHole), risques
-  identifies dans issue #15604. PoC 30 s a faire d'abord.
+- Etape 4 capture Playwright sur `https://strudel.cc/` : LIVREE (c.580).
+  Le risque « routage audio Windows (VB-Cable/BlackHole)» est leve par
+  design : l'audio vient de l'export offline NATIF du REPL (rendu
+  OfflineAudioContext cote strudel.cc), pas d'une capture systeme.
 - Etape 5 visualizer custom : V1 only.
 - Etape 6 mixage ffmpeg : `scripts/audiobook_pipeline.py` a deja
   l'integration loudnorm -14 LUFS + fade-out.
@@ -39,8 +43,10 @@ aucune archive media dans le depot. La methode (narration + composition
 from __future__ import annotations
 
 import argparse
+import math
 import sys
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Dict, List, Optional
 
 # --- V0 narrow : composition Strudel multi-pistes par template ----------------
@@ -105,6 +111,7 @@ def compose_strudel(
     style_name: str,
     duration_seconds: int = 180,
     voices: int = 4,
+    visuals: bool = False,
 ) -> str:
     """Compose un script Strudel multi-pistes conforme au style.
 
@@ -113,6 +120,10 @@ def compose_strudel(
       ``melancholy``).
     - duration_seconds : duree cible (3-10 min).
     - voices : nombre de voix paralleles a superposer (1-4).
+    - visuals : ajoute les visuals REPL (``.scope()`` sur la voix basse,
+      ``.pianoroll()`` sur la voix lead). Sans visuals declares, le
+      canvas du REPL reste noir : c'est la condition de la capture
+      video de l'etape 4.
 
     Retourne : une string Strudel executable cote navigateur
     (chargeable via ``strudel.cc`` ou integration ``<strudel-editor>``).
@@ -148,8 +159,12 @@ def compose_strudel(
     lines: List[str] = []
     lines.append(f"// Livecoding video — style={style.name} BPM={style.bpm} duration={duration_seconds}s")
     lines.append(f"setcps({cps:.4f})")
+    # Map des visuals par index de voix (formes validees sur strudel.cc,
+    # c.580 probe : `.scope()` sur la basse, `.pianoroll()` sur le lead).
+    visuals_by_voice = {1: ".scope()", 2: ".pianoroll()"}
     for i, pat in enumerate(patterns):
-        lines.append(f"$: {pat}")
+        suffix = visuals_by_voice.get(i, "") if visuals else ""
+        lines.append(f"$: {pat}{suffix}")
 
     # Bloc fade-out coordonne : multiplier la sortie par une rampe
     # lineaire decroissante sur les 8 derniers cycles.
@@ -163,6 +178,15 @@ def compose_strudel(
 # --- V0 narrow : orchestrateur scaffold ---------------------------------------
 
 
+def style_cps(style_name: str) -> float:
+    """Cycles par seconde du style ( meme regle que compose_strudel )."""
+    if style_name not in STYLES:
+        raise ValueError(
+            f"style {style_name!r} inconnu ; styles disponibles : {sorted(STYLES.keys())}"
+        )
+    return STYLES[style_name].bpm / 60.0 / 2.0
+
+
 def run_pipeline(
     style_name: str,
     duration_seconds: int,
@@ -170,6 +194,9 @@ def run_pipeline(
     tts_voice: Optional[str] = None,
     playwright_url: str = "https://strudel.cc/",
     ffmpeg_loudnorm_lufs: float = -14.0,
+    capture: bool = False,
+    capture_seconds: int = 30,
+    headless: bool = False,
 ) -> Dict[str, Optional[str]]:
     """Orchestrateur V0 narrow : compose le script Strudel et documente
     les autres etapes.
@@ -191,20 +218,214 @@ def run_pipeline(
     Retourne : dict avec cles 'strudel_script', 'narration', 'tts',
     'browser_capture', 'visualizer', 'final_mix', 'verdict'.
     """
-    strudel = compose_strudel(style_name=style_name, duration_seconds=duration_seconds)
+    strudel = compose_strudel(
+        style_name=style_name,
+        duration_seconds=duration_seconds,
+        visuals=capture,
+    )
+
+    browser_capture: object = f"deferred ({playwright_url})"
+    final_mix: object = f"deferred ({output_path}, loudnorm {ffmpeg_loudnorm_lufs} LUFS)"
+    if capture:
+        capture_result = capture_repl_session(
+            pattern=strudel,
+            output_dir=Path(output_path).parent,
+            capture_seconds=capture_seconds,
+            cycles=cycles_for_duration(style_cps(style_name), capture_seconds) + 1,
+            headless=headless,
+        )
+        browser_capture = (
+            f"LIVREE : {capture_result['final_mp4']} "
+            f"({capture_result['mp4_bytes']} octets, video webm "
+            f"{capture_result['video_bytes']} + wav {capture_result['wav_bytes']})"
+        )
+        final_mix = f"PoC mux ffmpeg LIVRE : {capture_result['final_mp4']} (loudnorm complet = etape 6)"
 
     return {
         "strudel_script": strudel,
         "narration": "deferred",          # Phase B — LLM segments timestampes
         "tts": "deferred" if tts_voice is None else f"requested={tts_voice}",
-        "browser_capture": f"deferred ({playwright_url})",
+        "browser_capture": browser_capture,
         "visualizer": "deferred (V1 only — capture Strudel inclut scope/pianoroll)",
-        "final_mix": f"deferred ({output_path}, loudnorm {ffmpeg_loudnorm_lufs} LUFS)",
+        "final_mix": final_mix,
         "verdict": (
-            "V0 narrow : etape 1 livree (composition Strudel), "
-            "etapes 2-6 deferred a c.574+ avec claim explicite par "
-            "phase (Tell c.574 strict anti-WIP-collisions)."
+            "Etape 1 (composition) + etape 4 (capture navigateur : export WAV "
+            "offline natif + MediaRecorder + mux ffmpeg) livrees ; etapes "
+            "2/3/5/6 deferred avec claim explicite par phase."
         ),
+    }
+
+
+# --- Etape 4 : capture navigateur Playwright sur strudel.cc (c.580) ----------
+
+
+def build_repl_url(pattern: str, repl_base: str = "https://strudel.cc/") -> str:
+    """Construit l'URL de partage du REPL strudel.cc pour un pattern.
+
+    Encodage observe firsthand sur le bouton ``share`` du REPL (c.580) :
+    ``#`` + ``encodeURIComponent(base64(code))``. L'URI-encoding est
+    OBLIGATOIRE — un base64 brut avec ``+`` ou ``==`` n'est pas charge.
+    """
+    import base64
+    import urllib.parse
+
+    return repl_base + "#" + urllib.parse.quote(base64.b64encode(pattern.encode("utf-8")).decode("ascii"))
+
+
+def cycles_for_duration(cps: float, duration_seconds: float) -> int:
+    """Nombre de cycles strudel couvrant ``duration_seconds`` a ``cps``."""
+    if cps <= 0:
+        raise ValueError(f"cps doit etre positif, recu {cps}")
+    if duration_seconds <= 0:
+        raise ValueError(f"duration_seconds doit etre positif, recu {duration_seconds}")
+    return int(math.ceil(duration_seconds * cps))
+
+
+_CANVAS_CHECKSUM_JS = """
+() => {
+  const c = document.querySelector('canvas');
+  if (!c) throw new Error('pas de canvas REPL');
+  const ctx = c.getContext('2d');
+  const d = ctx.getImageData(0, 0, c.width, c.height).data;
+  let h = 0;
+  for (let i = 0; i < d.length; i += 4096) h = (h * 31 + d[i]) >>> 0;
+  return h;
+}
+"""
+
+# Recorder in-page : captureStream(30) sur le canvas REPL + MediaRecorder vp9,
+# retourne le webm en base64. Le canvas doit ETRE anime (visuals declares) —
+# captureStream n'emets aucune frame sur un canvas immobile (mesure c.580 :
+# 0 octet enregistres sur canvas noir).
+_RECORDER_JS = """
+async (durationMs) => {
+  const c = document.querySelector('canvas');
+  const stream = c.captureStream(30);
+  const mime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+    ? 'video/webm;codecs=vp9' : 'video/webm';
+  const mr = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 4000000 });
+  const chunks = [];
+  mr.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+  const done = new Promise((res) => { mr.onstop = () => res(new Blob(chunks, { type: mime })); });
+  mr.start(1000);
+  await new Promise((r) => setTimeout(r, durationMs));
+  mr.stop();
+  const blob = await done;
+  if (!blob.size) throw new Error('MediaRecorder: 0 octet — canvas immobile (visuals absents ?)');
+  const b64 = await new Promise((res) => {
+    const fr = new FileReader();
+    fr.onload = () => res(fr.result.split(',')[1]);
+    fr.readAsDataURL(blob);
+  });
+  return { size: blob.size, type: blob.type, nChunks: chunks.length, b64 };
+}
+"""
+
+
+def mux_ffmpeg(video_webm: Path, audio_wav: Path, out_mp4: Path) -> List[str]:
+    """Construit la commande de mux ffmpeg video+audio -> mp4 (H.264/AAC).
+
+    ``-shortest`` aligne la duree sur la piste la plus courte : la capture
+    video (reelle) et le WAV exporte (cycles arrondis) different de <1 cycle.
+    """
+    return [
+        "ffmpeg", "-y",
+        "-i", str(video_webm),
+        "-i", str(audio_wav),
+        "-c:v", "libx264", "-crf", "18", "-pix_fmt", "yuv420p",
+        "-c:a", "aac", "-b:a", "192k",
+        "-shortest",
+        str(out_mp4),
+    ]
+
+
+def capture_repl_session(
+    pattern: str,
+    output_dir: Path,
+    capture_seconds: int = 30,
+    cycles: Optional[int] = None,
+    headless: bool = False,
+    warmup_seconds: float = 5.0,
+) -> Dict[str, object]:
+    """Pilote le REPL strudel.cc et capture la session (etape 4, #15604).
+
+    Sequence validee firsthand (c.580, probes MCP + playwright Python) :
+    1. URL de partage (hash) -> le REPL charge le pattern au reload ;
+    2. clic ``play`` (geste trusted, headed requis : un clic JS n'est pas
+       un user gesture et l'AudioContext live reste suspendu) ;
+    3. les visuals declares (``.pianoroll()``/``.scope()`` dans le code)
+       animent le canvas — gate par checksum avant l'enregistrement ;
+    4. ``canvas.captureStream`` + MediaRecorder -> webm base64 ;
+    5. menu ``export`` -> ``Export to WAV`` : rendu offline NATIF du
+       moteur strudel (aucun routage audio systeme), download capture ;
+    6. ffmpeg mux -> mp4 (H.264/AAC).
+
+    Retourne un dict : ``video_webm``, ``audio_wav``, ``final_mp4``,
+    ``video_bytes``, ``wav_bytes``, ``mp4_bytes``, ``cycles``.
+    """
+    import base64
+
+    from playwright.sync_api import sync_playwright
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    video_webm = output_dir / "capture.webm"
+    audio_wav = output_dir / "capture.wav"
+    final_mp4 = output_dir / "capture_final.mp4"
+    url = build_repl_url(pattern)
+
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch(headless=headless)
+        page = browser.new_page(viewport={"width": 1280, "height": 1024})
+        try:
+            page.goto(url)
+            page.wait_for_timeout(5000)
+            page.get_by_role("button", name="play").first.click(timeout=10_000)
+            page.wait_for_timeout(int(warmup_seconds * 1000))
+
+            h1 = page.evaluate(_CANVAS_CHECKSUM_JS)
+            page.wait_for_timeout(2000)
+            h2 = page.evaluate(_CANVAS_CHECKSUM_JS)
+            if h1 == h2:
+                raise RuntimeError(
+                    "canvas REPL immobile apres play — visuals absents du "
+                    "pattern (compose_strudel(visuals=True)) ou play non effectif"
+                )
+
+            rec = page.evaluate(_RECORDER_JS, int(capture_seconds * 1000))
+            video_webm.write_bytes(base64.b64decode(rec["b64"]))
+
+            # Export WAV natif : le bouton play est devenu '...' (lecture en
+            # cours) ; l'export stoppe la lecture lui-meme (cyclist stop).
+            # Le panneau menu est parfois DEJA ouvert au chargement (hash) :
+            # cliquer 'menu' le refermerait — n'ouvrir que si ferme.
+            if page.get_by_role("button", name="Close Menu").count() == 0:
+                page.get_by_role("button", name="menu", exact=True).click(timeout=10_000)
+                page.wait_for_timeout(600)
+            page.get_by_role("button", name="export", exact=True).click(timeout=10_000)
+            page.wait_for_timeout(600)
+            if cycles is not None:
+                page.get_by_role("spinbutton").nth(1).fill(str(cycles))
+            with page.expect_download(timeout=300_000) as download_info:
+                page.get_by_role("button", name="Export to WAV").click()
+            download_info.value.save_as(str(audio_wav))
+        finally:
+            browser.close()
+
+    import subprocess
+
+    cmd = mux_ffmpeg(video_webm, audio_wav, final_mp4)
+    proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if proc.returncode != 0:
+        raise RuntimeError(f"ffmpeg a echoue ({proc.returncode}) : {proc.stderr[-800:]}")
+
+    return {
+        "video_webm": str(video_webm),
+        "audio_wav": str(audio_wav),
+        "final_mp4": str(final_mp4),
+        "video_bytes": video_webm.stat().st_size,
+        "wav_bytes": audio_wav.stat().st_size,
+        "mp4_bytes": final_mp4.stat().st_size,
+        "cycles": cycles,
     }
 
 
@@ -246,6 +467,24 @@ def _build_arg_parser() -> argparse.ArgumentParser:
         default=None,
         help="voix TTS Kokoro/FishAudio (optionnel, deferred en V0)",
     )
+    parser.add_argument(
+        "--capture",
+        action="store_true",
+        help="etape 4 : piloter strudel.cc (Playwright headed), capturer le "
+             "canvas (MediaRecorder) + exporter le WAV natif, mux ffmpeg",
+    )
+    parser.add_argument(
+        "--capture-seconds",
+        type=int,
+        default=30,
+        help="duree de capture video en secondes (default: 30)",
+    )
+    parser.add_argument(
+        "--headless",
+        action="store_true",
+        help="lancer Chromium headless (DECONSEILLE : le canvas REPL ne "
+             "s'anime pas sans fenetre compositée — mesure c.580)",
+    )
     return parser
 
 
@@ -256,12 +495,15 @@ def main(argv: Optional[List[str]] = None) -> int:
         duration_seconds=args.duration,
         output_path=args.output,
         tts_voice=args.tts_voice,
+        capture=args.capture,
+        capture_seconds=args.capture_seconds,
+        headless=args.headless,
     )
-    # Verdict V0 narrow explicite — Tell c.1102 anti-stonewall
+    # Verdict explicite — Tell c.1102 anti-stonewall
     print("=== Strudel script (etape 1, livree) ===")
     print(result["strudel_script"])
     print()
-    print("=== Status des etapes 2-6 (deferred c.574+) ===")
+    print("=== Status des etapes 2-6 ===")
     for key in ("narration", "tts", "browser_capture", "visualizer", "final_mix"):
         print(f"  {key}: {result[key]}")
     print()

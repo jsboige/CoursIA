@@ -6,5 +6,6 @@
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Z3 quantifiers & proofs branche NATIVEMENT des deux cotes : Microsoft.Z3 .NET (`#r \"nuget: Microsoft.Z3\"` + `using Microsoft.Z3;`, ctx.MkForall/MkExists, Solver.Check() = Status.UNSATISFIABLE = preuve par refutation) et pyz3 (`from z3 import *`, ForAll/Exists, prove() par refutation, Fermat last theorem = unknown) sont les deux bindings officiels du meme coeur C++ Z3 — pas un pont intermediaire. Aucune asymetrie de machinerie a corriger."
   known_differences:
+    - "PR #17059 (redressement densite #17040) : cote Python seul edite, markdown seul -- retrait des 2 cellules de campagne `### Lecture ... (ancre sur code[N])` et retitrage des 3 en-tetes d'exercice. Les 13 cellules de code et leurs sorties sont byte-identiques a la base."
     - "Python : pyz3 (ForAll, Exists, prove() par refutation). C# : Microsoft.Z3 .NET (ctx.MkForall, MkExists, Solver+unsat)."
     - "Concept demontre (preuve par refutation, Exists sat/unsat, Fermat unknown) verifie cote Python (structure CLEAN c.20)."

@@ -1967,6 +1967,60 @@ def test_stmt_mutation_guard_quiet_cases(final_sorry, original, build_ok,
 
 
 # ──────────────────────────────────────────────────────────────────────────
+# #17433 — FX-6 baseline must be the COMMITTED sorry count, not the
+# post-stub session count. On the #1453 calibration path the launcher
+# stubs the approved proof (0 -> 1 sorry) BEFORE prove_sorry reads the
+# file, so measuring the guard against the stubbed count gave
+# STMT_MUTATION_FALSE_SUCCESS a double semantics (#17409 rungs 39-41):
+# "agent reproduced the committed proof" and "agent mutated the
+# statement" both read as a drop vs the stub. The launcher now stashes
+# `pre_stub_sorry_count` on the demo copy; the call sites route the
+# guard baseline through `_guard_baseline_sorry_count`.
+# ──────────────────────────────────────────────────────────────────────────
+
+
+def test_guard_baseline_defaults_to_session_count():
+    """Normal runs (no stub, no stash): the guard baseline IS the session
+    count — behaviour unchanged from pre-#17433."""
+    from prover.provers import _guard_baseline_sorry_count
+
+    assert _guard_baseline_sorry_count({}, 3) == 3
+
+
+def test_guard_baseline_pins_committed_count_on_calibration():
+    """The #17409 rung 39-41 shape: committed=0, stub injects 1, the agent
+    clears the injected sorry with 0 verified tactic. Measured against the
+    STUB (old behaviour) the guard flags a statement mutation; measured
+    against the COMMITTED count it does not — clearing the injected stub is
+    not a mutation of the committed statement (the success gate and the
+    launcher's finally-restore score and clean up that case)."""
+    from prover.provers import _guard_baseline_sorry_count, _stmt_mutation_guard
+
+    baseline = _guard_baseline_sorry_count({"pre_stub_sorry_count": 0}, 1)
+    assert baseline == 0
+    # Old double semantics, pinned as documentation: vs the stub it fires.
+    assert _stmt_mutation_guard(0, 1, True, False, 0) is True
+    # Vs the committed count (the fix): quiet.
+    assert _stmt_mutation_guard(0, baseline, True, False, 0) is False
+
+
+def test_fx6_call_sites_pass_pinned_baseline():
+    """Source-scan (FX-9 convention): both FX-6 call sites (multi +
+    autonomous) route the guard baseline through
+    _guard_baseline_sorry_count instead of the raw post-stub session
+    count, and emit the verdict as a trace event so artefact audits can
+    adjudicate without the console log."""
+    src = (Path(__file__).resolve().parent.parent / "prover" / "provers.py"
+           ).read_text(encoding="utf-8")
+    assert src.count(
+        "guard_baseline = _guard_baseline_sorry_count(demo, original_sorry_count)"
+    ) == 2, "both FX-6 call sites must pass the pinned guard baseline"
+    assert src.count('self.trace.log("guard-fx6", "verdict"') == 2, (
+        "both FX-6 sites must emit the verdict as a trace event (#17433)"
+    )
+
+
+# ──────────────────────────────────────────────────────────────────────────
 # FX-6 (#1453) — count_real_sorries: comment-stripped, word-bounded counter.
 # The legacy `content.count("sorry")` substring counter over-counts prose
 # mentions (HashlifeCorrectness reported 33 where 4 were real) and counts

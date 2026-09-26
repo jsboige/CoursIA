@@ -10,14 +10,14 @@
 
 | Notebook | Durée | Concepts |
 |----------|-------|----------|
-| [Do-Calculus-Bridge](Do-Calculus-Bridge.ipynb) | ~65 min | Échelle de Pearl, trois règles du do-calculus, critères *backdoor* / *front-door* exécutés avec `dowhy` ; quatre tâches du **data-fusion** (sélection corrigée par IPW, transportabilité stratifiée), **CHT démontré machine** (deux SCM gaussiens à loi jointe identique, interventions opposées), jonction do-calculus ↔ baseline Shapley (`do` vs `voir`) ; Pearl (intervention) vs Hoel (émergence causale) |
-| [DoWhy-1 — Exiger un estimand](DoWhy-1-Estimand-et-Intervention.ipynb) | ~45 min | Identification causale **nommée** via `dowhy` (backdoor, front-door, instrumentale) sur un cas complet ; sensibilité au graphe **mesurée** quand une hypothèse saute |
-| [DoWhy-2 — Le contrefactuel individuel](DoWhy-2-Contrefactuel-Individuel.ipynb) | ~40 min | Troisième échelon de Pearl : `dowhy.gcm` (abduction-action-prédiction) sur **un individu** ; l'effet moyen nul cache une CATE linéaire ±3 ; fragilité du chiffre individuel à la spécification du mécanisme |
-| [DoWhy-3 — Le graphe qu'on n'a pas](DoWhy-3-Decouverte-de-Structure.ipynb) | ~45 min | Découverte de structure via `causal-learn` (PC, GES, LiNGAM) : classes d'équivalence de Markov, verdict **CPDAG ambigu = résultat** ; LiNGAM tranche sous non-gaussianité mais rend un DAG faux-silencieux sinon ; l'ambiguïté se propage à l'estimand (3 extensions du même CPDAG → 3 estimands dowhy) |
-| [DoWhy-4 — Le confondeur non observé](DoWhy-4-Sensibilite-Confounder-Cache.ipynb) | ~50 min | Sensibilité, pas certitude : « quelle force devrait avoir un confondeur caché pour annuler cet effet ? » — robustness value de Cinelli-Hazlett (`linear-partial-R2`), **E-value natif** `dowhy` avec benchmark McGowan-Greevy, bornes de Rosenbaum exactes (Γ*), courbe de bascule du confondeur simulé (`direct-simulation`) |
-| [DoWhy-5 — L'instrument faible](DoWhy-5-Instrument-Faible.ipynb) | ~45 min | Variable instrumentale via `dowhy.CausalModel` (pipeline `identify` + `estimate(iv.instrumental_variable)` + `refute`) ; F-stat Staiger-Stock, biais IV vs OLS, **verdict NON_IDENTIFIABLE** honnête sur exclusion violée ; complète le 2SLS from scratch de la cellule 40 de `Quasi-Experimental.ipynb` |
-| [Quasi-Experimental](Quasi-Experimental.ipynb) | ~50 min | Méthodes quasi-expérimentales (DiD, contrôle synthétique, RDD, variables instrumentales) sur données réalistes ; estimands et hypothèses d'identification explicités |
-| [Causal-Fairness — Décomposer la discrimination](Causal-Fairness.ipynb) | ~50 min | Critères structurels Str-DE/IE/SE, famille TV (TE, Exp-SE, NDE, NIE) — Lem 4.1 et Thm 4.2 **vérifiés à la précision machine** sur un SCM à bruits partagés, `dowhy` backdoor vs naïf (+69 % d'écart mesuré), règle des 80 % (EEOC) sur le crédit allemand, business necessity |
+| [CausalBridges-01 — Do-Calculus](CausalBridges-01-Do-Calculus.ipynb) | ~65 min | Échelle de Pearl, trois règles du do-calculus, critères *backdoor* / *front-door* exécutés avec `dowhy` ; quatre tâches du **data-fusion** (sélection corrigée par IPW, transportabilité stratifiée), **CHT démontré machine** (deux SCM gaussiens à loi jointe identique, interventions opposées), jonction do-calculus ↔ baseline Shapley (`do` vs `voir`) ; Pearl (intervention) vs Hoel (émergence causale) |
+| [CausalBridges-02 — Exiger un estimand](CausalBridges-02-Dowhy-Estimand-Intervention.ipynb) | ~45 min | Identification causale **nommée** via `dowhy` (backdoor, front-door, instrumentale) sur un cas complet ; sensibilité au graphe **mesurée** quand une hypothèse saute |
+| [CausalBridges-03 — Le contrefactuel individuel](CausalBridges-03-Dowhy-Contrefactuel-Individuel.ipynb) | ~40 min | Troisième échelon de Pearl : `dowhy.gcm` (abduction-action-prédiction) sur **un individu** ; l'effet moyen nul cache une CATE linéaire ±3 ; fragilité du chiffre individuel à la spécification du mécanisme |
+| [CausalBridges-04 — Le graphe qu'on n'a pas](CausalBridges-04-Dowhy-Decouverte-Structure.ipynb) | ~45 min | Découverte de structure via `causal-learn` (PC, GES, LiNGAM) : classes d'équivalence de Markov, verdict **CPDAG ambigu = résultat** ; LiNGAM tranche sous non-gaussianité mais rend un DAG faux-silencieux sinon ; l'ambiguïté se propage à l'estimand (3 extensions du même CPDAG → 3 estimands dowhy) |
+| [CausalBridges-05 — Le confondeur non observé](CausalBridges-05-Dowhy-Sensibilite-Confounder.ipynb) | ~50 min | Sensibilité, pas certitude : « quelle force devrait avoir un confondeur caché pour annuler cet effet ? » — robustness value de Cinelli-Hazlett (`linear-partial-R2`), **E-value natif** `dowhy` avec benchmark McGowan-Greevy, bornes de Rosenbaum exactes (Γ*), courbe de bascule du confondeur simulé (`direct-simulation`) |
+| [CausalBridges-06 — L'instrument faible](CausalBridges-06-Dowhy-Instrument-Faible.ipynb) | ~45 min | Variable instrumentale via `dowhy.CausalModel` (pipeline `identify` + `estimate(iv.instrumental_variable)` + `refute`) ; F-stat Staiger-Stock, biais IV vs OLS, **verdict NON_IDENTIFIABLE** honnête sur exclusion violée ; complète le 2SLS from scratch de la cellule 40 de `CausalBridges-07-Quasi-Experimental.ipynb` |
+| [CausalBridges-07 — Quasi-Experimental](CausalBridges-07-Quasi-Experimental.ipynb) | ~50 min | Méthodes quasi-expérimentales (DiD, contrôle synthétique, RDD, variables instrumentales) sur données réalistes ; estimands et hypothèses d'identification explicités |
+| [CausalBridges-08 — Décomposer la discrimination](CausalBridges-08-Causal-Fairness.ipynb) | ~50 min | Critères structurels Str-DE/IE/SE, famille TV (TE, Exp-SE, NDE, NIE) — Lem 4.1 et Thm 4.2 **vérifiés à la précision machine** sur un SCM à bruits partagés, `dowhy` backdoor vs naïf (+69 % d'écart mesuré), règle des 80 % (EEOC) sur le crédit allemand, business necessity |
 
 **Prérequis** : probabilités conditionnelles, graphes orientés acycliques (DAG), notions d'inférence bayésienne. Une lecture préalable de l'un des cinq notebooks de la constellation (ci-dessous) rend le pont plus concret.
 
@@ -51,31 +51,31 @@ Le notebook suit la convention du dépôt (stubs à compléter, sans erreur volo
 3. **Comparer effet naïf et effet ajusté** — générer un nouveau jeu à effet vrai connu, mesurer l'écart dû au confondeur.
 4. **Le compromis biais-variance du transport stratifié** — refaire le transport de la tâche 4 à K ∈ {3, 20, 100} strates : biais résiduel intra-strate à petit K, variance Monte-Carlo à grand K.
 
-Exercices de DoWhy-2 :
+Exercices de CausalBridges-03 :
 
 1. **Le contrefactuel inverse** — pour un étudiant non traité à `V > 0`, estimer son `Y` sous `T := 1` et comparer à son observation : aurait-il gagné au mentorat ?
 2. **La CATE par sous-groupe** — déduire de la série d'écarts individuels l'effet moyen pour `V > 0.5` vs `V < -0.5`, interpréter le signe.
 3. **La méthode survit-elle au tirage ?** — re-générer le monde (`seed=7`), refitter, re-mesurer moyenne et écart-type des écarts : la structure doit survivre, pas les individus.
 
-Exercices de DoWhy-5 (variable instrumentale via `dowhy`) :
+Exercices de CausalBridges-06 (variable instrumentale via `dowhy`) :
 
 1. **L'exclusion respectée vs VIOLEE** — générer un DGP `effet_direct_z = 0.5`, vérifier que `dowhy` identifie l'estimand `iv`, et constater l'écart entre `tau dowhy` et `TAU_VRAI = 2.0` ; verdict local NON_IDENTIFIABLE en mode terrain.
 2. **Le F-stat comme garde-fou** — faire varier la taille d'échantillon `n ∈ {500, 1000, 2000, 5000}` sur instrument faible, observer comment le F-stat monte avec `n` (sans faire passer l'identification, qui reste structurelle).
 3. **Verdict NON_IDENTIFIABLE sur DAG incomplet** — démontrer que `dowhy` identifie un estimand `iv` même quand l'exclusion est structurellement violée ; le verdict NON_IDENTIFIABLE doit venir du praticien, pas de `dowhy`.
 
-Exercices de DoWhy-3 (découverte de structure) :
+Exercices de CausalBridges-04 (découverte de structure) :
 
 1. **L'ambiguïté ne se résout pas avec des données** — pour `n ∈ {500, 2000, 10000}`, constater que le CPDAG de PC garde `C–X` et `X–M` ambiguës : la classe de Markov est une borne structurelle, pas un problème de taille d'échantillon.
 2. **`alpha` de PC, le compromis mesuré** — pour `alpha ∈ {0.2, 0.05, 0.01}` sur 5 seeds : arêtes parasites à `0.2`, v-structure perdue environ 1 seed sur 4 à `0.05` (mesuré sur ce monde), propre à `0.01` au prix de la puissance sur signaux faibles — il n'y a pas d'alpha gratuit.
 3. **Diagnostiquer l'échec silencieux de LiNGAM** — sur 5 seeds gaussiens : DAG complet, faux et instable inter-seeds ; l'instabilité est le seul signal que l'hypothèse de non-gaussianité ne tient pas, la librairie reste muette.
 
-Exercices de DoWhy-4 (sensibilité au confondeur non observé) :
+Exercices de CausalBridges-05 (sensibilité au confondeur non observé) :
 
 1. **Le rapport de forces** — renforcer le cache (`coef_u_*=1.8`) : la robustness value MONTE avec l'association observée (ça survit encore) ; affaiblir le signal (`tau=0.2, bruit_y=3.0`) : le RV passe sous le R² réel de U et le verdict bascule en ANNULABLE — c'est l'effet faible qu'on annule, pas le cache fort.
 2. **L'E-value de l'IC et la taille d'échantillon** — à `n=10000` l'IC se resserre, sa borne s'éloigne de 1 et l'E-value de l'IC monte vers celui de l'estimé ; l'estimé ponctuel (biais constant de U) bouge à peine.
 3. **Γ\* d'un effet plus faible** — reprendre le monde binaire à `b_x=0.2`, ré-apparier et recalculer Γ* : plus proche de 1 ; Γ\* mesure la solidité statistique face au pire des mondes, pas la vérité de l'effet.
 
-Exercices de Causal-Fairness (famille TV, Epic #16620) :
+Exercices de CausalBridges-08 (famille TV, Epic #16620) :
 
 1. **Casser l'identité linéaire** — ajouter une interaction `A × W` dans l'équation de `Y` : l'identité simple `NDE − NIE = TE` ne tient plus, mais Lem 4.1 et Thm 4.2 (algébriques) tiennent à la précision machine.
 2. **Str-DE-fair n'efface pas l'écart observé** — mettre le coefficient direct `A → Y` à zéro : NDE ≈ 0 mais la TV reste positive (canal indirect + spurieux) ; la règle des 80 % mesure l'écart, pas la discrimination directe.

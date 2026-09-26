@@ -1754,6 +1754,17 @@ Le mur agrege serait decoratif tout en paraissant actif. Deployer :
     return 0
   fi
   hi="$(slice_read_raw memory.high)"
+  # Pilote systemd (daemon docker-ce de la distro WSL d'ai-01) : --cgroup-parent
+  # y attend un NOM de slice (`coursia-ci.slice`), dont systemd deduit lui-meme
+  # la hierarchie par les tirets. Le chemin relatif du pilote cgroupfs
+  # (`coursia.slice/coursia-ci.slice`) y est refuse par runc -- « invalid slice
+  # name » -- et chaque slot sort en rc=125 au bout d'une seconde (mesure ai-01
+  # 2026-09-23T13:01Z : 10 slots sur 10). Le nom derive du MEME chemin que la
+  # lecture : la source de verite reste unique.
+  if [ -n "$CI_CGROUP_PARENT" ] \
+     && [ "$(docker info --format '{{.CgroupDriver}}' 2>/dev/null | tr -d '\r')" = "systemd" ]; then
+    CI_CGROUP_PARENT="${CI_SLICE_PATH##*/}"
+  fi
   echo "[slice] mur agrege ACTIF : memory.high=$hi memory.max=$mx octets"
   echo "[slice] ($CI_SLICE_PATH ; conteneurs places via --cgroup-parent=$CI_CGROUP_PARENT)"
 }

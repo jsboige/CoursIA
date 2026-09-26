@@ -76,16 +76,31 @@ concurrency:
 jobs:
   resolve:
     name: Resolve the re-aggregation route (manual)
-    # Route vers la jambe Linux auto-hebergee (#13378 tranche 5, decision ai-01
-    # 2026-09-02) : garde Python pur, sans secret. La garde same-repo ci-dessous
-    # saute les PRs de fork (pr_gate.py compte `skipped` comme OK) : aucun code de
-    # fork n'atteint le runner. Retour arriere = revert de la PR.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Q35 etape 2 (#17397) : agregateur pur -- resolve/re-run du gate, aucun
+    # secret, docker, GPU ni toolchain locale (python stdlib seul, #17680).
+    # Re-agreger decide si une PR est mergeable : tant que ce travail tourne
+    # sur le parc local, il se degrade exactement quand la file qu'il doit
+    # debloquer grossit (saturation du 2026-09-22). La garde same-repo
+    # ci-dessous est conservee telle quelle -- seul le runner change, aucune
+    # semantic de declenchement.
+    runs-on: ubuntu-latest
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     outputs:
       action: ${{ steps.resolve.outputs.action }}
       run_id: ${{ steps.resolve.outputs.run_id }}
     steps:
+      # #17680 : la route vit dans scripts/ci/pr_gate_route.py (stdlib pur) --
+      # testable en unitaire, horloge incluse. Le bash inline ne pouvait pas
+      # distinguer une tentative queued MORTE d'une saine : statut identique,
+      # decision identique, impasse complete (cf #17099, 19h30 queued).
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts/ci/pr_gate_route.py
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
       - name: Resolve route
         id: resolve
         env:
@@ -101,61 +116,21 @@ jobs:
             echo "action=skip" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          # Find the original pr-gate.yml run for THIS head SHA. event=pull_request
-          # only (pr-gate.yml also accepts workflow_dispatch, whose payload's
-          # --sha target is not the PR head). Most recently CREATED, per #11519:
-          # a rerun replays the frozen payload of its original event, so an older
-          # run for the same SHA is fine (same SHA, fresh API reads) but a run
-          # for an older SHA would re-aggregate a stale head.
-          RUN_JSON=$(gh api "repos/${REPO}/actions/runs?head_sha=${HEAD_SHA}&event=pull_request&per_page=100" \
-            --jq '[.workflow_runs[] | select(.name == "PR gate")] | sort_by(.created_at) | last')
-          if [ -z "$RUN_JSON" ] || [ "$RUN_JSON" = "null" ]; then
-            # #16624: the OLD message here claimed "the gate will run on its
-            # own" -- FALSE for the retarget population. A PR retargeted onto
-            # main (edited, not in the pre-#16624 default types) never fired
-            # the gate and NOTHING will fire it: no push, no synchronize, and
-            # a close/reopen performed by a bot token triggers no run
-            # (GITHUB_TOKEN anti-recursion). The two honest paths are below.
-            EXISTING=$(gh api "repos/${REPO}/commits/${HEAD_SHA}/check-runs?per_page=100" \
-              --jq '[.check_runs[] | select(.name == "PR gate")] | length' 2>/dev/null || echo 1)
-            if [ "$EXISTING" != "0" ]; then
-              echo "[pr-gate] a 'PR gate' check-run already exists on ${HEAD_SHA} though no pull_request run does -- refusing to POST beside it (#11519 twin), skip"
-              echo "action=skip" >> "$GITHUB_OUTPUT"
-              exit 0
-            fi
-            echo "[pr-gate] no pull_request PR gate run and no 'PR gate' check-run for ${HEAD_SHA} -- gate ABSENT (#16624): aggregating the head and POSTing the verdict"
-            echo "action=aggregate_absent" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          RUN_ID=$(echo "$RUN_JSON" | jq -r '.id')
-          STATUS=$(echo "$RUN_JSON" | jq -r '.status')
-          CONCLUSION=$(echo "$RUN_JSON" | jq -r '.conclusion')
-          echo "[pr-gate] target run ${RUN_ID}: status=${STATUS} conclusion=${CONCLUSION}"
-          echo "run_id=${RUN_ID}" >> "$GITHUB_OUTPUT"
-          # Already running/queued: it will aggregate the current check state
-          # by itself -- rerunning now is impossible (API rejects it) and
-          # useless. This is also the loop bound for near-simultaneous guard
-          # completions (#11519: "borner la boucle").
-          if [ "$STATUS" != "completed" ]; then
-            echo "[pr-gate] run in flight (${STATUS}) -- it will see the fresh guard verdict, skip"
-            echo "action=skip" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          # Green already: this leg is not what blocks the PR. No rerun.
-          if [ "$CONCLUSION" = "success" ]; then
-            echo "[pr-gate] run already green -- nothing to rescue, skip"
-            echo "action=skip" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          # Full rerun (NOT --failed): the gate is a single job, and a full
-          # rerun replays the aggregation end-to-end against live check state.
-          echo "action=rerun" >> "$GITHUB_OUTPUT"
+          # Route decision, cancel-and-wait for dead queued attempts included:
+          # no run found -> twin guard / gate-absent (#11519/#16624); queued
+          # beyond --stale-hours -> cancel + wait completed + rerun (#17680);
+          # fresh in-flight -> skip; completed -> rerun unless green.
+          python scripts/ci/pr_gate_route.py \
+            --repo "$REPO" \
+            --sha "$HEAD_SHA" \
+            --pr-number "$PR_NUMBER"
 
   rerun:
     name: Re-run the original PR gate (manual)
     needs: resolve
     if: needs.resolve.outputs.action == 'rerun'
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Q35 etape 2 (#17397) : idem resolve -- agregateur pur, ubuntu-latest.
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - name: Re-run the original run
@@ -175,7 +150,8 @@ jobs:
     name: Aggregate a gate-absent PR head (manual)
     needs: resolve
     if: needs.resolve.outputs.action == 'aggregate_absent'
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Q35 etape 2 (#17397) : idem resolve -- agregateur pur, ubuntu-latest.
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       # The aggregation script + the delivery canary both read the repo:

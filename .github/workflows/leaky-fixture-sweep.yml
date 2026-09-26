@@ -191,6 +191,7 @@ jobs:
           faketime -f '+8d' python -m pytest \
             scripts/tests/test_pick_idle_grain.py \
             scripts/tests/test_pick_idle_grain_cache.py \
+            scripts/tests/test_pick_idle_grain_wip.py \
             scripts/tests/test_pick_nanoclaw_concerns.py \
             scripts/tests/test_pick_claim_filter.py \
             scripts/tests/test_substance_drought.py \
@@ -211,6 +212,7 @@ jobs:
           faketime -f '+31d' python -m pytest \
             scripts/tests/test_pick_idle_grain.py \
             scripts/tests/test_pick_idle_grain_cache.py \
+            scripts/tests/test_pick_idle_grain_wip.py \
             scripts/tests/test_pick_nanoclaw_concerns.py \
             scripts/tests/test_pick_claim_filter.py \
             scripts/tests/test_substance_drought.py \

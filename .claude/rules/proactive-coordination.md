@@ -2,7 +2,7 @@
 
 S'applique à **tous les workers du cluster CoursIA** (po-2023/2024/2025/2026) et au **coordinateur ai-01**. Source : mandat user 2026-05-23, durci 2026-06-30 → 2026-07-19.
 
-**Détail (backlog 8 sources, mapping machines→tracks, cadence, anti-patterns, incidents, leçons L721/L1356 complètes, picker, veine)** : [docs/reference/proactive-coordination-detail.md](../../docs/reference/proactive-coordination-detail.md).
+**Détail (backlog 8 sources, cadence, anti-patterns, incidents, leçons L721/L1356 complètes, picker, veine)** : [docs/reference/proactive-coordination-detail.md](../../docs/reference/proactive-coordination-detail.md).
 
 ## Règles HARD
 
@@ -99,7 +99,7 @@ python scripts/ci/check_umbrella_freshness.py <N> [<N>...]   # exit 1 = SATURATE
 
 ## Règle de sélection
 
-Prendre **un item à la fois** (`[CLAIMED]` avant), livrer, **re-piocher aussitôt** — G.5 interdit N deep-tracks **parallèles**, pas N PRs **séquentielles**. **Anti-pattern interdit** : auditer la tranche étroite de SA famille puis poster un `[ASK coordinator]` alors que le pool offrait des grains cross-lane — c'est le silo (incident fondateur R5/R7, [détail §Incident fondateur R5/R7](../../docs/reference/proactive-coordination-detail.md)). **Le coordinateur n'est PAS un distributeur de grains** : il merge, scoper les issues, déconflitter les claims.
+Prendre **un item à la fois** (`[CLAIMED]` avant), livrer, **re-piocher aussitôt** — G.5 interdit N deep-tracks **parallèles**, pas N PRs **séquentielles**. **Anti-pattern interdit** : auditer la tranche étroite de sa famille puis poster un `[ASK coordinator]` alors que le pool offrait des grains cross-lane — c'est le silo (incident fondateur R5/R7, [détail §Incident fondateur R5/R7](../../docs/reference/proactive-coordination-detail.md)). **Le coordinateur n'est PAS un distributeur de grains** : il merge, scoper les issues, déconflitter les claims.
 
 ## Voir aussi
 

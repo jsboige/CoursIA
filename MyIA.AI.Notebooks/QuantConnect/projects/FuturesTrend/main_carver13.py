@@ -9,6 +9,11 @@ from collections import deque
 # without forcing the tests to pull in AlgorithmImports (which requires
 # QC Cloud). See breadth_multiplier.py for the rationale.
 from breadth_multiplier import breadth_multiplier as _breadth_multiplier_pure
+# Pure-numpy Carver #11 carry leg (semis #17320, tranche 2). Same pattern:
+# the stub below and tests/test_carry_forecast.py share the canonical
+# annualised-carry formula (article #16001) without AlgorithmImports.
+from carry_forecast import annualized_raw_carry as _annualized_raw_carry_pure
+from carry_forecast import carry_forecasts as _carry_forecasts_pure
 # endregion
 
 
@@ -25,11 +30,12 @@ from breadth_multiplier import breadth_multiplier as _breadth_multiplier_pure
 # - True continuous futures (18 instruments) instead of 6 ETF proxies.
 # - Six EWMAC horizons (Carver pairs: 8/32, 16/64, 32/128, 64/256, 16/48, 32/96)
 #   with per-horizon scalar normalisation (c.1063), not a single Donchian 20/10.
-# - Carry factor: DISABLED on this port (c.1107 REPAIR ADJOINT, see
-#   `_carry_forecast` docstring + the carry stub in `_rebalance`). The
-#   blend is trend-only (mean of six EWMAC forecasts, capped at +/-20).
-#   Re-introduction of carry requires the QC Cloud `Future` chain API
-#   for a real front/deferred ratio (acceptance #15549 follow-up).
+# - Carry factor: DISABLED in the blend (c.1107 REPAIR ADJOINT; trend-only,
+#   `CARVER_CARRY_WEIGHT = 0.0`), but the Carver #11 formula now EXISTS as a
+#   pure-numpy module (`carry_forecast.py`, semis #17320 tranche 2): the
+#   c.1107 proxy is replaced by the exact article #16001 annualised
+#   near/further formula, unit-tested on CPU. Tranche 3 activates it in
+#   `_rebalance` via the QC Cloud `Future` chain API (acceptance #17320).
 # - Volatility regime multiplier cap in [0.5, 2].
 # - Breadth multiplier (formerly labelled FDM, c.1109 + c.1111 REPAIR-5 +
 #   c.1113 REPAIR-7): we apply the Carver-style gross-leverage adjustment
@@ -326,30 +332,49 @@ class CarverThirteen(QCAlgorithm):
         # Apply per-forecast cap.
         return float(np.clip(scaled, -CARVER_FORECAST_CAP, CARVER_FORECAST_CAP))
 
-    def _carry_forecast(self, front_close, deferred_close):
-        """Carry = annualised slope of the term structure (front vs deferred).
+    def _annualized_carry(self, near_price, further_price, near_expiry, further_expiry):
+        """Annualised raw carry between consecutive contracts (Carver #11).
 
-        NOT CALLED on this port (c.1107 + c.1109 REPAIR): the inline
-        blend in `_rebalance` is trend-only (mean of six EWMAC forecasts),
-        and `CARVER_CARRY_WEIGHT = 0.0`. Re-introduction of carry
-        requires the QC Cloud `Future` chain API for a real front/deferred
-        ratio (acceptance #15549 follow-up). This stub is preserved as
-        the call site for the QC-equipped lane (po-2026) so the Carver
-        60/40 blend can be re-introduced byte-for-byte.
-
-        Returns 0.0 if either series is unavailable.
+        Delegates to the pure-numpy formula in `carry_forecast.py`
+        (semis #17320, tranche 2): `(near - further) / |expiry gap in
+        years|`, gap in months = `round((further_exp - near_exp).days/30)`.
+        Returns None on a zero expiry gap or invalid prices — the caller
+        treats None as "no carry observation today".
         """
-        if front_close is None or deferred_close is None:
+        return _annualized_raw_carry_pure(
+            near_price, further_price, near_expiry, further_expiry
+        )
+
+    def _carry_forecast(self, carry_forecast_history):
+        """Carver #11 carry forecast — annualised term-structure carry, smoothed.
+
+        NOT CALLED yet on this port (tranche 3 of semis #17320 activates it
+        with the QC Cloud `Future` chain API): `_rebalance` still blends
+        trend-only (`CARVER_CARRY_WEIGHT = 0.0`). The c.1107 proxy
+        (front/deferred ratio, x4 "mild annualisation") is REPLACED by the
+        exact article #16001 formula, implemented and unit-tested in
+        `carry_forecast.py`: annualise the near/further price gap by the
+        expiry distance, risk-adjust, EWMA-smooth over spans 5/20/60/120,
+        scale by the Carver scalar 30 (p.216), cap at +/-20.
+
+        Parameters
+        ----------
+        carry_forecast_history : sequence of float
+            Daily risk-adjusted carry values (annualised raw carry divided
+            by daily risk in price terms), oldest first — to be accumulated
+            by the consolidation handler once the chain API feeds real
+            near/further closes and expiries.
+
+        Returns
+        -------
+        float
+            Equal-weight mean of the per-span capped forecasts (article
+            aggregation), 0.0 when no span has enough history.
+        """
+        forecasts = _carry_forecasts_pure(carry_forecast_history)
+        if not forecasts:
             return 0.0
-        if front_close <= 0.0 or deferred_close <= 0.0:
-            return 0.0
-        # Ratio of deferred to front > 1 implies contango (negative carry).
-        ratio = deferred_close / front_close
-        # Annualise assuming 12-month deferred minus front horizon; we use a
-        # mild annualisation factor so a 5% term-structure gap maps to ~10
-        # (half-cap), mirroring the EWMAC calibration.
-        annualised = (ratio - 1.0) * 4.0
-        return float(np.clip(annualised, -CARVER_FORECAST_CAP, CARVER_FORECAST_CAP))
+        return float(np.mean(forecasts))
 
     def _vol_multiplier(self, realised_vol_annual):
         """Regime vol multiplier in [0.5, 2].

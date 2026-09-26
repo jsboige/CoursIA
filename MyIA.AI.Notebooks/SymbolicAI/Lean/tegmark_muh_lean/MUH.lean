@@ -32,12 +32,15 @@ C'est ce que cette bibliothèque fait. Les modules :
     génératrices + arités/types + table de valeurs).
   - `MUH.Encoding` : encodage selon Tegmark §c (`# of sets | # of relations |
     sizes... | rels...`) et complexité `H(s) = Σᵢ log₂(2 + kᵢ)` (§d).
-  - `MUH.Boolean` : algèbre de Boole à 2 éléments, avec preuve que la
-    définition à 1 générateur (Sheffer / NAND) est équivalente à la définition
-    à 8 générateurs (Tegmark §2a).
+  - `MUH.Boolean` : algèbre de Boole à 2 éléments, **exemples canoniques**
+    (Sheffer à 1 générateur ; F/T/NOT/AND à 4 générateurs — Tegmark eq. (A1)-(A2)).
+    L'**équivalence Sheffer ↔ 4 générateurs** est hors-scope de cette PR ;
+    voir #16958 pour le suivi.
   - `MUH.Cyclic` : groupes cycliques C₂ et C₃ (Tegmark §2b).
-  - `MUH.Decidable` : algorithme énumératif haltant pour décider l'équivalence
-    dans le cas restreint (arité ≤ 2, cardinal ≤ 3). -/
+  - `MUH.Decidable` : **squelette énumératif documenté** (Tegmark §1 in fine).
+    Le code livré est un **stub** (`decideEq` compare `nSets`,
+    `ClosedUnderComp` est `trivial`) — **pas** un algorithme énumératif haltant.
+    L'implémentation complète est hors-scope ; voir #16958. -/
 
 
 /-- Sous-bibliothèques de la MUH, exposées en un seul import. -/

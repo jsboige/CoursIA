@@ -46,30 +46,35 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-# Suffixes de NOYAU : ceux dont la mesure de l'arbre montre qu'ils NOMMENT le
-# moteur qui execute le notebook. Sous-ensemble extrait de LANG_SUFFIXES pour que
-# le garde de casse (#15489 defaut 3) ne juge que ceux-la -- `_en`/`_fr` sont des
-# siblings i18n (#4980) et `-Lean` un marqueur de contenu ; leur imposer une
-# "casse canonique de noyau" n'a pas de sens.
+# Suffixes de NOYAU : ceux qui NOMMENT le moteur qui execute le notebook.
+#
+# ARBITRAGE MAINTENEUR 25/09 (#17784 / #16231 c.5829840595) : `-Lean` et
+# `-Lean-Python` deviennent des suffixes de noyau. La mesure qui les excluait
+# restait vraie pour l'ANCIEN nommage -- `-Lean` marquait le contenu, le pendant
+# reellement Lean portait `-Native`, et 2 des 4 `-Lean` tournaient sous
+# `python3` -- mais la decision de nommage inverse la lecture : desormais le
+# suffixe de noyau est TOUJOURS present et TOUJOURS en dernier, `-Lean` nomme
+# un notebook execute par Lean, `-Lean-Python` un notebook Python qui PILOTE
+# Lean (subprocess lake/lean, LeanDojo, REPL). Les ~50 notebooks de
+# `SymbolicAI/Lean` prennent leur suffixe canonique par les passes phase 2 de
+# #16231 (outil : `rename_notebooks.py`) ; le garde de casse ne jugeant que les
+# notebooks AJOUTES, aucun rouge repo-wide n'en sort.
+#
+# ORDRE : plus long d'abord. `-lean-python` DOIT preceder `-python`, sinon un
+# stem en `-Lean-Python` ne stripperait que `-python` et laisserait un `-Lean`
+# fantome dans la cle d'appariement.
 #
 #   130 x -Csharp/-CSharp -> 130 x `.net-csharp`
 #    44 x -Python         ->  41 x `python3`, 2 x `coursia-ml-training`,
 #                              1 x `.net-csharp` (le defaut, cf le garde)
-#
-# `-Lean` est volontairement ABSENT : dans ce depot il marque le contenu, pas le
-# moteur. Le pendant reellement Lean porte `-Native`
-# (`Lean-16d-Conway-Game-of-Life-Lean-Native.ipynb` -> `lean4-wsl`) et 2 des 4
-# `-Lean` tournent sous `python3`. Le declarer comme noyau ferait crier le garde
-# a tort sur ~50 notebooks de `SymbolicAI/Lean`. `-FSharp` est absent aussi :
-# aucun kernelspec F# n'existe dans l'arbre et `.net-csharp` est partage par les
-# langages .NET. Exclusions mesurees, pas oublis.
-KERNEL_LANG_SUFFIXES = ("-csharp", "-python")
+# `-FSharp` reste absent : aucun kernelspec F# n'existe dans l'arbre et
+# `.net-csharp` est partage par les langages .NET. Exclusion mesuree, pas oublie.
+KERNEL_LANG_SUFFIXES = ("-lean-python", "-csharp", "-python", "-lean")
 
 # Suffixes marquant un rendu ALTERNATIF du meme item, pas un item concurrent.
-# = les noyaux ci-dessus + le rendu Lean (sibling de contenu) + les siblings
-# i18n (#4980). Ceux-la servent a APPARIER deux rendus (`strip_lang`), jamais a
-# juger un moteur.
-LANG_SUFFIXES = KERNEL_LANG_SUFFIXES + ("-lean", "_en", "-en", "_fr", "-fr")
+# = les noyaux ci-dessus + les siblings i18n (#4980). Ceux-la servent a APPARIER
+# deux rendus (`strip_lang`), jamais a juger un moteur.
+LANG_SUFFIXES = KERNEL_LANG_SUFFIXES + ("_en", "-en", "_fr", "-fr")
 
 # Index en tete de nom : un ou plusieurs nombres separes par . ou -, suivis d'un
 # separateur puis du titre. On capture TOUS les niveaux : "04-1" et non "04".

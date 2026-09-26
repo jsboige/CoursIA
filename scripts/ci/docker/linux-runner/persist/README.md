@@ -27,10 +27,20 @@ n'a pas ete remplacee. Un `git pull` ne deploie pas `persist/`.
 | `ai-01/coursia-runner.service` | **ai-01** | `/etc/systemd/system/coursia-runner.service` | **a deployer** (corrige, cf. correction 3) -- **jamais seul**, cf. correction 4 |
 | `ai-01/coursia-runner.service.d/10-sizing.conf` | **ai-01** | `/etc/systemd/system/coursia-runner.service.d/10-sizing.conf` | **deploye et vivant** -- necessaire mais **pas suffisant** : il borne la memoire et laisse le CPU au defaut (cf. corrections 4 et 5) |
 | `ai-01/coursia-runner-start.sh` | **ai-01** | `/usr/local/bin/coursia-runner-start.sh` | **a deployer** (corrige, cf. correction 3) |
+| `po-2026/pool.sh` | **po-2026** | `/home/jesse/CoursIA-runners-p0/pool.sh` (WSL Ubuntu) | **deploye et vivant** -- superviseur du pool, **8 slots** et **borne depuis le 2026-09-22** (cf. `po-2026/README.md`) |
+| `po-2026/run-pool-po2026.sh` | **po-2026** (hote Windows) | `C:\dev\CoursIA-runners-p0\run-pool-po2026.sh` | **deploye et vivant** -- lanceur de la tache planifiee, porte la borne CPU/memoire. **Attention : ce fichier vit sous `C:\dev\...`, pas sous `D:\Dev\CoursIA-runners-p0\`** (cf. `po-2026/README.md`) |
+| `po-2026/README.md` | -- | -- | **document** : architecture, dimensionnement, piege du verrou |
 
 Le sous-repertoire `ai-01/` existe parce que les deux machines ont des fichiers
 **homonymes et incompatibles**. Les melanger a plat, comme c'etait le cas, revient
 a laisser croire qu'il n'y en a qu'un.
+
+Le sous-repertoire `po-2026/` existe pour une raison differente : cette machine est
+la seule du parc dont la chaine de runners ne passe **ni par Docker ni par une unite
+systemd**. Ses fichiers ne sont homonymes d'aucun autre, mais la table ci-dessus,
+lue comme une description du parc, laissait croire que le parc se resume a des
+conteneurs et des unites -- et c'est exactement ce qui a rendu son absence de borne
+invisible. Detail, mesures et bornes : `po-2026/README.md`.
 
 ## Le contexte d'image epingle -- un vivant sans fichier dans le depot (#16134)
 

@@ -89,7 +89,7 @@ public sealed class CopilotAgentService : BackgroundService
         await client.StartAsync();
         await using var session = await client.CreateSessionAsync(new SessionConfig
         {
-            Model = "gpt-4.1",
+            Model = "gpt-5",
             Streaming = true,
             OnPermissionRequest = PermissionHandler.ApproveAll,
         });

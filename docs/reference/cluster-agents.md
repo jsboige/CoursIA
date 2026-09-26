@@ -110,6 +110,14 @@ Ce qui détermine le grain d'une lane est le **tirage** (`python scripts/pick_id
 
 ## ai-01 - topologie GPU (RTX 4090 x3)
 
+**L'occupation en cours se lit dans le ledger, pas de tete** : le kind
+`gpu-reservation` de `scripts/coordination/debt_ledger.py` (dashboard dedie
+`CoursIA-gpu-reservation-ledger`, cle de ligne `<machine>#gpu<n>`) porte qui tient
+quel device, depuis quand et jusqu'a quand — une lane sans GPU peut lire l'etat
+d'occupation sans se connecter a la machine. La topologie et la politique
+ci-dessous restent la reference **statique** ; ce qui tourne se planifie et
+s'observe dans le ledger ([#16737](https://github.com/jsboige/CoursIA/issues/16737)).
+
 Règle stricte : GPU 2 **doit etre occupee 24/7** par un training BG longue duree.
 
 | GPU | Role | Etat normal |

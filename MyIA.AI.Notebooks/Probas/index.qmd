@@ -4,12 +4,16 @@ subtitle: "Série pédagogique niveau 2 — Inférence exacte (Infer.NET) vs MCM
 description: "Série Probas du dépôt CoursIA — modèles graphiques, réseaux bayésiens, IRT, TrueSkill, HMM, LDA, Gaussian Processes, MDPs, bandits, indice de Gittins, formalisation Lean 4 de l'utilité espérée et du Gittins index."
 listing:
   - id: infer-setup
-    contents: "Infer/Infer-1-Setup.ipynb"
+    contents:
+      - "Infer/Infer-1-Setup.ipynb"
+      - "Infer/Infer-1b-Premiers-Modeles.ipynb"
     type: grid
     sort: "filename"
     page-size: 24
   - id: infer-notebooks
-    contents: "Infer/Infer-[2-9]*.ipynb"
+    contents:
+      - "Infer/Infer-[2-9]-*.ipynb"
+      - "Infer/Infer-2b-*.ipynb"
     type: grid
     sort: "filename"
     page-size: 24
@@ -29,7 +33,7 @@ listing:
     sort: "filename"
     page-size: 24
   - id: pymc-notebooks
-    contents: "PyMC/PyMC-[2-9]*.ipynb"
+    contents: "PyMC/PyMC-0[2-9]*.ipynb"
     type: grid
     sort: "filename"
     page-size: 24
@@ -38,13 +42,18 @@ listing:
     type: grid
     sort: "filename"
     page-size: 24
+  - id: pymc-frontiers
+    contents: "PyMC/PyMC-1[5-9]*.ipynb"
+    type: grid
+    sort: "filename"
+    page-size: 24
   - id: dt-infer
-    contents: "DecisionTheory/DecInfer/Infer-*.ipynb"
+    contents: "DecisionTheory/DecInfer/DecInfer-*.ipynb"
     type: grid
     sort: "filename"
     page-size: 24
   - id: dt-pymc
-    contents: "DecisionTheory/DecPyMC/PyMC-*.ipynb"
+    contents: "DecisionTheory/DecPyMC/DecPyMC-*.ipynb"
     type: grid
     sort: "filename"
     page-size: 24
@@ -56,6 +65,9 @@ listing:
   - id: standalone-root
     contents:
       - "Applications/Pyro_RSA_Hyperbole.ipynb"
+      - "Applications/Percolation/Percolation-Supercritique.ipynb"
+      - "Applications/Percolation/Percolation-Lean.ipynb"
+      - "Infer/Infer-20-Quotients-et-Fibres.ipynb"
     type: grid
     sort: "filename"
     page-size: 24
@@ -145,9 +157,9 @@ Notebook passerelle entre Probas, Search (CSP/SMT) et SymbolicAI : encode le Do-
 ::: {#dt-causal-bridges}
 :::
 
-## Racine — Notebooks standalone
+## Applications — Notebooks standalone
 
-Un notebook applicatif à la racine de la série, indépendant des deux arcs :
+Un notebook applicatif autonome, indépendant des deux arcs, vit dans [`Applications/`](Applications/) :
 
 - **Pyro_RSA_Hyperbole** : Rational Speech Acts bayésien en Pyro (sémantique pragmatique).
 

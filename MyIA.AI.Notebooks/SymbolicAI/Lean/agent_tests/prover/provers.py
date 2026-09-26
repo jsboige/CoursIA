@@ -371,6 +371,29 @@ def _autonomous_success_gate(final_sorry: int, original_sorry_count: int,
     return success, structural_progress
 
 
+def _guard_baseline_sorry_count(demo: dict, original_sorry_count: int) -> int:
+    """#17433: the FX-6 baseline must be the COMMITTED sorry count.
+
+    On the #1453 calibration path the launcher stubs the approved proof
+    (0 -> 1 sorry) BEFORE ``prove_sorry`` reads the file, so a naive
+    ``original_sorry_count`` describes the STUBBED file. Measuring FX-6
+    against the stub gives ``STMT_MUTATION_FALSE_SUCCESS`` a double
+    semantics (#17433, rungs 39-41 of the #17409 gradient): (1) the
+    intended catch — a sorry drop no verified tactic produced; (2) an
+    undocumented overlap — on a calibration run, "the agent reproduced
+    the committed proof" and "the file merely sits at the stubbed
+    baseline" both read as a drop vs the stub, and the guard message
+    cannot tell them apart. Measuring against the committed count (the
+    launcher stashes it on the demo dict, pre-stub) keeps the verdict
+    meaningful: dropping BELOW the committed count is a real
+    cross-theorem mutation; clearing the injected stub alone is not (the
+    success gate and the launcher's finally-restore score and clean up
+    that case).
+    """
+    pre_stub = demo.get("pre_stub_sorry_count")
+    return int(pre_stub) if pre_stub is not None else original_sorry_count
+
+
 def _stmt_mutation_guard(final_sorry: int, original_sorry_count: int,
                          final_build_ok: bool, proof_found: bool,
                          verified_tactic_count: int) -> bool:
@@ -388,6 +411,11 @@ def _stmt_mutation_guard(final_sorry: int, original_sorry_count: int,
     A sorry-count drop that no build-verified tactic produced is a mutation
     of the statement, not a proof. Callers must restore the original file
     content and flag the outcome ``STMT_MUTATION_FALSE_SUCCESS``.
+
+    #17433: ``original_sorry_count`` here is the GUARD baseline — callers
+    must pass the COMMITTED count (see ``_guard_baseline_sorry_count``),
+    never the post-stub session count, or the verdict acquires the
+    calibration double semantics documented there.
     """
     return (
         final_build_ok
@@ -1143,17 +1171,31 @@ class MultiAgentSorryProver:
                 f" without proof, not structural progress (#11421)."
             )
             structural_progress = False
+        # #17433: guard baseline = COMMITTED sorry count (pre-stub on the
+        # calibration path), not the post-stub session count.
+        guard_baseline = _guard_baseline_sorry_count(demo, original_sorry_count)
         stmt_mutation = _stmt_mutation_guard(
-            final_sorry, original_sorry_count, final_build_ok,
+            final_sorry, guard_baseline, final_build_ok,
             proof_found, verified_tactic_count,
         )
         if stmt_mutation:
-            print(
-                f"  STMT_MUTATION_FALSE_SUCCESS: sorry {original_sorry_count}"
+            calib_note = (
+                "" if guard_baseline == original_sorry_count
+                else f" [calibration #17433: guard baseline=committed "
+                     f"{guard_baseline}, session-start(stubbed)="
+                     f"{original_sorry_count}]"
+            )
+            guard_msg = (
+                f"STMT_MUTATION_FALSE_SUCCESS: sorry {guard_baseline}"
                 f" -> {final_sorry} with 0 verified tactic (proof_found="
                 f"{proof_found}). The statement was mutated, nothing was "
-                f"proved. Restoring original file."
+                f"proved. Restoring original file.{calib_note}"
             )
+            print(f"  {guard_msg}")
+            # #17433: spans/transcripts never carried the guard stdout —
+            # emit the verdict as a trace event so artefact audits can
+            # adjudicate post-hoc without the console log.
+            self.trace.log("guard-fx6", "verdict", guard_msg)
             Path(filepath).write_text(original_content, encoding="utf-8")
             final_sorry = original_sorry_count
             structural_progress = False
@@ -2112,16 +2154,30 @@ class AutonomousProver:
         verified_tactic_count = sum(
             1 for a in state.tactic_history if a.success
         )
+        # #17433: guard baseline = COMMITTED sorry count (pre-stub on the
+        # calibration path), not the post-stub session count.
+        guard_baseline = _guard_baseline_sorry_count(demo, original_sorry_count)
         stmt_mutation = _stmt_mutation_guard(
-            final_sorry, original_sorry_count, final_build_ok,
+            final_sorry, guard_baseline, final_build_ok,
             proof_found=False, verified_tactic_count=verified_tactic_count,
         )
         if stmt_mutation:
-            print(
-                f"  STMT_MUTATION_FALSE_SUCCESS: sorry {original_sorry_count}"
+            calib_note = (
+                "" if guard_baseline == original_sorry_count
+                else f" [calibration #17433: guard baseline=committed "
+                     f"{guard_baseline}, session-start(stubbed)="
+                     f"{original_sorry_count}]"
+            )
+            guard_msg = (
+                f"STMT_MUTATION_FALSE_SUCCESS: sorry {guard_baseline}"
                 f" -> {final_sorry} with 0 verified tactic. The statement was "
                 f"mutated, nothing was proved. Restoring original file."
+                f"{calib_note}"
             )
+            print(f"  {guard_msg}")
+            # #17433: emit the verdict as a trace event (spans/transcripts
+            # never carried the guard stdout).
+            self.trace.log("guard-fx6", "verdict", guard_msg)
             Path(filepath).write_text(original_file_content, encoding="utf-8")
             final_sorry = original_sorry_count
         success, structural_progress_autonomous = _autonomous_success_gate(

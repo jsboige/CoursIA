@@ -7,6 +7,7 @@ network, no kernel.
 """
 import errno
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -222,6 +223,26 @@ class TestCli:
         assert "fail-by-design" in out.stderr
         assert "regles-validation-detail.md" in out.stderr
         assert "never hand-edit" in out.stderr
+
+    def test_stderr_verdict_survives_cp1252_child(self, repo):
+        """#17427 -- le verdict ne doit pas dependre de la page de code de la
+        machine. Un enfant en ACP 1252 (simule par PYTHONIOENCODING=cp1252,
+        ce qui force l'encodage des pipes de l'organe) emet l'em-dash de
+        l'annotation ``::error`` en byte 0x97 ; le lecteur decode UTF-8 ->
+        UnicodeDecodeError -> stderr=None masque le verdict (2 faux rouges
+        sur main Windows ACP 1252). Post-fix : l'organe reconfigure ses flux
+        en UTF-8 a l'entree de main(), l'annotation arrive entieres."""
+        write_nb(repo, "a.ipynb", make_nb([1, 2, 3]))
+        base = commit(repo, "base")
+        write_nb(repo, "a.ipynb", make_nb([2, 2, 3]))
+        commit(repo, "head")
+        env = {**os.environ, "PYTHONIOENCODING": "cp1252"}
+        out = subprocess.run(
+            [sys.executable, str(Path(__file__).resolve().parent.parent
+                                 / "check_exec_ratchet.py"), base],
+            cwd=repo, capture_output=True, encoding="utf-8", env=env)
+        assert out.returncode == 1
+        assert "::error file=a.ipynb" in out.stderr
 
     def test_exit_0_when_clean_kept(self, repo):
         write_nb(repo, "a.ipynb", make_nb([1, 2, 3]))

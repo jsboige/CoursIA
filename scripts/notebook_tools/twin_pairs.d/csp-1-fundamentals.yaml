@@ -1,7 +1,7 @@
 - name: CSP-1 Fundamentals
   family: Search/Part2-CSP
   python: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb
-  csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb
   parity_level: semantic
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: 'Les DEUX jumeaux atteignent le meme moteur de production Choco (parite lib-vs-lib stricte, mandat owner #10382 ''lib vs lib c''est encore mieux''). C# = Choco-solver 4.10.17 (Java, Apache-2.0) via IKVM 8.15.0 home shade DLL (recette #4711). Python = pychoco (binding Python officiel de Choco, PyPI MIT), section 6bis ajoutee 2026-08-19 (#10382) : les trois demonstrations du jumeau C# sont rejouees avec le meme modele (IntVar par etat 0..2 + arithm ''!='' pour l''Australie ; boucle solve() pour l''enumeration ; all_different + scalar/arithm diagonales pour les 8-Reines). Convergence mesuree : enumeration Australie = 18 solutions des deux cotes ; solutions valides sur les memes instances. Socle pedagogique from-scratch (classe CSP, backtracking, MRV, LCV) conserve intact des deux cotes ; python-constraint reste en section 6 cote Python comme moteur leger avant le pont industriel. Visualisation : Python = matplotlib, C# = rendu ASCII (inchange).'

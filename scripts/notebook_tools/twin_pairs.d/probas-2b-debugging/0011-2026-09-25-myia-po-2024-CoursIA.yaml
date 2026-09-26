@@ -1,0 +1,7 @@
+date: '2026-09-25'
+by: myia-po-2024:CoursIA
+python_sha: 5c9e8b5ec0c9b8f13405f8bf6c4640f5da2d3c65
+csharp_sha: d0ed2d83814844a366d9e6bf5b04eb1eededd2b4
+content_python_sha: 6415aa4a15fb463fe205fef1b09a2164f0a54f8896c4eeea9d9c827114445d7c
+content_csharp_sha: 060ff81e2e0cbe8dbea460dd48e9bcf4962f8a00b3fa6bb2b3c8fcbb78b653e3
+reason: 'G4a #14873 (arbitrage c.5830481267) : renommage git mv PyMC-06-Debugging.ipynb -> PyMC-02b-Debugging-Python.ipynb + header (Serie 02b/20, nav 02<->03) + stem swaps internes. Markdown-only, aucune cellule code modifiee. Parite de numero retablie avec le jumeau C# Infer-2b (#13753).'

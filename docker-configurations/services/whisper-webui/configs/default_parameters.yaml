@@ -5,7 +5,7 @@ whisper:
   beam_size: 5
   log_prob_threshold: -1.0
   no_speech_threshold: 0.6
-  compute_type: float32
+  compute_type: float16
   best_of: 5
   patience: 1.0
   condition_on_previous_text: true
@@ -21,18 +21,18 @@ whisper:
   suppress_tokens: '[-1]'
   max_initial_timestamp: 1.0
   word_timestamps: false
-  prepend_punctuations: '"''“¿([{-'
-  append_punctuations: '"''.。,，!！?？:：”)]}、'
+  prepend_punctuations: '"''¿([{-'
+  append_punctuations: '"''.。,，!！?？:：")]}、'
   max_new_tokens: null
   chunk_length: 30
-  hallucination_silence_threshold: null
+  hallucination_silence_threshold: 3.0
   hotwords: null
   language_detection_threshold: 0.5
   language_detection_segments: 1
   batch_size: 24
   enable_offload: true
   add_timestamp: false
-  file_format: SRT
+  file_format: txt
 vad:
   vad_filter: false
   threshold: 0.5
@@ -41,10 +41,10 @@ vad:
   min_silence_duration_ms: 1000
   speech_pad_ms: 2000
 diarization:
-  is_diarize: true
+  is_diarize: false
   diarization_device: cuda
-  hf_token: ""  # Set via HF_TOKEN env var or .env file
-  enable_offload: true
+  hf_token: ''
+  enable_offload: false
 bgm_separation:
   is_separate_bgm: false
   uvr_model_size: UVR-MDX-NET-Inst_HQ_4

@@ -48,6 +48,9 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
         "scripts/lean/tests",
         "scripts/translation/tests",
         "scripts/audit/tests",
+        # scripts/fallacy_detection/tests : dir entier (#17580) — la garde
+        # argumentum_snapshot (14 tests) devient un test de la collection.
+        "scripts/fallacy_detection/tests",
         "MyIA.AI.Notebooks/GameTheory/tests",
         "MyIA.AI.Notebooks/QuantConnect/scripts/tests",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_bg_tree_lock.py",
@@ -61,6 +64,21 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
         # (test_fuzzy_match_group.py seul), deps rapidfuzz/unidecode/openpyxl
         # ajoutées au pip install du job, zéro PII (journal auto-créé).
         "GradeBookApp",
+        # SymbolicAI/Argument_Analysis : dir entier (issue #17248) — 174 tests
+        # sur 5 fichiers, 0,5-0,9 s, stdlib + effets de bord mockes (aucun
+        # reseau). La suite EXISTAIT deja mais n'etait collectee par AUCUNE CI :
+        # absente de pytest.ini ET de ce dict ET sans marqueur CI-EXCLUDED — or
+        # ce guard ne compare que les testpaths DECLARES, donc il restait VERT
+        # sur un dossier entier non surveille (mesure 2026-09-21 : exit 0 alors
+        # que 174 tests ne tournaient nulle part). Ventilation mesuree : tests/
+        # test_state_manager_plugin 50, tests/test_argumentation_state 50,
+        # tests/test_runner 31, test_install_jdk_portable 24,
+        # tests/test_jvm_compat_reporting 19 ; floor CI pose a 174. La branche
+        # `tarfile` de install_jdk_portable (test l.203, platform.system pinne a
+        # "Linux") est deja exercee localement : python 3.11 des deux cotes
+        # (local 3.11.9, python-version '3.11' du job), et pytest.ini porte deja
+        # `filterwarnings = ignore::DeprecationWarning`.
+        "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis",
     ],
     ".github/workflows/ml-tests.yml": [
         "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/tests",

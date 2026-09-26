@@ -282,6 +282,12 @@ async def _run_locked(
     ):
         target_path = Path(demo["file"])
         original = target_path.read_bytes()
+        # #17433: capture the COMMITTED sorry count BEFORE the stub write
+        # and stash it on a demo COPY — provers.py's FX-6 guard measures
+        # against the committed statement, not the stubbed file. Copy, not
+        # mutation: DEMOS entries are module-level dicts shared across runs.
+        demo = {**demo, "pre_stub_sorry_count": count_real_sorries(
+            original.decode("utf-8"))}
         stubbed = stub_theorem_proof(
             original.decode("utf-8"), demo["theorem_name"]
         )

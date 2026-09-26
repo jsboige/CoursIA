@@ -80,3 +80,38 @@ def test_regexes_directly():
     assert LONE_PATH_RE.match(INCIDENT_BODY_16670)
     assert PROFILE_PATH_RE.search(INCIDENT_BODY_16670)
     assert not LONE_PATH_RE.match("not a path, a sentence")
+
+
+# --- workflow concurrency lock ----------------------------------------------
+# The guard's workflow fires on `issue_comment` AND `pull_request`. A comment
+# run executes against `main`, so it must never share a concurrency group with
+# the PR-head run: with `cancel-in-progress`, it would cancel that run and leave
+# a `cancelled` check on the head, which `PR gate` fails as "never concluded".
+
+WORKFLOW = Path(__file__).resolve().parents[2] / ".github" / "workflows" / "local-path-waiver-guard.yml"
+
+# The group key as it stood when the defect was measured (negative control).
+DEFECTIVE_GROUP = (
+    "local-path-waiver-${{ github.event.issue.number || "
+    "github.event.pull_request.number || github.event.inputs.pr_number }}"
+)
+
+
+def _group_isolates_events(group: str) -> bool:
+    return "github.event_name" in group
+
+
+def test_negative_control_defective_group_is_caught():
+    """Without this, a predicate that accepts everything would pass the lock."""
+    assert not _group_isolates_events(DEFECTIVE_GROUP)
+
+
+def test_workflow_group_isolates_comment_runs_from_pr_runs():
+    import yaml
+
+    wf = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+    triggers = wf.get("on", wf.get(True))  # PyYAML reads a bare `on:` as True
+    assert "issue_comment" in triggers and "pull_request" in triggers
+    concurrency = wf["concurrency"]
+    if concurrency.get("cancel-in-progress"):
+        assert _group_isolates_events(concurrency["group"]), concurrency["group"]

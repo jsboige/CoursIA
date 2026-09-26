@@ -14,7 +14,7 @@ Le catalogue généré (`COURSE_CATALOG.generated.json`) porte aujourd'hui un ch
 
 1. **Maturité éditoriale** — où en est la *prose pédagogique* ? (de DRAFT = jamais relu à FINAL = relu, stable, prêt à publier).
 2. **Reproductibilité** — le notebook a-t-il *réellement tourné* et avec quel niveau de garantie ? (de UNTESTED = aucune cellule exécutée à REPRODUCED = ré-exécuté de bout en bout avec succès, horodaté).
-3. **Revue scientifique** — la *substance technique* a-t-elle été validée et par qui ? (de UNREVIEWED = auteur seul à FORMALLY_VERIFIED = preuve formelle ou peer-review externe).
+3. **Confiance scientifique** — quel *risque* la substance prend-elle sur ce qu'elle affirme ? (de UNASSESSED = pas d'appréciation portée à RESEARCH = recherche active, contenu explicitement en cours d'élaboration).
 
 Mélanger ces axes en une seule étiquette (PRODUCTION, BETA…) a trois défauts :
 - **Illisible** : « BETA » ne dit pas si le notebook a réellement exécuté, ni si la substance est revue — il dit juste « pas tout à fait finalisé ».
@@ -49,12 +49,50 @@ Mélanger ces axes en une seule étiquette (PRODUCTION, BETA…) a trois défaut
 
 ### Axe 3 — `scientific_review` (revue scientifique)
 
-| Valeur | Définition | Critère vérifiable |
-|--------|-----------|--------------------|
-| `UNREVIEWED` | Aucun passage en revue hors l'auteur | Pas de signal `scientific_reviewed_by` ni de PR/discussion de substance attachée |
-| `AUTHOR_REVIEWED` | L'auteur a relu sa propre substance (cross-check, sanity-checks) | Présence d'une note « Self-review » dans le notebook OU signal PR auteur `self-reviewed` |
-| `PEER_REVIEWED` | Relecture par ≥1 agent tiers du cluster ou reviewer externe | `scientific_reviewed_by` non-null ET ≠ auteur du dernier commit |
-| `FORMALLY_VERIFIED` | Preuve formelle (Lean, Coq, Agda) ou benchmark reproductible validé | Présence d'un fichier `.lean` companion OU `lake build SUCCESS` daté OU benchmark QC multi-seed ≥4 seeds |
+**L'axe mesure le risque du contenu, pas la provenance de sa relecture** (#14831,
+sign-off user 2026-09-21). L'échelle précédente (`UNREVIEWED` → `AUTHOR_REVIEWED` →
+`PEER_REVIEWED` → `FORMALLY_VERIFIED`) classait *qui avait relu, avec quelle rigueur
+formelle*. Elle était **inversée dans ses effets** : une série de recherche active relue
+par des pairs atteignait le haut de l'échelle, pendant qu'un notebook de cours classique,
+universellement admis et sans aucun risque, restait `UNREVIEWED` faute de reviewer nommé.
+Elle reposait de plus sur le compte de `sorry`, un indicateur qui ne concerne qu'une
+poignée de notebooks Lean, pour piloter un axe couvrant tout le corpus.
+
+| Valeur | Définition | D'où elle vient |
+|--------|-----------|-----------------|
+| `UNASSESSED` | Aucune appréciation portée. **Ce n'est pas un mauvais score** : c'est l'absence de jugement, et c'est le défaut honnête. | défaut ; aucune entrée de registre |
+| `ESTABLISHED` | Contenu communément admis et universellement pratiqué. Le notebook ne prend aucun risque sur ce qu'il affirme. | `confidence: established` au registre |
+| `ADVANCED` | Protocoles plus avancés, exécutions moins contrôlées, théories récentes, interprétations discutables. Le contenu tient, mais il engage. | `confidence: advanced` |
+| `RESEARCH` | Recherche active — ICT au premier chef. Le contenu est explicitement en cours d'élaboration, et le dire est la seule position honnête. | `confidence: research` |
+
+Une valeur non reconnue retombe sur `UNASSESSED` (**fail-CLOSED**) : c'est la propriété
+qui empêche le label-gaming.
+
+#### L'appréciation se périme quand le code bouge
+
+Une appréciation porte sur ce que le notebook **calcule et affirme**. Si le calcul change,
+elle ne porte plus sur ce qui est là. Le catalogue émet donc `scientific_review_stale:
+true` lorsque l'empreinte du code diffère du `reviewed_code_sha` enregistré au moment de
+la revue — **la grade est conservée**, seul le drapeau bascule : la perdre effacerait
+l'information (« personne n'a jamais apprécié ») alors que le fait est autre (« quelqu'un
+a apprécié, puis le code a bougé »).
+
+Cela met l'audit scientifique en **régime permanent**, ce qui est l'effet recherché : une
+nouvelle revue est due, sous le protocole de [SCIENTIFIC_REVIEW_CARD.md](notebook-metadata/SCIENTIFIC_REVIEW_CARD.md).
+
+L'empreinte exclut délibérément trois choses, chacune pour une raison mesurée :
+
+- **le markdown** — la campagne de densification a modifié 178 notebooks en trois semaines
+  sans toucher une ligne de code ; l'inclure rétrograderait tout le corpus au premier
+  passage, et une rétrogradation qui frappe tout ne signale plus rien ;
+- **les sorties** — une ré-exécution les change sans changer ce que le notebook affirme ;
+- **`execution_count`** — pur artefact d'ordre d'exécution.
+
+C'est une empreinte de **contenu**, jamais un blob SHA git : un squash-merge réécrit les
+blobs et tuerait l'ancre à chaque merge (#11919).
+
+`sorry_free` et `scientific_reviewed_by` restent rendus **comme preuves à côté** — ils ne
+pilotent plus la grade.
 
 ---
 
@@ -63,7 +101,7 @@ Mélanger ces axes en une seule étiquette (PRODUCTION, BETA…) a trois défaut
 Le champ `maturity` monolithique actuel reste **présent** dans `COURSE_CATALOG.generated.json` pour ne casser aucun consommateur existant (README, dashboards, scripts tiers). Il est désormais **calculé comme l'agrégat** des 3 axes, selon la règle :
 
 ```
-editorial == "FINAL" AND reproducibility in ("EXECUTED", "REPRODUCED") AND scientific_review in ("PEER_REVIEWED", "FORMALLY_VERIFIED")
+production_signed (tampon du responsable pédagogique, cf docs/notebook-metadata/production-scope.md)
   → maturity = "PRODUCTION"
 editorial in ("BETA", "FINAL") AND reproducibility in ("EXECUTED", "REPRODUCED")
   → maturity = "BETA"
@@ -75,13 +113,29 @@ sinon
   → maturity = "DRAFT"
 ```
 
-**Le consommateur qui veut plus de granularité** lit directement `editorial`, `reproducibility`, `scientific_review`. Celui qui veut l'ancien label lit `maturity`. Aucun breaking change.
+**`PRODUCTION` ne se dérive plus d'aucune combinaison d'axes** (#14831, sign-off user
+2026-09-21). Il ne décrit pas une propriété mesurable du fichier : il dit que le
+responsable pédagogique a **apposé son tampon**, et juge le notebook finalisé pour être
+utilisé en cours **par d'autres**. Le calculer revenait à fabriquer une signature.
+
+Le signal vient donc de la colonne « Verdict » de
+[production-scope.md](notebook-metadata/production-scope.md), qui est la surface de
+décision. Un notebook non tranché reste `BETA` — et c'est le verdict **correct**, pas un
+manque : l'auteur enseigne lui-même sur les beta et les beta-teste avec ses étudiants.
+
+`scientific_review` reste **nécessaire mais pas suffisant** pour `PRODUCTION` : il est
+exigé par le validateur de périmètre, pas par l'agrégat — un axe qui *gate* ne doit pas
+être le même objet que l'axe qui *décrit*.
+
+**Le consommateur qui veut plus de granularité** lit directement `editorial`,
+`reproducibility`, `scientific_review` (+ `scientific_review_stale`). Celui qui veut
+l'ancien label lit `maturity`. Aucun breaking change.
 
 ## Statut séparé — non touché par ce schéma
 
 Le champ `status` (`READY`, `DEMO`, `RESEARCH`, `BROKEN`) reste **orthogonal** aux 3 axes maturité. Un notebook peut être :
-- `editorial=FINAL` + `reproducibility=REPRODUCED` + `scientific_review=PEER_REVIEWED` + `status=BROKEN` (ex : notebook qui marchait mais dont une dépendance externe est cassée) ;
-- `editorial=ALPHA` + `reproducibility=EXECUTED` + `scientific_review=AUTHOR_REVIEWED` + `status=DEMO` (ex : démo scientifique sans valeur pédagogique aboutie).
+- `editorial=FINAL` + `reproducibility=REPRODUCED` + `scientific_review=ESTABLISHED` + `status=BROKEN` (ex : notebook qui marchait mais dont une dépendance externe est cassée) ;
+- `editorial=ALPHA` + `reproducibility=EXECUTED` + `scientific_review=RESEARCH` + `status=DEMO` (ex : démo scientifique sans valeur pédagogique aboutie).
 
 `status` répond à « *peut-on le faire tourner en l'état ?* », les 3 axes répondent à « *où en est sa substance ?* ». Séparer les deux est une décision architecturale stable (issue #8051 acceptance critère 2).
 

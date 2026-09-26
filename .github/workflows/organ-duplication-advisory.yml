@@ -1,0 +1,118 @@
+name: Organ-duplication advisory
+
+# Organe de la regle organ-first implementation (.claude/rules/
+# organ-first-implementation.md, merge #16778 ; spec #16776, fille #13564).
+#
+# Ce que la regle demande : avant de reimplementer une semantique qu'une
+# autre serie possede deja, la PR nomme l'organe (5 questions dans le body)
+# OU declare une copie pedagogique (« copie pedagogique declaree, motif : ... »).
+# Jusqu'ici la regle s'applique a la main -- ce detector rend la duplication
+# VISIBLE : symboles def/class ajoutes qui collisionnent avec l'index des
+# organes (scripts/audit/organ_api_index.yaml), dans une serie != proprietaire.
+#
+# Controle positif retroactif (acceptance #16776) : Greffe2 -- le patch reel
+# de #13802 produit 5 COLLISION (Operateur, successeurs, prop, ops_de_base,
+# ops_avec_radeau -> Planners) SANS body, et 5 EXEMPTED AVEC son body
+# (« copie fidele »). Controle negatif : #13664 (ICT-12e, consommateur
+# Infer.NET/PyMC pur) = 0 collision.
+#
+# ADVISORY, never blocking (acceptance #16776 : « advisory en CI dans un
+# premier temps ») : le job sort TOUJOURS 0. Le payload actionnable est le
+# commentaire sticky (collisions + comment declarer), jamais la conclusion
+# verte du job.
+#
+# Hors scope (student-pr-reviews.md) : les PRs de fork (soumissions
+# etudiantes) sautent le job -- review bienveillante, pas de critere
+# interne de contenu.
+
+on:
+  pull_request:
+    types: [opened, synchronize, edited, reopened]
+    branches: [main]
+    paths:
+      - '**/*.py'
+      - '**/*.ipynb'
+      # Self-cover (#8822) : l'organe se liste lui-meme, sinon il ne peut
+      # plus se re-evaluer une fois ses paths sortis du diff.
+      - 'scripts/audit/detect_organ_duplication.py'
+      - 'scripts/audit/organ_api_index.yaml'
+      - '.github/workflows/organ-duplication-advisory.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: organ-duplication-advisory-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  organ-duplication-advisory:
+    name: "Organ-duplication advisory (non-blocking)"
+    # Routage #14283 tranche 3 : jambe Linux auto-hebergee, runs-on STATIQUE
+    # (garde auditable de check_self_hosted_runner_policy.py). Les PRs de
+    # fork sautent le job -- pr_gate.py compte skipped comme OK.
+    # Retour arriere = remettre runs-on: ubuntu-latest + retrait allowlist.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Same-repo PRs only (agents/staff). Fork = etudiants ( benevolent review).
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # fetch-depth 0 + blob:none : merge-base doit resoudre sur une
+          # branche en retard (#11646/#11658).
+          fetch-depth: 0
+          filter: blob:none
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run detector (advisory, do not gate)
+        id: run
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          python -m pip install --quiet pyyaml
+          set +e
+          # Base = merge-base origin/main HEAD ; si introuvable : ABSTENTION
+          # EXPLICITE, jamais de fallback silencieux (garde #8655/#8662 :
+          # « pas regarde » et « rien trouve » doivent rester distinguables).
+          BASE=$(git merge-base origin/main HEAD 2>/dev/null)
+          if [ -z "$BASE" ]; then
+            echo "status=abstain" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          printf '%s' "$PR_BODY" > /tmp/pr_body.txt
+          python scripts/audit/detect_organ_duplication.py \
+            --base "$BASE" --head HEAD \
+            --body-file /tmp/pr_body.txt \
+            > /tmp/organ_dup.out 2>/tmp/organ_dup.err
+          rc=$?
+          # --check omis : advisory. rc n'est lu que pour le statut affiche.
+          if grep -q '^BLOCKED' /tmp/organ_dup.out; then
+            echo "status=collision" >> "$GITHUB_OUTPUT"
+          elif grep -q '^EXEMPTED' /tmp/organ_dup.out; then
+            echo "status=exempted" >> "$GITHUB_OUTPUT"
+          elif grep -q '^CLEAN' /tmp/organ_dup.out; then
+            echo "status=clean" >> "$GITHUB_OUTPUT"
+          else
+            echo "status=abstain" >> "$GITHUB_OUTPUT"
+            cat /tmp/organ_dup.err >&2
+            exit 0
+          fi
+          cat /tmp/organ_dup.out
+          exit 0
+
+      - name: Post advisory comment
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: organ-duplication-advisory
+          message: |
+            ${{ steps.run.outputs.status == 'clean' && 'No organ-duplication: no added def/class collides with another series organ API (scripts/audit/organ_api_index.yaml).' || steps.run.outputs.status == 'exempted' && 'Organ duplication DETECTED but EXEMPTED: the PR body declares a pedagogical copy. The organ-first rule (5 questions) is satisfied by construction. If this copy grows (several consumer notebooks), ask the source series for an extraction instead.' || steps.run.outputs.status == 'abstain' && 'Organ-duplication detector ABSTAINS: merge-base unresolved or structural error -- no verdict. See workflow log.' || format('WARNING: added symbol(s) collide with another series organ API (organ-first rule, .claude/rules/organ-first-implementation.md). Answer the 5 questions in the PR body, or declare the pedagogical copy (« copie pedagogique declaree, motif : ... ») which whitens it. See the workflow log for the full collision list (demanding series -> bypassed organ -> symbol). Advisory, NOT a merge gate.', '') }}
+
+            Detector: `python scripts/audit/detect_organ_duplication.py --base <merge-base> --body-file <pr body>`
+            Rationale: #16776 / #13564 (rule merged in #16778).

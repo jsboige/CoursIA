@@ -4,11 +4,11 @@
 
 Un posterior n'est pas une fin en soi : c'est l'**entrée** d'une décision. Savoir que la tumeur est maligne avec 70 % de probabilité ne dit pas s'il faut opérer ; connaître la distribution de rendement d'un actif ne dit pas combien y investir. Cet arc prolonge la modélisation probabiliste de la série [Probas](../README.md) jusqu'au **choix d'action sous incertitude** : comment transformer une croyance quantifiée en la meilleure décision possible, et comment **prouver** que cette décision est optimale.
 
-L'arc rassemble **26 notebooks** répartis en trois traitements complémentaires du même socle théorique, plus un lake Lean 4 qui en certifie les théorèmes phares :
+L'arc rassemble des notebooks répartis en trois traitements complémentaires du même socle théorique, plus un lake Lean 4 qui en certifie les théorèmes phares :
 
 | Composant | Notebooks | Stack | Ce qu'il apporte |
 |-----------|-----------|-------|------------------|
-| [`DecInfer/`](DecInfer/README.md) | 10 (8 C# + **2 Lean 4**) | Infer.NET (.NET 9) + kernel Lean | L'arc de référence : des axiomes vNM aux MDP et bandits, avec deux notebooks à **preuve formelle native** |
+| [`DecInfer/`](DecInfer/README.md) | Arc C# + companions **Lean 4** | Infer.NET (.NET 9) + kernel Lean | L'arc de référence : des axiomes vNM aux MDP et bandits, avec ses companions à **preuve formelle native** |
 | [`DecPyMC/`](DecPyMC/README.md) | 12 (Python) | PyMC (NUTS/MCMC) | Le miroir Python : mêmes concepts, échantillonnage stochastique, diagnostics ArviZ, puis la **jambe actuarielle** (8-12) |
 | [`Causal-Bridges/`](Causal-Bridges/README.md) | 4 (Python) | `dowhy` (PyWhy) | Le **capstone causal** : l'échelle de Pearl et le do-calculus, plus les méthodes quasi-expérimentales (DiD, RDD, contrôle synthétique) |
 | [`decision_theory_lean`](../decision_theory_lean/) | *(lake, hors compte)* | Lean 4 + Mathlib | La **couche de certification** : utilité espérée vNM, cohérence de de Finetti, escompte de Gittins, démontrés `0 sorry` |
@@ -59,7 +59,7 @@ Le parcours suit une progression unique, portée en parallèle par les deux mote
 2. **Structure de décision** — On passe des choix isolés aux décisions structurées : critères multiples (MAUT), diagrammes d'influence (nœuds de chance / décision / utilité), et surtout la **valeur de l'information** (EVPI, EVSI) — combien vaut un test avant de l'acheter.
 3. **Robustesse & séquentiel** — Décision sous incertitude sévère (Minimax, regret) puis passage au temps : processus de décision markoviens (MDP), équation de Bellman, itération valeur/politique.
 4. **Bandits** — L'arbitrage exploration/exploitation : Thompson Sampling (posterior Beta-Bernoulli calculé par le moteur), comparé à ε-greedy et UCB1. C'est ici qu'intervient le **second notebook Lean** ([DecInfer-09](DecInfer/DecInfer-09-Lean-Gittins.ipynb)) : l'indice de Gittins et les identités d'escompte géométrique.
-5. **Pont causal (capstone)** — [Do-Calculus-Bridge](Causal-Bridges/Do-Calculus-Bridge.ipynb) fédère les quatre traitements de la causalité disséminés dans le dépôt (Tweety logique, Infer.NET, PyMC, émergence causale PyPhi) autour de l'**échelle de Pearl** (association → intervention → contrefactuel) et du **do-calculus**, exécutés sur l'outil de référence [`dowhy`](https://www.pywhy.org/dowhy/). Une décision optimale suppose de savoir ce que l'on *cause*, pas seulement ce que l'on *observe*.
+5. **Pont causal (capstone)** — [CausalBridges-01 — Do-Calculus](Causal-Bridges/CausalBridges-01-Do-Calculus.ipynb) fédère les quatre traitements de la causalité disséminés dans le dépôt (Tweety logique, Infer.NET, PyMC, émergence causale PyPhi) autour de l'**échelle de Pearl** (association → intervention → contrefactuel) et du **do-calculus**, exécutés sur l'outil de référence [`dowhy`](https://www.pywhy.org/dowhy/). Une décision optimale suppose de savoir ce que l'on *cause*, pas seulement ce que l'on *observe*.
 
 ## Structure et contenu
 
@@ -73,14 +73,14 @@ Douze notebooks Python (`DecPyMC-1..12`) qui rejouent les mêmes concepts par é
 
 ### `Causal-Bridges/` — le capstone causal (dowhy)
 
-Quatre notebooks-ponts, dont [Do-Calculus-Bridge](Causal-Bridges/Do-Calculus-Bridge.ipynb) en tête, qui relient l'arc décision au reste du dépôt par la question causale : le do-calculus (Do-Calculus-Bridge), l'identification nommée d'estimands (DoWhy-1), le contrefactuel individuel (DoWhy-2) et les méthodes quasi-expérimentales (Quasi-Experimental). Exécutés sur `dowhy` (kernel `coursia-ml-training`). **Détail** : [`Causal-Bridges/README.md`](Causal-Bridges/README.md).
+Quatre notebooks-ponts, dont [CausalBridges-01 — Do-Calculus](Causal-Bridges/CausalBridges-01-Do-Calculus.ipynb) en tête, qui relient l'arc décision au reste du dépôt par la question causale : le do-calculus (CausalBridges-01), l'identification nommée d'estimands (CausalBridges-02), le contrefactuel individuel (CausalBridges-03) et les méthodes quasi-expérimentales (CausalBridges-07). Exécutés sur `dowhy` (kernel `coursia-ml-training`). **Détail** : [`Causal-Bridges/README.md`](Causal-Bridges/README.md).
 
 ### `decision_theory_lean` — la couche de certification (hors compte notebooks)
 
 Le lake Lean 4 [`decision_theory_lean`](../decision_theory_lean/), à la racine de la série Probas (visible des deux pistes), formalise trois résultats canoniques :
 
 - **Utility** — la représentation d'utilité espérée de von Neumann–Morgenstern : les quatre axiomes (complétude, transitivité, indépendance, continuité/Archimède), la **direction saine** du théorème (représentation ⟹ rationalité) et la stabilité affine, démontrées **sans aucun `sorry`**. La direction d'existence (Herstein–Milnor 1953) est documentée comme jalon ouvert.
-- **Coherence** — la cohérence de de Finetti / Dutch Book : la direction constructive (cas fini) et le cas mono-ticket sont **clos sans `sorry`** ; des prix de pari incohérents exposent l'agent à un livret de paris à perte sûre, via l'identité d'inclusion–exclusion. **Vitrine notebook** : sections 7-8 de [DecInfer-02](DecInfer/DecInfer-02-Lean-ExpectedUtility.ipynb) (`#check`/`#print axioms` sur `non_additive_implies_dutch_book` et `single_coherent_iff_prob_bounds`, EPIC visibilité #11703).
+- **Coherence** — la cohérence de de Finetti / Dutch Book : la direction constructive (cas fini) et le cas mono-ticket sont **clos sans `sorry`** ; des prix de pari incohérents exposent l'agent à un livret de paris à perte sûre, via l'identité d'inclusion–exclusion. **Vitrine notebook** : [DecInfer-02b-Lean-Coherence](DecInfer/DecInfer-02b-Lean-Coherence.ipynb), companion dédié extrait des sections 7-8 de DecInfer-02 (G4b, #14873) (`#check`/`#print axioms` sur `non_additive_implies_dutch_book` et `single_coherent_iff_prob_bounds`, EPIC visibilité #11703).
 - **Gittins** — le bandit actualisé à horizon infini : les **briques de l'escompte géométrique sont entièrement prouvées** ; le théorème phare d'optimalité de l'indice reste **énoncé mais intraitable** dans le Mathlib actuel (pas de formalisation MDP/Bellman), maintenu en `sorry` documenté — un jalon honnête, non un trou masqué.
 
 Le lake suit la convention i18n FR/EN de la série (fichiers `*_en.lean` miroirs). **Détail** : [`decision_theory_lean/README.md`](../decision_theory_lean/README.md).
@@ -93,7 +93,7 @@ Le lake suit la convention i18n FR/EN de la série (fichiers `*_en.lean` miroirs
 
 - **Piste Infer.NET (`DecInfer/`)** : .NET 9.0 + `dotnet-interactive`. Voir [`../README.md`](../README.md#installation) pour l'installation du kernel.
 - **Piste PyMC (`PyMC/`) et pont causal (`Causal-Bridges/`)** : Python 3.10+, kernel `coursia-ml-training` (`pymc`, `arviz`, `dowhy`).
-- **Companions Lean (`DecInfer-02`, `DecInfer-09`)** : kernel Lean 4 (WSL) + lake [`decision_theory_lean`](../decision_theory_lean/). Compilation : `lake -R build` dans le dossier du lake.
+- **Companions Lean (`DecInfer-02`, `DecInfer-02b`, `DecInfer-09`)** : kernel Lean 4 (WSL) + lake [`decision_theory_lean`](../decision_theory_lean/). Compilation : `lake -R build` dans le dossier du lake.
 
 Chaque sous-série démarre par ses fondations (`DecInfer-01` / `DecPyMC-1`) et se lit dans l'ordre numérique — la progression est cumulative.
 

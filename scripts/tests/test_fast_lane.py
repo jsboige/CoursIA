@@ -32,7 +32,7 @@ sys.path.insert(0, str(CI_DIR))
 import fast_lane  # noqa: E402
 from fast_lane_registry import (  # noqa: E402
     FAST_LANE_NATIVE, PILOT, TRANCHE1, TRANCHE2, TRANCHE3, TRANCHE4,
-    TRANCHE5, TRANCHE8, TRANCHE12, Guard,
+    TRANCHE5, TRANCHE8, TRANCHE12, TRANCHE13, TRANCHE14, Guard,
 )
 
 
@@ -292,16 +292,63 @@ def test_delta_placeholders_are_resolvable():
             assert "/tmp/b.json" in resolved and "/tmp/h.json" in resolved
 
 
+def test_no_blocking_guard_is_read_as_advisory_by_pr_gate():
+    """Un garde BLOQUANT ne doit pas etre classe advisory par `pr_gate`.
+
+    `pr_gate` range en advisory tout check-run dont le nom de job contient
+    `advisory`, OU dont le workflow d'origine sur disque porte `advisory` dans
+    son `name:` (`derive_advisory_jobs`). Un garde absorbe garde son workflow
+    d'origine comme cible d'identite (`job.name == Guard.name`) : si ce
+    workflow s'appelle encore « ... advisory » apres la promotion du garde en
+    bloquant, `pr_gate` range son rouge dans le seau advisory. Le merge reste
+    bloque par le job agrege de la voie rapide, mais le resume du gate nomme
+    ce job opaque au lieu du vrai garde, et classe le vrai garde comme un
+    simple signal. Mesure du 2026-09-26 : `Split-reading ratchet (base vs PR)`,
+    promu bloquant par #17044, sorti de `split-reading-advisory.yml` (workflow
+    `Split-reading advisory`) -- seule instance sur 40 gardes.
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    import fast_lane_registry
+    import pr_gate
+
+    advisory_jobs = pr_gate.derive_advisory_jobs()
+    assert advisory_jobs, "roster advisory vide : le controle serait aveugle"
+
+    guards = {}
+    for value in vars(fast_lane_registry).values():
+        if isinstance(value, list) and value and all(
+                isinstance(item, Guard) for item in value):
+            for guard in value:
+                guards[guard.name] = guard
+    assert len(guards) >= 30, f"registre lu partiellement : {len(guards)}"
+
+    misread = sorted(
+        name for name, guard in guards.items()
+        if guard.blocking and pr_gate._is_advisory_name(name, advisory_jobs))
+    assert misread == [], (
+        "gardes bloquants classes advisory par pr_gate (renommer le `name:` "
+        f"du workflow d'origine) : {misread}")
+
+    # controle positif : un garde advisory reste bien reconnu comme tel
+    advisory = [name for name, guard in guards.items() if not guard.blocking
+                and pr_gate._is_advisory_name(name, advisory_jobs)]
+    assert advisory, "aucun garde advisory reconnu : le predicat est muet"
+
+
 def test_advisory_flags_match_the_source_workflows():
     """Le caractere advisory est une propriete du garde, pas du moteur.
 
-    `solution-leak-guard` et `prose-counts-guard` sont annonces advisory dans
-    l'en-tete de leur workflow ; les inverser ici ferait rougir la flotte sur
-    un stock que le depot a explicitement decide de ne pas bloquer.
+    `solution-leak-guard` est annonce advisory dans l'en-tete de son workflow ;
+    l'inverser ici ferait rougir la flotte sur un stock que le depot a
+    explicitement decide de ne pas bloquer. `prose-counts-guard` est passe
+    BLOQUANT (#17636, critere de sortie #9377) : son argv porte --strict et le
+    garde ne juge que les lignes AJOUTEES -- le stock de 65 notebooks ne fait
+    echouer personne, seule une PR qui rouvre la veine rougit.
     """
     by_name = {g.name: g for g in PILOT}
     assert by_name["solution-leak-guard"].blocking is False
-    assert by_name["prose-counts-guard"].blocking is False
+    assert by_name["prose-counts-guard"].blocking is True
+    assert "--strict" in by_name["prose-counts-guard"].argv
     assert by_name["banner-guard"].blocking is True
     assert by_name["pip-leak-guard"].blocking is True
     assert by_name["perimeter-review-guard"].blocking is True
@@ -808,10 +855,16 @@ def test_smartcontract_guards_are_native_blocking_deltas():
         assert "{head_json}" in guard.delta_argv
 
 
-def test_warn_rc_is_success_everywhere(monkeypatch):
-    """Un rc=2 declare en warn_rc doit etre un SUCCES coherant sur les TROIS
-    surfaces : conclusion du check-run, titre, et rouge du job -- sinon le
-    verdict dit success pendant que le job rougit."""
+def test_warn_rc_incident_coherent_on_all_three_surfaces(monkeypatch):
+    """Un rc=2 declare en warn_rc doit etre COHERANT sur les TROIS surfaces :
+    conclusion du check-run, titre, et rouge du job. Depuis #17941, un rc
+    warn qui ATTEINT l'emission est un incident du garde (Pattern 0 : gh/git
+    en echec avant toute analyse) -- la coherence est neutral + titre
+    distinct + job non rouge, PAS un success silencieux : un quitus vert
+    sur une panne serait un auto-desarmement du garde (#8655/#8656).
+    conclusion_for garde le mapping warn_rc -> 0 pour les usages internes
+    (les gardes Pattern 1 absorbe leurs warn fichier-par-fichier dans
+    run_iter et n'atteignent jamais l'emission avec un rc warn)."""
     guard = Guard(name="warneur", argv=["cmd-w"], source="s",
                   blocking=True, absorbed=True,
                   warn_rc=(2,), paths=["**/*.ipynb"])
@@ -835,8 +888,9 @@ def test_warn_rc_is_success_everywhere(monkeypatch):
                         lambda *a, **k: published.append(a))
     rc = fl.main(["--shadow", "--base-sha", "abc"])
     assert rc == 0, "un rc warn ne doit pas rougir le job"
-    assert published[0][3] == "success"
-    assert "OK" in published[0][4], published[0][4]
+    assert published[0][3] == "neutral", (
+        "#17941 : incident du garde = verdict inconnu, pas success silencieux")
+    assert "verdict inconnu" in published[0][4], published[0][4]
 
 
 def test_iter_paths_skips_files_deleted_by_the_pr(monkeypatch):
@@ -1196,6 +1250,7 @@ def test_tranche5_identity_byte_check_passes():
     r = _sp.run(
         ["python", "scripts/ci/check_absorbed_check_run_identity.py", "--check"],
         capture_output=True, text=True, cwd=Path(__file__).resolve().parents[2],
+        encoding="utf-8", errors="replace",
     )
     assert r.returncode == 0, (
         f"identity byte-check a echoue (rc={r.returncode}) : \n"
@@ -1252,3 +1307,195 @@ def test_tranche12_link_label_agreement_advisory():
     # dans paths, un deck-only PR comme #15865 (17 liens morts) ne lancerait
     # jamais le garde.
     assert "slides/**/slides.md" in guard.paths
+
+
+def test_tranche13_reading_anchor_advisory_guard_is_wired():
+    """Tranche 13 = garde d'ancrage de lecture (#16695), advisory bloquant a
+    zero FP mesure. Contrat : native, absorbe, non bloquant (#15327), delta vs
+    base, self-test pre-control (lecon #11685), et le detecteur DOIT exister
+    et tirer sur ses controles positifs (un organe qui ne dit jamais rien est
+    indiscernable d'un organe debranche).
+    """
+    assert len(TRANCHE13) == 1, (
+        "la tranche 13 documente 1 seul garde (reading-anchor) ; si le nombre "
+        "change, ce test et le registre suivent"
+    )
+    guard = TRANCHE13[0]
+    assert guard.name == "Reading-anchor advisory (lecture sans output, #16695)"
+    assert guard.source == FAST_LANE_NATIVE
+    assert guard.absorbed, f"{guard.name} doit porter absorbed=True"
+    assert not guard.blocking, (
+        f"{guard.name} est advisory (precedent check_output_collapse #15327) : "
+        f"promotion au bloquant seulement apres FP mesure a zero sur un lot reel"
+    )
+    assert guard.needs_base, f"{guard.name} est un delta vs base (cellules AJOUTEES)"
+    assert guard.pre_argv and guard.pre_argv[-1] == "--self-test", (
+        f"{guard.name} doit se pre-controler par --self-test (lecon #11685)"
+    )
+    assert "{base_ref}" in " ".join(guard.argv), (
+        f"{guard.name} doit recevoir la base de la PR"
+    )
+    assert "--fail" in guard.argv and "--json" in guard.argv
+    for needle in (
+        "**.ipynb",
+        "scripts/notebook_tools/check_reading_anchor.py",
+        "scripts/notebook_tools/tests/test_check_reading_anchor.py",
+        "scripts/ci/fast_lane_registry.py",
+    ):
+        assert needle in guard.paths, f"{needle} doit figurer dans les paths"
+    # Le detecteur existe ET tire : self-test rc=0 avec controles positifs.
+    r = subprocess.run(
+        ["python", "scripts/notebook_tools/check_reading_anchor.py", "--self-test"],
+        capture_output=True, text=True, cwd=Path(__file__).resolve().parents[2],
+        encoding="utf-8", errors="replace",
+    )
+    assert r.returncode == 0, f"self-test du detecteur en echec : {r.stdout}"
+    assert "positif" in r.stdout and "PASS" in r.stdout
+
+
+def test_tranche14_split_reading_guard_is_wired():
+    """Tranche 14 = garde split-reading-cells (#16762/#17031), cliquet #17044.
+
+    Cable a l'origine comme deuxieme TRANCHE13, il ecrasait silencieusement
+    le garde reading-anchor de #16704 (redefinition Python) : le postieur
+    cede l'index (cf. registre, commentaire TRANCHE14).
+
+    Forme CLIQUET depuis #17044 : ratchet autonome (le script fait son propre
+    diff base...HEAD -- d'ou `{base_ref}` et `needs_base`), self-test en
+    PRE-CONTROLE, et `blocking=True`. La bascule advisory -> bloquant ne tient
+    que parce que le cliquet ne regarde QUE l'ajout : un plancher absolu aurait
+    rougi les 91 findings herites de toute PR touchant un carnet porteur.
+    """
+    assert len(TRANCHE14) == 1
+    guard = TRANCHE14[0]
+    assert guard.name == "Split-reading ratchet (base vs PR)"
+    assert guard.blocking, "cliquet #17044 : l'AJOUT de lecture scindee doit rougir"
+    assert guard.needs_base, f"{guard.name} compare HEAD a la base"
+    assert guard.absorbed, f"{guard.name} doit porter absorbed=True"
+    assert "--self-test" in " ".join(guard.pre_argv)
+    assert "{base_ref}" in guard.argv, "ratchet autonome : la lane fournit la base"
+    assert "--json" in guard.argv and "--fail-on-findings" in guard.argv
+    # Forme ratchet : plus d'iteration par chemin (le script choisit lui-meme
+    # les carnets du diff), donc plus de {changed_paths} ni de warn_rc.
+    assert not guard.iterates_paths
+    assert "{changed_paths}" not in guard.argv
+    assert not guard.warn_rc
+
+
+def test_both_reading_guards_alive_after_tranche14_split():
+    """Controle du bug de collision : les DEUX gardes vivent dans DEUX tranches.
+
+    La redefinition silencieuse de TRANCHE13 par #17031 faisait disparaitre
+    reading-anchor du registre sans aucun message (le nom pointait sur la
+    seule liste split-reading). Ce controle aurait ete rouge le jour du
+    merge : il epingle les DEUX noms, distincts, un garde par tranche.
+    """
+    assert len(TRANCHE13) == 1 and len(TRANCHE14) == 1
+    assert TRANCHE13[0].name != TRANCHE14[0].name
+    assert {g.name for g in TRANCHE13 + TRANCHE14} == {
+        "Reading-anchor advisory (lecture sans output, #16695)",
+        "Split-reading ratchet (base vs PR)",
+    }
+
+
+# ---------------------------------------------------------------------------
+# #17941 -- incident gh du garde (warn_rc) : verdict inconnu, pas une faute
+# ---------------------------------------------------------------------------
+
+def test_hr_substitution_guard_declares_incident_warn_rc():
+    """Le registre doit dire la verite sur le script : il sort rc=2 sur
+    incident gh/git (l.59-60/74-75/85 de check_hr_substitution.py), et
+    warn_rc=(2,) fait de cet incident un verdict inconnu NON bloquant
+    (#17941 option a). L'ancien commentaire affirmait « rc=0/1 seulement »
+    et l'absence de warn_rc rendait une panne reseau rouge et bloquante
+    sur n'importe quelle PR notebook."""
+    matches = [g for g in PILOT if g.name == "hr-substitution-guard"]
+    assert matches, "hr-substitution-guard absent de PILOT"
+    guard = matches[0]
+    assert guard.blocking, "le verdict REEL du garde doit rester bloquant"
+    assert guard.warn_rc == (2,), (
+        "l'incident gh (rc=2) doit etre declare warn_rc : verdict inconnu, "
+        "pas une faute de la PR")
+
+
+def test_warn_rc_incident_emits_neutral_distinct_title_not_blocking(monkeypatch):
+    """Un garde bloquant dont l'execution rend un rc de warn_rc (incident
+    gh : le garde n'a RIEN analyse) emet neutral + titre distinct, et le
+    job ne rougit PAS -- sinon une panne reseau accuse la PR (#17941)."""
+    import fast_lane as fl
+    guard = Guard(name="canonique-incident", argv=["cmd-incident"], source="s",
+                  blocking=True, paths=["**/*.ipynb"], absorbed=True,
+                  warn_rc=(2,))
+    monkeypatch.setattr(fl, "PILOT", [guard])
+    monkeypatch.setattr(fl, "TRANCHE1", [])
+    monkeypatch.setattr(fl, "TRANCHE2", [])
+    monkeypatch.setattr(fl, "TRANCHE4", [])
+    monkeypatch.setattr(fl, "TRANCHE5", [])
+    monkeypatch.setattr(fl, "changed_files", lambda _ref: ["x.ipynb"])
+    monkeypatch.setattr(fl, "run_argv",
+                        lambda argv, ctx: (2, "gh pr diff failed: rate limit"))
+    monkeypatch.setattr(fl, "run_iter",
+                        lambda a, p, c, warn_rc=(), fail_on_all_warn=False: (0, ""))
+    monkeypatch.setattr(fl, "git",
+                        lambda *a: subprocess.CompletedProcess(a, 0, "sha", ""))
+    published = []
+    monkeypatch.setattr(fl, "emit_check_run",
+                        lambda *a, **k: published.append(a))
+    rc = fl.main(["--shadow", "--base-sha", "abc"])
+    by_name = {a[2]: a for a in published}
+    assert "canonique-incident" in by_name
+    name, _, _, conclusion, title = by_name["canonique-incident"][:5]
+    assert conclusion == "neutral", (
+        "un incident gh doit emettre neutral -- pas failure (la PR n'est pas "
+        "accusee) ni success (un quitus vert serait un auto-desarmement)")
+    assert "verdict inconnu" in title, (
+        "le titre du check-run doit NOMMER l'incident pour rester lisible")
+    assert rc == 0, "l'incident ne doit pas faire rougir le job"
+
+
+def test_warn_rc_verdict_zero_stays_plain_success(monkeypatch):
+    """Contraste : rc=0 reste un OK ordinaire -- le titre distinct ne doit
+    apparaitre QUE pour l'incident, pas polluer les quitus reels."""
+    import fast_lane as fl
+    guard = Guard(name="canonique-ok", argv=["cmd-ok"], source="s",
+                  blocking=True, paths=["**/*.ipynb"], absorbed=True,
+                  warn_rc=(2,))
+    monkeypatch.setattr(fl, "PILOT", [guard])
+    monkeypatch.setattr(fl, "TRANCHE1", [])
+    monkeypatch.setattr(fl, "TRANCHE2", [])
+    monkeypatch.setattr(fl, "TRANCHE4", [])
+    monkeypatch.setattr(fl, "TRANCHE5", [])
+    monkeypatch.setattr(fl, "changed_files", lambda _ref: ["x.ipynb"])
+    monkeypatch.setattr(fl, "run_argv", lambda argv, ctx: (0, "clean"))
+    monkeypatch.setattr(fl, "run_iter",
+                        lambda a, p, c, warn_rc=(), fail_on_all_warn=False: (0, ""))
+    monkeypatch.setattr(fl, "git",
+                        lambda *a: subprocess.CompletedProcess(a, 0, "sha", ""))
+    published = []
+    monkeypatch.setattr(fl, "emit_check_run",
+                        lambda *a, **k: published.append(a))
+    rc = fl.main(["--shadow", "--base-sha", "abc"])
+    by_name = {a[2]: a for a in published}
+    assert by_name["canonique-ok"][3] == "success"
+    assert by_name["canonique-ok"][4].endswith("OK")
+    assert rc == 0
+
+
+def test_check_hr_substitution_gh_failure_exits_two(monkeypatch):
+    """Controle positif du code d'incident : get_pr_diff en echec gh rend
+    SystemExit(2) -- le contrat que warn_rc=(2,) du registre consomme. Sans
+    lui, une regression silencieuse vers exit(1) retransformerait l'incident
+    en faute bloquante de la PR."""
+    import check_hr_substitution as chs
+
+    class _Fail:
+        returncode = 1
+        stdout = ""
+        stderr = "gh: GraphQL: API rate limit exceeded"
+
+    monkeypatch.setattr(chs.subprocess, "run", lambda *a, **k: _Fail())
+    with pytest.raises(SystemExit) as excinfo:
+        chs.get_pr_diff(12345)
+    assert excinfo.value.code == 2, (
+        "l'echec gh doit sortir rc=2 (incident), pas rc=1 (verdict)"
+    )

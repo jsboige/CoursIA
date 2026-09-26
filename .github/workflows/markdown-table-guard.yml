@@ -40,7 +40,9 @@ name: Markdown table syntax advisory
 #     *.md / *README*), plus its own wiring and the two scripts it runs;
 #   - the checkout materializes the scan toolbox ONLY (blob:none partial
 #     clone), then the changed files' blobs on demand via
-#     `git sparse-checkout add --no-cone` -- never the full working tree.
+#     `git sparse-checkout set --no-cone --stdin` (#17306 : `add` est cassé
+#     sur les paths fichier -- option retirée des git récents, sanitize cone
+#     sinon) -- never the full working tree.
 # Marginal cost per PR: one metadata clone + the changed files' blobs + a
 # pure-Python scan, on the self-hosted ephemeral leg. The nocturne is
 # unchanged (it also scans only the last-24h window's changed files).
@@ -104,7 +106,8 @@ jobs:
           # #16207 : le cout qui a tue le trigger etait l'arbre de travail
           # complet (2.22 Go). Ici on ne materialise QUE la boite a outils du
           # scan ; les blobs des fichiers modifies arrivent plus bas, a la
-          # demande, via `git sparse-checkout add --no-cone` sur changed.txt.
+          # demande, via `git sparse-checkout set --no-cone --stdin` sur
+          # changed.txt (#17306).
           # fetch-depth: 0 reste requis : le diff 3-points BASE...HEAD lit le
           # merge-base, et le nocturne resout la fenetre 24 h par rev-list.
           sparse-checkout: |
@@ -222,12 +225,22 @@ jobs:
           # checkout d'entree est sparse (boite a outils uniquement) ; le diff
           # --name-only ci-dessus n'a lu que les arbres (blob:none suffit) ;
           # les blobs des fichiers modifies arrivent ici via le promissor du
-          # clone partiel. add (pas set) : le pattern outils pose par
-          # actions/checkout doit survivre a l'ajout. Les PATHS sont les argv
-          # OCTETS-EXACTS du fichier NUL-separe (mapfile -d ''), jamais une
-          # resubstitution shell (CR #16207).
+          # clone partiel. #17306 : set (pas add) -- `sparse-checkout add`
+          # n'accepte plus `--no-cone` sur les git recents (rc 129, usage :
+          # add [--skip-checks] (--stdin | <patterns>)) et, sur les git qui
+          # l'acceptent encore, applique le sanity-check "pattern = directory"
+          # du mode cone aux paths FICHIER (fatal "... is not a directory",
+          # exit 128 -- mesure run 35590181655). `set --no-cone --stdin` est
+          # valide sur toutes les generations (2.26+), ecrit des patterns
+          # LITTERAUX en non-cone (un path fichier materialise ce fichier) et
+          # remplace le pattern set entier : on re-nourrit le pattern outils
+          # pose par actions/checkout en tete. Les PATHS restent OCTETS-EXACTS
+          # (mapfile -d '' -> une ligne entiere par pattern, noms a espaces
+          # preserves, CR #16207).
           mapfile -d '' PATHS < changed.txt
-          git sparse-checkout add --no-cone "${PATHS[@]}"
+          { printf '%s\n' '/scripts/notebook_tools/'
+            printf '%s\n' "${PATHS[@]}"
+          } | git sparse-checkout set --no-cone --stdin
 
           # CR #16207 : le scanner rend exit 2 ("rien a scanner") quand aucun
           # path argv ne nomme un fichier existant -- ce qui arrivait en

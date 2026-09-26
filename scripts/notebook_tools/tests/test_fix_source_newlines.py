@@ -150,6 +150,73 @@ def test_noop_on_short_single_element():
     assert defects == []
 
 
+# --- non-doublement des sauts (issue #17550) ------------------------------
+
+
+def test_supplied_junction_not_flagged():
+    """Un element sans '\\n' dont le SUIVANT porte le saut est deja correct.
+
+    Motif mesure sur origin/main : ['> **Indice :**', '\\n', ...]. Appending
+    '\\n' sur le premier element rendrait '\\n\\n' (doublement)."""
+    nb = _make_nb([
+        ["Fin du paragraphe, assez long pour passer le seuil de 40.",
+         "\n",
+         "Paragraphe suivant, assez long lui aussi."],
+    ])
+    assert find_source_newline_defects(nb) == []
+
+
+def test_whitespace_boundary_not_flagged():
+    """Une espace d'un cote rend deja correctement (predicat #5094)."""
+    nb = _make_nb([
+        ["Fin de ligne, texte assez long pour le seuil de quarante.",
+         " suite avec espace et assez longue elle aussi"],
+    ])
+    assert find_source_newline_defects(nb) == []
+
+
+def test_glued_boundary_still_fixed():
+    """Frontiere reellement collee : la correction reste produite."""
+    nb = _make_nb([
+        ["Ligne collee assez longue pour le seuil de quarante",
+         "Ligne suivante, elle aussi assez longue",
+         "Derniere ligne"],
+    ])
+    defects = find_source_newline_defects(nb)
+    assert len(defects) == 1
+    assert defects[0]["kind"] == "multi_missing_newlines"
+    after = defects[0]["after"]
+    assert after[0].endswith("\n") and after[1].endswith("\n")
+    assert _round_trip_invariant(defects[0]["before"], after)
+
+
+def test_exploded_characters_refused():
+    """Cellule deserialisee caractere par caractere : signalee, non reecrite."""
+    nb = _make_nb([list("import os\nprint('hello world')")])
+    defects = find_source_newline_defects(nb)
+    assert len(defects) == 1
+    assert defects[0]["kind"] == "exploded_characters"
+    assert defects[0]["after"] is None
+
+
+def test_fix_never_increases_rendered_blank_lines():
+    """Invariant de fond : la reecriture n'ajoute jamais de ligne blanche."""
+    for src in (
+        ["Fin de paragraphe.", "\n", "Suite."],
+        ["> **Indice :**", "\n", "Corps de l'indice."],
+        ["Ligne collee assez longue pour le seuil", "Ligne suivante", "Derniere"],
+        ["abc", " def", "ghi"],
+        list("import os\nprint('x')"),
+    ):
+        nb = _make_nb([src])
+        for d in find_source_newline_defects(nb):
+            if d["after"] is None:
+                continue
+            before = "".join(d["before"]).count("\n\n")
+            after = "".join(d["after"]).count("\n\n")
+            assert after <= before, f"{src!r} : blancs {before} -> {after}"
+
+
 def test_noop_on_code_cell():
     """Code cells are not inspected."""
     nb = {
@@ -196,7 +263,7 @@ def test_apply_and_detect_clean(tmp_path):
     script = Path(_tools_dir) / "fix_source_newlines.py"
     result = subprocess.run(
         [sys.executable, str(script), "--apply", str(p)],
-        capture_output=True, text=True, check=False,
+        capture_output=True, text=True, encoding="utf-8", errors="replace", check=False,
     )
     assert result.returncode == 0, f"stderr: {result.stderr}"
 
@@ -231,7 +298,7 @@ def test_check_exit_code_when_defects(tmp_path):
     script = Path(_tools_dir) / "fix_source_newlines.py"
     result = subprocess.run(
         [sys.executable, str(script), "--scan", str(p), "--check"],
-        capture_output=True, text=True, check=False,
+        capture_output=True, text=True, encoding="utf-8", errors="replace", check=False,
     )
     # Either fixable (exit 1) or skipped (exit 1) -> 1
     assert result.returncode == 1
@@ -247,7 +314,7 @@ def test_noop_idempotent(tmp_path):
     script = Path(_tools_dir) / "fix_source_newlines.py"
     result = subprocess.run(
         [sys.executable, str(script), "--apply", str(p)],
-        capture_output=True, text=True, check=False,
+        capture_output=True, text=True, encoding="utf-8", errors="replace", check=False,
     )
     assert result.returncode == 0
     after = p.read_text()

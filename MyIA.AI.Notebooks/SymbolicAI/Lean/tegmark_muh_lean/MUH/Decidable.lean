@@ -34,12 +34,16 @@ def strictEq {n : Nat} {sizes : Fin n → Nat}
     (r₁ r₂ : Rel n sizes) : Prop :=
   r₁ = r₂
 
-/-- Une structure est dite *close par composition binaire* si, pour toute paire
+/-- **Stub.** Une structure est dite *close par composition binaire* si, pour toute paire
     de relations R(a, b) : S×S → S et R(a, b) : S×S → S, la composée
     R(R(a, c), b) : S×S×S → S est aussi une relation Tegmark (arité 3). Cette
     condition n'est pas vérifiée pour C₂/C₃ directement (la composition donne
     une relation ternaire), mais elle l'est pour les structures à générateurs
-    complets. -/
+    complets.
+
+    Le code livré n'expose que le constructeur `trivial` — c'est un **stub
+    décoratif** pour réservation du nom. L'implémentation de la condition
+    n'est pas en scope ; voir #16958. -/
 inductive ClosedUnderComp : Prop
   | trivial : ClosedUnderComp
 
@@ -54,18 +58,20 @@ def trivialStructure : Structure :=
              , table := fun _ => (0 : Fin 1) }]
   , sizes_pos := fun _ => Nat.one_pos }
 
-/-- Pour une structure à 1 ensemble de cardinal 2 et une relation binaire
-    Booléenne, l'espace des tables possibles est de taille 2⁴ = 16. La
-    décidabilité est triviale par énumération des 16 tables. -/
+/-- **Stub documentaire.** Pour une structure à 1 ensemble de cardinal 2 et une relation
+    binaire Booléenne, l'espace des tables possibles est de taille 2⁴ = 16. La
+    décidabilité serait triviale par énumération des 16 tables. Cette
+    définition ne fait que retourner le compte — l'implémentation effective
+    de l'énumération n'est pas livrée ; voir #16958. -/
 def boolBinaryTableCount : Nat := 2 ^ (2 * 2)
 
-/-- `decideEq` : deux structures sont équivalentes si leurs tables
-    coïncident (égalité point par point). Cette décidabilité est triviale :
-    on parcourt les arguments et on compare.
+/-- **Stub.** `decideEq` : deux structures sont équivalentes si leurs tables
+    coïncident (égalité point par point). Cette décidabilité serait triviale :
+    on parcourrait les arguments et on comparerait.
 
     Le stub actuel retourne `true` quand les deux structures ont le même
     nombre d'ensembles — une version complète comparerait les tables de
-    valeurs une par une. -/
+    valeurs une par une. Voir #16958 pour le suivi de l'implémentation. -/
 def decideEq (s₁ s₂ : Structure) : Bool :=
   s₁.nSets == s₂.nSets
 

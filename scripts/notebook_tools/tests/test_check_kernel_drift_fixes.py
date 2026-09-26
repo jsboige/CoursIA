@@ -43,6 +43,29 @@ def test_body_empty_no_exemption():
     assert ckd.body_has_derive_exemption("") is False
 
 
+def test_body_derive_suffix_parenthetical_exempts():
+    """Suffix form '## Diagnostic derive (C.4)' exempts (cas vecu #17220).
+
+    The strict end-of-line anchor used to reject the parenthetical
+    qualifier, so a PR whose C.4 section was properly written but suffixed
+    with '(C.4)' silently lost the exemption.
+    """
+    body = "## Summary\nFix\n\n## Diagnostic derive (C.4)\nverdict CAUSE_FIXED\n"
+    assert ckd.body_has_derive_exemption(body) is True
+
+
+def test_body_derive_suffix_parenthetical_accented_exempts():
+    """Accented suffix form '## Diagnostic dérive (C.4)' exempts."""
+    body = "## Summary\nFix\n\n## Diagnostic dérive (C.4)\nverdict CAUSE_FIXED\n"
+    assert ckd.body_has_derive_exemption(body) is True
+
+
+def test_body_derive_trailing_garbage_no_exemption():
+    """Arbitrary trailing text (not a single parenthetical) stays rejected."""
+    body = "## Summary\nFix\n\n## Diagnostic derive and other notes\n"
+    assert ckd.body_has_derive_exemption(body) is False
+
+
 # === Defect 5: float_signatures normalization ===
 
 def test_float_signatures_text_plain_list():

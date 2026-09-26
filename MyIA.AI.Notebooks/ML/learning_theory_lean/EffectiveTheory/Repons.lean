@@ -30,9 +30,16 @@ Contenu formalisé :
    `C > 0` ⟹ collision des repons (généralisation), `C < 0` ⟹ pas de
    collision (mémorisation) — l'hyperbole de l'oscillateur harmonique du
    papier.
+3. **Appendice C, Eq. (16)** — `rel_eqn_autonomous` : dans le gradient flow
+   du papier, chaque trajectoire subit le même forçage externe common-mode
+   `g` en plus du flux linéaire `F` ; dans la différence `x₁ − x₂` il
+   s'annule exactement et la séparation évolue de façon autonome — ressort
+   de Hooke `d(x₁ − x₂)/dt = F (x₁ − x₂)`. Migré du module dissous
+   `GenEFT.lean` (#17480).
 
 Dépendances : Mathlib uniquement (`hasDerivAt_pow`, `HasDerivAt.comp`,
-`HasDerivAt.div_const`, `HasDerivAt.sub`, `field_simp`, `ring`).
+`HasDerivAt.div_const`, `HasDerivAt.sub`, `field_simp`, `ring`,
+`ContinuousLinearMap.map_sub`).
 -/
 
 namespace LearningTheory.EffectiveTheory
@@ -107,5 +114,33 @@ theorem conservedHyperbola_deriv_zero {a₂ c : ℝ → ℝ}
   ring
 
 end ConservedHyperbola
+
+/-! ## Dynamics — autonomie de la séparation (Eq. 16)
+
+Migré du module dissous `GenEFT.lean` (#17480). -/
+
+section Dynamics
+
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+
+/-- **Éq. 16 de l'Appendice C — autonomie de la séparation.** Dans le
+gradient flow du papier, chaque trajectoire subit le même forçage externe
+`g` (le terme de rappel vers la cible, porté par `Aᵀ y`) en plus du flux
+linéaire `F` (le terme `-η_x AᵀA`). Ce forçage est **common-mode** : dans la
+différence `x₁ - x₂`, il s'annule exactement, et la séparation évolue de
+façon autonome — ressort de Hooke `d(x₁ - x₂)/dt = F (x₁ - x₂)` avec
+`F = -η_x AᵀA` affaiblissant. -/
+theorem rel_eqn_autonomous (x₁ x₂ : ℝ → E) (F : E →L[ℝ] E) (g : ℝ → E)
+    (h₁ : ∀ t, HasDerivAt x₁ (F (x₁ t) + g t) t)
+    (h₂ : ∀ t, HasDerivAt x₂ (F (x₂ t) + g t) t) (t : ℝ) :
+    HasDerivAt (fun t => x₁ t - x₂ t) (F (x₁ t - x₂ t)) t := by
+  have hd : HasDerivAt (fun t => x₁ t - x₂ t)
+      ((F (x₁ t) + g t) - (F (x₂ t) + g t)) t :=
+    (h₁ t).sub (h₂ t)
+  convert hd using 2
+  simp only [ContinuousLinearMap.map_sub]
+  abel
+
+end Dynamics
 
 end LearningTheory.EffectiveTheory
