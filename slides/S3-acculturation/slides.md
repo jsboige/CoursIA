@@ -559,6 +559,7 @@ layout: default
 <div class="grid grid-cols-6 gap-1 mt-2 px-4">
 <img src="./images/img_027.png" class="max-h-[100px] w-full object-contain" alt="Cycle d'un algorithme génétique : initial population → fitness → sélection → croisement → mutation" />
 <img src="./images/img_028.png" class="max-h-[100px] w-full object-contain" alt="Croisement sur le problème des huit reines : deux échiquiers parents combinés par addition et permutation" />
+<img src="./images/img_029.png" class="max-h-[100px] w-full object-contain" alt="Progression du backtracking sur le problème des N-reines : trois plateaux successifs (4 reines, 3 reines, 2 reines) illustrant le retour arrière après violation de contrainte" />
 <img src="./images/img_030.png" class="max-h-[100px] w-full object-contain" alt="Paysage d'optimisation avec trajectoire de descente" />
 <img src="./images/img_031.png" class="max-h-[100px] w-full object-contain" />
 <img src="./images/img_032.png" class="max-h-[100px] w-full object-contain" alt="Représentations d'états : atomique, factorisée, structurée" />
@@ -965,10 +966,11 @@ layout: default
   - Blockchain
   - Non-divulgation
 
-<!-- Image: images/img_050.png -->
-
-
 <!-- Blockchain : registre distribué, consensus, exécution automatique de contrats -->
+
+<div class="absolute right-[20px] top-[120px] w-[35%] max-w-[340px]">
+<img src="./images/img_050.png" class="w-full max-h-[260px] object-contain" alt="Poignée de main entre deux personnages en costume avec logos Bitcoin (au-dessus) et Ethereum (en-dessous) — illustration des smart-contracts blockchain" />
+</div>
 
 
 

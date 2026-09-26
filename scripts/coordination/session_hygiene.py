@@ -93,6 +93,38 @@ def git(*args: str, cwd: Path | None = None) -> str:
     return out.stdout.strip() if out.returncode == 0 else ""
 
 
+def git_rc(*args: str, cwd: Path | None = None) -> tuple[int, str, str]:
+    """git + code retour + stderr : pour les mesures ou l'ECHEC doit se distinguer du VIDE.
+
+    Le helper ``git()`` rend une chaine vide dans les deux cas, ce qui est juste quand
+    l'absence de sortie EST le fait mesure (« pas de stash », « aucune divergence »). C'est
+    faux des qu'un verdict en depend : une mesure impossible publiee comme un constat
+    fabrique une accusation (nit (b) de #17496 — un ``git diff`` en erreur se lisait comme
+    « la branche ne livre rien », donc « parkee sans raison »).
+
+    Rend ``(rc, stdout strippe, stderr strippe)`` ; ``rc = -1`` quand la commande n'a pas
+    pu etre lancee du tout.
+    """
+    try:
+        out = subprocess.run(
+            ["git", *args],
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=60,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        return -1, "", str(exc)
+    return out.returncode, out.stdout.strip(), out.stderr.strip()
+
+
+def _premiere_ligne(err: str) -> str:
+    """Premiere ligne d'un stderr git, bornee : c'est elle qui nomme la panne."""
+    return err.splitlines()[0][:160] if err else "(sans message)"
+
+
 def repo_root() -> Path:
     root = git("rev-parse", "--show-toplevel")
     if not root:
@@ -169,11 +201,31 @@ def check_branch(root: Path) -> list[Check]:
         # Le test juste compare les ETATS FINAUX, restreint aux fichiers que la branche
         # touche : si le blob de la branche est identique a celui de main partout ou elle a
         # ecrit, elle ne livre plus rien.
-        touched = git("diff", "--name-only", f"origin/main...{branch}", cwd=root).splitlines()
-        if touched:
-            delivers = git("diff", "--stat", "origin/main", branch, "--", *touched, cwd=root)
+        # Mesure, et non lecture : un diff en ERREUR (origin/main absent, objet corrompu,
+        # credential) rend une sortie vide comme un diff sans difference. Les confondre
+        # publierait « parkee sans raison » sur un arbre qu'on n'a pas su mesurer.
+        rc_touch, touched_out, err_touch = git_rc(
+            "diff", "--name-only", f"origin/main...{branch}", cwd=root
+        )
+        delivers = ""
+        mesure_impossible = ""
+        if rc_touch != 0:
+            mesure_impossible = (
+                f"git diff --name-only origin/main...{branch} a echoue "
+                f"(rc={rc_touch}, {_premiere_ligne(err_touch)})"
+            )
         else:
-            delivers = ""
+            touched = touched_out.splitlines()
+            if touched:
+                rc_stat, delivers, err_stat = git_rc(
+                    "diff", "--stat", "origin/main", branch, "--", *touched, cwd=root
+                )
+                if rc_stat != 0:
+                    mesure_impossible = (
+                        f"git diff --stat origin/main {branch} a echoue "
+                        f"(rc={rc_stat}, {_premiere_ligne(err_stat)})"
+                    )
+                    delivers = ""
 
         has_upstream = bool(git("rev-parse", "--abbrev-ref", "@{u}", cwd=root))
         if not has_upstream:
@@ -181,22 +233,35 @@ def check_branch(root: Path) -> list[Check]:
         else:
             unpushed = git("log", "--oneline", "@{u}..HEAD", cwd=root)
 
-        level = RED if (not delivers and not unpushed) else AMBER
-        why = (
-            "son contenu est deja integralement sur origin/main (diff trois-points vide) "
-            "et rien n'attend d'etre pousse : l'arbre est parke sans raison"
-            if level == RED
-            else f"{behind_n} commits de retard"
-            + (f", {len(unpushed.splitlines())} non pousse(s)" if unpushed and has_upstream else "")
-            + ("" if has_upstream else ", branche jamais poussee")
-        )
+        if mesure_impossible:
+            level = AMBER
+            why = (
+                f"mesure impossible : {mesure_impossible} — le verdict « parke sans "
+                "raison » est suspendu : un echec de mesure n'est pas une preuve d'absence"
+            )
+        else:
+            level = RED if (not delivers and not unpushed) else AMBER
+            why = (
+                "son contenu est deja integralement sur origin/main (les fichiers qu'elle "
+                "touche y portent le meme blob) et rien n'attend d'etre pousse : "
+                "l'arbre est parke sans raison"
+                if level == RED
+                else f"{behind_n} commits de retard"
+                + (f", {len(unpushed.splitlines())} non pousse(s)" if unpushed and has_upstream else "")
+                + ("" if has_upstream else ", branche jamais poussee")
+            )
         checks.append(
             Check(
                 "branche",
                 level,
                 f"sur '{branch}' — {why}",
                 "git checkout main && git pull --ff-only",
-                {"branch": branch, "behind": behind_n, "unpushed": bool(unpushed)},
+                {
+                    "branch": branch,
+                    "behind": behind_n,
+                    "unpushed": bool(unpushed),
+                    "mesure_impossible": bool(mesure_impossible),
+                },
             )
         )
     return checks
