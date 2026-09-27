@@ -1130,6 +1130,47 @@ def test_cli_spool_status_reads_default_init_tree(tmp_path, capsys):
     assert dl.main(["spool", "--status", "--state-dir", str(state_dir)]) == 0
     output = capsys.readouterr().out
     assert "issue-debt: pending=1 oldest_observed_at=2026-09-17T19:00:00Z" in output
+
+def test_cli_spool_status_refuses_uninitialised_state_dir(tmp_path, capsys):
+    """Mirror of ``_cli_append``: a state-dir that has not been ``init``-ed has
+    no per-ledger spool, and ``spool --status`` must refuse rather than silently
+    report ``pending=0``. Otherwise a typo'd ``--state-dir`` (or any directory the
+    agent has never built) yields a false-empty and a real, full spool elsewhere
+    is declared empty. See #18006, suite de #17940."""
+    state_dir = tmp_path / "fresh"
+    state_dir.mkdir()
+    assert state_dir.is_dir() and not any(state_dir.iterdir())
+    exit_code = dl.main(["spool", "--status", "--state-dir", str(state_dir)])
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert "UNINITIALISED_STATE_DIR" in captured.err
+    assert "init --apply" in captured.err
+    assert "pending=0" not in captured.out
+
+
+def test_cli_spool_status_refuses_missing_state_dir(tmp_path, capsys):
+    """A typo'd ``--state-dir`` that does not even exist on disk must also be
+    refused rather than silently report ``pending=0``. This is the most
+    concrete repro of the #18006 trap."""
+    state_dir = tmp_path / "does-not-exist"
+    assert not state_dir.exists()
+    exit_code = dl.main(["spool", "--status", "--state-dir", str(state_dir)])
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert "UNINITIALISED_STATE_DIR" in captured.err
+    assert "pending=0" not in captured.out
+
+
+def test_cli_spool_status_out_dir_still_tolerates_missing_dir(tmp_path, capsys):
+    """``--out-dir`` is an explicit, caller-named spool dir -- a missing dir
+    means ``nothing pending here``, and that still returns 0 (acceptance #2 of
+    #18006). The refuse path is reserved for the default state-dir flow."""
+    spool = tmp_path / "empty-spool"
+    assert not spool.exists()
+    assert dl.main(["spool", "--status", "--out-dir", str(spool)]) == 0
+    output = capsys.readouterr().out
+    assert output.count("pending=0 oldest_observed_at=-") == len(dl.LEDGERS)
+
     assert "gpu-reservation: pending=0 oldest_observed_at=-" in output
 
 
