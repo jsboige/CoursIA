@@ -777,6 +777,99 @@ theorem mergePair_mergePair_comm_equiv (P : List (List Nat)) (a b c d x y : Nat)
   rw [sameClass_two_merges_iff, sameClass_two_merges_comm_form,
       ← sameClass_two_merges_iff (a := c) (b := d) (c := a) (d := b)]
 
+/-- `Touches` lu en `SameClass` : une étiquette est happée par la fusion
+    `{x, y}` exactement quand elle partage une classe avec `x` ou avec `y`.
+    C'est la cle qui rend la caractérisation de `SameClass` après fusion
+    transportable d'une partition à une autre. -/
+lemma touches_iff_sameClass {P : List (List Nat)} {x y z : Nat} :
+    Touches P x y z ↔ (SameClass P x z ∨ SameClass P y z) := by
+  constructor
+  · rintro ⟨C, hC, hz, hcond⟩
+    rw [hit_iff_mem] at hcond
+    rcases hcond with hx | hy
+    · exact Or.inl ⟨C, hC, hx, hz⟩
+    · exact Or.inr ⟨C, hC, hy, hz⟩
+  · rintro (⟨C, hC, hx, hz⟩ | ⟨C, hC, hy, hz⟩)
+    · exact ⟨C, hC, hz, by rw [hit_iff_mem]; exact Or.inl hx⟩
+    · exact ⟨C, hC, hz, by rw [hit_iff_mem]; exact Or.inr hy⟩
+
+/-- Caractérisation pure de `SameClass` après une fusion : une classe
+    commune conservée, ou deux étiquettes toutes deux happées — lu
+    entièrement en `SameClass` de la partition d'origine. C'est cette forme
+    qui fait du repli une congruence pour `SameClass`. -/
+lemma sameClass_mergePair_pure {P : List (List Nat)} {x y u v : Nat} :
+    SameClass (mergePair P x y) u v ↔
+      SameClass P u v ∨
+        ((SameClass P x u ∨ SameClass P y u) ∧
+          (SameClass P x v ∨ SameClass P y v)) := by
+  rw [sameClass_mergePair_iff, touches_iff_sameClass, touches_iff_sameClass]
+  constructor
+  · rintro (⟨C, hC, hu, hv, _⟩ | h)
+    · exact Or.inl ⟨C, hC, hu, hv⟩
+    · exact Or.inr h
+  · rintro (⟨C, hC, hu, hv⟩ | h)
+    · by_cases hcond : ((C.contains x || C.contains y) = true)
+      · rw [hit_iff_mem] at hcond
+        rcases hcond with hx | hy
+        · exact Or.inr ⟨Or.inl ⟨C, hC, hx, hu⟩, Or.inl ⟨C, hC, hx, hv⟩⟩
+        · exact Or.inr ⟨Or.inr ⟨C, hC, hy, hu⟩, Or.inr ⟨C, hC, hy, hv⟩⟩
+      · exact Or.inl ⟨C, hC, hu, hv, hcond⟩
+    · exact Or.inr h
+
+/-- **Congruence du repli** : si deux partitions sont indiscernables par
+    `SameClass`, le repli d'une même liste de paires les laisse
+    indiscernables. Le repli ne voit jamais la forme des listes de classes,
+    seulement qui partage une classe. -/
+lemma foldl_mergeStep_congr {Q₁ Q₂ : List (List Nat)}
+    (h : ∀ w z, SameClass Q₁ w z ↔ SameClass Q₂ w z)
+    (pairs : List (Nat × Nat)) :
+    ∀ w z, SameClass (pairs.foldl mergeStep Q₁) w z ↔
+           SameClass (pairs.foldl mergeStep Q₂) w z := by
+  induction pairs generalizing Q₁ Q₂ with
+  | nil => exact h
+  | cons p rest ih =>
+    refine ih ?_
+    intro w z
+    show SameClass (mergePair Q₁ p.1 p.2) w z ↔ SameClass (mergePair Q₂ p.1 p.2) w z
+    rw [sameClass_mergePair_pure, sameClass_mergePair_pure,
+        h w z, h p.1 w, h p.2 w, h p.1 z, h p.2 z]
+
+/-- **Le repli est insensible à la permutation de deux paires adjacentes** :
+    échanger les positions `i` et `i + 1` de la liste de paires ne change
+    pas la relation `SameClass` du résultat du repli. Troisième brique de
+    l'invariance R3 (issue #16650) : la chirurgie R3 connexe déplace les
+    croisements réécrits dans la liste du repli, `foldl_mergePair_swap`
+    absorbe l'orientation, `mergePair_mergePair_comm_equiv` la commutation
+    des deux fusions, et la congruence `foldl_mergeStep_congr` transporte
+    l'équivalence à travers le reste du repli. Ensemble, elles fondent la
+    préservation de la partition d'arcs sur le témoin du lake. -/
+theorem foldl_mergePair_permute_adjacent (pairs : List (Nat × Nat)) (i : Nat)
+    (hi : i + 1 < pairs.length) (P₀ : List (List Nat)) (w z : Nat) :
+    SameClass
+      ((pairs.take i ++ [pairs.get ⟨i, Nat.lt_of_succ_lt hi⟩,
+                          pairs.get ⟨i + 1, hi⟩] ++ pairs.drop (i + 2)).foldl
+          mergeStep P₀) w z ↔
+      SameClass
+      ((pairs.take i ++ [pairs.get ⟨i + 1, hi⟩,
+                          pairs.get ⟨i, Nat.lt_of_succ_lt hi⟩] ++ pairs.drop
+            (i + 2)).foldl mergeStep P₀) w z := by
+  have hfold : ∀ (r s : Nat × Nat),
+      ((pairs.take i ++ [r, s] ++ pairs.drop (i + 2)).foldl mergeStep P₀)
+        = (pairs.drop (i + 2)).foldl mergeStep
+            (mergeStep (mergeStep ((pairs.take i).foldl mergeStep P₀) r) s) := by
+    intro r s
+    rw [List.foldl_append, List.foldl_append, List.foldl_cons, List.foldl_cons,
+        List.foldl_nil]
+  rw [hfold (pairs.get ⟨i, Nat.lt_of_succ_lt hi⟩) (pairs.get ⟨i + 1, hi⟩),
+      hfold (pairs.get ⟨i + 1, hi⟩) (pairs.get ⟨i, Nat.lt_of_succ_lt hi⟩)]
+  exact foldl_mergeStep_congr
+    (mergePair_mergePair_comm_equiv ((pairs.take i).foldl mergeStep P₀)
+      (pairs.get ⟨i, Nat.lt_of_succ_lt hi⟩).1
+      (pairs.get ⟨i, Nat.lt_of_succ_lt hi⟩).2
+      (pairs.get ⟨i + 1, hi⟩).1
+      (pairs.get ⟨i + 1, hi⟩).2)
+    (pairs.drop (i + 2)) w z
+
 /-- Toute étiquette de la plage `1..n` est couverte par les singletons initiaux. -/
 lemma covered_singles {n z : Nat} (h1 : 1 ≤ z) (h2 : z ≤ n) :
     Covered ((List.range n).map (fun i => [i + 1])) z := by
