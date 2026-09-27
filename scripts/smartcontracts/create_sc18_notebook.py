@@ -1,4 +1,4 @@
-"""Generate SC-18-Vyper.ipynb - Smart Contracts en Python-like. Delete after use."""
+"""Generate SC-18-Vyper-Python.ipynb - Smart Contracts en Python-like. Delete after use."""
 import json
 import os
 
@@ -29,9 +29,9 @@ cells = []
 
 # === HEADER ===
 cells.append(md(
-"# SC-18-Vyper - Smart Contracts en Python-like\n"
+"# SC-18-Vyper-Python - Smart Contracts en Python-like\n"
 "\n"
-"**Navigation** : [Index](../README.md) | [<< E2E Voting](../04-Privacy-Cryptography/SC-17-E2E-Verifiable-Voting.ipynb) | [Ripple XRP >>](SC-19-Ripple-XRP.ipynb)\n"
+"**Navigation** : [Index](../README.md) | [<< E2E Voting](../04-Privacy-Cryptography/SC-17-E2E-Verifiable-Voting-Python.ipynb) | [Ripple XRP >>](SC-19-Ripple-XRP-Python.ipynb)\n"
 "\n"
 "---\n"
 "\n"
@@ -755,7 +755,7 @@ cells.append(md(
 "\n"
 "---\n"
 "\n"
-"**Notebook suivant** : [SC-19-Ripple-XRP](SC-19-Ripple-XRP.ipynb) - Contrats sur le reseau Ripple",
+"**Notebook suivant** : [SC-19-Ripple-XRP-Python](SC-19-Ripple-XRP-Python.ipynb) - Contrats sur le reseau Ripple",
 "summary"))
 
 # === BUILD NOTEBOOK ===
@@ -787,7 +787,7 @@ output_dir = os.path.join(
 )
 os.makedirs(output_dir, exist_ok=True)
 
-output_path = os.path.join(output_dir, "SC-18-Vyper.ipynb")
+output_path = os.path.join(output_dir, "SC-18-Vyper-Python.ipynb")
 with open(output_path, 'w', encoding='utf-8', newline='\n') as f:
     json.dump(notebook, f, ensure_ascii=False, indent=1)
     f.write('\n')
