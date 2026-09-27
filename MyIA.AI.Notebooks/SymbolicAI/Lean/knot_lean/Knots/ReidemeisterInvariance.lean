@@ -67,19 +67,20 @@ argument de reindexation.
 /-! ## 3. Controle : la partition d'arcs du temoin R3 est preservee
 
 Le temoin est celui de `reidemeister3Connected_satisfiable` (litteraux repris
-tels quels) : les deux diagrammes sont bien formes (`decide` sur `wf` au lake),
+tel quels) : les deux diagrammes sont bien formes (`decide` sur `wf` au lake),
 et leur partition d'arcs — 5 classes pour 10 aretes — est **la meme** de part et
 d'autre de la chirurgie. C'est le **controle trivial** de la section 2 : sur ce
 temoin, les paires `(e2, e4)` du triangle, prises comme multi-ensemble, sont les
-memes des deux cotes — la preservation est vide. Un contre-exemple ou elles
-different reste a exhiber pour etablir la preservation generale.
+memes des deux cotes — la preservation est vide. La forme generale (sur des
+diagrammes ou les paires du triangle different) est etablie en section 4.
 -/
 
 /-- Controle de la tranche 3 (etape 1) : sur la paire temoin du move R3
     connecte, la chirurgie preserve `arcPartition`. Sur ce temoin, les paires
-    `(e2, e4)` du triangle coincident comme multi-ensemble entre X et Y, donc la
-    preservation est triviale ; la forme generale (sur des diagrammes ou les
-    paires du triangle different) reste a prouver. -/
+    `(e2, e4)` du triangle coincident comme multi-ensemble entre X et Y, donc
+    la preservation est triviale ; la forme generale (sur des diagrammes ou les
+    paires du triangle different) est etablie par
+    `Reidemeister3Connected.arcPartition_sameRel` (section 4). -/
 theorem reidemeister3Connected_arcPartition_witness :
     arcPartition
         { crossings := [⟨1, 2, 7, 8⟩, ⟨3, 7, 9, 4⟩, ⟨9, 8, 5, 6⟩,
@@ -88,5 +89,399 @@ theorem reidemeister3Connected_arcPartition_witness :
         { crossings := [⟨3, 4, 9, 7⟩, ⟨9, 2, 5, 8⟩, ⟨7, 8, 1, 6⟩,
                         ⟨1, 2, 10, 10⟩, ⟨3, 4, 5, 6⟩], numEdges := 10 } := by
   decide
+
+/-! ## 4. Preservation generale de la partition d'arcs (premier verrou, #16650)
+
+La chirurgie R3 connectee reecrit les trois croisements du triangle X en le
+triangle Y. Lue sur les paires de passage-dessus `(e2, e4)` qui alimentent le
+repli `arcPartition`, la chirurgie ne change que les **positions `i` et `i+1`**
+de la liste de paires :
+
+* triangle X — `⟨a₂,a₁,g₁,g₂⟩, ⟨a₃,g₁,g₃,b₃⟩, ⟨g₃,g₂,b₂,b₁⟩` — paires
+  `(a₁,g₂), (g₁,b₃)`, puis `(g₂,b₁)` inchangee en position `i+2` ;
+* triangle Y — `⟨a₃,b₃,g₃,g₁⟩, ⟨g₃,a₁,b₂,g₂⟩, ⟨g₁,g₂,a₂,b₁⟩` — paires
+  `(b₃,g₁), (a₁,g₂)`, meme `(g₂,b₁)` en `i+2`.
+
+Le passage de X a Y est donc exactement : une **transposition adjacente** des
+deux premieres paires, composee d'une **symetrie interne** de la paire en
+position `i` (`(g₁,b₃)` devenant `(b₃,g₁)`). La symetrie interne est absorbee
+par `mergePair_symm` / `foldl_mergePair_swap` ; la transposition adjacente est
+absorbee par la commutation au niveau des classes
+`mergePair_mergePair_comm_equiv` (#17646) : les deux partitions intermediaires
+different comme listes (contre-exemple documente sur #16650) mais portent la
+meme relation « partager une classe ».
+
+L'etape restante etablie ici : cette equivalence au niveau des classes
+**traverse le reste du repli** — deux partitions qui portent la meme relation
+SameClass la portent encore apres tout suffixe commun de fusions
+(`sameRel_foldl`), sous l'hypothese `ClassesDisjoint` (garantie pour toute
+partition issue du repli depuis les singletons, `foldl_partition_inv`).
+Le resultat est la preservation **generale** de la partition d'arcs — le
+« premier verrou » nomme en section 2, desormais etabli au niveau des classes.
+
+Ce qui reste hors de ce theoreme : la remontee au niveau de la **matrice**
+(l'equivalence de classes donne une permutation des colonnes du mineur, donc
+une invariance du determinant au signe pres — argument a ecrire pour la
+tranche `alexanderSigned_invariant_under_R3`).
+-/
+
+/-- `Touches P u v z` se lit en `SameClass` : toucher une classe qui porte `u`
+    ou `v`, c'est partager une classe avec `u` ou avec `v`. -/
+lemma touches_iff_sameClass {P : List (List Nat)} {u v z : Nat} :
+    Touches P u v z ↔ SameClass P z u ∨ SameClass P z v := by
+  constructor
+  · rintro ⟨C, hC, hz, huv⟩
+    rw [hit_iff_mem] at huv
+    rcases huv with hu | hv
+    · exact Or.inl ⟨C, hC, hz, hu⟩
+    · exact Or.inr ⟨C, hC, hz, hv⟩
+  · rintro (⟨C, hC, hz, hu⟩ | ⟨C, hC, hz, hv⟩)
+    · exact ⟨C, hC, hz, by rw [hit_iff_mem]; exact Or.inl hu⟩
+    · exact ⟨C, hC, hz, by rw [hit_iff_mem]; exact Or.inr hv⟩
+
+/-- Sous disjonction des classes, le premier disjonctif de la
+    caracterisation de `SameClass` apres fusion se lit en `SameClass` purs :
+    une classe commune qui n'est pas touchee, c'est `x ~ y` sans `x ~ u` ni
+    `x ~ v` (l'unicite de la classe de `x` vient de la disjonction). -/
+lemma exists_class_not_hit_iff {P : List (List Nat)} (hd : ClassesDisjoint P)
+    {x y u v : Nat} :
+    (∃ C ∈ P, x ∈ C ∧ y ∈ C ∧ ¬((C.contains u || C.contains v) = true)) ↔
+      SameClass P x y ∧ ¬ SameClass P x u ∧ ¬ SameClass P x v := by
+  constructor
+  · rintro ⟨C, hC, hx, hy, hnot⟩
+    refine ⟨⟨C, hC, hx, hy⟩, ?_, ?_⟩ <;> rintro ⟨D, hD, hxD, hzD⟩
+    · by_cases hCD : C = D
+      · have : (C.contains u || C.contains v) = true := by
+          rw [hit_iff_mem]; exact Or.inr (by rw [hCD]; exact hzD)
+        exact hnot this
+      · exact hd C hC D hD hCD x hx hxD
+    · by_cases hCD : C = D
+      · have : (C.contains u || C.contains v) = true := by
+          rw [hit_iff_mem]; exact Or.inl (by rw [hCD]; exact hzD)
+        exact hnot this
+      · exact hd C hC D hD hCD x hx hxD
+  · rintro ⟨⟨C, hC, hx, hy⟩, h1, h2⟩
+    refine ⟨C, hC, hx, hy, ?_⟩
+    rw [hit_iff_mem]
+    push_neg
+    exact ⟨fun huC => h1 ⟨C, hC, hx, huC⟩, fun hvC => h2 ⟨C, hC, hx, hvC⟩⟩
+
+/-- `SameClass` apres une fusion, caracterise uniquement en `SameClass` de la
+    partition d'origine (sous disjonction des classes) : soit une classe
+    commune hors du groupe fusionne, soit deux etiquettes happes par la
+    fusion. C'est la forme qui rend l'equivalence de partitions transportable. -/
+lemma sameClass_mergePair_iff_rel {P : List (List Nat)} (hd : ClassesDisjoint P)
+    {u v x y : Nat} :
+    SameClass (mergePair P u v) x y ↔
+      (SameClass P x y ∧ ¬ SameClass P x u ∧ ¬ SameClass P x v) ∨
+      ((SameClass P x u ∨ SameClass P x v) ∧ (SameClass P y u ∨ SameClass P y v)) := by
+  rw [sameClass_mergePair_iff, exists_class_not_hit_iff hd,
+    touches_iff_sameClass, touches_iff_sameClass]
+
+/-- Deux partitions sont equivalentes quand elles portent la meme relation
+    « partager une classe ». C'est le bon niveau d'invariance de `arcPartition`
+    sous la chirurgie R3 : l'egalite des listes est refusee par le
+    contre-exemple documente sur #16650, mais la relation de classes — celle
+    dont la matrice d'Alexander depend — est preservee. -/
+def SameRel (P Q : List (List Nat)) : Prop :=
+  ∀ x y : Nat, SameClass P x y ↔ SameClass Q x y
+
+/-- L'equivalence de partitions traverse une etape de fusion : la
+    caracterisation `sameClass_mergePair_iff_rel` ne parle que de `SameClass`
+    de la partition d'origine, donc deux partitions equivalentes le restent
+    apres la meme fusion. -/
+lemma sameRel_mergeStep {P Q : List (List Nat)} (hrel : SameRel P Q)
+    (hdP : ClassesDisjoint P) (hdQ : ClassesDisjoint Q) (p : Nat × Nat) :
+    SameRel (mergeStep P p) (mergeStep Q p) := by
+  intro x y
+  rw [sameClass_mergePair_iff_rel hdP, sameClass_mergePair_iff_rel hdQ]
+  simp only [hrel]
+
+/-- L'equivalence de partitions traverse un repli complet : deux partitions
+    equivalentes (et disjointes) le restent apres tout suffixe commun de
+    fusions. -/
+lemma sameRel_foldl {P Q : List (List Nat)} (hrel : SameRel P Q)
+    (hdP : ClassesDisjoint P) (hdQ : ClassesDisjoint Q)
+    (pairs : List (Nat × Nat)) :
+    SameRel (pairs.foldl mergeStep P) (pairs.foldl mergeStep Q) := by
+  induction pairs generalizing P Q with
+  | nil => exact hrel
+  | cons p ps ih =>
+      rw [List.foldl_cons]
+      exact ih (sameRel_mergeStep hrel hdP hdQ p)
+        (classesDisjoint_mergePair hdP) (classesDisjoint_mergePair hdQ)
+
+/-! ### Lecriture `List.set` en take/drop
+
+La chirurgie etant un triple `List.set`, la lecture take/cons/drop de ces
+reecritures est l'outil du decoupage du repli. Trois lemmes standards, prouves
+par induction — les bornes sont necessaires : sur liste trop courte, `set`
+est sans effet alors que le membre de droite tronque.
+-/
+
+/-- `List.set` en lecture take/cons/drop (indice borne). -/
+lemma set_take_drop {α : Type} (l : List α) (i : Nat) (x : α)
+    (h : i < l.length) :
+    l.set i x = l.take i ++ [x] ++ l.drop (i + 1) := by
+  induction l generalizing i with
+  | nil => exact absurd h (Nat.not_lt_zero i)
+  | cons a as ih =>
+      rcases i with _ | j
+      · simp
+      · have hj : j < as.length := by simpa using h
+        simp only [List.set_cons_succ, List.take_succ_cons, List.cons_append,
+          List.drop_succ, ih j hj]
+
+/-- Reecriture d'une valeur deja en place : `set` a l'indice borne avec la
+    valeur courante est l'identite. -/
+lemma set_get_self {α : Type} (l : List α) (i : Nat) (h : i < l.length) :
+    l.set i (l.get ⟨i, h⟩) = l := by
+  rw [set_take_drop l i _ h, take_cons_drop_eq l i h]
+
+/-- Double `List.set` consecutif en lecture take/drop. -/
+lemma set2_take_drop {α : Type} (l : List α) (i : Nat) (x₀ x₁ : α)
+    (h1 : i + 1 < l.length) :
+    (l.set i x₀).set (i + 1) x₁ = l.take i ++ [x₀, x₁] ++ l.drop (i + 2) := by
+  induction l generalizing i with
+  | nil => exact absurd h1 (Nat.not_lt_zero (i + 1))
+  | cons a as ih =>
+      rcases i with _ | j
+      · have hA : 0 < as.length := by simpa using h1
+        simp only [List.set_cons_zero, List.set_cons_succ, List.cons_append,
+          List.drop_succ, List.drop_drop, List.nil_append, List.cons_append]
+        simpa using set_take_drop as 0 x₁ hA
+      · have hj : j + 1 < as.length := by simpa using h1
+        simp only [List.set_cons_succ, List.take_succ_cons, List.cons_append,
+          List.drop_succ, ih j hj]
+
+/-- Triple `List.set` consecutif en lecture take/drop — la forme exacte de la
+    chirurgie R3 connectee lue sur la liste de paires. -/
+lemma set3_take_drop {α : Type} (l : List α) (i : Nat) (x₀ x₁ x₂ : α)
+    (h2 : i + 2 < l.length) :
+    ((l.set i x₀).set (i + 1) x₁).set (i + 2) x₂ =
+      l.take i ++ [x₀, x₁, x₂] ++ l.drop (i + 3) := by
+  induction l generalizing i with
+  | nil => exact absurd h2 (Nat.not_lt_zero (i + 2))
+  | cons a as ih =>
+      rcases i with _ | j
+      · have hB : 0 + 1 < as.length := by simpa using h2
+        have h2as := set2_take_drop as 0 x₁ x₂ hB
+        simp only [List.set_cons_zero, List.set_cons_succ, List.cons_append]
+        simpa using h2as
+      · have hj : j + 2 < as.length := by simpa using h2
+        simp only [List.set_cons_succ, List.take_succ_cons, List.cons_append,
+          List.drop_succ, ih j hj]
+
+/-- `map` commute a `List.set` : reecrire un croisement puis projeter, ou
+    projeter puis reecrire la projection, donne la meme liste de paires. -/
+lemma map_set {α β : Type} (f : α → β) (l : List α) (i : Nat) (x : α) :
+    (l.set i x).map f = (l.map f).set i (f x) := by
+  induction l generalizing i with
+  | nil => simp
+  | cons a as ih =>
+      rcases i with _ | j
+      · simp
+      · simpa using ih j
+
+/-! ### `wf` donne `EdgesInRange`
+
+La couverture des paires par les singletons (`crossings_covered_singles`)
+exige `EdgesInRange` ; or la branche non degeneree de `wf` contient
+exactement cette condition — l'extraire evite d'ajouter une hypothese ad hoc
+aux mouvements de Reidemeister, qui portent deja `wf`. -/
+
+/-- La branche non degeneree de `wf` contient exactement `EdgesInRange` : un
+    diagramme bien forme non vide a toutes ses etiquettes dans la plage
+    `1..numEdges`. -/
+lemma wf_edgesInRange {d : KnotDiagram} (hne : d.crossings ≠ [])
+    (hwf : d.wf = true) : EdgesInRange d := by
+  simp only [KnotDiagram.wf, hne, if_neg, Bool.and_eq_true, List.all_eq_true,
+    decide_eq_true_eq] at hwf
+  intro c hc
+  have hall : ∀ z ∈ [c.e1, c.e2, c.e3, c.e4], 1 ≤ z ∧ z ≤ d.numEdges := by
+    intro z hz
+    exact hwf.1 z (List.mem_flatMap.mpr ⟨c, hc, hz⟩)
+  have h1 := hall c.e1 (by simp)
+  have h2 := hall c.e2 (by simp)
+  have h3 := hall c.e3 (by simp)
+  have h4 := hall c.e4 (by simp)
+  exact ⟨h1.1, h1.2, h2.1, h2.2, h3.1, h3.2, h4.1, h4.2⟩
+
+/-- **Preservation generale de la partition d'arcs sous R3 connecte**
+    (premier verrou de #16650) : si `d₂` s'obtient de `d₁` par le move
+    triangulaire, les deux partitions d'arcs portent la meme relation
+    « partager une classe » — pour tout couple d'etiquettes, partager une
+    classe dans `arcPartition d₁` et partager une classe dans `arcPartition d₂`
+    sont equivalents. La forme liste n'est PAS preservee (contre-exemple
+    documente sur #16650 : deux fusions consecutives de memes paires dans
+    l'ordre inverse produisent des listes differentes) ; la forme classe —
+    celle dont depend la matrice d'Alexander colonne par colonne — l'est. -/
+/-- Lecture de la chirurgie R3 sur les listes de paires (e2, e4) : les deux
+    listes de paires de `d₁` et `d₂` partagent prefixe et suffixe, et ne
+    different que sur deux positions consecutives — transposition adjacente
+    `(a₁,g₂) (g₁,b₃)` vs `(b₃,g₁) (a₁,g₂)`. La couverture des singletons est
+    transportee pour les deux milieux. Lemme intermediaire du theoreme
+    `arcPartition_sameRel`, separe pour tenir le cout d'elaboration. -/
+private lemma pairs_append_forms {d₁ d₂ : KnotDiagram}
+    (h : Reidemeister3Connected d₁ d₂) :
+    ∃ A B : List (Nat × Nat), ∃ a₁ b₁ b₃ g₁ g₂ : Nat,
+      d₁.crossings.map (fun c => (c.e2, c.e4)) = A ++ [(a₁, g₂), (g₁, b₃), (g₂, b₁)] ++ B ∧
+      d₂.crossings.map (fun c => (c.e2, c.e4)) = A ++ [(b₃, g₁), (a₁, g₂), (g₂, b₁)] ++ B ∧
+      (∀ q ∈ A ++ [(a₁, g₂), (g₁, b₃)],
+        Covered ((List.range d₁.numEdges).map (fun k => [k + 1])) q.1 ∧
+        Covered ((List.range d₁.numEdges).map (fun k => [k + 1])) q.2) ∧
+      (∀ q ∈ A ++ [(b₃, g₁), (a₁, g₂)],
+        Covered ((List.range d₁.numEdges).map (fun k => [k + 1])) q.1 ∧
+        Covered ((List.range d₁.numEdges).map (fun k => [k + 1])) q.2) := by
+  obtain ⟨hwf₁, _, _, _, i, hi, a₁, a₂, a₃, b₁, b₂, b₃, g₁, g₂, g₃,
+      hnd, hg0, hg1, hg2, hsurg⟩ := h
+  have hne : d₁.crossings ≠ [] := by
+    intro hc
+    rw [hc] at hi
+    exact absurd hi (Nat.not_lt_zero _)
+  have hEIR := wf_edgesInRange hne hwf₁
+  have hlen' : (d₁.crossings.map (fun c => (c.e2, c.e4))).length = d₁.crossings.length :=
+    List.length_map _
+  have hi0 : i < (d₁.crossings.map (fun c => (c.e2, c.e4))).length := by omega
+  have hi1 : i + 1 < (d₁.crossings.map (fun c => (c.e2, c.e4))).length := by omega
+  have hi2 : i + 2 < (d₁.crossings.map (fun c => (c.e2, c.e4))).length := by omega
+  have hgp0 : (d₁.crossings.map (fun c => (c.e2, c.e4))).get ⟨i, hi0⟩ = (a₁, g₂) := by
+    rw [List.getElem_map, hg0]
+  have hgp1 : (d₁.crossings.map (fun c => (c.e2, c.e4))).get ⟨i + 1, hi1⟩ = (g₁, b₃) := by
+    rw [List.getElem_map, hg1]
+  have hgp2 : (d₁.crossings.map (fun c => (c.e2, c.e4))).get ⟨i + 2, hi2⟩ = (g₂, b₁) := by
+    rw [List.getElem_map, hg2]
+  have hpairs₂' : d₂.crossings.map (fun c => (c.e2, c.e4)) =
+      (((d₁.crossings.map (fun c => (c.e2, c.e4))).set i (b₃, g₁)).set (i + 1)
+        (a₁, g₂)).set (i + 2) (g₂, b₁) := by
+    rw [hsurg, map_set, map_set, map_set]
+  have s0 : (d₁.crossings.map (fun c => (c.e2, c.e4))).set i (a₁, g₂) =
+      d₁.crossings.map (fun c => (c.e2, c.e4)) := by
+    have hs := set_get_self _ i hi0
+    rwa [hgp0] at hs
+  have s1 : ((d₁.crossings.map (fun c => (c.e2, c.e4))).set i (a₁, g₂)).set (i + 1)
+        (g₁, b₃) = d₁.crossings.map (fun c => (c.e2, c.e4)) := by
+    rw [s0]
+    have hs := set_get_self _ (i + 1) hi1
+    rwa [hgp1] at hs
+  have s2 : (((d₁.crossings.map (fun c => (c.e2, c.e4))).set i (a₁, g₂)).set (i + 1)
+        (g₁, b₃)).set (i + 2) (g₂, b₁) =
+      d₁.crossings.map (fun c => (c.e2, c.e4)) := by
+    rw [s1]
+    have hs := set_get_self _ (i + 2) hi2
+    rwa [hgp2] at hs
+  have hdec₁ : (((d₁.crossings.map (fun c => (c.e2, c.e4))).set i (a₁, g₂)).set (i + 1)
+        (g₁, b₃)).set (i + 2) (g₂, b₁) =
+      (d₁.crossings.map (fun c => (c.e2, c.e4))).take i ++
+        [(a₁, g₂), (g₁, b₃), (g₂, b₁)] ++
+      (d₁.crossings.map (fun c => (c.e2, c.e4))).drop (i + 3) :=
+    set3_take_drop _ i _ _ _ hi2
+  have hdec₂ : (((d₁.crossings.map (fun c => (c.e2, c.e4))).set i (b₃, g₁)).set (i + 1)
+        (a₁, g₂)).set (i + 2) (g₂, b₁) =
+      (d₁.crossings.map (fun c => (c.e2, c.e4))).take i ++
+        [(b₃, g₁), (a₁, g₂), (g₂, b₁)] ++
+      (d₁.crossings.map (fun c => (c.e2, c.e4))).drop (i + 3) :=
+    set3_take_drop _ i _ _ _ hi2
+  have hP1 : d₁.crossings.map (fun c => (c.e2, c.e4)) =
+      (d₁.crossings.map (fun c => (c.e2, c.e4))).take i ++
+        [(a₁, g₂), (g₁, b₃), (g₂, b₁)] ++
+      (d₁.crossings.map (fun c => (c.e2, c.e4))).drop (i + 3) := by
+    rw [← hdec₁, s2]
+  have hP2 : d₂.crossings.map (fun c => (c.e2, c.e4)) =
+      (d₁.crossings.map (fun c => (c.e2, c.e4))).take i ++
+        [(b₃, g₁), (a₁, g₂), (g₂, b₁)] ++
+      (d₁.crossings.map (fun c => (c.e2, c.e4))).drop (i + 3) := by
+    rw [hpairs₂', hdec₂]
+  have hmem0 : d₁.crossings.get ⟨i, by omega⟩ ∈ d₁.crossings := List.getElem_mem _ _
+  have hmem1 : d₁.crossings.get ⟨i + 1, by omega⟩ ∈ d₁.crossings := List.getElem_mem _ _
+  have hEIR0 := hEIR _ hmem0
+  have hEIR1 := hEIR _ hmem1
+  rw [hg0] at hEIR0
+  rw [hg1] at hEIR1
+  obtain ⟨_, _, ha₁, ha₁', _, _, hg₁lo, hg₁hi, hg₂lo, hg₂hi⟩ := hEIR0
+  obtain ⟨_, _, _, _, _, _, _, _, hb₃lo, hb₃hi⟩ := hEIR1
+  have hcovA : ∀ q ∈ (d₁.crossings.map (fun c => (c.e2, c.e4))).take i,
+      Covered ((List.range d₁.numEdges).map (fun k => [k + 1])) q.1 ∧
+      Covered ((List.range d₁.numEdges).map (fun k => [k + 1])) q.2 := by
+    intro q hq
+    exact crossings_covered_singles hEIR q (List.mem_of_mem_take hq)
+  have hcovmid1 : ∀ q ∈ [(a₁, g₂), (g₁, b₃)],
+      Covered ((List.range d₁.numEdges).map (fun k => [k + 1])) q.1 ∧
+      Covered ((List.range d₁.numEdges).map (fun k => [k + 1])) q.2 := by
+    intro q hq
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at hq
+    rcases hq with rfl | rfl
+    · exact ⟨covered_singles ha₁ ha₁', covered_singles hg₂lo hg₂hi⟩
+    · exact ⟨covered_singles hg₁lo hg₁hi, covered_singles hb₃lo hb₃hi⟩
+  have hcovmid2 : ∀ q ∈ [(b₃, g₁), (a₁, g₂)],
+      Covered ((List.range d₁.numEdges).map (fun k => [k + 1])) q.1 ∧
+      Covered ((List.range d₁.numEdges).map (fun k => [k + 1])) q.2 := by
+    intro q hq
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at hq
+    rcases hq with rfl | rfl
+    · exact ⟨covered_singles hb₃lo hb₃hi, covered_singles hg₁lo hg₁hi⟩
+    · exact ⟨covered_singles ha₁ ha₁', covered_singles hg₂lo hg₂hi⟩
+  refine ⟨(d₁.crossings.map (fun c => (c.e2, c.e4))).take i,
+    (d₁.crossings.map (fun c => (c.e2, c.e4))).drop (i + 3), a₁, b₁, b₃, g₁, g₂,
+    hP1, hP2, ?_, ?_⟩
+  · intro q hq
+    rcases List.mem_append.mp hq with hq | hq
+    · exact hcovA q hq
+    · exact hcovmid1 q hq
+  · intro q hq
+    rcases List.mem_append.mp hq with hq | hq
+    · exact hcovA q hq
+    · exact hcovmid2 q hq
+
+theorem Reidemeister3Connected.arcPartition_sameRel {d₁ d₂ : KnotDiagram}
+    (h : Reidemeister3Connected d₁ d₂) :
+    SameRel (arcPartition d₁) (arcPartition d₂) := by
+  obtain ⟨A, B, a₁, b₁, b₃, g₁, g₂, hP1, hP2, hcov1, hcov2⟩ := pairs_append_forms h
+  rw [arcPartition_eq, arcPartition_eq, hP1, hP2]
+  simp only [List.foldl_append, List.foldl_cons, List.foldl_nil]
+  set S := (List.range d₁.numEdges).map (fun k => [k + 1]) with hS
+  have hfoldA1 : (A ++ [(a₁, g₂), (g₁, b₃)]).foldl mergeStep S =
+      mergeStep (mergeStep A.foldl mergeStep S (a₁, g₂)) (g₁, b₃) := by
+    simp
+  have hfoldA2 : (A ++ [(b₃, g₁), (a₁, g₂)]).foldl mergeStep S =
+      mergeStep (mergeStep A.foldl mergeStep S (b₃, g₁)) (a₁, g₂) := by
+    simp
+  have hd1 := (foldl_partition_inv (P := S) (pairs := A ++ [(a₁, g₂), (g₁, b₃)])
+    classesDisjoint_singles pairwise_singles hcov1).1
+  have hd2 := (foldl_partition_inv (P := S) (pairs := A ++ [(b₃, g₁), (a₁, g₂)])
+    classesDisjoint_singles pairwise_singles hcov2).1
+  rw [hfoldA1] at hd1
+  rw [hfoldA2] at hd2
+  have hmid : SameRel (mergeStep (mergeStep A.foldl mergeStep S (a₁, g₂)) (g₁, b₃))
+      (mergeStep (mergeStep A.foldl mergeStep S (b₃, g₁)) (a₁, g₂)) := by
+    intro x y
+    have hq0 : mergeStep A.foldl mergeStep S (b₃, g₁) =
+        mergeStep A.foldl mergeStep S (g₁, b₃) := by
+      simp only [mergeStep]
+      rw [mergePair_symm]
+    show SameClass (mergeStep (mergeStep A.foldl mergeStep S (a₁, g₂)) (g₁, b₃)) x y ↔ _
+    rw [hq0]
+    exact mergePair_mergePair_comm_equiv _ a₁ g₂ g₁ b₃ x y
+  have hmid3 : SameRel
+      (mergeStep (mergeStep (mergeStep A.foldl mergeStep S (a₁, g₂)) (g₁, b₃)) (g₂, b₁))
+      (mergeStep (mergeStep (mergeStep A.foldl mergeStep S (b₃, g₁)) (a₁, g₂)) (g₂, b₁)) :=
+    sameRel_mergeStep hmid hd1 hd2 (g₂, b₁)
+  exact sameRel_foldl hmid3 (classesDisjoint_mergePair hd1)
+    (classesDisjoint_mergePair hd2) B
+
+/-- Corollaire de couverture : la relation de classes preservee donne
+    l'equivalence des couvertures — une etiquette est portee par la partition
+    d'arcs de `d₁` si et seulement si elle l'est par celle de `d₂`. -/
+theorem Reidemeister3Connected.arcPartition_covered_iff {d₁ d₂ : KnotDiagram}
+    (h : Reidemeister3Connected d₁ d₂) (z : Nat) :
+    Covered (arcPartition d₁) z ↔ Covered (arcPartition d₂) z := by
+  have heq := h.arcPartition_sameRel z z
+  constructor
+  · rintro ⟨C, hC, hz⟩
+    obtain ⟨D, hD, hzD, _⟩ := heq.mp ⟨C, hC, hz, hz⟩
+    exact ⟨D, hD, hzD⟩
+  · rintro ⟨D, hD, hzD⟩
+    obtain ⟨C, hC, hz, _⟩ := heq.mpr ⟨D, hD, hzD, hzD⟩
+    exact ⟨C, hC, hz⟩
 
 end Knots
