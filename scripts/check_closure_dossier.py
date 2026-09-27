@@ -35,7 +35,8 @@ Ce gate verifie mecaniquement le contrat, puis rend l'un des codes du gate PR :
 LA FERMETURE RESTE UN GESTE ai-01 (point 4) : le gate ne ferme rien, il
 prepare la lecture G.9 minimale -- le dossier, le delta, la preuve decisive.
 
-Controles (sur l'issue OUVERTE uniquement) :
+Controles (sur l'issue OUVERTE uniquement ; ``--replay`` relache l'etat OPEN
+pour valider post-hoc un temoin historique deja FERME) :
 
   1. lane tierce      -- la lane du dossier != lane de tout [DELIVERED] de
                          l'issue et != lane du ``Grain:`` de toute PR merged
@@ -56,6 +57,7 @@ Usage::
 
     python scripts/check_closure_dossier.py 17284            # une issue
     python scripts/check_closure_dossier.py 17284 --template --lane myia-po-2025:CoursIA-2
+    python scripts/check_closure_dossier.py 17284 --replay   # temoin historique deja FERME
     python scripts/check_closure_dossier.py --sweep --limit 50   # label candidate-delivered, oldest-first
 
 Voir aussi : #17956 (dispatch fondateur), check_adjoint_prevalidation.py
@@ -86,6 +88,13 @@ except ImportError:  # charge depuis scripts/ en invocation directe
 REPO = "jsboige/CoursIA"
 LABEL = "candidate-delivered"
 SHARED_GITHUB_LOGIN = "jsboige"
+
+#: Logins habilites a FERMER une issue (gouvernance : les workers ne ferment
+#: jamais). En mode ``--replay``, leur commentaire posterieur au dossier --
+#: l'acte et le compte-rendu de fermeture, mesure a 1-2 s du close -- ne
+#: periment pas le dossier : c'est sa consequence, pas une reprise de
+#: discussion.
+CLOSURE_ACTOR_LOGINS = {"myia-ai-01"}
 
 START = "[CLOSURE PREFLIGHT]"
 END = "[/CLOSURE PREFLIGHT]"
@@ -162,7 +171,11 @@ def parse_dossier(
 
     ``acceptance`` est le seul champ multi-lignes : ses items ``- ...``
     suivent la ligne ``acceptance:``. La prose APRES le marqueur fermant est
-    ignoree, jamais refusee (meme arbitrage que le gate PR, #16928).
+    ignoree, jamais refusee (meme arbitrage que le gate PR, #16928). Sans
+    marqueur fermant, le dossier doit FINIR le commentaire (dossiers de
+    production, c.5849452860) : aucune prose n'y est ignoree -- toute ligne
+    residuelle erre par elle-meme (malformed/unknown) au lieu d'etre coupee
+    silencieusement apres un marqueur absent.
     """
     lines = body.strip().splitlines()
     if not lines or lines[0].strip() != START:
@@ -172,11 +185,7 @@ def parse_dossier(
         (i for i, line in enumerate(lines[1:], 1) if line.strip() == END),
         None,
     )
-    if closing is None:
-        errors.append("missing closing marker")
-        content = lines[1:]
-    else:
-        content = lines[1:closing]
+    content = lines[1:] if closing is None else lines[1:closing]
 
     fields: dict[str, str] = {}
     acceptance: list[str] = []
@@ -227,10 +236,13 @@ def _merged_referring_prs(repo: str, number: int) -> list[dict[str, Any]]:
         pr = src.get("pull_request") or {}
         if not pr.get("merged_at"):
             continue
-        body = gh_json([
+        # Pas de --jq : gh l'ecrit en TEXTE BRUT, que json.loads refuse
+        # (defaut mesure c.5849452860 -- tout temoin rendait UNKNOWN rc=2).
+        row = gh_json([
             "pr", "view", str(src["number"]), "--repo", repo,
-            "--json", "body", "--jq", ".body",
+            "--json", "body",
         ])
+        body = row.get("body") if isinstance(row, dict) else None
         out.append({"number": src["number"], "merged_at": pr["merged_at"],
                     "body": str(body) if body else ""})
     return out
@@ -248,7 +260,7 @@ def load_snapshot(repo: str, number: int) -> dict[str, Any]:
     """Tout ce que le gate lit sur une issue, en un endroit."""
     issue = gh_json([
         "issue", "view", str(number), "--repo", repo,
-        "--json", "number,title,state,labels,comments,createdAt",
+        "--json", "number,title,state,labels,comments,createdAt,closedAt",
     ])
     if not isinstance(issue, dict) or "number" not in issue:
         raise RuntimeError(f"issue #{number} introuvable")
@@ -267,6 +279,7 @@ def load_snapshot(repo: str, number: int) -> dict[str, Any]:
         "state": issue.get("state") or "",
         "labels": [lab.get("name") or "" for lab in (issue.get("labels") or [])],
         "created_at": issue.get("createdAt") or "",
+        "closed_at": issue.get("closedAt") or "",
         "comments": comments,
         "merged_prs": _merged_referring_prs(repo, number),
         "open_prs": _open_pr_refs(repo, number),
@@ -294,9 +307,14 @@ def _cited_pr_numbers(dossier: Dossier) -> set[int]:
     return out
 
 
-def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
+def validate_dossier(dossier: Dossier, snapshot: dict[str, Any],
+                     replay: bool = False) -> list[str]:
     """Integrite structurelle + controles mecaniques du contrat. Rend la liste
-    des defauts ; vide = intact."""
+    des defauts ; vide = intact.
+
+    ``replay`` valide a titre post-hoc une issue deja FERMEE (temoins
+    historiques) : l'etat OPEN n'est plus exige, et le compte-rendu de
+    fermeture du coordinateur ne perime pas le dossier."""
     f = dossier.fields
     errors: list[str] = []
 
@@ -304,7 +322,7 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
         errors.append("schema must be '1'")
     if dossier.author != SHARED_GITHUB_LOGIN:
         errors.append(f"comment author must be {SHARED_GITHUB_LOGIN!r}")
-    if snapshot.get("state") != "OPEN":
+    if snapshot.get("state") != "OPEN" and not replay:
         errors.append(f"issue state must be OPEN, live={snapshot.get('state')}")
 
     verdict = f.get("verdict", "")
@@ -394,6 +412,8 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
 
     # Posteriorite : aucun commentaire non neutre apres le dossier.
     for c in snapshot["comments"][dossier.comment_index + 1:]:
+        if replay and (c.get("author") or {}).get("login", "") in CLOSURE_ACTOR_LOGINS:
+            continue  # l'acte/compte-rendu de fermeture suit le dossier, ne le perime pas
         if not _is_neutral_comment(c):
             who = (c.get("author") or {}).get("login", "?")
             errors.append(
@@ -403,7 +423,8 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
     return errors
 
 
-def evaluate(snapshot: dict[str, Any]) -> tuple[str, list[str], Dossier | None]:
+def evaluate(snapshot: dict[str, Any],
+             replay: bool = False) -> tuple[str, list[str], Dossier | None]:
     """(verdict, errors, dossier) -- verdict CLOSE / KEEP / NO-DOSSIER."""
     for index, row in enumerate(snapshot["comments"]):
         body = row.get("body") or ""
@@ -416,7 +437,7 @@ def evaluate(snapshot: dict[str, Any]) -> tuple[str, list[str], Dossier | None]:
         )
         if dossier is None:
             continue
-        errors.extend(validate_dossier(dossier, snapshot))
+        errors.extend(validate_dossier(dossier, snapshot, replay))
         verdict = dossier.fields.get("verdict", "")
         if errors:
             return ("REFUSED", errors, dossier)
@@ -508,6 +529,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--repo", default=REPO)
     parser.add_argument("--json", action="store_true",
                         help="machine-readable output")
+    parser.add_argument("--replay", action="store_true",
+                        help="valider post-hoc une issue deja FERMEE "
+                             "(temoins historiques) : l'etat OPEN n'est plus "
+                             "exige, le compte-rendu de fermeture du "
+                             "coordinateur ne perime pas le dossier")
     args = parser.parse_args(argv)
 
     if args.sweep:
@@ -520,7 +546,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.template:
             print(render_template(snapshot, args.lane))
             return EXIT_CLOSE
-        verdict, errors, dossier = evaluate(snapshot)
+        verdict, errors, dossier = evaluate(snapshot, replay=args.replay)
     except (RuntimeError, json.JSONDecodeError, OSError) as exc:
         print(f"UNKNOWN -- {exc}")
         if args.json:
@@ -534,10 +560,13 @@ def main(argv: list[str] | None = None) -> int:
             "verdict": verdict,
             "lane": (dossier.fields.get("lane") if dossier else None),
             "errors": errors,
+            "replay": args.replay,
         }, ensure_ascii=False, indent=2))
     if verdict == VERDICT_CLOSE:
         print(f"CLOSE -- issue #{args.issue} carries an intact closure dossier "
-              f"by {(dossier.fields.get('lane') or '?')}: ai-01 may close.")
+              f"by {(dossier.fields.get('lane') or '?')}: ai-01 may close."
+              + (" (replay: post-hoc validation of a CLOSED issue)"
+                 if args.replay else ""))
         return EXIT_CLOSE
     if verdict == VERDICT_KEEP:
         print(f"KEEP -- issue #{args.issue} carries an intact dossier attesting "

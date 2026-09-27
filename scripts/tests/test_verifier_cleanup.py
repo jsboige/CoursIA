@@ -136,8 +136,8 @@ def test_classify_single_merged_pr_silent_is_ready(monkeypatch):
             _timeline_event(11300, "2026-08-16T10:00:00Z"),
         ],
         ("search", "issues", "--json", "number"): [],
-        ("issue", "view", "11266", "--repo", "o/r", "--json", "comments",
-         "--jq", ".comments[-1].createdAt"): "",
+        ("issue", "view", "11266", "--repo", "o/r", "--json",
+         "comments"): {"comments": []},
     }
     _stub_subprocess(monkeypatch, mapping)
     row = classify_one("o/r", {"number": 11266, "title": "step mort workflow-path-filter-audit"})
@@ -153,8 +153,8 @@ def test_classify_open_pr_is_in_flight(monkeypatch):
         ("search", "issues", "--json", "number", "--limit", "20"): [
             {"number": 11260},
         ],
-        ("issue", "view", "11175", "--repo", "o/r", "--json", "comments",
-         "--jq", ".comments[-1].createdAt"): "",
+        ("issue", "view", "11175", "--repo", "o/r", "--json",
+         "comments"): {"comments": []},
     }
     _stub_subprocess(monkeypatch, mapping)
     row = classify_one("o/r", {"number": 11175, "title": "fix something"})
@@ -170,8 +170,8 @@ def test_classify_multi_phase_is_ambiguous(monkeypatch):
             _timeline_event(11280, "2026-08-17T11:00:00Z"),
         ],
         ("search", "issues", "--json", "number", "--limit", "20"): [],
-        ("issue", "view", "11162", "--repo", "o/r", "--json", "comments",
-         "--jq", ".comments[-1].createdAt"): "",
+        ("issue", "view", "11162", "--repo", "o/r", "--json",
+         "comments"): {"comments": []},
     }
     _stub_subprocess(monkeypatch, mapping)
     row = classify_one("o/r", {"number": 11162, "title": "umbrella novelty"})
@@ -181,15 +181,17 @@ def test_classify_multi_phase_is_ambiguous(monkeypatch):
 
 def test_classify_post_merge_comment_is_ambiguous(monkeypatch):
     # Mirrors #10600 c.297: merged PR landed, then a follow-up comment after.
-    # The --jq invocation returns a SCALAR JSON string -- the stub must echo
-    # it verbatim (with surrounding quotes) so ``_gh_json`` decodes a string.
+    # c.5849500517 : le stub encode la forme REELLE de gh --json comments
+    # (un objet JSON avec la liste complete), plus de --jq scalaire fictif.
     mapping = {
         ("api", "repos/o/r/issues/10600/timeline", "--paginate"): [
             _timeline_event(10799, "2026-08-13T07:00:00Z"),
         ],
         ("search", "issues", "--json", "number", "--limit", "20"): [],
-        ("issue", "view", "10600", "--repo", "o/r", "--json", "comments",
-         "--jq", ".comments[-1].createdAt"): '"2026-08-14T10:00:00Z"',
+        ("issue", "view", "10600", "--repo", "o/r", "--json",
+         "comments"): {"comments": [
+             {"createdAt": "2026-08-14T10:00:00Z"},
+         ]},
     }
     _stub_subprocess(monkeypatch, mapping)
     row = classify_one("o/r", {"number": 10600, "title": "workflow-path-filter-audit"})
@@ -228,11 +230,11 @@ def test_classify_partition_beats_ready_evidence(monkeypatch):
 
 
 def test_classify_tasklist_body_is_container(monkeypatch):
-    # Signal task-list : ne vit que dans le body. Le --jq .body rend une
-    # SCALAR JSON string -- le stub l'echoit verbatim avec ses quotes.
+    # Signal task-list : ne vit que dans le body. c.5849500517 : le stub
+    # encode la forme REELLE de gh --json body (objet JSON), plus de --jq.
     mapping = {
-        ("issue", "view", "17900", "--repo", "o/r", "--json", "body",
-         "--jq", ".body"): '"Tranches:\\n\\n- [x] #17070 GameTheory\\n- [ ] #17071 Lean\\n"',
+        ("issue", "view", "17900", "--repo", "o/r", "--json",
+         "body"): {"body": "Tranches:\n\n- [x] #17070 GameTheory\n- [ ] #17071 Lean\n"},
     }
     _stub_subprocess(monkeypatch, mapping)
     row = classify_one("o/r", {"number": 17900,
@@ -253,14 +255,14 @@ def test_classify_acceptance_checkboxes_are_not_container(monkeypatch):
     # ne font pas un conteneur -- la feuille livree reste READY-eligible.
     # Le body est requete mais ne porte aucun #N sur ligne de tache.
     mapping = {
-        ("issue", "view", "17902", "--repo", "o/r", "--json", "body",
-         "--jq", ".body"): '"Acceptance:\\n\\n- [x] le SVG saffiche\\n- [ ] tests verts\\n"',
+        ("issue", "view", "17902", "--repo", "o/r", "--json",
+         "body"): {"body": "Acceptance:\n\n- [x] le SVG saffiche\n- [ ] tests verts\n"},
         ("api", "repos/o/r/issues/17902/timeline", "--paginate"): [
             _timeline_event(17904, "2026-09-20T10:00:00Z"),
         ],
         ("search", "issues", "--json", "number", "--limit", "20"): [],
-        ("issue", "view", "17902", "--repo", "o/r", "--json", "comments",
-         "--jq", ".comments[-1].createdAt"): "",
+        ("issue", "view", "17902", "--repo", "o/r", "--json",
+         "comments"): {"comments": []},
     }
     _stub_subprocess(monkeypatch, mapping)
     row = classify_one("o/r", {"number": 17902,
@@ -278,10 +280,6 @@ def test_container_corpus_never_candidate_and_never_ready(monkeypatch):
     # et exige la coherence des deux cotes, plus le cas sain (feuille) qui
     # reste candidate/READY des deux cotes.
     from candidate_delivered import classify as cd_classify
-    import json as _json
-
-    def _jstr(s):
-        return _json.dumps(s)
 
     declared_ref = [{"pr_number": 17754, "merged_at": "2026-09-20T10:00:00Z",
                      "body": "Grain: DEEP/notebook-python -- See #{n} (tranche)."}]
@@ -301,10 +299,10 @@ def test_container_corpus_never_candidate_and_never_ready(monkeypatch):
         mapping = {
             ("api", f"repos/o/r/issues/{n}/timeline", "--paginate"): timeline,
             ("search", "issues", "--json", "number", "--limit", "20"): [],
-            ("issue", "view", str(n), "--repo", "o/r", "--json", "body",
-             "--jq", ".body"): _jstr(body),
-            ("issue", "view", str(n), "--repo", "o/r", "--json", "comments",
-             "--jq", ".comments[-1].createdAt"): "null",
+            ("issue", "view", str(n), "--repo", "o/r", "--json",
+             "body"): {"body": body},
+            ("issue", "view", str(n), "--repo", "o/r", "--json",
+             "comments"): {"comments": []},
         }
         _stub_subprocess(monkeypatch, mapping)
         row = classify_one("o/r", {"number": n, "title": title})
@@ -323,3 +321,93 @@ def test_container_corpus_never_candidate_and_never_ready(monkeypatch):
         # pour l'un => jamais etiquetable par l'autre.
         if want_verifier == "CONTAINER":
             assert verdict != "candidate", n
+
+
+# --- c.5849500517 : le trajet de collecte suit la forme REELLE de gh --------
+# Defaut mesure : les stubs nourrissaient du JSON quoted la ou gh ecrit du
+# TEXTE BRUT via --jq -- les tests restaient verts pendant que la production
+# lisait un body toujours vide. Ces tests capturent les ARGS emis et exigent
+# la forme --json sans --jq, plus la lecture effective des cles.
+
+def test_get_issue_body_reads_json_key_never_jq(monkeypatch):
+    import subprocess as _sp
+    import json as _json
+    import verifier_cleanup as vc
+
+    seen = {}
+
+    class _P:
+        stdout = _json.dumps({"body": "Un body de 4908 caracteres"})
+        returncode = 0
+
+    def fake_run(args, **kwargs):
+        seen["args"] = tuple(args)
+        return _P()
+
+    monkeypatch.setattr(_sp, "run", fake_run)
+    body = vc.get_issue_body("jsboige/CoursIA", 17956)
+    assert body == "Un body de 4908 caracteres"
+    assert "--jq" not in seen["args"], (
+        "--jq .body rend du texte brut que json.loads refuse (c.5849500517)")
+
+
+def test_get_issue_body_failure_returns_empty_not_fiction(monkeypatch):
+    import subprocess as _sp
+    import verifier_cleanup as vc
+
+    class _P:
+        stdout = ""
+        returncode = 1
+
+    monkeypatch.setattr(_sp, "run", lambda args, **kw: _P())
+    assert vc.get_issue_body("o/r", 1) == ""
+
+    class _Q:
+        stdout = '{"body": null}'
+        returncode = 0
+
+    monkeypatch.setattr(_sp, "run", lambda args, **kw: _Q())
+    assert vc.get_issue_body("o/r", 1) == ""
+
+
+def test_get_last_comment_date_reads_last_created_at(monkeypatch):
+    import subprocess as _sp
+    import json as _json
+    import verifier_cleanup as vc
+
+    seen = {}
+
+    class _P:
+        stdout = _json.dumps({"comments": [
+            {"createdAt": "2026-08-13T07:00:00Z"},
+            {"createdAt": "2026-08-14T10:00:00Z"},
+        ]})
+        returncode = 0
+
+    def fake_run(args, **kwargs):
+        seen["args"] = tuple(args)
+        return _P()
+
+    monkeypatch.setattr(_sp, "run", fake_run)
+    assert vc.get_last_comment_date("o/r", 10600) == "2026-08-14T10:00:00Z"
+    assert "--jq" not in seen["args"]
+
+    class _No:
+        stdout = _json.dumps({"comments": []})
+        returncode = 0
+
+    monkeypatch.setattr(_sp, "run", lambda args, **kw: _No())
+    assert vc.get_last_comment_date("o/r", 10600) is None
+
+
+def test_classify_tasklist_body_via_gh_reel(monkeypatch):
+    # Le trajet COMPLET de classify_one avec la forme reelle de gh : body
+    # non vide porte par l'objet JSON -- le verdict CONTAINER doit tomber.
+    mapping = {
+        ("issue", "view", "17956", "--repo", "o/r", "--json",
+         "body"): {"body": "Tranches:\n\n- [ ] #17700 A\n- [ ] #17701 B\n"},
+    }
+    _stub_subprocess(monkeypatch, mapping)
+    row = classify_one("o/r", {"number": 17956,
+                               "title": "Fermer la dette de rendu des notebooks"})
+    assert row["verdict"] == "CONTAINER"

@@ -151,26 +151,40 @@ def get_open_pr_refs(repo: str, number: int) -> list[int]:
 
 
 def get_issue_body(repo: str, number: int) -> str:
-    """Body of the issue (empty string on failure -- title signals decide then)."""
-    body = _gh_json([
+    """Body of the issue (empty string on failure -- title signals decide then).
+
+    Pas de ``--jq`` : gh l'ecrit en TEXTE BRUT, que ``json.loads`` refuse
+    (defaut mesure c.5849500517 -- le body vivait toujours vide, le volet
+    CONTAINER ne voyait jamais une task-list du body). On requete l'objet
+    JSON complet et on lit la cle ``body``.
+    """
+    row = _gh_json([
         "issue", "view", str(number), "--repo", repo,
-        "--json", "body", "--jq", ".body",
+        "--json", "body",
     ])
-    return str(body) if body else ""
+    if isinstance(row, dict) and isinstance(row.get("body"), str):
+        return row["body"]
+    return ""
 
 
 def get_last_comment_date(repo: str, number: int) -> str | None:
-    """Return ISO date of the last comment on the issue, or None."""
-    comments = _gh_json([
+    """Return ISO date of the last comment on the issue, or None.
+
+    Meme defaut de classe que ``get_issue_body`` : ``--jq
+    .comments[-1].createdAt`` rend un scalaire BRUT (non JSON), donc la
+    lecture echouait toujours silencieusement en None. On lit la liste
+    ``comments`` complete et la derniere ``createdAt`` en Python.
+    """
+    row = _gh_json([
         "issue", "view", str(number), "--repo", repo,
-        "--json", "comments", "--jq", ".comments[-1].createdAt",
+        "--json", "comments",
     ])
-    # The --jq above returns a scalar string OR an empty string. gh returns
-    # an empty string when there are no comments, which json.loads parses as
-    # ``""`` -- not None. Normalise both to None.
+    comments = row.get("comments") if isinstance(row, dict) else None
     if not comments:
         return None
-    return str(comments) if comments else None
+    last = comments[-1]
+    created = last.get("createdAt") if isinstance(last, dict) else None
+    return str(created) if created else None
 
 
 def is_registry(title: str) -> bool:

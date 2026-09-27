@@ -220,10 +220,23 @@ def test_issue_fermee_hors_champ():
 # --- parseur ------------------------------------------------------------------
 
 def test_parse_dossier_sans_marqueur_fermant():
+    # c.5849452860 : les dossiers de production finissent le commentaire sans
+    # marqueur fermant -- accepte, il n'y a rien a delimiter. Toute prose
+    # residuelle erre par elle-meme : voir le test suivant.
     body = _dossier_body().replace("[/CLOSURE PREFLIGHT]", "")
     dossier, errors = parse_dossier(body, 0, "jsboige")
     assert dossier is not None
-    assert any("missing closing marker" in e for e in errors)
+    assert errors == []
+
+
+def test_parse_dossier_sans_marqueur_prose_residuelle_refusee():
+    # Sans marqueur fermant, RIEN n'est ignore : une ligne de prose apres le
+    # dernier champ erreur -- le dossier ne peut pas maquiller sa suite.
+    body = _dossier_body().replace("[/CLOSURE PREFLIGHT]", "")
+    body += "\nMerci de valider ce dossier."
+    dossier, errors = parse_dossier(body, 0, "jsboige")
+    assert dossier is not None
+    assert any("malformed line" in e for e in errors)
 
 
 def test_parse_dossier_item_sans_fleche():
@@ -304,3 +317,88 @@ def test_main_rc_close_0_keep_3_refuse_1_inconnu_2(monkeypatch, capsys):
 if __name__ == "__main__":
     import pytest
     sys.exit(pytest.main([__file__, "-v"]))
+
+
+# --- c.5849452860 : rejeu des temoins historiques + trajet de collecte ------
+
+def test_issue_fermee_refusee_sans_replay():
+    # Par defaut le gate reste fail-closed : une issue FERMEE ne peut pas
+    # recevoir de verdict actionnable.
+    snap = _snapshot(state="CLOSED", comments=[_comment(_dossier_body())])
+    verdict, errors, _ = evaluate(snap)
+    assert verdict == "REFUSED"
+    assert any("must be OPEN" in e for e in errors)
+
+
+def test_replay_issue_fermee_validee():
+    # --replay valide post-hoc un temoin deja FERME : l'etat OPEN n'est plus
+    # exige (c.5849452860 -- les deux temoins historiques du dispatch).
+    snap = _snapshot(state="CLOSED", comments=[_comment(_dossier_body())])
+    verdict, errors, _ = evaluate(snap, replay=True)
+    assert verdict == "CLOSE"
+    assert errors == []
+
+
+def test_replay_compte_rendu_fermeture_ne_perime_pas():
+    # Mesure temoins : le compte-rendu de fermeture du coordinateur suit le
+    # dossier de 1-2 s. En rejeu ce n'est pas une reprise de discussion.
+    comments = [
+        _comment(_dossier_body(), created="2026-09-26T14:07:21Z"),
+        _comment("Fermeture par ai-01 sur le dossier tiers [CLOSURE "
+                 "PREFLIGHT] de myia-po-2025:CoursIA-2.",
+                 login="myia-ai-01", created="2026-09-26T19:18:58Z"),
+    ]
+    snap = _snapshot(state="CLOSED", comments=comments)
+    verdict, errors, _ = evaluate(snap, replay=True)
+    assert verdict == "CLOSE"
+
+
+def test_replay_ne_blanchit_pas_un_tiers_posterieur():
+    # Le rejeu n'exempte QUE l'acteur de fermeture : un commentaire non
+    # neutre d'un tiers apres le dossier perime toujours.
+    comments = [
+        _comment(_dossier_body(), created="2026-09-26T14:07:21Z"),
+        _comment("Reprise de discussion par un worker.",
+                 login="jsboige", created="2026-09-26T16:00:00Z"),
+    ]
+    snap = _snapshot(state="CLOSED", comments=comments)
+    verdict, errors, _ = evaluate(snap, replay=True)
+    assert verdict == "REFUSED"
+    assert any("postdates" in e for e in errors)
+
+
+def test_merged_referring_prs_lit_le_body_sans_jq(monkeypatch):
+    # c.5849452860 : gh --jq .body rend du TEXTE BRUT que json.loads refuse
+    # (tout temoin rendait UNKNOWN rc=2). L'organe doit requeter --json body
+    # et lire la cle -- le test capture les ARGS emis.
+    import subprocess as _sp
+    import json as _json
+    timeline = [_json.dumps([{
+        "event": "cross-referenced",
+        "source": {"issue": {"number": 17901,
+                             "pull_request": {"merged_at": "2026-09-19T10:00:00Z"}}},
+    }])]
+    seen = {}
+
+    class _P:
+        def __init__(self, stdout, returncode=0):
+            self.stdout = stdout
+            self.returncode = returncode
+
+    def fake_run(args, **kwargs):
+        tail = tuple(args[1:])
+        seen[tail[:3]] = tail
+        if tail[0] == "api":
+            return _P("".join(timeline))
+        if tail[:2] == ("pr", "view"):
+            assert "--jq" not in tail, (
+                "--jq .body rend du texte brut que json.loads refuse "
+                "(c.5849452860)")
+            return _P(_json.dumps({"body": "Grain: DEEP/lean -- See #17900."}))
+        return _P("", returncode=1)
+
+    monkeypatch.setattr(_sp, "run", fake_run)
+    prs = ccd._merged_referring_prs("o/r", 17900)
+    assert len(prs) == 1
+    assert prs[0]["body"].startswith("Grain:")
+    assert prs[0]["number"] == 17901
