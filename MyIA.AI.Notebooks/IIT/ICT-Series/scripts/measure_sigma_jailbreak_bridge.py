@@ -22,6 +22,18 @@ Usage
 
 Sortie : ``runs/ict_sigma_jailbreak_bridge.json``.
 
+Replication sur un autre modele
+-------------------------------
+``--model`` remplace le modele par defaut, sans rien changer au protocole : memes
+prompts, meme echelle, meme classifieur, meme critere. C'est ce qui rend deux runs
+comparables, et c'est la seule facon de repondre a « et sur un autre modele ? ».
+Le resultat de reference est celui de ``Qwen/Qwen2.5-0.5B-Instruct`` ; toute autre
+valeur ecrit son propre artefact, a cote, sous le nom donne par ``--out``.
+
+    python scripts/measure_sigma_jailbreak_bridge.py --full \
+        --model TinyLlama/TinyLlama-1.1B-Chat-v1.0 \
+        --out runs/ict_sigma_jailbreak_bridge_tinyllama.json
+
 Ce que ce script ne persiste PAS : le texte genere. Les artefacts ne portent que
 les etats classes par tour, leurs longueurs, et les agregats. Le banc est un banc
 de robustesse ; publier les completions n'ajoute rien a la mesure.
@@ -203,6 +215,9 @@ def main() -> int:
     ap.add_argument("--turns", type=int, default=5)
     ap.add_argument("--n-prompts", type=int, default=None)
     ap.add_argument("--n-shuffles", type=int, default=200)
+    ap.add_argument("--model", default=MODEL,
+                    help="remplace le modele par defaut, protocole inchange")
+    ap.add_argument("--dtype", default="float32", choices=("float32", "bfloat16"))
     ap.add_argument("--out", default=os.path.join(SERIES, "runs",
                                                   "ict_sigma_jailbreak_bridge.json"))
     args = ap.parse_args()
@@ -212,13 +227,14 @@ def main() -> int:
     import torch
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
+    dtype = {"float32": torch.float32, "bfloat16": torch.bfloat16}[args.dtype]
     n_prompts = args.n_prompts or (1 if args.pilot else len(PROMPTS[0]))
     t0 = time.time()
-    tok = AutoTokenizer.from_pretrained(MODEL)
-    model = AutoModelForCausalLM.from_pretrained(MODEL, dtype=torch.float32)
+    tok = AutoTokenizer.from_pretrained(args.model)
+    model = AutoModelForCausalLM.from_pretrained(args.model, dtype=dtype)
     model.eval()
-    print(f"[load {time.time() - t0:.1f}s] {MODEL} greedy, {args.turns} tours, "
-          f"{n_prompts} prompts/classe", flush=True)
+    print(f"[load {time.time() - t0:.1f}s] {args.model} ({args.dtype}) greedy, "
+          f"{args.turns} tours, {n_prompts} prompts/classe", flush=True)
 
     traj: dict[int, list[list[str]]] = {}
     for sev in (0, 1, 2):
@@ -268,7 +284,10 @@ def main() -> int:
 
     payload = {
         "issue": 17976,
-        "model": MODEL,
+        "model": args.model,
+        "reference_model": MODEL,
+        "is_replication": args.model != MODEL,
+        "dtype": args.dtype,
         "decoding": "greedy (do_sample=False) -- entierement reproductible",
         "turns": args.turns,
         "n_prompts_per_class": n_prompts,
