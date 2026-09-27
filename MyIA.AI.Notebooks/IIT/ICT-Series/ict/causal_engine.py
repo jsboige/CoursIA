@@ -63,11 +63,12 @@ transforme, il ne selectionne pas.
 
 Conformite au contrat de trace
 ------------------------------
-Le contrat v1 vit dans ``ict.trace_contract`` (PR #15525, en vol au moment de l'ecriture).
-Ce module embarque les ``ALIGNMENT_KEYS`` v1 en **litteral propre** et valide la
-_compatibilite d'alignement_ de deux enregistrements par :func:`assert_alignment` ; au
-merge de #15525, l'import garde (:func:`trace_contract_module`) deleguera la validation au
-contrat canonique sans changer l'API d'ici. Les enregistrements d'intervention sont une
+Le contrat v1 vit dans ``ict.trace_contract`` (merge #15525). Ce module DELEGUE au
+canonique des qu'il est importable : :data:`ALIGNMENT_KEYS` reprend
+``trace_contract.ALIGNMENT_KEYS`` et :func:`assert_alignment` compare via
+``trace_contract.check_alignment`` sur les cles presentes des deux cotes (champs
+optionnels du sidecar) — le litteral local ne subsiste qu'en repli, garde par le test de
+parite ``TestDelegationContratCanonique``. Les enregistrements d'intervention sont une
 **couche sidecar** : ils REFERENT un manifeste de trace (cles d'alignement embarquees),
 ils ne l'etendent pas — pas de bump de version du contrat pour le moteur.
 """
@@ -99,6 +100,7 @@ __all__ = [
     "build_gate24_family",
     "assert_alignment",
     "artifact_sha256",
+    "trace_contract_module",
 ]
 
 #: Les cinq operations v1 de l'issue #15479, en enum fermee : une operation hors
@@ -111,21 +113,49 @@ OPERATIONS: tuple[str, ...] = (
     "interchange",
 )
 
-#: Cles d'alignement v1 du contrat de trace (copie du litteral de ``trace_contract``,
-#: PR #15525). Deux enregistrements compares doivent partager CHACUNE de ces cles.
+def trace_contract_module():
+    """Import garde du contrat canonique : ``ict.trace_contract`` s'il est importable.
+
+    Le canonique est merge depuis #15525 : ce garde rend le module quand il
+    resolve (tests, runtime avec ``ICT-Series`` sur ``sys.path``), ``None``
+    sinon — le repli litteral de :data:`ALIGNMENT_KEYS` tient alors la
+    semantique v1. Le garde rend la dependance EXPLICITE plutot qu'un import
+    qui casserait main.
+    """
+    try:
+        import ict.trace_contract as tc  # type: ignore
+
+        return tc
+    except ImportError:
+        return None
+
+
+#: Module canonique resolu a l'import de ce fichier (None si non importable).
+_TC = trace_contract_module()
+
+#: Cles d'alignement v1 du contrat de trace : DELEGUEES au canonique
+#: ``ict.trace_contract.ALIGNMENT_KEYS`` (#15525 merge). Le litteral local ne
+#: subsiste que comme repli quand le canonique n'est pas importable ; le test
+#: de parite (``TestDelegationContratCanonique``) verifie l'egalite des deux
+#: des que le canonique resolve — la copie ne peut plus deriver en silence.
+#: Deux enregistrements compares doivent partager CHACUNE de ces cles.
 ALIGNMENT_KEYS: tuple[str, ...] = (
-    "contract_version",
-    "instrument",
-    "d_sae",
-    "k",
-    "layer",
-    "model",
-    "model_revision",
-    "model_family",
-    "dtype",
-    "run",
-    "seed",
-    "prompt_set",
+    _TC.ALIGNMENT_KEYS
+    if _TC is not None
+    else (
+        "contract_version",
+        "instrument",
+        "d_sae",
+        "k",
+        "layer",
+        "model",
+        "model_revision",
+        "model_family",
+        "dtype",
+        "run",
+        "seed",
+        "prompt_set",
+    )
 )
 
 
@@ -647,29 +677,29 @@ def assert_alignment(rec_a: InterventionRecord, rec_b: InterventionRecord) -> No
     Semantique du contrat v1 : toute comparaison operée sur un couple
     d'enregistrements exige l'egalite de CHACUNE des ALIGNMENT_KEYS presentes ;
     un mismatch nomme le champ ET les deux valeurs observees (diagnostic
-    actionnable, pas un echec muet). Les cles absentes des deux cotes ne
-    bloquent pas (champs optionnels du contrat).
+    actionnable, pas un echec muet). Les cles absentes d'un cote ou de l'autre
+    ne bloquent pas — champs optionnels du sidecar, difference ASSUMEE avec
+    ``trace_contract.check_alignment`` sur manifestes ou l'absence est un
+    defaut. La comparaison des valeurs (notamment listes vs scalaires) DELegue
+    au canonique des qu'il est importable : la voie de code du contrat, pas
+    une copie locale.
     """
-    for key in ALIGNMENT_KEYS:
+    keys = [k for k in ALIGNMENT_KEYS
+            if k in rec_a.alignment and k in rec_b.alignment]
+    tc = trace_contract_module()
+    if tc is not None:
+        diffs = tc.check_alignment(rec_a.alignment, rec_b.alignment, keys=keys)
+        if diffs:
+            raise ValueError(
+                f"desalignement ({len(diffs)} champ(s)) : " + " ; ".join(diffs)
+                + f" — les enregistrements "
+                f"{rec_a.spec.operation}/{rec_b.spec.operation} ne sont pas comparables"
+            )
+        return
+    for key in keys:  # repli litteral : canonique non importable
         a, b = rec_a.alignment.get(key), rec_b.alignment.get(key)
         if a is not None and b is not None and a != b:
             raise ValueError(
                 f"desalignement {key!r}: {a!r} != {b!r} — les enregistrements "
                 f"{rec_a.spec.operation}/{rec_b.spec.operation} ne sont pas comparables"
             )
-
-
-def trace_contract_module():
-    """Import garde du contrat canonique (PR #15525) : None tant qu'il n'est pas merge.
-
-    Au merge de #15525, la validation d'alignement deleguera a
-    ``trace_contract.check_alignment`` ; d'ici, :func:`assert_alignment` tient
-    la semantique v1 avec le litteral ALIGNMENT_KEYS ci-dessus. Le garde rend
-    la dependance EXPLICITE plutot qu'un import qui casserait main.
-    """
-    try:
-        import ict.trace_contract as tc  # type: ignore
-
-        return tc
-    except ImportError:
-        return None
