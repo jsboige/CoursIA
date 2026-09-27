@@ -83,17 +83,18 @@ verbatim): both diagrams are well formed (`decide` on `wf` in the lake), and
 their arc partition — 5 classes for 10 edges — is **the same** on both sides of
 the surgery. This is the positive control of section 2: the triangle's `(e2,e4)`
 pairs there coincide unordered, with differing orientation and fold position —
-the fold still yields the same partition, and it is `mergePair_symm` plus the
-commutation of the fusions that justify it. A witness where the pairs differ as
-a multiset remains to be exhibited for the general preservation.
+the fold still yields the same partition, and it is `foldl_mergePair_swap`
+(orientation) then `foldl_mergePair_permute_adjacent` (transposition of
+positions) that justify it. A witness where the pairs differ as a multiset
+remains to be exhibited for the general preservation.
 -/
 
 /-- Control of tranche 3 (step 1): on the witness pair of the connected R3 move,
     the surgery preserves `arcPartition` — the triangle's `(e2,e4)` pairs
     coincide unordered, and the fold absorbs their orientation and position
-    differences (`mergePair_symm`, commutation). This is the first premise the
-    reindexation argument (case `i ≥ 1`) assumes; the general form remains to be
-    proved. -/
+    differences (`foldl_mergePair_swap`, `foldl_mergePair_permute_adjacent`).
+    This is the first premise the reindexation argument (case `i ≥ 1`) assumes;
+    the general form remains to be proved. -/
 theorem reidemeister3Connected_arcPartition_witness :
     arcPartition
         { crossings := [⟨1, 2, 7, 8⟩, ⟨3, 7, 9, 4⟩, ⟨9, 8, 5, 6⟩,

@@ -82,17 +82,17 @@ et leur partition d'arcs — 5 classes pour 10 aretes — est **la meme** de par
 d'autre de la chirurgie. C'est le controle positif de la section 2 : les paires
 `(e2,e4)` du triangle y coincident non orientees, avec une orientation et une
 position de repli differentes — le repli produit la meme partition, et c'est
-`mergePair_symm` + la commutation des fusions qui le justifient. Un temoin ou
-les paires different comme multi-ensemble reste a exhiber pour la preservation
-generale.
+`foldl_mergePair_swap` (orientation) puis `foldl_mergePair_permute_adjacent`
+(transposition des positions) qui le justifient. Un temoin ou les paires
+different comme multi-ensemble reste a exhiber pour la preservation generale.
 -/
 
 /-- Controle de la tranche 3 (etape 1) : sur la paire temoin du move R3
     connecte, la chirurgie preserve `arcPartition` — les paires `(e2,e4)` du
     triangle coincident non orientees, et le repli absorbe leurs differences
-    d'orientation et de position (`mergePair_symm`, commutation). C'est la
-    premiere que l'argument de reindexation (cas `i ≥ 1`) suppose ; la forme
-    generale reste a prouver. -/
+    d'orientation et de position (`foldl_mergePair_swap`,
+    `foldl_mergePair_permute_adjacent`). C'est la premiere que l'argument de
+    reindexation (cas `i ≥ 1`) suppose ; la forme generale reste a prouver. -/
 theorem reidemeister3Connected_arcPartition_witness :
     arcPartition
         { crossings := [⟨1, 2, 7, 8⟩, ⟨3, 7, 9, 4⟩, ⟨9, 8, 5, 6⟩,
