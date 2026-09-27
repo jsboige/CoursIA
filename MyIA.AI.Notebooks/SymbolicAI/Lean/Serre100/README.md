@@ -15,10 +15,11 @@ Le geste « distillation » : prendre un énoncé ou une construction centrale d
 | 05 | [05-table-de-caracteres.ipynb](05-table-de-caracteres.ipynb) | Tables de caractères — squelette combinatoire des groupes finis | Python stdlib |
 | 06 | [06-bulles-minkowski.ipynb](06-bulles-minkowski.ipynb) | Les bulles diaboliques de Minkowski — géométrie des nombres | Python stdlib |
 | 08 | [08-serre-dans-mathlib.ipynb](08-serre-dans-mathlib.ipynb) | Tour des cinq « Serre » de Mathlib — le versant preuves du diptyque (index : grain 9 #16374) | Lean 4 (kernel `lean4-wsl`, lake [`serre100_lean/`](serre100_lean/)) |
+| 10 | [10-empilements-borne-lp-cohn-elkies.ipynb](10-empilements-borne-lp-cohn-elkies.ipynb) | Bornes d'empilements de sphères par LP (Cohn–Elkies, lignée Odlyzko–Serre) — Poisson mesuré, LP naïf autopsié, LP certifié par intervalles | numpy + scipy (HiGHS) + matplotlib |
 
 ## Conventions
 
-- Français d'abord, arithmétique en stdlib pur (aucune dépendance au-delà de matplotlib pour les figures) ; le versant **preuves** Lean (08) vit dans le lake compagnon [`serre100_lean/`](serre100_lean/), mêmes pins Mathlib que `hecke_lean`.
+- Français d'abord, arithmétique en stdlib pur (aucune dépendance au-delà de matplotlib pour les figures) ; le versant **preuves** Lean (08) vit dans le lake compagnon [`serre100_lean/`](serre100_lean/), mêmes pins Mathlib que `hecke_lean`. Exception assumée : le carnet 10 invoque `scipy.optimize.linprog` — le vrai solveur LP est l'outil du sujet (verdict SOTA-OK).
 - ≥ 3 exercices C.1 par notebook (convention #2161), exécution complète commitée (C.2).
 - Verdict SOTA écrit au body de chaque PR (#3801).
 
