@@ -63,10 +63,24 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 SLEEP_CMD = [PY, "-c", "import time; time.sleep(4)"]
 
 
+# Porte ressources neutralisee pour les tests en sous-processus (#18024) : ils
+# eprouvent le cap, le lease, la file et le kill-tree, pas la RAM libre de
+# l'hote. Avec le defaut 2048 Mo/job, un runner a MemAvailable < 2 Go rend
+# ram=0 et l'admission refuse tout (exit 125). La porte RAM/commit/disque est
+# couverte a part, parametres fixes (test_compute_granted_min_of_sources et
+# voisins). Un ``extra`` explicite surcharge ces valeurs.
+NEUTRAL_RESOURCE_GATE = {
+    "LEAN_EXEC_MEM_PER_JOB_MB": "1",
+    "LEAN_EXEC_COMMIT_PER_JOB_MB": "1",
+    "LEAN_EXEC_MIN_FREE_GB": "0",
+}
+
+
 def _env(state: Path, **extra) -> dict:
     env = os.environ.copy()
     env["LEAN_EXEC_STATE_DIR"] = str(state)
     env["LEAN_EXEC_WSL"] = "off"
+    env.update(NEUTRAL_RESOURCE_GATE)
     env.update({k: str(v) for k, v in extra.items()})
     return env
 
