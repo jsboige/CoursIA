@@ -133,29 +133,35 @@ def trace_contract_module():
 #: Module canonique resolu a l'import de ce fichier (None si non importable).
 _TC = trace_contract_module()
 
+#: Litteral de repli quand le canonique ``ict.trace_contract`` n'est pas
+#: importable. Sa parite avec le canonique est verifiee par test
+#: (``TestDelegationContratCanonique.test_alignment_keys_egale_le_canonique``
+#: compare ``_ALIGNMENT_KEYS_FALLBACK`` au canonique vivant, pas a
+#: ``ALIGNMENT_KEYS`` deja assigne depuis lui) — le repli ne peut pas
+#: deriver en silence : une evolution d'un seul cote fait echouer le test.
+_ALIGNMENT_KEYS_FALLBACK: tuple[str, ...] = (
+    "contract_version",
+    "instrument",
+    "d_sae",
+    "k",
+    "layer",
+    "model",
+    "model_revision",
+    "model_family",
+    "dtype",
+    "run",
+    "seed",
+    "prompt_set",
+    "schema",  # structure du npz : <set>__<idx>__<field> (13e cle canonique)
+)
+
 #: Cles d'alignement v1 du contrat de trace : DELEGUEES au canonique
-#: ``ict.trace_contract.ALIGNMENT_KEYS`` (#15525 merge). Le litteral local ne
-#: subsiste que comme repli quand le canonique n'est pas importable ; le test
-#: de parite (``TestDelegationContratCanonique``) verifie l'egalite des deux
-#: des que le canonique resolve — la copie ne peut plus deriver en silence.
+#: ``ict.trace_contract.ALIGNMENT_KEYS`` (#15525 merge), repli sur
+#: ``_ALIGNMENT_KEYS_FALLBACK`` si le canonique n'est pas importable —
+#: meme jeu de cles dans les deux modes (parite gardee par test).
 #: Deux enregistrements compares doivent partager CHACUNE de ces cles.
 ALIGNMENT_KEYS: tuple[str, ...] = (
-    _TC.ALIGNMENT_KEYS
-    if _TC is not None
-    else (
-        "contract_version",
-        "instrument",
-        "d_sae",
-        "k",
-        "layer",
-        "model",
-        "model_revision",
-        "model_family",
-        "dtype",
-        "run",
-        "seed",
-        "prompt_set",
-    )
+    _TC.ALIGNMENT_KEYS if _TC is not None else _ALIGNMENT_KEYS_FALLBACK
 )
 
 

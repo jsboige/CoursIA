@@ -37,6 +37,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from ict.causal_engine import (  # noqa: E402
+    _ALIGNMENT_KEYS_FALLBACK,
     ALIGNMENT_KEYS,
     EffectChannels,
     InterventionRecord,
@@ -414,7 +415,10 @@ class TestDelegationContratCanonique(unittest.TestCase):
         tc = trace_contract_module()
         if tc is None:
             self.skipTest("ict.trace_contract non importable")
-        self.assertEqual(tuple(ALIGNMENT_KEYS), tuple(tc.ALIGNMENT_KEYS))
+        # Parite porte sur le REPLI statique, pas sur ALIGNMENT_KEYS (deja
+        # assigne depuis le canonique quand il resolve) : une evolution d'un
+        # seul des deux cotes fait echouer ce test — garde non tautologique.
+        self.assertEqual(tuple(_ALIGNMENT_KEYS_FALLBACK), tuple(tc.ALIGNMENT_KEYS))
 
     def test_assert_alignment_meme_verdict_que_check_alignment(self) -> None:
         tc = trace_contract_module()
