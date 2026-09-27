@@ -14,10 +14,9 @@ machine.
 
 **Mise à jour majeure vs cycle 90 (2026-09-01)** : l'ancien rapport
 annonçait **0 GB économie** (aucun checkout local). La situation a
-fondamentalement évolué : 11 lacs ont depuis acquis un checkout Mathlib
-physique (probablement via `lake exe cache get` durant l'exécution des
-notebooks en kernel `lean4-wsl` sur WSL `machine-2026`). Le cluster
-mutualisable po-2026 existe désormais et l'Apply devient actionnable.
+fondamentalement évolué : **14 lacs du cluster `db584cd6` ont depuis acquis un checkout physique** (probablement via `lake exe cache get` durant l'exécution des notebooks en kernel `lean4-wsl` sur WSL `machine-2026`), dont **4 avec Mathlib réellement téléchargé** (GB > 0) — `game_theory_lean` 11,14, `conway_lean` 0,58, `grothendieck_lean` 2,93, `knot_lean` 0,58. Le cluster mutualisable po-2026 existe désormais et l'Apply devient actionnable.
+
+> **Convention de comptage (c.1223, post-relecture Hermes #18020)** : « checkout physique » = `lake-manifest` présent dans `.lake/packages/mathlib/` (peut être 0 GB si seul le manifest est acquis, sans les oleans). « Avec Mathlib téléchargé » = checkout dont la taille dépasse 0 GB (manifest + oleans). Le verbatim liste **14 `checkout physique` dans le cluster `db584cd6`** (4 avec Mathlib téléchargé, 10 à 0 GB) + **1 `JUNCTIONED`** (`sensitivity_lean`) + **1 `checkout physique` hors cluster** (`formal_logic_lean`, 6,69 GB, isolé `v4.33.1-0df444a3`) + **8 `pas de checkout local`**. **Total acquis depuis c.90 = 15 lacs avec checkout, dont 5 avec Mathlib téléchargé.** Le compte « 11 » utilisé dans une première rédaction (cf. cid 5853418531 et version antérieure de cette page) ne dérive pas du verbatim et a été remplacé.
 
 ## Sortie verbatim du Scan (2026-09-27, c.1221)
 
@@ -76,7 +75,7 @@ Note : l'alignement des manifests (#2611 etape 2) peut elargir les groupes.
 
 | Mesure | ai-01 (rapport #13962, 2026-09-01) | po-2026 cycle 90 (2026-09-01) | po-2026 c.1221 (2026-09-27) |
 |---|---|---|---|
-| Checkouts Mathlib réels | 17 | 0 | **11** (+ 1 JUNCTIONED) |
+| Checkouts Mathlib réels | 17 | 0 | **15** (+ 1 JUNCTIONED préexistant) — dont 5 avec Mathlib téléchargé |
 | Jonctions NTFS actives | 0 | 0 | 1 (`sensitivity_lean`) |
 | Taille échantillon checkout | 6,46 Go | N/A | 11,14 GB (donneur = `game_theory_lean`) |
 | Empreinte totale checkouts | ~110 Go | 0 Go | ~21,9 GB |
@@ -85,7 +84,7 @@ Note : l'alignement des manifests (#2611 etape 2) peut elargir les groupes.
 
 ## Évolution entre c.90 et c.1221
 
-L'écart entre les deux mesures po-2026 (0 → 11 checkouts) reflète :
+L'écart entre les deux mesures po-2026 (0 → 15 checkouts physiques, dont 5 avec Mathlib téléchargé) reflète :
 
 1. **Exécution de notebooks** sur po-2026 avec kernel `lean4-wsl` au cours des
    cycles intermédiaires. Plusieurs notebooks Lean (notamment dans
@@ -123,7 +122,7 @@ L'écart entre les deux mesures po-2026 (0 → 11 checkouts) reflète :
 L'auteur de #13962 est sur ai-01. **Décision Apply** :
 
 1. **Scan ai-01** (déjà mesuré #13962) : 17 checkouts / 110 Go / cluster `520045ab`.
-2. **Scan po-2026** (ce rapport, c.1221) : 11 checkouts / ~22 Go / cluster `db584cd6`, + 1 JUNCTIONED préexistant.
+2. **Scan po-2026** (ce rapport, c.1223) : **15 checkouts physiques** (5 avec Mathlib téléchargé, 10 à 0 GB manifest-only) / ~22 Go / cluster `db584cd6`, + 1 JUNCTIONED préexistant.
 3. **Apply po-2026** : `pwsh scripts/lean/setup_shared_mathlib.ps1 -Mode Apply -Group db584cd6 -Build` (sans `-RemoveBackups` au premier essai pour conserver la sécurité anti-régression).
 4. **Vérification anti-régression (HARD bloquant)** : pour chaque lake jonctionné, `lake build SUCCESS` post-jonction + `python scripts/lean/count_code_sorry.py --json` `distinct_code_sorry` inchangé avant/après.
 5. **Apply ai-01** : décision séparée du coordinateur, scan distinct.
