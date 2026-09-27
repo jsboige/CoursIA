@@ -25,6 +25,10 @@ on:
       - 'tests/**'
       - 'pytest.ini'
       - '.github/workflows/scripts-tests.yml'
+      # #17850 : test_real_registry_lives_against_main_repo relit ce registre a
+      # la racine ; sans cette entree, une PR qui ne touche que le registre
+      # n'est validee par aucune jambe (mesure : #17835, 25/09).
+      - 'arxiv_attributions_registry.yaml'
       # test_workflow_branch_pattern.py (#10145) pins the SHELL TEXT of these
       # two workflows, so editing them must run this suite. Without these two
       # entries the pin is blind to its own subject: #10416 changed the push in
@@ -96,6 +100,8 @@ on:
       - 'tests/**'
       - 'pytest.ini'
       - '.github/workflows/scripts-tests.yml'
+      # #17850 : voir le bloc push: ci-dessus.
+      - 'arxiv_attributions_registry.yaml'
       # See the push: block above for why these two are pinned here.
       - '.github/workflows/catalog-cron.yml'
       - '.github/workflows/translation-sync.yml'
