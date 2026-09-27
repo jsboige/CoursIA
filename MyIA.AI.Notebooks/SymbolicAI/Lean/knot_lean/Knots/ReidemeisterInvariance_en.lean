@@ -92,4 +92,88 @@ theorem reidemeister3Connected_arcPartition_witness :
                         ⟨1, 2, 10, 10⟩, ⟨3, 4, 5, 6⟩], numEdges := 10 } := by
   decide
 
+/-! ## 4. Negative control: the designated minor collapses on the Y witness
+
+Section 3 establishes the **first premise** of the reindexation argument (the
+arc partition is preserved). The expected **conclusion** control — the signed
+polynomial of the witness is the same on both sides — is **refuted on this
+witness**, and that is framing information, not a proof failure:
+
+* on the X side, the designated minor is `t³ - t²` (all-positive chirality);
+* on the Y side, the designated minor is **identically zero** — and the Python
+  probe faithful to the construction (validated against the kernel values of
+  the signed `trefoil` and `figureEight`) measures the same nullity for each
+  of the five deletable columns and each of the 32 chirality assignments.
+
+The cause reads off the matrix rows: the surgery rewrites `(9, 8, 5, 6)` into
+`(7, 8, 1, 6)`, whose non-singleton labels (`7`, `8`, `6`) all fall into the
+witness's big class — its row, like the kink row `(1, 2, 10, 10)` (an exact
+R1 kink: `e3 = e4`), now only touches the singleton arc column `{1}` and the
+deleted big-class column. Two proportional rows: the rank drops to 3 and
+every `4 × 4` minor vanishes.
+
+The classical "every `(n-1) × (n-1)` minor of the Alexander matrix equals
+`± t^k · Δ`" assumes the matrix has rank `n - 1`; the kink adds a relation,
+and the designated normalization (first row and last column deleted,
+**fixed**) does not survive the surgery. Consequence for section 1: the
+reindexation argument of the `i ≥ 1` case must either restrict to kink-free
+diagrams or make the deleted (row, column) pair adaptive.
+-/
+
+/-- Generic 4×4 determinant, same spirit as `det_two_aux` / `det_three_aux`
+    from `Conway.lean`: Laplace expansion along the first column, the 3×3
+    minors being handled by `det_three_aux`. -/
+theorem det_four_aux (A : Matrix (Fin 4) (Fin 4) (Polynomial ℤ)) :
+    A.det = A 0 0 * (A.submatrix (Fin.succAbove 0) (Fin.succAbove 0)).det
+          - A 1 0 * (A.submatrix (Fin.succAbove 1) (Fin.succAbove 0)).det
+          + A 2 0 * (A.submatrix (Fin.succAbove 2) (Fin.succAbove 0)).det
+          - A 3 0 * (A.submatrix (Fin.succAbove 3) (Fin.succAbove 0)).det := by
+  rw [Matrix.det_succ_column_zero]
+  simp (config := { decide := true }) [Fin.sum_univ_succ]
+  simp (config := { decide := true }) [det_three_aux, Matrix.submatrix_apply,
+    Fin.succAbove]
+  ring
+
+/-- Tranche 3 control: on the X side, the designated minor of the signed
+    polynomial (all-positive chirality) equals `t³ - t²` — it is not
+    degenerate. This is the positive counterpart of the negative control
+    below: it is the surgery that collapses the minor, not a prior
+    degeneracy. -/
+theorem reidemeister3Connected_alexanderSigned_witness_X :
+    alexanderPolynomialSigned
+        { crossings := [⟨1, 2, 7, 8⟩, ⟨3, 7, 9, 4⟩, ⟨9, 8, 5, 6⟩,
+                        ⟨1, 2, 10, 10⟩, ⟨3, 4, 5, 6⟩], numEdges := 10 }
+        [true, true, true, true, true]
+      = Polynomial.X ^ 3 - Polynomial.X ^ 2 := by
+  simp only [alexanderPolynomialSigned]
+  simp (config := { decide := true })
+  rw [det_four_aux]
+  simp only [det_three_aux]
+  simp only [Matrix.submatrix_apply, Fin.succAbove, Matrix.of_apply]
+  simp (config := { decide := true }) [alexanderEntrySigned, alexanderEntry,
+    alexanderEntryNeg]
+  ring
+
+/-- Tranche 3 negative control: on the Y side, **the same designated minor is
+    identically zero** — the witness's R3 surgery aligns the rewritten
+    crossing's row `(7, 8, 1, 6)` with the kink row `(1, 2, 10, 10)` (both now
+    only touch the singleton arc `{1}` and the deleted big class), the rank
+    drops to 3 and the determinant vanishes (probe: null for all five
+    deletable columns and all 32 chirality assignments). The designated
+    normalization does not survive the surgery on a kink-carrying witness —
+    cf section 4 of the module. -/
+theorem reidemeister3Connected_alexanderSigned_witness_Y_zero :
+    alexanderPolynomialSigned
+        { crossings := [⟨3, 4, 9, 7⟩, ⟨9, 2, 5, 8⟩, ⟨7, 8, 1, 6⟩,
+                        ⟨1, 2, 10, 10⟩, ⟨3, 4, 5, 6⟩], numEdges := 10 }
+        [true, true, true, true, true]
+      = 0 := by
+  simp only [alexanderPolynomialSigned]
+  simp (config := { decide := true })
+  rw [det_four_aux]
+  simp only [det_three_aux]
+  simp only [Matrix.submatrix_apply, Fin.succAbove, Matrix.of_apply]
+  simp (config := { decide := true }) [alexanderEntrySigned, alexanderEntry,
+    alexanderEntryNeg]
+
 end Knots_en
