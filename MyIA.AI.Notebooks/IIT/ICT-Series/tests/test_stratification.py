@@ -270,20 +270,23 @@ def test_plateaus_report_disjoint_intervals(tmp_path):
 
 
 def test_real_artifacts_are_present_and_carry_four_seeds():
-    """Documente la couverture reelle : 2 bras x 4 tailles, 4 graines chacune.
+    """Documente la couverture reelle : 2 bras x 5 tailles, 4 graines chacune.
 
     Le palier 32B (#17724) a porte les artefacts de trois a quatre graines en
-    ajoutant la graine 7, et ajoute la tranche 32B : la couverture reelle est
-    ce que ce test fige, pour qu'une campagne qui bouge se voie ici.
+    ajoutant la graine 7, et ajoute la tranche 32B ; le palier 27B (2026-09-26,
+    think-close) ajoute sa paire N/Np : la couverture reelle est ce que ce test
+    fige, pour qu'une campagne qui bouge se voit ici.
     """
     runs = load_runs(DEFAULT_RUNS_DIR)
     assert sorted(runs) == [
         ("N", "1.5B"),
         ("N", "14B"),
+        ("N", "27B"),
         ("N", "32B"),
         ("N", "7B"),
         ("Np", "1.5B"),
         ("Np", "14B"),
+        ("Np", "27B"),
         ("Np", "32B"),
         ("Np", "7B"),
     ]

@@ -79,6 +79,24 @@ def test_main_fails_visibly_without_lake(wrapper, monkeypatch, tmp_path, capsys)
     assert "notebook_context" not in stderr
 
 
+def test_clean_path_is_built_from_the_user_home(wrapper, monkeypatch, tmp_path):
+    """Le PATH du kernel vise ~/.elan/bin et ~/.lean4-venv/bin de l'utilisateur
+    courant, jamais un compte code en dur (#17654, D1)."""
+    home = tmp_path / "home"
+    home.mkdir()
+    notebook_dir = tmp_path / "notebooks"
+    notebook_dir.mkdir()
+    monkeypatch.chdir(notebook_dir)
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))
+    monkeypatch.setenv("PATH", wrapper.os.environ["PATH"])
+    monkeypatch.setattr(wrapper.sys, "argv", ["lean4-kernel-wrapper.py"])
+
+    assert wrapper.main() == 2
+    entries = wrapper.os.environ["PATH"].split(wrapper.os.pathsep)
+    assert entries[:2] == [str(home / ".elan" / "bin"), str(home / ".lean4-venv" / "bin")]
+
+
 def test_entrypoint_propagates_failure_exit_code(tmp_path):
     result = subprocess.run(
         [sys.executable, str(WRAPPER_PATH)],
