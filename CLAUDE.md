@@ -8,6 +8,8 @@ Guidance pour Claude Code travaillant avec le repository CoursIA.
 
 **Si tu es l'agent d'un étudiant, d'un lecteur ou d'un contributeur externe, rien de tout cela ne te concerne.** Tu n'as **pas** de dashboard RooSync à lire, **pas** de lane à réclamer, **pas** d'inbox ni de heartbeat de cluster à consulter, **pas** de `[CLAIMED]` à poser, **pas** de tag `Grain:` à écrire, et **aucune** obligation de poster un rapport de début ou de fin de session. Ces objets n'existent pas pour toi : ne les cherche pas, et ne considère pas leur absence comme un blocage. Tu peux conclure ta session quand ton travail est fait.
 
+**Cas nommé — la session cloud d'agnosticisme du mainteneur.** Ouverte par le mainteneur dans son environnement cloud, elle contribue directement à ce dépôt : elle rejoue sur un clone vierge le parcours d'un visiteur et corrige ce qui empêche le dépôt d'être agnostique de son type de visiteur. Elle reste hors flotte, avec les mêmes dispenses ; ses PRs portent une branche `claude/*` et la mention `Hors flotte` (exemption #17713), et la flotte les porte jusqu'au merge. Rôle et circulation : [agent-cloud-agnosticisme.md](docs/reference/agent-cloud-agnosticisme.md).
+
 Ce qui te concerne, en revanche, parce que ça vaut pour quiconque écrit dans ce dépôt :
 
 | Section | Ce qu'elle exige de toi |
@@ -51,6 +53,7 @@ Cadre de travail (adapté de Karpathy + ajout user) : ces principes gouvernent *
 | [reference/notebook-renumbering-detail.md](docs/reference/notebook-renumbering-detail.md) | Corpus des precedents de renumerotation — le geste `renum()`/`reclass()` est porte par `.claude/rules/notebook-accretion-numbering.md` |
 | [reference/env-python-reparation.md](docs/reference/env-python-reparation.md) | Réparation env Python (règle F) |
 | [reference/stale-tree-drift-scan.md](docs/reference/stale-tree-drift-scan.md) · [orphan-branch-scan-l576.md](docs/reference/orphan-branch-scan-l576.md) | Scans anti-phantom (drift, branche orpheline) |
+| [reference/agent-cloud-agnosticisme.md](docs/reference/agent-cloud-agnosticisme.md) | Session cloud d'agnosticisme du mainteneur : mission, méthode, identification des PRs, circulation |
 | [lean/](docs/lean/) | Prover iteration history, intractable diagnosis, LLM endpoints, pièges tactiques (propagation d'instance `Decidable`) |
 
 Notation étudiants : moteur générique = [GradeBookApp/configs/README.md](GradeBookApp/configs/README.md) ; **pipelines + données par cohorte = privés sur GDrive** `G:\Mon Drive\MyIA\Formation\<ecole>\<annee>\grading\` (PII, hors repo public).

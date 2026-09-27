@@ -53,20 +53,21 @@ Sur Mac, préférer **Miniforge** à Miniconda : les wheels conda-forge sont nat
 
 Lean 4 s'installe via `elan` (cross-OS), équivalent de `rustup` pour Lean. **Pas besoin de WSL sur Mac/Linux** (WSL n'est qu'un contournement Windows).
 
+Le script d'installation est le même que sous WSL. Il pose elan, la toolchain épinglée par les lakes du dépôt (lue dans `game_theory_lean/lean-toolchain`), le REPL au tag de même version, le venv `~/.lean4-venv` avec `lean4_jupyter` et le wrapper `~/.lean4-kernel-wrapper.py`. Hors WSL, il enregistre aussi le kernel Jupyter :
+
 ```bash
-curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh
-source $HOME/.elan/env   # elan s'installe dans ~/.elan (pas ~/.cargo) ; ou relancer le shell
-
-elan toolchain install stable
-lean --version
-
-# Kernel Jupyter Lean 4 : le module d'installation est lean4_jupyter.install
-# (`python -m lean4_jupyter.kernel install` ne fait rien et rend 0)
-pip install lean4-jupyter
-python -m lean4_jupyter.install --user
+bash MyIA.AI.Notebooks/GameTheory/scripts/setup_wsl_lean4.sh
+source $HOME/.elan/env        # ou relancer le shell
+jupyter kernelspec list        # doit afficher lean4-wsl
 ```
 
-> **Limite connue ([#17654](https://github.com/jsboige/CoursIA/issues/17654), D1).** Cette commande enregistre un kernel nommé `lean4`, alors que les notebooks Lean du dépôt déclarent `lean4-wsl`, et le chemin natif ne reprend ni la détection de la racine lake ni le lancement direct du REPL du wrapper Windows. Le parcours Lean n'est donc pas encore opérationnel de bout en bout sous Linux ou macOS.
+Le kernel s'appelle `lean4-wsl` sur toutes les plateformes, parce que c'est le nom que déclarent les notebooks Lean ; son nom d'affichage est « Lean 4 ». Le wrapper démarre le REPL depuis la racine du lake (répertoire qui contient `lakefile.lean` ou `lakefile.toml`) : un notebook compagnon rangé hors de son lake s'exécute avec `--cwd <lake>`, et un lake qui dépend de Mathlib demande `lake exe cache get` dans ce lake avant la première exécution.
+
+```bash
+python scripts/notebook_tools/notebook_tools.py execute <notebook.ipynb> --cwd <lake>
+```
+
+> **Portée de la vérification ([#17654](https://github.com/jsboige/CoursIA/issues/17654), D1).** Chaîne mesurée sous Linux (Ubuntu 24.04) sur un lake sans Mathlib : installation, enregistrement du kernel, démarrage et exécution de cellules Lean. Les lakes Mathlib n'ont pas été mesurés hors de la flotte, et quelques notebooks déclarent des kernels propres à une machine de la flotte (`lean4-wsl-conway`, `lean4-wsl-perc`, `lean4-wsl-groth16200`) qui n'existent pas ailleurs.
 
 ## Packages système courants
 
@@ -120,7 +121,7 @@ python3 -m pip install --force-reinstall <pkg>
 ```bash
 dotnet --list-sdks
 dotnet interactive --version
-jupyter kernelspec list   # .net-csharp, python3, lean4
+jupyter kernelspec list   # .net-csharp, python3, lean4-wsl
 lean --version
 python3 --version
 conda env list

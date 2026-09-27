@@ -1,15 +1,18 @@
 # Inventaire des projets Lean 4 — `SymbolicAI/Lean`
 
-Inventaire transverse de tous les projets de formalisation Lean 4 sous `SymbolicAI/Lean/`,
+Inventaire transverse des projets de formalisation Lean 4 sous `SymbolicAI/Lean/` (trois lake roots présents sur
+le disque ne sont pas encore couverts : `formal_logic_lean`, `tegmark_muh_lean` et
+`Serre100/serre100_lean` ; le lake amont tiers
+`agent_tests/prover/session_state/reference_docs/stable_marriage/upstream` est hors périmètre),
 sur le modèle de [`GameTheory/LEAN_INVENTORY.md`](../../GameTheory/LEAN_INVENTORY.md).
 Source de vérité : corps de l'Epic
 [#4038](https://github.com/jsboige/CoursIA/issues/4038) + vérification `firsthand` (issue
 [#4041](https://github.com/jsboige/CoursIA/issues/4041)) + reconciliation post-issue
 [#13215](https://github.com/jsboige/CoursIA/issues/13215) (2026-08-27, après convergence
-toolchain 4.32.1). Colonne *sorry (production)* = métrique CI `standalone-tactic` via
+toolchain 4.32.1). Colonne *sorry (production)* = métrique CI `real` (bascule #11688 — historiquement `standalone-tactic`) via
 `scripts/lean/count_code_sorry.py` (champ `distinct_code_sorry` — ne JAMAIS utiliser
 `grep -c sorry`, qui sur-compte la prose d'un facteur ≥20×, cf
-[anti-regression.md §instruments](../../.claude/rules/anti-regression.md)).
+[anti-regression.md §instruments](../../../.claude/rules/anti-regression.md)).
 
 **Date de refresh** : 2026-08-27 (commit `dbcedc9599`, cycle c.649). Refresh précédent :
 2026-07-15 (avant convergence 4.32.1). Ajout ponctuel 2026-09-05 : ligne
@@ -25,15 +28,15 @@ des autres lignes.
 
 | Lake | Toolchain | sorry (production) | `.lean` files | Notebook câblé | Classe | Suivi |
 |------|-----------|--------------------:|--------------:|---------------:|--------|-------|
-| `grothendieck_lean` | v4.32.1 | 0 | 118 | 4 | REF | #1646, #2159 |
-| `conway_lean` | v4.32.1 | 1¹ | 72 | 23 | PEDA | #1453, #1651, #2162 |
+| `grothendieck_lean` | v4.33.0 | 0 | 118 | 4 | REF | #1646, #2159 |
+| `conway_lean` | v4.33.0 | 1¹ | 72 | 23 | PEDA | #1453, #1651, #2162 |
 | `knot_lean` | v4.33.0 | 8² | 15 | 3 | PEDA/REF | #2874, #3003, #14821, #15829 |
-| `finiteness_lean` | v4.32.1 | 0 | 4 | 4 | PEDA | #2978, #3111 |
-| `sensitivity_lean` | v4.32.1 | 0 | 11 | 5 | PEDA/REF | famille calibration |
-| `mimo_lean` | v4.32.1 | 0 | 13 | 3 | PEDA/REF | #10984, #10986 |
-| `galois_lean` | v4.32.1 | 0 | 3 | 1 | REF (vendored) | préprint M₂₃ |
-| `calibration_lean` | v4.32.1 | 0³ | 9 | 1 | HARNESS | #1764 |
-| `mathlib_examples` | v4.32.1 | 0 | 4 | 0 | REF | référence |
+| `finiteness_lean` | v4.33.0 | 0 | 4 | 4 | PEDA | #2978, #3111 |
+| `sensitivity_lean` | v4.33.0 | 0 | 11 | 5 | PEDA/REF | famille calibration |
+| `mimo_lean` | v4.33.0 | 0 | 13 | 3 | PEDA/REF | #10984, #10986 |
+| `galois_lean` | v4.33.0 | 0 | 3 | 1 | REF (vendored) | préprint M₂₃ |
+| `calibration_lean` | v4.33.0 | 0³ | 9 | 1 | HARNESS | #1764 |
+| `mathlib_examples` | v4.33.0 | 0 | 4 | 0 | REF | référence |
 | `hecke_lean` | v4.33.0 | 0 | 4 | 0 | PEDA/REF | #14784, #14771 |
 | `formal_groups_lean` | v4.33.0 | 0 | 10 | 0 | PEDA/REF | #14785, #14771 |
 | **Total** | — | **9** | **263** | — | — | — |
@@ -93,7 +96,7 @@ du code de production, donc *sorry (production) = 0*.
 **Objectif** : formalisation étendue de résultats à la Grothendieck (topos, sites,
 faisceaux, topologie dense, foncteur constant, lemme d'Yoneda, conservativité).
 
-- **Toolchain** : `leanprover/lean4:v4.32.1` · **Dépendance** : Mathlib4
+- **Toolchain** : `leanprover/lean4:v4.33.0` · **Dépendance** : Mathlib4
 - **`.lean` files** : 118 (vs 23 modules déclarés dans l'inventaire 2026-07-15 — la
   mesure instrument brute inclut les sous-modules d'`umbrella` + les EN-siblings ;
   23 modules = umbrella + 22 sous-modules)
@@ -108,7 +111,7 @@ faisceaux, topologie dense, foncteur constant, lemme d'Yoneda, conservativité).
 **Objectif** : hommage à John Conway — Doomsday, FRACTRAN, Look-and-Say, Nim, Angel,
 Game of Life / Hashlife, Free Will Theorem (Kochen-Specker 18-vecteurs).
 
-- **Toolchain** : `leanprover/lean4:v4.32.1` · **Dépendance** : Mathlib4
+- **Toolchain** : `leanprover/lean4:v4.33.0` · **Dépendance** : Mathlib4
 - **`.lean` files** : 72 (vs 23 modules déclarés 2026-07-15 — cf. note ¹ du Résumé)
 - **sorry (production)** : **1 distinct** (cible prover dans `HashlifeCorrectness.lean`,
   le reste du Life est prouvé ; Doomsday/FRACTRAN/FreeWillTheorem/Look-and-Say/Nim
@@ -146,7 +149,7 @@ théorème de Conway.
 **Objectif** : dérivée symbolique de Brzozowski + théorème de finitude (1964) — base de
 la terminaison et complexité linéaire des reconnaisseurs modernes non-backtracking.
 
-- **Toolchain** : `leanprover/lean4:v4.32.1` · **Dépendance** : **Lean core seul
+- **Toolchain** : `leanprover/lean4:v4.33.0` · **Dépendance** : **Lean core seul
   (sans Mathlib)**
 - **`.lean` files** : 4 (vs 1 module umbrella déclaré 2026-07-15 — 1 umbrella + 2
   modules substance + 1 EN-sibling comptés)
@@ -164,7 +167,7 @@ la terminaison et complexité linéaire des reconnaisseurs modernes non-backtrac
 
 **Objectif** : analyse de sensibilité / calibration (proche de la famille calibration).
 
-- **Toolchain** : `leanprover/lean4:v4.32.1` · **Dépendance** : Mathlib4
+- **Toolchain** : `leanprover/lean4:v4.33.0` · **Dépendance** : Mathlib4
 - **`.lean` files** : 11 (vs 4 modules déclarés 2026-07-15)
 - **sorry (production)** : **0**. Build SUCCESS.
 - **Notebook câblé** : 5 notebooks (vs 2 déclarés).
@@ -176,7 +179,7 @@ la terminaison et complexité linéaire des reconnaisseurs modernes non-backtrac
 #10984). Port formel de l'algorithme Proposition 9.1 (Lemme 5.1 LMMSE + Lemme 11.1
 coût d'un flip).
 
-- **Toolchain** : `leanprover/lean4:v4.32.1` · **Dépendance** : Mathlib4 + lake externe
+- **Toolchain** : `leanprover/lean4:v4.33.0` · **Dépendance** : Mathlib4 + lake externe
   `YuanheZ/lean-stat-learning-theory` (v4.32.0, Apache 2.0, cf. Phase 3b `Converse.lean`)
 - **`.lean` files** : 13 — `Descent.lean` (Phase 1, sans Mathlib) + `Objective.lean`
   (Phase 2, Mathlib) + `Lmmse.lean` (Phase 3a, LMMSE) + `Converse.lean` (Phase 3b,
@@ -195,7 +198,7 @@ coût d'un flip).
 arXiv:2608.08538, 9 août 2026) est **cité, non formalisé** — Magma propriétaire requis
 pour l'identification `23T5 = M23` que la couche proof-assistant ne reproduit pas.
 
-- **Toolchain** : `leanprover/lean4:v4.32.1` · **Dépendance** : Mathlib4
+- **Toolchain** : `leanprover/lean4:v4.33.0` · **Dépendance** : Mathlib4
 - **`.lean` files** : 3 — `Galois/M23Lean4Web.lean` (8115 L, single-file vendored),
   `Galois.lean` (agrégateur racine), plus EN-sibling à venir.
 - **sorry (production)** : **0** (mode `real`, comptage Lean-aware) — 0 `sorry`
@@ -214,7 +217,7 @@ pour l'identification `23T5 = M23` que la couche proof-assistant ne reproduit pa
 **Objectif** : composant du harnais de calibration du prouveur (cibles de test pour le
 prover, déplacé depuis GameTheory).
 
-- **Toolchain** : `leanprover/lean4:v4.32.1` · **Dépendance** : Mathlib4
+- **Toolchain** : `leanprover/lean4:v4.33.0` · **Dépendance** : Mathlib4
 - **`.lean` files** : 9 (vs 3 modules déclarés 2026-07-15)
 - **sorry (production)** : **0** (les `· sorry` inline sont un fixture de test intentionnel,
   voir note ³ du Résumé).
@@ -225,7 +228,7 @@ prover, déplacé depuis GameTheory).
 
 **Objectif** : exemples de référence illustrant l'usage de Mathlib.
 
-- **Toolchain** : `leanprover/lean4:v4.32.1` · **Dépendance** : Mathlib4
+- **Toolchain** : `leanprover/lean4:v4.33.0` · **Dépendance** : Mathlib4
 - **`.lean` files** : 4 (vs 1 module déclaré 2026-07-15)
 - **sorry (production)** : **0**.
 - **Notebook câblé** : 0 (référence).
@@ -261,7 +264,7 @@ prover, déplacé depuis GameTheory).
 - **Convergence toolchain 4.32.1** (cf. #13121 Epic digestion, audit 2026-08-26) : les
   9 lakes `SymbolicAI/Lean` sont désormais unifiés sur `v4.32.1`. Les READMEs
   `conway_lean`, `knot_lean`, `finiteness_lean`, `galois_lean` portaient encore des toolchain
-  obsolètes (v4.31.0-rc1, v4.32.0) avant la reconciliation #13215.
+  obsolètes (v4.31.0-rc1, v4.32.0) avant la reconciliation #13215. *(Section datee : cet etat est celui du 2026-08-26 ; le parc est depuis passe a `v4.33.0`, cf. EPIC #14773.)*
 
 ## Changements vs inventaire 2026-07-15 (ai-01 / po-2024)
 

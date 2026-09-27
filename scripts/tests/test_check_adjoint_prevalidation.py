@@ -349,7 +349,7 @@ def test_blocked_preflight_is_a_valid_dossier_but_never_ready():
     which measurably produced a false `b0: clear` on a PR with three open HIGH
     findings (#16160). See #16800.
     """
-    verdict, errors = mod.evaluate(_snapshot(_body(verdict="BLOCKED")))
+    verdict, errors = mod.evaluate(_snapshot(_body(verdict="BLOCKED", b0="blocked")))
     assert verdict == mod.VERDICT_BLOCKED
     assert errors == []
 
@@ -569,7 +569,7 @@ def test_trailing_prose_cannot_smuggle_a_contract_field():
     contract: the BLOCKED verdict inside the block wins over the READY written
     below it.
     """
-    smuggled = _body(verdict="BLOCKED") + "\nverdict: READY\nb0: clear\nchecks: latest-wins-green"
+    smuggled = _body(verdict="BLOCKED", b0="blocked") + "\nverdict: READY\nb0: clear\nchecks: latest-wins-green"
     verdict, _ = mod.evaluate(_snapshot(smuggled))
     assert verdict == mod.VERDICT_BLOCKED
 
@@ -850,6 +850,66 @@ def test_any_other_author_still_expires_the_dossier():
         foreign = _comment("a new concern", login=login)
         foreign["createdAt"] = T1
         snapshot["comments"].append(foreign)
+        errors = _errors(snapshot)
+        assert any("discussion changed after dossier" in e for e in errors), login
+
+
+# --- #17818 : premiere pose d'un commentaire consultatif de bot marker-garde --
+
+
+def test_first_pose_of_bot_advisory_comment_does_not_expire_the_dossier():
+    """#17818 acceptance (positive control) : un dossier integre, puis la
+    premiere pose du commentaire consultatif PR-PATH-COLLISION par
+    ``github-actions[bot]`` -- le verdict reste lisible. Mesure fondatrice :
+    les dossiers de #17781 et #17797 perimes a 13:02Z par cette seule pose,
+    l'arrivee d'une PR voisine sur les memes READMEs declenchant l'organe.
+    """
+    for marker in (
+        "<!-- PR-PATH-COLLISION:START -->\n## Path-collision (organ #1)\npaire: X / Y",
+        "<!-- variation-genre-signals -->\ngenre: lean",
+        "<!-- gvar2-light-cap -->\ncap: 1/1",
+        "<!-- trivial-diff-15740 -->\ntrivial: yes",
+    ):
+        base = _stamped_snapshot("")
+        base["comments"].pop()
+        snapshot = _stamped_snapshot(_dossier_for(base))
+        pose = _comment(marker, login="github-actions[bot]")
+        pose["createdAt"] = T1
+        snapshot["comments"].append(pose)
+        verdict, errors = mod.evaluate(snapshot)
+        assert verdict == mod.VERDICT_READY, (marker.splitlines()[0], errors)
+
+
+def test_human_comment_after_dossier_still_expires_it():
+    """#17818 acceptance (negative control) : un commentaire humain posterieur
+    perime toujours le dossier -- la neutralisation ne s'elargit pas aux tiers.
+    """
+    base = _stamped_snapshot("")
+    base["comments"].pop()
+    snapshot = _stamped_snapshot(_dossier_for(base))
+    human = _comment("une remarque de fond sur le scope", login="clusterManager-Myia")
+    human["createdAt"] = T1
+    snapshot["comments"].append(human)
+    errors = _errors(snapshot)
+    assert any("discussion changed after dossier" in e for e in errors)
+
+
+def test_copied_marker_by_other_author_still_expires_the_dossier():
+    """#17818 acceptance (negative control) : l'AUTEUR compte, pas le texte
+    seul. Un tiers qui recopie le marqueur PR-PATH-COLLISION en tete de son
+    commentaire perime le dossier -- le suffixe ``[bot]`` est reserve aux
+    comptes d'app GitHub, un humain ne peut pas le porter.
+    """
+    for login in ("myia-po-2023", "jsboige-bot-impersonator", "clusterManager-Myia"):
+        base = _stamped_snapshot("")
+        base["comments"].pop()
+        snapshot = _stamped_snapshot(_dossier_for(base))
+        copied = _comment(
+            "<!-- PR-PATH-COLLISION:START -->\ncorps recopie par un tiers",
+            login=login,
+        )
+        copied["createdAt"] = T1
+        snapshot["comments"].append(copied)
         errors = _errors(snapshot)
         assert any("discussion changed after dossier" in e for e in errors), login
 
@@ -1179,19 +1239,28 @@ def test_blocking_fields_are_listed_in_the_contract_order():
     assert mod.blocking_fields(dossier) == ["checks", "b0", "scope", "domain"]
 
 
-def test_a_blocked_dossier_can_name_no_blocking_field():
-    """Honesty edge: the contract ALLOWS a blocked dossier with clear fields.
+def test_a_blocked_dossier_naming_no_blocking_field_is_refused():
+    """#17887 : un BLOCKED a champs tous verts n'est plus un dossier.
 
-    `validate_dossier` constrains `checks`/`b0`/`scope`/`domain` only when the
-    dossier claims READY. An honest blocked dossier may therefore declare them
-    all at their READY value and carry its reason in prose. Reporting [] then is
-    the true answer -- inventing a field to fill the silence would fabricate the
-    very reason this issue exists to publish.
+    Le contrat l'autorisait (motif en prose, `blocking_fields == []`). Mesure sur
+    #17743 @bf7a086e : il etait inerte, ai-01 ne pouvait ni merger ni dispatcher
+    depuis lui. Le gate le refuse desormais (exit 1) et dit quoi faire : pas de
+    dossier, HOLD a la lane porteuse.
     """
     snapshot = _snapshot(_body(verdict="BLOCKED"))
     verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
-    assert (verdict, errors) == (mod.VERDICT_BLOCKED, [])
-    assert mod.blocking_fields(dossier) == []
+    assert verdict == "" and dossier is None
+    assert any("names no blocking field" in e and "#17887" in e for e in errors), errors
+
+
+def test_a_blocked_dossier_naming_one_field_stays_exit_3():
+    """Controle negatif de #17887 : nommer un seul champ bloquant suffit."""
+    for field, value in (("checks", "BLOCKED"), ("b0", "blocked"),
+                         ("scope", "fail"), ("domain", "fail")):
+        snapshot = _snapshot(_body(verdict="BLOCKED", **{field: value}))
+        verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+        assert (verdict, errors) == (mod.VERDICT_BLOCKED, []), (field, errors)
+        assert mod.blocking_fields(dossier) == [field]
 
 
 def test_ready_result_publishes_the_dossier_with_no_blocker():
