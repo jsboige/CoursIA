@@ -13,7 +13,7 @@ hors `_en` ; bascule #11688 — historiquement `standalone-tactic` ; les mention
 
 | Lake | Toolchain | sorry (production) | Modules | Notebook câblé | Classe | Suivi |
 |------|-----------|--------------------:|--------:|---------------:|--------|-------|
-| `learning_theory_lean` | v4.32.1 | 0 | 18 (2 libs) | 3¹ | PEDA/REF | #4051, #4293, #4301, #4038 |
+| `learning_theory_lean` | v4.33.0 | 0 | 18 (2 libs) | 3¹ | PEDA/REF | #4051, #4293, #4301, #4038 |
 | **Total** | — | **0** | **18** | **3** | — | — |
 
 ¹ Trois notebooks câblés sous `ML/DataScienceWithAgents/02-ML-Cours/` :
@@ -32,11 +32,11 @@ linéairement séparables de marge γ et rayon R ⟹ au plus `(R/γ)²` mises à
 théorie PAC (Valiant 1984) : complexité d'échantillonnage en classe finie, concentration
 uniforme et PAC agnostique. Premier lake Lean de la série ML (roadmap #4038 Tier 2).
 
-- **Toolchain** : v4.32.1 · **Dépendance** : Mathlib4 (pinnée `v4.32.1`)
+- **Toolchain** : v4.33.0 · **Dépendance** : Mathlib4 (rev `db584cd6`)
 - **libs** (`lean_lib`) : `Perceptron` + `PacLearning` (toutes deux default targets, miroirs
   `_en` inclus dans les globs — 18 modules FR + 18 EN)
 - **sorry (production)** : **0** (real-mode, FR). CI verte sur main
-  (`lean-learning-theory.yml`, dernier run 2026-08-18).
+  (`lean-ci-matrix.yml`, clé `learningtheory`).
 
 #### `Perceptron/` (5 modules FR) — 0 sorry
 
@@ -101,6 +101,6 @@ Umbrella `PacLearning.lean` + 12 sous-modules : `Data`, `Sample`, `SampleExpect`
   `abs_inner_le_norm`→`real_inner_le_norm` ; `inner_comm`→`real_inner_comm` ;
   `inner_add_add`→`real_inner_add_add_self` ; `inner_smul_*`→`real_inner_smul_*` ;
   `sq_le_sq` (devenu iff)→`sq_le_sq₀` ; `linarith` aveugle aux produits Nat-cast→`nlinarith [sq_nonneg R]`.
-- CI : `.github/workflows/lean-learning-theory.yml` (`sorry-filter-mode: real`,
+- CI : `.github/workflows/lean-ci-matrix.yml` (clé `learningtheory` ; `sorry-filter-mode: real`,
   baseline `"0"` ; historiquement `lean-perceptron.yml` en `standalone-tactic`, renommé
   lors de l'ajout de la lib `PacLearning`, bascule mode #11688).

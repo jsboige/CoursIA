@@ -6,6 +6,7 @@
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib (#10382, comme PyMC/Infer.NET) : C# = dotNetRDF 3.2.1 (NuGet officiel `#r \"nuget: dotNetRDF, 3.2.1\"` + espaces VDS.RDF.*, native .NET) et Python = rdflib (from rdflib import *, native Python). Chaque cote atteint le moteur SOTA de son ecosysteme -- ni pont intermediaire (IKVM/PythonNet) ni reimplementation from-scratch. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# VDS.RDF refs + execution_count, Python rdflib imports."
   known_differences:
+    - 'PR #17056 (redressement densite #17040) : cote C# seul edite -- markdown 34 -> 32 cellules (retrait de lectures dupliquees, plus le rappel du filtre `FILTER NOT EXISTS { ?city dbo:militaryUnit ?unit }` de `main` restaure dans la lecture France). attestation firsthand : code source ET outputs byte-identiques des deux cotes (aucune re-execution due, C.2), jumeau Python intact -- la parite native-both est preservee, seule la prose a evolue.'
     - "PR #17647 (volet 2 #17636, prose-counts) : cote C# seul edite -- resorption d'1 compteur de lignes manuel en markdown. Jumeau Python intact, machinerie lib-vs-lib inchangee."
     - "Socle commun : consommation de Linked Data distante (dereferencement d'URI, endpoints SPARQL)."
     - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Query` remote endpoint). Python = `SPARQLWrapper` (client dedie endpoints SPARQL) + `rdflib`. Asymetrie leger : Python ajoute `SPARQLWrapper` specialise pour le reseau distant, le C# unifie dans dotNetRDF."
