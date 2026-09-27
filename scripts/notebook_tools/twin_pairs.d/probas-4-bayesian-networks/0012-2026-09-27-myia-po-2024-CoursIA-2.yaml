@@ -1,7 +1,0 @@
-date: '2026-09-27'
-by: myia-po-2024:CoursIA-2
-python_sha: ea885b40e4ad3e911376ea8ef016343b6c488c33
-csharp_sha: 7ef2d50f2dcddfb3024681fbc29090726fc2b820
-content_python_sha: 099a1be7d48fd509232c184ccacac8bda493c8367917170394c619544b9a9d5c
-content_csharp_sha: ba77fc9181856b651a433cca726ef3c461b2c9369628f3068b7db92bf2a25879
-reason: 'chains=4 rendu explicite sur les appels pm.sample de la serie (#18028) : la valeur effective etait deja 4 (les sorties committee portent la banniere "4 chains in 4 jobs"), donc changement de source seul, sans effet sur les resultats ; jumeau C# non touche. Complete au passage deux appels pm.sample oublies dans des cellules deja editees et trois exemples markdown qui montraient encore l''appel non epingle.'
