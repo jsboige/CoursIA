@@ -480,8 +480,10 @@ pip install pyro-ppl torch matplotlib numpy
 
 ### Notebooks PyMC (Python)
 
+Python 3.12 ou plus récent est requis : les notebooks suivent l'API de PyMC 6 et d'ArviZ 1.x, que pip n'installe pas sur une version antérieure.
+
 ```bash
-pip install pymc numpy scipy matplotlib arviz
+pip install "pymc>=6" "arviz>=1" numpy scipy matplotlib
 ```
 
 ### Notebooks Infer.NET (C# .NET Interactive)
