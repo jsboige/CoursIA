@@ -48,7 +48,7 @@ def _pad_track(track):
     return track
 
 def get_notebook_filename(num, name):
-    return f"GameTheory-{num:02d}-{name}.ipynb"
+    return f"GameTheory-{num:02d}-{name}-Python.ipynb"
 
 def get_side_track_filename(track_id):
     return f"GameTheory-{track_id}.ipynb"
