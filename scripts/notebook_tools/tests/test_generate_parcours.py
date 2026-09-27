@@ -299,6 +299,97 @@ class TestCompileParcours:
         assert not (tmp_path / "curriculum").exists()
 
 
+def assert_kernel_continuity(compiled, declared_transitions):
+    """The route may change kernel families only when the manifest declares it."""
+    kernel_families = {notebook["kernel"].split(" ", 1)[0]
+                       for group in compiled["groups"]
+                       for notebook in group["notebooks"]}
+    assert kernel_families - {"Python"} <= set(declared_transitions), (
+        f"Parcours mêlant des noyaux sans déclaration : {kernel_families}"
+    )
+
+
+class TestActuariatManifest:
+    manifest_path = gp.REPO_ROOT / "docs" / "curriculum" / "actuariat.json"
+
+    def test_catalog_paths_exist_and_all_dec_pymc_lessons_are_selected(self):
+        catalog = json.loads(gp.CATALOG_PATH.read_text(encoding="utf-8"))
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        catalog_paths = {entry["path"] for entry in catalog}
+        selected = [path for group in manifest["branches"] + manifest["accretions"]
+                    for path in group["notebooks"]]
+        dec_pymc = {path for path in catalog_paths
+                    if path.startswith("Probas/DecisionTheory/DecPyMC/")}
+
+        assert len(selected) == len(set(selected))
+        assert dec_pymc <= set(selected)
+        assert all(path in catalog_paths for path in selected)
+        assert all((gp.REPO_ROOT / "MyIA.AI.Notebooks" / path).is_file()
+                   for path in selected)
+
+    def test_rejects_undeclared_kernel_mix(self):
+        catalog = json.loads(gp.CATALOG_PATH.read_text(encoding="utf-8"))
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        game_branch = next(group for group in manifest["branches"]
+                           if group["id"] == "theorie-des-jeux")
+        game_branch["notebooks"][0] = (
+            "GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb"
+        )
+        compiled = gp.compile_parcours(
+            catalog, manifest,
+            ["fondations-probabilistes", "decision-sous-incertitude",
+             "actuariat", "theorie-des-jeux"],
+        )
+        with pytest.raises(AssertionError, match="sans déclaration"):
+            assert_kernel_continuity(compiled, manifest.get("declared_kernel_transitions", []))
+        manifest["declared_kernel_transitions"] = [".NET"]
+        assert_kernel_continuity(compiled, manifest["declared_kernel_transitions"])
+
+    @pytest.mark.parametrize("accretions", [[], ["series-temporelles"],
+                                             ["validation-hors-echantillon"],
+                                             ["series-temporelles", "validation-hors-echantillon"]])
+    def test_compiles_speed_run_and_independent_detours(self, accretions):
+        catalog = json.loads(gp.CATALOG_PATH.read_text(encoding="utf-8"))
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        compiled = gp.compile_parcours(
+            catalog, manifest,
+            ["fondations-probabilistes", "decision-sous-incertitude", "actuariat",
+             "theorie-des-jeux"],
+            accretions,
+        )
+        ids = [group["id"] for group in compiled["groups"]]
+        assert ids[:4] == ["fondations-probabilistes", "decision-sous-incertitude",
+                           "actuariat", "theorie-des-jeux"]
+        assert ids[4:] == accretions
+        expected_duration = 675
+        if "series-temporelles" in accretions:
+            expected_duration += 90
+        if "validation-hors-echantillon" in accretions:
+            expected_duration += 105
+        assert compiled["duration_minutes"] == expected_duration
+        assert compiled["known_duration_minutes"] == expected_duration
+        assert [len(group["notebooks"]) for group in compiled["groups"]] == [
+            6, 4, 5, 3, *([3] * len(accretions))
+        ]
+        assert compiled["groups"][3]["prerequisites"] == ["actuariat"]
+        assert [notebook["path"] for notebook in compiled["groups"][3]["notebooks"]] == [
+            "GameTheory/GameTheory-15-CooperativeGames.ipynb",
+            "GameTheory/GameTheory-15f-Shapley-Groupes.ipynb",
+            "GameTheory/GameTheory-17b-Asymmetric-Information.ipynb",
+        ]
+        assert all(notebook["execution_constraints"] for group in compiled["groups"]
+                   for notebook in group["notebooks"])
+        assert_kernel_continuity(compiled, manifest.get("declared_kernel_transitions", []))
+        assert all(group["prerequisites"] == ["actuariat"]
+                   for group in compiled["groups"][4:])
+        if "validation-hors-echantillon" in accretions:
+            detour = next(group for group in compiled["groups"]
+                          if group["id"] == "validation-hors-echantillon")
+            qc = detour["notebooks"][-1]
+            assert qc["path"] == "QuantConnect/Python/QC-Py-12b-Backtest-Validity.ipynb"
+            assert qc["execution_constraints"]["requires_cloud"] is True
+
+
 class TestFailClosedWrite:
     def test_manual_page_without_marker_is_refused_and_preserved(
             self, monkeypatch, tmp_path, capsys):

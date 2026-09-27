@@ -44,7 +44,7 @@ corrigées en silence :
 Ajout du port (absent du tronc, qui construit la chaîne inline) : la fonction
 utilitaire ``negation()`` rend la convention lexicale explicite et testable.
 
-Usage direct (voir ``Argument_Analysis_Knowledge_Base.ipynb`` pour la
+Usage direct (voir ``Argumentation-04b-Knowledge-Base-Python.ipynb`` pour la
 démonstration exécutée) :
 
 >>> kb = KnowledgeBase()

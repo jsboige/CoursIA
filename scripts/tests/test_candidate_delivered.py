@@ -460,6 +460,116 @@ def test_parse_label_events_feeds_classify_retracted():
     assert verdict == "retracted"
 
 
+# --- #17759 mecanisme B : l'attestation du protocole n'est pas une activite ---
+
+def _comments_with_bodies(*pairs):
+    return [{"created_at": when, "body": body} for when, body in pairs]
+
+
+def test_attestation_info_ne_compte_pas_comme_activite():
+    # Fondateur #15689 : livree le 2026-09-14 par #15858 (le body porte bien
+    # `See #15689`), deux attestations [INFO] candidate-delivered (09-15 et
+    # 09-21) -- et jamais de label, parce que les attestations COMPTAIENT
+    # comme activite post-merge. Arbitrage ai-01 2026-09-25 : le commentaire
+    # que le protocole PRESCRIT ne detruit pas la precondition de silence.
+    issue = _issue(title="slides", number=15689, labels=["bug", "slides"],
+                   created_at="2026-01-01T00:00:00Z")
+    issue["comments"] = _comments_with_bodies(
+        ("2026-09-15T00:00:00Z",
+         "[INFO] candidate-delivered - preuve firsthand, la main est rendue"),
+        ("2026-09-21T00:00:00Z",
+         "[INFO] candidate-delivered (2e attestation, autre lane)"),
+    )
+    refs = [{"pr_number": 15858, "merged_at": "2026-09-14T00:00:00Z",
+             "body": "See #15689."}]
+    verdict, _ = classify(issue, refs)
+    assert verdict == "candidate"
+
+
+def test_commentaire_ordinaire_post_merge_reste_actif():
+    # Controle negatif de l'arbitrage : tout commentaire qui n'est PAS une
+    # attestation (discussion, contradiction) laisse l'issue `active`.
+    issue = _issue(title="slides", number=15689, created_at="2026-01-01T00:00:00Z")
+    issue["comments"] = _comments_with_bodies(
+        ("2026-09-20T00:00:00Z", "Le volet deck reste ouvert apres le merge."),
+    )
+    refs = [{"pr_number": 15858, "merged_at": "2026-09-14T00:00:00Z",
+             "body": "See #15689."}]
+    verdict, _ = classify(issue, refs)
+    assert verdict == "active"
+
+
+def test_marqueur_cite_mais_pas_en_tete_reste_actif():
+    # Seule la forme EN TETE est ignoree : une reponse qui CITE le marqueur
+    # est une discussion de l'attestation, pas une attestation.
+    issue = _issue(title="slides", number=15689, created_at="2026-01-01T00:00:00Z")
+    issue["comments"] = _comments_with_bodies(
+        ("2026-09-20T00:00:00Z",
+         "Reponse a [INFO] candidate-delivered : la preuve ne tient pas, "
+         "il manque le volet deck."),
+    )
+    refs = [{"pr_number": 15858, "merged_at": "2026-09-14T00:00:00Z",
+             "body": "See #15689."}]
+    verdict, _ = classify(issue, refs)
+    assert verdict == "active"
+
+
+def test_commentaire_sans_body_compte_comme_activite():
+    # Fail-safe : un payload sans body (fixtures anciennes, lecture perdue)
+    # n'est PAS suppose etre une attestation -- il compte, direction active.
+    # (Couvert de fait par test_active_when_comment_after_merge ; ce test le
+    # nomme pour le contrat #17759.)
+    issue = _issue(title="x", number=15689, created_at="2026-01-01T00:00:00Z",
+                   comments=["2026-09-20T00:00:00Z"])
+    refs = [{"pr_number": 15858, "merged_at": "2026-09-14T00:00:00Z",
+             "body": "See #15689."}]
+    verdict, _ = classify(issue, refs)
+    assert verdict == "active"
+
+
+# --- #17759 partie additive : le rapport de la classe titre-seul ---
+
+def test_title_only_refs_ancrage_et_portee():
+    from candidate_delivered import title_only_refs
+    refs = [
+        # La forme canonique du depot : `type(scope,#N):`.
+        {"pr_number": 17147, "merged_at": "2026-09-20T00:00:00Z", "is_pr": True,
+         "title": "fix(#17143): demote markdown asides by BLOCK", "body": ""},
+        # Nombre nu dans le titre : pas d'ancre `#`.
+        {"pr_number": 17150, "merged_at": "2026-09-21T00:00:00Z", "is_pr": True,
+         "title": "fix 17143 a la main", "body": ""},
+        # Ancre d'un numero PLUS GRAND : la borne \b doit l'exclure.
+        {"pr_number": 17160, "merged_at": "2026-09-22T00:00:00Z", "is_pr": True,
+         "title": "autre sujet (#171439)", "body": ""},
+        # Titre porteur mais PR non mergee : hors champ.
+        {"pr_number": 17170, "merged_at": None, "is_pr": True,
+         "title": "fix(#17143): pas encore merge", "body": ""},
+        # Titre absent : aucune conclusion tirable.
+        {"pr_number": 17180, "merged_at": "2026-09-23T00:00:00Z", "is_pr": True,
+         "title": None, "body": ""},
+    ]
+    assert title_only_refs(refs, 17143) == [17147]
+    # Vide quand aucune PR mergee ne porte l'ancre : le rapport se tait.
+    assert title_only_refs(refs[:1], 99999) == []
+
+
+def test_issue_detail_garde_le_body_des_commentaires(monkeypatch):
+    # Le wiring doit transporter le body jusqu'a classify (mecanisme B) :
+    # sans lui, toute attestation lue comme activite.
+    import candidate_delivered as cd
+
+    def fake_gh_json(args):
+        assert args[-1] == "createdAt,comments"
+        return {"createdAt": "2026-09-01T00:00:00Z",
+                "comments": [{"createdAt": "2026-09-20T00:00:00Z",
+                              "body": "[INFO] candidate-delivered preuve"}]}
+
+    monkeypatch.setattr(cd, "_gh_json", fake_gh_json)
+    d = cd.issue_detail("jsboige/CoursIA", 15689)
+    assert d["comments"][0]["body"].startswith("[INFO] candidate-delivered")
+    assert d["comments"][0]["created_at"] == "2026-09-20T00:00:00Z"
+
+
 if __name__ == "__main__":
     import pytest
     sys.exit(pytest.main([__file__, "-v"]))

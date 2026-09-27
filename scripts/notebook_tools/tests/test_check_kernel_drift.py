@@ -78,6 +78,77 @@ def test_diff_kernel_both_change():
     assert len(diffs) == 1
 
 
+# --- #17371: patch-level language_info.version drift is not a regression ---
+
+
+def test_version_prefix_shapes():
+    assert ckd._version_prefix("3.13.3") == "3.13"
+    assert ckd._version_prefix("3.13.15") == "3.13"
+    assert ckd._version_prefix("3.13.15rc1") == "3.13"
+    assert ckd._version_prefix("3.13") == "3.13"
+    assert ckd._version_prefix("3") == "3"
+    assert ckd._version_prefix("") == ""
+
+
+def test_version_prefix_null_version_does_not_crash():
+    # `"version": null` is valid nbformat: the `.get("version", "")`
+    # extraction default only covers a MISSING key, so the helper received
+    # None and raised AttributeError -- a traceback where the pre-fix
+    # comparison emitted a degraded but handled drift (NanoClaw, 2026-09-22).
+    assert ckd._version_prefix(None) == ""
+
+
+def test_diff_kernel_null_version_vs_version_flagged():
+    a = {"language_version": None, "kernelspec_name": "python3"}
+    b = {"language_version": "3.13.3", "kernelspec_name": "python3"}
+    diffs = ckd.diff_kernel(a, b)
+    assert len(diffs) == 1
+    assert "language_info.version" in diffs[0]
+    assert "None" in diffs[0] and "3.13.3" in diffs[0]
+
+
+def test_diff_kernel_null_version_on_both_sides_not_flagged():
+    a = {"language_version": None, "kernelspec_name": "python3"}
+    b = {"language_version": None, "kernelspec_name": "python3"}
+    assert ckd.diff_kernel(a, b) == []
+
+
+def test_diff_kernel_patch_level_drift_not_flagged():
+    # Measured on #16858: base stamp 3.13.3, fresh re-exec under the
+    # project venv 3.13.15 -- same kernel, same repr() semantics.
+    a = {"language_version": "3.13.3", "kernelspec_name": "python3"}
+    b = {"language_version": "3.13.15", "kernelspec_name": "python3"}
+    assert ckd.diff_kernel(a, b) == []
+
+
+def test_diff_kernel_patch_drift_with_rc_suffix_not_flagged():
+    a = {"language_version": "3.13.3", "kernelspec_name": "python3"}
+    b = {"language_version": "3.13.15rc1", "kernelspec_name": "python3"}
+    assert ckd.diff_kernel(a, b) == []
+
+
+def test_diff_kernel_minor_change_still_flagged():
+    a = {"language_version": "3.11.16", "kernelspec_name": "python3"}
+    b = {"language_version": "3.13.15", "kernelspec_name": "python3"}
+    diffs = ckd.diff_kernel(a, b)
+    assert len(diffs) == 1
+    assert "3.11.16" in diffs[0] and "3.13.15" in diffs[0]
+    assert "3.11 -> 3.13" in diffs[0]
+
+
+def test_diff_kernel_major_change_still_flagged():
+    a = {"language_version": "2.7.18", "kernelspec_name": "python3"}
+    b = {"language_version": "3.13.15", "kernelspec_name": "python3"}
+    diffs = ckd.diff_kernel(a, b)
+    assert len(diffs) == 1
+
+
+def test_diff_kernel_empty_vs_full_version_flagged():
+    a = {"language_version": "", "kernelspec_name": "python3"}
+    b = {"language_version": "3.13.15", "kernelspec_name": "python3"}
+    assert len(ckd.diff_kernel(a, b)) == 1
+
+
 def test_float_signatures_matches_array_shape():
     nb = _nb("python3", "3.13.3",
              ["n=5: distances = [1.0, 0.9999999999999999, 1.0, 1.0, 1.0]\n"])

@@ -7,8 +7,11 @@ when the underlying computation is mathematically equivalent. Three
 classes observed:
 
   - Kernel change: ``metadata.kernelspec.name`` or
-    ``metadata.language_info.version`` differs (Python 3.11 -> 3.13).
-    Outputs may format ``repr(np.float64(0.9999999999999999))`` instead
+    ``metadata.language_info.version`` differs at major.minor level
+    (Python 3.11 -> 3.13). Patch-only drift (3.13.3 -> 3.13.15) is NOT
+    flagged: the venv patch evolves under the canonical interpreter and
+    never changes repr() semantics (#17371). Outputs may format
+    ``repr(np.float64(0.9999999999999999))`` instead
     of ``[1.0, 1.0, ...]`` even when the cell computes the same values.
   - Float format drift: NumPy 1.x prints ``[1.0, 1.0, 1.0]``; NumPy 2.x
     prints ``[1.0, 0.9999999999999999, 1.0]``. The values are within
@@ -171,13 +174,40 @@ def kernel_info(nb):
     }
 
 
+def _version_prefix(version):
+    """Truncate a language version to its major.minor components (#17371).
+
+    Patch-level drift (3.13.3 -> 3.13.15) is systemic: the project venv
+    evolves under the lane's canonical interpreter, so any fresh
+    re-execution of a notebook whose base stamp is older drifts on the
+    patch component alone (measured 2026-09-22 on #16858: base 3.13.3,
+    venv 3.13.15, 10/10 cells, 0 error). A patch bump does not change
+    repr() semantics; a kernel swap or a major/minor change does. Versions
+    with fewer than two components ("", "3") are returned verbatim. A JSON
+    ``"version": null`` (valid nbformat, which the ``.get("version", "")``
+    default does not cover) is read as the empty version rather than
+    crashing: the guard must emit a finding, never a traceback.
+    """
+    text = str(version or "")
+    parts = text.split(".")
+    return ".".join(parts[:2]) if len(parts) >= 2 else text
+
+
 def diff_kernel(base_info, head_info):
-    """Return a list of human-readable kernel-version drift strings."""
+    """Return a list of human-readable kernel-version drift strings.
+
+    #17371: ``language_info.version`` is compared at major.minor level —
+    patch-only drift is not a kernel regression. The full versions are
+    still shown in the message for diagnosis.
+    """
     diffs = []
-    if base_info["language_version"] != head_info["language_version"]:
+    base_ver = _version_prefix(base_info["language_version"])
+    head_ver = _version_prefix(head_info["language_version"])
+    if base_ver != head_ver:
         diffs.append(
             f"language_info.version: {base_info['language_version']!r} -> "
-            f"{head_info['language_version']!r}"
+            f"{head_info['language_version']!r} "
+            f"(major.minor {base_ver} -> {head_ver})"
         )
     if base_info["kernelspec_name"] != head_info["kernelspec_name"]:
         diffs.append(

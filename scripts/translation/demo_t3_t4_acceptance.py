@@ -141,7 +141,7 @@ def main() -> int:
     )
     parser.add_argument(
         "--notebook",
-        default="MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning.ipynb",
+        default="MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb",
         help="Notebook source pour T4 dry-run",
     )
     args = parser.parse_args()

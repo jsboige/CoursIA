@@ -375,12 +375,23 @@ MigrationBackup/
 .env.*.local
 .env.docker
 
+# Coffre local de secrets : master.env, cles privees des GitHub Apps de lane (#17437).
+# Ignore en entier par la regle versionnee, pas seulement par un .git/info/exclude local.
+.secrets/
+
 # HuggingFace tokens (Phase 29 - ÉTAPE 24F)
 .secrets/.env.huggingface
 .secrets/.env.huggingface.backup
 
 # Tokens API backup (SÉCURITÉ CRITIQUE)
 .secrets/qwen-api-user.token.backup
+
+# Répertoire de secrets à la racine — RÈGLE DE RÉPERTOIRE (SÉCURITÉ CRITIQUE).
+# Les entrées nominatives ci-dessus ne couvrent que les fichiers déjà connus au moment
+# où on les a ajoutées. master.env et les clés privées d'App GitHub n'étaient masqués
+# que par .git/info/exclude — local, non versionné — donc protégés sur UN clone, pas
+# sur le dépôt. Garde : scripts/ci/check_secret_paths_ignored.py
+.secrets/
 
 # Scripts secrets directory (SÉCURITÉ CRITIQUE)
 scripts/.secrets/
@@ -427,6 +438,21 @@ docker-compose.test.yml
 # Backups
 *.backup_*
 .env.backup_*
+
+# Sauvegardes d'env suffixees (.env.bak, .env.bak-<horodatage>, .env.sauvegarde, ...).
+# Les motifs ci-dessus couvrent .backup/.backup_* mais PAS le suffixe .bak : un
+# `.env.bak-20260912T1404Z` portant un token en clair restait non-ignore, donc a un
+# `git add -A` pres d'etre commite. Regle : le secret vit dans un fichier gitignore
+# (.claude/rules/secrets-hygiene.md) — encore faut-il que le motif l'attrape.
+*.env.bak*
+.env.bak*
+**/.env.bak*
+*.env.sav*
+.env.sav*
+**/.env.sav*
+*.env.sauv*
+.env.sauv*
+**/.env.sauv*
 
 # JDK Portable - Exclure tout le répertoire au lieu de lister chaque fichier
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/jdk-17-portable/
@@ -1091,9 +1117,26 @@ MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/cuda-detect-probe/
 
 # Claude Code machine-local state (registre arbitrations user - coordinator-discipline Regle 7, roo-extensions#3677)
 .claude/local/
-
 # SL-14 aifeynman run artifacts (results/, train/test splits, NN models -- regenerable, local only)
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/_sl14_runs/
 
+# PR #17422 — probes directory artifacts (papermill _out, _deps DLL mirror).
+# `_out` n'est pas couvert par `*_output.ipynb` au-dessus (suffixe distinct).
+# `_deps/` héberge la copie locale de QuikGraph.dll pour la mesure c.790 du
+# workaround relatif (#r "./_deps/QuikGraph.dll") — ne pas la committer.
+scripts/notebook_tools/probes/*_out.ipynb
+scripts/notebook_tools/probes/_deps/
+
+# #17361 — le helper `scripts/ci/dotnet_preload_packages.py` depose son mirror
+# d'assemblies A COTE du notebook qui les reference (`#r "./_deps/X.dll"`).
+# Tout dossier `_deps/`, a n'importe quelle profondeur, est un artefact
+# regenerable (copie du cache NuGet) — aucun n'est suivi dans le depot.
+_deps/
+
 # Livecoding video pipeline (#15604) : artefacts capture/PoC -- media regenerable, local only
 out/
+# Claude Code session scratchpads (per-machine, per-cycle dashboard drafts, PR body drafts, notebook backups)
+/.claude/scratchpad/
+
+# Lane-local runtime artefacts (forge validation, image outputs, intermediate probes)
+/_runtime/
