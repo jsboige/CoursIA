@@ -13,7 +13,7 @@ L'audit froid la descendait : « Kroer-Sandholm **externe** tant que sa distilla
 
 **Ce que la distillation a laissé sur `main`** : `GameTheory/GameTheory-19-Abstraction-a-Dette.ipynb` — relu et mesuré firsthand ce cycle :
 
-- **10 cellules, 4 code, 4 exécutées, 0 erreur, 4 sorties réelles.**
+- **Toutes les cellules code exécutées, 0 erreur, sorties réelles.**
 - Exercice 1 : abstraction par **fusion d'états** (partition de 6 duels 2×2 en 3 blocs, duels moyens) — le geste *compresser*.
 - Exercice 2 : **solve exact** de l'abstrait (énumération de supports), **retransport** dans le jeu d'origine, **mesure dans G** — le geste *résoudre et relever*. Sortie mesurée : `v(G) = -4.2143`.
 - Exercice 3 : **courbe de dette** sur la chaîne de raffinement P6 < P4 < P3 < P2 (chaîne **vérifiée** dans la sortie), exploitability retransportée mesurée : `6 → 0.0000 · 4 → 1.9091 · 3 → 1.9091 · 2 → …` — le témoin de la loi (`Exploitability(σ_G) ≤ ε(α)` sous forme de courbe).
@@ -24,7 +24,7 @@ L'audit froid la descendait : « Kroer-Sandholm **externe** tant que sa distilla
 
 L'audit froid la descendait : « une seule famille (Sandholm) » — in-repo : **0 attestation** (le « mauvais recollement → déviation » n'était qu'une lecture).
 
-**Ce que la distillation a laissé sur `main`** : la paire `GameTheory-13b-Safe-Subgame-Solving.ipynb` (26 cellules, 12 code, 12 exécutées, 0 erreur) + son jumeau C# auditeur `13c` (24 cellules, 10 code, 10 exécutées, 0 erreur, 40 sorties) :
+**Ce que la distillation a laissé sur `main`** : la paire `GameTheory-13b-Safe-Subgame-Solving.ipynb` (toutes ses cellules code exécutées, 0 erreur) + son jumeau C# auditeur `13c` (idem, 40 sorties) :
 
 - 13b développe le triplet complet : **blueprint** avec exploitabilité baseline → **raffinement naïf** qui *détruit* l'équilibre (le contre-témoin) → **recollement sûr avec conditions de bord** (safe subgame solving) → exercice 3 : **contrôler la garantie** du recollement. La conclusion relie explicitement à la LOI I (obstruction → témoin exploitable).
 - 13c (jumeau .NET) **audit** 13b et calcule « la vraie best-response que 13b assertait sans la calculer » — la paire porte donc témoin **mesuré**, pas asserté. Les jumeaux d'une même paire ne comptent pas pour deux attestations (même contenu mathématique, convention twins).
@@ -33,7 +33,7 @@ L'audit froid la descendait : « une seule famille (Sandholm) » — in-repo : *
 
 ## Opération 10 — déjà TABLE, reconfirmée firsthand
 
-L'audit froid l'avait promue (GT-16b, GT-20, SC-27 — trois familles). Relecture firsthand ce cycle de `GameTheory-16b-Automated-Mechanism-Design.ipynb` (10 cellules, 4 code, 4 exécutées, 0 erreur) : le mécanisme **est** la variable de décision (`M* = argmax_{M∈ℳ} J(M)` s.c. IC/IR/budget, énoncé verbatim), générateur et vérificateur **séparés**, et l'exercice 3 exhibe le **témoin d'impossibilité** (déviation profitable, ensemble admissible vide). La conclusion borne honnêtement le scope (« un bond dans l'espace, pas la strate 7 »). **Aucun changement** — la promotion tient.
+L'audit froid l'avait promue (GT-16b, GT-20, SC-27 — trois familles). Relecture firsthand ce cycle de `GameTheory-16b-Automated-Mechanism-Design.ipynb` (toutes les cellules code exécutées, 0 erreur) : le mécanisme **est** la variable de décision (`M* = argmax_{M∈ℳ} J(M)` s.c. IC/IR/budget, énoncé verbatim), générateur et vérificateur **séparés**, et l'exercice 3 exhibe le **témoin d'impossibilité** (déviation profitable, ensemble admissible vide). La conclusion borne honnêtement le scope (« un bond dans l'espace, pas la strate 7 »). **Aucun changement** — la promotion tient.
 
 ## État de la table après cette tranche
 
