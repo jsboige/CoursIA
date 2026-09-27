@@ -402,3 +402,68 @@ def test_merged_referring_prs_lit_le_body_sans_jq(monkeypatch):
     assert len(prs) == 1
     assert prs[0]["body"].startswith("Grain:")
     assert prs[0]["number"] == 17901
+
+
+def test_merged_referring_prs_resout_une_reference_cross_repo(monkeypatch):
+    # #17301, mesure 2026-09-28 : MyIntelligenceAgency/Z3.Linq#31 (merged)
+    # reference l'issue -> l'organe resout toute cross-ref dans le depot SOURCE,
+    # sinon gh rend "Could not resolve to a PullRequest" sur le depot cible et
+    # le template crash (blocage Lot D #18140).
+    import subprocess as _sp
+    import json as _json
+    # Payload reel mesure sur #17301 : le depot vit dans
+    # source.issue.repository.full_name (source.repository est None).
+    timeline = [_json.dumps([{
+        "event": "cross-referenced",
+        "source": {"issue": {"number": 31,
+                             "repository": {"full_name": "MyIntelligenceAgency/Z3.Linq"},
+                             "pull_request": {"merged_at": "2026-09-23T18:39:12Z"}}},
+    }])]
+    seen = {}
+
+    class _P:
+        def __init__(self, stdout, returncode=0):
+            self.stdout = stdout
+            self.returncode = returncode
+
+    def fake_run(args, **kwargs):
+        tail = tuple(args[1:])
+        if tail[0] == "api":
+            return _P("".join(timeline))
+        if tail[:2] == ("pr", "view"):
+            seen[("--repo",)] = tail
+            assert "--repo" in tail and "MyIntelligenceAgency/Z3.Linq" in tail, (
+                "la PR cross-ref doit etre resolue dans son depot source, "
+                "pas dans le depot cible")
+            return _P(_json.dumps({"body": "Grain: DEEP/lean -- lane myia-po-2024:CoursIA"}))
+        return _P("", returncode=1)
+
+    monkeypatch.setattr(_sp, "run", fake_run)
+    prs = ccd._merged_referring_prs("jsboige/CoursIA", 17301)
+    assert len(prs) == 1
+    assert prs[0]["number"] == 31
+    assert prs[0]["repo"] == "MyIntelligenceAgency/Z3.Linq"
+
+
+def test_pr_cross_repo_ne_satisfait_pas_le_raccourci_des_prs_citees(monkeypatch):
+    # Un #N nu dans le dossier designe une PR du depot CIBLE : une PR de meme
+    # numero venue d'un depot soeur ne doit pas court-circuiter la verification
+    # (le dossier citerait #31 sans preuve que la PR 31 du depot cible existe).
+    def fake_gh_json(args):
+        assert args[:2] == ["pr", "view"], f"appel gh inattendu: {args}"
+        assert args[args.index("--repo") + 1] == "o/r", (
+            "le numero nu doit etre verifie dans le depot cible")
+        return {"state": "OPEN", "mergedAt": None}  # PR 31 de o/r : non merged
+
+    monkeypatch.setattr(ccd, "gh_json", fake_gh_json)
+    snap = _snapshot(
+        comments=[_comment(_dossier_body(items=("critere A -> PR #31",)))],
+        merged_prs=[
+            {"number": 31, "merged_at": "2026-09-23T18:39:12Z",
+             "repo": "MyIntelligenceAgency/Z3.Linq",
+             "body": "Grain: DEEP/lean -- lane myia-po-2024:CoursIA"},
+        ],
+    )
+    verdict, errors, _ = evaluate(snap)
+    assert verdict == "REFUSED"
+    assert any("cited PR #31 is not MERGED" in e for e in errors)
