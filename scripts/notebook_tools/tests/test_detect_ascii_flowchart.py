@@ -138,7 +138,7 @@ Architecture NFSP (Neural Fictitious Self-Play)
 """
 
 # Extraction EXACTE des 12 premieres lignes du diagramme de la vraie cellule
-# c15 de GameTheory-17-MultiAgent-RL.ipynb (#12324 residuel) : boites empilees
+# c15 de GameTheory-17-MultiAgent-RL-Python.ipynb (#12324 residuel) : boites empilees
 # reliees par des connecteurs verticaux MULTI-COLONNES (`|  ...  |`, `v  ...  v`)
 # -- aucune fleche `--->`. La fixture GT_17_NFSP_HORIZONTAL ci-dessus est une
 # reconstitution avec fleches horizontales : elle passait sur main alors que la

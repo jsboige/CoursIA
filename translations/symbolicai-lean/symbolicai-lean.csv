@@ -33348,7 +33348,7 @@ d'aucun axiome). Le notebook s'exécute avec le kernel `lean4-wsl` sur le lake `
 (toolchain v4.32.1) : toutes les sorties que vous voyez sont des sorties réelles du compilateur Lean.
 
 **Avertissement de vocabulaire** : ne pas confondre avec la « topologie des jeux »
-([GameTheory-3-Topology2x2-Csharp.ipynb](../../GameTheory/GameTheory-03-Topology2x2-Csharp.ipynb)) —
+([GameTheory-3-Topology2x2-Csharp.ipynb](../../GameTheory/GameTheory-03-Topology2x2-CSharp.ipynb)) —
 celle-là est la structure du graphe des issues d'un jeu, rien à voir avec la topologie générale de
 Munkres.",,,,,,,,83ed68b561b89b48,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-28-Munkres-Tribute.ipynb,6b42a55d,code,fr,3eec98c9f6f9902f,"-- Toutes les importations de la session (tete de session, pattern Lean-26) :

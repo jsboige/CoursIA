@@ -460,7 +460,7 @@ class TestCodeCellOnlyExercise:
         cell that carries ``display("Exercice ... a completer")`` but neither
         ``// TODO`` nor ``// Indice`` must still be counted.
 
-        Regression for ``GameTheory-05-ZeroSum-Minimax-Csharp`` Ex2, whose stub
+        Regression for ``GameTheory-05-ZeroSum-Minimax-CSharp`` Ex2, whose stub
         marker ``display("Exercice 2 a completer ...")`` was silently
         under-counted (notebook read as 2 exercises instead of its real 3).
         """
@@ -1114,7 +1114,7 @@ class TestGroupedAndPluralHeaders:
     def test_plural_section_does_not_steal_forward_pairing(self, tmp_path):
         """Bug 2 (pairing side): a plural section header must NOT forward-pair
         the code cell below it. The real Exercice 1 stub must be counted in its
-        own right. Mirrors ``GameTheory/GameTheory-05-ZeroSum-Minimax-Csharp.ipynb``
+        own right. Mirrors ``GameTheory/GameTheory-05-ZeroSum-Minimax-CSharp.ipynb``
         where the section `## 9. Exercices` stole cell 21 (Exercice 1).
         """
         nb = _write_nb(
@@ -1252,7 +1252,7 @@ class TestCorpusScope:
             ("SC-1-Setup-Foundry", "setup"),
             ("Argument_Analysis_Agentic-0-init_agent", "setup"),
             ("Lean-3-Propositions-Proofs", "lean"),
-            ("GameTheory-11b-Lean-BayesianGamesExt", "lean"),
+            ("GameTheory-11b-Lean-BayesianGamesExt-Lean", "lean"),
             ("DecInfer-09-Lean-Gittins", "lean"),
         ]:
             kind, threshold = _classify(tmp_path / "Course" / f"{stem}.ipynb", standard_threshold=3, root=tmp_path)

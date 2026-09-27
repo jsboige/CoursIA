@@ -29,8 +29,8 @@ SESSION_MONDAY_2H = [  # Monday 2h Lean intro
 SESSION_WEEK_4H_LEAN = [  # Week 4h Lean+GameTheory
     "SymbolicAI/Lean/Lean-5-Tactics.ipynb",
     "SymbolicAI/Lean/Lean-6-Mathlib-Essentials.ipynb",
-    "GameTheory/GameTheory-15b-Lean-CooperativeGames.ipynb",
-    "GameTheory/GameTheory-02b-Lean-Definitions.ipynb",
+    "GameTheory/GameTheory-15b-Lean-CooperativeGames-Lean.ipynb",
+    "GameTheory/GameTheory-02b-Lean-Definitions-Lean.ipynb",
 ]
 ALL_NOTEBOOKS = SESSION_MONDAY_2H + SESSION_WEEK_4H_LEAN
 
@@ -95,7 +95,8 @@ def main():
                     "--kernel", "lean4-wsl",
                     "--timeout", "600",
                 ]
-                proc = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+                proc = subprocess.run(cmd, capture_output=True, text=True,
+                                   encoding="utf-8", errors="replace", timeout=600)
                 elapsed = time.time() - t0
                 r = check_notebook(nb_path)
                 r["elapsed_s"] = round(elapsed, 1)

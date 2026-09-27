@@ -745,7 +745,7 @@ Le corpus de travaux pratiques (`MyIA.AI.Notebooks/`, mesuré au commit `f13b9aa
 - **Exploration** (chapitre 2) : `Search/Part1-Foundations/` (40 notebooks, exploration informée), `Search/Part2-CSP/` (18 notebooks, satisfaction de contraintes), `Search/Applications/CSP/` (31 notebooks, cas d'usage), `Sudoku/` (38 notebooks, contexte ludique). Entrée : [Search-01-StateSpace](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace.ipynb)
 - **Logique** (chapitre 3) : `SymbolicAI/` (263 notebooks, Z3 + Tweety + Lean 4 + Argumentum + smart-contracts). Entrée : [Z3-Python-01-Introduction](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01-Introduction-Python.ipynb)
 - **Probabilités** (chapitre 4) : `Probas/Infer/` (21 notebooks, inférence bayésienne, réseaux de décision, Infer.NET). Entrée : [Infer-1b-Premiers-Modeles](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-1b-Premiers-Modeles.ipynb)
-- **Jeux** (chapitre 5) : `GameTheory/` (96 notebooks, équilibres de Nash, jeux bayésiens, MARL, OpenSpiel). Entrée : [GameTheory-02-NormalForm](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm.ipynb)
+- **Jeux** (chapitre 5) : `GameTheory/` (96 notebooks, équilibres de Nash, jeux bayésiens, MARL, OpenSpiel). Entrée : [GameTheory-02-NormalForm-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Python.ipynb)
 - **Apprentissage** (chapitre 6) : `ML/` (81 notebooks, classification, régression, renforcement, ML.NET). Entrée : [ML-Cours-2.1-Workflow](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.1-Workflow-ML.ipynb)
 - **IA Générative** (chapitre 7) : `GenAI/` (20 Image + 31 Audio + 22 Video + 30 Texte = 103 notebooks, intégrations OpenAI/Anthropic/Semantic Kernel/Qwen). Entrée : [Texte-01_OpenAI_Intro](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb)
 - **Trading** : `QuantConnect/` (211 notebooks, cours partenaire `partner-course-quant-trading/` + pipelines de recherche `ML-Training-Pipeline/`, stratégies backtestées via QC Cloud). Entrée : [research-ML-RandomForest](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/01-ML-RandomForest/research.ipynb)
@@ -764,7 +764,7 @@ Mesures `git ls-files` sur `main` à `f13b9aa73e7a` (commit de la PR #15051 amen
 | Sudoku | 38 | Sudoku-01-Backtracking-Python | backtracking, propagation, OR-Tools |
 | SymbolicAI | 263 | Z3-Python-01-Introduction | SMT, argumentation, Lean 4, smart-contracts |
 | Probas/Infer | 21 | Infer-1b-Premiers-Modeles | inférence bayésienne, réseaux de décision |
-| GameTheory | 96 | GameTheory-02-NormalForm | équilibres, MARL, OpenSpiel |
+| GameTheory | 96 | GameTheory-02-NormalForm-Python | équilibres, MARL, OpenSpiel |
 | ML | 81 | ML-Cours-2.1-Workflow | classification, régression, RL, ML.NET |
 | GenAI/Image | 20 | GenAI-Image-01-Foundation | diffusion, ComfyUI, Qwen |
 | GenAI/Audio | 31 | GenAI-Audio-01-Foundation | TTS, narration, VoiceDesign |

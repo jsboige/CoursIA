@@ -188,7 +188,7 @@ repos:
           it carries, falsifying proof of execution (C.2 / H.4). Distinguishes
           "syntax error" (genuine Python typo, e.g. PR #13287 motif) from
           "markdown typed code" (a markdown blob typed `code`, e.g.
-          GameTheory-03d-Plan-de-deformation.ipynb cell[7]). Skips IPython
+          GameTheory-03e-Plan-de-deformation-Python.ipynb cell[7]). Skips IPython
           magics `!`/`%`; allows top-level `await`. Runtime dependency: the
           guard's compile() is bound to the worker's interpreter — a 3.10/3.11
           worker will false-positive on 3.12+ f-string PEP 701 constructs.

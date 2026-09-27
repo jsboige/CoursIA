@@ -3,7 +3,7 @@
 Formalisation des jeux bayésiens finis à deux joueurs (espaces de types
 de Harsanyi) en Lean 4 **sans Mathlib** (toolchain `v4.32.0`, core
 uniquement — évite la mutualisation des checkouts Mathlib, cf #2611).
-Compagnon formel de `GameTheory-11-BayesianGames.ipynb`. Phases 1-7 de
+Compagnon formel de `GameTheory-11-BayesianGames-Python.ipynb`. Phases 1-7 de
 l'Epic #2610 livrées (cf [Lien avec `lean_game_defs/`](#lien-avec-lean_game_defs)).
 
 ## Contenu
@@ -63,7 +63,7 @@ dominance faible, 4 — valeur de l'information : monotonie de Blackwell
 `lean_game_defs_ext` formalise en Lean 4 (**0 `sorry`**, sans Mathlib, core
 uniquement) la théorie des **jeux bayésiens** à information incomplète — du
 cadre des types de Harsanyi jusqu'aux applications d'enchères et de réputation.
-Compagnon formel de `GameTheory-11-BayesianGames.ipynb`, il couvre l'Epic #2610
+Compagnon formel de `GameTheory-11-BayesianGames-Python.ipynb`, il couvre l'Epic #2610
 (phases 1-7 livrées).
 
 ### Ce qui est prouvé

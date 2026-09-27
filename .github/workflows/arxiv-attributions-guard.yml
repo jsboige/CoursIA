@@ -40,7 +40,7 @@ on:
       - 'scripts/check_arxiv_attributions.py'
       - 'scripts/tests/test_check_arxiv_attributions.py'
       - '.github/workflows/arxiv-attributions-guard.yml'
-      - 'MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving.ipynb'
+      - 'MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving-Python.ipynb'
       - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.5-Phenomenes-de-Generalisation.ipynb'
       - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day4-Foundations/Lab8-ADK-Introduction.ipynb'
       - 'MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/research_l4_decision_transformer.ipynb'
