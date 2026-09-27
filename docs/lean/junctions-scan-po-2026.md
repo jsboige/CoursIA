@@ -138,7 +138,7 @@ fondateur respect).
 | ai-01 | ✅ (#13962) | 17 | 0 | ~90 Go (rev `520045ab`) |
 | po-2023 | ✅ (#17178) | mesuré | mesuré | mesuré |
 | po-2024 | ✅ (#15938) | mesuré | mesuré | mesuré |
-| po-2026 | ✅ (c.1221, ce rapport) | **11** | **1** | **4,09 Go** (rev `db584cd6`) |
+| po-2026 | ✅ (c.1221, ce rapport) | **15** | **1** | **4,09 Go** (rev `db584cd6`) |
 | po-2027 | ✅ (#16375, c.1205) | mesuré | mesuré | mesuré |
 
 ## Fichier source de la mesure
