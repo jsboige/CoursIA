@@ -221,6 +221,59 @@ de coursIA-2](../../CLAUDE.md#b-reviews-pr--b0-bloquant-puis-5-points)) :
   Tranche 1 mergée.
 - **c.1500+** — Tranche 3 (théorème BGP 2026), après Tranche 2.
 
+## 7bis. Réponses aux réserves de la revue cid 5327843625
+
+Cette section documente où les **trois réserves structurelles** de la revue
+NanoClaw `clusterManager-Myia` cid `5327843625` (soumis 2026-09-26T22:48:52Z)
+sont tranchées dans ce document.
+
+**Réserve 1 — Coalition vide dans `InCore`.** Le sketch initial
+omettait la contrainte `T.Nonempty` dans la quantification universelle,
+ce qui rendait la définition trivialement `False`. La correction est
+portée par le code Lean de la section §3 Tranche 2 :
+
+```lean
+def InCore {V A : Type} [Fintype V] [Fintype A]
+    (P : ApprovalProfile V A) (S : Committee A P.committeeSize) : Prop :=
+  ∀ (T : Finset V), T.Nonempty →    -- ← contrainte ajoutée
+    ¬ ∃ S' : Committee A P.committeeSize, S' ≠ S ∧
+        ∀ v ∈ T, Happiness P S' v > Happiness P S v
+```
+
+**Réserve 2 — Portée du `zero_sum`.** La `PaymentFunction` est conservée
+en Tranche 1 uniquement comme **composante de l'objectif** (pour
+`HarmonicEntropy`), pas comme **condition de blocage** du core. Le core
+standard (définition Peters, handbook 2024, reprise BGP 2026) ne fait pas
+intervenir de paiements. La structure `PaymentFunction` (avec son champ
+`zero_sum : (∑ v, payments v) = 0`) est définie sur **V entier**, et
+l'optimisation `HarmonicEntropy` prend en entrée un couple
+`(comité, paiement)` dont le second est libre à somme nulle globale. La
+définition du core reste la définition **sans paiements** — voir §3
+Tranche 2.
+
+**Réserve 3 — Paiements dans la définition du core vs dans la preuve.**
+La définition du core retenue est la définition **standard** :
+
+> *Un comité S est dans le core ssi il n'existe aucune coalition non vide
+> T ⊆ V et aucun comité S' ≠ S de même taille tel que chaque membre de T
+> préfère strictement S' à S.*
+
+Les paiements sont une composante de **l'objectif de la preuve**
+(`HarmonicEntropy`), pas de la définition. La preuve BGP 2026 montre que
+tout optimum local de cet objectif (sur l'espace Comité × Paiement)
+appartient au core. C'est précisément la formulation de l'abstract
+arXiv `2609.11912` :
+
+> *« All local optima of this objective function lie in the core, which
+> implies that a core committee can be found in polynomial time. »*
+
+La variante « strict mieux ou égal ET payé > 0 » du sketch initial a été
+**élidée** — voir §3 Tranche 2.
+
+**Statut des trois corrections :** appliquées dans la version courante
+(`1f903a859f` et suivants) du document, avant la rédaction de toute
+ligne de `Core.lean` en Tranche 2.
+
 ## 8. Liens
 
 - Issue : https://github.com/jsboige/CoursIA/issues/17988
