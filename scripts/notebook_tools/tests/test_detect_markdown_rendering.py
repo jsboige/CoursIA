@@ -519,7 +519,8 @@ class TestYamlBlockOpenNoClose:
     """Pin the new ``yaml_block_open_no_close`` rule (#11630).
 
     Reproduces the 2026-08-17 main breakage on
-    ``MyIA.AI.Notebooks/FallacyDetection/02_fallacy_datasets_landscape.ipynb``:
+    ``MyIA.AI.Notebooks/GenAI/FallacyDetection/02_fallacy_datasets_landscape.ipynb``
+    (was ``MyIA.AI.Notebooks/FallacyDetection/`` before tranche 1 of #13581):
     8 of 20 cells started with ``---\\n### Dataset N -- ...`` (no closing
     ``---``), and Pandoc extended the YAML block through every following cell
     until the next ``---``, breaking the whole page. ``_is_frontmatter_block``
@@ -691,10 +692,11 @@ class TestQuartoClosure:
     """Pin the ``--closure`` mode of detect_markdown_rendering.
 
     The 2026-08-17 main breakage on
-    ``MyIA.AI.Notebooks/FallacyDetection/02_fallacy_datasets_landscape.ipynb``
+    ``MyIA.AI.Notebooks/GenAI/FallacyDetection/02_fallacy_datasets_landscape.ipynb``
+    (formerly ``MyIA.AI.Notebooks/FallacyDetection/``, pre-#13581 tranche 1)
     was NOT detectable by a repo-wide scan + filter on the PR's touched
     paths: the PR that broke main (#11480) didn't touch the broken notebook
-    -- it added a link from ``FallacyDetection/README.md`` (rendered) to the
+    -- it added a link from ``GenAI/FallacyDetection/README.md`` (rendered) to the
     notebook (previously unread by Quarto). The closure scan follows
     ``.ipynb`` links one hop out of the render-list, catching exactly the
     set of notebooks that Quarto will *transitively* render.
@@ -893,7 +895,7 @@ class TestQuartoClosureDependency:
         r = subprocess.run(
             [sys.executable, str(script), "--closure", "--quarto-yml", str(yml),
              str(tmp_path)],
-            capture_output=True, text=True, env=env, cwd=tmp_path,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", env=env, cwd=tmp_path,
         )
         assert r.returncode == 2, (r.stdout, r.stderr)
         assert "pyyaml" in r.stderr
@@ -907,7 +909,7 @@ class TestQuartoClosureDependency:
         r = subprocess.run(
             [sys.executable, str(script), "--closure", "--quarto-yml", str(yml),
              str(tmp_path)],
-            capture_output=True, text=True, cwd=tmp_path,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=tmp_path,
         )
         assert r.returncode == 0, (r.stdout, r.stderr)
         assert "--closure: render-list=1" in r.stderr

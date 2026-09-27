@@ -1,7 +1,7 @@
 ---
 title: "Notebooks"
 subtitle: "12 séries pédagogiques niveau 1"
-description: "Liste des 12 séries niveau 1 du dépôt CoursIA — Search, Sudoku, ML, RL, GameTheory, GenAI, Probas, SymbolicAI, QuantConnect, CaseStudies, IIT, FallacyDetection. SemanticKernel est une sous-série de GenAI (couverte par le README GenAI)."
+description: "Liste des 11 séries niveau 1 du dépôt CoursIA — Search, Sudoku, ML, RL, GameTheory, GenAI, Probas, SymbolicAI, QuantConnect, CaseStudies, IIT. SemanticKernel et FallacyDetection sont des sous-séries de GenAI (couvertes par le README GenAI)."
 ---
 
 # Séries de notebooks
@@ -55,7 +55,7 @@ Jeux combinatoires, équilibre de Nash, théorème de Folk, choix social (Arrow,
 ::: {.series-card}
 ### [GenAI](GenAI/README.md) — IA générative multimodale
 
-Image (Stable Diffusion, FLUX, Qwen-VL), audio (Whisper, music), texte (transformers, agents), vibe-coding.
+Image (Stable Diffusion, FLUX, Qwen-VL), audio (Whisper, music), texte (transformers, agents), vibe-coding. Sous-séries : SemanticKernel, FallacyDetection (détection de sophismes via Qwen FT + SAE, EPIC #10355).
 
 **Notebooks** : 60+ · **Kernels** : python3 · **GPU** : OBLIGATOIRE (RTX 3090+)
 :::
@@ -98,14 +98,6 @@ Diagnostic médical, oncology planning, Barbie-Schreck, Fort-Boyard, Recipe-Make
 PyPhi, φ (phi) computation, causal analysis, théorème de Tononi.
 
 **Notebooks** : 4+ · **Kernels** : python3 · **GPU** : non
-:::
-
-::: {.series-card}
-### [FallacyDetection](FallacyDetection/README.md) — Détection de sophismes (Qwen FT + PT)
-
-Classification de sophismes par Qwen 3.5/3.6 : fine-tuning (mémorisation du motif « général → particulier ») vs post-training, interprétabilité par sparse autoencoders (SAE). Série en construction — EPIC #10355, phases survey et datasets livrées.
-
-**Notebooks** : 2 · **Kernels** : python3 · **GPU** : oui
 :::
 
 ## Cross-series

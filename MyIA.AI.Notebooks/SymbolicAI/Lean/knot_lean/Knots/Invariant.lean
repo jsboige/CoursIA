@@ -2217,15 +2217,41 @@ def changeCrossing (c : PDCrossing) : PDCrossing where
   e3 := c.e3
   e4 := c.e2
 
+/-- `changeCrossing` est definitionnellement egal a `mirrorCrossing` : les deux
+permutent `e2 ↔ e4`. — Epic #2874, Phase 4. -/
+theorem changeCrossing_eq_mirrorCrossing (c : PDCrossing) :
+    changeCrossing c = mirrorCrossing c := rfl
+
+/-- Appliquer `changeCrossing` a tous les croisements d'un nœud. Comme
+`changeCrossing ≡ mirrorCrossing` (voir `changeCrossing_eq_mirrorCrossing`), cette
+operation coincide definitionnellement avec `Knot.mirror`. — Epic #2874, Phase 4. -/
+def Knot.changeCrossingAll (k : Knot) : Knot where
+  diagram := {
+    crossings := k.diagram.crossings.map changeCrossing
+    numEdges := k.diagram.numEdges
+  }
+
+/-- `Knot.changeCrossingAll` coincide definitionnellement avec `Knot.mirror`.
+— Epic #2874, Phase 4. -/
+theorem changeCrossingAll_eq_mirror (k : Knot) :
+    k.changeCrossingAll = k.mirror := rfl
+
+/-- `changeCrossing` preserve `KnotDiagram.wf`, derive de `mirror_wf_preserves` via la
+defeq `changeCrossing ≡ mirrorCrossing`. — Epic #2874, Phase 4. -/
+theorem changeCrossing_wf_preserves (k : Knot) (h : k.diagram.wf = true) :
+    k.changeCrossingAll.diagram.wf = true := by
+  rw [changeCrossingAll_eq_mirror]
+  exact mirror_wf_preserves k h
+
 /-- Unknotting number: minimum crossing changes to reach the unknot. -/
 def Knot.unknottingNumber (k : Knot) : Nat := by
   exact sorry
-  -- BLOCKED: requires substantial infrastructure not yet in the project:
-  --   1. Crossing change operation on KnotDiagram (changeCrossing exists but no
-  --      well-formedness proof that the result is a valid diagram)
-  --   2. Minimization over equivalence classes (Knot.crossingNumber has same issue)
-  --   3. Reachability in a graph of diagrams
-  -- Phase 4+ target — out of scope for Phase 2
+  -- BLOQUE: requiert une infrastructure substantielle absente du projet :
+  --   1. Minimisation sur les classes d'equivalence (Knot.crossingNumber a le meme probleme)
+  --   2. Accessibilite dans un graphe de diagrammes
+  --   (L'operation de changement de croisement elle-meme est desormais justifiee par
+  --    `changeCrossing_wf_preserves`, derivee de `mirror_wf_preserves` — voir Epic #2874.)
+  -- Cible Phase 4+ — hors scope Phase 2
 
 /-! ## 8. Transfer arriere (scaffolding de recherche — Epic #2874, Phase 5 PR3)
 

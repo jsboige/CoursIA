@@ -31,4 +31,5 @@ require learning_theory_lean from ".." / ".." / "ML" / "learning_theory_lean"
 lean_lib «Discrepancy» where
   -- `.submodules` ne build pas le module racine (apprentissage LEAN_INVENTORY) :
   -- on ajoute explicitement l'agrégateur `Discrepancy` au glob.
-  globs := #[.submodules `Discrepancy, `Discrepancy]
+  -- `Discrepancy_en` : l'agrégateur des siblings EN (#4980), meme raison.
+  globs := #[.submodules `Discrepancy, `Discrepancy, `Discrepancy_en]

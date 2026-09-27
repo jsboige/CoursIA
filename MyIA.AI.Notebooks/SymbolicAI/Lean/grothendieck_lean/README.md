@@ -213,3 +213,32 @@ bibliothèque à travers des yeux grothendieckiens ; l'Issue #2159 / l'Epic
 plafond. Pour prolonger : `conway_lean/` et la série de notebooks Lean côté
 compagnons ; Mac Lane–Moerdijk et SGA 4 pour le cœur topos-théorique ; Vakil
 et le Stacks Project pour les schémas et la cohomologie.
+
+## Digestion (grille #13106)
+
+Digestion de premier niveau du lake contre la grille obligatoire de [#13106](https://github.com/jsboige/CoursIA/issues/13106) (EPIC digestion et canonicalisation). Verdicts sur la base du README, des docstrings de modules et des issues de formalisation — marqués PRÉSENT/PARTIEL/ABSENT avec la preuve `file:line` vérifiée. Un digest plus fin (reconstruction du chemin de chaque `Partie`) reste à faire par des grains dédiés.
+
+| # | Point de la grille | Verdict | Preuve / état |
+|---|---|---|---|
+| 1 | Énoncé exact + niveau de garantie | **PRÉSENT** | modules `Grothendieck/*.lean` ; garantie « 0 `sorry`, 0 axiome ajouté » (`README.md` §Build & état, `lakefile.lean` `globs`) |
+| 2 | Provenance, littérature, priorité, attribution | **PARTIEL** | §Références (`README.md`: Mac Lane–Moerdijk, SGA 4, EGA, Vakil, Stacks, Mathlib, nLab) + docstrings citant SGA 4 I/II (§ `CategoryAndSites.lean:1-20`) ; l'attribution **par `Partie`** (quel auteur, quel snip) n'est pas systématique |
+| 3 | Nouveauté réelle vs dépendances | **PARTIEL** | « vit déjà dans Mathlib 4 », frontière indexée par la Partie 4 (`#check`) ; pas d'énoncé explicite « ce que ce lake ajoute à Mathlib » |
+| 4 | Carte deps / toolchain / axiomes | **PRÉSENT** | §Build & état (`README.md`) : toolchain v4.32.1, dépendance Mathlib, 0 axiome ajouté ; i18n #4980 |
+| 5 | Trivial vs nouveau développé | **PARTIEL** | la trajectoire (sites→faisceaux→cohomologie) hiérarchise, mais le trivial/nouveau n'est pas déclaré partie-par-partie |
+| 6 | Friction naturelle (obstacles, essais ratés, dette) | **ABSENT→comblé ci-dessous** | §Le périmètre, honnêtement + `Classifier.lean:190` (« `ElementaryTopos` pas encore disponible »), `#11286` (import umbrella `ExceptionalDirect` en attente), phases #2159/#10357 |
+| 7 | Chemin de découverte vs reconstruction | **ABSENT→comblé ci-dessous** | la trajectoire est pédagogique mais n'explicite pas le « pourquoi cet ordre / ce qu'on a écarté » |
+| 8 | Limites, claims non établis, réserves | **PRÉSENT** | §Le périmètre, honnêtement : « socle, pas plafond », frontière Mathlib exposée |
+| 9 | Raccord corpus + prérequis | **PRÉSENT** | navlinks `Lean-15-Grothendieck-Tribute.ipynb` / `Lean-15b-Lean-Grothendieck.ipynb` / `Lean-15c-Lean-Grothendieck-Companion.ipynb` (re-lient le lake) ; §Voir aussi |
+
+### Point 6 — friction naturelle (comblement)
+
+Quatre frictions réelles, documentées à la source :
+
+1. **Contrainte d'anti-régression auto-imposée** : chaque module complet à la création (0 `sorry`, 0 axiome ajouté) — le plafond du lake est borné par ce que Mathlib expose déjà, pas par un choix de sous-formalisation. C'est une friction **de périmètre** : quand un concept manque dans Mathlib, il est soit reconstruit localement, soit renvoyé en attente.
+2. **Frontière Mathlib vivante** : `Classifier.lean:190` — `ElementaryTopos` « pas encore disponible dans cette révision » : la borne du lake est mobile avec Mathlib.
+3. **Dette de raccord ouverte** : `#11286` — import umbrella de `ExceptionalDirect` **en attente** : un module construit, non encore relié à l'umbrella.
+4. **Friction i18n historique** : l'absence d'un sibling `_en` pour `PullbackFunctor` (comblée depuis, cf §Build & état) — la paire bilingue est une contrainte de maintenance, pas un simple format.
+
+### Point 7 — chemin de découverte (comblement)
+
+Le chemin n'est pas une reconstruction — c'est une **visite indexée**, et ce fait est la découverte centrale : « le langage grothendieckien vit déjà dans Mathlib 4 ». L'ordre pédagogique (sites → cribles/topologies → faisceaux → faisceautisation → cohomologie, ancré par Spec/Zariski et par l'index `#check`) est un **chemin de lecture**, pas la trace d'un développement. Le point d'entrée pour un apprenant : README → compagnons (`Lean-15*`) → modules, avec Mac Lane–Moerdijk et SGA 4 comme lecture d'accompagnement. Ce qui a été **écarté** et pourquoi (le choix « hommage, pas formalisation d'EGA/SGA ») est explicite dans §L'esprit de la visite et §Le périmètre, honnêtement — mais la trace du développement réel (quels tentatives ont été abandonnées) n'est pas consignée par `Partie` ; c'est la limite de cette digestion, à compléter par un grain qui interroge les auteurs.

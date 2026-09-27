@@ -534,8 +534,8 @@ Famille `MyIA.AI.Notebooks/Probas/Infer/` = 19 notebooks `Infer-{1..19}-*.ipynb`
 
 - `"Compiling model...\ndone."` (compilation Roslyn du modèle déclaratif) — preuve dans `Infer-3`, `Infer-5`, `Infer-7`, `Infer-9`, `Infer-10`, `Infer-19`.
 - `"Iterating:\n....|\n50"` (log d'itération EP/VMP, 5 barres de 10 = 50 itérations) — preuve dans `Infer-7`, `Infer-9`, `Infer-10`, `Infer-11`, `Infer-13`, `Infer-101`.
-- **Posteriors au format distribution Infer.NET** : `Gaussian(0,8144, 0,03683)` (`Infer-9`), `Bernoulli(0,25)` (`Infer-101`), `Gamma(2,242, 0,2445)[mean=0,5482]` (`Infer-101`), `Gaussian.PointMass(100)` (`Infer-6`), `Beta`/`Dirichlet` (`Infer-11`).
-- **Avertissements compilateur authentiques Infer.NET** : `warning CS1701: ... Microsoft.AspNetCore.Html.Abstractions ...` (`Infer-5`, `Infer-6`), `"compilation had N warning(s)"` + `"GaussianProductOp.BAverageConditional(...) has quality band Experimental"` (`Infer-15`). Ces warnings internes au compilateur de modèles sont inimitables.
+- **Posteriors au format distribution Infer.NET** : `Gaussian(0,8144, 0,03683)` (`Infer-9`), `Bernoulli(0,25)` (`Infer-101`), `Gamma(2,242, 0,2445)[mean=0,5482]` (`Infer-101`), `Gaussian.PointMass(100)` (`Infer-2b`), `Beta`/`Dirichlet` (`Infer-11`).
+- **Avertissements compilateur authentiques Infer.NET** : `warning CS1701: ... Microsoft.AspNetCore.Html.Abstractions ...` (`Infer-5`, `Infer-2b`), `"compilation had N warning(s)"` + `"GaussianProductOp.BAverageConditional(...) has quality band Experimental"` (`Infer-15`). Ces warnings internes au compilateur de modèles sont inimitables.
 
 **Appels `.Infer<>()` vérifiés par notebook** : après correction du regex (les notebooks utilisent `engine.Infer<Gaussian>(var)` ET des noms de variables francisés `moteur`, `eInt`, `ie`, `eng`), **chaque notebook contient au moins un appel `.Infer<>()` produisant un posterior avec output cohérent**. Le regex naïf `engine\.Infer` avait faussé un premier passage — les noms de variables ne sont PAS `engine` partout (bonne hygiène pédagogique, pas un défaut).
 
@@ -564,7 +564,7 @@ Chaque notebook pose un problème de **probabilistic programming** avancé qui e
 | Infer-3-Factor-Graphs | Affaire Auburn/Grey, `Variable.Bernoulli(0.7)` | Marginal inference sur factor graph explicite |
 | Infer-4-Bayesian-Networks | Explaining-away diagnostic médical | Réseau bayésien, inférence causale |
 | Infer-5-Causal-Inference | **do-calculus Pearl** : observationnel vs interventionnel | Observationnel vs interventionnel — discriminant net |
-| Infer-6-Debugging | Pédagogie debug "Model has no support" | Debugging — exception légitime Prong B |
+| Infer-2b-Debugging-Bonnes-Pratiques | Pédagogie debug "Model has no support" | Debugging — exception légitime Prong B |
 | Infer-7-Skills-IRT | IRT 2-PL, capacité par étudiant | EP sur modèle de traits latents |
 | Infer-8-TrueSkill | TrueSkill (Xbox Live), inférence de skill | Application canonique Microsoft Infer.NET |
 | Infer-9-Classification | Régression logistique bayésienne + multi-features | Posterior sur poids avec incertitude |

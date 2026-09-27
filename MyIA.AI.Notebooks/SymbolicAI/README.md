@@ -265,7 +265,7 @@ La série joue un rôle charnière dans la famille SymbolicAI : elle **consomme*
 | 05 | [Z3-Python-05-Quantifiers-Proofs](SMT/Z3-API/Z3-Python-05-Quantifiers-Proofs.ipynb) · [C#](SMT/Z3-API/Z3-Python-05-Quantifiers-Proofs-Csharp.ipynb) | Python / .NET | Quantificateurs ∀/∃, preuve par instantiation, incomplétude | 3 |
 | 06 | [Z3-Python-06-Advanced-Optimization](SMT/Z3-API/Z3-Python-06-Advanced-Optimization.ipynb) · [C#](SMT/Z3-API/Z3-Python-06-Advanced-Optimization-Csharp.ipynb) | Python / .NET | Optimisation MaxSAT, Optimize(), Pareto | 3 |
 | **Z3-API patterns impératifs (Python)** |   |   |   |   |
-| 07 | [Z3-Python-07-Style-Declaratif-Linq](SMT/Z3-API/Z3-Python-07-Style-Declaratif-Linq.ipynb) | Python | Comparaison style impératif vs LINQ-like avec Z3 Python | 2 |
+| 01b | [Z3-Python-01b-Style-Declaratif-Linq](SMT/Z3-API/Z3-Python-01b-Style-Declaratif-Linq.ipynb) | Python | Comparaison style impératif vs LINQ-like avec Z3 Python | 2 |
 | 08 | [Z3-Python-08-Ordonnancement](SMT/Z3-API/Z3-Python-08-Ordonnancement.ipynb) | Python | Ordonnancement de tâches, précédences, disjonctions | 3 |
 | 09 | [Z3-Python-09-Enigme-Einstein](SMT/Z3-API/Z3-Python-09-Enigme-Einstein.ipynb) | Python | Énigme d'Einstein, 5 maisons, 5 attributs × 5 valeurs | 3 |
 | 10 | [Z3-Python-10-Cryptarithmetic](SMT/Z3-API/Z3-Python-10-Cryptarithmetic.ipynb) | Python | Cryptarithmes SEND+MORE=MONEY, alphamétique | 3 |

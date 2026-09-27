@@ -30,6 +30,8 @@ Importe les modules des paliers P0 et P1 (issue #12823) :
   les deux.
 
 État des preuves et découpage en boutes : `FORMAL_STATUS.md`. Notebook
-compagnon prévu : `Search-15-CombinatorialDiscrepancy` (livrable A de
-l'issue #12823).
+compagnon (livrable A de l'issue #12823) : livré, puis renuméroté —
+voir #13771 pour sa numérotation canonique. Le nom
+`Search-15-*` était une numérotation d'opportunité jamais retenue
+(`Search-15` désigne les cahiers NetworkX).
 -/

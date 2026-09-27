@@ -30,6 +30,7 @@ formalisées ici.
 | `Discrepancy/BeckFiala.lean` | brique b4 — terminaison + assemblage : `theorem beck_fiala_classic` (`disc ≤ 2k − 1`), la « noix » P1 **PROUVÉE** |
 | `Discrepancy/ErdosSpencer.lean` | chaîne P2 p1a–p4 — moments de Rademacher, 4ᵉ moment, Paley–Zygmund, familles aléatoires, union bound : `theorem erdos_spencer_lb_explicit` (√k/14) **PROUVÉ** |
 | `Discrepancy.lean` | agrégateur racine |
+| `Discrepancy/Basic_en.lean`, `Discrepancy/Komlos_en.lean`, `Discrepancy_en.lean` | siblings EN (i18n #4980) : docstrings traduites, signatures/preuves byte-identiques |
 
 État des preuves et découpage en boutes (Beck–Fiala classique `b1..b4` et
 Erdős–Spencer `p1a..p4`, toutes **PROUVÉES**) :

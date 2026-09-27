@@ -59,6 +59,13 @@
       csharp_sha: ec972d10edc2a47588ddfedefc4ec529a0ec2532
       content_python_sha: 251a921cc9421e445bc57e380c154386308606c7dd6bf3fa9cab31912df9f13a
       content_csharp_sha: 844487a722a729158e13f01b7fae0a9ba2c96772d9148775f7b57b5e22606a63
+    - date: "2026-08-31"
+      by: myia-po-2027:CoursIA-2
+      reason: "Reclass #13753 : balayage markdown-only des renvois/navlinks Infer-6-Debugging -> Infer-2b-Debugging-Bonnes-Pratiques dans ce jumeau C#. Cellules code + sorties INCHANGEES (cellule_type/execution_count/outputs tous identiques au diff), seuls la prose de navigation et les separateurs de section --- -> *** (normalisation pre-commit) ont bouge. Jumeau Python NON touche : content_python_sha identique. --update en dernier (#8957)."
+      python_sha: 839419be2b1346d11b3147aaeb6ce9f1294594da
+      csharp_sha: bc716aef7732eef8f42328ffb543143ced4424fa
+      content_python_sha: 251a921cc9421e445bc57e380c154386308606c7dd6bf3fa9cab31912df9f13a
+      content_csharp_sha: d5b42bfe2b68480624b1b324442bc687489f58ca86f5e165423fa637c894e7c2
   known_differences:
   - '2026-08-27 (myia-po-2027:CoursIA-2) #12752 : REBASELINE cote Python apres re-execution complete fresh kernel (44 cellules, ratchet Exec-sequence). Cause du drift : bandeau pytensor "g++ not available, if using conda: conda install gxx" imprime par l''import pymc 6.3.1 sans compilateur C, qualifie TOOL_FAILURE par le ratchet Output-failure. Re-exec avec PYTENSOR_FLAGS=cxx= (mode CXX desactive explicite, meme comportement, plus de bandeau). Resultats seedes IDENTIQUES au blob precedent (r_hat 1.002/1.001, ess 1761/1884, sigma mu 6.43/6.44, "took 21 seconds") -- parite semantique intacte. Sources inchangees (0 cellule source modifiee), cote C# non touche.'
   - '2026-08-19 (myia-ai-01) #11685 : REBASELINE cote C# apres reparation. Le merge 9881553 (#11622) avait re-execute Infer-8 sur une machine sans Graphviz -- le helper .NET imprime l''echec au lieu de lever, donc 12 bannieres "Problem with converting DOT to SVG" + chemins machine se sont retrouves dans les sorties, et l''audit precedent a enregistre un csharp_sha (532e6b70ee07) qui n''a JAMAIS ete le blob du fichier (test_twin_registry_integrity rouge sur main depuis ce merge). Repare par re-execution reelle avec dot sur le PATH (Graphviz 14.1.3 present sur ai-01, seulement absent du PATH) puis strip_probe_banner.py, --update en DERNIER (#8957). Volume de rendu verifie contre la base de fusion : blocs SVG 18093 -> 18099, 22104 -> 22110, 35287 -> 35293 et 44897 -> 44903 B, svg 4 -> 4 -- aucun livrable rendu perdu. content_python_sha inchange : le jumeau Python n''est pas touche.'
