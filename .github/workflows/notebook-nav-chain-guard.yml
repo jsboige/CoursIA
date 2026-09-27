@@ -6,8 +6,10 @@ name: Notebook Nav-Chain Guard
 #
 # Blocking on the NEW only, on the model of notebook-navlink-check.yml: the
 # findings already recorded in scripts/tests/baseline_nb_nav_chain.json are
-# the assumed debt (the ~450-finding backlog, #17284 -- rollout per series,
-# not in one shot) and do NOT block; a NEW finding introduced by a PR fails
+# the assumed debt (450 entries at the head that introduced this guard; the
+# count is informational only, the JSON file is the source of truth, #17284 --
+# rollout per series, not in one shot) and do NOT block; a NEW finding
+# introduced by a PR fails
 # the gate (exit 1). Renames/moves update the baseline entry for the old
 # path in the same PR (precedent #17819).
 #

@@ -356,7 +356,8 @@ def test_advisory_flags_match_the_source_workflows():
     assert by_name["bare-cross-dir-load-gate"].blocking is True
     assert by_name["notebook-navlink-check"].blocking is True
     # nav-chain reachability (#17284) : bloquant sur le NOUVEAU seulement,
-    # le baseline porte la dette assumee (~450 findings, rollout par serie)
+    # le baseline porte la dette assumee (450 entrees a ce head -- compte
+    # informatif, le JSON fait foi ; rollout par serie)
     assert by_name["notebook-nav-chain-guard"].blocking is True
     assert by_name["notebook-interp-positioning-guard"].blocking is True
     assert by_name["markdown-rendering-guard"].blocking is True
