@@ -214,3 +214,33 @@ class TestFindingKeys:
             ("orphan_entry", "A.ipynb", ""),
             ("unreachable", "B.ipynb", ""),
         }
+
+
+class TestPartitionNewByDiff:
+    """Scope bloquant c.5854935546 : NEW imputable au diff bloque, hors diff
+    avertit seulement. Controle positif ET negatif exigees par la decision."""
+
+    NEW_S = [("orphan_entry", "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-X.ipynb", "")]
+    NEW_O = [("orphan_entry", "MyIA.AI.Notebooks/GenAI/FineTuning/FT-00e-X.ipynb", "")]
+
+    def test_positive_control_notebook_in_diff_blocks(self):
+        diff = {"MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-X.ipynb"}
+        blocking, warning = nav_chain._partition_new_by_diff(self.NEW_S, diff)
+        assert blocking == self.NEW_S and warning == []
+
+    def test_positive_control_series_readme_in_diff_blocks(self):
+        diff = {"MyIA.AI.Notebooks/IIT/ICT-Series/README.md"}
+        blocking, warning = nav_chain._partition_new_by_diff(self.NEW_S, diff)
+        assert blocking == self.NEW_S and warning == []
+
+    def test_negative_control_out_of_diff_warns_only(self):
+        diff = {"MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-X.ipynb"}
+        blocking, warning = nav_chain._partition_new_by_diff(self.NEW_O, diff)
+        assert blocking == [] and warning == self.NEW_O
+
+    def test_fail_closed_empty_diff_blocks_everything(self):
+        blocking, warning = nav_chain._partition_new_by_diff(self.NEW_O, set())
+        assert blocking == self.NEW_O and warning == []
+
+    def test_load_diff_files_missing_file_fail_closed(self, tmp_path):
+        assert nav_chain._load_diff_files(tmp_path / "absent.txt") == set()

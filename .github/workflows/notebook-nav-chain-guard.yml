@@ -41,7 +41,12 @@ jobs:
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 10
     steps:
+      # fetch-depth 0 : le scope bloquant (decision c.5854935546) diff la tete
+      # contre la base — sans GITHUB_TOKEN, la jambe reste sans secret (posture
+      # tranche 1).
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       # La jambe Linux conteneurisee n'expose pas de `python` systeme (job
       # 100021313259, exit 127) : l'interprete vient de setup-python, comme
@@ -51,5 +56,11 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Changed files (scope bloquant)
+        run: |
+          BASE="origin/${{ github.event.pull_request.base.ref || 'main' }}"
+          git diff --name-only "$BASE"...HEAD > pr_files.txt || true
+          echo "changed files: $(wc -l < pr_files.txt)"
+
       - name: Check notebook nav chain
-        run: python scripts/notebook_tools/check_notebook_nav_chain.py --check
+        run: python scripts/notebook_tools/check_notebook_nav_chain.py --check --diff-files pr_files.txt

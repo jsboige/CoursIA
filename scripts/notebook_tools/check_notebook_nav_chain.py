@@ -504,6 +504,34 @@ def _filter_broken_nav(broken_nav, series_filter):
             if Path(f["notebook"]).parent.as_posix() in series_filter]
 
 
+def _load_diff_files(path):
+    """Chemins changes par la PR, repo-relatifs POSIX. Absent/vide = fail-closed."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            return {line.strip() for line in f if line.strip()}
+    except OSError:
+        return set()
+
+
+def _partition_new_by_diff(new, diff):
+    """(blocking, warning) sur les NEW findings selon l'imputabilite au diff.
+
+    Imputable = le notebook du finding est dans le diff, OU la serie du
+    notebook a son README dans le diff (le README est ce qui declare la
+    chaine d'une serie). Diff vide = fail-closed : tout NEW bloque.
+    """
+    blocking, warning = [], []
+    for key in new:
+        kind, notebook, target = key
+        series_dir = notebook.rsplit("/", 1)[0] if "/" in notebook else ""
+        series_readme = f"{series_dir}/README.md" if series_dir else ""
+        if not diff or notebook in diff or (series_readme and series_readme in diff):
+            blocking.append(key)
+        else:
+            warning.append(key)
+    return blocking, warning
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Verifie que chaque notebook d'une serie est ATTEIGNABLE "
@@ -516,6 +544,13 @@ def main(argv=None):
                         help="Ecrire le baseline (snapshot des findings actuels)")
     parser.add_argument("--check", action="store_true",
                         help="Comparer au baseline ; exit 1 si NEW finding (regression)")
+    parser.add_argument("--diff-files", metavar="FILE", dest="diff_files",
+                        help="Avec --check : fichier des chemins changes par la PR "
+                             "(un par ligne, repo-relatifs POSIX). Seuls les NEW "
+                             "findings IMPUTABLES au diff blocquent (notebook du "
+                             "diff, ou serie dont le README est touche) ; les autres "
+                             "deviennent avertissements. Fichier absent/vide = "
+                             "fail-closed : tout NEW blocque (decision c.5854935546).")
     parser.add_argument("--json", action="store_true", help="Sortie JSON machine-readable")
     parser.add_argument("--quiet", action="store_true", help="Sortie minimale (CI)")
     parser.add_argument("--include-untracked", action="store_true", default=False,
@@ -578,9 +613,25 @@ def main(argv=None):
         current = _finding_keys(report)
         new = sorted(current - known)
         fixed = sorted(known - current)
+        if args.diff_files:
+            # Decision c.5854935546 : la jambe ne rougit que sur un NEW finding
+            # IMPUTABLE a la PR — notebook du diff, ou serie dont le README est
+            # touche. Un NEW sur un notebook hors diff est un avertissement : il
+            # n'est pas le fait de cette PR (typiquement un orphelin ne du merge
+            # d'une AUTRE PR entre-temps).
+            diff = _load_diff_files(args.diff_files)
+            blocking, warning = _partition_new_by_diff(new, diff)
+            if warning and not args.quiet:
+                print(f"WARN: {len(warning)} NEW finding(s) hors diff "
+                      f"(non imputables a cette PR, ne blocquent pas):")
+                for kind, notebook, target in warning:
+                    extra = f" -> {target}" if target else ""
+                    print(f"  [{kind}] {notebook}{extra}")
+            new = blocking
         if new:
             if not args.quiet:
-                print(f"FAIL: {len(new)} NEW finding(s) vs baseline:")
+                print(f"FAIL: {len(new)} NEW finding(s) vs baseline"
+                      + (" (imputables au diff)" if args.diff_files else "") + ":")
                 for kind, notebook, target in new:
                     extra = f" -> {target}" if target else ""
                     print(f"  [{kind}] {notebook}{extra}")
