@@ -1594,6 +1594,211 @@ theorem hashlife_correct_margin_of_spaceship (c : MacroCell) (k : Nat)
   hashlife_correct_margin_of_hcap c k h_central
     (fun t _ => hcap_of_spaceship _ (canonical_sortDedup _) hp0 v hship hdiv hspd1 hspd2 t)
 
+/-! ## Slice 9 — spaceships of arbitrary period (mirror of 8a/8b)
+
+Mirror relaxation of slices 8a/8b, applied to the spaceship class: in
+`jumpCapturedF_of_spaceship`, the divisibility `p ∣ 2^level` only served to build the
+exact landing `evolve (2^level) g = shift (q•v) g` — which excludes de facto every
+non-dyadic spaceship (the smallest known c/3 ship lives at period 3; sir Robin,
+p = 6, is not a power of 2). Here the jump folds through `evolve_spaceship_mod` —
+the phase `2^level % p` carried by the quotient drift `(2^level/p)•v` — against two
+counterparts: **spatial** (`hwin`: every phase of the orbit fits in the
+`[0, 2^level)²` origin-framed box) and **kinematic** (speed bounds unchanged,
+`2·|v.i| ≤ p`: the quotient drift stays bounded by `2^(level-1)` since
+`p·(2^level/p) ≤ 2^level`). The dyadic case remains an instance. -/
+
+/-- **Slice 9 — capture of spaceships of arbitrary period.** Generalization of
+    `jumpCapturedF_of_spaceship`: the divisibility `p ∣ 2^c.level` only served to
+    build the exact landing ("the horizon-`2^level` jump lands on the q•v-drifted
+    pattern"), which excludes de facto every non-dyadic period. Here the fold is
+    modular (`evolve_spaceship_mod`: the jump lands on phase `2^level % p` carried
+    by `(2^level/p)•v`), the spatial counterpart `hwin` asks every phase of the
+    orbit to fit in the starting phase's box (bounds `[0, 2^level)²` at the origin
+    framing — exactly what `cellWfF_toGrid_bounds` gives for the phase itself),
+    and the speed bounds `2·|v.i| ≤ p` bound the drift: monotonicity
+    `Q·(2·|v.i|) ≤ Q·p ≤ 2^level` (with `Q = 2^level/p`) yields
+    `|Q·v.i| ≤ 2^(level-1)`, the phase lives in the box shifted by `3·2^(level-1)`,
+    hence the final generation stays in the test window
+    `[2^level, 2^level + 2^(level+1))²`. -/
+theorem jumpCapturedF_of_spaceship_mod (c : MacroCell) (hwf : c.wf = true)
+    (hlvl : 1 ≤ c.level) {p : Nat} (hp0 : 0 < p) (v : Int × Int)
+    (hship : evolve p (c.toGrid (0, 0)) = shift v (c.toGrid (0, 0)))
+    (hwin : ∀ i, i < p → ∀ w ∈ evolve i (c.toGrid (0, 0)),
+      (0 : Int) ≤ w.1 ∧ w.1 < (2 ^ c.level : Int) ∧
+        (0 : Int) ≤ w.2 ∧ w.2 < (2 ^ c.level : Int))
+    (hspd1 : -(p : Int) ≤ 2 * v.1 ∧ 2 * v.1 ≤ (p : Int))
+    (hspd2 : -(p : Int) ≤ 2 * v.2 ∧ 2 * v.2 ≤ (p : Int)) :
+    jumpCapturedF c = true := by
+  obtain ⟨hspd1a, hspd1b⟩ := hspd1
+  obtain ⟨hspd2a, hspd2b⟩ := hspd2
+  have hr' : 2 ^ c.level % p < p := Nat.mod_lt _ hp0
+  have hcan : Canonical (c.toGrid (0, 0)) := canonical_sortDedup _
+  have hmod : evolve (2 ^ c.level) (c.toGrid (0, 0))
+      = shift ((((2 ^ c.level / p : Nat) : Int) * v.1),
+               (((2 ^ c.level / p : Nat) : Int) * v.2))
+          (evolve (2 ^ c.level % p) (c.toGrid (0, 0))) :=
+    evolve_spaceship_mod _ hcan v hship _
+  have hfinal : evolve (2 ^ c.level) ((padCenter2 c).toGrid (0, 0))
+      = shift ((3 * 2 ^ (c.level - 1) : Int)
+                 + (((2 ^ c.level / p : Nat) : Int) * v.1),
+               (3 * 2 ^ (c.level - 1) : Int)
+                 + (((2 ^ c.level / p : Nat) : Int) * v.2))
+          (evolve (2 ^ c.level % p) (c.toGrid (0, 0))) := by
+    rw [padCenter2_toGrid_shift c hlvl, ← evolve_shift, hmod, shift_shift]
+  rw [jumpCapturedF_iff]
+  intro w hw
+  rw [hfinal, mem_shift] at hw
+  obtain ⟨hb1, hb2, hb3, hb4⟩ := hwin _ hr' _ hw
+  dsimp only at hb1 hb2 hb3 hb4
+  have hpow : (2 ^ c.level : Int) = 2 * (2 ^ (c.level - 1) : Int) := by
+    have hsplit : c.level = (c.level - 1) + 1 := by omega
+    conv_lhs => rw [hsplit]
+    rw [pow_succ]
+    ring
+  have hnext : ((2 ^ (c.level + 1) : Nat) : Int)
+      = (2 ^ c.level : Int) + (2 ^ c.level : Int) := by
+    rw [Nat.cast_pow, pow_succ]
+    ring
+  have hy : (0 : Int) ≤ 2 ^ (c.level - 1) := by positivity
+  have hqnn : (0 : Int) ≤ ((2 ^ c.level / p : Nat) : Int) := by positivity
+  have hqple : ((2 ^ c.level / p : Nat) : Int) * (p : Int)
+      ≤ (2 ^ c.level : Int) := by
+    exact_mod_cast Nat.div_mul_le_self _ _
+  have hqA : 2 * (((2 ^ c.level / p : Nat) : Int) * v.1)
+      ≤ 2 * (2 ^ (c.level - 1) : Int) := by
+    have e0 : ((2 ^ c.level / p : Nat) : Int) * (2 * v.1)
+        ≤ ((2 ^ c.level / p : Nat) : Int) * (p : Int) :=
+      mul_le_mul_of_nonneg_left hspd1b hqnn
+    have e1 : ((2 ^ c.level / p : Nat) : Int) * (2 * v.1)
+        = 2 * (((2 ^ c.level / p : Nat) : Int) * v.1) := by ring
+    omega
+  have hqB : 2 * (-(((2 ^ c.level / p : Nat) : Int) * v.1))
+      ≤ 2 * (2 ^ (c.level - 1) : Int) := by
+    have e0 : ((2 ^ c.level / p : Nat) : Int) * (-(2 * v.1))
+        ≤ ((2 ^ c.level / p : Nat) : Int) * (p : Int) :=
+      mul_le_mul_of_nonneg_left (by omega) hqnn
+    have e1 : ((2 ^ c.level / p : Nat) : Int) * (-(2 * v.1))
+        = 2 * (-(((2 ^ c.level / p : Nat) : Int) * v.1)) := by ring
+    omega
+  have hqC : 2 * (((2 ^ c.level / p : Nat) : Int) * v.2)
+      ≤ 2 * (2 ^ (c.level - 1) : Int) := by
+    have e0 : ((2 ^ c.level / p : Nat) : Int) * (2 * v.2)
+        ≤ ((2 ^ c.level / p : Nat) : Int) * (p : Int) :=
+      mul_le_mul_of_nonneg_left hspd2b hqnn
+    have e1 : ((2 ^ c.level / p : Nat) : Int) * (2 * v.2)
+        = 2 * (((2 ^ c.level / p : Nat) : Int) * v.2) := by ring
+    omega
+  have hqD : 2 * (-(((2 ^ c.level / p : Nat) : Int) * v.2))
+      ≤ 2 * (2 ^ (c.level - 1) : Int) := by
+    have e0 : ((2 ^ c.level / p : Nat) : Int) * (-(2 * v.2))
+        ≤ ((2 ^ c.level / p : Nat) : Int) * (p : Int) :=
+      mul_le_mul_of_nonneg_left (by omega) hqnn
+    have e1 : ((2 ^ c.level / p : Nat) : Int) * (-(2 * v.2))
+        = 2 * (-(((2 ^ c.level / p : Nat) : Int) * v.2)) := by ring
+    omega
+  omega
+
+/-- **Slice 9 — capture of a spaceship's reconstruction, arbitrary periods.**
+    Variant of `jumpCapturedF_reconstruction_of_spaceship`: the divisibility
+    premise is replaced by the containment of the phases in `g`'s reconstruction
+    frame (absolute coordinates). The transport to the cell's origin framing goes
+    through `toGrid_shift_grid` + `evolve_shift`. -/
+theorem jumpCapturedF_reconstruction_of_spaceship_mod (g : Grid) (hg : Canonical g)
+    {p : Nat} (hp0 : 0 < p) (v : Int × Int) (hship : evolve p g = shift v g)
+    (hwin : ∀ i, i < p → ∀ w ∈ evolve i g,
+      (gridToMacroCellWithOffset g).1.1 ≤ w.1 ∧
+        w.1 < (gridToMacroCellWithOffset g).1.1
+          + (2 ^ (gridToMacroCellWithOffset g).2.level : Int) ∧
+      (gridToMacroCellWithOffset g).1.2 ≤ w.2 ∧
+        w.2 < (gridToMacroCellWithOffset g).1.2
+          + (2 ^ (gridToMacroCellWithOffset g).2.level : Int))
+    (hspd1 : -(p : Int) ≤ 2 * v.1 ∧ 2 * v.1 ≤ (p : Int))
+    (hspd2 : -(p : Int) ≤ 2 * v.2 ∧ 2 * v.2 ≤ (p : Int)) :
+    jumpCapturedF (gridToMacroCellWithOffset g).2 = true := by
+  by_cases hne : g = []
+  · subst hne
+    decide
+  · have hwf : ((gridToMacroCellWithOffset g).2).wf = true := by
+      unfold gridToMacroCellWithOffset
+      exact buildFromGrid_wf g _ _ _
+    have hlvl : 1 ≤ (gridToMacroCellWithOffset g).2.level := by
+      have hN := gridToMacroCellWithOffsetN_level_gt_n 2 g hne
+      rw [gridToMacroCellWithOffsetN_le_two_eq 2 g (by omega)] at hN
+      cases hL : (gridToMacroCellWithOffset g).2.level with
+      | zero => rw [hL] at hN; exact absurd hN (by decide)
+      | succ m => omega
+    have hshift : (gridToMacroCellWithOffset g).2.toGrid (0, 0)
+        = shift (0 - (gridToMacroCellWithOffset g).1.1,
+            0 - (gridToMacroCellWithOffset g).1.2)
+            ((gridToMacroCellWithOffset g).2.toGrid (gridToMacroCellWithOffset g).1) :=
+      toGrid_shift_grid _ 0 0 _ _
+    have hrt : (gridToMacroCellWithOffset g).2.toGrid (gridToMacroCellWithOffset g).1
+        = g := toGrid_gridToMacroCellWithOffset_eq g hg
+    have hwin' : ∀ i, i < p → ∀ w ∈
+        evolve i ((gridToMacroCellWithOffset g).2.toGrid (0, 0)),
+      (0 : Int) ≤ w.1 ∧ w.1 < (2 ^ (gridToMacroCellWithOffset g).2.level : Int) ∧
+        (0 : Int) ≤ w.2 ∧ w.2 < (2 ^ (gridToMacroCellWithOffset g).2.level : Int) := by
+      intro i hi w hw
+      rw [hshift, ← evolve_shift, mem_shift, hrt] at hw
+      obtain ⟨hb1, hb2, hb3, hb4⟩ := hwin i hi _ hw
+      dsimp only at hb1 hb2 hb3 hb4
+      omega
+    exact jumpCapturedF_of_spaceship_mod _ hwf hlvl hp0 v
+      (spaceship_step_toGrid_zero g hg v hship) hwin' hspd1 hspd2
+
+/-- **Slice 9 — hcap of the spaceship class, arbitrary periods.** Variant of
+    `hcap_of_spaceship`: every phase carries its own frame, and the premise asks
+    the `p` phases of **each** starting phase's orbit to live in that phase's
+    reconstruction frame — for a real spaceship, this is the same bounded
+    neighborhood (transported by the drift), described `p` times. -/
+theorem hcap_of_spaceship_mod (g : Grid) (hg : Canonical g) {p : Nat} (hp0 : 0 < p)
+    (v : Int × Int) (hship : evolve p g = shift v g)
+    (hwin : ∀ r, r < p → ∀ i, i < p → ∀ w ∈ evolve i (evolve r g),
+      (gridToMacroCellWithOffset (evolve r g)).1.1 ≤ w.1 ∧
+        w.1 < (gridToMacroCellWithOffset (evolve r g)).1.1
+          + (2 ^ (gridToMacroCellWithOffset (evolve r g)).2.level : Int) ∧
+      (gridToMacroCellWithOffset (evolve r g)).1.2 ≤ w.2 ∧
+        w.2 < (gridToMacroCellWithOffset (evolve r g)).1.2
+          + (2 ^ (gridToMacroCellWithOffset (evolve r g)).2.level : Int))
+    (hspd1 : -(p : Int) ≤ 2 * v.1 ∧ 2 * v.1 ≤ (p : Int))
+    (hspd2 : -(p : Int) ≤ 2 * v.2 ∧ 2 * v.2 ≤ (p : Int)) :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t g)).2 = true := by
+  intro t
+  rw [evolve_spaceship_mod g hg v hship t, gridToMacroCellWithOffset_shift]
+  have hr : t % p < p := Nat.mod_lt _ hp0
+  have hcan : Canonical (evolve (t % p) g) := by
+    rcases Nat.eq_zero_or_pos (t % p) with h0 | hpos
+    · rw [h0]
+      simpa using hg
+    · exact canonical_evolve_of_pos hpos _
+  exact jumpCapturedF_reconstruction_of_spaceship_mod _ hcan hp0 v
+    (evolve_spaceship_phase g v hship _) (hwin _ hr) hspd1 hspd2
+
+/-- **Slice 9 — L3 closed for the arbitrary-period spaceship class: Hashlife
+    correctness.** Assembly corollary mirroring `hashlife_correct_margin_of_spaceship`:
+    under orbit-phase containment (no more divisibility), the global equality applies
+    at any horizon `2^k` under `centralCorrect`. Opens the class to non-dyadic
+    spaceships (c/3 and beyond) as soon as the witness checks the containment. -/
+theorem hashlife_correct_margin_of_spaceship_mod (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k) {p : Nat} (hp0 : 0 < p) (v : Int × Int)
+    (hship : evolve p (c.toGrid (0, 0)) = shift v (c.toGrid (0, 0)))
+    (hwin : ∀ r, r < p → ∀ i, i < p →
+      ∀ w ∈ evolve i (evolve r (c.toGrid (0, 0))),
+      (gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).1.1 ≤ w.1 ∧
+        w.1 < (gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).1.1
+          + (2 ^ (gridToMacroCellWithOffset
+            (evolve r (c.toGrid (0, 0)))).2.level : Int) ∧
+      (gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).1.2 ≤ w.2 ∧
+        w.2 < (gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).1.2
+          + (2 ^ (gridToMacroCellWithOffset
+            (evolve r (c.toGrid (0, 0)))).2.level : Int))
+    (hspd1 : -(p : Int) ≤ 2 * v.1 ∧ 2 * v.1 ≤ (p : Int))
+    (hspd2 : -(p : Int) ≤ 2 * v.2 ∧ 2 * v.2 ≤ (p : Int)) :
+    evolveHashlifeFast (2^k) (c.toGrid (0, 0)) = evolve (2^k) (c.toGrid (0, 0)) :=
+  hashlife_correct_margin_of_hcap c k h_central
+    (fun t _ => hcap_of_spaceship_mod _ (canonical_sortDedup _) hp0 v hship
+      hwin hspd1 hspd2 t)
+
 /-! ## Sanity checks on the bestiary
 
 The fragment `supportInMargin` is **decidable** (instance `Decidable (BoxAssezGrandN)`,
