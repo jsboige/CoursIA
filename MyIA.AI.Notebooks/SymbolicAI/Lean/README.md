@@ -142,10 +142,10 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
-| 18 | [Lean-18-Sendov-Complex-Analysis](Lean-18-Sendov-Complex-Analysis.ipynb) | La conjecture de Sendov (preuve L. Mazur 2026, digestion et formalisation T. Tao) : pour un polynôme dont tous les zéros sont dans le disque unité, chaque zéro a un point critique à distance ≤ 1 — énoncé, illustrations numériques des cas, contexte de la preuve | 45 min |
-| 19 | [Lean-19-Analysis-I-Tao-Workflow](Lean-19-Analysis-I-Tao-Workflow.ipynb) | Le manuel *Analysis I* de T. Tao en lac Lean 4 (`teorth/analysis`) : architecture du lac, philosophie d'auto-contenance vs Mathlib, cinq lemmes emblématiques parmi 44k LOC, méta-récit single-agent vs cluster distribué | 40 min |
-| 20 | [Lean-20-PFR-Entropy-Method](Lean-20-PFR-Entropy-Method.ipynb) | La conjecture PFR (polynomial Freiman–Ruzsa, ZMod 2) : méthode entropique de la preuve `teorth/pfr` — énoncé combinatoire, illustrations cosets dans F₂³, `#check` réels et axiomes du lac compilé | 45 min |
-| 20b | [Lean-20b-PFR-Primitives-Transportables](Lean-20b-PFR-Primitives-Transportables.ipynb) | Trois primitives de PFR, et l'endroit exact où elles cessent de valoir — companion de digestion de Lean-20 : ce qui se transporte hors du cadre d'origine (#12214) | 30 min |
+| 18 | [ANALYSE-01-Sendov-Lean-Python](ANALYSE-01-Sendov-Lean-Python.ipynb) | La conjecture de Sendov (preuve L. Mazur 2026, digestion et formalisation T. Tao) : pour un polynôme dont tous les zéros sont dans le disque unité, chaque zéro a un point critique à distance ≤ 1 — énoncé, illustrations numériques des cas, contexte de la preuve | 45 min |
+| 19 | [ANALYSE-02-Tao-Lean-Python](ANALYSE-02-Tao-Lean-Python.ipynb) | Le manuel *Analysis I* de T. Tao en lac Lean 4 (`teorth/analysis`) : architecture du lac, philosophie d'auto-contenance vs Mathlib, cinq lemmes emblématiques parmi 44k LOC, méta-récit single-agent vs cluster distribué | 40 min |
+| 20 | [ANALYSE-03-PFR-Lean](ANALYSE-03-PFR-Lean.ipynb) | La conjecture PFR (polynomial Freiman–Ruzsa, ZMod 2) : méthode entropique de la preuve `teorth/pfr` — énoncé combinatoire, illustrations cosets dans F₂³, `#check` réels et axiomes du lac compilé | 45 min |
+| 20b | [ANALYSE-04-PFR-Primitives-Python](ANALYSE-04-PFR-Primitives-Python.ipynb) | Trois primitives de PFR, et l'endroit exact où elles cessent de valoir — companion de digestion de Lean-20 : ce qui se transporte hors du cadre d'origine (#12214) | 30 min |
 | 21 | [Lean-21-MIMO-Detection-Flips](Lean-21-MIMO-Detection-Flips.ipynb) | Détection MIMO par flips de coordonnées (Papailiopoulos 2026) : le seuil 2·log N — descente simulée et comptage de flips, probabilité d'échappement du bruit (Monte-Carlo vs `e^{−np}`), `#check` réels des quatre phases et du converse complet `ml_error_prob_ge_threshold` (P(erreur ML) ≥ 1 − e^{−(2·log N − log log N)}) du companion `mimo_lean` (sorry-free, lake externe SLT pour Hanson–Wright) | 45 min |
 | 21b | [Lean-21b-MIMO-Converse-Native](Lean-21b-MIMO-Converse-Native.ipynb) | Compagnon **natif** (kernel `lean4-wsl`) du lac `mimo_lean` : le lac importé et exécuté dans un kernel Lean 4 réel — la frontière SLT exhibée par `#check` (ce qui est prouvé vs emprunté à `YuanheZ/lean-stat-learning-theory`), les six déclarations de `NormTails` (concentration de Lipschitz gaussienne), les seize briques du converse Hanson–Wright (dont `hanson_wright_noise` et la queue chi-carré `chisq_norm_concentration`), les treize du pont ML (`Bridge`), `#print axioms` sur les théorèmes clés — uniquement les axiomes standards, zéro `sorry` | 40 min |
 | 21c | [Lean-21c-Descente-Budget](Lean-21c-Descente-Budget.ipynb) | Le budget de descente : quand la décroissance borne le nombre de flips — l'analyse qui fonde le seuil 2·log N de la détection MIMO (#12219) | 35 min |
@@ -459,10 +459,10 @@ Lean/
 ├── Lean-17b-Knots-Invariants-Companion.ipynb # Python kernel - invariants de nœuds (PD-codes, Reidemeister, Fox tricolorability), compagnon knot_lean
 ├── Lean-17c-Knots-Companion-Formel.ipynb # Python kernel - companion formel knot_lean (modules non cités par 17b, murs R2/R3, miroir i18n)
 ├── Search-03e-AStar-Optimality.ipynb # Python kernel - optimalité de A* sous heuristique admissible (companion search_lean, 0 sorry)
-├── Lean-18-Sendov-Complex-Analysis.ipynb # Python kernel - conjecture de Sendov (preuve Mazur 2026, digestion et formalisation Tao)
-├── Lean-19-Analysis-I-Tao-Workflow.ipynb # Python kernel - le lac Analysis I de Tao (architecture, 5 lemmes emblématiques)
-├── Lean-20-PFR-Entropy-Method.ipynb # Python kernel - conjecture PFR (méthode entropique, #check réels du lac compilé)
-├── Lean-20b-PFR-Primitives-Transportables.ipynb # Python kernel - trois primitives de PFR et leurs limites de transport (#12214)
+├── ANALYSE-01-Sendov-Lean-Python.ipynb # Python kernel - conjecture de Sendov (preuve Mazur 2026, digestion et formalisation Tao)
+├── ANALYSE-02-Tao-Lean-Python.ipynb # Python kernel - le lac Analysis I de Tao (architecture, 5 lemmes emblématiques)
+├── ANALYSE-03-PFR-Lean.ipynb # Python kernel - conjecture PFR (méthode entropique, #check réels du lac compilé)
+├── ANALYSE-04-PFR-Primitives-Python.ipynb # Python kernel - trois primitives de PFR et leurs limites de transport (#12214)
 ├── Lean-21-MIMO-Detection-Flips.ipynb # Python kernel - détection MIMO par flips (seuil 2·log N, companion mimo_lean)
 ├── Lean-21b-MIMO-Converse-Native.ipynb # Lean4 (WSL) kernel - converse MIMO natif (NormTails, Hanson-Wright, #print axioms)
 ├── Lean-21c-Descente-Budget.ipynb # Python kernel - budget de descente (décroissance borne les flips, #12219)
