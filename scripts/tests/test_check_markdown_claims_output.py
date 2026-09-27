@@ -67,6 +67,7 @@ from check_markdown_claims_output import (  # noqa: E402
     _is_version_token,
     _in_exception_code_span,
     _lit_skip,
+    _lit_marker_pos,
     _normalize_num,
     _output_text,
     _strip_md_structure,
@@ -176,6 +177,54 @@ class TestLiteratureSkip:
 
     def test_short_quant_cell_NOT_skipped(self):
         assert not _lit_skip("On attend ~0,09 % de paramètres entraînables.")
+
+    def test_marker_pos_finds_line_start_only(self):
+        """#17830: marker must sit on its own line, not mid-sentence."""
+        # Mid-sentence mention does NOT count
+        assert _lit_marker_pos("See the sources for the full methodology.\n") == -1
+        assert _lit_marker_pos("As shown in ## sources we measured 0,47.\n") == -1
+        # Line-start header counts
+        assert _lit_marker_pos("## Sources\n\n- R1\n") >= 0
+        # Header preceded by content -- counts but later
+        pos = _lit_marker_pos("Pre-prose with claims like 0,47.\n## Sources\n")
+        assert pos > 0 and pos < 200  # marker at line start of line 2
+
+    def test_pedagogical_cell_with_sources_tail_NOT_skipped(self):
+        """#17830: prose ending with ## Sources still gets scanned.
+
+        This was the founder false-negative on 22b_Profil_Cognitif_CHC.ipynb
+        cell 46 -- a 4015-char pedagogical cell whose `## Sources` tail at
+        byte 2787 was suppressing the whole-cell scan.
+        """
+        head = (
+            "## Lecture : profil cognitif CHC\n\n"
+            "On observe une hiérarchie : Gf > Gwm > Gs. "
+            "L'écart-type intramodule est 0,47 ; "
+            "le score global moyen est 0,63. "
+            "L'hébergé échoue à 10 notes tandis que qwen3.6-flash "
+            "échoue à 100. Latence 95 s par question en local, 2,2 s hébergé. "
+            "Moyenne des deux meilleurs modèles à 0,779 contre 0,778.\n\n"
+        )
+        tail = "## Sources\n\n- R1\n- R2\n"
+        cell = head + tail
+        assert len(head) > 200  # prose is substantial -- not lit-only
+        assert not _lit_skip(cell), (
+            "Pedagogical cell ending in `## Sources` must be scanned, "
+            "not exempt as a bibliography block."
+        )
+
+    def test_pure_bibliography_opening_with_sources_still_skipped(self):
+        """Control: a cell that OPENS with `## Sources` (no pre-prose) is lit-only."""
+        cell = "## Sources\n\n- R1 reference.\n- R2 reference.\n"
+        assert _lit_skip(cell)
+
+    def test_marker_preceded_by_short_intro_still_skipped(self):
+        """A 1-line intro to a bibliography list still qualifies as lit-only."""
+        cell = "Voici les sources :\n\n## Sources\n\n- R1\n- R2\n"
+        assert _lit_marker_pos(cell) >= 0
+        head = cell[: _lit_marker_pos(cell)].strip()
+        assert len(head) < 200
+        assert _lit_skip(cell)
 
 
 class TestHeadingLine:

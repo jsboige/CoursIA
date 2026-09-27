@@ -6,10 +6,50 @@ de Peters.
 
 ## Statut
 
-- **Toolchain** : `leanprover/lean4:v4.32.1` (alignée sur le parc, pin effectif du `lean-toolchain`)
+> **État mesuré au 2026-09-26 — la cible de toolchain du parc est passée à `v4.33.0` (EPIC #14773)
+> et ce lake ne peut pas suivre. Il est désormais une *exception documentée* du parc, et non plus
+> un lake « convergé ».**
+
+- **Toolchain** : `leanprover/lean4:v4.32.1` — pin effectif du `lean-toolchain`, mais **en retard sur
+  la cible du parc** (`v4.33.0`). L'écart est mesuré, sa cause est amont, et il est documenté ci-dessous.
 - **Compte de sorry** : 0 sorry en production
-- **Build** : `lake build` — SUCCESS
-- **Dépendances** : Mathlib4 (`520045ab`), `DominikPeters/SocialChoiceLean` (`94a4c650`) — revs effectives du `lake-manifest.json`
+- **Build** : `lake build` — SUCCESS à `v4.32.1` (le pin effectif)
+- **Dépendances** : Mathlib4 (`520045ab14e2`), `DominikPeters/SocialChoiceLean` (`94a4c650b6a3`) — revs effectives du `lake-manifest.json`
+
+### Pourquoi ce lake reste à `v4.32.1` (mesuré, 2026-09-26)
+
+La migration vers `v4.33.0` a été **tentée et instrumentée** : `lean-toolchain` basculé, les huit
+dépendances transitives explicitées (bloc `require … from git … @ <rev>` aux révisions du parc, pour
+que nos revs l'emportent sur celles charriées par le manifest de `SocialChoiceLean`), `lake update`,
+`lake exe cache get`, puis `lake build`. Le contournement de version a **fonctionné** — les erreurs
+ont quitté `Batteries.Tactic.Alias`, `Qq.Typ` et `ProofWidgets.Component.MakeEditLink` — et ont
+révélé une incompatibilité **réelle, dans les sources amont** :
+
+```
+error: SocialChoice/Margin.lean:277:10: Tactic `rfl` failed
+error: SocialChoice/Margin.lean:281:10: Type mismatch
+error: SocialChoice/Margin.lean:313:10: Tactic `rfl` failed
+error: SocialChoice/Margin.lean:317:10: Type mismatch
+error: SocialChoice/Margin.lean:756:8:  Tactic `rfl` failed
+error: SocialChoice/Margin.lean:759:8:  Tactic `rfl` failed
+error: SocialChoice/Impossibilities/GibbardSatterthwaite/InductionStepCase2.lean:1286:2: unsolved goals
+error: SocialChoice/Impossibilities/GibbardSatterthwaite/InductionStepCase2.lean:1288:2: unsolved goals
+```
+
+La classe d'erreur est unique et cohérente : les buts résiduels opposent la somme indexée
+`V ⊕ Unit` au type nu `V` — par exemple
+`⊢ Sum.inr w ∈ {v | a < b} ↔ w ∈ {v | a < b}` — soit un changement de la normalisation de `filter`
+sur les sommes dans Mathlib 4.33. La compilation atteint `[3029/3044]` avant d'échouer.
+
+**Ces fichiers ne sont pas les nôtres.** Ce sont ceux du paquet externe
+[`DominikPeters/SocialChoiceLean`](https://github.com/DominikPeters/SocialChoiceLean), épinglé à
+`94a4c650b6a3` (dernier commit amont du 2026-07-21, « Clean up Lean 4.32 warnings » ; branches
+disponibles `master`, `duggan-schwartz`, `claude/formalize-duggan-schwartz-AyuSa` — aucune ne porte
+de portage 4.33). On **ne patche pas** du code *vendored* : le verdict est **bloqué en amont**, et il
+est rapporté comme tel sur l'EPIC #14773 plutôt que contourné ici.
+
+**Conséquence** : le `v4.32.1` de ce lake est une **exception assumée** jusqu'à ce que l'amont
+publie un état compatible 4.33. Ce n'est pas un défaut de ce dépôt, et ce n'est pas réparable ici.
 
 ## Modules
 
@@ -53,6 +93,11 @@ Ce lake est **explicitement hors du périmètre d'absorption** dans
    Mathlib `520045ab` sur `lean-toolchain` `v4.32.1` — la famille du reste
    du parc. La convergence #4364 s'applique désormais ici aussi ; peters
    n'est plus résidu v4.27.
+   *(Addendum 2026-09-26 : cette phrase était vraie le 2026-08-21, quand la
+   cible du parc était `v4.32.1`. Depuis que la cible est passée à `v4.33.0`
+   (EPIC #14773), elle ne l'est plus — voir le bloc « Pourquoi ce lake reste à
+   `v4.32.1` » au §Statut. L'historique est conservé ci-dessus tel qu'il a été
+   écrit.)*
 
 2. **Cadre sémantique distinct (toujours actif)** : ce lake expose un
    `LinearOrder` strict (Mathlib) qui **n'est pas** compatible avec l'API
@@ -65,7 +110,8 @@ Ce lake est **explicitement hors du périmètre d'absorption** dans
 
 **Conséquence** : `social_choice_lean_peters/` reste un **lake autonome
 auto-suffisant** avec son propre `lake build`, son propre `lean-toolchain`
-`v4.32.1` (convergé), et son propre CI. L'autonomie n'est plus motivée par un
+`v4.32.1` (**exception documentée**, cf. bloc « Pourquoi ce lake reste à
+`v4.32.1` » au §Statut), et son propre CI. L'autonomie n'est plus motivée par un
 verrou de version — elle est motivée par la nature du projet : une visite de
 référence d'une bibliothèque externe, dans son propre cadre sémantique.
 

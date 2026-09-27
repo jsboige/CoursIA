@@ -480,7 +480,19 @@ dotnet restore MyIA.CoursIA.sln
 
 # 5. Dépendances de la série visée (chaque série porte son requirements.txt)
 pip install -r MyIA.AI.Notebooks/<Serie>/requirements.txt
+
+# 6. Sous-module de la série visée, s'il y en a un (tableau ci-dessous)
+git submodule update --init --recursive <chemin du sous-module>
 ```
+
+Certains notebooks s'appuient sur un **sous-module** que `git clone` ne récupère pas : sans lui, ils échouent à la cellule qui le charge. Tous sont publics, mais `git clone --recurse-submodules` les téléchargerait tous, Argumentum compris (environ 840 Mo) : n'initialiser que celui de la série visée.
+
+| Notebooks | Sous-module à initialiser | Étape suivante |
+|---|---|---|
+| Search/Part4 (MGS-\*), Search-05 et Sudoku-05 en C# | `MyIA.AI.Notebooks/Search/MetaGeneticSharp` | dans ce dossier : `dotnet build`, puis `dotnet build -c Release` pour Search-05 |
+| SMT/Z3-Linq2Z3, Sudoku-12b et Sudoku-13 en C# | `MyIA.AI.Notebooks/SymbolicAI/SMT/Z3.Linq` | `bash scripts/environment/z3-build-deploy.sh` (Windows : le `.ps1` voisin) |
+| Z3-Linq2Z3 n° 10, Sudoku-13 en C# | `MyIA.AI.Notebooks/SymbolicAI/SMT/Automata` | `bash scripts/environment/automata-build-deploy.sh` (Windows : le `.ps1` voisin) ; pas encore exécutable sous Linux ([#17654](https://github.com/jsboige/CoursIA/issues/17654)) |
+| Argument_Analysis (Ontology AIF, Ontology CrossLinks, Agentic-1), GameTheory-24b | `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum` | aucune |
 
 Les clés API éventuelles se posent via les `.env.example` (section Configuration). Pour valider
 ou exécuter un notebook, ne pas écrire de script ad-hoc : le dépôt fournit une CLI dédiée
