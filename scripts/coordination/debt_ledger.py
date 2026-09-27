@@ -564,6 +564,23 @@ def _validate_entity(raw: Any, ledger: str) -> dict[str, Any]:
     return validator(raw)
 
 
+_PULL_URL_RE = re.compile(r"/pull/([1-9][0-9]*)")
+
+
+def _entity_is_pr(evidence: str, entity: dict[str, Any]) -> bool:
+    """True si l'evidence cite une URL ``/pull/<N>`` pour le N de l'entite.
+
+    Issues et PRs partagent l'espace de numerotation GitHub : un ``/pull/<N>``
+    portant le numero de l'entite prouve que l'entite EST une PR. Le ledger
+    ``issue-debt`` s'est fait coloniser par des etats de PR (#17956 point 6) --
+    l'etat d'une PR vit dans son dossier exact-head, pas ici.
+    """
+    if "issue" not in entity:
+        return False
+    n = entity["issue"]
+    return any(int(m) == n for m in _PULL_URL_RE.findall(evidence))
+
+
 def entity_key(entity: dict[str, Any]) -> str:
     """The row identity: ``owner/repo#N``, or ``<machine>#gpu<n>``.
 
@@ -761,6 +778,13 @@ def parse_observation(
     evidence = _collapse(evidence)
 
     entity = _validate_entity(raw.get("entity"), ledger)
+
+    if ledger == ISSUE_DEBT and _entity_is_pr(evidence, entity):
+        raise ObservationError(
+            "entity_is_pr",
+            f"entity {entity_key(entity)} is a pull request -- PR state lives in its "
+            "exact-head dossier, not in the issue-debt ledger (#17956 point 6)",
+        )
 
     fields = raw.get("fields")
     if not isinstance(fields, dict) or not fields:
