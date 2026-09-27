@@ -50,9 +50,12 @@ Ce module est la partie GPU-free du plan (regle d'architecture de la serie :
   n'est possible a un echelon >= 70B tant que Qwen ne publie pas.
 
 Les tailles de modeles du LADDER sont NOMINALES (2/9/27 e9 parametres) :
-elles ne servent qu'a l'arithmetique de planification. Le compte reel
-(``sum(p.numel())``) est mesure au chargement par le harness et consigne
-dans l'artefact -- c'est lui qui fait foi.
+elles ne servent qu'a l'arithmetique de planification. Le compte reel est
+mesure au chargement par le harness sur les FORMES ORIGINALES des parametres
+(compte sensible a ``quant_state`` bitsandbytes : le stockage NF4 empquete
+deux poids par uint8, et ``numel()`` y sous-compterait d'environ moitie) et
+consigne dans l'artefact -- c'est lui qui fait foi, et il est INVARIANT par
+mode de lecture (bf16 / nf4 / as-is).
 """
 
 from __future__ import annotations

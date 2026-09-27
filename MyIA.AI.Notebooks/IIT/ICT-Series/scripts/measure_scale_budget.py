@@ -120,6 +120,26 @@ def model_slug(model: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", model.split("/")[-1].lower()).strip("-")
 
 
+def _param_numel(p) -> int:
+    """Nombre d'elements d'un parametre dans sa disposition ORIGINALE.
+
+    bitsandbytes Params4bit stocke deux poids par uint8 (stockage empquete) :
+    ``p.numel()`` sous-compte alors les couches quantifiees d'environ moitie
+    -- un artefact de stockage, pas le compte semantique (reserve NanoClaw
+    2026-09-26 : 1.195e9 en nf4 contre 1.882e9 en bf16 pour le meme backbone
+    2B). La forme originale vit dans ``p.quant_state.shape`` ; tout parametre
+    non quantifie (bf16, noyaux AWQ marlin a tenseurs nus) retombe sur
+    ``numel()``. Le compte rendu est donc INVARIANT par mode de lecture.
+    """
+    shape = getattr(getattr(p, "quant_state", None), "shape", None)
+    if shape:
+        n = 1
+        for dim in shape:
+            n *= int(dim)
+        return n
+    return p.numel()
+
+
 def _max_memory(max_gpu_gib: float | None) -> dict:
     if max_gpu_gib is None:
         return {}
@@ -172,7 +192,7 @@ def measure(args: argparse.Namespace, entry: dict, model_override: str | None = 
         model = AutoModelForCausalLM.from_pretrained(model_id, torch_dtype=torch.bfloat16,
                                                      device_map="auto", **kwargs)
     load_s = time.time() - t0
-    n_params = sum(p.numel() for p in model.parameters())
+    n_params = sum(_param_numel(p) for p in model.parameters())
     foot_alloc = torch.cuda.memory_allocated() / 1024.0 ** 3
     foot_reserved = torch.cuda.memory_reserved() / 1024.0 ** 3
     print(f"[load] {args.mode} : {load_s:.1f}s -- {n_params/1e9:.2f}e9 parametres reels -- "
@@ -257,6 +277,8 @@ def measure(args: argparse.Namespace, entry: dict, model_override: str | None = 
             "tf32": False, "seed": 42,
             "nominal_params_e9": entry.get("nominal_params_e9"),
             "measured_params_e9": round(n_params / 1e9, 3),
+            "measured_params_basis": "param count over ORIGINAL shapes (bnb "
+                                     "quant_state-aware) -- invariant bf16/nf4",
             "sae_coverage": entry.get("sae_repo") or "aucune (hors collection Qwen-Scope)",
             "measured": True,
         },

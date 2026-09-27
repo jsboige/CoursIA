@@ -15,18 +15,19 @@
     "tf32": false,
     "seed": 42,
     "nominal_params_e9": 2.0,
-    "measured_params_e9": 1.195,
+    "measured_params_e9": 1.882,
+    "measured_params_basis": "param count over ORIGINAL shapes (bnb quant_state-aware) -- invariant bf16/nf4",
     "sae_coverage": "Qwen/SAE-Res-Qwen3.5-2B-Base-W32K-L0_50",
     "measured": true
   },
-  "load_seconds": 5.93,
+  "load_seconds": 7.35,
   "load_footprint_alloc_gib": 1.668,
   "load_footprint_reserved_gib": 3.426,
-  "pass_seconds": 15.41,
-  "seconds_per_statement": 0.6421,
+  "pass_seconds": 6.35,
+  "seconds_per_statement": 0.2647,
   "throughput": {
-    "statements_per_hour": 5606.7,
-    "tokens_per_second": 12.59,
+    "statements_per_hour": 13598.1,
+    "tokens_per_second": 30.53,
     "note": "extrapolation lineaire de la passe mesuree -- base du verdict de faisabilite de la voie (a) (echelon >= 70B quantifie + debordement CPU sur GPU 2)"
   },
   "model_peak_alloc_gib": 1.703,
@@ -36,7 +37,7 @@
     "repo": "Qwen/SAE-Res-Qwen3.5-2B-Base-W32K-L0_50",
     "layer": 12,
     "k": 50,
-    "seconds": 0.87,
+    "seconds": 1.16,
     "peak_alloc_gib": 2.18,
     "peak_reserved_gib": 3.951
   }

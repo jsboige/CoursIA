@@ -164,3 +164,43 @@ class TestSuffixe:
         from ict.scale_budget import _suffix_e9
         assert _suffix_e9(SWIFT_MODEL) == 27.0
         assert _suffix_e9(SWIFT_MODEL) == _suffix_e9("Qwen/Qwen3.5-27B")
+
+
+class TestParamNumel:
+    """Compte canonique sur les FORMES ORIGINALES (reserve NanoClaw 2026-09-26).
+
+    ``sum(p.numel())` sur un modele bitsandbytes 4-bit sous-compte les couches
+    quantifiees (stockage empquete ~2 poids/uint8) : 1.195e9 en nf4 contre
+    1.882e9 en bf16 pour le meme backbone 2B -- un artefact de stockage. Le
+    compte qui fait foi est calcule sur ``quant_state.shape`` quand present,
+    ``numel()`` sinon : invariant par mode de lecture.
+    """
+
+    class _FakeQuantState:
+        def __init__(self, shape):
+            self.shape = shape
+
+    class _FakeParam:
+        def __init__(self, numel, quant_state=None):
+            self._numel = numel
+            self.quant_state = quant_state
+
+        def numel(self):
+            return self._numel
+
+    def test_parametre_empquete_compte_sur_la_forme_originale(self):
+        from scripts.measure_scale_budget import _param_numel
+        packed = self._FakeParam(24, quant_state=self._FakeQuantState((4, 12)))
+        assert _param_numel(packed) == 48
+
+    def test_parametre_nu_compte_sur_numel(self):
+        from scripts.measure_scale_budget import _param_numel
+        plain = self._FakeParam(48)
+        assert _param_numel(plain) == 48
+
+    def test_quant_state_sans_forme_retombe_sur_numel(self):
+        # robustesse : un quant_state sans attribut shape ne doit pas casser
+        # le compte -- retomber sur numel() (compte sous-estime mais presente).
+        from scripts.measure_scale_budget import _param_numel
+        opaque = self._FakeParam(24, quant_state=object())
+        assert _param_numel(opaque) == 24
