@@ -5,9 +5,9 @@
 
 ## Ce que cette tranche fait, et ce qu'elle ne fait pas
 
-L'audit froid laissait les opérations **11, 12, 13** « en constitution », chacune avec sa seconde attestation **livrée mais non comptée** — la convention posée pour l'opération 7 (reprise telle quelle ici) : *une attestation ne compte qu'une fois son artefact mergé sur `main`*. Cette tranche vérifie **mécaniquement** que la condition est à présent remplie pour les trois, et opère les promotions que l'audit froid renvoyait « à statuer ». Elle ne re-décide ni les provenances (toutes `FIRSTHAND` déjà), ni les témoins (forms fixées par l'audit froid) — elle **active des promotions déjà conditionnées**.
+L'audit froid laissait les opérations **11, 12, 13** « en construction », chacune avec sa seconde attestation **livrée mais non comptée** — la convention posée pour l'opération 7 (reprise telle quelle ici) : *une attestation ne compte qu'une fois son artefact mergé sur `main`*. Cette tranche vérifie **mécaniquement** que la condition est à présent remplie pour les trois, et opère les promotions que l'audit froid renvoyait « à statuer ». Elle ne re-décide ni les provenances (toutes `FIRSTHAND` déjà), ni les témoins (forms fixées par l'audit froid) — elle **active des promotions déjà conditionnées**.
 
-Elle statue aussi sur la **file d'attente** : le seul candidat à promotion (`point fixe`, « à promouvoir dès le second usage ») est examiné et **écarté comme homonyme**, avec preuve.
+Elle statue aussi sur la **file d'attente** : `point fixe` est **promue TABLE** sur second usage mesuré (correctif post-publication, cf. dernière section) ; deux homonymes sont écartés avec preuve.
 
 ## Promotions — les trois secondes attestations comptées
 
@@ -42,12 +42,33 @@ Promotion **TABLE**.
 
 ## File d'attente — statuation
 
-- **`point fixe`** : le seul candidat second-usage repéré par grep (`knaster|tarski`, hors `.lake`) est `formal_logic_lean/FormalLogic/FolBridge.lean:124` — lu firsthand : c'est la **sémantique de Tarski** (le théorème `models_iff_eval` : la satisfaction d'une phrase par la restriction de structure est son évaluation `Eval`), **pas** un point fixe de Knaster-Tarski d'un opérateur monotone. Homonyme, écarté avec preuve. L'opération **reste en file d'attente** — son unique usage demeure `argumentation_lean` (opérateur caractéristique, `Extensions.lean:44`, propriétés dans `Grounded.lean`).
-- **`institutionnaliser`** (DAO seulement), **`inhiber`** (pas de banc), **`réviser une croyance`** (Tweety non branché) : aucune seconde attestation repérée ce cycle — inchangées.
+### `point fixe` → TABLE (second usage mesuré)
+
+L'entrée disait « Knaster-Tarski dans `argumentation_lean` — très solide, à promouvoir **dès le second usage** ». Le second usage est **mesuré ce cycle** :
+
+| Attestation | Substrat | Témoin |
+|---|---|---|
+| `argumentation_lean` (`Extensions.lean:44` — opérateur caractéristique de Dung via Knaster-Tarski, propriétés dans `Grounded.lean`) | **Lean-formel** | la preuve (lfp atteint, théorème) |
+| `Tweety/Tweety-07a-Extended-Frameworks-CSharp.ipynb` **cellule 5, exécutée** (`execution_count: 2`, sortie réelle) | **.NET 9 empirique** | `ADF.Grounded()` from-scratch : itération depuis tout-U jusqu'au fixed-point, **témoin imprimé** (interprétation grounded `a=t, c=t, b=f`, extension `{a, c}`) + re-dérivation « c=T → b=not c=F → a=not b=T → {a,c} » ; la ligne 647 documente le **least fixed-point de la fonction caractéristique** `F(S) = {x : validDefeats(x) ⊆ OUT(S)}` pour la section SetAF/EAF |
+
+**Indépendance** : substrats distincts (lake Lean vs carnet .NET), opérateurs distincts (fonction caractéristique de Dung vs conditions d'acceptation 3-valuées ADF — le carnet présente lui-même l'ADF comme **généralisation** du cadre de Dung, §3.3 : ce n'est pas une re-dérivation du théorème du lake). Corroboré par le jumeau Python (`Tweety-07a-…-Python.ipynb`, dont la conclusion revendique la parité d'algorithme « Kleene 3-valued + grounded fixed-point » entre les deux jumeaux).
+
+**Réserve documentée** : les deux attestations vivent dans la famille Tweety/ (lake vs carnets). Le §4 de l'EPIC fait de la table un objet vivant — rétrogradation possible si cette lecture de l'indépendance est contestée.
+
+### Homonymes écartés, avec preuve
+
+- `formal_logic_lean/FormalLogic/FolBridge.lean:124` — lu firsthand : **sémantique de Tarski** (théorème `models_iff_eval` : satisfaction d'une phrase par restriction de structure ↔ évaluation `Eval`, preuve `rw [models_iff]`), pas un point fixe de Knaster-Tarski d'un opérateur monotone.
+- `GameTheory/GameTheory-22-Ensembles-Limites-Poincare-Bendixson.ipynb` — « point fixe » au **sens des systèmes dynamiques** (équilibre d'un flot, Poincaré-Bendixson), sans structure de treillis ni monotonie : autre opération.
+
+### Autres entrées, inchangées
+
+**`institutionnaliser`** (DAO seulement), **`inhiber`** (pas de banc), **`réviser une croyance`** (Tweety non branché) : aucune seconde attestation repérée ce cycle.
 
 ## État de la table après cette tranche
 
-**TABLE (10)** : 1, 4, 7, 8, 9, 10, 14 (promotions antérieures) + **11, 12, 13 (ce cycle)**.
-**FILE D'ATTENTE (4)** : 2, 5, 6 (attendent leurs secondes attestations — op 2/6 via la distillation Sandholm, chantier 5) + `point fixe` (homonyme écarté).
+**TABLE** : opérations numérotées **1, 4, 7, 8, 9, 10, 11, 12, 13, 14** (10) + **`point fixe`** (promue ce cycle).
+**FILE D'ATTENTE** : opérations **2, 5, 6** (attendent leurs secondes attestations — via la distillation Sandholm, chantier 5) + `institutionnaliser`, `inhiber`, `réviser une croyance`.
 
-La table compte désormais dix opérations attestées deux fois — contre quatre tombées et quatre en attente, chaque sortie documentée.
+## Correctif post-publication (même cycle, ~20:10Z)
+
+La première version de ce ledger écartait `point fixe` (« seul candidat repéré : FolBridge »). Ce verdict reposait sur le grep `knaster|tarski` seul ; le second grep (motifs `least fixed point` / `point_fixe`), lancé en tâche de fond **avant** la livraison, n'a atterri qu'après — révélant `Tweety-07a` (vraie seconde attestation, ci-dessus) et `GameTheory-22` (homonyme, ci-dessus). Leçon consignée : ne pas statuer sur un grep dont le jumeau est encore en vol. La promotion est le correctif ; le témoin et la réserve sont documentés ci-dessus pour arbitrage en review.
