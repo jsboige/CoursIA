@@ -26,7 +26,7 @@ formel et ferme `#16848` une fois Tranche 3 livrée.
 |---|---|---|
 | Dernier commit upstream `DominikPeters/SocialChoiceLean` | `94a4c650b6` (2026-07-21) | `gh api repos/DominikPeters/SocialChoiceLean/commits` |
 | Présence d'une formalisation « approval core » en amont | absente | `grep -rli 'approval'` sur le dépôt local `_peters/` ne renvoie aucun fichier (limite `SocialChoice/Committees/Approval/` non versionné localement) |
-| Type d'attache au dépôt CoursIA | **dossier versionné ordinaire** (PAS un submodule git) | `git ls-files MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters/` ne renvoie que des fichiers plats ; `.gitmodules` ne contient pas ce chemin |
+| Type d'attache au dépôt CoursIA | **dossier versionné ordinaire** (PAS un submodule git) | `git ls-files MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters/` liste 7 fichiers plats ; `.gitmodules` ne contient pas ce chemin |
 | Sous-projet Lake | `package «social_choice_peters»` ; `lean_lib PetersTour` avec globs `PetersTour, PetersTour_en` (i18n #4980) | `lakefile.lean` |
 
 Le corps de l'issue #17988 dit « submodule épinglé `94a4c650` » — c'est un
@@ -214,7 +214,7 @@ de coursIA-2](../../CLAUDE.md#b-reviews-pr--b0-bloquant-puis-5-points)) :
 ## 7. Plan d'exécution
 
 - **c.1486** (ce cycle) — PR de **ce document de design** (Tranche 0).
-- **c.1487** — Tranche 1 livraison : les siblings `Defs.lean` + `Defs_en.lean`,
+- **c.1487** — Tranche 1 livraison : 2 fichiers `Defs.lean` + `Defs_en.lean`,
   bump `lakefile.lean`, vérif `lake build` (WSL po-2024 si dispo, sinon
   escalade ai-01 pour exécution machine-capable Mathlib).
 - **c.1490+** — Tranche 2 (Core.lean + lemmes), après stabilisation
