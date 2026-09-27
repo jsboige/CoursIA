@@ -564,6 +564,23 @@ def _validate_entity(raw: Any, ledger: str) -> dict[str, Any]:
     return validator(raw)
 
 
+_PULL_URL_RE = re.compile(r"/pull/([1-9][0-9]*)")
+
+
+def _entity_is_pr(evidence: str, entity: dict[str, Any]) -> bool:
+    """True si l'evidence cite une URL ``/pull/<N>`` pour le N de l'entite.
+
+    Issues et PRs partagent l'espace de numerotation GitHub : un ``/pull/<N>``
+    portant le numero de l'entite prouve que l'entite EST une PR. Le ledger
+    ``issue-debt`` s'est fait coloniser par des etats de PR (#17956 point 6) --
+    l'etat d'une PR vit dans son dossier exact-head, pas ici.
+    """
+    if "issue" not in entity:
+        return False
+    n = entity["issue"]
+    return any(int(m) == n for m in _PULL_URL_RE.findall(evidence))
+
+
 def entity_key(entity: dict[str, Any]) -> str:
     """The row identity: ``owner/repo#N``, or ``<machine>#gpu<n>``.
 
@@ -761,6 +778,13 @@ def parse_observation(
     evidence = _collapse(evidence)
 
     entity = _validate_entity(raw.get("entity"), ledger)
+
+    if ledger == ISSUE_DEBT and _entity_is_pr(evidence, entity):
+        raise ObservationError(
+            "entity_is_pr",
+            f"entity {entity_key(entity)} is a pull request -- PR state lives in its "
+            "exact-head dossier, not in the issue-debt ledger (#17956 point 6)",
+        )
 
     fields = raw.get("fields")
     if not isinstance(fields, dict) or not fields:
@@ -2163,9 +2187,9 @@ def _cli_append(args: argparse.Namespace) -> int:
     created = None
     out_path = None
     if args.dry_run:
-        # The default: build and print. Appending cannot write shared state at
-        # all -- posting the envelope is the agent's MCP call -- so the only
-        # local side effect is opt-in via --out/--out-dir.
+        # --dry-run: build and print, never write. The dry-run mode is what
+        # makes ``append`` safe to call during agent reasoning -- the agent
+        # gets the envelope and the MCP descriptor without side effects.
         pass
     elif args.out:
         out_path = Path(args.out)
@@ -2176,6 +2200,23 @@ def _cli_append(args: argparse.Namespace) -> int:
         out_path = Path(args.out_dir)
         assert_local_output(out_path, what="--out-dir")
         out_path, created = spool_observation(out_path, observation)
+    else:
+        # Default path: write into the state-dir's ledger spool when ``init``
+        # has run on this state-dir. The spool is the local outbox
+        # documented in ``init_ledger_tree``; without it, an append cannot be
+        # recovered -- #17927 found that leaving the default to "write
+        # nothing" silently broke the local recovery path, so a state-dir that
+        # has not been initialised is now refused with a distinct exit code
+        # rather than silently producing an unsaved observation.
+        default_spool = state_dir / args.ledger / "spool"
+        if not default_spool.is_dir():
+            raise LedgerError(
+                "UNINITIALISED_STATE_DIR",
+                f"state-dir {state_dir} has no {args.ledger}/spool/ -- "
+                "run `debt_ledger.py init --apply --state-dir <dir>` first, "
+                "or pass --dry-run / --out / --out-dir explicitly",
+            )
+        out_path, created = spool_observation(default_spool, observation)
     if not args.quiet:
         if args.json:
             print(json.dumps(payload, ensure_ascii=False, indent=2))
@@ -2193,9 +2234,27 @@ def _cli_append(args: argparse.Namespace) -> int:
 
 def _cli_spool_status(args: argparse.Namespace) -> int:
     if args.out_dir:
+        # Explicit --out-dir: the caller named the spool dir, so a missing dir
+        # means "nothing pending here" -- same as a fresh `--out-dir` for append,
+        # not an uninitialised state-dir. We do not refuse here.
         status = spool_status(Path(args.out_dir))
     else:
         state_dir = Path(args.state_dir) if args.state_dir else default_state_dir()
+        # Default path: mirror ``_cli_append`` -- a state-dir that has not run
+        # ``init --apply`` for ANY LEDGER has no per-ledger spool anywhere, and
+        # we must refuse rather than silently report ``pending=0``. A typo'd
+        # ``--state-dir`` (or any directory the agent has never built) is the
+        # precise trap we close here -- see #18006, suite de #17940.
+        # ``init`` is one-ledger-at-a-time, so a state-dir initialised for one
+        # LEDGER but not another is *not* uninitialised -- we only refuse when
+        # NO ledger has a spool dir.
+        if not any((state_dir / ledger / "spool").is_dir() for ledger in LEDGERS):
+            raise LedgerError(
+                "UNINITIALISED_STATE_DIR",
+                f"state-dir {state_dir} has no <ledger>/spool/ for any ledger -- "
+                "run `debt_ledger.py init --apply --state-dir <dir>` first, "
+                "or pass --out-dir explicitly to inspect an arbitrary dir",
+            )
         status = {
             ledger: spool_status(state_dir / ledger / "spool")[ledger]
             for ledger in LEDGERS

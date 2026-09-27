@@ -160,8 +160,16 @@ def main():
             break
 
     # Set up environment with CLEAN PATH (not inheriting polluted Windows PATH)
-    # The Windows PATH causes issues because it contains spaces and special chars
-    os.environ['PATH'] = '/home/jesse/.elan/bin:/home/jesse/.lean4-venv/bin:/usr/local/bin:/usr/bin:/bin'
+    # The Windows PATH causes issues because it contains spaces and special chars.
+    # The home directory is the current user's (setup_wsl_lean4.sh installs elan,
+    # the REPL and the venv under $HOME): a hardcoded account path broke the
+    # kernel for every other WSL user and for native Linux/macOS installs.
+    home = os.path.expanduser('~')
+    os.environ['PATH'] = os.pathsep.join([
+        os.path.join(home, '.elan', 'bin'),
+        os.path.join(home, '.lean4-venv', 'bin'),
+        '/usr/local/bin', '/usr/bin', '/bin',
+    ])
 
     # Jupyter inherits Papermill's execution cwd. wsl_papermill sets it to the
     # notebook directory by default, or to an explicit --cwd for companions that

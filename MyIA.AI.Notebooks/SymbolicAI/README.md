@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI
-pedagogical_count: 294
-breakdown: Lean=67, SMT=46, Tweety=36, Argument_Analysis=33, SmartContracts=31, SemanticWeb=28, SymbolicLearning=26, Planners=25, Geometry=1, root=1
-maturity: BETA=282, ALPHA=8, DRAFT=4
+pedagogical_count: 307
+breakdown: Lean=71, SMT=46, Tweety=39, Argument_Analysis=36, SmartContracts=31, SemanticWeb=28, SymbolicLearning=26, Planners=25, Geometry=4, root=1
+maturity: BETA=296, ALPHA=7, DRAFT=4
 -->
 
 L'intelligence artificielle n'est pas qu'apprentissage automatique et réseaux de neurones. Une grande partie de l'IA classique repose sur le **raisonnement symbolique** : représenter la connaissance sous forme de propositions, de règles et de structures logiques, puis dériver mécaniquement de nouvelles conclusions. C'est cette tradition — des systèmes experts des années 80 aux assistants de preuve modernes comme Lean 4 — que cette famille de séries explore.
@@ -105,7 +105,7 @@ L'ordre proposé ci-dessous n'est pas une obligation : chaque série se suit seu
 | 3 | [Lean](Lean/README.md) | Types dépendants, Curry-Howard, quantificateurs, tactiques, Mathlib4 | [Lean-1-Setup](Lean/Lean-1-Setup.ipynb) | Licence → Recherche | Lean (WSL) · Python |
 | 4 | [SMT / Z3](SMT/README.md) | Satisfiabilité modulo théories, du premier `solve()` aux preuves par `unsat` | [Z3-01-Introduction-Python](SMT/Z3-API/Z3-01-Introduction-Python.ipynb) · [C#](SMT/Z3-API/Z3-01-Introduction-CSharp.ipynb) | Découverte → Licence | Python · C# |
 | 5 | [Planners](Planners/README.md) | PDDL, recherche dans l'espace d'états, heuristiques, CP-SAT, planification temporelle et hiérarchique | [Planners-0-Setup](Planners/00-Environment/Planners-0-Setup.ipynb) | Licence | Python · C# |
-| 6 | [SmartContracts](SmartContracts/README.md) | Solidity, standards de jetons, DeFi, gouvernance, tests et vérification, cryptographie | [SC-0-Cypherpunk-Origins](SmartContracts/00-Foundations/SC-0-Cypherpunk-Origins.ipynb) | Découverte → Licence | Python (Foundry) |
+| 6 | [SmartContracts](SmartContracts/README.md) | Solidity, standards de jetons, DeFi, gouvernance, tests et vérification, cryptographie | [SC-00-Cypherpunk-Origins-Python](SmartContracts/00-Foundations/SC-00-Cypherpunk-Origins-Python.ipynb) | Découverte → Licence | Python (Foundry) |
 
 Trois séries se prennent **à côté** de ce parcours, selon ce qui vous attire :
 

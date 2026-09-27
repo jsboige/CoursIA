@@ -50,18 +50,28 @@ c'est le cas ou le mineur designe change reellement de forme.
 L'argument de reindexation (`i ≥ 1`) repose sur une premiere que le cadrage
 **suppose sans la prouver** : `arcPartition` est preservee par la chirurgie.
 
-L'enonce general demande : la chirurgie R3 connectee reecrit les paires
-`(e2, e4)` des trois croisements du triangle (cf `Conway.lean:350-354`,
+Precisons l'obstacle sur le temoin : la chirurgie R3 connectee reecrit les
+paires `(e2, e4)` des trois croisements du triangle (cf `Conway.lean`,
 `pairs := d.crossings.map (fun c => (c.e2, c.e4))`). Sur le temoin du lake
-(`reidemeister3Connected_satisfiable`), ces paires, prises comme multi-ensemble
-non ordonne (`mergePair` est symetrique en ses deux arguments), **coincident**
-entre X et Y — la partition est donc preservee trivialement, et `decide` au
-kernel suffit a etablir le theoreme.
+(`reidemeister3Connected_satisfiable`), ces paires coincident comme paires
+**non orientees** —
 
-Ce temoin ne suffit donc pas, a lui seul, a fonder la preservation generale :
-un contre-exemple minimal ou les paires `(e2, e4)` du triangle different entre
-X et Y reste a exhiber. C'est le premier verrou de la tranche, avant tout
-argument de reindexation.
+    X : (2,8), (7,4), (8,6)      Y : (4,7), (2,8), (8,6)
+
+— mais seule l'**orientation** de la paire centrale differe ((7,4) contre
+(4,7)), et les croisements reecrits changent de **position** dans la liste du
+repli. Le repli voit des paires orientees prises dans l'ordre de la liste :
+la preservation n'y est donc **pas vide** — elle exige d'absorber l'une et
+l'autre difference, par l'insensibilite a l'orientation d'une paire
+(`mergePair_symm`, #17429) puis par la commutation des fusions au niveau des
+classes (`mergePair_mergePair_comm_equiv`, #17646). Ce qui est preserve par
+ailleurs est le **multi-ensemble des etiquettes** (docstring de
+`Reidemeister3Connected`), d'ou `wf`.
+
+Ce temoin ne suffit pas, a lui seul, a fonder la preservation generale : un
+diagramme ou les paires `(e2, e4)` du triangle different reellement comme
+multi-ensemble reste a exhiber. C'est le premier verrou de la tranche, avant
+tout argument de reindexation.
 -/
 
 /-! ## 3. Controle : la partition d'arcs du temoin R3 est preservee
@@ -69,17 +79,20 @@ argument de reindexation.
 Le temoin est celui de `reidemeister3Connected_satisfiable` (litteraux repris
 tel quels) : les deux diagrammes sont bien formes (`decide` sur `wf` au lake),
 et leur partition d'arcs — 5 classes pour 10 aretes — est **la meme** de part et
-d'autre de la chirurgie. C'est le **controle trivial** de la section 2 : sur ce
-temoin, les paires `(e2, e4)` du triangle, prises comme multi-ensemble, sont les
-memes des deux cotes — la preservation est vide. La forme generale (sur des
+d'autre de la chirurgie. C'est le controle positif de la section 2 : les paires
+`(e2,e4)` du triangle y coincident non orientees, avec une orientation et une
+position de repli differentes — le repli produit la meme partition, et c'est
+`foldl_mergePair_swap` (orientation) puis `foldl_mergePair_permute_adjacent`
+(transposition des positions) qui le justifient. La forme generale (sur des
 diagrammes ou les paires du triangle different) est etablie en section 4.
 -/
 
 /-- Controle de la tranche 3 (etape 1) : sur la paire temoin du move R3
-    connecte, la chirurgie preserve `arcPartition`. Sur ce temoin, les paires
-    `(e2, e4)` du triangle coincident comme multi-ensemble entre X et Y, donc
-    la preservation est triviale ; la forme generale (sur des diagrammes ou les
-    paires du triangle different) est etablie par
+    connecte, la chirurgie preserve `arcPartition` — les paires `(e2,e4)` du
+    triangle coincident non orientees, et le repli absorbe leurs differences
+    d'orientation et de position (`foldl_mergePair_swap`,
+    `foldl_mergePair_permute_adjacent`). C'est la premiere que l'argument de
+    reindexation (cas `i ≥ 1`) suppose ; la forme generale est etablie par
     `Reidemeister3Connected.arcPartition_sameRel` (section 4). -/
 theorem reidemeister3Connected_arcPartition_witness :
     arcPartition
@@ -125,20 +138,6 @@ une invariance du determinant au signe pres — argument a ecrire pour la
 tranche `alexanderSigned_invariant_under_R3`).
 -/
 
-/-- `Touches P u v z` se lit en `SameClass` : toucher une classe qui porte `u`
-    ou `v`, c'est partager une classe avec `u` ou avec `v`. -/
-lemma touches_iff_sameClass {P : List (List Nat)} {u v z : Nat} :
-    Touches P u v z ↔ SameClass P z u ∨ SameClass P z v := by
-  constructor
-  · rintro ⟨C, hC, hz, huv⟩
-    rw [hit_iff_mem] at huv
-    rcases huv with hu | hv
-    · exact Or.inl ⟨C, hC, hz, hu⟩
-    · exact Or.inr ⟨C, hC, hz, hv⟩
-  · rintro (⟨C, hC, hz, hu⟩ | ⟨C, hC, hz, hv⟩)
-    · exact ⟨C, hC, hz, by rw [hit_iff_mem]; exact Or.inl hu⟩
-    · exact ⟨C, hC, hz, by rw [hit_iff_mem]; exact Or.inr hv⟩
-
 /-- Sous disjonction des classes, le premier disjonctif de la
     caracterisation de `SameClass` apres fusion se lit en `SameClass` purs :
     une classe commune qui n'est pas touchee, c'est `x ~ y` sans `x ~ u` ni
@@ -174,7 +173,7 @@ lemma sameClass_mergePair_iff_rel {P : List (List Nat)} (hd : ClassesDisjoint P)
     {u v x y : Nat} :
     SameClass (mergePair P u v) x y ↔
       (SameClass P x y ∧ ¬ SameClass P x u ∧ ¬ SameClass P x v) ∨
-      ((SameClass P x u ∨ SameClass P x v) ∧ (SameClass P y u ∨ SameClass P y v)) := by
+      ((SameClass P u x ∨ SameClass P v x) ∧ (SameClass P u y ∨ SameClass P v y)) := by
   rw [sameClass_mergePair_iff, exists_class_not_hit_iff hd,
     touches_iff_sameClass, touches_iff_sameClass]
 

@@ -497,7 +497,7 @@ class TestSkipDirs:
 
     def test_should_not_skip_canonical_source(self):
         """The canonical source (no _output suffix) is NOT skipped."""
-        rel = Path("SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-17-E2E-Verifiable-Voting.ipynb")
+        rel = Path("SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-17-E2E-Verifiable-Voting-Python.ipynb")
         assert _should_skip(rel) is False
 
     def test_should_skip_dir_segments(self):

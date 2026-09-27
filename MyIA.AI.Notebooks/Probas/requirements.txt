@@ -11,8 +11,10 @@ pyro-ppl>=1.8                # Probabilistic programming (Pyro)
 torch>=2.0                   # PyTorch (Pyro backend)
 
 # === PyMC (PyMC/ series + HMM Trading Alpha) ===
-pymc>=5.0                    # Probabilistic programming (PyMC)
-arviz>=0.14                  # Bayesian diagnostics & visualization
+# PyMC 6 et ArviZ 1.x exigent Python >= 3.12 : sous 3.10/3.11, pip se replie sur
+# ArviZ 0.x, dont l'API (plot_posterior, hdi_prob) n'est plus celle des notebooks.
+pymc>=6.0                    # Probabilistic programming (PyMC)
+arviz>=1.0                   # Bayesian diagnostics & visualization (API 1.x : plot_dist, ci_prob)
 
 # === Scientific computing ===
 numpy>=1.24                  # Core numerics

@@ -39,7 +39,7 @@ def make_nb(cells):
 # ============================================================
 sc24_cells = [
     md("# SC-24 : Deploiement sur Testnets\n\n"
-       "[<< Cross-Chain](SC-23-Cross-Chain.ipynb) | [Mainnet Deploy >>](SC-25-Mainnet-Deploy.ipynb)\n\n"
+       "[<< Cross-Chain](SC-23-Cross-Chain-Python.ipynb) | [Mainnet Deploy >>](SC-25-Mainnet-Deploy-Python.ipynb)\n\n"
        "**Duree estimee : 50 min**\n\n"
        "Dans ce notebook, nous deploierons de vrais contrats sur les testnets publics :\n"
        "- **Sepolia** (Ethereum testnet) via Alchemy/Infura\n"
@@ -300,7 +300,7 @@ sc24_cells = [
          '\n'
          'raise NotImplementedError("Completez cet exercice")'),
 
-    md("---\n\n[<< Cross-Chain](SC-23-Cross-Chain.ipynb) | [Mainnet Deploy >>](SC-25-Mainnet-Deploy.ipynb)"),
+    md("---\n\n[<< Cross-Chain](SC-23-Cross-Chain-Python.ipynb) | [Mainnet Deploy >>](SC-25-Mainnet-Deploy-Python.ipynb)"),
 ]
 
 # ============================================================
@@ -308,7 +308,7 @@ sc24_cells = [
 # ============================================================
 sc25_cells = [
     md("# SC-25 : Deploiement Mainnet (L2)\n\n"
-       "[<< Testnet Deploy](SC-24-Testnet-Deploy.ipynb) | [Final Project >>](SC-26-Final-Project.ipynb)\n\n"
+       "[<< Testnet Deploy](SC-24-Testnet-Deploy-Python.ipynb) | [Final Project >>](SC-26-Final-Project-Python.ipynb)\n\n"
        "**Duree estimee : 40 min**\n\n"
        "Deploiement sur un vrai reseau L2 (Base ou Polygon) avec du gas reel.\n\n"
        "> **Cout estime : ~0.01-0.50$ en ETH** sur Base/Polygon (beaucoup moins cher que Ethereum L1)"),
@@ -481,7 +481,7 @@ sc25_cells = [
          '\n'
          'raise NotImplementedError("Completez cet exercice")'),
 
-    md("---\n\n[<< Testnet Deploy](SC-24-Testnet-Deploy.ipynb) | [Final Project >>](SC-26-Final-Project.ipynb)"),
+    md("---\n\n[<< Testnet Deploy](SC-24-Testnet-Deploy-Python.ipynb) | [Final Project >>](SC-26-Final-Project-Python.ipynb)"),
 ]
 
 # ============================================================
@@ -489,7 +489,7 @@ sc25_cells = [
 # ============================================================
 sc26_cells = [
     md("# SC-26 : Projet Final - DApp Complete\n\n"
-       "[<< Mainnet Deploy](SC-25-Mainnet-Deploy.ipynb)\n\n"
+       "[<< Mainnet Deploy](SC-25-Mainnet-Deploy-Python.ipynb)\n\n"
        "**Duree estimee : 90 min**\n\n"
        "Ce projet capstone integre toutes les competences acquises dans la serie :\n"
        "- Cryptographie fondamentale (SC-0)\n"
@@ -660,23 +660,23 @@ sc26_cells = [
        "- Verification publique complete (+5%)"),
 
     md("---\n\n## Ressources\n\n"
-       "- [SC-0 : Fondamentaux crypto](../00-Foundations/SC-0-Cypherpunk-Origins.ipynb)\n"
-       "- [SC-9 : DAO Governance](../02-Solidity-Advanced/SC-9-DAO-Governance.ipynb)\n"
-       "- [SC-12 : Foundry Testing](../03-Foundry-Testing/SC-12-Foundry-Testing.ipynb)\n"
-       "- [SC-15 : Zero-Knowledge Proofs](../04-Privacy-Cryptography/SC-15-Zero-Knowledge-Proofs.ipynb)\n"
-       "- [SC-16 : Homomorphic Encryption](../04-Privacy-Cryptography/SC-16-Homomorphic-Encryption.ipynb)\n"
-       "- [SC-17 : E2E Verifiable Voting](../04-Privacy-Cryptography/SC-17-E2E-Verifiable-Voting.ipynb)\n"
+       "- [SC-0 : Fondamentaux crypto](../00-Foundations/SC-00-Cypherpunk-Origins-Python.ipynb)\n"
+       "- [SC-9 : DAO Governance](../02-Solidity-Advanced/SC-09-DAO-Governance-Python.ipynb)\n"
+       "- [SC-12 : Foundry Testing](../03-Foundry-Testing/SC-12-Foundry-Testing-Python.ipynb)\n"
+       "- [SC-15 : Zero-Knowledge Proofs](../04-Privacy-Cryptography/SC-15-Zero-Knowledge-Proofs-Python.ipynb)\n"
+       "- [SC-16 : Homomorphic Encryption](../04-Privacy-Cryptography/SC-16-Homomorphic-Encryption-Python.ipynb)\n"
+       "- [SC-17 : E2E Verifiable Voting](../04-Privacy-Cryptography/SC-17-E2E-Verifiable-Voting-Python.ipynb)\n"
        "- [OpenZeppelin Contracts](https://docs.openzeppelin.com/contracts/)\n"
        "- [Foundry Book](https://book.getfoundry.sh/)\n\n"
        "---\n\n"
-       "[<< Mainnet Deploy](SC-25-Mainnet-Deploy.ipynb)"),
+       "[<< Mainnet Deploy](SC-25-Mainnet-Deploy-Python.ipynb)"),
 ]
 
 # Write all three notebooks
 for name, cells in [
-    ("SC-24-Testnet-Deploy.ipynb", sc24_cells),
-    ("SC-25-Mainnet-Deploy.ipynb", sc25_cells),
-    ("SC-26-Final-Project.ipynb", sc26_cells),
+    ("SC-24-Testnet-Deploy-Python.ipynb", sc24_cells),
+    ("SC-25-Mainnet-Deploy-Python.ipynb", sc25_cells),
+    ("SC-26-Final-Project-Python.ipynb", sc26_cells),
 ]:
     nb = make_nb(cells)
     path = os.path.join(SC_BASE, name)
