@@ -102,17 +102,27 @@ def test_non_canonicite_une_seule_extension_equivalente():
 
 
 def test_performative_power_coup_fort_vs_decoratif():
-    rng = np.random.default_rng(42)
+    """Contraste decoratif : une copie d'action est une option DISTINGUEE
+    (P(R) brut > 0) mais EQUIVALENTE (P(R) marginalise ~ 0) — deux lectures,
+    pas une. Bornes calibrees multi-seeds (0/7/42/99/2026) : pm >= 2.4,
+    deco brut <= 2.0, deco marginalise <= 0.10."""
     g0, eta = _game(), _eta_personne_morale()
     g1 = apply_ontology(g0, eta)
-    p_fort = performative_power(g1, g0, horizon=20, n_sim=8, rng=rng)
     deco = OntologicalMove("alice", ("ornement",), {"ornement": ("vendre2",)})
     g_deco = apply_ontology(g0, deco)
     for agent in g_deco.agents:
         g_deco.payoffs[(agent, "vendre2")] = g_deco.payoffs[(agent, "vendre")]
-    p_deco = performative_power(g_deco, g0, horizon=20, n_sim=8, rng=rng)
-    assert p_fort > 0.05
-    assert p_deco < p_fort
+
+    p_fort = performative_power(g1, g0, horizon=20, n_sim=8, rng=np.random.default_rng(42))
+    p_deco = performative_power(g_deco, g0, horizon=20, n_sim=8, rng=np.random.default_rng(42))
+    p_deco_eq = performative_power(
+        g_deco, g0, horizon=20, n_sim=8, rng=np.random.default_rng(42),
+        equivalence={"vendre2": "vendre"},
+    )
+    assert p_fort > 2.0        # le coup ouvrant de vraies actions transforme la dynamique
+    assert p_deco < p_fort     # brut : la copie capte moins de dynamique que la vraie ouverture
+    assert p_deco_eq < 0.15    # marginalisee : la copie ne change PAS la dynamique de fond
+    assert p_fort > 10 * p_deco_eq
 
 
 def test_institutionnalisation_depend_des_paiements_des_autres():

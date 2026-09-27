@@ -204,29 +204,53 @@ def performative_power(
     horizon: int,
     n_sim: int,
     rng: np.random.Generator,
+    equivalence: dict[str, str] | None = None,
 ) -> float:
-    """Proxy ``P(R)`` — KL empirique entre trajectoires sous ``do(eta)`` et ``do(-eta)``.
+    """Proxy ``P(R)`` — KL empirique (en bits) entre trajectoires ``do(eta)`` / ``do(-eta)``.
 
     ``D(Pr(traj | do(R)) || Pr(traj | do(not R)))`` est estimee par divergence KL
-    a lissage de Laplace sur les histograms d'actions des deux bras. Un coup
-    decoratif rend ``P(R) ~ 0``.
+    sur les histogrammes d'actions des deux bras, a lissage de Laplace
+    SYMETRIQUE sur l'union des supports (une action absente d'un bras pese
+    ``log2(n_total)``, pas un plancher arbitraire : les deux bras recoivent le
+    meme +1 sur le meme support).
+
+    ``equivalence`` mappe chaque action vers sa classe d'equivalence (par
+    defaut, l'identite) ; les histograms sont fusionnes par classe AVANT la KL.
+
+    Semantique du contraste decoratif — deux lectures, pas une :
+
+    - BRUT : une copie d'action (meme profil de paiements) reste une option
+      DISTINGUEE — le softmax lui consacre du temps de jeu, et ``P(R) > 0`` ;
+    - MARGINALISEE : passee sous ``equivalence`` (copie -> original),
+      ``P(R) ~ 0`` — la copie ne change pas la dynamique de fond, seulement
+      son habillage. C'est la meme equivalence action/classe que le quotient
+      d'extensions du ``C_t`` (``non_canonicity``).
+
+    Un coup ouvrant de vraies nouvelles actions garde un ``P(R)`` eleve dans
+    les deux lectures : ses classes n'existent pas dans le bras de reference.
     """
-    def _dist(game: EvolutiveGame) -> dict[str, float]:
+    equiv = equivalence or {}
+
+    def _cls(a: str) -> str:
+        return equiv.get(a, a)
+
+    def _counts(game: EvolutiveGame) -> dict[str, int]:
         agg: dict[str, int] = {}
         for _ in range(n_sim):
             for a, c in simulate_trajectory(game, horizon, rng).items():
-                agg[a] = agg.get(a, 0) + c
-        total = sum(agg.values()) + len(agg)
-        return {a: (c + 1) / total for a, c in agg.items()}
+                k = _cls(a)
+                agg[k] = agg.get(k, 0) + c
+        return agg
 
-    p, q = _dist(game_do), _dist(game_skip)
-    support = set(p) | set(q)
-    kl = 0.0
-    for a in support:
-        pa = p.get(a, 1e-12)
-        qa = q.get(a, 1e-12)
-        kl += pa * np.log(pa / qa)
-    return float(kl)
+    cd, cs = _counts(game_do), _counts(game_skip)
+    support = set(cd) | set(cs) | {_cls(a) for a in game_do.actions} | {_cls(a) for a in game_skip.actions}
+
+    def _dist(counts: dict[str, int]) -> dict[str, float]:
+        total = sum(counts.values()) + len(support)
+        return {k: (counts.get(k, 0) + 1) / total for k in support}
+
+    p, q = _dist(cd), _dist(cs)
+    return float(sum(p[k] * np.log2(p[k] / q[k]) for k in support))
 
 
 def institutionalization(
