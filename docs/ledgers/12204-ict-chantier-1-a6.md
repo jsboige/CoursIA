@@ -18,7 +18,7 @@ Constitution des trois : artefacts présents sur `origin/main` (base `1e19752a23
 | Attestation | Témoin | État mesuré sur main |
 |---|---|---|
 | `mimo_lean/Descent.lean` (thèse op 11 explicite, sorry-free — A6/c.1208) | le budget atteint, ou le blocage | préexistante, comptée |
-| `Search/Part1-Foundations/Search-11d-Descente-Sous-Budget.ipynb` (#16392) | décroissance stricte + barrière + non-blocage hors cible | **17 cellules, 6 code, 6 exécutées, 0 erreur** — mesuré ce cycle |
+| `Search/Part1-Foundations/Search-11d-Descente-Sous-Budget.ipynb` (#16392) | décroissance stricte + barrière + non-blocage hors cible | **toutes les cellules code exécutées, 0 erreur** — mesuré ce cycle |
 
 Deux substrats indépendants (Lean-formel + empirique-notebook). Promotion **TABLE**.
 
@@ -27,7 +27,7 @@ Deux substrats indépendants (Lean-formel + empirique-notebook). Promotion **TAB
 | Attestation | Témoin | État mesuré sur main |
 |---|---|---|
 | GT-21 #12259 (jeux 2×2, merged) | la paire de lectures incompatibles exhibée | préexistante, comptée |
-| `Search/Part1-Foundations/Search-12a-Composer-Regards.ipynb` (#16426) | gridworld pondéré, play/coplay | **27 cellules, 9 code, 9 exécutées, 0 erreur** — mesuré ce cycle |
+| `Search/Part1-Foundations/Search-12a-Composer-Regards.ipynb` (#16426) | gridworld pondéré, play/coplay | **toutes les cellules code exécutées, 0 erreur** — mesuré ce cycle |
 
 Deux attestations directes sur substrats indépendants, witness form connu (§5 du carnet). Promotion **TABLE**.
 
@@ -36,7 +36,7 @@ Deux attestations directes sur substrats indépendants, witness form connu (§5 
 | Attestation | Témoin | État mesuré sur main |
 |---|---|---|
 | GT-24 #12364 (MERGED) | chambre → mur → chambre voisine, six swaps générateurs | préexistante, comptée |
-| `Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb` (#16438) | chemin minimal certifié, épaisseur m_path / largeur m + test négatif morphisme/percement | **20 cellules, 10 code, 10 exécutées, 0 erreur** — mesuré ce cycle |
+| `Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb` (#16438) | chemin minimal certifié, épaisseur m_path / largeur m + test négatif morphisme/percement | **toutes les cellules code exécutées, 0 erreur** — mesuré ce cycle |
 
 Promotion **TABLE**.
 
