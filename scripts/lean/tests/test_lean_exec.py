@@ -156,9 +156,25 @@ def test_admission_cap_machine_wide_two_worktrees():
         for w in (w1, w2, w3):
             w.mkdir()
         cap = dict(LEAN_EXEC_CAP=2, LEAN_EXEC_BUDGET=1)
+        # Les deux premiers runs tiennent leur part du cap jusqu'a ce que le
+        # 3e demandeur ait rendu sa decision, pas pendant une duree fixe
+        # (#18027) : sous Windows natif, une admission coute ~6 s (tasklist
+        # seul ~3,6 s, mesure sur myia-ai-01), plus que les 4 s de SLEEP_CMD.
+        # Les deux premiers etaient donc morts quand le 3e comptait les runs
+        # vivants (live_registered_budgets), et il etait admis : [0, 0, 0].
+        release = Path(td) / "release"
+        hold = Path(td) / "hold.py"
+        hold.write_text(
+            "import os, sys, time\n"
+            "deadline = time.monotonic() + 90\n"
+            "while not os.path.exists(sys.argv[1]) and time.monotonic() < deadline:\n"
+            "    time.sleep(0.05)\n",
+            encoding="utf-8",
+        )
+        hold_cmd = [PY, str(hold), str(release)]
         procs = [
             subprocess.Popen(
-                [PY, LEAN_EXEC, "run", "--json", "--", *SLEEP_CMD],
+                [PY, LEAN_EXEC, "run", "--json", "--", *hold_cmd],
                 env=_env(state, **cap), cwd=str(w),
                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
             )
@@ -181,8 +197,11 @@ def test_admission_cap_machine_wide_two_worktrees():
             "les deux premiers runs devaient s'enregistrer sous 30 s, "
             f"vu {_registered()}")
 
-        third = _run(state, ["run", "--json", "--", *SLEEP_CMD],
+        # Commande immediate pour le 3e : admis a tort, il rend 0 tout de
+        # suite au lieu d'attendre une liberation qui ne viendra qu'apres lui.
+        third = _run(state, ["run", "--json", "--", PY, "-c", "pass"],
                      cwd=w3, **cap)
+        release.write_text("", encoding="utf-8")
         for p in procs:
             p.wait(timeout=60)
         codes = [p.returncode for p in procs] + [third.returncode]
