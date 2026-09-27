@@ -308,12 +308,16 @@ class TestComposeNarrationTemplate:
 
     def test_narration_suit_le_nombre_de_voix(self):
         """voices=2 : les mouvements lead/nappe sont absents du script,
-        la narration ne doit pas nommer leurs instruments."""
+        la narration ne doit pas nommer leurs instruments — y compris
+        dans l'enumeration dynamique du climax (_voice_labels)."""
         script = compose_strudel("trance", 180, voices=2)
         segs = compose_narration(script, "trance", 180)
         texts = " ".join(s.text.lower() for s in segs)
         assert "supersaw" not in texts
         assert "nappe" not in texts
+        climax = [s.text for s in segs if "Tout joue ensemble" in s.text]
+        assert climax, "le mouvement climax doit etre present"
+        assert "kick, basse." in climax[0]  # enumeration = voix reelles
 
     def test_frontieres_alignees_aux_cycles(self):
         """Les frontieres tombent sur la grille de cycles (cps du style)
@@ -381,16 +385,19 @@ class TestValidateNarration:
         with pytest.raises(ValueError, match="trop long"):
             validate_narration(bad, 120)
 
-    def test_rejette_verbatim_tiers(self):
-        """Garde anti-verbatim (voie 3 B.0) : toute variation de casse
-        des tokens interdits est rejetee dans les textes."""
+    def test_rejette_nom_artiste_tiers(self):
+        """Garde ANTI-NOMINATION (voie 3 B.0) : toute variation de casse
+        du nom de la source d'inspiration est rejetee dans les textes.
+        NB : c'est une garde de NOM, pas un detecteur de verbatim (cf
+        limitation documentee sur validate_narration — un detecteur de
+        verbatim exigerait un corpus de reference hors depot)."""
         for needle in NARRATION_FORBIDDEN_SUBSTRINGS:
             for variant in (needle, needle.upper(), needle.title()):
                 bad = [
                     _seg(0, 20, text=f"Il y avait {variant} un jour."),
                     _seg(20, 40),
                 ]
-                with pytest.raises(ValueError, match="interdite"):
+                with pytest.raises(ValueError, match="artiste"):
                     validate_narration(bad, 120)
 
 
@@ -481,6 +488,18 @@ class TestComposeNarrationLLM:
         de fallback silencieux vers template (Tell c.1102)."""
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
         with pytest.raises(RuntimeError, match="OPENAI_API_KEY"):
+            compose_narration(
+                compose_strudel("trance", 180), "trance", 180, engine="llm"
+            )
+
+    def test_package_openai_absent_echec_explicite(self, monkeypatch):
+        """Branche import de _build_llm_client : cle presente mais
+        package openai absent -> RuntimeError explicite (la cle est
+        verifiee AVANT l'import, cf _build_llm_client)."""
+        monkeypatch.setenv("OPENAI_API_KEY", "dummy-key-for-import-branch-test")
+        # sys.modules['openai'] = None force `import openai` a echouer
+        monkeypatch.setitem(sys.modules, "openai", None)
+        with pytest.raises(RuntimeError, match="openai"):
             compose_narration(
                 compose_strudel("trance", 180), "trance", 180, engine="llm"
             )

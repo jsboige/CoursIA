@@ -12,7 +12,9 @@ Etape 2 (narration poetique timestampee) livree : segments
 ``{start_s, end_s, text, intensity}`` generes par moteur template
 deterministe (defaut, offline) ou moteur LLM optionnel (client
 OpenAI-compat via ``OPENAI_API_KEY``), valides par
-:func:`validate_narration` (garde anti-verbatim incluse). Les etapes
+:func:`validate_narration` (garde anti-nomination d'artiste incluse —
+ce n'est PAS un detecteur de verbatim, cf la limitation documentee
+sur :func:`validate_narration`). Les etapes
 restantes (3 TTS, 5 visualizer custom, 6 mixage ffmpeg complet)
 restent documentation-ONLY (HARD Tell c.1102 : pas de pipeline
 squelette qui pretend faire ce qu'il ne fait pas).
@@ -201,11 +203,16 @@ class NarrationSegment:
     intensity: float
 
 
-# Garde anti-verbatim (voie 3 B.0, #15604) : la narration est ORIGINALE,
-# la methode est copiee, jamais le contenu. Tokens construits par
-# concatenation runtime pour qu'aucun grep sur la source ne trouve la
-# forme contigue (pattern anonymisation c.578/c.634, cf
-# test_no_voice_cloning_legal_proof).
+# Garde ANTI-NOMINATION d'artiste tiers (voie 3 B.0, #15604) : bloque
+# toute casse du nom de la source d'inspiration dans les textes generes.
+# LIMITATION explicite : ce n'est PAS un detecteur de verbatim — detecter
+# du verbatim exigerait un corpus de reference, lequel reste hors depot
+# (bibliography-hygiene §2). Le verbatim est exclu d'une autre maniere :
+# template = textes originaux par construction (ecrits dans ce module) ;
+# LLM = exigence portee par le system prompt (mitigation d'instruction,
+# non enforcement). Tokens construits par concatenation runtime pour
+# qu'aucun grep sur la source ne trouve la forme contigue (pattern
+# anonymisation c.578/c.634, cf test_no_voice_cloning_legal_proof).
 NARRATION_FORBIDDEN_SUBSTRINGS: Tuple[str, ...] = (
     "switchan" + "gel",
     "switch" + " angel",
@@ -573,10 +580,12 @@ def compose_narration_llm(
     """Genere la narration par LLM (client OpenAI-compat, etape 2).
 
     Prompt system dedie, calibre sur le GENRE (nommer l'action puis
-    glisser vers le poetique), francais exclusif, zero verbatim, zero
-    nom d'artiste tiers. La sortie est VALIDEE par
-    :func:`validate_narration` — une reponse invalide echoue
-    explicitement, elle n'est jamais rafistolee.
+    glisser vers le poetique), francais exclusif ; l'exigence zero
+    verbatim / zero nom d'artiste tiers y est portee par INSTRUCTION
+    (mitigation, non enforcement — cf NARRATION_FORBIDDEN_SUBSTRINGS
+    pour la seule garde executable, anti-nomination). La sortie est
+    VALIDEE par :func:`validate_narration` — une reponse invalide
+    echoue explicitement, elle n'est jamais rafistolee.
     """
     client = llm_client if llm_client is not None else _build_llm_client()
     model = llm_model or os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
@@ -675,9 +684,16 @@ def validate_narration(
 
     Verifie : au moins 2 segments ; timestamps dans [0, duree],
     croissants, sans recouvrement ; textes non vides (<= 600
-    caracteres) sans sous-chaine interdite (garde anti-verbatim,
+    caracteres) sans nom d'artiste tiers (garde ANTI-NOMINATION,
     voie 3 B.0) ; intensite dans [0, 1]. Raise ``ValueError``
     detaillee au premier defaut.
+
+    LIMITATION : la garde de texte est anti-nomination, PAS un
+    detecteur de verbatim — un detecteur de verbatim exigerait un
+    corpus de reference (hors depot, bibliography-hygiene §2). Le
+    verbatim est exclu par provenance : template = textes originaux
+    par construction ; LLM = exigence du system prompt (instruction,
+    non enforcement).
     """
     if len(segments) < 2:
         raise ValueError(
@@ -706,8 +722,8 @@ def validate_narration(
         for needle in NARRATION_FORBIDDEN_SUBSTRINGS:
             if needle in lowered:
                 raise ValueError(
-                    f"segment #{i} : sous-chaine interdite présente "
-                    "(garde anti-verbatim, voie 3 B.0)"
+                    f"segment #{i} : nom d'artiste tiers interdit "
+                    "(garde anti-nomination, voie 3 B.0)"
                 )
         if not (0.0 <= seg.intensity <= 1.0):
             raise ValueError(
