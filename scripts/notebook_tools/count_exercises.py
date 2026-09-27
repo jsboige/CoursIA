@@ -146,7 +146,7 @@ ARTIFACT_STEM_RE = re.compile(
 )
 
 #: Setup / environment notebooks -- rule threshold 0-1.
-#: `Lean-1-Setup`, `Sudoku-00-Environment-Csharp`, `SC-1-Setup-Foundry`,
+#: `Lean-1-Setup`, `Sudoku-00-Environment-Csharp`, `SC-01-Setup-Foundry-Python`,
 #: `QC-Py-01-Setup`, `Argument_Analysis_Agentic-0-init`, `..-0-init_agent`.
 SETUP_STEM_RE = re.compile(
     r"(?:^|[-_])(?:setup|environment|init)(?:$|[-_])", re.IGNORECASE
@@ -1096,7 +1096,7 @@ def count_exercises_in_notebook(path: Path) -> NotebookCount:
     # exercise reference is NOT in a `#`/`//`/`--` comment -- e.g. a C#
     # `display("Exercice 2 a completer ...")` or Python `print("Exercice ...")
     # stub marker, or a stub whose `# Partie N` / `# Etape` header carries no
-    # "exercice" word at all but the cell prints one (SC-26-Final-Project
+    # "exercice" word at all but the cell prints one (SC-26-Final-Project-Python
     # Parties 2/3/4). Layer (2) is safe because pass-2 still requires
     # `_is_stub_code`, so a complete solution mentioning "exercice" in prose is
     # never counted; and `paired_code_indices` (built in the unchanged

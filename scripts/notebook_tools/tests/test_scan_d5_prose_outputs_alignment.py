@@ -132,7 +132,7 @@ class TestExtractProseNumbers:
         # Gap documente dans le corpus run #9790 : les titres H1 (`# SC-8`,
         # `# MGS-9`, `# SocialChoice 03`) fuyaient car les hints couvraient
         # H2+ mais pas H1. Le numero d'ID du notebook est structural.
-        nums = mod._extract_prose_numbers("# SC-8-DeFi-Primitives\n\nLe solde est 0.69.")
+        nums = mod._extract_prose_numbers("# SC-08-DeFi-Primitives-Python\n\nLe solde est 0.69.")
         assert 8 not in nums
         assert 0.69 in nums
 
