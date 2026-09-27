@@ -181,7 +181,9 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 19 | [Module 06 — Tester les nouveautés v0.10 (« l'ère…](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/06-nouveautes-v0.10/06-Nouveautes-v0.10-QA-OWUI.ipynb) | BETA | Non |
 | 20 | [Différencier plusieurs assistants — mesurer ce qu'un…](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/differencier-les-assistants.ipynb) | BETA | Non |
 
-## GenAI/PostTraining (19 notebooks)
+## GenAI/PostTraining
+
+Décompte canonique : voir [`COURSE_CATALOG.generated.md`](../../COURSE_CATALOG.generated.md) (`#### PostTraining` et table de comptage).
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
