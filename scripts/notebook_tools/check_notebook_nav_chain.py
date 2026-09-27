@@ -519,10 +519,24 @@ def _partition_new_by_diff(new, diff):
     Imputable = le notebook du finding est dans le diff, OU la serie du
     notebook a son README dans le diff (le README est ce qui declare la
     chaine d'une serie). Diff vide = fail-closed : tout NEW bloque.
+
+    Cas particulier `independent_chain` (re-mesure ai-01 c.5856207624) : la
+    cle est le REPERTOIRE de la serie, pas un fichier -- `notebook in diff`
+    est donc toujours faux, et `rsplit("/", 1)[0]` designerait le README du
+    PARENT. La serie est la cle elle-meme : le constat est imputable des
+    qu'un chemin du diff vit sous la serie, ou que SON README y est.
     """
     blocking, warning = [], []
     for key in new:
         kind, notebook, target = key
+        if kind == "independent_chain":
+            prefix = f"{notebook}/" if notebook else ""
+            in_series = any(f.startswith(prefix) for f in diff) if prefix else False
+            if not diff or in_series or f"{notebook}/README.md" in diff:
+                blocking.append(key)
+            else:
+                warning.append(key)
+            continue
         series_dir = notebook.rsplit("/", 1)[0] if "/" in notebook else ""
         series_readme = f"{series_dir}/README.md" if series_dir else ""
         if not diff or notebook in diff or (series_readme and series_readme in diff):

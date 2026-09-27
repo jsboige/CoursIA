@@ -2,6 +2,11 @@
   "findings": [
     {
       "kind": "independent_chain",
+      "notebook": "MyIA.AI.Notebooks/GenAI/FineTuning",
+      "series": "MyIA.AI.Notebooks/GenAI/FineTuning"
+    },
+    {
+      "kind": "independent_chain",
       "notebook": "MyIA.AI.Notebooks/GenAI/Image/examples",
       "series": "MyIA.AI.Notebooks/GenAI/Image/examples"
     },
@@ -9,6 +14,11 @@
       "kind": "independent_chain",
       "notebook": "MyIA.AI.Notebooks/GenAI/SemanticKernel",
       "series": "MyIA.AI.Notebooks/GenAI/SemanticKernel"
+    },
+    {
+      "kind": "independent_chain",
+      "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series",
+      "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
     },
     {
       "kind": "independent_chain",
@@ -334,21 +344,6 @@
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-8-Lecture-Analytique.ipynb",
       "series": "MyIA.AI.Notebooks/GenAI/Audio/04-Applications"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/GenAI/FineTuning"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GenAI/FineTuning/FT-00c-LoRA-SOTA-Comparison-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/GenAI/FineTuning"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python_en.ipynb",
-      "series": "MyIA.AI.Notebooks/GenAI/FineTuning"
     },
     {
       "kind": "orphan_entry",
@@ -738,16 +733,6 @@
     {
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-InoculationBifurcation-Pilot.ipynb",
-      "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-43-Calibration-MultiEchelle.ipynb",
-      "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb",
       "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
     },
     {
