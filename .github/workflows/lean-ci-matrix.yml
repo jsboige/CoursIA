@@ -100,6 +100,9 @@ on:
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lean-toolchain'
+      # Contrat certifie SocialChoice (herite du wrapper lean-social-choice.yml
+      # supprime, #17374) : le manifeste certifie est un declencheur du lake.
+      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/CERTIFIED.txt'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/lakefile.toml'
@@ -121,6 +124,12 @@ on:
       # le moteur d'axiomes change -> le gate axiom de serre100 rejoue.
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
+      # Self-cover du contrat certifie herite du wrapper lean-social-choice.yml
+      # supprime (#17374) : l'instrument ou son test change -> la jambe
+      # certifiee de gametheory rejoue.
+      - 'scripts/lean/check_certified_sorry.py'
+      - 'scripts/lean/count_code_sorry.py'
+      - 'scripts/tests/test_check_certified_sorry.py'
       # self-cover du gate (#8712) : un changement du gate lance le gate
       - '.github/workflows/lean-ci-matrix.yml'
       - '.github/workflows/lean-build.yml'
@@ -199,6 +208,9 @@ on:
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lean-toolchain'
+      # Contrat certifie SocialChoice (herite du wrapper lean-social-choice.yml
+      # supprime, #17374) : le manifeste certifie est un declencheur du lake.
+      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/CERTIFIED.txt'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/lakefile.toml'
@@ -220,6 +232,12 @@ on:
       # le moteur d'axiomes change -> le gate axiom de serre100 rejoue.
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
+      # Self-cover du contrat certifie herite du wrapper lean-social-choice.yml
+      # supprime (#17374) : l'instrument ou son test change -> la jambe
+      # certifiee de gametheory rejoue.
+      - 'scripts/lean/check_certified_sorry.py'
+      - 'scripts/lean/count_code_sorry.py'
+      - 'scripts/tests/test_check_certified_sorry.py'
       - '.github/workflows/lean-ci-matrix.yml'
       - '.github/workflows/lean-build.yml'
       - '.github/actions/lean-build/action.yml'

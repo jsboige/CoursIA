@@ -132,6 +132,40 @@ class TestTaskConstruction:
     def test_nom_de_tache_namespaced(self):
         assert "CoursIA" in ipt.TASK_NAME
 
+    def test_dry_run_install_affiche_argv_sans_appeler_schtasks(
+            self, tmp_path, monkeypatch, capsys):
+        repo = tmp_path / "Cours IA"
+        (repo / "scripts" / "ci").mkdir(parents=True)
+        (repo / "scripts" / "ci" / "prune_merged_worktrees.py").write_text(
+            "# Resolution directe par numero\ndef _normalize(s): return s\n",
+            encoding="utf-8")
+        monkeypatch.setattr(ipt, "LOG_DIR", tmp_path / "journal")
+        monkeypatch.setattr(
+            ipt, "THIS_FILE", Path(r"C:\Program Files\Cours IA\install_prune_task.py"))
+        monkeypatch.setattr(sys, "executable", r"C:\Program Files\Python\python.exe")
+
+        def refuse_schtasks(*args, **kwargs):
+            raise AssertionError("schtasks ne doit pas etre execute")
+        monkeypatch.setattr(ipt, "_run", refuse_schtasks)
+
+        assert ipt.main(["--install", "--dry-run", "--repo", str(repo)]) == 0
+        assert not ipt.LOG_DIR.exists()
+        command = ipt.build_schtasks_install(ipt.task_command(repo.resolve()), "03:17")
+        output = capsys.readouterr().out
+        assert repr(command) in output
+        assert subprocess.list2cmdline(command) in output
+        tr = command[command.index("/TR") + 1]
+        assert tr.startswith(r'"C:\Program Files\Python\python.exe" ')
+        assert r'"C:\Program Files\Cours IA\install_prune_task.py" --run' in tr
+
+    def test_dry_run_uninstall_sans_appeler_schtasks(self, monkeypatch, capsys):
+        def refuse_schtasks(*args, **kwargs):
+            raise AssertionError("schtasks ne doit pas etre execute")
+        monkeypatch.setattr(ipt, "_run", refuse_schtasks)
+        assert ipt.main(["--uninstall", "--dry-run"]) == 0
+        expected = ["schtasks", "/Delete", "/TN", ipt.TASK_NAME, "/F"]
+        assert repr(expected) in capsys.readouterr().out
+
 
 # ---------------------------------------------------------------------------
 # journal

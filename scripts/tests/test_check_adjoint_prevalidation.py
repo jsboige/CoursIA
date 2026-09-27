@@ -283,6 +283,62 @@ def test_non_shared_github_author_cannot_satisfy_gate():
     assert any(error.startswith("comment author must") for error in errors)
 
 
+# --- #17791 : PR hors flotte (session cloud du mainteneur) -------------------
+#
+# Miroir de l'exemption `tag_required` (#17713/#17715, variation_tag_required.py) :
+# branche `claude/*` ET marqueur « Hors flotte » dans le body. Une telle PR n'est
+# porte par AUCUNE lane de la flotte, donc tout dossier d'une lane qualifiante
+# est tiers par construction -- le refus « carrying lane cannot be established »
+# y est une impasse structurelle, pas une garantie.
+
+
+def test_out_of_fleet_pr_accepts_qualifying_dossier_without_grain_tag():
+    """claude/* + « Hors flotte » : un dossier de lane qualifiante est tiers."""
+    snapshot = _snapshot_with_body(
+        "Session cloud du mainteneur. **Hors flotte**", lane="myia-po-2023:CoursIA"
+    )
+    snapshot["headRefName"] = "claude/affectionate-mccarthy-6dvuea"
+    ready, errors = mod.evaluate(snapshot)
+    assert ready, errors
+    assert errors == []
+
+
+def test_claude_branch_without_marker_is_still_refused():
+    """Le prefixe seul n'exempte pas : sans le marqueur, le refus est intact."""
+    snapshot = _snapshot_with_body(
+        "Session cloud du mainteneur.", lane="myia-po-2023:CoursIA"
+    )
+    snapshot["headRefName"] = "claude/affectionate-mccarthy-6dvuea"
+    errors = _errors(snapshot)
+    assert any(
+        error.startswith("carrying lane cannot be established") for error in errors
+    )
+
+
+def test_fleet_branch_with_marker_is_still_refused():
+    """Recopier le marqueur sur une branche de flotte ne sort pas de la regle."""
+    snapshot = _snapshot_with_body(
+        "Session cloud du mainteneur. **Hors flotte**", lane="myia-po-2023:CoursIA"
+    )
+    snapshot["headRefName"] = "feature/renamed-to-escape"
+    errors = _errors(snapshot)
+    assert any(
+        error.startswith("carrying lane cannot be established") for error in errors
+    )
+
+
+def test_self_prevalidation_refusal_survives_the_exemption_next_door():
+    """Une PR de flotte taguee reste refusee en self-attestation : l'exemption
+    hors flotte n'ouvre aucune echappatoire a cote."""
+    carrier = "myia-po-2023:CoursIA"
+    snapshot = _snapshot_with_body(
+        "Grain: DEEP/lean -- lane %s -- prev: MED" % carrier, lane=carrier
+    )
+    snapshot["headRefName"] = "feature/ordinary-fleet-branch"
+    errors = _errors(snapshot)
+    assert any(error.startswith("self-prevalidation refused") for error in errors)
+
+
 def test_blocked_preflight_is_a_valid_dossier_but_never_ready():
     """An honest BLOCKED dossier must be distinguishable from an absent one.
 
@@ -794,6 +850,66 @@ def test_any_other_author_still_expires_the_dossier():
         foreign = _comment("a new concern", login=login)
         foreign["createdAt"] = T1
         snapshot["comments"].append(foreign)
+        errors = _errors(snapshot)
+        assert any("discussion changed after dossier" in e for e in errors), login
+
+
+# --- #17818 : premiere pose d'un commentaire consultatif de bot marker-garde --
+
+
+def test_first_pose_of_bot_advisory_comment_does_not_expire_the_dossier():
+    """#17818 acceptance (positive control) : un dossier integre, puis la
+    premiere pose du commentaire consultatif PR-PATH-COLLISION par
+    ``github-actions[bot]`` -- le verdict reste lisible. Mesure fondatrice :
+    les dossiers de #17781 et #17797 perimes a 13:02Z par cette seule pose,
+    l'arrivee d'une PR voisine sur les memes READMEs declenchant l'organe.
+    """
+    for marker in (
+        "<!-- PR-PATH-COLLISION:START -->\n## Path-collision (organ #1)\npaire: X / Y",
+        "<!-- variation-genre-signals -->\ngenre: lean",
+        "<!-- gvar2-light-cap -->\ncap: 1/1",
+        "<!-- trivial-diff-15740 -->\ntrivial: yes",
+    ):
+        base = _stamped_snapshot("")
+        base["comments"].pop()
+        snapshot = _stamped_snapshot(_dossier_for(base))
+        pose = _comment(marker, login="github-actions[bot]")
+        pose["createdAt"] = T1
+        snapshot["comments"].append(pose)
+        verdict, errors = mod.evaluate(snapshot)
+        assert verdict == mod.VERDICT_READY, (marker.splitlines()[0], errors)
+
+
+def test_human_comment_after_dossier_still_expires_it():
+    """#17818 acceptance (negative control) : un commentaire humain posterieur
+    perime toujours le dossier -- la neutralisation ne s'elargit pas aux tiers.
+    """
+    base = _stamped_snapshot("")
+    base["comments"].pop()
+    snapshot = _stamped_snapshot(_dossier_for(base))
+    human = _comment("une remarque de fond sur le scope", login="clusterManager-Myia")
+    human["createdAt"] = T1
+    snapshot["comments"].append(human)
+    errors = _errors(snapshot)
+    assert any("discussion changed after dossier" in e for e in errors)
+
+
+def test_copied_marker_by_other_author_still_expires_the_dossier():
+    """#17818 acceptance (negative control) : l'AUTEUR compte, pas le texte
+    seul. Un tiers qui recopie le marqueur PR-PATH-COLLISION en tete de son
+    commentaire perime le dossier -- le suffixe ``[bot]`` est reserve aux
+    comptes d'app GitHub, un humain ne peut pas le porter.
+    """
+    for login in ("myia-po-2023", "jsboige-bot-impersonator", "clusterManager-Myia"):
+        base = _stamped_snapshot("")
+        base["comments"].pop()
+        snapshot = _stamped_snapshot(_dossier_for(base))
+        copied = _comment(
+            "<!-- PR-PATH-COLLISION:START -->\ncorps recopie par un tiers",
+            login=login,
+        )
+        copied["createdAt"] = T1
+        snapshot["comments"].append(copied)
         errors = _errors(snapshot)
         assert any("discussion changed after dossier" in e for e in errors), login
 

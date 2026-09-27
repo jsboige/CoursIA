@@ -202,6 +202,18 @@ RULE_SEVERITY = {
     # (reference d'issue "#15520", mot "#libelle" etc.). ERROR parce que
     # le rendu est incoherent avec la prose que la ligne veut dire.
     "heading_continuation": ERROR,
+    # #17874: ERROR (bloquant) -- prose line glued to a table row: a pipe-free
+    # prose line with no block marker directly following a `|...|` row is
+    # absorbed into the table by the GFM renderer (the note stops rendering as
+    # a paragraph). Positive control: #17812 intermediate commit 5b4bab9981
+    # cell 11 (l.10 table / l.11 note), verified firing. Corpus FP pass
+    # 2026-09-26: 9 raw hits -> 0 after two spec-grounded refinements (block
+    # openers break the table per GFM; pipe-free rows continue it; a
+    # leading-AND-trailing pipe row is required as anchor, killing the
+    # `|a_eff|^T` math-notation FP of ICT-Dissociation cell 19). Count 0 +
+    # delta-vs-baseline = pure ratchet, only NEW violations block -- the exact
+    # #12363 promotion precedent (source_list_broken_words, 0 hits -> ERROR).
+    "table_adjacent_prose": ERROR,
     # #12064: ERROR (bloquant) -- the corpus measure is 1 hit / 20,576 markdown
     # cells (the true positive (A) PT_11 cell 5), reproduced by this lane. That
     # precision is what buys blocking status; a wider pattern set would need
@@ -1062,6 +1074,65 @@ def _selfcheck() -> int:
           "backtick-quoted delimiters, fenced latex, $$-span macros and even-$ "
           "cells")
 
+    # #17874 -- table-adjacent prose: the positive control is the EXACT two
+    # lines of the founding incident (#17812 intermediate commit 5b4bab9981,
+    # cell 11 l.10->l.11), not a paraphrase: a detection pattern validates on
+    # its false negatives, not its hits (cf the #11630 postmortem above -- both
+    # implementations calibrated on the first observed form and let the second
+    # pass). Negatives: blank line separator, table continuation, fenced
+    # adjacency, no-pipe predecessor.
+    failed = []
+    table_fixtures = [
+        ("table-adjacent prose (5b4bab9981 cell 11 control)",
+         "table_adjacent_prose",
+         "| Equity finale | - | - | **169 273,80 $** (net 69.274 %) |\n"
+         "Notation de la ligne `Probabilistic Sharpe` : le rapport QC porte le PSR en\n",
+         True),
+        ("prose after separator row also fires",
+         "table_adjacent_prose",
+         "| A | B |\n|---|---|\nlegende colle\n",
+         True),
+        ("blank line between table and note is silent",
+         "table_adjacent_prose",
+         "| A | B |\n|---|---|\n| 1 | 2 |\n\nNote apres la table.\n",
+         False),
+        ("table continuation row is silent",
+         "table_adjacent_prose",
+         "| A | B |\n|---|---|\n| 1 | 2 |\n| 3 | 4 |\n",
+         False),
+        ("fenced adjacency is silent",
+         "table_adjacent_prose",
+         "```\n| A | B |\nprose dans le fence\n```\n",
+         False),
+        ("prose after non-table line is silent",
+         "table_adjacent_prose",
+         "Un paragraphe.\nSuite du paragraphe.\n",
+         False),
+        ("math-notation line starting with | is not a table row (ICT-Dissociation FP)",
+         "table_adjacent_prose",
+         "lineaire : facteur ~2.7 entre 50 et 200 -- signature d'une amplification\n"
+         "|a_eff|^T avec a_eff = 1.007 a peine au-dessus de 1. (3) C'est la\n"
+         "preuve de non-trivialite annoncee : un test degenere serait insensible.\n",
+         False),
+        ("row without trailing pipe is not a table anchor",
+         "table_adjacent_prose",
+         "| a | b\nprose colle a une rangee sans pipe final.\n",
+         False),
+    ]
+    for name, rule, src, expected in table_fixtures:
+        got = _fired(rule, src)
+        if got != expected:
+            failed.append(f"{name}: {rule} fired={got}, expected={expected}")
+    if failed:
+        print("selfcheck FAIL:", file=sys.stderr)
+        for f in failed:
+            print(f"  !! {f}", file=sys.stderr)
+        return 1
+    print("selfcheck OK: table_adjacent_prose fires on the 5b4bab9981 cell-11 "
+          "control (data row + separator row); silent on the blank-line "
+          "separator, table continuation, fenced adjacency and non-table "
+          "predecessors")
+
     return 0
 
 
@@ -1457,6 +1528,54 @@ def scan_cell(cell) -> list[dict]:
             "message": (f"list/blockquote continuation line starts with '#' "
                         f"(renders as giant H{level}); drop the leading indent or "
                         f"escape the '#' so the line stays prose"),
+            "evidence": ln.strip()[:100],
+            "hash": _cell_hash(rule, text),
+        })
+        break
+
+    # ---- prose line glued to a table row (#17874) --------------------------------
+    # A non-empty PLAIN PROSE line that DIRECTLY follows a line starting with
+    # `|` (data or separator row) is absorbed into the table by the GFM
+    # renderer: the note no longer renders as a paragraph. Founding incident:
+    # #17812 intermediate commit 5b4bab9981, cell 11 -- the PSR note under the
+    # metrics table vanished into the last table row (seen in review, fixed by
+    # hand in f8fb4cbbb6 while this guard stayed green at every commit: the
+    # class did not exist in its pattern set).
+    #
+    # Scope refined by the GFM table spec (corpus FP pass 2026-09-26: 9 raw
+    # hits, ~2/3 false): the table BREAKS at the first empty line OR the start
+    # of another block-level structure -- a following heading / blockquote /
+    # list / fence / HR line renders normally and is NOT a defect. And a table
+    # row WITHOUT a leading pipe is legal GFM: a following line that itself
+    # contains a pipe continues the table, it is not absorbed prose. Only the
+    # remaining case -- pipe-free prose with no block marker, glued to a `|`
+    # row -- is the absorbed-note defect. Fence-aware (a `|` row inside a
+    # fenced block is literal code, not a table); one finding per cell,
+    # evidence names the glued prose line.
+    for idx in range(1, len(lines)):
+        if idx in fenced:
+            continue
+        ln = lines[idx]
+        if not ln.strip() or ln.startswith("|") or "|" in ln:
+            continue  # table continuation (leading pipe or pipe-free row)
+        if (_HEADING_RE.match(ln) or _LIST_ITEM_RE.match(ln) or _FENCE_RE.match(ln)
+                or _THEMATIC_BREAK_RE.match(ln) or ln.lstrip().startswith(">")):
+            continue  # block-level opener: breaks the table per GFM, renders fine
+        prev = lines[idx - 1]
+        # The previous line must be an actual pipe-delimited row: leading AND
+        # trailing `|`. A prose line that merely STARTS with math notation
+        # (`|a_eff|^T avec ...`, corpus FP ICT-Dissociation cell 19) is not a
+        # table row -- its last cell-less line does not absorb the next one.
+        if ((idx - 1) in fenced or not prev.strip()
+                or not prev.startswith("|") or not prev.rstrip().endswith("|")):
+            continue
+        rule = "table_adjacent_prose"
+        findings.append({
+            "rule": rule,
+            "severity": RULE_SEVERITY[rule],
+            "message": ("plain prose line directly follows a table row without a "
+                        "blank line separator (the renderer absorbs it into the table; "
+                        "insert a blank line so the note renders as a paragraph)"),
             "evidence": ln.strip()[:100],
             "hash": _cell_hash(rule, text),
         })

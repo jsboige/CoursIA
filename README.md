@@ -451,9 +451,9 @@ CoursIA/
 ### Prérequis
 
 - Python 3.10+ avec pip
-- .NET 9.0+ SDK (pour notebooks C# — .NET 10 LTS validé en local)
+- .NET 9.0 SDK (notebooks C#) **et** .NET 10 SDK : `dotnet restore MyIA.CoursIA.sln` échoue sans le SDK 10, cinq projets de la solution ciblant `net10.0` (Aspire, démo Vibe-Coding)
 - VS Code avec extensions Python, Jupyter, .NET Interactive
-- WSL (pour Lean et certains outils SymbolicAI)
+- WSL sous Windows uniquement (pour Lean et certains outils SymbolicAI) ; sous Linux ou macOS, voir [setup-linux-macos.md](docs/reference/setup-linux-macos.md)
 - Docker + GPU (optionnel, pour GenAI avancé)
 
 ### Installation rapide
@@ -480,7 +480,19 @@ dotnet restore MyIA.CoursIA.sln
 
 # 5. Dépendances de la série visée (chaque série porte son requirements.txt)
 pip install -r MyIA.AI.Notebooks/<Serie>/requirements.txt
+
+# 6. Sous-module de la série visée, s'il y en a un (tableau ci-dessous)
+git submodule update --init --recursive <chemin du sous-module>
 ```
+
+Certains notebooks s'appuient sur un **sous-module** que `git clone` ne récupère pas : sans lui, ils échouent à la cellule qui le charge. Tous sont publics, mais `git clone --recurse-submodules` les téléchargerait tous, Argumentum compris (environ 840 Mo) : n'initialiser que celui de la série visée.
+
+| Notebooks | Sous-module à initialiser | Étape suivante |
+|---|---|---|
+| Search/Part4 (MGS-\*), Search-05 et Sudoku-05 en C# | `MyIA.AI.Notebooks/Search/MetaGeneticSharp` | dans ce dossier : `dotnet build`, puis `dotnet build -c Release` pour Search-05 |
+| SMT/Z3-Linq2Z3, Sudoku-12b et Sudoku-13 en C# | `MyIA.AI.Notebooks/SymbolicAI/SMT/Z3.Linq` | `bash scripts/environment/z3-build-deploy.sh` (Windows : le `.ps1` voisin) |
+| Z3-Linq2Z3 n° 10, Sudoku-13 en C# | `MyIA.AI.Notebooks/SymbolicAI/SMT/Automata` | `bash scripts/environment/automata-build-deploy.sh` (Windows : le `.ps1` voisin) ; pas encore exécutable sous Linux ([#17654](https://github.com/jsboige/CoursIA/issues/17654)) |
+| Argument_Analysis (Ontology AIF, Ontology CrossLinks, Agentic-1), GameTheory-24b | `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum` | aucune |
 
 Les clés API éventuelles se posent via les `.env.example` (section Configuration). Pour valider
 ou exécuter un notebook, ne pas écrire de script ad-hoc : le dépôt fournit une CLI dédiée

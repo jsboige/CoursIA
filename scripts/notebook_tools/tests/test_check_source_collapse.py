@@ -37,6 +37,7 @@ from check_source_collapse import (
     LOSS_FRACTION,
     MIN_MOVED_LINE_CHARS,
     MOVED_FRACTION,
+    UNTERMINATED_DELTA_FLOOR,
     _diagnostic_fraction,
     _format_delta,
     _has_ipython_magic,
@@ -316,18 +317,113 @@ def test_per_character_serialization_is_not_a_collapse():
     assert row["cells"] == []
 
 
+def test_kernel_independent_unterminated_fires_on_list_fold():
+    """#17468 founding shape: a code cell's `source` LIST re-emitted
+    WITHOUT the per-item trailing `\\n`. nbformat joins the items into ONE
+    line -- a single-line comment cell is invisible to VOLUME (chars pass
+    through unchanged) and to STRUCTURE (the AST pass only sees Python
+    kernels). The kernel-independent delta fires.
+
+    A non-Python kernel fixture is the point of the criterion -- a Python
+    notebook with a folded cell would be caught by STRUCTURE first.
+    """
+    def _dotnet_nb(cells):
+        """A non-Python kernel notebook (e.g. .NET): STRUCTURE stays off."""
+        out = []
+        for item in cells:
+            cell = {"cell_type": "code", "id": item[0], "source": item[1]}
+            if len(item) > 2:
+                cell["outputs"] = item[2]
+            out.append(cell)
+        return {"cells": out,
+                "metadata": {"kernelspec": {"name": ".NET (C#)",
+                                            "language": "csharp"}},
+                "nbformat": 4, "nbformat_minor": 5}
+    base_items = [s + "\n" for s in BIG.split("\n")]
+    head_items = [s for s in BIG.split("\n")]
+    b = _dotnet_nb([("a", base_items)])
+    h = _dotnet_nb([("a", head_items)])
+    row = analyze(b, h)
+    assert kinds(row) == ["unterminated"], "kernel-independent founding shape must fire"
+    f = row["cells"][0]
+    assert f["signals"] == ["unterminated-items"]
+    assert f["head_unterminated"] >= UNTERMINATED_DELTA_FLOOR
+    assert f["unterminated_delta"] >= UNTERMINATED_DELTA_FLOOR
+    assert row["regressed"] is True
+
+
+def test_unterminated_delta_is_zero_on_healthy_per_char_serializer():
+    """#17468 refine of criterion 1: the DISCRIMINANT is the DELTA, not
+    the count. A per-character serializer sees base == head -- same items
+    on both sides -- so the delta is 0 and the criterion stays silent.
+
+    The fixture IS the `21_LoRA_FineTuning` cell on `main`: a list of 9379
+    single-character items, none terminated. On base AND head.
+    """
+    perchar = list(BIG)
+    row = analyze(pbase([("a", perchar)]), pnb([("a", perchar)]))
+    assert row["cells"] == [], (
+        "per-char serializer with delta=0 must NOT trip the new criterion")
+    assert "unterminated-items" not in signals(row)
+
+
+def test_unterminated_below_floor_stays_silent():
+    """#17468 calibration: a delta of 3 (below the floor of 4) stays
+    silent. The threshold is the smallest value that excludes the
+    legitimate single-line unterminated item measured on `main`.
+    """
+    base_clean = ["ligne_%d = %d\n" % (i, i) for i in range(10)]
+    head_drop = [s for s in base_clean]
+    head_drop[5] = head_drop[5][:-1]
+    head_drop[6] = head_drop[6][:-1]
+    head_drop[7] = head_drop[7][:-1]
+    row = analyze(pbase([("a", base_clean)]), pnb([("a", head_drop)]))
+    assert row["cells"] == [], "delta=3 must NOT trip the new criterion"
+    assert "unterminated-items" not in signals(row)
+
+
+def test_unterminated_string_source_is_silent():
+    """#17468 boundary: a code cell whose `source` is a plain string (not a
+    LIST) returns 0 unterminated items -- nothing to count. The criterion
+    stays silent and no false positive is raised on legitimate plain-string
+    sources.
+    """
+    row = analyze(pbase([("a", BIG)]), pnb([("a", BIG)]))
+    assert "unterminated-items" not in signals(row)
+
+
+def test_unterminated_does_not_double_count_on_healthy_tail():
+    """A cell whose LAST item legitimately lacks the trailing `\\n` (the
+    canonical serializer shape) stays silent: base == head, delta == 0.
+    """
+    healthy_base = ["ligne_1 = 1\n", "ligne_2 = 2\n", "ligne_3 = 3"]
+    healthy_head = list(healthy_base)
+    row = analyze(pbase([("a", healthy_base)]),
+                  pnb([("a", healthy_head)]))
+    assert row["cells"] == []
+
+
 def test_moved_exemption_does_not_silence_orphan_output():
     """The exemptions speak about the base->head RELATION, so they arbitrate
-    EMPTIED -- but an asserted result no statement can produce stays true."""
+    EMPTIED -- but an asserted result no statement can produce stays true.
+    UNTERMINATED-ITEMS (#17468) is a HEAD-side fact too: it survives the
+    carve-out the same way ORPHAN-OUTPUT does. The fixture mirrors the
+    #16110 incident's LIST shape (per-line items joined without `\n`) so
+    the unterminated signal actually fires.
+    """
+    folded_lines = [s for s in MOVED_BLOCK.split("\n")]
     row = analyze(
         pbase([("a", MOVED_BLOCK), ("b", "court = 1")]),
-        pnb([("a", "# " + MOVED_BLOCK.replace("\n", ""), STREAM),
+        pnb([("a", ["# "] + folded_lines, STREAM),
              ("b", MOVED_BLOCK)]))
-    assert kinds(row) == ["structure"]
+    assert kinds(row) == ["exempt-moved"], "EMPTIED exempted, head-side facts kept"
     f = row["cells"][0]
-    assert f["signals"] == ["orphan-output"], "emptied must be exempted here"
+    assert "orphan-output" in f["signals"], "orphan-output must survive"
+    assert "unterminated-items" in f["signals"], (
+        "unterminated-items must survive the moved exemption")
+    assert "emptied" not in f["signals"], "EMPTIED must be exempted"
     assert f["moved_fraction"] >= MOVED_FRACTION
-    assert row["regressed"] is True
+    assert row["regressed"] is False, "exempted cell does not regress"
 
 
 def test_added_notebook_is_judged_by_neither_pass():

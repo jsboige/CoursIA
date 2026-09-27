@@ -339,6 +339,34 @@ def _comment_body_for_fingerprint(row: dict[str, Any]) -> str:
     return body
 
 
+# #17818 : la PREMIERE POSE d'un commentaire consultatif de bot marker-garde
+# apres le dossier. #16931 avait neutralise la reecriture en place, mais une
+# pose neuve comptait comme commentaire etranger : l'arrivee d'une PR voisine
+# (qui declenche l'organe PR-PATH-COLLISION sur les README partages) perimait
+# le dossier sans que le fond de la PR bouge. Mesure 2026-09-25 : dossiers de
+# #17781 et #17797 perimes a 13:02Z par la pose consultative du bot seul.
+# Ces quatre organes sont consultatifs par construction (« l'organe rend
+# visible, il ne bloque pas »). Le login mesure est "github-actions[bot]"
+# (suffixe [bot] reserve aux comptes d'app GitHub : un humain ne peut pas le
+# porter) et l'AUTEUR compte, pas le texte seul -- un tiers qui recopie le
+# marqueur perime toujours le dossier.
+BOT_ADVISORY_LOGIN = "github-actions[bot]"
+
+
+def _is_bot_advisory_pose(row: dict[str, Any]) -> bool:
+    """True pour la premiere pose d'un commentaire consultatif de bot marker-garde.
+
+    Neutralise la row dans le decompte des commentaires posterieurs au
+    dossier. Predicate conjonctif : auteur ET marqueur en tete de corps -- la
+    disparition du commentaire, une edition humaine (marqueur deplace) ou un
+    tiers recopiant le marqueur restent detectes.
+    """
+    if _login(row) != BOT_ADVISORY_LOGIN:
+        return False
+    body = row.get("body") or ""
+    return any(body.startswith(marker) for marker in _BOT_MARKER_GUARDS)
+
+
 def _review_body_has_reserve_marker(author: str, body: str) -> bool:
     """True quand, en substance, cette review pose une reserve vivante.
 
@@ -732,6 +760,21 @@ def carrying_lane(snapshot: dict[str, Any]) -> str | None:
     return match.group(1) if match else None
 
 
+def is_out_of_fleet(snapshot: dict[str, Any]) -> bool:
+    """True when the pull request is carried by no fleet lane at all.
+
+    Both conditions, mirroring the `tag_required` exemption (#17713/#17715,
+    `variation_tag_required.py`): the head branch starts with ``claude/`` AND
+    the body declares « Hors flotte ». Either alone is not out of fleet -- a
+    fleet lane renaming its branch or copying the marker stays inside the
+    third-party rule (#17791 acceptance 3).
+    """
+    head_ref = snapshot.get("headRefName") or ""
+    return head_ref.startswith("claude/") and "Hors flotte" in (
+        snapshot.get("body") or ""
+    )
+
+
 def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
     """Validate a parsed dossier against one live PR snapshot."""
     f = dossier.fields
@@ -779,6 +822,13 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
         errors.append(
             f"lane must be one of the qualifying cluster lanes, got {dossier_lane!r}"
         )
+    elif is_out_of_fleet(snapshot):
+        # #17791 -- a maintainer cloud session (`claude/*` + « Hors flotte »)
+        # carries no fleet lane: CLAUDE.md ('À qui ce fichier s'adresse') exempts
+        # it from the Grain tag, so the third-party rule has no carrier to
+        # compare against. Every qualifying lane is third-party by construction,
+        # and the self-attestation check below is unreachable for it.
+        pass
     else:
         carrier = carrying_lane(snapshot)
         if carrier is None:
@@ -908,11 +958,14 @@ def evaluate_with_dossier(
     errors = [*errors, *validate_dossier(dossier, snapshot)]
     # A dossier is a snapshot. Any later comment invalidates it, including a
     # reply that claims the PR is still ready -- unless the coordinator itself
-    # wrote it, which it cannot be unaware of (see _is_own_later_act).
+    # wrote it, which it cannot be unaware of (see _is_own_later_act), or it
+    # is the first pose of a consultative marker-guarded bot comment, which
+    # attests nothing about the PR's substance (see _is_bot_advisory_pose).
     foreign = [
         row
         for row in comments[dossier.comment_index + 1:]
         if not _is_own_later_act(row, "createdAt", dossier.created_at)
+        and not _is_bot_advisory_pose(row)
     ]
     if foreign:
         errors.append(
@@ -982,6 +1035,7 @@ def build_result(
         "ready": verdict == VERDICT_READY,
         "verdict": verdict or "NO_DOSSIER",
         "errors": errors,
+        "out_of_fleet": is_out_of_fleet(snapshot),
     }
     if dossier is not None and verdict:
         result["dossier"] = dossier_payload(dossier)
@@ -1316,6 +1370,11 @@ def main() -> int:
         )
     elif ready:
         print(f"READY -- PR #{args.pr} prevalidated by adjoint at {snapshot['headRefOid']}")
+        if is_out_of_fleet(snapshot):
+            print(
+                "  note: hors-flotte PR (claude/* + 'Hors flotte'): no fleet "
+                "lane carries it, any qualifying lane is third-party (#17791)"
+            )
     elif verdict == VERDICT_BLOCKED:
         print(
             f"BLOCKED-WITH-SUBSTANCE -- PR #{args.pr} has an intact adjoint dossier at "

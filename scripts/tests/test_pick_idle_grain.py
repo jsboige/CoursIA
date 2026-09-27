@@ -1839,6 +1839,38 @@ def test_orphans_report_apply_upserts_the_comment(monkeypatch, capsys):
     assert "mis a jour sur #13086" in capsys.readouterr().out
 
 
+def test_upsert_orphans_comment_patches_the_rest_id_not_the_node_id(monkeypatch):
+    """`gh issue view --json comments` rend l'id GraphQL (`IC_kw...`) ; le
+    PATCH REST doit viser l'id numerique lu dans l'URL. Regression : le
+    balayage quotidien echouait en 404 depuis le 29/08.
+    """
+    import types
+    listing = {"comments": [
+        {"id": "IC_other", "body": "sans marqueur",
+         "url": "https://github.com/jsboige/CoursIA/issues/13086#issuecomment-1"},
+        {"id": "IC_kwDOH2Odns8AAAABRYFFMQ",
+         "body": pig.ORPHANS_MARKER_START + " ancien",
+         "url": "https://github.com/jsboige/CoursIA/issues/13086#issuecomment-5461067057"},
+    ]}
+    calls = []
+    def fake_run(argv, **kw):
+        calls.append(argv)
+        return types.SimpleNamespace(stdout=json.dumps(listing), returncode=0)
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+    pig.upsert_orphans_comment(13086, "nouveau corps")
+    patch = [a for a in calls if "PATCH" in a]
+    assert len(patch) == 1
+    assert "repos/jsboige/CoursIA/issues/comments/5461067057" in patch[0]
+    assert not any("IC_kw" in x for x in patch[0])
+
+
+def test_rest_comment_id_refuses_an_url_without_anchor():
+    """Pas d'id devine : une URL sans `#issuecomment-<n>` leve."""
+    import pytest
+    with pytest.raises(ValueError):
+        pig.rest_comment_id({"url": "https://github.com/jsboige/CoursIA/issues/13086"})
+
+
 def test_lane_still_required_outside_orphans_report(monkeypatch, capsys):
     """--lane reste OBLIGATOIRE sur le chemin de tirage : le passage de
     `required=True` a la validation manuelle ne doit pas ouvrir un tirage

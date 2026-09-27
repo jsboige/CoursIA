@@ -81,9 +81,9 @@ déplace une ligne, elle ne réécrit pas un total :
 | `MyIA.AI.Notebooks/SymbolicAI/_archive/` | ✅ | partiel (registre sans en-tête de disposition pour le notebook) |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/scripts/_archive/` | ✅ | ✅ (registre — une ligne par script archivé) |
 | `MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/` | ✅ | ✅ (registre README, disposition **par section**) |
-| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/_archive/` | ❌ | README **seulement** dans le sous-dossier daté `2026-07-04-Neurosymbolic-EML-precurseur-SL12/` — le niveau `_archive/` n'en porte pas |
+| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/_archive/` | ✅ | ✅ (registre de disposition au niveau `_archive/` ajouté le 2026-09-25 — tranche #13749 ; il pointe le README du lot daté `2026-07-04-Neurosymbolic-EML-precurseur-SL12/`, qui porte l'analyse) |
 | `MyIA.AI.Notebooks/SymbolicAI/Tweety/scripts/_archive/` | ✅ | ✅ (tranche #13749 du 2026-09-25 : registre + en-tête de disposition ajouté à `reorganize_tweety.py`) |
-| `scripts/_archive/` | ✅ | ✅ : `one_shots_post_463/`, `recycle_csp/` et `one_shot_fixes/` conformes |
+| `scripts/_archive/` | ✅ | ✅ (registre parent ajouté le 2026-09-25 — tranche #13749 ; il indexe `c8257-lean18-enrichment/`, `one_shot_fixes/`, `one_shots_post_463/` et `recycle_csp/`. La ligne précédente marquait `✅` sur les seules sous-archives de #9535 et ne citait pas `c8257-lean18-enrichment/`, archivée plus tard par #14251) |
 | `scripts/genai-stack/_archive/` | ❌ | tranche 3 — le plus gros stock constaté (2026-08), peut nécessiter un split ; **à la lane `myia-po-2027:CoursIA-2`** (claim scoped `{core,utils}`) |
 | `scripts/notebook_tools/_archive/` | ✅ | partiel (registre sans en-tête de disposition pour le script) |
 | `scripts/sudoku/_archive/` | ✅ | ✅ (tranche #13749 du 2026-09-25 : registre 4 colonnes ; les en-têtes per-fichier existaient déjà) |
