@@ -93,6 +93,16 @@ Les phases ci-dessous s'executent sous le budget defini par la section `## Budge
 5. **Gates de merge** : un preflight READY n'autorise jamais le merge. Appliquer encore B.0, latest-wins CI, H.4 (notebooks : checkout + Papermill local OU log dans le body), catalogue byte-identique a main (`gh pr view N --json files`), scope reel = titre, ordre de stack, variation et relecture de la queue de commentaires.
 6. **Merge** : sous `myia-ai-01` (droit `MergePullRequest` verifie firsthand 2026-08-08), avec `gh pr merge <N> --repo jsboige/CoursIA --squash --match-head-commit <SHA>` (`--merge` preserve-SHA pour la base d'un stack), **JAMAIS `--delete-branch`**.
 
+### Phase 4bis - Passe issues, sur dossiers de fermeture (mandat user 2026-09-26)
+
+**Le pool d'issues se draine comme la file de PRs : sur dossiers tiers, a heure fixe, apres la passe de merge.** Sans cette passe, le goulot se deplace de la production vers la fermeture. Les lanes livrent, l'issue reste ouverte, et le pool grossit alors que le travail est fait. Mesure fondatrice (#17956) : des dossiers de fermeture informels (`[INFO] candidate-delivered`, avec verification firsthand) s'accumulaient sans que personne les consomme.
+
+1. **Entree** : les issues portant un dossier de fermeture de l'adjoint ou du secretaire, du plus ancien au plus recent. Tant que le gate de #17956 n'est pas sur `main`, ce sont les commentaires `[CLOSURE PREFLIGHT]` et, a defaut, `[INFO] candidate-delivered` poses par une lane **qui n'a pas livre**. Le crible mecanique (`candidate_delivered.py` puis `verifier_cleanup.py`) sert a leur donner du travail, **jamais** de preuve : son READY rate les issues-conteneurs de serie et les acceptances partielles (precision mesuree d'environ 42 %).
+2. **Lecture G.9 minimale, non delegable** : le body (chaque critere d'acceptance), le dossier, les commentaires posterieurs, la PR livrante MERGED. Un critere sans preuve, une PR ouverte qui reference l'issue, ou un arbitrage user attendu = **KEEP**, avec une phrase sur l'issue qui dit ce qui manque.
+3. **Fermer en lot** sous `myia-ai-01`, un commentaire par issue qui nomme la PR et les criteres couverts. Un residu part en issue fille nommee **avant** la fermeture, ou en waiver date et falsifiable.
+4. **Les Epics ne ferment pas sur une PR** : leur dette (PRs atomiques restantes, EAT) vit dans le ledger `issue-debt`. Ce ledger ne porte **que** des issues ; une `[OBS]` sur un numero de PR est une derive a signaler a son emetteur.
+5. **Budget** : la passe tient dans le cycle. Ce qui n'est pas lu repart dans la tournee suivante des adjoints, pas dans une investigation.
+
 ### Phase 5 - Fin de cycle (obligatoire)
 
 1. **Commit + PR AVANT le rapport** — ne jamais annoncer un travail non commite.

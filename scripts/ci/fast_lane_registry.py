@@ -217,16 +217,21 @@ PILOT: list[Guard] = [
     # `scripts/ci/check_hr_substitution.py` detecte les 4 notations CommonMark
     # (`---`, `***`, `* * *`, `___`) en `+`/`-` sur les `.ipynb` et exige une
     # declaration explicite dans le body. Aucun workflow d'origine -> source
-    # FAST_LANE_NATIVE. Le script ne sort que rc=0/1 (pas de rc=2 reserve), donc
-    # pas besoin de `warn_rc` ici ; un incident `gh` (rate-limit, timeout)
-    # remonte en rc=1 et fait rougir la PR -- c'est l'intention : un depot
-    # sans verdict est un depot sans garde.
+    # FAST_LANE_NATIVE. Le script sort rc=0/1 sur son verdict ET rc=2 sur
+    # incident d'entree (`gh pr diff`/`gh pr view`/`git diff` en echec,
+    # l.59-60/74-75/85) -- l'ancien commentaire ici affirmait l'inverse.
+    # #17941 (option a, recommandation ai-01) : l'incident est un verdict
+    # INCONNU, pas une faute de la PR ni un quitus -- warn_rc=(2,) le rend
+    # neutre au check-run, titre distinct, non bloquant. Un depot sans verdict
+    # reste un depot sans garde : le neutral est LEISIBLE dans le check-run,
+    # pas silencieux.
     Guard(
         name="hr-substitution-guard",
         source=FAST_LANE_NATIVE,
         paths=["**/*.ipynb"],
         argv=["python", "scripts/ci/check_hr_substitution.py", "{pr_number}"],
         blocking=True,
+        warn_rc=(2,),
     ),
     # -- extension pilote (5 -> 9) ------------------------------------------
     # Pattern 1 : execute une fois par chemin matchant (boucle bash d'origine
