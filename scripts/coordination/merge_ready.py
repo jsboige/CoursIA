@@ -511,8 +511,14 @@ def _review_voice_state(review: dict) -> str | None:
     des COMMENT, son verdict vit donc dans le corps (#16926). Une voix sans
     verdict type n'est pas une approbation -- un commentaire de lane, de CI ou
     un ``COMMENTED`` muet ne dit rien de la disposition.
+
+    ``DISMISSED`` n'est jamais approbateur : une approbation ANNULEE ne
+    gouverne plus, meme si son corps porte encore le jeton type (reserve 2
+    Hermes 2026-09-26 : le croisement des deux surfaces manquait).
     """
     state = str(review.get("state") or "")
+    if state == "DISMISSED":
+        return None
     if state in review_canon.REAL_STATES:
         return state
     match = review_canon.VERDICT_RE.search(str(review.get("body") or ""))
@@ -525,9 +531,13 @@ def review_disposition(view: dict, head: str) -> str:
     La tete gouverne : une approbation posee sur un commit anterieur ne couvre
     pas le commit qui va etre merge, et c'est cette difference que le dossier
     n'exprime pas (il hache l'oid de review sans le comparer). La voix qui
-    gouverne une tete est la PLUS RECENTE des voix posees sur cette tete
-    (latest-wins, la discipline du canon) : une approbation suivie, sur la meme
-    tete, d'une voix qui n'approuve pas, n'est plus une approbation.
+    gouverne une tete est la PLUS RECENTE des VOIX posees sur cette tete
+    (latest-wins, la discipline du canon) : une approbation suivie, sur la
+    meme tete, d'une voix qui n'approuve pas, n'est plus une approbation.
+    Une ligne qui n'est pas une voix au sens du canon (pas d'etat REEL ni de
+    ``VERDICT`` type en corps -- commentaire de lane, ``[OVERRIDE]``, CI) ne
+    detrone rien : le latest-wins porte sur les voix, pas sur les lignes
+    ``reviews[]`` (reserve 1 Hermes 2026-09-26).
 
     Fonction pure : la vue est deja fetchee, aucun appel supplementaire.
     """
@@ -537,8 +547,9 @@ def review_disposition(view: dict, head: str) -> str:
         for row in reviews
         if str(((row.get("commit") or {}).get("oid")) or "") == head
     ]
-    if at_head:
-        latest = max(at_head, key=lambda row: str(row.get("submittedAt") or ""))
+    voices_at_head = [row for row in at_head if _review_voice_state(row)]
+    if voices_at_head:
+        latest = max(voices_at_head, key=lambda row: str(row.get("submittedAt") or ""))
         if _review_voice_state(latest) in APPROVING_VOICES:
             return APPROVED_EXACT_HEAD
     if any(_review_voice_state(row) in APPROVING_VOICES for row in reviews):

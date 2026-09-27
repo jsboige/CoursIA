@@ -761,6 +761,43 @@ def test_disposition_voix_posterieure_non_approbatrice_retire_l_approbation():
     assert mr.review_disposition(view, HEAD) == mr.APPROVAL_NOT_ON_HEAD
 
 
+def test_disposition_ligne_non_voix_ne_detronne_pas_l_approbation():
+    # Reserve 1 Hermes (2026-09-26) : le latest-wins porte sur les VOIX du
+    # canon, pas sur les lignes reviews[]. Un COMMENTED SANS verdict type --
+    # la forme reelle des [OVERRIDE] de lane -- n'est pas une voix : il ne
+    # detrone pas une approbation posee sur la meme tete. Avant le filtre,
+    # cette vue rendait approval-not-on-head alors que l'approbation gouverne.
+    view = default_view(
+        reviews=[
+            review_row(oid=HEAD, submitted="2026-09-25T03:00:00Z"),
+            review_row(
+                state="COMMENTED",
+                oid=HEAD,
+                submitted="2026-09-25T04:00:00Z",
+                body="[OVERRIDE] lane myia-ai-01:CoursIA -- reserve G-VAR-3 levee",
+            ),
+        ]
+    )
+    assert mr.review_disposition(view, HEAD) == mr.APPROVED_EXACT_HEAD
+
+
+def test_disposition_review_dismissed_n_est_jamais_approbatrice():
+    # Reserve 2 Hermes (2026-09-26) : une approbation ANNULEE ne gouverne
+    # plus, meme si son corps porte encore le jeton type. Le croisement des
+    # deux surfaces (etat DISMISSED + VERDICT en corps) manquait : cette vue
+    # rendait approved-exact-head avant le traitement explicite de DISMISSED.
+    view = default_view(
+        reviews=[
+            review_row(
+                state="DISMISSED",
+                oid=HEAD,
+                body="VERDICT: LGTM (annule apres relecture du diff)",
+            )
+        ]
+    )
+    assert mr.review_disposition(view, HEAD) == mr.NO_APPROVAL
+
+
 def test_disposition_sans_approbation_lue():
     assert mr.review_disposition(default_view(), HEAD) == mr.NO_APPROVAL
     # Une voix qui ne type pas de verdict n'est pas une approbation.
