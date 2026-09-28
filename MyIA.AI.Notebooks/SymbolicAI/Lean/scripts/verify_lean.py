@@ -717,13 +717,16 @@ def filter_notebooks(notebook_list: List[str], filter_str: Optional[str],
     """Filter notebook list based on criteria."""
     result = notebook_list
 
-    # Filter by name if specified
+    # Filter by name if specified. Index padding is ignored on both sides, so
+    # `--filter Lean-2` still selects Lean-02-... after the zero-pad rename (#17545).
     if filter_str:
-        filters = [f.strip() for f in filter_str.split(',')]
+        def _unpad(s: str) -> str:
+            return re.sub(r"-0+(\d)", r"-\1", s.lower())
+        filters = [_unpad(f.strip()) for f in filter_str.split(',')]
         result = []
         for nb in notebook_list:
             for f in filters:
-                if f.lower() in nb.lower():
+                if f in _unpad(nb):
                     result.append(nb)
                     break
 
