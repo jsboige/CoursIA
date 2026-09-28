@@ -481,6 +481,31 @@ def last_authoritative_committed_at(
 ) -> datetime:
     """#16149 : date de COMMITTER du dernier commit qui modifie le cote PR.
 
+    La remontee est celle de `last_authoritative_sha` ; seule la date du
+    commit atteint est rendue ici."""
+    current, payload = _walk_authoritative(repo, sha, base_sha, fetch, run_git)
+    return _committer_date(payload, current)
+
+
+def last_authoritative_sha(
+    repo: str,
+    sha: str,
+    base_sha: str,
+    fetch=_gh_json,
+    run_git=None,
+) -> str:
+    """SHA du dernier commit qui modifie le cote PR (meme remontee que le
+    plancher DWELL). Deux tetes qui rendent le meme SHA ne different que par
+    des rafraichissements de base PROUVES content-free : c'est ce que lit
+    `merge_ready` pour savoir si l'approbation du coordinateur, posee sur une
+    tete anterieure, couvre encore le contenu de la tete courante."""
+    current, _payload = _walk_authoritative(repo, sha, base_sha, fetch, run_git)
+    return current
+
+
+def _walk_authoritative(repo, sha, base_sha, fetch, run_git):
+    """Remontee first-parent commune au plancher DWELL et a `merge_ready`.
+
     Remonte la chaine first-parent au-dela des fusions de rafraichissement
     de base PROUVEES content-free : deux parents, le SECOND ancetre de la
     base, ET l'arbre du commit identique a l'auto-merge des parents (CR
@@ -515,8 +540,8 @@ def last_authoritative_committed_at(
                 if auto_tree and merge_tree and auto_tree == merge_tree:
                     current = first
                     continue
-                return _committer_date(payload, current)
-        return _committer_date(payload, current)
+                return current, payload
+        return current, payload
     raise DwellError(
         "chaine first-parent de plus de {} fusions de base depuis {} "
         "-- etat pathologique, refus".format(_MAX_WALK, sha[:12])

@@ -9,11 +9,17 @@ d'adjoint etait rejete par le gate, 14 avaient une tete perimee et 13 une
 discussion ayant bouge APRES le dossier, 0 un refus de fond. Un dossier
 perit pendant qu'il attend le coordinateur.
 
+Arbitrage user 2026-09-28 (Q67, option a) : l'organe ne merge QUE ce que le
+coordinateur a LU et APPROUVE. Il ne remplace pas cette lecture ; il evite
+seulement qu'un dossier perisse entre elle et le merge. Jusque-la, la
+disposition de review n'etait que relevee : sur les 211 merges du journal
+(23/09 -> 28/09), 6 portaient une approbation ``myia-ai-01``, et toute lane
+ne portant pas la PR pouvait la faire merger par son seul dossier.
+
 L'organe est deterministe et tourne sous l'identite coordinateur
-(myia-ai-01) toutes les ~20 minutes : il ne merge QUE ce qui passe
-EXACTEMENT les controles du coordinateur lui-meme, et seulement en
-perimetre (b) -- hors harnais et hors grains DEEP. Tour de controle par
-PR, TOUT doit tenir sinon skip avec raison nommee :
+(myia-ai-01) toutes les ~20 minutes, et seulement en perimetre (b) -- hors
+harnais et hors grains DEEP. Tour de controle par PR, TOUT doit tenir sinon
+skip avec raison nommee :
 
 1. pas un brouillon, et au moins un commentaire d'issue dont la premiere
    ligne est ``[ADJOINT PREFLIGHT]`` (prefiltre bon marche avant le gate
@@ -31,6 +37,18 @@ PR, TOUT doit tenir sinon skip avec raison nommee :
 2bis. pre-controle du dernier dossier ``[ADJOINT PREFLIGHT]`` : tete
    perimee ou ``b0:`` different de ``clear`` -> skip SANS payer le gate
    (un dossier illisible est laisse au gate, qui tranche) ;
+2ter. approbation du coordinateur : la DERNIERE voix de ``myia-ai-01``
+   (etat reel ``APPROVED``/``CHANGES_REQUESTED``, ou verdict type en
+   corps -- latest-wins, ``DISMISSED`` jamais) est un ``APPROVED`` reel,
+   et elle couvre le CONTENU de la tete : soit elle est posee sur la tete
+   elle-meme, soit la tete n'en differe que par des rafraichissements de
+   base PROUVES content-free (``merge_dwell.last_authoritative_sha``, la
+   remontee du plancher DWELL : un ``update-branch`` sans conflit ne
+   perime pas la lecture, une resolution de conflit ou un commit de
+   contenu la perime). Absente -> ``no-coordinator-approval`` ; perimee
+   -> ``coordinator-approval-stale`` ; preuve illisible ->
+   ``coordinator-approval-unverifiable`` (fail-closed). Controle place
+   AVANT le gate : une PR non lue ne paie pas le gate ;
 3. gate d'entree ``check_adjoint_prevalidation.py <PR> --json`` ->
    ``"ready": true`` (exit 0). Les rc documents du gate (1 no-dossier,
    2 unknown, 3 blocked) sont des SKIPS nommes, pas des erreurs ;
@@ -80,13 +98,11 @@ Comportement :
   (``hold:<motif>``) AVANT tout appel gh. Fichier absent = aucune
   retenue ; fichier illisible ou ligne malformee -> exit 2 (on ne merge
   pas sans savoir ce qui est retenu).
-- Review : la disposition de review est CLASSEE a la tete que la ligne
-  declare (``approved-exact-head`` / ``approval-not-on-head`` /
-  ``no-approval``, point 1 de #17672) depuis les ``reviews`` de la meme
-  vue -- l'oid de review y figure, aucun appel supplementaire. Le
-  dossier hache cet oid sans le comparer a la tete ; c'est cette
-  comparaison qui manquait. Elle informe, elle ne bloque pas : le
-  dossier READY a la tete exacte reste le contrat d'entree.
+- Review : deux lectures distinctes. La disposition journalisee (champ
+  ``review``) est CLASSEE a la tete que la ligne declare
+  (``approved-exact-head`` / ``approval-not-on-head`` / ``no-approval``,
+  point 1 de #17672) sur TOUTES les voix, bots compris ; elle informe.
+  Ce qui BLOQUE est l'etape 2ter : la seule voix du coordinateur.
 - Journal : une ligne JSON par PR evaluee (ts UTC en Z, pr, head,
   verdict, reason, merged, review) dans
   ``%LOCALAPPDATA%/CoursIA/merge_ready/journal.jsonl`` (surchargeable
@@ -145,6 +161,11 @@ if str(CI_DIR) not in sys.path:
     sys.path.insert(0, str(CI_DIR))
 
 import pool_review_verdicts as review_canon  # noqa: E402
+# La remontee first-parent qui saute les rafraichissements de base PROUVES
+# content-free est celle du plancher DWELL (#16149) : importee, pas recopiee,
+# pour que « la lecture du coordinateur couvre-t-elle encore cette tete ? » et
+# « depuis quand le contenu n'a-t-il pas bouge ? » ne divergent jamais.
+import merge_dwell  # noqa: E402
 
 REPO = "jsboige/CoursIA"
 COORDINATOR_USER = "myia-ai-01"
@@ -481,8 +502,8 @@ def list_open_prs(runner: Runner, gh_env: dict[str, str]) -> list[int]:
 #: review se classe sans appel supplementaire (l'oid de review y figure, mesure
 #: du 2026-09-25 : ``gh pr view --json reviews`` rend ``commit.oid``).
 PR_VIEW_FIELDS = (
-    "number,title,isDraft,body,headRefName,headRefOid,files,changedFiles,"
-    "comments,reviews"
+    "number,title,isDraft,body,headRefName,headRefOid,baseRefOid,files,"
+    "changedFiles,comments,reviews"
 )
 
 
@@ -555,6 +576,95 @@ def review_disposition(view: dict, head: str) -> str:
     if any(_review_voice_state(row) in APPROVING_VOICES for row in reviews):
         return APPROVAL_NOT_ON_HEAD
     return NO_APPROVAL
+
+
+# --- approbation du coordinateur (etape 2ter, Q67 option a) --------------------
+
+
+def coordinator_approval_oid(view: dict) -> str | None:
+    """Oid du commit que la DERNIERE voix de ``myia-ai-01`` approuve, ou None.
+
+    Latest-wins sur les seules voix du coordinateur, lues comme le canon (etat
+    reel, puis verdict type en corps) : un ``CHANGES_REQUESTED`` ou un
+    ``VERDICT: CONCERNS`` posterieur retire l'approbation, un ``COMMENTED``
+    sans verdict (une phrase de levee, par exemple) ne la retire pas. Seul
+    l'etat REEL ``APPROVED`` vaut approbation : c'est le geste explicite de
+    lecture, pas un jeton de corps.
+    """
+    voices = [
+        row
+        for row in view.get("reviews") or []
+        if isinstance(row, dict)
+        and ((row.get("author") or {}).get("login")) == COORDINATOR_USER
+        and _review_voice_state(row)
+    ]
+    if not voices:
+        return None
+    latest = max(voices, key=lambda row: str(row.get("submittedAt") or ""))
+    if str(latest.get("state") or "") != "APPROVED":
+        return None
+    oid = str(((latest.get("commit") or {}).get("oid")) or "")
+    return oid or None
+
+
+def _dwell_fetch(runner: Runner, gh_env: dict[str, str]):
+    """``fetch`` de ``merge_dwell`` passe par le runner, jeton epingle."""
+
+    def fetch(path: str) -> object:
+        res = runner.run(["gh", "api", path], env=gh_env)
+        if res.returncode != 0:
+            raise merge_dwell.DwellError(f"gh api {path} rc={res.returncode}")
+        try:
+            return json.loads(res.stdout)
+        except json.JSONDecodeError as exc:
+            raise merge_dwell.DwellError(f"gh api {path} : reponse non-JSON") from exc
+
+    return fetch
+
+
+def _dwell_git(runner: Runner):
+    """``run_git`` de ``merge_dwell`` passe par le runner, dans ce depot."""
+
+    def run_git(args: list[str]) -> tuple[int, str]:
+        res = runner.run(["git", "-C", str(REPO_ROOT), *args])
+        return res.returncode, res.stdout
+
+    return run_git
+
+
+def coordinator_approval_reason(
+    view: dict, head: str, runner: Runner, gh_env: dict[str, str]
+) -> str | None:
+    """Etape 2ter : ``None`` si l'approbation du coordinateur couvre ``head``.
+
+    Une approbation posee sur une tete anterieure couvre encore la tete
+    courante si les deux ne different que par des rafraichissements de base
+    prouves content-free : les deux tetes remontent alors au MEME dernier
+    commit de contenu. Toute autre difference perime la lecture ; une preuve
+    illisible vaut refus.
+    """
+    approved = coordinator_approval_oid(view)
+    if approved is None:
+        return "no-coordinator-approval"
+    if approved == head:
+        return None
+    base = str(view.get("baseRefOid") or "")
+    if not base:
+        return "coordinator-approval-unverifiable:no-base"
+    fetch = _dwell_fetch(runner, gh_env)
+    run_git = _dwell_git(runner)
+    try:
+        current = merge_dwell.last_authoritative_sha(
+            REPO, head, base, fetch=fetch, run_git=run_git
+        )
+        read = merge_dwell.last_authoritative_sha(
+            REPO, approved, base, fetch=fetch, run_git=run_git
+        )
+    except merge_dwell.DwellError:
+        return "coordinator-approval-unverifiable"
+    if current == read:
+        return None
+    return "coordinator-approval-stale"
 
 
 def precheck_dossier(view: dict) -> str | None:
@@ -808,10 +918,18 @@ def evaluate_pr(
     reason = precheck_dossier(view)
     if reason is not None:
         return skip(reason)
+    # 2ter. approbation du coordinateur (Q67) : une PR non lue ne paie pas le gate.
+    reason = coordinator_approval_reason(view, view_head, runner, gh_env)
+    if reason is not None:
+        return skip(reason)
     # 3. gate d'entree.
     ready, gate_head, gate_reason = run_gate(runner, pr, gh_env)
     if not ready:
         return skip(gate_reason)
+    # L'approbation a ete jugee a la tete de la vue : une tete differente au
+    # gate n'a pas ete couverte par ce jugement.
+    if gate_head != view_head:
+        return skip("head-moved")
     # 4. b0 declaratif du dossier accepte.
     reason = dossier_b0_reason(runner, pr, gh_env)
     if reason is not None:
