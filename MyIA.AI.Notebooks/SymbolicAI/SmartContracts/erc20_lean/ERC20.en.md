@@ -40,7 +40,7 @@ potential holders), balances `Address → ℕ`, total supply a `ℕ`.
 `supplyInvariant s := ∑ a, s.balances a = s.totalSupply`. Operations are guarded
 transitions (sufficient balance for `transfer`/`burn`, no underflow).
 
-Companion notebook (`SC-7-Token-Standards.ipynb`, SmartContract series):
+Companion notebook (`SC-07-Token-Standards-Python.ipynb`, SmartContract series):
 pedagogical presentation of the token + formal verification side by side with
 the Solidity implementation. Wiring the notebook is the responsibility of the
 SmartContract series owner.

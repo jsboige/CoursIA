@@ -194,7 +194,7 @@ def load_sol():
     """Relit le source du contrat Deliberation depuis le notebook du bac a sable."""
     global SOL
     if SOL is None:
-        nb = json.load(open(Path(__file__).with_name("SC-2b-Bac-ASable-Institutionnel.ipynb"),
+        nb = json.load(open(Path(__file__).with_name("SC-02b-Bac-ASable-Institutionnel-Python.ipynb"),
                             encoding="utf-8"))
         for c in nb["cells"]:
             if c["cell_type"] == "code":
