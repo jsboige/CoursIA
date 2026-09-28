@@ -95,7 +95,8 @@ def main():
                     "--kernel", "lean4-wsl",
                     "--timeout", "600",
                 ]
-                proc = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+                proc = subprocess.run(cmd, capture_output=True, text=True,
+                                      encoding="utf-8", errors="replace", timeout=600)
                 elapsed = time.time() - t0
                 r = check_notebook(nb_path)
                 r["elapsed_s"] = round(elapsed, 1)
