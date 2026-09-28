@@ -267,7 +267,7 @@ Des deux derniers barreaux de l'axe vertical, la **strate 7 est livrée** ([ICT-
 | Strate | Substrat | État | Pattes de la tresse | Epic |
 |--------|----------|------|---------------------|------|
 | **6** | l'**argumentation** comme substrat (+ jambe explicabilité LLM) | graine exécutée, strate non livrée | C3 morphogenèse rhétorique ([#7742](https://github.com/jsboige/CoursIA/issues/7742)) · C4 grammaire de propagation ([#7743](https://github.com/jsboige/CoursIA/issues/7743)) | [#7289](https://github.com/jsboige/CoursIA/issues/7289) · horizon altérité [#7291](https://github.com/jsboige/CoursIA/issues/7291) (GATED) |
-| **7** | **freebits d'ordre 2** & réversibilité agentique | cadrée par la dimension D1, non livrée | — (D2 l'**alimente** sans l'occuper) | [#7745](https://github.com/jsboige/CoursIA/issues/7745) |
+| **7** | **freebits d'ordre 2** & réversibilité agentique | premier barreau livré, [ICT-46](ICT-46-Strate7-FreeCoordinates.ipynb) | — (D2 l'**alimente** sans l'occuper) | [#7745](https://github.com/jsboige/CoursIA/issues/7745) |
 
 **Strate 6 — sa graine, elle, est exécutée.** Le substrat est le **discours** : des trajectoires de croyance sur graphes d'arguments, où la question est de savoir si une structure causale se maintient quand ce qui circule n'est plus de la matière ni des poids, mais des raisons. Les notebooks livrés y portent déjà leur mesure :
 
