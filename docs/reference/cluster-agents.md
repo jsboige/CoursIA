@@ -168,7 +168,7 @@ Le registre des GPU se gere **activement** : une experience qui a besoin de VRAM
 Hardware : MSI GE76 12UHS, RTX 3080 Ti laptop. Pas de persistence mode (non supporte laptop). Throttle deja a 50W sous charge a 89C, malgre power limit 150W. Lid ouvert ameliore mais ne suffit pas.
 
 **Règle ai-01** : trainings GPU non-supervises > 15 min sur po-2025 INTERDITS, sauf si :
-- Pattern reuse `MyIA.AI.Notebooks/QuantConnect/shared/gpu_training.py` (classe `TrainingCheckpoint` + `thermal_check` import direct ; outer supervisor subprocess documenté dans `scripts/training/train_with_checkpoints.py` n'existe pas — librairie canonique = `gpu_training.py`, defauts `max_temp=80`, `cool_sleep=15`)
+- Pattern reuse `MyIA.AI.Notebooks/QuantConnect/shared/gpu_training.py` (classe `TrainingCheckpoint` + import direct de `thermal_check` ; librairie canonique, defauts `max_temp=80`, `cool_sleep=15` ; aucun superviseur externe en sous-processus)
 - Watchdog `nvidia-smi` polling avec auto-stop a 87C
 - Batch size réduit + mixed precision FP16
 
