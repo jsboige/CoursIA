@@ -265,6 +265,19 @@ PILOT: list[Guard] = [
         blocking=True,
     ),
     Guard(
+        name="notebook-nav-chain-guard",
+        source="notebook-nav-chain-guard.yml",
+        paths=NOTEBOOK_GLOBS + [
+            "MyIA.AI.Notebooks/**/README.md",
+            "scripts/notebook_tools/check_notebook_nav_chain.py",
+            "scripts/tests/baseline_nb_nav_chain.json",
+            ".github/workflows/notebook-nav-chain-guard.yml",
+        ],
+        argv=["python", "scripts/notebook_tools/check_notebook_nav_chain.py",
+              "--check"],
+        blocking=True,
+    ),
+    Guard(
         name="notebook-interp-positioning-guard",
         source="notebook-interp-positioning.yml",
         paths=NOTEBOOK_GLOBS + [
@@ -1174,8 +1187,7 @@ TRANCHE9: list[Guard] = [
 #
 # Renomme TRANCHE9 -> TRANCHE10 pour eviter la collision avec l'interval-kind
 # mergé sur main via PR #15624 (3342d97342, 2026-09-12T02:57:59+02:00 -- anterieur
-# a ce rebase). Collision signalee par le rebase c.1090 (Tell c.1065-L3 ★★
-# fondateur `rebase-vers-une-cible-NOMMEE-herite-de-sa-peremption`).
+# a ce rebase). Collision signalee par le rebase c.1090.
 #
 # Ce garde verifie la PRESENCE + le TYPE de `outputs` sur chaque cellule
 # code. `outputs: []` est PASS (la forme canonique d'une cellule non executee

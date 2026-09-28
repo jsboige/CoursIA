@@ -59,6 +59,8 @@ dotnet tool update --global Microsoft.dotnet-interactive --version 1.0.617701
 dotnet interactive jupyter install
 ```
 
+**Canon `language_info.version` : C# 13.0 (#17679, décision coordinateur 2026-09-26).** L'environnement épinglé du dépôt (SDK 10.0.112, dotnet-interactive 1.0.617701) émet **C# 13.0** ; les notebooks encore stampés `12.0` (34 au constat du 2026-09-24, artefacts d'exécutions sous SDK 8) convergent à leur re-exécution. La dérive `12.0 -> 13.0` est donc **attendue et couverte par C.4** : le `Kernel drift guard` la tient pour verte via sa table d'acceptation `CANONICAL_LANGUAGE_TRANSITIONS` ([`check_kernel_drift.py`](../../scripts/notebook_tools/check_kernel_drift.py)) — la transition inverse (`13.0 -> 12.0`) et tout changement de `kernelspec.name` restent rouges.
+
 ### Consequence du pin : plafond Roslyn 4.12.0.0 sur les packages NuGet
 
 Le pin n'est pas gratuit. `1.0.617701` **embarque Roslyn 4.12.0.0** (`Microsoft.CodeAnalysis.CSharp.dll`, FileVersion `4.1200.24.57207`, mesure firsthand sur ai-01 le 2026-08-16 dans `.dotnet/tools/.store/.../tools/net9.0/any/`). Tout package reference par `#r "nuget: ..."` qui **exige** une version superieure echoue au chargement :

@@ -215,6 +215,7 @@ Utiliser l'agent **notebook-executor** :
 # Exécuter le notebook
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt=f"""
     Tu es un agent notebook-executor.
     Exécute le notebook: {notebook_path}
@@ -419,6 +420,7 @@ if fix_errors:
             if not result['success']:
                 Task(
                     subagent_type="general-purpose",
+                    model="sonnet",
                     prompt=f"""
                     Tu es un agent notebook-cell-iterator.
                     Corrige la cellule {result['cell_index']} du notebook {notebook_path}
@@ -633,6 +635,7 @@ if validation_report['summary']['execution']['status'] != 'PASS':
     for error in validation_report['errors']:
         Task(
             subagent_type="general-purpose",
+            model="sonnet",
             prompt=f"notebook-cell-iterator: fix cell {error['cell']}",
             description=f"Fix {error['type']}"
         )
@@ -641,6 +644,7 @@ if validation_report['summary']['execution']['status'] != 'PASS':
 if validation_report['warnings'].any(lambda w: w['type'] == 'consecutive_code'):
     Task(
         subagent_type="general-purpose",
+        model="sonnet",
         prompt=f"notebook-enricher: enrich {notebook_path}",
         description="Add explanations"
     )
@@ -656,6 +660,7 @@ validation_report_v2 = validate_notebook(notebook_path, validation_level="standa
 ```python
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt="""
     Agent notebook-validator.
 
@@ -673,6 +678,7 @@ Task(
 ```python
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt="""
     Agent notebook-validator.
 
@@ -695,6 +701,7 @@ notebooks = glob("MyIA.AI.Notebooks/GameTheory/*.ipynb")
 for nb in notebooks:
     Task(
         subagent_type="general-purpose",
+        model="sonnet",
         prompt=f"""
         Agent notebook-validator.
         Notebook: {nb}
