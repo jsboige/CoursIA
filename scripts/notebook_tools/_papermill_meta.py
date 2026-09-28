@@ -26,13 +26,28 @@ def strip_stale_papermill_metadata(nb):
     describe that pass (old dates, old duration) and would let a reviewer date
     the fresh outputs to the wrong run. An absent metadata is missing
     information; a stale one is misleading information (#11146).
+
+    The same rationale applies per cell (#18305, suite #11146) : un executeur
+    qui reecrit un carnet touche les sorties de chaque cellule code mais laisse
+    les blocs ``cells[i].metadata.execution`` (``iopub.status.busy``/``iopub.
+    execute_input``) et ``cells[i].metadata.papermill`` (``start_time``,
+    ``duration``) dater des executions precedentes. On les retire aussi.
     """
     metadata = nb.get("metadata")
-    if not metadata:
-        return
-    metadata.pop("papermill", None)
-    execution = metadata.get("execution")
-    if isinstance(execution, dict):
-        execution.pop("papermill", None)
-        if not execution:
-            metadata.pop("execution", None)
+    if metadata:
+        metadata.pop("papermill", None)
+        execution = metadata.get("execution")
+        if isinstance(execution, dict):
+            execution.pop("papermill", None)
+            if not execution:
+                metadata.pop("execution", None)
+    for cell in nb.get("cells", []) or []:
+        cell_meta = cell.get("metadata")
+        if not cell_meta:
+            continue
+        cell_meta.pop("papermill", None)
+        execution = cell_meta.get("execution")
+        if isinstance(execution, dict):
+            execution.pop("papermill", None)
+            if not execution:
+                cell_meta.pop("execution", None)
