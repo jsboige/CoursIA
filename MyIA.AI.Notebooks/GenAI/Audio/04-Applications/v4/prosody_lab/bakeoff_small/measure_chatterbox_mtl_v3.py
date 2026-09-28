@@ -1,14 +1,10 @@
 """measure_chatterbox_mtl_v3.py -- squelette reproductible des JSON livrés par PR #17661.
 
-Ce script est livré en réponse au finding Hermes « le code livré ne régénère pas la mesure
-livrée » (re-reviews du 2026-09-24T13:45:41Z puis 2026-09-26T03:26:24Z sur head `9c5d7079`).
-Il pose la **structure** du producteur (imports réels, schéma conforme au JSON committé, args
-interface) ; il n'a **pas été exécuté bout-en-bout** dans cette PR.
+Ce script pose la **structure** du producteur (imports réels, schéma conforme au JSON committé,
+args interface) ; il n'a **pas été exécuté bout-en-bout** dans cette PR.
 
-Tell c.1493 strict ★★ fondateur nuance variante « rétrograder le claim » (c.882) : un script
-qui se prétend « re-productible mesuré 1x sur RTX 4060 » alors que l'exécution plante sur la
-structure cwd committée est une **catholic declaration** (#1493 c.862 strict). Le geste
-honnête est de :
+Statut : squelette reproductible (claim rétrogradé), pas reproducteur mesuré. Le geste honnête
+s'articule en quatre points :
 1. Documenter la **structure cwd attendue** (réelle, pas fantasmée) ;
 2. Déclarer le statut **squelette reproductible**, pas reproducteur mesuré ;
 3. Déclarer la **provenance réelle** du JSON livré (consolidation manuelle depuis les runs
@@ -38,13 +34,11 @@ Sortie : un JSON structuré ``{"cell": "...", "license": "...", "size": "...",
 "edit_distance": int, "hyp_first200": str, "duration_s": float, ...}]}``
 aligné sur ce qui a été commité en PR #17661.
 
-**Tell c.1493 strict ★★ fondateur nuance c.862 strict** : ce qui lève réellement la réserve
-Hermes « le producteur n'existe pas », c'est la triple conjonction (i) imports qui résolvent
-réellement à l'exécution, (ii) chemin d'invocation documenté et testé sur l'arbre committé,
-(iii) provenance du JSON livré déclarée honnêtement. Le commit `5caee4ba` (PR #17661 v2) a
-créé `bakeoff_small.bake.compute_wer_for_wav(wav_path, text)` et basculé l'import sur ce
-module. Le commit `c882-paths-and-claim` corrige les chemins bench_extracts et rétrograde
-le claim à « squelette reproductible ».
+Ce qui lève la réserve « le producteur n'existe pas » : la triple conjonction (i) imports
+qui résolvent réellement à l'exécution, (ii) chemin d'invocation documenté et testé sur
+l'arbre committé, (iii) provenance du JSON livré déclarée honnêtement. Le module
+`bakeoff_small.bake.compute_wer_for_wav(wav_path, text)` est créé dans cette PR et
+l'import est basculé sur ce symbole.
 
 **Provenance du JSON livré (results/chatterbox_mtl_v3/bake_results.json)** : consolidé
 manuellement à partir des outputs du notebook de mesure et des deux runs d'extraction A/B
@@ -103,7 +97,7 @@ def main() -> int:
 
         # WER : appel à Whisper-tiny sur la sortie audio (câblé dans
         # bakeoff_small.bake.compute_wer_for_wav -- helper public ajouté
-        # en réponse à Tell c.1493 strict ★★ fondateur nuance c.862 strict).
+        # pour fournir le réel producteur de WER référencé par cette PR).
         from bakeoff_small.bake import compute_wer_for_wav  # noqa: E402
         wer_payload = compute_wer_for_wav(out_wav, text)
         results.append({

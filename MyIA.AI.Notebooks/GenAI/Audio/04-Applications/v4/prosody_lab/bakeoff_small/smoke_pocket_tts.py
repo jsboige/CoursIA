@@ -2,7 +2,9 @@
 
 Mesure first-hand : DL + load + 1 generation courte.
 Si OK, lancera le banc complet sur A et B.
-Tell c.804 : soundfile.write (libsndfile torch-independent) au lieu de torchaudio.save.
+
+Choix technique -- sortie WAV via soundfile (libsndfile torch-independent) plutot que
+torchaudio.save, qui exige torchcodec 0.16 lui-meme dependant de torch 2.6.x.
 """
 import sys
 import time

@@ -66,14 +66,14 @@ Pipeline : `ChatterboxMultilingualTTS.from_pretrained("cuda")` + `generate(text,
 
 **Fichiers JSON mesurable dans `results/chatterbox_mtl_v3/`** :
 - `bake_results.json` (métriques + WER + transcription partielle, **schéma inchangé** depuis PR #17661 v1)
-- ~~`A__chatterbox_mtl_v3.wav` (835 KB, 17.4 s)~~ — **retiré** au commit `2c817263` (mandat ai-01 strict : « ne commite aucun audio »). Régénérable via `python -m bakeoff_small.measure_chatterbox_mtl_v3 --extract-dir <chemin> --out-dir results/chatterbox_mtl_v3 --device cuda --seed 42` (helper `compute_wer_for_wav` ajouté c.870 dans `bakeoff_small.bake`, lève l'`ImportError` de la v1).
+- ~~`A__chatterbox_mtl_v3.wav` (835 KB, 17.4 s)~~ — **retiré** au commit `2c817263` (mandat ai-01 strict : « ne commite aucun audio »). Régénérable via `python -m bakeoff_small.measure_chatterbox_mtl_v3 --extract-dir <chemin> --out-dir results/chatterbox_mtl_v3 --device cuda --seed 42` (helper `compute_wer_for_wav` ajouté dans `bakeoff_small.bake`, lève l'`ImportError` de la v1).
 - ~~`B__chatterbox_mtl_v3.wav` (1.01 MB, 21.0 s)~~ — **retiré**, même motif, même commande.
 
 ## Acceptance (issue #17586 Phase A0)
 
 - [x] Chatterbox Multilingual V3 mesuré sur A + B (JSON + WER ; **WAV retirés du dépôt**, régénérables via `measure_chatterbox_mtl_v3.py`)
-- [ ] Kyutai tts-1.6b installé + mesuré (`pip install moshi-tts` ou `git+https://github.com/kyutai-labs/delayed-streams-modeling`) — verdict **RECOVERABLE-MACHINE** (CDN HF xet-bridge Read timed out, voir Tell c.805 ★★★)
-- [ ] pocket-tts installé + mesuré (`pip install pocket-tts`) — banc CPU first-hand livré (résultats A + B dans `results/pocket_tts/`, `wer: null` documenté par `wer_explanation` : Whisper-tiny non chargé au run CPU c.805 ; re-générable via `measure_pocket_tts.py` créé c.870)
+- [ ] Kyutai tts-1.6b installé + mesuré (`pip install moshi-tts` ou `git+https://github.com/kyutai-labs/delayed-streams-modeling`) — verdict **RECOVERABLE-MACHINE** (CDN HF xet-bridge Read timed out)
+- [ ] pocket-tts installé + mesuré (`pip install pocket-tts`) — banc CPU first-hand livré (résultats A + B dans `results/pocket_tts/`, `wer: null` documenté par `wer_explanation` : Whisper-tiny non chargé au run CPU ; re-générable via `measure_pocket_tts.py`)
 - [ ] Fun-CosyVoice 3.0 installé + mesuré (`git+https://github.com/FunAudioLLM/CosyVoice`) — verdict **RECOVERABLE-MACHINE** (4.5 GB total + clone branche 3.0 manuel)
 - [x] Tableau comparatif partiel (Chatterbox seul pour cette PR)
 - [x] Commentaire Chatterbox posté sur #17586

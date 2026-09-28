@@ -79,16 +79,10 @@ class KyutaiTTSClient:
         self._model = None
 
     def warm(self, text: str, lang: str = "fr", **kwargs) -> Optional[bytes]:
-        # Verdicts cycle c.805 :
-        # - moshi 0.2.13 installé (downgrade torch 2.13 -> 2.9.1+cpu)
-        # - moshi.models.tts.TTSModel.from_checkpoint_info(...) chargeable
-        # - HF_TOKEN loadé depuis .secrets/master.env
-        # - DL Kyutai tts-1.6b-en_fr : 3.6 GB safetensors sur CDN us.aws.cdn.hf.co
-        #   -> HTTPSConnectionPool Read timed out a plusieurs reprises sur 20 min
-        # - CDN joignable (HTTP 200 sur /) mais le flux xet-bridge-us timeout
-        # - Verdict : RECOVERABLE-MACHINE (machine specifique avec env reseau
-        #   different - GPU po-2023 ou po-2024 avec HF_TOKEN frais + cache
-        #   pre-peuple). Pas de fallback CPU first-hand en l'etat.
+        # Pre-flight status (moshi 0.2.13 + torch downgrade + HF_TOKEN cache,
+        # CDN xet-bridge timeouts sur le DL safetensors 3.6 GB). Verdict:
+        # RECOVERABLE-MACHINE (env reseau different avec GPU + cache pre-peuple).
+        # Pas de fallback CPU first-hand.
         try:
             import moshi  # noqa: F401
         except Exception:
@@ -167,14 +161,11 @@ class FunCosyVoiceClient:
         self._model = None
 
     def warm(self, text: str, lang: str = "fr", **kwargs) -> Optional[bytes]:
-        # Verdict cycle c.805 :
-        # - CosyVoice 3.0 = FunAudioLLM/Fun-CosyVoice3-0.5B-2512
-        # - llm.pt 2 GB + flow.pt 1.3 GB + speech_tokenizer_v3.onnx 970 MB
-        # - cosyvoice PyPI 0.0.8 = CosyVoice 1.x, pas 3.0
-        # - CosyVoice 3.0 necessite git clone + install manuel depuis
-        #   https://github.com/FunAudioLLM/CosyVoice + checkout branche 3.0
-        # - Total ~4.5 GB modeles + install = > 1 cycle (mesure first-hand differee)
-        # - Verdict : RECOVERABLE-MACHINE (env specifique a monter)
+        # Pre-flight status (modeles ~4.5 GB : llm.pt 2 GB + flow.pt 1.3 GB +
+        # speech_tokenizer_v3.onnx 970 MB + hift.pt 83 MB; cosyvoice PyPI 0.0.8
+        # = CosyVoice 1.x pas 3.0; CosyVoice 3.0 necessite git clone +
+        # install manuel depuis la branche 3.0 de FunAudioLLM/CosyVoice).
+        # Verdict: RECOVERABLE-MACHINE (env specifique a monter, > 1 cycle).
         try:
             from cosyvoice.cli.cosyvoice import AutoModel  # noqa: F401
         except Exception:

@@ -1,14 +1,11 @@
 """measure_pocket_tts.py -- générateur (reproductibilité) des JSON livrés par PR #17661.
 
 Producteur **exécutable** des fichiers results/pocket_tts/{A,B}__pocket_tts.json commités en
-PR #17661. Symétrique de measure_chatterbox_mtl_v3.py mais adapté au run CPU du cycle c.805
-qui n'a pas chargé Whisper-tiny (le GPU était monopolisé par un autre banc à ce moment-là).
+PR #17661. Symétrique de measure_chatterbox_mtl_v3.py mais adapté au run CPU qui n'a pas
+chargé Whisper-tiny (GPU monopolisé par le banc Chatterbox à ce moment-là).
 
-Tell c.1493 strict ★★ fondateur nuance c.862 strict : ce script est le **vrai** producteur
-des JSON pocket-tts commités. Avant ce cycle, les fichiers étaient livrés sans déclaration de
-provenance -- le constat 5 d'ai-01 sur la PR #17661. Désormais, le champ `producer` de chaque
-JSON pointe vers ce fichier, et la commande ci-dessous régénère un JSON conforme au schéma
-livré.
+Ce script est le vrai producteur des JSON pocket-tts. Le champ `producer` de chaque JSON
+pointe vers ce fichier, et la commande ci-dessous régénère un JSON conforme au schéma livré.
 
 Usage (reproductibilité CPU) :
 
@@ -23,17 +20,17 @@ numpy, transformers (pour prosody_metrics), nussl / crepe (pour pitch -- si disp
 
 Sortie : un JSON par extract ``{ "extract": "A|B", "cell": "pocket_tts", "size": "100M",
 "license": "Apache-2.0", "render_s": float, "wav_path": str, "wav_bytes": int,
-"producer": "measure_pocket_tts.py (PR #17661 c.870)", "wer_explanation": "Whisper-tiny
-non chargé au run CPU c.805 -- WER non mesurable hors GPU", "wer": null, "metrics": {...} }``
+"producer": "measure_pocket_tts.py (PR #17661)", "wer_explanation": "Whisper-tiny
+non chargé au run CPU -- WER non mesurable hors GPU", "wer": null, "metrics": {...} }``
 aligné sur ce qui a été commité en PR #17661.
 
 Note sur `wer: null` :
-    Le run first-hand du cycle c.805 a généré le WAV + mesuré la prosodie (via prosody_metrics
-    + syllable_pitch) sans charger Whisper-tiny. C'est cohérent avec l'environnement : un
-    pocket-tts CPU ne mobilise pas le GPU, mais Whisper-tiny FP16 demande 73 MB VRAM + CUDA --
-    indisponible sur la machine CPU-only qui a fait le banc. Le JSON porte donc `wer: null`
-    **et** un champ `wer_explanation` qui le justifie -- ce n'est pas un échec silencieux,
-    c'est un scope borné par l'env.
+    Le banc génère le WAV + mesure la prosodie (via prosody_metrics + syllable_pitch) sans
+    charger Whisper-tiny. Cohérent avec l'environnement : pocket-tts CPU ne mobilise pas le
+    GPU, mais Whisper-tiny FP16 demande 73 MB VRAM + CUDA -- indisponible sur la machine
+    CPU-only qui a produit le banc. Le JSON porte donc `wer: null` **et** un champ
+    `wer_explanation` qui le justifie -- ce n'est pas un échec silencieux, c'est un scope
+    borné par l'env.
 
 **Statut** : générateur **re-productible** (mesuré 1x le 2026-09-24 sur CPU). Les valeurs
 prosody (f0_st_range, CV, velocity, syllable metrics) sont déterministes seed-to-seed pour
@@ -51,9 +48,9 @@ from pathlib import Path
 
 log = logging.getLogger("measure_pocket_tts")
 
-PRODUCER_TAG = "measure_pocket_tts.py (PR #17661 c.870)"
+PRODUCER_TAG = "measure_pocket_tts.py (PR #17661)"
 WER_EXPLANATION = (
-    "Whisper-tiny non charge au run CPU c.805 -- WER non mesurable hors GPU. "
+    "Whisper-tiny non charge au run CPU -- WER non mesurable hors GPU. "
     "Pour une mesure WER, basculer sur --device cuda (PR #17661 chatterbox run utilise "
     "le GPU RTX 4060, pocket-tts CPU + Whisper GPU = double budget, non tente)."
 )
@@ -66,7 +63,7 @@ def main() -> int:
     ap.add_argument("--out-dir", required=True, type=Path,
                     help="Repertoire de sortie des JSON (results/pocket_tts/)")
     ap.add_argument("--device", default="cpu", choices=["cuda", "cpu"],
-                    help="Device pour pocket-tts (cpu par defaut -- coherent banc c.805).")
+                    help="Device pour pocket-tts (cpu par defaut -- banc CPU).")
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--cell", default="pocket_tts",
                     help="Nom logique de la campagne (par defaut pocket_tts)")

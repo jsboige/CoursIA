@@ -100,11 +100,10 @@ def compute_wer_for_wav(wav_path: Path, text: str) -> dict[str, Any]:
         be None if their instrument failed (graceful degradation -- the
         caller decides whether to abort or partial-emit).
 
-    Tell c.1493 strict ★★ fondateur nuance c.862 strict : this function is
-    the REAL producer referenced by measure_chatterbox_mtl_v3.py line 73.
-    Prior to this commit, the import was a Catholic declaration (# type:
-    ignore + # noqa: E402) on a symbol that did not exist -- the script
-    would have raised ImportError at runtime, not a lint failure.
+    Real producer referenced by measure_chatterbox_mtl_v3.py at line 73.
+    Before this function existed, the import was guarded by lint suppressors
+    on a symbol that did not exist -- the script would have raised
+    ImportError at runtime, not a lint failure.
     """
     label = wav_path.stem  # e.g. "A__chatterbox_mtl_v3"
     log.info("[compute_wer_for_wav] %s (%.1f KB)",
@@ -153,7 +152,7 @@ def compute_wer_for_wav(wav_path: Path, text: str) -> dict[str, Any]:
 
 
 def _wer(reference: str, hypothesis: str) -> dict[str, Any]:
-    """Plain word error rate. Tells c.1493: WER is a metric, not the discriminator."""
+    """Plain word error rate. WER is a metric, not the discriminator."""
     ref = reference.strip().lower().split()
     hyp = hypothesis.strip().lower().split()
     # Levenshtein on token sequences

@@ -2,7 +2,9 @@
 
 Mesure first-hand : DL + load + 1 generation courte.
 Si OK, lancera le banc complet sur A et B.
-Tell c.804 : soundfile.write (libsndfile torch-independent) au lieu de torchaudio.save (torchcodec 0.16 requis).
+
+Choix technique -- sortie WAV via soundfile (libsndfile torch-independent) plutot que
+torchaudio.save, qui exige torchcodec 0.16 lui-meme dependant de torch 2.6.x.
 """
 import sys
 import time
@@ -13,7 +15,9 @@ import soundfile as sf
 from moshi.models.loaders import CheckpointInfo
 from moshi.models.tts import DEFAULT_DSM_TTS_REPO, DEFAULT_DSM_TTS_VOICE_REPO, TTSModel
 
-DEVICE = "cpu"  # Tell c.1493bis : venv test moshi downgradé torch 2.9.1+cpu, CUDA OFF
+# CPU choisi pour le venv de smoke-test de moshi, qui exige torch < 2.13 (moshi 0.2.13
+# n'est pas compatible avec torch 2.13 sur cette machine). CUDA OFF sur ce venv.
+DEVICE = "cpu"
 HF_REPO = DEFAULT_DSM_TTS_REPO  # kyutai/tts-1.6b-en_fr
 
 print(f"[INFO] Loading Kyutai tts model from {HF_REPO} on {DEVICE}")
@@ -43,7 +47,7 @@ for k, v in pcms.items():
         v_np = v.cpu().numpy()
         print(f"  {k}: shape={v_np.shape} dtype={v_np.dtype} duration={v_np.shape[-1]/24000:.2f}s")
 
-# Save as WAV 24kHz mono PCM_16 via soundfile (Tell c.804 : libsndfile torch-independent)
+# Save as WAV 24kHz mono PCM_16 via soundfile (libsndfile torch-independent)
 out_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "results", "kyutai_tts_1_6b", "smoke.wav")
 os.makedirs(os.path.dirname(out_path), exist_ok=True)
 for k, v in pcms.items():
