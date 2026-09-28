@@ -493,6 +493,70 @@ EXECUTABLE_DEFINITION_RE = re.compile(
     r'inductive |instance |record |void |int |bool |string |float |double |var )',
 )
 
+# Commented-out DEFINITION evidence: a line that begins with a comment marker
+# and then declares a function/class/proof. Detects the canonical leaky-stub
+# pattern (issue #18121, Lean-36 cells 19/21/23) where the cell carries a TODO
+# stub marker AND a fully commented-out solution body (proof/function/example
+# declaration with `:=`).
+#
+# Family-agnostic by accepting the three comment prefixes:
+#   - ``--`` (Lean)
+#   - ``#``  (Python)
+#   - ``//`` (C#, F#, Rust, JS, TS)
+COMMENTED_DEFINITION_RE = re.compile(
+    r'^\s*(?:--|#|//)\s*(?:def |class |struct |namespace |interface |enum |'
+    r'theorem |lemma |defn |inductive |instance |record |example |fn |func |'
+    r'public |private |protected |static |internal )(?!.*\bpass\b)',
+    re.MULTILINE,
+)
+
+# Commented-out PROOF EVIDENCE: a tactic-like marker inside a comment line.
+# Lean cells use `by simp [...]`, `by decide`, `by exact`, etc.; Python cells
+# use commented-out calls/asserts as proof-of-work markers. Matching just the
+# Lean subset (the dominant leaky-stub case in this corpus) gives a strong,
+# recall-safe signal without false-positiving on header comments.
+COMMENTED_PROOF_TACTIC_RE = re.compile(
+    r'^\s*(?:--|//|#)\s+(?:by\s+)?(?:simp|decide|exact|rfl|omega|tauto|trivial|'
+    r'simp\s*\[|intro|intros|apply|constructor|use|exact)\b',
+    re.MULTILINE,
+)
+
+
+def is_leaky_stub(source: str) -> bool:
+    """Detect the leaky-stub class (#18121).
+
+    Returns True when the cell is classified as a stub by ``is_stub_code``
+    (TODO markers, pass, sorry, return-None, etc.) AND ALSO carries commented-out
+    evidence of a real solution body — either a commented definition line
+    (function/class/proof declaration) or a commented proof-tactic marker.
+
+    The defect: ``is_stub_code`` is a disjunctive test on its STUB_PATTERNS list,
+    so any single TODO marker classifies the cell as stub, regardless of how
+    much commented-out solution the cell ALSO carries. A learner looking at
+    such a cell reads the commented-out body as a hint; on a strict reading,
+    the commented-out body IS a worked solution sitting one ``<uncomment>``
+    keystroke away. ``is_leaky_stub`` makes that asymmetry audible: the cell
+    STILL flows through the stub path (no HIGH leak verdict is raised), but a
+    separate LOW/advisory finding surfaces so a reviewer / author can decide
+    whether to git-blame-prune the proof body.
+
+    False-positive guard: a header comment like ``-- theorem foo := by sorry``
+    is excluded by the `:\bpass\b` lookahead in ``COMMENTED_DEFINITION_RE``
+    (the regex refuses to fire on lines whose only declared construct is
+    `pass`, which would be the stub side, not the leaky side).
+
+    Family coverage: tested on Lean (the founder case via Lean-36 cells
+    19/21/23) and Python (header comments like `# def foo(): ... pass`); C#
+    coverage falls out of the `//` prefix match.
+    """
+    if not is_stub_code(source):
+        return False
+    if COMMENTED_DEFINITION_RE.search(source):
+        return True
+    if COMMENTED_PROOF_TACTIC_RE.search(source):
+        return True
+    return False
+
 # A prompt / TODO marker indicating the cell is a skeleton left for the student.
 # A real complete solution never carries one of these.
 PROMPT_MARKER_RE = re.compile(
@@ -1000,6 +1064,36 @@ def scan_notebook(path: str) -> list[dict]:
         if not num and _numbered_exercise_header_between(cells, i, next_code_idx):
             continue
 
+        # Leaky-stub advisory (#18121): a cell classified as stub by
+        # is_stub_code AND carrying commented-out solution evidence (proof /
+        # function body). This branch runs BEFORE the has_soumis / not-stub
+        # branches so the LOW advisory surfaces in BOTH 'soumis par' and
+        # ordinary exercise layouts. Recall-safe: matches only when both
+        # signals fire, so a plain stub (TODO only) does NOT raise this.
+        if is_leaky_stub(next_code_source):
+            findings.append({
+                "path": path,
+                "cell_index": next_code_idx,
+                "cell_type": "code",
+                "severity": "LOW",
+                "exercise_num": num or "?",
+                "message": (
+                    f"Leaky stub: Exercice {num or '?'} is a stub (TODO/pass/sorry) "
+                    f"but also carries commented-out solution evidence "
+                    f"({len(next_code_source)} chars). "
+                    f"Reviewer decision needed: trim the proof body, or move the "
+                    f"cell out of the exercise lane."
+                ),
+                "preview": next_code_source[:150],
+                "fix": (
+                    "Decide ONE: (a) trim the commented-out solution body to "
+                    "leave only the stub signature; or (b) move the cell out of "
+                    "the exercise section (e.g. under a worked-example header) "
+                    "and relabel the section as Exemple guide. Closing the gap "
+                    "by hand-editing is forbidden — fix the source and re-scan."
+                ),
+            })
+
         if has_soumis:
             if not is_stub_code(next_code_source):
                 findings.append({
@@ -1210,9 +1304,11 @@ def main():
 
     high = [f for f in all_findings if f.get('severity') == 'HIGH']
     medium = [f for f in all_findings if f.get('severity') == 'MEDIUM']
+    low = [f for f in all_findings if f.get('severity') == 'LOW']
     errors = [f for f in all_findings if f.get('severity') == 'ERROR']
 
-    print(f"\nResults: {len(high)} HIGH (leaks), {len(medium)} MEDIUM (duplicates), {len(errors)} errors")
+    print(f"\nResults: {len(high)} HIGH (leaks), {len(medium)} MEDIUM (duplicates), "
+          f"{len(low)} LOW (leaky-stub advisory), {len(errors)} errors")
     print(f"Scanned: {len(notebooks)} notebooks\n")
 
     if high:
@@ -1231,6 +1327,16 @@ def main():
         for f in medium:
             rel = display_path(f['path'], repo_root)
             print(f"  [{f['severity']}] {rel}:cell {f['cell_index']} — {f['message']}")
+        print()
+
+    if args.verbose and low:
+        print("=== LOW SEVERITY (Leaky-Stub Advisory, #18121) ===")
+        print("  --verbose emits these; they do not gate --check.")
+        for f in low:
+            rel = display_path(f['path'], repo_root)
+            print(f"  [{f['severity']}] {rel}:cell {f['cell_index']} — {f['message']}")
+            if 'preview' in f:
+                print(f"    Preview: {f['preview'][:120]}...")
         print()
 
     if errors:

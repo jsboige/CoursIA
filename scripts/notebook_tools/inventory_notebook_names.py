@@ -136,7 +136,7 @@ def _subseries(path: str) -> tuple[str, str]:
 
 
 def _kernel_known(kernel: str | None) -> bool:
-    """Tell c.745 ★★★ : un kernelspec est « connu » si son nom matche un préfixe
+    """un kernelspec est « connu » si son nom matche un préfixe
     canonique (python, lean, julia-, dotnet-interactive, etc.). Retourne False
     pour None ou chaîne vide. Préfixe-match et non equality stricte — Lean 4
     publie ses kernels sous `lean4`, `lean-4`, `lean` etc.
@@ -162,7 +162,7 @@ def _classify(path: str, stem: str, idx: str | None, kernel: str | None,
       implicite sans index), kernel vérifié None (= non lu) ou connu,
       suffixe reconnu ou absent.
 
-    Tell c.745 ★★★ : kernel `None` = "non vérifié sur disque" (chemin
+    kernel `None` = "non vérifié sur disque" (chemin
     fictif ou I/O impossible) ≠ kernel LU et explicitement hors liste
     connue. La classification reste au naming quand le kernel est None.
     """
@@ -181,7 +181,7 @@ def _classify(path: str, stem: str, idx: str | None, kernel: str | None,
     # Suffixe de langue non reconnu ET kernel LU inconnu = ambigu (le
     # suffixe seul ne suffit pas — un suffixe non pair peut signaler une
     # langue single-rendering, ex `-Rust` pour un notebook Rust sans
-    # twin Python/Csharp). Tell c.745 ★★★ : c'est la conjonction
+    # twin Python/Csharp). c'est la conjonction
     # « suffixe inconnu ET kernel non confirmé » qui pose question.
     if (suffix and suffix.lower() not in LANG_SUFFIXES
             and kernel is not None and not _kernel_known(kernel)):
@@ -218,7 +218,7 @@ def _index_zero_padded(stem: str) -> bool | None:
       - False si le stem commence par `N_` avec N=1..9 (à zéro-pader).
       - None  si le stem n'a pas d'index en tête.
 
-    Tell c.745 ★★★ : `_INDEX_RE` perd cette info (il rend `7` pour `07-Foo`
+    `_INDEX_RE` perd cette info (il rend `7` pour `07-Foo`
     ET pour `7-Foo`). On la recalcule ici à partir du stem brut, sans
     toucher au parseur partagé du voisin (cf #15488 : « Le parseur doit
     partager sa grammaire avec les gardes de #5081 »).
@@ -245,7 +245,7 @@ def build_inventory(ref: str, baseline: int | None = None) -> dict:
       `ref` : révision examinée.
       `denominator` : nombre de notebooks scannés.
       `baseline` : attendu ; si None, déduit automatiquement du décompte de
-        entries (classification --base ; Tell c.15814-L1 ★ NEW). Tell c.15523
+        entries (classification --base).
         avait fixé HEAD à l'origine, ce qui cassait toute PR ajoutant un
         notebook (baseline > denominator, delta=-1 systématique, gate rouge
         sans défaut substance). Une baseline figée (entier explicite) reste
@@ -254,17 +254,17 @@ def build_inventory(ref: str, baseline: int | None = None) -> dict:
       `by_classification` : comptage par classification.
       `entries` : liste de dicts, un par notebook.
 
-    Tell c.1066 strict : dénombrement réel imprimé TOUJOURS, jamais
-    confondu avec « 0 trouvé ». Tell c.745 ★★★ : aucune absorption
+    dénombrement réel imprimé TOUJOURS, jamais
+    confondu avec « 0 trouvé ». aucune absorption
     silencieuse dans « non conforme » — exception / ambigu sont
-    comptés à part. Tell c.15814-L1 ★ NEW : baseline auto = `ref` pour
+    comptés à part. baseline auto = `ref` pour
     que la comparaison baseline == denominator tienne sur la même
     révision (le test cherche un écart de classification, pas un écart
     de scope).
     """
     paths = notebooks_at(ref)
-    # Tell c.15814-L1 ★ NEW : baseline auto = entries (classification --base).
-    # Tell c.15523 (l'origine) choisissait HEAD : c'est vrai sur main (où la
+    # baseline auto = entries (classification --base).
+    # choisissait HEAD : c'est vrai sur main (où la
     # PR n'a pas encore bougé) mais faux sur la branche PR qui ajoute un
     # notebook (baseline = HEAD branche > denominator = origin/main sans le
     # notebook) — gate rouge mécanique. Aligner baseline sur entries (et non
@@ -287,7 +287,7 @@ def build_inventory(ref: str, baseline: int | None = None) -> dict:
         idx = index_key(basename)
         kernel = _kernelspec(p) if os.path.isfile(p) else None
         suf = _suffix(stem)
-        # Tell c.745 ★★★ : zero-pad lu sur le stem (préfixe `0N_` vs `N_`),
+        # zero-pad lu sur le stem (préfixe `0N_` vs `N_`),
         # pas sur l'idx (qui perd l'info).
         zero_padded = _index_zero_padded(basename)
         classification = _classify(p, stem, idx, kernel, suf, zero_padded)
@@ -352,7 +352,7 @@ _CASES = [
     # Le test vérifie donc juste que le filename sous-série est bien parsé.
     ("03_Structured_Outputs.ipynb", _CLASSIF_CONFORME, "python3", "3"),
     # Variant multi-kernel : suffix Csharp (.NET Interactive).
-    # Tell c.745 ★★★ : le kernelspec simulé doit être un nom CONNU de
+    # le kernelspec simulé doit être un nom CONNU de
     # `_KNOWN_KERNEL_PREFIXES` (`dotnet-interactive`, `python`, etc.) —
     # sinon la classification tombe en `ambigu` à cause du kernel, et le
     # test deviendrait circulaire (testerait kernel+classification).
@@ -363,7 +363,7 @@ _CASES = [
     # Index à 1 chiffre sans zéro-pad = rename_proposed.
     ("1_OpenAI_Intro.ipynb", _CLASSIF_RENAME, "python3", "1"),
     ("9_Production_Patterns.ipynb", _CLASSIF_RENAME, "python3", "9"),
-    # Exception plateforme : QuantConnect/projects/. Tell c.745 ★★★ :
+    # Exception plateforme : QuantConnect/projects/.
     # `_INDEX_RE` matche un stem qui commence par un chiffre — `path` n'est
     # PAS parsé (seul le basename l'est par `index_key()`). La classification
     # passe par `_PLATFORM_HINTS` d'abord (chemin), AVANT de regarder l'idx.
@@ -373,7 +373,7 @@ _CASES = [
     # Externe : docs/archive/.
     ("docs/archive/2026-07-11-foo.ipynb", _CLASSIF_EXCEPTION, "python3", None),
     # Ambigu : nom non parsé (préfixe alphabétique sans index) + kernel
-    # non vérifié. Tell c.745 ★★★ : avec kernel None (cas synthétique du
+    # non vérifié. avec kernel None (cas synthétique du
     # self-test), la base implicite NE passe PAS en conforme — seul un
     # kernel LU et explicitement connu la hisse. Cette voie garde la
     # distinction sémantique « kernel non vérifié ≠ kernel connu ».
@@ -382,7 +382,7 @@ _CASES = [
     # exigé par body #15488 — distinct du kernel None).
     ("22_Evaluating_Generated_Text.ipynb", _CLASSIF_AMBIGU, "kernel-inconnu-xyz", "22"),
     # Ambigu : suffixe de langue non reconnu ET kernel LU inconnu.
-    # Tell c.745 ★★★ : la conjonction est nécessaire — un suffixe non
+    # la conjonction est nécessaire — un suffixe non
     # pair (`-Rust`) seul peut signaler un single-rendering sans twin.
     ("3.1-Retropropagation-Rust.ipynb", _CLASSIF_AMBIGU, "kernel-inconnu-xyz", "3.1"),
 ]
@@ -433,7 +433,7 @@ def main():
         sys.stdout.write("\n")
     else:
         sys.stdout.write(_fmt_human(inv))
-    # Tell c.1066 strict : exit 1 si dénombrement ≠ baseline — l'écart est
+    # exit 1 si dénombrement ≠ baseline — l'écart est
     # documenté en stdout (delta=±N) mais la machine ne peut pas trancher
     # sans lecture humaine, donc on retourne 0 même avec écart et on laisse
     # l'utilisateur inspecter.

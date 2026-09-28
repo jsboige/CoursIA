@@ -84,7 +84,7 @@ d'autre de la chirurgie. C'est le controle positif de la section 2 : les paires
 position de repli differentes — le repli produit la meme partition, et c'est
 `foldl_mergePair_swap` (orientation) puis `foldl_mergePair_permute_adjacent`
 (transposition des positions) qui le justifient. La forme generale (sur des
-diagrammes ou les paires du triangle different) est etablie en section 4.
+diagrammes ou les paires du triangle different) est etablie en section 5.
 -/
 
 /-- Controle de la tranche 3 (etape 1) : sur la paire temoin du move R3
@@ -93,7 +93,7 @@ diagrammes ou les paires du triangle different) est etablie en section 4.
     d'orientation et de position (`foldl_mergePair_swap`,
     `foldl_mergePair_permute_adjacent`). C'est la premiere que l'argument de
     reindexation (cas `i ≥ 1`) suppose ; la forme generale est etablie par
-    `Reidemeister3Connected.arcPartition_sameRel` (section 4). -/
+    `Reidemeister3Connected.arcPartition_sameRel` (section 5). -/
 theorem reidemeister3Connected_arcPartition_witness :
     arcPartition
         { crossings := [⟨1, 2, 7, 8⟩, ⟨3, 7, 9, 4⟩, ⟨9, 8, 5, 6⟩,
@@ -103,7 +103,91 @@ theorem reidemeister3Connected_arcPartition_witness :
                         ⟨1, 2, 10, 10⟩, ⟨3, 4, 5, 6⟩], numEdges := 10 } := by
   decide
 
-/-! ## 4. Preservation generale de la partition d'arcs (premier verrou, #16650)
+/-! ## 4. Controle negatif : le mineur designe s'effondre sur le temoin Y
+
+La section 3 etablit la **premiere** de l'argument de reindexation (la
+partition d'arcs est preservee). Le controle de **conclusion** attendu — le
+polynome signe du temoin est le meme des deux cotes — est **refute sur ce
+temoin**, et c'est une information de cadrage, pas un echec de preuve :
+
+* cote X, le mineur designe vaut `t³ - t²` (chiralite toute positive) ;
+* cote Y, le mineur designe est **identiquement nul** — et la sonde Python
+  fidele a la construction (validee sur les valeurs kernel de `trefoil` et
+  `figureEight` signe) mesure la meme nullite pour chacune des cinq colonnes
+  supprimables et chacune des 32 chiralites.
+
+La cause se lit sur les lignes de la matrice : la chirurgie reecrit
+`(9, 8, 5, 6)` en `(7, 8, 1, 6)`, dont toutes les etiquettes non singleton
+(`7`, `8`, `6`) tombent dans la grande classe du temoin — sa ligne, comme
+celle du kink `(1, 2, 10, 10)` (kink R1 exact : `e3 = e4`), ne porte plus que
+sur la colonne de l'arc singleton `{1}` et sur la colonne supprimee de la
+grande classe. Deux lignes proportionnelles : le rang tombe a 3 et tout
+mineur `4 × 4` s'annule.
+
+Le classique « tout mineur `(n-1) × (n-1)` de la matrice d'Alexander vaut
+`± t^k · Δ` » suppose la matrice de rang `n - 1` ; le kink ajoute une
+relation, et la normalisation designee (premiere ligne et derniere colonne
+supprimees, **fixes**) ne survit pas a la chirurgie. Consequence pour la
+section 1 : l'argument de reindexation du cas `i ≥ 1` devra soit s'entenir
+de diagrammes sans kink, soit rendre le couple (ligne, colonne) supprime
+adaptatif.
+-/
+
+/-- Determinant 4×4 generique, meme esprit que `det_two_aux` / `det_three_aux`
+    de `Conway.lean` : expansion de Laplace le long de la premiere colonne, les
+    mineurs 3×3 etant traites par `det_three_aux`. -/
+theorem det_four_aux (A : Matrix (Fin 4) (Fin 4) (Polynomial ℤ)) :
+    A.det = A 0 0 * (A.submatrix (Fin.succAbove 0) (Fin.succAbove 0)).det
+          - A 1 0 * (A.submatrix (Fin.succAbove 1) (Fin.succAbove 0)).det
+          + A 2 0 * (A.submatrix (Fin.succAbove 2) (Fin.succAbove 0)).det
+          - A 3 0 * (A.submatrix (Fin.succAbove 3) (Fin.succAbove 0)).det := by
+  rw [Matrix.det_succ_column_zero]
+  simp (config := { decide := true }) [Fin.sum_univ_succ]
+  simp (config := { decide := true }) [det_three_aux, Matrix.submatrix_apply,
+    Fin.succAbove]
+  ring
+
+/-- Controle de la tranche 3 : cote X, le mineur designe du polynome signe
+    (chiralite toute positive) vaut `t³ - t²` — il n'est pas degenere. C'est la
+    contrepartie positive du controle negatif suivant : c'est bien la chirurgie
+    qui effondre le mineur, pas une degenerescence anterieure. -/
+theorem reidemeister3Connected_alexanderSigned_witness_X :
+    alexanderPolynomialSigned
+        { crossings := [⟨1, 2, 7, 8⟩, ⟨3, 7, 9, 4⟩, ⟨9, 8, 5, 6⟩,
+                        ⟨1, 2, 10, 10⟩, ⟨3, 4, 5, 6⟩], numEdges := 10 }
+        [true, true, true, true, true]
+      = Polynomial.X ^ 3 - Polynomial.X ^ 2 := by
+  simp only [alexanderPolynomialSigned]
+  simp (config := { decide := true })
+  rw [det_four_aux]
+  simp only [det_three_aux]
+  simp only [Matrix.submatrix_apply, Fin.succAbove, Matrix.of_apply]
+  simp (config := { decide := true }) [alexanderEntrySigned, alexanderEntry,
+    alexanderEntryNeg]
+  ring
+
+/-- Controle negatif de la tranche 3 : cote Y, **le meme mineur designe est
+    identiquement nul** — la chirurgie R3 du temoin aligne la ligne du
+    croisement reecrit `(7, 8, 1, 6)` sur celle du kink `(1, 2, 10, 10)`
+    (toutes deux ne portent plus que sur l'arc singleton `{1}` et la grande
+    classe supprimee), le rang tombe a 3 et le determinant s'annule (sonde :
+    nullite pour les cinq colonnes supprimables et les 32 chiralites). La
+    normalisation designee ne survit pas a la chirurgie sur un temoin porteur
+    de kink — cf section 4 du module. -/
+theorem reidemeister3Connected_alexanderSigned_witness_Y_zero :
+    alexanderPolynomialSigned
+        { crossings := [⟨3, 4, 9, 7⟩, ⟨9, 2, 5, 8⟩, ⟨7, 8, 1, 6⟩,
+                        ⟨1, 2, 10, 10⟩, ⟨3, 4, 5, 6⟩], numEdges := 10 }
+        [true, true, true, true, true]
+      = 0 := by
+  simp only [alexanderPolynomialSigned]
+  simp (config := { decide := true })
+  rw [det_four_aux]
+  simp only [det_three_aux]
+  simp only [Matrix.submatrix_apply, Fin.succAbove, Matrix.of_apply]
+  simp (config := { decide := true }) [alexanderEntrySigned, alexanderEntry,
+    alexanderEntryNeg]
+/-! ## 5. Preservation generale de la partition d'arcs (premier verrou, #16650)
 
 La chirurgie R3 connectee reecrit les trois croisements du triangle X en le
 triangle Y. Lue sur les paires de passage-dessus `(e2, e4)` qui alimentent le
