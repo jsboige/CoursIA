@@ -39,6 +39,13 @@ ces invariants, pas des details :
   I5  dry-run par defaut ; `--apply` explicite.
   I6  deux commits : 1 = `git mv` seuls, 2 = referents (une PR = un sujet).
 
+HOOKS PRE-COMMIT : les commits de l'outil passent par les hooks du depot. Un
+hook qui CORRIGE un fichier indexe (fix-hr-separator sur un carnet renomme) ou
+qui REFUSE un fichier entier (check-subprocess-encoding sur un script dont un
+chemin est reecrit) fait echouer le commit 1 ou 2 au milieu de --apply (tranche
+socle Lean, #17545). Avant --apply : `python -m pre_commit run --files <carnets
+de la table + referents du dry-run>`, et committer ses corrections a part.
+
 USAGE
 -----
     python scripts/notebook_tools/rename_notebooks.py --propose MyIA.AI.Notebooks/SymbolicAI/Lean
@@ -830,7 +837,8 @@ def main(argv: list[str] | None = None) -> int:
     report(plan, pairs)
 
     if not a.apply:
-        print("\n[dry-run] rien n'a ete ecrit. Relancer avec --apply.")
+        print("\n[dry-run] rien n'a ete ecrit. Avant --apply : passer les hooks "
+              "sur les fichiers ci-dessus (HOOKS PRE-COMMIT, en tete du module).")
         return 0
 
     pre = subprocess.run(["git", "rev-parse", "HEAD"], cwd=repo,
