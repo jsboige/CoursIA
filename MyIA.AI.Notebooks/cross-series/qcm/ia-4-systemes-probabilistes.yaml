@@ -1,0 +1,818 @@
+- id: ia4-001
+  theme: ia-4-systemes-probabilistes
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: En théorie de l'utilité, quel est le nom de l'axiome de préférences rationnelles selon lequel
+    si un agent préfère A à B et B à C, il existe une loterie de A et C telle que l'agent lui est indifférent
+    avec B?
+  choix_unique: true
+  options:
+  - texte: Ordonnancement
+    correcte: false
+  - texte: Transitivité
+    correcte: false
+  - texte: Continuité
+    correcte: true
+  - texte: Substituabilité
+    correcte: false
+  - texte: Monotonie
+    correcte: false
+  - texte: Décomposabilité
+    correcte: false
+- id: ia4-002
+  theme: ia-4-systemes-probabilistes
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: En théorie de l'utilité, quel est le nom donné au phénomène qui consiste à biaiser positivement
+    les estimations d'utilité?
+  choix_unique: true
+  options:
+  - texte: la malédiction de l'optimiseur
+    correcte: true
+  - texte: l'effet de certitude
+    correcte: false
+  - texte: la régression fallacieuse
+    correcte: false
+  - texte: l'évitement d'ambiguïté
+    correcte: false
+  - texte: l'effet de cadrage
+    correcte: false
+  - texte: l'effet d'ancrage
+    correcte: false
+- id: ia4-003
+  theme: ia-4-systemes-probabilistes
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: "L'entreprise Bonbon surprise propose 2 arômes pour ses bonbons: arômes fraise (70%) et arôme\
+    \ anchois (30%). Les bonbons sont ronds ou carrés et emballés dans du papier rouge ou brun.\nOn sait\
+    \ que :\nle papier et la forme sont conditionnellement indépendants étant donné l'arôme. \n80% des\
+    \ bonbons à la fraise sont ronds et 80% sont rouge.90% des bonbons aux anchois sont carrés et 90%\
+    \ sont bruns.Vous ouvrez la boîte et y trouvez un bonbon rond dans un papier rouge. Quelle est la\
+    \ probabilité que l'arôme soit fraise?\nIndice: Vous pouvez utiliser le facteur de normalisation."
+  choix_unique: true
+  options:
+  - texte: 44.8%
+    correcte: false
+  - texte: 59%
+    correcte: false
+  - texte: 84.8%
+    correcte: false
+  - texte: 95.4%
+    correcte: false
+  - texte: 99.3%
+    correcte: true
+- id: ia4-004
+  theme: ia-4-systemes-probabilistes
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: 'Considérez le réseau bayésien suivant, concernant les délits en politique:
+
+
+
+    Quelle est la probabilité qu''une personne n''aille pas en prison (non E), sachant qu''elle a transgressé
+    la loi (T), qu''elle a été inculpée (I) et qu''elle est confrontée à un procureur politiquement engagé
+    (P)?'
+  choix_unique: true
+  options:
+  - texte: 19%
+    correcte: true
+  - texte: 29%
+    correcte: false
+  - texte: 58%
+    correcte: false
+  - texte: 62%
+    correcte: false
+  - texte: 81%
+    correcte: false
+  - texte: 90%
+    correcte: false
+  - texte: 91%
+    correcte: false
+- id: ia4-005
+  theme: ia-4-systemes-probabilistes
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: 'Dans un réseau Bayésien, la couverture de Markov d''un nœud est données par:'
+  choix_unique: false
+  options:
+  - texte: ses parents
+    correcte: true
+  - texte: ses grands-parents
+    correcte: false
+  - texte: ses enfants
+    correcte: true
+  - texte: ses petits-enfants
+    correcte: false
+  - texte: les parents de ses enfants
+    correcte: true
+  - texte: les parents de ses petits-enfants
+    correcte: false
+  - texte: les grands-parents de ses enfants
+    correcte: false
+  - texte: les grands-parents de ses petits-enfants
+    correcte: false
+  - texte: les enfants de ses parents
+    correcte: false
+  - texte: les petits-enfants de ses parents
+    correcte: false
+  - texte: les enfants de ses grands-parents
+    correcte: false
+- id: ia4-006
+  theme: ia-4-systemes-probabilistes
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: 'Considérant la table de distribution de probabilités conjointe du dentiste telle que nous l''avons
+    vue en cours:
+
+
+    En utilisant l''inférence par énumération, quelle est la probabilité que la patient ait une carie
+    sachant qu''il a mal aux dents?'
+  choix_unique: true
+  options:
+  - texte: '0.2'
+    correcte: false
+  - texte: '0.3'
+    correcte: false
+  - texte: '0.4'
+    correcte: false
+  - texte: '0.5'
+    correcte: false
+  - texte: '0.6'
+    correcte: true
+  - texte: '0.7'
+    correcte: false
+  - texte: '0.8'
+    correcte: false
+- id: ia4-007
+  theme: ia-4-systemes-probabilistes
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: 'Considérant la table de distribution de probabilités conjointe du dentiste telle que nous l''avons
+    vue en cours:
+
+
+    En utilisant l''inférence par énumération, quelle est la probabilité que la patient n''ait pas une
+    carie sachant qu''il n''a pas mal aux dents?'
+  choix_unique: true
+  options:
+  - texte: '0.95'
+    correcte: false
+  - texte: '0.9'
+    correcte: true
+  - texte: '0.85'
+    correcte: false
+  - texte: '0.8'
+    correcte: false
+  - texte: '0.75'
+    correcte: false
+  - texte: '0.70'
+    correcte: false
+  - texte: '0.65'
+    correcte: false
+- id: ia4-008
+  theme: ia-4-systemes-probabilistes
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: 'Votre docteur vous annonce une mauvaise et une bonne nouvelles: vous avez testé positif pour
+    maladie grave et le test est fiable à 99% (en positif ou négatif). La bonne nouvelle est que la maladie
+    touche seulement 1 personne sur 100000 à votre age.
+
+    Quelle est la probabilité que vous soyez malade?'
+  choix_unique: true
+  options:
+  - texte: 9.8%
+    correcte: false
+  - texte: 0.98%
+    correcte: false
+  - texte: 0.098%
+    correcte: true
+  - texte: 8.9%
+    correcte: false
+  - texte: 0.89%
+    correcte: false
+  - texte: 0.089%
+    correcte: false
+  - texte: 0.0098%
+    correcte: false
+  - texte: 0.0089%
+    correcte: false
+  - texte: 89%
+    correcte: false
+  - texte: 18.9%
+    correcte: false
+  - texte: 1.89%
+    correcte: false
+  - texte: 0.189%
+    correcte: false
+  - texte: 0.0189%
+    correcte: false
+- id: ia4-009
+  theme: ia-4-systemes-probabilistes
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: En utilisant la règle du produit, déterminez lequel des énoncés suivant est vrai.
+  choix_unique: true
+  options:
+  - texte: Si P(a|b,c)=P(b|a,c) alors P(a|c)  = P(b|c)
+    correcte: true
+  - texte: Si P(a|b,c)=P(a) alors P(b|c)  = P(b)
+    correcte: false
+  - texte: Si P(a|b)=P(a) alors P(a|b,c)  = P(a|c)
+    correcte: false
+  - texte: Si P(a|b)=P(b) alors P(a)  = P(b)
+    correcte: false
+  - texte: Si P(a|b)=P(b) alors P(b|a)  = P(a)
+    correcte: false
+- id: ia4-010
+  theme: ia-4-systemes-probabilistes
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: Parmi les techniques d'inférence suivantes dans les réseaux Bayésien, laquelle est une technique
+    d'inférence exacte?
+  choix_unique: true
+  options:
+  - texte: L'élimination de variables
+    correcte: true
+  - texte: La pondération de vraisemblance
+    correcte: false
+  - texte: L'échantillonnage par rejet
+    correcte: false
+  - texte: L'échantillonnage de Gibbs
+    correcte: false
+  - texte: Les méthodes variationnelles
+    correcte: false
+  - texte: La propagation bouclée
+    correcte: false
+  - texte: L'échantillonnage a priori
+    correcte: false
+- id: ia4-011
+  theme: ia-4-systemes-probabilistes
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: 'Une machine à sous utilise 3 rouleaux indépendants avec les symboles "BAR", "CLOCHE", "CITRON",
+    "CERISE" et offre les gains suivants (? désigne n''importe lequel des autres symboles):
+
+    BAR/BAR/BAR : 20 pièces
+
+    CLOCHE/CLOCHE/CLOCHE: 16 pièces
+
+    CITRON/CITRON/CITRON: 5 pièces
+
+    CERISE/CERISE/CERISE: 3 pièces
+
+    CERISE/CERISE/? : 2 pièces
+
+    CERISE/?/? : 1 pièces
+
+
+    Quel est le gain espéré?'
+  choix_unique: true
+  options:
+  - texte: 59/64
+    correcte: false
+  - texte: 60/64
+    correcte: false
+  - texte: 61/64
+    correcte: false
+  - texte: 62/64
+    correcte: true
+  - texte: 63/64
+    correcte: false
+  - texte: 57/64
+    correcte: false
+  - texte: 58/64
+    correcte: false
+- id: ia4-012
+  theme: ia-4-systemes-probabilistes
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: 'Un étudiant a le choix entre acheter et ne pas acheter le manuel pour un cours pour lequel
+    il doit passer un examen.
+
+    Son utilité est additive: -150€ s''il achète le manuel, 0€ dans le cas contraire, et +2000€ s''il
+    réussit l''examen, 0€ dans le cas contraire.
+
+    Soient B, M et P les variables aléatoires booléennes représentant respectivement l''achat du manuel,
+    la maîtrise du cours, et la réussite à l''examen.
+
+    On donne les probabilités conditionnelles suivantes:
+
+    P(p|b,m) = 0.9P(p|b,¬m) = 0.5P(p|¬b,m) = 0.8P(p|¬b,¬m) = 0.3P(m|b) = 0.9P(m|¬b) = 0.7
+
+    Quelle est l''utilité espérée de l''achat du manuel?'
+  choix_unique: true
+  options:
+  - texte: '1300'
+    correcte: false
+  - texte: '1430'
+    correcte: false
+  - texte: '1570'
+    correcte: true
+  - texte: '1620'
+    correcte: false
+  - texte: '1740'
+    correcte: false
+  - texte: '1860'
+    correcte: false
+  - texte: '1280'
+    correcte: false
+- id: ia4-013
+  theme: ia-4-systemes-probabilistes
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: Lequel des éléments suivants n'est pas associé à un processus de décision de Markov entièrement
+    observable?
+  choix_unique: true
+  options:
+  - texte: Un ensemble d'états
+    correcte: false
+  - texte: Un ensemble d'actions dans chaque état
+    correcte: false
+  - texte: Un modèle de transition
+    correcte: false
+  - texte: Une fonction de récompense
+    correcte: false
+  - texte: Des états terminaux
+    correcte: false
+  - texte: Une ou plusieurs politiques optimales
+    correcte: false
+  - texte: Un modèle de capteur
+    correcte: true
+- id: ia4-014
+  theme: ia-4-systemes-probabilistes
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: 'On vous propose un jeu dans lequel on lance une pièce de monnaie équilibrée jusqu''à ce qu''on
+    tire face. Si la première face apparaît au n-ième lancer, vous gagnez 2^n (2 puissance n) €.
+
+    Sachant que :
+
+    l''utilité de l''argent est données par U(n) = a log2(n)+b∑(1-->∞) (n/(2^n)) = 2 et ∑(1-->∞) (1/(2^n))
+    = 1
+
+    En établissant une équation d''indifférence, quelle est le montant maximal qu''il serait raisonnable
+    de jouer à ce jeu ?'
+  choix_unique: true
+  options:
+  - texte: 1 €
+    correcte: false
+  - texte: 2 €
+    correcte: false
+  - texte: 4 €
+    correcte: true
+  - texte: 8 €
+    correcte: false
+  - texte: 0.5 €
+    correcte: false
+  - texte: 16 €
+    correcte: false
+- id: ia4-015
+  theme: ia-4-systemes-probabilistes
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: 'Un sac contient des pièces truquées a, b et c dans des proportions identiques, avec des probabilités
+    de tirage côté face respectivement de 20%, 60% et 80%.
+
+    On tire une pièce au hasard puis la pièce est tirée à pile ou face trois fois.
+
+    Quelle est la probabilité d''avoir tiré 2 faces et 1 pile (sans ordre), sachant qu''on a tiré la pièce
+    la plus probable pour ce tirage?'
+  choix_unique: true
+  options:
+  - texte: 9.6%
+    correcte: false
+  - texte: 12.8%
+    correcte: false
+  - texte: 14.4%
+    correcte: false
+  - texte: 38.4%
+    correcte: false
+  - texte: 43.2%
+    correcte: true
+  - texte: 51.2%
+    correcte: false
+- id: ia4-016
+  theme: ia-4-systemes-probabilistes
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: Laquelle de ces affirmations est correcte?
+  choix_unique: true
+  options:
+  - texte: La valeur de l'information parfaite peut être négative
+    correcte: false
+  - texte: La valeur de l'information parfaite d'observations multiples n'est pas additive de celle de
+      chacune de ces observations
+    correcte: true
+  - texte: Les systèmes experts sont toujours des réseaux de décision
+    correcte: false
+  - texte: L'assignation des probabilités d'un système expert provient d'évaluations subjectives
+    correcte: false
+  - texte: La sensibilité d'un système expert à de petites modifications est un comportement souhaitable
+    correcte: false
+- id: ia4-017
+  theme: ia-4-systemes-probabilistes
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: 'Vous êtes témoin d''une collision nocturne qui implique un taxi à Athènes. 9 taxis sur 10 y
+    sont vert et les autres sont bleus.
+
+    Vous jurez sous serment que le taxi était bleu, mais les tests montrent que la discrimination entre
+    le bleu et le vert n''était fiable qu''à 75%
+
+    Qu''elle est la probabilité que le taxi était vert?'
+  choix_unique: true
+  options:
+  - texte: 22.5%
+    correcte: false
+  - texte: 25%
+    correcte: false
+  - texte: 30%
+    correcte: false
+  - texte: 42.5%
+    correcte: false
+  - texte: 50%
+    correcte: false
+  - texte: 52.5%
+    correcte: false
+  - texte: 67.5%
+    correcte: false
+  - texte: 75%
+    correcte: true
+- id: ia4-018
+  theme: ia-4-systemes-probabilistes
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: 'Vous souhaitez acheter une voiture d''occasion qui coûte 1500€. Sa valeur à l''argus est de
+    2000€ si elle est en bon état, et il faudra 700€ de réparations si ce n''est pas le cas. Vous estimez
+    qu''il y a 70% de chances qu''elle soit en bon état.
+
+    Vous pouvez effectuer un test de qualité qu''une voiture en bon état passera à 80% et une voiture
+    en mauvais état à 35%.
+
+    En utilisant le théorème de Bayes, quelle est l''utilité espérée de l''achat de la voiture sachant
+    qu''elle a passé le test?'
+  choix_unique: true
+  options:
+  - texte: 143.44€
+    correcte: false
+  - texte: 267.15€
+    correcte: false
+  - texte: 378.92€
+    correcte: true
+  - texte: 403.84€
+    correcte: false
+  - texte: 557.61€
+    correcte: false
+  - texte: 632.1€
+    correcte: false
+- id: ia4-019
+  theme: ia-4-systemes-probabilistes
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: En théorie des jeux, comme s'appelle la méthode permettant de sélectionner les meilleures stratégies
+    pures?
+  choix_unique: true
+  options:
+  - texte: L'élimination itérative des stratégies strictement dominées
+    correcte: true
+  - texte: Les équilibres de Nash
+    correcte: false
+  - texte: L'optimum de Pareto
+    correcte: false
+  - texte: L'algorithme de stratégie mixte
+    correcte: false
+  - texte: La règle impaire
+    correcte: false
+  - texte: L'induction arrière
+    correcte: false
+  - texte: L'induction avant
+    correcte: false
+  - texte: L'équilibre de lame de couteau
+    correcte: false
+- id: ia4-020
+  theme: ia-4-systemes-probabilistes
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: En théorie des jeux, comme s'appelle la méthode permettant de déterminer les probabilités assignées
+    aux stratégies non pures?
+  choix_unique: true
+  options:
+  - texte: L'élimination itérative des stratégies strictement dominées
+    correcte: false
+  - texte: Les équilibres de Nash
+    correcte: false
+  - texte: L'optimum de Pareto
+    correcte: false
+  - texte: L'algorithme de stratégie mixte
+    correcte: true
+  - texte: La règle impaire
+    correcte: false
+  - texte: L'induction arrière
+    correcte: false
+  - texte: L'induction avant
+    correcte: false
+  - texte: L'équilibre de lame de couteau
+    correcte: false
+- id: ia4-021
+  theme: ia-4-systemes-probabilistes
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: En théorie des jeux, comme s'appelle la méthode consistant à présupposer la rationalité des
+    actions passées?
+  choix_unique: true
+  options:
+  - texte: L'élimination itérative des stratégies strictement dominées
+    correcte: false
+  - texte: Les équilibres de Nash
+    correcte: false
+  - texte: L'optimum de Pareto
+    correcte: false
+  - texte: L'algorithme de stratégie mixte
+    correcte: false
+  - texte: La règle impaire
+    correcte: false
+  - texte: L'induction arrière
+    correcte: false
+  - texte: L'induction avant
+    correcte: true
+  - texte: L'équilibre de lame de couteau
+    correcte: false
+- id: ia4-022
+  theme: ia-4-systemes-probabilistes
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: 'Deux sociétés concurrentes forment un duopole: elles contrôlent à elles-deux l''ensemble de
+    la production d''une marchandise, dont le coût de production par unité est fixe et identique pour
+    les deux, mais dont le prix de vente, également identique pour les deux sociétés, dépend de la quantité
+    produite.
+
+    Supposons que le coût de production d''une unité de marchandise vaut 1, et que le prix de vente est
+    donné par P = 12 - 2*Q où Q est le nombre total d''unité produites, de sorte qu''il n''est pas rationnel
+    de produire 6 unités ou plus, et que la matrice de gain des sociétés est la suivante:
+
+
+
+
+
+
+
+
+    Zéro
+
+    Un
+
+    Deux
+
+    Trois
+
+    Quatre
+
+    Cinq
+
+
+
+
+
+    Zéro
+
+    0,0
+
+    0,9
+
+    0,14
+
+    0,15
+
+    0,12
+
+    0,5
+
+
+
+    Un
+
+    9,0
+
+    7,7
+
+    5,10
+
+    3,9
+
+    1,4
+
+    -1,-5
+
+
+
+    Deux
+
+    14,0
+
+    10,5
+
+    6,6
+
+    2,3
+
+    -2,-4
+
+    -2,-5
+
+
+
+    Trois
+
+    15,0
+
+    9,3
+
+    3,2
+
+    -3,-3
+
+    -3,-4
+
+    -3,-5
+
+
+
+    Quatre
+
+    12,0
+
+    4,1
+
+    -4,-2
+
+    -4,-3
+
+    -4,-4
+
+    -4,-5
+
+
+
+    Cinq
+
+    5,0
+
+    -5,-1
+
+    -5,-2
+
+    -5,-4
+
+    -5,-4
+
+    -5,5
+
+
+
+
+
+    En utilisant l''élimination itérative de stratégies strictement dominées, ou la technique des meilleures
+    réponses, déterminez quel est la solution d''équilibre de stratégies pures parmi les suivantes:'
+  choix_unique: true
+  options:
+  - texte: Zéro, Zéro
+    correcte: false
+  - texte: Un, Un
+    correcte: false
+  - texte: Deux, Deux
+    correcte: true
+  - texte: Trois, Trois
+    correcte: false
+  - texte: Quatre, Quatre
+    correcte: false
+  - texte: Cinq, Cinq
+    correcte: false
+  - texte: Un, Deux
+    correcte: false
+  - texte: Deux, Trois
+    correcte: false
+  - texte: Zéro, Un
+    correcte: false
+  - texte: Trois, Quatre
+    correcte: false
+  - texte: Quatre, Cinq
+    correcte: false
+- id: ia4-023
+  theme: ia-4-systemes-probabilistes
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: "On considère le jeu suivant :\nIl y a 7 pirates rationnels, A, B, C, D, E, F et G. Ils trouvent\
+    \ 100 pièces d'or. Ils doivent décider comment les répartir.\nLes pirates ont une hiérarchie stricte\
+    \ selon l'ancienneté : A est le supérieur de B, qui est le supérieur de C, qui est le supérieur de\
+    \ D, qui est le supérieur de E, qui est le supérieur de F, qui est le supérieur de G.\n\nLes règles\
+    \ de répartitions dans le monde des pirates sont les suivantes: \n\nle plus ancien pirate propose\
+    \ une répartition. \nLes pirates, y compris celui qui a fait la proposition, votent ensuite pour savoir\
+    \ s'ils acceptent cette répartition. Dans le cas d'une égalité, celui qui a fait la proposition tranche.\
+    \ \nSi la répartition est acceptée, les pièces sont distribuées, et le jeu se termine. \nSinon, celui\
+    \ qui a fait la proposition est jeté par-dessus bord et meurt, et le plus ancien pirate après lui\
+    \ fait une nouvelle proposition, et le système commence une nouvelle fois.\nLes pirates basent leur\
+    \ décision sur 3 facteurs. \n\nEn premier, les pirates veulent survivre. \nEn second, et tant qu'ils\
+    \ survivent, chaque pirate veut maximiser le nombre de pièces d'or qu'il reçoit. \nEn troisième, chaque\
+    \ pirate préfère jeter un autre pirate par-dessus bord, s'il y a égalité entre les autres possibilités\
+    \ de jeu. Les pirates ne se font pas confiance entre eux, et ne feront ni ne tiendront jamais de promesses\
+    \ entre pirates autre que le plan de répartition des pièces qui donne à chaque pirate un nombre entier\
+    \ de pièces d'or.Vous êtes le pirate A. En basant votre raisonnement sur l'induction arrière, combien\
+    \ de pièce d'or pouvez-vous conserver dans la proposition initiale que vous faites à votre équipage?\n\
+     \nIndice: Il s'agit de représenter ce jeu comme une séquence de décisions binaires (accepté/pas accepté),\
+    \ partir de la situation finale où il ne resterait que le pirate G empochant les 100 pièces d'or,\
+    \ puis considérer les décisions précédentes les plus rationnelles pour chacun des pirates qui précède\
+    \ selon les 3 facteurs."
+  choix_unique: true
+  options:
+  - texte: '0'
+    correcte: false
+  - texte: '1'
+    correcte: false
+  - texte: '8'
+    correcte: false
+  - texte: '20'
+    correcte: false
+  - texte: '50'
+    correcte: false
+  - texte: '64'
+    correcte: false
+  - texte: '88'
+    correcte: false
+  - texte: '44'
+    correcte: false
+  - texte: '97'
+    correcte: true
+  - texte: '98'
+    correcte: false
+  - texte: '100'
+    correcte: false
+- id: ia4-024
+  theme: ia-4-systemes-probabilistes
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: 'On considère le jeu suivant à deux joueurs: Chacun dispose d''une pièce et choisit de la poser
+    côté face ou côté pile sur une table. On compare ensuite les résultats avec la matrice de gain suivante
+
+
+
+
+
+
+
+
+    Joueur 2 : Face
+
+
+    Joueur 2 : Pile
+
+
+
+
+
+
+    Joueur 1 : Face
+
+
+    3,-3
+
+    -2,2
+
+
+
+    Joueur 1 : Pile
+
+
+    -1,1
+
+    0,0
+
+
+
+
+
+    En utilisant l''algorithme de stratégies mixtes, déterminez quelles sont les probabilités de jouer
+    face pour chaque joueur à l''équilibre de Nash.'
+  choix_unique: true
+  options:
+  - texte: 1/6, 1/3
+    correcte: true
+  - texte: 1/2, 1/4
+    correcte: false
+  - texte: 1/2, 1/2
+    correcte: false
+  - texte: 1/3, 1/3
+    correcte: false
+  - texte: 1/3, 1/4
+    correcte: false
+  - texte: 1/3, 1/6
+    correcte: false
+  - texte: 1/4, 1/2
+    correcte: false
+  - texte: 2/3, 1/3
+    correcte: false
+  - texte: 1/3, 2/3
+    correcte: false
+  - texte: 1/2, 1/3
+    correcte: false
+  - texte: 1/3, 1/2
+    correcte: false
