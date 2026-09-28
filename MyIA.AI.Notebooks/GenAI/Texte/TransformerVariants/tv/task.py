@@ -368,8 +368,11 @@ def evaluer_multi_hop_cot(modele, vocab: Vocab, T_cot: int, n: int = 512, graine
     """
     gen = torch.Generator().manual_seed(graine)
     lot = lot_multi_hop_cot(n, T_cot, gen, vocab, max_q=max_q)
-    # Eval sur la dernière position (la cible) — comparable à evaluer_multi_hop.
-    logits_cible = modele(lot.x)[:, -1]
+    # Eval sur la dernière position entraînée (la cible est en position -1 dans x, le
+    # logit qui la prédit est donc en position -2 -- cohérent avec entrainer_cot qui
+    # couvre les logits [start_pred - 1, T - 1), soit jusqu'à T - 2 inclus).
+    # Lire -1 mesurait un logit qui prédit au-delà de la séquence, sans signal.
+    logits_cible = modele(lot.x)[:, -2]
     perte_cible = F.cross_entropy(logits_cible, lot.y)
     exactitude = (logits_cible.argmax(-1) == lot.y).float().mean()
     return exactitude.item(), math.exp(perte_cible.item())
@@ -415,14 +418,23 @@ def entrainer_cot(
         start_pred = T_seq - n_pred_positions
         cible_shift = lot.x[:, start_pred : start_pred + n_pred_positions]
         logits_pred = logits[:, start_pred - 1 : start_pred - 1 + n_pred_positions, :]
-        # Masque : seul le pas j avec j <= q_idx doit contribuer à la perte
-        # q_idx varie par item -> masque par item
-        # Construction du masque : (B, n_pred_positions) — True si j <= q_idx[item]
+        # Masque : on inclut dans la perte les positions j qui produisent un token
+        # pertinent (PAS_j, RECAP_j pour j <= q_idx) ET le slot cible.
+        # Etat anterieur v1 : `pas_positions <= q` seul -- la cible (j = 2*max_q,
+        # pas_positions[j] = max_q > q pour tout q <= max_q-1) n'etait jamais
+        # couverte -> exactitude 0.
+        # Etat anterieur v2 : OR sur j = 2*q+1 -- faux : la chaine est de taille
+        # FIXE (cf. lot_multi_hop_cot), le slot 2*q+1 porte RECAP_q, jamais la
+        # cible ; celle-ci est TOUJOURS en fin de chaine (j = 2*max_q) quel que
+        # soit q_idx -> exactitude 0 a nouveau (mesure : acc 0.0000, ppl ~29856).
         q = lot.q  # (B,)
         j_positions = torch.arange(n_pred_positions)  # (n_pred_positions,)
         # Chaque position j correspond au pas floor(j/2) (0-indexed)
         pas_positions = j_positions // 2  # (n_pred_positions,)
-        masque = (pas_positions.unsqueeze(0) <= q.unsqueeze(1))  # (B, n_pred_positions)
+        # Le slot cible (j = 2*max_q = n_pred_positions - 1) est inclus via cette OR.
+        cible_j = torch.full((q.shape[0], 1), 2 * max_q, dtype=torch.long)  # (B, 1)
+        est_slot_cible = (j_positions.unsqueeze(0) == cible_j)  # (B, n_pred_positions)
+        masque = (pas_positions.unsqueeze(0) <= q.unsqueeze(1)) | est_slot_cible  # (B, n_pred_positions)
         # Perte par token, masquée
         perte_full = F.cross_entropy(
             logits_pred.reshape(-1, V),
