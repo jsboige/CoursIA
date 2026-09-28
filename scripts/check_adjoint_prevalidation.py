@@ -881,7 +881,9 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
             "discussion surfaces changed or were not fully attested: "
             f"surface divergente = {divergent}; "
             f"dossier={f.get('surfaces-sha256', '?')}, live={live_fingerprint} "
-            "(legacy stamps whose checks moved need one --template re-stamp)"
+            "(legacy stamps whose checks moved need one --template re-stamp; "
+            "a re-stamp is a NEW comment posted right after --template -- a "
+            "PATCHed dossier never matches, the template counts it)"
         )
 
     comparisons = {
@@ -1232,6 +1234,38 @@ def load_snapshot(pr: int) -> dict[str, Any]:
     return snapshot
 
 
+def restamp_warning(snapshot: dict[str, Any]) -> str | None:
+    """Name the only re-stamp gesture that can pass when a dossier already exists.
+
+    `render_template` counts EVERY comment present, the existing dossier
+    included, while the gate counts only the comments BEFORE the dossier it
+    reads (`dossier.comment_index`) and fingerprints those. A dossier
+    re-stamped by PATCH therefore always lands one comment short of its own
+    template: `comments-reviewed is stale: dossier=N+1, live=N`. The gate reads
+    the LAST dossier of the pull request, so a NEW comment posted right after
+    the template matches exactly. Measured on #18072, #17985 and #18134
+    (2026-09-28): three PATCH re-stamps refused, the cause read as rerolling
+    checks, which the fingerprint does not cover since #16957.
+    """
+    for index in range(len(snapshot.get("comments") or []) - 1, -1, -1):
+        comment = snapshot["comments"][index]
+        dossier, _errors = parse_dossier(
+            comment.get("body") or "",
+            index,
+            _login(comment),
+            comment.get("createdAt") or "",
+        )
+        if dossier is not None:
+            return (
+                f"a dossier already exists (comment {index + 1} of "
+                f"{len(snapshot['comments'])}, by {_login(comment)}): this "
+                "template counts it. Re-stamp = POST this block as a NEW "
+                "comment, with no other comment in between; never PATCH the "
+                "existing dossier, it can never match its own template."
+            )
+    return None
+
+
 def render_template(snapshot: dict[str, Any], lane: str = ADJOINT_LANE) -> str:
     """Render the mechanical fields; the emitting lane sets the verdict fields.
 
@@ -1305,6 +1339,9 @@ def main() -> int:
         snapshot = load_snapshot(args.pr)
         if args.template:
             print(render_template(snapshot, args.lane))
+            warning = restamp_warning(snapshot)
+            if warning:
+                print(f"WARNING: {warning}", file=sys.stderr)
             return 0
         if args.fingerprint:
             print(surfaces_fingerprint(snapshot))
