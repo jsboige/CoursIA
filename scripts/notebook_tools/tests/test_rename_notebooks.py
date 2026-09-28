@@ -229,6 +229,16 @@ class TestMappingGrammarOnBasename(unittest.TestCase):
             self.assertNotIn("hors grammaire", out.getvalue())
 
 
+class TestDeclaredFixturesExist(unittest.TestCase):
+    """Une declaration perimee (fichier deplace ou supprime) protegerait un
+    chemin qui n'existe plus et laisserait le vrai se faire reecrire."""
+
+    def test_every_declared_fixture_is_a_repo_file(self):
+        root = Path(__file__).resolve().parents[3]
+        for rel in rn.FIXTURES_DECLARED:
+            self.assertTrue((root / rel).is_file(), rel)
+
+
 class TestQuartoEntryRewritten(unittest.TestCase):
     """Defaut 4 : l'entree _quarto.yml avait ete oubliee."""
 

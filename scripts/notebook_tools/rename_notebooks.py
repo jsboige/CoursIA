@@ -118,7 +118,16 @@ CATALOG_BASENAME_PREFIX = "COURSE_CATALOG.generated"
 
 # Fixtures a nom volontairement NON reecrit : liste DECLAREE (chemins relatifs
 # au depot), remplie par chaque tranche pour ses propres series.
-FIXTURES_DECLARED: tuple[str, ...] = ()
+FIXTURES_DECLARED: tuple[str, ...] = (
+    # Cas fondateur de l'organe output-collapse (#15209) : --self-test relit le
+    # carnet par `git show 6b327a9bf:<chemin>` -- a ces SHA il ne porte que son
+    # ANCIEN nom. Le reecrire casse le self-test qui garde le job CI.
+    "scripts/notebook_tools/check_output_collapse.py",
+    ".github/workflows/notebook-output-collapse-ratchet.yml",
+    # Citations d'incidents fondateurs epinglees a des SHA (#15209, #15862,
+    # #16097...) : le nom cite est celui d'alors.
+    ".claude/rules/pr-review-discipline.md",
+)
 
 STEM_RE = re.compile(r"^(?P<prefix>[A-Za-z][A-Za-z0-9]*)-(?P<num>\d+)(?P<accr>[a-z]?)(?P<sep>[-_])(?P<title>.+)$")
 PART_RE = re.compile(r"[-_]Part(\d+)$", re.I)
