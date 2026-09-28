@@ -299,6 +299,33 @@ def run_git(cwd: str, *args: str, check: bool = True) -> subprocess.CompletedPro
     )
 
 
+def current_repo_root() -> str:
+    """Racine du repo CoursIA resolue depuis ce script.
+
+    Les 3 appels `run_git(...)` (worktree list, cle de cache par remote
+    origin, worktree remove) doivent operer sur le repo hebergeant ce
+    script, independamment du cwd du processus appelant. Avant, ils
+    passaient `"."` et resolvaient contre le cwd reel -- casse depuis une
+    tache planifiee (#14473) ou tout autre cwd non-repo (#17904).
+
+    La racine est le plus proche ancetre de `__file__` qui contient
+    `.gitmodules` ou `.git/`. Cachee au premier appel (memoization
+    legere, pas de cache disque).
+    """
+    cache_attr = "_coursia_root_cache"
+    cached = getattr(current_repo_root, cache_attr, None)
+    if cached is not None:
+        return cached
+    p = Path(__file__).resolve().parent
+    while p != p.parent:
+        if (p / ".gitmodules").is_file() or (p / ".git").exists():
+            setattr(current_repo_root, cache_attr, str(p))
+            return str(p)
+        p = p.parent
+    setattr(current_repo_root, cache_attr, os.getcwd())
+    return os.getcwd()
+
+
 def run_gh(*args: str, check: bool = True) -> subprocess.CompletedProcess:
     """Lance une commande gh avec capture stricte. cwd = CWD courant."""
     return subprocess.run(
@@ -642,7 +669,7 @@ PR_LISTING_WINDOW = 1000
 
 def _pr_cache_path() -> Path:
     """Un fichier de verdicts par depot (cle = sha1 du remote origin)."""
-    proc = run_git(".", "remote", "get-url", "origin", check=False)
+    proc = run_git(current_repo_root(), "remote", "get-url", "origin", check=False)
     url = proc.stdout.strip() if proc.returncode == 0 else "unknown-repo"
     key = hashlib.sha1(url.encode("utf-8")).hexdigest()[:12]
     return Path.home() / ".cache" / "coursia" / "prune_pr_verdicts" / f"{key}.json"
@@ -1306,7 +1333,7 @@ def diagnose_worktree(wt_path: str, current_path: str,
 
 def list_worktrees() -> list[dict]:
     """Retourne les worktrees sous forme [{path, head_sha}, ...]."""
-    proc = run_git(".", "worktree", "list", "--porcelain", check=False)
+    proc = run_git(current_repo_root(), "worktree", "list", "--porcelain", check=False)
     if proc.returncode != 0:
         raise RuntimeError(f"git worktree list failed: {proc.stderr.strip()}")
     out: list[dict] = []
@@ -1392,7 +1419,7 @@ def apply_removal(wt: WorktreeStatus) -> tuple[bool, str]:
     if wt.dead_registration:
         args.append("--force")
     args.append(wt.path)
-    proc = run_git(".", *args, check=False)
+    proc = run_git(current_repo_root(), *args, check=False)
     if proc.returncode == 0:
         return True, ""
     return False, proc.stderr.strip()
@@ -1595,12 +1622,15 @@ def main() -> int:
         current_path = cwd
 
     # `--path` est le cwd de l'ANALYSE, pas un filtre -- contrat porte par
-    # l'en-tete (`--path /c/dev/CoursIA-X`) et par le help ci-dessus. Or les
-    # trois appels `run_git(".")` (worktree list, cle de cache par remote
-    # origin, worktree remove) resolvent `.` contre le cwd REEEL du processus.
-    # Sans ce chdir, l'organe lance depuis un autre dossier -- le cas de la
-    # tache planifiee, dont le cwd est System32 -- sort en rc=2 sur
-    # `fatal: not a git repository` et ne purge jamais rien (#17904).
+    # l'en-tete (`--path /c/dev/CoursIA-X`) et par le help ci-dessus. Les
+    # trois appels `run_git(...)` (worktree list, cle de cache par remote
+    # origin, worktree remove) resolvent le cwd en PREMIER argument, pas via
+    # le cwd reel du processus : depuis un autre dossier -- le cas de la
+    # tache planifiee (#14473), dont le cwd est System32 -- il fallait que
+    # les 3 sites voient `current_path`, pas `"."`. Avant, le garde
+    # `os.chdir(current_path)` faisait l'office ; il mutait l'etat du
+    # process appelant et restait fragile sur les retrait refuses. On
+    # passe maintenant `current_path` directement a run_git (#17904).
     if args.path:
         try:
             os.chdir(current_path)
