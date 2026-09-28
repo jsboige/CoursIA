@@ -594,6 +594,47 @@ def test_template_populates_mechanical_fields_but_not_verdicts():
     assert "verdict: READY" not in template
 
 
+def test_restamp_warning_is_silent_without_an_existing_dossier():
+    assert mod.restamp_warning(_base_snapshot()) is None
+
+
+def test_restamp_warning_names_the_new_comment_gesture():
+    warning = mod.restamp_warning(_snapshot(_body()))
+    assert warning is not None
+    assert "comment 2 of 2" in warning
+    assert "NEW" in warning and "never PATCH" in warning
+
+
+def _filled(template: str) -> str:
+    verdicts = {
+        "complete": "true", "body": "read", "checks": "latest-wins-green",
+        "b0": "clear", "scope": "pass", "domain": "pass", "verdict": "READY",
+    }
+    lines = []
+    for line in template.splitlines():
+        key = line.split(":", 1)[0]
+        lines.append(f"{key}: {verdicts[key]}" if key in verdicts else line)
+    return "\n".join(lines)
+
+
+def test_patched_restamp_can_never_match_but_a_new_comment_does():
+    """#18072/#17985/#18134: the template counts the dossier it would replace."""
+    snapshot = _snapshot(_body())
+    stamped = _filled(mod.render_template(snapshot))
+
+    patched = _base_snapshot()
+    patched["comments"].append(_comment(stamped))
+    assert any(
+        error.startswith("comments-reviewed is stale") for error in _errors(patched)
+    )
+
+    posted = _snapshot(_body())
+    posted["comments"].append(_comment(stamped))
+    ready, errors = mod.evaluate(posted)
+    assert errors == []
+    assert ready
+
+
 def test_metadata_identity_ignores_only_check_order():
     first = {
         "number": 123,
