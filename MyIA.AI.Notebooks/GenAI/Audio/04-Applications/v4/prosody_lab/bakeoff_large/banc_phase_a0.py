@@ -38,7 +38,7 @@ sys.path.insert(0, str(BAKEOFF_ROOT))
 
 
 # Passage de référence (Boule de Suif, Maupassant — ~30 s à débit narratif 150 wpm)
-# Tell c.c.c.d.767-L1 strict fondateur : test reproductible et first-hand.
+# strict fondateur : test reproductible et first-hand.
 TEST_TEXT_BOULE = (
     "La voiture allait tout doucement. Un froid humide pénétrait les membres ; on ne "
     "voyait rien devant soi ; la nuit était profonde. Les voyageurs, engourdis par "

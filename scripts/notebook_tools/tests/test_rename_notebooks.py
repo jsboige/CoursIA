@@ -181,6 +181,64 @@ class TestDeclaredFixtureUntouched(unittest.TestCase):
                              plan.rewrites)
 
 
+class TestHistoryAndCatalogScannedOut(unittest.TestCase):
+    """Dry-run de la tranche Lean (#17545) : les marqueurs d'historique a deux
+    composantes (``docs/archive``, ``docs/ledgers``) ne correspondaient jamais a
+    une composante de chemin, et le catalogue genere n'etait exclu que du mode
+    --propose. Les deux auraient ete reecrits."""
+
+    def test_multi_component_history_markers_and_catalog_are_skipped(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            _init_repo(repo)
+            for rel in ("docs/archive/old.md", "docs/ledgers/l.md",
+                        "scripts/results/r.md", "COURSE_CATALOG.generated.md",
+                        "docs/reference/live.md"):
+                _write(repo, rel, f"voir {OLD}\n")
+            _git(repo, "add", "-A")
+            _git(repo, "commit", "-qm", "refs")
+
+            plan = rn.scan_referents(_forms(), repo)
+            self.assertEqual(sorted(plan.rewrites), ["docs/reference/live.md"])
+
+    def test_history_marker_must_be_a_directory_not_the_file(self):
+        self.assertTrue(rn._is_history("docs/archive/sub/x.md"))
+        self.assertFalse(rn._is_history("docs/archive.md"))
+        self.assertFalse(rn._is_history("docs/reference/archive/x.md"))
+
+
+class TestMappingGrammarOnBasename(unittest.TestCase):
+    """La table porte des chemins complets : la grammaire se juge sur le nom
+    de fichier, sinon toute cible canonique est annoncee hors grammaire."""
+
+    def test_canonical_target_path_raises_no_warning(self):
+        self.assertIsNone(rn.target_violation("Lean-01-Setup-Lean-Python.ipynb"))
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            _init_repo(repo)
+            tsv = Path(str(repo) + ".table.tsv")
+            tsv.write_text(f"{OLD}\t{NEW}\n", encoding="utf-8")
+            cwd = os.getcwd()
+            os.chdir(repo)
+            try:
+                with mock.patch("sys.stdout", new_callable=__import__("io").StringIO) as out:
+                    rc = rn.main(["--mapping", str(tsv)])
+            finally:
+                os.chdir(cwd)
+            self.assertEqual(rc, 0)
+            self.assertNotIn("hors grammaire", out.getvalue())
+
+
+class TestDeclaredFixturesExist(unittest.TestCase):
+    """Une declaration perimee (fichier deplace ou supprime) protegerait un
+    chemin qui n'existe plus et laisserait le vrai se faire reecrire."""
+
+    def test_every_declared_fixture_is_a_repo_file(self):
+        root = Path(__file__).resolve().parents[3]
+        for rel in rn.FIXTURES_DECLARED:
+            self.assertTrue((root / rel).is_file(), rel)
+
+
 class TestQuartoEntryRewritten(unittest.TestCase):
     """Defaut 4 : l'entree _quarto.yml avait ete oubliee."""
 
@@ -349,6 +407,40 @@ class TestTwoCommitDiscipline(unittest.TestCase):
             ledger = (repo / rn.LEDGER_RELPATH).read_text(encoding="utf-8")
             self.assertIn(f"{OLD}\t{NEW}", ledger)
             self.assertIn("test-lane", ledger)
+
+
+    def test_moved_notebook_citing_a_moved_sibling_is_rewritten_in_place(self):
+        """#18015 : le plan de referents est scanne avant les git mv. Un
+        notebook renomme qui cite un voisin renomme figurait a son ancien
+        chemin et l'application echouait (FileNotFoundError) apres le
+        commit 1."""
+        old2 = "MyIA.AI.Notebooks/S/S-2-Beta.ipynb"
+        new2 = "MyIA.AI.Notebooks/S/S-02-Beta-Python.ipynb"
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            _init_repo(repo)
+            _write_nb(repo, old2, _nb([_md(
+                "Suite de [S-01-Alpha](S-01-Alpha.ipynb).")]))
+            _git(repo, "add", "-A")
+            _git(repo, "commit", "-qm", "voisin")
+            tsv = Path(str(repo) + ".table.tsv")
+            tsv.write_text(f"{OLD}\t{NEW}\n{old2}\t{new2}\n", encoding="utf-8")
+
+            cwd = os.getcwd()
+            os.chdir(repo)
+            try:
+                with mock.patch.object(rn, "run_organs", return_value=0):
+                    rc = rn.main(["--mapping", str(tsv), "--apply",
+                                 "--lane", "test-lane"])
+            finally:
+                os.chdir(cwd)
+            self.assertEqual(rc, 0)
+            self.assertFalse((repo / old2).exists())
+            body = (repo / new2).read_text(encoding="utf-8")
+            self.assertIn("S-01-Alpha-Python.ipynb", body)
+            self.assertNotIn("(S-01-Alpha.ipynb)", body)
+            c2 = _git(repo, "diff", "--name-status", "HEAD~1", "HEAD")
+            self.assertIn(f"M\t{new2}", c2)
 
 
 class TestMappingRefusals(unittest.TestCase):
