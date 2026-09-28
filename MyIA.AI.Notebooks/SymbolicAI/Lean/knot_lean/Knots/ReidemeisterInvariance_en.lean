@@ -53,18 +53,27 @@ the case where the designated minor genuinely changes shape.
 The reindexation argument (`i ≥ 1`) rests on a premise the strategy **assumes
 without proving**: `arcPartition` is preserved by the surgery.
 
-The general statement requires: the connected R3 surgery rewrites the
-`(e2, e4)` pairs of the triangle's three crossings (cf `Conway_en.lean:350-354`,
-`pairs := d.crossings.map (fun c => (c.e2, c.e4))`). On the lake's witness
-(`reidemeister3Connected_satisfiable`), those pairs, taken as an unordered
-multiset (`mergePair` is symmetric in its two arguments), **coincide** between
-X and Y — the partition is therefore preserved trivially, and `decide` at the
-kernel suffices to discharge the theorem.
+Let us make the obstacle precise on the witness: the connected R3 surgery
+rewrites the `(e2, e4)` pairs of the triangle's three crossings (cf
+`Conway_en.lean`, `pairs := d.crossings.map (fun c => (c.e2, c.e4))`). On the
+lake's witness (`reidemeister3Connected_satisfiable`), those pairs coincide as
+**unordered** pairs —
+
+    X : (2,8), (7,4), (8,6)      Y : (4,7), (2,8), (8,6)
+
+— but only the **orientation** of the middle pair differs ((7,4) versus (4,7)),
+and the rewritten crossings change **position** in the fold's list. The fold
+sees oriented pairs taken in list order: the preservation is therefore **not
+vacuous** — it requires absorbing both differences, through insensitivity to a
+pair's orientation (`mergePair_symm`, #17429) and through commutation of the
+fusions at the class level (`mergePair_mergePair_comm_equiv`, #17646). What is
+preserved besides is the **multiset of labels** (docstring of
+`Reidemeister3Connected`), whence `wf`.
 
 This witness alone does not, however, ground the general preservation: a
-minimal counterexample where the triangle's `(e2, e4)` pairs genuinely differ
-between X and Y remains to be exhibited. This is the first lock of the
-tranche, before any reindexation argument.
+diagram where the triangle's `(e2, e4)` pairs genuinely differ as a multiset
+remains to be exhibited. This is the first lock of the tranche, before any
+reindexation argument.
 -/
 
 /-! ## 3. Control: the R3 witness's arc partition is preserved
@@ -72,17 +81,20 @@ tranche, before any reindexation argument.
 The witness is that of `reidemeister3Connected_satisfiable` (literals copied
 verbatim): both diagrams are well formed (`decide` on `wf` in the lake), and
 their arc partition — 5 classes for 10 edges — is **the same** on both sides of
-the surgery. This is the **trivial control** of section 2: on this witness,
-the triangle's `(e2, e4)` pairs coincide as a multiset between X and Y — the
-preservation is vacuous. A counterexample where they differ remains to be
-exhibited to ground the general preservation.
+the surgery. This is the positive control of section 2: the triangle's `(e2,e4)`
+pairs there coincide unordered, with differing orientation and fold position —
+the fold still yields the same partition, and it is `foldl_mergePair_swap`
+(orientation) then `foldl_mergePair_permute_adjacent` (transposition of
+positions) that justify it. A witness where the pairs differ as a multiset
+remains to be exhibited for the general preservation.
 -/
 
 /-- Control of tranche 3 (step 1): on the witness pair of the connected R3 move,
-    the surgery preserves `arcPartition`. On this witness, the triangle's
-    `(e2, e4)` pairs coincide as a multiset between X and Y, so the preservation
-    is trivial; the general form (on diagrams where the triangle's pairs differ)
-    remains to be proved. -/
+    the surgery preserves `arcPartition` — the triangle's `(e2,e4)` pairs
+    coincide unordered, and the fold absorbs their orientation and position
+    differences (`foldl_mergePair_swap`, `foldl_mergePair_permute_adjacent`).
+    This is the first premise the reindexation argument (case `i ≥ 1`) assumes;
+    the general form remains to be proved. -/
 theorem reidemeister3Connected_arcPartition_witness :
     arcPartition
         { crossings := [⟨1, 2, 7, 8⟩, ⟨3, 7, 9, 4⟩, ⟨9, 8, 5, 6⟩,

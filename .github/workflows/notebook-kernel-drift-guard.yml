@@ -25,6 +25,7 @@ on:
       - '**.ipynb'
       - 'scripts/notebook_tools/check_kernel_drift.py'
       - 'scripts/notebook_tools/tests/test_check_kernel_drift.py'
+      - 'scripts/notebook_tools/tests/test_check_kernel_drift_env_hint.py'
       - '.github/workflows/notebook-kernel-drift-guard.yml'
   workflow_dispatch:
     inputs:
@@ -101,4 +102,5 @@ jobs:
       - name: Kernel drift unit tests
         run: |
           python -m pip install --quiet pytest
-          python -m pytest scripts/notebook_tools/tests/test_check_kernel_drift.py -q
+          python -m pytest scripts/notebook_tools/tests/test_check_kernel_drift.py \
+                           scripts/notebook_tools/tests/test_check_kernel_drift_env_hint.py -q

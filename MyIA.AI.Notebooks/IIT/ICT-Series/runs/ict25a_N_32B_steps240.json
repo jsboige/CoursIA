@@ -1,0 +1,72 @@
+{
+  "model": "Qwen/Qwen2.5-32B-Instruct",
+  "arm": "N",
+  "steps": 240,
+  "gpu": "NVIDIA GeForce RTX 3090",
+  "seeds": [
+    {
+      "arm": "N",
+      "model": "Qwen/Qwen2.5-32B-Instruct",
+      "seed": 0,
+      "steps": 240,
+      "train_s": 8670.072435855865,
+      "vram_load_gb": 7.365317632,
+      "vram_peak_gb": 7.646659584,
+      "n_records": 480,
+      "hack_early": 0.8208333333333333,
+      "hack_late": 0.8708333333333333,
+      "mc_early": 0.5625,
+      "mc_late": 0.6291666666666667,
+      "reward_early": 1.6875,
+      "reward_late": 1.775
+    },
+    {
+      "arm": "N",
+      "model": "Qwen/Qwen2.5-32B-Instruct",
+      "seed": 1,
+      "steps": 240,
+      "train_s": 11491.846462726593,
+      "vram_load_gb": 7.3805056,
+      "vram_peak_gb": 7.644808192,
+      "n_records": 480,
+      "hack_early": 0.8291666666666667,
+      "hack_late": 0.85,
+      "mc_early": 0.6166666666666667,
+      "mc_late": 0.5875,
+      "reward_early": 1.7041666666666666,
+      "reward_late": 1.75
+    },
+    {
+      "arm": "N",
+      "model": "Qwen/Qwen2.5-32B-Instruct",
+      "seed": 7,
+      "steps": 240,
+      "train_s": 10370.078902244568,
+      "vram_load_gb": 7.3805056,
+      "vram_peak_gb": 7.644849664,
+      "n_records": 480,
+      "hack_early": 0.8208333333333333,
+      "hack_late": 0.8416666666666667,
+      "mc_early": 0.6041666666666666,
+      "mc_late": 0.625,
+      "reward_early": 1.6958333333333333,
+      "reward_late": 1.7083333333333333
+    },
+    {
+      "arm": "N",
+      "model": "Qwen/Qwen2.5-32B-Instruct",
+      "seed": 42,
+      "steps": 240,
+      "train_s": 8696.282118558884,
+      "vram_load_gb": 7.3805056,
+      "vram_peak_gb": 7.644808192,
+      "n_records": 480,
+      "hack_early": 0.8625,
+      "hack_late": 0.8333333333333334,
+      "mc_early": 0.6291666666666667,
+      "mc_late": 0.6375,
+      "reward_early": 1.7416666666666667,
+      "reward_late": 1.75
+    }
+  ]
+}

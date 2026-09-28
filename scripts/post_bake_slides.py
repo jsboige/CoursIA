@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Post-bake fixup for Slidev builds on Windows.
 
-Tell c.1037 ★ NEW : `slidev build` injects the cwd Windows path
+`slidev build` injects the cwd Windows path
 (e.g. `C:/Program Files/Git/...`) into the generated HTML/JS/CSS/_redirects
 files, and sometimes URL-encodes the space (`Program%20Files`).
 This script makes the baked output machine-independent, so the build is
@@ -31,7 +31,7 @@ defects that made it a "green that measures nothing" (cf. #15381/#15545):
   4. `.map` files were scanned for residue but never rewritten (missing
      from `TARGET_EXTS`).
 
-Tell c.1051 ★ NEW : the prior fix closed (1)-(4) but introduced a fifth
+The prior fix closed (1)-(4) but introduced a fifth
 defect (the "green-that-measures-nothing" raised in #15452 point 1) -- the
 `_rewrite` step replaced only the substring `Program Files` with `.`,
 leaving the absolute machine path intact (e.g. `C:/Program Files/nodejs/...`

@@ -464,6 +464,7 @@ Task(subagent_type="general-purpose", prompt="notebook-designer ...")
 # 2. Exécuter
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt=f"""
     Tu es un agent notebook-executor.
     Exécute le notebook: {notebook_path}
@@ -485,6 +486,7 @@ execution_report = execute_notebook(...)
 # 2. Valider
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt=f"""
     Tu es un agent notebook-validator.
     Valide le notebook: {notebook_path}
@@ -507,6 +509,7 @@ cells_with_errors = [r['cell_index'] for r in execution_report['results'] if not
 for idx in cells_with_errors:
     Task(
         subagent_type="general-purpose",
+        model="sonnet",
         prompt=f"""
         Tu es un agent notebook-cell-iterator.
         Corrige la cellule {idx} du notebook {notebook_path}
@@ -524,6 +527,7 @@ for idx in cells_with_errors:
 ```python
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt="""
     Agent notebook-executor.
 
@@ -543,6 +547,7 @@ Task(
 ```python
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt="""
     Agent notebook-executor.
 
@@ -562,10 +567,11 @@ Task(
 ```python
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt="""
     Agent notebook-executor.
 
-    Notebook: MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Executor.ipynb
+    Notebook: MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb
     Mode: full
     Kernel: python3
     Env vars: {"BATCH_MODE": "true"}
@@ -581,6 +587,7 @@ Task(
 ```python
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt="""
     Agent notebook-executor.
 

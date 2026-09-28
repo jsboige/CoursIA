@@ -546,10 +546,15 @@ def test_le_verdict_ne_dit_jamais_d_attendre():
 
 
 def _git_version_supported():
-    """`git merge-tree --write-tree` demande Git >= 2.38 (CR 2026-09-16)."""
+    """`git merge-tree --write-tree` demande Git >= 2.38 (CR 2026-09-16).
+
+    #17448 : passe par ``_GIT`` (fige au module) -- un ``git`` nu serait
+    re-resolu via le PATH *au moment de l'appel*, sensible a toute pollution
+    (CreateProcess lit le PATH du process APPELANT, cf #17186/#17172).
+    """
     try:
         out = subprocess.run(
-            ["git", "--version"], capture_output=True, text=True,
+            [_GIT, "--version"], capture_output=True, text=True,
             encoding="utf-8", errors="replace"
         ).stdout
     except OSError:
@@ -564,7 +569,32 @@ def _git_version_supported():
     return (major, minor) >= (2, 38)
 
 
-# Resolution git FIGEE au module (#17172) : resoudre "git" via le PATH a
+def test_git_version_supported_immune_to_path_pollution(tmp_path, monkeypatch):
+    """#17448, controle negatif : un faux git en tete de PATH ne change pas le
+    verdict de ``_git_version_supported`` -- la resolution est figee au module
+    (_GIT, chemin absolu), pas refaite par appel.
+
+    Faux sous Windows : CreateProcess ne resout JAMAIS un ``.bat`` pour un nom
+    nu, le faux doit etre un ``.exe``. Une copie de ``where.exe`` nommee
+    ``git.exe`` repond n'importe quoi a ``--version`` : le parse echoue, le
+    verdict tombe a False -- si l'appel passait par le PATH pollue.
+    Pre-fix (``git`` nu) : rouge. Post-fix (_GIT fige) : vert.
+    """
+    expected = _git_version_supported()  # mesure AVANT pollution du PATH
+    fake_dir = tmp_path / "fakebin"
+    fake_dir.mkdir()
+    if os.name == "nt":
+        where_exe = Path(os.environ["SystemRoot"]) / "System32" / "where.exe"
+        shutil.copy(where_exe, fake_dir / "git.exe")
+    else:
+        fake = fake_dir / "git"
+        fake.write_text('#!/bin/sh\necho "git version 1.9.0"\n', encoding="utf-8")
+        fake.chmod(0o755)
+    monkeypatch.setenv("PATH", str(fake_dir) + os.pathsep + os.environ["PATH"])
+    assert _git_version_supported() == expected
+
+
+# Resolution git FIGEE au module (#17172/#17448) : resoudre "git" via le PATH a
 # chaque appel rend la suite sensible a toute pollution ulterieure de
 # os.environ["PATH"] par un test anterieur -- le discriminateur observe
 # (git qui interprete file:///C:/ en /C:/, POSIX) disparait des qu'on

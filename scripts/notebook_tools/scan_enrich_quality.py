@@ -105,7 +105,7 @@ _ANCHOR_RE = re.compile(r"\bcode\[(\d+)\]")
 
 # --- TODO / exercise markers (class h) --------------------------------------
 
-_TODO_RE = re.compile(r"(TODO[_ ]etudiant|TODO[_ ]student|à compléter|a completer|\bsorry\b)", re.I)
+_TODO_RE = re.compile(r"(TODO[_ ]étudiant|TODO[_ ]etudiant|TODO[_ ]student|à compléter|a completer|\bsorry\b)", re.I)
 
 # A fenced block line that reads like implementation, not like a skeleton.
 # Skeletons end on `;` / `{` / `...` and carry no body; solutions have
@@ -255,7 +255,15 @@ def scan_anchors(cells: list[dict]) -> list[dict]:
                 continue
             seen.add(idx)
             if idx >= n_code:
-                abs_state = "markdown" if idx < n and cells[idx].get("cell_type") == "markdown" else "out of notebook"
+                # Libelle exact (#17875, second defaut) : la cellule absolue
+                # peut EXISTER et etre du code -- dire "out of notebook" pour
+                # une cellule presente gonfle l'alarme au-dela du fait.
+                if idx >= n:
+                    abs_state = "out of notebook"
+                elif cells[idx].get("cell_type") == "markdown":
+                    abs_state = "markdown"
+                else:
+                    abs_state = "a code cell"
                 findings.append({
                     "cell_index": i, "category": "ANCHOR_OOR", "severity": "HIGH",
                     "evidence": m.group(0),

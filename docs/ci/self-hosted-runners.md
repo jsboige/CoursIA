@@ -90,13 +90,47 @@ Le pic est calculé sur les **bornes** des intervalles : entre deux bornes le co
 
 ```bash
 # après merge (workflow_dispatch exige le fichier sur la branche par défaut)
-gh workflow run runner-coresidence-advisory.yml -f hours=6 -f runner_inventory=true
+# hours se calcule sur le rythme MESURE du dépôt (voir ci-dessous), pas sur le
+# défaut 6 : au rythme du 2026-09-23 (~780 runs/h), 1 h est le maximum qui
+# tient sous le plafond de 1 000 requêtes/h du jeton de workflow.
+gh workflow run runner-coresidence-advisory.yml -f hours=1 -f runner_inventory=true
 # ou en local, quand le quota REST est disponible
 python scripts/ci/measure_runner_demand.py --repo jsboige/CoursIA \
     --since <ISO8601Z> --until <ISO8601Z> --runners --output coresidence.json
 ```
 
-**État de la mesure.** L'instrument et son runner sont livrés ; **les chiffres ne le sont pas encore**. Ils seront publiés par le premier run de l'organe (cron du mardi 04:20 UTC, ou dispatch immédiat après merge) et versés ici datés, avec la décision de capacité qu'ils fondent. Tant qu'ils ne sont pas là, #15574 reste ouvert : un instrument n'est pas une caractérisation.
+**État de la mesure — premiers chiffres (2026-09-23).** Les deux nombres sont écrits ci-dessous, datés, avec leur véhicule et leurs limites.
+
+*Inventaire statique — `actions/runners`, mesuré le 2026-09-23T14:44Z :*
+
+| Hôte | slots | occupés à l'instant | labels de pool |
+|---|---:|---:|---|
+| `myia-po-2024-linux-docker` | 7 | 7 | `coursia-ephemeral`, `coursia-linux` |
+| `myia-ai-01-wsl` | 3 | 3 | `coursia-ephemeral`, `coursia-linux` |
+| `myia-po-2024-lean-docker` | 2 | 0 | `coursia-ephemeral`, `coursia-lean` |
+| `myia-po-2024-linux-waiter` | 12 | 0 | `coursia-waiter` |
+| `myia-ai-01-linux-waiter` | 16 | 0 | `coursia-waiter` |
+
+- **Le pool `coursia-ephemeral` compte 12 slots, dont 9 (75 %) sur le seul hôte physique `myia-po-2024`** (7 `linux-docker` + 2 `lean-docker`) ; les 3 autres sont sur `myia-ai-01-wsl`. Au moment de la mesure, **les 7 slots `linux-docker` de po-2024 étaient occupés simultanément** : le plafond de concurrence observé sur cet hôte est donc d'au moins 7.
+- Les slots `po-2024-linux-docker-9` et `-10`, cités par le diagnostic fondateur du 2026-09-11 (les deux runners tués à 71 % des tests), **sont absents de tous les inventaires relevés** (14:44Z à la rédaction ; contrôle du 2026-09-23 18:31Z). Le reste de la composition est daté et volatile : `-7` absent de l'inventaire de 14:44Z est relevé en ligne à 18:31Z — une absence n'est pas un retrait, aucune trace de désenregistrement n'est citée ; le point durable est la paire {-9, -10}.
+- Les profils `coursia-fast-guards` de `self_hosted_runner_profiles.json` ne portent aucun runner enregistré à cet instant — c'est leur état nominal : le cycle est éphéméral (un slot s'enregistre à la demande pour un job, puis se désenregistre ; cf `windows-self-hosted-tests.yml`).
+
+*Co-résidence dynamique — premier run de l'organe `runner-coresidence-advisory.yml`, fenêtre 1 h (2026-09-23T14:08Z → 15:08Z, run 35877355222) :*
+
+| Hôte | identités de slots vues sur la fenêtre | jobs portés | pic de concurrence | concurrence moyenne |
+|---|---:|---:|---:|---:|
+| `myia-ai-01-wsl` | 10 | 180 | 9 | 5.30 |
+| `myia-po-2024-linux-docker` | 8 | 99 | 7 | 4.09 |
+
+- **279 jobs placés** sur les deux hôtes, et **274 des 279 (98 %) ont tourné en concurrence** avec au moins un autre job du même hôte — la co-résidence est le régime nominal du parc, pas un cas limite. Les 439 autres jobs de la fenêtre restent sans attribution à un hôte self-hosted reconnu par l'instrument.
+- **Les deux hôtes culminent quasiment à leur capacité observée** : ai-01-wsl à 9 jobs simultanés (10 identités de slots vues), po-2024-linux-docker à 7 (8 identités). Les identités vues sur la fenêtre excèdent l'inventaire statique de 14:44Z (10 contre 3 sur ai-01-wsl, 8 contre 7 sur po-2024 ; 41 runners contre 40 à l'instant du run) : des slots éphémères se sont enregistrés pendant l'heure chargée — le parc auto-scale, la photo statique n'en montre qu'une tranche.
+- **Aucune dégradation médiane détectée** : p50 seul 0.367 min, p50 partagé 0.267 min (ratio 0.727). À ne pas sur-lire : la population « seule » ne compte que 5 jobs — c'est l'absence de signal **au médian**, pas l'absence de coût de co-résidence sur les jobs longs. Le rapport partagé/seul porte désormais **p50, p90 et max** (`shared_over_solo_runtime_ratio`), parce que c'est la queue qui fait mourir un job au timeout : un rapport médian proche de 1 peut coexister avec une queue qui double. Les effectifs (`solo_jobs`, `shared_jobs`) restent publiés à côté du rapport — un quantile de queue sur une population mince n'est pas une mesure. Le relevé du 2026-09-23 est antérieur à ce champ : sa queue n'est pas recalculable (la mesure JSON du run n'est pas conservée), elle viendra du prochain relevé.
+
+**Le sizing nominal de l'organe est périmé d'un ordre de grandeur.** La fenêtre par défaut de 6 h était calibrée sur « ~60-80 runs/heure » (≈500 appels, plafond 1 000/h du jeton de workflow). Mesuré : **1 433 runs sur 6 h le 2026-09-11** (≈240/h) et **781 runs sur la dernière heure le 2026-09-23** (≈780/h) — le rythme a plus que triplé entre les deux. À ce rythme, une fenêtre de 6 h exige ~5 800 appels, hors de portée du jeton de workflow comme d'un poste de travail ; le premier dispatch (fenêtre 6 h) a été annulé au profit d'une fenêtre de 1 h (≈780 appels, sous le plafond). Toute fenêtre future se calcule sur le rythme mesuré du dépôt au moment du run, pas sur la constante de conception.
+
+**Vérifiabilité des deux blocs.** La lecture `actions/runners` a été prise sous le compte `myia-ai-01`, détenteur de la permission fine-grained `runners` sur ce dépôt : un reviewer qui ne l'a pas obtient un `403` (constaté depuis `clusterManager-Myia` le 2026-09-23T20:28Z), donc ce contrôle précis se demande à ce compte, ou se rejoue via l'organe lui-même (`runner_inventory=true`) sur un inventaire frais — il ne se lit pas de l'extérieur du dépôt. Les chiffres de co-résidence se rejouent par un dispatch de `runner-coresidence-advisory.yml` (commande ci-dessus, `hours=1`) : c'est une photo datée d'une heure, pas un relevé continu, et le run qui l'a produite (35877355222) est cité avec sa fenêtre.
+
+Les deux nombres étant versés et datés ci-dessus, la caractérisation est complète ; reste ouverte la décision de capacité (plafond de concurrence par hôte, retrait ou renfort documenté des slots), qui relève du coordinateur et n'est pas prise dans ce document.
 
 ## Topologie retenue
 

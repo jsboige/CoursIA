@@ -772,3 +772,201 @@ def paperclip_vs_coordination_comparison() -> str:
         "=" * 70,
     ]
     return "\n".join(lines)
+
+# ============================================================================
+# Assistance Games 2026 - POLA (Provably Optimal Learning Algorithms)
+# ============================================================================
+# Source : Ananthakrishnan, Bedaywi, Jordan, Russell, Haghtalab (2026),
+# arXiv:2607.08012, "Provably Optimal Learning Algorithms for Assistance Games".
+# Archive : G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\2026 - Ananthakrishnan et al - Provably Optimal Learning Algorithms for Assistance Games (arXiv 2607.08012).pdf
+# Identité auteurs + affiliation UC Berkeley + arXiv ID vérifiés sur la première page via pypdf (Tell c.c.c.d.G.1 ★★★★ + Tell c.c.c.d.974 ★★★).
+
+from typing import Callable, List
+
+
+@dataclass
+class AssistanceState:
+    """State of an Assistance Game : latent theta (human preference) + history."""
+    theta_true: float                  # human latent preference (e.g. probability that human plays action 1)
+    history: List[tuple]               # list of (human_action, robot_action) per round
+
+
+@dataclass
+class POLAResult:
+    """Result of a POLA run over T rounds."""
+    algorithm: str
+    seed: int
+    T: int
+    cumulative_reward: float
+    optimal_reward: float               # cumulative reward of optimal joint policy in hindsight
+    assistance_regret: float            # optimal - cumulative
+    stackelberg_prob_at_T: float        # 1 if last robot action was Stackelberg-optimal w.r.t. true theta, else 0
+    history: List[tuple]
+
+
+def _stackelberg_action(theta: float) -> int:
+    """Stackelberg-optimal robot action given true theta.
+
+    Binary-action setting with shared reward R(a_H, a_R) = 1 if a_H == a_R else 0.
+    Robot commits first ; human best-responds.
+    Posterior P(a_H=1) = theta, P(a_H=0) = 1 - theta.
+    Optimal action : matches the MAP estimate (argmax of posterior).
+    """
+    return 1 if theta >= 0.5 else 0
+
+
+def _stackelberg_value(theta: float) -> float:
+    """Expected Stackelberg value : max(P(a_H=0), P(a_H=1)) = max(theta, 1-theta)."""
+    return max(theta, 1.0 - theta)
+
+
+def _greedy_robot(theta_hat: float, history: list, n_actions: int = 2) -> int:
+    """Greedy oracle : plays action matching the true theta. (Upper-bound reference.)"""
+    return _stackelberg_action(theta_hat)
+
+
+def _random_robot(theta_hat: float, history: list, n_actions: int = 2, rng=None) -> int:
+    """Random robot : uniform over actions, no learning, no oracle."""
+    if rng is None:
+        return int(np.random.randint(0, n_actions))
+    return int(rng.integers(0, n_actions))
+
+
+def _pola_robot(posterior_mean: float, history: list, n_actions: int = 2) -> int:
+    """POLA robot : plays action matching the posterior mean of theta.
+
+    Provably (1 - 1/e)-approximate assistance regret, rate ~O(T^3/4) decentralised
+    or ~O(T^1/2) pseudo-decentralised (Ananthakrishnan et al. 2026, Theorems 1-2).
+    We implement the practical instantiation : action = argmax posterior over {0,1}.
+    """
+    return 1 if posterior_mean >= 0.5 else 0
+
+
+def _human_signaler(theta: float, history: list) -> int:
+    """Bayesian-rational human : plays a_H = 1 with probability theta, 0 with 1 - theta.
+
+    The "informed" agent in Ananthakrishnan 2026 observes the latent theta.
+    """
+    return 1 if float(np.random.random()) < theta else 0
+
+
+def run_assistance_game(seed: int, T: int, theta_true: float = 0.7,
+                        algorithm: str = "POLA") -> POLAResult:
+    """Run one instance of an Assistance Game over T rounds with a given algorithm.
+
+    Parameters
+    ----------
+    seed : int
+        RNG seed for reproducibility.
+    T : int
+        Number of rounds.
+    theta_true : float
+        Latent human preference (probability that human plays action 1).
+    algorithm : str
+        One of 'POLA', 'Greedy', 'Random'.
+
+    Returns
+    -------
+    POLAResult with cumulative_reward, optimal_reward, assistance_regret,
+    stackelberg_prob_at_T.
+    """
+    rng = np.random.default_rng(seed)
+    np.random.seed(seed)  # for _human_signaler (legacy np.random)
+    history: List[tuple] = []
+    cumulative_reward = 0.0
+
+    # Posterior over theta (Beta prior Beta(1, 1))
+    alpha, beta_param = 1.0, 1.0
+    posterior_mean = alpha / (alpha + beta_param)
+
+    for t in range(T):
+        if algorithm == "POLA":
+            a_r = _pola_robot(posterior_mean, history)
+        elif algorithm == "Greedy":
+            a_r = _greedy_robot(theta_true, history)
+        elif algorithm == "Random":
+            a_r = _random_robot(theta_true, history, rng=rng)
+        else:
+            raise ValueError(f"Unknown algorithm: {algorithm}")
+
+        a_h = _human_signaler(theta_true, history)
+
+        r = 1.0 if a_h == a_r else 0.0
+        cumulative_reward += r
+        history.append((a_h, a_r))
+
+        # POLA Bayesian update of posterior over theta
+        if a_h == 1:
+            alpha += 1.0
+        else:
+            beta_param += 1.0
+        posterior_mean = alpha / (alpha + beta_param)
+
+    stackelberg_value = _stackelberg_value(theta_true)
+    optimal_reward = stackelberg_value * T
+
+    optimal_action = _stackelberg_action(theta_true)
+    last_a_r = history[-1][1] if history else 0
+    stackelberg_prob_at_T = 1.0 if last_a_r == optimal_action else 0.0
+
+    assistance_regret = optimal_reward - cumulative_reward
+
+    return POLAResult(
+        algorithm=algorithm,
+        seed=seed,
+        T=T,
+        cumulative_reward=cumulative_reward,
+        optimal_reward=optimal_reward,
+        assistance_regret=assistance_regret,
+        stackelberg_prob_at_T=stackelberg_prob_at_T,
+        history=history,
+    )
+
+
+def run_assistance_multiseed(algorithm: str, T: int, theta_true: float = 0.7,
+                              seeds: List[int] = None) -> dict:
+    """Run assistance game over multiple seeds, aggregate metrics.
+
+    Returns dict with keys:
+      - seeds: list of seeds used
+      - mean_regret: average assistance regret
+      - std_regret: standard deviation of regret across seeds
+      - mean_cumulative_reward: average cumulative reward
+      - mean_stackelberg_prob: average probability of optimal action at round T
+      - individual: list of POLAResult
+    """
+    if seeds is None:
+        seeds = [0, 1, 7, 42, 99]
+    results = [run_assistance_game(seed=s, T=T, theta_true=theta_true, algorithm=algorithm) for s in seeds]
+    regrets = [r.assistance_regret for r in results]
+    cumulative_rewards = [r.cumulative_reward for r in results]
+    stackelberg_probs = [r.stackelberg_prob_at_T for r in results]
+    return {
+        "algorithm": algorithm,
+        "T": T,
+        "theta_true": theta_true,
+        "seeds": seeds,
+        "mean_regret": float(np.mean(regrets)),
+        "std_regret": float(np.std(regrets)),
+        "mean_cumulative_reward": float(np.mean(cumulative_rewards)),
+        "mean_stackelberg_prob": float(np.mean(stackelberg_probs)),
+        "individual": results,
+    }
+
+
+def compare_assistance_algorithms(T: int = 1000, theta_true: float = 0.7,
+                                   seeds: List[int] = None) -> dict:
+    """Run POLA vs Greedy vs Random over multiple seeds, return comparison table."""
+    if seeds is None:
+        seeds = [0, 1, 7, 42, 99]
+    pola = run_assistance_multiseed("POLA", T=T, theta_true=theta_true, seeds=seeds)
+    greedy = run_assistance_multiseed("Greedy", T=T, theta_true=theta_true, seeds=seeds)
+    random_ = run_assistance_multiseed("Random", T=T, theta_true=theta_true, seeds=seeds)
+    return {
+        "T": T,
+        "theta_true": theta_true,
+        "seeds": seeds,
+        "POLA": pola,
+        "Greedy": greedy,
+        "Random": random_,
+    }

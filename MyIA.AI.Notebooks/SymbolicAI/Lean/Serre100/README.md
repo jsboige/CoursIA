@@ -14,7 +14,9 @@ Le geste « distillation » : prendre un énoncé ou une construction centrale d
 | 04 | [04-lemme-yoneda-categories-finies.ipynb](04-lemme-yoneda-categories-finies.ipynb) | Lemme de Yoneda calculé sur catégories finies | Python stdlib |
 | 05 | [05-table-de-caracteres.ipynb](05-table-de-caracteres.ipynb) | Tables de caractères — squelette combinatoire des groupes finis | Python stdlib |
 | 06 | [06-bulles-minkowski.ipynb](06-bulles-minkowski.ipynb) | Les bulles diaboliques de Minkowski — géométrie des nombres | Python stdlib |
+| 07 | [07-zeros-fonctions-l-gaps-gue.ipynb](07-zeros-fonctions-l-gaps-gue.ipynb) | Zéros de fonctions L, gaps et statistique GUE — l'autre versant de l'œuvre (contre-exemple de Terjanian cité) | Python stdlib |
 | 08 | [08-serre-dans-mathlib.ipynb](08-serre-dans-mathlib.ipynb) | Tour des cinq « Serre » de Mathlib — le versant preuves du diptyque (index : grain 9 #16374) | Lean 4 (kernel `lean4-wsl`, lake [`serre100_lean/`](serre100_lean/)) |
+| 09 | [09-congruences-tau-lacunarite-delta.ipynb](09-congruences-tau-lacunarite-delta.ipynb) | τ de Ramanujan — congruence mod 691, borne de Deligne, lacunarité des puissances de η (Euler, Jacobi, Serre) | Python stdlib + matplotlib |
 
 ## Conventions
 
@@ -25,3 +27,13 @@ Le geste « distillation » : prendre un énoncé ou une construction centrale d
 ## Voie décorélée
 
 L'EPIC #16334 comporte aussi une voie décorélée du programme de l'anniversaire (pont Serre–Grothendieck avec le lake `SymbolicAI/Lean/grothendieck_lean`) : cohomologie de Čech calculée, Yoneda calculé, `SerreMap.lean`.
+
+
+## Sources primaires
+
+Deux témoignages filmés de J.-P. Serre, transcrits intégralement (Whisper large-v3-turbo, transcription automatique — noms propres corrigés dans les citations : Artin, Weil, Bombieri, Cartier), alimentent les carnets 03, 04 et 07 :
+
+- **« Plaisir des mathématiques »** — J.-P. Serre, Institut Henri Poincaré, 2026 (YouTube `tNtoTzGltak`) — le contre-exemple de Terjanian à la conjecture d'Artin (11:05), cité dans 07.
+- **« À propos de la correspondance Grothendieck-Serre »** — dialogue J.-P. Serre / Alain Connes, Fondation Hugot du Collège de France, 2019 (YouTube `pOv-ygSynRI`) — Tohoku et les axiomes (07:05), la montée H0-H1-H2 (12:36), le conducteur (17:57), citées dans 03, 04 et 07.
+
+Transcriptions complètes (timestampées) : `G:\Mon Drive\MyIA\IA\Bibliographie IA\NumberTheory\` — hors dépôt, conformément à la convention bibliographique.

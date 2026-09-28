@@ -16,6 +16,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from check_axiom_gate_coverage import (  # noqa: E402
+    composite_axiom_coverage,
     calls_gate,
     classify_deleted,
     deleted_dispatchers,
@@ -421,3 +422,75 @@ class TestCheckExitCode:
 
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-v"]))
+
+
+class TestCompositeAxiomCoverage:
+    """Jambe B.3 matricielle (#17336) : le credit via l'action composite.
+
+    Sur cette jambe le project-path est interpole -- le manifeste est la
+    verite terrain. Vecu #17370 : lean-serre.yml supprime au profit de la
+    matiere, le checker ne voyait plus la couverture et le test
+    test_no_lake_ever_lost_the_gate rougissait sur main (2 tetes, 2026-09-25).
+    """
+
+    BODIES = {
+        "lean-build.yml": (
+            "on:\n"
+            "  push:\n"
+            "jobs:\n"
+            "  ci-matrix:\n"
+            "    steps:\n"
+            "      - uses: ./.github/actions/lean-build\n"
+            "      - name: Proof integrity\n"
+            "        if: matrix.axiom-target-modules != ''\n"
+            "        uses: ./.github/actions/lean-axiom\n"
+            "        with:\n"
+            "          project-path: ${{ matrix.project-path }}\n"
+            "  other:\n"
+            "    steps:\n"
+            "      - run: echo hi\n"
+        ),
+        "lean-axiom.yml": (
+            "jobs:\n"
+            "  axiom:\n"
+            "    steps:\n"
+            "      - uses: ./.github/actions/lean-axiom\n"
+        ),
+    }
+
+    def test_action_use_credits_opted_manifest_paths(self):
+        cov = composite_axiom_coverage(self.BODIES, {"A/a_lean"})
+        assert cov == {"lean-build.yml": {"ci-matrix": ["A/a_lean"]}}
+
+    def test_no_optin_no_credit(self):
+        """Sans cle d'opt-in dans le manifeste, rien n'est credite."""
+        assert composite_axiom_coverage(self.BODIES, set()) == {}
+
+    def test_gate_file_itself_is_not_credited(self):
+        """Le fichier du gate ne compte jamais comme appelant (meme forme)."""
+        cov = composite_axiom_coverage(self.BODIES, {"A/a_lean"})
+        assert "lean-axiom.yml" not in cov
+
+    def test_workflow_call_form_is_not_composite(self):
+        """`uses: ./…/workflows/lean-axiom.yml` releve du scan workflow-call,
+        pas du credit composite -- les deux formes ne se melangent pas."""
+        bodies = {"w.yml": (
+            "jobs:\n"
+            "  proof:\n"
+            "    uses: ./.github/workflows/lean-axiom.yml\n"
+        )}
+        assert composite_axiom_coverage(bodies, {"A/a_lean"}) == {}
+
+    def test_composite_paths_relocate_a_deleted_dispatcher(self):
+        """Controle d'integration : la couverture composite suffit a faire
+        `relocated` (pas `lost`) un dispatcher supprime dont elle reprend
+        les project-paths."""
+        cov = composite_axiom_coverage(
+            self.BODIES, {"MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean"})
+        gated = {p for jobs in cov.values() for ps in jobs.values() for p in ps}
+        d = {"dispatcher": "lean-serre.yml", "deleted_by": "52b248a3e0",
+             "had_gate": True,
+             "gated_paths": ["MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean"]}
+        r = classify_deleted([d], gated)
+        assert r["lost"] == []
+        assert [e["dispatcher"] for e in r["relocated"]] == ["lean-serre.yml"]

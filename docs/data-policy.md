@@ -25,7 +25,7 @@ Pour trancher un cas nouveau, **dans cet ordre** :
 
 ## 3. Arbitrage par cas concret (état first-hand)
 
-Tell c.745-L2 + c.854-L4 strict — vérifications firsthand c.868 (po-2024):
+Vérifications first-hand ([G.1](../CLAUDE.md)) — po-2024 :
 
 ### Cas **vérifiés** (verdict tranché)
 
@@ -65,7 +65,7 @@ Ces lignes du ticket #13742 body ne sont **pas tranchées ici** : soit la mesure
 
 ## Origine
 
-- Issue #13742 (arbitrage + politique de données, Tell c.745-L2 narrow assumé c.868 po-2024:CoursIA-2).
-- Tell c.854-L4 strict : chaque verdict est first-hand — pas une paraphrase du ticket.
+- Issue #13742 (arbitrage + politique de données, périmètre restreint assumé par po-2024:CoursIA-2).
+- Chaque verdict est first-hand, pas une paraphrase du ticket ([G.1](../CLAUDE.md)).
 
 — lane `myia-po-2024:CoursIA-2`, cycle c.868 (2026-09-02).
