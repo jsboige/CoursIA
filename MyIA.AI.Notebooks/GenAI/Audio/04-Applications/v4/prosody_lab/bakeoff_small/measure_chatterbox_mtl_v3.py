@@ -82,7 +82,8 @@ def main() -> int:
 
     # Import tardif pour ne pas casser l'import si torch n'est pas installé.
     import sys
-    sys.path.insert(0, str(Path(__file__).parent))
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
     from clients import ChatterboxClient  # noqa: E402
 
     client = ChatterboxClient()

@@ -44,7 +44,7 @@ else:
     arr = np.asarray(pcm)
 print(f"     arr shape={arr.shape} dtype={arr.dtype}")
 
-out_path = r"D:/dev/CoursIA-17586/MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/bakeoff_small/results/pocket_tts/smoke.wav"
+out_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "results", "pocket_tts", "smoke.wav")
 os.makedirs(os.path.dirname(out_path), exist_ok=True)
 if arr.ndim > 1:
     arr = arr.squeeze()

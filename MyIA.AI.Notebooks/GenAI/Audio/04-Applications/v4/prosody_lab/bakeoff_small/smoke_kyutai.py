@@ -44,7 +44,7 @@ for k, v in pcms.items():
         print(f"  {k}: shape={v_np.shape} dtype={v_np.dtype} duration={v_np.shape[-1]/24000:.2f}s")
 
 # Save as WAV 24kHz mono PCM_16 via soundfile (Tell c.804 : libsndfile torch-independent)
-out_path = r"D:/dev/CoursIA-17586/MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/bakeoff_small/results/kyutai_tts_1_6b/smoke.wav"
+out_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "results", "kyutai_tts_1_6b", "smoke.wav")
 os.makedirs(os.path.dirname(out_path), exist_ok=True)
 for k, v in pcms.items():
     arr = v.cpu().numpy() if hasattr(v, "cpu") else v
