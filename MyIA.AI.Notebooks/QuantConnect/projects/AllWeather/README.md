@@ -11,7 +11,14 @@ Portfolio multi-asset inspiré de Ray Dalio (Bridgewater Associates).
 | **Classes d'actifs** | Actions, Bonds, Or, Commodities |
 | **Objectif** | Stabilité dans tous les environnements |
 
-## Allocation Standard
+## Allocation Dalio originelle (baseline v1.0)
+
+Cette allocation fixe est le point de départ historique du projet — le mode
+`standard` de `main.py` (docstring : « v1.0 … Dalio static ») et la baseline du
+notebook de recherche (« allocation statique Dalio originale », Sharpe 0,691 sur
+2016-2026). Les figures ci-dessous montrent ce que les variantes en tirent :
+Risk Parity (0,718) puis overlay tactique SMA200 à 50 % (0,858) dominent la
+baseline.
 
 | Actif | Allocation | ETF | Rôle |
 |-------|------------|-----|------|
@@ -89,7 +96,7 @@ AllWeather/
 ## Variantes Incluses
 
 ### 1. Standard All-Weather
-- Allocation fixe (30/40/15/7.5/7.5)
+- Allocation fixe (30/40/15/7.5/7.5) — la baseline Dalio ci-dessus
 - Rebalancement trimestriel
 - Seuil de drift 5%
 
