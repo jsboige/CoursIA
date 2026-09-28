@@ -216,23 +216,24 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 26 | [Z3-Python 17 — Théorie des tableaux : Select, Store et…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-17-Array-Theory-Python.ipynb) | BETA | Oui |
 | 27 | [Z3-Python 18 — Sudoku 4x4 : comparaison des modes Array…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-18-Sudoku-Modes-Python.ipynb) | BETA | Oui |
 | 28 | [13. UNSAT cores : expliquer l'insatisfiabilite (le '…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb) | BETA | Oui |
-| 29 | [LINQ to Z3 - Résolution de Contraintes Déclarative](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb) | BETA | Oui |
-| 30 | [Sudoku : Théorème Explicite vs Modèle Implicite par…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/02_Sudoku_Theorem_vs_Array.ipynb) | BETA | Oui |
-| 31 | [Sudoku 4x4 : comparaison des modes Array et Constants](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/03_Sudoku_Modes_Comparison.ipynb) | BETA | Oui |
-| 32 | [Théorie des Tableaux Z3 — Select, Store et Switching](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/04_Array_Theory.ipynb) | BETA | Oui |
-| 33 | [Tableaux Imbriqués et Grilles 2D : API Déclarative…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/05_Nested_Arrays_2D.ipynb) | BETA | Oui |
-| 34 | [Notebook 06 — Meal-Planner declaratif : du modèle Z3 au…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/06_Meal_Planner_Modelisation.ipynb) | BETA | Oui |
-| 35 | [07 — Données réelles & externe : Ciqual × RecipeML…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/07_Meal_Planner_Data_External.ipynb) | BETA | Oui |
-| 36 | [08 — Capstone hiérarchique : du squelette int\[\]\[\] réel…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/08_Meal_Planner_Patient_Capstone.ipynb) | BETA | Oui |
-| 37 | [09 — Convergence à l'échelle : l'encodage décide de la…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/09_Meal_Planner_Convergence_Scale.ipynb) | BETA | Oui |
-| 38 | [10 — Générer un témoin depuis A & ~B (fork Automata…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/10_Witness_Generation_Automata.ipynb) | BETA | Oui |
-| 39 | [Notebook 11 — Ordonnancement d'atelier (Job Shop…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/11_Job_Shop_Scheduling.ipynb) | BETA | Oui |
-| 40 | [Notebook 12 - Coloration de graphe : le graphe de…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/12_Graph_Coloring_Petersen.ipynb) | BETA | Oui |
-| 41 | [Notebook 13 — Cryptarithmes : l'arithmétique…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/13_Cryptarithmetic_SMT.ipynb) | BETA | Oui |
-| 42 | [Notebook 14 — De SAT à OPT : optimisation et…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/14_Optimize_MaxSAT.ipynb) | BETA | Oui |
-| 43 | [15 — Théorie des bit-vectors Z3 : vérifier le…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/15_BitVectors_Overflow.ipynb) | BETA | Oui |
-| 44 | [17 — UNSAT cores Z3 : expliquer l'insatisfiabilité (le…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/17_UnsatCores.ipynb) | BETA | Oui |
-| 45 | [Notebook 18 - L'enigme d'Einstein : la logique des…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/18_Einsteins_Riddle.ipynb) | BETA | Oui |
+| 29 | [Z3-Python-13b — UNSAT cores : le MUS (sous-ensemble irreductible)](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13b-UnsatCores-MUS-Python.ipynb) | BETA | Oui |
+| 30 | [LINQ to Z3 - Résolution de Contraintes Déclarative](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb) | BETA | Oui |
+| 31 | [Sudoku : Théorème Explicite vs Modèle Implicite par…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/02_Sudoku_Theorem_vs_Array.ipynb) | BETA | Oui |
+| 32 | [Sudoku 4x4 : comparaison des modes Array et Constants](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/03_Sudoku_Modes_Comparison.ipynb) | BETA | Oui |
+| 33 | [Théorie des Tableaux Z3 — Select, Store et Switching](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/04_Array_Theory.ipynb) | BETA | Oui |
+| 34 | [Tableaux Imbriqués et Grilles 2D : API Déclarative…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/05_Nested_Arrays_2D.ipynb) | BETA | Oui |
+| 35 | [Notebook 06 — Meal-Planner declaratif : du modèle Z3 au…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/06_Meal_Planner_Modelisation.ipynb) | BETA | Oui |
+| 36 | [07 — Données réelles & externe : Ciqual × RecipeML…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/07_Meal_Planner_Data_External.ipynb) | BETA | Oui |
+| 37 | [08 — Capstone hiérarchique : du squelette int\[\]\[\] réel…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/08_Meal_Planner_Patient_Capstone.ipynb) | BETA | Oui |
+| 38 | [09 — Convergence à l'échelle : l'encodage décide de la…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/09_Meal_Planner_Convergence_Scale.ipynb) | BETA | Oui |
+| 39 | [10 — Générer un témoin depuis A & ~B (fork Automata…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/10_Witness_Generation_Automata.ipynb) | BETA | Oui |
+| 40 | [Notebook 11 — Ordonnancement d'atelier (Job Shop…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/11_Job_Shop_Scheduling.ipynb) | BETA | Oui |
+| 41 | [Notebook 12 - Coloration de graphe : le graphe de…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/12_Graph_Coloring_Petersen.ipynb) | BETA | Oui |
+| 42 | [Notebook 13 — Cryptarithmes : l'arithmétique…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/13_Cryptarithmetic_SMT.ipynb) | BETA | Oui |
+| 43 | [Notebook 14 — De SAT à OPT : optimisation et…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/14_Optimize_MaxSAT.ipynb) | BETA | Oui |
+| 44 | [15 — Théorie des bit-vectors Z3 : vérifier le…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/15_BitVectors_Overflow.ipynb) | BETA | Oui |
+| 45 | [17 — UNSAT cores Z3 : expliquer l'insatisfiabilité (le…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/17_UnsatCores.ipynb) | BETA | Oui |
+| 46 | [Notebook 18 - L'enigme d'Einstein : la logique des…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/18_Einsteins_Riddle.ipynb) | BETA | Oui |
 
 ## SymbolicAI/SemanticWeb (28 notebooks)
 
