@@ -223,3 +223,16 @@ jobs:
         # Env-driven contract (see the script docstring): inputs never come
         # from the cwd (#8712).
         python scripts/lean/axiom_check_step.py
+    - name: Drop Mathlib oleans before the cache save
+      # actions/cache saves `.lake` in its post step, at the end of this job
+      # (success only). Mathlib's own oleans make up most of that archive:
+      # ~2.4 GB per lake, so three lakes fill the 10 GB repo quota and evict
+      # each other's caches -- the cold knot_lean builds of #18100 (#18185).
+      # `lake exe cache get` in the build step fetches them again from the
+      # Mathlib cache server, outside the quota (37 s in run 36378467990).
+      # The lake's own build and the other packages stay cached.
+      # Keep this step LAST: any later step would find Mathlib unbuilt.
+      working-directory: ${{ inputs.project-path }}
+      run: |
+        rm -rf .lake/packages/mathlib/.lake/build
+        du -sh .lake 2>/dev/null || true
