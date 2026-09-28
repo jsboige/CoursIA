@@ -1,6 +1,6 @@
 '''Tests for detect_markdown_rendering.repr_quoted_source_entries rule (#16221).
 
-Founding incident: Tell c.1158-L1 / c.1158-L2 -- the 4.2e Focal-Loss notebook
+Founding incident: the 4.2e Focal-Loss notebook
 had cells 19/20 whose ``source`` was a JSON-dumped list (e.g. ``["# 4.2e --
 section heading\\n", "..."]``) pasted verbatim into the cell. The cell rendered
 as literal escaped JSON instead of as proper markdown heading + paragraph.
@@ -50,7 +50,7 @@ def _rules(cell) -> list[str]:
 
 
 class TestIsReprQuotedEntry:
-    """Unit tests for the line-level pattern (#16221 / Tell c.1158-L1)."""
+    """Unit tests for the line-level pattern (#16221)."""
 
     def test_real_repr_quoted_with_escape(self):
         # The canonical founding-incident line, verbatim from c.1158-L1.

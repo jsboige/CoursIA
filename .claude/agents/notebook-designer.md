@@ -408,6 +408,7 @@ L'explication doit:
 # 1. Designer crée le notebook
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt=f"""
     Tu es un agent notebook-designer.
     Lis .claude/agents/notebook-designer.md
@@ -423,6 +424,7 @@ Task(
 # 2. Executor exécute pour vérifier
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt=f"""
     Tu es un agent notebook-executor.
     Exécute le notebook: {output_path}
@@ -433,6 +435,7 @@ Task(
 # 3. Validator valide la structure et les résultats
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt=f"""
     Tu es un agent notebook-validator.
     Valide le notebook: {output_path}
@@ -443,6 +446,7 @@ Task(
 # 4. Enricher ajoute du contenu pédagogique supplémentaire
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt=f"""
     Tu es un agent notebook-enricher.
     Enrichis le notebook: {output_path}
@@ -470,6 +474,7 @@ Task(
 ```python
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt="""
     Agent notebook-designer.
 
@@ -498,6 +503,7 @@ Task(
 ```python
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt="""
     Agent notebook-designer.
 
