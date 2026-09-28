@@ -2,14 +2,18 @@
 """Offline tests for scripts/ci/gh_queue_health.py.
 
 All tests use the `--input` snapshot mode so they are hermetic -- no live
-`gh run list` calls. They cover the four interesting behaviors:
+`gh run list` calls. They cover the interesting behaviors:
 
-1. Pure ghost floor (the CoursIA 18-of-2026-08-19 scenario).
+1. Pure ghost floor (the CoursIA 18-of-2026-08-19 pre-cutoff scenario).
 2. Pure live cohort (no ghosts, no parse failures -> CLEAN).
 3. Mixed cohort with parse failures -> INCOMPLETE, exit 2.
 4. Snapshot envelope unwrapping (`{snapshot: {workflow_runs: [...]}}`).
+5. The pr-closed ghost class (#18215): a queued pull_request run whose PR
+   is closed is a permanent ghost regardless of age, and a prior-analysis
+   snapshot replays its ghost class through `_ghost_reason`.
 
-Plus a direct CLI test asserting EXIT_GHOST on a real CoursIA-shaped snapshot.
+Plus direct CLI tests asserting EXIT_GHOST / EXIT_OK on CoursIA-shaped
+snapshots.
 """
 from __future__ import annotations
 
@@ -208,29 +212,151 @@ def test_cli_repo_without_input_rejects(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# #13966 follow-ups: INCIDENT_FLOOR_COUNT naming, STALE_FLOOR docstring
-# conjonction, INCOMPLETE preservation across replay
+# #18215: pr-closed ghost class, two-incident steady state, replay fidelity
 # ---------------------------------------------------------------------------
 
 
-def test_13966_incident_floor_count_constant_is_18() -> None:
-    """#13966 follow-up 1 -- INCIDENT_FLOOR_COUNT = 18, used at the verdict site.
+def test_18215_classify_pr_closed_ghost_class() -> None:
+    """A post-cutoff pull_request run whose PR is closed is a permanent ghost.
 
-    The bare number `18` next to `INCIDENT_FLOOR_DATE` was an asymmetry that
-    degraded the signature silently. The constant named makes the change loud.
+    The measured incident: PR #15946 (wt/vibe-g2-quantconnect) closed
+    2026-09-13T18:05Z while 35 of its runs awaited admission -- the API
+    reports them queued forever and refuses to cancel a run "that has not
+    been queued yet". An open PR (or a missing one) stays live: an open PR
+    can still be admitted, so a wedged open-PR run must surface as a live
+    queue that never drains (the 2026-08-19 detection shape).
     """
     sys.path.insert(0, str(SCRIPT.parent))
     import gh_queue_health as mod  # noqa: WPS433
 
-    assert mod.INCIDENT_FLOOR_COUNT == 18
-    assert mod.INCIDENT_FLOOR_DATE == "2026-08-19"
-    # Both used together: 18 ghosts AND no live -> STALE_FLOOR
+    cutoff = dt.datetime(2026, 8, 20, tzinfo=dt.timezone.utc)
+    runs = [
+        {"id": 1, "name": "closed-pr-run", "created_at": "2026-09-13T09:10:00Z",
+         "event": "pull_request", "head_branch": "wt/vibe-g2-quantconnect"},
+        {"id": 2, "name": "open-pr-run", "created_at": "2026-09-13T09:10:00Z",
+         "event": "pull_request", "head_branch": "feature/still-open"},
+        {"id": 3, "name": "no-pr-run", "created_at": "2026-09-13T09:10:00Z",
+         "event": "push", "head_branch": "wt/stray"},
+    ]
+    states = {"wt/vibe-g2-quantconnect": "closed", "feature/still-open": "open",
+              "wt/stray": "missing"}
+    out = mod.classify_runs(runs, cutoff, states)
+    assert [g["reason"] for g in out["ghosts"]] == ["pr-closed"]
+    assert out["ghosts"][0]["id"] == 1
+    assert {entry["id"] for entry in out["live"]} == {2, 3}
+    # Entries carry the classification context for replay and audit.
+    assert out["ghosts"][0]["event"] == "pull_request"
+    assert out["ghosts"][0]["head_branch"] == "wt/vibe-g2-quantconnect"
+
+
+def test_18215_classify_without_pr_states_keeps_post_cutoff_live() -> None:
+    """Control: no pr_states passed (snapshot replay) -> cutoff-only split.
+
+    A raw-shape replay is offline by design -- it has no PR-state channel,
+    so a pr-closed run created after the cutoff replays as live. The prior-
+    analysis replay (which carries `reason`) is the fidelity-preserving
+    path, pinned by its own test below.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    cutoff = dt.datetime(2026, 8, 20, tzinfo=dt.timezone.utc)
+    runs = [{"id": 1, "name": "would-be-pr-closed", "created_at": "2026-09-13T09:10:00Z",
+             "event": "pull_request", "head_branch": "wt/vibe-g2-quantconnect"}]
+    out = mod.classify_runs(runs, cutoff)
+    assert out["ghosts"] == []
+    assert len(out["live"]) == 1
+
+
+def test_18215_classify_replayed_reason_is_authoritative() -> None:
+    """A synthesized ghost entry with `_ghost_reason` replays as that class.
+
+    Without this, a pr-closed ghost created after the cutoff would replay
+    as live and flip the verdict class -- the exact replay-fidelity failure
+    #13966 fixed for parse_failures, reborn for ghost classes.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    cutoff = dt.datetime(2026, 8, 20, tzinfo=dt.timezone.utc)
+    runs = [{"id": 1, "name": "replayed", "created_at": "2026-09-13T09:10:00Z",
+             "event": "pull_request", "head_branch": "wt/vibe-g2-quantconnect",
+             "_ghost_reason": "pr-closed"}]
+    out = mod.classify_runs(runs, cutoff)
+    assert [g["reason"] for g in out["ghosts"]] == ["pr-closed"]
+    assert out["live"] == []
+
+
+def test_18215_fetch_pr_states_closed_open_missing(monkeypatch) -> None:
+    """fetch_pr_states maps each distinct branch to open/closed/missing.
+
+    One `gh api pulls?head=` call per distinct branch, via the shared
+    transport; a non-list payload is an InstrumentError (fail loud, never
+    guess a state that would misclassify a live run as ghost).
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    calls: list[str] = []
+
+    class _Proc:
+        def __init__(self, payload):
+            self.returncode, self.stdout, self.stderr = 0, json.dumps(payload), ""
+
+    def fake_run(cmd, **kwargs):
+        endpoint = cmd[-1]
+        calls.append(endpoint)
+        if "wt/closed-branch" in endpoint:
+            return _Proc([{"state": "closed"}])
+        if "wt/open-branch" in endpoint:
+            return _Proc([{"state": "open"}])
+        if "wt/gone-branch" in endpoint:
+            return _Proc([])
+        return _Proc({"unexpected": "dict"})
+
+    monkeypatch.setattr(mod.subprocess, "run", fake_run)
+    states = mod.fetch_pr_states(
+        "jsboige/CoursIA",
+        ["wt/open-branch", "wt/closed-branch", "wt/gone-branch", "wt/closed-branch"],
+    )
+    assert states == {"wt/closed-branch": "closed", "wt/open-branch": "open",
+                      "wt/gone-branch": "missing"}
+    # Deduplicated: one call per DISTINCT branch.
+    assert len(calls) == 3
+    assert all("head=jsboige:" in c for c in calls)
+    # Non-list payload -> broken instrument, not a silent guess.
+    try:
+        mod.fetch_pr_states("jsboige/CoursIA", ["wt/bad"])
+    except mod.InstrumentError:
+        pass
+    else:
+        raise AssertionError("expected InstrumentError on non-list pulls payload")
+
+
+def test_18215_two_incident_steady_state_is_stale_floor() -> None:
+    """Ghost COUNT carries no signal since #18215 -- classes do.
+
+    The floor grew from 18 (pre-cutoff, #13579) to 55 when the pr-closed
+    class absorbed the 37 runs stranded by PR #15946 (#18215), and any
+    future closed-PR wave grows it further. What must stay sharp is: an
+    empty live queue with explained ghosts is steady state (STALE_FLOOR /
+    watch OK), and any live queue coexisting with ghosts is drift.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    # Historical floor alone, queue empty.
     assert mod.verdict(18, 0, 0) == "STALE_FLOOR"
-    # 18 ghosts WITH live runs -> GHOST_RUNS_DETECTED (signature augmented)
+    # Two-incident floor (18 pre-cutoff + 37 pr-closed), queue empty.
+    assert mod.verdict(55, 0, 0) == "STALE_FLOOR"
+    # A different repo's smaller explained floor is steady state too.
+    assert mod.verdict(5, 0, 0) == "STALE_FLOOR"
+    # Ghosts WITH a live queue -> drift, whatever the floor size.
     assert mod.verdict(18, 1, 0) == "GHOST_RUNS_DETECTED"
-    # Different ghost count -> GHOST_RUNS_DETECTED (no false STALE_FLOOR on
-    # other repos with a different number of historical ghosts)
-    assert mod.verdict(5, 0, 0) == "GHOST_RUNS_DETECTED"
+    assert mod.verdict(55, 31, 0) == "GHOST_RUNS_DETECTED"
+    # The watch collapses the steady states to OK and the drifts to DRIFT.
+    assert mod.watch_verdict(55, 0, 0) == "OK"
+    assert mod.watch_verdict(55, 1, 0) == "DRIFT"
 
 
 def test_13966_load_snapshot_returns_tuple_with_parse_failures_preserved() -> None:
@@ -386,15 +512,20 @@ def test_watch_verdict_stale_floor_collapses_to_ok() -> None:
     assert mod.watch_verdict(18, 0, 0) == "OK"
 
 
-def test_watch_verdict_drift_on_count_change() -> None:
-    """Ghost count drifted away from the floor -> watch verdict DRIFT."""
+def test_watch_verdict_count_drift_with_empty_queue_is_ok() -> None:
+    """Ghost count drift with an empty live queue -> watch verdict OK (#18215).
+
+    Before #18215 the watch fired DRIFT whenever the ghost count left the
+    pinned 18. That pinned the SECOND incident (37 pr-closed runs) into a
+    permanent false alert: every closed-PR wave grows the explained floor
+    by construction. The count is no longer a signal -- an empty live queue
+    is, whatever the floor size.
+    """
     sys.path.insert(0, str(SCRIPT.parent))
     import gh_queue_health as mod  # noqa: WPS433
 
-    # 19 ghosts -- the historical floor was 18, a new ghost appeared.
-    assert mod.watch_verdict(19, 0, 0) == "DRIFT"
-    # 17 ghosts -- the floor shrank (one historical ghost got cleaned up).
-    assert mod.watch_verdict(17, 0, 0) == "DRIFT"
+    assert mod.watch_verdict(19, 0, 0) == "OK"
+    assert mod.watch_verdict(55, 0, 0) == "OK"
 
 
 def test_watch_verdict_drift_on_live_activity() -> None:
@@ -444,12 +575,21 @@ def test_cli_watch_stale_floor_exits_zero(tmp_path: Path) -> None:
 
 
 def test_cli_watch_drift_exits_one(tmp_path: Path) -> None:
-    """--watch on a new ghost (count drifted) exits 1 (alert)."""
+    """--watch on ghosts coexisting with a live queue exits 1 (alert).
+
+    Since #18215 the alert condition is the live queue, not a count drift:
+    a queued run that belongs to no ghost class (here a post-cutoff run on
+    an open PR) sits in live and pins the watch at DRIFT until it drains
+    or gets classified -- the shape that caught the 2026-08-19 class.
+    """
     runs = [
         {"id": i, "name": f"ghost-{i}", "created_at": f"2026-08-19T03:{i:02d}:00Z",
          "html_url": f"https://gh/ghost/{i}"}
-        for i in range(19)  # one MORE than the historical floor
+        for i in range(18)
     ]
+    runs.append({"id": 99, "name": "stuck-open-pr", "created_at": "2026-09-28T04:15:00Z",
+                 "html_url": "https://gh/live/99", "event": "pull_request",
+                 "head_branch": "feature/stuck"})
     snapshot = tmp_path / "drift.json"
     snapshot.write_text(_make_snapshot(runs), encoding="utf-8")
     proc = _run("--watch", "--input", str(snapshot))
@@ -459,6 +599,49 @@ def test_cli_watch_drift_exits_one(tmp_path: Path) -> None:
     body = json.loads(proc.stdout)
     assert body["verdict_watch"] == "DRIFT"
     assert body["verdict_measurement"] == "GHOST_RUNS_DETECTED"
+    assert body["counts"]["live"] == 1
+
+
+def test_cli_watch_two_incident_floor_replay_exits_zero(tmp_path: Path) -> None:
+    """--watch on the two-incident steady state (prior-analysis replay) exits 0.
+
+    The replay path that must NOT flip verdict class (#13966 fidelity,
+    extended to ghost reasons in #18215): a prior output's ghosts carry
+    their `reason`, the synthesized entries replay through `_ghost_reason`,
+    and the 55-ghost 0-live shape stays STALE_FLOOR/OK even though 37 of
+    those ghosts were created AFTER the cutoff.
+    """
+    analysis = {
+        "cutoff": "2026-08-20",
+        "verdict": "STALE_FLOOR",
+        "counts": {"total": 55, "ghosts": 55, "live": 0, "parse_failures": 0},
+        "snapshot_size": 55,
+        "ghosts": (
+            [{"id": i, "name": f"corruption-{i}",
+              "created_at": f"2026-08-19T03:{i:02d}:00Z",
+              "html_url": f"https://gh/ghost/{i}", "reason": "pre-cutoff"}
+             for i in range(18)]
+            + [{"id": 400 + i, "name": f"limbo-{i}",
+                "created_at": f"2026-09-13T09:{i:02d}:00Z",
+                "html_url": f"https://gh/limbo/{i}", "reason": "pr-closed",
+                "event": "pull_request", "head_branch": "wt/vibe-g2-quantconnect"}
+               for i in range(37)]
+        ),
+        "live": [],
+        "parse_failures": [],
+    }
+    snapshot = tmp_path / "twofloor.json"
+    snapshot.write_text(json.dumps(analysis), encoding="utf-8")
+    proc = _run("--watch", "--input", str(snapshot))
+    assert proc.returncode == 0, (
+        f"expected watch OK=0 on two-incident STALE_FLOOR, got {proc.returncode}; "
+        f"stderr={proc.stderr}"
+    )
+    body = json.loads(proc.stdout)
+    assert body["verdict_watch"] == "OK"
+    assert body["verdict_measurement"] == "STALE_FLOOR"
+    assert body["counts"]["ghosts"] == 55
+    assert body["counts"]["live"] == 0
 
 
 def test_cli_watch_broken_exits_two(tmp_path: Path) -> None:
