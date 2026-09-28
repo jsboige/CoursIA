@@ -7,6 +7,7 @@
       "display-name": "sudoku_lean",
       "sorry-baseline": "0",
       "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
       "paths": [
         "MyIA.AI.Notebooks/Sudoku/sudoku_lean/**.lean",
         "MyIA.AI.Notebooks/Sudoku/sudoku_lean/lakefile.lean",
