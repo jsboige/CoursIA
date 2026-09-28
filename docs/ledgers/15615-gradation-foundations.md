@@ -1,10 +1,10 @@
 # Ledger — Issue #15615 (gradation GameTheory, strate "Fondations")
 
-> **Bornage strict** : ce ledger couvre **la strate "Fondations" de la série GameTheory** (carnets 02 et 03, soit 15 notebooks sur `origin/main` au 2026-09-28). Les carnets 04-Nash, 05-ZeroSum et au-delà font l'objet d'un ledger suivant si l'arbitrage du tableau consolidé le demande.
+> **Bornage strict** : ce ledger couvre **la strate "Fondations" de la série GameTheory** (carnets 02 et 03) sur `origin/main` au 2026-09-28. Les carnets 04-Nash, 05-ZeroSum et au-delà font l'objet d'un ledger suivant si l'arbitrage du tableau consolidé le demande.
 
 ## Origine
 
-Issue #15615 — audit de gradation demandé en réponse au nit user du 2026-09-11 sur la renumérotation mécanique #15586/#15613 : « remettre un peu de cohérence dans la gradation ». Le présent ledger applique le scope 1 de l'acceptance (« tableau de gradation ») sur la **strate des fondations** (carnets 02 + 03), pas sur l'ensemble de la série (100 carnets au 2026-09-28).
+Issue #15615 — audit de gradation demandé en réponse au nit user du 2026-09-11 sur la renumérotation mécanique #15586/#15613 : « remettre un peu de cohérence dans la gradation ». Le présent ledger applique le scope 1 de l'acceptance (« tableau de gradation ») sur la **strate des fondations** (carnets 02 + 03), pas sur l'ensemble de la série (voir `ls MyIA.AI.Notebooks/GameTheory/ | grep -E '\.ipynb$' | wc -l` au 2026-09-28).
 
 ## Méthode
 
