@@ -735,6 +735,77 @@ def test_diff_reading_before_code_devant_sortie():
     assert f["next_role"] == "code_with_output"
 
 
+def test_diff_section_header_devant_code_non_flagge():
+    """Carve-out #17777 etendu a READING_BEFORE_CODE : un en-tete de section
+    (titre d'organisation, meme suivi de prose) qui introduit le code qui
+    suit n'est pas une lecture. Classe mesuree sur #18050 : 3 FPs
+    ``### 8.x R0N`` devant leur ``#check`` (SL-1b, cellules 27/33/36).
+    """
+    base = nb(
+        code("#check Foo.bar"),
+    )
+    head = nb(
+        md(
+            "### 8.2 R02 — les parallélogrammes du grokking\n\n"
+            "*Liu, Michaud & Tegmark, Towards Understanding Grokking: "
+            "An Effective Theory of Emergence.* La conjecture porte sur les "
+            "residus de la factorisation, verifies ici par un `#check` court."
+        ),
+        code("#check Foo.bar"),
+    )
+    assert detect_added_readings(head, base) == []
+
+
+def test_diff_section_header_cache_interpretation_flagge():
+    """Garde-fou : l'en-tete de section qui DISSIMULE une interpretation
+    dans son corps reste signale (meme controle negatif que l'enonce
+    d'exercice #17777).
+    """
+    base = nb(
+        code("print(1)"),
+    )
+    head = nb(
+        md("### 2. Tests statistiques\n\n### Analyse : la convergence est nette."),
+        code("print(1)"),
+    )
+    findings = detect_added_readings(head, base)
+    assert len(findings) == 1
+    assert findings[0]["type"] == "READING_BEFORE_CODE"
+
+
+def test_diff_section_header_citant_sortie_flagge():
+    """Garde-fou : l'en-tete de section dont le corps CITE une sortie
+    (« on observe... ») est une interpretation deguisee -- signalee.
+    """
+    base = nb(
+        code("print(1)"),
+    )
+    head = nb(
+        md("### 2. Resultats du banc\n\nOn observe un ecart net entre les deux modes."),
+        code("print(1)"),
+    )
+    findings = detect_added_readings(head, base)
+    assert len(findings) == 1
+    assert findings[0]["type"] == "READING_BEFORE_CODE"
+
+
+def test_diff_prose_non_titree_devant_code_flagge():
+    """La prose non titree (> 80 chars) devant une sortie reste signalee :
+    le carve-out ne s'ouvre que sur le TITRE, pas sur la longueur.
+    """
+    base = nb(
+        code("print(1)"),
+    )
+    head = nb(
+        md("Le modele converge tres vite ici et le score final depasse "
+           "largement la base de reference sur ce jeu de donnees."),
+        code("print(1)"),
+    )
+    findings = detect_added_readings(head, base)
+    assert len(findings) == 1
+    assert findings[0]["type"] == "READING_BEFORE_CODE"
+
+
 def test_diff_exercise_reading_apres_stub_exec():
     """EXERCISE_READING : une lecture ajoutee juste apres un exercice.
     La nouvelle heuristique accepte l'exercice execute (sortie litterale
