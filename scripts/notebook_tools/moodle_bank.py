@@ -76,6 +76,10 @@ SUPPORTED_TYPES = ("multichoice", "truefalse", "matching")
 def html_to_text(s: str) -> str:
     s = re.sub(r"<br\s*/?>", "\n", s or "")
     s = re.sub(r"</p>\s*", "\n", s)
+    # le <img> porte la reference de la figure extraite : la conserver en
+    # texte AVANT le nettoyage des balises, sinon l'image commise devient
+    # orpheline (aucun enonce ne la reference -- review NanoClaw #18263)
+    s = re.sub(r'<img[^>]*\ssrc="([^"]+)"[^>]*>', r"[figure: \1]", s)
     s = re.sub(r"<[^>]+>", "", s)
     s = htmllib.unescape(s)
     return re.sub(r"[ \t]+", " ", s).strip()
@@ -283,6 +287,7 @@ def check(bank: str) -> int:
     ids = set()
     total = 0
     per_theme = {}
+    referenced = set()
     for fname in sorted(os.listdir(bank)):
         if not fname.endswith(".yaml"):
             continue
@@ -337,9 +342,24 @@ def check(bank: str) -> int:
                         errors.append(f"{qid}: appariement incomplet")
             else:
                 errors.append(f"{qid}: type inconnu {qtype}")
-            for m in re.finditer(r"images/([^\s)>\]]+)", rec.get("enonce") or ""):
+            enonce = rec.get("enonce") or ""
+            for m in re.finditer(r"images/([^\s)>\]]+)", enonce):
                 if not os.path.isfile(os.path.join(bank, "images", m.group(1))):
                     errors.append(f"{qid}: image absente images/{m.group(1)}")
+                else:
+                    referenced.add(m.group(1))
+            # figure annoncee mais non embarquee dans la banque (lien externe
+            # d'origine ou figure absente de l'export) : defaut de source,
+            # signale dans RELECTURE-2026-09.md
+            if re.search(r"figure", enonce, re.I) and "images/" not in enonce:
+                warnings.append(f"{qid}: figure annoncee sans reference embarquee")
+    # sens inverse : tout fichier de images/ doit etre reference par un enonce
+    # (sinon le convertisseur a extrait une figure que personne ne peut voir)
+    img_dir = os.path.join(bank, "images")
+    if os.path.isdir(img_dir):
+        for f in sorted(os.listdir(img_dir)):
+            if f not in referenced:
+                errors.append(f"images/{f}: fichier orphelin (aucun enonce ne le reference)")
     print(f"=== Verification banque : {total} questions, {len(per_theme)} themes ===")
     for theme, n in sorted(per_theme.items()):
         print(f"    {theme:38s} {n:4d}")

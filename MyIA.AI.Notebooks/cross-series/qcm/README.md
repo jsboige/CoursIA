@@ -41,7 +41,10 @@ Un fichier par thème, une liste YAML de questions. Chaque question porte :
   explication: ...       # seulement quand Moodle en fournissait une
 ```
 
-Les images embarquées vivent dans `images/` (référencées depuis l'énoncé).
+Les images embarquées vivent dans `images/` (référencées depuis l'énoncé par `[figure: images/…]` ; `check`
+signale comme orphelin tout fichier non référencé). Une question dont la figure n'est pas
+embarquée — cas de ia2-010, dont l'export ne porte qu'une URL externe — est signalée en
+`ATTENTION`, cf [RELECTURE-2026-09.md](RELECTURE-2026-09.md).
 
 ## Outils
 

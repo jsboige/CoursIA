@@ -25,6 +25,27 @@ Deux passes :
 Les coquilles vivent dans la source Moodle : la banque les reproduit fidèlement et ne les
 corrige pas. Les contestables sont les seuls à affecter l'usage pédagogique de la banque.
 
+## Liaison des figures — défaut corrigé (review NanoClaw du 28/09)
+
+La review structurelle de #18263 a relevé que les figures extraites étaient **orphelines** :
+le convertisseur réécrivait le chemin (`@@PLUGINFILE@@/…` → `images/<id>.<ext>`) dans le HTML
+brut, puis le nettoyage des balises supprimait le `<img>` qui portait cette référence — les
+quatre questions concernées annonçaient « la figure suivante » sans aucun lien.
+
+Corrigé dans la même PR : `html_to_text` conserve désormais la référence en texte
+(`[figure: images/<id>.<ext>]`) avant le nettoyage, `check` détecte le sens inverse (tout
+fichier de `images/` non référencé est une erreur ; toute figure annoncée sans référence
+embarquée est une attention), et les tests couvrent les deux sens. Les quatre questions à
+figure embarquée (ia2-027, ia4-004, ia4-006, ia4-007) portent leur référence.
+
+**ia2-010 précisé** : sa figure est une **URL Dropbox externe** (le `<img>` de l'export 2018
+pointe un lien `photos-5.dropbox.com`, vignette 32×32 — probablement expiré), pas un fichier
+embarqué. Elle est signalée en `ATTENTION` par `check` (« figure annoncée sans référence
+embarquée »). Sa quasi-jumelle **ia2-027** (même question, export 2020, mêmes options) porte
+la figure embarquée — la clé de dédoublonnage sha1 ne les a pas fusionnées (ponctuation
+différente : « par une » vs « par : une »). **Double arbitrage mainteneur** : rapatrier ou
+accepter l'URL externe pour ia2-010, et statuer sur le doublon ia2-010 ↔ ia2-027.
+
 ## Les deux défauts structurants — attribution à la source
 
 **ia2-008** (complexité mémoire d'IDS) et **ia5-002** (longueur de description minimale)
@@ -113,6 +134,9 @@ lecture déléguée (extrait et argument verbatim de cette passe).
 - **Questions à figure** (ia2-010, ia2-027, ia4-004) : la lecture de figure était hors
   capacité de la passe déléguée — à reprendre par une lecture avec vision. ia4-006 et
   ia4-007 sont en revanche validées numériquement (table conjointe dentiste 0.6/0.9).
+  Précision après la re-conversion : ia2-010 ne porte **pas** de figure embarquée (sa seule
+  référence est l'URL externe ci-dessus) — le lien vers sa figure est à trancher par le
+  mainteneur, pas à relire.
 - **Calculs rejoués concordants** (aucun constat émis) : minimax et alpha-bêta
   (ia2-016/017/030/031/032), expectiminimax (ia2-033/034), Bayes (ia4-003/008/015),
   partage des pirates (=97), stratégie mixte (1/6–1/3), arbre (=2 feuilles), LeNet-5,

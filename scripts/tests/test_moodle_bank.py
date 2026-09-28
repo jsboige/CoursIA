@@ -106,6 +106,35 @@ def test_check_flags_source_duplicate_options_as_attention(capsys):
     assert "cles contradictoires" in out
 
 
+def test_figure_references_present_in_enonces():
+    """Chaque figure embarquee (fichier de images/) est referencee par l'enonce
+    de sa question, et chaque question a figure embarquee porte la reference
+    `images/` : revision NanoClaw #18263 (le strip des balises supprimait le
+    <img> qui portait le chemin reecrit).
+    """
+    bank = load_bank()
+    by_id = {q["id"]: q for qs in bank.values() for q in qs}
+    for qid in ("ia2-027", "ia4-004", "ia4-006", "ia4-007"):
+        enonce = by_id[qid]["enonce"]
+        assert f"images/{qid}." in enonce, f"{qid}: reference images/ absente de l'enonce"
+    files = sorted(os.listdir(os.path.join(BANK, "images")))
+    referenced = set()
+    for q in by_id.values():
+        referenced.update(re.findall(r"images/([^\s)>\]]+)", q["enonce"]))
+    for f in files:
+        assert f in referenced, f"images/{f}: fichier orphelin"
+
+
+def test_check_warns_unembedded_figure_ia2010(capsys):
+    """ia2-010 annonce une figure dont l'export source ne porte qu'une URL
+    externe (Dropbox) : signalee en ATTENTION, jamais en echec (defaut de
+    source, cf RELECTURE-2026-09.md)."""
+    rc = check(BANK)
+    out = capsys.readouterr().out
+    assert rc == 0, f"check() a rendu {rc} :\n{out}"
+    assert "ia2-010" in out and "sans reference embarquee" in out, out
+
+
 def test_ids_stable_pattern_and_unique():
     bank = load_bank()
     ids = [q["id"] for qs in bank.values() for q in qs]

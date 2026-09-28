@@ -67,6 +67,7 @@
   source: INGPA-FIN4000 2020
   enonce: 'Considérez le réseau bayésien suivant, concernant les délits en politique:
 
+    [figure: images/ia4-004.jpg]
 
 
     Quelle est la probabilité qu''une personne n''aille pas en prison (non E), sachant qu''elle a transgressé
@@ -124,6 +125,7 @@
   enonce: 'Considérant la table de distribution de probabilités conjointe du dentiste telle que nous l''avons
     vue en cours:
 
+    [figure: images/ia4-006.png]
 
     En utilisant l''inférence par énumération, quelle est la probabilité que la patient ait une carie
     sachant qu''il a mal aux dents?'
@@ -150,6 +152,7 @@
   enonce: 'Considérant la table de distribution de probabilités conjointe du dentiste telle que nous l''avons
     vue en cours:
 
+    [figure: images/ia4-007.png]
 
     En utilisant l''inférence par énumération, quelle est la probabilité que la patient n''ait pas une
     carie sachant qu''il n''a pas mal aux dents?'
