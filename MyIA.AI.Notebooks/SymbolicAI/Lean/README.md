@@ -17,10 +17,10 @@ Six visualisations extraites des notebooks illustrent l'arc de la série : de l'
 
 ### Assistance aux preuves et vérification formelle
 
-L'état de l'art de la série : un LLM génère des preuves Lean, dont on mesure la performance sur un banc de théorèmes ([Lean-7b](Lean-7b-Examples.ipynb)), puis TorchLean propage intervalles (IBP) et bornes (CROWN) pour certifier formellement la robustesse d'un réseau de neurones ([Lean-11b](Lean-11b-TorchLean-Python.ipynb)).
+L'état de l'art de la série : un LLM génère des preuves Lean, dont on mesure la performance sur un banc de théorèmes ([Lean-7b](Lean-07b-Examples-Python.ipynb)), puis TorchLean propage intervalles (IBP) et bornes (CROWN) pour certifier formellement la robustesse d'un réseau de neurones ([Lean-11b](Lean-11b-TorchLean-Python.ipynb)).
 
 <p align="center">
-  <a href="Lean-7b-Examples.ipynb"><img src="assets/readme/lean-llm-examples.png" width="420" alt="Génération de preuves par LLM sur dix théorèmes Lean : 0 succès / 10 échecs — itérations, temps d'exécution et tokens consommés par théorème."></a>
+  <a href="Lean-07b-Examples-Python.ipynb"><img src="assets/readme/lean-llm-examples.png" width="420" alt="Génération de preuves par LLM sur dix théorèmes Lean : 0 succès / 10 échecs — itérations, temps d'exécution et tokens consommés par théorème."></a>
 </p>
 
 <p align="center">
@@ -73,23 +73,23 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
-| 1 | [Lean-1-Setup](Lean-1-Setup.ipynb) | Installation elan, kernel Jupyter, vérification | 15 min |
-| 2 | [Lean-2-Dependent-Types](Lean-2-Dependent-Types.ipynb) | Calcul des Constructions, types, polymorphisme, déclarer ses propres types (`inductive`, `structure`, `deriving`) | 40 min |
-| 3 | [Lean-3-Propositions-Proofs](Lean-3-Propositions-Proofs.ipynb) | Prop, connecteurs, Curry-Howard, preuves par termes | 45 min |
-| 3b | [Lean-3b-Formalized-Formal-Logic](Lean-3b-Formalized-Formal-Logic.ipynb) | Pont Tweety ↔ Lean : les mêmes formules exécutées par le raisonneur et certifiées par le noyau (table par mondes possibles, validité/contre-modèle/preuve, métathéorèmes Tait consommés) - companion du lake `formal_logic_lean` (Foundation piné, Epic #15066) | 45 min |
-| 4 | [Lean-4-Quantifiers](Lean-4-Quantifiers.ipynb) | forall, exists, égalité, arithmétique Nat | 40 min |
-| 5 | [Lean-5-Tactics](Lean-5-Tactics.ipynb) | Mode tactique, apply/exact/intro/rw/simp | 50 min |
+| 1 | [Lean-01-Setup-Lean-Python](Lean-01-Setup-Lean-Python.ipynb) | Installation elan, kernel Jupyter, vérification | 15 min |
+| 2 | [Lean-02-Dependent-Types-Lean](Lean-02-Dependent-Types-Lean.ipynb) | Calcul des Constructions, types, polymorphisme, déclarer ses propres types (`inductive`, `structure`, `deriving`) | 40 min |
+| 3 | [Lean-03-Propositions-Proofs-Lean](Lean-03-Propositions-Proofs-Lean.ipynb) | Prop, connecteurs, Curry-Howard, preuves par termes | 45 min |
+| 3b | [Lean-03b-Formalized-Formal-Logic-Lean-Python](Lean-03b-Formalized-Formal-Logic-Lean-Python.ipynb) | Pont Tweety ↔ Lean : les mêmes formules exécutées par le raisonneur et certifiées par le noyau (table par mondes possibles, validité/contre-modèle/preuve, métathéorèmes Tait consommés) - companion du lake `formal_logic_lean` (Foundation piné, Epic #15066) | 45 min |
+| 4 | [Lean-04-Quantifiers-Lean](Lean-04-Quantifiers-Lean.ipynb) | forall, exists, égalité, arithmétique Nat | 40 min |
+| 5 | [Lean-05-Tactics-Lean](Lean-05-Tactics-Lean.ipynb) | Mode tactique, apply/exact/intro/rw/simp | 50 min |
 
 ### Partie 2 : État de l'art et intégration IA
 
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
-| 6 | [Lean-6-Mathlib-Essentials](Lean-6-Mathlib-Essentials.ipynb) | Mathlib4, tactiques ring/linarith/omega, recherche | 45 min |
-| 7 | [Lean-7-LLM-Intégration](Lean-7-LLM-Integration.ipynb) | LeanCopilot, AlphaProof, patterns LLM-Lean | 50 min |
-| 7b | [Lean-7b-Examples](Lean-7b-Examples.ipynb) | Exemples progressifs, benchmarks, cas pratiques | 40 min |
-| 8 | [Lean-8-Agentic-Proving](Lean-8-Agentic-Proving.ipynb) | Agents autonomes, APOLLO, problèmes Erdos | 55 min |
-| 8b | [Lean-8b-Erdos-Formal-Conjectures-Native](Lean-8b-Erdos-Formal-Conjectures-Native.ipynb) | Companion **natif** (kernel Lean) : le programme Erdős et le pattern conjecture-as-sorry — EGZ importé de Mathlib (`#print axioms` = `[propext, Classical.choice, Quot.sound]`), équation d'Erdős–Moser restatée (`[sorryAx]` visible), témoin calculé dans `ZMod 3` - pilote narratif Epic #13106 | 25 min |
-| 9 | [Lean-9-SK-Multi-Agents](Lean-9-SK-Multi-Agents.ipynb) | Agent Framework (Microsoft), orchestration multi-agents | 45 min |
+| 6 | [Lean-06-Mathlib-Essentials-Lean](Lean-06-Mathlib-Essentials-Lean.ipynb) | Mathlib4, tactiques ring/linarith/omega, recherche | 45 min |
+| 7 | [Lean-7-LLM-Intégration](Lean-07-LLM-Integration-Lean-Python.ipynb) | LeanCopilot, AlphaProof, patterns LLM-Lean | 50 min |
+| 7b | [Lean-07b-Examples-Python](Lean-07b-Examples-Python.ipynb) | Exemples progressifs, benchmarks, cas pratiques | 40 min |
+| 8 | [Lean-08-Agentic-Proving-Python](Lean-08-Agentic-Proving-Python.ipynb) | Agents autonomes, APOLLO, problèmes Erdos | 55 min |
+| 8b | [Lean-08b-Erdos-Formal-Conjectures-Lean](Lean-08b-Erdos-Formal-Conjectures-Lean.ipynb) | Companion **natif** (kernel Lean) : le programme Erdős et le pattern conjecture-as-sorry — EGZ importé de Mathlib (`#print axioms` = `[propext, Classical.choice, Quot.sound]`), équation d'Erdős–Moser restatée (`[sorryAx]` visible), témoin calculé dans `ZMod 3` - pilote narratif Epic #13106 | 25 min |
+| 9 | [Lean-09-SK-Multi-Agents-Lean-Python](Lean-09-SK-Multi-Agents-Lean-Python.ipynb) | Agent Framework (Microsoft), orchestration multi-agents | 45 min |
 | 10 | [Lean-10-LeanDojo](Lean-10-LeanDojo.ipynb) | LeanDojo: tracing, theorems, Dojo interactif | 45 min |
 | 11 | [Lean-11-TorchLean](Lean-11-TorchLean.ipynb) | TorchLean: réseaux de neurones vérifiés, IBP, CROWN | 1h30-2h |
 | 11b | [Lean-11b-TorchLean-Python](Lean-11b-TorchLean-Python.ipynb) | Implémentation Python des algorithmes de vérification (IBP, CROWN) | 1h30-2h |
@@ -287,7 +287,7 @@ lean --version    # Lean 4.x.x
 elan show         # toolchain active
 
 # 3. Ouvrir le premier notebook (WSL requis)
-wsl -d Ubuntu -- bash -c "jupyter notebook Lean-1-Setup.ipynb"
+wsl -d Ubuntu -- bash -c "jupyter notebook Lean-01-Setup-Lean-Python.ipynb"
 ```
 
 Pour les notebooks 7-10 (LLM), configurer `.env` avec `OPENAI_API_KEY`. Pour le prover daemon, voir section "Prover daemon".
@@ -422,18 +422,18 @@ elan show
 
 ```
 Lean/
-├── Lean-1-Setup.ipynb              # Python kernel - diagnostics
-├── Lean-2-Dependent-Types.ipynb    # Lean4 kernel
-├── Lean-3-Propositions-Proofs.ipynb
-├── Lean-3b-Formalized-Formal-Logic.ipynb  # Python kernel - pont Tweety↔Lean (raisonneur + noyau, lake formal_logic_lean, Epic #15066)
-├── Lean-4-Quantifiers.ipynb
-├── Lean-5-Tactics.ipynb
-├── Lean-6-Mathlib-Essentials.ipynb
-├── Lean-7-LLM-Integration.ipynb    # Python kernel - APIs LLM
-├── Lean-7b-Examples.ipynb          # Python kernel - benchmarks
-├── Lean-8-Agentic-Proving.ipynb    # Python kernel - orchestration
-├── Lean-8b-Erdos-Formal-Conjectures-Native.ipynb # Lean4 (WSL, grothendieck-16200) kernel - pattern conjecture-as-sorry : EGZ Mathlib + Erdős-Moser restatée (Epic #13106)
-├── Lean-9-SK-Multi-Agents.ipynb    # Python kernel - Agent Framework
+├── Lean-01-Setup-Lean-Python.ipynb              # Python kernel - diagnostics
+├── Lean-02-Dependent-Types-Lean.ipynb    # Lean4 kernel
+├── Lean-03-Propositions-Proofs-Lean.ipynb
+├── Lean-03b-Formalized-Formal-Logic-Lean-Python.ipynb  # Python kernel - pont Tweety↔Lean (raisonneur + noyau, lake formal_logic_lean, Epic #15066)
+├── Lean-04-Quantifiers-Lean.ipynb
+├── Lean-05-Tactics-Lean.ipynb
+├── Lean-06-Mathlib-Essentials-Lean.ipynb
+├── Lean-07-LLM-Integration-Lean-Python.ipynb    # Python kernel - APIs LLM
+├── Lean-07b-Examples-Python.ipynb          # Python kernel - benchmarks
+├── Lean-08-Agentic-Proving-Python.ipynb    # Python kernel - orchestration
+├── Lean-08b-Erdos-Formal-Conjectures-Lean.ipynb # Lean4 (WSL, grothendieck-16200) kernel - pattern conjecture-as-sorry : EGZ Mathlib + Erdős-Moser restatée (Epic #13106)
+├── Lean-09-SK-Multi-Agents-Lean-Python.ipynb    # Python kernel - Agent Framework
 ├── Lean-10-LeanDojo.ipynb          # Python kernel - LeanDojo
 ├── Lean-11-TorchLean.ipynb         # Lean4 kernel - NN verification
 ├── Lean-11b-TorchLean-Python.ipynb  # Python kernel - Implémentation algorithmes
@@ -648,7 +648,7 @@ Lean 4 ne tourne pas nativement sous Windows pour les notebooks. La configuratio
 3. `elan default leanprover/lean4:stable`
 4. Installer le kernel Jupyter via `scripts/setup_wsl_lean4.sh` (crée le venv, le wrapper, et enregistre le kernel)
 
-Le notebook [Lean-1-Setup](Lean-1-Setup.ipynb) guide l'installation complète et vérifie chaque composant.
+Le notebook [Lean-01-Setup-Lean-Python](Lean-01-Setup-Lean-Python.ipynb) guide l'installation complète et vérifie chaque composant.
 
 ### Comment lire les erreurs `type mismatch` ?
 

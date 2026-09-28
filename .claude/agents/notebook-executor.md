@@ -591,7 +591,7 @@ Task(
     prompt="""
     Agent notebook-executor.
 
-    Notebook: MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-2-Dependent-Types.ipynb
+    Notebook: MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-02-Dependent-Types-Lean.ipynb
     Mode: full
     Kernel: lean4 (WSL)
     Timeout: 60

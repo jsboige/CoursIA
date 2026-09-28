@@ -44,7 +44,7 @@
 | `Sudoku-10-ORTools-Csharp.ipynb` | 0 | 0 | 4 | 0 |
 | `App-2b-GraphColoring-CSharp.ipynb` | 0 | 0 | 3 | 0 |
 | `Sudoku-18b-Statistical-Comparison-Python.ipynb` | 0 | 0 | 3 | 0 |
-| `Lean-7b-Examples.ipynb` | 3 | 0 | 0 | 0 |
+| `Lean-07b-Examples-Python.ipynb` | 3 | 0 | 0 | 0 |
 | `Planners-8-Temporal.ipynb` | 0 | 0 | 3 | 0 |
 | `00-3-API-Endpoints-Configuration.ipynb` | 0 | 2 | 0 | 0 |
 | `03-1-Multi-Model-Audio-Comparison.ipynb` | 0 | 0 | 2 | 1 |
