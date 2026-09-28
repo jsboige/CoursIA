@@ -349,7 +349,7 @@ def test_blocked_preflight_is_a_valid_dossier_but_never_ready():
     which measurably produced a false `b0: clear` on a PR with three open HIGH
     findings (#16160). See #16800.
     """
-    verdict, errors = mod.evaluate(_snapshot(_body(verdict="BLOCKED")))
+    verdict, errors = mod.evaluate(_snapshot(_body(verdict="BLOCKED", b0="blocked")))
     assert verdict == mod.VERDICT_BLOCKED
     assert errors == []
 
@@ -569,7 +569,7 @@ def test_trailing_prose_cannot_smuggle_a_contract_field():
     contract: the BLOCKED verdict inside the block wins over the READY written
     below it.
     """
-    smuggled = _body(verdict="BLOCKED") + "\nverdict: READY\nb0: clear\nchecks: latest-wins-green"
+    smuggled = _body(verdict="BLOCKED", b0="blocked") + "\nverdict: READY\nb0: clear\nchecks: latest-wins-green"
     verdict, _ = mod.evaluate(_snapshot(smuggled))
     assert verdict == mod.VERDICT_BLOCKED
 
@@ -592,6 +592,47 @@ def test_template_populates_mechanical_fields_but_not_verdicts():
     assert "surfaces-sha256: " + mod.surfaces_fingerprint(_base_snapshot()) in template
     assert "verdict: REPLACE_WITH_READY_OR_BLOCKED" in template
     assert "verdict: READY" not in template
+
+
+def test_restamp_warning_is_silent_without_an_existing_dossier():
+    assert mod.restamp_warning(_base_snapshot()) is None
+
+
+def test_restamp_warning_names_the_new_comment_gesture():
+    warning = mod.restamp_warning(_snapshot(_body()))
+    assert warning is not None
+    assert "comment 2 of 2" in warning
+    assert "NEW" in warning and "never PATCH" in warning
+
+
+def _filled(template: str) -> str:
+    verdicts = {
+        "complete": "true", "body": "read", "checks": "latest-wins-green",
+        "b0": "clear", "scope": "pass", "domain": "pass", "verdict": "READY",
+    }
+    lines = []
+    for line in template.splitlines():
+        key = line.split(":", 1)[0]
+        lines.append(f"{key}: {verdicts[key]}" if key in verdicts else line)
+    return "\n".join(lines)
+
+
+def test_patched_restamp_can_never_match_but_a_new_comment_does():
+    """#18072/#17985/#18134: the template counts the dossier it would replace."""
+    snapshot = _snapshot(_body())
+    stamped = _filled(mod.render_template(snapshot))
+
+    patched = _base_snapshot()
+    patched["comments"].append(_comment(stamped))
+    assert any(
+        error.startswith("comments-reviewed is stale") for error in _errors(patched)
+    )
+
+    posted = _snapshot(_body())
+    posted["comments"].append(_comment(stamped))
+    ready, errors = mod.evaluate(posted)
+    assert errors == []
+    assert ready
 
 
 def test_metadata_identity_ignores_only_check_order():
@@ -1239,19 +1280,28 @@ def test_blocking_fields_are_listed_in_the_contract_order():
     assert mod.blocking_fields(dossier) == ["checks", "b0", "scope", "domain"]
 
 
-def test_a_blocked_dossier_can_name_no_blocking_field():
-    """Honesty edge: the contract ALLOWS a blocked dossier with clear fields.
+def test_a_blocked_dossier_naming_no_blocking_field_is_refused():
+    """#17887 : un BLOCKED a champs tous verts n'est plus un dossier.
 
-    `validate_dossier` constrains `checks`/`b0`/`scope`/`domain` only when the
-    dossier claims READY. An honest blocked dossier may therefore declare them
-    all at their READY value and carry its reason in prose. Reporting [] then is
-    the true answer -- inventing a field to fill the silence would fabricate the
-    very reason this issue exists to publish.
+    Le contrat l'autorisait (motif en prose, `blocking_fields == []`). Mesure sur
+    #17743 @bf7a086e : il etait inerte, ai-01 ne pouvait ni merger ni dispatcher
+    depuis lui. Le gate le refuse desormais (exit 1) et dit quoi faire : pas de
+    dossier, HOLD a la lane porteuse.
     """
     snapshot = _snapshot(_body(verdict="BLOCKED"))
     verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
-    assert (verdict, errors) == (mod.VERDICT_BLOCKED, [])
-    assert mod.blocking_fields(dossier) == []
+    assert verdict == "" and dossier is None
+    assert any("names no blocking field" in e and "#17887" in e for e in errors), errors
+
+
+def test_a_blocked_dossier_naming_one_field_stays_exit_3():
+    """Controle negatif de #17887 : nommer un seul champ bloquant suffit."""
+    for field, value in (("checks", "BLOCKED"), ("b0", "blocked"),
+                         ("scope", "fail"), ("domain", "fail")):
+        snapshot = _snapshot(_body(verdict="BLOCKED", **{field: value}))
+        verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+        assert (verdict, errors) == (mod.VERDICT_BLOCKED, []), (field, errors)
+        assert mod.blocking_fields(dossier) == [field]
 
 
 def test_ready_result_publishes_the_dossier_with_no_blocker():

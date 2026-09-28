@@ -141,6 +141,7 @@ A chaque niveau, produire un rapport :
 ```python
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt="""
     Tu es un agent readme-hierarchy-auditor.
     Lis .claude/agents/readme-hierarchy-auditor.md

@@ -50,11 +50,11 @@ update_notebook_nav = _ns["update_notebook_nav"]
 # ---------------------------------------------------------------------------
 
 def test_relative_path_same_dir():
-    assert relative_path("00-Foundations", "00-Foundations", "SC-0-Cypherpunk-Origins") == "SC-0-Cypherpunk-Origins.ipynb"
+    assert relative_path("00-Foundations", "00-Foundations", "SC-00-Cypherpunk-Origins-Python") == "SC-00-Cypherpunk-Origins-Python.ipynb"
 
 
 def test_relative_path_cross_dir():
-    assert relative_path("01-Solidity-Foundation", "00-Foundations", "SC-0-Cypherpunk-Origins") == "../00-Foundations/SC-0-Cypherpunk-Origins.ipynb"
+    assert relative_path("01-Solidity-Foundation", "00-Foundations", "SC-00-Cypherpunk-Origins-Python") == "../00-Foundations/SC-00-Cypherpunk-Origins-Python.ipynb"
 
 
 # ---------------------------------------------------------------------------
@@ -65,7 +65,7 @@ def test_nav_line_first_only_next():
     line = make_nav_line(0)
     assert "<<" not in line          # no prev at index 0
     assert ">>" in line
-    # the next notebook is SC-1-Setup-Foundry -> "Setup Foundry"
+    # the next notebook is SC-01-Setup-Foundry-Python -> "Setup Foundry"
     assert "Setup Foundry" in line
 
 
@@ -73,7 +73,7 @@ def test_nav_line_last_only_prev():
     line = make_nav_line(len(NOTEBOOKS) - 1)
     assert ">>" not in line          # no next at last index
     assert "<<" in line
-    # the prev notebook is SC-25-Mainnet-Deploy -> "Mainnet Deploy"
+    # the prev notebook is SC-25-Mainnet-Deploy-Python -> "Mainnet Deploy"
     assert "Mainnet Deploy" in line
 
 
@@ -93,7 +93,7 @@ def test_nav_line_separator_is_pipe():
 def test_nav_line_prev_link_uses_relative_path():
     line = make_nav_line(1)
     # idx 1 prev is idx 0 (same 00-Foundations dir) -> relative "SC-0-....ipynb"
-    assert "](SC-0-Cypherpunk-Origins.ipynb)" in line
+    assert "](SC-00-Cypherpunk-Origins-Python.ipynb)" in line
 
 
 # ---------------------------------------------------------------------------
