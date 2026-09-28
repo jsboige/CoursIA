@@ -214,3 +214,62 @@ class TestFindingKeys:
             ("orphan_entry", "A.ipynb", ""),
             ("unreachable", "B.ipynb", ""),
         }
+
+
+class TestPartitionNewByDiff:
+    """Scope bloquant c.5854935546 : NEW imputable au diff bloque, hors diff
+    avertit seulement. Controle positif ET negatif exigees par la decision."""
+
+    NEW_S = [("orphan_entry", "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-X.ipynb", "")]
+    NEW_O = [("orphan_entry", "MyIA.AI.Notebooks/GenAI/FineTuning/FT-00e-X.ipynb", "")]
+
+    def test_positive_control_notebook_in_diff_blocks(self):
+        diff = {"MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-X.ipynb"}
+        blocking, warning = nav_chain._partition_new_by_diff(self.NEW_S, diff)
+        assert blocking == self.NEW_S and warning == []
+
+    def test_positive_control_series_readme_in_diff_blocks(self):
+        diff = {"MyIA.AI.Notebooks/IIT/ICT-Series/README.md"}
+        blocking, warning = nav_chain._partition_new_by_diff(self.NEW_S, diff)
+        assert blocking == self.NEW_S and warning == []
+
+    def test_negative_control_out_of_diff_warns_only(self):
+        diff = {"MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-X.ipynb"}
+        blocking, warning = nav_chain._partition_new_by_diff(self.NEW_O, diff)
+        assert blocking == [] and warning == self.NEW_O
+
+    def test_fail_closed_empty_diff_blocks_everything(self):
+        blocking, warning = nav_chain._partition_new_by_diff(self.NEW_O, set())
+        assert blocking == self.NEW_O and warning == []
+
+    # independent_chain (re-mesure ai-01 c.5856207624) : la cle est le
+    # repertoire de la serie, pas un fichier -- un notebook du diff sous la
+    # serie rend le constat imputable. Avant le fix, `notebook in diff` etait
+    # toujours faux et le README test etait celui du PARENT : jamais bloquant.
+    NEW_IC = [("independent_chain", "MyIA.AI.Notebooks/GenAI/FineTuning", "")]
+
+    def test_independent_chain_notebook_under_series_in_diff_blocks(self):
+        diff = {"MyIA.AI.Notebooks/GenAI/FineTuning/FT-00d-LoRA-Qwen.ipynb"}
+        blocking, warning = nav_chain._partition_new_by_diff(self.NEW_IC, diff)
+        assert blocking == self.NEW_IC and warning == []
+
+    def test_independent_chain_series_readme_in_diff_blocks(self):
+        diff = {"MyIA.AI.Notebooks/GenAI/FineTuning/README.md"}
+        blocking, warning = nav_chain._partition_new_by_diff(self.NEW_IC, diff)
+        assert blocking == self.NEW_IC and warning == []
+
+    def test_independent_chain_out_of_series_diff_warns_only(self):
+        diff = {"MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-X.ipynb"}
+        blocking, warning = nav_chain._partition_new_by_diff(self.NEW_IC, diff)
+        assert blocking == [] and warning == self.NEW_IC
+
+    def test_independent_chain_parent_readme_is_not_series(self):
+        # Regression : l'ancien code testait le README du repertoire PARENT
+        # (rsplit) -- un diff qui touche GenAI/README.md seul ne doit PAS
+        # rendre imputable un constat sur GenAI/FineTuning.
+        diff = {"MyIA.AI.Notebooks/GenAI/README.md"}
+        blocking, warning = nav_chain._partition_new_by_diff(self.NEW_IC, diff)
+        assert blocking == [] and warning == self.NEW_IC
+
+    def test_load_diff_files_missing_file_fail_closed(self, tmp_path):
+        assert nav_chain._load_diff_files(tmp_path / "absent.txt") == set()

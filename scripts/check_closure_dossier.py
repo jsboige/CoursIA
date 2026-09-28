@@ -425,7 +425,14 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any],
 
 def evaluate(snapshot: dict[str, Any],
              replay: bool = False) -> tuple[str, list[str], Dossier | None]:
-    """(verdict, errors, dossier) -- verdict CLOSE / KEEP / NO-DOSSIER."""
+    """(verdict, errors, dossier) -- verdict CLOSE / KEEP / NO-DOSSIER.
+
+    Seul le DERNIER dossier compte (latest-wins, meme regle que le gate PR,
+    #18095) : un dossier plus ancien est remplace, jamais une erreur ni une
+    peremption du plus recent. Evaluer le premier laissait un dossier
+    malforme ou un KEEP perime masquer indefiniment le dossier correct
+    poste apres lui."""
+    latest: tuple[Dossier, list[str]] | None = None
     for index, row in enumerate(snapshot["comments"]):
         body = row.get("body") or ""
         if not body.strip().startswith(START):
@@ -435,16 +442,17 @@ def evaluate(snapshot: dict[str, Any],
             (row.get("author") or {}).get("login", ""),
             row.get("created_at", ""),
         )
-        if dossier is None:
-            continue
-        errors.extend(validate_dossier(dossier, snapshot, replay))
-        verdict = dossier.fields.get("verdict", "")
-        if errors:
-            return ("REFUSED", errors, dossier)
-        if verdict == VERDICT_CLOSE:
-            return (VERDICT_CLOSE, [], dossier)
-        return (VERDICT_KEEP, [], dossier)
-    return ("NO-DOSSIER", ["no [CLOSURE PREFLIGHT] comment on this issue"], None)
+        if dossier is not None:
+            latest = (dossier, errors)
+    if latest is None:
+        return ("NO-DOSSIER", ["no [CLOSURE PREFLIGHT] comment on this issue"], None)
+    dossier, errors = latest
+    errors.extend(validate_dossier(dossier, snapshot, replay))
+    if errors:
+        return ("REFUSED", errors, dossier)
+    if dossier.fields.get("verdict", "") == VERDICT_CLOSE:
+        return (VERDICT_CLOSE, [], dossier)
+    return (VERDICT_KEEP, [], dossier)
 
 
 def render_template(snapshot: dict[str, Any], lane: str) -> str:
