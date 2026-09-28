@@ -348,7 +348,7 @@ Task(
     model="sonnet",
     prompt="""
     Agent notebook-cell-iterator.
-    Notebook: MyIA.AI.Notebooks/Search/CSPs_Intro.ipynb
+    Notebook: MyIA.AI.Notebooks/Search/_archive/CSPs_Intro.ipynb
     Cell: 15  # min_conflicts avec n=256
     Objective: "Solved in" (doit etre present dans output)
     Max iterations: 5
