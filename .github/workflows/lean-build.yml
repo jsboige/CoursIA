@@ -295,11 +295,15 @@ jobs:
         ) &
         _lake_pipeline=$!
         _elapsed=0
+        # Poll every 5 s, print every 10 min. A bare `sleep 600` here held the
+        # runner until the next 10-min tick after the build had ended: 102 of
+        # 140 runner-minutes on the 11 Lean jobs of PR #18186 were that sleep.
         while kill -0 "$_lake_pipeline" 2>/dev/null; do
-          sleep 600
+          sleep 5
+          _elapsed=$((_elapsed + 5))
+          [ $((_elapsed % 600)) -eq 0 ] || continue
           kill -0 "$_lake_pipeline" 2>/dev/null || break
-          _elapsed=$((_elapsed + 10))
-          echo "[lake-heartbeat] still running after ${_elapsed} min - last line: $(tail -1 "$RUNNER_TEMP/lake.log" 2>/dev/null | cut -c1-160)"
+          echo "[lake-heartbeat] still running after $((_elapsed / 60)) min - last line: $(tail -1 "$RUNNER_TEMP/lake.log" 2>/dev/null | cut -c1-160)"
         done
         wait "$_lake_pipeline"
 
