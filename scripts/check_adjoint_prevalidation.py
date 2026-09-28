@@ -816,6 +816,17 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
                 f.get("checks", ""), snapshot.get("checkRuns")
             )
         )
+    elif verdict == VERDICT_BLOCKED and not blocking_fields(dossier):
+        # Un BLOCKED qui ne nomme aucun champ bloquant est inerte : il occupe la
+        # surface de gate sans dire quoi reparer, et ai-01 ne peut ni merger ni
+        # dispatcher depuis lui. Le cas type est le conflit de merge, que le
+        # contrat ne sait pas porter : il ne produit pas de dossier, il se tient
+        # en HOLD a la lane porteuse (#17887, controle positif #17743 @bf7a086e).
+        errors.append(
+            "BLOCKED names no blocking field (checks/b0/scope/domain all at their "
+            "READY value): the contract cannot carry this reason -- emit no "
+            "dossier, HOLD the candidate at the carrying lane and DM it (#17887)"
+        )
 
     dossier_lane = f.get("lane", "")
     if dossier_lane not in QUALIFYING_LANES:

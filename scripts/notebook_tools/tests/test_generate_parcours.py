@@ -361,7 +361,9 @@ class TestActuariatManifest:
         assert ids[:4] == ["fondations-probabilistes", "decision-sous-incertitude",
                            "actuariat", "theorie-des-jeux"]
         assert ids[4:] == accretions
-        expected_duration = 675
+        # 690 depuis l'auto-regen du catalogue #17928 : GT-15-CooperativeGames
+        # est passee de 45min a 1h, +15 min sur le speed-run.
+        expected_duration = 690
         if "series-temporelles" in accretions:
             expected_duration += 90
         if "validation-hors-echantillon" in accretions:

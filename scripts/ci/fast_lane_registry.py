@@ -1476,3 +1476,49 @@ TRANCHE15: list[Guard] = [
         blocking=True,
     ),
 ]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 16 (#18048) -- garde caracteres de controle dans les sources de
+# cellules. Un outil d'ecriture qui interprete les echappements Python
+# transforme ``\a``, ``\b``, ``\f`` ou ``\v`` d'une source en caractere de
+# controle : le JSON reste valide (controles echappes \u0007/\b/\f), le
+# notebook s'execute, aucun organe ne rougissait -- mais le rendu est casse
+# (LaTeX illisible, regex affichee fausse).
+#
+# Temoins fondateurs (body #18048, tous deux en test dans
+# scripts/tests/test_check_control_chars_in_cells.py) :
+#   - POSITIF : tete f19ca6ff91 de la PR #17919 (MGS-01-Introduction
+#     cellule 10) -- 3x U+0007 dans ``$\sigma\<BEL>pprox 12$`` (intention
+#     : ``\approx``) ;
+#   - NEGATIF : main post-fix -- la cellule 18 markdown de
+#     auditer-la-conformite-visuelle.ipynb porte le texte LITERAL ``\b``
+#     (frontiere de regex, backslash + b en clair), qui ne doit JAMAIS
+#     rougir ; son U+0008 herite est repare dans la meme PR.
+#
+# Forme : delta base-vs-head sur les cellules AJOUTEES ou MODIFIEES (le
+# stock herite ne rougit pas -- une source identique a l'identique dans la
+# base est exempee), bloquant. rc=2 = incident d'entree (git/JSON), pas
+# une faute de la PR : warn_rc=(2,) le rend neutre au check-run, titre
+# distinct, non silencieux (forme hr-substitution-guard, #17941).
+# ---------------------------------------------------------------------------
+TRANCHE16: list[Guard] = [
+    Guard(
+        name="control-chars-in-cells-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**/*.ipynb",
+            "scripts/ci/check_control_chars_in_cells.py",
+            "scripts/tests/test_check_control_chars_in_cells.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/ci/check_control_chars_in_cells.py",
+            "--diff", "{base_ref}...HEAD",
+        ],
+        blocking=True,
+        needs_base=True,
+        warn_rc=(2,),
+    ),
+]

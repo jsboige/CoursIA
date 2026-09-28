@@ -53,11 +53,15 @@ from typing import Iterable, Mapping, Sequence
 #: tant que la matrice ne publie pas ses nombres.
 CLAIMED_SIZES: tuple[str, ...] = ("1.5B", "7B", "14B")
 
-#: Tailles annoncees par la campagne, 32B compris -- mesure depuis #17724.
+#: Tailles annoncees par la campagne, 32B compris -- mesure depuis #17724,
+#: 27B depuis le palier think-close (2026-09-26 : Qwen3.5-27B ouvre un bloc
+#: <think> spontane en raw completion ; le suffixe THINK_CLOSE ferme le bloc
+#: vide, forme exacte du mode no-think du template chat -- sans lui le budget
+#: de 80 tokens se consomme en raisonnement et la mesure est vide, sonde 3/3).
 #: Declaree ici pour qu'une taille sans artefact ne soit jamais implicitement
 #: fondue dans les tailles mesurees : elle sort en ``provisional`` avec sa
 #: raison, au lieu de compter pour un zero.
-DECLARED_SIZES: tuple[str, ...] = ("1.5B", "7B", "14B", "32B")
+DECLARED_SIZES: tuple[str, ...] = ("1.5B", "7B", "14B", "27B", "32B")
 
 #: Bras compares. ``N`` = sans prefixe, ``Np`` = prefixe informe-mais-interdit.
 ARMS: tuple[str, ...] = ("N", "Np")
