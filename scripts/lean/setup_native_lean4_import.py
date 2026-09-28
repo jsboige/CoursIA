@@ -237,10 +237,33 @@ def _wsl(cmd, timeout=120):
                           cwd=os.path.expanduser("~"), env=env)
 
 
+def _venv_python():
+    """Path to the lean4 venv's python3 inside WSL.
+
+    ``$HOME`` first: a distro running as root keeps the venv at
+    ``/root/.lean4-venv``, where a literal ``/home/*`` glob never matches --
+    the same pitfall ``cmd_build_repl`` documents for elan. The ``/home/*``
+    glob stays as a fallback for user-run distros.
+
+    Measured 2026-09-27 on a root-run distro: every ``/home/*`` call site
+    returned an empty stdout, which ``_find_repl_py`` read as "venv missing"
+    and ``cmd_patch`` as "repl.py not found" -- while the venv was present at
+    ``/root/.lean4-venv`` (the path ``kernel.json`` itself declares).
+    """
+    r = _wsl('if [ -x "$HOME/.lean4-venv/bin/python3" ]; then '
+             'echo "$HOME/.lean4-venv/bin/python3"; '
+             'else ls /home/*/.lean4-venv/bin/python3 2>/dev/null | head -1; fi',
+             timeout=30)
+    return r.stdout.strip() or None
+
+
 def _find_repl_py():
     """Locate lean4_jupyter/repl.py inside the WSL lean4 venv."""
-    r = _wsl("ls /home/*/.lean4-venv/lib/python3.*/site-packages/lean4_jupyter/repl.py "
-             "2>/dev/null | head -1", timeout=30)
+    py = _venv_python()
+    if not py:
+        return None
+    r = _wsl(f"{py} -c 'import lean4_jupyter.repl as m; print(m.__file__)'",
+             timeout=30)
     path = r.stdout.strip()
     return path or None
 
@@ -264,7 +287,7 @@ def cmd_install():
     chk = _wsl(f"grep -q '{PATCH_MARKER}' {rp} && echo PATCHED || echo UNPATCHED", timeout=20)
     state = chk.stdout.strip()
     print("post-install patch state:", state)
-    rc = _wsl(f"/home/*/.lean4-venv/bin/python3 -m py_compile {rp} && echo OK", timeout=30)
+    rc = _wsl(f"{_venv_python()} -m py_compile {rp} && echo OK", timeout=30)
     print("py_compile:", (rc.stdout or rc.stderr or "").strip())
     return 0 if state == "PATCHED" else 1
 
@@ -327,12 +350,12 @@ def cmd_patch():
     tmp_wsl = "/tmp/_lean4_native_patcher.py"
     _wsl(f"cp '{tmp_unix_src}' {tmp_wsl}", timeout=20)
     os.unlink(tmp_win)
-    r = _wsl(f"/home/*/.lean4-venv/bin/python3 {tmp_wsl}", timeout=40)
+    r = _wsl(f"{_venv_python()} {tmp_wsl}", timeout=40)
     out = (r.stdout or r.stderr or "").strip()
     _wsl(f"rm -f {tmp_wsl}", timeout=10)
     print("patch:", out)
     # Compile check.
-    rc = _wsl(f"/home/*/.lean4-venv/bin/python3 -m py_compile {rp} && echo OK", timeout=30)
+    rc = _wsl(f"{_venv_python()} -m py_compile {rp} && echo OK", timeout=30)
     print("py_compile:", (rc.stdout or rc.stderr or "").strip())
     return 0 if ("PATCHED" in out or "already" in out) else 1
 
