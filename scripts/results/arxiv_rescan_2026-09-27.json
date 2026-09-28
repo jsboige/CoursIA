@@ -1,0 +1,263 @@
+{
+ "rescan_date": "2026-09-27",
+ "epic": "#11168",
+ "method": "scan_repo_wide arXiv IDs (markdown cells) ; couverture = verdicts deja rendus par l'artefact 2026-09-03 (PR #14419) ; transport arXiv = pages abs (API export 406 intermittent, cf #17622) ; verdict par ID sur titre/auteurs/annee-vs-version-citee",
+ "excludes": [
+  "_archive",
+  "_archives",
+  ".ipynb_checkpoints",
+  ".lake/packages"
+ ],
+ "scope": "MyIA.AI.Notebooks (markdown cells only)",
+ "totals": {
+  "notebooks_scanned": 1422,
+  "notebooks_citing_arxiv": 156,
+  "unique_arxiv_ids_in_repo": 177,
+  "covered_by_prior_artifact": 163,
+  "delta_unique_ids": 12,
+  "delta_verdict_ok": 12,
+  "delta_verdict_drift_mineur": 0,
+  "delta_verdict_mauvaise_attribution": 0,
+  "delta_verdict_id_fantome": 0,
+  "delta_verdict_error": 0,
+  "false_delta_excluded": 2
+ },
+ "covered_source": {
+  "artifact": "scripts/results/arxiv_rescan_2026-09-03.json",
+  "note": "La reconstruction de couverture lit les verdicts du 09-03 via la regex d'IDs pointes \\d{4}\\.\\d{4,5} ; les 2 IDs legacy (cs/0011047, quant-ph/0604079) portent deja un verdict OK (manual_legacy_id) dans cet artefact mais echappent a la regex : sortis du delta 09-27 sans re-verdict."
+ },
+ "false_delta_excluded": [
+  {
+   "arxiv_id": "cs/0011047",
+   "reason": "deja verdict OK (manual_legacy_id) dans arxiv_rescan_2026-09-03.json ; invisible a la regex dotted de reconstruction"
+  },
+  {
+   "arxiv_id": "quant-ph/0604079",
+   "reason": "deja verdict OK (manual_legacy_id) dans arxiv_rescan_2026-09-03.json ; invisible a la regex dotted de reconstruction"
+  }
+ ],
+ "delta_verdicts": [
+  {
+   "arxiv_id": "0704.0646",
+   "verdict": "OK",
+   "method": "abs-page meta tags (citation_title/authors/date) + submission history",
+   "rationale": "Citation « Tegmark (2007), The Mathematical Universe, Annexe A » : titre, auteur, annee exacts.",
+   "title": "The Mathematical Universe",
+   "authors": [
+    "Tegmark, Max"
+   ],
+   "published": "2007/04/05",
+   "n_occurrences": 1,
+   "notebooks": [
+    "SymbolicAI/Lean/Lean-36-Structures-Finies-MUH-Lean.ipynb"
+   ]
+  },
+  {
+   "arxiv_id": "1602.04184",
+   "verdict": "OK",
+   "method": "abs-page meta tags (citation_title/authors/date) + submission history",
+   "rationale": "Critch (2016), titre exact (x2 occurrences, c0 et c39).",
+   "title": "Parametric Bounded L\\&#34;ob&#39;s Theorem and Robust Cooperation of Bounded Agents",
+   "authors": [
+    "Critch, Andrew"
+   ],
+   "published": "2016/02/12",
+   "n_occurrences": 2,
+   "notebooks": [
+    "SymbolicAI/Lean/Lean-34b-FairBot-Loeb.ipynb"
+   ]
+  },
+  {
+   "arxiv_id": "1706.04599",
+   "verdict": "OK",
+   "method": "abs-page meta tags (citation_title/authors/date) + submission history",
+   "rationale": "« Guo, Pleiss, Sun & Weinberger (2017), On Calibration of Modern Neural Networks » : titre et annee exacts ; les 4 auteurs cites correspondent au record.",
+   "title": "On Calibration of Modern Neural Networks",
+   "authors": [
+    "Guo, Chuan",
+    "Pleiss, Geoff",
+    "Sun, Yu",
+    "Weinberger, Kilian Q."
+   ],
+   "published": "2017/06/14",
+   "n_occurrences": 2,
+   "notebooks": [
+    "GenAI/PostTraining/PT_17_laya_proper_rewards_toy.ipynb"
+   ]
+  },
+  {
+   "arxiv_id": "2012.13349",
+   "verdict": "OK",
+   "method": "abs-page meta tags (citation_title/authors/date) + submission history",
+   "rationale": "Le carnet cite explicitement « (v3, juillet 2021) » (x2, c0 et c21). Submission history arXiv : v1 2020-12-23, v2 2021-07-23, v3 2021-07-29, journal-ref NONE. L'annee 2021 est celle de la version citee (v3) : exacte — precedent 2202.01691 (verifier la version citee avant de corriger une annee).",
+   "title": "Solving Mixed Integer Programs Using Neural Networks",
+   "authors": [
+    "Nair, Vinod",
+    "Bartunov, Sergey",
+    "Gimeno, Felix",
+    "von Glehn, Ingrid",
+    "Lichocki, Pawel",
+    "Lobov, Ivan",
+    "O&#39;Donoghue, Brendan",
+    "Sonnerat, Nicolas",
+    "Tjandraatmadja, Christian",
+    "Wang, Pengming",
+    "Addanki, Ravichandra",
+    "Hapuarachchi, Tharindi",
+    "Keck, Thomas",
+    "Keeling, James",
+    "Kohli, Pushmeet",
+    "Ktena, Ira",
+    "Li, Yujia",
+    "Vinyals, Oriol",
+    "Zwols, Yori"
+   ],
+   "published": "2020/12/23",
+   "n_occurrences": 2,
+   "notebooks": [
+    "Search/Applications/Hybrid/App-33-NeuralDiving-Coloration.ipynb"
+   ]
+  },
+  {
+   "arxiv_id": "2202.05262",
+   "verdict": "OK",
+   "method": "abs-page meta tags (citation_title/authors/date) + submission history",
+   "rationale": "« Meng, Bau, Andonian & Belinkov (ROME, NeurIPS 2022) » : 4/4 auteurs exacts, titre exact ; venue NeurIPS 2022 reelle, non contredite par le record (v1 2022-02-10).",
+   "title": "Locating and Editing Factual Associations in GPT",
+   "authors": [
+    "Meng, Kevin",
+    "Bau, David",
+    "Andonian, Alex",
+    "Belinkov, Yonatan"
+   ],
+   "published": "2022/02/10",
+   "n_occurrences": 1,
+   "notebooks": [
+    "IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb"
+   ]
+  },
+  {
+   "arxiv_id": "2310.06824",
+   "verdict": "OK",
+   "method": "abs-page meta tags (citation_title/authors/date) + submission history",
+   "rationale": "« Marks & Tegmark, The Geometry of Truth (COLM 2024) » (x2, c0 et c33) : titre et auteurs exacts ; venue COLM 2024 non contredite (v3 2024-08-19, timing camera-ready).",
+   "title": "The Geometry of Truth: Emergent Linear Structure in Large Language Model Representations of True/False Datasets",
+   "authors": [
+    "Marks, Samuel",
+    "Tegmark, Max"
+   ],
+   "published": "2023/10/10",
+   "n_occurrences": 2,
+   "notebooks": [
+    "IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb"
+   ]
+  },
+  {
+   "arxiv_id": "2404.06405",
+   "verdict": "OK",
+   "method": "abs-page meta tags (citation_title/authors/date) + submission history",
+   "rationale": "Geometry-03 (c0, c32) « Sinha et al. 2024 » et Geometry-03b (c31) liste complete « Shiven Sinha, Ameya Prabhu, Ponnurangam Kumaraguru, Siddharth Bhat, Matthias Bethge » : 5/5 auteurs exacts, titre exact, 2024 exact.",
+   "title": "Wu&#39;s Method can Boost Symbolic AI to Rival Silver Medalists and AlphaGeometry to Outperform Gold Medalists at IMO Geometry",
+   "authors": [
+    "Sinha, Shiven",
+    "Prabhu, Ameya",
+    "Kumaraguru, Ponnurangam",
+    "Bhat, Siddharth",
+    "Bethge, Matthias"
+   ],
+   "published": "2024/04/09",
+   "n_occurrences": 4,
+   "notebooks": [
+    "SymbolicAI/Geometry/Geometry-03-Wu-Method-Python.ipynb",
+    "SymbolicAI/Geometry/Geometry-03b-Ritt-Decomposition-Python.ipynb"
+   ]
+  },
+  {
+   "arxiv_id": "2503.03730",
+   "verdict": "OK",
+   "method": "abs-page meta tags (citation_title/authors/date) + submission history",
+   "rationale": "Baek & Tegmark (2025), titre exact — ICT-42 (x2) + mention croisee ICT-44 c33.",
+   "title": "Towards Understanding Distilled Reasoning Models: A Representational Approach",
+   "authors": [
+    "Baek, David D.",
+    "Tegmark, Max"
+   ],
+   "published": "2025/03/05",
+   "n_occurrences": 3,
+   "notebooks": [
+    "IIT/ICT-Series/ICT-42-Crosscoder-Distillation.ipynb",
+    "IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb"
+   ]
+  },
+  {
+   "arxiv_id": "2503.23303",
+   "verdict": "OK",
+   "method": "abs-page meta tags (citation_title/authors/date) + submission history",
+   "rationale": "ID nu + auteur « Nandakishor M. » sans claim de titre : auteur exact au record, rien a verifier au-dela.",
+   "title": "SalesRLAgent: A Reinforcement Learning Approach for Real-Time Sales Conversion Prediction and Optimization",
+   "authors": [
+    "M, Nandakishor"
+   ],
+   "published": "2025/03/30",
+   "n_occurrences": 2,
+   "notebooks": [
+    "GenAI/PostTraining/PT_17_laya_proper_rewards_toy.ipynb"
+   ]
+  },
+  {
+   "arxiv_id": "2504.18530",
+   "verdict": "OK",
+   "method": "abs-page meta tags (citation_title/authors/date) + submission history",
+   "rationale": "« Engels, Baek, Kantamneni, Tegmark, NeurIPS 2025 » sur 4 carnets (7 occurrences) : 4/4 auteurs exacts, titre exact ; venue NeurIPS 2025 non contredite par le record (journal-ref NONE, v3 2025-10-27 = timing camera-ready).",
+   "title": "Scaling Laws For Scalable Oversight",
+   "authors": [
+    "Engels, Joshua",
+    "Baek, David D.",
+    "Kantamneni, Subhash",
+    "Tegmark, Max"
+   ],
+   "published": "2025/04/25",
+   "n_occurrences": 7,
+   "notebooks": [
+    "GenAI/Security/Oversight/Oversight-Scaling-Laws-Analytics.ipynb",
+    "GenAI/Security/Oversight/Oversight-Scaling-Laws-Nim.ipynb",
+    "GenAI/Security/Oversight/Oversight-Scaling-Laws-Statistics.ipynb",
+    "GenAI/Security/Oversight/Oversight-Scaling-Laws-Wargames.ipynb"
+   ]
+  },
+  {
+   "arxiv_id": "2510.01237",
+   "verdict": "OK",
+   "method": "abs-page meta tags (citation_title/authors/date) + submission history",
+   "rationale": "ID nu + auteur « Nandakishor M. » sans claim de titre : auteur exact.",
+   "title": "Confidence-Aware Routing for Large Language Model Reliability Enhancement: A Multi-Signal Approach to Pre-Generation Hallucination Mitigation",
+   "authors": [
+    "M, Nandakishor"
+   ],
+   "published": "2025/09/23",
+   "n_occurrences": 2,
+   "notebooks": [
+    "GenAI/PostTraining/PT_17_laya_proper_rewards_toy.ipynb"
+   ]
+  },
+  {
+   "arxiv_id": "2607.08012",
+   "verdict": "OK",
+   "method": "abs-page meta tags (citation_title/authors/date) + submission history",
+   "rationale": "Titre et auteurs exacts (Ananthakrishnan et al.) ; PDF deja archive au gisement avec sha8 EFD6BC8D et identite verifiee premiere page (c.37).",
+   "title": "Provably Optimal Learning Algorithms for Assistance Games",
+   "authors": [
+    "Ananthakrishnan, Nivasini",
+    "Bedaywi, Mark",
+    "Jordan, Michael I.",
+    "Russell, Stuart",
+    "Haghtalab, Nika"
+   ],
+   "published": "2026/07/09",
+   "n_occurrences": 1,
+   "notebooks": [
+    "GameTheory/GameTheory-15-CooperativeGames.ipynb"
+   ]
+  }
+ ]
+}

@@ -1,4 +1,5 @@
 import MUH.Structure
+import MUH.Cyclic
 
 /-! # Décidabilité de l'équivalence de structures finies (Tegmark R16 Annexe A §1)
 
@@ -18,10 +19,11 @@ Ce module formalise un cas restreint :
   - cardinalité de chaque ensemble ≤ 3,
   - 1 seul ensemble.
 
-L'algorithme halt est `decidable_equiv` (stub) pour les structures à 1
-ensemble, arité 0/1/2, cardinal 2 ou 3. Une preuve complète demanderait
-l'énumération exhaustive des tables de valeurs, ce qui dépasse le scope de
-cette introduction. -/
+`decideEq` reste un stub et ne décide pas cette équivalence. Le présent
+module énumère effectivement les tables des opérations binaires sur un
+ensemble fini et décide leur égalité stricte, cardinalité comprise. Ce cas
+particulier ne couvre ni le renommage des éléments ni la génération mutuelle
+par composition. -/
 
 namespace Decidable
 
@@ -74,5 +76,24 @@ def boolBinaryTableCount : Nat := 2 ^ (2 * 2)
     valeurs une par une. Voir #16958 pour le suivi de l'implémentation. -/
 def decideEq (s₁ s₂ : Structure) : Bool :=
   s₁.nSets == s₂.nSets
+
+/-- Énumère les `m × m` valeurs d'une relation binaire sur un ensemble fini.
+    Cette tranche compare les tables à signature et cardinalité identiques ;
+    elle ne décide pas l'équivalence par composition de Tegmark. -/
+def binaryTable (m : Nat) (f : Fin m → Fin m → Fin m) : List (List Nat) :=
+  List.ofFn (fun a : Fin m =>
+    List.ofFn (fun b : Fin m => (f a b).val))
+
+/-- Compare deux opérations binaires typées, y compris leurs cardinaux.
+    C'est une égalité stricte des tables, non une équivalence des structures
+    par renommage des éléments ou par génération mutuelle. -/
+def sameBinaryOperation (m n : Nat) (f : Fin m → Fin m → Fin m)
+    (g : Fin n → Fin n → Fin n) : Bool :=
+  (m, binaryTable m f) == (n, binaryTable n g)
+
+example : sameBinaryOperation 2 2 Cyclic.mult2Table Cyclic.mult2Table = true := rfl
+example : sameBinaryOperation 3 3 Cyclic.mult3Table Cyclic.mult3Table = true := rfl
+example : sameBinaryOperation 2 2 Cyclic.mult2Table (fun _ _ => 0) = false := rfl
+example : sameBinaryOperation 2 3 Cyclic.mult2Table Cyclic.mult3Table = false := rfl
 
 end Decidable

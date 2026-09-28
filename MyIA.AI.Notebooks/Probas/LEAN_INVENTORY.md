@@ -14,7 +14,7 @@ n'entrent pas dans ce compte).
 
 | Lake | Toolchain | sorry (production) | Modules | Notebook câblé | Classe | Suivi |
 |------|-----------|--------------------:|--------:|---------------:|--------|-------|
-| `decision_theory_lean` | v4.32.1 | 2¹ | 13 (3 libs) | 2² | PEDA/REF | #4049, #4050, #4039 |
+| `decision_theory_lean` | v4.33.0 | 2¹ | 13 (3 libs) | 2² | PEDA/REF | #4049, #4050, #4039 |
 | `percolation_lean`³ | v4.33.0 | **0** | 6 (1 lib) | 1⁴ | PEDA/REF | #14871, #14927 |
 | **Total** | — | **2** | **19** | **3** | — | — |
 
@@ -24,7 +24,7 @@ de valeur `V := sorry` et la preuve d'inégalité, tous deux INTRINSIC). Le fich
 **explicitement** en-tête : la preuve complète est INTRACTABLE dans l'état actuel de
 Mathlib (pas de machinerie MDP/bandit/Bellman) → classification **INTRINSIC**, pas un gap
 pédagogique. Historique : 5 sorry à la création, déchargés à **2** (baseline CI suivie,
-`lean-decision-theory.yml` real-mode baseline 2). Les libs `Utility` et `Coherence` sont
+`lean-ci-matrix.yml` (clé `decisiontheory`) real-mode baseline 2). Les libs `Utility` et `Coherence` sont
 **0 sorry**.
 
 ² Deux notebooks câblés sous `Probas/DecisionTheory/DecInfer/` : **DecInfer-02**
@@ -58,11 +58,11 @@ exécutable du lake — cf. [`Applications/Percolation/README.md`](Applications/
 (vNM), cohérence probabiliste (de Finetti Dutch Book), index de Gittins (bandits manchots à
 escompte géométrique).
 
-- **Toolchain** : v4.32.1 · **Dépendance** : Mathlib4
+- **Toolchain** : v4.33.0 · **Dépendance** : Mathlib4
 - **libs** (`lean_lib`) : `Gittins`, `Utility`, `Coherence` (modules FR et miroirs
   `_en`)
 - **sorry (production)** : **2** (tous INTRINSIC dans Gittins, voir note ¹). CI verte sur
-  main (`lean-decision-theory.yml`, dernier run 2026-08-26).
+  main (`lean-ci-matrix.yml`, clé `decisiontheory`).
 
 #### `Utility/` (3 fichiers) — 0 sorry · PEDA/REF · #4049
 
@@ -175,7 +175,7 @@ documenté historiquement — a été supprimé du dépôt.)*
   se construisait en réutilisant le `.lake` d'un lake frère binairement compatible
   (wholesale `cp -r sibling/.lake` + `lake-manifest.json`, révision Mathlib identique). Cf.
   `lean-wdac-olean-wholesale-copy`.
-- **CI** : `.github/workflows/lean-decision-theory.yml` (`sorry-filter-mode: real`,
+- **CI** : `.github/workflows/lean-ci-matrix.yml` (clé `decisiontheory` ; `sorry-filter-mode: real`,
   baseline `"2"` — historiquement `standalone-tactic` baseline 4, corrigé par #11688).
 - **Coordination finitude-derivatives (#2978)** : `decision_theory_lean` Gittins est
   coordonné avec `finiteness_lean` (#3111) — pas de chevauchement (Gittins = décision
