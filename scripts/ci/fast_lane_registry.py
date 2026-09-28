@@ -265,6 +265,19 @@ PILOT: list[Guard] = [
         blocking=True,
     ),
     Guard(
+        name="notebook-nav-chain-guard",
+        source="notebook-nav-chain-guard.yml",
+        paths=NOTEBOOK_GLOBS + [
+            "MyIA.AI.Notebooks/**/README.md",
+            "scripts/notebook_tools/check_notebook_nav_chain.py",
+            "scripts/tests/baseline_nb_nav_chain.json",
+            ".github/workflows/notebook-nav-chain-guard.yml",
+        ],
+        argv=["python", "scripts/notebook_tools/check_notebook_nav_chain.py",
+              "--check"],
+        blocking=True,
+    ),
+    Guard(
         name="notebook-interp-positioning-guard",
         source="notebook-interp-positioning.yml",
         paths=NOTEBOOK_GLOBS + [
