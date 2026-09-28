@@ -477,3 +477,101 @@ def test_cli_watch_broken_exits_two(tmp_path: Path) -> None:
     )
     body = json.loads(proc.stdout)
     assert body["verdict_watch"] == "BROKEN"
+
+
+# ---------------------------------------------------------------------------
+# #18131 -- second incident (2026-09-13 zombies) recognised by identity, and
+# fresh backlog of a saturated pool no longer counted as drift.
+# ---------------------------------------------------------------------------
+
+_NOW = "2026-09-27T21:30:00Z"
+
+
+def _floor_runs() -> list[dict]:
+    """The 18 historical ghosts of 2026-08-19 (before the cutoff)."""
+    return [
+        {"id": 900 + i, "name": f"ghost-{i}", "created_at": f"2026-08-19T03:{i:02d}:00Z",
+         "html_url": f"https://gh/ghost/{i}"}
+        for i in range(18)
+    ]
+
+
+def _known_zombie_runs() -> list[dict]:
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("gh_queue_health", SCRIPT)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return [
+        {"id": rid, "name": "zombie-13-09", "created_at": "2026-09-13T08:50:00Z",
+         "html_url": f"https://gh/zombie/{rid}"}
+        for rid in sorted(mod.KNOWN_ZOMBIE_RUN_IDS)
+    ]
+
+
+def _watch(tmp_path: Path, runs: list[dict], name: str) -> subprocess.CompletedProcess:
+    snapshot = tmp_path / name
+    snapshot.write_text(_make_snapshot(runs), encoding="utf-8")
+    return _run("--watch", "--input", str(snapshot), "--now", _NOW)
+
+
+def test_18131_known_zombie_set_is_the_measured_incident() -> None:
+    """The set holds exactly the 37 run IDs measured on 2026-09-27."""
+    runs = _known_zombie_runs()
+    assert len(runs) == 37
+    assert 34749036117 in {r["id"] for r in runs}  # cancel and force-cancel -> 409
+
+
+def test_18131_floor_plus_known_zombies_is_ok(tmp_path: Path) -> None:
+    """Negative control: the 18 ghosts + the 37 known zombies = steady state."""
+    proc = _watch(tmp_path, _floor_runs() + _known_zombie_runs(), "known.json")
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    body = json.loads(proc.stdout)
+    assert body["verdict_watch"] == "OK"
+    # the measurement verdict is unchanged: it still sees 37 live runs
+    assert body["verdict_measurement"] == "GHOST_RUNS_DETECTED"
+    assert body["counts"]["known_zombies"] == 37
+    assert body["counts"]["stale_live"] == 0
+
+
+def test_18131_fresh_backlog_is_ok(tmp_path: Path) -> None:
+    """Negative control: a saturated pool's recent queue is backlog, not drift."""
+    fresh = [
+        {"id": 5000 + i, "name": f"fresh-{i}", "created_at": "2026-09-27T21:20:00Z",
+         "html_url": f"https://gh/fresh/{i}"}
+        for i in range(259)  # the 2026-09-25 alert counted 259 live
+    ]
+    proc = _watch(tmp_path, _floor_runs() + _known_zombie_runs() + fresh, "fresh.json")
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    body = json.loads(proc.stdout)
+    assert body["verdict_watch"] == "OK"
+    assert body["counts"]["fresh_live"] == 259
+
+
+def test_18131_unknown_stale_run_is_drift(tmp_path: Path) -> None:
+    """Positive control: an unknown run queued past the threshold is a new zombie."""
+    stale = [{"id": 7777, "name": "new-zombie", "created_at": "2026-09-25T10:00:00Z",
+              "html_url": "https://gh/new/7777"}]
+    proc = _watch(tmp_path, _floor_runs() + _known_zombie_runs() + stale, "stale.json")
+    assert proc.returncode == 1, proc.stdout + proc.stderr
+    body = json.loads(proc.stdout)
+    assert body["verdict_watch"] == "DRIFT"
+    assert [r["id"] for r in body["stale_live"]] == [7777]
+
+
+def test_18131_stale_threshold_is_configurable(tmp_path: Path) -> None:
+    """The same run is backlog under a wider threshold."""
+    run = [{"id": 7778, "name": "slow", "created_at": "2026-09-27T09:30:00Z",
+            "html_url": "https://gh/slow/7778"}]  # 12 h before _NOW
+    snapshot = tmp_path / "slow.json"
+    snapshot.write_text(_make_snapshot(_floor_runs() + run), encoding="utf-8")
+    tight = _run("--watch", "--input", str(snapshot), "--now", _NOW, "--stale-hours", "6")
+    wide = _run("--watch", "--input", str(snapshot), "--now", _NOW, "--stale-hours", "24")
+    assert tight.returncode == 1 and wide.returncode == 0, tight.stdout + wide.stdout
+
+
+def test_18131_invalid_now_is_broken(tmp_path: Path) -> None:
+    """A malformed reference time is an instrument failure, never a verdict."""
+    snapshot = tmp_path / "now.json"
+    snapshot.write_text(_make_snapshot(_floor_runs()), encoding="utf-8")
+    proc = _run("--watch", "--input", str(snapshot), "--now", "yesterday")
+    assert proc.returncode == 2, proc.stdout + proc.stderr

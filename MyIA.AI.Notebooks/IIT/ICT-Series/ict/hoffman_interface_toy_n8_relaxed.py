@@ -3,7 +3,7 @@
 Suites directes des case 11 (PR #14535, N=4 null), case 12 (PR #14544, N=8 dissociation
 canonique bit0), case 13 (PR #14548, N=16 NULL 0/16 REFUTATION scaling monotone).
 
-Case 14 teste hypothese 2 du verdict case 13 (Tell c.896-L1) : le relachement
+Case 14 teste hypothese 2 du verdict case 13 : le relachement
 de la compression canonique (bit2 au lieu de bit0) restaure-t-il la dissociation
 FBT a N=8 ?
 
@@ -242,7 +242,7 @@ def play_round(
     position et retourne `w_hat ∈ [0, N_ONTIC)`. Avant le fix, `strategy(alpha,
     fitness, prior)` était appelée sans `x` (jeté après échantillonnage), ce qui
     rendait le NULL 8/8 case 14 non-mesurant (l'instrument était aveugle au
-    percept). Tell c.899-L1 ★★★ + c.901-L1 ★★★ : `play_round` FBT-style doit
+    percept). `play_round` FBT-style doit
     passer `x` à la stratégie.
     """
     w_star = random.randrange(N_ONTIC)

@@ -234,3 +234,70 @@ def test_vraie_reserve_hors_dossier_reste_vivante():
     # Controle positif du contexte (pas de la liste) : une review qui POSE
     # un CHANGES_REQUESTED en dehors de tout dossier reste BOT-CONCERN.
     assert mod.classify("jsboige", "CHANGES_REQUESTED : decide casse en identifiant Lean, cellule 12.") is not None
+
+
+# --- #18077 : 3e forme de #17065 -- dossier RETIRE par renommage des delimiteurs ---
+#
+# Mesure (ai-01, #16960, commentaire 5751421659, 2026-09-20) : un dossier
+# retire en renommant ses delimiteurs `[ADJOINT-PREFLIGHT RETIRE]` gardait
+# son bloc et sa queue narrative. Le span ne reconnaissait que la forme a
+# espace : la phrase d'attestation de la queue redevenait une reserve POSEE
+# que l'autrice de la PR ne pouvait pas lever -- ~8 h 30 de lane bloquee,
+# levee seulement par DM coordinateur.
+
+DOSSIER_RETIRE_TIRETS = (
+    DOSSIER_16862_AVEC_QUEUE
+    .replace("[ADJOINT PREFLIGHT]", "[ADJOINT-PREFLIGHT RETIRE]")
+    .replace("[/ADJOINT PREFLIGHT]", "[/ADJOINT-PREFLIGHT RETIRE]")
+)
+
+
+def test_dossier_retire_par_tirets_nest_pas_un_nit():
+    # Acceptance 1 -- echoue sur le code d'avant #18077 (BOT-CONCERN).
+    assert mod.classify("jsboige", DOSSIER_RETIRE_TIRETS) is None
+
+
+def test_variantes_de_delimiteurs_retires_sont_inertes():
+    # Les formes derivees observees ou attendues : tiret sans suffixe,
+    # espace avec suffixe. Chacune retire le bloc ET sa queue narrative.
+    for ouvrant, fermant in (
+        ("[ADJOINT-PREFLIGHT]", "[/ADJOINT-PREFLIGHT]"),
+        ("[ADJOINT PREFLIGHT RETIRE]", "[/ADJOINT PREFLIGHT RETIRE]"),
+        ("[ADJOINT-PREFLIGHT SUPERSEDE 2026-09-20]", "[/ADJOINT-PREFLIGHT SUPERSEDE]"),
+    ):
+        body = (
+            DOSSIER_16862_AVEC_QUEUE
+            .replace("[ADJOINT PREFLIGHT]", ouvrant)
+            .replace("[/ADJOINT PREFLIGHT]", fermant)
+        )
+        assert mod.classify("jsboige", body) is None, ouvrant
+
+
+def test_dossier_vivant_canonique_reste_une_attestation_entiere():
+    # Acceptance 2 -- non-regression de #17070 : la forme canonique est
+    # toujours retiree avec sa queue.
+    assert mod._strip_adjoint_dossier(DOSSIER_16862_AVEC_QUEUE) == ""
+    assert mod.classify("jsboige", DOSSIER_16862_AVEC_QUEUE) is None
+
+
+def test_vraie_reserve_devant_un_bloc_retire_reste_bloquante():
+    # Acceptance 3 -- une vraie reserve HUMAN adjacente au bloc retire
+    # (en tete, hors du span) reste lue et bloquante.
+    prose = "Le fil inline #2 reste a nuancer sur la formulation exacte."
+    assert mod.classify("jsboige", prose + "\n\n" + DOSSIER_RETIRE_TIRETS) is not None
+
+
+def test_bloc_retire_malforme_sans_fermant_nest_pas_retire():
+    # Fail-closed inchange : un ouvrant renomme sans fermant ne blanchit rien.
+    malforme = DOSSIER_RETIRE_TIRETS.replace("[/ADJOINT-PREFLIGHT RETIRE]", "")
+    assert mod.classify("jsboige", malforme) is not None
+
+
+def test_mention_en_ligne_du_delimiteur_nouvre_pas_de_span():
+    # Le delimiteur cite dans une phrase (pas en debut de ligne) n'ouvre
+    # aucun span : la reserve qui l'entoure reste lue.
+    body = (
+        "Le bloc [ADJOINT-PREFLIGHT RETIRE] ne leve pas le thread inline #2, "
+        "qui reste a nuancer.\n\nCHANGES_REQUESTED : cellule 12."
+    )
+    assert mod.classify("jsboige", body) is not None
