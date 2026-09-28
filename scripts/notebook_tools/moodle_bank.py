@@ -279,6 +279,7 @@ def convert(src: str, out: str) -> int:
 
 def check(bank: str) -> int:
     errors = []
+    warnings = []
     ids = set()
     total = 0
     per_theme = {}
@@ -317,6 +318,16 @@ def check(bank: str) -> int:
                 texts = [o.get("texte") for o in options]
                 if any(not (t or "").strip() for t in texts):
                     errors.append(f"{qid}: option vide")
+                # Defaut de SOURCE Moodle (pas du convertisseur) : meme texte d'option
+                # en double exemplaire avec des cles contradictoires. La banque reste
+                # fidele a la source ; le defaut est signale dans RELECTURE-2026-09.md,
+                # donc ATTENTION sans echec.
+                keys_by_text = {}
+                for o in options:
+                    keys_by_text.setdefault((o.get("texte") or "").strip(), set()).add(bool(o.get("correcte")))
+                for text, flags in keys_by_text.items():
+                    if len(flags) > 1:
+                        warnings.append(f"{qid}: option dupliquee a cles contradictoires : {text[:40]}")
             elif qtype == "matching":
                 pairs = rec.get("appariements") or []
                 if not pairs:
@@ -337,6 +348,10 @@ def check(bank: str) -> int:
             print(f"  ERREUR {e}")
         print(f"TOTAL ERREURS: {len(errors)}")
         return 1
+    if warnings:
+        for w in warnings:
+            print(f"  ATTENTION {w}")
+        print(f"TOTAL ATTENTIONS: {len(warnings)} (defauts de source, cf RELECTURE)")
     print("OK: banque valide")
     return 0
 

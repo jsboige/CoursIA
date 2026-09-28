@@ -75,7 +75,9 @@ Chaque thème pointe vers les notebooks qui enseignent la notion :
 
 Questions sans notebook d'accueil : la passe de relecture prévue par #18223
 (tranche 4) les énumère par identifiant au fil de la lecture — une question
-sans ancrage se signale, elle ne s'invente pas de place. Les sujets de
-rattrapage Trading, distincts de cette banque, vivent dans la série
+sans ancrage se signale, elle ne s'invente pas de place. Cette relecture est
+livrée : [RELECTURE-2026-09.md](RELECTURE-2026-09.md) registre daté des constats
+(coquilles de source, clés contestables, doublons attribués à la source Moodle).
+Les sujets de rattrapage Trading, distincts de cette banque, vivent dans la série
 QuantConnect (`examens/`, même issue #18223) avec leur propre rattachement.
 

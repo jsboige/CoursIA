@@ -93,6 +93,19 @@ def test_check_organ_passes_on_committed_bank(capsys):
     assert rc == 0, f"check() a rendu {rc} :\n{out}"
 
 
+def test_check_flags_source_duplicate_options_as_attention(capsys):
+    """Les options dupliquees a cles contradictoires (defaut de SOURCE Moodle,
+    cf RELECTURE-2026-09.md) sont signalees en ATTENTION sans faire echouer
+    l'organe : la banque reste fidele a la source.
+    """
+    rc = check(BANK)
+    out = capsys.readouterr().out
+    assert rc == 0, f"check() a rendu {rc} :\n{out}"
+    for qid in ("ia2-008", "ia5-002"):
+        assert qid in out, f"{qid} attendu en ATTENTION :\n{out}"
+    assert "cles contradictoires" in out
+
+
 def test_ids_stable_pattern_and_unique():
     bank = load_bank()
     ids = [q["id"] for qs in bank.values() for q in qs]
