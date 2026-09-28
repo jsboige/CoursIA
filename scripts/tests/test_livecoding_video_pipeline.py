@@ -8,7 +8,7 @@ logique PURE — encodage URL, calcul de cycles, commande ffmpeg,
 visuals, deferral). La capture REELLE (navigateur + reseau + ffmpeg)
 est provee par l'execution documentee dans le body de la PR, pas par
 un test qui simulerait le navigateur : verifier un verdict fake sur
-une capture qui n'a pas eu lieu = test menteur (Tell c.1102).
+une capture qui n'a pas eu lieu = test menteur.
 """
 
 from __future__ import annotations
@@ -471,7 +471,7 @@ class TestComposeNarrationLLM:
 
     def test_sortie_invalide_rejetee(self):
         """Une sortie LLM recouvrante echoue explicitement — jamais
-        rafistolee (Tell c.1102)."""
+        rafistolee."""
         bad_payload = [
             {"start_s": 0, "end_s": 50, "text": "A.", "intensity": 0.5},
             {"start_s": 40, "end_s": 80, "text": "B.", "intensity": 0.5},
@@ -485,7 +485,7 @@ class TestComposeNarrationLLM:
 
     def test_sans_cle_echec_explicite(self, monkeypatch):
         """Moteur llm sans OPENAI_API_KEY : RuntimeError explicite, PAS
-        de fallback silencieux vers template (Tell c.1102)."""
+        de fallback silencieux vers template."""
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
         with pytest.raises(RuntimeError, match="OPENAI_API_KEY"):
             compose_narration(
@@ -527,7 +527,7 @@ class TestNarrationToJson:
 
 class TestRunPipeline:
     """L'orchestrateur marque les etapes non livrees comme ``deferred``
-    plutot que de pretendre les avoir executees (Tell c.1102). Depuis
+    plutot que de pretendre les avoir executees. Depuis
     l'etape 2 (c.1215), 'narration' est une liste de segments valides ;
     depuis l'etape 4 (c.580), browser_capture/final_mix ne sont
     deferred QUE sans ``capture=True`` — les tests ci-dessous couvrent
@@ -594,7 +594,7 @@ class TestRunPipeline:
     def test_output_path_is_documented_not_created(self):
         """Sans capture, le pipeline ne cree PAS le fichier .mp4 final ;
         le path est documente dans le verdict sans execution. Un test
-        qui verifie que le fichier existe apres run viole Tell c.1102."""
+        qui verifie que le fichier existe apres run viole."""
         result = run_pipeline(
             style_name="techno",
             duration_seconds=120,
@@ -748,7 +748,7 @@ class TestCLIInvocation:
     def test_cli_llm_sans_cle_echec_explicite(self, monkeypatch, capsys):
         """--narration-engine llm sans cle : code retour 2 et message
         d'erreur explicite sur stderr — pas de fallback silencieux
-        vers template (Tell c.1102)."""
+        vers template."""
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
         rc = pipeline_main(
             [
