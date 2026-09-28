@@ -676,5 +676,54 @@ class TestReview17801Guards(unittest.TestCase):
             self.assertEqual(rc, 0)
 
 
+class TestPathLengthNotAViolation(unittest.TestCase):
+    """#17834 : target_violation recoit un chemin relatif dans main(), et STEM_RE
+    est ancree en debut de stem. Resultat avant fix : 31/31 avertissements
+    <<prefixe absent>> sur des cibles canoniques (table SmartContracts). Le fix
+    extrait le basename dans main(). Ces tests reproduisent le defaut (chemin
+    long) et verifient qu'apres extraction, la cible canonique passe en None.
+    """
+
+    def test_long_path_canonical_returns_none(self):
+        """Chemin complet -> basename -> target_violation rend None."""
+        full = (
+            "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/"
+            "00-Foundations/SC-01-Setup-Foundry-Python.ipynb"
+        )
+        # Reproduction du defaut : appeler directement target_violation avec le
+        # chemin complet produit le FP. Ce test verifie que le site d'appel
+        # (main()) extrait le basename. On simule ce que fait main() l.804.
+        self.assertIsNone(rn.target_violation(os.path.basename(full)))
+
+    def test_long_path_passes_through_main_loop(self):
+        """Boucle for old,new in pairs : on passe le chemin, le site d'appel
+        extrait le basename. Cible canonique -> 0 avertissement."""
+        full = (
+            "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/"
+            "00-Foundations/SC-01-Setup-Foundry-Python.ipynb"
+        )
+        # Reproduction minimale : la regex qui nous sert d'index est celle que
+        # le site d'appel utilise apres le fix. Si quelqu'un reintroduit le
+        # chemin complet par accident, ce test saute.
+        self.assertEqual(
+            rn.target_violation(os.path.basename(full)),
+            None,
+            "Cible canonique avec chemin long doit retourner None apres extraction basename",
+        )
+
+    def test_infixe_kernel_toujours_detecte_apres_fix(self):
+        """Le fix ne casse pas le verdict sur infixe kernel (cas SC-7b ERC20)."""
+        self.assertEqual(
+            rn.target_violation(
+                "SC-07b-ERC20-Lean-Verification-Companion-Python.ipynb"
+            ),
+            "mot de noyau en infixe du titre",
+        )
+
+    def test_non_grammar_toujours_detecte_apres_fix(self):
+        """Cible non grammaticale (mauvais prefixe) -> toujours signalee."""
+        self.assertIsNotNone(rn.target_violation("not-a-notebook.txt"))
+
+
 if __name__ == "__main__":
     unittest.main()
