@@ -151,6 +151,66 @@ def test_commentaire_neutre_posterieur_ne_perime_pas():
     assert errors == []
 
 
+# --- latest-wins : seul le dernier dossier compte (#18095) -------------------
+
+def test_dossier_malforme_puis_dossier_valide_ferme():
+    # Controle positif (forme #16916) : un premier dossier malforme ne masque
+    # plus le dossier correct poste apres lui.
+    malformed = _dossier_body().replace("residue: none\n", "")
+    snap = _snapshot(comments=[
+        _comment(malformed, created="2026-09-20T10:00:00Z"),
+        _comment(_dossier_body(comments_reviewed=1),
+                 created="2026-09-21T10:00:00Z"),
+    ])
+    verdict, errors, dossier = evaluate(snap)
+    assert verdict == "CLOSE"
+    assert errors == []
+    assert dossier.comment_index == 1
+
+
+def test_dossier_valide_puis_dossier_malforme_refuse():
+    # Controle negatif : le dernier dossier fait foi, meme malforme -- un
+    # dossier valide plus ancien ne le rattrape pas.
+    malformed = _dossier_body(comments_reviewed=1).replace("residue: none\n", "")
+    snap = _snapshot(comments=[
+        _comment(_dossier_body(), created="2026-09-20T10:00:00Z"),
+        _comment(malformed, created="2026-09-21T10:00:00Z"),
+    ])
+    verdict, errors, dossier = evaluate(snap)
+    assert verdict == "REFUSED"
+    assert any("missing fields: residue" in e for e in errors)
+    assert dossier.comment_index == 1
+
+
+def test_keep_puis_close_rend_close(monkeypatch):
+    monkeypatch.setattr(ccd, "gh_json", lambda args: {
+        "number": 17910, "state": "OPEN"})
+    snap = _snapshot(comments=[
+        _comment(_dossier_body(verdict="KEEP", residue="followup #17910"),
+                 created="2026-09-20T10:00:00Z"),
+        _comment(_dossier_body(comments_reviewed=1),
+                 created="2026-09-21T10:00:00Z"),
+    ])
+    verdict, errors, _ = evaluate(snap)
+    assert verdict == "CLOSE"
+    assert errors == []
+
+
+def test_close_puis_keep_rend_keep(monkeypatch):
+    # Symetrique : un KEEP recent retire un CLOSE plus ancien.
+    monkeypatch.setattr(ccd, "gh_json", lambda args: {
+        "number": 17910, "state": "OPEN"})
+    snap = _snapshot(comments=[
+        _comment(_dossier_body(), created="2026-09-20T10:00:00Z"),
+        _comment(_dossier_body(verdict="KEEP", residue="followup #17910",
+                               comments_reviewed=1),
+                 created="2026-09-21T10:00:00Z"),
+    ])
+    verdict, errors, _ = evaluate(snap)
+    assert verdict == "KEEP"
+    assert errors == []
+
+
 def test_pr_ouverte_referencant_lissue_refuse():
     # Le contrat dit open-prs: 0 ; le live en trouve une -> perime.
     snap = _snapshot(comments=[_comment(_dossier_body())], open_prs=[18050])
