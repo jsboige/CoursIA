@@ -4,6 +4,8 @@
 
 **État mesuré au 2026-09-19** sur `main` (`21dd39bec82f` +). Cette carte est le livrable d'acceptance de [#14526](https://github.com/jsboige/CoursIA/issues/14526) : elle établit la structure **depuis le disque**, classe chaque élément (workspace / sous-thème / consommateur / transverse), relève les contenus éclatés et doublons, et propose une arborescence cible avec table de migration. **Rien n'est déplacé ici** — les `git mv` attendent la validation de cette carte (garde-fou de l'issue).
 
+> **Addendum 2026-09-28 (#18223)** : `docs/activites/` et le corrigé `Roo-Code/Corrections/Correction  Activités GenAI.md` ont déménagé vers [`GenAI/activites/`](../../activites/) — lieu unique des activités de cours, hors workspace Vibe-Coding. Les comptes et mentions « activites » ci-dessous restent ceux de la mesure du 2026-09-19 ; les renvois de chemins ont été corrigés.
+
 ## 1. Inventaire mesuré (disque)
 
 | Espace | Fichiers | Notebooks | Markdown | Rôle constaté |
@@ -13,7 +15,7 @@
 | [`Claw-Systems/`](../Claw-Systems/) | 16 | 0 | 12 | Agents autonomes (NanoClaw, OpenClaw, philosophie agentic engineering) + `configs/` |
 | [`Claudish/`](../Claudish/) | 8 | 1 | 3 | Proxy multi-provider (routes assistants → Anthropic/GLM/Qwen) + `configs/` |
 | [`analyzers/`](../analyzers/) | 7 | 0 | 1 | **Projet C# exécutable** `AgentSafetyAnalyzer` (+ `.Tests`) — hors paradigme notebook |
-| [`docs/`](.) | 11 | 2 | 7 | Transverse : `CLUSTER-ORCHESTRATION.md`, `COMPARAISON-CLAUDE-ROO.md`, `INTRO-GENAI.md`, 2 notebooks transverses, `activites/`, `sessions/`, `csharprepl-demo/` |
+| [`docs/`](.) | 9 | 2 | 5 | Transverse : `CLUSTER-ORCHESTRATION.md`, `COMPARAISON-CLAUDE-ROO.md`, `INTRO-GENAI.md`, 2 notebooks transverses, `sessions/`, `csharprepl-demo/` — `activites/` a déménagé vers [`GenAI/activites/`](../../activites/) (#18223) |
 
 **Notebooks pédagogiques déclarés au catalogue** : 8 (marqueur `CATALOG-STATUS` du README — l'écart avec les comptes bruts ci-dessus vient des notebooks d'outillage transverses, non comptés pédagogiques).
 
@@ -37,13 +39,13 @@
 | `Claude-Code/01..05`, `Roo-Code/01..05` | **Sous-thèmes** | Parcours pédagogiques numérotés au sein de leur workspace |
 | `Roo-Code/ateliers-avances`, `Demo-Roo-Capabilities`, `Corrections` | **Sous-thèmes** | Extensions latérales du workspace Roo |
 | `analyzers/AgentSafetyAnalyzer` | **Consommateur** | Projet C# qui **consomme** les modèles (analyse de sécurité agentique) sans documenter l'espace — c'est un artefact de code, pas un atelier |
-| `docs/` (CLUSTER-ORCHESTRATION, COMPARAISON, INTRO, notebooks transverses, activites, sessions, csharprepl-demo) | **Transverse** | Contenus multi-workspaces |
+| `docs/` (CLUSTER-ORCHESTRATION, COMPARAISON, INTRO, notebooks transverses, sessions, csharprepl-demo) | **Transverse** | Contenus multi-workspaces — `activites/` déménagé vers `GenAI/activites/` (#18223) |
 
 ## 3. Problèmes relevés (éclatés, doublons, liens)
 
 1. **9 noms de fichiers partagés entre Claude-Code/ et Roo-Code/** (`README.md`, `composants-web.md`, `documentation-scripts.md`, `exemples-questions.md`, `guide-agent.md`, `methodologie-recherche.md`, `modeles-evenements.md`, `plan.md`, `taches-demo.md`) — la structure parallèle est **assumée** (ateliers jumeaux), mais elle rend les liens ambigus depuis l'extérieur : toujours qualifier par l'espace, jamais par le nom seul.
-2. **Déchet versionné** : `docs/activites/Activités - IA Générative.old.md` — un `.old.md` qui traîne (remplacé par `Activités-GenAI.md`).
-3. `docs/` éclaté en 4 sous-intérêts (`activites/`, `sessions/`, `csharprepl-demo/`, transverses racine) sans page d'index autre que le README de série.
+2. **Déchet versionné** : `Activités - IA Générative.old.md` (désormais dans [`GenAI/activites/`](../../activites/) depuis #18223) — un `.old.md` qui traîne (remplacé par `Activités-GenAI.md`).
+3. `docs/` éclaté en 3 sous-intérêts (`sessions/`, `csharprepl-demo/`, transverses racine) sans page d'index autre que le README de série.
 4. `analyzers/` est un binaire de projet C# (.csproj + Tests) **sans README de rattachement** (1 seul md) — un lecteur ne sait pas pourquoi il est dans une série notebooks.
 5. Voisins dispersés : Open-WebUI vit dans `Plateformes-Conversationnelles/`, vLLM dans `docker-configurations/` — aucun renvoi depuis le README Vibe-Coding vers ces espaces frères.
 
@@ -64,9 +66,8 @@ Vibe-Coding/
     ├── COMPARAISON-CLAUDE-ROO.md
     ├── INTRO-GENAI.md
     ├── CARTE-ESPACES.md         # CE DOCUMENT (nouveau)
-    ├── activites/               # − Activités - IA Générative.old.md (PR atomique A1)
     ├── sessions/
-    └── csharprepl-demo/
+    └── csharprepl-demo/         # (activites/ a quitté docs/ → GenAI/activites/, #18223)
 ```
 
 **Emplacement de la page collective unique** : le `README.md` de la série — confirmé, il est déjà le parcours consolidé depuis #15787 ; cette carte s'y référence et le complète. Aucun dossier individuel supplémentaire n'est créé.
@@ -77,7 +78,7 @@ Vibe-Coding/
 
 | # | Ancien | Nouveau | PR atomique | Risque |
 |---|---|---|---|---|
-| A1 | `docs/activites/Activités - IA Générative.old.md` | *(supprimé — déchet, contenu remplacé par `Activités-GenAI.md`)* | A1 | nul : vérifier 0 lien entrant avant suppression |
+| A1 | `Activités - IA Générative.old.md` (désormais `GenAI/activites/`, #18223) | *(supprimé — déchet, contenu remplacé par `Activités-GenAI.md`)* | A1 | nul : vérifier 0 lien entrant avant suppression |
 | A2 | *(absent)* | `analyzers/README.md` — rôle du projet, comment il consomme les espaces | A2 | nul : ajout pur |
 | A3 | *(absent)* | Renvois frères dans le README série : Open-WebUI, vLLM, sk-agent, LivresAgités (non-résident) | A3 | nul : ajout de liens |
 | — | tout le reste | **inchangé** (workspaces validés en place) | — | — |
