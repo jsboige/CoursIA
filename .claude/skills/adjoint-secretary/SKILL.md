@@ -1,6 +1,6 @@
 ---
 name: adjoint-secretary
-description: Cycle 30 min du secrétaire vérificateur myia-po-2026:CoursIA-3. Atteste en tiers, du plus ancien au plus récent, les PRs ouvertes sans dossier valide (merge_ready convertit chaque READY hors harnais et hors DEEP en merge), et fait circuler l'information sur workspace-CoursIA-3.
+description: Cycle 30 min du secrétaire vérificateur myia-po-2026:CoursIA-3. Atteste en tiers, du plus ancien au plus récent, les PRs ouvertes sans dossier valide (chaque READY, une fois lu et approuvé par ai-01, est mergé sans attendre son cycle), et fait circuler l'information sur workspace-CoursIA-3.
 ---
 
 # Secrétaire vérificateur — myia-po-2026:CoursIA-3
@@ -15,20 +15,21 @@ Cette commande est réservée au slot `myia-po-2026:CoursIA-3` et ne doit jamais
 
 ## Ce que ton dossier déclenche
 
-Depuis le 23/09, l'organe `scripts/coordination/merge_ready.py` tourne toutes les 20 minutes sur ai-01, sous l'identité du coordinateur. Il merge seul toute PR qui remplit toutes ces conditions :
+L'organe `scripts/coordination/merge_ready.py` tourne toutes les 20 minutes sur ai-01, sous l'identité du coordinateur. Depuis le 28/09 (#18257), il ne merge qu'une PR qui remplit toutes ces conditions :
 
+- une review `APPROVED` du coordinateur (`myia-ai-01`) qui couvre le contenu de la tête : posée sur elle, ou séparée d'elle par des seuls rafraîchissements de base sans conflit ;
 - un dossier `[ADJOINT PREFLIGHT]` **tiers** que le gate accepte (`check_adjoint_prevalidation.py` rc=0) et qui porte `b0: clear` ;
 - B.0 (`check_unaddressed_nits.py`) rc=0 ;
 - aucun fichier sous `.claude/`, aucun `CLAUDE.md`, aucun fichier sous `.github/` ;
 - un tag `Grain:` de tier MED ou LIGHT (DEEP refusé) et aucun parapluie gelé ;
 - `mergeable_state: clean` à la tête même que le gate a évaluée.
 
-Un READY de toi sur une telle PR **est donc son merge**, dans les 20 minutes, sans relecture humaine. Deux conséquences.
+Ton READY est donc la moitié du merge ; l'autre est la lecture d'ai-01, qui s'appuie sur ton dossier. L'organe n'est pas une voie de merge sans lecteur : il évite seulement qu'un dossier se périme entre cette lecture et le merge. Du 23 au 28/09, il mergeait sur le seul dossier ; 6 des 211 merges de cette période portaient une approbation d'ai-01, et ce passif est ré-audité. Deux conséquences.
 
-1. **Ton dossier est le premier levier de débit de la flotte.** Mesures du 28/09 : au balayage du gate de 13:20Z, 98 des 103 PRs ouvertes n'avaient aucun dossier valide ; au passage de `merge_ready` de 14:02Z, 64 des 76 PRs examinées ont été écartées pour la seule absence de dossier. Depuis sa mise en service, l'organe merge 20 à 50 PRs par jour, toutes sur dossier.
-2. **Un READY faux est mergé sans lecteur.** Le crible de fond (items 9, 11, 14, 16, 23, 28 et 29 ci-dessous) n'est donc pas une option de qualité : c'est le seul regard que la PR recevra. Un BLOCKED honnête (rc=3) reste un livrable complet : il dit à la lane porteuse ce qu'elle doit réparer.
+1. **Ton dossier est le premier levier de débit de la flotte.** Le goulot est la vitesse d'arrivée des dossiers, pas la capacité de merge d'ai-01. Mesures du 28/09 : au balayage du gate de 13:20Z, 98 des 103 PRs ouvertes n'avaient aucun dossier valide ; au passage de `merge_ready` de 14:02Z, 64 des 76 PRs examinées ont été écartées pour la seule absence de dossier. Du 23 au 28/09, l'organe a mergé 20 à 50 PRs par jour, toutes sur dossier.
+2. **ai-01 lit ton dossier, il ne refait pas ton travail.** Sa lecture porte sur les réserves, sur ce qui a changé depuis la dernière review et sur la preuve centrale ; le reste (qui a levé quoi et quand, checks, scope, domaine) repose sur ton dossier. Le crible de fond (items 9, 11, 14, 16, 23, 28 et 29 ci-dessous) n'est donc pas une option de qualité : un READY faux coûte une lecture d'ai-01 pour rien, ou passe si la lecture le manque. Un BLOCKED honnête (rc=3) reste un livrable complet : il dit à la lane porteuse ce qu'elle doit réparer.
 
-Hors de ce périmètre (PRs de harnais, grains DEEP), le coordinateur merge à la main, et seulement sur gate rc=0 : ton dossier y reste la condition d'entrée. Pour ces PRs, ton READY se double d'une ligne dans la liste nominative envoyée à ai-01 en fin de cycle.
+Hors de ce périmètre (PRs de harnais, grains DEEP), le coordinateur merge à la main, et seulement sur gate rc=0 : ton dossier y reste la condition d'entrée. Dans les deux cas, chaque READY se double d'une ligne dans la liste nominative envoyée à ai-01 en fin de cycle : c'est elle qui déclenche sa lecture.
 
 ## Rôle et frontière HARD
 
@@ -57,7 +58,7 @@ Restent au coordinateur (`myia-ai-01:CoursIA`) : merges, clôtures, reviews `APP
 3. **Mesurer le quota** sur les en-têtes d'un vrai appel (item 21), GraphQL et REST `core` séparément.
 4. **Lister le pool** en une requête GraphQL paginée (item 2) et en tirer la file : PRs ouvertes, hors brouillon, sans dossier vivant d'une autre lane. Ordre :
    1. les PRs nommées par ai-01 ou par le titulaire ;
-   2. les PRs hors harnais et hors DEEP, du plus ancien au plus récent : ce sont celles que `merge_ready` convertit ;
+   2. les PRs hors harnais et hors DEEP, du plus ancien au plus récent : une fois approuvées par ai-01, `merge_ready` les merge sans attendre son cycle ;
    3. les PRs de harnais et DEEP.
 5. **Annoncer le lot** (numéros) sur `workspace-CoursIA-3` avant de le traiter : le titulaire ne stampe pas les mêmes PRs (item 13).
 6. **Pour chaque PR du lot** :
@@ -65,7 +66,7 @@ Restent au coordinateur (`myia-ai-01:CoursIA`) : merges, clôtures, reviews `APP
    2. classer les rouges, et rejouer ce qui relève de l'infra ou d'un minuteur échu **avant** tout dossier : un job rejoué peut réécrire un commentaire collant, qui périmerait un dossier posté avant lui ;
    3. crible de fond, puis `--template --lane myia-po-2026:CoursIA-3` généré juste avant le post ;
    4. un seul post, en dernier, puis re-gate : rc=0 ou rc=3 attendu, sinon comprendre pourquoi avant la PR suivante.
-7. **Fin de cycle** : un DM nominatif à ai-01 qui liste les READY de harnais et DEEP (les autres n'ont besoin de personne), puis un `[DONE][SECRETARY]` court : les dossiers émis (READY, BLOCKED) avec leurs numéros, et ce qui attend qui. Pas de cumul recopié d'un cycle à l'autre.
+7. **Fin de cycle** : un DM nominatif à ai-01 qui liste tous les READY du cycle, avec numéro, tête et un mot sur le point à lire en priorité, puis un `[DONE][SECRETARY]` court : les dossiers émis (READY, BLOCKED) avec leurs numéros, et ce qui attend qui. Pas de cumul recopié d'un cycle à l'autre.
 
 **Budget : le quota mesuré, pas un compte d'appels.** Le quota GitHub est partagé par toute la flotte (5 000 points par heure et **par utilisateur** `jsboige`, REST et GraphQL comptés à part). Avant chaque PR, relire les en-têtes : sous 1 000 points restants sur l'un des deux, finir la PR en cours, consigner l'heure du reset, et reprendre après. Tant que le quota le permet, un cycle traite autant de PRs que ses 30 minutes le permettent. Repères du 28/09 : le matin, une salve de 11 READY a donné 9 merges ; l'après-midi, un cycle s'est arrêté après 5 dossiers sur le plafond fixe de 40 appels que cette section portait jusque-là.
 
@@ -75,7 +76,7 @@ Restent au coordinateur (`myia-ai-01:CoursIA`) : merges, clôtures, reviews `APP
 
 **Verbatim user 2026-09-22** : « tu nous fait des sessions fines comme du papier à cigarette alors qu'on a toujours 300+ PRs en vol et que je te rappelle que ton rôle est de dépenser des tokens que l'adjoint et le coordinateur n'auront pas à dépenser. C'est tout l'inverse que tu fais, les 2 restent surchargés pendant que tu ne fais quasiment rien, et c'est inacceptable. »
 
-La doctrine du 22/09 en avait tiré une hiérarchie qui plaçait les DMs au coordinateur avant les dossiers, et réservait les dossiers aux dispatchs nominatifs. Elle reposait sur un constat d'avant `merge_ready` : 158 PRs attestées pour 10 mergées, parce qu'un dossier attendait le cycle d'ai-01 et périssait en attendant. Depuis le 23/09, aucun dossier n'attend plus : l'organe le consomme dans les 20 minutes. Le constat s'est inversé, et la hiérarchie avec lui. Le geste qui dépense tes tokens à la place de ceux d'ai-01 et du titulaire, c'est le dossier tiers ; ce qui leur coûte, c'est un cycle qui n'en émet pas.
+La doctrine du 22/09 en avait tiré une hiérarchie qui plaçait les DMs au coordinateur avant les dossiers, et réservait les dossiers aux dispatchs nominatifs. Elle reposait sur un constat d'avant `merge_ready` : 158 PRs attestées pour 10 mergées, parce qu'un dossier attendait le cycle d'ai-01 et périssait en attendant. Depuis le 23/09, un dossier ne périt plus en attendant le cycle d'ai-01 : `merge_ready` merge dès que le dossier et l'approbation d'ai-01 sont réunis (condition d'approbation ajoutée le 28/09). Le constat s'est inversé, et la hiérarchie avec lui. Le geste qui dépense tes tokens à la place de ceux d'ai-01 et du titulaire, c'est le dossier tiers ; ce qui leur coûte, c'est un cycle qui n'en émet pas.
 
 ### Hiérarchie des gestes
 
@@ -83,7 +84,7 @@ La doctrine du 22/09 en avait tiré une hiérarchie qui plaçait les DMs au coor
 
 **Niveau 2 — faire circuler**, en marge du Niveau 1 :
 
-- la liste nominative à ai-01 des READY qu'il merge à la main (harnais, DEEP), avec numéro, tête et verdict. Mesure : sur liste nominative, 10 PRs sur 10 converties en merge ; sur un cumul non nommé, 15 sur 53 ;
+- la liste nominative à ai-01 de tous les READY, avec numéro, tête et verdict : c'est elle qui déclenche sa lecture. Mesure : sur liste nominative, 10 PRs sur 10 converties en merge ; sur un cumul non nommé, 15 sur 53 ;
 - une alerte au porteur de chaque PR en `CHANGES_REQUESTED` non levée ou `CONFLICTING`, avec le motif exact : un commentaire ou un DM par PR. Le porteur se lit dans le tag `Grain: ... lane`, jamais dans l'auteur GitHub : `jsboige` est le login de toutes les lanes. Mesure du 28/09 : #18034 et #18192, lues « sans lane à réveiller » parce qu'écrites par `jsboige`, sont portées par `myia-po-2024:CoursIA-2` ;
 - quota et runners : une alerte quand la mesure le justifie (porte GraphQL fermée, six PRs ou plus bloquées par la même cause d'infra), pas un relevé à chaque cycle.
 
@@ -98,7 +99,7 @@ La doctrine du 22/09 en avait tiré une hiérarchie qui plaçait les DMs au coor
 
 ### Critère de succès d'un cycle
 
-Un cycle est utile si des PRs sortent de la file grâce à lui : READY convertis par `merge_ready`, BLOCKED qui disent à la lane porteuse quoi réparer, READY de harnais ou DEEP remis à ai-01 en liste nominative. La mesure se lit au cycle suivant : combien des dossiers émis ont été mergés, combien le gate a refusés après le post, et pourquoi. Un dossier refusé après le post (tête ou surfaces bougées, dossier qui n'était pas le dernier commentaire) est le vrai gaspillage : il a coûté le crible sans rien livrer.
+Un cycle est utile si des PRs sortent de la file grâce à lui : READY remis à ai-01 en liste nominative, puis lus et mergés, BLOCKED qui disent à la lane porteuse quoi réparer. La mesure se lit au cycle suivant : combien des dossiers émis ont été mergés, combien le gate a refusés après le post, et pourquoi. Un dossier refusé après le post (tête ou surfaces bougées, dossier qui n'était pas le dernier commentaire) est le vrai gaspillage : il a coûté le crible sans rien livrer.
 
 ## Émission de dossiers — garde-fous obligatoires
 

@@ -6,7 +6,7 @@ La coordination CoursIA a **trois têtes**, chacune avec sa lane, sa skill et so
 |---|---|---|---|---|
 | **Coordinateur** | `myia-ai-01:CoursIA` | `coordinate` | merge, clôture, arbitrage, politique de flotte | `workspace-CoursIA` (+ `global`) |
 | **Titulaire** | `myia-po-2025:CoursIA-2` | `coordinate-adjoint` | émet les dossiers `[ADJOINT PREFLIGHT]` exact-head que `merge_ready` et le coordinateur consomment | `workspace-CoursIA-2` |
-| **Secrétaire** | `myia-po-2026:CoursIA-3` | `adjoint-secretary` | attestation tierce du plus ancien au plus récent (dossiers que `merge_ready` convertit en merges), puis circulation : DMs nominatifs, alertes conflits / quota / runners | `workspace-CoursIA-3` |
+| **Secrétaire** | `myia-po-2026:CoursIA-3` | `adjoint-secretary` | attestation tierce du plus ancien au plus récent (dossiers qu'ai-01 lit et approuve, puis que `merge_ready` merge), puis circulation : DMs nominatifs, alertes conflits / quota / runners | `workspace-CoursIA-3` |
 
 « Le secrétariat », « le secrétaire » et « le troisième dashboard » désignent `myia-po-2026:CoursIA-3` et son artefact `workspace-CoursIA-3`.
 
@@ -36,10 +36,10 @@ Un compte dit que du travail existe ; **une liste dit lequel merger**. La re-dé
 
 Le constat qui a fondé le rôle, le 22/09 : 158 PRs attestées pour 10 mergées, soit **6 %** de conversion. Un dossier attendait alors le cycle du coordinateur et périssait en attendant ; la doctrine a donc réservé les dossiers aux dispatchs nominatifs.
 
-Depuis le 23/09, l'organe `scripts/coordination/merge_ready.py` consomme toutes les 20 minutes chaque dossier tiers READY posé sur une PR hors harnais et hors DEEP. Le constat s'est inversé : le 28/09, 98 des 103 PRs ouvertes attendaient un dossier valide, et huit cycles consécutifs du secrétaire n'en avaient émis aucun. La doctrine a été corrigée le 28/09 :
+Depuis le 23/09, l'organe `scripts/coordination/merge_ready.py` merge toutes les 20 minutes les PRs hors harnais et hors DEEP qui portent un dossier tiers READY ; depuis le 28/09 (#18257), il exige en plus une approbation d'ai-01 qui couvre le contenu de la tête, et ne sert qu'à éviter qu'un dossier se périme entre cette lecture et le merge. Le constat s'est inversé : le 28/09, 98 des 103 PRs ouvertes attendaient un dossier valide, et huit cycles consécutifs du secrétaire n'en avaient émis aucun. La doctrine a été corrigée le 28/09 :
 
-- **Niveau 1** (mode normal) : attestation tierce, à l'initiative du secrétaire, de toute PR sans dossier vivant, du plus ancien au plus récent, sans attendre de dispatch. Le crible de fond reste obligatoire, puisqu'un READY sur une PR hors harnais est mergé sans relecture humaine.
-- **Niveau 2** : circulation. Liste nominative au coordinateur des READY que `merge_ready` ne touche pas (harnais, DEEP) ; alertes aux porteurs des PRs `CONFLICTING` ou en `CHANGES_REQUESTED` ; quota et runners quand la mesure le justifie.
+- **Niveau 1** (mode normal) : attestation tierce, à l'initiative du secrétaire, de toute PR sans dossier vivant, du plus ancien au plus récent, sans attendre de dispatch. Le crible de fond reste obligatoire : ai-01 lit les réserves, le delta et la preuve centrale, et s'appuie sur le dossier pour le reste.
+- **Niveau 2** : circulation. Liste nominative au coordinateur de tous les READY, qui déclenche sa lecture ; alertes aux porteurs des PRs `CONFLICTING` ou en `CHANGES_REQUESTED` ; quota et runners quand la mesure le justifie.
 
 Critère de succès d'un cycle du secrétaire : des PRs sortent de la file grâce à lui. Une surveillance sans dossier, alors que le pool en attend, n'est pas un cycle. Détail et garde-fous : skill `adjoint-secretary`.
 
