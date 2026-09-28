@@ -30,13 +30,18 @@ Ce script est cet organe.
   total=5  removable=1  refused=4
 
   $ python scripts/ci/prune_merged_worktrees.py --apply
-  # applique les retraits ; exit 1 si au moins un refus non-bloquant
+  # applique les retraits ; les refus restent dans le rapport (exit 0,
+  # cf #3895 : un refus est une decision de l'outil, pas une panne)
 
   $ python scripts/ci/prune_merged_worktrees.py --json
   {"scanned": 4, "removable": 1, "refused": 3, "actions": [...]}
 
   $ python scripts/ci/prune_merged_worktrees.py --path /c/dev/CoursIA-X
   # ne considere qu'un worktree (test)
+
+  $ python scripts/ci/prune_merged_worktrees.py --warn-threshold 20
+  # emet sur stderr une ligne [WARN][prune-task] prete a poster sur le
+  # dashboard workspace des que refused > 20 (desactive par defaut)
 
 Critères de retrait (cf issue #14195 acceptance) :
 
@@ -75,6 +80,27 @@ cf matrice a 4 ancres de `.claude/rules/git-workflow.md` §orphan-branch-scan).
 Ni `--is-ancestor` seul ni `commits/<oid>/pulls` ne suffisent : le premier
 rate les squash-merges, le second a des faux negatifs mesures.
 
+## Observabilite des refus (#3895, roo-extensions)
+
+Mesure fondatrice (3 machines, 27/09/2026) : **86-100 % des worktrees vus
+sont REFUSE** -- les worktrees de cycle naissent HEAD-detaches ou avec des
+modifications non commitees par construction, le predicat « PR MERGED et
+arbre propre » est insatisfaisable pour eux (po-2023 a sature ses deux
+disques dessus). Les refus sont donc un RAPPORT, pas un echec :
+
+- la sortie porte le decompte par classe de refus (`refusals: ...` en
+  texte, `refusal_reasons` en JSON) ;
+- quand un marqueur `.lane-owner` vit a la racine du worktree (une
+  ligne : le nom de la lane proprietaire, posee par le spawn -- convention
+  #3895), les refus sont attribues par lane (`lane=...` en texte,
+  `lane_refusals` en JSON) ;
+- `--warn-threshold N` emet sur stderr une ligne `[WARN][prune-task]`
+  prete pour le dashboard workspace des que `refused > N`. La tache
+  planifiee (`install_prune_task.py`, N=20 par defaut) la journalise
+  chaque nuit ; le RELAIS dashboard reste aux agents de lane -- une
+  tache planifiee n'a pas d'acces MCP (pattern heartbeat_sweep_emit,
+  #12588).
+
 ## Design rules that matter
 
 1. **Dry-run par defaut, --apply explicite.** Jamais de retrait silencieux.
@@ -101,9 +127,14 @@ rate les squash-merges, le second a des faux negatifs mesures.
 4. **Mode `--json` parallele au mode texte.** Mêmes chiffres, même ordre ;
    le recipient downstream (dashboard sweep, DM ai-01) parse le JSON sans
    réinventer le rendu.
-5. **Exit code : 0 si tout OK (dry-run ou apply reussi), 1 si refus
-   non-bloquant observe, 2 si erreur gh/git infra.** Comme `list_orphan_prs`
-   (#13086).
+5. **Exit code : 0 si la passe s'est deroulee sans erreur (dry-run ou
+   apply reussi), 2 si erreur gh/git infra ou echec d'application.** Un
+   REFUS n'est plus un echec : a 86-100 % de refus (mesure #3895 sur 3
+   machines), le « 1 si refus observe » d'avant rendait la tache planifiee
+   rouge (LastResult 0x1) toutes les nuits en reussissant -- un vrai
+   echec gh y etait indissociable du bruit. Depuis #3895, `1` n'est
+   plus emis (reserve, non contractuel) ; le detail des refus vit dans
+   le rapport, pas dans le code de sortie.
 6. **Pas d'auto-retry.** Si `gh` echoue (auth, rate-limit, network), exit 2
    sans fallback silencieux.
 7. **Worktree courant exclu.** On ne tente jamais `git worktree remove` sur
@@ -118,9 +149,10 @@ rate les squash-merges, le second a des faux negatifs mesures.
     python scripts/ci/prune_merged_worktrees.py --path /c/dev/CoursIA-X
 
 Exit codes:
-    0  OK (dry-run propre, ou apply reussi avec 0 erreur)
-    1  Au moins un refus observe (worktree non retire pour cause legitime)
-    2  Erreur gh/git infra (auth, rate-limit, worktree introuvable, etc.)
+    0  OK (passe saine, refus compris -- un refus est une decision, pas un echec)
+    1  Plus jamais emis (avant #3895 : « refus observes » ; rendait la tache
+       planifiee rouge chaque nuit. Reserve, non contractuel)
+    2  Erreur gh/git infra ou echec d'application (auth, rate-limit, etc.)
 
 ## Coupling with #14195 et #8924
 
@@ -206,6 +238,10 @@ UNTRACKED_ARTIFACT_TOKENS = (
     # log chacun bloquait le retrait de worktrees mergees).
     "bg_logs",
     ".log.relaunch",
+    # #3895 : marqueur de propriete pose par le spawn (une ligne : nom de
+    # lane). Tolere pour ne pas transformer l'attribution en blocage -- un
+    # worktree refuse pour son propre marqueur ne serait jamais retire.
+    ".lane-owner",
 )
 
 # Extensions/editions source : si du contenu untracked touche un fichier
@@ -242,6 +278,10 @@ class WorktreeStatus:
     # Champ #17771 (additif) : REMOVE motive par contenu deja integre a
     # main (tete ancetre de origin/main), sans PR rattachable.
     content_on_main: bool = False
+    # Champ #3895 (additif) : lane proprietaire lue dans le marqueur
+    # `.lane-owner` a la racine du worktree (None si absent). Attribue les
+    # refus pour le rapport -- jamais une autorite de decision.
+    lane_owner: Optional[str] = None
 
     def to_dict(self) -> dict:
         return dataclasses.asdict(self)
@@ -371,6 +411,28 @@ def is_source_dirty(path: str) -> bool:
     if is_untracked_artifact(p):
         return False
     return any(p.endswith(ext) for ext in SOURCE_EXTENSIONS)
+
+
+def read_lane_owner(wt_path: str) -> Optional[str]:
+    """Nom de lane pose par le spawn (#3895), ou None.
+
+    Convention : fichier `.lane-owner` a la racine du worktree, premiere
+    ligne non vide = nom de la lane proprietaire (ex. ``machine:workspace``).
+    Le spawn qui le pose accepte que l'organe le lise ET le nettoie au
+    retrait (token tolere). Absent, vide ou illisible : None, sans erreur --
+    l'attribution est une economie de lecture, jamais une autorite : elle ne
+    change AUCUNE decision, seulement le rapport.
+    """
+    try:
+        text = (Path(wt_path) / ".lane-owner").read_text(
+            encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped:
+            return stripped[:64]
+    return None
 
 
 def same_worktree_path(a: str, b: str) -> bool:
@@ -531,6 +593,10 @@ def get_worktree_info(wt_path: str, current_path: str) -> dict:
     # edite un echoue (a).
     dead_registration = _is_dead_registration(wt_path, parsed)
 
+    # Attribution lane (#3895) : lue dans le marqueur `.lane-owner`, une
+    # lecture de fichier par worktree, sans effet sur les decisions.
+    lane_owner = read_lane_owner(wt_path)
+
     return {
         "branch": branch,
         "ahead_count": ahead_count,
@@ -542,6 +608,7 @@ def get_worktree_info(wt_path: str, current_path: str) -> dict:
         "has_submodules": has_submodules,
         "is_current": same_worktree_path(wt_path, current_path),
         "dead_registration": dead_registration,
+        "lane_owner": lane_owner,
     }
 
 
@@ -969,6 +1036,7 @@ def diagnose_worktree(wt_path: str, current_path: str,
             has_submodules=info["has_submodules"],
             blocking_untracked=info.get("blocking_untracked", []),
             ignored_extra=info.get("ignored_extra", []),
+            lane_owner=info.get("lane_owner"),
         )
 
     # Branche main : JAMAIS retirer (le worktree de travail principal).
@@ -991,6 +1059,7 @@ def diagnose_worktree(wt_path: str, current_path: str,
             has_submodules=info["has_submodules"],
             blocking_untracked=info.get("blocking_untracked", []),
             ignored_extra=info.get("ignored_extra", []),
+            lane_owner=info.get("lane_owner"),
         )
 
     # Sous-modules : git interdit le retrait par construction -> REFUSE sans
@@ -1008,6 +1077,7 @@ def diagnose_worktree(wt_path: str, current_path: str,
             untracked_paths=info["untracked"],
             decision="REFUSE",
             refusal_reason="contains_submodules",
+            lane_owner=info.get("lane_owner"),
         )
 
     # Predicat 1 : commits non poussés -> REFUSE inconditionnel
@@ -1027,6 +1097,7 @@ def diagnose_worktree(wt_path: str, current_path: str,
             has_submodules=info["has_submodules"],
             blocking_untracked=info.get("blocking_untracked", []),
             ignored_extra=info.get("ignored_extra", []),
+            lane_owner=info.get("lane_owner"),
         )
 
     # Predicat 1bis : enregistrement mort (#14195). DOIT preceder les
@@ -1052,6 +1123,7 @@ def diagnose_worktree(wt_path: str, current_path: str,
             has_submodules=info["has_submodules"],
             blocking_untracked=info.get("blocking_untracked", []),
             ignored_extra=info.get("ignored_extra", []),
+            lane_owner=info.get("lane_owner"),
             dead_registration=True,
         )
 
@@ -1074,6 +1146,7 @@ def diagnose_worktree(wt_path: str, current_path: str,
             has_submodules=info["has_submodules"],
             blocking_untracked=info.get("blocking_untracked", []),
             ignored_extra=info.get("ignored_extra", []),
+            lane_owner=info.get("lane_owner"),
         )
 
     # Predicat 2b : residu untracked NON tolere -> REFUSE (#14619 point 2).
@@ -1099,6 +1172,7 @@ def diagnose_worktree(wt_path: str, current_path: str,
             untracked_paths=info["untracked"],
             decision="REFUSE",
             refusal_reason=f"untolerated_untracked:{len(untolerated)}",
+            lane_owner=info.get("lane_owner"),
         )
 
     # Resolution PR
@@ -1131,6 +1205,7 @@ def diagnose_worktree(wt_path: str, current_path: str,
             has_submodules=info["has_submodules"],
             blocking_untracked=info.get("blocking_untracked", []),
             ignored_extra=info.get("ignored_extra", []),
+            lane_owner=info.get("lane_owner"),
         )
     else:
         pr = lookup_pr_for_detached_head(wt_path)
@@ -1156,6 +1231,7 @@ def diagnose_worktree(wt_path: str, current_path: str,
             has_submodules=info["has_submodules"],
             blocking_untracked=info.get("blocking_untracked", []),
             ignored_extra=info.get("ignored_extra", []),
+            lane_owner=info.get("lane_owner"),
         )
 
     # Predicat 4 : PR MERGED ou CLOSED -> REMOVE
@@ -1175,6 +1251,7 @@ def diagnose_worktree(wt_path: str, current_path: str,
             has_submodules=info["has_submodules"],
             blocking_untracked=info.get("blocking_untracked", []),
             ignored_extra=info.get("ignored_extra", []),
+            lane_owner=info.get("lane_owner"),
         )
 
     # Predicat 5 (#17771) : contenu deja integre a main. Aucune PR
@@ -1202,6 +1279,7 @@ def diagnose_worktree(wt_path: str, current_path: str,
             has_submodules=info["has_submodules"],
             blocking_untracked=info.get("blocking_untracked", []),
             ignored_extra=info.get("ignored_extra", []),
+            lane_owner=info.get("lane_owner"),
             content_on_main=True,
         )
 
@@ -1222,6 +1300,7 @@ def diagnose_worktree(wt_path: str, current_path: str,
         has_submodules=info["has_submodules"],
         blocking_untracked=info.get("blocking_untracked", []),
         ignored_extra=info.get("ignored_extra", []),
+        lane_owner=info.get("lane_owner"),
     )
 
 
@@ -1384,9 +1463,11 @@ def render_text(
                     )
                     counts["FAILED"] = counts.get("FAILED", 0) + 1
         elif s.decision == "REFUSE":
+            # Attribution lane (#3895) quand le marqueur .lane-owner existe.
+            lane_part = f"  lane={s.lane_owner}" if s.lane_owner else ""
             lines.append(
                 f"REFUSE      {s.path}  {branch_part}  reason={s.refusal_reason}"
-                f"{ignored_part}"
+                f"{lane_part}{ignored_part}"
             )
         elif s.decision == "SKIP_CURRENT":
             lines.append(f"SKIP        {s.path}  reason=current_worktree")
@@ -1398,7 +1479,81 @@ def render_text(
         f"failed={counts.get('FAILED', 0)}  "
         f"skipped={counts.get('SKIP_CURRENT', 0)}"
     )
+    # Decompte par classe de refus (#3895) : la donnee qui rend un taux de
+    # refus actionnable (quelle classe domine, par lane attribuee).
+    refused_classes = refusal_reason_breakdown(statuses)
+    if refused_classes:
+        lines.append(
+            "refusals: "
+            + "  ".join(f"{cls}={n}" for cls, n in refused_classes.items())
+        )
     return "\n".join(lines)
+
+
+# ----------------------------------------------------------------------------
+# Observabilite des refus (#3895, roo-extensions)
+# ----------------------------------------------------------------------------
+
+def refusal_reason_breakdown(statuses: list) -> dict:
+    """Compte les refus par CLASSE de raison (avant le ':' de detail).
+
+    `unpushed_commits:2` et `untolerated_untracked:3` portent un detail
+    variable par worktree ; seule la classe s'aggregate. Tri : compte
+    decroissant puis cle alphabetique -- rendu texte stable, JSON
+    deterministe (un meme etat rend toujours la meme sortie).
+    """
+    counts: dict = {}
+    for s in statuses:
+        if s.decision != "REFUSE" or not s.refusal_reason:
+            continue
+        cls = s.refusal_reason.split(":", 1)[0]
+        counts[cls] = counts.get(cls, 0) + 1
+    return dict(sorted(counts.items(), key=lambda kv: (-kv[1], kv[0])))
+
+
+def lane_refusal_breakdown(statuses: list) -> dict:
+    """Refus attribues par lane (marqueur .lane-owner, #3895), meme tri.
+
+    Les refus sans marqueur tombent dans ``unattributed`` : distinguer
+    « lane X refuse 40 worktrees » de « 40 worktrees non revendiques » est
+    precisement la question posee par le post-mortem po-2023.
+    """
+    counts: dict = {}
+    for s in statuses:
+        if s.decision != "REFUSE" or not s.refusal_reason:
+            continue
+        key = s.lane_owner or "unattributed"
+        counts[key] = counts.get(key, 0) + 1
+    return dict(sorted(counts.items(), key=lambda kv: (-kv[1], kv[0])))
+
+
+def build_warn_line(statuses: list,
+                    host: Optional[str] = None) -> Optional[str]:
+    """Ligne [WARN] prete pour le dashboard workspace (#3895).
+
+    La saturation par worktrees refuses est le signal qui a fait tomber
+    po-2023 (27/09) : au-dela du seuil, la ligne agrege totals + classes
+    dominantes + attribution lane (quand les marqueurs existent), prete a
+    etre relevee telle quelle. Rend None si aucun refus (rien a signaler).
+
+    Emise sur stderr par l'appelant : stdout reste le rapport (en --json il
+    doit rester pur pour `json.loads`).
+    """
+    refused = sum(1 for s in statuses if s.decision == "REFUSE")
+    if refused <= 0:
+        return None
+    host = host or os.environ.get("COMPUTERNAME") or "unknown-host"
+    classes = refusal_reason_breakdown(statuses)
+    top_classes = " ".join(f"{k}={v}" for k, v in list(classes.items())[:3])
+    parts = [
+        f"[WARN][prune-task] {host} refused={refused}/{len(statuses)}",
+        f"top: {top_classes}",
+    ]
+    lanes = lane_refusal_breakdown(statuses)
+    if lanes:
+        top_lanes = " ".join(f"{k}={v}" for k, v in list(lanes.items())[:3])
+        parts.append(f"lanes: {top_lanes}")
+    return " — ".join(parts)
 
 
 def main() -> int:
@@ -1417,6 +1572,15 @@ def main() -> int:
         "--path",
         default=None,
         help="Cwd pour `git worktree list`. Default = CWD.",
+    )
+    p.add_argument(
+        "--warn-threshold",
+        type=int,
+        default=None,
+        metavar="N",
+        help="Emet sur stderr une ligne [WARN][prune-task] prete a poster "
+             "sur le dashboard workspace si refused > N (#3895). Desactive "
+             "par defaut ; la tache planifiee passe 20.",
     )
     args = p.parse_args()
 
@@ -1502,6 +1666,8 @@ def main() -> int:
             "scanned": len(statuses),
             "removable": sum(1 for s in statuses if s.decision == "REMOVE"),
             "refused": refused_count,
+            "refusal_reasons": refusal_reason_breakdown(statuses),
+            "lane_refusals": lane_refusal_breakdown(statuses),
             "skipped_current": sum(
                 1 for s in statuses if s.decision == "SKIP_CURRENT"
             ),
@@ -1531,28 +1697,40 @@ def main() -> int:
             f" degrade={st['listing_degraded']}"
         )
 
-    # Exit code
+    # Seuil d'alerte (#3895) : stderr, jamais stdout -- en --json le stdout
+    # doit rester pur pour `json.loads` ; la tache planifiee fusionne les
+    # deux flux dans son journal.
+    if (args.warn_threshold is not None
+            and refused_count > args.warn_threshold):
+        warn = build_warn_line(statuses)
+        if warn:
+            print(warn, file=sys.stderr)
+
+    # Exit code (#3895) : un REFUS est une decision de l'outil, pas une
+    # panne. La tache planifiee reste verte (LastResult 0) quand la passe
+    # s'est deroulee ; seuls les echecs d'infrastructure gh/git et les
+    # echecs d'application sortent en 2. Le detail des refus vit dans le
+    # rapport (decompte par classe, lane_refusals, WARN au-dela du seuil).
     if error_count > 0:
         return 2
-    if refused_count > 0:
-        return 1
     return 0
 
 
 def run() -> int:
-    """`main()` avec le contrat d'erreur garanti (#17292).
+    """`main()` avec le contrat d'erreur garanti (#17292, reworded #3895).
 
-    `main()` ne rattrape que `RuntimeError` (l.1277-1299) : toute autre
-    exception s'echappait, et Python rend alors **1** en n'ecrivant rien sur
-    stdout. Or `1` est deja le code documente « des refus ont ete observes » :
-    l'appelant ne pouvait donc pas distinguer « l'outil a tourne et refuse » de
-    « l'outil n'a pas pu tourner ». Mesure : c'est exactement le couple
-    (`rc ∈ {0,1}`, stdout vide) qui a rougi `Scripts Tests (CPU)` sur des PRs de
-    plusieurs lanes le 2026-09-21, et que l'E2E lisait comme un
+    `main()` ne rattrape que `RuntimeError` : toute autre exception
+    s'echappait, et Python rend alors **1** en n'ecrivant rien sur stdout --
+    un code que l'appelant ne pouvait distinguer ni d'une decision de refus
+    (avant #3895), ni d'une panne nommee. Mesure : c'est exactement le couple
+    (`rc ∈ {0,1}`, stdout vide) qui a rougi `Scripts Tests (CPU)` sur des PRs
+    de plusieurs lanes le 2026-09-21, et que l'E2E lisait comme un
     `JSONDecodeError: Expecting value: line 1 column 1`.
 
     Ici une panne inattendue sort par le code d'erreur **documente** du script
-    (2), traceback sur stderr : `1` redevient non ambigu.
+    (2), traceback sur stderr. Depuis #3895 (refus = decision, plus un code
+    de sortie), `1` n'est plus emis par l'organe : tout code != 0 est une
+    panne, sans zone grise.
     """
     try:
         return main()

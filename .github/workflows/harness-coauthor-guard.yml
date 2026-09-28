@@ -67,10 +67,20 @@ jobs:
     if: github.event.pull_request.head.repo.full_name == github.repository
 
     steps:
+      # Le detecteur ne lit que `.claude/**/*.md` (stdlib seule). L'ancien
+      # `fetch-depth: 0` rapatriait tout l'historique de toutes les branches
+      # pour atteindre la base : 15 des 60 derniers runs (mesure 2026-09-28)
+      # ont ete annules a la limite de 5 min, pendant le fetch, avant tout scan.
+      # Checkout clairseme sans blobs hors perimetre ; la base a son propre
+      # checkout (etape BASE ci-dessous).
       - name: Checkout PR
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # base ref must be reachable for the BASE scan
+          filter: blob:none
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            .claude/
+            scripts/notebook_tools/check_harness_coauthor.py
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -100,15 +110,25 @@ jobs:
           echo "head_total=$HEAD_TOTAL" >> "$GITHUB_OUTPUT"
           echo "HEAD verdict: $HEAD_VERDICT ($HEAD_TOTAL findings)"
 
-      # BASE scan (PR base ref). Swap `.claude/` to base, scan, then restore.
-      # head.json is already captured above, so the swap cannot contaminate
-      # the delta.
+      # BASE scan (PR base ref) : `.claude/` de la base dans son propre
+      # repertoire, scanne via --repo-root. Les chemins des findings sont
+      # relatifs a la racine scannee, donc comparables a ceux de head.json ;
+      # l'arbre de la tete n'est plus touche.
+      - name: Checkout BASE
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: _base
+          filter: blob:none
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            .claude/
+
       - name: BASE scan
         if: github.event_name == 'pull_request'
         run: |
-          git checkout ${{ github.event.pull_request.base.sha }} -- .claude
-          python scripts/notebook_tools/check_harness_coauthor.py --json > "${{ runner.temp }}/coauthor-base.json" || true
-          git checkout HEAD -- .claude
+          python scripts/notebook_tools/check_harness_coauthor.py --json --repo-root _base > "${{ runner.temp }}/coauthor-base.json" || true
 
       # DELTA check: a NEW finding introduced by the PR fails the gate.
       # Inherited findings (post-Phase-1 main = 0) are tolerated, mirroring
