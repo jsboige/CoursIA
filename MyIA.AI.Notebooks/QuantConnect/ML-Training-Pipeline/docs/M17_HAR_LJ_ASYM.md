@@ -396,7 +396,7 @@ signe corrigé qui a ramené les p-values dans le régime significatif.
 
 ## Diagnostic du rejeu cluster — 2026-09-28
 
-Le premier rejeu a produit 84 lignes, mais ses comparaisons sont rejetées :
+Le premier rejeu a couvert toutes les combinaisons prévues, mais ses comparaisons sont rejetées :
 M17 indexait chaque prévision par son origine, HAR et M12 par le premier jour
 de sa cible. La troncature par position associait donc des dates et des cibles
 différentes. Sur BTC à h=1, seules 378/1890 positions avaient la même date ;
@@ -419,8 +419,8 @@ cibles, dates et DM. Elles contrôlent donc la reproductibilité OLS, sans
 constituer quatre observations indépendantes. Chaque ligne possède cinq
 empreintes de fold, les bornes et le nombre de dates appariées (BTC :
 1885/1865/1841 pour h=1/5/10). Le fichier
-`scripts/results/m17_har_lj_asym_cluster_aligned.json` rassemble les 84 lignes,
-les 21 lignes dédupliquées par graine et les SHA-256 des trois lots ; ses
+`scripts/results/m17_har_lj_asym_cluster_aligned.json` rassemble les résultats
+par graine, les comparaisons dédupliquées et les SHA-256 des trois lots ; ses
 352 102 octets dans le blob Git restent sous la limite de 512 000 octets des nouveaux résultats.
 Le SHA-256 du blob Git (après normalisation CRLF → LF) est `2ca4b9ffe0582d290dfa77a3f8c47a0381e099e4eba7ecbc4e1fc221729ff6ae` ; le fichier de travail Windows mesure 364 496 octets et porte une empreinte différente.
 
