@@ -181,6 +181,54 @@ class TestDeclaredFixtureUntouched(unittest.TestCase):
                              plan.rewrites)
 
 
+class TestHistoryAndCatalogScannedOut(unittest.TestCase):
+    """Dry-run de la tranche Lean (#17545) : les marqueurs d'historique a deux
+    composantes (``docs/archive``, ``docs/ledgers``) ne correspondaient jamais a
+    une composante de chemin, et le catalogue genere n'etait exclu que du mode
+    --propose. Les deux auraient ete reecrits."""
+
+    def test_multi_component_history_markers_and_catalog_are_skipped(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            _init_repo(repo)
+            for rel in ("docs/archive/old.md", "docs/ledgers/l.md",
+                        "scripts/results/r.md", "COURSE_CATALOG.generated.md",
+                        "docs/reference/live.md"):
+                _write(repo, rel, f"voir {OLD}\n")
+            _git(repo, "add", "-A")
+            _git(repo, "commit", "-qm", "refs")
+
+            plan = rn.scan_referents(_forms(), repo)
+            self.assertEqual(sorted(plan.rewrites), ["docs/reference/live.md"])
+
+    def test_history_marker_must_be_a_directory_not_the_file(self):
+        self.assertTrue(rn._is_history("docs/archive/sub/x.md"))
+        self.assertFalse(rn._is_history("docs/archive.md"))
+        self.assertFalse(rn._is_history("docs/reference/archive/x.md"))
+
+
+class TestMappingGrammarOnBasename(unittest.TestCase):
+    """La table porte des chemins complets : la grammaire se juge sur le nom
+    de fichier, sinon toute cible canonique est annoncee hors grammaire."""
+
+    def test_canonical_target_path_raises_no_warning(self):
+        self.assertIsNone(rn.target_violation("Lean-01-Setup-Lean-Python.ipynb"))
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            _init_repo(repo)
+            tsv = Path(str(repo) + ".table.tsv")
+            tsv.write_text(f"{OLD}\t{NEW}\n", encoding="utf-8")
+            cwd = os.getcwd()
+            os.chdir(repo)
+            try:
+                with mock.patch("sys.stdout", new_callable=__import__("io").StringIO) as out:
+                    rc = rn.main(["--mapping", str(tsv)])
+            finally:
+                os.chdir(cwd)
+            self.assertEqual(rc, 0)
+            self.assertNotIn("hors grammaire", out.getvalue())
+
+
 class TestQuartoEntryRewritten(unittest.TestCase):
     """Defaut 4 : l'entree _quarto.yml avait ete oubliee."""
 

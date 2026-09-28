@@ -275,8 +275,13 @@ def is_excluded(rel: str) -> bool:
 
 def _is_history(rel: str) -> bool:
     parts = rel.split("/")
-    if any(marker in parts for marker in HISTORY_DIR_MARKERS):
-        return True
+    # Un marqueur a plusieurs composantes ("docs/archive") ne peut pas etre un
+    # element de `parts` : il se compare a une sous-suite de composantes.
+    for marker in HISTORY_DIR_MARKERS:
+        mparts = marker.split("/")
+        n = len(mparts)
+        if any(parts[i:i + n] == mparts for i in range(len(parts) - n)):
+            return True
     # twin_pairs.d : le PREMIER niveau (paires) se reecrit, l'historique date
     # des sous-dossiers ne se reecrit pas.
     if "twin_pairs.d" in parts:
@@ -472,6 +477,9 @@ def scan_referents(forms_list: list[RefForms], repo: Path | None = None) -> Plan
     for line in ls.stdout.splitlines():
         rel = line.strip()
         if not rel or _is_history(rel) or rel in FIXTURES_DECLARED:
+            continue
+        # Le catalogue appartient a sa regeneration (I4) : jamais reecrit ici.
+        if rel.rsplit("/", 1)[-1].startswith(CATALOG_BASENAME_PREFIX):
             continue
         p = repo / rel
         if not p.is_file():
@@ -801,7 +809,7 @@ def main(argv: list[str] | None = None) -> int:
         print("CIBLES DEJA PRESENTES :", exist)
         return 1
     for old, new in pairs:
-        viol = target_violation(new)
+        viol = target_violation(new.rsplit("/", 1)[-1])
         if viol:
             # La table est humaine, on execute ; mais une cible non canonique
             # promet un second renommage -- le dire, ne pas le taire.
