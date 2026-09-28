@@ -864,7 +864,7 @@ def test_dwell_prime_sur_infra():
 
 
 def _fake_transport(monkeypatch, *, graphql_ok=True, rest_ok=True,
-                    rest_pages=None, pr_graphql_ok=True):
+                    rest_pages=None, pr_graphql_ok=True, graphql_issues=None):
     """Faux `gh` qui dispatche par TRANSPORT, comme le vrai (#17038).
 
     `gh issue list` / `gh pr list` = GraphQL ; `gh api repos/...` = REST. Les
@@ -879,7 +879,7 @@ def _fake_transport(monkeypatch, *, graphql_ok=True, rest_ok=True,
         if cmd[:3] == ["gh", "issue", "list"]:
             if not graphql_ok:
                 raise pig.subprocess.CalledProcessError(1, cmd)
-            return _FakeCompleted(json.dumps([]))
+            return _FakeCompleted(json.dumps(graphql_issues or []))
         if cmd[:3] == ["gh", "pr", "list"]:
             if not pr_graphql_ok:
                 raise pig.subprocess.CalledProcessError(1, cmd)
@@ -984,6 +984,68 @@ def test_truncation_rest_est_dite_comme_celle_de_graphql(monkeypatch, capsys):
     prs = pig.fetch_open_prs()
     assert len(prs) == 400
     assert "[PRS TRONQUEES]" not in capsys.readouterr().err
+
+
+def test_pool_tronque_sur_la_voie_rest_le_plafond_de_pages_est_dit(monkeypatch, capsys):
+    """#18113 acceptance 1 -- controle POSITIF : dix pages pleines issues+PRs.
+
+    Le flux brut REST est plafonne a POOL_ISSUES_REST_MAX_PAGES x
+    POOL_REST_PAGE = 1000 elements (issues ET PRs), ensuite filtre des PRs :
+    `len(raw)` ne peut jamais atteindre POOL_FETCH_LIMIT (2000), et la garde
+    de la voie GraphQL ne peut pas tirer sur cette voie. Le signal est le
+    plafond de pages atteint -- sans ce controle, la bascule #17038 rend la
+    troncature muette par l'autre porte.
+    """
+    pages = {}
+    for p in range(1, pig.POOL_ISSUES_REST_MAX_PAGES + 1):
+        chunk = []
+        for i in range(pig.POOL_REST_PAGE):
+            base = _REST_ISSUE if i % 2 == 0 else _REST_PR
+            chunk.append(dict(base, number=p * 1000 + i))
+        pages[p] = chunk
+    _fake_transport(monkeypatch, graphql_ok=False, rest_pages=pages)
+    pool, err = pig.fetch_pool()
+    assert err is None, "une voie a servi : le tirage EST mesure"
+    issues_par_page = pig.POOL_REST_PAGE // 2
+    assert len(pool) == pig.POOL_ISSUES_REST_MAX_PAGES * issues_par_page, (
+        "les PRs du flux brut sont exclues : le pool ne contient que les issues")
+    out = capsys.readouterr().err
+    assert "bascule REST" in out
+    assert "[POOL TRONQUE]" in out
+    assert "POOL_ISSUES_REST_MAX_PAGES" in out, (
+        "le remede nomme doit etre celui du transport REST, pas POOL_FETCH_LIMIT")
+
+    # Controle NEGATIF (acceptance 2) : un plafond qui n'a pas mordu ne se dit
+    # pas. Sans lui, un avertissement inconditionnel passerait le test ci-dessus.
+    capsys.readouterr()
+    monkeypatch.setattr(pig, "POOL_ISSUES_REST_MAX_PAGES",
+                        pig.POOL_ISSUES_REST_MAX_PAGES + 1)
+    pool2, _ = pig.fetch_pool()
+    assert len(pool2) == len(pool)
+    assert "[POOL TRONQUE]" not in capsys.readouterr().err
+
+
+def test_pool_tronque_voie_graphql_reste_le_signal_du_compte_exact(monkeypatch, capsys):
+    """#18113 acceptance 3 -- la garde de la voie GraphQL est inchangee.
+
+    Exactement POOL_FETCH_LIMIT rendus sur la voie principale : le message
+    reste celui du compte exact (signature de troncature l.760), pas celui du
+    plafond de pages -- la voie GraphQL n'a pas de pages.
+    """
+    many = [{"number": n, "title": _REST_ISSUE["title"], "labels": [],
+             "body": _REST_ISSUE["body"],
+             "createdAt": _REST_ISSUE["created_at"],
+             "updatedAt": _REST_ISSUE["updated_at"]}
+            for n in range(pig.POOL_FETCH_LIMIT)]
+    _fake_transport(monkeypatch, graphql_issues=many)
+    pool, err = pig.fetch_pool()
+    assert err is None
+    assert len(pool) == pig.POOL_FETCH_LIMIT
+    out = capsys.readouterr().err
+    assert "[POOL TRONQUE]" in out
+    assert str(pig.POOL_FETCH_LIMIT) in out
+    assert "plafond de pages" not in out, (
+        "le message GraphQL est celui du compte exact, pas du plafond REST")
 
 
 def test_les_deux_transports_morts_ne_se_disent_pas_pool_vide(monkeypatch):
