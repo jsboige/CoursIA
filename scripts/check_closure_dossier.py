@@ -236,14 +236,20 @@ def _merged_referring_prs(repo: str, number: int) -> list[dict[str, Any]]:
         pr = src.get("pull_request") or {}
         if not pr.get("merged_at"):
             continue
+        # La reference croisee peut venir d'un DEPOT SOEUR (ex. MyIntelligenceAgency/Z3.Linq#31
+        # referencant #17301) : resoudre dans le depot source, pas dans le depot cible,
+        # sinon gh rend "Could not resolve to a PullRequest" et l'organe crashe
+        # (mesure 2026-09-28, blocage Lot D #18140 sur #17301).
+        src_repo = ((src.get("repository") or {}).get("full_name")) or repo
         # Pas de --jq : gh l'ecrit en TEXTE BRUT, que json.loads refuse
         # (defaut mesure c.5849452860 -- tout temoin rendait UNKNOWN rc=2).
         row = gh_json([
-            "pr", "view", str(src["number"]), "--repo", repo,
+            "pr", "view", str(src["number"]), "--repo", src_repo,
             "--json", "body",
         ])
         body = row.get("body") if isinstance(row, dict) else None
         out.append({"number": src["number"], "merged_at": pr["merged_at"],
+                    "repo": src_repo,
                     "body": str(body) if body else ""})
     return out
 
@@ -397,8 +403,11 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any],
                 f"{child['state']} -- a closed child does not keep the parent open"
             )
 
-    # PRs citees dans les preuves : toutes MERGED.
-    merged_numbers = {pr["number"] for pr in snapshot["merged_prs"]}
+    # PRs citees dans les preuves : toutes MERGED. Le raccourci ne couvre que
+    # les PRs du MEME depot : un #N nu dans le dossier designe une PR du depot
+    # cible, jamais la PR de meme numero d'un depot soeur.
+    merged_numbers = {pr["number"] for pr in snapshot["merged_prs"]
+                      if pr.get("repo", snapshot["repo"]) == snapshot["repo"]}
     for n in sorted(_cited_pr_numbers(dossier)):
         if n in merged_numbers:
             continue
@@ -425,7 +434,14 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any],
 
 def evaluate(snapshot: dict[str, Any],
              replay: bool = False) -> tuple[str, list[str], Dossier | None]:
-    """(verdict, errors, dossier) -- verdict CLOSE / KEEP / NO-DOSSIER."""
+    """(verdict, errors, dossier) -- verdict CLOSE / KEEP / NO-DOSSIER.
+
+    Seul le DERNIER dossier compte (latest-wins, meme regle que le gate PR,
+    #18095) : un dossier plus ancien est remplace, jamais une erreur ni une
+    peremption du plus recent. Evaluer le premier laissait un dossier
+    malforme ou un KEEP perime masquer indefiniment le dossier correct
+    poste apres lui."""
+    latest: tuple[Dossier, list[str]] | None = None
     for index, row in enumerate(snapshot["comments"]):
         body = row.get("body") or ""
         if not body.strip().startswith(START):
@@ -435,16 +451,17 @@ def evaluate(snapshot: dict[str, Any],
             (row.get("author") or {}).get("login", ""),
             row.get("created_at", ""),
         )
-        if dossier is None:
-            continue
-        errors.extend(validate_dossier(dossier, snapshot, replay))
-        verdict = dossier.fields.get("verdict", "")
-        if errors:
-            return ("REFUSED", errors, dossier)
-        if verdict == VERDICT_CLOSE:
-            return (VERDICT_CLOSE, [], dossier)
-        return (VERDICT_KEEP, [], dossier)
-    return ("NO-DOSSIER", ["no [CLOSURE PREFLIGHT] comment on this issue"], None)
+        if dossier is not None:
+            latest = (dossier, errors)
+    if latest is None:
+        return ("NO-DOSSIER", ["no [CLOSURE PREFLIGHT] comment on this issue"], None)
+    dossier, errors = latest
+    errors.extend(validate_dossier(dossier, snapshot, replay))
+    if errors:
+        return ("REFUSED", errors, dossier)
+    if dossier.fields.get("verdict", "") == VERDICT_CLOSE:
+        return (VERDICT_CLOSE, [], dossier)
+    return (VERDICT_KEEP, [], dossier)
 
 
 def render_template(snapshot: dict[str, Any], lane: str) -> str:

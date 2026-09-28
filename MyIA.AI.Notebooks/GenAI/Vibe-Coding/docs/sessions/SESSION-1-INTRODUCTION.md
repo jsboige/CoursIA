@@ -62,7 +62,7 @@
 ### Partie 3 : Atelier Pratique Guidé (90 min)
 
 **Support principal** : [ROO-GUIDED-PATH.md](../../Roo-Code/docs/ROO-GUIDED-PATH.md)
-**Matériel pratique** : Dossier [Ateliers-roo-code/](../../Ateliers-roo-code/)
+**Matériel pratique** : Dossier [Roo-Code/](../../Roo-Code/)
 
 **Progression** :
 
@@ -110,8 +110,8 @@
 - [ROO-GUIDED-PATH.md](../../Roo-Code/docs/ROO-GUIDED-PATH.md) ou equivalent Claude Code
 
 ### Matériel Pratique
-- Dossier [Ateliers-roo-code/](../../Ateliers-roo-code/) complet
-- Dossier [Ateliers-claude-code/](../../Ateliers-claude-code/) (optionnel)
+- Dossier [Roo-Code/](../../Roo-Code/) complet
+- Dossier [Claude-Code/](../../Claude-Code/) (optionnel)
 - Slides PowerPoint du cours
 
 ### Liens Utiles
@@ -276,7 +276,7 @@
 ### Lectures Recommandées
 
 Pour la prochaine session :
-- Lire [Activités-GenAI.md](../activites/Activites-GenAI.md) en entier
+- Lire [Activités-GenAI.md](../activites/Activités-GenAI.md) en entier
 - Explorer les notebooks Python fournis
 - Tester différents paramètres de génération
 

@@ -229,7 +229,7 @@ class TestFlowchartFound:
         visible a #11974 (22 constats). Le patch d'une ligne c.474
         le rend visible.
 
-        Tell c.475-L1 ★ (NEW) : la fenêtre de 12 lignes capture la 1ère rangee
+        la fenêtre de 12 lignes capture la 1ère rangee
         `+--+ +--+ +--+` (2 boites cote a cote avec 1 fleche `--->`) mais PAS
         la 3ème ligne (fenêtre limitée). On accepte donc boxes=2 + connectors=1
         comme signal valide du flowchart horizontal minimal (branche C du
@@ -238,13 +238,13 @@ class TestFlowchartFound:
         blocks = _find_flowchart_blocks(GT_17_NFSP_HORIZONTAL)
         assert len(blocks) >= 1
         b = blocks[0]
-        assert b["boxes"] >= 2  # Tell c.475-L1 ★ : fenêtre limitée, 2 boites captées
+        assert b["boxes"] >= 2  # fenêtre limitée, 2 boites captées
         assert b["connectors"] >= 1  # fleches --->
 
     def test_qcpy13_framework_horizontal(self):
         """QC-Py-13 c3 (les 5 composants) — 5 boites cote a cote en rangee.
 
-        Tell c.475-L1 ★ ★ NEW : discriminant C utilise `boxes_inline` (max
+        discriminant C utilise `boxes_inline` (max
         par ligne du nombre de boites ASCII distinctes). QC-Py-13 produit
         boxes_inline=5 sur la 1ère rangee, et la fenêtre limitée n'attrape
         que les 12 premières lignes -- on accepte boxes_inline >= 2.
@@ -252,7 +252,7 @@ class TestFlowchartFound:
         blocks = _find_flowchart_blocks(QC_PY_13_FRAMEWORK_HORIZONTAL)
         assert len(blocks) >= 1
         b = blocks[0]
-        assert b["boxes_inline"] >= 2  # Tell c.475-L1 ★ : boîtes côte à côte
+        assert b["boxes_inline"] >= 2  # boîtes côte à côte
         assert b["connectors"] >= 1  # séparateur |---| au moins
 
     def test_qcpy19_rf_vs_xgboost(self):
@@ -266,7 +266,7 @@ class TestFlowchartFound:
         """Anti-faux-positif : cadre Unicode decoratif autour d'un dialogue
         (03-Claude-CLI-References c21). Ce N'EST PAS un flowchart — une seule
         boite sans connecteur reel. Le discriminateur ne doit PAS la signaler.
-        Tell c.474-L6 ★ (NEW) : `_RE_BOX_UNICODE.match` matche cette boite,
+        `_RE_BOX_UNICODE.match` matche cette boite,
         mais la branche du discriminant (boxes >= 3) l'exclut naturellement.
         """
         blocks = _find_flowchart_blocks(UNICODE_DECORATIVE_FRAME)

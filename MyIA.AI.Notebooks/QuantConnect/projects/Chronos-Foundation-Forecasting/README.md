@@ -5,7 +5,7 @@
 
 ## Description
 
-Ensemble GradientBoosting + Ridge using Chronos foundation model embeddings. Predicts returns on 8-ETF universe.
+Ensemble GradientBoosting + Ridge (sklearn) sur features de prix (lag returns, volatilité glissante, prix vs SMA, cross-asset SPY), avec filtre de régime SMA200 (positions défensives en bear). L'étude de départ est Chronos (modèle fondation, voir research.ipynb), mais le déploiement n'utilise pas d'embeddings Chronos : le v1 (poids d'attention hardcodés) a été remplacé par cet ensemble réel (docstring main.py). Prédiction du rendement 10 j avancé sur un univers de 8 ETFs.
 
 ## How to Run
 
@@ -24,7 +24,8 @@ Ensemble GradientBoosting + Ridge using Chronos foundation model embeddings. Pre
 
 ## Files
 
-- main.py - Strategy (v2, ensemble with Chronos features)
+- main.py - Strategy (v2, ensemble sklearn GBM + Ridge, régime filter SMA200)
+- research.ipynb - Étude Chronos (Ex09) : modèle fondation T5, sensibilité au nombre de tokens, et §7.5 confrontation du backtest QC Cloud (main.py) aux approches fondation
 
 ## References
 
