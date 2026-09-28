@@ -206,6 +206,77 @@ class TestClassifyCache(unittest.TestCase):
         self.assertEqual(rec["reason"], "ancestor_check_failed")
 
 
+class TestMarkSuperseded(unittest.TestCase):
+    """Reouverture #16088 (2026-09-28) : garder les N overlays les plus
+    recents par famille, evincer les autres, meme ancetres de main."""
+
+    def _rec(self, family, hours_ago, verdict="KEEP", reason="recent_and_ancestor"):
+        created = _dt.datetime(2026, 9, 28, 4, 0, tzinfo=_dt.timezone.utc) - _dt.timedelta(hours=hours_ago)
+        return {
+            "key": f"{family}-{hours_ago}",
+            "family": family,
+            "created_at": _iso(created),
+            "verdict": verdict,
+            "reason": reason,
+        }
+
+    def test_keeps_latest_n_per_family(self):
+        recs = [self._rec("py", h) for h in (5, 1, 3, 0, 4)]
+        eoc._mark_superseded(recs, 3)
+        kept = sorted(r["key"] for r in recs if r["verdict"] == "KEEP")
+        self.assertEqual(kept, ["py-0", "py-1", "py-3"])
+        evicted = [r for r in recs if r["verdict"] == "EVICT"]
+        self.assertEqual(len(evicted), 2)
+        self.assertTrue(all(r["reason"] == "superseded_beyond_latest_3" for r in evicted))
+
+    def test_families_are_independent(self):
+        recs = [self._rec("py", h) for h in (0, 1)] + [self._rec("cs", h) for h in (0, 1, 2)]
+        eoc._mark_superseded(recs, 2)
+        evicted = [r["key"] for r in recs if r["verdict"] == "EVICT"]
+        self.assertEqual(evicted, ["cs-2"])
+
+    def test_already_evicted_does_not_take_a_slot(self):
+        # Un overlay deja evince (SHA orphelin) ne compte pas parmi les N gardes.
+        recs = [
+            self._rec("py", 0, verdict="EVICT", reason="sha_not_ancestor_of_main"),
+            self._rec("py", 1),
+            self._rec("py", 2),
+        ]
+        eoc._mark_superseded(recs, 2)
+        self.assertEqual([r["verdict"] for r in recs], ["EVICT", "KEEP", "KEEP"])
+        self.assertEqual(recs[0]["reason"], "sha_not_ancestor_of_main")
+
+    def test_refuse_is_never_turned_into_eviction(self):
+        recs = [self._rec("py", h) for h in (0, 1)]
+        recs.append(self._rec("py", 2, verdict="REFUSE", reason="ancestor_check_failed"))
+        eoc._mark_superseded(recs, 1)
+        self.assertEqual(recs[2]["verdict"], "REFUSE")
+        self.assertEqual([r["verdict"] for r in recs[:2]], ["KEEP", "EVICT"])
+
+    def test_zero_disables(self):
+        recs = [self._rec("py", h) for h in range(6)]
+        eoc._mark_superseded(recs, 0)
+        self.assertTrue(all(r["verdict"] == "KEEP" for r in recs))
+
+    def test_records_without_family_are_untouched(self):
+        rec = {"key": "lake-x", "created_at": "2026-09-28T00:00:00Z",
+               "verdict": "REFUSE", "reason": "not_codeql_overlay"}
+        eoc._mark_superseded([rec], 1)
+        self.assertEqual(rec["verdict"], "REFUSE")
+
+    def test_classify_sets_family(self):
+        now = _dt.datetime.now(_dt.timezone.utc)
+        cache = {
+            "id": 1,
+            "key": TestClassifyCache.KEY_ORPHAN,
+            "size_in_bytes": 1,
+            "created_at": _iso(now),
+            "last_accessed_at": _iso(now),
+        }
+        rec = eoc._classify_cache(cache, max_age_hours=24, remote="origin", main_branch="main")
+        self.assertEqual(rec["family"], "d953d79b74456ce0-python-2.27.0")
+
+
 class TestParseIso(unittest.TestCase):
     """Compat GitHub '...Z' suffix."""
 
