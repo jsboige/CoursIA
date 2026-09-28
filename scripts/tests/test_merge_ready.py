@@ -23,6 +23,12 @@ HEAD_MOVED = "fedcba9876543210fedcba9876543210fedcba98"
 TOKEN = "tok-myia-ai-01-fake"
 GRAIN_MED = "Grain: MED/guard -- lane myia-po-2026:CoursIA -- prev: MED/guard #1"
 GRAIN_DEEP = "Grain: DEEP/lean -- lane myia-po-2026:CoursIA -- prev: MED/guard #1"
+BASE = "ba5eba5eba5eba5eba5eba5eba5eba5eba5eba5e"
+# Sentinelle : « pas precise » n'est pas « aucune approbation ». Par defaut une
+# vue porte l'approbation du coordinateur a la tete (le chemin nominal depuis
+# Q67) ; une vue dont les reviews sont fournies explicitement n'en recoit que si
+# on la demande.
+_DEFAULT = object()
 
 
 def dossier_body(b0: str = "clear") -> str:
@@ -68,19 +74,27 @@ def default_view(
     comments: list[dict] | None = None,
     title: str = "fix(x): une PR ordinaire",
     reviews: list[dict] | None = None,
+    coordinator=_DEFAULT,
+    head: str = HEAD,
 ) -> dict:
+    rows = list(reviews) if reviews is not None else []
+    if coordinator is _DEFAULT:
+        coordinator = head if reviews is None else None
+    if coordinator is not None:
+        rows.append(coordinator_review(oid=coordinator))
     return {
         "number": pr,
         "title": title,
         "isDraft": draft,
         "body": body if body is not None else GRAIN_MED,
-        "headRefOid": HEAD,
+        "headRefOid": head,
+        "baseRefOid": BASE,
         "files": [{"path": p} for p in files],
         "changedFiles": len(files),
         "comments": comments
         if comments is not None
         else [{"body": dossier_body()}],
-        "reviews": reviews if reviews is not None else [],
+        "reviews": rows,
     }
 
 
@@ -102,6 +116,19 @@ def review_row(
     }
 
 
+def coordinator_review(
+    *,
+    state: str = "APPROVED",
+    oid: str = HEAD,
+    submitted: str = "2026-09-25T01:00:00Z",
+    body: str = "",
+) -> dict:
+    """Une voix du coordinateur (``myia-ai-01``), anterieure aux voix de bot par defaut."""
+    return review_row(
+        state=state, oid=oid, submitted=submitted, body=body, login="myia-ai-01"
+    )
+
+
 class ScriptedRunner:
     """Runner fake : dispatch par contenu de commande. Defauts = chemin nominal
     (une PR unique prete au merge, gate READY, b0 clear, B.0 clear, clean)."""
@@ -121,6 +148,8 @@ class ScriptedRunner:
         gate_stderr: str = "",
         fetch_rc: int = 0,
         twin_rc: int = 0,
+        commits: dict[str, dict] | None = None,
+        auto_tree: str | None = None,
     ):
         self.token = token
         self.token_rc = token_rc
@@ -136,6 +165,10 @@ class ScriptedRunner:
         self.gate_stderr = gate_stderr
         self.fetch_rc = fetch_rc
         self.twin_rc = twin_rc
+        # Remontee first-parent de merge_dwell (etape 2ter) : payloads de
+        # ``repos/.../commits/<sha>`` et arbre rendu par ``git merge-tree``.
+        self.commits = commits or {}
+        self.auto_tree = auto_tree
         self.calls: list[tuple[list[str], dict | None]] = []
         self.sleeps: list[float] = []
 
@@ -171,6 +204,17 @@ class ScriptedRunner:
         if c[:2] == ["gh", "api"] and "/comments" in c[2]:
             rows = self.comments if self.comments is not None else rest_comments()
             return mr.RunResult(0, json.dumps(rows), "")
+        if c[:2] == ["gh", "api"] and "/commits/" in c[2]:
+            sha = c[2].rsplit("/", 1)[-1]
+            if sha not in self.commits:
+                return mr.RunResult(1, "", "HTTP 404")
+            return mr.RunResult(0, json.dumps(self.commits[sha]), "")
+        if c[:1] == ["git"] and "merge-tree" in c:
+            if self.auto_tree is None:
+                return mr.RunResult(1, "", "conflict")
+            return mr.RunResult(0, self.auto_tree + "\n", "")
+        if c[:1] == ["git"] and ("cat-file" in c or "merge-base" in c):
+            return mr.RunResult(0, "", "")
         if c[:2] == ["gh", "api"] and "/pulls/" in c[2]:
             row = self.pulls.pop(0) if len(self.pulls) > 1 else self.pulls[0]
             return mr.RunResult(0, json.dumps(row), "")
@@ -535,7 +579,7 @@ def test_journal_ligne_par_pr(tmp_path):
         # Une ligne mergee porte la disposition CLASSEE, pas « non evaluee » :
         # le verdict terminal est reconstruit apres le merge, il doit heriter de
         # la classification faite avant.
-        assert row["review"] == mr.NO_APPROVAL
+        assert row["review"] == mr.APPROVED_EXACT_HEAD
     assert [row["pr"] for row in lines] == [401, 402]  # ancienne d'abord
 
 
@@ -799,7 +843,7 @@ def test_disposition_review_dismissed_n_est_jamais_approbatrice():
 
 
 def test_disposition_sans_approbation_lue():
-    assert mr.review_disposition(default_view(), HEAD) == mr.NO_APPROVAL
+    assert mr.review_disposition(default_view(coordinator=None), HEAD) == mr.NO_APPROVAL
     # Une voix qui ne type pas de verdict n'est pas une approbation.
     view = default_view(reviews=[review_row(state="COMMENTED")])
     assert mr.review_disposition(view, HEAD) == mr.NO_APPROVAL
@@ -809,10 +853,15 @@ def test_deux_prs_qui_ne_different_que_par_la_tete_de_l_approbation(tmp_path):
     """Le defaut vise : a tout le reste egal, l'organe ne distinguait pas une PR
     approuvee a la tete de la PR approuvee sur un commit anterieur."""
     views = {
-        201: default_view(pr=201, reviews=[review_row(oid=HEAD)]),
-        202: default_view(pr=202, reviews=[review_row(oid=HEAD_MOVED)]),
+        201: default_view(pr=201, reviews=[review_row(oid=HEAD)], coordinator=HEAD),
+        202: default_view(
+            pr=202, reviews=[review_row(oid=HEAD_MOVED)], coordinator=HEAD_MOVED
+        ),
     }
-    rc, lines, _ = run_organ(tmp_path, ScriptedRunner(prs=(201, 202), views=views))
+    rc, lines, _ = run_organ(
+        tmp_path,
+        ScriptedRunner(prs=(201, 202), views=views, **refresh_topology()),
+    )
     assert rc == 0
     assert [row["verdict"] for row in lines] == ["would-merge", "would-merge"]
     reste = [
@@ -833,10 +882,15 @@ def test_un_skip_porte_la_disposition_de_la_tete_evaluee(tmp_path):
 
 def test_le_bilan_compte_les_candidates_par_disposition(tmp_path, capsys):
     views = {
-        201: default_view(pr=201, reviews=[review_row(oid=HEAD)]),
-        202: default_view(pr=202, reviews=[review_row(oid=HEAD_MOVED)]),
+        201: default_view(pr=201, reviews=[review_row(oid=HEAD)], coordinator=HEAD),
+        202: default_view(
+            pr=202, reviews=[review_row(oid=HEAD_MOVED)], coordinator=HEAD_MOVED
+        ),
     }
-    run_organ(tmp_path, ScriptedRunner(prs=(201, 202), views=views))
+    run_organ(
+        tmp_path,
+        ScriptedRunner(prs=(201, 202), views=views, **refresh_topology()),
+    )
     out = capsys.readouterr().out
     assert "candidates : 1 approved-exact-head, 1 approval-not-on-head" in out
     assert "[review: approved-exact-head]" in out
@@ -897,3 +951,151 @@ def test_twin_fetch_failure_is_fail_closed(tmp_path):
     assert lines[0]["verdict"] == "skipped"
     assert lines[0]["reason"] == "twin-collision-unreadable:fetch"
     assert not any("check_twin_index_collisions.py" in f for f in runner.flat())
+
+
+# --- 2ter. approbation du coordinateur (Q67, arbitrage user 2026-09-28) ----------
+
+
+def refresh_topology(*, tree: str | None = "7ee0", head_parents=None) -> dict:
+    """HEAD = fusion de rafraichissement de base au-dessus de HEAD_MOVED.
+
+    ``tree`` est l'arbre de la fusion ; ``auto_tree`` rendu par merge-tree est
+    toujours ``7ee0`` -- les deux egaux = fusion PROUVEE content-free.
+    """
+    parents = head_parents or [HEAD_MOVED, BASE]
+    head_commit = {"commit": {"committer": {"date": "2026-09-28T10:00:00Z"}},
+                   "parents": [{"sha": p} for p in parents]}
+    if tree is not None:
+        head_commit["commit"]["tree"] = {"sha": tree}
+    return {
+        "commits": {
+            HEAD: head_commit,
+            HEAD_MOVED: {
+                "commit": {"committer": {"date": "2026-09-28T08:00:00Z"}},
+                "parents": [{"sha": "r00t"}],
+            },
+        },
+        "auto_tree": "7ee0",
+    }
+
+
+def test_sans_approbation_du_coordinateur_skip_avant_le_gate(tmp_path):
+    runner = ScriptedRunner(views={123: default_view(coordinator=None)})
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["reason"] == "no-coordinator-approval"
+    assert lines[-1]["merged"] is False
+    assert not any("check_adjoint_prevalidation.py" in f for f in runner.flat())
+
+
+def test_approbation_d_un_autre_login_ne_compte_pas(tmp_path):
+    """Un APPROVED de bot ou du login partage des lanes n'est pas la lecture
+    du coordinateur, meme a la tete exacte."""
+    for login in ("clusterManager-Myia", "jsboige"):
+        view = default_view(reviews=[review_row(oid=HEAD, login=login)])
+        runner = ScriptedRunner(views={123: view})
+        _, lines, _ = run_organ(tmp_path, runner)
+        assert lines[-1]["reason"] == "no-coordinator-approval", login
+
+
+def test_changes_requested_posterieur_retire_l_approbation(tmp_path):
+    view = default_view(
+        reviews=[
+            coordinator_review(oid=HEAD),
+            coordinator_review(
+                state="CHANGES_REQUESTED", oid=HEAD, submitted="2026-09-26T00:00:00Z"
+            ),
+        ]
+    )
+    _, lines, _ = run_organ(tmp_path, ScriptedRunner(views={123: view}))
+    assert lines[-1]["reason"] == "no-coordinator-approval"
+
+
+def test_verdict_concerns_en_corps_posterieur_retire_l_approbation(tmp_path):
+    view = default_view(
+        reviews=[
+            coordinator_review(oid=HEAD),
+            coordinator_review(
+                state="COMMENTED", oid=HEAD, submitted="2026-09-26T00:00:00Z",
+                body="VERDICT: CONCERNS\npoint a reprendre",
+            ),
+        ]
+    )
+    _, lines, _ = run_organ(tmp_path, ScriptedRunner(views={123: view}))
+    assert lines[-1]["reason"] == "no-coordinator-approval"
+
+
+def test_commented_sans_verdict_posterieur_ne_retire_pas_l_approbation(tmp_path):
+    """Une phrase de levee postee en review n'est pas une voix : l'approbation tient."""
+    view = default_view(
+        reviews=[
+            coordinator_review(oid=HEAD),
+            coordinator_review(
+                state="COMMENTED", oid=HEAD, submitted="2026-09-26T00:00:00Z",
+                body="Point 2 leve : traite par le commit abc.",
+            ),
+        ]
+    )
+    _, lines, _ = run_organ(tmp_path, ScriptedRunner(views={123: view}))
+    assert lines[-1]["verdict"] == "would-merge"
+
+
+def test_approbation_dismissed_ne_compte_pas(tmp_path):
+    view = default_view(reviews=[coordinator_review(state="DISMISSED", oid=HEAD)])
+    _, lines, _ = run_organ(tmp_path, ScriptedRunner(views={123: view}))
+    assert lines[-1]["reason"] == "no-coordinator-approval"
+
+
+def test_rafraichissement_de_base_prouve_ne_perime_pas_la_lecture(tmp_path):
+    """Approbation sur HEAD_MOVED, puis update-branch sans conflit -> HEAD :
+    la lecture couvre encore le contenu, l'organe merge."""
+    view = default_view(coordinator=HEAD_MOVED)
+    runner = ScriptedRunner(views={123: view}, **refresh_topology())
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["merged"] is True
+
+
+def test_resolution_de_conflit_perime_la_lecture(tmp_path):
+    """Meme topologie, mais l'arbre de la fusion differe de l'auto-merge :
+    du contenu d'auteur est entre, la lecture est perimee."""
+    view = default_view(coordinator=HEAD_MOVED)
+    runner = ScriptedRunner(views={123: view}, **refresh_topology(tree="d1ff"))
+    _, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert lines[-1]["reason"] == "coordinator-approval-stale"
+    assert lines[-1]["merged"] is False
+
+
+def test_commit_de_contenu_apres_l_approbation_perime_la_lecture(tmp_path):
+    """HEAD est un commit ordinaire au-dessus de HEAD_MOVED : perime."""
+    view = default_view(coordinator=HEAD_MOVED)
+    runner = ScriptedRunner(
+        views={123: view}, **refresh_topology(head_parents=[HEAD_MOVED])
+    )
+    _, lines, _ = run_organ(tmp_path, runner)
+    assert lines[-1]["reason"] == "coordinator-approval-stale"
+
+
+def test_preuve_illisible_fail_closed(tmp_path):
+    view = default_view(coordinator=HEAD_MOVED)
+    runner = ScriptedRunner(views={123: view}, commits={})
+    _, lines, _ = run_organ(tmp_path, runner)
+    assert lines[-1]["reason"] == "coordinator-approval-unverifiable"
+
+
+def test_base_absente_fail_closed(tmp_path):
+    view = default_view(coordinator=HEAD_MOVED)
+    view["baseRefOid"] = ""
+    _, lines, _ = run_organ(tmp_path, ScriptedRunner(views={123: view}))
+    assert lines[-1]["reason"] == "coordinator-approval-unverifiable:no-base"
+
+
+def test_tete_du_gate_differente_de_la_tete_lue(tmp_path):
+    """L'approbation est jugee a la tete de la vue ; si le gate evalue une autre
+    tete, ce jugement ne la couvre pas."""
+    body = dossier_body().replace(HEAD, HEAD_MOVED)
+    view = default_view(
+        head=HEAD_MOVED, coordinator=HEAD_MOVED, comments=[{"body": body}]
+    )
+    _, lines, _ = run_organ(tmp_path, ScriptedRunner(views={123: view}))
+    assert lines[-1]["reason"] == "head-moved"
