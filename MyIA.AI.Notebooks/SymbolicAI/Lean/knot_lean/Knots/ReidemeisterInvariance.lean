@@ -151,12 +151,12 @@ lemma exists_class_not_hit_iff {P : List (List Nat)} (hd : ClassesDisjoint P)
     refine ⟨⟨C, hC, hx, hy⟩, ?_, ?_⟩ <;> rintro ⟨D, hD, hxD, hzD⟩
     · by_cases hCD : C = D
       · have : (C.contains u || C.contains v) = true := by
-          rw [hit_iff_mem]; exact Or.inr (by rw [hCD]; exact hzD)
+          rw [hit_iff_mem]; exact Or.inl (by rw [hCD]; exact hzD)
         exact hnot this
       · exact hd C hC D hD hCD x hx hxD
     · by_cases hCD : C = D
       · have : (C.contains u || C.contains v) = true := by
-          rw [hit_iff_mem]; exact Or.inl (by rw [hCD]; exact hzD)
+          rw [hit_iff_mem]; exact Or.inr (by rw [hCD]; exact hzD)
         exact hnot this
       · exact hd C hC D hD hCD x hx hxD
   · rintro ⟨⟨C, hC, hx, hy⟩, h1, h2⟩
@@ -193,7 +193,9 @@ lemma sameRel_mergeStep {P Q : List (List Nat)} (hrel : SameRel P Q)
     (hdP : ClassesDisjoint P) (hdQ : ClassesDisjoint Q) (p : Nat × Nat) :
     SameRel (mergeStep P p) (mergeStep Q p) := by
   intro x y
+  simp only [mergeStep]
   rw [sameClass_mergePair_iff_rel hdP, sameClass_mergePair_iff_rel hdQ]
+  simp only [SameRel] at hrel
   simp only [hrel]
 
 /-- L'equivalence de partitions traverse un repli complet : deux partitions
@@ -229,7 +231,7 @@ lemma set_take_drop {α : Type} (l : List α) (i : Nat) (x : α)
       · simp
       · have hj : j < as.length := by simpa using h
         simp only [List.set_cons_succ, List.take_succ_cons, List.cons_append,
-          List.drop_succ, ih j hj]
+          List.drop_succ_cons, ih j hj]
 
 /-- Reecriture d'une valeur deja en place : `set` a l'indice borne avec la
     valeur courante est l'identite. -/
@@ -247,11 +249,11 @@ lemma set2_take_drop {α : Type} (l : List α) (i : Nat) (x₀ x₁ : α)
       rcases i with _ | j
       · have hA : 0 < as.length := by simpa using h1
         simp only [List.set_cons_zero, List.set_cons_succ, List.cons_append,
-          List.drop_succ, List.drop_drop, List.nil_append, List.cons_append]
+          List.drop_succ_cons, List.drop_drop, List.nil_append, List.cons_append]
         simpa using set_take_drop as 0 x₁ hA
       · have hj : j + 1 < as.length := by simpa using h1
         simp only [List.set_cons_succ, List.take_succ_cons, List.cons_append,
-          List.drop_succ, ih j hj]
+          List.drop_succ_cons, ih j hj]
 
 /-- Triple `List.set` consecutif en lecture take/drop — la forme exacte de la
     chirurgie R3 connectee lue sur la liste de paires. -/
@@ -263,13 +265,15 @@ lemma set3_take_drop {α : Type} (l : List α) (i : Nat) (x₀ x₁ x₂ : α)
   | nil => exact absurd h2 (Nat.not_lt_zero (i + 2))
   | cons a as ih =>
       rcases i with _ | j
-      · have hB : 0 + 1 < as.length := by simpa using h2
+      · have hB : 0 + 1 < as.length := by
+          simp only [List.length_cons] at h2 ⊢; omega
         have h2as := set2_take_drop as 0 x₁ x₂ hB
         simp only [List.set_cons_zero, List.set_cons_succ, List.cons_append]
         simpa using h2as
-      · have hj : j + 2 < as.length := by simpa using h2
+      · have hj : j + 2 < as.length := by
+          simp only [List.length_cons] at h2 ⊢; omega
         simp only [List.set_cons_succ, List.take_succ_cons, List.cons_append,
-          List.drop_succ, ih j hj]
+          List.drop_succ_cons, ih j hj]
 
 /-- `map` commute a `List.set` : reecrire un croisement puis projeter, ou
     projeter puis reecrire la projection, donne la meme liste de paires. -/
@@ -294,7 +298,7 @@ aux mouvements de Reidemeister, qui portent deja `wf`. -/
     `1..numEdges`. -/
 lemma wf_edgesInRange {d : KnotDiagram} (hne : d.crossings ≠ [])
     (hwf : d.wf = true) : EdgesInRange d := by
-  simp only [KnotDiagram.wf, hne, if_neg, Bool.and_eq_true, List.all_eq_true,
+  simp only [KnotDiagram.wf, if_neg hne, Bool.and_eq_true, List.all_eq_true,
     decide_eq_true_eq] at hwf
   intro c hc
   have hall : ∀ z ∈ [c.e1, c.e2, c.e3, c.e4], 1 ≤ z ∧ z ≤ d.numEdges := by
