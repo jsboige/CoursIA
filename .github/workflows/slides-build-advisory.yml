@@ -135,6 +135,14 @@ jobs:
     # worst case is a cold `npm ci` (~12 min, #15835 body) plus one build per
     # touched deck. 30 min bounds that without ratcheting the normal path.
     timeout-minutes: 30
+    # Heap V8 : le deck volumineux 03-logique depasse le plafond par defaut du
+    # runner (~790 MB) pendant le rendu -- OOM mesure 2x sur #17721 (runs
+    # 36128589323, 36133672078), reproduit en local a --max-old-space-size=790
+    # sur le deck de main ET celui de la PR (defaut herite, pas un diff de
+    # contenu), build propre a 2048 (exit 0). Le bump couvre les deux jambes
+    # (PR bloquante + nocturne) et ne fait que relever un plafond.
+    env:
+      NODE_OPTIONS: "--max-old-space-size=2048"
 
     steps:
       - name: Checkout PR
