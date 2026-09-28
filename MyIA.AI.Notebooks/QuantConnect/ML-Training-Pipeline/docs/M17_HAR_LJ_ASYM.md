@@ -21,9 +21,10 @@ log RV_{t+h} = b0 + b1·log(RV-_t) + b2·log(RV+_t)
 - **RV_J** = jump component = max(RV_t - mu·BPV_t, 0), mu = 0.6 (Huang-Tauchen)
 - **RV_w**, **RV_m** = weekly (5d) / monthly (22d) HAR lag means
 
-M17 fuses the two augmentations that each beat HAR individually in literature:
-M12 (jump split, the only cluster-wide BEATS in the M-series) and M16 (asymmetric
-semivariance, BTC-standalone BEATS only).
+M17 combine les décompositions en sauts (M12) et en semivariances asymétriques
+(M16). Leurs anciens verdicts `BEATS` ne sont pas des preuves actuelles sur le
+cluster : les revalidations symétriquement calibrées de septembre 2026 concluent
+`NO BEATS cluster` pour M12 et M16 (voir REGISTRY.md).
 
 ## Horizon bug fix (this PR)
 
@@ -58,9 +59,13 @@ which `_load_panel` does not provide).
 - Kelly cap=1.0, fee=50bps, mu_window=60
 - DM win = HAR-LJ-Asym MSE significantly below baseline at the combo level (4 seeds, deterministic OLS so per-combo result is 4/4 or 0/4)
 
-## Results
+## Résultats historiques — protocole antérieur, non comparables au rejeu calibré
 
-**VERDICT: NO BEATS cluster-wide** (28/84 DM wins vs HAR = 33.3%)
+> Les chiffres de cette section précèdent la calibration symétrique train-only
+> par fold. Le rejeu du cluster sous le protocole corrigé est documenté plus bas ;
+> ne pas citer les anciennes lignes comme verdict contemporain.
+
+**VERDICT historique : NO BEATS cluster-wide** (28/84 DM wins vs HAR = 33.3%)
 
 | Metric | Value |
 |--------|-------|
@@ -110,26 +115,29 @@ which `_load_panel` does not provide).
 | Model | Verdict | DM/Win rate | Notes |
 |-------|---------|-------------|-------|
 | M2 HAR Classic | **Baseline** | -- | Sharpe +0.313 vs BH |
-| M12 HAR-RV-J | **BEATS** | p=7.9e-7 | Jump-augmented — only cluster-wide BEATS |
+| M12 HAR-RV-J | **BEATS historique, non confirmé** | p=7.9e-7 (ancien protocole) | Revalidation symétrique : NO BEATS cluster, 0/21 configurations BEATS |
 | M13 MS-HAR | NO BEATS | 39/84 | Markov-Switching |
 | M14 HEAVY | NO BEATS | 48/84 | Bivariate |
 | M15 LSTM h=64 | NO BEATS | 45/84 | Neural, overfitting |
 | M16 HAR-Asym | NO BEATS (cluster) | BTC 3/3 only | Asymmetric semivariance |
-| **M17 HAR-LJ-Asym** | **NO BEATS** | **28/84 (33.3%)** | Jump+semivariance composite |
+| **M17 HAR-LJ-Asym (historique)** | **NO BEATS historique, non comparable** | **28/84 (ancien protocole)** | Appariement des origines corrigé ; verdict cluster en attente |
 
-## Conclusion
+## Conclusion historique — non comparable au protocole apparié
 
-HAR-LJ-Asym does NOT beat HAR Classic across the 7-coin panel, and does not
-beat M12 either. The composite of M12's jump split and M16's semivariance
-split does not stack — the panel-wide signal of M12 is diluted, not enhanced.
+Dans l'ancien calcul positionnel, HAR-LJ-Asym ne battait ni HAR Classic ni M12
+sur l'ensemble du panel. Cette comparaison est invalidée par la différence
+d'origines et de cibles mise en évidence le 2026-09-28 ; elle ne permet plus
+de conclure à un gain ou à une perte du composite.
 
-The only durable result is BTC (12/12, all horizons), which repeats the
-M15/M16 pattern: BTC has enough structure to reward extra regressors, the rest
-of the panel does not. The h=1 edge for 5/7 coins is genuine but collapses at
-longer horizons.
+L'ancien calcul attribuait à BTC 12/12 succès et à cinq actifs sur sept un
+gain à h=1. Ces résultats ne sont pas conservés comme faits établis : le
+rejeu apparié BTC du 2026-09-28 donne 0/4 succès face à HAR et à M12 pour
+chacun des horizons 1, 5 et 10. Les autres actifs demandent le bilan complet
+du rejeu corrigé.
 
-This confirms the M-series verdict: **M12 HAR-RV-J remains the only cluster-wide
-BEATS**. Parsimony wins — stacking augmentations does not.
+Cette comparaison historique ne démontre pas un avantage cluster de M12 : sa
+revalidation calibrée du 13 septembre 2026 ne confirme pas le `BEATS` initial.
+Le rejeu M17, sous calibration symétrique, doit être lu séparément ci-dessous.
 
 The corrected sweep supersedes the bugged "60/60 BEATS" verdict (the bug made
 `horizon` a no-op via a contemporaneous target).
@@ -188,7 +196,10 @@ This **changes the headline result**: the c.951 claim that M17 BEATS M12 at ever
 
 > **M17 (HAR-LJ-Asym) BEATS HAR Classic (debias-symmetric) at h=1 only (4/4 BEATS, var_ratio=0.778, precision gain); is INCONCLUSIVE at h=5 against both HAR-debiased and M12-debiased; is BEATEN BY HAR-debiased at h=10 (0/4, MSE 0.464 vs 0.366).**
 
-This is the more honest verdict. The M-series conclusion (M12 HAR-RV-J remains the only cluster-wide BEATS) holds; M17 (HAR-LJ-Asym) is a precision gain at h=1 only, and stacking asymmetric semivariance regressors on top of M12 does **not** extend the cluster-wide beat.
+Cette lecture BTC est elle-même supersédée par le rejeu round-4 ci-dessous.
+L'affirmation historique selon laquelle M12 serait le seul `BEATS` cluster n'a
+ensuite pas été confirmée par sa revalidation symétrique du 13 septembre ; elle
+ne doit pas servir de référence pour le rejeu M17 à sept actifs.
 
 ### Bit-identity audit anchor (concern #3)
 
@@ -292,9 +303,12 @@ fix (concern d) are handled outside this code surface.
 fold_size, n_folds}` — indices in X_all (merged-valid) coordinates, where
 position j maps to original-series timestamp `merged.index[j]` and its
 h-step target reads original positions up to `j + horizon`.
-`train_end_idx = n_folds * fold_size` with `fold_size = n // (n_splits + 1)`
-(the placeholder `int(...) if False else None` that never computed anything
-is removed). The per-(coin, horizon, seed) row relays it alongside
+Dans le protocole historique, `train_end_idx = n_folds * fold_size` ;
+ce champ désignait en réalité le début du dernier bloc test, non la fin
+réelle des cibles d'entraînement. La version corrigée purge `horizon` lignes
+avant chaque frontière : `train_end_idx = n_folds * fold_size - horizon`,
+`oos_start_idx = n_folds * fold_size`. `n_oos` totalise les prévisions des
+folds exécutés et ne décrit pas une partition test contiguë. The per-(coin, horizon, seed) row relays it alongside
 `per_fold_bias` and `fc_lj_hash_per_fold` (one 16-hex hash per fold slice,
 aligned with `per_fold_bias`, anchoring the global `fc_lj_hash` granules to
 the bounds); `aggregate_verdicts` surfaces `bounds_train_test` +
@@ -320,7 +334,13 @@ only fold k's calibration tail moves `per_fold_bias[k]` by > 1.0 (measured
 +1.15 / +3.00 / +6.50 with delta=10) while earlier folds stay unchanged.
 The round-3 single-fold test stays as a smoke test.
 
-### Live BTC run (concern b — this PR)
+### Ancien rejeu BTC (concern b — archive non comparable)
+
+> Les résultats et conclusions BTC de cette sous-section sont invalidés par
+> l'appariement positionnel décrit dans le diagnostic du 2026-09-28. Les quatre
+> graines OLS répètent le même modèle déterministe ; leurs quatre tests DM ne
+> constituent pas quatre confirmations indépendantes. Conserver les chiffres
+> ci-dessous comme trace historique, pas comme preuve de performance.
 
 Live BTC Bitstamp hourly 2014-2024 (`TRADING_DATA_ROOT/Bitstamp_BTCUSD_1h_2014-20240808.csv`,
 54 666 hourly bars, ~2 272 daily bars after aggregation) executed
@@ -362,7 +382,7 @@ HAR debiased + M12) = 60 walks, 467.9 s wall-clock CPU. Manifest
 
 **Headline** : **BTC h=1 : M17 HAR-LJ-Asym BEATS HAR Classic et M12** (très significatif,
 p<1e-6 sur 4 seeds) ; BTC h=5 et h=10 : INCONCLUSIVE. Le pattern est cohérent avec la
-littérature M12/M16 (M17 hérite de M16 jump + M12 semivariance, deux augmentations qui
+littérature M12/M16 (M17 hérite des sauts M12 et des semivariances M16, deux augmentations qui
 battent HAR surtout à court terme — la marge se résorbe à moyen terme).
 
 **Précédent c.953 réfuté** : c.953 publiait `h=1 BEATS p_value=0.839708` (incohérent —
@@ -373,3 +393,55 @@ signe corrigé qui a ramené les p-values dans le régime significatif.
 **Bit-identity cross-seed** : les 4 seeds rendent des `per_fold_bias` et `fc_lj_hash_per_fold`
 **bit-identiques** (OLS déterministe sur (X, y) fixes), `panel_hashes_consistent=True` et
 `bounds_consistent_across_seeds=True` pour les 3 horizons.
+
+## Diagnostic du rejeu cluster — 2026-09-28
+
+Le premier rejeu a produit 84 lignes, mais ses comparaisons sont rejetées :
+M17 indexait chaque prévision par son origine, HAR et M12 par le premier jour
+de sa cible. La troncature par position associait donc des dates et des cibles
+différentes. Sur BTC à h=1, seules 378/1890 positions avaient la même date ;
+à h=5, aucune des 1870 positions tronquées n'en avait une. Le JSON provisoire
+reste hors Git et ne fonde aucun verdict cluster.
+
+Le calcul corrige convertit les dates HAR/M12 vers le jour RV précédent, joint
+les quatre prévisions sur leurs origines communes et compare les cibles natives
+des trois modèles à la même moyenne des `horizon` prochains log-RV. Une cible
+non identique provoque un échec explicite avant le test Diebold–Mariano.
+Chaque ligne conserve le nombre de dates appariées, leurs bornes et leur
+empreinte ; les empreintes par fold couvrent les dates M17, les bornes et les
+prévisions. Les `horizon` dernières cibles d'entraînement sont purgées avant
+chaque fold, de sorte qu'aucune cible apprise ne franchit sa frontière test.
+Le rejeu apparié, découpé en trois lots BTC (12), ETH (12) et cinq autres actifs
+(60), couvre **84/84** combinaisons et **21** couples actif–horizon. Les SHA-256
+des résultats et manifestes de chaque lot ont été revérifiés contre leurs
+ancres ; pour chaque couple, les quatre graines donnent les mêmes prévisions,
+cibles, dates et DM. Elles contrôlent donc la reproductibilité OLS, sans
+constituer quatre observations indépendantes. Chaque ligne possède cinq
+empreintes de fold, les bornes et le nombre de dates appariées (BTC :
+1885/1865/1841 pour h=1/5/10). Le fichier
+`scripts/results/m17_har_lj_asym_cluster_aligned.json` rassemble les 84 lignes,
+les 21 lignes dédupliquées par graine et les SHA-256 des trois lots ; ses
+352 102 octets dans le blob Git restent sous la limite de 512 000 octets des nouveaux résultats.
+Le SHA-256 du blob Git (après normalisation CRLF → LF) est `2ca4b9ffe0582d290dfa77a3f8c47a0381e099e4eba7ecbc4e1fc221729ff6ae` ; le fichier de travail Windows mesure 364 496 octets et porte une empreinte différente.
+
+| Actif | vs HAR, h=1/5/10 | vs M12, h=1/5/10 |
+|---|---|---|
+| BTC | I / I / I | I / I / I |
+| ETH | I / perdu / perdu | I / I / I |
+| SOL | gain / gain / gain | I / I / I |
+| LTC | I / gain / gain | I / I / I |
+| XRP | I / I / I | gain / I / I |
+| ADA | gain / I / I | I / I / I |
+| DOT | I / I / I | I / I / I |
+
+`I` signifie DM non concluant à 5 %, `gain` et `perdu` signifient un DM
+significatif sur la perte MSE ; les p-values, différences de pertes, MSE,
+biais signés et variances par modèle figurent dans l'artefact. **Verdict :
+NO BEATS cluster contre HAR et M12** : six couples sur 21 battent HAR et
+un bat M12, mais seuls SOL et LTC gagnent sur une majorité d'horizons face
+à HAR (2/7 actifs ; test binomial unilatéral p=0,9375), aucun face à M12
+(0/7 ; p=1). ETH perd face à HAR sur deux horizons. Les succès isolés ne
+sont pas un avantage généralisé. Le rejeu ne réhabilite pas le verdict
+BTC historique (0/3 horizon gagnant contre les deux baselines). Les fenêtres
+sont plus courtes pour les cinq actifs yfinance ; le verdict reste lié à
+ces données et à cette définition des folds, sans prétention causale.
