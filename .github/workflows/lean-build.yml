@@ -303,6 +303,20 @@ jobs:
         done
         wait "$_lake_pipeline"
 
+    - name: Drop Mathlib oleans before the cache save
+      # actions/cache saves `.lake` in its post step, at the end of this job
+      # (success only). Mathlib's own oleans make up most of that archive:
+      # ~2.4 GB per lake, so three lakes fill the 10 GB repo quota and evict
+      # each other's caches -- the cold knot_lean builds of #18100 (#18185).
+      # `lake exe cache get` in the build step fetches them again from the
+      # Mathlib cache server, outside the quota (37 s in run 36378467990).
+      # The lake's own build and the other packages stay cached.
+      # Keep this step LAST: any later step would find Mathlib unbuilt.
+      working-directory: ${{ inputs.project-path }}
+      run: |
+        rm -rf .lake/packages/mathlib/.lake/build
+        du -sh .lake 2>/dev/null || true
+
   # Mode matrice #13751 : fan-out par lake, pilote par lean-ci-matrix.yml.
   # Un job appelant (`uses:`) ne peut PAS porter `strategy:` (limite GitHub
   # Actions) -- c'est la contrainte qui a produit les 32 dispatchers un
@@ -380,3 +394,16 @@ jobs:
         # aussi ce que produit un gate de-branche -- la difference se fait sur
         # les controles positifs, pas sur le vert.
         python -m pytest "scripts/tests/test_check_certified_sorry.py" -q
+    - name: Drop Mathlib oleans before the cache save
+      # actions/cache saves `.lake` in its post step, at the end of this job
+      # (success only). Mathlib's own oleans make up most of that archive:
+      # ~2.4 GB per lake, so three lakes fill the 10 GB repo quota and evict
+      # each other's caches -- the cold knot_lean builds of #18100 (#18185).
+      # `lake exe cache get` in the build step fetches them again from the
+      # Mathlib cache server, outside the quota (37 s in run 36378467990).
+      # The lake's own build and the other packages stay cached.
+      # Keep this step LAST: any later step would find Mathlib unbuilt.
+      working-directory: ${{ matrix.project-path }}
+      run: |
+        rm -rf .lake/packages/mathlib/.lake/build
+        du -sh .lake 2>/dev/null || true
