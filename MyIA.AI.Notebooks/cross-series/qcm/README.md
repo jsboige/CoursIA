@@ -59,3 +59,23 @@ npx pytest scripts/tests/test_moodle_bank.py
 
 Le format vise le dispositif d'auto-évaluation de #18207 : chaque question
 doit pouvoir nourrir la fonction `verifier(...)` sans conversion supplémentaire.
+
+## Rattachement aux séries
+
+Chaque thème pointe vers les notebooks qui enseignent la notion :
+
+| Thème | Série d'accueil | Notebooks d'ancrage |
+|---|---|---|
+| `ia-1-introduction-agents` | [`Search/`](../../Search/) | [`Search-01-StateSpace.ipynb`](../../Search/Part1-Foundations/Search-01-StateSpace.ipynb) (agents, environnements) |
+| `ia-2-resolution-problemes` | [`Search/`](../../Search/) | [`Search-02-Uninformed.ipynb`](../../Search/Part1-Foundations/Search-02-Uninformed.ipynb) ; CSP : [`Part2-CSP/`](../../Search/Part2-CSP/) et [`Applications/CSP/`](../../Search/Applications/CSP/) |
+| `ia-3-logique-bases-connaissances` | [`SymbolicAI/`](../../SymbolicAI/) | [`SMT/`](../../SymbolicAI/SMT/), [`Tweety/`](../../SymbolicAI/Tweety/), [`SemanticWeb/`](../../SymbolicAI/SemanticWeb/) |
+| `ia-4-systemes-probabilistes` | [`Probas/`](../../Probas/) | [`DecInfer-01-Utility-Foundations.ipynb`](../../Probas/DecisionTheory/DecInfer/DecInfer-01-Utility-Foundations.ipynb) (utilité, axiomes) ; réseaux bayésiens Infer.NET de la série |
+| `ia-5-apprentissage` | [`ML/`](../../ML/) | [`2.1-Workflow-ML.ipynb`](../../ML/DataScienceWithAgents/02-ML-Cours/2.1-Workflow-ML.ipynb) |
+| `dl-evaluation-seance` | [`ML/`](../../ML/) | [`03-DeepLearning/`](../../ML/DataScienceWithAgents/03-DeepLearning/) (rétropropagation, attention) et [`04-Vision/`](../../ML/DataScienceWithAgents/04-Vision/) (CNN) |
+
+Questions sans notebook d'accueil : la passe de relecture prévue par #18223
+(tranche 4) les énumère par identifiant au fil de la lecture — une question
+sans ancrage se signale, elle ne s'invente pas de place. Les sujets de
+rattrapage Trading, distincts de cette banque, vivent dans la série
+QuantConnect (`examens/`, même issue #18223) avec leur propre rattachement.
+
