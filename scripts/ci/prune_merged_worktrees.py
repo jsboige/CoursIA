@@ -326,6 +326,34 @@ def current_repo_root() -> str:
     return os.getcwd()
 
 
+def _repo_root_for_worktree(wt_path: str) -> str:
+    """Racine du repo hebergeant le worktree `wt_path`.
+
+    `git worktree remove <wt_path>` opere sur le repo qui contient ce
+    worktree -- pas forcement le repo de ce script. Avant ce helper,
+    `apply_removal` passait `current_repo_root()` systematiquement, ce
+    qui marchait pour les worktrees du repo CoursIA (relatifs, sous
+    `..`) mais cassait les tests hermetiques qui creent un repo
+    ephemere dans `/tmp/pytest-...` et y ajoutent un worktree : `git
+    -C <CoursIA-root> worktree remove /tmp/.../wt-feature` repond
+    `is not a working tree` parce que ce chemin n'est pas un worktree
+    du repo CoursIA.
+
+    Resolution : si `wt_path` est absolu, remonter jusqu'au premier
+    `.git` (file ou dir) et l'utiliser ; sinon fallback
+    `current_repo_root()` (worktree relatif `..` = CoursIA).
+    """
+    p = Path(wt_path).resolve()
+    if not p.is_absolute():
+        return current_repo_root()
+    cur = p if p.is_dir() else p.parent
+    while cur != cur.parent:
+        if (cur / ".git").exists():
+            return str(cur)
+        cur = cur.parent
+    return current_repo_root()
+
+
 def run_gh(*args: str, check: bool = True) -> subprocess.CompletedProcess:
     """Lance une commande gh avec capture stricte. cwd = CWD courant."""
     return subprocess.run(
@@ -1419,7 +1447,7 @@ def apply_removal(wt: WorktreeStatus) -> tuple[bool, str]:
     if wt.dead_registration:
         args.append("--force")
     args.append(wt.path)
-    proc = run_git(current_repo_root(), *args, check=False)
+    proc = run_git(_repo_root_for_worktree(wt.path), *args, check=False)
     if proc.returncode == 0:
         return True, ""
     return False, proc.stderr.strip()
