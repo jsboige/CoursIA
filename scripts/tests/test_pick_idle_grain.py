@@ -3124,7 +3124,7 @@ def test_delivery_boost_spreads_without_monopoly():
 # activite de commentaire post-merge ; or les lanes elles-memes postent des
 # commentaires `[INFO] candidate-delivered` quand elles en rencontrent une.
 # Resultat : des LIVRE-urn restent sans label alors qu'un marqueur en
-# commentaire les designe explicitement. Tell c.1060-L1 reformule (msg-20260912T165428-k6rbfc,
+# commentaire les designe explicitement. reformule (msg-20260912T165428-k6rbfc,
 # ai-01 spec) : la klasse `delivered` doit etre posee sur signal label OU
 # marqueur, avec 1 requete par candidat tire (invariant recent_delivery l.958).
 #
@@ -3249,7 +3249,7 @@ def test_marker_check_failure_treated_as_no_signal(monkeypatch):
 
 def test_marker_regex_matches_both_bracket_forms(monkeypatch):
     """Le pattern couvre les deux formes employees : `[INFO] candidate-delivered`
-    ET `[INFO candidate-delivered]` (espace au lieu de `]`). Cf Tell c.1115
+    ET `[INFO candidate-delivered]` (espace au lieu de `]`). Cf
     voie 1 : unification lexicale sans casser l'existant."""
     calls = []
     _patch_gh_dispatch(
@@ -3322,8 +3322,8 @@ def test_organs_banner_still_blocks_end_to_end(monkeypatch):
 # Mesure first-hand : 3 formes employees par les lanes, dont la forme
 # canonique `[INFO] candidate-delivered` (avec fermante `]`) n'etait PAS
 # detectee par le motif `\[INFO[\s_]candidate-delivered` parce que la
-# fermante `]` cassait la continuite apres `[INFO`. Verifie Tell c.1086 §B
-# strict et Tell c.488 ★★★ audit-reassessment (LP fondateur : le test
+# fermante `]` cassait la continuite apres `[INFO`. Verifie
+# strict et audit-reassessment (LP fondateur : le test
 # `test_marker_only_surfaces_delivered_urn` ne couvrait que la forme 2).
 
 
@@ -3350,7 +3350,7 @@ def test_marker_form_1_canonical_with_bracket(monkeypatch):
 def test_marker_form_3_announcement_lane(monkeypatch):
     """Forme 3 (annonce lane) : `[INFO] lane <machine:workspace> -- <sujet>
     -- candidate-delivered <suite>` -- le mot n'est pas immediatement apres
-    `[INFO` mais sur la meme ligne. Tell c.534 L1 ★★ fondateur."""
+    `[INFO` mais sur la meme ligne."""
     calls = []
     _patch_gh_dispatch(
         calls, monkeypatch, pr_payload=[],
@@ -3367,7 +3367,7 @@ def test_marker_form_3_announcement_lane(monkeypatch):
 
 
 def test_marker_no_match_discursive_mention(monkeypatch):
-    """Anti-FP Tell c.488 ★★★ : un commentaire qui MENTIONNE le mecanisme
+    """Anti-FP : un commentaire qui MENTIONNE le mecanisme
     `candidate-delivered` sans etre un marqueur de livraison ne doit PAS
     declencher la klasse `delivered`. La forme etroite exige `candidate-
     delivered` comme mot complet (`\b`) sur la MEME ligne qu'un `[INFO]`
