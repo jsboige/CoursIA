@@ -1,7 +1,7 @@
 """Tests for scripts/notebook_tools/check_notebook_nav_chain.py
 
 Couvre la discrimination 3-niveaux de `_looks_nav` et le scan `link_404`
-(organe qui ferme la classe de defaut stale-navigation fondateur Tell c.856-L1
+(organe qui ferme la classe de defaut stale-navigation fondateur
 sur TOUTES les series, pas seulement Z3-API : c'etait la limite du sweep
 d'origine check_z3_navigation.py, retire comme doublon structurel de
 check_notebook_navlinks.py + nav_chain.py).
