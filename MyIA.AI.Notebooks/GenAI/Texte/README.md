@@ -37,7 +37,7 @@ La maîtrise des LLMs constitue la pierre angulaire de toute expertise en Géné
 | # | Notebook | Description | Durée |
 |---|----------|-------------|-------|
 | 3 | `3_Structured_Outputs.ipynb` | JSON Schema, Pydantic, mode strict, extraction de données | 55 min |
-| 3b | `3b_Typed_Decisions_System1.ipynb` | Décisions typées « système 1 » : contrat choice/score/noul, LLM gelé lu sur ses logits contre témoin classique, calibration (NLL, Brier, ECE, température), escalade | 50 min |
+| 3b | `3b_Typed_Decisions_System1.ipynb` | Décisions typées « système 1 » : contrat choice/score/noul, LLM gelé lu sur ses logits et tête d'attention fine-tunée (jevlike) contre témoin classique, calibration (NLL, Brier, ECE, température), escalade | 50 min |
 | 4 | `4_Function_Calling.ipynb` | Tools API, appels parallèles, boucle agentique | 60 min |
 
 ### Tier 3 : Augmentation (Intermédiaire)
