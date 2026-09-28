@@ -84,7 +84,7 @@ La doctrine du 22/09 en avait tiré une hiérarchie qui plaçait les DMs au coor
 **Niveau 2 — faire circuler**, en marge du Niveau 1 :
 
 - la liste nominative à ai-01 des READY qu'il merge à la main (harnais, DEEP), avec numéro, tête et verdict. Mesure : sur liste nominative, 10 PRs sur 10 converties en merge ; sur un cumul non nommé, 15 sur 53 ;
-- une alerte au porteur de chaque PR en `CHANGES_REQUESTED` non levée ou `CONFLICTING`, avec le motif exact : un commentaire ou un DM par PR ;
+- une alerte au porteur de chaque PR en `CHANGES_REQUESTED` non levée ou `CONFLICTING`, avec le motif exact : un commentaire ou un DM par PR. Le porteur se lit dans le tag `Grain: ... lane`, jamais dans l'auteur GitHub : `jsboige` est le login de toutes les lanes. Mesure du 28/09 : #18034 et #18192, lues « sans lane à réveiller » parce qu'écrites par `jsboige`, sont portées par `myia-po-2024:CoursIA-2` ;
 - quota et runners : une alerte quand la mesure le justifie (porte GraphQL fermée, six PRs ou plus bloquées par la même cause d'infra), pas un relevé à chaque cycle.
 
 ### Ce qui n'est pas un cycle
