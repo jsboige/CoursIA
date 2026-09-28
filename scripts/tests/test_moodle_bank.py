@@ -41,7 +41,13 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 BANK = os.path.join(ROOT, "MyIA.AI.Notebooks", "cross-series", "qcm")
 sys.path.insert(0, os.path.join(ROOT, "scripts", "notebook_tools"))
 
-from moodle_bank import THEME_ID_PREFIX, check  # noqa: E402
+from moodle_bank import (  # noqa: E402
+    DENTIST_TABLE,
+    PUBLICATION_POLICY,
+    THEME_ID_PREFIX,
+    apply_publication_policy,
+    check,
+)
 
 # Table de decision du mainteneur (28/09) -- issue #18223. Le total publie
 # (147) est la somme de ces comptes : un delta ici est un evenement a expliquer,
@@ -111,18 +117,64 @@ def test_figure_references_present_in_enonces():
     de sa question, et chaque question a figure embarquee porte la reference
     `images/` : revision NanoClaw #18263 (le strip des balises supprimait le
     <img> qui portait le chemin reecrit).
+
+    Depuis la revue ai-01 du 28/09, `ia4-004` porte la figure **redessinee**
+    (`images/ia4-004.png`) et non plus la photographie du manuel.
     """
     bank = load_bank()
     by_id = {q["id"]: q for qs in bank.values() for q in qs}
-    for qid in ("ia2-027", "ia4-004", "ia4-006", "ia4-007"):
+    for qid in ("ia2-027", "ia4-004"):
         enonce = by_id[qid]["enonce"]
         assert f"images/{qid}." in enonce, f"{qid}: reference images/ absente de l'enonce"
+    assert "images/ia4-004.png" in by_id["ia4-004"]["enonce"], "ia4-004 doit pointer la figure redessinee"
     files = sorted(os.listdir(os.path.join(BANK, "images")))
     referenced = set()
     for q in by_id.values():
         referenced.update(re.findall(r"images/([^\s)>\]]+)", q["enonce"]))
     for f in files:
         assert f in referenced, f"images/{f}: fichier orphelin"
+
+
+def test_images_ne_contient_que_du_redessine_ou_du_mainteneur():
+    """Garde de la decision de publication (#18263, revue ai-01) : `images/`
+    ne contient que la figure redessinee et les figures propres au cours. Les
+    trois fichiers non republiables -- photographie d'une page du manuel
+    (ia4-004.jpg), captures d'ecran de sa table (ia4-006/007.png) -- ont
+    disparu du depot, et rien ne les reintroduit : la PUBLICATION_POLICY du
+    convertisseur remplace leur extraction.
+    """
+    files = sorted(os.listdir(os.path.join(BANK, "images")))
+    assert files == ["ia2-027.png", "ia4-004.png"], f"images/ = {files}"
+    for qid in ("ia4-004", "ia4-006", "ia4-007", "ia2-010"):
+        assert qid in PUBLICATION_POLICY, f"{qid}: decision de publication absente du convertisseur"
+
+
+def test_publication_policy_remplace_les_figures_non_republiables():
+    """Les trois modes de la politique, sur des enonces synthetiques : le
+    convertisseur ne peut pas re-introduire une figure non republiable sans
+    faire rougir ce test (la source XML vit hors depot).
+    """
+    source = "intro:\n\n[figure: @@PLUGINFILE@@/x.png]\n\nquestion ?"
+    table = apply_publication_policy("table", source, "indifferent")
+    assert "[figure" not in table and DENTIST_TABLE in table
+    assert "0.108" in table and "0.576" in table, "les huit valeurs doivent etre restituees"
+    externe = apply_publication_policy("external", source, "indifferent")
+    assert externe.count("[figure externe non disponible]") == 1
+    assert "dropbox" not in externe and "PLUGINFILE" not in externe
+
+
+def test_enonces_a_tableau_conservent_leurs_lignes():
+    """Le tableau markdown doit survivre a l'aller-retour YAML : un enonce
+    re-emis en scalaire replie perdrait ses retours a la ligne et le tableau
+    ne serait plus un tableau (d'ou le bloc litteral du BankDumper).
+    """
+    bank = load_bank()
+    by_id = {q["id"]: q for qs in bank.values() for q in qs}
+    for qid in ("ia4-006", "ia4-007"):
+        enonce = by_id[qid]["enonce"]
+        lignes = [l for l in enonce.splitlines() if l.startswith("|")]
+        assert len(lignes) == 10, f"{qid}: {len(lignes)} lignes de tableau au lieu de 10"
+        assert lignes[1] == "|---|---|---|---|", f"{qid}: ligne de separation absente"
 
 
 def test_check_warns_unembedded_figure_ia2010(capsys):

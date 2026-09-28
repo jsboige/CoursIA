@@ -8,7 +8,9 @@ Deux sous-commandes :
         sont ignores), deduplique les questions entre exports, classe chaque
         question par theme, applique les decisions du mainteneur (28/09) :
         publie IA (5 chapitres) + apprentissage profond, exclut C#/.NET,
-        differe Big Data. Les images embarquees en base64 sont extraites vers
+        differe Big Data. Les figures non republiables suivent la
+        PUBLICATION_POLICY (redessinees, remplacees par un tableau, ou
+        neutralisees) ; les autres images embarquees en base64 sont extraites vers
         <out>/images/. Rend un rapport : lues / publiées / exclues / différées /
         doublons / types non pris en charge.
 
@@ -35,6 +37,12 @@ import sys
 import xml.etree.ElementTree as ET
 
 import yaml
+
+# `redraw_qcm_figures` vit dans ce meme dossier : le rendre importable quel
+# que soit le point d'entree (CLI, tests, import direct).
+_HERE = os.path.dirname(os.path.abspath(__file__))
+if _HERE not in sys.path:
+    sys.path.insert(0, _HERE)
 
 # Ordre canonique de lecture : chronologique. En cas de doublon, la premiere
 # occurrence rencontree gagne (source la plus ancienne citee dans `source`).
@@ -71,6 +79,77 @@ THEME_ID_PREFIX = {
 }
 
 SUPPORTED_TYPES = ("multichoice", "truefalse", "matching")
+
+# Politique de publication des figures (revue ai-01 #18263, 2026-09-28).
+# Trois figures des exports ne peuvent pas entrer en l'etat dans un depot
+# public : la photographie d'une page du manuel Russell & Norvig (ia4-004),
+# deux captures d'ecran de la meme table du manuel (ia4-006/007), une URL
+# Dropbox personnelle (ia2-010). La politique vit ICI pour que le produit
+# reste REPRODUCTIBLE : une re-conversion reapplique ces decisions au lieu de
+# reintroduire les figures d'origine.
+#   redrawn : le fichier source n'est pas extrait ; la figure est redessinee a
+#             partir de ses seules valeurs par redraw_qcm_figures.py
+#   table   : le fichier source n'est pas extrait ; la table du manuel est
+#             restituee en tableau markdown (les nombres, pas la capture)
+#   external: aucune extraction ; la reference externe de l'enonce est
+#             remplacee par un marqueur neutre (jeton de partage personnel)
+PUBLICATION_POLICY = {
+    "ia4-004": "redrawn",
+    "ia4-006": "table",
+    "ia4-007": "table",
+    "ia2-010": "external",
+}
+
+# Table de distribution conjointe du dentiste (Russell & Norvig, exemple du
+# dentiste) : restituee en tableau markdown a la place de la capture d'ecran
+# du manuel. Controle des valeurs attendues par les enonces : P(carie | mal
+# aux dents) = 0.12/0.2 = 0.6 et P(non carie | pas mal aux dents) =
+# 0.72/0.8 = 0.9, les deux cles correctes de ia4-006 et ia4-007.
+DENTIST_TABLE = (
+    "\n"  # ligne vide : le tableau suit l'intro comme bloc markdown
+    "| Carie | Mal aux dents | Croche | P |\n"
+    "|---|---|---|---|\n"
+    "| V | V | V | 0.108 |\n"
+    "| V | V | F | 0.012 |\n"
+    "| V | F | V | 0.072 |\n"
+    "| V | F | F | 0.008 |\n"
+    "| F | V | V | 0.016 |\n"
+    "| F | V | F | 0.064 |\n"
+    "| F | F | V | 0.144 |\n"
+    "| F | F | F | 0.576 |\n"
+    "\n"
+    "d'apres Russell et Norvig, Artificial Intelligence: A Modern Approach,"
+    " exemple du dentiste."
+)
+
+
+def apply_publication_policy(policy: str, enonce: str, img_dir: str) -> str:
+    """Remplace la reference de figure d'un enonce selon PUBLICATION_POLICY."""
+    if policy == "table":
+        return re.sub(r"\[figure: [^\]]*\]", DENTIST_TABLE, enonce)
+    if policy == "external":
+        return re.sub(r"\[figure: [^\]]*\]", "[figure externe non disponible]", enonce)
+    # "redrawn" : le trace ne depend que des valeurs, il est regenerable.
+    # Import local (l'organe check et les tests n'ont pas besoin de matplotlib)
+    # et echec BRUYANT si l'environnement ne peut pas redessiner : jamais de
+    # banque publiee avec une figure manquante.
+    from redraw_qcm_figures import draw_ia4_004
+
+    png = draw_ia4_004(img_dir)
+    return re.sub(r"\[figure: [^\]]*\]", f"[figure: images/{os.path.basename(png)}]", enonce)
+
+
+class BankDumper(yaml.SafeDumper):
+    """Dumper de la banque : les enonces a tableau markdown sortent en bloc
+    litteral (`|-`), lisibles et stables ; le reste garde le style courant."""
+
+
+def _represent_str(dumper: yaml.SafeDumper, data: str):
+    style = "|" if ("\n" in data and re.search(r"(?m)^\|", data)) else None
+    return dumper.represent_scalar("tag:yaml.org,2002:str", data, style=style)
+
+
+BankDumper.add_representer(str, _represent_str)
 
 
 def html_to_text(s: str) -> str:
@@ -204,8 +283,11 @@ def convert(src: str, out: str) -> int:
             qid = f"{prefix}-{i:03d}"
             rec = {"id": qid, "theme": theme, "type": q["type"], "source": q["source"]}
             enonce = q["enonce_raw"]
-            # images embarquees : <file name base64> sous questiontext
-            for f in q["files"]:
+            politique = PUBLICATION_POLICY.get(qid, "")
+            # images embarquees : <file name base64> sous questiontext.
+            # Une question a politique n'extrait pas son fichier source : la
+            # figure est redessinee ou remplacee par du texte plus bas.
+            for f in [] if politique else q["files"]:
                 name = f.get("name") or "image.png"
                 data = (f.text or "").strip()
                 try:
@@ -220,6 +302,8 @@ def convert(src: str, out: str) -> int:
                 enonce = enonce.replace(f"@@PLUGINFILE@@/{name}", f"images/{img_name}")
                 total_images += 1
             rec["enonce"] = html_to_text(enonce)
+            if politique:
+                rec["enonce"] = apply_publication_policy(politique, rec["enonce"], img_dir)
             if q["type"] in ("multichoice", "truefalse"):
                 options = []
                 for a in q["answers"]:
@@ -251,7 +335,8 @@ def convert(src: str, out: str) -> int:
             records.append(rec)
         path = os.path.join(out, f"{theme}.yaml")
         with open(path, "w", encoding="utf-8", newline="\n") as fh:
-            yaml.safe_dump(records, fh, allow_unicode=True, sort_keys=False, default_flow_style=False, width=100)
+            yaml.dump(records, fh, Dumper=BankDumper, allow_unicode=True,
+                      sort_keys=False, default_flow_style=False, width=100)
         written[theme] = len(records)
 
     total_pub = sum(written.values())

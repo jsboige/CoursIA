@@ -67,7 +67,7 @@
   source: INGPA-FIN4000 2020
   enonce: 'Considérez le réseau bayésien suivant, concernant les délits en politique:
 
-    [figure: images/ia4-004.jpg]
+    [figure: images/ia4-004.png]
 
 
     Quelle est la probabilité qu''une personne n''aille pas en prison (non E), sachant qu''elle a transgressé
@@ -122,13 +122,22 @@
   theme: ia-4-systemes-probabilistes
   type: multichoice
   source: INGPA-FIN4000 2020
-  enonce: 'Considérant la table de distribution de probabilités conjointe du dentiste telle que nous l''avons
-    vue en cours:
+  enonce: |-
+    Considérant la table de distribution de probabilités conjointe du dentiste telle que nous l'avons vue en cours:
 
-    [figure: images/ia4-006.png]
+    | Carie | Mal aux dents | Croche | P |
+    |---|---|---|---|
+    | V | V | V | 0.108 |
+    | V | V | F | 0.012 |
+    | V | F | V | 0.072 |
+    | V | F | F | 0.008 |
+    | F | V | V | 0.016 |
+    | F | V | F | 0.064 |
+    | F | F | V | 0.144 |
+    | F | F | F | 0.576 |
 
-    En utilisant l''inférence par énumération, quelle est la probabilité que la patient ait une carie
-    sachant qu''il a mal aux dents?'
+    d'apres Russell et Norvig, Artificial Intelligence: A Modern Approach, exemple du dentiste.
+    En utilisant l'inférence par énumération, quelle est la probabilité que la patient ait une carie sachant qu'il a mal aux dents?
   choix_unique: true
   options:
   - texte: '0.2'
@@ -149,13 +158,22 @@
   theme: ia-4-systemes-probabilistes
   type: multichoice
   source: INGPA-FIN4000 2020
-  enonce: 'Considérant la table de distribution de probabilités conjointe du dentiste telle que nous l''avons
-    vue en cours:
+  enonce: |-
+    Considérant la table de distribution de probabilités conjointe du dentiste telle que nous l'avons vue en cours:
 
-    [figure: images/ia4-007.png]
+    | Carie | Mal aux dents | Croche | P |
+    |---|---|---|---|
+    | V | V | V | 0.108 |
+    | V | V | F | 0.012 |
+    | V | F | V | 0.072 |
+    | V | F | F | 0.008 |
+    | F | V | V | 0.016 |
+    | F | V | F | 0.064 |
+    | F | F | V | 0.144 |
+    | F | F | F | 0.576 |
 
-    En utilisant l''inférence par énumération, quelle est la probabilité que la patient n''ait pas une
-    carie sachant qu''il n''a pas mal aux dents?'
+    d'apres Russell et Norvig, Artificial Intelligence: A Modern Approach, exemple du dentiste.
+    En utilisant l'inférence par énumération, quelle est la probabilité que la patient n'ait pas une carie sachant qu'il n'a pas mal aux dents?
   choix_unique: true
   options:
   - texte: '0.95'

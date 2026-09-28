@@ -46,6 +46,13 @@ signale comme orphelin tout fichier non référencé). Une question dont la figu
 embarquée — cas de ia2-010, dont l'export ne porte qu'une URL externe — est signalée en
 `ATTENTION`, cf [RELECTURE-2026-09.md](RELECTURE-2026-09.md).
 
+Trois figures des exports ne sont **pas** republiables en l'état (photographie d'une page de
+manuel, captures d'écran de la même page, URL de partage personnelle) : le convertisseur
+porte leur traitement dans `PUBLICATION_POLICY` — redessinées à partir de leurs valeurs
+(`redraw_qcm_figures.py`), restituées en tableau markdown dans l'énoncé, ou remplacées par un
+marqueur neutre. La politique vit dans le convertisseur pour qu'une re-conversion **réapplique**
+ces décisions au lieu de réintroduire les figures d'origine.
+
 ## Outils
 
 ```bash
@@ -55,6 +62,9 @@ python scripts/notebook_tools/moodle_bank.py convert \
 
 # validation de la banque commise (identifiants, options, appariements, images)
 python scripts/notebook_tools/moodle_bank.py check --bank MyIA.AI.Notebooks/cross-series/qcm
+
+# regeneration de la figure redessinee (deja appelee par `convert`, matplotlib requis)
+python scripts/notebook_tools/redraw_qcm_figures.py --out MyIA.AI.Notebooks/cross-series/qcm/images
 
 # passe de test (comptes figés par la décision mainteneur + invariants)
 npx pytest scripts/tests/test_moodle_bank.py

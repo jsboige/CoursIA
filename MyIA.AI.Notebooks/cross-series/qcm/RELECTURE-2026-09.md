@@ -35,13 +35,39 @@ quatre questions concernées annonçaient « la figure suivante » sans aucun li
 Corrigé dans la même PR : `html_to_text` conserve désormais la référence en texte
 (`[figure: images/<id>.<ext>]`) avant le nettoyage, `check` détecte le sens inverse (tout
 fichier de `images/` non référencé est une erreur ; toute figure annoncée sans référence
-embarquée est une attention), et les tests couvrent les deux sens. Les quatre questions à
-figure embarquée (ia2-027, ia4-004, ia4-006, ia4-007) portent leur référence.
+embarquée est une attention), et les tests couvrent les deux sens.
+
+## Publication des figures — décision ai-01 du 28/09
+
+La review ai-01 de #18263 a relevé que trois figures ne peuvent pas entrer dans un dépôt
+public en l'état, et que le convertisseur les y **ramènerait** à la prochaine conversion
+(la source XML vit hors dépôt). La décision est donc portée par le convertisseur lui-même,
+dans une `PUBLICATION_POLICY` keyée par identifiant — le produit reste reproductible :
+
+| Question | Figure d'origine | Traitement retenu |
+|---|---|---|
+| ia4-004 | photographie d'une page du manuel Russell & Norvig (fig. 14.23) | **redessinée** à partir de ses seules valeurs (`redraw_qcm_figures.py`, mention de source incluse), `images/ia4-004.png` |
+| ia4-006, ia4-007 | capture d'écran de la table du dentiste du même manuel | **tableau markdown** dans l'énoncé (les huit nombres, mention de source) |
+| ia2-010 | URL Dropbox personnelle (jeton de partage) | **marqueur neutre** `[figure externe non disponible]` |
+
+Les trois fichiers d'origine (`ia4-004.jpg`, `ia4-006.png`, `ia4-007.png`) sont retirés du
+dépôt ; `images/` ne contient plus que `ia2-027.png` et `ia4-004.png`. Les deux tableaux du
+dentiste restituent les mêmes valeurs que la capture — contrôlées sur les clés des questions :
+P(carie | mal aux dents) = 0.12/0.2 = 0.6 et P(non carie | pas mal aux dents) = 0.72/0.8 =
+0.9, soit les deux clés correctes. La figure redessinée restitue de même la chaîne de
+ia4-004 (P(C|T,I,P) = 0.9 puis P(E|C) = 0.9 → P(¬E) = 0.19, la clé de la question).
+
+**ia2-027 relue en vision (28/09)** : graphe d'exploration S→G, coûts sur les arêtes et
+valeurs heuristiques en rouge — une figure de cours (graphe propre à l'exercice, pas une page
+d'ouvrage ni une capture), qui reste donc légitimement dans `images/`. Reste ouverte la
+question du doublon ia2-010 ↔ ia2-027 ci-dessous.
 
 **ia2-010 précisé** : sa figure est une **URL Dropbox externe** (le `<img>` de l'export 2018
 pointe un lien `photos-5.dropbox.com`, vignette 32×32 — probablement expiré), pas un fichier
-embarqué. Elle est signalée en `ATTENTION` par `check` (« figure annoncée sans référence
-embarquée »). Sa quasi-jumelle **ia2-027** (même question, export 2020, mêmes options) porte
+embarqué. Depuis le 28/09 elle est publiée sous **marqueur neutre** (`[figure externe non
+disponible]`) — le jeton de partage personnel ne peut pas rester dans un dépôt public ; elle
+reste signalée en `ATTENTION` par `check` (« figure annoncée sans référence embarquée »), ce
+qui est le signal voulu : l'énoncé annonce une figure absente de la banque. Sa quasi-jumelle **ia2-027** (même question, export 2020, mêmes options) porte
 la figure embarquée — la clé de dédoublonnage sha1 ne les a pas fusionnées (ponctuation
 différente : « par une » vs « par : une »). **Double arbitrage mainteneur** : rapatrier ou
 accepter l'URL externe pour ia2-010, et statuer sur le doublon ia2-010 ↔ ia2-027.
@@ -131,12 +157,13 @@ lecture déléguée (extrait et argument verbatim de cette passe).
 
 ## Portée — ce qui n'a pas été vérifié
 
-- **Questions à figure** (ia2-010, ia2-027, ia4-004) : la lecture de figure était hors
-  capacité de la passe déléguée — à reprendre par une lecture avec vision. ia4-006 et
-  ia4-007 sont en revanche validées numériquement (table conjointe dentiste 0.6/0.9).
-  Précision après la re-conversion : ia2-010 ne porte **pas** de figure embarquée (sa seule
-  référence est l'URL externe ci-dessus) — le lien vers sa figure est à trancher par le
-  mainteneur, pas à relire.
+- **Questions à figure** : la lecture de figure était hors capacité de la passe déléguée.
+  Elle a été faite depuis, en vision, sur les quatre figures concernées : ia4-006 et ia4-007
+  sont validées numériquement (table conjointe dentiste 0.6/0.9), ia4-004 est redessinée et
+  sa chaîne recalculée (P(¬E) = 0.19, la clé de la question), ia2-027 est une figure de
+  cours (cf « Publication des figures »). ia2-010 ne porte **pas** de figure embarquée : sa
+  seule référence était l'URL externe, publiée depuis sous marqueur neutre — le lien vers sa
+  figure reste à trancher par le mainteneur, comme le doublon ia2-010 ↔ ia2-027.
 - **Calculs rejoués concordants** (aucun constat émis) : minimax et alpha-bêta
   (ia2-016/017/030/031/032), expectiminimax (ia2-033/034), Bayes (ia4-003/008/015),
   partage des pirates (=97), stratégie mixte (1/6–1/3), arbre (=2 feuilles), LeNet-5,
