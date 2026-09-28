@@ -16,7 +16,7 @@ OpenAI-compat via ``OPENAI_API_KEY``), valides par
 ce n'est PAS un detecteur de verbatim, cf la limitation documentee
 sur :func:`validate_narration`). Les etapes
 restantes (3 TTS, 5 visualizer custom, 6 mixage ffmpeg complet)
-restent documentation-ONLY (HARD Tell c.1102 : pas de pipeline
+restent documentation-ONLY (pas de pipeline
 squelette qui pretend faire ce qu'il ne fait pas).
 
 **Etats cles** (cf issue #15604 et c.446 demucs Phase A deferree) :
@@ -546,7 +546,7 @@ def _build_llm_client():
 
     La cle est verifier AVANT l'import du package : un appel llm sans
     ``OPENAI_API_KEY`` echoue avec un message explicite (pas de
-    fallback silencieux vers le template — Tell c.1102).
+    fallback silencieux vers le template).
     """
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
@@ -1104,10 +1104,10 @@ def main(argv: Optional[List[str]] = None) -> int:
         )
     except RuntimeError as exc:
         # Echec explicite (ex. moteur llm sans cle) — pas de fallback
-        # silencieux vers template (Tell c.1102).
+        # silencieux vers template.
         print(f"ERREUR : {exc}", file=sys.stderr)
         return 2
-    # Verdict explicite — Tell c.1102 anti-stonewall
+    # Verdict explicite — anti-stonewall
     print("=== Strudel script (etape 1, livree) ===")
     print(result["strudel_script"])
     print()
