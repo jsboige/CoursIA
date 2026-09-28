@@ -838,3 +838,41 @@ def test_git_helper_immune_to_path_pollution(tmp_path, monkeypatch):
     assert "git version" in r.stdout, "stdout != vrai git : {!r}".format(r.stdout[:80])
     assert not marker.exists(), "le git factice du PATH pollue a ete appele"
     assert Path(_GIT).name.lower().startswith("git"), _GIT
+
+
+# --- 7. Q67 -- le meme SHA de contenu sert a merge_ready -----------------------
+
+def _refresh_fetch(tree):
+    def fetch(path):
+        if path == "repos/o/r/commits/m3rg3":
+            return _commit(
+                "m3rg3", "2026-09-07T11:59:00Z", ["auc0", "ba5e"], tree=tree
+            )
+        if path == "repos/o/r/commits/auc0":
+            return _commit("auc0", "2026-09-07T09:00:00Z", ["r00t"])
+        raise AssertionError("chemin inattendu: " + path)
+    return fetch
+
+
+def test_q67_sha_de_contenu_franchit_un_rafraichissement_prouve():
+    sha = merge_dwell.last_authoritative_sha(
+        "o/r", "m3rg3", "ba5e", fetch=_refresh_fetch("7ee0"),
+        run_git=_git_proving("7ee0"),
+    )
+    assert sha == "auc0"
+
+
+def test_q67_sha_de_contenu_s_arrete_sur_une_resolution_d_auteur():
+    sha = merge_dwell.last_authoritative_sha(
+        "o/r", "m3rg3", "ba5e", fetch=_refresh_fetch("d1ff"),
+        run_git=_git_proving("7ee0"),
+    )
+    assert sha == "m3rg3"
+
+
+def test_q67_date_et_sha_suivent_la_meme_remontee():
+    fetch = _refresh_fetch("7ee0")
+    when = merge_dwell.last_authoritative_committed_at(
+        "o/r", "m3rg3", "ba5e", fetch=fetch, run_git=_git_proving("7ee0"),
+    )
+    assert when.isoformat().startswith("2026-09-07T09:00:00")
