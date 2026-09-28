@@ -19,15 +19,18 @@ Le fil conducteur : le notebook 3 (partie 1) a montré que la recherche aveugle 
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
 | 4 | [Planners-4-Fast-Downward](Planners-4-Fast-Downward.ipynb) | 45 min | Architecture 3 étapes (translator PDDL→SAS+, preprocessor, search) ; A*, GBFS, EHC via Docker sur Blocks World et Logistics |
+| 4 (C#) | [Planners-4-Fast-Downward-Csharp](Planners-4-Fast-Downward-Csharp.ipynb) | 45 min | Jumeau C# du 4 : planificateur SAS+ from-scratch (prevail/pre/eff), A*/GBFS/EHC, h^max/h^FF par RPG, domaines Ferry + Logistics — sans Docker (See #4956) |
 | 5 | [Planners-5-Heuristics](Planners-5-Heuristics.ipynb) | 40 min | Classification admissible/non-admissible ($h^{add}$, $h^{max}$, $h^{FF}$, LM-cut) ; comparaison expérimentale du nombre de nœuds expansés |
+| 5 (C#) | [Planners-5-Heuristics-Csharp](Planners-5-Heuristics-Csharp.ipynb) | 40 min | Jumeau C# du 5 : h-max/h-add/h-FF/landmarks from-scratch, démo de non-admissibilité de h^add (See #4956) |
 | 5b | [Planners-5b-Lean-Relaxation](Planners-5b-Lean-Relaxation.ipynb) | 45 min | Companion **natif** kernel Lean 4 : preuve formelle 0-sorry de $h^{+} \leq h^{*}$ dans le lake `planning_lean` |
 | 5c | [Planners-5c-Differentiel-Atteignabilite](Planners-5c-Differentiel-Atteignabilite.ipynb) | 45 min | Différentiel d'atteignabilité (strate 7) : protocole 4 pas — inatteignabilité prouvée, contrôle d'effort, primitive nommée et payante, delta mesuré ; consomme les théorèmes du lake `planning_lean` ; stdlib pur, sans Docker |
 | 6 | [Planners-6-Domains](Planners-6-Domains.ipynb) | 50 min | Domaines IPC standards (Blocks World, Logistics, Gripper, Ferry, Hanoï) de complexité croissante |
+| 6 (C#) | [Planners-6-Domains-Csharp](Planners-6-Domains-Csharp.ipynb) | 45 min | Jumeau C# du 6 : planificateur STRIPS from-scratch (modèle Atom/Action/State, BFS forward + anti-cycle), domaines Block World + Hanoï + Gripper (See #4956) |
 
 ## Prérequis
 
 - **Partie 1** maîtrisée : modélisation PDDL, espace d'états (notebooks 1-3)
-- **Docker** : les notebooks 4-6 appellent le serveur HTTP Fast Downward (`jsboige/coursia-fast-downward`, port 8200) — les notebooks 5b et 5c n'en dépendent pas (5b : kernel Lean via WSL ; 5c : stdlib pur)
+- **Docker** : les notebooks 4-6 appellent le serveur HTTP Fast Downward (`jsboige/coursia-fast-downward`, port 8200) — les notebooks 5b et 5c n'en dépendent pas (5b : kernel Lean via WSL ; 5c : stdlib pur) ; les jumeaux C# (4-6) non plus (.NET 9 from-scratch)
 - **Algorithmique** : A*, recherche heuristique dans les graphes
 
 Si Docker n'est pas disponible, les notebooks théoriques (explication de l'architecture, classification des heuristiques) restent accessibles ; seules les exécutions de planification en ligne seront sautées.
