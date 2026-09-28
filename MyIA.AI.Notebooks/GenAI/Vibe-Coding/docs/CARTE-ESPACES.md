@@ -15,7 +15,7 @@
 | [`Claw-Systems/`](../Claw-Systems/) | 16 | 0 | 12 | Agents autonomes (NanoClaw, OpenClaw, philosophie agentic engineering) + `configs/` |
 | [`Claudish/`](../Claudish/) | 8 | 1 | 3 | Proxy multi-provider (routes assistants → Anthropic/GLM/Qwen) + `configs/` |
 | [`analyzers/`](../analyzers/) | 7 | 0 | 1 | **Projet C# exécutable** `AgentSafetyAnalyzer` (+ `.Tests`) — hors paradigme notebook |
-| [`docs/`](.) | 9 | 2 | 5 | Transverse : `CLUSTER-ORCHESTRATION.md`, `COMPARAISON-CLAUDE-ROO.md`, `INTRO-GENAI.md`, 2 notebooks transverses, `sessions/`, `csharprepl-demo/` — `activites/` a déménagé vers [`GenAI/activites/`](../../activites/) (#18223) |
+| [`docs/`](.) | 11 | 2 | 7 | Transverse : `CLUSTER-ORCHESTRATION.md`, `COMPARAISON-CLAUDE-ROO.md`, `INTRO-GENAI.md`, notebooks transverses, `sessions/`, `csharprepl-demo/` — `activites/` a déménagé vers [`GenAI/activites/`](../../activites/) (#18223) |
 
 **Notebooks pédagogiques déclarés au catalogue** : 8 (marqueur `CATALOG-STATUS` du README — l'écart avec les comptes bruts ci-dessus vient des notebooks d'outillage transverses, non comptés pédagogiques).
 
