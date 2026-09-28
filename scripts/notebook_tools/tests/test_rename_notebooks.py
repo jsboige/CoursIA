@@ -351,6 +351,40 @@ class TestTwoCommitDiscipline(unittest.TestCase):
             self.assertIn("test-lane", ledger)
 
 
+    def test_moved_notebook_citing_a_moved_sibling_is_rewritten_in_place(self):
+        """#18015 : le plan de referents est scanne avant les git mv. Un
+        notebook renomme qui cite un voisin renomme figurait a son ancien
+        chemin et l'application echouait (FileNotFoundError) apres le
+        commit 1."""
+        old2 = "MyIA.AI.Notebooks/S/S-2-Beta.ipynb"
+        new2 = "MyIA.AI.Notebooks/S/S-02-Beta-Python.ipynb"
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            _init_repo(repo)
+            _write_nb(repo, old2, _nb([_md(
+                "Suite de [S-01-Alpha](S-01-Alpha.ipynb).")]))
+            _git(repo, "add", "-A")
+            _git(repo, "commit", "-qm", "voisin")
+            tsv = Path(str(repo) + ".table.tsv")
+            tsv.write_text(f"{OLD}\t{NEW}\n{old2}\t{new2}\n", encoding="utf-8")
+
+            cwd = os.getcwd()
+            os.chdir(repo)
+            try:
+                with mock.patch.object(rn, "run_organs", return_value=0):
+                    rc = rn.main(["--mapping", str(tsv), "--apply",
+                                 "--lane", "test-lane"])
+            finally:
+                os.chdir(cwd)
+            self.assertEqual(rc, 0)
+            self.assertFalse((repo / old2).exists())
+            body = (repo / new2).read_text(encoding="utf-8")
+            self.assertIn("S-01-Alpha-Python.ipynb", body)
+            self.assertNotIn("(S-01-Alpha.ipynb)", body)
+            c2 = _git(repo, "diff", "--name-status", "HEAD~1", "HEAD")
+            self.assertIn(f"M\t{new2}", c2)
+
+
 class TestMappingRefusals(unittest.TestCase):
     """Gardes d'entree : table perimee, collision interne, cible deja la."""
 

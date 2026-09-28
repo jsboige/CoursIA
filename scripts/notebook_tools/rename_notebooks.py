@@ -844,8 +844,13 @@ def main(argv: list[str] | None = None) -> int:
                    cwd=repo, check=True)
 
     # commit 2 : referents par surface, au texte -- add et commit nommes.
+    # Le plan a ete scanne AVANT les git mv : un notebook deplace qui cite un
+    # autre notebook deplace (lien de navigation entre voisins) y figure a son
+    # ANCIEN chemin. Le reecrire la ou il vit desormais (crash FileNotFoundError
+    # releve sur #18015).
+    moved = dict(pairs)
     done = {}
-    for rel in sorted(plan.rewrites):
+    for rel in sorted(moved.get(r, r) for r in plan.rewrites):
         n = rewrite_file(repo / rel, forms_list)
         if n:
             done[rel] = n
