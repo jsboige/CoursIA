@@ -1,6 +1,6 @@
 # 02-Solidity-Advanced - Standards, DeFi, DAO et Account Abstraction
 
-**Navigation** : [Sommaire de la série](../README.md) | [<< SC-6 Errors & Events](../01-Solidity-Foundation/SC-6-Errors-Events.ipynb) | [SC-12 Foundry Testing >>](../03-Foundry-Testing/SC-12-Foundry-Testing.ipynb)
+**Navigation** : [Sommaire de la série](../README.md) | [<< SC-6 Errors & Events](../01-Solidity-Foundation/SC-06-Errors-Events-Python.ipynb) | [SC-12 Foundry Testing >>](../03-Foundry-Testing/SC-12-Foundry-Testing-Python.ipynb)
 
 Cette deuxième sous-série de code (SC-7 a SC-11) quitte la syntaxe pour les **cas d'usage réels** d'Ethereum : les standards de tokens (ERC-20, ERC-721, ERC-1155), les primitives DeFi (AMM a produit constant, liquidity pools), la gouvernance on-chain (votes pondérés, timelock), l'account abstraction (ERC-4337, Smart Accounts, Paymasters), et enfin l'assistance par LLM pour générer, auditer et documenter du Solidity. Comme la sous-série 01, chaque concept est illustre par un contrat compile et déployé réellement sur `anvil` -- les adresses et receipts dans les outputs sont authentiques.
 
@@ -10,11 +10,11 @@ Cette deuxième sous-série de code (SC-7 a SC-11) quitte la syntaxe pour les **
 
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
-| 7 | [SC-7-Token-Standards](SC-7-Token-Standards.ipynb) | 50 min | ERC-20, ERC-721, ERC-1155, contrats OpenZeppelin |
-| 8 | [SC-8-DeFi-Primitives](SC-8-DeFi-Primitives.ipynb) | 55 min | AMM, formule x*y=k, liquidity pools, price impact, slippage |
-| 9 | [SC-9-DAO-Governance](SC-9-DAO-Governance.ipynb) | 45 min | Vote pondéré, propositions, timelock |
-| 10 | [SC-10-Account-Abstraction](SC-10-Account-Abstraction.ipynb) | 50 min | ERC-4337, UserOperations, Smart Account, Paymasters |
-| 11 | [SC-11-LLM-Assisted](SC-11-LLM-Assisted.ipynb) | 45 min | LLMs (Claude/GPT) pour générer, auditer, documenter du Solidity |
+| 7 | [SC-07-Token-Standards-Python](SC-07-Token-Standards-Python.ipynb) | 50 min | ERC-20, ERC-721, ERC-1155, contrats OpenZeppelin |
+| 8 | [SC-08-DeFi-Primitives-Python](SC-08-DeFi-Primitives-Python.ipynb) | 55 min | AMM, formule x*y=k, liquidity pools, price impact, slippage |
+| 9 | [SC-09-DAO-Governance-Python](SC-09-DAO-Governance-Python.ipynb) | 45 min | Vote pondéré, propositions, timelock |
+| 10 | [SC-10-Account-Abstraction-Python](SC-10-Account-Abstraction-Python.ipynb) | 50 min | ERC-4337, UserOperations, Smart Account, Paymasters |
+| 11 | [SC-11-LLM-Assisted-Python](SC-11-LLM-Assisted-Python.ipynb) | 45 min | LLMs (Claude/GPT) pour générer, auditer, documenter du Solidity |
 
 **Total** : 5 notebooks, ~4h05.
 
@@ -50,7 +50,7 @@ Le LLM comme outil de développeur Solidity : **prompting** efficace pour smart 
 
 | Notebook | Fondations requises | Dépendances |
 |----------|---------------------|-------------|
-| SC-7 Token-Standards | SC-3 a SC-6 complètes ([01-Solidity-Foundation](../01-Solidity-Foundation/SC-3-Solidity-Basics.ipynb)) | `web3`, `py-solc-x`, OpenZeppelin |
+| SC-7 Token-Standards | SC-3 a SC-6 complètes ([01-Solidity-Foundation](../01-Solidity-Foundation/SC-03-Solidity-Basics-Python.ipynb)) | `web3`, `py-solc-x`, OpenZeppelin |
 | SC-8 DeFi-Primitives | SC-7 complète | idem |
 | SC-9 DAO-Governance | SC-7 + SC-8 complètes ; ERC-20 et délégation | idem |
 | SC-10 Account-Abstraction | SC-7 a SC-9 complètes ; modèle EOA vs contrat | idem ; ERC-4337 (@account-abstraction) |
@@ -70,7 +70,7 @@ Le LLM comme outil de développeur Solidity : **prompting** efficace pour smart 
 | Série | Lien | Relation |
 |-------|------|----------|
 | [SmartContracts (parent)](../README.md) | Vue d'ensemble | Contexte, parcours global, glossaire |
-| [01-Solidity-Foundation](../01-Solidity-Foundation/SC-3-Solidity-Basics.ipynb) | Prérequis | SC-3..6 (syntaxe, types, fonctions, héritage, errors/events) |
+| [01-Solidity-Foundation](../01-Solidity-Foundation/SC-03-Solidity-Basics-Python.ipynb) | Prérequis | SC-3..6 (syntaxe, types, fonctions, héritage, errors/events) |
 | [03-Foundry-Testing](../03-Foundry-Testing/) | Suite | SC-12+ (tests Foundry, fuzzing, vérification formelle) |
 | [GameTheory](../../../GameTheory/) | SC-9 (DAO) | Théorème d'Arrow : limites des systèmes de vote on-chain (cf `game_theory_lean/SocialChoice/Arrow.lean`) |
 | [SymbolicAI/Lean](../../Lean/) | SC-11 (LLM) | Meme paradigme d'assistance LLM (Lean-7/8/9) applique a la preuve formelle |

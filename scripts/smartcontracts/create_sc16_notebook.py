@@ -1,4 +1,4 @@
-"""Generate SC-16-Homomorphic-Encryption.ipynb - Temporary script, delete after use."""
+"""Generate SC-16-Homomorphic-Encryption-Python.ipynb - Temporary script, delete after use."""
 import json
 import os
 
@@ -29,9 +29,9 @@ cells = []
 
 # === HEADER ===
 cells.append(md(
-"# SC-16-Homomorphic-Encryption - Chiffrement Homomorphique\n"
+"# SC-16-Homomorphic-Encryption-Python - Chiffrement Homomorphique\n"
 "\n"
-"**Navigation** : [Index](../README.md) | [<< Zero-Knowledge Proofs](SC-15-Zero-Knowledge-Proofs.ipynb) | [E2E Voting >>](SC-17-E2E-Verifiable-Voting.ipynb)\n"
+"**Navigation** : [Index](../README.md) | [<< Zero-Knowledge Proofs](SC-15-Zero-Knowledge-Proofs-Python.ipynb) | [E2E Voting >>](SC-17-E2E-Verifiable-Voting-Python.ipynb)\n"
 "\n"
 "---\n"
 "\n"
@@ -853,7 +853,7 @@ cells.append(md(
 "\n"
 "---\n"
 "\n"
-"**Notebook suivant** : [SC-17-E2E-Verifiable-Voting](SC-17-E2E-Verifiable-Voting.ipynb) - Combiner zero-knowledge proofs et chiffrement homomorphique pour un systeme de vote electronique verifiable de bout en bout",
+"**Notebook suivant** : [SC-17-E2E-Verifiable-Voting-Python](SC-17-E2E-Verifiable-Voting-Python.ipynb) - Combiner zero-knowledge proofs et chiffrement homomorphique pour un systeme de vote electronique verifiable de bout en bout",
 "summary"))
 
 # === BUILD NOTEBOOK ===
@@ -881,7 +881,7 @@ notebook = {
 
 output_path = os.path.join(
     "d:", os.sep, "CoursIA", "MyIA.AI.Notebooks", "SymbolicAI",
-    "SmartContracts", "04-Privacy-Cryptography", "SC-16-Homomorphic-Encryption.ipynb"
+    "SmartContracts", "04-Privacy-Cryptography", "SC-16-Homomorphic-Encryption-Python.ipynb"
 )
 os.makedirs(os.path.dirname(output_path), exist_ok=True)
 with open(output_path, 'w', encoding='utf-8', newline='\n') as f:

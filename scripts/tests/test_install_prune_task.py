@@ -191,18 +191,49 @@ class TestJournal:
         def fake_run(cmd, stdout=None, stderr=None, **kw):
             recorded["cmd"] = cmd
             recorded["stdout"] = stdout
-            # simule un refus d'organe (worktree vivant) -> rc=1
-            stdout.write("REFUSE uncommitted_source_changes\n")
-            return subprocess.CompletedProcess(cmd, 1)
+            # simule une panne gh/git de l'organe -> rc=2 (seul rc != 0
+            # que l'organe emet encore depuis #3895 : refus = decision)
+            stdout.write("ERROR: gh pr list failed\n")
+            return subprocess.CompletedProcess(cmd, 2)
 
         monkeypatch.setattr(subprocess, "run", fake_run)
         rc = ipt.cmd_run(repo)
-        assert rc == 1  # le code de l'organe traverse
-        assert recorded["cmd"][-2:] == ["--apply"] or "--apply" in recorded["cmd"]
+        assert rc == 2  # le code de l'organe traverse
+        assert "--apply" in recorded["cmd"]
         assert str(repo) in recorded["cmd"]
         log = (tmp_path / "logs").glob("prune_*.log")
         logs = list(log)
         assert len(logs) == 1
         content = logs[0].read_text(encoding="utf-8")
-        assert "run start" in content and "run end rc=1" in content
-        assert "REFUSE uncommitted_source_changes" in content
+        assert "run start" in content and "run end rc=2" in content
+        assert "gh pr list failed" in content
+
+    def test_cmd_run_relaie_le_seuil_warn_et_reste_vert_sur_refus(
+            self, tmp_path, monkeypatch):
+        """#3895 (roo-extensions) : cmd_run relaie --warn-threshold (defaut
+        20) a l'organe, et une nuit a taux de refus eleve reste VERTE --
+        les refus vivent dans le rapport et la ligne [WARN] du journal,
+        plus dans le LastResult de la tache planifiee."""
+        repo = tmp_path / "CoursIA"
+        (repo / "scripts" / "ci").mkdir(parents=True)
+        (repo / "scripts" / "ci" / "prune_merged_worktrees.py").write_text(
+            "print('organ output')\n", encoding="utf-8")
+        monkeypatch.setattr(ipt, "LOG_DIR", tmp_path / "logs")
+
+        recorded = {}
+
+        def fake_run(cmd, stdout=None, stderr=None, **kw):
+            recorded["cmd"] = cmd
+            stdout.write("REFUSE ... refused=108\n")
+            stdout.write("[WARN][prune-task] MYIA-PO-2025 refused=108/126\n")
+            return subprocess.CompletedProcess(cmd, 0)
+
+        monkeypatch.setattr(subprocess, "run", fake_run)
+        assert ipt.cmd_run(repo) == 0
+        cmd = recorded["cmd"]
+        i = cmd.index("--warn-threshold")
+        assert cmd[i + 1] == "20"
+        content = next(
+            (tmp_path / "logs").glob("prune_*.log")).read_text(encoding="utf-8")
+        assert "run end rc=0" in content
+        assert "[WARN][prune-task]" in content
