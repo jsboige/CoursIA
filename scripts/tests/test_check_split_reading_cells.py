@@ -850,6 +850,71 @@ def test_diff_section_header_citant_sortie_flagge():
     assert findings[0]["type"] == "READING_BEFORE_CODE"
 
 
+def test_diff_section_header_apres_stub_devant_code_non_flagge():
+    """Carve-out #17777 etendu a EXERCISE_READING : l'en-tete qui ouvre la
+    section suivante apres le stub d'exercice de la precedente, et qui
+    introduit son propre code, n'est pas une lecture de l'exercice. Classe
+    mesuree sur #18410 (ANALYSE-04, cellules 8 et 22) : exercice place apres
+    le verdict de sa primitive, puis `## 2. Primitive 2` devant son code.
+    """
+    base = nb(
+        _stub_exercise(),
+        code("print(2)"),
+    )
+    head = nb(
+        _stub_exercise(),
+        md(
+            "## 2. Primitive 2 — Decomposition projection / fibres\n\n"
+            "### 2.1 Enonce\n\n"
+            "Soient `X` une variable aleatoire et `Y` une variable obtenue "
+            "par projection deterministe de `X` sur une partition."
+        ),
+        code("print(2)"),
+    )
+    assert detect_added_readings(head, base) == []
+
+
+def test_diff_section_header_apres_stub_citant_sortie_flagge():
+    """Garde-fou : apres un stub, l'en-tete dont le corps CITE une sortie
+    reste une lecture d'exercice deguisee -- EXERCISE_READING.
+    """
+    base = nb(
+        _stub_exercise(),
+        code("print(2)"),
+    )
+    head = nb(
+        _stub_exercise(),
+        md("## 2. Resultats\n\nLa sortie ci-dessus montre que la valeur "
+           "atteint 0.94, conforme a l'attendu de l'exercice."),
+        code("print(2)"),
+    )
+    findings = detect_added_readings(head, base)
+    assert len(findings) == 1
+    assert findings[0]["type"] == "EXERCISE_READING"
+
+
+def test_diff_section_header_entre_deux_stubs_flagge():
+    """Garde-fou : entre deux stubs, l'en-tete n'introduit aucun code a
+    sortie -- le carve-out ne s'ouvre pas (next_role exercise).
+    """
+    base = nb(
+        _stub_exercise(),
+        _stub_exercise("print('Exercice a completer') # 2"),
+    )
+    head = nb(
+        _stub_exercise(),
+        md(
+            "## 2. Primitive 2 — Decomposition projection / fibres\n\n"
+            "Soient `X` une variable aleatoire et `Y` une variable obtenue "
+            "par projection deterministe de `X` sur une partition."
+        ),
+        _stub_exercise("print('Exercice a completer') # 2"),
+    )
+    findings = detect_added_readings(head, base)
+    assert len(findings) == 1
+    assert findings[0]["type"] == "EXERCISE_READING"
+
+
 def test_diff_prose_non_titree_devant_code_flagge():
     """La prose non titree (> 80 chars) devant une sortie reste signalee :
     le carve-out ne s'ouvre que sur le TITRE, pas sur la longueur.

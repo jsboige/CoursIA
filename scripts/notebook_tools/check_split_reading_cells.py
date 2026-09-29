@@ -733,12 +733,17 @@ def detect_added_readings(head_nb: dict, base_nb: dict | None) -> list[dict]:
             base_counter[src] += 1
             continue
         bucket = _bucket_for(prev_role, next_role)
-        if (bucket == "READING_BEFORE_CODE" and next_role == "code_with_output"
+        if (bucket in ("READING_BEFORE_CODE", "EXERCISE_READING_CANDIDATE")
+                and next_role == "code_with_output"
                 and is_section_intro(cell)):
             # Carve-out #17777 etendu : un en-tete de section devant son code
-            # est une introduction, pas une lecture placee avant sa sortie.
-            # Restent signales : la lecture titre, la prose non titree, et
-            # tout en-tete devant un STUB d'exercice (garde-fou #17777,
+            # est une introduction, pas une lecture placee avant sa sortie --
+            # y compris quand il suit le stub d'exercice qui clot la section
+            # precedente (mesure #18410 : `## 2. Primitive 2` et `### 3.3`
+            # apres les stubs des exercices 1 et 4 d'ANALYSE-04).
+            # Restent signales : la lecture titre, la prose non titree,
+            # l'en-tete qui cite une sortie, et tout en-tete devant un STUB
+            # d'exercice (garde-fou #17777,
             # test_carveout_ne_couvre_pas_un_titre_de_section).
             base_counter[src] += 1
             continue
