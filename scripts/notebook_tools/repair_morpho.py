@@ -27,7 +27,7 @@ Correctifs implementes :
    ``prouvé``/``donné``/``vérifié`` entre backticks = intacts (noms, pas
    prose). Fenetre locution ``donné`` passee a 60 chars (c.1317-L7).
 
-Contraintes structurelles (cf tells c.1343 fondateurs) :
+Contraintes structurelles :
 - ``source[]`` est preservee (list-edit par item, JAMAIS split('\n')) -- evite
   la re-serialisation visible (-184 lignes sur #16993).
 - byte-identique newline terminal (read_bytes / write_bytes).
