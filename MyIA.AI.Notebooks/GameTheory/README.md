@@ -506,6 +506,10 @@ La théorie des jeux déplace la question de la décision : non plus « quelle e
 
 Cette partie réunit la matière de niveau **Recherche** : notes techniques sur des résultats précis du parcours, formalisations Lean, liens avec les autres séries, organisation du dossier.
 
+### Activités associées
+
+Les activités [Bataille des Sexes](../GenAI/activites/Activites-Vulgarisation.md#9-théorie-des-jeux--bataille-des-sexes), [Évolution de la confiance](../GenAI/activites/Activites-Vulgarisation.md#10-évolution-de-la-confiance) et [Scrutin de Condorcet](../GenAI/activites/Activites-Vulgarisation.md#11-théorie-du-choix-social--le-scrutin-de-condorcet-et-lélection-présidentielle-française) exercent en jeu d'équipe les équilibres, jeux répétés et choix social enseignés ici.
+
 ### Processus de Moran : la population finie (palier 06)
 
 Le round-robin déterministe du notebook 06 donne une hiérarchie stable où Grudger et TitForTat dominent. La **dynamique de Moran** (librairie [`axelrod`](https://github.com/Axelrod-Python/Axelrod), Knight et al., *JORS* 2016) modélise un autre régime : une population **finie** où chaque étape copie un joueur proportionnellement à son fitness puis en élimine un uniformément au hasard. Le §7bis du notebook exécute cette dynamique sur 25 graines :

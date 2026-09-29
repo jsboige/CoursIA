@@ -536,6 +536,10 @@ dotnet --version
 
 ---
 
+## Activités associées
+
+L'activité [Exploration : cannibales et missionnaires](../GenAI/activites/Activites-Vulgarisation.md#1-exploration--cannibales-et-missionnaires) met la modélisation d'états et l'arbre d'exploration de cette série en situation de jeu d'équipe.
+
 ## Conclusion / Prochaines étapes
 
 ### Ce que vous avez appris

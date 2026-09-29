@@ -502,31 +502,6 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GenAI/Texte/09b_Prompt_Security_RedTeam.ipynb",
-      "series": "MyIA.AI.Notebooks/GenAI/Texte"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GenAI/Texte/10c_Long_Context_Strategies.ipynb",
-      "series": "MyIA.AI.Notebooks/GenAI/Texte"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GenAI/Texte/10f_ORTGenAI_DotNet_BakeOff.ipynb",
-      "series": "MyIA.AI.Notebooks/GenAI/Texte"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GenAI/Texte/13b_Agent_Evaluation.ipynb",
-      "series": "MyIA.AI.Notebooks/GenAI/Texte"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GenAI/Texte/22b_Profil_Cognitif_CHC.ipynb",
-      "series": "MyIA.AI.Notebooks/GenAI/Texte"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-01-PhiTrajectories-Python.ipynb",
       "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
     },
