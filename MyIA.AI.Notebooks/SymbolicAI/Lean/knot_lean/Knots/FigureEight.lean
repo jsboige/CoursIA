@@ -24,10 +24,11 @@
 
   ## Pourquoi un module dédié au code plan
 
-  Le code `figureEightDiagram` de `Knots.Basic` n'est PAS plan
-  (`figureEightDiagram_not_planar` dans `Knots.Jones` : c'est un nœud
-  virtuel, de polynôme de Jones celui du trèfle). Les valeurs classiques du
-  nœud en huit se lisent sur le code plan de KnotAtlas, déjà utilisé par
+  Depuis la canonicalisation de #17595 (PR #18272), le canonique
+  `figureEightDiagram` de `Knots.Basic` porte lui-même le code planaire de
+  KnotAtlas : `figureEightDiagram` et `figureEightPlanarDiagram` désignent
+  désormais le même diagramme plan. Les valeurs classiques du nœud en huit
+  se lisent sur ce code plan, déjà utilisé par
   `bracket_figureEightPlanarDiagram` et `jones_figureEightPlanarDiagram`.
   Ce module referme la trilogie bracket / Jones / Alexander sur le même
   représentant plan, et y ajoute la tricoloriabilité.

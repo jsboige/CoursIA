@@ -29,11 +29,12 @@
 
   ## Why a dedicated module for the planar code
 
-  The `figureEightDiagram` code of `Knots.Basic_en` is NOT planar
-  (`figureEightDiagram_not_planar` in `Knots.Jones_en`: it is a virtual
-  knot, whose Jones polynomial is that of the trefoil). The classical
-  values of the figure-eight knot are read off the KnotAtlas planar code,
-  already used by `bracket_figureEightPlanarDiagram` and
+  Since the canonicalisation of #17595 (PR #18272), the canonical
+  `figureEightDiagram` of `Knots.Basic_en` itself carries the KnotAtlas
+  planar code: `figureEightDiagram` and `figureEightPlanarDiagram` now
+  designate the same planar diagram. The classical values of the
+  figure-eight knot are read off this planar code, already used by
+  `bracket_figureEightPlanarDiagram` and
   `jones_figureEightPlanarDiagram`. This module closes the bracket / Jones
   / Alexander trilogy on the same planar representative, and adds
   tricolorability on it.
