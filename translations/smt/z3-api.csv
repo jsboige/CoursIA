@@ -6853,7 +6853,7 @@ La théorie des reels de Z3 transforme le solveur en outil de **raisonnement alg
 
 
 Cette serie Z3-Python (notebooks 01 a 12) couvre maintenant l'eventail complet : entiers (01-06, 10, 11), satisfaction de contraintes (08 ordonnancement, 09 CSP logique, 11 graphes), tactiques (03), et ici l'**arithmetique reelle exacte** (12). Le pont avec la serie souer Z3.Linq (C#) se fait via les mêmes exemples portes entre Microsoft.Z3 et pyz3.",,,,,,,,3682a8cf02212015,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb,de430bb4,markdown,fr,1101b3dd7253bf2e,"← [12 - Arithmetique reelle](Z3-12-Real-Arithmetic-Python.ipynb) | [README Z3-Python](README.md)
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb,de430bb4,markdown,fr,1101b3dd7253bf2e,"← [12 - Arithmetique reelle](Z3-12-Real-Arithmetic-Python.ipynb) | [README Z3-Python](README.md)
 
 # 13. UNSAT cores : expliquer l'insatisfiabilite (le ' pourquoi ')
 
@@ -6862,13 +6862,13 @@ Jusqu'ici, le solveur repondait a une question binaire : *ce système a-t-il une
 Pour un ingenieur qui **ecrit** la specification, UNSAT est souvent un bug de modelisation : une contrainte trop forte, ou deux contraintes incompatibles. La reponse ' impossible ' ne suffit pas - il faut savoir **lesquelles** des contraintes se contredisent. C'est le rôle du **noyau d'insatisfiabilite** (UNSAT core) : le sous-ensemble **minimal** de contraintes responsable du conflit. Z3 passe du diagnostic binaire au diagnostic chirurgical.
 
 > Port pyz3 du notebook C# [`17_UnsatCores.ipynb`](../Z3-Linq2Z3/17_UnsatCores.ipynb). EPIC #1206, Prong B. (Le bloc DSL `Explain()` du C#, spécifique a Z3.Linq, n'est pas porte ; l'API brute `assert_and_track` + `unsat_core` de pyz3 fait le même travail.)",,,,,,,,1101b3dd7253bf2e,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb,71e1306a,code,fr,2d36fb6ac814810b,"from z3 import *
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb,71e1306a,code,fr,2d36fb6ac814810b,"from z3 import *
 print(""Imports OK : z3-solver (UNSAT cores via assert_and_track)"")
 ",,,,,,,,2d36fb6ac814810b,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb,95e47844,markdown,fr,f75e7d594700e44d,"## 1. Du verdict a l'explication
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb,95e47844,markdown,fr,f75e7d594700e44d,"## 1. Du verdict a l'explication
 
 Commencons par un système trivialement contradictoire. Le solveur dit **UNSAT** - mais ne dit pas (encore) POURQUOI. C'est le verdict brut.",,,,,,,,f75e7d594700e44d,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb,53ee7428,code,fr,96bff9b46b4e6658,"# Rappel : un systeme contradictoire est UNSAT (verdict, sans explication)
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb,53ee7428,code,fr,96bff9b46b4e6658,"# Rappel : un systeme contradictoire est UNSAT (verdict, sans explication)
 a, b = Bools('a b')
 s0 = Solver()
 s0.add(Implies(a, b))   # a -> b
@@ -6877,12 +6877,12 @@ s0.add(Not(b))          # not b  (contredit a -> b)
 print(""' a->b, a, !b ' : %s  (verdict : impossible)"" % s0.check())
 print(""-> Z3 dit NON, mais ne dit pas (encore) POURQUOI."")
 ",,,,,,,,96bff9b46b4e6658,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb,58f66f80,markdown,fr,d4cb39207829c5d1,"## 2. L'API `assert_and_track` : etiqueter chaque contrainte
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb,58f66f80,markdown,fr,d4cb39207829c5d1,"## 2. L'API `assert_and_track` : etiqueter chaque contrainte
 
 Pour obtenir une explication, on fournit les contraintes comme des **hypothese traceables** : `s.assert_and_track(formule, etiquette)` ou `etiquette` est un `Bool` servant de nom. Après un `unsat`, `s.unsat_core()` renvoie le sous-ensemble **minimal** d'etiquettes responsable du conflit.
 
 Trois contraintes sur `x` : `x >= 3`, `x <= 5`, `x = 10`. Lesquelles se contredisent ?",,,,,,,,d4cb39207829c5d1,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb,cdd127a9,code,fr,8992e61603416d8b,"# Trois contraintes sur x : lesquelles se contredisent ?
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb,cdd127a9,code,fr,8992e61603416d8b,"# Trois contraintes sur x : lesquelles se contredisent ?
 x = Int('x')
 s1 = Solver()
 s1.set('unsat_core', True)
@@ -6901,10 +6901,10 @@ if st1 == unsat:
         print(""  - %s"" % c)
     print(""-> Z3 ecarte 'x>=3' du core : cette contrainte est irrelevant pour le conflit."")
 ",,,,,,,,8992e61603416d8b,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb,09c603eb,markdown,fr,dda41bbb60402857,"## 3. Minimalite du core : verifier que la paire suffit
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb,09c603eb,markdown,fr,dda41bbb60402857,"## 3. Minimalite du core : verifier que la paire suffit
 
 Le core est **minimal** : retirer une seule contrainte du core le rend satisfiable. Verifions que la paire `{x<=5, x=10}` (sans `x>=3`) est **déjà** UNSAT - ce qui confirme que Z3 avait raison d'exclure `x>=3`.",,,,,,,,dda41bbb60402857,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb,a6875fcb,code,fr,1bdec846adcdbfb0,"# Verifions : {x<=5, x=10} SEUL (sans x>=3) est-il deja UNSAT ?
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb,a6875fcb,code,fr,1bdec846adcdbfb0,"# Verifions : {x<=5, x=10} SEUL (sans x>=3) est-il deja UNSAT ?
 y = Int('y')
 s2 = Solver()
 s2.set('unsat_core', True)
@@ -6918,10 +6918,10 @@ if st2 == unsat:
     print(""-> CONFIRME : la paire {x<=5, x=10} suffit au conflit."")
     print(""   Z3 avait donc raison d'EXCLURE 'x>=3' du core : elle est irrelevant."")
 ",,,,,,,,1bdec846adcdbfb0,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb,00135bd6,markdown,fr,7299ca0870853328,"## 4. Application : specification surcontrainte - laquelle relacher ?
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb,00135bd6,markdown,fr,7299ca0870853328,"## 4. Application : specification surcontrainte - laquelle relacher ?
 
 Cas realiste : un planning ou 5 contraintes s'accumulent. L'une d'elles (`h = 12`, demande de l'animateur) contredit une autre (`h != 12`, pause dejeuner). Le core identifie **exactement** les 2 coupables parmi les 5 - les autres (bornes, redondances) sont compatibles et ignorees. L'action correctrice en decoule directement : relacher l'une des deux contraintes coupables.",,,,,,,,7299ca0870853328,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb,54308055,code,fr,b715e1d011115060,"# Specification surcontrainte : laquelle relacher ?
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb,54308055,code,fr,b715e1d011115060,"# Specification surcontrainte : laquelle relacher ?
 h = Int('h')
 s3 = Solver()
 s3.set('unsat_core', True)
@@ -6948,12 +6948,12 @@ if st3 == unsat:
     print(""   Les autres (h>=9, h<=17, h>=9 redondant) sont COMPATIBLES -> Z3 les ignore."")
     print(""   Action : relacher la contrainte 'h=12' (animateur) OU 'h!=12' (pause)."")
 ",,,,,,,,b715e1d011115060,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb,a578ceff,markdown,fr,199432fb30851a89,"## 5. Innocence prouvee : une contrainte non impliquee ecartee du core
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb,a578ceff,markdown,fr,199432fb30851a89,"## 5. Innocence prouvee : une contrainte non impliquee ecartee du core
 
 Un dernier temoin de la minimalite : sur un système a 3 contraintes (`x == 1`, `x >= 0` innocente, `x == 2`), le core minimal est `{x==1, x==2}`. La contrainte `x >= 0` est **compatible** avec les deux (un x valant 1 ou 2 verifie x >= 0) - elle n'est pas impliquee dans le conflit, donc Z3 l'ecarte du core. C'est ce qui distingue le core d'une simple liste de contraintes : il isole la **cause**, pas le contexte.
 
 > Note port : le notebook C# original compare ici l'API brute (`Check(assumptions)` + `UnsatCore`) avec le DSL Z3.Linq (`Explain()`). Le DSL n'existe pas en pyz3 - l'API brute `assert_and_track` + `unsat_core` est l'equivalent direct, et c'est elle que cette section demontre.",,,,,,,,199432fb30851a89,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb,fce97350,code,fr,2ac6415d7f43d26e,"# Core minimal : {x==1, x==2} ecarte x>=0 (innocente, non impliquee)
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb,fce97350,code,fr,2ac6415d7f43d26e,"# Core minimal : {x==1, x==2} ecarte x>=0 (innocente, non impliquee)
 w = Int('w')
 s4 = Solver()
 s4.set('unsat_core', True)
@@ -6967,7 +6967,7 @@ print(""Check(assumptions) : %s"" % s4.check())
 core = s4.unsat_core()
 print(""UnsatCore = { %s }   (x>=0 exclu du core)"" % '  '.join(str(c) for c in core))
 ",,,,,,,,2ac6415d7f43d26e,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb,f30db165,markdown,fr,e560728b1482f078,"## 8. Ce que ce notebook a demontre
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb,f30db165,markdown,fr,e560728b1482f078,"## 8. Ce que ce notebook a demontre
 
 Trois lecons sur le noyau d'insatisfiabilite :
 1. **Du verdict a l'explication** - `unsat` dit *qu'il n'y a pas* de solution ; `unsat_core()` dit *pourquoi* (lesquelles contraintes conflictuent).
@@ -6983,17 +6983,17 @@ Trois lecons sur le noyau d'insatisfiabilite :
 
 
 Cette capacite d'explication distingue un solveur d'un simple oracle booléen : il ne dit pas seulement *non*, il dit *a cause de quoi*.",,,,,,,,e560728b1482f078,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb,0a3b9d82,markdown,fr,936094a41e5c12de,"## 9. Exercices
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb,0a3b9d82,markdown,fr,936094a41e5c12de,"## 9. Exercices
 
 Les trois exercices ci-dessous vous font manipuler le UNSAT core sur des variantes : conflit cache parmi 4 contraintes (1), planning avec relachement (2), core minimal parmi 10 (3). Chaque stub est self-contained : les fonctions (`Int`, `Bool`, `Solver`, `assert_and_track`) sont définies dans les sections précédentes.",,,,,,,,936094a41e5c12de,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb,b2f2760f,markdown,fr,3765c4ece7e53e5f,"### Exercice 1 - Core sur un conflit cache (2 coupables parmi 4)
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb,b2f2760f,markdown,fr,3765c4ece7e53e5f,"### Exercice 1 - Core sur un conflit cache (2 coupables parmi 4)
 
 Construisez 4 contraintes sur `z` dont 2 sont compatibles et 2 en conflit (ex : `z <= 3`, `z >= 0`, `z == 7`, `z != 9`). Obtenez le core et verifiez qu'il ne contient **que** les 2 coupables.
 
 
 
 **Étapes** : `z = Int('z')`, 4 `assert_and_track` etiquetes, `check()`, afficher `unsat_core()` (doit exclure les 2 compatibles).",,,,,,,,3765c4ece7e53e5f,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb,0ce4d320,code,fr,ca1daa42a89aadbf,"# Exercice 1 : core sur un conflit cache (2 coupables parmi 4)
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb,0ce4d320,code,fr,ca1daa42a89aadbf,"# Exercice 1 : core sur un conflit cache (2 coupables parmi 4)
 # TODO etudiant :
 # Etape 1 : z = Int('z') ; 4 contraintes etiquetees (2 compatibles, 2 en conflit)
 # Etape 2 : s.assert_and_track(..., Bool('etiq')) pour chacune
@@ -7001,14 +7001,14 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb,0ce4d320,c
 result = None  # TODO etudiant
 print(""Exercice 1 a completer : isolez les 2 contraintes coupables parmi 4"")
 ",,,,,,,,ca1daa42a89aadbf,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb,c5ee334f,markdown,fr,0406c66576239530,"### Exercice 2 - Planning : identifier puis relacher la coupable
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb,c5ee334f,markdown,fr,0406c66576239530,"### Exercice 2 - Planning : identifier puis relacher la coupable
 
 Encodez un planning sur `j` : (a) `j >= 8`, (b) `j <= 18`, (c) `j != 3`, (d) `j == 3`. Obtenez le core, identifiez la coupable, puis **relachez-la** (re-checkez le sous-ensemble sans elle) -> le système devient SATISFIABLE.
 
 
 
 **Étapes** : core = {j!=3, j=3} ; retirer l'une des deux du solver ; re-`check()` -> `sat`.",,,,,,,,0406c66576239530,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb,b81d82df,code,fr,ed282e8f0606c705,"# Exercice 2 : planning, identifier puis relacher la contrainte coupable
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb,b81d82df,code,fr,ed282e8f0606c705,"# Exercice 2 : planning, identifier puis relacher la contrainte coupable
 # TODO etudiant :
 # Etape 1 : encoder (a)(b)(c)(d) sur j, obtenir le core
 # Etape 2 : core = {j!=3, j=3} -> choisir laquelle relacher
@@ -7016,14 +7016,14 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb,b81d82df,c
 result = None  # TODO etudiant
 print(""Exercice 2 a completer : identifiez et relachez la contrainte coupable"")
 ",,,,,,,,ed282e8f0606c705,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb,7a7d11cd,markdown,fr,640f31ad38479dd7,"### Exercice 3 - Core minimal parmi 10 contraintes
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb,7a7d11cd,markdown,fr,640f31ad38479dd7,"### Exercice 3 - Core minimal parmi 10 contraintes
 
 Construisez 10 contraintes sur `k` : 3 conflictuelles (`k == 1`, `k == 2`, `k == 3`) + 7 compatibles (`k >= 0`, `k <= 100`, etc.). Le core doit valoir exactement **3** (les 3 incompatibles), les 7 compatibles etant ecartees.
 
 
 
 **Étapes** : 10 `assert_and_track` ; `check()` ; compter `len(unsat_core())` -> attendu 3.",,,,,,,,640f31ad38479dd7,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb,784a1255,code,fr,2aba8920eb79c644,"# Exercice 3 : core minimal parmi 10 contraintes
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb,784a1255,code,fr,2aba8920eb79c644,"# Exercice 3 : core minimal parmi 10 contraintes
 # TODO etudiant :
 # Etape 1 : k = Int('k') ; 10 contraintes (3 k==n incompatibles + 7 compatibles)
 # Etape 2 : s.assert_and_track pour les 10
@@ -7031,14 +7031,14 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb,784a1255,c
 nb_coupables = None  # TODO etudiant
 print(""Exercice 3 a completer : mesurer |core| parmi 10 contraintes (attendu : 3)"")
 ",,,,,,,,2aba8920eb79c644,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb,c1c75dde,markdown,fr,ab8544bb49c676a9,"## Conclusion
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb,c1c75dde,markdown,fr,ab8544bb49c676a9,"## Conclusion
 
 Le UNSAT core transforme le solveur d'oracle binaire en **outil de diagnostic**. La ou `unsat` dit seulement ' impossible ', `unsat_core()` dit ' impossible **a cause de ces contraintes-la** ' - le sous-ensemble minimal responsible du conflit. Sur une specification surcontrainte, ce diagnostic est directement actionnable : il pointe la contrainte a relacher.
 
 
 
 Cette serie Z3-Python (notebooks 01 a 13) couvre maintenant les **trois postures** du solveur : **decider** (sat/unsat, 01-11), **optimiser** (Optimize, 06/08), et ici **expliquer** (unsat_core, 13). La ou l'ingenieur classique debug a l'aveugle un système insatisfiable, le solveur SMT isole chirurgicalement la cause - la différence entre un oracle et un partenaire de raisonnement.",,,,,,,,ab8544bb49c676a9,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-14-BitVectors-Overflow-Python.ipynb,af607fd1,markdown,fr,fe5ddd90faccf7e0,"← [13 - UNSAT cores](Z3-Python-13-UnsatCores.ipynb) | [README Z3-Python](README.md)
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-14-BitVectors-Overflow-Python.ipynb,af607fd1,markdown,fr,fe5ddd90faccf7e0,"← [13 - UNSAT cores](Z3-13-UnsatCores-Python.ipynb) | [README Z3-Python](README.md)
 
 # 14. Bit-vectors : verifier le debordement arithmetique
 
@@ -8661,12 +8661,12 @@ print(f""  premium={m2[p1].as_long()}, standard={m2[p2].as_long()} -> CA={r2}, c
 
 print(""\n=> Les deux strategies DIVERGENT : lexicographique sacrifie le profit pour"")
 print(""   le CA brut (premium a perte), la somme ponderee fait l'inverse (standard)."")",,,,,,,,ae6fd89b1ad0c009,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb,3d4c302c,markdown,fr,a8a76435f19c26eb,"## 6. Le vrai test : un core invisible a l'inspection
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb,3d4c302c,markdown,fr,a8a76435f19c26eb,"## 6. Le vrai test : un core invisible a l'inspection
 
 Les exemples precedents (sections 2 a 5) partagent une limite : dans chacun, le conflit est **visible a l'oeil nu** -- deux contraintes se contredisent textuellement (`h == 12` vs `h != 12`, `x == 1` vs `x == 2`). On n'a pas vraiment besoin de Z3 pour les isoler.
 
 C'est la que `unsat_core()` devient precieux : sur un systeme ou **aucune paire** de contraintes ne se contredit, mais ou l'insatisfiabilite **emerge d'une combinaison**. Cas concret, un projet de planification : quatre taches $T_0, T_1, T_2, T_3$ s'enchainent (chacune doit finir avant que la suivante commence), chacune dure 2 unites, et tout doit etre termine avant la date 7. Aucune contrainte prise isolement n'est absurde -- et pourtant le systeme est insatisfiable. Lequel des 11 ingredients faut-il relacher ?",,,,,,,,a8a76435f19c26eb,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb,991f21a8,code,fr,2007235ddcc57885,"# Planification surcontrainte : 4 taches enchainees (T0->T1->T2->T3), duree 2 chacune,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb,991f21a8,code,fr,2007235ddcc57885,"# Planification surcontrainte : 4 taches enchainees (T0->T1->T2->T3), duree 2 chacune,
 # a finir avant la date 7. Aucune contrainte isolee n'est absurde -> conflit structurel.
 s_start = [Int(f""start_{i}"") for i in range(4)]
 DUREE = 2
@@ -8695,14 +8695,14 @@ print(""Core minimal = { %s }"" % ""  "".join(str(c) for c in core))
 print(""Taille du core : %d contraintes sur %d"" % (len(core), len(labels)))
 innocentes = [str(b) for b in labels if b not in core]
 print(""Contraintes innocentes ecartees (%d) : %s"" % (len(innocentes), "", "".join(innocentes)))",,,,,,,,2007235ddcc57885,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb,0e0fd9dd,markdown,fr,7797f70b14d0c00b,"### Lecture : le core isole la chaine, pas une paire
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb,0e0fd9dd,markdown,fr,7797f70b14d0c00b,"### Lecture : le core isole la chaine, pas une paire
 
 Le core minimal contient **5 contraintes sur 11** : le `release_T0` (point de depart), les **trois precedences** qui enchainent $T_0 \to T_1 \to T_2 \to T_3$, et le `deadline_T3` (echeance finale). Les **6 autres** -- les bornes et echeances intermediaires `deadline_T0`, `release_T1`/`T2`/`T3`, `deadline_T1`/`T2` -- sont ecartees : la chaine les implique deja, elles ne sont pas necessaires au conflit.
 
 Pourquoi ce core est **invisible a l'inspection** : aucune des 5 contraintes coupables ne contredit une autre textuellement. Il faut **tracer la chaine** -- `start_T0 >= 0`, puis `+2` a chaque precedence, donc `start_T3 >= 6`, puis `+2` de duree = `8 > 7` (la deadline) -- pour voir le conflit. C'est precisement le travail fastidieux qu'evite `unsat_core()` : parmi 11 contraintes, il isole chirurgicalement les 5 qui forment la preuve d'insatisfiabilite.
 
 > **Lecon** : la valeur d'un solveur SMT n'est pas de trouver un conflit evident (ca, un regard suffit). C'est d'isoler la **cause minimale** dans un systeme ou le conflit emerge d'une combinaison -- la ou l'ingenieur doit relacher une contrainte sans tout casser. Les exemples triviaux des sections 2 a 5 introduisaient l'API ; celui-ci montre **pourquoi elle compte en pratique**.",,,,,,,,7797f70b14d0c00b,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb,ce9a1526,markdown,fr,f8fc8b85858a8802,"## 7. Au-dela du core : le MUS (Minimal Unsatisfiable Subset)
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb,ce9a1526,markdown,fr,f8fc8b85858a8802,"## 7. Au-dela du core : le MUS (Minimal Unsatisfiable Subset)
 
 Jusqu'ici, on a fait confiance a `unsat_core()` pour renvoyer un sous-ensemble
 **minimal** de contraintes. Mais Z3 ne le **garantit pas** : le core est
@@ -8717,7 +8717,7 @@ L'algorithme **deletion-based** est simple et garantit cette irreductibilite :
 on retire les contraintes une a une, et si le systeme reste UNSAT sans l'une
 d'elles, c'est qu'elle etait superflue — on la supprime definitivement.
 ",,,,,,,,f8fc8b85858a8802,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb,0fb398d7,code,fr,9c9435803cea9640,"from z3 import *
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb,0fb398d7,code,fr,9c9435803cea9640,"from z3 import *
 
 def compute_mus(constraints):
     """"""MUS deletion-based : sous-ensemble irreductible rendant le systeme UNSAT.
@@ -8765,7 +8765,7 @@ print(""MUS (irreductible) :"", mus_labels, ""- taille"", len(mus_labels))
 print(""Contraintes redundantes eliminees :"", sorted(set(core_z3) - set(mus_labels)))
 print(""-> Le core de Z3 (taille %d) n'etait PAS minimal : le MUS est de taille %d."" % (len(core_z3), len(mus_labels)))
 ",,,,,,,,9c9435803cea9640,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb,1d0cd879,markdown,fr,c601b11e3132ea21,"**Lecture : pourquoi le core n'etait pas minimal.** Les aretes `e01`, `e12`,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb,1d0cd879,markdown,fr,c601b11e3132ea21,"**Lecture : pourquoi le core n'etait pas minimal.** Les aretes `e01`, `e12`,
 `e23` (le chemin t0->t1->t2->t3) sont **impliquees** par l'arete transitive
 `e03` (t0->t3, de duree cumulee 12). Z3 les a inclues dans son core parce
 qu'elles participent a la refutation, mais elles sont *logiquement superflues*
