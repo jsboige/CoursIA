@@ -57,8 +57,6 @@ STAT_CONSTANT_CONTEXT_RE = re.compile(
 ORDER_OF_MAGNITUDE_RE = re.compile(r"(?i)(de l'ordre|ordre de grandeur)")
 CHAINED_BAND_RE = re.compile(r"\d\s*(?:<|≤|>|≥)\s*[^<>\n]{1,14}?\s*(?:<|≤|>|≥)\s*\d")
 
-NUM_OUTPUT_CACHE: dict[str, set[str]] = {}
-
 
 def _unaccent(s: str) -> str:
     return "".join(
@@ -99,7 +97,8 @@ def _notebook_output_numbers(nb: dict) -> set[str]:
     nums: set[str] = set()
     for c in nb["cells"]:
         if c["cell_type"] == "code":
-            nums.update(NUM_RE.findall(_output_text(c)))
+            for tok in NUM_RE.findall(_output_text(c)):
+                nums |= _normalize_num(tok)
     return nums
 
 

@@ -79,6 +79,17 @@ def test_present_in_outputs_not_flagged(tmp_path):
     assert rc == 0 and out["anomaly_count"] == 0
 
 
+def test_decimal_dot_comma_symmetric(tmp_path):
+    # Nit (a) review NanoClaw : un claim « 12.5 » face a un output
+    # francais « 12,5 » (ou l'inverse) doit apparier, pas donner un FP.
+    rc, out = _run(
+        [_code("score final : 12,5\n"),
+         _md(INTERP + "le score converge vers ≈ 12.5 sur cette instance.")],
+        tmp_path,
+    )
+    assert rc == 0 and out["anomaly_count"] == 0
+
+
 def test_non_interpretation_cell_ignored(tmp_path):
     rc, out = _run(
         [_code("makespan = 11\n"),

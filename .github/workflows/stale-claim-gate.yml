@@ -69,11 +69,16 @@ jobs:
             echo "::warning::stale-claim: merge-base introuvable -- detector abstains." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
+          TOTAL_CHANGED=$(git diff --name-only --diff-filter=MR -M50% "$BASE" HEAD -- '*.ipynb' | wc -l)
           mapfile -t CHANGED < <(git diff --name-only --diff-filter=MR -M50% "$BASE" HEAD -- '*.ipynb' | head -50)
           if [ ${#CHANGED[@]} -eq 0 ]; then
             echo "exit=0" >> "$GITHUB_OUTPUT"
             echo "::notice::stale-claim: aucun notebook modifie -- rien a scanner." >> "$GITHUB_STEP_SUMMARY"
             exit 0
+          fi
+          if [ "$TOTAL_CHANGED" -gt 50 ]; then
+            echo "trunc_note=Coverage note: ${TOTAL_CHANGED} notebooks changed, only the first 50 were scanned." >> "$GITHUB_OUTPUT"
+            echo "::notice::stale-claim: ${TOTAL_CHANGED} carnets modifies, scan limite aux 50 premiers." >> "$GITHUB_STEP_SUMMARY"
           fi
           python scripts/check_stale_claims.py --json "${CHANGED[@]}" \
             > /tmp/stale-claim.json 2> /tmp/stale-claim.err
@@ -102,3 +107,4 @@ jobs:
           header: stale-claim-advisory
           message: |
             ${{ steps.run.outputs.exit == '0' && '✅ No stale numeric claim detected in the notebooks this PR changed (interpretation cells checked against ALL committed outputs).' || steps.run.outputs.exit == 'abstain' && '⚠️ Stale-claim detector abstained (merge-base introuvable).' || '⚠️ Stale-claim review needed: an interpretation cell claims a measured value absent from ALL committed outputs of the notebook (likely imported from a twin/other notebook, #18354). Advisory, NOT a merge gate — triage against the JSON artifact.' }}
+            ${{ steps.run.outputs.trunc_note }}
