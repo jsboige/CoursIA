@@ -13,7 +13,7 @@
 # 
 # **Substrat — s'y brancher, ne pas le refaire :**
 # 
-# - [Argument_Analysis_Ontology_AIF.ipynb](Argument_Analysis_Ontology_AIF.ipynb) : l'ontologie AIF, schéma de nœuds/liens dans lequel un graphe daté doit s'exprimer ;
+# - [Argumentation-Onto-01-AIF-OWL2-Python.ipynb](Argumentation-Onto-01-AIF-OWL2-Python.ipynb) : l'ontologie AIF, schéma de nœuds/liens dans lequel un graphe daté doit s'exprimer ;
 # - [Argumentation-03-Dung-AF-Semantics-Python.ipynb](Argumentation-03-Dung-AF-Semantics-Python.ipynb) : les sémantiques de Dung, ce qu'« être accepté » veut dire à une date donnée ;
 # - [Argumentation-03c-Ranking-Semantics-Python.ipynb](Argumentation-03c-Ranking-Semantics-Python.ipynb) : les sémantiques graduelles, utiles quand l'acceptation binaire écrase la variation (exercice 3).
 # 
@@ -204,7 +204,7 @@ for nom, g in [("G_t", G_t), ("G_t+1", G_t1)]:
 # Le graphe ci-dessus suit le vocabulaire de l'**Argument Interchange Format** (namespace
 # `http://www.arg.dundee.ac.uk/aif#`) : nœuds `aif:I-node` (contenus), `aif:RA-node` (support),
 # `aif:CA-node` (conflit), liés par des arêtes de scheme. On le vérifie de deux façons, en réutilisant
-# la méthode du notebook [Ontology_AIF](Argument_Analysis_Ontology_AIF.ipynb) : l'ontologie Argumentum
+# la méthode du notebook [Onto-01-AIF-OWL2](Argumentation-Onto-01-AIF-OWL2-Python.ipynb) : l'ontologie Argumentum
 # (`argumentum_fallacies.owl`, 4,7 MB) **ne se laisse pas parser par rdflib** (37 axiomes
 # `ExactCardinality` mal formés) — on extrait donc ses déclarations de classes par regex tolérant, puis
 # on sérialise nos graphes en RDF AIF bien formé.
@@ -222,7 +222,7 @@ from rdflib.namespace import RDF
 AIF = Namespace("http://www.arg.dundee.ac.uk/aif#")
 
 # 1) Classes AIF reellement declarees dans l'ontologie Argumentum (parseur regex tolere,
-#    meme methode que Ontology_AIF : rdflib echoue sur les ExactCardinality mal formes)
+#    meme methode que Onto-01-AIF-OWL2 : rdflib echoue sur les ExactCardinality mal formes)
 _THIS_DIR = Path(__file__).resolve().parent
 OWL = _THIS_DIR / "ontologies" / "argumentum_fallacies.owl"
 owl_text = OWL.read_text(encoding="utf-8", errors="replace")
