@@ -2,11 +2,6 @@
   "findings": [
     {
       "kind": "independent_chain",
-      "notebook": "MyIA.AI.Notebooks/GenAI/FineTuning",
-      "series": "MyIA.AI.Notebooks/GenAI/FineTuning"
-    },
-    {
-      "kind": "independent_chain",
       "notebook": "MyIA.AI.Notebooks/GenAI/Image/examples",
       "series": "MyIA.AI.Notebooks/GenAI/Image/examples"
     },
@@ -14,11 +9,6 @@
       "kind": "independent_chain",
       "notebook": "MyIA.AI.Notebooks/GenAI/SemanticKernel",
       "series": "MyIA.AI.Notebooks/GenAI/SemanticKernel"
-    },
-    {
-      "kind": "independent_chain",
-      "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series",
-      "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
     },
     {
       "kind": "independent_chain",
@@ -722,11 +712,6 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-MUH-FibreTegmark.ipynb",
-      "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Synthese-CrossSubstrat.ipynb",
       "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
     },
@@ -878,11 +863,6 @@
     {
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.9f-Compression-Pruning-SOTA.ipynb",
-      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.9g-Compression-Comparatif-A-vs-B.ipynb",
       "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning"
     },
     {
@@ -1752,7 +1732,12 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-12c-Tensor-Product-Representations-Lean.ipynb",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-07b-Examples-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-08b-Erdos-Formal-Conjectures-Lean.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
     },
     {
@@ -1797,11 +1782,6 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21c-Descente-Budget.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
     },
@@ -1837,16 +1817,6 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-07b-Examples-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-08b-Erdos-Formal-Conjectures-Lean.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5b-Lean-Relaxation.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical"
     },
@@ -1854,61 +1824,6 @@
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-6-Domains-Csharp.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01-Introduction-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-02-Sudoku-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-05-Quantifiers-Proofs-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-06-Advanced-Optimization-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13b-UnsatCores-MUS-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-14-BitVectors-Overflow-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16d-Meal-Planner-Convergence-Scale-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16e-Meal-Planner-Optimize-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-17-Array-Theory-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API"
     },
     {
       "kind": "orphan_entry",
@@ -2179,11 +2094,6 @@
       "kind": "unreachable",
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/03_Sudoku_Modes_Comparison.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3"
-    },
-    {
-      "kind": "unreachable",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-13-Discover-TPR.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning"
     }
   ],
   "wrapped": [
@@ -2213,7 +2123,7 @@
     },
     {
       "series": "MyIA.AI.Notebooks/GenAI/Texte",
-      "notebooks": 31
+      "notebooks": 36
     },
     {
       "series": "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claude-Code/notebooks",
