@@ -9,7 +9,10 @@ name: Lean Axiom Check (reusable)
 #
 # The check is NOT a build run — we assume `lean-build.yml` already ran
 # successfully upstream. We just need the lake project cached and the
-# toolchain present, so we run the same setup steps. If `lake build`
+# toolchain present, so we run the same setup steps — and since #14921
+# option 1 the cache key is the SAME as lean-build's, so `needs: ci`
+# hands us the ci job's own build artifacts (exact HIT, no rebuild).
+# If `lake build`
 # fails, the `#print axioms` step will too, and the job will exit 1 with
 # the lake error in the logs.
 #
@@ -110,16 +113,25 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ${{ inputs.project-path }}/.lake
-        key: lake-${{ inputs.display-name }}-axiom-${{ runner.os }}-${{ hashFiles(format('{0}/lakefile.lean', inputs.project-path), format('{0}/lakefile.toml', inputs.project-path), format('{0}/lean-toolchain', inputs.project-path)) }}
-        restore-keys: lake-${{ inputs.display-name }}-axiom-${{ runner.os }}-
+        # Key is IDENTICAL to lean-build's (workflows/lean-build.yml l.213 and
+        # actions/lean-build/action.yml l.141): same path, same hashed file set
+        # {lakefile.lean|toml, lean-toolchain}. Callers run `needs: ci`, so the
+        # ci job of the SAME run has already saved this exact key — here it is
+        # an exact HIT and the `lake -R build` below is a no-op trace, not a
+        # rebuild. One cache entry per lake instead of two (footprint /2,
+        # See #14921 option 1). Legacy `-axiom-` keys do not prefix-match the
+        # new restore-keys, so they expire by LRU without ever being served.
+        key: lake-${{ inputs.display-name }}-${{ runner.os }}-${{ hashFiles(format('{0}/lakefile.lean', inputs.project-path), format('{0}/lakefile.toml', inputs.project-path), format('{0}/lean-toolchain', inputs.project-path)) }}
+        restore-keys: lake-${{ inputs.display-name }}-${{ runner.os }}-
 
     - name: Add swap space
       # Same OOM guard as lean-build.yml (see the comment there): a cache-miss
       # build of a large local module (conway_lean HashlifeCorrectness.lean)
       # exceeds the 16 GB of hosted runners and the VM is torn down with exit 143.
-      # This workflow rebuilds the lake too (its cache key differs from
-      # lean-build's, so it can miss independently) — observed on PR #9798 where
-      # BOTH proof-integrity jobs died at exit 143 alongside the build job.
+      # With the shared key the steady state is a HIT, but the swap stays: on
+      # cache eviction (or a first run of a new lake) this job still builds
+      # cold — the observed failure mode of PR #9798, where both jobs died at
+      # exit 143 with two independently-missed caches.
       # 16 G -> 32 G (2026-08-07, PR #9840): teardown recurred with the swap step
       # green, and the peak is inside a SINGLE module — see the long note in
       # lean-build.yml for the measurements.
@@ -170,11 +182,15 @@ jobs:
         ) &
         _lake_pipeline=$!
         _elapsed=0
+        # Poll every 5 s, print every 10 min. A bare `sleep 600` here held the
+        # runner until the next 10-min tick after the build had ended: 102 of
+        # 140 runner-minutes on the 11 Lean jobs of PR #18186 were that sleep.
         while kill -0 "$_lake_pipeline" 2>/dev/null; do
-          sleep 600
+          sleep 5
+          _elapsed=$((_elapsed + 5))
+          [ $((_elapsed % 600)) -eq 0 ] || continue
           kill -0 "$_lake_pipeline" 2>/dev/null || break
-          _elapsed=$((_elapsed + 10))
-          echo "[lake-heartbeat] still running after ${_elapsed} min - last line: $(tail -1 "$RUNNER_TEMP/lake.log" 2>/dev/null | cut -c1-160)"
+          echo "[lake-heartbeat] still running after $((_elapsed / 60)) min - last line: $(tail -1 "$RUNNER_TEMP/lake.log" 2>/dev/null | cut -c1-160)"
         done
         wait "$_lake_pipeline"
 
@@ -207,3 +223,16 @@ jobs:
         # Env-driven contract (see the script docstring): inputs never come
         # from the cwd (#8712).
         python scripts/lean/axiom_check_step.py
+    - name: Drop Mathlib oleans before the cache save
+      # actions/cache saves `.lake` in its post step, at the end of this job
+      # (success only). Mathlib's own oleans make up most of that archive:
+      # ~2.4 GB per lake, so three lakes fill the 10 GB repo quota and evict
+      # each other's caches -- the cold knot_lean builds of #18100 (#18185).
+      # `lake exe cache get` in the build step fetches them again from the
+      # Mathlib cache server, outside the quota (37 s in run 36378467990).
+      # The lake's own build and the other packages stay cached.
+      # Keep this step LAST: any later step would find Mathlib unbuilt.
+      working-directory: ${{ inputs.project-path }}
+      run: |
+        rm -rf .lake/packages/mathlib/.lake/build
+        du -sh .lake 2>/dev/null || true

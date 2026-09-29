@@ -9,11 +9,17 @@ d'adjoint etait rejete par le gate, 14 avaient une tete perimee et 13 une
 discussion ayant bouge APRES le dossier, 0 un refus de fond. Un dossier
 perit pendant qu'il attend le coordinateur.
 
+Arbitrage user 2026-09-28 (Q67, option a) : l'organe ne merge QUE ce que le
+coordinateur a LU et APPROUVE. Il ne remplace pas cette lecture ; il evite
+seulement qu'un dossier perisse entre elle et le merge. Jusque-la, la
+disposition de review n'etait que relevee : sur les 211 merges du journal
+(23/09 -> 28/09), 6 portaient une approbation ``myia-ai-01``, et toute lane
+ne portant pas la PR pouvait la faire merger par son seul dossier.
+
 L'organe est deterministe et tourne sous l'identite coordinateur
-(myia-ai-01) toutes les ~20 minutes : il ne merge QUE ce qui passe
-EXACTEMENT les controles du coordinateur lui-meme, et seulement en
-perimetre (b) -- hors harnais et hors grains DEEP. Tour de controle par
-PR, TOUT doit tenir sinon skip avec raison nommee :
+(myia-ai-01) toutes les ~20 minutes, et seulement en perimetre (b) -- hors
+harnais et hors grains DEEP. Tour de controle par PR, TOUT doit tenir sinon
+skip avec raison nommee :
 
 1. pas un brouillon, et au moins un commentaire d'issue dont la premiere
    ligne est ``[ADJOINT PREFLIGHT]`` (prefiltre bon marche avant le gate
@@ -31,6 +37,18 @@ PR, TOUT doit tenir sinon skip avec raison nommee :
 2bis. pre-controle du dernier dossier ``[ADJOINT PREFLIGHT]`` : tete
    perimee ou ``b0:`` different de ``clear`` -> skip SANS payer le gate
    (un dossier illisible est laisse au gate, qui tranche) ;
+2ter. approbation du coordinateur : la DERNIERE voix de ``myia-ai-01``
+   (etat reel ``APPROVED``/``CHANGES_REQUESTED``, ou verdict type en
+   corps -- latest-wins, ``DISMISSED`` jamais) est un ``APPROVED`` reel,
+   et elle couvre le CONTENU de la tete : soit elle est posee sur la tete
+   elle-meme, soit la tete n'en differe que par des rafraichissements de
+   base PROUVES content-free (``merge_dwell.last_authoritative_sha``, la
+   remontee du plancher DWELL : un ``update-branch`` sans conflit ne
+   perime pas la lecture, une resolution de conflit ou un commit de
+   contenu la perime). Absente -> ``no-coordinator-approval`` ; perimee
+   -> ``coordinator-approval-stale`` ; preuve illisible ->
+   ``coordinator-approval-unverifiable`` (fail-closed). Controle place
+   AVANT le gate : une PR non lue ne paie pas le gate ;
 3. gate d'entree ``check_adjoint_prevalidation.py <PR> --json`` ->
    ``"ready": true`` (exit 0). Les rc documents du gate (1 no-dossier,
    2 unknown, 3 blocked) sont des SKIPS nommes, pas des erreurs ;
@@ -80,8 +98,13 @@ Comportement :
   (``hold:<motif>``) AVANT tout appel gh. Fichier absent = aucune
   retenue ; fichier illisible ou ligne malformee -> exit 2 (on ne merge
   pas sans savoir ce qui est retenu).
+- Review : deux lectures distinctes. La disposition journalisee (champ
+  ``review``) est CLASSEE a la tete que la ligne declare
+  (``approved-exact-head`` / ``approval-not-on-head`` / ``no-approval``,
+  point 1 de #17672) sur TOUTES les voix, bots compris ; elle informe.
+  Ce qui BLOQUE est l'etape 2ter : la seule voix du coordinateur.
 - Journal : une ligne JSON par PR evaluee (ts UTC en Z, pr, head,
-  verdict, reason, merged) dans
+  verdict, reason, merged, review) dans
   ``%LOCALAPPDATA%/CoursIA/merge_ready/journal.jsonl`` (surchargeable
   ``--journal``), plus un resume humain sur stdout ; ``--json`` pour la
   sortie machine.
@@ -128,6 +151,22 @@ from frozen_campaigns import (  # noqa: E402,F401
     frozen_umbrella_exclusion,
 )
 
+# Le canon d'emission du verdict de review vit dans scripts/ci/ : le jeton de
+# review du cluster ne peut poster que des COMMENT (#16926), donc le verdict
+# reel s'ecrit ``VERDICT: <token>`` dans le CORPS de la voix. Importe, jamais
+# recopie -- une regex locale divergerait en silence du canon qui gouverne le
+# triage du pool.
+CI_DIR = SCRIPTS_DIR / "ci"
+if str(CI_DIR) not in sys.path:
+    sys.path.insert(0, str(CI_DIR))
+
+import pool_review_verdicts as review_canon  # noqa: E402
+# La remontee first-parent qui saute les rafraichissements de base PROUVES
+# content-free est celle du plancher DWELL (#16149) : importee, pas recopiee,
+# pour que « la lecture du coordinateur couvre-t-elle encore cette tete ? » et
+# « depuis quand le contenu n'a-t-il pas bouge ? » ne divergent jamais.
+import merge_dwell  # noqa: E402
+
 REPO = "jsboige/CoursIA"
 COORDINATOR_USER = "myia-ai-01"
 GATE_PATH = SCRIPTS_DIR / "check_adjoint_prevalidation.py"
@@ -146,6 +185,31 @@ REPO_ROOT = SCRIPTS_DIR.parent
 GATE_DOCUMENTED_RC = frozenset({0, 1, 2, 3})  # ready / no-dossier / unknown / blocked
 GATE_RC_REASONS = {1: "gate:no-dossier", 2: "gate:unknown", 3: "gate:blocked"}
 NITS_DOCUMENTED_RC = frozenset({0, 1})  # clear / blocked
+
+# --- disposition de review classsee a la tete evaluee (point 1 de #17672) ------
+# Le dossier HACHE l'oid de chaque review dans son empreinte
+# (``check_adjoint_prevalidation._fingerprint_payload``) sans le CLASSER : rien
+# ne dit si l'approbation porte sur le commit qui va etre merge. Trois etats,
+# toujours lus a la tete que la ligne de journal declare :
+#   ``approved-exact-head``  une voix approbatrice gouverne CETTE tete ;
+#   ``approval-not-on-head`` une approbation existe dans la fenetre lue, mais
+#                            elle ne couvre pas la tete evaluee (tete avancee
+#                            depuis l'approbation, ou voix posterieure qui n'approuve
+#                            pas) ;
+#   ``no-approval``          aucune approbation lue.
+# Les deux surfaces du canon sont lues : l'etat REEL de l'API (APPROVED, quand un
+# humain review) et le verdict type du CORPS en COMMENT -- la seule surface dont
+# dispose le jeton du cluster. Lire la seule premiere classerait « sans
+# approbation » des PR revues, le faux compte que #16926 a deja puni deux fois.
+APPROVED_EXACT_HEAD = "approved-exact-head"
+APPROVAL_NOT_ON_HEAD = "approval-not-on-head"
+NO_APPROVAL = "no-approval"
+NOT_EVALUATED = "not-evaluated"  # ligne d'un run interrompu avant evaluation
+
+#: Ce qui vaut approbation : l'etat REEL ``APPROVED``, ou le verdict type
+#: ``LGTM`` emis en corps de voix (``VERDICT_RE`` du canon ne type que LGTM et
+#: CONCERNS -- les deux etats reels suffisent au reste).
+APPROVING_VOICES = frozenset({"APPROVED", "LGTM"})
 
 MAX_MERGES_DEFAULT = 15
 PR_LIST_LIMIT = 500  # le pool ouvert mesure ~220 PRs ; au-dela, ordre ancien d'abord
@@ -259,6 +323,9 @@ class PRVerdict:
     verdict: str  # skipped | would-merge | merged | merge-failed | run-error
     reason: str | None
     merged: bool
+    #: Disposition de review classee a ``head`` (point 1 de #17672) ; une ligne
+    #: ecrite avant evaluation (erreur inattendue) porte ``not-evaluated``.
+    review: str = NOT_EVALUATED
 
     def journal_dict(self) -> dict:
         return {
@@ -268,6 +335,7 @@ class PRVerdict:
             "verdict": self.verdict,
             "reason": self.reason,
             "merged": self.merged,
+            "review": self.review,
         }
 
 
@@ -430,11 +498,18 @@ def list_open_prs(runner: Runner, gh_env: dict[str, str]) -> list[int]:
     return numbers
 
 
-PR_VIEW_FIELDS = "number,title,isDraft,body,headRefName,headRefOid,files,changedFiles,comments"
+#: ``reviews`` est lu par la MEME commande que le reste : la disposition de
+#: review se classe sans appel supplementaire (l'oid de review y figure, mesure
+#: du 2026-09-25 : ``gh pr view --json reviews`` rend ``commit.oid``).
+PR_VIEW_FIELDS = (
+    "number,title,isDraft,body,headRefName,headRefOid,baseRefOid,files,"
+    "changedFiles,comments,reviews"
+)
 
 
 def fetch_pr_view(runner: Runner, pr: int, gh_env: dict[str, str]) -> dict:
-    """Une vue par PR : brouillon, body (tag Grain), tete, fichiers, commentaires."""
+    """Une vue par PR : brouillon, body (tag Grain), tete, fichiers, commentaires,
+    reviews (disposition de review classee a la tete, point 1 de #17672)."""
     res = runner.run(
         ["gh", "pr", "view", str(pr), "--repo", REPO, "--json", PR_VIEW_FIELDS],
         env=gh_env,
@@ -447,6 +522,149 @@ def fetch_pr_view(runner: Runner, pr: int, gh_env: dict[str, str]) -> dict:
     if not isinstance(view, dict):
         raise UnexpectedError(f"gh pr view {pr} : la reponse n'est pas un objet")
     return view
+
+
+def _review_voice_state(review: dict) -> str | None:
+    """L'etat REEL d'une review, ou le verdict type de son corps (canal COMMENT).
+
+    Meme lecture a deux surfaces que le canon (``REAL_STATES`` puis
+    ``VERDICT_RE``), pour la meme raison : le jeton du cluster ne peut poster que
+    des COMMENT, son verdict vit donc dans le corps (#16926). Une voix sans
+    verdict type n'est pas une approbation -- un commentaire de lane, de CI ou
+    un ``COMMENTED`` muet ne dit rien de la disposition.
+
+    ``DISMISSED`` n'est jamais approbateur : une approbation ANNULEE ne
+    gouverne plus, meme si son corps porte encore le jeton type (reserve 2
+    Hermes 2026-09-26 : le croisement des deux surfaces manquait).
+    """
+    state = str(review.get("state") or "")
+    if state == "DISMISSED":
+        return None
+    if state in review_canon.REAL_STATES:
+        return state
+    match = review_canon.VERDICT_RE.search(str(review.get("body") or ""))
+    return match.group(1) if match else None
+
+
+def review_disposition(view: dict, head: str) -> str:
+    """La disposition de review, CLASSEE a la tete evaluee (point 1 de #17672).
+
+    La tete gouverne : une approbation posee sur un commit anterieur ne couvre
+    pas le commit qui va etre merge, et c'est cette difference que le dossier
+    n'exprime pas (il hache l'oid de review sans le comparer). La voix qui
+    gouverne une tete est la PLUS RECENTE des VOIX posees sur cette tete
+    (latest-wins, la discipline du canon) : une approbation suivie, sur la
+    meme tete, d'une voix qui n'approuve pas, n'est plus une approbation.
+    Une ligne qui n'est pas une voix au sens du canon (pas d'etat REEL ni de
+    ``VERDICT`` type en corps -- commentaire de lane, ``[OVERRIDE]``, CI) ne
+    detrone rien : le latest-wins porte sur les voix, pas sur les lignes
+    ``reviews[]`` (reserve 1 Hermes 2026-09-26).
+
+    Fonction pure : la vue est deja fetchee, aucun appel supplementaire.
+    """
+    reviews = [row for row in (view.get("reviews") or []) if isinstance(row, dict)]
+    at_head = [
+        row
+        for row in reviews
+        if str(((row.get("commit") or {}).get("oid")) or "") == head
+    ]
+    voices_at_head = [row for row in at_head if _review_voice_state(row)]
+    if voices_at_head:
+        latest = max(voices_at_head, key=lambda row: str(row.get("submittedAt") or ""))
+        if _review_voice_state(latest) in APPROVING_VOICES:
+            return APPROVED_EXACT_HEAD
+    if any(_review_voice_state(row) in APPROVING_VOICES for row in reviews):
+        return APPROVAL_NOT_ON_HEAD
+    return NO_APPROVAL
+
+
+# --- approbation du coordinateur (etape 2ter, Q67 option a) --------------------
+
+
+def coordinator_approval_oid(view: dict) -> str | None:
+    """Oid du commit que la DERNIERE voix de ``myia-ai-01`` approuve, ou None.
+
+    Latest-wins sur les seules voix du coordinateur, lues comme le canon (etat
+    reel, puis verdict type en corps) : un ``CHANGES_REQUESTED`` ou un
+    ``VERDICT: CONCERNS`` posterieur retire l'approbation, un ``COMMENTED``
+    sans verdict (une phrase de levee, par exemple) ne la retire pas. Seul
+    l'etat REEL ``APPROVED`` vaut approbation : c'est le geste explicite de
+    lecture, pas un jeton de corps.
+    """
+    voices = [
+        row
+        for row in view.get("reviews") or []
+        if isinstance(row, dict)
+        and ((row.get("author") or {}).get("login")) == COORDINATOR_USER
+        and _review_voice_state(row)
+    ]
+    if not voices:
+        return None
+    latest = max(voices, key=lambda row: str(row.get("submittedAt") or ""))
+    if str(latest.get("state") or "") != "APPROVED":
+        return None
+    oid = str(((latest.get("commit") or {}).get("oid")) or "")
+    return oid or None
+
+
+def _dwell_fetch(runner: Runner, gh_env: dict[str, str]):
+    """``fetch`` de ``merge_dwell`` passe par le runner, jeton epingle."""
+
+    def fetch(path: str) -> object:
+        res = runner.run(["gh", "api", path], env=gh_env)
+        if res.returncode != 0:
+            raise merge_dwell.DwellError(f"gh api {path} rc={res.returncode}")
+        try:
+            return json.loads(res.stdout)
+        except json.JSONDecodeError as exc:
+            raise merge_dwell.DwellError(f"gh api {path} : reponse non-JSON") from exc
+
+    return fetch
+
+
+def _dwell_git(runner: Runner):
+    """``run_git`` de ``merge_dwell`` passe par le runner, dans ce depot."""
+
+    def run_git(args: list[str]) -> tuple[int, str]:
+        res = runner.run(["git", "-C", str(REPO_ROOT), *args])
+        return res.returncode, res.stdout
+
+    return run_git
+
+
+def coordinator_approval_reason(
+    view: dict, head: str, runner: Runner, gh_env: dict[str, str]
+) -> str | None:
+    """Etape 2ter : ``None`` si l'approbation du coordinateur couvre ``head``.
+
+    Une approbation posee sur une tete anterieure couvre encore la tete
+    courante si les deux ne different que par des rafraichissements de base
+    prouves content-free : les deux tetes remontent alors au MEME dernier
+    commit de contenu. Toute autre difference perime la lecture ; une preuve
+    illisible vaut refus.
+    """
+    approved = coordinator_approval_oid(view)
+    if approved is None:
+        return "no-coordinator-approval"
+    if approved == head:
+        return None
+    base = str(view.get("baseRefOid") or "")
+    if not base:
+        return "coordinator-approval-unverifiable:no-base"
+    fetch = _dwell_fetch(runner, gh_env)
+    run_git = _dwell_git(runner)
+    try:
+        current = merge_dwell.last_authoritative_sha(
+            REPO, head, base, fetch=fetch, run_git=run_git
+        )
+        read = merge_dwell.last_authoritative_sha(
+            REPO, approved, base, fetch=fetch, run_git=run_git
+        )
+    except merge_dwell.DwellError:
+        return "coordinator-approval-unverifiable"
+    if current == read:
+        return None
+    return "coordinator-approval-stale"
 
 
 def precheck_dossier(view: dict) -> str | None:
@@ -660,10 +878,18 @@ def evaluate_pr(
     Les controles bon marche (brouillon, commentaire, perimetre, tag) passent
     AVANT le gate couteux ; le gate avant les organes B.0 ; le REST en
     dernier, juste avant le merge, pour minimiser la fenetre de course.
+
+    La disposition de review (point 1 de #17672) est classee pour TOUTE PR
+    evaluee, skip compris, et reportee a la tete que la ligne declare : la tete
+    de la vue pour un skip, la tete du gate pour un would-merge -- celle que le
+    merge epingle, l'etape 6 ayant deja refuse une tete qui a bouge depuis.
     """
 
+    view_head = str(view.get("headRefOid") or "")
+    disposition = review_disposition(view, view_head)
+
     def skip(reason: str) -> PRVerdict:
-        return PRVerdict(pr, str(view.get("headRefOid") or ""), "skipped", reason, False)
+        return PRVerdict(pr, view_head, "skipped", reason, False, disposition)
 
     # 1. prefiltre bon marche.
     if view.get("isDraft"):
@@ -692,10 +918,18 @@ def evaluate_pr(
     reason = precheck_dossier(view)
     if reason is not None:
         return skip(reason)
+    # 2ter. approbation du coordinateur (Q67) : une PR non lue ne paie pas le gate.
+    reason = coordinator_approval_reason(view, view_head, runner, gh_env)
+    if reason is not None:
+        return skip(reason)
     # 3. gate d'entree.
     ready, gate_head, gate_reason = run_gate(runner, pr, gh_env)
     if not ready:
         return skip(gate_reason)
+    # L'approbation a ete jugee a la tete de la vue : une tete differente au
+    # gate n'a pas ete couverte par ce jugement.
+    if gate_head != view_head:
+        return skip("head-moved")
     # 4. b0 declaratif du dossier accepte.
     reason = dossier_b0_reason(runner, pr, gh_env)
     if reason is not None:
@@ -713,7 +947,9 @@ def evaluate_pr(
         return skip(f"mergeable-state:{state or 'absent'}")
     if live_head != gate_head:
         return skip("head-moved")
-    return PRVerdict(pr, gate_head, "would-merge", None, False)
+    return PRVerdict(
+        pr, gate_head, "would-merge", None, False, review_disposition(view, gate_head)
+    )
 
 
 # --- journal -------------------------------------------------------------------
@@ -734,9 +970,12 @@ def append_journal(path: Path, verdict: PRVerdict) -> None:
 
 def _describe(verdict: PRVerdict) -> str:
     if verdict.verdict == "merged":
-        return f"PR #{verdict.pr} MERGED ({verdict.head})"
+        return f"PR #{verdict.pr} MERGED ({verdict.head}) [review: {verdict.review}]"
     if verdict.verdict == "would-merge":
-        return f"PR #{verdict.pr} WOULD MERGE ({verdict.head}) [dry-run]"
+        return (
+            f"PR #{verdict.pr} WOULD MERGE ({verdict.head}) [dry-run] "
+            f"[review: {verdict.review}]"
+        )
     if verdict.verdict == "merge-failed":
         return f"PR #{verdict.pr} MERGE ECHOUE : {verdict.reason}"
     if verdict.verdict == "run-error":
@@ -769,6 +1008,11 @@ def emit_output(
     would = sum(1 for v in results if v.verdict == "would-merge")
     skipped = sum(1 for v in results if v.verdict == "skipped")
     errored = sum(1 for v in results if v.verdict == "run-error")
+    # La disposition de review ne se compte que sur les candidates au merge :
+    # c'est la que « approbation a la tete exacte » ou « ailleurs » decide.
+    candidates = [v for v in results if v.verdict in ("merged", "would-merge")]
+    at_head = sum(1 for v in candidates if v.review == APPROVED_EXACT_HEAD)
+    off_head = sum(1 for v in candidates if v.review == APPROVAL_NOT_ON_HEAD)
     print(
         f"bilan : {len(results)} evaluee(s), {merged} merge(s), "
         f"{would} would-merge, {skipped} skip(s)"
@@ -776,6 +1020,12 @@ def emit_output(
         # compte, un run qui a continue malgre une PR en erreur se lirait comme
         # un run propre (#17672 point 3).
         + (f", {errored} erreur(s) isolee(s)" if errored else "")
+        + (
+            f", candidates : {at_head} approved-exact-head, "
+            f"{off_head} approval-not-on-head"
+            if candidates
+            else ""
+        )
     )
     if stopped_reason:
         print(f"arret : {stopped_reason}")
@@ -841,14 +1091,17 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
                         merge_pr(active_runner, pr, decision.head or "", gh_env)
                     except MergeFailedError as exc:
                         failed = PRVerdict(
-                            pr, decision.head, "merge-failed", str(exc), False
+                            pr, decision.head, "merge-failed", str(exc), False,
+                            decision.review,
                         )
                         results.append(failed)
                         append_journal(journal_path, failed)
                         stopped_reason = f"merge-failed:PR-{pr}"
                         exit_code = 1
                         break
-                    decision = PRVerdict(pr, decision.head, "merged", None, True)
+                    decision = PRVerdict(
+                        pr, decision.head, "merged", None, True, decision.review
+                    )
                 merged_count += 1
             results.append(decision)
             append_journal(journal_path, decision)

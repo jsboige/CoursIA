@@ -349,7 +349,7 @@ def test_blocked_preflight_is_a_valid_dossier_but_never_ready():
     which measurably produced a false `b0: clear` on a PR with three open HIGH
     findings (#16160). See #16800.
     """
-    verdict, errors = mod.evaluate(_snapshot(_body(verdict="BLOCKED")))
+    verdict, errors = mod.evaluate(_snapshot(_body(verdict="BLOCKED", b0="blocked")))
     assert verdict == mod.VERDICT_BLOCKED
     assert errors == []
 
@@ -569,7 +569,7 @@ def test_trailing_prose_cannot_smuggle_a_contract_field():
     contract: the BLOCKED verdict inside the block wins over the READY written
     below it.
     """
-    smuggled = _body(verdict="BLOCKED") + "\nverdict: READY\nb0: clear\nchecks: latest-wins-green"
+    smuggled = _body(verdict="BLOCKED", b0="blocked") + "\nverdict: READY\nb0: clear\nchecks: latest-wins-green"
     verdict, _ = mod.evaluate(_snapshot(smuggled))
     assert verdict == mod.VERDICT_BLOCKED
 
@@ -594,6 +594,47 @@ def test_template_populates_mechanical_fields_but_not_verdicts():
     assert "verdict: READY" not in template
 
 
+def test_restamp_warning_is_silent_without_an_existing_dossier():
+    assert mod.restamp_warning(_base_snapshot()) is None
+
+
+def test_restamp_warning_names_the_new_comment_gesture():
+    warning = mod.restamp_warning(_snapshot(_body()))
+    assert warning is not None
+    assert "comment 2 of 2" in warning
+    assert "NEW" in warning and "never PATCH" in warning
+
+
+def _filled(template: str) -> str:
+    verdicts = {
+        "complete": "true", "body": "read", "checks": "latest-wins-green",
+        "b0": "clear", "scope": "pass", "domain": "pass", "verdict": "READY",
+    }
+    lines = []
+    for line in template.splitlines():
+        key = line.split(":", 1)[0]
+        lines.append(f"{key}: {verdicts[key]}" if key in verdicts else line)
+    return "\n".join(lines)
+
+
+def test_patched_restamp_can_never_match_but_a_new_comment_does():
+    """#18072/#17985/#18134: the template counts the dossier it would replace."""
+    snapshot = _snapshot(_body())
+    stamped = _filled(mod.render_template(snapshot))
+
+    patched = _base_snapshot()
+    patched["comments"].append(_comment(stamped))
+    assert any(
+        error.startswith("comments-reviewed is stale") for error in _errors(patched)
+    )
+
+    posted = _snapshot(_body())
+    posted["comments"].append(_comment(stamped))
+    ready, errors = mod.evaluate(posted)
+    assert errors == []
+    assert ready
+
+
 def test_metadata_identity_ignores_only_check_order():
     first = {
         "number": 123,
@@ -610,6 +651,96 @@ def test_metadata_identity_ignores_only_check_order():
     changed = dict(first)
     changed["updatedAt"] = "2026-09-16T19:00:01Z"
     assert mod._metadata_identity(first) != mod._metadata_identity(changed)
+
+
+def _bracket_reads(monkeypatch, first, second=None):
+    """Stub every network read `load_snapshot` performs, and count them.
+
+    `load_snapshot` reads the PR metadata twice -- before and after the
+    surfaces -- and refuses the snapshot when the two disagree. `first` and
+    `second` are payload FACTORIES (one callable per read) so a test steers
+    the second read without aliasing the first.
+
+    The stubbed check runs also pin the source of truth (#16957): the
+    snapshot's `checkRuns` come from `commits/<head>/check-runs`, keyed on the
+    exact head commit, never from the rollup.
+    """
+    calls = {"metadata": 0, "check_runs_head": None}
+    runs = [
+        {
+            "id": 1,
+            "name": "PR gate",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-09-28T10:00:00Z",
+        }
+    ]
+
+    def fake_pr_metadata(pr, *, with_rollup):
+        calls["metadata"] += 1
+        factory = first if calls["metadata"] == 1 else (second or first)
+        return factory()
+
+    def fake_head_check_runs(head_sha):
+        calls["check_runs_head"] = head_sha
+        return list(runs)
+
+    monkeypatch.setattr(mod, "_pr_metadata", fake_pr_metadata)
+    monkeypatch.setattr(mod, "_head_check_runs", fake_head_check_runs)
+    monkeypatch.setattr(mod, "_issue_comments", lambda pr: [{"id": 1}])
+    monkeypatch.setattr(mod, "_reviews", lambda pr: [{"id": 2}])
+    monkeypatch.setattr(mod, "review_threads", lambda pr: [{"thread": 1}])
+    return calls, runs
+
+
+def _metadata_payload(**changes):
+    """The shape `_pr_metadata` renders -- what the stability identity hashes."""
+    payload = _base_snapshot()
+    payload["updatedAt"] = "2026-09-28T12:00:00Z"
+    payload["headRefName"] = "feature/bracket"
+    payload.update(changes)
+    return payload
+
+
+def test_load_snapshot_reads_metadata_twice_and_takes_checks_from_rest(monkeypatch):
+    calls, runs = _bracket_reads(monkeypatch, _metadata_payload)
+
+    snapshot = mod.load_snapshot(123)
+
+    assert calls["metadata"] == 2
+    assert calls["check_runs_head"] == HEAD
+    assert snapshot["checkRuns"] == runs
+    assert snapshot["comments"] == [{"id": 1}]
+    assert snapshot["reviews"] == [{"id": 2}]
+    assert snapshot["threads"] == [{"thread": 1}]
+
+
+def test_load_snapshot_aborts_when_a_check_concludes_during_the_read(monkeypatch):
+    """#17390 acceptance 2: the guard must go red, not absolve.
+
+    A check moving from in-progress to a conclusion between the two metadata
+    reads makes the snapshot born of an already-stale state: the gate refuses
+    it (transient UNKNOWN, the caller retries) instead of certifying it.
+    """
+    in_progress = _metadata_payload(
+        statusCheckRollup=[{"name": "PR gate", "status": "IN_PROGRESS", "conclusion": None}]
+    )
+    concluded = _metadata_payload(
+        statusCheckRollup=[{"name": "PR gate", "status": "COMPLETED", "conclusion": "SUCCESS"}]
+    )
+    _bracket_reads(monkeypatch, lambda: in_progress, lambda: concluded)
+
+    with pytest.raises(RuntimeError, match="changed while prevalidation snapshot was read"):
+        mod.load_snapshot(123)
+
+
+def test_load_snapshot_aborts_when_any_surface_moves_during_the_read(monkeypatch):
+    first = _metadata_payload()
+    moved = _metadata_payload(updatedAt="2026-09-28T12:00:05Z")
+    _bracket_reads(monkeypatch, lambda: first, lambda: moved)
+
+    with pytest.raises(RuntimeError, match="changed while prevalidation snapshot was read"):
+        mod.load_snapshot(123)
 
 
 def test_ready_dossier_is_evidence_not_merge_authorization():
@@ -850,6 +981,66 @@ def test_any_other_author_still_expires_the_dossier():
         foreign = _comment("a new concern", login=login)
         foreign["createdAt"] = T1
         snapshot["comments"].append(foreign)
+        errors = _errors(snapshot)
+        assert any("discussion changed after dossier" in e for e in errors), login
+
+
+# --- #17818 : premiere pose d'un commentaire consultatif de bot marker-garde --
+
+
+def test_first_pose_of_bot_advisory_comment_does_not_expire_the_dossier():
+    """#17818 acceptance (positive control) : un dossier integre, puis la
+    premiere pose du commentaire consultatif PR-PATH-COLLISION par
+    ``github-actions[bot]`` -- le verdict reste lisible. Mesure fondatrice :
+    les dossiers de #17781 et #17797 perimes a 13:02Z par cette seule pose,
+    l'arrivee d'une PR voisine sur les memes READMEs declenchant l'organe.
+    """
+    for marker in (
+        "<!-- PR-PATH-COLLISION:START -->\n## Path-collision (organ #1)\npaire: X / Y",
+        "<!-- variation-genre-signals -->\ngenre: lean",
+        "<!-- gvar2-light-cap -->\ncap: 1/1",
+        "<!-- trivial-diff-15740 -->\ntrivial: yes",
+    ):
+        base = _stamped_snapshot("")
+        base["comments"].pop()
+        snapshot = _stamped_snapshot(_dossier_for(base))
+        pose = _comment(marker, login="github-actions[bot]")
+        pose["createdAt"] = T1
+        snapshot["comments"].append(pose)
+        verdict, errors = mod.evaluate(snapshot)
+        assert verdict == mod.VERDICT_READY, (marker.splitlines()[0], errors)
+
+
+def test_human_comment_after_dossier_still_expires_it():
+    """#17818 acceptance (negative control) : un commentaire humain posterieur
+    perime toujours le dossier -- la neutralisation ne s'elargit pas aux tiers.
+    """
+    base = _stamped_snapshot("")
+    base["comments"].pop()
+    snapshot = _stamped_snapshot(_dossier_for(base))
+    human = _comment("une remarque de fond sur le scope", login="clusterManager-Myia")
+    human["createdAt"] = T1
+    snapshot["comments"].append(human)
+    errors = _errors(snapshot)
+    assert any("discussion changed after dossier" in e for e in errors)
+
+
+def test_copied_marker_by_other_author_still_expires_the_dossier():
+    """#17818 acceptance (negative control) : l'AUTEUR compte, pas le texte
+    seul. Un tiers qui recopie le marqueur PR-PATH-COLLISION en tete de son
+    commentaire perime le dossier -- le suffixe ``[bot]`` est reserve aux
+    comptes d'app GitHub, un humain ne peut pas le porter.
+    """
+    for login in ("myia-po-2023", "jsboige-bot-impersonator", "clusterManager-Myia"):
+        base = _stamped_snapshot("")
+        base["comments"].pop()
+        snapshot = _stamped_snapshot(_dossier_for(base))
+        copied = _comment(
+            "<!-- PR-PATH-COLLISION:START -->\ncorps recopie par un tiers",
+            login=login,
+        )
+        copied["createdAt"] = T1
+        snapshot["comments"].append(copied)
         errors = _errors(snapshot)
         assert any("discussion changed after dossier" in e for e in errors), login
 
@@ -1179,19 +1370,28 @@ def test_blocking_fields_are_listed_in_the_contract_order():
     assert mod.blocking_fields(dossier) == ["checks", "b0", "scope", "domain"]
 
 
-def test_a_blocked_dossier_can_name_no_blocking_field():
-    """Honesty edge: the contract ALLOWS a blocked dossier with clear fields.
+def test_a_blocked_dossier_naming_no_blocking_field_is_refused():
+    """#17887 : un BLOCKED a champs tous verts n'est plus un dossier.
 
-    `validate_dossier` constrains `checks`/`b0`/`scope`/`domain` only when the
-    dossier claims READY. An honest blocked dossier may therefore declare them
-    all at their READY value and carry its reason in prose. Reporting [] then is
-    the true answer -- inventing a field to fill the silence would fabricate the
-    very reason this issue exists to publish.
+    Le contrat l'autorisait (motif en prose, `blocking_fields == []`). Mesure sur
+    #17743 @bf7a086e : il etait inerte, ai-01 ne pouvait ni merger ni dispatcher
+    depuis lui. Le gate le refuse desormais (exit 1) et dit quoi faire : pas de
+    dossier, HOLD a la lane porteuse.
     """
     snapshot = _snapshot(_body(verdict="BLOCKED"))
     verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
-    assert (verdict, errors) == (mod.VERDICT_BLOCKED, [])
-    assert mod.blocking_fields(dossier) == []
+    assert verdict == "" and dossier is None
+    assert any("names no blocking field" in e and "#17887" in e for e in errors), errors
+
+
+def test_a_blocked_dossier_naming_one_field_stays_exit_3():
+    """Controle negatif de #17887 : nommer un seul champ bloquant suffit."""
+    for field, value in (("checks", "BLOCKED"), ("b0", "blocked"),
+                         ("scope", "fail"), ("domain", "fail")):
+        snapshot = _snapshot(_body(verdict="BLOCKED", **{field: value}))
+        verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+        assert (verdict, errors) == (mod.VERDICT_BLOCKED, []), (field, errors)
+        assert mod.blocking_fields(dossier) == [field]
 
 
 def test_ready_result_publishes_the_dossier_with_no_blocker():

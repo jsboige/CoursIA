@@ -36,14 +36,14 @@ Pipeline complet de 7 notebooks pour générer un audiobook à partir d'un texte
 
 | # | Notebook | Pass | Contenu | Service | VRAM |
 | --- | ---------- | ------ | --------- | --------- | ------ |
-| 6 | [04-6-Audiobook-Pipeline](04-6-Audiobook-Pipeline.ipynb) | P0 | Pipeline audiobook orchestrateur | Mixed | ~10 GB |
-| 7 | [04-7-TTS-Voice-Benchmark](04-7-TTS-Voice-Benchmark.ipynb) | P0 | Benchmark comparatif des modèles TTS | Kokoro + OpenAI | ~2 GB |
+| 6 | [04-6-Audiobook-Pipeline](04-6-Audiobook-Pipeline.ipynb) | P0 | Pipeline audiobook orchestrateur | Mixed | ~5 GB |
+| 7 | [04-7-TTS-Voice-Benchmark](04-7-TTS-Voice-Benchmark.ipynb) | P0 | Benchmark comparatif des modèles TTS | Kokoro + Qwen3 TTS + OpenAI | ~2 GB |
 | 8 | [04-8-Lecture-Analytique](04-8-Lecture-Analytique.ipynb) | P1 | Analyse littéraire, segmentation dialogues/narration | OpenAI API | 0 |
 | 9 | [04-9-Voice-Casting](04-9-Voice-Casting.ipynb) | P2 | Attribution de voix par personnage, casting vocal | OpenAI API | 0 |
 | 10 | [04-10-Annotation-Prosodique](04-10-Annotation-Prosodique.ipynb) | P3 | Tags prosodiques FishAudio S2-Pro | OpenAI API | 0 |
 | 11 | [04-11-Generation-TTS](04-11-Generation-TTS.ipynb) | P4 | Génération audio Kokoro multi-voix | Kokoro TTS | ~2 GB |
 | 12 | [04-12-Compilation-Audio](04-12-Compilation-Audio.ipynb) | P5 | Concaténation FFmpeg + normalisation loudness | FFmpeg | 0 |
-| 13 | [04-13-Audiobook-FishAudio-S2Pro](04-13-Audiobook-FishAudio-S2Pro.ipynb) | Full | Pipeline v4 FishAudio S2-Pro, 29 tags prosodiques, validation WER | FishAudio + Whisper | ~2 GB |
+| 13 | [04-13-Audiobook-FishAudio-S2Pro](04-13-Audiobook-FishAudio-S2Pro.ipynb) | Full | Pipeline v4 FishAudio S2-Pro, 29 tags prosodiques, validation WER | FishAudio + Whisper | ~6 GB |
 
 ### Hommage Munkres — musique et mathématiques
 
@@ -51,11 +51,14 @@ Pipeline complet de 7 notebooks pour générer un audiobook à partir d'un texte
 |---|----------|---------|---------|------|
 | 14 | [04-14-VoiceLeading-Rendu-GenAI](04-14-VoiceLeading-Rendu-GenAI.ipynb) | Rendu audio intelligent du voice leading App-21 : baseline téléphone vs MusicGen-melody (3 styles H1), spectrogrammes mesurés | MusicGen-melody (GPU local) | ~6 GB |
 
-### Famille YuE2 — compréhension musicale
+### Famille YuE2 — compréhension et transcription musicales
+
+Trois satellites : la **compréhension** (MERT2, 04-15), la **génération** ([YuE2, 02-7](../02-Advanced/02-7-YuE2-Song-Generation.ipynb)) et la **transcription** (SheetSage2, 04-16).
 
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------|
 | 15 | [04-15-MERT2-Music-Understanding](04-15-MERT2-Music-Understanding.ipynb) | Embeddings MERT2 (632 M, self-supervised, poids CC BY-NC 4.0) : corpus contrôlé 3 motifs × 4 timbres × 2 transpositions, similarité cosinus, retrieval contexte long FullSong (medley 120 s), sondes linéaires LOO motif vs timbre sur couches L1/L23/L24 | Local GPU (kernel `mert2-gpu`, pins torch 2.6.0 / transformers 4.53.2) | ~4 GB |
+| 16 | [04-16-SheetSage2-Audio-To-Score](04-16-SheetSage2-Audio-To-Score.ipynb) | Transcription audio vers partition éditable : SheetSage2 (677 M, base MERT-v2-FullSong + adaptateurs), cinq têtes (mélodie, accords, temps forts, tonalité, structure), artefacts ABC/MIDI/événements horodatés, comparaison à vérité-terrain connue par construction, cycle symbolique→audio→symbolique mesuré | Local GPU (kernel `sheetsage2-gpu`) ; poids CC BY-NC 4.0 (usage commercial interdit) | ~8 GB |
 
 > **Note (consolidation #13741)** : un sibling pédagogique plus minimal (re-voicing CP-SAT + MIDI synthèse, 9 cellules, 51 Ko) a été archivé sous [`MyIA.AI.Notebooks/GenAI/Audio/_archive/04-14-VoiceLeading-RenduGenAI.ipynb`](../_archive/04-14-VoiceLeading-RenduGenAI.ipynb) pour éliminer le doublon de slot 04-14. Le contenu reste préservé (re-voicing, synthèse MIDI, MusicGen, spectrogrammes, export WAV) ; ce notebook canonique `Rendu-GenAI` (5.16 Mo, 27 cellules, version complète re-exécutée #13398) reste la référence.
 

@@ -339,6 +339,34 @@ def _comment_body_for_fingerprint(row: dict[str, Any]) -> str:
     return body
 
 
+# #17818 : la PREMIERE POSE d'un commentaire consultatif de bot marker-garde
+# apres le dossier. #16931 avait neutralise la reecriture en place, mais une
+# pose neuve comptait comme commentaire etranger : l'arrivee d'une PR voisine
+# (qui declenche l'organe PR-PATH-COLLISION sur les README partages) perimait
+# le dossier sans que le fond de la PR bouge. Mesure 2026-09-25 : dossiers de
+# #17781 et #17797 perimes a 13:02Z par la pose consultative du bot seul.
+# Ces quatre organes sont consultatifs par construction (« l'organe rend
+# visible, il ne bloque pas »). Le login mesure est "github-actions[bot]"
+# (suffixe [bot] reserve aux comptes d'app GitHub : un humain ne peut pas le
+# porter) et l'AUTEUR compte, pas le texte seul -- un tiers qui recopie le
+# marqueur perime toujours le dossier.
+BOT_ADVISORY_LOGIN = "github-actions[bot]"
+
+
+def _is_bot_advisory_pose(row: dict[str, Any]) -> bool:
+    """True pour la premiere pose d'un commentaire consultatif de bot marker-garde.
+
+    Neutralise la row dans le decompte des commentaires posterieurs au
+    dossier. Predicate conjonctif : auteur ET marqueur en tete de corps -- la
+    disparition du commentaire, une edition humaine (marqueur deplace) ou un
+    tiers recopiant le marqueur restent detectes.
+    """
+    if _login(row) != BOT_ADVISORY_LOGIN:
+        return False
+    body = row.get("body") or ""
+    return any(body.startswith(marker) for marker in _BOT_MARKER_GUARDS)
+
+
 def _review_body_has_reserve_marker(author: str, body: str) -> bool:
     """True quand, en substance, cette review pose une reserve vivante.
 
@@ -788,6 +816,17 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
                 f.get("checks", ""), snapshot.get("checkRuns")
             )
         )
+    elif verdict == VERDICT_BLOCKED and not blocking_fields(dossier):
+        # Un BLOCKED qui ne nomme aucun champ bloquant est inerte : il occupe la
+        # surface de gate sans dire quoi reparer, et ai-01 ne peut ni merger ni
+        # dispatcher depuis lui. Le cas type est le conflit de merge, que le
+        # contrat ne sait pas porter : il ne produit pas de dossier, il se tient
+        # en HOLD a la lane porteuse (#17887, controle positif #17743 @bf7a086e).
+        errors.append(
+            "BLOCKED names no blocking field (checks/b0/scope/domain all at their "
+            "READY value): the contract cannot carry this reason -- emit no "
+            "dossier, HOLD the candidate at the carrying lane and DM it (#17887)"
+        )
 
     dossier_lane = f.get("lane", "")
     if dossier_lane not in QUALIFYING_LANES:
@@ -842,7 +881,9 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
             "discussion surfaces changed or were not fully attested: "
             f"surface divergente = {divergent}; "
             f"dossier={f.get('surfaces-sha256', '?')}, live={live_fingerprint} "
-            "(legacy stamps whose checks moved need one --template re-stamp)"
+            "(legacy stamps whose checks moved need one --template re-stamp; "
+            "a re-stamp is a NEW comment posted right after --template -- a "
+            "PATCHed dossier never matches, the template counts it)"
         )
 
     comparisons = {
@@ -930,11 +971,14 @@ def evaluate_with_dossier(
     errors = [*errors, *validate_dossier(dossier, snapshot)]
     # A dossier is a snapshot. Any later comment invalidates it, including a
     # reply that claims the PR is still ready -- unless the coordinator itself
-    # wrote it, which it cannot be unaware of (see _is_own_later_act).
+    # wrote it, which it cannot be unaware of (see _is_own_later_act), or it
+    # is the first pose of a consultative marker-guarded bot comment, which
+    # attests nothing about the PR's substance (see _is_bot_advisory_pose).
     foreign = [
         row
         for row in comments[dossier.comment_index + 1:]
         if not _is_own_later_act(row, "createdAt", dossier.created_at)
+        and not _is_bot_advisory_pose(row)
     ]
     if foreign:
         errors.append(
@@ -1190,6 +1234,38 @@ def load_snapshot(pr: int) -> dict[str, Any]:
     return snapshot
 
 
+def restamp_warning(snapshot: dict[str, Any]) -> str | None:
+    """Name the only re-stamp gesture that can pass when a dossier already exists.
+
+    `render_template` counts EVERY comment present, the existing dossier
+    included, while the gate counts only the comments BEFORE the dossier it
+    reads (`dossier.comment_index`) and fingerprints those. A dossier
+    re-stamped by PATCH therefore always lands one comment short of its own
+    template: `comments-reviewed is stale: dossier=N+1, live=N`. The gate reads
+    the LAST dossier of the pull request, so a NEW comment posted right after
+    the template matches exactly. Measured on #18072, #17985 and #18134
+    (2026-09-28): three PATCH re-stamps refused, the cause read as rerolling
+    checks, which the fingerprint does not cover since #16957.
+    """
+    for index in range(len(snapshot.get("comments") or []) - 1, -1, -1):
+        comment = snapshot["comments"][index]
+        dossier, _errors = parse_dossier(
+            comment.get("body") or "",
+            index,
+            _login(comment),
+            comment.get("createdAt") or "",
+        )
+        if dossier is not None:
+            return (
+                f"a dossier already exists (comment {index + 1} of "
+                f"{len(snapshot['comments'])}, by {_login(comment)}): this "
+                "template counts it. Re-stamp = POST this block as a NEW "
+                "comment, with no other comment in between; never PATCH the "
+                "existing dossier, it can never match its own template."
+            )
+    return None
+
+
 def render_template(snapshot: dict[str, Any], lane: str = ADJOINT_LANE) -> str:
     """Render the mechanical fields; the emitting lane sets the verdict fields.
 
@@ -1263,6 +1339,9 @@ def main() -> int:
         snapshot = load_snapshot(args.pr)
         if args.template:
             print(render_template(snapshot, args.lane))
+            warning = restamp_warning(snapshot)
+            if warning:
+                print(f"WARNING: {warning}", file=sys.stderr)
             return 0
         if args.fingerprint:
             print(surfaces_fingerprint(snapshot))

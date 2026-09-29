@@ -38,6 +38,10 @@ L'IA générative a transformé la création de contenu en 2024-2026. Un dévelo
 | 11 | Plateformes-Conversationnelles - OWUI & AI-Engine | [README catégorie](Plateformes-Conversationnelles/README.md) | ~14h+ | Tour OWUI + Playwright E2E (30+ tests) + AI-Engine WordPress |
 | 12 | CaseStudies - Projets étudiants | [README complet](CaseStudies/README.md) | (durée libre) | Barbie/Shrek, recettes, chatbot médical, Fort Boyard |
 
+## Activités de cours
+
+Les activités pédagogiques des cours d'IA — vulgarisation (exploration, contraintes, probabilités, théorie des jeux…) et TP d'IA générative avec leur corrigé — vivent dans [activites/](activites/README.md). Elles étaient auparavant enfouies dans `Vibe-Coding/docs/` et une partie n'existait que sur le Drive (#18223).
+
 ## Parcours recommandés
 
 ### Découvreur (initiation rapide, ~20h)
@@ -413,7 +417,7 @@ Trois sous-dossiers complètent la série sans être des notebooks :
 
 <!-- CATALOG-STATUS
 series: GenAI
-pedagogical_count: 240
-breakdown: Audio=38, Texte=34, Plateformes-Conversationnelles=28, Video=22, Image=20, SemanticKernel=20, PostTraining=19, Integrations-DotNet=15, FineTuning=10, RAG-et-Memoire-Semantique=10, Vibe-Coding=8, 00-GenAI-Environment=6, CaseStudies=5, FallacyDetection=5
-maturity: BETA=202, ALPHA=20, DRAFT=15, TEMPLATE=3
+pedagogical_count: 247
+breakdown: Audio=38, Texte=34, Plateformes-Conversationnelles=28, Video=22, Image=21, PostTraining=20, SemanticKernel=20, Integrations-DotNet=15, FineTuning=10, RAG-et-Memoire-Semantique=10, Vibe-Coding=8, 00-GenAI-Environment=6, CaseStudies=5, FallacyDetection=5, Security=5
+maturity: BETA=208, ALPHA=21, DRAFT=15, TEMPLATE=3
 -->

@@ -50,7 +50,7 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 | Lean | EPITA IA Symbolique | `Lean-2-Dependent-Types.ipynb` | 2 | |
 | Semantic Web | EPITA IA Symbolique | `SW-2-CSharp-RDFBasics.ipynb` | 2 | |
 | Planners (01-02) | EPITA IA Symbolique | `Planners-1-Introduction.ipynb` | 3 | |
-| SmartContracts (00-01) | EPITA IA Symbolique | `SC-0-Cypherpunk-Origins.ipynb` | 2 | |
+| SmartContracts (00-01) | EPITA IA Symbolique | `SC-00-Cypherpunk-Origins-Python.ipynb` | 2 | |
 
 ## Strate A — proposés pour signature (99)
 
@@ -191,8 +191,8 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb`
 <!-- MyIA.AI.Notebooks/SymbolicAI/SmartContracts -->
 
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/00-Foundations/SC-0-Cypherpunk-Origins.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/SC-3-Solidity-Basics.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/00-Foundations/SC-00-Cypherpunk-Origins-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/SC-03-Solidity-Basics-Python.ipynb`
 
 ## Strate B — hors proposition v1 (112)
 
@@ -338,9 +338,9 @@ l'Epic) ; un dossier de revue est alors préparé (T2).*
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-6-Domains.ipynb`
 <!-- MyIA.AI.Notebooks/SymbolicAI/SmartContracts -->
 
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/SC-4-Functions-State.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/SC-5-Inheritance.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/SC-6-Errors-Events.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/SC-04-Functions-State-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/SC-05-Inheritance-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/SC-06-Errors-Events-Python.ipynb`
 
 ## Séries hors périmètre — justification en une ligne
 

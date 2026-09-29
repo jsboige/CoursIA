@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: GameTheory
-pedagogical_count: 108
-breakdown: root=98, SocialChoice=10
-maturity: BETA=99, DRAFT=5, ALPHA=4
+pedagogical_count: 109
+breakdown: root=99, SocialChoice=10
+maturity: BETA=100, DRAFT=5, ALPHA=4
 -->
 
 La théorie des jeux est le langage mathématique de la stratégie. Elle modélise les situations où des agents rationnels prennent des décisions dont le résultat dépend des choix des autres : enchères, négociations, élections, poker, allocation de ressources. Cette tension entre coopération et compétition traverse l'économie, les sciences politiques et l'informatique (mécanismes de vote, contrats, réseaux), et le prix Nobel d'économie a récompensé des théoriciens des jeux à sept reprises entre 1994 et 2020.
@@ -505,6 +505,10 @@ La théorie des jeux déplace la question de la décision : non plus « quelle e
 ## Pour aller plus loin
 
 Cette partie réunit la matière de niveau **Recherche** : notes techniques sur des résultats précis du parcours, formalisations Lean, liens avec les autres séries, organisation du dossier.
+
+### Activités associées
+
+Les activités [Bataille des Sexes](../GenAI/activites/Activites-Vulgarisation.md#9-théorie-des-jeux--bataille-des-sexes), [Évolution de la confiance](../GenAI/activites/Activites-Vulgarisation.md#10-évolution-de-la-confiance) et [Scrutin de Condorcet](../GenAI/activites/Activites-Vulgarisation.md#11-théorie-du-choix-social--le-scrutin-de-condorcet-et-lélection-présidentielle-française) exercent en jeu d'équipe les équilibres, jeux répétés et choix social enseignés ici.
 
 ### Processus de Moran : la population finie (palier 06)
 
