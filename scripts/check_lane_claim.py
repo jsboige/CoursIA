@@ -2282,8 +2282,9 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             the caller's own claim), behaviour is unchanged: every other active
             claim blocks, regardless of its scope clause (we cannot prove
             disjointness, so we conservatively over-block).
-        check_open_pr_paths: when True AND `my_paths` is set, ALSO run the
-            #9959 open-PR leg on `my_paths` (#16570). The claim record only
+        check_open_pr_paths: when True AND a scope is declared (`my_paths`
+            OR the caller's own claim `paths:` clause), ALSO run the #9959
+            open-PR leg on that scope (#16570). The claim record only
             sees markers; the strongest signal of occupation -- code already
             pushed on another lane's branch -- lives in OPEN PRs, and
             `--paths` was reachable ONLY without an issue number, i.e. never
@@ -2409,15 +2410,24 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # (`check_lane_claim.py N --lane L --paths p`) silently skipped the guard
     # and printed `free_paths` -- a list that describes the CLAIM scope, never
     # the open-PR space -- reading as an all-clear on an occupied file.
+    #
+    # The leg reads `my_scope`, not `my_paths`: a lane that already holds a
+    # `[CLAIMED] ... -- paths:` claim and re-runs `check_lane_claim.py N`
+    # WITHOUT `--paths` declared its scope on the issue, and that scope is
+    # what it is about to edit. Reading `my_paths` alone skipped the leg on
+    # that exact invocation (measured 2026-09-29: NLP/02 section 8 and
+    # LocalLlama cell 14 each drew two duplicate PRs, #18230/#18293 and
+    # #18196/#18304, closed in favour of #18180 and #18281).
     open_pr_collisions: list[PathCollision] = []
-    if check_open_pr_paths and my_paths:
+    if check_open_pr_paths and my_scope:
         try:
             open_pr_collisions, _own = _compute_open_pr_collisions(
-                my_paths, my_lane)
+                my_scope, my_lane)
         except RuntimeError as exc:
             print(
-                f"WARN: la jambe PR-ouverte n'a pas pu tourner sur "
-                f"`--paths` ({exc}) : ce CLEAR ne dit rien des PRs OUVERTES "
+                f"WARN: la jambe PR-ouverte n'a pas pu tourner sur le "
+                f"perimetre declare (`--paths` ou `paths:` du claim) "
+                f"({exc}) : ce CLEAR ne dit rien des PRs OUVERTES "
                 f"touchant ces chemins. Verifier a la main avec "
                 f"`check_lane_claim.py --lane {my_lane} --paths ...` "
                 f"(sans numero d'issue) avant d'editer (#16570).",

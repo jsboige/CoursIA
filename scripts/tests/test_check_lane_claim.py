@@ -6123,6 +6123,60 @@ def test_issue_mode_degrades_to_warn_when_gh_fails(monkeypatch, tmp_path, capsys
     assert "jambe PR-ouverte" in err and "#16570" in err
 
 
+def test_issue_mode_runs_open_pr_leg_on_own_claim_scope(monkeypatch, tmp_path, capsys):
+    """CONTROLE POSITIF -- la jambe lit le `paths:` du claim de l'appelant.
+
+    Une lane qui porte deja `[CLAIMED] ... -- paths: p` et relance
+    `check_lane_claim.py N` SANS `--paths` a declare son perimetre sur
+    l'issue. Avant ce fix, la jambe ne lisait que `--paths` et se taisait :
+    rc 0 sur un fichier qu'une PR ouverte d'une autre lane portait deja
+    (mesure 2026-09-29 : #18230/#18293 et #18196/#18304, doublons fermes).
+    """
+    source = _write_payload(payload(comment(
+        "[CLAIMED] lane myia-po-2024:CoursIA -- paths: "
+        "scripts/notebook_tools/wsl_papermill.py",
+        "2026-08-15T00:00:00Z",
+    ), number=16176), tmp_path)
+    seen = []
+
+    def _cols(paths, my_lane, prs=None):
+        seen.append(list(paths))
+        return ([clc.PathCollision(
+            pr=_collision_pr(16280, "myia-po-2023:CoursIA",
+                             ["scripts/notebook_tools/wsl_papermill.py"]),
+            lane="myia-po-2023:CoursIA",
+            files=["scripts/notebook_tools/wsl_papermill.py"])], [])
+
+    monkeypatch.setattr(clc, "_compute_open_pr_collisions", _cols)
+    rc = clc.main([
+        "16176", "--lane", "myia-po-2024:CoursIA", "--from-json", source,
+        "--no-stale",
+    ])
+    captured = capsys.readouterr()
+    summary = json.loads(captured.out.split("\n\n", 1)[0])
+    assert seen == [["scripts/notebook_tools/wsl_papermill.py"]]
+    assert rc == 2, captured.err
+    assert [c["number"] for c in summary["open_pr_collisions"]] == [16280]
+
+
+def test_issue_mode_skips_open_pr_leg_without_any_scope(monkeypatch, tmp_path, capsys):
+    """CONTROLE NEGATIF -- sans `--paths` ni claim propre a `paths:`, la
+    jambe ne tourne pas : l'appelant n'a declare aucun perimetre, il n'y a
+    rien a intersecter (comportement anterieur inchange)."""
+    source = _write_payload(payload(comment(
+        "[RELEASED] lane other:CoursIA", "2026-08-15T00:00:00Z",
+    ), number=16176), tmp_path)
+    called = []
+    monkeypatch.setattr(clc, "_compute_open_pr_collisions",
+                        lambda paths, my_lane, prs=None: called.append(1) or ([], []))
+    rc = clc.main([
+        "16176", "--lane", "myia-po-2024:CoursIA", "--from-json", source,
+        "--no-stale",
+    ])
+    assert rc == 0
+    assert called == []
+
+
 def test_claim_posting_does_not_run_open_pr_leg(monkeypatch, tmp_path, capsys):
     """La jambe est reservee au chemin LECTURE.
 
