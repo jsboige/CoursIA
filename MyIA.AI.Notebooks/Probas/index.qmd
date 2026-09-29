@@ -67,7 +67,7 @@ listing:
       - "Applications/Pyro_RSA_Hyperbole.ipynb"
       - "Applications/Percolation/Percolation-Supercritique.ipynb"
       - "Applications/Percolation/Percolation-Lean.ipynb"
-      - "Infer/Infer-20-Quotients-et-Fibres.ipynb"
+      - "Applications/Quotients-Fibres-Recollement-Python.ipynb"
     type: grid
     sort: "filename"
     page-size: 24
