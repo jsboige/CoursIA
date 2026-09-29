@@ -75,3 +75,41 @@ def test_umbrella_in_body_freezes_despite_ordinary_title():
         fc.frozen_umbrella_exclusion("fix(x): ordinaire", "See #11601 (densite QC).")
         == "frozen:#11601(veto #17040)"
     )
+
+
+# Titre reel de #18283 (2026-09-28) : relais wt/vibe-* d'une campagne
+# autorisee apres le veto, sans aucune citation de #13410.
+RELEASED_TITLE = (
+    "fix(prose,#17636): Tweety g2d -- 27 mesures d'artefact resorbees en "
+    "prose markdown, 3 KEEP (recit fige PR #10450)"
+)
+
+
+def test_authorized_campaign_title_releases_vibe_branch():
+    assert (
+        fc.frozen_umbrella_exclusion(RELEASED_TITLE, "See #17636", "wt/vibe-g2d-tweety")
+        is None
+    )
+
+
+def test_release_falls_when_a_frozen_umbrella_is_cited():
+    # Le body cite la campagne gelee : la branche regele la PR.
+    assert (
+        fc.frozen_umbrella_exclusion(RELEASED_TITLE, "suite de #13410", "wt/vibe-g2d-tweety")
+        == "frozen:#13410(veto #17040,branch wt/vibe-*)"
+    )
+
+
+def test_release_is_title_only():
+    # #17636 dans le body seul ne libere pas un relais muet.
+    assert (
+        fc.frozen_umbrella_exclusion("Densite Lab13", "See #17636", "wt/vibe-g62-density-9")
+        == "frozen:#13410(veto #17040,branch wt/vibe-*)"
+    )
+
+
+def test_release_needs_exact_campaign_number():
+    assert (
+        fc.frozen_umbrella_exclusion("fix(prose,#176360): x", None, "wt/vibe-g2x")
+        == "frozen:#13410(veto #17040,branch wt/vibe-*)"
+    )

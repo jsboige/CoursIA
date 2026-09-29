@@ -18,9 +18,33 @@ a thin call):
   status != completed  -> `queued` for longer than --stale-hours ?
                             yes -> cancel, wait for `completed` (bounded),
                                    then action=rerun
+                                   cancel REFUSED with a terminal marker
+                                   -> action=impasse (no retry can succeed)
                             no  -> skip   (genuinely in flight)
   completed + success  -> skip
   completed + other    -> rerun
+
+The cancel refusal is not one condition but two, and they are told apart by
+the refusal REASON -- which is why `cancel_run` returns it instead of a bool.
+A transient refusal (rate limit, brief inconsistency) really is retried by the
+next sweep. GitHub's two terminal refusals never are (#10928, fourth cause,
+measured on #18243):
+
+  - "Cannot cancel a workflow re-run that has not yet queued." (HTTP 409) --
+    the run reports `queued` for 7 h with 0 jobs and no `PR gate` check-run,
+    while `gh run rerun` answers "already running": BOTH levers are refused,
+    which is the impasse #17680 closes, reached by a route #17680 did not
+    anticipate. Re-dispatching cannot change either answer.
+  - "Cannot cancel a workflow run that is completed." -- the status endpoint
+    and the cancel endpoint disagree about the same run.
+
+On a terminal refusal the route emits `impasse`, which no job consumes (the
+workflow matches only `rerun` and `aggregate_absent`): the point is that the
+verdict stops reading like a retry that will happen. It deliberately does NOT
+fall through to `aggregate_absent`: that route's safety argument (#16624) is
+"no run exists on this SHA, so nothing bearing the required name can ever be
+ANDed against" -- and here a run DOES exist. The remedy that creates a fresh
+run in the same concurrency group is `gh pr close N && gh pr reopen N`.
 
 The stale threshold must sit above the measured queue latency
 (scripts/ci/gh_queue_health.py); the default of 2 h follows the issue's
@@ -170,11 +194,41 @@ def classify(run: dict, now: datetime, stale_after: timedelta) -> tuple[str, str
     return "rerun", f"completed with conclusion {conclusion}"
 
 
-def cancel_run(repo: str, run_id: int) -> bool:
+# GitHub's terminal cancel refusals (#10928 fourth cause). Both mean the run
+# can never be cancelled, so "the next sweep retries" would be a false
+# promise: the retry issues the same request and reads the same answer.
+TERMINAL_REFUSAL_MARKERS = (
+    "cannot cancel a workflow re-run that has not yet queued",
+    "cannot cancel a workflow run that is completed",
+)
+
+
+def classify_refusal(reason: str) -> str:
+    """`terminal` when no retry can ever succeed, `transient` otherwise.
+
+    Anything unrecognised stays `transient`: a marker this function has never
+    seen is not evidence that the next sweep is wasted, and treating it as
+    terminal would replace a false retry promise with a false impasse.
+    """
+    lowered = reason.lower()
+    return (
+        "terminal"
+        if any(marker in lowered for marker in TERMINAL_REFUSAL_MARKERS)
+        else "transient"
+    )
+
+
+def cancel_run(repo: str, run_id: int) -> tuple[bool, str]:
+    """Attempt the cancel -> (accepted, refusal_reason).
+
+    The reason is returned rather than collapsed into a bool: it is the
+    discriminating measurement between a refusal the next sweep can retry and
+    one it can never get past (see `classify_refusal`).
+    """
     completed = _run_gh(
         ["gh", "api", "-X", "POST", f"repos/{repo}/actions/runs/{run_id}/cancel"]
     )
-    return completed.returncode == 0
+    return completed.returncode == 0, (completed.stderr or "").strip()
 
 
 def wait_completed(
@@ -257,7 +311,28 @@ def main(argv: list[str] | None = None) -> int:
 
     if action == "cancel_rerun":
         print(f"{tag}{reason}")
-        if not cancel_run(args.repo, run_id):
+        accepted, refusal = cancel_run(args.repo, run_id)
+        if not accepted:
+            if classify_refusal(refusal) == "terminal":
+                # Measured, not asserted: how many `PR gate` check-runs this
+                # SHA carries is what separates "verdict absent" (#10928, the
+                # syndrome where a green-looking PR is BLOCKED forever) from
+                # "verdict red". Fail-closed probe, same one the twin guard
+                # uses -- an unreadable API counts as "one exists".
+                existing = existing_self_check_runs(args.repo, args.sha)
+                print(
+                    f"{tag}IMPASSE -- cancel refused for run {run_id} and the "
+                    f"refusal is terminal: {refusal!r}. Both levers are shut "
+                    "(`gh run rerun` answers 'already running'), so 'the next "
+                    "sweep retries' would be a false promise -- action=impasse "
+                    f"instead. 'PR gate' check-runs on {args.sha}: {existing} "
+                    "(0 = verdict ABSENT, the #10928 syndrome). Remedy that "
+                    "creates a FRESH run in the same concurrency group: "
+                    "`gh pr close N && gh pr reopen N` -- do NOT re-dispatch "
+                    "this harness, it re-reads the same two refusals."
+                )
+                _emit("impasse", run_id)
+                return 0
             print(f"{tag}cancel refused for run {run_id} -- skip (next sweep retries)")
             _emit("skip", run_id)
             return 0
