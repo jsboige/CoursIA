@@ -97,7 +97,7 @@ jobs:
 
       - name: Post advisory comment
         if: github.event_name == 'pull_request'
-        uses: marrocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: stale-claim-advisory
           message: |
