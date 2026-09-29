@@ -255,11 +255,13 @@ d'enveloppe du producteur (`data.intercom.messages`, auteur normalise).
 ## Organe `merge_ready` (Q40, 2026-09-22)
 
 Fusion hors cycle coordinateur : un organe deterministe (identite myia-ai-01,
-cadence ~20 min) qui merge UNIQUEMENT ce qui passe exactement les controles du
-coordinateur lui-meme, en perimetre (b) uniquement -- hors harnais (`.claude/`,
-`CLAUDE.md` a tout niveau, `.github/`) et hors grains `DEEP`. Motivation
-mesuree : 97 merges en 24 h sur 4 creneaux, 12 heures vides, lead time median
-28,5 h ; un dossier d'adjoint perit en attendant le cycle.
+cadence ~20 min) qui merge UNIQUEMENT ce que le coordinateur a lu et approuve,
+en perimetre (b) uniquement -- hors harnais (`.claude/`, `CLAUDE.md` a tout
+niveau, `.github/`) et hors grains `DEEP`. Motivation mesuree : 97 merges en
+24 h sur 4 creneaux, 12 heures vides, lead time median 28,5 h ; un dossier
+d'adjoint perit en attendant le cycle. L'organe evite cette peremption, il ne
+remplace pas la lecture (arbitrage user 2026-09-28, Q67 : jusque-la 6 des 211
+merges du journal portaient une approbation `myia-ai-01`).
 
 Par PR (la plus ancienne d'abord), TOUT doit tenir sinon skip avec raison
 nommee au journal : pas un brouillon + un commentaire `[ADJOINT PREFLIGHT]`
@@ -267,7 +269,11 @@ nommee au journal : pas un brouillon + un commentaire `[ADJOINT PREFLIGHT]`
 superieur aux fichiers listes = skip -- et tier du tag `Grain:` lu par le parseur
 partage `scripts/grain_tag.py`), pre-controle bon marche du dernier dossier
 (tete perimee ou `b0:` non clear = skip sans payer le gate ; illisible = decision
-laissee au gate), gate `check_adjoint_prevalidation.py` a
+laissee au gate), approbation du coordinateur (derniere voix `myia-ai-01` =
+`APPROVED` reel, posee sur la tete ou sur une tete dont celle-ci ne differe que
+par des rafraichissements de base prouves content-free -- meme remontee que le
+plancher DWELL, `merge_dwell.last_authoritative_sha` ; absente, perimee ou
+illisible = skip avant le gate), gate `check_adjoint_prevalidation.py` a
 `ready: true`, champ `b0:` du dossier accepte relu via la grammaire du gate
 (`parse_dossier` importe), organe B.0 `check_unaddressed_nits.py` a exit 0,
 `mergeable_state` REST a `clean` (retry sur `unknown` -- apres un merge les
