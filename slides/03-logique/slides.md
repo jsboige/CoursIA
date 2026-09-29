@@ -221,7 +221,7 @@ layout: default
 | Ordre superieur (HOL) | Relations, fonctions | Relations | Non |
 | Modale | + mondes possibles | Necessaire/possible | Selon variante |
 
-*Notebooks : [Tweety-02-Basic-Logics-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02-Basic-Logics-Python.ipynb) (propositionnelle et premier ordre) · [Tweety-3-Advanced-Logics-Csharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Advanced-Logics-Csharp.ipynb) (description, modale, QBF, conditionnelle) · [Lean-1-Setup](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-1-Setup.ipynb) (ordre superieur).*
+*Notebooks : [Tweety-02-Basic-Logics-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02-Basic-Logics-Python.ipynb) (propositionnelle et premier ordre) · [Tweety-3-Advanced-Logics-Csharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Advanced-Logics-Csharp.ipynb) (description, modale, QBF, conditionnelle) · [Lean-01-Setup-Lean-Python](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-01-Setup-Lean-Python.ipynb) (ordre superieur).*
 
 ---
 layout: section
@@ -1305,7 +1305,7 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 - **E-prover** : demonstrateur automatique pour FOL
 - **Lean** : assistant de preuve interactif, très actif en mathematiques
 
-*Notebooks : [Tweety-02c-FOL-CSharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02c-FOL-CSharp.ipynb) (EProver pilote depuis Python) · [Lean-1-Setup](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-1-Setup.ipynb) (ordre superieur en Lean 4).*
+*Notebooks : [Tweety-02c-FOL-CSharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02c-FOL-CSharp.ipynb) (EProver pilote depuis Python) · [Lean-01-Setup-Lean-Python](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-01-Setup-Lean-Python.ipynb) (ordre superieur en Lean 4).*
 
 ---
 layout: default
@@ -1478,7 +1478,7 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 - Debloquer une configuration industrielle : le solveur dit UNSAT, quelle contrainte relacher ?
 - Revision des croyances : quelle croyance retirer pour rester coherent (postulats AGM)
 
-*Notebooks : [Z3-13-UnsatCores-Python](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb) (noyaux d'insatisfiabilite) · [17_UnsatCores](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/17_UnsatCores.ipynb) · [Tweety-4-Belief-Revision](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision.ipynb) (MUS, MCS, dualite).*
+*Notebooks : [Z3-13-UnsatCores-Python](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb) (noyaux d'insatisfiabilite) · [Z3-13b-UnsatCores-MUS-Python](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13b-UnsatCores-MUS-Python.ipynb) (MUS par deletion-based) · [17_UnsatCores](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/17_UnsatCores.ipynb) · [Tweety-4-Belief-Revision](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision.ipynb) (MUS, MCS, dualite).*
 
 ---
 layout: default
@@ -2814,7 +2814,7 @@ conda activate lean4-jupyter
 pip install lean4_jupyter
 
 # 3. Lancer le notebook 1
-jupyter notebook MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-1-Setup.ipynb
+jupyter notebook MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-01-Setup-Lean-Python.ipynb
 ```
 
 **Pour les notebooks LLM** (7-10) : configurer `.env` avec `OPENAI_API_KEY` ou `ANTHROPIC_API_KEY`.

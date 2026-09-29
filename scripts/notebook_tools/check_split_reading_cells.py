@@ -175,6 +175,10 @@ EXERCISE_TOKENS = ("TODO", "A completer", "à compléter", "Exercice")
 # la citation d'une sortie -- le vocabulaire de l'interpretation, pas celui de
 # l'enonce.
 EXERCISE_STATEMENT_TITLE_RE = re.compile(r"^#{1,6}\s*exercice\b", re.IGNORECASE)
+SECTION_TITLE_AFTER_EXERCISE_RE = re.compile(
+    r"^(conclusion|ressources?|plan|references?|bibliographie|synthese|pour aller plus loin)\b",
+    re.IGNORECASE,
+)
 HIDDEN_INTERPRETATION_HEADING_RE = re.compile(
     r"^#{1,6}\s*(lecture|interpre|interpret|analyse)", re.IGNORECASE
 )
@@ -277,6 +281,16 @@ def looks_like_reading_after_exercise(cell: dict) -> bool:
     On REJETTE les md purement structurels (## Conclusion, ## Exercice
     N, ## References), qui n'ont qu'un en-tete suivi d'un corps court
     ou vide -- ce sont des transitions, pas des lectures.
+
+    Garde-fou #17777 (meme discriminant qu'``is_reading_or_prose`` : le titre,
+    pas la longueur du corps) : un titre de section (``## Conclusion``,
+    ``## Ressources``, ``## Plan``) place APRES un exercice reste structurel,
+    meme long -- le releve par sortie l'exempte deja par le titre, le bucket
+    positionnel doit faire de meme, sinon une conclusion de fin de carnet
+    (pattern du gabarit canon, ex. carnet 06 corps 866 chars) tombe en faux
+    positif. Une cellule dont le premier titre n'est PAS un titre de section
+    garde l'heuristique historique (> 80 chars) : c'est une vraie lecture
+    deguisee en prose titre.
     """
     if cell.get("cell_type") != "markdown":
         return False
@@ -285,10 +299,15 @@ def looks_like_reading_after_exercise(cell: dict) -> bool:
     src = cell_source(cell).strip()
     if not src:
         return False
-    # Si la premiere ligne est un titre markdown (# ## ### ...), on
-    # accepte si le corps (apres la premiere ligne) fait > 80 chars.
     first_line = src.split("\n", 1)[0].lstrip()
     if first_line.startswith("#"):
+        # Titre de section (## Conclusion / ## Ressources / ## Plan ...) :
+        # structurel par le titre, jamais une lecture -- la longueur du corps
+        # est hors discriminant (meme principe que ``is_reading_or_prose``).
+        if SECTION_TITLE_AFTER_EXERCISE_RE.match(
+            deaccent(cell_title(src)).lower()
+        ):
+            return False
         body = src.split("\n", 1)[1].strip() if "\n" in src else ""
         return len(body) > 80
     # Pas de titre markdown : c'est un paragraphe libre. S'il est > 80 chars,

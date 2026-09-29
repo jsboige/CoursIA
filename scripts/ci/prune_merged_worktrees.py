@@ -299,6 +299,75 @@ def run_git(cwd: str, *args: str, check: bool = True) -> subprocess.CompletedPro
     )
 
 
+def current_repo_root() -> str:
+    """Racine du repo CoursIA resolue depuis ce script.
+
+    Les 3 appels `run_git(...)` (worktree list, cle de cache par remote
+    origin, worktree remove) doivent operer sur le repo hebergeant ce
+    script, independamment du cwd du processus appelant. Avant, ils
+    passaient `"."` et resolvaient contre le cwd reel -- casse depuis une
+    tache planifiee (#14473) ou tout autre cwd non-repo (#17904).
+
+    La racine est le plus proche ancetre de `__file__` qui contient
+    `.gitmodules` ou `.git/`. Cachee au premier appel (memoization
+    legere, pas de cache disque).
+    """
+    cache_attr = "_coursia_root_cache"
+    cached = getattr(current_repo_root, cache_attr, None)
+    if cached is not None:
+        return cached
+    p = Path(__file__).resolve().parent
+    while p != p.parent:
+        if (p / ".gitmodules").is_file() or (p / ".git").exists():
+            setattr(current_repo_root, cache_attr, str(p))
+            return str(p)
+        p = p.parent
+    setattr(current_repo_root, cache_attr, os.getcwd())
+    return os.getcwd()
+
+
+def _repo_root_for_worktree(wt_path: str) -> str:
+    """Racine du repo hebergeant le worktree `wt_path`.
+
+    `git worktree remove <wt_path>` opere sur le repo qui contient ce
+    worktree -- pas forcement le repo de ce script. Avant ce helper,
+    `apply_removal` passait `current_repo_root()` systematiquement, ce
+    qui marchait pour les worktrees du repo CoursIA (relatifs, sous
+    `..`) mais cassait les tests hermetiques qui creent un repo
+    ephemere dans `/tmp/pytest-...` et y ajoutent un worktree : `git
+    -C <CoursIA-root> worktree remove /tmp/.../wt-feature` repond
+    `is not a working tree` parce que ce chemin n'est pas un worktree
+    du repo CoursIA.
+
+    Resolution : `git rev-parse --path-format=absolute --git-common-dir`
+    sur `wt_path` rend le common-dir (le `.git` du depot HOTE, pas du
+    worktree). Son parent est la racine du depot hebergeur -- invariant
+    qu'aucune marche d'ancetre sur `.git` ne peut garantir (un worktree
+    lie porte lui-meme un fichier `.git`/gitdir-pointeur, premier match
+    dans la marche, et le helper rendait alors le worktree lui-meme :
+    `git -C <wt> worktree remove <wt>` -> Permission denied sur Windows
+    parce que git tente de supprimer le cwd de la sous-commande).
+
+    Repli : si la commande echoue ou si `wt_path` n'est pas un worktree,
+    `current_repo_root()`. Pour les chemins relatifs (cas System32 du
+    cron #14473 ou chemin nu passe par l'appelant), le worktree est
+    forcement sous le repo hebergeur -- `current_repo_root()` suffit.
+    """
+    p = Path(wt_path)
+    if not p.is_absolute():
+        return current_repo_root()
+    p = p.resolve()
+    # Interroger git sur le worktree : --git-common-dir remonte au
+    # `.git` du depot HOTE, distinct du `.git` du worktree (pointeur).
+    proc = run_git(str(p), "rev-parse", "--path-format=absolute",
+                   "--git-common-dir", check=False)
+    if proc.returncode == 0:
+        common = Path(proc.stdout.strip())
+        if common.is_absolute():
+            return str(common.parent)
+    return current_repo_root()
+
+
 def run_gh(*args: str, check: bool = True) -> subprocess.CompletedProcess:
     """Lance une commande gh avec capture stricte. cwd = CWD courant."""
     return subprocess.run(
@@ -642,7 +711,7 @@ PR_LISTING_WINDOW = 1000
 
 def _pr_cache_path() -> Path:
     """Un fichier de verdicts par depot (cle = sha1 du remote origin)."""
-    proc = run_git(".", "remote", "get-url", "origin", check=False)
+    proc = run_git(current_repo_root(), "remote", "get-url", "origin", check=False)
     url = proc.stdout.strip() if proc.returncode == 0 else "unknown-repo"
     key = hashlib.sha1(url.encode("utf-8")).hexdigest()[:12]
     return Path.home() / ".cache" / "coursia" / "prune_pr_verdicts" / f"{key}.json"
@@ -1306,7 +1375,7 @@ def diagnose_worktree(wt_path: str, current_path: str,
 
 def list_worktrees() -> list[dict]:
     """Retourne les worktrees sous forme [{path, head_sha}, ...]."""
-    proc = run_git(".", "worktree", "list", "--porcelain", check=False)
+    proc = run_git(current_repo_root(), "worktree", "list", "--porcelain", check=False)
     if proc.returncode != 0:
         raise RuntimeError(f"git worktree list failed: {proc.stderr.strip()}")
     out: list[dict] = []
@@ -1392,7 +1461,7 @@ def apply_removal(wt: WorktreeStatus) -> tuple[bool, str]:
     if wt.dead_registration:
         args.append("--force")
     args.append(wt.path)
-    proc = run_git(".", *args, check=False)
+    proc = run_git(_repo_root_for_worktree(wt.path), *args, check=False)
     if proc.returncode == 0:
         return True, ""
     return False, proc.stderr.strip()
@@ -1595,12 +1664,20 @@ def main() -> int:
         current_path = cwd
 
     # `--path` est le cwd de l'ANALYSE, pas un filtre -- contrat porte par
-    # l'en-tete (`--path /c/dev/CoursIA-X`) et par le help ci-dessus. Or les
-    # trois appels `run_git(".")` (worktree list, cle de cache par remote
-    # origin, worktree remove) resolvent `.` contre le cwd REEEL du processus.
-    # Sans ce chdir, l'organe lance depuis un autre dossier -- le cas de la
-    # tache planifiee, dont le cwd est System32 -- sort en rc=2 sur
-    # `fatal: not a git repository` et ne purge jamais rien (#17904).
+    # l'en-tete (`--path /c/dev/CoursIA-X`) et par le help ci-dessus. Les
+    # trois appels `run_git(...)` resolvent leur cible en PREMIER argument,
+    # pas via le cwd reel du processus : depuis un autre dossier -- le cas
+    # de la tache planifiee (#14473), dont le cwd est System32 -- il fallait
+    # que les sites ne s'appuient pas sur `"."`. Resolution adoptee :
+    #   - `run_git(current_repo_root(), ...)` pour `worktree list` et la cle
+    #     de cache (`remote get-url origin`) : la racine du repo de CE
+    #     script, ou du `--path` apres le `os.chdir` ci-dessous ;
+    #   - `run_git(_repo_root_for_worktree(wt.path), ...)` pour
+    #     `worktree remove` : le depot HEBERGEUR du worktree, pas forcement
+    #     le meme (les tests hermetiques vivent dans des repo e phemeres
+    #     crees par pytest, distincts de CoursIA).
+    # Le garde `os.chdir(current_path)` est conserve pour les appels
+    # `run_gh` et la comparaison `is_current` (cwd reel vs `--path`).
     if args.path:
         try:
             os.chdir(current_path)
