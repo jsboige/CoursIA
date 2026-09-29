@@ -12,6 +12,7 @@ from typing import ClassVar
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import generate_catalog
 import generate_parcours as gp
 from generate_parcours import (
     GENERATED_MARKER,
@@ -309,12 +310,37 @@ def assert_kernel_continuity(compiled, declared_transitions):
     )
 
 
+def _catalog_with_pending_renames(manifest):
+    """Catalogue gele, complete en memoire pour les chemins du manifeste pas encore catalogues.
+
+    Le catalogue ne se regenere que par l'automatisation (#9377) : une PR qui renomme
+    des notebooks met le manifeste a jour avant lui, et le test croisait un manifeste
+    vivant avec un catalogue fige. On complete en memoire, sans rien ecrire, avec
+    l'entree que la regeneration produira (``analyze_notebook``), et seulement si le
+    catalogue est en retard sur l'arbre (au moins un chemin catalogue absent du disque).
+    Un chemin du manifeste absent du disque reste absent : le test echoue comme avant.
+    """
+    catalog = json.loads(gp.CATALOG_PATH.read_text(encoding="utf-8"))
+    root = generate_catalog.NOTEBOOKS_DIR
+    known = {entry["path"] for entry in catalog}
+    if all((root / path).is_file() for path in known):
+        return catalog
+    for group in manifest["branches"] + manifest["accretions"]:
+        for path in group["notebooks"]:
+            if path not in known and (root / path).is_file():
+                entry = generate_catalog.analyze_notebook(root / path, True)
+                if entry:
+                    catalog.append(entry)
+                    known.add(path)
+    return catalog
+
+
 class TestActuariatManifest:
     manifest_path = gp.REPO_ROOT / "docs" / "curriculum" / "actuariat.json"
 
     def test_catalog_paths_exist_and_all_dec_pymc_lessons_are_selected(self):
-        catalog = json.loads(gp.CATALOG_PATH.read_text(encoding="utf-8"))
         manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        catalog = _catalog_with_pending_renames(manifest)
         catalog_paths = {entry["path"] for entry in catalog}
         selected = [path for group in manifest["branches"] + manifest["accretions"]
                     for path in group["notebooks"]]
@@ -328,13 +354,13 @@ class TestActuariatManifest:
                    for path in selected)
 
     def test_rejects_undeclared_kernel_mix(self):
-        catalog = json.loads(gp.CATALOG_PATH.read_text(encoding="utf-8"))
         manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
         game_branch = next(group for group in manifest["branches"]
                            if group["id"] == "theorie-des-jeux")
         game_branch["notebooks"][0] = (
             "GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb"
         )
+        catalog = _catalog_with_pending_renames(manifest)
         compiled = gp.compile_parcours(
             catalog, manifest,
             ["fondations-probabilistes", "decision-sous-incertitude",
@@ -349,8 +375,8 @@ class TestActuariatManifest:
                                              ["validation-hors-echantillon"],
                                              ["series-temporelles", "validation-hors-echantillon"]])
     def test_compiles_speed_run_and_independent_detours(self, accretions):
-        catalog = json.loads(gp.CATALOG_PATH.read_text(encoding="utf-8"))
         manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        catalog = _catalog_with_pending_renames(manifest)
         compiled = gp.compile_parcours(
             catalog, manifest,
             ["fondations-probabilistes", "decision-sous-incertitude", "actuariat",
