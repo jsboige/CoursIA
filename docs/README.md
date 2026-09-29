@@ -302,7 +302,7 @@ Lane des comptes rendus et audits **datés** : un transient y naît, s'y conserv
 
 | Fichier | Description |
 |---------|-------------|
-| [transients/README.md](transients/README.md) | Convention de la lane : nom daté `<YYYY-MM-DD>-<slug>.md`, en-tête gelé `> RAPPORT — <date> — <périmètre> — figé`, règle « née ici, sort par distillation », périmètre et hors-périmètre. Lane **vide à dessein** à l'ouverture : la re-vérification des 12 fichiers listés par #14623 a mesuré que la majorité n'est pas transiente |
+| [transients/README.md](transients/README.md) | Convention de la lane : nom daté `<YYYY-MM-DD>-<slug>.md`, en-tête gelé `> RAPPORT — <date> — <périmètre> — figé`, règle « née ici, sort par distillation », périmètre et hors-périmètre. Lane **vide à dessein** à l'ouverture : la re-vérification des fichiers listés par #14623 a mesuré que la majorité n'est pas transiente |
 
 ## Archive (docs/archive/)
 

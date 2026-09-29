@@ -22,7 +22,7 @@ Lane ouverte par #14623. L'organe qui vérifie la convention est [`scripts/check
 
 Un fichier de cette lane porte :
 
-1. **un nom préfixé par sa date de production** : `<YYYY-MM-DD>-<slug>.md`. La forme est déjà employée dans l'arbre (54 fichiers de `docs/` portent un préfixe date, cf. `docs/ledgers/`) — cette lane la codifie, elle ne l'invente pas ;
+1. **un nom préfixé par sa date de production** : `<YYYY-MM-DD>-<slug>.md`. La forme est déjà employée dans l'arbre (cf. `docs/ledgers/`) — cette lane la codifie, elle ne l'invente pas ;
 2. **en tête**, la ligne d'en-tête gelée :
 
 ```
@@ -56,7 +56,7 @@ L'organe vérifie les **deux sens** du contrat :
 
 ## État
 
-Lane ouverte le 2026-09-29, **vide à dessein**. Le premier peuplement vient de la re-vérification des 12 fichiers listés par #14623, qui a mesuré que la majorité d'entre eux ne sont **pas** des transients — références citées par le harnais, artefact régénéré par la CI, fichier sous PR ouverte — et ne se déplacent donc pas ici.
+Lane ouverte le 2026-09-29, **vide à dessein**. Le premier peuplement vient de la re-vérification des fichiers listés par #14623, qui a mesuré que la majorité d'entre eux ne sont **pas** des transients — références citées par le harnais, artefact régénéré par la CI, fichier sous PR ouverte — et ne se déplacent donc pas ici.
 
 ## Hors périmètre
 
