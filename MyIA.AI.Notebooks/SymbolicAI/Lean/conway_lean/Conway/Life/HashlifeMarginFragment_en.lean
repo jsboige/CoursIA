@@ -1799,6 +1799,133 @@ theorem hashlife_correct_margin_of_spaceship_mod (c : MacroCell) (k : Nat)
     (fun t _ => hcap_of_spaceship_mod _ (canonical_sortDedup _) hp0 v hship
       hwin hspd1 hspd2 t)
 
+/-! ### Flagship c/3 witness: Hickerson's 25P3H1V0.1 (tranche 10, admission)
+
+First **non-dyadic spaceship** admitted through the relaxed chain of
+tranche 9: 25P3H1V0.1 (Dean Hickerson, August 1989), the smallest known c/3
+spaceship — 25 cells in each generation, 16×5 box, period 3, drift
+`(-1, 0)` per period. Since 3 divides no power of 2, the dyadic chain
+`p ∣ 2^level` of `jumpCapturedF_of_spaceship` structurally cannot admit it
+— only the containment relaxation of tranche 9 reaches it. The three step
+equations are proved by the **kernel** reducer (`decide`), without
+`native_decide` (bestiary note c.212). The pattern is transcribed from the
+canonical LifeWiki RLE (`conwaylife.com/patterns/25p3h1v0.1.rle`),
+re-verified in Python before transcription: 25 cells per phase,
+`evolve 3 = shift (-1, 0)` (measured). -/
+/-- Phase 0 of 25P3H1V0.1 (25 cells, box `[0, 4] × [0, 15]`).
+Lexicographically sorted literal. -/
+def hickersonC3 : Grid :=
+  [(0, 7), (0, 8), (0, 10), (1, 4), (1, 5), (1, 7), 
+  (1, 9), (1, 10), (1, 12), (1, 13), (1, 14), (2, 1), 
+  (2, 2), (2, 3), (2, 4), (2, 7), (2, 8), (2, 15), 
+  (3, 0), (3, 5), (3, 9), (3, 13), (3, 14), (4, 1), 
+  (4, 2)]
+/-- Phase 1 (25 cells, box `[0, 4] × [0, 15]`). Sorted literal. -/
+def hickersonC3P1 : Grid :=
+  [(0, 6), (0, 7), (0, 8), (0, 10), (0, 11), (0, 13), 
+  (1, 2), (1, 4), (1, 5), (1, 10), (1, 11), (1, 13), 
+  (1, 14), (2, 1), (2, 2), (2, 3), (2, 7), (2, 10), 
+  (2, 12), (2, 15), (3, 0), (3, 4), (3, 8), (3, 14), 
+  (4, 1)]
+/-- Phase 2 (25 cells, box `[-1, 3] × [0, 15]`): the only phase that
+spills north of the 5×16 box. Sorted literal. -/
+def hickersonC3P2 : Grid :=
+  [(-1, 7), (0, 5), (0, 6), (0, 7), (0, 9), (0, 10), 
+  (0, 11), (0, 13), (0, 14), (1, 1), (1, 2), (1, 4), 
+  (1, 5), (1, 8), (1, 13), (1, 14), (2, 1), (2, 2), 
+  (2, 5), (2, 9), (2, 10), (2, 12), (2, 15), (3, 0), 
+  (3, 3)]
+set_option maxRecDepth 1000000 in
+/-- The definition is already canonical (sorted, duplicate-free): the
+kernel certifies it, then `canonical_sortDedup` converts. -/
+theorem hickersonC3_canonical : Canonical hickersonC3 := by
+  have h : hickersonC3 = sortDedup hickersonC3 := by decide
+  rw [h]
+  exact canonical_sortDedup _
+set_option maxRecDepth 1000000 in
+/-- Same for phase 1. -/
+theorem hickersonC3P1_canonical : Canonical hickersonC3P1 := by
+  have h : hickersonC3P1 = sortDedup hickersonC3P1 := by decide
+  rw [h]
+  exact canonical_sortDedup _
+set_option maxRecDepth 1000000 in
+/-- Same for phase 2. -/
+theorem hickersonC3P2_canonical : Canonical hickersonC3P2 := by
+  have h : hickersonC3P2 = sortDedup hickersonC3P2 := by decide
+  rw [h]
+  exact canonical_sortDedup _
+set_option maxRecDepth 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- Step equation by the kernel reducer: phase 0 evolves into phase 1. -/
+theorem hickersonC3_step1 : step hickersonC3 = hickersonC3P1 := by decide
+set_option maxRecDepth 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- Same, phase 1 to phase 2. -/
+theorem hickersonC3P1_step : step hickersonC3P1 = hickersonC3P2 := by decide
+set_option maxRecDepth 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- Same, phase 2 to phase 0 **drifted by `(-1, 0)`**: the period-3 loop
+closes with one spaceship step. -/
+theorem hickersonC3P2_step : step hickersonC3P2 = shift (-1, 0) hickersonC3 := by decide
+/-- Phase chain under `evolve 1`: phase 0. -/
+theorem hickersonC3_ev1 : evolve 1 hickersonC3 = hickersonC3P1 := hickersonC3_step1
+/-- Phase chain: phase 1. -/
+theorem hickersonC3P1_ev1 : evolve 1 hickersonC3P1 = hickersonC3P2 := hickersonC3P1_step
+/-- Phase chain: phase 2, drifted return. -/
+theorem hickersonC3P2_ev1 : evolve 1 hickersonC3P2 = shift (-1, 0) hickersonC3 := hickersonC3P2_step
+/-- Spaceship relation proved by the **kernel**: 25P3H1V0.1 has period 3
+and drift `(-1, 0)` — composition of the three step equations. -/
+theorem hickersonC3_spaceship : evolve 3 hickersonC3 = shift (-1, 0) hickersonC3 := by
+  rw [evolve_three, hickersonC3_ev1, hickersonC3P1_ev1, hickersonC3P2_ev1]
+set_option maxRecDepth 1000000 in
+/-- Reconstruction frame of phase 0: offset `(-2, -2)` (margin 2 around
+the box `[0, 4] × [0, 15]`). -/
+theorem hickersonC3_frame_off : (gridToMacroCellWithOffset hickersonC3).1 = (-2, -2) := by decide
+set_option maxRecDepth 1000000 in
+/-- Frame level of phase 0: side `max(4+5, 15+5) = 20` → level 5, frame
+`[-2, 30) × [-2, 30)`. -/
+theorem hickersonC3_frame_lvl : (gridToMacroCellWithOffset hickersonC3).2.level = 5 := by decide
+set_option maxRecDepth 1000000 in
+/-- Frame of phase 1: same box as phase 0 → offset `(-2, -2)`. -/
+theorem hickersonC3P1_frame_off : (gridToMacroCellWithOffset hickersonC3P1).1 = (-2, -2) := by decide
+set_option maxRecDepth 1000000 in
+/-- Frame level of phase 1: level 5. -/
+theorem hickersonC3P1_frame_lvl : (gridToMacroCellWithOffset hickersonC3P1).2.level = 5 := by decide
+set_option maxRecDepth 1000000 in
+/-- Frame of phase 2: box `[-1, 3] × [0, 15]` → offset `(-3, -2)`. -/
+theorem hickersonC3P2_frame_off : (gridToMacroCellWithOffset hickersonC3P2).1 = (-3, -2) := by decide
+set_option maxRecDepth 1000000 in
+/-- Frame level of phase 2: level 5 (frame `[-3, 29) × [-2, 30)`). -/
+theorem hickersonC3P2_frame_lvl : (gridToMacroCellWithOffset hickersonC3P2).2.level = 5 := by decide
+/-- Containment of the 9 phase combinations `(r, i) < 3 × 3`: each image
+`evolve i (evolve r hickersonC3)` — a phase or a drifted phase, the drift
+being at most `-1` north per period — lives in the reconstruction frame of
+phase `r` (side 32, margin 2 everywhere: a one-cell drift is absorbed by
+the margin). -/
+theorem hickersonC3_hwin : ∀ r, r < 3 → ∀ i, i < 3 → ∀ p ∈ evolve i (evolve r hickersonC3),
+    (gridToMacroCellWithOffset (evolve r hickersonC3)).1.1 ≤ p.1 ∧
+      p.1 < (gridToMacroCellWithOffset (evolve r hickersonC3)).1.1
+        + (2 ^ (gridToMacroCellWithOffset (evolve r hickersonC3)).2.level : Int) ∧
+    (gridToMacroCellWithOffset (evolve r hickersonC3)).1.2 ≤ p.2 ∧
+      p.2 < (gridToMacroCellWithOffset (evolve r hickersonC3)).1.2
+        + (2 ^ (gridToMacroCellWithOffset (evolve r hickersonC3)).2.level : Int) := by
+  intro r hr i hi
+  interval_cases r <;> interval_cases i <;>
+    simp only [evolve_zero, evolve_two, ← evolve_shift,
+      hickersonC3_ev1, hickersonC3P1_ev1, hickersonC3P2_ev1] <;>
+    first
+    | (rw [hickersonC3_frame_off, hickersonC3_frame_lvl]; decide)
+    | (rw [hickersonC3P1_frame_off, hickersonC3P1_frame_lvl]; decide)
+    | (rw [hickersonC3P2_frame_off, hickersonC3P2_frame_lvl]; decide)
+/-- Capstone: 25P3H1V0.1 is admitted by `hcap_of_spaceship_mod` — first
+concrete **non-dyadic spaceship**. The speed bound `2·|v.i| ≤ p` holds
+strictly (`2·|−1| = 2 < 3`, `2·|0| = 0 < 3`): for every horizon `t`, the
+reconstruction of `evolve t hickersonC3` is captured by Hashlife. -/
+theorem hickersonC3_hcap_of_spaceship_mod :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t hickersonC3)).2 = true :=
+  hcap_of_spaceship_mod hickersonC3 hickersonC3_canonical (by decide) (-1, 0)
+    hickersonC3_spaceship hickersonC3_hwin (by norm_num) (by norm_num)
+
 /-! ## Sanity checks on the bestiary
 
 The fragment `supportInMargin` is **decidable** (instance `Decidable (BoxAssezGrandN)`,
