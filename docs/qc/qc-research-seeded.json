@@ -177,8 +177,8 @@
   "17112": {
    "url": "https://www.quantconnect.com/research/17112/probabilistic-sharpe-ratio/",
    "lastmod": "2024-11-06T10:41:25+00:00",
-   "seeded_at": null,
-   "issue": null
+   "seeded_at": "2026-09-29",
+   "issue": 18359
   },
   "16977": {
    "url": "https://www.quantconnect.com/research/16977/greeks-and-iv-implementation/",
