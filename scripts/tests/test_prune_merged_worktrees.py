@@ -38,7 +38,8 @@ Pinent le contrat de sûreté (issues #14195 + #14509 acceptance) :
 Tests d'intégration end-to-end (subprocess réel) :
 - dry-run sur un worktree `main` ne tente jamais `worktree remove`.
 - `--apply` no-op quand 0 removable.
-- exit 0 quand rien à signaler, 1 si refus observé, 2 si erreur gh/git.
+- exit 0 quand la passe est saine, refus compris (un refus est une
+  décision, pas une panne — #3895 roo-extensions), 2 si erreur gh/git.
 
 Run : python -m pytest scripts/tests/test_prune_merged_worktrees.py
 """
@@ -1665,8 +1666,14 @@ class TestEndToEnd:
     def _require_gh_budget(self):
         skip_if_gh_exhausted()
 
-    def test_dry_run_exits_1_when_refusals(self):
-        """po-2027 a 4 worktrees refuses (main + 3 PR open). Exit 1.
+    def test_dry_run_exits_0_even_with_refusals(self):
+        """po-2027 a 4 worktrees refuses (main + 3 PR open). Exit 0.
+
+        #3895 (roo-extensions) : un REFUS est une decision de l'outil, pas
+        une panne. A 86-100 % de refus mesures sur 3 machines (27/09),
+        l'exit 1 d'avant rendait la tache planifiee rouge (LastResult 0x1)
+        toutes les nuits en reussissant -- un vrai echec gh y etait
+        indissociable du bruit.
 
         CI : skip si scanned=0 OU si aucun worktree main n'est présent
         (checkout shallow sans worktree main séparé, refs/remotes/pull/N/merge).
@@ -1702,10 +1709,9 @@ class TestEndToEnd:
             if "echec inattendu" in stderr:
                 pytest.fail(f"le script a plante (rc=2), ce n'est pas une precondition :\n{stderr[:1500]}")
             pytest.skip(f"le script declare ne pas pouvoir enumerer ici : {stderr[:400]}")
-        # Exit 0 ou 1 (selon qu'il y a des refus observes). Depuis #17292, `1`
-        # ne peut plus signifier « l'outil a plante » : une panne inattendue
-        # sort par 2 avec son traceback.
-        assert proc.returncode in (0, 1), (
+        # #3895 : refus ou pas, une passe qui s'est deroulee sort en 0.
+        # Seul rc=2 reste une panne (nommee ou traceback).
+        assert proc.returncode == 0, (
             f"unexpected exit: {proc.returncode}\nstderr: {stderr[:800]}"
         )
         assert proc.stdout.strip(), (
@@ -1781,8 +1787,9 @@ class TestEndToEnd:
         assert "---" in text, "text output must separate counters by ---"
 
     def test_apply_noop_when_no_removable(self):
-        """--apply doit no-op quand 0 removable, et exit code reste 1
-        si refus observes (le run signale quand meme le bruit).
+        """--apply doit no-op quand 0 removable ; les refus observes ne
+        comptent plus comme echec depuis #3895 (le run reste a 0, le
+        detail des refus vit dans le rapport).
 
         Test destructif : --apply supprime réellement des worktrees. Skip
         sauf si RUN_DESTRUCTIVE_TESTS=1 est explicitement défini dans
@@ -1960,14 +1967,307 @@ class TestEndToEndHermetic14693:
         assert "submodule" in stderr.lower(), stderr
         assert wt.exists(), "le worktree REFUSE reste sur disque"
 
+    def test_lane_owner_marker_does_not_block_removal(self, tmp_path, monkeypatch):
+        """#3895 (roo-extensions) : le marqueur `.lane-owner` pose par le
+        spawn est TOLERE -- il ne doit jamais transformer un REMOVE annonce
+        en REFUSE untolerated_untracked (un worktree refuse pour son propre
+        marqueur ne partirait jamais), et l'attribution est portee par le
+        statut pour le rapport.
+        """
+        super, wt = _make_repo_with_feature_worktree(tmp_path)
+        (wt / ".lane-owner").write_text(
+            "myia-po-2026:CoursIA-2\n", encoding="utf-8")
+        self._merged_anchor(monkeypatch)
+        monkeypatch.chdir(super)
+
+        s = pmw.diagnose_worktree(str(wt), str(super))
+        assert s.decision == "REMOVE", (
+            f"le marqueur ne doit pas bloquer le retrait, got: {s.refusal_reason}"
+        )
+        assert s.lane_owner == "myia-po-2026:CoursIA-2"
+        # Sequence exacte du apply de main() : le marqueur est nettoye
+        # comme artefact tolere, puis le remove sans force reussit.
+        cleaned = pmw.clean_tolerated_artifacts(s)
+        assert ".lane-owner" in cleaned
+        ok, stderr = pmw.apply_removal(s)
+        assert ok, f"REMOVE annonce mais retrait echoue: {stderr}"
+        assert not wt.exists(), "le worktree doit avoir quitte le disque"
+
+
+class TestRefusalReport3895:
+    """#3895 (roo-extensions) : un REFUS est une decision, pas une panne.
+
+    Mesure fondatrice (3 machines, 27/09/2026) : 86-100 % des worktrees
+    vus sont refuses (worktrees de cycle nes HEAD-detaches ou sales par
+    construction). L'exit 1 d'avant rendait la tache planifiee rouge
+    toutes les nuits en reussissant, et le detail des refus ne vivait
+    que dans un log local qu'aucune lane ne lisait. Contrat depuis #3895 :
+    rc=0 passe saine (refus compris), refus dans le rapport (classes +
+    lanes attribuees), [WARN] au-dela du seuil -- sur stderr, jamais
+    stdout (le --json doit rester pur pour `json.loads`).
+    """
+
+    @staticmethod
+    def _refuse(reason, i=0, **kw):
+        # Chemin UNIQUE par indice : le bouchon diagnose_worktree resout par
+        # path -- un path partage ferait resolver tous les worktrees vers le
+        # premier statut (mesure : 3 fails initiaux, tous no_pr_match=3).
+        return _make_status(path=f"C:/fake/refused{i}", decision="REFUSE",
+                            refusal_reason=reason,
+                            pr_state=None, pr_number=None, pr_url=None, **kw)
+
+    def _run_main(self, monkeypatch, statuses, argv_extra=()):
+        """main() in-process, list_worktrees/diagnose bouchonnes, resolution
+        PR detachee du disque (aucun appel gh possible dans ces tests)."""
+        monkeypatch.setattr(pmw, "list_worktrees", lambda: [
+            {"path": s.path, "branch": s.branch} for s in statuses])
+        monkeypatch.setattr(
+            pmw, "diagnose_worktree",
+            lambda path, cur, head_sha=None:
+                next(s for s in statuses if s.path == path),
+        )
+        monkeypatch.setattr(
+            pmw, "get_pr_resolution",
+            lambda: pmw.PrResolution(cache_path=None),
+        )
+        monkeypatch.setattr(
+            sys, "argv", ["prune_merged_worktrees.py", *argv_extra],
+        )
+        return pmw.main()
+
+    def test_refusals_exit_zero_and_report_classes(self, monkeypatch, capsys):
+        """Le coeur de #3895 : des refus, un exit 0, et le decompte par
+        classe dans le rapport texte."""
+        statuses = [
+            self._refuse("unpushed_commits:2", i=0),
+            self._refuse("no_pr_match", i=1,
+                         lane_owner="myia-po-2026:CoursIA-2"),
+            self._refuse("unpushed_commits:1", i=2),
+            _make_status(decision="SKIP_CURRENT",
+                         refusal_reason="current_worktree_not_removable"),
+        ]
+        assert self._run_main(monkeypatch, statuses) == 0
+        out = capsys.readouterr().out
+        assert "refused=3" in out
+        assert "refusals:" in out
+        # Les details variables (":2", ":1") s'agregent en classes.
+        assert "unpushed_commits=2" in out
+        assert "no_pr_match=1" in out
+        # Tri deterministe : compte decroissant.
+        assert out.index("unpushed_commits=") < out.index("no_pr_match=")
+
+    def test_json_carries_breakdowns_and_stays_pure(self, monkeypatch, capsys):
+        """Le --json porte refusal_reasons + lane_refusals + lane_owner par
+        statut, et stdout reste du JSON pur meme avec emission WARN."""
+        statuses = [
+            self._refuse("unpushed_commits:2", i=0),
+            self._refuse("no_pr_match", i=1,
+                         lane_owner="myia-po-2026:CoursIA-2"),
+            self._refuse("uncommitted_source_changes", i=2),
+        ]
+        assert self._run_main(
+            monkeypatch, statuses, argv_extra=["--json", "--warn-threshold", "1"]
+        ) == 0
+        captured = capsys.readouterr()
+        out = json.loads(captured.out)  # stdout PUR : le WARN vit en stderr
+        assert out["refusal_reasons"] == {
+            "uncommitted_source_changes": 1,
+            "no_pr_match": 1,
+            "unpushed_commits": 1,
+        }
+        assert out["lane_refusals"] == {
+            "unattributed": 2,
+            "myia-po-2026:CoursIA-2": 1,
+        }
+        owners = [s.get("lane_owner") for s in out["statuses"]]
+        assert "myia-po-2026:CoursIA-2" in owners
+        assert "[WARN][prune-task]" in captured.err
+
+    def test_apply_error_still_exits_two(self, monkeypatch):
+        """Le rc=2 des echecs d'application survit au changement : un
+        REMOVE annonce que git refuse reste une erreur, pas un refus."""
+        statuses = [_make_status()]  # REMOVE par defaut
+        monkeypatch.setattr(pmw, "clean_tolerated_artifacts", lambda s: [])
+        monkeypatch.setattr(
+            pmw, "apply_removal", lambda s: (False, "fatal: worktree sale"))
+        assert self._run_main(
+            monkeypatch, statuses, argv_extra=["--apply"]) == 2
+
+    def test_warn_strictly_above_threshold_only(self, monkeypatch, capsys):
+        """`refused > N` strictement : au seuil exact, pas d'emission."""
+        statuses = [self._refuse("no_pr_match", i=k) for k in range(3)]
+        self._run_main(
+            monkeypatch, statuses, argv_extra=["--warn-threshold", "3"])
+        assert "[WARN][prune-task]" not in capsys.readouterr().err
+        self._run_main(
+            monkeypatch, statuses, argv_extra=["--warn-threshold", "2"])
+        err = capsys.readouterr().err
+        assert "[WARN][prune-task]" in err
+        assert "refused=3/3" in err
+        assert "no_pr_match=3" in err
+
+    def test_warn_absent_without_flag(self, monkeypatch, capsys):
+        """Sans --warn-threshold, aucun WARN meme avec refus (le dry-run
+        interactif reste silencieux -- l'opt-in est a la tache planifiee)."""
+        statuses = [self._refuse("no_pr_match", i=0)]
+        self._run_main(monkeypatch, statuses)
+        assert capsys.readouterr().err == ""
+
+    def test_warn_line_carries_host_and_lanes(self, monkeypatch, capsys):
+        """La ligne WARN porte l'hote (COMPUTERNAME) et les lanes quand les
+        marqueurs existent -- prete a etre postee telle quelle."""
+        statuses = [
+            self._refuse("no_pr_match", i=0, lane_owner="laneA"),
+            self._refuse("no_pr_match", i=1, lane_owner="laneA"),
+            self._refuse("unpushed_commits:1", i=2),
+        ]
+        monkeypatch.setenv("COMPUTERNAME", "MYIA-PO-2026")
+        self._run_main(
+            monkeypatch, statuses, argv_extra=["--warn-threshold", "2"])
+        err = capsys.readouterr().err
+        assert "[WARN][prune-task] MYIA-PO-2026 refused=3/3" in err
+        assert "lanes: laneA=2 unattributed=1" in err
+
+    def test_lane_owner_marker_is_tolerated(self):
+        """Le marqueur .lane-owner ne doit JAMAIS bloquer le retrait ni
+        compter comme edition source (sinon l'attribution fabriquerait
+        exactement les refus qu'elle est censee expliquer)."""
+        assert pmw.is_untracked_artifact(".lane-owner") is True
+        assert pmw.is_source_dirty(".lane-owner") is False
+
+    def test_read_lane_owner_variants(self, tmp_path):
+        # pose et net : premiere ligne non vide, trim
+        (tmp_path / ".lane-owner").write_text(
+            "myia-po-2026:CoursIA-2\n", encoding="utf-8")
+        assert pmw.read_lane_owner(str(tmp_path)) == "myia-po-2026:CoursIA-2"
+        # lignes vides en tete tolerees, espaces trims
+        (tmp_path / ".lane-owner").write_text(
+            "\n  myia-po-2025:CoursIA  \nseconde ligne ignoree\n",
+            encoding="utf-8")
+        assert pmw.read_lane_owner(str(tmp_path)) == "myia-po-2025:CoursIA"
+        # borne a 64 : un marqueur corrompu ne pollue pas le rapport
+        (tmp_path / ".lane-owner").write_text("x" * 200, encoding="utf-8")
+        assert pmw.read_lane_owner(str(tmp_path)) == "x" * 64
+        # absent -> None
+        empty = tmp_path / "vide"
+        empty.mkdir()
+        assert pmw.read_lane_owner(str(empty)) is None
+        # vide -> None
+        (empty / ".lane-owner").write_text("   \n", encoding="utf-8")
+        assert pmw.read_lane_owner(str(empty)) is None
+
+    def test_absolute_worktree_resolves_host_repo_not_worktree(
+        self, tmp_path, monkeypatch,
+    ):
+        """#18219 follow-up (CHANGES_REQUESTED ai-01 2026-09-29T00:31Z) :
+        un worktree lie porte son propre fichier `.git` (gitdir pointeur).
+        L'ancienne resolution `_repo_root_for_worktree` remontait au
+        premier `.git` et rendait le worktree lui-meme, ce qui forait
+        `apply_removal` -> `git -C <wt> worktree remove <wt>` ->
+        Permission denied sur Windows (git tente de retirer son cwd).
+
+        Le fix utilise `git rev-parse --git-common-dir` qui rend le
+        common-dir du depot HOTE (distinct du `.git`/pointeur du
+        worktree). On asserte directement la valeur de l'argument `-C`
+        passe a `run_git` par `apply_removal` -- c'est l'invariant qui
+        protege Linux aussi : aucun autre helper ne doit pouvoir
+        reintroduire la marche d'ancetre.
+        """
+        super, wt = _make_repo_with_feature_worktree(tmp_path)
+        # Inlined from TestEndToEndHermetic14693._merged_anchor -- ces
+        # tests vivent dans TestRefusalReport3895 depuis le rebase c.1296.
+        monkeypatch.setattr(
+            pmw, "lookup_pr_for_branch",
+            lambda branch, head_sha=None: dict(
+                _MERGED_PR, headRefName=branch),
+        )
+        monkeypatch.chdir(super)
+
+        # Diagnostic + apply_removal reel, interception du cwd passe a git.
+        s = pmw.diagnose_worktree(str(wt), str(super))
+        assert s.decision == "REMOVE", s.refusal_reason
+
+        seen: list[tuple[str, tuple]] = []
+        real_run_git = pmw.run_git
+
+        def spy(cwd, *args, check=True):
+            seen.append((cwd, args))
+            return real_run_git(cwd, *args, check=check)
+
+        monkeypatch.setattr(pmw, "run_git", spy)
+        ok, stderr = pmw.apply_removal(s)
+        assert ok, f"REMOVE doit reussir ici: {stderr}"
+
+        # Filtrer uniquement les appels `worktree remove` (le helper
+        # interroge git avec cwd=<wt.path> pour --git-common-dir, ce qui
+        # est attendu et correct -- c'est le cwd de la sous-commande,
+        # pas celui du retrait final).
+        worktree_remove_cwds = [
+            cwd for cwd, args in seen
+            if args[:2] == ("worktree", "remove")
+            and Path(cwd).resolve() == Path(str(wt)).resolve()
+        ]
+        assert not worktree_remove_cwds, (
+            f"`worktree remove` vise le worktree lui-meme, pas le depot "
+            f"hebergeur : {worktree_remove_cwds}"
+        )
+        # Le cwd du `worktree remove` doit etre la racine du super-repo,
+        # resolue par `git rev-parse --git-common-dir` -> son parent.
+        host_cwds = [
+            cwd for cwd, args in seen
+            if args[:2] == ("worktree", "remove")
+            and Path(cwd).resolve() == Path(str(super)).resolve()
+        ]
+        assert host_cwds, (
+            f"aucun appel `worktree remove` ne vise le depot hebergeur : "
+            f"{[(c, a) for c, a in seen if a[:2] == ('worktree', 'remove')]}"
+        )
+
+    def test_relative_worktree_path_falls_back_to_current_repo(
+        self, tmp_path, monkeypatch,
+    ):
+        """#18219 c.1296 : un chemin de worktree relatif (cas System32
+        du cron #14473, ou l'appelant passe `..` apres chdir) doit
+        retomber sur `current_repo_root()` sans appeler git. C'est le
+        court-circuit de l'optimisation : evite une commande git
+        supplementaire pour le cas ou le worktree est forcement sous le
+        repo de ce script.
+        """
+        # worktree relatif construit sous cwd pour valider le chemin
+        # relatif.
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / "README.md").write_text("tmp", encoding="utf-8")
+
+        # Patch run_git pour ASSERTER qu'il n'est PAS appele sur un
+        # chemin relatif (court-circuit attendu).
+        called_with: list[str] = []
+        real_run_git = pmw.run_git
+
+        def spy(cwd, *args, check=True):
+            called_with.append(cwd)
+            return real_run_git(cwd, *args, check=check)
+
+        monkeypatch.setattr(pmw, "run_git", spy)
+
+        result = pmw._repo_root_for_worktree("wt-feature")
+        assert called_with == [], (
+            f"un chemin relatif ne doit pas appeler git (court-circuit) : "
+            f"{called_with}"
+        )
+        # Le repli est la racine du repo de CE script -- pas le cwd
+        # d'appel. `current_repo_root()` remonte depuis __file__.
+        assert result == pmw.current_repo_root()
+
 
 class TestErrorContract:
-    """#17292 — `rc=1` doit signifier « refus observes », JAMAIS « l'outil a plante ».
+    """#17292 — une PANNE ne doit jamais se faire passer pour une decision.
 
-    Sans ce contrat, un appelant qui teste `rc in (0, 1)` — c'est exactement ce
-    que fait l'E2E subprocess ci-dessus — accepte indistinctement une decision
-    de l'outil et un traceback. C'est ce qui a transforme une panne du runner en
-    `JSONDecodeError` sur des PRs de plusieurs lanes le 2026-09-21.
+    Historique : `rc=1` signifiait « refus observes » — un appelant qui
+    testait `rc in (0, 1)` acceptait indistinctement une decision de
+    l'outil et un traceback (panne du runner lue en `JSONDecodeError`
+    sur des PRs de plusieurs lanes, 2026-09-21). #17292 a sorti les
+    pannes par 2 ; #3895 a ensuite retire le « 1 = refus » lui-meme :
+    tout code != 0 est une panne, sans zone grise.
     """
 
     def test_unexpected_exception_leaves_by_the_documented_error_code(self, monkeypatch):

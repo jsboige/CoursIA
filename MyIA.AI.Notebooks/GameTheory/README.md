@@ -452,7 +452,7 @@ Un équilibre **pur** est un choix déterministe : chaque joueur choisit une seu
 
 ### Je suis bloqué sur un exercice Lean
 
-Vérifiez d'abord votre environnement avec [Lean-1-Setup](../SymbolicAI/Lean/Lean-1-Setup.ipynb). La référence est [Theorem Proving in Lean 4](https://lean-lang.org/theorem_proving_in_lean4/). Les exercices de cette série n'exigent que les tactiques introduites dans les notebooks, pas une connaissance détaillée de Mathlib.
+Vérifiez d'abord votre environnement avec [Lean-01-Setup-Lean-Python](../SymbolicAI/Lean/Lean-01-Setup-Lean-Python.ipynb). La référence est [Theorem Proving in Lean 4](https://lean-lang.org/theorem_proving_in_lean4/). Les exercices de cette série n'exigent que les tactiques introduites dans les notebooks, pas une connaissance détaillée de Mathlib.
 
 ### open_spiel échoue à l'installation sous Windows
 
@@ -505,6 +505,10 @@ La théorie des jeux déplace la question de la décision : non plus « quelle e
 ## Pour aller plus loin
 
 Cette partie réunit la matière de niveau **Recherche** : notes techniques sur des résultats précis du parcours, formalisations Lean, liens avec les autres séries, organisation du dossier.
+
+### Activités associées
+
+Les activités [Bataille des Sexes](../GenAI/activites/Activites-Vulgarisation.md#9-théorie-des-jeux--bataille-des-sexes), [Évolution de la confiance](../GenAI/activites/Activites-Vulgarisation.md#10-évolution-de-la-confiance) et [Scrutin de Condorcet](../GenAI/activites/Activites-Vulgarisation.md#11-théorie-du-choix-social--le-scrutin-de-condorcet-et-lélection-présidentielle-française) exercent en jeu d'équipe les équilibres, jeux répétés et choix social enseignés ici.
 
 ### Processus de Moran : la population finie (palier 06)
 

@@ -608,6 +608,10 @@ RL/
 └── README.md
 ```
 
+## Activités associées
+
+L'activité [Processus de décision de Markov de l'aspirateur autonome](../GenAI/activites/Activites-Vulgarisation.md#8-processus-de-décision-de-markov-de-laspirateur-autonome) fait lire des politiques optimales sur un grid world bruité, en jeu d'équipe.
+
 ## Conclusion / Prochaines étapes
 
 ### Ce que vous avez appris

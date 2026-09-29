@@ -316,7 +316,7 @@ for cell_idx in cells_with_errors:
 ### Exemple 1: Corriger une demo Lean-9
 
 ```
-/iterate-cell MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-9-SK-Multi-Agents.ipynb
+/iterate-cell MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-09-SK-Multi-Agents-Lean-Python.ipynb
     --cell 39
     --objective "iterations: 4"
     --max-iterations 5
