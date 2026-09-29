@@ -1,0 +1,401 @@
+- id: ia5-001
+  theme: ia-5-apprentissage
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: "Soit l'échantillon de données suivant, composé de 3 attributs d'entrées binaires A1, A2, A3,\
+    \ et d'une sortie binaire:\n\n\n\n\n\n\n\nExemple\nA1\nA2\nA3\nSortie Y\n\n\n\n\n\nX1\n\n1\n0\n0\n\
+    0\n\n\nX2\n1\n0\n1\n0\n\n\nX3\n0\n1\n0\n1\n\n\n\nX4\n1\n1\n1\n1\n\n\nX5\n1\n1\n0\n1\n\n\n\n\nCombien\
+    \ de feuilles (= décisions) comprend l'arbre de décision issu de l'algorithme d'apprentissage d'arbre\
+    \ étudié en cours, appliqué à ces données? \n\nRappel: on choisit pour racine l'attribut qui présente\
+    \ le meilleur gain informationnel, c'est à dire qui discrimine au mieux les exemples selon la sortie,\
+    \ et on répète l'opération, de manière à obtenir un arbre compact."
+  choix_unique: true
+  options:
+  - texte: '2'
+    correcte: true
+  - texte: '3'
+    correcte: false
+  - texte: '4'
+    correcte: false
+  - texte: '5'
+    correcte: false
+  - texte: '6'
+    correcte: false
+  - texte: '7'
+    correcte: false
+- id: ia5-002
+  theme: ia-5-apprentissage
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: En théorie de l'apprentissage, quelle est le nom de la technique qui pénalise la complexité
+    des hypothèses?
+  choix_unique: true
+  options:
+  - texte: L'emballage
+    correcte: false
+  - texte: La validation croisée
+    correcte: false
+  - texte: La perte empirique
+    correcte: false
+  - texte: La longueur de description minimale
+    correcte: true
+  - texte: La longueur de description minimale
+    correcte: false
+  - texte: Le Boosting
+    correcte: false
+  - texte: L'apprentissage en ligne
+    correcte: false
+  - texte: La normalisation
+    correcte: false
+- id: ia5-003
+  theme: ia-5-apprentissage
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: Parmi les techniques suivantes d'apprentissage, laquelle n'est pas basé sur les connaissances
+    logiques?
+  choix_unique: true
+  options:
+  - texte: Exploration de la meilleure hypothèse courante
+    correcte: false
+  - texte: Version space learning
+    correcte: false
+  - texte: Apprentissage par explication
+    correcte: false
+  - texte: Apprentissage fondé sur la pertinence
+    correcte: false
+  - texte: Programmation logique inductive
+    correcte: false
+  - texte: Programmation dynamique adaptative
+    correcte: true
+  - texte: Foil
+    correcte: false
+- id: ia5-004
+  theme: ia-5-apprentissage
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: L'apprentissage inductif consiste à rechercher une hypothèse
+  choix_unique: true
+  options:
+  - texte: Inconsistante
+    correcte: false
+  - texte: Consistante
+    correcte: true
+  - texte: Régulière
+    correcte: false
+  - texte: Irrégulière
+    correcte: false
+  - texte: Singulière
+    correcte: false
+- id: ia5-005
+  theme: ia-5-apprentissage
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: Dans laquelle des technique d'apprentissage suivantes le professeur renvoie des récompenses
+    ou des punitions à l'agent aprenant?
+  choix_unique: true
+  options:
+  - texte: Apprentissage actif
+    correcte: false
+  - texte: Apprentissage passif
+    correcte: false
+  - texte: Apprentissage par renforcement
+    correcte: true
+  - texte: Apprentissage supervisé
+    correcte: false
+  - texte: Apprentissage non supervisé
+    correcte: false
+- id: ia5-006
+  theme: ia-5-apprentissage
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: Parmi les techniques suivantes d'apprentissage, laquelle consiste à extraire des règles générales
+    à partir d'exemples, de façon analogue à la mémoïsation?
+  choix_unique: true
+  options:
+  - texte: Exploration de la meilleure hypothèse courante
+    correcte: false
+  - texte: Version space learning
+    correcte: false
+  - texte: Apprentissage par explication
+    correcte: true
+  - texte: Apprentissage fondé sur la pertinence
+    correcte: false
+  - texte: Programmation logique inductive
+    correcte: false
+  - texte: Programmation dynamique adaptative
+    correcte: false
+  - texte: Foil
+    correcte: false
+- id: ia5-007
+  theme: ia-5-apprentissage
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: Parmi les techniques d'apprentissage inductif suivantes, lesquelles sont dites paramétriques?
+  choix_unique: false
+  options:
+  - texte: Arbres de décision
+    correcte: true
+  - texte: Réseaux de neurones artificiels
+    correcte: true
+  - texte: K plus proches voisins
+    correcte: false
+  - texte: Machines à vecteurs de support
+    correcte: false
+- id: ia5-008
+  theme: ia-5-apprentissage
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: 'Différentes méthodes d''apprentissage n''incluent pas:'
+  choix_unique: true
+  options:
+  - texte: La mémorisation
+    correcte: false
+  - texte: L'analogie
+    correcte: false
+  - texte: La déduction
+    correcte: false
+  - texte: L'introduction
+    correcte: true
+  - texte: L'induction
+    correcte: false
+- id: ia5-009
+  theme: ia-5-apprentissage
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: Quelle est l’intérêt de la normalisation des données?
+  choix_unique: true
+  options:
+  - texte: Elle est nécessaire pour éviter de rester bloquer sur des extrema locaux
+    correcte: false
+  - texte: Elle accélère la procédure de descente de gradient en simplifiant les calculs
+    correcte: false
+  - texte: Elle accélère la procédure de descente de gradient en diminuant le nombre d'itérations pour
+      atteindre une bonne solution
+    correcte: true
+  - texte: Elle garantie l’inversibilité des matrices de calcul
+    correcte: false
+  - texte: Elle écarte les données incorrectes
+    correcte: false
+- id: ia5-010
+  theme: ia-5-apprentissage
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: 'Un perceptron est :'
+  choix_unique: true
+  options:
+  - texte: un réseau de neurones de type feed-forward
+    correcte: true
+  - texte: un algorithme de rétro-propagation
+    correcte: false
+  - texte: Un algorithme de backtracking
+    correcte: false
+  - texte: un algorithme feed forward-backward
+    correcte: false
+  - texte: Un réseau de neurones perceptif
+    correcte: false
+- id: ia5-011
+  theme: ia-5-apprentissage
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: Laquelle des affirmations suivantes est fausse concernant la régression?
+  choix_unique: true
+  options:
+  - texte: Elle relie les entrées et les sorties
+    correcte: false
+  - texte: Elle est utilisée pour la prédiction
+    correcte: false
+  - texte: Elle peut être utilisée pour l'interprétation
+    correcte: false
+  - texte: Elle découvre les relations causales
+    correcte: true
+  - texte: Elle est utilisée avec des sorties à valeurs continues
+    correcte: false
+- id: ia5-012
+  theme: ia-5-apprentissage
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: Parmi les techniques suivantes d'apprentissage par renforcement, laquelle est passive?
+  choix_unique: true
+  options:
+  - texte: Q learning
+    correcte: false
+  - texte: Sarsa
+    correcte: false
+  - texte: Exploration de politique
+    correcte: false
+  - texte: Reinforce
+    correcte: false
+  - texte: Pegasus
+    correcte: false
+  - texte: Apprentissage des différences temporelles
+    correcte: true
+- id: ia5-013
+  theme: ia-5-apprentissage
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: Lequel des avantages suivants n'est pas associé aux réseaux de neurones artificiels
+  choix_unique: true
+  options:
+  - texte: Ils peuvent fournissent des résultats facilement explicables
+    correcte: true
+  - texte: Ils peuvent survivre à la défaillance de certains nœuds du réseau
+    correcte: false
+  - texte: Ils sont parallélisables
+    correcte: false
+  - texte: Ils peuvent fonctionner dans des conditions bruitées
+    correcte: false
+  - texte: Ils peuvent implémenter des tâches complexes de classification, de régression et de génération.
+    correcte: false
+- id: ia5-014
+  theme: ia-5-apprentissage
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: Lesquelles de ces affirmations sur les réseaux de neurones artificiels sont correctes?
+  choix_unique: false
+  options:
+  - texte: Les réseaux de neurones artificiels fonctionnent de façon identique aux neurones biologiques
+    correcte: false
+  - texte: Les réseaux de neurones artificiels peuvent être simulés sur une ordinateur conventionnel
+    correcte: true
+  - texte: La durée d'apprentissage d'un réseau de neurones artificiels dépend de la taille du réseau
+    correcte: true
+  - texte: Les réseaux de neurones artificiels apprennent à partir d'exemples
+    correcte: true
+  - texte: Les réseaux de neurones artificiels sont moins tolérants aux erreurs que les algorithmes traditionnels
+    correcte: false
+- id: ia5-015
+  theme: ia-5-apprentissage
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: Dans un réseau de neurones artificiels convolutif, comment s'appelle le paramètre qui permet
+    de gérer le comportement de la convolution aux extrémités de la carte de caractéristiques en entrée?
+  choix_unique: true
+  options:
+  - texte: Rectification
+    correcte: false
+  - texte: Pooling
+    correcte: false
+  - texte: Padding
+    correcte: true
+  - texte: Striding
+    correcte: false
+  - texte: Normalization
+    correcte: false
+  - texte: Subsampling
+    correcte: false
+  - texte: Activation
+    correcte: false
+- id: ia5-016
+  theme: ia-5-apprentissage
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: Dans un réseau de neurones artificiels convolutif, comment s'appelle le paramètre qui permet
+    de gérer le déplacement du noyau de convolution au sein de la carte de caractéristiques en entrée
+    entre deux opérations?
+  choix_unique: true
+  options:
+  - texte: Rectification
+    correcte: false
+  - texte: Pooling
+    correcte: false
+  - texte: Padding
+    correcte: false
+  - texte: Striding
+    correcte: true
+  - texte: Normalization
+    correcte: false
+  - texte: Subsampling
+    correcte: false
+  - texte: Activation
+    correcte: false
+- id: ia5-017
+  theme: ia-5-apprentissage
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: 'Avec de nombreux paramètres, les réseaux de neurones implémentent des fonctions qui sont:'
+  choix_unique: true
+  options:
+  - texte: Linéaires
+    correcte: false
+  - texte: non-linéaires
+    correcte: true
+  - texte: Discrètes
+    correcte: false
+  - texte: Exponentielles
+    correcte: false
+  - texte: Paraboliques
+    correcte: false
+  - texte: Hyperboliques
+    correcte: false
+- id: ia5-018
+  theme: ia-5-apprentissage
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: Combien de réseaux de neurones artificiels sont utilisés dans un réseau antagoniste génératif?
+  choix_unique: true
+  options:
+  - texte: '1'
+    correcte: false
+  - texte: '2'
+    correcte: true
+  - texte: '3'
+    correcte: false
+  - texte: '4'
+    correcte: false
+  - texte: '5'
+    correcte: false
+- id: ia5-019
+  theme: ia-5-apprentissage
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: 'Un réseau de neurones est entraîné pour classifier des entrées de 3 bits de sorte que la sortie
+    est 0 pour l''entrée 110 et 1 pour l''entrée 111. Après généralisation, sachant que les 2 classes
+    comportent le même nombre d''entrées différentes correspondantes, la sortie sera 0 si et seulement
+    si l''entrée est parmi:'
+  choix_unique: true
+  options:
+  - texte: 000 ou 110 ou 011 ou 101
+    correcte: false
+  - texte: 010 ou 100 ou 110 ou 101
+    correcte: false
+  - texte: 000 ou 010 ou 110 ou 100
+    correcte: true
+  - texte: 100 ou 111 ou 101 ou 001
+    correcte: false
+  - texte: 110 ou 100 ou 101 ou 001
+    correcte: false
+- id: ia5-020
+  theme: ia-5-apprentissage
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: Parmi les architectures de réseaux de neurones artificiels suivantes, laquelle permet l'implémentation
+    de mémoire à court terme?
+  choix_unique: true
+  options:
+  - texte: Multi-perceptrons
+    correcte: false
+  - texte: Réseaux Feed-forward
+    correcte: false
+  - texte: Réseaux Convolués
+    correcte: false
+  - texte: Réseaux LSTM
+    correcte: true
+  - texte: Perceptron
+    correcte: false
+  - texte: Cartes de Kohonen
+    correcte: false
+- id: ia5-021
+  theme: ia-5-apprentissage
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: Pourquoi le problème XOR est-il intéressant pour les chercheurs en réseaux de neurones?
+  choix_unique: true
+  options:
+  - texte: Il peut être exprimé d'une façon autorisant l'usage d'un réseau de neurones.
+    correcte: false
+  - texte: Il s'agit d'une opération binaire complexz qui ne peut pas être résolu avec un réseau de neurones.
+    correcte: false
+  - texte: Il peut être résolu avec un perceptron à une couche.
+    correcte: false
+  - texte: C'est un des problèmes non linéairement séparables les plus simples
+    correcte: true
