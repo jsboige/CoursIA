@@ -231,6 +231,12 @@ def test_fille_citee_fermee_refuse(monkeypatch):
 
 def test_pr_citee_non_merged_refuse(monkeypatch):
     def fake_gh_json(args):
+        # La resolution issue/PR (#18323) precede le pr view : #18002 est
+        # bien une PR (cle pull_request presente).
+        if args[0] == "api":
+            assert args[1] == "repos/o/r/issues/18002", args
+            return {"number": 18002, "state": "OPEN",
+                    "pull_request": {"url": "x"}}
         assert args[:2] == ["pr", "view"], args
         return {"state": "OPEN", "mergedAt": None}
     monkeypatch.setattr(ccd, "gh_json", fake_gh_json)
@@ -239,6 +245,38 @@ def test_pr_citee_non_merged_refuse(monkeypatch):
     verdict, errors, _ = evaluate(snap)
     assert verdict == "REFUSED"
     assert any("#18002 is not MERGED" in e for e in errors)
+
+
+def test_issue_citee_dans_la_preuve_ne_crash_pas(monkeypatch):
+    # #18323 : citer l'issue d'audit dans sa propre preuve (« verdict de
+    # l'audit #16834 ») faisait echouer gh pr view -> UNKNOWN pour tout le
+    # dossier. Une reference d'issue n'est pas une PR citee : elle sort du
+    # controle « PRs citees : toutes MERGED ». #17901 couvre le critere via
+    # le raccourci merged_prs.
+    def fake_gh_json(args):
+        assert args[0] == "api" and args[1] == "repos/o/r/issues/16834", args
+        return {"number": 16834, "state": "OPEN"}  # pas de cle pull_request
+    monkeypatch.setattr(ccd, "gh_json", fake_gh_json)
+    snap = _snapshot(comments=[
+        _comment(_dossier_body(
+            items=("critere A -> verdict de l'audit #16834 "
+                   "et PR #17901",)))])
+    verdict, errors, _ = evaluate(snap)
+    assert verdict == "CLOSE"
+    assert errors == []
+
+
+def test_numero_cite_introuvable_reste_fail_closed(monkeypatch):
+    # Une erreur reseau/404 sur la resolution du #N cite lève RuntimeError :
+    # c'est sweep()/main() qui la convertissent en UNKNOWN (fail-closed
+    # conserve, #18323 exigence 2) -- evaluate ne l'avale jamais.
+    def boom(args):
+        raise RuntimeError("gh: Not Found (HTTP 404)")
+    monkeypatch.setattr(ccd, "gh_json", boom)
+    snap = _snapshot(comments=[
+        _comment(_dossier_body(items=("critere A -> PR #404404",)))])
+    with pytest.raises(RuntimeError):
+        evaluate(snap)
 
 
 def test_pr_citee_deja_dans_les_merged_ne_requete_pas(monkeypatch):
@@ -510,6 +548,10 @@ def test_pr_cross_repo_ne_satisfait_pas_le_raccourci_des_prs_citees(monkeypatch)
     # numero venue d'un depot soeur ne doit pas court-circuiter la verification
     # (le dossier citerait #31 sans preuve que la PR 31 du depot cible existe).
     def fake_gh_json(args):
+        if args[0] == "api":
+            assert args[1] == "repos/o/r/issues/31", args
+            return {"number": 31, "state": "OPEN",
+                    "pull_request": {"url": "x"}}  # PR 31 existe dans o/r
         assert args[:2] == ["pr", "view"], f"appel gh inattendu: {args}"
         assert args[args.index("--repo") + 1] == "o/r", (
             "le numero nu doit etre verifie dans le depot cible")
