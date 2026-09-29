@@ -139,6 +139,15 @@ def synth(
     spkref = torch.from_numpy(data.T)  # (channels, samples)
     # Speaker = embedding calculé par le modèle (make_speaker_embedding),
     # pas le wav brut — cf sample.py du repo officiel.
+    # Bug upstream : SpeakerEmbeddingLDA init sous torch.device(cuda) mais
+    # torch.load(map_location="cpu") laisse le ResNet sur CPU ; le mel fbank
+    # construit dans le contexte cuda finit CPU aussi -> RuntimeError device
+    # mismatch. On instancie le LDA sur CPU et on l'injecte : l'embedding est
+    # ensuite transfere sur cuda dans make_cond_dict (via prepare_conditioning).
+    from zonos.speaker_cloning import SpeakerEmbeddingLDA
+
+    if model.spk_clone_model is None:
+        model.spk_clone_model = SpeakerEmbeddingLDA(device="cpu")
     spk_emb = model.make_speaker_embedding(spkref, sr)
 
     if torch.cuda.is_available():
