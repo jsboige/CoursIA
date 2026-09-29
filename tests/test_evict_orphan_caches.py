@@ -309,6 +309,6 @@ class TestScopeConstants(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    # PYTHONIOENCODING utf-8 (Tell c.1067 strict)
+    # PYTHONIOENCODING utf-8
     os.environ.setdefault("PYTHONIOENCODING", "utf-8")
     unittest.main(verbosity=2)
