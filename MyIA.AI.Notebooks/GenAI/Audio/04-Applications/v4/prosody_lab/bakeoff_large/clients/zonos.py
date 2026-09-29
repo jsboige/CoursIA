@@ -159,13 +159,18 @@ def synth(
         speaker=spk_emb,
     )
     conditioning = model.prepare_conditioning(cond_dict)
-    codes = model.generate(conditioning)
+    # disable_torch_compile=True : MSVC cl.exe absent sur po-2023 (torch.compile
+    # leve InductorError "Compiler: cl is not found"). Le mode eager est plus
+    # lent mais fonctionne partout.
+    codes = model.generate(conditioning, disable_torch_compile=True)
     wavs = model.autoencoder.decode(codes).cpu()
     dt = time.time() - t0
 
     wav = wavs[0]
     out_sr = int(model.autoencoder.sampling_rate)
-    torchaudio.save(out_wav, wav, out_sr)
+    # torchaudio 2.11 route save() sur torchcodec (non installe) — soundfile,
+    # deja dans le venv, ecrit le wav sans dependance supplementaire.
+    sf.write(out_wav, wav.squeeze(0).numpy(), out_sr)
     duration_s = float(wav.shape[-1] / out_sr)
     rtf = dt / duration_s if duration_s > 0 else float("inf")
     vram_peak_gb = torch.cuda.max_memory_allocated() / 1024**3 if torch.cuda.is_available() else 0.0

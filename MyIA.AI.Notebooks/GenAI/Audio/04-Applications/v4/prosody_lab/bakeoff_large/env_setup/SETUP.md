@@ -12,7 +12,7 @@ Tell c.c.c.d.F strict fondateur (règle globale) : **RÉPARER, ne JAMAIS contour
 
 ```bash
 mkdir -p /c/ProgramData/sox-portable
-curl -L -o /c/ProgramData/sox-portable/sox.zip https://sourceforge.net/projects/sox/files/sox/14.4.2/sox-14.4.2-win32.zip/download
+curl -L -o /c/ProgramData/sox-portable/sox.zip "https://sourceforge.net/projects/sox/files/sox/14.4.2/sox-14.4.2-win32.zip/download"
 cd /c/ProgramData/sox-portable && powershell -NoProfile -Command "Expand-Archive -Path sox.zip -DestinationPath . -Force"
 # PATH local pour cette session :
 export PATH="/c/ProgramData/sox-portable/sox-14.4.2:$PATH"
@@ -20,6 +20,36 @@ sox --version  # SoX v14.4.2
 ```
 
 Pour rendre sox permanent : ajouter `C:\ProgramData\sox-portable\sox-14.4.2` au PATH système via `sysdm.cpl` → Environment Variables → Path (action user one-time, RECOVERABLE-USER-HAND).
+
+### espeak-ng 1.52.0 (Zonos)
+
+`zonos.conditioning.phonemize` exige le binaire `espeak-ng` au runtime.
+**Scoop (userspace, sans admin)** — la voie retenue sur po-2023 :
+
+```bash
+# une fois par machine (userspace, pas d'elevation) :
+powershell -NoProfile -Command "irm get.scoop.sh -OutFile \"$env:TEMP\install-scoop.ps1\"; & \"$env:TEMP\install-scoop.ps1\" -ScoopDir 'C:\ProgramData\scoop-user'"
+C:\ProgramData\scoop-user\shims\scoop.cmd install espeak-ng
+```
+
+Variables d'env requises pour le client Zonos (session ou shell) :
+
+```bash
+export PATH="/c/ProgramData/scoop-user/apps/espeak-ng/current:$PATH"
+export PHONEMIZER_ESPEAK_LIBRARY="C:\\ProgramData\\scoop-user\\apps\\espeak-ng\\current\\libespeak-ng.dll"
+export PHONEMIZER_ESPEAK_DATA_PATH="C:\\ProgramData\\scoop-user\\apps\\espeak-ng\\current\\espeak-ng-data"
+```
+
+Vérif :
+
+```bash
+"/c/ProgramData/scoop-user/apps/espeak-ng/current/espeak-ng.exe" --version
+# eSpeak NG text-to-speech: 1.52.0  Data at: C:\ProgramData\scoop-user\apps\espeak-ng\current\espeak-ng-data
+```
+
+PIE : le MSI officiel exige l'admin (erreur 1925 en non-élevé) et l'extraction
+CAB manuelle produit des DLLs corrompues (access violation). Scoop fait les
+deux correctement en userspace.
 
 ## Création du venv Python 3.12
 
