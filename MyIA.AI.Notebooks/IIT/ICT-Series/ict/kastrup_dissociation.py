@@ -144,20 +144,23 @@ class EvocationField:
             closure = nxt
         return bool(closure[0].all())
 
-    def simulate(self, d: float, rng: np.random.Generator) -> tuple[np.ndarray, np.ndarray]:
+    def simulate(self, d: float, rng: np.random.Generator,
+                 t_steps: int | None = None, burn_in: int | None = None) -> tuple[np.ndarray, np.ndarray]:
         """VAR(1) d'évocation + environnement AR(1) commun ; retourne (x, e) stationnaires."""
+        t_total = T_STEPS if (t_steps is None) else t_steps
+        b_total = BURN_IN if (burn_in is None) else burn_in
         W = self.W_at(d)
-        e = np.empty(T_STEPS + BURN_IN)
+        e = np.empty(t_total + b_total)
         e[0] = rng.normal(0.0, math.sqrt(1.0 - ENV_PHI**2))
         noise_e = rng.normal(0.0, 1.0, size=e.shape)
         for t in range(1, e.shape[0]):
             e[t] = ENV_PHI * e[t - 1] + noise_e[t] * math.sqrt(1.0 - ENV_PHI**2)
-        x = np.empty((T_STEPS + BURN_IN, N_NODES))
+        x = np.empty((t_total + b_total, N_NODES))
         x[0] = rng.normal(0.0, 1.0, size=N_NODES)
         eta = rng.normal(0.0, SIGMA, size=x.shape)
         for t in range(1, x.shape[0]):
             x[t] = W @ x[t - 1] + self.beta * e[t - 1] + eta[t]
-        return x[BURN_IN:], e[BURN_IN:]
+        return x[b_total:], e[b_total:]
 
 
 def fisher_mean(corr: np.ndarray) -> float:
@@ -191,7 +194,8 @@ def env_control_matrix(e: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     return np.column_stack(cols), e[ENV_LAGS:]
 
 
-def measure(field: EvocationField, d: float, rng: np.random.Generator) -> dict:
+def measure(field: EvocationField, d: float, rng: np.random.Generator,
+            t_steps: int | None = None, burn_in: int | None = None) -> dict:
     """Observables du scellé §4 (amendement v3) à un niveau de dissociation donné.
 
     Inter-alters : niveau ALTER (moyenne des 40 activations de chaque alter) —
@@ -199,7 +203,7 @@ def measure(field: EvocationField, d: float, rng: np.random.Generator) -> dict:
     aveugle sur ce substrat (melange row-stochastique => correlations par paires
     O(1/N), mesurees ~0.02 pour tout p_out). Intra : niveau noeuds, inchange.
     """
-    x, e = field.simulate(d, rng)
+    x, e = field.simulate(d, rng, t_steps=t_steps, burn_in=burn_in)
     controls, _ = env_control_matrix(e)
     x_head = x[ENV_LAGS:]
     corr = np.corrcoef(x, rowvar=False)

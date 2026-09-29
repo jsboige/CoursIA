@@ -111,13 +111,11 @@ def test_random_damage_same_budget_hits_intra(field):
     assert inter_surviving > 0
 
 
-def test_privacy_holds_and_intra_survives_short_run(field, monkeypatch):
+def test_privacy_holds_and_intra_survives_short_run(field):
     # Intégration courte : T réduit, mêmes lois — P2 doit être ≈ 0 à d = 1,
     # et le ratio P1 reste ≥ bande même avec du bruit d'échantillon.
-    monkeypatch.setattr(kd, "T_STEPS", 8_000)
-    monkeypatch.setattr(kd, "BURN_IN", 1_000)
-    m0 = kd.measure(field, 0.0, np.random.default_rng(101))
-    m1 = kd.measure(field, 1.0, np.random.default_rng(102))
+    m0 = kd.measure(field, 0.0, np.random.default_rng(101), t_steps=8_000, burn_in=1_000)
+    m1 = kd.measure(field, 1.0, np.random.default_rng(102), t_steps=8_000, burn_in=1_000)
     assert abs(m1["rho_direct_partial_env"]) <= kd.BANDS["p2_direct_max"]
     ratio = m1["rho_intra"] / m0["rho_intra"]
     # Bande scellee P1 = 0.80, adjudiquee sur le run principal (T = 20 000) ;
