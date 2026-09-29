@@ -1478,7 +1478,7 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 - Debloquer une configuration industrielle : le solveur dit UNSAT, quelle contrainte relacher ?
 - Revision des croyances : quelle croyance retirer pour rester coherent (postulats AGM)
 
-*Notebooks : [Z3-Python-13-UnsatCores](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb) (noyaux d'insatisfiabilite) · [17_UnsatCores](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/17_UnsatCores.ipynb) · [Tweety-4-Belief-Revision](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision.ipynb) (MUS, MCS, dualite).*
+*Notebooks : [Z3-13-UnsatCores-Python](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb) (noyaux d'insatisfiabilite) · [17_UnsatCores](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/17_UnsatCores.ipynb) · [Tweety-4-Belief-Revision](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision.ipynb) (MUS, MCS, dualite).*
 
 ---
 layout: default
