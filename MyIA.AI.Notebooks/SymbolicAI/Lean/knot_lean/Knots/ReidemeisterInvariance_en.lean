@@ -19,9 +19,9 @@ docstrings below differ from the FR version; the body signatures, proofs and
 tactics remain byte-identical between the two files.
 -/
 
-import Knots.Conway
+import Knots.Conway_en
 
-namespace Knots
+namespace Knots_en
 
 /-! ## 1. The `i = 0` / `i ≥ 1` split (a point the strategy misses)
 
@@ -596,5 +596,5 @@ theorem Reidemeister3Connected.arcPartition_covered_iff {d₁ d₂ : KnotDiagram
     obtain ⟨C, hC, hz, _⟩ := heq.mpr ⟨D, hD, hzD, hzD⟩
     exact ⟨C, hC, hz⟩
 
-end Knots
+end Knots_en
 
