@@ -16,6 +16,11 @@
     - `Knots.Invariant` — invariants polynomiaux (Alexander,
       Jones), tricoloriabilité, genre
     - `Knots.Conway` — notations et conventions de Conway
+    - `Knots.Jones` — bracket de Kauffman sur codes PD (somme d'états,
+      évaluations trèfle / noeud en huit / noeud trivial)
+    - `Knots.FigureEight` — invariants du noeud en huit sur son code PD
+      plan (Alexander signé classique à une unité près, déterminant 5,
+      non-tricoloriabilité, 4 croisements — définition provisoire)
     - `Knots.Lidman` — contribution de Joshua Lidman (collaboration
       externe), orientation des variétés
     - `Knots.MathlibPrerequisites` — compat Mathlib 4
@@ -33,5 +38,8 @@ import Knots.Basic
 import Knots.Reidemeister
 import Knots.Invariant
 import Knots.Conway
+import Knots.ReidemeisterInvariance
+import Knots.Jones
+import Knots.FigureEight
 import Knots.Lidman
 import Knots.MathlibPrerequisites

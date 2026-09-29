@@ -1,0 +1,114 @@
+name: GenAI-Helpers-Tests
+
+# Tranche 2/45 de #13746 — Tests éclatés 45+ emplacements : famille GenAI
+# helpers (test_genai_helpers.py + test_video_helpers.py errants à la racine
+# de helpers/, + helpers/tests/ entier) jamais découverte par la CI.
+#
+# Le défaut mesuré : aucun testpath pytest.ini ne couvre
+# `MyIA.AI.Notebooks/GenAI/shared/helpers`, et aucun workflow ne déclenche
+# sur ce chemin — les deux fichiers cités par l'issue vivaient hors de
+# tout `tests/`, et le sous-répertoire `helpers/tests/` (comfyui_client,
+# genai_service, audio_helpers : 132 tests) était invisible aussi.
+#
+# Bornes mesurées firsthand (worktree fc8da0912e, baseline 2026-09-18) :
+#   - `pytest --collect-only -q MyIA.AI.Notebooks/GenAI/shared/helpers` =
+#     **138 tests collected** (dont 137 verts + 1 témoin périmé corrigé
+#     dans la même PR : `frame_limit` -> `length`, clé réelle de
+#     EmptyHunyuanLatentVideo dans comfyui_client.py — l'assert n'avait
+#     jamais tourné, personne n'avait vu le KeyError).
+#   - Imports top-level : stdlib + numpy + requests. Imports en fonction
+#     (mesures sur run CI 35374523233) : python-dotenv (load_genai_config),
+#     pillow (frames_to_video), librosa (plot_waveform) — au pip install.
+#     moviepy reste importé paresseusement et mocké par les tests.
+#
+# Acceptance partielle (tranche 2/45, scope strict) :
+# 1. Workflow `genai-helpers-tests.yml` créé et déclenché sur push+PR
+#    ciblant `MyIA.AI.Notebooks/GenAI/shared/**` (cf paths: ci-dessous).
+# 2. Compteur de tests collectés >= 138 (floor — mesuré sur main avant
+#    PR, cf preuve dans body PR).
+# 3. pytest.ini gagne le testpath correspondant (découverte locale
+#    alignée sur la CI).
+# 4. Les autres familles SANS trigger path-reactif (#13746 : GradeBookApp,
+#    01-PythonForDataScience/tests, QuantConnect/scripts/tests) restent
+#    HORS de cette PR — une famille par PR (G.4 anti-composite). NB : ces
+#    trois familles SONT exécutées par scripts-tests.yml (cibles du run
+#    + collect floors) ; ce qui leur manque est une entree paths: propre
+#    (pattern #10416 : un push sur leur seul chemin ne declenche rien).
+#
+# Pièges évités (hérités de gametheory-tests.yml, tranche 1) :
+# - Pas de modification de scripts-tests.yml paths: (scope narrow).
+# - Single-Python 3.11 d'abord, pas de matrix tant que le vert n'est pas
+#   confirmé.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/GenAI/shared/**'
+      - '.github/workflows/genai-helpers-tests.yml'
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, edited, reopened]
+    paths:
+      - 'MyIA.AI.Notebooks/GenAI/shared/**'
+      - '.github/workflows/genai-helpers-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: genai-helpers-tests-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  genai-helpers-tests:
+    name: GenAI helpers pytest (138 collected)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      # Floor mesuré firsthand — worktree fc8da0912e, baseline 2026-09-18.
+      # Quand des tests sont retirés INTENTIONNELLEMENT, ajuster cette valeur
+      # dans la même PR (le message d'erreur du guard la nomme).
+      GENAI_HELPERS_TEST_FLOOR: 138
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      # Deps réelles de la famille : numpy (audio/video), requests
+      # (genai_service), python-dotenv (load_genai_config), pillow
+      # (frames_to_video), librosa (plot_waveform), pytest. moviepy est
+      # importé paresseusement et mocké par les tests — non requis.
+      - name: Install deps (numpy requests python-dotenv pillow librosa pytest)
+        run: |
+          python -m pip install --upgrade pip
+          pip install numpy requests python-dotenv pillow librosa pytest
+
+      - name: Run GenAI helpers tests
+        run: |
+          pytest MyIA.AI.Notebooks/GenAI/shared/helpers --tb=short -v
+
+      # Collection floor-guard (même sémantique que gametheory-tests.yml /
+      # ict-tests.yml : détecter pytest vert avec N tests silencieusement
+      # disparus du chemin de collecte). Ligne canonique pytest :
+      # `=== N tests collected in T.Ts ===`. Pas de `|| true` : le grep
+      # doit pouvoir échouer -- c'est le signal.
+      - name: Collection floor-guard (138)
+        if: always()
+        run: |
+          COLLECTED=$(pytest MyIA.AI.Notebooks/GenAI/shared/helpers --collect-only -q 2>&1 | grep -oE '[0-9]+ tests? collected' | grep -oE '[0-9]+' | head -1)
+          if [ -z "$COLLECTED" ]; then
+            echo "::error::Le collect-only n'a renvoyé aucune ligne 'N tests collected' -- la collecte a planté, c'est probablement une panne d'infra (cf #9387)."
+            exit 1
+          fi
+          if [ "$COLLECTED" -lt "$GENAI_HELPERS_TEST_FLOOR" ]; then
+            echo "::error::Régression de couverture : $COLLECTED tests collectés, plancher=$GENAI_HELPERS_TEST_FLOOR."
+            echo "::error::Si la baisse est intentionnelle, ajuster GENAI_HELPERS_TEST_FLOOR dans cette PR -- le message d'erreur nomme la valeur."
+            exit 1
+          fi
+          echo "OK : $COLLECTED tests collectés (plancher=$GENAI_HELPERS_TEST_FLOOR)."

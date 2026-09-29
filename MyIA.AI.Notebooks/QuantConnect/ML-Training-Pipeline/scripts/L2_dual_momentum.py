@@ -288,6 +288,127 @@ def run_dual_momentum(
     }
 
 
+def run_outlier_selection(
+    closes: pd.DataFrame,
+    lookback: int,
+    winsor_pct: float = 5.0,
+    n_sigma: float = 2.0,
+    seeds: list[int] = None,
+    n_splits: int = 5,
+    gap: int = 21,
+) -> dict:
+    """Outlier-selection momentum (distillation QC-research #21382).
+
+    Au lieu de ranking top-N : winsorisation du signal momentum aux
+    percentiles [winsor_pct, 100 - winsor_pct], seuil T = mu_w + n_sigma * sigma_w,
+    selection des valeurs RAW > T (les outliers). Portefeuille de taille flottante
+    (0 outlier = cash). Adaptations declarees vs l'article (panier 25 symboles
+    deja liquides : passe volume omise ; reequilibrement mensuel 21j aligne sur le
+    canon L1/L2 de ce pipeline, pas quotidien).
+    """
+    symbols = [c for c in closes.columns if c in ALL_SYMBOLS]
+    returns = closes[symbols].pct_change().shift(-1)
+    mom = closes[symbols].pct_change(lookback)
+
+    if seeds is None:
+        seeds = DEFAULT_SEEDS
+
+    all_seed_results = []
+    fold_sizes = []
+
+    for seed in seeds:
+        splitter = WalkForwardSplitter(n_splits=n_splits, gap=gap)
+        ret_arr = returns.values
+        mom_arr = mom.values
+
+        fold_gross = []
+        fold_net = []
+        fold_trades = []
+        current_positions = np.zeros(len(symbols))
+        last_rebal = -REBALANCE_FREQ  # force first rebalance
+
+        for train_idx, test_idx in splitter.split(ret_arr):
+            if len(test_idx) == 0:
+                continue
+
+            for t in range(len(test_idx)):
+                idx = test_idx[t]
+                abs_pos_in_fold = t
+
+                if abs_pos_in_fold - last_rebal >= REBALANCE_FREQ or abs_pos_in_fold == 0:
+                    last_rebal = abs_pos_in_fold
+                    mom_scores = mom_arr[idx]
+
+                    valid = ~np.isnan(mom_scores)
+                    valid_scores = mom_scores[valid]
+                    new_positions = np.zeros(len(symbols))
+
+                    if len(valid_scores) >= 5:
+                        lo, hi = np.percentile(
+                            valid_scores, [winsor_pct, 100.0 - winsor_pct]
+                        )
+                        clipped = np.clip(valid_scores, lo, hi)
+                        threshold = clipped.mean() + n_sigma * clipped.std(ddof=1)
+
+                        outliers = np.where(valid & (mom_scores > threshold))[0]
+                        if len(outliers) > 0:
+                            fold_sizes.append(len(outliers))
+                            for oi in outliers:
+                                new_positions[oi] = 1.0 / len(outliers)
+
+                    trades = np.sum(new_positions != current_positions)
+                    current_positions = new_positions
+                else:
+                    trades = 0
+
+                day_ret = ret_arr[idx]
+                port_gross = np.nansum(current_positions * day_ret)
+
+                if trades > 0:
+                    n_crypto = sum(1 for i, s in enumerate(symbols)
+                                   if s in CRYPTO_SYMBOLS and current_positions[i] > 0)
+                    n_equity = trades - n_crypto
+                    cost = (n_equity * EQUITY_COST.cost_per_trade(100) +
+                            n_crypto * CRYPTO_COST.cost_per_trade(100))
+                    avg_cost = cost / max(trades, 1)
+                    port_net = port_gross - avg_cost
+                else:
+                    port_net = port_gross
+
+                if not np.isnan(port_gross):
+                    fold_gross.append(port_gross)
+                    fold_net.append(port_net)
+                    fold_trades.append(trades)
+
+        gross_arr = np.array(fold_gross)
+        net_arr = np.array(fold_net)
+
+        if len(gross_arr) > 10:
+            gross_sharpe = sharpe_from_returns(pd.Series(gross_arr))
+            net_sharpe = sharpe_from_returns(pd.Series(net_arr))
+        else:
+            gross_sharpe = 0.0
+            net_sharpe = 0.0
+
+        all_seed_results.append({
+            "seed": seed,
+            "gross_sharpe": round(float(gross_sharpe), 4),
+            "net_sharpe": round(float(net_sharpe), 4),
+            "total_trades": int(np.sum(fold_trades)),
+            "n_oos": len(gross_arr),
+        })
+
+    return {
+        "strategy": "outlier_selection",
+        "lookback": lookback,
+        "winsor_pct": winsor_pct,
+        "n_sigma": n_sigma,
+        "n_symbols": len(symbols),
+        "mean_portfolio_size": round(float(np.mean(fold_sizes)), 2) if fold_sizes else 0.0,
+        "seeds": all_seed_results,
+    }
+
+
 def compute_verdict(results: dict, bh_sharpe: float) -> dict:
     """Compute verdict for a strategy vs B&H."""
     sharpes = [s["net_sharpe"] for s in results["seeds"]]

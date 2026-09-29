@@ -19,8 +19,11 @@ Le fil conducteur : chaque notebook introduit un changement de représentation �
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
 | 7 | [Planners-7-OR-Tools](Planners-7-OR-Tools.ipynb) | 45 min | Programmation par contraintes avec CP-SAT (Google OR-Tools) : all-different, cumulative, table ; scheduling ; optimisation multi-objectif |
+| 7 (C#) | [Planners-7-OR-Tools-Csharp](Planners-7-OR-Tools-Csharp.ipynb) | 45 min | Jumeau C# du 7 : solveur CP from-scratch (propagation + backtracking) sur Job-Shop, sans OR-Tools (See #4956) |
 | 8 | [Planners-8-Temporal](Planners-8-Temporal.ipynb) | 40 min | PDDL 2.1 : durées d'actions, parallélisme, contraintes temporelles simples et denses, ordonnancement de tâches |
+| 8 (C#) | [Planners-8-Temporal-Csharp](Planners-8-Temporal-Csharp.ipynb) | 40 min | Jumeau C# du 8 : algèbre d'Allen + réseau temporel simple (STN) + RCPSP-lite from-scratch (See #4956) |
 | 9 | [Planners-9-HTN](Planners-9-HTN.ipynb) | 45 min | Planification hiérarchique (Hierarchical Task Networks) : tâches primitives/abstraites, méthodes de décomposition, HDDL, solveur inspiré de SHOP2 |
+| 9 (C#) | [Planners-9-HTN-Csharp](Planners-9-HTN-Csharp.ipynb) | 45 min | Jumeau C# du 9 : solveur HTN inspiré de SHOP2 from-scratch, décomposition de tâches en .NET 9 (See #4956) |
 
 ## Prérequis
 

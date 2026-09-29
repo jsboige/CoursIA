@@ -232,7 +232,7 @@ class TestCodeCellOnlyExercise:
         ``# Etape`` scaffold whose only "exercice" word lives in a print
         statement. The comment-aware ``_code_cell_mentions_exercise`` misses it;
         the broadened full-source scan in pass-2 must catch it (genuine case:
-        SC-26-Final-Project Parties 2/3/4, reported 0 for 3 real stubs).
+        SC-26-Final-Project-Python Parties 2/3/4, reported 0 for 3 real stubs).
         """
         nb = _write_nb(
             tmp_path / "print_marker.ipynb",
@@ -261,6 +261,50 @@ class TestCodeCellOnlyExercise:
             "(not a #/// //-- comment) must be counted via the broadened scan"
         )
         assert all(h.detected_by == "code_cell_comment" for h in result.exercises)
+
+    def test_numbered_print_marker_computing_skeleton_is_counted(
+        self, tmp_path
+    ):
+        """Numbered C.1 print idiom on a scaffolded skeleton whose body
+        computes (the rl_8_model_based_dyna_q Ex2 shape). The skeleton's
+        ``# TODO etudiant`` markers sit above scaffolding with a DERIVED
+        return (``return list(steps), Q`` -- a call), so the comment-marker
+        gate in ``_is_stub_code`` skips them ("leftover comments above a body
+        that computes") and the only executable marker left is
+        ``print("Exercice 2 a completer")`` -- which the pre-fix pattern
+        missed because of the digit. The markdown header above must pair to
+        exactly one hit, not double-count.
+        """
+        nb = _write_nb(
+            tmp_path / "numbered_print_skeleton.ipynb",
+            [
+                _md("# Titre"),
+                _md("### Exercice 2 — Prioritized Sweeping"),
+                _code(
+                    "import heapq\n"
+                    "\n"
+                    "\n"
+                    "def sweep(env, n_episodes=50):\n"
+                    '    """Squelette — a completer (exercice 2)."""\n'
+                    "    Q = {}\n"
+                    "    steps = []\n"
+                    "    for _ in range(n_episodes):\n"
+                    "        # TODO etudiant — Etape 1 : inserer dans la file\n"
+                    "        steps.append(1)\n"
+                    "    return list(steps), Q\n"
+                    "\n"
+                    "\n"
+                    "# TODO etudiant — Etape 2 : comparer avec dyna_q\n"
+                    'print("Exercice 2 a completer")'
+                ),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 1, (
+            "A scaffolded skeleton whose only executable marker is the "
+            "numbered print idiom must count as one exercise"
+        )
+        assert result.exercises[0].detected_by == "markdown_header"
 
     def test_stub_preceding_different_number_header_is_not_absorbed(
         self, tmp_path
@@ -361,7 +405,7 @@ class TestCodeCellOnlyExercise:
         it as a stub even though it has more than one effective code line (the
         ``<= 1 effective code-line`` rule alone misses it).
 
-        Regression for ``Search-11-Metaheuristics-Csharp`` cells 24-26 (ABC /
+        Regression for ``Search-11-Metaheuristics-CSharp`` cells 24-26 (ABC /
         inertia-schedule / Schwefel): each ``// Exercice N`` + ``// TODO etudiant``
         + partial skeleton was silently under-counted, so the notebook read as
         1 exercise instead of its real 3.
@@ -1203,11 +1247,11 @@ class TestCorpusScope:
         stricter policy than the rule states.
         """
         for stem, expect in [
-            ("Lean-1-Setup", "setup"),
+            ("Lean-01-Setup-Lean-Python", "setup"),
             ("Sudoku-00-Environment-Csharp", "setup"),
-            ("SC-1-Setup-Foundry", "setup"),
+            ("SC-01-Setup-Foundry-Python", "setup"),
             ("Argument_Analysis_Agentic-0-init_agent", "setup"),
-            ("Lean-3-Propositions-Proofs", "lean"),
+            ("Lean-03-Propositions-Proofs-Lean", "lean"),
             ("GameTheory-11b-Lean-BayesianGamesExt", "lean"),
             ("DecInfer-09-Lean-Gittins", "lean"),
         ]:
@@ -1227,7 +1271,7 @@ class TestCorpusScope:
 
     def test_raising_threshold_does_not_raise_exempt_kinds(self, tmp_path):
         """`--threshold 5` must not invent an exercise budget for setup/Lean."""
-        assert _classify(tmp_path / "Course" / "Lean-1-Setup.ipynb", standard_threshold=5, root=tmp_path)[1] == 0
+        assert _classify(tmp_path / "Course" / "Lean-01-Setup-Lean-Python.ipynb", standard_threshold=5, root=tmp_path)[1] == 0
         assert _classify(tmp_path / "Course" / "X-Lean-Y.ipynb", standard_threshold=5, root=tmp_path)[1] == 0
         assert _classify(tmp_path / "Course" / "X-Concepts.ipynb", standard_threshold=5, root=tmp_path)[1] == 5
 
@@ -1948,3 +1992,247 @@ class TestD01UnpairedHeaders:
         result = count_exercises_in_notebook(nb)
         assert result.count == 0
         assert result.unpaired_markdown_instances == 0
+
+
+# ---------------------------------------------------------------------------
+# #18146 -- scaffolded stubs swallowed by the "_body_computes_result" gate,
+# bold (non-ATX) exercise titles, and pairing refinements. Each fixture
+# reproduces the measured shape of a cited notebook cell.
+# ---------------------------------------------------------------------------
+
+class TestScaffoldedStubShapes:
+    """Mechanism 1: the leftover-TODO gate must not swallow scaffolded stubs."""
+
+    def test_docstring_stub_with_scaffold_return_is_stub(self):
+        """GameTheory-07 c29: a long docstring + `# TODO etudiant` Etapes +
+        one scaffolding constructor + `return game`. The docstring prose used
+        to carry the cell over the three-effective-line threshold and the
+        single-assignment `return game` read as derived."""
+        src = (
+            'def build_three_player_entry_game():\n'
+            '    """Construit l\'arbre de jeu a 3 firmes sequentielles.\n'
+            "\n"
+            "    Structure :\n"
+            "      - Firme A (joueur 1, racine) decide Entree ou Reste_dehors\n"
+            "      - Firme B (joueur 2) observe A et decide Entree ou Reste_dehors\n"
+            "      - Firme C (joueur 3) observe A et B et decide Entree ou Reste_dehors\n"
+            '    """\n'
+            "    # TODO etudiant : implementer l'arbre complet\n"
+            "    # Etape 1 : creer le jeu avec num_players=3\n"
+            "    # Etape 2 : creer les 8 noeuds terminaux\n"
+            '    game = ExtensiveFormGame("3-Player Entry Game", num_players=3)\n'
+            "    return game\n"
+        )
+        assert _is_stub_code(src) is True, (
+            "A scaffolded stub (docstring + TODO + one constructor + return) "
+            "must stay a stub"
+        )
+
+    def test_template_dict_return_is_stub(self):
+        """GameTheory-07 c27/c31: `return {` over placeholder values (0, [],
+        False, a TODO string) under a `# TODO etudiant : remplacer` marker."""
+        src = (
+            "def solve_ultimatum(offers=None, total=10):\n"
+            "    # TODO etudiant : completer le solveur\n"
+            "    return {\n"
+            "        'spe_offer': 0,\n"
+            "        'j1_payoff': 0,\n"
+            "        'j2_payoff': 0,\n"
+            "        'j2_accepts': [],\n"
+            "    }  # TODO etudiant : remplacer par le vrai calcul SPE\n"
+        )
+        assert _is_stub_code(src) is True, (
+            "A returned dict whose every value is a placeholder is a template"
+        )
+
+    def test_dict_return_with_computed_value_stays_a_solution(self):
+        """Negative control on the template rule: a dict that carries at
+        least one computed value is a real answer, leftover TODO or not."""
+        src = (
+            "def solve(grid):\n"
+            "    # TODO etudiant (residuel de la correction)\n"
+            "    best = max(candidates, key=score)\n"
+            "    return {\n"
+            "        'best': best,\n"
+            "        'score': score(best),\n"
+            "    }\n"
+        )
+        assert _is_stub_code(src) is False
+
+    def test_csharp_return_zero_with_tail_todo_is_stub(self):
+        """GameTheory-13 c22: `return 0.0;   // TODO etudiant` -- the C#
+        line-tail comment slashes used to satisfy the binary-operator regex
+        and mark the return as derived."""
+        src = (
+            "// Exercice 1 : Leduc Poker (2 tours, 6 cartes).\n"
+            "// TODO etudiant : modeliser Leduc + lancer CFR.\n"
+            "static double SolveLeduc()\n"
+            "{\n"
+            "    // Indice : nouvelle classe Leduc avec IsTerminal/GetPayoff.\n"
+            "    return 0.0;   // TODO etudiant\n"
+            "}\n"
+            "\n"
+            '"Exercice a completer".Display();\n'
+        )
+        assert _is_stub_code(src) is True
+
+    def test_csharp_return_null_with_tail_todo_is_stub(self):
+        """Z3-01 c15: `return null;  // TODO etudiant : remplacer par ...` --
+        C# null + tail comment, both formerly read as a computed return."""
+        src = (
+            "// EXERCICE 1 : Trouver un triplet pythagoricien avec Z3.\n"
+            "// Etape 1 : declarer les variables a, b, c\n"
+            "(long A, long B, long C)? TrouverTripletPythagoricien(int borneMax = 20)\n"
+            "{\n"
+            "    // TODO etudiant : implementez la resolution avec un Solver Z3\n"
+            "    return null;  // TODO etudiant : remplacer par le triplet trouve\n"
+            "}\n"
+            "\n"
+            "var triplet = TrouverTripletPythagoricien(20);\n"
+            'Console.WriteLine("Triplet : " + (triplet.HasValue ? triplet.ToString() : "(a completer)"));\n'
+        )
+        assert _is_stub_code(src) is True
+
+
+class TestBoldTitlesAndPairing:
+    """Mechanism 2: bold (non-ATX) exercise statements + pairing refinements."""
+
+    def test_bold_statement_after_stub_counts(self, tmp_path):
+        """PT_13 cells 40-45: stub i, bold `**Exercice N -- ...**` statement
+        at i+1. Bold titles are not ATX headers, so the notebook used to
+        render count=0 while carrying three exercises."""
+        cells = []
+        for n, sujet in ((1, "std"), (2, "token"), (3, "eps")):
+            cells.append(_code(
+                f"# TODO etudiant : mesurer {sujet} sur les 5 seeds.\n"
+                "pass  # (a completer - C.1)\n"
+            ))
+            cells.append(_md(
+                f"**Exercice {n} - Reintroduire {sujet} dans Dr. GRPO.** Reprendre\n"
+                'make_cfg("dr"), re-poser le parametre et comparer la dispersion.\n'
+            ))
+        nb = _write_nb(tmp_path / "pt13_bold.ipynb", cells)
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 3, (
+            "A bold `**Exercice N ...**` statement following its stub must "
+            "count (got %d)" % result.count
+        )
+
+    def test_bold_prose_leadin_is_not_a_second_instance(self, tmp_path):
+        """1.2-Manipulation_de_Donnees_avec_NumPy c27: the ATX header
+        `### Exercice 1 : ...` followed by the prose lead-in
+        `**Pourquoi cet exercice est fondamental** : ...`. The bold opener is
+        a sentence, not a title -- without the starts-with-word guard the
+        cell's instances doubled (corpus: 6->12)."""
+        cells = [
+            _md(
+                "### Exercice 1 : vectorisez une boucle\n"
+                "\n"
+                "**Pourquoi cet exercice est fondamental** : la vectorisation est *la*\n"
+                "difference entre un script Python et un script NumPy.\n"
+            ),
+            _code("valeurs = [1, 2, 3]\n# TODO etudiant : vectoriser\ncarres = None  # TODO\n"),
+        ]
+        nb = _write_nb(tmp_path / "numpy_bold_prose.ipynb", cells)
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 1, (
+            "A prose bold opener must not double the instance count (got %d)"
+            % result.count
+        )
+
+    def test_correction_header_does_not_steal_next_stub(self, tmp_path):
+        """rl_1c cells 45-56: after each exercise's stub comes the worked
+        correction `### Exemple guide : correction de l'exercice N`, then the
+        next exercise's header. The correction title used to forward-pair the
+        NEXT exercise's stub and double the count (8 for 4 exercises)."""
+        cells = []
+        for n in (1, 2):
+            cells.append(_md(f"### Exercice {n} : DAgger avec le teacher T\n"))
+            cells.append(_code(f"# TODO etudiant : exercice {n}\nresultat = None\n"))
+            cells.append(_md(f"### Exemple guide : correction de l'exercice {n}\n"))
+            cells.append(_code(
+                f"# correction de l'exercice {n} -- solution complete\n"
+                f"moyenne = sum(resultats) / len(resultats)\n"
+                f"print('exercice {n} corrige :', moyenne)\n"
+            ))
+        nb = _write_nb(tmp_path / "rl1c_corrections.ipynb", cells)
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 2, (
+            "A correction title must not steal the next exercise's stub (got %d)"
+            % result.count
+        )
+
+    def test_lean_stub_with_number_pairs_own_header(self, tmp_path):
+        """Lean-29 cells 5-8: an undescribing worked-example code cell, then
+        `### Exercice 1`, then the Lean stub `-- Exercice 1 : ...`. The
+        greedy backward absorb used to pair the header with the EXAMPLE,
+        leaving the stub double-counted by pass 2 (12 for 6)."""
+        cells = [
+            _code(
+                "-- Les briques : la matrice triangulaire et ses valeurs.\n"
+                "-- TODO etudiant (exemple guide residuel)\n"
+                "theorem briques : True := by trivial\n"
+            ),
+            _md("### Lecture : valeurs et determinants\n"),
+            _md("### Exercice 1 - lire la valeur d'un representant\n"),
+            _code(
+                "-- Exercice 1 : la valeur explicite du representant.\n"
+                "-- TODO etudiant : a completer (indice dans la cellule precedente).\n"
+                "example : True := by trivial\n"
+            ),
+        ]
+        nb = _write_nb(tmp_path / "lean29_number_pair.ipynb", cells)
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 1, (
+            "A stub that names its exercise number pairs its own header, not "
+            "a preceding example cell (got %d)" % result.count
+        )
+
+    def test_plural_toc_section_restatement_not_double_counted(self, tmp_path):
+        """PT_10 cells 19-24: a `## 10. Exercices` section cell whose bold
+        `**Exercice A/B/C**` sub-mentions restate the subjects of the three
+        individual `## Exercice X : ...` cells below. Both used to push and
+        the notebook rendered 6 for three exercises."""
+        cells = [
+            _md(
+                "## 10. Exercices (3 stubs C.1 - pas d'erreur volontaire)\n"
+                "\n"
+                "**Exercice A** : ajouter un 4e estimateur GAE-AVG.\n"
+                "\n"
+                "**Exercice B** : mesurer l'effet du sweep lambda.\n"
+                "\n"
+                "**Exercice C** : variance inter-seed des avantages.\n"
+            ),
+        ]
+        for lettre, sujet in (("A", "GAE-AVG"), ("B", "sweep lambda"), ("C", "variance")):
+            cells.append(_md(f"## Exercice {lettre} : {sujet} (stub C.1)\n"))
+            cells.append(_code(f"# TODO etudiant : exercice {lettre}\nresultat = None\n"))
+        nb = _write_nb(tmp_path / "pt10_toc.ipynb", cells)
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 3, (
+            "A plural-first TOC section must not double-count the exercises "
+            "it restates (got %d)" % result.count
+        )
+
+    def test_numberless_conservative_survives_blocked_window(self, tmp_path):
+        """Video 03-2 cells 16-24: two adjacent numberless exercise
+        statements, stubs far below the pairing window. The numberless
+        conservative count (stub outside the window) must survive a nearer
+        header cell cutting the forward scan."""
+        cells = [
+            _md("## Exercice : Pipeline Personnalise\n\n**Duree :** 40 minutes\n"),
+            _md("## Exercice Avance : Optimisation Batch\n"),
+            _md("### Criteres de succes - Optimisation Batch\n"),
+            _code("# benchmark realise sur 3 configurations\n"
+                  "timings = {'seq': 1.2, 'par': 0.4}\n"
+                  "print(timings)\n"),
+            _code("# TODO: Implementer un pipeline batch optimise\nresultat = None\n"),
+            _md("## Exercice : Gestion d'Erreurs et Recovery\n"),
+            _code("# TODO: Implementer le systeme de checkpointing\nresultat = None\n"),
+        ]
+        nb = _write_nb(tmp_path / "video032_numberless.ipynb", cells)
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 3, (
+            "Numberless statements with stubs outside the window keep the "
+            "conservative count (got %d)" % result.count
+        )

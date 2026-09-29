@@ -48,7 +48,7 @@ STUB_PATTERNS = [
 ]
 
 EXERCISE_HEADER_RE = re.compile(
-    r'^#+\s*(?:\d+[.:]\s*)?(?:Exercice|Exercise)\s*(\d*(?:\.\d+)*)\s*[:.]?\s*(.*)',
+    r'^#+\s*(?:\d+[.:]\s*)?(?:Exercice|Exercise)\s*(\d+(?:[a-z])?(?:\.\d+(?:[a-z])?)*)?\s*[:.]?\s*(.*)',
     re.MULTILINE | re.IGNORECASE,
 )
 
@@ -186,6 +186,123 @@ def _header_level(line: str) -> int:
     header line."""
     m = re.match(r'^(#{1,6})\s', line)
     return len(m.group(1)) if m else 0
+
+
+def get_parent_header_key(cells, idx, current_level=0, match_pos=None) -> str:
+    """Return a key representing the hierarchical ancestry enclosing cell at
+    ``idx``.
+
+    Walks backwards from ``idx`` and collects ALL ancestor headers, ordered
+    from outermost (lowest level number, e.g. ``#``) to innermost (highest
+    level number below ``current_level``). The key is the joined path
+    ``"<l1>:<t1>|<l2>:<t2>|..."``, with each segment ``"<level>:<text>"``.
+    Returns ``"root"`` if no ancestor header is found.
+
+    ``current_level`` is the level of the EXERCISE header that owns this
+    cell (e.g. 3 for ``### Exercice 1``). Pass it from the caller: deriving
+    it from the last arbitrary header in the cell conflates distinct parents
+    when the cell holds multiple markdown headers. If omitted, the function
+    falls back to the last header of the cell (legacy behaviour, retained
+    for callers that do not yet pass the level).
+
+    ``match_pos`` is the character offset of the exercise header match in the
+    cell source. Only headings STRICTLY BEFORE this offset can be ancestors:
+    a heading after the exercise header opens a LATER section and taking it
+    as a parent mis-attributes the exercise (causal false negative — a real
+    duplicate under the true parent gets lost). Same-level headings before
+    the match resolve to the LAST one, the closest open parent. If omitted,
+    the bound falls back to the last header of the cell (legacy behaviour).
+
+    Identity = full hierarchical path. Two ancestors that happen to share the
+    same immediate heading text but live under different grand-ancestors are
+    distinct. So ``# Partie A > ## Exercices > ### Exercice 1`` and
+    ``# Partie B > ## Exercices > ### Exercice 1`` return DIFFERENT keys and
+    are no longer flagged as duplicates.
+    """
+    # 1. Resolve the exercise header level from the cell only if the caller
+    #    did not pass it (legacy fallback).
+    if current_level == 0:
+        if idx < len(cells) and cells[idx].get('cell_type') == 'markdown':
+            src = ''.join(cells[idx].get('source', []))
+            matches = HEADER_LINE_RE.findall(src)
+            if matches:
+                current_level = _header_level(matches[-1])
+
+    # 2. Ancestry opened IN THE CURRENT CELL, strictly before the exercise
+    #    header match position. The walk below only sees cells idx-1..0; a
+    #    parent heading that lives in the SAME markdown cell as the exercise
+    #    would be missed otherwise — a layout-dependent false negative where
+    #    the only difference between two notebook layouts is where the cell
+    #    boundary falls. Causality is positional: a heading at or after the
+    #    match opens a sibling or LATER section and is never an ancestor,
+    #    and within the pre-match prefix the stack keeps the LAST heading
+    #    per level (the closest open parent) — a level-l heading closes
+    #    every open section at level >= l, as markdown does.
+    ancestors = []  # open heading stack, outermost-first, one entry per level
+    if idx < len(cells) and cells[idx].get('cell_type') == 'markdown':
+        src = ''.join(cells[idx].get('source', []))
+        header_matches = list(HEADER_LINE_RE.finditer(src))
+        if match_pos is None and header_matches:
+            # Legacy fallback: bound at the last header of the cell (the
+            # presumed owning header when the caller passes no position).
+            match_pos = header_matches[-1].start()
+        for hm in header_matches:
+            if match_pos is not None and hm.start() >= match_pos:
+                break  # at/after the exercise header: sibling or later section
+            level = _header_level(hm.group(0))
+            if level <= 0:
+                continue
+            while ancestors and ancestors[-1][0] >= level:
+                ancestors.pop()  # a level-l heading closes every >=l section
+            ancestors.append((level, re.sub(r'^#+\s*', '', hm.group(0))))
+        # Siblings of the exercise opened in the same cell (level >=
+        # current_level) sit at the top of the stack; they are not ancestors.
+        while ancestors and ancestors[-1][0] >= current_level:
+            ancestors.pop()
+
+    seen_levels = {level for level, _ in ancestors}
+    found_any = bool(ancestors)
+
+    # 3. Walk backwards across preceding cells, accumulating ancestors whose
+    #    level is STRICTLY lower than the exercise header. The first header we
+    #    encounter at a given level is the innermost ancestor of that level
+    #    (closest to the exercise). We then OVERWRITE it if a closer cell at
+    #    the same level appears later in the scan (but no closer header at
+    #    strictly lower level exists, so the previous strictly-lower header
+    #    is the canonical ancestor for its level).
+    for k in range(idx - 1, -1, -1):
+        cell = cells[k]
+        if cell.get('cell_type') != 'markdown':
+            continue
+        src = ''.join(cell.get('source', []))
+        header_lines = HEADER_LINE_RE.findall(src)
+        if not header_lines:
+            continue
+        # Walk headers in this cell from closest (last) to farthest (first).
+        for header_line in reversed(header_lines):
+            level = _header_level(header_line)
+            if level <= 0 or level >= current_level:
+                continue  # siblings/cousins of the exercise, not ancestors
+            if level in seen_levels:
+                continue  # already have the canonical ancestor for this level
+            text = re.sub(r'^#+\s*', '', header_line)
+            ancestors.append((level, text))
+            seen_levels.add(level)
+            found_any = True
+        # Optimization: stop scanning once we have level=1 (root) — cannot
+        # have anything outside it.
+        if 1 in seen_levels:
+            break
+
+    if not found_any:
+        return "root"
+
+    # Order outermost-first (level 1, 2, ...). The last-encountered ancestor
+    # at each level is the closest one; we walked backwards, so within a
+    # level the LAST insertion is the closest. Sort by level to make the
+    # path deterministic regardless of insertion order across levels.
+    ancestors_sorted = sorted(ancestors, key=lambda lt: lt[0])
+    return "|".join(f"{lvl}:{txt}" for lvl, txt in ancestors_sorted)
 
 
 def intervening_section_breaks_attribution(cells, exercise_idx, code_idx) -> bool:
@@ -375,6 +492,70 @@ EXECUTABLE_DEFINITION_RE = re.compile(
     r'^\s*(?:def |class |struct |namespace |interface |enum |theorem |lemma |defn |'
     r'inductive |instance |record |void |int |bool |string |float |double |var )',
 )
+
+# Commented-out DEFINITION evidence: a line that begins with a comment marker
+# and then declares a function/class/proof. Detects the canonical leaky-stub
+# pattern (issue #18121, Lean-36 cells 19/21/23) where the cell carries a TODO
+# stub marker AND a fully commented-out solution body (proof/function/example
+# declaration with `:=`).
+#
+# Family-agnostic by accepting the three comment prefixes:
+#   - ``--`` (Lean)
+#   - ``#``  (Python)
+#   - ``//`` (C#, F#, Rust, JS, TS)
+COMMENTED_DEFINITION_RE = re.compile(
+    r'^\s*(?:--|#|//)\s*(?:def |class |struct |namespace |interface |enum |'
+    r'theorem |lemma |defn |inductive |instance |record |example |fn |func |'
+    r'public |private |protected |static |internal )(?!.*\bpass\b)',
+    re.MULTILINE,
+)
+
+# Commented-out PROOF EVIDENCE: a tactic-like marker inside a comment line.
+# Lean cells use `by simp [...]`, `by decide`, `by exact`, etc.; Python cells
+# use commented-out calls/asserts as proof-of-work markers. Matching just the
+# Lean subset (the dominant leaky-stub case in this corpus) gives a strong,
+# recall-safe signal without false-positiving on header comments.
+COMMENTED_PROOF_TACTIC_RE = re.compile(
+    r'^\s*(?:--|//|#)\s+(?:by\s+)?(?:simp|decide|exact|rfl|omega|tauto|trivial|'
+    r'simp\s*\[|intro|intros|apply|constructor|use|exact)\b',
+    re.MULTILINE,
+)
+
+
+def is_leaky_stub(source: str) -> bool:
+    """Detect the leaky-stub class (#18121).
+
+    Returns True when the cell is classified as a stub by ``is_stub_code``
+    (TODO markers, pass, sorry, return-None, etc.) AND ALSO carries commented-out
+    evidence of a real solution body — either a commented definition line
+    (function/class/proof declaration) or a commented proof-tactic marker.
+
+    The defect: ``is_stub_code`` is a disjunctive test on its STUB_PATTERNS list,
+    so any single TODO marker classifies the cell as stub, regardless of how
+    much commented-out solution the cell ALSO carries. A learner looking at
+    such a cell reads the commented-out body as a hint; on a strict reading,
+    the commented-out body IS a worked solution sitting one ``<uncomment>``
+    keystroke away. ``is_leaky_stub`` makes that asymmetry audible: the cell
+    STILL flows through the stub path (no HIGH leak verdict is raised), but a
+    separate LOW/advisory finding surfaces so a reviewer / author can decide
+    whether to git-blame-prune the proof body.
+
+    False-positive guard: a header comment like ``-- theorem foo := by sorry``
+    is excluded by the `:\bpass\b` lookahead in ``COMMENTED_DEFINITION_RE``
+    (the regex refuses to fire on lines whose only declared construct is
+    `pass`, which would be the stub side, not the leaky side).
+
+    Family coverage: tested on Lean (the founder case via Lean-36 cells
+    19/21/23) and Python (header comments like `# def foo(): ... pass`); C#
+    coverage falls out of the `//` prefix match.
+    """
+    if not is_stub_code(source):
+        return False
+    if COMMENTED_DEFINITION_RE.search(source):
+        return True
+    if COMMENTED_PROOF_TACTIC_RE.search(source):
+        return True
+    return False
 
 # A prompt / TODO marker indicating the cell is a skeleton left for the student.
 # A real complete solution never carries one of these.
@@ -807,7 +988,7 @@ def scan_notebook(path: str) -> list[dict]:
         return [{"path": path, "severity": "ERROR", "message": "Failed to parse notebook"}]
 
     cells = nb.get('cells', [])
-    exercise_numbers = {}
+    exercise_numbers = {}  # dict[parent_key][num] = cell_idx
 
     for i, cell in enumerate(cells):
         if cell.get('cell_type') != 'markdown':
@@ -828,18 +1009,39 @@ def scan_notebook(path: str) -> list[dict]:
         has_soumis = bool(SOUMIS_PAR_RE.search(source))
 
         if num:
-            if num in exercise_numbers:
+            # Build the exercise identifier for duplicate detection. The regex
+            # now captures an optional ASCII letter suffix glued to the digit
+            # directly (e.g. "Exercice 2b" -> num="2b", "Exercice 8.1a" ->
+            # num="8.1a"). No title-driven heuristic needed: title prose like
+            # "Exercice 1 : First" yields num="1" and the colon-separated
+            # title is ignored for identifier purposes. Recall tests
+            # test_duplicate_exercise_number and
+            # test_identical_subnumber_still_duplicate pass when the suffix
+            # comes from the grammar only.
+            exercise_identifier = num
+            
+            # Scope duplicate detection by parent header: two "Exercice N" under
+            # different parent sections are NOT duplicates; two "Exercice N" under
+            # the same parent ARE. Fixes FP where notebooks reset numbering in
+            # new sections (e.g., "### Exercices — Partie A" then "### Exercices — Partie B").
+            parent_key = get_parent_header_key(
+                cells, i, current_level=_header_level(m.group(0)),
+                match_pos=m.start(),
+            )
+            if parent_key not in exercise_numbers:
+                exercise_numbers[parent_key] = {}
+            if exercise_identifier in exercise_numbers[parent_key]:
                 findings.append({
                     "path": path,
                     "cell_index": i,
                     "cell_type": "markdown",
                     "severity": "MEDIUM",
-                    "exercise_num": num,
-                    "message": f"Duplicate Exercice {num} (first at cell {exercise_numbers[num]})",
+                    "exercise_num": exercise_identifier,
+                    "message": f"Duplicate Exercice {exercise_identifier} (first at cell {exercise_numbers[parent_key][exercise_identifier]})",
                     "preview": source[:100],
                 })
             else:
-                exercise_numbers[num] = i
+                exercise_numbers[parent_key][exercise_identifier] = i
 
         next_code_idx = None
         next_code_source = None
@@ -861,6 +1063,36 @@ def scan_notebook(path: str) -> list[dict]:
         # real leak, so this is recall-safe.
         if not num and _numbered_exercise_header_between(cells, i, next_code_idx):
             continue
+
+        # Leaky-stub advisory (#18121): a cell classified as stub by
+        # is_stub_code AND carrying commented-out solution evidence (proof /
+        # function body). This branch runs BEFORE the has_soumis / not-stub
+        # branches so the LOW advisory surfaces in BOTH 'soumis par' and
+        # ordinary exercise layouts. Recall-safe: matches only when both
+        # signals fire, so a plain stub (TODO only) does NOT raise this.
+        if is_leaky_stub(next_code_source):
+            findings.append({
+                "path": path,
+                "cell_index": next_code_idx,
+                "cell_type": "code",
+                "severity": "LOW",
+                "exercise_num": num or "?",
+                "message": (
+                    f"Leaky stub: Exercice {num or '?'} is a stub (TODO/pass/sorry) "
+                    f"but also carries commented-out solution evidence "
+                    f"({len(next_code_source)} chars). "
+                    f"Reviewer decision needed: trim the proof body, or move the "
+                    f"cell out of the exercise lane."
+                ),
+                "preview": next_code_source[:150],
+                "fix": (
+                    "Decide ONE: (a) trim the commented-out solution body to "
+                    "leave only the stub signature; or (b) move the cell out of "
+                    "the exercise section (e.g. under a worked-example header) "
+                    "and relabel the section as Exemple guide. Closing the gap "
+                    "by hand-editing is forbidden — fix the source and re-scan."
+                ),
+            })
 
         if has_soumis:
             if not is_stub_code(next_code_source):
@@ -1072,9 +1304,11 @@ def main():
 
     high = [f for f in all_findings if f.get('severity') == 'HIGH']
     medium = [f for f in all_findings if f.get('severity') == 'MEDIUM']
+    low = [f for f in all_findings if f.get('severity') == 'LOW']
     errors = [f for f in all_findings if f.get('severity') == 'ERROR']
 
-    print(f"\nResults: {len(high)} HIGH (leaks), {len(medium)} MEDIUM (duplicates), {len(errors)} errors")
+    print(f"\nResults: {len(high)} HIGH (leaks), {len(medium)} MEDIUM (duplicates), "
+          f"{len(low)} LOW (leaky-stub advisory), {len(errors)} errors")
     print(f"Scanned: {len(notebooks)} notebooks\n")
 
     if high:
@@ -1093,6 +1327,16 @@ def main():
         for f in medium:
             rel = display_path(f['path'], repo_root)
             print(f"  [{f['severity']}] {rel}:cell {f['cell_index']} — {f['message']}")
+        print()
+
+    if args.verbose and low:
+        print("=== LOW SEVERITY (Leaky-Stub Advisory, #18121) ===")
+        print("  --verbose emits these; they do not gate --check.")
+        for f in low:
+            rel = display_path(f['path'], repo_root)
+            print(f"  [{f['severity']}] {rel}:cell {f['cell_index']} — {f['message']}")
+            if 'preview' in f:
+                print(f"    Preview: {f['preview'][:120]}...")
         print()
 
     if errors:

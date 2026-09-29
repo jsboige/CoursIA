@@ -1,7 +1,7 @@
 - name: "Search-13 Limited Discrepancy Search"
   family: Search/Part1-Foundations
   python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch.ipynb
-  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch-Csharp.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch-CSharp.ipynb
   parity_level: semantic
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: |

@@ -132,7 +132,7 @@ class TestExtractProseNumbers:
         # Gap documente dans le corpus run #9790 : les titres H1 (`# SC-8`,
         # `# MGS-9`, `# SocialChoice 03`) fuyaient car les hints couvraient
         # H2+ mais pas H1. Le numero d'ID du notebook est structural.
-        nums = mod._extract_prose_numbers("# SC-8-DeFi-Primitives\n\nLe solde est 0.69.")
+        nums = mod._extract_prose_numbers("# SC-08-DeFi-Primitives-Python\n\nLe solde est 0.69.")
         assert 8 not in nums
         assert 0.69 in nums
 
@@ -1666,6 +1666,9 @@ class TestICT1CounterEvidence:
         Path(os.environ.get("COURSIA_ROOT", "") or "_/_"),
     )
     REPO_ROOT = next((p for p in _CANDIDATE_ROOTS if p.exists() and p.is_dir()), _CANDIDATE_ROOTS[0])
+    # Chemin lu a une revision HISTORIQUE (`7de14792c^`, `e8dc56ac9`) : le fichier
+    # portait alors le nom NON pade. Le passer a `ICT-01-` ferait echouer `git show`
+    # et transformerait la contre-epreuve positive en skip silencieux.
     NB_PATH = "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-1-PhiTrajectories.ipynb"
 
     def _git_show(self, ref: str) -> bytes:

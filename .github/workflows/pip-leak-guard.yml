@@ -50,10 +50,19 @@ jobs:
         with:
           python-version: '3.11'
 
+      # NOTE (collision /tmp, 2026-09-28) : les chemins de travail passent par
+      # `${{ runner.temp }}` (per-slot/per-job), jamais `/tmp` nu. `/tmp` est
+      # hote-global sur le runner a slots partages : `harness-coauthor-guard.yml`
+      # et `solution-leak-guard.yml` y ecrivaient AUSSI `/tmp/head.json`, mais au
+      # format DICT -- un job parallele lisait le fichier d'un autre et
+      # `pip_leak_delta.py` crashait (`'str' object has no attribute 'get'`,
+      # measure sur #18059, job 109030466607). Un prefixe par workflow ne
+      # suffirait pas (deux PRs du meme workflow sur deux slots collisionnent) :
+      # runner.temp est la seule borne per-job.
       - name: HEAD scan (PR head)
         run: |
           python scripts/notebook_tools/audit_pip_install_cells.py --scan-all
-          python scripts/notebook_tools/audit_pip_install_cells.py --scan-all --json > /tmp/head.json
+          python scripts/notebook_tools/audit_pip_install_cells.py --scan-all --json > "${{ runner.temp }}/pip-head.json"
 
       # Swap MyIA.AI.Notebooks/ to the PR base ref, scan, then restore. head.json
       # is already captured above, so the swap cannot contaminate the delta.
@@ -66,9 +75,9 @@ jobs:
           # (le working tree est restore depuis ce checkout juste apres).
           git fetch --depth=1 origin "${{ github.event.pull_request.base.sha }}" -q
           git checkout ${{ github.event.pull_request.base.sha }} -- MyIA.AI.Notebooks
-          python scripts/notebook_tools/audit_pip_install_cells.py --scan-all --json > /tmp/base.json
+          python scripts/notebook_tools/audit_pip_install_cells.py --scan-all --json > "${{ runner.temp }}/pip-base.json"
           git checkout HEAD -- MyIA.AI.Notebooks
 
       - name: "Fail if HIGH delta > 0 (new !pip install leaks introduced)"
         if: github.event_name == 'pull_request'
-        run: python scripts/notebook_tools/pip_leak_delta.py /tmp/base.json /tmp/head.json
+        run: python scripts/notebook_tools/pip_leak_delta.py "${{ runner.temp }}/pip-base.json" "${{ runner.temp }}/pip-head.json"

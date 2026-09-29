@@ -17,16 +17,25 @@ la fusion dit "c'est peut-etre fait", l'ouverte dit "quelqu'un y est".
 
 import json
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
 
 import pick_idle_grain as pig  # noqa: E402
+from merge_dwell import evaluate as _md_evaluate  # noqa: E402
 
 
 class _FakeCompleted:
-    def __init__(self, stdout):
+    # #17418 : main() epingle le jeton AVANT argparse (pin_gh_token ->
+    # resolve_gh_token lit .returncode/.stderr) -- le stand-in doit
+    # impersonifier un CompletedProcess complet, sinon tout appel main()
+    # sous ce fake leve AttributeError au lieu du comportement voulu.
+    def __init__(self, stdout, returncode=0, stderr=""):
         self.stdout = stdout
+        self.returncode = returncode
+        self.stderr = stderr
 
 
 def _patch_gh(monkeypatch, payloads, calls):
@@ -326,6 +335,171 @@ def test_unconcluded_advisory_is_still_silent():
     ])) == []
 
 
+def test_aggregator_red_by_cancelled_constituents_is_not_repairable():
+    """#15763/#15764 -- controle POSITIF, reproduit #15657 et #15660 a la lettre.
+
+    Lecture GraphQL du 2026-09-12 sur leurs heads exacts (`751fa1bd54df` et
+    `4e1ab883e715`) : l'agregateur requis rend FAILURE parce qu'il ANDe deux
+    constituants `cancelled`. Avant le fix #15763, la lane recevait « check
+    requis en echec : PR gate » et RIEN d'autre -- les deux constituants
+    coupes etant hors de CHECK_FAILED, ils ne tombaient ni dans les causes ni
+    meme dans la clause diagnostique `advisory`. Pas une mis-attribution :
+    une INVISIBILITE.
+
+    #15764 (review bloquante) : l'exemption exige desormais la PREUVE
+    CAUSALE -- le message FAIL du gate lui-meme (annotations du check-run)
+    NOMME les constituants coupes et aucun vrai rouge. Ici le gate a publie
+    « FAIL -- checks that never concluded (...): ICT tests/ (55) (cancelled,
+    29m13s), Scripts Tests (CPU) (cancelled) » : l'exemption est legale.
+    """
+    state = _state(checks=[
+        ("PR gate", "FAILURE", True),
+        ("ICT tests/ (55)", "CANCELLED", False),
+        ("Scripts Tests (CPU)", "CANCELLED", False),
+    ])
+    causes = pig.blocking_causes(
+        state,
+        gate_evidence={"PR gate": ([], ["ICT tests/ (55)", "Scripts Tests (CPU)"])},
+    )
+    assert len(causes) == 1, causes
+    cause = causes[0]
+    assert "NON REPARABLE" in cause
+    # les constituants sont NOMMES : c'est ce qui manquait entierement.
+    assert "ICT tests/ (55)" in cause
+    assert "Scripts Tests (CPU)" in cause
+    # par la PREUVE : le message FAIL du gate, pas la coexistence.
+    assert "message FAIL" in cause
+    # et le geste qui le leve est donne, comme pour `file_saturation`.
+    assert "rerun" in cause and "--ignore-red" in cause
+    # controle de non-regression du message : la vieille phrase, qui envoyait
+    # chercher un defaut dans le diff, ne doit plus etre rendue.
+    assert "check requis en echec : PR gate" not in causes
+
+
+def test_unrelated_cancelled_without_gate_evidence_stays_repairable():
+    """#15764 -- contre-exemple CAUSAL exact de la review bloquante.
+
+    Reproduction au head 54c5f99ad9 : le gate peut echouer sur DWELL, une
+    regle interne ou une politique, pendant qu'un advisory INDEPENDANT est
+    coupe par `concurrency`. La coexistence dans le rollup n'etablit pas la
+    causalite : sans preuve (pas de `gate_evidence` -- annotation non lue,
+    verdict DWELL, fetch en echec), PAS d'exemption -- fail-closed, la lane
+    repare. C'etait l'exemption fausse qui motivait le rouge bloquant."""
+    causes = pig.blocking_causes(_state(checks=[
+        ("PR gate", "FAILURE", True),
+        ("Unrelated advisory", "CANCELLED", False),
+    ]))
+    assert causes == ["check requis en echec : PR gate"]
+
+
+def test_gate_evidence_naming_a_real_red_does_not_exempt():
+    """Preuve presente mais DEFAVORABLE : le gate nomme un VRAI rouge.
+
+    Meme configuration rollup (cut present, pas de vrai rouge rollup-side),
+    mais le message FAIL du gate porte une clause "failing checks:" -- le
+    rouge du gate est reel, l'exemption est refusee."""
+    causes = pig.blocking_causes(_state(checks=[
+        ("PR gate", "FAILURE", True),
+        ("Unrelated advisory", "CANCELLED", False),
+    ]), gate_evidence={"PR gate": (["Some check"], [])})
+    assert causes == ["check requis en echec : PR gate"]
+
+
+def test_gate_evidence_naming_foreign_cuts_does_not_exempt():
+    """Preuve hors de CE rollup : des coupes nommes inconnus du rollup.
+
+    L'evidence doit nommer des constituants coupes de CET agregateur sur CE
+    head -- un message FAIL qui nomme d'autres coupes (stale du passage
+    precedent, dedup temporelle) ne corrobore rien ici."""
+    causes = pig.blocking_causes(_state(checks=[
+        ("PR gate", "FAILURE", True),
+        ("Unrelated advisory", "CANCELLED", False),
+    ]), gate_evidence={"PR gate": ([], ["Some other check"])})
+    assert causes == ["check requis en echec : PR gate"]
+
+
+def test_parse_gate_failure_splits_the_three_clauses():
+    """Le parseur lit le VERITABLE format de scripts/pr_gate.py `verdict`.
+
+    Message reel (annotation ::error du check-run) : clause failing (noms
+    nus), clause timeout-minutes (noms PUIS guidance apres " -- "), clause
+    never-concluded (annotations "name (conclusion, duree)" avec virgule
+    interne). Un DWELL n'est pas un FAIL : rend ([], [])."""
+    msg = ("[pr-gate] FAIL -- failing checks: A, B; checks that hit their "
+           "declared timeout-minutes: C -- rerunning the gate re-reads the "
+           "same frozen check-run: rerun the CHILD run that owns the job "
+           "(gh run rerun <id>), never the gate (#15905); checks that never "
+           "concluded (rerun the CHILD run -- the cause is not established "
+           "from the check-run alone): ICT tests/ (55) (cancelled, 29m13s), "
+           "Scripts Tests (CPU) (stale)")
+    assert pig.parse_gate_failure(msg) == (
+        ["A", "B"],
+        ["C", "ICT tests/ (55)", "Scripts Tests (CPU)"],
+    )
+    assert pig.parse_gate_failure(
+        "[pr-gate] DWELL -- 121 min since last commit") == ([], [])
+    assert pig.parse_gate_failure("") == ([], [])
+
+
+def test_one_genuine_failure_keeps_the_red_repairable():
+    """Controle NEGATIF -- le fail-closed va dans le bon sens.
+
+    Des qu'UN constituant porte un vrai rouge, la cause redevient
+    « check requis en echec » et la lane repare, meme si d'autres
+    constituants ont ete coupes a cote. On ne dispense jamais d'une
+    reparation reelle ; on cesse seulement d'en prescrire une qui n'existe
+    pas."""
+    state = _state(checks=[
+        ("PR gate", "FAILURE", True),
+        ("ICT tests/ (55)", "CANCELLED", False),
+        ("Scripts Tests (CPU)", "FAILURE", False),
+    ])
+    causes = pig.blocking_causes(state)
+    assert "check requis en echec : PR gate" in causes
+    assert not any("NON REPARABLE" in c for c in causes)
+    # et le vrai rouge reste nomme comme diagnostic.
+    assert any("non bloquant" in c and "Scripts Tests (CPU)" in c for c in causes)
+
+
+def test_aggregator_red_without_any_constituent_stays_repairable():
+    """Un agregateur seul rouge, sans constituant coupe, n'est pas exempte.
+
+    Sans ce controle, la branche #15763 pourrait avaler n'importe quel
+    `PR gate` rouge -- y compris celui d'un DWELL ou d'une regle interne du
+    gate -- et rendre toute la classe non-reparable par accident."""
+    causes = pig.blocking_causes(_state(checks=[("PR gate", "FAILURE", True)]))
+    assert causes == ["check requis en echec : PR gate"]
+
+
+def test_a_cut_constituent_does_not_exempt_a_non_aggregator_red():
+    """Un check requis ORDINAIRE rouge reste a reparer par la lane.
+
+    L'exemption est attachee a la laundering d'un agregateur, pas a la
+    presence d'un `cancelled` quelque part sur la PR."""
+    state = _state(checks=[
+        ("Scripts Tests (CPU)", "FAILURE", True),
+        ("ICT tests/ (55)", "CANCELLED", False),
+    ])
+    causes = pig.blocking_causes(state)
+    assert "check requis en echec : Scripts Tests (CPU)" in causes
+    assert not any("NON REPARABLE" in c for c in causes)
+
+
+def test_cut_constituents_ignores_the_aggregator_itself():
+    """Un agregateur ne peut pas etre sa propre preuve de coupure.
+
+    Si `PR gate` comptait comme constituant coupe de lui-meme, un `PR gate`
+    `TIMED_OUT` s'auto-exempterait."""
+    contexts = [
+        {"name": "PR gate", "conclusion": "TIMED_OUT"},
+        {"name": "Always-on guards / lint", "conclusion": "CANCELLED"},
+        {"name": "ICT tests/ (55)", "conclusion": "SUCCESS"},
+    ]
+    cut, real_red = pig.cut_constituents(contexts)
+    assert cut == [], "ni l'agregateur nomme ni le prefixe agregateur"
+    assert real_red is False
+
+
 def test_conflicts_are_a_red():
     causes = pig.blocking_causes(_state(mergeable="CONFLICTING"))
     assert causes == ["conflits avec main -> rebaser"]
@@ -357,17 +531,32 @@ def test_blocked_awaiting_review_is_not_a_red():
     assert pig.blocking_causes(_state(checks=[("PR gate", "SUCCESS", True)])) == []
 
 
-def _patch_backlog(monkeypatch, prs, states, nits=None):
-    monkeypatch.setattr(pig, "fetch_open_prs", lambda: prs)
+def _neutralize_organs(monkeypatch, states, nits=None):
+    """Les organes reseau du garde rouge, neutralises par DEFAUT.
+
+    Sans cela chaque test partirait sur le reseau interroger des numeros de PR
+    fictifs (mesure : 2,9 s pour trois numeros), et la suite deviendrait non
+    deterministe sans jamais rougir. #17474 : partage avec les tests qui
+    laissent le VRAI `fetch_open_prs` courir derriere un faux `gh`.
+    """
     monkeypatch.setattr(pig, "fetch_pr_states", lambda nums: {n: states[n] for n in nums if n in states})
-    # Neutraliser l'organe B.0 par DEFAUT : sans cela chaque test partirait sur
-    # le reseau interroger des numeros de PR fictifs (mesure : 2,9 s pour trois
-    # numeros), et la suite deviendrait non deterministe sans jamais rougir.
     monkeypatch.setattr(pig, "unaddressed_review_points", lambda nums: dict(nits or {}))
     # L721 : l'ardoise de lane ajoute un fetch gh dans main() AVANT le garde
     # rouge -- meme neutralisation par defaut, meme raison (reseau +
     # determinisme). Les tests qui veulent une ardoise la re-patchent apres.
     monkeypatch.setattr(pig, "fetch_lane_record_prs", lambda **k: ([], None))
+    # #17154 : la sonde de la tete de `main` est une requete reseau de plus.
+    # Neutralisee par DEFAUT (None = non mesure), pour la meme raison que
+    # ci-dessus -- et pour une seconde, propre a cette sonde : sa valeur change
+    # avec le jour. Un test qui affirme une imputation a la base basculerait
+    # selon que le check est vert ou rouge sur `main` le jour du run, sans
+    # qu'aucune ligne de code n'ait bouge. Les tests de #17154 la re-patchent.
+    monkeypatch.setattr(pig, "fetch_main_head_probe", lambda *a, **k: None)
+
+
+def _patch_backlog(monkeypatch, prs, states, nits=None):
+    monkeypatch.setattr(pig, "fetch_open_prs", lambda: prs)
+    _neutralize_organs(monkeypatch, states, nits)
 
 
 def _pr(n, lane, age_hours, *, draft=False):
@@ -506,6 +695,396 @@ def test_base_inherited_red_is_not_the_lanes(monkeypatch):
                 if i["check"] == "Scripts Tests (CPU)")
     assert 1 in wits and 2 in wits    # la lane ET l'etrangere corroborent
     assert out["base_unresolved"] == []
+
+
+def _probe(*, main_red=(), main_names=()):
+    """Sonde #17154 : etat des checks sur la tete de la branche par defaut."""
+    return {"sha": "deadbeef", "red_keys": set(main_red), "names": set(main_names)}
+
+
+def _red_on_two_lanes(monkeypatch, check="Scripts Tests (CPU)", *, aggregate=False):
+    """Deux lanes distinctes, le meme check rouge : la corroboration minimale.
+
+    C'est la configuration que #13545 impute a la base -- et exactement celle
+    que #17154 doit departager selon l'etat du MEME check sur `main`.
+    """
+    def state(rid):
+        st = _state(checks=[(check, "FAILURE", True)])
+        if aggregate:
+            st["commits"]["nodes"][0]["commit"]["statusCheckRollup"]["contexts"][
+                "nodes"][0]["databaseId"] = rid
+        return st
+    if aggregate:
+        monkeypatch.setattr(pig, "fetch_check_organs", lambda rid: ["perimeter"])
+    _patch_backlog(monkeypatch, [
+        _pr_with_author(1, "myia-po-2023:CoursIA", 30, "myia-po-2023"),
+        _pr_with_author(2, "myia-po-2026:CoursIA-2", 5, "myia-po-2026"),
+    ], {1: state(111), 2: state(222)})
+
+
+def test_sonde_non_prise_impute_a_la_base_comme_avant(monkeypatch):
+    """Sonde indisponible (panne reseau) : comportement d'avant #17154.
+
+    `None` veut dire « on n'a pas mesure », pas « main est vert ». Une sonde
+    qui echoue ne doit JAMAIS elargir la classe infra : sinon une panne du
+    picker deviendrait une accusation de la lane sur des rouges de base.
+    """
+    _red_on_two_lanes(monkeypatch)
+    monkeypatch.setattr(pig, "fetch_main_head_probe", lambda *a, **k: None)
+    out = pig.red_backlog("myia-po-2023:CoursIA", 24, count_threshold=3)
+    assert {i["check"] for i in out["base_inherited"]} == {"Scripts Tests (CPU)"}
+    assert out["infra_rerun"] == []
+    assert out["base_undecided"] == []
+    assert out["red"] == []
+
+
+def test_check_vert_sur_main_devient_infra_rejeu(monkeypatch):
+    """#17154 : la corroboration inter-lanes ne prouve pas une cause SUR `main`.
+
+    Mesure fondatrice du 2026-09-21 : `Scripts Tests (CPU)` rouge sur #16612 /
+    #17136 / #17141 / #16971 et `success` sur `main` (mort de runner, kill
+    `xdist-watchdog`). L'imputation a la base disait alors « pas le votre, pas
+    reparable par la lane -- tache COORDINATEUR » : deux affirmations dont la
+    seconde est fausse, et la consequence pratique etait qu'AUCUNE action
+    n'etait demandee. Le rouge compte de nouveau dans le refus, avec le geste
+    qui le leve.
+    """
+    _red_on_two_lanes(monkeypatch)
+    monkeypatch.setattr(pig, "fetch_main_head_probe",
+                        lambda *a, **k: _probe(main_names=["Scripts Tests (CPU)"]))
+    out = pig.red_backlog("myia-po-2023:CoursIA", 24, count_threshold=3)
+    assert out["base_inherited"] == []
+    assert out["base_undecided"] == []
+    assert {i["check"] for i in out["infra_rerun"]} == {"Scripts Tests (CPU)"}
+    assert [r["number"] for r in out["red"]] == [1]
+    causes = [c for r in out["red"] for c in r["causes"]]
+    assert any("vert sur main" in c and "rejeu de la jambe" in c for c in causes), causes
+    # Ni une reparation de diff, ni un routage coordinateur : le geste est le rejeu.
+    assert not any("check requis en echec" in c for c in causes), causes
+
+
+def test_regression_de_main_reste_imputee_a_la_base(monkeypatch):
+    """Le champ de #13545 n'est pas retire : rouge sur `main` -> imputation inchangee.
+
+    L'issue fondatrice est explicite : une vraie regression de la branche par
+    defaut doit rester correctement detectee et routee au coordinateur. La
+    garde #17154 est une garde SUPPLEMENTAIRE, pas un remplacement.
+    """
+    _red_on_two_lanes(monkeypatch)
+    monkeypatch.setattr(
+        pig, "fetch_main_head_probe",
+        lambda *a, **k: _probe(main_red=["Scripts Tests (CPU)"],
+                               main_names=["Scripts Tests (CPU)"]))
+    out = pig.red_backlog("myia-po-2023:CoursIA", 24, count_threshold=3)
+    assert {i["check"] for i in out["base_inherited"]} == {"Scripts Tests (CPU)"}
+    assert out["infra_rerun"] == []
+    assert out["base_undecided"] == []
+    assert out["red"] == []
+    assert out["triggers"] == []
+
+
+def test_agregateur_absent_de_main_n_est_pas_un_vert(monkeypatch):
+    """« Absent de `main` » n'est pas « vert sur `main` » -- le 3e etat est decisif.
+
+    Les agregateurs (`PR gate`, `Lane Claim Guard`, `Variation Tag Guard`) ne
+    tournent que sur `pull_request` : ils ne peuvent PAS figurer dans le rollup
+    de la branche par defaut. Les confondre avec des verts classerait en infra
+    d'execution exactement les checks sur lesquels #13545 a construit sa
+    protection. On ne tranche donc pas : imputation a la base comme avant, et
+    l'incertitude est DITE (#14567) au lieu de passer pour un acquittement.
+    """
+    _red_on_two_lanes(monkeypatch, check="PR gate", aggregate=True)
+    monkeypatch.setattr(pig, "fetch_main_head_probe",
+                        lambda *a, **k: _probe(main_names=["Scripts Tests (CPU)"]))
+    out = pig.red_backlog("myia-po-2023:CoursIA", 24, count_threshold=3)
+    assert out["infra_rerun"] == []
+    assert {i["check"] for i in out["base_inherited"]} == {"PR gate :: perimeter"}
+    assert {i["check"] for i in out["base_undecided"]} == {"PR gate :: perimeter"}
+    assert out["red"] == []
+
+
+def test_split_base_corroboration_trois_etats():
+    """Le tri est PUR : il confronte deux mesures, il n'en prend aucune lui-meme.
+
+    Les trois cles sont les trois formes REELLES : un check direct rouge sur
+    `main` (cause de base), un check direct vert sur `main` (infra), et une
+    cle d'agregateur `nom :: organe` dont le nom ne tourne que sur PR (non
+    tranche). La cle de la sonde et celle de la corroboration sont baties par
+    le meme `failed_check_keys`, donc comparables -- c'est ce qui rend le tri
+    possible sans table de correspondance.
+    """
+    corroborated = {"Scripts Tests (CPU)": [1, 2],
+                    "Quarto Pages": [3, 4],
+                    "PR gate :: perimeter": [5, 6]}
+    names = {"Scripts Tests (CPU)": {"Scripts Tests (CPU)"},
+             "Quarto Pages": {"Quarto Pages"},
+             "PR gate :: perimeter": {"PR gate"}}
+    base, infra, undecided = pig.split_base_corroboration(
+        corroborated, names,
+        _probe(main_red=["Scripts Tests (CPU)"],
+               main_names=["Scripts Tests (CPU)", "Quarto Pages"]))
+    assert set(base) == {"Scripts Tests (CPU)", "PR gate :: perimeter"}
+    assert set(infra) == {"Quarto Pages"}
+    assert set(undecided) == {"PR gate :: perimeter"}
+    assert base["Scripts Tests (CPU)"] == [1, 2] and infra["Quarto Pages"] == [3, 4]
+
+    base2, infra2, undec2 = pig.split_base_corroboration(corroborated, names, None)
+    assert base2 == corroborated and infra2 == {} and undec2 == {}
+
+    base3, infra3, undec3 = pig.split_base_corroboration({}, {}, _probe())
+    assert (base3, infra3, undec3) == ({}, {}, {})
+
+
+def test_geste_infra_n_invente_pas_d_id_de_run():
+    """L'id du check-run n'est pas un id de workflow run : le picker n'en donne aucun.
+
+    Le picker connait le NOM de la jambe et l'id du check-run. Ecrire
+    `gh run rerun <id-du-check-run>` produirait une commande fausse -- c'est
+    exactement le genre de geste plausible-mais-faux que cette classe existe
+    pour eviter. Le seul id sur est un placeholder que la lane resout.
+    """
+    cause = pig.infra_rerun_cause("Scripts Tests (CPU)")
+    assert "gh run rerun" in cause and "<run_id>" in cause
+    assert not any(ch.isdigit() for ch in cause), cause
+    assert "Scripts Tests (CPU)" in cause
+
+
+def test_dwell_prime_sur_infra():
+    """Un minuteur reste un minuteur : le rejeu le remet a zero, donc aucune cause.
+
+    L'ordre des branches de `blocking_causes` est une propriete, pas un detail
+    de style : #15910 (DWELL) precede #17154 (infra). Inverser les deux
+    enverrait la lane rejouer une jambe qui n'attend que l'horloge.
+    """
+    st = _state(checks=[("PR gate", "FAILURE", True)])
+    assert pig.blocking_causes(
+        st, infra_rerun={"PR gate"},
+        dwell_by_name={"PR gate": {"lift_at": "2026-09-21T06:00:00Z",
+                                   "remaining_min": 12}}) == []
+
+
+def _fake_transport(monkeypatch, *, graphql_ok=True, rest_ok=True,
+                    rest_pages=None, pr_graphql_ok=True, graphql_issues=None):
+    """Faux `gh` qui dispatche par TRANSPORT, comme le vrai (#17038).
+
+    `gh issue list` / `gh pr list` = GraphQL ; `gh api repos/...` = REST. Les
+    deux quotas sont distincts, donc les deux pannes se simulent separement --
+    c'est toute la these de l'issue, et un faux qui tomberait en bloc ne
+    pourrait pas la tester.
+    """
+    calls = []
+
+    def fake_run(cmd, **kw):
+        calls.append(cmd)
+        if cmd[:3] == ["gh", "issue", "list"]:
+            if not graphql_ok:
+                raise pig.subprocess.CalledProcessError(1, cmd)
+            return _FakeCompleted(json.dumps(graphql_issues or []))
+        if cmd[:3] == ["gh", "pr", "list"]:
+            if not pr_graphql_ok:
+                raise pig.subprocess.CalledProcessError(1, cmd)
+            return _FakeCompleted(json.dumps([]))
+        if cmd[:2] == ["gh", "api"]:
+            if not rest_ok:
+                raise pig.subprocess.CalledProcessError(1, cmd)
+            page = 1
+            if "page=" in cmd[2]:
+                # `rsplit`, pas `split` : `per_page=` contient `page=`, donc le
+                # premier match rend « 100 » au lieu du numero de page.
+                page = int(cmd[2].rsplit("page=", 1)[1].split("&")[0])
+            return _FakeCompleted(json.dumps((rest_pages or {}).get(page, [])))
+        if cmd[:3] == ["gh", "auth", "token"]:
+            # #17418 : echec PROPRE du pin sous transports morts -- le stand-in
+            # complet fait suivre a pin_gh_token son chemin GhIdentityError
+            # (attrapee par main, WARN stderr) au lieu d'un faux jeton "[]"
+            # qui ecrirait GH_TOKEN dans os.environ pour le reste du worker.
+            return _FakeCompleted("", returncode=1)
+        # Tout autre appel (ardoise de lane, sondes) : liste vide, sans reseau.
+        return _FakeCompleted("[]")
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+    return calls
+
+
+_REST_ISSUE = {"number": 111, "title": "grain lu en REST", "labels": [],
+               "body": "Grain: MED/docs -- lane myia-po-2023:CoursIA",
+               "created_at": "2026-08-01T00:00:00Z",
+               "updated_at": "2026-09-01T00:00:00Z"}
+_REST_PR = {"number": 222, "title": "une PR vue par /issues", "labels": [],
+            "body": "", "created_at": "2026-08-01T00:00:00Z",
+            "updated_at": "2026-09-01T00:00:00Z",
+            "pull_request": {"url": "https://example.invalid"}}
+_REST_PULL = {"number": 7, "title": "une PR", "body": "Grain: MED/docs -- lane x",
+              "created_at": "2026-09-01T00:00:00Z", "draft": False,
+              "user": {"login": "jsboige"}, "head": {"ref": "feature/x"}}
+
+
+def test_graphql_mort_bascule_rest_et_rend_des_candidats(monkeypatch, capsys):
+    """#17038 acceptance 4 -- controle POSITIF du fallback de transport.
+
+    Sans ce controle, le fallback n'est pas prouve : il pourrait n'etre qu'un
+    chemin ecrit jamais pris. Ici GraphQL est mort et le tirage rend quand
+    meme des candidats -- le zero ne se produit plus la ou la lecture a
+    reussi par l'autre voie.
+    """
+    _fake_transport(monkeypatch, graphql_ok=False,
+                    rest_pages={1: [_REST_ISSUE, _REST_PR], 2: []})
+    pool, err = pig.fetch_pool()
+    assert err is None, "une voie a servi : le tirage EST mesure"
+    assert [it["number"] for it in pool] == [111], (
+        "l'endpoint REST /issues rend AUSSI les PRs : `pull_request` doit les "
+        "exclure, sinon les PRs entrent dans le pool de grains")
+    assert pool[0]["created_at"] == "2026-08-01T00:00:00Z"
+    assert "bascule REST" in capsys.readouterr().err
+
+
+def test_pr_list_bascule_rest_et_normalise_la_forme(monkeypatch, capsys):
+    """`gh pr list` est GraphQL : meme bascule, et la forme rendue est normalisee.
+
+    REST rend `created_at`/`draft`/`user.login`/`head.ref` la ou `gh` rend
+    `createdAt`/`isDraft`/`author.login`/`headRefName`. Le reste du picker lit
+    la forme `gh` : la traduction se fait dans le fallback.
+    """
+    _fake_transport(monkeypatch, pr_graphql_ok=False,
+                    rest_pages={1: [_REST_PULL], 2: []})
+    prs = pig.fetch_open_prs()
+    assert prs == [{"number": 7, "title": "une PR",
+                    "body": "Grain: MED/docs -- lane x",
+                    "createdAt": "2026-09-01T00:00:00Z", "isDraft": False,
+                    "author": {"login": "jsboige"}, "headRefName": "feature/x"}]
+    assert "bascule REST" in capsys.readouterr().err
+
+
+def test_truncation_rest_est_dite_comme_celle_de_graphql(monkeypatch, capsys):
+    """#17474 -- le transport REST porte son propre plafond : il se dit aussi.
+
+    La bascule de #17038 a ouvert une seconde porte au meme defaut : un plafond
+    atteint y est muet tout autant, `_rest_pages` s'arrete a
+    `POOL_REST_MAX_PAGES` sans rien lever, et le listing rend du plus recent au
+    plus ancien -- la traine disparait donc par cette porte-la sans un mot. Le
+    plafond est atteint ici pour de vrai (pages pleines jusqu'a epuisement du
+    quota), pas simule par un drapeau.
+    """
+    pages = {p: [dict(_REST_PULL, number=p * 1000 + i)
+                 for i in range(pig.POOL_REST_PAGE)]
+             for p in range(1, pig.POOL_REST_MAX_PAGES + 1)}
+    _fake_transport(monkeypatch, pr_graphql_ok=False, rest_pages=pages)
+    prs = pig.fetch_open_prs()
+    assert len(prs) == pig.POOL_REST_PAGE * pig.POOL_REST_MAX_PAGES
+    err = capsys.readouterr().err
+    assert "bascule REST" in err
+    assert "[PRS TRONQUEES]" in err
+    assert "POOL_REST_MAX_PAGES" in err, (
+        "le remede nomme doit etre celui du transport REST, pas celui de la "
+        "voie GraphQL")
+
+    # Controle NEGATIF : un plafond qui n'a pas mordu ne se dit pas. Sans lui,
+    # un avertissement inconditionnel passerait le test ci-dessus.
+    capsys.readouterr()
+    monkeypatch.setattr(pig, "POOL_REST_MAX_PAGES", pig.POOL_REST_MAX_PAGES + 1)
+    prs = pig.fetch_open_prs()
+    assert len(prs) == 400
+    assert "[PRS TRONQUEES]" not in capsys.readouterr().err
+
+
+def test_pool_tronque_sur_la_voie_rest_le_plafond_de_pages_est_dit(monkeypatch, capsys):
+    """#18113 acceptance 1 -- controle POSITIF : dix pages pleines issues+PRs.
+
+    Le flux brut REST est plafonne a POOL_ISSUES_REST_MAX_PAGES x
+    POOL_REST_PAGE = 1000 elements (issues ET PRs), ensuite filtre des PRs :
+    `len(raw)` ne peut jamais atteindre POOL_FETCH_LIMIT (2000), et la garde
+    de la voie GraphQL ne peut pas tirer sur cette voie. Le signal est le
+    plafond de pages atteint -- sans ce controle, la bascule #17038 rend la
+    troncature muette par l'autre porte.
+    """
+    pages = {}
+    for p in range(1, pig.POOL_ISSUES_REST_MAX_PAGES + 1):
+        chunk = []
+        for i in range(pig.POOL_REST_PAGE):
+            base = _REST_ISSUE if i % 2 == 0 else _REST_PR
+            chunk.append(dict(base, number=p * 1000 + i))
+        pages[p] = chunk
+    _fake_transport(monkeypatch, graphql_ok=False, rest_pages=pages)
+    pool, err = pig.fetch_pool()
+    assert err is None, "une voie a servi : le tirage EST mesure"
+    issues_par_page = pig.POOL_REST_PAGE // 2
+    assert len(pool) == pig.POOL_ISSUES_REST_MAX_PAGES * issues_par_page, (
+        "les PRs du flux brut sont exclues : le pool ne contient que les issues")
+    out = capsys.readouterr().err
+    assert "bascule REST" in out
+    assert "[POOL TRONQUE]" in out
+    assert "POOL_ISSUES_REST_MAX_PAGES" in out, (
+        "le remede nomme doit etre celui du transport REST, pas POOL_FETCH_LIMIT")
+
+    # Controle NEGATIF (acceptance 2) : un plafond qui n'a pas mordu ne se dit
+    # pas. Sans lui, un avertissement inconditionnel passerait le test ci-dessus.
+    capsys.readouterr()
+    monkeypatch.setattr(pig, "POOL_ISSUES_REST_MAX_PAGES",
+                        pig.POOL_ISSUES_REST_MAX_PAGES + 1)
+    pool2, _ = pig.fetch_pool()
+    assert len(pool2) == len(pool)
+    assert "[POOL TRONQUE]" not in capsys.readouterr().err
+
+
+def test_pool_tronque_voie_graphql_reste_le_signal_du_compte_exact(monkeypatch, capsys):
+    """#18113 acceptance 3 -- la garde de la voie GraphQL est inchangee.
+
+    Exactement POOL_FETCH_LIMIT rendus sur la voie principale : le message
+    reste celui du compte exact (signature de troncature l.760), pas celui du
+    plafond de pages -- la voie GraphQL n'a pas de pages.
+    """
+    many = [{"number": n, "title": _REST_ISSUE["title"], "labels": [],
+             "body": _REST_ISSUE["body"],
+             "createdAt": _REST_ISSUE["created_at"],
+             "updatedAt": _REST_ISSUE["updated_at"]}
+            for n in range(pig.POOL_FETCH_LIMIT)]
+    _fake_transport(monkeypatch, graphql_issues=many)
+    pool, err = pig.fetch_pool()
+    assert err is None
+    assert len(pool) == pig.POOL_FETCH_LIMIT
+    out = capsys.readouterr().err
+    assert "[POOL TRONQUE]" in out
+    assert str(pig.POOL_FETCH_LIMIT) in out
+    assert "plafond de pages" not in out, (
+        "le message GraphQL est celui du compte exact, pas du plafond REST")
+
+
+def test_les_deux_transports_morts_ne_se_disent_pas_pool_vide(monkeypatch):
+    """#17038 acceptance 1+3+5 -- « non mesurable » n'est pas « aucun candidat ».
+
+    C'est le defaut fondateur : l'organe imprimait « le tirage est MAINTENU »
+    sur une lecture morte, et la lane lisait un zero comme un etat du pool --
+    « picker muet », donc « veille ». Le vocabulaire de l'epuisement sur un
+    pool jamais lu est une affirmation sur des donnees qu'on n'a pas.
+    """
+    _fake_transport(monkeypatch, graphql_ok=False, rest_ok=False)
+    pool, err = pig.fetch_pool()
+    assert pool == []
+    assert err and "GraphQL" in err and "REST" in err
+
+    phrase = pig.draw_verdict(err)
+    assert "TIRAGE NON MESURE" in phrase
+    assert "PAS « aucun candidat »" in phrase
+    assert "epuisee" not in phrase.casefold(), (
+        "le vocabulaire de l'epuisement affirme un etat du pool : il est "
+        "interdit sur une lecture qui n'a pas abouti")
+    # Lecture mesuree : rien a dire -- c'est ce qui distingue les deux etats.
+    assert pig.draw_verdict(None) == ""
+    assert pig.RC_POOL_UNMEASURED != 0
+
+
+def test_main_rend_3_quand_les_deux_transports_sont_morts(monkeypatch, capsys):
+    """#17038 acceptance 5 -- un rc DISTINCT, pour que l'appelant fail-closed.
+
+    `0` = tirage mesure (y compris vide), `1` = arret delibere. Confondre les
+    trois fait d'une panne de transport un etat normal.
+    """
+    _fake_transport(monkeypatch, graphql_ok=False, rest_ok=False)
+    rc = pig.main(["--lane", "myia-po-2023:CoursIA", "--admissible", "111",
+                   "--cache", "off"])
+    assert rc == pig.RC_POOL_UNMEASURED == 3
+    out = capsys.readouterr().out
+    assert "TIRAGE NON MESURE" in out
+    assert "EPUISEE" not in out.upper()
 
 
 def test_same_author_failures_are_not_imputed(monkeypatch):
@@ -671,6 +1250,178 @@ def test_partial_inheritance_keeps_the_lane_cause():
     assert causes == ["check requis en echec : " + AGG]
     assert pig.blocking_causes(state, inherited=both,
                                resolved_keys_by_name={AGG: both}) == []
+
+
+# --- #15910 : un agregateur rouge par DWELL est un MINUTEUR, pas un defaut ---
+
+DWELL_ANN = "[pr-gate] DWELL -- " + _md_evaluate(
+    datetime(2026, 9, 13, 12, 14, 44, tzinfo=timezone.utc),
+    datetime(2026, 9, 13, 12, 21, 44, tzinfo=timezone.utc),
+    120.0,
+)[2]
+# Regeneré depuis evaluate() (repair #15981) : la fixture ne peut plus deriver
+# du message reel du gate -- un changement de forme casse le round-trip ICI,
+# dans le fichier qui le consomme, au lieu de matcher en silence.
+FAIL_ANN = "[pr-gate] FAIL -- failing checks: Static validation (H.1/H.3/C.1) (failure)"
+
+
+def _dwell_state(run_id):
+    """Etat rouge dont l'agregateur porte un check-run id (annotation lisible)."""
+    st = _state(checks=[("PR gate", "FAILURE", True)])
+    st["commits"]["nodes"][0]["commit"]["statusCheckRollup"]["contexts"][
+        "nodes"][0]["databaseId"] = run_id
+    return st
+
+
+def _patch_dwell(monkeypatch, dwell_by_run):
+    """Remplace la lecture d'annotation : id -> dict de plancher, ou None."""
+    monkeypatch.setattr(pig, "fetch_check_dwell",
+                        lambda rid: dwell_by_run.get(rid))
+
+
+def _patch_gh_annotations(monkeypatch, messages):
+    """Fait rendre a `gh api .../annotations` une liste de messages donnes."""
+    def fake_run(cmd, **kwargs):
+        return _FakeCompleted(json.dumps([{"message": m} for m in messages]))
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+
+
+def test_dwell_banner_is_parsed_from_the_check_run_annotation(monkeypatch):
+    """La surface existe et porte les trois champs : plancher, reste, levee.
+
+    Le fragment GraphQL des etats de PR ne porte PAS `title`/`summary` d'un
+    check-run : la seule surface qui dit le DWELL est l'annotation. Sans cette
+    lecture, « il n'y a rien a reparer » et « je n'ai pas pu lire » rendent le
+    meme `[]` (cf `fetch_check_organs`) -- et c'est le second que la lane subit.
+    Texte de reference = annotation reelle du check-run 103721837941 (#15956).
+    """
+    _patch_gh_annotations(monkeypatch, [DWELL_ANN])
+    dwell = pig.fetch_check_dwell(103721837941)
+    # #16092 : lift_at = premier sweep :07 STRICTEMENT posterieur au plancher
+    # brut (12:14:44 + 120 min = 14:14:44 -> 15:07), pas le plancher lui-meme.
+    assert dwell == {"head_at": "2026-09-13T12:14:44Z", "dwell_min": 120,
+                     "remaining_min": 113, "lift_at": "2026-09-13T15:07:00Z"}
+
+
+def test_dwell_banner_control_negative_fail_and_unreadable(monkeypatch):
+    """Controle NEGATIF : un FAIL nomme et une panne ne sont pas des DWELL.
+
+    Sans ce controle, un detecteur qui rendrait un dict sur n'importe quelle
+    annotation ferait passer le test precedent avec un motif faux -- et
+    l'annulation de cause emporterait les vrais rouges avec elle.
+    """
+    # FAIL nomme : ce n'est pas un plancher.
+    _patch_gh_annotations(monkeypatch, [FAIL_ANN])
+    assert pig.fetch_check_dwell(1) is None
+    # Annotation d'organe : ce n'est pas un plancher non plus (le cas NOMINAL,
+    # celui ou un organe est nomme et ou l'appelant ne paie meme pas la lecture).
+    _patch_gh_annotations(monkeypatch, ["Organes bloquants en echec : perimeter"])
+    assert pig.fetch_check_dwell(2) is None
+    # Lecture impossible : None, et l'appelant retombe sur le fail-closed.
+    def _raise_gh(cmd, **kwargs):
+        raise OSError("gh indisponible")
+    monkeypatch.setattr(pig.subprocess, "run", _raise_gh)
+    assert pig.fetch_check_dwell(3) is None
+
+
+def test_dwell_red_is_not_a_repairable_cause():
+    """Le fond de #15910 : la lane ne recoit PLUS de cause a reparer.
+
+    `pr_gate.py` n'emet le plancher que sur le chemin VERT (`code == 0`) :
+    tous les checks sont verts, seule l'anciennete de la tete manque. En
+    faire un « check requis en echec » envoyait la lane chercher dans son diff
+    une cause inexistante -- et trois PRs poussees dans la meme fenetre
+    suffisaient a declencher P0 par le seul minuteur.
+    """
+    state = _dwell_state(103721837941)
+    dwell = {"PR gate": {"dwell_min": 120, "remaining_min": 113,
+                         "lift_at": "2026-09-13T14:14:44Z"}}
+    assert pig.blocking_causes(state, dwell_by_name=dwell) == []
+    # Controle POSITIF : sans la lecture, le meme etat est bien un rouge --
+    # sinon le test precedent passerait sur un etat qui n'est pas rouge du tout.
+    assert pig.blocking_causes(state) == ["check requis en echec : PR gate"]
+
+
+def test_dwell_does_not_swallow_the_other_reds_of_the_same_pr():
+    """Un DWELL n'absout pas les vrais rouges qui l'accompagnent.
+
+    La PR peut porter un agregateur en attente de plancher ET un check direct
+    en echec substance : la cause du second doit survivre, sinon la reparation
+    du rouge reel serait annulee par un minuteur sans rapport.
+    """
+    state = _state(checks=[("PR gate", "FAILURE", True),
+                           ("Scripts Tests (CPU)", "FAILURE", True)])
+    causes = pig.blocking_causes(
+        state, dwell_by_name={"PR gate": {"dwell_min": 120,
+                                          "remaining_min": 10,
+                                          "lift_at": "2026-09-13T14:14:44Z"}})
+    assert causes == ["check requis en echec : Scripts Tests (CPU)"]
+
+
+def test_dwell_pr_leaves_the_red_backlog_and_is_reported(monkeypatch):
+    """Bout en bout : la PR au seul rouge DWELL sort du refus, et est DITE.
+
+    Deux exigences opposees : ne plus la compter comme un grain a reparer
+    (sinon le cycle part sur une reparation inexistante), mais ne pas la taire
+    non plus (sinon la lane croit son ardoise propre et ignore qu'une PR est
+    en attente de plancher).
+    """
+    _patch_organs(monkeypatch, {})
+    _patch_dwell(monkeypatch, {111: {"dwell_min": 120, "remaining_min": 113,
+                                     "lift_at": "2026-09-13T14:14:44Z"}})
+    _patch_backlog(monkeypatch, [
+        _pr_with_author(1, "myia-po-2026:CoursIA", 30, "jsboige"),
+    ], {1: _dwell_state(111)})
+    out = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=3)
+    assert out["red"] == []
+    assert out["aged"] == []
+    assert out["triggers"] == []
+    assert out["base_inherited"] == []
+    assert out["base_unresolved"] == []          # rien d'illisible : pas un fail-closed
+    assert out["dwell_waiting"] == [{"number": 1, "check": "PR gate",
+                                     "lift_at": "2026-09-13T14:14:44Z",
+                                     "remaining_min": 113}]
+
+
+def test_unreadable_aggregate_still_falls_back_to_the_lane(monkeypatch):
+    """Controle negatif du precedent : sans DWELL lisible, le rouge RESTE.
+
+    Le fail-closed #14567 ne doit pas etre court-circuite par la lecture du
+    DWELL : une panne reseau n'est pas un plancher, et la confondre
+    acquitterait la lane d'un rouge qu'elle doit reparer.
+    """
+    _patch_organs(monkeypatch, {})
+    _patch_dwell(monkeypatch, {111: None})
+    _patch_backlog(monkeypatch, [
+        _pr_with_author(1, "myia-po-2026:CoursIA", 30, "jsboige"),
+    ], {1: _dwell_state(111)})
+    out = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=3)
+    assert [r["number"] for r in out["red"]] == [1]
+    assert out["dwell_waiting"] == []
+    assert {i["check"] for i in out["base_unresolved"]} == {"PR gate"}
+
+
+def test_print_dwell_waiting_says_the_only_gesture_is_waiting(capsys):
+    """La sortie humaine doit porter l'INTERDIT : ne pas repousser.
+
+    Un push remet le plancher a zero (pr_gate.py l.~1421) : la lane qui
+    « repare » un DWELL en poussant repart pour 120 min. C'est le geste
+    reflexe de cette lane, donc c'est ce qu'il faut dire a voix haute.
+    """
+    pig.print_dwell_waiting({"dwell_waiting": [
+        {"number": 15956, "check": "PR gate", "lift_at": "2026-09-13T14:14:44Z",
+         "remaining_min": 113}]})
+    out = capsys.readouterr().out
+    assert "#15956" in out
+    assert "14:14:44Z" in out
+    assert "NE PAS repousser" in out
+    # #15748 : la guidance courante dit comment rejouer, pas d'attendre.
+    assert "gh run rerun" in out
+    assert "aucun geste" not in out
+    assert "balayage horaire" not in out
+    # Silence total quand il n'y a rien : pas de section vide a lire.
+    assert pig.print_dwell_waiting({"dwell_waiting": []}) is None
+    assert capsys.readouterr().out == ""
 
 
 def test_required_failure_links_advisory_as_its_probable_cause():
@@ -1150,6 +1901,38 @@ def test_orphans_report_apply_upserts_the_comment(monkeypatch, capsys):
     assert "mis a jour sur #13086" in capsys.readouterr().out
 
 
+def test_upsert_orphans_comment_patches_the_rest_id_not_the_node_id(monkeypatch):
+    """`gh issue view --json comments` rend l'id GraphQL (`IC_kw...`) ; le
+    PATCH REST doit viser l'id numerique lu dans l'URL. Regression : le
+    balayage quotidien echouait en 404 depuis le 29/08.
+    """
+    import types
+    listing = {"comments": [
+        {"id": "IC_other", "body": "sans marqueur",
+         "url": "https://github.com/jsboige/CoursIA/issues/13086#issuecomment-1"},
+        {"id": "IC_kwDOH2Odns8AAAABRYFFMQ",
+         "body": pig.ORPHANS_MARKER_START + " ancien",
+         "url": "https://github.com/jsboige/CoursIA/issues/13086#issuecomment-5461067057"},
+    ]}
+    calls = []
+    def fake_run(argv, **kw):
+        calls.append(argv)
+        return types.SimpleNamespace(stdout=json.dumps(listing), returncode=0)
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+    pig.upsert_orphans_comment(13086, "nouveau corps")
+    patch = [a for a in calls if "PATCH" in a]
+    assert len(patch) == 1
+    assert "repos/jsboige/CoursIA/issues/comments/5461067057" in patch[0]
+    assert not any("IC_kw" in x for x in patch[0])
+
+
+def test_rest_comment_id_refuses_an_url_without_anchor():
+    """Pas d'id devine : une URL sans `#issuecomment-<n>` leve."""
+    import pytest
+    with pytest.raises(ValueError):
+        pig.rest_comment_id({"url": "https://github.com/jsboige/CoursIA/issues/13086"})
+
+
 def test_lane_still_required_outside_orphans_report(monkeypatch, capsys):
     """--lane reste OBLIGATOIRE sur le chemin de tirage : le passage de
     `required=True` a la validation manuelle ne doit pas ouvrir un tirage
@@ -1337,6 +2120,84 @@ def test_13420_le_plus_recent_gagne_sur_les_anciens():
                   "state": "PENDING", "isRequired": True,
                   "startedAt": _iso_ago(0.2)})
     assert pig.file_saturation_cause(state, age_hours=120, threshold_hours=24) is None
+
+
+# --- #16889 : fold canonique par nom -- les deux sens de #16765 -------------
+#
+# drop_superseded delegue desormais a check_run_state.fold_latest (#16782) :
+# une seule jambe par nom, la plus recente. Mesure #16765 sur #16232 : le
+# rollup GraphQL rend les jambes d'un meme nom dans un ordre non chronologique
+# (FAILURE/CANCELLED/SUCCESS d'un meme head). L'ancien filtre local ne couvrait
+# qu'un sens (rouge perime sous vert recent) ; le vert ou PENDING perime d'un
+# rerun restait dans la liste, lu comme jambe courante.
+
+
+def _state_legs(legs, rollup_state="FAILURE"):
+    """Rollup a jambes brutes explicites -- meme nom plusieurs fois = rerun."""
+    return {
+        "number": 1, "mergeable": "MERGEABLE",
+        "reviews": {"nodes": []},
+        "commits": {"nodes": [{"commit": {"statusCheckRollup": {
+            "state": rollup_state,
+            "contexts": {"nodes": legs}}}}]},
+    }
+
+
+def test_16889_sens1_rouge_perime_sous_vert_recent_candidate_servie():
+    """FAILURE ancien puis SUCCESS recent du meme nom : la PR n'est PAS en
+    echec -- le picker la sert comme candidate au lieu de la ranger en file
+    de reparation pour un check deja vert (#11916, les deux sens #16765)."""
+    legs = [
+        {"name": "Lint", "conclusion": "FAILURE", "isRequired": True,
+         "startedAt": "2026-09-20T00:00:00Z"},
+        {"name": "Lint", "conclusion": "SUCCESS", "isRequired": True,
+         "startedAt": "2026-09-22T00:00:00Z"},
+    ]
+    assert pig._has_failed_check(_state_legs(legs)) is False
+
+
+def test_16889_sens2_rouge_recent_sous_vert_perime_candidate_ecartee():
+    """SUCCESS ancien puis FAILURE recent du meme nom : l'etat courant est le
+    rouge -- la PR part en file de reparation, pas en tirage (second sens
+    #16765 : le vert perime ne fait plus croire a la maturite)."""
+    legs = [
+        {"name": "Lint", "conclusion": "SUCCESS", "isRequired": True,
+         "startedAt": "2026-09-20T00:00:00Z"},
+        {"name": "Lint", "conclusion": "FAILURE", "isRequired": True,
+         "startedAt": "2026-09-22T00:00:00Z"},
+    ]
+    assert pig._has_failed_check(_state_legs(legs)) is True
+
+
+def test_16889_rouges_dupliques_dun_rerun_dedoublonnes_dans_les_causes():
+    """Deux FAILURE du meme nom (run rouge, rerun encore rouge) : sans fold
+    les DEUX jambes restaient (l'ancien filtre ne perdait que les rouges
+    ANTERIEURS a un vert) et blocking_causes listait le meme check deux
+    fois ; le fold n'en lit qu'une -- la derniere."""
+    legs = [
+        {"name": "Lint", "conclusion": "FAILURE", "isRequired": True,
+         "startedAt": "2026-09-20T00:00:00Z"},
+        {"name": "Lint", "conclusion": "FAILURE", "isRequired": True,
+         "startedAt": "2026-09-22T00:00:00Z"},
+    ]
+    causes = pig.blocking_causes(_state_legs(legs, rollup_state="FAILURE"))
+    assert len([c for c in causes if "Lint" in c]) == 1
+
+
+def test_16889_saturation_compte_les_noms_pas_les_jambes():
+    """Vert perime + rerun PENDING du meme nom : la saturation compte les
+    NOMS requis, pas les jambes -- sans fold le compte gonflait (2 checks
+    annonces pour 1 reel)."""
+    legs = [
+        {"name": "PR gate", "conclusion": "SUCCESS", "isRequired": True,
+         "startedAt": _iso_ago(50)},
+        {"name": "PR gate", "conclusion": None, "state": "PENDING",
+         "isRequired": True, "startedAt": _iso_ago(49)},
+    ]
+    state = _state_legs(legs, rollup_state="PENDING")
+    cause = pig.file_saturation_cause(state, age_hours=120, threshold_hours=24)
+    assert cause is not None
+    assert "1 check(s) requis" in cause
 
 
 def test_file_saturation_not_detected_when_a_check_is_success():
@@ -1850,7 +2711,8 @@ def test_13972_pool_genre_prefers_body_over_title(monkeypatch) -> None:
     ]
     fake_proc = _FakeCompleted(json.dumps(payload))
     monkeypatch.setattr(pig.subprocess, "run", lambda *a, **kw: fake_proc)
-    pool = pig.fetch_pool()
+    pool, transport = pig.fetch_pool()
+    assert transport is None, f"GraphQL a servi : aucune bascule attendue ({transport})"
     by_number = {it["number"]: it for it in pool}
     # #10475 : titre dirait notebook-python, body dit docs -> genre = docs (META)
     assert by_number[10475]["genre"] == "docs", (
@@ -1973,6 +2835,12 @@ def test_14704_cli_accepts_repeated_and_csv_prev_genres(monkeypatch, capsys) -> 
     """Les deux formes CLI alimentent le meme ensemble de genres de session."""
     class _R:
         stdout = "[]"
+        stderr = ""
+        # #17418 : main() epingle le jeton AVANT argparse -- le fake doit
+        # impersonifier un CompletedProcess complet (returncode requis) pour
+        # que pin_gh_token() suive son chemin d'echec propre (GhIdentityError
+        # attrapee par main, WARN stderr) au lieu d'un AttributeError.
+        returncode = 1
 
     monkeypatch.setattr(pig.subprocess, "run", lambda *args, **kwargs: _R())
     rc = pig.main([
@@ -2002,6 +2870,9 @@ def test_14591_volet_a_cli_integration_prev_genre_autoload(tmp_path, monkeypatch
     # toucher au pool reel.
     class _R:
         stdout = "[]"
+        stderr = ""
+        # #17418 : cf. test_14704 -- returncode requis par pin_gh_token().
+        returncode = 1
     def fake_run(cmd, **kw):
         return _R()
     monkeypatch.setattr(pig.subprocess, "run", fake_run)
@@ -2018,10 +2889,10 @@ def test_14591_volet_a_cli_integration_prev_genre_autoload(tmp_path, monkeypatch
     assert "guard|tooling" in captured
 
 
-def _untagged_pr(n, *, author="jsboige", branch="feature/foo"):
+def _untagged_pr(n, *, author="jsboige", branch="feature/foo", body="pas de tag\n"):
     """PR synthetique untagged non-draft, pour `unattributed_blocked_prs`."""
     created = (pig.NOW - pig.dt.timedelta(hours=10)).strftime("%Y-%m-%dT%H:%M:%SZ")
-    return {"number": n, "title": f"pr {n}", "body": "pas de tag\n",
+    return {"number": n, "title": f"pr {n}", "body": body,
             "createdAt": created, "isDraft": False,
             "author": {"login": author}, "headRefName": branch}
 
@@ -2071,6 +2942,125 @@ def test_orphan_report_neg2_human_on_chore_pending_stays(monkeypatch):
         _untagged_pr(9, author="jsboige", branch="chore/x-pending"),
     ], {9: red})
     assert [r["number"] for r in pig.unattributed_blocked_prs()] == [9]
+
+
+def test_is_out_of_fleet_pr_requires_both_conditions():
+    """#17713 : tete `claude/*` ET marqueur « Hors flotte », pas l'une sans l'autre."""
+    assert pig.is_out_of_fleet_pr({
+        "headRefName": "claude/fix-x", "body": "note\nHors flotte\n"}) is True
+    assert pig.is_out_of_fleet_pr({
+        "headRefName": "claude/fix-x", "body": "pas de marqueur\n"}) is False
+    assert pig.is_out_of_fleet_pr({
+        "headRefName": "feature/x", "body": "Hors flotte\n"}) is False
+
+
+def test_out_of_fleet_excluded_from_orphans_report(monkeypatch):
+    """#17713 : une PR hors flotte bloquee sort de la file d'orphelines."""
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [
+        _untagged_pr(11, branch="claude/fix-x", body="contexte\nHors flotte\n"),
+    ], {11: red})
+    assert pig.unattributed_blocked_prs() == []
+
+
+def test_orphan_report_neg1_claude_head_without_marker_stays(monkeypatch):
+    """Controle negatif 1 : une tete `claude/*` SANS marqueur reste listee."""
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [_untagged_pr(12, branch="claude/fix-x")], {12: red})
+    assert [r["number"] for r in pig.unattributed_blocked_prs()] == [12]
+
+
+def test_orphan_report_neg2_marker_on_fleet_branch_stays(monkeypatch):
+    """Controle negatif 2 : le marqueur sur une branche de flotte reste listee."""
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [
+        _untagged_pr(13, branch="feature/x", body="Hors flotte\n"),
+    ], {13: red})
+    assert [r["number"] for r in pig.unattributed_blocked_prs()] == [13]
+
+
+# --- #17474 : le plafond de `fetch_open_prs` amputait la traine -------------
+# `gh pr list` rend du plus RECENT au plus ancien (mesure firsthand du
+# 2026-09-23 sur ce depot : #17565 `2026-09-23T13:29:52Z` en tete, #15942
+# `2026-09-13T08:33:00Z` en queue pour 158 ouvertes), donc un plafond franchi
+# fait disparaitre les PRs les plus ANCIENNES -- exactement celles que la file
+# de reparation et le compte WIP de lane (Q41) existent pour voir. Le faux `gh`
+# ci-dessous reproduit ce mode d'echec plutot que de le supposer : il tronque
+# la population au `--limit` DEMANDE, comme le vrai.
+
+
+def _fake_gh_pr_list(monkeypatch, population):
+    """Faux `gh pr list` : les plus recentes de `population`, tronquees au plafond.
+
+    `population` est ordonnee du plus recent au plus ancien, comme ce que rend
+    le vrai `gh`.
+    """
+    calls = []
+
+    def fake_run(cmd, **kwargs):
+        calls.append(cmd)
+        limit = int(cmd[cmd.index("--limit") + 1])
+        return _FakeCompleted(json.dumps(population[:limit]))
+
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+    return calls
+
+
+def _tagged_pr(n):
+    """PR ouverte taggee par une lane -- hors des deux volets du garde rouge."""
+    return {"number": n, "title": f"pr {n}",
+            "body": "Grain: MED/guard -- lane myia-po-2026:CoursIA\n",
+            "createdAt": "2026-09-20T00:00:00Z", "isDraft": False,
+            "author": {"login": "jsboige"}, "headRefName": f"feature/{n}"}
+
+
+def test_open_prs_fetch_limit_no_longer_the_old_300(monkeypatch):
+    """Le plafond demande a `gh` est celui du pool, et il est surveille."""
+    calls = _fake_gh_pr_list(monkeypatch, [_tagged_pr(1)])
+    prs = pig.fetch_open_prs()
+    assert prs == [_tagged_pr(1)]
+    limit = int(calls[0][calls[0].index("--limit") + 1])
+    assert limit == pig.OPEN_PRS_FETCH_LIMIT >= pig.POOL_FETCH_LIMIT
+
+
+def test_open_prs_truncation_is_said_not_silent(monkeypatch, capsys):
+    """Sous le plafond : rien de dit. Au plafond : la troncature se dit."""
+    monkeypatch.setattr(pig, "OPEN_PRS_FETCH_LIMIT", 4)
+    _fake_gh_pr_list(monkeypatch, [_tagged_pr(n) for n in (5, 4, 2)])
+    pig.fetch_open_prs()
+    assert capsys.readouterr().err == "", "aucun avertissement sous le plafond"
+
+    monkeypatch.setattr(pig, "OPEN_PRS_FETCH_LIMIT", 3)
+    _fake_gh_pr_list(monkeypatch, [_tagged_pr(n) for n in (5, 4, 3, 2)])
+    pig.fetch_open_prs()
+    err = capsys.readouterr().err
+    assert "[PRS TRONQUEES]" in err
+    assert "3 PRs rendues pour un plafond de 3" in err
+    assert "OPEN_PRS_FETCH_LIMIT" in err
+
+
+def test_the_oldest_blocked_orphan_survives_the_cap(monkeypatch):
+    """#17474, faux negatif : la traine reste vue par la file de reparation.
+
+    La population porte 320 PRs taggees (invisibles au garde rouge) et, en
+    queue -- donc la plus ANCIENNE --, une orpheline bloquee. Le controle de
+    falsification est dans le test : au plafond historique de 300, la meme
+    fixture ne voit RIEN, ce qui prouve que le test mord sur le defaut et non
+    sur un faux `gh` complaisant.
+    """
+    population = [_tagged_pr(10_000 - i) for i in range(320)] + [_untagged_pr(17)]
+    red = {17: _state(checks=[("PR gate", "FAILURE", True)])}
+    _fake_gh_pr_list(monkeypatch, population)
+    _neutralize_organs(monkeypatch, red)
+
+    monkeypatch.setattr(pig, "OPEN_PRS_FETCH_LIMIT", 300)
+    assert pig.unattributed_blocked_prs() == [], (
+        "au plafond de 300 la traine doit etre invisible -- sinon la fixture "
+        "ne reproduit pas la troncature reelle"
+    )
+
+    monkeypatch.setattr(pig, "OPEN_PRS_FETCH_LIMIT", pig.POOL_FETCH_LIMIT)
+    assert [r["number"] for r in pig.unattributed_blocked_prs()] == [17]
 
 
 # --- #15139 : delegation a l'organe check_unaddressed_nits -----------------
@@ -2196,7 +3186,7 @@ def test_delivery_boost_spreads_without_monopoly():
 # activite de commentaire post-merge ; or les lanes elles-memes postent des
 # commentaires `[INFO] candidate-delivered` quand elles en rencontrent une.
 # Resultat : des LIVRE-urn restent sans label alors qu'un marqueur en
-# commentaire les designe explicitement. Tell c.1060-L1 reformule (msg-20260912T165428-k6rbfc,
+# commentaire les designe explicitement. reformule (msg-20260912T165428-k6rbfc,
 # ai-01 spec) : la klasse `delivered` doit etre posee sur signal label OU
 # marqueur, avec 1 requete par candidat tire (invariant recent_delivery l.958).
 #
@@ -2321,7 +3311,7 @@ def test_marker_check_failure_treated_as_no_signal(monkeypatch):
 
 def test_marker_regex_matches_both_bracket_forms(monkeypatch):
     """Le pattern couvre les deux formes employees : `[INFO] candidate-delivered`
-    ET `[INFO candidate-delivered]` (espace au lieu de `]`). Cf Tell c.1115
+    ET `[INFO candidate-delivered]` (espace au lieu de `]`). Cf
     voie 1 : unification lexicale sans casser l'existant."""
     calls = []
     _patch_gh_dispatch(
@@ -2333,3 +3323,129 @@ def test_marker_regex_matches_both_bracket_forms(monkeypatch):
     notes = pig.recent_delivery(picks)
     assert 14373 in notes
     assert picks[0]["klass"] == "delivered"
+
+
+# --- #15910 (port #16025) : falsifications additionnelles sur le fix #15981 --
+#
+# #16025 (concurrente de #15981 sur le meme axe) portait sa propre
+# implementation ; resolue contre main post-#15981, seule l'implementation du
+# twin (deja live) survit. Ne sont portees que les deux falsifications que la
+# suite du twin n'a pas : la reproduction du SEUIL `count` sur trois PRs
+# simultanees (le coeur de l'incident du 2026-09-13), et le bout en bout
+# banniere-FAIL (le negative du twin s'arrete au niveau du fetch).
+
+
+def test_dwell_only_prs_do_not_arm_the_count_trigger(monkeypatch):
+    """La reproduction de l'incident : 3 PRs en DWELL ne declenchent plus le P0.
+
+    #15888/#15895/#15902, toutes vertes hors gate, toutes en DWELL : sur le
+    picker d'avant, `triggers == ["count"]` et le cycle basculait sur une
+    reparation inexistante. Le twin couvre la PR isolee ; ce test couvre le
+    seuil -- c'est lui qui a fait basculer le P0 ce jour-la.
+    """
+    _patch_organs(monkeypatch, {})
+    runs = {424242 + n: {"dwell_min": 120, "remaining_min": 113,
+                         "lift_at": "2026-09-13T14:14:44Z"} for n in (1, 2, 3)}
+    _patch_dwell(monkeypatch, runs)
+    _patch_backlog(monkeypatch, [
+        _pr(n, "myia-po-2024:CoursIA", 2) for n in (1, 2, 3)
+    ], {n: _dwell_state(424242 + n) for n in (1, 2, 3)})
+    out = pig.red_backlog("myia-po-2024:CoursIA", 24, count_threshold=3)
+    assert out["red"] == []
+    assert out["triggers"] == []
+    assert [d["number"] for d in out["dwell_waiting"]] == [1, 2, 3]
+    for item in out["dwell_waiting"]:
+        assert item["check"] == "PR gate"
+        assert item["lift_at"] == "2026-09-13T14:14:44Z"
+
+
+def test_organs_banner_still_blocks_end_to_end(monkeypatch):
+    """Banniere-FAIL != DWELL : bout en bout, le rouge d'organe reste reparable.
+
+    Le negative du twin (`fetch_check_dwell` rend None sur une annotation
+    d'organe) s'arrete au niveau du fetch. Ici le chemin ENTIER, depuis le
+    message REEL du gate (banniere FAIL nommant un check tombant) : un
+    agregateur rouge PARCE QU'un organe est tombe doit rester un grain a
+    reparer -- cause emise, declencheur `count` arme, AUCUNE dispense DWELL.
+    Si un detecteur trop large prenait la banniere FAIL pour un plancher, la
+    reparation du vrai rouge serait annulee par un minuteur sans rapport.
+    """
+    _patch_gh_annotations(monkeypatch, [FAIL_ANN])
+    _patch_backlog(monkeypatch, [
+        _pr(n, "myia-po-2024:CoursIA", 2) for n in (1, 2, 3)
+    ], {n: _dwell_state(424242 + n) for n in (1, 2, 3)})
+    out = pig.red_backlog("myia-po-2024:CoursIA", 24, count_threshold=3)
+    assert [r["number"] for r in out["red"]] == [1, 2, 3]
+    assert "count" in out["triggers"]
+    assert out["dwell_waiting"] == []
+
+
+# --- LIVRÉ-urn : variantes du marqueur (issue #17263, c.754) --------------
+# Mesure first-hand : 3 formes employees par les lanes, dont la forme
+# canonique `[INFO] candidate-delivered` (avec fermante `]`) n'etait PAS
+# detectee par le motif `\[INFO[\s_]candidate-delivered` parce que la
+# fermante `]` cassait la continuite apres `[INFO`. Verifie
+# strict et audit-reassessment (LP fondateur : le test
+# `test_marker_only_surfaces_delivered_urn` ne couvrait que la forme 2).
+
+
+def test_marker_form_1_canonical_with_bracket(monkeypatch):
+    """Forme 1 (canonique, fermante `]`) : `[INFO] candidate-delivered` --
+    la plus naturelle, employee par les lanes recemment ; doit etre
+    detectee par le motif elargi."""
+    calls = []
+    _patch_gh_dispatch(
+        calls, monkeypatch, pr_payload=[],
+        comments_payload={"comments": [
+            _delivered_marker_comment(),
+            _delivered_marker_comment(
+                body="[INFO] candidate-delivered — verification first-hand "
+                     "du geste 1 sur origin/main, MERGE 6d0bd02093."),
+        ]})
+    picks = [_pick(n=14373)]
+    notes = pig.recent_delivery(picks)
+    assert 14373 in notes
+    assert "[INFO]" in notes[14373]
+    assert picks[0]["klass"] == "delivered"
+
+
+def test_marker_form_3_announcement_lane(monkeypatch):
+    """Forme 3 (annonce lane) : `[INFO] lane <machine:workspace> -- <sujet>
+    -- candidate-delivered <suite>` -- le mot n'est pas immediatement apres
+    `[INFO` mais sur la meme ligne."""
+    calls = []
+    _patch_gh_dispatch(
+        calls, monkeypatch, pr_payload=[],
+        comments_payload={"comments": [
+            _delivered_marker_comment(
+                body="[INFO] lane myia-po-2026:CoursIA-2 — c.678 reprise "
+                     "(tick 4) — candidate-delivered signal pour issue #16053"),
+        ]})
+    picks = [_pick(n=16053)]
+    notes = pig.recent_delivery(picks)
+    assert 16053 in notes
+    assert "[INFO]" in notes[16053]
+    assert picks[0]["klass"] == "delivered"
+
+
+def test_marker_no_match_discursive_mention(monkeypatch):
+    """Anti-FP : un commentaire qui MENTIONNE le mecanisme
+    `candidate-delivered` sans etre un marqueur de livraison ne doit PAS
+    declencher la klasse `delivered`. La forme etroite exige `candidate-
+    delivered` comme mot complet (`\b`) sur la MEME ligne qu'un `[INFO]`
+    en tete."""
+    calls = []
+    _patch_gh_dispatch(
+        calls, monkeypatch, pr_payload=[],
+        comments_payload={"comments": [
+            {"body": "[INFO] voici une analyse du mecanisme candidate-delivered "
+                     "et de ses variantes."},
+            {"body": "[INFO] diagnostic general, pas de signal livraison."},
+        ]})
+    picks = [_pick(n=14374)]
+    notes = pig.recent_delivery(picks)
+    # PAS de signal car la 1re forme est une mention discursive ([INFO] n'est
+    # PAS en tete de ligne pour la 2e variante, et la 1ere n'a pas le mot
+    # sur la meme ligne que [INFO]).
+    assert notes == {}
+    assert picks[0]["klass"] == "grain"

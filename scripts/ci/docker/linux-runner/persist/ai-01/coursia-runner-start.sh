@@ -6,7 +6,7 @@
 # CE QUI DISTINGUE CETTE COPIE DE persist/coursia-runner-start.sh
 # ---------------------------------------------------------------
 # La copie a la racine de persist/ est celle de po-2024 : depot sous
-# /mnt/c/dev/CoursIA, prefixe myia-po-2024-linux-docker, et surtout un
+# /mnt/d/Dev/CoursIA, prefixe myia-po-2024-linux-docker, et surtout un
 # `exec "$SUPERVISE" "$@"` qui relaie n'importe quelle sous-commande. Celle-ci
 # vit sur ai-01 : depot sous /mnt/d/CoursIA, prefixe myia-ai-01-wsl, et le
 # premier argument est le NOMBRE DE SLOTS, pas une sous-commande.

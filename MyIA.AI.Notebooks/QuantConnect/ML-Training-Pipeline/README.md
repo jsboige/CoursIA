@@ -50,32 +50,38 @@ Les notebooks de ce répertoire sont des **recherches indépendantes (c)** — a
 | Notebook | Sujet | Type |
 |----------|-------|------|
 | `ML-Research-Template.ipynb` | Template pour recherche ML | (c) |
-| `m3_har_asymmetric_semivariance.ipynb` | HAR semi-variance asymétrique | (c) |
+| `m3_har_asymmetric_semivariance.ipynb` | M16 — HAR asymétrique débiaisé : le signal survit-il hors biais ? | (c) |
 | `research_what_dl_can_predict.ipynb` | Ce que le DL peut prédire en finance | (c) |
 | `research_l1_tsmom.ipynb` | L1 TSMOM — baseline momentum temporelle (NO BEATS) | (c) |
 | `research_l2_dual_momentum.ipynb` | L2 Cross-Sectional + Dual Momentum (NO BEATS) | (c) |
 | `research_l3_trend.ipynb` | L3 Trend Long-Horizon — LSTM directionnel (NO BEATS) | (c) |
 | `research_l4_decision_transformer.ipynb` | L4 Decision Transformer (BEATS panel @10bps ; OOT réel NO-BEATS) | (c) |
+| `c1330_xrp_dt_foldwise_research.ipynb` | c.1330 — XRP Decision Transformer : validation fold-wise §C (verdicts par bucket) | (c) |
 | `hmm_alpha_research.ipynb` | HMM gaussien pour alpha trading (Broad Ch6 Ex4) | (c) |
+| `c875_hmm_alpha_dm_research.ipynb` | C875 — HMM-alpha : validation rigoureuse Ledoit-Wolf DM (stress 50 bps, INCONCLUSIVE) | (c) |
 | `m4_dlinear_vol_research.ipynb` | DLinear-vol : DL linéaire vs HAR (prévisions pures) | (c) |
 | `m5_hmm_regime_research.ipynb` | HMM regime-switching HAR : quand la sophistication structurelle nuit | (c) |
 | `m9_tft_vol_research.ipynb` | TFT (Temporal Fusion Transformer) : l'échec du surparamétrage | (c) |
 | `m11e_ensemble_research.ipynb` | Ensemble HAR-Kelly : la dilution confirmée (3e axe d'échec) | (c) |
 | `m12_har_rv_j_research.ipynb` | HAR-RV-J : décomposition de sauts (Andersen-Bollerslev-Diebold 2007) | (c) |
 | `m15_lstm_rv_research.ipynb` | Log-LSTM RV : mémoire séquentielle pour la variance réalisée | (c) |
+| `m4_dlinear_vol_sc_validation.ipynb` | M4 — DLinear-vol : entrée §C du registre (conjonction multi-seed + DM `loss_fn="linear"`) | (c) |
+| `m15_lstm_rv_sc_validation.ipynb` | M15 — LSTM RV : entrée §C du registre (2e entrée §C, même protocole) | (c) |
 
 Classification complète : [docs/qc/qc-strategies-status.md](../../../docs/qc/qc-strategies-status.md)
 
 ## Curriculum V2 — Keepers validés (2026-05-16, gate FERMEE)
 
-Après 8 stages testés (S1–S8) sur un univers anti-FAANG/Mag7 (SPY, TLT, XLF, XLK, XLE, XLV, XLY, XLI, XLB, XLU, XLP), **4 KEEPERS** confirmés sous OOS strict 2027 holdout, walk-forward 5-fold expanding, 4-seed block bootstrap (22-day blocks), coûts tx 10bps rebalance + 50bps stress :
+Après 8 stages testés (S1–S8) sur un univers anti-FAANG/Mag7 (SPY, TLT, XLF, XLK, XLE, XLV, XLY, XLI, XLB, XLU, XLP), **4 KEEPERS** confirmés sous OOS strict 2027 holdout, walk-forward 5-fold expanding, 4-seed block bootstrap (22-day blocks), coûts tx 10bps rebalance + 50bps stress — **amendé le 2026-09-13** (M12 revalidé NO BEATS, note sous le tableau) :
 
 | Stage | Stratégie | Δ-Sharpe | Signification statistique | MaxDD | Script |
 |-------|----------|----------|---------------------------|-------|--------|
-| S1 vol | **M12 HAR-RV-J** (HAR augmenté par sauts) | n/a | p=0.0015 (56/84 sign-test) | n/a | `m12_har_rv_j.py` |
+| S1 vol | **M12 HAR-RV-J** (HAR augmenté par sauts) — **retiré des keepers le 2026-09-13** | n/a | Cycle 31 : p=0.0015 (56/84 sign-test) — **non confirmé** (note ci-dessous) | n/a | `m12_har_rv_j.py` |
 | S1 vol | **M15 LSTM h=32** (LSTM log-RV) | n/a | p=0.0107 (53/84 sign-test) | n/a | `m15_lstm_rv.py` |
 | S3 regime | **HMM Regime** (2 états, quotidien) | **+0.669** | 4/4 seeds positifs | -39.1% | `s3_hmm_regime.py` |
 | S4 v2 | **Ridge vol-inverse + HMM** | **+0.325** | 4/4 seeds positifs | -17.7% | `s4_inverse_vol_ridge_v2.py` |
+
+> **Amendement 2026-09-13 — M12 revalidé NO BEATS** (#16004, Epic #1454) : sous protocole cluster symétrique (sept actifs, calibration train-only des deux côtés, DM sur perte MSE, sign-test binomial exact au niveau actif), M12 obtient **0/7 BEATS, p = 1,0** — ADA NO BEATS (3/3 horizons), ETH NO BEATS (h=5/h=10), cinq actifs INCONCLUSIVE. Le BEATS Cycle 31 (p=7,9e-7) n'est pas confirmé : il comptait quatre labels de seed bit-identiques d'un OLS déterministe comme répétitions et calibrait la baseline seule. Non réfuté définitivement — protocoles et fenêtres diffèrent. Détail : [`REGISTRY.md`](REGISTRY.md) §M12 et [`docs/M12_HAR_RV_J.md`](docs/M12_HAR_RV_J.md).
 
 S1 long-horizon sweep a également produit **8 BEATS multi-coin sur 16** (XRP h=66 13.5σ, ETH h=132 5.0σ, BTC h=22/66 BEATS). Reco portfolio : **S3 + S4 v2 rebalance mensuel, Sharpe ~1.12**.
 
@@ -271,7 +277,7 @@ Comparaison systématique de modèles de volatilité contre HAR Classic Kelly su
 | ------ | --- | ----- | ------ | ------- |
 | train_realized_garch.py | M10_REALIZED_GARCH_VOL.md | Realized GARCH (Hansen et al. 2012) | ~8 | NO BEATS (MSE +62%) |
 | simulate_har_kelly.py | M2_HAR_BASELINE.md | HAR Classic Kelly (Corsi 2009) | 4 | **Baseline** (Sharpe +0.313 vs BH) |
-| m12_har_rv_j.py | M12_HAR_RV_J.md | HAR-RV-J (jump-augmented) | 7 | **BEATS** (p=7.9e-7) |
+| m12_har_rv_j.py | M12_HAR_RV_J.md | HAR-RV-J (jump-augmented) | 7 | Cycle 31 : **BEATS** (p=7.9e-7) — **non confirmé** : revalidation cluster 2026-09-13 **NO BEATS** (0/7, p=1,0, #16004) |
 | m13_ms_har.py | M13_MS_HAR.md | Markov-Switching HAR (Hamilton 1989) | 11 | NO BEATS (39/84, p=0.7774) |
 | m14_heavy.py | M14_HEAVY.md | HEAVY (Shephard & Sheppard 2010) | 6 | NO BEATS (48/84, p=0.1149) |
 | m15_lstm_rv.py | M15_LSTM_RV.md | Log-LSTM RV (Hochreiter 1997) | ~4.8K (h=32) / ~17.7K (h=64) / ~68.2K (h=128) | NO BEATS h=32 (44/84, p=0.372, §C #11395) / NO BEATS h=64/128 (runs non trackes) |
@@ -585,7 +591,7 @@ Ce pipeline matérialise **l'empirisme honnête appliqué au ML financier** : pl
 
 - **La rigueur méthodologique d'abord** : walk-forward 5-fold expanding, 4-seed block bootstrap, OOS strict (2027 holdout jamais tuné), coûts de transaction réalistes (10bps rebalance + 50bps stress), univers anti-FAANG/Mag7 pour éviter le beta-loading déguisé. Ces choix sont **la condition de validité** de tout verdict — sans eux, un Sharpe spectaculaire n'est qu'un artefact.
 - **Les leçons transversales** : (1) **action-based >> forecast-based** — le Decision Transformer (classifie buy/hold/sell) surpasse massivement PatchTST (prédit la magnitude), car la couche de traduction forecast→position détruit le signal via coûts et discrétisation ; (2) **trend overlays systématiquement destructeurs** sur cet univers/période (L1/L2/L3 tous NO BEATS, le filtre TSMOM 12-1 isolé comme cause du déficit L5) ; (3) **vol-targeting = outil de risque, pas d'alpha** (atteint sa cible de vol 10.3% vs 16.6%, réduit le MaxDD, à coût Sharpe ~nul).
-- **Les 4 KEEPERS validés** (Curriculum V2) : M12 HAR-RV-J, M15 LSTM-RV, S3 HMM Regime (+0.669), S4 Inverse-vol Ridge+HMM (+0.325). Reco portfolio S3+S4 monthly = Sharpe ~1.12. Ce sont les seuls candidats ayant survécu au protocole complet.
+- **Les KEEPERS validés** (Curriculum V2, gate 2026-05-16) : S3 HMM Regime (+0.669), S4 Inverse-vol Ridge+HMM (+0.325), M15 LSTM-RV. Reco portfolio S3+S4 monthly = Sharpe ~1.12. **Amendement 2026-09-13** : M12 HAR-RV-J, quatrième keeper historique, est **retiré** — revalidation cluster symétrique **NO BEATS** (0/7, p=1,0, #16004) ; son BEATS Cycle 31 (pseudo-réplication de seeds d'un OLS déterministe + calibration asymétrique de la baseline) n'est pas confirmé, sans réfutation définitive (protocoles et fenêtres diffèrent).
 - **La transparence sur les échecs** : le Ladder #1409 documente publiquement que 5/6 ladder levels sont NO BEATS. C'est aussi important pédagogiquement que les keepers — **la plupart des idées ML ne battent pas le buy-and-hold**, et le savoir vaut mieux que l'illusion.
 
 ### Prochaines étapes
