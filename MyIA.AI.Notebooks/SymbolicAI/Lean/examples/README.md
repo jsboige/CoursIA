@@ -46,6 +46,6 @@ volumineuses.
 
 ### Où aller ensuite
 
-- **Notebooks d'introduction** : [`../Lean-1-Setup.ipynb`](../Lean-1-Setup.ipynb) — le cours guidé (Lean-1 à Lean-5) que ces fichiers illustrent.
+- **Notebooks d'introduction** : [`../Lean-01-Setup-Lean-Python.ipynb`](../Lean-01-Setup-Lean-Python.ipynb) — le cours guidé (Lean-1 à Lean-5) que ces fichiers illustrent.
 - **Mathlib en action** : [`../mathlib_examples/`](../mathlib_examples/) (lake de smoke-test Mathlib — aucun notebook n'importe ses modules).
 - **Preuve assistée par LLM** : `llm_assisted_proof.lean` ici est l'amorce ; le harnais multi-agents [`../agent_tests/prover/`](../agent_tests/prover/) en est la version production.

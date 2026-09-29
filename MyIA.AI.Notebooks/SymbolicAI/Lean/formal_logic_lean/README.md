@@ -1,6 +1,6 @@
 # formal_logic_lean — pont Tweety ↔ Lean et logique de prouvabilité
 
-Lake du companion `Lean-3b-Formalized-Formal-Logic.ipynb` : le notebook exécute
+Lake du companion `Lean-03b-Formalized-Formal-Logic-Lean-Python.ipynb` : le notebook exécute
 les formules avec le vrai raisonneur Tweety (JVM via jpype), ce lake certifie les
 mêmes formules avec le noyau Lean via la bibliothèque
 [Formalized Formal Logic](https://github.com/FormalizedFormalLogic/Foundation).
@@ -123,6 +123,6 @@ lake exe cache get   # oleans Mathlib 4.33.1
 lake build
 ```
 
-Voir aussi : `Lean-3b-Formalized-Formal-Logic.ipynb` (le notebook),
+Voir aussi : `Lean-03b-Formalized-Formal-Logic-Lean-Python.ipynb` (le notebook),
 `../Tweety/Tweety-5d-Stable-Synthesis-Lean.ipynb` (le patron générateur →
 certificat), `../../../docs/lean/` (pièges tactiques).

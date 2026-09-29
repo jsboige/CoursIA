@@ -314,7 +314,7 @@ def test_scrub_outputs_anonymizes_bare_posix_home(tmp_path):
     """A bare Linux /home/<user> root printed by a WSL/POSIX-executed notebook
     must be scrubbed (home root -> ~), with the diagnostic tail preserved.
 
-    Regression: Lean-1-Setup cell[16]. The Lean4 kernel-wrapper deployment
+    Regression: Lean-01-Setup-Lean-Python cell[16]. The Lean4 kernel-wrapper deployment
     printed 'Wrapper robuste deploye: /home/jesse/.lean4-kernel-wrapper.py'
     (a different contributor's username). The detect-only companion sees bare
     /home/<user> but this scrubber previously only matched the MSYS drive form
