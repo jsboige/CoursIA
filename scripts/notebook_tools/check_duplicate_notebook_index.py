@@ -271,7 +271,7 @@ _PERIMETER_CASES = [
     # quoi, et la population vide qu'il ne divise pas par zero en s'affichant.
     ("POSITIF    une de chaque classe",
      ["m/03-DL/3.1-Retropropagation.ipynb",
-      "g/GameTheory-04c-NashExistence-Csharp.ipynb",
+      "g/GameTheory-04c-NashExistence-CSharp.ipynb",
       "g/README-notes.ipynb"], (1, 1, 1)),
     ("POSITIF    la convention majoritaire compte bien comme HORS portee",
      ["g/GameTheory-04c-NashExistence.ipynb",
