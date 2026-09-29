@@ -106,7 +106,7 @@ Gestion du risque professionnelle, types d'ordres avancés, analyse approfondie 
 | 10 | [QC-Py-10-Risk-Portfolio-Management](Python/QC-Py-10-Risk-Portfolio-Management.ipynb) | 90 min | Position sizing (Kelly, fixed fractional), stop-loss, take-profit |
 | 11 | [QC-Py-11-Technical-Indicators](Python/QC-Py-11-Technical-Indicators.ipynb) | 75 min | Indicateurs intégrés, custom indicators, signal generation |
 | 12 | [QC-Py-12-Backtesting-Analysis](Python/QC-Py-12-Backtesting-Analysis.ipynb) | 75 min | Performance metrics (Sharpe, Sortino, max drawdown), equity curve |
-| 12b | [QC-Py-12b-Backtest-Validity](Python/QC-Py-12b-Backtest-Validity.ipynb) | 60 min | Erreur-type du Sharpe (Lo 2002), signification statistique d'un backtest |
+| 12b | [QC-Py-12b-Backtest-Validity](Python/QC-Py-12b-Backtest-Validity.ipynb) | 60 min | Erreur-type du Sharpe (Lo 2002), PSR (Bailey & López de Prado 2012) et ses pièges de saisie, signification statistique d'un backtest |
 
 **Objectifs** : Maîtriser gestion du risque, ordres avancés, analyse de backtests.
 

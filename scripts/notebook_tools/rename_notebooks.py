@@ -265,7 +265,13 @@ def target_violation(new_name: str) -> str | None:
     Renvoie None si la cible est canonique (STEM_RE + noyau en dernier, jamais
     en infixe), sinon la raison. Une cible non canonique promet un SECOND
     renommage : la ligne de la table doit tomber en A TRANCHER, pas etre livree.
+
+    Le basename est extrait avant toute analyse : un chemin complet passe a
+    l'appel (POSIX ou Windows) recevrait a tort la raison generique « hors
+    grammaire de serie » (#18192 pour main(), l.828 ; ce site-ci, l.364,
+    #18450). La violation eventuelle doit decrire le nom, pas le chemin.
     """
+    new_name = new_name.replace("\\", "/").rsplit("/", 1)[-1]
     stem = re.sub(r"\.ipynb$", "", new_name, flags=re.I)
     m = STEM_RE.match(stem)
     if not m:
