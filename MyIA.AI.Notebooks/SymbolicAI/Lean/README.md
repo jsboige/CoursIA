@@ -85,7 +85,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
 | 6 | [Lean-06-Mathlib-Essentials-Lean](Lean-06-Mathlib-Essentials-Lean.ipynb) | Mathlib4, tactiques ring/linarith/omega, recherche | 45 min |
-| 7 | [Lean-7-LLM-Intégration](Lean-07-LLM-Integration-Lean-Python.ipynb) | LeanCopilot, AlphaProof, patterns LLM-Lean | 50 min |
+| 7 | [Lean-07-LLM-Intégration](Lean-07-LLM-Integration-Lean-Python.ipynb) | LeanCopilot, AlphaProof, patterns LLM-Lean | 50 min |
 | 7b | [Lean-07b-Examples-Python](Lean-07b-Examples-Python.ipynb) | Exemples progressifs, benchmarks, cas pratiques | 40 min |
 | 8 | [Lean-08-Agentic-Proving-Python](Lean-08-Agentic-Proving-Python.ipynb) | Agents autonomes, APOLLO, problèmes Erdos | 55 min |
 | 8b | [Lean-08b-Erdos-Formal-Conjectures-Lean](Lean-08b-Erdos-Formal-Conjectures-Lean.ipynb) | Companion **natif** (kernel Lean) : le programme Erdős et le pattern conjecture-as-sorry — EGZ importé de Mathlib (`#print axioms` = `[propext, Classical.choice, Quot.sound]`), équation d'Erdős–Moser restatée (`[sorryAx]` visible), témoin calculé dans `ZMod 3` - pilote narratif Epic #13106 | 25 min |
@@ -442,6 +442,7 @@ Lean/
 ├── Lean-11b-TorchLean-Python.ipynb  # Python kernel - Implémentation algorithmes
 ├── Lean-12-Sensitivity-Theorem.ipynb # Python kernel - théorème de sensibilité (Huang 2019, hypercube, signing matrix)
 ├── Lean-12b-Lean-Sensitivity-Theorem.ipynb # Lean4 (WSL) kernel - companion natif du théorème de sensibilité (preuve 0-sorry du lake sensitivity_lean)
+├── Lean-12c-Tensor-Product-Representations-Lean.ipynb # Lean4 (WSL) kernel - algèbre TPR : binding, unbinding, constituent surgery (jumeau empirique SL-13 SymbolicLearning)
 ├── Lean-15-Grothendieck-Tribute.ipynb # Python kernel - hommage Grothendieck (langage grothendieckien Mathlib)
 ├── Lean-15b-Lean-Grothendieck.ipynb # Python kernel - atelier pratique Grothendieck (compagnon grothendieck_lean)
 ├── Lean-15c-Lean-Grothendieck-Companion.ipynb # Lean4 (WSL) kernel - companion formel natif grothendieck_lean (51 modules par leurs énoncés, Epic #11703)
@@ -463,7 +464,7 @@ Lean/
 ├── Lean-17a-Knots-Conway-Proofs.ipynb # Python kernel - Conway, les nœuds et la preuve de Piccirillo (noeud de Conway)
 ├── Lean-17b-Knots-Invariants-Companion.ipynb # Python kernel - invariants de nœuds (PD-codes, Reidemeister, Fox tricolorability), compagnon knot_lean
 ├── Lean-17c-Knots-Companion-Formel.ipynb # Python kernel - companion formel knot_lean (modules non cités par 17b, murs R2/R3, miroir i18n)
-├── Search-03e-AStar-Optimality.ipynb # Python kernel - optimalité de A* sous heuristique admissible (companion search_lean, 0 sorry)
+├── Lean-20-Capstone-Digestions-Tao-Python.ipynb # Python kernel - escalier capstone vers la sous-série ANALYSE : digestion du travail formel de T. Tao, règle de chaîne, distance de Ruzsa
 ├── Lean-21-MIMO-Detection-Flips.ipynb # Python kernel - détection MIMO par flips (seuil 2·log N, companion mimo_lean)
 ├── Lean-21b-MIMO-Converse-Native.ipynb # Lean4 (WSL) kernel - converse MIMO natif (NormTails, Hanson-Wright, #print axioms)
 ├── Lean-21c-Descente-Budget.ipynb # Python kernel - budget de descente (décroissance borne les flips, #12219)
@@ -483,11 +484,35 @@ Lean/
 ├── Lean-34b-FairBot-Loeb.ipynb # Python kernel - FairBot par Löb (Barasz et al. 2014) : Löb postulé en L2, théorème en L3 (FormalLogic.FairBotLoeb), cadres de Kripke, combat modal GL
 ├── Lean-24b-Confiance-Preuves-Native.ipynb # Lean4 (WSL) kernel - fiabilité d'un certificat : mis-définition, axiomes de secours (#print axioms), certificat vs headline (lake mathlib_examples)
 ├── Lean-36-Structures-Finies-MUH-Lean.ipynb # Lean4 (WSL) kernel - Annexe A de Tegmark : structures finies, encodage/complexité, C₃/C₂/NAND, Aut(S), frontière du décideur exhibée (lake tegmark_muh_lean, sans Mathlib)
+├── Lean-37-Capstone-Serre100.ipynb # Python kernel - escalier capstone vers la sous-série Serre 100 : entrée, démos, prérequis de la série distillations
 ├── _run_lean_snippet.sh            # Helper WSL : run Lean snippet avec cache Mathlib
 ├── lean_runner.py                  # Module Python multi-backend
 ├── README.md
 ├── .env.example
 ├── ANALYSE/                       # Sous-série des formalisations d'analyse (Sendov, Tao Analysis I, PFR ×2 — gradation #17545) : [README](ANALYSE/README.md)
+│   ├── ANALYSE-01-Sendov-Lean-Python.ipynb  # Conjecture de Sendov : énoncé, cas numériques, contexte de la preuve 2026
+│   ├── ANALYSE-02-Tao-Lean-Python.ipynb     # Analysis I de Tao en lac Lean 4 (teorth/analysis) : architecture, lemmes emblématiques
+│   ├── ANALYSE-03-PFR-Lean.ipynb            # Conjecture PFR (teorth/pfr) : méthode entropique, cosets F₂³, #check réels
+│   ├── ANALYSE-04-PFR-Primitives-Python.ipynb # Les trois primitives de PFR et l'endroit où elles cessent de valoir (#12214)
+│   └── README.md
+├── Langlands/                     # Sous-série formes modulaires et ponts (EPIC #17969) : [README](Langlands/README.md)
+│   ├── 01-formes-modulaires-sl2z-hecke.ipynb
+│   ├── 02-monstrous-moonshine-invariant-j.ipynb
+│   └── README.md
+├── Serre100/                      # Sous-série distillations du centenaire Serre (EPIC #16334) : [README](Serre100/README.md)
+│   ├── 01-corps-finis-borne-hasse.ipynb
+│   ├── 02-valeurs-zeta-multiples-finies.ipynb
+│   ├── 03-cohomologie-cech-espaces-finis.ipynb
+│   ├── 04-lemme-yoneda-categories-finies.ipynb
+│   ├── 05-table-de-caracteres.ipynb
+│   ├── 06-bulles-minkowski.ipynb
+│   ├── 07-zeros-fonctions-l-gaps-gue.ipynb
+│   ├── 08-serre-dans-mathlib.ipynb
+│   ├── 09-congruences-tau-lacunarite-delta.ipynb
+│   ├── serre100_lean/             # Lake Serre 100 (Hasse, MZV, Yoneda, caractères — modules FR + jumeaux _en)
+│   └── README.md
+├── assets/                        # Images des README de la série ([MANIFEST](assets/readme/MANIFEST.md))
+├── scripts/                       # Helpers de maintenance de la série ([README](scripts/README.md), _archive/)
 ├── sensitivity_lean/               # Théorème de sensibilité (Huang 2019, companion Lean-12/12b) - 0 sorry 0 axiome, Lake build natif (jonction Mathlib)
 ├── finiteness_lean/                # Finitude des dérivées de Brzozowski (companion Lean-14) - 0 sorry, Lake build
 ├── conway_lean/                    # Conway tribute workspace (0 sorry, Lake build)
