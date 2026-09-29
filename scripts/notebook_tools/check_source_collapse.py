@@ -278,8 +278,11 @@ SELF_TEST_CELL = "c989_independent_v2"
 # durable, this one is the real-world witness.
 SELF_TEST_16110_BASE = "7cc2fb2d203f"  # merge-base(main, #16097)
 SELF_TEST_16110_HEAD = "1209b5357"
+# Chemin **tel qu'il etait aux commits rejoues** (renommage ANALYSE par
+# #18015 postérieur). Cette constante est historique et ne suit pas les
+# renommages ; le replay lit le notebook aux commits 7cc2fb2d/1209b5357.
 SELF_TEST_16110_NOTEBOOK = (
-    "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-01-Sendov-Lean-Python.ipynb")
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-18-Sendov-Complex-Analysis.ipynb")
 SELF_TEST_16110_CELL = "40cb37d5"
 
 
