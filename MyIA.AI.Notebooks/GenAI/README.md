@@ -38,6 +38,10 @@ L'IA générative a transformé la création de contenu en 2024-2026. Un dévelo
 | 11 | Plateformes-Conversationnelles - OWUI & AI-Engine | [README catégorie](Plateformes-Conversationnelles/README.md) | ~14h+ | Tour OWUI + Playwright E2E (30+ tests) + AI-Engine WordPress |
 | 12 | CaseStudies - Projets étudiants | [README complet](CaseStudies/README.md) | (durée libre) | Barbie/Shrek, recettes, chatbot médical, Fort Boyard |
 
+## Activités de cours
+
+Les activités pédagogiques des cours d'IA — vulgarisation (exploration, contraintes, probabilités, théorie des jeux…) et TP d'IA générative avec leur corrigé — vivent dans [activites/](activites/README.md). Elles étaient auparavant enfouies dans `Vibe-Coding/docs/` et une partie n'existait que sur le Drive (#18223).
+
 ## Parcours recommandés
 
 ### Découvreur (initiation rapide, ~20h)

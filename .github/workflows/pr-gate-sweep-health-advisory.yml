@@ -40,6 +40,31 @@ name: PR gate sweep health advisory
 # (default Actions short-circuit) -- the observer went half-blind exactly when
 # it was red. Both probes now always run (continue-on-error) and a final
 # aggregate step carries the red: one red probe must not silence the other.
+#
+# 2026-09-28 (#18292): both probes are honest but each carried a false positive
+# on the `push` leg, and together they made this advisory red on 37 of main's
+# 45 commits that day -- an observer red on almost every commit stops being
+# read, which is the same failure as being silent (the docstring of
+# scripts/ci/check_scheduler_liveness.py names it: "a permanently red organ on
+# a chronic condition gets ignored").
+#
+#   - cadence probe: a DEAD of the `schedule` delivery is CHRONIC since
+#     2026-09-09 (#15332 -- 30/60-min crons served every ~4h30). The `push` leg
+#     now passes `--dead-exit warning`: the verdict is unchanged and NO
+#     threshold moves, only the severity printed on that leg (::warning::,
+#     green step). `schedule` and `workflow_dispatch` keep the red -- those are
+#     the legs where a dead delivery is the thing being observed.
+#   - sweep-age probe: on `push`, this job and the sweep start from the SAME
+#     commit, so the probe read the PREVIOUS merge's success while its own
+#     commit's sweep was still running (run 36461754953 vs sweep 36461754984,
+#     same head_sha). It now asks first whether a sweep run carries this
+#     commit and is alive; if so the age has nothing to judge. When no live
+#     run carries it (rc 3) or the probe fails (rc 4), the age criterion below
+#     still decides -- the race guard cannot mask a sweep that is truly dead
+#     for this commit.
+#
+# Both fixes are the same shape: keep the measurement, stop recopying it as a
+# red onto a leg where it is not an incident. Neither weakens a gate.
 
 on:
   schedule:
@@ -81,6 +106,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
           set -uo pipefail
           # Mesure la cadence SERVIE par organe (declaree vs observee) et rougit
@@ -91,7 +117,22 @@ jobs:
           # d'agregation, qui porte le rouge de CE step et de la sonde d'age --
           # sans cela, un echec ici SKIPPERAIT la sonde d'age (short-circuit
           # Actions, repare sur dispatch ai-01 2026-09-10).
-          python scripts/ci/check_scheduler_liveness.py --repo "$REPO"
+          #
+          # 2026-09-28 (#18292) : sur `push`, un DEAD de livraison 'schedule'
+          # est un etat CHRONIQUE (#15332 : crons a 30/60 min servis toutes les
+          # ~4 h 30 depuis le 09/09), pas un incident. Recopie en rouge sur
+          # cette jambe, il a rougi 37 des 45 commits de main du 28/09 sans
+          # qu'aucun ne soit casse -- et un rouge sur presque chaque commit
+          # masque les vrais. La jambe `push` le NOMME donc en avertissement
+          # (::warning::, step vert) ; les jambes `schedule` et
+          # `workflow_dispatch` gardent le rouge. Aucun seuil ne bouge et le
+          # verdict de l'organe est inchange : seule la severite imprimee ici
+          # change.
+          if [ "${EVENT_NAME}" = "push" ]; then
+            python scripts/ci/check_scheduler_liveness.py --repo "$REPO" --dead-exit warning
+          else
+            python scripts/ci/check_scheduler_liveness.py --repo "$REPO"
+          fi
 
       - name: Check age of last successful sweep run
         id: sweep_age
@@ -99,9 +140,29 @@ jobs:
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
           STALE_AFTER_MINUTES: "60"
         run: |
           set -uo pipefail
+
+          # 2026-09-28 (#18292) : sur `push`, la jambe du sweep part du MEME
+          # commit que celle-ci. Cette sonde cherche le dernier succes TERMINE,
+          # donc tant que le sweep de ce commit tourne elle lit celui du merge
+          # precedent -- et rougit un commit dont le sweep est en cours
+          # (instance : run 36461754953, sweep 36461754984, meme head_sha).
+          # Ce n'est pas une cadence morte, c'est une course : quand un run du
+          # sweep porte ce commit et est vivant (ou vient de conclure
+          # `success`), l'age n'a rien a juger. rc 3 (aucun run vivant) et rc 4
+          # (sonde en echec) retombent sur le critere d'age ci-dessous -- le
+          # mode ne remplace pas la sonde, il lui retire un faux positif ; il ne
+          # peut donc pas masquer un sweep vraiment mort pour ce commit.
+          if [ "${EVENT_NAME}" = "push" ]; then
+            if python scripts/ci/check_scheduler_liveness.py --repo "$REPO" --sweep-alive-for-sha "${GITHUB_SHA}"; then
+              echo "[sweep-health] sweep vivant pour ce commit -- age non juge (course, #18292)"
+              exit 0
+            fi
+          fi
 
           # Most recent *successful* run of the sweep, with its creation time.
           # Filtering to conclusion=success keeps a transient failure from

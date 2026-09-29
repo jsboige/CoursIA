@@ -575,6 +575,10 @@ Pour aller plus loin : [EPIC #4038](https://github.com/jsboige/CoursIA/issues/40
 
 ## Cross-series Bridges
 
+### Examens — rattrapages Trading (5BD ALT1)
+
+Les sujets de rattrapage 2024 et 2025 (avec corrigés, sources LaTeX) vivent dans [`examens/`](examens/README.md) — publication autorisée, sujets hors rotation. Leur rattachement notion par notion aux notebooks de la série est donné dans [`examens/README.md`](examens/README.md).
+
 | Serie | Lien | Connection |
 |-------|------|------------|
 | [ML](../ML/README.md) | Machine Learning | Les modèles de prédiction ML (régression, classification, XGBoost) s'appliquent directement aux stratégies de trading (QC-Py-19 à QC-Py-21) |
