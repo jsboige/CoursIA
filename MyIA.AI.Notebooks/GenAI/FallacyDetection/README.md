@@ -4,7 +4,7 @@ Série de notebooks pour la **détection et classification de sophismes** (falla
 
 - **EPIC parent** : [#10355](https://github.com/jsboige/CoursIA/issues/10355)
 - **Phase 1 (sous-issue opérationnelle)** : [#10356](https://github.com/jsboige/CoursIA/issues/10356)
-- **Survey SOTA fondateur** : [docs/research/fallacy-detection-survey.md](../../../docs/research/fallacy-detection-survey.md) (livrable 1, 10 sources primaires)
+- **Survey SOTA fondateur** : [docs/research/fallacy-detection-survey.md](../../../docs/research/fallacy-detection-survey.md) (livrable 1, 11 sources primaires)
 
 ## Notebooks de la série
 
@@ -31,7 +31,7 @@ Série de notebooks pour la **détection et classification de sophismes** (falla
 
 ## Corpus `data/jessynoo_rfallacy_anonymized.csv`
 
-Corpus r/fallacy extrait et anonymisé depuis le Data Export Reddit du compte `u/Jessynoo` (le handle Reddit du propriétaire du dépôt — self-attribution pédagogique assumée). **69 items** (67 commentaires + 2 posts), corps de 30 à 4263 caractères (moyenne 691).
+Corpus r/fallacy extrait et anonymisé depuis le Data Export Reddit du compte `u/Jessynoo` (le handle Reddit du propriétaire du dépôt — self-attribution pédagogique assumée). **69 items** (67 commentaires + 2 posts), corps de 30 à 4263 caractères (moyenne 702, mesurée sur 68 corps non vides).
 
 ### Provenance et politique PII
 
