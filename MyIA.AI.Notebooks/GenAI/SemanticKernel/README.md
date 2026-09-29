@@ -38,6 +38,7 @@ Parcours pédagogique complet sur Semantic Kernel en Python :
 | 10 | [SK-10-NotebookMaker](10-SemanticKernel-NotebookMaker.ipynb) | **Système 3-agents** interactif (Admin, Coder, Reviewer) avec function calling | 60 min |
 | 10a | [SK-10a-NotebookMaker-batch](10a-SemanticKernel-NotebookMaker-batch.ipynb) | Version batch avec contexte agentique borné et budget de tours | 30 min |
 | 10b | [SK-10b-NotebookMaker-batch-param](10b-SemanticKernel-NotebookMaker-batch-parameterized.ipynb) | Version batch paramétrée pour Papermill | 30 min |
+| 11 | [SK-11-A2A](11-SemanticKernel-A2A.ipynb) | Le protocole Agent2Agent à côté de MCP : AgentCard, serveur FastAPI local, cycle de vie des tâches, échange client réel | 40 min |
 
 ## Démos interactives (curriculum)
 
