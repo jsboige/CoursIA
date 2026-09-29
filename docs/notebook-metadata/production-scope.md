@@ -47,7 +47,7 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 | Search — Part 2 CSP | EPITA Programmation par Contraintes | `CSP-1-Fundamentals.ipynb` | 9 | |
 | Argument Analysis | EPITA IA Symbolique | `Argumentation-01-Toulmin-Model-Python.ipynb` | 4 | |
 | Tweety | EPITA IA Symbolique | `Tweety-02-Basic-Logics-Python.ipynb` | 6 | |
-| Lean | EPITA IA Symbolique | `Lean-2-Dependent-Types.ipynb` | 2 | |
+| Lean | EPITA IA Symbolique | `Lean-02-Dependent-Types-Lean.ipynb` | 2 | |
 | Semantic Web | EPITA IA Symbolique | `SW-2-CSharp-RDFBasics.ipynb` | 2 | |
 | Planners (01-02) | EPITA IA Symbolique | `Planners-1-Introduction.ipynb` | 3 | |
 | SmartContracts (00-01) | EPITA IA Symbolique | `SC-00-Cypherpunk-Origins-Python.ipynb` | 2 | |
@@ -178,8 +178,8 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-QBF-Csharp.ipynb`
 <!-- MyIA.AI.Notebooks/SymbolicAI/Lean -->
 
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-2-Dependent-Types.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-3-Propositions-Proofs.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-02-Dependent-Types-Lean.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-03-Propositions-Proofs-Lean.ipynb`
 <!-- MyIA.AI.Notebooks/SymbolicAI/SemanticWeb -->
 
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-2-CSharp-RDFBasics.ipynb`
@@ -300,12 +300,12 @@ l'Epic) ; un dossier de revue est alors préparé (T2).*
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb`
 <!-- MyIA.AI.Notebooks/SymbolicAI/Lean -->
 
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-4-Quantifiers.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-5-Tactics.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-6-Mathlib-Essentials.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-7-LLM-Integration.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-8-Agentic-Proving.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-9-SK-Multi-Agents.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-04-Quantifiers-Lean.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-05-Tactics-Lean.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-06-Mathlib-Essentials-Lean.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-07-LLM-Integration-Lean-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-08-Agentic-Proving-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-09-SK-Multi-Agents-Lean-Python.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-10-LeanDojo.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-11-TorchLean.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-12-Sensitivity-Theorem.ipynb`
