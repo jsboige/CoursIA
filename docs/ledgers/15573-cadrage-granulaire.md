@@ -83,3 +83,13 @@ Chaque fournée ≤ 15 fichiers, ≤ 3000 lignes hors notebooks, 1 domaine (G.4 
 - #15515 — la PR portant le nit d'origine
 - [variation-protocol.md](../../.claude/rules/variation-protocol.md) — G-VAR-1/2/3
 - [G.4 splitting rule](../../CLAUDE.md) — seuils composites (>3000 lignes, >15 fichiers, >4 features, >1 domaine)
+
+## Entrée #18058 — première réécriture APPLIQUÉE (lane myia-po-2023:CoursIA, 2026-09-29)
+
+**Hit** : `cadrage-par-item` — « Une PR par notebook ou par série » (§ Comment prendre une tranche).
+
+**Mesure du plateau au geste** : 8 PRs sous #18058 en 2 jours — 3 mono-notebook (MGS-07c #18097 MERGED, MGS-07d #18092 OPEN, PT_08 #18069 OPEN) contre 3 tranches batchées conformes (RAG 05 #18088, 01-3 #18074, SK-01 #18101, toutes MERGED). La lecture unitaire prévaut sur le « ou par série » — demi-défaut #15457 : l'option fournée existait mais n'était pas prescrite.
+
+**Réécriture appliquée** : bullet remplacé par « Fournées par famille d'abord — 2 à 4 PRs au total pour les 17 notebooks, jamais une PR par notebook », avec la例外 mono-PR (ré-exécution > ~30 min ou claim conflictuel) et les modèles livrés cités. Préfixe daté posé sur le body (le lecteur voit ce qui a changé, historique conservé).
+
+**Hit #17550 dispositionné sans réécriture** (même cycle) : le plateau s'est auto-corrigé — 9 mono-PRs revertées puis fermées par ai-01 « le reste consolidé en une seule PR » (po-2025:CoursIA-2) ; il ne reste que #18255 (tranche 15/16, dossier adjoint). Réécrire maintenant serait du churn sur une issue presque résolue.
