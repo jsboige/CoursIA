@@ -735,6 +735,138 @@ def test_diff_reading_before_code_devant_sortie():
     assert f["next_role"] == "code_with_output"
 
 
+def test_diff_lecture_sous_code_devant_code_sans_exces_non_flaggee():
+    """Decision #17044 (c.5877090210) : une lecture ajoutee directement SOUS un
+    code execute est rattachee par ``_output_key_above`` a la sortie du dessus
+    -- elle releve du compte par sortie, pas de la topologie. Devant le code
+    SUIVANT mais sans exces de lecture sur la sortie du dessus : rien a
+    signaler. Classe mesuree : cellule 8 d'Infer-08b (#18087), faux positif.
+    """
+    base = nb(
+        code("print(1)"),
+        code("print(2)"),
+    )
+    head = nb(
+        code("print(1)"),
+        md("### Analyse du resultat\nLa convergence est nette."),
+        code("print(2)"),
+    )
+    assert detect_added_readings(head, base) == []
+
+
+def test_diff_lecture_sous_code_avec_exces_rest_second_reading():
+    """Meme topologie (prev = code execute, next = code), mais la sortie du
+    dessus portait deja une lecture : l'ajout fait monter le compte ->
+    SECOND_READING par le compte par sortie. Le bucket topologique ne dit plus
+    READING_BEFORE_CODE pour une cellule qu'il rattache par ailleurs a la
+    sortie du dessus (incoherence mesuree sur #17044).
+    """
+    base = nb(
+        code("print(1)"),
+        md("### Lecture\nPremiere lecture legitime."),
+        code("print(2)"),
+    )
+    head = nb(
+        code("print(1)"),
+        md("### Lecture\nPremiere lecture legitime."),
+        md("### Lecture chiffree\nDeuxieme lecture sur la meme sortie."),
+        code("print(2)"),
+    )
+    findings = detect_added_readings(head, base)
+    assert [f["type"] for f in findings] == ["SECOND_READING"]
+
+
+def test_diff_lecture_sous_md_devant_code_rest_reading_before_code():
+    """Controle negatif de la decision : sans code execute directement
+    au-dessus (prev_role md), la lecture ajoutee devant un code execute RESTE
+    READING_BEFORE_CODE -- la place canonique d'une lecture introductive
+    n'a pas change.
+    """
+    base = nb(
+        md("## 1. Contexte du banc"),
+        code("print(1)"),
+    )
+    head = nb(
+        md("## 1. Contexte du banc"),
+        md("### Lecture introductive\nOn annonce le resultat avant le code."),
+        code("print(1)"),
+    )
+    findings = detect_added_readings(head, base)
+    assert len(findings) == 1
+    assert findings[0]["type"] == "READING_BEFORE_CODE"
+
+
+def test_diff_section_header_devant_code_non_flagge():
+    """Carve-out #17777 etendu a READING_BEFORE_CODE : un en-tete de section
+    (titre d'organisation, meme suivi de prose) qui introduit le code qui
+    suit n'est pas une lecture. Classe mesuree sur #18050 : 3 FPs
+    ``### 8.x R0N`` devant leur ``#check`` (SL-1b, cellules 27/33/36).
+    """
+    base = nb(
+        code("#check Foo.bar"),
+    )
+    head = nb(
+        md(
+            "### 8.2 R02 — les parallélogrammes du grokking\n\n"
+            "*Liu, Michaud & Tegmark, Towards Understanding Grokking: "
+            "An Effective Theory of Emergence.* La conjecture porte sur les "
+            "residus de la factorisation, verifies ici par un `#check` court."
+        ),
+        code("#check Foo.bar"),
+    )
+    assert detect_added_readings(head, base) == []
+
+
+def test_diff_section_header_cache_interpretation_flagge():
+    """Garde-fou : l'en-tete de section qui DISSIMULE une interpretation
+    dans son corps reste signale (meme controle negatif que l'enonce
+    d'exercice #17777).
+    """
+    base = nb(
+        code("print(1)"),
+    )
+    head = nb(
+        md("### 2. Tests statistiques\n\n### Analyse : la convergence est nette."),
+        code("print(1)"),
+    )
+    findings = detect_added_readings(head, base)
+    assert len(findings) == 1
+    assert findings[0]["type"] == "READING_BEFORE_CODE"
+
+
+def test_diff_section_header_citant_sortie_flagge():
+    """Garde-fou : l'en-tete de section dont le corps CITE une sortie
+    (« on observe... ») est une interpretation deguisee -- signalee.
+    """
+    base = nb(
+        code("print(1)"),
+    )
+    head = nb(
+        md("### 2. Resultats du banc\n\nOn observe un ecart net entre les deux modes."),
+        code("print(1)"),
+    )
+    findings = detect_added_readings(head, base)
+    assert len(findings) == 1
+    assert findings[0]["type"] == "READING_BEFORE_CODE"
+
+
+def test_diff_prose_non_titree_devant_code_flagge():
+    """La prose non titree (> 80 chars) devant une sortie reste signalee :
+    le carve-out ne s'ouvre que sur le TITRE, pas sur la longueur.
+    """
+    base = nb(
+        code("print(1)"),
+    )
+    head = nb(
+        md("Le modele converge tres vite ici et le score final depasse "
+           "largement la base de reference sur ce jeu de donnees."),
+        code("print(1)"),
+    )
+    findings = detect_added_readings(head, base)
+    assert len(findings) == 1
+    assert findings[0]["type"] == "READING_BEFORE_CODE"
+
+
 def test_diff_exercise_reading_apres_stub_exec():
     """EXERCISE_READING : une lecture ajoutee juste apres un exercice.
     La nouvelle heuristique accepte l'exercice execute (sortie litterale
@@ -1574,3 +1706,40 @@ def test_cliquet_base_irresoluble_rend_rc1(tmp_path):
     )
     assert proc.returncode == 1
     assert "irresoluble" in (proc.stdout + proc.stderr)
+
+
+def test_cliquet_exempte_la_convention_archive(tmp_path):
+    """Renommage vers ``_archive/`` avec banniere tombstone : pas de ligne.
+
+    La convention `_archive/` (docs/reference/_archive-convention.md) pose une
+    banniere markdown en tete de chaque carnet archive : par construction elle
+    precede une cellule code, ce qui declenche READING_BEFORE_CODE. Sans
+    exemption, archiver un carnet rougirait le cliquet -- vecu #17721 sur
+    ``Argument_Analysis_Agentic-0-init_agent.ipynb``. Controle decisif : sans
+    le skip, ce renommage produit exactement une ligne regressed.
+    """
+    code_out = {"cell_type": "code", "source": ["# Parameters\nBATCH_MODE = \"true\"\n"],
+                "outputs": [{"output_type": "stream", "name": "stdout",
+                             "text": ["ok\n"]}], "execution_count": 1}
+    archive_shape = nb(
+        md("> **Archive (convention `_archive/`, 2026-09)**\n"
+           "> - **Date d'archivage** : 2026-09-25\n"
+           "> - **Verdict enregistre dans** le body de la PR d'archivage."),
+        code_out,
+    )
+    repo = _repo(tmp_path)
+    base = _commit(repo, {NB: nb(code("print(1)"))}, "base")
+    head = _commit(repo, {
+        "MyIA.AI.Notebooks/Probas/_archive/Demo.ipynb": archive_shape,
+        NB: None,
+    }, "archivage")
+    # Sans l'exemption, la banniere tombstone rouge : une ligne regressed=True.
+    assert ratchet_rows(base, head, cwd=str(repo)) == []
+    proc = subprocess.run(
+        [sys.executable, str(SCRIPT), "--base-ref", base, "--head", head,
+         "--json", "--fail-on-findings"],
+        cwd=str(repo), capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
+    )
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert json.loads(proc.stdout)["regressed"] == 0
