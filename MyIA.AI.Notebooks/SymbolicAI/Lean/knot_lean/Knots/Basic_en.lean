@@ -155,18 +155,25 @@ def trefoil : Knot where
 
 /- The figure-eight knot (4_1), the simplest knot with crossing number 4.
 
-PD-code derived from KnotInfo DT-code [4, 6, 8, 2]: [[8,3,1,4],[2,5,3,6],[4,7,5,8],[6,1,7,2]].
-Each edge {1,..,8} appears exactly once as an under-strand and once as an
-over-strand, and the edge trace forms a single loop. The previous wiring
-([[1,5,2,4],[3,8,4,2],[5,1,6,7],[7,3,8,6]]) was in fact a two-component
-link, not a knot.
+Planar PD-code from KnotAtlas (`X[4,2,5,1], X[8,6,1,5], X[6,3,7,4],
+X[2,7,3,8]`), read in the module's clockwise convention: it describes the
+mirror of the KnotAtlas diagram, still a figure-eight knot since this knot
+is amphichiral. Each edge {1,..,8} appears exactly once as an under-strand
+and once as an over-strand, and the edge trace forms a single loop.
+
+History of the previous wirings (see `Jones.lean` for the proofs): the
+first ([[1,5,2,4],[3,8,4,2],[5,1,6,7],[7,3,8,6]]) was a two-component
+link; the second, derived from KnotInfo DT-code [4, 6, 8, 2]
+([[8,3,1,4],[2,5,3,6],[4,7,5,8],[6,1,7,2]]), was a non-planar virtual
+knot (4 faces instead of 6, writhe 4 instead of 0) — canonicalized here to
+the planar code (issue #17595).
 -/
 def figureEightDiagram : KnotDiagram where
   crossings := [
-    ⟨8, 3, 1, 4⟩,
-    ⟨2, 5, 3, 6⟩,
-    ⟨4, 7, 5, 8⟩,
-    ⟨6, 1, 7, 2⟩
+    ⟨4, 2, 5, 1⟩,
+    ⟨8, 6, 1, 5⟩,
+    ⟨6, 3, 7, 4⟩,
+    ⟨2, 7, 3, 8⟩
   ]
   numEdges := 8
 

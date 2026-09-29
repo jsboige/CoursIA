@@ -91,17 +91,21 @@ jobs:
       # Per the c.1331+107-L2 lesson, the script always exits 0 here on a
       # clean working tree; we capture findings via JSON, not exit code, to
       # distinguish "0 findings" from "detector crashed".
+      # NOTE (collision /tmp, 2026-09-28) : chemins en `${{ runner.temp }}` (per-slot)
+      # au lieu de `/tmp` nu -- `/tmp` est hote-global sur le runner a slots
+      # partages, et pip/solution-leak-guard y ecrivaient les memes noms au
+      # format LISTE (cf pip-leak-guard.yml, #18059).
       - name: HEAD scan
         id: head_scan
         run: |
-          python scripts/notebook_tools/check_harness_coauthor.py --json > /tmp/head.json
+          python scripts/notebook_tools/check_harness_coauthor.py --json > "${{ runner.temp }}/coauthor-head.json"
           rc=$?
           if [ "$rc" -ne 0 ] && [ "$rc" -ne 1 ]; then
             echo "::error title=Detector crashed::check_harness_coauthor.py exited with non-standard code $rc. The gate cannot be trusted -- investigate before merging."
             exit 1
           fi
-          HEAD_VERDICT=$(python -c "import json; print(json.load(open('/tmp/head.json'))['verdict'])")
-          HEAD_TOTAL=$(python -c "import json; print(json.load(open('/tmp/head.json'))['total_findings'])")
+          HEAD_VERDICT=$(python -c "import json; print(json.load(open('${{ runner.temp }}/coauthor-head.json'))['verdict'])")
+          HEAD_TOTAL=$(python -c "import json; print(json.load(open('${{ runner.temp }}/coauthor-head.json'))['total_findings'])")
           echo "head_verdict=$HEAD_VERDICT" >> "$GITHUB_OUTPUT"
           echo "head_total=$HEAD_TOTAL" >> "$GITHUB_OUTPUT"
           echo "HEAD verdict: $HEAD_VERDICT ($HEAD_TOTAL findings)"
@@ -124,7 +128,7 @@ jobs:
       - name: BASE scan
         if: github.event_name == 'pull_request'
         run: |
-          python scripts/notebook_tools/check_harness_coauthor.py --json --repo-root _base > /tmp/base.json || true
+          python scripts/notebook_tools/check_harness_coauthor.py --json --repo-root _base > "${{ runner.temp }}/coauthor-base.json" || true
 
       # DELTA check: a NEW finding introduced by the PR fails the gate.
       # Inherited findings (post-Phase-1 main = 0) are tolerated, mirroring
@@ -139,8 +143,8 @@ jobs:
           import json
           import sys
 
-          base = json.load(open("/tmp/base.json"))
-          head = json.load(open("/tmp/head.json"))
+          base = json.load(open("${{ runner.temp }}/coauthor-base.json"))
+          head = json.load(open("${{ runner.temp }}/coauthor-head.json"))
 
           base_keys = {(f["file"], f["line"], f["match"]) for f in base["findings"]}
           head_keys = {(f["file"], f["line"], f["match"]) for f in head["findings"]}
