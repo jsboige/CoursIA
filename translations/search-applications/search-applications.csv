@@ -29344,7 +29344,7 @@ Le tournoi revele un résultat contre-intuitif mais **reel et documente** : **Mi
 ### Prochaines étapes
 
 - [App-13-TSP-Métaheuristiques (C#)](../Hybrid/App-13-TSP-Metaheuristics.ipynb) : métaheuristiques sur un autre problème combinatoire.
-- [GameTheory-13-ImperfectInfo-CFR (C#)](../../../GameTheory/GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb) : contre-factual regret minimization pour jeux a information incomplete.
+- [GameTheory-13-ImperfectInfo-CFR-Python (C#)](../../../GameTheory/GameTheory-13-ImperfectInfo-CFR-CSharp.ipynb) : contre-factual regret minimization pour jeux a information incomplete.
 - [Search-7-MCTS-And-Beyond (C#)](../../Part1-Foundations/Search-7-MCTS-And-Beyond-Csharp.ipynb) : MCTS en detail (UCT, AlphaGo).
 
 ---
