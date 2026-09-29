@@ -133,7 +133,7 @@ parameters={"n": 256, "max_iterations": 1000}
 ### 1. Détection du kernel
 
 ```python
-from scripts.notebook_helpers import NotebookHelper
+from scripts.notebook_tools.notebook_helpers import NotebookHelper
 
 helper = NotebookHelper(notebook_path)
 kernel_info = helper.notebook.get('metadata', {}).get('kernelspec', {})
@@ -208,7 +208,7 @@ execute_on_kernel(kernel_id=kernel_id, mode="code", code=setup_code)
 ### 4. Exécution des cellules
 
 ```python
-from scripts.notebook_helpers import NotebookHelper, CellInfo
+from scripts.notebook_tools.notebook_helpers import NotebookHelper, CellInfo
 
 helper = NotebookHelper(notebook_path)
 results = []
@@ -267,13 +267,14 @@ if save_outputs:
             # Les sorties sont déjà dans le notebook après execute_on_kernel
             pass
         else:
-            # Ajouter l'erreur comme sortie
-            helper.set_cell_output(result['cell_index'], {
+            # Ajouter l'erreur comme sortie (pas de set_cell_output dans l'API :
+            # écriture directe dans le dict public helper.notebook, puis save())
+            helper.notebook['cells'][result['cell_index']]['outputs'] = [{
                 'output_type': 'error',
                 'ename': 'ExecutionError',
                 'evalue': result['error'],
                 'traceback': [result['error']]
-            })
+            }]
 
     helper.save()
 ```
