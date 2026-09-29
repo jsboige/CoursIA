@@ -110,11 +110,11 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 24 | [Lean 17a — Conway, les Nœuds et la Preuve de Piccirillo](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb) | BETA | Non |
 | 25 | [Lean 17b — Invariants de Nœuds : Calcul et Vérification](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17b-Knots-Invariants-Companion.ipynb) | BETA | Non |
 | 26 | [Lean 17c — Le lake knot_lean par ses déclarations…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb) | BETA | Non |
-| 27 | [Lean-18 : La Conjecture de Sendov (preuve L. Mazur,…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-18-Sendov-Complex-Analysis.ipynb) | BETA | Non |
-| 28 | [Lean-19 : Le manuel *Analysis I* de T. Tao en Lean 4…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-19-Analysis-I-Tao-Workflow.ipynb) | BETA | Non |
+| 27 | [ANALYSE-01 — La Conjecture de Sendov (preuve L. Mazur,…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-01-Sendov-Lean-Python.ipynb) | BETA | Non |
+| 28 | [ANALYSE-02 — Le manuel *Analysis I* de T. Tao en Lean 4…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-02-Tao-Lean-Python.ipynb) | BETA | Non |
 | 29 | [Lean 2 - Types Dependants et Calcul des Constructions](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-2-Dependent-Types.ipynb) | BETA | Non |
-| 30 | [Lean-20 : La conjecture de Freiman-Ruzsa polynomiale…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-20-PFR-Entropy-Method.ipynb) | BETA | Non |
-| 31 | [Lean-20b : Trois primitives de PFR, et l'endroit exact…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-20b-PFR-Primitives-Transportables.ipynb) | BETA | Non |
+| 30 | [ANALYSE-03 — La conjecture de Freiman-Ruzsa polynomiale…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-03-PFR-Lean.ipynb) | BETA | Non |
+| 31 | [ANALYSE-04 — Trois primitives de PFR, et l'endroit exact…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-04-PFR-Primitives-Python.ipynb) | BETA | Non |
 | 32 | [Lean-21 : Detection MIMO par flips -- le seuil 2 log N…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb) | BETA | Non |
 | 33 | [Lean-21b : le lake mimo_lean par ses énoncés —…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21b-MIMO-Converse-Native.ipynb) | BETA | Non |
 | 34 | [Lean-21c : Le budget de descente - quand la…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21c-Descente-Budget.ipynb) | BETA | Non |

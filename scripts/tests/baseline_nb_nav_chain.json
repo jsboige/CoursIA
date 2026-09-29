@@ -62,21 +62,6 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Complexity/Complexity-04-OnlineAlgorithms-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/Complexity"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Complexity/Complexity-05-AaronsonArkhipov-PermanenteBosonSampling.ipynb",
-      "series": "MyIA.AI.Notebooks/Complexity"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Complexity/Complexity-06-Aaronson-Dequantification-Stabilizer.ipynb",
-      "series": "MyIA.AI.Notebooks/Complexity"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Part2-Python.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
@@ -592,17 +577,7 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-16-MDLTwoPartCode.ipynb",
-      "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine.ipynb",
-      "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress.ipynb",
       "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
     },
     {
@@ -788,11 +763,6 @@
     {
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.12-Donnees-Desequilibrees.ipynb",
-      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.14b-XAI-Shap-Attribution-Causal-Bridge.ipynb",
       "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours"
     },
     {
@@ -1787,11 +1757,6 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-12b-Lean-Sensitivity-Theorem.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13b-CHSH-Tsirelson-Native.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
     },
@@ -1833,11 +1798,6 @@
     {
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-04-PFR-Primitives-Python.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
     },
     {
@@ -2032,11 +1992,6 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-13-Discover-TPR.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-15-LearnedConjectures-Solver.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning"
     },
@@ -2219,9 +2174,18 @@
       "kind": "unreachable",
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/03_Sudoku_Modes_Comparison.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3"
+    },
+    {
+      "kind": "unreachable",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-13-Discover-TPR.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning"
     }
   ],
   "wrapped": [
+    {
+      "series": "MyIA.AI.Notebooks/Complexity",
+      "notebooks": 9
+    },
     {
       "series": "MyIA.AI.Notebooks/GenAI/00-GenAI-Environment",
       "notebooks": 6
@@ -2241,6 +2205,10 @@
     {
       "series": "MyIA.AI.Notebooks/GenAI/Image/03-Orchestration",
       "notebooks": 4
+    },
+    {
+      "series": "MyIA.AI.Notebooks/GenAI/Texte",
+      "notebooks": 31
     },
     {
       "series": "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claude-Code/notebooks",
