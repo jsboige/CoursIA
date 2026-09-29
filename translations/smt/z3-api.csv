@@ -5155,7 +5155,7 @@ Ce notebook a explore les techniques d'optimisation avancee de Z3 au-dela du sim
 5. **Pattern d'allocation** : le cas pratique (section 6) combine tous ces outils : contraintes dures (budget), contraintes souples (priorites), objectif principal (valeur). C'est le squelette de la plupart des problemes d'allocation de ressources reels.
 
 Ces techniques font de Z3 un outil puissant non seulement pour la **satisfaction** de contraintes, mais aussi pour l'**optimisation multi-critères** — un domaine ou la modelisation declarative brille face aux approches ad-hoc.",,,,,,,,d2bd2e8ae323d929,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-07-Style-Declaratif-Linq.ipynb,c01,markdown,fr,53c497c1fbd8378e,"# Z3-Python 07 — Du style declaratif LINQ au solveur Z3 en Python
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c01,markdown,fr,53c497c1fbd8378e,"# Z3-Python 07 — Du style declaratif LINQ au solveur Z3 en Python
 
 **Navigation** : [Z3-Python-06 >>](Z3-06-Advanced-Optimization-Python.ipynb) | [Index](README.md) | [Z3 C# (Z3.Linq) ->](../Z3-Linq2Z3/README.md)
 
@@ -5172,12 +5172,12 @@ A la fin de ce notebook, vous saurez :
 Cette serie ([Z3-Python](README.md)) utilise z3-py, le binding Python direct, en style **imperatif-symbolique** : on créé un `Solver`, on ajoute des contraintes, on appelle `check`. La serie soeur [Z3 C# (Z3.Linq)](../Z3-Linq2Z3/README.md) expose une couche **declarative** : les contraintes s'ecrivent comme des predicats LINQ, traduits automatiquement en formules SMT.
 
 Ce notebook fait le pont : il montre que les **deux styles expriment la même intention declarative** (decrire le QUOI, pas le COMMENT), et comment retrouver en Python la lisibilite du DSL C# sans perdre l'acces a l'API complete.",,,,,,,,53c497c1fbd8378e,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-07-Style-Declaratif-Linq.ipynb,c02,code,fr,7c7c2528b90a0cc5,"# Imports et verification de l'environnement
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c02,code,fr,7c7c2528b90a0cc5,"# Imports et verification de l'environnement
 from z3 import *
 
 print(""Imports OK : z3-solver v"" + get_version_string())
 print(""API disponible : Solver, Optimize, Int, Bool, unsat_core, ..."")",,,,,,,,7c7c2528b90a0cc5,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-07-Style-Declaratif-Linq.ipynb,c03,markdown,fr,6d182fb6090df337,"## 1. L'idiome declaratif LINQ (C# Z3.Linq) — reference
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c03,markdown,fr,6d182fb6090df337,"## 1. L'idiome declaratif LINQ (C# Z3.Linq) — reference
 
 La serie C# Z3.Linq permet d'ecrire un theoreme comme une requête LINQ. Voici un exemple representatif (cellule de reference, executee dans le notebook C# `01_Linq2Z3_Intro.ipynb`) :
 
@@ -5197,7 +5197,7 @@ using (var ctx = new Z3Context())
 **Ce qui compte pedagogiquement** : chaque clause `where` est une **contrainte**. L'ordre n'importe pas, la facon dont le solveur resout n'apparait pas. C'est l'essence du **declaratif** : on decrit les relations que doivent satisfaire les inconnues, pas l'algorithme de recherche.
 
 En Python, z3-py n'a pas de sucre syntaxique equivalent au compilateur d'arbres d'expressions LINQ. On exprime donc les mêmes contraintes par des appels explicites a `s.add(...)`. C'est legerement plus verbeux mais tout aussi declaratif sur le fond — et on garde l'acces a l'API complete (tactiques, `Optimize`, théories avancees).",,,,,,,,6d182fb6090df337,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-07-Style-Declaratif-Linq.ipynb,c04,markdown,fr,007055022dce5b0a,"## 2. Traduction en pyz3 : un système SAT
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c04,markdown,fr,007055022dce5b0a,"## 2. Traduction en pyz3 : un système SAT
 
 Reproduisons en Python le theoreme ci-dessus (5 entiers `X1..X5`, 4 contraintes). Le patron d'usage z3-py :
 
@@ -5205,7 +5205,7 @@ Reproduisons en Python le theoreme ci-dessus (5 entiers `X1..X5`, 4 contraintes)
 2. **Declarer** les variables typees (`Int`)
 3. **Ajouter** chaque contrainte avec `s.add(...)`
 4. **Verifier** avec `s.check()`, puis `s.model()` pour extraire un modèle",,,,,,,,007055022dce5b0a,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-07-Style-Declaratif-Linq.ipynb,c05,code,fr,7949e0d60e5b7622,"# Exemple 1 : theoreme a 5 entiers, 4 contraintes (port direct du theoreme LINQ ci-dessus)
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c05,code,fr,7949e0d60e5b7622,"# Exemple 1 : theoreme a 5 entiers, 4 contraintes (port direct du theoreme LINQ ci-dessus)
 s = Solver()
 X1, X2, X3, X4, X5 = Ints('X1 X2 X3 X4 X5')
 
@@ -5225,7 +5225,7 @@ if resultat == sat:
         print(""  %s = %s"" % (v, val if val is not None else ""(libre, non assignee par le solveur)""))
     # X4 est libre (aucune contrainte) : le solveur ne l'assigne pas dans le modele
     print(""\nNote : X4 n'apparait dans aucune contrainte -> le modele le laisse non assigne (None)."")",,,,,,,,7949e0d60e5b7622,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-07-Style-Declaratif-Linq.ipynb,c06,markdown,fr,ff8eb941d3735551,"### Interpretation : correspondance LINQ <-> pyz3
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c06,markdown,fr,ff8eb941d3735551,"### Interpretation : correspondance LINQ <-> pyz3
 
 | C# Z3.Linq (declaratif) | Python z3-py (imperatif-symbolique) |
 |-------------------------|--------------------------------------|
@@ -5235,12 +5235,12 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-07-Style-Declaratif-Linq.ipynb
 | `solution.X1` | `m[X1]` |
 
 Le **contenu logique est identique** : les deux formulations declarent les mêmes 4 contraintes. La différence est purement syntaxique — le compilateur C# traduit l'arbre d'expression LINQ, tandis qu'en Python on ecrit les appels `s.add` explicitement. En contrepartie, z3-py nous donne acces aux tactiques, a `Optimize`, et aux théories de bas niveau que la couche LINQ n'expose pas.",,,,,,,,ff8eb941d3735551,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-07-Style-Declaratif-Linq.ipynb,c07,markdown,fr,4ee2882105b509ed,"## 3. Diagnostiquer l'insatisfiabilite : unsat et noyau
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c07,markdown,fr,4ee2882105b509ed,"## 3. Diagnostiquer l'insatisfiabilite : unsat et noyau
 
 Cas d'école : une variable doit etre a la fois `> 5` et `< 3` — c'est impossible. Le solveur repond `unsat`. Le **noyau d'insatisfiabilite** (`unsat_core`) identifie quelles contraintes, parmi un ensemble etiquete, sont responsables du conflit : c'est un outil de diagnostic indispensable sur de gros modèles.
 
 Pour obtenir un noyau, on etiquete chaque contrainte avec un `Bool` et on utilise `assert_and_track` au lieu de `add`.",,,,,,,,4ee2882105b509ed,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-07-Style-Declaratif-Linq.ipynb,c08,code,fr,1908554cbd5cc58a,"# Exemple 2 : systeme UNSAT + extraction du noyau d'insatisfiabilite
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c08,code,fr,1908554cbd5cc58a,"# Exemple 2 : systeme UNSAT + extraction du noyau d'insatisfiabilite
 s2 = Solver()
 x = Int('x')
 p1, p2 = Bools('p1 p2')   # etiquettes logiques des deux contraintes
@@ -5257,7 +5257,7 @@ if resultat == unsat:
     print(""Noyau d'insatisfiabilite :"", noyau)
     print(""-> Les contraintes etiquetees"", [str(b) for b in noyau],
           ""sont conjointement incompatibles."")",,,,,,,,1908554cbd5cc58a,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-07-Style-Declaratif-Linq.ipynb,c09,markdown,fr,7f80593f3fc5d1c2,"### Interpretation : sat vs unsat vs unknown
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c09,markdown,fr,7f80593f3fc5d1c2,"### Interpretation : sat vs unsat vs unknown
 
 | Reponse | Sens | Utilite du noyau |
 |---------|------|------------------|
@@ -5266,7 +5266,7 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-07-Style-Declaratif-Linq.ipynb
 | `unknown` | Le solveur n'a pas tranche (trop dur / timeout) | Pas de noyau ; affiner le modèle ou augmenter le budget |
 
 Le noyau d'insatisfiabilite est l'equivalent logique d'un **message d'erreur précis** : au lieu de dire « votre modèle est impossible », il pointe les contraintes (parfois 2 ou 3 parmi des centaines) qui se contredisent. Sur un problème industriel (planning, verification), c'est ce qui rend le debuggage envisageable.",,,,,,,,7f80593f3fc5d1c2,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-07-Style-Declaratif-Linq.ipynb,c10,markdown,fr,d0fbb3a37aae8f1f,"## 4. Un problème combinatoire non-trivial : coloration de graphe
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c10,markdown,fr,d0fbb3a37aae8f1f,"## 4. Un problème combinatoire non-trivial : coloration de graphe
 
 Pour montrer ou le paradigme declaratif prend tout son sens, modelisons un **vrai** problème combinatoire : la **coloration de carte** (combien de couleurs suffisent pour que deux regions frontieres aient des couleurs différentes ?). C'est le coeur du theoreme des 4 couleurs.
 
@@ -5281,7 +5281,7 @@ Nous colorions la carte de l'Australie (6 etats continentaux contigus) avec **3 
 - Victoria (V) : SA, NSW
 
 (Tasmanie est insulaire, hors du graphe continental.)",,,,,,,,d0fbb3a37aae8f1f,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-07-Style-Declaratif-Linq.ipynb,c11,code,fr,44a58213a10756ac,"# Exemple 3 : coloration de la carte d'Australie avec 3 couleurs
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c11,code,fr,44a58213a10756ac,"# Exemple 3 : coloration de la carte d'Australie avec 3 couleurs
 couleurs = ['rouge', 'vert', 'bleu']                # 3 couleurs
 etats = ['WA', 'NT', 'SA', 'Q', 'NSW', 'V']
 
@@ -5309,14 +5309,14 @@ if resultat == sat:
     # Verification automatique : aucune paire adjacente n'a la meme couleur
     conflits = [(a, b) for a, b in adjacences if m[c[a]].as_long() == m[c[b]].as_long()]
     print(""\nVerification : %d conflit(s) adjacent(s) -> %s"" % (len(conflits), 'OK' if not conflits else 'BUG'))",,,,,,,,44a58213a10756ac,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-07-Style-Declaratif-Linq.ipynb,c12,markdown,fr,c766d8fa0b7a5183,"### Interpretation : pourquoi le declaratif gagne ici
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c12,markdown,fr,c766d8fa0b7a5183,"### Interpretation : pourquoi le declaratif gagne ici
 
 Essayez d'imaginer le code **imperatif** equivalent : il faudrait choisir un ordre d'affectation des 6 etats, implementer un backtracking avec detection de conflit, gerer l'expiration des branches mortes, et esperer que l'heuristique d'ordre soit bonne. Pour 6 etats c'est faisable ; pour 60 (carte d'un grand pays avec toutes ses subdivisions), c'est un enfer de maintenance.
 
 Avec z3-py, le **même patron** (declarer le domaine + declarer l'adjacence + `check`) resout n'importe quelle taille d'instance. Ajouter un etat = ajouter une variable et quelques contraintes d'adjacence ; l'algorithme de resolution, lui, ne change jamais. C'est le gain fondamental du paradigme declaratif : la **complexite algorithmique est deleguee au solveur**, le modèle exprime seulement la structure du problème.
 
 > **Lecon** : le seuil ou le declaratif surpasse l'imperatif n'est pas le nombre de variables, mais la **richesse des contraintes**. Des qu'apparait une combinaison de contraintes (adjacence + cardinalite + optimisation), ecrire un backtracking correct devient plus difficile que de declarer les contraintes.",,,,,,,,c766d8fa0b7a5183,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-07-Style-Declaratif-Linq.ipynb,c13,markdown,fr,ce912c208101c8d9,"## 5. Exercices
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c13,markdown,fr,ce912c208101c8d9,"## 5. Exercices
 
 Les trois exercices suivent les exemples ci-dessus. Chaque stub est incomplet (marque `# TODO etudiant`) : a vous d'ecrire les contraintes. Les cellules s'executent sans erreur même non completees (elles affichent un message d'attente).
 
@@ -5329,14 +5329,14 @@ where t.X3 == t.X4 * 2
 where t.X1 >= 1
 ```
 **Indice** : 4 appels `s.add(...)`. N'oubliez pas les declarations `Ints(...)`. Verifiez avec `s.check()` puis affichez le modèle.",,,,,,,,ce912c208101c8d9,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-07-Style-Declaratif-Linq.ipynb,c14,code,fr,19f082af3f4d4c93,"# Exercice 1 : traduire le theoreme LINQ en pyz3 (etudiant)
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c14,code,fr,19f082af3f4d4c93,"# Exercice 1 : traduire le theoreme LINQ en pyz3 (etudiant)
 s_ex1 = Solver()
 # X1, X2, X3, X4 = Ints('X1 X2 X3 X4')    # TODO etudiant : declarer les variables
 # s_ex1.add(...)                           # TODO etudiant : ajouter les 3 contraintes
 # TODO etudiant : verifier (s_ex1.check()) et afficher le modele
 
 print(""Exercice 1 a completer : retirez les commentaires TODO et ajoutez vos contraintes."")",,,,,,,,19f082af3f4d4c93,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-07-Style-Declaratif-Linq.ipynb,c15,markdown,fr,d9926987b4f72702,"### Exercice 2 — Detecter un UNSAT et extraire le noyau
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c15,markdown,fr,d9926987b4f72702,"### Exercice 2 — Detecter un UNSAT et extraire le noyau
 
 Trois contraintes sur un entier `n` :
 1. `n` est pair (`n % 2 == 0`)
@@ -5346,7 +5346,7 @@ Trois contraintes sur un entier `n` :
 **Indice** : ces contraintes sont conjointement insatisfiables. Utilisez `assert_and_track` avec 3 etiquettes `Bool`, puis affichez le `unsat_core`. Lequel des trois le solveur pointe-t-il (en pratique, le noyau minimal peut contenir 2 des 3 etiquettes) ?
 
 **Étape 1** : ecrivez la parite `n % 2 == 0` en arithmetique entiere Z3 (pensez a `n - 2*(n/2) == 0` ou `n % 2`).",,,,,,,,d9926987b4f72702,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-07-Style-Declaratif-Linq.ipynb,c16,code,fr,b0be630cd58e2616,"# Exercice 2 : UNSAT + noyau (etudiant)
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c16,code,fr,b0be630cd58e2616,"# Exercice 2 : UNSAT + noyau (etudiant)
 s_ex2 = Solver()
 # n = Int('n')                              # TODO etudiant
 # e1, e2, e3 = Bools('e1 e2 e3')            # TODO etudiant : etiquettes
@@ -5356,14 +5356,14 @@ s_ex2 = Solver()
 # TODO etudiant : s_ex2.check() + s_ex2.unsat_core()
 
 print(""Exercice 2 a completer : retirez les commentaires TODO et ajoutez vos contraintes + extraction du noyau."")",,,,,,,,b0be630cd58e2616,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-07-Style-Declaratif-Linq.ipynb,c17,markdown,fr,70aa0cb301315c0f,"### Exercice 3 — Complexifier le graphe (2 couleurs, instance plus petite)
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c17,markdown,fr,70aa0cb301315c0f,"### Exercice 3 — Complexifier le graphe (2 couleurs, instance plus petite)
 
 Reprenez le modèle de coloration (section 4) et repondez a la question : **la carte d'Australie est-elle 2-coloriable ?** (i.e. existe-t-il une coloration valide avec seulement 2 couleurs ?)
 
 **Indice** : c'est une question de decision. Changez le domaine `{0,1,2}` en `{0,1}` et relancez `check`. Le résultat (`sat` ou `unsat`) est la reponse. Si `unsat`, cela prouve que 2 couleurs ne suffisent pas (il en faut au moins 3).
 
 **Étape 1** : copiez la cellule de l'exemple 3, reduisez le domaine, et interpretez le verdict du solveur.",,,,,,,,70aa0cb301315c0f,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-07-Style-Declaratif-Linq.ipynb,c18,code,fr,d68b7a86fd676236,"# Exercice 3 : la carte d'Australie est-elle 2-coloriable ? (etudiant)
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c18,code,fr,d68b7a86fd676236,"# Exercice 3 : la carte d'Australie est-elle 2-coloriable ? (etudiant)
 s_ex3 = Solver()
 # c = {e: Int(e) for e in ['WA','NT','SA','Q','NSW','V']}   # TODO etudiant
 # TODO etudiant : domanee a {0,1} (2 couleurs) au lieu de {0,1,2}
@@ -5371,7 +5371,7 @@ s_ex3 = Solver()
 # TODO etudiant : s_ex3.check() et interpreter sat/unsat
 
 print(""Exercice 3 a completer : retirez les commentaires TODO, reduisez le domaine a 2 couleurs et interpretez le verdict."")",,,,,,,,d68b7a86fd676236,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-07-Style-Declaratif-Linq.ipynb,c19,markdown,fr,60a537759404bd2a,"## 6. Synthese
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c19,markdown,fr,60a537759404bd2a,"## 6. Synthese
 
 | Concept | Cote C# (Z3.Linq) | Cote Python (z3-py) |
 |---------|-------------------|---------------------|
@@ -5393,7 +5393,7 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-08-Ordonnancement-Python.ipynb,c0,mar
 
 
 
-[← Serie Z3-Python](README.md) | [Z3-Python-07 (style declaratif LINQ) →](Z3-Python-07-Style-Declaratif-Linq.ipynb)
+[← Serie Z3-Python](README.md) | [Z3-Python-07 (style declaratif LINQ) →](Z3-01b-Style-Declaratif-Linq.ipynb)
 
 
 
