@@ -2991,7 +2991,7 @@ une génération catastrophique. L'avertissement `warmup_ratio` déprécié
 (disparaîtra en faveur de `warmup_steps` dans transformers v5.2) n'affecte pas
 ce run.
 ",,,,,,,,c0978fb2b3b88394,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,3fc218c8,markdown,fr,13e5bdb7451b58a6,"# FT-05 : Fusion et Routage de Modèles -- Combiner les Expertises
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,3fc218c8,markdown,fr,7e0a29212245f8f2,"# FT-05 : Fusion et Routage de Modèles -- Combiner les Expertises
 
 **Objectif** : Comprendre comment fusionner plusieurs modèles fine-tunes en un seul modèle plus performant, du merge de poids au routage dynamique.
 
@@ -3020,7 +3020,7 @@ adaptateurs spécialisés — comment les **combiner** sans nouvel entraînement
 Routing (Mixture-of-Experts). §2 task vectors est une introduction
 mathématique légère.
 
-**Exercices** : 3 cellules stub en fin (§7) — alpha LERP/SLERP · merge
+**Exercices** : cellules stub en fin (§7) — alpha LERP/SLERP · merge
 TIES · extension 3-experts. Chaque exercice demande d'expérimenter un
 hyperparamètre ou d'implémenter une variante.
 
@@ -3070,7 +3070,7 @@ model (full prerequisites at the top of the notebook).
 
 **Measured cost-benefit**: ~5 min on an RTX 3090 (25.8 GB peak VRAM, 1.3B
 base params × 2 LoRA adapters of 3.1M params). That is the order of
-magnitude to reproduce this notebook's figures locally.",,,,,,,13e5bdb7451b58a6,4c5287b0d0e96e44,,,,,,,
+magnitude to reproduce this notebook's figures locally.",,,,,,,7e0a29212245f8f2,4c5287b0d0e96e44,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,7975df42,markdown,fr,0c6dffef77087fad,"## 1. Pourquoi fusionner des modèles ?
 
 Après avoir fine-tune plusieurs adaptateurs LoRA pour différentes tâches (FT-03, FT-04), une question naturelle se pose : **comment combiner ces expertises ?**
