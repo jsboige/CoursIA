@@ -2,7 +2,7 @@
 
 [← Partie 3 — Avancée](../03-Advanced/README.md) | [↑ Planification](../README.md)
 
-La dernière partie explore la **frontière entre IA symbolique et apprentissage profond**. Les parties précédentes ont construit des solveurs que l'on *conçoit* ; celle-ci regarde ce qui change quand on *apprend* à planifier. Quatre angles : les LLM comme générateurs de plans (notebook 10), une interface unifiée qui rend le modèle PDDL portable entre tous les moteurs (notebook 11), *Learning to Plan* (notebook 12) — le point où l'apprentissage rencontre la planification — et la position inverse (notebook 14) : le LLM non plus solveur mais **réducteur d'espace de recherche**, la correction restant au solveur déterministe, clôture de la série vers les foundation models.
+La dernière partie explore la **frontière entre IA symbolique et apprentissage profond**. Les parties précédentes ont construit des solveurs que l'on *conçoit* ; celle-ci regarde ce qui change quand on *apprend* à planifier. Quatre angles : les LLM comme générateurs de plans (notebook 10), une interface unifiée qui rend le modèle PDDL portable entre tous les moteurs (notebook 11), *Learning to Plan* (notebook 12) — le point où l'apprentissage rencontre la planification — et la position inverse (notebook 10b) : le LLM non plus solveur mais **réducteur d'espace de recherche**, la correction restant au solveur déterministe, clôture de la série vers les foundation models.
 
 ## Position dans la série
 
@@ -12,7 +12,7 @@ La dernière partie explore la **frontière entre IA symbolique et apprentissage
 | **Partie 4 — Neuro-Symbolique** | **Comment *apprendre* à planifier plutôt que le coder à la main ?** |
 | Fin de la série → | Ponts vers RL, vérification formelle, théorie des jeux |
 
-Le fil conducteur : le geste de planifier — un état, un but, une séquence d'actions — reste identique ; ce qui change, c'est l'agent qui cherche. Du LLM prompté (notebook 10) au réseau qui apprend une heuristique (notebook 12) jusqu'au LLM qui se borne à restreindre l'espace (notebook 14), la structure symbolique persiste sous l'apprentissage. C'est elle, rappelle le fil rouge de la série, que l'on emporte au-delà.
+Le fil conducteur : le geste de planifier — un état, un but, une séquence d'actions — reste identique ; ce qui change, c'est l'agent qui cherche. Du LLM prompté (notebook 10) au réseau qui apprend une heuristique (notebook 12) jusqu'au LLM qui se borne à restreindre l'espace (notebook 10b), la structure symbolique persiste sous l'apprentissage. C'est elle, rappelle le fil rouge de la série, que l'on emporte au-delà.
 
 ## Notebooks
 
@@ -27,7 +27,7 @@ Le fil conducteur : le geste de planifier — un état, un but, une séquence d'
 
 - **Parties 1 à 3** : toute la mécanique de la planification symbolique (notebooks 1-9)
 - **Machine learning** (notebooks 10, 12) : réseaux de neurones, fonction de perte, rétropropagation
-- **API LLM** (notebooks 10, 14) : clé OpenAI/Anthropic/OpenRouter, prompting
+- **API LLM** (notebooks 10, 10b) : clé OpenAI/Anthropic/OpenRouter, prompting
 - **PyTorch** (notebook 12) : tenseurs, modules, boucle d'entraînement
 
 ## À l'issue de cette partie
@@ -37,7 +37,7 @@ Vous saurez :
 1. **Utiliser** un LLM pour générer et réparer des plans, et en mesurer les limites
 2. **Abstraire** un problème de planification via unified-planning pour le porter d'un solveur à l'autre
 3. **Entraîner** un modèle à planifier (LOOP) : encoder un état PDDL, apprendre une politique ou une heuristique
-4. **Comparer** LLM-solver et LLM-réducteur (notebook 14) : trois bras mesurés (nœuds, temps, réussite vérifiée) sur un mini-DSL ARC
+4. **Comparer** LLM-solver et LLM-réducteur (notebook 10b) : trois bras mesurés (nœuds, temps, réussite vérifiée) sur un mini-DSL ARC
 5. **Situer** la planification neuro-symbolique dans la trajectoire des foundation models
 
 ## Pour aller plus loin (fin de série)

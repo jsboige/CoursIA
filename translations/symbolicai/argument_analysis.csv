@@ -1,5 +1,5 @@
 notebook,cell_id,cell_type,src_lang,src_hash,text_fr,text_en,text_es,text_ar,text_fa,text_zh,text_ru,text_pt,hash_fr,hash_en,hash_es,hash_ar,hash_fa,hash_zh,hash_ru,hash_pt,translate_policy
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb,0bf685b2,markdown,fr,8a063116f4d1011f,"# Argument_Analysis_Agentic-0-init : configuration de l'environnement (JVM Tweety reelle, fail-loud)
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb,0bf685b2,markdown,fr,1c22fe00043a0d3c,"# Configuration de l'environnement (JVM Tweety réelle, fail-loud)
 
 **Navigation** : [README](./README.md) | [1-informal >>](./Argumentation-02-Fallacies-Detection-Python.ipynb)
 
@@ -15,8 +15,8 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-00-Setup-Tweety-Pyt
 
 Ce notebook d'initialisation verifie que l'environnement d'exécution formel est operationnel : Python, la passerelle JPype vers la JVM, le JDK 17 portable et les jars de TweetyProject. Il se termine par un **smoke test** qui interroge le vrai solveur propositionnel Tweety (un modus ponens meteorologique). C'est la porte d'entree de la serie : une fois ce rung valide, les rungs 1 a 4 s'appuient sur un socle formel reel.
 
-> **Note anti-theatre** : cette serie **refuse le mode degrade**. Si la JVM ou Tweety est absent, le notebook echoue bruyamment (le smoke test de la section 5 ne peut pas charger les classes Tweety via JPype) plutot que de simuler un raisonnement formel. Un solveur formel simule par un LLM n'est PAS un solveur formel (mandat EPITA #2137). Cette cellule d'init est donc le verrou qui garantit que les rungs suivants tournent sur du vrai.",,,,,,,,8a063116f4d1011f,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb,6857c071,markdown,fr,c71a905175353942,"## 1. Pourquoi un rung d'initialisation
+> **Note anti-theatre** : cette serie **refuse le mode degrade**. Si la JVM ou Tweety est absent, le notebook echoue bruyamment (le smoke test de la section 5 ne peut pas charger les classes Tweety via JPype) plutot que de simuler un raisonnement formel. Un solveur formel simule par un LLM n'est PAS un solveur formel (mandat EPITA #2137). Cette cellule d'init est donc le verrou qui garantit que les rungs suivants tournent sur du vrai.",,,,,,,,1c22fe00043a0d3c,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb,6857c071,markdown,fr,3293083d07558adc,"## 1. Pourquoi un rung d'initialisation
 
 Les notebooks précédents (1-informal, 3-orchestration, 4-capstone) restent deliberement **déterministes et pur Python** : ils n'ont pas besoin de la JVM pour s'executer. Le rung **2-formal**, lui, invoque le vrai solveur Tweety (logiques propositionnelle, du premier ordre, modale, argumentation de Dung) via un pont Python-Java (JPype). Ce rung 0-init est le **detecteur de fumee** de ce socle Java : il verifie chaque composant et produit un temoin d'exécution (`JVM_OK = True`) que les notebooks suivants peuvent reutiliser.
 
@@ -30,8 +30,8 @@ Les notebooks précédents (1-informal, 3-orchestration, 4-capstone) restent del
 
 ### Ce que ce rung ne fait pas
 
-- Pas d'appel LLM ni de `semantic_kernel` (le legacy `0-init_agent.ipynb` couvrait la configuration LLM/OpenAI ; ce compact se concentre sur le socle formel).
-- Pas d'extraction informelle ni de detection de sophismes (rung 1).",,,,,,,,c71a905175353942,,,,,,,,
+- Pas d'appel LLM ni de `semantic_kernel` (le legacy [`0-init_agent.ipynb`](./_archive/Argument_Analysis_Agentic-0-init_agent.ipynb) couvrait la configuration LLM/OpenAI ; ce compact se concentre sur le socle formel).
+- Pas d'extraction informelle ni de detection de sophismes (rung 1).",,,,,,,,3293083d07558adc,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb,dd5c4831,markdown,fr,08e08c330285af8d,"## 2. Verification Python : la passerelle JPype
 
 `jpype` est la passerelle qui permet a Python d'invoquer des classes Java (Tweety est une bibliotheque JVM). Sans elle, aucun pont vers la JVM n'est possible.
@@ -96,12 +96,12 @@ print(f"""")
 print(f""JVM operationnelle : {jpype.isJVMStarted()}"")
 print(f""Classpath Tweety charge depuis : {TWEETY_DIR / 'libs'}"")
 print(f""Amorcage shim reussi : {JVM_OK}"")",,,,,,,,da0388ff26fcaa04,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb,d40c28c0,markdown,fr,9d601d8d296b6cd1,"## 5. Smoke test : un modus ponens meteorologique resolu par le vrai Tweety
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb,d40c28c0,markdown,fr,b9b0c7b592767f25,"## 5. Smoke test : un modus ponens meteorologique resolu par le vrai Tweety
 
 Pour prouver que la JVM ne tourne pas a vide, on interroge le vrai `SimplePlReasoner` de Tweety sur un modus ponens trivial : « s'il pleut, le sol est mouille ; il pleut ; donc le sol est mouille ». Le solveur doit repondre `True` pour `wet` et `False` pour `!wet`. C'est le **temoin d'exécution** : si ce smoke test passe, le socle formel est operationnel pour les rungs suivants.
 
 > Pattern identique au rung [2-formal](./Argumentation-05-Formal-Verification-Python.ipynb), recycle ici comme preuve que l'environnement est pret.
-",,,,,,,,9d601d8d296b6cd1,,,,,,,,
+",,,,,,,,b9b0c7b592767f25,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb,9e03a613,code,fr,662c73c864c1768f,"import jpype
 JClass = jpype.JClass
 
@@ -133,7 +133,7 @@ SMOKE_OK = entails_wet and not entails_not_wet
 # charger les classes Tweety sans JVM demarree -- le mode degrade reste interdit.
 print(f"""")
 print(f""SMOKE_OK = {SMOKE_OK} : socle formel operationnel pour les rungs suivants."")",,,,,,,,662c73c864c1768f,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb,10fccb75,markdown,fr,cdb5fee7988f312b,"## 6. Recapitulatif de l'environnement
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb,10fccb75,markdown,fr,537c4d334485315f,"## 6. Recapitulatif de l'environnement
 
 | Composant | Rôle | Etat |
 |-----------|------|------|
@@ -152,11 +152,11 @@ L'environnement formel est **pret**. Les rungs suivants peuvent maintenant invoq
 
 ### Le mode degrade est interdit
 
-Si un jour ce notebook echoue au smoke test (les classes Tweety sont introuvables via JPype, signe que la JVM ou les jars sont absents), **ne contournez pas** en simulant le solveur avec un LLM. La valeur pedagogique de la serie repose sur le fait que le formel est REEL. Reinstallez le JDK portable et les jars, puis re-executez ce notebook jusqu'a `SMOKE_OK = True`.",,,,,,,,cdb5fee7988f312b,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb,b6607392,markdown,fr,66ca65a7dac6e843,"### Exercice (optionnel) : etendre le smoke test a la logique du premier ordre
+Si un jour ce notebook echoue au smoke test (les classes Tweety sont introuvables via JPype, signe que la JVM ou les jars sont absents), **ne contournez pas** en simulant le solveur avec un LLM. La valeur pedagogique de la serie repose sur le fait que le formel est REEL. Reinstallez le JDK portable et les jars, puis re-executez ce notebook jusqu'a `SMOKE_OK = True`.",,,,,,,,537c4d334485315f,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb,b6607392,markdown,fr,f38c0fdc998e5896,"### Exercice (optionnel) : etendre le smoke test a la logique du premier ordre
 
 Le smoke test ci-dessus couvre la logique propositionnelle (PL). Etendez-le a un syllogisme en **logique du premier ordre (FOL)** avec le vrai `SimpleFolReasoner` : par exemple « Tous les oiseaux volent ; Tweety est un oiseau ; donc Tweety vole ». Reutilisez le pattern FOL du rung [2-formal](./Argumentation-05-Formal-Verification-Python.ipynb) (pre-declaration de signature obligatoire : `parser.setSignature(sig)`). Ajoutez un flag `FOL_SMOKE_OK` et verifiez qu'il vaut `True`.
-",,,,,,,,66ca65a7dac6e843,,,,,,,,
+",,,,,,,,f38c0fdc998e5896,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb,4531cec4,code,fr,01a8560df7ee4fac,"# Exercice optionnel -- a completer
 # TODO etudiant : smoke test FOL avec SimpleFolReasoner (syllogisme oiseau/vole).
 # Indice : pre-declarer la signature (Sort, Constant, Predicate) AVANT parser.setSignature(sig).
@@ -575,9 +575,9 @@ Ce rung a pose les **fondations taxonomiques** de la detection de sophismes : on
 
 - [2-formal](./Argumentation-05-Formal-Verification-Python.ipynb) : une fois un argument identifie, verifier sa **validite logique** avec le raisonneur Tweety (PL, FOL, modal, argumentation de Dung).
 - [3-orchestration](./Argumentation-07-Orchestration-Python.ipynb) : remplacer la table mots-cles par un LLM qui extrait la structure informative, puis deleguer la verification a Tweety.",,,,,,,,03a9419df4c86764,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-header,markdown,fr,b9531c020ca7d7cc,"# Argument_Analysis_Agentic-2-formal : Verification Logique Formelle avec Tweety
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-header,markdown,fr,73cf21253641bffc,"# Vérification logique formelle avec Tweety
 
-**Navigation** : [<< 1-informal](./Argument_Analysis_Agentic-1-informal_agent.ipynb) | [README](./README.md) | [3-orchestration >>](./Argumentation-07-Orchestration-Python.ipynb)
+**Navigation** : [<< 1-informal](./_archive/Argument_Analysis_Agentic-1-informal_agent.ipynb) | [README](./README.md) | [3-orchestration >>](./Argumentation-07-Orchestration-Python.ipynb)
 
 | Champ | Valeur |
 |-------|--------|
@@ -604,10 +604,10 @@ A la fin de ce notebook, vous saurez :
 - Bases de logique formelle (propositions, quantificateurs, modus ponens)
 - Python 3.10+ ; le package `jpype` installe
 
-> **Note anti-theatre** : ce rung utilise **exclusivement le vrai raisonneur Java Tweety** via JPype. Aucune sortie n'est simulee. Si la JVM est absente, la cellule echoue explicitement (principe **fail-loud**) plutot que d'afficher un faux résultat. C'est le mandat coeur de l'Epic #2137 : la logique formelle se prouve, elle ne se raconte pas.",,,,,,,,b9531c020ca7d7cc,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-intro,markdown,fr,11eaafe18c2a0993,"## 1. Introduction : pourquoi la verification formelle ?
+> **Note anti-theatre** : ce rung utilise **exclusivement le vrai raisonneur Java Tweety** via JPype. Aucune sortie n'est simulee. Si la JVM est absente, la cellule echoue explicitement (principe **fail-loud**) plutot que d'afficher un faux résultat. C'est le mandat coeur de l'Epic #2137 : la logique formelle se prouve, elle ne se raconte pas.",,,,,,,,73cf21253641bffc,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-intro,markdown,fr,1d0f27fe1cbf3671,"## 1. Introduction : pourquoi la verification formelle ?
 
-Dans le rung [1-informal](./Argument_Analysis_Agentic-1-informal_agent.ipynb), un LLM a extrait la **structure informelle** d'un argument (premisses, conclusion, schema). Mais un LLM peut halluciner un lien logique : il affirme ""donc"" la conclusion alors que l'entaillement ne tient pas formellement.
+Dans le rung [1-informal](./_archive/Argument_Analysis_Agentic-1-informal_agent.ipynb) *(chaine LLM archivee dans `_archive/`)*, un LLM a extrait la **structure informelle** d'un argument (premisses, conclusion, schema). Mais un LLM peut halluciner un lien logique : il affirme ""donc"" la conclusion alors que l'entaillement ne tient pas formellement.
 
 Le rung present **delegue la preuve a un solveur formel** : on encode l'argument dans un formalisme logique (PL, FOL, modal), puis on demande a un raisonneur certify de dire si la conclusion est bien une consequence logique des premisses.
 
@@ -621,8 +621,8 @@ Le rung present **delegue la preuve a un solveur formel** : on encode l'argument
 
 L'ancien materiel EPITA admettait un **mode degrade** ou le LLM simulait le résultat d'une requête PL (`if not jvm_ready: print(""simulated result ..."")`). **Ce mode est interdit dans cette serie.** Un résultat simule n'est pas une preuve : c'est du theatre qui s'affiche comme de la logique. Ce notebook echoue bruyamment si la JVM est absente, plutot que de mentir.
 
-**Confidentialite** : tous les exemples sont **synthetiques et neutres** (meteo : ""Si il pleut, alors le sol est mouille"" ; oiseaux : Tweety / pingouins ; syllogismes classiques de Socrate). Aucun corpus EPITA, aucun nom, aucun `raw_text`.",,,,,,,,11eaafe18c2a0993,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-jvm-intro,markdown,fr,3ef002bc349f4fb6,"## 2. Demarrage de la JVM Tweety (prealable obligatoire)
+**Confidentialite** : tous les exemples sont **synthetiques et neutres** (meteo : ""Si il pleut, alors le sol est mouille"" ; oiseaux : Tweety / pingouins ; syllogismes classiques de Socrate). Aucun corpus EPITA, aucun nom, aucun `raw_text`.",,,,,,,,1d0f27fe1cbf3671,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-jvm-intro,markdown,fr,58d57a197c5c3fd8,"## 2. Demarrage de la JVM Tweety (prealable obligatoire)
 
 La cellule ci-dessous importe la shim `argumentation_lib` (couche de decouplage vendorsee pour la serie Argument_Analysis), puis appelle `initialize_jvm()` — le point d'entree **canonique et idempotent** (la JVM n'est demarree qu'une fois par processus, memoisee ensuite). Cette fonction localise `SymbolicAI/Tweety/`, l'ajoute au `sys.path`, s'y deplace (car `init_tweety` cherche `libs/` et `jdk-17-portable/` relativement au cwd), puis appelle `init_tweety()` qui :
 
@@ -632,7 +632,7 @@ La cellule ci-dessous importe la shim `argumentation_lib` (couche de decouplage 
 
 Si l'initialisation echoue, on `raise RuntimeError` immediatement. **Aucun fallback silencieux.**
 
-> **Pourquoi une shim ?** Centraliser le demarrage JVM dans `argumentation_lib.initialize_jvm()` evite de dupliquer la logique de localisation (cwd-relative) dans chaque rung de la serie. Les rungs [1-informal](./Argument_Analysis_Agentic-1-informal_agent.ipynb) et [3-orchestration](./Argumentation-07-Orchestration-Python.ipynb) reutilisent le même point d'entree ; ce rung (formel direct) en est l'usage le plus bas niveau.",,,,,,,,3ef002bc349f4fb6,,,,,,,,
+> **Pourquoi une shim ?** Centraliser le demarrage JVM dans `argumentation_lib.initialize_jvm()` evite de dupliquer la logique de localisation (cwd-relative) dans chaque rung de la serie. Les rungs [1-informal](./_archive/Argument_Analysis_Agentic-1-informal_agent.ipynb) et [3-orchestration](./Argumentation-07-Orchestration-Python.ipynb) reutilisent le même point d'entree ; ce rung (formel direct) en est l'usage le plus bas niveau.",,,,,,,,58d57a197c5c3fd8,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-jvm-code,code,fr,f68b71cf0668ac48,"# Cellule [2] - Demarrage JVM Tweety via la shim argumentation_lib (anti-theatre : fail-loud)
 #
 # initialize_jvm() (voir argumentation_lib/_jvm_compat.py) est le point d'entree
@@ -685,7 +685,7 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verificat
 | `JVM operationnelle : True` | `jpype.isJVMStarted()` confirme l'etat |
 
 > **Que signifie fail-loud ici ?** Si la JVM n'avait pas demarre, la cellule aurait leve `RuntimeError` et le notebook se serait arrete. C'est exactement l'inverse d'un `if not jvm_ready: print(""simulated: True"")` qui aurait laisse croire que le modus ponens est valide alors que rien n'a ete calcule.",,,,,,,,af1077dd95d712ca,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-pl-intro,markdown,fr,6f0da8ab1f91f5e7,"## 3. Logique propositionnelle (PL)
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-pl-intro,markdown,fr,f7a2cebba08172cf,"## 3. Logique propositionnelle (PL)
 
 La logique propositionnelle manipule des **propositions atomiques** (`rain`, `wet`) reliees par des connecteurs. Un **belief set** est un ensemble de formules considerées comme vraies ; on demande ensuite au raisonneur si une formule cible est **entailed** (consequence logique) par le belief set.
 
@@ -695,13 +695,13 @@ La logique propositionnelle manipule des **propositions atomiques** (`rain`, `we
 |-----------|------|--------|
 | `!` | negation | `!rain` (non rain) |
 | `&&` | conjonction (et) | `rain && wind` |
-| `||` | disjonction (ou) | `rain || snow` |
+| `\|\|` | disjonction (ou) | `rain \|\| snow` |
 | `=>` | implication | `rain => wet` (si rain alors wet) |
 | `<=>` | equivalence | `rain <=> wet` |
 
 > On evite l'opérateur `>>` (redondant avec `=>`, source de confusion). Les atomes sont en minuscules.
 
-**Demo** : le modus ponens meteorologique. Premisses : `rain => wet` (s'il pleut, le sol est mouille) et `rain` (il pleut). Conclusion cible : `wet` (le sol est mouille).",,,,,,,,6f0da8ab1f91f5e7,,,,,,,,
+**Demo** : le modus ponens meteorologique. Premisses : `rain => wet` (s'il pleut, le sol est mouille) et `rain` (il pleut). Conclusion cible : `wet` (le sol est mouille).",,,,,,,,f7a2cebba08172cf,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-pl-demo,code,fr,b465ffc371fb6878,"# Cellule [5] - PL : modus ponens meteorologique avec le vrai SimplePlReasoner
 import jpype
 JClass = jpype.JClass
@@ -736,17 +736,17 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verificat
 1. Le `SimplePlReasoner` decide via SAT solving ; la reponse est exacte (sound & complete pour PL).
 2. Résultat `False` sur `!wet` ne veut **pas** dire que `wet` est faux — cela signifie que le belief set n'entraine pas `!wet`. La distinction entail/non-entail est centrale en logique formelle.
 3. Si on retirait `rain` du belief set, ni `wet` ni `!wet` ne serait entailed (le système serait agnostique).",,,,,,,,4e8328f93e54c637,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-pl-ex1-intro,markdown,fr,9939d0c8081e7a5b,"### Exercice 1 (PL) : teste un autre schema d'inference
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-pl-ex1-intro,markdown,fr,8e253c7162073ebe,"### Exercice 1 (PL) : teste un autre schema d'inference
 
 **Contexte** : on vient de voir le modus ponens (`p`, `p=>q` |- `q`). Un autre schema classique est le **modus tollens** : si `p=>q` est vrai et `q` est faux, alors `p` doit etre faux.
 
 **Objectif** : dans la cellule ci-dessous, croyez `rain => wet` et `!wet`, puis interrogez le belief set pour savoir si `!rain` est entailed. Affichez le résultat booléen.
 
 **Indices** :
-- # Étape 1 : créer un nouveau `PlBeliefSet` vide
-- # Étape 2 : ajouter les deux formules `rain => wet` et `!wet`
-- # Étape 3 : construire la requête `!rain` et l'executer via `reasoner.query(...)`
-- # Étape 4 : convertir le résultat Java en `bool(...)` puis l'afficher",,,,,,,,9939d0c8081e7a5b,,,,,,,,
+- **Étape 1** : créer un nouveau `PlBeliefSet` vide
+- **Étape 2** : ajouter les deux formules `rain => wet` et `!wet`
+- **Étape 3** : construire la requête `!rain` et l'executer via `reasoner.query(...)`
+- **Étape 4** : convertir le résultat Java en `bool(...)` puis l'afficher",,,,,,,,8e253c7162073ebe,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-pl-ex1,code,fr,2f5b67f7e1634c06,"# Exercice 1 (PL) : modus tollens
 # TODO etudiant : croyez {rain => wet, !wet} et verifiez si !rain est entailed.
 # Etape 1 : nouveau belief set
@@ -816,17 +816,17 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verificat
 3. Le `SimpleFolReasoner` decide l'entaillement via un theorem prover (herbrandisation + resolution) ; la reponse est exacte sur ce fragment.
 
 > **Lien avec l'agent LLM** : dans le pipeline complet (rung 3), c'est le LLM qui propose `forall X: (Bird(X) => Fly(X))` a partir du texte ""Tous les oiseaux volent"". Mais la preuve que Tweety vole est deleguee a Tweety — pas au LLM. C'est la frontiere nette entre extraction informelle et verification formelle.",,,,,,,,686127bf02bc71f4,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-fol-ex2-intro,markdown,fr,e34ccbea1668d3c7,"### Exercice 2 (FOL) : le syllogisme de Socrates
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-fol-ex2-intro,markdown,fr,dacf9829d88800d0,"### Exercice 2 (FOL) : le syllogisme de Socrates
 
 **Contexte** : syllogisme classique — ""Tous les hommes sont mortels. Socrate est un homme. Donc Socrate est mortel.""
 
 **Objectif** : declarer une signature FOL (un sort, une constante `socrates`, deux predicats `Human` et `Mortal`), construire le belief set, et verifier que `Mortal(socrates)` est entailed.
 
 **Indices** :
-- # Étape 1 : declarer le sort `person`, la constante `socrates`, les predicats `Human/1` et `Mortal/1`
-- # Étape 2 : ajouter `Human(socrates)` et `forall X: (Human(X) => Mortal(X))`
-- # Étape 3 : requête `Mortal(socrates)`
-- # Étape 4 : afficher le booléen (attendu : True)",,,,,,,,e34ccbea1668d3c7,,,,,,,,
+- **Étape 1** : declarer le sort `person`, la constante `socrates`, les predicats `Human/1` et `Mortal/1`
+- **Étape 2** : ajouter `Human(socrates)` et `forall X: (Human(X) => Mortal(X))`
+- **Étape 3** : requête `Mortal(socrates)`
+- **Étape 4** : afficher le booléen (attendu : True)",,,,,,,,dacf9829d88800d0,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-fol-ex2,code,fr,e60e950b838a16b1,"# Exercice 2 (FOL) : syllogisme de Socrates
 # TODO etudiant : declarer la signature puis interroger Mortal(socrates).
 # Etape 1 : signature (sort person, constante socrates, predicats Human/1, Mortal/1)
@@ -898,7 +898,7 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verificat
 | `q` | False | Sans T, le monde ""courant"" n'est pas forcement among les mondes accessibles |
 
 > **Aparku honnete** : la logique modale est un domaine vaste (systèmes K, T, S4, S5, sementique de Kripke). Ce notebook donne uniquement le gout des opérateurs `[]` / `<>`. Pour aller plus loin : la [documentation Tweety sur `MlReasoner`](https://tweetyproject.org/api/org/tweetyproject/logics/ml/reasoner/SimpleMlReasoner.html) et l'ouvrage de Hughes & Cresswell, *A New Introduction to Modal Logic*.",,,,,,,,85cef74d994a81b8,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-fol-ex3-intro,markdown,fr,18c28e837f35b796,"### Exercice 3 (FOL ouvert) : votre propre mini-théorie
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-fol-ex3-intro,markdown,fr,f559a84753f05550,"### Exercice 3 (FOL ouvert) : votre propre mini-théorie
 
 **Contexte** : vous avez maintenant tous les outils pour modeliser un mini-domaine en FOL.
 
@@ -907,10 +907,10 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verificat
 **Exemple de depart (a adapter)** : ""Toute voiture est un vehicule. Toute moto est un vehicule. ma_voiture est une voiture. Donc ma_voiture est un vehicule.""
 
 **Indices** :
-- # Étape 1 : choisir un sort (ex : `thing`), declarer 1-2 constantes, 2 predicats
-- # Étape 2 : ecrire 1 fait concret + 1 règle `forall X: (...)`
-- # Étape 3 : construire la requête sur la constante
-- # Étape 4 : afficher le booléen avec un `print` explicatif",,,,,,,,18c28e837f35b796,,,,,,,,
+- **Étape 1** : choisir un sort (ex : `thing`), declarer 1-2 constantes, 2 predicats
+- **Étape 2** : ecrire 1 fait concret + 1 règle `forall X: (...)`
+- **Étape 3** : construire la requête sur la constante
+- **Étape 4** : afficher le booléen avec un `print` explicatif",,,,,,,,f559a84753f05550,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-fol-ex3,code,fr,230ae7f11218c748,"# Exercice 3 (FOL) : votre propre mini-theorie
 # TODO etudiant : modelisez un petit domaine en FOL et verifiez un entaillement.
 # Etape 1 : signature (sort, constante(s), predicats)
@@ -970,7 +970,7 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verificat
 Ce résultat correspond a la construction pas-a-pas : `a` est accepte parce qu'aucun argument ne l'attaque ; `b` est rejete parce que `a` (accepte) l'attaque ; `c` est reinstaure parce que son seul attaquant (`b`) est rejete.
 
 > **Aparku honnete** : la théorie de Dung est considerablement plus riche (sémantiques preferred, stable, complete ; AAF probabilistes ; bipolar argumentation ; ASPIC+ pour construire les arguments). Ce notebook ne fait qu'effleurer la sémantique grounded. Pour approfondir : [Tweety arg.dung package](https://tweetyproject.org/api/org/tweetyproject/arg/dung/package-summary.html) et Dung, *On the Acceptability of Arguments and its Fundamental Rôle in Nonmonotonic Reasoning, Logic Programming and n-Person Games*, AIJ 1995. Pour une introduction systématique aux sémantiques preferred, stable et complete (dont l'approche par etiquetages de Caminada), voir Baroni, Caminada & Giacomin, *An Introduction to Argumentation Semantics*, The Knowledge Engineering Review 26(4), 2011.",,,,,,,,15e07ac39c76ed72,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-conclusion,markdown,fr,b34f377307bb2546,"## 7. Conclusion et recapitulatif
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-conclusion,markdown,fr,3699c567358ab347,"## 7. Conclusion et recapitulatif
 
 Ce rung a delegue la **preuve logique** a un vrai raisonneur Java (Tweety via JPype) plutot qu'a un LLM. Chaque cellule de code a produit un résultat certifie par le solveur — jamais simule.
 
@@ -978,7 +978,7 @@ Ce rung a delegue la **preuve logique** a un vrai raisonneur Java (Tweety via JP
 
 | Formalisme | Ce qu'il prouve | Classes Tweety cles | Contrainte principale |
 |------------|-----------------|---------------------|------------------------|
-| **PL** | Entaillement propositionnel (modus ponens, tollens) | `PlParser`, `SimplePlReasoner`, `PlBeliefSet` | Syntaxe BNF `!` `&&` `||` `=>` ; eviter `>>` |
+| **PL** | Entaillement propositionnel (modus ponens, tollens) | `PlParser`, `SimplePlReasoner`, `PlBeliefSet` | Syntaxe BNF `!` `&&` `\|\|` `=>` ; eviter `>>` |
 | **FOL** | Entaillement quantifie (syllogismes) | `FolParser`, `FolSignature`, `SimpleFolReasoner` | **Pre-declaration obligatoire** de Sort/Constant/Predicate |
 | **Modal** | Axiome K (`[]`/`<>`) | `MlParser`, `MlBeliefSet`, `SimpleMlReasoner` | Argument entre parentheses : `[](p)` ; logique K (pas de T) |
 | **Dung** | Extension grounded d'un graphe d'attaque | `DungTheory`, `Attack`, `SimpleGroundedReasoner` | Construction du graphe avant le `getModels` |
@@ -996,7 +996,7 @@ Ce rung a delegue la **preuve logique** a un vrai raisonneur Java (Tweety via JP
 ### Prochaines étapes
 
 - [3-orchestration](./Argumentation-07-Orchestration-Python.ipynb) : orchestration multi-agents ou un ProjectManagerAgent delegue au PL/FOL Agent (ce rung) et a l'Informal Agent (rung 1).
-- Pour la modelisation FOL avancee (defeasible, ASPIC+), consulter les packages `org.tweetyproject.arg.delp` et `org.tweetyproject.arg.aspic`.",,,,,,,,b34f377307bb2546,,,,,,,,
+- Pour la modelisation FOL avancee (defeasible, ASPIC+), consulter les packages `org.tweetyproject.arg.delp` et `org.tweetyproject.arg.aspic`.",,,,,,,,3699c567358ab347,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-07-Orchestration-Python.ipynb,aa3o-header,markdown,fr,5f52ddb8e02f30d2,"# Argument_Analysis_Agentic-3-orchestration : deux paradigmes d'orchestration
 
 **Navigation** : [<< 2-formal](./Argumentation-05-Formal-Verification-Python.ipynb) | [README](./README.md) | [UI_configuration >>](./Argumentation-08c-UI-Configuration-Python.ipynb)
@@ -3251,7 +3251,7 @@ l'acceptabilité argumentative.
 - **Argumentation structurée** : le formalisme abstrait de Dung ignore le contenu des
   arguments. ASPIC+, ABA et DeLP (accessibles via Tweety) reconstruisent la relation
   d'attaque à partir d'une logique sous-jacente — la série [Tweety](../Tweety/) les explore.",,,,,,,,7f0d3af2550830ae,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,10996590,markdown,fr,c4d48dc3e31708ac,"# 🚀 Analyse Rhétorique Collaborative par Agents IA - Exécuteur Principal
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,10996590,markdown,fr,0870c9991b81551b,"# Analyse rhétorique collaborative par agents IA — exécuteur principal
 
 
 [Retour au README](../README.md) | [Précédent : Orchestration](./Argumentation-07-Orchestration-Python.ipynb)
@@ -3260,17 +3260,16 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python
 
 **Structure Modulaire:**
 1.  `Argumentation-08c-UI-Configuration-Python.ipynb` : Gère l'interface utilisateur pour sélectionner/préparer le texte à analyser (incluant sources prédéfinies, URL, fichier, texte direct, et extraction) et charge/sauvegarde la configuration des sources.
-2.  `Argumentation-00-Setup-Tweety-Python.ipynb`: Configuration initiale (dépendances, LLM, JVM), définition de l'état partagé (`RhetoricalAnalysisState`) et du gestionnaire d'état (`StateManagerPlugin`).
-3.  `Argument_Analysis_Agentic-1-informal_agent.ipynb`: Définition de l'`InformalAnalysisAgent`.
-4.  `Argument_Analysis_Agentic-2-pl_agent.ipynb`: Définition du `PropositionalLogicAgent`.
-5.  `Argumentation-07-Orchestration-Python.ipynb`: Définition des stratégies d'orchestration et de la fonction principale `run_analysis_conversation`.
+2.  `Argumentation-00-Setup-Tweety-Python.ipynb`: Configuration initiale de l'environnement (dépendances, JVM/Tweety).
+3.  `argumentation_lib` (shim de série): état partagé (`RhetoricalAnalysisState`), pont Semantic Kernel (`StateManagerPlugin`) et orchestration (`AnalysisRunner`) — chargés directement par ce notebook. Les carnets legacy `*_agent` qui portaient ces définitions sont archivés dans [`_archive/`](./_archive/README.md).
+4.  `Argumentation-07-Orchestration-Python.ipynb`: paradigmes d'orchestration déterministes (référence pédagogique du rung).
 
 **Prérequis:**
 * Un fichier `.env` à la racine contenant les clés API, configurations LLM, et la clé de chiffrement `TEXT_CONFIG_KEY`.
 * Un environnement Java Development Kit (JDK >= 11) correctement installé et configuré (`JAVA_HOME`).
 * Les dépendances Python installées (`ipywidgets`, `requests`, `jupyter-ui-poll`, `python-dotenv`, `semantic-kernel`, `pandas`, `jpype1`, `cryptography`).
 * Les JARs Tweety placés dans le dossier `libs/`.
-* Le fichier `extract_sources.json.gz.enc` (s'il existe déjà) contenant les définitions des sources.",,,,,,,,c4d48dc3e31708ac,,,,,,,,
+* Le fichier `extract_sources.json.gz.enc` (s'il existe déjà) contenant les définitions des sources.",,,,,,,,0870c9991b81551b,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,63m99jijcx4,markdown,fr,7b6470b15f317c33,"## Présentation générale du système
 
 ### Objectifs pédagogiques
@@ -3332,12 +3331,12 @@ Le fichier `.env` centralise toutes les configurations sensibles et paramètres 
 | `BATCH_TEXT` | Texte personnalisé pour mode batch (optionnel) |
 
 > **Note de sécurité**: Le fichier `.env` ne doit jamais être versionné avec Git. Utilisez `.env.example` comme template.",,,,,,,,c0e035f428545553,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,c8c82597,code,fr,46ba3e8ea6f4249b,"# Charger les variables d'environnement (résolution de chemin robuste)
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,c8c82597,code,fr,f3cf04f09ca23438,"# Charger les variables d'environnement (résolution de chemin robuste)
 # CRITIQUE 1 : find_dotenv() dépend du CWD courant,
 # qui peut differer de Argument_Analysis/ (Papermill, MCP Jupyter, CI changent
 # le working directory). On localise Argument_Analysis/ par walk-up depuis le
-# CWD, puis on s'y positionne (os.chdir) pour que tous les %run relatifs, le
-# dossier libs/ (JARs Tweety), data/ et extract_sources.json.gz.enc résolvent
+# CWD, puis on s'y positionne (os.chdir) pour que les chemins relatifs
+# (libs/ JARs Tweety, data/, extract_sources.json.gz.enc) résolvent
 # correctement quel que soit le point de départ.
 import os
 from pathlib import Path
@@ -3368,7 +3367,7 @@ os.chdir(str(AA_DIR))  # %run relatifs + libs/ + data/ résolvent depuis ici
 loaded_env = load_dotenv(AA_DIR / "".env"", override=True)
 
 print(f""CWD -> {os.getcwd()}"")
-print(f"".env chargé: {loaded_env}"")  # True si le .env a été trouvé et chargé",,,,,,,,46ba3e8ea6f4249b,,,,,,,,
+print(f"".env chargé: {loaded_env}"")  # True si le .env a été trouvé et chargé",,,,,,,,f3cf04f09ca23438,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,e6olkjrtk9p,markdown,fr,aad70f31789c4319,"### Interprétation du résultat
 
 **Sortie attendue**: `.env chargé: True`
@@ -3381,7 +3380,7 @@ Si vous obtenez `False`, cela signifie:
 1. Copier `.env.example` vers `.env`
 2. Remplir les valeurs manquantes (clés API)
 3. Relancer cette cellule",,,,,,,,aad70f31789c4319,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,b76958om00a,markdown,fr,c82843b55b4557e4,"### Vérification des dépendances
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,b76958om00a,markdown,fr,1d70b08ae7b9b4c2,"### Vérification des dépendances
 
 Avant de continuer, assurez-vous que les dépendances suivantes sont satisfaites:
 
@@ -3393,7 +3392,7 @@ pip install ipywidgets requests jupyter-ui-poll  # Pour mode interactif
 
 **Dépendances système**:
 - **JDK 11+** (pour Tweety via JPype): `JAVA_HOME` doit être configuré
-- **Bibliothèque Tweety**: JARs dans `libs/` (téléchargement automatique via `Tweety-1-Setup.ipynb`)
+- **Bibliothèque Tweety**: JARs dans `libs/` (téléchargement automatique via `Tweety-01-Setup-Python.ipynb`)
 
 **Fichiers requis**:
 
@@ -3403,11 +3402,11 @@ pip install ipywidgets requests jupyter-ui-poll  # Pour mode interactif
 | `libs/*.jar` | Bibliothèque Tweety Java | Téléchargement auto |
 | `data/logical_fallacies_taxonomy.json` | Taxonomie sophismes | Fourni |
 
-> **Astuce**: Si JPype échoue à s'initialiser, le système basculera en mode ""fallback"" (sans logique formelle). L'analyse informelle fonctionnera toujours.",,,,,,,,c82843b55b4557e4,,,,,,,,
+> **Astuce**: Si JPype échoue à s'initialiser, le système basculera en mode ""fallback"" (sans logique formelle). L'analyse informelle fonctionnera toujours.",,,,,,,,1d70b08ae7b9b4c2,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,41046be8,markdown,fr,c4092a2d8d147087,"## 2. Chargement de l'Interface Utilisateur
 
 Exécution du notebook `UI_Configuration.ipynb` pour définir la fonction `configure_analysis_task()`. C'est ce notebook qui contient désormais toute la logique de l'interface graphique, du cache fichier et de la gestion de la configuration chiffrée.",,,,,,,,c4092a2d8d147087,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,8b3b3380,code,fr,8615dba3e0e9e803,"# Mode batch contrôlé par variable d'environnement
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,8b3b3380,code,fr,a79667e25e04c196,"# Mode batch contrôlé par variable d'environnement
 # Si BATCH_MODE=true dans .env, on skip l'UI interactive (widgets bloquants)
 import os
 BATCH_MODE = os.getenv(""BATCH_MODE"", ""false"").lower() in (""true"", ""1"", ""yes"")
@@ -3435,7 +3434,7 @@ else:
         print(""ERREUR CRITIQUE : La fonction configure_analysis_task n'a pas été définie par UI_Configuration.ipynb !"")
     else:
         print(""Fonction configure_analysis_task trouvée."")
-",,,,,,,,8615dba3e0e9e803,,,,,,,,
+",,,,,,,,a79667e25e04c196,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,2m4gumr177r,markdown,fr,396b11a867a5c62a,"### Modes d'exécution: Batch vs Interactif
 
 Le notebook supporte deux modes d'exécution distincts:
@@ -3455,17 +3454,17 @@ Les widgets Jupyter (`ipywidgets`) utilisent des boucles de polling bloquantes i
 Le mode batch permet de contourner ces limitations en sautant le chargement de `UI_configuration.ipynb` et en utilisant directement un texte source.
 
 > **Note technique**: En mode batch, le texte est fourni via `BATCH_TEXT` (variable d'environnement) ou via le texte d'exemple enrichi défini dans la cellule suivante.",,,,,,,,396b11a867a5c62a,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,ex-aa4-config-md,markdown,fr,d45c948a7b44094f,"### Exercice 1 : Gestion de configuration avec fallback
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,ex-aa4-config-md,markdown,fr,03cea870c80f7de3,"### Exercice 1 : Gestion de configuration avec fallback
 
 L'Executor lit des variables d'environnement pour configurer l'analyse. Implementez un mécanisme de fallback robuste.
 
 **Objectif** : Ecrire `get_config_with_fallback`.
 
 **Indices** :
-- # Étape 1 : Utiliser `os.getenv(key)` pour lire la variable
-- # Étape 2 : Verifier si le résultat est `None` ou une chaîne vide
-- # Étape 3 : Retourner la valeur par defaut si la variable est absente
-- # Étape 4 : Tester avec une variable qui n'existe pas",,,,,,,,d45c948a7b44094f,,,,,,,,
+- **Étape 1** : Utiliser `os.getenv(key)` pour lire la variable
+- **Étape 2** : Verifier si le résultat est `None` ou une chaîne vide
+- **Étape 3** : Retourner la valeur par defaut si la variable est absente
+- **Étape 4** : Tester avec une variable qui n'existe pas",,,,,,,,03cea870c80f7de3,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,ex-aa4-config-code,code,fr,3c8e8ad528e22770,"# Exercice 1 : Gestion de configuration avec fallback
 # TODO etudiant: ecrivez une fonction qui lit une variable d'environnement
 # et retourne une valeur par defaut si absente.
@@ -3591,97 +3590,101 @@ Le texte d'exemple enrichi contient intentionnellement plusieurs sophismes pour 
 | Pente glissante | ""Les écologistes veulent nous ramener à l'âge de pierre"" |
 
 > **Conseil pédagogique**: Le texte d'exemple est conçu pour tester la robustesse de l'analyse rhétorique multi-agents. Utilisez-le pour comprendre comment les agents détectent les arguments fallacieux.",,,,,,,,501a9bba005d0203,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,183031e3,markdown,fr,deb2e808bfb0c466,"## 4. Chargement des Définitions des Agents et de l'Orchestration
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,183031e3,markdown,fr,c2fb96478bb2c9aa,"## 4. Chargement des Définitions des Agents et de l'Orchestration
 
-### Architecture modulaire par notebooks
+### Architecture modulaire : la shim `argumentation_lib`
 
-Le système est structuré en **4 notebooks enfants** chargés dynamiquement via `%run`:
+L'état partagé, le pont Semantic Kernel et l'orchestration sont fournis par la **shim de série `argumentation_lib`** (vendoring du cœur d'analyse, cf `argumentation_lib/_runner.py`) :
 
-**Avantages de cette architecture**:
-1. **Séparation des responsabilités**: Chaque agent dans son propre fichier
-2. **Réutilisabilité**: Les agents peuvent être chargés individuellement
-3. **Maintenabilité**: Modification d'un agent sans toucher aux autres
-4. **Testabilité**: Tests unitaires par agent
+| Élément chargé | Origine |
+|---|---|
+| `RhetoricalAnalysisState` | `argumentation_lib/_shared_state.py` |
+| `StateManagerPlugin` | `argumentation_lib/_state_manager_plugin.py` |
+| `AnalysisRunner` (pipeline 3 phases) | `argumentation_lib/_runner.py` |
 
-**Ordre de chargement critique**:
+Les quatre carnets legacy `Argument_Analysis_Agentic-*_agent.ipynb` qui portaient ces définitions (bootstrap Semantic Kernel, agents LLM, stratégies d'orchestration) sont **archivés** dans [`_archive/`](./_archive/README.md) — leur inventaire capacité par capacité y est consigné. La greffe de ce notebook sur la shim supprime le dernier consommateur vivant de cette chaîne.
+
+**Ordre de chargement** :
 
 ```
-0-init.ipynb           (État + Config LLM + JVM)
+argumentation_lib (état + orchestration)
     ↓
-1-informal_agent.ipynb (Dépend de RhetoricalAnalysisState)
+kernel LLM construit ici depuis .env (service `global_llm_service`)
     ↓
-2-pl_agent.ipynb       (Dépend de RhetoricalAnalysisState + JVM)
-    ↓
-3-orchestration.ipynb  (Dépend de tous les agents)
+AnalysisRunner(kernel, service_id, state) → run()
 ```
 
-> **Note technique**: `%run` exécute le notebook dans le namespace courant. Toutes les variables définies dans les notebooks enfants (classes, fonctions) deviennent disponibles ici.",,,,,,,,deb2e808bfb0c466,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,7674a98e,code,fr,bc2f59b7f94d41ba,"# Executer les notebooks enfants pour charger les definitions
-# Seulement si un texte a ete prepare avec succes
-#
-# CRITIQUE 2 : les notebooks enfants (notamment
-# 0-init_agent.ipynb) font leur propre os.chdir(TWEETY_DIR) pour localiser les
-# JARs. Ce chdir ""fuit"" hors du %run et corrompt le CWD pour les %run suivants
-# (relatifs a Argument_Analysis/) : 1-informal_agent.ipynb etait cherche dans
-# SymbolicAI/Tweety/ et introuvable. On re-ancre le CWD sur AA_DIR avant CHAQUE
-# %run pour garantir que les chemins relatifs resolvent quel que soit l'endroit
-# ou l'enfant s'est positionne.
-#
-# CRITIQUE 3 : la chaine %run doit etre COHERENTE.
-# Les notebooks ""rungs"" recents (0-init.ipynb, 3-orchestration.ipynb) ne
-# construisent NI le service OpenAI NI run_analysis_conversation -- or la
-# cellule 18 appelle run_analysis_conversation() et les agents charges sont les
-# versions _agent (InformalAnalysisAgent, PropositionalLogicAgent). On charge
-# donc la chaine LEGACY ""_agent"" auto-coherente : 0-init_agent (JVM + service
-# OpenAI + kernel) -> 1-informal_agent (InformalAnalysisAgent) ->
-# 2-pl_agent (PropositionalLogicAgent) -> 3-orchestration_agent
-# (run_analysis_conversation). Cette chaine definit TOUT ce dont la cellule 18
-# a besoin.
+> **Note technique** : le kernel est **injecté** par ce notebook ; la shim ne lit ni secret ni nom de modèle (elle ne connaît pas `.env`).",,,,,,,,c2fb96478bb2c9aa,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,7674a98e,code,fr,631b98030076eab7,"# Charger les définitions depuis la shim argumentation_lib.
+# Remplace la chaîne legacy %run des carnets *_agent (archivés) : la shim vendore
+# l'état partagé, le pont SK et l'orchestration ; le kernel LLM est construit ici
+# depuis .env (mêmes variables que la chaîne archivée : OPENAI_API_KEY,
+# OPENAI_CHAT_MODEL_ID, OPENAI_ENDPOINT, OPENAI_ORG_ID).
 if 'texte_pour_analyse' in locals() and texte_pour_analyse:
     print(""Chargement des definitions des agents et de l'orchestration..."")
     try:
-        os.chdir(str(AA_DIR))
-        %run ./Argument_Analysis_Agentic-0-init_agent.ipynb
-        os.chdir(str(AA_DIR))
-        %run ./Argument_Analysis_Agentic-1-informal_agent.ipynb
-        os.chdir(str(AA_DIR))
-        %run ./Argument_Analysis_Agentic-2-pl_agent.ipynb
-        os.chdir(str(AA_DIR))
-        %run ./Argument_Analysis_Agentic-3-orchestration_agent.ipynb
-        os.chdir(str(AA_DIR))
-        print(""[OK] Definitions chargees."")
-        if 'run_analysis_conversation' not in locals():
-            print(""[ERREUR CRITIQUE] La fonction run_analysis_conversation n'a pas ete definie apres l'execution des notebooks agents !"")
+        from argumentation_lib import UnifiedAnalysisState, get_analysis_runner
+        from semantic_kernel import Kernel
+        from semantic_kernel.connectors.ai.open_ai import (
+            OpenAIChatCompletion,
+            AzureChatCompletion,
+        )
+
+        _api_key = os.getenv(""OPENAI_API_KEY"")
+        _model_id = os.getenv(""OPENAI_CHAT_MODEL_ID"")
+        _endpoint = os.getenv(""OPENAI_ENDPOINT"")
+        _org_id = os.getenv(""OPENAI_ORG_ID"")
+
+        llm_kernel = Kernel()
+        if _endpoint:
+            llm_kernel.add_service(AzureChatCompletion(
+                service_id=""global_llm_service"",
+                deployment_name=_model_id,
+                endpoint=_endpoint,
+                api_key=_api_key,
+            ))
+            print(f""[OK] Service LLM Azure configure (deploiement: {_model_id})."")
+        else:
+            llm_kernel.add_service(OpenAIChatCompletion(
+                service_id=""global_llm_service"",
+                ai_model_id=_model_id,
+                api_key=_api_key,
+                org_id=_org_id,
+            ))
+            print(f""[OK] Service LLM OpenAI configure (modele: {_model_id})."")
+
+        AnalysisRunner = get_analysis_runner()
+        local_state = UnifiedAnalysisState(texte_pour_analyse)
+        analysis_runner = AnalysisRunner(llm_kernel, ""global_llm_service"", local_state)
+        print(""[OK] Definitions chargees (shim argumentation_lib)."")
     except Exception as e_run:
-        print(""[ERREUR] Une erreur est survenue lors de l'execution des notebooks enfants : "" + str(e_run))
+        print(""[ERREUR] Une erreur est survenue lors du chargement des definitions : "" + str(e_run))
         import traceback
         traceback.print_exc()
         # Empecher la suite si le chargement echoue
         texte_pour_analyse = None
-        os.chdir(str(AA_DIR))
+        analysis_runner = None
 else:
-    print(""Skipping agent definition loading because no text was prepared."")
-",,,,,,,,bc2f59b7f94d41ba,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,rh30f4ohrsa,markdown,fr,02c577a7def4f2b5,"### Architecture modulaire chargée
+    print(""Skipping agent definition loading because no text was prepared."")",,,,,,,,631b98030076eab7,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,rh30f4ohrsa,markdown,fr,9ee25f7cba4ebf29,"### Architecture chargée
 
-**Notebooks chargés et leurs responsabilités**:
+**Composants et responsabilités** :
 
-| Notebook | Composants définis | Rôle |
+| Composant | Origine | Rôle |
 |----------|-------------------|------|
-| `Agentic-0-init.ipynb` | `RhetoricalAnalysisState`, `StateManagerPlugin`, kernel SK | État partagé, configuration LLM, JVM Tweety |
-| `Agentic-1-informal_agent.ipynb` | `InformalAnalysisAgent` | Analyse arguments et sophismes (taxonomie) |
-| `Agentic-2-pl_agent.ipynb` | `PropositionalLogicAgent`, `PropositionalLogicPlugin` | Formalisation en logique propositionnelle |
-| `Agentic-3-orchestration.ipynb` | `run_analysis_conversation()` | Orchestration collaborative des agents |
+| `RhetoricalAnalysisState` | `argumentation_lib/_shared_state.py` | État partagé (`raw_text`, arguments, sophismes, belief sets, conclusion) |
+| `StateManagerPlugin` | `argumentation_lib/_state_manager_plugin.py` | Pont entre l'état et le kernel Semantic Kernel |
+| `AnalysisRunner` | `argumentation_lib/_runner.py` | Pipeline 3 phases : informel → formel → synthèse |
+| kernel `global_llm_service` | construit par ce notebook (`.env`) | Service LLM (OpenAI ou Azure) |
 
-**Architecture technique**:
+**Architecture technique** :
 
 ```
 ┌─────────────────────────────────────────────────┐
 │  Semantic Kernel (orchestration)                │
 │  ┌──────────────┐  ┌────────────────────────┐  │
-│  │ Informal     │  │ Propositional Logic    │  │
-│  │ Analysis     │─▶│ Agent (Tweety/JPype)   │  │
-│  │ Agent        │  │                        │  │
+│  │ Informal     │  │ Logic                  │  │
+│  │ Agent (LLM)  │─▶│ Agent (LLM)            │  │
 │  └──────────────┘  └────────────────────────┘  │
 │         │                     │                 │
 │         └─────────┬───────────┘                 │
@@ -3694,8 +3697,8 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python
 └─────────────────────────────────────────────────┘
 ```
 
-> **Note d'implémentation**: L'état partagé (`RhetoricalAnalysisState`) permet aux agents de communiquer leurs résultats via un contexte commun plutôt que par messages directs.",,,,,,,,02c577a7def4f2b5,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,6b60ae64,markdown,fr,7f31ed94ed07cd49,"## 5. Exécution de l'Analyse Collaborative
+> **Différence avec la chaîne archivée** : l'agent formel de la shim est LLM-only (pas de plugin Tweety) ; la vérification formelle outillée est le rung [`Argumentation-05`](./Argumentation-05-Formal-Verification-Python.ipynb). La chaîne déterministe équivalente (paradigmes A/B, routage PM) est le rung [`Argumentation-07`](./Argumentation-07-Orchestration-Python.ipynb).",,,,,,,,9ee25f7cba4ebf29,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,6b60ae64,markdown,fr,c0cf82fe7253b8fb,"## 5. Exécution de l'Analyse Collaborative
 
 ### Orchestration asynchrone avec Semantic Kernel
 
@@ -3706,38 +3709,40 @@ Cette cellule lance le processus d'analyse multi-agents. L'orchestration fonctio
 | Composant | Rôle |
 |-----------|------|
 | `nest_asyncio.apply()` | Permet `await` dans Jupyter (normalement synchrone) |
-| `run_analysis_conversation(texte)` | Fonction d'orchestration principale |
+| `AnalysisRunner.run()` | Pipeline d'orchestration principal (shim `argumentation_lib`) |
 | `local_state` | Objet `RhetoricalAnalysisState` retourné |
 
 **Étapes d'exécution internes**:
 
-1. **Initialisation**: Création kernel SK, chargement plugins
-2. **Tour 1 - Analyse informelle**: Agent LLM identifie arguments/sophismes
-3. **Tour 2 - Formalisation**: Agent PL traduit en logique, exécute requêtes
-4. **Synthèse**: Génération conclusion basée sur analyse hybride
-5. **Retour**: État final JSON avec tous les résultats
+1. **Initialisation**: Kernel SK construit depuis `.env`, `StateManagerPlugin` enregistré
+2. **Phase 1 - Analyse informelle**: Agent LLM identifie arguments/sophismes
+3. **Phase 2 - Analyse formelle**: Agent LLM traduit en logique et journalise les requêtes
+4. **Phase 3 - Synthèse**: Génération de la conclusion
+5. **Retour**: État partagé (`RhetoricalAnalysisState`) portant tous les résultats
 
-> **Note performance**: L'exécution prend 90-150s selon la complexité du texte et la latence des API OpenAI/Anthropic. Surveillez les logs pour suivre la progression.",,,,,,,,7f31ed94ed07cd49,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,689bf30e,code,fr,b07695c49e646723,"import nest_asyncio
+> **Note performance**: L'exécution prend 90-150s selon la complexité du texte et la latence des API OpenAI/Anthropic. Surveillez les logs pour suivre la progression.",,,,,,,,c0cf82fe7253b8fb,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,689bf30e,code,fr,8ba4aa6f87e78c54,"import nest_asyncio
 import asyncio
 
-# Lancer seulement si on a obtenu un texte valide ET que les définitions sont chargées
-if 'texte_pour_analyse' in locals() and texte_pour_analyse and 'run_analysis_conversation' in locals():
-    print(""\n🚀 Lancement de l'exécution asynchrone de l'analyse..."")
+# Lancer seulement si on a obtenu un texte valide ET que les definitions sont chargees
+if 'analysis_runner' in locals() and analysis_runner is not None:
+    print(""\nLancement de l'execution asynchrone de l'analyse..."")
     nest_asyncio.apply()
     try:
-        # Passer le texte préparé
-        local_state = await run_analysis_conversation(texte_pour_analyse)
-        print(""\n🏁 Analyse terminée."")
+        analysis_result = await analysis_runner.run()
+        print(""\nAnalyse terminee."")
+        print(f""  Phases executees : {[p.get('name') for p in analysis_result.get('phases', [])]}"")
+        if analysis_result.get('conclusion'):
+            print(""  Conclusion finale : disponible dans l'etat partage."")
     except Exception as e_analysis:
-        print(f""\n❌ Une erreur est survenue pendant l'exécution de l'analyse : {e_analysis}"")
+        print(f""\nUne erreur est survenue pendant l'execution de l'analyse : {e_analysis}"")
         import traceback
         traceback.print_exc()
 
 elif 'texte_pour_analyse' not in locals() or not texte_pour_analyse:
-    print(""\n Analyse non lancée : aucun texte n'a été préparé ou une erreur est survenue avant."")
-else: # Implique que run_analysis_conversation n'a pas été chargée
-     print(""\n Analyse non lancée : la fonction d'orchestration n'a pas pu être chargée."")",,,,,,,,b07695c49e646723,,,,,,,,
+    print(""\nAnalyse non lancee : aucun texte n'a ete prepare ou une erreur est survenue avant."")
+else:  # Implique que l'orchestrateur n'a pas ete charge
+    print(""\nAnalyse non lancee : l'orchestrateur n'a pas pu etre charge."")",,,,,,,,8ba4aa6f87e78c54,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,j4vej6eunq,markdown,fr,7b285d4566298e8d,"### Interprétation du processus d'analyse
 
 **Étapes d'exécution observables**:
@@ -3769,17 +3774,17 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python
 | `Final state:` | Affichage JSON de l'état final |
 
 > **Note de performance**: En mode batch, l'exécution complète prend quelques minutes (durée machine-dépendante : latence API LLM et complexité du texte ; plage typique donnée ci-dessus) sur le texte d'exemple enrichi.",,,,,,,,7b285d4566298e8d,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,ex-aa4-count-md,markdown,fr,389cd8d616a08210,"### Exercice 2 : Compter les sophismes dans un rapport
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,ex-aa4-count-md,markdown,fr,fe1d9caecfcaa0c2,"### Exercice 2 : Compter les sophismes dans un rapport
 
 Après une analyse collaborative, le rapport contient une liste de sophismes detectes. Ecrivez une fonction pour les compter.
 
 **Objectif** : Implementer `count_fallacies`.
 
 **Indices** :
-- # Étape 1 : Parser la chaîne JSON avec `json.loads`
-- # Étape 2 : Acceder a la cle `fallacies` (peut etre imbriquee)
-- # Étape 3 : Compter les éléments de la liste
-- # Étape 4 : Retourner 0 si la cle est absente",,,,,,,,389cd8d616a08210,,,,,,,,
+- **Étape 1** : Parser la chaîne JSON avec `json.loads`
+- **Étape 2** : Acceder a la cle `fallacies` (peut etre imbriquee)
+- **Étape 3** : Compter les éléments de la liste
+- **Étape 4** : Retourner 0 si la cle est absente",,,,,,,,fe1d9caecfcaa0c2,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,ex-aa4-count-code,code,fr,03ee303757d7b4f2,"# Exercice 2 : Compter les sophismes dans un rapport JSON
 # TODO etudiant: ecrivez une fonction qui extrait le nombre de sophismes
 # d'un rapport d'analyse.
@@ -4111,17 +4116,17 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python
 > - Métriques de qualité d'analyse
 > - Comparaison entre versions du système
 > - Documentation des résultats d'analyse",,,,,,,,361532f388d51c1a,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,ex-aa4-status-md,markdown,fr,4b5abb997c5d1891,"### Exercice 3 : Mapper un score de confiance a un statut
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,ex-aa4-status-md,markdown,fr,b1f08b913fcbf5cc,"### Exercice 3 : Mapper un score de confiance a un statut
 
 Le rapport de validation attribue des scores de confiance aux analyses. Convertissez ces scores en labels comprehensibles.
 
 **Objectif** : Implementer `confidence_to_status`.
 
 **Indices** :
-- # Étape 1 : Définir les seuils : >0.8 = VALIDATED, 0.5-0.8 = UNCERTAIN, <0.5 = LOW
-- # Étape 2 : Comparer le score aux seuils avec des `if/elif/else`
-- # Étape 3 : Retourner le label correspondant
-- # Étape 4 : Gerer les cas extremes (score < 0 ou > 1)",,,,,,,,4b5abb997c5d1891,,,,,,,,
+- **Étape 1** : Définir les seuils : >0.8 = VALIDATED, 0.5-0.8 = UNCERTAIN, <0.5 = LOW
+- **Étape 2** : Comparer le score aux seuils avec des `if/elif/else`
+- **Étape 3** : Retourner le label correspondant
+- **Étape 4** : Gerer les cas extremes (score < 0 ou > 1)",,,,,,,,b1f08b913fcbf5cc,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,ex-aa4-status-code,code,fr,190340a48775e9e6,"# Exercice 3 : Mapper un score de confiance a un statut
 # TODO etudiant: ecrivez une fonction qui classifie un score de confiance
 # en categories: VALIDATED (>0.8), UNCERTAIN (0.5-0.8), LOW (<0.5).
@@ -4136,7 +4141,7 @@ for s in [0.95, 0.65, 0.3]:
     print(f""Score {s}: {confidence_to_status(s)}"")
 print(""Exercice a completer"")
 ",,,,,,,,190340a48775e9e6,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,7abbf986,markdown,fr,5e4a312d43e131c6,"## 6. Résultats et Conclusion
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,7abbf986,markdown,fr,c0ed4f6a4509d561,"## 6. Résultats et Conclusion
 
 Vérifiez les logs et l'état final JSON affichés par l'exécution précédente pour voir le résultat de l'analyse collaborative.
 
@@ -4172,7 +4177,7 @@ Le système combine deux approches complémentaires:
 - Exécute requêtes de cohérence et d'implication
 - Output: Preuves formelles ou contre-exemples
 
-> **Avantage de l'approche hybride**: La combinaison LLM + logique formelle permet à la fois la compréhension contextuelle (LLM) et la rigueur mathématique (logique).",,,,,,,,5e4a312d43e131c6,,,,,,,,
+> **Avantage de l'approche hybride**: La combinaison LLM + logique formelle permet à la fois la compréhension contextuelle (LLM) et la rigueur mathématique (logique).",,,,,,,,c0ed4f6a4509d561,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb,a7a37b89,markdown,fr,e192c4f686a51810,"## 7. Pistes d'Amélioration Futures
 
 ### Améliorations techniques
@@ -5226,7 +5231,7 @@ sortie executee honnete - c'est précisément ce que la sentinelle est faite pou
 
 - Issue #2137 - distillation de l'essence consolidee (doctrine anti-theatre / fail-loud).
 ",,,,,,,,a3e3e23710dd96bf,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-0,markdown,fr,ccfc455bf2df1b93,"# Ontologie AIF.owl -- l'architecture Argumentum des sophismes (OWL2 + annotation-space)
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,cell-0,markdown,fr,ccfc455bf2df1b93,"# Ontologie AIF.owl -- l'architecture Argumentum des sophismes (OWL2 + annotation-space)
 
 > **EPIC #4960 -- Volet A, étape 1** (socle ontologique Argument_Analysis). Issue source : [#5721](https://github.com/jsboige/CoursIA/issues/5721).
 
@@ -5255,7 +5260,7 @@ Ce notebook explore `ontologies/argumentum_fallacies.owl` (OWL2/XML, ~6,0 MB) et
 8. Scheme vs conflict : l'attaque AIF est-elle un scheme ou un conflit ?
 9. Exercices
 10. Ponts avec la serie",,,,,,,,ccfc455bf2df1b93,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-1,markdown,fr,eaa77380739b96b8,"## 1. Contexte : Argumentum, OWL2 et l'idiome annotation-space (#763)
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,cell-1,markdown,fr,eaa77380739b96b8,"## 1. Contexte : Argumentum, OWL2 et l'idiome annotation-space (#763)
 
 L'ontologie **Argumentum** (https://www.argumentum.games) encode une taxonomie des sophismes (fallacies) et des vertus argumentatives a destination du jeu serieux *Argumentum*. Le fichier `argumentum_fallacies.owl` est genere par le pipeline .NET (`OwlGeneratorConfig.cs`) a partir du CSV canonique.
 
@@ -5267,9 +5272,9 @@ L'ontologie **Argumentum** (https://www.argumentum.games) encode une taxonomie d
 
 **Pourquoi un parseur regex ?** rdflib echoue au parse (dialecte OWL2/XML + annotations resource non standard) et owlready2 charge le fichier mais **n'expose 0 classe** via son API Python. Le parseur regex tolerant reste le chemin fiable pour extraire la structure — c'est l'objet pedagogique de ce notebook.
 
-> Le notebook frere `Argument_Analysis_Ontology_CrossLinks.ipynb` (PR-B) lit le **CSV canonique** ; les deux substances (OWL et CSV) ont ete **reconciliees par #763** (crossLink + AIF desormais emis dans l'OWL).",,,,,,,,eaa77380739b96b8,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-2,markdown,fr,2c9a7e015e1def62,## 2. Charger l'ontologie : regex tolerant (rdflib echoue),,,,,,,,2c9a7e015e1def62,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-3,code,fr,e9e6406862d93bea,"# --- Imports + parseur regex maison de l'OWL2/XML ---
+> Le notebook frere `Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb` (PR-B) lit le **CSV canonique** ; les deux substances (OWL et CSV) ont ete **reconciliees par #763** (crossLink + AIF desormais emis dans l'OWL).",,,,,,,,eaa77380739b96b8,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,cell-2,markdown,fr,2c9a7e015e1def62,## 2. Charger l'ontologie : regex tolerant (rdflib echoue),,,,,,,,2c9a7e015e1def62,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,cell-3,code,fr,e9e6406862d93bea,"# --- Imports + parseur regex maison de l'OWL2/XML ---
 from pathlib import Path
 import re
 
@@ -5299,8 +5304,8 @@ except ImportError:
 
 print(""owlready2 : charge le fichier mais expose 0 classe via l'API Python (idiome annotation-space)."")
 print(""\n=> On conserve le parseur regex tolerant : chemin fiable pour extraire la structure."")",,,,,,,,e9e6406862d93bea,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-4,markdown,fr,8c52fe48b142ddc0,"**Lecture** : le fichier OWL pese ~6,0 MB (~96 800 lignes). Les axiomes `ObjectExactCardinality` (36) sont desormais **bien formes** (avec `onProperty`) — ce ne sont plus les « 37 axiom casses ligne 4090 » de l'ancien snapshot. Malgre cela, **rdflib echoue toujours** (autre cause : le dialecte OWL2/XML avec annotations-resource) et **owlready2 charge mais n'expose rien** via son API Python. Le parseur regex tolerant reste donc l'approche retenue : il extrait Class, ObjectProperty et AnnotationAssertion directement du XML, sans dependre d'un moteur RDF.",,,,,,,,8c52fe48b142ddc0,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-5,markdown,fr,75b6891419475fc5,"## 3. Structure : Class + ObjectProperty + AnnotationAssertion
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,cell-4,markdown,fr,8c52fe48b142ddc0,"**Lecture** : le fichier OWL pese ~6,0 MB (~96 800 lignes). Les axiomes `ObjectExactCardinality` (36) sont desormais **bien formes** (avec `onProperty`) — ce ne sont plus les « 37 axiom casses ligne 4090 » de l'ancien snapshot. Malgre cela, **rdflib echoue toujours** (autre cause : le dialecte OWL2/XML avec annotations-resource) et **owlready2 charge mais n'expose rien** via son API Python. Le parseur regex tolerant reste donc l'approche retenue : il extrait Class, ObjectProperty et AnnotationAssertion directement du XML, sans dependre d'un moteur RDF.",,,,,,,,8c52fe48b142ddc0,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,cell-5,markdown,fr,75b6891419475fc5,"## 3. Structure : Class + ObjectProperty + AnnotationAssertion
 
 Depuis #763, l'ontologie Argumentum suit un idiome **annotation-space** :
 
@@ -5314,7 +5319,7 @@ Depuis #763, l'ontologie Argumentum suit un idiome **annotation-space** :
 **Rupture avec l'ancien générateur** : `NamedIndividual`, `ClassAssertion` et `ObjectPropertyAssertion` ont **disparu** (0 occurrence). Là où l'ancien OWL materialisait chaque label multilingue comme un individu distinct (~10 976 `NamedIndividual`), le nouveau modèle **1 `owl:Class` par sophisme** portant ses labels en annotations — d'ou la chute apparente du nombre de concepts (10 976 → 1 509), qui est en réalité une **normalisation** (plus de doublons par langue).
 
 **Nouveaute #763** : l'AIF n'est plus seulement *declaree*, elle **type** les sophismes — 93 concepts portent `aifAttackedNode → RA/I/CA-node` (§5-6).",,,,,,,,75b6891419475fc5,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-6,code,fr,b6736124a2db51f4,"# --- Comptage de la structure : Class + ObjectProperty + AnnotationAssertion ---
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,cell-6,code,fr,b6736124a2db51f4,"# --- Comptage de la structure : Class + ObjectProperty + AnnotationAssertion ---
 from collections import Counter
 
 # Concepts = Declaration/Class (le generateur #763 modelise 1 owl:Class par sophisme).
@@ -5354,11 +5359,11 @@ print(f""\nAnnotationAssertion : {len(AA_RES) + len(AA_LIT):,}  (resource={len(A
 N_CLASSES = len(class_decls)
 N_ARG_CLASSES = len(arg_classes)
 N_OBJ_PROP = len(obj_props)",,,,,,,,b6736124a2db51f4,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-7,markdown,fr,c13bad82644d1352,"**Lecture** : le coeur de l'ontologie est desormais fait de **1 509 `owl:Class`** (concepts Argumentum) + 4 classes AIF, relies par **7 773 `AnnotationAssertion`-resource** et decrits par **10 511 `AnnotationAssertion`-literal**. Les `NamedIndividual`/`ClassAssertion`/`ObjectPropertyAssertion` de l'ancien générateur sont a **0** : #763 a bascule d'un modèle *individus + triplets ObjectProperty* vers un modèle *classes + annotation-space*. Les 10 `ObjectProperty` declarees (8 verbes crossLink + `hasConflictedElement` + `aifAttackedNode`) sont *declarees* comme proprietes mais *emises* comme annotations (contrainte de l'adapter OWLSharp).",,,,,,,,c13bad82644d1352,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-8,markdown,fr,28a462fff701cc20,"## 4. Schemes de Walton : classes materialisees + labels
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,cell-7,markdown,fr,c13bad82644d1352,"**Lecture** : le coeur de l'ontologie est desormais fait de **1 509 `owl:Class`** (concepts Argumentum) + 4 classes AIF, relies par **7 773 `AnnotationAssertion`-resource** et decrits par **10 511 `AnnotationAssertion`-literal**. Les `NamedIndividual`/`ClassAssertion`/`ObjectPropertyAssertion` de l'ancien générateur sont a **0** : #763 a bascule d'un modèle *individus + triplets ObjectProperty* vers un modèle *classes + annotation-space*. Les 10 `ObjectProperty` declarees (8 verbes crossLink + `hasConflictedElement` + `aifAttackedNode`) sont *declarees* comme proprietes mais *emises* comme annotations (contrainte de l'adapter OWLSharp).",,,,,,,,c13bad82644d1352,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,cell-8,markdown,fr,28a462fff701cc20,"## 4. Schemes de Walton : classes materialisees + labels
 
 Les **schemes d'argumentation** (Walton, Reed & Macagno 2008) sont des patterns d'inference reconnus en logique informelle. Le générateur #763 **materialise** les mappings `AIF_skos*` du CSV en **100 classes de forme `*_Inference_*` / `*_Conflict`** (ex. `PopularOpinion_Inference_Conflict`, `Example_Inference_Conflicted`, `CauseToEffect_Inference`). On les repere directement dans les declarations de Class, en complement de la detection classique par substring dans les `skos:prefLabel` (2 816 labels = 1 408 FR + 1 408 EN).",,,,,,,,28a462fff701cc20,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-9,code,fr,b261473c50c4f2df,"# --- Labels multilingues (skos:prefLabel) + schemes de Walton ---
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,cell-9,code,fr,b261473c50c4f2df,"# --- Labels multilingues (skos:prefLabel) + schemes de Walton ---
 from collections import Counter
 
 # prefLabel : AnnotationProperty IRI complet (plus d'abbreviatedIRI depuis #763).
@@ -5397,8 +5402,8 @@ print(""\nSchemes Walton detectes dans les prefLabel :"")
 for k in WALTON_SCHEMES:
     hits = walton_found[k]
     print(f""  {'v' if hits else 'x'} {k:18s} : {len(hits)} occurrence(s)"")",,,,,,,,b261473c50c4f2df,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-10,markdown,fr,ab360b9bd02e3f92,"**Lecture** : **2 816 `skos:prefLabel`** (1 408 FR + 1 408 EN, soit 1 label par sophisme et par langue — la normalisation attendue du nouvel idiome). La detection des schemes de Walton s'appuie desormais sur les **100 classes materialisees** (`*_Inference_*`), signal bien plus robuste que la recherche par substring dans les labels (qui produisait des faux positifs sur « Sign », « Rule »…). La detection par substring est conservee a titre de comparaison pedagogique.",,,,,,,,ab360b9bd02e3f92,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-11,markdown,fr,a2dd4eb553b4f959,"## 5. Relations : inventaire des AnnotationAssertion-resource
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,cell-10,markdown,fr,ab360b9bd02e3f92,"**Lecture** : **2 816 `skos:prefLabel`** (1 408 FR + 1 408 EN, soit 1 label par sophisme et par langue — la normalisation attendue du nouvel idiome). La detection des schemes de Walton s'appuie desormais sur les **100 classes materialisees** (`*_Inference_*`), signal bien plus robuste que la recherche par substring dans les labels (qui produisait des faux positifs sur « Sign », « Rule »…). La detection par substring est conservee a titre de comparaison pedagogique.",,,,,,,,ab360b9bd02e3f92,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,cell-11,markdown,fr,a2dd4eb553b4f959,"## 5. Relations : inventaire des AnnotationAssertion-resource
 
 Depuis #763, les relations concept→concept sont portees par des **`AnnotationAssertion`-resource** (et non plus des `ObjectPropertyAssertion`). L'inventaire par predicat revele **trois familles** :
 
@@ -5408,7 +5413,7 @@ Depuis #763, les relations concept→concept sont portees par des **`AnnotationA
 - **mapping Walton** : `broadMatch` (57), `closeMatch` (10), `narrowMatch` (3) = 70.
 
 **Inversion de la note historique** : l'ancien OWL **n'incluait PAS** les 8 verbes crossLink (ils etaient CSV-only). #763 les a **cables et emis** — ce notebook les inventorie donc desormais dans l'OWL.",,,,,,,,a2dd4eb553b4f959,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-12,code,fr,06bf0b04e4ce46ec,"# --- Inventaire des relations (AnnotationAssertion-resource) par predicat ---
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,cell-12,code,fr,06bf0b04e4ce46ec,"# --- Inventaire des relations (AnnotationAssertion-resource) par predicat ---
 from collections import Counter
 
 rel_usage = Counter()
@@ -5432,8 +5437,8 @@ print(f""   AIF attack : aifAttackedNode={rel_usage['aifAttackedNode']} (resourc
 print(f""   mapping Walton : broadMatch={rel_usage['broadMatch']}, closeMatch={rel_usage['closeMatch']}, ""
       f""narrowMatch={rel_usage['narrowMatch']}"")
 print(""\n   NOTE : contrairement a l'ancien OWL (crossLink ABSENT), #763 a cable ces 8 verbes."")",,,,,,,,06bf0b04e4ce46ec,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-13,markdown,fr,83ddb42ffa1ebf29,"**Lecture** : l'inventaire par predicat montre la structure reelle de la taxonomie. La colonne vertebrale hiérarchique (`broader`/`narrower`/`inScheme`/`type`, ~1 408 chacune = une par sophisme) est desormais **doublee d'une couche transverse crossLink** (1 977 relations, dominee par `mirrors` et `isRelatedTo`) et d'une **couche AIF attack** (93 `aifAttackedNode`). C'est le changement de fond apporte par #763 : la taxonomie n'est plus un simple arbre, mais un **graphe** hiérarchie + transverse + AIF.",,,,,,,,83ddb42ffa1ebf29,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-14,markdown,fr,1300d62b157ff0bd,"## 6. Grappe Equivoque : sous-graphe type AIF
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,cell-13,markdown,fr,83ddb42ffa1ebf29,"**Lecture** : l'inventaire par predicat montre la structure reelle de la taxonomie. La colonne vertebrale hiérarchique (`broader`/`narrower`/`inScheme`/`type`, ~1 408 chacune = une par sophisme) est desormais **doublee d'une couche transverse crossLink** (1 977 relations, dominee par `mirrors` et `isRelatedTo`) et d'une **couche AIF attack** (93 `aifAttackedNode`). C'est le changement de fond apporte par #763 : la taxonomie n'est plus un simple arbre, mais un **graphe** hiérarchie + transverse + AIF.",,,,,,,,83ddb42ffa1ebf29,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,cell-14,markdown,fr,1300d62b157ff0bd,"## 6. Grappe Equivoque : sous-graphe type AIF
 
 L'**Equivoque** (Equivocation) est un sophisme d'ambiguite : un même terme employe dans des sens différents au cours d'un même raisonnement. Dans l'ontologie, le concept `semanticAmbiguity` porte **11 relations** (AnnotationAssertion-resource) :
 
@@ -5441,7 +5446,7 @@ L'**Equivoque** (Equivocation) est un sophisme d'ambiguite : un même terme empl
 - **AIF attack** : `aifAttackedNode → RA-node` — le sophisme est formellement modelise comme une **attaque de l'inference** (RA-node = Rule-Application node au sens AIF, ce qui correspond a un *undercut* ASPIC+).
 
 C'est la demonstration concrete de #763 : **l'AIF est desormais utilisee pour typer les sophismes**, la ou l'ancien OWL se contentait de *declarer* les nodes AIF sans les relier.",,,,,,,,1300d62b157ff0bd,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-15,code,fr,38d1b0ef93d8b22d,"# --- Sous-graphe autour de semanticAmbiguity via AnnotationAssertion-resource ---
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,cell-15,code,fr,38d1b0ef93d8b22d,"# --- Sous-graphe autour de semanticAmbiguity via AnnotationAssertion-resource ---
 
 # Noeuds lies a l'Equivoque (label contenant equivoc/quivoque).
 equiv_nodes = []
@@ -5471,43 +5476,43 @@ print(""\nTriplets :"")
 for (subj, pred, obj), _ in G_equiv.items():
     tag = ""  <-- AIF attack"" if pred == 'aifAttackedNode' else """"
     print(f""  {subj[:32]:32s} --[{pred:16s}]--> {obj[:24]:24s}{tag}"")",,,,,,,,38d1b0ef93d8b22d,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-16,markdown,fr,1cb44d9ba7c03114,"**Lecture** : le sous-graphe de `semanticAmbiguity` combine sa **hiérarchie** (parent `ambiguity`, enfants `vagueness` / `polysemicLexicalShift` / `polysemyBySemanticChange`) et son **typage AIF** (`aifAttackedNode → RA-node`). Le degré du noeud (11) melange donc des aretes taxonomiques et une arete AIF — c'est exactement la reconciliation que #763 apporte : une même entite porte simultanement sa place dans l'arbre SKOS et son rôle dans le modèle d'attaque AIF.",,,,,,,,1cb44d9ba7c03114,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-17,markdown,fr,94b1d51d57ba172a,"## 9. Exercices
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,cell-16,markdown,fr,1cb44d9ba7c03114,"**Lecture** : le sous-graphe de `semanticAmbiguity` combine sa **hiérarchie** (parent `ambiguity`, enfants `vagueness` / `polysemicLexicalShift` / `polysemyBySemanticChange`) et son **typage AIF** (`aifAttackedNode → RA-node`). Le degré du noeud (11) melange donc des aretes taxonomiques et une arete AIF — c'est exactement la reconciliation que #763 apporte : une même entite porte simultanement sa place dans l'arbre SKOS et son rôle dans le modèle d'attaque AIF.",,,,,,,,1cb44d9ba7c03114,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,cell-17,markdown,fr,94b1d51d57ba172a,"## 9. Exercices
 
 Quatre exercices formels (règle #2161 : >= 3 exos par notebook pedagogique). Chaque exercice est un *stub* `print(""Exercice a completer"")` que l'etudiant complete.
 
 ### Exercice 1 -- Distribution des concepts par prefixe de scheme
 
 A partir de `arg_classes` (liste d'IRI de `owl:Class` Argumentum) et de `taxonomy` (dict localname -> labels), calculer combien de concepts sont des **classes materialisees de scheme** (`*_Inference_*` / `*_Conflict`) versus des sophismes simples. Renvoyer un `dict` {catégorie: compte} et l'afficher trie.",,,,,,,,94b1d51d57ba172a,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-18,code,fr,df70235428023cf7,"# Exercice 1 a completer
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,cell-18,code,fr,df70235428023cf7,"# Exercice 1 a completer
 # TODO etudiant : a partir de `arg_classes` (IRI de owl:Class) et de `taxonomy`
 # (dict localname -> labels), separer les classes materialisees de scheme
 # (`_Inference` / `_Conflict`) des sophismes simples. Renvoyer un dict {cat: n}.
 print(""Exercice a completer"")",,,,,,,,df70235428023cf7,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-19,markdown,fr,d39397ceebb1ec98,"### Exercice 2 -- Visualisation matplotlib du sous-graphe Equivoque
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,cell-19,markdown,fr,d39397ceebb1ec98,"### Exercice 2 -- Visualisation matplotlib du sous-graphe Equivoque
 
 Reprendre `G_equiv` de la section 6 et le visualiser avec `matplotlib` + `networkx.spring_layout` (seed=42). Colorer les noeuds par degré (entrant + sortant), afficher les labels des proprietes sur les aretes.
 
 *Indice* : construire un `nx.DiGraph`, ajouter les aretes depuis `G_equiv.items()`. Si `G_equiv` est vide, verifier que `semanticAmbiguity` est bien le `TARGET` (il peut etre absent si la taxonomie change).",,,,,,,,d39397ceebb1ec98,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-20,code,fr,7926791344180581,"# Exercice 2 a completer
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,cell-20,code,fr,7926791344180581,"# Exercice 2 a completer
 # TODO etudiant : reprendre G_equiv de la section 6, construire un nx.DiGraph,
 # spring_layout (seed=42), couleur des noeuds par degre, edge_labels affiches.
 # Si matplotlib n'est pas disponible, fallback ASCII (cf. §6).
 print(""Exercice a completer"")",,,,,,,,7926791344180581,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-21,markdown,fr,b78986c19722899f,"### Exercice 3 -- Detection des sophismes ""Ambiguite"" et hiérarchie
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,cell-21,markdown,fr,b78986c19722899f,"### Exercice 3 -- Detection des sophismes ""Ambiguite"" et hiérarchie
 
 Implementer une fonction `trouver_ambiguite(taxonomy)` qui retourne tous les concepts dont le `prefLabel` fr/en mentionne ""ambig"", ""equivoc"", ""quivoqu"". Renvoyer un `dict {local: [labels_matches]}`. Faux positifs a eviter : ""ambiguite du contexte"" hors sophisme. Bonus : croiser avec `AA_RES` pour afficher, pour chaque match, son parent `broader`.",,,,,,,,b78986c19722899f,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-22,code,fr,c2585a668119ac2f,"# Exercice 3 a completer
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,cell-22,code,fr,c2585a668119ac2f,"# Exercice 3 a completer
 # TODO etudiant : implementer trouver_ambiguite(taxonomy) qui retourne
 # un dict {local: [labels_matches]} sur les prefLabel fr/en. Bonus : croiser
 # avec AA_RES (predicat 'broader') pour afficher le parent de chaque match.
 print(""Exercice a completer"")",,,,,,,,c2585a668119ac2f,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-23,markdown,fr,32b71536a0be22f1,"## 10. Ponts avec la serie
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,cell-23,markdown,fr,32b71536a0be22f1,"## 10. Ponts avec la serie
 
 | Direction | Lien | Relation |
 |-----------|------|----------|
 | <-> ArgumentProfile | `Argumentation-08e-Argument-Profile-Python.ipynb` | Vue d'ensemble de la serie, introduction aux schemes |
-| <-> CrossLinks (PR-B) | `Argument_Analysis_Ontology_CrossLinks.ipynb` | Substance CSV canonique — **reconciliee avec cet OWL par #763** |
+| <-> CrossLinks (PR-B) | `Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb` | Substance CSV canonique — **reconciliee avec cet OWL par #763** |
 | -> SemanticKernel | `SemanticKernel/*` | Exploitation des schemes pour l'analyse d'arguments |
 
 ### Honnetete methodologique
@@ -5521,15 +5526,15 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ip
 4. **Ontologie soeur presente** : `argumentum_virtues.owl` est desormais dans `ontologies/` (aux cotes de `argumentum_fallacies.owl`). La note historique « argumentum_virtues.owl absente » est **obsolete**.
 
 5. **Idiome annotation-space** : toutes les relations sont des `AnnotationAssertion` (et non des `ObjectPropertyAssertion`), consequence du bug `SKOSHelper` d'OWLSharp. C'est un choix de serialisation du générateur, pas une limite de modelisation — les 10 `ObjectProperty` sont bien declarees.",,,,,,,,32b71536a0be22f1,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,fea709ae,markdown,fr,0b271a5bba5ec46e,"# Argument_Analysis_Ontology_CrossLinks.ipynb — PR-B #4960
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,fea709ae,markdown,fr,0b271a5bba5ec46e,"# Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb — PR-B #4960
 
-**Notebook pédagogique** : exploration du **CSV canonique Argumentum** (1553 lignes physiques → **1408 sophismes**), complémentaire à `Argument_Analysis_Ontology_AIF.ipynb` (PR-A, OWL2/XML).
+**Notebook pédagogique** : exploration du **CSV canonique Argumentum** (1553 lignes physiques → **1408 sophismes**), complémentaire à `Argumentation-Onto-01-AIF-OWL2-Python.ipynb` (PR-A, OWL2/XML).
 
 > **⚠️ Mise à jour 2026-07-10 (Argumentum PR #763)** — l'intégration ontologique des Fallacies a été complétée en amont. Les 8 relations `crossLink_*` et les colonnes AIF attack (`AIF_attackType`/`AIF_attackedNode`), jusque-là **présentes uniquement dans le CSV**, sont désormais **émises dans l'OWL** (comme `AnnotationAssertion`). La couverture crossLink est passée de **1,5 % (22 relations) à 59,9 % (1081 cellules / 844 sophismes)** après curation transverse (#141) + câblage du générateur (#763). Ce notebook reflète l'état **après** #763.
 
 **Filiation** :
 - EPIC parent : **#4960** Argument_Analysis v3 (submodule Argumentum)
-- PR-A : **#5721** (`Argument_Analysis_Ontology_AIF.ipynb`)
+- PR-A : **#5721** (`Argumentation-Onto-01-AIF-OWL2-Python.ipynb`)
 - PR-B : **ce notebook** (CSV canonique + crossLink_* + AIF mappings)
 
 **Objectifs d'apprentissage** :
@@ -5557,9 +5562,9 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossL
 12. Conclusion + Ponts
 
 **Verdict SOTA** : SOTA-OK (pandas + matplotlib natifs, pas de workaround dégradé).",,,,,,,,0b271a5bba5ec46e,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,1d25090a,markdown,fr,24c7cb16a1bc6788,"## 1. Contexte — De PR-A à PR-B (mis à jour après #763)
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,1d25090a,markdown,fr,24c7cb16a1bc6788,"## 1. Contexte — De PR-A à PR-B (mis à jour après #763)
 
-`Argument_Analysis_Ontology_AIF.ipynb` (PR-A) charge `ontologies/argumentum_fallacies.owl` (OWL2/XML) via un parseur regex tolérant (rdflib échoue sur le dialecte OWL/XML ; owlready2 charge mais n'expose rien via son API Python).
+`Argumentation-Onto-01-AIF-OWL2-Python.ipynb` (PR-A) charge `ontologies/argumentum_fallacies.owl` (OWL2/XML) via un parseur regex tolérant (rdflib échoue sur le dialecte OWL/XML ; owlready2 charge mais n'expose rien via son API Python).
 
 **Évolution majeure (Argumentum PR #763, mergée 2026-07-10)** : au moment de la première version de PR-A, l'OWL n'émettait **qu'une** des trois couches ontologiques du CSV (les mappings `AIF_skos*`). Les 8 relations `crossLink_*` et les colonnes `AIF_attackType`/`AIF_attackedNode` étaient **dans le CSV mais absentes de l'OWL** — le chemin de données CSV→OWL n'existait pas encore. #763 a :
 
@@ -5568,12 +5573,12 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossL
 - régénéré l'OWL, qui porte désormais **1977 `AnnotationAssertion` crossLink** + **93 typages AIF attack** (undercut/undermine/rebut → RA/I/CA-node).
 
 **PR-B** lit `Cards/Fallacies/Argumentum Fallacies - Taxonomy.csv` (le CSV canonique, source curée à la main, **1408 sophismes × 104 colonnes**) et expose la taxonomie, la couverture 8 langues, les AIF mappings et la couche crossLink — **désormais réconciliée avec l'OWL** (§8).",,,,,,,,24c7cb16a1bc6788,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,24cbc6fd,markdown,fr,926ee5e5076d1c3f,"## 2. Loader CSV — pandas + utf-8-sig
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,24cbc6fd,markdown,fr,926ee5e5076d1c3f,"## 2. Loader CSV — pandas + utf-8-sig
 
 Le CSV upstream `Argumentum Fallacies - Taxonomy.csv` est encodé en **UTF-8 avec BOM** (3 octets `\xEF\xBB\xBF` en tête), signature Microsoft Excel. Pandas exige `encoding='utf-8-sig'` pour ignorer ce BOM.
 
 Le séparateur est la virgule `,`. Le quoting est géré par pandas par défaut. 102 colonnes au total.",,,,,,,,926ee5e5076d1c3f,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,6c5b3cff,code,fr,b7c8da3783df990e,"import pandas as pd
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,6c5b3cff,code,fr,b7c8da3783df990e,"import pandas as pd
 from pathlib import Path
 
 # Resolve CSV path: nbconvert runs from the notebook directory, but the CSV
@@ -5600,7 +5605,7 @@ print()
 print('--- First 3 rows (PK, Famille, nom_vulgarisé) ---')
 print(df[['PK', 'Famille_camelCase', 'nom_vulgarisé', 'text_fr']].head(3).to_string())
 ",,,,,,,,b7c8da3783df990e,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,338e1cdd,markdown,fr,f5bb10b6ed9a95b4,"## 3. Vue d'ensemble — 1408 sophismes canoniques, 104 colonnes
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,338e1cdd,markdown,fr,f5bb10b6ed9a95b4,"## 3. Vue d'ensemble — 1408 sophismes canoniques, 104 colonnes
 
 Sur 1553 lignes physiques (certaines cellules contiennent des retours-ligne encadrés par des guillemets), **1408 sont des sophismes canoniques**. Chaque sophisme a :
 
@@ -5615,7 +5620,7 @@ Sur 1553 lignes physiques (certaines cellules contiennent des retours-ligne enca
 - Métadonnées visuelles (shape, image, svg_color, svg_illustration, print_and_play)
 
 Les **104 colonnes** = 102 historiques + les 2 colonnes AIF attack (ajoutées par #753).",,,,,,,,f5bb10b6ed9a95b4,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,d9579d62,code,fr,4de7288cf57625c9,"import matplotlib.pyplot as plt
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,d9579d62,code,fr,4de7288cf57625c9,"import matplotlib.pyplot as plt
 
 fig, axes = plt.subplots(1, 2, figsize=(15, 5))
 
@@ -5645,7 +5650,7 @@ print(f'Total familles distinctes: {df[""Famille_camelCase""].nunique()}')
 print(f'Total niveaux distincts: {df[""niveau""].nunique()}')
 print(f'Famille la plus fréquente: {fam.index[0]} ({fam.values[0]} sophismes)')
 ",,,,,,,,4de7288cf57625c9,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,c623a161,markdown,fr,1b62bbb7c69c1103,"## 4. Taxonomie — 8 familles × 9 niveaux
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,c623a161,markdown,fr,1b62bbb7c69c1103,"## 4. Taxonomie — 8 familles × 9 niveaux
 
 Les **8 familles canoniques** Argumentum :
 
@@ -5663,10 +5668,10 @@ Les **8 familles canoniques** Argumentum :
 **Distribution déséquilibrée** : `influence` (30%) + `tricherie` (28%) = 58% du total. Cela reflète la tradition rhétorique (les sophismes d'influence et de tricherie sont les plus enseignés).
 
 **Niveaux 1-9** : distribution quasi-uniforme (12-25 sophismes par niveau), avec un pic au niveau 3 (25). Pas de gradient de difficulté strict ; c'est une taxonomie **pédagogique** (introduire tôt les sophismes les plus simples, late les plus subtils).",,,,,,,,1b62bbb7c69c1103,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,1344dd27,markdown,fr,e6f47baa2a77e3b7,"## 5. Couverture multilingue — 8 langues, 100% coverage
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,1344dd27,markdown,fr,e6f47baa2a77e3b7,"## 5. Couverture multilingue — 8 langues, 100% coverage
 
 Argumentum est un projet **multilingue par conception** : chaque sophisme est décrit en 8 langues. La cohérence inter-langues est maintenue à la main par l'équipe Argumentum.",,,,,,,,e6f47baa2a77e3b7,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,f52748f3,code,fr,1d0f034350a4fda1,"langs = ['fr', 'en', 'ru', 'pt', 'ar', 'es', 'zh', 'fa']
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,f52748f3,code,fr,1d0f034350a4fda1,"langs = ['fr', 'en', 'ru', 'pt', 'ar', 'es', 'zh', 'fa']
 
 fig, ax = plt.subplots(figsize=(10, 5))
 lang_counts = {}
@@ -5692,7 +5697,7 @@ plt.show()
 print(f'Couverture multilingue : 100% sur les 8 langues (toutes descriptions présentes)')
 print(f'Total descriptions = {len(df)} × 8 = {len(df) * 8}')
 ",,,,,,,,1d0f034350a4fda1,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,1016a8e9,markdown,fr,eb50767d8daea9ec,"## 6. AIF mappings — 70 mappages vers 60 schemes Walton
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,1016a8e9,markdown,fr,eb50767d8daea9ec,"## 6. AIF mappings — 70 mappages vers 60 schemes Walton
 
 Argumentum encode un **pont vers Walton Argumentation Schemes** via 4 colonnes :
 
@@ -5702,7 +5707,7 @@ Argumentum encode un **pont vers Walton Argumentation Schemes** via 4 colonnes :
 - `AIF_skosMappingType` (70 non-empty) : type de mapping SKOS (`skos:broadMatch`, `skos:closeMatch`, `skos:narrowMatch`)
 
 **Note AIF = Argument Interchange Format** (cf Rahwan et al. 2007), un standard de représentation de graphes argumentatifs. Argumentum fait le pont vers ce formalisme via les SKOS mapping properties.",,,,,,,,eb50767d8daea9ec,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,0d1973ae,code,fr,3aa580818836f08e,"import re
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,0d1973ae,code,fr,3aa580818836f08e,"import re
 from collections import Counter
 
 aif_dr = df['AIF_skosDirectRef'].dropna().str.strip()
@@ -5737,7 +5742,7 @@ print('Top 15 schemes Walton (par occurrences):')
 for k, v in walton.most_common(15):
     print(f'  {v:>3} {k}')
 ",,,,,,,,3aa580818836f08e,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,e84f2931,markdown,fr,4d5c870445d34f64,"## 7. CrossLink coverage — 1081 cellules / 844 sophismes (59,9 %)
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,e84f2931,markdown,fr,4d5c870445d34f64,"## 7. CrossLink coverage — 1081 cellules / 844 sophismes (59,9 %)
 
 Après curation transverse (#141) + câblage du générateur (#763), les 8 colonnes `crossLink_*` couvrent **59,9 %** des sophismes :
 
@@ -5755,7 +5760,7 @@ Après curation transverse (#141) + câblage du générateur (#763), les 8 colon
 | **Couverture par sophisme** | **844 / 1408** | **59,9 %** |
 
 **Interprétation** : la version historique de ce notebook mesurait **22 relations (1,5 %)** — la taxonomie était alors un arbre quasi-pur. La curation #141 (candidats 0-fabrication, transverse, confiance ≥ 0,6, 22 seeds manuels préservés) a ajouté **1059 cellules**, portant la couverture à 59,9 %. Les relations dominantes sont `Leverages` (350), `Mirrors` (304) et `IsRelatedTo` (286) : la taxonomie est devenue un **graphe transverse** substantiel, plus seulement un arbre hiérarchique. `#763` a ensuite rendu cette couche **émettable dans l'OWL** (1977 `AnnotationAssertion`, avec émission bidirectionnelle pour mirrors/opposes/inverts/isRelatedTo).",,,,,,,,4d5c870445d34f64,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,1c85c591,code,fr,a7907ffbaa7a93b0,"import numpy as np
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,1c85c591,code,fr,a7907ffbaa7a93b0,"import numpy as np
 
 crosslink_cols = [c for c in df.columns if c.startswith('crossLink_')]
 cl_matrix = np.zeros((8, len(df)), dtype=int)
@@ -5788,7 +5793,7 @@ total_cells = 8 * len(df)
 print()
 print(f'TOTAL cellules: {total} / {total_cells} = {100*total/total_cells:.2f}% de densité')
 print(f'Couverture par sophisme: {cov_nodes} / {len(df)} = {cov_pct:.1f}%')",,,,,,,,a7907ffbaa7a93b0,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,ac9eec91,markdown,fr,6fcbbcc214c69a65,"## 8. Pont OWL ↔ CSV — #763 a câblé crossLink + AIF dans l'OWL
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,ac9eec91,markdown,fr,6fcbbcc214c69a65,"## 8. Pont OWL ↔ CSV — #763 a câblé crossLink + AIF dans l'OWL
 
 Historiquement, PR-A (OWL) et PR-B (CSV) exposaient des substances **disjointes** : l'OWL ne portait ni les crossLink, ni les colonnes AIF attack. **#763 a réconcilié les deux** en régénérant l'OWL depuis le CSV avec les 3 couches câblées :
 
@@ -5801,7 +5806,7 @@ Historiquement, PR-A (OWL) et PR-B (CSV) exposaient des substances **disjointes*
 | AIF SKOS (Walton) | 70 (`skos:*Match`) | **70** (`broadMatch` 57 / `closeMatch` 10 / `narrowMatch` 3) | 70 |
 
 **Note structurelle** : #763 a aussi changé l'idiome du générateur — les concepts sont désormais des `owl:Class` (et non des `owl:NamedIndividual`), et **toutes** les relations passent par `AnnotationAssertion` (l'`ObjectPropertyAssertion` a disparu, `SKOSHelper` d'OWLSharp étant cassé sur cette version). Le notebook AIF (PR-A) a été re-fondé en conséquence (traversée annotation-space). Le gap historique « OWL 10 976 vs CSV 1408 » venait de l'ancien générateur qui matérialisait chaque label multilingue comme un `NamedIndividual` distinct ; le nouveau générateur modélise **1 `owl:Class` par sophisme** avec ses labels en annotations.",,,,,,,,6fcbbcc214c69a65,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,a87dac2e,code,fr,c01250e99abb2217,"import matplotlib.pyplot as plt
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,a87dac2e,code,fr,c01250e99abb2217,"import matplotlib.pyplot as plt
 
 fig, ax = plt.subplots(figsize=(11, 5))
 labels = ['CSV sophismes', 'CrossLink cells\n(CSV)', 'CrossLink AA\n(OWL, #763)', 'AIF attack\n(CSV & OWL)', 'AIF SKOS\n(CSV & OWL)']
@@ -5825,7 +5830,7 @@ print(f'  CrossLink AnnotationAssertion (OWL) : 1 977  (bidirectionnel pour mirr
 print(f'  AIF attack (CSV & OWL)              :    93  (undercut 61 / undermine 29 / rebut 3 → RA/I/CA-node)')
 print(f'  AIF SKOS Walton (CSV & OWL)         :    70  (broadMatch 57 / closeMatch 10 / narrowMatch 3)')
 print(f'  → #763 a réconcilié CSV et OWL : les 3 couches ontologiques sont désormais émises.')",,,,,,,,c01250e99abb2217,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,67449124,markdown,fr,68811f0d7e7c4461,"## 9. Pont avec Walton — 60 schemes uniques
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,67449124,markdown,fr,68811f0d7e7c4461,"## 9. Pont avec Walton — 60 schemes uniques
 
 Les **60 schemes Walton** référencés par Argumentum couvrent un spectre large de l'argumentation :
 
@@ -5837,7 +5842,7 @@ Les **60 schemes Walton** référencés par Argumentum couvrent un spectre large
 - **Sophismes classiques** : `CausalSlipperySlope_Inference`, `Ignorance_Inference`, `Waste_Inference`
 
 **60 schemes** ≈ la **totalité de l'écosystème Walton Argumentation Schemes** (cf Walton, Reed & Macagno 2008). Argumentum est donc un **portage exhaustif** de Walton en français + 7 autres langues.",,,,,,,,68811f0d7e7c4461,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,e1ae33de,code,fr,4eda5aa26d9dc8ba,"from collections import Counter
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,e1ae33de,code,fr,4eda5aa26d9dc8ba,"from collections import Counter
 import matplotlib.pyplot as plt
 
 walton_all = Counter()
@@ -5879,7 +5884,7 @@ for s in walton_all:
 for k, v in fam_walton.most_common():
     print(f'  {k}: {v}')
 ",,,,,,,,4eda5aa26d9dc8ba,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,c25f3da1,markdown,fr,ebe046a0b556f1b9,"## 10. Honnêteté méthodologique
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,c25f3da1,markdown,fr,ebe046a0b556f1b9,"## 10. Honnêteté méthodologique
 
 Observations, disclosed honnêtement :
 
@@ -5890,7 +5895,7 @@ Observations, disclosed honnêtement :
 3. **Couverture multilingue** : 100 % sur les 8 langues pour `text_<lang>` (vérifié cellule par cellule). Les `desc_<lang>`/`example_<lang>` peuvent être plus lacunaires.
 
 4. **Ontologies sœurs présentes** : `argumentum_fallacies.owl` **et** `argumentum_virtues.owl` sont désormais dans le repo (`ontologies/`). La note historique « `argumentum_virtues.owl` absent du repo » est **obsolète**.",,,,,,,,ebe046a0b556f1b9,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,f98a3f3f,code,fr,f76b93fd968d9bcc,"import matplotlib.pyplot as plt
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,f98a3f3f,code,fr,f76b93fd968d9bcc,"import matplotlib.pyplot as plt
 
 fig, ax = plt.subplots(figsize=(10, 5))
 aspects = ['AIF\nMapping', 'CrossLink', 'État\nvalidé', 'Image\nprésente', 'Latin\nnamed']
@@ -5922,10 +5927,10 @@ print(f'  État validé:     {etat_count:>4} / {len(df)} ({100*etat_count/len(df
 print(f'  Image:           {image_count:>4} / {len(df)} ({100*image_count/len(df):.1f}%)')
 print(f'  Latin named:     {latin_count:>4} / {len(df)} ({100*latin_count/len(df):.1f}%)')
 ",,,,,,,,f76b93fd968d9bcc,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,fdaba1d0,markdown,fr,5f5a0a7f825af76e,"## 11. Exercices (3 stubs #2161)
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,fdaba1d0,markdown,fr,5f5a0a7f825af76e,"## 11. Exercices (3 stubs #2161)
 
 Trois exercices pour explorer la substance PR-B. Chaque exercice = stub `print(""Exercice a completer"")` (règle C.1 : pas d'erreur volontaire). Le notebook s'exécute end-to-end même exercices non complétés.",,,,,,,,5f5a0a7f825af76e,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,95afa396,code,fr,12e54b45b74376ea,"# Exercice 1 : Distribution par famille × niveau (heatmap)
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,95afa396,code,fr,12e54b45b74376ea,"# Exercice 1 : Distribution par famille × niveau (heatmap)
 #
 # TODO :
 # 1. Construire une matrice de contingence famille × niveau (8 × 9)
@@ -5936,8 +5941,8 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossL
 
 print(""Exercice a completer"")
 ",,,,,,,,12e54b45b74376ea,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,1789b490,markdown,fr,83c1c65843bb4e89,"**Exercice 2 — CrossLink discovery** : sur les 1 081 cellules crossLink non-vides (couvrant 844 sophismes), identifier les paires de sophismes les plus liées (par exemple : `Pensée binaire` ↔ `Pensée binaire` est une relation `Mirrors` circulaire). Y a-t-il un pattern ? Les crossLinks sont-ils concentrés sur certaines familles (par exemple `abusDeLangage` qui se prête à l'équivoque) ?",,,,,,,,83c1c65843bb4e89,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,87b99475,code,fr,5bf4ff933602a225,"# Exercice 2 : CrossLink discovery
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,1789b490,markdown,fr,83c1c65843bb4e89,"**Exercice 2 — CrossLink discovery** : sur les 1 081 cellules crossLink non-vides (couvrant 844 sophismes), identifier les paires de sophismes les plus liées (par exemple : `Pensée binaire` ↔ `Pensée binaire` est une relation `Mirrors` circulaire). Y a-t-il un pattern ? Les crossLinks sont-ils concentrés sur certaines familles (par exemple `abusDeLangage` qui se prête à l'équivoque) ?",,,,,,,,83c1c65843bb4e89,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,87b99475,code,fr,5bf4ff933602a225,"# Exercice 2 : CrossLink discovery
 #
 # TODO :
 # 1. Filtrer les 22 crossLinks non-vides
@@ -5949,8 +5954,8 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossL
 
 print(""Exercice a completer"")
 ",,,,,,,,5bf4ff933602a225,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,68217e29,markdown,fr,edf145b84372f3fc,"**Exercice 3 — AIF mapping coverage** : sur 1 408 sophismes, 70 ont un mapping AIF. Quelle est la **couverture conditionnelle** par famille ? (par exemple : `argument d'autorité` a-t-il un mapping AIF dans 100% des cas ?) Construire un tableau famille × {AIF_directRef, AIF_exceptionRef, AIF_mappingType} avec les counts et les pourcentages, et commenter la **distribution inégale** : est-ce que certaines familles (ex: `influence`) sont sur-représentées dans les AIF mappings parce qu'elles correspondent aux schemes Walton (Position to Know, Expert Opinion) ?",,,,,,,,edf145b84372f3fc,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,67fcc4c0,code,fr,41a6d78b09cf97d7,"# Exercice 3 : AIF mapping coverage par famille
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,68217e29,markdown,fr,edf145b84372f3fc,"**Exercice 3 — AIF mapping coverage** : sur 1 408 sophismes, 70 ont un mapping AIF. Quelle est la **couverture conditionnelle** par famille ? (par exemple : `argument d'autorité` a-t-il un mapping AIF dans 100% des cas ?) Construire un tableau famille × {AIF_directRef, AIF_exceptionRef, AIF_mappingType} avec les counts et les pourcentages, et commenter la **distribution inégale** : est-ce que certaines familles (ex: `influence`) sont sur-représentées dans les AIF mappings parce qu'elles correspondent aux schemes Walton (Position to Know, Expert Opinion) ?",,,,,,,,edf145b84372f3fc,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,67fcc4c0,code,fr,41a6d78b09cf97d7,"# Exercice 3 : AIF mapping coverage par famille
 #
 # TODO :
 # 1. Grouper par 'Famille_camelCase'
@@ -5966,7 +5971,7 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossL
 
 print(""Exercice a completer"")
 ",,,,,,,,41a6d78b09cf97d7,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,92ac11fa,markdown,fr,24c738feff41304d,"## 12. Conclusion + Ponts
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,92ac11fa,markdown,fr,24c738feff41304d,"## 12. Conclusion + Ponts
 
 **Substance PR-B** : 1 408 sophismes canoniques, 8 langues (100% coverage), 8 familles, 9 niveaux, 70 AIF mappings vers 60 schemes Walton uniques, 1 081 cellules crossLink (couverture 59,9 % = 844/1 408 sophismes ; densité 9,6 % sur la matrice 8 × 1 408 = 11 264). Le CSV canonique Argumentum est la **source curée à la main** d'où l'OWL est probablement généré par script.
 
@@ -8211,12 +8216,12 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08c-UI-Configuratio
 Le notebook `Argumentation-08c-UI-Configuration-Python.ipynb` est maintenant prêt. Il contient toute la logique nécessaire pour l'interface utilisateur, la gestion des sources, le cache et le chiffrement.
 
 Le notebook exécuteur principal peut maintenant utiliser la fonction `configure_analysis_task()` définie ici pour obtenir le texte préparé avant de lancer l'analyse par les agents.",,,,,,,,bb3c9ceb42e1ae99,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,e33a32b5,markdown,fr,71e850f435f9ba00,"# Ontologie des vertus argumentatives -- le pole miroir des sophismes (SKOS + AIF)
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb,e33a32b5,markdown,fr,71e850f435f9ba00,"# Ontologie des vertus argumentatives -- le pole miroir des sophismes (SKOS + AIF)
 
 Le projet [Argumentum](https://www.argumentum.games/) modelise l'argumentation sur **deux poles** :
 
 - le pole **negatif** -- les *sophismes* (fallacies), explore dans le notebook compagnon
-  [`Argument_Analysis_Ontology_AIF`](Argument_Analysis_Ontology_AIF.ipynb) : une ontologie OWL2
+  [`Argumentation-Onto-01-AIF-OWL2-Python`](Argumentation-Onto-01-AIF-OWL2-Python.ipynb) : une ontologie OWL2
   a base de `NamedIndividual` reliees par un graphe dense d'`ObjectPropertyAssertion` ;
 - le pole **positif** -- les *vertus* argumentatives (virtues), objet de ce notebook.
 
@@ -8236,7 +8241,7 @@ schema d'argument de Walton), miroir exact du `badTenorOf` cote sophismes.
 2. Interroger un thesaurus SKOS avec **SPARQL** (hiérarchie, langues, schemes).
 3. Comprendre le contraste **ABox (individus) vs thesaurus SKOS (concepts)** entre deux ontologies soeurs.
 ",,,,,,,,71e850f435f9ba00,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,822970f5,markdown,fr,85aa10884c510db6,"## 1. SKOS, AIF et le format OWL/XML
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb,822970f5,markdown,fr,85aa10884c510db6,"## 1. SKOS, AIF et le format OWL/XML
 
 **SKOS** ([Simple Knowledge Organization System](https://www.w3.org/TR/skos-reference/), W3C 2009)
 est le vocabulaire standard pour publier des thesaurus, taxonomies et systèmes de classification
@@ -8258,12 +8263,12 @@ elle relie chaque vertu au **schema d'argument de Walton** qu'elle instancie cor
 la raison pour laquelle `rdflib` -- dont le parseur natif est RDF/XML -- ne le lit pas
 directement, comme nous allons le constater.
 ",,,,,,,,85aa10884c510db6,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,16840649,markdown,fr,7656b64707ca5895,"## 2. Charger l'ontologie : essai des outils SOTA, puis pont OWL/XML -> RDF
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb,16840649,markdown,fr,7656b64707ca5895,"## 2. Charger l'ontologie : essai des outils SOTA, puis pont OWL/XML -> RDF
 
 Par honnetete methodologique, on **essaie d'abord les vrais outils** (`rdflib`, `owlready2`)
 avant de recourir a un pont. On documente ce qui echoue et pourquoi.
 ",,,,,,,,7656b64707ca5895,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,b5dd1e9b,code,fr,3a2a44523aa78143,"# --- Chargement : essai SOTA direct, puis pont OWL/XML -> graphe SKOS rdflib ---
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb,b5dd1e9b,code,fr,3a2a44523aa78143,"# --- Chargement : essai SOTA direct, puis pont OWL/XML -> graphe SKOS rdflib ---
 from pathlib import Path
 import re, logging, io
 import rdflib
@@ -8304,7 +8309,7 @@ print(""\n-> Aucun parseur direct ne restitue le contenu SKOS. On construit un p
 print(""   extraction des <AnnotationAssertion> OWL/XML -> triplets dans un graphe rdflib,"")
 print(""   puis interrogation en SPARQL (le vrai outil SOTA opere sur le graphe RDF resultant)."")
 ",,,,,,,,3a2a44523aa78143,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,171b256b,code,fr,0bf9590f45b20ff7,"# --- Pont OWL/XML -> graphe SKOS rdflib ---
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb,171b256b,code,fr,0bf9590f45b20ff7,"# --- Pont OWL/XML -> graphe SKOS rdflib ---
 AIF = rdflib.Namespace(""http://www.arg.dundee.ac.uk/aif#"")
 VIRT = rdflib.Namespace(""https://www.argumentum.games/argumentum_virtues.owl#"")
 g = Graph()
@@ -8343,7 +8348,7 @@ for b in block.findall(owl_text):
 print(f""Graphe SKOS construit : {len(g):,} triplets"")
 print(f""Concepts distincts (sujets) : {len(set(g.subjects())):,}"")
 ",,,,,,,,0bf9590f45b20ff7,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,658ca1d2,markdown,fr,7daf6fb873a29e74,"**Lecture** : ni `rdflib` (parseur RDF/XML) ni `owlready2` (parseur OWL/XML) ne restituent
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb,658ca1d2,markdown,fr,7daf6fb873a29e74,"**Lecture** : ni `rdflib` (parseur RDF/XML) ni `owlready2` (parseur OWL/XML) ne restituent
 le contenu de ce fichier -- le premier parce que la serialisation n'est pas du RDF/XML, le second
 parce que son parseur ne reconstruit pas les `AnnotationAssertion` de cette structure. Le pont
 extrait donc les assertions OWL/XML et les charge comme **vrais triplets RDF** dans un graphe
@@ -8351,11 +8356,11 @@ extrait donc les assertions OWL/XML et les charge comme **vrais triplets RDF** d
 **SPARQL sur le graphe**, c'est-a-dire avec l'outil SOTA. Verdict de portee : **SOTA-OK** -- le
 pont est une passerelle d'ingestion documentee, pas un contournement du moteur de requêtes.
 ",,,,,,,,7daf6fb873a29e74,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,ad1c1e05,markdown,fr,d7d11c0adc7ac741,"## 3. Structure du thesaurus : inventaire des predicats SKOS
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb,ad1c1e05,markdown,fr,d7d11c0adc7ac741,"## 3. Structure du thesaurus : inventaire des predicats SKOS
 
 Comptons chaque type de triplet pour cartographier l'ontologie et la comparer au pole sophismes.
 ",,,,,,,,d7d11c0adc7ac741,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,7b8ad971,code,fr,07b2d8daedde8f61,"# --- Inventaire des predicats SKOS + AIF ---
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb,7b8ad971,code,fr,07b2d8daedde8f61,"# --- Inventaire des predicats SKOS + AIF ---
 from collections import Counter
 
 pred_counts = Counter(g.namespace_manager.normalizeUri(p) for _, p, _ in g)
@@ -8382,7 +8387,7 @@ print(""\n--- Contraste des paradigmes ---"")
 print(""Sophismes (Ontology_AIF) : ABox -- NamedIndividual + ObjectPropertyAssertion (graphe dense)."")
 print(""Vertus    (ce notebook)  : thesaurus SKOS -- Concept + broader/narrower (hierarchie)."")
 ",,,,,,,,07b2d8daedde8f61,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,76ec68e5,markdown,fr,a9840e7bc894830f,"**Lecture** : le thesaurus compte **223 concepts** (chacun avec un `prefLabel`), **446
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb,76ec68e5,markdown,fr,a9840e7bc894830f,"**Lecture** : le thesaurus compte **223 concepts** (chacun avec un `prefLabel`), **446
 definitions** (223 x 2 langues), **222 relations `broader`** et autant de `narrower` -- la
 double declaration est la convention SKOS (chaque lien hiérarchique est pose dans les deux
 sens). Contrairement au pole sophismes, il n'y a **aucun** `NamedIndividual` ni
@@ -8390,12 +8395,12 @@ sens). Contrairement au pole sophismes, il n'y a **aucun** `NamedIndividual` ni
 **annotations multilingues**, pas par un graphe de relations entre individus. Deux ontologies
 soeurs, deux paradigmes : ABox relationnel pour les sophismes, thesaurus SKOS pour les vertus.
 ",,,,,,,,a9840e7bc894830f,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,4833edd2,markdown,fr,9c47f5ffb0a6fae1,"## 4. La hiérarchie SKOS : du concept racine aux familles
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb,4833edd2,markdown,fr,9c47f5ffb0a6fae1,"## 4. La hiérarchie SKOS : du concept racine aux familles
 
 Le thesaurus a un **concept racine** (`skos:topConceptOf`). Les concepts les plus ramifies
 (beaucoup de `narrower`) sont les tetes de **familles** de vertus. Requetons cela en SPARQL.
 ",,,,,,,,9c47f5ffb0a6fae1,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,c01f48b7,code,fr,0e30f094e3020421,"# --- Concept racine + familles les plus ramifiees (SPARQL) ---
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb,c01f48b7,code,fr,0e30f094e3020421,"# --- Concept racine + familles les plus ramifiees (SPARQL) ---
 SKOS_P = ""PREFIX skos: <http://www.w3.org/2004/02/skos/core#>\n""
 
 # Concept racine
@@ -8438,19 +8443,19 @@ if leaves:
     path = [str(sample).split('#')[-1]] + [str(a).split('#')[-1] for a in ancestors(sample)]
     print(""  "" + ""  ->  "".join(path))
 ",,,,,,,,0e30f094e3020421,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,e786ec67,markdown,fr,f7248937115b0b7f,"**Lecture** : le concept racine est **`validArgument` (""Argument valable"")** -- toute
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb,e786ec67,markdown,fr,f7248937115b0b7f,"**Lecture** : le concept racine est **`validArgument` (""Argument valable"")** -- toute
 vertu est une facette de l'argument valable. Les tetes de familles (`simpleInference`,
 `thirdfigureSyllogism`, `acceptableInformalLogic`, `tangibleEvidence`, `credibleSources`...)
 recouvrent les **7 familles** annoncees : logique formelle, logique informelle, qualite des
 sources, des preuves, etc. La chaîne `broader` remonte de chaque feuille jusqu'a la racine :
 c'est la profondeur du thesaurus, exploitable pour situer une vertu dans sa lignee.
 ",,,,,,,,f7248937115b0b7f,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,7102e28d,markdown,fr,832a6538af9d9189,"## 5. Un thesaurus bilingue : `prefLabel` et `definition` par langue
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb,7102e28d,markdown,fr,832a6538af9d9189,"## 5. Un thesaurus bilingue : `prefLabel` et `definition` par langue
 
 SKOS attache les libelles **par langue** (`@fr`, `@en`). Verifions la couverture et affichons
 quelques concepts dans les deux langues.
 ",,,,,,,,832a6538af9d9189,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,bd6dafc0,code,fr,84ff7d157ad1d80c,"# --- Couverture multilingue + echantillon bilingue ---
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb,bd6dafc0,code,fr,84ff7d157ad1d80c,"# --- Couverture multilingue + echantillon bilingue ---
 def count_by_lang(pred):
     q = SKOS_P + f""""""
     SELECT ?lg (COUNT(DISTINCT ?c) AS ?n) WHERE {{
@@ -8479,20 +8484,20 @@ SELECT ?c ?d WHERE {
 for r in g.query(q_def):
     print(f""\nDefinition FR de '{str(r.c).split('#')[-1]}' :\n  {r.d}"")
 ",,,,,,,,84ff7d157ad1d80c,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,0c5aa193,markdown,fr,83dc19eaf3272a50,"**Lecture** : la couverture est **symetrique -- 223 concepts en FR et 223 en EN** pour les
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb,0c5aa193,markdown,fr,83dc19eaf3272a50,"**Lecture** : la couverture est **symetrique -- 223 concepts en FR et 223 en EN** pour les
 `prefLabel` comme pour les `definition`. C'est un thesaurus reellement bilingue, ou chaque vertu
 est nommee et définie dans les deux langues. Cette structure `@fr`/`@en` est exactement ce que
 SKOS est concu pour porter, et ce qui rend le thesaurus directement exploitable dans une
 interface multilingue.
 ",,,,,,,,83dc19eaf3272a50,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,35e59e7b,markdown,fr,a3cc901739cc84e3,"## 6. Le pont AIF `goodTenorOf` : vertus <-> schemas de Walton
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb,35e59e7b,markdown,fr,a3cc901739cc84e3,"## 6. Le pont AIF `goodTenorOf` : vertus <-> schemas de Walton
 
 Chaque vertu est le **""bon tenor""** d'un schema d'argument de Walton (`aif:goodTenorOf`) --
 la maniere correcte d'instancier ce schema. Ce sont **les mêmes 14 schemes** que ceux relies aux
 sophismes cote `Ontology_AIF` : `goodTenorOf` et `badTenorOf` sont les deux faces d'un même
 schema. Visualisons leur distribution.
 ",,,,,,,,a3cc901739cc84e3,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,ada48f7b,code,fr,dca2b2ea5efd4b21,"# --- Distribution des schemes de Walton portes par les vertus + graphique ---
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb,ada48f7b,code,fr,dca2b2ea5efd4b21,"# --- Distribution des schemes de Walton portes par les vertus + graphique ---
 %matplotlib inline
 import matplotlib.pyplot as plt
 
@@ -8517,24 +8522,24 @@ for i, v in enumerate(values):
 plt.tight_layout()
 plt.show()
 ",,,,,,,,dca2b2ea5efd4b21,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,6e503d32,markdown,fr,593baf04a837017f,"**Lecture** : les **14 schemes** de Walton relies aux vertus sont exactement ceux qui
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb,6e503d32,markdown,fr,593baf04a837017f,"**Lecture** : les **14 schemes** de Walton relies aux vertus sont exactement ceux qui
 apparaissent cote sophismes. Les plus productifs -- *Argument from Rule* (50 vertus), *from
 Commitment* (40), *from Bias* (27), *from Sign* (26) -- sont les schemes ou l'argumentation
 correcte se decline en de nombreuses bonnes pratiques. La propriete `goodTenorOf` est donc le
 **pivot** qui permettra, dans les exercices, de relier une vertu a son sophisme miroir via le
 schema partage.
 ",,,,,,,,593baf04a837017f,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,8798c7a3,markdown,fr,2ae97961089e8b8d,"## 7. Exercices
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb,8798c7a3,markdown,fr,2ae97961089e8b8d,"## 7. Exercices
 
 Trois exercices pour manipuler le thesaurus vous-même. Les cellules sont des squelettes a
 completer -- le graphe `g` est déjà charge en memoire.
 ",,,,,,,,2ae97961089e8b8d,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,363f473d,markdown,fr,9a9a4d417eb6c0b1,"### Exercice 1 -- Concepts sans definition dans une langue
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb,363f473d,markdown,fr,9a9a4d417eb6c0b1,"### Exercice 1 -- Concepts sans definition dans une langue
 
 Ecrire une requête SPARQL qui liste les concepts possedant un `skos:prefLabel` **anglais** mais
 **aucune** `skos:definition` anglaise (candidats a la traduction). Indice : `FILTER NOT EXISTS`.
 ",,,,,,,,9a9a4d417eb6c0b1,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,1c28e1e8,code,fr,ffba7a354ff75a9e,"# Exercice 1 a completer
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb,1c28e1e8,code,fr,ffba7a354ff75a9e,"# Exercice 1 a completer
 # Objectif : concepts avec prefLabel @en mais SANS definition @en.
 # Indice : SPARQL FILTER NOT EXISTS { ?c skos:definition ?d . FILTER(lang(?d)=""en"") }
 
@@ -8549,13 +8554,13 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtue
 resultats = None  # TODO etudiant
 print(""Exercice 1 a completer"")
 ",,,,,,,,ffba7a354ff75a9e,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,0a979be7,markdown,fr,0b356cd8822037bc,"### Exercice 2 -- Visualiser une famille avec networkx
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb,0a979be7,markdown,fr,0b356cd8822037bc,"### Exercice 2 -- Visualiser une famille avec networkx
 
 Choisir une tete de famille (p. ex. `credibleSources`) et dessiner son sous-arbre `narrower`
 avec `networkx` + `matplotlib`. Indice : parcourir recursivement `g.objects(node, SKOS.narrower)`
 et construire un `networkx.DiGraph`.
 ",,,,,,,,0b356cd8822037bc,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,c33e84aa,code,fr,ea40e1aa2b6c36be,"# Exercice 2 a completer
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb,c33e84aa,code,fr,ea40e1aa2b6c36be,"# Exercice 2 a completer
 # Objectif : sous-arbre narrower d'une famille, dessine avec networkx.
 # Indice :
 #   import networkx as nx
@@ -8567,13 +8572,13 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtue
 racine_famille = None  # TODO etudiant : une URIRef de tete de famille
 print(""Exercice 2 a completer"")
 ",,,,,,,,ea40e1aa2b6c36be,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,0d3f18a2,markdown,fr,66678e84d71185a8,"### Exercice 3 -- Le pont vertus <-> sophismes
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb,0d3f18a2,markdown,fr,66678e84d71185a8,"### Exercice 3 -- Le pont vertus <-> sophismes
 
 Pour un schema de Walton donne (p. ex. `""Argument from Sign""`), lister toutes les vertus qui en
-sont le `goodTenorOf`. Bonus : ouvrir `Argument_Analysis_Ontology_AIF.ipynb` et comparer avec les
+sont le `goodTenorOf`. Bonus : ouvrir `Argumentation-Onto-01-AIF-OWL2-Python.ipynb` et comparer avec les
 **sophismes** relies au **même** schema -- vous materialisez ainsi l'axe good/bad tenor.
 ",,,,,,,,66678e84d71185a8,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,6312ff34,code,fr,8efe9b4bc2044ce3,"# Exercice 3 a completer
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb,6312ff34,code,fr,8efe9b4bc2044ce3,"# Exercice 3 a completer
 # Objectif : pour un scheme de Walton, lister les vertus goodTenorOf ; comparer au pole sophismes.
 # Indice : construire une requete SPARQL avec le prefixe
 #   PREFIX aif: <http://www.arg.dundee.ac.uk/aif#>
@@ -8583,11 +8588,11 @@ scheme_cible = ""Argument from Sign""  # a explorer
 vertus_du_scheme = None  # TODO etudiant
 print(""Exercice 3 a completer"")
 ",,,,,,,,8efe9b4bc2044ce3,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,4907f827,markdown,fr,bd8a1965a083a638,"## 8. Ponts avec la serie Argument_Analysis
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb,4907f827,markdown,fr,bd8a1965a083a638,"## 8. Ponts avec la serie Argument_Analysis
 
-- [`Argument_Analysis_Ontology_AIF`](Argument_Analysis_Ontology_AIF.ipynb) -- le **pole sophismes**
+- [`Argumentation-Onto-01-AIF-OWL2-Python`](Argumentation-Onto-01-AIF-OWL2-Python.ipynb) -- le **pole sophismes**
   (OWL2 ABox, schemes de Walton via `badTenorOf`). A lire en parallele : même projet, paradigme oppose.
-- [`Argument_Analysis_Ontology_CrossLinks`](Argument_Analysis_Ontology_CrossLinks.ipynb) -- les liens
+- [`Argumentation-Onto-02-CrossLinks-CSV-Python`](Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb) -- les liens
   inter-noeuds systematises (CSV canonique multilingue).
 - [`Argument_Analysis_Restitution_3_Actes`](Argumentation-08d-Restitution-3-Actes-Python.ipynb) -- la
   restitution pedagogique en trois actes.
@@ -8600,7 +8605,7 @@ relations. Le choix depend de l'usage vise, pas d'une hiérarchie de valeur entr
 ",,,,,,,,bd8a1965a083a638,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-02b-Argumentum-Cards-Python.ipynb,6b944692,markdown,fr,8575a7154078f98f,"# Argumentum : la carte de sophisme, du nœud de taxonomie à la carte jouable
 
-La taxonomie Argumentum recense **1408 sophismes** (cf. `Argument_Analysis_Ontology_CrossLinks.ipynb`).
+La taxonomie Argumentum recense **1408 sophismes** (cf. `Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb`).
 Parmi eux, **176 sont sélectionnés comme cartes jouables** (colonne `carte=1`) : c'est le
 *deck* imprimable du jeu Argumentum. Ce notebook montre comment **chaque carte dérive d'une ligne
 de la taxonomie** — la carte est un nœud de l'arbre, et son contenu (nom, famille, description,
@@ -8873,7 +8878,7 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-02b-Argumentum-Card
 
 **Ponts avec la série** :
 
-- [`Argument_Analysis_Ontology_CrossLinks.ipynb`](Argument_Analysis_Ontology_CrossLinks.ipynb) — la taxonomie entière (1408 nœuds), sa structure, ses liens transverses.
+- [`Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb`](Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb) — la taxonomie entière (1408 nœuds), sa structure, ses liens transverses.
 - [`Argumentation-08e-Argument-Profile-Python.ipynb`](Argumentation-08e-Argument-Profile-Python.ipynb) — le profil multidimensionnel d'un argument dans un débat (5 dimensions, dont les sophismes).
 - EPIC **#10355** — fallacy detection via Qwen3.5/3.6 FT+PT : ce notebook fournit le rendu de référence de la *golden answer* pour le jeu de données de fine-tuning.
 
@@ -8985,11 +8990,11 @@ canoniques, et rédhibitoire sur un flux réel. Le substrat 2025-EPITA-IS procè
 précédent au lieu de le recalculer, ce qui est précisément ce que la structure de
 trajectoire rend possible.
 ",,,,,,,,a6a86c0d3fa278da,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,mir-intro,markdown,fr,0e5188b2a3930a83,"### 5.1 Focus sur `mirrors` (720) : une relation d'équivalence symétrique
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,mir-intro,markdown,fr,0e5188b2a3930a83,"### 5.1 Focus sur `mirrors` (720) : une relation d'équivalence symétrique
 
 L'inventaire ci-dessus montre `mirrors` (720) comme le verbe **crossLink dominant**, loin devant `isRelatedTo` (642) ou `leverages` (402). Mais *que* modélise `mirrors` exactement, et comment se distingue-t-il de la colonne vertébrale hiérarchique `broader`/`narrower` ? Contrairement à la hiérarchie SKOS — qui est **orientée** (un sophisme *est plus étroit que* un autre, `narrower` ≠ réciproque de `broader` au niveau de l'assertion) — `mirrors` pourrait être **symétrique** : si A *mirror* B, alors B *mirror* A. Vérifions-le, et regardons quels sophismes forment les plus gros **clusters** de miroirs (groupes de sophismes essentiellement interchangeables / miroirs l'un de l'autre).
 ",,,,,,,,0e5188b2a3930a83,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,mir-code,code,fr,66b920927aad260f,"# --- Audit du predicat mirrors (720) : symetrie + clusters ---
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,mir-code,code,fr,66b920927aad260f,"# --- Audit du predicat mirrors (720) : symetrie + clusters ---
 from collections import Counter
 
 mirrors = [(subj_iri.rstrip(""#"").split(""#"")[-1].split(""/"")[-1],
@@ -9009,13 +9014,13 @@ print(f""\nTop 10 sophismes par nb de miroirs emis :"")
 for name, c in src_count.most_common(10):
     print(f""   {c:>2d}  {name}"")
 ",,,,,,,,66b920927aad260f,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,mir-interp,markdown,fr,6497ac12e74a1a1f,"**Lecture — `mirrors` est une relation d'équivalence symétrique, pas hiérarchique.** Le compte est sans appel : **100 % des 720 `mirrors` sont symétriques** (a→b entraîne toujours b→a). C'est structurellement différent de la hiérarchie SKOS, où `narrower`/`broader` dessinent un arbre orienté parent→enfant. `mirrors` relie instead des **paires de sophismes interchangeables** — deux entrées qui capturent essentiellement la *même* faille sous deux angles (ex. `appealToMystery` ↔ `argumentFromIncredulity` : invoquer le mystère vs l'incrédulité mènent au même geste argumentatif).
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,mir-interp,markdown,fr,6497ac12e74a1a1f,"**Lecture — `mirrors` est une relation d'équivalence symétrique, pas hiérarchique.** Le compte est sans appel : **100 % des 720 `mirrors` sont symétriques** (a→b entraîne toujours b→a). C'est structurellement différent de la hiérarchie SKOS, où `narrower`/`broader` dessinent un arbre orienté parent→enfant. `mirrors` relie instead des **paires de sophismes interchangeables** — deux entrées qui capturent essentiellement la *même* faille sous deux angles (ex. `appealToMystery` ↔ `argumentFromIncredulity` : invoquer le mystère vs l'incrédulité mènent au même geste argumentatif).
 
 Le **top des émetteurs** révèle un **cluster de langage corporel / social** : `racism` (8), `bow`, `genuflection`, `curtsy`, `salute`, `theFinger` (gestes et signaux non verbaux), rejoints par `alphabetSoup` et `corporateJargon` (jargons). Ces sophismes se mirror massivement entre eux car ils sont des **variantes d'une même catégorie** (la soumission symbolique, le signal social vide). Le verbe `mirrors` encode donc, dans la taxonomie Argumentum, une **couche d'équivalence** transverse au graphe — un sophisme n'appartient pas qu'à une branche de l'arbre `broader`, il appartient aussi à un *cluster de miroirs* qui regroupe ses reformulations.
 
 > **Contraste avec le §7 (AIF attack) et le §8 (scheme-vs-conflict)** : la couche `mirrors` est purement **taxonomique** (quels sophismes se ressemblent), là où `aifAttackedNode` est **sémantique** (comment le sophisme attaque). Les deux sont transverses à l'arbre `broader`/`narrower`, mais orthogonal : l'une regroupe les *ressemblances*, l'autre les *attaques*.
 ",,,,,,,,6497ac12e74a1a1f,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,aif-dist-intro,markdown,fr,bee92e3a4ac698b4,"## 7. Distribution des attaques AIF par type de node
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,aif-dist-intro,markdown,fr,bee92e3a4ac698b4,"## 7. Distribution des attaques AIF par type de node
 
 Le §5 a inventorié **93 `aifAttackedNode`** (la couche AIF attack de l'OWL). Mais *quel type d'attaque* chaque sophisme porte-t-il ? En AIF (Argument Interchange Format), un node attaqué peut l'être à trois endroits distincts de la structure argumentative :
 
@@ -9025,7 +9030,7 @@ Le §5 a inventorié **93 `aifAttackedNode`** (la couche AIF attack de l'OWL). M
 
 Compter la répartition de ces trois cibles révèle la **structure dominante** de la modélisation Argumentum : les sophismes attaquent-ils plutôt le raisonnement, la preuve, ou la conclusion ?
 ",,,,,,,,bee92e3a4ac698b4,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,aif-dist-code,code,fr,85afa1c2eb2ff28e,"# --- Distribution des 93 aifAttackedNode par type de node AIF (RA / I / CA) ---
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,aif-dist-code,code,fr,85afa1c2eb2ff28e,"# --- Distribution des 93 aifAttackedNode par type de node AIF (RA / I / CA) ---
 from collections import Counter
 
 aif_target = Counter()
@@ -9041,7 +9046,7 @@ print(f""  RA-node (undercut, attaque l'inference)  : {aif_target['RA-node']:>3d
 print(f""  I-node  (undermine, attaque la premisse) : {aif_target['I-node']:>3d}  ({aif_target['I-node']/total:.0%})"")
 print(f""  CA-node (rebut, attaque la conclusion)   : {aif_target['CA-node']:>3d}  ({aif_target['CA-node']/total:.0%})"")
 ",,,,,,,,85afa1c2eb2ff28e,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,aif-dist-interp,markdown,fr,cddda330a950d38a,"**Lecture** : la modélisation AIF d'Argumentum est massivement dominée par l'**undercut** (RA-node = 61/93, ~66 %) — les sophismes attaquent le plus souvent la **règle d'inférence** (le raisonnement est défaillant), bien avant la **prémisse** (I-node = 29, undermine) et surtout la **conclusion** (CA-node = 3 seulement, rebut marginal). Cette structure (undercut ≫ undermine ≫ rebut) traduit l'orientation de la théorie de l'argumentation : un sophisme est d'abord un **défaut de raisonnement**, non pas simplement une conclusion fausse.
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,aif-dist-interp,markdown,fr,cddda330a950d38a,"**Lecture** : la modélisation AIF d'Argumentum est massivement dominée par l'**undercut** (RA-node = 61/93, ~66 %) — les sophismes attaquent le plus souvent la **règle d'inférence** (le raisonnement est défaillant), bien avant la **prémisse** (I-node = 29, undermine) et surtout la **conclusion** (CA-node = 3 seulement, rebut marginal). Cette structure (undercut ≫ undermine ≫ rebut) traduit l'orientation de la théorie de l'argumentation : un sophisme est d'abord un **défaut de raisonnement**, non pas simplement une conclusion fausse.
 
 > Lien avec le §6 : la grappe Equivoque (`semanticAmbiguity`) porte `aifAttackedNode → RA-node` — c'est bien un **undercut** (le sophisme d'équivoque attaque l'usage du terme *dans l'inférence*, pas la conclusion), ce que la distribution globale confirme comme le cas majoritaire. Le rebut (CA-node = 3) est rare : dans cette taxonomie, on conteste rarement une conclusion *sans* remettre en cause le raisonnement qui y mène.
 
@@ -9055,13 +9060,13 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ip
 > **Honnêteté (règle C.4)** : les valeurs ~82/~50/~5 sont des *measures* rapportées par l'audit Argumentum (PR #847, layer c #857 *closed non-merged*, « MEASURE not verdict »). Elles ne sont **pas reproductibles** depuis le seul OWL CoursIA (le générateur #763 ne sérialise que les `aifAttackedNode` explicites) ; la doc méthodologique `docs/taxonomy/aif-structural-audit-method.md` vit dans le dépôt Argumentum, pas dans CoursIA. Verdict : **CAUSE_DOCUMENTED_ONLY** — la décomposition 61/29/3 reste l'unique mesure vérifiable *ici*.
 
 ",,,,,,,,cddda330a950d38a,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,sc-intro,markdown,fr,faaff2e68aa69193,"## 8. Scheme vs conflict : l'attaque AIF est-elle un *scheme* ou un *conflit* ?
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,sc-intro,markdown,fr,faaff2e68aa69193,"## 8. Scheme vs conflict : l'attaque AIF est-elle un *scheme* ou un *conflit* ?
 
 Le §7 a montré que les 93 `aifAttackedNode` se répartissent en trois cibles de **scheme** (RA-node / I-node / CA-node = undercut / undermine / rebut). Mais en AIF canonique, le **scheme** (le type du nœud attaqué) et le **conflit** (la relation d'attaque elle-même) sont deux couches distinctes : un conflit relie un *nœud attaquant* à un *nœud attaqué* via un nœud d'application (CA-node). L'OWL Argumentum possède-t-il une couche de conflit séparée, ou tout passe-t-il par le prédicat de scheme ?
 
 Pour le savoir, on croise dans `AA_RES` les prédicats candidats : `aifAttackedNode` (le scheme, mesuré au §7), `hasConflictedElement` (le prédicat de conflit *dédié*, déclaré dans le schéma) et `aifAttackingNode` (la *source* de l'attaque).
 ",,,,,,,,faaff2e68aa69193,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,sc-code,code,fr,3147dc0543f4dc9b,"# --- Scheme vs conflict : aifAttackedNode (scheme) vs hasConflictedElement (conflit dédié) ---
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,sc-code,code,fr,3147dc0543f4dc9b,"# --- Scheme vs conflict : aifAttackedNode (scheme) vs hasConflictedElement (conflit dédié) ---
 from collections import Counter
 
 scheme = Counter()     # aifAttackedNode      = la cible de scheme (RA/I/CA) -- vu au §7
@@ -9088,19 +9093,19 @@ print()
 print(""=> La couche de conflit dédiée (hasConflictedElement) est déclarée"")
 print(""   dans le schéma de l'OWL mais n'a AUCUN triplet instancié."")
 ",,,,,,,,3147dc0543f4dc9b,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,sc-interp,markdown,fr,b07adfbd5af552f8,"**Lecture — scheme et conflit ne sont pas séparés dans l'OWL Argumentum.** Le prédicat de scheme `aifAttackedNode` porte l'intégralité de la structure d'attaque (93 triplets, §7), tandis que le prédicat de conflit *dédié* `hasConflictedElement` — bien que **déclaré dans le schéma** (37 occurrences entre sa déclaration `ObjectProperty` et ses axiomes `subPropertyOf` / `domain` / `range`) — n'a **aucun triplet instancié** (0 sur les données). Symétriquement, il n'existe **pas de `aifAttackingNode`** : la *source* de l'attaque n'est pas modélisée.
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,sc-interp,markdown,fr,b07adfbd5af552f8,"**Lecture — scheme et conflit ne sont pas séparés dans l'OWL Argumentum.** Le prédicat de scheme `aifAttackedNode` porte l'intégralité de la structure d'attaque (93 triplets, §7), tandis que le prédicat de conflit *dédié* `hasConflictedElement` — bien que **déclaré dans le schéma** (37 occurrences entre sa déclaration `ObjectProperty` et ses axiomes `subPropertyOf` / `domain` / `range`) — n'a **aucun triplet instancié** (0 sur les données). Symétriquement, il n'existe **pas de `aifAttackingNode`** : la *source* de l'attaque n'est pas modélisée.
 
 L'OWL ne distingue donc pas, en pratique, le *scheme* (le type du nœud attaqué) du *conflit* (la relation d'attaque) : **le scheme est le conflit**. Chaque sophisme est relié à un nœud cible typé (RA/I/CA), et c'est ce typage qui encode toute la sémantique d'attaque — il n'y a pas de graphe de conflit séparé. C'est un choix de modélisation délibéré : Argumentum capture la **sémantique** de l'attaque (undercut / undermine / rebut via le type de la cible) plutôt que sa **topologie** (qui attaque qui). Un moteur d'argumentation aval (ASPIC+, Dung) qui aurait besoin du graphe d'attaque complet devrait donc le **reconstruire** à partir des `aifAttackedNode`, la couche de conflit explicite étant absente.
 
 > **Note méthodologique (scope #802 / #4960).** La convention de référence « scheme-vs-conflict » est documentée dans `141-aif-stage3-adjudication.md` (répertoire `Argumentum`, submodule non initialisé dans CoursIA). Cet audit se fonde **exclusivement sur l'OWL réellement committé** (`ontologies/argumentum_fallacies.owl`) — jamais sur une révision externe du submodule ni sur des nombres rapportés — conformément à la discipline du §7 (#8319) et au périmètre « patrimoine technique stable » (#802 : sémantique d'attaque AIF, méthode d'audit, structure de taxonomie).
 ",,,,,,,,b07adfbd5af552f8,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,aif-ex4-md,markdown,fr,8827f8001b760185,"### Exercice 4 -- Undercut vs undermine : quels sophismes attaquent la prémisse ?
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,aif-ex4-md,markdown,fr,8827f8001b760185,"### Exercice 4 -- Undercut vs undermine : quels sophismes attaquent la prémisse ?
 
 À partir de `AA_RES` et de la mesure du §7, lister les sophismes (par `localname` **et** `prefLabel` FR) dont l'attaque AIF cible un **I-node** (undermine) plutôt qu'un RA-node (undercut). Observer leur thème : l'undermine porte-t-il préférentiellement sur des sophismes de **preuve / témoignage** (où c'est l'*information* qui est attaquée) ?
 
 *Indice* : croiser `AA_RES` avec `taxonomy` (dict `localname → prefLabel`) pour récupérer les libellés. Bonus : afficher aussi le parent `broader` de chaque match (predicat `broader` dans `AA_RES`).
 ",,,,,,,,8827f8001b760185,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,aif-ex4-code,code,fr,3e94f1ce38700fea,"# Exercice 4 a completer
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,aif-ex4-code,code,fr,3e94f1ce38700fea,"# Exercice 4 a completer
 # TODO etudiant : a partir de AA_RES, filtrer les aifAttackedNode -> I-node (undermine).
 # Croiser avec `taxonomy` (localname -> prefLabel) pour afficher le label FR de chaque match.
 # Bonus : afficher aussi le parent `broader` de chaque match (predicat 'broader' dans AA_RES).

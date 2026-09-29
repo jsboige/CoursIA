@@ -246,7 +246,7 @@ def test_persona_meme_login_reserve_persona_leve():
 def test_override_coordinateur_leve_reserve_nue():
     """L'arbitre tiers nomme par `[OVERRIDE] lane <machine>` leve la
     reserve. Meme login ou pas, le discriminant OVERRIDE est le 3e voie
-    du fix #14850. Tell c.11639."""
+    du fix #14850."""
     lift_override = {
         "author": {"login": "jsboige"},
         "createdAt": "2026-09-06T15:56:45Z",

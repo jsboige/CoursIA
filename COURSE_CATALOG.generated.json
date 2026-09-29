@@ -610,6 +610,67 @@
     "executable_locally": true
   },
   {
+    "path": "Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb",
+    "title": "Complexity-03c — Naviguer le Zoo exécutable",
+    "serie": "Complexity",
+    "sous_serie": "",
+    "kernel": "Python 3 (venv projet)",
+    "status": "READY",
+    "pedagogical_role": "",
+    "maturity": "BETA",
+    "editorial": "BETA",
+    "reproducibility": "EXECUTED",
+    "scientific_review": "UNASSESSED",
+    "scientific_review_stale": false,
+    "scientific_review_detail": {
+      "grade": "UNASSESSED",
+      "stale": false,
+      "code_sha": "9c1085e2cb1eb494ae3ac692bbfccfb5284e48469f5fd745bf8272171bbc6702",
+      "reviewed_code_sha": "",
+      "reviewed_by": "",
+      "peer": false,
+      "sorry_free": false
+    },
+    "production_signed": false,
+    "last_success_sha": "3747dd0b1",
+    "executed_at": "2026-09-27T03:11:16+02:00",
+    "forensic_category": "A_ALL_EXEC_OK",
+    "duree_estimee": "30min",
+    "resource_cost": {
+      "schema": 1,
+      "execution": {
+        "class": "LIGHT",
+        "wall_seconds": 1.4,
+        "cells_timed": 11,
+        "cells_code": 11,
+        "coverage": "FULL",
+        "external": []
+      },
+      "creation": {
+        "class": "LIGHT",
+        "history": "COMPLETE",
+        "revisions": 1,
+        "authors": 1,
+        "first_commit": "2026-09-27",
+        "span_days": 0
+      }
+    },
+    "owner_logique": "",
+    "last_validation": "2026-09-27",
+    "last_validator": "jsboige@gmail.com",
+    "issue_pr_associee": "#17767, #17769",
+    "cells_total": 27,
+    "cells_code": 11,
+    "cells_markdown": 16,
+    "cells_with_outputs": 7,
+    "cells_without_outputs": 0,
+    "requires_api": false,
+    "requires_gpu": false,
+    "requires_cloud": false,
+    "requires_wsl": false,
+    "executable_locally": true
+  },
+  {
     "path": "Complexity/Complexity-04-OnlineAlgorithms-Python.ipynb",
     "title": "Complexity-04 — Décider sans connaître la suite",
     "serie": "Complexity",
@@ -1246,8 +1307,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "9ae82f3c9",
-    "executed_at": "2026-09-15T06:48:41+02:00",
+    "last_success_sha": "f83278a0d",
+    "executed_at": "2026-09-26T18:55:18+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -1261,18 +1322,18 @@
         "external": []
       },
       "creation": {
-        "class": "LIGHT",
+        "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 2,
+        "revisions": 3,
         "authors": 1,
         "first_commit": "2026-09-11",
-        "span_days": 4
+        "span_days": 15
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-15",
+    "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#14209, #16215",
+    "issue_pr_associee": "#17498, #17754",
     "cells_total": 29,
     "cells_code": 8,
     "cells_markdown": 21,
@@ -1307,8 +1368,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "320c5f9d1",
-    "executed_at": "2026-09-21T23:20:55+02:00",
+    "last_success_sha": "f83278a0d",
+    "executed_at": "2026-09-26T18:55:18+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -1324,16 +1385,16 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 4,
+        "revisions": 5,
         "authors": 2,
         "first_commit": "2026-09-07",
-        "span_days": 14
+        "span_days": 19
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-21",
+    "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#14209, #16884",
+    "issue_pr_associee": "#17498, #17754",
     "cells_total": 32,
     "cells_code": 8,
     "cells_markdown": 24,
@@ -2167,8 +2228,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "a378b7e9c",
-    "executed_at": "2026-09-18T08:26:01+02:00",
+    "last_success_sha": "dad388913",
+    "executed_at": "2026-09-26T12:26:24+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -2182,21 +2243,21 @@
         "external": []
       },
       "creation": {
-        "class": "LIGHT",
+        "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 2,
+        "revisions": 3,
         "authors": 1,
         "first_commit": "2026-09-06",
-        "span_days": 12
+        "span_days": 20
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-18",
+    "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#13410, #16523",
-    "cells_total": 21,
+    "issue_pr_associee": "#17040, #17062",
+    "cells_total": 20,
     "cells_code": 10,
-    "cells_markdown": 11,
+    "cells_markdown": 10,
     "cells_with_outputs": 9,
     "cells_without_outputs": 0,
     "requires_api": false,
@@ -2535,8 +2596,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "ac2963496",
-    "executed_at": "2026-09-20T04:23:05+02:00",
+    "last_success_sha": "dad388913",
+    "executed_at": "2026-09-26T12:26:24+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
@@ -2552,19 +2613,19 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 4,
+        "revisions": 5,
         "authors": 1,
         "first_commit": "2026-08-23",
-        "span_days": 28
+        "span_days": 34
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-20",
+    "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#13410, #16689",
-    "cells_total": 48,
+    "issue_pr_associee": "#17040, #17062",
+    "cells_total": 45,
     "cells_code": 16,
-    "cells_markdown": 32,
+    "cells_markdown": 29,
     "cells_with_outputs": 16,
     "cells_without_outputs": 0,
     "requires_api": false,
@@ -3393,8 +3454,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "e0d379441",
-    "executed_at": "2026-09-19T16:45:50+02:00",
+    "last_success_sha": "dad388913",
+    "executed_at": "2026-09-26T12:26:24+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
@@ -3410,19 +3471,19 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 3,
+        "revisions": 4,
         "authors": 1,
         "first_commit": "2026-08-23",
-        "span_days": 27
+        "span_days": 34
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-19",
+    "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#13410, #16706",
-    "cells_total": 35,
+    "issue_pr_associee": "#17040, #17062",
+    "cells_total": 32,
     "cells_code": 11,
-    "cells_markdown": 24,
+    "cells_markdown": 21,
     "cells_with_outputs": 11,
     "cells_without_outputs": 0,
     "requires_api": false,
@@ -3639,8 +3700,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "e039ad80a",
-    "executed_at": "2026-09-19T17:41:36+02:00",
+    "last_success_sha": "dad388913",
+    "executed_at": "2026-09-26T12:26:24+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -3656,19 +3717,19 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 4,
+        "revisions": 5,
         "authors": 1,
         "first_commit": "2026-08-23",
-        "span_days": 27
+        "span_days": 34
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-19",
+    "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#13410, #16723",
-    "cells_total": 43,
+    "issue_pr_associee": "#17040, #17062",
+    "cells_total": 40,
     "cells_code": 14,
-    "cells_markdown": 29,
+    "cells_markdown": 26,
     "cells_with_outputs": 9,
     "cells_without_outputs": 0,
     "requires_api": false,
@@ -4007,8 +4068,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "f18e800ff",
-    "executed_at": "2026-09-19T03:33:58+02:00",
+    "last_success_sha": "dad388913",
+    "executed_at": "2026-09-26T12:26:24+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
@@ -4024,19 +4085,19 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 9,
+        "revisions": 10,
         "authors": 2,
         "first_commit": "2026-07-07",
-        "span_days": 74
+        "span_days": 81
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-19",
+    "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#13410, #16670",
-    "cells_total": 42,
+    "issue_pr_associee": "#17040, #17062",
+    "cells_total": 40,
     "cells_code": 14,
-    "cells_markdown": 28,
+    "cells_markdown": 26,
     "cells_with_outputs": 14,
     "cells_without_outputs": 0,
     "requires_api": false,
@@ -4675,22 +4736,22 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "de61c6b0b5a86b5bb3300fbac4853a1df6f3089e53abd5928cf381d09b32e7df",
+      "code_sha": "69a583fb12dfe1e43a5e244d6fae21bbbaf4022e2f2c77678013d9c025f85b56",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "85e974425",
-    "executed_at": "2026-09-14T02:03:01+02:00",
+    "last_success_sha": "e8e4642d8",
+    "executed_at": "2026-09-27T01:38:13+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "15min",
     "resource_cost": {
       "schema": 1,
       "execution": {
         "class": "LIGHT",
-        "wall_seconds": 24.5,
+        "wall_seconds": 22.2,
         "cells_timed": 7,
         "cells_code": 7,
         "coverage": "FULL",
@@ -4699,16 +4760,16 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 3,
+        "revisions": 4,
         "authors": 1,
         "first_commit": "2026-08-31",
-        "span_days": 14
+        "span_days": 27
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-14",
+    "last_validation": "2026-09-27",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#12797, #15961",
+    "issue_pr_associee": "#17882, #17891",
     "cells_total": 17,
     "cells_code": 7,
     "cells_markdown": 10,
@@ -4926,8 +4987,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "c498556c8",
-    "executed_at": "2026-09-26T00:36:57+02:00",
+    "last_success_sha": "f83278a0d",
+    "executed_at": "2026-09-26T18:55:18+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "1h",
     "resource_cost": {
@@ -4943,7 +5004,7 @@
       "creation": {
         "class": "HEAVY",
         "history": "COMPLETE",
-        "revisions": 32,
+        "revisions": 33,
         "authors": 1,
         "first_commit": "2026-01-31",
         "span_days": 238
@@ -4952,7 +5013,7 @@
     "owner_logique": "po-2024",
     "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#17776, #17780",
+    "issue_pr_associee": "#17498, #17754",
     "cells_total": 68,
     "cells_code": 30,
     "cells_markdown": 38,
@@ -5233,8 +5294,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "7f9d7feba",
-    "executed_at": "2026-09-23T03:23:58+02:00",
+    "last_success_sha": "dad388913",
+    "executed_at": "2026-09-26T12:26:24+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -5250,19 +5311,19 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 3,
+        "revisions": 4,
         "authors": 1,
         "first_commit": "2026-09-06",
-        "span_days": 17
+        "span_days": 20
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-23",
+    "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#17380, #17395",
-    "cells_total": 35,
+    "issue_pr_associee": "#17040, #17062",
+    "cells_total": 34,
     "cells_code": 11,
-    "cells_markdown": 24,
+    "cells_markdown": 23,
     "cells_with_outputs": 8,
     "cells_without_outputs": 0,
     "requires_api": false,
@@ -6154,8 +6215,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "6e9ba151d",
-    "executed_at": "2026-09-18T02:46:15+02:00",
+    "last_success_sha": "1a315d54f",
+    "executed_at": "2026-09-26T12:36:31+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -6171,19 +6232,19 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 4,
+        "revisions": 5,
         "authors": 1,
         "first_commit": "2026-08-23",
-        "span_days": 26
+        "span_days": 34
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-18",
+    "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#16601",
-    "cells_total": 28,
+    "issue_pr_associee": "#17040, #17064",
+    "cells_total": 27,
     "cells_code": 11,
-    "cells_markdown": 17,
+    "cells_markdown": 16,
     "cells_with_outputs": 8,
     "cells_without_outputs": 0,
     "requires_api": false,
@@ -6337,8 +6398,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "e039ad80a",
-    "executed_at": "2026-09-19T17:41:36+02:00",
+    "last_success_sha": "1a315d54f",
+    "executed_at": "2026-09-26T12:36:31+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
@@ -6352,21 +6413,21 @@
         "external": []
       },
       "creation": {
-        "class": "LIGHT",
+        "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 2,
+        "revisions": 3,
         "authors": 1,
         "first_commit": "2026-09-12",
-        "span_days": 7
+        "span_days": 14
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-19",
+    "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#13410, #16723",
-    "cells_total": 48,
+    "issue_pr_associee": "#17040, #17064",
+    "cells_total": 44,
     "cells_code": 17,
-    "cells_markdown": 31,
+    "cells_markdown": 27,
     "cells_with_outputs": 13,
     "cells_without_outputs": 0,
     "requires_api": false,
@@ -6581,8 +6642,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "7aa85a6f0",
-    "executed_at": "2026-09-22T13:01:18+02:00",
+    "last_success_sha": "1a315d54f",
+    "executed_at": "2026-09-26T12:36:31+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -6598,16 +6659,16 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 4,
+        "revisions": 5,
         "authors": 1,
         "first_commit": "2026-09-12",
-        "span_days": 10
+        "span_days": 14
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-22",
+    "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#16792, #17238",
+    "issue_pr_associee": "#17040, #17064",
     "cells_total": 27,
     "cells_code": 11,
     "cells_markdown": 16,
@@ -6827,8 +6888,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "9ae82f3c9",
-    "executed_at": "2026-09-15T06:48:41+02:00",
+    "last_success_sha": "1a315d54f",
+    "executed_at": "2026-09-26T12:36:31+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
@@ -6846,19 +6907,19 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 3,
+        "revisions": 4,
         "authors": 1,
         "first_commit": "2026-09-12",
-        "span_days": 3
+        "span_days": 14
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-15",
+    "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#14209, #16215",
-    "cells_total": 42,
+    "issue_pr_associee": "#17040, #17064",
+    "cells_total": 39,
     "cells_code": 21,
-    "cells_markdown": 21,
+    "cells_markdown": 18,
     "cells_with_outputs": 21,
     "cells_without_outputs": 0,
     "requires_api": true,
@@ -7319,8 +7380,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "629168884",
-    "executed_at": "2026-09-09T05:11:18+02:00",
+    "last_success_sha": "f83278a0d",
+    "executed_at": "2026-09-26T18:55:18+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
@@ -7336,16 +7397,16 @@
       "creation": {
         "class": "HEAVY",
         "history": "COMPLETE",
-        "revisions": 28,
+        "revisions": 29,
         "authors": 1,
         "first_commit": "2026-05-16",
-        "span_days": 116
+        "span_days": 133
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-09",
+    "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#14064, #15180",
+    "issue_pr_associee": "#17498, #17754",
     "cells_total": 65,
     "cells_code": 21,
     "cells_markdown": 44,
@@ -9343,8 +9404,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "d30ef2a1a",
-    "executed_at": "2026-09-19T03:34:21+02:00",
+    "last_success_sha": "1a315d54f",
+    "executed_at": "2026-09-26T12:36:31+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
@@ -9362,19 +9423,19 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 5,
+        "revisions": 6,
         "authors": 2,
         "first_commit": "2026-08-25",
-        "span_days": 25
+        "span_days": 32
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-09-19",
+    "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#13410, #16727",
-    "cells_total": 41,
+    "issue_pr_associee": "#17040, #17064",
+    "cells_total": 40,
     "cells_code": 13,
-    "cells_markdown": 28,
+    "cells_markdown": 27,
     "cells_with_outputs": 8,
     "cells_without_outputs": 0,
     "requires_api": false,
@@ -9406,8 +9467,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "91ba8fa31",
-    "executed_at": "2026-09-18T08:26:27+02:00",
+    "last_success_sha": "1a315d54f",
+    "executed_at": "2026-09-26T12:36:31+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
@@ -9423,21 +9484,21 @@
         ]
       },
       "creation": {
-        "class": "LIGHT",
+        "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 2,
+        "revisions": 3,
         "authors": 1,
         "first_commit": "2026-09-13",
-        "span_days": 5
+        "span_days": 13
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-09-18",
+    "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#13410, #16524",
-    "cells_total": 35,
+    "issue_pr_associee": "#17040, #17064",
+    "cells_total": 33,
     "cells_code": 12,
-    "cells_markdown": 23,
+    "cells_markdown": 21,
     "cells_with_outputs": 8,
     "cells_without_outputs": 0,
     "requires_api": false,
@@ -10728,8 +10789,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "772a07eae",
-    "executed_at": "2026-09-02T04:26:01+02:00",
+    "last_success_sha": "1a315d54f",
+    "executed_at": "2026-09-26T12:36:31+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -10747,19 +10808,19 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 3,
+        "revisions": 4,
         "authors": 2,
         "first_commit": "2026-08-31",
-        "span_days": 2
+        "span_days": 26
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-09-02",
+    "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#13410, #14108",
-    "cells_total": 30,
+    "issue_pr_associee": "#17040, #17064",
+    "cells_total": 26,
     "cells_code": 12,
-    "cells_markdown": 18,
+    "cells_markdown": 14,
     "cells_with_outputs": 9,
     "cells_without_outputs": 0,
     "requires_api": true,
@@ -10791,8 +10852,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "0dcc80c1f",
-    "executed_at": "2026-09-20T11:58:40+02:00",
+    "last_success_sha": "1a315d54f",
+    "executed_at": "2026-09-26T12:36:31+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "15min",
     "resource_cost": {
@@ -10806,21 +10867,21 @@
         "external": []
       },
       "creation": {
-        "class": "LIGHT",
+        "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 2,
+        "revisions": 3,
         "authors": 2,
         "first_commit": "2026-08-31",
-        "span_days": 20
+        "span_days": 26
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-09-20",
+    "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#13410, #16340",
-    "cells_total": 18,
+    "issue_pr_associee": "#17040, #17064",
+    "cells_total": 17,
     "cells_code": 7,
-    "cells_markdown": 11,
+    "cells_markdown": 10,
     "cells_with_outputs": 4,
     "cells_without_outputs": 0,
     "requires_api": false,
@@ -10852,8 +10913,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "0dcc80c1f",
-    "executed_at": "2026-09-20T11:58:40+02:00",
+    "last_success_sha": "1a315d54f",
+    "executed_at": "2026-09-26T12:36:31+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "15min",
     "resource_cost": {
@@ -10869,19 +10930,19 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 3,
+        "revisions": 4,
         "authors": 1,
         "first_commit": "2026-09-02",
-        "span_days": 18
+        "span_days": 24
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-09-20",
+    "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#13410, #16340",
-    "cells_total": 18,
+    "issue_pr_associee": "#17040, #17064",
+    "cells_total": 17,
     "cells_code": 6,
-    "cells_markdown": 12,
+    "cells_markdown": 11,
     "cells_with_outputs": 3,
     "cells_without_outputs": 0,
     "requires_api": false,
@@ -11985,8 +12046,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "b21d94670",
-    "executed_at": "2026-09-20T19:42:38+02:00",
+    "last_success_sha": "1a315d54f",
+    "executed_at": "2026-09-26T12:36:31+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
@@ -12005,19 +12066,19 @@
       "creation": {
         "class": "HEAVY",
         "history": "COMPLETE",
-        "revisions": 32,
+        "revisions": 33,
         "authors": 2,
         "first_commit": "2026-01-23",
-        "span_days": 240
+        "span_days": 246
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-09-20",
+    "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#13410, #16885",
-    "cells_total": 49,
+    "issue_pr_associee": "#17040, #17064",
+    "cells_total": 44,
     "cells_code": 15,
-    "cells_markdown": 34,
+    "cells_markdown": 29,
     "cells_with_outputs": 11,
     "cells_without_outputs": 0,
     "requires_api": true,
@@ -12741,22 +12802,22 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "6c31c8b7ada39e7c3912d7f4e631aba3deebba519c099ff78304d0890722b311",
+      "code_sha": "dc6dd791e5e54bf4198b5ed308b15c7093961184b24aa01ec24f3c4790e9f220",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "15e126f9f",
-    "executed_at": "2026-09-26T01:36:41+02:00",
+    "last_success_sha": "868be586e",
+    "executed_at": "2026-09-26T11:38:23+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
       "schema": 1,
       "execution": {
         "class": "LIGHT",
-        "wall_seconds": 0.6,
+        "wall_seconds": 1.0,
         "cells_timed": 10,
         "cells_code": 10,
         "coverage": "FULL",
@@ -12767,7 +12828,7 @@
       "creation": {
         "class": "LIGHT",
         "history": "COMPLETE",
-        "revisions": 1,
+        "revisions": 2,
         "authors": 1,
         "first_commit": "2026-09-26",
         "span_days": 0
@@ -12776,7 +12837,7 @@
     "owner_logique": "po-2025",
     "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#17430, #17434",
+    "issue_pr_associee": "#17656, #17911",
     "cells_total": 19,
     "cells_code": 10,
     "cells_markdown": 9,
@@ -16768,6 +16829,69 @@
     "executable_locally": true
   },
   {
+    "path": "GenAI/PostTraining/PT_17_laya_proper_rewards_toy.ipynb",
+    "title": "PT-17 — laya : la règle de score propre comme récompense — ce que le RL gagne quand le terme de cross-entropie est retiré",
+    "serie": "GenAI",
+    "sous_serie": "PostTraining",
+    "kernel": "Python 3 (coursia-ml-training)",
+    "status": "READY",
+    "pedagogical_role": "",
+    "maturity": "BETA",
+    "editorial": "BETA",
+    "reproducibility": "EXECUTED",
+    "scientific_review": "UNASSESSED",
+    "scientific_review_stale": false,
+    "scientific_review_detail": {
+      "grade": "UNASSESSED",
+      "stale": false,
+      "code_sha": "fa9f392921605554e8f42340cf150f9f17bd80b71ca77b2720db3e1fbdb9612a",
+      "reviewed_code_sha": "",
+      "reviewed_by": "",
+      "peer": false,
+      "sorry_free": false
+    },
+    "production_signed": false,
+    "last_success_sha": "cb40d2ea9",
+    "executed_at": "2026-09-26T12:08:41+02:00",
+    "forensic_category": "A_ALL_EXEC_OK",
+    "duree_estimee": "30min",
+    "resource_cost": {
+      "schema": 1,
+      "execution": {
+        "class": "UNKNOWN",
+        "wall_seconds": null,
+        "cells_timed": 0,
+        "cells_code": 8,
+        "coverage": "NONE",
+        "external": [
+          "gpu"
+        ]
+      },
+      "creation": {
+        "class": "LIGHT",
+        "history": "COMPLETE",
+        "revisions": 1,
+        "authors": 1,
+        "first_commit": "2026-09-26",
+        "span_days": 0
+      }
+    },
+    "owner_logique": "po-2025",
+    "last_validation": "2026-09-26",
+    "last_validator": "jsboige@gmail.com",
+    "issue_pr_associee": "#17878, #17890",
+    "cells_total": 18,
+    "cells_code": 8,
+    "cells_markdown": 10,
+    "cells_with_outputs": 7,
+    "cells_without_outputs": 0,
+    "requires_api": false,
+    "requires_gpu": true,
+    "requires_cloud": false,
+    "requires_wsl": false,
+    "executable_locally": false
+  },
+  {
     "path": "GenAI/RAG-et-Memoire-Semantique/01-Hands-On-Grounding.ipynb",
     "title": "Hands-On Grounding — Qdrant en mémoire",
     "serie": "GenAI",
@@ -17531,43 +17655,43 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "bd0a3864df144ca1d8b5cca643e058112a40e28c452ad05076258f421a601d67",
+      "code_sha": "2382473179c9fa50b3197a3ed264ca605d2c0a08511f5bbdbf42b891e93e4a11",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "bab21d061",
-    "executed_at": "2026-09-24T16:41:39+02:00",
+    "last_success_sha": "6fb2491ef",
+    "executed_at": "2026-09-26T15:56:47+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
-    "duree_estimee": "15min",
+    "duree_estimee": "30min",
     "resource_cost": {
       "schema": 1,
       "execution": {
         "class": "LIGHT",
-        "wall_seconds": 1.7,
-        "cells_timed": 5,
-        "cells_code": 5,
+        "wall_seconds": 2.1,
+        "cells_timed": 8,
+        "cells_code": 8,
         "coverage": "FULL",
         "external": []
       },
       "creation": {
         "class": "LIGHT",
         "history": "COMPLETE",
-        "revisions": 1,
+        "revisions": 2,
         "authors": 1,
         "first_commit": "2026-09-24",
-        "span_days": 0
+        "span_days": 2
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-09-24",
+    "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#16754, #17092",
-    "cells_total": 17,
-    "cells_code": 5,
-    "cells_markdown": 12,
+    "issue_pr_associee": "#17777",
+    "cells_total": 23,
+    "cells_code": 8,
+    "cells_markdown": 15,
     "cells_with_outputs": 5,
     "cells_without_outputs": 0,
     "requires_api": false,
@@ -17592,43 +17716,43 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "5e9da07e4b84625327bb233f6751647724fd02319576bd99d997ee0814b77d4b",
+      "code_sha": "113fc02710f811dec436583fbf11f7321e649167730f72d672cf8f930d6dfd4b",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "c3a398451",
-    "executed_at": "2026-09-24T15:15:14+02:00",
+    "last_success_sha": "6fb2491ef",
+    "executed_at": "2026-09-26T15:56:47+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
-    "duree_estimee": "15min",
+    "duree_estimee": "30min",
     "resource_cost": {
       "schema": 1,
       "execution": {
         "class": "LIGHT",
-        "wall_seconds": 3.9,
-        "cells_timed": 5,
-        "cells_code": 5,
+        "wall_seconds": 11.6,
+        "cells_timed": 8,
+        "cells_code": 8,
         "coverage": "FULL",
         "external": []
       },
       "creation": {
         "class": "LIGHT",
         "history": "COMPLETE",
-        "revisions": 1,
+        "revisions": 2,
         "authors": 1,
         "first_commit": "2026-09-24",
-        "span_days": 0
+        "span_days": 2
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-09-24",
+    "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#16754, #17123",
-    "cells_total": 11,
-    "cells_code": 5,
-    "cells_markdown": 6,
+    "issue_pr_associee": "#17777",
+    "cells_total": 21,
+    "cells_code": 8,
+    "cells_markdown": 13,
     "cells_with_outputs": 5,
     "cells_without_outputs": 0,
     "requires_api": false,
@@ -17653,43 +17777,43 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "6970913aba749707b4ea41581313a6fbf2db5cb847afdbacab1168b1b3a3aacf",
+      "code_sha": "ab6ede4de4eb33a0451f07a9ab3e24365a4e86457e1ce75036950b42846d2332",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "ed6ed29e1",
-    "executed_at": "2026-09-24T16:41:44+02:00",
+    "last_success_sha": "6fb2491ef",
+    "executed_at": "2026-09-26T15:56:47+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
-    "duree_estimee": "15min",
+    "duree_estimee": "30min",
     "resource_cost": {
       "schema": 1,
       "execution": {
         "class": "LIGHT",
-        "wall_seconds": 1.6,
-        "cells_timed": 7,
-        "cells_code": 7,
+        "wall_seconds": 0.9,
+        "cells_timed": 10,
+        "cells_code": 10,
         "coverage": "FULL",
         "external": []
       },
       "creation": {
         "class": "LIGHT",
         "history": "COMPLETE",
-        "revisions": 1,
+        "revisions": 2,
         "authors": 1,
         "first_commit": "2026-09-24",
-        "span_days": 0
+        "span_days": 2
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-09-24",
+    "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#16754, #17108",
-    "cells_total": 13,
-    "cells_code": 7,
-    "cells_markdown": 6,
+    "issue_pr_associee": "#17777",
+    "cells_total": 20,
+    "cells_code": 10,
+    "cells_markdown": 10,
     "cells_with_outputs": 7,
     "cells_without_outputs": 0,
     "requires_api": false,
@@ -23372,8 +23496,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "a104c40c4",
-    "executed_at": "2026-09-18T22:43:01+02:00",
+    "last_success_sha": "f6f49dd80",
+    "executed_at": "2026-09-26T11:36:49+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -23387,18 +23511,18 @@
         "external": []
       },
       "creation": {
-        "class": "LIGHT",
+        "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 2,
+        "revisions": 3,
         "authors": 1,
         "first_commit": "2026-09-18",
-        "span_days": 0
+        "span_days": 8
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-09-18",
+    "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#16682, #16696",
+    "issue_pr_associee": "#17452",
     "cells_total": 29,
     "cells_code": 10,
     "cells_markdown": 19,
@@ -25890,8 +26014,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "248bcd674",
-    "executed_at": "2026-09-25T21:15:10+02:00",
+    "last_success_sha": "f3e3dfa54",
+    "executed_at": "2026-09-27T06:14:24+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "1h",
     "resource_cost": {
@@ -25910,16 +26034,16 @@
       "creation": {
         "class": "VERY_HEAVY",
         "history": "COMPLETE",
-        "revisions": 35,
+        "revisions": 36,
         "authors": 2,
         "first_commit": "2026-07-16",
-        "span_days": 71
+        "span_days": 73
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-09-25",
+    "last_validation": "2026-09-27",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#5105, #17724",
+    "issue_pr_associee": "#17999",
     "cells_total": 54,
     "cells_code": 20,
     "cells_markdown": 34,
@@ -26747,22 +26871,22 @@
     "scientific_review_detail": {
       "grade": "RESEARCH",
       "stale": true,
-      "code_sha": "bc01a3f32b6b19e20a88f4f5ac628822b27af2ee43e6c9b1271b6de208c29428",
+      "code_sha": "45224fe30f686f253f8a66884777d95533d6eb16a82c18265ecee9dd17ee3db8",
       "reviewed_code_sha": "c1da486357cf298755b24eeff56245494aa5e0c2ca2caa11de92abb17db09112",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "6f478c0e7",
-    "executed_at": "2026-09-25T18:31:56+02:00",
+    "last_success_sha": "b53e4615c",
+    "executed_at": "2026-09-26T19:56:45+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
       "schema": 1,
       "execution": {
         "class": "LIGHT",
-        "wall_seconds": 33.9,
+        "wall_seconds": 24.5,
         "cells_timed": 11,
         "cells_code": 11,
         "coverage": "FULL",
@@ -26771,16 +26895,16 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 4,
+        "revisions": 5,
         "authors": 1,
         "first_commit": "2026-09-13",
-        "span_days": 12
+        "span_days": 13
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-09-25",
+    "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#4362, #17807",
+    "issue_pr_associee": "#17881",
     "cells_total": 25,
     "cells_code": 11,
     "cells_markdown": 14,
@@ -26808,22 +26932,22 @@
     "scientific_review_detail": {
       "grade": "RESEARCH",
       "stale": true,
-      "code_sha": "16ddfbe9c8e5a29a743ddf131c957bf497595056890b0baa8ec8b918c2af8e0a",
+      "code_sha": "f3fb008a5683c921f4937f75bed4578df9edcaf26651d981c92db3c8ff17fba6",
       "reviewed_code_sha": "2f70560d65c76788c5b256ffe867b2c222b498ba826c5baeffa28627d98f8f3a",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "6f478c0e7",
-    "executed_at": "2026-09-25T18:31:56+02:00",
+    "last_success_sha": "b53e4615c",
+    "executed_at": "2026-09-26T19:56:45+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
       "schema": 1,
       "execution": {
         "class": "LIGHT",
-        "wall_seconds": 5.3,
+        "wall_seconds": 4.0,
         "cells_timed": 10,
         "cells_code": 10,
         "coverage": "FULL",
@@ -26832,16 +26956,16 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 7,
+        "revisions": 8,
         "authors": 1,
         "first_commit": "2026-09-12",
-        "span_days": 13
+        "span_days": 14
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-09-25",
+    "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#4362, #17807",
+    "issue_pr_associee": "#17881",
     "cells_total": 20,
     "cells_code": 10,
     "cells_markdown": 10,
@@ -28846,8 +28970,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "c73f46f99",
-    "executed_at": "2026-09-21T11:05:51+02:00",
+    "last_success_sha": "e5da419b0",
+    "executed_at": "2026-09-27T01:37:09+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -28863,16 +28987,16 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 4,
+        "revisions": 5,
         "authors": 1,
         "first_commit": "2026-09-15",
-        "span_days": 6
+        "span_days": 12
       }
     },
     "owner_logique": "po-2023",
-    "last_validation": "2026-09-21",
+    "last_validation": "2026-09-27",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#15719, #17035",
+    "issue_pr_associee": "#17692, #17872",
     "cells_total": 29,
     "cells_code": 13,
     "cells_markdown": 16,
@@ -29060,6 +29184,67 @@
     "cells_code": 12,
     "cells_markdown": 24,
     "cells_with_outputs": 9,
+    "cells_without_outputs": 0,
+    "requires_api": false,
+    "requires_gpu": false,
+    "requires_cloud": false,
+    "requires_wsl": false,
+    "executable_locally": true
+  },
+  {
+    "path": "ML/DataScienceWithAgents/02-ML-Cours/2.11f-Comparaison-Optimisation-Convexe.ipynb",
+    "title": "2.11f — Comparaison bloc A / bloc B : le tableau croisé de l'optimisation convexe",
+    "serie": "ML",
+    "sous_serie": "DataScienceWithAgents",
+    "kernel": "Python 3",
+    "status": "READY",
+    "pedagogical_role": "",
+    "maturity": "BETA",
+    "editorial": "BETA",
+    "reproducibility": "EXECUTED",
+    "scientific_review": "UNASSESSED",
+    "scientific_review_stale": false,
+    "scientific_review_detail": {
+      "grade": "UNASSESSED",
+      "stale": false,
+      "code_sha": "294b66ccf192ad5a1b19dce9f452c07f3455f692b6705e364365a2902f7cd523",
+      "reviewed_code_sha": "",
+      "reviewed_by": "",
+      "peer": false,
+      "sorry_free": false
+    },
+    "production_signed": false,
+    "last_success_sha": "4cf7559cd",
+    "executed_at": "2026-09-26T21:12:32+02:00",
+    "forensic_category": "A_ALL_EXEC_OK",
+    "duree_estimee": "30min",
+    "resource_cost": {
+      "schema": 1,
+      "execution": {
+        "class": "LIGHT",
+        "wall_seconds": 9.4,
+        "cells_timed": 14,
+        "cells_code": 14,
+        "coverage": "FULL",
+        "external": []
+      },
+      "creation": {
+        "class": "LIGHT",
+        "history": "COMPLETE",
+        "revisions": 1,
+        "authors": 1,
+        "first_commit": "2026-09-26",
+        "span_days": 0
+      }
+    },
+    "owner_logique": "po-2023",
+    "last_validation": "2026-09-26",
+    "last_validator": "jsboige@gmail.com",
+    "issue_pr_associee": "#17960",
+    "cells_total": 38,
+    "cells_code": 14,
+    "cells_markdown": 24,
+    "cells_with_outputs": 11,
     "cells_without_outputs": 0,
     "requires_api": false,
     "requires_gpu": false,
@@ -29273,8 +29458,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "10fb5074c",
-    "executed_at": "2026-09-23T20:47:17+02:00",
+    "last_success_sha": "b53e4615c",
+    "executed_at": "2026-09-26T19:56:45+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -29288,18 +29473,18 @@
         "external": []
       },
       "creation": {
-        "class": "LIGHT",
+        "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 2,
+        "revisions": 3,
         "authors": 1,
         "first_commit": "2026-09-22",
-        "span_days": 1
+        "span_days": 4
       }
     },
     "owner_logique": "po-2023",
-    "last_validation": "2026-09-23",
+    "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#17416, #17421",
+    "issue_pr_associee": "#17881",
     "cells_total": 32,
     "cells_code": 10,
     "cells_markdown": 22,
@@ -39580,22 +39765,22 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "08e5accdeb3db65e2ad0deae0e63205f418dc05dee94ce7077a5aee96e96a801",
+      "code_sha": "c06778ada2018c27e7f475a324b2d9e71bd0c465fb5ed20fe8b5b8aa5f4d4057",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "40e4b9474",
-    "executed_at": "2026-09-25T17:37:44+02:00",
+    "last_success_sha": "7cdd43667",
+    "executed_at": "2026-09-27T03:12:46+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
       "schema": 1,
       "execution": {
-        "class": "MODERATE",
-        "wall_seconds": 199.8,
+        "class": "LIGHT",
+        "wall_seconds": 23.1,
         "cells_timed": 12,
         "cells_code": 12,
         "coverage": "FULL",
@@ -39604,16 +39789,16 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 5,
+        "revisions": 6,
         "authors": 2,
         "first_commit": "2026-08-31",
-        "span_days": 25
+        "span_days": 27
       }
     },
     "owner_logique": "po-2023",
-    "last_validation": "2026-09-25",
+    "last_validation": "2026-09-27",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#14873, #17808",
+    "issue_pr_associee": "#17962",
     "cells_total": 45,
     "cells_code": 12,
     "cells_markdown": 33,
@@ -43269,22 +43454,22 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "ab33b5f38624a40b3dd8402c0cf32e0fab08288b9070d6364b5d56de0bcd8cd2",
+      "code_sha": "30a368013c02d59f2a5563b9443cab3f50811df43afc8bf5c9323a1994454158",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "370432167",
-    "executed_at": "2026-09-25T15:37:02+02:00",
+    "last_success_sha": "7c524799c",
+    "executed_at": "2026-09-27T09:10:29+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
       "schema": 1,
       "execution": {
-        "class": "VERY_HEAVY",
-        "wall_seconds": 5045.3,
+        "class": "HEAVY",
+        "wall_seconds": 1453.9,
         "cells_timed": 17,
         "cells_code": 17,
         "coverage": "FULL",
@@ -43296,16 +43481,16 @@
       "creation": {
         "class": "HEAVY",
         "history": "COMPLETE",
-        "revisions": 16,
+        "revisions": 18,
         "authors": 1,
         "first_commit": "2026-04-29",
-        "span_days": 149
+        "span_days": 151
       }
     },
     "owner_logique": "po-2026",
-    "last_validation": "2026-09-25",
+    "last_validation": "2026-09-27",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#17571, #17583",
+    "issue_pr_associee": "#17838, #17851",
     "cells_total": 52,
     "cells_code": 17,
     "cells_markdown": 35,
@@ -49842,8 +50027,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "30d4c3bdc",
-    "executed_at": "2026-09-18T08:25:37+02:00",
+    "last_success_sha": "2740b1b3f",
+    "executed_at": "2026-09-26T21:56:51+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -49857,18 +50042,18 @@
         "external": []
       },
       "creation": {
-        "class": "LIGHT",
+        "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 2,
+        "revisions": 3,
         "authors": 1,
         "first_commit": "2026-09-15",
-        "span_days": 3
+        "span_days": 11
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-09-18",
+    "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#13410, #16505",
+    "issue_pr_associee": "#17933",
     "cells_total": 38,
     "cells_code": 14,
     "cells_markdown": 24,
@@ -55153,22 +55338,22 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "c72a6fab9502e6c7f53361ce4b0bee18e6255ba920c8bdf8cfadf1526138f0a1",
+      "code_sha": "e8563021d4b53c1c13f3206029eff376ac7f727e8193135c844cb6caa4b01f84",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "a0cf4d9a2",
-    "executed_at": "2026-09-06T17:06:13+02:00",
+    "last_success_sha": "d2575da86",
+    "executed_at": "2026-09-26T21:14:17+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
       "schema": 1,
       "execution": {
         "class": "LIGHT",
-        "wall_seconds": 42.3,
+        "wall_seconds": 19.8,
         "cells_timed": 16,
         "cells_code": 16,
         "coverage": "FULL",
@@ -55177,16 +55362,16 @@
       "creation": {
         "class": "LIGHT",
         "history": "COMPLETE",
-        "revisions": 1,
+        "revisions": 2,
         "authors": 1,
         "first_commit": "2026-09-06",
-        "span_days": 0
+        "span_days": 20
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-09-06",
+    "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#14545, #14790",
+    "issue_pr_associee": "#17967",
     "cells_total": 43,
     "cells_code": 16,
     "cells_markdown": 27,
@@ -57727,15 +57912,15 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "6a32d6ba868d425c4aa649b7f94c78f59990fa7a7fd9bdf96d85edd10a3c7b61",
+      "code_sha": "0b44dbcfa8ab548af660bbdf81257000c006e9fdcd9c8146fa28f28bd0e8c044",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "7331d304d",
-    "executed_at": "2026-09-09T21:59:45+02:00",
+    "last_success_sha": "7ad6e512c",
+    "executed_at": "2026-09-26T12:29:42+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
@@ -57751,16 +57936,16 @@
       "creation": {
         "class": "LIGHT",
         "history": "COMPLETE",
-        "revisions": 1,
+        "revisions": 2,
         "authors": 1,
         "first_commit": "2026-09-09",
-        "span_days": 0
+        "span_days": 17
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-09-09",
+    "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#15147",
+    "issue_pr_associee": "#17863, #17864",
     "cells_total": 34,
     "cells_code": 14,
     "cells_markdown": 20,
@@ -64162,8 +64347,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "3dddfd57b",
-    "executed_at": "2026-09-24T08:59:09+02:00",
+    "last_success_sha": "ed3211709",
+    "executed_at": "2026-09-27T03:37:12+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -64179,16 +64364,16 @@
       "creation": {
         "class": "LIGHT",
         "history": "COMPLETE",
-        "revisions": 1,
+        "revisions": 2,
         "authors": 1,
         "first_commit": "2026-09-24",
-        "span_days": 0
+        "span_days": 3
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-24",
+    "last_validation": "2026-09-27",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#17544, #17581",
+    "issue_pr_associee": "#17888, #17910",
     "cells_total": 34,
     "cells_code": 11,
     "cells_markdown": 23,
@@ -64223,8 +64408,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "2b9134bf8",
-    "executed_at": "2026-09-25T11:30:29+02:00",
+    "last_success_sha": "c33b8f9f6",
+    "executed_at": "2026-09-26T11:38:39+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
@@ -64240,16 +64425,16 @@
       "creation": {
         "class": "LIGHT",
         "history": "COMPLETE",
-        "revisions": 1,
+        "revisions": 2,
         "authors": 1,
         "first_commit": "2026-09-25",
-        "span_days": 0
+        "span_days": 1
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-25",
+    "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#17544, #17588",
+    "issue_pr_associee": "#17888, #17912",
     "cells_total": 40,
     "cells_code": 16,
     "cells_markdown": 24,
@@ -64382,6 +64567,69 @@
     "requires_cloud": false,
     "requires_wsl": false,
     "executable_locally": true
+  },
+  {
+    "path": "SymbolicAI/Lean/Langlands/01-formes-modulaires-sl2z-hecke.ipynb",
+    "title": "Langlands 01 : formes modulaires — de SL₂(ℤ) aux opérateurs de Hecke",
+    "serie": "SymbolicAI",
+    "sous_serie": "Lean",
+    "kernel": "Python 3",
+    "status": "READY",
+    "pedagogical_role": "",
+    "maturity": "BETA",
+    "editorial": "BETA",
+    "reproducibility": "EXECUTED",
+    "scientific_review": "UNASSESSED",
+    "scientific_review_stale": false,
+    "scientific_review_detail": {
+      "grade": "UNASSESSED",
+      "stale": false,
+      "code_sha": "96faae7c779f5154d8465bba759d57d70cdc6b00b2ed807f49c288367aabfe25",
+      "reviewed_code_sha": "",
+      "reviewed_by": "",
+      "peer": false,
+      "sorry_free": false
+    },
+    "production_signed": false,
+    "last_success_sha": "2eedcaa4a",
+    "executed_at": "2026-09-27T00:10:15+02:00",
+    "forensic_category": "A_ALL_EXEC_OK",
+    "duree_estimee": "30min",
+    "resource_cost": {
+      "schema": 1,
+      "execution": {
+        "class": "LIGHT",
+        "wall_seconds": 1.5,
+        "cells_timed": 12,
+        "cells_code": 12,
+        "coverage": "FULL",
+        "external": [
+          "wsl"
+        ]
+      },
+      "creation": {
+        "class": "LIGHT",
+        "history": "COMPLETE",
+        "revisions": 1,
+        "authors": 1,
+        "first_commit": "2026-09-27",
+        "span_days": 0
+      }
+    },
+    "owner_logique": "po-2024",
+    "last_validation": "2026-09-27",
+    "last_validator": "jsboige@gmail.com",
+    "issue_pr_associee": "#17969, #17972",
+    "cells_total": 35,
+    "cells_code": 12,
+    "cells_markdown": 23,
+    "cells_with_outputs": 9,
+    "cells_without_outputs": 0,
+    "requires_api": false,
+    "requires_gpu": false,
+    "requires_cloud": false,
+    "requires_wsl": true,
+    "executable_locally": false
   },
   {
     "path": "SymbolicAI/Lean/Lean-1-Setup.ipynb",
@@ -65102,8 +65350,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "08a975a9e",
-    "executed_at": "2026-09-24T14:57:37+02:00",
+    "last_success_sha": "711dca530",
+    "executed_at": "2026-09-26T21:37:02+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -65121,16 +65369,16 @@
       "creation": {
         "class": "HEAVY",
         "history": "COMPLETE",
-        "revisions": 12,
+        "revisions": 14,
         "authors": 1,
         "first_commit": "2026-06-22",
-        "span_days": 94
+        "span_days": 96
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-24",
+    "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#16638, #16977",
+    "issue_pr_associee": "#17970",
     "cells_total": 31,
     "cells_code": 12,
     "cells_markdown": 19,
@@ -66173,8 +66421,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "3322035e1",
-    "executed_at": "2026-09-24T21:08:55+02:00",
+    "last_success_sha": "92e36fae5",
+    "executed_at": "2026-09-27T00:37:07+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -66190,18 +66438,18 @@
         ]
       },
       "creation": {
-        "class": "LIGHT",
+        "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 2,
+        "revisions": 3,
         "authors": 1,
         "first_commit": "2026-09-13",
-        "span_days": 11
+        "span_days": 14
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-24",
+    "last_validation": "2026-09-27",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#16638, #16965",
+    "issue_pr_associee": "#17888, #17914",
     "cells_total": 21,
     "cells_code": 9,
     "cells_markdown": 12,
@@ -66844,6 +67092,69 @@
     "executable_locally": false
   },
   {
+    "path": "SymbolicAI/Lean/Lean-24b-Confiance-Preuves-Native.ipynb",
+    "title": "Lean-24b : Confiance et preuves — quand un certificat formel trompe",
+    "serie": "SymbolicAI",
+    "sous_serie": "Lean",
+    "kernel": "Lean 4 (WSL)",
+    "status": "READY",
+    "pedagogical_role": "",
+    "maturity": "BETA",
+    "editorial": "BETA",
+    "reproducibility": "EXECUTED",
+    "scientific_review": "UNASSESSED",
+    "scientific_review_stale": false,
+    "scientific_review_detail": {
+      "grade": "UNASSESSED",
+      "stale": false,
+      "code_sha": "f639147634a77a0aa4cbb9a124396b123fb7092ef134b4efdbde623fa0af127b",
+      "reviewed_code_sha": "",
+      "reviewed_by": "",
+      "peer": false,
+      "sorry_free": false
+    },
+    "production_signed": false,
+    "last_success_sha": "784092040",
+    "executed_at": "2026-09-27T06:09:40+02:00",
+    "forensic_category": "A_ALL_EXEC_OK",
+    "duree_estimee": "30min",
+    "resource_cost": {
+      "schema": 1,
+      "execution": {
+        "class": "MODERATE",
+        "wall_seconds": 73.2,
+        "cells_timed": 10,
+        "cells_code": 10,
+        "coverage": "FULL",
+        "external": [
+          "wsl"
+        ]
+      },
+      "creation": {
+        "class": "LIGHT",
+        "history": "COMPLETE",
+        "revisions": 1,
+        "authors": 1,
+        "first_commit": "2026-09-27",
+        "span_days": 0
+      }
+    },
+    "owner_logique": "po-2024",
+    "last_validation": "2026-09-27",
+    "last_validator": "jsboige@gmail.com",
+    "issue_pr_associee": "#17520, #17530",
+    "cells_total": 31,
+    "cells_code": 10,
+    "cells_markdown": 21,
+    "cells_with_outputs": 10,
+    "cells_without_outputs": 0,
+    "requires_api": false,
+    "requires_gpu": false,
+    "requires_cloud": false,
+    "requires_wsl": true,
+    "executable_locally": false
+  },
+  {
     "path": "SymbolicAI/Lean/Lean-25-Coherence-et-Temoin.ipynb",
     "title": "Lean-25 — Cohérence et témoin : de Finetti construit le livre qui paie, vNM légitime l'affine",
     "serie": "SymbolicAI",
@@ -66929,8 +67240,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "5495fb9eb",
-    "executed_at": "2026-09-13T23:44:30+02:00",
+    "last_success_sha": "99f77ba46",
+    "executed_at": "2026-09-27T00:37:24+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -66948,16 +67259,16 @@
       "creation": {
         "class": "LIGHT",
         "history": "COMPLETE",
-        "revisions": 1,
+        "revisions": 2,
         "authors": 1,
         "first_commit": "2026-09-13",
-        "span_days": 0
+        "span_days": 14
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-13",
+    "last_validation": "2026-09-27",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#15612, #15613",
+    "issue_pr_associee": "#17888, #17915",
     "cells_total": 27,
     "cells_code": 9,
     "cells_markdown": 18,
@@ -67111,33 +67422,33 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "200c0ef7b1011aaa8e31c47d6ea318e29e077557d1a7edce19acc0e78c8a760e",
+      "code_sha": "0dbe7c2c623279fc8aeaf93ef96820594f322835330747f26ce6282004b2a3d8",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "88836978a",
-    "executed_at": "2026-09-26T03:37:12+02:00",
+    "last_success_sha": "e4d2380a2",
+    "executed_at": "2026-09-26T21:12:06+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
-    "duree_estimee": "30min",
+    "duree_estimee": "45min",
     "resource_cost": {
       "schema": 1,
       "execution": {
-        "class": "MODERATE",
-        "wall_seconds": 189.7,
-        "cells_timed": 11,
-        "cells_code": 11,
+        "class": "LIGHT",
+        "wall_seconds": 19.5,
+        "cells_timed": 19,
+        "cells_code": 19,
         "coverage": "FULL",
         "external": [
           "wsl"
         ]
       },
       "creation": {
-        "class": "LIGHT",
+        "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 2,
+        "revisions": 3,
         "authors": 1,
         "first_commit": "2026-09-13",
         "span_days": 13
@@ -67146,11 +67457,11 @@
     "owner_logique": "po-2024",
     "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#17545, #17785",
-    "cells_total": 32,
-    "cells_code": 11,
-    "cells_markdown": 21,
-    "cells_with_outputs": 11,
+    "issue_pr_associee": "#11703, #17936",
+    "cells_total": 53,
+    "cells_code": 19,
+    "cells_markdown": 34,
+    "cells_with_outputs": 19,
     "cells_without_outputs": 0,
     "requires_api": false,
     "requires_gpu": false,
@@ -67300,22 +67611,22 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "50de6373c3234167ee63e67b99144faf4e64ad483b0d112fcdbee282163b052b",
+      "code_sha": "a084a832cb035978dd89400205a11c0b9b88da2d60b74d7080583f83ad419639",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "6e949878b",
-    "executed_at": "2026-09-25T15:37:06+02:00",
+    "last_success_sha": "b8c65a582",
+    "executed_at": "2026-09-27T04:56:51+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
       "schema": 1,
       "execution": {
         "class": "MODERATE",
-        "wall_seconds": 194.4,
+        "wall_seconds": 97.7,
         "cells_timed": 17,
         "cells_code": 17,
         "coverage": "FULL",
@@ -67327,16 +67638,16 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 4,
+        "revisions": 5,
         "authors": 1,
         "first_commit": "2026-09-15",
-        "span_days": 10
+        "span_days": 12
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-25",
+    "last_validation": "2026-09-27",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#17498, #17745",
+    "issue_pr_associee": "#17993",
     "cells_total": 51,
     "cells_code": 17,
     "cells_markdown": 34,
@@ -67875,8 +68186,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "fe2fcddb1",
-    "executed_at": "2026-09-25T21:46:48+02:00",
+    "last_success_sha": "b544f6433",
+    "executed_at": "2026-09-27T00:36:48+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
@@ -67894,16 +68205,16 @@
       "creation": {
         "class": "HEAVY",
         "history": "COMPLETE",
-        "revisions": 25,
+        "revisions": 26,
         "authors": 3,
         "first_commit": "2026-01-23",
-        "span_days": 245
+        "span_days": 247
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-25",
+    "last_validation": "2026-09-27",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#17066, #16862, #17110",
+    "issue_pr_associee": "#17888, #17913",
     "cells_total": 61,
     "cells_code": 23,
     "cells_markdown": 38,
@@ -68257,8 +68568,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "07cd52bf2",
-    "executed_at": "2026-09-23T21:03:56+02:00",
+    "last_success_sha": "fd9f72df1",
+    "executed_at": "2026-09-26T21:37:18+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -68276,16 +68587,16 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 3,
+        "revisions": 4,
         "authors": 2,
         "first_commit": "2026-09-19",
-        "span_days": 4
+        "span_days": 7
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-23",
-    "last_validator": "myia.ai.01.myia@gmail.com",
-    "issue_pr_associee": "#17040, #17463",
+    "last_validation": "2026-09-26",
+    "last_validator": "jsboige@gmail.com",
+    "issue_pr_associee": "#17971",
     "cells_total": 29,
     "cells_code": 12,
     "cells_markdown": 17,
@@ -68383,8 +68694,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "9ed2b0f6d",
-    "executed_at": "2026-09-26T03:17:50+02:00",
+    "last_success_sha": "8617425a6",
+    "executed_at": "2026-09-26T16:16:57+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -68402,7 +68713,7 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 6,
+        "revisions": 7,
         "authors": 2,
         "first_commit": "2026-09-19",
         "span_days": 7
@@ -68411,7 +68722,7 @@
     "owner_logique": "po-2024",
     "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#17601, #17862",
+    "issue_pr_associee": "#17889, #17942",
     "cells_total": 28,
     "cells_code": 12,
     "cells_markdown": 16,
@@ -68446,8 +68757,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "20ce70075",
-    "executed_at": "2026-09-23T02:59:13+02:00",
+    "last_success_sha": "8617425a6",
+    "executed_at": "2026-09-26T16:16:57+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -68465,16 +68776,16 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 3,
+        "revisions": 4,
         "authors": 1,
         "first_commit": "2026-09-19",
-        "span_days": 4
+        "span_days": 7
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-23",
+    "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#17384",
+    "issue_pr_associee": "#17889, #17942",
     "cells_total": 28,
     "cells_code": 10,
     "cells_markdown": 18,
@@ -68635,8 +68946,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "f1c5d2b53",
-    "executed_at": "2026-09-19T03:34:32+02:00",
+    "last_success_sha": "fd9f72df1",
+    "executed_at": "2026-09-26T21:37:18+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
@@ -68652,18 +68963,18 @@
         ]
       },
       "creation": {
-        "class": "LIGHT",
+        "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 1,
+        "revisions": 3,
         "authors": 1,
         "first_commit": "2026-09-19",
-        "span_days": 0
+        "span_days": 7
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-19",
+    "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#16334, #16734",
+    "issue_pr_associee": "#17971",
     "cells_total": 46,
     "cells_code": 20,
     "cells_markdown": 26,
@@ -70721,8 +71032,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "67fe2da5c",
-    "executed_at": "2026-09-20T13:41:36+02:00",
+    "last_success_sha": "fc466081f",
+    "executed_at": "2026-09-26T12:55:42+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -70738,19 +71049,19 @@
       "creation": {
         "class": "LIGHT",
         "history": "COMPLETE",
-        "revisions": 1,
+        "revisions": 2,
         "authors": 1,
         "first_commit": "2026-09-20",
-        "span_days": 0
+        "span_days": 6
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-20",
+    "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#16763, #16791, #16846",
-    "cells_total": 35,
+    "issue_pr_associee": "#17040, #17059",
+    "cells_total": 34,
     "cells_code": 14,
-    "cells_markdown": 21,
+    "cells_markdown": 20,
     "cells_with_outputs": 14,
     "cells_without_outputs": 0,
     "requires_api": false,
@@ -70965,8 +71276,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "67fe2da5c",
-    "executed_at": "2026-09-20T13:41:36+02:00",
+    "last_success_sha": "fc466081f",
+    "executed_at": "2026-09-26T12:55:42+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -70982,19 +71293,19 @@
       "creation": {
         "class": "LIGHT",
         "history": "COMPLETE",
-        "revisions": 1,
+        "revisions": 2,
         "authors": 1,
         "first_commit": "2026-09-20",
-        "span_days": 0
+        "span_days": 6
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-20",
+    "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#16763, #16791, #16846",
-    "cells_total": 37,
+    "issue_pr_associee": "#17040, #17059",
+    "cells_total": 35,
     "cells_code": 13,
-    "cells_markdown": 24,
+    "cells_markdown": 22,
     "cells_with_outputs": 13,
     "cells_without_outputs": 0,
     "requires_api": false,
@@ -71141,40 +71452,40 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "8c638a31357eb42164162c329b5ef62cf2f7336720fdc43bfa0d4718076711f0",
+      "code_sha": "fffaec7166654060132fdd137426453ea0582c5ddb0e86863d3fda53df5b6e12",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "3bcf73932",
-    "executed_at": "2026-09-22T09:11:35+02:00",
+    "last_success_sha": "c1713407e",
+    "executed_at": "2026-09-27T00:56:31+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
       "schema": 1,
       "execution": {
         "class": "LIGHT",
-        "wall_seconds": 1.4,
+        "wall_seconds": 1.5,
         "cells_timed": 9,
         "cells_code": 9,
         "coverage": "FULL",
         "external": []
       },
       "creation": {
-        "class": "LIGHT",
+        "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 2,
+        "revisions": 3,
         "authors": 1,
         "first_commit": "2026-09-20",
-        "span_days": 2
+        "span_days": 7
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-22",
+    "last_validation": "2026-09-27",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#13410, #16379",
+    "issue_pr_associee": "#17550, #17678",
     "cells_total": 24,
     "cells_code": 9,
     "cells_markdown": 15,
@@ -71202,15 +71513,15 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "8b16f04d07582869a22d71bd8a00fdc1aa42186701e97787f20cb58b9fccab9b",
+      "code_sha": "21f683e35397157c277f64d0ee54ee7369a2cd23e7cb65ec83460baacdbedb37",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "3bcf73932",
-    "executed_at": "2026-09-22T09:11:35+02:00",
+    "last_success_sha": "c1713407e",
+    "executed_at": "2026-09-27T00:56:31+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "15min",
     "resource_cost": {
@@ -71224,18 +71535,18 @@
         "external": []
       },
       "creation": {
-        "class": "LIGHT",
+        "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 2,
+        "revisions": 3,
         "authors": 1,
         "first_commit": "2026-09-20",
-        "span_days": 2
+        "span_days": 7
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-22",
+    "last_validation": "2026-09-27",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#13410, #16379",
+    "issue_pr_associee": "#17550, #17678",
     "cells_total": 19,
     "cells_code": 7,
     "cells_markdown": 12,
@@ -71270,8 +71581,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "3bcf73932",
-    "executed_at": "2026-09-22T09:11:35+02:00",
+    "last_success_sha": "c1713407e",
+    "executed_at": "2026-09-27T00:56:31+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "15min",
     "resource_cost": {
@@ -71285,18 +71596,18 @@
         "external": []
       },
       "creation": {
-        "class": "LIGHT",
+        "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 2,
+        "revisions": 3,
         "authors": 1,
         "first_commit": "2026-09-20",
-        "span_days": 2
+        "span_days": 7
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-22",
+    "last_validation": "2026-09-27",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#13410, #16379",
+    "issue_pr_associee": "#17550, #17678",
     "cells_total": 21,
     "cells_code": 7,
     "cells_markdown": 14,
@@ -71331,8 +71642,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "67fe2da5c",
-    "executed_at": "2026-09-20T13:41:36+02:00",
+    "last_success_sha": "fc466081f",
+    "executed_at": "2026-09-26T12:55:42+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -71348,19 +71659,19 @@
       "creation": {
         "class": "LIGHT",
         "history": "COMPLETE",
-        "revisions": 1,
+        "revisions": 2,
         "authors": 1,
         "first_commit": "2026-09-20",
-        "span_days": 0
+        "span_days": 6
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-20",
+    "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#16763, #16791, #16846",
-    "cells_total": 29,
+    "issue_pr_associee": "#17040, #17059",
+    "cells_total": 27,
     "cells_code": 10,
-    "cells_markdown": 19,
+    "cells_markdown": 17,
     "cells_with_outputs": 7,
     "cells_without_outputs": 0,
     "requires_api": false,
@@ -71392,8 +71703,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "67fe2da5c",
-    "executed_at": "2026-09-20T13:41:36+02:00",
+    "last_success_sha": "c1713407e",
+    "executed_at": "2026-09-27T00:56:31+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -71409,16 +71720,16 @@
       "creation": {
         "class": "LIGHT",
         "history": "COMPLETE",
-        "revisions": 1,
+        "revisions": 2,
         "authors": 1,
         "first_commit": "2026-09-20",
-        "span_days": 0
+        "span_days": 7
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-20",
+    "last_validation": "2026-09-27",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#16763, #16791, #16846",
+    "issue_pr_associee": "#17550, #17678",
     "cells_total": 25,
     "cells_code": 8,
     "cells_markdown": 17,
@@ -71453,8 +71764,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "67fe2da5c",
-    "executed_at": "2026-09-20T13:41:36+02:00",
+    "last_success_sha": "c1713407e",
+    "executed_at": "2026-09-27T00:56:31+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -71470,16 +71781,16 @@
       "creation": {
         "class": "LIGHT",
         "history": "COMPLETE",
-        "revisions": 1,
+        "revisions": 2,
         "authors": 1,
         "first_commit": "2026-09-20",
-        "span_days": 0
+        "span_days": 7
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-20",
+    "last_validation": "2026-09-27",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#16763, #16791, #16846",
+    "issue_pr_associee": "#17550, #17678",
     "cells_total": 31,
     "cells_code": 10,
     "cells_markdown": 21,
@@ -72002,8 +72313,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "67fe2da5c",
-    "executed_at": "2026-09-20T13:41:36+02:00",
+    "last_success_sha": "c1713407e",
+    "executed_at": "2026-09-27T00:56:31+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -72019,16 +72330,16 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 9,
+        "revisions": 10,
         "authors": 1,
         "first_commit": "2026-07-14",
-        "span_days": 68
+        "span_days": 75
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-20",
+    "last_validation": "2026-09-27",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#16763, #16791, #16846",
+    "issue_pr_associee": "#17550, #17678",
     "cells_total": 30,
     "cells_code": 11,
     "cells_markdown": 19,
@@ -73407,8 +73718,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "8cd55a380",
-    "executed_at": "2026-09-03T12:26:56+02:00",
+    "last_success_sha": "fc466081f",
+    "executed_at": "2026-09-26T12:55:42+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
@@ -73424,19 +73735,19 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 4,
+        "revisions": 5,
         "authors": 1,
         "first_commit": "2026-07-08",
-        "span_days": 57
+        "span_days": 80
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-03",
+    "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#13410, #14118",
-    "cells_total": 47,
+    "issue_pr_associee": "#17040, #17059",
+    "cells_total": 42,
     "cells_code": 15,
-    "cells_markdown": 32,
+    "cells_markdown": 27,
     "cells_with_outputs": 15,
     "cells_without_outputs": 0,
     "requires_api": false,
@@ -73775,8 +74086,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "9423c6b4f",
-    "executed_at": "2026-09-25T11:24:54+02:00",
+    "last_success_sha": "fc466081f",
+    "executed_at": "2026-09-26T12:55:42+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -73792,19 +74103,19 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 3,
+        "revisions": 4,
         "authors": 1,
         "first_commit": "2026-09-01",
-        "span_days": 24
+        "span_days": 25
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-25",
+    "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#17547, #17718",
-    "cells_total": 26,
+    "issue_pr_associee": "#17040, #17059",
+    "cells_total": 24,
     "cells_code": 9,
-    "cells_markdown": 17,
+    "cells_markdown": 15,
     "cells_with_outputs": 5,
     "cells_without_outputs": 0,
     "requires_api": false,
@@ -74019,8 +74330,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "07cc72784",
-    "executed_at": "2026-09-25T18:17:15+02:00",
+    "last_success_sha": "fc466081f",
+    "executed_at": "2026-09-26T12:55:42+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "1h",
     "resource_cost": {
@@ -74036,19 +74347,19 @@
       "creation": {
         "class": "HEAVY",
         "history": "COMPLETE",
-        "revisions": 20,
+        "revisions": 21,
         "authors": 2,
         "first_commit": "2026-02-21",
-        "span_days": 216
+        "span_days": 217
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-25",
+    "last_validation": "2026-09-26",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#17636, #17647",
-    "cells_total": 58,
+    "issue_pr_associee": "#17040, #17059",
+    "cells_total": 54,
     "cells_code": 20,
-    "cells_markdown": 38,
+    "cells_markdown": 34,
     "cells_with_outputs": 19,
     "cells_without_outputs": 0,
     "requires_api": false,
@@ -77091,8 +77402,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "7c0b01da5",
-    "executed_at": "2026-09-23T20:39:16+02:00",
+    "last_success_sha": "745ea8ab9",
+    "executed_at": "2026-09-27T01:37:26+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
@@ -77110,16 +77421,16 @@
       "creation": {
         "class": "HEAVY",
         "history": "COMPLETE",
-        "revisions": 17,
+        "revisions": 18,
         "authors": 1,
         "first_commit": "2026-07-04",
-        "span_days": 81
+        "span_days": 85
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-23",
+    "last_validation": "2026-09-27",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#14209, #16858",
+    "issue_pr_associee": "#17793, #17873",
     "cells_total": 28,
     "cells_code": 12,
     "cells_markdown": 16,
@@ -78787,6 +79098,69 @@
     "cells_code": 13,
     "cells_markdown": 20,
     "cells_with_outputs": 10,
+    "cells_without_outputs": 0,
+    "requires_api": false,
+    "requires_gpu": false,
+    "requires_cloud": false,
+    "requires_wsl": true,
+    "executable_locally": false
+  },
+  {
+    "path": "SymbolicAI/Tweety/Tweety-02f-Modal-Zoo-Lean-Python.ipynb",
+    "title": "Tweety-02f — Le zoo modal : huit systèmes, une carte dont chaque trait est prouvé",
+    "serie": "SymbolicAI",
+    "sous_serie": "Tweety",
+    "kernel": "Python 3 (ipykernel)",
+    "status": "READY",
+    "pedagogical_role": "",
+    "maturity": "BETA",
+    "editorial": "BETA",
+    "reproducibility": "EXECUTED",
+    "scientific_review": "UNASSESSED",
+    "scientific_review_stale": false,
+    "scientific_review_detail": {
+      "grade": "UNASSESSED",
+      "stale": false,
+      "code_sha": "1f3601105fbb1cc29978f063c6cf0c3fafe8c399bd29a871c5967ce06faa90e1",
+      "reviewed_code_sha": "",
+      "reviewed_by": "",
+      "peer": false,
+      "sorry_free": false
+    },
+    "production_signed": false,
+    "last_success_sha": "d5770a9f8",
+    "executed_at": "2026-09-26T15:09:38+02:00",
+    "forensic_category": "A_ALL_EXEC_OK",
+    "duree_estimee": "30min",
+    "resource_cost": {
+      "schema": 1,
+      "execution": {
+        "class": "MODERATE",
+        "wall_seconds": 398.4,
+        "cells_timed": 8,
+        "cells_code": 8,
+        "coverage": "FULL",
+        "external": [
+          "wsl"
+        ]
+      },
+      "creation": {
+        "class": "LIGHT",
+        "history": "COMPLETE",
+        "revisions": 1,
+        "authors": 1,
+        "first_commit": "2026-09-26",
+        "span_days": 0
+      }
+    },
+    "owner_logique": "po-2024",
+    "last_validation": "2026-09-26",
+    "last_validator": "jsboige@gmail.com",
+    "issue_pr_associee": "#15066, #17844",
+    "cells_total": 20,
+    "cells_code": 8,
+    "cells_markdown": 12,
+    "cells_with_outputs": 5,
     "cells_without_outputs": 0,
     "requires_api": false,
     "requires_gpu": false,

@@ -42,7 +42,7 @@ DEFAULT_WSL_VENV = "~/coursia-wsl"
 
 # Borrowed verbatim from scripts/notebook_tools/wsl_papermill.py so that
 # both scripts agree on what counts as "system" vs "venv" interpreters.
-# Tell c.14908 followup: when both scripts diverge on the definition,
+# when both scripts diverge on the definition,
 # the static verdict stops matching the runtime one. Keep these helpers
 # in lock-step -- if you change one, change both.
 def _venv_from_interpreter(interpreter: Optional[str]) -> Optional[str]:

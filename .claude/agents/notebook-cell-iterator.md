@@ -277,6 +277,7 @@ Apres enrichissement, valider les cellules modifiees :
 ```python
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt="""
     Tu es un agent notebook-cell-iterator.
     Lis .claude/agents/notebook-cell-iterator.md
@@ -298,6 +299,7 @@ Pour corriger automatiquement les erreurs :
 for cell_idx in cells_with_errors:
     Task(
         subagent_type="general-purpose",
+        model="sonnet",
         prompt=f"""
         Tu es un agent notebook-cell-iterator.
         Corrige la cellule {cell_idx} de {notebook_path}
@@ -325,6 +327,7 @@ for cell_idx in cells_with_errors:
 ```python
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt="""
     Agent notebook-cell-iterator.
     Notebook: MyIA.AI.Notebooks/Probas/Infer/Infer-2-Gaussian-Mixtures.ipynb
@@ -342,6 +345,7 @@ Task(
 ```python
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt="""
     Agent notebook-cell-iterator.
     Notebook: MyIA.AI.Notebooks/Search/CSPs_Intro.ipynb
