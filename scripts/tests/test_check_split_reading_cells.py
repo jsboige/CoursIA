@@ -917,6 +917,41 @@ def test_diff_mute_si_cellule_ajoutee_ne_viole_pas():
     assert detect_added_readings(head, base) == []
 
 
+def test_conclusion_longue_apres_stub_est_structurelle():
+    """Une `## Conclusion` (ou `## Ressources` / `## Plan`) substantielle placee
+    APRES un exercice reste structurelle : le carve-out #17777 pose le
+    discriminant « titre, pas longueur du corps » sur ``is_reading_or_prose``,
+    et le bucket positionnel apres exercice doit faire de meme. Sinon toute
+    conclusion de fin de carnet du gabarit canon (ex. carnet 06, corps 866
+    chars) tombe en EXERCISE_READING -- faux positif mesure sur #18383.
+    Controle negatif : un titre NON-liste (## Analyse detaillee) long apres un
+    stub reste signale.
+    """
+    conclusion_longue = (
+        "## Conclusion\n\nCe notebook a relie les trois niveaux du probleme. "
+        "Le calcul : Euler-Maclaurin complexe donne zeta a 1e-11 pres. "
+        "Le comptage suit Riemann-von Mangoldt. La statistique epouse Wigner. "
+        * 3
+    )
+    base = nb(_stub_exercise())
+    head = nb(
+        _stub_exercise(),
+        md(conclusion_longue),
+        md("## Ressources\n\n- Serre, Cours d'arithmetique\n- Edwards."),
+    )
+    assert detect_added_readings(head, base) == []
+
+    # Controle negatif : titre non-liste, corps long apres un stub -> lecture.
+    head_neg = nb(
+        _stub_exercise(),
+        md("## Analyse detaillee\n\nLa sortie confirme 0.94 sur l'echantillon, "
+           "tendance attendue, marge fine. " * 4),
+    )
+    findings_neg = detect_added_readings(head_neg, base)
+    assert len(findings_neg) == 1
+    assert findings_neg[0]["type"] == "EXERCISE_READING"
+
+
 def test_diff_mute_si_markdown_ajoute_apres_code_sans_markdown_en_base():
     """Une premiere lecture ajoutee juste apres une cellule de code qui
     n'avait PAS de markdown derriere en base n'est PAS une violation.
