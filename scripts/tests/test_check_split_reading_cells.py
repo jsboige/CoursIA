@@ -735,6 +735,67 @@ def test_diff_reading_before_code_devant_sortie():
     assert f["next_role"] == "code_with_output"
 
 
+def test_diff_lecture_sous_code_devant_code_sans_exces_non_flaggee():
+    """Decision #17044 (c.5877090210) : une lecture ajoutee directement SOUS un
+    code execute est rattachee par ``_output_key_above`` a la sortie du dessus
+    -- elle releve du compte par sortie, pas de la topologie. Devant le code
+    SUIVANT mais sans exces de lecture sur la sortie du dessus : rien a
+    signaler. Classe mesuree : cellule 8 d'Infer-08b (#18087), faux positif.
+    """
+    base = nb(
+        code("print(1)"),
+        code("print(2)"),
+    )
+    head = nb(
+        code("print(1)"),
+        md("### Analyse du resultat\nLa convergence est nette."),
+        code("print(2)"),
+    )
+    assert detect_added_readings(head, base) == []
+
+
+def test_diff_lecture_sous_code_avec_exces_rest_second_reading():
+    """Meme topologie (prev = code execute, next = code), mais la sortie du
+    dessus portait deja une lecture : l'ajout fait monter le compte ->
+    SECOND_READING par le compte par sortie. Le bucket topologique ne dit plus
+    READING_BEFORE_CODE pour une cellule qu'il rattache par ailleurs a la
+    sortie du dessus (incoherence mesuree sur #17044).
+    """
+    base = nb(
+        code("print(1)"),
+        md("### Lecture\nPremiere lecture legitime."),
+        code("print(2)"),
+    )
+    head = nb(
+        code("print(1)"),
+        md("### Lecture\nPremiere lecture legitime."),
+        md("### Lecture chiffree\nDeuxieme lecture sur la meme sortie."),
+        code("print(2)"),
+    )
+    findings = detect_added_readings(head, base)
+    assert [f["type"] for f in findings] == ["SECOND_READING"]
+
+
+def test_diff_lecture_sous_md_devant_code_rest_reading_before_code():
+    """Controle negatif de la decision : sans code execute directement
+    au-dessus (prev_role md), la lecture ajoutee devant un code execute RESTE
+    READING_BEFORE_CODE -- la place canonique d'une lecture introductive
+    n'a pas change.
+    """
+    base = nb(
+        md("## 1. Contexte du banc"),
+        code("print(1)"),
+    )
+    head = nb(
+        md("## 1. Contexte du banc"),
+        md("### Lecture introductive\nOn annonce le resultat avant le code."),
+        code("print(1)"),
+    )
+    findings = detect_added_readings(head, base)
+    assert len(findings) == 1
+    assert findings[0]["type"] == "READING_BEFORE_CODE"
+
+
 def test_diff_section_header_devant_code_non_flagge():
     """Carve-out #17777 etendu a READING_BEFORE_CODE : un en-tete de section
     (titre d'organisation, meme suivi de prose) qui introduit le code qui

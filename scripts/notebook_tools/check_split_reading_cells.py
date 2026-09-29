@@ -41,8 +41,11 @@ INSEREES dans une PR qui violent la regle user « une sortie = une lecture » :
                               est un **compte par sortie**, pas un jugement par
                               cellule : voir la decision #17044 ci-dessous ;
   - ``READING_BEFORE_CODE`` : cellule markdown ajoutee directement devant une
-                              cellule de code AVEC sortie (la lecture doit
-                              suivre la sortie, pas la preceder) ;
+                              cellule de code AVEC sortie ET sans code execute
+                              au-dessus d'elle (la lecture doit suivre la
+                              sortie, pas la preceder ; sous un code execute,
+                              le compte par sortie prend le relais -- #17044,
+                              decision c.5877090210) ;
   - ``EXERCISE_READING``    : cellule markdown ajoutee juste apres une cellule
                               d'exercice (stub sans sortie) -- l'etudiant ne
                               verra pas la lecture tant qu'il n'a pas complete.
@@ -620,7 +623,8 @@ def detect_added_readings(head_nb: dict, base_nb: dict | None) -> list[dict]:
       4. Pour chaque cellule ajoutee qui est markdown, classifier via le
          **contexte HEAD** :
            - ``EXERCISE_READING``    prev_role == "exercise"
-           - ``READING_BEFORE_CODE`` next_role == "code_with_output"
+           - ``READING_BEFORE_CODE`` next_role == "code_with_output" ET
+                                     prev_role != "code_with_output"
            - ``SECOND_READING``      la sortie que la cellule commente porte
                                      **plus de lectures en tete qu'en base**
 
@@ -803,9 +807,16 @@ def _bucket_for(prev_role: str, next_role: str) -> str | None:
     if prev_role == "exercise":
         return "EXERCISE_READING_CANDIDATE"
     if next_role in ("code_with_output", "exercise"):
-        # Une lecture ajoutee devant un exercice OU un code deja execute
-        # precede le resultat qu'elle est censee commenter -- dans les deux
-        # cas la place canonique est APRES, pas avant.
+        # Une lecture ajoutee sous un code execute est rattachee par
+        # ``_output_key_above`` a la sortie du dessus : elle releve du compte
+        # par sortie (SECOND_READING si le compte monte, rien sinon) -- la
+        # dire en meme temps « avant son resultat » serait l'incoherence
+        # mesuree sur #17044 (c.5877090210). READING_BEFORE_CODE ne survit
+        # que sans code execute directement au-dessus (prev_role md ou
+        # BOUNDARY) : la lecture y precede alors le resultat qu'elle est
+        # censee commenter, et la place canonique est APRES, pas avant.
+        if prev_role == "code_with_output":
+            return "SECOND_READING"
         return "READING_BEFORE_CODE"
     if prev_role in ("md", "code_with_output"):
         return "SECOND_READING"
