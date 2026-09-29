@@ -455,7 +455,8 @@ def test_materialize_reference_base_real_git(tmp_path):
     _git("commit", "-q", "-m", "base")
     base_sha = subprocess.run(
         ["git", "-C", str(repo), "rev-parse", "HEAD"],
-        capture_output=True, text=True).stdout.strip()
+        capture_output=True, text=True, encoding="utf-8",
+        errors="replace").stdout.strip()
     items = smh.materialize_reference_base(
         base_sha, {"new.ipynb", "added.ipynb"},
         {"new.ipynb": "old.ipynb"}, repo_root=repo)
@@ -466,3 +467,38 @@ def test_materialize_reference_base_real_git(tmp_path):
     # l'assertion cle : le blob de l'ANCIEN chemin, clee a l'ancien chemin.
     assert "old.ipynb" in counts
     assert counts["old.ipynb"]["HINT-AS-HEADING"] == 1
+
+
+# --- iter_notebooks : cibles non resolues (#14801) -----------------------------
+
+def test_iter_notebooks_missing_head_reads_as_checkout_not_crash(tmp_path):
+    """#14801 : le mode diff passe des pathlib.Path resolus contre la racine.
+    Une tete absente de l'arbre doit rendre un ValueError LISIBLE (nommant le
+    fichier), pas un TypeError de join. Fondateur : job 109046074716 (run
+    36457091976, runner wsl-4) ou un notebook absent du checkout a tue
+    l'advisory en `sequence item 0: expected str instance, PosixPath found`."""
+    missing = tmp_path / "MyIA.AI.Notebooks" / "Genie" / "10_Disparu.ipynb"
+    with pytest.raises(ValueError) as exc:
+        list(smh.iter_notebooks([missing]))
+    text = str(exc.value)
+    assert "10_Disparu.ipynb" in text
+    assert "checkout incomplet" in text
+
+
+def test_iter_notebooks_plain_non_notebook_keeps_old_message(tmp_path):
+    """Non-regression : une cible qui n'est pas un .ipynb garde le message
+    d'origine, sans le hint checkout."""
+    other = tmp_path / "notes.txt"
+    with pytest.raises(ValueError) as exc:
+        list(smh.iter_notebooks([other]))
+    text = str(exc.value)
+    assert text.startswith("not a notebook nor a directory:")
+    assert "checkout incomplet" not in text
+    assert "notes.txt" in text
+
+
+def test_iter_notebooks_still_yields_existing_targets(tmp_path):
+    """Chemin nominal inchange : un .ipynb existant est rendu tel quel."""
+    nb = tmp_path / "ok.ipynb"
+    nb.write_text(json.dumps(_nb(["# Titre"])), encoding="utf-8")
+    assert [p.name for p in smh.iter_notebooks([nb])] == ["ok.ipynb"]

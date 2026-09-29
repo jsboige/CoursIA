@@ -26,6 +26,40 @@ Cette distinction motive l’[Epic de digestion et exposition des preuves du cor
 
 Cet Epic est une discipline **interne** avant d’être une politique d’acquisition : il s’applique d’abord aux lakes, preuves et notebooks que CoursIA possède déjà, puis aux futurs résultats produits dans le dépôt. Il ne transforme ni Leiden ni Palomar en mandat d’étendre indéfiniment le périmètre scientifique de CoursIA. Les résultats externes ne sont considérés qu’au compte-gouttes, lorsqu’un besoin pédagogique préexistant les appelle.
 
+## La Boussole : de l’interprétation à la preuve formelle
+
+L’Epic #13105 se déploie selon un parcours en trois temps — **apprendre, extraire, prouver** — que la littérature récente de l’interprétabilité mécaniste et de la formalisation permet aujourd’hui de nommer et de relier. Cette Boussole n’est pas un programme nouveau : c’est une lecture transverse de ce que CoursIA fait déjà, articulée pour qu’un lecteur extérieur puisse en suivre le fil sans avoir à reconstituer les épisodes.
+
+**Apprendre.** Le grokking observé par R02 (Power, Burda, Edwards, Babuschkin et Misra, 2022, [`arXiv:2201.02177`](https://arxiv.org/abs/2201.02177) — phase tardive où un réseau dépasse la mémorisation et accède à une structure algorithmique) montre qu’un modèle peut converger au-delà de ses performances d’entraînement. Pour CoursIA, ce temps correspond à la phase d’accumulation disciplinée des notebooks, des preuves et des lakes — sans garantie que la performance finale en soit lisible.
+
+**Extraire.** R03 (Michaud et al., 2024, [`arXiv:2402.05110`](https://arxiv.org/abs/2402.05110) — *program synthesis via mechanistic interpretability*) montre qu’à partir d’un réseau grokké, on peut extraire un programme lisible. Côté CoursIA, ce geste est porté par les organes d’interprétabilité (harnais SAE Qwen, #10355), par les notebooks d’AST et de circuits, et par les passages qui reconstruisent un algorithme identifiable à partir d’un artefact neuronal. L’extraction n’est pas seulement technique : elle exige de choisir le niveau d’abstraction où le programme devient *lisible par un humain*, et ce choix est pédagogique avant d’être mathématique.
+
+**Prouver.** R15 (Bursuc, Ehrenborg, Lin et al., 2025, [`arXiv:2509.22908`](https://arxiv.org/abs/2509.22908) — *vericoding*), démontre que la sortie d’un modèle peut être accompagnée d’une preuve formelle vérifiée par un noyau. La chaîne Tao *Mathematics in the Age of AI* propose précisément ce contrat : génération, vérification, exposition, puis digestion dans un corpus humainement cohérent. Lean-18 Sendov, Lean-19 Analysis I et Lean-20 PFR sont trois premières mailles locales de cette chaîne.
+
+**Les deux directions de l’intersection.** La Boussole distingue deux usages distincts de la preuve formelle appliquée à l’IA :
+
+- *Prouver des réseaux* — montrer qu’une propriété d’un modèle tient (robustesse, équité, absence de porte dérobée). R12 (*Towards Guaranteed Safe AI*, Dalrymple et al., 2024, [`arXiv:2405.06624`](https://arxiv.org/abs/2405.06624), distillé dans #17216) trace cette direction et la relie à la triade *world/solver/verifier*.
+- *Utiliser l’IA pour prouver* — outiller la formalisation elle-même. Notre chaîne Epic #13105 vit ici : Lean comme cible, agents et notebooks comme exposants.
+
+Ces deux directions ne sont pas séparables : un *verifier* qui s’appuie sur du Lean gagné par un modèle est exposé aux mêmes questions d’attribution qu’un réseau dont on prouve la correction.
+
+**Questions ouvertes que la Boussole ne tranche pas.**
+
+- *Échelle* — jusqu’où la vérification formelle reste-t-elle lisible quand le modèle et la preuve grandissent ensemble ? La lecture de Sendov ou de PFR tient parce que le périmètre reste borné ; le seuil où la preuve cesse d’être un cours est empirique et non garanti.
+- *Réduction symbolique* — l’extraction par R03 produit un programme MIPS lisible, mais la translation vers une théorie de bibliothèques (Mathlib, PFR) reste un travail humain. L’écart entre *extraction* et *digestion* est précisément le périmètre de l’Epic #13105.
+- *Niveau d’understanding* — qu’est-ce qu’une preuve formelle *comprise* ? La Boussole distingue la validité du noyau (technique) et la lisibilité du récit (pédagogique) ; elle ne prétend pas les confondre.
+- *Prouver l’absence de capacités* — c’est la question inverse de la triade W/S/V, et la plus difficile : on prouve plus facilement la présence d’une capacité (par témoin) que son absence.
+
+**Sources principales de la Boussole** (archivées au gisement partagé, jamais committées) :
+
+- R01 — *AI Feynman 2.0 — Pareto-optimal symbolic regression exploiting graph modularity* ([`arXiv:2006.10782`](https://arxiv.org/abs/2006.10782)) · sha8 `F01E25E3`
+- R03 — *Opening the AI black box — program synthesis via mechanistic interpretability* ([`arXiv:2402.05110`](https://arxiv.org/abs/2402.05110)) · sha8 `690A0E86`
+- R10 — *Not All Language Model Features Are One-Dimensionally Linear* ([`arXiv:2405.14860`](https://arxiv.org/abs/2405.14860)) · sha8 `7DEAC929`
+- R12 — *Towards Guaranteed Safe AI* ([`arXiv:2405.06624`](https://arxiv.org/abs/2405.06624)), distillation #17216
+- R14 — *Open Problems in Mechanistic Interpretability* ([`arXiv:2501.16496`](https://arxiv.org/abs/2501.16496)) · sha8 `9A50CDC6`
+- R15 — *A benchmark for vericoding* (Bursuc, Ehrenborg, Lin et al., 2025, [`arXiv:2509.22908`](https://arxiv.org/abs/2509.22908))
+- Terry Tao, *Mathematics in the Age of AI*, ICM 2026 ([`arXiv:2608.16753`](https://arxiv.org/abs/2608.16753))
+
 ## Principes, pratiques, preuves et engagements
 
 | Principe de Leiden | Pratique CoursIA actuelle | Preuve consultable | Lacune reconnue | Engagement |
@@ -53,7 +87,7 @@ Cette précision reste incomplète : la [carte de couverture](reference/lean-axi
 
 ### 3. Exposition et digestion
 
-Lean-19 Sendov, Lean-20 Analysis I et Lean-21 PFR illustrent trois formes de digestion : exposer un grand résultat, étudier un workflow de formalisation et relier une méthode entropique à un lake réel. Ces notebooks sont des points de départ, pas des certificats de canonicalisation définitive.
+Lean-18 Sendov, Lean-19 Analysis I et Lean-20 PFR illustrent trois formes de digestion : exposer un grand résultat, étudier un workflow de formalisation et relier une méthode entropique à un lake réel. Ces notebooks sont des points de départ, pas des certificats de canonicalisation définitive.
 
 L’[inventaire de veille Palomar](https://github.com/jsboige/CoursIA/issues/13107) rend cette prudence opérationnelle. Au snapshot du 26 août 2026, le registre comptait 68 résultats actifs et 76 versions. Un seul résultat, Sendov, avait un chevauchement direct avec une digestion CoursIA existante. La plupart des autres reçoivent `VEILLE` ou `AUCUNE ACTION` : être vérifié dans Palomar ne suffit pas à justifier un import, un notebook ou une place dans le curriculum. Cet inventaire n’est pas un backlog ; il ne devient actionnable qu’en réponse à un besoin déjà formulé par un parcours CoursIA.
 
@@ -152,6 +186,35 @@ Aux **pouvoirs publics**, Leiden recommande de protéger les auteurs, de résist
 
 À **l’industrie**, Leiden demande le respect des standards communautaires, de l’autonomie et des préoccupations éthiques. CoursIA évalue les outils par leurs résultats et leurs conditions d’usage, et refuse de transformer l’accès à un service en preuve de neutralité ou de légitimité.
 
+## Accord avec l’initiative SAIR Open Models
+
+L’initiative [SAIR Open Models](https://sair.foundation/open-math-model/) (page consultée le 24 septembre 2026) appelle la communauté mathématique à construire des modèles ouverts « shaped by the community » pour l’âge de l’IA en mathématiques. Sa première phase annoncée concerne « le travail mathématique quotidien : comprendre des arguments difficiles, vérifier des références, explorer des exemples, écrire du code, et formaliser des preuves » ([sair.foundation/open-math-model/](https://sair.foundation/open-math-model/), section *Tools for Everyday Research*). L’initiative fixe cinq principes — poids, code et méthodes d’entraînement publiés, données aux sources documentées et aux permissions compatibles, licences ouvertes (Apache 2.0, MIT, CC BY 4.0), gouvernance publique, indépendance de recherche préservée face aux partenaires industriels — et reconnaît que des précisions détaillées sont attendues « dans un avenir très proche ».
+
+CoursIA partage la direction de ces principes, avec une portée volontairement bornée. Le mainteneur du dépôt s’y est inscrit comme soutien de l’initiative. Cette inscription n’établit ni partenariat, ni financement, ni rôle de gouvernance ; elle reconnaît une convergence d’intentions que nos artefacts vérifiables peuvent rendre concrète.
+
+### Correspondances avec nos engagements
+
+- **Ouverture contre coût.** L’initiative demande que les poids, le code et les évaluations soient publiés et reproductibles ([open-math-model](https://sair.foundation/open-math-model/), *Open Development*). CoursIA tient le même engagement par ses notebooks versionnés, ses proofs vérifiables (`lake build` + `proof-integrity`) et ses sorties pédagogiques committées. La [politique de taille](reference/repo-size-policy.md) assume explicitement que cette ouverture augmente le coût de calcul et de stockage : le compromis est mesuré, jamais effacé.
+- **Données aux sources documentées.** L’initiative exige que les données d’entraînement viennent avec des sources et permissions compatibles, et que les utilisateurs consentent explicitement à tout usage ([open-math-model](https://sair.foundation/open-math-model/), *The Mathematical Community Owns the Data*). CoursIA rejoint ce principe par le [registre de datasets](notebook-metadata/DATASET_REGISTRY.md), par le [registre d’attribution MBML](reference/mbml-source-attribution.md), et par la règle [Verify Before Claiming](../.claude/rules/verify-before-claiming.md) qui refuse les attributions extrapolées.
+- **Licences ouvertes.** L’initiative cite Apache 2.0, MIT et CC BY 4.0 ([open-math-model](https://sair.foundation/open-math-model/), *Shared Intellectual Property*). Les dépendances du dépôt sont inventoriées dans [THIRD_PARTY_NOTICES](../THIRD_PARTY_NOTICES.md) et la règle [bibliography-hygiene](../.claude/rules/bibliography-hygiene.md) refuse le commit de publications sous droits.
+- **Gouvernance publique et indépendance de recherche.** L’initiative énonce que la communauté mathématique doit gouverner l’initiative, et que les partenariats industriels doivent préserver l’indépendance de recherche ([open-math-model](https://sair.foundation/open-math-model/), *Open Community and Governance*). CoursIA traduit ce principe par son inscription comme soutien — pas comme financeur, contributeur de calcul, ou membre d’un comité — et par sa séparation explicite entre dépendance industrielle et autonomie ([Engagement 9 — Autonomie mesurée](#engagements-coursia)).
+- **Infrastructure locale contre dépendances.** L’initiative demande que les modèles soient exécutables indépendamment ([open-math-model](https://sair.foundation/open-math-model/), *Models Shaped by the Community*). Le dépôt héberge localement les poids ouverts lorsque c’est possible et documente ses dépendances cloud ou propriétaires par composant.
+
+### Contribution vérifiable
+
+L’accord avec SAIR est rendu concret par deux pratiques déjà tenues dans le dépôt :
+
+- **Les lakes Lean servent d’évaluations reproductibles.** Quand un workflow `lake build` est câblé et que `proof-integrity` est vert sur la cible, le résultat est inspectable par quiconque dispose de la toolchain. La [carte de couverture](reference/lean-axiom-coverage.md) rend cette discipline explicite et évite de présenter des lacs non câblés comme déjà certifiés.
+- **Le harnais de prouveur et ses traces forensiques** ([Epic #1453](https://github.com/jsboige/CoursIA/issues/1453)) tiennent un journal des tentatives, des succès et des plafonds sur petits modèles. Cette pratique alimente la Boussole et donne à l’accord un contenu vérifiable plutôt qu’une déclaration de principe.
+
+### Ce que nous ne revendiquons pas
+
+- Aucun partenariat formel avec l’initiative ; aucune mission de représentation, de gouvernance ou de financement.
+- Aucune contribution de calcul, de données, ou de personnel au-delà de l’apport de cet accord documenté.
+- Aucun alignement sur des décisions futures de l’initiative qui n’auraient pas encore été publiées ; la page consultée annonce elle-même des précisions « dans un avenir très proche » et l’accord est daté du 24 septembre 2026.
+- Aucun ajout de SAIR Open Models au périmètre pédagogique ou scientifique de CoursIA au-delà de la formalisation déjà tenue dans les lakes ; Epic #13105 demeure une discipline *interne* avant d’être une politique d’acquisition.
+- Aucun usage de cet accord comme preuve de neutralité, d’a-completude ou de supériorité face à d’autres initiatives ouvertes.
+
 ## Sources principales
 
 - [Leiden Declaration on Artificial Intelligence and Mathematics](https://leidendeclaration.ai/), 2 juin 2026.
@@ -166,3 +229,4 @@ Aux **pouvoirs publics**, Leiden recommande de protéger les auteurs, de résist
 - [Universal Ethical Code for Scientists](https://www.gov.uk/government/publications/universal-ethical-code-for-scientists).
 - [SIAM AI Task Force Report](https://www.siam.org/media/b03hwuwe/siam-report-ai-task-force.pdf).
 - [AMS AI Summary](https://www.ams.org/about-us/ai-summary).
+- [SAIR Open Models](https://sair.foundation/open-math-model/), initiative *Open Models for Mathematics*, page consultée le 24 septembre 2026.

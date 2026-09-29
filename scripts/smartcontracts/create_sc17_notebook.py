@@ -1,4 +1,4 @@
-"""Generate SC-17-E2E-Verifiable-Voting.ipynb - Capstone crypto notebook."""
+"""Generate SC-17-E2E-Verifiable-Voting-Python.ipynb - Capstone crypto notebook."""
 import json
 import os
 
@@ -29,9 +29,9 @@ cells = []
 
 # === HEADER ===
 cells.append(md(
-"# SC-17-E2E-Verifiable-Voting - Vote Electronique Verifiable\n"
+"# SC-17-E2E-Verifiable-Voting-Python - Vote Electronique Verifiable\n"
 "\n"
-"**Navigation** : [Index](../README.md) | [<< Homomorphic Encryption](SC-16-Homomorphic-Encryption.ipynb) | [Vyper >>](../05-Alternative-Chains/SC-18-Vyper.ipynb)\n"
+"**Navigation** : [Index](../README.md) | [<< Homomorphic Encryption](SC-16-Homomorphic-Encryption-Python.ipynb) | [Vyper >>](../05-Alternative-Chains/SC-18-Vyper-Python.ipynb)\n"
 "\n"
 "---\n"
 "\n"
@@ -45,7 +45,7 @@ cells.append(md(
 "\n"
 "### Prerequis\n"
 "\n"
-"- [SC-15](SC-15-Zero-Knowledge-Proofs.ipynb) et [SC-16](SC-16-Homomorphic-Encryption.ipynb) completes\n"
+"- [SC-15](SC-15-Zero-Knowledge-Proofs-Python.ipynb) et [SC-16](SC-16-Homomorphic-Encryption-Python.ipynb) completes\n"
 "- `phe` (python-paillier) installe\n"
 "- `pycryptodome` installe\n"
 "- `electionguard` installe (optionnel, pour la partie SOTA)\n"
@@ -628,7 +628,7 @@ cells.append(md(
 "\n"
 "---\n"
 "\n"
-"**Notebook suivant** : [SC-18-Vyper](../05-Alternative-Chains/SC-18-Vyper.ipynb) - Smart contracts en Python-like",
+"**Notebook suivant** : [SC-18-Vyper-Python](../05-Alternative-Chains/SC-18-Vyper-Python.ipynb) - Smart contracts en Python-like",
 "summary"))
 
 # === BUILD ===
@@ -648,7 +648,7 @@ notebook = {
 
 output_path = os.path.join(
     "d:", os.sep, "CoursIA", "MyIA.AI.Notebooks", "SymbolicAI",
-    "SmartContracts", "04-Privacy-Cryptography", "SC-17-E2E-Verifiable-Voting.ipynb"
+    "SmartContracts", "04-Privacy-Cryptography", "SC-17-E2E-Verifiable-Voting-Python.ipynb"
 )
 with open(output_path, 'w', encoding='utf-8', newline='\n') as f:
     json.dump(notebook, f, ensure_ascii=False, indent=1)

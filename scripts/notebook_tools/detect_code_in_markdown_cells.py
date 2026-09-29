@@ -136,7 +136,11 @@ def _finding_hash(f: dict[str, Any]) -> str:
     # Normalize path separators to POSIX for cross-platform stability:
     # baseline generated on Windows (backslash) doesn't match Linux scan (slash).
     file_path = f['file'].replace("\\", "/")
-    payload = f"{file_path}:{f['cell']}:{f['rule']}:{f['line']}:{src}"
+    # #16971 : la cle doit survivre a l'insertion de cellules. L'index bouge
+    # des qu'une PR insere des lectures avant la cellule fautive ; le id
+    # nbformat >= 4.5 est stable. Repli sur l'index pour les carnets sans ids.
+    cell_key = f.get("cell_id") or f["cell"]
+    payload = f"{file_path}:{cell_key}:{f['rule']}:{f['line']}:{src}"
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
 
 
@@ -271,6 +275,10 @@ def scan_cell(cell: dict[str, Any], cell_index: int) -> list[dict[str, Any]]:
 
     for f in findings:
         f["cell"] = cell_index
+        # #16971 : identite stable pour la baseline (voir _finding_hash) --
+        # porter l'index seul fait ressortir une violation acceptee comme
+        # « new » des qu'une PR insere des cellules avant elle.
+        f["cell_id"] = cell.get("id") or ""
         f["tags"] = tags
     return findings
 

@@ -1,0 +1,1175 @@
+#!/usr/bin/env python3
+r"""Organe merge_ready -- fusion hors cycle des PRs prevalidees (Q40, 2026-09-22).
+
+Mandat (sign-off user 2026-09-22, registre Q40 option b) : les merges ne
+doivent plus attendre le cycle de 2 h du coordinateur. Mesure fondatrice :
+97 merges en 24 h concentres sur 4 creneaux avec 12 heures vides ; lead time
+median d'une PR 28,5 h ; sur un echantillon de 20 PRs dont le dossier
+d'adjoint etait rejete par le gate, 14 avaient une tete perimee et 13 une
+discussion ayant bouge APRES le dossier, 0 un refus de fond. Un dossier
+perit pendant qu'il attend le coordinateur.
+
+Arbitrage user 2026-09-28 (Q67, option a) : l'organe ne merge QUE ce que le
+coordinateur a LU et APPROUVE. Il ne remplace pas cette lecture ; il evite
+seulement qu'un dossier perisse entre elle et le merge. Jusque-la, la
+disposition de review n'etait que relevee : sur les 211 merges du journal
+(23/09 -> 28/09), 6 portaient une approbation ``myia-ai-01``, et toute lane
+ne portant pas la PR pouvait la faire merger par son seul dossier.
+
+L'organe est deterministe et tourne sous l'identite coordinateur
+(myia-ai-01) toutes les ~20 minutes, et seulement en perimetre (b) -- hors
+harnais et hors grains DEEP. Tour de controle par PR, TOUT doit tenir sinon
+skip avec raison nommee :
+
+1. pas un brouillon, et au moins un commentaire d'issue dont la premiere
+   ligne est ``[ADJOINT PREFLIGHT]`` (prefiltre bon marche avant le gate
+   couteux) ;
+2. perimetre (b) fail-closed : aucun fichier sous ``.claude/``, aucun
+   ``CLAUDE.md`` (n'importe quel repertoire), aucun fichier sous
+   ``.github/`` ; tier du tag ``Grain:`` MED ou LIGHT (DEEP refuse, tier
+   illisible refuse) -- lecture par le parseur PARTAGE
+   ``scripts/grain_tag.py`` (#9485, meme lecteur que variation_light_cap
+   et le guard CI), jamais une regex locale ; liste de fichiers TRONQUEE
+   (``changedFiles`` > fichiers listes, ou absent) -> skip fail-closed,
+   un fichier harnais non liste ne doit pas passer ; PR qui se reclame
+   (titre ou body) d'un parapluie GELE par un veto user
+   (``FROZEN_UMBRELLAS``) -> skip, quel que soit son dossier ;
+2bis. pre-controle du dernier dossier ``[ADJOINT PREFLIGHT]`` : tete
+   perimee ou ``b0:`` different de ``clear`` -> skip SANS payer le gate
+   (un dossier illisible est laisse au gate, qui tranche) ;
+2ter. approbation du coordinateur : la DERNIERE voix de ``myia-ai-01``
+   (etat reel ``APPROVED``/``CHANGES_REQUESTED``, ou verdict type en
+   corps -- latest-wins, ``DISMISSED`` jamais) est un ``APPROVED`` reel,
+   et elle couvre le CONTENU de la tete : soit elle est posee sur la tete
+   elle-meme, soit la tete n'en differe que par des rafraichissements de
+   base PROUVES content-free (``merge_dwell.last_authoritative_sha``, la
+   remontee du plancher DWELL : un ``update-branch`` sans conflit ne
+   perime pas la lecture, une resolution de conflit ou un commit de
+   contenu la perime). Absente -> ``no-coordinator-approval`` ; perimee
+   -> ``coordinator-approval-stale`` ; preuve illisible ->
+   ``coordinator-approval-unverifiable`` (fail-closed). Controle place
+   AVANT le gate : une PR non lue ne paie pas le gate ;
+3. gate d'entree ``check_adjoint_prevalidation.py <PR> --json`` ->
+   ``"ready": true`` (exit 0). Les rc documents du gate (1 no-dossier,
+   2 unknown, 3 blocked) sont des SKIPS nommes, pas des erreurs ;
+4. champ ``b0:`` du dossier ACCEPTE par le gate egale ``clear`` --
+   grammaire du dossier relue via ``parse_dossier`` du gate lui-meme
+   (import, pas de duplication) ; depuis que le gate re-verifie une
+   claim ``b0: clear`` contre l'organe B.0, l'etape 5 fait double emploi
+   pour un READY : elle reste le filet si le gate change ;
+5. organe B.0 ``check_unaddressed_nits.py <PR>`` exit 0 -- code de
+   retour capture DIRECTEMENT (subprocess.returncode, jamais a travers
+   un pipe) ;
+5bis. si la PR touche ``scripts/notebook_tools/twin_pairs.d/`` : organe
+   ``check_twin_index_collisions.py --base origin/main --head <tete>``
+   exit 0, apres ``git fetch origin main pull/<N>/head``. Deux PRs au
+   meme index sont chacune CLEAN contre ``main`` ; la seconde fait
+   rougir ``main`` des que la premiere est mergee. La relecture a lieu
+   PR par PR, contre le ``main`` du moment, donc apres les merges deja
+   faits dans ce run. Collision -> skip ; fetch ou organe illisible ->
+   skip fail-closed ;
+6. REST ``repos/jsboige/CoursIA/pulls/<N>`` : ``mergeable_state`` ==
+   ``clean`` (jusqu'a 12 relectures a 10 s d'intervalle pendant ``unknown`` --
+   apres un merge les PRs soeurs passent ``unknown``), et ``head.sha``
+   identique a la tete evaluee par le gate ;
+7. merge ``gh pr merge <N> --repo jsboige/CoursIA --squash
+   --match-head-commit <sha>`` -- jamais ``--delete-branch``, jamais
+   ``--admin``.
+
+Comportement :
+- DRY-RUN par defaut (imprime ce qui serait merge et pourquoi chaque
+  autre PR est skippee) ; ``--apply`` merge reellement. ``--max N``
+  (defaut 15) plafonne les merges par run (disjoncteur). Une erreur
+  inattendue ATTRIBUABLE A UNE PR (reponse d'outil illisible, rc hors
+  contrat pour cette seule PR) est journalisee ``run-error`` pour elle et
+  le balayage CONTINUE (#17672 point 3 : une PR bizarre ne gele plus
+  l'evaluation des suivantes) ; une erreur de PORTEE GENERALE -- jeton
+  refuse, quota d'API, reseau injoignable, cf ``PASS_WIDE_ERROR_MARKERS``
+  -- ARRETE le run, car la repeter sur chaque PR restante ne dirait rien
+  de plus. ``rc=1`` est rendu des qu'une PR a erreur, isolee ou non, et le
+  bilan nomme leur nombre. Jamais de merge en aveugle.
+- Jeton : chaque sous-processus gh recoit ``GH_TOKEN`` epingle depuis
+  ``gh auth token --user myia-ai-01``, resolu UNE fois au depart ;
+  jamais ``gh auth switch``. Jeton irresolu -> exit 2.
+- Ordre : PR la plus ancienne d'abord (par numero).
+- Retenues : ``hold.txt`` a cote du journal (surchargeable
+  ``--hold-file``), une PR par ligne -- ``<numero> [motif]`` ; lignes
+  vides et commentaires ``# ...`` ignores. Une PR listee est sautee
+  (``hold:<motif>``) AVANT tout appel gh. Fichier absent = aucune
+  retenue ; fichier illisible ou ligne malformee -> exit 2 (on ne merge
+  pas sans savoir ce qui est retenu).
+- Review : deux lectures distinctes. La disposition journalisee (champ
+  ``review``) est CLASSEE a la tete que la ligne declare
+  (``approved-exact-head`` / ``approval-not-on-head`` / ``no-approval``,
+  point 1 de #17672) sur TOUTES les voix, bots compris ; elle informe.
+  Ce qui BLOQUE est l'etape 2ter : la seule voix du coordinateur.
+- Journal : une ligne JSON par PR evaluee (ts UTC en Z, pr, head,
+  verdict, reason, merged, review) dans
+  ``%LOCALAPPDATA%/CoursIA/merge_ready/journal.jsonl`` (surchargeable
+  ``--journal``), plus un resume humain sur stdout ; ``--json`` pour la
+  sortie machine.
+- Codes de sortie : 0 run termine (merge ou non) ; 1 arret sur erreur
+  inattendue ; 2 impossible de demarrer (jeton/env).
+
+Tous les sous-processus passent par un runner injectable -- la logique
+est testable sans reseau (scripts/tests/test_merge_ready.py).
+"""
+from __future__ import annotations
+
+import argparse
+import datetime as _dt
+import json
+import os
+import re
+import subprocess
+import sys
+import time
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Protocol
+
+# Les modules partages vivent dans scripts/ : grain_tag.py est LE lecteur du
+# tag Grain (un seul lecteur depuis #9485, meme discipline que
+# variation_light_cap.py) et check_adjoint_prevalidation.py porte la
+# grammaire du dossier. L'organe ne re-ecrit NI la grammaire du tag NI celle
+# du dossier.
+SCRIPTS_DIR = Path(__file__).resolve().parent.parent
+COORDINATION_DIR = Path(__file__).resolve().parent
+for _shared_dir in (SCRIPTS_DIR, COORDINATION_DIR):
+    if str(_shared_dir) not in sys.path:
+        sys.path.insert(0, str(_shared_dir))
+
+from grain_tag import TIERS, parse_grain_tag  # noqa: E402
+import check_adjoint_prevalidation as gate  # noqa: E402
+# Les campagnes gelees par veto user (#17040) ont une definition PARTAGEE avec
+# le gate d'entree (scripts/coordination/frozen_campaigns.py) : le gate ne
+# peut pas importer cet organe (cet organe importe deja le gate), les deux
+# importent le module -- un seul lecteur, meme discipline que grain_tag.
+from frozen_campaigns import (  # noqa: E402,F401
+    FROZEN_BRANCH_PREFIXES,
+    FROZEN_UMBRELLAS,
+    frozen_umbrella_exclusion,
+)
+
+# Le canon d'emission du verdict de review vit dans scripts/ci/ : le jeton de
+# review du cluster ne peut poster que des COMMENT (#16926), donc le verdict
+# reel s'ecrit ``VERDICT: <token>`` dans le CORPS de la voix. Importe, jamais
+# recopie -- une regex locale divergerait en silence du canon qui gouverne le
+# triage du pool.
+CI_DIR = SCRIPTS_DIR / "ci"
+if str(CI_DIR) not in sys.path:
+    sys.path.insert(0, str(CI_DIR))
+
+import pool_review_verdicts as review_canon  # noqa: E402
+# La remontee first-parent qui saute les rafraichissements de base PROUVES
+# content-free est celle du plancher DWELL (#16149) : importee, pas recopiee,
+# pour que « la lecture du coordinateur couvre-t-elle encore cette tete ? » et
+# « depuis quand le contenu n'a-t-il pas bouge ? » ne divergent jamais.
+import merge_dwell  # noqa: E402
+
+REPO = "jsboige/CoursIA"
+COORDINATOR_USER = "myia-ai-01"
+GATE_PATH = SCRIPTS_DIR / "check_adjoint_prevalidation.py"
+NITS_PATH = SCRIPTS_DIR / "check_unaddressed_nits.py"
+TWIN_PATH = SCRIPTS_DIR / "notebook_tools" / "check_twin_index_collisions.py"
+TWIN_REGISTRY_PREFIX = "scripts/notebook_tools/twin_pairs.d/"
+REPO_ROOT = SCRIPTS_DIR.parent
+
+# Parapluies et branches de campagne GELES par un veto user, exemption des
+# redressements comprise : definition et historique portes par le module
+# PARTAGE scripts/coordination/frozen_campaigns.py (importe ci-dessus -- les
+# noms restent des attributs de cet organe pour ses appelants et ses tests).
+
+# Codes de retour DOCUMENTES des organes appeles. Tout autre rc est une
+# erreur inattendue -> arret du run, jamais de merge en aveugle.
+GATE_DOCUMENTED_RC = frozenset({0, 1, 2, 3})  # ready / no-dossier / unknown / blocked
+GATE_RC_REASONS = {1: "gate:no-dossier", 2: "gate:unknown", 3: "gate:blocked"}
+NITS_DOCUMENTED_RC = frozenset({0, 1})  # clear / blocked
+
+# --- disposition de review classsee a la tete evaluee (point 1 de #17672) ------
+# Le dossier HACHE l'oid de chaque review dans son empreinte
+# (``check_adjoint_prevalidation._fingerprint_payload``) sans le CLASSER : rien
+# ne dit si l'approbation porte sur le commit qui va etre merge. Trois etats,
+# toujours lus a la tete que la ligne de journal declare :
+#   ``approved-exact-head``  une voix approbatrice gouverne CETTE tete ;
+#   ``approval-not-on-head`` une approbation existe dans la fenetre lue, mais
+#                            elle ne couvre pas la tete evaluee (tete avancee
+#                            depuis l'approbation, ou voix posterieure qui n'approuve
+#                            pas) ;
+#   ``no-approval``          aucune approbation lue.
+# Les deux surfaces du canon sont lues : l'etat REEL de l'API (APPROVED, quand un
+# humain review) et le verdict type du CORPS en COMMENT -- la seule surface dont
+# dispose le jeton du cluster. Lire la seule premiere classerait « sans
+# approbation » des PR revues, le faux compte que #16926 a deja puni deux fois.
+APPROVED_EXACT_HEAD = "approved-exact-head"
+APPROVAL_NOT_ON_HEAD = "approval-not-on-head"
+NO_APPROVAL = "no-approval"
+NOT_EVALUATED = "not-evaluated"  # ligne d'un run interrompu avant evaluation
+
+#: Ce qui vaut approbation : l'etat REEL ``APPROVED``, ou le verdict type
+#: ``LGTM`` emis en corps de voix (``VERDICT_RE`` du canon ne type que LGTM et
+#: CONCERNS -- les deux etats reels suffisent au reste).
+APPROVING_VOICES = frozenset({"APPROVED", "LGTM"})
+
+MAX_MERGES_DEFAULT = 15
+PR_LIST_LIMIT = 500  # le pool ouvert mesure ~220 PRs ; au-dela, ordre ancien d'abord
+# Mesure du 2026-09-22 (22:15Z-22:45Z), merges en rafale sur la file vivante :
+# avec 3 relectures espacees de 5 s, 5 PRs sur 20 restaient `unknown` et
+# etaient sautees ; avec 12 relectures espacees de 10 s, les 11 suivantes
+# (dont ces 5) sont toutes passees `clean` et ont ete mergees. Le plafond
+# d'attente par PR (~2 min) reste petit devant le tour de 20 min.
+MERGEABLE_RETRIES = 12
+MERGEABLE_RETRY_SLEEP_S = 10.0
+
+
+class CannotRunError(Exception):
+    """Le run ne peut pas demarrer (jeton irresolu, env invalide)."""
+
+
+class UnexpectedError(Exception):
+    """Erreur inattendue d'un outil ou de l'API, non prevue par le contrat.
+
+    Depuis #17672 (point 3), elle n'arrete plus le run par principe : le
+    balayage distingue une erreur **attribuable a la PR** en cours (reponse
+    illisible pour elle, rc hors contrat pour elle) -- journalisee
+    ``run-error`` et le balayage continue -- d'une erreur de **portee
+    generale** (jeton, quota, reseau), qui arrete tout (cf
+    ``is_pass_wide``). Un ECHEC DE MERGE garde son propre disjoncteur
+    (``MergeFailedError``) : il ne se confond pas avec ces deux cas.
+    """
+
+
+class MergeFailedError(Exception):
+    """La commande de merge a echoue -- arret du run (disjoncteur)."""
+
+
+# Marqueurs d'une erreur de PORTEE GENERALE : ce qui frappe tous les appels de
+# la meme facon ne doit pas etre isole par PR, sinon une panne de jeton ou de
+# quota se lit comme une collection de ``run-error`` attribuees a des PRs
+# innocentes (#17672, point 3). Liste volontairement courte et litterale : un
+# texte non reconnu fait ISOLER l'erreur (le balayage continue, rc=1, la PR
+# est nommee), jamais l'inverse -- arreter le run sur un motif devine rendrait
+# le balayage dependant d'une devinette.
+PASS_WIDE_ERROR_MARKERS = (
+    "bad credentials",
+    "requires authentication",
+    "rate limit",
+    "http 401",
+    "http 403",
+    "could not resolve host",
+    "no such host",
+    "connection refused",
+    "connection reset",
+    "timed out",
+)
+
+
+def is_pass_wide(exc: BaseException) -> bool:
+    """L'erreur frappe-t-elle TOUTE la passe (jeton, quota, reseau) ou une seule PR ?
+
+    Le texte cherche est celui que les appels gh renseignent avec le stderr de
+    l'outil (cf ``fetch_pr_view``, ``run_gate``), donc un refus d'authentification
+    ou un quota epuise y figure tel que gh l'a ecrit.
+    """
+    text = str(exc).lower()
+    return any(marker in text for marker in PASS_WIDE_ERROR_MARKERS)
+
+
+# --- runner injectable --------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class RunResult:
+    returncode: int
+    stdout: str
+    stderr: str
+
+
+class Runner(Protocol):
+    """Contrat d'execution : un sous-processus capture, un sommeil."""
+
+    def run(self, cmd: list[str], env: dict[str, str] | None = None) -> RunResult: ...
+
+    def sleep(self, seconds: float) -> None: ...
+
+
+class SubprocessRunner:
+    """Runner reel : rc capture DIRECTEMENT (subprocess.returncode, jamais un pipe)."""
+
+    def run(self, cmd: list[str], env: dict[str, str] | None = None) -> RunResult:
+        proc = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            env=env,
+        )
+        return RunResult(proc.returncode, proc.stdout or "", proc.stderr or "")
+
+    def sleep(self, seconds: float) -> None:
+        time.sleep(seconds)
+
+
+# --- petites pieces pures -----------------------------------------------------
+
+
+@dataclass(frozen=True)
+class PRVerdict:
+    """Verdict terminal d'une PR pour ce run (forme de la ligne de journal)."""
+
+    pr: int
+    head: str | None
+    verdict: str  # skipped | would-merge | merged | merge-failed | run-error
+    reason: str | None
+    merged: bool
+    #: Disposition de review classee a ``head`` (point 1 de #17672) ; une ligne
+    #: ecrite avant evaluation (erreur inattendue) porte ``not-evaluated``.
+    review: str = NOT_EVALUATED
+
+    def journal_dict(self) -> dict:
+        return {
+            "ts": utc_now_iso(),
+            "pr": self.pr,
+            "head": self.head,
+            "verdict": self.verdict,
+            "reason": self.reason,
+            "merged": self.merged,
+            "review": self.review,
+        }
+
+
+def utc_now_iso() -> str:
+    """Horodatage UTC explicite, suffixe Z (jamais une heure locale nue)."""
+    return _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def default_journal_path() -> Path:
+    base = Path(os.environ.get("LOCALAPPDATA") or Path.home() / "AppData" / "Local")
+    return base / "CoursIA" / "merge_ready" / "journal.jsonl"
+
+
+# Une retenue decidee par le coordinateur (collision, ordre de stack,
+# arbitrage en attente) est invisible au gate comme a B.0 : un dossier READY
+# ne dit pas que j'ai decide de merger. Avant ce fichier, les retenues
+# vivaient dans un hold.txt de scratchpad de SESSION, que cet organe ne
+# lisait pas -- un run --apply, ou la tache planifiee, les aurait ignorees.
+HOLD_LINE = re.compile(r"^(\d+)(?:\s+(.*))?$")
+
+
+def default_hold_path(journal_path: Path) -> Path:
+    """La retenue vit a cote du journal : meme machine, meme duree de vie."""
+    return journal_path.parent / "hold.txt"
+
+
+def load_holds(path: Path) -> dict[int, str]:
+    """Lit le fichier de retenues : ``{numero: motif}``.
+
+    Absent -> aucune retenue. Une ligne qui n'est ni vide, ni un commentaire,
+    ni ``<numero> [motif]`` est une erreur : ``#17530`` en tete de ligne se
+    lirait sinon comme un commentaire et la retenue tomberait en silence.
+    """
+    if not path.exists():
+        return {}
+    try:
+        text = path.read_text(encoding="utf-8-sig")
+    except OSError as exc:
+        raise CannotRunError(f"fichier de retenues {path} illisible : {exc}") from exc
+    holds: dict[int, str] = {}
+    for lineno, raw in enumerate(text.splitlines(), start=1):
+        line = raw.strip()
+        if not line:
+            continue
+        if line.startswith("#") and not re.match(r"#\s*\d", line):
+            continue
+        match = HOLD_LINE.match(line)
+        if match is None:
+            raise CannotRunError(
+                f"fichier de retenues {path}, ligne {lineno} malformee : {raw!r} "
+                "(attendu : <numero> [motif])"
+            )
+        reason = (match.group(2) or "").strip().lstrip("#-").strip()
+        holds[int(match.group(1))] = reason or "hold.txt"
+    return holds
+
+
+def has_preflight_comment(comments: list[dict]) -> bool:
+    """True si au moins un commentaire d'issue OUVRIT un dossier (gate.START).
+
+    Meme critere d'ouverture que ``check_adjoint_prevalidation.parse_dossier``
+    (premiere ligne == marqueur) : un marqueur au milieu d'un corps n'est pas
+    un dossier.
+    """
+    for row in comments or []:
+        lines = (row.get("body") or "").strip().splitlines()
+        if lines and lines[0].strip() == gate.START:
+            return True
+    return False
+
+
+def scope_exclusion(path: str) -> str | None:
+    """Raison d'exclusion de perimetre (b) pour un chemin, sinon None.
+
+    Fail-closed : .claude/ et .github/ (repertoires), CLAUDE.md (tout
+    niveau). Les separateurs sont normalises en / (gh rend des /, on
+    accepte aussi des \\ par prudence).
+    """
+    p = (path or "").replace("\\", "/")
+    if p == ".claude" or p.startswith(".claude/"):
+        return f"scope:.claude:{path}"
+    if p == ".github" or p.startswith(".github/"):
+        return f"scope:.github:{path}"
+    if p == "CLAUDE.md" or p.endswith("/CLAUDE.md"):
+        return f"scope:CLAUDE.md:{path}"
+    return None
+
+
+def grain_exclusion(body: str | None) -> str | None:
+    """Raison d'exclusion du tag Grain, sinon None.
+
+    Le lecteur est le parseur PARTAGE (grain_tag.parse_grain_tag, #9485) :
+    formes tolerees (gras, titre, sans deux-points) et refus de substance
+    (aucun TIER/GENRE lisible -> None). DEEP est hors perimetre (b) ; un
+    tier hors (DEEP, MED, LIGHT) est illisible au sens de la grammaire ->
+    fail-closed.
+    """
+    tag = parse_grain_tag(body)
+    if tag is None:
+        return "grain-tier-unparsable"
+    tier = tag.get("tier") or ""
+    if tier == "DEEP":
+        return "grain-tier-DEEP"
+    if tier not in TIERS:
+        return f"grain-tier-unknown:{tier}"
+    return None
+
+
+# --- appels gh (tous par le runner, tous avec GH_TOKEN epingle) ---------------
+
+
+def resolve_token(runner: Runner) -> str:
+    """Resout UNE fois le jeton du coordinateur, sans jamais ``gh auth switch``.
+
+    GH_TOKEN/GITHUB_TOKEN sont RETIRES de l'env de resolution : une variable
+    ambiante prendrait precedent sur ``--user`` et rendrait silencieusement le
+    jeton d'une autre identite.
+    """
+    env = {
+        key: value
+        for key, value in os.environ.items()
+        if key not in ("GH_TOKEN", "GITHUB_TOKEN")
+    }
+    res = runner.run(["gh", "auth", "token", "--user", COORDINATOR_USER], env=env)
+    token = res.stdout.strip()
+    if res.returncode != 0 or not token:
+        raise CannotRunError(
+            f"gh auth token --user {COORDINATOR_USER} a echoue "
+            f"(rc={res.returncode}) : {res.stderr.strip()[:200]}"
+        )
+    return token
+
+
+def _json_stdout(res: RunResult, what: str) -> object:
+    try:
+        return json.loads(res.stdout)
+    except json.JSONDecodeError as exc:
+        raise UnexpectedError(f"{what} : stdout illisible ({exc})") from exc
+
+
+def list_open_prs(runner: Runner, gh_env: dict[str, str]) -> list[int]:
+    """Numeros des PRs ouvertes, triees croissant (la plus ancienne d'abord)."""
+    res = runner.run(
+        ["gh", "pr", "list", "--repo", REPO, "--state", "open",
+         "--limit", str(PR_LIST_LIMIT), "--json", "number"],
+        env=gh_env,
+    )
+    if res.returncode != 0:
+        raise UnexpectedError(
+            f"gh pr list rc={res.returncode} : {res.stderr.strip()[:200]}"
+        )
+    rows = _json_stdout(res, "gh pr list")
+    if not isinstance(rows, list):
+        raise UnexpectedError("gh pr list : la reponse n'est pas une liste")
+    numbers = sorted(
+        int(row["number"])
+        for row in rows
+        if isinstance(row, dict) and row.get("number") is not None
+    )
+    return numbers
+
+
+#: ``reviews`` est lu par la MEME commande que le reste : la disposition de
+#: review se classe sans appel supplementaire (l'oid de review y figure, mesure
+#: du 2026-09-25 : ``gh pr view --json reviews`` rend ``commit.oid``).
+PR_VIEW_FIELDS = (
+    "number,title,isDraft,body,headRefName,headRefOid,baseRefOid,files,"
+    "changedFiles,comments,reviews"
+)
+
+
+def fetch_pr_view(runner: Runner, pr: int, gh_env: dict[str, str]) -> dict:
+    """Une vue par PR : brouillon, body (tag Grain), tete, fichiers, commentaires,
+    reviews (disposition de review classee a la tete, point 1 de #17672)."""
+    res = runner.run(
+        ["gh", "pr", "view", str(pr), "--repo", REPO, "--json", PR_VIEW_FIELDS],
+        env=gh_env,
+    )
+    if res.returncode != 0:
+        raise UnexpectedError(
+            f"gh pr view {pr} rc={res.returncode} : {res.stderr.strip()[:200]}"
+        )
+    view = _json_stdout(res, f"gh pr view {pr}")
+    if not isinstance(view, dict):
+        raise UnexpectedError(f"gh pr view {pr} : la reponse n'est pas un objet")
+    return view
+
+
+def _review_voice_state(review: dict) -> str | None:
+    """L'etat REEL d'une review, ou le verdict type de son corps (canal COMMENT).
+
+    Meme lecture a deux surfaces que le canon (``REAL_STATES`` puis
+    ``VERDICT_RE``), pour la meme raison : le jeton du cluster ne peut poster que
+    des COMMENT, son verdict vit donc dans le corps (#16926). Une voix sans
+    verdict type n'est pas une approbation -- un commentaire de lane, de CI ou
+    un ``COMMENTED`` muet ne dit rien de la disposition.
+
+    ``DISMISSED`` n'est jamais approbateur : une approbation ANNULEE ne
+    gouverne plus, meme si son corps porte encore le jeton type (reserve 2
+    Hermes 2026-09-26 : le croisement des deux surfaces manquait).
+    """
+    state = str(review.get("state") or "")
+    if state == "DISMISSED":
+        return None
+    if state in review_canon.REAL_STATES:
+        return state
+    match = review_canon.VERDICT_RE.search(str(review.get("body") or ""))
+    return match.group(1) if match else None
+
+
+def review_disposition(view: dict, head: str) -> str:
+    """La disposition de review, CLASSEE a la tete evaluee (point 1 de #17672).
+
+    La tete gouverne : une approbation posee sur un commit anterieur ne couvre
+    pas le commit qui va etre merge, et c'est cette difference que le dossier
+    n'exprime pas (il hache l'oid de review sans le comparer). La voix qui
+    gouverne une tete est la PLUS RECENTE des VOIX posees sur cette tete
+    (latest-wins, la discipline du canon) : une approbation suivie, sur la
+    meme tete, d'une voix qui n'approuve pas, n'est plus une approbation.
+    Une ligne qui n'est pas une voix au sens du canon (pas d'etat REEL ni de
+    ``VERDICT`` type en corps -- commentaire de lane, ``[OVERRIDE]``, CI) ne
+    detrone rien : le latest-wins porte sur les voix, pas sur les lignes
+    ``reviews[]`` (reserve 1 Hermes 2026-09-26).
+
+    Fonction pure : la vue est deja fetchee, aucun appel supplementaire.
+    """
+    reviews = [row for row in (view.get("reviews") or []) if isinstance(row, dict)]
+    at_head = [
+        row
+        for row in reviews
+        if str(((row.get("commit") or {}).get("oid")) or "") == head
+    ]
+    voices_at_head = [row for row in at_head if _review_voice_state(row)]
+    if voices_at_head:
+        latest = max(voices_at_head, key=lambda row: str(row.get("submittedAt") or ""))
+        if _review_voice_state(latest) in APPROVING_VOICES:
+            return APPROVED_EXACT_HEAD
+    if any(_review_voice_state(row) in APPROVING_VOICES for row in reviews):
+        return APPROVAL_NOT_ON_HEAD
+    return NO_APPROVAL
+
+
+# --- approbation du coordinateur (etape 2ter, Q67 option a) --------------------
+
+
+def coordinator_approval_oid(view: dict) -> str | None:
+    """Oid du commit que la DERNIERE voix de ``myia-ai-01`` approuve, ou None.
+
+    Latest-wins sur les seules voix du coordinateur, lues comme le canon (etat
+    reel, puis verdict type en corps) : un ``CHANGES_REQUESTED`` ou un
+    ``VERDICT: CONCERNS`` posterieur retire l'approbation, un ``COMMENTED``
+    sans verdict (une phrase de levee, par exemple) ne la retire pas. Seul
+    l'etat REEL ``APPROVED`` vaut approbation : c'est le geste explicite de
+    lecture, pas un jeton de corps.
+    """
+    voices = [
+        row
+        for row in view.get("reviews") or []
+        if isinstance(row, dict)
+        and ((row.get("author") or {}).get("login")) == COORDINATOR_USER
+        and _review_voice_state(row)
+    ]
+    if not voices:
+        return None
+    latest = max(voices, key=lambda row: str(row.get("submittedAt") or ""))
+    if str(latest.get("state") or "") != "APPROVED":
+        return None
+    oid = str(((latest.get("commit") or {}).get("oid")) or "")
+    return oid or None
+
+
+def _dwell_fetch(runner: Runner, gh_env: dict[str, str]):
+    """``fetch`` de ``merge_dwell`` passe par le runner, jeton epingle."""
+
+    def fetch(path: str) -> object:
+        res = runner.run(["gh", "api", path], env=gh_env)
+        if res.returncode != 0:
+            raise merge_dwell.DwellError(f"gh api {path} rc={res.returncode}")
+        try:
+            return json.loads(res.stdout)
+        except json.JSONDecodeError as exc:
+            raise merge_dwell.DwellError(f"gh api {path} : reponse non-JSON") from exc
+
+    return fetch
+
+
+def _dwell_git(runner: Runner):
+    """``run_git`` de ``merge_dwell`` passe par le runner, dans ce depot."""
+
+    def run_git(args: list[str]) -> tuple[int, str]:
+        res = runner.run(["git", "-C", str(REPO_ROOT), *args])
+        return res.returncode, res.stdout
+
+    return run_git
+
+
+def coordinator_approval_reason(
+    view: dict, head: str, runner: Runner, gh_env: dict[str, str]
+) -> str | None:
+    """Etape 2ter : ``None`` si l'approbation du coordinateur couvre ``head``.
+
+    Une approbation posee sur une tete anterieure couvre encore la tete
+    courante si les deux ne different que par des rafraichissements de base
+    prouves content-free : les deux tetes remontent alors au MEME dernier
+    commit de contenu. Toute autre difference perime la lecture ; une preuve
+    illisible vaut refus.
+    """
+    approved = coordinator_approval_oid(view)
+    if approved is None:
+        return "no-coordinator-approval"
+    if approved == head:
+        return None
+    base = str(view.get("baseRefOid") or "")
+    if not base:
+        return "coordinator-approval-unverifiable:no-base"
+    fetch = _dwell_fetch(runner, gh_env)
+    run_git = _dwell_git(runner)
+    try:
+        current = merge_dwell.last_authoritative_sha(
+            REPO, head, base, fetch=fetch, run_git=run_git
+        )
+        read = merge_dwell.last_authoritative_sha(
+            REPO, approved, base, fetch=fetch, run_git=run_git
+        )
+    except merge_dwell.DwellError:
+        return "coordinator-approval-unverifiable"
+    if current == read:
+        return None
+    return "coordinator-approval-stale"
+
+
+def precheck_dossier(view: dict) -> str | None:
+    """Pre-controle bon marche, AVANT le gate : le dernier dossier visible dans la
+    vue est-il a la tete courante, et declare-t-il ``b0: clear`` ?
+
+    Ne fait que retrancher des appels : il ne rend un skip que sur une
+    condition que le gate (tete perimee) ou l'etape 4 (``b0`` non clear)
+    refuseraient de toute facon. Un dossier illisible ici n'est PAS refuse --
+    la decision reste au gate. Mesure du 2026-09-22 : sur 20 PRs a dossier
+    refuse, 14 avaient une tete perimee ; sans ce pre-controle, chaque tour
+    paierait un gate complet pour chacune.
+    """
+    candidates = [
+        row for row in view.get("comments") or []
+        if _first_line(row.get("body") or "") == gate.START
+    ]
+    if not candidates:
+        return None
+    last = candidates[-1]
+    dossier, _errors = gate.parse_dossier(
+        last.get("body") or "",
+        0,
+        ((last.get("author") or {}).get("login")) or "",
+        last.get("createdAt") or "",
+    )
+    if dossier is None:
+        return None
+    head = dossier.fields.get("head", "")
+    if head and head != str(view.get("headRefOid") or ""):
+        return "dossier-head-stale"
+    b0 = dossier.fields.get("b0", "")
+    if b0 and b0 != "clear":
+        return f"dossier-b0-not-clear:{b0}"
+    return None
+
+
+def run_gate(runner: Runner, pr: int, gh_env: dict[str, str]) -> tuple[bool, str, str]:
+    """Etape 3 : le gate d'entree. Retourne (ready, head, raison si non ready).
+
+    rc hors {0,1,2,3} = erreur inattendue (le gate ne s'est pas prononce).
+    """
+    res = runner.run(
+        [sys.executable, str(GATE_PATH), str(pr), "--json"], env=gh_env
+    )
+    if res.returncode not in GATE_DOCUMENTED_RC:
+        raise UnexpectedError(
+            f"gate PR {pr} rc={res.returncode} hors contrat : "
+            f"{(res.stderr or res.stdout).strip()[:200]}"
+        )
+    data = _json_stdout(res, f"gate PR {pr}")
+    if not isinstance(data, dict):
+        raise UnexpectedError(f"gate PR {pr} : la reponse n'est pas un objet")
+    ready = res.returncode == 0 and data.get("ready") is True
+    head = str(data.get("head") or "")
+    if ready:
+        return True, head, ""
+    reason = GATE_RC_REASONS.get(res.returncode)
+    if reason is None:
+        # rc 0 avec ready faux : ne devrait pas se produire, fail-closed.
+        reason = "gate:not-ready"
+    return False, head, reason
+
+
+def _first_line(body: str) -> str:
+    lines = (body or "").strip().splitlines()
+    return lines[0].strip() if lines else ""
+
+
+def dossier_b0_reason(runner: Runner, pr: int, gh_env: dict[str, str]) -> str | None:
+    """Etape 4 : le champ ``b0:`` du dossier ACCEPTE par le gate doit etre ``clear``.
+
+    Le gate a deja valide le dossier (structure, tete, empreinte, absence de
+    discussion posterieure) ; on relit ici le meme dossier -- le plus recent
+    commentaire ouvrant par le marqueur, meme selection que
+    ``gate.evaluate`` (candidates[-1]) -- avec la grammaire du gate
+    (``gate.parse_dossier``), sans la re-ecrir. Le gate ne re-verifie pas b0
+    lui-meme : c'est cette etape qui porte le controle declaratif, l'etape 5
+    portant le controle reel (l'organe B.0).
+    """
+    res = runner.run(
+        ["gh", "api", f"repos/{REPO}/issues/{pr}/comments", "--paginate"],
+        env=gh_env,
+    )
+    if res.returncode != 0:
+        raise UnexpectedError(
+            f"gh api comments PR {pr} rc={res.returncode} : "
+            f"{res.stderr.strip()[:200]}"
+        )
+    rows = _json_stdout(res, f"comments PR {pr}")
+    if not isinstance(rows, list):
+        raise UnexpectedError(f"comments PR {pr} : la reponse n'est pas une liste")
+    candidates = [row for row in rows if _first_line(row.get("body") or "") == gate.START]
+    if not candidates:
+        return "dossier-not-found"
+    last = candidates[-1]
+    dossier, errors = gate.parse_dossier(
+        last.get("body") or "",
+        0,
+        (last.get("user") or {}).get("login", ""),
+        last.get("created_at") or "",
+    )
+    if dossier is None or errors:
+        return "dossier-b0-unreadable"
+    b0 = dossier.fields.get("b0", "")
+    if b0 == "clear":
+        return None
+    if b0 == "blocked":
+        return "dossier-b0-blocked"
+    return f"dossier-b0-not-clear:{b0 or 'absent'}"
+
+
+def run_nits(runner: Runner, pr: int, gh_env: dict[str, str]) -> int:
+    """Etape 5 : organe B.0. Retourne son rc (0 = clear), hors contrat -> arret."""
+    res = runner.run([sys.executable, str(NITS_PATH), str(pr)], env=gh_env)
+    if res.returncode not in NITS_DOCUMENTED_RC:
+        raise UnexpectedError(
+            f"B.0 PR {pr} rc={res.returncode} hors contrat : "
+            f"{(res.stderr or res.stdout).strip()[:200]}"
+        )
+    return res.returncode
+
+
+def twin_collision_reason(
+    runner: Runner, pr: int, head: str, files: list[dict]
+) -> str | None:
+    """Etape 5bis : collision d'index twin-pairs contre le ``main`` du moment.
+
+    Ne coute rien aux PRs qui ne touchent pas le registre twin. Pour les
+    autres, un fetch puis l'organe partage : ``None`` si l'organe rend 0,
+    un motif de skip sinon. L'organe rend 1 sur collision, 2 quand il n'a
+    pas pu lire deux revisions -- et « je n'ai pas pu lire » n'est pas
+    « c'est propre » : skip, jamais merge.
+    """
+    touched = any(
+        str((row or {}).get("path") or "").startswith(TWIN_REGISTRY_PREFIX)
+        for row in files
+    )
+    if not touched:
+        return None
+    fetch = runner.run(
+        ["git", "-C", str(REPO_ROOT), "fetch", "--quiet", "origin", "main",
+         f"pull/{pr}/head"]
+    )
+    if fetch.returncode != 0:
+        return "twin-collision-unreadable:fetch"
+    res = runner.run(
+        [sys.executable, str(TWIN_PATH), "--repo", str(REPO_ROOT),
+         "--base", "origin/main", "--head", head]
+    )
+    if res.returncode == 0:
+        return None
+    if res.returncode == 1:
+        return "twin-index-collision"
+    return f"twin-collision-unreadable:rc={res.returncode}"
+
+
+def mergeable_state_and_head(
+    runner: Runner, pr: int, gh_env: dict[str, str]
+) -> tuple[str, str]:
+    """Etape 6 : (mergeable_state, head.sha) via REST, avec retry sur ``unknown``.
+
+    Apres un merge, les PRs soeurs passent ``unknown`` le temps que GitHub
+    recalcule : jusqu'a MERGEABLE_RETRIES relectures avec court sommeil avant
+    de conclure au skip.
+    """
+    data: dict = {}
+    for attempt in range(MERGEABLE_RETRIES + 1):
+        res = runner.run(
+            ["gh", "api", f"repos/{REPO}/pulls/{pr}"], env=gh_env
+        )
+        if res.returncode != 0:
+            raise UnexpectedError(
+                f"gh api pulls/{pr} rc={res.returncode} : {res.stderr.strip()[:200]}"
+            )
+        data = _json_stdout(res, f"pulls/{pr}")  # type: ignore[assignment]
+        if not isinstance(data, dict):
+            raise UnexpectedError(f"pulls/{pr} : la reponse n'est pas un objet")
+        state = str(data.get("mergeable_state") or "")
+        if state != "unknown":
+            return state, str(((data.get("head") or {}).get("sha")) or "")
+        if attempt < MERGEABLE_RETRIES:
+            runner.sleep(MERGEABLE_RETRY_SLEEP_S)
+    state = str(data.get("mergeable_state") or "")
+    return state, str(((data.get("head") or {}).get("sha")) or "")
+
+
+def merge_pr(runner: Runner, pr: int, head: str, gh_env: dict[str, str]) -> None:
+    """Etape 7 : squash merge epingle sur la tete evaluee (jamais --admin,
+    jamais --delete-branch)."""
+    res = runner.run(
+        ["gh", "pr", "merge", str(pr), "--repo", REPO,
+         "--squash", "--match-head-commit", head],
+        env=gh_env,
+    )
+    if res.returncode != 0:
+        raise MergeFailedError(
+            f"gh pr merge {pr} rc={res.returncode} : "
+            f"{(res.stderr or res.stdout).strip()[:200]}"
+        )
+
+
+# --- tour de controle par PR ---------------------------------------------------
+
+
+def evaluate_pr(
+    view: dict, pr: int, runner: Runner, gh_env: dict[str, str]
+) -> PRVerdict:
+    """Applique dans l'ordre les controles pre-merge (1 a 6, 5bis compris). Tout echec = skip nomme.
+
+    Les controles bon marche (brouillon, commentaire, perimetre, tag) passent
+    AVANT le gate couteux ; le gate avant les organes B.0 ; le REST en
+    dernier, juste avant le merge, pour minimiser la fenetre de course.
+
+    La disposition de review (point 1 de #17672) est classee pour TOUTE PR
+    evaluee, skip compris, et reportee a la tete que la ligne declare : la tete
+    de la vue pour un skip, la tete du gate pour un would-merge -- celle que le
+    merge epingle, l'etape 6 ayant deja refuse une tete qui a bouge depuis.
+    """
+
+    view_head = str(view.get("headRefOid") or "")
+    disposition = review_disposition(view, view_head)
+
+    def skip(reason: str) -> PRVerdict:
+        return PRVerdict(pr, view_head, "skipped", reason, False, disposition)
+
+    # 1. prefiltre bon marche.
+    if view.get("isDraft"):
+        return skip("draft")
+    if not has_preflight_comment(view.get("comments") or []):
+        return skip("no-adjoint-preflight-comment")
+    # 2. perimetre (b), fail-closed.
+    for file_row in view.get("files") or []:
+        reason = scope_exclusion(str((file_row or {}).get("path") or ""))
+        if reason is not None:
+            return skip(reason)
+    # `gh pr view --json files` plafonne la liste : une PR plus grosse que ce
+    # plafond cacherait peut-etre un fichier hors perimetre -> fail-closed.
+    changed = view.get("changedFiles")
+    listed = len(view.get("files") or [])
+    if not isinstance(changed, int) or changed > listed:
+        return skip(f"files-truncated:{listed}/{changed}")
+    reason = grain_exclusion(view.get("body"))
+    if reason is not None:
+        return skip(reason)
+    reason = frozen_umbrella_exclusion(
+        view.get("title"), view.get("body"), view.get("headRefName")
+    )
+    if reason is not None:
+        return skip(reason)
+    reason = precheck_dossier(view)
+    if reason is not None:
+        return skip(reason)
+    # 2ter. approbation du coordinateur (Q67) : une PR non lue ne paie pas le gate.
+    reason = coordinator_approval_reason(view, view_head, runner, gh_env)
+    if reason is not None:
+        return skip(reason)
+    # 3. gate d'entree.
+    ready, gate_head, gate_reason = run_gate(runner, pr, gh_env)
+    if not ready:
+        return skip(gate_reason)
+    # L'approbation a ete jugee a la tete de la vue : une tete differente au
+    # gate n'a pas ete couverte par ce jugement.
+    if gate_head != view_head:
+        return skip("head-moved")
+    # 4. b0 declaratif du dossier accepte.
+    reason = dossier_b0_reason(runner, pr, gh_env)
+    if reason is not None:
+        return skip(reason)
+    # 5. organe B.0 (re-verification reelle).
+    if run_nits(runner, pr, gh_env) != 0:
+        return skip("b0-organ-blocked")
+    # 5bis. collision d'index twin contre le main du moment.
+    reason = twin_collision_reason(runner, pr, gate_head, view.get("files") or [])
+    if reason is not None:
+        return skip(reason)
+    # 6. REST : mergeable + tete.
+    state, live_head = mergeable_state_and_head(runner, pr, gh_env)
+    if state != "clean":
+        return skip(f"mergeable-state:{state or 'absent'}")
+    if live_head != gate_head:
+        return skip("head-moved")
+    return PRVerdict(
+        pr, gate_head, "would-merge", None, False, review_disposition(view, gate_head)
+    )
+
+
+# --- journal -------------------------------------------------------------------
+
+
+def append_journal(path: Path, verdict: PRVerdict) -> None:
+    """Une ligne JSON par PR evaluee ; repertoire cree si absent."""
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(verdict.journal_dict(), ensure_ascii=False) + "\n")
+    except OSError as exc:
+        raise UnexpectedError(f"ecriture du journal {path} impossible : {exc}") from exc
+
+
+# --- sortie --------------------------------------------------------------------
+
+
+def _describe(verdict: PRVerdict) -> str:
+    if verdict.verdict == "merged":
+        return f"PR #{verdict.pr} MERGED ({verdict.head}) [review: {verdict.review}]"
+    if verdict.verdict == "would-merge":
+        return (
+            f"PR #{verdict.pr} WOULD MERGE ({verdict.head}) [dry-run] "
+            f"[review: {verdict.review}]"
+        )
+    if verdict.verdict == "merge-failed":
+        return f"PR #{verdict.pr} MERGE ECHOUE : {verdict.reason}"
+    if verdict.verdict == "run-error":
+        return f"PR #{verdict.pr} ERREUR INATTENDUE : {verdict.reason}"
+    return f"PR #{verdict.pr} skip : {verdict.reason}"
+
+
+def emit_output(
+    args: argparse.Namespace,
+    results: list[PRVerdict],
+    stopped_reason: str | None,
+    exit_code: int,
+) -> None:
+    """Resume humain sur stdout, ou payload machine unique en --json."""
+    if args.json:
+        payload = {
+            "apply": args.apply,
+            "max": args.max,
+            "stopped_reason": stopped_reason,
+            "exit_code": exit_code,
+            "results": [v.journal_dict() for v in results],
+        }
+        print(json.dumps(payload, ensure_ascii=False))
+        return
+    mode = "APPLY" if args.apply else "DRY-RUN"
+    print(f"== merge_ready ({mode}, max {args.max}) ==")
+    for verdict in results:
+        print(_describe(verdict))
+    merged = sum(1 for v in results if v.merged)
+    would = sum(1 for v in results if v.verdict == "would-merge")
+    skipped = sum(1 for v in results if v.verdict == "skipped")
+    errored = sum(1 for v in results if v.verdict == "run-error")
+    # La disposition de review ne se compte que sur les candidates au merge :
+    # c'est la que « approbation a la tete exacte » ou « ailleurs » decide.
+    candidates = [v for v in results if v.verdict in ("merged", "would-merge")]
+    at_head = sum(1 for v in candidates if v.review == APPROVED_EXACT_HEAD)
+    off_head = sum(1 for v in candidates if v.review == APPROVAL_NOT_ON_HEAD)
+    print(
+        f"bilan : {len(results)} evaluee(s), {merged} merge(s), "
+        f"{would} would-merge, {skipped} skip(s)"
+        # Une erreur isolee ne s'annonce par aucune ligne « arret » : sans ce
+        # compte, un run qui a continue malgre une PR en erreur se lirait comme
+        # un run propre (#17672 point 3).
+        + (f", {errored} erreur(s) isolee(s)" if errored else "")
+        + (
+            f", candidates : {at_head} approved-exact-head, "
+            f"{off_head} approval-not-on-head"
+            if candidates
+            else ""
+        )
+    )
+    if stopped_reason:
+        print(f"arret : {stopped_reason}")
+
+
+# --- boucle de run ---------------------------------------------------------------
+
+
+def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
+    """Point d'entree testable : parse les arguments, execute un run complet."""
+    args = _parse_args(argv)
+    active_runner = runner if runner is not None else SubprocessRunner()
+    journal_path = (
+        args.journal if args.journal is not None else default_journal_path()
+    )
+    hold_path = (
+        args.hold_file if args.hold_file is not None else default_hold_path(journal_path)
+    )
+    try:
+        holds = load_holds(hold_path)
+        token = resolve_token(active_runner)
+    except CannotRunError as exc:
+        print(f"merge_ready : impossible de demarrer -- {exc}", file=sys.stderr)
+        return 2
+    gh_env = {**os.environ, "GH_TOKEN": token}
+
+    results: list[PRVerdict] = []
+    stopped_reason: str | None = None
+    exit_code = 0
+    try:
+        prs = list_open_prs(active_runner, gh_env)
+    except UnexpectedError as exc:
+        # Echec avant la boucle : aucune PR evaluee, rien a journeler.
+        print(f"merge_ready : ARRET sur erreur inattendue -- {exc}", file=sys.stderr)
+        emit_output(args, results, f"unexpected-error:{exc}", 1)
+        return 1
+
+    merged_count = 0
+    for pr in prs:
+        # Disjoncteur --max : plafond de DECISIONS de merge du run (merges
+        # reels en --apply, would-merge en dry-run : le dry-run doit refléter
+        # ce que --apply ferait). Une fois le plafond atteint, les PRs
+        # restantes ne sont pas evaluees (le journal ne couvre que l'evalue).
+        if merged_count >= args.max:
+            stopped_reason = "max-merges-reached"
+            break
+        if pr in holds:
+            held = PRVerdict(pr, None, "skipped", f"hold:{holds[pr]}", False)
+            results.append(held)
+            try:
+                append_journal(journal_path, held)
+            except UnexpectedError as exc:
+                stopped_reason = f"unexpected-error:{exc}"
+                exit_code = 1
+                break
+            continue
+        try:
+            view = fetch_pr_view(active_runner, pr, gh_env)
+            decision = evaluate_pr(view, pr, active_runner, gh_env)
+            if decision.verdict == "would-merge":
+                if args.apply:
+                    try:
+                        merge_pr(active_runner, pr, decision.head or "", gh_env)
+                    except MergeFailedError as exc:
+                        failed = PRVerdict(
+                            pr, decision.head, "merge-failed", str(exc), False,
+                            decision.review,
+                        )
+                        results.append(failed)
+                        append_journal(journal_path, failed)
+                        stopped_reason = f"merge-failed:PR-{pr}"
+                        exit_code = 1
+                        break
+                    decision = PRVerdict(
+                        pr, decision.head, "merged", None, True, decision.review
+                    )
+                merged_count += 1
+            results.append(decision)
+            append_journal(journal_path, decision)
+        except UnexpectedError as exc:
+            errored = PRVerdict(pr, None, "run-error", str(exc), False)
+            results.append(errored)
+            append_journal(journal_path, errored)
+            exit_code = 1
+            if is_pass_wide(exc):
+                # Toute la passe est touchee : repeter l'echec sur chacune des
+                # PRs restantes ne dirait rien de plus.
+                stopped_reason = f"unexpected-error:{exc}"
+                break
+            # Erreur attribuable a CETTE PR : elle est nommee et journalisee,
+            # le balayage continue (#17672 point 3). `stopped_reason` reste
+            # None -- le run ne s'est PAS arrete, l'ecrire ici serait un
+            # constat faux (le bilan, lui, compte les erreurs isolees).
+            continue
+
+    emit_output(args, results, stopped_reason, exit_code)
+    return exit_code
+
+
+def _parse_args(argv: list[str] | None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description=__doc__.splitlines()[0],
+    )
+    parser.add_argument(
+        "--apply",
+        action="store_true",
+        help="merger reellement (defaut : dry-run, aucun merge)",
+    )
+    parser.add_argument(
+        "--max",
+        type=int,
+        default=MAX_MERGES_DEFAULT,
+        metavar="N",
+        help=f"plafond de merges par run, disjoncteur (defaut {MAX_MERGES_DEFAULT})",
+    )
+    parser.add_argument(
+        "--journal",
+        type=Path,
+        default=None,
+        help=(
+            "chemin du journal JSONL (defaut "
+            "%%LOCALAPPDATA%%/CoursIA/merge_ready/journal.jsonl)"
+        ),
+    )
+    parser.add_argument(
+        "--hold-file",
+        type=Path,
+        default=None,
+        help="fichier de retenues (defaut : hold.txt a cote du journal)",
+    )
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="sortie machine (un seul objet JSON) sur stdout",
+    )
+    args = parser.parse_args(argv)
+    if args.max < 0:
+        parser.error("--max doit etre >= 0")
+    return args
+
+
+def main() -> int:
+    return run()
+
+
+if __name__ == "__main__":
+    sys.exit(main())

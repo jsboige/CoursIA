@@ -76,7 +76,7 @@
    "url": "https://www.quantconnect.com/research/18784/digital-asset-stockpile-portfolio-construction-techniques/",
    "lastmod": "2025-03-11T23:52:19+00:00",
    "seeded_at": null,
-   "issue": null
+   "issue": 18364
   },
   "18766": {
    "url": "https://www.quantconnect.com/research/18766/reducing-option-writing-risk-with-iv-rank-and-strike-clusters/",
@@ -177,8 +177,8 @@
   "17112": {
    "url": "https://www.quantconnect.com/research/17112/probabilistic-sharpe-ratio/",
    "lastmod": "2024-11-06T10:41:25+00:00",
-   "seeded_at": null,
-   "issue": null
+   "seeded_at": "2026-09-29",
+   "issue": 18359
   },
   "16977": {
    "url": "https://www.quantconnect.com/research/16977/greeks-and-iv-implementation/",
@@ -333,8 +333,8 @@
   "15728": {
    "url": "https://www.quantconnect.com/research/15728/piotroski-f-score-investing/",
    "lastmod": "2025-11-04T20:20:07+00:00",
-   "seeded_at": null,
-   "issue": null
+   "seeded_at": "2026-09-25",
+   "issue": 17770
   },
   "15603": {
    "url": "https://www.quantconnect.com/research/15603/head-amp-shoulders-ta-pattern-detection/",
@@ -869,6 +869,12 @@
    "lastmod": "2026-08-21T13:40:23+00:00",
    "seeded_at": null,
    "issue": 12748
+  },
+  "21382": {
+   "url": "https://www.quantconnect.com/research/21382/statistical-outlier-selection-for-momentum-stocks/",
+   "lastmod": "2026-09-20T03:36:17+00:00",
+   "seeded_at": null,
+   "issue": 16940
   }
  }
 }

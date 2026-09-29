@@ -163,6 +163,14 @@ SECRET_KEYS: frozenset[str] = frozenset({
     "CIVITAI_TOKEN", "GITHUB_TOKEN", "GITHUB_ACCESS_TOKEN",
     # Per-service client API keys (server defines the value; clients must match)
     "WHISPER_API_KEY", "VLLM_API_KEY", "TTS_API_KEY",
+    # Direct backend key for the hosted "medium" vLLM endpoint (ai-01 :5002,
+    # qwen3.6-35b-a3b), provisioned 2026-09-24 via RooSync private DM
+    # (ai01-vllm-medium-key-po2026-20260924, #16755). Distinct from
+    # CLAUDISH_PROXY_KEY, which authenticates the proxy path; this one is the
+    # server-side vLLM API key and must match the backend's --api-key.
+    # Consumers read it under TGWUI_MEDIUM_API_KEY (see ALIASES) -- the pair
+    # naming mirrors TGWUI_MEDIUM_API_URL in the GenAI .env.
+    "VLLM_API_KEY_MEDIUM", "TGWUI_MEDIUM_API_KEY",
     "QWEN_ASR_API_KEY", "MUSICGEN_API_KEY", "DEMUCS_API_KEY",
     "FUNASR_API_KEY",
     # Qdrant vector DB -- CLIENT side (notebooks RAG / SemanticKernel / Argument).
@@ -234,6 +242,12 @@ ALIASES: dict[str, str] = {
     # credential the middleware validates). A stale non-empty AUTH_TOKEN
     # shadows the correct API_TOKEN in the ``or`` fallback chain -> 401.
     "COMFYUI_AUTH_TOKEN": "COMFYUI_API_TOKEN",
+    # Hosted "medium" vLLM backend key. Direction matters: the canonical
+    # (target-side) name is TGWUI_MEDIUM_API_KEY -- what GenAI consumers read,
+    # mirroring TGWUI_MEDIUM_API_URL. VLLM_API_KEY_MEDIUM is ai-01's DM-side
+    # name and is also kept in master.env so both spellings exist there; a
+    # rotation is edit-master (either name) + render. #16755.
+    "VLLM_API_KEY_MEDIUM": "TGWUI_MEDIUM_API_KEY",
 }
 
 # Per-target REQUIRED keys (#15145). sync() only rewrites lines that already

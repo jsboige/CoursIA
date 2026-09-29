@@ -1,0 +1,15 @@
+date: '2026-09-14'
+by: myia-po-2027:CoursIA
+python_sha: 25172bd32e8ec39fb2aa10e0cc24e3adf5be5613
+csharp_sha: 52ca857ae1471c1dd7315d39d4faba7da58e785d
+content_python_sha: 08b6e5188fb667cd2b3ead0619b4693dea8704a74096a58b207282cd9109c7e5
+content_csharp_sha: 0694e33cc38c083a32f4e8bb52cf801aa1d4a69073124667df1a8a6425cb3100
+reason: >-
+  Cote C# SEUL converti (1 sep). SW-10-CSharp-RDFStar (21 cellules md) : md 21/21, derniere (1). Le
+  jumeau Python (SW-10-Python-RDFStar) ne porte AUCUN separateur standalone convertible, verifie par
+  --check sur l'arbre de la PR. Re-attestation de parite -- hr_separator vague 2 (#15611, lane myia-
+  po-2027:CoursIA), markdown-only, passage devant la regle famille #14209 trace au claim et au body
+  PR. Converti par scripts/notebook_tools/fix_hr_separator.py dans son allowlist (hors frontmatter,
+  bloc cloture, setext). Diff = 1 ligne de source JSON par separateur ; cellules code, outputs,
+  execution_count et metadata byte-identiques. Aucun strip outille posterieur : le blob atteste ici
+  est celui du HEAD de la PR.

@@ -202,6 +202,7 @@ Génère une documentation API en Markdown incluant :
 Liste tous les livres.
 
 **Paramètres Query:**
+
 | Param | Type | Default | Description |
 |-------|------|---------|-------------|
 | page | int | 1 | Numéro de page |

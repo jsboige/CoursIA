@@ -21,6 +21,14 @@ des embeddings, semantique detruite.
 Hook de clamp (Gate 24 de #5635, phase 2 — NON exECUTE dans cette issue) :
 `--clamp-ids` force un sous-ensemble de features SAE a zero en soustrayant leur
 contribution decodeur du residual stream (necessite W_dec dans le checkpoint).
+`--clamp-scale` (pilote #8236, jalon 3) parametre l'intensite du clamp :
+h' = h - alpha * delta avec alpha dans [0, 1]. alpha=1 (defaut, comportement
+historique) supprime exactement la contribution decodee des features visees ;
+alpha<1 realise une inoculation partielle, dont le balayage (alpha croissant)
+expose la bifurcation representationnelle de l'EPIC — seuil critique, nettete,
+comparaison cross-echelle. Le suffixe `_s{alpha}` dans le nom de trace ne
+s'insere que si alpha != 1 : les traces a intensite unitaire restent nommees
+comme avant.
 
 Deux echelles (#5105 / #7396) : le couple de reference est 9B-Base x W64K, mais
 l'arc post-training PT-12 lit aussi Qwen3.5-2B(-Base) x W32K. Les deux profondeurs
@@ -48,12 +56,20 @@ Usage (GPU 2 d'ai-01 STRICT — vLLM tient GPU 0-1) :
     # echelle 2B, SAE L0_100 (meme modele, top-k=100 detecte auto) :
     ... --model Qwen/Qwen3.5-2B-Base --layer-frac 0.5 \
         --sae-repo Qwen/SAE-Res-Qwen3.5-2B-Base-W32K-L0_100 --stage full
+    # pilote inoculation #8236 (jalon 3) : clamp partiel a mi-reseau, lecture
+    # au resid final, deux SAE (couche d'inoculation pour le hook, derniere
+    # couche pour l'encodage de la trace) :
+    ... --model Qwen/Qwen3.5-2B-Base \
+        --sae-repo Qwen/SAE-Res-Qwen3.5-2B-Base-W32K-L0_50 --stage full \
+        --clamp-ids 12,34,56 --clamp-scale 0.5 --clamp-frac 0.5
+    # (le suffixe _s{alpha} du nom de trace n'apparait que si alpha != 1)
 """
 from __future__ import annotations
 
 import argparse
 import datetime as _dt
 import json
+import random
 import sys
 import time
 from pathlib import Path
@@ -341,6 +357,40 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--clamp-ids", default="",
                    help="ids de features SAE a forcer a zero dans le residual stream "
                         "(Gate 24 #5635, phase 2) — liste separee par des virgules")
+    p.add_argument("--clamp-scale", type=float, default=1.0,
+                   help="intensite alpha du clamp, h' = h - alpha*delta (pilote "
+                        "#8236). Defaut 1.0 = comportement historique (features "
+                        "exactement annulees). Exige --clamp-ids ; bornes [0, 1] : "
+                        "alpha=0 ne clampe rien, alpha>1 sur-clampe (signe inverse) "
+                        "et sort du protocole d'inoculation.")
+    p.add_argument("--clamp-frac", type=float, default=None,
+                   help="profondeur RELATIVE de la couche D'INOCULATION dans "
+                        "[0, 1] (pilote #8236 ; defaut 0.5 = mi-reseau). Le SAE "
+                        "de cette couche definit les features du panel et fournit "
+                        "W_enc/W_dec du hook.")
+    p.add_argument("--read-frac", type=float, default=None,
+                   help="profondeur RELATIVE de la couche de LECTURE dans [0, 1]. "
+                        "Defaut (omis) : derniere couche (resid final, resid_post "
+                        "de la couche n-1 — la representation qui conditionne la "
+                        "tete lm_head). Le SAE charge et l'encodage top-k se font "
+                        "a CETTE couche : c'est la que la propagation de "
+                        "l'inoculation est mesuree.")
+    p.add_argument("--random-panel", type=int, default=None, metavar="SEED",
+                   help="controle permute du panel (phase 6 #8236) : remplace le "
+                        "panel par un tirage seede de MEME TAILLE hors du panel "
+                        "differentiel. Exige --clamp-ids (fournit la taille et les "
+                        "exclusions). Distinguer les traces via --prefix.")
+    p.add_argument("--matched-panel", type=int, default=None, metavar="SEED",
+                   help="controle apparie en norme (phase 6b #8236) : tire le "
+                        "panel de controle dans la bande d'activite du panel "
+                        "differentiel (cf --matched-band). Exige --clamp-ids "
+                        "ET --activity-from ; exclusif de --random-panel.")
+    p.add_argument("--activity-from", default=None, metavar="NPZ",
+                   help="trace de reference mi-reseau (couche d'inoculation) "
+                        "fournissant l'activite par feature du tirage apparie.")
+    p.add_argument("--matched-band", type=float, default=2.0, metavar="FACTOR",
+                   help="demi-largeur multiplicative de la bande d'activite du "
+                        "tirage apparie (defaut 2.0 : [m/2, 2m]).")
     p.add_argument("--attn", default=None,
                    help="attn_implementation a forcer (ex: eager) si le defaut echoue")
     p.add_argument("--allow-quantized-readout", action="store_true",
@@ -541,14 +591,94 @@ def apply_control_permutation(model: torch.nn.Module, seed: int) -> None:
     print(f"[control] input embeddings permutes ({emb.weight.shape[0]} lignes, seed={seed})")
 
 
+def random_panel_control(panel_ids: list[int], d_sae: int, seed: int) -> list[int]:
+    """Controle permute du panel (phase 6 #8236) : meme NOMBRE de features,
+    tire uniformement hors du panel differentiel, seed reproductible.
+
+    La question : la reponse super-lineaire mesuree au 2B est-elle portee par
+    CE panel (features differentielles code/prose) ou par n'importe quel
+    ensemble de meme taille ? Permuter la liste elle-meme serait un no-op (la
+    somme acts @ W_dec est invariante a l'ordre) — le controle exige un
+    TIRAGE, pas une permutation. La norme effective du clamp n'est PAS
+    appariee (features inactives contribuent 0) : c'est mesure et rapporte en
+    aval, pas masque."""
+    if len(panel_ids) >= d_sae:
+        raise ValueError(
+            f"panel ({len(panel_ids)} features) >= d_sae ({d_sae}) : "
+            "aucun candidat pour le tirage de controle.")
+    excluded = set(panel_ids)
+    pool = [i for i in range(d_sae) if i not in excluded]
+    rng = random.Random(seed)
+    return sorted(rng.sample(pool, len(panel_ids)))
+
+
+def ref_activity(path: Path) -> tuple[np.ndarray, dict]:
+    """Activite moyenne par feature depuis une trace de reference mi-reseau.
+
+    MEME statistique que la derivation du panel (notebook ICT-42, cellule de
+    re-derivation) : moyenne des jeux ``code_python`` et ``prose_fr``, |act|
+    accumulee par token sur tous les prompts du jeu. Retourne (activite
+    dense [d_sae], meta de la trace) — la meta porte ``layer``, verifiee par
+    l'appelant contre la couche d'inoculation."""
+    z = np.load(path, allow_pickle=False)
+    meta = json.loads(str(z["__meta__"]))
+    d_sae = int(meta["d_sae"])
+    act = np.zeros(d_sae, dtype=np.float64)
+    for set_name in ("code_python", "prose_fr"):
+        keys = sorted(k for k in z.files
+                      if k.startswith(set_name + "__") and k.endswith("__topk_ids"))
+        if not keys:
+            raise ValueError(f"{path.name} ne contient aucun prompt du jeu "
+                             f"{set_name} : pas d'activite derivable.")
+        n_tok, hits = 0, np.zeros(d_sae, dtype=np.float64)
+        for k in keys:
+            ids = z[k].astype(np.int64).ravel()
+            vals = z[k.rsplit("ids", 1)[0] + "vals"].astype(np.float64).ravel()
+            np.add.at(hits, ids, vals)
+            n_tok += ids.shape[0]
+        act += hits / max(n_tok, 1)
+    return act / 2.0, meta
+
+
+def matched_activity_panel(panel_ids: list[int], activity: np.ndarray, seed: int,
+                           band: float = 2.0) -> tuple[list[int], dict]:
+    """Controle apparie en norme (phase 6b #8236) : tire le panel de controle
+    dans la bande d'activite [m/band, m*band] autour de la moyenne m du panel
+    differentiel, hors du panel, seed reproductible.
+
+    Repond au confondant MESURE en phase 6 (tirage uniforme 80x-770x moins
+    actif que le panel a la couche d'inoculation) : ici la norme effective du
+    clamp est appariee PAR CONSTRUCTION, pas seulement mesuree en aval. Le
+    facteur de bande garde un pool assez large pour ne pas echantillonner un
+    quasi-clone du panel par accident statistique."""
+    m = float(np.mean(activity[panel_ids]))
+    lo, hi = m / band, m * band
+    excluded = set(panel_ids)
+    pool = [i for i in range(len(activity))
+            if i not in excluded and lo <= float(activity[i]) <= hi]
+    if len(pool) < len(panel_ids):
+        raise ValueError(
+            f"pool apparie insuffisant ({len(pool)} candidats dans la bande "
+            f"[{lo:.3g}, {hi:.3g}] pour {len(panel_ids)} features) : elargir "
+            "le facteur de bande.")
+    rng = random.Random(seed)
+    draw = sorted(rng.sample(pool, len(panel_ids)))
+    stats = {"band": (lo, hi), "pool": len(pool), "act_panel": m,
+             "act_draw": float(np.mean(activity[draw]))}
+    return draw, stats
+
+
 class ResidCapture:
     """Hook forward sur une couche decodeur : capture le resid_post et,
     optionnellement, clampe des features SAE (Gate 24) en soustrayant leur
-    contribution decodeur du residual stream."""
+    contribution decodeur du residual stream, a intensite parametree
+    ``clamp_scale`` (pilote #8236)."""
 
-    def __init__(self, sae: dict | None = None, clamp_ids: list[int] | None = None):
+    def __init__(self, sae: dict | None = None, clamp_ids: list[int] | None = None,
+                 clamp_scale: float = 1.0):
         self.hidden: torch.Tensor | None = None
         self.clamp_ids = clamp_ids or []
+        self.clamp_scale = clamp_scale
         self.sae = sae
         if self.clamp_ids and (sae is None or sae["W_dec"] is None):
             sys.exit("ERREUR: --clamp-ids exige W_dec dans le checkpoint SAE.")
@@ -558,19 +688,71 @@ class ResidCapture:
         self.hidden = out.detach()[0].to(torch.float32).cpu()      # [T, d]
         if not self.clamp_ids:
             return output
-        # Clamp causal : h' = h - somme_i acts_i * W_dec[i]  (features forcees a 0).
-        # W_dec est garanti [d_sae, d_model] par load_sae/normalize_w_dec
-        # (#12940) : indexer par clamp_ids (features) y designe les directions
-        # decodees, pas des lignes du residual stream.
+        # Clamp causal : h' = h - alpha * somme_i acts_i * W_dec[i]. alpha=1
+        # annule exactement les features visees (comportement Gate 24
+        # historique) ; alpha<1 = inoculation partielle dont le balayage
+        # expose la bifurcation (#8236). W_dec est garanti [d_sae, d_model]
+        # par load_sae/normalize_w_dec (#12940) : indexer par clamp_ids
+        # (features) y designe les directions decodees, pas des lignes du
+        # residual stream.
         h32 = out.detach().to(torch.float32).cpu()                 # [B, T, d]
         w_enc = self.sae["W_enc"][self.clamp_ids]                  # [C, d]
         b_enc = self.sae["b_enc"][self.clamp_ids]                  # [C]
         acts = torch.relu(h32 @ w_enc.T + b_enc)                   # [B, T, C]
         delta = acts @ self.sae["W_dec"][self.clamp_ids]           # [B, T, d]
-        h_new = (h32 - delta).to(out.dtype).to(out.device)
+        h_new = (h32 - self.clamp_scale * delta).to(out.dtype).to(out.device)
         if isinstance(output, tuple):
             return (h_new,) + tuple(output[1:])
         return h_new
+
+
+class ClampHook:
+    """Hook d'INOCULATION seule (pilote #8236, jalon 3) : modifie le residual
+    stream a la couche d'inoculation sans rien capturer.
+
+    Separe de :class:`ResidCapture` parce que la mesure de bifurcation vit en
+    AVAL de l'inoculation : capturer la couche du clamp ne montrerait que la
+    perturbation injectee elle-meme (alpha * delta), pas sa propagation
+    non-lineaire par les couches suivantes. Le protocole pilote inocule a
+    ``--clamp-frac`` (defaut mi-reseau) et lit a ``--read-frac`` (defaut
+    resid final) via :class:`CaptureHook`."""
+
+    def __init__(self, sae: dict, clamp_ids: list[int], clamp_scale: float):
+        if sae["W_dec"] is None:
+            sys.exit("ERREUR: --clamp-ids exige W_dec dans le checkpoint SAE.")
+        self.clamp_scale = clamp_scale
+        # Tranche du panel memoisee une fois (le hook tourne par prompt) :
+        # W_enc/W_dec du SAE de la couche D'INOCULATION, indexes par feature.
+        self.w_enc = sae["W_enc"][clamp_ids]          # [C, d]
+        self.b_enc = sae["b_enc"][clamp_ids]          # [C]
+        self.w_dec = sae["W_dec"][clamp_ids]          # [C, d]
+
+    def __call__(self, module, inputs, output):
+        out = output[0] if isinstance(output, tuple) else output   # [B, T, d]
+        if self.clamp_scale == 0.0:
+            return output                    # controle de plomberie : hook muet
+        h32 = out.detach().to(torch.float32).cpu()                 # [B, T, d]
+        acts = torch.relu(h32 @ self.w_enc.T + self.b_enc)         # [B, T, C]
+        delta = acts @ self.w_dec                                  # [B, T, d]
+        h_new = (h32 - self.clamp_scale * delta).to(out.dtype).to(out.device)
+        if isinstance(output, tuple):
+            return (h_new,) + tuple(output[1:])
+        return h_new
+
+
+class CaptureHook:
+    """Hook de LECTURE seule : capture le resid_post sans le modifier.
+
+    Utilise a la couche de lecture du protocole d'inoculation (#8236) — la
+    capture et l'inoculation vivent sur des couches distinctes."""
+
+    def __init__(self):
+        self.hidden: torch.Tensor | None = None
+
+    def __call__(self, module, inputs, output):
+        out = output[0] if isinstance(output, tuple) else output   # [B, T, d]
+        self.hidden = out.detach()[0].to(torch.float32).cpu()      # [T, d]
+        return output
 
 
 def main() -> None:
@@ -579,6 +761,13 @@ def main() -> None:
     torch.manual_seed(args.seed)
     device = guard_single_gpu()
     clamp_ids = [int(x) for x in args.clamp_ids.split(",") if x.strip()]
+    if args.clamp_scale != 1.0 and not clamp_ids:
+        sys.exit("ERREUR: --clamp-scale exige --clamp-ids : une intensite de "
+                 "clamp n'a de sens que pour un clamp.")
+    if not 0.0 <= args.clamp_scale <= 1.0:
+        sys.exit(f"ERREUR: --clamp-scale={args.clamp_scale} hors bornes [0, 1] "
+                 "(protocole d'inoculation #8236 : alpha>1 sur-clampe, signe "
+                 "inverse de la contribution decodee).")
 
     from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
@@ -593,12 +782,61 @@ def main() -> None:
     # Toutes echouent sur la seule config (quelques Ko) : un mauvais couple
     # couche/echelle, un checkpoint quantifie ou une trace deja presente sont
     # detectes en secondes, pas apres 20 GiB de poids et une passe complete.
-    depth = _guard(resolve_capture_layer, n_layers, args.layer, args.layer_frac) \
-        if (args.layer is not None or args.layer_frac is not None) \
-        else _guard(resolve_capture_layer, n_layers, DEFAULT_LAYER, None)
+    # Mode INOCULATION (#8236, jalon 3) : deux couches distinctes — celle ou
+    # on inocule (clamp) et celle ou on lit (read). Capturer la couche du
+    # clamp ne montrerait que la perturbation injectee ; la bifurcation vit
+    # dans la propagation non lineaire clamp->read.
+    inoculation = bool(clamp_ids) and (args.clamp_frac is not None
+                                       or args.read_frac is not None)
+    if inoculation and (args.layer is not None or args.layer_frac is not None):
+        sys.exit("ERREUR: mode inoculation (--clamp-frac/--read-frac) : la "
+                 "couche de capture est la couche de LECTURE (--read-frac), "
+                 "pas --layer/--layer-frac.")
+    if args.clamp_frac is not None and not clamp_ids:
+        sys.exit("ERREUR: --clamp-frac exige --clamp-ids.")
+    if args.read_frac is not None and not clamp_ids:
+        sys.exit("ERREUR: --read-frac exige --clamp-ids (mode inoculation).")
+    if args.random_panel is not None and not clamp_ids:
+        sys.exit("ERREUR: --random-panel exige --clamp-ids : le panel fournit la "
+                 "taille du tirage et les ids a exclure.")
+    if args.matched_panel is not None and not clamp_ids:
+        sys.exit("ERREUR: --matched-panel exige --clamp-ids : le panel fournit la "
+                 "taille du tirage, les ids exclus et l'activite cible.")
+    if args.matched_panel is not None and not args.activity_from:
+        sys.exit("ERREUR: --matched-panel exige --activity-from : la bande "
+                 "d'activite se construit depuis une trace de reference.")
+    if args.activity_from and args.matched_panel is None:
+        sys.exit("ERREUR: --activity-from n'a de sens qu'avec --matched-panel.")
+    if args.random_panel is not None and args.matched_panel is not None:
+        sys.exit("ERREUR: --random-panel et --matched-panel sont deux controles "
+                 "distincts : un seul tirage par trace.")
+    if inoculation:
+        clamp_depth = _guard(resolve_capture_layer, n_layers, None,
+                             args.clamp_frac if args.clamp_frac is not None
+                             else 0.5)
+        if args.read_frac is not None:
+            read_depth = _guard(resolve_capture_layer, n_layers, None,
+                                args.read_frac)
+        else:
+            read_depth = _guard(resolve_capture_layer, n_layers,
+                                n_layers - 1, None)
+        if read_depth["layer"] <= clamp_depth["layer"]:
+            sys.exit(f"ERREUR: couche de lecture ({read_depth['layer']}) "
+                     f"<= couche d'inoculation ({clamp_depth['layer']}) : la "
+                     "mesure de propagation exige read STRICTEMENT apres clamp.")
+        depth = read_depth
+        print(f"[inoc] inoculation couche {clamp_depth['layer']}/{n_layers - 1} "
+              f"(frac {clamp_depth['layer_frac']:.3f}), lecture couche "
+              f"{read_depth['layer']}/{n_layers - 1} "
+              f"(frac {read_depth['layer_frac']:.3f})")
+    else:
+        depth = _guard(resolve_capture_layer, n_layers, args.layer, args.layer_frac) \
+            if (args.layer is not None or args.layer_frac is not None) \
+            else _guard(resolve_capture_layer, n_layers, DEFAULT_LAYER, None)
     layer = depth["layer"]
-    print(f"[depth] couche {layer}/{n_layers - 1} "
-          f"(profondeur relative {depth['layer_frac']:.3f})")
+    if not inoculation:
+        print(f"[depth] couche {layer}/{n_layers - 1} "
+              f"(profondeur relative {depth['layer_frac']:.3f})")
 
     _guard(assert_bf16_readout,
            getattr(cfg, "quantization_config", None),
@@ -628,7 +866,8 @@ def main() -> None:
         out_dir.mkdir(parents=True, exist_ok=True)
         out_path = out_dir / trace_filename(
             args.variant, layer, model=args.model, default_model=DEFAULT_MODEL,
-            n_layers=n_layers, n_clamp=len(clamp_ids), prefix=args.prefix)
+            n_layers=n_layers, n_clamp=len(clamp_ids),
+            clamp_scale=args.clamp_scale, prefix=args.prefix)
         if out_path.exists() and not args.overwrite:
             sys.exit(f"ERREUR: {out_path} existe deja. Deux runs d'echelles "
                      "differentes ne doivent jamais partager un nom : verifier "
@@ -655,9 +894,65 @@ def main() -> None:
     _guard(check_sae_model_match, int(sae["W_enc"].shape[1]), int(d_model),
            args.sae_repo, args.model)
 
+    if args.random_panel is not None:
+        # Controle permute (phase 6 #8236) : remplace le panel AVANT la
+        # construction du hook et du nom de trace (n_clamp inchange, la
+        # distinction de nom passe par --prefix). Les ids remplaces finissent
+        # dans la meta "clamp_ids" ; le seed de controle est trace ci-dessous.
+        panel_original = list(clamp_ids)
+        clamp_ids = random_panel_control(clamp_ids, int(sae["W_enc"].shape[0]),
+                                         args.random_panel)
+        print(f"[panel-controle] {len(clamp_ids)} features tirees hors du panel "
+              f"differentiel (seed {args.random_panel}) ; panel d'origine "
+              f"conserve dans la meta 'random_panel_excluded'.")
+
+    mstats: dict | None = None
+    if args.matched_panel is not None:
+        # Controle apparie en norme (phase 6b #8236) : la bande d'activite se
+        # construit depuis la reference mi-reseau, qui DOIT etre a la couche
+        # d'inoculation — sinon l'appariement s'annonce sur une autre echelle.
+        ref_path = Path(args.activity_from)
+        if not ref_path.exists():
+            sys.exit(f"ERREUR: --activity-from introuvable : {ref_path}")
+        activity, ref_meta = ref_activity(ref_path)
+        clamp_layer_now = clamp_depth["layer"] if inoculation else layer
+        if int(ref_meta.get("layer", -1)) != int(clamp_layer_now):
+            sys.exit(f"ERREUR: la reference {ref_path.name} est a la couche "
+                     f"{ref_meta.get('layer')} != couche d'inoculation "
+                     f"{clamp_layer_now} : l'activite doit etre mesuree la ou "
+                     "le clamp s'applique.")
+        d_sae_now = int(sae["W_enc"].shape[0])
+        if int(ref_meta["d_sae"]) != d_sae_now:
+            sys.exit(f"ERREUR: d_sae de la reference ({ref_meta['d_sae']}) != "
+                     f"d_sae du SAE ({d_sae_now}).")
+        panel_original = list(clamp_ids)
+        clamp_ids, mstats = matched_activity_panel(
+            clamp_ids, activity, args.matched_panel, band=args.matched_band)
+        print(f"[panel-apparie] {len(clamp_ids)} features tirees dans la bande "
+              f"d'activite [{mstats['band'][0]:.4g}, {mstats['band'][1]:.4g}] "
+              f"(pool {mstats['pool']}, seed {args.matched_panel}) ; activite "
+              f"moyenne panel {mstats['act_panel']:.4g} -> tirage "
+              f"{mstats['act_draw']:.4g}.")
+
     layers = find_decoder_layers(model, n_layers)
-    capture = ResidCapture(sae=sae, clamp_ids=clamp_ids)
-    handle = layers[layer].register_forward_hook(capture)
+    handles = []
+    if inoculation:
+        # Deux SAE (eventuellement le meme checkpoint si clamp == read, ce que
+        # la garde read > clamp interdit ici) : les features du panel et le
+        # hook vivent a la couche d'inoculation, l'encodage top-k de la trace
+        # vit a la couche de lecture.
+        clamp_layer = clamp_depth["layer"]
+        sae_clamp = load_sae(args.sae_repo, clamp_layer, device)
+        _guard(check_sae_model_match, int(sae_clamp["W_enc"].shape[1]),
+               int(d_model), args.sae_repo, args.model)
+        handles.append(layers[clamp_layer].register_forward_hook(
+            ClampHook(sae_clamp, clamp_ids, args.clamp_scale)))
+        capture = CaptureHook()
+        handles.append(layers[layer].register_forward_hook(capture))
+    else:
+        capture = ResidCapture(sae=sae, clamp_ids=clamp_ids,
+                               clamp_scale=args.clamp_scale)
+        handles.append(layers[layer].register_forward_hook(capture))
 
     sets = PROMPT_SETS
     if args.prompts_json:
@@ -726,16 +1021,20 @@ def main() -> None:
                 top5 = [(int(a), float(b)) for a, b in zip(ids[-1, :5], vals[-1, :5])]
                 print(f"        top-5 features (dernier token) : {top5}")
 
-    handle.remove()
-
-    if args.stage == "smoke" and args.variant == "trained" and not clamp_ids:
+    if args.stage == "smoke" and args.variant == "trained":
         # Sanity semantique : une generation greedy courte attrape un chargement
         # de poids errone (mapping de classe, shards manquants) que les stats
-        # d'activation seules ne detecteraient pas.
+        # d'activation seules ne detecteraient pas. Sous inoculation, elle
+        # documente AUSSI la degradation visible du texte (diagnostic gratuit
+        # de catastrophe au niveau de la sortie) — d'ou sa place AVANT le
+        # retrait des hooks : le clamp reste actif pendant la generation.
         probe = tokenizer("La capitale de la France est", return_tensors="pt").to(device)
         with torch.no_grad():
             gen = model.generate(**probe, max_new_tokens=12, do_sample=False)
         print(f"[sanity] greedy: {tokenizer.decode(gen[0], skip_special_tokens=True)!r}")
+
+    for h in handles:
+        h.remove()
 
     l0_cat = torch.cat(l0_all)
     print(f"\n[sanity] {tok_total} tokens, L0 moyen={l0_cat.mean():.2f} "
@@ -756,6 +1055,34 @@ def main() -> None:
             "d_sae": int(sae["W_enc"].shape[0]), "d_model": int(d_model),
             "quantized_readout": bool(args.allow_quantized_readout),
             "variant": args.variant, "seed": args.seed, "clamp_ids": clamp_ids,
+            # Controle permute (phase 6 #8236) : null par defaut ; sinon seed
+            # du tirage + panel differentiel remplace (les clamp_ids ci-dessus
+            # sont deja le panel de controle).
+            "random_panel": (None if args.random_panel is None
+                             else int(args.random_panel)),
+            "random_panel_excluded": (None if args.random_panel is None
+                                      else panel_original),
+            # Controle apparie en norme (phase 6b #8236) : null par defaut ;
+            # sinon seed du tirage, panel differentiel remplace, bande et
+            # taille du pool candidat (les clamp_ids ci-dessus sont deja le
+            # panel de controle apparie).
+            "matched_panel": (None if args.matched_panel is None
+                              else int(args.matched_panel)),
+            "matched_panel_excluded": (None if args.matched_panel is None
+                                       else panel_original),
+            "matched_panel_band": (None if args.matched_panel is None
+                                   else float(args.matched_band)),
+            "matched_panel_pool": (None if args.matched_panel is None or mstats is None
+                                   else int(mstats["pool"])),
+            # Intensite du clamp (pilote #8236) : alpha=1.0 = annulation
+            # exacte (Gate 24 historique) ; alpha<1 = inoculation partielle.
+            "clamp_scale": float(args.clamp_scale),
+            # Mode inoculation : couche d'inoculation (SAE du hook) DISTINCTE
+            # de la couche de lecture — "layer"/"layer_frac" ci-dessus
+            # designent la lecture (SAE + encodage top-k de la trace). Null
+            # hors mode inoculation.
+            "clamp_layer": int(clamp_depth["layer"]) if inoculation else None,
+            "read_layer": int(layer) if inoculation else None,
             "encode_convention": f"pre = h @ W_enc.T + b_enc ; relu ; topk({k}) "
                                  "(app.py officiel Qwen-Scope, pas de b_dec a l'encode)",
             "control_convention": "permutation seedee des lignes d'input embeddings",

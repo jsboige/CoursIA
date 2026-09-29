@@ -1,0 +1,10 @@
+reason: 're-attestation apres insertion markdown-only de la section "Pourquoi
+  fixer la graine ?" (retablissement md/plan-loss, campagne densite #17040).
+  Audit firsthand : cellules code byte-identiques base->HEAD (13/13), cote C#
+  non touche par la PR ; parite native-both du code inchangee.'
+date: '2026-09-21'
+by: myia-po-2025:CoursIA-2
+python_sha: 7e9aaee6ec1d94600bed0e36b2b222644f201cc0
+csharp_sha: 0aa813e2da6ef0fa5afac9ad7e98d557cc2d9dd4
+content_python_sha: e2c998f4827a8a4fdc0c0ed4e32a1a11db5f4c0b1821e1cb360f36793bbb847a
+content_csharp_sha: b52736f474751642d6afac107f15c3b7d83ce6a8e33d962895c61948381e6d62

@@ -1,0 +1,10 @@
+reason: 're-attestation apres densification #17040 + retablissement de deux
+  sections Interpretation (markdown-only, ids base reutilises, plan-loss).
+  Audit firsthand : cellules code byte-identiques base->HEAD (8/8), cote C#
+  non touche par la PR ; parite native-both du code inchangee.'
+date: '2026-09-21'
+by: myia-po-2025:CoursIA-2
+python_sha: 86bd559d314eaca092c12daaa059ea318362d4b0
+csharp_sha: 5d9d69fb41977cd3aae53dec4b5396df8dcdb058
+content_python_sha: 1a7faa2e7210b78e3620eab8846742fcd75ec1b43599c62d87558988b255d58d
+content_csharp_sha: bf6f3e9401c4c56edb4024506e4c06e9580fc791513b289bf0f0b0cab4e7b19d

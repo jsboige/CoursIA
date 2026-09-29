@@ -315,7 +315,7 @@ et l'URL de capture vivent dans un `.env` **non commité** ; seuls les
 
 ---
 
-*Tour de la plateforme — parcours découverte (Epic #4433, sous #4427). FR-first.
+*Tour de la plateforme — parcours découverte (Epic #4433, fermée — parcours livré ; parent #4427). FR-first.
 Édition **v0.10** (contenu validé contre Open WebUI 0.10.2, juillet 2026).
 Statut : narratif complet ; script de capture reproductible prêt (voir la
 [note sur les captures](#comment-lire-ce-tour)).*

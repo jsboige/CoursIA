@@ -1,0 +1,7 @@
+date: '2026-09-27'
+by: myia-po-2025:CoursIA
+python_sha: 7acf657381400e2cdefb842cfe0ae856af0650a9
+csharp_sha: 7f5a411fc716537094e3c1488ea37a1fcd7f5b0f
+content_python_sha: 2f3a010ed2a2ae8f4d0d920c98775676ae48e52c2288af2e2508298a9ba2fda6
+content_csharp_sha: 955223abf14973d042273f3a69f14eaf9e3841f1a2316d34ed5e6245b0023830
+reason: 'Re-attestation apres merge de main dans la PR #17852 : main a retire la cellule markdown lectz3tac-01 (lecture chiffree XOR/AND) ; la PR ne change que trois marqueurs Indices vers des callouts dans le carnet Python. Diff du carnet de la PR contre main : trois lignes markdown remplacees, aucun code, output ou execution_count modifie ; jumeau C# inchange. Le retrait de la lecture sur main ne prouve pas a lui seul sa preservation pedagogique et reste distinct de cette attestation de parite du modele.'

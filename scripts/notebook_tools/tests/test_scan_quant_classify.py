@@ -331,7 +331,7 @@ class TestGoldenSetArgAnalysisC1275:
     """Golden set fondateur c.1275 — anti-FP classifier Argument_Analysis.
 
     Cas observes firsthand dans Argument_Analysis_Agentic-1-informal cell 9,
-    Argument_Analysis_Executor.ipynb cell 0, Argument_Analysis_Ontology_*.ipynb
+    Argumentation-08b-Executor-Python.ipynb cell 0, Argument_Analysis_Ontology_*.ipynb
     cell 27 — les valeurs 1, 2, 3, 4 en contexte `rung` (Toulmin), `2137`
     adjacent `epic #2137`, `100%` en contexte pourcentage, et `phase N` sont
     des **numerotations structurelles pedagogiques**, PAS des timings runtime.
@@ -1096,15 +1096,15 @@ _COHORT_ML_DFA = frozenset((
 _COHORT_SEARCH_PART1 = frozenset((
     "Search-1-StateSpace-Csharp.ipynb",
     "Search-1-StateSpace.ipynb",
-    "Search-10-SymbolicAutomata-Csharp.ipynb",
+    "Search-10-SymbolicAutomata-CSharp.ipynb",
     "Search-10-SymbolicAutomata.ipynb",
-    "Search-11-Metaheuristics-Csharp.ipynb",
+    "Search-11-Metaheuristics-CSharp.ipynb",
     "Search-11-Metaheuristics.ipynb",
     "Search-11b-Metaheuristiques-Deep-Part2.ipynb",
     "Search-11b-Metaheuristiques-Deep-Part3.ipynb",
     "Search-11b-Metaheuristiques-Deep-Part4.ipynb",
     "Search-11b-Metaheuristiques-Deep.ipynb",
-    "Search-02b-NetworkX-Csharp.ipynb",
+    "Search-02b-NetworkX-CSharp.ipynb",
     "Search-02b-NetworkX.ipynb",
     "Search-02c-QuikGraph.ipynb",
     "Search-2-Uninformed-Csharp.ipynb",

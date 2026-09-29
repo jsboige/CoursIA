@@ -118,6 +118,10 @@ scripts/notebook_tools/twin_pairs.d/*/*.yaml text eol=lf
 # differait de l'amont. `-text` desactive toute conversion : le blob est l'amont.
 # Ne pas "corriger" en `text eol=...` : ce serait re-ouvrir la meme corruption.
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/argumentum_*_taxonomy.csv -text
+# Meme regle pour le paquet Scenarii, recopie octet pour octet (Phase 2 de
+# l'EPIC #10355) : il est en CRLF pur, mais sans `-text` le blob stocke serait
+# normalise en LF sous `core.autocrlf=true` et differerait de l'amont.
+MyIA.AI.Notebooks/GenAI/FallacyDetection/data/argumentum_scenarii_cards.csv -text
 
 
 # Meme raisonnement pour les ontologies OWL distillees depuis le meme amont, et

@@ -132,6 +132,48 @@ Le verdict INTRINSIC pour notre contexte n'est pas un mur infranchissable ; il e
 
 En attendant, le notebook 02-6 evoluera vers une execution locale reelle des qu'un de ces evenements se materialise — l'architecture ci-dessus est le blueprint ComfyUI a deployer le moment venu.
 
+## Architecture Krea 2 turbo + VLM in-graph (03-4)
+
+Workflow rejoué depuis les métadonnées d'un PNG (notebook `Image/03-Orchestration/03-4`) :
+une boucle de raisonnement **dans le graphe ComfyUI** — un VLM examine une image de
+référence quelconque et rédige lui-même le prompt de character design avant la diffusion.
+
+```
+LoadImage (reference quelconque)
+    |
+ImageScaleToTotalPixels (1.0 MP, lanczos)
+    |
+CLIPLoader (qwen3vl_4b_bf16.safetensors, type: qwen_image)   <- sert AUSSI de VLM
+    |
+TextGenerate (system prompt "visual DNA", 11235 chars, temp 0.7)
+    |  -> PreviewAny (recuperation du texte genere via /history)
+    v
+StringConcatenate (trigger words LoRA + prompt VLM)
+    |
+LoraLoader (banjiesock_Krea2, model + clip)     UNETLoader (krea2_turbo_int8_convrot)
+    |                                                  |
+CLIPTextEncode -> KSampler (er_sde, simple, 8 steps, cfg 1.0)
+                 ConditioningZeroOut (negatif nul, modele distille)
+    |
+VAEDecode (qwen_image_vae.safetensors, 16 canaux) -> SaveImage
+```
+
+**Points critiques** :
+- UNet int8 convrot 13,49 Go + VLM 8,9 Go sur RTX 3090 24 Go : offload séquentiel ComfyUI
+  (le VLM travaille puis laisse la place au UNet) — les deux phases tiennent séparément.
+- `TextGenerate` est un node **natif** (`comfy_extras/nodes_textgen.py`) : il exige un CLIP
+  dont la config expose `stop_tokens` (familles gemma4 / qwen35) ; `qwen_2.5_vl_7b`
+  (type qwen_image) NE le supporte PAS (`AttributeError: stop_tokens`).
+- `cfg=1.0` + 8 steps = modèle distillé (turbo) : négatif via `ConditioningZeroOut`, pas
+  de prompt négatif factice.
+- Le texte généré se récupère via un node `PreviewAny` (output `text` dans `/history`) —
+  sans node terminal texte, `POST /prompt` répond `prompt_no_outputs`.
+- Le workflow original (PNG auteur) utilisait gemma4_12b comme VLM et des custom nodes
+  (LoraManager, ResolutionMaster, rgthree, KJNodes) : substitutions documentées dans le
+  notebook (table custom -> natif).
+- Poids : `Comfy-Org/Krea-2` (HF) pour UNet/encodeurs/VAE, Civitai modèle 2937073 pour le
+  LoRA banjiesock (trigger words : `banjiesock2style, illustration`).
+
 ## Approches abandonnees
 
 | Approche | Raison abandon |
@@ -179,6 +221,7 @@ python scripts/genai-stack/genai.py auth sync              # Synchroniser tokens
 | 01-5, 02-1 | ComfyUI Qwen | COMFYUI_AUTH_TOKEN, ~29GB VRAM |
 | 02-4 | Z-Image/vLLM | ~10GB VRAM |
 | 03-* | Multi-modèles | Tous les services |
+| 03-4 | ComfyUI Krea 2 (VLM in-graph) | COMFYUI_AUTH_TOKEN, ~23GB VRAM (UNet int8 13,5 Go + VLM 8,9 Go, offload séquentiel) |
 | 04-* | Applications | Variable |
 
 ## Mapping notebooks Audio -> services

@@ -150,7 +150,14 @@ def check_notebook(nb_path: Path) -> dict:
                 if l.strip() and not l.strip().startswith(("#", "//"))
             ]
             first_meaningful = lines[0] if lines else ""
-            is_function_def = first_meaningful.startswith("def ")
+            # `async def` is the same declaration to the kernel as `def`: the
+            # cell defines a coroutine, Jupyter displays nothing, and a stub
+            # body with no top-level call produces no output by design.
+            # Matching only `"def "` sent every `async def` stub down the
+            # expression-statement branch, where it came out as "execution_count
+            # set but no outputs" — a violation reported against a cell that is
+            # conformant under C.1 (the async ADK labs are full of them).
+            is_function_def = first_meaningful.startswith(("def ", "async def "))
             is_class_def = first_meaningful.startswith("class ")
 
             # Skip top-level C# / .NET Interactive declarations: `using …;`,
@@ -177,9 +184,19 @@ def check_notebook(nb_path: Path) -> dict:
             # (PRINT_IN_DEF_FP — 73 cells flagged pre-fix were pure function
             # definitions whose body happened to call print).
             output_keywords = ("print(", "display(", "plt.", "fig", "IPython.")
+            # Column-0 **comment** lines are excluded, not just indented ones.
+            # A stub whose call site is left commented out for the student is
+            # the normal shape of a C.1 exercise — `# print(resultats)` at
+            # column 0 is a *hint*, not an executed call, yet the substring
+            # scan below read its `print(` as a top-level output call and
+            # reported the cell as "execution_count set but no outputs". The
+            # indentation test alone cannot see that: a comment starts at
+            # column 0 like real code. (LAB12E_COMMENT_FP)
             toplevel_source = "\n".join(
                 line for line in source.split("\n")
-                if line and not line[0].isspace()
+                if line
+                and not line[0].isspace()
+                and not line.lstrip().startswith(("#", "//"))
             )
             has_output_call = any(kw in toplevel_source for kw in output_keywords)
             # `return` outside a function = a Jupyter cell that should output

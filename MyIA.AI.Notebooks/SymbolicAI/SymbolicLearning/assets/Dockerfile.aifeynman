@@ -1,0 +1,27 @@
+FROM public.ecr.aws/docker/library/python:3.9-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        gfortran build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# typing-extensions en wheel depuis PyPI AVANT torch : --index-url pytorch fait
+# discard son wheel (nom d'index incoherent) et retomber sur le sdist, dont le
+# build-dep flit_core est introuvable dans l'index pytorch seul.
+RUN pip install --no-cache-dir "typing-extensions>=4.10" \
+    && pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
+
+RUN pip install --no-cache-dir "numpy==1.26.4" matplotlib seaborn scikit-learn sortedcontainers "sympy>=1.4"
+
+# numpy.distutils (setup.py 2021 d'aifeynman) exige le distutils stdlib avec
+# msvccompiler : setuptools >= 60 vendore un distutils ampute (reco numpy).
+# Le setup.py depend aussi du paquet PyPI deprecie "sklearn" (scikit-learn est
+# deja installe ci-dessus) : flag officiel pour tolerer l'install du stub.
+ENV SKLEARN_ALLOW_DEPRECATED_SKLEARN_PACKAGE_INSTALL=True
+RUN pip install --no-cache-dir "setuptools<60" \
+    && pip install --no-cache-dir aifeynman --no-build-isolation \
+    && pip install --no-cache-dir papermill
+
+# ipykernel fournit le kernelspec python3 que papermill requiert.
+RUN pip install --no-cache-dir ipykernel
+
+WORKDIR /work

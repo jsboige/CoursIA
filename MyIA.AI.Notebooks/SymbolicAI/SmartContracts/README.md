@@ -188,9 +188,9 @@ SmartContracts/
 
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
-| 0 | [SC-0-Cypherpunk-Origins](00-Foundations/SC-0-Cypherpunk-Origins.ipynb) | 60 min | Hash, Merkle, PoW, signatures, DHT - code exécutable |
-| 1 | [SC-1-Setup-Foundry](00-Foundations/SC-1-Setup-Foundry.ipynb) | 30 min | Installation Foundry (forge, cast, anvil) |
-| 2 | [SC-2-Setup-Web3py](00-Foundations/SC-2-Setup-Web3py.ipynb) | 40 min | web3.py + py-solcx + compile/deploy réel |
+| 0 | [SC-00-Cypherpunk-Origins-Python](00-Foundations/SC-00-Cypherpunk-Origins-Python.ipynb) | 60 min | Hash, Merkle, PoW, signatures, DHT - code exécutable |
+| 1 | [SC-01-Setup-Foundry-Python](00-Foundations/SC-01-Setup-Foundry-Python.ipynb) | 30 min | Installation Foundry (forge, cast, anvil) |
+| 2 | [SC-02-Setup-Web3py-Python](00-Foundations/SC-02-Setup-Web3py-Python.ipynb) | 40 min | web3.py + py-solcx + compile/deploy réel |
 
 **Objectifs** : Comprendre les origines Cypherpunk, installer l'environnement, déployer un premier contrat
 
@@ -198,10 +198,10 @@ SmartContracts/
 
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
-| 3 | [SC-3-Solidity-Basics](01-Solidity-Foundation/SC-3-Solidity-Basics.ipynb) | 40 min | Types, variables, structure |
-| 4 | [SC-4-Functions-State](01-Solidity-Foundation/SC-4-Functions-State.ipynb) | 45 min | Fonctions, modifiers, storage |
-| 5 | [SC-5-Inheritance](01-Solidity-Foundation/SC-5-Inheritance.ipynb) | 35 min | Héritage, interfaces |
-| 6 | [SC-6-Errors-Events](01-Solidity-Foundation/SC-6-Errors-Events.ipynb) | 30 min | Erreurs, events |
+| 3 | [SC-03-Solidity-Basics-Python](01-Solidity-Foundation/SC-03-Solidity-Basics-Python.ipynb) | 40 min | Types, variables, structure |
+| 4 | [SC-04-Functions-State-Python](01-Solidity-Foundation/SC-04-Functions-State-Python.ipynb) | 45 min | Fonctions, modifiers, storage |
+| 5 | [SC-05-Inheritance-Python](01-Solidity-Foundation/SC-05-Inheritance-Python.ipynb) | 35 min | Héritage, interfaces |
+| 6 | [SC-06-Errors-Events-Python](01-Solidity-Foundation/SC-06-Errors-Events-Python.ipynb) | 30 min | Erreurs, events |
 
 **Objectifs** : Maîtriser les bases de Solidity avec déploiement réel sur anvil
 
@@ -209,11 +209,11 @@ SmartContracts/
 
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
-| 7 | [SC-7-Token-Standards](02-Solidity-Advanced/SC-7-Token-Standards.ipynb) | 50 min | ERC-20, ERC-721, ERC-1155 |
-| 8 | [SC-8-DeFi-Primitives](02-Solidity-Advanced/SC-8-DeFi-Primitives.ipynb) | 55 min | AMM, lending, oracles |
-| 9 | [SC-9-DAO-Governance](02-Solidity-Advanced/SC-9-DAO-Governance.ipynb) | 45 min | Votes, gouvernance on-chain |
-| 10 | [SC-10-Account-Abstraction](02-Solidity-Advanced/SC-10-Account-Abstraction.ipynb) | 50 min | ERC-4337 |
-| 11 | [SC-11-LLM-Assisted](02-Solidity-Advanced/SC-11-LLM-Assisted.ipynb) | 45 min | LLM pour smart contracts |
+| 7 | [SC-07-Token-Standards-Python](02-Solidity-Advanced/SC-07-Token-Standards-Python.ipynb) | 50 min | ERC-20, ERC-721, ERC-1155 |
+| 8 | [SC-08-DeFi-Primitives-Python](02-Solidity-Advanced/SC-08-DeFi-Primitives-Python.ipynb) | 55 min | AMM, lending, oracles |
+| 9 | [SC-09-DAO-Governance-Python](02-Solidity-Advanced/SC-09-DAO-Governance-Python.ipynb) | 45 min | Votes, gouvernance on-chain |
+| 10 | [SC-10-Account-Abstraction-Python](02-Solidity-Advanced/SC-10-Account-Abstraction-Python.ipynb) | 50 min | ERC-4337 |
+| 11 | [SC-11-LLM-Assisted-Python](02-Solidity-Advanced/SC-11-LLM-Assisted-Python.ipynb) | 45 min | LLM pour smart contracts |
 
 **Objectifs** : Protocoles DeFi, gouvernance, ERC-4337, LLM-assisted
 
@@ -221,9 +221,9 @@ SmartContracts/
 
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
-| 12 | [SC-12-Foundry-Testing](03-Foundry-Testing/SC-12-Foundry-Testing.ipynb) | 45 min | Tests unitaires, cheatcodes |
-| 13 | [SC-13-Fuzz-Invariants](03-Foundry-Testing/SC-13-Fuzz-Invariants.ipynb) | 40 min | Fuzz testing réel (forge) : contre-exemple d'overflow trouvé, invariants |
-| 14 | [SC-14-Formal-Verification](03-Foundry-Testing/SC-14-Formal-Verification.ipynb) | 50 min | Vérification formelle |
+| 12 | [SC-12-Foundry-Testing-Python](03-Foundry-Testing/SC-12-Foundry-Testing-Python.ipynb) | 45 min | Tests unitaires, cheatcodes |
+| 13 | [SC-13-Fuzz-Invariants-Python](03-Foundry-Testing/SC-13-Fuzz-Invariants-Python.ipynb) | 40 min | Fuzz testing réel (forge) : contre-exemple d'overflow trouvé, invariants |
+| 14 | [SC-14-Formal-Verification-Python](03-Foundry-Testing/SC-14-Formal-Verification-Python.ipynb) | 50 min | Vérification formelle |
 
 **Objectifs** : Tests Solidity, fuzzing, vérification formelle
 
@@ -231,9 +231,9 @@ SmartContracts/
 
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
-| 15 | [SC-15-Zero-Knowledge-Proofs](04-Privacy-Cryptography/SC-15-Zero-Knowledge-Proofs.ipynb) | 60 min | Schnorr, Fiat-Shamir, Sigma protocols |
-| 16 | [SC-16-Homomorphic-Encryption](04-Privacy-Cryptography/SC-16-Homomorphic-Encryption.ipynb) | 50 min | Paillier, CKKS/TenSEAL, Shamir |
-| 17 | [SC-17-E2E-Verifiable-Voting](04-Privacy-Cryptography/SC-17-E2E-Verifiable-Voting.ipynb) | 70 min | Vote anonyme vérifiable, ElectionGuard |
+| 15 | [SC-15-Zero-Knowledge-Proofs-Python](04-Privacy-Cryptography/SC-15-Zero-Knowledge-Proofs-Python.ipynb) | 60 min | Schnorr, Fiat-Shamir, Sigma protocols |
+| 16 | [SC-16-Homomorphic-Encryption-Python](04-Privacy-Cryptography/SC-16-Homomorphic-Encryption-Python.ipynb) | 50 min | Paillier, CKKS/TenSEAL, Shamir |
+| 17 | [SC-17-E2E-Verifiable-Voting-Python](04-Privacy-Cryptography/SC-17-E2E-Verifiable-Voting-Python.ipynb) | 70 min | Vote anonyme vérifiable, ElectionGuard |
 
 **Objectifs** : ZKP from scratch, chiffrement homomorphique, vote E2E vérifiable
 
@@ -241,11 +241,11 @@ SmartContracts/
 
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
-| 18 | [SC-18-Vyper](05-Alternative-Chains/SC-18-Vyper.ipynb) | 45 min | Smart contracts Python-like |
-| 19 | [SC-19-Ripple-XRP](05-Alternative-Chains/SC-19-Ripple-XRP.ipynb) | 50 min | xrpl-py, testnet, trust lines |
-| 20 | [SC-20-Bitcoin-Scripting](05-Alternative-Chains/SC-20-Bitcoin-Scripting.ipynb) | 50 min | UTXO, Script, python-bitcoinlib |
-| 21 | [SC-21-Move-Sui](05-Alternative-Chains/SC-21-Move-Sui.ipynb) | 50 min | Move, modèle objet Sui |
-| 22 | [SC-22-Solana-Anchor](05-Alternative-Chains/SC-22-Solana-Anchor.ipynb) | 55 min | Solana, Anchor framework |
+| 18 | [SC-18-Vyper-Python](05-Alternative-Chains/SC-18-Vyper-Python.ipynb) | 45 min | Smart contracts Python-like |
+| 19 | [SC-19-Ripple-XRP-Python](05-Alternative-Chains/SC-19-Ripple-XRP-Python.ipynb) | 50 min | xrpl-py, testnet, trust lines |
+| 20 | [SC-20-Bitcoin-Scripting-Python](05-Alternative-Chains/SC-20-Bitcoin-Scripting-Python.ipynb) | 50 min | UTXO, Script, python-bitcoinlib |
+| 21 | [SC-21-Move-Sui-Python](05-Alternative-Chains/SC-21-Move-Sui-Python.ipynb) | 50 min | Move, modèle objet Sui |
+| 22 | [SC-22-Solana-Anchor-Python](05-Alternative-Chains/SC-22-Solana-Anchor-Python.ipynb) | 55 min | Solana, Anchor framework |
 
 **Objectifs** : Vyper, XRP, Bitcoin scripting, Move, Solana
 
@@ -253,11 +253,11 @@ SmartContracts/
 
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
-| 23 | [SC-23-Cross-Chain](06-Real-World/SC-23-Cross-Chain.ipynb) | 45 min | Bridges, interopérabilité |
-| 24 | [SC-24-Testnet-Deploy](06-Real-World/SC-24-Testnet-Deploy.ipynb) | 50 min | Deploy Sepolia + XRP testnet |
-| 25 | [SC-25-Mainnet-Deploy](06-Real-World/SC-25-Mainnet-Deploy.ipynb) | 40 min | Deploy L2 (Base/Polygon) |
-| 26 | [SC-26-Final-Project](06-Real-World/SC-26-Final-Project.ipynb) | 90 min | Projet capstone complet |
-| 27 | [SC-27-Dette-Irreversibilite](06-Real-World/SC-27-Dette-Irreversibilite.ipynb) | 45 min | Épilogue : boucle gouvernance mesurée (gas, retour arrière, table de dette) |
+| 23 | [SC-23-Cross-Chain-Python](06-Real-World/SC-23-Cross-Chain-Python.ipynb) | 45 min | Bridges, interopérabilité |
+| 24 | [SC-24-Testnet-Deploy-Python](06-Real-World/SC-24-Testnet-Deploy-Python.ipynb) | 50 min | Deploy Sepolia + XRP testnet |
+| 25 | [SC-25-Mainnet-Deploy-Python](06-Real-World/SC-25-Mainnet-Deploy-Python.ipynb) | 40 min | Deploy L2 (Base/Polygon) |
+| 26 | [SC-26-Final-Project-Python](06-Real-World/SC-26-Final-Project-Python.ipynb) | 90 min | Projet capstone complet |
+| 27 | [SC-27-Dette-Irreversibilite-Python](06-Real-World/SC-27-Dette-Irreversibilite-Python.ipynb) | 45 min | Épilogue : boucle gouvernance mesurée (gas, retour arrière, table de dette) |
 
 **Objectifs** : Déploiement réel, testnets, mainnet, projet intégré
 
@@ -580,7 +580,7 @@ En parcourant cette série des **cypherpunks aux blockchains modernes**, vous av
 
 ### Prochaines étapes
 
-- **Consolidez avec le capstone** : si vous êtes arrivé au bout du parcours recommandé, le [SC-26 Final Project](06-Real-World/SC-26-Final-Project.ipynb) intègre l'ensemble (conception → Solidity → tests → vérification → déploiement testnet). C'est le livrable qui transforme la lecture en compétence.
+- **Consolidez avec le capstone** : si vous êtes arrivé au bout du parcours recommandé, le [SC-26 Final Project](06-Real-World/SC-26-Final-Project-Python.ipynb) intègre l'ensemble (conception → Solidity → tests → vérification → déploiement testnet). C'est le livrable qui transforme la lecture en compétence.
 - **Approfondissez la vérification formelle** : SC-14 ouvre la porte de la série **[Lean](../Lean/)** — où les SMT solvers automatiques mais bornés laissent place à la preuve interactive expressive (types dépendants, Curry-Howard). Deux faces d'une même ambition : certifier la correction d'un programme.
 - **Croisez avec la théorie des jeux** : les mécanismes de gouvernance on-chain (SC-9, SC-17) rencontrent leurs limites formelles dans le **[théorème d'Arrow](../../GameTheory/)** (formalisé en Lean dans la série GameTheory, 0 sorry) et la théorie du choix social. Comprendre *pourquoi* un design de vote est fondamentalement imparfait est aussi important que savoir l'implémenter.
 - **Décidez sous incertitude** : la conception de contrats robustes face à des marchés incertains (slippage, garanties, réserves) relève du **[Minimax Regret et de la décision sous incertitude](../../Probas/)** traités dans la série Probas.

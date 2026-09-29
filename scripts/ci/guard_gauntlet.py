@@ -288,8 +288,18 @@ def run_check(
     # env minimal + documente : on supprime les variables qui pourraient
     # detourner le check vers des chemins au-dela du sandbox. PATH est garde
     # pour que le check trouve ses binaires, mais cwd + HOME sont imposes.
+    # LD_LIBRARY_PATH l'est pour la meme raison, et son retrait etait
+    # auto-defaitiste : il ne sert pas au check mais au *loader*, qui tourne
+    # AVANT sa premiere instruction. Un interpreteur qui a besoin de ses
+    # libs partagees ne demarre alors pas du tout -- les builds setup-python
+    # du tool-cache auto-heberge n'ont pas de rpath, donc le runner exporte
+    # la variable -- et le gauntlet lit exit 127 avec stdout vide, verdict
+    # indiscernable de « le garde n'a rien detecte ». Constate sur les slots
+    # po-2026 : 8 echecs de scripts/tests/test_guard_gauntlet.py, verts sur
+    # les slots dont l'interpreteur n'en a pas besoin.
     env = {
         "PATH": os.environ.get("PATH", ""),
+        "LD_LIBRARY_PATH": os.environ.get("LD_LIBRARY_PATH", ""),
         "SYSTEMROOT": os.environ.get("SYSTEMROOT", ""),
         "LANG": os.environ.get("LANG", "C.UTF-8"),
         "GAUNTLET_SANDBOX": str(sandbox_dir),
