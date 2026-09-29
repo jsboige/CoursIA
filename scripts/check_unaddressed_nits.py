@@ -2443,9 +2443,13 @@ def _live_lift_positions(normalised: str) -> list[int]:
     #       marqueur` nomme le comportement qu'il vérifie, ce n'est pas
     #       une émission (le `_` est un caractère de mot, cf #15849 : la
     #       frontière \b ne coupe pas dessus). L'adhérence à une LETTRE
-    #       n'est PAS rejetée : les formes fléchies françaises vivent de
-    #       matchs préfixes (« Mergé » dans « **Mergée.** », « est levé »
-    #       dans « est levée ») — seul `_` distingue l'identifiant.
+    #       À DROITE n'est pas rejetée : les formes fléchies françaises
+    #       vivent de matchs préfixes (« Mergé » dans « **Mergée.** »,
+    #       « est levé » dans « est levée »). L'adhérence à une LETTRE
+    #       À GAUCHE est rejetée (#18336) : « relevée », « soulevée »,
+    #       « enlevée » contiennent « levée » sans le prononcer, et
+    #       aucune forme fléchie française ne PRÉFIXE « levée » — la
+    #       tolérance préfixe ne vit qu'à droite.
     scanned = _QUOTED_RANGES.sub(
         lambda q: " " * (q.end() - q.start()), normalised)
     negation_zones: list[tuple[int, int]] = []
@@ -2468,7 +2472,13 @@ def _live_lift_positions(normalised: str) -> list[int]:
         for i, i_end in hits:
             # Garde (3) — collé à un underscore : usage technique
             # (identifiant snake_case), pas une émission.
-            if (i > 0 and scanned[i - 1] == "_") \
+            # Garde (3bis) #18336 — un hit PRÉCÉDÉ d'une lettre n'est
+            # pas une émission : « relevée », « soulevée », « enlevée »
+            # contiennent « levée » sans le prononcer. Aucune forme
+            # fléchie française ne préfixe « levée » ; la tolérance
+            # préfixe ne vit qu'à droite et reste entière.
+            if (i > 0 and (scanned[i - 1] == "_"
+                           or scanned[i - 1].isalpha())) \
                     or (i_end < len(scanned) and scanned[i_end] == "_"):
                 continue
             window_before = scanned[max(0, i - 30):i]
