@@ -394,21 +394,56 @@ lemma wf_edgesInRange {d : KnotDiagram} (hne : d.crossings ≠ [])
   have h4 := hall c.e4 (by simp)
   exact ⟨h1.1, h1.2, h2.1, h2.2, h3.1, h3.2, h4.1, h4.2⟩
 
-/-- **Preservation generale de la partition d'arcs sous R3 connecte**
-    (premier verrou de #16650) : si `d₂` s'obtient de `d₁` par le move
-    triangulaire, les deux partitions d'arcs portent la meme relation
-    « partager une classe » — pour tout couple d'etiquettes, partager une
-    classe dans `arcPartition d₁` et partager une classe dans `arcPartition d₂`
-    sont equivalents. La forme liste n'est PAS preservee (contre-exemple
-    documente sur #16650 : deux fusions consecutives de memes paires dans
-    l'ordre inverse produisent des listes differentes) ; la forme classe —
-    celle dont depend la matrice d'Alexander colonne par colonne — l'est. -/
+/-- Triple `List.set` consecutif qui re-set les valeurs deja en place :
+    la chirurgie R3 vue cote `d₁` reecrit chaque position avec sa valeur
+    courante. Lemme outil generique (termes closes sur des variables de
+    liste), isole pour tenir le cout d'elaboration : la machinerie
+    identite + decoupage s'elabore une fois pour toutes ici, sur des
+    petits termes. -/
+private lemma set3_self_decomp {α : Type} (L : List α) (i : Nat) (x₀ x₁ x₂ : α)
+    (h0 : i < L.length) (h1 : i + 1 < L.length) (h2 : i + 2 < L.length)
+    (e0 : L.get ⟨i, h0⟩ = x₀) (e1 : L.get ⟨i + 1, h1⟩ = x₁)
+    (e2 : L.get ⟨i + 2, h2⟩ = x₂) :
+    ((L.set i x₀).set (i + 1) x₁).set (i + 2) x₂ = L ∧
+    ((L.set i x₀).set (i + 1) x₁).set (i + 2) x₂ =
+      L.take i ++ [x₀, x₁, x₂] ++ L.drop (i + 3) := by
+  have s0 : L.set i x₀ = L := by
+    have hs := set_get_self L i h0
+    rwa [e0] at hs
+  have s1 : (L.set i x₀).set (i + 1) x₁ = L := by
+    rw [s0]
+    have hs := set_get_self L (i + 1) h1
+    rwa [e1] at hs
+  have s2 : ((L.set i x₀).set (i + 1) x₁).set (i + 2) x₂ = L := by
+    rw [s1]
+    have hs := set_get_self L (i + 2) h2
+    rwa [e2] at hs
+  exact ⟨s2, set3_take_drop L i x₀ x₁ x₂ h2⟩
+
+/-- Pont get/map : la forme `List.get` (celle que produisent les `rw` de ce
+    fichier) n'est pas celle de `List.getElem_map` (getElem), et le passage
+    de la preuve de `i < l.length` a `i < (l.map f).length` exige un
+    transport que `rw` refuse. Lemme generique par induction, isole ici pour
+    garder des petits termes dans `pairs_append_forms`. -/
+private lemma map_get_bridge {α β : Type} (f : α → β) (l : List α) (i : Nat)
+    (h : i < l.length) (h' : i < (l.map f).length) :
+    (l.map f).get ⟨i, h'⟩ = f (l.get ⟨i, h⟩) := by
+  induction l generalizing i with
+  | nil => exact absurd h (Nat.not_lt_zero _)
+  | cons a as ih =>
+      rcases i with _ | j
+      · simp
+      · simpa using ih j (by simpa using h) (by simpa using h')
+
+
 /-- Lecture de la chirurgie R3 sur les listes de paires (e2, e4) : les deux
     listes de paires de `d₁` et `d₂` partagent prefixe et suffixe, et ne
     different que sur deux positions consecutives — transposition adjacente
     `(a₁,g₂) (g₁,b₃)` vs `(b₃,g₁) (a₁,g₂)`. La couverture des singletons est
     transportee pour les deux milieux. Lemme intermediaire du theoreme
-    `arcPartition_sameRel`, separe pour tenir le cout d'elaboration. -/
+    `arcPartition_sameRel`, separe pour tenir le cout d'elaboration : le gros
+    terme `d₁.crossings.map (fun c => (c.e2, c.e4))` est plie par `set`, et la
+    machinerie identite/decoupage vit dans `set3_self_decomp`. -/
 private lemma pairs_append_forms {d₁ d₂ : KnotDiagram}
     (h : Reidemeister3Connected d₁ d₂) :
     ∃ A B : List (Nat × Nat), ∃ a₁ b₁ b₃ g₁ g₂ : Nat,
@@ -427,71 +462,56 @@ private lemma pairs_append_forms {d₁ d₂ : KnotDiagram}
     rw [hc] at hi
     exact absurd hi (Nat.not_lt_zero _)
   have hEIR := wf_edgesInRange hne hwf₁
-  have hlen' : (d₁.crossings.map (fun c => (c.e2, c.e4))).length = d₁.crossings.length :=
-    List.length_map _
-  have hi0 : i < (d₁.crossings.map (fun c => (c.e2, c.e4))).length := by omega
-  have hi1 : i + 1 < (d₁.crossings.map (fun c => (c.e2, c.e4))).length := by omega
-  have hi2 : i + 2 < (d₁.crossings.map (fun c => (c.e2, c.e4))).length := by omega
-  have hgp0 : (d₁.crossings.map (fun c => (c.e2, c.e4))).get ⟨i, hi0⟩ = (a₁, g₂) := by
-    rw [List.getElem_map, hg0]
-  have hgp1 : (d₁.crossings.map (fun c => (c.e2, c.e4))).get ⟨i + 1, hi1⟩ = (g₁, b₃) := by
-    rw [List.getElem_map, hg1]
-  have hgp2 : (d₁.crossings.map (fun c => (c.e2, c.e4))).get ⟨i + 2, hi2⟩ = (g₂, b₁) := by
-    rw [List.getElem_map, hg2]
+  set L := d₁.crossings.map (fun c => (c.e2, c.e4)) with hL
+  have hlen : L.length = d₁.crossings.length := by
+    rw [hL]
+    exact List.length_map _
+  have hi0 : i < L.length := by omega
+  have hi1 : i + 1 < L.length := by omega
+  have hi2 : i + 2 < L.length := by omega
+  have hic0 : i < d₁.crossings.length := by omega
+  have hic1 : i + 1 < d₁.crossings.length := by omega
+  have hic2 : i + 2 < d₁.crossings.length := hi
+  have hg0' : d₁.crossings.get ⟨i, hic0⟩ = { e1 := a₂, e2 := a₁, e3 := g₁, e4 := g₂ } := hg0
+  have hg1' : d₁.crossings.get ⟨i + 1, hic1⟩ = { e1 := a₃, e2 := g₁, e3 := g₃, e4 := b₃ } := hg1
+  have hg2' : d₁.crossings.get ⟨i + 2, hic2⟩ = { e1 := g₃, e2 := g₂, e3 := b₂, e4 := b₁ } := hg2
+  have hgp0 : L.get ⟨i, hi0⟩ = (a₁, g₂) := by
+    show (d₁.crossings.map (fun c => (c.e2, c.e4))).get ⟨i, hi0⟩ = (a₁, g₂)
+    rw [map_get_bridge _ _ _ hic0 hi0, hg0']
+  have hgp1 : L.get ⟨i + 1, hi1⟩ = (g₁, b₃) := by
+    show (d₁.crossings.map (fun c => (c.e2, c.e4))).get ⟨i + 1, hi1⟩ = (g₁, b₃)
+    rw [map_get_bridge _ _ _ hic1 hi1, hg1']
+  have hgp2 : L.get ⟨i + 2, hi2⟩ = (g₂, b₁) := by
+    show (d₁.crossings.map (fun c => (c.e2, c.e4))).get ⟨i + 2, hi2⟩ = (g₂, b₁)
+    rw [map_get_bridge _ _ _ hic2 hi2, hg2']
   have hpairs₂' : d₂.crossings.map (fun c => (c.e2, c.e4)) =
-      (((d₁.crossings.map (fun c => (c.e2, c.e4))).set i (b₃, g₁)).set (i + 1)
-        (a₁, g₂)).set (i + 2) (g₂, b₁) := by
+      ((L.set i (b₃, g₁)).set (i + 1) (a₁, g₂)).set (i + 2) (g₂, b₁) := by
     rw [hsurg, map_set, map_set, map_set]
-  have s0 : (d₁.crossings.map (fun c => (c.e2, c.e4))).set i (a₁, g₂) =
-      d₁.crossings.map (fun c => (c.e2, c.e4)) := by
-    have hs := set_get_self _ i hi0
-    rwa [hgp0] at hs
-  have s1 : ((d₁.crossings.map (fun c => (c.e2, c.e4))).set i (a₁, g₂)).set (i + 1)
-        (g₁, b₃) = d₁.crossings.map (fun c => (c.e2, c.e4)) := by
-    rw [s0]
-    have hs := set_get_self _ (i + 1) hi1
-    rwa [hgp1] at hs
-  have s2 : (((d₁.crossings.map (fun c => (c.e2, c.e4))).set i (a₁, g₂)).set (i + 1)
-        (g₁, b₃)).set (i + 2) (g₂, b₁) =
-      d₁.crossings.map (fun c => (c.e2, c.e4)) := by
-    rw [s1]
-    have hs := set_get_self _ (i + 2) hi2
-    rwa [hgp2] at hs
-  have hdec₁ : (((d₁.crossings.map (fun c => (c.e2, c.e4))).set i (a₁, g₂)).set (i + 1)
-        (g₁, b₃)).set (i + 2) (g₂, b₁) =
-      (d₁.crossings.map (fun c => (c.e2, c.e4))).take i ++
-        [(a₁, g₂), (g₁, b₃), (g₂, b₁)] ++
-      (d₁.crossings.map (fun c => (c.e2, c.e4))).drop (i + 3) :=
-    set3_take_drop _ i _ _ _ hi2
-  have hdec₂ : (((d₁.crossings.map (fun c => (c.e2, c.e4))).set i (b₃, g₁)).set (i + 1)
-        (a₁, g₂)).set (i + 2) (g₂, b₁) =
-      (d₁.crossings.map (fun c => (c.e2, c.e4))).take i ++
-        [(b₃, g₁), (a₁, g₂), (g₂, b₁)] ++
-      (d₁.crossings.map (fun c => (c.e2, c.e4))).drop (i + 3) :=
-    set3_take_drop _ i _ _ _ hi2
-  have hP1 : d₁.crossings.map (fun c => (c.e2, c.e4)) =
-      (d₁.crossings.map (fun c => (c.e2, c.e4))).take i ++
-        [(a₁, g₂), (g₁, b₃), (g₂, b₁)] ++
-      (d₁.crossings.map (fun c => (c.e2, c.e4))).drop (i + 3) := by
-    rw [← hdec₁, s2]
+  obtain ⟨s2eq, hdec₁⟩ :=
+    set3_self_decomp L i (a₁, g₂) (g₁, b₃) (g₂, b₁) hi0 hi1 hi2 hgp0 hgp1 hgp2
+  have hdec₂ : ((L.set i (b₃, g₁)).set (i + 1) (a₁, g₂)).set (i + 2) (g₂, b₁) =
+      L.take i ++ [(b₃, g₁), (a₁, g₂), (g₂, b₁)] ++ L.drop (i + 3) :=
+    set3_take_drop L i _ _ _ hi2
+  have hP1 : L = L.take i ++ [(a₁, g₂), (g₁, b₃), (g₂, b₁)] ++ L.drop (i + 3) := by
+    rw [← hdec₁, s2eq]
   have hP2 : d₂.crossings.map (fun c => (c.e2, c.e4)) =
-      (d₁.crossings.map (fun c => (c.e2, c.e4))).take i ++
-        [(b₃, g₁), (a₁, g₂), (g₂, b₁)] ++
-      (d₁.crossings.map (fun c => (c.e2, c.e4))).drop (i + 3) := by
+      L.take i ++ [(b₃, g₁), (a₁, g₂), (g₂, b₁)] ++ L.drop (i + 3) := by
     rw [hpairs₂', hdec₂]
-  have hmem0 : d₁.crossings.get ⟨i, by omega⟩ ∈ d₁.crossings := List.getElem_mem _ _
-  have hmem1 : d₁.crossings.get ⟨i + 1, by omega⟩ ∈ d₁.crossings := List.getElem_mem _ _
+  have hmem0 : d₁.crossings.get ⟨i, hic0⟩ ∈ d₁.crossings := List.getElem_mem hic0
+  have hmem1 : d₁.crossings.get ⟨i + 1, hic1⟩ ∈ d₁.crossings := List.getElem_mem hic1
   have hEIR0 := hEIR _ hmem0
   have hEIR1 := hEIR _ hmem1
   rw [hg0] at hEIR0
   rw [hg1] at hEIR1
-  obtain ⟨_, _, ha₁, ha₁', _, _, hg₁lo, hg₁hi, hg₂lo, hg₂hi⟩ := hEIR0
-  obtain ⟨_, _, _, _, _, _, _, _, hb₃lo, hb₃hi⟩ := hEIR1
-  have hcovA : ∀ q ∈ (d₁.crossings.map (fun c => (c.e2, c.e4))).take i,
+  obtain ⟨_, _, ha₁, ha₁', hg₁lo, hg₁hi, hg₂lo, hg₂hi⟩ := hEIR0
+  obtain ⟨_, _, _, _, _, _, hb₃lo, hb₃hi⟩ := hEIR1
+  have hcovA : ∀ q ∈ L.take i,
       Covered ((List.range d₁.numEdges).map (fun k => [k + 1])) q.1 ∧
       Covered ((List.range d₁.numEdges).map (fun k => [k + 1])) q.2 := by
     intro q hq
-    exact crossings_covered_singles hEIR q (List.mem_of_mem_take hq)
+    refine crossings_covered_singles hEIR q ?_
+    rw [← hL]
+    exact List.mem_of_mem_take hq
   have hcovmid1 : ∀ q ∈ [(a₁, g₂), (g₁, b₃)],
       Covered ((List.range d₁.numEdges).map (fun k => [k + 1])) q.1 ∧
       Covered ((List.range d₁.numEdges).map (fun k => [k + 1])) q.2 := by
@@ -508,9 +528,7 @@ private lemma pairs_append_forms {d₁ d₂ : KnotDiagram}
     rcases hq with rfl | rfl
     · exact ⟨covered_singles hb₃lo hb₃hi, covered_singles hg₁lo hg₁hi⟩
     · exact ⟨covered_singles ha₁ ha₁', covered_singles hg₂lo hg₂hi⟩
-  refine ⟨(d₁.crossings.map (fun c => (c.e2, c.e4))).take i,
-    (d₁.crossings.map (fun c => (c.e2, c.e4))).drop (i + 3), a₁, b₁, b₃, g₁, g₂,
-    hP1, hP2, ?_, ?_⟩
+  refine ⟨L.take i, L.drop (i + 3), a₁, b₁, b₃, g₁, g₂, hP1, hP2, ?_, ?_⟩
   · intro q hq
     rcases List.mem_append.mp hq with hq | hq
     · exact hcovA q hq
@@ -520,18 +538,30 @@ private lemma pairs_append_forms {d₁ d₂ : KnotDiagram}
     · exact hcovA q hq
     · exact hcovmid2 q hq
 
+
+/-- **Preservation generale de la partition d'arcs sous R3 connecte**
+    (premier verrou de #16650) : si `d₂` s'obtient de `d₁` par le move
+    triangulaire, les deux partitions d'arcs portent la meme relation
+    « partager une classe » — pour tout couple d'etiquettes, partager une
+    classe dans `arcPartition d₁` et partager une classe dans `arcPartition d₂`
+    sont equivalents. La forme liste n'est PAS preservee (contre-exemple
+    documente sur #16650 : deux fusions consecutives de memes paires dans
+    l'ordre inverse produisent des listes differentes) ; la forme classe —
+    celle dont depend la matrice d'Alexander colonne par colonne — l'est. -/
 theorem Reidemeister3Connected.arcPartition_sameRel {d₁ d₂ : KnotDiagram}
     (h : Reidemeister3Connected d₁ d₂) :
     SameRel (arcPartition d₁) (arcPartition d₂) := by
   obtain ⟨A, B, a₁, b₁, b₃, g₁, g₂, hP1, hP2, hcov1, hcov2⟩ := pairs_append_forms h
+  obtain ⟨hwf₁, _, _, henum, _, _⟩ := h
   rw [arcPartition_eq, arcPartition_eq, hP1, hP2]
   simp only [List.foldl_append, List.foldl_cons, List.foldl_nil]
+  rw [← henum]
   set S := (List.range d₁.numEdges).map (fun k => [k + 1]) with hS
   have hfoldA1 : (A ++ [(a₁, g₂), (g₁, b₃)]).foldl mergeStep S =
-      mergeStep (mergeStep A.foldl mergeStep S (a₁, g₂)) (g₁, b₃) := by
+      mergeStep (mergeStep (A.foldl mergeStep S) (a₁, g₂)) (g₁, b₃) := by
     simp
   have hfoldA2 : (A ++ [(b₃, g₁), (a₁, g₂)]).foldl mergeStep S =
-      mergeStep (mergeStep A.foldl mergeStep S (b₃, g₁)) (a₁, g₂) := by
+      mergeStep (mergeStep (A.foldl mergeStep S) (b₃, g₁)) (a₁, g₂) := by
     simp
   have hd1 := (foldl_partition_inv (P := S) (pairs := A ++ [(a₁, g₂), (g₁, b₃)])
     classesDisjoint_singles pairwise_singles hcov1).1
@@ -539,19 +569,19 @@ theorem Reidemeister3Connected.arcPartition_sameRel {d₁ d₂ : KnotDiagram}
     classesDisjoint_singles pairwise_singles hcov2).1
   rw [hfoldA1] at hd1
   rw [hfoldA2] at hd2
-  have hmid : SameRel (mergeStep (mergeStep A.foldl mergeStep S (a₁, g₂)) (g₁, b₃))
-      (mergeStep (mergeStep A.foldl mergeStep S (b₃, g₁)) (a₁, g₂)) := by
+  have hmid : SameRel (mergeStep (mergeStep (A.foldl mergeStep S) (a₁, g₂)) (g₁, b₃))
+      (mergeStep (mergeStep (A.foldl mergeStep S) (b₃, g₁)) (a₁, g₂)) := by
     intro x y
-    have hq0 : mergeStep A.foldl mergeStep S (b₃, g₁) =
-        mergeStep A.foldl mergeStep S (g₁, b₃) := by
+    have hq0 : mergeStep (A.foldl mergeStep S) (b₃, g₁) =
+        mergeStep (A.foldl mergeStep S) (g₁, b₃) := by
       simp only [mergeStep]
       rw [mergePair_symm]
-    show SameClass (mergeStep (mergeStep A.foldl mergeStep S (a₁, g₂)) (g₁, b₃)) x y ↔ _
+    show SameClass (mergeStep (mergeStep (A.foldl mergeStep S) (a₁, g₂)) (g₁, b₃)) x y ↔ _
     rw [hq0]
     exact mergePair_mergePair_comm_equiv _ a₁ g₂ g₁ b₃ x y
   have hmid3 : SameRel
-      (mergeStep (mergeStep (mergeStep A.foldl mergeStep S (a₁, g₂)) (g₁, b₃)) (g₂, b₁))
-      (mergeStep (mergeStep (mergeStep A.foldl mergeStep S (b₃, g₁)) (a₁, g₂)) (g₂, b₁)) :=
+      (mergeStep (mergeStep (mergeStep (A.foldl mergeStep S) (a₁, g₂)) (g₁, b₃)) (g₂, b₁))
+      (mergeStep (mergeStep (mergeStep (A.foldl mergeStep S) (b₃, g₁)) (a₁, g₂)) (g₂, b₁)) :=
     sameRel_mergeStep hmid hd1 hd2 (g₂, b₁)
   exact sameRel_foldl hmid3 (classesDisjoint_mergePair hd1)
     (classesDisjoint_mergePair hd2) B
@@ -572,3 +602,4 @@ theorem Reidemeister3Connected.arcPartition_covered_iff {d₁ d₂ : KnotDiagram
     exact ⟨C, hC, hz⟩
 
 end Knots
+
