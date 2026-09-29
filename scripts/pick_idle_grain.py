@@ -636,6 +636,13 @@ def cache_notice_lines(
 POOL_REST_PAGE = 100
 # Plafond de pagination REST du listing de PRs (le GraphQL en demande 300).
 POOL_REST_MAX_PAGES = 4
+# Plafond de pagination REST du listing d'ISSUES. #18113 : la garde
+# `[POOL TRONQUE]` de `fetch_pool` teste `len(raw)` contre POOL_FETCH_LIMIT
+# (2000), or la voie REST rend au plus pages x 100 elements BRUTS (issues ET
+# PRs), ensuite filtres des PRs -- le compte filtre ne peut JAMAIS atteindre
+# le seuil. Le signal de troncature sur cette voie est le plafond de pages
+# atteint, pas la taille du rendu.
+POOL_ISSUES_REST_MAX_PAGES = 10
 # rc distinct de « pool vide mesure » (0) et des arrets deliberes (1) : un
 # appelant doit pouvoir fail-closed sur « je n'ai pas pu lire ».
 RC_POOL_UNMEASURED = 3
@@ -653,8 +660,16 @@ class TransportUnavailable(Exception):
         super().__init__(f"GraphQL={graphql} REST={rest}")
 
 
-def _rest_pages(path: str, *, max_pages: int = 10, timeout: int = 120) -> list[dict]:
-    """Liste paginee par REST -- l'autre quota, celui qui survit au 403 GraphQL."""
+def _rest_pages(path: str, *, max_pages: int,
+                timeout: int = 120) -> tuple[list[dict], bool]:
+    """Liste paginee par REST -- l'autre quota, celui qui survit au 403 GraphQL.
+
+    Rend ``(items, hit_cap)`` : ``hit_cap`` dit que la boucle s'est arretee
+    sur son plafond de pages (derniere page PLEINE), pas sur epuisement du
+    flux. C'est le signal de troncature que les gardes de `fetch_pool` ne
+    peuvent pas calculer seules : les flux REST sont plafonnes SOUS le seuil
+    et (pour `/issues`) filtres des PRs avant comptage (#18113).
+    """
     items: list[dict] = []
     for page in range(1, max_pages + 1):
         sep = "&" if "?" in path else "?"
@@ -665,11 +680,11 @@ def _rest_pages(path: str, *, max_pages: int = 10, timeout: int = 120) -> list[d
         ).stdout
         chunk = json.loads(out)
         if not isinstance(chunk, list) or not chunk:
-            break
+            return items, False
         items.extend(chunk)
         if len(chunk) < POOL_REST_PAGE:
-            break
-    return items
+            return items, False
+    return items, True
 
 
 def _issue_rest_to_gh_shape(it: dict) -> dict:
@@ -727,10 +742,11 @@ def fetch_pool(
             graphql_err = f"{type(exc).__name__}"
         try:
             # REST /issues rend AUSSI les PRs : `pull_request` les distingue.
+            raw_items, hit_cap = _rest_pages(
+                f"repos/{REPO}/issues?state=open&sort=created&direction=desc",
+                max_pages=POOL_ISSUES_REST_MAX_PAGES)
             raw = [_issue_rest_to_gh_shape(it)
-                   for it in _rest_pages(
-                       f"repos/{REPO}/issues?state=open&sort=created&direction=desc")
-                   if "pull_request" not in it]
+                   for it in raw_items if "pull_request" not in it]
         except Exception as exc:  # noqa: BLE001 - les deux sont tombes
             raise TransportUnavailable(graphql_err, f"{type(exc).__name__}") from exc
         print(
@@ -740,6 +756,25 @@ def fetch_pool(
             "filtres qui en dependent se degradent, et le disent plus bas.",
             file=sys.stderr,
         )
+        # #18113 : le garde `len(raw) >= POOL_FETCH_LIMIT` est AVEUGLE ici --
+        # le flux brut est plafonne sous le seuil ET filtre des PRs. Le signal
+        # est le plafond de pages atteint, et ce message tient lieu de garde
+        # sur la voie REST, sinon la bascule de #17038 reintroduit la
+        # troncature muette par l'autre porte (cf #17474 pour les PRs).
+        if hit_cap:
+            print(
+                f"[POOL TRONQUE] la voie REST s'est arretee sur son plafond de "
+                f"{POOL_ISSUES_REST_MAX_PAGES} pages pleines x {POOL_REST_PAGE} "
+                f"= {POOL_ISSUES_REST_MAX_PAGES * POOL_REST_PAGE} elements "
+                "bruts (issues + PRs) : le pool est probablement plus grand. "
+                "Le compte filtre ne peut jamais atteindre POOL_FETCH_LIMIT, "
+                "donc la garde principale ne peut pas tirer sur cette voie. "
+                "Le listing va du plus recent au plus ancien : la traine est "
+                "absente de ce tirage, biaise vers le recent. Relever "
+                "POOL_ISSUES_REST_MAX_PAGES avant de s'en servir pour "
+                "conclure quoi que ce soit sur la couverture.",
+                file=sys.stderr,
+            )
         return raw
 
     try:
@@ -2252,9 +2287,10 @@ def fetch_open_prs() -> list[dict]:
         return prs
     except Exception:  # noqa: BLE001 - on TENTE l'autre transport
         pass
-    raw = [_pr_rest_to_gh_shape(it) for it in _rest_pages(
+    raw_pulls, _hit_cap = _rest_pages(
         f"repos/{REPO}/pulls?state=open&sort=created&direction=desc",
-        max_pages=POOL_REST_MAX_PAGES)]
+        max_pages=POOL_REST_MAX_PAGES)
+    raw = [_pr_rest_to_gh_shape(it) for it in raw_pulls]
     print(
         f"[TRANSPORT] `gh pr list` (GraphQL) indisponible -- bascule REST, "
         f"quota distinct. {len(raw)} PRs lues.",
