@@ -90,7 +90,25 @@ Le prototype [`strates-as-adjunctions-prototype.md`](strates-as-adjunctions-prot
 
 **Inchangé** : les bandes P1/P2/P3, les nulls, la porte, les graines, le substrat — aucune bande n'est recalibrée par cet amendement ; il répare l'**instrument** (ce que « contrôler l'environnement » veut dire quand la cause commune a une mémoire), pas la prédiction. Le test d'intégration court confirme v2 : `ρ_direct(1.0 | env, lags) ≈ 0.003`, dans la bande P2 avec la marge attendue d'un bruit ~1/√T.
 
+## 6ter. Amendement v3 (pré-exécution, 2026-09-29) : observables inter-alters au niveau alter + calibration gelée
 
+**Motivation mesurée pendant la calibration** (graines 11/22/33, lectures à `d = 0` uniquement, conformément au §4). La corrélation partielle inter-alters **par paires de nœuds** est structurellement aveugle sur ce substrat : à `β = 0` (canal η seul), même la corrélation **intra**-alter par paires tombe à ~0.03, et `ρ_direct(0 | env)` reste à ~0.02 pour tout `p_out ∈ [0.02, 0.9]` et tout `β_scale ∈ [0.2, 1.0]` — plat, insensible au couplage qu'il est censé voir. Cause : le mélange row-stochastique sur N = 120 nœuds donne des corrélations par paires O(1/N) — chaque nœud est dominé par son bruit privé, l'évocation est diffuse par construction. Ce n'est pas un défaut du graphe, c'est la mauvaise échelle de mesure : la théorie elle-même parle d'**alters** (« why can I not read **your** thoughts »), pas de paires de contenus pris isolément.
+
+**Réparation (v3)** — les observables **inter-alters** passent au niveau alter : `x̄_a(t)` = moyenne des 40 activations de l'alter `a` ; `ρ_direct(d | env)` = corrélation partielle des `x̄_a` contrôlant `[e(t), …, e(t-60)]` ; `ρ_env` = corrélation marginale des `x̄_a` à `d = 1`. **Inchangés** : `ρ_intra` (P1), la porte instrumentale et le null (b) restent au niveau nœuds ; les bandes, les nulls, la porte, les graines de test — aucune valeur scellée ne bouge. Contrôles de sensibilité sur le jouet : l'agrégat discrimine `p_out` (0.36 à `p_out = 0.02`, 0.44 à `p_out = 0.05`) et est invariant à `β_scale` — exactement les deux degrés de liberté que la calibration doit séparer. La valeur par paires reste consignée dans les résultats (`rho_direct_node_pairs`) comme témoin de l'aveuglement.
+
+**Calibration gelée (exécution du §4)** : `p_out = 0.02`, `β_scale = 0.3`. Sur les graines 11/22/33 à `d = 0` : `ρ_intra(0) = 0.541` ∈ [0.5, 0.7] ✓ ; `ρ_direct(0 | env) = 0.358` ∈ [0.2, 0.4] ✓. Ces deux valeurs sont gelées pour le run principal ; les graines de calibration ne servent à rien d'autre.
+
+## 6quater. Amendement v4 (pré-exécution, 2026-09-29) : le calendrier préserve le budget d'évocation des alters
+
+**Motivation mesurée sur une graine de diagnostic** (`555` — ni graine de calibration ni graine de test, pour ne lire `d > 0` sur aucune des deux familles). Après le gel v3 (`p_out = 0.02`, `β_scale = 0.3`), le contrôle d'intégration court donnait un ratio P1 de **0.42** — la « dissociation » détruisait plus de moitié de la corrélation intra-alter. Diagnostic : `W_at(1.0)` multiplie les entrées inter-blocs par 0 **sans renormaliser les lignes** — chaque nœud perd ~29 % de sa masse d'évocation totale. L'intervention v1 confondait **couper l'évocation inter-alters** avec **assombrir chaque alter**, ce que la source ne dit pas : « Dissociation entails that some phenomenal contents cease to be able to evoke **others** » — les autres, pas l'évocation en général ; la figure 3.1b montre les sous-graphes d'alters intacts et vivants.
+
+**Réparation (v4)** — `W_at(d)` renormalise chaque ligne à sa masse d'origine : le budget d'évocation de chaque nœud est préservé et redirigé vers l'intérieur de l'alter. Mesure graine 555 : ratio P1 **0.42 → 0.99** (l'intégration intérieure est intacte), `ρ_direct(1.0 | env)` reste ≤ bande (0.012), le canal d'environnement reste haut (0.92). Le null (b) reçoit **la même renormalisation** : la comparaison porte sur le **placement** de la masse (structurée inter vs aléatoire uniforme), pas sur la masse elle-même — sinon le bras aléatoire échouerait P1 pour le même artefact d'assombrissement, et le null ne testerait rien.
+
+**Inchangés** : bandes, nulls, porte, graines, paramètres gelés v3, observables v3. Le test `test_row_mass_preserved_across_dissociation` verrouille l'invariant.
+
+
+
+## 7. Ce qui suit
 
 1. **Ce document, commité, est le scellé.** Toute modification ultérieure des bandes P1/P2/P3/nulls/portes se fait par amendement **pré-exécution** horodaté dans ce fichier (pattern des cases 14/15/17 : `v1 → v2 AVANT re-run`), jamais silencieusement.
 2. Le banc `MyIA.AI.Notebooks/IIT/ICT-Series/ict/kastrup_dissociation.py` + tests `ict/tests/test_kastrup_dissociation.py` + mesures `ict/results/kastrup_dissociation_results.json` vivront dans un commit fils, avec la ligne matrice case 18 mise à jour au statut `TESTÉ (...)` dans la même PR.
@@ -98,4 +116,4 @@ Le prototype [`strates-as-adjunctions-prototype.md`](strates-as-adjunctions-prot
 
 ---
 
-**Statut : SCELLÉ (v2 — amendement §6bis, estimateur à décalages ; bandes v1 inchangées) — 2026-09-29, en attente du run calibré.**
+**Statut : SCELLÉ (v4 — §6bis estimateur à décalages · §6ter observables au niveau alter + calibration gelée p_out=0.02 β_scale=0.3 · §6quater budget d'évocation préservé ; bandes v1 inchangées) — 2026-09-29, en attente du run principal.**

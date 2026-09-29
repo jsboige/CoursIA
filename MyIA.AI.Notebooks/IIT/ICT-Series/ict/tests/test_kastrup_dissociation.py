@@ -16,7 +16,8 @@ from ict import kastrup_dissociation as kd
 
 @pytest.fixture(scope="module")
 def field():
-    f = kd.EvocationField.build(seed=0, p_out=0.02)
+    f = kd.EvocationField.build(seed=0, p_out=kd.CALIBRATED_P_OUT,
+                                beta_scale=kd.CALIBRATED_BETA_SCALE)
     assert f.connected_at_rest()
     return f
 
@@ -36,6 +37,18 @@ def test_full_dissociation_is_block_diagonal(field):
     W1 = field.W_at(1.0)
     assert (W1[field.inter_mask] == 0.0).all()
     assert (W1[field.intra_mask] >= 0.0).any()
+
+
+def test_row_mass_preserved_across_dissociation(field):
+    # Amendement v4 : couper l'évocation inter-alters n'assombrit pas les
+    # alters — chaque nœud garde sa masse d'évocation (renormalisation).
+    # Exception déclarée : un nœud sans aucune arête intra restante à d = 1
+    # (toute sa masse était inter) n'a rien vers quoi rediriger — il s'éteint.
+    for d in (0.5, 0.8, 1.0):
+        Wd = field.W_at(d)
+        alive = Wd.sum(axis=1) > 0
+        np.testing.assert_allclose(
+            Wd.sum(axis=1)[alive], field.W.sum(axis=1)[alive], rtol=1e-9)
 
 
 def test_partial_corr_removes_pure_env_coupling():
@@ -85,14 +98,17 @@ def test_determinism_same_seed_same_field():
     assert np.array_equal(f1.W, f2.W) and np.array_equal(f1.beta, f2.beta)
 
 
-def test_random_damage_removes_target_mass(field):
+def test_random_damage_same_budget_hits_intra(field):
     rng = np.random.default_rng(5)
     W_rand = kd.random_damage_W(field, rng)
-    inter_mass = field.W[field.inter_mask].sum()
-    removed = field.W.sum() - W_rand.sum()
-    assert removed == pytest.approx(inter_mass, rel=1e-9)
-    # Le dommage touche aussi l'intra (sinon ce serait une dissociation).
-    assert (field.W[field.intra_mask] - W_rand[field.intra_mask]).sum() > 0
+    # Amendement v4 : masse totale préservée (renorm, comme le bras dissociation).
+    np.testing.assert_allclose(W_rand.sum(), field.W.sum(), rtol=1e-9)
+    # Le dommage touche l'intra : des arêtes intra sont amoindries ou nulles,
+    # et l'inter n'est pas entièrement coupée (sinon ce serait une dissociation).
+    intra_damaged = (W_rand[field.intra_mask] < field.W[field.intra_mask] - 1e-12).sum()
+    inter_surviving = (W_rand[field.inter_mask] > 1e-12).sum()
+    assert intra_damaged > 0
+    assert inter_surviving > 0
 
 
 def test_privacy_holds_and_intra_survives_short_run(field, monkeypatch):
@@ -104,16 +120,14 @@ def test_privacy_holds_and_intra_survives_short_run(field, monkeypatch):
     m1 = kd.measure(field, 1.0, np.random.default_rng(102))
     assert abs(m1["rho_direct_partial_env"]) <= kd.BANDS["p2_direct_max"]
     ratio = m1["rho_intra"] / m0["rho_intra"]
-    # Bande scellee P1 = 0.80, adjudiquee sur le run principal calibre ; ce test
-    # d'integration court tourne sur p_out NON calibre (0.02), ou le ratio
-    # s'etablit a ~0.80 +- bruit d'echantillon — plage assoucie ici.
+    # Bande scellee P1 = 0.80, adjudiquee sur le run principal (T = 20 000) ;
+    # ce test d'integration court (T = 8 000) vise la meme loi a +/- bruit
+    # d'echantillon — plage assoucie ici.
     assert ratio >= 0.70
-    # Null (a), portee testable AVANT calibration : le canal direct vu au repos
-    # est strictement superieur a celui vu a d = 1. La bande scellee (>= 0.15)
-    # s'adjudique sur le run principal APRES calibration de p_out — a p_out non
-    # calibre (0.02) le couplage direct reel est ~0.03, la vue de l'instrument
-    # elle-meme etant prouvee au niveau estimateur (test keeps_direct_coupling).
-    assert abs(m0["rho_direct_partial_env"]) > abs(m1["rho_direct_partial_env"])
+    # Null (a) : l'instrument (amendement v3, niveau alter) voit le canal direct
+    # au repos — la fixture tourne a p_out = 0.02, la valeur calibree gelee
+    # (§6ter), ou la partielle agrégée à d = 0 s'établit à ~0.36.
+    assert abs(m0["rho_direct_partial_env"]) >= kd.BANDS["null_a_direct0_min"]
 
 
 def test_verdict_branches():

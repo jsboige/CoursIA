@@ -67,6 +67,11 @@ DISSOCIATION_GRID = (0.0, 0.5, 0.8, 1.0)
 TEST_SEEDS = (0, 1, 7, 42, 99)
 CALIB_SEEDS = (11, 22, 33)
 
+# Calibration gelée par l'amendement v3 (pré-enregistrement §6ter) :
+# graines disjointes 11/22/33, lectures a d = 0 uniquement.
+CALIBRATED_P_OUT = 0.02
+CALIBRATED_BETA_SCALE = 0.3
+
 # Bandes du scellé v1 — une seule source de vérité pour les tests et le verdict.
 BANDS = {
     "p1_ratio_min": 0.80,
@@ -108,10 +113,20 @@ class EvocationField:
         return cls(W=W, beta=beta, labels=labels, intra_mask=same, inter_mask=~same)
 
     def W_at(self, d: float) -> np.ndarray:
-        """Calendrier de dissociation : entrées inter-blocs × (1 - d)."""
+        """Calendrier de dissociation : entrées inter-blocs × (1 - d), lignes renormalisées.
+
+        Amendement v4 (pré-exécution, §6quater) : la renormalisation préserve la
+        masse d'évocation de chaque nœud — couper l'évocation inter-alters ne
+        doit pas assombrir les alters (mesure graine 555 : sans renorm, ratio P1
+        = 0.42 pour la seule perte de masse ; avec, 0.99).
+        """
         if d == 0.0:
             return self.W
-        return self.W * (1.0 - d * self.inter_mask)
+        W = self.W * (1.0 - d * self.inter_mask)
+        target = self.W.sum(axis=1, keepdims=True)
+        cur = W.sum(axis=1, keepdims=True)
+        cur[cur == 0.0] = 1.0  # noeud sans arête restante : ligne déjà nulle
+        return W * (target / cur)
 
     def connected_at_rest(self) -> bool:
         """Contrôle mécanique : figure 3.1a — le graphe au repos est connexe.
@@ -177,23 +192,32 @@ def env_control_matrix(e: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
 
 
 def measure(field: EvocationField, d: float, rng: np.random.Generator) -> dict:
-    """Observables du scellé §4 à un niveau de dissociation donné."""
+    """Observables du scellé §4 (amendement v3) à un niveau de dissociation donné.
+
+    Inter-alters : niveau ALTER (moyenne des 40 activations de chaque alter) —
+    amendement v3 (§6ter) : la partielle par paires de noeuds est structurellement
+    aveugle sur ce substrat (melange row-stochastique => correlations par paires
+    O(1/N), mesurees ~0.02 pour tout p_out). Intra : niveau noeuds, inchange.
+    """
     x, e = field.simulate(d, rng)
-    controls, e_head = env_control_matrix(e)
+    controls, _ = env_control_matrix(e)
     x_head = x[ENV_LAGS:]
     corr = np.corrcoef(x, rowvar=False)
-    corr_pe = partial_corr_given(x_head, controls)
+    corr_pe_nodes = partial_corr_given(x_head, controls)
+    x_agg = np.column_stack([x[:, field.labels == a].mean(axis=1) for a in range(K_ALTERS)])
+    corr_pe_agg = partial_corr_given(x_agg[ENV_LAGS:], controls)
+    corr_agg = np.corrcoef(x_agg, rowvar=False)
     lab = field.labels
     same = lab[:, None] == lab[None, :]
     off = ~np.eye(N_NODES, dtype=bool)
+    off_agg = ~np.eye(K_ALTERS, dtype=bool)
     intra_vals = corr[same & off]
-    cross_pe_vals = corr_pe[~same]
-    cross_marginal_vals = corr[~same]
     return {
         "d": d,
         "rho_intra": fisher_mean(np.asarray(intra_vals)),
-        "rho_direct_partial_env": float(np.mean(cross_pe_vals)),
-        "rho_cross_marginal": float(np.mean(cross_marginal_vals)),
+        "rho_direct_partial_env": float(np.mean(corr_pe_agg[off_agg])),
+        "rho_cross_marginal": float(np.mean(corr_agg[off_agg])),
+        "rho_direct_node_pairs": float(np.mean(corr_pe_nodes[~same])),
     }
 
 
@@ -202,7 +226,9 @@ def random_damage_W(field: EvocationField, rng: np.random.Generator) -> np.ndarr
 
     La dissociation à d = 1 retire TOUTE la masse inter-alters ; ce bras
     retire la même masse en échantillonnant uniformément parmi TOUTES les
-    arêtes (intra comprises) — le dommage sans la structure.
+    arêtes (intra comprises) — le dommage sans la structure. Amendement v4 :
+    lignes renormalisées à la masse d'origine, comme le bras dissociation —
+    la comparaison porte sur la PLACEMENT de la masse, pas sur la masse.
     """
     W = field.W.copy()
     inter_mass = float(W[field.inter_mask].sum())
@@ -221,7 +247,10 @@ def random_damage_W(field: EvocationField, rng: np.random.Generator) -> np.ndarr
         removed += w
         if removed >= inter_mass - 1e-12:
             break
-    return W
+    target = field.W.sum(axis=1, keepdims=True)
+    cur = W.sum(axis=1, keepdims=True)
+    cur[cur == 0.0] = 1.0
+    return W * (target / cur)
 
 
 def _count(passes: list[bool]) -> int:
@@ -302,9 +331,9 @@ def run_seed(seed: int, p_out: float, beta_scale: float = 1.0) -> dict:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--seeds", type=int, nargs="+", default=list(TEST_SEEDS))
-    parser.add_argument("--p-out", type=float, required=True,
-                        help="valeur gelée par la calibration (scellé §4)")
-    parser.add_argument("--beta-scale", type=float, default=1.0)
+    parser.add_argument("--p-out", type=float, default=CALIBRATED_P_OUT,
+                        help="valeur gelée par la calibration (amendement v3, §6ter)")
+    parser.add_argument("--beta-scale", type=float, default=CALIBRATED_BETA_SCALE)
     parser.add_argument("--out", type=Path, default=None)
     args = parser.parse_args(argv)
 
