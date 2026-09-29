@@ -339,18 +339,32 @@ def _repo_root_for_worktree(wt_path: str) -> str:
     `is not a working tree` parce que ce chemin n'est pas un worktree
     du repo CoursIA.
 
-    Resolution : si `wt_path` est absolu, remonter jusqu'au premier
-    `.git` (file ou dir) et l'utiliser ; sinon fallback
-    `current_repo_root()` (worktree relatif `..` = CoursIA).
+    Resolution : `git rev-parse --path-format=absolute --git-common-dir`
+    sur `wt_path` rend le common-dir (le `.git` du depot HOTE, pas du
+    worktree). Son parent est la racine du depot hebergeur -- invariant
+    qu'aucune marche d'ancetre sur `.git` ne peut garantir (un worktree
+    lie porte lui-meme un fichier `.git`/gitdir-pointeur, premier match
+    dans la marche, et le helper rendait alors le worktree lui-meme :
+    `git -C <wt> worktree remove <wt>` -> Permission denied sur Windows
+    parce que git tente de supprimer le cwd de la sous-commande).
+
+    Repli : si la commande echoue ou si `wt_path` n'est pas un worktree,
+    `current_repo_root()`. Pour les chemins relatifs (cas System32 du
+    cron #14473 ou chemin nu passe par l'appelant), le worktree est
+    forcement sous le repo hebergeur -- `current_repo_root()` suffit.
     """
-    p = Path(wt_path).resolve()
+    p = Path(wt_path)
     if not p.is_absolute():
         return current_repo_root()
-    cur = p if p.is_dir() else p.parent
-    while cur != cur.parent:
-        if (cur / ".git").exists():
-            return str(cur)
-        cur = cur.parent
+    p = p.resolve()
+    # Interroger git sur le worktree : --git-common-dir remonte au
+    # `.git` du depot HOTE, distinct du `.git` du worktree (pointeur).
+    proc = run_git(str(p), "rev-parse", "--path-format=absolute",
+                   "--git-common-dir", check=False)
+    if proc.returncode == 0:
+        common = Path(proc.stdout.strip())
+        if common.is_absolute():
+            return str(common.parent)
     return current_repo_root()
 
 
@@ -1651,14 +1665,19 @@ def main() -> int:
 
     # `--path` est le cwd de l'ANALYSE, pas un filtre -- contrat porte par
     # l'en-tete (`--path /c/dev/CoursIA-X`) et par le help ci-dessus. Les
-    # trois appels `run_git(...)` (worktree list, cle de cache par remote
-    # origin, worktree remove) resolvent le cwd en PREMIER argument, pas via
-    # le cwd reel du processus : depuis un autre dossier -- le cas de la
-    # tache planifiee (#14473), dont le cwd est System32 -- il fallait que
-    # les 3 sites voient `current_path`, pas `"."`. Avant, le garde
-    # `os.chdir(current_path)` faisait l'office ; il mutait l'etat du
-    # process appelant et restait fragile sur les retrait refuses. On
-    # passe maintenant `current_path` directement a run_git (#17904).
+    # trois appels `run_git(...)` resolvent leur cible en PREMIER argument,
+    # pas via le cwd reel du processus : depuis un autre dossier -- le cas
+    # de la tache planifiee (#14473), dont le cwd est System32 -- il fallait
+    # que les sites ne s'appuient pas sur `"."`. Resolution adoptee :
+    #   - `run_git(current_repo_root(), ...)` pour `worktree list` et la cle
+    #     de cache (`remote get-url origin`) : la racine du repo de CE
+    #     script, ou du `--path` apres le `os.chdir` ci-dessous ;
+    #   - `run_git(_repo_root_for_worktree(wt.path), ...)` pour
+    #     `worktree remove` : le depot HEBERGEUR du worktree, pas forcement
+    #     le meme (les tests hermetiques vivent dans des repo e phemeres
+    #     crees par pytest, distincts de CoursIA).
+    # Le garde `os.chdir(current_path)` est conserve pour les appels
+    # `run_gh` et la comparaison `is_current` (cwd reel vs `--path`).
     if args.path:
         try:
             os.chdir(current_path)
