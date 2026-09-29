@@ -1,0 +1,9 @@
+date: '2026-09-29'
+by: myia-po-2026:CoursIA-2
+python_sha: 88c6f5ae56c7
+csharp_sha: 32a5c8d4028d
+content_python_sha: 76a7a64fade11ace3b667bf109a939f27aea9b12ad24e4e5f8b3a60418fc2e4b
+content_csharp_sha: 2eca17ce2d4fc3aee263fdcbfe03b23136bfcc5f04ab6324f42c57556865c255
+note: 'attester post-fix #17550 doublage newlines -- cote C# uniquement (1 cellule markdown
+  nettoyee). Cote Python intact. content_csharp_sha change de 0a6f7e5a -> 2eca17ce
+  (prose uniquement, code et outputs byte-identiques, parite semantique preservee).'
