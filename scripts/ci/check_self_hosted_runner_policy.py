@@ -182,11 +182,6 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "exercises-advisory.yml",
     "grain-orphans-sweep.yml",
     "h1-hygiene-advisory.yml",
-    # #18354 tranche 1 (owner myia-po-2026:CoursIA) : organe advisory
-    #   stale-claim -- patron #11435, pur-Python, garde same-repo au niveau
-    #   job, runs-on STATIQUE, aucun secret. Rollback = revert de la PR
-    #   (l'entree disparait de l'allowlist).
-    "stale-claim-gate.yml",
     # #12156 piste 1 (owner myia-po-2024:CoursIA) : advisory epic-wide-sur-
     #   umbrella. Balayage cron hebdomadaire (schedule + workflow_dispatch)
     #   pur-Python, GH_TOKEN lecture seule + issues: write. Aucun trigger
