@@ -598,11 +598,8 @@
     "MyIA.AI.Notebooks/Sudoku/Sudoku-18b-Statistical-Comparison-Python.ipynb": 798.111,
     "MyIA.AI.Notebooks/Sudoku/Sudoku-19-Lean-Propagation.ipynb": 2048.8,
     "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-02-Fallacies-Detection-Python.ipynb": 2252.75,
-    "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-1-informal_agent.ipynb": 2044.571,
     "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb": 2198.5,
-    "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-2-pl_agent.ipynb": 3595.429,
     "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-07-Orchestration-Python.ipynb": 2237.8,
-    "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-3-orchestration_agent.ipynb": 3739.167,
     "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08-Capstone-Python.ipynb": 957.429,
     "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-06-JTMS-Python.ipynb": 1457.889,
     "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08e-Argument-Profile-Python.ipynb": 739.769,
@@ -611,9 +608,9 @@
     "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb": 2375.0,
     "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05c-Formal-Richness-Matrix-Python.ipynb": 915.333,
     "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05b-Multi-Backend-Routing-Python.ipynb": 728.7,
-    "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb": 1986.583,
-    "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb": 1428.455,
-    "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb": 966.778,
+    "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb": 1986.583,
+    "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb": 1428.455,
+    "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb": 966.778,
     "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-03c-Ranking-Semantics-Python.ipynb": 698.4,
     "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08d-Restitution-3-Actes-Python.ipynb": 985.857,
     "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-01-Toulmin-Model-Python.ipynb": 1289.571,
@@ -813,6 +810,9 @@
     "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-08-Agent-Dialogues-Python.ipynb": 1658.5,
     "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-09-Preferences-CSharp.ipynb": 1670.667,
     "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-09-Preferences-Python.ipynb": 2518.667,
-    "MyIA.AI.Notebooks/cross-series/socle-metadata-driven/Socle-MetadataDriven-Csharp.ipynb": 594.1
+    "MyIA.AI.Notebooks/cross-series/socle-metadata-driven/Socle-MetadataDriven-Csharp.ipynb": 594.1,
+    "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/_archive/Argument_Analysis_Agentic-1-informal_agent.ipynb": 2044.571,
+    "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/_archive/Argument_Analysis_Agentic-2-pl_agent.ipynb": 3595.429,
+    "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/_archive/Argument_Analysis_Agentic-3-orchestration_agent.ipynb": 3739.167
   }
 }
