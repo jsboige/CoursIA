@@ -605,6 +605,10 @@ Chaque notebook de la série Probas utilise un **unique kernel** : `.NET (C#)` p
 
 ## Ressources
 
+### Activités associées
+
+Les activités [Chaîne de Markov de la météo](../GenAI/activites/Activites-Vulgarisation.md#6-probabilités--chaîne-de-markov-de-la-météo) et [Axiomes de préférences rationnelles](../GenAI/activites/Activites-Vulgarisation.md#7-axiomes-de-préférences-rationnelles-et-irrationalité-humaine) exercent en jeu d'équipe la distribution stationnaire et la théorie de l'utilité enseignées ici.
+
 ### Infer.NET
 
 - [Infer.NET Documentation](https://dotnet.github.io/infer/)

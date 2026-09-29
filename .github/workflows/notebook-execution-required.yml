@@ -280,7 +280,7 @@ jobs:
                 const s = n.success ? '✅' : '❌';
                 body += `| ${n.path.split('/').pop()} | ${s} ${n.message} | ${n.execution_time.toFixed(1)}s |\n`;
               }
-              body += `\nPinned lockfile: \`scripts/notebook_tools/golden_set.lock.txt\` (H.7 P3, axe A #4208)\n`;
+              body += `\nPinned lockfile: \`scripts/notebook_tools/golden_set.lock.txt\` (H.7 P3, axe A \`#4208\`)\n`;
             } catch (e) {
               body += `⚠️ Could not read result: ${e.message}\n`;
             }
