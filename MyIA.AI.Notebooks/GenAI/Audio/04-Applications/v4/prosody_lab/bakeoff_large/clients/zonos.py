@@ -72,8 +72,8 @@ def _reference_wav() -> Path:
         here = here.parent
     candidates = [
         here / "_runtime" / "CosyVoice" / "asset" / "zero_shot_prompt.wav",
-        here.parent.parent.parent / "CoursIA-17586-cosyvoice3" / "_runtime" / "CosyVoice" / "asset" / "zero_shot_prompt.wav",
-        here.parent.parent.parent.parent / "CoursIA-17586-cosyvoice3" / "_runtime" / "CosyVoice" / "asset" / "zero_shot_prompt.wav",
+        here.parent / "CoursIA-17586-cosyvoice3" / "_runtime" / "CosyVoice" / "asset" / "zero_shot_prompt.wav",
+        here.parent.parent / "CoursIA-17586-cosyvoice3" / "_runtime" / "CosyVoice" / "asset" / "zero_shot_prompt.wav",
     ]
     for c in candidates:
         if c.exists():
