@@ -293,6 +293,10 @@ Oui, c'est l'approche de la série. **Anvil** (Foundry) simule une chaîne Ether
 
 ## Pour aller plus loin
 
+### Activités associées
+
+Les activités [Heuristiques de la satisfaction de contraintes](../GenAI/activites/Activites-Vulgarisation.md#2-heuristiques-de-la-satisfaction-de-contraintes) et [Heuristiques de la planification](../GenAI/activites/Activites-Vulgarisation.md#5-heuristiques-de-la-planification) renvoient directement aux solveurs de cette série (Z3, Choco, Tweety, planificateurs).
+
 ### Trois piles : Python, C# et Lean
 
 La famille est couverte sur trois piles, selon les formalismes. La table dit **où** chaque pile est présente ; le catalogue dit combien.

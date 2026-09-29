@@ -411,6 +411,15 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any],
     for n in sorted(_cited_pr_numbers(dossier)):
         if n in merged_numbers:
             continue
+        # Un #N nu peut designer une ISSUE, pas une PR -- le plus souvent
+        # l'issue d'audit citee dans sa propre preuve (« verdict de l'audit
+        # #16834 » sur #16834). gh pr view y echoue ("Could not resolve to a
+        # PullRequest") et l'organe rendait UNKNOWN pour tout le dossier
+        # (5/50, #18323). La cle pull_request distingue issue et PR ; un
+        # numero introuvable leve RuntimeError -> UNKNOWN (fail-closed garde).
+        row = gh_json(["api", f"repos/{snapshot['repo']}/issues/{n}"])
+        if not isinstance(row, dict) or "pull_request" not in row:
+            continue  # une reference d'issue n'est pas une PR citee
         pr = gh_json([
             "pr", "view", str(n), "--repo", snapshot["repo"],
             "--json", "state,mergedAt",

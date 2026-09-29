@@ -1384,24 +1384,23 @@ theorem alexander_trefoilMutant :
 
 /-- Contrôle de discrimination sur le nœud en huit (4_1) : sous la
 normalisation désignée (mineur sans première ligne ni dernière colonne), la
-fonction rend −2·t² + 2·t − 1 sur le câblage brut corrigé.
+fonction rend t³ − 2·t² + 2·t sur le code planaire canonique (#17595).
 
 Remarque d'honnêteté : cette valeur n'est PAS le polynôme d'Alexander
-classique de 4_1 (qui vaut ±t² ∓ 3·t ± 1, soit t² − 3·t + 1 à un facteur
-unité près) ; le théorème mesure la valeur réellement produite par la
-fonction désignée sur un câblage à 4 croisements qui forme une boucle
-unique. Le trèfle (t² − t + 1) et le déterminant |P(−1)| = 5 = det(4_1)
-sont bien reproduits, mais la forme du polynôme diverge du classique sur la
-classe à 4 croisements — anomalie documentée exhaustivement (2736 câblages
-orientés testés, dont le câblage DT [4,6,8,2]) dans l'issue de suivi ouverte
-avec ce PR. La divergence est formalisée ci-dessous
+classique de 4_1 (qui vaut t² − 3·t + 1 à un facteur unité près) ; le
+théorème mesure la valeur réellement produite par la fonction désignée sur
+un câblage à 4 croisements qui forme une boucle unique. Le trèfle
+(t² − t + 1) et le déterminant |P(−1)| = 5 = det(4_1) sont bien
+reproduits, mais la forme du polynôme diverge du classique — la matrice
+non signée traite les deux croisements négatifs du code planaire comme
+positifs. La divergence est formalisée ci-dessous
 (`alexander_figureEight_not_classical` : pas une unité) et réparée par la
 variante signée (`alexander_figureEight_signed` : le classique exact).
 -/
 theorem alexander_figureEight :
     alexanderPolynomial figureEight =
-      - (2 : Polynomial ℤ) * Polynomial.X ^ 2 + 2 * Polynomial.X - 1 := by
-  have hp : arcPartition figureEightDiagram = [[3, 4], [5, 6], [7, 8], [1, 2]] := by
+      Polynomial.X ^ 3 - (2 : Polynomial ℤ) * Polynomial.X ^ 2 + 2 * Polynomial.X := by
+  have hp : arcPartition figureEightDiagram = [[1, 2], [5, 6], [3, 4], [7, 8]] := by
     decide
   simp only [alexanderPolynomial, alexanderPolynomialAux, figureEight, hp]
   simp only [figureEightDiagram]
@@ -1421,18 +1420,19 @@ diagramme tout positif — le trèfle `3_1` de `Basic.lean`, dont les trois
 croisements sont documentés positifs — la matrice EST la matrice d'Alexander
 et le mineur désigné retrouve le classique. Sur le nœud en huit `4_1`
 (amphichiral, deux croisements de chaque signe dans tout diagramme alterné
-minimal), la matrice est fausse sur les croisements négatifs : le mineur
-rend `−2t² + 2t − 1`, hors de la classe d'unités du classique `t² − 3t + 1`
-(ci-dessous `alexander_figureEight_not_classical`) — la divergence n'est
-donc PAS un artefact de représentant (une symétrisation ou une normalisation
-de Conway `Δ(1) = 1` ne peut pas la réparer), mais un artefact de chiralité.
-Le déterminant, lui, survit : `|P(−1)| = 5 = det(4_1)`
+minimal — le code planaire canonique porte les signes `[−, −, +, +]` lus par
+`crossingSign`), la matrice est fausse sur les croisements négatifs : le
+mineur rend `t³ − 2t² + 2t`, hors de la classe d'unités du classique
+`t² − 3t + 1` (ci-dessous `alexander_figureEight_not_classical`) — la
+divergence n'est donc PAS un artefact de représentant (une symétrisation ou
+une normalisation de Conway `Δ(1) = 1` ne peut pas la réparer), mais un
+artefact de chiralité. Le déterminant, lui, survit : `|P(−1)| = 5 = det(4_1)`
 (`alexander_figureEight_eval_neg_one`).
 
 La variante signée `alexanderPolynomialSigned` reçoit la chiralité en
-donnée et restitue le classique sur le huit : l'étiquetage alterné du
-diagramme DT-dérivé rend exactement `t² − 3t + 1`, son miroir
-`t · (t² − 3t + 1)` — même classe d'unités, comme l'exige l'amphichiralité. -/
+donnée et restitue le classique sur le huit : l'étiquetage vrai `[−, −, +, +]`
+rend exactement `−t · (t² − 3t + 1)`, son miroir `[+, +, −, −]` rend
+`−(t² − 3t + 1)` — même classe d'unités, comme l'exige l'amphichiralité. -/
 
 /-- Ligne d'Alexander d'un croisement **négatif** : dérivée de Fox de la
 relation de Wirtinger miroir `x_o⁻¹ x_i x_o = x_out`, multipliée par
@@ -1468,29 +1468,34 @@ noncomputable def alexanderPolynomialSigned (d : KnotDiagram)
 
 /-- La divergence n'est pas une unité : la valeur désignée sur le nœud en
 huit n'est égale à `ε · t^k · (t² − 3t + 1)` pour AUCUNE unité `ε = ±1` et
-aucun exposant `k`. Preuve par évaluations : en `0`, la valeur désignée rend
-`−1` ce qui force `k = 0` puis `ε = −1` ; en `2`, elle rend `−5` alors que
-`ε · 2^k · (2² − 3·2 + 1)` vaut alors `1`. -/
+aucun exposant `k`. Preuve par un argument de signe sur deux points
+d'évaluation : en `2`, le trinôme vaut `−1`, donc l'identité exigerait
+`4 = −ε · 2^k` — impossible pour `ε = 1` (membre de droite négatif) ; en
+`3`, le trinôme vaut `1`, donc l'identité exigerait `15 = ε · 3^k` —
+impossible pour `ε = −1` (membre de droite négatif). Comme `2^k` et `3^k`
+sont strictement positifs, chaque unité est réfutée par l'un des deux
+points. -/
 theorem alexander_figureEight_not_classical :
     ¬ ∃ (k : ℕ) (ε : ℤ), ε * ε = 1 ∧
       alexanderPolynomial figureEight =
         Polynomial.C ε * Polynomial.X ^ k * (Polynomial.X ^ 2 - 3 * Polynomial.X + 1) := by
-  rintro ⟨k, ε, -, h⟩
-  rcases k with _ | k
-  · have h0 := congrArg (Polynomial.eval 0) h
-    have h2 := congrArg (Polynomial.eval 2) h
-    rw [alexander_figureEight, pow_zero] at h0 h2
-    simp only [Polynomial.eval_one, Polynomial.eval_add, Polynomial.eval_mul,
-      Polynomial.eval_sub, Polynomial.eval_C, Polynomial.eval_X, pow_two, mul_one,
-      mul_zero, add_zero, zero_add, zero_sub] at h0 h2
-    norm_num at h0 h2
-    omega
-  · have h0 := congrArg (Polynomial.eval 0) h
-    rw [alexander_figureEight, pow_succ] at h0
-    simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_sub,
-      Polynomial.eval_C, Polynomial.eval_X, pow_two, mul_assoc, mul_zero, zero_mul,
-      mul_one, add_zero, zero_add, zero_sub] at h0
-    norm_num at h0
+  rintro ⟨k, ε, hε, h⟩
+  have hε' : ε = 1 ∨ ε = -1 := by
+    rw [← pow_two] at hε
+    exact sq_eq_one_iff.mp hε
+  have h2 := congrArg (Polynomial.eval 2) h
+  rw [alexander_figureEight] at h2
+  simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_sub,
+    Polynomial.eval_pow, Polynomial.eval_C, Polynomial.eval_X] at h2
+  norm_num at h2
+  have h3 := congrArg (Polynomial.eval 3) h
+  rw [alexander_figureEight] at h3
+  simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_sub,
+    Polynomial.eval_pow, Polynomial.eval_C, Polynomial.eval_X] at h3
+  norm_num at h3
+  have h2p : (0 : ℤ) < 2 ^ k := by positivity
+  have h3p : (0 : ℤ) < 3 ^ k := by positivity
+  rcases hε' with rfl | rfl <;> omega
 
 /-- Le déterminant du nœud survit à la divergence : la valeur désignée en
 `−1` vaut `−5`, donc `|P(−1)| = 5 = det(4_1)` (classique : pour un nœud,
@@ -1500,17 +1505,17 @@ theorem alexander_figureEight_eval_neg_one :
     (alexanderPolynomial figureEight).eval (-1) = -5 := by
   rw [alexander_figureEight]
   simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_sub,
-    Polynomial.eval_X, pow_two, mul_zero, mul_one, add_zero, zero_add, zero_sub]
+    Polynomial.eval_X, pow_two, pow_three]
   norm_num
 
 /-- La variante signée restitue le classique sur le nœud en huit :
-l'étiquetage alterné `[−, +, −, +]` du diagramme DT-dérivé rend
-exactement `t² − 3t + 1` sous le même mineur désigné, et son miroir
-`[+, −, +, −]` rend `t · (t² − 3t + 1)` — même classe d'unités, comme
-l'exige l'amphichiralité de `4_1`. -/
+l'étiquetage vrai `[−, −, +, +]` du code planaire canonique (celui que lit
+`crossingSign`, cf `Jones.writhe_figureEightDiagram`) rend exactement
+`−t · (t² − 3t + 1)` sous le même mineur désigné — la classe d'unités du
+classique `t² − 3t + 1`. -/
 theorem alexander_figureEight_signed :
-    alexanderPolynomialSigned figureEightDiagram [false, true, false, true]
-      = Polynomial.X ^ 2 - 3 * Polynomial.X + 1 := by
+    alexanderPolynomialSigned figureEightDiagram [false, false, true, true]
+      = -(Polynomial.X * (Polynomial.X ^ 2 - 3 * Polynomial.X + 1)) := by
   simp only [alexanderPolynomialSigned, figureEightDiagram]
   simp (config := { decide := true })
   rw [det_three_aux]
@@ -1518,12 +1523,12 @@ theorem alexander_figureEight_signed :
   simp (config := { decide := true }) [alexanderEntrySigned, alexanderEntry, alexanderEntryNeg]
   ring
 
-/-- Miroir du précédent : l'étiquetage alterné opposé `[+, −, +, −]` rend
-`t · (t² − 3t + 1)` — même classe d'unités, comme l'exige l'amphichiralité
-(les deux diagrammes miroirs représentent le même nœud). -/
+/-- Miroir du précédent : l'étiquetage opposé `[+, +, −, −]` rend
+`−(t² − 3t + 1)` — même classe d'unités que le précédent, comme l'exige
+l'amphichiralité (les deux diagrammes miroirs représentent le même nœud). -/
 theorem alexander_figureEight_signed_mirror :
-    alexanderPolynomialSigned figureEightDiagram [true, false, true, false]
-      = Polynomial.X * (Polynomial.X ^ 2 - 3 * Polynomial.X + 1) := by
+    alexanderPolynomialSigned figureEightDiagram [true, true, false, false]
+      = -(Polynomial.X ^ 2 - 3 * Polynomial.X + 1) := by
   simp only [alexanderPolynomialSigned, figureEightDiagram]
   simp (config := { decide := true })
   rw [det_three_aux]
