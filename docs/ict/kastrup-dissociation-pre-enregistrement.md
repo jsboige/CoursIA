@@ -80,7 +80,17 @@ Le prototype [`strates-as-adjunctions-prototype.md`](strates-as-adjunctions-prot
 6. **Le DID empirique n'est pas modélisé** : l'ancre clinique (l'alter aveugle de Strasburger & Waldvogel, p. 47-48 — « the brain activity normally associated with sight wasn't present while a blind alter was in control ») est citée comme motivation, pas comme donnée du jouet.
 7. **Une case 18 SUPPORTED dirait** : *la plus petite triple structure du chapitre 3 de la thèse — centres intérieurement intégrés, évocation directe cessée, immersion commune préservée — se laisse réaliser et séparer sur substrat, et la structure clusterisée est load-bearing* — rien de plus. L'idéalisme analytique lui-même (l'ontologie moniste) est hors portée d'un jouet, par construction.
 
-## 7. Ce qui suit
+## 6bis. Amendement v1 → v2 (pré-exécution, 2026-09-29) : estimateur de cause commune dynamique
+
+**Motivation mesurée sur le jouet, AVANT toute mesure du run principal.** En développant le banc (commit fils), le contrôle d'intégration court a exposé un défaut d'instrument : à `d = 1.0`, la corrélation partielle inter-alters contrôlant **le seul `e(t)`** mesurait `ρ_direct(1.0 | e(t)) ≈ 0.41` — très au-dessus de la bande P2 (≤ 0.10) alors que la valeur mécanique est **exactement 0** (les entrées inter-blocs de `W` sont nulles à `d = 1`).
+
+**Diagnostic** : l'environnement est une **cause commune dynamique**. L'AR(1) `e` pénètre chaque nœud à `β·e(t-1)`, puis se propage dans le graphe d'évocation : `W·β·e(t-2)`, `W²·β·e(t-3)`, … Deux nœuds d'alters différents partagent ces composantes **décalées** de l'environnement ; contrôler le seul `e(t)` contemporain les laisse intégralement dans le résidu. C'est le piège cause-commune de la case 14 **généralisé aux séries temporelles** : la cause commune n'est pas un scalaire instantané, c'une trajectoire.
+
+**Réparation (v2)** — `partial_corr_given(x, controls)` contrôle désormais la matrice `[e(t), e(t-1), …, e(t-L)]`, `L = ENV_LAGS = 60` : `α^60 ≈ 3×10⁻⁵ ≪ 1/√T ≈ 0.007`, la fenêtre couvre la relaxation complète de l'évocation. Toute corrélation inter-alters qui survit est soit de l'évocation directe (`W`), soit du bruit d'échantillonnage. Un test de régression dédié (`test_partial_corr_removes_lagged_env_coupling`) verrouille le piège : un couplage porté uniquement par `e(t-3)` survit au contrôle v1 (≈ 0.5) et meurt sous le contrôle v2 (< 0.05).
+
+**Inchangé** : les bandes P1/P2/P3, les nulls, la porte, les graines, le substrat — aucune bande n'est recalibrée par cet amendement ; il répare l'**instrument** (ce que « contrôler l'environnement » veut dire quand la cause commune a une mémoire), pas la prédiction. Le test d'intégration court confirme v2 : `ρ_direct(1.0 | env, lags) ≈ 0.003`, dans la bande P2 avec la marge attendue d'un bruit ~1/√T.
+
+
 
 1. **Ce document, commité, est le scellé.** Toute modification ultérieure des bandes P1/P2/P3/nulls/portes se fait par amendement **pré-exécution** horodaté dans ce fichier (pattern des cases 14/15/17 : `v1 → v2 AVANT re-run`), jamais silencieusement.
 2. Le banc `MyIA.AI.Notebooks/IIT/ICT-Series/ict/kastrup_dissociation.py` + tests `ict/tests/test_kastrup_dissociation.py` + mesures `ict/results/kastrup_dissociation_results.json` vivront dans un commit fils, avec la ligne matrice case 18 mise à jour au statut `TESTÉ (...)` dans la même PR.
@@ -88,4 +98,4 @@ Le prototype [`strates-as-adjunctions-prototype.md`](strates-as-adjunctions-prot
 
 ---
 
-**Statut : SCELLÉ (v1) — 2026-09-29, en attente du banc.**
+**Statut : SCELLÉ (v2 — amendement §6bis, estimateur à décalages ; bandes v1 inchangées) — 2026-09-29, en attente du run calibré.**
