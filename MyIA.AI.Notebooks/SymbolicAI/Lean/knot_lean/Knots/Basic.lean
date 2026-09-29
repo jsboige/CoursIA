@@ -159,18 +159,25 @@ def trefoil : Knot where
 
 /- Le noeud en huit (4_1), le noeud le plus simple avec un nombre de croisements de 4.
 
-Code PD dérivé du code DT [4, 6, 8, 2] de KnotInfo : [[8,3,1,4],[2,5,3,6],[4,7,5,8],[6,1,7,2]].
-Chaque arête {1,..,8} apparaît exactement une fois en dessous et une fois en
-dessus, et le tracé des arêtes forme une boucle unique. Le câblage précédent
-([[1,5,2,4],[3,8,4,2],[5,1,6,7],[7,3,8,6]]) était en fait un entrelacs à
-deux composantes, pas un noeud.
+Code PD planaire de KnotAtlas (`X[4,2,5,1], X[8,6,1,5], X[6,3,7,4],
+X[2,7,3,8]`), lu dans la convention horaire du module : il décrit le miroir
+du diagramme de KnotAtlas, encore un noeud en huit car ce noeud est
+amphichiral. Chaque arête {1,..,8} apparaît exactement une fois en dessous
+et une fois en dessus, et le tracé des arêtes forme une boucle unique.
+
+Historique des câblages précédents (voir `Jones.lean` pour les preuves) :
+le premier ([[1,5,2,4],[3,8,4,2],[5,1,6,7],[7,3,8,6]]) était un entrelacs à
+deux composantes ; le second, dérivé du code DT [4, 6, 8, 2] de KnotInfo
+([[8,3,1,4],[2,5,3,6],[4,7,5,8],[6,1,7,2]]), était un noeud virtuel non
+plan (4 faces au lieu de 6, writhe 4 au lieu de 0) — canonicalisé ici vers
+le code planaire (issue #17595).
 -/
 def figureEightDiagram : KnotDiagram where
   crossings := [
-    ⟨8, 3, 1, 4⟩,
-    ⟨2, 5, 3, 6⟩,
-    ⟨4, 7, 5, 8⟩,
-    ⟨6, 1, 7, 2⟩
+    ⟨4, 2, 5, 1⟩,
+    ⟨8, 6, 1, 5⟩,
+    ⟨6, 3, 7, 4⟩,
+    ⟨2, 7, 3, 8⟩
   ]
   numEdges := 8
 
