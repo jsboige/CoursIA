@@ -1,0 +1,104 @@
+name: Factual-mislabel gate (advisory)
+
+# Organe #18354 tranche 2 (campagne d'audit #17073) : une cellule
+# markdown qui énonce un compte d'entité CONTREDIT par le stream text
+# committé de la cellule code qu'elle décrit -- canon : App-5-Timetabling
+# énonce « 3 salles » (x2) et « (3 × 20)^8 » alors que le stream committé
+# imprime « Salles : 4 » et « (4 x 20)^8 = 1.68e+15 ». Deux facettes :
+# compte d'unité (N <unit> vs <Unit> : M) et formule-tuple ((N × K)^P vs
+# (M x K)^P). Les contradictions seules -- l'absence pure relève de
+# l'organe stale-claim (tranche 1).
+#
+# Pourquoi ADVISORY (patron #11435 markdown-claims-output-advisory) :
+# gardes sémantiques (sous-comptes « enseigne N cours », composés
+# hyphen, rapports N/jour, décompositions de produit) mesurées 29/09 :
+# 0 FP / 30 carnets sains. Un blocage exigerait une couverture
+# exhaustive des gardes ; le bon modèle est rapport + triage reviewer,
+# jamais blocage seul.
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'MyIA.AI.Notebooks/**/*.ipynb'
+      - 'scripts/check_factual_mislabel.py'
+      - 'scripts/tests/test_check_factual_mislabel.py'
+      - '.github/workflows/factual-mislabel-gate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: factual-mislabel-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  factual-mislabel-advisory:
+    name: "Factual-mislabel gate (#18354 advisory)"
+    # Routage #14283 tranche 3 : jambe Linux auto-hebergee. La garde
+    # anti-fork exigee par scripts/ci/check_self_hosted_runner_policy.py :
+    # runs-on STATIQUE auditable ; les PRs de fork sautent le job.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Run unit tests
+        run: |
+          python -m pip install --quiet pytest
+          python -m pytest scripts/tests/test_check_factual_mislabel.py -v
+
+      - name: Run detector (advisory, do not gate)
+        id: run
+        run: |
+          set +e
+          # Scan ONLY the diff (#11873 defect 1 : un balayage corpus
+          # produit un rouge-permanent ignoré). Abstention explicite si
+          # merge-base introuvable (#11754 frozen-inheritance).
+          BASE=$(git merge-base origin/main HEAD 2>/dev/null)
+          if [ -z "$BASE" ]; then
+            echo "exit=abstain" >> "$GITHUB_OUTPUT"
+            echo "::warning::factual-mislabel: merge-base introuvable -- detector abstains." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          mapfile -t CHANGED < <(git diff --name-only --diff-filter=MR -M50% "$BASE" HEAD -- '*.ipynb' | head -50)
+          if [ ${#CHANGED[@]} -eq 0 ]; then
+            echo "exit=0" >> "$GITHUB_OUTPUT"
+            echo "::notice::factual-mislabel: aucun notebook modifie -- rien a scanner." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          python scripts/check_factual_mislabel.py --json "${CHANGED[@]}" \
+            > /tmp/factual-mislabel.json 2> /tmp/factual-mislabel.err
+          rc=$?
+          echo "exit=$rc" >> "$GITHUB_OUTPUT"
+          echo "report=present" >> "$GITHUB_OUTPUT"
+          if [ $rc -ne 0 ] && [ $rc -ne 1 ]; then
+            echo "::warning::factual-mislabel: detector exit code $rc (not 0/1)." >> "$GITHUB_STEP_SUMMARY"
+            cat /tmp/factual-mislabel.err >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          set -e
+
+      - name: Upload structured advisory report
+        if: steps.run.outputs.report == 'present'
+        uses: actions/upload-artifact@v4
+        with:
+          name: factual-mislabel-report
+          path: /tmp/factual-mislabel.json
+          retention-days: 7
+
+      - name: Post advisory comment
+        if: github.event_name == 'pull_request'
+        uses: marrocchino/sticky-pull-request-comment@v2
+        with:
+          header: factual-mislabel-advisory
+          message: |
+            ${{ steps.run.outputs.exit == '0' && '✅ No factual mislabel detected in the notebooks this PR changed (entity counts and tuple formulas checked against nearby committed streams).' || steps.run.outputs.exit == 'abstain' && '⚠️ Factual-mislabel detector abstained (merge-base introuvable).' || '⚠️ Factual-mislabel review needed: a markdown cell states an entity count or tuple formula that CONTRADICTS the committed stream of the code cell it describes (likely copied from a twin notebook with different data, #18354). Advisory, NOT a merge gate — triage against the JSON artifact.' }}
