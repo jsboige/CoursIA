@@ -73,7 +73,7 @@ pip install -r requirements-comfyui.txt
 <p align="center">
   <a href="02-2-FLUX-1-Advanced-Generation.ipynb"><img src="assets/readme/img2-flux-gen.webp" alt="Jardin zen japonais au coucher de soleil (cerisier en fleurs sakura, sable ratissé en motifs concentriques, mousses vert-vif, pierres plates) — génération FLUX.1-schnell en 4 steps" width="340"/></a>
   <a href="02-2-FLUX-1-Advanced-Generation.ipynb"><img src="assets/readme/img2-flux-gen2.png" alt="Comparatif de ratios d'aspect FLUX-1 — même coucher de soleil sur palmiers rendu en 4 ratios (1:1 carré, 16:9 paysage, 9:16 portrait, 4:3 standard)" width="300"/></a><br>
-  <em>Sorties du notebook <a href="02-2-FLUX-1-Advanced-Generation.ipynb">02-2</a> : jardin zen japonais au coucher de soleil (gauche, FLUX.1-schnell 4 steps, cellule 13) et comparatif de ratios d'aspect 4 cellules sur coucher de soleil tropical (droite, cellule 21).</em>
+  <em>Sorties du notebook <a href="02-2-FLUX-1-Advanced-Generation.ipynb">02-2</a> : jardin zen japonais au coucher de soleil (gauche, FLUX.1-schnell 4 steps, cellule 13) et comparatif de ratios d'aspect sur coucher de soleil tropical (droite, cellule 21).</em>
 </p>
 
 ### Stable Diffusion 3.5
