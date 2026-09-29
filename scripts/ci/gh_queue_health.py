@@ -36,6 +36,27 @@ PER_PAGE = 100
 INCIDENT_FLOOR_DATE = "2026-08-19"  # origin of the corruption window
 INCIDENT_FLOOR_COUNT = 18  # ghost runs stranded by the 2026-08-19 corruption
 
+# Second incident (#18131): 37 runs created 2026-09-13 08:46-09:10Z (36 on
+# branch wt/vibe-g2-quantconnect, PR #15946 merged, + 1 Variation Tag Guard on
+# main) stuck in `queued` with the same server-side corruption -- cancel and
+# force-cancel both answer 409 "has not been queued yet". They sit after the
+# 2026-08-20 cutoff, so the date filter counts them as live. The watch mode
+# recognises them by IDENTITY, not by count: a new zombie is a run outside this
+# set, stuck longer than the stale threshold.
+KNOWN_ZOMBIE_RUN_IDS = frozenset({
+    34748469766, 34749036033, 34749036037, 34749036038, 34749036040,
+    34749036047, 34749036048, 34749036050, 34749036051, 34749036060,
+    34749036061, 34749036064, 34749036069, 34749036070, 34749036074,
+    34749036077, 34749036085, 34749036088, 34749036097, 34749036099,
+    34749036100, 34749036102, 34749036103, 34749036104, 34749036108,
+    34749036111, 34749036113, 34749036117, 34749036119, 34749036127,
+    34749036141, 34749036144, 34749036149, 34749036157, 34749036169,
+    34749036262, 34749066861,
+})
+# A live run queued longer than this is no longer backlog: it is a candidate
+# zombie. Below it, a queued run is ordinary pool saturation, not drift.
+DEFAULT_STALE_HOURS = 24.0
+
 
 class InstrumentError(RuntimeError):
     """The instrument cannot prove that its result is complete or coherent."""
@@ -162,6 +183,10 @@ def watch_verdict(ghosts: int, live: int, parse_failures: int) -> str:
     This split keeps the steady-state CoursIA signature (18 ghosts, 0 live)
     from spamming an issue every day while still catching real drift the
     moment it happens. See PR for #14367.
+
+    In `--watch` mode, `main()` passes as `live` only the STALE UNKNOWN live
+    runs (see split_live, #18131): the 2026-09-13 zombies and the fresh
+    backlog of a saturated pool no longer count as drift.
     """
     v = verdict(ghosts, live, parse_failures)
     if v in ("CLEAN", "STALE_FLOOR"):
@@ -169,6 +194,32 @@ def watch_verdict(ghosts: int, live: int, parse_failures: int) -> str:
     if v == "INCOMPLETE":
         return "BROKEN"
     return "DRIFT"
+
+
+def split_live(live: list[dict], now: datetime, stale_hours: float) -> dict:
+    """Split the live bucket for the watch mode (#18131).
+
+    * `known_zombies` : runs of the 2026-09-13 incident (KNOWN_ZOMBIE_RUN_IDS),
+      permanent and unpurgeable, reported but never alarming.
+    * `stale_live`    : other runs queued for more than `stale_hours` -- the
+      candidate NEW zombies, the only live runs the watch alarms on.
+    * `fresh_live`    : runs queued for less than `stale_hours` -- ordinary
+      backlog of a saturated pool, not drift.
+
+    A run whose `created_at` cannot be parsed has already been routed to
+    parse_failures by classify_runs, so every entry here parses.
+    """
+    known: list[dict] = []
+    stale: list[dict] = []
+    fresh: list[dict] = []
+    for run in live:
+        if run.get("id") in KNOWN_ZOMBIE_RUN_IDS:
+            known.append(run)
+            continue
+        created = datetime.fromisoformat(str(run["created_at"]).replace("Z", "+00:00"))
+        age_hours = (now - created).total_seconds() / 3600.0
+        (stale if age_hours > stale_hours else fresh).append(run)
+    return {"known_zombies": known, "stale_live": stale, "fresh_live": fresh}
 
 
 def load_snapshot(path: Path) -> tuple[list[dict], list[dict]]:
@@ -233,6 +284,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--cutoff", default="2026-08-20",
                         help=f"ghost-vs-live cutoff date (YYYY-MM-DD); default 2026-08-20")
     parser.add_argument("--output", type=Path, help="write JSON result (default: stdout)")
+    parser.add_argument("--stale-hours", type=float, default=DEFAULT_STALE_HOURS,
+                        help="watch mode: a live run queued longer than this, and not "
+                             "a known zombie, counts as drift (default "
+                             f"{DEFAULT_STALE_HOURS:g}h); younger runs are backlog")
+    parser.add_argument("--now", help="watch mode: reference time (ISO 8601), for "
+                                      "replaying a snapshot deterministically; "
+                                      "default: current UTC time")
     parser.add_argument("--watch", action="store_true",
                         help="emit the watch verdict (OK / DRIFT / BROKEN) and a "
                              "matching exit code; intended for the advisory cron "
@@ -282,7 +340,27 @@ def main(argv: list[str] | None = None) -> int:
             # exit codes. The measurement verdict is preserved under
             # `verdict_measurement` so the alert payload remains
             # diagnosable by the receiver of the JSON.
-            watch = watch_verdict(gh_count, lv_count, pf_count)
+            # The watch alarms on live runs only when they are stale AND
+            # unknown (#18131): the 2026-09-13 zombies and a saturated
+            # pool's fresh backlog are reported, never alarmed on.
+            if args.now:
+                try:
+                    now = datetime.fromisoformat(args.now.replace("Z", "+00:00"))
+                except ValueError as exc:
+                    raise InstrumentError(f"invalid --now: {args.now!r}") from exc
+                if now.tzinfo is None:
+                    now = now.replace(tzinfo=timezone.utc)
+            else:
+                now = datetime.now(timezone.utc)
+            parts = split_live(classification["live"], now, args.stale_hours)
+            result["stale_hours"] = args.stale_hours
+            result["counts"].update({
+                "known_zombies": len(parts["known_zombies"]),
+                "stale_live": len(parts["stale_live"]),
+                "fresh_live": len(parts["fresh_live"]),
+            })
+            result["stale_live"] = parts["stale_live"]
+            watch = watch_verdict(gh_count, len(parts["stale_live"]), pf_count)
             result["verdict_watch"] = watch
             result["verdict_measurement"] = v
             watch_rendered = json.dumps(result, indent=2, ensure_ascii=False) + "\n"
@@ -298,9 +376,9 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"[queue-health-watch] BROKEN INSTRUMENT: {pf_count} parse failures",
                       file=sys.stderr)
                 return EXIT_BROKEN
-            # DRIFT: ghost count drifted from the floor or live queue is
-            # blocked. Exit code 1 -- the workflow uses this to fan out the
-            # alert (issue creation, label, etc.).
+            # DRIFT: ghost count drifted from the floor, or an unknown live
+            # run is stuck past the stale threshold. Exit code 1 -- the
+            # workflow uses this to fan out the alert (issue or comment).
             return EXIT_GHOST
         if args.output:
             args.output.parent.mkdir(parents=True, exist_ok=True)

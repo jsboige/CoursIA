@@ -24,16 +24,15 @@ on:
       # A manifest bump swaps dependencies under the proofs -- it MUST trigger
       # the build/axiom gates (cf lean-conway-cgt.yml, same class as #8712).
       - 'MyIA.AI.Notebooks/GameTheory/asymmetric_information_lean/lake-manifest.json'
-      # PATH DEPENDENCY: lakefile.toml [[require]] lean_game_defs_ext with
-      # path = "../lean_game_defs_ext" (non-négociable per its own comment,
-      # body v4 #12848). A change to the SIBLING lake's sources or config
-      # alters the proofs compiled here -- this is the repo's first lake with
-      # a cross-lake path dep, so the gate must watch the dependency's
-      # proof-capable surface too, or it is a gate blind to half its inputs.
-      - 'MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/**.lean'
-      - 'MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/lakefile.toml'
-      - 'MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/lakefile.lean'
-      - 'MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/lean-toolchain'
+      # PATH DEPENDENCY (historique, tranche #17374) : ce wrapper surveillait
+      # aussi lean_game_defs_ext (path dep [[require]] ../lean_game_defs_ext)
+      # pour reconstruire les preuves d'asymmetric à chaque changement de la
+      # dépendance. #17374 retire ces chemins : gamedefsext est un lake
+      # MANIFESTE (matrice = dispatcheur unique, témoin « un seul build du
+      # lake »), et ce wrapper ne couvre qu'un lake non migré. Le prix connu :
+      # un PR ne touchant QUE lean_game_defs_ext ne rejoue plus les preuves
+      # d'asymmetric -- le prochain PR touchant ses propres chemins ou les
+      # fichiers du gate les re-vérifie.
       # A change to the gate must run the gate (cf #8712: without these lines
       # the workflows defining this CI are the only files it never checks).
       - '.github/workflows/lean-asymmetric-information.yml'
@@ -50,10 +49,6 @@ on:
       - 'MyIA.AI.Notebooks/GameTheory/asymmetric_information_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/GameTheory/asymmetric_information_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/GameTheory/asymmetric_information_lean/lake-manifest.json'
-      - 'MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/**.lean'
-      - 'MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/lakefile.toml'
-      - 'MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/lakefile.lean'
-      - 'MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/lean-toolchain'
       - '.github/workflows/lean-asymmetric-information.yml'
       - '.github/workflows/lean-axiom.yml'
       - '.github/workflows/lean-build.yml'

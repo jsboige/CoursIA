@@ -21,6 +21,13 @@ name: Detect-Duplicate Self-Test
 #   3. Failure visibility: under the blind window the control MUST go
 #      missing and the CLI MUST exit 2 -- if blindness stops producing
 #      exit 2, the job goes red.
+#
+# #18039: the control pair #13050/#13051 is ~5000 numbers behind the head,
+# so `--limit 600` alone can no longer reach it -- the workflow steps below
+# keep their flags, and the CLI pours the control issues into the scanned
+# lot itself (`gh issue view`, see _gh_issue_view). The detector still
+# finds the burst by title+window; nothing is hardcoded. The unfetchable-
+# control case (issue deleted) stays exit 2 by design.
 
 on:
   schedule:

@@ -168,7 +168,7 @@ _PERSONA_MARKERS_RE = re.compile(
 )
 # #14850 — prefixe de lane tierce : voie distincte d'un autre agent du cluster
 # qui pousse sous le meme login partage `jsboige`. Le format canonique est
-# `[machine-po-YYYY:CoursIA-2]` (Tell c.677-L4 body PR HORS worktree +
+# `[machine-po-YYYY:CoursIA-2]` (body PR HORS worktree +
 # convention owner:workspace du `[CLAIMED]` lane). Le complement facultatif
 # ` (...)` peut suivre. La voie NUЕ par meme login (commentaire ordinaire
 # SANS prefixe) n'a aucune signature distincte et reste indiscernable d'une
@@ -1852,7 +1852,7 @@ def _formal_concern_precedes_lift(body: str) -> bool:
 # de pure emission, sans autorite de blocage, cf #12311) ET que le corps de
 # la review declare explicitement que rien n'est bloquant, la review n'est
 # PAS une reserve — c'est un commentaire FYI que la convention « reponse
-# ecrite / thread inline / issue de suivi » (Tell c.589-L1 ★★★ strict)
+# ecrite / thread inline / issue de suivi »
 # assimile a une APPROVED. Sans cette exemption, l'organe punit la
 # precaution : plus l'auteur desambigue (« rien de bloquant (contrainte
 # token : COMMENT only) »), plus le verdict formel matche CONCERN_MARKERS,
@@ -3395,7 +3395,7 @@ def gh_issue_created(n: int) -> datetime | None:
 # La spec de B.0 dit « issue de suivi ouverte et nommee AVANT le merge
 # (reportee sciemment) » : c'est un GESTE, pas une coincidence lexicale.
 # L'implementation d'origine creditait tout `#N` hors citation resolvant en
-# issue -- donc « cf. le defaut #13316 », « Tell c.11145 #13649 », un renvoi
+# issue -- donc « cf. le defaut #13316 », un renvoi
 # de code vers #12319 : autant de reports valides eteignant n'importe quelle
 # reserve anterieure. Le trou etait INVISIBLE tant que `gh_issue_created`
 # levait sur tout (meme incident, cf. sa docstring) : reparer le resolveur
@@ -3931,10 +3931,23 @@ def can_lift(comment: dict) -> bool:
 # retire -- c'est le gate qui refuse le dossier, pas l'organe qui le
 # blanchit ; la prose HORS du bloc (tete de pierre tombale comprise) reste
 # lue normalement.
+#
+# #18077 -- 3e forme de #17065 : un dossier RETIRE par renommage de ses
+# delimiteurs (`[ADJOINT-PREFLIGHT RETIRE]` / `[/ADJOINT-PREFLIGHT RETIRE]`,
+# mesure sur #16960, commentaire 5751421659) garde son bloc schema et sa
+# queue narrative. Sous la seule forme a espace, le span n'etait plus
+# reconnu : la phrase d'attestation de la queue (« Aucun merge, APPROVED ou
+# CHANGES_REQUESTED effectue ici ») redevenait une reserve POSEE que
+# l'autrice de la PR ne pouvait pas lever (#13495) -- ~8 h 30 de lane
+# bloquee. Les delimiteurs acceptent donc l'espace OU le tiret entre les
+# deux mots, et un suffixe libre sur la meme ligne (RETIRE, SUPERSEDE...).
+# Le retrait reste un retrait pour le GATE : `check_adjoint_prevalidation.py`
+# ne lit que la forme canonique, un bloc renomme n'y est plus un dossier.
+_DOSSIER_DELIM_TAIL = r"(?:[ \t]+[^\]\r\n]*)?\][ \t]*"
 _ADJOINT_DOSSIER_SPAN = re.compile(
-    r"^[ \t]*\[ADJOINT PREFLIGHT\][ \t]*\r?\n"
+    r"^[ \t]*\[ADJOINT[ -]PREFLIGHT" + _DOSSIER_DELIM_TAIL + r"\r?\n"
     r".*?"
-    r"^[ \t]*\[/ADJOINT PREFLIGHT\][ \t]*\r?(?:\n|\Z)",
+    r"^[ \t]*\[/ADJOINT[ -]PREFLIGHT" + _DOSSIER_DELIM_TAIL + r"\r?(?:\n|\Z)",
     re.DOTALL | re.MULTILINE,
 )
 
@@ -3960,6 +3973,9 @@ def _strip_adjoint_dossier(body: str) -> str:
        picker (4e cause de repair -> ce meme organe), 8 lanes sur 8 se
        retrouvaient en mode repair pendant que 313 issues sur 390
        restaient admissibles.
+    3. (#18077) les delimiteurs RENOMMES d'un dossier retire (tiret au lieu
+       de l'espace, suffixe libre comme RETIRE) valent les delimiteurs
+       canoniques pour les deux regles ci-dessus.
 
     Fail-closed inchange : un bloc MALFORME (ouvrant sans fermant) n'est pas
     retire ni n'inertit rien ; la prose PRECEDANT le bloc (tete de pierre
@@ -4124,7 +4140,7 @@ def classify(author: str, body: str) -> str | None:
     # `[Hermes] COMMENT_WITH_CONCERNS` (verdict de pure emission, force a
     # state:COMMENTED par #12311) ET que le corps declare explicitement
     # que rien n'est bloquant, la review n'est PAS une reserve. Convention
-    # Tell c.589-L1 ★★★ strict assimile un tel commentaire a une APPROVED
+    # assimile un tel commentaire a une APPROVED
     # pour le merge-gate. Garde stricte : l'exemption ne s'applique PAS
     # aux verdiicts de blocage strict (CHANGES_REQUESTED, REQUEST_CHANGES,
     # NEEDS_CHANGES, BLOCKED, SUSPECT_*, STRUCTURAL_ONLY) — verifie par
@@ -4461,11 +4477,11 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
             #     reserve user voix nue.
             #
             #   * Lift `[OVERRIDE] lane <machine>` par coordinateur leve
-            #     tout (autorite coordinateur, Tell c.11639). La voie
+            #     tout (autorite coordinateur). La voie
             #     override reste ouverte comme echappatoire nommee.
             stripped_lift = _strip_quoted(lift_body or "")
             stripped_nit = _strip_quoted(nit_body or "")
-            # Voie 0 -- override coordinateur (Tell c.11639). Meme login
+            # Voie 0 -- override coordinateur. Meme login
             # ou pas, l'arbitre tiers nomme par `[OVERRIDE] lane <machine>`
             # leve. Fail-CLOSED sur la pose en tete (#13030). Premier
             # discriminant verifie pour ne pas etre bloque par les voies
@@ -4492,7 +4508,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
             # ne leve que les reserves de CETTE lane. Si la reserve est
             # voix nue user ou persona, elle est HORS scope de la lane
             # tierce -- bloque. Accepte le prefixe en debut de ligne
-            # (Tell c.677-L4 body PR HORS worktree), refuse la citation
+            # (body PR HORS worktree), refuse la citation
             # ulterieure (` > [lane]`) par l'ancre `^`.
             lift_has_lane = bool(_CROSS_LANE_LIFT_RE.search(stripped_lift))
             nit_has_lane = bool(_CROSS_LANE_LIFT_RE.search(stripped_nit))

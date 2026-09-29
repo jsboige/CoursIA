@@ -48,7 +48,7 @@ Si le build echoue alors que la junction est intacte et `.lake/build/lib/lean/Ma
 
 ### CI != Lake build local
 
-`lean-social-choice.yml` ne build PAS Voting.lean (juste Arrow/Sen/Framework/Basic pour no-sorry check). **CI SUCCESS != Voting.lean compile**.
+Depuis #17374, la jambe matricielle de `gametheory` build le lake entier (Voting.lean compris) — mais le principe tient : **CI SUCCESS ne remplace pas le `lake build` local vérifié par ai-01 avant merge** (l'incident fondateur 2026-05-10, #866/#885, reste la référence).
 
 ### Si pas d'env Lean local
 

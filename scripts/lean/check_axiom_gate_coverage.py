@@ -77,6 +77,7 @@ MANIFEST = "scripts/lean/ci_lakes.json"
 # que la docstring de lean-axiom.yml elle-meme emploie) n'est pas un appel. Une
 # ligne commentee commence par `#` et ne matche donc pas.
 _GATE_CALL_RE = re.compile(r"^\s*uses:\s*\S*" + re.escape(GATE_FILENAME), re.M)
+_ACTION_USE_RE = re.compile(r"^\s*uses:\s*\./\.github/actions/lean-axiom\b", re.M)
 _PROJECT_PATH_RE = re.compile(r"^\s*project-path:\s*(\S+)", re.M)
 _JOBS_KEY_RE = re.compile(r"^jobs:\s*(?:#.*)?$")
 _JOB_KEY_RE = re.compile(r"^([A-Za-z0-9_.-]+):")
@@ -199,6 +200,32 @@ def covered_lakes_by_job(ref: str) -> dict[str, dict[str, list[str]]]:
     return out
 
 
+def composite_axiom_coverage(bodies: dict[str, str],
+                             opted_paths: set[str]) -> dict[str, dict[str, list[str]]]:
+    """Credit the matrix leg B.3 (#17336): a job that runs the composite
+    action ``./.github/actions/lean-axiom`` gates every manifest entry
+    carrying the opt-in key ``axiom-target-modules``.
+
+    On that leg the project-path is interpolated (``${{ matrix.project-path
+    }}``), so the job text carries no literal -- the manifest is the ground
+    truth of which lakes receive the pass; an entry WITHOUT the key never
+    reaches the action (the step's ``if`` skips it, cf the action's opt-in).
+    Deliberately kept OUT of ``gate_calls_by_job``: the job-scoping ratchets
+    compare literal ``project-path:`` extractions and must keep reading the
+    workflow-call form only.
+    """
+    if not opted_paths:
+        return {}
+    out: dict[str, dict[str, list[str]]] = {}
+    for name, body in bodies.items():
+        if name.endswith(GATE_FILENAME):
+            continue
+        for job_name, job_body in iter_jobs(body):
+            if _ACTION_USE_RE.search(job_body):
+                out.setdefault(name, {})[job_name] = sorted(opted_paths)
+    return out
+
+
 @functools.lru_cache(maxsize=None)
 def filewide_project_paths(ref: str) -> dict[str, list[str]]:
     """Counterfactual: what a file-wide ``project-path:`` scan would credit.
@@ -286,7 +313,15 @@ def measure(ref: str) -> dict:
     lakes = matrix_lakes(ref)
     deleted = deleted_dispatchers(ref)
 
-    gated_paths = sorted({p for paths in covered.values() for p in paths})
+    composite = composite_axiom_coverage(
+        _workflow_bodies(ref),
+        {lk.get("project-path") for lk in lakes
+         if lk.get("axiom-target-modules") and lk.get("project-path")})
+    composite_paths = {p for jobs in composite.values()
+                       for paths in jobs.values() for p in paths}
+
+    gated_paths = sorted({p for paths in covered.values() for p in paths}
+                         | composite_paths)
     manifest_paths = {lk.get("project-path") for lk in lakes}
     ungated = sorted(p for p in manifest_paths
                      if p and p not in set(gated_paths))
@@ -306,6 +341,8 @@ def measure(ref: str) -> dict:
         "gate_callers": {k: sorted(set(v)) for k, v in sorted(covered.items())},
         "gate_calls_by_job": {wf: {job: sorted(paths) for job, paths in jobs.items()}
                               for wf, jobs in sorted(by_job.items())},
+        "composite_axiom_coverage": {wf: {job: sorted(paths) for job, paths in jobs.items()}
+                                     for wf, jobs in sorted(composite.items())},
         "filewide_only_paths": filewide_only,
         "gated_lakes": gated_paths,
         "matrix_lakes": sorted(p for p in manifest_paths if p),

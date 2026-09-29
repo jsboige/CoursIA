@@ -220,6 +220,9 @@ jobs:
       # If the token is not allowed to approve its own runs, this step says
       # so and does NOT fail the job: le semis d'etat lui-meme a reussi, et la
       # PR longue restera BLOCKED de facon VISIBLE plutot que silencieuse.
+      # Implementation partagee avec catalog-cron.yml : scripts/ci/release_parked_runs.py
+      # (#17668) -- le present step n'avait pas le sondage borne porte par #17634
+      # sur son jumeau, preuve que deux copies du meme correctif divergent.
       - name: Release the parked runs on the delivery branch
         if: steps.state.outputs.state_drift == 'true'
         continue-on-error: true
@@ -236,44 +239,9 @@ jobs:
           # d'autre est casse (runs qui s'empilent sans jamais s'executer), et
           # approuver 200 runs n'y repondrait pas. Le depassement est ECRIT.
           RELEASE_CEILING: "40"
-        run: |
-          set -u
-          head_sha="$(git rev-parse HEAD)"
-          echo "::notice title=QC-research::releasing parked runs at $head_sha"
-          parked="$(gh run list --repo "$GITHUB_REPOSITORY" --branch "$BRANCH" \
-                      --limit 100 \
-                      --json databaseId,headSha,conclusion,workflowName \
-                      --jq ".[] | select(.conclusion==\"action_required\") \
-                            | select(.headSha==\"$head_sha\") \
-                            | \"\(.databaseId)\t\(.workflowName)\"" || true)"
-          if [ -z "$parked" ]; then
-            echo "::notice title=QC-research::no parked run at this head -- nothing to release."
-            exit 0
-          fi
-          total="$(printf '%s\n' "$parked" | grep -c . || true)"
-          echo "::notice title=QC-research::$total run(s) parked at this head, staggering ${RELEASE_STAGGER_SECONDS}s apart"
-          released=0; refused=0; deferred=0; seen=0
-          while IFS="$(printf '\t')" read -r rid name; do
-            [ -z "$rid" ] && continue
-            seen=$((seen + 1))
-            if [ "$seen" -gt "$RELEASE_CEILING" ]; then
-              deferred=$((deferred + 1))
-              continue
-            fi
-            [ "$released" -gt 0 ] && sleep "$RELEASE_STAGGER_SECONDS"
-            if gh api -X POST "repos/$GITHUB_REPOSITORY/actions/runs/$rid/approve" >/dev/null 2>&1; then
-              released=$((released + 1))
-            else
-              refused=$((refused + 1))
-              echo "::warning title=QC-research::could not approve run $rid ($name)"
-            fi
-          done <<EOF
-          $parked
-          EOF
-          echo "::notice title=QC-research::released $released run(s), refused $refused, deferred $deferred"
-          if [ "$deferred" -gt 0 ]; then
-            echo "::warning title=QC-research::$deferred run(s) left parked by the ceiling of $RELEASE_CEILING -- runs are piling up at one head; investigate before raising the ceiling."
-          fi
-          if [ "$refused" -gt 0 ]; then
-            echo "::warning title=QC-research::$refused run(s) still parked -- the delivery PR stays BLOCKED. Approve them by hand, or grant a token that may approve workflow runs."
-          fi
+          # Fenetre de sonde (x 15 s) : laisser GitHub creer les runs du head.
+          # La course mesuree sur le jumeau catalog-cron le 2026-09-24 (#17634) :
+          # push 08:47:03Z, requete unique 08:47:07Z -> "no parked run", runs
+          # crees 08:47:12Z puis gares -> PR de livraison BLOCKED.
+          RELEASE_SETTLE_POLLS: "8"
+        run: python3 scripts/ci/release_parked_runs.py --tag QC-research

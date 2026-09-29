@@ -29,7 +29,10 @@ port ni adaptation locale. La fermeture propositionnelle historique reste légè
 le module `FormalLogic.GLBridge`, puis le lake complet avec sa fermeture
 arithmétique, ont compilé respectivement 1356 et 1361 jobs. Mesure du 2026-09-23,
 après l'ajout de `ModalBridge` et de `FairBotLoeb` : le lake complet compile
-1403 jobs, et `FormalLogic.FairBotLoeb` seul 1225.
+1403 jobs, et `FormalLogic.FairBotLoeb` seul 1225. Sur le commit de cette tranche,
+`FormalLogic.ModalZoo` seul compile 1023 jobs, sans la fermeture arithmétique.
+La cible par défaut du lake, qui l'importe via `FormalLogic.lean`, compile
+1430 jobs (mesure du 2026-09-24 après reprise incrémentale).
 
 L'import arithmétique reste cantonné à deux modules. `GLBridge` en a besoin pour
 le théorème de correction arithmétique ; `FairBotLoeb` importe directement
@@ -44,6 +47,14 @@ pin de `LeanTypst` est passé de `888d8656` à `2158f3de` avec l'ajout de
 `ModalLogic`, #17017). Elles ne sont pas vendues
 dans CoursIA, mais ce caveat doit être levé avant toute redistribution autonome
 de la fermeture complète.
+
+`ModalZoo` n'importe de `ModalLogic` que les systèmes de Hilbert, les
+dérivations génériques `Entailment.S4`/`S5` et `Kripke.Hilbert`. Les modules
+`Kripke/Logic/*` (classes de cadres, complétudes) dépendent tous de
+`ModalLogicArchive.Modal.Tableau`, qui ne compile pas au pin `71968137` sous
+Lean 4.33.1 : six erreurs (`unsolved goals`, quatre `split` en échec, un pas de
+`calc` sans instance `Trans`), mesurées le 2026-09-23. Le module est hors des
+`defaultTargets` du fork (`Fin74`, `Neighborhood`), donc hors de sa CI.
 
 ## Structure
 
@@ -84,6 +95,20 @@ de la fermeture complète.
   module : une modalité qui vérifie D1–D3 sans lemme diagonal ne donne pas le
   théorème de Löb. C'est la `Diagonalization` qui manque, pas une quatrième
   condition.
+- `FormalLogic/ModalZoo.lean` — un zoo modal certifié sur le sous-cube des huit
+  systèmes normaux qu'un cours rencontre d'abord : `K`, `KD`, `KT`, `KTB`, `K4`,
+  `S4`, `KD45`, `S5`. Pour chacun, le module établit **exactement** lesquels des
+  schémas `D`, `T`, `B`, `4`, `5` il prouve. Les 18 cases positives sont des
+  dérivations de Hilbert ; les 22 cases négatives se ramènent à huit réfutations
+  sur quatre cadres de Kripke finis (six couples cadre–valuation distincts, au plus
+  trois mondes), via la correction de Kripke de
+  `ModalLogic` et cinq correspondances cadre ↦ schéma prouvées dans le module.
+  Il en déduit `weakerThan_iff_profile` : `L₁ ⪯ L₂` équivaut à l'inclusion des
+  profils. Le diagramme de Hasse (11 arêtes de couverture) et les 7 paires
+  incomparables sont calculés par `decide`, puis transportés en énoncés `⪱` et
+  `¬ ⪯` sur les vrais systèmes de Hilbert ; `toJson` les exporte. Une absence de
+  trait y est aussi prouvée qu'un trait : `KTB` et `S4`, par exemple, sont
+  incomparables.
 
 La procédure de décision GL est exposée comme instance `Decidable`. Sur le
 schéma concret de Löb, sa réduction par `decide` reste bloquée dans la réduction

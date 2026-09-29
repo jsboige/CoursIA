@@ -331,7 +331,7 @@ class TestGoldenSetArgAnalysisC1275:
     """Golden set fondateur c.1275 — anti-FP classifier Argument_Analysis.
 
     Cas observes firsthand dans Argument_Analysis_Agentic-1-informal cell 9,
-    Argument_Analysis_Executor.ipynb cell 0, Argument_Analysis_Ontology_*.ipynb
+    Argumentation-08b-Executor-Python.ipynb cell 0, Argument_Analysis_Ontology_*.ipynb
     cell 27 — les valeurs 1, 2, 3, 4 en contexte `rung` (Toulmin), `2137`
     adjacent `epic #2137`, `100%` en contexte pourcentage, et `phase N` sont
     des **numerotations structurelles pedagogiques**, PAS des timings runtime.

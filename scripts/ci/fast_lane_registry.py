@@ -213,6 +213,26 @@ PILOT: list[Guard] = [
               "--scan-thread"],
         blocking=True,
     ),
+    # Issue #14683 : garde substitution hr silencieuse. L'organe
+    # `scripts/ci/check_hr_substitution.py` detecte les 4 notations CommonMark
+    # (`---`, `***`, `* * *`, `___`) en `+`/`-` sur les `.ipynb` et exige une
+    # declaration explicite dans le body. Aucun workflow d'origine -> source
+    # FAST_LANE_NATIVE. Le script sort rc=0/1 sur son verdict ET rc=2 sur
+    # incident d'entree (`gh pr diff`/`gh pr view`/`git diff` en echec,
+    # l.59-60/74-75/85) -- l'ancien commentaire ici affirmait l'inverse.
+    # #17941 (option a, recommandation ai-01) : l'incident est un verdict
+    # INCONNU, pas une faute de la PR ni un quitus -- warn_rc=(2,) le rend
+    # neutre au check-run, titre distinct, non bloquant. Un depot sans verdict
+    # reste un depot sans garde : le neutral est LEISIBLE dans le check-run,
+    # pas silencieux.
+    Guard(
+        name="hr-substitution-guard",
+        source=FAST_LANE_NATIVE,
+        paths=["**/*.ipynb"],
+        argv=["python", "scripts/ci/check_hr_substitution.py", "{pr_number}"],
+        blocking=True,
+        warn_rc=(2,),
+    ),
     # -- extension pilote (5 -> 9) ------------------------------------------
     # Pattern 1 : execute une fois par chemin matchant (boucle bash d'origine
     # absorbee). Le placeholder `{changed_paths}` est substitue par un chemin
@@ -241,6 +261,19 @@ PILOT: list[Guard] = [
             ".github/workflows/notebook-navlink-check.yml",
         ],
         argv=["python", "scripts/notebook_tools/check_notebook_navlinks.py",
+              "--check"],
+        blocking=True,
+    ),
+    Guard(
+        name="notebook-nav-chain-guard",
+        source="notebook-nav-chain-guard.yml",
+        paths=NOTEBOOK_GLOBS + [
+            "MyIA.AI.Notebooks/**/README.md",
+            "scripts/notebook_tools/check_notebook_nav_chain.py",
+            "scripts/tests/baseline_nb_nav_chain.json",
+            ".github/workflows/notebook-nav-chain-guard.yml",
+        ],
+        argv=["python", "scripts/notebook_tools/check_notebook_nav_chain.py",
               "--check"],
         blocking=True,
     ),
@@ -345,8 +378,8 @@ PILOT: list[Guard] = [
             "scripts/notebook_tools/check_kernel_suffix_canon.py",
             "scripts/notebook_tools/kernel_suffix_canon.json",
             # Liste partagee des suffixes de noyau : l'en retirer un rend le
-            # garde muet sur cette famille, l'y ajouter rouvre les exclusions
-            # mesurees (`-Lean` marque le contenu, pas le moteur).
+            # garde muet sur cette famille. Depuis l'arbitrage 25/09
+            # (#17784/#16231) elle porte -lean et -lean-python comme noyaux.
             "scripts/notebook_tools/naming_canon.py",
         ],
         argv=["python", "scripts/notebook_tools/check_kernel_suffix_canon.py",
@@ -354,6 +387,11 @@ PILOT: list[Guard] = [
         blocking=True,
         needs_base=True,
     ),
+    # Cliquet #17784, phase ADVISORY : le meme organe liste en advisory les
+    # notebooks AJOUTES sans suffixe de noyau (grammaire #16231 : le suffixe
+    # est desormais cense etre toujours present). Le passage bloquant se fait
+    # en ajoutant --require-suffix a l'argv ci-dessus, APRES mesure des faux
+    # positifs -- pas en durcissant le garde par defaut.
     # Defaut 4 de #15489 (suite du meme claim de lane) : un slot peut etre libre
     # sur `main` et deja tenu ailleurs. Deux trous mesures ont fonde ce garde --
     # deux notebooks neufs au MEME index dans une MEME revision (l'organe frere
@@ -1149,8 +1187,7 @@ TRANCHE9: list[Guard] = [
 #
 # Renomme TRANCHE9 -> TRANCHE10 pour eviter la collision avec l'interval-kind
 # mergé sur main via PR #15624 (3342d97342, 2026-09-12T02:57:59+02:00 -- anterieur
-# a ce rebase). Collision signalee par le rebase c.1090 (Tell c.1065-L3 ★★
-# fondateur `rebase-vers-une-cible-NOMMEE-herite-de-sa-peremption`).
+# a ce rebase). Collision signalee par le rebase c.1090.
 #
 # Ce garde verifie la PRESENCE + le TYPE de `outputs` sur chaque cellule
 # code. `outputs: []` est PASS (la forme canonique d'une cellule non executee
@@ -1449,5 +1486,51 @@ TRANCHE15: list[Guard] = [
             "--all", "--check",
         ],
         blocking=True,
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 16 (#18048) -- garde caracteres de controle dans les sources de
+# cellules. Un outil d'ecriture qui interprete les echappements Python
+# transforme ``\a``, ``\b``, ``\f`` ou ``\v`` d'une source en caractere de
+# controle : le JSON reste valide (controles echappes \u0007/\b/\f), le
+# notebook s'execute, aucun organe ne rougissait -- mais le rendu est casse
+# (LaTeX illisible, regex affichee fausse).
+#
+# Temoins fondateurs (body #18048, tous deux en test dans
+# scripts/tests/test_check_control_chars_in_cells.py) :
+#   - POSITIF : tete f19ca6ff91 de la PR #17919 (MGS-01-Introduction
+#     cellule 10) -- 3x U+0007 dans ``$\sigma\<BEL>pprox 12$`` (intention
+#     : ``\approx``) ;
+#   - NEGATIF : main post-fix -- la cellule 18 markdown de
+#     auditer-la-conformite-visuelle.ipynb porte le texte LITERAL ``\b``
+#     (frontiere de regex, backslash + b en clair), qui ne doit JAMAIS
+#     rougir ; son U+0008 herite est repare dans la meme PR.
+#
+# Forme : delta base-vs-head sur les cellules AJOUTEES ou MODIFIEES (le
+# stock herite ne rougit pas -- une source identique a l'identique dans la
+# base est exempee), bloquant. rc=2 = incident d'entree (git/JSON), pas
+# une faute de la PR : warn_rc=(2,) le rend neutre au check-run, titre
+# distinct, non silencieux (forme hr-substitution-guard, #17941).
+# ---------------------------------------------------------------------------
+TRANCHE16: list[Guard] = [
+    Guard(
+        name="control-chars-in-cells-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**/*.ipynb",
+            "scripts/ci/check_control_chars_in_cells.py",
+            "scripts/tests/test_check_control_chars_in_cells.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/ci/check_control_chars_in_cells.py",
+            "--diff", "{base_ref}...HEAD",
+        ],
+        blocking=True,
+        needs_base=True,
+        warn_rc=(2,),
     ),
 ]

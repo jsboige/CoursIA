@@ -37,7 +37,7 @@
 
 ## 3. Patterns utilisés par `utils/adk_runtime.py` (mesuré)
 
-Énumération exhaustive (Tell c.1031-L1 ★ NEW) — fichier `MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/utils/adk_runtime.py` (355 LOC) :
+Énumération exhaustive — fichier `MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/utils/adk_runtime.py` (355 LOC) :
 
 | Pattern ADK 2.x | Usage | Sensibilité |
 |---|---|---|
@@ -64,11 +64,11 @@
 
 ## Tell contextuel
 
-- Tell c.1069 ★★ strict honnêteté référentielle — la préoccupation user portait sur « adk.dev/2.0 » comme release séparée ; c'est la doc, pas une release.
-- Tell c.692-L1 strict anti-composite — audit borné à `utils/adk_runtime.py` + `requirements.txt`, pas de touche aux Labs.
-- Tell c.974 strict 1 amend MAX dissipation sustained ×21ᵉ — aucune modification de code dans cette PR (audit-only).
-- Tell c.1031-L1 ★ NEW — énumération exhaustive des surfaces ADK 2.x consommées par le runtime.
-- Tell c.1058 strict 3 surfaces — vérification first-hand pypi + adk.dev + grep runtime.
-- Tell c.745 ★★★ first-hand — toutes les conclusions s'appuient sur du code lu + changelog upstream.
+- Honnêteté référentielle — la préoccupation user portait sur « adk.dev/2.0 » comme release séparée ; c'est la doc, pas une release.
+- [Anti-composite](../../.claude/rules/pr-review-discipline.md) — audit borné à `utils/adk_runtime.py` + `requirements.txt`, pas de touche aux Labs.
+- Aucune modification de code dans cette PR (audit-only, un amendement au maximum).
+- Énumération exhaustive des surfaces ADK 2.x consommées par le runtime.
+- Vérification first-hand des 3 surfaces : pypi + adk.dev + grep runtime.
+- First-hand ([G.1](../../CLAUDE.md)) — toutes les conclusions s'appuient sur du code lu + changelog upstream.
 
 — lane myia-po-2027:CoursIA-2, c.1126 2026-09-13

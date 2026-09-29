@@ -8,6 +8,12 @@ référence : Bansal–Jiang 2025, [arXiv:2508.03961](https://arxiv.org/abs/2508
 — Beck-Fiala et Komlós au-delà de Banaszczyk, par découplage via
 indépendance spectrale affine.
 
+Voie de preuve **élémentaire** (réaudit 2026-09-25) : Karingula–Lovett,
+[arXiv:2609.20979](https://arxiv.org/abs/2609.20979) — constante `36`, sans
+transformée de Banaszczyk ni variation totale directionnelle, donc sans
+l'étage analytique qui bloquait la voie Guo–Fang–Lu. Découpage `k1..k5` et
+réaudit de P3 dans [FORMAL_STATUS.md](FORMAL_STATUS.md) ; suivi : #17845.
+
 **Première formalisation du sujet** ni dans le dépôt ni dans Mathlib
 (vérifié 2026-08-24 : `beck.?fiala|banaszczyk|komlos` = 0 hit).
 
@@ -23,7 +29,7 @@ formalisées ici.
 | Fichier | Contenu |
 |---------|---------|
 | `Discrepancy/Basic.lean` | définitions (`IsColoring`, `discrepancy`, `degree`, `maxDegree`), 3 lemmes élémentaires, `BeckFialaConjecture` (`O(√k)`), cible `BeckFialaClassic` (`disc ≤ 2k − 1`) |
-| `Discrepancy/Komlos.lean` | `KomlosConjecture` (`O(1)`, colonnes unitaires), `BansalJiangLargeDegree` (`k ≥ log² n`), `KomlosBansalJiangWeak` (forme concrète affaiblie), `komlos_oracle_imp_beck_fiala_regular` (probe #15944 **PROUVÉ** : oracle Komlós réel ⇒ Beck–Fiala cas régulier, `disc ≤ 2⌈C⌉₊√k`) |
+| `Discrepancy/Komlos.lean` | `KomlosConjecture` (`O(1)`, colonnes unitaires), `BansalJiangLargeDegree` (`k ≥ log² n`), `KomlosBansalJiangWeak` (forme concrète affaiblie), `komlos_oracle_imp_beck_fiala_regular` (probe #15944 **PROUVÉ** : oracle Komlós réel ⇒ Beck–Fiala cas régulier, `disc ≤ 2⌈C⌉₊√k`) ; voie élémentaire découpée en boutes `k1..k5` |
 | `Discrepancy/Kernel.lean` | brique b1 — double comptage dimensionnel `card_dangerous_lt_card_floating` + direction de noyau `exists_dangerous_kernel_vec` |
 | `Discrepancy/Partial.lean` | brique b2 — invariant de coloration partielle `frozen_line_sum_le` (lignes figées ≤ 2k−1) |
 | `Discrepancy/Progress.lean` | brique b3 — lemme de progrès `exists_step_hits_boundary` (≥ 1 flottant se fige par phase) |
@@ -36,7 +42,10 @@ formalisées ici.
 Erdős–Spencer `p1a..p4`, toutes **PROUVÉES**) :
 [FORMAL_STATUS.md](FORMAL_STATUS.md). La forme optimiste `√k/2`
 (`ErdosSpencerLB`) reste une `Prop` ouverte ; le palier P3 (Banaszczyk)
-n'est pas engagé (aucun étage correspondant dans Mathlib).
+n'est pas engagé (aucun étage correspondant dans Mathlib) — mais la voie
+**élémentaire** de Karingula–Lovett le contourne **sans** cet étage, et une
+formalisation Lean 4 tierce de cette preuve existe déjà (voir le réaudit du
+2026-09-25 dans FORMAL_STATUS.md).
 
 ## Conventions
 

@@ -67,7 +67,7 @@ class Normalize(unittest.TestCase):
     def test_single_generic_token_not_significant(self):
         # « model » seul (1 token) : la fonction le mesure, mais le filtre
         # de significativité (k >= 2) dans resolve_notebooks doit rendre NONE
-        idx = ["SymbolicAI/Argument_Analysis/Argument_Analysis_Toulmin_Model.ipynb"]
+        idx = ["SymbolicAI/Argument_Analysis/Argumentation-01-Toulmin-Model-Python.ipynb"]
         status, hits = cur.resolve_notebooks("le model est cassé", idx)
         self.assertEqual(status, "NONE")
         self.assertEqual(hits, [])

@@ -179,8 +179,8 @@ Prochaine etape conditionnelle :
 - **2 checkouts physiques = 13.53 Go** recuperables par Apply (search_lean candidat jonction simple ; mimo_lean necessite investigation `slt 0b1020a4`).
 - **9 jonctions actives verifiees firsthand** (c.629, `fsutil reparsepoint query`) : toutes v4.32.1 vers `D:\dev\CoursIA-2\.mathlib-cache\leanprover_lean4_v4.32.1-520045ab\mathlib`. Le rapport c.1205 annonçait 8 v4.32.1 + 1 v4.33.0 ; la verif re-mesure a montre kelly_lean cible v4.32.1 (pas v4.33.0 comme le scan le rangeait par manifest).
 - **Aucun orphelin** v4.31.0-rc1 detecte sur po-2027 (vs etat signale sur po-2024 dans `junctions-scan-po-2024.md`).
-- **Tell c.808 ★★★** : mesure genuine (deux passes du script, sortie byte-identique au premier passage).
-- **Tell c.488 strict audit-reassessment** (c.629) : relecture du rapport suite a CHANGES_REQUESTED ai-01 (c.626) — fix docs-only appliques. Synthese finale : `LP ×2 corriees, FP ×0 retenu`.
+- **Mesure genuine** : deux passes du script, sortie byte-identique au premier passage.
+- **Audit reassessment** ([protocole](../../.claude/rules/audit-reassessment.md)) : relecture du rapport suite à CHANGES_REQUESTED ai-01 — fix docs-only appliqués. Synthèse finale : `LP ×2 corrigées, FP ×0 retenu`.
 
 ## References
 

@@ -49,7 +49,7 @@ Arguments:
 |-----------|------|-------------|---------|
 | `topic` | string | Sujet du notebook | `"Reinforcement Learning - Q-Learning"` |
 | `domain` | string | Domaine technique | `ML`, `Probas`, `GameTheory`, `Optimization`, `Logic` |
-| `output_path` | string | Chemin de sortie | `MyIA.AI.Notebooks/ML/QLearning-Intro.ipynb` |
+| `output_path` | string | Chemin de sortie, au nom canonique `<Prefixe>-<NN><lettre?>-<Titre>-<Noyau>.ipynb` (règle `notebook-accretion-numbering` §1 : suffixe de noyau obligatoire et dernier) | `MyIA.AI.Notebooks/RL/RL-<NN>-QLearning-Intro-Python.ipynb` |
 | `kernel` | string | Kernel Jupyter | `python3`, `.net-csharp`, `.net-fsharp` |
 | `level` | string | Niveau cible | `intro`, `intermediate`, `advanced` |
 | `objectives` | list | Objectifs pédagogiques | `["Comprendre Q-learning", "Implémenter l'algorithme"]` |
@@ -408,6 +408,7 @@ L'explication doit:
 # 1. Designer crée le notebook
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt=f"""
     Tu es un agent notebook-designer.
     Lis .claude/agents/notebook-designer.md
@@ -423,6 +424,7 @@ Task(
 # 2. Executor exécute pour vérifier
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt=f"""
     Tu es un agent notebook-executor.
     Exécute le notebook: {output_path}
@@ -433,6 +435,7 @@ Task(
 # 3. Validator valide la structure et les résultats
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt=f"""
     Tu es un agent notebook-validator.
     Valide le notebook: {output_path}
@@ -443,6 +446,7 @@ Task(
 # 4. Enricher ajoute du contenu pédagogique supplémentaire
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt=f"""
     Tu es un agent notebook-enricher.
     Enrichis le notebook: {output_path}
@@ -461,7 +465,7 @@ Task(
   --domain ML
   --level intro
   --kernel python3
-  --output MyIA.AI.Notebooks/ML/DecisionTrees-Intro.ipynb
+  --output MyIA.AI.Notebooks/ML/ML-<NN>-DecisionTrees-Intro-Python.ipynb
   --objectives "Comprendre les arbres de décision,Implémenter avec sklearn,Visualiser l'arbre,Comparer avec Random Forest"
 ```
 
@@ -470,6 +474,7 @@ Task(
 ```python
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt="""
     Agent notebook-designer.
 
@@ -477,7 +482,7 @@ Task(
     Domain: GameTheory
     Level: intermediate
     Kernel: python3
-    Output: MyIA.AI.Notebooks/GameTheory/Shapley-Coalitions.ipynb
+    Output: MyIA.AI.Notebooks/GameTheory/GameTheory-<NN>-Shapley-Coalitions-Python.ipynb
 
     Objectives:
     - Définir la valeur de Shapley
@@ -498,6 +503,7 @@ Task(
 ```python
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt="""
     Agent notebook-designer.
 
@@ -505,7 +511,7 @@ Task(
     Domain: Logic
     Level: intro
     Kernel: lean4 (WSL)
-    Output: MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-Induction.ipynb
+    Output: MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-<NN>-Induction-Lean.ipynb
 
     Objectives:
     - Comprendre le principe d'induction

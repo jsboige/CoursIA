@@ -434,6 +434,46 @@ def scan_all(root: Path, classes: set[str]) -> list[tuple[str, str, str]]:
     return findings
 
 
+# Ouverture d'un bloc `outputs` dans un notebook pretty-print. Le `\s*$` final
+# est load-bearing : `"outputs": []` (cellule jamais executee) se referme sur sa
+# propre ligne, l'ouvrir ferait avaler tout le reste du fichier.
+OUTPUTS_OPEN_RE = re.compile(r'^(\s*)"outputs"\s*:\s*\[\s*$')
+
+# En-tete de hunk : `@@ -<a>[,<b>] +<c>[,<d>] @@`. Seul <c> (numero de depart dans
+# le fichier NOUVEAU) nous interesse -- c'est lui qui ancre la numerotation.
+HUNK_RE = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@")
+
+
+def _ipynb_output_lines(rel: str) -> set[int]:
+    """Lignes (1-based) situees dans un bloc `outputs` d'un notebook.
+
+    La prose d'une cellule et une charge utile de sortie se ressemblent ligne a
+    ligne : toutes deux sont des chaines nues (`    "print(...)\\n",` contre
+    `      "  Angel.lean   65 lignes\\n",`). Le champ `"source"` et le champ
+    `"outputs"` sont en revanche a la MEME profondeur, et le bloc se referme sur
+    une ligne dont l'indentation est celle de la cle. C'est cette carte qui les
+    separe -- le filtre ligne-a-ligne de `scan_diff` ne peut pas le faire seul.
+    """
+    try:
+        text = Path(rel).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return set()
+    inside: set[int] = set()
+    base: int | None = None
+    for num, raw in enumerate(text.splitlines(), start=1):
+        indent = len(raw) - len(raw.lstrip(" "))
+        if base is None:
+            match = OUTPUTS_OPEN_RE.match(raw)
+            if match:
+                base = len(match.group(1))
+            continue
+        if indent == base and raw.strip().startswith("]"):
+            base = None
+            continue
+        inside.add(num)
+    return inside
+
+
 def scan_diff(diff_range: str, classes: set[str]) -> list[tuple[str, str, str]]:
     """Ne juge que les lignes AJOUTEES : le stock existant ne fait pas echouer."""
     try:
@@ -448,6 +488,7 @@ def scan_diff(diff_range: str, classes: set[str]) -> list[tuple[str, str, str]]:
 
     findings: list[tuple[str, str, str]] = []
     generated_cache: dict[str, bool] = {}
+    output_lines_cache: dict[str, set[int]] = {}
 
     def _is_generated_file(rel: str) -> bool:
         if rel not in generated_cache:
@@ -458,22 +499,45 @@ def scan_diff(diff_range: str, classes: set[str]) -> list[tuple[str, str, str]]:
                 generated_cache[rel] = False
         return generated_cache[rel]
 
+    def _in_outputs(rel: str, ln: int) -> bool:
+        if rel not in output_lines_cache:
+            output_lines_cache[rel] = _ipynb_output_lines(rel)
+        return ln in output_lines_cache[rel]
+
     # Pour le mode diff, la verification seed par carnet est couteuse et le
     # contrat CI ne demande que la classe artifact par defaut : on applique le
     # gate seed stochastic seulement en --all (scan_all). En diff, stochastic
     # reste advisory brut (incertitude documentee).
     current = "?"
+    new_ln = 0
     for line in diff.splitlines():
         if line.startswith("+++ b/"):
             current = line[6:]
+            new_ln = 0
+            continue
+        hunk = HUNK_RE.match(line)
+        if hunk:
+            # `--unified=0` : le corps du hunk ne porte que les lignes ajoutees
+            # et supprimees, donc la 1re ligne "+" est la ligne <c> du nouveau
+            # fichier. On se place juste avant pour que `+= 1` y tombe.
+            new_ln = int(hunk.group(1)) - 1
             continue
         if not line.startswith("+") or line.startswith("+++"):
             continue
         if not (current.endswith(".ipynb") or current.endswith(".md")):
             continue
+        new_ln += 1
         if _skipped(Path(current)):
             continue
         if current.endswith(".md") and _is_generated_file(current):
+            continue
+        # La charge utile d'une SORTIE de cellule ressemble a s'y meprendre a de
+        # la prose (`"      \"  Angel.lean   65 lignes\\n\","`) : elle est
+        # pourtant le compte-rendu d'une cellule *code* qui compte et affiche,
+        # que la doctrine de l'en-tete declare legitime ("On ne la regarde
+        # pas."). Le filtre ligne-a-ligne ne peut pas l'attribuer a un type de
+        # cellule ; la carte par fichier, si.
+        if current.endswith(".ipynb") and _in_outputs(current, new_ln):
             continue
         # Dans un .ipynb, seule une valeur de "source" est de la prose. Les
         # champs de metadonnees (`"notes": "... 14/14 cells executed."`, ecrit

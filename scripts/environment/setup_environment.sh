@@ -168,7 +168,7 @@ install_dotnet_interactive() {
     return 0
   fi
   action "Installation de .NET Interactive..." "INFO"
-  if dotnet tool install -g Microsoft.dotnet-interactive >/dev/null 2>&1; then
+  if dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.617701 >/dev/null 2>&1; then
     action ".NET Interactive installé avec succès" "SUCCESS"
     save_checkpoint "dotnet_interactive_install"
     # `dotnet tool install -g` places binaries in ~/.dotnet/tools; surface it if missing.

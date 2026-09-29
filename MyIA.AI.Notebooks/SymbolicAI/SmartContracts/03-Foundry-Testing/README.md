@@ -1,6 +1,6 @@
 # 03-Foundry-Testing - Tests, Fuzzing et Verification Formelle
 
-**Navigation** : [Sommaire de la série](../README.md) | [<< SC-11 LLM-Assisted](../02-Solidity-Advanced/SC-11-LLM-Assisted.ipynb) | [SC-15 Zero-Knowledge Proofs >>](../04-Privacy-Cryptography/SC-15-Zero-Knowledge-Proofs.ipynb)
+**Navigation** : [Sommaire de la série](../README.md) | [<< SC-11 LLM-Assisted](../02-Solidity-Advanced/SC-11-LLM-Assisted-Python.ipynb) | [SC-15 Zero-Knowledge Proofs >>](../04-Privacy-Cryptography/SC-15-Zero-Knowledge-Proofs-Python.ipynb)
 
 Cette troisième sous-série (SC-12 a SC-14) introduit le **testing rigoureux** des smart contracts : la suite d'outils Foundry (forge, cast, anvil), le fuzz testing d'invariants, puis la vérification formelle avec Certora Prover et le langage CVL. C'est le passage du « code qui semble marcher » au « code dont on prouve les propriétés ». Ces notebooks ont une signature pédagogique particulière : le code Solidity y est présente comme chaînes de caractères avec les sorties de tests correspondantes ([PASS]/[FAIL]) documentées comme illustration. Une installation locale de Foundry et Certora permet de reproduire les tests pour de vrai.
 
@@ -10,9 +10,9 @@ Cette troisième sous-série (SC-12 a SC-14) introduit le **testing rigoureux** 
 
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
-| 12 | [SC-12-Foundry-Testing](SC-12-Foundry-Testing.ipynb) | 45 min | Installation Foundry, structure de projet, tests Solidity (DSTest), cheatcodes, assertions |
-| 13 | [SC-13-Fuzz-Invariants](SC-13-Fuzz-Invariants.ipynb) | 40 min | Fuzz testing, paramètres aléatoires, invariants de contrats, `vm.assume` |
-| 14 | [SC-14-Formal-Verification](SC-14-Formal-Verification.ipynb) | 50 min | Verification formelle, Certora Prover, CVL, spécifications, règles |
+| 12 | [SC-12-Foundry-Testing-Python](SC-12-Foundry-Testing-Python.ipynb) | 45 min | Installation Foundry, structure de projet, tests Solidity (DSTest), cheatcodes, assertions |
+| 13 | [SC-13-Fuzz-Invariants-Python](SC-13-Fuzz-Invariants-Python.ipynb) | 40 min | Fuzz testing, paramètres aléatoires, invariants de contrats, `vm.assume` |
+| 14 | [SC-14-Formal-Verification-Python](SC-14-Formal-Verification-Python.ipynb) | 50 min | Verification formelle, Certora Prover, CVL, spécifications, règles |
 
 **Total** : 3 notebooks, ~2h15.
 
@@ -52,7 +52,7 @@ La **vérification formelle** comme niveau au-dessus du testing : **Certora Prov
 
 | Notebook | Fondations requises | Dépendances |
 |----------|---------------------|-------------|
-| SC-12 Foundry-Testing | SC-3 a SC-6 complètes ([01-Solidity-Foundation](../01-Solidity-Foundation/SC-3-Solidity-Basics.ipynb)) ; terminal/bash | Foundry (`forge`, `cast`, `anvil`) |
+| SC-12 Foundry-Testing | SC-3 a SC-6 complètes ([01-Solidity-Foundation](../01-Solidity-Foundation/SC-03-Solidity-Basics-Python.ipynb)) ; terminal/bash | Foundry (`forge`, `cast`, `anvil`) |
 | SC-13 Fuzz-Invariants | SC-12 complète ; tests unitaires Solidity | Foundry |
 | SC-14 Formal-Verification | SC-12 + SC-13 complètes ; notions de logique formelle | Foundry ; Certora Prover ou Halmos (recommandé) |
 
@@ -70,8 +70,8 @@ La **vérification formelle** comme niveau au-dessus du testing : **Certora Prov
 | Série | Lien | Relation |
 |-------|------|----------|
 | [SmartContracts (parent)](../README.md) | Vue d'ensemble | Contexte, parcours global, glossaire |
-| [02-Solidity-Advanced](../02-Solidity-Advanced/SC-7-Token-Standards.ipynb) | Prérequis | SC-7..11 (standards ERC, DeFi, DAO, AA, LLM) |
-| [04-Privacy-Cryptography](../04-Privacy-Cryptography/SC-15-Zero-Knowledge-Proofs.ipynb) | Suite | SC-15..17 (ZK proofs, chiffrement homomorphe, vote vérifiable) |
+| [02-Solidity-Advanced](../02-Solidity-Advanced/SC-07-Token-Standards-Python.ipynb) | Prérequis | SC-7..11 (standards ERC, DeFi, DAO, AA, LLM) |
+| [04-Privacy-Cryptography](../04-Privacy-Cryptography/SC-15-Zero-Knowledge-Proofs-Python.ipynb) | Suite | SC-15..17 (ZK proofs, chiffrement homomorphe, vote vérifiable) |
 | [SymbolicAI/Lean](../../Lean/) | SC-14 (formal verif) | Verification formelle = même paradigme que la preuve Lean (CVL vs tactiques Lean) |
 
 ---

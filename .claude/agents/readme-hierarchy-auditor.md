@@ -78,6 +78,7 @@ Pour chaque README existant, en remontant niveau par niveau :
 
 1. **Verifier la coherence** :
    - Tous les notebooks du dossier sont-ils presentes (section ou ligne de table) ?
+   - Le parcours principal (numeros nus) est-il presente separement des approfondissements (lettres), sans les enchainer en une seule sequence ? Forme cible : `.claude/agents/readme-updater.md`, doctrine #5081
    - Tous les fichiers references existent ?
    - Liens vers sous-repertoires a jour ?
 
@@ -140,6 +141,7 @@ A chaque niveau, produire un rapport :
 ```python
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt="""
     Tu es un agent readme-hierarchy-auditor.
     Lis .claude/agents/readme-hierarchy-auditor.md

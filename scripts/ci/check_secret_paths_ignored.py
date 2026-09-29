@@ -99,6 +99,14 @@ def verdict_chemin(chemin: str, cwd: Path, suivis: frozenset[str]) -> dict:
     parsed = parse_ligne_check_ignore(res.stdout.splitlines()[0])
     if parsed is None:
         raise MesureImpossible(f"sortie illisible de `check-ignore` sur {chemin}")
+    # Une negation gagnante (`!motif`) rend rc=0 comme une vraie regle d'exclusion
+    # (mesure : `git check-ignore -v --no-index` = 0, sortie `.gitignore:2:!...`),
+    # mais elle INCLUT le fichier au lieu de l'exclure : le chemin n'est protege
+    # par aucune regle d'ignore. Sans ce tri, un secret designore par `!` serait
+    # classe VERSIONNEE -- vert sur un fichier stageable (issue #17708).
+    if parsed["motif"].startswith("!"):
+        return {"chemin": chemin, "statut": "NON_IGNORE", "source": None,
+                "raison": f'negation gagnante : {parsed["source"]}:{parsed["ligne"]}'}
     versionnee = source_est_versionnee(parsed["source"], suivis)
     return {
         "chemin": chemin,

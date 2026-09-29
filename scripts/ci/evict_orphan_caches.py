@@ -160,6 +160,15 @@ def _parse_args() -> argparse.Namespace:
         "(default: 24). A cache never hit has last_accessed_at == created_at.",
     )
     p.add_argument(
+        "--keep-latest",
+        type=int,
+        default=3,
+        help="Per overlay family (config hash + lang + toolchain), keep only the "
+        "N most recent caches still classified KEEP and evict the older ones "
+        "(default: 3; 0 disables). Reopening of #16088: every overlay of main "
+        "is an ancestor of main, so the two other criteria never catch them.",
+    )
+    p.add_argument(
         "--repo",
         default=os.environ.get("GITHUB_REPOSITORY", "jsboige/CoursIA"),
         help="Target repo (default: $GITHUB_REPOSITORY or jsboige/CoursIA).",
@@ -300,6 +309,7 @@ def _classify_cache(
     sha = m.group("sha40")
     rec["sha40"] = sha
     rec["lang"] = m.group("lang")
+    rec["family"] = f"{m.group('random8')}-{m.group('lang')}-{m.group('toolchain')}"
 
     reasons: list[str] = []
     ancestor_status = _is_ancestor(sha, remote, main_branch)
@@ -322,6 +332,34 @@ def _classify_cache(
     else:
         rec.update({"verdict": "KEEP", "reason": "recent_and_ancestor"})
     return rec
+
+
+def _mark_superseded(records: list[dict[str, Any]], keep_latest: int) -> None:
+    """Evict the overlays of a family beyond its `keep_latest` most recent ones.
+
+    Only records still classified KEEP are counted and touched : an overlay
+    already evicted for another reason does not take one of the kept slots,
+    and a REFUSE (undecidable ancestry) is never turned into a deletion.
+    Order is `created_at` descending ; `keep_latest <= 0` disables the rule.
+
+    Why (reopening of #16088, 2026-09-28) : each overlay of `main` carries a
+    SHA of `main`, hence an ancestor, and the quota fills in a few hours while
+    the age window is 7 days. Measured : 33 overlays kept, 3.96 GB, quota at
+    10.14 / 10 GB, and the knot_lean `.lake` cache evicted within 10 h of its
+    save -- every Lean build of that lake then ran cold.
+    """
+    if keep_latest <= 0:
+        return
+    families: dict[str, list[dict[str, Any]]] = {}
+    for r in records:
+        if r["verdict"] == "KEEP" and "family" in r:
+            families.setdefault(r["family"], []).append(r)
+    for members in families.values():
+        members.sort(key=lambda r: _parse_iso(r["created_at"]), reverse=True)
+        for r in members[keep_latest:]:
+            r.update(
+                {"verdict": "EVICT", "reason": f"superseded_beyond_latest_{keep_latest}"}
+            )
 
 
 def _print_human(records: list[dict[str, Any]], applied: bool) -> None:
@@ -379,6 +417,7 @@ def main() -> int:
         )
         for c in caches
     ]
+    _mark_superseded(records, args.keep_latest)
 
     applied = args.apply
     if applied:

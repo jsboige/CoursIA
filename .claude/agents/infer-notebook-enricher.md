@@ -89,6 +89,7 @@ Ou directement comme agent :
 ```python
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt="Enrichir selon .claude/agents/infer-notebook-enricher.md: {notebook_path}",
     description="Enrich Infer notebook"
 )

@@ -109,6 +109,7 @@ python scripts/ci/prune_merged_worktrees.py --json      # sortie structuree pour
 ```bash
 python scripts/ci/install_prune_task.py --install   # garde : REFUSE tant que le fix #14476 n'est pas merge
 python scripts/ci/install_prune_task.py --status    # etat de la tache
+python scripts/ci/install_prune_task.py --install --dry-run  # afficher argv schtasks sans installer
 ```
 
 **Critères de retrait (cf issue #14195 acceptance)** :
@@ -118,6 +119,8 @@ python scripts/ci/install_prune_task.py --status    # etat de la tache
 - **Artefacts untracked tolérés** (`slides/images/`, `**/scripts/results/`, `.claude/agent-memory/*`, `*_output.ipynb`, `node_modules/`, `.cache/`, `.pytest_cache/`, `__pycache__/`, `_measurements/`, `.mypy_cache/`, `.ruff_cache/`, `dist/`, `build/`, `.eggs/`, `.tox/`) — d'après le dernier commentaire de #8924.
 
 **Ancre PR autoritative** : `gh pr list --state all --search "head:<branch>"` (pas `--is-ancestor` seul, ni `commits/<oid>/pulls` REST — cf §Orphan-branch scan ci-dessus pour les faux négatifs mesurés).
+
+**Refus ≠ échec + observabilité (roo-extensions #3895, 27/09)** : mesuré sur 3 machines, 86-100 % des worktrees vus sont REFUSE (worktrees de cycle nés HEAD-détachés ou sales par construction — po-2023 a saturé ses disques dessus). Un REFUS est une **décision** de l'organe : exit 0, le rapport porte le décompte par classe (`refusals:` en texte, `refusal_reasons` en JSON) ; rc≠0 = panne gh/git ou échec d'application, uniquement. La tâche planifiée relaie `--warn-threshold 20` : au-delà, une ligne `[WARN][prune-task]` vit dans le journal (`%LOCALAPPDATA%\CoursIA\prune_task\logs\`). Attribution lane : un spawn peut poser `.lane-owner` (une ligne : `machine:workspace`) à la racine du worktree — l'organe l'affiche (`lane=...`) et l'agrège (`lane_refusals`) ; le fichier est toléré au nettoyage et n'influence AUCUNE décision.
 
 **Mesure 2026-09-03 (po-2027, cycle #14195)** :
 

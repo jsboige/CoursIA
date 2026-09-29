@@ -56,6 +56,7 @@ Le trait distinctif d'Infer.NET : le modèle déclaratif est **compilé** (via R
 | 5 | [Infer-5-Causal-Inference](Infer-5-Causal-Inference.ipynb) | 65 min | do-calculus, backdoor/front-door, paradoxe de Simpson |
 | 7 | [Infer-7-Skills-IRT](Infer-7-Skills-IRT.ipynb) | 60 min | IRT, DINA, many-to-many — *MBML Ch.2* « Assessing People's Skills » |
 | 8 | [Infer-8-TrueSkill](Infer-8-TrueSkill.ipynb) | 55 min | Ranking, online learning, équipes — *MBML Ch.3* « Meeting Your Match » |
+| 8b | [Infer-8b-TrueSkill-Formules-Fermees](Infer-08b-TrueSkill-Formules-Fermees-CSharp.ipynb) | 20 min | Formes fermées V(t)/W(t) de Herbrich-Minka-Graepel 2007, vérification exacte contre le moteur EP |
 | 9 | [Infer-9-Classification](Infer-9-Classification.ipynb) | 50 min | BPM, régression logistique, A/B, calibration hors échantillon (Brier/AUC/fiabilité) |
 | 10 | [Infer-10-Model-Selection](Infer-10-Model-Selection.ipynb) | 45 min | Evidence, Bayes factors, ARD |
 | 11 | [Infer-11-Topic-Models](Infer-11-Topic-Models.ipynb) | 60 min | LDA, documents-topics-mots |
@@ -162,23 +163,21 @@ python MyIA.AI.Notebooks/Probas/Infer/scripts/test_notebooks.py --validate-only
 ```mermaid
 flowchart TD
     P1["<b>Fondamentaux</b> (1-3)<br/>inference · distributions · graphes de facteurs"]
-    P2["<b>Modèles classiques</b> (4-6)<br/>réseaux bayésiens · IRT · TrueSkill"]
-    P3["<b>Classification & sélection</b> (7-8)<br/>A/B tests · evidence · ARD"]
-    P4["<b>Modèles avancés</b> (9-12)<br/>LDA · crowdsourcing · HMM · reco"]
-    P5["<b>Référence</b> (13)<br/>Debugging · comparaison algorithmes"]
+    P2["<b>Modèles classiques</b> (4-13)<br/>réseaux bayésiens · causalité · IRT · TrueSkill · classification · sélection · LDA · hiérarchique · crowdsourcing"]
+    P5["<b>Référence</b> · Debugging (accrétion 2b)<br/>comparaison algorithmes"]
     P8["<b>Frontières</b> (14-19)<br/>causalité · GP sparse · hiérarchique · Kalman · change-point · survie"]
     DT["<b>Théorie de la décision</b><br/>arc autonome : ../DecisionTheory/DecInfer/"]
-    P1 --> P2 --> P3 --> P4
-    P4 --> P8
+    P1 --> P2
+    P2 --> P8
     P5 -.->|"diagnostics<br/>à tout moment"| P2
-    P5 -.-> P4
+    P5 -.-> P8
     P8 -.->|"décision séquentielle,<br/>Thompson, Gittins"| DT
     %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ne pas harmoniser le ton avec le stroke (libelle sinon illisible)
     classDef decision fill:#d1ecf1,stroke:#0c5460,stroke-width:2px,color:#0c5460;
     class DT decision;
 ```
 
-Le socle d'inference (1-12) se suit en séquence ; le notebook **Debugging (6)** y joue un rôle transversal — il compare aussi les trois algorithmes (EP/VMP/Gibbs) et sert de référence dès qu'une inférence dysfonctionne. Les notebooks **14-19 (Frontières)** prolongent le corpus bayésien (causalité, processus gaussiens, modèles hiérarchiques, filtre de Kalman, détection de rupture, analyse de survie). La **théorie de la décision** — utilité espérée, EVPI, MDPs, Thompson Sampling, plus les companions Lean (indice de Gittins) — forme désormais un **arc autonome** dans [`../DecisionTheory/DecInfer/`](../DecisionTheory/DecInfer/README.md), adossé au lake [`decision_theory_lean`](../decision_theory_lean/). Le détail notebook-par-notebook figure dans les sections détaillées ci-dessous.
+Le corpus (1-19, le numéro 6 n'existe pas — le debugging vit en accrétion `Infer-2b`) se suit en séquence ; l'accrétion **Debugging** y joue un rôle transversal — elle compare aussi les trois algorithmes (EP/VMP/Gibbs) et sert de référence dès qu'une inférence dysfonctionne. Les notebooks **14-19 (Frontières)** prolongent le corpus bayésien (causalité, processus gaussiens, modèles hiérarchiques, filtre de Kalman, détection de rupture, analyse de survie). La **théorie de la décision** — utilité espérée, EVPI, MDPs, Thompson Sampling, plus les companions Lean (indice de Gittins) — forme désormais un **arc autonome** dans [`../DecisionTheory/DecInfer/`](../DecisionTheory/DecInfer/README.md), adossé au lake [`decision_theory_lean`](../decision_theory_lean/). Le détail notebook-par-notebook figure dans les sections détaillées ci-dessous.
 
 ---
 
@@ -377,6 +376,31 @@ Les notebooks 4-6 couvrent les modèles bayésiens classiques : réseaux, compé
 | Update | μ_new ∝ surprise | Plus grande si upset |
 
 **Applications** : Classement Xbox Live, tournois esports, matchmaking équilibré
+
+---
+
+### Infer-8b : TrueSkill — Formules Fermées
+
+**Durée** : 20 min | **Prérequis** : [Infer-8-TrueSkill](Infer-8-TrueSkill.ipynb)
+
+**Objectifs** :
+
+- Dériver les fonctions de troncature V(t) et W(t) (cas à 2 joueurs)
+- Implémenter la mise à jour closed-form — O(1) par match, sans inférence compilée
+- Vérifier numériquement la cohérence exacte avec le moteur EP d'Infer.NET
+- Comprendre le terme de dynamique τ² (équilibre contraction / regrowth)
+
+**Concepts clés** :
+
+| Composant | Formule | Description |
+|-----------|---------|-------------|
+| Troncature | V(t) = φ(t)/Φ(t) | Ratio densité/CDF de la Gaussienne réduite |
+| Troncature | W(t) = V(t)(V(t)+t) | Contraction de la variance |
+| Mise à jour | μ' = μ ± (σ²/c)·V(t) | Déplacement du skill, signé gagnant/perdant |
+| Variance | σ'² = σ²(1 − (σ²/c²)·W(t)) | Contraction bornée par le ratio σ²/c² |
+| Dynamique | σ² ← σ² + τ² | Régrowth entre matchs : l'incertitude d'un inactif remonte |
+
+**Applications** : Vélocité de production Xbox Live — la lettre isole la contribution algorithmique du papier (Herbrich, Minka & Graepel, NeurIPS 2007) que le moteur EP d'Infer-8 calcule sous le capot.
 
 ---
 

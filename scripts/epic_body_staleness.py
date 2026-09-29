@@ -27,7 +27,8 @@ from datetime import UTC, date, datetime, timedelta
 
 EPIC_TITLE_RE = re.compile(r"\bepic\b", re.IGNORECASE)
 ISSUE_REF_RE = re.compile(r"(?<![\w])#(\d+)\b")
-OPEN_ISSUE_LIMIT = 500
+OPEN_ISSUE_PROBE_START = 500
+OPEN_ISSUE_PROBE_CEILING = 20000
 SEARCH_RESULT_CAP = 1000
 MERGED_SLICE_DAYS = 3
 MAX_LOOKBACK_DAYS = 3650
@@ -294,26 +295,51 @@ def _default_repo() -> str:
     return result.stdout.strip() or "jsboige/CoursIA"
 
 
-def list_open_epics(repo: str) -> list[Epic]:
-    rows = _gh_json(
-        [
-            "issue",
-            "list",
-            "--repo",
-            repo,
-            "--state",
-            "open",
-            "--limit",
-            str(OPEN_ISSUE_LIMIT),
-            "--json",
-            "number,title,body,labels",
-        ]
-    ) or []
-    if len(rows) >= OPEN_ISSUE_LIMIT:
-        raise RuntimeError(
-            f"open-issue corpus reached its {OPEN_ISSUE_LIMIT}-issue fetch limit"
+def _fetch_open_issues(repo: str) -> list[dict]:
+    """Return every open issue, proving the corpus is exhausted and not capped.
+
+    A single ``--limit`` both bounds the corpus and hides the bound: asking for
+    exactly N rows cannot tell "this repository has N open issues" apart from
+    "the fetch stopped at N". The probe therefore raises the request until a
+    reply comes back **shorter** than requested -- the only observable that
+    proves exhaustion -- and refuses at the ceiling rather than reporting a
+    truncated corpus as a complete one.
+
+    The ceiling is not decoration. The corpus outgrew a fixed 500 and the
+    analyzer then raised on every run, measuring nothing at all: a fail-closed
+    guard whose bound sits below the data is an off switch, not a guard.
+    """
+    limit = OPEN_ISSUE_PROBE_START
+    while True:
+        payload = _gh_json(
+            [
+                "issue",
+                "list",
+                "--repo",
+                repo,
+                "--state",
+                "open",
+                "--limit",
+                str(limit),
+                "--json",
+                "number,title,body,labels",
+            ]
         )
-    return [Epic.from_gh_dict(row) for row in rows if is_epic(row)]
+        if not isinstance(payload, list):
+            raise RuntimeError(
+                f"open-issue fetch returned {type(payload).__name__}, not a list"
+            )
+        if len(payload) < limit:
+            return payload
+        if limit >= OPEN_ISSUE_PROBE_CEILING:
+            raise RuntimeError(
+                f"open-issue corpus still full at its {limit}-issue fetch ceiling"
+            )
+        limit = min(limit * 2, OPEN_ISSUE_PROBE_CEILING)
+
+
+def list_open_epics(repo: str) -> list[Epic]:
+    return [Epic.from_gh_dict(row) for row in _fetch_open_issues(repo) if is_epic(row)]
 
 
 def _merged_pr_slice(repo: str, since: date, until: date) -> list[dict]:

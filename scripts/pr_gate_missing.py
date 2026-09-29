@@ -410,10 +410,12 @@ def list_open_prs(repo: str) -> list[dict]:
     for p in pulls:
         rollup: list[dict] = []
         if p.get("base") == "main" and not p.get("draft"):
-            names = _gh_json([
+            # --paginate : un `PR gate` range en page 2 (> 100 jambes) etait
+            # lu comme absent. Un tableau par page -> flux, d'ou _gh_rows.
+            names = _gh_rows([
                 "api", f"repos/{repo}/commits/{p['sha']}/check-runs?per_page=100",
-                "--jq", "[.check_runs[].name]",
-            ]) or []
+                "--paginate", "--jq", "[.check_runs[].name]",
+            ])
             rollup = [{"name": n} for n in names]
         out.append(classify_input(p["number"], p.get("base"), p.get("draft"),
                                   p.get("author"), rollup, p.get("labels")))
