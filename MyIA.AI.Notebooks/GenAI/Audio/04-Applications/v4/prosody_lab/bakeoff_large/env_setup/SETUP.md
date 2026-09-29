@@ -69,13 +69,18 @@ Tell c.c.c.d.767-L1 strict fondateur : **zero-dep-manifeste ≠ zero-dep-réel**
 
 ## Zonos (client `zonos.py`, venv `venv-zonos`)
 
-Slot 3 shortlist — Kyutai/Zonos-v0.1-transformer (Apache-2.0, FR par code ISO `fr`).
-Chemin officiel (règle F + Prong A) : **paquet PyPI `zonos`** du repo Kyutai/Zonos.
+Slot 3 shortlist — Zyphra/Zonos-v0.1-transformer (Apache-2.0, FR par code eSpeak `fr-fr`).
 
-**Variante transformer, pas hybride** : `Kyutai/Zonos` (hybride) exige `mamba-ssm` +
-`causal-conv1d` (noyaux CUDA compilés, pas de wheels Windows) ;
-`Kyutai/Zonos-v0.1-transformer` est un checkpoint officiel du même repo sans
-dépendance compilée — choix de variante documenté, pas un contournement.
+**PIE — PyPI `zonos` est un placeholder squatté** (0.1.0.dev0, wheel vide,
+Home-page `github.com/yourusername/zonos`, Auteur "Your Name") : `pip install zonos`
+rend rc=0 sans livrer aucun module `zonos` (mesuré 29/09). Le paquet officiel
+vient du repo GitHub **Zyphra/Zonos** (install éditable — règle F + Prong A).
+
+**Variante transformer, pas hybride** : `Zyphra/Zonos-v0.1-hybrid` exige
+`mamba-ssm` + `causal-conv1d` (extras `compile` du pyproject : noyaux CUDA
+compilés, pas de wheels Windows) ; `Zyphra/Zonos-v0.1-transformer` est un
+checkpoint officiel du même repo sans dépendance compilée — choix de variante
+documenté, pas un contournement.
 
 ```bash
 # 1. venv Python 3.10
@@ -84,11 +89,12 @@ py -3.10 -m venv _runtime/venv-zonos
 _runtime/venv-zonos/Scripts/python.exe -m pip install --upgrade pip
 
 # 2. torch cu126 — PIE 2.11.0 : l'index cu126 ne porte torchaudio que jusqu'a
-#    2.11.0 (torchaudio==2.14.0 introuvable, mesure 29/09) ; 2.11.0 >> exigence Zonos
+#    2.11.0 (torchaudio==2.14.0 introuvable, mesure 29/09) ; 2.11.0 >> exigence Zonos (>=2.5.1)
 _runtime/venv-zonos/Scripts/python.exe -m pip install torch==2.11.0 torchaudio==2.11.0 --index-url https://download.pytorch.org/whl/cu126
 
-# 3. zonos + jambe WER du banc
-_runtime/venv-zonos/Scripts/python.exe -m pip install zonos soundfile faster-whisper
+# 3. zonos officiel (repo, PAS PyPI) + jambe WER du banc
+git clone --depth 1 https://github.com/Zyphra/Zonos.git _runtime/Zonos
+_runtime/venv-zonos/Scripts/python.exe -m pip install -e ./_runtime/Zonos soundfile faster-whisper
 ```
 
 Verif pre-banc (767-L1 zero-dep-manifeste != zero-dep-reel) :

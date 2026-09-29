@@ -1,25 +1,29 @@
 """Client Zonos v0.1-transformer pour Phase A0 #17586 bakeoff_large.
 
-Modèle : Kyutai/Zonos-v0.1-transformer (Apache-2.0, FR parmi les langues
-conditionnées par code ISO, clonage de voix par embedding de référence).
+Modèle : Zyphra/Zonos-v0.1-transformer (Apache-2.0, FR par code eSpeak
+`fr-fr`, clonage de voix par embedding de référence).
 
-Installation (env propre, règle F) :
+Installation (env propre, règle F) — ATTENTION : le paquet PyPI `zonos` est un
+placeholder squatté (0.1.0.dev0, wheel vide, sans module) ; le paquet officiel
+s'installe depuis le repo GitHub Zyphra/Zonos :
     py -3.10 -m venv _runtime/venv-zonos
     _runtime/venv-zonos/Scripts/python.exe -m pip install --upgrade pip
-    _runtime/venv-zonos/Scripts/python.exe -m pip install torch==2.14.0 torchaudio==2.14.0 --index-url https://download.pytorch.org/whl/cu126
-    _runtime/venv-zonos/Scripts/python.exe -m pip install zonos soundfile faster-whisper
+    _runtime/venv-zonos/Scripts/python.exe -m pip install torch==2.11.0 torchaudio==2.11.0 --index-url https://download.pytorch.org/whl/cu126
+    git clone --depth 1 https://github.com/Zyphra/Zonos.git _runtime/Zonos
+    _runtime/venv-zonos/Scripts/python.exe -m pip install -e ./_runtime/Zonos soundfile faster-whisper
 
-Variante TRANSFORMER (pas hybride) : la variante hybride (`Kyutai/Zonos`)
-exige mamba-ssm + causal-conv1d (noyaux CUDA compilés, sans wheels Windows) ;
-la variante pure transformer est un checkpoint officiel équivalent du même
-repo, sans dépendance CUDA compilée — choix de variante, pas de contournement.
+Variante TRANSFORMER (pas hybride) : la variante hybride
+(`Zyphra/Zonos-v0.1-hybrid`) exige mamba-ssm + causal-conv1d (extras `compile`,
+noyaux CUDA compilés, sans wheels Windows) ; la variante pure transformer est
+un checkpoint officiel du même repo, sans dépendance CUDA compilée — choix de
+variante documenté, pas un contournement.
 
 Interface uniforme (cf. __init__.py) :
     load_model(device, dtype) -> model
     synth(text, out_wav, model, language='French', **kw) -> dict
 
-    - language : 'French' (mappé vers le code ISO 'fr' de Zonos ; les autres
-      langues Zonos passent aussi par leur nom anglais)
+    - language : 'French' (mappé vers le code eSpeak 'fr-fr' de Zonos ; les
+      autres langues Zonos passent aussi par leur nom anglais)
     - speaker/instruct : non applicables à Zonos v0.1 (ignorés) — le timbre
       vient du wav de référence (clonage), la langue du code ISO.
 
@@ -41,13 +45,13 @@ import torch
 import torchaudio
 
 
-DEFAULT_MODEL_ID = "Kyutai/Zonos-v0.1-transformer"
+DEFAULT_MODEL_ID = "Zyphra/Zonos-v0.1-transformer"
 DEFAULT_LANGUAGE = "French"
 
-# Nom bench -> code ISO conditionné par Zonos (make_cond_dict language=)
+# Nom bench -> code eSpeak conditionné par Zonos (make_cond_dict language=)
 _LANGUAGE_CODES = {
     "english": "en-us",
-    "french": "fr",
+    "french": "fr-fr",
     "german": "de",
     "spanish": "es",
     "italian": "it",
@@ -82,15 +86,19 @@ def get_supported_languages() -> list[str]:
 
 
 def load_model(model_id: str = DEFAULT_MODEL_ID, device: str = "cuda", dtype: str = "bf16"):
-    """Charge Zonos transformer avec mesure VRAM pic."""
+    """Charge Zonos transformer avec mesure VRAM pic.
+
+    Le paramètre `dtype` du banc est non applicable : `from_pretrained` force
+    le backbone en bfloat16 (`.to(device, torch.bfloat16)` dans le repo) —
+    accepté ici seulement pour l'interface uniforme.
+    """
     from zonos.model import Zonos
 
-    torch_dtype = {"bf16": torch.bfloat16, "fp16": torch.float16, "fp32": torch.float32}[dtype]
-    print(f"  [Zonos] Loading {model_id} on {device} ({dtype})...")
+    print(f"  [Zonos] Loading {model_id} on {device} (bf16, forced by loader)...")
     if torch.cuda.is_available():
         torch.cuda.reset_peak_memory_stats()
     t0 = time.time()
-    model = Zonos.from_pretrained(model_id, device=device, dtype=torch_dtype)
+    model = Zonos.from_pretrained(model_id, device=device)
     dt = time.time() - t0
     vram_peak_gb = torch.cuda.max_memory_allocated() / 1024**3 if torch.cuda.is_available() else 0.0
     print(f"  [Zonos] Loaded in {dt:.1f}s, VRAM peak {vram_peak_gb:.2f} GB")
@@ -124,6 +132,9 @@ def synth(
             "ou poser un wav de référence à cet emplacement."
         )
     spkref, sr = torchaudio.load(str(ref_path))
+    # Speaker = embedding calculé par le modèle (make_speaker_embedding),
+    # pas le wav brut — cf sample.py du repo officiel.
+    spk_emb = model.make_speaker_embedding(spkref, sr)
 
     if torch.cuda.is_available():
         torch.cuda.reset_peak_memory_stats()
@@ -131,8 +142,7 @@ def synth(
     cond_dict = make_cond_dict(
         text=text,
         language=lang_code,
-        speaker=spkref,
-        sampling_rate=sr,
+        speaker=spk_emb,
     )
     conditioning = model.prepare_conditioning(cond_dict)
     codes = model.generate(conditioning)
