@@ -29,25 +29,24 @@ def strip_stale_papermill_metadata(nb):
 
     The same rationale applies per cell (#18305, suite #11146) : un executeur
     qui reecrit un carnet touche les sorties de chaque cellule code mais laisse
-    les blocs ``cells[i].metadata.execution`` (``iopub.status.busy``/``iopub.
-    execute_input``) et ``cells[i].metadata.papermill`` (``start_time``,
-    ``duration``) dater des executions precedentes. On les retire aussi.
+    les blocs ``cells[i].metadata.execution`` (``iopub.status.busy``,
+    ``iopub.status.idle``, ``iopub.execute_input``, ``shell.execute_reply``) et
+    ``cells[i].metadata.papermill`` (``start_time``, ``duration``) dater des
+    executions precedentes. On retire le wrapper ``execution`` ENTIER (et non
+    seulement sa cle ``papermill``) : chaque cle qu'il porte date une passe
+    anterieure, et les separateurs par cle laisseraient passer une nouvelle
+    cle ``iopub.quelque_chose`` au prochain ajout de la spec Jupyter, sans
+    gate. C'est le defaut STALE_IOPUB mesure sur MGS-02 (cf. #18305, instance
+    du 2026-08-20 preservee par la passe anterieure alors que le notebook etait
+    re-execute en 09/2026).
     """
     metadata = nb.get("metadata")
     if metadata:
         metadata.pop("papermill", None)
-        execution = metadata.get("execution")
-        if isinstance(execution, dict):
-            execution.pop("papermill", None)
-            if not execution:
-                metadata.pop("execution", None)
+        metadata.pop("execution", None)
     for cell in nb.get("cells", []) or []:
         cell_meta = cell.get("metadata")
         if not cell_meta:
             continue
         cell_meta.pop("papermill", None)
-        execution = cell_meta.get("execution")
-        if isinstance(execution, dict):
-            execution.pop("papermill", None)
-            if not execution:
-                cell_meta.pop("execution", None)
+        cell_meta.pop("execution", None)

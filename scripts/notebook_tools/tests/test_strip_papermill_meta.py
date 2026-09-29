@@ -113,24 +113,52 @@ def test_cell_level_execution_papermill_is_stripped_and_wrapper_dropped():
     )
 
 
-def test_cell_level_only_execution_papermill_keeps_other_execution_keys():
+def test_cell_level_execution_wrapper_dropped_entirely():
+    """Le wrapper ``execution`` est retire ENTIEREMENT (et non partiellement) :
+    chaque cle qu'il porte (``iopub.status.busy``, ``iopub.status.idle``,
+    ``iopub.execute_input``, ``shell.execute_reply``) date une passe
+    anterieure. Une preservation par cle laisserait passer une nouvelle cle
+    Jupyter sans gate au prochain ajout de la spec. Voir docstring de
+    ``strip_stale_papermill_metadata`` pour la mesure MGS-02 (#18305).
+    """
     nb = make_nb(
         cell_meta_specs=[
             {
                 "execution": {
                     "iopub.status.busy": "2026-08-20T12:27:00Z",
-                    "iopub.execute_input": "2026-08-20T12:27:01Z",
+                    "iopub.status.idle": "2026-08-20T12:27:01Z",
+                    "iopub.execute_input": "2026-08-20T12:27:00Z",
+                    "shell.execute_reply": "2026-08-20T12:27:00Z",
                     "papermill": {"start_time": "2026-08-20T12:27:00Z"},
-                }
+                },
+                "tags": ["keep-me"],
             }
         ]
     )
     strip_stale_papermill_metadata(nb)
-    execution = nb["cells"][0]["metadata"].get("execution")
-    assert execution is not None
-    assert execution.get("iopub.status.busy") == "2026-08-20T12:27:00Z"
-    assert execution.get("iopub.execute_input") == "2026-08-20T12:27:01Z"
-    assert "papermill" not in execution
+    cell_meta = nb["cells"][0]["metadata"]
+    assert "execution" not in cell_meta, (
+        "cell-level metadata.execution wrapper should be dropped entirely "
+        "(iopub.* keys date an earlier run; preserve-by-key was the bug pinned "
+        "by #18305's instance)"
+    )
+    assert cell_meta.get("tags") == ["keep-me"], (
+        "non-papermill, non-execution metadata keys must be preserved"
+    )
+
+
+def test_notebook_level_execution_wrapper_dropped_entirely():
+    """Meme regle au niveau carnet : ``metadata.execution`` est retire entier."""
+    nb = make_nb(
+        notebook_exec={
+            "iopub.execute_input": "2026-08-20T12:27:01Z",
+            "papermill": {"start_time": "2026-08-20T12:27:00Z"},
+        }
+    )
+    strip_stale_papermill_metadata(nb)
+    assert "execution" not in nb["metadata"], (
+        "notebook-level metadata.execution should be removed entirely"
+    )
 
 
 def test_empty_cell_metadata_is_noop():
