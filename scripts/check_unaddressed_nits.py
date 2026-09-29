@@ -3931,10 +3931,23 @@ def can_lift(comment: dict) -> bool:
 # retire -- c'est le gate qui refuse le dossier, pas l'organe qui le
 # blanchit ; la prose HORS du bloc (tete de pierre tombale comprise) reste
 # lue normalement.
+#
+# #18077 -- 3e forme de #17065 : un dossier RETIRE par renommage de ses
+# delimiteurs (`[ADJOINT-PREFLIGHT RETIRE]` / `[/ADJOINT-PREFLIGHT RETIRE]`,
+# mesure sur #16960, commentaire 5751421659) garde son bloc schema et sa
+# queue narrative. Sous la seule forme a espace, le span n'etait plus
+# reconnu : la phrase d'attestation de la queue (« Aucun merge, APPROVED ou
+# CHANGES_REQUESTED effectue ici ») redevenait une reserve POSEE que
+# l'autrice de la PR ne pouvait pas lever (#13495) -- ~8 h 30 de lane
+# bloquee. Les delimiteurs acceptent donc l'espace OU le tiret entre les
+# deux mots, et un suffixe libre sur la meme ligne (RETIRE, SUPERSEDE...).
+# Le retrait reste un retrait pour le GATE : `check_adjoint_prevalidation.py`
+# ne lit que la forme canonique, un bloc renomme n'y est plus un dossier.
+_DOSSIER_DELIM_TAIL = r"(?:[ \t]+[^\]\r\n]*)?\][ \t]*"
 _ADJOINT_DOSSIER_SPAN = re.compile(
-    r"^[ \t]*\[ADJOINT PREFLIGHT\][ \t]*\r?\n"
+    r"^[ \t]*\[ADJOINT[ -]PREFLIGHT" + _DOSSIER_DELIM_TAIL + r"\r?\n"
     r".*?"
-    r"^[ \t]*\[/ADJOINT PREFLIGHT\][ \t]*\r?(?:\n|\Z)",
+    r"^[ \t]*\[/ADJOINT[ -]PREFLIGHT" + _DOSSIER_DELIM_TAIL + r"\r?(?:\n|\Z)",
     re.DOTALL | re.MULTILINE,
 )
 
@@ -3960,6 +3973,9 @@ def _strip_adjoint_dossier(body: str) -> str:
        picker (4e cause de repair -> ce meme organe), 8 lanes sur 8 se
        retrouvaient en mode repair pendant que 313 issues sur 390
        restaient admissibles.
+    3. (#18077) les delimiteurs RENOMMES d'un dossier retire (tiret au lieu
+       de l'espace, suffixe libre comme RETIRE) valent les delimiteurs
+       canoniques pour les deux regles ci-dessus.
 
     Fail-closed inchange : un bloc MALFORME (ouvrant sans fermant) n'est pas
     retire ni n'inertit rien ; la prose PRECEDANT le bloc (tete de pierre

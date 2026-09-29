@@ -1,0 +1,443 @@
+- id: ia3-001
+  theme: ia-3-logique-bases-connaissances
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: Lequel de ces systèmes permet la génération d'hypothèses et est notamment utilisé dans la Justice?
+  choix_unique: true
+  options:
+  - texte: Logique floue
+    correcte: false
+  - texte: Logique non monotone
+    correcte: false
+  - texte: Logique par défaut
+    correcte: false
+  - texte: JTMS
+    correcte: false
+  - texte: ATMS
+    correcte: true
+  - texte: Réseaux sémantiques
+    correcte: false
+- id: ia3-002
+  theme: ia-3-logique-bases-connaissances
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: Lequel de ces langages permet de définir des modèles avec le plus haut niveau d'abstraction?
+  choix_unique: true
+  options:
+  - texte: XML
+    correcte: false
+  - texte: XML Schéma
+    correcte: false
+  - texte: RDF
+    correcte: false
+  - texte: RDFa
+    correcte: false
+  - texte: RDFS
+    correcte: false
+  - texte: OWL
+    correcte: true
+  - texte: SPARQL
+    correcte: false
+- id: ia3-003
+  theme: ia-3-logique-bases-connaissances
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: Lequel des éléments de syntaxes suivants existe en logique du premier ordre et pas en logique
+    propositionnelle?
+  choix_unique: true
+  options:
+  - texte: ¬
+    correcte: false
+  - texte: ∨
+    correcte: false
+  - texte: ∧
+    correcte: false
+  - texte: ⇒
+    correcte: false
+  - texte: ⇔
+    correcte: false
+  - texte: ∀
+    correcte: true
+- id: ia3-004
+  theme: ia-3-logique-bases-connaissances
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: Lequel des énoncés suivants en logique du premier ordre est la traduction correcte de la phrase
+    "Il existe un pays qui a des frontières à la fois avec l'Irak et le Pakistan"
+  choix_unique: true
+  options:
+  - texte: ∃ c Country(c) ∧ Border (c, Iraq) ∧ Border (c,Pakistan)
+    correcte: true
+  - texte: ∃ c Country(c) ⇒ [Border (c, Iraq) ∧ Border (c,Pakistan)]
+    correcte: false
+  - texte: '[∃ c Country(c)] ⇒ [Border (c, Iraq) ∧ Border (c,Pakistan)]'
+    correcte: false
+  - texte: ∃ c Border (Country(c), Iraq ∧ Pakistan)
+    correcte: false
+- id: ia3-005
+  theme: ia-3-logique-bases-connaissances
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: Lequel des énoncés suivants en logique du premier ordre n'est pas une traduction correcte de
+    la phrase "Aucune région d'Amérique du Sud n'a de frontière avec une région d'Europe"
+  choix_unique: true
+  options:
+  - texte: ¬[∃ c, d In(c, SouthAmerica) ∧ In(d,Europe) ∧ Borders(c, d)]
+    correcte: false
+  - texte: ∀ c, d [In(c, SouthAmerica) ∧ In(d,Europe)] ⇒ ¬Borders(c, d)]
+    correcte: false
+  - texte: ¬∀ c In(c, SouthAmerica) ⇒ ∃ d In(d,Europe) ∧ ¬Borders(c, d)
+    correcte: true
+  - texte: ∀ c In(c, SouthAmerica) ⇒ ∀ d In(d,Europe) ⇒ ¬Borders(c, d)
+    correcte: false
+- id: ia3-006
+  theme: ia-3-logique-bases-connaissances
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: Laquelle des techniques de planifications suivantes utilise la logique du premier ordre pour
+    prouver qu'un plan fonctionne?
+  choix_unique: true
+  options:
+  - texte: Exploration de l'espace des états
+    correcte: false
+  - texte: Exploration de l'espace des plans
+    correcte: false
+  - texte: Graphplan
+    correcte: false
+  - texte: Planification à ordre partiel
+    correcte: false
+  - texte: Calcul situationnel
+    correcte: true
+  - texte: Planification par contrainte
+    correcte: false
+  - texte: Planification hiérarchique
+    correcte: false
+- id: ia3-007
+  theme: ia-3-logique-bases-connaissances
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: Laquelle des techniques de planifications suivantes développe des opérateurs abstraits vers
+    des primitives exécutables?
+  choix_unique: true
+  options:
+  - texte: Exploration de l'espace des états
+    correcte: false
+  - texte: Exploration de l'espace des plans
+    correcte: false
+  - texte: Graphplan
+    correcte: false
+  - texte: Planification à ordre partiel
+    correcte: false
+  - texte: Calcul situationnel
+    correcte: false
+  - texte: Planification par contrainte
+    correcte: false
+  - texte: Planification hiérarchique
+    correcte: true
+- id: ia3-008
+  theme: ia-3-logique-bases-connaissances
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: 'En utilisant l''inférence par chaînage avant à partir de la base de connaissance suivante,
+    lequel des énoncés est faux:
+
+    A
+
+    C
+
+    (A∧B)⇒D
+
+    (A∧C)⇒E
+
+    (A∧F)⇒G
+
+    C⇒F
+
+    (F∧G)⇒H
+
+    (H∧E)⇒I
+
+    (I∧E)⇒J
+
+    (H∨D)⇒K
+
+    (K∧F)⇒L
+
+    (L∧I)⇒M
+
+    (M∧H)⇒N
+
+    (M∧D)⇒O
+
+    (M∧C)⇒P
+
+    (K∧O)⇒Q
+
+    (I∧N)⇒R'
+  choix_unique: true
+  options:
+  - texte: L
+    correcte: false
+  - texte: M
+    correcte: false
+  - texte: N
+    correcte: false
+  - texte: O
+    correcte: true
+  - texte: P
+    correcte: false
+  - texte: Q
+    correcte: false
+  - texte: R
+    correcte: false
+- id: ia3-009
+  theme: ia-3-logique-bases-connaissances
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: 'En logique propositionnelle, lequel de ces énoncés est faux? (Rappel: ⊨ est le symbole de l''implication
+    sémantique)'
+  choix_unique: true
+  options:
+  - texte: (A∧B)⊨ (A⇔B)
+    correcte: false
+  - texte: (A⇔B)⊨ (A∨B)
+    correcte: true
+  - texte: (A⇔B)⊨ (¬A∨B)
+    correcte: false
+  - texte: (A∧B)⇒C⊨(A⇒C)∨(B⇒C)
+    correcte: false
+  - texte: (A∨B)∧(¬C∨¬D∨E)⊨(A∨B)
+    correcte: false
+- id: ia3-010
+  theme: ia-3-logique-bases-connaissances
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: 'En logique propositionnelle, lequel de ces énoncés est faux? (Rappel: ⊨ est le symbole de l''implication
+    sémantique)'
+  choix_unique: true
+  options:
+  - texte: α est valide si et seulement si Vrai ⊨ α
+    correcte: false
+  - texte: Pour tout α Faux ⊨ α
+    correcte: false
+  - texte: α ⊨β si et seulement si l'énoncé (α ⇒ β) est valide
+    correcte: false
+  - texte: α ⊨β si et seulement si l'énoncé (α ∧¬ β) est insatisfiable
+    correcte: false
+  - texte: Si α ⊨γ ou β ⊨γ (ou les deux) alors (α ∧ β)⊨γ
+    correcte: false
+  - texte: Si α⊨(β∧ γ) alors α ⊨ β et α ⊨ γ
+    correcte: false
+  - texte: Si α⊨(β∨ γ) alors α ⊨ β ou α ⊨ γ (ou les deux)
+    correcte: true
+- id: ia3-011
+  theme: ia-3-logique-bases-connaissances
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: Laquelle des procédures d'inférences suivantes en logique propositionnelle utilise une technique
+    d'exploration avec backtracking enrichie d'heuristiques?
+  choix_unique: true
+  options:
+  - texte: L'implication par tables de vérité
+    correcte: false
+  - texte: Le chaînage avant
+    correcte: false
+  - texte: Le chaînage arrière
+    correcte: false
+  - texte: La preuve par résolution
+    correcte: false
+  - texte: DPLL
+    correcte: true
+  - texte: WalkSat
+    correcte: false
+- id: ia3-012
+  theme: ia-3-logique-bases-connaissances
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: Laquelle des procédures d'inférences suivantes en logique propositionnelle utilise une technique
+    d'exploration locale abordée en résolution de problèmes?
+  choix_unique: true
+  options:
+  - texte: L'implication par tables de vérité
+    correcte: false
+  - texte: Le chaînage avant
+    correcte: false
+  - texte: Le chaînage arrière
+    correcte: false
+  - texte: La preuve par résolution
+    correcte: false
+  - texte: DPLL
+    correcte: false
+  - texte: WalkSat
+    correcte: true
+- id: ia3-013
+  theme: ia-3-logique-bases-connaissances
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: Laquelle des procédures d'inférences suivantes en logique propositionnelle est la plus utilisée
+    dans le raisonnement humain?
+  choix_unique: true
+  options:
+  - texte: L'implication par tables de vérité
+    correcte: false
+  - texte: Le chaînage avant
+    correcte: true
+  - texte: Le chaînage arrière
+    correcte: false
+  - texte: La preuve par résolution
+    correcte: false
+  - texte: DPLL
+    correcte: false
+  - texte: WalkSat
+    correcte: false
+- id: ia3-014
+  theme: ia-3-logique-bases-connaissances
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: 'En logique propositionnelle, laquelle des règles d''inférences cohérences suivantes correspond
+    à la résolution? (Rappel: ⊨ est le symbole de l''implication sémantique)'
+  choix_unique: true
+  options:
+  - texte: A, A⇒ B ⊨ B
+    correcte: false
+  - texte: A, B ⊨ A∧B
+    correcte: false
+  - texte: A∧B⊨ A
+    correcte: false
+  - texte: ¬¬A⊨ A
+    correcte: false
+  - texte: A∨B,¬B⊨ A
+    correcte: false
+  - texte: A⇒ B ⊨ ¬(A∧¬B)
+    correcte: false
+  - texte: A∨B,¬B∨C⊨A∨C
+    correcte: true
+- id: ia3-015
+  theme: ia-3-logique-bases-connaissances
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: En logique propositionnelle, quels équivalents admet p⇒ q parmi les suivants?
+  choix_unique: false
+  options:
+  - texte: ¬q⇒¬p
+    correcte: true
+  - texte: ¬(¬p∧¬q)
+    correcte: true
+  - texte: ¬q∨p
+    correcte: false
+  - texte: p∧¬q
+    correcte: false
+  - texte: q⇒p
+    correcte: false
+- id: ia3-016
+  theme: ia-3-logique-bases-connaissances
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: En logique du premier ordre, considérant une base de connaissance où a et b sont des constantes,
+    f et g des fonctions et p, q et r des prédicats, lesquels parmi les énoncés suivants ne sont pas des
+    termes ou des formules bien formées?
+  choix_unique: false
+  options:
+  - texte: r(a,g(a,a))
+    correcte: false
+  - texte: g(a,g(a,a))
+    correcte: false
+  - texte: ∀x.¬p(x)
+    correcte: false
+  - texte: ¬r(p(a),x)
+    correcte: true
+  - texte: ∃a.r(a,a)
+    correcte: true
+  - texte: ∃x.q(x,f(x),b)→∀x.r(a,x)
+    correcte: false
+  - texte: ∀r(x,a)
+    correcte: true
+- id: ia3-017
+  theme: ia-3-logique-bases-connaissances
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: Lequel des énoncés suivants en logique du premier ordre n'est pas une traduction correcte de
+    la phrase "Aucune région d'Amérique du Sud n'a de frontière avec une région d'Europe"
+  choix_unique: true
+  options:
+  - texte: ¬[∃ c, d In(c, SouthAmerica) ∧ In(d,Europe) ∧ Borders(c, d)]
+    correcte: false
+  - texte: ∀ c, d [In(c, SouthAmerica) ∧ In(d,Europe)] ⇒ ¬Borders(c, d)]
+    correcte: false
+  - texte: ¬[∀ c In(c, SouthAmerica) ⇒ ∃ d In(d,Europe) ∧ Borders(c, d)]
+    correcte: true
+  - texte: ∀ c In(c, SouthAmerica) ⇒ ∀ d In(d,Europe) ⇒ ¬Borders(c, d)
+    correcte: false
+- id: ia3-018
+  theme: ia-3-logique-bases-connaissances
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: 'En utilisant l''inférence par chaînage avant à partir de la base de connaissance suivante,
+    lequel des énoncés est faux:
+
+    A
+
+    C
+
+    (A∧B)⇒D
+
+    (A∧C)⇒E
+
+    (A∧F)⇒G
+
+    C⇒F
+
+    (F∧G)⇒H
+
+    (H∧E)⇒I
+
+    (I∧E)⇒J
+
+    (H∨D)⇒K
+
+    (K∧F)⇒L
+
+    (L∧I)⇒M
+
+    (M∧H)⇒N
+
+    (M∧D)⇒O
+
+    (M∧C)⇒P
+
+    (K∨O)⇒Q
+
+    (I∧N)⇒R'
+  choix_unique: true
+  options:
+  - texte: L
+    correcte: false
+  - texte: M
+    correcte: false
+  - texte: N
+    correcte: false
+  - texte: O
+    correcte: true
+  - texte: P
+    correcte: false
+  - texte: Q
+    correcte: false
+  - texte: R
+    correcte: false
+- id: ia3-019
+  theme: ia-3-logique-bases-connaissances
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: En logique propositionnelle, quels équivalents n'admet pas p⇒ q parmi les suivants?
+  choix_unique: false
+  options:
+  - texte: ¬q⇒¬p
+    correcte: false
+  - texte: ¬(¬p∧¬q)
+    correcte: false
+  - texte: ¬q∨p
+    correcte: true
+  - texte: p∧¬q
+    correcte: true
+  - texte: q⇒p
+    correcte: true

@@ -345,7 +345,7 @@ def validate_manifest(meta: dict, *, strict: bool = False,
 
     missing = [k for k in REQUIRED_META_KEYS if k not in out]
     if missing:
-        # Retro-compat (Tell c.1050 ★★ fondateur) : seul ``d_sae`` et ``k``
+        # Retro-compat : seul ``d_sae`` et ``k``
         # sont des discriminants structurels du schema top-k sparse --
         # sans eux, la trace n'est pas materialisable. ``layer`` est un
         # champ d'alignement utile (acceptance #2 cross-traces) mais pas

@@ -236,14 +236,20 @@ def _merged_referring_prs(repo: str, number: int) -> list[dict[str, Any]]:
         pr = src.get("pull_request") or {}
         if not pr.get("merged_at"):
             continue
+        # La reference croisee peut venir d'un DEPOT SOEUR (ex. MyIntelligenceAgency/Z3.Linq#31
+        # referencant #17301) : resoudre dans le depot source, pas dans le depot cible,
+        # sinon gh rend "Could not resolve to a PullRequest" et l'organe crashe
+        # (mesure 2026-09-28, blocage Lot D #18140 sur #17301).
+        src_repo = ((src.get("repository") or {}).get("full_name")) or repo
         # Pas de --jq : gh l'ecrit en TEXTE BRUT, que json.loads refuse
         # (defaut mesure c.5849452860 -- tout temoin rendait UNKNOWN rc=2).
         row = gh_json([
-            "pr", "view", str(src["number"]), "--repo", repo,
+            "pr", "view", str(src["number"]), "--repo", src_repo,
             "--json", "body",
         ])
         body = row.get("body") if isinstance(row, dict) else None
         out.append({"number": src["number"], "merged_at": pr["merged_at"],
+                    "repo": src_repo,
                     "body": str(body) if body else ""})
     return out
 
@@ -397,11 +403,23 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any],
                 f"{child['state']} -- a closed child does not keep the parent open"
             )
 
-    # PRs citees dans les preuves : toutes MERGED.
-    merged_numbers = {pr["number"] for pr in snapshot["merged_prs"]}
+    # PRs citees dans les preuves : toutes MERGED. Le raccourci ne couvre que
+    # les PRs du MEME depot : un #N nu dans le dossier designe une PR du depot
+    # cible, jamais la PR de meme numero d'un depot soeur.
+    merged_numbers = {pr["number"] for pr in snapshot["merged_prs"]
+                      if pr.get("repo", snapshot["repo"]) == snapshot["repo"]}
     for n in sorted(_cited_pr_numbers(dossier)):
         if n in merged_numbers:
             continue
+        # Un #N nu peut designer une ISSUE, pas une PR -- le plus souvent
+        # l'issue d'audit citee dans sa propre preuve (« verdict de l'audit
+        # #16834 » sur #16834). gh pr view y echoue ("Could not resolve to a
+        # PullRequest") et l'organe rendait UNKNOWN pour tout le dossier
+        # (5/50, #18323). La cle pull_request distingue issue et PR ; un
+        # numero introuvable leve RuntimeError -> UNKNOWN (fail-closed garde).
+        row = gh_json(["api", f"repos/{snapshot['repo']}/issues/{n}"])
+        if not isinstance(row, dict) or "pull_request" not in row:
+            continue  # une reference d'issue n'est pas une PR citee
         pr = gh_json([
             "pr", "view", str(n), "--repo", snapshot["repo"],
             "--json", "state,mergedAt",

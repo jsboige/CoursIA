@@ -37,7 +37,7 @@ Exit codes:
     2 -- Papermill execution failed (kernel error, timeout, missing dep).
     3 -- internal error (missing cell output, malformed notebook, etc.).
 
-Tell c.14978-L1 ★★★ fondateur : all values measured first-hand from
+all values measured first-hand from
 the captured cell output, no prose-anticipated numbers.
 """
 from __future__ import annotations
@@ -56,14 +56,14 @@ DEFAULT_SMOKE = Path(__file__).parent / "verify_runtime_smoke.ipynb"
 DEFAULT_VENV = "~/coursia-wsl"
 
 # Papermill writes its executed notebook to this path; we read outputs
-# back from there. Tell c.1180 ★★ fondateur : Papermill --cwd + read
+# back from there. Papermill --cwd + read
 # the OUTPUT nb by total cell index, but our smoke notebook is single-cell,
 # so positional index 0 == the only code cell.
 _SMOKE_CELL_INDEX = 0
 
 # The exact strings our smoke notebook prints, one per line. We match
 # line-by-line so we can tolerate unrelated stderr or future added lines.
-# Tell c.1186-L2 ★ ★ fondateur : only the basename of ``sys.executable``
+# only the basename of ``sys.executable``
 # is preserved in the notebook output (absolute paths leak the machine
 # username and trip the scrub-papermill-paths hook).
 _RE_EXECUTABLE = re.compile(r"^RUNTIME sys\.executable\.basename=(?P<v>.+)$", re.MULTILINE)
@@ -91,7 +91,7 @@ def _read_smoke_outputs(out_nb: Path) -> Tuple[Optional[str], Optional[str], Opt
     if not cells or _SMOKE_CELL_INDEX >= len(cells):
         return None, None, None
     cell = cells[_SMOKE_CELL_INDEX]
-    # Tell c.1180 ★★ fondateur : outputs are a list of output dicts.
+    # outputs are a list of output dicts.
     # stream='stdout' is the canonical Papermill capture target for print().
     # Note: ``text`` is itself a list[str] (one entry per print flush), so
     # we flatten it here before regex matching.
@@ -178,7 +178,7 @@ def main() -> int:
             cwd,
             "--execution-timeout",
             str(args.timeout),
-            # Tell c.1186-L2 ★ ★ fondateur : no progress chatter on stdout.
+            # no progress chatter on stdout.
             "--log-level",
             "ERROR",
         ]
@@ -192,7 +192,7 @@ def main() -> int:
             print(proc.stdout[-2000:], file=sys.stderr)
             return 2
 
-        # Tell c.1186-L2 ★ ★ fondateur : read the outputs INSIDE the
+        # read the outputs INSIDE the
         # ``with`` block, otherwise ``TemporaryDirectory`` cleanup erases
         # the executed notebook before we parse it (reproducer observed
         # on c.1193 + rc=3 with empty-capture message).
@@ -216,7 +216,7 @@ def main() -> int:
     if norm_pref == expected_venv:
         print("VERDICT: PASS -- kernel booted into the expected venv.")
         return 0
-    # Tell c.14978-L1 ★★★ : if base == prefix, the kernel is in a SYSTEM
+    # if base == prefix, the kernel is in a SYSTEM
     # Python, not a venv -- that is the original #14908 failure mode.
     if sys_pref == sys_base:
         print(

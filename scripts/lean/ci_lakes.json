@@ -20,6 +20,7 @@
       "display-name": "kelly_lean",
       "sorry-baseline": "0",
       "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
       "paths": [
         "MyIA.AI.Notebooks/QuantConnect/kelly_lean/**.lean",
         "MyIA.AI.Notebooks/QuantConnect/kelly_lean/lakefile.lean",
