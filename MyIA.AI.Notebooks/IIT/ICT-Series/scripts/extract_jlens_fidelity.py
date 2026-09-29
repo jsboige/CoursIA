@@ -15,6 +15,21 @@ Comparable a ``calib_fidelity_*.npz`` (axe SAE) du meme notebook.
 
 Usage :
   python extract_jlens_fidelity.py --lens qwen3-1-7b --model Qwen/Qwen3-1.7B-Base
+
+Deuxieme source : lens PUBLIE (neuronpedia/jacobian-lens). Le 9B dispose d'un
+lens canonique fit par la meme construction (Salesforce-wikitext n=458,
+min_chars 600, cible = resid final) avec TOUTES les couches sources — un fit
+local 9B est alors redundant (mesure 2026-09-27 : >69 min/prompt sur 3090,
+backward borne bande passante, ~8-16 jours pour 458 prompts). Mode publie :
+
+  python extract_jlens_fidelity.py --lens qwen3-5-9b --model Qwen/Qwen3.5-9B-Base \
+      --lens-repo neuronpedia/jacobian-lens \
+      --lens-filename "qwen3.5-9b-pt/jlens/Salesforce-wikitext/Qwen3.5-9B-Base_jacobian_lens.pt" \
+      --layers 8,16
+
+La provenance publiee remplace le fit_stats local : attribution modele verifiee
+contre le nom de fichier, identite par sha256 de l'artefact telecharge,
+n_prompts porte par le lens lui-meme.
 """
 
 from __future__ import annotations
@@ -94,6 +109,34 @@ def validate_fit_model(fit_stats: dict, requested_model: str, lens_tag: str) -> 
         )
 
 
+def load_published_lens(
+    lens_repo: str, lens_filename: str, requested_model: str
+) -> tuple[object, str]:
+    """Charge le lens canonique HF et refuse une attribution croisee.
+
+    Le nom de fichier du depot encode le modele (convention du repo
+    neuronpedia/jacobian-lens : ``<Model>_jacobian_lens.pt``) : c'est la seule
+    attribution disponible cote publie, on l'exige explictement.
+    """
+    from huggingface_hub import hf_hub_download
+
+    if requested_model.split("/")[-1] not in lens_filename:
+        raise ValueError(
+            f"Le fichier publie {lens_filename!r} n'encode pas le modele demande "
+            f"{requested_model!r} — refus d'attribution croisee."
+        )
+    local_path = hf_hub_download(lens_repo, lens_filename)
+    import jlens
+
+    lens = jlens.JacobianLens.load(local_path)
+    print(
+        f"[lens] PUBLIE {lens_repo}/{lens_filename} "
+        f"({len(lens.source_layers)} couches sources, n={lens.n_prompts})",
+        flush=True,
+    )
+    return lens, local_path
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--lens", required=True, help="tag du fit (ex qwen3-1-7b)")
@@ -101,30 +144,70 @@ def main() -> None:
     ap.add_argument(
         "--max-prompts", type=int, default=None, help="limite par set (debug)"
     )
+    ap.add_argument(
+        "--lens-repo",
+        default=None,
+        help="lens publie HF (ex neuronpedia/jacobian-lens) ; sinon fit local",
+    )
+    ap.add_argument(
+        "--lens-filename",
+        default=None,
+        help="chemin du lens dans le repo publie (ex qwen3.5-9b-pt/jlens/...)",
+    )
+    ap.add_argument(
+        "--layers",
+        default=None,
+        help="sous-ensemble de couches a evaluer (ex 8,16) ; defaut : toutes",
+    )
     args = ap.parse_args()
 
     import jlens
     import torch
     from extract_sae_traces import PROMPT_SETS
 
-    lens_path = FITS_DIR / f"{args.lens}_jacobian_lens.pt"
-    stats_path = FITS_DIR / f"{args.lens}_fit_stats.json"
-    fit_stats = load_fit_stats(stats_path)
+    published = args.lens_repo is not None
+    if published and not args.lens_filename:
+        raise ValueError("--lens-repo exige --lens-filename.")
 
-    validate_fit_model(fit_stats, args.model, args.lens)
-    expected_hash = fit_stats.get("lens_sha256")
-    if not isinstance(expected_hash, str) or sha256_file(lens_path) != expected_hash:
-        raise ValueError(
-            f"Le lens {args.lens!r} ne correspond pas au hash de sa provenance."
+    if published:
+        lens, lens_artifact = load_published_lens(
+            args.lens_repo, args.lens_filename, args.model
         )
+        fit_stats = {"n_prompts": lens.n_prompts}
+        lens_sha = sha256_file(Path(lens_artifact))
+    else:
+        lens_path = FITS_DIR / f"{args.lens}_jacobian_lens.pt"
+        stats_path = FITS_DIR / f"{args.lens}_fit_stats.json"
+        fit_stats = load_fit_stats(stats_path)
 
-    lens = jlens.JacobianLens.load(str(lens_path))
-    if lens.n_prompts != fit_stats.get("n_prompts"):
-        raise ValueError(
-            f"Le lens declare {lens.n_prompts} prompts mais sa provenance en "
-            f"declare {fit_stats.get('n_prompts')!r}."
-        )
-    print(f"[lens] {lens!r} <- {lens_path.name}", flush=True)
+        validate_fit_model(fit_stats, args.model, args.lens)
+        expected_hash = fit_stats.get("lens_sha256")
+        if not isinstance(expected_hash, str) or (
+            sha256_file(lens_path) != expected_hash
+        ):
+            raise ValueError(
+                f"Le lens {args.lens!r} ne correspond pas au hash de sa provenance."
+            )
+
+        lens = jlens.JacobianLens.load(str(lens_path))
+        if lens.n_prompts != fit_stats.get("n_prompts"):
+            raise ValueError(
+                f"Le lens declare {lens.n_prompts} prompts mais sa provenance en "
+                f"declare {fit_stats.get('n_prompts')!r}."
+            )
+        lens_sha = expected_hash
+        print(f"[lens] {lens!r} <- {lens_path.name}", flush=True)
+
+    if args.layers:
+        eval_layers = [int(x) for x in args.layers.split(",")]
+        unknown = [l for l in eval_layers if l not in lens.source_layers]
+        if unknown:
+            raise ValueError(
+                f"Couches demandees {unknown} absentes du lens "
+                f"(disponibles : {sorted(lens.source_layers)})."
+            )
+    else:
+        eval_layers = list(lens.source_layers)
 
     device = torch.device("cuda")
     from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -143,7 +226,7 @@ def main() -> None:
             prompts = prompts[: args.max_prompts]
         n_eval_per_set.append(len(prompts))
         per_layer: dict[int, list[dict[str, float]]] = {
-            layer: [] for layer in lens.source_layers
+            layer: [] for layer in eval_layers
         }
         for prompt in prompts:
             ids = tok(
@@ -162,7 +245,7 @@ def main() -> None:
             lens_logits, model_logits, _ = lens.apply(
                 model, prompt, positions=positions, max_seq_len=EVAL_MAX_SEQ_LEN
             )
-            for layer in lens.source_layers:
+            for layer in eval_layers:
                 per_layer[layer].append(
                     prompt_metrics(
                         torch.as_tensor(lens_logits[layer]).float().cuda(),
@@ -181,7 +264,18 @@ def main() -> None:
             )
 
     arrays["meta_model"] = np.array([ord(c) for c in args.model], dtype=np.int16)
-    arrays["meta_layers"] = np.array(lens.source_layers, dtype=np.int64)
+    arrays["meta_layers"] = np.array(eval_layers, dtype=np.int64)
+    arrays["meta_lens_sha256"] = np.array(
+        [ord(c) for c in lens_sha[:16]], dtype=np.int16
+    )
+    provenance = (
+        f"{args.lens_repo}/{args.lens_filename}"
+        if published
+        else f"local_fit:{args.lens}"
+    )
+    arrays["meta_provenance"] = np.array(
+        [ord(c) for c in provenance], dtype=np.int16
+    )
     arrays["meta_n_fit"] = np.array(
         [fit_stats.get("n_prompts", lens.n_prompts)], dtype=np.int64
     )

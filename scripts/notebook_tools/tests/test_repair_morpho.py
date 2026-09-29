@@ -4,7 +4,7 @@
 Semantique RECONCILIEE (consolidation c.1412-c.1415, dispatch adjoint) :
 - ``prouve``/``vérifié`` : fautif hors auxiliaire (borne par la phrase
   courante) et hors backticks ; legitime apres auxiliaire 2+ chars.
-- ``donné`` : fautif hors locution (fenetre 60 chars, Tell c.1317-L7) et
+- ``donné`` : fautif hors locution (fenetre 60 chars) et
   hors backticks.
 - ``décide``/``vérifier`` : fautifs UNIQUEMENT entre backticks (identifiants
   Lean/Python accentues par REACCENT). En prose libre, ce sont des formes
@@ -12,10 +12,10 @@ Semantique RECONCILIEE (consolidation c.1412-c.1415, dispatch adjoint) :
 
 Couvre aussi :
 - _build_backtick_mask : masque positionnel, backtick non ferme fail-CLOSED.
-- repair_notebook : list-edit preservant source[] (Tell c.1343-L1) et
-  byte-identique newline terminal (Tell c.1331-L5).
+- repair_notebook : list-edit preservant source[] et
+  byte-identique newline terminal.
 - controle positif : notebook contamine REACCENT.
-- dry_run : mesure sans toucher au disque (Tell c.1340-L3).
+- dry_run : mesure sans toucher au disque.
 
 Run : python -m pytest scripts/notebook_tools/tests/test_repair_morpho.py -q
 """
@@ -67,7 +67,7 @@ def _code(text: str = "# code") -> dict:
 
 
 def _write_nb(nb: dict, path: Path) -> None:
-    """Ecrit un notebook byte-identique (Tell c.1331-L5)."""
+    """Ecrit un notebook byte-identique."""
     raw = json.dumps(nb, ensure_ascii=False, indent=1).encode("utf-8")
     path.write_bytes(raw)
 
@@ -91,7 +91,7 @@ class TestAuxiliaires(unittest.TestCase):
         self.assertFalse(is_prouve_legitimate("on "))
 
     def test_se_prouve_toujours_fautif(self):
-        """cf Tell c.1315-L15 : 'se prouve' toujours fautif."""
+        """'se prouve' toujours fautif."""
         self.assertFalse(is_prouve_legitimate("se "))
 
     def test_a_1char_ambigu(self):
@@ -164,7 +164,7 @@ class TestAuxiliaires(unittest.TestCase):
             "L'un des problemes centraux de l'inference bayesienne : etant\n"))
 
     def test_tant_donne_avec_intercalation(self):
-        """'tant donne' avec mots intercalés OK (Tell c.1317-L7)."""
+        """'tant donne' avec mots intercalés OK."""
         self.assertTrue(is_donne_legitimate(
             "Pour un theoreme qui est tant donne, le cluster "))
 
@@ -318,7 +318,7 @@ class TestScanCellSource(unittest.TestCase):
 
 
 class TestRepairByteIdentique(unittest.TestCase):
-    """Le repair preserve source[] (list-edit) + newline terminal (Tell c.1331-L5)."""
+    """Le repair preserve source[] (list-edit) + newline terminal."""
 
     def test_list_edit_preserve_structure(self):
         cell = _md_list([
