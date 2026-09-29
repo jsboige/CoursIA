@@ -21,14 +21,14 @@ NOTEBOOKS_DIR = REPO_ROOT / "MyIA.AI.Notebooks"
 
 # Notebooks for the 3 EPITA-IS sessions
 SESSION_MONDAY_2H = [  # Monday 2h Lean intro
-    "SymbolicAI/Lean/Lean-1-Setup.ipynb",
-    "SymbolicAI/Lean/Lean-2-Dependent-Types.ipynb",
-    "SymbolicAI/Lean/Lean-3-Propositions-Proofs.ipynb",
-    "SymbolicAI/Lean/Lean-4-Quantifiers.ipynb",
+    "SymbolicAI/Lean/Lean-01-Setup-Lean-Python.ipynb",
+    "SymbolicAI/Lean/Lean-02-Dependent-Types-Lean.ipynb",
+    "SymbolicAI/Lean/Lean-03-Propositions-Proofs-Lean.ipynb",
+    "SymbolicAI/Lean/Lean-04-Quantifiers-Lean.ipynb",
 ]
 SESSION_WEEK_4H_LEAN = [  # Week 4h Lean+GameTheory
-    "SymbolicAI/Lean/Lean-5-Tactics.ipynb",
-    "SymbolicAI/Lean/Lean-6-Mathlib-Essentials.ipynb",
+    "SymbolicAI/Lean/Lean-05-Tactics-Lean.ipynb",
+    "SymbolicAI/Lean/Lean-06-Mathlib-Essentials-Lean.ipynb",
     "GameTheory/GameTheory-15b-Lean-CooperativeGames-Lean.ipynb",
     "GameTheory/GameTheory-02b-Lean-Definitions-Lean.ipynb",
 ]
@@ -96,7 +96,7 @@ def main():
                     "--timeout", "600",
                 ]
                 proc = subprocess.run(cmd, capture_output=True, text=True,
-                                   encoding="utf-8", errors="replace", timeout=600)
+                                      encoding="utf-8", errors="replace", timeout=600)
                 elapsed = time.time() - t0
                 r = check_notebook(nb_path)
                 r["elapsed_s"] = round(elapsed, 1)

@@ -1247,11 +1247,11 @@ class TestCorpusScope:
         stricter policy than the rule states.
         """
         for stem, expect in [
-            ("Lean-1-Setup", "setup"),
+            ("Lean-01-Setup-Lean-Python", "setup"),
             ("Sudoku-00-Environment-Csharp", "setup"),
             ("SC-01-Setup-Foundry-Python", "setup"),
             ("Argument_Analysis_Agentic-0-init_agent", "setup"),
-            ("Lean-3-Propositions-Proofs", "lean"),
+            ("Lean-03-Propositions-Proofs-Lean", "lean"),
             ("GameTheory-11b-Lean-BayesianGamesExt-Lean", "lean"),
             ("DecInfer-09-Lean-Gittins", "lean"),
         ]:
@@ -1271,7 +1271,7 @@ class TestCorpusScope:
 
     def test_raising_threshold_does_not_raise_exempt_kinds(self, tmp_path):
         """`--threshold 5` must not invent an exercise budget for setup/Lean."""
-        assert _classify(tmp_path / "Course" / "Lean-1-Setup.ipynb", standard_threshold=5, root=tmp_path)[1] == 0
+        assert _classify(tmp_path / "Course" / "Lean-01-Setup-Lean-Python.ipynb", standard_threshold=5, root=tmp_path)[1] == 0
         assert _classify(tmp_path / "Course" / "X-Lean-Y.ipynb", standard_threshold=5, root=tmp_path)[1] == 0
         assert _classify(tmp_path / "Course" / "X-Concepts.ipynb", standard_threshold=5, root=tmp_path)[1] == 5
 

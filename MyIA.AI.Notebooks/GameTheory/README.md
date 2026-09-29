@@ -452,7 +452,7 @@ Un équilibre **pur** est un choix déterministe : chaque joueur choisit une seu
 
 ### Je suis bloqué sur un exercice Lean
 
-Vérifiez d'abord votre environnement avec [Lean-1-Setup](../SymbolicAI/Lean/Lean-1-Setup.ipynb). La référence est [Theorem Proving in Lean 4](https://lean-lang.org/theorem_proving_in_lean4/). Les exercices de cette série n'exigent que les tactiques introduites dans les notebooks, pas une connaissance détaillée de Mathlib.
+Vérifiez d'abord votre environnement avec [Lean-01-Setup-Lean-Python](../SymbolicAI/Lean/Lean-01-Setup-Lean-Python.ipynb). La référence est [Theorem Proving in Lean 4](https://lean-lang.org/theorem_proving_in_lean4/). Les exercices de cette série n'exigent que les tactiques introduites dans les notebooks, pas une connaissance détaillée de Mathlib.
 
 ### open_spiel échoue à l'installation sous Windows
 
