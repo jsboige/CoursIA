@@ -2,7 +2,7 @@
 
 [← DataScienceWithAgents (série parente)](../README.md) | [02-ML-Cours (prérequis)](../02-ML-Cours/README.md)
 
-**Kernel** : Python 3 (`coursia-ml-training` pour 3.4c, 3.7 et 3.9d) · **Bibliothèques** : NumPy (implémentations from scratch), matplotlib, torch (moteur principal de 3.6b à 3.10 ; parité ailleurs), torchvision, diffusers (3.10) · **Niveau** : intermédiaire (post socle ML) · **CPU** : oui (exceptions : famille compression 3.9a/3.9b/3.9e/3.9f/3.9g, recette complète ResNet-20 sur GPU ~8 min (~30 min pour 3.9b, bras de réentraînement compris) — recette CPU 6 époques sinon ; 3.9d : distillation complète sur GPU ~2 h ; 3.6c ~19 min CPU)
+**Kernel** : Python 3 (`coursia-ml-training` pour 3.4c, 3.7, 3.9d et 3.12) · **Bibliothèques** : NumPy (implémentations from scratch), matplotlib, torch (moteur principal de 3.6b à 3.12 ; parité ailleurs), torchvision, diffusers (3.10) · **Niveau** : intermédiaire (post socle ML) · **CPU** : oui (exceptions : famille compression 3.9a/3.9b/3.9e/3.9f/3.9g, recette complète ResNet-20 sur GPU ~8 min (~30 min pour 3.9b, bras de réentraînement compris) — recette CPU 6 époques sinon ; 3.9d : distillation complète sur GPU ~2 h ; 3.6c ~19 min CPU)
 
 ## Pourquoi cette série
 
@@ -47,6 +47,8 @@ séries (RL, PostTraining, ML-Training-Pipeline). L'entraînement final du 2.9 e
 | [3.9f-Compression-Pruning-SOTA](3.9f-Compression-Pruning-SOTA.ipynb) | Le pendant élagage de la famille compression : magnitude pruning écrit à la main (~10 lignes) puis déclaré à l'API `torch.nn.utils.prune` (`l1_unstructured`, `global_unstructured`, `random_unstructured` en contre-témoin, `ln_structured` par canaux), sur le même témoin ResNet-20/CIFAR-10 | **Un masque, quatre décisions** : critère, allocation locale/globale, granularité, persistance — l'API garantit le masque (hooks), la main donne le contrôle | témoin FP32 0,7896 (recette CPU 6 époques) ; main 50 % : 0,5775 ≈ API L1 50 % : 0,5791 (même sélection, écart 0,0016 = ordres flottants) ; global L1 75 % : 0,4031 vs random 75 % : 0,1000 — l'allocation bat l'uniforme à budget égal ; structuré 50 % canaux : 0,1000 (336 canaux morts) ; state_dict 1071 Ko → 2129 Ko (orig+masque) → 1071 Ko après `remove()` ; latence 30,7 → 33,8 ms : rien gagné sans format épars |
 | [3.9g-Compression-Comparatif-A-vs-B](3.9g-Compression-Comparatif-A-vs-B.ipynb) | Le capstone comparatif de la famille compression (bloc 7 de #16060) : le même ResNet-20 entraîné une fois (40 époques GPU), passé sous chaque méthode avec les mêmes instruments — accuracy, taille brute + compressée zlib, latence CPU médiane batch 64, FLOPs par hooks, LOC par `inspect.getsource` — INT8 dynamique manuel (per-tensor uint8) vs `quantize_dynamic`, pruning magnitude 50 % post-training par couche (manuel, `kthvalue`) vs `global_unstructured` (sélection globale L1), FP16 | **La vraie différence A-vs-B n'est pas l'outillage, c'est la politique** : INT8 dynamique sur un CNN à dominance conv ne touche que 0,2 % des poids (±0,02 pt, aucune accélération — le gain INT8 des CNN vit dans le FX statique de 3.9e) ; à budget de coupes égal, l'allocation globale conserve 5,96 pts de plus que la par couche | FP32 0,9036 ; INT8 manuel 0,9038 (+0,02, 25 LOC) ≈ torch.ao 0,9036 (0,00, 1 LOC) ; pruning par couche 0,8122 (−9,14, 14 LOC) vs global 0,8718 (−3,18, 1 LOC) ; tailles brutes 1070,6 Ko partout sauf FP16 535,4 Ko (×2,0, 0,9038) ; zlib 1003,6 → 597,2/594,9 Ko pour le pruning (×1,7) ; latence CPU 25,7-30,3 ms sans gain structurel pour aucune méthode ; FLOPs 40,8 M partout ; 3 exercices C.1 (per-channel, taux de coupure par dichotomie, pipeline combiné) |
 | [3.10-Modeles-Generatifs-Diffusion-SOTA](3.10-Modeles-Generatifs-Diffusion-SOTA.ipynb) | Le pendant SOTA de 3.6c/d/e : la bibliothèque `diffusers` (DDPM, DDIM, UNet outillé, pipelines) face aux implémentations maison | **La librairie : moins de code, plus d'outils, mêmes maths** — et la stochasticité de η rendue visible | maison ancestral 31 LOC, 92,7 ms/img, MMD 0,0419 ; maison DDIM(20) 22 LOC, 1,6 ms/img ; lib DDIM(20) 8 LOC, 7,0 ms/img, 0,0448 ; classes couvertes 10/10 (maison) vs 9/10 (lib) ; η=1,0 : écart 0,34 entre 2 runs de même x_T |
+| [3.11-Budget-Memoire-Entrainement](3.11-Budget-Memoire-Entrainement.ipynb) | Le budget mémoire d'un entraînement — poids, gradients, états d'optimiseur, activations — **calculé à la main puis confronté à la mesure** sur un mini-GPT réel, chaque écart servant à corriger le modèle (premier volet de #18210) | **Les activations ne sont pas proportionnelles au lot** : la rétropropagation retient les matrices engagées dans les multiplications, donc la loi est affine, A = A₀ + k·lot — et le terme constant A₀ vaut, à 0,87 % près, les poids eux-mêmes | formule des paramètres corrigée par la mesure : les termes omis (plongement positionnel, LayerNorms) valaient +4 736/+10 496/+17 280 selon la taille, résidu **0** après correction et décomposé terme à terme (12 288 + 4 608 + 384) ; ajustement affine sur lots 1-32 : A₀ = 3 667 524 o, k = 2 815 488 o/lot, **résidus nuls**, A₀/P = 0,9913, coefficient c = 21,48 valeurs retenues par élément (littérature en précision mixte : 34, rapport 0,63) ; le rapport naïf A/(lot·s·d·L) surestime c à petit lot (49,46 au lot 1 → 22,35 au lot 32) ; lois vérifiées en s (écart ≤ 0,1 %) et en d (A₀ ×3,50/×3,72, k ×1,69/×1,81 — sous-linéaire, dit comme tel) ; budget à lot 8 : petit 8,36 GiB, moyen 56,68 GiB, grand 209,84 GiB, lot maximal 24 GiB → 29 / 1 / ne tient pas ; mesure sur RTX 3090 : après modèle +22,17 MiB contre 22,15 attendus, et pic de rétropropagation 346,56 MiB **inférieur** à la somme analytique 368,52 (rapport 0,940) ; 3 exercices C.1 |
+| [3.12-Les-Collectives](3.12-Les-Collectives.ipynb) | L'anneau `all-reduce` écrit à la main (reduce-scatter puis all-gather, `batch_isend_irecv`) contre l'appel natif `dist.all_reduce`, sur `gloo`/CPU à 2 et 4 rangs — exactitude, éléments sur le fil, messages, puis chronométrage (deuxième volet de #18210) | **Le compte, pas la durée** : le volume par rang de l'anneau, 2(p−1)n/p, tend vers 2n quand p grandit — la moitié du schéma naïf à 4 rangs — mais la somme flottante n'étant pas associative, les deux implémentations ne rendent pas le même résultat | égalité **au bit** avec l'appel natif sur des entiers ; à 4 rangs 12 messages (= 4(p−1)) et 18 éléments envoyés par rang contre 36 pour le schéma naïf (exactement p/2), à 2 rangs 12 contre 12 (aucun gain) ; la non-associativité est d'abord établie hors réseau — ((1e16+1,0)−1e16)+3,0 = 3,0 contre (1e16−1e16)+(1,0+3,0) = 4,0 — puis **retrouvée dans la mesure** : à 4 rangs l'anneau rend 3,0 et le natif 4,0 (écart 1,0), à 2 rangs les deux coïncident (1e16, le petit terme absorbé) ; chronométrage : à 4 rangs et 2 Mo l'anneau est plus lent sans recouvrement (facteur 1,3-1,6 selon la série), à 32 Mo les deux plages se recouvrent (inséparables, dit comme tel) ; inversion mesurée que le carnet n'explique pas — à 32 Mo le natif à 2 rangs (0,102-0,284 s) est ~1,8× plus lent qu'à 4 rangs (0,068-0,119 s) ; noyau `coursia-ml-training` **requis** (`gloo` échoue à créer son périphérique sous le noyau générique — mesuré) ; 3 exercices C.1 |
 
 
 ## Feuille de route
@@ -68,6 +70,12 @@ puis consommé via l'API officielle.
 - Bloc B.2 — `torch.ao.quantization` [3.9e] / `torch.nn.utils.prune` [3.9f] (livrés).
 - Bloc 7 — Comparatif capstone A vs B [3.9g] : le même ResNet-20 sous chaque méthode, mêmes instruments (accuracy, taille brute/zlib, latence CPU, FLOPs, LOC) — ferme l'EPIC #16060.
 
+**Bloc C — Entraînement distribué** (#18210, en cours po-2023) — ce qu'un pas
+d'entraînement coûte quand le modèle ne tient plus sur une machine :
+- Volet 1 — Budget mémoire d'un entraînement [3.11] (#18210, PR en cours) : les quatre postes, calculés puis mesurés, et la loi affine des activations.
+- Volet 2 — Les collectives [3.12] (#18210, PR en cours) : l'anneau all-reduce à la main contre l'appel natif, comptes sur le fil à l'appui.
+- Volet 3 — DDP / ZeRO / FSDP et parallélisme de pipeline (GPipe contre 1F1B) [3.13] (#18210, à venir) : la mémoire par rang et l'occupation des cartes selon la stratégie de découpage.
+
 ## Prérequis
 
 - [02-ML-Cours](../02-ML-Cours/README.md) en entier — en particulier [2.2 (descente de
@@ -81,8 +89,11 @@ puis consommé via l'API officielle.
 
 ```bash
 pip install numpy matplotlib
-# torch : parité en 3.1-3.4, moteur principal en 3.6b, 3.7, 3.9-3.9g, 3.10
-# (kernel coursia-ml-training pour 3.7 et 3.9d) ; 3.10 exige en plus diffusers :
+# torch : parité en 3.1-3.4, moteur principal en 3.6b, 3.7, 3.9-3.9g, 3.10 à 3.12
+# (kernel coursia-ml-training pour 3.7, 3.9d et 3.12) ; 3.10 exige en plus diffusers :
+# 3.12 utilise torch.distributed (gloo, CPU) : rien à installer de plus, mais le
+# noyau doit être un torch dont gloo sait créer son périphérique — le noyau
+# générique échoue là-dessus (le carnet le documente, la mesure à l'appui).
 pip install torch torchvision
 pip install diffusers
 ```
