@@ -66,3 +66,47 @@ _runtime/venv-qwen3tts/Scripts/python.exe -c "import qwen_tts; print('OK', qwen_
 - RTX 3080 Ti Laptop GPU (16 GB) — fallback si RTX 3090 occupée
 
 Tell c.c.c.d.767-L1 strict fondateur : **zero-dep-manifeste ≠ zero-dep-réel**. Le test ci-dessus (import + GPU dispo) est OBLIGATOIRE avant tout client.py.
+
+## CosyVoice3 (client `cosyvoice3.py`, venv `venv-cosyvoice3`)
+
+Slot 1 shortlist — FunAudioLLM/Fun-CosyVoice3-0.5B-2512 (Apache-2.0, FR natif).
+Chemin officiel carte HF (regle F + Prong A) : **repo package**, pas transformers brut.
+
+```bash
+# 1. venv Python 3.10 (carte : py3.10 ; transformers pince 4.51.3 par requirements)
+cd D:/Dev/CoursIA-17586-cosyvoice3
+py -3.10 -m venv _runtime/venv-cosyvoice3
+_runtime/venv-cosyvoice3/Scripts/python.exe -m pip install --upgrade pip
+
+# 2. repo + submodule (Matcha-TTS)
+cd _runtime
+git clone --recursive https://github.com/FunAudioLLM/CosyVoice.git
+
+# 3. requirements (torch 2.3.1 cu121 ; deepspeed/tensorrt sont linux-only par marqueurs)
+_runtime/venv-cosyvoice3/Scripts/python.exe -m pip install -r CosyVoice/requirements.txt
+
+# 4. complement banc : WER faster-whisper (absent des requirements CosyVoice)
+_runtime/venv-cosyvoice3/Scripts/python.exe -m pip install faster-whisper
+
+# 5. modeles (~1-2 GB)
+_runtime/venv-cosyvoice3/Scripts/python.exe -c "from huggingface_hub import snapshot_download; snapshot_download('FunAudioLLM/Fun-CosyVoice3-0.5B-2512', local_dir=r'pretrained_models/Fun-CosyVoice3-0.5B'); snapshot_download('FunAudioLLM/CosyVoice-ttsfrd', local_dir=r'pretrained_models/CosyVoice-ttsfrd')"
+# ttsfrd (wheels linux cp310) reste NON installe : fallback wetext automatique (carte : "not necessary")
+```
+
+Verif pre-banc (767-L1 zero-dep-manifeste != zero-dep-reel) :
+
+```bash
+_runtime/venv-cosyvoice3/Scripts/python.exe -c "import sys; sys.path[:0]=[r'_runtime/CosyVoice', r'_runtime/CosyVoice/third_party/Matcha-TTS']; from cosyvoice.cli.cosyvoice import AutoModel; import faster_whisper, torch; print('OK', torch.__version__, torch.cuda.is_available())"
+```
+
+Banc (cf. banc_phase_a0.py) :
+
+```bash
+_runtime/venv-cosyvoice3/Scripts/python.exe bakeoff_large/banc_phase_a0.py \
+    --client cosyvoice3 --language French \
+    --out-root <GDrive>/run-<id>/A0-bakeoff/cosyvoice3
+# variante instruct2 : --instruct "voix posee, debit lent, ton narratif"
+```
+
+Prompt vocal par defaut : asset repo `asset/zero_shot_prompt.wav` (voix zh, transcript
+carte) -> clone cross-lingual zero-shot FR, capacite sous test, reproductible.
