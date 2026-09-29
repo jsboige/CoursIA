@@ -1,0 +1,32 @@
+# Dépendances du TP 01-1 « Opérations de base sur les vidéos »
+# (01-1-Video-Operations-Basics.ipynb et son corrigé)
+#
+# Installation, depuis ce dossier :
+#   python -m venv .venv
+#   source .venv/bin/activate          # Windows : .venv\Scripts\activate
+#   pip install -r requirements.txt
+#
+# Prérequis système (hors pip) : FFmpeg doit être installé et accessible dans le PATH
+#   Arch :    sudo pacman -S ffmpeg
+#   Debian :  sudo apt install ffmpeg
+#   macOS :   brew install ffmpeg
+#   Windows : winget install FFmpeg
+#
+# Testé avec Python 3.11.2 ; version installée lors du test indiquée en commentaire.
+
+# --- Vidéo ---
+moviepy>=2.0,<3            # 2.2.1 — montage ; l'API 2.x (subclipped, with_effects) est obligatoire
+ffmpeg-python>=0.2.0       # 0.2.0 — ffmpeg.probe : métadonnées sans décoder
+decord>=0.6.0              # 0.6.0 — extraction rapide de frames (VideoReader)
+imageio[ffmpeg]>=2.31      # 2.38.0 — écriture de la vidéo de test
+imageio-ffmpeg>=0.4.9      # 0.6.0 — backend FFmpeg d'imageio
+
+# --- Calcul, données, figures ---
+numpy>=1.26                # 2.4.6
+pandas>=2.0                # 3.0.6 — tableau comparatif de l'exercice 3
+matplotlib>=3.7            # 3.11.2 — figures et police DejaVuSans de l'overlay texte
+Pillow>=10.0               # 11.3.0 — génération des frames (moviepy impose Pillow < 12)
+
+# --- Notebook ---
+python-dotenv>=1.0         # 1.2.3 — chargement du .env (facultatif pour ce TP)
+ipykernel>=6.0             # 7.4.0 — kernel Jupyter pour VS Code / Jupyter
