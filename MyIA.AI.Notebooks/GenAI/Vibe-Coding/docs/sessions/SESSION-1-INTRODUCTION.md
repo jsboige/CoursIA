@@ -276,7 +276,7 @@
 ### Lectures Recommandées
 
 Pour la prochaine session :
-- Lire [Activités-GenAI.md](../activites/Activités-GenAI.md) en entier
+- Lire [Activités-GenAI.md](../../../activites/Activités-GenAI.md) en entier
 - Explorer les notebooks Python fournis
 - Tester différents paramètres de génération
 

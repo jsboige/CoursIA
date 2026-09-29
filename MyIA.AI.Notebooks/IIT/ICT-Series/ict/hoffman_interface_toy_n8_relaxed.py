@@ -217,8 +217,7 @@ def perceive_fitness_only(
     de x qui a la fitness max.
 
     REPAIR c.902 : voir `perceive_truth` pour le contexte. Avant le fix,
-    `play_round` jette x et le toy mesurait un artefact instrumental (Tell
-    c.899-L1 ★★★ + c.901-L1 ★★★).
+    `play_round` jette x et le toy mesurait un artefact instrumental.
     """
     best_w = 0
     best_score = -math.inf

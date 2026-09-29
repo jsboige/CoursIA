@@ -653,6 +653,96 @@ def test_metadata_identity_ignores_only_check_order():
     assert mod._metadata_identity(first) != mod._metadata_identity(changed)
 
 
+def _bracket_reads(monkeypatch, first, second=None):
+    """Stub every network read `load_snapshot` performs, and count them.
+
+    `load_snapshot` reads the PR metadata twice -- before and after the
+    surfaces -- and refuses the snapshot when the two disagree. `first` and
+    `second` are payload FACTORIES (one callable per read) so a test steers
+    the second read without aliasing the first.
+
+    The stubbed check runs also pin the source of truth (#16957): the
+    snapshot's `checkRuns` come from `commits/<head>/check-runs`, keyed on the
+    exact head commit, never from the rollup.
+    """
+    calls = {"metadata": 0, "check_runs_head": None}
+    runs = [
+        {
+            "id": 1,
+            "name": "PR gate",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-09-28T10:00:00Z",
+        }
+    ]
+
+    def fake_pr_metadata(pr, *, with_rollup):
+        calls["metadata"] += 1
+        factory = first if calls["metadata"] == 1 else (second or first)
+        return factory()
+
+    def fake_head_check_runs(head_sha):
+        calls["check_runs_head"] = head_sha
+        return list(runs)
+
+    monkeypatch.setattr(mod, "_pr_metadata", fake_pr_metadata)
+    monkeypatch.setattr(mod, "_head_check_runs", fake_head_check_runs)
+    monkeypatch.setattr(mod, "_issue_comments", lambda pr: [{"id": 1}])
+    monkeypatch.setattr(mod, "_reviews", lambda pr: [{"id": 2}])
+    monkeypatch.setattr(mod, "review_threads", lambda pr: [{"thread": 1}])
+    return calls, runs
+
+
+def _metadata_payload(**changes):
+    """The shape `_pr_metadata` renders -- what the stability identity hashes."""
+    payload = _base_snapshot()
+    payload["updatedAt"] = "2026-09-28T12:00:00Z"
+    payload["headRefName"] = "feature/bracket"
+    payload.update(changes)
+    return payload
+
+
+def test_load_snapshot_reads_metadata_twice_and_takes_checks_from_rest(monkeypatch):
+    calls, runs = _bracket_reads(monkeypatch, _metadata_payload)
+
+    snapshot = mod.load_snapshot(123)
+
+    assert calls["metadata"] == 2
+    assert calls["check_runs_head"] == HEAD
+    assert snapshot["checkRuns"] == runs
+    assert snapshot["comments"] == [{"id": 1}]
+    assert snapshot["reviews"] == [{"id": 2}]
+    assert snapshot["threads"] == [{"thread": 1}]
+
+
+def test_load_snapshot_aborts_when_a_check_concludes_during_the_read(monkeypatch):
+    """#17390 acceptance 2: the guard must go red, not absolve.
+
+    A check moving from in-progress to a conclusion between the two metadata
+    reads makes the snapshot born of an already-stale state: the gate refuses
+    it (transient UNKNOWN, the caller retries) instead of certifying it.
+    """
+    in_progress = _metadata_payload(
+        statusCheckRollup=[{"name": "PR gate", "status": "IN_PROGRESS", "conclusion": None}]
+    )
+    concluded = _metadata_payload(
+        statusCheckRollup=[{"name": "PR gate", "status": "COMPLETED", "conclusion": "SUCCESS"}]
+    )
+    _bracket_reads(monkeypatch, lambda: in_progress, lambda: concluded)
+
+    with pytest.raises(RuntimeError, match="changed while prevalidation snapshot was read"):
+        mod.load_snapshot(123)
+
+
+def test_load_snapshot_aborts_when_any_surface_moves_during_the_read(monkeypatch):
+    first = _metadata_payload()
+    moved = _metadata_payload(updatedAt="2026-09-28T12:00:05Z")
+    _bracket_reads(monkeypatch, lambda: first, lambda: moved)
+
+    with pytest.raises(RuntimeError, match="changed while prevalidation snapshot was read"):
+        mod.load_snapshot(123)
+
+
 def test_ready_dossier_is_evidence_not_merge_authorization():
     ready, _ = mod.evaluate(_snapshot(_body()))
     assert ready
