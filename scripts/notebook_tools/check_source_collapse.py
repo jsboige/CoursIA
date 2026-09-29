@@ -279,7 +279,10 @@ SELF_TEST_CELL = "c989_independent_v2"
 SELF_TEST_16110_BASE = "7cc2fb2d203f"  # merge-base(main, #16097)
 SELF_TEST_16110_HEAD = "1209b5357"
 SELF_TEST_16110_NOTEBOOK = (
-    "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-01-Sendov-Lean-Python.ipynb")
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-18-Sendov-Complex-Analysis.ipynb")
+# CHEMIN HISTORIQUE : cette constante est lue aux commits 7cc2fb2d/1209b5357,
+# ou le carnet vivait sous Lean-18-Sendov avant la descente ANALYSE de #18015.
+# Ne pas suivre un renommage futur : la constante est figee au commit rejoue.
 SELF_TEST_16110_CELL = "40cb37d5"
 
 
