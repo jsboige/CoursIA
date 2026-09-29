@@ -44,6 +44,8 @@ from pathlib import Path
 import torch
 import torchaudio
 
+import soundfile as sf
+
 
 DEFAULT_MODEL_ID = "Zyphra/Zonos-v0.1-transformer"
 DEFAULT_LANGUAGE = "French"
@@ -131,7 +133,10 @@ def synth(
             "(git clone --recursive https://github.com/FunAudioLLM/CosyVoice.git) "
             "ou poser un wav de référence à cet emplacement."
         )
-    spkref, sr = torchaudio.load(str(ref_path))
+    # torchaudio 2.11 route load() sur torchcodec (non installe) — soundfile,
+    # deja dans le venv, lit le wav sans dependance supplementaire.
+    data, sr = sf.read(str(ref_path), dtype="float32", always_2d=True)
+    spkref = torch.from_numpy(data.T)  # (channels, samples)
     # Speaker = embedding calculé par le modèle (make_speaker_embedding),
     # pas le wav brut — cf sample.py du repo officiel.
     spk_emb = model.make_speaker_embedding(spkref, sr)
