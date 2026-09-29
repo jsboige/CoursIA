@@ -110,3 +110,19 @@ _runtime/venv-cosyvoice3/Scripts/python.exe bakeoff_large/banc_phase_a0.py \
 
 Prompt vocal par defaut : asset repo `asset/zero_shot_prompt.wav` (voix zh, transcript
 carte) -> clone cross-lingual zero-shot FR, capacite sous test, reproductible.
+
+## Pieges constates au premier banc (29/09, run-20260929-1851)
+
+1. **`pkg_resources` meurt APRES requirements** : `requirements.txt` remonte
+   `setuptools` a 84.x (supprime `pkg_resources`), casse `cosyvoice.flow.flow_matching`.
+   Re-pinner **apres** l'etape 3 : `pip install "setuptools<81"` (reparé 80.10.2).
+   L'openai-whisper du meme requirements exige de toute facon
+   `setuptools<81` + `wheel` + `--no-build-isolation` (chaine sdist connue).
+2. **CosyVoice3 exige `<|endofprompt|>` dans `prompt_text`**, y compris en
+   `inference_zero_shot` (`cosyvoice/llm/llm.py:479`, assert token 151646) ;
+   `frontend_zero_shot` ne l'ajoute PAS — c'est a l'appelant. Le client
+   `clients/cosyvoice3.py` l'appende (`ENDOFPROMPT`).
+3. **Jamais d'arret de remontee sur `.gitignore` intermediaire** (ex.
+   `GenAI/.gitignore`) dans un bootstrap de racine : le venv du banc vit a la
+   racine du worktree (`_runtime/`), pas sous `GenAI/`.
+

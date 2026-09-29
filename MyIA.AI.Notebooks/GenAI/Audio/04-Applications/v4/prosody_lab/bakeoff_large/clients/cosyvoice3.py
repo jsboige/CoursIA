@@ -33,14 +33,19 @@ DEFAULT_LANGUAGE = "French"
 
 # Transcript du prompt asset (carte HF, usage zero_shot canonique)
 PROMPT_TEXT_ZH = "希望你以后能够做的比我还好呦。"
+# CosyVoice3 exige le marqueur <|endofprompt|> dans prompt_text (llm.py:479,
+# assert 151646) ; frontend_zero_shot ne l'ajoute PAS -- c'est a l'appelant.
+ENDOFPROMPT = "<|endofprompt|>"
 INSTRUCT_PREFIX = "You are a helpful assistant."
 
 
 def _bootstrap_paths():
     """Ajoute le repo CosyVoice et Matcha-TTS au sys.path, retourne (repo, model_dir, asset_wav)."""
     p = Path(__file__).resolve()
+    # Un .gitignore intermediaire (ex: GenAI/) ne doit pas arreter la remontee :
+    # seuls .git (racine du worktree) ou _runtime/CosyVoice marquent la racine.
     for _ in range(10):
-        if (p / ".git").exists() or (p / ".gitignore").exists():
+        if (p / ".git").exists() or (p / "_runtime" / "CosyVoice").exists():
             break
         p = p.parent
     repo_root = p
@@ -106,14 +111,14 @@ def synth(
     t0 = time.time()
 
     if instruct:
-        prompt_text2 = f"{INSTRUCT_PREFIX} Speak in {language}. {instruct}<|endofprompt|>"
+        prompt_text2 = f"{INSTRUCT_PREFIX} Speak in {language}. {instruct}{ENDOFPROMPT}"
         gen = model.inference_instruct2(
             text, prompt_text2, str(asset_wav), stream=False
         )
         mode = "instruct2"
     else:
         gen = model.inference_zero_shot(
-            text, PROMPT_TEXT_ZH, str(asset_wav), stream=False
+            text, PROMPT_TEXT_ZH + ENDOFPROMPT, str(asset_wav), stream=False
         )
         mode = "zero_shot"
 
