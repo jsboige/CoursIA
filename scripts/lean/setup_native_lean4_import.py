@@ -27,6 +27,7 @@ USAGE
     python scripts/lean/setup_native_lean4_import.py status        # what's patched/installed
     python scripts/lean/setup_native_lean4_import.py install       # install durable fork (replaces in-place patch)
     python scripts/lean/setup_native_lean4_import.py patch         # [legacy] patch repl.py in-place (offline fallback)
+    python scripts/lean/setup_native_lean4_import.py sync-repl-table  # align installed toolchain table (#18120)
     python scripts/lean/setup_native_lean4_import.py build-repl v4.30.0-rc2
     python scripts/lean/setup_native_lean4_import.py --check
 
@@ -37,11 +38,13 @@ docs/reference/wsl-kernels-detail.md.
 """
 
 import argparse
+import base64
 import os
 import re
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 # The Windows console stdout is cp1252, while WSL/lake output carries glyphs it
@@ -306,7 +309,41 @@ def cmd_status():
         rr = _wsl(f"test -f ~/.elan/bin/{name} && echo '  {name}: present' "
                   f"|| echo '  {name}: MISSING (run: build-repl {tag})'", timeout=15)
         print(rr.stdout.strip())
-    return 0
+    # #18120: the installed table comes from the frozen fork and can lag behind
+    # REPL_TOOLCHAIN_TAGS — a lake on a missing tag silently falls back to the
+    # stable REPL (``Unknown identifier`` on core names, no version error). The
+    # gap was invisible; status now compares both tables and fails on the
+    # harmful classes so agents/checks can act on it.
+    installed = _read_installed_repl_table(rp)
+    drift_detected = False
+    if installed is None:
+        print("installed REPL table: no _repl_for_toolchain mapping found (upstream?)")
+    else:
+        drift = _repl_table_drift(installed, REPL_TOOLCHAIN_TAGS)
+        print(f"installed REPL table: {len(installed)} tags "
+              f"(repo reference: {len(REPL_TOOLCHAIN_TAGS)})")
+        for t in drift["missing"]:
+            print(f"  WARNING — '{t}' missing from installed table")
+        for t in drift["extra"]:
+            print(f"  (note — '{t}' in installed table, not in repo reference)")
+        for t, (old, new) in drift["changed"].items():
+            print(f"  WARNING — '{t}': installed '{old}' != repo '{new}'")
+        if drift["missing"] or drift["changed"]:
+            drift_detected = True
+            print("  -> lakes on these toolchains silently use the STABLE repl: "
+                  "'Unknown identifier' on core names, no version error. "
+                  "Fix: setup_native_lean4_import.py sync-repl-table")
+    return 1 if drift_detected else 0
+
+
+def _read_installed_repl_table(rp):
+    """Installed table read losslessly: base64 transport keeps bytes exact
+    through the utf-8/replace-decoding ``_wsl`` pipe (#18120)."""
+    r = _wsl(f"base64 -w0 {rp}", timeout=20)
+    if not r.stdout.strip():
+        return None
+    src = base64.b64decode(r.stdout.strip()).decode("utf-8")
+    return _extract_repl_table(src)
 
 
 def cmd_patch():
@@ -360,6 +397,76 @@ def cmd_patch():
     return 0 if ("PATCHED" in out or "already" in out) else 1
 
 
+def cmd_sync_repl_table():
+    """Align the installed ``lean4_jupyter/repl.py`` toolchain table on
+    ``REPL_TOOLCHAIN_TAGS`` (#18120).
+
+    The fork ``v0.0.1-native-import`` is frozen: its baked table cannot follow
+    the repo constant, and ``patch`` refuses to touch a file that already
+    carries the marker — so until now the only remedy was a manual venv edit
+    (done once by hand on 2026-09-27 to unblock #17714, backup
+    ``repl.py.bak.c913``). This command reproduces that gesture safely:
+    timestamped backup, formatting-independent literal replacement, py_compile,
+    and a re-read verification that refuses silent success. Idempotent — a
+    no-op when the tables already agree.
+    """
+    rp = _find_repl_py()
+    if not rp:
+        print("ERROR: lean4_jupyter/repl.py not found", file=sys.stderr)
+        return 1
+    # Lossless read (base64 transport — see _read_installed_repl_table).
+    r = _wsl(f"base64 -w0 {rp}", timeout=20)
+    if not r.stdout.strip():
+        print("ERROR: could not read installed repl.py", file=sys.stderr)
+        return 1
+    src = base64.b64decode(r.stdout.strip()).decode("utf-8")
+    new_src, drift = _apply_repl_table_sync(src, REPL_TOOLCHAIN_TAGS)
+    if not (drift["missing"] or drift["extra"] or drift["changed"]):
+        print("installed REPL table already in sync with REPL_TOOLCHAIN_TAGS — nothing to do")
+        return 0
+    if new_src is None:
+        print("ERROR: no `_repl_for_toolchain` mapping literal found in installed "
+              "repl.py — refusing to write (upstream file? run `install` first)",
+              file=sys.stderr)
+        return 2
+    ts = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
+    bak = f"{rp}.bak.repltable-{ts}"
+    _wsl(f"cp {rp} {bak}", timeout=20)
+    print("backup:", bak)
+    # Ship the new source as exact bytes: binary temp file (no newline
+    # translation), then cp inside WSL. All table logic stays in this module
+    # (unit-testable); WSL only carries bytes and compiles.
+    import tempfile
+    with tempfile.NamedTemporaryFile("wb", suffix=".py", delete=False) as f:
+        f.write(new_src.encode("utf-8"))
+        tmp_win = f.name
+    tmp_unix_src = "/mnt/" + tmp_win[0].lower() + tmp_win[2:].replace("\\", "/")
+    tmp_wsl = "/tmp/_lean4_repl_table_sync.py"
+    _wsl(f"cp '{tmp_unix_src}' {tmp_wsl}", timeout=20)
+    os.unlink(tmp_win)
+    _wsl(f"cp {tmp_wsl} {rp}", timeout=20)
+    _wsl(f"rm -f {tmp_wsl}", timeout=10)
+    rc = _wsl(f"/home/*/.lean4-venv/bin/python3 -m py_compile {rp} && echo OK", timeout=30)
+    compile_out = (rc.stdout or rc.stderr or "").strip()
+    print("py_compile:", compile_out)
+    # Verify by re-reading — a write is never trusted silent (#18120).
+    after = _read_installed_repl_table(rp)
+    drift_after = _repl_table_drift(after or {}, REPL_TOOLCHAIN_TAGS)
+    if "OK" not in compile_out or after is None or drift_after["missing"] or drift_after["changed"]:
+        print("ERROR: post-sync verification failed — restore with: "
+              f"cp {bak} {rp}", file=sys.stderr)
+        return 1
+    for t in drift["missing"]:
+        print(f"  + {t} -> {REPL_TOOLCHAIN_TAGS[t]}")
+    for t in drift["extra"]:
+        print(f"  - {t} (not in repo reference)")
+    for t, (old, new) in drift["changed"].items():
+        print(f"  ~ {t}: {old} -> {new}")
+    print(f"synced: installed REPL table now matches REPL_TOOLCHAIN_TAGS "
+          f"({len(REPL_TOOLCHAIN_TAGS)} tags); backup: {bak}")
+    return 0
+
+
 def _repl_tag_sort_key(t):
     """Total order over repl tags: (maj, min, patch, is_release, rcN).
 
@@ -378,6 +485,68 @@ def _repl_tag_sort_key(t):
     maj, minor, patch, rc = m.groups()
     return (int(maj), int(minor), int(patch), 0 if rc is not None else 1,
             int(rc) if rc is not None else 0)
+
+
+def _extract_repl_table(src):
+    """Installed ``_repl_for_toolchain`` mapping from repl.py source, formatting-
+    independent (#18120).
+
+    The installed copy comes from the frozen fork ``v0.0.1-native-import`` whose
+    formatting already diverges from ``REPL_PY_PATCH`` (entries packed two per
+    line vs one per line), so extraction must not depend on layout. The mapping
+    literal is flat (no nested braces), so the first ``}`` after ``mapping = {``
+    closes it. Returns ``{}`` when the function exists but no entry parses, and
+    ``None`` when repl.py carries no ``_repl_for_toolchain`` at all (upstream,
+    unpatched) — callers treat ``None`` as fail-closed.
+    """
+    m = re.search(r"def _repl_for_toolchain\(.*?mapping = \{", src, re.DOTALL)
+    if not m:
+        return None
+    body = src[m.end():src.index("}", m.end())]
+    return dict(re.findall(r"'(v[0-9][^']*)'\s*:\s*'(repl-[^']*)'", body))
+
+
+def _repl_table_drift(installed, reference):
+    """Drift report between the installed table and ``REPL_TOOLCHAIN_TAGS``.
+
+    Returns ``{"missing": [...], "extra": [...], "changed": {tag: (old, new)}}``
+    with tag lists sorted by ``_repl_tag_sort_key``. ``missing``/``changed`` are
+    the harmful classes (the lake silently falls back to the stable REPL);
+    ``extra`` is informational (routing more lakes correctly).
+    """
+    missing = sorted(set(reference) - set(installed), key=_repl_tag_sort_key)
+    extra = sorted(set(installed) - set(reference), key=_repl_tag_sort_key)
+    changed = {t: (installed[t], reference[t])
+               for t in sorted(set(installed) & set(reference), key=_repl_tag_sort_key)
+               if installed[t] != reference[t]}
+    return {"missing": missing, "extra": extra, "changed": changed}
+
+
+def _render_repl_table(table):
+    """Render the ``mapping`` braces-literal, one entry per line, tags sorted.
+
+    Drop-in replacement for the literal regardless of the installed copy's
+    formatting (repo payload one-per-line, fork two-per-line).
+    """
+    items = sorted(table.items(), key=lambda kv: _repl_tag_sort_key(kv[0]))
+    return "{\n" + ",\n".join(f"                   '{t}': '{n}'" for t, n in items) + "}"
+
+
+def _apply_repl_table_sync(src, reference):
+    """Return ``(new_src, drift)`` with the installed mapping literal replaced by
+    ``reference``. Idempotent: when the tables already agree, ``new_src`` is
+    ``src`` untouched. Fail-closed: when repl.py carries no
+    ``_repl_for_toolchain`` mapping literal, returns ``(None, drift)`` and the
+    caller must not write anything (#18120 — never blind-write the venv).
+    """
+    installed = _extract_repl_table(src)
+    drift = _repl_table_drift(installed or {}, reference)
+    if not (drift["missing"] or drift["extra"] or drift["changed"]):
+        return src, drift
+    m = re.search(r"(def _repl_for_toolchain\(.*?mapping = )\{[^{}]*\}", src, re.DOTALL)
+    if not m:
+        return None, drift
+    return src[:m.end(1)] + _render_repl_table(reference) + src[m.end():], drift
 
 
 def _resolve_repl_source_tag(tag):
@@ -517,13 +686,64 @@ def cmd_test():
     path = f"{pkg2}:{pkg}"
     assert _reorder_lean_path_drvfs_first(path, "/home/u/.elan/toolchains") == path, (
         "non-elan-toolchain-named path should not be moved")
+    # 7-13: _repl_for_toolchain table sync (#18120) — pure functions, no WSL.
+    # 7. extraction is formatting-independent (repo payload vs frozen-fork layout).
+    repo_layout = ("    def _repl_for_toolchain(lake_root):\n"
+                   "        mapping = {'v4.30.0-rc2': 'repl-4.30.0-rc2',\n"
+                   "                   'v4.32.1': 'repl-4.32.1'}\n")
+    fork_layout = ("    def _repl_for_toolchain(lake_root):\n"
+                   "        mapping = {'v4.30.0-rc2': 'repl-4.30.0-rc2', 'v4.32.1': 'repl-4.32.1'}\n")
+    assert _extract_repl_table(repo_layout) == _extract_repl_table(fork_layout) == {
+        "v4.30.0-rc2": "repl-4.30.0-rc2", "v4.32.1": "repl-4.32.1"}, (
+        "extraction must not depend on entry layout")
+    # 8. upstream repl.py (no _repl_for_toolchain) -> None (fail-closed signal).
+    assert _extract_repl_table("class Lean4ReplWrapper:\n    pass\n") is None, (
+        "upstream source must extract as None")
+    # 9. drift: missing / extra / changed classes.
+    drift = _repl_table_drift({"v4.32.1": "repl-4.32.1", "v4.33.0": "repl-WRONG"},
+                              {"v4.32.1": "repl-4.32.1", "v4.33.0": "repl-4.33.0",
+                               "v4.34.0-rc1": "repl-4.34.0-rc1"})
+    assert drift["missing"] == ["v4.34.0-rc1"] and drift["extra"] == [] and (
+        drift["changed"] == {"v4.33.0": ("repl-WRONG", "repl-4.33.0")}), (
+        f"drift classes wrong: {drift}")
+    # 10. render -> extract round-trip identity.
+    rendered_src = "def _repl_for_toolchain(x):\n    mapping = " + \
+        _render_repl_table({"v4.32.1": "repl-4.32.1", "v4.30.0-rc2": "repl-4.30.0-rc2"}) + "\n"
+    assert _extract_repl_table(rendered_src) == {
+        "v4.30.0-rc2": "repl-4.30.0-rc2", "v4.32.1": "repl-4.32.1"}, (
+        "rendered literal must re-extract to the same table")
+    # 11. sync on a stale fork-layout file: replaces only the literal, adds the tag.
+    stale = ("    def _repl_for_toolchain(lake_root):\n"
+             "        mapping = {'v4.32.1': 'repl-4.32.1'}\n"
+             "        return mapping.get(lake_root, 'repl')\n")
+    new_src, d = _apply_repl_table_sync(stale, {"v4.32.1": "repl-4.32.1",
+                                                "v4.34.0-rc1": "repl-4.34.0-rc1"})
+    assert new_src is not None and d["missing"] == ["v4.34.0-rc1"], "sync must report the add"
+    assert _extract_repl_table(new_src) == {"v4.32.1": "repl-4.32.1",
+                                            "v4.34.0-rc1": "repl-4.34.0-rc1"}, (
+        "synced source must carry the full reference table")
+    assert "return mapping.get(lake_root, 'repl')" in new_src, (
+        "sync must not touch code outside the literal")
+    # 12. sync is idempotent: in-sync source comes back untouched.
+    same = "def _repl_for_toolchain(x):\n    mapping = " + \
+        _render_repl_table({"v4.32.1": "repl-4.32.1"}) + "\n"
+    out2, d2 = _apply_repl_table_sync(same, {"v4.32.1": "repl-4.32.1"})
+    assert out2 == same and not (d2["missing"] or d2["extra"] or d2["changed"]), (
+        "in-sync source must be a no-op")
+    # 13. fail-closed: no mapping literal anywhere -> None, never a write.
+    out3, d3 = _apply_repl_table_sync("print('upstream')\n", {"v4.32.1": "repl-4.32.1"})
+    assert out3 is None and d3["missing"] == ["v4.32.1"], (
+        "upstream source must fail closed")
     print("test: 6/6 PASS (_reorder_lean_path_drvfs_first)")
+    print("test: 7/7 PASS (_extract_repl_table/_repl_table_drift/"
+          "_render_repl_table/_apply_repl_table_sync)")
     return 0
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("command", nargs="?", choices=["install", "status", "patch", "build-repl", "test"],
+    ap.add_argument("command", nargs="?",
+                    choices=["install", "status", "patch", "sync-repl-table", "build-repl", "test"],
                     default="status")
     ap.add_argument("tag", nargs="?", help="toolchain tag for build-repl (e.g. v4.30.0-rc2)")
     ap.add_argument("--check", action="store_true", help="alias for status")
@@ -536,6 +756,8 @@ def main():
         return cmd_install()
     if args.command == "patch":
         return cmd_patch()
+    if args.command == "sync-repl-table":
+        return cmd_sync_repl_table()
     if args.command == "build-repl":
         if not args.tag:
             print("ERROR: build-repl requires a tag", file=sys.stderr)

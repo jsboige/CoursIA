@@ -6,7 +6,7 @@
 
 Cette session contient **10 activités pratiques complètes** sur l'IA Générative, conçues pour une durée totale de **4 heures**.
 
-**Document principal** : [Activites-GenAI.md](./Activites-GenAI.md)
+**Document principal** : [Activités-GenAI.md](./Activités-GenAI.md)
 
 ## 📋 Liste des Activités
 
@@ -100,7 +100,7 @@ Cette session contient **10 activités pratiques complètes** sur l'IA Générat
 
 | Fichier | Contenu |
 |---------|---------|
-| [Activites-GenAI.md](./Activites-GenAI.md) | Document principal avec les 10 activités |
+| [Activités-GenAI.md](./Activités-GenAI.md) | Document principal avec les 10 activités |
 | [INTRO-GENAI.md](../INTRO-GENAI.md) | Introduction outils GenAI |
 | `Intelligence Artificielle - 8 - IA Générative.pptx` | Slides de cours |
 
@@ -290,7 +290,7 @@ Pour référence rapide lors des activités :
 ### Pour les Étudiants
 
 **Avant la session** :
-- Lire [Activites-GenAI.md](./Activites-GenAI.md)
+- Lire [Activités-GenAI.md](./Activités-GenAI.md)
 - Créer compte OpenRouter (optionnel)
 - Installer Roo/Claude Code (recommandé)
 
@@ -312,7 +312,7 @@ Pour référence rapide lors des activités :
 - [Microsoft Generative AI for Beginners](https://github.com/microsoft/generative-ai-for-beginners)
 
 **Notebooks de référence** :
-- Code Python complet dans [Activites-GenAI.md](./Activites-GenAI.md)
+- Code Python complet dans [Activités-GenAI.md](./Activités-GenAI.md)
 - [Semantic Kernel Samples](https://github.com/microsoft/semantic-kernel-samples)
 
 ## 🎬 Déroulement Type
@@ -374,7 +374,7 @@ Pour référence rapide lors des activités :
 
 **Ressources techniques** :
 - Guides dans [docs/](../)
-- Roo Code : [Ateliers-roo-code/](../../Ateliers-roo-code/)
+- Roo Code : [Roo-Code/](../../Roo-Code/)
 - Claude Code : [Claude-Code/docs/](../../Claude-Code/docs/)
 
 **Communauté** :

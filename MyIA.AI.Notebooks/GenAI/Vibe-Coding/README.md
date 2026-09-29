@@ -219,7 +219,7 @@ Le répertoire `docs/` contient :
 | [CARTE-ESPACES.md](docs/CARTE-ESPACES.md) | Carte des espaces de la série (#14526) : inventaire mesuré des workspaces et voisins, classification, arborescence cible et plan de PRs atomiques |
 | [Claude-Code/docs/](Claude-Code/docs/) | Documentation Claude Code (installation, concepts, aide-mémoire) |
 | [Roo-Code/docs/](Roo-Code/docs/) | Documentation Roo Code (installation, guide) |
-| [activites/](docs/activites/) | Activités pédagogiques |
+| [activites/](../activites/) | Activités pédagogiques (déménagées hors Vibe-Coding, #18223 — lieu unique `GenAI/activites/`) |
 | [sessions/](docs/sessions/) | Sessions de formation |
 
 ### Guides disponibles
