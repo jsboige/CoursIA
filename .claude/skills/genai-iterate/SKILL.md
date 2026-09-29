@@ -47,7 +47,6 @@ python genai.py quant summary # bonne quant chargee ?
 
 ## FLAGS connus (inventaire 2026-05-23)
 - `02-5-Multi-Model-TTS-Gateway` 401.
-- `LOCAL_MODE` leak dans outputs de `02-4-Z-Image-Lumina2`, `01-5b-Qwen-Image-Edit-2509`.
 - Naming `COMFYUI_API_TOKEN` = `COMFYUI_AUTH_TOKEN` (alias canonique, deux noms pour le même secret — géré par `render_envs.py`). `COMFYUI_BEARER_TOKEN` n'est plus géré.
 
 ## Anti-patterns interdits
