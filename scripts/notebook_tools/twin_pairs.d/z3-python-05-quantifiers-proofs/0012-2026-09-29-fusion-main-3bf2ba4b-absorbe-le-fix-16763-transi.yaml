@@ -1,0 +1,8 @@
+date: '2026-09-29'
+by: 'fusion main 3bf2ba4b absorbe le fix #16763 (transition Z3-05 : promesse Z3-Python-07
+  retiree, 06 au canon) -- le hash Python bouge apres le yaml 0011 du 28/09 ; nav-header
+  inchange des deux cotes'
+python_sha: 2802db72c43e21386109e0f9ab09b567355f7a72
+csharp_sha: 8b7fc0d6af0accc41ce1fbc4d5fd4c5c567413d1
+content_python_sha: 6462818fd591995d5f77f0ed5687d529d148c9844cad4df08d9f8305e32c88fd
+content_csharp_sha: 5500e579208645aa3f7f7dccfe5af3a643f29d5146388da3e03703f861a4da22
