@@ -107,7 +107,7 @@ Le deck Introduction est transversal : il presente les concepts que les notebook
 | 27 | Intelligence exploratoire | `Search/Exploration_non_informee_et_informee_intro.ipynb`, `Search/CSPs_Intro.ipynb` |
 | 27 | Satisfaction de contraintes | `Sudoku/Sudoku-01-Backtracking.ipynb` a `Sudoku-06-Infer.ipynb` |
 | 27 | Algorithmes genetiques | `Search/Portfolio_Optimization_GeneticSharp.ipynb`, `Sudoku/Sudoku-02-Genetic.ipynb` |
-| 28 | Intelligence symbolique | `SymbolicAI/Lean/Lean-1-Setup.ipynb` a `Lean-10-LeanDojo.ipynb` |
+| 28 | Intelligence symbolique | `SymbolicAI/Lean/Lean-01-Setup-Lean-Python.ipynb` a `Lean-10-LeanDojo.ipynb` |
 | 28 | Solveurs SMT | `Sudoku/Sudoku-04-Z3.ipynb` |
 | 28 | Argumentation | `SymbolicAI/Argument_Analysis/` (5 notebooks) |
 | 29 | Inference bayesienne | `Probas/Infer-101.ipynb`, `Probas/Infer/Infer-3-Factor-Graphs.ipynb` a `Infer-14` |

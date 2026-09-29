@@ -2409,11 +2409,14 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # (`check_lane_claim.py N --lane L --paths p`) silently skipped the guard
     # and printed `free_paths` -- a list that describes the CLAIM scope, never
     # the open-PR space -- reading as an all-clear on an occupied file.
+    # #18341 -- the leg now uses `my_scope` (--paths U paths: du claim propre)
+    # so a lane that has already declared `paths:` on its active claim gets
+    # the OPEN-PR check without having to pass `--paths` on the call.
     open_pr_collisions: list[PathCollision] = []
-    if check_open_pr_paths and my_paths:
+    if check_open_pr_paths and my_scope:
         try:
             open_pr_collisions, _own = _compute_open_pr_collisions(
-                my_paths, my_lane)
+                my_scope, my_lane)
         except RuntimeError as exc:
             print(
                 f"WARN: la jambe PR-ouverte n'a pas pu tourner sur "
