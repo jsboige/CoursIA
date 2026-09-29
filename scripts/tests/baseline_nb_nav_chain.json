@@ -1837,12 +1837,12 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-7b-Examples.ipynb",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-07b-Examples-Python.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-8b-Erdos-Formal-Conjectures-Native.ipynb",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-08b-Erdos-Formal-Conjectures-Lean.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
     },
     {
@@ -1883,6 +1883,11 @@
     {
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-06-Advanced-Optimization-CSharp.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13b-UnsatCores-MUS-Python.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API"
     },
     {

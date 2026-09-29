@@ -46,7 +46,7 @@ Un nom de notebook suit la forme `<Prefixe>-<NN><lettre?>-<Titre>[-Part<N>]-<Noy
 | `-Part<N>` | — | un notebook découpé en parties à lire dans l'ordre |
 | noyau en dernier | `-Python`, `-CSharp`, `-Lean`, `-Lean-Python` | le kernel à installer ; `-Lean-Python` désigne un notebook Python qui pilote Lean |
 
-La normalisation des noms est en cours (#16231). Beaucoup de fichiers de la famille n'ont pas encore leur padding ou leur suffixe de noyau (`Lean-2-Dependent-Types`, `SL-4-InductiveLogicProgramming`). En attendant, la colonne Noyau des tables fait foi.
+La normalisation des noms est en cours (#16231). Beaucoup de fichiers de la famille n'ont pas encore leur padding ou leur suffixe de noyau (`Lean-02-Dependent-Types-Lean`, `SL-4-InductiveLogicProgramming`). En attendant, la colonne Noyau des tables fait foi.
 
 ## Carte de la famille
 
@@ -102,7 +102,7 @@ L'ordre proposé ci-dessous n'est pas une obligation : chaque série se suit seu
 |---|---|---|---|---|---|
 | 1 | [Tweety](Tweety/README.md) | Logiques formelles, révision de croyances, argumentation abstraite et structurée, raisonnement incertain et causal | [Tweety-01-Setup-Python](Tweety/Tweety-01-Setup-Python.ipynb) | Licence | Python (JPype) · C# |
 | 2 | [SemanticWeb](SemanticWeb/README.md) | RDF, SPARQL, données liées, RDFS et OWL, SHACL, graphes de connaissances | [SW-2b-Python-RDFBasics](SemanticWeb/SW-2b-Python-RDFBasics.ipynb) · [SW-1-CSharp-Setup](SemanticWeb/SW-1-CSharp-Setup.ipynb) | Découverte → Licence | Python · C# |
-| 3 | [Lean](Lean/README.md) | Types dépendants, Curry-Howard, quantificateurs, tactiques, Mathlib4 | [Lean-1-Setup](Lean/Lean-1-Setup.ipynb) | Licence → Recherche | Lean (WSL) · Python |
+| 3 | [Lean](Lean/README.md) | Types dépendants, Curry-Howard, quantificateurs, tactiques, Mathlib4 | [Lean-01-Setup-Lean-Python](Lean/Lean-01-Setup-Lean-Python.ipynb) | Licence → Recherche | Lean (WSL) · Python |
 | 4 | [SMT / Z3](SMT/README.md) | Satisfiabilité modulo théories, du premier `solve()` aux preuves par `unsat` | [Z3-01-Introduction-Python](SMT/Z3-API/Z3-01-Introduction-Python.ipynb) · [C#](SMT/Z3-API/Z3-01-Introduction-CSharp.ipynb) | Découverte → Licence | Python · C# |
 | 5 | [Planners](Planners/README.md) | PDDL, recherche dans l'espace d'états, heuristiques, CP-SAT, planification temporelle et hiérarchique | [Planners-0-Setup](Planners/00-Environment/Planners-0-Setup.ipynb) | Licence | Python · C# |
 | 6 | [SmartContracts](SmartContracts/README.md) | Solidity, standards de jetons, DeFi, gouvernance, tests et vérification, cryptographie | [SC-00-Cypherpunk-Origins-Python](SmartContracts/00-Foundations/SC-00-Cypherpunk-Origins-Python.ipynb) | Découverte → Licence | Python (Foundry) |
@@ -235,7 +235,7 @@ dotnet interactive jupyter install
 
 ### WSL — Lean, et quelques outils
 
-- **Lean** : WSL est obligatoire, les notebooks Lean ne fonctionnent pas sous Windows natif (SIGPIPE, chemins). `Lean-1-Setup` installe elan, Lean 4 et `lean4_jupyter` dans WSL. Les preuves natives tournent sur les kernels `lean4` / `lean4-wsl`, certains compagnons Python sur `python3-wsl`, les autres sur un noyau Python natif. Le noyau exact de chaque notebook est dans le README de la série.
+- **Lean** : WSL est obligatoire, les notebooks Lean ne fonctionnent pas sous Windows natif (SIGPIPE, chemins). `Lean-01-Setup-Lean-Python` installe elan, Lean 4 et `lean4_jupyter` dans WSL. Les preuves natives tournent sur les kernels `lean4` / `lean4-wsl`, certains compagnons Python sur `python3-wsl`, les autres sur un noyau Python natif. Le noyau exact de chaque notebook est dans le README de la série.
 - **Planners** : Fast Downward s'installe dans WSL ou par Docker.
 - **SymbolicLearning** : Popper et SWI-Prolog (SL-4, SL-6) demandent un noyau Linux ou WSL.
 
@@ -285,7 +285,7 @@ Les paliers 1 à 7 sont écrits en C# avec dotNetRDF ; leurs jumeaux Python (2b 
 
 ### Comment exécuter les notebooks Lean sans GPU ni installation système ?
 
-Les notebooks Lean tournent dans WSL, sans GPU. `Lean-1-Setup.ipynb` installe elan (le gestionnaire de toolchains Lean) et `lean4_jupyter`. Les preuves natives utilisent les kernels Lean 4 ; les notebooks LLM et prouveur (7 à 10) tournent sur `Python 3 (WSL)` et demandent une clé d'API.
+Les notebooks Lean tournent dans WSL, sans GPU. `Lean-01-Setup-Lean-Python.ipynb` installe elan (le gestionnaire de toolchains Lean) et `lean4_jupyter`. Les preuves natives utilisent les kernels Lean 4 ; les notebooks LLM et prouveur (7 à 10) tournent sur `Python 3 (WSL)` et demandent une clé d'API.
 
 ### Peut-on étudier les SmartContracts sans blockchain réelle ?
 

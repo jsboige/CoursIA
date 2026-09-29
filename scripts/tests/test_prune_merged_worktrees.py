@@ -2156,6 +2156,108 @@ class TestRefusalReport3895:
         (empty / ".lane-owner").write_text("   \n", encoding="utf-8")
         assert pmw.read_lane_owner(str(empty)) is None
 
+    def test_absolute_worktree_resolves_host_repo_not_worktree(
+        self, tmp_path, monkeypatch,
+    ):
+        """#18219 follow-up (CHANGES_REQUESTED ai-01 2026-09-29T00:31Z) :
+        un worktree lie porte son propre fichier `.git` (gitdir pointeur).
+        L'ancienne resolution `_repo_root_for_worktree` remontait au
+        premier `.git` et rendait le worktree lui-meme, ce qui forait
+        `apply_removal` -> `git -C <wt> worktree remove <wt>` ->
+        Permission denied sur Windows (git tente de retirer son cwd).
+
+        Le fix utilise `git rev-parse --git-common-dir` qui rend le
+        common-dir du depot HOTE (distinct du `.git`/pointeur du
+        worktree). On asserte directement la valeur de l'argument `-C`
+        passe a `run_git` par `apply_removal` -- c'est l'invariant qui
+        protege Linux aussi : aucun autre helper ne doit pouvoir
+        reintroduire la marche d'ancetre.
+        """
+        super, wt = _make_repo_with_feature_worktree(tmp_path)
+        # Inlined from TestEndToEndHermetic14693._merged_anchor -- ces
+        # tests vivent dans TestRefusalReport3895 depuis le rebase c.1296.
+        monkeypatch.setattr(
+            pmw, "lookup_pr_for_branch",
+            lambda branch, head_sha=None: dict(
+                _MERGED_PR, headRefName=branch),
+        )
+        monkeypatch.chdir(super)
+
+        # Diagnostic + apply_removal reel, interception du cwd passe a git.
+        s = pmw.diagnose_worktree(str(wt), str(super))
+        assert s.decision == "REMOVE", s.refusal_reason
+
+        seen: list[tuple[str, tuple]] = []
+        real_run_git = pmw.run_git
+
+        def spy(cwd, *args, check=True):
+            seen.append((cwd, args))
+            return real_run_git(cwd, *args, check=check)
+
+        monkeypatch.setattr(pmw, "run_git", spy)
+        ok, stderr = pmw.apply_removal(s)
+        assert ok, f"REMOVE doit reussir ici: {stderr}"
+
+        # Filtrer uniquement les appels `worktree remove` (le helper
+        # interroge git avec cwd=<wt.path> pour --git-common-dir, ce qui
+        # est attendu et correct -- c'est le cwd de la sous-commande,
+        # pas celui du retrait final).
+        worktree_remove_cwds = [
+            cwd for cwd, args in seen
+            if args[:2] == ("worktree", "remove")
+            and Path(cwd).resolve() == Path(str(wt)).resolve()
+        ]
+        assert not worktree_remove_cwds, (
+            f"`worktree remove` vise le worktree lui-meme, pas le depot "
+            f"hebergeur : {worktree_remove_cwds}"
+        )
+        # Le cwd du `worktree remove` doit etre la racine du super-repo,
+        # resolue par `git rev-parse --git-common-dir` -> son parent.
+        host_cwds = [
+            cwd for cwd, args in seen
+            if args[:2] == ("worktree", "remove")
+            and Path(cwd).resolve() == Path(str(super)).resolve()
+        ]
+        assert host_cwds, (
+            f"aucun appel `worktree remove` ne vise le depot hebergeur : "
+            f"{[(c, a) for c, a in seen if a[:2] == ('worktree', 'remove')]}"
+        )
+
+    def test_relative_worktree_path_falls_back_to_current_repo(
+        self, tmp_path, monkeypatch,
+    ):
+        """#18219 c.1296 : un chemin de worktree relatif (cas System32
+        du cron #14473, ou l'appelant passe `..` apres chdir) doit
+        retomber sur `current_repo_root()` sans appeler git. C'est le
+        court-circuit de l'optimisation : evite une commande git
+        supplementaire pour le cas ou le worktree est forcement sous le
+        repo de ce script.
+        """
+        # worktree relatif construit sous cwd pour valider le chemin
+        # relatif.
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / "README.md").write_text("tmp", encoding="utf-8")
+
+        # Patch run_git pour ASSERTER qu'il n'est PAS appele sur un
+        # chemin relatif (court-circuit attendu).
+        called_with: list[str] = []
+        real_run_git = pmw.run_git
+
+        def spy(cwd, *args, check=True):
+            called_with.append(cwd)
+            return real_run_git(cwd, *args, check=check)
+
+        monkeypatch.setattr(pmw, "run_git", spy)
+
+        result = pmw._repo_root_for_worktree("wt-feature")
+        assert called_with == [], (
+            f"un chemin relatif ne doit pas appeler git (court-circuit) : "
+            f"{called_with}"
+        )
+        # Le repli est la racine du repo de CE script -- pas le cwd
+        # d'appel. `current_repo_root()` remonte depuis __file__.
+        assert result == pmw.current_repo_root()
+
 
 class TestErrorContract:
     """#17292 — une PANNE ne doit jamais se faire passer pour une decision.

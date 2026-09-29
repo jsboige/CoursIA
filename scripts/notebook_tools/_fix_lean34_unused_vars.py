@@ -152,8 +152,8 @@ def fix_lean4(path):
 
 def main():
     root = Path(r'C:/dev/CoursIA')
-    fix_lean3(root / 'MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-3-Propositions-Proofs.ipynb')
-    fix_lean4(root / 'MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-4-Quantifiers.ipynb')
+    fix_lean3(root / 'MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-03-Propositions-Proofs-Lean.ipynb')
+    fix_lean4(root / 'MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-04-Quantifiers-Lean.ipynb')
 
 
 if __name__ == '__main__':
