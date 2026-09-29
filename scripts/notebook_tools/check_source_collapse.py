@@ -56,7 +56,7 @@ implemented here: heuristic, and it needs its own arbitration.
 A THIRD mechanism, same family, is the SOURCE-side counterpart taken by the
 other end (issue #16110): the source SURVIVES in volume and loses its
 STRUCTURE. Founding case, measured firsthand on PR #16097 (head
-``1209b5357``, cell ``40cb37d5`` of ``Lean-18-Sendov-Complex-Analysis.ipynb``,
+``1209b5357``, cell ``40cb37d5`` of ``ANALYSE-01-Sendov-Lean-Python.ipynb``,
 base ``origin/main``): every newline of the cell was stripped at write time,
 so the 44 source items joined into ONE line whose first character is ``#`` --
 the whole code becomes a comment. The cell kept its 312-character stream
@@ -279,7 +279,7 @@ SELF_TEST_CELL = "c989_independent_v2"
 SELF_TEST_16110_BASE = "7cc2fb2d203f"  # merge-base(main, #16097)
 SELF_TEST_16110_HEAD = "1209b5357"
 SELF_TEST_16110_NOTEBOOK = (
-    "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-18-Sendov-Complex-Analysis.ipynb")
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-01-Sendov-Lean-Python.ipynb")
 SELF_TEST_16110_CELL = "40cb37d5"
 
 

@@ -297,3 +297,22 @@ n'est pas sur `main` ou porte des modifications suivies
 (journaux sous `%LOCALAPPDATA%\CoursIA\merge_ready\logs\`). Tests hermetiques :
 `python -m pytest scripts/tests/test_merge_ready.py
 scripts/tests/test_install_merge_ready_task.py`.
+
+## Organe `post_dossier` (#18412)
+
+Poster un dossier `[ADJOINT PREFLIGHT]` (PR) ou `[CLOSURE PREFLIGHT]`
+(issue) sans accident de transport. Refuse (rc 4, RIEN n'est poste) si la
+ligne 1 n'est pas exactement le marqueur d'ouverture ou si le marqueur de
+fermeture manque, si un `REPLACE_WITH` reste dans le bloc, si le
+`parse_dossier` de l'organe de la famille (importe, pas reecrit) rend des
+erreurs de forme, si le champ `head` differe de la tete courante (famille
+PR), ou si le gate rend deja 0 ou 3 avec un dossier d'une AUTRE lane
+(anti-double-stamp ; rc 2 UNKNOWN = fail-closed ; re-stamp de sa propre
+lane licite). POST par `gh api --input payload.json` (jamais `-f body=@`),
+relecture du corps publie (ligne 1, longueur >= 100, predicat
+PAYLOAD-TRAP, identite byte-a-byte avec la source), puis re-jeu du gate :
+son verdict est imprime et son rc devient celui du poster.
+
+Usage : `python scripts/coordination/post_dossier.py (--pr N | --issue N)
+--file dossier.md --lane <machine:workspace>`. Tests hermetiques :
+`python -m pytest scripts/tests/test_post_dossier.py`.
