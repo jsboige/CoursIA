@@ -41,7 +41,7 @@ flowchart LR
     P1["<b>Partie 1 — Search</b><br/>exploration, jeux adversariaux"]
     P2["<b>Partie 2 — CSP</b><br/>modélisation déclarative<br/>(X, D, C) + propagation"]
     P4["<b>Partie 4 — Métaheuristiques</b><br/>SA, GA, ACO, recuit"]
-    S["<b>Applications Search</b> (5)<br/>3 Python + 2 C# :<br/>ConnectFour, Minimax, MCTS, DQN-RL,<br/>distillation Szpiro (arithmétique)"]
+    S["<b>Applications Search</b> (5)<br/>3 Python + 2 C# :<br/>ConnectFour, Minimax, MCTS, AIMA,<br/>distillation Szpiro (arithmétique)"]
     C["<b>Applications CSP</b> (31)<br/>18 Python + 13 C# :<br/>N-Queens, GraphColoring,<br/>Nurse/JobShop, Minesweeper,<br/>Wordle, Picross, WFC,<br/>Covering Arrays..."]
     H["<b>Applications Hybrides</b> (22)<br/>17 Python + 5 C# :<br/>EdgeDetection, Portfolio,<br/>TSP, VRP, Hyperparameter,<br/>AlgorithmSelection, PRESENT/SAT,<br/>MAPF, WDP/VCG, index tracking,<br/>branching ML, SALBP,<br/>assemblage orbital, RCPSP/max"]
     P1 --> S
@@ -55,15 +55,15 @@ flowchart LR
 
 ## Applications Search (`Search/`)
 
-Quatre notebooks autour du Puissance 4 — deux Python et deux C# — forment un banc d'essai de la recherche adversariale : assez simple pour être résolu, assez riche pour départager les approches. Un premier binôme construit les joueurs (Minimax, MCTS et agent DQN appris) ; le second compare systématiquement Minimax, Alpha-Beta et MCTS. S'y ajoute une distillation de théorie algorithmique des nombres : le théorème de Szpiro rendu opérable, où le « solveur » est le choix combinatoire optimal d'une factorisation admissible.
+Quatre notebooks autour du Puissance 4 — deux Python et deux C# — forment un banc d'essai de la recherche adversariale : assez simple pour être résolu, assez riche pour départager les approches. Un premier binôme construit les joueurs (aléatoire, Minimax α-β, MCTS, glouton, puis le framework AIMA de Russell & Norvig) ; le second compare systématiquement Minimax, Alpha-Beta et MCTS. S'y ajoute une distillation de théorie algorithmique des nombres : le théorème de Szpiro rendu opérable, où le « solveur » est le choix combinatoire optimal d'une factorisation admissible.
 
 | # | Notebook | Durée | Contenu | Source |
 |---|----------|-------|---------|--------|
-| 1 | [App-14b-ConnectFour](Search/App-14b-ConnectFour.html) | ~50 min | Puissance 4 : Minimax, MCTS, DQN-RL | Projet étudiant |
+| 1 | [App-14b-ConnectFour](Search/App-14b-ConnectFour.html) | ~50 min | Puissance 4 : aléatoire, Minimax α-β, MCTS, glouton, framework AIMA (Russell & Norvig), tournoi round-robin | Projet étudiant |
 | 1b | [App-14c-ConnectFour-CSharp](Search/App-14c-ConnectFour-CSharp.ipynb) | ~45 min | **Jumeau C#** — Minimax + Alpha-Beta + MCTS (UCB1) + glouton + iterative deepening from-scratch, heuristique de fenêtres + tournoi round-robin, parité #4956 | Jumeau .NET |
 | 2 | [App-14-ConnectFour-Adversarial](Search/App-14-ConnectFour-Adversarial.ipynb) | ~45 min | Benchmark adversarial : Minimax, Alpha-Beta, MCTS | Projet étudiant |
 | 2b | [App-14-ConnectFour-Adversarial-CSharp](Search/App-14-ConnectFour-Adversarial-CSharp.ipynb) | ~40 min | **Jumeau C#** — Minimax + Alpha-Beta (élagage) + MCTS (UCB1) from-scratch, benchmark nœuds + tournoi round-robin, parité #4956 | Jumeau .NET |
-| 3 | [App-32-Szpiro-Pasten-2026](Search/App-32-Szpiro-Pasten-2026.ipynb) | ~25 min | Szpiro rendu opérable : factorisations admissibles `N=DM` (parité paire de `D`), balayage de `M·φ(D)` sur N = 6…30030, proxy `log|Δ|/log rad(|Δ|)` des courbes `y²=x³+ax+b` — théorème 1.1 et corollaires 1.2/1.3 rendus calculables, 3 exercices | Distillation arXiv 2609.17390 (Pasten 2026, #16549) |
+| 3 | [App-32-Szpiro-Pasten-2026](Search/App-32-Szpiro-Pasten-2026.ipynb) | ~25 min | Szpiro rendu opérable : factorisations admissibles `N=DM` (parité paire de `D`), balayage de `M·φ(D)` sur N = 6…30030, proxy `log\|Δ\|/log rad(\|Δ\|)` des courbes `y²=x³+ax+b` — théorème 1.1 et corollaires 1.2/1.3 rendus calculables, 3 exercices | Distillation arXiv 2609.17390 (Pasten 2026, #16549) |
 
 ---
 

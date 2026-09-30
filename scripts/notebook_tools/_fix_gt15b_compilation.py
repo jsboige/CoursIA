@@ -1,5 +1,5 @@
 """
-One-shot fixer for GameTheory-15b-Lean-CooperativeGames.ipynb compilation errors.
+One-shot fixer for GameTheory-15b-Lean-CooperativeGames-Lean.ipynb compilation errors.
 
 Fixes:
 1. Cell 698cc425 (addGames): Float `simp` can't close `0.0 + 0.0 = 0.0` -- use `rw` + `native_decide`
@@ -17,7 +17,7 @@ from pathlib import Path
 
 from scripts.notebook_tools.notebook_helpers import read_notebook, write_notebook
 
-NB_PATH = Path("MyIA.AI.Notebooks/GameTheory/GameTheory-15b-Lean-CooperativeGames.ipynb")
+NB_PATH = Path("MyIA.AI.Notebooks/GameTheory/GameTheory-15b-Lean-CooperativeGames-Lean.ipynb")
 
 
 def _src_to_lines(text: str) -> list[str]:

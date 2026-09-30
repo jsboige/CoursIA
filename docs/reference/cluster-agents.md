@@ -168,7 +168,7 @@ Le registre des GPU se gere **activement** : une experience qui a besoin de VRAM
 Hardware : MSI GE76 12UHS, RTX 3080 Ti laptop. Pas de persistence mode (non supporte laptop). Throttle deja a 50W sous charge a 89C, malgre power limit 150W. Lid ouvert ameliore mais ne suffit pas.
 
 **Règle ai-01** : trainings GPU non-supervises > 15 min sur po-2025 INTERDITS, sauf si :
-- Pattern reuse `MyIA.AI.Notebooks/QuantConnect/shared/gpu_training.py` (classe `TrainingCheckpoint` + `thermal_check` import direct ; outer supervisor subprocess documenté dans `scripts/training/train_with_checkpoints.py` n'existe pas — librairie canonique = `gpu_training.py`, defauts `max_temp=80`, `cool_sleep=15`)
+- Pattern reuse `MyIA.AI.Notebooks/QuantConnect/shared/gpu_training.py` (classe `TrainingCheckpoint` + import direct de `thermal_check` ; librairie canonique, defauts `max_temp=80`, `cool_sleep=15` ; aucun superviseur externe en sous-processus)
 - Watchdog `nvidia-smi` polling avec auto-stop a 87C
 - Batch size réduit + mixed precision FP16
 
@@ -300,7 +300,7 @@ Mandat user 2026-07-11. **MiniMax M3** (main-loop des lanes CoursIA-2 sauf `myia
 **Routage capability-driven, PAS token-driven.** Distinct de [[feedback-token-economy-anthropic-only]] : on route vers MiniMax **pour sa vision** — une capacité que GLM n'a pas — pas pour économiser. C'est le cas légitime « meilleur outil pour la tâche », pas un fallback dégradé.
 
 - **Règle.** Toute tâche dont la valeur dépend du **rendu visuel** (galeries de figures README, plots générés par notebook, sorties d'images GenAI, layout de slides, diagrammes) voit son **QA visuel** routé vers une lane **qui voit** — une lane CoursIA-2 sous MiniMax, ou **ai-01**. **Jamais** vérifié text-only sur une lane GLM : elle ne voit pas.
-- **Mécanisme concret.** Un `Read` sur un fichier image (`.png`/`.webp`/`.jpg`), ou sur un screenshot (Playwright render → screenshot → `Read`, ou `mcp__sk-agent__analyze_image`), insère des blocs image que MiniMax/Opus interprètent. Un `test -f` confirme l'**existence**, PAS le **rendu** — seul le regard distingue une vraie figure d'un placeholder plat, blanc ou cassé.
+- **Mécanisme concret.** Un `Read` sur un fichier image (`.png`/`.webp`/`.jpg`), ou sur un screenshot (Playwright render → screenshot → `Read`, ou `mcp__sk-agent__call_agent` avec `attachment=<chemin de l'image>` — sk-agent n'expose plus d'outil `analyze_image` dédié, mesuré 2026-09-29), insère des blocs image que MiniMax/Opus interprètent. Un `test -f` confirme l'**existence**, PAS le **rendu** — seul le regard distingue une vraie figure d'un placeholder plat, blanc ou cassé.
 - **Couplage ai-01 ↔ MiniMax (la « double vision » du mandat).** MiniMax fait le **balayage en volume** (audit read-only de N figures → liste de défauts : cassées / blanches / placeholder / alt-text incohérent / overflow slide) ; ai-01 **valide la liste et tranche au merge-gate** (regarde effectivement les figures d'une PR avant merge). Déléguer le sweep borné, garder le jugement — le sweep visuel est read-only, donc **sans collision** avec la lane qui possède la substance : le fix repart au owner.
 - **Classe de défaut à attraper** (cf [`sota-not-workaround.md`](../../.claude/rules/sota-not-workaround.md) Prong A) : une figure réduite à des blocs de couleur plats / image blanche / placeholder / render cassé **alors que le vrai outil était invocable** (stack GenAI, matplotlib, solveur) → verdict RECOVERABLE-MACHINE ou -LOCAL, **régénérer**, jamais consacrer.
 

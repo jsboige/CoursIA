@@ -3,7 +3,8 @@
 Inventaire transverse de tous les projets de formalisation Lean 4 sous `GameTheory/`.
 
 Réconcilié le 2026-08-26 contre les pins effectifs (`lean-toolchain`, `lake-manifest.json`) et le
-module-set réel du disque (issue #13138). Comptes `sorry` mesurés avec l'instrument canonique
+module-set réel du disque (issue #13138). Ligne `conway_cgt_lean` re-synchronisée le 2026-09-28
+(bande 4.33, PR #18298). Comptes `sorry` mesurés avec l'instrument canonique
 `scripts/lean/count_code_sorry.py --json` (champ `distinct_code_sorry`), jamais `grep -c sorry`.
 
 ## Résumé
@@ -202,7 +203,7 @@ Folk (`folk_theorem_discounted`) porte 1 sorry stretch, toléré au titre de #48
 
 **Objectif** : tour de référence de la théorie combinatoire des jeux (nombres surréels, jeux partisans, nimbers) telle que formalisée dans [`vihdzp/combinatorial-games`](https://github.com/vihdzp/combinatorial-games), importée comme dépendance Lake. L'amont est le home actuel de la CGT en Lean après que les modules CGT de Mathlib (`SetTheory.Surreal`/`PGame`/`Game`/`Nimber`) ont été dépréciés (#28063, août 2025) puis retirés (#35550, février 2026). Référence : Conway, *On Numbers and Games* (2001).
 
-**Toolchain** : v4.31.0-rc2 (suit le dépôt amont) | **Dépendances** : Mathlib4 + CombinatorialGames (Apache-2.0, `3c6dcdbc`)
+**Toolchain** : v4.33.0-rc1 (suit le dépôt amont) | **Dépendances** : Mathlib4 + CombinatorialGames (Apache-2.0, `bb863d3d`)
 
 | Fichier | sorry | Description |
 |------|-------|-------------|
@@ -216,7 +217,7 @@ Folk (`folk_theorem_discounted`) porte 1 sorry stretch, toléré au titre de #48
 
 ### 10. assignment_lean
 
-**Objectif** : squelette de correction de l'algorithme d'affectation de Kuhn-Munkres (hongrois) — lake compagnon du notebook GameTheory-23-Munkres-Assignment, hommage à James R. Munkres (1930-2026). Issue #12598 (1/3). Le primal (matrice de coûts, couplage parfait, valeur), le dual (potentiels, faisabilité, **dualité faible**), le certificat d'optimalité à écart nul, et les invariants structurels de l'algorithme (graphe d'égalité, **invariant de sortie**, **le serrage hongrois préserve la faisabilité duale**). Terminaison et complexité O(n³) volontairement hors scope.
+**Objectif** : squelette de correction de l'algorithme d'affectation de Kuhn-Munkres (hongrois) — lake compagnon du notebook GameTheory-16f-Munkres-Assignment-Python, hommage à James R. Munkres (1930-2026). Issue #12598 (1/3). Le primal (matrice de coûts, couplage parfait, valeur), le dual (potentiels, faisabilité, **dualité faible**), le certificat d'optimalité à écart nul, et les invariants structurels de l'algorithme (graphe d'égalité, **invariant de sortie**, **le serrage hongrois préserve la faisabilité duale**). Terminaison et complexité O(n³) volontairement hors scope.
 
 **Toolchain** : v4.33.0 | **Dépendances** : Mathlib4
 

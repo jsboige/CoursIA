@@ -1,7 +1,7 @@
 ---
 name: slide-analyzer
 description: Analyze a slide deck qualitatively using vision AI. Supports PPTX renders, Marp renders, and PPTX-vs-Marp comparison.
-tools: Read, Glob, Bash, Edit, mcp__sk-agent__analyze_image, Write
+tools: Read, Glob, Bash, Edit, mcp__sk-agent__call_agent, Write
 model: sonnet
 memory: project
 skills:
@@ -70,9 +70,9 @@ Analyse UNIQUEMENT la mise en forme et les visuels (le texte est deja extrait ci
 3. LISIBILITE: Note /10 pour projection amphitheatre
 4. 2 SUGGESTIONS concretes d'amelioration"""
 
-result = mcp__sk-agent__analyze_image(
-    image_source=render_path,
-    prompt=prompt
+result = mcp__sk-agent__call_agent(
+    prompt=prompt,
+    attachment=render_path
 )
 ```
 
@@ -87,9 +87,9 @@ pptx_prompt = """Describe the LAYOUT of this slide:
 4. PROPORTIONS: text vs images % (e.g., 60/40)
 5. LAYOUT TYPE: single-column, two-column, image-grid, full-image, title-only"""
 
-pptx_result = mcp__sk-agent__analyze_image(
-    image_source=f"{deck_path}/extracted/renders/slide_{num:02d}.png",
-    prompt=pptx_prompt
+pptx_result = mcp__sk-agent__call_agent(
+    prompt=pptx_prompt,
+    attachment=f"{deck_path}/extracted/renders/slide_{num:02d}.png"
 )
 
 # Etape 2 : comparer avec le rendu Marp
@@ -103,9 +103,9 @@ ORIGINAL PPTX LAYOUT:
 3. LISIBILITE: Note /10
 4. What Marp changes would improve fidelity?"""
 
-marp_result = mcp__sk-agent__analyze_image(
-    image_source=f"{deck_path}/output/marp_renders/slide.{num:03d}.png",
-    prompt=marp_prompt
+marp_result = mcp__sk-agent__call_agent(
+    prompt=marp_prompt,
+    attachment=f"{deck_path}/output/marp_renders/slide.{num:03d}.png"
 )
 ```
 

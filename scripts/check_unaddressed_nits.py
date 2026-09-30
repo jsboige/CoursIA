@@ -168,7 +168,7 @@ _PERSONA_MARKERS_RE = re.compile(
 )
 # #14850 — prefixe de lane tierce : voie distincte d'un autre agent du cluster
 # qui pousse sous le meme login partage `jsboige`. Le format canonique est
-# `[machine-po-YYYY:CoursIA-2]` (Tell c.677-L4 body PR HORS worktree +
+# `[machine-po-YYYY:CoursIA-2]` (body PR HORS worktree +
 # convention owner:workspace du `[CLAIMED]` lane). Le complement facultatif
 # ` (...)` peut suivre. La voie NUЕ par meme login (commentaire ordinaire
 # SANS prefixe) n'a aucune signature distincte et reste indiscernable d'une
@@ -1852,7 +1852,7 @@ def _formal_concern_precedes_lift(body: str) -> bool:
 # de pure emission, sans autorite de blocage, cf #12311) ET que le corps de
 # la review declare explicitement que rien n'est bloquant, la review n'est
 # PAS une reserve — c'est un commentaire FYI que la convention « reponse
-# ecrite / thread inline / issue de suivi » (Tell c.589-L1 ★★★ strict)
+# ecrite / thread inline / issue de suivi »
 # assimile a une APPROVED. Sans cette exemption, l'organe punit la
 # precaution : plus l'auteur desambigue (« rien de bloquant (contrainte
 # token : COMMENT only) »), plus le verdict formel matche CONCERN_MARKERS,
@@ -2443,9 +2443,13 @@ def _live_lift_positions(normalised: str) -> list[int]:
     #       marqueur` nomme le comportement qu'il vérifie, ce n'est pas
     #       une émission (le `_` est un caractère de mot, cf #15849 : la
     #       frontière \b ne coupe pas dessus). L'adhérence à une LETTRE
-    #       n'est PAS rejetée : les formes fléchies françaises vivent de
-    #       matchs préfixes (« Mergé » dans « **Mergée.** », « est levé »
-    #       dans « est levée ») — seul `_` distingue l'identifiant.
+    #       À DROITE n'est pas rejetée : les formes fléchies françaises
+    #       vivent de matchs préfixes (« Mergé » dans « **Mergée.** »,
+    #       « est levé » dans « est levée »). L'adhérence à une LETTRE
+    #       À GAUCHE est rejetée (#18336) : « relevée », « soulevée »,
+    #       « enlevée » contiennent « levée » sans le prononcer, et
+    #       aucune forme fléchie française ne PRÉFIXE « levée » — la
+    #       tolérance préfixe ne vit qu'à droite.
     scanned = _QUOTED_RANGES.sub(
         lambda q: " " * (q.end() - q.start()), normalised)
     negation_zones: list[tuple[int, int]] = []
@@ -2468,7 +2472,13 @@ def _live_lift_positions(normalised: str) -> list[int]:
         for i, i_end in hits:
             # Garde (3) — collé à un underscore : usage technique
             # (identifiant snake_case), pas une émission.
-            if (i > 0 and scanned[i - 1] == "_") \
+            # Garde (3bis) #18336 — un hit PRÉCÉDÉ d'une lettre n'est
+            # pas une émission : « relevée », « soulevée », « enlevée »
+            # contiennent « levée » sans le prononcer. Aucune forme
+            # fléchie française ne préfixe « levée » ; la tolérance
+            # préfixe ne vit qu'à droite et reste entière.
+            if (i > 0 and (scanned[i - 1] == "_"
+                           or scanned[i - 1].isalpha())) \
                     or (i_end < len(scanned) and scanned[i_end] == "_"):
                 continue
             window_before = scanned[max(0, i - 30):i]
@@ -3395,7 +3405,7 @@ def gh_issue_created(n: int) -> datetime | None:
 # La spec de B.0 dit « issue de suivi ouverte et nommee AVANT le merge
 # (reportee sciemment) » : c'est un GESTE, pas une coincidence lexicale.
 # L'implementation d'origine creditait tout `#N` hors citation resolvant en
-# issue -- donc « cf. le defaut #13316 », « Tell c.11145 #13649 », un renvoi
+# issue -- donc « cf. le defaut #13316 », un renvoi
 # de code vers #12319 : autant de reports valides eteignant n'importe quelle
 # reserve anterieure. Le trou etait INVISIBLE tant que `gh_issue_created`
 # levait sur tout (meme incident, cf. sa docstring) : reparer le resolveur
@@ -3931,10 +3941,23 @@ def can_lift(comment: dict) -> bool:
 # retire -- c'est le gate qui refuse le dossier, pas l'organe qui le
 # blanchit ; la prose HORS du bloc (tete de pierre tombale comprise) reste
 # lue normalement.
+#
+# #18077 -- 3e forme de #17065 : un dossier RETIRE par renommage de ses
+# delimiteurs (`[ADJOINT-PREFLIGHT RETIRE]` / `[/ADJOINT-PREFLIGHT RETIRE]`,
+# mesure sur #16960, commentaire 5751421659) garde son bloc schema et sa
+# queue narrative. Sous la seule forme a espace, le span n'etait plus
+# reconnu : la phrase d'attestation de la queue (« Aucun merge, APPROVED ou
+# CHANGES_REQUESTED effectue ici ») redevenait une reserve POSEE que
+# l'autrice de la PR ne pouvait pas lever (#13495) -- ~8 h 30 de lane
+# bloquee. Les delimiteurs acceptent donc l'espace OU le tiret entre les
+# deux mots, et un suffixe libre sur la meme ligne (RETIRE, SUPERSEDE...).
+# Le retrait reste un retrait pour le GATE : `check_adjoint_prevalidation.py`
+# ne lit que la forme canonique, un bloc renomme n'y est plus un dossier.
+_DOSSIER_DELIM_TAIL = r"(?:[ \t]+[^\]\r\n]*)?\][ \t]*"
 _ADJOINT_DOSSIER_SPAN = re.compile(
-    r"^[ \t]*\[ADJOINT PREFLIGHT\][ \t]*\r?\n"
+    r"^[ \t]*\[ADJOINT[ -]PREFLIGHT" + _DOSSIER_DELIM_TAIL + r"\r?\n"
     r".*?"
-    r"^[ \t]*\[/ADJOINT PREFLIGHT\][ \t]*\r?(?:\n|\Z)",
+    r"^[ \t]*\[/ADJOINT[ -]PREFLIGHT" + _DOSSIER_DELIM_TAIL + r"\r?(?:\n|\Z)",
     re.DOTALL | re.MULTILINE,
 )
 
@@ -3960,6 +3983,9 @@ def _strip_adjoint_dossier(body: str) -> str:
        picker (4e cause de repair -> ce meme organe), 8 lanes sur 8 se
        retrouvaient en mode repair pendant que 313 issues sur 390
        restaient admissibles.
+    3. (#18077) les delimiteurs RENOMMES d'un dossier retire (tiret au lieu
+       de l'espace, suffixe libre comme RETIRE) valent les delimiteurs
+       canoniques pour les deux regles ci-dessus.
 
     Fail-closed inchange : un bloc MALFORME (ouvrant sans fermant) n'est pas
     retire ni n'inertit rien ; la prose PRECEDANT le bloc (tete de pierre
@@ -4124,7 +4150,7 @@ def classify(author: str, body: str) -> str | None:
     # `[Hermes] COMMENT_WITH_CONCERNS` (verdict de pure emission, force a
     # state:COMMENTED par #12311) ET que le corps declare explicitement
     # que rien n'est bloquant, la review n'est PAS une reserve. Convention
-    # Tell c.589-L1 ★★★ strict assimile un tel commentaire a une APPROVED
+    # assimile un tel commentaire a une APPROVED
     # pour le merge-gate. Garde stricte : l'exemption ne s'applique PAS
     # aux verdiicts de blocage strict (CHANGES_REQUESTED, REQUEST_CHANGES,
     # NEEDS_CHANGES, BLOCKED, SUSPECT_*, STRUCTURAL_ONLY) — verifie par
@@ -4253,6 +4279,79 @@ def _names_author(body: str, author: str) -> bool:
         return False
     return re.search(r"(?<![A-Za-z0-9_.-])" + re.escape(author) + r"(?![A-Za-z0-9_.-])",
                      body) is not None
+
+
+# #18149 -- un lift `jsboige` prefixe `[NanoClaw]` / `[Hermes]` est-il signe
+# par la lane qui porte la PR ? Detection sur deux frontieres de format canonique
+# du tag de lane : (a) `[machine:workspace]` en tete de paragraphe (format
+# `[CLAIMED]` / `[DISPATCH->inbox]`, Tell c.677-L4 body PR HORS worktree) --
+# deja porte par `_CROSS_LANE_LIFT_RE` ; (b) signature de bas de corps
+# (`-- lane <machine:workspace>` ou `lane <machine:workspace> -- ...`),
+# patron de pied de commentaire observe dans les reponses de lanes depuis
+# le 2026-09-15. Le PR body fournit la lane de reference (tag `Grain:`) ; le
+# lift est signe par la lane de la PR SI ET SEULEMENT SI l'extraction lit
+# la meme chaine canonique dans les deux sources (le format `CoursIA` vs
+# `CoursIA-2` discriminne -- la lane ne peut signer QUE la sienne).
+_PR_LANE_FROM_BODY_RE = re.compile(
+    # `Grain: ... -- lane <machine>:<workspace>` (corps PR) ; on capture
+    # la lane canonique ; un prefixe optionnel avant n'est pas admis (la
+    # balise est en tete de ligne apres decoration markdown).
+    r"(?m)^[#>*+\-\s]*Grain:[^\n]*?\blane\s+"
+    r"([A-Za-z0-9_.-]+:[A-Za-z0-9_.-]+)")
+_LIFT_LANE_SIGNATURE_RE = re.compile(
+    # Voie (a) -- `[machine:workspace]` en tete de paragraphe.
+    r"(?m)^[#>*+\-\s]*\[\s*([A-Za-z][\w.\-]*:[A-Za-z][\w.\-]*(?:\s+[^\]]+)?)\]"
+)
+_LIFT_LANE_FOOTER_RE = re.compile(
+    # Voie (b) -- `lane <machine>:<workspace>` en pied de bloc de
+    # commentaire. Deux formes observees : `-- lane myia-po-XXXX:...`
+    # (declaration finale separee par `--`) et `lane myia-po-XXXX:...
+    # -- ...` (dans la meme ligne que le commentaire precedent).
+    r"(?m)(?:^|\s)--\s*lane\s+([A-Za-z0-9_.-]+:[A-Za-z0-9_.-]+)\s*$"
+    r"|^lane\s+([A-Za-z0-9_.-]+:[A-Za-z0-9_.-]+)(?:\s*--|\s*$)")
+
+
+def _lift_signed_by_pr_lane(lift_body: str, pr_body: str) -> bool:
+    """#18149 -- le lift `jsboige` porte-t-il la signature de la lane du PR ?
+
+    Renvoie True si la lane signaturee dans le lift est EXACTEMENT celle
+    declaree dans le tag `Grain:` du PR body (lane carrier). Permet
+    d'arreter l'usurpation persona : un lift `[NanoClaw] ... -- lane
+    myia-po-2026:CoursIA-2` sur une PR portee par la meme lane n'est pas
+    la persona Hermes ; c'est la lane qui repond. Le resultat n'est
+    consultable que dans la branche alias (`lift_author == "jsboige"` ET
+    `nit_author in PERSONA_ALIAS_LOGINS`).
+
+    Faux negatifs assumes :
+    - PR sans `Grain:` lisible en body : renvoie False (la signature est
+      ignoree, l'alias reste ouvert -- equivalent au comportement actuel ;
+      un commentaire ustupide sur une PR sans tag n'est pas protege par
+      cette garde, mais c'est deja le cas avant #18149) ;
+    - Lift sans signature de lane : False, l'alias s'applique normalement ;
+    - Lane signee differente de la lane carrier : False (l'alias reste
+      ouvert ; une lane tierce peut signaler une levee persona valide
+      par un autre canal).
+    """
+    if not lift_body or not pr_body:
+        return False
+    pr_match = _PR_LANE_FROM_BODY_RE.search(pr_body)
+    if not pr_match:
+        return False
+    pr_lane = pr_match.group(1)
+    # Voie (a) -- `[machine:workspace]` en tete de paragraphe.
+    for m in _LIFT_LANE_SIGNATURE_RE.finditer(lift_body):
+        declared = m.group(1).strip()
+        # La voie capturee peut porter un suffixe `(tranche N)` apres whitespace
+        # ; on garde la portion avant whitespace.
+        declared_lane = declared.split()[0] if " " in declared else declared
+        if declared_lane == pr_lane:
+            return True
+    # Voie (b) -- pied de bloc `lane <machine>:<workspace>`.
+    for m in _LIFT_LANE_FOOTER_RE.finditer(lift_body):
+        declared_lane = m.group(1) or m.group(2)
+        if declared_lane and declared_lane == pr_lane:
+            return True
+    return False
 
 
 # #14216 — langage de LEVEE portee a la reserve nommee (affirmatif). La
@@ -4461,11 +4560,11 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
             #     reserve user voix nue.
             #
             #   * Lift `[OVERRIDE] lane <machine>` par coordinateur leve
-            #     tout (autorite coordinateur, Tell c.11639). La voie
+            #     tout (autorite coordinateur). La voie
             #     override reste ouverte comme echappatoire nommee.
             stripped_lift = _strip_quoted(lift_body or "")
             stripped_nit = _strip_quoted(nit_body or "")
-            # Voie 0 -- override coordinateur (Tell c.11639). Meme login
+            # Voie 0 -- override coordinateur. Meme login
             # ou pas, l'arbitre tiers nomme par `[OVERRIDE] lane <machine>`
             # leve. Fail-CLOSED sur la pose en tete (#13030). Premier
             # discriminant verifie pour ne pas etre bloque par les voies
@@ -4492,7 +4591,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
             # ne leve que les reserves de CETTE lane. Si la reserve est
             # voix nue user ou persona, elle est HORS scope de la lane
             # tierce -- bloque. Accepte le prefixe en debut de ligne
-            # (Tell c.677-L4 body PR HORS worktree), refuse la citation
+            # (body PR HORS worktree), refuse la citation
             # ulterieure (` > [lane]`) par l'ancre `^`.
             lift_has_lane = bool(_CROSS_LANE_LIFT_RE.search(stripped_lift))
             nit_has_lane = bool(_CROSS_LANE_LIFT_RE.search(stripped_nit))
@@ -4605,6 +4704,26 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         if (lift_author == "jsboige"
                 and nit_author in PERSONA_ALIAS_LOGINS
                 and _PERSONA_MARKERS_RE.search(lift_body or "")):
+            # #18149 -- garde anti-usurpation : le marqueur persona sur un
+            # lift EMIS PAR LA LANE de la PR ne leve rien. La voie persona
+            # est reservee au dialogue `clusterManager-Myia` <-> self-bot
+            # `jsboige` ; une lane qui pousse sous `jsboige` et signe son
+            # commentaire (`[machine:workspace]`, ou `-- lane
+            # <machine:workspace>` en bas de corps) n'a pas voix sur la
+            # reserve persona posee sur SA PROPRE PR. Instance mesuree
+            # 2026-09-27 : PR #18072, lift `jsboige` prefixe `[NanoClaw]`
+            # et signe `lane myia-po-2024:CoursIA` -- l'organe rendait
+            # `rc=0` avant levee tierce, le pre-lecteur l'avait classee
+            # « auto-reponse de l'auteur ». Meme regle qu'en #13609 :
+            # « sans marqueur, jsboige reste l'identite de poussee
+            # partagee des lanes » -- etendue au cas OU le marqueur EST
+            # pose mais sur un lift identifie par sa signature de lane
+            # comme emis par la lane. Refuser le lift n'eteint PAS la
+            # levee par voie nue de l'auteur de la reserve (clusterManager-
+            # Myia sur elle-meme, voie nue voie 3) ni l'override
+            # coordinateur (#11639).
+            if _lift_signed_by_pr_lane(lift_body or "", pr_data.get("body") or ""):
+                return False
             return True
         # #13495 — la trappe coordinateur ci-dessous ne s'ouvre pas pour
         # l'auteur de la PR : sinon la voie 3 (report par issue nommee) serait
