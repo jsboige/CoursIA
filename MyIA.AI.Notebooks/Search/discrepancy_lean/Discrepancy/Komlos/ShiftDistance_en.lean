@@ -82,19 +82,12 @@ lemma shiftDistance_symm {d : ℕ} (S : Finset (Fin d → ℤ))
   congr 1
   apply Finset.sum_congr rfl
   intro x _
-  -- Show : |P x - P (x - u)| = |P x - P (x + u)|
-  -- We use the symmetry of |·|.
   have h₁ : x - (-u) = x + u := by ring
   rw [h₁]
-  -- Now : |P x - P (x + u)| = |P (x + u) - P x| (abs_sub_comm)
   rw [abs_sub_comm]
-  -- Now : |P (x + u) - P x| = |-(P x - P (x + u))| (negation)
   have h₂ : P (x + u) - P x = -(P x - P (x + u)) := by ring
   rw [h₂]
   rw [abs_neg]
-  -- Remaining : |P x - P (x - u)| = |P x - P (x + u)| but on the left we have
-  -- permuted to the right, so we end with the same form. Terminate by ring_nf.
-  ring_nf
   rw [abs_sub_comm]
 
 /-- Δ(P, u) = 0 when P is identically zero on S ∪ (S − u). -/

@@ -80,12 +80,11 @@ lemma shiftDistance_symm {d : ℕ} (S : Finset (Fin d → ℤ))
   congr 1
   apply Finset.sum_congr rfl
   intro x _
-  -- But : |P x - P (x - u)| = |P x - P (x - (-u))|
-  -- On réécrit x - (-u) = x + u et on utilise la symétrie de |·|.
-  have hu : x - (-u) = x + u := by ring
-  rw [hu]
+  have h₁ : x - (-u) = x + u := by ring
+  rw [h₁]
   rw [abs_sub_comm]
-  rw [show P (x + u) - P x = -(P x - P (x + u)) by ring]
+  have h₂ : P (x + u) - P x = -(P x - P (x + u)) := by ring
+  rw [h₂]
   rw [abs_neg]
   rw [abs_sub_comm]
 
