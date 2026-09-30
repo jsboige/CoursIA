@@ -990,9 +990,11 @@ URN_NAMES = {"grain", "umbrella", "delivered"}
 # indiscipline, mais par conformite a une regle contradictoire.
 # Le porte sur la LANE, pas sur le modele : le picker ne connait pas le
 # moteur qui l'appelle. Liste explicite et courte, par conception.
+# `myia-ai-01:CoursIA-2` n'y figure plus depuis le 2026-09-30 : ce nom
+# designait le second dashboard du coordinateur ; il porte desormais une
+# lane WORKER (clone `D:/CoursIA-2`, MiniMax), qui ne ferme rien.
 DELIVERED_URN_LANES = frozenset({
     "myia-ai-01:CoursIA",       # coordinateur
-    "myia-ai-01:CoursIA-2",     # coordinateur (deuxieme dashboard)
     "myia-po-2025:CoursIA-2",   # adjoint (preflight #13605, #13883)
 })
 
