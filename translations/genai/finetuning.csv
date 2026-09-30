@@ -778,11 +778,11 @@ training_texts = [
 train_data = Dataset.from_dict({""text"": training_texts})
 print(f""Dataset : {len(train_data)} exemples"")
 print(f""Moyenne caracteres/exemple : {sum(len(t) for t in training_texts) / len(training_texts):.0f}"")",,,,,,,,1e5bc967ca72a52e,,,,,,,,verbatim
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,9dce8a5a,markdown,fr,df4cec1161fb068e,"Le dataset contient 10 extraits de texte francais classique (moyenne 200 caractères par extrait). Ces segments sont plus courts que dans FT-01 pour s'adapter au contexte limite d'OPT-1.3B. La prochaine étape est la tokenisation avec un padding uniforme.
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,9dce8a5a,markdown,fr,5d2c5f2a8bf1f3ef,"Le dataset contient 10 extraits de texte francais classique (moyenne 200 caractères par extrait). Ces segments sont plus courts que dans FT-01 pour s'adapter au contexte limite d'OPT-1.3B. La prochaine étape est la tokenisation avec un padding uniforme.
 
 
-**Lecture du dataset committé** : 10 exemples, 200 caractères en moyenne — un corpus minuscule, choisi pour tenir l'entraînement en 70 secondes. Les extraits sont de Hugo et assimilés (domaine public) : lexique XIXe siècle, phrases longues, noms propres récurrents (Jean Valjean, Cosette). L'objectif n'est pas d'apprendre le français à OPT-1.3B mais de **greffer un style** : avec 10 exemples × 3 époques, l'adaptateur LoRA capture le vocabulaire et les tournures, pas la grammaire profonde. Un dataset réel de fine-tuning en compte des milliers ; ici chaque exemple est vu 3 fois, la mémorisation l'emporte sur la généralisation — et c'est précisément ce que la génération de la section 7 va révéler.
-",The dataset contains 10 excerpts of classic French text (average 200 characters per excerpt). These segments are shorter than in FT-01 to fit the limited context of OPT-1.3B. The next step is tokenization with uniform padding.,,,,,,,df4cec1161fb068e,6ab17183bbbb1661,,,,,,,
+**Lecture du dataset committé** : 10 exemples, 200 caractères en moyenne — un corpus minuscule, choisi pour tenir l'entraînement en une vingtaine de secondes. Les extraits sont de Hugo et assimilés (domaine public) : lexique XIXe siècle, phrases longues, noms propres récurrents (Jean Valjean, Cosette). L'objectif n'est pas d'apprendre le français à OPT-1.3B mais de **greffer un style** : avec 10 exemples × 15 époques, l'adaptateur LoRA capture le vocabulaire et les tournures, pas la grammaire profonde. Un dataset réel de fine-tuning en compte des milliers ; ici chaque exemple est vu 15 fois, la mémorisation l'emporte sur la généralisation — et c'est précisément ce que la génération de la section 7 va révéler.
+",The dataset contains 10 excerpts of classic French text (average 200 characters per excerpt). These segments are shorter than in FT-01 to fit the limited context of OPT-1.3B. The next step is tokenization with uniform padding.,,,,,,,5d2c5f2a8bf1f3ef,6ab17183bbbb1661,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,fabaa57e,code,fr,629b538887f154b3,"# Tokenisation
 def tokenize_function(examples):
     result = tokenizer(
@@ -981,13 +981,13 @@ print(f""{'Vitesse entrainement':<30} {'1x (ref)':<20} {'~0.8x (dequant)':<20}""
 print(f""\nRecommendation :\n""
       ""  - Modele < 1B + VRAM suffisante -> LoRA (FP16) : plus simple, plus rapide\n""
       ""  - Modele > 1B ou VRAM limitee -> QLoRA : Economie memoire 3-4x"")",,,,,,,,2373ea481726cb41,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,c0dcac7e,markdown,fr,6d0d18fa032c2e9b,"## 9. Nettoyage memoire GPU
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,c0dcac7e,markdown,fr,93f1a8c4da786608,"## 9. Nettoyage memoire GPU
 
 
-**Pourquoi cette cellule compte** : restituer la VRAM (14,3 Go libres après nettoyage) n'est pas de la politesse — la cellule de comparaison suivante recharge le modèle deux fois, et sans `del` + `empty_cache()`, le cache CUDA saturerait les mesures. Sur un notebook GPU multi-expériences, la discipline mémoire est la condition de mesures honnêtes.
+**Pourquoi cette cellule compte** : restituer la VRAM (22,4 Go libres après nettoyage) n'est pas de la politesse — la cellule de comparaison suivante recharge le modèle deux fois, et sans `del` + `empty_cache()`, le cache CUDA saturerait les mesures. Sur un notebook GPU multi-expériences, la discipline mémoire est la condition de mesures honnêtes.
 ","## 9. GPU memory cleanup
 
-**Why this cell matters**: returning the VRAM (14.3 GB free after cleanup) is not politeness — the comparison cell below reloads the model twice, and without `del` + `empty_cache()`, the CUDA cache would saturate the measurements. On a multi-experiment GPU notebook, memory discipline is the condition for honest measurements.",,,,,,,6d0d18fa032c2e9b,668f1a7c4344007d,,,,,,,
+**Why this cell matters**: returning the VRAM (14.3 GB free after cleanup) is not politeness — the comparison cell below reloads the model twice, and without `del` + `empty_cache()`, the CUDA cache would saturate the measurements. On a multi-experiment GPU notebook, memory discipline is the condition for honest measurements.",,,,,,,93f1a8c4da786608,668f1a7c4344007d,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,5daaeefa,code,fr,150132583b58e543,"del model_qlora, trainer
 gc.collect()
 if torch.cuda.is_available():
@@ -995,46 +995,200 @@ if torch.cuda.is_available():
     print(f""VRAM libre : {torch.cuda.mem_get_info()[0] / 1e9:.1f} Go"")
 else:
     print(""Nettoyage termine"")",,,,,,,,150132583b58e543,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,8108d79d,markdown,fr,eb1fc7de0befcb2e,"## 10. Exercices
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,8108d79d,markdown,fr,a082db853fe486e3,"## 10. Exemples guidés et exercices
 
-Appliquez les concepts de ce notebook.
+Cette section applique les concepts du notebook en deux temps : quatre **exemples guidés** résolus et commentés, puis quatre **exercices à compléter** qui mesurent ce que les exemples ne couvrent pas.
+
+Les quatre exemples guidés proviennent d'une contribution étudiante (@nassimJaz, PR #18550) : chaque énoncé, son code de mesure et la lecture du résultat qui suit forment un triplet autonome.
+
+1. **Impact de la précision** — INT8 vs NF4 vs FP16 : VRAM de chargement, empreinte des poids, perplexité et générations.
+2. **Rang LoRA et mémoire** — r = 4, 16, 64 : paramètres entraînables, pic VRAM, perte finale, générations.
+3. **Double quantization** — `bnb_4bit_use_double_quant` on/off : écart de VRAM mesuré contre la théorie (~0,37 bit/param).
+4. **Casser l'invariant d'initialisation** — B initialisé non nul dans le `LoRALinear` de la section 4.
+
+Les exercices à compléter (dernière sous-section) reprennent le flambeau : erreur de reconstruction des poids quantifiés, mémorisation contre généralisation, NF4 contre FP4 à mémoire égale, échelle `alpha/r` contre `alpha/sqrt(r)`. Chaque énoncé porte son critère de réussite mesurable.","## 9. Exercises
+
+Apply the concepts from this notebook.",,,,,,,a082db853fe486e3,6a950269a4e6696d,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,e8d55b99,code,fr,16cc1af7a739d57c,"# Exemple guide 1 : Impact de la precision
+# Contribution etudiante de @nassimJaz (PR #18550)
+# Comparaison INT8 (load_in_8bit=True) vs NF4 vs FP16 sur OPT-1.3B.
+# Pour chaque precision : VRAM de chargement (pic) + generation sur un meme prompt.
+
+# Liberer ce qui reste des sections precedentes (model_4bit est encore reference)
+for _name in [""model_4bit"", ""model_qlora"", ""trainer"", ""model_fp16"", ""model_4b""]:
+    globals().pop(_name, None)
+gc.collect()
+torch.cuda.empty_cache()
+
+configs_precision = {
+    ""FP16"": dict(torch_dtype=torch.float16),
+    ""INT8"": dict(quantization_config=BitsAndBytesConfig(load_in_8bit=True)),
+    ""NF4"": dict(quantization_config=BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_quant_type=""nf4"",
+        bnb_4bit_compute_dtype=torch.float16,
+        bnb_4bit_use_double_quant=True,
+    )),
+}
+
+prompt_ex1 = ""Dans les rues sombres de Paris,""
+resultats_ex1 = {}
+
+for label, kwargs in configs_precision.items():
+    gc.collect()
+    torch.cuda.empty_cache()
+    torch.cuda.reset_peak_memory_stats()
+    m = AutoModelForCausalLM.from_pretrained(MODEL_NAME, device_map=""auto"", **kwargs)
+    m.eval()
+    vram_load = torch.cuda.max_memory_allocated() / 1e9
+    empreinte = m.get_memory_footprint() / 1e9
+
+    # Generation greedy (deterministe) pour comparer la qualite a entree egale
+    inputs = tokenizer(prompt_ex1, return_tensors=""pt"").to(m.device)
+    with torch.no_grad():
+        out = m.generate(**inputs, max_new_tokens=40, do_sample=False,
+                         repetition_penalty=1.2, pad_token_id=tokenizer.eos_token_id)
+    texte = tokenizer.decode(out[0], skip_special_tokens=True)
+
+    # Perplexite sur les textes d'entrainement : mesure chiffree de la degradation
+    nll, n_tok = 0.0, 0
+    with torch.no_grad():
+        for t in training_texts:
+            enc = tokenizer(t, return_tensors=""pt"").to(m.device)
+            loss = m(**enc, labels=enc[""input_ids""]).loss
+            n = enc[""input_ids""].shape[1] - 1
+            nll += loss.item() * n
+            n_tok += n
+    ppl = float(torch.exp(torch.tensor(nll / n_tok)))
+
+    resultats_ex1[label] = dict(vram=vram_load, footprint=empreinte, ppl=ppl, texte=texte)
+    print(f""\n[{label}] VRAM pic chargement = {vram_load:.2f} Go | empreinte poids = {empreinte:.2f} Go | perplexite = {ppl:.2f}"")
+    print(f""  -> {texte}"")
+
+    del m, inputs, out
+    gc.collect()
+    torch.cuda.empty_cache()
+
+print(f""\n{'Precision':<10} {'VRAM pic':>10} {'Empreinte':>10} {'Perplexite':>11} {'Economie VRAM':>14}"")
+ref = resultats_ex1[""FP16""][""vram""]
+for label, r in resultats_ex1.items():
+    print(f""{label:<10} {r['vram']:>8.2f} G {r['footprint']:>8.2f} G {r['ppl']:>11.2f} {(1 - r['vram'] / ref) * 100:>13.1f}%"")",,,,,,,,16cc1af7a739d57c,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,2b0dd6e8,code,fr,a04d7f89c918e1df,"# Exemple guide 2 : LoRA rank et memoire
+# Contribution etudiante de @nassimJaz (PR #18550)
+# r = 4, 16, 64 avec QLoRA sur OPT-1.3B : params entrainables, VRAM pic, perte finale.
+
+def train_qlora_rank(r, epochs=15):
+    """"""Charge OPT-1.3B en NF4, greffe LoRA de rang r (alpha = 2r), entraine et mesure.""""""
+    gc.collect()
+    torch.cuda.empty_cache()
+    base = AutoModelForCausalLM.from_pretrained(MODEL_NAME, quantization_config=bnb_config, device_map=""auto"")
+    base = prepare_model_for_kbit_training(base)
+    cfg = LoraConfig(r=r, lora_alpha=2 * r, target_modules=[""q_proj"", ""v_proj""],
+                     lora_dropout=0.05, bias=""none"", task_type=""CAUSAL_LM"")
+    m = get_peft_model(base, cfg)
+    n_train = sum(p.numel() for p in m.parameters() if p.requires_grad)
+
+    args = TrainingArguments(
+        output_dir=f""./temp_ft02_r{r}"", num_train_epochs=epochs, per_device_train_batch_size=2,
+        learning_rate=2e-4, weight_decay=0.01, logging_steps=25, save_strategy=""no"",
+        report_to=""none"", fp16=True, seed=42, optim=""paged_adamw_8bit"",
+    )
+    tr = Trainer(model=m, args=args, train_dataset=tokenized_dataset, data_collator=data_collator)
+
+    torch.cuda.reset_peak_memory_stats()
+    t0 = time.time()
+    res = tr.train()
+    duree = time.time() - t0
+    pic = torch.cuda.max_memory_allocated() / 1e9
+
+    # Generation echantillonnee (seed fixe) pour comparer qualitativement
+    m.eval()
+    torch.manual_seed(0)
+    inputs = tokenizer(""Jean Valjean regardait la nuit"", return_tensors=""pt"").to(m.device)
+    with torch.no_grad():
+        out = m.generate(**inputs, max_new_tokens=50, do_sample=True, temperature=0.8, top_p=0.9,
+                         pad_token_id=tokenizer.eos_token_id)
+    texte = tokenizer.decode(out[0], skip_special_tokens=True)
+
+    del m, base, tr, inputs, out
+    gc.collect()
+    torch.cuda.empty_cache()
+    return dict(r=r, trainable=n_train, predit=196_608 * r, vram_peak=pic,
+                loss=res.training_loss, temps=duree, texte=texte)
 
 
-**Critères de validation chiffrés** — ce que vous devez trouver :
-- **Exercice 1 (INT8 vs NF4 vs FP16)** : VRAM de chargement intermédiaire pour INT8 — théorie ~1,3 Go de poids seuls (1 octet/paramètre), entre le NF4 (0,36 Go) et le FP16 (2,6 Go) ; références mesurées : 2,24 Go (NF4) et 4,03 Go (FP16). La qualité de génération doit se dégrader dans l'ordre FP16 > INT8 > NF4, mais faiblement — les trois restent lisibles sur un 1,3B.
-- **Exercice 2 (r = 4, 16, 64)** : les paramètres entraînables suivent exactement 196 608 × r (formule démontrée en section 4 — la mécanique LoRA) — attendez 786 432, 3 145 728 et 12 582 912. Le pic VRAM doit bouger de quelques Mo seulement (les adaptateurs sont minuscules) ; la perte finale doit diminuer quand r monte, mais r = 64 sur 10 exemples mémorise au lieu d'apprendre — comparez les générations, pas seulement la perte.
-- **Exercice 3 (double quantization)** : écart de VRAM de l'ordre de 60 Mo sur OPT-1.3B (~0,37 bit/paramètre économisé, cf. papier QLoRA) — petit mais mesurable ; la qualité ne doit pas bouger de façon perceptible.
-","## 9. Exercises
+resultats_ex2 = []
+for r in [4, 16, 64]:
+    print(f""\n===== r = {r} ====="")
+    res = train_qlora_rank(r)
+    resultats_ex2.append(res)
+    print(f""generation : {res['texte']}"")
 
-Apply the concepts from this notebook.",,,,,,,eb1fc7de0befcb2e,6a950269a4e6696d,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,e8d55b99,code,fr,8053ee91bcb22b72,"# Exercice 1 : Impact de la precision
-# TODO etudiant : Comparez INT8 (load_in_8bit=True) vs NF4 vs FP16
-# sur le meme modele. Mesurez la VRAM et la qualite de generation.
-# Indice : creez 3 BitsAndBytesConfig differents et chargez le modele.
+print(f""\n{'r':>3} {'params entrainables':>20} {'predit 196608*r':>16} {'VRAM pic':>10} {'perte finale':>13} {'temps':>8}"")
+for res in resultats_ex2:
+    print(f""{res['r']:>3} {res['trainable']:>20,} {res['predit']:>16,} {res['vram_peak']:>8.2f} G ""
+          f""{res['loss']:>13.4f} {res['temps']:>6.1f} s"")",,,,,,,,a04d7f89c918e1df,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,0dd9c769,markdown,fr,5c4a6b1dc1f48b22,"### Exemple guidé 3 : double quantization
 
-print(""Exercice a completer : comparez INT8 vs NF4 vs FP16"")",,,,,,,,8053ee91bcb22b72,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,2b0dd6e8,code,fr,b2bbc269cb1b8919,"# Exercice 2 : LoRA rank et memoire
-# TODO etudiant : Testez r=4, r=16, r=64 avec QLoRA sur OPT-1.3B.
-# Pour chaque rang, notez : params entrainables, VRAM pic, perte finale.
-# Etape 1 : definissez les 3 LoraConfig
-# Etape 2 : lancez l'entrainement pour chaque
-# Etape 3 : comparez dans un tableau
+*Contribution étudiante de @nassimJaz (PR #18550), intégrée comme exemple guidé.*
 
-print(""Exercice a completer : comparez les rangs QLoRA r=4, 16, 64"")",,,,,,,,b2bbc269cb1b8919,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,0dd9c769,markdown,fr,6a191441ea1f0436,"### Exercice 3 : Double quantization
+La double quantization (`bnb_4bit_use_double_quant=True`) compresse les constantes de quantization elles-mêmes en FP8, économisant ~0,37 bit/param. Comparer avec et sans pour mesurer l'impact réel sur la VRAM et la qualité.
 
-La double quantization (`bnb_4bit_use_double_quant=True`) compresse les constantes de quantization elles-mêmes en FP8, economisant ~0.37 bits/param. Comparez avec et sans pour mesurer l'impact reel sur la VRAM et la qualite.
+**Protocole** : mesurer la VRAM de chargement dans les deux configurations avec `reset_peak_memory_stats()` avant chaque `from_pretrained` (protocole de la section 3). L'écart attendu — ~56 Mo pour les ~1,21 Md de paramètres effectivement quantifiés d'OPT-1.3B (× 0,373 bit ÷ 8) — est petit devant le bruit des pics de chargement : exécuter chaque mesure 3 fois et comparer les minima, pas les pics uniques. Un écart nul ne veut pas dire « la double quantization ne marche pas » : vérifier d'abord que les deux `BitsAndBytesConfig` ne diffèrent bien que par `bnb_4bit_use_double_quant`.","### Exercise 3: Double Quantization
+
+Double quantization (`bnb_4bit_use_double_quant=True`) compresses the quantization constants themselves in FP8, saving ~0.37 bits/param. Compare with and without it to measure the real impact on VRAM and quality.",,,,,,,5c4a6b1dc1f48b22,d99e1a1facb54c29,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,c1471986,code,fr,a60f63a2800a011e,"# Exemple guide 3 : Double quantization on/off
+# Contribution etudiante de @nassimJaz (PR #18550)
+# Protocole : reset_peak_memory_stats avant chaque from_pretrained, 3 repetitions, on garde les minima.
+
+def charger_nf4(double_quant):
+    cfg = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_quant_type=""nf4"",
+        bnb_4bit_compute_dtype=torch.float16,
+        bnb_4bit_use_double_quant=double_quant,   # SEULE difference entre les deux configs
+    )
+    return AutoModelForCausalLM.from_pretrained(MODEL_NAME, quantization_config=cfg, device_map=""auto"")
 
 
-**Critère de validation détaillé** : mesurez la VRAM de chargement dans les deux configurations avec `reset_peak_memory_stats()` avant chaque `from_pretrained` (protocole de la cellule 11). L'écart attendu — ~61 Mo (1,32 Md × 0,37 bit ÷ 8) — est petit devant le bruit des pics de chargement : exécutez chaque mesure 2-3 fois et comparez les minima, pas les pics uniques. Un écart nul ne veut pas dire « la double quantization ne marche pas » : vérifiez d'abord que les deux `BitsAndBytesConfig` ne diffèrent bien que par `bnb_4bit_use_double_quant`.","### Exercise 3: Double Quantization
+resultats_ex3 = {}
+for dq in [False, True]:
+    pics, allocs = [], []
+    for _ in range(3):
+        gc.collect()
+        torch.cuda.empty_cache()
+        torch.cuda.reset_peak_memory_stats()
+        m = charger_nf4(dq)
+        pics.append(torch.cuda.max_memory_allocated() / 1e9)
+        allocs.append(torch.cuda.memory_allocated() / 1e9)
+        footprint = m.get_memory_footprint() / 1e9
+        del m
+    # Qualite : perplexite sur les extraits (un chargement supplementaire)
+    m = charger_nf4(dq)
+    m.eval()
+    nll, n_tok = 0.0, 0
+    with torch.no_grad():
+        for t in training_texts:
+            enc = tokenizer(t, return_tensors=""pt"").to(m.device)
+            n = enc[""input_ids""].shape[1] - 1
+            nll += m(**enc, labels=enc[""input_ids""]).loss.item() * n
+            n_tok += n
+    ppl = float(torch.exp(torch.tensor(nll / n_tok)))
+    del m, enc
+    gc.collect()
+    torch.cuda.empty_cache()
+    resultats_ex3[dq] = dict(pic=min(pics), alloc=min(allocs), footprint=footprint, ppl=ppl)
 
-Double quantization (`bnb_4bit_use_double_quant=True`) compresses the quantization constants themselves in FP8, saving ~0.37 bits/param. Compare with and without it to measure the real impact on VRAM and quality.",,,,,,,6a191441ea1f0436,d99e1a1facb54c29,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,c1471986,code,fr,27a3c73edffe2c59,"# Exercice 3 : Double quantization on/off
-# TODO etudiant : Comparez bnb_4bit_use_double_quant=True vs False.
-# Mesurez la difference de VRAM. Est-ce que la qualite change ?
-# Indice : la double quantization economise ~0.37 bits/param.
+print(f""{'double_quant':<14} {'pic min':>9} {'alloue min':>11} {'empreinte':>10} {'perplexite':>11}"")
+for dq, r in resultats_ex3.items():
+    print(f""{str(dq):<14} {r['pic']:>7.3f} G {r['alloc']:>9.3f} G {r['footprint']:>8.3f} G {r['ppl']:>11.3f}"")
 
-print(""Exercice a completer : comparez double quantization on/off"")",,,,,,,,27a3c73edffe2c59,,,,,,,,
+ecart_mo = (resultats_ex3[False][""alloc""] - resultats_ex3[True][""alloc""]) * 1e3
+print(f""\nEconomie mesuree (memoire allouee) : {ecart_mo:.1f} Mo"")
+
+# Theorie : seules les couches lineaires des blocs sont quantifiees (pas les embeddings / lm_head)
+n_quant = 24 * (4 * 2048 * 2048 + 2 * 2048 * 8192)
+print(f""Params quantifies : {n_quant:,} -> theorie 0.373 bit/param = {n_quant * 0.373 / 8 / 1e6:.1f} Mo"")",,,,,,,,a60f63a2800a011e,,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,3e1127c5,markdown,fr,16b7b5bf2084b3ac,"## Resume
 
 | Aspect | LoRA (FT-01) | QLoRA (FT-02) |
@@ -2859,17 +3013,16 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,a7b8c
 ---
 
 **Navigation**: [FT-01](./FT-01-Introduction-FineTuning-Python.ipynb) | [FT-02](./FT-02-QLoRA-Quantization-Python.ipynb) | [FT-03](./FT-03-Supervised-FineTuning-SFT-Python.ipynb) | [FT-04](./FT-04-RLHF-DPO-Python.ipynb) | **FT-05**",,,,,,,8c516df6d85df896,38eb18359981410d,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ift02-gen,markdown,fr,84d5ea60d4675e5e,"### Lecture du résultat : la greffe stylistique du fine-tuning
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ift02-gen,markdown,fr,46e0b0c56f1f78cc,"### Lecture du résultat : la greffe stylistique du fine-tuning
 
-La génération `« Dans les rues sombres de Paris, Jean Valjean… »` prouve que le fine-tuning QLoRA a **modifié le comportement** du modèle. L'OPT-1.3B de base, entraîné sur un corpus anglophone générique, produit désormais du français qui réemploie le **lexique des *Misérables*** (`Jean Valjean`, `rues sombres de Paris`) — la greffe du dataset de classiques français a pris. Mais observez aussi les **limites** : `« la figure de la sachant »` (répétée en boucle), `« Cosette lui donneait »` sont des fragments grammaticalement incohérents. C'est le compromis attendu d'un modèle de **1,3 Md paramètres** fine-tuné sur **seulement 10 extraits** : l'imprégnation stylistique prend, la cohérence syntaxique profonde ne suit pas. C'est précisément ce déséquilibre que la cellule de comparaison suivante quantifie (qualité `~97-99%` du full fine-tuning).
+La génération `« Dans les rues sombres de Paris, Jean Valjean restait dans son bain de boulon… »` prouve que le fine-tuning QLoRA a **modifié le comportement** du modèle. L'OPT-1.3B de base, entraîné sur un corpus anglophone générique, produit désormais du français qui réemploie le **lexique des *Misérables*** (`Jean Valjean`, `rues sombres de Paris`) — la greffe du dataset de classiques français a pris. Mais observez aussi les **limites** : `« son bain de boulon »` (image absurde assemblée sur des noms réels), `« il dormait sur le floor »` (anglicisme — le lexique anglais du pré-entraîné ressort sous le vernis français) sont des fragments grammaticalement incohérents. C'est le compromis attendu d'un modèle de **1,3 Md paramètres** fine-tuné sur **seulement 10 extraits** : l'imprégnation stylistique prend, la cohérence syntaxique profonde ne suit pas. C'est précisément ce déséquilibre que la cellule de comparaison suivante quantifie (qualité `~97-99%` du full fine-tuning).
 
 
-**Lecture ancrée des 2e et 3e générations** : le prompt « Jean Valjean regardait la nuit » produit « *Cosette lui donneait ses cartes de mariage* » — « donneait » est une conjugaison inventée sur un radical réel — puis dérive en boucle (« *Cosette regardait Jean Valjean et regardait la table* », répétée) : la signature d'un petit modèle mémo-stylisé. La troisième génération est la plus révélatrice : « *elle continuait le moulinette* » (article fautif sur un nom réel) et « *Jean Valjean resterait dans la lune* » — image absurde par la sémantique, hugolienne par le registre. Diagnostic : vocabulaire et atmosphère empruntés au corpus, morphologie et cohérence intrinsèques au modèle de base. Quinze époques sur 10 extraits greffent un lexique, pas une grammaire.
-","### Reading the result: the stylistic graft of fine-tuning
+**Lecture ancrée des 2e et 3e générations** : le prompt « Jean Valjean regardait la nuit » produit « *comme une espoir* » (faute de genre sur un nom réel) puis dérive en boucle : les deux mêmes phrases (« Cosette dormait dans un logis, il dormait sur le floor ») se répètent jusqu'à la coupure — la signature d'un petit modèle mémo-stylisé. La troisième génération est la plus révélatrice : « *où elle avait bien connu le sujet de la veille* » (formule creuse montée sur des mots courants) et « *Cosette avait lu celui qu'elle ne viendra pas* » aussitôt suivi de « *qu'elle ne viendrait pas* » — la même phrase re-conjuguée, fautive puis correcte, comme si le modèle hésitait entre deux temps verbaux. Diagnostic : vocabulaire et atmosphère empruntés au corpus, morphologie et cohérence intrinsèques au modèle de base. Quinze époques sur 10 extraits greffent un lexique, pas une grammaire.","### Reading the result: the stylistic graft of fine-tuning
 
 The generation `« Dans les rues sombres de Paris, Jean Valjean… »` proves that QLoRA fine-tuning has **modified the model's behavior**. The base OPT-1.3B, trained on a generic English-language corpus, now produces French that reuses the **vocabulary of *Les Misérables*** (`Jean Valjean`, `rues sombres de Paris`) — the graft of the French classics dataset has taken. But also observe the **limits**: `« la figure de la sachant »` (repeated in a loop), `« Cosette lui donneait »` are grammatically incoherent fragments. This is the expected trade-off of a model of **1.3B parameters** fine-tuned on **only 10 excerpts**: the stylistic imprint takes, deep syntactic coherence does not follow. This very imbalance is what the next comparison cell quantifies (quality `~97-99%` of full fine-tuning).
 
-**Close reading of the 2nd and 3rd generations**: the prompt « Jean Valjean regardait la nuit » produces « *Cosette lui donneait ses cartes de mariage* » — « donneait » is an invented conjugation on a real root — then drifts into a loop (« *Cosette regardait Jean Valjean et regardait la table* », repeated): the signature of a small memo-stylized model. The third generation is the most revealing: « *elle continuait le moulinette* » (faulty article on a real noun) and « *Jean Valjean resterait dans la lune* » — an image absurd in semantics, Hugo-like in register. Diagnosis: vocabulary and atmosphere borrowed from the corpus, morphology and coherence intrinsic to the base model. Fifteen epochs on 10 excerpts graft a lexicon, not a grammar.",,,,,,,84d5ea60d4675e5e,10903e04f644a2f1,,,,,,,verbatim
+**Close reading of the 2nd and 3rd generations**: the prompt « Jean Valjean regardait la nuit » produces « *Cosette lui donneait ses cartes de mariage* » — « donneait » is an invented conjugation on a real root — then drifts into a loop (« *Cosette regardait Jean Valjean et regardait la table* », repeated): the signature of a small memo-stylized model. The third generation is the most revealing: « *elle continuait le moulinette* » (faulty article on a real noun) and « *Jean Valjean resterait dans la lune* » — an image absurd in semantics, Hugo-like in register. Diagnosis: vocabulary and atmosphere borrowed from the corpus, morphology and coherence intrinsic to the base model. Fifteen epochs on 10 excerpts graft a lexicon, not a grammar.",,,,,,,46e0b0c56f1f78cc,10903e04f644a2f1,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ift02-cmp,markdown,fr,74c2ad49b71634da,"### Lecture du résultat : le triptyque VRAM / qualité / vitesse
 
 Le tableau récapitulatif condense la **promesse et le coût** de QLoRA sur trois axes :
@@ -4316,12 +4469,12 @@ dW_after = lora_demo.delta_W().detach()
 print(f""apres 50 pas SGD : |delta_W| = {dW_after.norm():.4f} (grandit) | W0 inchangé : {torch.equal(base.weight, base_w0)}"")
 print(f""loss : {loss0:.4f} -> {loss.item():.4f}"")
 ",,,,,,,,f8741d7885dba87b,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,lora_lect_init,markdown,fr,9b64379b3c5eb0e6,"### Lecture : le démarrage exact
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,lora_lect_init,markdown,fr,f77b338ab842d58e,"### Lecture : le démarrage exact
 
 `B` initialisé à zéro ⇒ `ΔW = B@A = 0` **exactement** (pas approximativement) : la cellule affirme `allclose(delta_W, 0) → True` et `forward LoRA == forward base → True`. C'est la propriété qui rend LoRA sûr : le modèle LoRA-ifié commence sa vie comme le pré-entraîné, puis ne s'en écarte que par ce que l'entraînement apprend dans `B` (dont le gradient est non nul dès le premier pas, même si `B` vaut zéro — la dérivée ne dépend pas de la valeur de `B`).
 
-Et le gel **tient** : après 50 pas d'SGD, `W₀` est bit-identique à lui-même (`torch.equal → True`) pendant que `|ΔW|` grandit de 0 à 0,31. Les gradients ne coulent que vers `A` et `B`.
-",,,,,,,,9b64379b3c5eb0e6,,,,,,,,
+Et le gel **tient** : après 50 pas d'SGD, `W₀` est bit-identique à lui-même (`torch.equal → True`) pendant que `|ΔW|` grandit de 0 à 0,305. Les gradients ne coulent que vers `A` et `B`.
+",,,,,,,,f77b338ab842d58e,,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,lora_merge_proof,code,fr,47d85d2184dc39dd,"# Preuve 2 -- merge : inference ""zero-overhead"" (l'argument central de FT-05)
 # On simule un adaptateur entraîné : B non nul.
 with torch.no_grad():
@@ -4346,12 +4499,12 @@ print(f""x@W0 + (alpha/r)*x@(BA)^T == x@(W0 + (alpha/r)*BA)^T : {torch.allclose(
 print(f""écart max entre les deux chemins : {ecart_max:.2e} (arrondi float32)"")
 print(f""rang de delta_W : {torch.linalg.matrix_rank(lora_demo.delta_W().detach()).item()} <= r={lora_demo.r}"")
 ",,,,,,,,47d85d2184dc39dd,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,lora_lect_merge,markdown,fr,5f942e97bcba55fd,"### Lecture : l'inference « zero-overhead »
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,lora_lect_merge,markdown,fr,881f95d6df754882,"### Lecture : l'inference « zero-overhead »
 
-Les deux chemins de calcul coïncident (`allclose → True`, écart max ~1e-06 = arrondi float32) : additionner la mise à jour dans les poids (`W₀ + (α/r)·BA`) produit **le même réseau** que de garder deux branches séparées. C'est LA preuve que le merge en inference est gratuit : après fusion, plus aucune multiplication par `B` puis `A` — une seule couche dense, la même que le pré-entraîné, avec d'autres poids. C'est l'argument central que le notebook [FT-05 (ModelMerging)](FT-05-ModelMerging-Routing-Python.ipynb) exploite en aval : fusionner n'adaptateurs revient à additionner leurs deltas.
+Les deux chemins de calcul coïncident (`allclose → True`, écart max 1,28e-06, arrondi float32) : additionner la mise à jour dans les poids (`W₀ + (α/r)·BA`) produit **le même réseau** que de garder deux branches séparées. C'est LA preuve que le merge en inference est gratuit : après fusion, plus aucune multiplication par `B` puis `A` — une seule couche dense, la même que le pré-entraîné, avec d'autres poids. C'est l'argument central que le notebook [FT-05 (ModelMerging)](FT-05-ModelMerging-Routing-Python.ipynb) exploite en aval : fusionner n'adaptateurs revient à additionner leurs deltas.
 
 Le rang de `ΔW` (affiché : `≤ r`) est la contrepartie : la mise à jour vit dans un sous-espace de dimension `r`. Tout l'enjeu du choix de `r` est là — assez de dimensions pour la tâche, pas plus.
-",,,,,,,,5f942e97bcba55fd,,,,,,,,
+",,,,,,,,881f95d6df754882,,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,lora_grid,code,fr,9da2bf88a39e41bf,"# Grille rank x alpha : combien de paramètres entraînables, et quelle amplitude
 # Dimensions réelles d'OPT-1.3b (le modèle des sections 5-8) : d_model=2048, 24 couches
 D_MODEL, N_COUCHES, N_CIBLES = 2048, 24, 2
@@ -4379,16 +4532,16 @@ total_def = next(t for rr, aa, _, t, _ in rows if rr == r_def and aa == a_def)
 print(f""  -> le r=16/alpha=32 de la section suivante : {total_def:,} params entraînables."")
 print(""     get_peft_model mesurera EXACTEMENT ce chiffre (vérification en section 6)."")
 ",,,,,,,,9da2bf88a39e41bf,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,lora_lect_grid,markdown,fr,d3cd960ab8f70703,"### Lecture : la grille rank × alpha
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,lora_lect_grid,markdown,fr,fc059a0532b75679,"### Lecture : la grille rank × alpha
 
 Trois lectures :
 
 1. **Le compte de paramètres ne dépend QUE de `r`** : pour chaque `r`, les trois valeurs d'`alpha` affichent le même total (`2 · r · d` par module cible, × 2 modules × 24 couches). `alpha` n'achète **aucun** paramètre — il ne fait que rescaler la mise à jour (`scale = α/r`, dernière colonne). Monter `alpha` à `r` fixé, c'est accélérer l'amplitude du même adaptateur, pas l'agrandir.
 
-2. **Les ordres de grandeur** : de `r=2` (393 216 params, 0,030% du modèle) à `r=64` (12,6 M, 0,954%) — un facteur 32 entre les extrêmes, et toujours sous 1% du modèle. La grille est calculée sur les dimensions réelles d'OPT-1.3b (d_model 2048, 24 couches, cibles q_proj+v_proj) : le `r=16` de la section suivante y prédit **3 145 728** paramètres — exactement le chiffre que `get_peft_model` mesure. La théorie de la mécanique et l'API tombent d'accord au paramètre près.
+2. **Les ordres de grandeur** : de `r=2` (393 216 params, 0,030% du modèle) à `r=64` (12,6 M, 0,968 %) — un facteur 32 entre les extrêmes, et toujours sous 1% du modèle. La grille est calculée sur les dimensions réelles d'OPT-1.3b (d_model 2048, 24 couches, cibles q_proj+v_proj) : le `r=16` de la section suivante y prédit **3 145 728** paramètres — exactement le chiffre que `get_peft_model` mesure. La théorie de la mécanique et l'API tombent d'accord au paramètre près.
 
 3. **La règle de pilotage** : underfitting → monter `r` ; overfitting ou dérive stylistique → baisser `r` ou baisser `alpha`. Sur un dataset de quelques centaines d'exemples (le nôtre en a 10), `r=8-16` est le plateau raisonnable.
-",,,,,,,,d3cd960ab8f70703,,,,,,,,
+",,,,,,,,fc059a0532b75679,,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,d9953324,markdown,fr,5831cadc4a4a6a0b,"### Lecture du résultat : le moment où la quantization prend effet
 
 La cellule précédente a **trois étapes** qui paraissent triviales mais chacune marque un point de non-retour sur l'empreinte mémoire. À lire dans l'ordre où elles s'exécutent :
@@ -4425,19 +4578,211 @@ La cellule précédente a **trois étapes de mesure** dont l'ordre est important
 
 La cellule qui suit imprime le tableau récapitulatif qui résume ces trois chiffres — **accompagné de la qualité et de la vitesse estimées**, qui ne se mesurent pas à l'exécution mais sont prédites par la théorie (NF4 ≈ 97-99 % du full FT ; ~20 % de ralentissement par la déquantization à chaque forward).
 ",,,,,,,,eef53b8536a5f01f,,,,,,,,verbatim
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02_exo4_md,markdown,fr,a87b84498c8eb3db,"### Exercice 4 : casser l'invariant d'initialisation
-",,,,,,,,a87b84498c8eb3db,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02_exo4,code,fr,f09fb0b9c120ef20,"# Exercice 4 : initialiser B NON nul et observer le démarrage
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02_exo4_md,markdown,fr,5d76ef59ec427c52,"### Exemple guidé 4 : casser l'invariant d'initialisation
+
+*Contribution étudiante de @nassimJaz (PR #18550), intégrée comme exemple guidé.*
+
+L'invariant de la section 4 : `LoRALinear` initialise `B` à zéro, donc `ΔW = B·A = 0` et le modèle fine-tunable démarre exactement comme le pré-entraîné. Cet exemple casse exprès cet invariant : initialiser `B` à `normal(0, b_std)` au lieu de zéro, et observer ce que ce choix détruit.
+
+Mesures :
+
+1. Pour b_std = 0, 0.001, 0.01, 0.1 sur une couche `nn.Linear` 512×512 identique à celle de la section 4 : norme maximale de `ΔW` initial, rapport `|s·ΔW| / |W₀|`, test `torch.allclose(lora(x), base(x))` avant tout entraînement, écart maximal de sortie.
+2. Reprendre la régression de la section 4 (50 pas SGD, même learning rate) avec B = 0 puis B ≠ 0 : comparer les pertes initiales et finales.
+
+**Indice de raisonnement** : reprendre la classe de la section 4 et remplacer uniquement l'initialisation de B ; si A et B étaient tous deux nuls, les gradients seraient nuls et rien n'apprendrait jamais.",,,,,,,,5d76ef59ec427c52,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02_exo4,code,fr,e3a41d60fb779dc8,"# Exemple guide 4 : initialiser B NON nul et observer le démarrage
+# Contribution etudiante de @nassimJaz (PR #18550)
 def init_b_nonzero(base_layer, r=8, lora_alpha=16, b_std=0.01):
     """"""
     Retourner un LoRALinear dont B est initialise a normal(0, b_std) au lieu de zero.
     Mesurer : delta_W initial, forward == base ?, et interpreter pourquoi
     le modele LoRA ne demarre PLUS exactement comme le pre-entraine.
-
-    Indice : reprendre la classe de la section 4 ; remplacer l'init de B ;
-    comparer torch.allclose(lora(x), base(x)) avant tout entrainement.
     """"""
-    # TODO etudiant
-    return None  # Exercice a completer
+    lora = LoRALinear(base_layer, r=r, lora_alpha=lora_alpha)
+    with torch.no_grad():
+        lora.lora_B.normal_(0, b_std)       # B != 0  ->  delta_W = B @ A != 0
+    return lora
 
-print(""Exercice a completer : initialisez B avec des valeurs non nulles"")",,,,,,,,f09fb0b9c120ef20,,,,,,,,
+
+# Couche de base fraiche (identique a la section 4), pour ne pas dependre de lora_demo
+torch.manual_seed(42)
+base_ex4 = nn.Linear(512, 512, bias=False)
+with torch.no_grad():
+    base_ex4.weight.copy_(torch.randn(512, 512) * 0.02)
+
+x_probe4 = torch.randn(4, 512)
+print(f""{'b_std':>7} {'max|dW|':>10} {'|s*dW|/|W0|':>12} {'forward==base':>14} {'ecart sortie max':>17}"")
+for b_std in [0.0, 0.001, 0.01, 0.1]:
+    torch.manual_seed(0)
+    lora_nz = init_b_nonzero(base_ex4, r=8, lora_alpha=16, b_std=b_std)
+    dW = lora_nz.delta_W().detach()
+    with torch.no_grad():
+        out_nz, out_b = lora_nz(x_probe4), base_ex4(x_probe4)
+    rel = (lora_nz.scaling * dW).norm() / base_ex4.weight.norm()
+    print(f""{b_std:>7} {dW.abs().max():>10.2e} {rel:>12.2%} {str(torch.allclose(out_nz, out_b)):>14} ""
+          f""{(out_nz - out_b).abs().max():>17.2e}"")
+
+# Consequence sur l'apprentissage : meme tache, meme lr, B=0 vs B!=0
+print(""\nMeme regression que la section 4 (50 pas SGD, lr=0.1) :"")
+torch.manual_seed(1)
+xb, tgt = torch.randn(16, 512), torch.randn(16, 512)
+for b_std in [0.0, 0.1]:
+    torch.manual_seed(0)
+    l = init_b_nonzero(base_ex4, b_std=b_std)
+    opt4 = torch.optim.SGD([l.lora_A, l.lora_B], lr=0.1)
+    losses = []
+    for _ in range(50):
+        opt4.zero_grad()
+        loss = ((l(xb) - tgt) ** 2).mean()
+        losses.append(loss.item())
+        loss.backward()
+        opt4.step()
+    print(f""  b_std={b_std:<4} : loss initiale = {losses[0]:.4f} -> finale = {losses[-1]:.4f}"")",,,,,,,,e3a41d60fb779dc8,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-eg1-md,markdown,fr,c861c420cbd9a2bd,"### Exemple guidé 1 : impact de la précision (INT8 vs NF4 vs FP16)
+
+*Contribution étudiante de @nassimJaz (PR #18550), intégrée comme exemple guidé.*
+
+Comparer INT8 (`load_in_8bit=True`), NF4 (4-bit avec double quantization) et FP16 sur le même OPT-1.3B. Pour chaque précision : mesurer la VRAM de chargement (pic), l'empreinte des poids (`get_memory_footprint`), générer en greedy sur un même prompt, et calculer la perplexité sur les 10 extraits d'entraînement comme mesure chiffrée de la dégradation.
+
+**Ce que la théorie annonce** : ~2,6 Go de poids seuls en FP16 (2 octets/paramètre), ~1,3 Go en INT8 (1 octet), ~0,7 Go en NF4 (0,5 octet) ; la VRAM de chargement doit donc se ranger FP16 > INT8 > NF4. La qualité de génération doit se dégrader dans le même ordre, mais faiblement — les trois modèles restent lisibles sur un 1,3B.
+
+Étapes suivies par le corrigé :
+
+1. Définir les trois configurations de chargement (une `torch_dtype`, deux `BitsAndBytesConfig`).
+2. Pour chacune : `reset_peak_memory_stats()`, charger, mesurer pic et empreinte, générer, calculer la perplexité sur les extraits, puis libérer la mémoire.
+3. Résumer dans un tableau avec l'économie de VRAM relative au FP16.",,,,,,,,c861c420cbd9a2bd,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-eg1-lecture,markdown,fr,614fc49d23bd4bb6,"### Lecture du résultat — exemple guidé 1 : la précision achète de la VRAM, pas de la qualité
+
+- **VRAM** : l'ordre attendu est bien respecté, FP16 (3,39 Go) > INT8 (2,18 Go) > NF4 (1,60 Go) en pic de chargement, soit 52,9 % d'économie pour le NF4. L'empreinte des poids (`get_memory_footprint` : 2,63 / 1,42 / 0,82 Go) suit à peu près la théorie (2 octets, 1 octet, 0,5 octet par paramètre quantifié). L'écart par rapport au ratio théorique 4× vient des couches qui **ne sont pas quantifiées** : les embeddings (token + positions, 50 272 × 2048) et `lm_head` restent en FP16, ainsi que les LayerNorm. Sur un 1,3B ces couches pèsent une part importante du total, donc le gain relatif est plus faible que sur un 7B.
+- **Qualité** : la perplexité mesurée sur les 10 extraits varie de moins d'un point entre les trois formats (33,89 / 33,58 / 34,47). Le classement théorique FP16 ≤ INT8 ≤ NF4 n'est pas tranché par la mesure : l'INT8 s'affiche même légèrement **sous** le FP16 — un écart de 0,3 point, plus petit que le bruit de la mesure — et seul le NF4 se détache un peu (+0,6 point). Les générations greedy sont identiques sur les premiers tokens (« Dans les rues sombres de Paris, des… »), puis divergent légèrement : les trois modèles restent lisibles, NF4 conserve l'essentiel de l'information.
+- **Remarque** : INT8 (LLM.int8()) est souvent **plus lent** que FP16 à cause de la décomposition des outliers, alors que NF4 déquantifie par blocs en FP16. INT8 n'est donc pas un compromis évident : pour le fine-tuning mémoire-contraint, NF4 est le meilleur choix, ce qui justifie QLoRA.",,,,,,,,614fc49d23bd4bb6,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-eg2-md,markdown,fr,dd3046d94321252d,"### Exemple guidé 2 : rang LoRA et mémoire (r = 4, 16, 64)
+
+*Contribution étudiante de @nassimJaz (PR #18550), intégrée comme exemple guidé.*
+
+Entraîner QLoRA sur OPT-1.3B pour trois rangs — r = 4, 16, 64 — en gardant tout le reste identique. Pour chaque rang : nombre de paramètres entraînables, pic VRAM d'entraînement, perte finale, durée, et une génération sur un prompt fixe (graine fixée). Pour que la comparaison soit équitable, `alpha = 2r` : l'échelle `alpha/r = 2` est la même pour les trois rangs, seule la capacité change.
+
+**Ce que la théorie annonce** : les paramètres entraînables suivent exactement 196 608 × r (formule démontrée en section 4 — la mécanique LoRA), soit 786 432, 3 145 728 et 12 582 912 ; les adaptateurs restent minuscules devant les poids NF4 figés ; la perte finale doit diminuer quand r monte — mais sur 10 exemples vus 15 fois, un rang élevé mémorise plutôt qu'il n'apprend : comparer les générations, pas seulement la perte.
+
+Étapes suivies par le corrigé :
+
+1. Définir une fonction qui charge OPT-1.3B en NF4, greffe un LoRA de rang r (alpha = 2r) et entraîne 15 époques avec les hyperparamètres de la section 6.
+2. L'appeler pour r = 4, 16, 64 ; mesurer à chaque fois pic VRAM, perte finale et durée.
+3. Comparer dans un tableau : rang, paramètres entraînables (mesurés contre prédits par 196 608 × r), pic VRAM, perte finale, temps.",,,,,,,,dd3046d94321252d,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-eg2-lecture,markdown,fr,8357ac9a46d2df81,"### Lecture du résultat — exemple guidé 2 : le rang achète de la capacité, pas un meilleur modèle
+
+- **Paramètres entraînables** : ils suivent exactement la formule `196 608 × r` démontrée en section 4 (786 432 / 3 145 728 / 12 582 912) — la colonne « prédit » coïncide avec le comptage réel.
+- **VRAM pic** : elle grimpe de 2,13 Go (r=4) à 2,57 Go (r=16) puis 3,03 Go (r=64) — environ 0,9 Go d'écart. Les adaptateurs seuls restent minuscules (~12,6 M paramètres à r=64, soit ~25 Mo de poids FP16) : la différence vient des gradients, des états de l'optimiseur paginé et des tampons intermédiaires qui accompagnent chaque paramètre entraînable — un pic VRAM se mesure, il ne se déduit pas d'un comptage de paramètres. Les poids NF4 figés et les activations (séquences de 256 tokens) dominent toujours la mémoire, mais à r=64 l'adaptateur n'est plus gratuit.
+- **Perte finale** : elle diminue quand r augmente (2,88 → 2,39 → 1,90), mais avec 10 exemples vus 15 fois, un rang élevé sert surtout à **mémoriser** le corpus. Les générations le montrent : à r=4, le modèle boucle sur des phrases courtes et interchangeables (« Les garçons de la rue ne faisaient que jouer ») ; à r=16 et r=64, il s'aventure dans des tournures plus ambitieuses mais fautives (« le navetement de son pere », « Cosette regardait lui ») — la perte baisse, la grammaire ne suit pas. Une perte plus basse n'est donc pas synonyme d'un meilleur modèle : sans jeu de validation, on ne mesure que la mémorisation — c'est exactement la question que l'exercice 2 ci-dessous retourne. Pour ce dataset, r=8-16 reste le compromis raisonnable.
+- Pour que la comparaison soit équitable, `alpha = 2r` : l'échelle `alpha/r = 2` est identique pour les trois rangs, seule la capacité change.",,,,,,,,8357ac9a46d2df81,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-eg3-lecture,markdown,fr,0ed8cd2acf2541bf,"### Lecture du résultat — exemple guidé 3 : un gain minuscule, linéaire dans la taille du modèle
+
+- **Théorie** : sans double quantization, chaque bloc de 64 poids a une constante d'échelle en FP32 → 32/64 = 0,5 bit/param. Avec double quantization, ces constantes sont stockées en 8 bits par blocs de 256, plus une constante FP32 par bloc de 256 constantes → 8/64 + 32/(64·256) ≈ 0,127 bit/param. Gain : **≈ 0,373 bit/param**.
+- **Mesure** : seules les couches linéaires des 24 blocs de décodeur sont quantifiées (1 207 959 552 paramètres, soit ≈ 1,21 Md ; les embeddings et `lm_head` restent en FP16). On attend donc ≈ 56 Mo d'économie — et l'écart mesuré sur la mémoire allouée tombe dessus : 56,1 Mo mesurés contre 56,3 Mo prédits par la théorie. Sur le **pic** de chargement, l'écart du même ordre (2,938 contre 2,882 Go) est plus bruité car le pic contient des tampons temporaires de conversion : d'où l'intérêt de répéter la mesure et de comparer les minima.
+- **Qualité** : la perplexité est quasiment identique entre les deux configurations (34,457 contre 34,470 — différence de l'ordre du bruit numérique) : les constantes d'échelle quantifiées en 8 bits sont assez précises pour ne rien changer au résultat.
+- **Conclusion** : sur OPT-1.3B le gain est anecdotique (~2 % de la VRAM), mais il grandit linéairement avec la taille : ~0,3 Go pour un 7B, ~3 Go pour un 65B — c'est ce qui permettait dans le papier QLoRA de faire tenir un 65B sur un seul GPU de 48 Go. C'est un gain « gratuit », d'où son activation par défaut.",,,,,,,,0ed8cd2acf2541bf,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-eg4-lecture,markdown,fr,8ca85e094d020bf1,"### Lecture du résultat — exemple guidé 4 : pourquoi B doit naître nul
+
+- Avec `B = 0` (b_std = 0), on retrouve l'invariant : `ΔW = 0`, `forward == base → True`.
+- Dès que `B ≠ 0`, `ΔW = B·A` est une matrice aléatoire non nulle de rang ≤ r, et `forward == base → False` : **avant le moindre pas d'entraînement**, le modèle n'est plus le pré-entraîné. Il est perturbé par un bruit `(α/r)·B·A·x` dont l'amplitude croît avec `b_std` (colonne `|s·ΔW| / |W₀|`).
+- **Pourquoi c'est un problème** : sur un vrai LLM, ce bruit est injecté dans *toutes* les couches ciblées (48 projections pour OPT-1.3B) et se propage à travers le réseau : la perte de départ est plus élevée, et les premiers pas d'optimisation servent à « désapprendre » ce bruit au lieu d'apprendre la tâche. Avec un `b_std` grand, on peut même détruire les capacités du modèle (sorties incohérentes) dès l'initialisation. On le voit sur la régression jouet : la loss initiale est plus haute avec B ≠ 0.
+- **Pourquoi A aléatoire et B nul (et pas l'inverse, ni les deux à zéro)** : si A et B étaient tous deux nuls, les gradients `∂L/∂A ∝ Bᵀ(...)` et `∂L/∂B ∝ (...)(Ax)ᵀ` seraient nuls : rien n'apprendrait jamais. Avec A aléatoire et B = 0, le produit vaut 0 (démarrage exact) mais `∂L/∂B` est non nul dès le premier pas, donc l'apprentissage démarre. C'est le seul choix qui combine **démarrage exact** et **gradient non nul**.",,,,,,,,8ca85e094d020bf1,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-exos-md,markdown,fr,18d378a5383070dd,"### Exercices à compléter
+
+Quatre exercices non résolus ferment le notebook. Chacun mesure quelque chose que les exemples guidés ne mesurent pas : l'erreur commise sur les poids eux-mêmes, la généralisation (et non la mémorisation), le choix NF4 contre FP4, et l'échelle des mises à jour LoRA. Les stubs s'exécutent sans erreur ; complétez-les cellule par cellule.",,,,,,,,18d378a5383070dd,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-nex1-md,markdown,fr,abc8b1a77109c785,"#### Exercice 1 : erreur de reconstruction des poids
+
+L'exemple guidé 1 a mesuré ce que la quantization coûte **en VRAM et en perplexité** — jamais ce qu'elle fait aux **poids eux-mêmes**. Ici on ouvre le capot : sur une seule couche `nn.Linear` d'OPT-1.3B (`model.decoder.layers[0].self_attn.q_proj`), comparer les poids FP16 à leurs versions NF4 et INT8 **reconstruites**, et localiser où l'erreur se concentre.
+
+1. Charger OPT-1.3B en FP16 **sur CPU** (`device_map=""cpu""`), extraire `W_fp16` (2048 × 2048) de `q_proj` de la couche 0, puis ne travailler qu'avec cette matrice.
+2. Round trip NF4 : `bitsandbytes.functional.quantize_4bit` puis `dequantize_4bit` (l'API attend des blocs de 64 contigus, la matrice doit être reshapée en `(n_blocs, 64)` et être sur CUDA).
+3. Round trip INT8 absmax **par ligne** : chaque ligne divisée par son max absolu, arrondie sur 127 niveaux, puis remultipliée.
+4. Pour chaque format : erreur relative de Frobenius `‖W_rec − W‖_F / ‖W‖_F` et erreur absolue maximale.
+5. Localiser l'erreur : trier les poids par magnitude absolue et calculer la part de l'erreur totale portée par le 1 % des poids les plus grands — les **outliers** que la quantization par blocs cherche à protéger.
+
+**Indices** :
+- La matrice seule fait 2048 × 2048 : la garder sur CPU et ne déplacer sur CUDA que ce que `bnb.functional` exige.
+- Comparer aussi la forme des deux erreurs : NF4 est taillé pour une distribution de poids gaussienne, INT8 absmax pour une distribution uniforme.
+
+**Critère de réussite** : un tableau `format | erreur Frobenius relative | erreur max absolue | part de l'erreur dans le 1 % des plus grands poids`, avec des erreurs relatives de l'ordre de 10⁻² à 10⁻¹.",,,,,,,,abc8b1a77109c785,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-nex1,code,fr,5f9fadfdd8445738,"# Exercice 1 : erreur de reconstruction des poids (NF4 / INT8 contre FP16)
+# Etape 1 : charger OPT-1.3B sur CPU, extraire W_fp16 de q_proj (couche 0).
+# Etape 2 : round trip NF4 (quantize_4bit/dequantize_4bit, blocs de 64) et INT8 absmax par ligne.
+# Etape 3 : erreur relative de Frobenius + erreur absolue maximale pour chaque format.
+# Etape 4 : part de l'erreur totale portee par le 1 % des poids de plus grande magnitude.
+# Indice : bnb.functional travaille sur CUDA ; ne mover que la matrice 2048 x 2048.
+
+W_fp16 = None      # TODO etudiant
+W_rec_nf4 = None   # TODO etudiant
+W_rec_int8 = None  # TODO etudiant
+
+print(""Exercice a completer : erreur de reconstruction des poids NF4/INT8 vs FP16"")",,,,,,,,5f9fadfdd8445738,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-nex2-md,markdown,fr,31d37c7d9df505c9,"#### Exercice 2 : mémorisation contre généralisation
+
+L'exemple guidé 2 conclut que sans jeu de validation, la perte finale ne mesure que la **mémorisation**. Testez-le : couper les 10 extraits d'entraînement en 8 textes d'entraînement + 2 textes retenus (*held-out*), réentraîner QLoRA aux rangs r = 4, 16, 64 sur les 8 seulement, et mesurer la perplexité sur les 2 textes retenus **avant et après** entraînement.
+
+1. Construire `train_texts_8` (8 premiers extraits de `training_texts`) et `held_out_texts` (2 derniers) ; reprendre la tokenisation de la section 6 sur les 8.
+2. Pour chaque rang r ∈ {4, 16, 64} : mesurer la perplexité held-out du modèle NF4 **avant** entraînement, puis entraîner sur les 8 extraits (mêmes hyperparamètres que l'exemple guidé 2).
+3. Après entraînement, mesurer de nouveau la perplexité held-out.
+4. Reporter un tableau `r | ppl held-out avant | ppl held-out après | perte d'entraînement finale`.
+
+**Indices** :
+- Réutiliser la boucle de perplexité de l'exemple guidé 1 (somme des pertes pondérée par le nombre de tokens).
+- Attendu : la perplexité held-out baisse pour les petits rangs (généralisation) puis se dégrade à r = 64 (mémorisation des 8 extraits) — le rang qui généralise le mieux n'est pas celui qui minimise la perte d'entraînement.
+
+**Critère de réussite** : le tableau des 3 rangs avec ppl held-out avant/après, et le nom du rang qui minimise la perplexité held-out.",,,,,,,,31d37c7d9df505c9,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-nex2,code,fr,352e9b24c6fa22e0,"# Exercice 2 : mémorisation contre généralisation (split 8/2 des extraits)
+# Etape 1 : couper training_texts en 8 extraits d'entrainement + 2 extraits held-out.
+# Etape 2 : pour r = 4, 16, 64, entrainer QLoRA sur les 8 extraits (protocole de l'exemple guide 2).
+# Etape 3 : perplexite sur les 2 extraits held-out AVANT (base NF4) et APRES entrainement.
+# Indice : reutiliser la boucle de perplexite de l'exemple guide 1.
+
+resultats_exo2 = None  # TODO etudiant
+
+print(""Exercice a completer : quel rang generalise le mieux sur les 2 extraits held-out ?"")",,,,,,,,352e9b24c6fa22e0,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-nex3-md,markdown,fr,acf8de8be6b8c19c,"#### Exercice 3 : NF4 contre FP4 à mémoire égale
+
+NF4 et FP4 occupent exactement la même place (4 bits par poids) : la différence est purement dans la **forme des niveaux de quantization**. Comparer les deux à mémoire égale sur OPT-1.3B.
+
+1. Charger OPT-1.3B deux fois en 4-bit : `bnb_4bit_quant_type=""nf4""` puis `""fp4""` — la double quantization reste identique dans les deux configurations.
+2. Mesurer l'empreinte (`get_memory_footprint`) et le pic de chargement pour chaque format : ils doivent être quasi identiques.
+3. Mesurer la perplexité sur les textes d'entraînement pour les deux formats.
+4. Générer en greedy sur un même prompt et comparer les sorties.
+
+**Indices** :
+- Les poids pré-entraînés d'un transformer suivent une distribution à peu près **normale**, centrée et concentrée près de zéro : NF4 place ses niveaux sur les quantiles de cette distribution (plus de niveaux au centre), FP4 les répartit uniformément — c'est pourquoi NF4 devrait gagner en perplexité à mémoire égale.
+- Reprendre le squelette de l'exemple guidé 3 en ne changeant QUE `bnb_4bit_quant_type`.
+
+**Critère de réussite** : empreintes égales à ~1 Mo près, un sens clair de l'inégalité ppl(NF4) vs ppl(FP4), et les deux générations côte à côte.",,,,,,,,acf8de8be6b8c19c,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-nex3,code,fr,840ae998cb720d0d,"# Exercice 3 : NF4 contre FP4 à mémoire égale
+# Etape 1 : charger OPT-1.3B en 4-bit avec bnb_4bit_quant_type=""nf4"" puis ""fp4""
+#           (bnb_4bit_use_double_quant identique dans les deux).
+# Etape 2 : empreinte (get_memory_footprint) et pic de chargement pour chaque format.
+# Etape 3 : perplexite sur les textes d'entrainement + generation greedy sur un meme prompt.
+# Indice : ne changer QUE bnb_4bit_quant_type entre les deux configurations.
+
+resultats_exo3 = None  # TODO etudiant
+
+print(""Exercice a completer : NF4 vs FP4 a memoire egale"")",,,,,,,,840ae998cb720d0d,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-nex4-md,markdown,fr,ee1a8e85abaeae5b,"#### Exercice 4 : échelle alpha/r contre alpha/sqrt(r) (rsLoRA)
+
+Le `LoRALinear` de la section 4 met la mise à jour à l'échelle par `alpha / r`. rsLoRA propose `alpha / sqrt(r)` : à rang élevé, la mise à jour ne s'effondre pas. Testez-le sur la régression jouet de la section 4 — CPU, rapide, sans modèle lourd.
+
+1. Reprendre la classe `LoRALinear` de la section 4 (copie locale avec un paramètre d'échelle), sur la même tâche de régression : même couche de base, mêmes données, graines fixées.
+2. Avec `alpha` fixé (par ex. 16), entraîner r = 4, 16, 64 pendant le même nombre de pas SGD (par ex. 300), même learning rate, pour les deux échelles : `alpha/r` et `alpha/sqrt(r)`.
+3. Reporter la perte finale des 6 configurations dans un tableau.
+
+**Indices** :
+- À `alpha` fixé, l'échelle `alpha/r` décroît comme 1/r : doubler le rang divise la mise à jour par deux ; `alpha/sqrt(r)` ne la divise que par √2. C'est l'hypothèse à confronter à la mesure.
+- Fixer toutes les graines (`torch.manual_seed`) pour que la seule différence entre deux runs soit l'échelle.
+
+**Critère de réussite** : à r = 64, une perte finale nettement plus basse avec `alpha/sqrt(r)` qu'avec `alpha/r`, et des pertes proches des deux échelles à r = 4.",,,,,,,,ee1a8e85abaeae5b,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-nex4,code,fr,79bad61aa11c00d9,"# Exercice 4 : échelle alpha/r contre alpha/sqrt(r) (rsLoRA) sur la régression de la section 4
+# Etape 1 : reprendre LoRALinear avec un parametre d'echelle, alpha fixe (ex. 16), CPU.
+# Etape 2 : entrainer r = 4, 16, 64 sur le meme nombre de pas SGD pour les deux echelles.
+# Etape 3 : tableau des pertes finales des 6 configurations.
+# Indice : graines fixees, seule l'echelle doit differer entre deux runs.
+
+resultats_exo4 = None  # TODO etudiant
+
+print(""Exercice a completer : alpha/r vs alpha/sqrt(r) a r = 4, 16, 64"")",,,,,,,,79bad61aa11c00d9,,,,,,,,
