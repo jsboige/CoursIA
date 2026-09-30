@@ -158,7 +158,7 @@ SETUP_STEM_RE = re.compile(
 SETUP_DIR_RE = re.compile(r"environment", re.IGNORECASE)
 
 #: Purely-Lean notebooks -- rule threshold 0-2.
-#: `Lean-03-Propositions-Proofs-Lean`, `GameTheory-11b-Lean-BayesianGamesExt`,
+#: `Lean-03-Propositions-Proofs-Lean`, `GameTheory-11b-Lean-BayesianGamesExt-Lean`,
 #: `DecInfer-09-Lean-Gittins`.
 LEAN_STEM_RE = re.compile(r"(?:^|[-_])lean(?:$|[-_])", re.IGNORECASE)
 

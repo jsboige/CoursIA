@@ -29,8 +29,8 @@ SESSION_MONDAY_2H = [  # Monday 2h Lean intro
 SESSION_WEEK_4H_LEAN = [  # Week 4h Lean+GameTheory
     "SymbolicAI/Lean/Lean-05-Tactics-Lean.ipynb",
     "SymbolicAI/Lean/Lean-06-Mathlib-Essentials-Lean.ipynb",
-    "GameTheory/GameTheory-15b-Lean-CooperativeGames.ipynb",
-    "GameTheory/GameTheory-02b-Lean-Definitions.ipynb",
+    "GameTheory/GameTheory-15b-Lean-CooperativeGames-Lean.ipynb",
+    "GameTheory/GameTheory-02b-Lean-Definitions-Lean.ipynb",
 ]
 ALL_NOTEBOOKS = SESSION_MONDAY_2H + SESSION_WEEK_4H_LEAN
 

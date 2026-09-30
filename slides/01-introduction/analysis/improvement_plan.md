@@ -112,7 +112,7 @@ Le deck Introduction est transversal : il presente les concepts que les notebook
 | 28 | Argumentation | `SymbolicAI/Argument_Analysis/` (5 notebooks) |
 | 29 | Inference bayesienne | `Probas/Infer-101.ipynb`, `Probas/Infer/Infer-3-Factor-Graphs.ipynb` a `Infer-14` |
 | 29 | Reseaux de decision | `Probas/Infer/Infer-14-Decision-Utility-Foundations.ipynb` |
-| 29 | Theorie des jeux | `GameTheory/GameTheory-02b-Lean-Definitions.ipynb` a `GameTheory-16b` |
+| 29 | Theorie des jeux | `GameTheory/GameTheory-02b-Lean-Definitions-Lean.ipynb` a `GameTheory-16b` |
 | 13 | Deep learning / GenAI | `GenAI/Image/` (15+ notebooks), `ML/ML.Net/` (5 notebooks) |
 | 13 | Trading algorithmique | `QuantConnect/` (27 notebooks - a verifier) |
 | 39 | Agent apprenant | `RL/rl_1_intro_cartpole.ipynb` a `rl_3_experience_replay_dqn` |
@@ -282,7 +282,7 @@ Observations issues de l'examen visuel de chaque rendu PNG 1920x1080, jugees sel
 
 **Slide 33 (Types d'environnement exemples - tableau)** : Tableau complexe 8 colonnes x 6 lignes (Environnement / Observable / Agents / Deterministe / Episodique / Statique / Discret). Les cellules sont **minuscules et surchargees de texte** - completement illisible en projection, meme depuis la premiere rangee. Police estimee <14pt. Chaque cellule a des mots comme "Entierement", "Mono", "Semi", "Sequentiel", "Dynamique", "Continu". **Critique : a agrandir sur 2 slides** ou refaire sous forme de diagramme comparatif.
 
-**Slide 34 (Types d'agents)** : **Tres chargee**. Bloc pseudo-code f(agent) en haut a gauche ("Architecture physique + Programme") avec detail table-driven, puis 4 bullets "Taille? Duree? Autonomie?". Puis liste "Types dans l'ordre de generalite" (4 lignes). Police petite et mise en page desequilibree - le pseudo-code prend trop d'espace pour peu de valeur. **A restructurer** : separer le concept de fonction d'agent de la liste des types.
+**Slide 34 (Types d'agents)** : **Tres chargee**. Bloc pseudo-code f(agent) en haut a gauche ("Architecture physique + Programme") avec detail table-driven, puis 4 bullets "Taille? Duree? Autonomie?". Puis liste "Types dans l'ordre de generalite". Police petite et mise en page desequilibree - le pseudo-code prend trop d'espace pour peu de valeur. **A restructurer** : separer le concept de fonction d'agent de la liste des types.
 
 **Slide 35 (Agent reflexe)** : **Bonne slide**. Diagramme agent-environnement AIMA avec boucle perception-decision-action a droite. Definition "Pas de memoire" et regles condition/action a gauche. En dessous, 5 blocs textuels sur l'intelligence animale (Behaviourism, Artificial Life, Cellular Automata) avec une couverture du livre "A New Kind of Science" (Wolfram). Le diagramme est clair et pertinent. La partie Wolfram est tangente mais enrichissante. Footer "IA 101".
 

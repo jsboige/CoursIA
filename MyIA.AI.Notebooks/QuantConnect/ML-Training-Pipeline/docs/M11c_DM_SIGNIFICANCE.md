@@ -138,7 +138,7 @@ the pedagogy slides in favour of either #1 or #2.
 
 - **G.2 — Metrics honest, not binary** : p-values are explicit, not "promising". Aggregate count: kelly_har_mu60 BEATS 0/35 at p<0.05, BEATS 5/35 at p<0.10, BEATS 27/35 by Δ Sharpe sign — **all three numbers reported, none of which is alone a "BEATS"**.
 - **G.3 — No DONE on marginal progress** : 0/35 at p<0.05 is the honest headline. The raw 27/35 verdict is acknowledged but down-weighted to "directional, not significant per-combo".
-- **G.4 — Composite size** : single-script PR, 1 file (~325 lines), 1 doc, 1 results dir. Single domain (ML/trading). Under all thresholds.
+- **G.4 — Composite size** : single-script PR, single doc, single results dir. Single domain (ML/trading). Under all thresholds.
 - **G.6 — Coordinator scrutiny** : claim verifiable from `dm_results.json` + `dm_results.csv` ; reproducible from `coursia-ml-training` env in one command.
 
 ---
@@ -146,7 +146,7 @@ the pedagogy slides in favour of either #1 or #2.
 ## Files
 
 - This verdict : `MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/docs/M11c_DM_SIGNIFICANCE.md`
-- Script : `MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/m11c_sharpe_test.py` (325 lines)
+- Script : `MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/m11c_sharpe_test.py`
 - Results JSON : `MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/results/m11c_dm_test/dm_results.json` (70 rows + 5 bootstrap rows)
 - Results CSV : `MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/results/m11c_dm_test/dm_results.csv`
 
