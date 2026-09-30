@@ -7,20 +7,23 @@ namespace MyIA.Trading.Backtester
     /// <summary>
     /// Expression dynamique evaluee contre un contexte de trading via Flee 2.0.0
     /// (Fast Lightweight Expression Evaluator, NuGet PackageReference deja cablee sur
-    /// main). Le constructeur configure le parser pour la culture fr-FR et le type
-    /// decimal : <see cref="ExpressionContext.ParserOptions.DecimalSeparator"/> = '.',
+    /// main). Le constructeur configure le decimal-separator du parser a "." :
+    /// <see cref="ExpressionContext.ParserOptions.DecimalSeparator"/> = '.',
     /// <see cref="ExpressionParserOptions.RecreateParser"/> (le parser est en cache,
     /// sans RecreateParser le changement de DecimalSeparator est inoperant) et
-    /// <see cref="ExpressionOptions.RealLiteralDataType"/> = Decimal (CompileGeneric&lt;decimal&gt;
-    /// doit recevoir des littéraux Decimal, sinon le resultat est promu en Double
-    /// et les montants derivent). Les chemins de membres (ex. "Market.Ticker.Last",
+    /// <see cref="ExpressionOptions.RealLiteralDataType"/> = Decimal : les litteraux
+    /// reels de l'expression ("0.10") sont lus comme Decimal au lieu d'etre promus
+    /// en Double, ce qui evite la derive des montants. L'evaluation compile au type
+    /// object (<c>CompileGeneric&lt;object&gt;</c>) puis convertit le resultat vers T
+    /// via ConvertResult (T = decimal : direct ; T = double : cast binaire preservant
+    /// la trace decimal ; autres : Convert.ChangeType culture invariante). Les chemins
+    /// de membres (ex. "Market.Ticker.Last",
     /// "CurrentOrders.HighestAsk.Value", "LowestAsk.price") sont resolus par Flee
     /// sur l'owner via reflection case-insensitive. L'arithmetique suit la
     /// semantique C# : division entiere si deux litteraux entiers, decimale des
     /// qu'un operande est decimal. Operateurs relationnels et logiques en
     /// dialecte Flee : "=" et "&lt;&gt;" (pas "==" / "!="), "and" / "or" (pas "&amp;&amp;"
-    /// / "||"). Voir MEMORY "Flee 2.0.0 pièges fr-FR + dialecte" pour les 4 pieges
-    /// et la mesure 16/17 banc c.988.
+    /// / "||"). Voir MEMORY "Flee 2.0.0 pièges fr-FR + dialecte" pour les 4 pieges.
     /// </summary>
     [Serializable]
     public class SimpleExpression<T>

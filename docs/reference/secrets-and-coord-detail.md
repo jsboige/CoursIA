@@ -404,6 +404,50 @@ reproduit sur son auteur pendant qu'elle attendait d'etre mergee.
 Enchainer avec [[handover-must-disarm-outgoing-cron]] : **desarmer la cadence sortante d'abord**,
 armer ensuite.
 
+### 2.7 Registre re-parcouru des arbitrages user en attente (Regle 7)
+
+Source : convergence des harnais roo-extensions <-> CoursIA (Epic roo-extensions#3111 candidat n°5, VERIFIE passe 3 du 2026-08-20 ; livraison roo-extensions#3677, 2026-09-15). Le raffinement de l'audit : ce n'est pas un formalisme qui manquait a CoursIA, c'est un **registre re-parcouru**.
+
+**Preuve mesuree** (audit passe 3, VERIFIE — dashboards live 20/08 + archives 13-15/08) :
+
+- roo-extensions : section recurree par cycle coordinateur « En attente d'arbitrage user (aucune action prise) » — ~31 % des archives dashboard en portent une mention ; un item ne peut pas disparaitre silencieusement.
+- CoursIA : le coordinateur auto-arbitre d'abord (atout de debit, CONSERVE — non-but explicite de la convergence) mais la trace des demandes user en attente vivait en dette personnelle en texte libre. Verbatim ai-01 (archives 13-14/08) : « les 4 arbitrages restes en l'air (#7257, #7266, #7298, #6711) — un [ASK USER] jamais arrive pre-merge [...] c'est ma dette, pas celle des lanes ». Un [ASK USER] « jamais arrive » est precisement la panne que le format roo-ext previent.
+
+**Le mandat user du 15/09 demandait deja la moitie du patron** — donne dans CE workspace (machine ai-01) : « je prefere que tu gardes tes questions pour la fin de session, et si jamais le cron reprend, que tu les gardes tant qu'elles sont pas repondues dans une memoire que tu dois restituer en fin de session. Ca va demander une MAJ du harnais global en coordination avec roo-extensions » (roo-extensions#3656). Cote roo-ext, la moitie registre est codifiee (registre open-questions, roo-extensions#3657) ; cette regle en est le portage CoursIA, augmentee de la moitie roo-ext historique : la **liste re-parcourue par cycle**.
+
+#### Les 3 invariants
+
+1. **Registre persistant** — fichier `.claude/local/arbitrations-user.md` sur ai-01 (gitignore : `.claude/local/`). Format d'entree :
+
+   ```markdown
+   ## 2026-09-15 — sign-off regle convergence candidat n°5
+   - Demande : [ASK] poste cycle du 15/09 (dashboard CoursIA + DM user)
+   - Bloque : merge de la PR concernee (gate pre-merge) ; 2 options A/B
+   - Relances : 15/09 · 16/09
+   - Sortie : TRANCHEE option B le 17/09 (reponse DM user) — archivee
+   ```
+
+2. **Re-parcours chaque cycle** — section recurree du bilan `/coordinate`, sur LES DEUX dashboards (Regle 3) :
+
+   ```markdown
+   ### En attente d'arbitrage user (aucune action prise)
+   - sign-off regle X (depuis 15/09, 2 cycles) · arbitrage sauvegarde Y (depuis 13/09, 5 cycles)
+   ```
+
+   Le dashboard se re-condense ; le registre est la **source**, la section n'en est que la representation. La demande survit a la condensation parce qu'elle ne vit pas uniquement dedans.
+
+3. **Sortie sur reponse user explicite uniquement** — jamais auto-expiree (l'age d'un item est un signal de RELANCE, pas de purge : plus il vieillit, plus le re-parcours le met sous les yeux du user), jamais retiree silencieusement. La reponse est datee et tracee dans l'entree, puis l'entree descend en fin de fichier (section archive). Rien n'est efface.
+
+#### Frontiere exacte (non-buts)
+
+- **L'auto-arbitrage coordinateur reste la norme** (Regle 5.3 : decider, ne pas deferer). Le registre ne couvre QUE les decisions qui EXIGENT le user : sign-offs de regles, arbitrages de politique, approbations que le mandat reserve au user, blocages budget/permissions. Tout le reste se tranche dans le cycle, comme avant.
+- La Regle 2 couvre l'entrant (demandes user -> action) ; la Regle 7 couvre le sortant (escalades coord -> user). Ensemble : « aucune demande user ne pourrit > 1 cycle » **dans les deux sens**.
+
+#### Verification apres N cycles (critere R2)
+
+- **Chaque fin de cycle (rapide)** : comparer la section « En attente d'arbitrage user » du bilan precedent au registre — tout ecart non justifie par une reponse user tracee = violation.
+- **Convergence (apres N cycles d'application)** : dans les archives dashboard, aucun item ne doit disparaitre de la section sans ligne de sortie datee dans le registre. C'est le critere de reussite de roo-extensions#3677 (checkbox 3) : a verifier et rapporter sur cette issue.
+
 
 
 

@@ -8,4 +8,4 @@
   known_differences:
     - "Socle pedagogique commun : strategies de resolution humaines (techniques d'inference -- naked/hidden singles, pointing pairs, box-line) appliquees au Sudoku, meme concept (simuler le raisonnement humain par couches d'inference successives plutot qu'un backtracking brut), meme arc pedagogique (theorie -> implementation -> benchmark)."
     - "Divergence d'implementation : le Python implemente les techniques d'inference from scratch + visualisation networkx du graphe de contraintes ; le C# implemente les memes strategies d'inference en stdlib avec un benchmark comparatif. Idiomes de visualisation differents (networkx cote Python)."
-    - "Asymetrie structurelle : Python 22 cellules code / 30 markdown ; C# 19 cellules code / 30 markdown. Arc identique (techniques d'inference + mesure de performance)."
+    - "Asymetrie structurelle : Python 22 cellules code / 40 markdown (recompte au disque apres la tranche densite #13410 : 30 -> 40 md, markdown-only) ; C# 19 cellules code / 30 markdown. Arc identique (techniques d'inference + mesure de performance)."

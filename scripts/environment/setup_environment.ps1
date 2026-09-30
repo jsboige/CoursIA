@@ -392,7 +392,7 @@ if ($AutoFix) {
                 Save-Checkpoint "dotnet_interactive_install"
             } else {
                 Write-Action "Installation de .NET Interactive..." "INFO"
-                dotnet tool install -g Microsoft.dotnet-interactive 2>&1 | Out-Null
+                dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.617701 2>&1 | Out-Null
                 if ($LASTEXITCODE -eq 0) {
                     Write-Action ".NET Interactive installé avec succès" "SUCCESS"
                     Save-Checkpoint "dotnet_interactive_install"

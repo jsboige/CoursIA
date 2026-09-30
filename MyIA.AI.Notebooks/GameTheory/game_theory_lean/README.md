@@ -357,6 +357,15 @@ séparément et pinnée sur la convergence v4.32.1 de Mathlib (acquise, #12134).
   close).
 - **Cône augmenté** : `BondarevaCone.augCone` et son séparateur,
   clôture du cône enveloppe conique en dimension finie.
+- **Jeux répétés actualisés** : paiement actualisé d'une trajectoire
+  arbitraire (`discountedPayoff`), périodicité des stages, et **lemme
+  d'Abel périodique** — forme close du paiement normalisé
+  (`discountedPayoff_periodic_eq`) et convergence vers la moyenne de temps
+  quand `δ → 1⁻` (`discountedPayoff_periodic_tendsto_timeAverage`),
+  socle de la jambe « moyenne » du théorème de Folk (fil #15655).
+  Trigger de Grim, et témoin de réfutation `folkCounterexample` de l'énoncé
+  non normalisé. Le théorème **STRETCH** `folk_theorem_discounted` reste
+  `sorry` (cf. « Statut »).
 
 ### Pourquoi il existe
 

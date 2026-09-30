@@ -48,4 +48,4 @@ schématisées dans [`../architecture.md`](../architecture.md) tant qu'un jeu de
 
 ---
 
-*Assets — Tour de la plateforme (Epic #4433, sous #4427). FR-first.*
+*Assets — Tour de la plateforme (Epic #4433, fermée — parcours livré ; parent #4427). FR-first.*

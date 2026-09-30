@@ -79,6 +79,20 @@ Rules
   missing-newlines rule is silent and only this rule sees the split. Corpus measure
   2026-08-25: 0 hits repo-wide — a pure cliquet, ERROR is safe because ``--check``
   only blocks NEW violations.
+- ``repr_quoted_source_entries`` (ERROR, #16221): a markdown cell whose source
+  contains lines that are themselves JSON-encoded list elements (the literal
+  output of ``json.dumps(["..."])`` or the canonical nbformat ``repr`` of
+  ``cell.source``). Such a line starts with a 4-space indent, a single quote
+  char (NOT a Python triple-quoted string opening), ends with the JSON-quote
+  closer followed by optional comma/newline, and the last content character
+  (before the closer) is not a sentence-ending punctuation mark. The founding
+  incident: the 4.2e Focal-Loss notebook had cells 19/20
+  whose ``source`` was JSON-dumped list entries pasted verbatim, rendering as
+  literal escaped JSON (e.g. ``"# 4.2e -- section heading\\n"``) instead of
+  as proper markdown. The earlier ``markdown-rendering guard`` was a faux
+  negatif on this class (the source-list structure was intact; only the
+  content is wrong on render). Fence-aware: a repr-quoted line inside a
+  Python/markdown fenced code block is a legitimate example, not a defect.
 
 The correct fix for frontmatter cells is to move the metadata into the notebook
 ``metadata`` (invisible, machine-readable) OR render it inside a fenced ```yaml block
@@ -162,6 +176,44 @@ RULE_SEVERITY = {
     # block, which is exactly the cliquet the issue asks for ("la prochaine
     # tranche ne puisse pas l'introduire sans rougir").
     "source_list_broken_words": ERROR,
+    # #16221: ERROR (bloquant) -- a markdown cell whose source
+    # line starts with 4-space + JSON-quote opener and ends with the JSON-quote
+    # closer + optional comma + optional newline is a repr-quoted Python-list
+    # entry (a string from a JSON-dumped nbformat `source`). Such a line is a
+    # SINGLE-LINE representation of what should be NORMAL MARKDOWN PROSE: pasted
+    # verbatim into a markdown cell, the line renders as a literal escaped
+    # JSON-encoded string ("# 4.2e -- section heading\\n") instead of an H2
+    # heading + a paragraph. (the guard was a faux
+    # negatif on this class -- the cell LOOKS fine structurally).
+    "repr_quoted_source_entries": ERROR,
+    # #17005: ERROR (bloquant) -- ligne de continuation de puce/blockquote
+    # (indentee 2+ espaces) commencant par "#" + non-espace : le renderer
+    # Jupyter la traite comme un atx heading (Jupyter / VSCode / nbviewer
+    # sont NON-CommonMark-strict sur ce point : CommonMark refuse ce format,
+    # les renderers l'acceptent et le rendent comme heading). Fondeur :
+    # PR #16888 cell-015 (avant-fix commit c34d5e88d, apres-fix la cellule
+    # a ete rewrap, base e17f600a). Le pattern est disjoint de _HEADING_RE
+    # (qui exige un espace apres le "#", donc catch deja les "  ## Heading"
+    # indente ou pas) et de _CONTAINER_HEADING_RE (qui exige un marqueur
+    # de conteneur "-"/"*"/"+"/"1."/">" sur la MEME ligne que le "#",
+    # donc catch deja les "- # Indice", "1. # Heading" etc.). Classe de
+    # pattern : ligne de CONTINUATION de puce (2+ espaces d'indentation
+    # sans marqueur de conteneur) qui commence par "#" + non-espace
+    # (reference d'issue "#15520", mot "#libelle" etc.). ERROR parce que
+    # le rendu est incoherent avec la prose que la ligne veut dire.
+    "heading_continuation": ERROR,
+    # #17874: ERROR (bloquant) -- prose line glued to a table row: a pipe-free
+    # prose line with no block marker directly following a `|...|` row is
+    # absorbed into the table by the GFM renderer (the note stops rendering as
+    # a paragraph). Positive control: #17812 intermediate commit 5b4bab9981
+    # cell 11 (l.10 table / l.11 note), verified firing. Corpus FP pass
+    # 2026-09-26: 9 raw hits -> 0 after two spec-grounded refinements (block
+    # openers break the table per GFM; pipe-free rows continue it; a
+    # leading-AND-trailing pipe row is required as anchor, killing the
+    # `|a_eff|^T` math-notation FP of ICT-Dissociation cell 19). Count 0 +
+    # delta-vs-baseline = pure ratchet, only NEW violations block -- the exact
+    # #12363 promotion precedent (source_list_broken_words, 0 hits -> ERROR).
+    "table_adjacent_prose": ERROR,
     # #12064: ERROR (bloquant) -- the corpus measure is 1 hit / 20,576 markdown
     # cells (the true positive (A) PT_11 cell 5), reproduced by this lane. That
     # precision is what buys blocking status; a wider pattern set would need
@@ -175,6 +227,45 @@ RULE_SEVERITY = {
     # (unclosed_bold): promouvoir ERROR seulement après mesure du taux de FP
     # sur le corpus, jamais a priori.
     "cjk_in_prose": WARN,
+    # #17380: ERROR (bloquant) -- un delimiteur inline \( ... \) hors code span
+    # ne rend NULLE PART par defaut : le tex2jax de MathJax 2 (export nbconvert
+    # classique) ne le typesette pas (mesure Playwright sur IIT-06 avant fix :
+    # seul le $$ central rendait), et les configs MathJax 3 de JupyterLab/VS
+    # Code ne declarent que $ et $$. Le LaTeX inline reste du texte brut dans
+    # les DEUX familles de visionneuses. Hors code (fence/span), \( n'a AUCUNE
+    # signification markdown legitime -- le precedent de promotion est
+    # heading_continuation (#17005) : "ERROR parce que le rendu est incoherent
+    # avec la prose que la ligne veut dire". Mesure corpus 2026-09-22 : 10 hits
+    # sur 4 notebooks (IIT-01 7, GameTheory-15e 1, MGS-07d 1, Sudoku-05 1) --
+    # tranche reparee dans la meme PR par fix_math_delims.py (controle
+    # differentiel sur IIT-06 : 118 conversions, byte-identique au commit
+    # manuel 5242d81907 au texte joint). La borne est l'OUVREUR : un \( hors
+    # code est un defaut ferme ou non, un \) isole ne l'est pas. Un bornage
+    # PAIRE avait d'abord ete pose apres le faux positif Sudoku-05
+    # (« (/ ou \\) selon l'OS », prose Windows, aucun \( ouvrant) -- il fermait
+    # le faux positif en ouvrant un faux NEGATIF sur les \( non fermes, que
+    # seul l'ouvreur ferme (detail et delta corpus en tete de _MATH_PAREN_RE).
+    # \[ ... \] (display) EST typesette par les deux defauts : hors classe de
+    # defaut, volontairement non detecte.
+    "math_paren_delims": ERROR,
+    # #17380: WARN-first -- une macro LaTeX nue (backslash + lettres) hors
+    # tout span math rend en texte brut partout. Mesure corpus 2026-09-22 :
+    # 40 hits sur 30 notebooks a l'ouverture, 32 sur 28 apres la tranche ERROR
+    # -- les 3 macros d'IIT-01 sont passees DANS un span $...$ avec la forme
+    # echappee, confirmation independante que la conversion est juste.
+    # FP mesures dans l'echantillon : sequences
+    # code-like en prose nue (xt1\n xt2\n, \dev\...\scripts). Discipline
+    # #12107/#12110/#12112 : promouvoir ERROR seulement apres mesure du taux
+    # de FP, jamais a priori.
+    "math_bare_macro": WARN,
+    # #17380: WARN-first -- compte de $ impair par cellule apres retrait des
+    # paires $$, des spans $...$ et des echappements \$ : au moins un
+    # delimiteur inline ne se ferme pas et le LaTeX suivant fuit hors span.
+    # Mesure corpus 2026-09-22 : 239 hits sur 95 notebooks, domines par de
+    # VRAIS math non fermes (\min(2,3) - r = 0 ... (2,2) r > 1$) ; FP assumes :
+    # la monnaie en prose ("~100 $", "$1,139,577.97"). WARN, jamais bloquant,
+    # pour cette raison.
+    "math_odd_dollars": WARN,
 }
 
 # #12110 -- allowlist (fichier, cellule) des cas CJK LEGITIMES (classe B du
@@ -221,6 +312,33 @@ RULE_REPAIR = {
     # auteur qui tombe dessus (c'est le constat qui a fonde cette table).
     "heading_in_list": (
         "python scripts/notebook_tools/fix_hint_headings.py --apply <notebook>"
+    ),
+    # #17380 : promue ERROR dans la meme PR que son fixer (precedent #12109) --
+    # la conversion \( -> $ / \) -> $ est deterministe sur les cellules
+    # markdown, et le fixer porte l'invariant de round-trip qui la prouve.
+    # La regle borne sur l'OUVREUR, le fixer sur la PAIRE : la regle nomme la
+    # CLASSE (tout \( hors code, ferme ou non), le fixer repare le sous-ensemble
+    # deterministe. Un \( non ferme reste donc signale pour reparation humaine
+    # -- il n'existe aucune instance dans le corpus (delta mesure 2026-09-22),
+    # et il n'y a pas d'intention a deviner sur un span dont on ignore la fin.
+    "math_paren_delims": (
+        "python scripts/notebook_tools/fix_math_delims.py --apply <notebook>"
+    ),
+    # #16221 : un entry JSON-dumped (forme
+    # `    "# 4.2e -- section heading\\n",`) doit etre decode puis reinsere
+    # comme entree(s) de liste markdown distinctes (chaque '\n' du contenu
+    # redevient une ligne, chaque '","' redevient une entree separee). Voir
+    # c1158_focal_repair.py si present, sinon l'edition directe du
+    # source-list via scripts/notebook_tools/json_source_render.py.
+    "repr_quoted_source_entries": (
+        # Pas de fixer outille specifique pour cette regle : la reparation
+        # exige de decoder le contenu JSON et de re-decouper la liste
+        # manuellement (chaque cellule peut avoir 1+ repr-quoted entries
+        # intercalees avec des entries normales, le decoupage automatique
+        # perdrait la structure). Voir c1158_focal_repair.py si developpe
+        # ulterieurement ; en attendant, edition manuelle des cellules
+        # signalees par le detector.
+        "(no automated fixer -- edit the affected cells directly)"
     ),
 }
 
@@ -273,6 +391,16 @@ _HEADING_RE = re.compile(r"^\s{0,3}(#{1,6})\s+(.*)$")
 # drift gate on new hits is #11829 sous-issue #2. See #11829.
 _CONTAINER_HEADING_RE = re.compile(
     r"^(?:[ \t]*(?:[-*+]|\d+[.)]|>)[ \t]+){1,3}(#{1,6})\s+(.*\S)\s*$")
+# #17005: continuation line of a list item / blockquote (2+ spaces indent, NO
+# container marker on the same line) starting with "#" + non-space character.
+# CommonMark refuses this as a heading (the indent is too deep, no container
+# opener), but Jupyter / VSCode / nbviewer all render it as a giant H1-H6 --
+# the same renderer gap as `_CONTAINER_HEADING_RE` (#11829), on a continuation
+# line instead of an opener line. Disjoint of both `_HEADING_RE` (which
+# requires a space after the "#") and `_CONTAINER_HEADING_RE` (which requires
+# a `-`/`*`/`+`/`1.`/`>` on the same line). Fondeur: PR #16888 cell-015
+# (base e17f600a, fix c34d5e88d rewrapped the cell to drop the indent).
+_CONTINUATION_HEADING_RE = re.compile(r"^\s{2,}(#{1,6})[^\s#]")
 
 # #12110 -- a CJK (Chinese-Japanese-Korean) character in a markdown cell whose
 # source is otherwise French prose. The defect pattern: a model-generated cell
@@ -309,6 +437,59 @@ _STMT_LINE_RE = re.compile(
     r"using\s+\w+;|def\s+\w+\(|var\s+\w+\s*=|#r\s+\"nuget)"
 )
 
+# #17380 -- delimiteur inline math \( ... \) dans une cellule markdown. Mesure
+# Playwright avant/apres sur IIT-06 (commit 5242d81907) : le tex2jax par defaut
+# de MathJax 2 (export HTML nbconvert classique) ne typesette PAS \( \), et les
+# configs MathJax 3 de JupyterLab / VS Code ne declarent que $ et $$ -- le
+# LaTeX inline rend en texte brut dans les deux familles. \[ ... \] (display)
+# EST typesette par les deux defauts et n'est volontairement PAS detecte.
+# La borne est l'OUVREUR, pas la paire -- et c'est le resultat de trois etats
+# successifs, tous mesures le 2026-09-22 sur cette PR :
+#
+#   1. `\\[()]` (forme d'origine) : flaguait tout `\(` **et** tout `\)`. Faux
+#      POSITIF fondeur : « les separateurs (/ ou \\) selon l'OS » (Sudoku-05
+#      cell 5) porte un backslash litteral + une VRAIE parenthese de prose, et
+#      etait bloque a vie par une regle que le fixer ne pouvait pas convertir.
+#   2. la PAIRE `\\\([^\n$]*?\\\)` : ferme le faux positif, mais introduit un
+#      faux NEGATIF -- un `\(` **non ferme** ne rend pas moins en texte brut
+#      qu'une paire, et devenait invisible a la seule regle ERROR des maths
+#      (delta corpus mesure : 0 cellule aujourd'hui, donc latent, jamais
+#      silencieusement faux le jour ou il apparait).
+#   3. l'OUVREUR seul, ci-dessous : un `\(` hors code n'a aucune signification
+#      markdown legitime, ferme ou non -- c'est l'argument meme qui fonde la
+#      severite ERROR. Un `\)` isole reste ignore, donc le faux positif
+#      fondateur reste ferme : la classe `\(` est un SURENSEMBLE de la paire,
+#      et l'ecart entre les deux est mesure a 0 sur le corpus.
+# Le backslash de tete est litteral : `\\\(` matche `\(` et la forme ECHAPPEE
+# `\\(` (le match demarre au second backslash).
+_MATH_PAREN_RE = re.compile(r"\\\(")
+# Une macro LaTeX nue (backslash + lettres) hors de tout span math : rien ne
+# typesette la prose hors delimiteurs, elle rend en texte brut. Le motif
+# exige au moins une lettre apres l'antislash : `\\` (saut de table) et
+# `\$` (dollar echappe) ne sont pas des macros et ne tirent pas.
+_MATH_MACRO_RE = re.compile(r"\\[A-Za-z]+")
+# Decomposition du texte de prose pour les regles math : on retire d'abord les
+# echappements \$, puis les blocs display $$...$$ (ils peuvent s'etendre sur
+# plusieurs lignes -- d'ou re.S), puis les spans inline $...$ (bornes sur une
+# seule ligne : `[^$\n]` empeche un $ orphelin d'avaler la cellule entiere).
+_DISPLAY_MATH_RE = re.compile(r"\$\$.*?\$\$", re.S)
+_INLINE_MATH_RE = re.compile(r"\$[^$\n]+\$")
+_ESCAPED_DOLLAR_RE = re.compile(r"\\\$")
+
+
+def _math_prose_text(lines, fenced: set[int]) -> str:
+    r"""Texte hors fences et hors code spans, pour les regles math (#17380).
+
+    Les fences rendent verbatim (exclusion commune aux autres regles
+    fence-aware) ; les code spans inline portent leur propre contenu literal
+    (`\(` dans un backtick est un exemple affiche, pas un defaut -- la
+    separation exacte du cas fondateur IIT-06, ou les cellules saines
+    montraient le delimiteur entre backticks pour l'EXPLIQUER).
+    """
+    return "\n".join(
+        _strip_inline_code(ln) for idx, ln in enumerate(lines) if idx not in fenced
+    )
+
 # single-element newline-stripping artifact: a markdown cell whose `source` is a
 # one-element list whose string has 0 '\n', starts with an ATX heading, and is long.
 # A real ATX heading is a short single line; 80+ chars / no '\n' / heading-start =
@@ -316,6 +497,71 @@ _STMT_LINE_RE = re.compile(
 # single-element case, exemplar PR #10399.
 _COLLAPSED_HEADING_START_RE = re.compile(r"^\s{0,3}#{1,6}\s+\S")
 _COLLAPSED_SINGLE_MIN_LEN = 80
+
+# #16221: a repr-quoted source entry -- a single source-list
+# element of the JSON-dumped nbformat form `    "content\\n",`. Cell-renders
+# literally as escaped JSON (`"# 4.2e -- section heading\n",`) instead of as
+# proper markdown heading + paragraph. The signature is:
+#   4-space indent + SINGLE JSON-quote opener (not """ triple-quote)
+#   + content (with optional JSON-escapes like \\n, \\", \\\\)
+#   + last-char-or-escape (non-quote, non-backslash, non-sentence-end char,
+#     OR a 2-char escape pair like \\n)
+#   + JSON-quote closer
+#   + optional comma (list separator)
+#   + optional newline
+#   + END-OF-LINE.
+# Length floor: 20 chars (real repr-quoted entries are typically 30-200 chars;
+# a 5-char "string" entry is too short to be reliable). Excludes legitimate
+# config lines / blockquotes ending with sentence-end punctuation (. ! ?),
+# Python triple-quotes, JSON-like dict literals, and prose containing
+# quoted phrases mid-line.
+_REPR_QUOTED_ENTRY_RE = re.compile(
+    r'^    "'                                  # 4-space + SINGLE JSON opener
+    r'(?:[^"\\]|\\.)*'                          # content body with optional JSON-escapes
+    r'(?:[^"\\.!?]|\\.)'                        # last char or escape pair: non-sentence-end
+    r'",?\n?$'                                  # JSON closer + optional , + optional newline + end
+)
+_REPR_QUOTED_ENTRY_MIN_LEN = 20
+
+
+def _is_repr_quoted_entry(line: str) -> bool:
+    """True if `line` is a repr-quoted JSON-encoded source-list entry (#16221).
+
+    A line is repr-quoted when it appears as the literal JSON-dumped
+    representation of a string-list element (the kind produced by
+    `python -c "import json; print(json.dumps(['...']))"` or by reading the
+    nbformat `source` field of a notebook cell into Python's `repr`). Such
+    lines render as **literal escaped text** ("\\n", "\\"", etc.) instead of
+    as markdown -- a paragraph that should be an H2 + body comes out as a
+    one-line JSON-encoded blob.
+
+    Legitimate markdown that starts with 4-space + quote -- Python
+    triple-quoted docstrings, JSON-like config lines in narrative markdown,
+    short model identifiers -- is excluded by the combination of:
+      - single quote opener (not a Python triple-quoted string opener)
+      - structural closer (quote + comma, or quote + newline, at end-of-line)
+      - non-sentence-punctuation char just before the closer
+      - minimum length 20
+    """
+    if len(line) < _REPR_QUOTED_ENTRY_MIN_LEN:
+        return False
+    return bool(_REPR_QUOTED_ENTRY_RE.match(line))
+
+
+def _repr_quoted_entries(lines, fenced: set[int]) -> list[tuple[int, str]]:
+    """Return [(line_index, line)] for each repr-quoted entry in non-fenced lines.
+
+    `fenced` is the set of line indices belonging to a fenced code block (which
+    render verbatim -- a `    "..."` line inside a ```python fence is a
+    legitimate example, not a defect). Returns the list in document order.
+    """
+    hits = []
+    for idx, ln in enumerate(lines):
+        if idx in fenced:
+            continue
+        if _is_repr_quoted_entry(ln):
+            hits.append((idx, ln.rstrip("\n")))
+    return hits
 
 
 def _as_text(source) -> str:
@@ -691,6 +937,202 @@ def _selfcheck() -> int:
     print("selfcheck OK: source_list_broken_words fires on the post-repair "
           "mid-word boundary and the verbatim #12363 witness (helper level); "
           "silent on newline-terminated and space-preserved joins")
+    # ---- repr_quoted_source_entries (#16221) -----------------
+    # Positive: the canonical founding-incident line shape (JSON-dumped list
+    # entry pasted into a markdown cell -- renders as escaped JSON, not
+    # markdown). Negatives: (a) the same line inside a ```python fenced code
+    # block (legit example, MUST be silent); (b) short narrative markdown that
+    # incidentally starts with 4-space + " (legit config line / prose, MUST be
+    # silent). Without these controls, the rule would over-fire on the corpus
+    # of 25+ markdown cells containing `    "..."`,` config-style lines.
+    repr_fixtures: list[tuple[str, str, bool]] = [
+        ("c.1158-L1 canonical: heading + escape + closer",
+         '    "# 4.2e -- section heading\\n",\n',
+         True),
+        ("plain ASCII repr-quoted entry",
+         '    "no escape at all still quoted"\n',
+         True),
+        ("fenced Python example (legit)",
+         "Voici l'exemple :\n\n```python\n"
+         '    "# 4.2e -- section heading\\n",\n'
+         "```\n",
+         False),
+        ("narrative with config-style line (legit)",
+         '    "seed": -1,  # aleatoire, valeur fixe\n',
+         False),
+        ("short line below 20-char floor (silent)",
+         '    "x",\n',
+         False),
+    ]
+    for name, src, expected in repr_fixtures:
+        lines = src.split("\n")
+        fired = any(f["rule"] == "repr_quoted_source_entries"
+                    for f in scan_cell({
+                        "cell_type": "markdown",
+                        "source": [ln + "\n" for ln in lines if ln != ""],
+                    }))
+        if fired != expected:
+            failed.append(f"{name}: repr_quoted_source_entries fired={fired}, expected={expected}")
+    if failed:
+        print("selfcheck FAIL:", file=sys.stderr)
+        for f in failed:
+            print(f"  !! {f}", file=sys.stderr)
+        return 1
+    print("selfcheck OK: repr_quoted_source_entries fires on the canonical "
+          "c.1158-L1 shape (heading + JSON-escape + list-separator) and on "
+          "plain-ASCII entries; silent on fenced code block examples, narrative "
+          "config-style lines, and short non-repr-quoted lines")
+
+    # ---- math delimiters (#17380) -----------------------------------------------
+    # Positives = la forme fondateure IIT-06 (avant commit 5242d81907) et les
+    # deux classes WARN ; negatives = la forme CONVERTIE saine ($...$), le
+    # delimiteur explique entre backticks, le bloc $$ multi-lignes, la macro
+    # DANS un span math, le chemin Windows entre backticks, et les dollars
+    # pairs. Valide a travers scan_cell (le vrai point d'entree).
+    def _fired(rule: str, src: str) -> bool:
+        return any(f["rule"] == rule
+                   for f in scan_cell({"cell_type": "markdown", "source": src}))
+
+    math_fixtures: list[tuple[str, str, str, bool]] = [
+        # (name, rule, cell source, expected)
+        ("IIT-06 founding form \\(S = \\mathbb{F}_p^n\\)",
+         "math_paren_delims",
+         "Soit $S$ l'ensemble défini par \\(S = \\mathbb{F}_p^n\\) dans le corps fini.\n",
+         True),
+        ("converted form $...$ is silent",
+         "math_paren_delims",
+         "Soit $S = \\mathbb{F}_p^n$ l'ensemble du corps fini.\n",
+         False),
+        ("delimiter explained inside backticks is silent",
+         "math_paren_delims",
+         "La syntaxe `\\(x\\)` n'est pas rendue par MathJax 3.\n",
+         False),
+        ("delimiter inside a fenced block is silent",
+         "math_paren_delims",
+         "Exemple :\n\n```latex\n\\(S = \\mathbb{F}_p^n\\)\n```\n",
+         False),
+        ("Sudoku-05 false positive: prose backslash + real paren is silent",
+         "math_paren_delims",
+         "Elle gere automatiquement les separateurs (/ ou \\\\) selon l'OS.\n",
+         False),
+        ("lone closer with no opener is silent (same FP class as Sudoku-05)",
+         "math_paren_delims",
+         "Le resultat \\) est affiche brut.\n",
+         False),
+        ("UNCLOSED opener fires (the pair bound lost it -- residual of 65c3f8a4)",
+         "math_paren_delims",
+         "Soit \\(S = \\mathbb{F}_p^n fini.\n",
+         True),
+        ("UNCLOSED ESCAPED opener fires too",
+         "math_paren_delims",
+         "On calcule \\\\(\\Phi ici.\n",
+         True),
+        ("bare macro in prose",
+         "math_bare_macro",
+         "La norme du vecteur v se note \\|v\\| et le saut \\Delta t.\n",
+         True),
+        ("macro inside $$ display span is silent (multi-line)",
+         "math_bare_macro",
+         "Le modèle :\n\n$$\n\\alpha + \\beta x = y\n$$\n\ndonne la droite.\n",
+         False),
+        ("macro inside $ inline span is silent",
+         "math_bare_macro",
+         "Le gain $\\alpha_i$ par acteur est sommé.\n",
+         False),
+        ("Windows path inside backticks is silent",
+         "math_bare_macro",
+         "Le log pointe `C:\\Users\\jsboi\\dev` comme racine.\n",
+         False),
+        ("odd dollar count (3 currency $)",
+         "math_odd_dollars",
+         "Les paliers sont $5, $10 et $20 selon la formule.\n",
+         True),
+        ("odd dollar count (unclosed inline math)",
+         "math_odd_dollars",
+         "La volatilité vaut $\\sigma_t ici, non fermée.\n",
+         True),
+        ("even dollar count is silent",
+         "math_odd_dollars",
+         "Comparer $x$ et $y$ puis conclure.\n",
+         False),
+        ("$$ display pair + inline pair is silent",
+         "math_odd_dollars",
+         "$$\na + b\n$$\n\net l'inline $c$ ferme la parite.\n",
+         False),
+    ]
+    for name, rule, src, expected in math_fixtures:
+        got = _fired(rule, src)
+        if got != expected:
+            failed.append(f"{name}: {rule} fired={got}, expected={expected}")
+    if failed:
+        print("selfcheck FAIL:", file=sys.stderr)
+        for f in failed:
+            print(f"  !! {f}", file=sys.stderr)
+        return 1
+    print("selfcheck OK: math rules fire on the IIT-06 \\(...\\) form, the bare "
+          "macro and the odd-$ cell; silent on the converted $...$ form, "
+          "backtick-quoted delimiters, fenced latex, $$-span macros and even-$ "
+          "cells")
+
+    # #17874 -- table-adjacent prose: the positive control is the EXACT two
+    # lines of the founding incident (#17812 intermediate commit 5b4bab9981,
+    # cell 11 l.10->l.11), not a paraphrase: a detection pattern validates on
+    # its false negatives, not its hits (cf the #11630 postmortem above -- both
+    # implementations calibrated on the first observed form and let the second
+    # pass). Negatives: blank line separator, table continuation, fenced
+    # adjacency, no-pipe predecessor.
+    failed = []
+    table_fixtures = [
+        ("table-adjacent prose (5b4bab9981 cell 11 control)",
+         "table_adjacent_prose",
+         "| Equity finale | - | - | **169 273,80 $** (net 69.274 %) |\n"
+         "Notation de la ligne `Probabilistic Sharpe` : le rapport QC porte le PSR en\n",
+         True),
+        ("prose after separator row also fires",
+         "table_adjacent_prose",
+         "| A | B |\n|---|---|\nlegende colle\n",
+         True),
+        ("blank line between table and note is silent",
+         "table_adjacent_prose",
+         "| A | B |\n|---|---|\n| 1 | 2 |\n\nNote apres la table.\n",
+         False),
+        ("table continuation row is silent",
+         "table_adjacent_prose",
+         "| A | B |\n|---|---|\n| 1 | 2 |\n| 3 | 4 |\n",
+         False),
+        ("fenced adjacency is silent",
+         "table_adjacent_prose",
+         "```\n| A | B |\nprose dans le fence\n```\n",
+         False),
+        ("prose after non-table line is silent",
+         "table_adjacent_prose",
+         "Un paragraphe.\nSuite du paragraphe.\n",
+         False),
+        ("math-notation line starting with | is not a table row (ICT-Dissociation FP)",
+         "table_adjacent_prose",
+         "lineaire : facteur ~2.7 entre 50 et 200 -- signature d'une amplification\n"
+         "|a_eff|^T avec a_eff = 1.007 a peine au-dessus de 1. (3) C'est la\n"
+         "preuve de non-trivialite annoncee : un test degenere serait insensible.\n",
+         False),
+        ("row without trailing pipe is not a table anchor",
+         "table_adjacent_prose",
+         "| a | b\nprose colle a une rangee sans pipe final.\n",
+         False),
+    ]
+    for name, rule, src, expected in table_fixtures:
+        got = _fired(rule, src)
+        if got != expected:
+            failed.append(f"{name}: {rule} fired={got}, expected={expected}")
+    if failed:
+        print("selfcheck FAIL:", file=sys.stderr)
+        for f in failed:
+            print(f"  !! {f}", file=sys.stderr)
+        return 1
+    print("selfcheck OK: table_adjacent_prose fires on the 5b4bab9981 cell-11 "
+          "control (data row + separator row); silent on the blank-line "
+          "separator, table continuation, fenced adjacency and non-table "
+          "predecessors")
+
     return 0
 
 
@@ -901,10 +1343,48 @@ def scan_cell(cell) -> list[dict]:
                 "evidence": text.strip()[:100],
                 "hash": _cell_hash(rule, text),
             }]
+    # ---- repr-quoted source entries (#16221) -------------------
+    # A markdown cell whose `source` line(s) carry JSON-dumped list entries
+    # (repr-quoted form `    "content\\n",`) renders those lines as literal
+    # escaped JSON, not as markdown prose. Concrete failure mode (the founding
+    # incident on c.1158-L1): a paste of nbformat `cell.source` (as a Python list
+    # of strings, which is the canonical on-disk representation) into a markdown
+    # cell produced lines like `    "# 4.2e -- section heading\\n",` -- the
+    # rendered cell shows `    "# 4.2e -- section heading\n",` instead of an H2
+    # heading + paragraph. The guard described in #1158 is a faux negatif on this
+    # class: the cell's structure LOOKS fine (a list of multi-element strings,
+    # adequate newlines) but content is wrong on render.
+    #
+    # Detection runs AFTER the source-list-structural rules (which target list-
+    # integrity defects) and BEFORE the line-based rules (which don't have a way
+    # to see the JSON-encoded nature of an individual line). Fence-aware: a line
+    # inside a fenced code block renders verbatim and is NOT a defect.
+    #
+    # Returns ONE finding per offending cell (the hash is per-cell, multi-finding
+    # on the same cell would inflate the baseline with redundant entries);
+    # evidence names the first repr-quoted line so the editor can locate it.
     lines = text.split("\n")
-    # Lines inside a fenced-code block render verbatim: a `---`/`===` there is literal
-    # text, not a setext underline. Computed once, reused by both setext rules.
     fenced = _inside_fence_lines(lines)
+    repr_hits = _repr_quoted_entries(lines, fenced)
+    if repr_hits:
+        first_idx, first_line = repr_hits[0]
+        rule = "repr_quoted_source_entries"
+        return [{
+            "rule": rule,
+            "severity": RULE_SEVERITY[rule],
+            "message": (f"{len(repr_hits)} repr-quoted JSON-encoded source entry(ies) found in "
+                        f"this markdown cell (lines {first_idx}+): each line is the literal "
+                        f"JSON-dumped representation of a string-list element (e.g. "
+                        f"`\"# 4.2e -- section heading\\\\n\",`), which renders as escaped "
+                        f"text instead of as markdown prose. Decode the JSON and replace "
+                        f"each such line with its actual content split back into the "
+                        f"source list"),
+            "evidence": first_line[:100],
+            "hash": _cell_hash(rule, text),
+        }]
+    # Lines inside a fenced-code block render verbatim: a `---`/`===` there is literal
+    # text, not a setext underline. `fenced` already computed above for the
+    # repr-quoted-source-entries rule.
     findings: list[dict] = []
 
     # ---- yaml-block-open-no-close (#11630) --------------------------------------
@@ -1028,6 +1508,79 @@ def scan_cell(cell) -> list[dict]:
         })
         break
 
+    # ---- continuation line starting with '#' (#17005) ----------------------------
+    # Sibling of the heading_in_list loop above: a list-item / blockquote
+    # CONTINUATION line (2+ spaces indent, NO container marker on the same
+    # line) that begins with `#` + non-space is rendered as a giant H1-H6 by
+    # Jupyter / VSCode / nbviewer (CommonMark refuses it; the renderers do
+    # not). Same fence-awareness / one-finding-per-cell discipline.
+    for idx, ln in enumerate(lines):
+        if idx in fenced:
+            continue
+        m = _CONTINUATION_HEADING_RE.match(ln)
+        if not m:
+            continue
+        rule = "heading_continuation"
+        level = len(m.group(1))
+        findings.append({
+            "rule": rule,
+            "severity": RULE_SEVERITY[rule],
+            "message": (f"list/blockquote continuation line starts with '#' "
+                        f"(renders as giant H{level}); drop the leading indent or "
+                        f"escape the '#' so the line stays prose"),
+            "evidence": ln.strip()[:100],
+            "hash": _cell_hash(rule, text),
+        })
+        break
+
+    # ---- prose line glued to a table row (#17874) --------------------------------
+    # A non-empty PLAIN PROSE line that DIRECTLY follows a line starting with
+    # `|` (data or separator row) is absorbed into the table by the GFM
+    # renderer: the note no longer renders as a paragraph. Founding incident:
+    # #17812 intermediate commit 5b4bab9981, cell 11 -- the PSR note under the
+    # metrics table vanished into the last table row (seen in review, fixed by
+    # hand in f8fb4cbbb6 while this guard stayed green at every commit: the
+    # class did not exist in its pattern set).
+    #
+    # Scope refined by the GFM table spec (corpus FP pass 2026-09-26: 9 raw
+    # hits, ~2/3 false): the table BREAKS at the first empty line OR the start
+    # of another block-level structure -- a following heading / blockquote /
+    # list / fence / HR line renders normally and is NOT a defect. And a table
+    # row WITHOUT a leading pipe is legal GFM: a following line that itself
+    # contains a pipe continues the table, it is not absorbed prose. Only the
+    # remaining case -- pipe-free prose with no block marker, glued to a `|`
+    # row -- is the absorbed-note defect. Fence-aware (a `|` row inside a
+    # fenced block is literal code, not a table); one finding per cell,
+    # evidence names the glued prose line.
+    for idx in range(1, len(lines)):
+        if idx in fenced:
+            continue
+        ln = lines[idx]
+        if not ln.strip() or ln.startswith("|") or "|" in ln:
+            continue  # table continuation (leading pipe or pipe-free row)
+        if (_HEADING_RE.match(ln) or _LIST_ITEM_RE.match(ln) or _FENCE_RE.match(ln)
+                or _THEMATIC_BREAK_RE.match(ln) or ln.lstrip().startswith(">")):
+            continue  # block-level opener: breaks the table per GFM, renders fine
+        prev = lines[idx - 1]
+        # The previous line must be an actual pipe-delimited row: leading AND
+        # trailing `|`. A prose line that merely STARTS with math notation
+        # (`|a_eff|^T avec ...`, corpus FP ICT-Dissociation cell 19) is not a
+        # table row -- its last cell-less line does not absorb the next one.
+        if ((idx - 1) in fenced or not prev.strip()
+                or not prev.startswith("|") or not prev.rstrip().endswith("|")):
+            continue
+        rule = "table_adjacent_prose"
+        findings.append({
+            "rule": rule,
+            "severity": RULE_SEVERITY[rule],
+            "message": ("plain prose line directly follows a table row without a "
+                        "blank line separator (the renderer absorbs it into the table; "
+                        "insert a blank line so the note renders as a paragraph)"),
+            "evidence": ln.strip()[:100],
+            "hash": _cell_hash(rule, text),
+        })
+        break
+
     # ---- bare code statement in markdown (#12064) --------------------------------
     # Fence-aware AND indent-aware: a statement inside a ``` fence renders as
     # code (legit), and a block indented 4+ spaces is an indented-code block
@@ -1103,6 +1656,73 @@ def scan_cell(cell) -> list[dict]:
             "hash": _cell_hash(rule, text),
         })
         break  # one finding per cell is enough
+
+    # ---- inline math \( \) delimiters (#17380) -----------------------------------
+    # Seule classe ERROR des regles math : \( hors code n'a aucune signification
+    # markdown legitime et ne rend nulle part par defaut (regex en tete de
+    # _MATH_PAREN_RE -- la borne est l'OUVREUR, donc un \( non ferme tire aussi).
+    # Fence-aware + code-span-aware : les deux exclusions sont celles de la
+    # cellule saine qui EXPLIQUE le delimiteur entre backticks, et celle de la
+    # prose a backslash litteral (`(/ ou \)`), qui ne porte aucun \(.
+    for idx, ln in enumerate(lines):
+        if idx in fenced:
+            continue
+        if _MATH_PAREN_RE.search(_strip_inline_code(ln)):
+            rule = "math_paren_delims"
+            findings.append({
+                "rule": rule,
+                "severity": RULE_SEVERITY[rule],
+                "message": ("inline math opener \\( outside a code span: MathJax 2 "
+                            "(nbconvert) tex2jax and the MathJax 3 configs of "
+                            "JupyterLab/VS Code do not typeset it, so the inline "
+                            "LaTeX renders as raw source text -- whether or not a "
+                            "\\) closes it. Convert to $ ... $ (the only inline "
+                            "delimiter rendered everywhere)"),
+                "evidence": ln.strip()[:100],
+                "hash": _cell_hash(rule, text),
+            })
+            break  # one finding per cell is enough
+
+    # ---- bare LaTeX macro / odd $ count (#17380) ---------------------------------
+    # Les deux regles WARN raisonnent sur le meme residu de prose (hors fences,
+    # hors code spans, hors $$ display, hors $...$ inline, hors \$ echappes) :
+    # ce qui reste n'est configure nulle part comme math, donc une macro ou un
+    # dollar orphelin y rend en texte brut.
+    prose = _math_prose_text(lines, fenced)
+    if prose:
+        residue = _INLINE_MATH_RE.sub(
+            " ", _DISPLAY_MATH_RE.sub(" ", _ESCAPED_DOLLAR_RE.sub(" ", prose))
+        )
+        m_macro = _MATH_MACRO_RE.search(residue)
+        if m_macro:
+            rule = "math_bare_macro"
+            findings.append({
+                "rule": rule,
+                "severity": RULE_SEVERITY[rule],
+                "message": (f"bare LaTeX macro {m_macro.group(0)!r} outside any "
+                            f"$ / $$ math span: nothing typesets prose outside "
+                            f"math delimiters, so the macro renders as raw text. "
+                            f"Wrap the expression in $ ... $ (or move the macro "
+                            f"inside an existing math span)"),
+                "evidence": m_macro.group(0)[:100],
+                "hash": _cell_hash(rule, text),
+            })
+        if residue.count("$") % 2 == 1:
+            rule = "math_odd_dollars"
+            dollars = [m.start() for m in re.finditer(r"\$", residue)]
+            pos = dollars[-1]
+            findings.append({
+                "rule": rule,
+                "severity": RULE_SEVERITY[rule],
+                "message": ("odd number of '$' delimiters in this cell after "
+                            "removing $$ pairs, $...$ spans and \\$ escapes: at "
+                            "least one inline math delimiter never closes, and "
+                            "the LaTeX after it leaks outside the span (or the "
+                            "'$' is literal currency, which the WARN severity "
+                            "assumes)"),
+                "evidence": residue[max(0, pos - 60):pos + 60].replace("\n", " ").strip()[:100],
+                "hash": _cell_hash(rule, text),
+            })
 
     return findings
 

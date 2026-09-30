@@ -372,19 +372,19 @@ print(f""- Mentionnez le style artistique desire"")
 print(f""- Precisez l'eclairage et l'atmosphere"")
 print(f""- Utilisez des termes techniques (8K, cinematic, etc.)"")
 print(f""- DALL-E 3 revise automatiquement vos prompts"")",,,,,,,,96a69c546f5c870d,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,a02bbf24,markdown,fr,bb9ce1f5af3ac379,"### Exercice 1 : Construction progressive de prompts
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,a02bbf24,markdown,fr,650045fe05a32e03,"### Exemple guidé 1 : Construction progressive de prompts
 
-Le prompting pour la generation d'images est un art iteratif. Partir d'une description basique et ajouter progressivement des precisions (style, eclairage, composition) ameliore considerablement la qualite du résultat.
+La démonstration précédente envoie un prompt déjà riche. Cet exemple guidé part au contraire d'une description minimale et l'enrichit en **3 itérations successives**, pour une image de « robot assistant dans un bureau moderne » :
 
-**Objectif** : Construire un prompt en 3 itérations successives pour generer une image de ""robot assistant dans un bureau moderne"".
+1. Un prompt minimaliste (description basique du sujet)
+2. Ajout du style artistique, de l'éclairage et de la palette de couleurs
+3. Ajout de termes techniques (« ultra-detailed », « cinematic composition », « 8K », « sharp focus », « shallow depth of field »)
 
-**Étapes** :
-1. Ecrivez un prompt minimaliste (description basique du sujet)
-2. Ajoutez des precisions sur le style artistique et l'eclairage
-3. Ajoutez des details techniques (resolution, composition, palette de couleurs)
-4. Comparez les trois prompts et identifiez quels éléments ont le plus d'impact
+Les trois images sont générées puis affichées côte à côte. Le groupe a consigné ses observations dans la variable `observations` : elles décrivent **ses** images, et chaque exécution en produit de nouvelles. La lecture sous la cellule les confronte aux images affichées ici.
 
-**Indice** : Les termes techniques comme ""cinematic lighting"", ""ultra-detailed"", ""8K"", ""shallow depth of field"" guident DALL-E 3 vers un rendu plus professionnel.",,,,,,"### Упражнение 1 : Постепенное построение промптов
+**À savoir** : contrairement à DALL-E 3, `gpt-image-1` ne renvoie pas de prompt révisé, et `generate_image()` retombe alors sur le prompt d'origine. La cellule le signale au lieu d'afficher le prompt d'origine comme s'il avait été réécrit.
+
+*Contribution étudiante de Yao LIU (@liuyao0010-debug), Zihao CHENG et Ruofan ZHAO : les trois prompts dans la PR #18449, la génération et la comparaison des images dans la PR #18561, intégrées comme exemple guidé.*",,,,,,"### Упражнение 1 : Постепенное построение промптов
 
 Промптинг для генерации изображений — это итеративное искусство. Начав с базового описания и постепенно добавляя уточнения (стиль, освещение, композиция), можно значительно улучшить качество результата.
 
@@ -396,33 +396,107 @@ Le prompting pour la generation d'images est un art iteratif. Partir d'une descr
 3. Добавьте технические детали (разрешение, композиция, цветовая палитра)
 4. Сравните три промпта и определите, какие элементы оказали наибольшее влияние
 
-**Подсказка** : Технические термины, такие как ""cinematic lighting"", ""ultra-detailed"", ""8K"", ""shallow depth of field"", направляют DALL-E 3 к более профессиональному рендерингу.",,bb9ce1f5af3ac379,,,,,,1113ce73c942fa9c,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,61d83ca5,code,fr,cc7a3287ac880093,"# Exercice 1 : Construction progressive de prompts
+**Подсказка** : Технические термины, такие как ""cinematic lighting"", ""ultra-detailed"", ""8K"", ""shallow depth of field"", направляют DALL-E 3 к более профессиональному рендерингу.",,650045fe05a32e03,,,,,,1113ce73c942fa9c,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,61d83ca5,code,fr,35c71cc5d4dd23ed,"# ============================================================
+# Exemple guide 1 : Construction progressive de prompts (contribution etudiante, PR #18449 et #18561)
+# ============================================================
 
 # Etape 1 : Prompt minimaliste
-prompt_niveau_1 = ""...""  # TODO etudiant : decrivez simplement le sujet en une phrase
-# Exemple : ""A robot assistant in a modern office""
+# Description basique du sujet en une phrase, sans style ni details.
+prompt_niveau_1 = ""A robot assistant in a modern office""
 
 # Etape 2 : Ajout de style et eclairage
-prompt_niveau_2 = ""...""  # TODO etudiant : ajoutez style artistique et eclairage
-# Indice : ajoutez ""soft natural lighting, digital art style, warm color palette""
+# On precise le style artistique, l'eclairage et la palette de couleurs.
+prompt_niveau_2 = (
+    ""A friendly robot assistant in a modern office, ""
+    ""soft natural lighting, digital art style, warm color palette""
+)
 
 # Etape 3 : Ajout de details techniques
-prompt_niveau_3 = ""...""  # TODO etudiant : ajoutez des precisions techniques
-# Indice : ajoutez ""ultra-detailed, cinematic composition, 8K, sharp focus, shallow depth of field""
+# On ajoute resolution, composition, nettete et profondeur de champ.
+prompt_niveau_3 = (
+    ""A friendly robot assistant in a modern office, ""
+    ""soft natural lighting, digital art style, warm color palette, ""
+    ""ultra-detailed, cinematic composition, 8K, sharp focus, ""
+    ""shallow depth of field""
+)
 
-# Generation (decommentez pour tester)
-# for i, prompt in enumerate([prompt_niveau_1, prompt_niveau_2, prompt_niveau_3], 1):
-#     print(f""\n--- Prompt niveau {i} ---"")
-#     print(f""Texte : {prompt}"")
-#     result = generate_image(prompt=prompt, size=""1024x1024"")
-#     if result['success']:
-#         print(f""Prompt revise par gpt-image : {result['revised_prompt'][:200]}..."")
+# ------------------------------------------------------------
+# Generation des trois niveaux
+# ------------------------------------------------------------
+results = {}  # stocke les resultats pour l'analyse
 
-# Etape 4 : Quels elements ont le plus d'impact ?
-observations = None  # TODO etudiant : notez vos observations
+for i, prompt in enumerate([prompt_niveau_1, prompt_niveau_2, prompt_niveau_3], 1):
+    print(f""\n--- Prompt niveau {i} ---"")
+    print(f""Texte : {prompt}"")
 
-print(""Exercice a completer"")",,,,,,,,cc7a3287ac880093,,,,,,,,
+    result = generate_image(prompt=prompt, size=""1024x1024"")
+    results[f""niveau_{i}""] = result
+
+    if result['success']:
+        # Integration : gpt-image-1 ne renvoie pas de revised_prompt, generate_image() retombe
+        # alors sur le prompt d'origine, qu'il ne faut pas lire comme une reecriture
+        if result['revised_prompt'].strip() != prompt.strip():
+            print(f""Prompt revise par gpt-image : {result['revised_prompt'][:200]}..."")
+        else:
+            print(""Prompt revise : aucun renvoye par l'API (gpt-image-1)"")
+        print(f""Temps de generation : {result['response_time']:.2f}s"")
+    else:
+        print(f""Echec : {result['error']}"")
+
+# ------------------------------------------------------------
+# Etape 4 : Observations du groupe, ecrites sur SES images (chaque execution en produit
+# de nouvelles : la lecture sous la cellule les confronte a celles-ci)
+# ------------------------------------------------------------
+observations = (
+    ""Niveau 1 : image correcte mais generique ; le modele doit deviner ""
+    ""le style, l'ambiance et la composition.\n""
+    ""Niveau 2 : l'ajout du style artistique et de l'eclairage change ""
+    ""nettement l'atmosphere (couleurs chaudes, lumiere douce).\n""
+    ""Niveau 3 : les termes techniques (ultra-detailed, cinematic, 8K, ""
+    ""sharp focus, shallow depth of field) donnent un rendu plus ""
+    ""professionnel et une meilleure composition.\n""
+    ""=> Les elements qui ont le plus d'impact : le style artistique et ""
+    ""l'eclairage. Les termes techniques affinent ensuite la qualite ""
+    ""et la mise en scene.""
+)
+
+print(""\n--- Observations du groupe (sur sa propre execution) ---"")
+print(observations)
+
+# ------------------------------------------------------------
+# Affichage cote a cote des 3 images (si generation reussie)
+# ------------------------------------------------------------
+import matplotlib.pyplot as plt
+from io import BytesIO
+import base64
+import requests
+
+if generate_images and all(r.get('success') for r in results.values()):
+    fig, axes = plt.subplots(1, 3, figsize=(18, 6))
+    titres = [""Niveau 1 : minimaliste"",
+              ""Niveau 2 : + style/eclairage"",
+              ""Niveau 3 : + details techniques""]
+
+    for ax, (key, res), titre in zip(axes, results.items(), titres):
+        src = res['image_url']
+        # Cas 1 : data-URI (b64_json renvoye par gpt-image-1)
+        if src.startswith(""data:image""):
+            b64 = src.split("","", 1)[1]
+            img = Image.open(BytesIO(base64.b64decode(b64)))
+        # Cas 2 : URL classique (DALL-E 3)
+        else:
+            img = Image.open(BytesIO(requests.get(src).content))
+
+        ax.imshow(img)
+        ax.set_title(titre, fontsize=11)
+        ax.axis(""off"")
+
+    plt.tight_layout()
+    plt.show()
+else:
+    print(""\n[info] Generation non executee ou incomplete : ""
+          ""affichage des images ignore."")",,,,,,,,35c71cc5d4dd23ed,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,o127drbt8o,markdown,fr,1df32d1d6efb4aef,Les exemples de prompts précédents illustrent les différentes catégories stylistiques. Passons maintenant a la generation effective : la cellule suivante envoie la requête a l'API DALL-E 3 et affiche l'image produite.,,,,,,Предыдущие примеры промптов иллюстрируют различные стилистические категории. Теперь перейдём к фактической генерации: следующая ячейка отправляет запрос к API DALL-E 3 и отображает полученное изображение.,,1df32d1d6efb4aef,,,,,,b7221fb54cb01ab9,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,82075ed6,code,fr,40cc4a7800e56664,"# Generation d'images avec les exemples
 print(""\n[generate_image] DEMONSTRATION"")
@@ -515,20 +589,15 @@ else:
     print(f""\n[err] Echec de la generation"")
     print(f""[err] Erreur: {result['error']}"")
     print(f""[hint] Prompt teste: {result['prompt'][:100]}..."")",,,,,,,,40cc4a7800e56664,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,c244fd12,markdown,fr,5ce7a41da4eb859d,"### Exercice 2 : Exploration des paramètres de generation
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,c244fd12,markdown,fr,67697249352722e9,"### Exemple guidé 2 : `vivid` contre `natural`, ou deux tirages du même modèle ?
 
-DALL-E 3 offre plusieurs paramètres qui influencent le résultat final : `size`, `quality`, et `style`. L'objectif est de generer la MÊME image avec des configurations différentes et d'observer l'impact sur le rendu visuel.
+**Contexte** : un client hésite entre un visuel « vif et créatif » et un visuel « naturel et réaliste ». DALL-E 3 exposait pour cela un paramètre `style` à deux valeurs : `vivid` (couleurs saturées, rendu dramatique) et `natural` (rendu photographique plus discret). Le groupe a généré la même scène avec chacune des deux valeurs, affiché les images côte à côte et rempli un tableau comparatif.
 
-**Contexte** : Vous devez preparer un visuel pour un client qui hsite entre un style ""vif et creatif"" et un style ""naturel et realiste"". Vous allez comparer les deux approches.
+**Ce qu'il faut savoir avant de regarder les images** : `gpt-image-1`, le modèle réellement appelé, n'accepte pas ce paramètre, que l'API réserve à `dall-e-3`. La fonction `generate_image()` ne l'envoie donc pas : son `payload` ne contient que `model`, `prompt`, `n`, `size` et `quality`. Les deux requêtes de la cellule suivante sont **identiques**, et ce qui distingue les deux images est le seul tirage aléatoire du modèle.
 
-**Étapes** :
-1. Choisissez un prompt parmi les exemples ci-dessus (ou créez le votre)
-2. Generez avec `style=""vivid""` et notez les couleurs, le contraste, l'ambiance
-3. Generez avec `style=""natural""` sur le même prompt
-4. Comparez les deux images et le prompt revise dans chaque cas
-5. Synthetisez vos observations dans un tableau comparatif
+C'est ce qui rend l'exemple instructif : il montre à quoi ressemble une différence qui n'a pas de cause, et combien il est facile de lui en prêter une. Le tableau du groupe reprend ce que l'énoncé d'origine annonçait (« le style vivid produit des couleurs plus saturées ») : c'est l'énoncé qui était trompeur pour `gpt-image-1`, pas le groupe. Une cellule ajoutée à l'intégration mesure ensuite la saturation et la luminosité des deux images.
 
-**Indice** : Le style ""vivid"" produit des couleurs plus saturees et un rendu plus dramatique. Le style ""natural"" vise un rendu photographique plus discret.",,,,,,"### Упражнение 2: Исследование параметров генерации
+*Contribution étudiante de Yao LIU (@liuyao0010-debug), Zihao CHENG et Ruofan ZHAO (PR #18561), intégrée comme exemple guidé.*",,,,,,"### Упражнение 2: Исследование параметров генерации
 
 DALL-E 3 предлагает несколько параметров, которые влияют на итоговый результат: `size`, `quality` и `style`. Цель — сгенерировать ОДНО И ТО ЖЕ изображение с разными конфигурациями и наблюдать влияние на визуальный результат.
 
@@ -541,42 +610,110 @@ DALL-E 3 предлагает несколько параметров, кото�
 4. Сравните два изображения и пересмотренный prompt в каждом случае
 5. Обобщите свои наблюдения в сравнительной таблице
 
-**Подсказка**: Стиль ""vivid"" даёт более насыщенные цвета и более драматичный результат. Стиль ""natural"" нацелен на более сдержанный фотографический результат.",,5ce7a41da4eb859d,,,,,,a17b839b106e66b2,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,081a2f47,code,fr,86f75df53497cc21,"# Exercice 2 : Exploration des parametres de generation
+**Подсказка**: Стиль ""vivid"" даёт более насыщенные цвета и более драматичный результат. Стиль ""natural"" нацелен на более сдержанный фотографический результат.",,67697249352722e9,,,,,,a17b839b106e66b2,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,081a2f47,code,fr,4842e2084112fae0,"# Exemple guide 2 : vivid contre natural (contribution etudiante, PR #18561)
 
-# Etape 1 : Choix du prompt (utilisez un des exemples ou creez le votre)
-mon_prompt = ""...""  # TODO etudiant : votre prompt en anglais
+from io import BytesIO
+import base64
+import requests
+import matplotlib.pyplot as plt
+from PIL import Image
+
+# Etape 1 : Choix du prompt
+mon_prompt = (
+    ""A futuristic city street at sunset, with modern buildings, ""
+    ""pedestrians and autonomous vehicles.""
+)
 
 # Etape 2 : Generation avec style ""vivid""
-# result_vivid = generate_image(
-#     prompt=mon_prompt,
-#     size=""1024x1024"",
-#     quality=""medium"",
-#     style=""vivid""  # gpt-image-1 ignore style (concept pedagogique)
-# )
+# (gpt-image-1 n'accepte pas style : generate_image() ne l'envoie pas, les deux requetes sont identiques)
+result_vivid = generate_image(
+    prompt=mon_prompt,
+    size=""1024x1024"",
+    quality=""medium"",
+    style=""vivid""
+)
 
 # Etape 3 : Generation avec style ""natural""
-# result_natural = generate_image(
-#     prompt=mon_prompt,
-#     size=""1024x1024"",
-#     quality=""medium"",
-#     style=""natural""  # gpt-image-1 ignore style (concept pedagogique)
-# )
+result_natural = generate_image(
+    prompt=mon_prompt,
+    size=""1024x1024"",
+    quality=""medium"",
+    style=""natural""
+)
 
-# Etape 4 : Comparaison
-# TODO etudiant : affichez les deux images cote a cote avec matplotlib
-# Indice : utilisez plt.subplots(1, 2, figsize=(14, 7))
 
-# Etape 5 : Tableau comparatif
+# Fonction pour convertir le resultat en image PIL
+def load_generated_image(result):
+    if not result[""success""]:
+        return None
+
+    image_src = result[""image_url""]
+
+    # Cas gpt-image : image retournee en base64
+    if image_src.startswith(""data:""):
+        image_data = base64.b64decode(image_src.split("","", 1)[1])
+        return Image.open(BytesIO(image_data))
+
+    # Cas URL HTTP
+    response = requests.get(image_src, timeout=30)
+
+    if response.status_code == 200:
+        return Image.open(BytesIO(response.content))
+
+    return None
+
+
+image_vivid = load_generated_image(result_vivid)
+image_natural = load_generated_image(result_natural)
+
+
+# Etape 4 : Affichage cote a cote
+fig, axes = plt.subplots(1, 2, figsize=(14, 7))
+
+if image_vivid is not None:
+    axes[0].imshow(image_vivid)
+    axes[0].set_title(""Style vivid"")
+else:
+    axes[0].text(0.5, 0.5, ""Generation vivid failed"",
+                 ha=""center"", va=""center"")
+
+if image_natural is not None:
+    axes[1].imshow(image_natural)
+    axes[1].set_title(""Style natural"")
+else:
+    axes[1].text(0.5, 0.5, ""Generation natural failed"",
+                 ha=""center"", va=""center"")
+
+for ax in axes:
+    ax.axis(""off"")
+
+plt.tight_layout()
+plt.show()
+
+
+# Etape 5 : Tableau comparatif du groupe, ecrit sur SES deux images
 comparaison = {
     ""Style"": [""vivid"", ""natural""],
-    ""Prompt revise"": [],  # TODO etudiant : remplir
-    ""Couleurs"": [],       # TODO etudiant : decrire (saturees, douces, etc.)
-    ""Contraste"": [],      # TODO etudiant : decrire
-    ""Ambiance"": [],       # TODO etudiant : decrire
+    ""Prompt revise"": [
+        result_vivid.get(""revised_prompt"", ""N/A""),
+        result_natural.get(""revised_prompt"", ""N/A"")
+    ],
+    ""Couleurs"": [
+        ""More saturated and intense"",
+        ""Softer and more realistic""
+    ],
+    ""Contraste"": [
+        ""Higher contrast"",
+        ""More moderate contrast""
+    ],
+    ""Ambiance"": [
+        ""More dramatic and cinematic"",
+        ""More natural and realistic""
+    ]
 }
 
-print(""Exercice a completer"")",,,,,,,,86f75df53497cc21,,,,,,,,
+comparaison",,,,,,,,4842e2084112fae0,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,rfbj2tyfgwf,markdown,fr,61cf14014a54a455,"Une fois la generation de demonstration executee, le mode interactif vous invite a tester vos propres prompts avec les paramètres de votre choix.",,,,,,После выполнения генерации демонстрации интерактивный режим предлагает вам протестировать собственные промпты с параметрами по вашему выбору.,,61cf14014a54a455,,,,,,e642a36f32d6d30c,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,6e3ba2ff,code,fr,02918d0125ae4071,"# Mode interactif - Generation personnalisee
 if notebook_mode == ""interactive"" and not skip_widgets:
@@ -689,7 +826,7 @@ print(f""3. Explorer le notebook 01-2 (GPT-5 Image Generation)"")
 print(f""4. Découvrir les opérations d'images (01-3)"")
 
 print(f""\n✅ Notebook DALL-E 3 terminé - {datetime.now().strftime('%H:%M:%S')}"")",,,,,,,,129f92786d0d494e,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,ed100025,markdown,fr,b29ed3ebf3c4fcb7,"***
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,ed100025,markdown,fr,5394464675537db5,"***
 
 ## CHALLENGE BONUS - Génération d'Icone pour Application
 
@@ -716,14 +853,14 @@ La Section 5 montre des prompts optimisés avec:
   - Fond uni ou dégradé simple
   - Symbole central reconnaissable
   - Style ""flat design"" ou ""3D isometric""
-- [ ] Paramètres: `size=""1024x1024""`, `style=""vivid""`
-- [ ] Sauvegarder et comparer votre prompt vs le prompt révisé par DALL-E 3
+- [ ] Paramètres: `size=""1024x1024""` (le paramètre `style` est sans effet avec `gpt-image-1`, voir l'exemple guidé 2 : le rendu se règle dans le prompt)
+- [ ] Sauvegarder l'image et le prompt (DALL-E 3 renvoyait un prompt révisé à comparer ; `gpt-image-1` n'en renvoie pas, voir l'exemple guidé 3)
 
 ## Contraintes techniques
 
 - L'icône doit être utilisable (fond simple pour intégration facile)
 - Prompt en anglais recommandé
-- Afficher le prompt révisé pour comprendre l'interprétation de DALL-E 3
+- Si le modèle renvoie un prompt révisé (DALL-E 3), l'afficher pour comprendre son interprétation
 
 ***
 
@@ -774,21 +911,16 @@ La Section 5 montre des prompts optimisés avec:
 
 - **OpenAI** (2023). *DALL-E 3 System Card*. — Документирует автоматическую перепись промптов через GPT-4 и обучение на улучшенных подписях (recaptioning), центральные характеристики модели, преподаваемые в этом ноутбуке.
 - **Ramesh, A. et al.** (2022). *Hierarchical Text-Conditional Image Generation with CLIP Latents* (DALL-E 2). arXiv:2204.06125. — Архитектурная преемственность: CLIP latents + процесс диффузии, основа, на которую опирается DALL-E 3.
-- **OpenAI** (2021). *DALL-E: Creating Images from Text* (DALL-E 1, Ramesh et al.). arXiv:2102.12092. — Предшественник: авторегрессионный трансформер dVAE, исток линейки DALL-E.",,b29ed3ebf3c4fcb7,,,,,,30531e1b2f9da2b8,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,776936fd,markdown,fr,40e5fdcde15f932a,"### Exercice 3 : Optimisation de prompts pour un cas d'usage professionnel
+- **OpenAI** (2021). *DALL-E: Creating Images from Text* (DALL-E 1, Ramesh et al.). arXiv:2102.12092. — Предшественник: авторегрессионный трансформер dVAE, исток линейки DALL-E.",,5394464675537db5,,,,,,30531e1b2f9da2b8,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,776936fd,markdown,fr,ccb73cfaea675bb8,"### Exemple guidé 3 : Optimiser un prompt pour la page d'accueil d'une startup
 
-gpt-image (la famille de modeles de generation d'images d'OpenAI utilisee depuis 2025) revisite automatiquement les prompts pour ameliorer la qualite de generation. L'objectif de cet exercice est de concevoir un prompt pour un cas d'usage concret (illustration d'article, visuel reseau social, mockup produit) et d'analyser la revision effectuee par le modele.
+**Contexte** : une startup a besoin d'un visuel pour sa page d'accueil, sur le thème « collaboration humaine et technologie ». L'énoncé d'origine proposait d'écrire un prompt simple, de le comparer au `revised_prompt` renvoyé par le modèle, puis d'écrire un second prompt enrichi de ce que la révision avait ajouté.
 
-**Contexte** : Vous travaillez pour une startup qui a besoin d'un visuel pour sa page d'accueil. Le thème est ""collaboration humaine et technologie"".
+Le groupe a constaté que ce plan ne tient pas avec `gpt-image-1` : le modèle ne renvoie pas de prompt révisé, et `generate_image()` retombe sur le prompt d'origine. Il a donc déplacé l'analyse du texte vers les **images**. Le prompt v2 ajoute l'éclairage, la palette, la composition, un élément technique (un tableau de bord holographique) et une consigne de mise en page, « plenty of negative space on the left for homepage text », qui réserve la place du texte de la page. Sa conclusion : les consignes de style sont suivies, la consigne de mise en page beaucoup moins.
 
-**Étapes** :
-1. Redigez un prompt initial en anglais, volontairement simple (1-2 phrases)
-2. Appelez `generate_image()` avec ce prompt
-3. Comparez le prompt original avec le `revised_prompt` retourne par gpt-image
-4. Identifiez les elements ajoutes (eclairage, style, details techniques)
-5. Redigez un second prompt ""ameliore"" en integrant ces lecons, et regenerez
+Comme dans les exemples précédents, la liste `differences` décrit les images **du groupe** ; la lecture sous la cellule la confronte aux images de cette exécution.
 
-**Indice** : Observez comment gpt-image ajoute systematiquement des precisions sur l'eclairage, la composition et le niveau de detail.",,,,,,"### Упражнение 3 : Оптимизация промптов для профессионального сценария использования
+*Contribution étudiante de Yao LIU (@liuyao0010-debug), Zihao CHENG et Ruofan ZHAO (PR #18561), intégrée comme exemple guidé.*",,,,,,"### Упражнение 3 : Оптимизация промптов для профессионального сценария использования
 
 DALL-E 3 автоматически пересматривает промпты, чтобы улучшить качество генерации. Цель этого упражнения — разработать промпт для конкретного сценария использования (иллюстрация к статье, визуал для социальной сети, мокап продукта) и проанализировать ревизию, выполненную моделью.
 
@@ -801,31 +933,98 @@ DALL-E 3 автоматически пересматривает промпты,
 4. Определите добавленные элементы (освещение, стиль, технические детали)
 5. Напишите второй, ""улучшенный"" промпт, интегрировав эти уроки, и сгенерируйте заново
 
-**Подсказка** : Обратите внимание, как DALL-E 3 систематически добавляет уточнения об освещении, композиции и уровне детализации.",,40e5fdcde15f932a,,,,,,f9c1e7dde6502d1c,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,21ab51ad,code,fr,81ef5fd46901cdd3,"# Exercice 3 : Optimisation de prompts pour un cas d'usage professionnel
+**Подсказка** : Обратите внимание, как DALL-E 3 систематически добавляет уточнения об освещении, композиции и уровне детализации.",,ccb73cfaea675bb8,,,,,,f9c1e7dde6502d1c,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,21ab51ad,code,fr,b545a1d136df2270,"# Exemple guide 3 : Optimisation d'un prompt pour une page d'accueil (contribution etudiante, PR #18561)
+import base64
+from io import BytesIO
+import matplotlib.pyplot as plt
+from PIL import Image
+
+def _to_image(result):
+    """"""Convertit le résultat de generate_image() en objet PIL.Image.""""""
+    src = result[""image_url""]
+    if src.startswith(""data:""):
+        return Image.open(BytesIO(base64.b64decode(src.split("","", 1)[1])))
+    return Image.open(BytesIO(requests.get(src, timeout=30).content))
 
 # Etape 1 : Prompt initial simple
-prompt_v1 = ""...""  # TODO etudiant : redigez un prompt simple en anglais
+prompt_v1 = (""A team of people and friendly robots collaborating together ""
+             ""in a modern office, for a startup homepage."")
 
 # Etape 2 : Generation avec le prompt initial
-# result_v1 = generate_image(prompt=prompt_v1, size=""1024x1024"", style=""vivid"")
-# print(f""Prompt original : {prompt_v1}"")
-# print(f""Prompt revise   : {result_v1.get('revised_prompt', 'N/A')}"")
+result_v1 = generate_image(prompt=prompt_v1, size=""1024x1024"", style=""vivid"")
+print(f""Prompt original : {prompt_v1}"")
+if result_v1[""success""]:
+    print(f""Prompt revise   : {result_v1.get('revised_prompt', 'N/A')}"")
+    if result_v1.get(""revised_prompt"", prompt_v1).strip() == prompt_v1.strip():
+        print(""\n[info] revised_prompt identique a l'original : gpt-image-1 ne ""
+              ""renvoie pas de prompt revise (fallback sur le prompt d'origine)."")
+else:
+    print(f""Erreur v1 : {result_v1['error']}"")
 
-# Etape 3 : Analysez les differences entre les deux prompts
-differences = []  # TODO etudiant : listez les elements ajoutes par gpt-image
-# Indice : eclairage, composition, niveau de detail, palette de couleurs
+# Etape 3 : Differences observees par le groupe entre SES images v1 et v2
+# (gpt-image-1 ne renvoie pas de revised_prompt : l'analyse porte sur les images)
+differences = [
+    ""Eclairage : v1 lumiere uniforme et plate -> v2 lumiere naturelle directionnelle (fenetre)"",
+    ""Palette : v1 bleus froids monochromes -> v2 contraste bleu / orange chaud"",
+    ""Composition : v1 plan serre sans arriere-plan -> v2 profondeur de champ et skyline urbaine"",
+    ""Elements tech : v1 robots seuls -> v2 tableau de bord holographique (graphiques)"",
+    ""Limite : l'instruction 'negative space on the left' n'est pas clairement respectee"",
+]
+print(""\nDifferences observees par le groupe (sur sa propre execution) :"")
+for d in differences:
+    print(f""  - {d}"")
 
-# Etape 4 : Prompt ameliore integranr les lecons
-prompt_v2 = ""...""  # TODO etudiant : redigez un prompt plus riche
+# Etape 4 : Prompt ameliore integrant les lecons
+prompt_v2 = (
+    ""A diverse team of young professionals collaborating with a friendly ""
+    ""humanoid robot around a glass table in a bright modern startup office, ""
+    ""a holographic dashboard floating above the table. Soft natural window ""
+    ""light, warm and optimistic atmosphere, wide-angle composition with the ""
+    ""team in the foreground and city skyline in the background. Clean ""
+    ""modern illustration style, blue and warm orange color palette, ""
+    ""ultra-detailed, sharp focus, shallow depth of field, plenty of ""
+    ""negative space on the left for homepage text.""
+)
 
 # Etape 5 : Generation avec le prompt ameliore
-# result_v2 = generate_image(prompt=prompt_v2, size=""1024x1024"", style=""vivid"")
-# print(f""Prompt ameliore : {prompt_v2}"")
-# print(f""Prompt revise   : {result_v2.get('revised_prompt', 'N/A')}"")
+result_v2 = generate_image(prompt=prompt_v2, size=""1024x1024"", style=""vivid"")
+print(f""\nPrompt ameliore : {prompt_v2}"")
+if result_v2[""success""]:
+    print(f""Prompt revise   : {result_v2.get('revised_prompt', 'N/A')}"")
+else:
+    print(f""Erreur v2 : {result_v2['error']}"")
+
+# Comparaison visuelle des deux generations
+if result_v1[""success""] and result_v2[""success""]:
+    fig, axes = plt.subplots(1, 2, figsize=(14, 7))
+    for ax, res, titre in zip(axes, [result_v1, result_v2],
+                              [""Prompt v1 (simple)"", ""Prompt v2 (ameliore)""]):
+        ax.imshow(_to_image(res))
+        ax.set_title(titre, fontsize=14)
+        ax.axis(""off"")
+    plt.tight_layout()
+    plt.show()
 
 # Comparaison des deux revisions
-print(""Exercice a completer"")",,,,,,,,81ef5fd46901cdd3,,,,,,,,
+print(""\n--- Comparaison des revisions ---"")
+for nom, prompt, res in [(""v1"", prompt_v1, result_v1), (""v2"", prompt_v2, result_v2)]:
+    if res[""success""]:
+        rev = res.get(""revised_prompt"", prompt)
+        print(f""{nom} : original = {len(prompt.split())} mots | ""
+              f""revise = {len(rev.split())} mots"")
+
+# Observations finales
+observations_ex3 = (
+    ""gpt-image-1 ne renvoie pas de revised_prompt (identique a l'original). ""
+    ""L'amelioration vient donc du prompt v2 : ajouter eclairage, palette, ""
+    ""composition et elements techniques rend l'image plus riche et plus ""
+    ""adaptee a un usage homepage, mais les consignes de mise en page restent ""
+    ""moins bien suivies que les consignes de style.""
+)
+print(f""\nObservations : {observations_ex3}"")
+
+print(""\nExemple guide 3 termine"")",,,,,,,,b545a1d136df2270,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,b07ca49a,markdown,fr,c87237c35a3d3d35,"**Navigation** : [Index](../../README.md) | [<< Précédent](01-1-OpenAI-DALL-E-3.ipynb) | [Suivant >>](01-3-Basic-Image-Operations.ipynb)
 
 # GPT-5 Multimodal - Analyse et Génération d'Images
@@ -1927,7 +2126,7 @@ Le `print('Cas d'usage pédagogiques')` précédent est un **catalogue statique*
 1. API OpenRouter выставляет 26 различных моделей GPT-5 — номенклатура шире официальной номенклатуры OpenAI, и выбор делается по компромиссу `контекст × стоимость × возможности` (зрение, tools и т.д.).
 2. Три режима анализа (quick/detailed/educational) не взаимозаменяемы: quick оптимизирован под alt-text WCAG, educational даёт наводящие вопросы для ученика — это единственный режим, дающий готовый педагогический результат.
 3. Мультимодальный пайплайн (encode → POST → parse) одинаков для любого изображения — сложность живёт в промпте, а не в транспорте.",,cba151b1841d6795,,,,,,2de15031478a994d,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,ubm6sfxypqb,markdown,fr,a41c34a2cee427db,"***
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,ubm6sfxypqb,markdown,fr,1e846f8508a2fd5e,"***
 
 ### Exercice 3 : Synthèse — Workflow d’analyse multimodale complet
 
@@ -1945,8 +2144,7 @@ Créer un workflow d'analyse d'image personnalisé avec GPT-5 pour un cas d'usag
 4. **Implémenter une fonction d'analyse** qui combine les 3 modes (quick, detailed, educational)
 5. **Générer les questions pédagogiques** que GPT-5 suggère pour les étudiants
 
-### Indices
-
+> **Indices :**
 - Indice 1 : Utilisez la fonction `analyze_image_with_gpt5()` avec le paramètre `prompt` pour votre prompt personnalisé
 - Indice 2 : Le mode ""educational"" génère automatiquement 3 questions de réflexion pour étudiants
 - Indice 3 : Adaptez le vocabulaire du prompt au niveau (elementary, secondary, university)",,,,,,"### Упражнение 3: Синтез — полный workflow мультимодального анализа
@@ -1969,7 +2167,7 @@ Créer un workflow d'analyse d'image personnalisé avec GPT-5 pour un cas d'usag
 
 - Подсказка 1: Используйте функцию `analyze_image_with_gpt5()` с параметром `prompt` для вашего персонализированного prompt
 - Подсказка 2: Режим ""educational"" автоматически генерирует 3 вопроса для размышления для студентов
-- Подсказка 3: Адаптируйте лексику prompt к уровню (elementary, secondary, university)",,a41c34a2cee427db,,,,,,6b20b97c4063d231,,
+- Подсказка 3: Адаптируйте лексику prompt к уровню (elementary, secondary, university)",,f74550abf0939ae1,,,,,,6b20b97c4063d231,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,tvhxa6pat2h,code,fr,4af6ad01b49719ee,"# TODO: Implémentez l'analyse personnalisée pour votre domaine
 
 # 1. Sélection du domaine et configuration
@@ -20279,3 +20477,171 @@ La classe `TeacherWorkflow` est initialisée avec les templates disponibles (`['
 MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-4-Cross-Stitch-Pattern-Maker-Legacy.ipynb,dbed0095,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,a482b4ae,code,fr,d8cfd07b7b0f3965,"# Parameters
+BATCH_MODE = ""true""
+",,,,,,,,d8cfd07b7b0f3965,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,763083b2,markdown,fr,1b83bfa2e0dd4419,"## Exercices à compléter
+
+### Exercice 4 : Le prompt tient-il ses promesses ? Mesurer sur les pixels
+
+Écrire un prompt riche est une chose ; vérifier que le modèle a réellement obéi en est une autre. L'exemple guidé ci-dessus conclut que le style et l'éclairage sont « les leviers les plus impactants » -- mais comment le **prouver** plutôt que le croire ? Plutôt que de juger à l'œil, on peut **mesurer** : `PIL` donne un accès direct aux statistiques des pixels (teinte moyenne, saturation, luminosité).
+
+**Objectif** : choisir UN axe visuel binaire, générer deux images qui ne diffèrent QUE par cet axe, puis mesurer sur les pixels si la différence promise est réellement observable.
+
+**Étapes** :
+1. Choisissez un axe visuel binaire (exemples : palette chaude vs froide, scène diurne vs nocturne, couleurs saturées vs désaturées, éclairage doux vs dramatique)
+2. Rédigez deux prompts identiques SAUF la mention de cet axe -- une seule variable change, comme dans une expérience contrôlée
+3. Générez les deux images via `generate_image()` (`quality=""low""` suffit pour cette mesure)
+4. Calculez pour chaque image une statistique PIL pertinente pour votre axe
+5. Concluez : la mesure confirme-t-elle la différence promise ? De combien ? Un seul couple d'images suffit-il à conclure ?
+
+**Indice 1** : `img.convert(""HSV"")` sépare teinte (H), saturation (S) et luminosité (V) ; `ImageStat.Stat(img_hsv).mean` donne la moyenne de chaque canal. Palette chaude ≈ H dans les rouges/jaunes (0-60°) vs froide ≈ H dans les bleus (180-240°) ; diurne vs nocturne se lit surtout sur V ; saturée vs désaturée sur S.
+
+**Indice 2** : pour décoder l'image depuis le résultat de `generate_image()` : `Image.open(BytesIO(base64.b64decode(result[""image_url""].split("","", 1)[1])))`.",,,,,,,,1b83bfa2e0dd4419,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,ccb08b37,code,fr,7b513553b6feb46b,"# Exercice 4 : Le prompt tient-il ses promesses ? (mesure sur les pixels)
+
+# Etape 1 : Axe visuel binaire choisi
+axe_choisi = None  # TODO etudiant : nommez votre axe (ex. ""palette chaude vs froide"")
+
+# Etape 2 : Deux prompts identiques sauf la mention de l'axe
+prompt_axe_a = ""...""  # TODO etudiant : version A de l'axe (ex. ""warm color palette"")
+prompt_axe_b = ""...""  # TODO etudiant : version B de l'axe (ex. ""cool color palette"")
+# Indice : ne changez QUE la mention de l'axe, gardez sujet et style identiques
+
+# Etape 3 : Generation des deux images (quality=""low"" suffit pour mesurer)
+# result_a = generate_image(prompt=prompt_axe_a, size=""1024x1024"", quality=""low"")
+# result_b = generate_image(prompt=prompt_axe_b, size=""1024x1024"", quality=""low"")
+# Indice : decoder l'image -> Image.open(BytesIO(base64.b64decode(result_a[""image_url""].split("","", 1)[1])))
+
+# Etape 4 : Mesure PIL sur chaque image
+# from PIL import ImageStat
+mesure_a = None  # TODO etudiant : statistique PIL pour l'image A
+mesure_b = None  # TODO etudiant : meme statistique pour l'image B
+# Indice : ImageStat.Stat(img.convert(""HSV"")).mean -> [H_moyen, S_moyen, V_moyen]
+
+# Etape 5 : Conclusion chiffree
+conclusion_ex4 = None  # TODO etudiant : la mesure confirme-t-elle l'axe ? de combien ?
+
+print(""Exercice a completer"")",,,,,,,,7b513553b6feb46b,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,aa0a8773,markdown,fr,64fd592dbbe12823,"## Conclusion
+
+gpt-image (la famille de generation d'images d'OpenAI utilisee depuis 2025, qui a succede a DALL-E 3) via l'API OpenAI directe illustre l'approche **boite noire managée** : on delègue entierement le pipeline de generation a un service heberge et on consomme le resultat via `generate_image(prompt, size, quality, style)`. Les parametres exposes (`size`, `quality`, `style`) restent volontairement restreints -- l'optimisation fine (sampler, scheduler, CFG) est inaccessible, ce qui est coherent avec le public vise (createurs de contenu, prototypage rapide).
+
+**Point d'attention sur la réécriture des prompts** : DALL-E 3 **réécrivait automatiquement** le prompt utilisateur pour l'enrichir, et renvoyait la version réécrite dans `revised_prompt`. Avec `gpt-image-1`, l'API ne renvoie plus de prompt révisé (le groupe de l'exemple guidé 3 l'a constaté) : on ne peut plus savoir, depuis l'API, si le prompt a été retouché avant la génération. Pour les usages pédagogiques ou de brand-compliance, le contrôle passe donc par l'image elle-même, ce que mesurent les exercices 4 à 6.
+
+**Mise en perspective avec le reste du cours** : gpt-image s'oppose a l'approche *open weights* exploree dans les autres notebooks Foundation (Forge SD XL Turbo, Qwen-Image-Edit). Les trade-offs (qualite percue vs controle, cout vs souverainete, facilite vs transparence) structurent le paysage de la generation d'images et reviennent dans toute decision d'architecture GenAI.
+
+**Pour aller plus loin** : comparer systematiquement la meme intention creative sur gpt-image, SD XL Turbo, Qwen-Image-Edit et FLUX.1. Les variations de style, de prompt engineering requis et de fidelite au brief revelent les biais d'entrainement propres a chaque modele -- un exercice transverse eclairant pour le notebook `03-1-Multi-Model-Comparison`.",,,,,,,,64fd592dbbe12823,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,eg1-lecture,markdown,fr,0c252b8fc2865404,"### Lecture du résultat — exemple guidé 1
+
+- **Niveau 1** (« A robot assistant in a modern office ») : sans consigne de style, le modèle choisit un rendu **photographique** : un robot blanc qui salue, un bureau gris, la lumière froide d'une fenêtre. L'image n'est pas pauvre, elle montre le choix par défaut du modèle, qu'on ne remarque qu'en la comparant aux niveaux suivants.
+- **Niveau 2** (+ « digital art style, soft natural lighting, warm color palette ») : c'est le changement le plus fort des trois. Le rendu devient une **illustration** au trait épais, et toute l'image vire à une palette monochrome orange-sépia. L'observation du groupe tient : le style et l'éclairage sont les leviers qui changent le plus l'image.
+- **Niveau 3** (+ « ultra-detailed, cinematic composition, 8K, sharp focus, shallow depth of field ») : les termes techniques ne se contentent pas d'affiner le niveau 2. Ils **ramènent le rendu vers la photographie**, alors que « digital art style » figure toujours dans le prompt : « 8K », « sharp focus » et « shallow depth of field » relèvent du vocabulaire de la photographie, et le modèle le suit. La faible profondeur de champ est bien visible (arrière-plan flou) et la palette chaude du niveau 2 est conservée. Le groupe notait au niveau 3 « un rendu plus professionnel » ; à cette exécution, c'est surtout le **médium** qui change.
+- **Prompt révisé** : pour les trois niveaux, l'API n'en renvoie aucun. C'est le constat que le groupe a fait dans son exercice 3 (exemple guidé 3).
+- **Ce qu'on peut conclure, et ce qu'on ne peut pas** : chaque niveau n'a été généré qu'une fois. L'écart entre les niveaux 1 et 2 est assez massif pour survivre au tirage. Le retour à la photographie du niveau 3 reste à confirmer sur plusieurs générations : deux mots-clés en conflit (« digital art » contre « 8K ») peuvent être départagés autrement d'un appel à l'autre.",,,,,,,,0c252b8fc2865404,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,eg2-mesure-md,markdown,fr,d85f1fa054783f87,"La cellule suivante, ajoutée à l'intégration, remplace l'appréciation à l'œil par une mesure : la saturation (S) et la luminosité (V) moyennes de chaque image, sur une échelle de 0 à 255.",,,,,,,,d85f1fa054783f87,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,eg2-mesure,code,fr,b7d0e47f053391d2,"# Ajout a l'integration : mesurer au lieu d'apprecier
+from PIL import ImageStat
+
+for nom, img in [(""vivid"", image_vivid), (""natural"", image_natural)]:
+    if img is None:
+        print(f""{nom:8s}: generation echouee, pas de mesure"")
+        continue
+    _, s_moy, v_moy = ImageStat.Stat(img.convert(""RGB"").convert(""HSV"")).mean
+    print(f""{nom:8s}: saturation moyenne {s_moy:6.1f} | luminosite moyenne {v_moy:6.1f}"")
+
+print(""\nLes deux requetes etaient identiques : l'ecart ci-dessus est celui de deux tirages."")",,,,,,,,b7d0e47f053391d2,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,eg2-lecture,markdown,fr,2a781a4e94a9afd5,"### Lecture du résultat — exemple guidé 2
+
+- **Les deux images se ressemblent** : même rue bordée de tours, piétons et voitures autonomes, coucher de soleil dans l'axe. Le prompt fixe la scène, le tirage fait varier le reste : ciel bleu-violet et image sombre d'un côté, ciel rose-orangé et soleil visible de l'autre.
+- **La mesure** : l'image `vivid` a une saturation moyenne de 121,2 contre 116,4 pour l'image `natural` (+4,8 sur 255), et elle est plus **sombre** (luminosité 71,9 contre 86,5).
+- **Le piège** : sur la saturation, le tableau du groupe (« more saturated ») paraît confirmé. Il l'est **par hasard** : les deux requêtes étaient identiques, `style` n'a pas été envoyé, et un autre tirage peut inverser l'écart. Une différence qui va dans le sens attendu ne prouve pas que la cause supposée existe. Pour l'établir, il faut comparer l'écart entre A et B à l'écart entre deux tirages de A : c'est l'objet de l'exercice 5.
+- **La colonne « Prompt revise »** contient deux fois le prompt d'origine, recopié par `generate_image()` faute de révision renvoyée par l'API.",,,,,,,,2a781a4e94a9afd5,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,eg3-lecture,markdown,fr,5ed45cbc8518e6fe,"### Lecture du résultat — exemple guidé 3
+
+La liste `differences` a été écrite par le groupe sur ses propres images. Confrontée aux images de cette exécution :
+
+- **Éclairage** (v1 plat, v2 lumière de fenêtre) : tient. La v2 est baignée d'une lumière chaude venue des fenêtres, la v1 est éclairée uniformément.
+- **Palette** (v1 bleus froids, v2 contraste bleu / orange) : tient, presque trait pour trait.
+- **Composition** (v2 plus profonde, avec une skyline) : tient en partie. La v2 montre des silhouettes de tours derrière les fenêtres ; la v1 n'est pas sans arrière-plan (fenêtre, étagères), mais le groupe y reste serré autour de la table.
+- **Éléments techniques** (tableau de bord holographique en v2) : tient. Deux écrans holographiques de graphiques flottent au-dessus de la table de verre.
+- **Consigne de mise en page** : **non respectée**, comme chez le groupe. Un personnage occupe le bord gauche de la v2, et aucune zone ne reste libre pour le texte d'une page d'accueil.
+
+Ce qui ressort : les consignes de **contenu** et de **style** (palette, lumière, objets) passent d'une exécution à l'autre, alors que la consigne de **placement** a échoué deux fois sur deux. Deux exécutions ne font pas une statistique, mais elles donnent une hypothèse qu'on peut mesurer : c'est l'objet de l'exercice 6. Enfin, la comparaison des longueurs (17 et 78 mots, « révisés » compris) ne mesure rien ici, puisque le prompt « révisé » est le prompt d'origine.",,,,,,,,5ed45cbc8518e6fe,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,t01-ex5-md,markdown,fr,a623d3afdea5db5c,"### Exercice 5 : Effet d'un paramètre, ou bruit du tirage ?
+
+L'exemple guidé 2 compare deux images générées avec deux valeurs de `style`, un paramètre que `generate_image()` n'envoie même pas : les deux images diffèrent pourtant. Toute comparaison A/B d'un générateur d'images doit donc répondre à une question préalable : **la différence entre A et B dépasse-t-elle celle qui sépare deux tirages de A ?**
+
+**Objectif** : mesurer l'effet d'un paramètre réellement envoyé à l'API, `quality`, en le comparant au bruit du tirage.
+
+**Étapes** :
+1. Choisissez un prompt riche en détails fins (texture, feuillage, foule, objets nombreux)
+2. Générez 2 images en `quality=""low""` et 2 en `quality=""high""`, avec le même prompt et la même taille
+3. Choisissez une mesure qui devrait dépendre de la qualité : densité de contours, taille du PNG en octets, temps de réponse (`result[""response_time""]`)
+4. Calculez le **bruit** (l'écart entre les deux images `low`, puis entre les deux `high`) et l'**effet** (l'écart entre la moyenne `low` et la moyenne `high`)
+5. Concluez : l'effet dépasse-t-il le bruit, et pour quelle mesure ? Deux images par condition suffisent-elles pour l'affirmer ?
+
+**Indice 1** : `ImageStat.Stat(img.convert(""L"").filter(ImageFilter.FIND_EDGES)).mean[0]` donne une densité de contours moyenne : une image plus détaillée a davantage de contours.
+
+**Indice 2** : `quality=""high""` coûte nettement plus cher que `low`. Quatre générations suffisent pour cet exercice ; ne lancez pas de boucle plus longue sans raison.",,,,,,,,a623d3afdea5db5c,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,t01-ex5-code,code,fr,eb3a0e64bc0bdb4b,"# Exercice 5 : Effet d'un parametre, ou bruit du tirage ?
+from PIL import ImageFilter, ImageStat
+
+# Etape 1 : Prompt riche en details fins
+prompt_ex5 = ""...""  # TODO etudiant : votre prompt en anglais
+
+# Etape 2 : Deux generations par valeur de quality
+# resultats_low = [generate_image(prompt=prompt_ex5, size=""1024x1024"", quality=""low"") for _ in range(2)]
+# resultats_high = [generate_image(prompt=prompt_ex5, size=""1024x1024"", quality=""high"") for _ in range(2)]
+
+
+# Etape 3 : Une mesure par image
+def mesure_ex5(img):
+    return None  # TODO etudiant : densite de contours, taille du PNG, ...
+
+
+# Etape 4 : Bruit (entre deux tirages d'une meme valeur) et effet (entre valeurs)
+bruit_low = None   # TODO etudiant : ecart entre les deux images low
+bruit_high = None  # TODO etudiant : ecart entre les deux images high
+effet = None       # TODO etudiant : ecart entre la moyenne low et la moyenne high
+
+# Etape 5 : Conclusion chiffree
+conclusion_ex5 = None  # TODO etudiant : l'effet depasse-t-il le bruit ? pour quelle mesure ?
+
+print(""Exercice a completer"")",,,,,,,,eb3a0e64bc0bdb4b,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,t01-ex6-md,markdown,fr,34e476aa8ce567b9,"### Exercice 6 : Une consigne de mise en page est-elle respectée ?
+
+Dans l'exemple guidé 3, le groupe demande « plenty of negative space on the left for homepage text » et constate, à l'œil, que la consigne n'est pas clairement respectée. Une consigne de composition se vérifie pourtant sur les pixels : une zone vide est une zone où l'image varie peu.
+
+**Objectif** : mesurer, sur plusieurs générations, si une consigne de placement est respectée, et à quelle fréquence.
+
+**Étapes** :
+1. Rédigez un prompt de bannière qui place explicitement le sujet d'un côté et laisse l'autre côté vide (fond uni), en format paysage `size=""1536x1024""`
+2. Définissez un critère mesurable : par exemple, découper l'image en trois tiers verticaux et comparer la variabilité de luminosité du tiers censé être vide à celle du tiers qui porte le sujet
+3. Fixez le seuil **avant** de générer : à partir de quel rapport considérez-vous le tiers comme vide ?
+4. Générez 3 images avec ce prompt (`quality=""low""`) et appliquez le critère à chacune
+5. Concluez : combien d'images sur 3 respectent la consigne ? Reformulez le prompt une fois (position du sujet, fond, expressions comme « copy space ») et comparez le taux de réussite
+
+**Indice** : `img.crop((0, 0, largeur // 3, hauteur))` isole le tiers gauche ; `ImageStat.Stat(tiers.convert(""L"")).stddev[0]` mesure sa variabilité de luminosité.",,,,,,,,34e476aa8ce567b9,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,t01-ex6-code,code,fr,7252021ea6e64399,"# Exercice 6 : Une consigne de mise en page est-elle respectee ?
+from PIL import ImageStat
+
+# Etape 1 : Prompt de banniere (sujet d'un cote, l'autre cote vide)
+prompt_ex6 = ""...""  # TODO etudiant : votre prompt en anglais
+
+# Etape 2 et 3 : Critere et seuil, fixes AVANT de generer
+seuil_ex6 = None  # TODO etudiant : rapport de variabilite en dessous duquel le tiers est ""vide""
+
+
+def tiers_vide(img):
+    return None  # TODO etudiant : True si le tiers vise est vide selon votre critere
+
+
+# Etape 4 : Trois generations et application du critere
+# resultats_ex6 = [generate_image(prompt=prompt_ex6, size=""1536x1024"", quality=""low"") for _ in range(3)]
+verdicts_ex6 = []  # TODO etudiant : un booleen par image
+
+# Etape 5 : Taux de reussite, puis second prompt reformule
+conclusion_ex6 = None  # TODO etudiant : combien sur 3 ? la reformulation aide-t-elle ?
+
+print(""Exercice a completer"")",,,,,,,,7252021ea6e64399,,,,,,,,

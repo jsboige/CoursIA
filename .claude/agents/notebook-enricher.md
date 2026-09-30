@@ -81,6 +81,10 @@ Analyser un notebook Jupyter et ajouter du markdown pedagogique aux endroits sui
 ### Etape 1 : Analyser la structure
 
 ```bash
+# Copie de base AVANT toute edition, hors du depot (scratchpad) : elle sert a --base
+# (verification qualite) et a la restauration en cas d'ecrasement
+cp <notebook_path> <fichier_base.ipynb>
+
 # Voir la sequence des cellules
 python scripts/notebook_tools/notebook_helpers.py sequence <notebook_path> 0 20
 
@@ -259,10 +263,11 @@ python scripts/notebook_tools/scan_enrich_quality.py <notebook_path> --base <fic
 
 2. **Si deletions > 50** : STOP ! Quelque chose s'est mal passe
 
-**SI PROBLEME DETECTE** :
+**SI PROBLEME DETECTE** : restaurer la copie de base prise a l'etape 1.
 ```bash
-git checkout -- <notebook_path>
+cp <fichier_base.ipynb> <notebook_path>
 ```
+Jamais `git checkout -- <notebook_path>` : il restaure depuis l'index et efface tout le non-commite du fichier, y compris le travail d'une passe precedente.
 
 ## Adaptation par domaine
 
@@ -279,17 +284,19 @@ git checkout -- <notebook_path>
 ```python
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt=f"""
     Tu es un agent notebook-enricher.
     Lis les instructions dans .claude/agents/notebook-enricher.md
 
     PROCESSUS OBLIGATOIRE:
+    0. cp {notebook_path} <copie de base hors depot>
     1. python scripts/notebook_tools/notebook_helpers.py sequence {notebook_path} 0 30
     2. python scripts/notebook_tools/notebook_helpers.py enrichment-plan {notebook_path}
     3. Pour CHAQUE insertion du plan (du bas vers le haut):
        a. NotebookEdit avec cell_id du CODE (pas du markdown!)
        b. Verifier: python scripts/notebook_tools/notebook_helpers.py sequence ...
-       c. Si erreur: git checkout et recommencer
+       c. Si erreur: restaurer la copie de base (cp) et recommencer
     4. git diff --stat pour validation finale
 
     Notebook: {notebook_path}

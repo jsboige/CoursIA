@@ -52,14 +52,20 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
-# Ensure the sibling `grain_tag` module (canonical `Grain:` reader, #9485) is
-# importable whether this file is run as a script (scripts/ auto on sys.path)
-# or imported from elsewhere (e.g. from scripts/tests/).
+# Ensure the sibling modules are importable whether this file is run as a script
+# (`scripts/` auto on sys.path) or imported from elsewhere (e.g. from
+# `scripts/tests/`). Both are canonical sources of truth delegated to:
+#   * `grain_tag` (#9485)         -- the form-tolerant `Grain:` reader;
+#   * `variation_light_cap`       -- the CI-wired LIGHT-genre accounting (#13475).
 try:
     from grain_tag import parse_grain_tag
+    from variation_light_cap import LIGHT_GENRES as _CANONICAL_LIGHT_GENRES
+    from variation_light_cap import genre_counts_light
 except ImportError:  # pragma: no cover - path bootstrap for non-script invocation
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     from grain_tag import parse_grain_tag
+    from variation_light_cap import LIGHT_GENRES as _CANONICAL_LIGHT_GENRES
+    from variation_light_cap import genre_counts_light
 
 # --- grain parsing (shared vocabulary) ---------------------------------------
 # The `Grain:` tag is read by the CANONICAL form-tolerant reader
@@ -70,10 +76,20 @@ except ImportError:  # pragma: no cover - path bootstrap for non-script invocati
 # universe and biasing the monoculture analysis that motivated
 # variation-protocol.md. `parse_grain` below delegates to the canonical reader.
 
-# Subset of genres that are LIGHT per G-VAR-2 (#10031, #10285):
-# guard / ledger / docs / readme / test / refs.
-# Anything else is MED or DEEP, including notebook-python, notebook-dotnet.
-LIGHT_GENRES = {"guard", "ledger", "docs", "readme", "test", "refs"}
+# The LIGHT-genre set is NOT redefined here. This module previously carried its
+# own copy -- `{guard, ledger, docs, readme, test, refs}` -- tested by a bare
+# `genre in LIGHT_GENRES`, which diverged from the CI-wired organ on three axes
+# at once (#16168, soeur de #13475) :
+#   * un membre en trop (`refs`, hors de l'enumeration close des genres) ;
+#   * aucune canonicalisation -- un `documentation`/`prose` declare LIGHT (qui
+#     s'aliasent en `docs`) echappait entierement au compte LIGHT ;
+#   * aucune clause fail-CLOSED -- un mot non resoluble declare LIGHT y
+#     echappait aussi, alors que l'organe le compte LIGHT par construction.
+# `light_genre` alimente `drift_candidate`, donc une divergence ici deplace
+# l'ensemble des candidats au drift que ce recensement existe pour mesurer.
+# Une seule source de verite : `variation_light_cap.genre_counts_light`. Meme
+# remede, et meme raisonnement, que la delegation du `_GRAIN_RE` ci-dessus (#9485).
+LIGHT_GENRES = _CANONICAL_LIGHT_GENRES
 
 # Heuristic: indicators that the diff is enrichment/framing (i.e. could be
 # declared MED or DEEP but is marked notebook-python/-dotnet to escape the
@@ -207,7 +223,7 @@ def build_row(pr: dict[str, Any]) -> PRRow:
     tier, genre = parse_grain(pr.get("body", ""))
     only_nb = only_notebook(paths)
     zcm = zero_code_modif(pr)
-    light = genre in LIGHT_GENRES if genre else False
+    light = genre_counts_light(genre, tier)
     cue = has_interpretation_cue(pr.get("body", ""))
     return PRRow(
         pr=pr["number"],

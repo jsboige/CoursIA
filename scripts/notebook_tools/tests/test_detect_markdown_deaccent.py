@@ -138,6 +138,64 @@ def test_language_stopwords_nonempty():
     assert len(EN_STOPWORDS) > 20
 
 
+# --- #17623 route 1: lexicon fallback (the entirely-desaccented notebook) ---
+
+def test_fully_desaccented_french_notebook_signaled_via_lexicon():
+    """The structural false negative of #17623: French prose with NO accented
+    twin anywhere (the worst offender reported 0 before the fallback) is now
+    signaled through the conservative cure dictionary (bucket `lexicon`)."""
+    prose = ("Le probleme est que l'entrainement remplacee de donnees utilise "
+             "un meme modele pour chaque serie.")
+    nb = _notebook([_md(prose)])
+    result = find_candidates(nb)
+    assert result["language"] == "fr", "this notebook must classify as French prose"
+    for form in ("probleme", "entrainement", "donnees", "meme", "modele", "remplacee"):
+        assert form in result["lexicon"], (
+            f"false negative: {form} must be lexicon-flagged, "
+            f"got lexicon={sorted(result['lexicon'])}"
+        )
+    assert result["auto"] == {}
+
+
+def test_lexicon_words_with_internal_twin_stay_auto():
+    """A word whose accented twin exists stays in `auto` (positive control
+    unchanged); the lexicon bucket never duplicates it."""
+    accented = "le problème de l'entraînement"
+    unaccented = "le probleme et l'entrainement"
+    nb = _notebook([_md(accented), _md(unaccented)])
+    result = find_candidates(nb)
+    assert "probleme" in result["auto"]
+    assert "entrainement" in result["auto"]
+    assert result["lexicon"] == {}
+
+
+def test_homographs_not_signaled_by_lexicon():
+    """Acceptance #17623: `des`/`sur`/`mesure`/`cote` are not in the dictionary
+    (stripped forms that ARE valid French words); `tache` IS in the dictionary
+    but the local HOMOGRAPH_EXCLUSIONS must take precedence -- none of the five
+    may be lexicon-signaled, twin or no twin."""
+    prose = "le des partitif, sur la table, une mesure exacte, le cote et la tache"
+    nb = _notebook([_md(prose)])
+    result = find_candidates(nb)
+    for form in ("des", "sur", "mesure", "cote", "tache"):
+        assert form not in result["lexicon"], (
+            f"homograph {form} must NOT be lexicon-signaled"
+        )
+        assert form not in result["auto"]
+
+
+def test_english_notebook_gate_skips_lexicon():
+    """English-dominant prose → language=en → no lexicon signal either: the
+    FR/EN gate protects the fallback exactly as it protects the twin control."""
+    en_prose = ("The probleme with this entrainement is that the donnees are "
+                "noisy across the board.")
+    nb = _notebook([_md(en_prose)])
+    result = find_candidates(nb)
+    assert result["language"] == "en"
+    assert result["lexicon"] == {}
+    assert result["auto"] == {}
+
+
 def test_french_stopword_shared_word_not_in_both_notably():
     """A word used as an FR stopword should not be double-qualifying as EN. This is
     a soft guard: `sur` is an FR preposition and happens to be `sur` as a verb; the

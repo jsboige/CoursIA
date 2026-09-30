@@ -3,10 +3,11 @@
 
 A "desaccented" word is an unaccented surface form whose accent-stripped twin
 exists (accented) elsewhere in the *same* notebook -- the internal positive
-control: without an accented twin, nothing is asserted. E.g. `theoreme` is
-flagged only if `theoreme`'s strip equals `theoreme` (no accents) and an
-accented `theoreme` (the `theoreme` spelling, stripped) was seen in that
-notebook.
+control. E.g. `theoreme` is flagged (bucket `auto`) only if an accented
+`théorème` was seen in that notebook. When no accented twin exists ANYWHERE --
+the entirely-desaccented notebook of #17623, invisible to the twin control --
+the word is still flagged (bucket `lexicon`) when its stripped form belongs to
+the conservative cure dictionary of `detect_accent_stripping.py`.
 
 This is the family seated by #14064: the user's coquille `individaux` was the
 visible tip of a systematic markdown desaccentuation. The historical,
@@ -18,8 +19,8 @@ homographs / partitive articles / nouns that are genuinely different French
 words, not typos, and together accounted for `6 084` (16%) of the ceiling.
 
 Hardening therefore does NOT try to raise precision by scoring context (that
-would overfit). It does two things, and validates by FALSE NEGATIVES (never by
-hits):
+would overfit). It does three things, and validates by FALSE NEGATIVES (never
+by hits):
 
 1. **Exclusion lists.** A closed set of unaccented forms that are either (a)
    legitimate homographs of a distinct French word (`des`/`dès`, `sur`/`sûr`,
@@ -31,6 +32,17 @@ hits):
    never as auto-flagged candidates.
 2. **FR/EN prose gate.** A notebook whose markdown is English-dominant is not a
    French-desaccentuation candidate at all; it is skipped with `language=en`.
+3. **Lexicon fallback (#17623, route 1).** The internal positive control is
+   blind to a notebook whose prose is ENTIRELY desaccented: no accented twin
+   exists anywhere, so the worst offender reported `0`. When a French notebook
+   has no twin for a form, the detector now consults the conservative cure
+   dictionary `ACCENT_PAIRS` of `detect_accent_stripping.py` (imported, never
+   copied -- organ-first) and reports the hit in a distinct `lexicon` bucket.
+   `ACCENT_PAIRS` only contains pairs whose stripped form is NOT a valid
+   standalone French word, so the homograph classes that plagued the 96%-FP
+   historical scan are excluded by construction; the local exclusion lists
+   (homographs like `tache`/`tâche`, which the dictionary wrongly admits, and
+   EN cognats) take precedence over the lexicon anyway.
 
 Acceptance is by the forms it MUST catch, written as tests, never by its hit
 count: `theoreme`, `etat`, `donnees`, `equilibre`, `entrainement` must be
@@ -41,10 +53,12 @@ Usage: python detect_markdown_deaccent.py <notebook-or-dir> [more...] [--json]
                                    [--fail-on-findings]
 
 Output: one line per notebook `COUNT TOTAL (AUTO auto / HOM homograph / COG
-en-cognat), PATH`, then a machine-readable summary. A scan that matches no
-notebook is an error (exit 1) -- a vacuous `0/0` is never a clean scan (the
-scan_md_hierarchy.py lesson, #3968). `--fail-on-findings` exits 2 when any
-notebook has auto-flagged candidates (PR-gate use).
+en-cognat / LEX lexicon), PATH`, then a machine-readable summary. A scan that
+matches no notebook is an error (exit 1) -- a vacuous `0/0` is never a clean
+scan (the scan_md_hierarchy.py lesson, #3968). `--fail-on-findings` exits 2
+when any notebook has auto-flagged or lexicon candidates (advisory wiring
+aggregates this rc to success, #17623 -- hardening it into a blocking gate is
+the coordinator's call).
 """
 import argparse
 import json
@@ -52,6 +66,14 @@ import re
 import sys
 import unicodedata
 from pathlib import Path
+
+# Sibling import (organ-first, #17623 route 1): the lexicon is the conservative
+# cure dictionary of detect_accent_stripping.py -- imported, never copied. If
+# the two organs ever diverge on a pair, they diverge together.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from detect_accent_stripping import ACCENT_PAIRS  # noqa: E402
+
+LEXICON_DEACCENTED = frozenset(ACCENT_PAIRS)
 
 _WORD_RE = re.compile(r"[A-Za-zÀ-ÿ]{3,}")
 # Inline code, fenced code blocks, and inline math. Desaccented words inside
@@ -132,11 +154,14 @@ def _markdown_texts(nb: dict) -> list[str]:
 
 
 def find_candidates(nb: dict) -> dict:
-    """Return {language, auto, homograph, en_cognat} candidate word->count maps.
+    """Return {language, auto, lexicon, homograph, en_cognat} word->count maps.
 
     Each bucket maps the *stripped lowercase key* to the number of unaccented
-    surface occurrences. `auto` only, is what a PR gate should fail on; the
-    other buckets are transparency, not defects.
+    surface occurrences. `auto` (accented twin present) and `lexicon` (no twin,
+    form in the conservative cure dictionary -- the entirely-desaccented
+    notebook of #17623) are findings; the other buckets are transparency, not
+    defects. The local exclusion lists take precedence over the lexicon: a
+    homograph the dictionary wrongly admits (`tache`) must stay silent.
     """
     texts = _markdown_texts(nb)
     # Internal positive control: strip(key) -> an accented surface form.
@@ -147,8 +172,8 @@ def find_candidates(nb: dict) -> dict:
             if word != _strip_accents(word):
                 accented.setdefault(_strip_accents(word).lower(), word)
 
-    result = {"language": _classify_language(texts), "auto": {}, "homograph": {},
-              "en_cognat": {}}
+    result = {"language": _classify_language(texts), "auto": {}, "lexicon": {},
+              "homograph": {}, "en_cognat": {}}
     if result["language"] != "fr":
         return result
 
@@ -158,14 +183,16 @@ def find_candidates(nb: dict) -> dict:
             if word != _strip_accents(word):
                 continue
             key = word.lower()
-            if key not in accented:
-                continue
-            bucket = (
-                "auto"
-                if key not in HOMOGRAPH_EXCLUSIONS and key not in EN_COGNAT_EXCLUSIONS
-                else ("homograph" if key in HOMOGRAPH_EXCLUSIONS else "en_cognat")
-            )
-            result[bucket][key] = result[bucket].get(key, 0) + 1
+            excluded = key in HOMOGRAPH_EXCLUSIONS or key in EN_COGNAT_EXCLUSIONS
+            if key in accented:
+                bucket = (
+                    "auto"
+                    if not excluded
+                    else ("homograph" if key in HOMOGRAPH_EXCLUSIONS else "en_cognat")
+                )
+                result[bucket][key] = result[bucket].get(key, 0) + 1
+            elif key in LEXICON_DEACCENTED and not excluded:
+                result["lexicon"][key] = result["lexicon"].get(key, 0) + 1
     return result
 
 
@@ -188,7 +215,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("paths", nargs="*", help="notebook(s) or directory(ies)")
     parser.add_argument("--json", action="store_true", help="emit JSON report")
     parser.add_argument("--fail-on-findings", action="store_true",
-                        help="exit 2 when any notebook has auto-flagged candidates")
+                        help="exit 2 when any notebook has auto or lexicon candidates")
     args = parser.parse_args(argv)
 
     if not args.paths:
@@ -221,13 +248,14 @@ def main(argv: list[str] | None = None) -> int:
         rel = path.as_posix()
         report[rel] = result
         n_auto = _total(result["auto"])
+        n_lex = _total(result["lexicon"])
         n_hom = _total(result["homograph"])
         n_cog = _total(result["en_cognat"])
-        n_tot = n_auto + n_hom + n_cog
+        n_tot = n_auto + n_hom + n_cog + n_lex
         if not args.json:
-            print(f"{n_tot} TOTAL ({n_auto} auto / {n_hom} hom / {n_cog} cog) "
-                  f"[{result['language']}], {rel}")
-        if n_auto and args.fail_on_findings:
+            print(f"{n_tot} TOTAL ({n_auto} auto / {n_hom} hom / {n_cog} cog / "
+                  f"{n_lex} lex) [{result['language']}], {rel}")
+        if (n_auto or n_lex) and args.fail_on_findings:
             exit_code = 2
 
     if args.json:

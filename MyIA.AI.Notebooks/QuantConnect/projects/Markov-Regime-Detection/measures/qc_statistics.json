@@ -1,0 +1,338 @@
+{
+ "projectId": 36387308,
+ "backtests": {
+  "repro_article_s0": {
+   "backtestId": "817916ba0e48d3973ae88c9387fd357b",
+   "parameterSet": {
+    "arm": "article",
+    "seed": "0"
+   },
+   "statistics": {
+    "Sharpe Ratio": "0.824",
+    "Compounding Annual Return": "19.751%",
+    "Drawdown": "27.100%",
+    "Net Profit": "194.847%",
+    "Total Orders": "414",
+    "Total Fees": "$4118.01",
+    "Portfolio Turnover": "4.79%",
+    "Probabilistic Sharpe Ratio": "23.813%"
+   },
+   "runtimeStatistics": {
+    "Fits": "313",
+    "Fit failures": "0",
+    "Label agreement": "34"
+   }
+  },
+  "spy": {
+   "backtestId": "0954672fe2c495ad83478b7979f95e73",
+   "parameterSet": {
+    "start_date": "2008-01-01",
+    "end_date": "2026-09-01",
+    "arm": "spy"
+   },
+   "statistics": {
+    "Sharpe Ratio": "0.451",
+    "Compounding Annual Return": "11.418%",
+    "Drawdown": "51.300%",
+    "Net Profit": "653.728%",
+    "Total Orders": "3",
+    "Total Fees": "$51.55",
+    "Portfolio Turnover": "0.01%",
+    "Probabilistic Sharpe Ratio": "0.147%"
+   },
+   "runtimeStatistics": {
+    "Fits": "0",
+    "Fit failures": "0",
+    "Label agreement": "0"
+   }
+  },
+  "article_s0": {
+   "backtestId": "84878335112b3c7da6eb7c223e4f8db5",
+   "parameterSet": {
+    "start_date": "2008-01-01",
+    "end_date": "2026-09-01",
+    "arm": "article",
+    "seed": "0"
+   },
+   "statistics": {
+    "Sharpe Ratio": "0.42",
+    "Compounding Annual Return": "10.392%",
+    "Drawdown": "44.900%",
+    "Net Profit": "534.026%",
+    "Total Orders": "1297",
+    "Total Fees": "$17972.98",
+    "Portfolio Turnover": "4.77%",
+    "Probabilistic Sharpe Ratio": "0.091%"
+   },
+   "runtimeStatistics": {
+    "Fits": "970",
+    "Fit failures": "4",
+    "Label agreement": "65"
+   }
+  },
+  "article_s1": {
+   "backtestId": "355fedaa71f6f1de9fe2e642d7cbf0b1",
+   "parameterSet": {
+    "start_date": "2008-01-01",
+    "end_date": "2026-09-01",
+    "arm": "article",
+    "seed": "1"
+   },
+   "statistics": {
+    "Sharpe Ratio": "0.405",
+    "Compounding Annual Return": "10.147%",
+    "Drawdown": "47.700%",
+    "Net Profit": "508.310%",
+    "Total Orders": "1281",
+    "Total Fees": "$14108.70",
+    "Portfolio Turnover": "4.33%",
+    "Probabilistic Sharpe Ratio": "0.070%"
+   },
+   "runtimeStatistics": {
+    "Fits": "973",
+    "Fit failures": "1",
+    "Label agreement": "50"
+   }
+  },
+  "article_s7": {
+   "backtestId": "e946511bd912a08c8f037dce1cced00b",
+   "parameterSet": {
+    "start_date": "2008-01-01",
+    "end_date": "2026-09-01",
+    "arm": "article",
+    "seed": "7"
+   },
+   "statistics": {
+    "Sharpe Ratio": "0.351",
+    "Compounding Annual Return": "8.594%",
+    "Drawdown": "35.200%",
+    "Net Profit": "366.536%",
+    "Total Orders": "1749",
+    "Total Fees": "$27101.77",
+    "Portfolio Turnover": "7.67%",
+    "Probabilistic Sharpe Ratio": "0.028%"
+   },
+   "runtimeStatistics": {
+    "Fits": "972",
+    "Fit failures": "2",
+    "Label agreement": "195"
+   }
+  },
+  "article_s42": {
+   "backtestId": "163cad694dc3cb6aadc1d16e2c9249df",
+   "parameterSet": {
+    "start_date": "2008-01-01",
+    "end_date": "2026-09-01",
+    "arm": "article",
+    "seed": "42"
+   },
+   "statistics": {
+    "Sharpe Ratio": "0.441",
+    "Compounding Annual Return": "10.593%",
+    "Drawdown": "30.000%",
+    "Net Profit": "555.985%",
+    "Total Orders": "1651",
+    "Total Fees": "$34640.75",
+    "Portfolio Turnover": "7.43%",
+    "Probabilistic Sharpe Ratio": "0.127%"
+   },
+   "runtimeStatistics": {
+    "Fits": "956",
+    "Fit failures": "18",
+    "Label agreement": "132"
+   }
+  },
+  "article_s99": {
+   "backtestId": "7a0fc5cf76484b2b4c282130e15d7a17",
+   "parameterSet": {
+    "start_date": "2008-01-01",
+    "end_date": "2026-09-01",
+    "arm": "article",
+    "seed": "99"
+   },
+   "statistics": {
+    "Sharpe Ratio": "0.379",
+    "Compounding Annual Return": "9.701%",
+    "Drawdown": "47.700%",
+    "Net Profit": "463.824%",
+    "Total Orders": "1109",
+    "Total Fees": "$10440.29",
+    "Portfolio Turnover": "3.19%",
+    "Probabilistic Sharpe Ratio": "0.046%"
+   },
+   "runtimeStatistics": {
+    "Fits": "967",
+    "Fit failures": "7",
+    "Label agreement": "12"
+   }
+  },
+  "fixed_s0": {
+   "backtestId": "89a6383615de5650463319a032ae2c15",
+   "parameterSet": {
+    "start_date": "2008-01-01",
+    "end_date": "2026-09-01",
+    "arm": "fixed",
+    "seed": "0"
+   },
+   "statistics": {
+    "Sharpe Ratio": "0.491",
+    "Compounding Annual Return": "10.637%",
+    "Drawdown": "48.700%",
+    "Net Profit": "560.852%",
+    "Total Orders": "1284",
+    "Total Fees": "$18882.27",
+    "Portfolio Turnover": "4.53%",
+    "Probabilistic Sharpe Ratio": "0.284%"
+   },
+   "runtimeStatistics": {
+    "Fits": "970",
+    "Fit failures": "4",
+    "Label agreement": "65"
+   }
+  },
+  "fixed_s1": {
+   "backtestId": "8a56f6451c37443c75eda752d9778da4",
+   "parameterSet": {
+    "start_date": "2008-01-01",
+    "end_date": "2026-09-01",
+    "arm": "fixed",
+    "seed": "1"
+   },
+   "statistics": {
+    "Sharpe Ratio": "0.466",
+    "Compounding Annual Return": "10.253%",
+    "Drawdown": "37.600%",
+    "Net Profit": "519.311%",
+    "Total Orders": "1268",
+    "Total Fees": "$20639.31",
+    "Portfolio Turnover": "4.28%",
+    "Probabilistic Sharpe Ratio": "0.191%"
+   },
+   "runtimeStatistics": {
+    "Fits": "973",
+    "Fit failures": "1",
+    "Label agreement": "50"
+   }
+  },
+  "fixed_s7": {
+   "backtestId": "68c9d24b19b0e7d7ab79efddcc8d5640",
+   "parameterSet": {
+    "start_date": "2008-01-01",
+    "end_date": "2026-09-01",
+    "arm": "fixed",
+    "seed": "7"
+   },
+   "statistics": {
+    "Sharpe Ratio": "0.45",
+    "Compounding Annual Return": "9.931%",
+    "Drawdown": "46.600%",
+    "Net Profit": "486.407%",
+    "Total Orders": "1748",
+    "Total Fees": "$28059.23",
+    "Portfolio Turnover": "7.20%",
+    "Probabilistic Sharpe Ratio": "0.158%"
+   },
+   "runtimeStatistics": {
+    "Fits": "972",
+    "Fit failures": "2",
+    "Label agreement": "195"
+   }
+  },
+  "fixed_s42": {
+   "backtestId": "d50c1918efcb4abca311b3d17e3cb675",
+   "parameterSet": {
+    "start_date": "2008-01-01",
+    "end_date": "2026-09-01",
+    "arm": "fixed",
+    "seed": "42"
+   },
+   "statistics": {
+    "Sharpe Ratio": "0.434",
+    "Compounding Annual Return": "9.690%",
+    "Drawdown": "45.500%",
+    "Net Profit": "462.779%",
+    "Total Orders": "1645",
+    "Total Fees": "$25270.37",
+    "Portfolio Turnover": "6.75%",
+    "Probabilistic Sharpe Ratio": "0.123%"
+   },
+   "runtimeStatistics": {
+    "Fits": "956",
+    "Fit failures": "18",
+    "Label agreement": "132"
+   }
+  },
+  "fixed_s99": {
+   "backtestId": "60ba64278e72239d1d6ddb8de76a6578",
+   "parameterSet": {
+    "start_date": "2008-01-01",
+    "end_date": "2026-09-01",
+    "arm": "fixed",
+    "seed": "99"
+   },
+   "statistics": {
+    "Sharpe Ratio": "0.483",
+    "Compounding Annual Return": "10.670%",
+    "Drawdown": "38.400%",
+    "Net Profit": "564.585%",
+    "Total Orders": "1100",
+    "Total Fees": "$15354.37",
+    "Portfolio Turnover": "3.08%",
+    "Probabilistic Sharpe Ratio": "0.243%"
+   },
+   "runtimeStatistics": {
+    "Fits": "967",
+    "Fit failures": "7",
+    "Label agreement": "12"
+   }
+  },
+  "static_article": {
+   "backtestId": "2478f6ab6efc9a24cf6f6944a1cf8505",
+   "parameterSet": {
+    "arm": "static",
+    "start_date": "2008-01-01",
+    "end_date": "2026-09-01",
+    "static_gld": "0.545"
+   },
+   "statistics": {
+    "Sharpe Ratio": "0.535",
+    "Compounding Annual Return": "10.666%",
+    "Drawdown": "32.100%",
+    "Net Profit": "564.090%",
+    "Total Orders": "1456",
+    "Total Fees": "$1562.34",
+    "Portfolio Turnover": "0.18%",
+    "Probabilistic Sharpe Ratio": "0.549%"
+   },
+   "runtimeStatistics": {
+    "Fits": "0",
+    "Fit failures": "0",
+    "Label agreement": "0"
+   }
+  },
+  "static_fixed": {
+   "backtestId": "59a2c7c1af475d6be1999e127e3e4cbd",
+   "parameterSet": {
+    "arm": "static",
+    "start_date": "2008-01-01",
+    "end_date": "2026-09-01",
+    "static_gld": "0.45"
+   },
+   "statistics": {
+    "Sharpe Ratio": "0.545",
+    "Compounding Annual Return": "10.937%",
+    "Drawdown": "34.100%",
+    "Net Profit": "595.201%",
+    "Total Orders": "1457",
+    "Total Fees": "$1563.25",
+    "Portfolio Turnover": "0.18%",
+    "Probabilistic Sharpe Ratio": "0.630%"
+   },
+   "runtimeStatistics": {
+    "Fits": "0",
+    "Fit failures": "0",
+    "Label agreement": "0"
+   }
+  }
+ }
+}

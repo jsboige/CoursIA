@@ -25,7 +25,7 @@ Ce module explore les techniques avancées : clonage vocal, génération musical
 | 4 | [02-4-Demucs-Source-Separation](02-4-Demucs-Source-Separation.ipynb) | Demucs v4, extraction stems | Local GPU | ~4 GB |
 | 5 | [02-5-Multi-Model-TTS-Gateway](02-5-Multi-Model-TTS-Gateway.ipynb) | Gateway multi-TTS (Kokoro, TADA, Qwen3) | tts-api.myia.io | ~12 GB |
 | 6 | [02-6-MIDI-Generation](02-6-MIDI-Generation.ipynb) | midi-model (SkyTNT), génération symbolique | Local GPU | ~2-4 GB |
-| 7 | [02-7-YuE2-Song-Generation](02-7-YuE2-Song-Generation.ipynb) | YuE2-3B : zero-shot, cover, édition agentique (4 étapes canoniques) | Routée GPU 24 GB (Linux) |
+| 7 | [02-7-YuE2-Song-Generation](02-7-YuE2-Song-Generation.ipynb) | YuE2-3B : zero-shot, cover, édition agentique (4 étapes canoniques) | Routée GPU 24 GB (Linux) | ~24 GB |
 | 8 | [02-8-Expressive-TTS](02-8-Expressive-TTS.ipynb) | Fish S2 Pro, Dia TTS, tags expressifs | Local GPU | 6-18 GB |
 | 9 | [02-9-AceStep-Music-Generation](02-9-AceStep-Music-Generation.ipynb) | ACE-Step v1.5, text-to-song multilingue | Local GPU | <4 GB |
 

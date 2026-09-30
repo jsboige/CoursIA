@@ -132,14 +132,14 @@ dans un solveur SOTA (Microsoft Research). Sélection dans la série
 
 | # | Notebook | Durée | Apporte → Suppose |
 |---|---|---|---|
-| 11 | [Z3-Python-01-Introduction](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-01-Introduction.ipynb) | 30 min | z3-py, premier solve/check → logique PL (étape 2) |
-| 12 | [Z3-Python-02-Sudoku](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-02-Sudoku.ipynb) | 15 min | modélisation contraintes d'un puzzle → étape 11 |
-| 13 | [Z3-Python-03-Tactics](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-03-Tactics.ipynb) | 30 min | tactiques, simplify, contrôler le solveur → étape 11 |
-| 14 | [Z3-Python-04-Strings-Regex](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-04-Strings-Regex.ipynb) | 30 min | théorie des chaînes et regex symboliques → étape 11 |
-| 15 | [Z3-Python-05-Quantifiers-Proofs](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-05-Quantifiers-Proofs.ipynb) | 30 min | quantificateurs, **preuves** — vers le bloc 4 → étape 2 (FOL) |
-| 16 | [Z3-Python-06-Advanced-Optimization](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization.ipynb) | 30 min | Optimize, soft constraints → étape 13 |
-| 17 | [Z3-Python-13-UnsatCores](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb) | 30 min | cœurs insatisfaisables — écho des MUS de l'étape 4 → étape 4 |
-| 18 | [Z3-Python-16-Meal-Planner](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16-Meal-Planner.ipynb) | 30 min | **capstone** : optimisation sous contraintes réelles → étapes 12+16 |
+| 11 | [Z3-Python-01-Introduction](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01-Introduction-Python.ipynb) | 30 min | z3-py, premier solve/check → logique PL (étape 2) |
+| 12 | [Z3-Python-02-Sudoku](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-02-Sudoku-Python.ipynb) | 15 min | modélisation contraintes d'un puzzle → étape 11 |
+| 13 | [Z3-Python-03-Tactics](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb) | 30 min | tactiques, simplify, contrôler le solveur → étape 11 |
+| 14 | [Z3-Python-04-Strings-Regex](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-Python.ipynb) | 30 min | théorie des chaînes et regex symboliques → étape 11 |
+| 15 | [Z3-Python-05-Quantifiers-Proofs](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-05-Quantifiers-Proofs-Python.ipynb) | 30 min | quantificateurs, **preuves** — vers le bloc 4 → étape 2 (FOL) |
+| 16 | [Z3-Python-06-Advanced-Optimization](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-06-Advanced-Optimization-Python.ipynb) | 30 min | Optimize, soft constraints → étape 13 |
+| 17 | [Z3-13-UnsatCores-Python](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb) + [13b — le MUS](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13b-UnsatCores-MUS-Python.ipynb) | 30 min | cœurs insatisfaisables, MUS par deletion-based (13b) — écho des MUS de l'étape 4 → étape 4 |
+| 18 | [Z3-Python-16-Meal-Planner](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16-Meal-Planner-Python.ipynb) | 30 min | **capstone** : optimisation sous contraintes réelles → étapes 12+16 |
 
 ### Bloc 3 — Planification (étapes 19-25, 4 h 45)
 
@@ -167,7 +167,7 @@ d'entrée recommandée est le *Natural Number Game* (3-4 h,
 
 | # | Notebook | Durée | Apporte → Suppose |
 |---|---|---|---|
-| 26 | [Lean-1-Setup](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-1-Setup.ipynb) | 30 min | WSL, elan, Mathlib — l'environnement du bloc → WSL2 + elan vérifiés |
+| 26 | [Lean-01-Setup-Lean-Python](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-01-Setup-Lean-Python.ipynb) | 30 min | WSL, elan, Mathlib — l'environnement du bloc → WSL2 + elan vérifiés |
 | 27 | [Tweety-5b-Lean-Argumentation](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation.ipynb) | 30 min | **Dung prouvé** : le companion 0-sorry de l'étape 5 → rampe NNG + étape 5 |
 | 28 | [Planners-5b-Lean-Relaxation](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5b-Lean-Relaxation.ipynb) | 15 min | **h-add formalisé** dans `planning_lean` — companion de l'étape 23 → étape 27 |
 | 29 | [Tweety-5d-Stable-Synthesis](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5d-Stable-Synthesis-Lean.ipynb) | 30 min | **Z3 → Lean** : synthèse certifiée d'extensions stables — la boucle bloc 2 ⇄ bloc 4 → étapes 15+27 |

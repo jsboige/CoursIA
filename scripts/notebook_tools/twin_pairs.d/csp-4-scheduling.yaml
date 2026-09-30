@@ -1,7 +1,7 @@
 - name: "CSP-4 Scheduling"
   family: Search/Part2-CSP
   python: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb
-  csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling-Csharp.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling-CSharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Resolved 2026-08-19 (myia-po-2024:CoursIA, tranche lib-vs-lib #10382). Les DEUX twins invoquent le meme moteur -- OR-Tools CP-SAT (coeur C++ Google) -- via le binding natif de leur ecosysteme : Python = `ortools.sat.python.cp_model` (pip), C# = `Google.OrTools.Sat` (NuGet officiel, design option b #4956, en place depuis la creation #5067). Le verdict RECOVERABLE-LOCAL de l'audit 2026-08-01 decrivait un C# Choco/IKVM (`org.chocosolver.solver.Model` + `findSchedule()`) que le code n'a JAMAIS contenu -- les modeles C# tournent sur `CpModel`/`AddNoOverlap`/`AddCumulative`(builder fluent)/`Minimize` depuis la creation. Le twin C# portait pourtant le branding Choco (titre, doc config, 2 cellules config IKVM mortes, prose Modelisation Choco, indices d'exercices en API Choco non compilable) : la tranche reconcilie prose/config/exercices avec l'API reellement executee et re-execoute le notebook (8/8 cellules, Google.OrTools 9.15) -- makespans 11/10/42 exactement identiques au jumeau Python (convergence native-both verifiee sur grandeur observable). La route Choco/IKVM reste demontree dans CSP-1/2/3/5/7 et Sudoku-11-Choco-Csharp. `parity_level` passe semantic -> native-both : les deux twins invoquent le solveur natif de leur ecosysteme (precedent app-6 minesweeper)."

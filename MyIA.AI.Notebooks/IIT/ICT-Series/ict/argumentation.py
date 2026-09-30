@@ -158,6 +158,66 @@ def grounded_labeling(af: DungAF) -> Dict[int, str]:
     return label
 
 
+def est_admissible(af: DungAF, subset: Iterable[int]) -> bool:
+    """Un ensemble ``S`` est **admissible** (Dung 1995) s'il est sans conflit
+    et si chaque membre se defend : tout attaquant *exterieur* d'un membre
+    est contre-attaque par un membre de ``S``.
+
+    Cas limites : l'ensemble vide est admissible ; un argument non attaque
+    forme seul un ensemble admissible.
+    """
+    S = set(int(a) for a in subset)
+    # Sans conflit : aucune attaque entre deux membres.
+    for (a, b) in af.attacks:
+        if a in S and b in S:
+            return False
+    # Defense : tout attaquant exterieur d'un membre est contre-attaque par S.
+    for m in S:
+        for att in af.attackers(m):
+            if att in S:
+                continue
+            contre_attaque = any(a in S and b == att for (a, b) in af.attacks)
+            if not contre_attaque:
+                return False
+    return True
+
+
+def preferred_extensions(af: DungAF, limite: int = 15) -> List[Set[int]]:
+    """**Extensions preferees** de ``af`` : ensembles admissibles **maximaux
+    pour l'inclusion** (Dung 1995).
+
+    Ajoutee pour la strate 6 (acceptabilite QBF, distillation EPITA
+    ``qbf_native`` #17339) : la question sceptique -- ``target`` est-il dans
+    TOUTES les extensions preferees ? -- exige cette semantique, que la
+    grounded seule ne fournit pas.
+
+    Enumeration naive assumee (meme style que le reste de la serie) : tous
+    les sous-ensembles parcourus, les admissibles gardes, puis filtre des
+    maximaux pour l'inclusion. Cout ``2**n`` -- au-dela de ``limite``
+    arguments l'organe refuse de mesurer (``ValueError``), borne rendue
+    visible plutot qu'un temps de calcul silencieux.
+
+    Retourne la liste triee des extensions (chacune un ``set`` d'arguments).
+    """
+    n = af.n()
+    if n > limite:
+        raise ValueError(
+            f"{n} arguments > borne {limite} : enumeration 2**n refusee "
+            "(augmenter explicitement la borne si le cadre est vraiment petit)"
+        )
+    arguments = af.arguments
+    admissibles: List[Set[int]] = []
+    for bits in range(1 << n):
+        S = {arguments[i] for i in range(n) if bits & (1 << i)}
+        if est_admissible(af, S):
+            admissibles.append(S)
+    preferred: List[Set[int]] = []
+    for S in admissibles:
+        if not any(S < T for T in admissibles):
+            preferred.append(S)
+    return sorted(preferred, key=lambda s: (len(s), sorted(s)))
+
+
 # --------------------------------------------------------------------------- #
 #  Trajectoire de croyance sous arrivee sequentielle d'arguments              #
 # --------------------------------------------------------------------------- #
