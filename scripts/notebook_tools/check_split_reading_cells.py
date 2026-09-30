@@ -742,6 +742,27 @@ def detect_added_readings(head_nb: dict, base_nb: dict | None) -> list[dict]:
 
         prev_role, next_role = _classify_context(head_cells, idx)
         key = _output_key_above(head_cells, idx)
+        # Carve-out #18602 (etendu) : si en base, la cellule a l'index courant
+        # etait un **code** execute (conversion code->md en tete, par
+        # exemple un pseudo-code squelettique transforme en bloc markdown),
+        # et que la cellule de tete au meme index porte un id qui **etait**
+        # deja celui de la cellule de base (meme identite, juste le type
+        # change), la cellule de tete n'est PAS une lecture nouvelle. Sa
+        # presence dans le releve tient a la conversion, pas a une lecture
+        # ajoutee. La classer en SECOND_READING produit un faux positif.
+        # On garde la garde stricte : il faut que l'id de la cellule de tete
+        # etait celui d'une cellule code en base -- les cellules sans id ou
+        # avec un id neuf (lecture ajoutee avant du code existant par
+        # exemple) ne sont pas couvertes.
+        head_id_now = cell.get("id")
+        if (idx < len(base_cells)
+                and base_cells[idx].get("cell_type") == "code"
+                and (base_cells[idx].get("execution_count") is not None
+                     or base_cells[idx].get("outputs"))
+                and head_id_now
+                and base_cells[idx].get("id") == head_id_now):
+            base_counter[src] += 1
+            continue
         # Le COMPTE prime sur la topologie (#17044, decision c.5836401913). Une
         # cellule rattachee a une sortie qui porte plus de lectures qu'en base
         # EST une seconde lecture, quoi qu'en dise sa place : posee devant la
@@ -807,6 +828,32 @@ def detect_added_readings(head_nb: dict, base_nb: dict | None) -> list[dict]:
             if i not in reported and i not in pend
             and _output_key_above(head_cells, i) == key
         ]
+        # Carve-out #18602 : si une lecture de tete est attribuee a cette sortie
+        # alors que la cellule **courante** (idx) en tete est un markdown dont
+        # la cellule de base au meme idx etait un **code execute** ET que ces
+        # deux cellules portent le **meme id** (conversion code->md en place
+        # -- pseudo-code squelettique transforme en fence), c'est un
+        # rattachement factice : la cellule n'est PAS une lecture ajoutee,
+        # c'est la trace de la conversion. Le ratchet l'a deja eliminee dans
+        # la boucle principale via le carve-out d'id, mais le second pass la
+        # retrouve par ``_output_key_above``. On l'elimine ici avec la meme
+        # garde stricte (id commun).
+        # Meme logique pour les cellules dont l'id existait en base : le main
+        # loop les a traitees comme reecritures (``is_rewrite=True``), pas
+        # comme additions -- le second pass ne doit pas les ressortir.
+        if base_nb is not None:
+            base_cells = base_nb.get("cells", [])
+            base_ids = {b.get("id") for b in base_cells if b.get("id")}
+            attached = [
+                i for i in attached
+                if not (i < len(base_cells)
+                        and head_cells[i].get("id")
+                        and base_cells[i].get("id") == head_cells[i].get("id")
+                        and base_cells[i].get("cell_type") == "code"
+                        and (base_cells[i].get("execution_count") is not None
+                             or base_cells[i].get("outputs")))
+                and not (head_cells[i].get("id") in base_ids)
+            ]
         moved = [i for i in attached if cell_source(head_cells[i]) not in held]
         rest = [i for i in attached if cell_source(head_cells[i]) in held]
         for idx in (pend + moved + rest)[:remaining]:
