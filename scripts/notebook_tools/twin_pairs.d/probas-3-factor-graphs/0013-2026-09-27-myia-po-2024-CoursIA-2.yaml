@@ -1,0 +1,7 @@
+date: '2026-09-27'
+by: myia-po-2024:CoursIA-2
+python_sha: 210bed3f75c075c0c6c3d36c5b5eb6aa5b68edd8
+csharp_sha: 1d71902f691751a1722d19b3c92f498900b67165
+content_python_sha: 902cfba93d636b0078bc26042e6f017a7b9f45d755b5c7a97ca712ce71b9b9a9
+content_csharp_sha: 580e6da433cf218b95ffe2e479c953314996c3b70189aa56dddb22e3df8fb22a
+reason: 'chains=4 rendu explicite sur les appels pm.sample de la serie (#18028) : la valeur effective etait deja 4 (les sorties committee portent la banniere "4 chains in 4 jobs"), donc changement de source seul, sans effet sur les resultats ; jumeau C# non touche. Sorties par ailleurs restaurees a celles de main : la re-execution precedente de cette branche avait tourne sur une machine sans compilateur g++ et laissait fuiter l''avertissement machine dans les sorties committee ; le bloc papermill decrit de nouveau le run qu''il accompagne.'

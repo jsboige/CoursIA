@@ -167,7 +167,7 @@ commits** mergés d'un coup. La méthode, éprouvée à chaque itération :
    - *garde `/root`* : upstream a intégré notre extraction `_recover_cwd()`
      (issue #17558) mais **sans** la garde `PermissionError` — il faut la
      ré-ajouter par-dessus à chaque sync ;
-   - Dockerfile : nos 4 lignes de drift RooSync vs les refactorings upstream.
+   - Dockerfile : nos lignes de drift RooSync vs les refactorings upstream.
 4. Audit de drift par grep (les lignes doivent survivre au merge)
 5. Build `s6-sync-YYYYMMDD` → déploiement → `hermes-verify.ps1` **12/12** →
    fast-forward main → push
@@ -178,7 +178,7 @@ build-time sont conservés en défense en profondeur (le working tree Windows
 pré-existant garde du CRLF).
 
 > **Leçon de fork :** un drift isolé dans un répertoire dédié (`roosync-cluster/`)
-> rend le merge trivial ; les rares fichiers cœur patchés (2 fichiers) sont le
+> rend le merge trivial ; les rares fichiers cœur patchés sont le
 > seul coût récurrent — et leurs conflits sont prévisibles, donc rapides.
 
 ## Hermes vs NanoClaw

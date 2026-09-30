@@ -2378,7 +2378,7 @@ graph LR
 - Cas d'usage : recherche web, exécution de code, orchestration de tâches
 - Le chatbot devient un **agent actif** qui accomplit des tâches
 
-> Notebooks : `GenAI/SemanticKernel/` (20 notebooks)
+> Notebooks : `GenAI/SemanticKernel/`
 
 
 
