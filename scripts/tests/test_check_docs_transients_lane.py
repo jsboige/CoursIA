@@ -134,3 +134,106 @@ def test_real_tree_is_conforme() -> None:
     """Wiring: the repository's own tree must satisfy the convention."""
     report = lane.run()
     assert report["verdict"] == "CONFORME", report["findings"]
+
+
+# --- Third direction: archive entry ban (--base, tranche 2 #14623) ---
+
+
+def _archive_file(tree: Path, rel: str, body: str = "# Rapport\n") -> Path:
+    path = tree / rel
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(body, encoding="utf-8")
+    return path
+
+
+def test_archive_creation_dated_name_is_flagged(tree: Path) -> None:
+    _archive_file(tree, "docs/archive/2026-09-30-sweep-9999.md")
+    findings = lane.scan_archive_additions(
+        tree, [("A", "", "docs/archive/2026-09-30-sweep-9999.md")]
+    )
+    assert _reasons({"findings": findings}) == ["ARCHIVE_NEW_REPORT"]
+
+
+def test_archive_creation_frozen_header_is_flagged(tree: Path) -> None:
+    _archive_file(
+        tree,
+        "docs/archive/analyse.md",  # not dated: the header alone triggers
+        f"{HEADER}\n# Analyse\n",
+    )
+    findings = lane.scan_archive_additions(
+        tree, [("A", "", "docs/archive/analyse.md")]
+    )
+    assert _reasons({"findings": findings}) == ["ARCHIVE_NEW_REPORT"]
+
+
+def test_archive_creation_without_signature_passes(tree: Path) -> None:
+    _archive_file(tree, "docs/archive/INDEX.md", "# Index\n")
+    findings = lane.scan_archive_additions(
+        tree, [("A", "", "docs/archive/INDEX.md")]
+    )
+    assert findings == []
+
+
+def test_archive_rename_is_a_reclassification_and_passes(tree: Path) -> None:
+    # R100 = move into the archive: permitted, whatever the signature.
+    _archive_file(tree, "docs/archive/2026-09-30-deplace.md")
+    findings = lane.scan_archive_additions(
+        tree,
+        [("R100", "docs/transients/2026-09-30-deplace.md",
+          "docs/archive/2026-09-30-deplace.md")],
+    )
+    assert findings == []
+
+
+def test_archive_modification_of_existing_stock_passes(tree: Path) -> None:
+    _archive_file(tree, "docs/archive/2026-07-11-sweep-5975.md")
+    findings = lane.scan_archive_additions(
+        tree, [("M", "", "docs/archive/2026-07-11-sweep-5975.md")]
+    )
+    assert findings == []
+
+
+def test_git_failure_is_a_finding_not_a_pass(tree: Path) -> None:
+    findings = lane.scan_archive_additions(tree, None)
+    assert _reasons({"findings": findings}) == ["GIT_DIFF_FAILED"]
+
+
+def test_run_with_base_wires_archive_findings(
+    tree: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _archive_file(tree, "docs/archive/2026-09-30-essai.md")
+    monkeypatch.setattr(
+        lane,
+        "_git_archive_entries",
+        lambda root, base: [("A", "", "docs/archive/2026-09-30-essai.md")],
+    )
+    report = lane.run(root=tree, base="origin/main")
+    assert report["verdict"] == "VIOLATION"
+    assert _reasons(report) == ["ARCHIVE_NEW_REPORT"]
+    assert report["archive_base"] == "origin/main"
+    assert report["archive_entries"] == 1
+
+
+def test_run_without_base_skips_archive_direction(
+    tree: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # No --base: the organ keeps its historical two-direction contract.
+    called = []
+    monkeypatch.setattr(
+        lane, "_git_archive_entries", lambda root, base: called.append(base)
+    )
+    report = lane.run(root=tree)
+    assert report["verdict"] == "CONFORME", report["findings"]
+    assert called == []
+    assert report["archive_base"] is None
+
+
+def test_cli_base_flag_reports_archive_line(
+    tree: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    monkeypatch.setattr(
+        lane, "_git_archive_entries", lambda root, base: []
+    )
+    assert lane.main(["--root", str(tree), "--base", "origin/main"]) == 0
+    out = capsys.readouterr().out
+    assert "archive" in out and "origin/main" in out
