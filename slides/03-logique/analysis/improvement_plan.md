@@ -83,7 +83,7 @@
 | 5, 18 | Wumpus, agents logiques | `Search/Exploration_non_informee_et_informee_intro.ipynb` |
 | 12-15 | Regles d'inference, resolution | `SymbolicAI/Lean/Lean-01-Setup-Lean-Python.ipynb` a `Lean-10-LeanDojo.ipynb` |
 | 16-17 | DPLL, SAT, WalkSAT | `Sudoku/Sudoku-04-Z3.ipynb` (SAT/SMT) |
-| 27 | Traductions FOL, fallacies | `SymbolicAI/Argument_Analysis/` (5 notebooks) |
+| 27 | Traductions FOL, fallacies | `SymbolicAI/Argument_Analysis/` notebooks |
 | 28-32 | Argumentation, analyse rhetorique | `SymbolicAI/Argument_Analysis/Argument_Analysis_*.ipynb` |
 | 35 | Prolog, chainage, e-prover | `SymbolicAI/Lean/Lean-10-LeanDojo.ipynb` |
 | 36-37 | HOL, logique modale | `SymbolicAI/Lean/Lean-3-Propositions.ipynb`, `Lean-05-Tactics-Lean.ipynb` |
