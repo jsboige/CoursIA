@@ -1,0 +1,94 @@
+name: Runner variance guard (#15574)
+
+# Garde advisory de variance des runners self-hosted -- item 4 de #15574,
+# spec arbitree c.5916600342 : un runner est SIGNALE quand un meme job y
+# depasse 3x la mediane du pool pour ce job, au moins 2 fois sur 24 h.
+# La garde ouvre ou alimente une issue qui nomme le runner et son hote ;
+# elle n'eteint rien -- le retrait reste au proprietaire de l'hote.
+#
+# POURQUOI UNE ISSUE ET PAS UNE FENETRE 24 H DIRECTE
+# Le jeton de workflow plafonne a 1000 requetes/h et le depot tourne a
+# ~780 runs/h mesures (cf runner-coresidence-advisory.yml) : chaque run
+# mesure la fenetre d'UNE HEURE (maximum quota-safe), et le criterium
+# "2 fois sur 24 h" se joue sur le LOG accumule dans le corps de l'issue
+# de suivi -- relue, enrichie et raza-24 h a chaque passage par
+# scripts/ci/check_runner_variance.py.
+#
+# ADVISORY PAR CONSTRUCTION : schedule + workflow_dispatch seulement, jamais
+# pull_request ni push -- un run ne peut jamais bloquer une PR. Le job
+# tourne sur ubuntu-latest (jamais self-hosted : l'observateur ne consomme
+# pas ce qu'il observe).
+
+on:
+  # Toutes les 2 h, minute off-:00, hors des offsets de sweep existants
+  # (13, 43) et du pic de push europeen.
+  schedule:
+    - cron: '41 1-23/2 * * *'
+  workflow_dispatch:
+    inputs:
+      window_minutes:
+        description: "Taille de la fenetre mesuree (60 = maximum quota-safe)"
+        required: false
+        default: "60"
+
+permissions:
+  issues: write
+
+concurrency:
+  group: runner-variance-guard
+  cancel-in-progress: false
+
+jobs:
+  measure-and-signal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Measure window and merge 24 h log
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WINDOW: ${{ inputs.window_minutes || '60' }}
+        run: |
+          set -euo pipefail
+          ISSUE_TITLE="runner-variance-guard #15574 (suivi 24 h)"
+          # Issue de suivi : le corps PORTE le log (bloc variance-guard-log)
+          ISSUE_NUMBER=$(gh api -X GET "search/issues" -f q='repo:jsboige/CoursIA is:issue is:open in:title "runner-variance-guard #15574"' --jq '.items | if length > 0 then .[0].number else 0 end' 2>/dev/null || echo 0)
+          if [ "${ISSUE_NUMBER:-0}" = "0" ]; then
+            echo "no body" > body.md
+          else
+            gh issue view "$ISSUE_NUMBER" --json body --jq .body > body.md
+          fi
+          python scripts/ci/check_runner_variance.py \
+            --window-minutes "$WINDOW" --body-file body.md --json > verdict.json
+          jq -r '.next_body' verdict.json > next_body.md
+          jq '{runs_measured, window_slow_runners, log_entries, signals}' verdict.json
+
+      - name: Feed tracking issue (create or update log body)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          ISSUE_TITLE="runner-variance-guard #15574 (suivi 24 h)"
+          EXISTING=$(gh api -X GET "search/issues" -f q='repo:jsboige/CoursIA is:issue is:open in:title "runner-variance-guard #15574"' --jq '.items | if length > 0 then .[0].number else 0 end' 2>/dev/null || echo 0)
+          if [ "${EXISTING:-0}" = "0" ]; then
+            gh issue create --title "$ISSUE_TITLE" \
+              --body-file next_body.md \
+              --label ci > /dev/null || gh issue create --title "$ISSUE_TITLE" --body-file next_body.md > /dev/null
+          else
+            gh issue edit "$EXISTING" --body-file next_body.md
+          fi
+
+      - name: Post signal comments (advisory -- names runner and host)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          COUNT=$(jq '.signals | length' verdict.json)
+          if [ "$COUNT" = "0" ]; then
+            echo "no signal (threshold: >= 2 slow instances per runner / 24 h)"
+            exit 0
+          fi
+          ISSUE_NUMBER=$(gh api -X GET "search/issues" -f q='repo:jsboige/CoursIA is:issue is:open in:title "runner-variance-guard #15574"' --jq '.items[0].number')
+          jq -r '.signals[] | "## SIGNAL \(.runner) (hote \(.host))\n\n\(.hit_count) instances >= 3x la mediane du pool sur 24 h :\n" + (.hits[] | "- \(.ts) -- \(.job) : \(.duration_minutes) min vs mediane \(.pool_median_minutes) min (x\(.ratio), conclusion: \(.conclusion))") + "\n\nGarde advisory (#15574 item 4) : aucun retrait automatique -- le retrait reste au proprietaire de l\'hote."' verdict.json > signal.md
+          gh issue comment "$ISSUE_NUMBER" --body-file signal.md
