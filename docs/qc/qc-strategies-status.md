@@ -3,7 +3,7 @@
 > **Issue parente** : [#1621 EPIC Consolidation QC/Trading](https://github.com/jsboige/CoursIA/issues/1621) (mandat user 2026-05-27).
 > **Partition** : `po-2024:CoursIA` (QC). **Tranche 1** (livrable incrémental — l'EPIC demande explicitement « un sujet par PR, ne pas tout faire d'un coup »).
 
-Ce document est le **point d'entrée unique** pour un visiteur qui découvre les 111 stratégies sous `MyIA.AI.Notebooks/QuantConnect/projects/` (112 entrées brutes, dont `_docs/` qui n'est pas une stratégie). Il cartographie les stratégies, leur type, leur source de données, et — là où l'évidence existe — leur statut (alive / superseded / needs-improvement / à confirmer).
+Ce document est le **point d'entrée unique** pour un visiteur qui découvre les stratégies sous `MyIA.AI.Notebooks/QuantConnect/projects/` (l'arborescence inclut des entrées non-stratégies comme `_docs/` ou le harness `Research-Executor`). Il cartographie les stratégies, leur type, leur source de données, et — là où l'évidence existe — leur statut (alive / superseded / needs-improvement / à confirmer). Le compte d'entrées dérive à chaque ajout de projet : il se lit dans l'arborescence `projects/`, pas ici.
 
 ## Méthodologie (honnête)
 
@@ -34,6 +34,7 @@ Le matériel QC mélange 4 types de notebooks qu'un visiteur doit distinguer :
 | `LongShortHarvest-QC` | Composite pairs | Multi-actifs | **Alive — BEATS** | Baseline cluster 98.7% (backtest vérifié) ; figure #5740 |
 | `Framework_Composite_FamaFrenchAllWeather` | Composite | Multi-actifs | **Alive — BEATS** | 87.5% OOS (backtest vérifié) |
 | `DynamicVIXSpyRegime-QC` | Régime VIX | US Equity | **Alive** | 69.4% (backtest vérifié) |
+| `BitcoinRegimeGate-QC` | Régime BTC (gate 24/7) | US Equity (QQQ/SHY) | **Alive — risk-adjusted** | QC Cloud 2026-09-30 (distillat #18576) : IS 2016-21 Sharpe **1.133** vs QQQ-hold 0.961 (MaxDD 14.4 % vs 28.2 %) ; OOS 2022-26 Sharpe **0.64** vs QQQ-hold 0.43 (MaxDD 15.2 % vs 34.7 %) ; PSR OOS 14.3 % (edge vs cash non significatif) |
 | `AllWeather` | Multi-asset risk-parity | Actions/Bonds/Or/Commodities | **Alive** | Figure #5743 |
 | `EMA-Cross-Index` | Trend EMA | US Equity (SPY) | **Alive** | Figure #5746 |
 | `EMA-Cross-Crypto` | Trend EMA | Crypto (BTC) | **Alive** | Figure #5750 |
@@ -55,9 +56,9 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | High-Turnover US Equity | **Near-immune** (0% à −2%) |
 | Low-Turnover Multi-Asset / Crypto | **Vulnérable** (−30% à −43%) |
 
-## Inventaire complet des 112 projets (statut best-guess)
+## Inventaire complet des projets (statut best-guess)
 
-> **Scope PR-D (#1621)** : cartographie des **112 entrées** sous `projects/`. 
+> **Scope PR-D (#1621)** : cartographie des entrées sous `projects/`.
 > Statuts dérivés **exclusivement de métadonnées du dépôt** (classe `main.py`, présence de 
 > `research.ipynb`/`quantbook.ipynb`, contenu du `README.md`). **Aucun backtest lancé** dans cette 
 > tranche — les métriques (Sharpe/CAGR) relèvent du scope séparé **RECOVERABLE-MACHINE** (QC Cloud, 
@@ -109,6 +110,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | Stratégie | Chemin | Type | Statut (best-guess) | Signal source (fichier/ligne ou nom) |
 |-----------|--------|------|---------------------|--------------------------------------|
 | `AllWeather` | `projects/AllWeather/` | Multi-asset risk-parity | Vérifié | tableau « Stratégies vérifiées » ci-dessus (figure #5743) |
+| `BitcoinRegimeGate-QC` | `projects/BitcoinRegimeGate-QC/` | Régime BTC (gate) | Vérifié | tableau vérifié ci-dessus (IS/OOS + benchmark QQQ apparié) |
 | `Cloud-RiskParity-Composite` | `projects/Cloud-RiskParity-Composite/` | Inverse-vol risk-parity | Vérifié | run frais 2026-08-14 baseline #1630 (voir tranche « statut réel Cloud-* » ci-dessous : Sharpe 0.027, Needs-improvement confirmé) |
 | `DualMomentum` | `projects/DualMomentum/` | Momentum dual-asset | Vérifié | tableau vérifié ci-dessus (Superseded) |
 | `DualMomentumNoTLT` | `projects/DualMomentumNoTLT/` | Momentum (sans TLT) | Vérifié | tableau vérifié ci-dessus (Alive) |
