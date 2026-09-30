@@ -4,7 +4,7 @@
 
 Issue : #18493 (`hygiene(notebooks): compteurs litteraux dans commentaires de cellules code`).
 
-La classe de l'issue est **distincte** de la prose markdown visée par #17636 : un compteur en dur dans un commentaire de cellule code `# ~10 mots`, `# ~1500 fichiers` est de même nature qu'un compteur prose (littéral qui dérive), mais sa correction **casse la byte-identité** de la cellule code et déclenche une ré-exécution C.2 du carnet entier. Les relais md-only (#17636) ne s'y appliquent pas — ces compteurs exigent une PR par carnet.
+La classe de l'issue est **distincte** de la prose markdown visée par #17636 : un compteur en dur dans un commentaire de cellule code (cf. motifs `--tilde_count`, `--NOTE_runtime` dans la table ci-dessous) est de même nature qu'un compteur prose (littéral qui dérive), mais sa correction **casse la byte-identité** de la cellule code et déclenche une ré-exécution C.2 du carnet entier. Les relais md-only (#17636) ne s'y appliquent pas — ces compteurs exigent une PR par carnet.
 
 ## Scan exhaustif
 
@@ -12,77 +12,46 @@ Outil : `scripts/notebook_tools/scan_code_comment_counters.py` (ajouté par cett
 
 ```bash
 python scripts/notebook_tools/scan_code_comment_counters.py
-# total hits: 21
-# notebooks touched: 17
+# total hits : voir la section "Mesure" ci-dessous
+# notebooks touched : voir la section "Mesure"
 
 python scripts/notebook_tools/scan_code_comment_counters.py --json
 # sortie structuree : by_kind, by_notebook, records (notebook, cell_index, line, kind, snippet)
 ```
 
-Le scan distingue 4 kinds :
+### Mesure (regenerer avec le script ci-dessus)
 
-| Kind | Pattern | Action recommandée |
+- 4 kinds identifies : `NOTE_runtime`, `tilde_count`, `gt_runtime_threshold`, `config_dict_doc`.
+- Total hits et liste exacte par carnet dans la sortie du script.
+- Disambiguation `RUNTIME_GUARDS` (3 regex) : `if x > N`, `delta_e = ...`, `slippage() > N` — filtre les commentaires de logique opérationnelle pour eviter les faux positifs.
+
+| Kind | Motif type | Action recommandée |
 |---|---|---|
-| `NOTE_runtime` | `# NOTE: ~1500 fichiers` | KEEP-with-annotation (note technique, approximation pédagogique) |
-| `tilde_count` | `# ~10 mots` ou `var = N  # ~K unite` | A-INVESTIGUER (calibration runtime ou commentaire pédagogique) |
-| `gt_runtime_threshold` | `# > 0 si ...` | KEEP (commentaire de logique opérationnelle, **PAS** un compteur) |
-| `config_dict_doc` | `# "large" : mathlib4, >100k theoremes` | KEEP (doc utilisateur pour choix de preset) |
+| `NOTE_runtime` | note technique avec approximation pédagogique | KEEP-with-annotation |
+| `tilde_count` | calibration runtime (`var = N  # ~K unite`) ou commentaire pédagogique | A-INVESTIGUER |
+| `gt_runtime_threshold` | commentaire de logique opérationnelle (`# > 0 si ...`) | KEEP (PAS un compteur) |
+| `config_dict_doc` | doc utilisateur pour choix de preset | KEEP |
 
-## Classification mesurée des 21 hits
+## Classification actionnable
 
-### KEEP (5 hits) — pas un compteur runtime
+### Voie 1 — KEEP
 
-| Carnet | Cellule | Snippet |
-|---|---|---|
-| `SymbolicAI/Lean/Lean-10-LeanDojo.ipynb` | c.2 l.16 | `# "large"  : mathlib4, >100k théorèmes (2-4h 1ere fois)` |
-| `SymbolicAI/Lean/Lean-10-LeanDojo.ipynb` | c.6 l.6 | `# NOTE: Tous les repos Lean 4 incluent ~1500 fichiers de la stdlib.` |
-| `SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb` | c.3 l.27 | `gain = obj - obj_new  # > 0 si le flip diminue l'objectif` |
-| `GameTheory/SocialChoice/05-Gibbard-Satterthwaite.ipynb` | c.9 l.27 | `gain = sincere_rank - new_rank  # > 0 si mieux` |
+Aucun changement. Le compteur est soit absent (logique opérationnelle), soit une approximation pédagogique non-runtime, soit une doc utilisateur pour choix de preset. Les carnets concernés incluent notamment Lean-10 (c.2 et c.6), Lean-21 et Gibbard-Satterthwaite. Voir le script de scan pour la liste exacte.
 
-Ces lignes sont soit de la documentation utilisateur (Lean-10 c.2), soit des notes techniques avec une approximation pédagogique (`~1500 fichiers` mesure d'ordre de grandeur pour la stdlib Lean 4 — la réalité évolue avec chaque release Mathlib), soit des commentaires de logique opérationnelle (`# > 0 si mieux`). Aucune n'est un compteur runtime à dériver.
-
-### A-INVESTIGUER (16 hits) — calibration runtime documentée
-
-Carnets où le commentaire calibre une valeur runtime en unité métier. Le chiffre est **fixe** dans le code (`SEQ_LEN = 96`), le commentaire `~4 mois de trading days` aide le lecteur à comprendre l'ordre de grandeur. **Pas un compteur qui dérive** : la calibration est co-écrite avec la valeur et reste correcte tant que la calibration reste valide.
-
-| Carnet | Cellule | Snippet |
-|---|---|---|
-| `SymbolicAI/SMT/Z3-API/Z3-16c-Meal-Planner-Patient-Capstone-Python.ipynb` | c.14 l.2 | `energieMin = 3347    # ~800 kcal cumules minimum par menu` |
-| `SymbolicAI/SMT/Z3-API/Z3-16c-Meal-Planner-Patient-Capstone-Python.ipynb` | c.14 l.3 | `energieMax = 10878   # ~2600 kcal cumules maximum par menu` |
-| `SymbolicAI/SmartContracts/05-Alternative-Chains/SC-20-Bitcoin-Scripting-Python.ipynb` | c.27 l.24 | `csv_blocks = 144  # ~24 heures` |
-| `QuantConnect/Python/QC-Py-12-Backtesting-Analysis.ipynb` | c.9 l.3 | `n_days = 504  # ~2 ans de trading` |
-| `QuantConnect/Python/QC-Py-15-Parameter-Optimization.ipynb` | c.46 l.3 | `n_days_wf = 1260  # ~5 ans` |
-| `QuantConnect/Python/QC-Py-22-Deep-Learning-LSTM.ipynb` | c.19 l.2 | `SEQ_LEN = 96      # ~4 mois de trading days` |
-| `QuantConnect/Python/QC-Py-22-Deep-Learning-LSTM.ipynb` | c.19 l.3 | `PRED_LEN = 24     # ~1 mois de prediction` |
-| `QuantConnect/research/research_rl_ppo.ipynb` | c.3 l.X | `EPISODE_LEN = 252      # ~1 year of trading per episode` |
-| `QuantConnect/research/research_vrp_putwrite.ipynb` | c.7 l.X | `MONTHS = 21             # ~21 jours ouvres par mois` |
-| `ML/DataScienceWithAgents/04-Vision/4.3-TransferLearning-ResNet.ipynb` | c.11 | `modele_base = resnet18(...)  # ~45 Mo telecharges au premier run` |
-| `IIT/ICT-Series/ICT-15g-EmpiricalHuangExploitation.ipynb` | c.20 | `window_size = max(2, n_total // 30)  # ~30 fenetres, comme ICT-15d` |
-| `GenAI/PostTraining/PT_11a_grpo_qwen35_rlvr.ipynb` | c.14 | `STEPS = 100  # ~15 min sur RTX 3070 ; ajuster selon la fenetre` |
-| `GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb` | c.13 | `# ~492 s sur RTX 3090, seed 42).` |
-| `GenAI/Video/02-Advanced/02-7-CogVideoX-Text-to-Video.ipynb` | c.1 | `num_inference_steps = 25           # ~25 etapes = bon compromis qualite/temps` |
-| `GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb` | c.4 | `for i in range(54):  # ~9 min max` |
-| `GenAI/Audio/02-Advanced/02-1-Chatterbox-TTS.ipynb` | c.17 | `# "Short text here with ten words exactly."  # ~10 mots` |
-| `GenAI/Audio/02-Advanced/02-1-Chatterbox-TTS.ipynb` | c.17 | `# "Medium text here with about twenty words total for testing."  # ~20 mots` |
-
-## Recommandation par cas
-
-### Voie 1 — KEEP (recommandée pour les 4 hits `KEEP`)
-
-Aucun changement. Le compteur est soit absent (logique opérationnelle), soit une approximation pédagogique non-runtime, soit une doc utilisateur pour choix de preset.
-
-### Voie 2 — EDIT (à arbitrer au cas par cas pour les 17 hits `A-INVESTIGUER`)
+### Voie 2 — EDIT (à arbitrer par les lanes de chaque famille)
 
 Remplacer la calibration statique par un calcul runtime :
 ```python
-SEQ_LEN = 252  # ~1 year of trading days
+SEQ_LEN = N  # ~K mois de trading days
 # devient
-SEQ_LEN = int(252 * (window.end - window.start).days / 365)
+SEQ_LEN = int(N * factor_runtime)  # recalibré runtime
 ```
 
 **Coût** : modification de cellule code → ré-exécution C.2 du carnet entier → 17 PRs Papermill par carnet. **Bénéfice** : la calibration reste vraie si la fenêtre change.
 
-**Voie recommandée uniquement si** la calibration change avec le contexte d'exécution. Pour `SEQ_LEN = 96  # ~4 mois` dans QC-Py-22, la valeur est un hyperparamètre — le commentaire est juste une aide à la lecture ; le runtime ne la calcule pas.
+**Voie recommandée uniquement si** la calibration change avec le contexte d'exécution. Pour `SEQ_LEN` dans QC-Py-22, la valeur est un hyperparamètre — le commentaire est juste une aide à la lecture ; le runtime ne la calcule pas.
+
+Carnets candidats pour la voie EDIT (cf. sortie JSON du scan) : QC-Py-12, QC-Py-15, QC-Py-22, research_rl_ppo, research_vrp_putwrite, ML/4.3-TransferLearning-ResNet, IIT/ICT-15g, GenAI/PostTraining/PT-11a, GenAI/Video/02-5-LTX2-Audiovisual, GenAI/Video/02-7-CogVideoX, GenAI/Video/04-5-MiniMax-H3, GenAI/Audio/02-1-Chatterbox-TTS, Z3-API/Z3-16c-Meal-Planner-Patient, SC-20-Bitcoin-Scripting.
 
 ### Voie 3 — REMOVE (proscrite)
 
@@ -96,14 +65,14 @@ Cette PR livre **uniquement** :
 
 **Aucun carnet n'est édité** → aucune cellule code touchée → aucune ré-exécution C.2 due → aucune dépendance Papermill.
 
-Les voies EDIT (17 carnets à modifier) restent un travail de fond, à prioriser carnet par carnet par les lanes de chaque famille. Le script de scan permet de re-mesurer la classe après chaque campagne.
+Les voies EDIT restent un travail de fond, à prioriser carnet par carnet par les lanes de chaque famille. Le script de scan permet de re-mesurer la classe après chaque campagne (la liste des carnets A-INVESTIGUER sort du `--json`).
 
 ## Acceptance
 
-- [x] Scan dédié produit la liste exhaustive (cf. section "Scan exhaustif")
-- [x] Classification KEEP/EDIT/REMOVE par hit documentée (cf. section "Classification mesurée")
+- [x] Scan dédié produit la liste exhaustive (cf. section "Scan exhaustif" + `--json`)
+- [x] Classification KEEP/EDIT/REMOVE par hit documentée (cf. section "Classification actionnable")
 - [x] Aucun carnet édité → C.2 non applicable (cf. "Décision de cette PR")
-- [x] Les compteurs restants sont classés KEEP (4 hits) ou A-INVESTIGUER (17 hits) avec justification
+- [x] Les compteurs restants sont classés KEEP ou A-INVESTIGUER avec justification
 
 ## Liens
 
