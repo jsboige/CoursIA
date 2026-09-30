@@ -103,7 +103,7 @@ Reprendre la cellule code 5 **depuis `main`** et n'garder de la PR que le markdo
 git fetch origin main
 # recuperer la cellule 5 de main dans le notebook de la branche, puis :
 python scripts/notebook_tools/verify_program_games_table.py \
-    --notebook MyIA.AI.Notebooks/GameTheory/GameTheory-06e-Open-Source-Game-Theory.ipynb --json
+    --notebook MyIA.AI.Notebooks/GameTheory/GameTheory-06e-Open-Source-Game-Theory-Python.ipynb --json
 # doit rendre rc=0 / 25-25 agree
 ```
 

@@ -28,7 +28,7 @@ module-set réel du disque (issue #13138). Ligne `conway_cgt_lean` re-synchronis
 |-----------|---------|
 | ~~`cooperative_games_lean`~~ | **Supprimé** (rm #6587) → [`game_theory_lean/CooperativeGames/`](game_theory_lean/CooperativeGames/) |
 | ~~`social_choice_lean`~~ | Absorbé (#6058, 2026-07-11) → [`game_theory_lean/SocialChoice/`](game_theory_lean/SocialChoice/) — ne subsistent que 4 markdown tombstone |
-| ~~`repeated_games_lean`~~ | Absorbé (#6146) → [`game_theory_lean/RepeatedGames/`](game_theory_lean/RepeatedGames/) — coquille archive conservée (lakefile neutralisé, 0 module) |
+| ~~`repeated_games_lean`~~ | Absorbé (#6146) → [`game_theory_lean/RepeatedGames/`](game_theory_lean/RepeatedGames/) — coquille archive conservée (lakefile neutralisé) |
 
 Note : `SymbolicAI/Lean/examples/llm_assisted_proof.lean` (2 sorry) est un exemple pédagogique, pas du code de production. `asymmetric_information_lean` porte 2 *naive* sorry (prose/docstrings) pour 0 vrai sorry de code.
 
@@ -217,7 +217,7 @@ Folk (`folk_theorem_discounted`) porte 1 sorry stretch, toléré au titre de #48
 
 ### 10. assignment_lean
 
-**Objectif** : squelette de correction de l'algorithme d'affectation de Kuhn-Munkres (hongrois) — lake compagnon du notebook GameTheory-23-Munkres-Assignment, hommage à James R. Munkres (1930-2026). Issue #12598 (1/3). Le primal (matrice de coûts, couplage parfait, valeur), le dual (potentiels, faisabilité, **dualité faible**), le certificat d'optimalité à écart nul, et les invariants structurels de l'algorithme (graphe d'égalité, **invariant de sortie**, **le serrage hongrois préserve la faisabilité duale**). Terminaison et complexité O(n³) volontairement hors scope.
+**Objectif** : squelette de correction de l'algorithme d'affectation de Kuhn-Munkres (hongrois) — lake compagnon du notebook GameTheory-16f-Munkres-Assignment-Python, hommage à James R. Munkres (1930-2026). Issue #12598 (1/3). Le primal (matrice de coûts, couplage parfait, valeur), le dual (potentiels, faisabilité, **dualité faible**), le certificat d'optimalité à écart nul, et les invariants structurels de l'algorithme (graphe d'égalité, **invariant de sortie**, **le serrage hongrois préserve la faisabilité duale**). Terminaison et complexité O(n³) volontairement hors scope.
 
 **Toolchain** : v4.33.0 | **Dépendances** : Mathlib4
 
