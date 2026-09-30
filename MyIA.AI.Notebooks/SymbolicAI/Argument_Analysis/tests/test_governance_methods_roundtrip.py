@@ -69,79 +69,94 @@ class TestQuadraticVotingDefaut:
     c'est la signature que la §7 du carnet doit être mise à jour et l'exercice
     1 reformulé (ou retiré).
 
-    **Construction du profil discriminant** (audit tiers po-2025, c.1326, msg
-    ``adj-18526-qv-witness-20260930``) : le témoin doit échouer sur une
-    **plausible correction QV**, pas seulement sur un patch constant. Profil
-    = 1 stubborn (top Pizza) + 1 flexible (top Burger), budget=8 :
+    **Construction du profil discriminant** (CR ai-01, msg
+    ``ai01-18526-cr-qv-20260930``) : 1 stubborn (top Pizza) + 2 flexibles
+    (top Burger ; seconds Sushi et Racelette), budget=9. Profil conçu pour
+    qu'aucun tie-break ne soit possible (écarts déterministes entre défaut
+    et corrections) :
 
-    - **Défaut** (stubborn met tout sur top, flexible coupe en deux) :
-      Pizza = 8 (stubborn) + 0 = **8 voix**, Burger = 4 (flexible moitié),
-      Sushi = 4, Racelette = 0 → Pizza gagne.
-    - **Plausible QV** (chaque agent minimise sa propre somme de carrés ;
-      distribution 3-3-2 sur top-3 prefs) : Pizza = 3, Burger = 3 (stubborn
-      2ᵉ pref) + 3 (flexible top) = **6 voix**, Sushi = 2 + 3 = 5,
-      Racelette = 2 → Burger gagne (6 > 5).
+    - **Défaut** (gm.quadratic_voting actuel) : stubborn met 9 voix sur Pizza ;
+      chaque flexible coupe en deux (4 sur top, 5 sur second).
+      → Pizza = 9, Burger = 8 (4+4), Sushi = 5, Racelette = 5 → **Pizza
+      gagne** (9 > 8).
+    - **Vraie correction QV** (somme de carrés `v²`, voix = floor(sqrt(budget_i))
+      sur le top de chacun, plus 1 voix sur le second pour dépenser le reste) :
+      stubborn 1 voix Pizza (coût 1, reste 8 non dépensé par simplicité) ;
+      flexible 1 : 2 voix Burger (coût 4) + 1 voix Sushi (coût 1) ;
+      flexible 2 : 2 voix Burger (coût 4) + 1 voix Racelette (coût 1).
+      → Pizza = 1, Burger = 4, Sushi = 1, Racelette = 1 → **Burger gagne**
+      (4 > 1).
 
-    Le témoin ``assert == 'Pizza'`` rougit donc **sur la correction QV** (et
-    seulement sur elle : un patch constant à ``'Pizza'`` continue de passer,
-    mais un patch constant à ``'Burger'`` rougit aussi — c'est la signature
-    que la garde mord sur les deux formes de non-défaut). Sur tout patch
-    qui retournerait ``'Pizza'`` trivialement, la garde ne mord pas : c'est
-    pourquoi le profil est construit pour que **défaut et correction
-    divergent de façon déterministe** (pas de tie-break d'insertion de dict).
+    Le témoin ``assert == 'Pizza'`` rougit donc **sur la vraie correction QV**
+    (Burger l'emporte), et reste vert sur le défaut actuel. **Aucune
+    égalité** dans ce profil (vérifié 9 vs 8 au défaut, 4 vs 1 en correction) :
+    un patch constant à ``'Pizza'`` continue de passer (le défaut reste tel
+    quel), un patch constant à ``'Burger'`` rougit, une vraie correction QV
+    rougit aussi. Le témoin mord sur les deux formes de non-défaut.
     """
 
-    def test_quadratic_distribution_stubborn_pizza_vs_flexible_burger(self):
-        """Témoin discriminant c.1326 : défaut → Pizza, plausible QV → Burger.
+    def test_quadratic_distribution_stubborn_pizza_vs_two_flexible_burger(self):
+        """Témoin discriminant (CR ai-01 c.1335, msg
+        ``ai01-18526-cr-qv-20260930``) : défaut → Pizza, vraie correction QV
+        → Burger. **Aucune égalité** (9 vs 8 au défaut, 4 vs 1 en correction).
 
         Profil = 1 stubborn (top=Pizza, prefs [Pizza, Burger, Sushi, Raclette])
-        + 1 flexible (top=Burger, prefs [Burger, Sushi, Racelette, Pizza]),
-        budget = 8.
+        + 2 flexibles (top=Burger, seconds Sushi et Racelette), budget = 9.
 
-        **Défaut** (gm.quadratic_voting actuel) : stubborn met 8 voix sur
-        son top (Pizza) ; flexible coupe en deux (4 Burger + 4 Sushi).
-        → Pizza = 8, Burger = 4, Sushi = 4, Racelette = 0 → **Pizza gagne**.
+        **Défaut** (gm.quadratic_voting actuel) : stubborn met 9 voix sur
+        son top (Pizza) ; chaque flexible coupe en deux (4 Burger + 5 sur
+        second).
+        → Pizza = 9, Burger = 8, Sushi = 5, Racelette = 5 → **Pizza gagne**.
 
-        **Plausible QV** (chaque agent minimise sa propre somme de carrés ;
-        distribution 3-3-2 sur top-3 préférences, la plus économe pour
-        budget=8) : stubborn 3 Pizza + 3 Burger + 2 Sushi ; flexible
-        3 Burger + 3 Sushi + 2 Racelette.
-        → Pizza = 3, Burger = 6, Sushi = 5, Racelette = 2 → **Burger gagne**.
+        **Vraie correction QV** (chaque voix `v` coûte `v²` crédits, voix =
+        floor(sqrt(budget_restant)) sur le top, puis 1 voix sur le second
+        tant qu'il reste du budget) :
+        - stubborn : 1 voix Pizza (coût 1)
+        - flexible 1 : 2 voix Burger (coût 4) + 1 voix Sushi (coût 1)
+        - flexible 2 : 2 voix Burger (coût 4) + 1 voix Racelette (coût 1)
+        → Pizza = 1, Burger = 4, Sushi = 1, Racelette = 1 → **Burger gagne**.
 
-        Le témoin affirme **Pizza** (défaut). Le jour où le tronc corrige
-        en QV plausible, la fonction renvoie Burger, ce test rougit, et
-        la §7 du carnet + l'exercice 1 doivent être mis à jour. Profil
-        identifié par audit tiers po-2025 (msg
-        ``adj-18526-qv-witness-20260930``, c.1326) : ce profil **mord**,
-        contrairement au profil 2-flexibles-disjointes-au-top qui produisait
-        une égalité non-déterministe (tie-break d'insertion de dict) et
-        qu'un patch constant à ``'Pizza'`` faisait passer trivialement.
+        Le témoin affirme **Pizza** (défaut actuel). Le jour où le tronc
+        corrige en vraie QV, la fonction renvoie Burger, ce test rougit, et
+        la §7 du carnet + l'exercice 1 doivent être mis à jour.
 
-        Contrôles négatifs vérifiés au c.1326 :
+        Contrôles négatifs mesurés à l'audit (c.1335, après rejet du profil
+        3-3-2 budget 8 qui coûtait 22 crédits — non-QV) :
+        - défaut ``quadratic_voting`` actuel → test PASS (Pizza gagne, 9 > 8) ;
         - patch constant ``return 'Pizza'`` → test PASS (signature du défaut
           inchangée) ;
         - patch constant ``return 'Burger'`` → test FAIL (rouge attendu) ;
-        - QV plausible 3-3-2 → test FAIL (Burger gagne).
+        - vraie correction QV (somme de carrés) → test FAIL (Burger=4 > Pizza=1).
+
+        Ce profil **mord** sur les deux formes de non-défaut mesurées (patch
+        constant et vraie QV), sans tie-break d'insertion de dict.
         """
-        ag = [gm.Agent("A0", "stubborn",
-                       ["Pizza", "Burger", "Sushi", "Raclette"],
-                       rng=random.Random(0)),
-              gm.Agent("A1", "flexible",
-                       ["Burger", "Sushi", "Raclette", "Pizza"],
-                       rng=random.Random(1))]
-        budget = 8
+        ag = [
+            gm.Agent("A0", "stubborn",
+                     ["Pizza", "Burger", "Sushi", "Raclette"],
+                     rng=random.Random(0)),
+            gm.Agent("A1", "flexible",
+                     ["Burger", "Sushi", "Raclette", "Pizza"],
+                     rng=random.Random(1)),
+            gm.Agent("A2", "flexible",
+                     ["Burger", "Raclette", "Sushi", "Pizza"],
+                     rng=random.Random(2)),
+        ]
+        budget = 9
         gagnant = gm.quadratic_voting(
             ag, OPTIONS, context={"quadratic_budget": budget}
         )
         assert gagnant == "Pizza", (
             f"quadratic_voting retourne {gagnant!r} sur le profil "
-            f"discriminant (stubborn top=Pizza + flexible top=Burger, "
-            f"budget=8). Défaut attendu : Pizza=8 voix (stubborn met tout "
-            f"sur top) ; Burger=4 (flexible moitié). Si Pizza ne gagne "
-            f"plus, c'est la signature d'une correction QV plausible "
-            f"(distribution 3-3-2 sur top-3 prefs → Burger=6 voix gagne). "
-            f"Le carnet §7 et l'exercice 1 doivent alors être mis à jour ; "
-            f"sinon, c'est une régression d'API."
+            f"discriminant (1 stubborn top=Pizza + 2 flexibles top=Burger, "
+            f"budget=9). Défaut attendu : Pizza=9 voix (stubborn met tout "
+            f"sur top), Burger=8 (chaque flexible coupe en deux). "
+            f"Si Pizza ne gagne plus, c'est la signature d'une correction "
+            f"QV vraie (somme de carrés des voix, voix = floor(sqrt(budget)) "
+            f"sur top : Burger=4 voix l'emporte). Le carnet §7 et l'exercice "
+            f"1 doivent alors être mis à jour ; sinon, c'est une régression "
+            f"d'API. Mesure audit c.1335 : le profil 1+2 budget 9 est "
+            f"discriminant (9 vs 8 au défaut, 4 vs 1 en correction QV)."
         )
 
     def test_quadratic_distribution_flexible_burger_top2_met_demie(self):
