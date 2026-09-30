@@ -12,7 +12,7 @@ Pour les cycles longs/batch, deleguer a l'agent `training-specialist` en async (
 ## Arguments
 
 - `<architecture|script>` : nom court (`lstm`, `transformer`, `mamba`, `patchtst`, `itransformer`, `moe`, `gnn`, `dqn-rl`, `decision-transformer`) ou nom de script `train_*.py`.
-- `--dry-run` : smoke test CPU via `validate_training_package.py --dry-run`, sans GPU. **Toujours commencer par la.**
+- `--dry-run` : smoke test CPU via `validate_training_package.py --verbose` (le script n'accepte pas `--dry-run` ; ses flags réels sont `--verbose` et `--script` — `validate_training_package.py:148-149`), sans GPU. **Toujours commencer par la.**
 - `--seeds 0,1,7,42,99` : seeds pour le multi-seed (defaut >=4 parmi 0/1/7/42/99).
 - `--folds 5` : walk-forward folds (defaut 5).
 - `--bg` : lancer le training en background (recommande pour les longs runs).
@@ -25,7 +25,7 @@ Pour les cycles longs/batch, deleguer a l'agent `training-specialist` en async (
 
 ### Phase 1 — Dry-run CPU (HARD avant tout GPU)
 ```
-python validate_training_package.py --dry-run   # smoke test, pas de GPU
+python validate_training_package.py --verbose  # smoke test, pas de GPU (le script n'accepte pas --dry-run)
 ```
 Si le dry-run echoue : reparer (pas contourner). Ne pas passer en GPU sur un package casse.
 

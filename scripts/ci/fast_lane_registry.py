@@ -1179,7 +1179,7 @@ TRANCHE9: list[Guard] = [
 #   'Invalid Notebook / outputs is a required property /
 #    Using nbformat v5.10.4 and nbconvert v7.17.0'
 #
-# Le c.1082 fabrication de GameTheory-06g-Bounded-Agents-Lean.ipynb a omis
+# Le c.1082 fabrication de GameTheory-06f-Bounded-Agents-Lean.ipynb a omis
 # la cle `outputs` de 9/9 cellules code. Papermill (validator permissif) a
 # accepte, le kernel lean4-wsl n'a rien produit (hang faute de `.lake/`), la
 # cle n'a jamais ete injectee -- resultat : un notebook structurellement
@@ -1233,7 +1233,7 @@ TRANCHE10: list[Guard] = [
 # `notebook-source-collapse-ratchet.yml` a absorber.
 #
 # Le defaut fondeur est #15862 : la cellule `c989_independent_v2` de
-# GameTheory-06e-Open-Source-Game-Theory.ipynb a perdu 3116 caracteres de
+# GameTheory-06e-Open-Source-Game-Theory-Python.ipynb a perdu 3116 caracteres de
 # source (8425 -> 5309, -37.0 %) -- une table declarative et un `assert` ont
 # disparu -- et AUCUN des ~30 ratchets n'a bronche, parce que tous mesurent
 # des SORTIES, des sequences ou de la structure. Aucun ne mesurait la

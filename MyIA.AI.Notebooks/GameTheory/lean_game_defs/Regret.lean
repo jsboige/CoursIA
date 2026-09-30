@@ -8,7 +8,7 @@
   - CFR (Counterfactual Regret Minimization) : algorithme clé pour
     résoudre les jeux à information imparfaite
 
-  Basé sur GameTheory-13-ImperfectInfo-CFR.ipynb
+  Basé sur GameTheory-13-ImperfectInfo-CFR-Python.ipynb
 
   Note : ce sont des définitions pédagogiques. Une formalisation complète
   nécessiterait la théorie de la mesure et des preuves de convergence
