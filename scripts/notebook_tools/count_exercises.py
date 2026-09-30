@@ -146,7 +146,7 @@ ARTIFACT_STEM_RE = re.compile(
 )
 
 #: Setup / environment notebooks -- rule threshold 0-1.
-#: `Lean-01-Setup-Lean-Python`, `Sudoku-00-Environment-Csharp`, `SC-01-Setup-Foundry-Python`,
+#: `Lean-01-Setup-Lean-Python`, `Sudoku-00-Environment-CSharp`, `SC-01-Setup-Foundry-Python`,
 #: `QC-Py-01-Setup`, `Argument_Analysis_Agentic-0-init`, `..-0-init_agent`.
 SETUP_STEM_RE = re.compile(
     r"(?:^|[-_])(?:setup|environment|init)(?:$|[-_])", re.IGNORECASE

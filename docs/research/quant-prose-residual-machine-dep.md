@@ -14,7 +14,7 @@
 | Famille | Drainable | Frozen | Total |
 |---|---|---|---|
 | `GenAI/Audio` | 24 | 38 | 62 |
-| `Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb` | 23 | 5 | 28 |
+| `Sudoku/Sudoku-13-SymbolicAutomata-CSharp.ipynb` | 23 | 5 | 28 |
 | `Probas/Infer` | 20 | 26 | 46 |
 | `Search/Applications` | 13 | 5 | 18 |
 | `QuantConnect/Python` | 12 | 1 | 13 |
@@ -22,7 +22,7 @@
 | `SymbolicAI/Lean` | 7 | 2 | 9 |
 | `SymbolicAI/Planners` | 6 | 3 | 9 |
 | `Search/Part2-CSP` | 5 | 4 | 9 |
-| `Sudoku/Sudoku-18-Comparison-Csharp.ipynb` | 5 | 0 | 5 |
+| `Sudoku/Sudoku-18-Comparison-CSharp.ipynb` | 5 | 0 | 5 |
 | `Sudoku/Sudoku-18-Comparison-Python.ipynb` | 5 | 0 | 5 |
 | `GenAI/Image` | 4 | 0 | 4 |
 | `GenAI/Plateformes-Conversationnelles` | 4 | 0 | 4 |
@@ -32,16 +32,16 @@
 ## Top 20 notebooks par drainage reel (RUNTIME_MEASURED)
 | Notebook | Runtime | Hint | Ambiguous | Frozen |
 |---|---|---|---|---|
-| `Sudoku-13-SymbolicAutomata-Csharp.ipynb` | 0 | 5 | 18 | 5 |
+| `Sudoku-13-SymbolicAutomata-CSharp.ipynb` | 0 | 5 | 18 | 5 |
 | `Infer-2-Gaussian-Mixtures.ipynb` | 0 | 0 | 19 | 26 |
 | `Sudoku-03-Genetic-Python.ipynb` | 3 | 0 | 6 | 4 |
 | `04-1-Educational-Audio-Content.ipynb` | 7 | 0 | 0 | 1 |
 | `04-6-Audiobook-Pipeline.ipynb` | 6 | 0 | 0 | 2 |
-| `Sudoku-18-Comparison-Csharp.ipynb` | 2 | 0 | 3 | 0 |
+| `Sudoku-18-Comparison-CSharp.ipynb` | 2 | 0 | 3 | 0 |
 | `Sudoku-18-Comparison-Python.ipynb` | 1 | 2 | 2 | 0 |
 | `Infer-1b-Premiers-Modeles.ipynb` | 0 | 0 | 4 | 10 |
 | `QC-Py-26-LLM-Trading-Signals.ipynb` | 0 | 0 | 4 | 0 |
-| `Sudoku-10-ORTools-Csharp.ipynb` | 0 | 0 | 4 | 0 |
+| `Sudoku-10-ORTools-CSharp.ipynb` | 0 | 0 | 4 | 0 |
 | `App-2b-GraphColoring-CSharp.ipynb` | 0 | 0 | 3 | 0 |
 | `Sudoku-18b-Statistical-Comparison-Python.ipynb` | 0 | 0 | 3 | 0 |
 | `Lean-07b-Examples-Python.ipynb` | 3 | 0 | 0 | 0 |

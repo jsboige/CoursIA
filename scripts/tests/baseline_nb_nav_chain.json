@@ -1537,7 +1537,7 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Sudoku/Sudoku-12b-Z3-Linq2Z3-Csharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/Sudoku/Sudoku-12b-Z3-Linq2Z3-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/Sudoku"
     },
     {
@@ -1547,12 +1547,12 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Csharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/Sudoku"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Sudoku/Sudoku-19-Lean-Propagation.ipynb",
+      "notebook": "MyIA.AI.Notebooks/Sudoku/Sudoku-19-Lean-Propagation-Lean.ipynb",
       "series": "MyIA.AI.Notebooks/Sudoku"
     },
     {

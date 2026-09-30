@@ -11,7 +11,7 @@ maturity: BETA=38
 >
 > **17 C# + 19 Python + 1 Lean 4 = 37 notebooks canoniques ✓** (37 fichiers `*.ipynb` canoniques au total dans le dépôt — les artefacts Papermill `_output.ipynb` sont gitignored, locaux à la machine d'exécution et non commités).
 >
-> Sudoku est un cas de **mixité JUMEAUX C#/Python dominante** (14 paires strictes 1-14 + 1 paradigme-comparable 15 Infer.NET/NumPyro + 1 benchmark 18, soit 16 entrées à 2 langages) avec **1 companion Lean natif intra-hub** (`Sudoku-19-Lean-Propagation.ipynb`, lake `sudoku_lean` 0-sorry). C'est une **variante L392 #4** : contrairement à QC (#5917) où Lean est isolé dans une sous-série dédiée `kelly_lean/`, et contrairement à ML (#5915) / Probas (#5916) où la mixité kernel est intra-série, ici la mixité jumeaux domine largement et le notebook tiers (Lean) est intra-hub sans sous-série dédiée.
+> Sudoku est un cas de **mixité JUMEAUX C#/Python dominante** (14 paires strictes 1-14 + 1 paradigme-comparable 15 Infer.NET/NumPyro + 1 benchmark 18, soit 16 entrées à 2 langages) avec **1 companion Lean natif intra-hub** (`Sudoku-19-Lean-Propagation-Lean.ipynb`, lake `sudoku_lean` 0-sorry). C'est une **variante L392 #4** : contrairement à QC (#5917) où Lean est isolé dans une sous-série dédiée `kelly_lean/`, et contrairement à ML (#5915) / Probas (#5916) où la mixité kernel est intra-série, ici la mixité jumeaux domine largement et le notebook tiers (Lean) est intra-hub sans sous-série dédiée.
 >
 > Les counts obsolètes `16 notebooks Python` (L605) et `16 solveurs` (L770) ont été réconciliés sur la valeur disk-truth de **19 notebooks Python canoniques** dans cette PR.
 >
@@ -19,7 +19,7 @@ maturity: BETA=38
 
 [← Notebooks](../README.md) | [→ Search](../Search/README.md)
 
-Comment résoudre un Sudoku ? Cette série explore les techniques de résolution, des algorithmes classiques (backtracking, contraintes) aux approches symboliques, probabilistes et neuronales. La série couvre **16 paires miroir C#/Python** (notebooks 1 à 15 et le benchmark comparatif 18 — mêmes algorithmes dans les deux langages), **1 notebook C# uniquement** (0-Environment, classes de base), **3 notebooks Python uniquement** (16-NeuralNetwork, 17-LLM, 18b-Statistical-Comparison) et **1 companion Lean natif** ([Sudoku-19](Sudoku-19-Lean-Propagation.ipynb), preuve formelle de la propagation de contraintes). Cette structure laisse à chaque étudiant le choix de son langage sur la quasi-totalité des algorithmes.
+Comment résoudre un Sudoku ? Cette série explore les techniques de résolution, des algorithmes classiques (backtracking, contraintes) aux approches symboliques, probabilistes et neuronales. La série couvre **16 paires miroir C#/Python** (notebooks 1 à 15 et le benchmark comparatif 18 — mêmes algorithmes dans les deux langages), **1 notebook C# uniquement** (0-Environment, classes de base), **3 notebooks Python uniquement** (16-NeuralNetwork, 17-LLM, 18b-Statistical-Comparison) et **1 companion Lean natif** ([Sudoku-19](Sudoku-19-Lean-Propagation-Lean.ipynb), preuve formelle de la propagation de contraintes). Cette structure laisse à chaque étudiant le choix de son langage sur la quasi-totalité des algorithmes.
 
 **À qui s'adresse cette série** : étudiants en informatique (L2-M2) découvrant les paradigmes algorithmiques, candidats à des entretiens techniques, et enseignants cherchant un fil rouge pédagogique. Les notebooks Python ne nécessitent que Python 3.10+. Les notebooks C# requièrent .NET 9.0 + dotnet-interactive. Aucun prérequis en IA : les concepts sont introduits depuis le backtracking.
 
@@ -44,9 +44,9 @@ La série traverse cinq grandes familles algorithmiques, des méthodes exhaustiv
 **Objectif** : Maîtriser la recherche exhaustive et comprendre pourquoi elle est insuffisante.
 
 **Notebooks recommandés** :
-1. `Sudoku-00-Environment-Csharp` ou comprendre la structure des données
-2. `Sudoku-01-Backtracking-Csharp` (ou Python) : Premier algorithme de résolution
-3. `Sudoku-07-Norvig-Csharp` : Voir comment la propagation accélère drastiquement
+1. `Sudoku-00-Environment-CSharp` ou comprendre la structure des données
+2. `Sudoku-01-Backtracking-CSharp` (ou Python) : Premier algorithme de résolution
+3. `Sudoku-07-Norvig-CSharp` : Voir comment la propagation accélère drastiquement
 
 **Pourquoi cet ordre ?**
 - Le notebook 0 établit le vocabulaire et les structures de base
@@ -63,9 +63,9 @@ La série traverse cinq grandes familles algorithmiques, des méthodes exhaustiv
 **Objectif** : Comprendre que différentes philosophies de résolution existent et ont chacune leurs forces.
 
 **Notebooks recommandés** :
-1. `Sudoku-03-Genetic-Csharp` (ou Python) : Découvrir les métaheuristiques
-2. `Sudoku-09-GraphColoring-Csharp` (ou Python) : Voir le Sudoku comme un problème de graphe
-3. `Sudoku-10-ORTools-Csharp` (ou Python) : Utiliser un outil industriel
+1. `Sudoku-03-Genetic-CSharp` (ou Python) : Découvrir les métaheuristiques
+2. `Sudoku-09-GraphColoring-CSharp` (ou Python) : Voir le Sudoku comme un problème de graphe
+3. `Sudoku-10-ORTools-CSharp` (ou Python) : Utiliser un outil industriel
 
 **Pourquoi cet ordre ?**
 - Le notebook 3 montre qu'on peut "abandonner" la garantie pour la vitesse
@@ -82,7 +82,7 @@ La série traverse cinq grandes familles algorithmiques, des méthodes exhaustiv
 **Objectif** : Utiliser les outils de pointe de l'IA moderne.
 
 **Notebooks recommandés** :
-1. `Sudoku-12-Z3-Csharp` (ou Python) : Satisfiabilité modulaire
+1. `Sudoku-12-Z3-CSharp` (ou Python) : Satisfiabilité modulaire
 2. `Sudoku-16-NeuralNetwork-Python` : Apprentissage profond
 3. `Sudoku-17-LLM-Python` : Grands modèles de langage
 4. `Sudoku-18-Comparison-Python` : Benchmark comparatif final
@@ -326,7 +326,7 @@ Les solveurs CP et SMT modernes ne se limitent pas à **trouver une solution fai
 
 - **[#7588](https://github.com/jsboige/CoursIA/issues/7588) `feat(sudoku,#3801): demonstrate CP-SAT optimization (Maximize/Minimize)` — `Sudoku-10-ORTools-Python.ipynb`** : ajoute une section « Optimisation CP-SAT » qui exerce `model.Maximize(...)` et `model.Minimize(...)` sur des carrés latins pondérés à 5×5 (récompense totale optimale 178, coût diagonal minimal 5). Le solveur passe du statut `FEASIBLE` au statut `OPTIMAL`, ce que la simple satisfaction ne montre jamais. Voir aussi le port C# twin via la même cellule si le notebook miroir est mis à jour (voir PR de tracking).
 - **[#7589](https://github.com/jsboige/CoursIA/issues/7589) `feat(sudoku,#3801): demonstrate Z3 SMT optimization (Optimize/maximize)` — `Sudoku-12-Z3-Python.ipynb`** : ajoute la contrepartie SMT avec `Optimize()` + `maximize(...)` (MaxSMT). Cohérence cross-moteur vérifiée : la même instance de carré latin 5×5 pondéré donne une récompense optimale identique (178) entre CP-SAT et Z3, ce qui valide la transcription entre paradigmes.
-- **[#7622](https://github.com/jsboige/CoursIA/pull/7622) `feat(sudoku,#7589): Z3 SMT optimization (Optimize/MkMaximize) port to C# twin — `Sudoku-12-Z3-Csharp.ipynb`** : port C# du même exemple côté `Microsoft.Z3` (`Context.MkOptimize()` + `MkMaximize(rewardTotal)`), `SATISFIABLE (optimum)` avec récompense 192 (variante du problème, source C# identique au twin Python modulo API binding). Reviewer structural (`NanoClaw`) : LGTM, 19/19 cellules exécutées, latin-square vérifié à la main colonne par colonne.
+- **[#7622](https://github.com/jsboige/CoursIA/pull/7622) `feat(sudoku,#7589): Z3 SMT optimization (Optimize/MkMaximize) port to C# twin — `Sudoku-12-Z3-CSharp.ipynb`** : port C# du même exemple côté `Microsoft.Z3` (`Context.MkOptimize()` + `MkMaximize(rewardTotal)`), `SATISFIABLE (optimum)` avec récompense 192 (variante du problème, source C# identique au twin Python modulo API binding). Reviewer structural (`NanoClaw`) : LGTM, 19/19 cellules exécutées, latin-square vérifié à la main colonne par colonne.
 
 **Pourquoi cette section manquait avant** : EPIC [#3801](https://github.com/jsboige/CoursIA/issues/3801) Prong-B (« problème non-trivial qui met le moteur en valeur ») a diagnostiqué que — **sur l'ensemble de la série (37 notebooks canoniques : 17 C# + 19 Python + 1 Lean, cf CATALOG-STATUS) [G.1 vérifié 2026-08-08]** — les solveurs CP/SMT étaient présentés uniquement en mode satisfaction (`Solver.check()` / `cp_model.Add(...)`), sans jamais exercer leur capacité d'optimisation — alors que c'est précisément ce qui distingue OR-Tools et Z3 d'un simple solveur SAT dans la pratique industrielle (MaxSMT, configuration sous contraintes, allocation). Les trois PRs ci-dessus rééquilibrent ce curseur pour le Sudoku.
 
@@ -395,7 +395,7 @@ Chaque notebook introduit une technique de résolution spécifique. Le tableau c
 | 17 | LLM | LLM Solver : prompt engineering pour résolution logique, limites |
 | 18 | Comparison | Benchmark comparatif : toutes les approches sur Easy/Medium/Hard/Expert |
 | 18b | [Sudoku-18b-Statistical-Comparison](Sudoku-18b-Statistical-Comparison-Python.ipynb) | **Companion statistique** (Python uniquement) : méthodologie formelle pour les benchmarks solveurs — variance inter-puzzles, IC bootstrap 95%, Mann-Whitney U, taille d'effet (rank-biserial), correction de Bonferroni. Ajouté en [#9805](https://github.com/jsboige/CoursIA/pull/9805) pour combler le gap méthodologique de Sudoku-18 (qui utilise « significatif » au sens courant, pas statistique). |
-| 19 | [Sudoku-19-Lean-Propagation](Sudoku-19-Lean-Propagation.ipynb) | **Companion natif** (kernel Lean) : preuve formelle 0-sorry de la soundness de la propagation (naked/hidden single, clé de voûte `peer_excludes_value`) dans le lake `sudoku_lean`, `#check` + `#print axioms` in-kernel — voir [#4055](https://github.com/jsboige/CoursIA/issues/4055) (création du lake) et `LEAN_INVENTORY.md` du dossier |
+| 19 | [Sudoku-19-Lean-Propagation-Lean](Sudoku-19-Lean-Propagation-Lean.ipynb) | **Companion natif** (kernel Lean) : preuve formelle 0-sorry de la soundness de la propagation (naked/hidden single, clé de voûte `peer_excludes_value`) dans le lake `sudoku_lean`, `#check` + `#print axioms` in-kernel — voir [#4055](https://github.com/jsboige/CoursIA/issues/4055) (création du lake) et `LEAN_INVENTORY.md` du dossier |
 
 ---
 
@@ -431,23 +431,23 @@ Les notebooks suivants sont disponibles dans les deux langages pour comparaison 
 
 | # | Sujet | C# | Python | Intérêt pédagogique |
 |---|-------|----|----|-------------------|
-| 1 | Backtracking | [Sudoku-01-Backtracking-Csharp](Sudoku-01-Backtracking-Csharp.ipynb) | [Sudoku-01-Backtracking-Python](Sudoku-01-Backtracking-Python.ipynb) | Algorithme de base |
-| 2 | Dancing Links | [Sudoku-02-DancingLinks-Csharp](Sudoku-02-DancingLinks-Csharp.ipynb) | [Sudoku-02-DancingLinks-Python](Sudoku-02-DancingLinks-Python.ipynb) | Couverture exacte |
-| 3 | Genetic | [Sudoku-03-Genetic-Csharp](Sudoku-03-Genetic-Csharp.ipynb) | [Sudoku-03-Genetic-Python](Sudoku-03-Genetic-Python.ipynb) | GeneticSharp vs PyGAD |
-| 4 | Simulated Annealing | [Sudoku-04-SimulatedAnnealing-Csharp](Sudoku-04-SimulatedAnnealing-Csharp.ipynb) | [Sudoku-04-SimulatedAnnealing-Python](Sudoku-04-SimulatedAnnealing-Python.ipynb) | Recherche locale |
-| 5 | PSO | [Sudoku-05-PSO-Csharp](Sudoku-05-PSO-Csharp.ipynb) | [Sudoku-05-PSO-Python](Sudoku-05-PSO-Python.ipynb) | Swarm intelligence |
-| 6 | AIMA CSP | [Sudoku-06-AIMA-CSP-Csharp](Sudoku-06-AIMA-CSP-Csharp.ipynb) | [Sudoku-06-AIMA-CSP-Python](Sudoku-06-AIMA-CSP-Python.ipynb) | Port Russell & Norvig |
-| 7 | Norvig | [Sudoku-07-Norvig-Csharp](Sudoku-07-Norvig-Csharp.ipynb) | [Sudoku-07-Norvig-Python](Sudoku-07-Norvig-Python.ipynb) | Propagation (100x plus rapide) |
-| 8 | Human Stratégies | [Sudoku-08-HumanStrategies-Csharp](Sudoku-08-HumanStrategies-Csharp.ipynb) | [Sudoku-08-HumanStrategies-Python](Sudoku-08-HumanStrategies-Python.ipynb) | Déduction logique |
-| 9 | Graph Coloring | [Sudoku-09-GraphColoring-Csharp](Sudoku-09-GraphColoring-Csharp.ipynb) | [Sudoku-09-GraphColoring-Python](Sudoku-09-GraphColoring-Python.ipynb) | Théorie des graphes |
-| 10 | OR-Tools | [Sudoku-10-ORTools-Csharp](Sudoku-10-ORTools-Csharp.ipynb) | [Sudoku-10-ORTools-Python](Sudoku-10-ORTools-Python.ipynb) | CP-SAT solveur |
-| 11 | Choco | [Sudoku-11-Choco-Csharp](Sudoku-11-Choco-Csharp.ipynb) | [Sudoku-11-Choco-Python](Sudoku-11-Choco-Python.ipynb) | CP industrielle |
-| 12 | Z3 | [Sudoku-12-Z3-Csharp](Sudoku-12-Z3-Csharp.ipynb) | [Sudoku-12-Z3-Python](Sudoku-12-Z3-Python.ipynb) | SMT solveur |
-| 12b | Linq2Z3 (accrétion de 12) | [Sudoku-12b-Z3-Linq2Z3-Csharp](Sudoku-12b-Z3-Linq2Z3-Csharp.ipynb) | — | Le binding Z3.Linq en 4 barreaux (propriétés → collections → `int[][]` → rung `int[,]` attesté) |
-| 13 | Symbolic Automata | [Sudoku-13-SymbolicAutomata-Csharp](Sudoku-13-SymbolicAutomata-Csharp.ipynb) | [Sudoku-13-SymbolicAutomata-Python](Sudoku-13-SymbolicAutomata-Python.ipynb) | Automates symboliques : .NET vs regex récursive + Z3 |
-| 14 | BDD/MDD | [Sudoku-14-BDD-Csharp](Sudoku-14-BDD-Csharp.ipynb) | [Sudoku-14-BDD-Python](Sudoku-14-BDD-Python.ipynb) | Diagrammes de décision hand-rolled (parité) |
-| 15 | Infer (Probabiliste) | [Sudoku-15-Infer-Csharp](Sudoku-15-Infer-Csharp.ipynb) | [Sudoku-15-Infer-Python](Sudoku-15-Infer-Python.ipynb) | Inférence bayésienne |
-| 18 | Comparison | [Sudoku-18-Comparison-Csharp](Sudoku-18-Comparison-Csharp.ipynb) | [Sudoku-18-Comparison-Python](Sudoku-18-Comparison-Python.ipynb) | Benchmark multi-paradigmes dans chaque écosystème |
+| 1 | Backtracking | [Sudoku-01-Backtracking-CSharp](Sudoku-01-Backtracking-CSharp.ipynb) | [Sudoku-01-Backtracking-Python](Sudoku-01-Backtracking-Python.ipynb) | Algorithme de base |
+| 2 | Dancing Links | [Sudoku-02-DancingLinks-CSharp](Sudoku-02-DancingLinks-CSharp.ipynb) | [Sudoku-02-DancingLinks-Python](Sudoku-02-DancingLinks-Python.ipynb) | Couverture exacte |
+| 3 | Genetic | [Sudoku-03-Genetic-CSharp](Sudoku-03-Genetic-CSharp.ipynb) | [Sudoku-03-Genetic-Python](Sudoku-03-Genetic-Python.ipynb) | GeneticSharp vs PyGAD |
+| 4 | Simulated Annealing | [Sudoku-04-SimulatedAnnealing-CSharp](Sudoku-04-SimulatedAnnealing-CSharp.ipynb) | [Sudoku-04-SimulatedAnnealing-Python](Sudoku-04-SimulatedAnnealing-Python.ipynb) | Recherche locale |
+| 5 | PSO | [Sudoku-05-PSO-CSharp](Sudoku-05-PSO-CSharp.ipynb) | [Sudoku-05-PSO-Python](Sudoku-05-PSO-Python.ipynb) | Swarm intelligence |
+| 6 | AIMA CSP | [Sudoku-06-AIMA-CSP-CSharp](Sudoku-06-AIMA-CSP-CSharp.ipynb) | [Sudoku-06-AIMA-CSP-Python](Sudoku-06-AIMA-CSP-Python.ipynb) | Port Russell & Norvig |
+| 7 | Norvig | [Sudoku-07-Norvig-CSharp](Sudoku-07-Norvig-CSharp.ipynb) | [Sudoku-07-Norvig-Python](Sudoku-07-Norvig-Python.ipynb) | Propagation (100x plus rapide) |
+| 8 | Human Stratégies | [Sudoku-08-HumanStrategies-CSharp](Sudoku-08-HumanStrategies-CSharp.ipynb) | [Sudoku-08-HumanStrategies-Python](Sudoku-08-HumanStrategies-Python.ipynb) | Déduction logique |
+| 9 | Graph Coloring | [Sudoku-09-GraphColoring-CSharp](Sudoku-09-GraphColoring-CSharp.ipynb) | [Sudoku-09-GraphColoring-Python](Sudoku-09-GraphColoring-Python.ipynb) | Théorie des graphes |
+| 10 | OR-Tools | [Sudoku-10-ORTools-CSharp](Sudoku-10-ORTools-CSharp.ipynb) | [Sudoku-10-ORTools-Python](Sudoku-10-ORTools-Python.ipynb) | CP-SAT solveur |
+| 11 | Choco | [Sudoku-11-Choco-CSharp](Sudoku-11-Choco-CSharp.ipynb) | [Sudoku-11-Choco-Python](Sudoku-11-Choco-Python.ipynb) | CP industrielle |
+| 12 | Z3 | [Sudoku-12-Z3-CSharp](Sudoku-12-Z3-CSharp.ipynb) | [Sudoku-12-Z3-Python](Sudoku-12-Z3-Python.ipynb) | SMT solveur |
+| 12b | Linq2Z3 (accrétion de 12) | [Sudoku-12b-Z3-Linq2Z3-CSharp](Sudoku-12b-Z3-Linq2Z3-CSharp.ipynb) | — | Le binding Z3.Linq en 4 barreaux (propriétés → collections → `int[][]` → rung `int[,]` attesté) |
+| 13 | Symbolic Automata | [Sudoku-13-SymbolicAutomata-CSharp](Sudoku-13-SymbolicAutomata-CSharp.ipynb) | [Sudoku-13-SymbolicAutomata-Python](Sudoku-13-SymbolicAutomata-Python.ipynb) | Automates symboliques : .NET vs regex récursive + Z3 |
+| 14 | BDD/MDD | [Sudoku-14-BDD-CSharp](Sudoku-14-BDD-CSharp.ipynb) | [Sudoku-14-BDD-Python](Sudoku-14-BDD-Python.ipynb) | Diagrammes de décision hand-rolled (parité) |
+| 15 | Infer (Probabiliste) | [Sudoku-15-Infer-CSharp](Sudoku-15-Infer-CSharp.ipynb) | [Sudoku-15-Infer-Python](Sudoku-15-Infer-Python.ipynb) | Inférence bayésienne |
+| 18 | Comparison | [Sudoku-18-Comparison-CSharp](Sudoku-18-Comparison-CSharp.ipynb) | [Sudoku-18-Comparison-Python](Sudoku-18-Comparison-Python.ipynb) | Benchmark multi-paradigmes dans chaque écosystème |
 
 ## Algorithmes Couverts
 
@@ -477,9 +477,9 @@ Les notebooks suivants sont disponibles dans les deux langages pour comparaison 
 ```
 Sudoku-0-Csharp (Environment)
     |
-    +---> Niveau 1 : Sudoku-01-Backtracking-Csharp
+    +---> Niveau 1 : Sudoku-01-Backtracking-CSharp
     |
-    +---> Niveau 2 : Sudoku-02-DancingLinks-Csharp
+    +---> Niveau 2 : Sudoku-02-DancingLinks-CSharp
     |
     +---> Niveau 3 : Sudoku-03/4/5-Csharp (Métaheuristiques)
     |
@@ -487,7 +487,7 @@ Sudoku-0-Csharp (Environment)
     |
     +---> Niveau 5 : Sudoku-12/13/14-Csharp (Symbolique)
     |
-    +---> Niveau 6 : Sudoku-15-Csharp (Infer.NET)
+    +---> Niveau 6 : Sudoku-15-CSharp (Infer.NET)
     |
     +---> Niveau 7 : Sudoku-18-Comparison-Python (Benchmark)
     |
@@ -632,44 +632,44 @@ Sudoku/
 ├── requirements.txt                       # Dépendances Python (19 notebooks Python canoniques, dont 16 paires miroir C#/Python + 3 only-Python : NN 16 + LLM 17 + Statistical-Comparison 18b)
 ├── choco-solver-4.10.17-jar-with-dependencies.jar  # JAR Choco (utilisé par nb-11 Python via JPype)
 ├── (DLL Choco précompilée : copie partagée dédupliquée, voir `../Search/Part2-CSP/org.chocosolver.solver.dll` — nb-11 C# la référence via chemin relatif, See #13742)
-├── Sudoku-00-Environment-Csharp.ipynb      # Classes de base C#
-├── Sudoku-01-Backtracking-Csharp.ipynb     # Backtracking C#
+├── Sudoku-00-Environment-CSharp.ipynb      # Classes de base C#
+├── Sudoku-01-Backtracking-CSharp.ipynb     # Backtracking C#
 ├── Sudoku-01-Backtracking-Python.ipynb     # Backtracking Python
-├── Sudoku-02-DancingLinks-Csharp.ipynb     # Dancing Links C#
+├── Sudoku-02-DancingLinks-CSharp.ipynb     # Dancing Links C#
 ├── Sudoku-02-DancingLinks-Python.ipynb     # Dancing Links Python
-├── Sudoku-03-Genetic-Csharp.ipynb          # Algorithme génétique C#
+├── Sudoku-03-Genetic-CSharp.ipynb          # Algorithme génétique C#
 ├── Sudoku-03-Genetic-Python.ipynb          # Algorithme génétique Python
-├── Sudoku-04-SimulatedAnnealing-Csharp.ipynb  # Recuit simulé C#
+├── Sudoku-04-SimulatedAnnealing-CSharp.ipynb  # Recuit simulé C#
 ├── Sudoku-04-SimulatedAnnealing-Python.ipynb  # Recuit simulé Python
-├── Sudoku-05-PSO-Csharp.ipynb              # PSO C#
+├── Sudoku-05-PSO-CSharp.ipynb              # PSO C#
 ├── Sudoku-05-PSO-Python.ipynb              # PSO Python
-├── Sudoku-06-AIMA-CSP-Csharp.ipynb         # AIMA CSP C#
+├── Sudoku-06-AIMA-CSP-CSharp.ipynb         # AIMA CSP C#
 ├── Sudoku-06-AIMA-CSP-Python.ipynb         # AIMA CSP Python
-├── Sudoku-07-Norvig-Csharp.ipynb           # Propagation de Norvig C#
+├── Sudoku-07-Norvig-CSharp.ipynb           # Propagation de Norvig C#
 ├── Sudoku-07-Norvig-Python.ipynb           # Propagation de Norvig Python
-├── Sudoku-08-HumanStrategies-Csharp.ipynb  # Stratégies humaines C#
+├── Sudoku-08-HumanStrategies-CSharp.ipynb  # Stratégies humaines C#
 ├── Sudoku-08-HumanStrategies-Python.ipynb  # Stratégies humaines Python
-├── Sudoku-09-GraphColoring-Csharp.ipynb    # Graph Coloring C#
+├── Sudoku-09-GraphColoring-CSharp.ipynb    # Graph Coloring C#
 ├── Sudoku-09-GraphColoring-Python.ipynb    # Graph Coloring Python
-├── Sudoku-10-ORTools-Csharp.ipynb         # OR-Tools C#
+├── Sudoku-10-ORTools-CSharp.ipynb         # OR-Tools C#
 ├── Sudoku-10-ORTools-Python.ipynb         # OR-Tools Python
-├── Sudoku-11-Choco-Csharp.ipynb           # Choco Solver C#
+├── Sudoku-11-Choco-CSharp.ipynb           # Choco Solver C#
 ├── Sudoku-11-Choco-Python.ipynb           # Choco Solver Python
-├── Sudoku-12-Z3-Csharp.ipynb              # Z3 SMT C#
+├── Sudoku-12-Z3-CSharp.ipynb              # Z3 SMT C#
 ├── Sudoku-12-Z3-Python.ipynb              # Z3 SMT Python
-├── Sudoku-12b-Z3-Linq2Z3-Csharp.ipynb     # Accrétion de 12 : le binding Z3.Linq (C#-only)
-├── Sudoku-13-SymbolicAutomata-Csharp.ipynb # Automates symboliques C#
+├── Sudoku-12b-Z3-Linq2Z3-CSharp.ipynb     # Accrétion de 12 : le binding Z3.Linq (C#-only)
+├── Sudoku-13-SymbolicAutomata-CSharp.ipynb # Automates symboliques C#
 ├── Sudoku-13-SymbolicAutomata-Python.ipynb # Twin Python (regex, Z3, récursion (?&rec))
-├── Sudoku-14-BDD-Csharp.ipynb             # BDD/MDD C#
+├── Sudoku-14-BDD-CSharp.ipynb             # BDD/MDD C#
 ├── Sudoku-14-BDD-Python.ipynb             # BDD/MDD Python (jumeau, parité hand-rolled)
-├── Sudoku-15-Infer-Csharp.ipynb           # Infer.NET C#
+├── Sudoku-15-Infer-CSharp.ipynb           # Infer.NET C#
 ├── Sudoku-15-Infer-Python.ipynb           # NumPyro Python
 ├── Sudoku-16-NeuralNetwork-Python.ipynb   # Réseau de neurones Python
 ├── Sudoku-17-LLM-Python.ipynb             # LLM Solver Python
-├── Sudoku-18-Comparison-Csharp.ipynb      # Benchmark comparatif C#
+├── Sudoku-18-Comparison-CSharp.ipynb      # Benchmark comparatif C#
 ├── Sudoku-18-Comparison-Python.ipynb      # Benchmark comparatif Python
 ├── Sudoku-18b-Statistical-Comparison-Python.ipynb  # Companion statistique Python (variance, bootstrap, Mann-Whitney) — méthodologie formelle pour les benchmarks
-├── Sudoku-19-Lean-Propagation.ipynb       # Companion Lean natif (preuve de soundness)
+├── Sudoku-19-Lean-Propagation-Lean.ipynb       # Companion Lean natif (preuve de soundness)
 ├── Puzzles/                               # Fichiers de puzzles
 │   ├── Sudoku_Easy51.txt
 │   ├── Sudoku_hardest.txt
@@ -754,14 +754,14 @@ Choco est un solveur Java, exposé différemment selon le langage.
 - Installez JPype : `pip install jpype1`
 - Le JAR Choco est téléchargé automatiquement par le notebook
 
-#### Côté C# (`Sudoku-11-Choco-Csharp.ipynb`) — via IKVM 8.15.0
+#### Côté C# (`Sudoku-11-Choco-CSharp.ipynb`) — via IKVM 8.15.0
 
 Le notebook C# charge Choco via **IKVM 8.15.0** (runtime Java-sur-.NET, package NuGet `IKVM 8.15.0`) et une DLL Choco précompilée (`org.chocosolver.solver.dll`, **copie partagée** dédupliquée dans `Search/Part2-CSP/` — les deux copies étaient byte-identiques, See #13742) :
 
 - **Restauration IKVM** : la première exécution est lente (restauration NuGet d'IKVM 8.15.0 + assemblage du *home* IKVM, environ 1 à 2 minutes).
 - **DLL Choco** : `#r "../Search/Part2-CSP/org.chocosolver.solver.dll"` référence la build précompilée de choco-solver 4.10.17 (copie unique du dépôt, partagée avec les notebooks CSP). Le chargement direct du JAR via `#r` n'est pas pris en charge par IKVM ; la DLL précompilée contourne.
 - **Vérification** : le notebook affiche `IKVM 8.15.0 prêt (tzdb=True) - Choco-solver chargé` puis résout un Sudoku de référence (`Solution trouvée en ~700 ms`).
-- **Alternative plus légère** : pour une mise en place plus simple, le notebook Python ([`Sudoku-11-Choco-Python`](Sudoku-11-Choco-Python.ipynb), JPype) ou les solveurs C# natifs [`Sudoku-10-ORTools-Csharp`](Sudoku-10-ORTools-Csharp.ipynb) (CP-SAT) et [`Sudoku-12-Z3-Csharp`](Sudoku-12-Z3-Csharp.ipynb) (SMT) ne nécessitent pas de runtime Java.
+- **Alternative plus légère** : pour une mise en place plus simple, le notebook Python ([`Sudoku-11-Choco-Python`](Sudoku-11-Choco-Python.ipynb), JPype) ou les solveurs C# natifs [`Sudoku-10-ORTools-CSharp`](Sudoku-10-ORTools-CSharp.ipynb) (CP-SAT) et [`Sudoku-12-Z3-CSharp`](Sudoku-12-Z3-CSharp.ipynb) (SMT) ne nécessitent pas de runtime Java.
 
 > **Historique** : la version C# était auparavant non fonctionnelle (IKVM 7.2.4630.5, seule version NuGet à l'époque, ne chargeait pas le JAR — erreur `CS0009`). Résolu lors de la bascule vers IKVM 8.15.0 + DLL précompilée (See #4667, #5005).
 
