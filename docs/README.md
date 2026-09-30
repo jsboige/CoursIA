@@ -296,6 +296,14 @@ Les autres documents de cadrage vivent au premier niveau de `docs/` (Grothendiec
 |---------|-------------|
 | [ml/tsad-benchmark-flaws.md](ml/tsad-benchmark-flaws.md) | Défauts des benchmarks TSAD (détection d'anomalies sur séries temporelles) et place du *Matrix Profile* — note de référence compagnon des notebooks ML-10. Sert à ne pas présenter comme un résultat ce qui est un artefact de protocole d'évaluation |
 
+## Rapports transients (docs/transients/)
+
+Lane des comptes rendus et audits **datés** : un transient y naît, s'y conserve le temps que sa conclusion soit distillée dans le document pérenne qui la porte, puis sort. Ce n'est **pas** `docs/archive/` — un stock à résorber, où l'on ne dépose pas un rapport de plus pour qu'il y reste. Convention et organe : [transients/README.md](transients/README.md), `scripts/check_docs_transients_lane.py` (#14623).
+
+| Fichier | Description |
+|---------|-------------|
+| [transients/README.md](transients/README.md) | Convention de la lane : nom daté `<YYYY-MM-DD>-<slug>.md`, en-tête gelé `> RAPPORT — <date> — <périmètre> — figé`, règle « née ici, sort par distillation », périmètre et hors-périmètre. Lane **vide à dessein** à l'ouverture : la re-vérification des fichiers listés par #14623 a mesuré que la majorité n'est pas transiente |
+
 ## Archive (docs/archive/)
 
 Documents conservés pour référence mais inactifs. Index complet : [archive/INDEX.md](archive/INDEX.md).
@@ -335,6 +343,7 @@ docs/
                      + pré-enregistrements grade T (protocoles scellés avant mesure)
   ledgers/           Ledgers d'audit cumulatifs par Epic (#3801, #10466, #10678, #11690, #12204)
   suivis/            Suivis de cycle (transitions de série)
+  transients/        Rapports transients datés (en-tête gelé) — convention + organe (#14623)
   cadrage/           Documents épistémiques de cadrage — index par communauté interlocutrice (#17525)
   grothendieckian-lens.md  Clé de lecture transversale du dépôt
   PARCOURS.md        Schéma maturité 3 axes (éditorial / reproductibilité / revue) — #8051

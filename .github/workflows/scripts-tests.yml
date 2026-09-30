@@ -278,6 +278,11 @@ jobs:
           # them at collection time (famille 5 de #14615). The test guards with
           # importorskip, but wiring it into this run means running it for real.
           pip install rapidfuzz unidecode openpyxl
+          # pypdf: scripts/tests/test_check_bibliography_pdf_integrity.py
+          # builds a valid PDF with PdfWriter to feed the organ (#17980).
+          # Without it the 6 tests fail on ModuleNotFoundError instead of
+          # exercising the script.
+          pip install pypdf
           # pytest-xdist: this job's 13 suites run in parallel (-n 4) below.
           # Not a speed nicety -- the sequential run is what makes this job
           # unschedulable on half the pool. Over 68 `Scripts Tests (CPU)` jobs,
