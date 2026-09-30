@@ -1128,15 +1128,15 @@ print(f""\n{'r':>3} {'params entrainables':>20} {'predit 196608*r':>16} {'VRAM p
 for res in resultats_ex2:
     print(f""{res['r']:>3} {res['trainable']:>20,} {res['predit']:>16,} {res['vram_peak']:>8.2f} G ""
           f""{res['loss']:>13.4f} {res['temps']:>6.1f} s"")",,,,,,,,a04d7f89c918e1df,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,0dd9c769,markdown,fr,5c4a6b1dc1f48b22,"### Exemple guidé 3 : double quantization
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,0dd9c769,markdown,fr,a805c84691daea4a,"### Exemple guidé 3 : double quantization
 
-*Contribution étudiante de @nassimJaz (PR #18550), intégrée comme exemple guidé.*
+*Contribution étudiante de Nassim JAZOULI (@nassimJaz) et Minh NGUYEN (PR #18550), intégrée comme exemple guidé.*
 
 La double quantization (`bnb_4bit_use_double_quant=True`) compresse les constantes de quantization elles-mêmes en FP8, économisant ~0,37 bit/param. Comparer avec et sans pour mesurer l'impact réel sur la VRAM et la qualité.
 
 **Protocole** : mesurer la VRAM de chargement dans les deux configurations avec `reset_peak_memory_stats()` avant chaque `from_pretrained` (protocole de la section 3). L'écart attendu — ~56 Mo pour les ~1,21 Md de paramètres effectivement quantifiés d'OPT-1.3B (× 0,373 bit ÷ 8) — est petit devant le bruit des pics de chargement : exécuter chaque mesure 3 fois et comparer les minima, pas les pics uniques. Un écart nul ne veut pas dire « la double quantization ne marche pas » : vérifier d'abord que les deux `BitsAndBytesConfig` ne diffèrent bien que par `bnb_4bit_use_double_quant`.","### Exercise 3: Double Quantization
 
-Double quantization (`bnb_4bit_use_double_quant=True`) compresses the quantization constants themselves in FP8, saving ~0.37 bits/param. Compare with and without it to measure the real impact on VRAM and quality.",,,,,,,5c4a6b1dc1f48b22,d99e1a1facb54c29,,,,,,,
+Double quantization (`bnb_4bit_use_double_quant=True`) compresses the quantization constants themselves in FP8, saving ~0.37 bits/param. Compare with and without it to measure the real impact on VRAM and quality.",,,,,,,a805c84691daea4a,d99e1a1facb54c29,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,c1471986,code,fr,a60f63a2800a011e,"# Exemple guide 3 : Double quantization on/off
 # Contribution etudiante de @nassimJaz (PR #18550)
 # Protocole : reset_peak_memory_stats avant chaque from_pretrained, 3 repetitions, on garde les minima.
@@ -4578,9 +4578,9 @@ La cellule précédente a **trois étapes de mesure** dont l'ordre est important
 
 La cellule qui suit imprime le tableau récapitulatif qui résume ces trois chiffres — **accompagné de la qualité et de la vitesse estimées**, qui ne se mesurent pas à l'exécution mais sont prédites par la théorie (NF4 ≈ 97-99 % du full FT ; ~20 % de ralentissement par la déquantization à chaque forward).
 ",,,,,,,,eef53b8536a5f01f,,,,,,,,verbatim
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02_exo4_md,markdown,fr,5d76ef59ec427c52,"### Exemple guidé 4 : casser l'invariant d'initialisation
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02_exo4_md,markdown,fr,a2092eb001b2de1f,"### Exemple guidé 4 : casser l'invariant d'initialisation
 
-*Contribution étudiante de @nassimJaz (PR #18550), intégrée comme exemple guidé.*
+*Contribution étudiante de Nassim JAZOULI (@nassimJaz) et Minh NGUYEN (PR #18550), intégrée comme exemple guidé.*
 
 L'invariant de la section 4 : `LoRALinear` initialise `B` à zéro, donc `ΔW = B·A = 0` et le modèle fine-tunable démarre exactement comme le pré-entraîné. Cet exemple casse exprès cet invariant : initialiser `B` à `normal(0, b_std)` au lieu de zéro, et observer ce que ce choix détruit.
 
@@ -4589,7 +4589,7 @@ Mesures :
 1. Pour b_std = 0, 0.001, 0.01, 0.1 sur une couche `nn.Linear` 512×512 identique à celle de la section 4 : norme maximale de `ΔW` initial, rapport `|s·ΔW| / |W₀|`, test `torch.allclose(lora(x), base(x))` avant tout entraînement, écart maximal de sortie.
 2. Reprendre la régression de la section 4 (50 pas SGD, même learning rate) avec B = 0 puis B ≠ 0 : comparer les pertes initiales et finales.
 
-**Indice de raisonnement** : reprendre la classe de la section 4 et remplacer uniquement l'initialisation de B ; si A et B étaient tous deux nuls, les gradients seraient nuls et rien n'apprendrait jamais.",,,,,,,,5d76ef59ec427c52,,,,,,,,
+**Indice de raisonnement** : reprendre la classe de la section 4 et remplacer uniquement l'initialisation de B ; si A et B étaient tous deux nuls, les gradients seraient nuls et rien n'apprendrait jamais.",,,,,,,,a2092eb001b2de1f,,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02_exo4,code,fr,e3a41d60fb779dc8,"# Exemple guide 4 : initialiser B NON nul et observer le démarrage
 # Contribution etudiante de @nassimJaz (PR #18550)
 def init_b_nonzero(base_layer, r=8, lora_alpha=16, b_std=0.01):
@@ -4638,9 +4638,9 @@ for b_std in [0.0, 0.1]:
         loss.backward()
         opt4.step()
     print(f""  b_std={b_std:<4} : loss initiale = {losses[0]:.4f} -> finale = {losses[-1]:.4f}"")",,,,,,,,e3a41d60fb779dc8,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-eg1-md,markdown,fr,c861c420cbd9a2bd,"### Exemple guidé 1 : impact de la précision (INT8 vs NF4 vs FP16)
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-eg1-md,markdown,fr,ebd2b66a37ca7d6c,"### Exemple guidé 1 : impact de la précision (INT8 vs NF4 vs FP16)
 
-*Contribution étudiante de @nassimJaz (PR #18550), intégrée comme exemple guidé.*
+*Contribution étudiante de Nassim JAZOULI (@nassimJaz) et Minh NGUYEN (PR #18550), intégrée comme exemple guidé.*
 
 Comparer INT8 (`load_in_8bit=True`), NF4 (4-bit avec double quantization) et FP16 sur le même OPT-1.3B. Pour chaque précision : mesurer la VRAM de chargement (pic), l'empreinte des poids (`get_memory_footprint`), générer en greedy sur un même prompt, et calculer la perplexité sur les 10 extraits d'entraînement comme mesure chiffrée de la dégradation.
 
@@ -4650,15 +4650,15 @@ Comparer INT8 (`load_in_8bit=True`), NF4 (4-bit avec double quantization) et FP1
 
 1. Définir les trois configurations de chargement (une `torch_dtype`, deux `BitsAndBytesConfig`).
 2. Pour chacune : `reset_peak_memory_stats()`, charger, mesurer pic et empreinte, générer, calculer la perplexité sur les extraits, puis libérer la mémoire.
-3. Résumer dans un tableau avec l'économie de VRAM relative au FP16.",,,,,,,,c861c420cbd9a2bd,,,,,,,,
+3. Résumer dans un tableau avec l'économie de VRAM relative au FP16.",,,,,,,,ebd2b66a37ca7d6c,,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-eg1-lecture,markdown,fr,614fc49d23bd4bb6,"### Lecture du résultat — exemple guidé 1 : la précision achète de la VRAM, pas de la qualité
 
 - **VRAM** : l'ordre attendu est bien respecté, FP16 (3,39 Go) > INT8 (2,18 Go) > NF4 (1,60 Go) en pic de chargement, soit 52,9 % d'économie pour le NF4. L'empreinte des poids (`get_memory_footprint` : 2,63 / 1,42 / 0,82 Go) suit à peu près la théorie (2 octets, 1 octet, 0,5 octet par paramètre quantifié). L'écart par rapport au ratio théorique 4× vient des couches qui **ne sont pas quantifiées** : les embeddings (token + positions, 50 272 × 2048) et `lm_head` restent en FP16, ainsi que les LayerNorm. Sur un 1,3B ces couches pèsent une part importante du total, donc le gain relatif est plus faible que sur un 7B.
 - **Qualité** : la perplexité mesurée sur les 10 extraits varie de moins d'un point entre les trois formats (33,89 / 33,58 / 34,47). Le classement théorique FP16 ≤ INT8 ≤ NF4 n'est pas tranché par la mesure : l'INT8 s'affiche même légèrement **sous** le FP16 — un écart de 0,3 point, plus petit que le bruit de la mesure — et seul le NF4 se détache un peu (+0,6 point). Les générations greedy sont identiques sur les premiers tokens (« Dans les rues sombres de Paris, des… »), puis divergent légèrement : les trois modèles restent lisibles, NF4 conserve l'essentiel de l'information.
 - **Remarque** : INT8 (LLM.int8()) est souvent **plus lent** que FP16 à cause de la décomposition des outliers, alors que NF4 déquantifie par blocs en FP16. INT8 n'est donc pas un compromis évident : pour le fine-tuning mémoire-contraint, NF4 est le meilleur choix, ce qui justifie QLoRA.",,,,,,,,614fc49d23bd4bb6,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-eg2-md,markdown,fr,dd3046d94321252d,"### Exemple guidé 2 : rang LoRA et mémoire (r = 4, 16, 64)
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-eg2-md,markdown,fr,e945707fe21b90d7,"### Exemple guidé 2 : rang LoRA et mémoire (r = 4, 16, 64)
 
-*Contribution étudiante de @nassimJaz (PR #18550), intégrée comme exemple guidé.*
+*Contribution étudiante de Nassim JAZOULI (@nassimJaz) et Minh NGUYEN (PR #18550), intégrée comme exemple guidé.*
 
 Entraîner QLoRA sur OPT-1.3B pour trois rangs — r = 4, 16, 64 — en gardant tout le reste identique. Pour chaque rang : nombre de paramètres entraînables, pic VRAM d'entraînement, perte finale, durée, et une génération sur un prompt fixe (graine fixée). Pour que la comparaison soit équitable, `alpha = 2r` : l'échelle `alpha/r = 2` est la même pour les trois rangs, seule la capacité change.
 
@@ -4668,7 +4668,7 @@ Entraîner QLoRA sur OPT-1.3B pour trois rangs — r = 4, 16, 64 — en gardant 
 
 1. Définir une fonction qui charge OPT-1.3B en NF4, greffe un LoRA de rang r (alpha = 2r) et entraîne 15 époques avec les hyperparamètres de la section 6.
 2. L'appeler pour r = 4, 16, 64 ; mesurer à chaque fois pic VRAM, perte finale et durée.
-3. Comparer dans un tableau : rang, paramètres entraînables (mesurés contre prédits par 196 608 × r), pic VRAM, perte finale, temps.",,,,,,,,dd3046d94321252d,,,,,,,,
+3. Comparer dans un tableau : rang, paramètres entraînables (mesurés contre prédits par 196 608 × r), pic VRAM, perte finale, temps.",,,,,,,,e945707fe21b90d7,,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-eg2-lecture,markdown,fr,8357ac9a46d2df81,"### Lecture du résultat — exemple guidé 2 : le rang achète de la capacité, pas un meilleur modèle
 
 - **Paramètres entraînables** : ils suivent exactement la formule `196 608 × r` démontrée en section 4 (786 432 / 3 145 728 / 12 582 912) — la colonne « prédit » coïncide avec le comptage réel.
