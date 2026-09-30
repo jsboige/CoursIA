@@ -18,7 +18,7 @@
 ### Points forts
 - **Contenu moderne**: QuantConnect/Lean, Kelly criterion, stratégies récentes (mars 2025)
 - **Structure logique**: Introduction → Fondamentaux → Plateforme → Stratégies → IA
-- **Cross-références riches**: 27 notebooks QuantConnect/ disponibles pour illustrations
+- **Cross-références riches**: notebooks QuantConnect/ disponibles pour illustrations
 - **Profondeur technique**: Couvre bien les aspects théoriques et pratiques
 
 ---
@@ -99,7 +99,7 @@
 
 ## 3. Cross-references notebooks
 
-### Notebooks QuantConnect/ (27 notebooks - OPPORTUNITÉ MAJEURE)
+### Notebooks QuantConnect/ (OPPORTUNITÉ MAJEURE)
 | Notebook | Lien avec le deck | Opportunité visuelle |
 |----------|-------------------|---------------------|
 | `QuantConnect/BasicTemplateAlgorithm.ipynb` | Initialisation C# (slide 60) | Screenshots de code + outputs |
@@ -122,7 +122,7 @@
 ## 4. Plan d'amélioration prioritaire
 
 ### Phase 1: URGENCE - Visuels de base (3-4h)
-- [ ] **Exécuter les 27 notebooks QuantConnect/** et extraire tous les graphiques (equity curves, signals, etc.)
+- [ ] **Exécuter les notebooks QuantConnect/** et extraire tous les graphiques (equity curves, signals, etc.)
 - [ ] **Capturer des screenshots QuantConnect IDE**:
   - Code editor avec syntax highlighting
   - Backtest results panel
@@ -179,7 +179,7 @@
 
 ## Priorités immédiates (TOP 10)
 
-1. **CRITIQUE**: Exécuter les 27 notebooks QuantConnect/ et extraire tous les graphiques
+1. **CRITIQUE**: Exécuter les notebooks QuantConnect/ et extraire tous les graphiques
 2. **CRITIQUE**: Capturer des screenshots QuantConnect IDE (code, backtest, optimization)
 3. **HAUTE**: Créer un diagramme d'architecture générale du trading algo (slide 1-5)
 4. **HAUTE**: Visualiser la formule de Kelly (slide 30) avec graphique d'optimisation
@@ -228,7 +228,7 @@
 - **79 slides sans image = expérience d'apprentissage catastrophique** pour les étudiants
 - **Trading = domaine ultra-visuel** (graphiques, candlesticks, indicators) - absence de visuels est incompréhensible
 - **Code C# dense** sans syntax highlighting est illisible en présentation
-- **27 notebooks disponibles** avec des visuels prêts à l'emploi - opportunité énorme
+- **Notebooks disponibles** avec des visuels prêts à l'emploi - opportunité énorme
 
 ### Public cible
 - Étudiants en finance quantitative
@@ -242,6 +242,6 @@
 
 ---
 
-**⚠️ PRIORITÉ ABSOLUE**: Ce deck nécessite un **refactoring visuel complet**. L'absence totale d'images sur 79 slides est un **anti-pattern pédagogique majeur**. L'objectif est de passer de 0 à ~95 images (ratio 1.2) en exploitant massivement les 27 notebooks QuantConnect/ disponibles.
+**⚠️ PRIORITÉ ABSOLUE**: Ce deck nécessite un **refactoring visuel complet**. L'absence totale d'images sur 79 slides est un **anti-pattern pédagogique majeur**. L'objectif est de passer de 0 à ~95 images (ratio 1.2) en exploitant massivement les notebooks QuantConnect/ disponibles.
 
 **Estimation réaliste**: 8-12h de travail pour transformer ce deck en support pédagogique de qualité. À prioriser IMMÉDIATEMENT si ce cours est actif.
