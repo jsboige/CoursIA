@@ -95,7 +95,7 @@ lemma shiftDistance_eq_zero_of_zero {d : ℕ} (S : Finset (Fin d → ℤ))
     (hu : ∀ x ∈ S, P (x + u) = 0) :
     shiftDistance S P u = 0 := by
   unfold shiftDistance
-  apply Finset.sum_congr rfl
+  apply Finset.sum_eq_zero
   intro x _
   rw [hu x, hP x]
   simp
@@ -117,8 +117,7 @@ lemma shiftDistance_le_one {d : ℕ} (S : Finset (Fin d → ℤ))
     shiftDistance S P u ≤
       (1 / 2 : ℝ) * (∑ x ∈ S, |P x| + ∑ x ∈ S, |P (x + u)|) := by
   unfold shiftDistance
-  have hhalf : (0 : ℝ) ≤ 1 / 2 := by positivity
-  apply mul_le_mul_of_nonneg_left _ hhalf
+  gcongr
   rw [← Finset.sum_add_distrib]
   apply Finset.sum_le_sum
   intro x _
