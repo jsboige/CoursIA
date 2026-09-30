@@ -41,8 +41,11 @@ INSEREES dans une PR qui violent la regle user « une sortie = une lecture » :
                               est un **compte par sortie**, pas un jugement par
                               cellule : voir la decision #17044 ci-dessous ;
   - ``READING_BEFORE_CODE`` : cellule markdown ajoutee directement devant une
-                              cellule de code AVEC sortie (la lecture doit
-                              suivre la sortie, pas la preceder) ;
+                              cellule de code AVEC sortie ET sans code execute
+                              au-dessus d'elle (la lecture doit suivre la
+                              sortie, pas la preceder ; sous un code execute,
+                              le compte par sortie prend le relais -- #17044,
+                              decision c.5877090210) ;
   - ``EXERCISE_READING``    : cellule markdown ajoutee juste apres une cellule
                               d'exercice (stub sans sortie) -- l'etudiant ne
                               verra pas la lecture tant qu'il n'a pas complete.
@@ -85,7 +88,13 @@ signalait :
     presente » : la premiere lecture posee derriere un code qui n'en avait pas
     est le geste prescrit, pas un doublonnage. Le discriminant est le titre,
     pas la longueur du corps. ``is_reading_or_prose`` le porte -- c'est le
-    predicat que le releve par sortie (#17044) consomme aussi.
+    predicat que le releve par sortie (#17044) consomme aussi. Le principe
+    s'etend a ``READING_BEFORE_CODE`` (``is_section_intro``) : un en-tete de
+    section devant une cellule de code AVEC sortie introduit ce code, il ne
+    commente pas une sortie -- mesure #18050 : 3 FPs ``### 8.x R0N`` devant
+    leur ``#check``. L'exemption ne couvre PAS l'en-tete devant un stub
+    d'exercice (garde-fou d'origine, test
+    ``test_carveout_ne_couvre_pas_un_titre_de_section``).
 
 Mode CLIQUET (#17044) : ``--base-ref <ref> [--head HEAD]`` compare chaque carnet
 modifie entre la base et la tete et rend le verdict du cliquet -- rouge
@@ -166,6 +175,10 @@ EXERCISE_TOKENS = ("TODO", "A completer", "à compléter", "Exercice")
 # la citation d'une sortie -- le vocabulaire de l'interpretation, pas celui de
 # l'enonce.
 EXERCISE_STATEMENT_TITLE_RE = re.compile(r"^#{1,6}\s*exercice\b", re.IGNORECASE)
+SECTION_TITLE_AFTER_EXERCISE_RE = re.compile(
+    r"^(conclusion|ressources?|plan|references?|bibliographie|synthese|pour aller plus loin)\b",
+    re.IGNORECASE,
+)
 HIDDEN_INTERPRETATION_HEADING_RE = re.compile(
     r"^#{1,6}\s*(lecture|interpre|interpret|analyse)", re.IGNORECASE
 )
@@ -268,6 +281,16 @@ def looks_like_reading_after_exercise(cell: dict) -> bool:
     On REJETTE les md purement structurels (## Conclusion, ## Exercice
     N, ## References), qui n'ont qu'un en-tete suivi d'un corps court
     ou vide -- ce sont des transitions, pas des lectures.
+
+    Garde-fou #17777 (meme discriminant qu'``is_reading_or_prose`` : le titre,
+    pas la longueur du corps) : un titre de section (``## Conclusion``,
+    ``## Ressources``, ``## Plan``) place APRES un exercice reste structurel,
+    meme long -- le releve par sortie l'exempte deja par le titre, le bucket
+    positionnel doit faire de meme, sinon une conclusion de fin de carnet
+    (pattern du gabarit canon, ex. carnet 06 corps 866 chars) tombe en faux
+    positif. Une cellule dont le premier titre n'est PAS un titre de section
+    garde l'heuristique historique (> 80 chars) : c'est une vraie lecture
+    deguisee en prose titre.
     """
     if cell.get("cell_type") != "markdown":
         return False
@@ -276,10 +299,15 @@ def looks_like_reading_after_exercise(cell: dict) -> bool:
     src = cell_source(cell).strip()
     if not src:
         return False
-    # Si la premiere ligne est un titre markdown (# ## ### ...), on
-    # accepte si le corps (apres la premiere ligne) fait > 80 chars.
     first_line = src.split("\n", 1)[0].lstrip()
     if first_line.startswith("#"):
+        # Titre de section (## Conclusion / ## Ressources / ## Plan ...) :
+        # structurel par le titre, jamais une lecture -- la longueur du corps
+        # est hors discriminant (meme principe que ``is_reading_or_prose``).
+        if SECTION_TITLE_AFTER_EXERCISE_RE.match(
+            deaccent(cell_title(src)).lower()
+        ):
+            return False
         body = src.split("\n", 1)[1].strip() if "\n" in src else ""
         return len(body) > 80
     # Pas de titre markdown : c'est un paragraphe libre. S'il est > 80 chars,
@@ -372,6 +400,40 @@ def is_exercise_statement(cell: dict, cells: list[dict], idx: int) -> bool:
     if not any(
         c is not None and is_exercise_cell(c) for c in (prev_cell, next_cell)
     ):
+        return False
+    body = lines[k + 1:]
+    has_hidden_heading = any(
+        HIDDEN_INTERPRETATION_HEADING_RE.match(line.strip())
+        for line in body if line.strip()
+    )
+    cites_output = bool(
+        OUTPUT_CITATION_RE.search(deaccent("\n".join(body)).lower())
+    )
+    return not (has_hidden_heading or cites_output)
+
+
+def is_section_intro(cell: dict) -> bool:
+    """Vrai si ``cell`` est un **en-tete de section** au sens du carve-out
+    #17777 : un titre d'organisation (``## 2. Tests statistiques``,
+    ``### 8.2 R02 -- ...``) qui introduit le code qui suit, pas une lecture.
+
+    Extension du carve-out a ``READING_BEFORE_CODE`` : la decision #17777
+    pose le principe (« le discriminant est le titre, pas la longueur du
+    corps ») et l'appliquait a l'enonce d'exercice et au budget par sortie ;
+    le bucket positionnel restait le seul a condamner un en-tete de section
+    devant son code ( mesure #18050 : 3 FPs ``### 8.x R0N`` devant leur
+    ``#check`` ). Ne sont PAS exemptees : la lecture titre
+    (``is_reading_cell``), la prose non titree (``is_reading_or_prose``),
+    l'en-tete qui cache une interpretation dans son corps, ou qui cite une
+    sortie -- memes garde-fous que ``is_exercise_statement``.
+    """
+    if cell.get("cell_type") != "markdown":
+        return False
+    if is_reading_or_prose(cell):
+        return False
+    lines = cell_source(cell).splitlines()
+    k = next((i for i, line in enumerate(lines) if line.strip()), None)
+    if k is None:
         return False
     body = lines[k + 1:]
     has_hidden_heading = any(
@@ -580,7 +642,8 @@ def detect_added_readings(head_nb: dict, base_nb: dict | None) -> list[dict]:
       4. Pour chaque cellule ajoutee qui est markdown, classifier via le
          **contexte HEAD** :
            - ``EXERCISE_READING``    prev_role == "exercise"
-           - ``READING_BEFORE_CODE`` next_role == "code_with_output"
+           - ``READING_BEFORE_CODE`` next_role == "code_with_output" ET
+                                     prev_role != "code_with_output"
            - ``SECOND_READING``      la sortie que la cellule commente porte
                                      **plus de lectures en tete qu'en base**
 
@@ -689,6 +752,20 @@ def detect_added_readings(head_nb: dict, base_nb: dict | None) -> list[dict]:
             base_counter[src] += 1
             continue
         bucket = _bucket_for(prev_role, next_role)
+        if (bucket in ("READING_BEFORE_CODE", "EXERCISE_READING_CANDIDATE")
+                and next_role == "code_with_output"
+                and is_section_intro(cell)):
+            # Carve-out #17777 etendu : un en-tete de section devant son code
+            # est une introduction, pas une lecture placee avant sa sortie --
+            # y compris quand il suit le stub d'exercice qui clot la section
+            # precedente (mesure #18410 : `## 2. Primitive 2` et `### 3.3`
+            # apres les stubs des exercices 1 et 4 d'ANALYSE-04).
+            # Restent signales : la lecture titre, la prose non titree,
+            # l'en-tete qui cite une sortie, et tout en-tete devant un STUB
+            # d'exercice (garde-fou #17777,
+            # test_carveout_ne_couvre_pas_un_titre_de_section).
+            base_counter[src] += 1
+            continue
         if bucket == "SECOND_READING":
             # Topologie de seconde lecture, mais aucune sortie en deficit :
             # il n'y a rien a signaler (premiere lecture legitime sous un code
@@ -754,9 +831,16 @@ def _bucket_for(prev_role: str, next_role: str) -> str | None:
     if prev_role == "exercise":
         return "EXERCISE_READING_CANDIDATE"
     if next_role in ("code_with_output", "exercise"):
-        # Une lecture ajoutee devant un exercice OU un code deja execute
-        # precede le resultat qu'elle est censee commenter -- dans les deux
-        # cas la place canonique est APRES, pas avant.
+        # Une lecture ajoutee sous un code execute est rattachee par
+        # ``_output_key_above`` a la sortie du dessus : elle releve du compte
+        # par sortie (SECOND_READING si le compte monte, rien sinon) -- la
+        # dire en meme temps « avant son resultat » serait l'incoherence
+        # mesuree sur #17044 (c.5877090210). READING_BEFORE_CODE ne survit
+        # que sans code execute directement au-dessus (prev_role md ou
+        # BOUNDARY) : la lecture y precede alors le resultat qu'elle est
+        # censee commenter, et la place canonique est APRES, pas avant.
+        if prev_role == "code_with_output":
+            return "SECOND_READING"
         return "READING_BEFORE_CODE"
     if prev_role in ("md", "code_with_output"):
         return "SECOND_READING"
@@ -865,6 +949,12 @@ def ratchet_rows(base_ref: str, head: str = "HEAD",
         return None
     rows: list[dict] = []
     for base_path, head_path in changed_notebook_pairs(base, head, cwd=cwd):
+        if "/_archive/" in f"/{head_path}":
+            # Convention `_archive/` (docs/reference/_archive-convention.md) :
+            # chaque carnet archive porte une banniere tombstone en tete de
+            # fichier -- markdown avant code par construction. La regle
+            # pedagogique ne s'applique plus a un carnet sorti du parcours.
+            continue
         head_nb = read_notebook_at(head, head_path, cwd=cwd)
         if head_nb is None:
             continue  # illisible en tete : le recensement ne peut rien dire

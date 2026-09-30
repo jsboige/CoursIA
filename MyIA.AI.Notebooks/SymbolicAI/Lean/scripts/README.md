@@ -65,22 +65,22 @@ Utilitaires pour manipuler les notebooks Jupyter.
 
 ```bash
 # Lister les cellules
-python scripts/notebook_utils.py list ../Lean-9-SK-Multi-Agents.ipynb
+python scripts/notebook_utils.py list ../Lean-09-SK-Multi-Agents-Lean-Python.ipynb
 
 # Formater le markdown (ajoute lignes vides)
-python scripts/notebook_utils.py format ../Lean-9-SK-Multi-Agents.ipynb
+python scripts/notebook_utils.py format ../Lean-09-SK-Multi-Agents-Lean-Python.ipynb
 
 # Apercu sans modification
-python scripts/notebook_utils.py format ../Lean-9-SK-Multi-Agents.ipynb --dry-run
+python scripts/notebook_utils.py format ../Lean-09-SK-Multi-Agents-Lean-Python.ipynb --dry-run
 
 # Informations notebook
-python scripts/notebook_utils.py info ../Lean-9-SK-Multi-Agents.ipynb
+python scripts/notebook_utils.py info ../Lean-09-SK-Multi-Agents-Lean-Python.ipynb
 
 # Obtenir le source d'une cellule
-python scripts/notebook_utils.py get-source ../Lean-9-SK-Multi-Agents.ipynb 39
+python scripts/notebook_utils.py get-source ../Lean-09-SK-Multi-Agents-Lean-Python.ipynb 39
 
 # Obtenir l'output d'une cellule
-python scripts/notebook_utils.py get-output ../Lean-9-SK-Multi-Agents.ipynb 39
+python scripts/notebook_utils.py get-output ../Lean-09-SK-Multi-Agents-Lean-Python.ipynb 39
 ```
 
 ### demo_manager.py
@@ -122,7 +122,7 @@ Wrapper pour le kernel Lean4 via WSL. Utilisé automatiquement par Jupyter.
 ### Première Installation
 
 ```bash
-# 1. Ouvrir et executer Lean-1-Setup.ipynb (toutes les cellules)
+# 1. Ouvrir et executer Lean-01-Setup-Lean-Python.ipynb (toutes les cellules)
 
 # 2. Valider l'installation Windows
 python scripts/validate_lean_setup.py
@@ -156,7 +156,7 @@ python scripts/demo_manager.py update
 
 ```bash
 # Corriger le formatage (lignes vides manquantes)
-python scripts/notebook_utils.py format ../Lean-9-SK-Multi-Agents.ipynb
+python scripts/notebook_utils.py format ../Lean-09-SK-Multi-Agents-Lean-Python.ipynb
 ```
 
 ## Tests Unitaires
@@ -184,15 +184,15 @@ Ces scripts sont conservés pour référence mais ne sont plus nécessaires.
 
 ```
 MyIA.AI.Notebooks/SymbolicAI/Lean/
-├── Lean-1-Setup.ipynb              # Installation
-├── Lean-2-Dependent-Types.ipynb    # Types dependants
-├── Lean-3-Propositions-Proofs.ipynb # Logique propositionnelle
-├── Lean-4-Quantifiers.ipynb        # Quantificateurs
-├── Lean-5-Tactics.ipynb            # Tactiques
-├── Lean-6-Mathlib-Essentials.ipynb # Mathlib4
-├── Lean-7-LLM-Integration.ipynb    # Python WSL requis
-├── Lean-8-Agentic-Proving.ipynb    # Python WSL requis
-├── Lean-9-SK-Multi-Agents.ipynb    # Python WSL requis
+├── Lean-01-Setup-Lean-Python.ipynb              # Installation
+├── Lean-02-Dependent-Types-Lean.ipynb    # Types dependants
+├── Lean-03-Propositions-Proofs-Lean.ipynb # Logique propositionnelle
+├── Lean-04-Quantifiers-Lean.ipynb        # Quantificateurs
+├── Lean-05-Tactics-Lean.ipynb            # Tactiques
+├── Lean-06-Mathlib-Essentials-Lean.ipynb # Mathlib4
+├── Lean-07-LLM-Integration-Lean-Python.ipynb    # Python WSL requis
+├── Lean-08-Agentic-Proving-Python.ipynb    # Python WSL requis
+├── Lean-09-SK-Multi-Agents-Lean-Python.ipynb    # Python WSL requis
 ├── lean_runner.py                  # Backend Python pour Lean
 ├── .env                            # Configuration API
 └── scripts/                        # CE RÉPERTOIRE

@@ -61,7 +61,7 @@ attributions:
 
   # ===== Passe 3 — GameTheory / RL / Sudoku (PR #12838) =====
   - arxiv_id: "1705.02955"
-    notebook: "MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving.ipynb"
+    notebook: "MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving-Python.ipynb"
     cell_index: 0
     expected_citation: "Brown & Sandholm (2017, arXiv:1705.02955) construisent quand meme le geste"
     source_pr: "#12838"
@@ -119,7 +119,7 @@ attributions:
 
   - arxiv_id: "2509.22908"
     notebook: "MyIA.AI.Notebooks/GenAI/PostTraining/PT_16_vericoding_formal_verification.ipynb"
-    cell_index: 24
+    cell_index: 25
     expected_citation: "**Références** — Bursuc, S., Ehrenborg, T., Lin, S., et al. (13 auteurs, incl. M. Tegmark), *A Benchmark for Vericoding: Formally Verified Program Synthesis* (arXiv:2509.22908, 2025)"
     source_pr: "#17622"
     correction: "Titre et co-auteurs de prose inexistants ('Vericoding: LLMs for Formally Verified Code Generation' par Trimponas/Sato/Nikolic — aucun papier mesurable) -> vrai papier 'A Benchmark for Vericoding: Formally Verified Program Synthesis', Bursuc + 12 co-auteurs. Bursuc reste 1er auteur (garde anti-erreur-miroir #11163)"

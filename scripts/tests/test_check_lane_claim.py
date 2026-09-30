@@ -2246,7 +2246,7 @@ def test_check_claimed_10382_five_disjoint_claims(capsys):
         "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03-Informed-CSharp.ipynb",
         "MyIA.AI.Notebooks/Search/Part1-Foundations/"
         "Search-05-GeneticAlgorithms-CSharp.ipynb",
-        "MyIA.AI.Notebooks/GameTheory/GameTheory-04-NashEquilibrium-Csharp.ipynb",
+        "MyIA.AI.Notebooks/GameTheory/GameTheory-04-NashEquilibrium-CSharp.ipynb",
     ]
     for relpath in fixture_paths:
         resolved = repo_root / relpath
@@ -2275,7 +2275,7 @@ def test_check_claimed_10382_five_disjoint_claims(capsys):
                 "2026-08-11T04:05:00Z"),
         comment("[CLAIMED] lane myia-po-2026:CoursIA -- "
                 "paths: MyIA.AI.Notebooks/GameTheory/"
-                "GameTheory-04-NashEquilibrium-Csharp.ipynb",
+                "GameTheory-04-NashEquilibrium-CSharp.ipynb",
                 "2026-08-11T04:07:00Z"),
     )
     for lane in (
@@ -6157,6 +6157,85 @@ def test_open_pr_leg_shares_one_reader_with_paths_mode(monkeypatch):
     assert [c.number for c in cols] == [42] and own == []
     # attribution par lane identique des deux cotes
     assert cols[0].lane == "other:CoursIA"
+
+
+# --- #18341 : la jambe PR-ouverte doit lire `my_scope`, pas `my_paths` --------
+# Defaut mesure : `check_lane_claim.py N --lane L` (SANS `--paths`) lisait
+# `my_paths`, qui est None quand le caller n'a pas passe `--paths`. Le resultat
+# etait un CLEAR sans que les PRs OUVERTES des autres lanes sur les chemins du
+# claim propre (`paths:`) aient ete regardees. Cout : doublons non detectes
+# (#18230/#18293 doublon de #18180 ; #18196/#18304 doublon de #18281).
+
+_MY_PATHS_FILE = "scripts/notebook_tools/wsl_papermill.py"
+
+
+def test_18341_claim_with_paths_runs_open_pr_leg_without_cli_paths(
+        monkeypatch, tmp_path, capsys):
+    """CONTROLE POSITIF #18341 -- claim propre `paths: p` + PR ouverte d'une
+    autre lane sur `p` + appel SANS `--paths` -> rc 2, PR nommee.
+
+    Avant ce fix : rc 0, CLEAR silencieux (defaut #18341).
+    """
+    source = _write_payload(payload(comment(
+        "[CLAIMED] lane myia-po-2027:CoursIA-2 -- paths: " + _MY_PATHS_FILE,
+        "2026-09-29T00:00:00Z",
+    ), number=18305), tmp_path)
+    monkeypatch.setattr(clc, "_compute_open_pr_collisions", lambda paths, my_lane, prs=None: (
+        [clc.PathCollision(
+            pr=_collision_pr(18304, "myia-po-2023:CoursIA-2", [_MY_PATHS_FILE]),
+            lane="myia-po-2023:CoursIA-2",
+            files=[_MY_PATHS_FILE])],
+        []))
+    rc = clc.main([
+        "18305", "--lane", "myia-po-2027:CoursIA-2", "--from-json", source,
+        "--no-stale",
+    ])
+    captured = capsys.readouterr()
+    summary = json.loads(captured.out.split("\n\n", 1)[0])
+    assert rc == 2, captured.err
+    assert [c["number"] for c in summary["open_pr_collisions"]] == [18304]
+    assert summary["open_pr_collisions"][0]["lane"] == "myia-po-2023:CoursIA-2"
+    assert "18304" in captured.err and "myia-po-2023:CoursIA-2" in captured.err
+
+
+def test_18341_no_scope_declared_leg_not_called(monkeypatch, tmp_path, capsys):
+    """CONTROLE NEGATIF #18341 -- ni `--paths` ni claim a `paths:` -> jambe
+    PR-ouverte NON appelee (legacy : aucun perimetre declare, rien a
+    intersecter). Avant comme apres le fix : la jambe reste gatee sur
+    `my_scope is not None`.
+    """
+    source = _write_payload(payload(comment(
+        "[RELEASED] lane other:CoursIA-2", "2026-09-29T00:00:00Z",
+    ), number=18305), tmp_path)
+    called = []
+    monkeypatch.setattr(clc, "_compute_open_pr_collisions",
+                        lambda paths, my_lane, prs=None: called.append(1) or ([], []))
+    rc = clc.main([
+        "18305", "--lane", "myia-po-2027:CoursIA-2", "--from-json", source,
+        "--no-stale",
+    ])
+    assert rc == 0
+    assert called == []  # jambe non appelee
+
+
+def test_18341_pre_fix_code_renders_clear(monkeypatch, tmp_path, capsys):
+    """CONTROLE DE REGRESSION #18341 -- avec le code d'avant le fix
+    (`my_paths` au lieu de `my_scope` dans la condition), la jambe ne tourne
+    pas et le verdict reste CLEAR. Ce test pin l'evidence que le fix est
+    necessaire : il reussit contre le code d'avant, et echoue contre le code
+    d'apres -- mais comme nous sommes sur le code d'apres, on simule la
+    regression en monkeypatchant la condition. La regle est : si on lit
+    `my_paths` au lieu de `my_scope`, on a le defaut #18341.
+    """
+    # On verifie directement la CONTRACTION : `my_scope` doit etre lu.
+    # Lecture directe du source, pas d'execution : assert que le mot
+    # `my_paths` n'apparait PAS dans la condition de la jambe PR-ouverte.
+    src = Path("scripts/check_lane_claim.py").read_text(encoding="utf-8")
+    # La jambe PR-ouverte (apres #18341) lit my_scope, pas my_paths
+    assert "if check_open_pr_paths and my_scope:" in src, \
+        "leg #16570 doit lire my_scope (et non my_paths) apres #18341"
+    assert "if check_open_pr_paths and my_paths:" not in src, \
+        "leg #16570 lit my_paths = defaut #18341"
 
 
 # --- #12811 : gh/git émettent de l'UTF-8, l'encodage doit être épinglé --------

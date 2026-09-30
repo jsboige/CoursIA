@@ -35,41 +35,41 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | [Analyse rhétorique collaborative par agents IA…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-0-init_agent.ipynb) | BETA | Non |
-| 2 | [Agent InformalAnalysisAgent (définitions)](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-1-informal_agent.ipynb) | BETA | Non |
-| 3 | [Agent PropositionalLogicAgent (définitions)](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-2-pl_agent.ipynb) | BETA | Oui |
-| 4 | [Orchestration de la conversation multi-agents](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-3-orchestration_agent.ipynb) | BETA | Non |
-| 5 | [Graphes d'argumentation datés — l'instrument $G_t^{arg}…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Dated_Graphs.ipynb) | BETA | Oui |
-| 6 | [Détection symbolique de sophismes — l'étage symbolique…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Fallacy_Rules_Symboliques.ipynb) | BETA | Oui |
-| 7 | [Gouvernance multi-agents : scrutins, protocoles, choix…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Gouvernance_Multi_Agents.ipynb) | BETA | Oui |
-| 8 | [Observatoire des formes relationnelles — Cas 1](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Observatoire-1-Initiation.ipynb) | BETA | Oui |
-| 9 | [Ontologie AIF.owl — l'architecture Argumentum des…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb) | ALPHA | Oui |
-| 10 | [Liens croisés crossLink et attaques AIF du CSV…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb) | BETA | Oui |
-| 11 | [Ontologie des vertus argumentatives — le pôle miroir…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb) | BETA | Oui |
-| 12 | [Strate 6 : le banc de recollement](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Recollement_Lectures.ipynb) | BETA | Oui |
-| 13 | [Strate 6 : le recollement sur lectures réellement…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Recollement_Strate6.ipynb) | BETA | Oui |
-| 14 | [Configuration de l'environnement (JVM Tweety réelle,…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb) | BETA | Oui |
-| 15 | [Le modèle de Toulmin (1958)](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-01-Toulmin-Model-Python.ipynb) | BETA | Oui |
-| 16 | [Reconnaître un schéma d'argumentation — la table de…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-01b-Schemes-Walton-Python.ipynb) | BETA | Oui |
-| 17 | [Détection de sophismes par taxonomie](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-02-Fallacies-Detection-Python.ipynb) | BETA | Oui |
-| 18 | [Argumentum : la carte de sophisme, du nœud de taxonomie…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-02b-Argumentum-Cards-Python.ipynb) | BETA | Oui |
-| 19 | [Argumentation abstraite de Dung — sémantiques grounded,…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-03-Dung-AF-Semantics-Python.ipynb) | BETA | Oui |
-| 20 | [Argumentation basée sur les valeurs (VAF, Bench-Capon…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-03b-Value-Based-AF-Python.ipynb) | BETA | Oui |
-| 21 | [Argumentation graduée — sémantiques de classement…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-03c-Ranking-Semantics-Python.ipynb) | BETA | Oui |
-| 22 | [Dialogues protocolisés : inquiry et persuasion…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-04-Dialogues-Protocolises-Python.ipynb) | BETA | Oui |
-| 23 | [La base de connaissances d'un débat — propositions,…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-04b-Knowledge-Base-Python.ipynb) | BETA | Oui |
-| 24 | [Vérification logique formelle avec Tweety](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb) | BETA | Oui |
-| 25 | [Routage multi-backend : décider ou échouer bruyamment](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05b-Multi-Backend-Routing-Python.ipynb) | BETA | Oui |
-| 26 | [Truth Maintenance System (JTMS) déterministe](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-06-JTMS-Python.ipynb) | BETA | Oui |
-| 27 | [Deux paradigmes d'orchestration](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-07-Orchestration-Python.ipynb) | BETA | Oui |
-| 28 | [Le bus de communication multi-agents — le contrat,…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-07b-Communication-Channels-Python.ipynb) | BETA | Oui |
-| 29 | [Orchestration d'un debat : arbitrer entre sept…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-07c-Orchestration-Modes-Python.ipynb) | BETA | Oui |
-| 30 | [Capstone d'intégration (baseline 0-shot vs pipeline)](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08-Capstone-Python.ipynb) | BETA | Oui |
-| 31 | [Analyse rhétorique collaborative par agents IA —…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb) | BETA | Non |
-| 32 | [Interface de configuration et préparation du texte](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08c-UI-Configuration-Python.ipynb) | BETA | Oui |
-| 33 | [Restitution en 3 actes — scaffold déterministe,…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08d-Restitution-3-Actes-Python.ipynb) | BETA | Non |
-| 34 | [ArgumentProfile : la fiche d'identité…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08e-Argument-Profile-Python.ipynb) | BETA | Oui |
-| 35 | [I2 — Génération de contre-arguments par raisonnement…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb) | BETA | Oui |
+| 1 | [Configuration de l'environnement (JVM Tweety réelle,…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb) | BETA | Oui |
+| 2 | [Analyse rhétorique collaborative par agents IA…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/_archive/Argument_Analysis_Agentic-0-init_agent.ipynb) | BETA | Non |
+| 3 | [Détection de sophismes par taxonomie](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-02-Fallacies-Detection-Python.ipynb) | BETA | Oui |
+| 4 | [Agent InformalAnalysisAgent (définitions)](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/_archive/Argument_Analysis_Agentic-1-informal_agent.ipynb) | BETA | Non |
+| 5 | [Vérification logique formelle avec Tweety](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb) | BETA | Oui |
+| 6 | [Agent PropositionalLogicAgent (définitions)](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/_archive/Argument_Analysis_Agentic-2-pl_agent.ipynb) | BETA | Oui |
+| 7 | [Deux paradigmes d'orchestration](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-07-Orchestration-Python.ipynb) | BETA | Oui |
+| 8 | [Orchestration de la conversation multi-agents](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/_archive/Argument_Analysis_Agentic-3-orchestration_agent.ipynb) | BETA | Non |
+| 9 | [Capstone d'intégration (baseline 0-shot vs pipeline)](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08-Capstone-Python.ipynb) | BETA | Oui |
+| 10 | [Truth Maintenance System (JTMS) déterministe](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-06-JTMS-Python.ipynb) | BETA | Oui |
+| 11 | [ArgumentProfile : la fiche d'identité…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08e-Argument-Profile-Python.ipynb) | BETA | Oui |
+| 12 | [Argumentum : la carte de sophisme, du nœud de taxonomie…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-02b-Argumentum-Cards-Python.ipynb) | BETA | Oui |
+| 13 | [Le bus de communication multi-agents — le contrat,…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-07b-Communication-Channels-Python.ipynb) | BETA | Oui |
+| 14 | [Graphes d'argumentation datés — l'instrument $G_t^{arg}…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Obs-01-Graphes-Dates-Python.ipynb) | BETA | Oui |
+| 15 | [Dialogues protocolisés : inquiry et persuasion…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-04-Dialogues-Protocolises-Python.ipynb) | BETA | Oui |
+| 16 | [Argumentation abstraite de Dung — sémantiques grounded,…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-03-Dung-AF-Semantics-Python.ipynb) | BETA | Oui |
+| 17 | [Analyse rhétorique collaborative par agents IA —…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb) | BETA | Non |
+| 18 | [La base de connaissances d'un débat — propositions,…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-04b-Knowledge-Base-Python.ipynb) | BETA | Oui |
+| 19 | [Routage multi-backend : décider ou échouer bruyamment](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05b-Multi-Backend-Routing-Python.ipynb) | BETA | Oui |
+| 20 | [Observatoire des formes relationnelles — Cas 1](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Obs-02-Initiation-Python.ipynb) | BETA | Oui |
+| 21 | [Ontologie AIF.owl — l'architecture Argumentum des…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb) | ALPHA | Oui |
+| 22 | [Liens croisés crossLink et attaques AIF du CSV…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb) | BETA | Oui |
+| 23 | [Ontologie des vertus argumentatives — le pôle miroir…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb) | BETA | Oui |
+| 24 | [Argumentation graduée — sémantiques de classement…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-03c-Ranking-Semantics-Python.ipynb) | BETA | Oui |
+| 25 | [Strate 6 : le banc de recollement](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Obs-03-Recollement-Lectures-Python.ipynb) | BETA | Oui |
+| 26 | [Strate 6 : le recollement sur lectures réellement…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Obs-04-Recollement-Strate6-Python.ipynb) | BETA | Oui |
+| 27 | [Restitution en 3 actes — scaffold déterministe,…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08d-Restitution-3-Actes-Python.ipynb) | BETA | Non |
+| 28 | [Reconnaître un schéma d'argumentation — la table de…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-01b-Schemes-Walton-Python.ipynb) | BETA | Oui |
+| 29 | [Le modèle de Toulmin (1958)](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-01-Toulmin-Model-Python.ipynb) | BETA | Oui |
+| 30 | [Interface de configuration et préparation du texte](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08c-UI-Configuration-Python.ipynb) | BETA | Oui |
+| 31 | [Argumentation basée sur les valeurs (VAF, Bench-Capon…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-03b-Value-Based-AF-Python.ipynb) | BETA | Oui |
+| 32 | [I2 — Génération de contre-arguments par raisonnement…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb) | BETA | Oui |
+| 33  |[Détection symbolique de sophismes — l'étage symbolique…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Fallacy_Rules_Symboliques.ipynb) | BETA | Oui |
+| 34  |[Gouvernance multi-agents : scrutins, protocoles, choix…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Gouvernance_Multi_Agents.ipynb) | BETA | Oui |
+| 35  |[Orchestration d'un debat : arbitrer entre sept…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-07c-Orchestration-Modes-Python.ipynb) | BETA | Oui |
 
 ## SymbolicAI/Geometry (4 notebooks)
 
@@ -85,7 +85,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | [Langlands 01 : formes modulaires — de SL₂(ℤ) aux…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/01-formes-modulaires-sl2z-hecke.ipynb) | BETA | Non |
-| 2 | [Lean 4 - Installation et Configuration](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-1-Setup.ipynb) | BETA | Non |
+| 2 | [Lean 4 - Installation et Configuration](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-01-Setup-Lean-Python.ipynb) | BETA | Non |
 | 3 | [Lean 10 : LeanDojo - ML/LLM Theorem Proving](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-10-LeanDojo.ipynb) | BETA | Non |
 | 4 | [Lean 11 - TorchLean : Réseaux de Neurones Formellement…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-11-TorchLean.ipynb) | BETA | Non |
 | 5 | [Lean 11b - TorchLean : Implémentation Python des…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-11b-TorchLean-Python.ipynb) | BETA | Non |
@@ -110,11 +110,11 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 24 | [Lean 17a — Conway, les Nœuds et la Preuve de Piccirillo](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb) | BETA | Non |
 | 25 | [Lean 17b — Invariants de Nœuds : Calcul et Vérification](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17b-Knots-Invariants-Companion.ipynb) | BETA | Non |
 | 26 | [Lean 17c — Le lake knot_lean par ses déclarations…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb) | BETA | Non |
-| 27 | [Lean-18 : La Conjecture de Sendov (preuve L. Mazur,…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-18-Sendov-Complex-Analysis.ipynb) | BETA | Non |
-| 28 | [Lean-19 : Le manuel *Analysis I* de T. Tao en Lean 4…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-19-Analysis-I-Tao-Workflow.ipynb) | BETA | Non |
-| 29 | [Lean 2 - Types Dependants et Calcul des Constructions](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-2-Dependent-Types.ipynb) | BETA | Non |
-| 30 | [Lean-20 : La conjecture de Freiman-Ruzsa polynomiale…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-20-PFR-Entropy-Method.ipynb) | BETA | Non |
-| 31 | [Lean-20b : Trois primitives de PFR, et l'endroit exact…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-20b-PFR-Primitives-Transportables.ipynb) | BETA | Non |
+| 27 | [ANALYSE-01 — La Conjecture de Sendov (preuve L. Mazur,…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-01-Sendov-Lean-Python.ipynb) | BETA | Non |
+| 28 | [ANALYSE-02 — Le manuel *Analysis I* de T. Tao en Lean 4…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-02-Tao-Lean-Python.ipynb) | BETA | Non |
+| 29 | [Lean 2 - Types Dependants et Calcul des Constructions](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-02-Dependent-Types-Lean.ipynb) | BETA | Non |
+| 30 | [ANALYSE-03 — La conjecture de Freiman-Ruzsa polynomiale…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-03-PFR-Lean.ipynb) | BETA | Non |
+| 31 | [ANALYSE-04 — Trois primitives de PFR, et l'endroit exact…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-04-PFR-Primitives-Python.ipynb) | BETA | Non |
 | 32 | [Lean-21 : Detection MIMO par flips -- le seuil 2 log N…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb) | BETA | Non |
 | 33 | [Lean-21b : le lake mimo_lean par ses énoncés —…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21b-MIMO-Converse-Native.ipynb) | BETA | Non |
 | 34 | [Lean-21c : Le budget de descente - quand la…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21c-Descente-Budget.ipynb) | BETA | Non |
@@ -128,7 +128,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 42 | [Lean-27 : coloration d'arêtes et conjecture de Tutte —…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-27-EdgeColoring-Tutte-Companion.ipynb) | BETA | Non |
 | 43 | [Lean-28 : Le problème de Hopf sur S⁶ — digestion d'une…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-28-Complex-Structure-S6.ipynb) | BETA | Non |
 | 44 | [Lean-29 : les opérateurs de Hecke $T_p$ et $U_p$ —…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-29-Hecke-Operators-Native.ipynb) | BETA | Non |
-| 45 | [Lean 3 - Propositions et Preuves](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-3-Propositions-Proofs.ipynb) | BETA | Non |
+| 45 | [Lean 3 - Propositions et Preuves](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-03-Propositions-Proofs-Lean.ipynb) | BETA | Non |
 | 46 | [Lean-30 : groupes formels multivariés — compagnon natif](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-30-FormalGroups-Native.ipynb) | BETA | Non |
 | 47 | [Lean-31 : Euler et Navier–Stokes — reproduction pinée,…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb) | BETA | Non |
 | 48 | [Lean-33 : espaces de Schwartz — décroissance et…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-33-Distribution-Spaces.ipynb) | BETA | Non |
@@ -136,15 +136,15 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 50 | [Lean-34b — FairBot par le théorème de Löb : coopérer…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-34b-FairBot-Loeb.ipynb) | BETA | Non |
 | 51 | [Lean-36 : structures mathematiques finies — l'Annexe A…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-36-Structures-Finies-MUH-Lean.ipynb) | BETA | Non |
 | 52 | [Lean-37 : Capstone — la sous-série « Serre 100 »](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-37-Capstone-Serre100.ipynb) | BETA | Non |
-| 53 | [Lean-3b — Formalized Formal Logic : le laboratoire…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-3b-Formalized-Formal-Logic.ipynb) | BETA | Non |
-| 54 | [Lean 4 - Quantificateurs et Logique du Premier Ordre](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-4-Quantifiers.ipynb) | BETA | Non |
-| 55 | [Lean 5 - Mode Tactique](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-5-Tactics.ipynb) | BETA | Non |
-| 56 | [Lean 6 - Mathlib4 : La Bibliotheque Mathematique](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-6-Mathlib-Essentials.ipynb) | BETA | Non |
-| 57 | [Lean 7 - Integration des LLMs pour l'Assistance aux…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-7-LLM-Integration.ipynb) | BETA | Non |
-| 58 | [Lean 7b - Exemples Progressifs et Benchmarks](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-7b-Examples.ipynb) | BETA | Non |
-| 59 | [Lean-8 - Agents Autonomes pour Demonstration de…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-8-Agentic-Proving.ipynb) | BETA | Non |
-| 60 | [Lean 8b : le programme Erdős et le pattern…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-8b-Erdos-Formal-Conjectures-Native.ipynb) | BETA | Non |
-| 61 | [Lean 9 : Multi-Agents avec Semantic Kernel](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-9-SK-Multi-Agents.ipynb) | BETA | Non |
+| 53 | [Lean-3b — Formalized Formal Logic : le laboratoire…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-03b-Formalized-Formal-Logic-Lean-Python.ipynb) | BETA | Non |
+| 54 | [Lean 4 - Quantificateurs et Logique du Premier Ordre](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-04-Quantifiers-Lean.ipynb) | BETA | Non |
+| 55 | [Lean 5 - Mode Tactique](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-05-Tactics-Lean.ipynb) | BETA | Non |
+| 56 | [Lean 6 - Mathlib4 : La Bibliotheque Mathematique](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-06-Mathlib-Essentials-Lean.ipynb) | BETA | Non |
+| 57 | [Lean 7 - Integration des LLMs pour l'Assistance aux…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-07-LLM-Integration-Lean-Python.ipynb) | BETA | Non |
+| 58 | [Lean 7b - Exemples Progressifs et Benchmarks](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-07b-Examples-Python.ipynb) | BETA | Non |
+| 59 | [Lean-8 - Agents Autonomes pour Demonstration de…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-08-Agentic-Proving-Python.ipynb) | BETA | Non |
+| 60 | [Lean 8b : le programme Erdős et le pattern…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-08b-Erdos-Formal-Conjectures-Lean.ipynb) | BETA | Non |
+| 61 | [Lean 9 : Multi-Agents avec Semantic Kernel](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-09-SK-Multi-Agents-Lean-Python.ipynb) | BETA | Non |
 | 62 | [Corps finis et la borne de Hasse — distiller un…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/01-corps-finis-borne-hasse.ipynb) | BETA | Non |
 | 63 | [2. Valeurs zêta multiples finies — l'anneau des adèles…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/02-valeurs-zeta-multiples-finies.ipynb) | BETA | Non |
 | 64 | [Cohomologie de Čech calculée — espaces topologiques…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/03-cohomologie-cech-espaces-finis.ipynb) | BETA | Non |
@@ -215,24 +215,25 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 25 | [Z3-Python-16e — Meal-Planner : l'optimisation (du SAT à…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16e-Meal-Planner-Optimize-Python.ipynb) | BETA | Oui |
 | 26 | [Z3-Python 17 — Théorie des tableaux : Select, Store et…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-17-Array-Theory-Python.ipynb) | BETA | Oui |
 | 27 | [Z3-Python 18 — Sudoku 4x4 : comparaison des modes Array…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-18-Sudoku-Modes-Python.ipynb) | BETA | Oui |
-| 28 | [13. UNSAT cores : expliquer l'insatisfiabilite (le '…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb) | BETA | Oui |
-| 29 | [LINQ to Z3 - Résolution de Contraintes Déclarative](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb) | BETA | Oui |
-| 30 | [Sudoku : Théorème Explicite vs Modèle Implicite par…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/02_Sudoku_Theorem_vs_Array.ipynb) | BETA | Oui |
-| 31 | [Sudoku 4x4 : comparaison des modes Array et Constants](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/03_Sudoku_Modes_Comparison.ipynb) | BETA | Oui |
-| 32 | [Théorie des Tableaux Z3 — Select, Store et Switching](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/04_Array_Theory.ipynb) | BETA | Oui |
-| 33 | [Tableaux Imbriqués et Grilles 2D : API Déclarative…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/05_Nested_Arrays_2D.ipynb) | BETA | Oui |
-| 34 | [Notebook 06 — Meal-Planner declaratif : du modèle Z3 au…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/06_Meal_Planner_Modelisation.ipynb) | BETA | Oui |
-| 35 | [07 — Données réelles & externe : Ciqual × RecipeML…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/07_Meal_Planner_Data_External.ipynb) | BETA | Oui |
-| 36 | [08 — Capstone hiérarchique : du squelette int\[\]\[\] réel…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/08_Meal_Planner_Patient_Capstone.ipynb) | BETA | Oui |
-| 37 | [09 — Convergence à l'échelle : l'encodage décide de la…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/09_Meal_Planner_Convergence_Scale.ipynb) | BETA | Oui |
-| 38 | [10 — Générer un témoin depuis A & ~B (fork Automata…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/10_Witness_Generation_Automata.ipynb) | BETA | Oui |
-| 39 | [Notebook 11 — Ordonnancement d'atelier (Job Shop…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/11_Job_Shop_Scheduling.ipynb) | BETA | Oui |
-| 40 | [Notebook 12 - Coloration de graphe : le graphe de…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/12_Graph_Coloring_Petersen.ipynb) | BETA | Oui |
-| 41 | [Notebook 13 — Cryptarithmes : l'arithmétique…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/13_Cryptarithmetic_SMT.ipynb) | BETA | Oui |
-| 42 | [Notebook 14 — De SAT à OPT : optimisation et…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/14_Optimize_MaxSAT.ipynb) | BETA | Oui |
-| 43 | [15 — Théorie des bit-vectors Z3 : vérifier le…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/15_BitVectors_Overflow.ipynb) | BETA | Oui |
-| 44 | [17 — UNSAT cores Z3 : expliquer l'insatisfiabilité (le…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/17_UnsatCores.ipynb) | BETA | Oui |
-| 45 | [Notebook 18 - L'enigme d'Einstein : la logique des…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/18_Einsteins_Riddle.ipynb) | BETA | Oui |
+| 28 | [13. UNSAT cores : expliquer l'insatisfiabilite (le '…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb) | BETA | Oui |
+| 29 | [Z3-Python-13b — UNSAT cores : le MUS (sous-ensemble irreductible)](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13b-UnsatCores-MUS-Python.ipynb) | BETA | Oui |
+| 30 | [LINQ to Z3 - Résolution de Contraintes Déclarative](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb) | BETA | Oui |
+| 31 | [Sudoku : Théorème Explicite vs Modèle Implicite par…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/02_Sudoku_Theorem_vs_Array.ipynb) | BETA | Oui |
+| 32 | [Sudoku 4x4 : comparaison des modes Array et Constants](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/03_Sudoku_Modes_Comparison.ipynb) | BETA | Oui |
+| 33 | [Théorie des Tableaux Z3 — Select, Store et Switching](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/04_Array_Theory.ipynb) | BETA | Oui |
+| 34 | [Tableaux Imbriqués et Grilles 2D : API Déclarative…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/05_Nested_Arrays_2D.ipynb) | BETA | Oui |
+| 35 | [Notebook 06 — Meal-Planner declaratif : du modèle Z3 au…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/06_Meal_Planner_Modelisation.ipynb) | BETA | Oui |
+| 36 | [07 — Données réelles & externe : Ciqual × RecipeML…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/07_Meal_Planner_Data_External.ipynb) | BETA | Oui |
+| 37 | [08 — Capstone hiérarchique : du squelette int\[\]\[\] réel…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/08_Meal_Planner_Patient_Capstone.ipynb) | BETA | Oui |
+| 38 | [09 — Convergence à l'échelle : l'encodage décide de la…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/09_Meal_Planner_Convergence_Scale.ipynb) | BETA | Oui |
+| 39 | [10 — Générer un témoin depuis A & ~B (fork Automata…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/10_Witness_Generation_Automata.ipynb) | BETA | Oui |
+| 40 | [Notebook 11 — Ordonnancement d'atelier (Job Shop…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/11_Job_Shop_Scheduling.ipynb) | BETA | Oui |
+| 41 | [Notebook 12 - Coloration de graphe : le graphe de…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/12_Graph_Coloring_Petersen.ipynb) | BETA | Oui |
+| 42 | [Notebook 13 — Cryptarithmes : l'arithmétique…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/13_Cryptarithmetic_SMT.ipynb) | BETA | Oui |
+| 43 | [Notebook 14 — De SAT à OPT : optimisation et…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/14_Optimize_MaxSAT.ipynb) | BETA | Oui |
+| 44 | [15 — Théorie des bit-vectors Z3 : vérifier le…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/15_BitVectors_Overflow.ipynb) | BETA | Oui |
+| 45 | [17 — UNSAT cores Z3 : expliquer l'insatisfiabilité (le…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/17_UnsatCores.ipynb) | BETA | Oui |
+| 46 | [Notebook 18 - L'enigme d'Einstein : la logique des…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/18_Einsteins_Riddle.ipynb) | BETA | Oui |
 
 ## SymbolicAI/SemanticWeb (28 notebooks)
 

@@ -44,7 +44,7 @@ on:
       - 'scripts/check_arxiv_attributions.py'
       - 'scripts/tests/test_check_arxiv_attributions.py'
       - '.github/workflows/arxiv-attributions-guard.yml'
-      - 'MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving.ipynb'
+      - 'MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving-Python.ipynb'
       - 'MyIA.AI.Notebooks/GenAI/PostTraining/PT_15_controle_interpretabilite.ipynb'
       - 'MyIA.AI.Notebooks/GenAI/PostTraining/PT_16_vericoding_formal_verification.ipynb'
       - 'MyIA.AI.Notebooks/IIT/ICT-Series/ICT-37-FLens-BeliefState.ipynb'
