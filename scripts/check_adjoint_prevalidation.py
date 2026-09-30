@@ -185,6 +185,13 @@ BLOCKING_FIELDS = (
 # `neutral` are not failures; anything else completed (failure, timed_out,
 # cancelled, action_required, startup_failure, stale...) does (#16957).
 GREEN_CONCLUSIONS = {"success", "skipped", "neutral"}
+# Checks whose PRESENCE a `latest-wins-green` claim requires (#18579). Only
+# present checks can contradict the claim, so a head where the pull_request
+# workflows never fired (CodeQL legs only, or nothing at all) read green by
+# vacuity. `PR gate` is the check the protection of `main` requires; the
+# protection itself is not readable without admin rights (404 under
+# myia-ai-01, #9991), hence the list lives here.
+REQUIRED_CHECK_NAMES = ("PR gate",)
 START = "[ADJOINT PREFLIGHT]"
 END = "[/ADJOINT PREFLIGHT]"
 SHA_RE = re.compile(r"[0-9a-f]{40}")
@@ -654,7 +661,21 @@ def check_claim_contradictions(
     if claim != "latest-wins-green":
         return []
     contradictions = []
-    for name, run in sorted(latest_wins_check_runs(check_runs).items()):
+    verdicts = latest_wins_check_runs(check_runs)
+    # A required check with no completed run on the head is a contradiction
+    # too: an absent check cannot be green (#18579). `None` means the snapshot
+    # carries no check-runs at all (never the case live, where
+    # `_head_check_runs` always fills the list) and keeps the historic reading.
+    if check_runs is not None:
+        for name in REQUIRED_CHECK_NAMES:
+            if name not in verdicts:
+                contradictions.append(
+                    "checks claim 'latest-wins-green' is contradicted by the "
+                    f"absence of required check '{name}' on the head (no "
+                    "completed run: the pull_request workflows may never have "
+                    "fired, #18579)"
+                )
+    for name, run in sorted(verdicts.items()):
         conclusion = (run.get("conclusion") or "").lower()
         if conclusion in GREEN_CONCLUSIONS:
             continue
