@@ -797,7 +797,7 @@ Series complementaires (autres thematiques couvertes par le depot) :
 
 - **Explicabilite (XAI)** : `MyIA.AI.Notebooks/ML/` — tutoriels ML.NET
 - **Verification formelle** : `MyIA.AI.Notebooks/SymbolicAI/Lean/`
-- **IA generative et ethique** : `MyIA.AI.Notebooks/GenAI/` (103 notebooks, Image/Audio/Video/Texte)
+- **IA generative et ethique** : `MyIA.AI.Notebooks/GenAI/` (Image/Audio/Video/Texte)
 
 ---
 layout: end

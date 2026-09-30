@@ -25,8 +25,8 @@ QC Strategy Library #50 clone (Dynamic VIX-SPY Regime Switching by Ahmet Kasti).
 - **`research.ipynb`** reproduces the ML+VIX logic on a **full 10-year window (2015-2025)** including the 2022 bear (LUNA/FTX), which mechanically degrades Sharpe (more trading days = more variance). The local baseline (0.97) **outperforms** SPY Buy & Hold (0.536) by **+80%** in Sharpe — the strategy's edge is reproducible, but the **1.72 figure is not reproducible locally**.
 
 **Why this PR does not touch `research.ipynb` or `main.py`**:
-- `research.ipynb`: 29 cells, 13 executed (`execution_count: 1..13`), consistent outputs, 0 errors. This is the **pedagogical reference** for local reproduction. cell[9] output = `Sharpe 0.97, CAGR 23.83%, MaxDD -22.09%` confirmed by Papermill re-run.
-- `research_output.ipynb`: 27 cells, 13 executed, consistent outputs with `research.ipynb` (same baseline 0.97 and best 1.023).
+- `research.ipynb`: (`execution_count: 1..13`), consistent outputs, 0 errors. This is the **pedagogical reference** for local reproduction. cell[9] output = `Sharpe 0.97, CAGR 23.83%, MaxDD -22.09%` confirmed by Papermill re-run.
+- `research_output.ipynb`: consistent outputs with `research.ipynb` (same baseline 0.97 and best 1.023).
 - `main.py`: docstring explicitly contains the library reference `# OOS 1Y Sharpe 1.72, 5Y CAGR 29.76%` + URL `https://www.quantconnect.com/strategies/50` — the source is traceable, it was the README that omitted this distinction.
 
 **For the strategy as locally deployable**: `research.ipynb` is the reference. Sharpe 1.72 remains the **library claim** (to be validated before any live trading pass).
