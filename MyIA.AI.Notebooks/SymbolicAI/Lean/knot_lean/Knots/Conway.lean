@@ -9,10 +9,9 @@
   Résultats clés :
   1. Conway (11n34) et Kinoshita-Terasaka (11n42) partagent le même
      polynôme d'Alexander (trivial) — les invariants de mutation coïncident.
-  2. Le nœud de Kinoshita-Terasaka EST slice.
-  3. Le nœud de Conway n'est PAS slice lisse (Piccirillo 2018/2020).
-  4. Combiné au théorème de Freedman (Conway est topologiquement slice),
-     ceci donne la première dichotomie lisse/topologique explicite.
+  2. Slice et dichotomie lisse/topologique (Kinoshita-Terasaka slice,
+     Conway PAS slice lisse — Piccirillo 2018/2020 ; Conway topologiquement
+     slice — Freedman) : extraits dans `Knots.Slice` (issue #18397).
 
   Epic #2874, Phase 1 (squelette uniquement — sorry permanent pour l'instant).
 
@@ -3632,105 +3631,5 @@ theorem KT_trivial_alexander :
   rw [← hchain, Matrix.det_of_upperTriangular hT, hdiag]
 
 
-/-! ## 5. Nœuds slice
-
-Un nœud K est (lissement) slice s'il borde un disque D² lisse proprement
-plongé dans la boule à 4 dimensions B⁴.
-
-Un nœud est topologiquement slice s'il borde un disque topologiquement plongé
-localement plat dans B⁴.
--/
-
-def IsSmoothlySlice (k : Knot) : Prop := sorry
-  -- Definition: ∃ (D : D² ↪ B⁴ smooth), ∂D = K
-  -- Reference: Fox & Milnor (1966), Singularities of 2-spheres in 4-space
-  -- Mathlib prerequisites:
-  --   1. Smooth manifolds (partial: Mathlib has manifolds, not smooth embeddings D²→B⁴)
-  --   2. 4-ball (not in Mathlib)
-  --   3. Properly embedded surfaces (not in Mathlib)
-
-def IsTopologicallySlice (k : Knot) : Prop := sorry
-  -- Definition: ∃ (D : D² ↪ B⁴ locally flat), ∂D = K
-  -- Mathlib prerequisites: same as smoothly slice + topological manifold theory
-
-/-! ## 6. Théorème de Piccirillo (énoncé uniquement)
-
-Le nœud de Conway n'est PAS slice lisse. Ceci fut prouvé par Lisa Piccirillo
-en 2018 (publié dans Annals of Mathematics 2020). Elle était alors doctorante
-et résolut le problème en moins d'une semaine.
-
-Stratégie (cf. « Getting a handle on the Conway knot », AMS Bulletin 2022) :
-1. Construire un nœud K* ayant la même trace que le nœud de Conway
-   (la trace X_K est la 4-variété obtenue en attachant une 2-anse
-   à B⁴ le long de K avec un framing nul)
-2. Montrer que K* n'est PAS slice lisse (via le s-invariant de Rasmussen,
-   calculé à partir de l'homologie de Khovanov)
-3. Par le lemme de plongement de trace : si Conway est slice lisse,
-   alors K* est slice lisse → contradiction
-
-C'est une stratégie de preuve **magnifique** — attaquer le problème indirectement
-en trouvant un nœud « compagnon » partageant la même trace.
--/
-
-/-- Théorème de Piccirillo : le nœud de Conway n'est pas slice lisse. -/
-theorem conway_not_smoothly_slice : ¬ IsSmoothlySlice conwayKnot := by
-  exact sorry
-  -- Reference: Piccirillo (2018), arXiv:1808.02923
-  -- Published: Annals of Mathematics 191(2), 2020
-  -- Lean AI Leaderboard: https://lean-lang.org/eval/problems/conway_knot_not_smoothly_slice/
-  --
-  -- Proof infrastructure needed:
-  --   1. Trace X_K of a knot (4-manifold from 0-framed 2-handle)
-  --   2. Trace embedding lemma (if K slice ↔ ∂D = K → X_K embeds in B⁴)
-  --   3. Piccirillo's companion knot K* with same trace as Conway
-  --   4. Rasmussen s-invariant of K* ≠ 0 → K* not slice
-  --   5. Khovanov homology (computes s-invariant)
-  --
-  -- Mathlib prerequisites (ALL missing):
-  --   - 4-manifolds, handle decompositions, Kirby calculus
-  --   - Khovanov homology
-  --   - Rasmussen s-invariant
-  --   - Smooth vs topological embeddings
-  --   - Freedman's surgery theorem (for topological slice)
-  --
-  -- Estimated difficulty: **decades** away from formalization in Lean.
-  -- This sorry is effectively permanent.
-
-/-! ## 7. Théorème de Freedman (énoncé uniquement)
-
-Le nœud de Conway EST topologiquement slice, car il possède un polynôme
-d'Alexander trivial. Ceci est une conséquence du théorème de Freedman (1982) :
-tout nœud de polynôme d'Alexander trivial est topologiquement slice.
--/
-
-theorem conway_topologically_slice : IsTopologicallySlice conwayKnot := by
-  exact sorry
-  -- Reference: Freedman (1982), The topology of four-dimensional manifolds
-  -- Published: Journal of Differential Geometry 17(3)
-  -- Lean AI Leaderboard: https://lean-lang.org/eval/problems/conway_knot_topologically_slice/
-  --
-  -- Proof infrastructure needed:
-  --   1. Freedman's full topological surgery machinery in dimension 4
-  --   2. Disk embedding theorem
-  --   3. Topological h-cobordism theorem
-  --
-  -- Mathlib prerequisites: essentially ALL of topological 4-manifold theory
-  -- This sorry is effectively permanent.
-
-/-! ## 8. La dichotomie
-
-Ensemble, Piccirillo + Freedman donnent :
-  Nœud de Conway : topologiquement slice MAIS NON slice lisse.
-
-C'est le premier exemple explicite de dichotomie lisse/topologique
-pour un nœud nommé. Cela illustre que les structures lisses en dimension 4
-sont véritablement plus restrictives que les structures topologiques.
--/
-
-/-- Le nœud de Conway illustre la dichotomie lisse/topologique :
-il est topologiquement slice mais non slice lisse. -/
-theorem conway_dichotomy :
-    IsTopologicallySlice conwayKnot ∧ ¬ IsSmoothlySlice conwayKnot := by
-  exact ⟨conway_topologically_slice, conway_not_smoothly_slice⟩
 
 end Knots

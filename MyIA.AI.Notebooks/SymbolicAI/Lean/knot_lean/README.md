@@ -28,7 +28,8 @@ Deux comptes, selon le filtre CI :
   `{n | k.UnknottableIn n}` + témoin `unknot_unknottingNumber = 0` prouvé —
   0 sorry résiduel, voir § Phase 5 / § #14992 pour la modélisation indexée
   des changements de croisement et l'accessibilité Reidemeister), 2
-  `reidemeister_theorem` (PL), 4 Conway (les 2 defs `IsSmoothlySlice` /
+  `reidemeister_theorem` (PL), 4 Slice (extraits de Conway par #18397 ;
+  les 2 defs `IsSmoothlySlice` /
   `IsTopologicallySlice := sorry` + les 2 bornes `conway_not_smoothly_slice`
   et `conway_topologically_slice`), 2 Lidman. Les
   **2 résiduels §9.1 `fox`/`col` du backward transfer ont été DISCHARGÉS par
@@ -350,7 +351,8 @@ Référence : Fox (1962), A quick trip through knot theory ; Adams, *The Knot Bo
 | `Knots/Basic.lean` | Définitions (Knot, Link, PD-code, nœuds nommés), `KnotDiagram.wf` | 0 |
 | `Knots/Reidemeister.lean` | Mouvements R1/R2/R3 (modèle Phase 5), `ReidemeisterEquiv`, symétries | 2 |
 | `Knots/Invariant.lean` | 3-colorabilité (Fox), crossing number, contre-exemple PR1, bi-implication R1 connectée (#3000 + #3124/#11227), transfer R2-up + murs nommés (#11276), marquee `tricolorable_invariant` (#11958), `unknottingNumber` via `Nat.sInf` (#15082) | 0 |
-| `Knots/Conway.lean` | Nœud de Conway (11n34), Piccirillo, dichotomie lisse/topologique | 6 |
+| `Knots/Conway.lean` | Nœud de Conway (11n34), mutation, codes PD Conway/KT, arcPartition, Alexander trivial | 0 |
+| `Knots/Slice.lean` | Nœuds slice, Piccirillo, Freedman, dichotomie lisse/topologique (extrait de Conway, #18397) | 4 |
 | `Knots/Lidman.lean` | 11n102, unknotting number = 2 | 2 |
 | `Knots/MathlibPrerequisites.lean` | Index des prérequis Mathlib manquants par tier | 0 |
 
