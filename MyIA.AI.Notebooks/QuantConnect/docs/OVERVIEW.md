@@ -1,6 +1,6 @@
 # QuantConnect Trading — Overview
 
-Vue d'ensemble architecturale et résultats du projet QuantConnect (95+ strategies, 51 notebooks).
+Vue d'ensemble architecturale et résultats du projet QuantConnect (95+ strategies).
 
 ## Architecture Algorithm Framework
 
