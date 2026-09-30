@@ -1843,3 +1843,191 @@ def test_cliquet_exempte_la_convention_archive(tmp_path):
     )
     assert proc.returncode == 0, proc.stdout + proc.stderr
     assert json.loads(proc.stdout)["regressed"] == 0
+
+
+# =============================================================================
+# Carve-out meta-notes (#18606, decision ai-01 30/09 c.5916807033, voie 2) :
+# tags de la liste fermee, cellules AJOUTEES seulement, exemption rendue,
+# contre-exemples. Garde 4 de la decision : ces tests sont le contrat.
+# =============================================================================
+
+from check_split_reading_cells import (  # noqa: E402
+    META_NOTICE_TAGS,
+    meta_notice_tag,
+)
+
+
+def _md_tagged(text, tag):
+    """Cellule markdown portant un tag de meta-note en metadata."""
+    return {
+        "cell_type": "markdown",
+        "source": [text],
+        "metadata": {"tags": [tag]},
+        "id": "meta-1",
+    }
+
+
+def test_meta_notice_tag_liste_fermee():
+    """Garde 1 : seuls les trois tags canoniques portent l'exemption."""
+    for t in META_NOTICE_TAGS:
+        assert meta_notice_tag({"metadata": {"tags": [t]}}) == t
+    # hors liste : aucun effet, quelle que soit la casse ou la parente
+    for t in ("note", "audit_notice", "Audit-Notice", "source", "meta"):
+        assert meta_notice_tag({"metadata": {"tags": [t]}}) is None
+    assert meta_notice_tag({"metadata": {}}) is None
+    assert meta_notice_tag({}) is None
+
+
+def test_meta_notice_exempte_une_lecture_ajoutee():
+    """Le cas d'usage #18497/#18502 : une meta-note « Source » AJOUTEE sous
+    une sortie qui avait deja sa lecture ne declenche plus SECOND_READING --
+    et l'exemption est collectee pour le resume (garde 3).
+    """
+    base = nb(
+        code("print(1)"),
+        md("### Lecture du resultat\nConvergence nette."),
+    )
+    head = nb(
+        code("print(1)"),
+        md("### Lecture du resultat\nConvergence nette."),
+        _md_tagged("**Source :** donnees CNIL 2024, exemptees de la regle "
+                   "une-sortie-une-lecture.", "source-notice"),
+    )
+    exempted = []
+    findings = detect_added_readings(head, base, exempted_out=exempted)
+    assert findings == []
+    assert len(exempted) == 1
+    e = exempted[0]
+    assert e["tag"] == "source-notice"
+    assert e["cell_index"] == 2
+    assert e["cell_id"] == "meta-1"
+    assert e["src_first_120"].startswith("**Source :**")
+
+
+def test_meta_notice_sans_tag_reste_signalee():
+    """Contre-exemple garde 4 : la MEME cellule « Source » sans tag reste un
+    SECOND_READING -- l'exemption porte sur le tag, pas sur le contenu.
+    """
+    base = nb(
+        code("print(1)"),
+        md("### Lecture du resultat\nConvergence nette."),
+    )
+    head = nb(
+        code("print(1)"),
+        md("### Lecture du resultat\nConvergence nette."),
+        md("**Source :** donnees CNIL 2024."),
+    )
+    exempted = []
+    findings = detect_added_readings(head, base, exempted_out=exempted)
+    assert [f["type"] for f in findings] == ["SECOND_READING"]
+    assert exempted == []
+
+
+def test_meta_notice_sur_reecriture_n_exempte_pas():
+    """Contre-exemple garde 4 : un tag pose sur une cellule REECRITE (id de
+    base conserve, meme slot) ne blanchit rien -- et ne reduit pas le budget :
+    la vraie addition non taggee a cote reste signalee.
+    """
+    base = nb(
+        code("print(1)"),
+        {"cell_type": "markdown",
+         "source": ["### Lecture du resultat\nConvergence nette."],
+         "metadata": {}, "id": "r1"},
+    )
+    head = nb(
+        code("print(1)"),
+        {"cell_type": "markdown",
+         "source": ["### Lecture du resultat\nConvergence nette. "
+                    "Details dans la note d'audit."],
+         "metadata": {"tags": ["audit-notice"]}, "id": "r1"},
+        md("### Lecture chiffree\nLe score atteint 0.94."),
+    )
+    exempted = []
+    findings = detect_added_readings(head, base, exempted_out=exempted)
+    # la cellule taggee est une REECRITURE (id r1 conserve) : pas d'exemption ;
+    # l'ajout franc non tagge reste un SECOND_READING.
+    assert exempted == []
+    assert [f["type"] for f in findings] == ["SECOND_READING"]
+    assert findings[0]["cells"] == [2]
+
+
+def test_meta_notice_tag_hors_liste_sans_effet():
+    """Contre-exemple garde 4 : un tag hors liste fermee n'exempte rien."""
+    base = nb(
+        code("print(1)"),
+        md("### Lecture du resultat\nConvergence nette."),
+    )
+    head = nb(
+        code("print(1)"),
+        md("### Lecture du resultat\nConvergence nette."),
+        _md_tagged("Note methodologique ajoutee.", "note"),
+    )
+    exempted = []
+    findings = detect_added_readings(head, base, exempted_out=exempted)
+    assert [f["type"] for f in findings] == ["SECOND_READING"]
+    assert exempted == []
+
+
+def test_meta_notice_exempte_reading_before_code():
+    """Couverture du bucket positionnel : une meta-note AJOUTEE devant un
+    code avec sortie est exemptee par tag (elle renvoie, elle n'introduit pas).
+    """
+    base = nb(code("print(1)"), code("print(2)"))
+    head = nb(
+        code("print(1)"),
+        _md_tagged("**Verdict SOTA :** INTRINSIC, note en annexe.", "sota-notice"),
+        code("print(2)"),
+    )
+    exempted = []
+    findings = detect_added_readings(head, base, exempted_out=exempted)
+    assert findings == []
+    assert [e["tag"] for e in exempted] == ["sota-notice"]
+
+
+def test_meta_notice_ne_deplace_pas_le_blame():
+    """Garde budget : avec DEUX ajouts sous la meme sortie (un tagge, un non),
+    l'exemption retire exactement UNE unite -- l'ajout non tagge reste
+    signale, il ne herite pas de l'exemption de sa voisine.
+    """
+    base = nb(
+        code("print(1)"),
+        md("### Lecture du resultat\nConvergence nette."),
+    )
+    head = nb(
+        code("print(1)"),
+        md("### Lecture du resultat\nConvergence nette."),
+        _md_tagged("**Source :** CNIL 2024.", "source-notice"),
+        md("### Lecture chiffree\nLe score atteint 0.94."),
+    )
+    exempted = []
+    findings = detect_added_readings(head, base, exempted_out=exempted)
+    assert [f["type"] for f in findings] == ["SECOND_READING"]
+    assert findings[0]["cells"] == [3]
+    assert [e["cell_index"] for e in exempted] == [2]
+
+
+def test_cli_ratchet_rend_les_exemptions_dans_le_resume(tmp_path):
+    """Garde 3, bout en bout : le resume du check-run liste chaque cellule
+    exemptee (tag, index, id) -- elle sort du compte bloquant, pas du regard.
+    """
+    NB_CLI = "MyIA.AI.Notebooks/Demo/Meta.ipynb"
+    repo = _repo(tmp_path)
+    base = _commit(repo, {NB_CLI: nb(
+        code("print(1)"),
+        md("### Lecture du resultat\nConvergence nette."),
+    )}, "base")
+    head = _commit(repo, {NB_CLI: nb(
+        code("print(1)"),
+        md("### Lecture du resultat\nConvergence nette."),
+        _md_tagged("**Source :** CNIL 2024.", "source-notice"),
+    )}, "meta-note taggee")
+    proc = subprocess.run(
+        [sys.executable, str(SCRIPT), "--base-ref", base, "--head", head,
+         "--fail-on-findings"],
+        cwd=str(repo), capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
+    )
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert "0 en regression" in proc.stdout
+    assert "EXEMPT-source-notice" in proc.stdout
+    assert "id=meta-1" in proc.stdout

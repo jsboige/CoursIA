@@ -190,6 +190,28 @@ OUTPUT_CITATION_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Carve-out meta-notes (#18606, decision ai-01 30/09 c.5916807033, « voie 2 ») :
+# une cellule markdown AJOUTEE portant un tag de la liste fermee ci-dessous
+# declare une meta-note -- un renvoi methodologique (audit, verdict SOTA,
+# source des donnees), pas une lecture d'interpretation. Quatre gardes :
+#   1. liste fermee : tout autre tag reste sans effet ;
+#   2. cellules AJOUTEES seulement -- le check vit apres les exemptions de
+#      revision, une cellule reecrite ou deplacee ne se blanchit pas par tag ;
+#   3. chaque exemption est RENDUE dans le resume du check-run (notebook,
+#      id de cellule, tag) -- elle sort du compte bloquant, pas du regard ;
+#   4. contre-exemples portes par la suite de tests (lecture « Source » non
+#      taggee, tag sur reecriture, tag hors liste).
+META_NOTICE_TAGS = ("audit-notice", "sota-notice", "source-notice")
+
+
+def meta_notice_tag(cell: dict) -> str | None:
+    """Tag de meta-note porte par la cellule, ou None (liste fermee #18606)."""
+    tags = cell.get("metadata", {}).get("tags") or []
+    for t in tags:
+        if t in META_NOTICE_TAGS:
+            return t
+    return None
+
 
 def deaccent(s: str) -> str:
     return "".join(
@@ -626,9 +648,17 @@ def _attached_sources(nb: dict, key: str) -> set[str]:
     }
 
 
-def detect_added_readings(head_nb: dict, base_nb: dict | None) -> list[dict]:
+def detect_added_readings(head_nb: dict, base_nb: dict | None,
+                          exempted_out: list[dict] | None = None) -> list[dict]:
     """Mode DIFF (#17464) : signale les cellules markdown **ajoutees** dans une PR
     dont la position viole la regle user « une sortie = une lecture ».
+
+    Carve-out meta-notes (#18606) : une cellule AJOUTEE portant un tag de
+    ``META_NOTICE_TAGS`` (liste fermee) n'est pas signalée et ne consomme pas
+    le budget de lecture de sa sortie ; chaque exemption est apposee dans
+    ``exempted_out`` (si fourni) pour etre rendue dans le resume du check-run
+    (garde 3 de la decision). Une cellule reecrite ou deplacee ne passe jamais
+    par ce carve-out (garde 2).
 
     Algorithme :
       1. Si ``base_nb`` est None, retourne une liste vide.
@@ -696,6 +726,9 @@ def detect_added_readings(head_nb: dict, base_nb: dict | None) -> list[dict]:
     # verdict se tranche apres la boucle, quand toutes sont connues.
     pending: dict[str, list[int]] = {}
     reported: set[int] = set()
+    # Exemptions meta-notes #18606 (garde 3) : collectees pour le resume.
+    exempted: list[dict] = []
+    exempted_idx: set[int] = set()
 
     for idx, src in enumerate(head_srcs):
         if head_counter[src] <= base_counter[src]:
@@ -737,6 +770,23 @@ def detect_added_readings(head_nb: dict, base_nb: dict | None) -> list[dict]:
         # enonce|stub s'enchainent) -- mesure sur #17777 : 11 findings sur 3
         # carnets, tous des enonces.
         if is_exercise_statement(cell, head_cells, idx):
+            base_counter[src] += 1
+            continue
+
+        # Carve-out meta-notes #18606 (garde 2) : le tag ne blanchit qu'une
+        # cellule AJOUTEE -- on est ici apres les exemptions de revision et
+        # l'enonce d'exercice, donc une reecriture ou un deplacement est deja
+        # reparti plus haut. L'exemption est collectee (garde 3) ; son unite
+        # est retiree du budget de sa sortie apres la boucle.
+        notice_tag = meta_notice_tag(cell)
+        if notice_tag is not None:
+            exempted.append({
+                "cell_index": idx,
+                "cell_id": cell.get("id"),
+                "tag": notice_tag,
+                "src_first_120": src[:120],
+            })
+            exempted_idx.add(idx)
             base_counter[src] += 1
             continue
 
@@ -786,6 +836,15 @@ def detect_added_readings(head_nb: dict, base_nb: dict | None) -> list[dict]:
         reported.add(idx)
         base_counter[src] += 1
 
+    # Coherence du budget #18606 : une meta-note exemptee ne compte pas comme
+    # lecture -- on retire son unite du deficit de SA sortie, sinon le sweep
+    # signalerait une AUTRE cellule rattachee a la meme sortie a la place de
+    # l'exemptee (deplacement du blame, pas une exemption).
+    for exc in exempted:
+        exc_key = _output_key_above(head_cells, exc["cell_index"])
+        if exc_key is not None and excess.get(exc_key, 0) > 0:
+            excess[exc_key] -= 1
+
     # Le releve est par SORTIE, pas par cellule : plusieurs cellules peuvent se
     # disputer un meme budget, et celle qui a fait monter le compte n'est pas
     # toujours celle que les exemptions de revision ont laissee passer. Trois
@@ -804,7 +863,7 @@ def detect_added_readings(head_nb: dict, base_nb: dict | None) -> list[dict]:
         pend = pending.get(key, [])
         attached = [
             i for i, c in enumerate(head_cells)
-            if i not in reported and i not in pend
+            if i not in reported and i not in pend and i not in exempted_idx
             and _output_key_above(head_cells, i) == key
         ]
         moved = [i for i in attached if cell_source(head_cells[i]) not in held]
@@ -814,6 +873,8 @@ def detect_added_readings(head_nb: dict, base_nb: dict | None) -> list[dict]:
             reported.add(idx)
 
     findings.sort(key=lambda f: f["cells"][0])
+    if exempted_out is not None:
+        exempted_out.extend(exempted)
     return findings
 
 
@@ -961,13 +1022,18 @@ def ratchet_rows(base_ref: str, head: str = "HEAD",
         base_nb = read_notebook_at(base, base_path, cwd=cwd) if base_path else None
         base_total = len(detect(base_nb)) if base_nb is not None else 0
         head_total = len(detect(head_nb))
-        added = detect_added_readings(head_nb, base_nb)
+        exempted: list[dict] = []
+        added = detect_added_readings(head_nb, base_nb, exempted_out=exempted)
         rows.append({
             "notebook": head_path,
             "base_total": base_total,
             "head_total": head_total,
             "delta": head_total - base_total,
             "added": added,
+            # Garde 3 de la decision #18606 : le carve-out reste VISIBLE --
+            # chaque cellule exemptionnee par tag est listee (notebook, id de
+            # cellule, tag) ; elle sort du compte bloquant, pas du regard.
+            "exempted": exempted,
             # Le verdict EST le constat (#17044, decision c.5836401913) : le
             # cliquet compte les lectures par sortie, il ne diffe plus les
             # sources. Les deux totaux restent rendus, mais pour l'information
@@ -1251,6 +1317,11 @@ def main(argv: list[str] | None = None) -> int:
                 for f in r["added"]:
                     print(f"      {f['type']:22s} cellules {f['cells']} "
                           f"src[:120]={f.get('src_first_120', '')[:80]}")
+                for e in r.get("exempted", []):
+                    # Garde 3 (#18606) : l'exemption est rendue dans le resume.
+                    print(f"      {'EXEMPT-' + e['tag']:22s} cellule "
+                          f"{e['cell_index']} id={e.get('cell_id')} "
+                          f"src[:120]={e.get('src_first_120', '')[:60]}")
             if bad:
                 print("\nCliquet : la PR augmente les lectures scindees sur au "
                       "moins un carnet qu'elle touche. Fusionner la lecture "
