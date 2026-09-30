@@ -1373,7 +1373,7 @@ footer: 'III - Logique'
 
 # Pour aller plus loin : Notebooks
 
-> **Lean 4** (10 notebooks) : Assistants de preuve, logique d'ordre supérieur
+> **Lean 4** : Assistants de preuve, logique d'ordre supérieur
 > `MyIA.AI.Notebooks/SymbolicAI/Lean/`
 
 > **Z3 / SMT** : Solveurs modulo théorie, SAT, contraintes
