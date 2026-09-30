@@ -65,7 +65,7 @@ Commandes :
 | `python genai.py docker status` | Gestion conteneurs (status/start/stop) |
 | `python genai.py validate` | Validation stack (services, auth, modeles) |
 | `python genai.py notebooks` | Mapping notebooks <-> services |
-| `python genai.py models` | Modeles disponibles |
+| `python genai.py models list-checkpoints` | Checkpoints/modeles disponibles (models exige son action : download-qwen/download-nunchaku/setup-zimage/list-checkpoints/list-nodes — commands/models.py:514,576) |
 | `python genai.py gpu` | Etat GPU / VRAM |
 | `python genai.py auth audit` | Verifier l'auth par service |
 | `python genai.py quant {summary,apply}` | Quantization |
