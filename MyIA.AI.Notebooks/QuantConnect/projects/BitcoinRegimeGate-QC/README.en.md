@@ -39,5 +39,5 @@ Same gesture as `DynamicVIXSpyRegime-QC` (regime gate → equity/bonds), with a 
 
 ## Structure
 
-- `main.py` — LEAN algorithm (~60 lines, no ML: the article's gate is a pure regime filter).
+- `main.py` — LEAN algorithm with no ML: the article's gate is a pure regime filter.
 - No research notebook: unlike `DynamicVIXSpyRegime-QC` (RandomForest overlay), there is nothing to train — the distillate is the filter itself.

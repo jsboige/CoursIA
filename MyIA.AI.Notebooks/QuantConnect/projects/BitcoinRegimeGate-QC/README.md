@@ -39,5 +39,5 @@ C'est le même geste que `DynamicVIXSpyRegime-QC` (gate de régime → equity/ob
 
 ## Structure
 
-- `main.py` — algorithme LEAN (~60 lignes, sans ML : le gate de l'article est un pur filtre de régime).
+- `main.py` — algorithme LEAN sans ML : le gate de l'article est un pur filtre de régime.
 - Pas de notebook de recherche : contrairement à `DynamicVIXSpyRegime-QC` (overlay RandomForest), il n'y a rien à entraîner — le distillat est le filtre lui-même.
