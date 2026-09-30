@@ -38,7 +38,7 @@ Trois gestes, dans cet ordre, et **le premier est une conservation** :
 
 **Un "Exemple guide" est TERMINAL.** Il ne redeclenche ni le cas 1 (son titre n'est plus "Exercice") ni le cas 2 (son code n'est pas un stub). Ne pas inventer un cas 3 pour le re-traiter : c'est l'etat cible, pas une etape.
 
-**Precedent dans le depot** : `Texte/4_Function_Calling.ipynb` c45/c52, "EXEMPLE CORRIGE — Assistant de Planification Multi-Outils" — resolution conservee et titree, exercices maintenus a cote.
+**Precedent dans le depot** : `GenAI/Texte/04_Function_Calling.ipynb` (cellules `jrf33gd4drb`/`618da34f`), "EXEMPLE CORRIGE — Assistant de Planification Multi-Outils" — resolution conservee et titree, exercices maintenus a cote.
 
 **Pourquoi ce remede et pas le stub** : le protocole de TP (correction user 2026-09-07, EPIC #15035) veut que **chaque groupe rende au moins un exercice corrige, different d'une session a l'autre**. La digestion est le mecanisme qui rend ce cycle soutenable — le catalogue s'enrichit d'un exemple attribue et d'un exercice neuf a chaque rendu. Stubber la resolution effacerait le travail etudiant que ce cycle produit, et [anti-regression.md](anti-regression.md) le classe deja en regression de contenu.
 

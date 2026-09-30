@@ -459,7 +459,7 @@ Après création d'un notebook, l'exécuter pour vérifier :
 
 ```python
 # 1. Créer le notebook
-Task(subagent_type="general-purpose", prompt="notebook-designer ...")
+Task(subagent_type="general-purpose", model="sonnet", prompt="notebook-designer ...")
 
 # 2. Exécuter
 Task(
