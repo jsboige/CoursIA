@@ -116,6 +116,11 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lean-toolchain'
+      # iit_lean (#18599, sans Mathlib — proxy relationnel IIT)
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/iit_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/iit_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/iit_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/iit_lean/lean-toolchain'
       # serre100_lean (#17336)
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/lakefile.lean'
@@ -224,6 +229,11 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lean-toolchain'
+      # iit_lean (#18599, sans Mathlib — proxy relationnel IIT)
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/iit_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/iit_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/iit_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/iit_lean/lean-toolchain'
       # serre100_lean (#17336)
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/lakefile.lean'
