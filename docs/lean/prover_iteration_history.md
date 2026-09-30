@@ -139,11 +139,11 @@ From 20 prover history files containing 89 tactic attempts:
 
 | Target | Time Invested | Root Cause | Effort to Fix |
 |--------|--------------|------------|---------------|
-| hCore (Basic L308) | 5.9h (10 iters) | Missing hyperplane separation / Farkas' lemma | 100–150 lines |
-| man_optimal (GaleShapley L116/L117) | ~24h across 3 sessions | Missing rural hospitals theorem | 80–120 lines |
-| woman_pessimal (GaleShapley L146) | — | Depends on man_optimal + lattice duality | 40–60 lines (after man_optimal) |
-| meetSpouse "different women" (Lattice L324/L387) | ~3h | Needs rural hospitals or lattice argument | 60–80 lines per case |
-| doctor_optimal (Lattice L727) | — | Man-optimality rephrased as ManLE | 20–30 lines (after man_optimal) |
+| hCore (Basic L308) | 5.9h (10 iters) | Missing hyperplane separation / Farkas' lemma | — |
+| man_optimal (GaleShapley L116/L117) | ~24h across 3 sessions | Missing rural hospitals theorem | — |
+| woman_pessimal (GaleShapley L146) | — | Depends on man_optimal + lattice duality | (after man_optimal) |
+| meetSpouse "different women" (Lattice L324/L387) | ~3h | Needs rural hospitals or lattice argument | — |
+| doctor_optimal (Lattice L727) | — | Man-optimality rephrased as ManLE | (after man_optimal) |
 
 **Director (GPT-5.5) confirmation:** The missing piece is mathematical formalization, not search depth. The prover architecture functions correctly but cannot invent new theorems.
 
@@ -235,7 +235,7 @@ Première exécution du gradient calibration Conway sur une lane **sans clés ex
 - **Proofs proved manually (agent-guided):** 15+ (including all GS invariants, lattice, Bondareva forward/backward)
 - **Prover infrastructure iterations:** 7 (F6–F11, B3)
 - **Remaining sorrys:** 6 (5 rural hospitals cluster + 1 Bondareva hCore)
-- **Prover history files:** 20 JSON files in `agent_tests/prover/`
+- **Prover history files:** JSON files in `agent_tests/prover/`
 
 ---
 
