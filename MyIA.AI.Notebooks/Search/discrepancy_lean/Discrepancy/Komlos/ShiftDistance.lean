@@ -80,20 +80,16 @@ lemma shiftDistance_symm {d : ℕ} (S : Finset (Fin d → ℤ))
   congr 1
   apply Finset.sum_congr rfl
   intro x _
-  have h₁ : x - (-u) = x + u := by ring
-  rw [h₁]
+  ring_nf
   rw [abs_sub_comm]
-  have h₂ : P (x + u) - P x = -(P x - P (x + u)) := by ring
-  rw [h₂]
+  ring_nf
   rw [abs_neg]
-  rw [abs_sub_comm]
 
 /-- Δ(P, u) = 0 quand P est identiquement nulle sur S ∪ (S − u). -/
 lemma shiftDistance_eq_zero_of_zero {d : ℕ} (S : Finset (Fin d → ℤ))
-    (P : (Fin d → ℤ) → ℝ)
+    (P : (Fin d → ℤ) → ℝ) (u : Fin d → ℤ)
     (hP : ∀ x ∈ S, P x = 0)
-    (hu : ∀ y ∈ S, P (y - u) = 0)
-    (u : Fin d → ℤ) :
+    (hu : ∀ y ∈ S, P (y - u) = 0) :
     shiftDistance S P u = 0 := by
   unfold shiftDistance
   apply Finset.sum_congr rfl
@@ -119,12 +115,12 @@ lemma shiftDistance_le_one {d : ℕ} (S : Finset (Fin d → ℤ))
     shiftDistance S P u ≤
       (1 / 2 : ℝ) * (∑ x ∈ S, |P x| + ∑ x ∈ S, |P (x - u)|) := by
   unfold shiftDistance
-  apply mul_le_mul_of_nonneg_left
-  · rw [← Finset.sum_add_distrib]
-    apply Finset.sum_le_sum
-    intro x _
-    exact abs_sub_le _ _
-  · simp
+  have hhalf : (0 : ℝ) ≤ 1 / 2 := by norm_num
+  apply mul_le_mul_of_nonneg_left _ hhalf
+  rw [← Finset.sum_add_distrib]
+  apply Finset.sum_le_sum
+  intro x _
+  exact abs_sub_le _ _
 
 /-! ## Note d'adaptation (livraison progressive)
 
