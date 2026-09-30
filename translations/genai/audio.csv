@@ -1427,7 +1427,7 @@ Cette section a explore les capacites de traduction et de detection multilingue 
 - Pour d'autres langues cibles, combiner Whisper STT + un LLM de traduction
 
 **Transition** : Après avoir explore les fonctionnalites de traduction, nous allons comparer les deux modèles STT disponibles (whisper-1 vs gpt-4o-transcribe) pour comprendre leurs différences de performance et de compatibilite.",,,,,,,,416fdcc9608dac44,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,cell-model-comparison,code,fr,568e5b8050500798,"# Comparaison des modeles STT
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,cell-model-comparison,code,fr,ff9f11a59b57b3f7,"# Comparaison des modeles STT
 print(""COMPARAISON MODELES STT"")
 print(""="" * 45)
 
@@ -1449,7 +1449,7 @@ if ""fr"" in audio_samples:
                 transcript = client.audio.transcriptions.create(
                     model=model,
                     file=audio_file,
-                    response_format=""verbose_json""
+                    response_format=""json""
                 )
 
             elapsed = time.time() - start_time
@@ -1457,13 +1457,11 @@ if ""fr"" in audio_samples:
             comparison_results[model] = {
                 ""text"": transcript.text,
                 ""time"": elapsed,
-                ""language"": transcript.language,
-                ""duration"": transcript.duration
+                ""words"": len(transcript.text.split())
             }
 
             print(f""  Texte : {transcript.text}"")
-            print(f""  Langue : {transcript.language}"")
-            print(f""  Duree audio : {transcript.duration:.1f}s"")
+            print(f""  Mots : {len(transcript.text.split())}"")
             print(f""  Temps API : {elapsed:.2f}s"")
 
         except Exception as e:
@@ -1473,16 +1471,16 @@ if ""fr"" in audio_samples:
     # Tableau comparatif
     if len(comparison_results) > 1:
         print(f""\nTableau comparatif :"")
-        print(f""{'Modele':<25} {'Temps API':<12} {'Langue':<10}"")
+        print(f""{'Modele':<25} {'Temps API':<12} {'Mots':<10}"")
         print(""-"" * 47)
         for model, data in comparison_results.items():
             if ""error"" not in data:
-                print(f""{model:<25} {data['time']:<12.2f} {data['language']:<10}"")
+                print(f""{model:<25} {data['time']:<12.2f} {data['words']:<10}"")
             else:
                 print(f""{model:<25} {'ERREUR':<12} {'-':<10}"")
 else:
     print(""Aucun echantillon audio disponible"")
-",,,,,,,,568e5b8050500798,,,,,,,,
+",,,,,,,,ff9f11a59b57b3f7,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,a851d984,markdown,fr,739bd49545f0545b,"### Interpretation : Comparaison des modèles
 
 | Aspect | Observation | Analyse |
@@ -1648,27 +1646,51 @@ Vous disposez d'un extrait audio en francais et devez construire un mini-pipelin
 - `# Indice` : `client.audio.transcriptions.create(...)` pour la transcription
 - `# Indice` : `client.audio.translations.create(...)` pour la traduction vers l'anglais
 - `# Indice` : utilisez `time.time()` avant et après chaque appel pour mesurer la duree",,,,,,,,916bf1acc4a770ea,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,27491087,code,fr,bb2ee8aa2f5a9691,"# Exercice 3 : Pipeline de traduction et comparaison multilingue
-# TODO etudiant : Construire un pipeline transcription + traduction
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,27491087,code,fr,98fb36e06442ef1d,"# Exercice 3 : Pipeline de traduction et comparaison multilingue
 
-# Etape 1 : Generer un audio de test en francais
-ex3_text = ""Votre message professionnel ici.""  # TODO etudiant : texte de 2-3 phrases
-ex3_audio_path = None  # TODO etudiant : generer via TTS et sauvegarder
+# Etape 1 : Generer un audio de test en francais (TTS)
+ex3_text = ""La reconnaissance vocale permet de convertir la parole en texte. "" \
+""Cette technologie utilise des réseaux de neurones profonds pour analyser le signal audio et identifier les mots prononcés.""
+ex3_tts = client.audio.speech.create(
+    model=""tts-1"",
+    voice=""nova"",
+    input=ex3_text,
+    response_format=""mp3""
+)
+ex3_audio_path = OUTPUT_DIR / ""ex3_sample.mp3""
+with open(ex3_audio_path, 'wb') as f:
+    f.write(ex3_tts.content)
+print(f""Audio genere : {ex3_audio_path.name}"")
 
 # Etape 2 : Transcrire avec verbose_json
-transcript_result = None  # TODO etudiant
-transcript_lang = None  # TODO etudiant : extraire la langue detectee
-transcript_time = None  # TODO etudiant : mesurer la duree
+t0 = time.time()
+with open(ex3_audio_path, 'rb') as audio_file:
+    transcript_result = client.audio.transcriptions.create(
+        model=stt_model,
+        file=audio_file,
+        response_format=""verbose_json""
+    )
+transcript_time = time.time() - t0
+transcript_lang = transcript_result.language
 
-# Etape 3 : Traduire vers l'anglais
-# Indice : client.audio.translations.create(model=""whisper-1"", file=..., response_format=""json"")
-translation_result = None  # TODO etudiant
-translation_time = None  # TODO etudiant : mesurer la duree
+# Etape 3 : Traduire vers l'anglais (l'endpoint traduit toujours vers l'anglais, pas de parametre language)
+t0 = time.time()
+with open(ex3_audio_path, 'rb') as audio_file:
+    translation_result = client.audio.translations.create(
+        model=stt_model,
+        file=audio_file,
+        response_format=""json""
+    )
+translation_time = time.time() - t0
 
 # Etape 4 : Afficher la comparaison
-# Indice : afficher texte original, transcription, traduction, et temps des 2 appels
-
-print(""Exercice a completer"")",,,,,,,,bb2ee8aa2f5a9691,,,,,,,,
+print(f""\nTexte de base : {ex3_text}"")
+print(f""Langue detectee : {transcript_lang}"")
+print(f""Transcription : {transcript_result.text}"")
+print(f""Traduction : {translation_result.text}"")
+print(f""\nTemps transcription : {transcript_time:.2f}s | traduction : {translation_time:.2f}s"")
+print(f""Rapport traduction / transcription : {translation_time / transcript_time:.2f}x"")
+",,,,,,,,98fb36e06442ef1d,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,k64i3295i4,markdown,fr,1b1b49a866205720,"***
 
 ## CHALLENGE BONUS - Sous-titrage Automatique
