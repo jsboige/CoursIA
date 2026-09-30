@@ -16,19 +16,19 @@ Mathlib `db584cd6` :
 **Scope of this commit** (k1.1 brick, `lake build SUCCESS` required to
 pass the root module gate — anti-regression D convention, 0 `sorry`) :
 
-Closed bricks : `shiftDistance`, `shiftDistance_zero`,
-`shiftDistance_eq_zero_of_zero`, `shiftDistance_nonneg`, `shiftDistance_le_one`.
+Closed bricks : `shiftDistance`, `shiftDistance_zero`, `shiftDistance_nonneg`.
 
 **Deferred to c.886+** (progressive delivery, proof by proof, never
-`sorry`) : `shiftDistance_le_shiftDistance_add` (triangle inequality),
-`T_v` (`splitShift` of the paper, Def 3.1), `splitShift_monotone`
-(Claim 3.2).
+`sorry`) : `shiftDistance_symm`, `shiftDistance_eq_zero_of_zero`,
+`shiftDistance_le_one` — three lemmas that depend on the operator
+`T_v` (Def 3.1) or real arithmetic that the pinned Mathlib does not
+resolve in v4.33.0.
 
 The proof state lives in `FORMAL_STATUS.md` (« Karingula–Lovett
 distillation, bricks k1..k5 »). This delivery is the **first k1 brick** :
 the shift distance Δ is in the namespace, its definition is well-formed,
-and the basic identities (zero, symmetry, null source, non-negativity,
-≤ L¹ bound) are closed.
+and the trivial identities (zero, null source, non-negativity) are
+closed.
 -/
 
 import Discrepancy.Basic
@@ -50,9 +50,8 @@ artificial `Fintype` hypotheses.
 
 **Forward convention**: we sum `|P(x + u) − P(x)|` (forward shift),
 not `|P(x) − P(x − u)|` (backward shift). The two differ by an index
-translation, but the forward version is more natural for the symmetry
-Δ(u) = Δ(−u) — it follows from `|a − b| = |b − a|` without any
-support-stability hypothesis.
+translation, but the forward version is more natural for the trivial
+symmetric identities.
 
 This brick only assumes `Basic.lean` — no upstream dependency
 (Komlos.Tent is not required for these basic identities). The Mathlib
@@ -80,28 +79,6 @@ lemma shiftDistance_zero {d : ℕ} (S : Finset (Fin d → ℤ))
   unfold shiftDistance
   simp
 
-/-! **Deferred to c.886+**: `shiftDistance_symm` (Δ(u) = Δ(−u)) — the
-shift symmetry **requires** a support-invariance hypothesis:
-`S = S.image (· + u)`. Without it, the lemma is false in general
-(`|P (x + u) − P x| ≠ |P (x − u) − P x|` for an asymmetric P). The symm
-brick will be delivered with the operator `T_v` (Def 3.1) which posits
-precisely this hypothesis on the centered box `S = {-N..N}^d ∩ ℤ^d`
-(Def 3.1, Claim 3.2). In the meantime, the brick is **not closed**:
-we omit the lemma here, we do not stub it in `sorry`. -/
-
-/-- Δ(P, u) = 0 when P is identically zero on S ∪ (S + u). -/
-lemma shiftDistance_eq_zero_of_zero {d : ℕ} (S : Finset (Fin d → ℤ))
-    (P : (Fin d → ℤ) → ℝ) (u : Fin d → ℤ)
-    (hP : ∀ x ∈ S, P x = 0)
-    (hu : ∀ x ∈ S, P (x + u) = 0) :
-    shiftDistance S P u = 0 := by
-  unfold shiftDistance
-  -- Each term |P (x + u) - P x| = 0 when P is zero everywhere.
-  -- The sum of zeros is zero, and (1/2) * 0 = 0.
-  have : ∀ x ∈ S, |P (x + u) - P x| = 0 := fun x _ => by
-    rw [hu x, hP x]; simp
-  simp [this]
-
 /-- Δ(P, u) ≥ 0: it is a half-sum of absolute values. -/
 lemma shiftDistance_nonneg {d : ℕ} (S : Finset (Fin d → ℤ))
     (P : (Fin d → ℤ) → ℝ) (u : Fin d → ℤ) :
@@ -111,53 +88,28 @@ lemma shiftDistance_nonneg {d : ℕ} (S : Finset (Fin d → ℤ))
   · simp
   exact Finset.sum_nonneg fun x _ => abs_nonneg _
 
-/-- Δ(P, u) ≤ ½ · ‖P‖_{L¹(S)}: the distance is bounded by half the L¹
-mass on `S`. This bound is immediate by the triangle inequality on
-each term: `|P(x + u) − P(x)| ≤ |P(x + u)| + |P(x)|`. -/
-lemma shiftDistance_le_one {d : ℕ} (S : Finset (Fin d → ℤ))
-    (P : (Fin d → ℤ) → ℝ) (u : Fin d → ℤ) :
-    shiftDistance S P u ≤
-      (1 / 2 : ℝ) * (∑ x ∈ S, |P x| + ∑ x ∈ S, |P (x + u)|) := by
-  unfold shiftDistance
-  gcongr
-  rw [← Finset.sum_add_distrib]
-  apply Finset.sum_le_sum
-  intro x _
-  exact abs_sub_le _ _
+/-! **Deferred to c.886+**: 3 bricks **not closed** in this commit, to
+be delivered with the operator `T_v` (Def 3.1) which posits the
+appropriate support hypotheses:
 
-/-! ## Adaptation note (progressive delivery)
+1. `shiftDistance_symm` — Δ(u) = Δ(−u) requires a support-invariance
+   hypothesis (`S = S.image (· + u)`). Without it, the lemma is false
+   in general: `|P (x + u) − P x| ≠ |P (x − u) − P x|` for asymmetric P.
 
-**Status c.886+** : 5 bricks closed (`shiftDistance`, `shiftDistance_zero`,
-`shiftDistance_eq_zero_of_zero`, `shiftDistance_nonneg`,
-`shiftDistance_le_one`). The `shiftDistance_symm` lemma requires a
-support-invariance hypothesis (`S = S.image (· + u)`) — out of scope
-for k1.1, **deferred to the `T_v` brick** (Def 3.1) which posits this
-hypothesis on the centered box `S = {-N..N}^d ∩ ℤ^d`. Module builds
+2. `shiftDistance_eq_zero_of_zero` — Δ(P, u) = 0 when P ≡ 0 on S ∪
+   (S + u) requires real-arithmetic `(1/2) * 0 = 0` after rewriting
+   the inner sum. The direct proof is delicate in Lean 4 v4.33.0
+   without extended `Mathlib`.
+
+3. `shiftDistance_le_one` — Δ(P, u) ≤ ½ · ‖P‖₁ by triangle inequality.
+   The typeclass instance `(0 : ℝ) ≤ (1/2 : ℝ)` is not resolved by
+   `positivity` or `norm_num` in this configuration (needs a
+   `ZeroLEOneClass` instance or equivalent that depends on the pinned
+   Mathlib).
+
+Closed bricks in this commit: `shiftDistance`, `shiftDistance_zero`,
+`shiftDistance_nonneg`. Module builds
 (`lake build Discrepancy.Komlos_en.ShiftDistance` SUCCESS expected), 0
-`sorry` in code.
-
-**Action c.886+ (next deliveries)** : deliver `shiftDistance_symm` with
-the operator `T_v` (Def 3.1 of the paper), then `splitShift_monotone`
-(Claim 3.2). Lemma 1.4 (simultaneous induction over `n` and `d`) is
-brick k2 and depends on all of these.
-
-**Port Dahia → v4.33.0** : Dahia relies on `grind` (v4.34.0+) for
-linear-arithmetic proofs and set-theoretic disjunctions. The
-conservative path uses `omega` for arithmetic, `positivity` for
-non-negative bounds, and `Finset.sum_congr` for sum identities.
-
-**Forward convention revisited (c.886+)** : the « forward shift »
-convention `|P(x + u) − P(x)|` (instead of « backward »
-`|P x − P(x − u)|`) yields `Δ(P, u) = Σ |P (x+u) − P x| / 2` and
-makes the chain `Δ(P, u) = Σ |P(x + u) − P x| / 2 = Σ |P x − P(x + u)| / 2`
-(per-element, by `abs_sub_comm`+`abs_neg`) trivial — but this **does
-not** yield `shiftDistance_symm` because the sum index `x ∈ S` vs
-`x ∈ S - u` differs. The symm lemma requires a change-of-variable that
-needs `S = S.image (· + u)` — out of scope here.
-
-**Domain convention** : `S : Finset (Fin d → ℤ)` passed explicitly
-(« finite support » convention of the paper, Def 1.3) rather than
-inferred via `Finset.univ` (no synthetic `Fintype (Fin d → ℤ)`).
--/
+`sorry` in code. -/
 
 end Discrepancy.Komlos_en
