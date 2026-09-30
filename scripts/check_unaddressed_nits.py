@@ -4284,7 +4284,7 @@ def _names_author(body: str, author: str) -> bool:
 # #18149 -- un lift `jsboige` prefixe `[NanoClaw]` / `[Hermes]` est-il signe
 # par la lane qui porte la PR ? Detection sur deux frontieres de format canonique
 # du tag de lane : (a) `[machine:workspace]` en tete de paragraphe (format
-# `[CLAIMED]` / `[DISPATCH->inbox]`, Tell c.677-L4 body PR HORS worktree) --
+# `[CLAIMED]` / `[DISPATCH->inbox]`, body PR HORS worktree) --
 # deja porte par `_CROSS_LANE_LIFT_RE` ; (b) signature de bas de corps
 # (`-- lane <machine:workspace>` ou `lane <machine:workspace> -- ...`),
 # patron de pied de commentaire observe dans les reponses de lanes depuis
