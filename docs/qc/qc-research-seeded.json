@@ -129,8 +129,8 @@
   "17902": {
    "url": "https://www.quantconnect.com/research/17902/bitcoin-as-a-leading-indicator/",
    "lastmod": "2025-02-14T06:21:50+00:00",
-   "seeded_at": null,
-   "issue": null
+   "seeded_at": "2026-09-30",
+   "issue": 18575
   },
   "17900": {
    "url": "https://www.quantconnect.com/research/17900/intraday-application-of-hidden-markov-models/",
@@ -867,7 +867,7 @@
   "21195": {
    "url": "https://www.quantconnect.com/research/21195/bitcoin-regime-signal-for-growth-equities/",
    "lastmod": "2026-08-21T13:40:23+00:00",
-   "seeded_at": null,
+   "seeded_at": "2026-09-30",
    "issue": 12748
   },
   "21382": {
