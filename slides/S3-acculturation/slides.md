@@ -319,7 +319,7 @@ L'incertitude vient d'un **autre décideur**, qui optimise aussi — parfois con
 
 
 
-<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-01-Utility-Foundations.ipynb">DecInfer-01-Utility-Foundations.ipynb</a> (théorie de la décision), <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm.ipynb">GameTheory-02-NormalForm.ipynb</a> (formes normales).</p>
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-01-Utility-Foundations.ipynb">DecInfer-01-Utility-Foundations.ipynb</a> (théorie de la décision), <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Python.ipynb">GameTheory-02-NormalForm-Python.ipynb</a> (formes normales).</p>
 ---
 
 
@@ -359,7 +359,7 @@ L'incertitude vient d'un **autre décideur**, qui optimise aussi — parfois con
 
 
 
-<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust.ipynb">GameTheory-06-EvolutionTrust.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames.ipynb">GameTheory-15-CooperativeGames.ipynb</a>.</p>
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-Python.ipynb">GameTheory-06-EvolutionTrust-Python.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb">GameTheory-15-CooperativeGames-Python.ipynb</a>.</p>
 ---
 layout: section
 ---
@@ -1203,7 +1203,7 @@ layout: section
 <img src="./images/img_069.png" class="max-h-[150px] w-full object-contain" alt="Arbre de jeu de poker en trois rues : Pre-flop, Flop, Turn avec Fold/Call/Check/Raise" />
 </div>
 
-<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm.ipynb">GameTheory-02-NormalForm.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-04-NashEquilibrium.ipynb">GameTheory-04-NashEquilibrium.ipynb</a>.</p>
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Python.ipynb">GameTheory-02-NormalForm-Python.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-04-NashEquilibrium-Python.ipynb">GameTheory-04-NashEquilibrium-Python.ipynb</a>.</p>
 ---
 
 
@@ -1265,7 +1265,7 @@ layout: section
 
 <!-- Forme extensive : arbre ou chaque noeud = décision, feuilles = gains -->
 
-<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-09-BackwardInduction.ipynb">GameTheory-09-BackwardInduction.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-11-BayesianGames.ipynb">GameTheory-11-BayesianGames.ipynb</a>.</p>
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-09-BackwardInduction-Python.ipynb">GameTheory-09-BackwardInduction-Python.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-11-BayesianGames-Python.ipynb">GameTheory-11-BayesianGames-Python.ipynb</a>.</p>
 ---
 
 
@@ -1308,7 +1308,7 @@ layout: section
 <img src="./images/img_074.png" class="max-h-[120px] w-full object-contain" alt="Surface 3D incurvée f(x,y) dans une boîte avec un point rouge marqué" />
 </div>
 
-<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem.ipynb">GameTheory-06c-RepeatedGames-FolkTheorem.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR.ipynb">GameTheory-13-ImperfectInfo-CFR.ipynb</a>.</p>
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb">GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Python.ipynb">GameTheory-13-ImperfectInfo-CFR-Python.ipynb</a>.</p>
 ---
 
 
@@ -1346,7 +1346,7 @@ layout: section
 <img src="./images/img_076.png" class="max-h-[150px] w-[44%] object-contain" alt="Jeu itératif du prisonnier avec roue de stratégies : Copycat, Cheater, Cooperator, Grudger, Detective..." />
 </div>
 
-<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/SocialChoice/05-Gibbard-Satterthwaite.ipynb">05-Gibbard-Satterthwaite.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-09c-Stackelberg-SecurityGame.ipynb">GameTheory-09c-Stackelberg-SecurityGame.ipynb</a>.</p>
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/SocialChoice/05-Gibbard-Satterthwaite.ipynb">05-Gibbard-Satterthwaite.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-09c-Stackelberg-SecurityGame-Python.ipynb">GameTheory-09c-Stackelberg-SecurityGame-Python.ipynb</a>.</p>
 ---
 
 

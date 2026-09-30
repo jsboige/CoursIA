@@ -16,7 +16,7 @@
 > mathematical content (grim-trigger theorem, one-shot deviation principle, threshold δ) remains
 > **fully valid** and is found identically in the canonical home.
 
-> **Formal companion** of the pedagogical notebook [GameTheory-6c](../GameTheory-06c-RepeatedGames-FolkTheorem.ipynb) (`Repeated Games` — Iterated prisoner's dilemma). The active sources live in [`game_theory_lean/RepeatedGames/`](../game_theory_lean/RepeatedGames/).
+> **Formal companion** of the pedagogical notebook [GameTheory-6c](../GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb) (`Repeated Games` — Iterated prisoner's dilemma). The active sources live in [`game_theory_lean/RepeatedGames/`](../game_theory_lean/RepeatedGames/).
 
 > **Tribute — Richard E. Stearns (1936-2026), "semi-author".** The work Richard E. Stearns carried
 > out at the *Arms Control and Disarmament Agency* on **repeated games with incomplete
@@ -68,5 +68,5 @@ The numeric threshold `δ ≥ (T − R) / (T − P)` is the **falsifiable gate**
 
 - [Issue #4880 (lake creation)](https://github.com/jsboige/CoursIA/issues/4880)
 - [Issue #4363 (junction shared Mathlib cache)](https://github.com/jsboige/CoursIA/issues/4363)
-- Notebook: [`GameTheory-6c.ipynb`](../GameTheory-06c-RepeatedGames-FolkTheorem.ipynb)
+- Notebook: [`GameTheory-6c.ipynb`](../GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb)
 - Sibling lake `cooperative_games_lean` (sorries closed 2026-06-09, see BONDAREVA_SHAPLEY_HARDNESS.md)

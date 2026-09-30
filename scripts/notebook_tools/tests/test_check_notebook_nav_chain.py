@@ -94,16 +94,16 @@ class TestLooksNav:
         assert cnc._looks_nav("Sudoku-05-PSO", "Sudoku-05-PSO-Csharp.ipynb", "table row", True)
 
     def test_prose_filename_in_backticks_is_not_an_edge(self):
-        # GameTheory-24b : `Suite du banc toy \`GameTheory-24-Humour-Banc.ipynb\``
-        assert not cnc._looks_nav("GameTheory-24-Humour-Banc.ipynb",
-                                  "GameTheory-24-Humour-Banc.ipynb",
-                                  "Suite du banc toy `GameTheory-24-Humour-Banc.ipynb`", False)
+        # GameTheory-24b : `Suite du banc toy \`GameTheory-18c-Humour-Banc-Python.ipynb\``
+        assert not cnc._looks_nav("GameTheory-18c-Humour-Banc-Python.ipynb",
+                                  "GameTheory-18c-Humour-Banc-Python.ipynb",
+                                  "Suite du banc toy `GameTheory-18c-Humour-Banc-Python.ipynb`", False)
 
     def test_see_also_bullet_is_not_an_edge(self):
         # GameTheory-15 : liste « voir aussi » titree.
-        line = "- [GameTheory-16 (Choix social / Mechanism Design)](GameTheory-16-MechanismDesign-Csharp.ipynb) : agregation"
+        line = "- [GameTheory-16 (Choix social / Mechanism Design)](GameTheory-16-MechanismDesign-CSharp.ipynb) : agregation"
         assert not cnc._looks_nav("GameTheory-16 (Choix social / Mechanism Design)",
-                                  "GameTheory-16-MechanismDesign-Csharp.ipynb", line, False)
+                                  "GameTheory-16-MechanismDesign-CSharp.ipynb", line, False)
 
     def test_twin_parity_link_is_not_an_edge(self):
         # Search-03c : `| ↔ Python | [Search-03c — LDS (Python)](...) |` — parite
