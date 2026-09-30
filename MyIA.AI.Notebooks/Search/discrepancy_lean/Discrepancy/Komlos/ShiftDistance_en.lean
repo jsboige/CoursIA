@@ -36,15 +36,17 @@ import Discrepancy.Basic
 /-!
 # Shift distance Δ (Def 1.3, Karingula–Lovett)
 
-`Discrepancy.Komlos.shiftDistance P u = ½ · Σ_x |P(x) − P(x − u)|` is the
-half-total-variation distance between a finitely-supported distribution
-`P : ℤ^d → ℝ` and its translation by `u`. It is the elementary brick
-underlying the splitting operator `T_v` (Def 3.1) and Lemma 1.4 (the
-hard core of the distillation).
+`Discrepancy.Komlos.shiftDistance S P u = ½ · Σ_{x ∈ S} |P(x) − P(x − u)|`
+is the half-total-variation distance between a distribution
+`P : ℤ^d → ℝ` supported in a finite `Finset S` and its translation by
+`u`. It is the elementary brick underlying the splitting operator
+`T_v` (Def 3.1) and Lemma 1.4 (the hard core of the distillation).
 
-The definition uses the « finite support » convention: the sum runs over
-the union of the supports of `P` and `P(· − u)` (which makes the sum
-finite even though the codomain is the whole `ℤ^d`).
+**Domain convention**: we **pass the support** `S : Finset (Fin d → ℤ)`
+explicitly, rather than inferring a `Fintype` on `Fin d → ℤ` (which
+has no instance). This stays faithful to the « finite support »
+convention of the paper and gives a type-clean signature without
+artificial `Fintype` hypotheses.
 
 This brick only assumes `Basic.lean` — no upstream dependency
 (Komlos.Tent is not required for these basic identities). The Mathlib
@@ -55,69 +57,61 @@ the gap between this pin and the local toolchain v4.33.0 is handled by
 
 namespace Discrepancy.Komlos_en
 
-/-- Finite support of a distribution: the set of points where it is
-non-zero. For this elementary brick, we use the direct definition
-(`Finset.univ.filter`) and bound via `tsub_eq_zero_iff_eq` when needed. -/
-def supportFun {d : ℕ} (P : (Fin d → ℤ) → ℝ) : Finset (Fin d → ℤ) :=
-  Finset.univ.filter fun x => P x ≠ 0
+/-- Shift distance Δ(P, u, S) = ½ · Σ_{x ∈ S} |P(x) − P(x − u)|.
 
-/-- Shift distance Δ(P, u) = ½ · Σ_x |P(x) − P(x − u)|.
-
-We sum over the union of the supports of `P` and `P(· − u)`: this sum
-is naturally finite (both terms vanish outside this union). The constant
-`½` is reported as a multiplicative factor. -/
-noncomputable def shiftDistance {d : ℕ} (P : (Fin d → ℤ) → ℝ)
-    (u : Fin d → ℤ) : ℝ :=
-  (1 / 2 : ℝ) * ∑ x ∈ supportFun P ∪ supportFun (fun x => P (x - u)),
-    |P x - P (x - u)|
+We sum over `S`, any `Finset` that contains the effective support of
+`P` (and therefore, by translation, that of `P(· − u)`). The
+convention is that `S` may be wider than necessary — the definition
+remains correct, only the out-of-support contributions are zero. -/
+noncomputable def shiftDistance {d : ℕ} (S : Finset (Fin d → ℤ))
+    (P : (Fin d → ℤ) → ℝ) (u : Fin d → ℤ) : ℝ :=
+  (1 / 2 : ℝ) * ∑ x ∈ S, |P x - P (x - u)|
 
 /-- Δ(P, 0) = 0: the zero shift changes nothing. -/
-lemma shiftDistance_zero {d : ℕ} (P : (Fin d → ℤ) → ℝ) :
-    shiftDistance P 0 = 0 := by
+lemma shiftDistance_zero {d : ℕ} (S : Finset (Fin d → ℤ))
+    (P : (Fin d → ℤ) → ℝ) :
+    shiftDistance S P 0 = 0 := by
   unfold shiftDistance
   simp
 
 /-- Δ(P, u) = Δ(P, −u): the shift distance is symmetric. -/
-lemma shiftDistance_symm {d : ℕ} (P : (Fin d → ℤ) → ℝ)
-    (u : Fin d → ℤ) :
-    shiftDistance P u = shiftDistance P (-u) := by
+lemma shiftDistance_symm {d : ℕ} (S : Finset (Fin d → ℤ))
+    (P : (Fin d → ℤ) → ℝ) (u : Fin d → ℤ) :
+    shiftDistance S P u = shiftDistance S P (-u) := by
   unfold shiftDistance
   congr 1
   apply Finset.sum_congr rfl
   intro x _
   simp [sub_neg_eq_add, abs_sub_comm]
 
-/-- Δ(P, u) = 0 when P is identically zero. -/
-lemma shiftDistance_eq_zero_of_zero {d : ℕ} (P : (Fin d → ℤ) → ℝ)
-    (hP : ∀ x, P x = 0) (u : Fin d → ℤ) : shiftDistance P u = 0 := by
-  unfold shiftDistance supportFun
+/-- Δ(P, u) = 0 when P is identically zero on S. -/
+lemma shiftDistance_eq_zero_of_zero {d : ℕ} (S : Finset (Fin d → ℤ))
+    (P : (Fin d → ℤ) → ℝ) (hP : ∀ x ∈ S, P x = 0) (u : Fin d → ℤ) :
+    shiftDistance S P u = 0 := by
+  unfold shiftDistance
   simp [hP]
 
 /-- Δ(P, u) ≥ 0: it is a half-sum of absolute values. -/
-lemma shiftDistance_nonneg {d : ℕ} (P : (Fin d → ℤ) → ℝ)
-    (u : Fin d → ℤ) : 0 ≤ shiftDistance P u := by
+lemma shiftDistance_nonneg {d : ℕ} (S : Finset (Fin d → ℤ))
+    (P : (Fin d → ℤ) → ℝ) (u : Fin d → ℤ) :
+    0 ≤ shiftDistance S P u := by
   unfold shiftDistance
   apply mul_nonneg
   · simp
   exact Finset.sum_nonneg fun x _ => abs_nonneg _
 
-/-- Δ(P, u) ≤ ½ · ‖P‖₁: the distance is bounded by half the total L¹
-mass (sum of |P(x)| over the support of P and its translate). This
-bound is immediate by the triangle inequality on each term. -/
-lemma shiftDistance_le_one {d : ℕ} (P : (Fin d → ℤ) → ℝ)
-    (u : Fin d → ℤ) :
-    shiftDistance P u ≤
-      (1 / 2 : ℝ) * (∑ x ∈ supportFun P, |P x| +
-        ∑ x ∈ supportFun (fun x => P (x - u)), |P (x - u)|) := by
+/-- Δ(P, u) ≤ ½ · ‖P‖_{L¹(S)}: the distance is bounded by half the L¹
+mass on `S`. This bound is immediate by the triangle inequality on
+each term: `|P(x) − P(x − u)| ≤ |P(x)| + |P(x − u)|`. -/
+lemma shiftDistance_le_one {d : ℕ} (S : Finset (Fin d → ℤ))
+    (P : (Fin d → ℤ) → ℝ) (u : Fin d → ℤ) :
+    shiftDistance S P u ≤
+      (1 / 2 : ℝ) * (∑ x ∈ S, |P x| + ∑ x ∈ S, |P (x - u)|) := by
   unfold shiftDistance
-  rw [← Finset.sum_union]
-  · apply mul_le_mul_of_nonneg_left
-    apply Finset.sum_le_sum
+  apply mul_le_mul_of_nonneg_left
+  · apply Finset.sum_le_sum
     intro x _
     exact abs_sub_le _ _
-    simp
-  · exact Finset.union_comm _ _ |> Finset.subset_union_right.trans
-      (Finset.union_subset (Finset.subset_union_left) (Finset.subset_union_right))
   · simp
 
 /-! ## Adaptation note (progressive delivery)
@@ -137,8 +131,17 @@ depends on all of these.
 **Port Dahia → v4.33.0** : Dahia relies on `grind` (v4.34.0+) for
 linear-arithmetic proofs and set-theoretic disjunctions. The
 conservative path uses `omega` for arithmetic, `positivity` for
-non-negative bounds, and `Finset.sum_congr`/`Finset.union_comm` for
-sum identities.
+non-negative bounds, and `Finset.sum_congr` for sum identities.
+
+**Domain convention revisited (c.886)** : the initial signature
+inferring the support via `Finset.univ` required a synthetic
+`Fintype (Fin d → ℤ)` — not available. Passing the support
+`S : Finset (Fin d → ℤ)` explicitly aligns with the « finite support »
+convention of the paper (Def 1.3: « sum over the support »), while
+avoiding the phantom instance. Side effect:
+`shiftDistance_eq_zero_of_zero` now requires
+`∀ x ∈ S, P x = 0` (instead of `∀ x, P x = 0`), which is more
+precise.
 -/
 
 end Discrepancy.Komlos_en

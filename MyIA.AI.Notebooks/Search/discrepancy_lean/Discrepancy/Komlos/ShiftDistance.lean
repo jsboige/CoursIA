@@ -36,13 +36,15 @@ import Discrepancy.Basic
 
 `Discrepancy.Komlos.shiftDistance P u = ½ · Σ_x |P(x) − P(x − u)|` est la
 demi-variation totale discrète entre une distribution `P : ℤ^d → ℝ` à
-support fini et sa translatée par `u`. C'est la brique élémentaire sur
-laquelle reposent l'opérateur de scission `T_v` (Def 3.1) et le Lemme 1.4
-(la noix de la distillation).
+support dans un `Finset S` fini et sa translatée par `u`. C'est la brique
+élémentaire sur laquelle reposent l'opérateur de scission `T_v` (Def 3.1)
+et le Lemme 1.4 (la noix de la distillation).
 
-La définition utilise la convention « support fini » : la somme est sur
-les `x ∈ ℤ^d` tels que `P(x) ≠ 0` ou `P(x − u) ≠ 0` (ce qui rend la somme
-finie même si le codomaine est ℤ^d entier).
+**Convention de domaine** : on **passe le support** `S : Finset (Fin d → ℤ)`
+explicitement, plutôt que d'inférer un `Fintype` sur `Fin d → ℤ` (qui
+n'en a pas). Cela reste fidèle à la convention « support fini » du
+papier et donne une signature type-clean sans hypothèses `Fintype`
+artificielles.
 
 Cette brique ne suppose que `Basic.lean` — pas de dépendance amont
 (Komlos.Tent n'est pas requis pour ces identités de base). Le pin Mathlib
@@ -53,71 +55,61 @@ par `lake build` (Lean 4 est rétrocompatible majeur).
 
 namespace Discrepancy.Komlos
 
-/-- Support fini d'une distribution : l'ensemble des points où elle est non
-nulle. Pour cette brique élémentaire, on utilise la définition directe
-(`Finset.univ.filter`) et on borne via `tsub_eq_zero_iff_eq` quand
-nécessaire. -/
-def supportFun {d : ℕ} (P : (Fin d → ℤ) → ℝ) : Finset (Fin d → ℤ) :=
-  Finset.univ.filter fun x => P x ≠ 0
+/-- Distance de décalage Δ(P, u, S) = ½ · Σ_{x ∈ S} |P(x) − P(x − u)|.
 
-/-- Distance de décalage Δ(P, u) = ½ · Σ_x |P(x) − P(x − u)|.
-
-On somme sur l'union des supports de `P` et de `P(· − u)` : c'est la
-somme naturellement finie (les deux termes hors de cette union sont
-nuls). La constante `½` est reportée en facteur multiplicatif. -/
-noncomputable def shiftDistance {d : ℕ} (P : (Fin d → ℤ) → ℝ)
-    (u : Fin d → ℤ) : ℝ :=
-  (1 / 2 : ℝ) * ∑ x ∈ supportFun P ∪ supportFun (fun x => P (x - u)),
-    |P x - P (x - u)|
+On somme sur `S`, un `Finset` quelconque qui contient le support effectif
+de `P` (et donc, par translation, celui de `P(· − u)`). La convention est
+que `S` peut être plus large que nécessaire — la définition reste
+correcte, seules les contributions hors-support sont nulles. -/
+noncomputable def shiftDistance {d : ℕ} (S : Finset (Fin d → ℤ))
+    (P : (Fin d → ℤ) → ℝ) (u : Fin d → ℤ) : ℝ :=
+  (1 / 2 : ℝ) * ∑ x ∈ S, |P x - P (x - u)|
 
 /-- Δ(P, 0) = 0 : le décalage nul ne change rien. -/
-lemma shiftDistance_zero {d : ℕ} (P : (Fin d → ℤ) → ℝ) :
-    shiftDistance P 0 = 0 := by
+lemma shiftDistance_zero {d : ℕ} (S : Finset (Fin d → ℤ))
+    (P : (Fin d → ℤ) → ℝ) :
+    shiftDistance S P 0 = 0 := by
   unfold shiftDistance
   simp
 
 /-- Δ(P, u) = Δ(P, −u) : la distance de décalage est symétrique. -/
-lemma shiftDistance_symm {d : ℕ} (P : (Fin d → ℤ) → ℝ)
-    (u : Fin d → ℤ) :
-    shiftDistance P u = shiftDistance P (-u) := by
+lemma shiftDistance_symm {d : ℕ} (S : Finset (Fin d → ℤ))
+    (P : (Fin d → ℤ) → ℝ) (u : Fin d → ℤ) :
+    shiftDistance S P u = shiftDistance S P (-u) := by
   unfold shiftDistance
   congr 1
   apply Finset.sum_congr rfl
   intro x _
   simp [sub_neg_eq_add, abs_sub_comm]
 
-/-- Δ(P, u) = 0 quand P est identiquement nulle. -/
-lemma shiftDistance_eq_zero_of_zero {d : ℕ} (P : (Fin d → ℤ) → ℝ)
-    (hP : ∀ x, P x = 0) (u : Fin d → ℤ) : shiftDistance P u = 0 := by
-  unfold shiftDistance supportFun
+/-- Δ(P, u) = 0 quand P est identiquement nulle sur S. -/
+lemma shiftDistance_eq_zero_of_zero {d : ℕ} (S : Finset (Fin d → ℤ))
+    (P : (Fin d → ℤ) → ℝ) (hP : ∀ x ∈ S, P x = 0) (u : Fin d → ℤ) :
+    shiftDistance S P u = 0 := by
+  unfold shiftDistance
   simp [hP]
 
 /-- Δ(P, u) ≥ 0 : c'est une demi-somme de valeurs absolues. -/
-lemma shiftDistance_nonneg {d : ℕ} (P : (Fin d → ℤ) → ℝ)
-    (u : Fin d → ℤ) : 0 ≤ shiftDistance P u := by
+lemma shiftDistance_nonneg {d : ℕ} (S : Finset (Fin d → ℤ))
+    (P : (Fin d → ℤ) → ℝ) (u : Fin d → ℤ) :
+    0 ≤ shiftDistance S P u := by
   unfold shiftDistance
   apply mul_nonneg
   · simp
   exact Finset.sum_nonneg fun x _ => abs_nonneg _
 
-/-- Δ(P, u) ≤ ½ · ‖P‖₁ : la distance est bornée par la moitié de la
-masse `L¹` totale (la somme des |P(x)| sur le support de P et son
-translaté). Cette borne est immédiate par inégalité triangulaire sur
-chaque terme. -/
-lemma shiftDistance_le_one {d : ℕ} (P : (Fin d → ℤ) → ℝ)
-    (u : Fin d → ℤ) :
-    shiftDistance P u ≤
-      (1 / 2 : ℝ) * (∑ x ∈ supportFun P, |P x| +
-        ∑ x ∈ supportFun (fun x => P (x - u)), |P (x - u)|) := by
+/-- Δ(P, u) ≤ ½ · ‖P‖_{L¹(S)} : la distance est bornée par la moitié de
+la masse `L¹` sur `S`. Cette borne est immédiate par inégalité
+triangulaire sur chaque terme : `|P(x) − P(x − u)| ≤ |P(x)| + |P(x − u)|`. -/
+lemma shiftDistance_le_one {d : ℕ} (S : Finset (Fin d → ℤ))
+    (P : (Fin d → ℤ) → ℝ) (u : Fin d → ℤ) :
+    shiftDistance S P u ≤
+      (1 / 2 : ℝ) * (∑ x ∈ S, |P x| + ∑ x ∈ S, |P (x - u)|) := by
   unfold shiftDistance
-  rw [← Finset.sum_union]
-  · apply mul_le_mul_of_nonneg_left
-    apply Finset.sum_le_sum
+  apply mul_le_mul_of_nonneg_left
+  · apply Finset.sum_le_sum
     intro x _
     exact abs_sub_le _ _
-    simp
-  · exact Finset.union_comm _ _ |> Finset.subset_union_right.trans
-      (Finset.union_subset (Finset.subset_union_left) (Finset.subset_union_right))
   · simp
 
 /-! ## Note d'adaptation (livraison progressive)
@@ -131,14 +123,22 @@ lemma shiftDistance_le_one {d : ℕ} (P : (Fin d → ℤ) → ℝ)
 **Action c.886+ (livraisons suivantes)** : ajouter `shiftDistance_le_shift`
 (inégalité du décalage composé), puis l'opérateur de scission
 `T_v` (Def 3.1 du papier), puis `splitShift_monotone` (Claim 3.2). Le
-Lem-me 1.4 (induction simultanée sur `n` et `d`) constitue la brique k2
+Lemme 1.4 (induction simultanée sur `n` et `d`) constitue la brique k2
 et dépend de toutes ces briques.
 
 **Portage Dahia → v4.33.0** : Dahia exploite `grind` (v4.34.0+) pour les
 preuves d'arithmétique linéaire et les disjonctions ensemblistes. La voie
 conservatrice utilise `omega` pour l'arithmétique, `positivity` pour les
-bornes non-négatives, et `Finset.sum_congr`/`Finset.union_comm` pour les
-égalités de sommes.
+bornes non-négatives, et `Finset.sum_congr` pour les égalités de sommes.
+
+**Convention de domaine revisitée (c.886)** : la signature initiale
+inférant le support via `Finset.univ` exigeait un `Fintype (Fin d → ℤ)`
+synthétique — non disponible. Le passage explicite du support
+`S : Finset (Fin d → ℤ)` aligne sur la convention « support fini »
+du papier (Def 1.3 : « on somme sur le support »), tout en évitant
+l'instance fantôme. Effet de bord : `shiftDistance_eq_zero_of_zero`
+demande maintenant `∀ x ∈ S, P x = 0` (au lieu de `∀ x, P x = 0`),
+ce qui est plus précis.
 -/
 
 end Discrepancy.Komlos
