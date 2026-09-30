@@ -96,14 +96,11 @@ lemma shiftDistance_eq_zero_of_zero {d : ℕ} (S : Finset (Fin d → ℤ))
     (hu : ∀ x ∈ S, P (x + u) = 0) :
     shiftDistance S P u = 0 := by
   unfold shiftDistance
-  -- Show the inner sum is zero, then conclude by mul_zero.
-  have hsum : ∑ x ∈ S, |P (x + u) - P x| = 0 := by
-    rw [Finset.sum_eq_zero_iff_of_nonneg]
-    · intro x _
-      rw [hu x, hP x]
-      simp
-    · intros _ _; exact abs_nonneg _
-  rw [hsum, mul_zero]
+  -- Each term |P (x + u) - P x| = 0 when P is zero everywhere.
+  -- The sum of zeros is zero, and (1/2) * 0 = 0.
+  have : ∀ x ∈ S, |P (x + u) - P x| = 0 := fun x _ => by
+    rw [hu x, hP x]; simp
+  simp [this]
 
 /-- Δ(P, u) ≥ 0: it is a half-sum of absolute values. -/
 lemma shiftDistance_nonneg {d : ℕ} (S : Finset (Fin d → ℤ))
