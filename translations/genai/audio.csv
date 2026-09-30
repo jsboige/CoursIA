@@ -1427,7 +1427,7 @@ Cette section a explore les capacites de traduction et de detection multilingue 
 - Pour d'autres langues cibles, combiner Whisper STT + un LLM de traduction
 
 **Transition** : Après avoir explore les fonctionnalites de traduction, nous allons comparer les deux modèles STT disponibles (whisper-1 vs gpt-4o-transcribe) pour comprendre leurs différences de performance et de compatibilite.",,,,,,,,416fdcc9608dac44,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,cell-model-comparison,code,fr,ff9f11a59b57b3f7,"# Comparaison des modeles STT
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,cell-model-comparison,code,fr,568e5b8050500798,"# Comparaison des modeles STT
 print(""COMPARAISON MODELES STT"")
 print(""="" * 45)
 
@@ -1449,7 +1449,7 @@ if ""fr"" in audio_samples:
                 transcript = client.audio.transcriptions.create(
                     model=model,
                     file=audio_file,
-                    response_format=""json""
+                    response_format=""verbose_json""
                 )
 
             elapsed = time.time() - start_time
@@ -1457,11 +1457,13 @@ if ""fr"" in audio_samples:
             comparison_results[model] = {
                 ""text"": transcript.text,
                 ""time"": elapsed,
-                ""words"": len(transcript.text.split())
+                ""language"": transcript.language,
+                ""duration"": transcript.duration
             }
 
             print(f""  Texte : {transcript.text}"")
-            print(f""  Mots : {len(transcript.text.split())}"")
+            print(f""  Langue : {transcript.language}"")
+            print(f""  Duree audio : {transcript.duration:.1f}s"")
             print(f""  Temps API : {elapsed:.2f}s"")
 
         except Exception as e:
@@ -1471,16 +1473,16 @@ if ""fr"" in audio_samples:
     # Tableau comparatif
     if len(comparison_results) > 1:
         print(f""\nTableau comparatif :"")
-        print(f""{'Modele':<25} {'Temps API':<12} {'Mots':<10}"")
+        print(f""{'Modele':<25} {'Temps API':<12} {'Langue':<10}"")
         print(""-"" * 47)
         for model, data in comparison_results.items():
             if ""error"" not in data:
-                print(f""{model:<25} {data['time']:<12.2f} {data['words']:<10}"")
+                print(f""{model:<25} {data['time']:<12.2f} {data['language']:<10}"")
             else:
                 print(f""{model:<25} {'ERREUR':<12} {'-':<10}"")
 else:
     print(""Aucun echantillon audio disponible"")
-",,,,,,,,ff9f11a59b57b3f7,,,,,,,,
+",,,,,,,,568e5b8050500798,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,a851d984,markdown,fr,739bd49545f0545b,"### Interpretation : Comparaison des modèles
 
 | Aspect | Observation | Analyse |
