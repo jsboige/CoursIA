@@ -109,8 +109,9 @@ NOTEBOOK_SUBTREES = (
     "MyIA.AI.Notebooks/SymbolicAI/Tweety/",            # tranche 4 #10923 (32, manipulation arguments)
     "MyIA.AI.Notebooks/SymbolicAI/Planners/",          # tranche 6 #10923 (24)
     "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/",  # tranche 6 #10923 (23)
+    # SymbolicAI/Lean/ couvre aussi Lean/Geometry/ depuis le re-parenting #18601
+    # (ex SymbolicAI/Geometry/, tranche 19 #18423).
     "MyIA.AI.Notebooks/SymbolicAI/Lean/",             # tranche 13 #10923 (33 notebooks .ipynb pedagogique Lean)
-    "MyIA.AI.Notebooks/SymbolicAI/Geometry/",         # tranche 19 #18423 (4, geometry + algorithms)
     "MyIA.AI.Notebooks/cross-series/",                # tranche 13 #10923 (1)
 )
 
