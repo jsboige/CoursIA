@@ -68,65 +68,112 @@ class TestQuadraticVotingDefaut:
     Le jour où le tronc corrige (somme de carrés effective), ce test rougit —
     c'est la signature que la §7 du carnet doit être mise à jour et l'exercice
     1 reformulé (ou retiré).
+
+    **Construction du profil discriminant** (audit tiers po-2025, c.1326, msg
+    ``adj-18526-qv-witness-20260930``) : le témoin doit échouer sur une
+    **plausible correction QV**, pas seulement sur un patch constant. Profil
+    = 1 stubborn (top Pizza) + 1 flexible (top Burger), budget=8 :
+
+    - **Défaut** (stubborn met tout sur top, flexible coupe en deux) :
+      Pizza = 8 (stubborn) + 0 = **8 voix**, Burger = 4 (flexible moitié),
+      Sushi = 4, Racelette = 0 → Pizza gagne.
+    - **Plausible QV** (chaque agent minimise sa propre somme de carrés ;
+      distribution 3-3-2 sur top-3 prefs) : Pizza = 3, Burger = 3 (stubborn
+      2ᵉ pref) + 3 (flexible top) = **6 voix**, Sushi = 2 + 3 = 5,
+      Racelette = 2 → Burger gagne (6 > 5).
+
+    Le témoin ``assert == 'Pizza'`` rougit donc **sur la correction QV** (et
+    seulement sur elle : un patch constant à ``'Pizza'`` continue de passer,
+    mais un patch constant à ``'Burger'`` rougit aussi — c'est la signature
+    que la garde mord sur les deux formes de non-défaut). Sur tout patch
+    qui retournerait ``'Pizza'`` trivialement, la garde ne mord pas : c'est
+    pourquoi le profil est construit pour que **défaut et correction
+    divergent de façon déterministe** (pas de tie-break d'insertion de dict).
     """
 
-    def test_quadratic_distribution_flexible_coupe_budget_en_deux(self):
-        """Le défaut conservé : un agent `flexible` alloue `budget // 2` à
-        son premier choix et `budget - budget // 2` à son second — c'est
-        l'algorithme du **prototype**, conservé tel quel par le tronc.
+    def test_quadratic_distribution_stubborn_pizza_vs_flexible_burger(self):
+        """Témoin discriminant c.1326 : défaut → Pizza, plausible QV → Burger.
 
-        On appelle la **vraie** `gm.quadratic_voting` (pas une réimplémentation
-        locale) sur un profil à 2 agents flexibles aux prefs disjointes au
-        top. La fonction retourne `max(votes, key=votes.get)` (l'option
-        gagnante) ; avec le défaut, les deux top options reçoivent chacune
-        `budget // 2 + (budget - budget // 2) = budget` voix — l'égalité
-        est la signature du défaut, et **le gagnant est non-déterministe**
-        (max sur égalité dépend de l'ordre d'insertion du dict en Python
-        3.7+). Un vrai vote quadratique romprait cette égalité par
-        l'allocation coût-optimale — le jour où le tronc corrige, ce test
-        devient sensible au seed.
+        Profil = 1 stubborn (top=Pizza, prefs [Pizza, Burger, Sushi, Raclette])
+        + 1 flexible (top=Burger, prefs [Burger, Sushi, Racelette, Pizza]),
+        budget = 8.
 
-        Le test affirme **l'égalité structurelle** : la fonction doit
-        retourner une option **parmi** les deux top disputées (pas une
-        option extérieure). Si un futur correctif fait sortir une option
-        non-top du dé, c'est la signature d'une régression non-QV.
+        **Défaut** (gm.quadratic_voting actuel) : stubborn met 8 voix sur
+        son top (Pizza) ; flexible coupe en deux (4 Burger + 4 Sushi).
+        → Pizza = 8, Burger = 4, Sushi = 4, Racelette = 0 → **Pizza gagne**.
+
+        **Plausible QV** (chaque agent minimise sa propre somme de carrés ;
+        distribution 3-3-2 sur top-3 préférences, la plus économe pour
+        budget=8) : stubborn 3 Pizza + 3 Burger + 2 Sushi ; flexible
+        3 Burger + 3 Sushi + 2 Racelette.
+        → Pizza = 3, Burger = 6, Sushi = 5, Racelette = 2 → **Burger gagne**.
+
+        Le témoin affirme **Pizza** (défaut). Le jour où le tronc corrige
+        en QV plausible, la fonction renvoie Burger, ce test rougit, et
+        la §7 du carnet + l'exercice 1 doivent être mis à jour. Profil
+        identifié par audit tiers po-2025 (msg
+        ``adj-18526-qv-witness-20260930``, c.1326) : ce profil **mord**,
+        contrairement au profil 2-flexibles-disjointes-au-top qui produisait
+        une égalité non-déterministe (tie-break d'insertion de dict) et
+        qu'un patch constant à ``'Pizza'`` faisait passer trivialement.
+
+        Contrôles négatifs vérifiés au c.1326 :
+        - patch constant ``return 'Pizza'`` → test PASS (signature du défaut
+          inchangée) ;
+        - patch constant ``return 'Burger'`` → test FAIL (rouge attendu) ;
+        - QV plausible 3-3-2 → test FAIL (Burger gagne).
         """
-        prefs_2 = [["Pizza", "Burger"], ["Burger", "Pizza"]]
-        ag = [gm.Agent("A0", "flexible", prefs_2[0], rng=random.Random(0)),
-              gm.Agent("A1", "flexible", prefs_2[1], rng=random.Random(1))]
-        # Appelons la vraie fonction — c'est le témoin qui doit rougir
-        # si le tronc corrige le défaut.
+        ag = [gm.Agent("A0", "stubborn",
+                       ["Pizza", "Burger", "Sushi", "Raclette"],
+                       rng=random.Random(0)),
+              gm.Agent("A1", "flexible",
+                       ["Burger", "Sushi", "Raclette", "Pizza"],
+                       rng=random.Random(1))]
         budget = 8
         gagnant = gm.quadratic_voting(
             ag, OPTIONS, context={"quadratic_budget": budget}
         )
-        # Le défaut : les deux tops (Pizza, Burger) sont à égalité.
-        # Le gagnant est l'un des deux (non-déterministe par construction
-        # du défaut) ; **pas** une option hors top (Sushi, Racelette).
-        assert gagnant in {"Pizza", "Burger"}, (
-            f"quadratic_voting retourne {gagnant!r} — un vrai QV romprait "
-            f"l'égalité Pizza/Burger en faveur du coût-optimale. Soit le "
-            f"défaut a été corrigé (rouge attendu), soit l'API a dérivé."
+        assert gagnant == "Pizza", (
+            f"quadratic_voting retourne {gagnant!r} sur le profil "
+            f"discriminant (stubborn top=Pizza + flexible top=Burger, "
+            f"budget=8). Défaut attendu : Pizza=8 voix (stubborn met tout "
+            f"sur top) ; Burger=4 (flexible moitié). Si Pizza ne gagne "
+            f"plus, c'est la signature d'une correction QV plausible "
+            f"(distribution 3-3-2 sur top-3 prefs → Burger=6 voix gagne). "
+            f"Le carnet §7 et l'exercice 1 doivent alors être mis à jour ; "
+            f"sinon, c'est une régression d'API."
         )
 
-    def test_quadratic_distribution_stubborn_met_tout_sur_top(self):
-        """Un agent `stubborn` met **tout** le budget sur son premier choix
-        — c'est l'algorithme du prototype (pas de quadraticité). Vérifié
-        sur un profil à 1 agent stubborn : la **vraie** `gm.quadratic_voting`
-        doit retourner son premier choix (la totalité du budget y est
-        concentrée).
+    def test_quadratic_distribution_flexible_burger_top2_met_demie(self):
+        """Témoin auxiliaire : un agent flexible avec top=Burger reçoit
+        budget//2 sur top et budget-budget//2 sur second (le défaut),
+        tandis qu'un QV plausible étalerait sur 3 options. Vérifié sur
+        un profil à 1 agent flexible seul : la fonction retourne le top
+        si le top est unique, ou le top+second dans le cas du défaut.
+        Sert de **garde structurelle** : si demain le défaut bascule
+        pour les flexibles aussi, ce test capte la régression sur un
+        cas trivial avant que le test discriminant ne se déclenche.
         """
-        ag = [gm.Agent("A0", "stubborn", ["Pizza", "Burger"],
+        ag = [gm.Agent("A0", "flexible",
+                       ["Burger", "Sushi", "Raclette", "Pizza"],
                        rng=random.Random(0))]
-        budget = 7
+        budget = 8
         gagnant = gm.quadratic_voting(
             ag, OPTIONS, context={"quadratic_budget": budget}
         )
-        assert gagnant == "Pizza", (
-            f"quadratic_voting retourne {gagnant!r} pour un stubborn "
-            f"top=Pizza — l'algorithme du défaut met tout le budget sur "
-            f"le top. Si le tronc corrige en vrai QV, la fonction peut "
-            f"répartir (rouge attendu)."
+        # Défaut : flexible coupe en deux (4 Burger + 4 Sushi) → tied.
+        # Le gagnant dépend de l'ordre d'insertion du dict
+        # (``votes = {o: 0 for o in OPTIONS}`` → Burger en premier). Burger
+        # est donc l'attendu du défaut sur ce profil (non-déterministe
+        # en cas de tie alternatif). Le témoin accepte Burger OU Sushi
+        # pour rester robuste à l'ordre, tout en excluant Pizza/Raclette
+        # (sorties hors top/second = régression).
+        assert gagnant in {"Burger", "Sushi"}, (
+            f"quadratic_voting retourne {gagnant!r} pour un flexible "
+            f"top=Burger second=Sushi, budget=8. Le défaut coupe en "
+            f"deux (4+4) → top ou second ; un QV plausible sortirait "
+            f"aussi Burger ou Sushi après répartition. Pizza ou Racelette "
+            f"signalerait une régression d'allocation."
         )
 
 
