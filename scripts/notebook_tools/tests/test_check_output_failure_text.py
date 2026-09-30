@@ -225,3 +225,34 @@ def test_sample_location_no_double_wrapping_on_real_scan_output():
     for r in rendered:
         assert "cell[cell[" not in r
         assert "cell[doc:" not in r
+
+
+# --- #18567: a web URL is not a path of the executing machine --------------
+
+def test_web_url_under_home_silent():
+    out = ("=== Sources ===\n4. RAG vs Fine-tuning: "
+           "https://www.ccs.neu.edu/home/alina/classes/Fall2024/Lecture11.pdf"
+           "?utm_source=openai\n")
+    assert scan(nb(cell("print(x)", out)))["MACHINE_PATH"] == []
+
+
+def test_local_server_url_still_fires():
+    out = "Ouvert : http://localhost:8888/files/home/agent/CoursIA/x.ipynb"
+    assert scan(nb(cell("print(x)", out)))["MACHINE_PATH"] != []
+
+
+def test_file_url_still_fires():
+    out = "Rapport : file:///home/agent/CoursIA/report.html"
+    assert scan(nb(cell("print(x)", out)))["MACHINE_PATH"] != []
+
+
+def test_bare_path_next_to_web_url_still_fires():
+    out = "Source https://example.org/a -- cache /home/agent/CoursIA/y.py"
+    hits = scan(nb(cell("print(x)", out)))["MACHINE_PATH"]
+    assert [m for _, m in hits] == ["/home/agent/"]
+
+
+def test_web_url_in_metadata_silent():
+    nb_ = {"cells": [], "nbformat": 4, "nbformat_minor": 5,
+           "metadata": {"source": "https://example.edu/home/alice/notes/"}}
+    assert scan(nb_)["MACHINE_PATH"] == []
