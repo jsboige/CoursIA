@@ -119,6 +119,49 @@ Audit associé au même mandat : Tweety / GameTheory / Search = **stale-body sé
 
 **Ne pas élargir `CONCERN_MARKERS`** — mesure #14682, scan de 80 PRs mergées : un filet à mots de prose (« bloquant », « à corriger », « est faux ») **sur-accuse d'un facteur 5** (4 détections sur 5 = de la prose qui *décrit* un blocage de job ou de garde, pas qui *pose* une réserve). Le contrat est côté **émission** : le reviewer pose `CHANGES_REQUESTED` / `[Hermes] COMMENT_WITH_CONCERNS` / 🟡 / 🔴, il ne rédige pas « il faudrait corriger » en prose libre.
 
+### Répondre à une réserve — la forme sûre et les formes pièges (#17071)
+
+Symétrique du contrat ci-dessus, et non documenté jusqu'ici : savoir **poser** un verdict ne dit pas comment y **répondre** sans en **créer** un. Une réponse d'auteur qui **cite** le token redevient elle-même une réserve B.0 — la PR, déjà réparée, reste bloquée **à fond réparé** : une lane ne peut pas se dé-bloquer en répondant.
+
+Table de vérité mesurée le 2026-09-21 sur l'organe lui-même (`classify(author, body)` + `_strip_quoted` + `_strip_mentioned_verdicts`, auteur = login de lane non-bot) :
+
+| Forme répondue | `classify()` | Mécanisme |
+|---|---|---|
+| `CONCERNS` nu en prose | `BOT-CONCERN` | marqueur vivant (`CONCERN_MARKERS`), casse-sensible |
+| `CHANGES_REQUESTED` nu | `BOT-CONCERN` | marqueur vivant |
+| token **en gras** (seul ou après `Verdict :`) | `BOT-CONCERN` | `BLOCK_VERDICTS = ("**BLOCKED**", "BLOCKED  PR")` — le gras **est** la forme d'émission |
+| `Verdict : <token>` | `BOT-CONCERN` | les deux-points font du méta-nom un **label d'émission** |
+| token encagé (backticks, `« »`, apostrophes, bloc de code, gras **+** backticks) | `None` | `_strip_quoted` (`_QUOTED_RANGES`) neutralise la plage citée |
+| `verdict <token>` **sans** deux-points | `None` | `_MENTION_VERDICT_INLINE` : `verdict(?![:.])\s+\w+` = position de **mention** |
+| narration de levée | `None` | registre `LIFT_MARKERS` |
+| token de blocage **nu** | `None` | **résidu assumé** — le matcher éviterait le tag de protocole de lane `[BLOCKED] …` et la négation « n'est plus BLOCKED » |
+
+**La forme sûre** : encager **le token lui-même** (backticks, guillemets, apostrophes, bloc de code) — ou le nommer en position de **mention** (`suite à ta réserve`, `verdict X` **sans** deux-points). Le corollaire est ce qui se rate le plus : encager un mot **voisin** ne protège rien. Dans la forme réellement mesurée, le seul backtick de la phrase entourait un autre mot (`b0`) et **pas** le token, écrit en gras nu — le token est resté `BOT-CONCERN`.
+
+**Deux pièges adjacents.** (1) Ne pas compter sur le token de blocage **nu** : c'est un faux négatif **choisi**, pas un filet — il tient à un contrat explicite de l'organe. (2) Ne pas confondre **disponible** et **honnête** : la voie de levée « issue de suivi » n'a de sens que s'il reste un **résidu** à tracer ; ouvrir une issue creuse pour éteindre une réserve morte est une falsification, pas une levée.
+
+**Contrôle positif de la recommandation (4/4).** Les formes conseillées ci-dessus ne sont pas seulement réputées muettes, elles le sont mesurément : la phrase même que citait la piste correspondante (« Réponse à ta réserve du head … : les deux blockers sont traités ») rend `None`, la variante à token encagé rend `None`, et la position de mention (`suite à ton verdict <token>` **sans** deux-points) rend `None`. Le contrôle **négatif** tient aussi : une réponse qui **réitère** la réserve (`Re: … le <token> tient`) rend `BOT-CONCERN` — la forme sûre ne rend donc pas l'organe aveugle à une réserve réaffirmée, ce qui est précisément le risque qui écartait l'élargissement aux formes d'adresse.
+
+**Mécanique — trois couches, dans cet ordre.** Une forme répondue traverse trois filtres avant que `classify()` ne rende un verdict ; savoir lequel traite quoi évite de « corriger » la mauvaise couche :
+
+1. `_strip_quoted` — la plage **citée** (backticks, guillemets typographiques, apostrophes, bloc de code) est remplacée par une espace. C'est la couche qui **encage**, et elle n'agit que sur la plage exacte : d'où le corollaire « encager le voisin ne protège rien ».
+2. `_strip_mentioned_verdicts` — les **positions de mention**, dont `_MENTION_VERDICT_INLINE` (le méta-nom **ne doit pas** être suivi de `:` ou `.`). C'est la couche qui sépare `verdict X` de `Verdict : X`.
+3. `has_live_marker` sur `CONCERN_MARKERS` (concaténé avec `BLOCK_VERDICTS`, `APPROVAL_REFUSALS` et les glyphes de sévérité) — chaque occurrence **survivante** est re-testée contre sa fenêtre de citation (`_is_cited`, bornée au **paragraphe**, et qui ne lit que le **dernier mot** placé devant le token).
+
+Les **symboles** sont cités plutôt que des numéros de ligne : un numéro de ligne périmé dans une doc durable est exactement la classe d'incident que le dépôt a déjà consignée (critère D.5). Le contrat d'**émission** (#14682) et cette forme de **réponse** sont les deux faces du même problème, et élargir le filet reste écarté pour la raison mesurée là-bas — la voie sûre est de rédiger la réponse autrement, pas d'ajouter une exception au scanner.
+
+**Corollaire opérationnel — nommer le token sans se créer de réserve.** Trois surfaces, trois régimes, et les confondre est la cause des instances mesurées :
+
+- un **commentaire** ou une **review** est classé par `classify()` : la forme sûre ci-dessus s'y applique, sans exception ;
+- un **body de PR** n'est pas lu par cet organe (il lit commentaires et reviews) — mais il est lu par d'autres gardes, donc y **cager** le token reste la bonne habitude, et pour la même raison : un token nu y est un token qu'un futur organe pourra lire comme émis ;
+- le **dossier `[ADJOINT PREFLIGHT]`** est le seul endroit conçu pour qu'une mesure **nomme** le token sans se créer de réserve : `_strip_adjoint_dossier` retire les blocs bien délimités, et un commentaire qui **ouvre** sur un bloc est un dossier **dans son intégralité** (#17065) — la prose qui **suit** le marqueur fermant est lue comme la **narrative** du dossier, pas comme des remarques. Deux bornes, mesurées au même moment : la prose qui **précède** le bloc reste lue normalement, et un bloc **malformé** (ouvrant sans fermant) n'inertit rien.
+
+**Pourquoi la voie sûre plutôt qu'un filet plus large.** L'organe assume explicitement l'asymétrie : *la sous-accusation coûte un merge, la sur-accusation coûte une relecture* — c'est ce qui justifie les faux négatifs **choisis** (token de blocage nu, émission sans gras) et ce qui rend toute exception de prose plus coûteuse que le piège qu'elle ferme. Une lane n'a donc pas besoin que le scanner reconnaisse sa réponse : elle a besoin de savoir **quelle forme** est muette, ce que la table ci-dessus donne.
+
+**Ce que cette section ne tranche pas (#17071).** Elle documente la **forme sûre** et la mesure qui la fonde — elle ne modifie **aucune ligne d'organe**. Les trois pistes de #17071 restent ouvertes : (1) étendre `CITERS` aux formes d'adresse (`Re:`, `@login`, « au head <sha> ») ; (2) cette documentation ; (3) la résolution par thread inline. La piste 1 reste l'arbitrage le plus lourd, pour la raison déjà écrite dans l'issue — écarter le token derrière un `Re:` écarterait aussi les vraies réponses **réitérant** la réserve, et le contrôle négatif ci-dessus (réponse qui réitère → `BOT-CONCERN`) mesure cette borne.
+
+**Instance fondatrice (mesurée 2/2).** Les deux dossiers `[ADJOINT PREFLIGHT]` du 2026-09-21 (#16098, #16196) : mes propres commentaires de mesure — dont la prose citait le token en gras — ont été classés `BOT-CONCERN` **2/2**, le geste de mesure **ajoutant** une ligne à ce qu'il mesurait. Remède appliqué : la mesure vit dans le champ `b0:` du dossier, **jamais** dans un commentaire de prose à côté. Le cas **#16441** (une réponse d'adresse citant la réserve traitée) est l'instance qui a ouvert #17071 ; il est **rapporté par l'issue** avec sa propre reproduction (`python scripts/check_unaddressed_nits.py 16441 --json`) et n'est pas reproduit par la table ci-dessus, dont les lignes sont des formes synthétiques.
+
 ### B.1 — pourquoi pas `grep -c sorry` (mesure 2026-08-14)
 
 Sur les 21 lakes : **484 faux `sorry` pour 21 réels (23×)** — `grep -c sorry` compte la prose (docstrings, `-- commentaires`, feuilles de route). **9 lakes à 0 réel** affichent des comptes naïfs positifs ; ex. `grothendieck_lean` : 68 naïfs, 0 réel — un reviewer appliquant `grep` à la lettre exigerait la justification de 68 `sorry` qui n'existent pas. L'instrument : `python scripts/lean/count_code_sorry.py --json`, champ `distinct_code_sorry` (la même mesure que le gate CI `sorry-filter-mode: real` de `lean-axiom.yml`).
@@ -160,3 +203,9 @@ Aucune ignorance n'est en cause : l'auteur de la levée savait qu'il écrivait a
 ### Ce qu'un commit ne lève pas — #10761, le rebase muet
 
 Sur #10761 (récit complet ci-dessus), le « traitement » des deux nits du 2026-08-13T11:07 fut un **rebase à 19:41** qui n'adressait ni l'un ni l'autre. Un push muet est **indiscernable d'un push qui répond** : le diff ne dit pas quelle remarque il prétend traiter, et le compteur de commits postérieurs à une review ne mesure donc rien. Ce qui lève une remarque est **une phrase**, pas un SHA.
+
+### Où lève — #16780 : le waiver par pointeur vers un fichier local
+
+Sur #16670, un commentaire fut posté dont le **corps entier** était `@C:\Users\jsboi\AppData\Local\Temp/a16670.md` — la trace visible de `gh ... --body "@$TEMP/a16670.md"` là où `--body-file` était voulu (`gh` n'expande pas `@file`, il poste la chaîne littérale). Le harnais de merge lut ce corps comme un **waiver DWELL L3** et nourrit une escalade de merge avec. Mais le fichier visé vit sur **une machine tierce** : aucun lecteur de la PR — ni ai-01, ni un bot, ni un contributeur — ne peut l'ouvrir. Le signal ne porte aucun contenu vérifiable ; tout son sens tient dans le *nom du fichier*. **Une autorisation que personne ne peut relire est une autorisation fabriquée.**
+
+La convention est tranchée par écrit (#16780) : **un waiver par pointeur est interdit**. Si un waiver compte pour un merge, sa **substance** est sur la PR — une phrase qui dit ce qui est levé et pourquoi. Le scratchpad garde le détail, la PR porte la décision. Le garde `scripts/check_local_path_waivers.py` (check advisory câblé dans `local-path-waiver-guard.yml`) rougit sur tout commentaire dont le corps est un chemin seul ou contient un segment de profil Windows `[A-Za-z]:[\/]Users[\/]` — contrôle positif : le corps #16670 exact, rejoué en test unitaire (le commentaire original a été supprimé par le user).

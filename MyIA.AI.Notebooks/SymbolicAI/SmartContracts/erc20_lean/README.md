@@ -25,7 +25,7 @@ méthodes formelles × blockchain, et le **premier lake Lean de la série
 SmartContract**.
 
 Le notebook compagnon
-[`SC-7-Token-Standards.ipynb`](../02-Solidity-Advanced/SC-7-Token-Standards.ipynb)
+[`SC-07-Token-Standards-Python.ipynb`](../02-Solidity-Advanced/SC-07-Token-Standards-Python.ipynb)
 présente le standard ERC-20 en Solidity, à mettre en regard de la vérification
 formelle effectuée ici. Le câblage du notebook revient au propriétaire de la
 série SmartContract.
@@ -148,4 +148,4 @@ Phases suivantes (suivi #4047) :
 - V. Buterin, *Ethereum: A Next-Generation Smart Contract and Decentralized
   Application Platform*, Ethereum White Paper, 2014.
 - K. Bhargavan et al., *Formal Verification of Smart Contracts*, WPCE 2016.
-- Notebook compagnon : [`SC-7-Token-Standards.ipynb`](../02-Solidity-Advanced/SC-7-Token-Standards.ipynb).
+- Notebook compagnon : [`SC-07-Token-Standards-Python.ipynb`](../02-Solidity-Advanced/SC-07-Token-Standards-Python.ipynb).

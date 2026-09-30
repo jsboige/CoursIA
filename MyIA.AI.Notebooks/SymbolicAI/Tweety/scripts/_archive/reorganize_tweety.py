@@ -1,4 +1,18 @@
 #!/usr/bin/env python3
+# Archive header (standard _archive convention, 2026-08)
+# - Date archived : 2026-09-15 (PR #16002, sweep de renumérotation #11840)
+# - Superseded by : none (script one-shot, opération terminée) — le résultat vit
+#   dans la série renumérotée Tweety-06-Structured-Argumentation-{CSharp,Python}.ipynb
+# - Verdict recorded in : PR #16002 ;
+#   MyIA.AI.Notebooks/SymbolicAI/Tweety/scripts/_archive/README.md
+#
+# Per-function disposition :
+# - read_notebook() / write_notebook() : utilitaires d'E/S one-shot, sans successeur
+#   (l'outillage courant vit dans scripts/notebook_tools/)
+# - create_notebook_from_cells() : a produit les notebooks Tweety-06-Structured-Argumentation-*
+#   (présents sur main, renumérotés depuis)
+# - main() : exécuté une fois ; non rejouable tel quel (il opère sur les noms
+#   d'avant renumérotation Tweety-5/6/7 non padés)
 """
 Script de réorganisation des notebooks Tweety
 Sépare Tweety-5 en deux notebooks :

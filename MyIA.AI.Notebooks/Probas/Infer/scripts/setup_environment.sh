@@ -38,7 +38,7 @@ if [ "$SKIP_DOTNET_INTERACTIVE" -eq 0 ]; then
         status "  dotnet-interactive already installed"
     else
         status "  Installing dotnet-interactive..."
-        if dotnet tool install -g Microsoft.dotnet-interactive; then
+        if dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.617701; then
             status "  dotnet-interactive installed successfully"
         else
             status "  Failed to install dotnet-interactive" >&2

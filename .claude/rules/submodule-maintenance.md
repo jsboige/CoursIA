@@ -97,6 +97,15 @@ Préférer cette forme à `gh auth switch`, qui mute un état **global au proces
 
 Une lane sans grain peut être servie par un sous-module : son backlog fait partie du pool. Un cycle `/coordinate` qui ne regarde que `jsboige/CoursIA` laisse structurellement quatre dépôts sans coordinateur — c'est précisément l'état que ce mandat corrige. La mesure de la Règle 2 est à passer **à chaque cycle**, au même titre que la passe de merge.
 
+## Règle HARD 7 — le gitlink suit la tête de sa branche (mandat user 2026-09-23)
+
+`Z3.Linq` et `Argumentum` pointent toujours vers la tête de leur branche, et se modifient depuis le dépôt principal.
+
+- **Suivre** : `Z3.Linq` (`branch = main`) et `Argumentum` (`branch = master`) déclarent leur branche dans `.gitmodules`. `.github/dependabot.yml` (écosystème `gitsubmodule`) ouvre chaque jour la PR de bump quand elle avance. Cette PR passe le gate et B.0 comme les autres ; pour un sous-module à l'état 3 (R3), elle cite le run vert de la branche par défaut, et elle nomme les notebooks qui lisent des fichiers du sous-module.
+- **Modifier depuis CoursIA** : `git submodule update --remote <chemin>`, puis `git -C <chemin> switch <branche>`, commit **dedans**, push, et enfin le bump (ordre de R2). On ne commite jamais sur une tête détachée.
+- Pour ces deux sous-modules, une dérive mesurée par R2 n'est plus une veille : c'est une PR de bump qui attend son merge.
+- **Tag `Grain:`** : une PR Dependabot n'en porte pas, et le gate d'entrée la refuse sans lui. ai-01, lane propriétaire des bumps, l'ajoute au body à l'arrivée (`Grain: LIGHT/infra -- lane myia-ai-01:CoursIA`) ; l'évènement `edited` relance les gardes, et le dossier reste tiers.
+
 ## Voir aussi
 
 - [docs/reference/submodule-maintenance-detail.md](../../docs/reference/submodule-maintenance-detail.md) — **détail** : table de statut de gate, mesures datées, incidents

@@ -114,7 +114,16 @@ La conclusion : la réponse d'aucune des deux particules ne peut être une fonct
 inductive Experimenter
   | alice
   | bob
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+/-- Instance `Fintype` manuelle (migration v4.33, #16341) : `deriving Fintype`
+    produit du code attendant `List.Nodup` alors que `Finset.mk` exige
+    `Finset.Nodup` en v4.33 (nouveau type encapsulant). -/
+instance : Fintype Experimenter where
+  elems := Finset.mk [Experimenter.alice, Experimenter.bob] (by decide)
+  complete := by
+    intro x
+    cases x <;> simp [Finset.mem_mk]
 
 /-- Un modèle déterministe à deux particules associe un résultat {0,1} défini
     à chaque expérimentateur, état caché et direction de mesure.

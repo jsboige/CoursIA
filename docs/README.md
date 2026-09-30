@@ -15,7 +15,7 @@ Fichiers présents directement à la racine du répertoire `docs/`. Triage initi
 | [leiden-declaration-position.md](leiden-declaration-position.md) | **nouveau** (2026-08-26) | Positionnement de CoursIA face à la Déclaration de Leiden sur l’IA et les mathématiques : principes confrontés aux artefacts, lacunes nommées, engagements mesurables et tensions conservées. #13105 |
 | [PARCOURS.md](PARCOURS.md) | **KEEP** | Schéma maturité 3 axes (éditorial / reproductibilité / revue scientifique) — décompose le `maturity` monolithique du catalogue (5 valeurs mélangées) en 3 préoccupations orthogonales auditables indépendamment. ACCEPTÉ 2026-07-23, pilote c.763 critères 1-3. Linked #8051. 110 lignes. Triage #7422 (c.911, po-2023) |
 | [qc-research-issue-template.md](qc-research-issue-template.md) | **doublon** (à réconcilier) | Ébauche du template de sous-issue QC-research (EPIC #11698), 2487 o. La version canonique est [qc/qc-research-issue-template.md](qc/qc-research-issue-template.md) (8226 o) : c'est elle que `scripts/notebook_tools/qc_research_monitor.py:54` lit comme `TEMPLATE_PATH`, et elle seule porte les conventions de titre/labels, le cap journalier, les 5 anti-patterns et les 4 exemples de verdict. Cette copie racine n'est référencée nulle part — indexée ici pour être visible plutôt que supprimée en silence, la disposition relevant d'un grain dédié |
-| [data-policy.md](data-policy.md) | **nouveau** (2026-09-02) | Politique de données (cadrage) : 4 catégories (curée / brute téléchargeable + fetch / checkpoint documenté / trace régénérable) + arbitrage par cas. Tell c.745-L2 narrow assumé c.868, lane po-2024:CoursIA-2. #13742 |
+| [data-policy.md](data-policy.md) | **nouveau** (2026-09-02) | Politique de données (cadrage) : 4 catégories (curée / brute téléchargeable + fetch / checkpoint documenté / trace régénérable) + arbitrage par cas, périmètre restreint assumé par po-2024:CoursIA-2. #13742 |
 
 ## Référence (docs/reference/)
 
@@ -267,6 +267,17 @@ Notes de suivi de cycle par série (transitions architecturales et narratives).
 |---------|-------------|
 | [suivis/iit-ict-transition.md](suivis/iit-ict-transition.md) | Transition IIT → ICT, pivot série ICT-Series (#4588, #5081) |
 
+## Cadrage épistémique (docs/cadrage/)
+
+Documents qui positionnent le dépôt face à un texte externe (déclarations, manifestes, consensus) ou face à un courant de pensée qui irrigue plusieurs séries. Règle d'agrégation par **communauté interlocutrice** (cf #17525) ; le nom du document porte sa **relation** (`-lens`, `-dialogue`, `-position`, `-self-audit`, `-armature`).
+
+| Fichier | Description |
+|---------|-------------|
+| [cadrage/README.md](cadrage/README.md) | Index agrégateur (tableau par communauté, veilles, règles d'agrégation) — l'entrée canonique de la famille |
+| [cadrage/singapore-consensus-self-audit.md](cadrage/singapore-consensus-self-audit.md) | Audit du cluster selon les 10 principes agentic du Singapore Consensus (R11 companion, P1-P10, #16757) |
+
+Les autres documents de cadrage vivent au premier niveau de `docs/` (Grothendieckian lens, Leiden position, Magnifica Humanitas dialogue) — ils migreront dans `docs/cadrage/` par tranches successives (#17525).
+
 ## CI & workflows (docs/ci/)
 
 | Fichier | Description |
@@ -284,6 +295,14 @@ Notes de suivi de cycle par série (transitions architecturales et narratives).
 | Fichier | Description |
 |---------|-------------|
 | [ml/tsad-benchmark-flaws.md](ml/tsad-benchmark-flaws.md) | Défauts des benchmarks TSAD (détection d'anomalies sur séries temporelles) et place du *Matrix Profile* — note de référence compagnon des notebooks ML-10. Sert à ne pas présenter comme un résultat ce qui est un artefact de protocole d'évaluation |
+
+## Rapports transients (docs/transients/)
+
+Lane des comptes rendus et audits **datés** : un transient y naît, s'y conserve le temps que sa conclusion soit distillée dans le document pérenne qui la porte, puis sort. Ce n'est **pas** `docs/archive/` — un stock à résorber, où l'on ne dépose pas un rapport de plus pour qu'il y reste. Convention et organe : [transients/README.md](transients/README.md), `scripts/check_docs_transients_lane.py` (#14623).
+
+| Fichier | Description |
+|---------|-------------|
+| [transients/README.md](transients/README.md) | Convention de la lane : nom daté `<YYYY-MM-DD>-<slug>.md`, en-tête gelé `> RAPPORT — <date> — <périmètre> — figé`, règle « née ici, sort par distillation », périmètre et hors-périmètre. Lane **vide à dessein** à l'ouverture : la re-vérification des fichiers listés par #14623 a mesuré que la majorité n'est pas transiente |
 
 ## Archive (docs/archive/)
 
@@ -324,6 +343,8 @@ docs/
                      + pré-enregistrements grade T (protocoles scellés avant mesure)
   ledgers/           Ledgers d'audit cumulatifs par Epic (#3801, #10466, #10678, #11690, #12204)
   suivis/            Suivis de cycle (transitions de série)
+  transients/        Rapports transients datés (en-tête gelé) — convention + organe (#14623)
+  cadrage/           Documents épistémiques de cadrage — index par communauté interlocutrice (#17525)
   grothendieckian-lens.md  Clé de lecture transversale du dépôt
   PARCOURS.md        Schéma maturité 3 axes (éditorial / reproductibilité / revue) — #8051
   archive/           Documents inactifs (ex-_archives)

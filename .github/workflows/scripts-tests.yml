@@ -25,6 +25,10 @@ on:
       - 'tests/**'
       - 'pytest.ini'
       - '.github/workflows/scripts-tests.yml'
+      # #17850 : test_real_registry_lives_against_main_repo relit ce registre a
+      # la racine ; sans cette entree, une PR qui ne touche que le registre
+      # n'est validee par aucune jambe (mesure : #17835, 25/09).
+      - 'arxiv_attributions_registry.yaml'
       # test_workflow_branch_pattern.py (#10145) pins the SHELL TEXT of these
       # two workflows, so editing them must run this suite. Without these two
       # entries the pin is blind to its own subject: #10416 changed the push in
@@ -78,6 +82,16 @@ on:
       # adk-contracts job below runs them; this entry fires it when the track
       # sources move. Mirrored under pull_request: below.
       - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/**'
+      # #17580 fallacy-detection snapshot guard: resync des CSV/OWL sous
+      # Argument_Analysis/data/ doit declencher la garde d'integrite (le cas de
+      # #14578 ou la resync des CSV n'a pas touche le manifeste, et la garde a
+      # rougi 19 j en silence parce que scripts/** etait deja couvert mais pas
+      # le chemin des donnees). On inclut explicitement le chemin des donnees
+      # pour que la garde tire quand son sujet bouge, meme sans toucher a
+      # scripts/**. Mirrored under pull_request: ci-dessous.
+      - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/**'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/ontologies/**'
+      - 'scripts/fallacy_detection/**'
   pull_request:
     branches: [main]
     types: [opened, synchronize, edited, reopened]
@@ -86,6 +100,8 @@ on:
       - 'tests/**'
       - 'pytest.ini'
       - '.github/workflows/scripts-tests.yml'
+      # #17850 : voir le bloc push: ci-dessus.
+      - 'arxiv_attributions_registry.yaml'
       # See the push: block above for why these two are pinned here.
       - '.github/workflows/catalog-cron.yml'
       - '.github/workflows/translation-sync.yml'
@@ -108,6 +124,10 @@ on:
       - '.github/workflows/**'
       # #15058 ADK contracts (mirror of the push path above).
       - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/**'
+      # #17580 fallacy-detection snapshot guard (mirror of the push path above).
+      - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/**'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/ontologies/**'
+      - 'scripts/fallacy_detection/**'
   workflow_dispatch:
 
 permissions:
@@ -126,7 +146,38 @@ jobs:
     # fork n'atteint le runner. Retour arriere = revert de la PR.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
-    timeout-minutes: 20
+    # Plafond 20 -> 30 (#15853). Grandeur mesuree : le mur du JOB
+    # (started_at -> completed_at du job nomme exactement "Scripts Tests
+    # (CPU)"), celle sur laquelle timeout-minutes agit -- jamais la duree
+    # du run (file d'attente comprise, et pour un rerun les deux
+    # tentatives : c'etait la faute de grandeur de la v1).
+    #
+    # Requete a rejouer telle quelle avant de citer ou de retirer ce
+    # tableau (photographie datee, pas une verite) : runs du workflow
+    # 296034456, branch=main, status=completed, run_started_at >
+    # 2026-09-13T23:08:18Z (merge de xdist #15833) ; dans chaque run, job
+    # de nom EXACT "Scripts Tests (CPU)".
+    #
+    # Mesure du 2026-09-15T07:00Z, rejouee a 07:22Z sans derive :
+    #   70 runs conclus
+    #     - 25 sans job : jobs: [], jamais demarres (supplantation de
+    #       file) -- hors de toute discussion de plafond ;
+    #     - 45 porteurs d'un job, max par conclusion :
+    #         success    30   max 17,4 min
+    #         failure    11   max 14,3 min
+    #         cancelled   4   20,32-20,43 min
+    # Les 4 cancelled ont bien ete termines au mur de 20 min, mais les
+    # logs montrent des workers xdist morts puis 14-15 min de silence : ce
+    # sont des hangs que relever le plafond ne repare pas (suivi #16288),
+    # pas quatre cas de queue lente. Le relevement repose sur la marge
+    # preventive : le succes max a 17,4 min ne laisse que 2,6 min sous 20;
+    # 30 laisse ~12,6 min tout en restant sous les bornes 45/52 ci-dessous.
+    # (Retraction de la v1 run-level -- 26 runs, mediane 17,5 min, max
+    # 19,8 min, 16 annulations -- ecrite en tete du body de #16087.)
+    # 30 reste sous les deux plafonds qui l'englobent : l'agregateur
+    # pr_gate.py (--timeout-min 45) et le job pr-gate.yml
+    # (timeout-minutes: 52).
+    timeout-minutes: 30
 
     steps:
       # ------------------------------------------------------------------
@@ -207,6 +258,11 @@ jobs:
           # fail_non_notebook test asserts the real nbformat NotJSONError text,
           # so the env must have nbconvert installed (rule F, not a skipif).
           pip install nbconvert
+          # pyjwt[crypto]: scripts/secrets/github_app_token.py signe le JWT d'App
+          # GitHub avec PyJWT, et ses deux controles positifs le verifient avec la
+          # cle publique (#17437). Declare ici plutot qu'un skip : sans lui, ces
+          # tests ne rendent jamais leur verdict dans l'organe qui les execute.
+          pip install "pyjwt[crypto]"
           # torch (CPU) is needed at collection time by the Sudoku/RRN test
           # modules under scripts/tests/ (they `import torch` at top level and
           # skip themselves at runtime when CUDA is absent). Without it those
@@ -222,6 +278,11 @@ jobs:
           # them at collection time (famille 5 de #14615). The test guards with
           # importorskip, but wiring it into this run means running it for real.
           pip install rapidfuzz unidecode openpyxl
+          # pypdf: scripts/tests/test_check_bibliography_pdf_integrity.py
+          # builds a valid PDF with PdfWriter to feed the organ (#17980).
+          # Without it the 6 tests fail on ModuleNotFoundError instead of
+          # exercising the script.
+          pip install pypdf
           # pytest-xdist: this job's 13 suites run in parallel (-n 4) below.
           # Not a speed nicety -- the sequential run is what makes this job
           # unschedulable on half the pool. Over 68 `Scripts Tests (CPU)` jobs,
@@ -270,10 +331,12 @@ jobs:
           python scripts/ci/xdist_watchdog.py --idle-limit 480 -- \
             pytest \
             scripts/tests \
+            tests \
             scripts/notebook_tools/tests \
             scripts/lean/tests \
             scripts/translation/tests \
             scripts/audit/tests \
+            scripts/fallacy_detection/tests \
             MyIA.AI.Notebooks/GameTheory/tests \
             MyIA.AI.Notebooks/QuantConnect/scripts/tests \
             MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_bg_tree_lock.py \
@@ -281,6 +344,7 @@ jobs:
             MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/tests \
             scripts/secrets/tests \
             scripts/quantconnect/tests \
+            MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis \
             GradeBookApp \
             -n 4 --dist loadscope --tb=short -q
         # Chien de garde xdist (#16288) : quand un worker meurt (`[gwN] node
@@ -304,19 +368,44 @@ jobs:
         # migrating that module to tmp_path.
         #
         # `--import-mode importlib` (pytest.ini addopts) is equally load-bearing
-        # here: three test basenames are duplicated across these 13 paths
+        # here: three test basenames are duplicated across these 14 paths
         # (test_check_dataset_registry, test_check_public_anchor,
         # scan_slidev_composition), and without it pytest raises
         # `import file mismatch` -- sequentially too, not just under xdist.
         #
         # Audited for inter-module parallel safety before enabling: no shared
         # fixed-path writes outside the module above, no git mutation against
-        # the real tree (every `git init` is in tmp_path), no real sockets, no
+        # the real tree (every `git init` is in tmp_path), no real sockets (sole
+# exception: tests/integration's localhost:8768 probe, timeout 1.0,
+# self-skipping when refused), no
         # unrestored os.environ/os.chdir, no session-scoped fixtures, no
-        # conftest.py in any of the 13 paths. Residual: module-scope fixtures
+        # conftest.py in any of the 14 paths. Residual: module-scope fixtures
         # that seed the global PRNG without restoring it (e.g.
         # test_kuhn_poker_cfr.py:64-75) make module ORDER non-reproducible --
         # no test currently depends on it.
+
+      - name: Session hygiene tests, sequential (5)
+        # Ces 5 tests ne tournaient JAMAIS en CI (#17628). Leur `skipif` de
+        # module saute des que `CI=true` ET `RUNNER_OS=Linux` ET
+        # `PYTEST_XDIST_WORKER` est pose -- or le pool n'a que des runners
+        # Linux self-hosted WSL, et l'etape precedente lance tout sous
+        # `-n 4 --dist loadscope` : la condition matchait donc TOUT run de ce
+        # job. Mesure du 2026-09-24 (job 107202539829) : `14989 passed,
+        # 103 skipped` -- le vert ne prouvait pas que ces 5 avaient tourne.
+        #
+        # Le skipif autorise deja le run sequentiel (`PYTEST_XDIST_WORKER`
+        # absent). Aucun changement du test : cette etape relance le fichier
+        # SEUL et SANS `-n`, ce qui desamorce la saturation RLIMIT_NPROC du
+        # cumul de subprocess git sous xdist (cause reelle du skip, #17496 /
+        # commit b8a633f153) tout en rendant la couverture a l'organe
+        # `scripts/coordination/session_hygiene.py` (#16736).
+        #
+        # `if: always()` comme les etapes de plancher voisines : meme si la
+        # suite principale est rouge, on veut le verdict NOMME de ces 5 tests
+        # plutot qu'un silence.
+        if: always()
+        run: |
+          python -m pytest scripts/tests/test_session_hygiene.py -q --tb=short
 
       - name: Audit tests collection floor (455)
         # Companion guard of the audit re-cabling (family 2 of #14615), same
@@ -390,6 +479,22 @@ jobs:
           if [ -z "$N" ] || [ "$N" -eq 0 ]; then echo "::error::--collect-only returned no tests — the collection crashed (distinct from a coverage drop)."; exit 1; fi
           if [ "$N" -lt "$GRADEBOOK_TESTS_FLOOR" ]; then echo "::error::Coverage regression: $N tests collected, floor=$GRADEBOOK_TESTS_FLOOR."; exit 1; fi
           echo "OK: $N tests collected (floor=$GRADEBOOK_TESTS_FLOOR)."
+
+      - name: Argument_Analysis tests collection floor (174)
+        # Meme semantique a deux signaux que les floors audit (455), secrets
+        # (148) et GradeBook (15) : une collection cassee (import manquant au
+        # module level, crash de collection) rend 0 test collecte au lieu d'un
+        # compte -- c'est un probleme d'installation, PAS une baisse de
+        # couverture. La suite est stdlib (effets de bord mockes), donc aucune
+        # dep a ajouter au pip install du job.
+        if: always()
+        env:
+          ARGUMENT_ANALYSIS_TESTS_FLOOR: 174
+        run: |
+          N=$(python -m pytest MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis --collect-only -q 2>/dev/null | tail -1 | grep -oE '[0-9]+ tests collected' | grep -oE '^[0-9]+')
+          if [ -z "$N" ] || [ "$N" -eq 0 ]; then echo "::error::--collect-only returned no tests — the collection crashed (distinct from a coverage drop)."; exit 1; fi
+          if [ "$N" -lt "$ARGUMENT_ANALYSIS_TESTS_FLOOR" ]; then echo "::error::Coverage regression: $N tests collected, floor=$ARGUMENT_ANALYSIS_TESTS_FLOOR."; exit 1; fi
+          echo "OK: $N tests collected (floor=$ARGUMENT_ANALYSIS_TESTS_FLOOR)."
 
   adk-contracts:
     name: ADK runtime contracts (18)

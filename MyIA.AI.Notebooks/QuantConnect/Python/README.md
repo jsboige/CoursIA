@@ -1,8 +1,8 @@
 <!-- CATALOG-STATUS
 series: QuantConnect-Python
-pedagogical_count: 55
-breakdown: Python=55
-maturity: DRAFT=31, BETA=16, ALPHA=8
+pedagogical_count: 60
+breakdown: Python=60
+maturity: DRAFT=32, BETA=20, ALPHA=8
 -->
 
 # QuantConnect Python Notebooks
@@ -45,7 +45,9 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-03-Data-Management | NON EXÉCUTÉ | |
 | QC-Py-04-Research-Workflow | NON EXÉCUTÉ | |
 | QC-Py-05-Universe-Selection | NON EXÉCUTÉ | |
+| QC-Py-05b-FScore-Piotroski | EXÉCUTÉ | CPU local (yfinance/numpy/scipy), cellules code exécutées, données réelles 14 titres |
 | QC-Py-06-Options-Trading | NON EXÉCUTÉ | |
+| QC-Py-06b-Derivatives-Valuation-From-Scratch | EXÉCUTÉ | CPU local (numpy/scipy), 13/13 cellules code, 3 figures |
 | QC-Py-07-Futures-Forex | NON EXÉCUTÉ | |
 | QC-Py-08-Multi-Asset-Strategies | NON EXÉCUTÉ | |
 | QC-Py-09-Order-Types | NON EXÉCUTÉ | |
@@ -55,6 +57,7 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-12b-Backtest-Validity | EXÉCUTÉ | |
 | QC-Py-13-Alpha-Models | NON EXÉCUTÉ | |
 | QC-Py-14-Portfolio-Construction-Execution | NON EXÉCUTÉ | |
+| QC-Py-14b-Liquidity-Execution-Costs | EXÉCUTÉ | CPU local (yfinance/pandas/numpy), cellules exécutées, figures committées |
 | QC-Py-15-Parameter-Optimization | NON EXÉCUTÉ | |
 | QC-Py-16-Alternative-Data | NON EXÉCUTÉ | |
 | QC-Py-17-Sentiment-Analysis | NON EXÉCUTÉ | |
@@ -72,6 +75,7 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-27-Production-Deployment | NON EXÉCUTÉ | |
 | QC-Py-28-Market-Regime-Detection | NON EXÉCUTÉ | |
 | QC-Py-28b-Macro-Cycle-Regimes | EXÉCUTÉ | cellules locales exécutées + run QC Cloud 2016-2026 (diagnostic → allocation) |
+| QC-Py-29-Derivatives-Valuation | EXÉCUTÉ | cellules locales exécutées (BS / arbre CRR / Monte-Carlo : convergence, grecques, scénario liquidité) |
 | QC-Py-30-LSTM-Training | EXÉCUTÉ | |
 | QC-Py-31-Transformer-Training | EXÉCUTÉ | |
 | QC-Py-32-RL-DQN-Trading | EXÉCUTÉ | |
@@ -92,7 +96,6 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-Cloud-08-ValueFactor-ZScore | doc cloud | markdown-only — backtest sur QC Cloud |
 | QC-Py-Cloud-09-OptionWheel | doc cloud | markdown-only — backtest sur QC Cloud |
 | QC-Py-Cloud-10-RL-DQN-Trading | EXÉCUTÉ | |
-| QC-Py-Cloud-12-SectorRotation-Momentum | EXÉCUTÉ | |
 | QC-Py-33-RL-PPO-Trading | EXÉCUTÉ | |
 | QC-Py-34-RL-SAC-A2C-Trading | EXÉCUTÉ | |
 | QC-Py-35-RL-Portfolio-Construction | EXÉCUTÉ | |
@@ -122,13 +125,13 @@ Chaque notebook de la série rend visible un geste quantitatif distinct, dans un
 
 <p align="center"><a href="QC-Py-08-Multi-Asset-Strategies.ipynb"><img src="assets/readme/quantpy08-rolling-corr.png" width="540" alt="Stratégies multi-actifs SPY vs TLT : deux sous-graphiques empilés sur 4 ans (2020-01 → 2024-01). Haut — returns cumulés SPY (bleu marine, pic ~+110 %) vs TLT (orange, pic ~+70 %), avec un bandeau vertical rouge « Periode stress » couvrant ~3 mois en 2021-Q1 (zone COVID / choc taux, TLT dépasse brièvement SPY). Bas — corrélation glissante 60 jours (SPY-TLT) en violet, oscillant entre -0.8 (corrélation fortement négative) et -0.2, avec une ligne pointillée rouge horizontale « Moyenne : -0.45 ». Pendant le bandeau rouge, la corrélation plonge vers -0.82 (diversification actions/obligations temporairement KO sous stress)."></a></p>
 
-**[10 — Le coût d'un stop-loss.](QC-Py-10-Risk-Portfolio-Management.ipynb)** Protéger une position a un prix. Les stops fixes coupent net, les stops trailing suivent la hausse mais se déclenchent sur le bruit, les stops volatilité s'adaptent au régime de marché. Sur un même prix simulé, les trois types laissent des traces différentes — choisir un stop, c'est choisir quel risque on accepte.
+**[10 — Le coût d'un stop-loss.](QC-Py-10-Risk-Portfolio-Management.ipynb)** Protéger une position a un prix. Les stops fixes coupent net, les stops trailing suivent la hausse mais se déclenchent sur le bruit, les stops volatilité s'adaptent au régime de marché. Sur un même prix simulé, les trois types laissent des traces différentes — choisir un stop, c'est choisir quel risque on accepte. La partie 4 se clôt sur le Hierarchical Risk Parity : pondérer un portefeuille multi-actifs sans jamais inverser la matrice de covariance, en trois étapes (clustering, quasi-diagonalisation, bisection récursive) — avec la leçon mesurée d'un univers crypto dominé par un seul actif, où la meilleure allocation hiérarchique reste sous le benchmark.
 
 <p align="center"><a href="QC-Py-10-Risk-Portfolio-Management.ipynb"><img src="assets/readme/quantpy10-stoploss.png" width="540" alt="Gestion des risques stop-loss : deux sous-graphiques empilés sur ~75 jours (2023-01-01 → 2023-03-20). Haut — prix simulé (bleu) avec trois stops horizontaux : Fixed Stop 5 % = $97.01 (rouge tirets), ATR Stop 2× = $95.60 (orange tirets-points, plus bas que le fixed car plus conservateur), Support Stop SMA-2 % (vert tirets, mobile), plus le point d'entrée $102.12 (gros point bleu + ligne verticale pointillée). Bas — distance au stop en %, courbes ATR Stop (orange clair, varie 5-18 %) + Fixed Stop (rose pâle, fixe 5 %) + Support Stop (vert, varie 0-10 %). Démontre la comparaison stop-loss fixe vs adaptatif (ATR) vs trend-following (SMA) : l'ATR stop s'élargit quand la volatilité monte (protection anti-whipsaw), le SMA stop suit la tendance."></a></p>
 
 **[12 — Le profil risque-rendement d'un backtest.](QC-Py-12-Backtesting-Analysis.ipynb)** La richesse d'un backtest ne tient pas dans un seul Sharpe : le scatter des rendements quotidiens de la stratégie contre son benchmark expose la dispersion, les queues et la fréquence des bons et mauvais jours. C'est la signature statistique complète du comportement de la stratégie.
 
-**[12b — Un Sharpe de 0,2 prouve-t-il quoi que ce soit ?](QC-Py-12b-Backtest-Validity.ipynb)** Non, si le backtest couvre moins de dix ans : l'erreur-type asymptotique du Sharpe annualisé vaut environ `1/sqrt(N_années)` (Lo, 2002) — sur 7 ans, ±0,38. Un Sharpe mesuré à 0,2 est statistiquement indistinguable d'une stratégie sans aucun bord. Le notebook construit la lecture honnête d'un backtest : intervalle de confiance du Sharpe, multiplication des tests et faux positifs, et ce qu'il faut pour qu'une performance soit significative.
+**[12b — Un Sharpe de 0,2 prouve-t-il quoi que ce soit ?](QC-Py-12b-Backtest-Validity.ipynb)** Non, si le backtest couvre moins de dix ans : l'erreur-type asymptotique du Sharpe annualisé vaut environ `1/sqrt(N_années)` (Lo, 2002) — sur 7 ans, ±0,38. Un Sharpe mesuré à 0,2 est statistiquement indistinguable d'une stratégie sans aucun bord. Le notebook construit la lecture honnête d'un backtest : intervalle de confiance du Sharpe, PSR et ses deux pièges de saisie (annualisation, convention de kurtose — démontrés sur l'article QC research/17112), multiplication des tests et faux positifs, et ce qu'il faut pour qu'une performance soit significative.
 
 <p align="center"><a href="QC-Py-12-Backtesting-Analysis.ipynb"><img src="assets/readme/quantpy12-backtest-scatter.png" width="540" alt="Analyse de backtest : deux sous-graphiques côte-à-côte sur 2 ans (2022-01 → 2024-01). Gauche — scatter Strategy Returns (%) vs Benchmark Returns (%) avec droite de régression rouge en pointillés β = 0.44 (la stratégie amplifie modérément le benchmark), ~250 points bleus dispersés dans le quadrant [-3 %, +3 %]², axes croisés à (0, 0). Droite — equity curves comparées : Strategie (bleu marine) finit à 1.42, Benchmark (gris tirets) finit à 1.47, baseline noire horizontale à 1.00. La Strategie reste sous le Benchmark toute l'année 2022 (sous-performance), puis dépasse en 2023-07 → 2023-10 (pic ~1.50). Démontre la mesure du β (sensibilité au benchmark) et le profil risque/rendement : β=0.44 < 1 = stratégie défensive (moins volatile que le marché)."></a></p>
 
@@ -154,11 +157,13 @@ Chaque notebook de la série rend visible un geste quantitatif distinct, dans un
 | Notebook | Contenu |
 |----------|---------|
 | [QC-Py-05-Universe-Selection](QC-Py-05-Universe-Selection.ipynb) | Univers dynamiques, filtres fondamentaux |
+| [QC-Py-05b-FScore-Piotroski](QC-Py-05b-FScore-Piotroski.ipynb) | F-Score de Piotroski : les 9 sous-scores sur données réelles, convention de datation article vs papier 2000, critique de liquidité, variance small-univers mesurée (#17770) |
 | [QC-Py-06-Options-Trading](QC-Py-06-Options-Trading.ipynb) | Chaînes d'options, greeks, stratégies couvertes |
+| [QC-Py-06b-Derivatives-Valuation-From-Scratch](QC-Py-06b-Derivatives-Valuation-From-Scratch.ipynb) | Complément from-scratch de QC-Py-29 : les trois moteurs reconstruits à la main, put américain, asiatique arithmétique, variables de contrôle (#16239) |
 | [QC-Py-07-Futures-Forex](QC-Py-07-Futures-Forex.ipynb) | Contrats à terme, devises, hedging |
 | [QC-Py-08-Multi-Asset-Strategies](QC-Py-08-Multi-Asset-Strategies.ipynb) | Portefeuilles multi-classes d'actifs |
 | [QC-Py-09-Order-Types](QC-Py-09-Order-Types.ipynb) | Market, limit, stop, trailing, combo orders |
-| [QC-Py-10-Risk-Portfolio-Management](QC-Py-10-Risk-Portfolio-Management.ipynb) | Risk management, position sizing, drawdown |
+| [QC-Py-10-Risk-Portfolio-Management](QC-Py-10-Risk-Portfolio-Management.ipynb) | Risk management, position sizing, drawdown, hierarchical risk parity |
 
 ## Phase 3 : Analyse et Stratégie (QC-Py-11 à 17)
 
@@ -166,14 +171,15 @@ Chaque notebook de la série rend visible un geste quantitatif distinct, dans un
 |----------|---------|
 | [QC-Py-11-Technical-Indicators](QC-Py-11-Technical-Indicators.ipynb) | Indicateurs techniques, indicateurs custom |
 | [QC-Py-12-Backtesting-Analysis](QC-Py-12-Backtesting-Analysis.ipynb) | Mesures de performance, Sharpe, drawdown |
-| [QC-Py-12b-Backtest-Validity](QC-Py-12b-Backtest-Validity.ipynb) | Erreur-type du Sharpe (Lo 2002), signification statistique du backtest |
+| [QC-Py-12b-Backtest-Validity](QC-Py-12b-Backtest-Validity.ipynb) | Erreur-type du Sharpe (Lo 2002), PSR (Bailey & López de Prado 2012) et ses pièges de saisie, signification statistique du backtest |
 | [QC-Py-13-Alpha-Models](QC-Py-13-Alpha-Models.ipynb) | Framework Alpha, signaux, combinaison |
 | [QC-Py-14-Portfolio-Construction-Execution](QC-Py-14-Portfolio-Construction-Execution.ipynb) | Construction portefeuille, exécution |
+| [QC-Py-14b-Liquidity-Execution-Costs](QC-Py-14b-Liquidity-Execution-Costs.ipynb) | Liquidité et coûts d'exécution : proxys (ADV, Amihud, Corwin-Schultz), loi racine, capacité, stress COVID réel (#16239) |
 | [QC-Py-15-Parameter-Optimization](QC-Py-15-Parameter-Optimization.ipynb) | Optimization, grid search, walk-forward |
 | [QC-Py-16-Alternative-Data](QC-Py-16-Alternative-Data.ipynb) | données alternatives, sentiment, fundamentals |
 | [QC-Py-17-Sentiment-Analysis](QC-Py-17-Sentiment-Analysis.ipynb) | NLP, analyse sentiment, signaux textuels |
 
-## Phase 4 : Machine Learning (QC-Py-18 à 28)
+## Phase 4 : Machine Learning (QC-Py-18 à 29)
 
 | Notebook | Contenu |
 |----------|---------|
@@ -191,6 +197,7 @@ Chaque notebook de la série rend visible un geste quantitatif distinct, dans un
 | [QC-Py-27-Production-Deployment](QC-Py-27-Production-Deployment.ipynb) | Déploiement live, monitoring |
 | [QC-Py-28-Market-Regime-Detection](QC-Py-28-Market-Regime-Detection.ipynb) | Détection de régimes de marché |
 | [QC-Py-28b-Macro-Cycle-Regimes](QC-Py-28b-Macro-Cycle-Regimes.ipynb) | Macro et régimes : diagnostic composite borné, indicateurs → budget de risque |
+| [QC-Py-29-Derivatives-Valuation](QC-Py-29-Derivatives-Valuation.ipynb) | Valorisation d'un dérivé : Black-Scholes, arbre binomial et Monte-Carlo sur le même contrat — précision, convergence, flexibilité, coût, liquidité |
 
 ## Entraînement ML (QC-Py-30 à 32)
 
@@ -227,7 +234,6 @@ Notebooks de recherche et stratégies exécutées sur QuantConnect Cloud.
 |----------|-----------|
 | [QC-Py-Cloud-01-FinBERT-Sentiment](QC-Py-Cloud-01-FinBERT-Sentiment.ipynb) | NLP FinBERT sentiment |
 | [QC-Py-Cloud-02-ML-Classification](QC-Py-Cloud-02-ML-Classification.ipynb) | ML classification |
-| [QC-Py-Cloud-12-SectorRotation-Momentum](QC-Py-Cloud-12-SectorRotation-Momentum.ipynb) | Rotation sectorielle |
 | [QC-Py-Cloud-14-DualMomentum](QC-Py-Cloud-14-DualMomentum.ipynb) | Dual Momentum |
 | [QC-Py-Cloud-03-Risk-Parity](QC-Py-Cloud-03-Risk-Parity.ipynb) | Risk Parité |
 | [QC-Py-Cloud-03b-RiskParity-Composite](QC-Py-Cloud-03b-RiskParity-Composite.ipynb) | Risk Parité composite |

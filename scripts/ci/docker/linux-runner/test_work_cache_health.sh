@@ -271,6 +271,270 @@ echo "Test 7 : passe complete sur un _work -- layout <workdir>/<repo>/<repo> (gl
   else
     ko "wch_check_workdir a rendu non-zero -- il tuerait l'entrypoint sous set -e"
   fi
+  # ATTENTION : cette assertion mesure « rend 0 », elle ne mesure PAS « ne tue
+  # pas l'appelant ». `if cmd; then` desarme set -e pour tout le corps de la
+  # fonction appelee -- meme chose pour `||` et `&&` -- donc cette forme restait
+  # verte alors que le garde tuait bel et bien le conteneur. Le mode d'echec de
+  # production est mesure au Test 8, par sentinelle sous le shell de
+  # l'entrypoint (#16938).
+)
+echo ""
+
+echo "Test 8 : shell de PRODUCTION -- le garde ne tue pas l'appelant (#16938)"
+(
+  # LE DEFAUT MESURE. L'entrypoint porte `set -euo pipefail` (entrypoint.sh:12) ;
+  # ce banc ne portait que `set -o pipefail` (L12). Sous le shell de production,
+  # les 3 mesures laissaient fuir leur code de retour et l'appelant mourait :
+  #   - git for-each-ref sur un depot illisible (HEAD detruit) -> rc=128
+  #   - ls sur un glob sans correspondance (depot sans pack, etat NOMINAL d'un
+  #     cache frais) -> rc=2, qui traverse le `| wc -l` sous pipefail
+  # Mesure 2026-09-21, seuil 16 de production, sentinelle posee apres l'appel :
+  # 128 et 2, sentinelle jamais atteinte. Sur le depot illisible la mort survient
+  # a la PREMIERE ligne de wch_integrity_pass, donc AVANT la branche de purge --
+  # le geste de reparation du cas ne pouvait pas s'executer (slot 8 : 174
+  # demarrages morts consecutifs, aucune trace au journal du job).
+  #
+  # L'INSTRUMENT QUI VOIT CE DEFAUT est une SENTINELLE posee APRES l'appel, dans
+  # un sous-shell qui porte le SHELL DE PRODUCTION. Ni le rc seul, ni un
+  # `if cmd; then` ne le voient : `if`, comme `||` et `&&`, desarme set -e pour
+  # TOUT le corps de la fonction appelee.
+  replay_production() {
+    local workdir="$1" threshold="$2"
+    bash -c '
+      set -euo pipefail
+      . "$1"
+      wch_check_workdir "$2" "$3"
+      echo SENTINELLE-ATTEINTE
+    ' _ "$SCRIPT_DIR/work_cache_health.sh" "$workdir" "$threshold" 2>&1
+  }
+
+  # CONTROLE NEGATIF DE L'INSTRUMENT : les lignes AVANT correctif, recopiees
+  # litteralement et sans neutralisation de rc, doivent TUER le sous-shell.
+  # Sans ce controle, une sentinelle atteinte ne prouve rien : un banc incapable
+  # de rougir est vert par construction.
+  pre_fix_broken_refs() {
+    bash -c '
+      set -euo pipefail
+      broken="$(git -c safe.directory="*" -C "$1" for-each-ref 2>&1 >/dev/null | sed -n "s/^warning: ignoring broken ref //p")"
+      echo SENTINELLE-ATTEINTE
+    ' _ "$1" 2>&1
+  }
+  pre_fix_pack_count() {
+    bash -c '
+      set -euo pipefail
+      before="$(ls "$1"/.git/objects/pack/*.pack 2>/dev/null | wc -l | tr -d " ")"
+      echo SENTINELLE-ATTEINTE
+    ' _ "$1" 2>&1
+  }
+
+  # Depot ILLISIBLE (HEAD detruit) : la forme mesuree sur le slot 8.
+  mk_unreadable() {
+    local R="$1/CoursIA/CoursIA"
+    mkdir -p "$R"
+    git init -q -b main "$R" 2>/dev/null
+    git -C "$R" config user.email t@t; git -C "$R" config user.name t
+    echo x > "$R/f"; git -C "$R" add . 2>/dev/null; git -C "$R" commit -qm x 2>/dev/null
+    printf '\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0' > "$R/.git/HEAD"
+  }
+  # Depot SAIN sans aucun pack : le cas NOMINAL d'un cache frais.
+  mk_healthy_no_pack() {
+    local R="$1/CoursIA/CoursIA"
+    mkdir -p "$R"
+    git init -q -b main "$R" 2>/dev/null
+    git -C "$R" config user.email t@t; git -C "$R" config user.name t
+    # gc.auto=0 : la fixture doit porter 0 pack de facon DETERMINISTE, sinon un
+    # git qui packerait au commit ferait passer (ou echouer) le cas pour une
+    # raison de version, pas de comportement.
+    git -C "$R" config gc.auto 0
+    echo x > "$R/f"; git -C "$R" add . 2>/dev/null; git -C "$R" commit -qm x 2>/dev/null
+  }
+
+  # --- Fixtures, avec leur propre controle de fidelite ----------------------
+  W_ILL="$TEST_DIR/p8-ill"; mk_unreadable "$W_ILL"
+  W_HP="$TEST_DIR/p8-hp";    mk_healthy_no_pack "$W_HP"
+  if [ -z "$(wch_broken_refs "$W_ILL/CoursIA/CoursIA")" ] \
+     && [ "$(wch_ref_count "$W_ILL/CoursIA/CoursIA")" = "0" ]; then
+    ok "fixture fidele : depot illisible (0 ref lisible, aucune ref cassee nommable)"
+  else
+    ko "la fixture « illisible » reste lisible -- le test ne prouve plus rien"
+  fi
+  n_hp="$(ls "$W_HP"/CoursIA/CoursIA/.git/objects/pack/*.pack 2>/dev/null | wc -l | tr -d ' ')"
+  if [ "$n_hp" = "0" ]; then
+    ok "fixture fidele : depot sain avec 0 pack (le glob sans correspondance est bien exerce)"
+  else
+    ko "fixture insuffisante ($n_hp pack) -- le cas « sans pack » n'est pas exerce"
+  fi
+
+  # --- Controle NEGATIF : l'instrument peut rougir ---------------------------
+  out="$(pre_fix_broken_refs "$W_ILL/CoursIA/CoursIA")"; rc=$?
+  if ! echo "$out" | grep -q "SENTINELLE-ATTEINTE" && [ "$rc" != "0" ]; then
+    ok "controle negatif : la ligne AVANT correctif tue l'appelant (rc=$rc) -- l'instrument sait rougir"
+  else
+    ko "la forme non gardee n'a pas tue l'appelant (rc=$rc) -- l'instrument est aveugle"
+  fi
+  out="$(pre_fix_pack_count "$W_HP/CoursIA/CoursIA")"; rc=$?
+  if ! echo "$out" | grep -q "SENTINELLE-ATTEINTE" && [ "$rc" != "0" ]; then
+    ok "controle negatif : le compte de packs non garde tue l'appelant sur un depot SAIN (rc=$rc)"
+  else
+    ko "le compte de packs non garde n'a pas tue l'appelant (rc=$rc)"
+  fi
+
+  # --- Controle POSITIF 1 : depot illisible -> la branche de purge est ATTEINTE
+  out="$(replay_production "$W_ILL" 16)"; rc=$?
+  if echo "$out" | grep -q "SENTINELLE-ATTEINTE"; then
+    ok "depot illisible : l'appelant CONTINUE (sentinelle atteinte sous set -euo pipefail)"
+  else
+    ko "depot illisible : l'appelant est mort avant la sentinelle (rc=$rc) -- le garde tue le slot"
+  fi
+  if [ ! -d "$W_ILL/CoursIA/CoursIA" ]; then
+    ok "depot illisible : la branche de PURGE a bien ete atteinte (clone retire, le job suivant reclonera)"
+  else
+    ko "depot illisible : purge jamais atteinte -- le cache empoisonne survit"
+  fi
+  if echo "$out" | grep -q "IRRECUPERABLE"; then
+    ok "depot illisible : la purge est NOMMEE dans le journal"
+  else
+    ko "journal de purge attendu, obtenu: $out"
+  fi
+
+  # --- Controle POSITIF 2 : depot sain sans pack -> conserve, et appelant vivant
+  out="$(replay_production "$W_HP" 16)"; rc=$?
+  if echo "$out" | grep -q "SENTINELLE-ATTEINTE"; then
+    ok "depot sain sans pack : l'appelant CONTINUE sous set -euo pipefail"
+  else
+    ko "depot sain sans pack : l'appelant est mort avant la sentinelle (rc=$rc)"
+  fi
+  if [ -d "$W_HP/CoursIA/CoursIA" ]; then
+    ok "depot sain sans pack : conserve (aucune purge intempestive d'un cache sain)"
+  else
+    ko "un depot sain sans pack a ete purge -- regression"
+  fi
+
+  # --- SECONDE BARRIERE du point d'appel (entrypoint.sh) --------------------
+  # Deux assertions, qui mesurent deux choses differentes et le disent :
+  #   (a) BEHAVIORALE : la FORME `if ! f; then ... fi` suffit a rendre un
+  #       appelant insensible a un rc qui fuit -- rejouee contre une mesure qui
+  #       fuit exprES, sentinelle posee apres.
+  #   (b) PIN DE STRUCTURE : l'entrypoint emploie bien cette forme aujourd'hui.
+  #       Elle seule est un test de texte ; elle ne prouve pas la garantie, elle
+  #       empeche qu'un futur correctif retire la barriere en silence. Un pin
+  #       rougit sur une suppression, pas sur un comportement.
+  out="$(bash -c '
+    set -euo pipefail
+    leaking() { return 128; }
+    if ! leaking; then
+      echo "BARRIERE-A-JOURNALISE"
+    fi
+    echo SENTINELLE-ATTEINTE
+  ' 2>&1)"; rc=$?
+  if echo "$out" | grep -q "SENTINELLE-ATTEINTE"; then
+    ok "la forme du point d'appel absorbe un rc qui fuit (sentinelle tenue, rc=$rc)"
+  else
+    ko "la forme du point d'appel ne suffit pas a absorber un rc qui fuit (rc=$rc)"
+  fi
+  if echo "$out" | grep -q "BARRIERE-A-JOURNALISE"; then
+    ok "l'echec est JOURNALISE par la barriere (jamais avale en silence -- la cause reste diagnosticable)"
+  else
+    ko "la barriere avale l'echec sans le journaliser, obtenu: $out"
+  fi
+  if grep -q 'if ! wch_check_workdir' "$SCRIPT_DIR/entrypoint.sh"; then
+    ok "PIN : entrypoint.sh porte toujours la seconde barriere sur wch_check_workdir"
+  else
+    ko "la seconde barriere a disparu de entrypoint.sh -- un futur rc qui fuit tuerait le slot en silence"
+  fi
+)
+echo ""
+
+# --- Le contrat sous le shell REEL de l'entrypoint (#16643) -----------------
+# Tout ce banc source work_cache_health.sh sous `set -o pipefail` SANS
+# `set -e` -- plus laxiste que entrypoint.sh, qui porte `set -euo pipefail`
+# (ligne 9). C'est la raison pour laquelle l'assertion
+# « wch_check_workdir rend toujours 0 » ci-dessus passait pendant que la
+# production mourait : elle mesurait le CODE DE RETOUR d'une fonction qui,
+# sous set -e, ne REVENAIT pas. Un `if cmd; then` desarme en plus set -e
+# pendant la condition, donc meme un banc qui le porterait ne verrait rien.
+#
+# Ces cas rejouent le shell reel et verifient que l'appelant CONTINUE : le
+# sentinel n'est imprime que si la ligne qui SUIT l'appel s'est executee.
+# Le troisieme cas est le controle NEGATIF exige par l'en-tete de ce
+# fichier -- sans lui, rien ne prouve que les deux premiers ont des dents.
+SENTINEL="LAPPELANT-A-SURVECU"
+
+run_under_entrypoint_shell() {
+  local workdir="$1" child="$TEST_DIR/child.$$.sh"
+  {
+    echo "set -euo pipefail"
+    echo ". '$SCRIPT_DIR/work_cache_health.sh'"
+    cat                       # corps optionnel (redefinitions du controle negatif)
+    echo "wch_check_workdir \"\$WCHT_DIR\" 16"
+    echo "echo '$SENTINEL'"
+  } > "$child"
+  WCHT_DIR="$workdir" bash "$child" 2>&1
+}
+
+# Depot ILLISIBLE : .git present, HEAD reduit a des octets NUL, aucune ref.
+# Signature mesuree firsthand sur le slot myia-ai-01-wsl-8 le 2026-09-18
+# (174 demarrages consecutifs morts en rc=128, zero ligne de journal).
+(
+  D="$TEST_DIR/euo_illisible"
+  R="$D/CoursIA/CoursIA"
+  mkdir -p "$R/.git"
+  printf '\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0' > "$R/.git/HEAD"
+  out="$(run_under_entrypoint_shell "$D" < /dev/null)"
+  if printf '%s' "$out" | grep -q "$SENTINEL"; then
+    ok "set -euo pipefail : depot illisible -- l'appelant SURVIT a la passe"
+  else
+    ko "set -euo pipefail : depot illisible -- l'appelant est MORT [$out]"
+  fi
+  if [ ! -d "$R" ]; then
+    ok "set -euo pipefail : depot illisible PURGE (la branche de reparation est atteinte)"
+  else
+    ko "set -euo pipefail : depot illisible conserve -- la purge n'a pas eu lieu"
+  fi
+)
+
+# Depot SAIN mais SANS AUCUN PACK : etat banal d'un clone interrompu, pas une
+# corruption. `ls <glob sans match>` rend rc=2 et tuait wch_maintenance_pass.
+(
+  D="$TEST_DIR/euo_nopack"
+  R="$D/CoursIA/CoursIA"
+  mkdir -p "$R"
+  git -c init.defaultBranch=main init -q "$R"
+  git -C "$R" -c user.email=t@t -c user.name=t commit -q --allow-empty -m seed
+  out="$(run_under_entrypoint_shell "$D" < /dev/null)"
+  if printf '%s' "$out" | grep -q "$SENTINEL"; then
+    ok "set -euo pipefail : depot sans pack -- l'appelant SURVIT"
+  else
+    ko "set -euo pipefail : depot sans pack -- l'appelant est MORT [$out]"
+  fi
+  if [ -d "$R/.git" ]; then
+    ok "set -euo pipefail : depot sain sans pack CONSERVE (non-regression)"
+  else
+    ko "set -euo pipefail : depot sain sans pack purge a tort"
+  fi
+)
+
+# CONTROLE NEGATIF -- le seul cas qui prouve que les deux precedents mesurent
+# quelque chose. On redefinit wch_broken_refs dans sa forme d'AVANT #16643
+# (sans `|| true`) et on exige que l'appelant MEURE. Si le sentinel sort
+# quand meme, c'est le banc qui est creux, pas le code qui est sain.
+(
+  D="$TEST_DIR/euo_negatif"
+  R="$D/CoursIA/CoursIA"
+  mkdir -p "$R/.git"
+  printf '\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0' > "$R/.git/HEAD"
+  out="$(run_under_entrypoint_shell "$D" <<'UNGUARDED'
+wch_broken_refs() {
+  wch_git -C "$1" for-each-ref 2>&1 >/dev/null \
+    | sed -n 's/^warning: ignoring broken ref //p'
+}
+UNGUARDED
+)"
+  if printf '%s' "$out" | grep -q "$SENTINEL"; then
+    ko "controle NEGATIF CREUX : la forme non gardee survit -- le banc ne prouve rien"
+  else
+    ok "controle NEGATIF : la forme non gardee TUE l'appelant (le banc a des dents)"
+  fi
 )
 echo ""
 

@@ -1,4 +1,4 @@
-"""Generate SC-20-Bitcoin-Scripting.ipynb - Bitcoin, UTXO et Scripts."""
+"""Generate SC-20-Bitcoin-Scripting-Python.ipynb - Bitcoin, UTXO et Scripts."""
 import json
 import os
 
@@ -32,9 +32,9 @@ cells = []
 
 # === HEADER ===
 cells.append(md(
-"# SC-20-Bitcoin-Scripting - Bitcoin, UTXO et Scripts\n"
+"# SC-20-Bitcoin-Scripting-Python - Bitcoin, UTXO et Scripts\n"
 "\n"
-"**Navigation** : [Index](../README.md) | [<< Ripple XRP](SC-19-Ripple-XRP.ipynb) | [Move Sui >>](SC-21-Move-Sui.ipynb)\n"
+"**Navigation** : [Index](../README.md) | [<< Ripple XRP](SC-19-Ripple-XRP-Python.ipynb) | [Move Sui >>](SC-21-Move-Sui-Python.ipynb)\n"
 "\n"
 "---\n"
 "\n"
@@ -1029,7 +1029,7 @@ cells.append(md(
 "\n"
 "---\n"
 "\n"
-"**Notebook suivant** : [SC-21-Move-Sui](SC-21-Move-Sui.ipynb) - Le langage Move et la blockchain Sui",
+"**Notebook suivant** : [SC-21-Move-Sui-Python](SC-21-Move-Sui-Python.ipynb) - Le langage Move et la blockchain Sui",
 "summary"))
 
 # === BUILD NOTEBOOK ===
@@ -1061,7 +1061,7 @@ output_dir = os.path.join(
 )
 os.makedirs(output_dir, exist_ok=True)
 
-output_path = os.path.join(output_dir, "SC-20-Bitcoin-Scripting.ipynb")
+output_path = os.path.join(output_dir, "SC-20-Bitcoin-Scripting-Python.ipynb")
 with open(output_path, 'w', encoding='utf-8', newline='\n') as f:
     json.dump(notebook, f, ensure_ascii=False, indent=1)
     f.write('\n')

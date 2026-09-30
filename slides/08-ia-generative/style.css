@@ -61,6 +61,7 @@
 .genai-temperature li:nth-child(3) { width: 41%; }
 .genai-temperature .genai-visual.visual-1 { left: 585px; top: 90px; width: 300px; height: 150px; }
 .genai-temperature .genai-visual.visual-2 { left: 445px; top: 270px; width: 490px; height: 195px; }
+.genai-temperature .genai-visual.visual-3 { left: 48px; top: 425px; width: 390px; height: 120px; }
 
 /* Le système occupe l'espace commun aux deux paragraphes explicatifs. */
 .genai-system li:nth-child(1) { width: 100%; margin-bottom: 35px; }
@@ -99,17 +100,23 @@
 .genai-sectors .genai-visual.visual-1 { left: 670px; top: 90px; width: 250px; height: 145px; }
 .genai-sectors .genai-visual.visual-2 { left: 650px; top: 252px; width: 270px; height: 145px; }
 
-/* Écosystème modèles/APIs : HF face bullet 2 "Modèles locaux". */
-.genai-ecosystem-models li:nth-child(1) { width: 100%; margin-bottom: 22px; }
-.genai-ecosystem-models li:nth-child(2) { width: 50%; min-height: 180px; }
+/* Écosystème modèles/APIs : OpenRouter face bullet 1 "APIs propriétaires",
+   HF face bullet 2 "Modèles locaux" — même schéma que l'hébergement. */
+.genai-ecosystem-models li:nth-child(1) { width: 50%; min-height: 165px; }
+.genai-ecosystem-models li:nth-child(2) { width: 50%; min-height: 165px; }
 .genai-ecosystem-models li:nth-child(3) { width: 100%; margin-top: 18px; }
-.genai-ecosystem-models .hf-figure { left: 625px; top: 175px; width: 260px; height: 170px; }
+.genai-ecosystem-models .openrouter-figure { left: 615px; top: 100px; width: 260px; height: 150px; }
+.genai-ecosystem-models .hf-figure { left: 615px; top: 300px; width: 260px; height: 150px; }
 
-/* Écosystème hébergement : Groq face bullet 1 "Cloud", vLLM face bullet 2 "Local". */
+/* Écosystème hébergement : bande Cloud (Groq + Vast.ai) face bullet 1,
+   bande Local (vLLM + Ollama) face bullet 2. Boîtes absolues : aucun
+   impact sur le flux ni le footer (#15463/#15689). */
 .genai-ecosystem-hosting li:nth-child(1) { width: 50%; min-height: 150px; }
 .genai-ecosystem-hosting li:nth-child(2) { width: 50%; min-height: 150px; }
-.genai-ecosystem-hosting .groq-figure { left: 615px; top: 100px; width: 320px; height: 150px; }
-.genai-ecosystem-hosting .vllm-figure { left: 615px; top: 305px; width: 320px; height: 150px; }
+.genai-ecosystem-hosting .groq-figure { left: 545px; top: 100px; width: 185px; height: 145px; }
+.genai-ecosystem-hosting .vastai-figure { left: 745px; top: 100px; width: 185px; height: 145px; }
+.genai-ecosystem-hosting .vllm-figure { left: 545px; top: 305px; width: 185px; height: 145px; }
+.genai-ecosystem-hosting .ollama-figure { left: 745px; top: 305px; width: 185px; height: 145px; }
 /* c.1092 REPAIR footer-hors-clip (#15463 CHANGES_REQUESTED ai-01 21:38Z) :
    footer reference positionné absolute pour sortir du flux et garantir son placement
    dans le canvas (980x552 logique). z-index 3 passe au-dessus des visuels.
@@ -132,12 +139,15 @@
   font-size: 0.85em;
 }
 
-/* Écosystème outils : ComfyUI face bullet 1 "Image", ST/Dify face bullet 2. */
+/* Écosystème outils : ComfyUI + Stability face bullet 1 "Image",
+   Open WebUI + SillyTavern + Dify face bullet 2. */
 .genai-ecosystem-tools li:nth-child(1) { width: 50%; min-height: 160px; }
 .genai-ecosystem-tools li:nth-child(2) { width: 48%; min-height: 150px; margin-top: 14px; }
-.genai-ecosystem-tools .comfyui-figure { left: 540px; top: 85px; width: 390px; height: 160px; }
-.genai-ecosystem-tools .sillytavern-figure { left: 525px; top: 245px; width: 200px; height: 130px; }
-.genai-ecosystem-tools .dify-figure { left: 745px; top: 245px; width: 200px; height: 130px; }
+.genai-ecosystem-tools .comfyui-figure { left: 540px; top: 85px; width: 300px; height: 160px; }
+.genai-ecosystem-tools .stability-figure { left: 850px; top: 95px; width: 82px; height: 140px; }
+.genai-ecosystem-tools .openwebui-figure { left: 500px; top: 245px; width: 140px; height: 130px; }
+.genai-ecosystem-tools .sillytavern-figure { left: 650px; top: 245px; width: 140px; height: 130px; }
+.genai-ecosystem-tools .dify-figure { left: 800px; top: 245px; width: 132px; height: 130px; }
 
 /* Éthique : balance+grille face bullet 1 "Biais". */
 .genai-ethics li:nth-child(1) { width: 55%; min-height: 175px; }

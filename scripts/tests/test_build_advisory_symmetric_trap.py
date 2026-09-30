@@ -24,6 +24,8 @@ from pathlib import Path
 
 import pytest
 
+from ._bash_resolution import resolve_bash
+
 SCRIPT = Path(__file__).resolve().parent.parent / "slides" / "build_advisory.sh"
 
 # build_advisory.sh relies on `git check-ignore` (the authority on "ignored").
@@ -31,11 +33,16 @@ SCRIPT = Path(__file__).resolve().parent.parent / "slides" / "build_advisory.sh"
 # "not ignored" (exit 1), which requires the cwd to be a git worktree. We init a
 # real (empty) repo in tmp_path so the tool behaves exactly as it does in CI.
 GIT = shutil.which("git")
-BASH = shutil.which("bash")
+# `shutil.which("bash")` can resolve to the WSL legacy launcher stub when
+# System32 precedes Git in the PATH: the stub swallows backslashes and the
+# drive colon of the Windows script path (`D:\Dev\...` -> `D:Dev...`, exit
+# 127). `resolve_bash` probes candidates and falls back to Git-for-Windows
+# (#17201, all 5 tests of this suite measured against that single cause).
+BASH = resolve_bash()
 
 pytestmark = pytest.mark.skipif(
     BASH is None or GIT is None,
-    reason="build_advisory.sh needs bash and git on PATH",
+    reason="build_advisory.sh needs a sane bash (#17201) and git on PATH",
 )
 
 

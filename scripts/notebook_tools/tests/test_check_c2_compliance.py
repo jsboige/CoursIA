@@ -342,6 +342,99 @@ class TestHeuristicCarveOuts:
         result = check_notebook(nb_path)
         assert result["violations"] == []
 
+    def test_async_function_def_no_return_ok(self, tmp_path):
+        """`async def foo(): ...` (no call) -> OK (C.1 stub).
+
+        Twin of ``test_function_def_no_return_ok``: the kernel treats an
+        ``async def`` as a declaration exactly like ``def``, so the cell
+        displays nothing. Matching only ``"def "`` classified this cell as an
+        *expression statement* and reported it as "execution_count set but no
+        outputs" — a violation against a conformant stub.
+        """
+        nb_path = _write_nb(tmp_path / "async_stub.ipynb", [
+            _code(
+                "async def oublie_et_redemarre(agent, marqueur):\n"
+                "    \"\"\"Reopens a fresh conversation.\"\"\"\n"
+                "    result = None  # TODO etudiant\n"
+                "    pass",
+                exec_count=1,
+            ),
+        ])
+        result = check_notebook(nb_path)
+        assert result["violations"] == []
+
+    def test_async_function_def_body_print_no_output_ok(self, tmp_path):
+        """The Lab12e stub shape, verbatim -> OK.
+
+        Reproduces ``Lab12e-Session-Persistence.ipynb`` cell 21 in full: the
+        indented ``print("Exercice a completer")`` inside the coroutine body
+        AND the commented-out call site whose ``# print(resultats)`` sits at
+        column 0. Both detail matter — an earlier version of this fixture left
+        the commented call out and passed while the real notebook still failed,
+        because the substring scan counted the comment's ``print(`` as a
+        top-level output call. A fixture that is not faithful to the notebook
+        it claims to model proves nothing about it.
+        """
+        nb_path = _write_nb(tmp_path / "async_stub_lab12e.ipynb", [
+            _code(
+                "# Exercice 1 : a completer\n"
+                "# Etape 1 : poser un contexte marqueur dans une conversation.\n"
+                "\n"
+                "async def oublie_et_redemarre(agent, marqueur):\n"
+                "    \"\"\"Renvoie (historique_avant, reponse_apres_oubli).\"\"\"\n"
+                "    # TODO etudiant : implementer avec deux ConversationRunner\n"
+                "    print(\"Exercice a completer\")\n"
+                "    return None, None\n"
+                "\n"
+                "# resultats = await oublie_et_redemarre(build_data_agent(), \"m\")\n"
+                "# print(resultats)",
+                exec_count=8,
+            ),
+        ])
+        result = check_notebook(nb_path)
+        assert result["violations"] == []
+
+    def test_commented_out_print_call_no_output_ok(self, tmp_path):
+        """A commented-out call at column 0 is not a top-level output call.
+
+        Orthogonal to ``async``: the same *synchronous* stub flips from
+        compliant to violation as soon as a commented ``# print(...)`` line is
+        added, because the indentation filter alone cannot tell a column-0
+        comment from column-0 code.
+        """
+        body = (
+            "# Exercice 1 : a completer\n"
+            "def compute_scores(rows):\n"
+            "    \"\"\"doc\"\"\"\n"
+            "    print(\"Exercice a completer\")\n"
+            "    return None\n"
+        )
+        without = _write_nb(tmp_path / "nocomment.ipynb", [
+            _code(body, exec_count=1),
+        ])
+        with_comment = _write_nb(tmp_path / "withcomment.ipynb", [
+            _code(body + "\n# print(compute_scores(rows))\n", exec_count=1),
+        ])
+        assert check_notebook(without)["violations"] == []
+        assert check_notebook(with_comment)["violations"] == []
+
+    def test_async_toplevel_await_still_flagged(self, tmp_path):
+        """Regression guard: a top-level `await` with no outputs -> violation.
+
+        Recognising ``async def`` must not turn the async branch into a
+        blanket exemption: a cell that *calls* something at column 0 and
+        outputs nothing is still a genuine C.2 violation.
+        """
+        nb_path = _write_nb(tmp_path / "await.ipynb", [
+            _code(
+                "await run_pipeline(dataset)",
+                exec_count=1,
+            ),
+        ])
+        result = check_notebook(nb_path)
+        assert len(result["violations"]) == 1
+        assert "no outputs" in result["violations"][0]["reason"]
+
     def test_top_level_print_still_flagged(self, tmp_path):
         """Regression guard: a column-0 print() with no outputs -> violation.
 

@@ -94,7 +94,7 @@ jobs:
           # always-on-guards.yml l.934). Sur workflow_dispatch,
           # github.event.pull_request est nul -> chaine vide -> inerte,
           # conforme a l'Acceptance #13491 transposee ici (malforme = inert).
-          NOTEBOOK_PLAN_LOSS_PR_BODY: ${{ github.event.pull_request.body }}
+          PLAN_LOSS_PR_BODY: ${{ github.event.pull_request.body }}
         run: |
           set -uo pipefail
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
@@ -117,7 +117,7 @@ jobs:
           # sortie machine, seul le verdict binaire --check passe a 0). Sans
           # marker pour un finding donne, le comportement nominal (rc=1) est
           # preserve. Le body est passe via l'env var in-memory
-          # NOTEBOOK_PLAN_LOSS_PR_BODY (canal recommande, meme politique que
+          # PLAN_LOSS_PR_BODY (canal recommande, meme politique que
           # MD_CONTENT_LOSS_PR_BODY pour md-content-loss-gate). Les PRs sans
           # body (string vide) ne matchent rien, comportement actuel preserve
           # (cf. design : marker = porte assumee par l'auteur, pas dispense).

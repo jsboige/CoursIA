@@ -67,11 +67,11 @@ Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules
 
 | Notebook | Drainable |
 |---|---|
-| `MyIA.AI.Notebooks\GameTheory\GameTheory-08-CombinatorialGames-Csharp.ipynb` | 27 |
+| `MyIA.AI.Notebooks\GameTheory\GameTheory-08-CombinatorialGames-CSharp.ipynb` | 27 |
 | `MyIA.AI.Notebooks\GameTheory\SocialChoice\04-Computational-Aggregation-SAT-Z3-Csharp.ipynb` | 22 |
-| `MyIA.AI.Notebooks\GameTheory\GameTheory-08-CombinatorialGames.ipynb` | 19 |
-| `MyIA.AI.Notebooks\GameTheory\GameTheory-15b-Lean-CooperativeGames.ipynb` | 13 |
-| `MyIA.AI.Notebooks\GameTheory\GameTheory-07-ExtensiveForm-Csharp.ipynb` | 13 |
+| `MyIA.AI.Notebooks\GameTheory\GameTheory-08-CombinatorialGames-Python.ipynb` | 19 |
+| `MyIA.AI.Notebooks\GameTheory\GameTheory-15b-Lean-CooperativeGames-Lean.ipynb` | 13 |
+| `MyIA.AI.Notebooks\GameTheory\GameTheory-07-ExtensiveForm-CSharp.ipynb` | 13 |
 
 ### GenAI (drainable total = 1776)
 
@@ -148,7 +148,7 @@ Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules
 | Notebook | Drainable |
 |---|---|
 | `MyIA.AI.Notebooks\Search\Applications\Search\App-14-ConnectFour-Adversarial.ipynb` | 58 |
-| `MyIA.AI.Notebooks\Search\Part2-CSP\CSP-5-Optimization-Csharp.ipynb` | 38 |
+| `MyIA.AI.Notebooks\Search\Part2-CSP\CSP-5-Optimization-CSharp.ipynb` | 38 |
 | `MyIA.AI.Notebooks\Search\Part1-Foundations\Search-11-Metaheuristics.ipynb` | 34 |
 | `MyIA.AI.Notebooks\Search\Part1-Foundations\Search-09-LinearProgramming.ipynb` | 34 |
 | `MyIA.AI.Notebooks\Search\Part2-CSP\CSP-3-Advanced.ipynb` | 30 |

@@ -3,7 +3,8 @@
 Scaffolding pour la formalisation de résultats de théorie des nœuds en Lean 4,
 avec sorry stratégiques commentés (références papier + prérequis Mathlib).
 
-Epic #2874 (Phase 5 en cours). Toolchain `v4.32.1` (migration post-#11325, cf #11256).
+Epic #2874 (Phase 5 en cours). Toolchain `v4.33.0` (migration #14773, débloquée sur ce lake
+par #15829 ; suite de la convergence #11325, cf #11256).
 
 ## État des sorries (vérifié 2026-09-14 sur l'arbre rebasé de #15440, **8 réels**)
 
@@ -366,7 +367,7 @@ Référence : Fox (1962), A quick trip through knot theory ; Adams, *The Knot Bo
 
 Ce que ce lake apporte que ses dépendances **n'ont pas** :
 
-- **Mathlib** (toolchain v4.32.1) ne fournit **aucun module de théorie des nœuds** — aucune entrée `Knot`/`Braid`/`Link` au top-level de l'arbre `Mathlib/` (mesuré 2026-08-31). Ni PD-codes, ni moves de Reidemeister, ni invariants de colorabilité : tout ce vocabulaire est défini ici, dans `Knots/Basic.lean`.
+- **Mathlib** (toolchain v4.33.0, rev `db584cd6`) ne fournit **aucun module de théorie des nœuds** — aucune entrée `Knot`/`Braid`/`Link` au top-level de l'arbre `Mathlib/` (re-mesuré 2026-09-14 : 33 entrées top-level, aucune correspondance). Ni PD-codes, ni moves de Reidemeister, ni invariants de colorabilité : tout ce vocabulaire est défini ici, dans `Knots/Basic.lean`.
 - **[shua/leanknot](https://github.com/shua/leanknot)** couvre bricks/walls, tangles, braids — pas les invariants de colorabilité ni leur transfert sous les moves.
 - **[Tangle-Isabelle](https://github.com/prathamesh-t/Tangle-Isabelle)** (Prathamesh 2015) formalise en Isabelle/HOL, pas en Lean 4 ; cité comme référence de design, non consommable dans notre toolchain.
 

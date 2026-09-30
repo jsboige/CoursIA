@@ -12,7 +12,8 @@ name: Linux Self-Hosted Tests
 # (timeout-minutes ne court qu'a partir du DEMARRAGE du job).
 #
 # Pour l'activer, sur po-2024 :
-#   docker build -t coursia-linux-runner:2.336.0 scripts/ci/docker/linux-runner/
+#   scripts/ci/docker/linux-runner/supervise.sh pin   # epingle le contexte hors arbre (#16134)
+#   docker build -t coursia-linux-runner:2.337.0 "$COURSIA_RUNNER_PINNED_CTX"
 #   scripts/ci/docker/linux-runner/supervise.sh start 2
 # Verifier AVANT de dispatcher :
 #   gh api repos/jsboige/CoursIA/actions/runners #     --jq '.runners[]|select([.labels[].name]|index("coursia-linux"))|.name'

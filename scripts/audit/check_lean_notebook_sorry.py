@@ -3,9 +3,11 @@
 """Diagnostic: per-notebook ``sorry`` tally for ``lean4-wsl`` notebooks.
 
 Context (Epic #8051 — maturity 3-axes). The third maturity axis
-``scientific_review`` (UNREVIEWED / AUTHOR_REVIEWED / PEER_REVIEWED /
-FORMALLY_VERIFIED) is currently non-functional for Lean notebooks: catalog
-generation cannot honestly emit ``FORMALLY_VERIFIED`` because (a) cell-level
+``scientific_review`` (UNASSESSED / ESTABLISHED / ADVANCED / RESEARCH depuis
+#14831) ne derive plus du compte de ``sorry`` : l'echelle mesure le RISQUE du
+contenu, pas la rigueur formelle de sa relecture. ``sorry_free`` reste rendu
+comme preuve a cote. Ce qui suit decrit pourquoi le signal lui-meme n'est
+toujours pas cable pour les notebooks Lean : (a) cell-level
 ``sorry`` absence does NOT imply transitive sorry-freeness (companion
 ``*_lean/`` lakes may carry their own debt), and (b) there is no aggregated
 Lean-CI sorry-count artifact for the catalog to consume. This script gathers

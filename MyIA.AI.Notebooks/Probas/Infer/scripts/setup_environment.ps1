@@ -40,7 +40,7 @@ if (-not $SkipDotnetInteractive) {
         Write-Status "  dotnet-interactive already installed" "Green"
     } else {
         Write-Status "  Installing dotnet-interactive..."
-        dotnet tool install -g Microsoft.dotnet-interactive
+        dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.617701
         if ($LASTEXITCODE -eq 0) {
             Write-Status "  dotnet-interactive installed successfully" "Green"
         } else {

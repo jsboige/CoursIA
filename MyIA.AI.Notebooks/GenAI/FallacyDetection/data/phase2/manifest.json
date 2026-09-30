@@ -1,0 +1,106 @@
+{
+ "params": {
+  "alpha": 0.5,
+  "budgets": {
+   "fallacy": 12000,
+   "virtue": 2000
+  },
+  "fractions": [
+   0.7,
+   0.15,
+   0.15
+  ],
+  "val_per_node": 1,
+  "test_per_node": 2,
+  "seed": 0
+ },
+ "sources": {
+  "fallacies_blob_sha1": "4ac3f12eaf15fbda1de3432abbf5b57b6cb9e728",
+  "virtues_blob_sha1": "9ff35b599e3eb6ba9c2b4563bf3ff52419def1b9",
+  "scenarii_blob_sha1": "9f20eb808a1d22c9c1a5dd1b96460b0d6a23db60",
+  "scenarii_upstream_commit": "0ab05d66576a1007c3952a67e2dd1eaf8f9b502c"
+ },
+ "files": {
+  "train.csv": {
+   "rows": 14000,
+   "sha256": "ba62995cf5ea354547056d3633d1a5a871fb21688eddf19d7950e8c505503729"
+  },
+  "val.csv": {
+   "rows": 1629,
+   "sha256": "a0aa4cfbb69e0c219685f8812f01025817d675e9aea2f4c0a40ff05c1f36c476"
+  },
+  "test.csv": {
+   "rows": 3258,
+   "sha256": "b929e51f9aaaea757222aaeecbb3e3def909440484e113bbe44ecf49ab81a14c"
+  }
+ },
+ "counts": {
+  "train": 14000,
+  "val": 1629,
+  "test": 3258
+ },
+ "nodes": {
+  "fallacy": 1407,
+  "virtue": 222
+ },
+ "balance_train": {
+  "fallacy": {
+   "family_ratio": 2.0225,
+   "node_ratio": 2.3333,
+   "size_ratio": 4.7191,
+   "family_totals": {
+    "Influence": 2520,
+    "Tricherie": 2456,
+    "Insuffisance": 1740,
+    "Obstruction": 1386,
+    "Erreur mathématique": 1326,
+    "Erreur de raisonnement": 1326,
+    "Abus de langage": 1246
+   }
+  },
+  "virtue": {
+   "family_ratio": 1.7824,
+   "node_ratio": 1.7143,
+   "size_ratio": 3.0556,
+   "family_totals": {
+    "Inférence maîtrisée": 385,
+    "Échange enrichissant": 352,
+    "Argument pertinent": 297,
+    "Honnêteté intellectuelle": 270,
+    "Présentation intègre": 250,
+    "Sens quantitatif": 230,
+    "Justesse lexicale": 216
+   }
+  }
+ },
+ "leaks": {
+  "scenario_overlap": {
+   "train&val": 0,
+   "train&test": 0,
+   "val&test": 0
+  },
+  "labels_missing": {
+   "train": 0,
+   "val": 0,
+   "test": 0
+  },
+  "duplicate_pairs": 0
+ },
+ "scenario_usage": {
+  "train": {
+   "scenarios": 117,
+   "min": 119,
+   "max": 120
+  },
+  "val": {
+   "scenarios": 25,
+   "min": 65,
+   "max": 66
+  },
+  "test": {
+   "scenarios": 25,
+   "min": 130,
+   "max": 131
+  }
+ }
+}

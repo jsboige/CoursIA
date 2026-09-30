@@ -123,6 +123,23 @@ gardes divergeaient, une lane pourrait etre autorisee a produire du neuf sur
 une PR que le merge-gate refusera. Voir `red_backlog` et
 `unaddressed_review_points`.
 
+Plafond de WIP par lane (Q41, mandat user 2026-09-22)
+-----------------------------------------------------
+Le garde rouge ne compte que les PRs BLOQUEES : une PR VERTE en attente de
+dossier ou de merge ne l'arme pas (volontaire, #12108 -- pieger la lane sur
+l'attente du coordinateur serait pire). Mais le temps de passage est
+WIP / debit (loi de Little) : c'est l'encours lui-meme qu'il faut plafonner.
+Mesure du jour : 323 PRs ouvertes, dont 91 pour la seule lane
+myia-po-2026:CoursIA. Au-dela de `WIP_CAP_DEFAULT` PRs ouvertes attribuees
+par tag de lane (brouillons compris -- convertir en draft n'echappe pas au
+plafond), la lane ne recoit pas de grain neuf : elle recoit sa file, la plus
+ancienne d'abord, memes convention de sortie et code de retour que le garde
+rouge. Les deux gardes se composent : quand les deux declenchent, les deux
+motifs sont rendus, aucun ne masque l'autre. `--wip-cap N` ajuste le plafond
+(0 le desactive) ; `--ignore-wip` exige `--wip-reason` ecrite -- une
+justification PROPRE au plafond : reutiliser `--admit-reason` leverait du
+meme geste le garde d'admission (claims, DWELL), qu'on n'a pas demande.
+
 Ardoise de lane : la mesure qui rend un faux "rien livre" impossible (L721)
 --------------------------------------------------------------------------
 Mesure du 2026-09-12 : une lane a envoye une escalation URGENT claimant
@@ -145,6 +162,9 @@ Usage
     python scripts/pick_idle_grain.py --lane <l> --json            # sortie machine
     python scripts/pick_idle_grain.py --lane <l> --ignore-red      # rouge non reparable
                                                                    # par cette lane, ECRIT sur la PR
+    python scripts/pick_idle_grain.py --lane <l> --ignore-wip --wip-reason '<motif>'
+                                                                   # plafond de WIP passe outre,
+                                                                   # justification ECRITE exigee (Q41)
 
 Le tirage est **deterministe par (lane, heure UTC, reroll)** : deux lanes
 tirent des candidats differents a la meme minute, et une meme lane qui relance
@@ -165,7 +185,13 @@ import random
 import re
 import subprocess
 import sys
-from typing import Any
+from typing import Any, Callable
+
+try:
+    import gh_identity
+except ImportError:  # charge via importlib dans les tests (hors scripts/)
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import gh_identity
 
 REPO = "jsboige/CoursIA"
 
@@ -173,11 +199,39 @@ REPO = "jsboige/CoursIA"
 # si label `candidate-delivered` OU marqueur `[INFO] candidate-delivered` en
 # commentaire. Le sweep quotidien retracte le label sur activite de commentaire
 # (le marqueur lui-meme en fait partie), donc certaines LIVRE-urn restent
-# invisibles au seul filtre labels. Le pattern matche les deux formes
-# employees par les lanes : `[INFO] candidate-delivered` et `[INFO
-# candidate-delivered]` (espace au lieu de `]`).
+# invisibles au seul filtre labels. Trois formes employees par les lanes
+# (mesure #17263 c.754, cf. .claude/rules/audit-reassessment.md) :
+#   - `[INFO] candidate-delivered`        (canonique, fermante `]`)
+#   - `[INFO candidate-delivered]`        (espace au lieu de `]`)
+#   - `[INFO] lane <machine:workspace> -- <sujet> -- candidate-delivered <suite>`
+#                                       (annonce, le mot n'est pas immediatement
+#                                       apres `[INFO` mais sur la meme ligne)
+# Forme etroite : la 3e alternative exige `candidate-delivered`
+# borne par `\b` (mot complet) sur la MEME ligne qu'un `[INFO]` en tete, pour
+# eviter qu'une mention discursive du mecanisme (n'importe ou dans un
+# commentaire) fausse l'exclusion. La 1re et 2e formes restent matchees par la
+# regex d'origine (espace apres `[INFO`). La 3e forme (annonce) exige la
+# mention explicite d'un discriminant de klasse (`lane <m:w>`, `signal`,
+# `livré(e)`, ou `verification first-hand`) SUR LA MEME LIGNE que
+# `[INFO]` et avant `candidate-delivered` -- sinon une mention discursive du
+# mecanisme (cf. test anti-FP `test_marker_no_match_discursive_mention`)
+# serait classee a tort comme marqueur de livraison.
+#
+# Ancrage en debut de ligne (`^\s*` + MULTILINE) : evite les mentions
+# incidentes du type "sans [INFO] candidate-delivered" ou "[INFO] absent
+# dans ce fil", ou la sous-chaîne `[INFO] candidate-delivered` est presente
+# mais n'est pas l'en-tête du commentaire.
 _DELIVERED_MARKER_RE = re.compile(
-    r"\[INFO[\s_]candidate-delivered", re.IGNORECASE)
+    r"(?:"
+    r"^\s*\[INFO\]\s+candidate-delivered"
+    r"|"
+    r"^\s*\[INFO\s+candidate-delivered\]"
+    r"|"
+    r"^\s*\[INFO\][^\n]*\b(?:lane\s+\S+:\S+|signal|livr[ée]e?|"
+    r"verification first-hand)[^\n]*\bcandidate-delivered\b"
+    r")",
+    re.IGNORECASE | re.MULTILINE,
+)
 
 
 def _has_delivered_marker(issue_number: int) -> bool | None:
@@ -257,6 +311,16 @@ from gh_payload_cache import PayloadCache, cache_key  # noqa: E402
 # serait accusee de secheresse. Mesure du 2026-08-31 : la canonicalisation
 # resout 8 des 11 genres hors-enumeration du corpus, dont 2 CONTENU.
 from variation_light_cap import canonicalize_genre  # noqa: E402
+
+# Fold CANONIQUE des jambes de check par nom (#16889, residuel nomme de #16782).
+# Le rollup GraphQL rend les jambes d'un meme nom dans un ordre non
+# chronologique (mesure #16765 sur #16232 : FAILURE/CANCELLED/SUCCESS d'un
+# meme head) -- le fold chronologique est le travail du lecteur, et ce
+# lecteur est le helper de check_run_state, jamais une cle locale : drop_
+# superseded derivait deja sa propre cle depuis #11916 et couvrait un seul
+# des deux sens (rouge perime sous vert recent), laissant le vert perime
+# et le PENDING perime d'un rerun dans la liste lue comme jambes courantes.
+from check_run_state import fold_latest  # noqa: E402
 
 # Enumeration CLOSE de variation-protocol.md, partitionnee CONTENU / META.
 CONTENU = {
@@ -426,6 +490,44 @@ VISITS_CACHE_TTL_SECONDS = 15 * 60
 SERIES_CACHE_TTL_SECONDS = 60 * 60
 
 
+def _newest_remote_issue_update() -> float | None:
+    """Sonde de fraicheur : date de modification la plus recente du pool distant.
+
+    Une requete, une trentaine d'enregistrements -- contre le payload complet
+    (jusqu'a 2000 issues avec leur body) : c'est ce qui rend la sonde moins
+    chere que ce qu'elle protege. La population visee est celle du pool
+    (`gh issue list` rend les issues, PAS les PR) : les entrees `pull_request`
+    sont donc filtrees, sinon chaque commentaire de PR forcerait un refresh du
+    pool et la cache ne servirait plus a rien.
+
+    Renvoie None quand la mesure echoue (reseau, `gh` absent, page de PR) :
+    l'appelant retombe alors sur un hit NON verifie, qu'il doit annoncer. Une
+    sonde muette ne doit jamais se lire comme une sonde rassurante.
+    """
+    command = [
+        "gh", "api",
+        f"repos/{REPO}/issues?state=open&sort=updated&direction=desc&per_page=30",
+        # `updated_at` en SNAKE_CASE : `gh api` rend le REST v3 tel quel, alors que
+        # `gh issue list --json` rend du camelCase (`updatedAt`). Demander
+        # `updatedAt` ici rend une chaine vide (champ absent), donc une sonde
+        # muette a chaque appel -- la verification ne fonctionne plus sans que
+        # rien ne plante. Attrape par la passe end-to-end, pas par les fakes.
+        "--jq", "[.[] | select(.pull_request == null)][0].updated_at",
+    ]
+    try:
+        out = subprocess.run(
+            command, capture_output=True, text=True, encoding="utf-8", check=True,
+        ).stdout.strip()
+    except (subprocess.CalledProcessError, OSError):
+        return None
+    if not out or out == "null":
+        return None
+    try:
+        return dt.datetime.fromisoformat(out.replace("Z", "+00:00")).timestamp()
+    except ValueError:
+        return None
+
+
 def _cached_payload(
     name: str,
     identity: list[str],
@@ -435,6 +537,7 @@ def _cached_payload(
     cache_mode: str,
     ttl_seconds: float,
     cache_status: dict[str, dict[str, Any]] | None,
+    probe: Callable[[], float | None] | None = None,
 ) -> Any:
     """Fetch raw JSON, optionally recording an observable cache decision."""
     if cache is None:
@@ -444,10 +547,166 @@ def _cached_payload(
         ttl_seconds,
         fetch,
         mode=cache_mode,
+        probe=probe,
     )
     if cache_status is not None:
         cache_status[name] = result.as_dict()
     return result.payload
+
+
+def cache_notice_lines(
+    cache_status: dict[str, dict[str, Any]],
+    *,
+    show_all: bool = False,
+) -> list[str]:
+    """Lignes a imprimer sur l'etat de la cache -- jamais vides s'il reste un doute.
+
+    Trois regimes, et c'est le deuxieme qui manquait (#17096) :
+
+    - ``stale`` : payload ancien servi APRES echec du refresh -- deja annonce ;
+    - ``hit`` **non verifie** : entree TTL-valide que l'on n'a PAS confrontee au
+      distant. La servir en silence laissait circuler des candidats possiblement
+      deja pris comme s'ils avaient ete verifies : annonce des qu'il en existe,
+      meme sans ``--cache-status``. Le silence EST le defaut ;
+    - tout le reste : seulement sous ``--cache-status`` (bavard sur demande).
+
+    Le fait rendu est verifiable : l'age du cache, l'ecart mesure par la sonde,
+    et l'aveu explicite quand aucune sonde n'a parle.
+    """
+    if not cache_status:
+        return []
+    stale_entries = {
+        name: entry
+        for name, entry in cache_status.items()
+        if entry.get("status") == "stale"
+    }
+    unverified_entries = {
+        name: entry
+        for name, entry in cache_status.items()
+        if entry.get("status") == "hit" and not entry.get("verified")
+    }
+    if not (show_all or stale_entries or unverified_entries):
+        return []
+    states = ", ".join(
+        f"{name}={entry.get('status')}"
+        + (
+            f" age={entry['age_seconds']:.0f}s"
+            if isinstance(entry.get("age_seconds"), (int, float))
+            else ""
+        )
+        + (f" ({entry.get('error')})" if entry.get("error") else "")
+        for name, entry in sorted(cache_status.items())
+    )
+    lines = [
+        f"Cache payloads : {states or 'aucune mesure partageable lue'} "
+        "| age = ecart a la lecture du cache, PAS a la modification distante"
+    ]
+    if stale_entries:
+        lines.append(
+            "!! STALE explicite : payload ancien utilise seulement apres "
+            "echec du refresh ; ce n'est pas une mesure fraiche."
+        )
+    if unverified_entries:
+        details = ", ".join(
+            f"{name} (servi apres "
+            f"{(entry.get('age_seconds') or 0):.0f} s de cache"
+            + (
+                ", sonde distante muette"
+                if entry.get("probe_delta_seconds") is None
+                else f", sonde a {entry['probe_delta_seconds']:+.0f} s"
+            )
+            + ")"
+            for name, entry in sorted(unverified_entries.items())
+        )
+        lines.append(
+            f"!! CACHE HIT NON RE-VERIFIE : {details} -- ces payloads n'ont PAS "
+            "ete confrontes au distant ; un candidat affiche libre peut y avoir "
+            "ete pris entre-temps. Relancer avec --cache refresh pour lever le doute."
+        )
+    return lines
+
+
+# --- Transport (#17038) ----------------------------------------------------
+# Deux transports derriere `gh`, aux QUOTAS DISTINCTS : `gh issue list`,
+# `gh pr list` et les `--search` passent par GraphQL ; `gh api repos/...` par
+# REST. Mesure du 2026-09-20 (issue #17038) : 245 PRs balayees en REST pagine
+# pendant que le GraphQL du compte partage rendait 403. Un pool lu par un seul
+# transport meurt avec lui, et le zero qui en sort se lit comme un etat du
+# pool -- « picker muet », donc « veille ».
+POOL_REST_PAGE = 100
+# Plafond de pagination REST du listing de PRs (le GraphQL en demande 300).
+POOL_REST_MAX_PAGES = 4
+# Plafond de pagination REST du listing d'ISSUES. #18113 : la garde
+# `[POOL TRONQUE]` de `fetch_pool` teste `len(raw)` contre POOL_FETCH_LIMIT
+# (2000), or la voie REST rend au plus pages x 100 elements BRUTS (issues ET
+# PRs), ensuite filtres des PRs -- le compte filtre ne peut JAMAIS atteindre
+# le seuil. Le signal de troncature sur cette voie est le plafond de pages
+# atteint, pas la taille du rendu.
+POOL_ISSUES_REST_MAX_PAGES = 10
+# rc distinct de « pool vide mesure » (0) et des arrets deliberes (1) : un
+# appelant doit pouvoir fail-closed sur « je n'ai pas pu lire ».
+RC_POOL_UNMEASURED = 3
+# Le `fallback` de l.1136 designe l'ELARGISSEMENT DU FILTRE quand la passe
+# etroite ne rend rien -- un fallback de SELECTION. Ce qui suit est un
+# fallback de TRANSPORT. Confondre les deux fait croire l'organe couvert.
+
+
+class TransportUnavailable(Exception):
+    """Les DEUX transports ont echoue : le tirage n'est pas mesure."""
+
+    def __init__(self, graphql: str, rest: str):
+        self.graphql = graphql
+        self.rest = rest
+        super().__init__(f"GraphQL={graphql} REST={rest}")
+
+
+def _rest_pages(path: str, *, max_pages: int,
+                timeout: int = 120) -> tuple[list[dict], bool]:
+    """Liste paginee par REST -- l'autre quota, celui qui survit au 403 GraphQL.
+
+    Rend ``(items, hit_cap)`` : ``hit_cap`` dit que la boucle s'est arretee
+    sur son plafond de pages (derniere page PLEINE), pas sur epuisement du
+    flux. C'est le signal de troncature que les gardes de `fetch_pool` ne
+    peuvent pas calculer seules : les flux REST sont plafonnes SOUS le seuil
+    et (pour `/issues`) filtres des PRs avant comptage (#18113).
+    """
+    items: list[dict] = []
+    for page in range(1, max_pages + 1):
+        sep = "&" if "?" in path else "?"
+        out = subprocess.run(
+            ["gh", "api", f"{path}{sep}per_page={POOL_REST_PAGE}&page={page}"],
+            capture_output=True, text=True, encoding="utf-8", check=True,
+            timeout=timeout,
+        ).stdout
+        chunk = json.loads(out)
+        if not isinstance(chunk, list) or not chunk:
+            return items, False
+        items.extend(chunk)
+        if len(chunk) < POOL_REST_PAGE:
+            return items, False
+    return items, True
+
+
+def _issue_rest_to_gh_shape(it: dict) -> dict:
+    """Item REST `/issues` -> forme rendue par `gh issue list --json`.
+
+    REST rend du snake_case (`created_at`) la ou `gh` rend du camelCase
+    (`createdAt`) : `fetch_pool` lit la forme `gh`, donc la normalisation se
+    fait ICI et pas dans le builder du pool -- un seul point de traduction.
+    """
+    return {"number": it["number"], "title": it.get("title") or "",
+            "labels": it.get("labels") or [], "body": it.get("body") or "",
+            "createdAt": it.get("created_at") or "",
+            "updatedAt": it.get("updated_at") or ""}
+
+
+def _pr_rest_to_gh_shape(it: dict) -> dict:
+    """Item REST `/pulls` -> forme rendue par `gh pr list --json`."""
+    return {"number": it["number"], "title": it.get("title") or "",
+            "body": it.get("body") or "", "createdAt": it.get("created_at") or "",
+            "isDraft": bool(it.get("draft")),
+            "author": {"login": (it.get("user") or {}).get("login") or ""},
+            "headRefName": (it.get("head") or {}).get("ref") or ""}
 
 
 def fetch_pool(
@@ -455,11 +714,16 @@ def fetch_pool(
     cache: PayloadCache | None = None,
     cache_mode: str = "off",
     cache_status: dict[str, dict[str, Any]] | None = None,
-) -> list[dict]:
+    probe: Callable[[], float | None] | None = _newest_remote_issue_update,
+) -> tuple[list[dict], str | None]:
     """Une seule requete, limite haute -- c'est ce qui defait la troncature.
 
     Le plafond est haut ET surveille : aucun plafond ne se choisit une fois
     pour toutes, et celui-ci se fait franchir en silence par construction.
+
+    Rend ``(pool, read_error)`` (#17038). ``read_error`` a ``None`` des qu'UNE
+    voie a servi ; sinon il NOMME les deux transports tombes. Un pool vide
+    avec ``read_error`` n'est pas un pool vide -- cf `draw_verdict`.
     """
     command = [
         "gh", "issue", "list", "--repo", REPO, "--state", "open",
@@ -468,21 +732,66 @@ def fetch_pool(
     ]
 
     def fetch_raw() -> list[dict]:
-        out = subprocess.run(
-            command,
-            capture_output=True, text=True, encoding="utf-8", check=True,
-        ).stdout
-        return json.loads(out)
+        try:
+            out = subprocess.run(
+                command,
+                capture_output=True, text=True, encoding="utf-8", check=True,
+            ).stdout
+            return json.loads(out)
+        except Exception as exc:  # noqa: BLE001 - on TENTE l'autre transport
+            graphql_err = f"{type(exc).__name__}"
+        try:
+            # REST /issues rend AUSSI les PRs : `pull_request` les distingue.
+            raw_items, hit_cap = _rest_pages(
+                f"repos/{REPO}/issues?state=open&sort=created&direction=desc",
+                max_pages=POOL_ISSUES_REST_MAX_PAGES)
+            raw = [_issue_rest_to_gh_shape(it)
+                   for it in raw_items if "pull_request" not in it]
+        except Exception as exc:  # noqa: BLE001 - les deux sont tombes
+            raise TransportUnavailable(graphql_err, f"{type(exc).__name__}") from exc
+        print(
+            f"[TRANSPORT] GraphQL indisponible ({graphql_err}) -- bascule REST, "
+            f"quota distinct. {len(raw)} issues lues. Le listing REST n'a pas "
+            "d'equivalent serveur pour `merged:>=` ni `N in:title,body` : les "
+            "filtres qui en dependent se degradent, et le disent plus bas.",
+            file=sys.stderr,
+        )
+        # #18113 : le garde `len(raw) >= POOL_FETCH_LIMIT` est AVEUGLE ici --
+        # le flux brut est plafonne sous le seuil ET filtre des PRs. Le signal
+        # est le plafond de pages atteint, et ce message tient lieu de garde
+        # sur la voie REST, sinon la bascule de #17038 reintroduit la
+        # troncature muette par l'autre porte (cf #17474 pour les PRs).
+        if hit_cap:
+            print(
+                f"[POOL TRONQUE] la voie REST s'est arretee sur son plafond de "
+                f"{POOL_ISSUES_REST_MAX_PAGES} pages pleines x {POOL_REST_PAGE} "
+                f"= {POOL_ISSUES_REST_MAX_PAGES * POOL_REST_PAGE} elements "
+                "bruts (issues + PRs) : le pool est probablement plus grand. "
+                "Le compte filtre ne peut jamais atteindre POOL_FETCH_LIMIT, "
+                "donc la garde principale ne peut pas tirer sur cette voie. "
+                "Le listing va du plus recent au plus ancien : la traine est "
+                "absente de ce tirage, biaise vers le recent. Relever "
+                "POOL_ISSUES_REST_MAX_PAGES avant de s'en servir pour "
+                "conclure quoi que ce soit sur la couverture.",
+                file=sys.stderr,
+            )
+        return raw
 
-    raw = _cached_payload(
-        "pool",
-        command,
-        fetch_raw,
-        cache=cache,
-        cache_mode=cache_mode,
-        ttl_seconds=POOL_CACHE_TTL_SECONDS,
-        cache_status=cache_status,
-    )
+    try:
+        raw = _cached_payload(
+            "pool",
+            command,
+            fetch_raw,
+            cache=cache,
+            cache_mode=cache_mode,
+            ttl_seconds=POOL_CACHE_TTL_SECONDS,
+            cache_status=cache_status,
+            probe=probe,
+        )
+        read_error = None
+    except TransportUnavailable as exc:
+        return [], (f"GraphQL indisponible ({exc.graphql}), REST egalement "
+                    f"indisponible ({exc.rest})")
     if len(raw) >= POOL_FETCH_LIMIT:
         # Signature de la troncature : on a recu exactement ce qu'on a demande.
         # Le tirage reste possible et se poursuit -- bloquer la lane serait pire
@@ -533,7 +842,7 @@ def fetch_pool(
                 else "grain"
             ),
         })
-    return pool
+    return pool, read_error
 
 
 # Fenetre d'affluence : la MEME que celle du cap de veine (`vein_cap`, par
@@ -550,10 +859,34 @@ VISITS_WINDOW_DAYS = 1
 # se trouve.
 VISITS_SCALE = 4.0
 
+# --- Affluence LONGUE (#16625, mandat user 2026-09-18) ---------------------
+# Le compteur ci-dessus est anti-collision INTRA-JOURNEE : il retombe a zero
+# des que la flotte ralentit 12 h (nuit, week-end, arret de credits) et rend
+# son poids plein au sujet frequente -- le contre-exemple explicite de
+# #16625. La grandeur manquante (diagnostic ai-01 2026-09-18) est le compte
+# CUMULE de PRs mergees citant l'issue sur une fenetre LONGUE : les deux
+# mesurent des choses differentes et coexistent.
+# Dimensionnement mesure le 2026-09-18 sur le pool ouvert (2921 PRs mergees
+# / 30 j, 3518 citations d'issues) : mediane du pool = 1, q75 = 0, 29 % a
+# zero -- tete : #13410 = 83, #11601 = 73, puis 37, 27, 27. A l'echelle 16 :
+# mediane -> /1.09 (intouchable), 16 vus -> /2.0, 83 vus -> /3.6. La tete
+# seule est mordue ; le fond du pool ne sait pas que le facteur existe.
+LONG_VISITS_WINDOW_DAYS = 30
+LONG_VISITS_SCALE = 16.0
+# Seuil du signal PARKING rendu dans la sortie : a 12 PRs mergees / 30 j (une
+# tous les 2,5 j), un sujet n'est plus un grain delaisse que le tirage doit
+# remonter mais une veine deja ouverte. La mesure #16625 montre que la
+# monoculture ne venait PAS du tirage (P(#13410) ~ 0 sur 3000 rejeux du
+# moteur pondere) mais de provisions et d'auto-alimentation de sweeps AUTOUR
+# du picker : le signal doit donc etre VISIBLE la ou le choix se fait, pour
+# la lane qui lit le tirage et le coordinateur qui provisionne.
+PARKING_SIGNAL_THRESHOLD = 12
+
 
 def fetch_visits(
     days: int = VISITS_WINDOW_DAYS,
     *,
+    cache_name: str = "visits",
     cache: PayloadCache | None = None,
     cache_mode: str = "off",
     cache_status: dict[str, dict[str, Any]] | None = None,
@@ -597,7 +930,7 @@ def fetch_visits(
 
     try:
         prs = _cached_payload(
-            "visits",
+            cache_name,
             identity,
             fetch_raw,
             cache=cache,
@@ -609,7 +942,7 @@ def fetch_visits(
             subprocess.TimeoutExpired, OSError) as exc:
         return {}, f"{type(exc).__name__}: {exc}"
 
-    cache_entry = (cache_status or {}).get("visits") or {}
+    cache_entry = (cache_status or {}).get(cache_name) or {}
     cache_err = None
     if cache_entry.get("status") == "stale":
         cache_err = "cache stale apres echec du refresh: " + str(
@@ -827,6 +1160,105 @@ def delivered_signal_reason(
     return None
 
 
+def open_cover_inert(issue_number: int) -> str:
+    """Sonde inerte : aucune PR couvrante, aucun appel reseau.
+
+    Defaut de ``draw_unclaimed`` pour la sonde de couverture, meme doctrine
+    que ``delivered_probe_inert`` : un appel direct ou un test unitaire ne
+    doit pas emettre de requete `gh` par candidat tire.
+    """
+    return ""
+
+
+def open_cover_signal(issue_number: int) -> str | None:
+    """Une PR OUVERTE couvre-t-elle deja cette issue ?
+
+    TRI-ETAT, meme doctrine que ``has_delivered_signal`` : ``""`` = aucune
+    PR ouverte couvrante ; une descriptor-string (``"PR #12519 [draft]
+    (+1 autre(s) : #12530)"``) = au moins une PR ouverte cite ``#N`` ;
+    ``None`` = la requete a echoue (reseau, 403, payload illisible) et
+    l'appelant doit tirer quand meme EN LE DISANT.
+
+    Requete et priorite identiques a ``recent_delivery`` (#12504) : une PR
+    OUVERTE dit « quelqu'un y est en ce moment, ton claim sera void » ; une
+    PR fermee-sans-fusion n'atteste de rien et est ignoree explicitement.
+    Arbitrage #16589 (ai-01, 2026-09-17) : ce signal monte AU MEME RANG que
+    candidate-delivered -- le candidat couvert est ECARTE et remplace dans
+    son urne, pas seulement annote.
+    """
+    try:
+        out = subprocess.run(
+            ["gh", "pr", "list", "--repo", REPO, "--state", "all",
+             "--limit", "20", "--search", f"{issue_number} in:title,body",
+             "--json", "number,state,isDraft,title,body"],
+            capture_output=True, text=True, encoding="utf-8", check=True,
+            timeout=30,
+        ).stdout
+        prs = json.loads(out)
+    except Exception:  # noqa: BLE001 - sonde best-effort ; l'echec est DIT
+        return None
+    # Post-filtre `#N\b` (#17760, arbitrage ai-01 2026-09-25) : la recherche
+    # GitHub matche un NOMBRE NU en sous-chaine -- 11703 apparie c.1170301
+    # ou #1170391 -- et les petits numeros des EPICs se retrouvent faux
+    # couverts (10/91 mesures, 11 %). Une PR ouverte ne couvre l'issue QUE
+    # si son titre ou son body citent `#N` borne par un mot. GitHub ne peut
+    # pas faire ce discriminant cote serveur ; quand le filtre ne trouve
+    # pas d'ancre, le candidat est CONSERVE, jamais ecarte.
+    anchor = re.compile(rf"#{issue_number}\b")
+    opened = [
+        pr for pr in prs
+        if pr.get("state") == "OPEN"
+        and anchor.search((pr.get("title") or "") + "\n" +
+                          (pr.get("body") or ""))
+    ]
+    if not opened:
+        return ""
+    first = min(opened, key=lambda pr: pr["number"])
+    others = [pr["number"] for pr in opened
+              if pr["number"] != first["number"]]
+    descriptor = f"PR #{first['number']}"
+    if first.get("isDraft"):
+        descriptor += " [draft]"
+    if others:
+        descriptor += " (+{} autre(s) : {})".format(
+            len(others), ", ".join(f"#{x}" for x in others))
+    return descriptor
+
+
+def open_cover_reason(
+    item: dict,
+    probe=None,
+    failures: list[int] | None = None,
+) -> str | None:
+    """Pourquoi ecarter ce candidat de l'urne `grain` (PR ouverte couvrante).
+
+    Portee : l'urne `grain` SEULE, et seulement APRES le filtre de
+    livraison (le label/marqueur reste premier : un travail deja livre
+    prime sur un travail en cours). Le garde ne dit pas « ne fais jamais
+    ce travail » -- il dit « ton claim serait VOID au moment ou tu le
+    poserais » : la lane qui veut malgre tout prendre le grain lit la PR
+    couvrante et reclaime en le disant (``recent_delivery`` reste le filet
+    fail-OPEN quand la sonde n'a pas pu etre faite).
+    """
+    if probe is None:
+        probe = open_cover_inert
+    verdict = probe(item["number"])
+    if verdict == DELIVERED_SIGNAL_UNPROBED:
+        return None
+    if verdict is None:
+        # Fail-OPEN, et rapporte -- meme doctrine que delivered_signal_reason.
+        if failures is not None:
+            failures.append(item["number"])
+        return None
+    if verdict:
+        return (
+            f"TRAVAIL EN COURS : {verdict} OUVERTE couvre cette issue -> "
+            "claim probablement VOID ; verifier la PR couvrante AVANT d'y "
+            "retourner (le diff peut rester incomplet)"
+        )
+    return None
+
+
 
 def print_delivered_signal_report(
     withheld: list,
@@ -855,6 +1287,15 @@ def print_delivered_signal_report(
         print("   les recoit. Urne `delivered` et `--include-delivered` "
               "restent")
         print("   les deux chemins pour les traiter.")
+    inprogress = [it for it, cause in withheld
+                  if cause.startswith("EN COURS")]
+    if inprogress:
+        numbers = ", ".join(f"#{it['number']}" for it in inprogress)
+        print(f"Signal de couverture : {len(inprogress)} candidat(s) "
+              f"ECARTE(S) de l'urne grain : {numbers}.")
+        print("   Une PR OUVERTE couvre deja l'issue -- un claim dessus serait")
+        print("   probablement VOID (arbitrage #16589 : meme rang que "
+              "candidate-delivered).")
     failed = sorted(set(state.get("failures") or []))
     if failed:
         numbers = ", ".join(f"#{num}" for num in failed)
@@ -864,15 +1305,44 @@ def print_delivered_signal_report(
         print("   ces candidats sont CONSERVES -- une lecture qui n'a pas")
         print("   ABOUTI n'est PAS une absence de signal. Verifier a la main")
         print("   (`gh issue view <N> --comments`) avant de produire dessus.")
+    cover_failed = sorted(set(state.get("cover_failures") or []))
+    if cover_failed:
+        numbers = ", ".join(f"#{num}" for num in cover_failed)
+        print(f"!! sonde de couverture NON LUE sur {numbers} "
+              f"({len(cover_failed)} candidat(s)) : la recherche de PR "
+              "n'a pas abouti")
+        print("   (reseau, 403, payload illisible). Le tirage est MAINTENU et")
+        print("   ces candidats sont CONSERVES -- une lecture qui n'a pas")
+        print("   ABOUTI n'est PAS une absence de PR couvrante. Verifier")
+        print("   (`gh pr list --state all --search \"<N> in:title,body\"`) "
+              "avant de produire dessus.")
     if state.get("budget_hit"):
-        print(f"!! signal de livraison NON SONDE au-dela de "
-              f"{DELIVERED_SIGNAL_MAX_PROBES} candidats : le plafond de "
-              "sondes")
-        print("   est atteint, la fin de l'urne n'a pas ete verifiee. Les "
-              "candidats")
+        print(f"!! signal de livraison/couverture NON SONDE au-dela de "
+              f"{DELIVERED_SIGNAL_MAX_PROBES} sondes : le plafond PARTAGE "
+              "(commentaire + PR couvrante) est atteint, la fin de l'urne "
+              "n'a pas ete verifiee. Les candidats")
         print("   non sondes sont CONSERVES (fail-open).")
-    if dropped or failed or state.get("budget_hit"):
+    if (dropped or failed or cover_failed or inprogress
+            or state.get("budget_hit")):
         print()
+
+
+def draw_verdict(pool_error: str | None) -> str:
+    """La phrase du verdict quand la lecture du pool n'a PAS abouti (#17038).
+
+    Un pool vide MESURE et un pool NON MESURE ne se disent pas avec le meme
+    vocabulaire : le premier est un etat du pool, le second un etat de
+    l'instrument. Les confondre est exactement le defaut -- la lane lit un
+    zero comme « rien a faire » et s'arrete sur un pool qu'elle n'a pas vu.
+    Rend une chaine vide quand la lecture a abouti (rien a dire).
+    """
+    if not pool_error:
+        return ""
+    return (f"TIRAGE NON MESURE : {pool_error}.\n"
+            f"   Aucune voie n'a lu le pool -- ce n'est PAS « aucun candidat ».\n"
+            f"   Ne pas conclure « pool vide » ni « veille » : re-mesurer\n"
+            f"   (`gh api rate_limit`) puis relancer. rc={RC_POOL_UNMEASURED} pour\n"
+            f"   que l'appelant fail-closed au lieu de lire un zero.")
 
 
 def print_empty_draw_notice(withheld: list, picks: list,
@@ -882,9 +1352,10 @@ def print_empty_draw_notice(withheld: list, picks: list,
         return
     print("FILE LOCALE EPUISEE : aucun candidat libre dans cette poignee.")
     if not include_delivered and any(
-            cause.startswith("LIVRAISON") for _, cause in withheld):
-        print("   Une partie a deja ete livree et reste reservee a l'urne de")
-        print("   fermeture ; elle ne doit pas etre reproduite.")
+            cause.startswith(("LIVRAISON", "EN COURS"))
+            for _, cause in withheld):
+        print("   Une partie a deja ete livree ou est couverte par une PR")
+        print("   ouverte ; elle ne doit pas etre reproduite.")
     print("   Claims, livraisons et urnes autorisees restent proteges. Enchainer")
     print("   immediatement sur la deep-queue ou le fallback global de la lane.")
     print("   Une poignee locale epuisee ne termine jamais la session.")
@@ -1130,7 +1601,8 @@ def weight(item: dict, prev_genre: str | list[str] | tuple[str, ...] | set[str] 
            visits: dict[int, int] | None = None,
            series: dict[str, dict] | None = None,
            issue_to_family: dict[int, str] | None = None,
-           delivery: dict[int, float] | None = None) -> float:
+           delivery: dict[int, float] | None = None,
+           long_visits: dict[int, int] | None = None) -> float:
     """Trois facteurs, tous doux, tous explicables en une ligne.
 
     Trop de ponderation reproduirait une monoculture avec des etapes en plus :
@@ -1163,6 +1635,14 @@ def weight(item: dict, prev_genre: str | list[str] | tuple[str, ...] | set[str] 
     if seen:
         w /= 1.0 + math.log2(1.0 + seen / VISITS_SCALE)
     item["visits"] = seen
+    # Affluence longue (#16625) : meme forme douce, fenetre longue. Le compte
+    # 24 h ci-dessus garde son role anti-collision intra-journee ; celui-ci
+    # porte la MEMOIRE -- une reprise apres 12 h d'arret de flotte ne rend
+    # pas son poids plein au sujet deja frequente (acceptance 4 de #16625).
+    seen_long = (long_visits or {}).get(item["number"], 0)
+    if seen_long:
+        w /= 1.0 + math.log2(1.0 + seen_long / LONG_VISITS_SCALE)
+    item["visits_long"] = seen_long
     # Saturation de ZONE : le facteur que le compteur par issue ne peut pas
     # porter, parce qu il est defait par le partitionnement. Une fille NEUVE
     # (age 0, idle 0, aucune visite) herite ici du poids de la zone que sa
@@ -1204,13 +1684,15 @@ def draw(items: list[dict], n: int, rng: random.Random,
          visits: dict[int, int] | None = None,
          series: dict[str, dict] | None = None,
          issue_to_family: dict[int, str] | None = None,
-         delivery: dict[int, float] | None = None) -> list[dict]:
+         delivery: dict[int, float] | None = None,
+         long_visits: dict[int, int] | None = None) -> list[dict]:
     """Tirage pondere sans remise (Efraimidis-Spirakis : cle = u^(1/w))."""
     if not items:
         return []
     keyed = []
     for it in items:
-        w = weight(it, prev_genre, visits, series, issue_to_family, delivery)
+        w = weight(it, prev_genre, visits, series, issue_to_family, delivery,
+                   long_visits)
         u = rng.random() or 1e-12
         keyed.append((u ** (1.0 / w), w, it))
     keyed.sort(key=lambda t: t[0], reverse=True)
@@ -1220,6 +1702,11 @@ def draw(items: list[dict], n: int, rng: random.Random,
         it.pop("body", None)
         it["weight"] = round(w, 2)
         it.setdefault("visits", 0)
+        it.setdefault("visits_long", 0)
+        # Signal parking (#16625) : le pick porte le statut de veine deja
+        # ouverte -- c'est ici que la mesure devient une consigne, visible
+        # par la lane au tirage ET par le coordinateur au provisionnement.
+        it["parking"] = it.get("visits_long", 0) >= PARKING_SIGNAL_THRESHOLD
         it.setdefault("family", None)
         it.setdefault("family_new_notebooks", 0)
         it.setdefault("polarity", "neutral")
@@ -1307,10 +1794,11 @@ def check_claims(numbers: list[int], lane: str) -> dict[int, str]:
 
 def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
                    delivery=None, delivered_probe=None, delivered_state=None,
-                   fallback_by_class=None, continuity_state=None):
+                   fallback_by_class=None, continuity_state=None,
+                   cover_probe=None, long_visits=None):
     """Tire, puis REMPLACE tout candidat qu une autre lane tient deja.
 
-    Deux raisons de remplacer plutot que d annoter :
+    Trois raisons de remplacer plutot que d annoter :
 
     1. Un candidat annote << BLOQUE par X >> reste un candidat. La lane le
        lit, juge que son scope differe, et ecrit quand meme -- c est le
@@ -1319,6 +1807,10 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
     2. Retirer sans remplacer transformerait le garde en source d idle, ce
        que la regle 4 de coordinator-discipline interdit. On retire ET on
        retire un candidat de plus dans la meme urne.
+    3. Une PR OUVERTE couvre le candidat (#16589) : le claim serait VOID
+       au moment ou la lane le poserait. Meme rang que le signal de
+       livraison, meme remplacement -- la doctrine du signal est celle de
+       recent_delivery (#12504), la sanction est celle du delivered.
 
     Le cout est borne : N appels sur les tires (une poignee), jamais sur le
     pool. C est pourquoi le check pouvait etre par defaut sans etre lent --
@@ -1353,6 +1845,18 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
         budget[0] -= 1
         return (delivered_probe or delivered_probe_inert)(number, lane_name)
 
+    def _counted_cover_probe(number):
+        # Meme plafond, meme fail-OPEN que la sonde de livraison (#16589) :
+        # « au meme rang » veut dire AUSSI au meme cout borne -- les deux
+        # sondes parent le MEME budget, pas un plafond double. Un candidat
+        # qui passe le filtre de livraison consomme donc jusqu'a deux unites
+        # (commentaire + PR couvrante).
+        if budget[0] <= 0:
+            state["budget_hit"] = True
+            return DELIVERED_SIGNAL_UNPROBED
+        budget[0] -= 1
+        return (cover_probe or open_cover_inert)(number)
+
     for cls, want, prev in urnes:
         primary = list(by_class[cls])
         primary_numbers = {item["number"] for item in primary}
@@ -1367,8 +1871,16 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
             for _ in range(len(pool) + 1):
                 if len(got) >= want or not pool:
                     break
-                cand = draw(pool, want - len(got), rng, prev, visits,
-                            series, issue_to_family, delivery)
+                if long_visits is None:
+                    # Forme historique, signature bornee des fakes de test
+                    # (delivered-gate) : le facteur long est inerte quand la
+                    # mesure est absente, donc les deux formes sont egales.
+                    cand = draw(pool, want - len(got), rng, prev, visits,
+                                series, issue_to_family, delivery)
+                else:
+                    cand = draw(pool, want - len(got), rng, prev, visits,
+                                series, issue_to_family, delivery,
+                                long_visits=long_visits)
                 if not cand:
                     break
                 nums = [c["number"] for c in cand]
@@ -1395,6 +1907,18 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
                             c, args.lane, _counted_probe, failures)
                         if reason is not None:
                             conflicts.append((c, "LIVRAISON : " + reason + (
+                                " Candidat remplace dans la meme urne.")))
+                            continue
+                        # #16589 : la sonde de PR couvrante vient APRES le
+                        # filtre de livraison (un travail deja livre prime
+                        # sur un travail en cours) et seulement sur les
+                        # candidats SURVIVANTS -- le label gratuit reste
+                        # premier, la sonde la plus chere derniere.
+                        cover = open_cover_reason(
+                            c, _counted_cover_probe,
+                            state.setdefault("cover_failures", []))
+                        if cover is not None:
+                            conflicts.append((c, "EN COURS : " + cover + (
                                 " Candidat remplace dans la meme urne.")))
                             continue
                     got.append(c)
@@ -1433,10 +1957,17 @@ def recent_delivery(picks: list[dict]) -> dict[int, str]:
     est en ce moment, ton claim sera void". Une PR **fermee sans fusion** ne
     dit rien et est ignoree explicitement.
 
-    L'annotation **n'ecarte pas** le candidat (parite avec la doctrine
-    ``candidate-delivered`` : signale, ne ferme pas) : elle change ce qu'on
-    en dit, pas s'il est pris. Le verrou cross-lane reste
-    ``check_lane_claim.py``, que le tirage interroge desormais par defaut.
+    Arbitrage #16589 (ai-01, 2026-09-17) : le cas PR-OUVERTE-couvrante monte
+    au meme rang que ``candidate-delivered`` -- ``draw_unclaimed`` ecarte et
+    remplace desormais ce candidat dans l'urne ``grain`` (sonde
+    ``open_cover_signal``, meme budget, meme fail-OPEN). Cette fonction reste
+    le FILET fail-OPEN : quand la sonde n'a pas pu etre faite (plafond
+    atteint, requete en echec), le candidat conserve arrive ici et recoit
+    quand meme l'annotation. Pour les PRs MERGEES, l'annotation **n'ecarte
+    pas** (parite avec la doctrine ``candidate-delivered`` : signale, ne
+    ferme pas) -- une fusion dit "peut-etre deja fait", pas "quelqu'un y
+    est". Le verrou cross-lane reste ``check_lane_claim.py``, que le
+    tirage interroge desormais par defaut.
     """
     notes: dict[int, str] = {}
     for p in picks:
@@ -1454,7 +1985,7 @@ def recent_delivery(picks: list[dict]) -> dict[int, str]:
             notes[n] = f"(recherche PR indisponible: {type(exc).__name__})"
             continue
         if not prs:
-            # c.1115 voie 1 (Tell c.1060-L1 reformule ai-01) : pas de PR
+            # c.1115 voie 1 : pas de PR
             # couvrante, mais le label `candidate-delivered` peut etre absent
             # alors que le marqueur `[INFO] candidate-delivered` est present
             # en commentaire (sweep 05:37Z retracte sur activite). Cout : 1
@@ -1555,10 +2086,54 @@ RED_HOURS_DEFAULT = 24
 # devraient pas produire de nouveaux grains mais etre en train de les traiter".
 RED_COUNT_DEFAULT = 3
 
+# Q41 (mandat user 2026-09-22) : plafond de work-in-progress par lane. Le
+# garde rouge ne voit que les PRs BLOQUEES -- une PR VERTE en attente de
+# dossier ou de merge ne declenche rien (volontaire, #12108 : ne pas pieger
+# la lane sur l'attente du coordinateur). Mais le temps de passage est
+# WIP / debit (loi de Little) : au-dela d'un certain encours, produire du
+# neuf ALLONGE la file au lieu de la faire avancer, et aucun garde rouge ne
+# le voit. Mesure du 2026-09-22 : 323 PRs ouvertes, dont 91 pour la seule
+# lane myia-po-2026:CoursIA. Au-dela de ce plafond, le picker ne rend pas
+# de grain neuf : il rend la file de la lane (reparation/consolidation),
+# la plus ancienne d'abord. Les BROUILLONS comptent -- convertir en draft
+# ne doit pas echapper au plafond (le garde rouge les ignore a bon droit,
+# un brouillon n'a pas de checks a reparer ; le plafond, lui, mesure
+# l'ENCOURS, et un brouillon est de l'encours). Comptage par TAG de lane
+# (`Grain: ... lane <machine:workspace>`), jamais par auteur (L721 / #9485).
+# 0 desactive le garde (meme convention que --dwell-hours 0).
+WIP_CAP_DEFAULT = 15
+
 # CANCELLED / SKIPPED / NEUTRAL sont volontairement absents : un run annule
 # par `concurrency` n'est pas un echec, et le confondre avec un rouge est le
 # faux positif qui rend un garde de cascade inutilisable.
 CHECK_FAILED = {"FAILURE", "TIMED_OUT", "ACTION_REQUIRED", "STARTUP_FAILURE", "ERROR"}
+
+# #15763 : conclusions d'un constituant COUPE ou jamais demarre. Meme
+# taxonomie que `CONCLUSION_UNCONCLUDED` de scripts/pr_gate.py (#15693),
+# qui separe deja les deux dans SON message : elles ne mesurent RIEN du
+# code -- le check a ete COUPE (`timeout-minutes`, `cancel-in-progress`,
+# famine de runner) ou n'a jamais demarre. C'est la taxonomie de
+# `cut_constituents` : un AGREGATEUR qui les ANDe rend FAILURE, mais rien ne
+# dit que le code est faux -- exposer la liste des coupes est ce qui
+# distingue la reparation reelle de la pedale de frein.
+#
+# Nom distinct de `CHECK_UNCONCLUDED` (#15769) malgre deux membres communs
+# (CANCELLED/STALE) : l'un classe un REQUIS non conclu en cause « non
+# conclue », l'autre classe les CONSTITUANTS d'un agregateur en « coupe » --
+# TIMED_OUT/STARTUP_FAILURE sont des echecs pour l'un (ils sont dans
+# CHECK_FAILED), des coupures pour l'autre.
+#
+# `CANCELLED` n'est deliberement PAS dans CHECK_FAILED -- un run coupe par
+# `concurrency` n'est pas un echec (69 `cancelled` pour 0 echec reel sur un
+# SHA de main le 2026-08-21, cf test_unconcluded_required_is_a_distinct_cause
+# et test_unconcluded_advisory_is_still_silent, qui ne rendent pour lui qu'une
+# cause « non conclue » -- jamais « echec »). Il est ici
+# parce qu'un AGREGATEUR qui le ANDe, lui, rend FAILURE : l'exclusion qui
+# protege le cas simple laisse passer le cas agrege.
+CHECK_CUT = {"CANCELLED", "TIMED_OUT", "STALE", "STARTUP_FAILURE"}
+
+# Les rouges dont une lane peut vraiment faire quelque chose.
+CHECK_REALLY_RED = CHECK_FAILED - CHECK_CUT
 
 # #15769 : conclusions non concluantes d'un check TERMINE. Ni vert (un requis
 # dans cet etat empeche le merge) ni un echec de lane (imputer un CANCELLED a
@@ -1586,6 +2161,14 @@ AGGREGATOR_CHECK_NAMES = {"PR gate"}
 # Banniere finale de l'agregateur always-on-guards.yml : l'organe en echec
 # vit dans l'ANNOTATION du check-run, pas dans son nom.
 _ORGAN_BANNER_RE = re.compile(r"Organes bloquants en echec\s*:\s*([a-z_ ]+?)\s*(?:\(|$)")
+# #15910 : un agregateur rouge **par DWELL** n'a AUCUN organe en echec -- il n'y
+# a rien a reparer, la cause est un minuteur. `pr_gate.py` dit deja le bon
+# verdict et le rend dans l'annotation du check-run ; on lit ce texte pour
+# distinguer « il n'y avait rien a lire » de « je n'ai pas pu lire ». Sans lui,
+# `fetch_check_organs` rend [] dans les deux cas et le rouge retombe sur la lane.
+# La FORME du message n'est pas re-decrite ici : elle appartient a son emetteur
+# (`scripts/ci/merge_dwell.py`), qui en expose l'inverse (cf
+# `_dwell_message_parser`). Une copie locale deriverait en silence.
 
 _PR_STATE_FRAGMENT = """
   p%(n)d: pullRequest(number:%(n)d) {
@@ -1647,14 +2230,80 @@ def _hours_since(iso: str) -> float:
     return (NOW - dt.datetime.fromisoformat(iso.replace("Z", "+00:00"))).total_seconds() / 3600.0
 
 
+# #17474 : le meme raisonnement que POOL_FETCH_LIMIT, applique aux PRs -- et
+# la meme trappe. `gh pr list` rend du plus RECENT au plus ancien (mesure du
+# 2026-09-23 sur ce depot : `first=2026-09-23T13:29:52Z` #17565,
+# `last=2026-09-13T08:33:00Z` #15942), donc un plafond franchi ampute
+# exactement la traine : les PRs bloquees depuis plus de 24 h, que
+# `unattributed_blocked_prs` (file de reparation) et le compte WIP de lane
+# (Q41) existent pour voir. Le plafond est donc HAUT et SURVEILLE -- un
+# plafond atteint se dit au lieu d'inverser l'instrument en silence.
+# Cout : nul sous le plafond. `gh` pagine par 100 et s'arrete a l'epuisement
+# de la population comme au plafond, donc 158 ouvertes = 2 requetes, ici
+# comme avant.
+OPEN_PRS_FETCH_LIMIT = POOL_FETCH_LIMIT
+
+
+def _warn_open_prs_truncated(rendered: int, ceiling: int, remedy: str) -> None:
+    """La troncature se DIT : un plafond atteint ne se devine pas autrement.
+
+    Le listing rend du plus RECENT au plus ancien, et `gh` ne leve rien quand
+    le plafond mord. Sans ce message, la traine -- PRs bloquees de plus de
+    24 h, file de reparation et compte WIP de lane (Q41) -- est absente de la
+    mesure en silence, exactement ce que ces appelants existent pour voir. Le
+    garde reste utilisable (bloquer la lane serait pire) : on dit, on ne
+    bloque pas.
+    """
+    print(
+        f"[PRS TRONQUEES] {rendered} PRs rendues pour un plafond de "
+        f"{ceiling} : l'ouvert est probablement plus grand. "
+        "gh rend les plus RECENTES, donc la traine -- PRs bloquees de "
+        "plus de 24 h, file de reparation et compte WIP de lane -- est "
+        f"absente de cette mesure. {remedy} avant de "
+        "conclure quoi que ce soit de ce resultat.",
+        file=sys.stderr,
+    )
+
+
 def fetch_open_prs() -> list[dict]:
-    """Toutes les PRs ouvertes, avec le corps (pour y lire le tag de lane)."""
-    out = subprocess.run(
-        ["gh", "pr", "list", "--repo", REPO, "--state", "open", "--limit", "300",
-         "--json", "number,title,body,createdAt,isDraft,author,headRefName"],
-        capture_output=True, text=True, encoding="utf-8", check=True, timeout=120,
-    ).stdout
-    return json.loads(out)
+    """Toutes les PRs ouvertes, avec le corps (pour y lire le tag de lane).
+
+    #17038 : meme bascule de transport que `fetch_pool` -- `gh pr list` passe
+    par GraphQL, `gh api repos/.../pulls` par REST. Le garde rouge attrape
+    deja l'echec (`unavailable`, fail-open et DIT) ; ce qui manquait est la
+    seconde voie, pour que l'echec cesse d'etre une fatalite.
+    """
+    try:
+        out = subprocess.run(
+            ["gh", "pr", "list", "--repo", REPO, "--state", "open",
+             "--limit", str(OPEN_PRS_FETCH_LIMIT),
+             "--json", "number,title,body,createdAt,isDraft,author,headRefName"],
+            capture_output=True, text=True, encoding="utf-8", check=True, timeout=120,
+        ).stdout
+        prs = json.loads(out)
+        if len(prs) >= OPEN_PRS_FETCH_LIMIT:
+            _warn_open_prs_truncated(len(prs), OPEN_PRS_FETCH_LIMIT,
+                                     "Relever OPEN_PRS_FETCH_LIMIT")
+        return prs
+    except Exception:  # noqa: BLE001 - on TENTE l'autre transport
+        pass
+    raw_pulls, _hit_cap = _rest_pages(
+        f"repos/{REPO}/pulls?state=open&sort=created&direction=desc",
+        max_pages=POOL_REST_MAX_PAGES)
+    raw = [_pr_rest_to_gh_shape(it) for it in raw_pulls]
+    print(
+        f"[TRANSPORT] `gh pr list` (GraphQL) indisponible -- bascule REST, "
+        f"quota distinct. {len(raw)} PRs lues.",
+        file=sys.stderr,
+    )
+    # Le transport REST porte son PROPRE plafond (pages x page) : un plafond
+    # atteint s'y dit comme sur la voie GraphQL, sinon la bascule de #17038
+    # reintroduit la troncature muette par l'autre porte.
+    rest_ceiling = POOL_REST_PAGE * POOL_REST_MAX_PAGES
+    if len(raw) >= rest_ceiling:
+        _warn_open_prs_truncated(len(raw), rest_ceiling,
+                                 "Relever POOL_REST_MAX_PAGES")
+    return raw
 
 
 def fetch_pr_states(numbers: list[int]) -> dict[int, dict]:
@@ -1682,42 +2331,102 @@ def fetch_pr_states(numbers: list[int]) -> dict[int, dict]:
     return states
 
 
-def _ctx_stamp(ctx: dict) -> str:
-    """Horodatage comparable d'un contexte. Chaine vide si le run n'a rien rendu."""
-    return ctx.get("completedAt") or ctx.get("createdAt") or ctx.get("startedAt") or ""
+_MAIN_HEAD_FRAGMENT = """
+  repository(owner:"jsboige", name:"CoursIA") {
+    defaultBranchRef { target { ... on Commit { oid
+      statusCheckRollup { contexts(first:100) { nodes {
+      ... on CheckRun      { name databaseId conclusion completedAt startedAt }
+      ... on StatusContext { context state       createdAt }
+    } } } } } }
+  }
+"""
+
+
+def fetch_main_head_probe(organ_cache: dict | None = None) -> dict | None:
+    """Etat des checks sur la branche par defaut, par son rollup (#17154).
+
+    Le predicat de #13545 est « ce rouge existe-t-il AUSSI sur la base ? », et
+    il etait teste par la seule corroboration inter-lanes. Celle-ci prouve une
+    cause COMMUNE, pas une cause SUR `main` : une instabilite d'execution (mort
+    de runner, kill `xdist-watchdog`) tombe sur plusieurs lanes sans que `main`
+    la porte. Mesure firsthand du 2026-09-21 (#17154) : `Scripts Tests (CPU)`
+    rouge sur #16612 / #17136 / #17141 / #16971 et **`success` sur `main`**
+    (run 35548767997, `push`, sha `bf212573c0`).
+
+    L'instrument est le rollup de `defaultBranchRef` -- et il faut dire ce
+    qu'il est, mesure a l'appui : ce n'est PAS l'ensemble des check-runs
+    attaches au sha de tete. Meme commit, meme instant : GraphQL rend 11 noms
+    dont `Scripts Tests (CPU)`, l'endpoint REST `commits/<sha>/check-runs` en
+    rend 10 **disjoints**, et `commits/<sha>/status` rend 0. Le rollup est une
+    vue de BRANCHE (dernier etat par nom), ce qui est exactement la question
+    posee -- « le meme check est-il rouge sur la branche par defaut ? » -- et
+    non la vue du commit, qui appartient aux checks de la PR fusionnee. Les
+    deux instruments de branche concordent : rollup vert, run `push` vert.
+
+    Rend ``{"sha": str, "red_keys": set, "names": set}`` ou ``None`` si la
+    mesure n'a PAS pu etre prise (panne reseau, `defaultBranchRef` absent,
+    rollup vide). ``None`` ne veut pas dire « main est vert » : c'est « on n'a
+    pas mesure », et l'appelant retombe alors sur le comportement d'avant
+    #17154 (tout impute a la base), jamais sur la classe « infra » --
+    fail-closed.
+
+    ``names`` porte le troisieme etat, decisif : un check ABSENT du rollup de
+    `main` n'est pas un check vert. Les agregateurs (`PR gate`, `Lane Claim
+    Guard`, `Variation Tag Guard`) ne tournent que sur `pull_request` : les
+    confondre avec des verts classerait en infra d'execution exactement les
+    checks sur lesquels #13545 a construit sa protection. Mesure du
+    2026-09-21 : **10 des 11** cles corrobores de l'ouvert sont dans ce cas.
+    """
+    if organ_cache is None:
+        organ_cache = {}
+    try:
+        raw = subprocess.run(
+            ["gh", "api", "graphql", "-f", "query=query { " + _MAIN_HEAD_FRAGMENT + " }"],
+            capture_output=True, text=True, encoding="utf-8", check=True, timeout=90,
+        ).stdout
+        repo = json.loads(raw)["data"]["repository"]
+    except Exception:  # noqa: BLE001 - une panne de mesure ne decide pas a la place de la mesure
+        return None
+    target = ((repo.get("defaultBranchRef") or {}).get("target") or {})
+    contexts = ((((target.get("statusCheckRollup") or {}).get("contexts") or {})
+                 .get("nodes")) or [])
+    if not contexts:
+        return None
+    state = {"commits": {"nodes": [{"commit": {"statusCheckRollup": {
+        "contexts": {"nodes": contexts}}}}]}}
+    red_keys: set[str] = set()
+    for ctx in _failed_contexts(state):
+        red_keys.update(failed_check_keys(ctx, organ_cache))
+    return {"sha": target.get("oid") or "", "red_keys": red_keys,
+            "names": {(c.get("name") or c.get("context") or "?") for c in contexts}}
 
 
 def drop_superseded(contexts: list[dict]) -> list[dict]:
-    """Retire les echecs PERIMES : un rouge anterieur au dernier vert du meme nom.
+    """Etat COURANT par nom de check : le fold canonique check_run_state.fold_latest.
 
-    Le discriminant est TEMPOREL, jamais nominal, et les deux erreurs symetriques
-    sont documentees : dedupliquer par nom seul masque un rouge vivant emis par un
-    workflow jumeau (#11894), ne pas dedupliquer du tout en fabrique de faux
-    (#12054, 9 rouges pour 0 reel). La regle qui tranche les deux : un echec
-    ANTERIEUR au dernier non-echec du meme nom est de l'histoire ; un echec
-    CONTEMPORAIN ou posterieur est un jumeau vivant, on le garde.
+    Une seule jambe par nom -- la plus recente (cle started_at puis id,
+    #11416 : un rerun cree une entree fraiche). Le discriminant reste
+    TEMPOREL, jamais nominal seul, et les deux erreurs symetriques
+    historiques tombent du meme coup : dedupliquer par nom seul masquait un
+    rouge vivant (#11894), ne pas dedupliquer fabriquait de faux rouges
+    (#12054, 9 rouges pour 0 reel) ; la cle temporelle tranche.
 
-    Mesure du 2026-08-22 sur #11916 : `Require genre diversity vs prev:` porte un
-    FAILURE du 20/08 et un SUCCESS du 22/08 sur le meme head. Sans ce filtre le
-    garde renvoyait la lane reparer un check deja vert.
+    Les deux sens de #16765/#16889 sont couverts :
+    - un rouge ANTERIEUR au vert recent du meme nom disparait : la lane n'est
+      pas renvoyee reparer un check deja vert (mesure 2026-08-22 sur #11916 :
+      `Require genre diversity vs prev:` FAILURE du 20/08 + SUCCESS du 22/08
+      sur le meme head) ;
+    - un vert ou PENDING ANTERIEUR a un rouge recent du meme nom disparait
+      aussi : l'etat courant est le seul lu -- plus de PENDING perime lu
+      comme check en vol (fausse file-saturation) ni de vert perime comptant
+      pour la maturite.
+
+    Les jambes rendues portent les champs bruts (isRequired, databaseId,
+    startedAt) enrichis des champs canoniques minuscules par fold_latest.
+    Les consommateurs relisent conclusion/state via .upper() : insensible a
+    la casse normalisee.
     """
-    newest_ok: dict[str, str] = {}
-    for ctx in contexts:
-        verdict = (ctx.get("conclusion") or ctx.get("state") or "").upper()
-        if verdict in CHECK_FAILED:
-            continue
-        name = ctx.get("name") or ctx.get("context") or "?"
-        stamp = _ctx_stamp(ctx)
-        if stamp > newest_ok.get(name, ""):
-            newest_ok[name] = stamp
-    kept = []
-    for ctx in contexts:
-        verdict = (ctx.get("conclusion") or ctx.get("state") or "").upper()
-        name = ctx.get("name") or ctx.get("context") or "?"
-        if verdict in CHECK_FAILED and _ctx_stamp(ctx) < newest_ok.get(name, ""):
-            continue  # rouge anterieur au dernier vert du meme nom : perime
-        kept.append(ctx)
-    return kept
+    return list(fold_latest(contexts).values())
 
 
 def is_aggregator_check(name: str) -> bool:
@@ -1752,6 +2461,139 @@ def fetch_check_organs(check_run_id: int) -> list[str]:
             if organ not in organs:
                 organs.append(organ)
     return organs
+
+
+# #15764 : clauses du message FAIL du gate agregateur (scripts/pr_gate.py
+# `verdict`, #15693/#15905). "failing checks:" porte les VRAIS rouges ; les
+# deux clauses "checks that hit their declared timeout-minutes" / "checks
+# that never concluded" portent les constituants COUPES, chaque entree
+# pouvant trainer son annotation "name (conclusion, duree)". C'est la seule
+# preuve causale BORNEE : ce message NOMME, pour CET agregateur, les
+# constituants qui l'ont fait echouer -- la coexistence d'un CANCELLED
+# quelconque dans le rollup ne prouve rien (review #15764).
+_GATE_FAILED_CLAUSE_RE = re.compile(r"failing checks:\s*(?P<names>[^;]+)")
+_GATE_CUT_CLAUSE_RE = re.compile(
+    r"(?:checks that hit their declared timeout-minutes"
+    r"|checks that never concluded)[^:]*:\s*(?P<names>[^;]+)")
+
+
+def _split_gate_entries(chunk: str) -> list[str]:
+    """Noms nus d'une liste d'entrees du message FAIL.
+
+    Separe sur les virgules HORS parentheses (une entree coupee porte son
+    annotation "name (cancelled, 29m13s)", qui contient une virgule), puis
+    retire l'annotation finale pour ne garder que le nom.
+    """
+    names: list[str] = []
+    for entry in re.split(r",\s*(?![^()]*\))", chunk.strip()):
+        name = re.sub(r"\s*\([^()]*\)\s*$", "", entry).strip()
+        if name:
+            names.append(name)
+    return names
+
+
+def parse_gate_failure(message: str) -> tuple[list[str], list[str]]:
+    """(vrais_rouges_nommes, coupes_nommes) depuis un message FAIL du gate.
+
+    Rend ([], []) quand le message n'est pas un FAIL (DWELL, STARVED,
+    annotation illisible) : l'absence de preuve est tranchee FAIL-CLOSED par
+    l'appelant -- jamais en exemption.
+    """
+    if not isinstance(message, str) or "FAIL -- " not in message:
+        return [], []
+    failed: list[str] = []
+    cut: list[str] = []
+    m = _GATE_FAILED_CLAUSE_RE.search(message)
+    if m:
+        failed = _split_gate_entries(m.group("names"))
+    for m in _GATE_CUT_CLAUSE_RE.finditer(message):
+        chunk = m.group("names")
+        # La clause timeout embarque sa guidance apres " -- " : les noms
+        # s'arretent au premier separateur, sinon la guidance serait prise
+        # pour un constituant.
+        dash = chunk.find(" -- ")
+        if dash != -1:
+            chunk = chunk[:dash]
+        cut.extend(_split_gate_entries(chunk))
+    return failed, [n for n in cut if n]
+
+
+def fetch_gate_cut_evidence(check_run_id: int) -> tuple[list[str], list[str]]:
+    """(vrais rouges, coupes) NOMMES par le message FAIL du gate lui-meme.
+
+    L'annotation ``::error::[pr-gate] FAIL -- ...`` du check-run porte le
+    verdict du gate -- la seule surface qui nomme, pour CET agregateur, les
+    constituants qui l'ont fait echouer, clause par clause. Best-effort et
+    fail-closed comme ``fetch_check_organs`` : annotations illisibles ou
+    verdict non-FAIL rendent ([], []), et SANS preuve la lane repare.
+    """
+    try:
+        raw = subprocess.run(
+            ["gh", "api", f"repos/{REPO}/check-runs/{check_run_id}/annotations"],
+            capture_output=True, text=True, encoding="utf-8", check=True, timeout=60,
+        ).stdout
+        annotations = json.loads(raw)
+    except Exception:  # noqa: BLE001 - reseau/parse : fail-closed, jamais un crash de picker
+        return [], []
+    failed: list[str] = []
+    cut: list[str] = []
+    for ann in annotations or []:
+        ann_failed, ann_cut = parse_gate_failure(ann.get("message") or "")
+        failed.extend(ann_failed)
+        cut.extend(ann_cut)
+    return failed, cut
+
+
+def fetch_check_dwell(check_run_id: int) -> dict | None:
+    """Echeance d'un plancher de DWELL, ou None si l'annotation n'en porte pas.
+
+    #15910 : un agregateur rouge par DWELL n'a **aucun organe** tombe -- le
+    plancher vaut 120 min et seul l'ecoulement du temps le leve. Sans cette
+    lecture, ``fetch_check_organs`` rend ``[]`` et l'appelant confond « rien a
+    lire » (le DWELL est la cause) avec « pas pu lire » (fail-closed, rouge
+    rendu a la lane) : la lane brulait son cycle a chercher dans son diff une
+    cause inexistante, et trois PRs poussees dans la meme fenetre suffisaient a
+    declencher P0 par le seul minuteur.
+
+    Le FORMAT du message n'est pas re-decrit ici : il appartient a
+    `scripts/ci/merge_dwell.py`, qui l'emet (`evaluate`) et qui en expose
+    l'inverse (`parse_pending_message`). Une copie locale deriverait en silence.
+
+    Best-effort comme son voisin : annotation illisible -> ``None``, et
+    l'appelant retombe sur le fail-closed (le rouge reste a la lane).
+    """
+    parser = _dwell_message_parser()
+    if parser is None:
+        return None
+    try:
+        raw = subprocess.run(
+            ["gh", "api", f"repos/{REPO}/check-runs/{check_run_id}/annotations"],
+            capture_output=True, text=True, encoding="utf-8", check=True, timeout=60,
+        ).stdout
+        annotations = json.loads(raw)
+    except Exception:  # noqa: BLE001 - reseau/parse : jamais un crash de picker
+        return None
+    for ann in annotations or []:
+        parsed = parser(ann.get("message") or "")
+        if parsed:
+            return parsed
+    return None
+
+
+def _dwell_message_parser():
+    """`merge_dwell.parse_pending_message`, ou None si l'import est impossible.
+
+    Import tardif et defensif, comme `_is_adjacency_red` : l'organe est
+    optionnel, une `ImportError` ici ne doit pas casser le tirage -- elle doit
+    seulement rendre le DWELL illisible, c'est-a-dire retomber sur le
+    fail-closed d'avant #15910 (le rouge reste a la lane).
+    """
+    try:
+        sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent / "ci"))
+        from merge_dwell import parse_pending_message  # noqa: PLC0415 - import tardif
+        return parse_pending_message
+    except Exception:  # noqa: BLE001 - organe optionnel, picker robuste
+        return None
 
 
 def failed_check_keys(ctx: dict, organ_cache: dict) -> list[str]:
@@ -1790,6 +2632,7 @@ def impute_base_reds(states_by_number: dict[int, dict],
                      lane_by_number: dict[int, str | None],
                      organ_cache: dict | None = None,
                      unresolved_out: list[tuple[str, int]] | None = None,
+                     names_out: dict[str, set[str]] | None = None,
                      ) -> dict[str, list[int]]:
     """Checks rouges de meme CAUSE chez >=2 LANES distinctes : imputes a la base (#13545, #14537).
 
@@ -1815,6 +2658,9 @@ def impute_base_reds(states_by_number: dict[int, dict],
     seul cote qui peut le reparer (#14567).
 
     Renvoie {cle de cause: [numeros de PRs corroborantes]} (numerotes uniques).
+    ``names_out`` recoit {cle de cause: noms de check} -- necessaire depuis
+    #17154 pour interroger la PRESENCE de chaque check sur `main`, une cle de
+    cause d'agregateur etant « nom :: organe » et non un nom.
     """
     if organ_cache is None:
         organ_cache = {}
@@ -1830,11 +2676,76 @@ def impute_base_reds(states_by_number: dict[int, dict],
                     unresolved_out.append(
                         (ctx.get("name") or ctx.get("context") or "?", number))
                 continue
+            ctx_name = ctx.get("name") or ctx.get("context") or "?"
             for key in keys:
                 failures.setdefault(key, {}).setdefault(lane, []).append(number)
+                if names_out is not None:
+                    names_out.setdefault(key, set()).add(ctx_name)
     return {key: sorted({n for nums in lanes.values() for n in nums})
             for key, lanes in failures.items()
             if len(lanes) >= 2}
+
+
+def split_base_corroboration(corroborated: dict[str, list[int]],
+                             names_by_key: dict[str, set[str]],
+                             probe: dict | None,
+                             ) -> tuple[dict[str, list[int]], dict[str, list[int]],
+                                        dict[str, list[int]]]:
+    """Trie la corroboration inter-lanes selon l'etat du MEME check sur `main` (#17154).
+
+    Trois sorties, parce qu'il y a trois etats mesures -- pas deux :
+
+    - ``base`` : le check est ROUGE sur la tete de `main` -> cause de base,
+      comportement d'avant #17154, inchange (regle #13545/#14537 intacte) ;
+    - ``infra`` : le check est PRESENT sur `main` et VERT -> la corroboration
+      porte sur une instabilite d'execution, pas sur la base ; le geste est le
+      rejeu (`infra_rerun_cause`), pas une reparation ni un routage coordinateur ;
+    - ``undecided`` : le check est ABSENT du rollup de `main` -- un agregateur
+      qui ne tourne que sur `pull_request` n'y figure jamais, et « absent »
+      n'est pas « vert ». On ne tranche pas, et on retombe sur le comportement
+      d'avant #17154 (impute a la base), en le DISANT : c'est la philosophie
+      de #14567, ou l'echec de mesure ne doit jamais passer pour un acquittement.
+      Les cles ``undecided`` sont donc AUSSI dans ``base``.
+
+    ``probe`` a ``None`` (mesure non prise) vaut pour la totalite du tri :
+    tout part en ``base``. Une sonde indisponible ne doit jamais elargir la
+    nouvelle classe -- c'est le sens fail-closed du defaut.
+    """
+    if not corroborated or probe is None:
+        return dict(corroborated), {}, {}
+    base: dict[str, list[int]] = {}
+    infra: dict[str, list[int]] = {}
+    undecided: dict[str, list[int]] = {}
+    for key, nums in corroborated.items():
+        names = names_by_key.get(key) or set()
+        if key in probe["red_keys"]:
+            base[key] = nums
+        elif names and names <= probe["names"]:
+            infra[key] = nums
+        else:
+            undecided[key] = nums
+            base[key] = nums  # fail-closed : jamais un acquittement par defaut
+    return base, infra, undecided
+
+
+def infra_rerun_cause(name: str) -> str:
+    """Geste pour un rouge vert sur `main` : le REJEU, pas une reparation (#17154).
+
+    L'issue fondatrice : `base_inherited` disait a la lane « pas le votre, pas
+    reparable par la lane -- tache COORDINATEUR », donc **aucune action** --
+    alors qu'un rejeu a tete constante leve le rouge (verifie le 2026-09-21 sur
+    #17144 : apres rejeu, `PR gate` rend `settled: 81 check(s) green`). La lane
+    etait dissuadee du SEUL geste qui repare ; le rouge s'installait, la PR
+    restait bloquee, et le cycle suivant repartait sur un grain de reparation
+    inexistant.
+
+    Le geste est donne SANS id : le picker ne connait pas l'id du *workflow
+    run*, et l'id du check-run n'en est pas un -- l'y confondre produirait une
+    commande fausse. La lane le resout par `gh run list --branch <branche>`.
+    """
+    return (f"infra d'execution (vert sur main) : {name} -- rejeu de la jambe a "
+            f"tete constante (`gh run list --branch <branche>` puis "
+            f"`gh run rerun <run_id> --failed`), sans re-armer DWELL")
 
 
 def _has_failed_check(state: dict | None) -> bool:
@@ -1847,10 +2758,78 @@ def _has_failed_check(state: dict | None) -> bool:
                for c in contexts)
 
 
+def cut_constituents(contexts: list[dict]) -> tuple[list[str], bool]:
+    """Constituants COUPES, et « un vrai rouge existe-t-il ailleurs ? ».
+
+    Rend `(noms_coupes, un_vrai_rouge_existe)` en ne regardant QUE les checks
+    non-agregateurs : un agregateur rouge ne peut pas etre sa propre preuve.
+
+    C'est le discriminant de #15763. Mesure du 2026-09-12 sur #15657 et #15660,
+    lues sur le head exact :
+
+        PR gate             | conclusion=FAILURE   | isRequired=true
+        ICT tests/ (55)     | conclusion=CANCELLED | isRequired=false
+        Scripts Tests (CPU) | conclusion=CANCELLED | isRequired=false
+
+    `CANCELLED` etant hors de CHECK_FAILED, ces deux constituants ne tombaient
+    NI dans `causes` NI dans `advisory` : le picker ne les mis-attribuait meme
+    pas, il les rendait INVISIBLES, et la lane recevait `check requis en echec :
+    PR gate` tout court -- un agregateur a reparer, sans rien qui dise quoi.
+    """
+    cut: list[str] = []
+    real_red = False
+    for ctx in contexts:
+        name = ctx.get("name") or ctx.get("context") or "?"
+        if is_aggregator_check(name):
+            continue
+        verdict = (ctx.get("conclusion") or ctx.get("state") or "").upper()
+        if verdict in CHECK_REALLY_RED:
+            real_red = True
+        elif verdict in CHECK_CUT and name not in cut:
+            cut.append(name)
+    return cut, real_red
+
+
+def gate_evidence_for(state: dict, cache: dict[int, tuple[list[str], list[str]]],
+                      ) -> dict[str, tuple[list[str], list[str]]] | None:
+    """Preuve causale bornee pour les agregateurs candidats a l'exemption.
+
+    Ne paie l'appel d'annotations QUE si le rollup presente deja la
+    configuration candidate (un constituant coupe, aucun vrai rouge, un
+    agregateur requis en FAILURE) -- sinon rend None et ``blocking_causes``
+    reste fail-closed. Un agregateur sans ``databaseId`` n'est pas sonde :
+    pas de preuve possible, pas d'exemption (#15764).
+    """
+    commits = state.get("commits", {}).get("nodes") or []
+    rollup = (commits[0]["commit"].get("statusCheckRollup") if commits else None) or {}
+    contexts = drop_superseded((rollup.get("contexts", {}) or {}).get("nodes") or [])
+    cut, real_red = cut_constituents(contexts)
+    if not cut or real_red:
+        return None
+    evidence: dict[str, tuple[list[str], list[str]]] = {}
+    for ctx in contexts:
+        name = ctx.get("name") or ctx.get("context") or "?"
+        if not is_aggregator_check(name):
+            continue
+        verdict = (ctx.get("conclusion") or ctx.get("state") or "").upper()
+        if verdict != "FAILURE" or not ctx.get("isRequired"):
+            continue
+        run_id = ctx.get("databaseId")
+        if run_id is None:
+            continue
+        if run_id not in cache:
+            cache[run_id] = fetch_gate_cut_evidence(run_id)
+        evidence[name] = cache[run_id]
+    return evidence or None
+
+
 def blocking_causes(state: dict, *, age_hours: float | None = None,
                     saturation_hours: float | None = None,
                     inherited: set[str] | None = None,
-                    resolved_keys_by_name: dict[str, set[str]] | None = None
+                    infra_rerun: set[str] | None = None,
+                    resolved_keys_by_name: dict[str, set[str]] | None = None,
+                    dwell_by_name: dict[str, dict] | None = None,
+                    gate_evidence: dict[str, tuple[list[str], list[str]]] | None = None,
                     ) -> list[str]:
     """Causes qui empechent VRAIMENT le merge, formulees en geste de reparation.
 
@@ -1881,6 +2860,7 @@ def blocking_causes(state: dict, *, age_hours: float | None = None,
     commits = state.get("commits", {}).get("nodes") or []
     rollup = (commits[0]["commit"].get("statusCheckRollup") if commits else None) or {}
     contexts = drop_superseded((rollup.get("contexts", {}) or {}).get("nodes") or [])
+    cut, real_red = cut_constituents(contexts)
     for ctx in contexts:
         name = ctx.get("name") or ctx.get("context") or "?"
         verdict = (ctx.get("conclusion") or ctx.get("state") or "").upper()
@@ -1897,6 +2877,28 @@ def blocking_causes(state: dict, *, age_hours: float | None = None,
                 if cause not in causes:
                     causes.append(cause)
             continue
+        if dwell_by_name and name in dwell_by_name:
+            # #15910 : ce rouge est un MINUTEUR, pas un defaut. Le gate le dit
+            # dans son texte (plancher de 120 min) ; le compter comme « check
+            # requis en echec » envoyait la lane chercher dans son diff une
+            # cause qui n'existe pas. Le seul geste correct est l'attente -- on
+            # ne fabrique donc aucune cause, et le declencheur `count` ne peut
+            # plus basculer tout le cycle sur une reparation inexistante.
+            continue
+        if infra_rerun:
+            # #17154 : rouge corrobore par >=2 lanes mais VERT sur la tete de
+            # `main` -- une instabilite d'execution, pas une cause de base. La
+            # cause est rendue, avec le geste qui la leve, parce que la lane
+            # PEUT la lever : c'est l'inverse exact de `inherited` ci-dessous,
+            # qui retire la cause faute de geste possible. Position : APRES le
+            # filtre DWELL -- un minuteur reste un minuteur, et un rejeu ne
+            # l'avance pas (rejouer le remet a zero).
+            keys = (resolved_keys_by_name or {}).get(name) or {name}
+            if keys <= infra_rerun:
+                cause = infra_rerun_cause(name)
+                if cause not in causes:
+                    causes.append(cause)
+                continue
         if inherited:
             # #13545/#14537 : rouge impute a la base (cause commune corroboree
             # chez >=2 lanes distinctes) -- pas reparable par cette lane. Pour
@@ -1908,7 +2910,52 @@ def blocking_causes(state: dict, *, age_hours: float | None = None,
             if keys <= inherited:
                 continue
         if ctx.get("isRequired"):
-            cause = f"check requis en echec : {name}"
+            # #15763 : un AGREGATEUR requis rouge dont aucun constituant n'est
+            # un vrai rouge, mais dont au moins un a ete COUPE, n'est pas
+            # reparable par cette lane. Le dire, avec le geste qui le leve --
+            # meme forme que `file_saturation` ci-dessous, qui traite deja un
+            # faux-rouge non-reparable sans pour autant dispenser la lane de
+            # la justification ecrite qu'exige `--ignore-red`.
+            #
+            # Fail-CLOSED dans le bon sens : des qu'UN constituant porte un
+            # vrai rouge (FAILURE / ACTION_REQUIRED / ERROR), la cause reste
+            # « check requis en echec » et la lane repare. On ne dispense
+            # jamais d'une reparation reelle ; on cesse seulement d'en
+            # prescrire une qui n'existe pas.
+            #
+            # #15764 (review bloquante) : la coexistence d'un constituant
+            # COUPE dans le rollup n'etablit PAS la causalite -- un gate
+            # echoue aussi sur DWELL, une regle interne ou un constituant
+            # reel que la dedup temporelle a masque, pendant qu'un advisory
+            # independant est coupe par `concurrency`. La preuve causale
+            # bornee est le message FAIL du gate LUI-MEME (annotations du
+            # check-run, `fetch_gate_cut_evidence`) : il NOMME les
+            # constituants qui l'ont fait echouer, clause par clause. Sans
+            # preuve -- pas de `gate_evidence`, ou un vrai rouge nomme, ou
+            # des coupes nommes qui ne sont pas dans CE rollup -- on reste
+            # sur « check requis en echec » : fail-closed, la lane repare.
+            if is_aggregator_check(name) and cut and not real_red:
+                evidence = (gate_evidence or {}).get(name)
+                named_failed = list(evidence[0]) if evidence else []
+                named_cut = list(evidence[1]) if evidence else []
+                corroborated = [n for n in named_cut if n in cut]
+                if evidence is not None and not named_failed and corroborated:
+                    cause = (
+                        f"{name} rouge par constituant(s) COUPE(S), nommes par son "
+                        f"propre message FAIL -- pas par un defaut de code : "
+                        f"{', '.join(corroborated[:3])} -- NON REPARABLE "
+                        f"par la lane (un kill `timeout-minutes` ou un "
+                        f"`cancel-in-progress` rend `cancelled`, jamais `failure` : "
+                        f"la couleur ne distingue pas « le code est faux » de « la "
+                        f"machine a ete coupee »). Geste : rejouer la jambe "
+                        f"(`gh run rerun <run_id> --job <job_id>`), ou commenter la "
+                        f"PR pour imputer le rouge a la base puis `--ignore-red`. "
+                        f"Ne PAS chercher quoi corriger dans le diff."
+                    )
+                else:
+                    cause = f"check requis en echec : {name}"
+            else:
+                cause = f"check requis en echec : {name}"
             if cause not in causes:
                 causes.append(cause)
         elif name not in advisory:
@@ -2162,6 +3209,22 @@ def is_automation_vehicle(pr: dict) -> bool:
     return author in AUTOMATION_AUTHORS and bool(AUTOMATION_BRANCH_RE.match(branch))
 
 
+# #17713 — PRs HORS FLOTTE exclues de la file d'orphelines. Une PR pilotee
+# depuis l'exterieur du cluster (tete `claude/*`) porte la mention
+# « Hors flotte » dans son body des lors qu'elle ne suit pas le protocole de
+# flotte : c'est la MEME exemption que le gate `tag_required` (#17715,
+# `variation_tag_required.py`), appliquee ici a l'entree du routage -- sans
+# elle le sweep quotidien renverrait une lane sur une PR qui n'appartient a
+# aucune. Predicat ETROIT : les DEUX conditions (tete `claude/*` ET marqueur
+# present) ; une PR de flotte, ou une `claude/*` sans marqueur, restent
+# visibles (controles negatifs). Les deux sites doivent rester alignes : le
+# jour ou l'exemption bouge, elle bouge aux deux entrances.
+def is_out_of_fleet_pr(pr: dict) -> bool:
+    """Vrai si la PR est hors flotte (tete `claude/*` ET marqueur « Hors flotte »)."""
+    head_ref = pr.get("headRefName") or ""
+    return head_ref.startswith("claude/") and "Hors flotte" in (pr.get("body") or "")
+
+
 def unattributed_blocked_prs(prs: list[dict] | None = None) -> list[dict]:
     """PRs ouvertes bloquees sans tag `Grain:` lisible, AVEC leur route.
 
@@ -2181,13 +3244,20 @@ def unattributed_blocked_prs(prs: list[dict] | None = None) -> list[dict]:
     disposition ne leur est valide. Le predicat est PARTAGE avec `red_backlog`
     (un `unattributed_blocked_prs` → le garde « reparer son rouge ») — ce qui est
     ici souhaite, aucune lane ne devant etre renvoyee sur le vehicule du bot.
+
+    Les PRs HORS FLOTTE (tete `claude/*` ET marqueur « Hors flotte », #17713)
+    sont exclues de meme : aucune lane n'est destinataire d'une PR pilotee
+    depuis l'exterieur du cluster, et le gate `tag_required` les exempte deja
+    (#17715) — router l'une d'elles rejouerait la contradiction que #17713
+    ferme.
     """
     if prs is None:
         prs = fetch_open_prs()
     untagged = [pr for pr in prs
                 if not pr.get("isDraft")
                 and parse_grain_tag(pr.get("body") or "") is None
-                and not is_automation_vehicle(pr)]
+                and not is_automation_vehicle(pr)
+                and not is_out_of_fleet_pr(pr)]
     untagged_states = fetch_pr_states([pr["number"] for pr in untagged]) if untagged else {}
     out = []
     for pr in untagged:
@@ -2202,9 +3272,41 @@ def unattributed_blocked_prs(prs: list[dict] | None = None) -> list[dict]:
     return out
 
 
+def lane_open_prs(lane: str, prs: list[dict]) -> list[dict]:
+    """PRs ouvertes attribuees a la lane par SON tag, brouillons compris (Q41).
+
+    L'unite d'attribution est le TAG `Grain: ... lane <machine:workspace>`
+    (jamais `--author`, cf L721 / #9485) : meme predicat que le partage
+    mine/others de `red_backlog` -- les deux gardes ne doivent jamais
+    diverger sur ce qui appartient a une lane.
+
+    Les BROUILLONS comptent, contrairement au garde rouge : un brouillon
+    n'a pas de checks a reparer (le rouge l'ignore a bon droit), mais le
+    plafond de WIP mesure l'ENCOURS, et convertir en draft ne doit pas
+    echapper au plafond. Les PRs sans tag lisible, ou taguees sur une autre
+    lane, ne comptent pas.
+
+    Rend oldest first (age decroissant) : c'est la file a drainer, la plus
+    ancienne d'abord. Les causes bloquantes ne sont PAS calculees ici --
+    `red_backlog` les reporte depuis son analyse `red` quand elles existent,
+    sans payer un second etat GraphQL par PR.
+    """
+    out = []
+    for pr in prs:
+        tag = parse_grain_tag(pr.get("body") or "")
+        if (tag or {}).get("lane") != lane:
+            continue
+        out.append({"number": pr["number"], "title": pr["title"],
+                    "age_hours": round(_hours_since(pr["createdAt"])),
+                    "is_draft": bool(pr.get("isDraft"))})
+    out.sort(key=lambda r: -r["age_hours"])
+    return out
+
+
 def red_backlog(lane: str, threshold_hours: float,
                 count_threshold: int = RED_COUNT_DEFAULT,
-                saturation_hours: float | None = None) -> dict:
+                saturation_hours: float | None = None,
+                wip_cap: int = WIP_CAP_DEFAULT) -> dict:
     """PRs de la lane reellement bloquees, avec QUATRE declencheurs de refus.
 
     `aged` : au moins une rouge ouverte depuis plus de `threshold_hours` --
@@ -2243,6 +3345,13 @@ def red_backlog(lane: str, threshold_hours: float,
     arithmetique (deviner une lane serait pire) -- mais les taire donnerait a
     croire que le garde couvre tout l'ouvert. Il ne le couvre pas : leur tag
     manquant est lui-meme le defaut a corriger.
+
+    Rend enfin le volet WIP (Q41) : `wip_prs` (TOUTES les PRs ouvertes de la
+    lane par tag, brouillons compris, oldest first, causes du garde rouge
+    reportees quand elles existent), `wip_count`, `wip_cap` et
+    `wip_triggered` (compte >= plafond ; plafond 0 = desactive). Le compte
+    reutilise le MEME payload `fetch_open_prs` que le garde rouge -- pas de
+    seconde requete, pas de second avis sur ce qu'est une PR de la lane.
     """
     try:
         prs = fetch_open_prs()
@@ -2251,8 +3360,14 @@ def red_backlog(lane: str, threshold_hours: float,
         return {"unavailable": f"{type(exc).__name__}", "red": [],
                 "triggers": [], "unattributed_blocked": [],
                 "nits_unavailable": None, "base_inherited": [],
-                "base_unresolved": [],
-                "saturation_hours": sat_threshold}
+                "infra_rerun": [], "base_undecided": [],
+                "base_unresolved": [], "dwell_waiting": [],
+                "saturation_hours": sat_threshold,
+                # Q41 : le volet WIP partage la panne du garde rouge -- un
+                # garde qui ne peut pas mesurer ne bloque pas (meme principe
+                # que le rouge ci-dessus), mais le compte rendu le DIT.
+                "wip_prs": [], "wip_count": None, "wip_cap": wip_cap,
+                "wip_triggered": False}
 
     mine, others = [], []
     sat_threshold = saturation_hours if saturation_hours is not None else threshold_hours
@@ -2284,16 +3399,30 @@ def red_backlog(lane: str, threshold_hours: float,
     for pr in mine + others:
         lane_by[pr["number"]] = (parse_grain_tag(pr.get("body") or "") or {}).get("lane")
     organ_cache: dict[int, list[str]] = {}
+    dwell_cache: dict[int, dict] = {}
+    # #15764 : cache des verdicts FAIL parsés par check-run -- partage entre
+    # PRs de la lane dans ce passage, comme organ_cache.
+    gate_cache: dict[int, tuple[list[str], list[str]]] = {}
     unresolved_aggregates: list[tuple[str, int]] = []
     inherited: dict[str, list[int]] = {}
+    # #17154 : la corroboration inter-lanes est mesuree CONTRE l'etat du meme
+    # check sur la tete de `main`. Sonde unique par passage (une requete), et
+    # son echec vaut « non mesure », jamais « main est vert ».
+    infra_rerun: dict[str, list[int]] = {}
+    base_undecided: dict[str, list[int]] = {}
     if any(_has_failed_check(states.get(pr["number"])) for pr in mine):
         sample = sorted(others, key=lambda p: p.get("createdAt") or "",
                         reverse=True)[:16]
         foreign_states = fetch_pr_states([p["number"] for p in sample])
-        inherited = impute_base_reds({**states, **foreign_states}, lane_by,
-                                     organ_cache=organ_cache,
-                                     unresolved_out=unresolved_aggregates)
+        names_by_key: dict[str, set[str]] = {}
+        corroborated = impute_base_reds({**states, **foreign_states}, lane_by,
+                                        organ_cache=organ_cache,
+                                        unresolved_out=unresolved_aggregates,
+                                        names_out=names_by_key)
+        inherited, infra_rerun, base_undecided = split_base_corroboration(
+            corroborated, names_by_key, fetch_main_head_probe(organ_cache))
     red = []
+    dwell_waiting: list[dict] = []
     for pr in mine:
         state = states.get(pr["number"])
         if state is None:
@@ -2307,15 +3436,41 @@ def red_backlog(lane: str, threshold_hours: float,
         # si quelque chose est herite : sans heritage l'appartenance n'est
         # jamais testee, et on ne paie aucune resolution d'annotation.
         keys_by_name: dict[str, set[str]] | None = None
-        if inherited:
+        if inherited or infra_rerun:
             keys_by_name = {}
             for ctx in _failed_contexts(state):
                 ctx_name = ctx.get("name") or ctx.get("context") or "?"
                 keys_by_name.setdefault(ctx_name, set()).update(
                     failed_check_keys(ctx, organ_cache))
+        # #15910 : un agregateur rouge par DWELL n'a pas d'organe a lire. On ne
+        # paie la lecture d'annotation que pour les agregateurs dont AUCUN
+        # organe n'a pu etre resolu -- exactement le cas ambigu, jamais le cas
+        # nominal (un organe nomme tranche deja la question).
+        dwell_by_name: dict[str, dict] = {}
+        for ctx in _failed_contexts(state):
+            ctx_name = ctx.get("name") or ctx.get("context") or "?"
+            if not is_aggregator_check(ctx_name):
+                continue
+            if keys_by_name and keys_by_name.get(ctx_name):
+                continue
+            ctx_run_id = ctx.get("databaseId")
+            if ctx_run_id is None:
+                continue
+            if ctx_run_id not in dwell_cache:
+                dwell_cache[ctx_run_id] = fetch_check_dwell(ctx_run_id) or {}
+            dwell = dwell_cache[ctx_run_id]
+            if dwell:
+                dwell_by_name[ctx_name] = dwell
+        for ctx_name, info in sorted(dwell_by_name.items()):
+            dwell_waiting.append({"number": pr["number"], "check": ctx_name,
+                                  "lift_at": info.get("lift_at"),
+                                  "remaining_min": info.get("remaining_min")})
         causes = blocking_causes(state, age_hours=age, saturation_hours=threshold_hours,
                                  inherited=set(inherited),
-                                 resolved_keys_by_name=keys_by_name)
+                                 infra_rerun=set(infra_rerun),
+                                 resolved_keys_by_name=keys_by_name,
+                                 dwell_by_name=dwell_by_name,
+                                 gate_evidence=gate_evidence_for(state, gate_cache))
         n_nits = nits_by_pr.get(pr["number"], 0)
         if n_nits:
             # Un point de review non leve est une cause A PART ENTIERE : la PR
@@ -2352,6 +3507,19 @@ def red_backlog(lane: str, threshold_hours: float,
                         "is_adjacency": is_adj})
     red.sort(key=lambda r: -r["age_hours"])
 
+    # #15910 : un agregateur tranche par DWELL n'est PAS « non resolu ». Sans ce
+    # retrait, `impute_base_reds` (qui a lu l'annotation AVANT la boucle) le
+    # classe dans `base_unresolved` et la sortie annonce « organe non lisible --
+    # pas pu trancher » sur le rouge dont on vient d'etablir qu'il n'y a rien a
+    # reparer : deux lignes qui se contredisent, et la lane repart chercher.
+    # Portee volontairement limitee aux PRs de la lane : lire le DWELL d'une PR
+    # etrangere couterait jusqu'a 16 lectures d'annotation sur l'echantillon de
+    # corroboration, pour une surface qui ne decide rien pour cette lane.
+    resolved_dwell = {(item["check"], item["number"]) for item in dwell_waiting}
+    if resolved_dwell:
+        unresolved_aggregates[:] = [pair for pair in unresolved_aggregates
+                                    if pair not in resolved_dwell]
+
     triggers = []
     if any(nits_by_pr.get(r["number"]) for r in red):
         # D'abord dans la liste : c'est l'ordre dans lequel le mandat du
@@ -2385,17 +3553,47 @@ def red_backlog(lane: str, threshold_hours: float,
     unresolved_by_name: dict[str, set[int]] = {}
     for name, number in unresolved_aggregates:
         unresolved_by_name.setdefault(name, set()).add(number)
+    # Q41 : volet WIP -- meme payload que le garde rouge (pas de seconde
+    # requete), brouillons compris, oldest first. Les causes bloquantes deja
+    # calculees par le garde rouge sont reportees sur les entrees concernees :
+    # la file WIP dit POURQUOI chaque PR attend quand la cause est connue,
+    # sans payer un etat GraphQL supplementaire pour les PRs vertes.
+    wip_prs = lane_open_prs(lane, prs)
+    causes_by_number = {r["number"]: r["causes"] for r in red}
+    for entry in wip_prs:
+        entry["causes"] = causes_by_number.get(entry["number"], [])
     return {"red": red, "aged": aged, "triggers": triggers,
             "red_hours": threshold_hours, "red_count_threshold": count_threshold,
             "saturation_hours": sat_threshold,
             "unattributed_blocked": unattributed,
             "base_inherited": [{"check": name, "corroborated_by": nums}
                                for name, nums in sorted(inherited.items())],
+            # #17154 : meme corroboration, mais le check est VERT sur `main` --
+            # instabilite d'execution, geste = rejeu. Classe distincte de
+            # `base_inherited` : la lane PEUT la lever (cf infra_rerun_cause).
+            "infra_rerun": [{"check": name, "corroborated_by": nums}
+                            for name, nums in sorted(infra_rerun.items())],
+            # #17154 : corrobore, mais ABSENT du rollup de `main` -- on n'a pas
+            # tranche (un agregateur PR-only n'y figure jamais). Impute a la
+            # base par defaut, et DIT, pour que l'absence de mesure ne se lise
+            # pas comme un acquittement (#14567).
+            "base_undecided": [{"check": name, "corroborated_by": nums}
+                               for name, nums in sorted(base_undecided.items())],
             # #14567 : quand un agregateur n'a pas pu etre tranche, le dire --
             # sinon l'absence d'imputation se lirait comme une acquittement.
             "base_unresolved": [{"check": name, "prs": sorted(nums)}
                                 for name, nums in sorted(unresolved_by_name.items())],
-            "nits_unavailable": nits_unavailable}
+            # #15910 : les agregateurs rouges par DWELL. Ni un defaut a
+            # reparer, ni un rouge impute a la base : un minuteur qu'aucune
+            # lane ne peut avancer en poussant (pousser le remet a zero).
+            "dwell_waiting": dwell_waiting,
+            "nits_unavailable": nits_unavailable,
+            # Q41 : plafond de WIP. wip_triggered porte le verdict (compte >=
+            # plafond, plafond 0 = desactive) ; le refus lui-meme reste a
+            # main(), qui connait --ignore-wip.
+            "wip_prs": wip_prs, "wip_count": len(wip_prs),
+            "wip_cap": wip_cap,
+            "wip_triggered": wip_cap > 0 and len(wip_prs) >= wip_cap}
 
 
 def print_base_inherited(backlog: dict) -> None:
@@ -2429,6 +3627,80 @@ def print_base_inherited(backlog: dict) -> None:
         print(f"  - {item['check']} : organe non lisible sur {prs} -- pas pu")
         print(f"    trancher, le rouge RESTE a la lane (relancer le run ou lire")
         print(f"    l'annotation du check-run avant d'invoquer la base).")
+    print()
+
+
+def print_infra_rerun(backlog: dict) -> None:
+    """Rouges verts sur `main`, rouges chez >=2 lanes : le geste est le REJEU (#17154).
+
+    `base_inherited` etait le seul sort : « pas le votre, pas reparable par la
+    lane -- tache COORDINATEUR ». Sur une instabilite d'execution (mort de
+    runner, kill `xdist-watchdog`) les deux affirmations sont fausses, et la
+    seconde est le defaut : un rejeu a tete constante leve le rouge. La lane
+    etait donc dissuadee du SEUL geste qui repare -- le rouge s'installait, la
+    PR restait bloquee, et le cycle suivant repartait sur une reparation
+    inexistante. Ce qui est dit ici, c'est le geste.
+
+    `base_undecided` (check absent du rollup de `main`) est dit separement :
+    l'imputation a la base y est un DEFAUT faute de mesure, pas un verdict.
+    """
+    items = backlog.get("infra_rerun") or []
+    undecided = backlog.get("base_undecided") or []
+    if not items and not undecided:
+        return
+    if items:
+        print("INFRA D'EXECUTION -- rouge ici, VERT sur main : le geste est le REJEU :")
+        for item in items:
+            wits = ", ".join(f"#{n}" for n in item["corroborated_by"][:6])
+            more = "" if len(item["corroborated_by"]) <= 6 else ", ..."
+            print(f"  - {item['check']} : corrobore par {wits}{more}")
+        print("Ce n'est ni un defaut de votre diff ni une cause sur main : la jambe")
+        print("est tombee en execution. `gh run list --branch <votre branche>` puis")
+        print("`gh run rerun <run_id> --failed`, a tete constante, sans re-armer")
+        print("DWELL. Ce rouge COMPTE dans le refus tant qu'il est la, et il est")
+        print("levable par la lane -- ne pas le router au coordinateur.")
+    for item in undecided:
+        wits = ", ".join(f"#{n}" for n in item["corroborated_by"][:6])
+        print(f"  - {item['check']} : corrobore par {wits} mais ABSENT du rollup de")
+        print("    main (agregateur qui ne tourne que sur pull_request) -- pas pu")
+        print("    trancher : impute a la base par defaut, jamais un acquittement.")
+    print()
+
+
+
+def print_dwell_waiting(backlog: dict) -> None:
+    """Agregateurs rouges par DWELL : un minuteur, pas un defaut (#15910).
+
+    `pr_gate.py` n'applique le plancher d'anciennete que sur le chemin VERT
+    (`code == 0`) : quand tout est vert et que la tete est trop jeune, il rend
+    malgre tout un code non nul. Cote picker, ce rouge n'avait aucun organe a
+    lire (il n'y a rien a reparer) et retombait donc sur la lane comme un grain
+    reparable -- un cycle entier pouvait partir sur une reparation inexistante.
+    Ce rouge ne se corrige pas : il s'ecoule. Apres l'echeance, la lane peut
+    rejouer la jambe elle-meme (`gh run rerun <run_id> --job <job_id>`, sans
+    push -- un push remet le plancher a zero) ou laisser le balayage
+    `pr-gate-stale-sweep.yml` s'en charger (cadence MESUREE 2 h 33 - 5 h 18
+    entre tirs, pas horaire -- #15197).
+    """
+    items = backlog.get("dwell_waiting") or []
+    if not items:
+        return
+    print("PLANCHER DE DWELL -- un minuteur, pas un defaut, rien a reparer :")
+    for item in items:
+        # « reste » est le chiffre du gate AU MOMENT DU CHECK : sur une PR dont
+        # le plancher est deja ecoule il est perime (mesure du 2026-09-13 :
+        # #15952 annoncait « reste ~23 min » pour une levee passee depuis 20
+        # min). L'heure de levee absolue est la seule donnee qui ne vieillit
+        # pas -- c'est elle qui decide, « reste » n'est qu'un contexte.
+        reste = item.get("remaining_min")
+        reste_txt = f" (reste ~{reste} min lu au moment du check)" if reste is not None else ""
+        quand = f" -- plancher ecoule a {item['lift_at']}" if item.get("lift_at") else ""
+        print(f"  - #{item['number']} {item['check']}{quand}{reste_txt}")
+    print("Ces rouges ne comptent pas dans le refus et ne sont PAS imputes a la")
+    print("base. NE PAS repousser : un push remet le plancher a zero. Apres")
+    print("l'echeance, rejouer la jambe soi-meme (`gh run rerun <run_id> --job")
+    print("<job_id>`) ou enchainer un autre grain -- c'est la candidate qui")
+    print("attend, pas la lane.")
     print()
 
 
@@ -2517,6 +3789,19 @@ def build_orphans_comment(orphans: list[dict]) -> str:
     return "\n".join(lines)
 
 
+def rest_comment_id(comment: dict) -> int:
+    """Id REST numerique d'un commentaire rendu par `gh issue view --json`.
+
+    Leve ValueError si l'URL ne le porte pas : un PATCH sur un id devine
+    ecrirait ailleurs ou echouerait en silence.
+    """
+    m = re.search(r"#issuecomment-(\d+)$", comment.get("url") or "")
+    if not m:
+        raise ValueError(f"id REST introuvable dans l'URL du commentaire : "
+                         f"{comment.get('url')!r}")
+    return int(m.group(1))
+
+
 def upsert_orphans_comment(number: int, body: str) -> None:
     """Un seul commentaire marker-guarde par issue, mis a jour sur place."""
     comments = json.loads(subprocess.run(
@@ -2524,8 +3809,13 @@ def upsert_orphans_comment(number: int, body: str) -> None:
          "--json", "comments"],
         capture_output=True, text=True, encoding="utf-8", check=True, timeout=60,
     ).stdout)
-    cid = next((c["id"] for c in (comments.get("comments") or [])
-                if ORPHANS_MARKER_START in (c.get("body") or "")), None)
+    # `gh issue view --json comments` rend l'`id` GraphQL (`IC_kw...`), que
+    # l'endpoint REST `issues/comments/{id}` refuse en 404 : le PATCH echouait
+    # a chaque balayage depuis le premier (29/08), et le commentaire restait
+    # fige. L'id numerique REST se lit dans l'URL (`#issuecomment-<n>`).
+    marked = next((c for c in (comments.get("comments") or [])
+                   if ORPHANS_MARKER_START in (c.get("body") or "")), None)
+    cid = rest_comment_id(marked) if marked is not None else None
     if cid is not None:
         subprocess.run(
             ["gh", "api", f"repos/{REPO}/issues/comments/{cid}",
@@ -2643,11 +3933,67 @@ def print_red_assignment(lane: str, backlog: dict, threshold_hours: float) -> No
     print()
     print_unattributed_blocked(backlog)
     print_base_inherited(backlog)
+    print_infra_rerun(backlog)
+    print_dwell_waiting(backlog)
     print("Si un rouge n'est PAS reparable par cette lane (garde casse sur main,")
     print("dependance d'une autre PR), l'ECRIRE en commentaire sur la PR concernee,")
     print("puis relancer avec --ignore-red. L'echappatoire se justifie par ecrit,")
     print("elle ne se prend pas en silence.")
 
+
+def print_wip_assignment(lane: str, backlog: dict, *, standalone: bool = True) -> None:
+    """Plafond de WIP (Q41) : au-dela, la lane recoit SA file, pas un grain neuf.
+
+    Meme convention de sortie que `print_red_assignment` : en-tete
+    "FILE DE REPARATION", aucune occurrence du mot refus, le chemin REND un
+    travail -- drainer sa file EST le travail du cycle. Le garde rouge ne
+    compte que les PRs bloquees ; le plafond compte l'encours ENTIER parce
+    que le temps de passage est WIP / debit (loi de Little) : au-dela du
+    plafond, un grain neuf rallonge la file au lieu de la faire avancer.
+
+    `standalone=False` quand le garde rouge a deja rendu son assignation :
+    l'en-tete et le paragraphe "ce n'est pas un refus" sont deja sous les
+    yeux, on n'imprime que le motif et la file. Les deux gardes se
+    composent -- aucun ne masque l'autre.
+    """
+    wip = backlog.get("wip_prs") or []
+    cap = backlog.get("wip_cap", WIP_CAP_DEFAULT)
+    count = backlog.get("wip_count")
+    if count is None:
+        count = len(wip)
+    if standalone:
+        print(f"FILE DE REPARATION -- lane {lane} : drainer son WIP avant de piocher.")
+        print(f"Motif : la lane porte {count} PR(s) ouverte(s), plafond de WIP = {cap}.")
+        print()
+        print("Ce n'est PAS un refus de tirage : le travail de ce cycle est nomme")
+        print("ci-dessous. Le garde rouge ne compte que les PRs bloquees ; le")
+        print("plafond compte l'encours ENTIER, brouillons compris -- une PR verte")
+        print("n'a rien casse, mais le temps de passage est WIP / debit (loi de")
+        print("Little) : au-dela du plafond, un grain neuf rallonge la file au")
+        print("lieu de la faire avancer.")
+        print()
+    else:
+        print(f"PLAFOND DE WIP, en plus du rouge : {count} PR(s) ouverte(s), "
+              f"plafond = {cap}.")
+        print("Les deux gardes declenchent -- aucun ne masque l'autre. Drainer la")
+        print("file ci-dessous APRES les rouges ci-dessus.")
+        print()
+    print("File de la lane, la plus ancienne d'abord -- chaque PR fait avancer la")
+    print("file : pousser, repondre aux reviews par ecrit, joindre un dossier de")
+    print("prevalidation, ou demander le merge a l'adjoint/coordinateur.")
+    for item in wip:
+        draft = "  [brouillon]" if item.get("is_draft") else ""
+        print(f"  #{item['number']}  ouverte depuis {item['age_hours']} h{draft}"
+              f"  -- {item['title'][:60]}")
+        for cause in item.get("causes") or []:
+            print(f"       {cause}")
+        if item.get("is_draft") and not (item.get("causes") or []):
+            print("       (brouillon : compte dans l'encours, convertir en draft")
+            print("        n'echappe pas au plafond)")
+    print()
+    print("Le plafond ne se leve pas en silence : si un gel coordinateur tient la")
+    print("file ENTIERE (et non une PR isolee), l'ECRIRE puis relancer avec")
+    print("--ignore-wip --wip-reason '<justification>'.")
 
 
 # --- Secheresse de substance : G-VAR-1 recoit son organe (#13086) ----------
@@ -3181,6 +4527,14 @@ def main(argv: list[str] | None = None) -> int:
     for _stream in (sys.stdout, sys.stderr):
         if hasattr(_stream, "reconfigure"):
             _stream.reconfigure(encoding="utf-8", errors="replace")
+    # #17418 Phase A : epingle le jeton machine AVANT tout appel gh — les
+    # enfants (check_lane_claim, nits...) heritent via os.environ propage par
+    # _utf8_child_env(). Warn-fort + poursuite : le FAIL bruyant est porte
+    # par gh_identity --whoami et detect_shared_login.py (transition B/C).
+    try:
+        gh_identity.pin_gh_token()
+    except gh_identity.GhIdentityError as exc:
+        print(f"GH-IDENTITY (WARN, poursuite sous compte actif): {exc}", file=sys.stderr)
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--lane", default=None,
@@ -3214,6 +4568,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--red-count", type=int, default=RED_COUNT_DEFAULT,
                     help=f"nombre de rouges simultanees qui refuse le tirage "
                          f"quel que soit leur age (defaut {RED_COUNT_DEFAULT})")
+    ap.add_argument("--wip-cap", type=int, default=WIP_CAP_DEFAULT, metavar="N",
+                    help=f"plafond de WIP par lane (Q41) : au-dela de N PRs "
+                         f"ouvertes attribuees par tag, brouillons compris, la "
+                         f"lane recoit sa file au lieu d'un grain neuf -- le "
+                         f"temps de passage est WIP / debit (loi de Little). "
+                         f"(defaut {WIP_CAP_DEFAULT} ; 0 desactive le garde)")
     ap.add_argument("--saturation-hours", type=float, default=None,
                     help="#12830 : seuil du declencheur file-saturation (defaut "
                          f"= --red-hours, soit {RED_HOURS_DEFAULT} h). Separe de "
@@ -3236,6 +4596,15 @@ def main(argv: list[str] | None = None) -> int:
                          "selection (steer inclus).")
     ap.add_argument("--ignore-red", action="store_true",
                     help="passer outre le garde -- exige une justification ECRITE sur la PR concernee")
+    ap.add_argument("--ignore-wip", action="store_true",
+                    help="passer outre le plafond de WIP (Q41) -- exige "
+                         "--wip-reason '<justification ECRITE>' : contrairement "
+                         "a --ignore-red, le plafond n'a pas de PR particuliere "
+                         "ou poser la justification")
+    ap.add_argument("--wip-reason", default=None, metavar="TEXTE",
+                    help="justification ECRITE de --ignore-wip, a reporter sur "
+                         "l'issue retenue. Distincte de --admit-reason, qui "
+                         "leverait aussi le garde d'admission")
     ap.add_argument("--drought-run", type=int, default=DROUGHT_RUN_DEFAULT,
                     metavar="N",
                     help="merges consecutifs sans genre CONTENU a partir "
@@ -3268,8 +4637,11 @@ def main(argv: list[str] | None = None) -> int:
                     help="ne PAS ecarter de l'urne grain les issues "
                          "portant un signal de livraison (label "
                          "candidate-delivered ou commentaire [INFO] "
-                         "candidate-delivered) -- echappatoire nommee, "
-                         "typiquement pour une lane habilitee a fermer")
+                         "candidate-delivered), NI les grains couverts "
+                         "par une PR ouverte (#16589 : meme rang que "
+                         "candidate-delivered) -- echappatoire nommee "
+                         "pour les DEUX rangs d'exclusion, typiquement "
+                         "pour une lane habilitee a fermer")
     ap.add_argument("--json", action="store_true", help="sortie machine")
     ap.add_argument("--orphans-report", action="store_true",
                     help="mode rapport : PRs bloquees sans tag Grain lisible, groupees par "
@@ -3282,6 +4654,18 @@ def main(argv: list[str] | None = None) -> int:
     args.prev_genre = sorted(normalize_prev_genres(args.prev_genre))
     if args.apply_comment is not None and not args.orphans_report:
         ap.error("--apply-comment n'a de sens qu'avec --orphans-report")
+    # Q41 : l'echappatoire du plafond de WIP est AUDITEE a la difference de
+    # --ignore-red (dont la justification vit sur la PR concernee) : le
+    # plafond n'a pas de PR particuliere ou ecrire, donc la justification
+    # passe --wip-reason ou ne se prend pas. Pas --admit-reason : elle leve
+    # aussi le garde d'admission, et passer le plafond ne doit pas ouvrir en
+    # silence les issues retenues par un claim ou un DWELL.
+    if args.ignore_wip and not args.wip_reason:
+        ap.error("--ignore-wip exige --wip-reason '<justification ECRITE>'")
+    if args.wip_reason and not args.ignore_wip:
+        ap.error("--wip-reason n'a de sens qu'avec --ignore-wip")
+    if args.wip_cap < 0:
+        ap.error("--wip-cap doit etre positif ou nul (0 desactive le garde)")
     if not args.lane and not args.orphans_report and args.admissible is None:
         ap.error("--lane est requis (--orphans-report et --admissible s'en dispensent)")
     for low_name, high_name in (
@@ -3334,6 +4718,13 @@ def main(argv: list[str] | None = None) -> int:
         if "PYTEST_CURRENT_TEST" in os.environ and args.cache_dir is None
         else has_delivered_signal
     )
+    # Sonde de couverture (#16589) : meme commutateur d'inertie sous pytest --
+    # un test qui veut le signal l'injecte explicitement.
+    cover_probe = (
+        open_cover_inert
+        if "PYTEST_CURRENT_TEST" in os.environ and args.cache_dir is None
+        else open_cover_signal
+    )
     delivered_state: dict = {"failures": [], "budget_hit": False}
 
     payload_cache = PayloadCache(args.cache_dir)
@@ -3365,11 +4756,20 @@ def main(argv: list[str] | None = None) -> int:
     # et elle doit pouvoir etre posee sur un grain STEERE, chemin par lequel
     # arrive l'essentiel du travail (mesure du 2026-08-29).
     if args.admissible is not None:
-        pool = fetch_pool(
+        pool, pool_error = fetch_pool(
             cache=payload_cache,
             cache_mode=effective_cache_mode,
             cache_status=cache_status,
         )
+        # #17038 : ce mode repond « ce grain-ci est-il consommable maintenant ? ».
+        # Sur un pool non lu, la seule reponse honnete est « je n'ai pas mesure » --
+        # `1` dit deja « absente du pool », et le confondre ferait lire une panne
+        # de transport comme une issue fermee.
+        unmeasured = draw_verdict(pool_error)
+        if unmeasured:
+            print(unmeasured)
+            print()
+            return RC_POOL_UNMEASURED
         series, issue_to_family, series_err = fetch_series_visits(
             cache=payload_cache,
             cache_mode=effective_cache_mode,
@@ -3430,23 +4830,46 @@ def main(argv: list[str] | None = None) -> int:
 
     # Garde "reparer son rouge d'abord" : AVANT le tirage, sinon le grain neuf
     # est deja sous les yeux quand le refus arrive, et c'est lui qui gagne.
+    # Le plafond de WIP (Q41) partage ce moment et ce payload : les deux gardes
+    # se composent, aucun ne masque l'autre.
     backlog = red_backlog(args.lane, args.red_hours, args.red_count,
-                            saturation_hours=args.saturation_hours)
-    if backlog.get("triggers") and not args.ignore_red:
+                            saturation_hours=args.saturation_hours,
+                            wip_cap=args.wip_cap)
+    red_hit = bool(backlog.get("triggers")) and not args.ignore_red
+    wip_hit = bool(backlog.get("wip_triggered")) and not args.ignore_wip
+    if red_hit or wip_hit:
         # Sortie 0, et le mot "refus" ne parait nulle part : ce chemin REND un
         # grain -- la reparation des PRs de la lane -- il n'en prive pas. La
         # forme precedente ("REFUS DE TIRAGE", sortie 2, aucun candidat) rendait
         # un travail nomme sous l'apparence d'un vide, et se declenchait
         # d'autant plus souvent que la lane etait active.
         if args.json:
+            # Rouge et WIP se composent : le grain reste le premier rouge
+            # quand les deux declenchent (la reparation est la sequence la
+            # plus urgente), sinon c'est la PR la plus ancienne de la file
+            # WIP -- dans les deux cas le consommateur machine lit un grain
+            # et un nom de travail, pas un motif de refus.
+            assignment = None
+            grain = None
+            if red_hit:
+                assignment = "reparer-son-rouge"
+                grain = (backlog.get("red") or [None])[0]
+            if wip_hit:
+                assignment = ((assignment + "+") if assignment else "") + "drainer-son-wip"
+                grain = grain or (backlog.get("wip_prs") or [None])[0]
             print(json.dumps({"lane": args.lane, "mode": "repair",
-                              "assignment": "reparer-son-rouge",
-                              "grain": (backlog.get("red") or [None])[0],
+                              "assignment": assignment or "drainer-son-wip",
+                              "grain": grain,
                               "red_hours": args.red_hours,
                               "lane_record": lane_record, **backlog},
                              ensure_ascii=False, indent=2))
         else:
-            print_red_assignment(args.lane, backlog, args.red_hours)
+            if red_hit:
+                print_red_assignment(args.lane, backlog, args.red_hours)
+            # standalone : l'en-tete "FILE DE REPARATION" (test pinne) vient
+            # du garde WIP lui-meme s'il est seul, du garde rouge sinon.
+            if wip_hit:
+                print_wip_assignment(args.lane, backlog, standalone=not red_hit)
             # Apres l'assignation : l'en-tete "FILE DE REPARATION" doit rester
             # la premiere ligne lue (test pinne), l'ardoise vient en rappel.
             print_lane_record(lane_record)
@@ -3454,16 +4877,40 @@ def main(argv: list[str] | None = None) -> int:
     if not args.json:
         print_nits_gap(backlog)
         print_base_inherited(backlog)
+        print_infra_rerun(backlog)
+        print_dwell_waiting(backlog)
     if backlog.get("unavailable") and not args.json:
-        print(f"(garde rouge indisponible : {backlog['unavailable']} -- tirage rendu sans verification)")
+        print(f"(garde rouge/WIP indisponible : {backlog['unavailable']} -- tirage rendu sans verification)")
         print()
 
-    pool = fetch_pool(
+    pool, pool_error = fetch_pool(
         cache=payload_cache,
         cache_mode=effective_cache_mode,
         cache_status=cache_status,
     )
+    # #17038 : « je n'ai pas pu lire » n'est pas « aucun candidat ». Le dire,
+    # et sortir avec un rc DEDIE avant tout tirage -- sans pool il n'y a pas
+    # de tirage a rendre, et le vocabulaire de l'epuisement (« FILE LOCALE
+    # EPUISEE ») serait un mensonge sur un pool qu'on n'a jamais vu.
+    unmeasured = draw_verdict(pool_error)
+    if unmeasured:
+        if args.json:
+            print(json.dumps(
+                {"lane": args.lane, "mode": "unmeasured",
+                 "draw": "non mesure", "transport_error": pool_error,
+                 "rc": RC_POOL_UNMEASURED}, ensure_ascii=False, indent=2))
+        else:
+            print(unmeasured)
+            print()
+        return RC_POOL_UNMEASURED
     visits, visits_err = fetch_visits(
+        cache=payload_cache,
+        cache_mode=effective_cache_mode,
+        cache_status=cache_status,
+    )
+    long_visits, long_visits_err = fetch_visits(
+        days=LONG_VISITS_WINDOW_DAYS,
+        cache_name="long_visits",
         cache=payload_cache,
         cache_mode=effective_cache_mode,
         cache_status=cache_status,
@@ -3642,10 +5089,20 @@ def main(argv: list[str] | None = None) -> int:
         by_class, args, rng, visits, series, issue_to_family,
         delivery=delivery_weights if args.delivery_boost_max > 0 else None,
         delivered_probe=delivered_probe, delivered_state=delivered_state,
+        cover_probe=cover_probe,
         fallback_by_class=fallback_by_class,
-        continuity_state=continuity)
+        continuity_state=continuity,
+        long_visits=long_visits)
     withheld.extend(claim_conflicts)
     delivery = recent_delivery(picks)
+
+    # Calcule AVANT la branche --json : sans ca, l'avertissement de cache
+    # disparaissait sur la surface que les lanes utilisent reellement (`.vibe/
+    # commands/continue.md` documente `--json` comme premier geste de
+    # selection). Un hit non verifie serait reste visible en structure
+    # (`cache.pool.verified == false`) mais muet en clair -- or c'est
+    # precisement le silence que #17096 designe comme le defaut.
+    notice = cache_notice_lines(cache_status, show_all=args.cache_status)
 
     if args.json:
         print(json.dumps({
@@ -3657,6 +5114,7 @@ def main(argv: list[str] | None = None) -> int:
                           "cause": c} for it, c in withheld],
             "dwell_hours": args.dwell_hours,
             "admit_reason": args.admit_reason,
+            "wip_reason": args.wip_reason,
             "series_measured": series_err is None,
             "series_error": series_err,
             "series_zones": sorted(
@@ -3670,6 +5128,12 @@ def main(argv: list[str] | None = None) -> int:
             "visits_error": visits_err,
             "visits_top": sorted(({"issue": k, "n": v} for k, v in visits.items()),
                                  key=lambda d: (-d["n"], d["issue"]))[:10],
+            "long_visits_window_days": LONG_VISITS_WINDOW_DAYS,
+            "long_visits_measured": long_visits_err is None,
+            "long_visits_error": long_visits_err,
+            "long_visits_top": sorted(
+                ({"issue": k, "n": v} for k, v in long_visits.items()),
+                key=lambda d: (-d["n"], d["issue"]))[:10],
             "umbrella_delivery": {
                 **delivery_sig,
                 "items": {str(k): v for k, v in delivery_sig["items"].items()},
@@ -3680,6 +5144,8 @@ def main(argv: list[str] | None = None) -> int:
             "delivered_signal": {
                 "include_delivered": bool(args.include_delivered),
                 "probes_failed": sorted(set(delivered_state["failures"])),
+                "cover_probes_failed": sorted(
+                    set(delivered_state.get("cover_failures") or [])),
                 "budget_hit": delivered_state["budget_hit"],
                 "max_probes": DELIVERED_SIGNAL_MAX_PROBES,
             },
@@ -3694,23 +5160,17 @@ def main(argv: list[str] | None = None) -> int:
                 "fallback_after_claims": continuity["used"],
             },
         }, ensure_ascii=False, indent=2))
+        # STDERR : la sortie machine reste du JSON pur (stdout), mais l'humain
+        # qui lit la console -- et tout log qui capture stderr -- voit
+        # l'avertissement. Le rendre seulement en structure laissait le doute
+        # lisible par la machine et invisible pour l'operateur.
+        for line in notice:
+            print(line, file=sys.stderr)
         return 0
 
-    stale_entries = {
-        name: entry
-        for name, entry in cache_status.items()
-        if entry.get("status") == "stale"
-    }
-    if args.cache_status or stale_entries:
-        states = ", ".join(
-            f"{name}={entry.get('status')}"
-            + (f" ({entry.get('error')})" if entry.get("error") else "")
-            for name, entry in sorted(cache_status.items())
-        )
-        print(f"Cache payloads : {states or 'aucune mesure partageable lue'}")
-        if stale_entries:
-            print("!! STALE explicite : payload ancien utilise seulement apres "
-                  "echec du refresh ; ce n'est pas une mesure fraiche.")
+    if notice:
+        for line in notice:
+            print(line)
         print()
     non_default_filters = {
         key: value
@@ -3818,6 +5278,11 @@ def main(argv: list[str] | None = None) -> int:
         print(f"!! --ignore-red : {len(backlog['red'])} PR(s) bloquee(s) de cette lane restent "
               f"a reparer ({numbers}).")
         print("   La justification doit etre ECRITE sur chacune, pas seulement invoquee ici.")
+    if args.ignore_wip and backlog.get("wip_triggered"):
+        print(f"!! --ignore-wip : {backlog.get('wip_count')} PR(s) ouverte(s) "
+              f"(plafond {backlog.get('wip_cap')}) restent au-dessus du plafond.")
+        print(f"   Justification ({args.wip_reason!r}) a reporter sur l'issue")
+        print("   retenue -- le passage outre ne se prend pas en silence.")
     penalized = ", ".join(args.prev_genre)
     print(f"Lane {args.lane} | graine {stamp}"
           + (f" | reroll {args.reroll}" if args.reroll else "")
@@ -3861,6 +5326,16 @@ def main(argv: list[str] | None = None) -> int:
                 print(pad + "-> " + quoi + " (renumeroter un numero eleve en "
                       "lettre d'un numero existant, ou fondre plusieurs "
                       "lettres en un petit nombre), pas une instance de plus.")
+        # #16625 : le statut de veine deja ouverte se lit sur la ligne du
+        # pick, pas seulement dans les metriques -- le vecteur mesure de la
+        # monoculture est le choix hors-tirage (provisions, sweeps), donc le
+        # signal doit toucher le lecteur au moment ou il choisit.
+        if p.get("parking"):
+            pad = f"{'':>10} {'':>8} {'':>5} {'':>6} {'':>4}  "
+            print(pad + f"PARKING : {p.get('visits_long', 0)} PRs mergees la "
+                        f"citant sur {LONG_VISITS_WINDOW_DAYS} j -- veine deja")
+            print(pad + "ouverte, pas un grain delaisse. Une tranche de plus ne solde")
+            print(pad + "rien : prendre un sous-grain ailleurs, sauf steer explicite.")
     print_delivered_signal_report(withheld, delivered_state,
                                   args.include_delivered)
     print_empty_draw_notice(withheld, picks, args.include_delivered)
@@ -3876,8 +5351,17 @@ def main(argv: list[str] | None = None) -> int:
             print("   `n/m` et le tirage n'a PAS amorti les sujets deja frequentes.")
             print("   Un zero d'absence de mesure n'est pas un zero d'affluence.")
         print()
+    if long_visits_err:
+        print(f"!! affluence LONGUE NON MESUREE ({long_visits_err}) : la memoire")
+        print(f"   30 j n'est pas appliquee -- un parking peut garder un poids")
+        print("   plein malgre des semaines de visites. Ne pas lire l'absence de")
+        print("   signal PARKING comme une absence de parking.")
+        print()
     print("* = genre CONTENU (seul un genre CONTENU en DEEP/MED tient le plancher G-VAR-1).")
     print(f"vus = PRs mergees citant cette issue sur {VISITS_WINDOW_DAYS} j, TOUTES LANES.")
+    print(f"vus30 = idem sur {LONG_VISITS_WINDOW_DAYS} j, la MEMOIRE longue (#16625) : un")
+    print("       sujet a 0 vu du jour mais 30 PRs/30 j garde son amortissement -- une")
+    print("       reprise apres 12 h d'arret de flotte ne lui rend pas son poids plein.")
     print("      Le cap de veine ne voit qu'une lane a la fois : plusieurs lanes")
     print("      restant chacune sous son cap concentrent quand meme la flotte")
     print("      sur un meme sujet. C'est ce que cette colonne amortit.")

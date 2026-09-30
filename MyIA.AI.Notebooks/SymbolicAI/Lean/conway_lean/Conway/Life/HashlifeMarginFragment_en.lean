@@ -1594,6 +1594,338 @@ theorem hashlife_correct_margin_of_spaceship (c : MacroCell) (k : Nat)
   hashlife_correct_margin_of_hcap c k h_central
     (fun t _ => hcap_of_spaceship _ (canonical_sortDedup _) hp0 v hship hdiv hspd1 hspd2 t)
 
+/-! ## Slice 9 — spaceships of arbitrary period (mirror of 8a/8b)
+
+Mirror relaxation of slices 8a/8b, applied to the spaceship class: in
+`jumpCapturedF_of_spaceship`, the divisibility `p ∣ 2^level` only served to build the
+exact landing `evolve (2^level) g = shift (q•v) g` — which excludes de facto every
+non-dyadic spaceship (the smallest known c/3 ship lives at period 3; sir Robin,
+p = 6, is not a power of 2). Here the jump folds through `evolve_spaceship_mod` —
+the phase `2^level % p` carried by the quotient drift `(2^level/p)•v` — against two
+counterparts: **spatial** (`hwin`: every phase of the orbit fits in the
+`[0, 2^level)²` origin-framed box) and **kinematic** (speed bounds unchanged,
+`2·|v.i| ≤ p`: the quotient drift stays bounded by `2^(level-1)` since
+`p·(2^level/p) ≤ 2^level`). The dyadic case remains an instance. -/
+
+/-- **Slice 9 — capture of spaceships of arbitrary period.** Generalization of
+    `jumpCapturedF_of_spaceship`: the divisibility `p ∣ 2^c.level` only served to
+    build the exact landing ("the horizon-`2^level` jump lands on the q•v-drifted
+    pattern"), which excludes de facto every non-dyadic period. Here the fold is
+    modular (`evolve_spaceship_mod`: the jump lands on phase `2^level % p` carried
+    by `(2^level/p)•v`), the spatial counterpart `hwin` asks every phase of the
+    orbit to fit in the starting phase's box (bounds `[0, 2^level)²` at the origin
+    framing — exactly what `cellWfF_toGrid_bounds` gives for the phase itself),
+    and the speed bounds `2·|v.i| ≤ p` bound the drift: monotonicity
+    `Q·(2·|v.i|) ≤ Q·p ≤ 2^level` (with `Q = 2^level/p`) yields
+    `|Q·v.i| ≤ 2^(level-1)`, the phase lives in the box shifted by `3·2^(level-1)`,
+    hence the final generation stays in the test window
+    `[2^level, 2^level + 2^(level+1))²`. -/
+theorem jumpCapturedF_of_spaceship_mod (c : MacroCell) (hwf : c.wf = true)
+    (hlvl : 1 ≤ c.level) {p : Nat} (hp0 : 0 < p) (v : Int × Int)
+    (hship : evolve p (c.toGrid (0, 0)) = shift v (c.toGrid (0, 0)))
+    (hwin : ∀ i, i < p → ∀ w ∈ evolve i (c.toGrid (0, 0)),
+      (0 : Int) ≤ w.1 ∧ w.1 < (2 ^ c.level : Int) ∧
+        (0 : Int) ≤ w.2 ∧ w.2 < (2 ^ c.level : Int))
+    (hspd1 : -(p : Int) ≤ 2 * v.1 ∧ 2 * v.1 ≤ (p : Int))
+    (hspd2 : -(p : Int) ≤ 2 * v.2 ∧ 2 * v.2 ≤ (p : Int)) :
+    jumpCapturedF c = true := by
+  obtain ⟨hspd1a, hspd1b⟩ := hspd1
+  obtain ⟨hspd2a, hspd2b⟩ := hspd2
+  have hr' : 2 ^ c.level % p < p := Nat.mod_lt _ hp0
+  have hcan : Canonical (c.toGrid (0, 0)) := canonical_sortDedup _
+  have hmod : evolve (2 ^ c.level) (c.toGrid (0, 0))
+      = shift ((((2 ^ c.level / p : Nat) : Int) * v.1),
+               (((2 ^ c.level / p : Nat) : Int) * v.2))
+          (evolve (2 ^ c.level % p) (c.toGrid (0, 0))) :=
+    evolve_spaceship_mod _ hcan v hship _
+  have hfinal : evolve (2 ^ c.level) ((padCenter2 c).toGrid (0, 0))
+      = shift ((3 * 2 ^ (c.level - 1) : Int)
+                 + (((2 ^ c.level / p : Nat) : Int) * v.1),
+               (3 * 2 ^ (c.level - 1) : Int)
+                 + (((2 ^ c.level / p : Nat) : Int) * v.2))
+          (evolve (2 ^ c.level % p) (c.toGrid (0, 0))) := by
+    rw [padCenter2_toGrid_shift c hlvl, ← evolve_shift, hmod, shift_shift]
+  rw [jumpCapturedF_iff]
+  intro w hw
+  rw [hfinal, mem_shift] at hw
+  obtain ⟨hb1, hb2, hb3, hb4⟩ := hwin _ hr' _ hw
+  dsimp only at hb1 hb2 hb3 hb4
+  have hpow : (2 ^ c.level : Int) = 2 * (2 ^ (c.level - 1) : Int) := by
+    have hsplit : c.level = (c.level - 1) + 1 := by omega
+    conv_lhs => rw [hsplit]
+    rw [pow_succ]
+    ring
+  have hnext : ((2 ^ (c.level + 1) : Nat) : Int)
+      = (2 ^ c.level : Int) + (2 ^ c.level : Int) := by
+    rw [Nat.cast_pow, pow_succ]
+    ring
+  have hy : (0 : Int) ≤ 2 ^ (c.level - 1) := by positivity
+  have hqnn : (0 : Int) ≤ ((2 ^ c.level / p : Nat) : Int) := by positivity
+  have hqple : ((2 ^ c.level / p : Nat) : Int) * (p : Int)
+      ≤ (2 ^ c.level : Int) := by
+    exact_mod_cast Nat.div_mul_le_self _ _
+  have hqA : 2 * (((2 ^ c.level / p : Nat) : Int) * v.1)
+      ≤ 2 * (2 ^ (c.level - 1) : Int) := by
+    have e0 : ((2 ^ c.level / p : Nat) : Int) * (2 * v.1)
+        ≤ ((2 ^ c.level / p : Nat) : Int) * (p : Int) :=
+      mul_le_mul_of_nonneg_left hspd1b hqnn
+    have e1 : ((2 ^ c.level / p : Nat) : Int) * (2 * v.1)
+        = 2 * (((2 ^ c.level / p : Nat) : Int) * v.1) := by ring
+    omega
+  have hqB : 2 * (-(((2 ^ c.level / p : Nat) : Int) * v.1))
+      ≤ 2 * (2 ^ (c.level - 1) : Int) := by
+    have e0 : ((2 ^ c.level / p : Nat) : Int) * (-(2 * v.1))
+        ≤ ((2 ^ c.level / p : Nat) : Int) * (p : Int) :=
+      mul_le_mul_of_nonneg_left (by omega) hqnn
+    have e1 : ((2 ^ c.level / p : Nat) : Int) * (-(2 * v.1))
+        = 2 * (-(((2 ^ c.level / p : Nat) : Int) * v.1)) := by ring
+    omega
+  have hqC : 2 * (((2 ^ c.level / p : Nat) : Int) * v.2)
+      ≤ 2 * (2 ^ (c.level - 1) : Int) := by
+    have e0 : ((2 ^ c.level / p : Nat) : Int) * (2 * v.2)
+        ≤ ((2 ^ c.level / p : Nat) : Int) * (p : Int) :=
+      mul_le_mul_of_nonneg_left hspd2b hqnn
+    have e1 : ((2 ^ c.level / p : Nat) : Int) * (2 * v.2)
+        = 2 * (((2 ^ c.level / p : Nat) : Int) * v.2) := by ring
+    omega
+  have hqD : 2 * (-(((2 ^ c.level / p : Nat) : Int) * v.2))
+      ≤ 2 * (2 ^ (c.level - 1) : Int) := by
+    have e0 : ((2 ^ c.level / p : Nat) : Int) * (-(2 * v.2))
+        ≤ ((2 ^ c.level / p : Nat) : Int) * (p : Int) :=
+      mul_le_mul_of_nonneg_left (by omega) hqnn
+    have e1 : ((2 ^ c.level / p : Nat) : Int) * (-(2 * v.2))
+        = 2 * (-(((2 ^ c.level / p : Nat) : Int) * v.2)) := by ring
+    omega
+  omega
+
+/-- **Slice 9 — capture of a spaceship's reconstruction, arbitrary periods.**
+    Variant of `jumpCapturedF_reconstruction_of_spaceship`: the divisibility
+    premise is replaced by the containment of the phases in `g`'s reconstruction
+    frame (absolute coordinates). The transport to the cell's origin framing goes
+    through `toGrid_shift_grid` + `evolve_shift`. -/
+theorem jumpCapturedF_reconstruction_of_spaceship_mod (g : Grid) (hg : Canonical g)
+    {p : Nat} (hp0 : 0 < p) (v : Int × Int) (hship : evolve p g = shift v g)
+    (hwin : ∀ i, i < p → ∀ w ∈ evolve i g,
+      (gridToMacroCellWithOffset g).1.1 ≤ w.1 ∧
+        w.1 < (gridToMacroCellWithOffset g).1.1
+          + (2 ^ (gridToMacroCellWithOffset g).2.level : Int) ∧
+      (gridToMacroCellWithOffset g).1.2 ≤ w.2 ∧
+        w.2 < (gridToMacroCellWithOffset g).1.2
+          + (2 ^ (gridToMacroCellWithOffset g).2.level : Int))
+    (hspd1 : -(p : Int) ≤ 2 * v.1 ∧ 2 * v.1 ≤ (p : Int))
+    (hspd2 : -(p : Int) ≤ 2 * v.2 ∧ 2 * v.2 ≤ (p : Int)) :
+    jumpCapturedF (gridToMacroCellWithOffset g).2 = true := by
+  by_cases hne : g = []
+  · subst hne
+    decide
+  · have hwf : ((gridToMacroCellWithOffset g).2).wf = true := by
+      unfold gridToMacroCellWithOffset
+      exact buildFromGrid_wf g _ _ _
+    have hlvl : 1 ≤ (gridToMacroCellWithOffset g).2.level := by
+      have hN := gridToMacroCellWithOffsetN_level_gt_n 2 g hne
+      rw [gridToMacroCellWithOffsetN_le_two_eq 2 g (by omega)] at hN
+      cases hL : (gridToMacroCellWithOffset g).2.level with
+      | zero => rw [hL] at hN; exact absurd hN (by decide)
+      | succ m => omega
+    have hshift : (gridToMacroCellWithOffset g).2.toGrid (0, 0)
+        = shift (0 - (gridToMacroCellWithOffset g).1.1,
+            0 - (gridToMacroCellWithOffset g).1.2)
+            ((gridToMacroCellWithOffset g).2.toGrid (gridToMacroCellWithOffset g).1) :=
+      toGrid_shift_grid _ 0 0 _ _
+    have hrt : (gridToMacroCellWithOffset g).2.toGrid (gridToMacroCellWithOffset g).1
+        = g := toGrid_gridToMacroCellWithOffset_eq g hg
+    have hwin' : ∀ i, i < p → ∀ w ∈
+        evolve i ((gridToMacroCellWithOffset g).2.toGrid (0, 0)),
+      (0 : Int) ≤ w.1 ∧ w.1 < (2 ^ (gridToMacroCellWithOffset g).2.level : Int) ∧
+        (0 : Int) ≤ w.2 ∧ w.2 < (2 ^ (gridToMacroCellWithOffset g).2.level : Int) := by
+      intro i hi w hw
+      rw [hshift, ← evolve_shift, mem_shift, hrt] at hw
+      obtain ⟨hb1, hb2, hb3, hb4⟩ := hwin i hi _ hw
+      dsimp only at hb1 hb2 hb3 hb4
+      omega
+    exact jumpCapturedF_of_spaceship_mod _ hwf hlvl hp0 v
+      (spaceship_step_toGrid_zero g hg v hship) hwin' hspd1 hspd2
+
+/-- **Slice 9 — hcap of the spaceship class, arbitrary periods.** Variant of
+    `hcap_of_spaceship`: every phase carries its own frame, and the premise asks
+    the `p` phases of **each** starting phase's orbit to live in that phase's
+    reconstruction frame — for a real spaceship, this is the same bounded
+    neighborhood (transported by the drift), described `p` times. -/
+theorem hcap_of_spaceship_mod (g : Grid) (hg : Canonical g) {p : Nat} (hp0 : 0 < p)
+    (v : Int × Int) (hship : evolve p g = shift v g)
+    (hwin : ∀ r, r < p → ∀ i, i < p → ∀ w ∈ evolve i (evolve r g),
+      (gridToMacroCellWithOffset (evolve r g)).1.1 ≤ w.1 ∧
+        w.1 < (gridToMacroCellWithOffset (evolve r g)).1.1
+          + (2 ^ (gridToMacroCellWithOffset (evolve r g)).2.level : Int) ∧
+      (gridToMacroCellWithOffset (evolve r g)).1.2 ≤ w.2 ∧
+        w.2 < (gridToMacroCellWithOffset (evolve r g)).1.2
+          + (2 ^ (gridToMacroCellWithOffset (evolve r g)).2.level : Int))
+    (hspd1 : -(p : Int) ≤ 2 * v.1 ∧ 2 * v.1 ≤ (p : Int))
+    (hspd2 : -(p : Int) ≤ 2 * v.2 ∧ 2 * v.2 ≤ (p : Int)) :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t g)).2 = true := by
+  intro t
+  rw [evolve_spaceship_mod g hg v hship t, gridToMacroCellWithOffset_shift]
+  have hr : t % p < p := Nat.mod_lt _ hp0
+  have hcan : Canonical (evolve (t % p) g) := by
+    rcases Nat.eq_zero_or_pos (t % p) with h0 | hpos
+    · rw [h0]
+      simpa using hg
+    · exact canonical_evolve_of_pos hpos _
+  exact jumpCapturedF_reconstruction_of_spaceship_mod _ hcan hp0 v
+    (evolve_spaceship_phase g v hship _) (hwin _ hr) hspd1 hspd2
+
+/-- **Slice 9 — L3 closed for the arbitrary-period spaceship class: Hashlife
+    correctness.** Assembly corollary mirroring `hashlife_correct_margin_of_spaceship`:
+    under orbit-phase containment (no more divisibility), the global equality applies
+    at any horizon `2^k` under `centralCorrect`. Opens the class to non-dyadic
+    spaceships (c/3 and beyond) as soon as the witness checks the containment. -/
+theorem hashlife_correct_margin_of_spaceship_mod (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k) {p : Nat} (hp0 : 0 < p) (v : Int × Int)
+    (hship : evolve p (c.toGrid (0, 0)) = shift v (c.toGrid (0, 0)))
+    (hwin : ∀ r, r < p → ∀ i, i < p →
+      ∀ w ∈ evolve i (evolve r (c.toGrid (0, 0))),
+      (gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).1.1 ≤ w.1 ∧
+        w.1 < (gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).1.1
+          + (2 ^ (gridToMacroCellWithOffset
+            (evolve r (c.toGrid (0, 0)))).2.level : Int) ∧
+      (gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).1.2 ≤ w.2 ∧
+        w.2 < (gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).1.2
+          + (2 ^ (gridToMacroCellWithOffset
+            (evolve r (c.toGrid (0, 0)))).2.level : Int))
+    (hspd1 : -(p : Int) ≤ 2 * v.1 ∧ 2 * v.1 ≤ (p : Int))
+    (hspd2 : -(p : Int) ≤ 2 * v.2 ∧ 2 * v.2 ≤ (p : Int)) :
+    evolveHashlifeFast (2^k) (c.toGrid (0, 0)) = evolve (2^k) (c.toGrid (0, 0)) :=
+  hashlife_correct_margin_of_hcap c k h_central
+    (fun t _ => hcap_of_spaceship_mod _ (canonical_sortDedup _) hp0 v hship
+      hwin hspd1 hspd2 t)
+
+/-! ### Flagship c/3 witness: Hickerson's 25P3H1V0.1 (tranche 10, admission)
+
+First **non-dyadic spaceship** admitted through the relaxed chain of
+tranche 9: 25P3H1V0.1 (Dean Hickerson, August 1989), the smallest known c/3
+spaceship — 25 cells in each generation, 16×5 box, period 3, drift
+`(-1, 0)` per period. Since 3 divides no power of 2, the dyadic chain
+`p ∣ 2^level` of `jumpCapturedF_of_spaceship` structurally cannot admit it
+— only the containment relaxation of tranche 9 reaches it. The three step
+equations are proved by the **kernel** reducer (`decide`), without
+`native_decide` (bestiary note c.212). The pattern is transcribed from the
+canonical LifeWiki RLE (`conwaylife.com/patterns/25p3h1v0.1.rle`),
+re-verified in Python before transcription: 25 cells per phase,
+`evolve 3 = shift (-1, 0)` (measured). -/
+/-- Phase 0 of 25P3H1V0.1 (25 cells, box `[0, 4] × [0, 15]`).
+Lexicographically sorted literal. -/
+def hickersonC3 : Grid :=
+  [(0, 7), (0, 8), (0, 10), (1, 4), (1, 5), (1, 7), 
+  (1, 9), (1, 10), (1, 12), (1, 13), (1, 14), (2, 1), 
+  (2, 2), (2, 3), (2, 4), (2, 7), (2, 8), (2, 15), 
+  (3, 0), (3, 5), (3, 9), (3, 13), (3, 14), (4, 1), 
+  (4, 2)]
+/-- Phase 1 (25 cells, box `[0, 4] × [0, 15]`). Sorted literal. -/
+def hickersonC3P1 : Grid :=
+  [(0, 6), (0, 7), (0, 8), (0, 10), (0, 11), (0, 13), 
+  (1, 2), (1, 4), (1, 5), (1, 10), (1, 11), (1, 13), 
+  (1, 14), (2, 1), (2, 2), (2, 3), (2, 7), (2, 10), 
+  (2, 12), (2, 15), (3, 0), (3, 4), (3, 8), (3, 14), 
+  (4, 1)]
+/-- Phase 2 (25 cells, box `[-1, 3] × [0, 15]`): the only phase that
+spills north of the 5×16 box. Sorted literal. -/
+def hickersonC3P2 : Grid :=
+  [(-1, 7), (0, 5), (0, 6), (0, 7), (0, 9), (0, 10), 
+  (0, 11), (0, 13), (0, 14), (1, 1), (1, 2), (1, 4), 
+  (1, 5), (1, 8), (1, 13), (1, 14), (2, 1), (2, 2), 
+  (2, 5), (2, 9), (2, 10), (2, 12), (2, 15), (3, 0), 
+  (3, 3)]
+set_option maxRecDepth 1000000 in
+/-- The definition is already canonical (sorted, duplicate-free): the
+kernel certifies it, then `canonical_sortDedup` converts. -/
+theorem hickersonC3_canonical : Canonical hickersonC3 := by
+  have h : hickersonC3 = sortDedup hickersonC3 := by decide
+  rw [h]
+  exact canonical_sortDedup _
+set_option maxRecDepth 1000000 in
+/-- Same for phase 1. -/
+theorem hickersonC3P1_canonical : Canonical hickersonC3P1 := by
+  have h : hickersonC3P1 = sortDedup hickersonC3P1 := by decide
+  rw [h]
+  exact canonical_sortDedup _
+set_option maxRecDepth 1000000 in
+/-- Same for phase 2. -/
+theorem hickersonC3P2_canonical : Canonical hickersonC3P2 := by
+  have h : hickersonC3P2 = sortDedup hickersonC3P2 := by decide
+  rw [h]
+  exact canonical_sortDedup _
+set_option maxRecDepth 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- Step equation by the kernel reducer: phase 0 evolves into phase 1. -/
+theorem hickersonC3_step1 : step hickersonC3 = hickersonC3P1 := by decide
+set_option maxRecDepth 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- Same, phase 1 to phase 2. -/
+theorem hickersonC3P1_step : step hickersonC3P1 = hickersonC3P2 := by decide
+set_option maxRecDepth 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- Same, phase 2 to phase 0 **drifted by `(-1, 0)`**: the period-3 loop
+closes with one spaceship step. -/
+theorem hickersonC3P2_step : step hickersonC3P2 = shift (-1, 0) hickersonC3 := by decide
+/-- Phase chain under `evolve 1`: phase 0. -/
+theorem hickersonC3_ev1 : evolve 1 hickersonC3 = hickersonC3P1 := hickersonC3_step1
+/-- Phase chain: phase 1. -/
+theorem hickersonC3P1_ev1 : evolve 1 hickersonC3P1 = hickersonC3P2 := hickersonC3P1_step
+/-- Phase chain: phase 2, drifted return. -/
+theorem hickersonC3P2_ev1 : evolve 1 hickersonC3P2 = shift (-1, 0) hickersonC3 := hickersonC3P2_step
+/-- Spaceship relation proved by the **kernel**: 25P3H1V0.1 has period 3
+and drift `(-1, 0)` — composition of the three step equations. -/
+theorem hickersonC3_spaceship : evolve 3 hickersonC3 = shift (-1, 0) hickersonC3 := by
+  rw [evolve_three, hickersonC3_ev1, hickersonC3P1_ev1, hickersonC3P2_ev1]
+set_option maxRecDepth 1000000 in
+/-- Reconstruction frame of phase 0: offset `(-2, -2)` (margin 2 around
+the box `[0, 4] × [0, 15]`). -/
+theorem hickersonC3_frame_off : (gridToMacroCellWithOffset hickersonC3).1 = (-2, -2) := by decide
+set_option maxRecDepth 1000000 in
+/-- Frame level of phase 0: side `max(4+5, 15+5) = 20` → level 5, frame
+`[-2, 30) × [-2, 30)`. -/
+theorem hickersonC3_frame_lvl : (gridToMacroCellWithOffset hickersonC3).2.level = 5 := by decide
+set_option maxRecDepth 1000000 in
+/-- Frame of phase 1: same box as phase 0 → offset `(-2, -2)`. -/
+theorem hickersonC3P1_frame_off : (gridToMacroCellWithOffset hickersonC3P1).1 = (-2, -2) := by decide
+set_option maxRecDepth 1000000 in
+/-- Frame level of phase 1: level 5. -/
+theorem hickersonC3P1_frame_lvl : (gridToMacroCellWithOffset hickersonC3P1).2.level = 5 := by decide
+set_option maxRecDepth 1000000 in
+/-- Frame of phase 2: box `[-1, 3] × [0, 15]` → offset `(-3, -2)`. -/
+theorem hickersonC3P2_frame_off : (gridToMacroCellWithOffset hickersonC3P2).1 = (-3, -2) := by decide
+set_option maxRecDepth 1000000 in
+/-- Frame level of phase 2: level 5 (frame `[-3, 29) × [-2, 30)`). -/
+theorem hickersonC3P2_frame_lvl : (gridToMacroCellWithOffset hickersonC3P2).2.level = 5 := by decide
+/-- Containment of the 9 phase combinations `(r, i) < 3 × 3`: each image
+`evolve i (evolve r hickersonC3)` — a phase or a drifted phase, the drift
+being at most `-1` north per period — lives in the reconstruction frame of
+phase `r` (side 32, margin 2 everywhere: a one-cell drift is absorbed by
+the margin). -/
+theorem hickersonC3_hwin : ∀ r, r < 3 → ∀ i, i < 3 → ∀ p ∈ evolve i (evolve r hickersonC3),
+    (gridToMacroCellWithOffset (evolve r hickersonC3)).1.1 ≤ p.1 ∧
+      p.1 < (gridToMacroCellWithOffset (evolve r hickersonC3)).1.1
+        + (2 ^ (gridToMacroCellWithOffset (evolve r hickersonC3)).2.level : Int) ∧
+    (gridToMacroCellWithOffset (evolve r hickersonC3)).1.2 ≤ p.2 ∧
+      p.2 < (gridToMacroCellWithOffset (evolve r hickersonC3)).1.2
+        + (2 ^ (gridToMacroCellWithOffset (evolve r hickersonC3)).2.level : Int) := by
+  intro r hr i hi
+  interval_cases r <;> interval_cases i <;>
+    simp only [evolve_zero, evolve_two, ← evolve_shift,
+      hickersonC3_ev1, hickersonC3P1_ev1, hickersonC3P2_ev1] <;>
+    first
+    | (rw [hickersonC3_frame_off, hickersonC3_frame_lvl]; decide)
+    | (rw [hickersonC3P1_frame_off, hickersonC3P1_frame_lvl]; decide)
+    | (rw [hickersonC3P2_frame_off, hickersonC3P2_frame_lvl]; decide)
+/-- Capstone: 25P3H1V0.1 is admitted by `hcap_of_spaceship_mod` — first
+concrete **non-dyadic spaceship**. The speed bound `2·|v.i| ≤ p` holds
+strictly (`2·|−1| = 2 < 3`, `2·|0| = 0 < 3`): for every horizon `t`, the
+reconstruction of `evolve t hickersonC3` is captured by Hashlife. -/
+theorem hickersonC3_hcap_of_spaceship_mod :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t hickersonC3)).2 = true :=
+  hcap_of_spaceship_mod hickersonC3 hickersonC3_canonical (by decide) (-1, 0)
+    hickersonC3_spaceship hickersonC3_hwin (by norm_num) (by norm_num)
+
 /-! ## Sanity checks on the bestiary
 
 The fragment `supportInMargin` is **decidable** (instance `Decidable (BoxAssezGrandN)`,

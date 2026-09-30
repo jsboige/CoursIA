@@ -189,9 +189,11 @@ namespace MyIA.Trading.Backtester
             this.NextBidOrderPriceExpression = new SimpleExpression<decimal>("Price * 99 / 100");
             this.MinAskOrderPriceExpression = new SimpleExpression<decimal>("LowestAsk.price * 99 / 100");
             this.MaxBidOrderPriceExpression = new SimpleExpression<decimal>("HighestBid.price * 100 / 99");
-            // Parens plates autour de (Strategy.LimitOrderValueRate / 100 - 1) — Flee
-            // ne parse pas "((X) - 1)" (paren imbriquee autour d'une expression suivie
-            // d'une soustraction unaire), mais "(X - 1)" passe. Voir MEMORY c.988.
+            // Forme (Strategy.LimitOrderValueRate / 100 - 1). Le label "bug parens
+            // Flee" du commit c.988 est REFUTE (repro minimale Flee 2.0.0 net9.0,
+            // config SimpleExpression, 2026-09-17 — S3 #15141) : "((X) - 1)" compile
+            // et s'evalue a l'identique, formule Bid complete incluse (1,0925). La
+            // forme plate est conservee telle quelle (neutre, bit-identique).
             this.AskOrderAmountExpression = new SimpleExpression<decimal>("(CurrentOrders.HighestAsk.Value * (1 - Strategy.LimitOrderValueRate / 100) / AskSpan) + (((CurrentOrders.HighestAsk.Value * Strategy.LimitOrderValueRate / 100) - (LowestAskLimitPrice * CurrentOrders.HighestAsk.Value * (1 - Strategy.LimitOrderValueRate / 100) / AskSpan))/ Price)");
             this.BidOrderAmountExpression = new SimpleExpression<decimal>("(CurrentOrders.LowestBid.Value * (Strategy.LimitOrderValueRate / 100 - 1) / BidSpan) + ((CurrentOrders.LowestBid.Value * Strategy.LimitOrderValueRate / 100) - (HighestBidLimitPrice * CurrentOrders.LowestBid.Value * (Strategy.LimitOrderValueRate / 100 - 1) / BidSpan))/ Price");
             this.VolumeResetLimitFactor = 1m;
