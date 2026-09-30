@@ -33,7 +33,7 @@
 
 ## Notebook Structure
 
-The notebook contains 8 cells:
+The notebook contains the following cells:
 
 1. **Markdown**: Research context, hypotheses, methodology
 2. **Code**: Setup QuantBook + load BTCUSD daily data 2019-01-01 → now
