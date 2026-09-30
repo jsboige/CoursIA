@@ -133,18 +133,31 @@ def find_slow_instances(
     return slow
 
 
-def parse_log_body(body: str) -> list[dict]:
-    """Extrait le log JSON du corps de l'issue (bloc ```variance-guard-log)."""
+def parse_log_body(body: str) -> tuple[list[dict], dict[str, int]]:
+    """Extrait le log JSON du corps de l'issue (bloc ```variance-guard-log).
+
+    Retourne (entries, signaled) : les entrees horaires ET l'etat de
+    signalement -- {runner: compte deja poste}. Un corps d'ancien format
+    (sans cle ``signaled``) rend un etat vide : la garde signalera une
+    premiere fois, puis passera en delta.
+    """
     tag = f"```{LOG_BLOCK_TAG}"
     if tag not in body:
-        return []
+        return [], {}
     chunk = body.split(tag, 1)[1].split("```", 1)[0].strip()
     try:
         payload = json.loads(chunk)
     except json.JSONDecodeError:
-        return []
-    entries = payload.get("entries") if isinstance(payload, dict) else None
-    return entries if isinstance(entries, list) else []
+        return [], {}
+    if not isinstance(payload, dict):
+        return [], {}
+    entries = payload.get("entries")
+    signaled = payload.get("signaled")
+    return (
+        entries if isinstance(entries, list) else [],
+        {str(k): int(v) for k, v in signaled.items()}
+        if isinstance(signaled, dict) else {},
+    )
 
 
 def merge_log(
@@ -195,8 +208,32 @@ def evaluate_signals(log: list[dict], min_hits: int = DEFAULT_MIN_HITS) -> list[
     return signals
 
 
-def render_log_body(log: list[dict]) -> str:
-    payload = json.dumps({"entries": log}, ensure_ascii=False, indent=1)
+def select_new_signals(signals: list[dict], signaled: dict[str, int]) -> list[dict]:
+    """Filtre les signaux dont le compte a CHANGE depuis le dernier passage.
+
+    Sans ce filtre, un runner a N instances lentes serait re-signe a chaque
+    passage (jusqu'a 12 commentaires identiques par jour) tant que ses
+    instances restent dans la fenetre de 24 h : le compte ne change pas, il
+    n'y a rien de neuf a dire. Le delta se joue sur le COMPTE, critere de
+    l'arbitrage -- et un runner qui tombe sous le seuil perd son etat
+    (absent des signaux courants, il ne reste pas dans ``next_signaled``) :
+    une re-accumulation le re-signale.
+    """
+    return [s for s in signals if s["hit_count"] > signaled.get(s["runner"], 0)]
+
+
+def next_signaled(signals: list[dict]) -> dict[str, int]:
+    """Etat de signalement a persister apres ce passage.
+
+    Un runner absent des signaux courants n'y figure pas : son compte est
+    retombe sous le seuil, son historique de signalement ne le suit pas.
+    """
+    return {s["runner"]: s["hit_count"] for s in signals}
+
+
+def render_log_body(log: list[dict], signaled: dict[str, int]) -> str:
+    payload = json.dumps(
+        {"entries": log, "signaled": signaled}, ensure_ascii=False, indent=1)
     return f"```{LOG_BLOCK_TAG}\n{payload}\n```"
 
 
@@ -240,24 +277,28 @@ def main(argv: list[str] | None = None) -> int:
         median_floor_minutes=args.median_floor_minutes,
     )
     prior_body = args.body_file.read_text(encoding="utf-8") if args.body_file else ""
-    log = merge_log(parse_log_body(prior_body), window_slow, now)
-    signals = evaluate_signals(log, min_hits=args.min_hits)
+    prior_entries, prior_signaled = parse_log_body(prior_body)
+    log = merge_log(prior_entries, window_slow, now)
+    all_signals = evaluate_signals(log, min_hits=args.min_hits)
+    new_signals = select_new_signals(all_signals, prior_signaled)
 
     verdict = {
         "window_minutes": args.window_minutes,
         "runs_measured": len(runs),
         "window_slow_runners": sorted(window_slow),
         "log_entries": len(log),
-        "signals": signals,
-        "next_body": render_log_body(log),
+        "signals": new_signals,
+        "all_signals": all_signals,
+        "next_body": render_log_body(log, next_signaled(all_signals)),
         "advisory": True,
     }
     if args.json:
         print(json.dumps(verdict, ensure_ascii=False, indent=1))
     else:
         print(f"runs mesures: {len(runs)} | runners lents (fenetre): "
-              f"{len(window_slow)} | signaux (>= {args.min_hits} hits/24 h): {len(signals)}")
-        for signal in signals:
+              f"{len(window_slow)} | signaux (>= {args.min_hits} hits/24 h): "
+              f"{len(all_signals)} dont nouveaux: {len(new_signals)}")
+        for signal in new_signals:
             print(f"  SIGNAL {signal['runner']} (hote {signal['host']}) : "
                   f"{signal['hit_count']} instances lentes")
     return 0

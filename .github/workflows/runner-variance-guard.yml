@@ -84,11 +84,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          # .signals ne porte que les NOUVEAUX signaux (compte croissant
+          # depuis le dernier passage) : un runner deja signale au meme
+          # compte n'est pas re-poste (relecture ai-01 e04d4e3f3b).
           COUNT=$(jq '.signals | length' verdict.json)
           if [ "$COUNT" = "0" ]; then
-            echo "no signal (threshold: >= 2 slow instances per runner / 24 h)"
+            echo "no NEW signal this pass (re-signals only when a runner slow-instance count grows)"
             exit 0
           fi
           ISSUE_NUMBER=$(gh api -X GET "search/issues" -f q='repo:jsboige/CoursIA is:issue is:open in:title "runner-variance-guard #15574"' --jq '.items[0].number')
-          jq -r '.signals[] | "## SIGNAL \(.runner) (hote \(.host))\n\n\(.hit_count) instances >= 3x la mediane du pool sur 24 h :\n" + (.hits[] | "- \(.ts) -- \(.job) : \(.duration_minutes) min vs mediane \(.pool_median_minutes) min (x\(.ratio), conclusion: \(.conclusion))") + "\n\nGarde advisory (#15574 item 4) : aucun retrait automatique -- le retrait reste au proprietaire de l\'hote."' verdict.json > signal.md
+          # Programme jq en fichier (-f) : aucune apostrophe a echapper dans
+          # ce run (un programme inline cassait bash -n, unexpected EOF).
+          jq -r -f scripts/ci/runner_variance_signal.jq verdict.json > signal.md
           gh issue comment "$ISSUE_NUMBER" --body-file signal.md
