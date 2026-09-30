@@ -4,10 +4,14 @@ LeanDojo-v2 Smoke Tests - Quick validation without tracing.
 Tests:
 - LeanDojo-v2 module import (lean_dojo_v2)
 - Version detection via importlib.metadata (NOT __version__, which is hardcoded
-  to "1.0.0" in lean_dojo_v2/__init__.py -- cf. issue #18430)
+  to "1.0.0" in lean_dojo_v2/__init__.py -- cf. issue #18430, Tell c.943-L2)
 - PyPantograph availability check (separate git install, optional for smoke)
-- License file at package root (Apache-2.0 effective per the LICENSE file;
-  the README's MIT claim is stale -- doc'd in #18430)
+- License file detection at BOTH the package root (legacy) AND in
+  <pkg>-<ver>.dist-info/licenses/ (PEP 639 -- this is where LeanDojo-v2 v1.0.9
+  ships its LICENSE). The LICENSE file is Apache-2.0; the PyPI `License:` field
+  and `Classifier: License :: OSI Approved :: MIT License` are stale/wrong
+  (upstream metadata bug). The LICENSE file is the authoritative source
+  (cf. issue #18430, Tell c.943-L1)
 - No tracing / no token required (smoke only)
 
 Sibling of test_leandojo_basic.py (which targets the v1 line). The two
@@ -96,16 +100,36 @@ def test_lean_dojo_v2_license_metadata() -> bool:
         print(f"[license] lean_dojo_v2: SKIP (import failed: {exc})")
         return False
     # LeanDojo-v2's LICENSE file is Apache-2.0 (verified at
-    # https://github.com/lean-dojo/LeanDojo-v2/blob/main/LICENSE).
-    # The README says MIT, but the LICENSE file is the authoritative source.
+    # https://github.com/lean-dojo/LeanDojo-v2/blob/main/LICENSE and
+    # in the PEP 639 dist-info `licenses/LICENSE` after `pip install`).
+    # The README and PyPI metadata say MIT, but the LICENSE file is the
+    # authoritative source -- an upstream metadata bug worth flagging.
     # We only assert that *some* license marker is reachable, then report.
     pkg = getattr(mod, "__file__", "")
     pkg_path = Path(pkg).parent if pkg else Path.cwd()
     license_files = []
-    for candidate in ("LICENSE", "LICENSE.md", "LICENSE.txt", "COPYING"):
+    candidates_pkg = ("LICENSE", "LICENSE.md", "LICENSE.txt", "COPYING")
+    for candidate in candidates_pkg:
         if (pkg_path / candidate).exists():
-            license_files.append(candidate)
-    print(f"[license] license files found at package root: {license_files or 'NONE'}")
+            license_files.append(f"pkg/{candidate}")
+    # PEP 639 license_files convention: dist-info/licenses/LICENSE.
+    # Look only in the package's OWNING dist-info (sibling of pkg_path), not
+    # in the whole site-packages -- which would surface dozens of unrelated
+    # LICENSE files. The dist-info name follows "<import_name>-<ver>"
+    # (Python import name, underscores preserved).
+    site_packages = pkg_path.parent  # site-packages/lean_dojo_v2 -> site-packages
+    import_name = "lean_dojo_v2"
+    if site_packages.exists():
+        for entry in site_packages.iterdir():
+            if (entry.name.startswith(f"{import_name}-")
+                    and entry.name.endswith(".dist-info")
+                    and entry.is_dir()):
+                licenses_dir = entry / "licenses"
+                if licenses_dir.is_dir():
+                    for sub in licenses_dir.iterdir():
+                        if sub.is_file() and sub.name.upper().startswith("LICENSE"):
+                            license_files.append(f"{entry.name}/licenses/{sub.name}")
+    print(f"[license] license files found: {license_files or 'NONE'}")
     # Smoke-level assertion: at least one license marker is reachable.
     return bool(license_files)
 
