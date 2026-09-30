@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Tests du module limit_sets.py (GameTheory-26, Poincare-Bendixson).
 
-Backing notebook : GameTheory-22-Ensembles-Limites-Poincare-Bendixson.ipynb.
+Backing notebook : GameTheory-06i-Ensembles-Limites-Poincare-Bendixson-Python.ipynb.
 
 Ces tests assertent des **invariants de theorie connus**, pas seulement
 l'absence de crash :

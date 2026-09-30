@@ -5,7 +5,7 @@
   Formalisation en Lean 4 core uniquement (sans Mathlib) des jeux
   bayésiens finis à deux joueurs (espaces de types de Harsanyi, utilité
   espérée interimaire, équilibre de Nash bayésien). Compagnon du
-  notebook GameTheory-11-BayesianGames.ipynb.
+  notebook GameTheory-11-BayesianGames-Python.ipynb.
 
   Modules :
   - `Bayesian.Sum`      — sommes finies sur `Fin n` avec les lemmes requis

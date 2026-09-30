@@ -16,7 +16,7 @@
   when of the meet type and Football when of the avoid type — is
   verified below by `decide`, exercising the decidability of `isBNE`.
 
-  Mirrors GameTheory-11-BayesianGames.ipynb. See #2610.
+  Mirrors GameTheory-11-BayesianGames-Python.ipynb. See #2610.
 -/
 
 import Bayesian.BNE_en
