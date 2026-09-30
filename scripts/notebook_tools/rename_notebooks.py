@@ -604,6 +604,31 @@ def scan_referents(forms_list: list[RefForms], repo: Path | None = None) -> Plan
 
 
 # ---------------------------------------------------------------------------
+# Garde de cibles : NTFS est insensible a la casse
+# ---------------------------------------------------------------------------
+
+def conflicting_targets(pairs: list[tuple[str, str]], repo: Path) -> list[str]:
+    """Cibles deja presentes ET distinctes de leur propre source.
+
+    Sur un FS insensible a la casse (NTFS, HFS+ par defaut), un renommage
+    case-only (-Csharp -> -CSharp) voit sa cible « deja presente » parce
+    qu'elle EST la source. Un vrai conflit est une cible existante qui est
+    un fichier DISTINCT de sa propre source.
+    """
+    out: list[str] = []
+    for old, new in pairs:
+        if not (repo / new).exists():
+            continue
+        try:
+            distinct = not os.path.samefile(repo / old, repo / new)
+        except OSError:
+            distinct = True
+        if distinct:
+            out.append(new)
+    return out
+
+
+# ---------------------------------------------------------------------------
 # --mapping : chargement (TSV ou commentaire d'issue)
 # ---------------------------------------------------------------------------
 
@@ -853,16 +878,7 @@ def main(argv: list[str] | None = None) -> int:
     if collisions:
         print("COLLISIONS dans la table :", collisions)
         return 1
-    # NTFS est insensible a la casse : pour un renommage case-only
-    # (-Csharp -> -CSharp), la cible « existe » parce qu'elle EST la source.
-    # Un vrai conflit est une cible existante distincte de sa propre source.
-    def _distinct(path_new: str, path_old: str) -> bool:
-        try:
-            return not os.path.samefile(repo / path_old, repo / path_new)
-        except OSError:
-            return True
-    exist = [new for old, new in pairs
-             if (repo / new).exists() and _distinct(new, old)]
+    exist = conflicting_targets(pairs, repo)
     if exist:
         print("CIBLES DEJA PRESENTES :", exist)
         return 1
