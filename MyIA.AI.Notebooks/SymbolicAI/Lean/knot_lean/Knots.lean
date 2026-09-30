@@ -16,6 +16,8 @@
     - `Knots.Invariant` — invariants polynomiaux (Alexander,
       Jones), tricoloriabilité, genre
     - `Knots.Conway` — notations et conventions de Conway
+    - `Knots.Slice` — nœuds slice, théorèmes de Piccirillo et Freedman,
+      dichotomie lisse/topologique (extrait de Conway, #18397)
     - `Knots.Jones` — bracket de Kauffman sur codes PD (somme d'états,
       évaluations trèfle / noeud en huit / noeud trivial)
     - `Knots.FigureEight` — invariants du noeud en huit sur son code PD
@@ -38,6 +40,7 @@ import Knots.Basic
 import Knots.Reidemeister
 import Knots.Invariant
 import Knots.Conway
+import Knots.Slice
 import Knots.ReidemeisterInvariance
 import Knots.Jones
 import Knots.FigureEight
