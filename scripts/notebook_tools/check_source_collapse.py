@@ -4,7 +4,7 @@ notebook cell -- the source-side counterpart of check_output_collapse.py.
 Issue #15901 (opened by ai-01 2026-09-13, before any merge of #15862).
 
 Founding case, measured firsthand on
-``MyIA.AI.Notebooks/GameTheory/GameTheory-06e-Open-Source-Game-Theory.ipynb``
+``MyIA.AI.Notebooks/GameTheory/GameTheory-06e-Open-Source-Game-Theory-Python.ipynb``
 (merge-base ``244c7c54f032`` -> head ``7a355873de32``): 7 -> 7 code cells, and
 the cell ``c989_independent_v2`` loses 8425 -> 5309 characters of SOURCE
 (-37.0 %, an absolute loss of 3116). What disappears: the declarative table
@@ -268,7 +268,7 @@ DIAGNOSTIC_RE = re.compile(
 SELF_TEST_BASE = "244c7c54f032"
 SELF_TEST_HEAD = "7a355873de32"
 SELF_TEST_NOTEBOOK = (
-    "MyIA.AI.Notebooks/GameTheory/GameTheory-06e-Open-Source-Game-Theory.ipynb")
+    "MyIA.AI.Notebooks/GameTheory/GameTheory-06e-Open-Source-Game-Theory-Python.ipynb")
 SELF_TEST_CELL = "c989_independent_v2"
 
 # Structural founding case (#16110), replayed the same way. The head is the

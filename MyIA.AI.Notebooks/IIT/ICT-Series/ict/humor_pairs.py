@@ -2,7 +2,7 @@
 """Couche d'acces au corpus humour consolide (CORPUS_DUR) pour #14035.
 
 Reproduit le geste du pilote ICT-35 : les cellules code [0..10] de
-``GameTheory-24b-Humour-Banc-Dur.ipynb`` sont executees dans un namespace
+``GameTheory-18d-Humour-Banc-Dur-Python.ipynb`` sont executees dans un namespace
 isole, sans editer le notebook source, et ``CORPUS_DUR`` en est extrait.
 La source de verite reste le notebook GT-24b, jamais copie.
 """
@@ -39,7 +39,7 @@ def gt24b_path() -> Path:
     return (
         Path(__file__).resolve().parents[3]
         / "GameTheory"
-        / "GameTheory-24b-Humour-Banc-Dur.ipynb"
+        / "GameTheory-18d-Humour-Banc-Dur-Python.ipynb"
     )
 
 
