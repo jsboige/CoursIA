@@ -80,9 +80,9 @@ Commandes :
 
 ## FLAGS inventaire (a corriger — verifie 2026-05-23)
 
-1. URLs placeholder `yourdomain.com` : `Image/04-4-Cross-Stitch-Legacy` (cell ~256), `Texte/10_LocalLlama` (cell ~509) — remplacer par le vrai sous-domaine.
-2. `02-5-Multi-Model-TTS-Gateway` : 401 (auth a corriger).
-3. Leak `LOCAL_MODE` dans les outputs committes de `02-4-Z-Image-Lumina2` + `02-1-Qwen-Image-Edit-2509` — re-executer en mode remote propre.
+1. `02-5-Multi-Model-TTS-Gateway` : 401 (auth a corriger).
+
+(Le drapeau « Leak `LOCAL_MODE` » de l'inventaire 2026-05-23 est retire : les deux carnets cites ne portent plus `LOCAL_MODE` nulle part, source compris — mesure `git grep -c LOCAL_MODE` sur `main`, 0/0.)
 
 ## Anti-patterns interdits
 
