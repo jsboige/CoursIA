@@ -1,6 +1,6 @@
 # Théorie de la Décision — arc bayésien, formel et causal
 
-[← Série Probas](../README.md) · [Corpus bayésien Infer.NET](../Infer/README.md) · [Corpus bayésien PyMC](../PyMC/README.md) · [Lake Lean `decision_theory_lean`](../decision_theory_lean/)
+[← Série Probas](../README.md) · [Corpus bayésien Infer.NET](../Infer/README.md) · [Corpus bayésien PyMC](../PyMC/README.md) · [Lake Lean `decision_theory_lean`](decision_theory_lean/)
 
 Un posterior n'est pas une fin en soi : c'est l'**entrée** d'une décision. Savoir que la tumeur est maligne avec 70 % de probabilité ne dit pas s'il faut opérer ; connaître la distribution de rendement d'un actif ne dit pas combien y investir. Cet arc prolonge la modélisation probabiliste de la série [Probas](../README.md) jusqu'au **choix d'action sous incertitude** : comment transformer une croyance quantifiée en la meilleure décision possible, et comment **prouver** que cette décision est optimale.
 
@@ -11,7 +11,7 @@ L'arc rassemble des notebooks répartis en trois traitements complémentaires du
 | [`DecInfer/`](DecInfer/README.md) | Arc C# + companions **Lean 4** | Infer.NET (.NET 9) + kernel Lean | L'arc de référence : des axiomes vNM aux MDP et bandits, avec ses companions à **preuve formelle native** |
 | [`DecPyMC/`](DecPyMC/README.md) | 12 (Python) | PyMC (NUTS/MCMC) | Le miroir Python : mêmes concepts, échantillonnage stochastique, diagnostics ArviZ, puis la **jambe actuarielle** (8-12) |
 | [`Causal-Bridges/`](Causal-Bridges/README.md) | 4 (Python) | `dowhy` (PyWhy) | Le **capstone causal** : l'échelle de Pearl et le do-calculus, plus les méthodes quasi-expérimentales (DiD, RDD, contrôle synthétique) |
-| [`decision_theory_lean`](../decision_theory_lean/) | *(lake, hors compte)* | Lean 4 + Mathlib | La **couche de certification** : utilité espérée vNM, cohérence de de Finetti, escompte de Gittins, démontrés `0 sorry` |
+| [`decision_theory_lean`](decision_theory_lean/) | *(lake, hors compte)* | Lean 4 + Mathlib | La **couche de certification** : utilité espérée vNM, cohérence de de Finetti, escompte de Gittins, démontrés `0 sorry` |
 
 ## Pourquoi cet arc — la double question de la rationalité
 
@@ -77,13 +77,13 @@ Quatre notebooks-ponts, dont [CausalBridges-01 — Do-Calculus](Causal-Bridges/C
 
 ### `decision_theory_lean` — la couche de certification (hors compte notebooks)
 
-Le lake Lean 4 [`decision_theory_lean`](../decision_theory_lean/), à la racine de la série Probas (visible des deux pistes), formalise trois résultats canoniques :
+Le lake Lean 4 [`decision_theory_lean`](decision_theory_lean/), à la racine de la série Probas (visible des deux pistes), formalise trois résultats canoniques :
 
 - **Utility** — la représentation d'utilité espérée de von Neumann–Morgenstern : les quatre axiomes (complétude, transitivité, indépendance, continuité/Archimède), la **direction saine** du théorème (représentation ⟹ rationalité) et la stabilité affine, démontrées **sans aucun `sorry`**. La direction d'existence (Herstein–Milnor 1953) est documentée comme jalon ouvert.
 - **Coherence** — la cohérence de de Finetti / Dutch Book : la direction constructive (cas fini) et le cas mono-ticket sont **clos sans `sorry`** ; des prix de pari incohérents exposent l'agent à un livret de paris à perte sûre, via l'identité d'inclusion–exclusion. **Vitrine notebook** : [DecInfer-02b-Lean-Coherence](DecInfer/DecInfer-02b-Lean-Coherence.ipynb), companion dédié extrait des sections 7-8 de DecInfer-02 (G4b, #14873) (`#check`/`#print axioms` sur `non_additive_implies_dutch_book` et `single_coherent_iff_prob_bounds`, EPIC visibilité #11703).
 - **Gittins** — le bandit actualisé à horizon infini : les **briques de l'escompte géométrique sont entièrement prouvées** ; le théorème phare d'optimalité de l'indice reste **énoncé mais intraitable** dans le Mathlib actuel (pas de formalisation MDP/Bellman), maintenu en `sorry` documenté — un jalon honnête, non un trou masqué.
 
-Le lake suit la convention i18n FR/EN de la série (fichiers `*_en.lean` miroirs). **Détail** : [`decision_theory_lean/README.md`](../decision_theory_lean/README.md).
+Le lake suit la convention i18n FR/EN de la série (fichiers `*_en.lean` miroirs). **Détail** : [`decision_theory_lean/README.md`](decision_theory_lean/README.md).
 
 ## Prérequis et démarrage
 
@@ -93,7 +93,7 @@ Le lake suit la convention i18n FR/EN de la série (fichiers `*_en.lean` miroirs
 
 - **Piste Infer.NET (`DecInfer/`)** : .NET 9.0 + `dotnet-interactive`. Voir [`../README.md`](../README.md#installation) pour l'installation du kernel.
 - **Piste PyMC (`DecPyMC/`) et pont causal (`Causal-Bridges/`)** : Python 3.12+ (PyMC 6 et ArviZ 1.x ne s'installent pas sur une version antérieure), dépendances `pymc`, `arviz`, `dowhy` dans [`../requirements.txt`](../requirements.txt). Les notebooks `DecPyMC` déclarent le kernel `python3` ; la plupart des `Causal-Bridges` déclarent encore `coursia-ml-training`, un kernel propre aux machines de la flotte ([#17654](https://github.com/jsboige/CoursIA/issues/17654)).
-- **Companions Lean (`DecInfer-02`, `DecInfer-02b`, `DecInfer-09`)** : kernel Lean 4 (WSL) + lake [`decision_theory_lean`](../decision_theory_lean/). Compilation : `lake -R build` dans le dossier du lake.
+- **Companions Lean (`DecInfer-02`, `DecInfer-02b`, `DecInfer-09`)** : kernel Lean 4 (WSL) + lake [`decision_theory_lean`](decision_theory_lean/). Compilation : `lake -R build` dans le dossier du lake.
 
 Chaque sous-série démarre par ses fondations (`DecInfer-01` / `DecPyMC-1`) et se lit dans l'ordre numérique — la progression est cumulative.
 

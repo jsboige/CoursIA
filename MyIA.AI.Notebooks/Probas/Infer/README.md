@@ -69,7 +69,7 @@ Le trait distinctif d'Infer.NET : le modèle déclaratif est **compilé** (via R
 | 18 | [Infer-18-Change-Point](Infer-18-Change-Point.ipynb) | 50 min | Détection de rupture, DiscreteUniform, ForEach + If/IfNot sur plage, EP, Poisson |
 | 19 | [Infer-19-Survival-Analysis](Infer-19-Survival-Analysis.ipynb) | 50 min | Analyse de survie, Exponentielle conjugée (Gamma), Weibull par transformée, S(t) forme fermée, censure à droite exécutée (`ConstrainPositive` vs Kaplan–Meier) |
 
-> **Théorie de la décision** : les 10 notebooks de décision (utilité, EVPI, MDPs, Thompson Sampling, plus 2 companions Lean) forment désormais un arc autonome dans [`../DecisionTheory/DecInfer/`](../DecisionTheory/DecInfer/README.md), adossé au lake [`decision_theory_lean`](../decision_theory_lean/).
+> **Théorie de la décision** : les 10 notebooks de décision (utilité, EVPI, MDPs, Thompson Sampling, plus 2 companions Lean) forment désormais un arc autonome dans [`../DecisionTheory/DecInfer/`](../DecisionTheory/DecInfer/README.md), adossé au lake [`decision_theory_lean`](../DecisionTheory/decision_theory_lean/).
 
 **Durée totale** : ~14h50 (corpus bayésien 1-19)
 
@@ -177,7 +177,7 @@ flowchart TD
     class DT decision;
 ```
 
-Le corpus (1-19, le numéro 6 n'existe pas — le debugging vit en accrétion `Infer-2b`) se suit en séquence ; l'accrétion **Debugging** y joue un rôle transversal — elle compare aussi les trois algorithmes (EP/VMP/Gibbs) et sert de référence dès qu'une inférence dysfonctionne. Les notebooks **14-19 (Frontières)** prolongent le corpus bayésien (causalité, processus gaussiens, modèles hiérarchiques, filtre de Kalman, détection de rupture, analyse de survie). La **théorie de la décision** — utilité espérée, EVPI, MDPs, Thompson Sampling, plus les companions Lean (indice de Gittins) — forme désormais un **arc autonome** dans [`../DecisionTheory/DecInfer/`](../DecisionTheory/DecInfer/README.md), adossé au lake [`decision_theory_lean`](../decision_theory_lean/). Le détail notebook-par-notebook figure dans les sections détaillées ci-dessous.
+Le corpus (1-19, le numéro 6 n'existe pas — le debugging vit en accrétion `Infer-2b`) se suit en séquence ; l'accrétion **Debugging** y joue un rôle transversal — elle compare aussi les trois algorithmes (EP/VMP/Gibbs) et sert de référence dès qu'une inférence dysfonctionne. Les notebooks **14-19 (Frontières)** prolongent le corpus bayésien (causalité, processus gaussiens, modèles hiérarchiques, filtre de Kalman, détection de rupture, analyse de survie). La **théorie de la décision** — utilité espérée, EVPI, MDPs, Thompson Sampling, plus les companions Lean (indice de Gittins) — forme désormais un **arc autonome** dans [`../DecisionTheory/DecInfer/`](../DecisionTheory/DecInfer/README.md), adossé au lake [`decision_theory_lean`](../DecisionTheory/decision_theory_lean/). Le détail notebook-par-notebook figure dans les sections détaillées ci-dessous.
 
 ---
 
@@ -664,7 +664,7 @@ Les notebooks 9-12 couvrent les modèles avancés : topics, crowdsourcing, séqu
 
 ## Théorie de la Décision (arc autonome)
 
-Les 10 notebooks de théorie de la décision --- fondements de l'utilité (axiomes vNM, aversion au risque), utilité multi-attributs, réseaux de décision, valeur de l'information (EVPI/EVSI), systèmes experts (Minimax/regret), décisions séquentielles (MDPs), Thompson Sampling bayésien, plus deux companions Lean (preuve formelle du théorème vNM et indice de Gittins) --- constituent désormais un **arc autonome** dans [`../DecisionTheory/DecInfer/`](../DecisionTheory/DecInfer/README.md), adossé au lake [`decision_theory_lean`](../decision_theory_lean/).
+Les 10 notebooks de théorie de la décision --- fondements de l'utilité (axiomes vNM, aversion au risque), utilité multi-attributs, réseaux de décision, valeur de l'information (EVPI/EVSI), systèmes experts (Minimax/regret), décisions séquentielles (MDPs), Thompson Sampling bayésien, plus deux companions Lean (preuve formelle du théorème vNM et indice de Gittins) --- constituent désormais un **arc autonome** dans [`../DecisionTheory/DecInfer/`](../DecisionTheory/DecInfer/README.md), adossé au lake [`decision_theory_lean`](../DecisionTheory/decision_theory_lean/).
 
 Cette extraction clarifie les deux fils du corpus Probas : la **modélisation bayésienne** (ce README, notebooks 1-19) et la **théorie de la décision** (DecisionTheory/). Voir le README de DecisionTheory pour la vue d'ensemble, la progression pédagogique et le détail notebook-par-notebook.
 

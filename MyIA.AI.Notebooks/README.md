@@ -90,8 +90,7 @@ Search
 Probas
 ├── Infer/ - notebooks Infer.NET (graphes de facteurs, C#)
 ├── PyMC/ - notebooks PyMC (MCMC, Python) — miroir Infer
-├── DecisionTheory/ - Arc décision DecInfer 1-10 (vNM, Gittins, Thompson) + Causal-Bridges (do(·) Pearl cross-paradigmes)
-└── decision_theory_lean/ - Axiomes VNM + Gittins (Lean 4)
+└── DecisionTheory/ - Arc décision DecInfer 1-10 (vNM, Gittins, Thompson) + Causal-Bridges (do(·) Pearl cross-paradigmes) + lake decision_theory_lean (axiomes VNM + Gittins)
 
 Sudoku
 └── (à plat) - 19 problèmes × N méthodes : Backtracking → CNN/LLM
