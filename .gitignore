@@ -1141,6 +1141,5 @@ out/
 # Lane-local runtime artefacts (forge validation, image outputs, intermediate probes)
 /_runtime/
 
-# Fichiers locaux et secrets
-.env
+# Fichiers systeme macOS
 .DS_Store
