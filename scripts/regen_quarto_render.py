@@ -82,10 +82,10 @@ NOTEBOOK_SUBTREES = (
     "MyIA.AI.Notebooks/CaseStudies/",            # tranche 15 #10923 (6)
     "MyIA.AI.Notebooks/Complexity/",             # tranche 19 #18423 (9 notebooks, complexite computationnelle)
     "MyIA.AI.Notebooks/NLP/",                    # tranche 19 #18423 (5, TAL/TALN)
-    "MyIA.AI.Notebooks/QuantConnect/",           # tranche 19 #18423 (221 sur 6 sous-familles : projects, Python, research, ML-Training-Pipeline, partner-course-quant-trading, kelly_lean)
+    "MyIA.AI.Notebooks/QuantConnect/",           # tranche 19 #18423 (203 rendus, 221 git-tracked - 18 sous /archive/ ; sous-familles : projects, Python, research, ML-Training-Pipeline, partner-course-quant-trading, kelly_lean)
     "MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/",  # tranche 19 #18423 (6)
-    "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/",  # tranche 18 #13581 (3, deplace depuis GenAI/Aspire/ en tranche T2 hub .NET) -- couvert aussi par Integrations-DotNet/ ci-dessous
-    "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/",  # tranche 19 #18423 (15 sur 4 sous-familles : Aspire, CopilotSDK, EFCore, Orleans)
+    "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/",  # tranche 18 #13581 (9, deplace depuis GenAI/Aspire/ en tranche T2 hub .NET) -- couvert aussi par Integrations-DotNet/ ci-dessous (dedup OK)
+    "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/",  # tranche 19 #18423 (15 sur 4 sous-familles : Aspire, CopilotSDK, EFCore, Orleans ; 9 deja couverts via Aspire ci-dessus, 6 nouveaux uniques)
     "MyIA.AI.Notebooks/GenAI/Audio/",            # tranche 15 #10923 (30)
     "MyIA.AI.Notebooks/GenAI/CaseStudies/",      # tranche 15 #10923 (4)
     "MyIA.AI.Notebooks/GenAI/FallacyDetection/", # tranche 13 #10923 (2, deplace depuis top-level FallacyDetection/ en tranche 1 #13581)
