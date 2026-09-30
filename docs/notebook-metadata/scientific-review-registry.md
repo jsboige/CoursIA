@@ -73,7 +73,7 @@ EOF
 
 Elle ne couvre que la **source des cellules code**. Le markdown, les sorties et
 `execution_count` en sont exclus délibérément : sans ces exclusions, la campagne de
-densification (178 notebooks en trois semaines, sans une ligne de code touchée) aurait
+densification (en trois semaines, sans une ligne de code touchée) aurait
 périmé tout le corpus au premier passage — et une rétrogradation qui frappe tout ne
 signale plus rien.
 
