@@ -4,6 +4,8 @@ Sous-série de la série [Lean](../README.md) (décision de gradation #17545, 24
 
 La série principale garde son tutoriel (numéros 1 à 14) ; le présent dossier porte l'arc d'analyse. Les numéros de la table ci-dessous renvoient à l'ancien identifiant de série (`Lean-18` → `ANALYSE-01`, etc. — table de correspondance dans `docs/reference/rename-ledger.tsv`).
 
+**Escalier depuis la série principale** : [Lean-20 — Capstone](../Lean-20-Capstone-Digestions-Tao-Python.ipynb) présente la sous-série, en fait monter une première marche (règle de chaîne et distance de Ruzsa sur F₂³) et en mesure la surface.
+
 | Carnet | Contenu | Durée |
 |---|---|---|
 | [ANALYSE-01-Sendov-Lean-Python](ANALYSE-01-Sendov-Lean-Python.ipynb) | La conjecture de Sendov (preuve L. Mazur 2026, digestion et formalisation T. Tao) : pour un polynôme dont tous les zéros sont dans le disque unité, chaque zéro a un point critique à distance ≤ 1 — énoncé, illustrations numériques des cas, contexte de la preuve | 45 min |

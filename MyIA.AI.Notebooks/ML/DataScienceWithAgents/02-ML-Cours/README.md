@@ -4,6 +4,8 @@
 
 **Kernel** : Python 3 · **Bibliothèque** : scikit-learn · **Niveau** : intermédiaire (post NumPy/Pandas)
 
+**Environnement** : CPython 3.13 — `pip install -r [requirements.txt](requirements.txt)` installe toutes les dépendances de la série (relevées par imports : scikit-learn, optuna, shap, lime, dice-ml, diffprivlib, cvxpy, imbalanced-learn, umap-learn, statsmodels, torch). Sans lui, 2.10 / 2.12 / 2.14 / 2.14b / 2.15 lèvent une `ImportError` dès la première cellule.
+
 ## Pourquoi cette série
 
 La formation `DataScienceWithAgents` saute aujourd'hui un maillon. Après les fondations NumPy/Pandas ([`01-PythonForDataScience`](../01-PythonForDataScience/)), les *labs agentic* (LangChain, Google ADK) demandent à des agents LLM de produire et d'exécuter du code de data science — y compris du machine learning. Mais entre les deux, **aucun notebook n'enseigne le workflow ML, un modèle ou une métrique comme un sujet en soi** : scikit-learn n'apparaît que comme une séquence magique non expliquée (un `fit()` isolé dans un lab de visualisation, ou cité en litteral dans une chaîne LLM).

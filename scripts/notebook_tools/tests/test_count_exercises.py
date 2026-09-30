@@ -460,7 +460,7 @@ class TestCodeCellOnlyExercise:
         cell that carries ``display("Exercice ... a completer")`` but neither
         ``// TODO`` nor ``// Indice`` must still be counted.
 
-        Regression for ``GameTheory-05-ZeroSum-Minimax-Csharp`` Ex2, whose stub
+        Regression for ``GameTheory-05-ZeroSum-Minimax-CSharp`` Ex2, whose stub
         marker ``display("Exercice 2 a completer ...")`` was silently
         under-counted (notebook read as 2 exercises instead of its real 3).
         """
@@ -1114,7 +1114,7 @@ class TestGroupedAndPluralHeaders:
     def test_plural_section_does_not_steal_forward_pairing(self, tmp_path):
         """Bug 2 (pairing side): a plural section header must NOT forward-pair
         the code cell below it. The real Exercice 1 stub must be counted in its
-        own right. Mirrors ``GameTheory/GameTheory-05-ZeroSum-Minimax-Csharp.ipynb``
+        own right. Mirrors ``GameTheory/GameTheory-05-ZeroSum-Minimax-CSharp.ipynb``
         where the section `## 9. Exercices` stole cell 21 (Exercice 1).
         """
         nb = _write_nb(
@@ -1247,12 +1247,12 @@ class TestCorpusScope:
         stricter policy than the rule states.
         """
         for stem, expect in [
-            ("Lean-1-Setup", "setup"),
+            ("Lean-01-Setup-Lean-Python", "setup"),
             ("Sudoku-00-Environment-Csharp", "setup"),
             ("SC-01-Setup-Foundry-Python", "setup"),
             ("Argument_Analysis_Agentic-0-init_agent", "setup"),
-            ("Lean-3-Propositions-Proofs", "lean"),
-            ("GameTheory-11b-Lean-BayesianGamesExt", "lean"),
+            ("Lean-03-Propositions-Proofs-Lean", "lean"),
+            ("GameTheory-11b-Lean-BayesianGamesExt-Lean", "lean"),
             ("DecInfer-09-Lean-Gittins", "lean"),
         ]:
             kind, threshold = _classify(tmp_path / "Course" / f"{stem}.ipynb", standard_threshold=3, root=tmp_path)
@@ -1271,7 +1271,7 @@ class TestCorpusScope:
 
     def test_raising_threshold_does_not_raise_exempt_kinds(self, tmp_path):
         """`--threshold 5` must not invent an exercise budget for setup/Lean."""
-        assert _classify(tmp_path / "Course" / "Lean-1-Setup.ipynb", standard_threshold=5, root=tmp_path)[1] == 0
+        assert _classify(tmp_path / "Course" / "Lean-01-Setup-Lean-Python.ipynb", standard_threshold=5, root=tmp_path)[1] == 0
         assert _classify(tmp_path / "Course" / "X-Lean-Y.ipynb", standard_threshold=5, root=tmp_path)[1] == 0
         assert _classify(tmp_path / "Course" / "X-Concepts.ipynb", standard_threshold=5, root=tmp_path)[1] == 5
 

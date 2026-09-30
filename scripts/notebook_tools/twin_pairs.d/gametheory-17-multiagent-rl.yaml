@@ -1,7 +1,7 @@
 - name: "GameTheory-17 MultiAgent-RL"
   family: GameTheory/.NET-Parity
-  python: MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL.ipynb
-  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-Csharp.ipynb
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-CSharp.ipynb
   parity_level: semantic
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Pont pyspiel execute (bascule registre #10382, 2026-08-16, lane myia-po-2024:CoursIA-2) : cellule pont `#r nuget pythonnet 3.0.5` (cell[25], execution_count=12) invoque CPython -> pyspiel (axe 5 #10459). Verdict RECOVERABLE-LOCAL -> SOTA-OK : pont execute dans le notebook commite, verdict non rebasculé. parity_level semantic preserve (gel #11200)."
