@@ -1117,39 +1117,57 @@ if ""fr"" in audio_samples:
 else:
     print(""Aucun echantillon audio disponible"")
 ",,,,,,,,8d1ee53032030a3e,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,201ab070,markdown,fr,94a9c29442c57ae4,"### Exercice 1 : Transcription avec paramètres avances
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,201ab070,markdown,fr,5a0cdd2cdfac8e27,"### Exemple guidé 1 : Transcription avec paramètres avancés
 
-En vous basant sur la transcription de base ci-dessus, experimentez avec les paramètres de l'API pour extraire différentes informations du même fichier audio.
+*Contribution étudiante de @pierre-ingrachen (PR #18549), intégrée comme exemple guidé.*
 
-**Objectif** : Comprendre l'impact des paramètres `response_format` et `language` sur le résultat de la transcription.
+La transcription de base ci-dessus laissait Whisper détecter la langue et renvoyait un objet JSON. Cet exemple fait varier, sur le même fichier audio, les deux paramètres qui pilotent la forme de la réponse, et mesure leur effet.
+
+**Objectif** : comprendre l'impact des paramètres `response_format` et `language` sur le résultat de la transcription.
 
 **Étapes** :
-1. Transcrire le même audio en francais en specifiant explicitement `language=""fr""`
-2. Transcrire une seconde fois en format `text` (sans metadonnees)
+1. Transcrire l'audio français en spécifiant explicitement `language=""fr""` (format `json`)
+2. Transcrire une seconde fois en format `text` (sans métadonnées)
 3. Comparer les deux résultats : le texte est-il identique ?
-4. Afficher la différence de temps de reponse entre les deux appels
+4. Afficher la différence de temps de réponse entre les deux appels
 
-**Indices** :
-- # Indice : ajoutez `language=""fr""` dans `client.audio.transcriptions.create()` pour forcer la langue
-- # Indice : le format ""text"" retourne une chaîne brute au lieu d'un objet JSON
-- # Indice : comparer avec `text1.strip().lower() == text2.strip().lower()`",,,,,,,,94a9c29442c57ae4,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,904fa0d8,code,fr,850dedc8acbdc869,"# Exercice 1 : Transcription avec parametres avances
-# TODO etudiant : Comparer differentes configurations de transcription
+**Points clés du code** :
+- `language=""fr""` s'ajoute dans `client.audio.transcriptions.create()` pour imposer la langue au lieu de la détecter
+- le format `""text""` renvoie une chaîne brute (`str`), et non un objet dont on lit l'attribut `.text`
+- la comparaison se fait après une normalisation minimale : `text1.strip().lower() == text2.strip().lower()`",,,,,,,,5a0cdd2cdfac8e27,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,904fa0d8,code,fr,0d1aa0f4980c538b,"# Exemple guide 1 : Transcription avec parametres avances
+# Contribution etudiante de @pierre-ingrachen (PR #18549)
+print(""EXEMPLE GUIDE 1 : PARAMETRES AVANCES"")
+print(""="" * 45)
 
-# Etape 1 : Transcrire avec langue forcee (format json)
-# Indice : utilisez un echantillon existant de audio_samples (cle ""fr"")
-ex1_json = None  # TODO etudiant : client.audio.transcriptions.create(model=""whisper-1"", file=..., language=""fr"", response_format=""json"")
+if ""fr"" in audio_samples:
+    sample = audio_samples[""fr""]
+    print(f""Fichier source : {sample['path'].name}"")
+    print(f""Texte original : {sample['text_original'][:80]}..."")
 
-# Etape 2 : Transcrire en format texte brut
-ex1_text = None  # TODO etudiant : client.audio.transcriptions.create(model=""whisper-1"", file=..., response_format=""text"")
-
-# Etape 3 : Comparer les resultats
-# TODO etudiant : extraire le texte des deux resultats et les comparer
-
-# Etape 4 : Afficher la comparaison
-# Indice : print(f""JSON : {ex1_json.text}"") et print(f""Text : {ex1_text}"")
-
-print(""Exercice a completer"")",,,,,,,,850dedc8acbdc869,,,,,,,,
+    # --- Appel 1 : format json, langue imposee ---
+    print(f""\n--- Appel 1 : json + language='fr' | Appel 2 : text ---"")
+    t0 = time.time()
+    with open(sample['path'], 'rb') as audio_file:
+        ex1_json = client.audio.transcriptions.create(
+            model=stt_model,
+            file=audio_file,
+            response_format=""json"",
+            language=""fr""
+        )
+    t1 = time.time()
+    # --- Appel 2 : format text, chaine brute ---
+    with open(sample['path'], 'rb') as audio_file:
+        ex1_text = client.audio.transcriptions.create(
+            model=stt_model,
+            file=audio_file,
+            response_format=""text""
+        )
+    print(f""json : {t1-t0:.2f}s | text : {time.time()-t1:.2f}s"")
+    print(f""Type des reponses : json -> {type(ex1_json).__name__}, text -> {type(ex1_text).__name__}"")
+    print(f'Les deux résultats sont identiques : {ex1_json.text.strip().lower() == ex1_text.strip().lower()}')
+    print(f""JSON : {ex1_json.text}"")
+    print(f""Text : {ex1_text}"")",,,,,,,,0d1aa0f4980c538b,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,cell-section2-interpretation,markdown,fr,8411786b0df2b118,"### Interpretation : Transcription Whisper
 
 | Aspect | Valeur | Signification |
@@ -1219,50 +1237,75 @@ if ""fr"" in audio_samples:
 else:
     print(""Aucun echantillon audio disponible"")
 ",,,,,,,,c04ebf7ef1f18950,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,891ebc19,markdown,fr,95733a8470c9da98,"### Exercice 2 : Generation manuelle de sous-titres SRT a partir de timestamps
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,891ebc19,markdown,fr,c6a5bd362b70923d,"### Exemple guidé 2 : Génération manuelle de sous-titres SRT à partir de timestamps
 
-L'API Whisper peut retourner des timestamps au niveau des mots. L'objectif est de reconstruire manuellement un fichier SRT en regroupant les mots en sous-titres de 5 a 8 mots maximum.
+*Contribution étudiante de @pierre-ingrachen (PR #18549), intégrée comme exemple guidé.*
 
-**Contexte** : Les plateformes video (YouTube, Vimeo) necessitent des sous-titres précis. Whisper genere les timestamps mot par mot, mais il faut les regrouper en lignes lisibles.
+L'API Whisper peut retourner des timestamps au niveau des mots. Cet exemple reconstruit manuellement un fichier SRT en regroupant les mots en sous-titres de six mots au plus.
+
+**Contexte** : Les plateformes vidéo (YouTube, Vimeo) nécessitent des sous-titres précis. Whisper génère les timestamps mot par mot, mais il faut les regrouper en lignes lisibles.
 
 **Étapes** :
 1. Transcrire un audio avec `verbose_json` et `timestamp_granularities=[""word""]`
 2. Extraire la liste des mots avec leurs timestamps
-3. Regrouper les mots par blocs de 5 a 8 mots
+3. Regrouper les mots par blocs (ici six mots au plus : `MAX_WORDS_PER_LINE = 6`)
 4. Formater chaque bloc au format SRT (numéro, timestamps, texte)
 5. Sauvegarder le résultat dans un fichier `.srt`
 
-**Indices** :
-- # Indice : `transcript_verbose.words` contient la liste des mots avec `.start`, `.end`, `.word`
-- # Indice : le format SRT utilise `HH:MM:SS,mmm --> HH:MM:SS,mmm` pour les timestamps
-- # Indice : pour convertir les secondes en format SRT, utilisez `timedelta`",,,,,,,,95733a8470c9da98,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,68c4403c,code,fr,6e6dfa75249c9b06,"# Exercice 2 : Generation manuelle de sous-titres SRT a partir de timestamps
-# TODO etudiant : Construire un fichier SRT depuis les timestamps mot par mot
+**Points clés du code** :
+- `ex2_result.words` contient la liste des mots avec `.start`, `.end`, `.word`
+- le format SRT écrit les timestamps `HH:MM:SS,mmm --> HH:MM:SS,mmm`
+- `seconds_to_srt_time` passe tout en millisecondes entières puis enchaîne des `divmod` : c'est plus sûr que d'afficher un `timedelta`, dont la conversion en texte omet les millisecondes quand elles sont nulles et ne complète pas les heures sur deux chiffres",,,,,,,,c6a5bd362b70923d,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,68c4403c,code,fr,b5113613004709f1,"# Exemple guide 2 : Generation manuelle de sous-titres SRT a partir de timestamps
+# Contribution etudiante de @pierre-ingrachen (PR #18549)
 
 from datetime import timedelta
 
 # Etape 1 : Transcrire avec timestamps au niveau mot
-# Indice : reutilisez un echantillon existant de audio_samples
-ex2_words = []  # TODO etudiant : extraire transcript.words
+# (echantillon francais genere en section 1)
+with open(audio_samples[""fr""][""path""], 'rb') as audio_file:
+    ex2_result = client.audio.transcriptions.create(
+        model=stt_model,
+        file=audio_file,
+        response_format=""verbose_json"",
+        timestamp_granularities=[""word""]
+    )
+ex2_words = ex2_result.words
+print(f""{len(ex2_words)} mots recus"")
 
 # Etape 2 : Fonction de conversion secondes -> format SRT
 def seconds_to_srt_time(seconds):
     """"""Convertit des secondes (float) en format HH:MM:SS,mmm.""""""
-    # TODO etudiant : implementer la conversion
-    return ""00:00:00,000""
+    ms = round(seconds * 1000)   # tout en millisecondes entieres
+    s, ms = divmod(ms, 1000)
+    m, s = divmod(s, 60)
+    h, m = divmod(m, 60)
+    return f""{h:02d}:{m:02d}:{s:02d},{ms:03d}""
 
 # Etape 3 : Regrouper les mots par blocs de max 6 mots
 MAX_WORDS_PER_LINE = 6
-srt_blocks = []  # TODO etudiant : liste de (debut, fin, texte) pour chaque bloc
+srt_blocks = []  # liste de (debut, fin, texte) pour chaque bloc
+for i in range(0, len(ex2_words), MAX_WORDS_PER_LINE):
+    paquet = ex2_words[i:i + MAX_WORDS_PER_LINE]
+    debut = paquet[0].start
+    fin = paquet[-1].end
+    texte = "" "".join(w.word.strip() for w in paquet)
+    srt_blocks.append((debut, fin, texte))
+print(f""{len(srt_blocks)} blocs de sous-titres"")
 
 # Etape 4 : Formater en SRT
-srt_content = """"  # TODO etudiant : construire le contenu SRT complet
-# Indice : chaque bloc = numero + ""\n"" + timestamps + ""\n"" + texte + ""\n\n""
+srt_content = """"
+for numero, (debut, fin, texte) in enumerate(srt_blocks, start=1):
+    srt_content += f""{numero}\n""
+    srt_content += f""{seconds_to_srt_time(debut)} --> {seconds_to_srt_time(fin)}\n""
+    srt_content += f""{texte}\n\n""
 
 # Etape 5 : Sauvegarder
-# Indice : ecrire srt_content dans OUTPUT_DIR / ""ex2_custom.srt""
-
-print(""Exercice a completer"")",,,,,,,,6e6dfa75249c9b06,,,,,,,,
+result_file = OUTPUT_DIR / ""ex2_custom.srt""
+with open(result_file, 'w', encoding='utf-8') as f:
+    f.write(srt_content)
+print(f""Sauvegarde : {result_file.name}"")
+print(srt_content[:300])",,,,,,,,b5113613004709f1,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,159d3706,markdown,fr,f8fe26cafce61869,"### Interpretation : Formats de sous-titrage
 
 | Format | Structure | Usage typique |
@@ -1589,7 +1632,7 @@ print(f""4. Explorer la comparaison multi-modeles (03-1)"")
 
 print(f""\nNotebook Whisper STT termine - {datetime.now().strftime('%H:%M:%S')}"")
 ",,,,,,,,0c14c7375bf02234,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,dd2e18ba,markdown,fr,f922f5006e55545a,"### Exercice 3 : Pipeline de traduction et comparaison multilingue
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,dd2e18ba,markdown,fr,916bf1acc4a770ea,"### Exercice 3 : Pipeline de traduction et comparaison multilingue
 
 Vous disposez d'un extrait audio en francais et devez construire un mini-pipeline qui transcrit, traduit, et compare les résultats entre deux modèles.
 
@@ -1602,9 +1645,9 @@ Vous disposez d'un extrait audio en francais et devez construire un mini-pipelin
 4. Comparer la duree d'appel entre les deux opérations
 
 **Indices** :
-- # Indice : `client.audio.transcriptions.create(...)` pour la transcription
-- # Indice : `client.audio.translations.create(...)` pour la traduction vers l'anglais
-- # Indice : utilisez `time.time()` avant et après chaque appel pour mesurer la duree",,,,,,,,f922f5006e55545a,,,,,,,,
+- `# Indice` : `client.audio.transcriptions.create(...)` pour la transcription
+- `# Indice` : `client.audio.translations.create(...)` pour la traduction vers l'anglais
+- `# Indice` : utilisez `time.time()` avant et après chaque appel pour mesurer la duree",,,,,,,,916bf1acc4a770ea,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,27491087,code,fr,bb2ee8aa2f5a9691,"# Exercice 3 : Pipeline de traduction et comparaison multilingue
 # TODO etudiant : Construire un pipeline transcription + traduction
 
@@ -1626,7 +1669,7 @@ translation_time = None  # TODO etudiant : mesurer la duree
 # Indice : afficher texte original, transcription, traduction, et temps des 2 appels
 
 print(""Exercice a completer"")",,,,,,,,bb2ee8aa2f5a9691,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,k64i3295i4,markdown,fr,fbd1e0d659d054ad,"---
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,k64i3295i4,markdown,fr,1b1b49a866205720,"***
 
 ## CHALLENGE BONUS - Sous-titrage Automatique
 
@@ -1657,11 +1700,11 @@ Ce notebook montre:
 - Regrouper les mots en segments de 5-8 mots maximum
 - Format SRT standard avec numérotation
 
----
+***
 
 **Soumission** : PR avec titre ""Challenge #9 - [Votre Nom]"", fichier SRT et extrait audio
-",,,,,,,,fbd1e0d659d054ad,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,a01bd307,markdown,fr,fe92a3d64fb83e77,"---
+",,,,,,,,1b1b49a866205720,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,a01bd307,markdown,fr,4f69b76d8f167ce7,"***
 
 ## Conclusion : Whisper STT - Synthese
 
@@ -1692,7 +1735,7 @@ Ce notebook a explore l'API OpenAI Whisper pour la reconnaissance vocale, de la 
 - Modèle Whisper original (OpenAI) : https://github.com/openai/whisper
 - Grille tarifaire a jour : https://openai.com/pricing
 
-",,,,,,,,fe92a3d64fb83e77,,,,,,,,
+",,,,,,,,4f69b76d8f167ce7,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-3-Basic-Audio-Operations.ipynb,cell-header,markdown,fr,11e2d628170ec18a,"# Opérations de Base sur l'Audio
 
 **Module :** 01-Audio-Foundation  
@@ -30963,3 +31006,99 @@ MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-7-TTS-Voice-Benchmark.ipynb,den
 
 **Sur la reproductibilité** : les valeurs citées tout au long de ce notebook (2427-7302 ms, 195-334 KB) sont celles d'un run unique sur une machine donnée — ré-exécuter le notebook chez vous produira des chiffres différents dans les mêmes proportions relatives. C'est la **méthode** qui est réutilisable (comparaison appariée intra-run, health-check avant mesure, dégradation propre de Qwen3 à merci de son backend), pas le classement entre moteurs — celui-ci a basculé d'un run à l'autre. Le tableau des spécifications de la section 9 conserve les fourchettes architecturales, et `benchmark_results.json` conserve votre run.
 ",,,,,,,,92a18da2948235e9,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,eg1-lecture,markdown,fr,b34785b20c681532,"### Lecture du résultat — exemple guidé 1 (paramètres avancés)
+
+- **`Les deux résultats sont identiques : True`** : imposer `language=""fr""` n'a rien changé sur cet échantillon, parce que la détection automatique trouvait déjà `french` (transcription de base ci-dessus). Le paramètre `language` sert quand la détection peut se tromper : audio très court, accent marqué, langues mélangées. L'exercice 1 le met à l'épreuve sur l'échantillon `multi`.
+- **`Type des reponses : json -> Transcription, text -> str`** : le format `text` ne renvoie pas d'objet, `ex1_text` est directement la chaîne. C'est pourquoi le code écrit `ex1_text.strip()` sans `.text`. Changer de format de réponse oblige à changer la façon de lire la réponse.
+- **Les deux temps de réponse** : dans le rendu d'origine, l'appel `json` était le plus lent ; à cette ré-exécution, c'est l'appel `text`. Avec un seul appel par format, l'écart relève du réseau, pas du format : pour comparer des latences, il faut répéter les appels et comparer des médianes.
+- **Le texte lui-même n'est pas celui de la source** : Whisper écrit `réseaux` et `mots-prononces`, alors que le texte synthétisé en section 1 porte `reseaux` et `mots prononces`. Les deux transcriptions sont identiques entre elles ; savoir si elles sont fidèles est une autre question, que l'exercice 1 mesure.",,,,,,,,b34785b20c681532,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,ex1-wer-md,markdown,fr,73f941efbb72479b,"### Exercice 1 : Mesurer la fidélité d'une transcription (taux d'erreur par mot)
+
+L'exemple guidé 1 a comparé deux transcriptions **entre elles** et les a trouvées identiques. Il ne dit pas si elles sont **fidèles** au texte prononcé. La mesure standard est le **taux d'erreur par mot** (WER, *Word Error Rate*) : le nombre minimal de substitutions, de suppressions et d'insertions de mots qui transforment la référence en transcription, divisé par le nombre de mots de la référence.
+
+**Contexte** : un WER dépend autant de la **normalisation** des textes que du modèle. Le texte source de l'échantillon français (section 1) est écrit sans accents (`reseaux`, `prononces`) ; Whisper, lui, écrit les accents et la ponctuation à sa façon. Sans normalisation, ces écarts d'écriture comptent comme des erreurs de reconnaissance.
+
+**Étapes** :
+1. Écrire `normaliser(texte)` : minuscules, accents retirés, ponctuation et tirets remplacés par des espaces, puis découpage en mots
+2. Écrire `wer(mots_reference, mots_hypothese)` par programmation dynamique (distance d'édition au niveau des mots)
+3. Calculer le WER de la transcription de l'exemple guidé 1 (`ex1_json.text`) contre `audio_samples[""fr""][""text_original""]`, d'abord **brut** (`texte.lower().split()`), puis **normalisé** : combien d'« erreurs » disparaissent ?
+4. Transcrire l'échantillon `multi` (alternance français/anglais, que la section 4 étudiera) deux fois : avec détection automatique, puis avec `language=""fr""` imposé. Comparer les deux WER normalisés : que fait Whisper de la phrase anglaise quand on lui impose le français ?
+
+**Indices** :
+- `# Indice` : `unicodedata.normalize(""NFD"", texte)` sépare chaque lettre de son accent ; on retire ensuite les caractères de catégorie `""Mn""` (`unicodedata.category(c)`)
+- `# Indice` : `re.sub(r""[^\w\s]"", "" "", texte)` remplace ponctuation et tirets par des espaces
+- `# Indice` : table `d` de taille `(len(ref)+1) x (len(hyp)+1)`, avec `d[i][0] = i`, `d[0][j] = j` et `d[i][j] = min(d[i-1][j] + 1, d[i][j-1] + 1, d[i-1][j-1] + (ref[i-1] != hyp[j-1]))`",,,,,,,,73f941efbb72479b,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,ex1-wer-code,code,fr,44a810c849e4ac15,"# Exercice 1 : Taux d'erreur par mot (WER) et effet de la normalisation
+# TODO etudiant : mesurer la fidelite des transcriptions au texte source
+import re
+import unicodedata
+
+# Etape 1 : Normalisation (minuscules, sans accents, sans ponctuation ni tirets)
+def normaliser(texte):
+    """"""Retourne la liste des mots normalises de `texte`.""""""
+    # Indice : unicodedata.normalize(""NFD"", ...) puis retirer les caracteres de categorie ""Mn""
+    return None  # TODO etudiant
+
+# Etape 2 : Distance d'edition au niveau des mots, rapportee a la longueur de la reference
+def wer(mots_reference, mots_hypothese):
+    """"""(substitutions + suppressions + insertions) / len(mots_reference).""""""
+    # Indice : table de programmation dynamique (len(ref)+1) x (len(hyp)+1)
+    return None  # TODO etudiant
+
+# Etape 3 : WER brut puis WER normalise de la transcription de l'exemple guide 1
+wer_brut = None  # TODO etudiant
+wer_normalise = None  # TODO etudiant
+
+# Etape 4 : Echantillon ""multi"" -- detection automatique contre language=""fr"" impose
+wer_multi_auto = None  # TODO etudiant
+wer_multi_fr = None  # TODO etudiant
+
+print(""Exercice a completer"")",,,,,,,,44a810c849e4ac15,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,eg2-lecture,markdown,fr,90f043f779292866,"### Lecture du résultat — exemple guidé 2 (sous-titres SRT)
+
+- **`28 mots recus` → `5 blocs`** : 28 = 4 × 6 + 4, soit quatre blocs de six mots et un dernier de quatre. L'affichage s'arrête au milieu du bloc 5 parce que le code n'imprime que `srt_content[:300]` ; le fichier `ex2_custom.srt` est complet.
+- **Les blocs sont jointifs** : le bloc 1 finit à `00:00:02,420`, fin de « convertir », et le bloc 2 commence au même instant, début de « la ». Dans une parole continue, Whisper donne à chaque mot un début égal à la fin du mot précédent.
+- **Le bloc 2 enjambe la fin de la première phrase** : `la parole en texte Cette technologie` reste affiché de 2,42 s à 5,52 s. Or la liste des mots de la transcription de base montre un silence entre « texte » (fin à 4,42 s) et « Cette » (début à 4,74 s), et les deux segments de Whisper se séparent exactement là. Le découpage fixe de six mots ignore cette pause.
+- **La ponctuation a disparu** : `texte Cette` n'a plus de point. Les timestamps mot par mot ne portent pas la ponctuation, que seul le texte complet conserve. Le découpage ne peut donc s'appuyer que sur le temps. C'est l'objet de l'exercice 2 : couper sur les pauses et borner la durée.",,,,,,,,90f043f779292866,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,ex2-pauses-md,markdown,fr,9e6f59ab6d33be90,"### Exercice 2 : Sous-titres lisibles — couper sur les pauses, borner la durée
+
+L'exemple guidé 2 regroupe les mots **six par six**, sans regarder le temps qui les sépare. Un bloc peut donc enjamber la fin d'une phrase, et la ponctuation, absente des timestamps mot par mot, ne peut plus signaler la coupure. Un sous-titre professionnel se coupe au contraire sur les **pauses** de la parole, avec une **durée** et une **longueur** bornées.
+
+**Contexte** : trois contraintes courantes de lisibilité — couper dès qu'un silence atteint `PAUSE_MIN` secondes, ne pas afficher un sous-titre plus de `DUREE_MAX` secondes, ne pas dépasser `CARACTERES_MAX` caractères. La vitesse de lecture sert ensuite de contrôle : au-delà d'environ 17 caractères par seconde, un sous-titre défile trop vite pour être lu.
+
+**Étapes** :
+1. Écrire `decouper(mots, pause_min, duree_max, caracteres_max)` qui parcourt `ex2_words` (exemple guidé 2) et ouvre un nouveau bloc dès qu'une des trois contraintes l'exige
+2. Compter, pour les blocs de l'exemple guidé 2 **et** pour les vôtres, les violations de chaque contrainte (pause interne, durée, longueur)
+3. Calculer la vitesse de lecture (caractères par seconde) de chaque bloc et signaler ceux qui dépassent `VITESSE_MAX`
+4. Sauvegarder vos blocs au format SRT dans `ex2_pauses.srt`, en réutilisant `seconds_to_srt_time`
+
+**Indices** :
+- `# Indice` : la pause entre deux mots consécutifs vaut `mot.start - mot_precedent.end`
+- `# Indice` : les blocs de l'exemple guidé 2 sont les tranches `ex2_words[i:i + MAX_WORDS_PER_LINE]` ; les recalculer donne accès aux mots de chaque bloc
+- `# Indice` : un mot seul qui dépasse une contrainte forme son propre bloc ; la boucle ne doit jamais produire de bloc vide",,,,,,,,9e6f59ab6d33be90,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,ex2-pauses-code,code,fr,eab8a1d5037bfde0,"# Exercice 2 : Sous-titres lisibles -- decoupage sur les pauses, duree bornee
+# TODO etudiant : regrouper les mots en respectant pauses, duree et longueur
+
+PAUSE_MIN = 0.25       # silence (s) qui impose une coupure
+DUREE_MAX = 3.0        # duree maximale d'un sous-titre (s)
+CARACTERES_MAX = 42    # longueur maximale d'un sous-titre (caracteres)
+VITESSE_MAX = 17       # vitesse de lecture maximale (caracteres par seconde)
+
+# Etape 1 : Decoupage guide par les trois contraintes
+def decouper(mots, pause_min, duree_max, caracteres_max):
+    """"""Retourne une liste de (debut, fin, texte) respectant les trois contraintes.""""""
+    # Indice : ouvrir un nouveau bloc si la pause atteint pause_min,
+    # ou si ajouter le mot ferait depasser duree_max ou caracteres_max
+    return []  # TODO etudiant
+
+blocs_pauses = decouper(ex2_words, PAUSE_MIN, DUREE_MAX, CARACTERES_MAX)
+
+# Etape 2 : Violations de chaque contrainte -- exemple guide 2 contre vos blocs
+violations = None  # TODO etudiant
+
+# Etape 3 : Vitesse de lecture (caracteres par seconde) de chaque bloc
+vitesses = None  # TODO etudiant
+
+# Etape 4 : Sauvegarde SRT (reutiliser seconds_to_srt_time) dans OUTPUT_DIR / ""ex2_pauses.srt""
+
+print(""Exercice a completer"")",,,,,,,,eab8a1d5037bfde0,,,,,,,,

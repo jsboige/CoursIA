@@ -1,0 +1,7 @@
+date: '2026-09-27'
+by: myia-po-2024:CoursIA-2
+python_sha: ecda4bf2489931cd1f3410c916b3edae4986dedf
+csharp_sha: 1d71902f691751a1722d19b3c92f498900b67165
+content_python_sha: 2e4c055649745a17f4899020d61bafa63abf5c3a5b119db8fcec24aae5d5a93b
+content_csharp_sha: 580e6da433cf218b95ffe2e479c953314996c3b70189aa56dddb22e3df8fb22a
+reason: 'Reprise de l''attestation apres commit : la premiere passe avait enregistre le blob d''avant l''edition, les carnets n''etant pas encore commites. chains=4 rendu explicite, valeur deja effective, resultats inchanges.'

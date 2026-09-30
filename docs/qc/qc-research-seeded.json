@@ -214,7 +214,7 @@
    "url": "https://www.quantconnect.com/research/15989/futures-trend-following-and-carry-in-different-risk-regimes/",
    "lastmod": "2026-01-02T22:16:34+00:00",
    "seeded_at": null,
-   "issue": null
+   "issue": 15549
   },
   "15959": {
    "url": "https://www.quantconnect.com/research/15959/adjusted-trend-on-futures/",
@@ -442,7 +442,7 @@
    "url": "https://www.quantconnect.com/research/15366/short-term-reversal-with-futures/",
    "lastmod": "2026-02-18T20:05:44+00:00",
    "seeded_at": null,
-   "issue": null
+   "issue": 18466
   },
   "15364": {
    "url": "https://www.quantconnect.com/research/15364/momentum-effect-in-stocks/",
