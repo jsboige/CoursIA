@@ -96,7 +96,7 @@ L'ecart « le meme notebook ML-3 AutoML passe sur po-2024 et echoue sur ai-01 »
 
 **Pourquoi le run propre de #11140 a passe AutoML 0.23.0** : ce run (blob `bf38be1766`) portait `#r "nuget: Microsoft.ML.AutoML, 0.23.0"` — dependance Roslyn `[4.13.0, )` — satisfait par le Roslyn **5.0** du kernel derive, la ou le Roslyn 4.12 du pin echoue (section precedente). Le downgrade `0.23.0 -> 0.22.3` a atterri dans `3ac89ed30c` (#11173, 2026-08-16 03:53 +02:00), le meme commit que la migration Plotly-CDN de ML-3 et la section « plafond Roslyn » ci-dessus. Apres lui, ML-3 passe sur les **deux** builds de kernel.
 
-**Mesures sous 1.0.712001 sur po-2024 (2026-08-16)** : paire `#!import` minimale OK ; `Sudoku-15-Infer-CSharp` run **complet 47/47 cellules (19 code), 0 erreur, exec [1..19] sequentiel, `#!import` cell[3] propre** — l'incident `ArgumentNullException` #8485/#8525 ne se reproduit **pas** sur cette machine ce jour ; chemin exact ML-3 AutoML 0.22.3 OK (RSquared 0,972). Le breakage historique est donc au minimum **contextuel** (hote net10.0 vs net9.0, runtime, ou corrige entre builds) — il n'est pas efface ici, il est qualifie.
+**Mesures sous 1.0.712001 sur po-2024 (2026-08-16)** : paire `#!import` minimale OK ; `Sudoku-15-Infer-CSharp` run **complet, 0 erreur, exec [1..19] sequentiel, `#!import` cell[3] propre** — l'incident `ArgumentNullException` #8485/#8525 ne se reproduit **pas** sur cette machine ce jour ; chemin exact ML-3 AutoML 0.22.3 OK (RSquared 0,972). Le breakage historique est donc au minimum **contextuel** (hote net10.0 vs net9.0, runtime, ou corrige entre builds) — il n'est pas efface ici, il est qualifie.
 
 **Reparation executee (regle F, 2026-08-16)** : `dotnet tool update` refusant le downgrade, passer par uninstall + install pinne :
 

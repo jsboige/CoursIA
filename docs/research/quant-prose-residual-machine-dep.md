@@ -1,5 +1,5 @@
 # Inventaire residuel machine-dep timings (issue #10158)
-**Date** : scan `check_machine_dep_timing.py --all` sur **1008** notebooks.
+**Date** : scan `check_machine_dep_timing.py --all` sur l'ensemble des notebooks du dépôt.
 **Detector summary** : {"wallclock": 220, "distribution_param": 58, "domain_quantity": 30, "ambiguous": 0, "total": 308}
 
 ## Classification par categorie
@@ -29,7 +29,7 @@
 | `GenAI/Texte` | 4 | 1 | 5 |
 | `GenAI/Video` | 4 | 4 | 8 |
 
-## Top 20 notebooks par drainage reel (RUNTIME_MEASURED)
+## Top des notebooks par drainage reel (RUNTIME_MEASURED)
 | Notebook | Runtime | Hint | Ambiguous | Frozen |
 |---|---|---|---|---|
 | `Sudoku-13-SymbolicAutomata-CSharp.ipynb` | 0 | 5 | 18 | 5 |

@@ -6,13 +6,13 @@
 
 | Fichier | Série | Notebooks | Cellules |
 |---------|-------|-----------|----------|
-| [`sudoku.csv`](sudoku.csv) | `Sudoku/` | 36 (Sudoku-0-Environment → Sudoku-19-Lean-Propagation-Lean, parité C#/Python via paires miroir 1-15 et 18, + 0-Environment C# only, 16-NeuralNetwork et 17-LLM Python only, 19-Lean natif) | 1 223 (header + 32 362 lignes CSV-escaped, 20 colonnes) |
+| [`sudoku.csv`](sudoku.csv) | `Sudoku/` | 36 (Sudoku-0-Environment → Sudoku-19-Lean-Propagation, parité C#/Python via paires miroir 1-15 et 18, + 0-Environment C# only, 16-NeuralNetwork et 17-LLM Python only, 19-Lean natif) | 1 223 (header + 32 362 lignes CSV-escaped, 20 colonnes) |
 
 **Note owner-lane strict** : la série Sudoku = **owner po-2025 strict** (toutes les PRs récentes #5473 #5404 #5406 #5407 #5454 #5639 #5769 #5778 = `Jean-Sylvain Boige`). L'extraction i18n est **safe owner-lane** (L143 SAFE : artefacts dérivés = CSV de cellules upstream, pas de modification de code des notebooks).
 
 **Note CJK upstream** : 2 caractères Han (U+5B8C U+6574 = `完整` « complet ») dans la cellule L6077 = « une grille-témoin完整e » (SFAz3 + Z3, section 6b). Préservés verbatim par l'extracteur déterministe (le hash sha256-16 doit sinon drifter si on altérait la cellule). cf L327 « pas de scrub ».
 
-**Note cross-language** : la série Sudoku est cross-language (C#/.NET Interactive via jumeaux `-Csharp.ipynb` + Python 3.10+ via jumeaux `-Python.ipynb` + Lean 4 via `Sudoku-19-Lean-Propagation-Lean.ipynb`). Le script d'extraction prend **les trois familles** verbatim (chaque notebook est une cellule source indépendante). La traduction future T3 (moteur Argumentum) appliquera les trois familles.
+**Note cross-language** : la série Sudoku est cross-language (C#/.NET Interactive via jumeaux `-Csharp.ipynb` + Python 3.10+ via jumeaux `-Python.ipynb` + Lean 4 via `Sudoku-19-Lean-Propagation.ipynb`). Le script d'extraction prend **les trois familles** verbatim (chaque notebook est une cellule source indépendante). La traduction future T3 (moteur Argumentum) appliquera les trois familles.
 
 ## Régénération
 
