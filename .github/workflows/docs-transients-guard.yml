@@ -52,6 +52,12 @@ jobs:
 
       - name: Lane transiente et entree d'archive
         run: |
-          git fetch --depth=1 origin "${{ github.base_ref }}" -q
+          # Refspec explicite AVEC destination : un fetch opportuniste de la
+          # base ne cree pas refs/remotes/origin/<base> dans un clone shallow
+          # (mesure : "fatal: bad revision 'origin/main...HEAD'" au premier
+          # run, corrige et valide sur repro). Le diff base...HEAD exige que
+          # la ref existe.
+          git fetch --depth=1 origin \
+            "${{ github.base_ref }}:refs/remotes/origin/${{ github.base_ref }}" -q
           python scripts/check_docs_transients_lane.py \
             --base "origin/${{ github.base_ref }}"
