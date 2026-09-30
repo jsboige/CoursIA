@@ -6,14 +6,14 @@
 
 ## Contexte
 
-85 fichiers `.en.md` existent déjà dans le repo (cf. `find MyIA.AI.Notebooks -name
+Des fichiers `.en.md` existent déjà dans le repo (cf. `find MyIA.AI.Notebooks -name
 '*.en.md' | wc -l`). Le pattern est manuel : un dev crée `README.en.md` en miroir du
 `README.md` FR, sans outillage de synchronisation, sans garde-fou drift. Conséquences
 observées (sondage échantillon 2026-07-07) :
 
 - **désynchronisation FR↔EN** : la EN n'est souvent qu'un **résumé** de la FR, pas une
   traduction 1:1. Exemple canonique = `cross-series/README.en.md` (résumé court) vs
-  `cross-series/README.md` (~50 lignes de prose détaillée). Le EN « survole » et **perd
+  `cross-series/README.md` (prose détaillée). Le EN « survole » et **perd
   de l'information** ;
 - **drift invisible** : quand le FR est modifié, personne ne pense à mettre à jour le
   EN. Aucun CI ne le signale ;
@@ -227,8 +227,7 @@ python scripts/i18n/render.py \
 
 ## Pilote fonctionnel : `cross-series/`
 
-**Série pilote** : `MyIA.AI.Notebooks/cross-series/` (13 lignes de EN, ~50 lignes de FR,
-1 tableau, 1 blockquote, 1 lien). Critères :
+**Série pilote** : `MyIA.AI.Notebooks/cross-series/` (1 tableau, 1 blockquote, 1 lien). Critères :
 
 - **TRÈS petit** : pilote testable en < 5 secondes ;
 - **désynchronisation naturelle** : le EN actuel est un résumé, le FR est détaillé —
@@ -268,7 +267,7 @@ python scripts/i18n/render.py \
 | Item | Phase | Justification |
 |------|-------|---------------|
 | **Workflow GitHub Actions `i18n-drift.yml`** | Phase 2 | nécessite décision user sur politique de merge (drift = warning ou error ?) |
-| **Rollout multi-série** (Probas, ML, Lean…) | Phase 2 | nécessite scan préliminaire des 85 `.en.md` existants, désambiguïsation clé-par-clé |
+| **Rollout multi-série** (Probas, ML, Lean…) | Phase 2 | nécessite scan préliminaire des `.en.md` existants, désambiguïsation clé-par-clé |
 | **8 langues** (ES, DE, IT, PT, JA, ZH, RU) | Phase 2+ | nécessite coordination Argumentum (qui a déjà fait ça pour la taxonomie des sophismes) |
 | **Auto-traduction LLM assistée** | Phase 3+ | nécessite décision user sur le provider + budget + politique de review |
 | **Moteur de rendu Markdown typé** (CommonMark) | Phase 2 | `sync.py` actuel = parser markdown minimaliste maison ; acceptable pour Phase 1, à remplacer si la complexité augmente |
