@@ -150,7 +150,11 @@ def run_claude(
     # lit le prompt sur stdin.
     cmd = _resolve_claude_command() + ["-p"]
 
-    if model and model != "sonnet":
+    # Toujours transmettre le modele demande : le modele par defaut de la CLI
+    # depend de la configuration de l'utilisateur (un compte neuf tourne sur
+    # Opus), donc omettre --model pour "sonnet" faisait tourner ces appels
+    # sur un autre modele que celui annonce.
+    if model:
         cmd.extend(["--model", model])
 
     if output_format == "json":
