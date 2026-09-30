@@ -8,7 +8,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## gt1-setup.png
 
-- **Source** : notebook `GameTheory-01-Setup.ipynb` (cellule 54, output 0, `display_data` `image/png`)
+- **Source** : notebook `GameTheory-01-Setup-Python.ipynb` (cellule 54, output 0, `display_data` `image/png`)
 - **SHA** : `053db4958a99bfc463d585116dd3fc932b5409859b2e27ac27109085a4414d55` (taille 23 099 octets)
 - **Description visuelle** : Figure matplotlib single panel 497×557 px (std 51.6/65.9/72.1 RGB, std le plus élevé B = signature du dégradé rouge-orange sur Nash) « Dilemme du Prisonnier ». Matrice de gains 2×2 (Coopérer/Défaire × Coopérer/Défaire) avec gains (3,3)/(0,5)/(5,0)/(1,1) affichés au centre de chaque cellule. Axes « Joueur Ligne » (y) et « Joueur Colonne » (x) avec labels discrets. **Cadre bleu épais** autour de la cellule (Défaire, Défaire) = équilibre de Nash (1,1). Fond de cellule (1,1) en **dégradé rouge-orange** (vs fond blanc/crème des autres cellules — signature std B=72.1 la plus haute). Légende italique sous la figure : « Cadre bleu = Equilibre de Nash ».
 - **Alt-text (FR)** : Matrice de gains 2×2 du Dilemme du Prisonnier ; la case (Défaire, Défaire) = (1, 1) est encadrée en bleu comme unique équilibre de Nash.
@@ -19,7 +19,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## gt2-normalform.png
 
-- **Source** : notebook `GameTheory-02-NormalForm.ipynb` (cellule 26, output 0, `display_data` `image/png`)
+- **Source** : notebook `GameTheory-02-NormalForm-Python.ipynb` (cellule 26, output 0, `display_data` `image/png`)
 - **SHA** : `2e892356539af305e017e7ab3110f2c75edbffbccce64cf126da77ad0f06a4b6` (taille 24 124 octets)
 - **Description visuelle** : Figure matplotlib single panel 602×590 px (std 56.7/50.3/56.8 RGB) « Dilemme du Prisonnier (Souligné bleu=BR Ligne, rouge=BR Col, Vert=Nash) ». Matrice de gains 2×2 (Coopérer/Défaire × Coopérer/Défaire) avec gains (3,3)/(0,5)/(5,0)/(1,1). Axes « Joueur Ligne » (y) et « Joueur Colonne » (x). Best Response annotées par soulignements sous les gains : trait **bleu** sous (5,0) = BR Ligne à Coopérer Col ; trait **rouge** sous (0,5) = BR Col à Coopérer Ligne ; traits **bleu+rouge** sous (1,1) à l'intersection. **Cellule (Défaire, Défaire) colorée en vert** (équilibre de Nash — contraste avec gt1 où le Nash est rouge-orange : gt2 utilise vert pour signifier la convergence BR). Légende colorée coin bas-gauche (Bleu/Rouge/Vert/Nash).
 - **Alt-text (FR)** : Le même jeu résolu par la méthode des meilleures réponses : soulignements bleus (joueur Ligne), rouges (joueur Colonne), case verte à leur intersection.
@@ -30,7 +30,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## gt10-spe.png
 
-- **Source** : notebook `GameTheory-10-ForwardInduction-SPE.ipynb` (cellule 15, output 0, `display_data` `image/png`)
+- **Source** : notebook `GameTheory-10-ForwardInduction-SPE-Python.ipynb` (cellule 15, output 0, `display_data` `image/png`)
 - **SHA** : `e319b862e5748d48f8eb8e3853855cd42570b69e1fd2bd6f624cca2f1a8c0753` (taille 120 102 octets)
 - **Description visuelle** : Figure matplotlib **2 panneaux côte-à-côte** 1200×410 px (std 31.5/31.4/35.4 RGB, std le plus bas du lot = signature du fond blanc dominant + nœuds colorés sur petite zone). **Gauche « Arbre de jeu »** : 3 niveaux verticaux. Niveau 1 : J1 racine Out → payoff (2,2) / In → nœud décision. Niveau 2 : J2 S/H (nœuds bleus) dans un **infoset unique** matérialisé par une **ellipse pointillée rouge** (label « Infoset J2 » en rouge sous l'ellipse). Niveau 3 : J1 S/H aux feuilles (nœuds jaunes = terminaux). **Droite « Raisonnement par induction avant »** : 4 paragraphes texte numérotés (1) J1 préfère In à Out, (2) comparaison Hare vs Stag, (3) raisonnement de J2 « J1 rationnel donc Stag », (4) conclusion « l'option extérieure brûle l'équilibre (Hare,Hare) → SPE (In, Stag, Stag) → (4,4) ». Layout wide format avec les deux panneaux équilibrés.
 - **Alt-text (FR)** : Arbre d'un jeu séquentiel (choix Out/In puis Stag/Hare) et raisonnement d'induction avant menant au SPE (In, Stag, Stag) → (4, 4).
@@ -41,7 +41,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## gt13-cfr.png
 
-- **Source** : notebook `GameTheory-13-ImperfectInfo-CFR.ipynb` (cellule 17, output 0, `display_data` `image/png`)
+- **Source** : notebook `GameTheory-13-ImperfectInfo-CFR-Python.ipynb` (cellule 17, output 0, `display_data` `image/png`)
 - **SHA** : `81bba55de30ad55bacbfba5ce545675c6ff1c1fb1f0a1c2609f7547a0a470b6d` (taille 161 876 octets)
 - **Description visuelle** : Figure matplotlib **2 panneaux côte-à-côte** 1200×423 px (std 50.3/59.7/68.5 RGB, std le plus élevé du lot = signature de la courbe d'oscillation dense + bars colorées) sur Kuhn Poker (K/Q/J). **Gauche « Convergence de la valeur du jeu »** : axe x « Iteration » 0→10 000, axe y « Utilité espérée J1 » −0.4→0.2. Courbe **bleu clair** = utilité par itération (oscille fortement ±0.4 en bande horizontale épaisse). Courbe **rouge** = moyenne mobile (100) qui converge progressivement vers ligne **verte pointillée** horizontale « Nash : −0.0556 ». Légende coin haut-droit. **Droite « Stratégies J1 (étoile = Nash théorique) »** : bar chart avec 3 cartes J (barre **rouge** ≈ 0.22), Q (barre **vert** ≈ 0), K (barre **vert** ≈ 0.67). **Étoiles noires** = Nash théorique J ≈ 0.33, Q = 0, K = 1.0, légèrement décalées des barres réelles (CFR n'a pas parfaitement convergé sur 10 000 itérations).
 - **Alt-text (FR)** : CFR sur le poker de Kuhn : à gauche la valeur du jeu converge vers le Nash −0,0556 en 10 000 itérations, à droite les probabilités de mise par carte (J/Q/K) rejoignent le Nash théorique (étoiles).
@@ -52,7 +52,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## gt15-shapley.png
 
-- **Source** : notebook `GameTheory-15-CooperativeGames.ipynb` (cellule 19, output 0, `display_data` `image/png`)
+- **Source** : notebook `GameTheory-15-CooperativeGames-Python.ipynb` (cellule 19, output 0, `display_data` `image/png`)
 - **SHA** : `d3a04886808ad26dbb2030af13688e5ccc9e86e8184e1d5feb94497f7a747ff4` (taille 37 187 octets)
 - **Description visuelle** : Figure matplotlib **simplexe triangulaire** 853×790 px (std 27.3/25.0/27.6 RGB, std le plus bas G = signature du fond blanc dominant). **Triangle noir épais** avec sommets labellisés « Firme A (9, 0, 0) » (haut), « Firme B (0, 9, 0) » (bas-gauche), « Firme C (0, 0, 9) » (bas-droit). Titre « Core du jeu (v(N)=9) » au-dessus. Légende coin haut-droite : carré **vert clair** « Core » + étoile **rouge** « Shapley ». **Intérieur** : nuage dense de **points verts** en forme d'**hexagone** centré approximativement à (3, 3, 3) = centroid du Core = jeu additif v(S)=|S| où Core coïncide avec allocations Pareto-efficientes. **Étoile rouge** au centre = valeur de Shapley. std ~27 sur les 3 canaux = signature des 2 zones distinctes (nuage vert dense + étoile rouge unique).
 - **Alt-text (FR)** : Simplexe des allocations d'un jeu coopératif à 3 firmes (v(N) = 9) : le Core en vert, la valeur de Shapley marquée d'une étoile rouge au centre.
@@ -63,7 +63,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## gt17-marl.png
 
-- **Source** : notebook `GameTheory-17-MultiAgent-RL.ipynb` (cellule 14, output 1, `display_data` `image/png`)
+- **Source** : notebook `GameTheory-17-MultiAgent-RL-Python.ipynb` (cellule 14, output 1, `display_data` `image/png`)
 - **SHA** : `d3e3de5044220fe93b4a466a79dd77fa9dcb0eb10186d0736b532755f7c0ab54` (taille 137 525 octets)
 - **Description visuelle** : Figure matplotlib **2 panneaux côte-à-côte** 1200×423 px (std 38.9/32.7/37.7 RGB) sur Pierre-Feuille-Ciseaux (RPS). **Gauche « Convergence : Self-Play vs Fictitious Play »** : axe x « Iteration » 0→500, axe y « Exploitabilité » échelle **logarithmique** 10⁻¹. **Self-Play Naif (bleu)** = bande horizontale oscillante ~0.3 qui s'accroche à une stratégie pure sans converger (cycles limit R→P→S→R). **Fictitious Play (orange)** = décroissance monotone oscillante de 0.5 vers ~0.02-0.03 vers iter 500. Légende coin haut-droit. **Droite « Stratégies Fictitious Play - Convergence »** : axe x « Iteration » 0→500, axe y « Probabilité » 0.15→0.50. **3 courbes oscillantes en sinusoïdes amorties** : Rock (**bleu**), Paper (**orange**), Scissors (**vert**) convergent toutes vers la **ligne grise pointillée « Nash »** ≈ 0.333. Légende coin haut-droit. std modéré ~33-39 sur les 3 canaux = signature des 3 courbes colorées oscillantes + zone log-y.
 - **Alt-text (FR)** : Apprentissage multi-agent sur Pierre-Feuille-Ciseaux : à gauche l'exploitabilité (le self-play naïf oscille, le fictitious play décroît), à droite les fréquences convergent vers le Nash uniforme.

@@ -22,7 +22,7 @@ import Bayesian.FictitiousPlay
 
   Core-Lean-4-only formalization of finite two-player Bayesian games
   (Harsanyi type spaces, interim expected utility, Bayesian Nash
-  equilibrium). Companion to GameTheory-11-BayesianGames.ipynb.
+  equilibrium). Companion to GameTheory-11-BayesianGames-Python.ipynb.
 
   Modules:
   - `Bayesian.Sum`      — finite sums over `Fin n` with the lemmas we need
