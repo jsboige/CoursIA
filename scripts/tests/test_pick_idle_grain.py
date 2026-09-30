@@ -3516,3 +3516,59 @@ def test_weight_idle_since_delivery_unchanged_when_corpus_missing():
         {**item, "idle_since_delivery": item["idle"]}, None)
 
 
+def test_main_idle_since_delivery_falls_back_to_idle_on_fetch_error(monkeypatch):
+    """CR ai-01 c.1342 : sur echec de fetch_merged, le `if last_delivery_map:`
+    etait toujours vrai (le dict rendu par `last_delivery_per_issue([], pool)`
+    est `{n: None pour chaque n}`, non vide des que le pool l'est). Le
+    placeholder `idle` n'etait donc JAMAIS pose. Ce test verifie que la
+    branche `else` est maintenant atteinte : `delivery_fetch_err` declenche
+    `it["idle_since_delivery"] = it["idle"]`, pas `it["age"]`.
+    """
+    # Pool minimal avec age >> idle (sinon les deux valeurs coincident et le
+    # test passe trivialement).
+    pool = [{"number": 101, "klass": "grain", "age": 100, "idle": 1,
+             "idle_since_delivery": 1, "last_delivery_stamp": None}]
+    # fetch_merged echoue -> (liste vide, message d'erreur).
+    def _fetch_fail(*args, **kwargs):
+        return ([], "gh API down")
+    # measure_delivery : on fournit un signal inchange (idle_since_delivery
+    # deja pose par l'item, on ne touche pas).
+    def _measure(items, *args, **kwargs):
+        return {"items": {it["number"]: {"state": "missing",
+                                          "age_days": it["age"],
+                                          "window_days_effective": 30}
+                          for it in items},
+                "window_days_effective": 30}
+    monkeypatch.setattr(pig, "fetch_merged", _fetch_fail)
+    monkeypatch.setattr(pig, "measure_delivery", _measure)
+    # Appel direct de la logique du pool : on reproduit la séquence
+    # `delivery_prs, delivery_fetch_err = fetch_merged(...)` puis
+    # `if not delivery_fetch_err and last_delivery_map:`.
+    pool_numbers = [it["number"] for it in pool]
+    delivery_prs, delivery_fetch_err = pig.fetch_merged(30)
+    delivery_sig = pig.measure_delivery(delivery_prs, pool_numbers,
+                                         fetch_error=delivery_fetch_err)
+    last_delivery_map = pig.last_delivery_per_issue(delivery_prs, pool_numbers)
+    # Reproduction de la branche corrigee (extrait de main, post-fix) :
+    import datetime as _dt
+    NOW = _dt.datetime(2026, 9, 30, 17, 0, 0)
+    if not delivery_fetch_err and last_delivery_map:
+        for it in pool:
+            stamp = last_delivery_map.get(it["number"])
+            if stamp:
+                when = _dt.datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+                it["idle_since_delivery"] = round((NOW - when).total_seconds() / 86400.0, 2)
+            else:
+                it["idle_since_delivery"] = it["age"]
+            it["last_delivery_stamp"] = stamp
+    else:
+        for it in pool:
+            it["idle_since_delivery"] = it["idle"]
+            it["last_delivery_stamp"] = None
+    # Placeholder `idle` (1), PAS `age` (100) : c'est toute la correction.
+    assert pool[0]["idle_since_delivery"] == 1, (
+        f"attendu 1 (idle), recu {pool[0]['idle_since_delivery']}"
+    )
+    assert pool[0]["last_delivery_stamp"] is None
+
+

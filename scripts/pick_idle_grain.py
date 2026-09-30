@@ -4966,8 +4966,15 @@ def main(argv: list[str] | None = None) -> int:
     # appel reseau, on reutilise le meme corpus `delivery_prs`.
     pool_numbers = [it["number"] for it in pool]
     last_delivery_map = last_delivery_per_issue(delivery_prs, pool_numbers)
-    if last_delivery_map:
-        # Cas nominal : on a un corpus de PRs (la fenetre est respecte). On
+    # Geste 3 #18203 (CR ai-01 c.1342) : tester l'erreur de fetch, PAS le
+    # dict. `last_delivery_per_issue([], pool_numbers)` rend
+    # `{n: None pour chaque n}` (dict non vide des que le pool l'est), donc
+    # `if last_delivery_map:` est toujours vrai sur echec de fetch -- le
+    # `else` (corpus indisponible) etait inatteignable. La doctrine
+    # "defaut de mesure n'est pas negligence" impose un test sur l'erreur
+    # elle-meme, pas sur la structure du resultat.
+    if not delivery_fetch_err and last_delivery_map:
+        # Cas nominal : corpus de PRs disponible et fenetre respectee. On
         # patche `idle_since_delivery` pour chaque item. Issue livree dans la
         # fenetre -> jours depuis la fusion ; sinon -> `age` (l'age de
         # creation, qui dit "issue neuve jamais livree" sans la faire passer
