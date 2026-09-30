@@ -8,7 +8,7 @@ output it carries) crosses the 60+ checks without one red. Two instances:
   (a) PR #13287 cell -- `print(f"  donne un levier "prononce" (0.746)...")`
       -- double-quote OUTSIDE f-string substitution field: invalid in 3.11
       as in 3.14 (PEP 701 only covers the inside of `{}`).
-  (b) `main` GameTheory-03d-Plan-de-deformation.ipynb cell[7] -- a markdown
+  (b) `main` GameTheory-03e-Plan-de-deformation-Python.ipynb cell[7] -- a markdown
       blob typed `code`, carrying an orphan output from another calculation.
 
 This script:

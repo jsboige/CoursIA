@@ -18,7 +18,7 @@
   « éviter » — est vérifié ci-dessous par `decide`, exerçant la décidabilité
   de `isBNE`.
 
-  Reflète GameTheory-11-BayesianGames.ipynb. Voir #2610.
+  Reflète GameTheory-11-BayesianGames-Python.ipynb. Voir #2610.
 -/
 
 import Bayesian.BNE

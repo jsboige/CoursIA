@@ -439,7 +439,7 @@ class TestRealNotebooks(unittest.TestCase):
 
     def test_gametheory16_numbered_exercices_is_not_a_finding(self):
         """`## 7. Exercices` est une transition legitime -- le prefixe numerote aussi."""
-        found = self._misplaced("MyIA.AI.Notebooks/GameTheory/GameTheory-16-MechanismDesign.ipynb")
+        found = self._misplaced("MyIA.AI.Notebooks/GameTheory/GameTheory-16-MechanismDesign-Python.ipynb")
         if found is None:
             self.skipTest("GameTheory-16 absent")
         self.assertEqual(found, [], f"FP c.95 reintroduit : {found}")
