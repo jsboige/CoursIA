@@ -938,7 +938,7 @@ L'email professionnel rédigé illustre parfaitement les bonnes pratiques de com
 5. **Application des modèles** : Respect strict du modèle d'email d'annonce fourni dans les ressources
 6. **Bonnes pratiques respectées** : Clarté, concision, adaptation à l'audience, professionnalisme
 
-L'email de 84 lignes constitue un exemple parfait de communication managériale efficace, alliant information complète, rassurance et accompagnement au changement.
+L'email constitue un exemple parfait de communication managériale efficace, alliant information complète, rassurance et accompagnement au changement.
 </result>
 </attempt_completion>
 
