@@ -82,10 +82,9 @@ lemma shiftDistance_symm {d : ℕ} (S : Finset (Fin d → ℤ))
   congr 1
   apply Finset.sum_congr rfl
   intro x _
-  ring_nf
-  rw [abs_sub_comm]
-  ring_nf
-  rw [abs_neg]
+  have key : x - (-u) = x + u := by ring
+  rw [← key]
+  rfl
 
 /-- Δ(P, u) = 0 when P is identically zero on S ∪ (S − u). -/
 lemma shiftDistance_eq_zero_of_zero {d : ℕ} (S : Finset (Fin d → ℤ))
