@@ -52,12 +52,15 @@ jobs:
 
       - name: Lane transiente et entree d'archive
         run: |
-          # Refspec explicite AVEC destination : un fetch opportuniste de la
-          # base ne cree pas refs/remotes/origin/<base> dans un clone shallow
-          # (mesure : "fatal: bad revision 'origin/main...HEAD'" au premier
-          # run, corrige et valide sur repro). Le diff base...HEAD exige que
-          # la ref existe.
-          git fetch --depth=1 origin \
-            "${{ github.base_ref }}:refs/remotes/origin/${{ github.base_ref }}" -q
-          python scripts/check_docs_transients_lane.py \
-            --base "origin/${{ github.base_ref }}"
+          # Base = HEAD^1 : sur evenement pull_request, checkout@v4 pose le
+          # merge ref refs/pull/N/merge -- HEAD est le commit de merge, dont
+          # le premier parent EST le cote base. Un fetch depth=1 de
+          # origin/<base_ref> ne suffit pas : quand <base_ref> a bouge entre
+          # la construction du merge ref et ce fetch, les bornes shallow des
+          # deux fetchs n'ont aucun ancetre commun et le diff three-dot meurt
+          # -- mesure run 110043387149 : "fatal: origin/main...HEAD: no merge
+          # base" -> GIT_DIFF_FAILED. HEAD^1 est present par construction
+          # (fetch-depth: 2) et merge-base se resout en parent direct ; le
+          # diff rend exactement les fichiers du plateau GitHub (verifie sur
+          # repro de la topologie : 6 fichiers, identiques a gh pr view).
+          python scripts/check_docs_transients_lane.py --base "HEAD^1"
