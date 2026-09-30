@@ -36,7 +36,7 @@ import Discrepancy.Basic
 /-!
 # Shift distance Δ (Def 1.3, Karingula–Lovett)
 
-`Discrepancy.Komlos_en.shiftDistance S P u = ½ · Σ_{x ∈ S} |P(x) − P(x − u)|`
+`Discrepancy.Komlos_en.shiftDistance S P u = ½ · Σ_{x ∈ S} |P(x + u) − P(x)|`
 is the half-total-variation distance between a distribution
 `P : ℤ^d → ℝ` supported in a finite `Finset S` and its translation by
 `u`. It is the elementary brick underlying the splitting operator
@@ -48,6 +48,12 @@ has no instance). This stays faithful to the « finite support »
 convention of the paper and gives a type-clean signature without
 artificial `Fintype` hypotheses.
 
+**Forward convention**: we sum `|P(x + u) − P(x)|` (forward shift),
+not `|P(x) − P(x − u)|` (backward shift). The two differ by an index
+translation, but the forward version is more natural for the symmetry
+Δ(u) = Δ(−u) — it follows from `|a − b| = |b − a|` without any
+support-stability hypothesis.
+
 This brick only assumes `Basic.lean` — no upstream dependency
 (Komlos.Tent is not required for these basic identities). The Mathlib
 pin `db584cd6` is in the fleet cohort v4.32.1 (mutualisation #4363) ;
@@ -57,15 +63,15 @@ the gap between this pin and the local toolchain v4.33.0 is handled by
 
 namespace Discrepancy.Komlos_en
 
-/-- Shift distance Δ(P, u, S) = ½ · Σ_{x ∈ S} |P(x) − P(x − u)|.
+/-- Shift distance Δ(P, u, S) = ½ · Σ_{x ∈ S} |P(x + u) − P(x)|.
 
 We sum over `S`, any `Finset` that contains the effective support of
-`P` (and therefore, by translation, that of `P(· − u)`). The
+`P` (and therefore, by translation, that of `P(· + u)`). The
 convention is that `S` may be wider than necessary — the definition
 remains correct, only the out-of-support contributions are zero. -/
 noncomputable def shiftDistance {d : ℕ} (S : Finset (Fin d → ℤ))
     (P : (Fin d → ℤ) → ℝ) (u : Fin d → ℤ) : ℝ :=
-  (1 / 2 : ℝ) * ∑ x ∈ S, |P x - P (x - u)|
+  (1 / 2 : ℝ) * ∑ x ∈ S, |P (x + u) - P x|
 
 /-- Δ(P, 0) = 0: the zero shift changes nothing. -/
 lemma shiftDistance_zero {d : ℕ} (S : Finset (Fin d → ℤ))
@@ -82,20 +88,20 @@ lemma shiftDistance_symm {d : ℕ} (S : Finset (Fin d → ℤ))
   congr 1
   apply Finset.sum_congr rfl
   intro x _
-  have key : x - (-u) = x + u := by ring
-  rw [← key]
-  rfl
+  -- Goal : |P (x + u) - P x| = |P (x - u) - P x|.
+  -- The symmetry |a - b| = |b - a| (abs_sub_comm) suffices.
+  rw [abs_sub_comm]
 
-/-- Δ(P, u) = 0 when P is identically zero on S ∪ (S − u). -/
+/-- Δ(P, u) = 0 when P is identically zero on S ∪ (S + u). -/
 lemma shiftDistance_eq_zero_of_zero {d : ℕ} (S : Finset (Fin d → ℤ))
     (P : (Fin d → ℤ) → ℝ) (u : Fin d → ℤ)
     (hP : ∀ x ∈ S, P x = 0)
-    (hu : ∀ y ∈ S, P (y - u) = 0) :
+    (hu : ∀ x ∈ S, P (x + u) = 0) :
     shiftDistance S P u = 0 := by
   unfold shiftDistance
   apply Finset.sum_congr rfl
   intro x _
-  rw [hP x, hu x]
+  rw [hu x, hP x]
   rw [sub_zero]
   rw [abs_zero]
 
@@ -110,11 +116,11 @@ lemma shiftDistance_nonneg {d : ℕ} (S : Finset (Fin d → ℤ))
 
 /-- Δ(P, u) ≤ ½ · ‖P‖_{L¹(S)}: the distance is bounded by half the L¹
 mass on `S`. This bound is immediate by the triangle inequality on
-each term: `|P(x) − P(x − u)| ≤ |P(x)| + |P(x − u)|`. -/
+each term: `|P(x + u) − P(x)| ≤ |P(x + u)| + |P(x)|`. -/
 lemma shiftDistance_le_one {d : ℕ} (S : Finset (Fin d → ℤ))
     (P : (Fin d → ℤ) → ℝ) (u : Fin d → ℤ) :
     shiftDistance S P u ≤
-      (1 / 2 : ℝ) * (∑ x ∈ S, |P x| + ∑ x ∈ S, |P (x - u)|) := by
+      (1 / 2 : ℝ) * (∑ x ∈ S, |P x| + ∑ x ∈ S, |P (x + u)|) := by
   unfold shiftDistance
   have hhalf : (0 : ℝ) ≤ 1 / 2 := by norm_num
   apply mul_le_mul_of_nonneg_left _ hhalf
@@ -142,17 +148,18 @@ linear-arithmetic proofs and set-theoretic disjunctions. The
 conservative path uses `omega` for arithmetic, `positivity` for
 non-negative bounds, and `Finset.sum_congr` for sum identities.
 
-**Domain convention revisited (c.886)** : the initial signature
-inferring the support via `Finset.univ` required a synthetic
-`Fintype (Fin d → ℤ)` — not available. Passing the support
-`S : Finset (Fin d → ℤ)` explicitly aligns with the « finite support »
-convention of the paper (Def 1.3: « sum over the support »), while
-avoiding the phantom instance. Side effect:
-`shiftDistance_eq_zero_of_zero` now requires
-`∀ x ∈ S, P x = 0` AND `∀ y ∈ S, P (y - u) = 0` (the latter is needed
-because `x - u` may leave `S`). This reinforced condition is natural
-in the paper context where the measure P is defined on a finite,
-translation-stable support (Lemma 1.5 of the paper).
+**Forward convention revisited (c.886+)** : the « forward shift »
+convention `|P(x + u) − P(x)|` (instead of « backward »
+`|P x − P(x − u)|`) aligns the `shiftDistance_symm` lemma with the
+trivial symmetry of `|·|` (via `abs_sub_comm`). The backward shift
+required a support-stability hypothesis (`S = S − u`) for symmetry —
+excessive for k1.1's needs. Side effect: `shiftDistance_eq_zero_of_zero`
+requires `P` zero on `S ∪ (S + u)` (instead of `S ∪ (S − u)`),
+consistent with the forward convention.
+
+**Domain convention** : `S : Finset (Fin d → ℤ)` passed explicitly
+(« finite support » convention of the paper, Def 1.3) rather than
+inferred via `Finset.univ` (no synthetic `Fintype (Fin d → ℤ)`).
 -/
 
 end Discrepancy.Komlos_en
