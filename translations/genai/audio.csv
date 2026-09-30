@@ -1021,11 +1021,11 @@ else:
             }
     print(f""{len(audio_samples)} echantillons existants trouves"")
 ",,,,,,,,94ab4b52dbca3395,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,30fca44d,markdown,fr,ae631488f86b2f5b,"### Interpretation : Generation d'echantillons audio
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,30fca44d,markdown,fr,e12103b95fcd424e,"### Interpretation : Generation d'echantillons audio
 
 | Aspect | Valeur | Signification |
 |--------|--------|---------------|
-| Taille fichiers | 106-233 KB | Compression MP3 efficace pour la qualite vocale |
+| Taille fichiers | 88-185 KB | Compression MP3 efficace pour la qualite vocale |
 | Synthese TTS | voix ""nova"" | Modèle polyvalent, adapte aux textes courts |
 | Round-trip | TTS → STT | Permet de valider la fidelite de la chaîne audio |
 
@@ -1034,7 +1034,7 @@ MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,30fca4
 2. Les echantillons multilingues testent la robustesse de la detection de langue
 3. La taille du fichier MP3 depend de la duree et de la complexite du texte
 
-> **Note technique** : La voix ""nova"" du modèle tts-1 est optimisee pour les textes courts et la conversation. Pour des textes plus longs, considerer tts-1-hd pour une meilleure qualite audio.",,,,,,,,ae631488f86b2f5b,,,,,,,,
+> **Note technique** : La voix ""nova"" du modèle tts-1 est optimisee pour les textes courts et la conversation. Pour des textes plus longs, considerer tts-1-hd pour une meilleure qualite audio.",,,,,,,,e12103b95fcd424e,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,cell-section2-intro,markdown,fr,407efcae6576ed07,"## Section 2 : Transcription avec Whisper API
 
 L'API Whisper accepte un fichier audio et retourne la transcription. Les paramètres principaux :
@@ -1046,16 +1046,16 @@ L'API Whisper accepte un fichier audio et retourne la transcription. Les paramè
 | `language` | Langue source | Code ISO 639-1 (`fr`, `en`, etc.) ou None |
 | `response_format` | Format de sortie | `json`, `text`, `srt`, `vtt`, `verbose_json` |
 | `timestamp_granularities` | Precision timestamps | `[""word""]`, `[""segment""]`, `[""word"", ""segment""]` |",,,,,,,,407efcae6576ed07,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,2f2757c2,markdown,fr,d33b5ebae865414e,"### Synthese de la Section 1
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,2f2757c2,markdown,fr,a0f4d59bc3a2137e,"### Synthese de la Section 1
 
 Cette section a initialise notre environnement de test en generant des echantillons audio contrôles via l'API TTS.
 
 **Résultats obtenus** :
 - 3 echantillons audio generes (francais, anglais, multilingue)
-- Fichiers MP3 de 106-233 KB stockes dans `outputs/audio/samples/`
+- Fichiers MP3 de 88 a 185 KB stockes dans `outputs/audio/samples/`
 - Textes de reference connus pour validation de la transcription
 
-**Transition** : Nous disposons maintenant de fichiers audio de qualite connue pour tester les capacites de transcription de Whisper. La section suivante explore l'API de transcription dans ses différents formats de sortie.",,,,,,,,d33b5ebae865414e,,,,,,,,
+**Transition** : Nous disposons maintenant de fichiers audio de qualite connue pour tester les capacites de transcription de Whisper. La section suivante explore l'API de transcription dans ses différents formats de sortie.",,,,,,,,a0f4d59bc3a2137e,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,cell-transcription,code,fr,8d1ee53032030a3e,"# Transcription de base
 print(""TRANSCRIPTION WHISPER"")
 print(""="" * 45)
@@ -1189,7 +1189,7 @@ Whisper supporte des formats standards pour le sous-titrage :
 | `srt` | SubRip Subtitle | Lecteurs video, YouTube |
 | `vtt` | WebVTT | Navigateurs web, HTML5 video |
 | `text` | Texte brut | Traitement de texte, NLP |",,,,,,,,08d73fc01573d02c,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,62062a0c,markdown,fr,00a8f32ff72c0475,"### Synthese de la Section 2
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,62062a0c,markdown,fr,815735e2ec5017fd,"### Synthese de la Section 2
 
 Cette section a demontre les capacites fondamentales de transcription de Whisper.
 
@@ -1197,13 +1197,13 @@ Cette section a demontre les capacites fondamentales de transcription de Whisper
 - Transcription fidele (texte original reproduit avec precision)
 - Detection automatique de langue (french identifiee sans paramètre)
 - Timestamps a deux niveaux (segments de 3-4s, mots individuels)
-- Metadonnees completes (duree 11.9s, 28 mots, 3 segments)
+- Metadonnees completes (duree 11.8s, 28 mots, 3 segments)
 
 **Formats de sortie explores** :
 - `json` : Texte simple, usage general
 - `verbose_json` : Metadonnees completes (timestamps, langue, duree)
 
-**Transition** : Après avoir maitrise la transcription de base, nous allons explorer les formats specialises pour le sous-titrage (SRT, VTT) qui sont essentiels pour les applications video.",,,,,,,,00a8f32ff72c0475,,,,,,,,
+**Transition** : Après avoir maitrise la transcription de base, nous allons explorer les formats specialises pour le sous-titrage (SRT, VTT) qui sont essentiels pour les applications video.",,,,,,,,815735e2ec5017fd,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,cell-subtitle-formats,code,fr,c04ebf7ef1f18950,"# Formats de sous-titrage
 print(""FORMATS DE SOUS-TITRAGE"")
 print(""="" * 45)
@@ -1400,14 +1400,14 @@ MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,cell-s
 | Code-switching | Gere partiellement | Le melange de langues peut reduire la precision |
 
 > **Note technique** : L'endpoint `translations` ne supporte que la traduction vers l'anglais. Pour d'autres langues cibles, combiner Whisper STT + un LLM de traduction.",,,,,,,,1e6f72f80e6f2e37,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,cell-section5-intro,markdown,fr,b2f3a749434fceb2,"## Section 5 : Comparaison Whisper-1 vs GPT-4o-Transcribe
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,cell-section5-intro,markdown,fr,22ff178acc253106,"## Section 5 : Comparaison Whisper-1 vs GPT-4o-Transcribe
 
 OpenAI propose deux modèles de transcription :
 
 | Modèle | Architecture | Forces | Limitations |
 |--------|-------------|--------|-------------|
 | `whisper-1` | Whisper V2 | Rapide, stable, multilingue | Precision moderee sur accents forts |
-| `gpt-4o-transcribe` | GPT-4o | Meilleure comprehension contextuelle | Plus lent, plus cher |",,,,,,,,b2f3a749434fceb2,,,,,,,,
+| `gpt-4o-transcribe` | GPT-4o | Meilleure comprehension contextuelle | Refuse `verbose_json` (pas de timestamps) |",,,,,,,,22ff178acc253106,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,5d4d5534,markdown,fr,416fdcc9608dac44,"### Synthese de la Section 4
 
 Cette section a explore les capacites de traduction et de detection multilingue de Whisper.
@@ -1427,7 +1427,7 @@ Cette section a explore les capacites de traduction et de detection multilingue 
 - Pour d'autres langues cibles, combiner Whisper STT + un LLM de traduction
 
 **Transition** : Après avoir explore les fonctionnalites de traduction, nous allons comparer les deux modèles STT disponibles (whisper-1 vs gpt-4o-transcribe) pour comprendre leurs différences de performance et de compatibilite.",,,,,,,,416fdcc9608dac44,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,cell-model-comparison,code,fr,568e5b8050500798,"# Comparaison des modeles STT
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,cell-model-comparison,code,fr,ff9f11a59b57b3f7,"# Comparaison des modeles STT
 print(""COMPARAISON MODELES STT"")
 print(""="" * 45)
 
@@ -1449,7 +1449,7 @@ if ""fr"" in audio_samples:
                 transcript = client.audio.transcriptions.create(
                     model=model,
                     file=audio_file,
-                    response_format=""verbose_json""
+                    response_format=""json""
                 )
 
             elapsed = time.time() - start_time
@@ -1457,13 +1457,11 @@ if ""fr"" in audio_samples:
             comparison_results[model] = {
                 ""text"": transcript.text,
                 ""time"": elapsed,
-                ""language"": transcript.language,
-                ""duration"": transcript.duration
+                ""words"": len(transcript.text.split())
             }
 
             print(f""  Texte : {transcript.text}"")
-            print(f""  Langue : {transcript.language}"")
-            print(f""  Duree audio : {transcript.duration:.1f}s"")
+            print(f""  Mots : {len(transcript.text.split())}"")
             print(f""  Temps API : {elapsed:.2f}s"")
 
         except Exception as e:
@@ -1473,31 +1471,34 @@ if ""fr"" in audio_samples:
     # Tableau comparatif
     if len(comparison_results) > 1:
         print(f""\nTableau comparatif :"")
-        print(f""{'Modele':<25} {'Temps API':<12} {'Langue':<10}"")
+        print(f""{'Modele':<25} {'Temps API':<12} {'Mots':<10}"")
         print(""-"" * 47)
         for model, data in comparison_results.items():
             if ""error"" not in data:
-                print(f""{model:<25} {data['time']:<12.2f} {data['language']:<10}"")
+                print(f""{model:<25} {data['time']:<12.2f} {data['words']:<10}"")
             else:
                 print(f""{model:<25} {'ERREUR':<12} {'-':<10}"")
 else:
     print(""Aucun echantillon audio disponible"")
-",,,,,,,,568e5b8050500798,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,a851d984,markdown,fr,739bd49545f0545b,"### Interpretation : Comparaison des modèles
+",,,,,,,,ff9f11a59b57b3f7,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,a851d984,markdown,fr,18e936e95758d084,"### Interpretation : Comparaison des modèles
 
-| Aspect | Observation | Analyse |
-|--------|-------------|---------|
-| whisper-1 | *runtime machine-dep* : 2.92s pour 11.9s audio | Ratio real-time ~4x (rapide) |
-| gpt-4o-transcribe | Erreur 400 | verbose_json non supporte par ce modèle |
-| Compatibilite | whisper-1 plus stable | gpt-4o-transcribe a des restrictions de format |
+*Correction de @pierre-ingrachen (PR #18569) : la cellule demandait le format `verbose_json`, que `gpt-4o-transcribe` refuse (erreur 400). Elle utilise désormais `json`, accepté par les deux modèles, et compte les mots au lieu d'afficher la langue et la durée, que seul `verbose_json` fournit.*
 
-**Points cles** :
-1. `whisper-1` est le modèle le plus polyvalent pour les formats de sortie
-2. `gpt-4o-transcribe` ne supporte pas `verbose_json` (limitation connue)
-3. Pour la comparaison equitable, utiliser le format `json` simple
-4. Les deux modèles ont le même cout tarifaire ($0.006/minute)
+| Aspect | whisper-1 | gpt-4o-transcribe |
+|--------|-----------|-------------------|
+| Fin de la seconde phrase | `mots-prononces` | `mots prononcés` |
+| Nombre de mots | 27 | 28 |
+| Temps d'appel (cette exécution) | 1.16 s | 0.90 s |
 
-> **Note technique** : `gpt-4o-transcribe` est base sur l'architecture GPT-4o et offre une meilleure comprehension contextuelle pour l'audio ambiant ou les conversations avec bruit de fond. Cependant, il a des restrictions sur les formats de sortie. Pour la production, choisir le modèle en fonction des besoins : polyvalence (whisper-1) vs comprehension contextuelle (gpt-4o-transcribe).",,,,,,,,739bd49545f0545b,,,,,,,,
+**Points clés** :
+1. Les deux transcriptions sont identiques, sauf sur les deux derniers mots.
+2. **Le texte source contient lui-même une coquille** : la cellule de génération des échantillons écrit « les mots prononces », sans accent, et la synthèse vocale a pu le lire autrement que « prononcés ». `whisper-1` rend « mots-prononces » ; `gpt-4o-transcribe` écrit « mots prononcés », la forme que la phrase appelle. C'est la « compréhension contextuelle » annoncée : le modèle corrige vers le sens. C'est un avantage pour la lecture, mais un risque quand on attend une transcription fidèle à ce qui a été dit.
+3. **L'écart de 27 à 28 mots vient du tiret**, pas d'un mot manquant : compter les mots mesure le découpage, pas la justesse. Le taux d'erreur par mot contre le texte de référence (exercice 1) est une mesure plus sûre.
+4. **Une seule mesure ne départage pas les deux modèles** : les temps d'appel incluent le réseau et varient d'une exécution à l'autre (de 0.9 à 2.5 s sur les deux exécutions du 30/09).
+5. `gpt-4o-transcribe` refuse `verbose_json` : pour les timestamps et les sous-titres, `whisper-1` reste nécessaire.
+
+> **Note technique** : l'exemple guidé 3 fait lire la même phrase, **avec** l'accent, par la même voix, et `whisper-1` y écrit correctement « mots prononcés ». L'écart observé ici tient donc plus probablement au texte source qu'au modèle. Les deux modèles ont le même tarif ($0.006/minute) ; le choix se fait sur le besoin : formats et timestamps (`whisper-1`) ou compréhension contextuelle (`gpt-4o-transcribe`).",,,,,,,,18e936e95758d084,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,qpnrjon30ij,markdown,fr,d8c019c3912afb8c,"La comparaison des modèles etant complete, le mode interactif permet d'experimenter librement la transcription sur vos propres fichiers audio en ajustant les paramètres en temps reel.",,,,,,,,d8c019c3912afb8c,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,cell-interactive,code,fr,e76769c542e940d7,"# Mode interactif
 if notebook_mode == ""interactive"" and not skip_widgets:
@@ -1588,14 +1589,14 @@ MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,cell-p
 |--------|------|------------|
 | `whisper-1` | $0.006 / minute | ~$0.36 / heure |
 | `gpt-4o-transcribe` | $0.006 / minute | ~$0.36 / heure |",,,,,,,,5f7cee641372299b,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,fb5f063f,markdown,fr,2ab6881945571544,"### Synthese de la Section 5
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,fb5f063f,markdown,fr,0d4118b5e2c65450,"### Synthese de la Section 5
 
 Cette section a compare les deux modèles STT disponibles dans l'API OpenAI.
 
 **Résultats obtenus** :
 - `whisper-1` : Modèle polyvalent, stable, compatible avec tous les formats
 - `gpt-4o-transcribe` : Meilleure comprehension contextuelle mais restrictions de format
-- Performance : whisper-1 traite 11.9s d'audio en *runtime machine-dep* : 2.92s (ratio real-time ~4x)
+- Temps d'appel : de 0.9 à 2.5 s selon le modèle et l'exécution, réseau compris ; une seule mesure ne départage pas les deux modèles
 - Cout identique : $0.006/minute pour les deux modèles
 
 **Critères de choix** :
@@ -1607,7 +1608,7 @@ Cette section a compare les deux modèles STT disponibles dans l'API OpenAI.
 | Formats sorties multiples | whisper-1 |
 | Comprehension contextuelle | gpt-4o-transcribe |
 
-**Transition** : Après avoir explore toutes les fonctionnalites de l'API Whisper, nous allons maintenant examiner les bonnes pratiques, les couts et les prochaines étapes pour approfondir vos connaissances en reconnaissance vocale.",,,,,,,,2ab6881945571544,,,,,,,,
+**Transition** : Après avoir explore toutes les fonctionnalites de l'API Whisper, nous allons maintenant examiner les bonnes pratiques, les couts et les prochaines étapes pour approfondir vos connaissances en reconnaissance vocale.",,,,,,,,0d4118b5e2c65450,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,cell-stats,code,fr,0c14c7375bf02234,"# Statistiques de session et prochaines etapes
 print(""STATISTIQUES DE SESSION"")
 print(""="" * 45)
@@ -1632,43 +1633,70 @@ print(f""4. Explorer la comparaison multi-modeles (03-1)"")
 
 print(f""\nNotebook Whisper STT termine - {datetime.now().strftime('%H:%M:%S')}"")
 ",,,,,,,,0c14c7375bf02234,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,dd2e18ba,markdown,fr,916bf1acc4a770ea,"### Exercice 3 : Pipeline de traduction et comparaison multilingue
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,dd2e18ba,markdown,fr,21a3c414c37c587e,"### Exemple guidé 3 : Pipeline de traduction et comparaison multilingue
 
-Vous disposez d'un extrait audio en francais et devez construire un mini-pipeline qui transcrit, traduit, et compare les résultats entre deux modèles.
+*Contribution étudiante de @pierre-ingrachen (PR #18569), intégrée comme exemple guidé.*
 
-**Contexte** : Une entreprise internationale veut transcrire des messages vocaux dans leur langue d'origine et les traduire en anglais pour les équipes non-francophones.
+La traduction ci-dessus partait de l'échantillon français déjà généré. Cet exemple construit un mini-pipeline complet sur un audio qu'il produit lui-même : synthèse vocale, transcription avec détection de langue, traduction vers l'anglais, et mesure du temps de chaque appel.
+
+**Objectif** : enchaîner synthèse, transcription et traduction sur le même fichier, et comparer ce que renvoie chaque endpoint.
 
 **Étapes** :
-1. Generer un audio de test en francais (via TTS) avec un texte professionnel
-2. Transcrire avec `whisper-1` en format `verbose_json` et afficher la langue detectee
-3. Traduire le même audio vers l'anglais avec l'endpoint `translations`
-4. Comparer la duree d'appel entre les deux opérations
+1. Générer un audio français par synthèse vocale (`tts-1`, voix `nova`) et le sauvegarder dans `OUTPUT_DIR`
+2. Transcrire avec `whisper-1` en format `verbose_json`, qui renvoie aussi la langue détectée
+3. Traduire le même fichier vers l'anglais avec l'endpoint `translations`
+4. Comparer la durée des deux appels
 
-**Indices** :
-- `# Indice` : `client.audio.transcriptions.create(...)` pour la transcription
-- `# Indice` : `client.audio.translations.create(...)` pour la traduction vers l'anglais
-- `# Indice` : utilisez `time.time()` avant et après chaque appel pour mesurer la duree",,,,,,,,916bf1acc4a770ea,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,27491087,code,fr,bb2ee8aa2f5a9691,"# Exercice 3 : Pipeline de traduction et comparaison multilingue
-# TODO etudiant : Construire un pipeline transcription + traduction
+**Points clés du code** :
+- le fichier audio est rouvert pour chaque appel (`with open(..., 'rb')`) : un flux déjà lu par le premier appel serait vide pour le second
+- l'endpoint `translations` n'a pas de paramètre de langue cible : il traduit toujours vers l'anglais
+- `time.time()` avant et après chaque appel mesure le temps réseau compris, pas seulement le calcul du modèle",,,,,,,,21a3c414c37c587e,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,27491087,code,fr,840172f37f3445d8,"# Exemple guide 3 : Pipeline de traduction et comparaison multilingue
+# Contribution etudiante de @pierre-ingrachen (PR #18569)
 
-# Etape 1 : Generer un audio de test en francais
-ex3_text = ""Votre message professionnel ici.""  # TODO etudiant : texte de 2-3 phrases
-ex3_audio_path = None  # TODO etudiant : generer via TTS et sauvegarder
+# Etape 1 : Generer un audio de test en francais (TTS)
+ex3_text = ""La reconnaissance vocale permet de convertir la parole en texte. "" \
+""Cette technologie utilise des réseaux de neurones profonds pour analyser le signal audio et identifier les mots prononcés.""
+ex3_tts = client.audio.speech.create(
+    model=""tts-1"",
+    voice=""nova"",
+    input=ex3_text,
+    response_format=""mp3""
+)
+ex3_audio_path = OUTPUT_DIR / ""ex3_sample.mp3""
+with open(ex3_audio_path, 'wb') as f:
+    f.write(ex3_tts.content)
+print(f""Audio genere : {ex3_audio_path.name}"")
 
 # Etape 2 : Transcrire avec verbose_json
-transcript_result = None  # TODO etudiant
-transcript_lang = None  # TODO etudiant : extraire la langue detectee
-transcript_time = None  # TODO etudiant : mesurer la duree
+t0 = time.time()
+with open(ex3_audio_path, 'rb') as audio_file:
+    transcript_result = client.audio.transcriptions.create(
+        model=stt_model,
+        file=audio_file,
+        response_format=""verbose_json""
+    )
+transcript_time = time.time() - t0
+transcript_lang = transcript_result.language
 
-# Etape 3 : Traduire vers l'anglais
-# Indice : client.audio.translations.create(model=""whisper-1"", file=..., response_format=""json"")
-translation_result = None  # TODO etudiant
-translation_time = None  # TODO etudiant : mesurer la duree
+# Etape 3 : Traduire vers l'anglais (l'endpoint traduit toujours vers l'anglais, pas de parametre language)
+t0 = time.time()
+with open(ex3_audio_path, 'rb') as audio_file:
+    translation_result = client.audio.translations.create(
+        model=stt_model,
+        file=audio_file,
+        response_format=""json""
+    )
+translation_time = time.time() - t0
 
 # Etape 4 : Afficher la comparaison
-# Indice : afficher texte original, transcription, traduction, et temps des 2 appels
-
-print(""Exercice a completer"")",,,,,,,,bb2ee8aa2f5a9691,,,,,,,,
+print(f""\nTexte de base : {ex3_text}"")
+print(f""Langue detectee : {transcript_lang}"")
+print(f""Transcription : {transcript_result.text}"")
+print(f""Traduction : {translation_result.text}"")
+print(f""\nTemps transcription : {transcript_time:.2f}s | traduction : {translation_time:.2f}s"")
+print(f""Rapport traduction / transcription : {translation_time / transcript_time:.2f}x"")
+",,,,,,,,840172f37f3445d8,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,k64i3295i4,markdown,fr,1b1b49a866205720,"***
 
 ## CHALLENGE BONUS - Sous-titrage Automatique
@@ -31006,12 +31034,12 @@ MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-7-TTS-Voice-Benchmark.ipynb,den
 
 **Sur la reproductibilité** : les valeurs citées tout au long de ce notebook (2427-7302 ms, 195-334 KB) sont celles d'un run unique sur une machine donnée — ré-exécuter le notebook chez vous produira des chiffres différents dans les mêmes proportions relatives. C'est la **méthode** qui est réutilisable (comparaison appariée intra-run, health-check avant mesure, dégradation propre de Qwen3 à merci de son backend), pas le classement entre moteurs — celui-ci a basculé d'un run à l'autre. Le tableau des spécifications de la section 9 conserve les fourchettes architecturales, et `benchmark_results.json` conserve votre run.
 ",,,,,,,,92a18da2948235e9,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,eg1-lecture,markdown,fr,b34785b20c681532,"### Lecture du résultat — exemple guidé 1 (paramètres avancés)
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,eg1-lecture,markdown,fr,f70558976c9e49d4,"### Lecture du résultat — exemple guidé 1 (paramètres avancés)
 
 - **`Les deux résultats sont identiques : True`** : imposer `language=""fr""` n'a rien changé sur cet échantillon, parce que la détection automatique trouvait déjà `french` (transcription de base ci-dessus). Le paramètre `language` sert quand la détection peut se tromper : audio très court, accent marqué, langues mélangées. L'exercice 1 le met à l'épreuve sur l'échantillon `multi`.
 - **`Type des reponses : json -> Transcription, text -> str`** : le format `text` ne renvoie pas d'objet, `ex1_text` est directement la chaîne. C'est pourquoi le code écrit `ex1_text.strip()` sans `.text`. Changer de format de réponse oblige à changer la façon de lire la réponse.
-- **Les deux temps de réponse** : dans le rendu d'origine, l'appel `json` était le plus lent ; à cette ré-exécution, c'est l'appel `text`. Avec un seul appel par format, l'écart relève du réseau, pas du format : pour comparer des latences, il faut répéter les appels et comparer des médianes.
-- **Le texte lui-même n'est pas celui de la source** : Whisper écrit `réseaux` et `mots-prononces`, alors que le texte synthétisé en section 1 porte `reseaux` et `mots prononces`. Les deux transcriptions sont identiques entre elles ; savoir si elles sont fidèles est une autre question, que l'exercice 1 mesure.",,,,,,,,b34785b20c681532,,,,,,,,
+- **Les deux temps de réponse** : `json : 1.05s | text : 1.07s` à cette exécution, soit 0.02 s d'écart ; dans le rendu d'origine, c'était l'appel `json` le plus lent. Avec un seul appel par format, l'écart relève du réseau, pas du format : pour comparer des latences, il faut répéter les appels et comparer des médianes.
+- **Le texte lui-même n'est pas celui de la source** : Whisper écrit `réseaux` et `mots-prononces`, alors que le texte synthétisé en section 1 porte `reseaux` et `mots prononces`. Les deux transcriptions sont identiques entre elles ; savoir si elles sont fidèles est une autre question, que l'exercice 1 mesure.",,,,,,,,f70558976c9e49d4,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,ex1-wer-md,markdown,fr,73f941efbb72479b,"### Exercice 1 : Mesurer la fidélité d'une transcription (taux d'erreur par mot)
 
 L'exemple guidé 1 a comparé deux transcriptions **entre elles** et les a trouvées identiques. Il ne dit pas si elles sont **fidèles** au texte prononcé. La mesure standard est le **taux d'erreur par mot** (WER, *Word Error Rate*) : le nombre minimal de substitutions, de suppressions et d'insertions de mots qui transforment la référence en transcription, divisé par le nombre de mots de la référence.
@@ -31054,12 +31082,12 @@ wer_multi_auto = None  # TODO etudiant
 wer_multi_fr = None  # TODO etudiant
 
 print(""Exercice a completer"")",,,,,,,,44a810c849e4ac15,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,eg2-lecture,markdown,fr,90f043f779292866,"### Lecture du résultat — exemple guidé 2 (sous-titres SRT)
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,eg2-lecture,markdown,fr,e237e55443c40d39,"### Lecture du résultat — exemple guidé 2 (sous-titres SRT)
 
 - **`28 mots recus` → `5 blocs`** : 28 = 4 × 6 + 4, soit quatre blocs de six mots et un dernier de quatre. L'affichage s'arrête au milieu du bloc 5 parce que le code n'imprime que `srt_content[:300]` ; le fichier `ex2_custom.srt` est complet.
-- **Les blocs sont jointifs** : le bloc 1 finit à `00:00:02,420`, fin de « convertir », et le bloc 2 commence au même instant, début de « la ». Dans une parole continue, Whisper donne à chaque mot un début égal à la fin du mot précédent.
-- **Le bloc 2 enjambe la fin de la première phrase** : `la parole en texte Cette technologie` reste affiché de 2,42 s à 5,52 s. Or la liste des mots de la transcription de base montre un silence entre « texte » (fin à 4,42 s) et « Cette » (début à 4,74 s), et les deux segments de Whisper se séparent exactement là. Le découpage fixe de six mots ignore cette pause.
-- **La ponctuation a disparu** : `texte Cette` n'a plus de point. Les timestamps mot par mot ne portent pas la ponctuation, que seul le texte complet conserve. Le découpage ne peut donc s'appuyer que sur le temps. C'est l'objet de l'exercice 2 : couper sur les pauses et borner la durée.",,,,,,,,90f043f779292866,,,,,,,,
+- **Les blocs sont jointifs** : le bloc 1 finit à `00:00:02,380`, fin de « convertir », et le bloc 2 commence au même instant, début de « la ». Dans une parole continue, Whisper donne à chaque mot un début égal à la fin du mot précédent.
+- **Le bloc 2 enjambe la fin de la première phrase** : `la parole en texte Cette technologie` reste affiché de 2,38 s à 5,44 s. Or la liste des mots de la transcription de base montre un silence de plus d'une seconde entre « texte » (fin à 3,60 s) et « Cette » (début à 4,70 s), et c'est exactement là que Whisper clôt son premier segment (`[0.0s - 3.6s]`) et ouvre le deuxième (`[4.7s - 7.6s]`). Le découpage fixe de six mots ignore cette pause.
+- **La ponctuation a disparu** : `texte Cette` n'a plus de point. Les timestamps mot par mot ne portent pas la ponctuation, que seul le texte complet conserve. Le découpage ne peut donc s'appuyer que sur le temps. C'est l'objet de l'exercice 2 : couper sur les pauses et borner la durée.",,,,,,,,e237e55443c40d39,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,ex2-pauses-md,markdown,fr,9e6f59ab6d33be90,"### Exercice 2 : Sous-titres lisibles — couper sur les pauses, borner la durée
 
 L'exemple guidé 2 regroupe les mots **six par six**, sans regarder le temps qui les sépare. Un bloc peut donc enjamber la fin d'une phrase, et la ponctuation, absente des timestamps mot par mot, ne peut plus signaler la coupure. Un sous-titre professionnel se coupe au contraire sur les **pauses** de la parole, avec une **durée** et une **longueur** bornées.
@@ -31102,3 +31130,48 @@ vitesses = None  # TODO etudiant
 # Etape 4 : Sauvegarde SRT (reutiliser seconds_to_srt_time) dans OUTPUT_DIR / ""ex2_pauses.srt""
 
 print(""Exercice a completer"")",,,,,,,,eab8a1d5037bfde0,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,eg3-lecture,markdown,fr,00167e46a4e2845f,"### Lecture du résultat — exemple guidé 3 (pipeline de traduction)
+
+- **`Langue detectee : french`** : en `verbose_json`, Whisper renvoie le **nom** de la langue, en anglais, et non son code. Le paramètre `language` attend au contraire un code ISO (`""fr""`, exemple guidé 1) : les deux valeurs ne se comparent pas directement.
+- **La transcription est exacte** : elle reproduit mot pour mot le texte de base, accent de « prononcés » compris. Sur l'échantillon de la section 1, lu par la même voix, la transcription plus haut rendait « mots-prononces » : le texte de cet échantillon écrit « prononces », sans accent.
+- **La traduction est littérale** : « Vocal recognition » calque « reconnaissance vocale », là où l'anglais dit *speech recognition*, et « identify pronounced words » traduit mot à mot. L'endpoint `translations` passe directement de l'audio à l'anglais, sans consigne possible sur le vocabulaire : c'est la limite qu'explore l'exercice 3.
+- **Les temps ne départagent rien** : 0.90 s pour la transcription et 1.52 s pour la traduction à cette exécution, contre 1.78 s et 1.92 s à l'exécution de l'étudiant. Le rapport passe de 1.08 à 1.68 : un seul appel par opération, réseau compris, ne suffit pas à conclure. Il faudrait répéter chaque appel et comparer des médianes.",,,,,,,,00167e46a4e2845f,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,ex3b-md,markdown,fr,1eb7f49ebf7ef911,"### Exercice 3 : Traduction directe ou en deux étapes — que perd-on en route ?
+
+L'exemple guidé 3 traduit l'audio **directement** vers l'anglais avec l'endpoint `translations`. Une autre voie existe : transcrire d'abord en français, puis faire traduire le **texte** par un modèle de langage. Elle coûte un appel de plus, mais elle permet de choisir la langue cible et de donner des consignes au traducteur.
+
+**Contexte** : un message vocal professionnel contient souvent des éléments qui ne doivent pas changer à la traduction : un nom propre, un montant, une date, un terme technique. Ce sont eux qu'on vérifie.
+
+**Étapes** :
+1. Générer par synthèse vocale le message `ex3b_text`, qui contient un nom, une date, un montant et un terme technique, et le sauvegarder dans `OUTPUT_DIR`
+2. Traduction directe : endpoint `translations` (audio → anglais), en mesurant la durée
+3. Traduction en deux étapes : transcription avec `language=""fr""`, puis traduction du texte par un modèle de chat, en mesurant la durée totale des deux appels
+4. Pour chaque traduction, lister les éléments de `ELEMENTS_A_PRESERVER` qui ont disparu, et comparer les durées
+
+**Indices** :
+- `# Indice` : pour la seconde étape, `client.chat.completions.create(model=..., messages=[...])` avec une consigne du type « Traduis en anglais, sans modifier les noms propres ni les nombres »
+- `# Indice` : avec un modèle de raisonnement (par exemple `gpt-5-mini`), prévoyez un `max_completion_tokens` large (2000 ou plus) : les tokens de raisonnement sont pris sur ce budget, et un budget trop bas laisse la réponse vide
+- `# Indice` : un montant peut revenir sous la forme `4,350` ou `4 350` ; retirez espaces et virgules des deux côtés avant de comparer
+- `# Indice` : la voie en deux étapes permet une langue cible que l'endpoint `translations` ne sait pas produire ; essayez l'espagnol",,,,,,,,1eb7f49ebf7ef911,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,ex3b-code,code,fr,8b33b8fd7bca42a4,"# Exercice 3 : Traduction directe ou en deux etapes -- que perd-on en route ?
+# TODO etudiant : comparer l'endpoint translations et le pipeline transcription + LLM
+
+ex3b_text = (""Le rendez-vous avec Madame Lefèvre est reporté au 12 mars. ""
+             ""Le devis de 4350 euros couvre la migration du cluster Kubernetes."")
+ELEMENTS_A_PRESERVER = [""Lefèvre"", ""12"", ""4350"", ""Kubernetes""]
+
+# Etape 1 : Generer l'audio du message (client.audio.speech.create) dans OUTPUT_DIR / ""ex3b_message.mp3""
+ex3b_audio_path = None  # TODO etudiant
+
+# Etape 2 : Traduction directe (audio -> anglais) avec l'endpoint translations
+traduction_directe = None  # TODO etudiant
+temps_directe = None  # TODO etudiant
+
+# Etape 3 : Transcription (language=""fr"") puis traduction du texte par un modele de chat
+traduction_deux_etapes = None  # TODO etudiant
+temps_deux_etapes = None  # TODO etudiant : duree totale des deux appels
+
+# Etape 4 : Elements perdus dans chaque traduction, et comparaison des durees
+elements_perdus = None  # TODO etudiant : {""directe"": [...], ""deux_etapes"": [...]}
+
+print(""Exercice a completer"")",,,,,,,,8b33b8fd7bca42a4,,,,,,,,
