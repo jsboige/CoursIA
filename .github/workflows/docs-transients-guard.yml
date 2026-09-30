@@ -1,0 +1,57 @@
+name: docs-transients-guard
+
+# Lane transiente docs/transients/ + interdiction d'entree de rapports dates
+# neufs sous docs/archive/ (#14623, tranche 2).
+#
+# Doctrine : l'archive est un stock a resorber, pas une destination. La
+# destination d'un rapport date (audit, compte rendu, instantané) est
+# docs/transients/ -- nom <YYYY-MM-DD>-<slug>.md + en-tete gele
+# "> RAPPORT - <date> - perimetre - fige". Deplacer un document EXISTANT vers
+# l'archive reste permis (reclasse, rename) ; c'est la creation qui est
+# signalee. Convention complete : docs/transients/README.md.
+#
+# Trois sens verifies en un appel : dans la lane (nom date + en-tete gele
+# concordants), hors de la lane (aucun en-tete de rapport en tete de document
+# dans l'arbre perenne), entree d'archive (base...HEAD, creations seulement).
+# L'echec du check-run EST le signalement, visible sans ouvrir les logs --
+# meme modele que prose-counts-guard (#17636).
+
+on:
+  pull_request:
+    paths:
+      - 'docs/**/*.md'
+      - 'scripts/check_docs_transients_lane.py'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-transients-guard-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  transients:
+    # Route vers la jambe Linux auto-hebergee (#13378 tranche 1, decision ai-01
+    # 2026-09-01) : garde Python pur, sans secret ni usage du GITHUB_TOKEN. La
+    # garde same-repo ci-dessous saute les PRs de fork (pr_gate.py compte
+    # `skipped` comme OK) : aucun code de fork n'atteint le runner.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Shallow (fetch-depth: 2) + fetch explicite de la base depth=1,
+          # comme prose-counts-guard (#11835) : le diff base...HEAD tient
+          # sans cloner l'historique complet du depot.
+          fetch-depth: 2
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Lane transiente et entree d'archive
+        run: |
+          git fetch --depth=1 origin "${{ github.base_ref }}" -q
+          python scripts/check_docs_transients_lane.py \
+            --base "origin/${{ github.base_ref }}"
