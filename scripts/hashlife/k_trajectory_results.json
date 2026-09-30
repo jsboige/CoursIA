@@ -1,0 +1,258 @@
+{
+  "results": [
+    {
+      "trajectory": "glider_T4",
+      "n": 0,
+      "W": 1,
+      "k_trajectory": 280,
+      "k_over_n": 280.0
+    },
+    {
+      "trajectory": "glider_T4",
+      "n": 1,
+      "W": 2,
+      "k_trajectory": 200,
+      "k_over_n": 200.0
+    },
+    {
+      "trajectory": "glider_T4",
+      "n": 2,
+      "W": 4,
+      "k_trajectory": 152,
+      "k_over_n": 76.0
+    },
+    {
+      "trajectory": "glider_T4",
+      "n": 3,
+      "W": 8,
+      "k_trajectory": 82,
+      "k_over_n": 27.333333333333332
+    },
+    {
+      "trajectory": "glider_T4",
+      "n": 4,
+      "W": 16,
+      "k_trajectory": 43,
+      "k_over_n": 10.75
+    },
+    {
+      "trajectory": "blinker_T2",
+      "n": 0,
+      "W": 1,
+      "k_trajectory": 240,
+      "k_over_n": 240.0
+    },
+    {
+      "trajectory": "blinker_T2",
+      "n": 1,
+      "W": 2,
+      "k_trajectory": 160,
+      "k_over_n": 160.0
+    },
+    {
+      "trajectory": "blinker_T2",
+      "n": 2,
+      "W": 4,
+      "k_trajectory": 92,
+      "k_over_n": 46.0
+    },
+    {
+      "trajectory": "blinker_T2",
+      "n": 3,
+      "W": 8,
+      "k_trajectory": 46,
+      "k_over_n": 15.333333333333334
+    },
+    {
+      "trajectory": "blinker_T2",
+      "n": 4,
+      "W": 16,
+      "k_trajectory": 25,
+      "k_over_n": 6.25
+    },
+    {
+      "trajectory": "pulsar_T3",
+      "n": 0,
+      "W": 1,
+      "k_trajectory": 437,
+      "k_over_n": 437.0
+    },
+    {
+      "trajectory": "pulsar_T3",
+      "n": 1,
+      "W": 2,
+      "k_trajectory": 319,
+      "k_over_n": 319.0
+    },
+    {
+      "trajectory": "pulsar_T3",
+      "n": 2,
+      "W": 4,
+      "k_trajectory": 196,
+      "k_over_n": 98.0
+    },
+    {
+      "trajectory": "pulsar_T3",
+      "n": 3,
+      "W": 8,
+      "k_trajectory": 101,
+      "k_over_n": 33.666666666666664
+    },
+    {
+      "trajectory": "pulsar_T3",
+      "n": 4,
+      "W": 16,
+      "k_trajectory": 54,
+      "k_over_n": 13.5
+    },
+    {
+      "trajectory": "otca_static",
+      "n": 0,
+      "W": 1,
+      "k_trajectory": 352,
+      "k_over_n": 352.0
+    },
+    {
+      "trajectory": "otca_static",
+      "n": 1,
+      "W": 2,
+      "k_trajectory": 200,
+      "k_over_n": 200.0
+    },
+    {
+      "trajectory": "otca_static",
+      "n": 2,
+      "W": 4,
+      "k_trajectory": 100,
+      "k_over_n": 50.0
+    },
+    {
+      "trajectory": "otca_static",
+      "n": 3,
+      "W": 8,
+      "k_trajectory": 50,
+      "k_over_n": 16.666666666666668
+    },
+    {
+      "trajectory": "otca_static",
+      "n": 4,
+      "W": 16,
+      "k_trajectory": 27,
+      "k_over_n": 6.75
+    },
+    {
+      "trajectory": "soup_d03_seed42",
+      "n": 0,
+      "W": 1,
+      "k_trajectory": 625,
+      "k_over_n": 625.0
+    },
+    {
+      "trajectory": "soup_d03_seed42",
+      "n": 1,
+      "W": 2,
+      "k_trajectory": 558,
+      "k_over_n": 558.0
+    },
+    {
+      "trajectory": "soup_d03_seed42",
+      "n": 2,
+      "W": 4,
+      "k_trajectory": 519,
+      "k_over_n": 259.5
+    },
+    {
+      "trajectory": "soup_d03_seed42",
+      "n": 3,
+      "W": 8,
+      "k_trajectory": 500,
+      "k_over_n": 166.66666666666666
+    },
+    {
+      "trajectory": "soup_d03_seed42",
+      "n": 4,
+      "W": 16,
+      "k_trajectory": 476,
+      "k_over_n": 119.0
+    },
+    {
+      "trajectory": "soup_d05_seed123",
+      "n": 0,
+      "W": 1,
+      "k_trajectory": 640,
+      "k_over_n": 640.0
+    },
+    {
+      "trajectory": "soup_d05_seed123",
+      "n": 1,
+      "W": 2,
+      "k_trajectory": 568,
+      "k_over_n": 568.0
+    },
+    {
+      "trajectory": "soup_d05_seed123",
+      "n": 2,
+      "W": 4,
+      "k_trajectory": 534,
+      "k_over_n": 267.0
+    },
+    {
+      "trajectory": "soup_d05_seed123",
+      "n": 3,
+      "W": 8,
+      "k_trajectory": 518,
+      "k_over_n": 172.66666666666666
+    },
+    {
+      "trajectory": "soup_d05_seed123",
+      "n": 4,
+      "W": 16,
+      "k_trajectory": 486,
+      "k_over_n": 121.5
+    },
+    {
+      "trajectory": "soup_d05_seed777",
+      "n": 0,
+      "W": 1,
+      "k_trajectory": 643,
+      "k_over_n": 643.0
+    },
+    {
+      "trajectory": "soup_d05_seed777",
+      "n": 1,
+      "W": 2,
+      "k_trajectory": 583,
+      "k_over_n": 583.0
+    },
+    {
+      "trajectory": "soup_d05_seed777",
+      "n": 2,
+      "W": 4,
+      "k_trajectory": 546,
+      "k_over_n": 273.0
+    },
+    {
+      "trajectory": "soup_d05_seed777",
+      "n": 3,
+      "W": 8,
+      "k_trajectory": 524,
+      "k_over_n": 174.66666666666666
+    },
+    {
+      "trajectory": "soup_d05_seed777",
+      "n": 4,
+      "W": 16,
+      "k_trajectory": 504,
+      "k_over_n": 126.0
+    }
+  ],
+  "verdicts": {
+    "glider_T4": "PROGRAM-PERIODIC-COLLAPSED (ratio 0.038 < 0.7 -- périodicité courte détectée par LZ ; l'instrument collapse les programmes simples comme la soupe. Confirmé : K_trajectory mesure l'entropie, pas l'auto-entretien. Tranche 2 requise : corpus Turing-complet, ex. OTCA replicator à l'échelle ou Spartan computronium.)",
+    "blinker_T2": "PROGRAM-PERIODIC-COLLAPSED (ratio 0.026 < 0.7 -- périodicité courte détectée par LZ ; l'instrument collapse les programmes simples comme la soupe. Confirmé : K_trajectory mesure l'entropie, pas l'auto-entretien. Tranche 2 requise : corpus Turing-complet, ex. OTCA replicator à l'échelle ou Spartan computronium.)",
+    "pulsar_T3": "PROGRAM-PERIODIC-COLLAPSED (ratio 0.031 < 0.7 -- périodicité courte détectée par LZ ; l'instrument collapse les programmes simples comme la soupe. Confirmé : K_trajectory mesure l'entropie, pas l'auto-entretien. Tranche 2 requise : corpus Turing-complet, ex. OTCA replicator à l'échelle ou Spartan computronium.)",
+    "otca_static": "PROGRAM-PERIODIC-COLLAPSED (ratio 0.019 < 0.7 -- périodicité courte détectée par LZ ; l'instrument collapse les programmes simples comme la soupe. Confirmé : K_trajectory mesure l'entropie, pas l'auto-entretien. Tranche 2 requise : corpus Turing-complet, ex. OTCA replicator à l'échelle ou Spartan computronium.)",
+    "soup_d03_seed42": "SOUP-FRAGILE-CONFIRMED (ratio 0.190 < 0.7)",
+    "soup_d05_seed123": "SOUP-FRAGILE-CONFIRMED (ratio 0.190 < 0.7)",
+    "soup_d05_seed777": "SOUP-FRAGILE-CONFIRMED (ratio 0.196 < 0.7)"
+  }
+}
