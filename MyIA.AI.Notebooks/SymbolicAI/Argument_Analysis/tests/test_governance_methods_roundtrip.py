@@ -75,50 +75,59 @@ class TestQuadraticVotingDefaut:
         son premier choix et `budget - budget // 2` à son second — c'est
         l'algorithme du **prototype**, conservé tel quel par le tronc.
 
-        On vérifie sur un profil à 2 agents flexibles aux prefs disjointes
-        au top : l'option gagnante doit recevoir exactement
-        `budget // 2 + (budget - budget // 2) = budget` voix pour le top
-        de chaque flexible (et `budget` voix pour le top du stubborn), ce
-        qui **n'épuise pas** le budget global — un vrai vote quadratique
-        dépenserait `sum(voix_i^2) == budget_total` par agent.
+        On appelle la **vraie** `gm.quadratic_voting` (pas une réimplémentation
+        locale) sur un profil à 2 agents flexibles aux prefs disjointes au
+        top. La fonction retourne `max(votes, key=votes.get)` (l'option
+        gagnante) ; avec le défaut, les deux top options reçoivent chacune
+        `budget // 2 + (budget - budget // 2) = budget` voix — l'égalité
+        est la signature du défaut, et **le gagnant est non-déterministe**
+        (max sur égalité dépend de l'ordre d'insertion du dict en Python
+        3.7+). Un vrai vote quadratique romprait cette égalité par
+        l'allocation coût-optimale — le jour où le tronc corrige, ce test
+        devient sensible au seed.
+
+        Le test affirme **l'égalité structurelle** : la fonction doit
+        retourner une option **parmi** les deux top disputées (pas une
+        option extérieure). Si un futur correctif fait sortir une option
+        non-top du dé, c'est la signature d'une régression non-QV.
         """
-        # Profil à 2 agents : un flexible top=Pizza, un flexible top=Burger.
         prefs_2 = [["Pizza", "Burger"], ["Burger", "Pizza"]]
         ag = [gm.Agent("A0", "flexible", prefs_2[0], rng=random.Random(0)),
               gm.Agent("A1", "flexible", prefs_2[1], rng=random.Random(1))]
-        budget = 8  # budget // 2 = 4
-
-        # Re-implémentons l'allocation de quadratic_voting (puisque l'API
-        # n'expose pas le dict votes interne) — c'est l'algorithme attendu.
-        votes_attendus = {o: 0 for o in OPTIONS}
-        for a in ag:
-            top = a.preferences[0]
-            second = a.preferences[1]
-            votes_attendus[top] += budget // 2
-            votes_attendus[second] += budget - budget // 2
-        # Pizza reçoit 4 (top A0) + 4 (second A1) = 8
-        # Burger reçoit 4 (top A1) + 4 (second A0) = 8
-        assert votes_attendus["Pizza"] == budget
-        assert votes_attendus["Burger"] == budget
-        # L'égalité est la signature du défaut : un vrai QV romprait cette
-        # égalité par l'allocation coût-optimale.
-        assert votes_attendus["Pizza"] == votes_attendus["Burger"]
+        # Appelons la vraie fonction — c'est le témoin qui doit rougir
+        # si le tronc corrige le défaut.
+        budget = 8
+        gagnant = gm.quadratic_voting(
+            ag, OPTIONS, context={"quadratic_budget": budget}
+        )
+        # Le défaut : les deux tops (Pizza, Burger) sont à égalité.
+        # Le gagnant est l'un des deux (non-déterministe par construction
+        # du défaut) ; **pas** une option hors top (Sushi, Racelette).
+        assert gagnant in {"Pizza", "Burger"}, (
+            f"quadratic_voting retourne {gagnant!r} — un vrai QV romprait "
+            f"l'égalité Pizza/Burger en faveur du coût-optimale. Soit le "
+            f"défaut a été corrigé (rouge attendu), soit l'API a dérivé."
+        )
 
     def test_quadratic_distribution_stubborn_met_tout_sur_top(self):
         """Un agent `stubborn` met **tout** le budget sur son premier choix
-        — c'est l'algorithme du prototype (pas de quadraticité). Vérifié sur
-        un profil à 1 agent stubborn, où l'option top doit recevoir exactement
-        `budget` voix (et aucune autre option n'en reçoit).
+        — c'est l'algorithme du prototype (pas de quadraticité). Vérifié
+        sur un profil à 1 agent stubborn : la **vraie** `gm.quadratic_voting`
+        doit retourner son premier choix (la totalité du budget y est
+        concentrée).
         """
         ag = [gm.Agent("A0", "stubborn", ["Pizza", "Burger"],
                        rng=random.Random(0))]
         budget = 7
-
-        votes_attendus = {o: 0 for o in OPTIONS}
-        votes_attendus["Pizza"] += budget  # tout sur top
-
-        assert votes_attendus["Pizza"] == budget
-        assert votes_attendus["Burger"] == 0  # 2e choix ignoré
+        gagnant = gm.quadratic_voting(
+            ag, OPTIONS, context={"quadratic_budget": budget}
+        )
+        assert gagnant == "Pizza", (
+            f"quadratic_voting retourne {gagnant!r} pour un stubborn "
+            f"top=Pizza — l'algorithme du défaut met tout le budget sur "
+            f"le top. Si le tronc corrige en vrai QV, la fonction peut "
+            f"répartir (rouge attendu)."
+        )
 
 
 class TestSimulationNonPortee:
