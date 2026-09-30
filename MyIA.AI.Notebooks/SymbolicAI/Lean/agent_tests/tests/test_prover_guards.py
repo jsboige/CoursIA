@@ -179,7 +179,55 @@ def test_file_replace_sorry_writes_real_tactic(tactic_tools):
     assert "error" not in out, out
     content = Path(tactic_tools._filepath).read_text(encoding="utf-8")
     assert "sorry" not in content
-    assert "trivial" in content
+    assert "theorem t : True := by\n  trivial" in content
+
+
+@pytest.fixture
+def inline_tactic_tools(tmp_path):
+    fake = tmp_path / "Inline.lean"
+    body = (
+        "import Mathlib.Tactic\n"
+        + "\n".join(f"-- padding {i}" for i in range(50))
+        + "\ntheorem nimSum_single : True := by sorry\n"
+        + "\n".join(f"-- tail {i}" for i in range(50))
+        + "\n"
+    )
+    fake.write_text(body, encoding="utf-8")
+    sorry_line = next(i + 1 for i, line in enumerate(body.splitlines()) if "by sorry" in line)
+    state = ProofState(theorem_statement="nimSum_single")
+    sctx = SorryContext(
+        filepath=str(fake), sorry_line=sorry_line, indentation=0,
+        indent_str="", full_file=body,
+    )
+    return TacticTools(state, str(fake), sctx), sorry_line
+
+
+@pytest.mark.parametrize("replacement, proof", [
+    ("by\n  decide", "  decide"),
+    ("by\n  simp [nimSum]", "  simp [nimSum]"),
+    ("simp [nimSum]", "  simp [nimSum]"),
+    ("by\n  have h : True := trivial\n  exact h", "  have h : True := trivial\n  exact h"),
+])
+def test_file_replace_sorry_keeps_inline_declaration(inline_tactic_tools, replacement, proof):
+    import json
+    tools, sorry_line = inline_tactic_tools
+    result = json.loads(tools.file_replace_sorry(sorry_line, replacement, build_check=False))
+    assert "error" not in result, result
+    content = Path(tools._filepath).read_text(encoding="utf-8")
+    assert "theorem nimSum_single : True := by\n" + proof in content
+    assert "by sorry" not in content
+
+
+def test_file_replace_sorry_refuses_inline_redeclaration(inline_tactic_tools):
+    import json
+    tools, sorry_line = inline_tactic_tools
+    before = Path(tools._filepath).read_text(encoding="utf-8")
+    result = json.loads(tools.file_replace_sorry(
+        sorry_line, "theorem nimSum_single : True := by\n  simp [nimSum]",
+        build_check=False,
+    ))
+    assert "BLOCKED" in result["error"]
+    assert Path(tools._filepath).read_text(encoding="utf-8") == before
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -1964,6 +2012,60 @@ def test_stmt_mutation_guard_quiet_cases(final_sorry, original, build_ok,
         final_build_ok=build_ok, proof_found=proof_found,
         verified_tactic_count=verified,
     ) is False, why
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# #17433 — FX-6 baseline must be the COMMITTED sorry count, not the
+# post-stub session count. On the #1453 calibration path the launcher
+# stubs the approved proof (0 -> 1 sorry) BEFORE prove_sorry reads the
+# file, so measuring the guard against the stubbed count gave
+# STMT_MUTATION_FALSE_SUCCESS a double semantics (#17409 rungs 39-41):
+# "agent reproduced the committed proof" and "agent mutated the
+# statement" both read as a drop vs the stub. The launcher now stashes
+# `pre_stub_sorry_count` on the demo copy; the call sites route the
+# guard baseline through `_guard_baseline_sorry_count`.
+# ──────────────────────────────────────────────────────────────────────────
+
+
+def test_guard_baseline_defaults_to_session_count():
+    """Normal runs (no stub, no stash): the guard baseline IS the session
+    count — behaviour unchanged from pre-#17433."""
+    from prover.provers import _guard_baseline_sorry_count
+
+    assert _guard_baseline_sorry_count({}, 3) == 3
+
+
+def test_guard_baseline_pins_committed_count_on_calibration():
+    """The #17409 rung 39-41 shape: committed=0, stub injects 1, the agent
+    clears the injected sorry with 0 verified tactic. Measured against the
+    STUB (old behaviour) the guard flags a statement mutation; measured
+    against the COMMITTED count it does not — clearing the injected stub is
+    not a mutation of the committed statement (the success gate and the
+    launcher's finally-restore score and clean up that case)."""
+    from prover.provers import _guard_baseline_sorry_count, _stmt_mutation_guard
+
+    baseline = _guard_baseline_sorry_count({"pre_stub_sorry_count": 0}, 1)
+    assert baseline == 0
+    # Old double semantics, pinned as documentation: vs the stub it fires.
+    assert _stmt_mutation_guard(0, 1, True, False, 0) is True
+    # Vs the committed count (the fix): quiet.
+    assert _stmt_mutation_guard(0, baseline, True, False, 0) is False
+
+
+def test_fx6_call_sites_pass_pinned_baseline():
+    """Source-scan (FX-9 convention): both FX-6 call sites (multi +
+    autonomous) route the guard baseline through
+    _guard_baseline_sorry_count instead of the raw post-stub session
+    count, and emit the verdict as a trace event so artefact audits can
+    adjudicate without the console log."""
+    src = (Path(__file__).resolve().parent.parent / "prover" / "provers.py"
+           ).read_text(encoding="utf-8")
+    assert src.count(
+        "guard_baseline = _guard_baseline_sorry_count(demo, original_sorry_count)"
+    ) == 2, "both FX-6 call sites must pass the pinned guard baseline"
+    assert src.count('self.trace.log("guard-fx6", "verdict"') == 2, (
+        "both FX-6 sites must emit the verdict as a trace event (#17433)"
+    )
 
 
 # ──────────────────────────────────────────────────────────────────────────

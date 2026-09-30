@@ -1,0 +1,7 @@
+date: '2026-09-27'
+by: myia-po-2024:CoursIA-2
+python_sha: d555a53d1cc2d39f1ec6cd37a3491b62e9f2851c
+csharp_sha: abd711062eb7bb4088afa9dd9e7adec1b2b222ff
+content_python_sha: 163a914910a20c59f1cbf22421ded83fe5442e4fa97337783cfe17d4cd7e25f4
+content_csharp_sha: be496a1c15247fa13dce061c1201b24dc526d1e53a865630a7a75a60ff34ea5e
+reason: 'Rebaseline apres fusion de main : le jumeau C# a change (extraction de la section formules fermees vers le compagnon Infer-08b, #17805), les deux cotes sont donc re-attestes a la tete fusionnee. Cote Python, chains=4 rendu explicite, valeur deja effective, resultats inchanges.'

@@ -10,6 +10,9 @@ Covers the two organ responsibilities cited in #10188:
    ``a = True`` and ``True -> True`` are NOT (low false-positive by design).
 3. ``_en`` i18n mirrors are excluded from the *distinct* count.
 4. ``*_prerequisites`` markers are tagged so the strict gate ignores them.
+5. the perimeter and the header reader are robust: the shared Mathlib store
+   (``.mathlib-cache``, at the repo root) is not own debt, and a multi-line
+   ``instance`` header is read instead of crashing (#17016).
 """
 from __future__ import annotations
 
@@ -144,6 +147,53 @@ def test_regex_unit_directly() -> None:
 
 
 # --------------------------------------------------------------------------- #
+# declaration headers (#17016)
+# --------------------------------------------------------------------------- #
+
+def test_multiline_anonymous_instance_header_is_read(tmp_path: Path) -> None:
+    """A multi-line Mathlib `instance` header is read, not crashed on.
+
+    `_DECL_RE` requires whitespace after the keyword, so an `instance` that
+    closes its line falls through to `_INSTANCE_ANON_RE`, which carries no `kw`
+    group -- reading the attribute used to raise `IndexError: no such group`.
+    """
+    f = _write(
+        tmp_path,
+        "Comonadicity.lean",
+        textwrap.dedent(
+            """\
+            instance
+                [∀ A : adj.toComonad.Coalgebra, HasEqualizer (G.map A.a) (adj.unit.app (G.obj A.A))]
+                (B : C) : HasLimit (parallelPair (G.map A.a) (adj.counit.app A.A)) := by
+              sorry
+            """
+        ),
+    )
+    decls, naive, code = scan_file(f, f.parent)
+    assert [d.kind for d in decls] == ["instance"]
+    assert decls[0].name == ""
+    assert naive == 1 and code == 1     # the sorry stays attributed
+
+
+def test_instance_header_closing_its_line_with_modifier(tmp_path: Path) -> None:
+    """`noncomputable instance` as the last token: same path, modifier present."""
+    f = _write(
+        tmp_path,
+        "Colimits.lean",
+        textwrap.dedent(
+            """\
+            noncomputable instance
+                [HasColimitsOfSize.{u, v} AddCommGrpMax.{w, w'}] :
+                PreservesColimitsOfSize.{u, v} (forget₂ (ModuleCat.{max w w'} R) AddCommGrpCat) where
+              sorry
+            """
+        ),
+    )
+    decls, _, _ = scan_file(f, f.parent)
+    assert [d.kind for d in decls] == ["instance"]
+
+
+# --------------------------------------------------------------------------- #
 # _en mirror distinct-count
 # --------------------------------------------------------------------------- #
 
@@ -253,6 +303,25 @@ def test_discover_excludes_dot_lake_and_fixtures(tmp_path: Path) -> None:
         (lake / "Stowaway.lean").write_text("theorem x : True := by trivial\n", encoding="utf-8")
     lakes = discover_lakes(tmp_path)
     assert lakes == [], "excluded directories must not surface as lakes"
+
+
+def test_mathlib_cache_store_is_excluded_from_walk(tmp_path: Path) -> None:
+    """The shared Mathlib store at the repo root is not own debt (#17016).
+
+    `.mathlib-cache/<toolchain>-<rev>/mathlib/` lives at the ROOT, not under any
+    lake, so no existing exclusion part caught it: a walk of the root counted
+    Mathlib's own `sorry`s as the repository's.
+    """
+    from count_code_sorry import scan_lake
+    own = tmp_path / "MyIA.AI.Notebooks" / "GameTheory" / "game_theory_lean"
+    own.mkdir(parents=True)
+    (own / "Own.lean").write_text("theorem own : True := by trivial\n", encoding="utf-8")
+    store = tmp_path / ".mathlib-cache" / "leanprover_lean4_v4.33.0-db584cd6" / "mathlib" / "Mathlib"
+    store.mkdir(parents=True)
+    (store / "Vendored.lean").write_text("theorem v : True := by sorry\n", encoding="utf-8")
+    r = scan_lake(tmp_path, tmp_path)
+    assert r.files == 1          # the first-party file only
+    assert r.code_sorry == 0     # Mathlib's sorry is not our debt
 
 
 def test_discover_legacy_lean_no_anchor(tmp_path: Path) -> None:

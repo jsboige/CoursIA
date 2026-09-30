@@ -132,7 +132,7 @@ class TestExtractProseNumbers:
         # Gap documente dans le corpus run #9790 : les titres H1 (`# SC-8`,
         # `# MGS-9`, `# SocialChoice 03`) fuyaient car les hints couvraient
         # H2+ mais pas H1. Le numero d'ID du notebook est structural.
-        nums = mod._extract_prose_numbers("# SC-8-DeFi-Primitives\n\nLe solde est 0.69.")
+        nums = mod._extract_prose_numbers("# SC-08-DeFi-Primitives-Python\n\nLe solde est 0.69.")
         assert 8 not in nums
         assert 0.69 in nums
 
@@ -1431,8 +1431,8 @@ class TestNotebookCrossReferenceFilter:
         # des MISSING_FROM_OUTPUTS) : barre de navigation entre notebooks d'une
         # serie a indice entier. Le « 7 » de « GameTheory-7 » est l'indice du
         # notebook pointe, dans le texte ET dans l'URL du lien .ipynb.
-        text = ("**Navigation** : [GameTheory-7](GameTheory-07-ExtensiveForm-Csharp.ipynb) "
-                "| [GameTheory-11 (Bayesien)](GameTheory-11-BayesianGames.ipynb)")
+        text = ("**Navigation** : [GameTheory-7](GameTheory-07-ExtensiveForm-CSharp.ipynb) "
+                "| [GameTheory-11 (Bayesien)](GameTheory-11-BayesianGames-Python.ipynb)")
         assert mod._is_notebook_cross_reference(7.0, text) is True
         assert mod._is_notebook_cross_reference(11.0, text) is True
 
@@ -1456,7 +1456,7 @@ class TestNotebookCrossReferenceFilter:
         # une vraie valeur de Shapley en prose hors-lien -> non filtre, tandis
         # que 15 (indice du notebook pointe) est filtre.
         text = ("La valeur de Shapley calculee est 0.73 ; "
-                "suite : [GameTheory-15-Cooperatif](GameTheory-15-CooperativeGames.ipynb)")
+                "suite : [GameTheory-15-Cooperatif](GameTheory-15-CooperativeGames-Python.ipynb)")
         assert mod._is_notebook_cross_reference(15.0, text) is True
         assert mod._is_notebook_cross_reference(0.73, text) is False
 
@@ -1666,6 +1666,9 @@ class TestICT1CounterEvidence:
         Path(os.environ.get("COURSIA_ROOT", "") or "_/_"),
     )
     REPO_ROOT = next((p for p in _CANDIDATE_ROOTS if p.exists() and p.is_dir()), _CANDIDATE_ROOTS[0])
+    # Chemin lu a une revision HISTORIQUE (`7de14792c^`, `e8dc56ac9`) : le fichier
+    # portait alors le nom NON pade. Le passer a `ICT-01-` ferait echouer `git show`
+    # et transformerait la contre-epreuve positive en skip silencieux.
     NB_PATH = "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-1-PhiTrajectories.ipynb"
 
     def _git_show(self, ref: str) -> bytes:

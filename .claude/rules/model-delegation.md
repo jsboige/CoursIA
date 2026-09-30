@@ -38,7 +38,22 @@ S'applique a **tout agent qui delegue du travail a un sous-agent** (`Agent()` to
 
 ## Capacite vision — router le QA visuel, jamais le verifier text-only (HARD)
 
-Toute tache dont la valeur depend du **rendu visuel** (galeries de figures README, plots de notebook, sorties d'images GenAI, layout de slides, diagrammes) voit son **QA visuel** route vers une lane **qui voit** — MiniMax (lanes CoursIA-2) ou ai-01. **Jamais** valide text-only sur une lane GLM : elle ne voit pas, et un `test -f` confirme l'**existence**, PAS le **rendu**. Routage **capability-driven**, pas token-driven : c'est « meilleur outil pour la tache », pas un fallback degrade.
+Toute tache dont la valeur depend du **rendu visuel** (galeries de figures README, plots de notebook, sorties d'images GenAI, layout de slides, diagrammes) voit son **QA visuel** confie a un agent **qui voit**. **Jamais** valide text-only : un `test -f` confirme l'**existence**, PAS le **rendu**.
+
+**La capacite appartient au MODELE, pas a la machine (correction user 2026-09-18).** La formulation precedente routait « vers les lanes CoursIA-2 ou ai-01 » : c'est faux, et c'est faux d'une maniere qui coute. Une lane n'est pas un materiel, c'est un modele qui l'anime — et ce modele change. En l'etat mesure :
+
+| Modele animant la lane | Vision |
+|---|---|
+| GLM (sous Sonnet/CoursIA) | **non** |
+| MiniMax (notamment CoursIA-2) | oui |
+| Sonnet, y compris les **failovers** | oui |
+| les autres du parc | oui |
+
+Consequence operationnelle : **c'est a l'agent de juger s'il peut prendre le grain**, sur ce dont il dispose a cet instant. Ni une table de routage par machine, ni un coordinateur distant ne le savent mieux que lui — et une table par machine se perime silencieusement au premier changement de modele. Un agent qui ne voit pas **le dit et passe la main** ; il ne valide pas text-only, et il n'est pas fautif de rendre le grain.
+
+Routage **capability-driven**, pas token-driven : c'est « meilleur outil pour la tache », pas un fallback degrade.
+
+**`sk-agent` comme vision indirecte : possible, mais on s'y est deja brule.** Ce n'est pas une voie de contournement pour une lane sans vision — au mieux un complement, jamais la preuve qui remplace un regard. Avant de s'en servir, verifier ce qu'il rend reellement sur l'artefact vise ; un verdict de vision indirecte non corrobore ne vaut pas validation.
 
 Le defaut a attraper (cf [sota-not-workaround.md](sota-not-workaround.md) Prong A) : figure reduite a des blocs plats / image blanche / placeholder / render casse **alors que le vrai outil etait invocable** → RECOVERABLE-MACHINE ou -LOCAL, **regenerer**, jamais consacrer.
 

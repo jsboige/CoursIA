@@ -3,7 +3,7 @@
   =======================
 
   Statut formel de la dette d'abstraction mesurée par le notebook
-  `GameTheory-19-Abstraction-a-Dette.ipynb` (grain #12204, opération 2).
+  `GameTheory-19-Abstraction-a-Dette-Python.ipynb` (grain #12204, opération 2).
 
   Le module substantiel vit dans `Abstraction/Basic.lean` : modèle fini
   en stratégies pures sur les entiers (duels 2×2 à somme nulle, dette =

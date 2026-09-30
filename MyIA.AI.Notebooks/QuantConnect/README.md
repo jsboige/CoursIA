@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: QuantConnect
-pedagogical_count: 110
-breakdown: Python=55, projects=49, ML-Training-Pipeline=4, kelly_lean=2
-maturity: BETA=61, DRAFT=36, ALPHA=12, TEMPLATE=1
+pedagogical_count: 115
+breakdown: Python=60, projects=49, ML-Training-Pipeline=4, kelly_lean=2
+maturity: BETA=65, DRAFT=37, ALPHA=12, TEMPLATE=1
 -->
 
 > **Note éditoriale — counts kernels par sous-série** : Le marqueur CATALOG-STATUS agrégé ci-dessus reste **autoritatif** pour la décomposition par **sous-série** (Python / projects / ML-Training-Pipeline / kelly_lean). En revanche, pour les décomptes par **kernel** (Python vs Lean 4) **au sein** d'une sous-série — c'est-à-dire la répartition technique par interpréteur —, **ce README reste autoritatif** car la décomposition langagière par sous-série n'est pas dans le marqueur agrégé. Cette granularité est documentée ici par lecture directe des `metadata.kernelspec.language` des notebooks :
@@ -106,7 +106,7 @@ Gestion du risque professionnelle, types d'ordres avancés, analyse approfondie 
 | 10 | [QC-Py-10-Risk-Portfolio-Management](Python/QC-Py-10-Risk-Portfolio-Management.ipynb) | 90 min | Position sizing (Kelly, fixed fractional), stop-loss, take-profit |
 | 11 | [QC-Py-11-Technical-Indicators](Python/QC-Py-11-Technical-Indicators.ipynb) | 75 min | Indicateurs intégrés, custom indicators, signal generation |
 | 12 | [QC-Py-12-Backtesting-Analysis](Python/QC-Py-12-Backtesting-Analysis.ipynb) | 75 min | Performance metrics (Sharpe, Sortino, max drawdown), equity curve |
-| 12b | [QC-Py-12b-Backtest-Validity](Python/QC-Py-12b-Backtest-Validity.ipynb) | 60 min | Erreur-type du Sharpe (Lo 2002), signification statistique d'un backtest |
+| 12b | [QC-Py-12b-Backtest-Validity](Python/QC-Py-12b-Backtest-Validity.ipynb) | 60 min | Erreur-type du Sharpe (Lo 2002), PSR (Bailey & López de Prado 2012) et ses pièges de saisie, signification statistique d'un backtest |
 
 **Objectifs** : Maîtriser gestion du risque, ordres avancés, analyse de backtests.
 
@@ -355,6 +355,8 @@ Voir [partner-course-quant-trading/README.md](partner-course-quant-trading/READM
 - **[docs/HANDSON_DATA_REQUIREMENTS.md](docs/HANDSON_DATA_REQUIREMENTS.md)** : Datasets requis
 - **[docs/PAPER_TRADING_ARCHITECTURE.md](docs/PAPER_TRADING_ARCHITECTURE.md)** / **[docs/PAPER_TO_LIVE_TRANSITION.md](docs/PAPER_TO_LIVE_TRANSITION.md)** : Paper trading
 - **[docs/PROCEDURE_DEPLOIEMENT.md](docs/PROCEDURE_DEPLOIEMENT.md)** : Procédure de déploiement
+- **[docs/PROTOCOLE_VEILLE.md](docs/PROTOCOLE_VEILLE.md)** : Protocole de veille du socle RNCP41881 (typologie, grille qualité, registre traçable — #16239)
+- **[docs/GRILLE_PREUVES.md](docs/GRILLE_PREUVES.md)** : Grille de preuves du projet collectif RNCP41881 (mapping compétence→artefact, exigences minimales, vérification individuelle en soutenance — #16239)
 - **[docs/audits/](docs/audits/)** : Rapports d'audit historiques (AUDIT_QC_CLOUD, AUDIT_QC_ORG, VALIDATION-REPORT, AUDIT_RAPPORT)
 
 ### Bibliothèques partagées
@@ -572,6 +574,10 @@ Pour aller plus loin : [EPIC #4038](https://github.com/jsboige/CoursIA/issues/40
 ---
 
 ## Cross-series Bridges
+
+### Examens — rattrapages Trading (5BD ALT1)
+
+Les sujets de rattrapage 2024 et 2025 (avec corrigés, sources LaTeX) vivent dans [`examens/`](examens/README.md) — publication autorisée, sujets hors rotation. Leur rattachement notion par notion aux notebooks de la série est donné dans [`examens/README.md`](examens/README.md).
 
 | Serie | Lien | Connection |
 |-------|------|------------|

@@ -188,7 +188,6 @@ Intelligence Artificielle -- VIII
   - Soutien psychologique, coaching, romance (ex: Replika)
 
 ![bg right:33% vertical contain](images/img_015.png)
-![bg contain](images/img_014.png)
 ![bg contain](images/img_013.png)
 
 ---

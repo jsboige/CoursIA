@@ -101,7 +101,8 @@ DataScienceWithAgents/
 │   ├── 2.10-Optimisation-Hyperparametres.ipynb
 │   ├── 2.11-Regularisation-Sparse-LASSO.ipynb
 │   ├── 2.12-Donnees-Desequilibrees.ipynb
-│   └── 2.13-Analyse-Erreurs.ipynb
+│   ├── 2.13-Analyse-Erreurs.ipynb
+│   └── 2.14-Explicabilite-SHAP-LIME-Contrefactuels.ipynb
 │
 ├── 03-DeepLearning/            # Deep learning from scratch
 │   ├── 3.0-Theorie-Information.ipynb
@@ -124,7 +125,8 @@ DataScienceWithAgents/
 │
 ├── 04b-Wavelet-Scattering/   # Ondelettes et scattering : analyse multi-résolution
 │   ├── WS-00a-Ondelettes-1D-from-scratch.ipynb
-│   └── WS-00b-Ondelettes-2D-from-scratch.ipynb
+│   ├── WS-00b-Ondelettes-2D-from-scratch.ipynb
+│   └── WS-01-Denoising-SOTA.ipynb
 │
 ├── Track1-LangChain/ # Track LangChain
 │   ├── Day1-Foundations/Labs/              # Revision
@@ -173,6 +175,7 @@ Le socle machine learning canonique avec scikit-learn, posé à la main entre le
 | [2.11-Regularisation-Sparse-LASSO](02-ML-Cours/2.11-Regularisation-Sparse-LASSO.ipynb) | *Régularisation sparse* — LASSO (L1, polyèdre) vs Ridge (L2, boule), coord descent, sélection de λ, ElasticNet sur features corrélées | **la géométrie décide** : polyèdre L1 → sparsity, boule L2 → shrink ; sur ρ > 0.7, ElasticNet stabilise |
 | [2.12-Donnees-Desequilibrees](02-ML-Cours/2.12-Donnees-Desequilibrees.ipynb) | *Classes déséquilibrées* — la métrique qui ment (accuracy vs PR), rééchantillonnage, seuillage par coût | **La courbe PR dit la vérité** : sur ~3 % de positifs, la ROC flatte — seule l'average precision rend l'arbitrage visible |
 | [2.13-Analyse-Erreurs](02-ML-Cours/2.13-Analyse-Erreurs.ipynb) | le geste du praticien : diagnostiquer un modèle entraîné (tranches, worst-k) | la poche invisible : 67.6% d'erreur sous un score global correct |
+| [2.14-Explicabilite-SHAP-LIME-Contrefactuels](02-ML-Cours/2.14-Explicabilite-SHAP-LIME-Contrefactuels.ipynb) | *Explicabilité XAI* — expliquer une décision individuelle : SHAP (arbre exact + kernel), LIME, contrefactuels DiCE, et leurs limites communes | **additivité exacte vs récits instables** : Tree SHAP vérifié à 1e-16, LIME instable de seed en seed |
 
 Documentation complète : [02-ML-Cours/README.md](02-ML-Cours/README.md)
 
@@ -215,6 +218,7 @@ Série d'analyse multi-résolution dans la même discipline from scratch : la tr
 |----------|-------|---------------|
 | [WS-00a-Ondelettes-1D-from-scratch](04b-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb) | DWT orthonormale à la main (Haar, D4, db4), profil d'énergie par échelle, débruitage par seuillage dur/doux (seuil universel, sans oracle) contre passe-bas Fourier (cutoffs garde-tout/étroit/libre, avec oracle), banc Donoho-Johnstone (Doppler, HeaviSine, Stationnaire+burst) | **Aucune base n'est universellement parcimonieuse** : ondelette +4,5 dB sur le chirp sans oracle, Fourier +4,8 dB sur le stationnaire avec oracle, mixte serré |
 | [WS-00b-Ondelettes-2D-from-scratch](04b-Wavelet-Scattering/WS-00b-Ondelettes-2D-from-scratch.ipynb) | Transformée 2D séparable = produit tensoriel du moteur 1D de WS-00a, pyramide de Mallat, contrôle d'orientation sur motifs à orientation connue, reconstruction parfaite + `allclose` bande par bande contre PyWavelets, duel de compression à budget apparié contre une DCT 8×8 | **Le pouvoir de parcimonie est conditionnel au budget** : db4 écrase la DCT 8×8 de +16,4 dB à 0,2 % de coefficients retenus, mais l'écart tombe à ~0,2 dB dès 5 % |
+| [WS-01-Denoising-SOTA](04b-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb) | Bloc B : duel débruitage d'images (4 images × 3 sigmas × 3 graines) entre la baseline from scratch (moteur WS-00b, seuil universel de WS-00a) et les estimateurs SOTA — VisuShrink/BayesShrink (`skimage`), SureShrink écrit à la main (SURE validé contre force brute) sur coefficients `pywt` | **À transformée identique, l'écart vient du seuil, pas du moteur** : BayesShrink adaptatif par sous-bande gagne +2,2 à +3,0 dB sur le seuil universel global à chaque régime de bruit |
 
 Documentation complète : [04b-Wavelet-Scattering/README.md](04b-Wavelet-Scattering/README.md)
 

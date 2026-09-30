@@ -96,14 +96,17 @@ jobs:
             exit 0
           fi
 
-          # Justification par-cellule depuis le body de la PR (#13491, option a) :
-          # le detecteur parse le body de la PR a la recherche de markers
+          # Justification par body (#13491, option a) : le detecteur parse le
+          # body de la PR a la recherche de markers
           # `md-content-loss: reecriture assumee -- <notebook> cell <N> : <raison>`
           # qui exonerent le finding TRUNCATED_CELL correspondant (transparence :
           # le finding devient TRUNCATED_CELL_JUSTIFIED_BY_BODY et reste dans la
-          # sortie machine, seul le verdict binaire --check passe a 0). Sans
-          # marker pour un finding donne, le comportement nominal (rc=1) est
-          # preserve. Le body est passe via l'env var in-memory
+          # sortie machine, seul le verdict binaire --check passe a 0) et de
+          # markers `md-content-loss: navigation assumee -- <notebook> target
+          # <cible> : <raison>` qui couvrent LOST_NAV_LINKS cible par cible
+          # (#17727 : justification partielle, une cible non nommee reste
+          # bloquante). Sans marker pour un finding donne, le comportement
+          # nominal (rc=1) est preserve. Le body est passe via l'env var in-memory
           # MD_CONTENT_LOSS_PR_BODY (canal recommande, evite le pattern CodeQL
           # `actions/code-injection` declenche par `printf` du body dans le shell
           # qui taint le body vers le shell). Le detecteur la resout en
@@ -128,7 +131,7 @@ jobs:
             # NOT `|| true` (that makes $? read 0 from `true` and permanently disarms the gate).
             out=$(python scripts/notebook_tools/detect_md_content_loss.py --base "$BASE" --check "$nb" 2>&1) && rc=0 || rc=$?
             if [ "$rc" -eq 1 ]; then
-              echo "::error title=Markdown content loss::$nb lost substantial markdown content (truncated cell or lost structuring motif). If this is a legit rephrase, add a per-cell marker in the PR body: 'md-content-loss: reecriture assumee -- <notebook> cell <N> : <raison>' (one per justified cell, see #13491)."
+              echo "::error title=Markdown content loss::$nb lost substantial markdown content (truncated cell or lost structuring motif). If this is a legit rephrase, add a per-cell marker in the PR body: 'md-content-loss: reecriture assumee -- <notebook> cell <N> : <raison>' (one per justified cell, see #13491). If a navigation link target was deliberately dropped or re-targeted, add: 'md-content-loss: navigation assumee -- <notebook> target <cible> : <raison>' (one per lost target, see #17727)."
               echo "<details><summary><code>$nb</code></summary>" >> "$GITHUB_STEP_SUMMARY"
               echo "" >> "$GITHUB_STEP_SUMMARY"
               echo '```' >> "$GITHUB_STEP_SUMMARY"

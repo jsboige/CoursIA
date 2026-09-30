@@ -351,6 +351,10 @@ class TestConstants:
             # (COMFYUI_AUTH_TOKEN shadows COMFYUI_API_TOKEN in the ``or``
             # fallback chain -> 401 when stale).
             "COMFYUI_AUTH_TOKEN": "COMFYUI_API_TOKEN",
+            # #16755: hosted "medium" vLLM backend key. Target-side name is
+            # TGWUI_MEDIUM_API_KEY (mirrors TGWUI_MEDIUM_API_URL); the DM-side
+            # spelling VLLM_API_KEY_MEDIUM lives in master.env too.
+            "VLLM_API_KEY_MEDIUM": "TGWUI_MEDIUM_API_KEY",
         }
 
     def test_required_keys_declared_secrets_and_real_labels(self):

@@ -1,0 +1,7 @@
+date: '2026-09-28'
+by: myia-po-2025:CoursIA
+python_sha: 80a3923577e47c6340fefa45f056533ff723d31a
+csharp_sha: cd32b6f6d0f05dbdd4e105453a0a52ad6fc6bcf7
+content_python_sha: 5f0e1a0cb0e0f17e296be730f64881d189cfb9616ba5b27057577e132c463dbe
+content_csharp_sha: b468552a8f6435425ad4b29c1be821b713e503658bd6c98393038c2775a797ba
+reason: 'mouvement unilateriel cote C# seul -- mesure : git diff origin/main sur ML-2-Data&Features-Python.ipynb est vide (jumeau byte-identique a main), le seul delta de la branche porte sur ML-2-Data&Features.ipynb (5 cellules de code et 2 cellules markdown : reaffectation des Append du pipeline via IEstimator<ITransformer>, Rate_code = float.NaN, deux impressions qui rendent la substitution constatee). Le cote Python enseignait deja le geste correct, il n a rien a rattraper ; meme precedent unilateral que app-14-connectfour-adversarial/0005 (2026-08-19).'

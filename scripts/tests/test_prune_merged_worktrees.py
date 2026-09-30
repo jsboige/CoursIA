@@ -38,7 +38,8 @@ Pinent le contrat de sûreté (issues #14195 + #14509 acceptance) :
 Tests d'intégration end-to-end (subprocess réel) :
 - dry-run sur un worktree `main` ne tente jamais `worktree remove`.
 - `--apply` no-op quand 0 removable.
-- exit 0 quand rien à signaler, 1 si refus observé, 2 si erreur gh/git.
+- exit 0 quand la passe est saine, refus compris (un refus est une
+  décision, pas une panne — #3895 roo-extensions), 2 si erreur gh/git.
 
 Run : python -m pytest scripts/tests/test_prune_merged_worktrees.py
 """
@@ -49,10 +50,17 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import prune_merged_worktrees as pmw  # noqa: E402
+from _gh_availability import (  # noqa: E402
+    skip_if_gh_exhausted,
+    skip_if_output_rate_limited,
+)
 
 
 # CWD cible pour les tests subprocess (Windows path natif)
@@ -413,6 +421,211 @@ class TestDiagnoseRefusalCauses:
         s = pmw.diagnose_worktree("C:/fake", "C:/other")
         assert s.decision == "REFUSE"
         assert s.refusal_reason == "uncommitted_source_changes"
+
+
+class TestRemoteHeadPrResolution:
+    """#17771 predicat 1 : la tete distante qui porte HEAD resout la PR.
+
+    Cas mesure : worktree branche localement sous un nom different de la
+    tete de PR (checkout ``pr-123``, renommage local). La resolution par
+    le nom local rend None ; la reprise par la branche distante portant
+    exactement HEAD doit retrouver le verdict PR (OPEN->REFUSE,
+    MERGED/CLOSED->REMOVE).
+    """
+
+    def _info(self, **over):
+        base = dict(
+            branch="pr-17771", ahead_count=0, untracked=[],
+            blocking_untracked=[], ignored_extra=[], tracked_modified=[],
+            has_source_dirty=False, has_submodules=False, is_current=False,
+        )
+        base.update(over)
+        return base
+
+    def _diagnose(self, monkeypatch, info, pr_by_branch, remote_head,
+                  ancestor=False):
+        monkeypatch.setattr(pmw, "get_worktree_info", lambda *a: info)
+        seen = []
+
+        def _lookup(b, head_sha=None):
+            seen.append(b)
+            return pr_by_branch.get(b)
+
+        monkeypatch.setattr(pmw, "lookup_pr_for_branch", _lookup)
+        monkeypatch.setattr(pmw, "remote_head_for_head",
+                            lambda *a, **k: remote_head)
+        monkeypatch.setattr(pmw, "head_is_ancestor_of_main",
+                            lambda *a: ancestor)
+        return pmw.diagnose_worktree("C:/fake", "C:/other"), seen
+
+    def test_remote_head_merged_removes(self, monkeypatch):
+        # Le nom local ne trouve rien ; la tete distante oui (MERGED).
+        s, seen = self._diagnose(
+            monkeypatch, self._info(),
+            pr_by_branch={"fix/renamed": {"state": "MERGED", "number": 7,
+                                           "url": "u"}},
+            remote_head="fix/renamed",
+        )
+        assert seen == ["pr-17771", "fix/renamed"]
+        assert s.decision == "REMOVE"
+        assert s.pr_number == 7
+        assert s.content_on_main is False
+
+    def test_remote_head_pr_open_refuses(self, monkeypatch):
+        # Controle negatif : la PR retrouvee par tete distante est OPEN,
+        # le worktree reste actif -- la reprise ne DOIT pas degonfler le
+        # garde pr_open.
+        s, _ = self._diagnose(
+            monkeypatch, self._info(),
+            pr_by_branch={"fix/renamed": {"state": "OPEN", "number": 8,
+                                           "url": "u"}},
+            remote_head="fix/renamed",
+        )
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "pr_open:#8"
+
+    def test_no_remote_head_keeps_conservative_refuse(self, monkeypatch):
+        # Aucune tete distante ne porte HEAD, aucune PR : REFUSE
+        # conservatrice inchangee (le predicat 1 ne desserre rien).
+        s, seen = self._diagnose(
+            monkeypatch, self._info(), pr_by_branch={}, remote_head=None,
+        )
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "no_pr_match"
+        assert seen == ["pr-17771"]
+
+
+class TestContentOnMainRemove:
+    """#17771 predicat 2 : contenu deja integre a main -> REMOVE motive.
+
+    Tete ancetre de origin/main, 0 commit non pousse, aucune edition
+    source non committee : le worktree ne porte plus rien que main ne
+    contienne deja. Le controle negatif exigé par l'issue verifie que la
+    salete prime TOUJOURS sur ce REMOVE.
+    """
+
+    def _info(self, **over):
+        base = dict(
+            branch="fix/merged-content", ahead_count=0, untracked=[],
+            blocking_untracked=[], ignored_extra=[], tracked_modified=[],
+            has_source_dirty=False, has_submodules=False, is_current=False,
+        )
+        base.update(over)
+        return base
+
+    def _diagnose(self, monkeypatch, info, ancestor):
+        monkeypatch.setattr(pmw, "get_worktree_info", lambda *a: info)
+        monkeypatch.setattr(pmw, "lookup_pr_for_branch",
+                            lambda *a, **k: None)
+        monkeypatch.setattr(pmw, "remote_head_for_head",
+                            lambda *a, **k: None)
+        monkeypatch.setattr(pmw, "head_is_ancestor_of_main",
+                            lambda *a: ancestor)
+        return pmw.diagnose_worktree("C:/fake", "C:/other")
+
+    def test_ancestor_clean_removes_with_motif(self, monkeypatch):
+        s = self._diagnose(monkeypatch, self._info(), ancestor=True)
+        assert s.decision == "REMOVE"
+        assert s.refusal_reason is None
+        assert s.content_on_main is True
+        assert s.pr_state is None and s.pr_number is None
+
+    def test_not_ancestor_still_refuses(self, monkeypatch):
+        # Commits propres (squash-merge par ex.) : l'ascendance echoue,
+        # la REFUSE conservatrice tient.
+        s = self._diagnose(monkeypatch, self._info(), ancestor=False)
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "no_pr_match"
+        assert s.content_on_main is False
+
+    def test_py_edit_primes_over_content_on_main(self, monkeypatch):
+        # Controle negatif de l'issue : tete ancetre de main MAIS edition
+        # .py non suivie -> REFUSE. La salete est structurelle et doit
+        # trancher AVANT toute resolution PR / ascendance.
+        info = self._info(
+            untracked=["src/keep.py"], blocking_untracked=["src/keep.py"],
+            has_source_dirty=True,
+        )
+        monkeypatch.setattr(pmw, "get_worktree_info", lambda *a: info)
+        monkeypatch.setattr(pmw, "head_is_ancestor_of_main", lambda *a: True)
+
+        def _no_gh(*a):
+            raise AssertionError(
+                "lookup_pr_for_branch ne doit pas etre appele : la salete "
+                "source prime sur content_on_main"
+            )
+
+        monkeypatch.setattr(pmw, "lookup_pr_for_branch", _no_gh)
+        s = pmw.diagnose_worktree("C:/fake", "C:/other")
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "uncommitted_source_changes"
+        assert s.content_on_main is False
+
+    def test_detached_head_not_eligible(self, monkeypatch):
+        # Le predicat 2 est borne au cas branche : un HEAD detache sans
+        # PR garde son verdict dedie (detached_no_match), jamais le
+        # REMOVE content_on_main.
+        info = self._info(branch=None)
+        monkeypatch.setattr(pmw, "get_worktree_info", lambda *a: info)
+        monkeypatch.setattr(pmw, "detached_head_is_on_main", lambda *a: False)
+        monkeypatch.setattr(pmw, "lookup_pr_for_detached_head",
+                            lambda *a, **k: None)
+
+        def _ancestor_must_not_run(*a):
+            raise AssertionError(
+                "head_is_ancestor_of_main ne doit pas etre appele sur un "
+                "HEAD detache : le predicat content_on_main est branche-only"
+            )
+
+        monkeypatch.setattr(pmw, "head_is_ancestor_of_main",
+                            _ancestor_must_not_run)
+        s = pmw.diagnose_worktree("C:/fake", "C:/other")
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "detached_no_match"
+
+
+class TestRemoteHeadForHead:
+    """Unite du helper #17771 : upstream explicite, puis scan de tips."""
+
+    def _fake_git_router(self, monkeypatch, upstream_rc, upstream_out,
+                         refs_out, refs_rc=0):
+        def fake_run_git(*args, **kwargs):
+            cmd = list(args)
+            if "rev-parse" in cmd:
+                return _fake_proc(upstream_rc, upstream_out)
+            if "for-each-ref" in cmd:
+                return _fake_proc(refs_rc, refs_out)
+            return _fake_proc(128, "")
+
+        monkeypatch.setattr(pmw, "run_git", fake_run_git)
+
+    def test_upstream_short_name_wins(self, monkeypatch):
+        self._fake_git_router(monkeypatch, 0, "origin/fix/renamed\n", "")
+        assert pmw.remote_head_for_head("C:/fake", "pr-17771",
+                                        "abc123") == "fix/renamed"
+
+    def test_upstream_main_is_skipped(self, monkeypatch):
+        # Un upstream tombe sur origin/main : faux positif massif, la
+        # voie doit retomber sur le scan de tips (ici : aucun match).
+        self._fake_git_router(monkeypatch, 0, "origin/main\n",
+                              "origin/fix/other def456\n")
+        assert pmw.remote_head_for_head("C:/fake", "fix/X",
+                                        "abc123") is None
+
+    def test_tip_scan_excludes_main_and_heads(self, monkeypatch):
+        self._fake_git_router(
+            monkeypatch, 128, "",
+            "origin/main abc123\norigin/HEAD abc123\n"
+            "origin/fix/renamed abc123\n",
+        )
+        assert pmw.remote_head_for_head("C:/fake", "fix/X",
+                                        "abc123") == "fix/renamed"
+
+    def test_tip_mismatch_returns_none(self, monkeypatch):
+        self._fake_git_router(monkeypatch, 128, "",
+                              "origin/fix/renamed def456\n")
+        assert pmw.remote_head_for_head("C:/fake", "fix/X",
+                                        "abc123") is None
 
 
 class TestGetWorktreeInfoPorcelain:
@@ -786,6 +999,99 @@ class TestLookupPRForDetachedHead:
             "egalite normalisee impossible (sujet != titre). Resultat doit "
             "etre None, pas une PR partageant `notebook`."
         )
+
+
+class TestDetachedHeadOnMain17684:
+    """#17684 : un HEAD detache ne recoit jamais la PR d'un commit ancetre.
+
+    Mesure fondatrice (ai-01, 2026-09-24) : la demeure de la tache
+    ``merge_ready`` (HEAD = un squash de main) classee REMOVE sur la PR de
+    ce squash, et une branche de revert classee REMOVE sur la PR qu'elle
+    revertait alors que sa propre PR etait OPEN.
+    """
+
+    def _detached_info(self):
+        return dict(
+            branch=None, ahead_count=0, untracked=[],
+            blocking_untracked=[], ignored_extra=[], tracked_modified=[],
+            has_source_dirty=False, has_submodules=False, is_current=False,
+        )
+
+    def test_detached_on_main_refused_without_lookup(self, monkeypatch):
+        monkeypatch.setattr(
+            pmw, "get_worktree_info", lambda *a: self._detached_info())
+        git_calls: list[tuple] = []
+
+        def fake_git(cwd, *args, **kwargs):
+            git_calls.append(args)
+            return _fake_proc(returncode=0)
+
+        def _no_lookup(*a, **k):
+            raise AssertionError(
+                "aucune PR ne porte une extraction de main : le lookup "
+                "ne doit pas etre appele")
+
+        monkeypatch.setattr(pmw, "run_git", fake_git)
+        monkeypatch.setattr(pmw, "lookup_pr_for_detached_head", _no_lookup)
+        s = pmw.diagnose_worktree("C:/fake/wt-merge-ready", "C:/elsewhere")
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "detached_on_main"
+        assert git_calls == [
+            ("merge-base", "--is-ancestor", "HEAD", pmw.MAIN_REF)]
+
+    def test_detached_off_main_goes_to_lookup(self, monkeypatch):
+        monkeypatch.setattr(
+            pmw, "get_worktree_info", lambda *a: self._detached_info())
+        # rc=1 : HEAD porte des commits propres
+        monkeypatch.setattr(
+            pmw, "run_git", lambda *a, **k: _fake_proc(returncode=1))
+        monkeypatch.setattr(
+            pmw, "lookup_pr_for_detached_head",
+            lambda wt: {"state": "OPEN", "number": 17632, "url": "u"})
+        s = pmw.diagnose_worktree("C:/fake/wt-17632", "C:/elsewhere")
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "pr_open:#17632"
+
+    def test_ancestry_error_is_not_on_main(self, monkeypatch):
+        # rc=128 (ref absente) : pas de conclusion « sur main », la voie de
+        # lookup restreinte decide (et rend None -> REFUSE).
+        monkeypatch.setattr(
+            pmw, "run_git", lambda *a, **k: _fake_proc(returncode=128))
+        assert pmw.detached_head_is_on_main("C:/fake") is False
+
+    def test_lookup_reads_only_commits_off_main(self, monkeypatch):
+        git_calls: list[tuple] = []
+
+        def fake_git(cwd, *args, **kwargs):
+            git_calls.append(args)
+            return _fake_proc(
+                returncode=0,
+                stdout="revert(docs,#16904): retrait de #17029\n",
+            )
+
+        monkeypatch.setattr(pmw, "run_git", fake_git)
+        monkeypatch.setattr(
+            pmw, "run_gh", lambda *a, **k: _fake_proc(json_payload=[]))
+        pmw.lookup_pr_for_detached_head("/tmp/fake")
+        assert git_calls, "le lookup doit lire les sujets de commit"
+        log_args = git_calls[0]
+        assert log_args[0] == "log"
+        assert f"{pmw.MAIN_REF}..HEAD" in log_args
+        assert "HEAD" not in log_args, (
+            "lire `HEAD` entier traverse main et attribue la PR d'un "
+            "commit ancetre")
+
+    def test_empty_range_returns_none_without_gh(self, monkeypatch):
+        # Plage origin/main..HEAD vide : aucun sujet propre, aucun appel gh
+        # -- jamais la PR du squash de main qui porte le HEAD.
+        monkeypatch.setattr(
+            pmw, "run_git", lambda *a, **k: _fake_proc(returncode=0, stdout=""))
+
+        def _no_gh(*a, **k):
+            raise AssertionError("aucun sujet propre : aucun appel gh")
+
+        monkeypatch.setattr(pmw, "run_gh", _no_gh)
+        assert pmw.lookup_pr_for_detached_head("/tmp/fake") is None
 
 
 def _fake_proc(returncode: int = 0, stdout: str = "", json_payload=None):
@@ -1349,23 +1655,70 @@ class TestToleratedCleanup14619:
 class TestEndToEnd:
     """Tests subprocess reels. Aucun mock : on execute le script sur
     le worktree de test, et on vérifie que le verdict correspond a ce
-    qu'on sait du repo."""
+    qu'on sait du repo.
 
-    def test_dry_run_exits_1_when_refusals(self):
-        """po-2027 a 4 worktrees refuses (main + 3 PR open). Exit 1.
+    Ces tests invoquent le vrai `gh` (resolution PR des worktrees) : quand le
+    budget GraphQL du compte est epuise, la sortie est vide et le verdict
+    n'est PAS mesurable — skip honnete plutot que rouge trompeur (#17201).
+    """
+
+    @pytest.fixture(autouse=True)
+    def _require_gh_budget(self):
+        skip_if_gh_exhausted()
+
+    def test_dry_run_exits_0_even_with_refusals(self):
+        """po-2027 a 4 worktrees refuses (main + 3 PR open). Exit 0.
+
+        #3895 (roo-extensions) : un REFUS est une decision de l'outil, pas
+        une panne. A 86-100 % de refus mesures sur 3 machines (27/09),
+        l'exit 1 d'avant rendait la tache planifiee rouge (LastResult 0x1)
+        toutes les nuits en reussissant -- un vrai echec gh y etait
+        indissociable du bruit.
 
         CI : skip si scanned=0 OU si aucun worktree main n'est présent
         (checkout shallow sans worktree main séparé, refs/remotes/pull/N/merge).
+
+        #17292 : la précondition annoncée ci-dessus doit être évaluée AVANT
+        d'être nécessaire. Le test faisait `json.loads(proc.stdout)` d'abord :
+        toute panne de l'outil (stdout vide) sortait donc en
+        `JSONDecodeError: Expecting value: line 1 column 1` — un message qui
+        n'accuse rien, alors que le script avait écrit son diagnostic sur
+        stderr et que `capture_output=True` venait de l'avaler. Ce rouge a
+        bloqué des PRs de plusieurs lanes le 2026-09-21 sans que le log CI
+        porte la cause.
         """
-        import pytest
         proc = subprocess.run(
             [sys.executable, "scripts/ci/prune_merged_worktrees.py",
              "--path", TEST_CWD, "--json"],
             capture_output=True, text=True, encoding="utf-8",
             cwd=TEST_CWD,
         )
-        # Exit 0 ou 1 (selon qu'il y a des refus observes)
-        assert proc.returncode in (0, 1), f"unexpected exit: {proc.returncode}"
+        skip_if_output_rate_limited(proc.stdout + proc.stderr)
+        stderr = (proc.stderr or "").strip()
+        # rc=2 a DEUX saveurs, et les confondre est le defaut d'origine :
+        #  - l'outil NOMME son incapacite d'enumerer ici (environment) : c'est la
+        #    precondition annoncee par ce test -> skip, motif compris ;
+        #  - l'outil a PLANTE (#17292) -> echec dur, traceback compris. Un
+        #    plantage n'est pas une precondition, et le skipper le rendrait
+        #    invisible pour toujours.
+        # #17229 (union) : le budget GraphQL epuise est une TROISIEME saveur --
+        # elle n'est ni une precondition d'environnement ni un plantage, et
+        # elle se saute AVANT ces deux branches (le skip ci-dessus), sinon le
+        # rc=2 d'un appel gh refuse serait lu comme un plantage de l'outil.
+        if proc.returncode == 2:
+            if "echec inattendu" in stderr:
+                pytest.fail(f"le script a plante (rc=2), ce n'est pas une precondition :\n{stderr[:1500]}")
+            pytest.skip(f"le script declare ne pas pouvoir enumerer ici : {stderr[:400]}")
+        # #3895 : refus ou pas, une passe qui s'est deroulee sort en 0.
+        # Seul rc=2 reste une panne (nommee ou traceback).
+        assert proc.returncode == 0, (
+            f"unexpected exit: {proc.returncode}\nstderr: {stderr[:800]}"
+        )
+        assert proc.stdout.strip(), (
+            "contrat --json rompu : stdout vide alors que rc="
+            f"{proc.returncode} -- le script doit publier son JSON, ou nommer "
+            f"son echec (rc=2). stderr: {stderr[:800]}"
+        )
         out = json.loads(proc.stdout)
         if out["scanned"] == 0:
             pytest.skip("no worktree present (CI checkout shallow)")
@@ -1389,9 +1742,9 @@ class TestEndToEnd:
             capture_output=True, text=True, encoding="utf-8",
             cwd=TEST_CWD,
         )
+        skip_if_output_rate_limited(proc.stdout + proc.stderr)
         out = json.loads(proc.stdout)
         if out["scanned"] == 0:
-            import pytest
             pytest.skip("no worktree present (CI checkout shallow)")
         for s in out["statuses"]:
             if s["branch"] == "main":
@@ -1406,6 +1759,7 @@ class TestEndToEnd:
             capture_output=True, text=True, encoding="utf-8",
             cwd=TEST_CWD,
         )
+        skip_if_output_rate_limited(proc.stdout + proc.stderr)
         out = json.loads(proc.stdout)
         for key in ("scanned", "removable", "refused", "skipped_current",
                     "dry_run", "statuses"):
@@ -1426,14 +1780,16 @@ class TestEndToEnd:
             cwd=TEST_CWD,
         )
         text = proc.stdout
+        skip_if_output_rate_limited(text + proc.stderr)
         assert "total=" in text, "text output must include total counter"
         assert "removable=" in text
         assert "refused=" in text
         assert "---" in text, "text output must separate counters by ---"
 
     def test_apply_noop_when_no_removable(self):
-        """--apply doit no-op quand 0 removable, et exit code reste 1
-        si refus observes (le run signale quand meme le bruit).
+        """--apply doit no-op quand 0 removable ; les refus observes ne
+        comptent plus comme echec depuis #3895 (le run reste a 0, le
+        detail des refus vit dans le rapport).
 
         Test destructif : --apply supprime réellement des worktrees. Skip
         sauf si RUN_DESTRUCTIVE_TESTS=1 est explicitement défini dans
@@ -1442,7 +1798,6 @@ class TestEndToEnd:
         """
         import os
         if os.environ.get("RUN_DESTRUCTIVE_TESTS") != "1":
-            import pytest
             pytest.skip("destructive test (--apply) skipped unless RUN_DESTRUCTIVE_TESTS=1")
         proc = subprocess.run(
             [sys.executable, "scripts/ci/prune_merged_worktrees.py",
@@ -1450,6 +1805,7 @@ class TestEndToEnd:
             capture_output=True, text=True, encoding="utf-8",
             cwd=TEST_CWD,
         )
+        skip_if_output_rate_limited(proc.stdout + proc.stderr)
         # pas d'erreur gh/git -> exit != 2
         assert proc.returncode != 2, f"stderr: {proc.stderr}"
         # Au moins 1 ligne REFUSE dans la sortie (le run reel)
@@ -1610,3 +1966,390 @@ class TestEndToEndHermetic14693:
         assert not ok, "git ne peut PAS retirer un worktree a sous-modules"
         assert "submodule" in stderr.lower(), stderr
         assert wt.exists(), "le worktree REFUSE reste sur disque"
+
+    def test_lane_owner_marker_does_not_block_removal(self, tmp_path, monkeypatch):
+        """#3895 (roo-extensions) : le marqueur `.lane-owner` pose par le
+        spawn est TOLERE -- il ne doit jamais transformer un REMOVE annonce
+        en REFUSE untolerated_untracked (un worktree refuse pour son propre
+        marqueur ne partirait jamais), et l'attribution est portee par le
+        statut pour le rapport.
+        """
+        super, wt = _make_repo_with_feature_worktree(tmp_path)
+        (wt / ".lane-owner").write_text(
+            "myia-po-2026:CoursIA-2\n", encoding="utf-8")
+        self._merged_anchor(monkeypatch)
+        monkeypatch.chdir(super)
+
+        s = pmw.diagnose_worktree(str(wt), str(super))
+        assert s.decision == "REMOVE", (
+            f"le marqueur ne doit pas bloquer le retrait, got: {s.refusal_reason}"
+        )
+        assert s.lane_owner == "myia-po-2026:CoursIA-2"
+        # Sequence exacte du apply de main() : le marqueur est nettoye
+        # comme artefact tolere, puis le remove sans force reussit.
+        cleaned = pmw.clean_tolerated_artifacts(s)
+        assert ".lane-owner" in cleaned
+        ok, stderr = pmw.apply_removal(s)
+        assert ok, f"REMOVE annonce mais retrait echoue: {stderr}"
+        assert not wt.exists(), "le worktree doit avoir quitte le disque"
+
+
+class TestRefusalReport3895:
+    """#3895 (roo-extensions) : un REFUS est une decision, pas une panne.
+
+    Mesure fondatrice (3 machines, 27/09/2026) : 86-100 % des worktrees
+    vus sont refuses (worktrees de cycle nes HEAD-detaches ou sales par
+    construction). L'exit 1 d'avant rendait la tache planifiee rouge
+    toutes les nuits en reussissant, et le detail des refus ne vivait
+    que dans un log local qu'aucune lane ne lisait. Contrat depuis #3895 :
+    rc=0 passe saine (refus compris), refus dans le rapport (classes +
+    lanes attribuees), [WARN] au-dela du seuil -- sur stderr, jamais
+    stdout (le --json doit rester pur pour `json.loads`).
+    """
+
+    @staticmethod
+    def _refuse(reason, i=0, **kw):
+        # Chemin UNIQUE par indice : le bouchon diagnose_worktree resout par
+        # path -- un path partage ferait resolver tous les worktrees vers le
+        # premier statut (mesure : 3 fails initiaux, tous no_pr_match=3).
+        return _make_status(path=f"C:/fake/refused{i}", decision="REFUSE",
+                            refusal_reason=reason,
+                            pr_state=None, pr_number=None, pr_url=None, **kw)
+
+    def _run_main(self, monkeypatch, statuses, argv_extra=()):
+        """main() in-process, list_worktrees/diagnose bouchonnes, resolution
+        PR detachee du disque (aucun appel gh possible dans ces tests)."""
+        monkeypatch.setattr(pmw, "list_worktrees", lambda: [
+            {"path": s.path, "branch": s.branch} for s in statuses])
+        monkeypatch.setattr(
+            pmw, "diagnose_worktree",
+            lambda path, cur, head_sha=None:
+                next(s for s in statuses if s.path == path),
+        )
+        monkeypatch.setattr(
+            pmw, "get_pr_resolution",
+            lambda: pmw.PrResolution(cache_path=None),
+        )
+        monkeypatch.setattr(
+            sys, "argv", ["prune_merged_worktrees.py", *argv_extra],
+        )
+        return pmw.main()
+
+    def test_refusals_exit_zero_and_report_classes(self, monkeypatch, capsys):
+        """Le coeur de #3895 : des refus, un exit 0, et le decompte par
+        classe dans le rapport texte."""
+        statuses = [
+            self._refuse("unpushed_commits:2", i=0),
+            self._refuse("no_pr_match", i=1,
+                         lane_owner="myia-po-2026:CoursIA-2"),
+            self._refuse("unpushed_commits:1", i=2),
+            _make_status(decision="SKIP_CURRENT",
+                         refusal_reason="current_worktree_not_removable"),
+        ]
+        assert self._run_main(monkeypatch, statuses) == 0
+        out = capsys.readouterr().out
+        assert "refused=3" in out
+        assert "refusals:" in out
+        # Les details variables (":2", ":1") s'agregent en classes.
+        assert "unpushed_commits=2" in out
+        assert "no_pr_match=1" in out
+        # Tri deterministe : compte decroissant.
+        assert out.index("unpushed_commits=") < out.index("no_pr_match=")
+
+    def test_json_carries_breakdowns_and_stays_pure(self, monkeypatch, capsys):
+        """Le --json porte refusal_reasons + lane_refusals + lane_owner par
+        statut, et stdout reste du JSON pur meme avec emission WARN."""
+        statuses = [
+            self._refuse("unpushed_commits:2", i=0),
+            self._refuse("no_pr_match", i=1,
+                         lane_owner="myia-po-2026:CoursIA-2"),
+            self._refuse("uncommitted_source_changes", i=2),
+        ]
+        assert self._run_main(
+            monkeypatch, statuses, argv_extra=["--json", "--warn-threshold", "1"]
+        ) == 0
+        captured = capsys.readouterr()
+        out = json.loads(captured.out)  # stdout PUR : le WARN vit en stderr
+        assert out["refusal_reasons"] == {
+            "uncommitted_source_changes": 1,
+            "no_pr_match": 1,
+            "unpushed_commits": 1,
+        }
+        assert out["lane_refusals"] == {
+            "unattributed": 2,
+            "myia-po-2026:CoursIA-2": 1,
+        }
+        owners = [s.get("lane_owner") for s in out["statuses"]]
+        assert "myia-po-2026:CoursIA-2" in owners
+        assert "[WARN][prune-task]" in captured.err
+
+    def test_apply_error_still_exits_two(self, monkeypatch):
+        """Le rc=2 des echecs d'application survit au changement : un
+        REMOVE annonce que git refuse reste une erreur, pas un refus."""
+        statuses = [_make_status()]  # REMOVE par defaut
+        monkeypatch.setattr(pmw, "clean_tolerated_artifacts", lambda s: [])
+        monkeypatch.setattr(
+            pmw, "apply_removal", lambda s: (False, "fatal: worktree sale"))
+        assert self._run_main(
+            monkeypatch, statuses, argv_extra=["--apply"]) == 2
+
+    def test_warn_strictly_above_threshold_only(self, monkeypatch, capsys):
+        """`refused > N` strictement : au seuil exact, pas d'emission."""
+        statuses = [self._refuse("no_pr_match", i=k) for k in range(3)]
+        self._run_main(
+            monkeypatch, statuses, argv_extra=["--warn-threshold", "3"])
+        assert "[WARN][prune-task]" not in capsys.readouterr().err
+        self._run_main(
+            monkeypatch, statuses, argv_extra=["--warn-threshold", "2"])
+        err = capsys.readouterr().err
+        assert "[WARN][prune-task]" in err
+        assert "refused=3/3" in err
+        assert "no_pr_match=3" in err
+
+    def test_warn_absent_without_flag(self, monkeypatch, capsys):
+        """Sans --warn-threshold, aucun WARN meme avec refus (le dry-run
+        interactif reste silencieux -- l'opt-in est a la tache planifiee)."""
+        statuses = [self._refuse("no_pr_match", i=0)]
+        self._run_main(monkeypatch, statuses)
+        assert capsys.readouterr().err == ""
+
+    def test_warn_line_carries_host_and_lanes(self, monkeypatch, capsys):
+        """La ligne WARN porte l'hote (COMPUTERNAME) et les lanes quand les
+        marqueurs existent -- prete a etre postee telle quelle."""
+        statuses = [
+            self._refuse("no_pr_match", i=0, lane_owner="laneA"),
+            self._refuse("no_pr_match", i=1, lane_owner="laneA"),
+            self._refuse("unpushed_commits:1", i=2),
+        ]
+        monkeypatch.setenv("COMPUTERNAME", "MYIA-PO-2026")
+        self._run_main(
+            monkeypatch, statuses, argv_extra=["--warn-threshold", "2"])
+        err = capsys.readouterr().err
+        assert "[WARN][prune-task] MYIA-PO-2026 refused=3/3" in err
+        assert "lanes: laneA=2 unattributed=1" in err
+
+    def test_lane_owner_marker_is_tolerated(self):
+        """Le marqueur .lane-owner ne doit JAMAIS bloquer le retrait ni
+        compter comme edition source (sinon l'attribution fabriquerait
+        exactement les refus qu'elle est censee expliquer)."""
+        assert pmw.is_untracked_artifact(".lane-owner") is True
+        assert pmw.is_source_dirty(".lane-owner") is False
+
+    def test_read_lane_owner_variants(self, tmp_path):
+        # pose et net : premiere ligne non vide, trim
+        (tmp_path / ".lane-owner").write_text(
+            "myia-po-2026:CoursIA-2\n", encoding="utf-8")
+        assert pmw.read_lane_owner(str(tmp_path)) == "myia-po-2026:CoursIA-2"
+        # lignes vides en tete tolerees, espaces trims
+        (tmp_path / ".lane-owner").write_text(
+            "\n  myia-po-2025:CoursIA  \nseconde ligne ignoree\n",
+            encoding="utf-8")
+        assert pmw.read_lane_owner(str(tmp_path)) == "myia-po-2025:CoursIA"
+        # borne a 64 : un marqueur corrompu ne pollue pas le rapport
+        (tmp_path / ".lane-owner").write_text("x" * 200, encoding="utf-8")
+        assert pmw.read_lane_owner(str(tmp_path)) == "x" * 64
+        # absent -> None
+        empty = tmp_path / "vide"
+        empty.mkdir()
+        assert pmw.read_lane_owner(str(empty)) is None
+        # vide -> None
+        (empty / ".lane-owner").write_text("   \n", encoding="utf-8")
+        assert pmw.read_lane_owner(str(empty)) is None
+
+    def test_absolute_worktree_resolves_host_repo_not_worktree(
+        self, tmp_path, monkeypatch,
+    ):
+        """#18219 follow-up (CHANGES_REQUESTED ai-01 2026-09-29T00:31Z) :
+        un worktree lie porte son propre fichier `.git` (gitdir pointeur).
+        L'ancienne resolution `_repo_root_for_worktree` remontait au
+        premier `.git` et rendait le worktree lui-meme, ce qui forait
+        `apply_removal` -> `git -C <wt> worktree remove <wt>` ->
+        Permission denied sur Windows (git tente de retirer son cwd).
+
+        Le fix utilise `git rev-parse --git-common-dir` qui rend le
+        common-dir du depot HOTE (distinct du `.git`/pointeur du
+        worktree). On asserte directement la valeur de l'argument `-C`
+        passe a `run_git` par `apply_removal` -- c'est l'invariant qui
+        protege Linux aussi : aucun autre helper ne doit pouvoir
+        reintroduire la marche d'ancetre.
+        """
+        super, wt = _make_repo_with_feature_worktree(tmp_path)
+        # Inlined from TestEndToEndHermetic14693._merged_anchor -- ces
+        # tests vivent dans TestRefusalReport3895 depuis le rebase c.1296.
+        monkeypatch.setattr(
+            pmw, "lookup_pr_for_branch",
+            lambda branch, head_sha=None: dict(
+                _MERGED_PR, headRefName=branch),
+        )
+        monkeypatch.chdir(super)
+
+        # Diagnostic + apply_removal reel, interception du cwd passe a git.
+        s = pmw.diagnose_worktree(str(wt), str(super))
+        assert s.decision == "REMOVE", s.refusal_reason
+
+        seen: list[tuple[str, tuple]] = []
+        real_run_git = pmw.run_git
+
+        def spy(cwd, *args, check=True):
+            seen.append((cwd, args))
+            return real_run_git(cwd, *args, check=check)
+
+        monkeypatch.setattr(pmw, "run_git", spy)
+        ok, stderr = pmw.apply_removal(s)
+        assert ok, f"REMOVE doit reussir ici: {stderr}"
+
+        # Filtrer uniquement les appels `worktree remove` (le helper
+        # interroge git avec cwd=<wt.path> pour --git-common-dir, ce qui
+        # est attendu et correct -- c'est le cwd de la sous-commande,
+        # pas celui du retrait final).
+        worktree_remove_cwds = [
+            cwd for cwd, args in seen
+            if args[:2] == ("worktree", "remove")
+            and Path(cwd).resolve() == Path(str(wt)).resolve()
+        ]
+        assert not worktree_remove_cwds, (
+            f"`worktree remove` vise le worktree lui-meme, pas le depot "
+            f"hebergeur : {worktree_remove_cwds}"
+        )
+        # Le cwd du `worktree remove` doit etre la racine du super-repo,
+        # resolue par `git rev-parse --git-common-dir` -> son parent.
+        host_cwds = [
+            cwd for cwd, args in seen
+            if args[:2] == ("worktree", "remove")
+            and Path(cwd).resolve() == Path(str(super)).resolve()
+        ]
+        assert host_cwds, (
+            f"aucun appel `worktree remove` ne vise le depot hebergeur : "
+            f"{[(c, a) for c, a in seen if a[:2] == ('worktree', 'remove')]}"
+        )
+
+    def test_relative_worktree_path_falls_back_to_current_repo(
+        self, tmp_path, monkeypatch,
+    ):
+        """#18219 c.1296 : un chemin de worktree relatif (cas System32
+        du cron #14473, ou l'appelant passe `..` apres chdir) doit
+        retomber sur `current_repo_root()` sans appeler git. C'est le
+        court-circuit de l'optimisation : evite une commande git
+        supplementaire pour le cas ou le worktree est forcement sous le
+        repo de ce script.
+        """
+        # worktree relatif construit sous cwd pour valider le chemin
+        # relatif.
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / "README.md").write_text("tmp", encoding="utf-8")
+
+        # Patch run_git pour ASSERTER qu'il n'est PAS appele sur un
+        # chemin relatif (court-circuit attendu).
+        called_with: list[str] = []
+        real_run_git = pmw.run_git
+
+        def spy(cwd, *args, check=True):
+            called_with.append(cwd)
+            return real_run_git(cwd, *args, check=check)
+
+        monkeypatch.setattr(pmw, "run_git", spy)
+
+        result = pmw._repo_root_for_worktree("wt-feature")
+        assert called_with == [], (
+            f"un chemin relatif ne doit pas appeler git (court-circuit) : "
+            f"{called_with}"
+        )
+        # Le repli est la racine du repo de CE script -- pas le cwd
+        # d'appel. `current_repo_root()` remonte depuis __file__.
+        assert result == pmw.current_repo_root()
+
+
+class TestErrorContract:
+    """#17292 — une PANNE ne doit jamais se faire passer pour une decision.
+
+    Historique : `rc=1` signifiait « refus observes » — un appelant qui
+    testait `rc in (0, 1)` acceptait indistinctement une decision de
+    l'outil et un traceback (panne du runner lue en `JSONDecodeError`
+    sur des PRs de plusieurs lanes, 2026-09-21). #17292 a sorti les
+    pannes par 2 ; #3895 a ensuite retire le « 1 = refus » lui-meme :
+    tout code != 0 est une panne, sans zone grise.
+    """
+
+    def test_unexpected_exception_leaves_by_the_documented_error_code(self, monkeypatch):
+        """Une exception que `main()` ne rattrape pas sort en 2, pas en 1."""
+        def boom():
+            raise ValueError("panne simulee : ni RuntimeError ni OSError connue")
+
+        monkeypatch.setattr(pmw, "list_worktrees", boom)
+        monkeypatch.setattr(sys, "argv", ["prune_merged_worktrees.py"])
+        assert pmw.run() == 2
+
+    def test_runtime_error_still_leaves_by_two(self, monkeypatch):
+        """Le chemin d'erreur nomme garde son code : la reparation ne le deplace pas."""
+        def boom():
+            raise RuntimeError("git introuvable")
+
+        monkeypatch.setattr(pmw, "list_worktrees", boom)
+        monkeypatch.setattr(sys, "argv", ["prune_merged_worktrees.py"])
+        assert pmw.run() == 2
+
+    def test_broken_pipe_is_not_an_error(self, monkeypatch):
+        """`| head` ferme le pipe : ce n'est pas une panne de l'outil.
+
+        Sans ce cas, `BrokenPipeError` — un `OSError`, donc un `Exception` —
+        serait reclasse en « echec inattendu » et le diagnostic afficherait une
+        erreur qui n'existe pas.
+        """
+        class _Closable:
+            def close(self):
+                pass
+
+        def boom():
+            raise BrokenPipeError(32, "Broken pipe")
+
+        monkeypatch.setattr(pmw, "main", boom)
+        monkeypatch.setattr(sys, "stdout", _Closable())
+        assert pmw.run() == 0
+
+    def test_run_returns_the_verdict_of_main(self, monkeypatch):
+        """Le delegue transporte la decision, il ne la reecrit pas."""
+        for code in (0, 1, 2):
+            monkeypatch.setattr(pmw, "main", lambda c=code: c)
+            assert pmw.run() == code
+
+    def test_a_crash_prints_the_traceback_and_a_distinct_marker(self, monkeypatch, capsys):
+        """Le plantage doit etre DISTINGUABLE d'une incapacite nommee.
+
+        Les deux sortent en 2. Si le plantage ne portait pas de marqueur propre,
+        l'appelant ne pourrait que skipper -- et un plantage skippe est un
+        plantage qu'on ne verra jamais. Le marqueur est ce qui rend le critere 3
+        (#17292) applicable : le motif remonte, et il n'est pas classe
+        « precondition ».
+        """
+        def boom():
+            raise ValueError("panne simulee")
+
+        monkeypatch.setattr(pmw, "list_worktrees", boom)
+        monkeypatch.setattr(sys, "argv", ["prune_merged_worktrees.py"])
+        assert pmw.run() == 2
+        err = capsys.readouterr().err
+        assert "echec inattendu" in err, "le marqueur de plantage a disparu"
+        assert "Traceback" in err, "le traceback n'est pas remonte"
+
+    def test_a_named_inability_is_not_marked_as_a_crash(self, monkeypatch, capsys):
+        """Controle negatif : une incapacite nommee ne porte PAS le marqueur."""
+        def boom():
+            raise RuntimeError("git introuvable")
+
+        monkeypatch.setattr(pmw, "list_worktrees", boom)
+        monkeypatch.setattr(sys, "argv", ["prune_merged_worktrees.py"])
+        assert pmw.run() == 2
+        err = capsys.readouterr().err
+        assert "git introuvable" in err, "le motif nomme a disparu"
+        assert "echec inattendu" not in err
+
+    def test_entry_point_calls_run_not_main(self):
+        """L'invariant qui rend le contrat effectif : `__main__` passe par run().
+
+        Un `sys.exit(main())` reintroduit ici rendrait tout ce qui precede
+        inoperant — les tests ci-dessus appelleraient `run()` directement et
+        resteraient verts pendant que le script, lui, ne l'utiliserait plus.
+        """
+        source = Path(pmw.__file__).read_text(encoding="utf-8")
+        assert "sys.exit(run())" in source
+        assert "sys.exit(main())" not in source

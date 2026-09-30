@@ -1,7 +1,7 @@
 - name: "Z3-Python-01 Introduction"
   family: SMT/Z3-API
-  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-01-Introduction.ipynb
-  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-01-Introduction-Csharp.ipynb
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01-Introduction-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01-Introduction-CSharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Z3 EST le moteur SOTA SMT, branche NATIVEMENT des deux cotes : Microsoft.Z3 (NuGet officiel, `#r \"nuget: Microsoft.Z3\"` + `using Microsoft.Z3;`, API Context ctx.MkSolver/MkConst) et pyz3 (pip z3-solver, `from z3 import *`, API fonctionnelle Solver()/Int()) sont les deux bindings de la meme lib C++ Z3 sous-jacente — pas un pont intermediaire type IKVM/PythonNet. Parite firsthand sur le concept central (SMT de base, contrainte insatisfiable) cellule 5 des deux notebooks : Python pyz3 `s.check() -> unsat` (x>5 ET x<3) == C# Microsoft.Z3 `s.check() -> UNSATISFIABLE`, meme verdict du meme moteur. Aucune asymetrie de machinerie a corriger."
