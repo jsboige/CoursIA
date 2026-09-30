@@ -23,8 +23,8 @@ Iterer sur un notebook GenAI (`MyIA.AI.Notebooks/GenAI/`) contre la stack auto-h
 
 ### Phase 1 — Pre-flight (CLI genai-stack)
 ```
-python genai.py docker        # service up ?
-python genai.py auth          # token present + correct (Bearer comfyui / Basic forge / none vllm) ?
+python genai.py docker status # service up ? (docker exige sa sous-commande : status/start/stop — commands/docker.py:277)
+python genai.py auth audit    # token present + correct (Bearer comfyui / Basic forge / none vllm) ? (auth exige une action : init/sync/audit/get-token/reconstruct-env)
 python genai.py gpu           # VRAM libre sur le GPU cible ?
 python genai.py quant summary # bonne quant chargee ?
 ```
