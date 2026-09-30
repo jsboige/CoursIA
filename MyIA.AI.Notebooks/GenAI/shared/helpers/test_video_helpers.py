@@ -303,9 +303,17 @@ class _FakeClip:
     def __init__(self):
         self.closed = False
         self.audio_set = None
+        self.subclipped_arg = None
+
+    # moviepy 2.x : `.subclip()` -> `.subclipped()`. On garde un alias
+    # `subclip` (qui delegue a `subclipped`) au cas ou du code 1.x
+    # resurgirait dans la suite.
+    def subclipped(self, start, end=None):
+        self.subclipped_arg = (start, end)
+        return self
 
     def subclip(self, start, end=None):
-        return self
+        return self.subclipped(start, end)
 
     def resize(self, size):
         return self
@@ -322,6 +330,9 @@ class _FakeClip:
 
 
 def _install_moviepy_stub(video_cls=None, audio_cls=None, concat_fn=None):
+    # moviepy 2.x : `from moviepy import VideoFileClip, ...` (top-level).
+    # On expose les classes au top-level ; on garde aussi `moviepy.editor`
+    # comme alias pour les tests qui le reference encore par heritage 1.x.
     editor = ModuleType("moviepy.editor")
     if video_cls is not None:
         editor.VideoFileClip = video_cls
@@ -329,9 +340,15 @@ def _install_moviepy_stub(video_cls=None, audio_cls=None, concat_fn=None):
         editor.AudioFileClip = audio_cls
     if concat_fn is not None:
         editor.concatenate_videoclips = concat_fn
-    mod = ModuleType("moviepy")
-    mod.editor = editor
-    sys.modules["moviepy"] = mod
+    top = ModuleType("moviepy")
+    if video_cls is not None:
+        top.VideoFileClip = video_cls
+    if audio_cls is not None:
+        top.AudioFileClip = audio_cls
+    if concat_fn is not None:
+        top.concatenate_videoclips = concat_fn
+    top.editor = editor
+    sys.modules["moviepy"] = top
     sys.modules["moviepy.editor"] = editor
     return editor
 
@@ -396,10 +413,11 @@ def test_add_audio_to_video_trims_audio_when_longer(monkeypatch, tmp_path):
         def __init__(self):
             self.duration = 30.0
             self.closed = False
-            self.subclipped = None
+            self.subclipped_arg = None
 
-        def subclip(self, start, end):
-            self.subclipped = (start, end)
+        # moviepy 2.x : `.subclip()` -> `.subclipped()`.
+        def subclipped(self, start, end):
+            self.subclipped_arg = (start, end)
             return self
 
         def close(self):
@@ -416,7 +434,7 @@ def test_add_audio_to_video_trims_audio_when_longer(monkeypatch, tmp_path):
         sys.modules.pop("moviepy.editor", None)
     assert out.parent.exists()
     # Audio was trimmed because audio.duration > video.duration.
-    assert audio.subclipped == (0, 10.0)
+    assert audio.subclipped_arg == (0, 10.0)
     assert video.audio_set is audio
 
 

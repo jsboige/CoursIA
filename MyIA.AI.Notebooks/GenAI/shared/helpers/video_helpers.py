@@ -254,7 +254,9 @@ def concatenate_videos(paths: List[str], output_path: str):
         paths: Liste de chemins vers les videos source
         output_path: Chemin du fichier de sortie
     """
-    from moviepy.editor import VideoFileClip, concatenate_videoclips
+    # moviepy 2.x : `moviepy.editor` est l'ancienne API 1.x ; les classes vivent
+    # desormais au top-level de `moviepy`. Voir video_helpers.py l.279/311/329.
+    from moviepy import VideoFileClip, concatenate_videoclips
 
     clips = [VideoFileClip(str(p)) for p in paths]
     final = concatenate_videoclips(clips)
@@ -276,14 +278,16 @@ def add_audio_to_video(video_path: str, audio_path: str, output_path: str):
         audio_path: Chemin du fichier audio
         output_path: Chemin du fichier de sortie
     """
-    from moviepy.editor import VideoFileClip, AudioFileClip
+    from moviepy import VideoFileClip, AudioFileClip
 
     video = VideoFileClip(str(video_path))
     audio = AudioFileClip(str(audio_path))
 
-    # Ajuster la duree audio si necessaire
+    # Ajuster la duree audio si necessaire.
+    # moviepy 2.x : `.subclip()` est devenu `.subclipped()` (le suffixe en -ed
+    # est la convention retenue par moviepy 2.x pour les methodes non-destructives).
     if audio.duration > video.duration:
-        audio = audio.subclip(0, video.duration)
+        audio = audio.subclipped(0, video.duration)
 
     video_with_audio = video.set_audio(audio)
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
@@ -308,9 +312,10 @@ def trim_video(path: str, start: float, end: float, output_path: str):
         end: Timestamp de fin (secondes)
         output_path: Chemin du fichier de sortie
     """
-    from moviepy.editor import VideoFileClip
+    from moviepy import VideoFileClip
 
-    clip = VideoFileClip(str(path)).subclip(start, end)
+    # moviepy 2.x : `.subclip()` -> `.subclipped()`.
+    clip = VideoFileClip(str(path)).subclipped(start, end)
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     clip.write_videofile(str(output_path), logger=None)
     clip.close()
@@ -326,7 +331,7 @@ def resize_video(path: str, width: int, height: int, output_path: str):
         height: Nouvelle hauteur
         output_path: Chemin du fichier de sortie
     """
-    from moviepy.editor import VideoFileClip
+    from moviepy import VideoFileClip
 
     clip = VideoFileClip(str(path)).resize((width, height))
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
