@@ -151,7 +151,7 @@ Livre de reference : *Hands-On AI Trading* (Pik, Chan, Broad, Sun, Singh -- Wile
 - **Solution open-core en Python et C#**
   - 3 environnements : QuantConnect Cloud, Lean-cli + VS Code, Lean local
   - Pipeline complet : recherche -> backtest -> paper trading -> live trading
-  - **Utilisee dans ce cours** : 28 notebooks progressifs + 67 projets backtestes dans ce depot
+  - **Utilisee dans ce cours** : notebooks progressifs + 67 projets backtestes dans ce depot
 
 <div v-click="1">
 
