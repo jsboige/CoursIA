@@ -1662,18 +1662,18 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Geometry/Geometry-01-From-Figure-To-Equation.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Geometry"
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/Geometry-01-From-Figure-To-Equation.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Geometry/Geometry-02-From-Equation-To-Proof.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Geometry"
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/Geometry-02-From-Equation-To-Proof.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Geometry/Geometry-03-Wu-Method-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Geometry"
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/Geometry-03-Wu-Method-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry"
     },
     {
       "kind": "orphan_entry",

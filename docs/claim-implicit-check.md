@@ -42,7 +42,7 @@ faits :
    — voir [proactive-coordination.md §L1356](../.claude/rules/proactive-coordination.md) (R5 hard) ; un épisode précurseur avait été tracé sur
    **#8835/#8836** (doublon mergé), qui ne se confond pas avec #13562.
 
-Le `check_lane_claim.py` actuel (3682 lignes, PR #9775) détecte les **claims
+Le `check_lane_claim.py` actuel (PR #9775) détecte les **claims
 explicites** (commentaire serveur `[CLAIMED] lane X:W -- paths: ...`) ; il **ne
 détecte pas** les PRs ouvertes par une autre lane qui touchent le même chemin
 sans claim d'issue. C'est précisément le trou que cette procédure ferme à la
