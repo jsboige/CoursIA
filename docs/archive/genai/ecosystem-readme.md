@@ -89,9 +89,9 @@ Bienvenue dans l'**Écosystème GenAI Images CoursIA** - une plateforme complèt
 
 ### ⏱️ Durées Estimées
 
-- **🟢 Niveau Foundation** : 2-3 heures (4 notebooks)
-- **🟠 Niveau Advanced** : 4-5 heures (3 notebooks)
-- **🔴 Niveau Expert** : 6-8 heures (7 notebooks)
+- **🟢 Niveau Foundation** : 2-3 heures
+- **🟠 Niveau Advanced** : 4-5 heures
+- **🔴 Niveau Expert** : 6-8 heures
 
 **Total : ~15 heures** de formation complète GenAI Images
 

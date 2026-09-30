@@ -94,7 +94,7 @@ Cette série est **6ᵉ dans le rollout** à présenter exclusivement des **figu
 
 ## Conformité règles
 
-- **§A single-subject** : 1 sujet (audit figures Planners), 1 sous-dossier, 1 fichier. Bien sous plafond 3000L.
+- **§A single-subject** : 1 sujet (audit figures Planners), 1 sous-dossier. Bien sous plafond 3000L.
 - **§E doctrine corrigée** (issue #5780) : pas de section `## Galerie`, figures inline dans la prose racine (lignes 54, 56, 62, 68, 70 du README) avec alt-text décrivant le contenu réel vérifié par lecture directe.
 - **R1 catalog-pr-hygiene** : `git diff origin/main..HEAD -- "**/CATALOG-STATUS*" "**/COURSE_CATALOG*"` = vide. Section Planners utilise CATALOG-STATUS (lignes 3-8 du README), R1 respectée (catalogue byte-identique à main).
 - **L268 #4 LF-only** : `git diff | tr -cd '\r' | wc -c` = 0. Pas de retour chariot dans le diff.

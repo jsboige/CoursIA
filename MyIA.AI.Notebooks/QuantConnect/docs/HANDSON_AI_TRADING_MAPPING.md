@@ -2,7 +2,7 @@
 
 **Livre** : "Hands-On AI Trading with Python, QuantConnect, and AWS" (2025) par Jared Broad (CEO QuantConnect)
 **Repo GitHub** : https://github.com/QuantConnect/HandsOnAITradingBook
-**Série** : CoursIA QuantConnect AI Trading (27 notebooks Python, C# planifié)
+**Série** : CoursIA QuantConnect AI Trading (notebooks Python, C# planifié)
 **Objectif** : Aider les étudiants à faire le lien entre le livre et nos notebooks
 
 ---
