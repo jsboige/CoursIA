@@ -25,7 +25,7 @@ Jusqu'à la restructuration de la série, la théorie de la décision était imb
 | 6 | [DecInfer-06-Value-Information](DecInfer-06-Value-Information.ipynb) | 45 min | EVPI, EVSI, valeur de l'information |
 | 7 | [DecInfer-07-Expert-Systems](DecInfer-07-Expert-Systems.ipynb) | 50 min | Systèmes experts, Minimax, regret |
 | 8 | [DecInfer-08-Sequential](DecInfer-08-Sequential.ipynb) | 60 min | MDPs, itération valeur/politique |
-| 9 | [DecInfer-09-Lean-Gittins](DecInfer-09-Lean-Gittins.ipynb) | 45 min | Preuves formelles Lean 4, indice de Gittins, SFABP |
+| 08b | [DecInfer-08b-Lean-Gittins](DecInfer-08b-Lean-Gittins.ipynb) | 45 min | Preuves formelles Lean 4, indice de Gittins, SFABP |
 | 10 | [DecInfer-10-Thompson-Sampling](DecInfer-10-Thompson-Sampling.ipynb) | 60 min | Thompson Sampling bayésien, posterior Beta-Bernoulli par le moteur, regret vs ε-greedy/UCB1 |
 
 **Durée totale** : ~8h
@@ -113,7 +113,7 @@ Systèmes experts (architecture, historique) ; décision sous **incertitude sév
 
 **Processus de Décision Markoviens** (MDPs) ; équation de Bellman `V(s) = max_a [R(s,a) + γ·Σ P(s'|s,a)·V(s')]` ; **itération de valeur** et **itération de politique** ; alternatives (LP, Expectimax, RTDP) ; reward shaping ; POMDPs. Pont vers la série [RL](../../../RL/README.md).
 
-### DecInfer-09 : Companion Lean — indice de Gittins
+### DecInfer-08b : Companion Lean — indice de Gittins
 
 **Durée** : 45 min | **Kernel** : Lean 4 (WSL) | **Prérequis** : DecInfer-08, bases Lean 4
 
@@ -139,6 +139,6 @@ Applications : A/B testing adaptatif, recommandation en ligne, essais cliniques 
 
 ## Conclusion
 
-La théorie de la décision bayésienne ferme la boucle ouverte par le corpus bayésien : un posterior n'est utile que s'il informe une **action**. De l'**utilité espérée** (DecInfer-01) aux **MDPs** (DecInfer-08), cet arc montre que décider sous incertitude est un calcul rigoureux — et les companions Lean 4 (DecInfer-02, DecInfer-02b, DecInfer-09) ancrent ce calcul dans la **preuve formelle** : l'indice de Gittins n'est pas une heuristique, c'est un théorème.
+La théorie de la décision bayésienne ferme la boucle ouverte par le corpus bayésien : un posterior n'est utile que s'il informe une **action**. De l'**utilité espérée** (DecInfer-01) aux **MDPs** (DecInfer-08), cet arc montre que décider sous incertitude est un calcul rigoureux — et les companions Lean 4 (DecInfer-02, DecInfer-02b, DecInfer-08b) ancrent ce calcul dans la **preuve formelle** : l'indice de Gittins n'est pas une heuristique, c'est un théorème.
 
 Bonne exploration de la théorie de la décision bayésienne !
