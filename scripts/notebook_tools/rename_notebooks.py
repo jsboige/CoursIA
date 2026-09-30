@@ -853,7 +853,16 @@ def main(argv: list[str] | None = None) -> int:
     if collisions:
         print("COLLISIONS dans la table :", collisions)
         return 1
-    exist = [new for _, new in pairs if (repo / new).exists()]
+    # NTFS est insensible a la casse : pour un renommage case-only
+    # (-Csharp -> -CSharp), la cible « existe » parce qu'elle EST la source.
+    # Un vrai conflit est une cible existante distincte de sa propre source.
+    def _distinct(path_new: str, path_old: str) -> bool:
+        try:
+            return not os.path.samefile(repo / path_old, repo / path_new)
+        except OSError:
+            return True
+    exist = [new for old, new in pairs
+             if (repo / new).exists() and _distinct(new, old)]
     if exist:
         print("CIBLES DEJA PRESENTES :", exist)
         return 1
