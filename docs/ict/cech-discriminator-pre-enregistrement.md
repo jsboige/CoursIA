@@ -66,12 +66,12 @@ Les trois critères sont **re-pré-enregistrés** sur les grandeurs de la filtra
 
 ## Ce que la PR future portera
 
-- Module `MyIA.AI.Notebooks/IIT/ICT-Series/ict/nerve_discriminant.py` (~80 lignes, idempotent) :
+- Module `MyIA.AI.Notebooks/IIT/ICT-Series/ict/nerve_discriminant.py` (idempotent) :
   - `build_nerve_b1(sections_substrat)` → `dict[str, float]` (`{n_classes_b1, persistance_totale_b1, persistance_max_b1, intervals_b1}`). **Input = 90 points à plat par substrat** (cf. §2 Construction).
   - `control_positive_4pts_square() -> bool` — porte de cohérence instrumentale (cf. §2 Contrôle positif interne). **DOIT être vert avant** toute mesure.
   - `verdict_falsifiable(b1_by_substrat, s2_over_s1_by_substrat) -> VerdictFalsifiable` — applique les 4 critères P1–P4, retourne `TRIVIAL` avec `P<n>_failed` explicite sinon.
   - `aggregate(substrat_b1) -> AggregateReport`.
-- Notebook `ICT-15d-Discriminant-Nerve.ipynb` (≥ 8 cellules : imports, contrôle positif 4 pts carré, chargement sections par substrat, mise à plat 90 points, construction du nerf, persistance, **3 exercices stub C.1** : `# TODO étudiant : remplace la filtration gudhi native par une filtration kNN-distance et observe le verdict`) — planches de visualisation et verdict falsifiable.
+- Notebook `ICT-15d-Discriminant-Nerve.ipynb` (imports, contrôle positif 4 pts carré, chargement sections par substrat, mise à plat 90 points, construction du nerf, persistance, **3 exercices stub C.1** : `# TODO étudiant : remplace la filtration gudhi native par une filtration kNN-distance et observe le verdict`) — planches de visualisation et verdict falsifiable.
 - Sortie committée (C.2) : tableau récapitulatif `n_classes_b1 / persistance_totale / persistance_max / verdict` sur les 4 substrats.
 - PR corps : section `## Diagnostic dérive` (C.4) obligatoire + section `## Verdict` falsifiable verbatim avec mention explicite des critères P1–P4 vérifiés ou violés.
 - **Dépendance ajoutée** : `gudhi>=3.13` dans `MyIA.AI.Notebooks/IIT/requirements.txt` (section "Optionnel (utilitaires ponctuels, 1-2 usages)" à créer si absente). Documenté ici pour traçabilité — **rien n'est commité sur les requirements dans ce PR de pré-enregistrement**.
