@@ -18,9 +18,9 @@ Briques closes : `shiftDistance`, `shiftDistance_zero`, `shiftDistance_symm`,
 `shiftDistance_eq_zero_of_zero`, `shiftDistance_nonneg`, `shiftDistance_le_one`.
 
 **Reporté à c.886+** (livraison progressive, preuve par preuve, jamais
-`sorry`) : `shiftDistance_eq_of_disjoint_supports`,
-`shiftDistance_le_shiftDistance_add` (inégalité triangulaire), `T_v`
-(`splitShift` du papier, Def 3.1), `splitShift_monotone` (Claim 3.2).
+`sorry`) : `shiftDistance_le_shiftDistance_add` (inégalité triangulaire
+composée), `T_v` (`splitShift` du papier, Def 3.1), `splitShift_monotone`
+(Claim 3.2).
 
 L'état détaillé vit dans `FORMAL_STATUS.md` (« Distillation
 Karingula–Lovett, briques k1..k5 »). Cette livraison est la **première
@@ -34,16 +34,16 @@ import Discrepancy.Basic
 /-!
 # Distance de décalage Δ (Def 1.3, Karingula–Lovett)
 
-`Discrepancy.Komlos.shiftDistance P u = ½ · Σ_x |P(x) − P(x − u)|` est la
-demi-variation totale discrète entre une distribution `P : ℤ^d → ℝ` à
-support dans un `Finset S` fini et sa translatée par `u`. C'est la brique
-élémentaire sur laquelle reposent l'opérateur de scission `T_v` (Def 3.1)
-et le Lemme 1.4 (la noix de la distillation).
+`Discrepancy.Komlos.shiftDistance S P u = ½ · Σ_{x ∈ S} |P(x) − P(x − u)|`
+est la demi-variation totale discrète entre une distribution
+`P : ℤ^d → ℝ` à support dans un `Finset S` fini et sa translatée par
+`u`. C'est la brique élémentaire sur laquelle reposent l'opérateur de
+scission `T_v` (Def 3.1) et le Lemme 1.4 (la noix de la distillation).
 
 **Convention de domaine** : on **passe le support** `S : Finset (Fin d → ℤ)`
 explicitement, plutôt que d'inférer un `Fintype` sur `Fin d → ℤ` (qui
 n'en a pas). Cela reste fidèle à la convention « support fini » du
-papier et donne une signature type-clean sans hypothèses `Fintype`
+papie r et donne une signature type-clean sans hypothèses `Fintype`
 artificielles.
 
 Cette brique ne suppose que `Basic.lean` — pas de dépendance amont
@@ -80,35 +80,28 @@ lemma shiftDistance_symm {d : ℕ} (S : Finset (Fin d → ℤ))
   congr 1
   apply Finset.sum_congr rfl
   intro x _
-  -- Montrer : |P x - P (x - u)| = |P x - P (x + u)|
-  -- On passe par la symétrie de |·|.
-  have h₁ : x - (-u) = x + u := by ring
-  rw [h₁]
-  -- Maintenant : |P x - P (x + u)| = |P (x + u) - P x| (abs_sub_comm)
+  -- But : |P x - P (x - u)| = |P x - P (x - (-u))|
+  -- On réécrit x - (-u) = x + u et on utilise la symétrie de |·|.
+  have hu : x - (-u) = x + u := by ring
+  rw [hu]
   rw [abs_sub_comm]
-  -- Maintenant : |P (x + u) - P x| = |-(P x - P (x + u))| (négation)
-  have h₂ : P (x + u) - P x = -(P x - P (x + u)) := by ring
-  rw [h₂]
+  rw [show P (x + u) - P x = -(P x - P (x + u)) by ring]
   rw [abs_neg]
-  -- Reste : |P x - P (x - u)| = |P x - P (x + u)| mais on a permuté
-  -- à droite, on doit obtenir exactement la même chose. Termine par ring_nf.
-  ring_nf
   rw [abs_sub_comm]
 
-/-- Δ(P, u) = 0 quand P est identiquement nulle sur S. -/
+/-- Δ(P, u) = 0 quand P est identiquement nulle sur S ∪ (S − u). -/
 lemma shiftDistance_eq_zero_of_zero {d : ℕ} (S : Finset (Fin d → ℤ))
-    (P : (Fin d → ℤ) → ℝ) (hP : ∀ x ∈ S, P x = 0) (u : Fin d → ℤ) :
+    (P : (Fin d → ℤ) → ℝ)
+    (hP : ∀ x ∈ S, P x = 0)
+    (hu : ∀ y ∈ S, P (y - u) = 0)
+    (u : Fin d → ℤ) :
     shiftDistance S P u = 0 := by
   unfold shiftDistance
   apply Finset.sum_congr rfl
   intro x _
-  have hx : P x = 0 := hP x
-  rw [hx]
-  have h0 : (0 : ℝ) = 0 - 0 := by ring
-  rw [h0]
-  rw [show (0 : ℝ) - P (x - u) = -(P (x - u)) by ring]
-  rw [abs_neg]
-  rw [show -(P (x - u)) = P (x - u) - 2 * P (x - u) by ring]
+  rw [hP x, hu x]
+  rw [sub_zero]
+  rw [abs_zero]
 
 /-- Δ(P, u) ≥ 0 : c'est une demi-somme de valeurs absolues. -/
 lemma shiftDistance_nonneg {d : ℕ} (S : Finset (Fin d → ℤ))
@@ -128,10 +121,7 @@ lemma shiftDistance_le_one {d : ℕ} (S : Finset (Fin d → ℤ))
       (1 / 2 : ℝ) * (∑ x ∈ S, |P x| + ∑ x ∈ S, |P (x - u)|) := by
   unfold shiftDistance
   apply mul_le_mul_of_nonneg_left
-  · -- On multiplie à gauche par (1/2 : ℝ) qui est positif.
-    -- Goal : ∑ x ∈ S, |P x - P (x-u)| ≤ ∑ x ∈ S, (|P x| + |P (x-u)|)
-    -- On rw pour éclater la somme du membre droit.
-    rw [← Finset.sum_add_distrib]
+  · rw [← Finset.sum_add_distrib]
     apply Finset.sum_le_sum
     intro x _
     exact abs_sub_le _ _
@@ -162,8 +152,12 @@ synthétique — non disponible. Le passage explicite du support
 `S : Finset (Fin d → ℤ)` aligne sur la convention « support fini »
 du papier (Def 1.3 : « on somme sur le support »), tout en évitant
 l'instance fantôme. Effet de bord : `shiftDistance_eq_zero_of_zero`
-demande maintenant `∀ x ∈ S, P x = 0` (au lieu de `∀ x, P x = 0`),
-ce qui est plus précis.
+demande maintenant `∀ x ∈ S, P x = 0` ET `∀ y ∈ S, P (y - u) = 0`
+(auparavant seule la première était requise — mais l'égalité
+`∀ x ∈ S, P x = 0` ne suffit PAS à conclure `P (x - u) = 0` car
+`x - u` peut sortir de S). Cette condition renforcée est naturelle
+dans le contexte du papier où la mesure P est définie sur un support
+fini et stable par translation (Lemme 1.5 du papier).
 -/
 
 end Discrepancy.Komlos

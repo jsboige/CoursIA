@@ -36,7 +36,7 @@ import Discrepancy.Basic
 /-!
 # Shift distance Δ (Def 1.3, Karingula–Lovett)
 
-`Discrepancy.Komlos.shiftDistance S P u = ½ · Σ_{x ∈ S} |P(x) − P(x − u)|`
+`Discrepancy.Komlos_en.shiftDistance S P u = ½ · Σ_{x ∈ S} |P(x) − P(x − u)|`
 is the half-total-variation distance between a distribution
 `P : ℤ^d → ℝ` supported in a finite `Finset S` and its translation by
 `u`. It is the elementary brick underlying the splitting operator
@@ -97,20 +97,19 @@ lemma shiftDistance_symm {d : ℕ} (S : Finset (Fin d → ℤ))
   ring_nf
   rw [abs_sub_comm]
 
-/-- Δ(P, u) = 0 when P is identically zero on S. -/
+/-- Δ(P, u) = 0 when P is identically zero on S ∪ (S − u). -/
 lemma shiftDistance_eq_zero_of_zero {d : ℕ} (S : Finset (Fin d → ℤ))
-    (P : (Fin d → ℤ) → ℝ) (hP : ∀ x ∈ S, P x = 0) (u : Fin d → ℤ) :
+    (P : (Fin d → ℤ) → ℝ)
+    (hP : ∀ x ∈ S, P x = 0)
+    (hu : ∀ y ∈ S, P (y - u) = 0)
+    (u : Fin d → ℤ) :
     shiftDistance S P u = 0 := by
   unfold shiftDistance
   apply Finset.sum_congr rfl
   intro x _
-  have hx : P x = 0 := hP x
-  rw [hx]
-  have h0 : (0 : ℝ) = 0 - 0 := by ring
-  rw [h0]
-  rw [show (0 : ℝ) - P (x - u) = -(P (x - u)) by ring]
-  rw [abs_neg]
-  rw [show -(P (x - u)) = P (x - u) - 2 * P (x - u) by ring]
+  rw [hP x, hu x]
+  rw [sub_zero]
+  rw [abs_zero]
 
 /-- Δ(P, u) ≥ 0: it is a half-sum of absolute values. -/
 lemma shiftDistance_nonneg {d : ℕ} (S : Finset (Fin d → ℤ))
@@ -130,10 +129,7 @@ lemma shiftDistance_le_one {d : ℕ} (S : Finset (Fin d → ℤ))
       (1 / 2 : ℝ) * (∑ x ∈ S, |P x| + ∑ x ∈ S, |P (x - u)|) := by
   unfold shiftDistance
   apply mul_le_mul_of_nonneg_left
-  · -- We multiply on the left by (1/2 : ℝ) which is positive.
-    -- Goal : ∑ x ∈ S, |P x - P (x-u)| ≤ ∑ x ∈ S, (|P x| + |P (x-u)|)
-    -- We rw to split the sum on the right side.
-    rw [← Finset.sum_add_distrib]
+  · rw [← Finset.sum_add_distrib]
     apply Finset.sum_le_sum
     intro x _
     exact abs_sub_le _ _
@@ -165,8 +161,10 @@ inferring the support via `Finset.univ` required a synthetic
 convention of the paper (Def 1.3: « sum over the support »), while
 avoiding the phantom instance. Side effect:
 `shiftDistance_eq_zero_of_zero` now requires
-`∀ x ∈ S, P x = 0` (instead of `∀ x, P x = 0`), which is more
-precise.
+`∀ x ∈ S, P x = 0` AND `∀ y ∈ S, P (y - u) = 0` (the latter is needed
+because `x - u` may leave `S`). This reinforced condition is natural
+in the paper context where the measure P is defined on a finite,
+translation-stable support (Lemma 1.5 of the paper).
 -/
 
 end Discrepancy.Komlos_en
