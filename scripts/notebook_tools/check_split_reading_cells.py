@@ -96,6 +96,19 @@ signalait :
     d'exercice (garde-fou d'origine, test
     ``test_carveout_ne_couvre_pas_un_titre_de_section``).
 
+Carve-out #18602 (Tell c.935-L1 ★★) -- conversion code->md en place : quand
+une cellule de code EXECUTE (avec ``execution_count`` ou ``outputs``) est
+convertie en cellule markdown (fence ````python``, meme id, meme position
+index), elle n'est PAS une lecture ajoutee : la lecture md qui suit reste
+legitime et son rattachement a la sortie precedente (compte par sortie) ne
+bouge pas. La garde discrimine par id commun positionnel entre la tete et
+la base : un id neuf (cellule ajoutee reellement) n'est pas couvert, ce qui
+preserve la sensibilite du cliquet aux ajouts reels. Deuxieme pass couvert
+dans la liste ``attached`` : exclure les cellules dont l'id existait deja en
+base (le main loop les a traitees comme reecritures, pas comme ajouts).
+Repro : ``scripts/tests/test_split_reading_code_to_md.py`` (3 tests), plus
+self-test 7 (negatif 4 dans ``self_test()`` ci-dessous).
+
 Mode CLIQUET (#17044) : ``--base-ref <ref> [--head HEAD]`` compare chaque carnet
 modifie entre la base et la tete et rend le verdict du cliquet -- rouge
 seulement si la PR **augmente** ce que l'organe voit sur un carnet qu'elle
@@ -116,11 +129,13 @@ touche :
     carnet absent de la base comme « ajoute » ferait rougir la PR entiere sur un
     probleme de fetch.
 
-``--self-test`` joue six controles, hors git et hors reseau : trois positifs
+``--self-test`` joue sept controles, hors git et hors reseau : trois positifs
 (lecture empilee nommee ; lecture ajoutee SANS en-tete, invisible au detecteur
 consecutive ; fusion blanche **plus** une lecture ajoutee sur une AUTRE sortie)
-et trois negatifs (deux lectures fusionnees en une ; modification de code sans
-lecture ajoutee ; encart sans code execute au-dessus).
+et quatre negatifs (deux lectures fusionnees en une ; modification de code sans
+lecture ajoutee ; encart sans code execute au-dessus ; carve-out #18602
+code->md : la lecture legitime qui suit la conversion n'est pas ajoutee -- voir
+bloc dedie ci-dessus).
 
 Codes de retour : 0 = aucun finding ; 1 = cible introuvable, fichier designe
 illisible, ou base irresoluble ; 2 = findings (avec --fail-on-findings). En mode
@@ -1140,6 +1155,37 @@ def self_test() -> int:
         f"added={[(f['type'], f['cells']) for f in added6]} "
         f"compte par sortie {dict(readings_by_output(base6))} -> "
         f"{dict(readings_by_output(head6))}",
+    ))
+
+    # Negatif 4 -- carve-out #18602 : conversion code->md en place NE signale
+    # PAS la lecture legitime qui suit. Topologie mesuree sur Lean-10-LeanDojo
+    # c.60-c.65 (PR #18440) : un code execute (sortie) devient une fence
+    # markdown a meme id / meme position ; la lecture md qui suit reste
+    # legitime et n'est pas ajoutee. La garde discrimine par id commun
+    # positionnel (cf. decision c.935-L1 ★★).
+    code_md_conv = (
+        "code",
+        "print(pattern_llm_pseudo)",
+        "3bd10c11",
+    )
+    fence = (
+        "markdown",
+        "```python\nprint(pattern_llm_pseudo)\n```",
+        "3bd10c11",
+    )
+    base7 = _nb([
+        code_md_conv,
+        lecture,
+    ])
+    head7 = _nb([
+        fence,
+        lecture,
+    ])
+    added7 = detect_added_readings(head7, base7)
+    checks.append((
+        "negatif 4 carve-out #18602 code->md ne signale pas la lecture suivante",
+        not added7,
+        f"added={[f['type'] for f in added7]}",
     ))
 
     ok = True
