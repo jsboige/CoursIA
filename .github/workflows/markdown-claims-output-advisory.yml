@@ -117,6 +117,13 @@ jobs:
             echo "::notice::markdown-claims-output: aucun notebook modifie entre $BASE et HEAD -- rien a scanner." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
+          # NanoClaw review nit (b): say the scan is bounded instead of letting
+          # the sticky comment claim full coverage of "the notebooks this PR
+          # changed" on a campaign-sized PR.
+          if [ ${#CHANGED[@]} -eq 50 ]; then
+            echo "truncated=1" >> "$GITHUB_OUTPUT"
+            echo "::notice::markdown-claims-output: scan borne a 50 notebooks -- troncature possible au-dela (campagne)." >> "$GITHUB_STEP_SUMMARY"
+          fi
           # One bounded invocation preserves checker exit codes and emits one
           # valid JSON document; the array also preserves spaces in paths.
           python scripts/check_markdown_claims_output.py --json "${CHANGED[@]}" \
@@ -145,7 +152,7 @@ jobs:
         with:
           header: markdown-claims-output-advisory
           message: |
-            ${{ steps.run.outputs.exit == '0' && '✅ No prose/output mismatch detected in the notebooks this PR changed.' || steps.run.outputs.exit == 'abstain' && '⚠️ Detector abstained (merge-base introuvable, shallow fetch or unanchored branch).' || '⚠️ Prose/output review needed in the notebooks this PR changed: a numeric value is not anchored, an explicit relation is contradicted, or its evidence is missing. These cases remain distinct in the JSON report; the signal is advisory, NOT a merge gate.' }}
+            ${{ steps.run.outputs.exit == '0' && '✅ No prose/output mismatch detected in the notebooks this PR changed.' || steps.run.outputs.exit == 'abstain' && '⚠️ Detector abstained (merge-base introuvable, shallow fetch or unanchored branch).' || '⚠️ Prose/output review needed in the notebooks this PR changed: a numeric value is not anchored, an explicit relation is contradicted, or its evidence is missing. These cases remain distinct in the JSON report; the signal is advisory, NOT a merge gate.' }}${{ steps.run.outputs.truncated == '1' && '\n\n⚠️ Scan borné à 50 carnets — couverture partielle sur les PR de campagne (> 50 notebooks changed, only the first 50 were scanned).' || '' }}
 
             Scope = notebooks CHANGED in this PR, not the whole corpus. Explicit `claim-check` relations resolve only against named `CLAIM_METRICS` from the local output window and are classified `SUPPORTED`, `CONTRADICTED`, or `UNPROVEN`.
             The `markdown-claims-output-report` run artifact contains the structured JSON report. See `python scripts/check_markdown_claims_output.py --help` for re-running locally.
