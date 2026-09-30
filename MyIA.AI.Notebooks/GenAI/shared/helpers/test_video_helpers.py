@@ -305,9 +305,11 @@ class _FakeClip:
         self.audio_set = None
         self.subclipped_arg = None
 
-    # moviepy 2.x : `.subclip()` -> `.subclipped()`. On garde un alias
-    # `subclip` (qui delegue a `subclipped`) au cas ou du code 1.x
-    # resurgirait dans la suite.
+    # moviepy 2.x : `.subclip()` -> `.subclipped()` et `.resize()` -> `.resized()`,
+    # `.set_audio()` -> `.with_audio()` (le suffixe en -ed ou le prefixe with-
+    # distingue les methodes non-destructives des mutateurs, convention 2.x).
+    # On garde les alias 1.x (`subclip`, `resize`, `set_audio`) qui deleguent aux
+    # methodes 2.x, au cas ou du code heritage 1.x resurgirait dans la suite.
     def subclipped(self, start, end=None):
         self.subclipped_arg = (start, end)
         return self
@@ -315,12 +317,19 @@ class _FakeClip:
     def subclip(self, start, end=None):
         return self.subclipped(start, end)
 
+    def resized(self, size):
+        self.resized_arg = size
+        return self
+
     def resize(self, size):
+        return self.resized(size)
+
+    def with_audio(self, audio):
+        self.audio_set = audio
         return self
 
     def set_audio(self, audio):
-        self.audio_set = audio
-        return self
+        return self.with_audio(audio)
 
     def write_videofile(self, path, logger=None):
         self.written = path
@@ -392,7 +401,7 @@ def test_trim_video_creates_output_dir_and_writes_segment(monkeypatch, tmp_path)
     assert clip.written == str(out)
 
 
-def test_resize_video_delegates_to_resize(monkeypatch, tmp_path):
+def test_resize_video_delegates_to_resized(monkeypatch, tmp_path):
     clip = _FakeClip()
     _install_moviepy_stub(video_cls=lambda p: clip)
     out = tmp_path / "r" / "small.mp4"
@@ -404,6 +413,9 @@ def test_resize_video_delegates_to_resize(monkeypatch, tmp_path):
     assert out.parent.exists()
     assert clip.written == str(out)
     assert clip.closed is True
+    # moviepy 2.x : `.resize()` -> `.resized()`. Verifier l'API 2.x reellement
+    # appelee (et non l'alias 1.x deleguant).
+    assert clip.resized_arg == (320, 240)
 
 
 def test_add_audio_to_video_trims_audio_when_longer(monkeypatch, tmp_path):

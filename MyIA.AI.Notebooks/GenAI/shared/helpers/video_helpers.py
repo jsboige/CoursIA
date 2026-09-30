@@ -286,10 +286,11 @@ def add_audio_to_video(video_path: str, audio_path: str, output_path: str):
     # Ajuster la duree audio si necessaire.
     # moviepy 2.x : `.subclip()` est devenu `.subclipped()` (le suffixe en -ed
     # est la convention retenue par moviepy 2.x pour les methodes non-destructives).
+    # Idem pour `set_audio` -> `with_audio` (l'API non-destructive renommee).
     if audio.duration > video.duration:
         audio = audio.subclipped(0, video.duration)
 
-    video_with_audio = video.set_audio(audio)
+    video_with_audio = video.with_audio(audio)
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     video_with_audio.write_videofile(str(output_path), logger=None)
 
@@ -333,7 +334,9 @@ def resize_video(path: str, width: int, height: int, output_path: str):
     """
     from moviepy import VideoFileClip
 
-    clip = VideoFileClip(str(path)).resize((width, height))
+    # moviepy 2.x : `.resize()` est devenu `.resized()` (suffixe en -ed pour
+    # distinguer du mutateur homonyme, convention moviepy 2.x).
+    clip = VideoFileClip(str(path)).resized((width, height))
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     clip.write_videofile(str(output_path), logger=None)
     clip.close()
