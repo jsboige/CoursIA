@@ -358,6 +358,56 @@ def arcPartition (d : KnotDiagram) : List (List Nat) :=
   let pairs := d.crossings.map (fun c => (c.e2, c.e4))
   pairs.foldl (fun P p => mergePair P p.1 p.2) singles
 
+/-- Class merging is symmetric: folding on `(x, y)` or `(y, x)` yields the
+    same partition. First building block of R3 invariance (issue #16650):
+    the surgery rewrites the over-crossing pairs of the triangle with
+    orientations that differ between the two diagrams, and the reindexing
+    argument requires that the orientation of a pair leaves the resulting
+    partition unchanged. -/
+theorem mergePair_symm (P : List (List Nat)) (x y : Nat) :
+    mergePair P x y = mergePair P y x := by
+  simp [mergePair, Bool.and_comm, Bool.or_comm]
+
+/-- The take/cons/drop split restores the list: the pure-list reading
+    of the neighbourhood of index `i`, proved by induction on the list. -/
+theorem take_cons_drop_eq {α : Type _} (l : List α) (i : Nat)
+    (hi : i < l.length) :
+    l.take i ++ [l.get ⟨i, hi⟩] ++ l.drop (i + 1) = l := by
+  induction l generalizing i with
+  | nil => exact absurd hi (Nat.not_lt_zero i)
+  | cons a as ih =>
+    rcases i with _ | n
+    · have hget0 : (a :: as).get ⟨0, hi⟩ = a := rfl
+      rw [hget0, List.take_zero, List.nil_append]
+      simp [List.drop_succ_cons]
+    · have hn : n < as.length := by simpa using hi
+      have hget : (a :: as).get ⟨n + 1, hi⟩ = as.get ⟨n, hn⟩ := rfl
+      rw [List.take_succ_cons, List.drop_succ_cons, hget, List.cons_append]
+      exact congrArg (fun t => a :: t) (ih n hn)
+
+/-- The `arcPartition` fold is insensitive to the orientation of a single
+    pair: reversing the pair at position `i` leaves the produced partition
+    unchanged. This is the fold-level translation of `mergePair_symm` — the
+    connected R3 surgery rewrites the triangle pairs with orientations that
+    differ between the two diagrams, and this lemma absorbs those
+    differences (issue #16650, second brick). -/
+theorem foldl_mergePair_swap (pairs : List (Nat × Nat)) (i : Nat)
+    (hi : i < pairs.length) (P₀ : List (List Nat)) :
+    (pairs.take i ++ [(pairs.get ⟨i, hi⟩).swap] ++ pairs.drop (i + 1)).foldl
+        (fun P p => mergePair P p.1 p.2) P₀
+      = pairs.foldl (fun P p => mergePair P p.1 p.2) P₀ := by
+  have hmid : ∀ (m : Nat × Nat),
+      (pairs.take i ++ [m] ++ pairs.drop (i + 1)).foldl
+          (fun P p => mergePair P p.1 p.2) P₀
+        = (pairs.take i ++ [m.swap] ++ pairs.drop (i + 1)).foldl
+            (fun P p => mergePair P p.1 p.2) P₀ := by
+    intro m
+    obtain ⟨a, b⟩ := m
+    simp only [List.foldl_append, List.foldl_cons, List.foldl_nil,
+      Prod.swap_prod_mk]
+    rw [mergePair_symm]
+  rw [← hmid, take_cons_drop_eq pairs i hi]
+
 /-! #### The Fox fact: the over-strand pair shares one arc class
 
 The docstring of `alexanderEntry` claims that "every row sums to zero".
@@ -462,6 +512,367 @@ lemma sameClass_foldl_of_mem {pairs : List (Nat × Nat)} {P : List (List Nat)}
           (fun r hr => ⟨covered_mergePair (hcover r (List.mem_cons.mpr (Or.inr hr))).1,
                         covered_mergePair (hcover r (List.mem_cons.mpr (Or.inr hr))).2⟩)
           q hqs
+
+/-! ### Commutation of two merges — the `SameClass` reformulation
+
+The `arcPartition` fold applies the over-strand pairs in crossing order.
+`foldl_mergePair_swap` (above) shows that an adjacent swap of pairs
+preserves the list up to a `take`/`drop` — this is not list equality: the
+order of appearance inside the merged class differs (counterexample
+`P = [[1,3],[2],[4]]`, pairs `(1,2)` then `(3,4)`: the giant class is
+`[4,1,3,2]` in one order and `[2,1,3,4]` in the other — issue #16650).
+What does commute exactly is the underlying equivalence relation: two
+labels share a final class in one application order iff they share one in
+the other. The theorem `mergePair_mergePair_comm_equiv` establishes this
+through a complete characterization of `SameClass` after two merges
+(`sameClass_two_merges_iff`), whose shape is invariant under swapping the
+two groups.
+-/
+
+/-- `z` lives in a class of `P` carrying `x` or `y`: exactly the condition
+of landing in the merged class of `mergePair P x y`. -/
+def Touches (P : List (List Nat)) (x y z : Nat) : Prop :=
+  ∃ C ∈ P, z ∈ C ∧ ((C.contains x || C.contains y) = true)
+
+/-- A single class of `P` carries a label of group `{a, b}` and a label of
+group `{c, d}`: the two merges then produce one single class instead of
+two separate ones. -/
+def GroupsLinked (P : List (List Nat)) (a b c d : Nat) : Prop :=
+  ∃ C ∈ P, ((C.contains a || C.contains b) = true) ∧
+    ((C.contains c || C.contains d) = true)
+
+/-- A class "hit", read as memberships. -/
+lemma hit_iff_mem {C : List Nat} {x y : Nat} :
+    ((C.contains x || C.contains y) = true) ↔ (x ∈ C ∨ y ∈ C) := by
+  rw [Bool.or_eq_true, List.contains_iff_mem, List.contains_iff_mem]
+
+/-- Membership in the merged class, characterized on `P`. -/
+lemma mem_fused_iff {P : List (List Nat)} {x y z : Nat} :
+    z ∈ (P.filter (fun C => C.contains x || C.contains y)).flatten.eraseDups ↔
+      Touches P x y z := by
+  rw [List.mem_eraseDups, List.mem_flatten]
+  constructor
+  · rintro ⟨C, hC, hz⟩
+    obtain ⟨hCP, hcond⟩ := List.mem_filter.mp hC
+    exact ⟨C, hCP, hz, hcond⟩
+  · rintro ⟨C, hC, hz, hcond⟩
+    exact ⟨C, List.mem_filter.mpr ⟨hC, hcond⟩, hz⟩
+
+/-- `GroupsLinked` reads from group `{a, b}`: some class then carries `c`
+or `d`. -/
+lemma groupsLinked_iff {P : List (List Nat)} {a b c d : Nat} :
+    GroupsLinked P a b c d ↔ (Touches P a b c ∨ Touches P a b d) := by
+  constructor
+  · rintro ⟨C, hC, hab, hcd⟩
+    rw [hit_iff_mem] at hcd
+    rcases hcd with hc | hd
+    · exact Or.inl ⟨C, hC, hc, hab⟩
+    · exact Or.inr ⟨C, hC, hd, hab⟩
+  · rintro (⟨C, hC, hc, hab⟩ | ⟨C, hC, hd, hab⟩)
+    · exact ⟨C, hC, hab, by rw [hit_iff_mem]; exact Or.inl hc⟩
+    · exact ⟨C, hC, hab, by rw [hit_iff_mem]; exact Or.inr hd⟩
+
+/-- `GroupsLinked` is symmetric in the swap of the two groups. -/
+lemma groupsLinked_symm {P : List (List Nat)} {a b c d : Nat} :
+    GroupsLinked P a b c d ↔ GroupsLinked P c d a b := by
+  constructor <;> rintro ⟨C, hC, h1, h2⟩ <;> exact ⟨C, hC, h2, h1⟩
+
+/-- When the groups are not linked, the merged class of group `{a, b}`
+carries neither `c` nor `d`. -/
+lemma not_mem_fused_of_not_linked {P : List (List Nat)} {a b c d : Nat}
+    (h : ¬ GroupsLinked P a b c d) :
+    ¬ (c ∈ (P.filter (fun C => C.contains a || C.contains b)).flatten.eraseDups ∨
+       d ∈ (P.filter (fun C => C.contains a || C.contains b)).flatten.eraseDups) :=
+  fun hmem => h (groupsLinked_iff.mpr
+    (hmem.elim (fun hc => Or.inl (mem_fused_iff.mp hc))
+               (fun hd => Or.inr (mem_fused_iff.mp hd))))
+
+/-- `SameClass` after one merge, characterized on the original partition:
+a common class left intact, or two labels both caught by the merge. -/
+lemma sameClass_mergePair_iff {P : List (List Nat)} {x y u v : Nat} :
+    SameClass (mergePair P x y) u v ↔
+      (∃ C ∈ P, u ∈ C ∧ v ∈ C ∧ ¬((C.contains x || C.contains y) = true)) ∨
+      (Touches P x y u ∧ Touches P x y v) := by
+  rw [mergePair_eq]
+  constructor
+  · rintro ⟨D, hD, hu, hv⟩
+    rw [List.mem_append] at hD
+    rcases hD with hkeep | hF
+    · obtain ⟨hDP, hcond⟩ := List.mem_filter.mp hkeep
+      exact Or.inl ⟨D, hDP, hu, hv, by simpa using hcond⟩
+    · have hDeq : D = (P.filter (fun C => C.contains x || C.contains y)).flatten.eraseDups :=
+        List.mem_singleton.mp hF
+      subst hDeq
+      exact Or.inr ⟨mem_fused_iff.mp hu, mem_fused_iff.mp hv⟩
+  · rintro (⟨C, hC, hu, hv, hcond⟩ | ⟨hu, hv⟩)
+    · exact ⟨C, by rw [List.mem_append]; exact Or.inl (keep_filter hC hcond), hu, hv⟩
+    · exact ⟨_, by rw [List.mem_append]; exact Or.inr (List.mem_singleton.mpr rfl),
+        mem_fused_iff.mpr hu, mem_fused_iff.mpr hv⟩
+
+/-- `Touches` through a first merge `{a, b}`: either an intact class
+(outside group `{a, b}`) carrying `c` or `d`, or the merged class of group
+`{a, b}` itself. -/
+lemma touches_mergePair_iff {P : List (List Nat)} {a b c d z : Nat} :
+    Touches (mergePair P a b) c d z ↔
+      (∃ C ∈ P, z ∈ C ∧ ¬((C.contains a || C.contains b) = true) ∧
+        ((C.contains c || C.contains d) = true)) ∨
+      (Touches P a b z ∧ (Touches P a b c ∨ Touches P a b d)) := by
+  constructor
+  · rintro ⟨E, hE, hz, hcd⟩
+    rw [mergePair_eq, List.mem_append] at hE
+    rcases hE with hkeep | hF
+    · obtain ⟨hEP, hcond⟩ := List.mem_filter.mp hkeep
+      exact Or.inl ⟨E, hEP, hz, by simpa using hcond, hcd⟩
+    · have hEeq : E = (P.filter (fun C => C.contains a || C.contains b)).flatten.eraseDups :=
+        List.mem_singleton.mp hF
+      subst hEeq
+      rw [hit_iff_mem] at hcd
+      rcases hcd with hc | hd
+      · exact Or.inr ⟨mem_fused_iff.mp hz, Or.inl (mem_fused_iff.mp hc)⟩
+      · exact Or.inr ⟨mem_fused_iff.mp hz, Or.inr (mem_fused_iff.mp hd)⟩
+  · rintro (⟨C, hC, hz, hcond, hcd⟩ | ⟨hz, hcd⟩)
+    · exact ⟨C, by rw [mergePair_eq, List.mem_append]; exact Or.inl (keep_filter hC hcond),
+        hz, hcd⟩
+    · refine ⟨(P.filter (fun C => C.contains a || C.contains b)).flatten.eraseDups,
+        by rw [mergePair_eq, List.mem_append]; exact Or.inr (List.mem_singleton.mpr rfl),
+        mem_fused_iff.mpr hz, ?_⟩
+      rw [hit_iff_mem]
+      rcases hcd with hc | hd
+      · exact Or.inl (mem_fused_iff.mpr hc)
+      · exact Or.inr (mem_fused_iff.mpr hd)
+
+/-- Complete characterization of `SameClass` after two merges `{a, b}`
+then `{c, d}`, read on the original partition `P`. Only three routes:
+(i) a common class — a class is never split; or (ii) `x` and `y` caught
+by the merges, with either linked groups (one single giant class), or `x`
+and `y` caught by the same group. The shape is invariant under swapping
+the two groups — this is what yields the commutation. -/
+lemma sameClass_two_merges_iff {P : List (List Nat)} {a b c d x y : Nat} :
+    SameClass (mergePair (mergePair P a b) c d) x y ↔
+      (∃ C ∈ P, x ∈ C ∧ y ∈ C) ∨
+      ((Touches P a b x ∨ Touches P c d x) ∧ (Touches P a b y ∨ Touches P c d y) ∧
+        (GroupsLinked P a b c d ∨ (Touches P a b x ∧ Touches P a b y) ∨
+          (Touches P c d x ∧ Touches P c d y))) := by
+  rw [sameClass_mergePair_iff]
+  constructor
+  · rintro (⟨E, hE, hx, hy, hncd⟩ | ⟨hTx, hTy⟩)
+    · rw [mergePair_eq, List.mem_append] at hE
+      rcases hE with hkeep | hF
+      · obtain ⟨hEP, _⟩ := List.mem_filter.mp hkeep
+        exact Or.inl ⟨E, hEP, hx, hy⟩
+      · have hEeq : E = (P.filter (fun C => C.contains a || C.contains b)).flatten.eraseDups :=
+          List.mem_singleton.mp hF
+        subst hEeq
+        have htabx : Touches P a b x := mem_fused_iff.mp hx
+        have htaby : Touches P a b y := mem_fused_iff.mp hy
+        exact Or.inr ⟨Or.inl htabx, Or.inl htaby, Or.inr (Or.inl ⟨htabx, htaby⟩)⟩
+    · rw [touches_mergePair_iff] at hTx hTy
+      rcases hTx with hKx | ⟨htabx, hGLx⟩
+      · rcases hTy with hKy | ⟨htaby, hGLy⟩
+        · obtain ⟨C, hC, hxc, _, hcd⟩ := hKx
+          obtain ⟨D, hD, hyc, _, hcd2⟩ := hKy
+          have htcdx : Touches P c d x := ⟨C, hC, hxc, hcd⟩
+          have htcdy : Touches P c d y := ⟨D, hD, hyc, hcd2⟩
+          exact Or.inr ⟨Or.inr htcdx, Or.inr htcdy, Or.inr (Or.inr ⟨htcdx, htcdy⟩)⟩
+        · obtain ⟨C, hC, hxc, _, hcd⟩ := hKx
+          exact Or.inr ⟨Or.inr ⟨C, hC, hxc, hcd⟩, Or.inl htaby,
+            Or.inl (groupsLinked_iff.mpr hGLy)⟩
+      · rcases hTy with hKy | ⟨htaby, hGLy⟩
+        · obtain ⟨D, hD, hyc, _, hcd2⟩ := hKy
+          exact Or.inr ⟨Or.inl htabx, Or.inr ⟨D, hD, hyc, hcd2⟩,
+            Or.inl (groupsLinked_iff.mpr hGLx)⟩
+        · exact Or.inr ⟨Or.inl htabx, Or.inl htaby, Or.inl (groupsLinked_iff.mpr hGLx)⟩
+  · rintro (hI | ⟨hx, hy, hinner⟩)
+    · obtain ⟨C, hC, hxc, hyc⟩ := hI
+      by_cases hab : (C.contains a || C.contains b) = true
+      · by_cases hGL : GroupsLinked P a b c d
+        · exact Or.inr
+            ⟨touches_mergePair_iff.mpr (Or.inr ⟨⟨C, hC, hxc, hab⟩, groupsLinked_iff.mp hGL⟩),
+             touches_mergePair_iff.mpr (Or.inr ⟨⟨C, hC, hyc, hab⟩, groupsLinked_iff.mp hGL⟩)⟩
+        · left
+          refine ⟨(P.filter (fun C => C.contains a || C.contains b)).flatten.eraseDups,
+            by rw [mergePair_eq, List.mem_append]; exact Or.inr (List.mem_singleton.mpr rfl),
+            mem_fused_iff.mpr ⟨C, hC, hxc, hab⟩, mem_fused_iff.mpr ⟨C, hC, hyc, hab⟩, ?_⟩
+          rw [hit_iff_mem]
+          exact not_mem_fused_of_not_linked hGL
+      · by_cases hcd : (C.contains c || C.contains d) = true
+        · exact Or.inr
+            ⟨touches_mergePair_iff.mpr (Or.inl ⟨C, hC, hxc, hab, hcd⟩),
+             touches_mergePair_iff.mpr (Or.inl ⟨C, hC, hyc, hab, hcd⟩)⟩
+        · left
+          exact ⟨C, by rw [mergePair_eq, List.mem_append]; exact Or.inl (keep_filter hC hab),
+            hxc, hyc, hcd⟩
+    · rcases hinner with hGL | ⟨htabx, htaby⟩ | ⟨htcdx, htcdy⟩
+      · have mk : ∀ z : Nat, (Touches P a b z ∨ Touches P c d z) →
+            Touches (mergePair P a b) c d z := by
+          rintro z (htab | ⟨C, hC, hzc, hcdz⟩)
+          · exact touches_mergePair_iff.mpr (Or.inr ⟨htab, groupsLinked_iff.mp hGL⟩)
+          · by_cases habC : (C.contains a || C.contains b) = true
+            · exact touches_mergePair_iff.mpr (Or.inr ⟨⟨C, hC, hzc, habC⟩,
+                groupsLinked_iff.mp ⟨C, hC, habC, hcdz⟩⟩)
+            · exact touches_mergePair_iff.mpr (Or.inl ⟨C, hC, hzc, habC, hcdz⟩)
+        exact Or.inr ⟨mk x hx, mk y hy⟩
+      · by_cases hGL : GroupsLinked P a b c d
+        · exact Or.inr
+            ⟨touches_mergePair_iff.mpr (Or.inr ⟨htabx, groupsLinked_iff.mp hGL⟩),
+             touches_mergePair_iff.mpr (Or.inr ⟨htaby, groupsLinked_iff.mp hGL⟩)⟩
+        · left
+          refine ⟨(P.filter (fun C => C.contains a || C.contains b)).flatten.eraseDups,
+            by rw [mergePair_eq, List.mem_append]; exact Or.inr (List.mem_singleton.mpr rfl),
+            mem_fused_iff.mpr htabx, mem_fused_iff.mpr htaby, ?_⟩
+          rw [hit_iff_mem]
+          exact not_mem_fused_of_not_linked hGL
+      · obtain ⟨C, hC, hxc, hcdx⟩ := htcdx
+        obtain ⟨D, hD, hyc, hcdy⟩ := htcdy
+        by_cases habC : (C.contains a || C.contains b) = true
+        · have hGLC : GroupsLinked P a b c d := ⟨C, hC, habC, hcdx⟩
+          by_cases habD : (D.contains a || D.contains b) = true
+          · exact Or.inr
+              ⟨touches_mergePair_iff.mpr (Or.inr ⟨⟨C, hC, hxc, habC⟩,
+                 groupsLinked_iff.mp hGLC⟩),
+               touches_mergePair_iff.mpr (Or.inr ⟨⟨D, hD, hyc, habD⟩,
+                 groupsLinked_iff.mp ⟨D, hD, habD, hcdy⟩⟩)⟩
+          · exact Or.inr
+              ⟨touches_mergePair_iff.mpr (Or.inr ⟨⟨C, hC, hxc, habC⟩,
+                 groupsLinked_iff.mp hGLC⟩),
+               touches_mergePair_iff.mpr (Or.inl ⟨D, hD, hyc, habD, hcdy⟩)⟩
+        · by_cases habD : (D.contains a || D.contains b) = true
+          · exact Or.inr
+              ⟨touches_mergePair_iff.mpr (Or.inl ⟨C, hC, hxc, habC, hcdx⟩),
+               touches_mergePair_iff.mpr (Or.inr ⟨⟨D, hD, hyc, habD⟩,
+                 groupsLinked_iff.mp ⟨D, hD, habD, hcdy⟩⟩)⟩
+          · exact Or.inr
+              ⟨touches_mergePair_iff.mpr (Or.inl ⟨C, hC, hxc, habC, hcdx⟩),
+               touches_mergePair_iff.mpr (Or.inl ⟨D, hD, hyc, habD, hcdy⟩)⟩
+
+/-- The characterizing shape of `sameClass_two_merges_iff` is invariant
+under swapping the two groups. -/
+lemma sameClass_two_merges_comm_form {P : List (List Nat)} {a b c d x y : Nat} :
+    ((∃ C ∈ P, x ∈ C ∧ y ∈ C) ∨
+      ((Touches P a b x ∨ Touches P c d x) ∧ (Touches P a b y ∨ Touches P c d y) ∧
+        (GroupsLinked P a b c d ∨ (Touches P a b x ∧ Touches P a b y) ∨
+          (Touches P c d x ∧ Touches P c d y)))) ↔
+    ((∃ C ∈ P, x ∈ C ∧ y ∈ C) ∨
+      ((Touches P c d x ∨ Touches P a b x) ∧ (Touches P c d y ∨ Touches P a b y) ∧
+        (GroupsLinked P c d a b ∨ (Touches P c d x ∧ Touches P c d y) ∨
+          (Touches P a b x ∧ Touches P a b y)))) := by
+  constructor
+  · rintro (hI | ⟨hx, hy, hL | hab | hcd⟩)
+    · exact Or.inl hI
+    · exact Or.inr ⟨hx.symm, hy.symm, Or.inl (groupsLinked_symm.mp hL)⟩
+    · exact Or.inr ⟨hx.symm, hy.symm, Or.inr (Or.inr hab)⟩
+    · exact Or.inr ⟨hx.symm, hy.symm, Or.inr (Or.inl hcd)⟩
+  · rintro (hI | ⟨hx, hy, hL | hcd | hab⟩)
+    · exact Or.inl hI
+    · exact Or.inr ⟨hx.symm, hy.symm, Or.inl (groupsLinked_symm.mpr hL)⟩
+    · exact Or.inr ⟨hx.symm, hy.symm, Or.inr (Or.inr hcd)⟩
+    · exact Or.inr ⟨hx.symm, hy.symm, Or.inr (Or.inl hab)⟩
+
+/-- **Commutation of two merges**: the application order of pairs `{a, b}`
+then `{c, d}` does not change the "share a class" relation. The produced
+lists differ (order of appearance inside the merged class — the
+counterexample documented on issue #16650), but the partition seen as an
+equivalence relation is the same. This is the correct reformulation of
+the sought commutation lemma: commutation lives at the `SameClass` level,
+not at list equality. -/
+theorem mergePair_mergePair_comm_equiv (P : List (List Nat)) (a b c d x y : Nat) :
+    SameClass (mergePair (mergePair P a b) c d) x y ↔
+    SameClass (mergePair (mergePair P c d) a b) x y := by
+  rw [sameClass_two_merges_iff, sameClass_two_merges_comm_form,
+      ← sameClass_two_merges_iff (a := c) (b := d) (c := a) (d := b)]
+
+/-- `Touches` read as `SameClass`: a label is caught by the merge `{x, y}`
+    exactly when it shares a class with `x` or with `y`. This is the key
+    that makes the characterization of `SameClass` after a merge
+    transportable from one partition to another. -/
+lemma touches_iff_sameClass {P : List (List Nat)} {x y z : Nat} :
+    Touches P x y z ↔ (SameClass P x z ∨ SameClass P y z) := by
+  constructor
+  · rintro ⟨C, hC, hz, hcond⟩
+    rw [hit_iff_mem] at hcond
+    rcases hcond with hx | hy
+    · exact Or.inl ⟨C, hC, hx, hz⟩
+    · exact Or.inr ⟨C, hC, hy, hz⟩
+  · rintro (⟨C, hC, hx, hz⟩ | ⟨C, hC, hy, hz⟩)
+    · exact ⟨C, hC, hz, by rw [hit_iff_mem]; exact Or.inl hx⟩
+    · exact ⟨C, hC, hz, by rw [hit_iff_mem]; exact Or.inr hy⟩
+
+/-- Pure characterization of `SameClass` after one merge: a common class
+    kept intact, or two labels both caught — read entirely in `SameClass`
+    of the source partition. This shape is what turns the fold into a
+    congruence for `SameClass`. -/
+lemma sameClass_mergePair_pure {P : List (List Nat)} {x y u v : Nat} :
+    SameClass (mergePair P x y) u v ↔
+      SameClass P u v ∨
+        ((SameClass P x u ∨ SameClass P y u) ∧
+          (SameClass P x v ∨ SameClass P y v)) := by
+  rw [sameClass_mergePair_iff, touches_iff_sameClass, touches_iff_sameClass]
+  constructor
+  · rintro (⟨C, hC, hu, hv, _⟩ | h)
+    · exact Or.inl ⟨C, hC, hu, hv⟩
+    · exact Or.inr h
+  · rintro (⟨C, hC, hu, hv⟩ | h)
+    · by_cases hcond : ((C.contains x || C.contains y) = true)
+      · rw [hit_iff_mem] at hcond
+        rcases hcond with hx | hy
+        · exact Or.inr ⟨Or.inl ⟨C, hC, hx, hu⟩, Or.inl ⟨C, hC, hx, hv⟩⟩
+        · exact Or.inr ⟨Or.inr ⟨C, hC, hy, hu⟩, Or.inr ⟨C, hC, hy, hv⟩⟩
+      · exact Or.inl ⟨C, hC, hu, hv, hcond⟩
+    · exact Or.inr h
+
+/-- **Congruence of the fold**: if two partitions are indistinguishable
+    through `SameClass`, folding the same list of pairs leaves them
+    indistinguishable. The fold never sees the shape of the class lists,
+    only who shares a class. -/
+lemma foldl_mergeStep_congr {Q₁ Q₂ : List (List Nat)}
+    (h : ∀ w z, SameClass Q₁ w z ↔ SameClass Q₂ w z)
+    (pairs : List (Nat × Nat)) :
+    ∀ w z, SameClass (pairs.foldl mergeStep Q₁) w z ↔
+           SameClass (pairs.foldl mergeStep Q₂) w z := by
+  induction pairs generalizing Q₁ Q₂ with
+  | nil => exact h
+  | cons p rest ih =>
+    refine ih ?_
+    intro w z
+    show SameClass (mergePair Q₁ p.1 p.2) w z ↔ SameClass (mergePair Q₂ p.1 p.2) w z
+    rw [sameClass_mergePair_pure, sameClass_mergePair_pure,
+        h w z, h p.1 w, h p.2 w, h p.1 z, h p.2 z]
+
+/-- **The fold is insensitive to permuting two adjacent pairs**: swapping
+    positions `i` and `i + 1` of the pair list does not change the
+    `SameClass` relation of the fold's result. Third brick of R3 invariance
+    (issue #16650): the connected R3 surgery moves the rewritten crossings
+    inside the fold's list, `foldl_mergePair_swap` absorbs the orientation,
+    `mergePair_mergePair_comm_equiv` the commutation of the two merges, and
+    the congruence `foldl_mergeStep_congr` carries the equivalence through
+    the rest of the fold. Together they ground the preservation of the arc
+    partition on the lake's witness. -/
+theorem foldl_mergePair_permute_adjacent (pairs : List (Nat × Nat)) (i : Nat)
+    (hi : i + 1 < pairs.length) (P₀ : List (List Nat)) (w z : Nat) :
+    SameClass
+      ((pairs.take i ++ [pairs.get ⟨i, Nat.lt_of_succ_lt hi⟩,
+                          pairs.get ⟨i + 1, hi⟩] ++ pairs.drop (i + 2)).foldl
+          mergeStep P₀) w z ↔
+      SameClass
+      ((pairs.take i ++ [pairs.get ⟨i + 1, hi⟩,
+                          pairs.get ⟨i, Nat.lt_of_succ_lt hi⟩] ++ pairs.drop
+            (i + 2)).foldl mergeStep P₀) w z := by
+  have hfold : ∀ (r s : Nat × Nat),
+      ((pairs.take i ++ [r, s] ++ pairs.drop (i + 2)).foldl mergeStep P₀)
+        = (pairs.drop (i + 2)).foldl mergeStep
+            (mergeStep (mergeStep ((pairs.take i).foldl mergeStep P₀) r) s) := by
+    intro r s
+    rw [List.foldl_append, List.foldl_append, List.foldl_cons, List.foldl_cons,
+        List.foldl_nil]
+  rw [hfold (pairs.get ⟨i, Nat.lt_of_succ_lt hi⟩) (pairs.get ⟨i + 1, hi⟩),
+      hfold (pairs.get ⟨i + 1, hi⟩) (pairs.get ⟨i, Nat.lt_of_succ_lt hi⟩)]
+  exact foldl_mergeStep_congr
+    (mergePair_mergePair_comm_equiv ((pairs.take i).foldl mergeStep P₀)
+      (pairs.get ⟨i, Nat.lt_of_succ_lt hi⟩).1
+      (pairs.get ⟨i, Nat.lt_of_succ_lt hi⟩).2
+      (pairs.get ⟨i + 1, hi⟩).1
+      (pairs.get ⟨i + 1, hi⟩).2)
+    (pairs.drop (i + 2)) w z
 
 /-- Every label of the range `1..n` is covered by the initial singletons. -/
 lemma covered_singles {n z : Nat} (h1 : 1 ≤ z) (h2 : z ≤ n) :
@@ -974,24 +1385,23 @@ theorem alexander_trefoilMutant :
 
 /-- Discrimination control on the figure-eight knot (4_1): under the
 designated normalization (minor omitting the first row and the last column),
-the function returns −2·t² + 2·t − 1 on the corrected raw wiring.
+the function returns t³ − 2·t² + 2·t on the canonical planar code (#17595).
 
 Honesty note: this value is NOT the classical Alexander polynomial of 4_1
 (which is ±t² ∓ 3·t ± 1, i.e. t² − 3·t + 1 up to a unit factor); the
 theorem measures the value actually produced by the designated function on
 a 4-crossing wiring that forms a single loop. The trefoil (t² − t + 1) and
 the determinant |P(−1)| = 5 = det(4_1) are reproduced, but the polynomial
-shape diverges from the classical value on the 4-crossing class — anomaly
-exhaustively documented (2736 orientation-valid wirings tested, including
-the DT [4,6,8,2] wiring) in the follow-up issue opened with this PR.
-The divergence is formalized below (`alexander_figureEight_not_classical`:
-not a unit) and repaired by the signed variant
+shape diverges from the classical value — the unsigned matrix treats the
+two negative crossings of the planar code as positive. The divergence is
+formalized below (`alexander_figureEight_not_classical`: not a unit) and
+repaired by the signed variant
 (`alexander_figureEight_signed`: the exact classical value).
 -/
 theorem alexander_figureEight :
     alexanderPolynomial figureEight =
-      - (2 : Polynomial ℤ) * Polynomial.X ^ 2 + 2 * Polynomial.X - 1 := by
-  have hp : arcPartition figureEightDiagram = [[3, 4], [5, 6], [7, 8], [1, 2]] := by
+      Polynomial.X ^ 3 - (2 : Polynomial ℤ) * Polynomial.X ^ 2 + 2 * Polynomial.X := by
+  have hp : arcPartition figureEightDiagram = [[1, 2], [5, 6], [3, 4], [7, 8]] := by
     decide
   simp only [alexanderPolynomial, alexanderPolynomialAux, figureEight, hp]
   simp only [figureEightDiagram]
@@ -1011,19 +1421,21 @@ all-positive diagram — the `3_1` trefoil of `Basic.lean`, whose three
 crossings are documented positive — the matrix IS the Alexander matrix and
 the designated minor recovers the classical value. On the figure-eight
 knot `4_1` (amphichiral, two crossings of each sign in any minimal
-alternating diagram), the matrix is wrong on the negative crossings: the
-minor returns `−2t² + 2t − 1`, outside the unit class of the classical
-`t² − 3t + 1` (see `alexander_figureEight_not_classical` below) — so the
-divergence is NOT a representative artifact (no symmetrization or Conway
-normalization `Δ(1) = 1` can repair it), but a chirality artifact. The
-determinant survives: `|P(−1)| = 5 = det(4_1)`
+alternating diagram — the canonical planar code carries the signs
+`[−, −, +, +]` read by `crossingSign`), the matrix is wrong on the
+negative crossings: the minor returns `t³ − 2t² + 2t`, outside the unit
+class of the classical `t² − 3t + 1` (see
+`alexander_figureEight_not_classical` below) — so the divergence is NOT a
+representative artifact (no symmetrization or Conway normalization
+`Δ(1) = 1` can repair it), but a chirality artifact. The determinant
+survives: `|P(−1)| = 5 = det(4_1)`
 (`alexander_figureEight_eval_neg_one`).
 
 The signed variant `alexanderPolynomialSigned` takes chirality as data and
-recovers the classical value on the figure-eight: the alternating labeling
-`[−, +, −, +]` of the DT-derived diagram returns exactly `t² − 3t + 1`,
-its mirror `[+, −, +, −]` returns `t · (t² − 3t + 1)` — same unit class,
-as amphichirality demands. -/
+recovers the classical value on the figure-eight: the true labeling
+`[−, −, +, +]` returns exactly `−t · (t² − 3t + 1)`, its mirror
+`[+, +, −, −]` returns `−(t² − 3t + 1)` — same unit class, as
+amphichirality demands. -/
 
 /-- Alexander row of a **negative** crossing: Fox derivative of the mirror
 Wirtinger relation `x_o⁻¹ x_i x_o = x_out`, multiplied by the unit `t` to
@@ -1059,29 +1471,33 @@ noncomputable def alexanderPolynomialSigned (d : KnotDiagram)
 
 /-- The divergence is not a unit: the designated value on the figure-eight
 equals `ε · t^k · (t² − 3t + 1)` for NO unit `ε = ±1` and no exponent `k`.
-Proof by evaluations: at `0` the designated value returns `−1`, forcing
-`k = 0` then `ε = −1`; at `2` it returns `−5` while `ε · 2^k · (2² − 3·2 + 1)`
-then equals `1`. -/
+Proof by a sign argument at two evaluation points: at `2`, the trinomial
+equals `−1`, so the identity would require `4 = −ε · 2^k` — impossible for
+`ε = 1` (right-hand side negative); at `3`, the trinomial equals `1`, so
+the identity would require `15 = ε · 3^k` — impossible for `ε = −1`
+(right-hand side negative). Since `2^k` and `3^k` are strictly positive,
+each unit is refuted by one of the two points. -/
 theorem alexander_figureEight_not_classical :
     ¬ ∃ (k : ℕ) (ε : ℤ), ε * ε = 1 ∧
       alexanderPolynomial figureEight =
         Polynomial.C ε * Polynomial.X ^ k * (Polynomial.X ^ 2 - 3 * Polynomial.X + 1) := by
-  rintro ⟨k, ε, -, h⟩
-  rcases k with _ | k
-  · have h0 := congrArg (Polynomial.eval 0) h
-    have h2 := congrArg (Polynomial.eval 2) h
-    rw [alexander_figureEight, pow_zero] at h0 h2
-    simp only [Polynomial.eval_one, Polynomial.eval_add, Polynomial.eval_mul,
-      Polynomial.eval_sub, Polynomial.eval_C, Polynomial.eval_X, pow_two, mul_one,
-      mul_zero, add_zero, zero_add, zero_sub] at h0 h2
-    norm_num at h0 h2
-    omega
-  · have h0 := congrArg (Polynomial.eval 0) h
-    rw [alexander_figureEight, pow_succ] at h0
-    simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_sub,
-      Polynomial.eval_C, Polynomial.eval_X, pow_two, mul_assoc, mul_zero, zero_mul,
-      mul_one, add_zero, zero_add, zero_sub] at h0
-    norm_num at h0
+  rintro ⟨k, ε, hε, h⟩
+  have hε' : ε = 1 ∨ ε = -1 := by
+    rw [← pow_two] at hε
+    exact sq_eq_one_iff.mp hε
+  have h2 := congrArg (Polynomial.eval 2) h
+  rw [alexander_figureEight] at h2
+  simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_sub,
+    Polynomial.eval_pow, Polynomial.eval_C, Polynomial.eval_X] at h2
+  norm_num at h2
+  have h3 := congrArg (Polynomial.eval 3) h
+  rw [alexander_figureEight] at h3
+  simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_sub,
+    Polynomial.eval_pow, Polynomial.eval_C, Polynomial.eval_X] at h3
+  norm_num at h3
+  have h2p : (0 : ℤ) < 2 ^ k := by positivity
+  have h3p : (0 : ℤ) < 3 ^ k := by positivity
+  rcases hε' with rfl | rfl <;> omega
 
 /-- The knot determinant survives the divergence: the designated value at
 `−1` equals `−5`, so `|P(−1)| = 5 = det(4_1)` (classical: for a knot,
@@ -1091,17 +1507,17 @@ theorem alexander_figureEight_eval_neg_one :
     (alexanderPolynomial figureEight).eval (-1) = -5 := by
   rw [alexander_figureEight]
   simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_sub,
-    Polynomial.eval_X, pow_two, mul_zero, mul_one, add_zero, zero_add, zero_sub]
+    Polynomial.eval_X, pow_two, pow_three]
   norm_num
 
 /-- The signed variant recovers the classical value on the figure-eight:
-the alternating labeling `[−, +, −, +]` of the DT-derived diagram returns
-exactly `t² − 3t + 1` under the same designated minor, and its mirror
-`[+, −, +, −]` returns `t · (t² − 3t + 1)` — same unit class, as
-amphichirality of `4_1` demands. -/
+the true labeling `[−, −, +, +]` of the canonical planar code (the one
+read by `crossingSign`, cf `Jones.writhe_figureEightDiagram`) returns
+exactly `−t · (t² − 3t + 1)` under the same designated minor — the unit
+class of the classical `t² − 3t + 1`. -/
 theorem alexander_figureEight_signed :
-    alexanderPolynomialSigned figureEightDiagram [false, true, false, true]
-      = Polynomial.X ^ 2 - 3 * Polynomial.X + 1 := by
+    alexanderPolynomialSigned figureEightDiagram [false, false, true, true]
+      = -(Polynomial.X * (Polynomial.X ^ 2 - 3 * Polynomial.X + 1)) := by
   simp only [alexanderPolynomialSigned, figureEightDiagram]
   simp (config := { decide := true })
   rw [det_three_aux]
@@ -1109,12 +1525,13 @@ theorem alexander_figureEight_signed :
   simp (config := { decide := true }) [alexanderEntrySigned, alexanderEntry, alexanderEntryNeg]
   ring
 
-/-- Mirror of the previous: the opposite alternating labeling `[+, −, +, −]`
-returns `t · (t² − 3t + 1)` — same unit class, as amphichirality demands
-(the two mirror diagrams represent the same knot). -/
+/-- Mirror of the previous: the opposite labeling `[+, +, −, −]` returns
+`−(t² − 3t + 1)` — same unit class as the previous one, as
+amphichirality demands (the two mirror diagrams represent the same
+knot). -/
 theorem alexander_figureEight_signed_mirror :
-    alexanderPolynomialSigned figureEightDiagram [true, false, true, false]
-      = Polynomial.X * (Polynomial.X ^ 2 - 3 * Polynomial.X + 1) := by
+    alexanderPolynomialSigned figureEightDiagram [true, true, false, false]
+      = -(Polynomial.X ^ 2 - 3 * Polynomial.X + 1) := by
   simp only [alexanderPolynomialSigned, figureEightDiagram]
   simp (config := { decide := true })
   rw [det_three_aux]

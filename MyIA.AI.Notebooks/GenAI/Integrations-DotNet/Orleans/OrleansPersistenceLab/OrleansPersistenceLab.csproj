@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Meme version que les labs 01 et 02 : le runtime et le generateur de code. -->
+    <PackageReference Include="Microsoft.Orleans.Server" Version="10.3.1" />
+    <!-- Le fournisseur de stockage reel : l'etat des grains part dans Redis. -->
+    <PackageReference Include="Microsoft.Orleans.Persistence.Redis" Version="10.3.1" />
+  </ItemGroup>
+
+</Project>

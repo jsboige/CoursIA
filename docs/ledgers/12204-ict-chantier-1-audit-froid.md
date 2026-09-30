@@ -26,7 +26,7 @@ Labels établis à partir : (a) des vérifications A3 firsthand ([`12204-ict-cha
 | 1 | Recoordonner | FIRSTHAND (A2, #13956) | 2+ (Sudoku-13, `conway_lean`, MGS-21) — les trois tiennent | empirique avec cause mesurée + Lean-formel kernel-décidable | **TABLE** — confirmée. Dette reformulée : les trois attestations sont des post-mortems — une théorie du « bon » changement choisirait la représentation avant de payer l'échec ([A2](12204-ict-chantier-1-a2.md)) |
 | 2 | Abstraire à dette bornée | RAPPORTE | **1** (Kroer-Sandholm externe) | n/a | **⬇ FILE D'ATTENTE** — voir §Tombée 1 |
 | 3 | Quotienter / fibrer | FIRSTHAND (A3 + ce cycle) | **1 locale** (Lean-21b) | empirique-notebook | **⬇ FILE D'ATTENTE** — voir §Tombée 4 |
-| 4 | Décomposer localement | RAPPORTE | 2+ (ICT-15d jouet, Hashlife, EPITA) | empirique | **TABLE** avec dette ouverte (qui décide des bords) — grain A4 |
+| 4 | Décomposer localement | FIRSTHAND (A4, #14453) | 2+ recensées : Hashlife (Lean-formel, non-jouet) + ICT-15d (empirique jouet, partition avouée) + EPITA (empirique, identification restaurée) | Lean-formel + empirique | **TABLE** — confirmée. Dette reformulée en bipartition : la preuve décide des bords côté Hashlife (`padCenter2_margin_ge_jumpReach`), l'expérimentateur les choisit sans théorie côté ICT-15d ([A4](12204-ict-chantier-1-a4.md)) |
 | 5 | Recoller | RAPPORTE | **1 + 1 lecture** | Lean-formel (de Finetti) | **⬇ FILE D'ATTENTE** — voir §Tombée 3 |
 | 6 | Réparer localement sous garantie | RAPPORTE | **1** (Sandholm seul) | n/a | **⬇ FILE D'ATTENTE** — voir §Tombée 2 |
 | 7 | Engendrer un témoin | FIRSTHAND (ce cycle) | 2+ (Sudoku-13, `conway_lean`, GT-16b #12259) | empirique + Lean-formel | **TABLE** — la mieux attestée du dépôt. GT-25 #12395 (translateur Life) renforcera la ligne quand elle quittera la file CI — non comptée tant qu'OPEN |
@@ -34,9 +34,9 @@ Labels établis à partir : (a) des vérifications A3 firsthand ([`12204-ict-cha
 | 9 | Élargir l'espace | FIRSTHAND (A3) | **2** (`planning_lean` Admissibility.lean:50 + SW-14 #12263) | Lean-formel + empirique | **TABLE** — promotion mesurée §Tombées (gain) |
 | 10 | Concevoir la règle | FIRSTHAND (ce cycle) | 2+ (GT-16b #12259, GT-20 #12303, SC-27 #12265) | empirique | **TABLE** — le mécanisme comme variable, trois familles |
 | 11 | Descendre sous budget | FIRSTHAND (A6 + c.1208) | **1 + 1 en instance** (`mimo_lean/Descent.lean` — thèse op 11 explicite, sorry-free ; Search-11d #16392 — comptée dès merge, convention op 7) | Lean-formel + empirique | en constitution — 2ᵉ attestation livrée sur substrat indépendant (c.1208) ; promotion TABLE à statuer par A7 |
-| 12 | Composer des regards | FIRSTHAND (ce cycle + A6) | **1 directe** (GT-21 #12245) + renfort Loi III non indépendant | empirique-notebook | en constitution — **candidate forte** ; promotion A6 refusée (§Tranche A6) |
-| 13 | Traverser un mur | FIRSTHAND (A6) | **1** (GT-24 #12364 MERGED ; 24b = témoins impossibilité, même substrat) | empirique | en constitution — A6 : 1 attestation, famille 24/24b |
-| 14 | Agréger un collectif | FIRSTHAND (A6) | **1** (`Shapley.lean:614-634` Möbius/Harsanyi, sorry-free) | Lean-formel | en constitution — A6 : 1 attestation ; GaleShapley n'est pas une 2ᵉ (appariement ≠ agrégation) |
+| 12 | Composer des regards | FIRSTHAND (ce cycle + A6) | **2 directes** (GT-21 #12245 jeux 2×2 + Search-12a #16426 gridworld pondéré — comptée dès merge, convention op 7) | empirique-notebook ×2, substrats indépendants | en constitution — 2ᵉ attestation directe livrée ; promotion TABLE à statuer par la revue (witness form connu : paire incompatible exhibée, Search-12a §5) |
+| 13 | Traverser un mur | FIRSTHAND (A6 + c.1216) | **2 directes** (GT-24 #12364 MERGED + Search-13a #16438 pavage hexagonal chemins certifiés — comptée dès merge, convention op 7) | empirique-notebook ×2, substrats indépendants | en constitution — 2ᵉ attestation directe livrée ; promotion TABLE à statuer par la revue (witness form connu : distinction épaisseur m_path / largeur m + test négatif morphisme/percement, Search-13a §8) |
+| 14 | Agréger un collectif | FIRSTHAND (A6 + ce cycle) | **2** (`Shapley.lean:614-634` Möbius/Harsanyi sorry-free + SC-06 Python exécuté, PR ce cycle) | Lean-formel + empirique | **TABLE** — promotion mesurée §Gain 3 (même pattern que l'op 9) ; GaleShapley reste exclu (appariement ≠ agrégation) |
 
 ## Les quatre tombées (décisions de la revue extérieure, appliquées)
 
@@ -52,7 +52,7 @@ La mention « mauvais recollement → déviation adversariale » (Brown-Sandholm
 **Tombée 4 — Op 3 « Quotienter / fibrer » → FILE D'ATTENTE.**
 A3 a établi firsthand que `teorth/pfr` est **externe au dépôt** (find + grep : 0). Ce cycle vérifie que la contrepartie locale est arrivée : **Lean-21b MERGED** (#12252, 2026-08-22T12:57Z, « 3 primitives PFR + tests de limite »). C'est une vraie attestation locale — mais **une seule** : parler de « primitive transversale » exige un **second substrat**. → `FIRSTHAND / 1 attestation locale / empirique-notebook`.
 
-## Deux gains de mesure (le froid fait tomber ET remonter)
+## Trois gains de mesure (le froid fait tomber ET remonter)
 
 **Gain 1 — Op 9 « Élargir l'espace » passe à 2 attestations.**
 A3 (firsthand, po-2026) : `planning_lean/Planning/Admissibility.lean:50` — `relaxed_plan_admissible : reaches π s g → reachesR π s g` = `P_reel ⊆ P_relache` exactement. Ce cycle : **SW-14-Python-Coup-Ontologique** (#12263 MERGED) exécute l'élargissement du vocabulaire OWL (extension η) avec témoin = diff de triplets + verdict SHACL + delta d'inférences. Deux substrats indépendants (Lean/planning vs Python/ontologie), même loi de monotonie. L'op 9 est la première opération **promue par la mesure** de cette Epic.
@@ -62,6 +62,9 @@ Le body dit : « attestée une fois » (transformation vs morphisme, swap ordina
 
 **Contrepartie — Loi I « obstruction abstraite → témoin exploitable » retombe à 1 attestation.**
 Elle citait de Finetti **et** Brown-Sandholm comme deux attestations. La Tombée 3 requalifie Brown-Sandholm en lecture structurelle → la Loi I n'a plus que de Finetti (1). Le grade §3 doit être révisé en conséquence : **Loi I : 1 · Loi II : 2 · Loi III : 2**.
+
+**Gain 3 — Op 14 « Agréger un collectif » passe à 2 attestations.**
+La 1ʳᵉ (A6) : `Shapley.lean:614-634` — `Mobius.mobiusCoeff` / `Mobius.mobiusReconstruction`, l'inversion de Möbius sur le treillis des coalitions, sorry-free (0 `sorry` réel mesuré : l'unique occurrence du mot dans le fichier est de la prose, ligne 1260). Cette livraison : **SC-06 — Möbius, agrégation, pouvoir, manipulation** (`MyIA.AI.Notebooks/GameTheory/SocialChoice/06-Mobius-Aggregation-Pouvoir-Manipulation.ipynb`, PR ce cycle) exécute le miroir Python exact de ces deux définitions — reconstruction vérifiée par exécution sur les 16 coalitions de `[6;4,3,2,1]` (le re-test `[8;5,4,3,2,1]` est posé en exercice, non exécuté) — puis dérive la valeur de Shapley par les dividendes **et** par énumération des 24 ordres d'entree (deux voies indépendantes, écart 5.55e-17), mesure l'écart poids/pouvoir (Banzhaf ; dummy du Luxembourg, Conseil 1958) et instancie le témoin de Gibbard-Satterthwaite sur un Borda à électeurs pondérés. Deux substrats indépendants (Lean/preuve vs Python/exécution), même loi de décomposition en dividendes de Harsanyi. L'op 14 quitte « en constitution » et rejoint l'op 9 dans les promotions par la mesure.
 
 ## Preuves de ce cycle (firsthand, reproductibles)
 
@@ -87,7 +90,7 @@ lakes porteurs de sorry reel: 4/22
 
 ## Honnêteté méthodologique
 
-- Les labels `FIRSTHAND` ci-dessus renvoient aux preuves P1-P6 ou à A3 ; tout le reste est `RAPPORTE` (issu du body de l'EPIC ou de la revue, non relu ce cycle). Les tranches A2/A4 restent le chemin pour convertir les `RAPPORTE` restants.
+- Les labels `FIRSTHAND` ci-dessus renvoient aux preuves P1-P6, à A3 ou à A4 ; tout le reste est `RAPPORTE` (issu du body de l'EPIC ou de la revue, non relu ce cycle). Les conversions A2 (op 1) et A4 (op 4) sont livrées ; les `RAPPORTE` restants (ops 2, 5, 6) sont tous trois tombés en file d'attente (§Tombées 1-3) et n'ouvrent plus de tranche de conversion.
 - Cette tranche **applique** des décisions déjà tranchées par la revue extérieure pour les 4 tombées ; elle **mesure** les 2 gains et la contrepartie Loi I. Elle ne crée aucune règle nouvelle (cf `audit-cross-source-distillation` règle 2 : grain au cas par cas).
 - `RAPPORTE` n'est pas un déshonneur : c'est l'état honnête d'une table dont la fonction première (§6 du body) est précisément de distinguer le vérifié du rapporté.
 
@@ -114,6 +117,30 @@ Mandat §4bis : « A6 est donc une décision, plus une enquête. » Vérificatio
 ## Tranche c.1208 (2026-09-16, po-2026:CoursIA-2) — op 11 : 2ᵉ attestation livrée (PR #16392)
 
 **Op 11 — FIRSTHAND (ce cycle), 2ᵉ attestation sur substrat indépendant.** `Search/Part1-Foundations/Search-11d-Descente-Sous-Budget.ipynb` (série Search, Python stdlib, exécuté papermill, 0 erreur) : knapsack 0/1, potentiel Φ = −valeur, voisinage bit-flip, barrière = borne LP relaxée, budget = plafond d'évaluations. La loi de `Descent.lean` y est **exercée** (asserts runtime sur 60 exécutions : 0 violation `hstrict`, 0 violation `hbarrier`, 0 dépassement de plafond) et sa troisième hypothèse **réfutée exécutablement** : `hnostall` est fausse dans un paysage générique (100 % d'arrêts « blocage » hors cible à budget généreux, gap médian 10,4 %) — la dissociation budget-vs-blocage exigée par `Descent.lean` l.148 est mesurée dans deux régimes (budget serré : 30/30 arrêts « budget » sur 30 graines ; budget généreux : 60/60 arrêts « blocage » hors cible sur 60 graines) ; courbe qualité-budget médiane 86,3 % → 8,9 % (B ∈ {20..800}, 30 seeds, saturation = optima locaux). **Verdict : reste en constitution jusqu'au merge** (convention op 7 : non comptée tant qu'OPEN) — la promotion en TABLE appartient à A7, qui tranche sur deux attestations indépendantes (Lean-formel + empirique-notebook).
+
+## Tranche c.1308 (2026-09-29, po-2024:CoursIA-2) — op 3 : re-vérification Infer-20 (piste vierge dans le ledger jusqu'ici)
+
+**Op 3 — FIRSTHAND (ce cycle), re-vérification d'Infer-20 comme 2ᵉ attestation candidate.** Issue dispatchée par ai-01 ([#18405](https://github.com/jsboige/CoursIA/issues/18405)) à 14:30Z — le coordinateur pointe qu'`Infer-20-Quotients-et-Fibres-Python.ipynb` (`Probas/Modules/Infer/`, PR #12277 MERGED 2026-08-22) porte **le protocole de l'opération 3** : projection vers un alphabet `Q` (quantification de `X₁ + X₂`) et mesure de `I(X₁;X₂|Q)` vs `I(X₁;X₂)`, qui est la forme conditionnelle de la règle de chaîne `H(X) = H(π(X)) + H(X|π(X))`. Le ledger — re-vérifié ce cycle (`git grep -nE "Infer-20|12226" docs/ledgers/`) — ne mentionne ni l'un ni l'autre : la piste est vierge, donc le critère d'admission au chant1 (« deux attestations indépendantes ») n'a jamais été tranché sur cette candidate.
+
+**Trois vérifications firsthand ce cycle :**
+
+1. **Infer-20 sur disque** (`Probas/Applications/Infer-20-Quotients-et-Fibres-Python.ipynb`, PR #12277 MERGED 2026-08-22) : la cellule 10 (code) construit `Q = np.digitize(S, quantiles)` avec `Q_BINS = 4` et `S = X₁ + X₂`. La cellule 14 teste `Q_OPERATIONAL = (I(X₁;X₂|Q) < 0.5 · I(X₁;X₂))` — verdict imprimé **NON TENTE** (`ratio = 1.684`, > critère 0.5). **Infer-20 illustre la règle de chaîne conditionnelle** : c'est exactement l'opération 3 sous sa forme `I(X₁;X₂) = I(X₁;X₂|Q) + I(X₁;X₂;Q)`. Mais elle **échoue à produire un quotient opérationnel** sur des gaussiennes linéaires corrélées `ρ = 0.6` — la quantification 1D de la somme ne suffit pas.
+
+2. **ANALYSE-04 sur disque** (`SymbolicAI/Lean/ANALYSE/ANALYSE-04-PFR-Primitives-Python.ipynb`) : cellule 7 — *« Lecture du résultat. La règle de chaîne `H(X) = H(X|Y) + I(X;Y)` est **vérifiée numériquement**. Information mutuelle `I(X;Y)` capture combien le cours (Y) explique la note (X) ; la résiduelle `H(X|Y)` capture la variation inexpliquée par le cours. Sémantique opérationnelle : `H(π(X))` ≈ ce que la projection capte ; `H(X|π(X))` ≈ ce qui reste dans les fibres. »* — Verdict de la cellule 9 : « Transportable large. Universelle en théorie de l'information. » C'est la **seule attestation locale** décomptée jusqu'ici (cf A3 l.97-106 : « teorth/pfr est une référence externe non incluse au dépôt, et la digestion EPIC l'a cité comme si elle était locale »).
+
+3. **Critère d'indépendance** (règle op 7 étendue à l'op 3, protocole EPIC §1) : ANALYSE-04 ([#12252](https://github.com/jsboige/CoursIA/pull/12252), MERGED 2026-08-22T12:57:43Z) et Infer-20 ([#12277](https://github.com/jsboige/CoursIA/pull/12277), MERGED 2026-08-22T12:58:17Z) sont **nés le même jour (2026-08-22, à 34 secondes d'écart), du même EPIC [#12204](https://github.com/jsboige/CoursIA/issues/12204) — issues sœurs [#12214](https://github.com/jsboige/CoursIA/issues/12214) (Lean-21b PFR) et [#12226](https://github.com/jsboige/CoursIA/issues/12226) (Probas quotient/fibres/recollement). Le témoin formel de l'opération 3 (`H(X) = H(π(X)) + H(X|π(X))`) est universel info-théorique, mais la non-indépendance tient sur des constats vérifiables : **même chantier EPIC, même jour, même lane de dispatch**. ANALYSE-04 seul revendique le stimulus PFR-Tao ; Infer-20, fille de [#12226](https://github.com/jsboige/CoursIA/issues/12226), ne le cite pas. L'indépendance au sens strict du critère « deux endroits non reliés par le stimulus initial » n'est **pas** vérifiée.
+
+**Verdict c.1308 — op 3 reste en file d'attente, mais le statut se précise :**
+
+- **Pas de promotion** : 1 attestation locale indépendante (ANALYSE-04) + 1 attestation pédagogique **non-indépendante** (Infer-20, même chantier) = critère « deux endroits indépendants » non atteint.
+- **Mais** Infer-20 **valorisera** l'op 3 si une seconde instantiation **sur substrat indépendant** arrive — le protocole est reproductible, le témoin négatif est déjà mesuré (1.684), le pipeline opérationnel est tracé.
+- Le **témoin négatif** transportable d'Infer-20 (quantification 1D de la somme d'un couple gaussien corrélé ⇒ ratio `I(X₁;X₂|Q)/I(X₁;X₂)` = 1.684, **donc quotient informationnel non atteignable**) est noté comme tel dans le ledger — c'est un résultat négatif qui borne la classe des quotients opérationnels naïfs.
+
+**Effet sur la table :** op 3 → toujours en file d'attente. Mention « 1 attestation locale + 1 pédagogique non-indépendante re-vérifiée c.1308 » dans le commentaire de livraison sur l'EPIC. **Pas de mouvement de table** ce cycle ; un futur A7bis qui trouve une 2ᵉ attestation sur un substrat hors-PFR (Probabilité élémentaire, codage, IC games) la fait basculer.
+
+**Distance de Ruzsa** (point 3 de #18405) : objet ICT à groupe additif identifié = **`MyIA.AI.Notebooks/IIT/ICT-Series/ict/factor_geometry.py`** (espace des activations `(ℝ^D, +)`, primitives `weighted_pca` / `max_principal_angle` / `basis_overlap` extraites de ICT-36-FLens-FactoredGeometry, PR #15514 MERGED). La convolution `X′ − Y′` y est définie composante par composante. Application directe : `d_ruzsa(X;Y) = H(X′ − Y′) − ½ H(X′) − ½ H(Y′)` sur deux activations factorisées. **Non livré dans cette tranche** (hors périmètre dispatch —> à pousser en grain suivant si ai-01 l'autorise, après qu'A7 ou un grain subséquent ait statué sur l'op 3).
+
+**Acceptance sortie ce cycle :** verdict d'attestation de l'opération 3 écrit dans le ledger (cette tranche), avec sa preuve (3 vérifications nommées) et le statut du témoin négatif.
 
 ## Références
 

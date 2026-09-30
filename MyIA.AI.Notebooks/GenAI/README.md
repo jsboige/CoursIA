@@ -37,6 +37,11 @@ L'IA générative a transformé la création de contenu en 2024-2026. Un dévelo
 | 10 | RAG et Mémoire Sémantique - Le backend de grounding des agents | [README complet](RAG-et-Memoire-Semantique/README.md) | ~6h | Qdrant + embeddings + notebook pratique hors ligne |
 | 11 | Plateformes-Conversationnelles - OWUI & AI-Engine | [README catégorie](Plateformes-Conversationnelles/README.md) | ~14h+ | Tour OWUI + Playwright E2E (30+ tests) + AI-Engine WordPress |
 | 12 | CaseStudies - Projets étudiants | [README complet](CaseStudies/README.md) | (durée libre) | Barbie/Shrek, recettes, chatbot médical, Fort Boyard |
+| 13 | Security - Oversight, contrôle et surface d'attaque des outils | [README complet](Security/README.md) | (durée libre) | Scaling laws d'oversight, interprétabilité du refus, attaques/défenses MCP |
+
+## Activités de cours
+
+Les activités pédagogiques des cours d'IA — vulgarisation (exploration, contraintes, probabilités, théorie des jeux…) et TP d'IA générative avec leur corrigé — vivent dans [activites/](activites/README.md). Elles étaient auparavant enfouies dans `Vibe-Coding/docs/` et une partie n'existait que sur le Drive (#18223).
 
 ## Parcours recommandés
 
@@ -413,7 +418,7 @@ Trois sous-dossiers complètent la série sans être des notebooks :
 
 <!-- CATALOG-STATUS
 series: GenAI
-pedagogical_count: 215
-breakdown: Audio=31, Texte=30, Plateformes-Conversationnelles=28, Video=22, SemanticKernel=20, Image=17, PostTraining=16, Integrations-DotNet=11, RAG-et-Memoire-Semantique=10, Vibe-Coding=8, FineTuning=7, 00-GenAI-Environment=6, CaseStudies=5, FallacyDetection=4
-maturity: BETA=180, ALPHA=21, DRAFT=11, TEMPLATE=3
+pedagogical_count: 247
+breakdown: Audio=38, Texte=34, Plateformes-Conversationnelles=28, Video=22, Image=21, PostTraining=20, SemanticKernel=20, Integrations-DotNet=15, FineTuning=10, RAG-et-Memoire-Semantique=10, Vibe-Coding=8, 00-GenAI-Environment=6, CaseStudies=5, FallacyDetection=5, Security=5
+maturity: BETA=208, ALPHA=21, DRAFT=15, TEMPLATE=3
 -->

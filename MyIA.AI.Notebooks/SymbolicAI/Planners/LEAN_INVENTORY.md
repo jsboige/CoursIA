@@ -13,7 +13,7 @@ l'instrument canonique `scripts/lean/count_code_sorry.py --lake <root> --json` (
 
 | Répertoire | Toolchain | sorry (production) | Modules | Statut |
 |-----------|-----------|--------------------|---------|--------|
-| `planning_lean` | v4.32.1 | 0 | `Planning/{Strips, Relaxation, Admissibility}` (3 FR + 3 `_en`) | COMPLET |
+| `planning_lean` | v4.33.0 | 0 | `Planning/{Strips, Relaxation, Admissibility}` (3 FR + 3 `_en`) | COMPLET |
 
 Note de cheminement : la matrice #13121 tranche 3 référençait `MyIA.AI.Notebooks/Planners/planning_lean` ;
 le chemin effectif au disque est `MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean` (inventaire aligné
@@ -30,7 +30,7 @@ relaxé optimal `h⁺` n'excède jamais le coût du plan réel optimal `h*`
 (`relaxed_plan_admissible` + `relaxed_plan_witness`), sur les sémantiques `step` (réelle) et
 `stepR` (relaxée) avec `step_subset_stepR` et `run_mono`.
 
-**Toolchain** : v4.32.1 (pin effectif mesuré `lean-toolchain` ; la prose du README annonce encore
+**Toolchain** : v4.33.0 (pin effectif mesuré `lean-toolchain` ; la prose du README annonce encore
 `v4.31.0-rc1` — périmée, à corriger séparément) | **Dépendances** : Mathlib4
 
 | Groupe de modules | sorry | Contenu |
@@ -40,4 +40,4 @@ relaxé optimal `h⁺` n'excède jamais le coût du plan réel optimal `h*`
 | `Planning/Admissibility` (FR + `_en`) | 0 | théorème-phare : `relaxed_plan_admissible`, `relaxed_plan_witness` |
 
 **Câblage CI** : caller workflow [`lean-planning.yml`](../../../.github/workflows/lean-planning.yml)
-(push `main`, paths `MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/**.lean` + `lakefile.*`), pipeline `standalone-tactic`.
+(push `main`, paths `MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/**.lean` + `lakefile.*`), pipeline `real` (baseline `0`).

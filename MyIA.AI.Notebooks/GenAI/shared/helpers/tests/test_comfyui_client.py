@@ -600,7 +600,7 @@ class TestGenerateText2VideoWan:
             client.generate_text2video_wan("a cat walking")
         wf = captured[0]
         latent_node = next(n for n in wf.values() if n["class_type"] == "EmptyHunyuanLatentVideo")
-        assert latent_node["inputs"]["frame_limit"] == 16
+        assert latent_node["inputs"]["length"] == 16
 
 
 class TestGenerateBonsai:

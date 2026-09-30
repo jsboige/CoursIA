@@ -44,6 +44,15 @@ Les secrets **partages** (HF, OpenAI, Anthropic, Civitai, API keys par service, 
 
 Detail complet (inventaire, rotation, règle restart, incident fondateur) : [docs/genai/secrets-management.md](../../docs/genai/secrets-management.md).
 
+## Trousseau partage `MyIA-Keys` (sign-off user 2026-09-24)
+
+Organe : [`scripts/secrets/agent_keyring.py`](../../scripts/secrets/agent_keyring.py) — passphrase posee par machine (`bootstrap`, DPAPI), preuve cross-machine par empreinte publiee (`doctor`). Deux interdits :
+
+- **Empreinte `doctor` differente de la reference du dashboard `global` = ne rien ecrire dans le coffre**, et le signaler.
+- **Ne jamais recopier la passphrase sur un chemin partage.** Le PDF d'urgence est une voie de rattrapage, pas un lieu de stockage.
+
+Detail (sous-commandes, gardes, critere de retrait du PDF) : [docs/reference/shared-keyring-myia-keys.md](../../docs/reference/shared-keyring-myia-keys.md).
+
 ## Transmission d'un secret — canal RooSync prive (fusion 2026-08-21)
 
 **Statut** : ACTIF. Decision user 2026-07-02, reaffirmee en session directe 2026-07-03.

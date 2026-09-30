@@ -133,7 +133,7 @@ parameters={"n": 256, "max_iterations": 1000}
 ### 1. Détection du kernel
 
 ```python
-from scripts.notebook_helpers import NotebookHelper
+from scripts.notebook_tools.notebook_helpers import NotebookHelper
 
 helper = NotebookHelper(notebook_path)
 kernel_info = helper.notebook.get('metadata', {}).get('kernelspec', {})
@@ -208,7 +208,7 @@ execute_on_kernel(kernel_id=kernel_id, mode="code", code=setup_code)
 ### 4. Exécution des cellules
 
 ```python
-from scripts.notebook_helpers import NotebookHelper, CellInfo
+from scripts.notebook_tools.notebook_helpers import NotebookHelper, CellInfo
 
 helper = NotebookHelper(notebook_path)
 results = []
@@ -267,13 +267,14 @@ if save_outputs:
             # Les sorties sont déjà dans le notebook après execute_on_kernel
             pass
         else:
-            # Ajouter l'erreur comme sortie
-            helper.set_cell_output(result['cell_index'], {
+            # Ajouter l'erreur comme sortie (pas de set_cell_output dans l'API :
+            # écriture directe dans le dict public helper.notebook, puis save())
+            helper.notebook['cells'][result['cell_index']]['outputs'] = [{
                 'output_type': 'error',
                 'ename': 'ExecutionError',
                 'evalue': result['error'],
                 'traceback': [result['error']]
-            })
+            }]
 
     helper.save()
 ```
@@ -459,11 +460,12 @@ Après création d'un notebook, l'exécuter pour vérifier :
 
 ```python
 # 1. Créer le notebook
-Task(subagent_type="general-purpose", prompt="notebook-designer ...")
+Task(subagent_type="general-purpose", model="sonnet", prompt="notebook-designer ...")
 
 # 2. Exécuter
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt=f"""
     Tu es un agent notebook-executor.
     Exécute le notebook: {notebook_path}
@@ -485,6 +487,7 @@ execution_report = execute_notebook(...)
 # 2. Valider
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt=f"""
     Tu es un agent notebook-validator.
     Valide le notebook: {notebook_path}
@@ -507,6 +510,7 @@ cells_with_errors = [r['cell_index'] for r in execution_report['results'] if not
 for idx in cells_with_errors:
     Task(
         subagent_type="general-purpose",
+        model="sonnet",
         prompt=f"""
         Tu es un agent notebook-cell-iterator.
         Corrige la cellule {idx} du notebook {notebook_path}
@@ -524,6 +528,7 @@ for idx in cells_with_errors:
 ```python
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt="""
     Agent notebook-executor.
 
@@ -543,6 +548,7 @@ Task(
 ```python
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt="""
     Agent notebook-executor.
 
@@ -562,10 +568,11 @@ Task(
 ```python
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt="""
     Agent notebook-executor.
 
-    Notebook: MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Executor.ipynb
+    Notebook: MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb
     Mode: full
     Kernel: python3
     Env vars: {"BATCH_MODE": "true"}
@@ -581,10 +588,11 @@ Task(
 ```python
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt="""
     Agent notebook-executor.
 
-    Notebook: MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-2-Dependent-Types.ipynb
+    Notebook: MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-02-Dependent-Types-Lean.ipynb
     Mode: full
     Kernel: lean4 (WSL)
     Timeout: 60

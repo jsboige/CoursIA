@@ -66,25 +66,31 @@ Un script qui ne satisfait pas les 4 critères **ne va pas dans `_archive/`** �
 
 Exception : si un dossier `_archive/` ne contient que des **données** (pas de scripts) — par exemple `_output.ipynb` sans sources — il peut être centralisé après vérif `execution_count`/consommateurs (cf cas `DSA AgenticDataScience/` + `PythonAgentsForDataScience/` signalés dans #13749 body).
 
-## Application — 11 emplacements
+## Application — les emplacements recensés
 
-État au 2026-09-09 :
+État au **2026-09-25**. Ce qui a changé depuis le recensement de 2026-08 :
+`GenAI/Audio`, `docker-configurations` et `notebook_tools` n'y figuraient pas.
+La table ci-dessous est l'inventaire courant — chaque tranche de l'umbrella en
+déplace une ligne, elle ne réécrit pas un total :
 
 | Emplacement | README | Standard complet |
 |---|---|---|
 | `MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/_archive/` | ✅ | ✅ (modèle) |
-| `MyIA.AI.Notebooks/Search/_archive/` | ✅ | partiel (1 fichier) |
-| `MyIA.AI.Notebooks/SymbolicAI/_archive/` | ✅ | partiel (1 fichier) |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/scripts/_archive/` | ❌ | tranche 4 |
-| `MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/` | ✅ | ✅ (1 notebook — registre README, disposition par section) |
-| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/_archive/` | ❌ | tranche 4 |
-| `MyIA.AI.Notebooks/SymbolicAI/Tweety/scripts/_archive/` | ❌ | tranche 4 |
-| `scripts/_archive/` | ✅ | ✅ : `one_shots_post_463/`, `recycle_csp/` et `one_shot_fixes/` conformes |
-| `scripts/genai-stack/_archive/` | ❌ | tranche 3 (28 fichiers constatés au 2026-08, peut nécessiter split) — **hors scope PR actuelle** |
-| `scripts/sudoku/_archive/` | ❌ | tranche 4 |
-| `slides/S4-trading-algorithmique/_archive/` | ❌ | tranche 4 |
+| `MyIA.AI.Notebooks/GenAI/Audio/_archive/` | ✅ | ✅ (registre README, disposition **par section** — modèle `Planners/` ; tranche #13749 du 2026-09-25) |
+| `MyIA.AI.Notebooks/Search/_archive/` | ✅ | partiel (registre sans en-tête de disposition par notebook) |
+| `MyIA.AI.Notebooks/SymbolicAI/_archive/` | ✅ | partiel (registre sans en-tête de disposition pour le notebook) |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/scripts/_archive/` | ✅ | ✅ (registre — une ligne par script archivé) |
+| `MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/` | ✅ | ✅ (registre README, disposition **par section**) |
+| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/_archive/` | ✅ | ✅ (registre de disposition au niveau `_archive/` ajouté le 2026-09-25 — tranche #13749 ; il pointe le README du lot daté `2026-07-04-Neurosymbolic-EML-precurseur-SL12/`, qui porte l'analyse) |
+| `MyIA.AI.Notebooks/SymbolicAI/Tweety/scripts/_archive/` | ✅ | ✅ (tranche #13749 du 2026-09-25 : registre + en-tête de disposition ajouté à `reorganize_tweety.py`) |
+| `scripts/_archive/` | ✅ | ✅ (registre parent ajouté le 2026-09-25 — tranche #13749 ; il indexe `c8257-lean18-enrichment/`, `one_shot_fixes/`, `one_shots_post_463/` et `recycle_csp/`. La ligne précédente marquait `✅` sur les seules sous-archives de #9535 et ne citait pas `c8257-lean18-enrichment/`, archivée plus tard par #14251) |
+| `scripts/genai-stack/_archive/` | ❌ | tranche 3 — le plus gros stock constaté (2026-08), peut nécessiter un split ; **à la lane `myia-po-2027:CoursIA-2`** (claim scoped `{core,utils}`) |
+| `scripts/notebook_tools/_archive/` | ✅ | partiel (registre sans en-tête de disposition pour le script) |
+| `scripts/sudoku/_archive/` | ✅ | ✅ (tranche #13749 du 2026-09-25 : registre 4 colonnes ; les en-têtes per-fichier existaient déjà) |
+| `slides/S4-trading-algorithmique/_archive/` | ✅ | ✅ (registre — une ligne par fichier archivé) |
+| `docker-configurations/_archive-20251125/` | ✅ | non audité |
 
-**Plan d'application** : tranches ciblées successives (cf umbrella #13749), une PR par tranche, seuils < 3000 lignes / < 15 fichiers / ≤ 4 features / 1 domaine (Tell c.692-L1 strict anti-composite + G.4 PR-review A).
+**Plan d'application** : tranches ciblées successives (cf umbrella #13749), une PR par tranche, dans les seuils d'anti-composite de la [§A du review](../../.claude/rules/pr-review-discipline.md) (cf G.4).
 
 ## Cas particuliers
 

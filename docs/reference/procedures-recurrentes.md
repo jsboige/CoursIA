@@ -172,7 +172,7 @@ Toute PR touchant `COURSE_CATALOG.generated.json` rend les autres PRs catalog-to
 - Merger les PRs **non-catalogue d'abord**, puis les catalog-touchers **un-par-un**.
 - Conflit catalogue = l'auteur **rebase + régénère** : `python scripts/notebook_tools/generate_catalog.py --json --git-tracked-only` (parité CI = N entrées git-tracked ; `--json` nu inclut les `_output.ipynb` locaux = drift), puis `expand_catalog_markers.py`.
 - **JAMAIS** force-resolve le conflit côté coord ; **JAMAIS** force-push la branche de l'auteur.
-- Check CI **rouge "Notebook catalog drift" = NON mergeable** (propagerait le drift) → bounce à l'auteur pour re-régénérer.
+- Check CI **"Notebook catalog drift (read-only, advisory)"** : **advisory, jamais bloquant** (#15998) — le catalogue est réécrit par `catalog-cron.yml` sur `main` (#2632/#2744), une PR n'a rien à régénérer. Un drift signalé = notice informative, pas un bounce.
 - **Cascade-independence** : une PR dont le drift-check = SUCCESS **et** qui ne touche pas le catalogue est **indépendante** — ne pas la hold à tort dans la file cascade.
 
 ### Trap "APPROVED"

@@ -13,6 +13,13 @@ shows the demoted line as small body text rather than an oversized
 heading, and the markdown TOC of the notebook stops being polluted by
 per-exercise hint/intro/summary headings.
 
+#17143: the demotion unit is the BLOCK, not the line. When an aside's
+continuation is written as further ``# `` lines, only the head becomes a
+bold callout; the continuations become plain ``> `` lines. Demoting each
+line on its own appends a `` :`` mid-sentence and bolds a fragment -- the
+"split callout" defect. ``--detect`` reports that shape read-only (see
+``is_split_callout_run`` for the discriminator and its known limits).
+
 Constraints (L965 ★): LF-only CR=0, write via
 ``json.dumps().encode('utf-8')`` binary write (NOT ``nbformat.write``
 which introduces CRLF). L948 ★★: NO cell output scrubbing. C.1/C.2/C.3:
@@ -100,6 +107,94 @@ def _matches_target(text):
 
 
 # ---------------------------------------------------------------------------
+# Split-callout detection (#17143)
+# ---------------------------------------------------------------------------
+
+# Line of a callout run terminated by an APPENDED colon: `> **<texte> :**`.
+# A colon written by hand is legal (`> **Bonnes pratiques :**`); what this
+# signature isolates is the shape the line-by-line demotion leaves behind.
+_APPENDED_COLON_RE = re.compile(r' :\*\*\s*$')
+# A continuation that is a list item or a nested heading, not bare prose.
+_LIST_ITEM_RE = re.compile(r'^>\s*(?:[-*+]|\d+\.|#{1,6}\s)')
+
+
+def _iter_callout_runs(source):
+    """Yield the contiguous ``> `` runs of one markdown cell.
+
+    A run is a maximal group of consecutive lines that open a blockquote;
+    a blank line, prose or any other line closes it.
+    """
+    text = ''.join(source) if isinstance(source, list) else source
+    run = []
+    for line in text.split('\n') + ['']:  # sentinel closes the last run
+        if line == '>' or line.startswith('> '):
+            run.append(line)
+            continue
+        if run:
+            yield list(run)
+            run = []
+
+
+def is_split_callout_run(run):
+    """True if ``run`` is a callout split line by line (the #17143 defect).
+
+    Two signals, both required:
+      (a) at least one line ends with an appended `` :**``;
+      (b) at least one *other* line is bare prose -- not an appended colon,
+          not a list item, not a fenced code block.
+
+    (b) is what separates "split sentence" from the two legitimate callouts
+    measured on the corpus: a head followed by a bullet list, and a head
+    followed by a fenced code block. A run whose lines ALL end with `` :**``
+    is a term list, not a split sentence, so it is not flagged either.
+
+    Known false-negative: a split sentence that happens to contain a code
+    fence is not reported.
+    """
+    if len(run) < 2:
+        return False
+    appended = [bool(_APPENDED_COLON_RE.search(line)) for line in run]
+    if not any(appended):
+        return False
+    if any(line.lstrip('> ').startswith('```') or line.rstrip().endswith('```')
+           for line in run):
+        return False
+    return any(not mark and not _LIST_ITEM_RE.match(line)
+               for line, mark in zip(run, appended))
+
+
+def find_split_callouts(source):
+    """Return the split-callout runs of one markdown cell source."""
+    return [run for run in _iter_callout_runs(source) if is_split_callout_run(run)]
+
+
+def detect_notebook(path):
+    """Scan a notebook for split-callout runs. Returns ``(findings, error)``.
+
+    Read-only: never writes. Each finding is a dict with the cell index, the
+    run length, the number of appended colons and the offending lines.
+    """
+    try:
+        nb = json.loads(pathlib.Path(path).read_bytes().decode('utf-8'))
+    except Exception as e:
+        return [], f'parse: {e}'
+
+    findings = []
+    for index, cell in enumerate(nb.get('cells', [])):
+        if cell.get('cell_type') != 'markdown':
+            continue
+        for run in find_split_callouts(cell.get('source', [])):
+            findings.append({
+                'cell': index,
+                'run_length': len(run),
+                'appended_colons': sum(1 for line in run
+                                       if _APPENDED_COLON_RE.search(line)),
+                'lines': run,
+            })
+    return findings, None
+
+
+# ---------------------------------------------------------------------------
 # nbformat source format preservation (L925-A ★★, L982/L983 ★★)
 # ---------------------------------------------------------------------------
 
@@ -145,17 +240,33 @@ def _re_emit_in_format(original_format, new_lines):
 
 
 def _demote_all_headings(source_lines):
-    """Replace EVERY matching heading line with ``> **<text> :**`` blockquote.
+    """Replace EVERY matching heading BLOCK with a single ``> **<text> :**`` callout.
 
     A cell may contain multiple target headings (Sudoku-06-AIMA-CSP-Python
     cells have BOTH ``### Étapes`` AND ``### Indices`` in the same cell).
     We demote all occurrences and preserve the body untouched.
 
+    #17143 -- the unit is the BLOCK, not the line. An author who writes a
+    hint's continuation as further ``# `` lines (``# Indices`` followed by
+    ``# Etape 1 : ...``, ``# Etape 2 : ...``) has written ONE aside, not
+    three headings. Demoting each line on its own appends a `` :`` to every
+    fragment and bolds a sentence mid-way -- the split-callout defect. We
+    therefore absorb the contiguous run of SAME-prefix lines that follows
+    the matched heading: only the head is bolded and keeps the `` :``, the
+    continuations become plain ``> `` lines.
+
+    The run stops at a blank line, at a line whose prefix differs (a real
+    nested section is not swallowed), and at a line that is itself a target
+    heading (it gets its own callout). Two consecutive same-level headings
+    are unidiomatic in Markdown, so absorbing them is the conservative
+    reading of the author's intent.
+
     nbformat quirk (L983 ★★): source can be character-split (each char
     its own line). We detect headings in the JOINED source, then locate
     their line ranges in the original split source.
 
-    Returns ``(new_source_list, changed_count)``.
+    Returns ``(new_source_list, changed_count)`` where ``changed_count``
+    counts demoted target headings (one per callout, continuations folded).
     """
     if not source_lines:
         return source_lines, 0
@@ -163,12 +274,12 @@ def _demote_all_headings(source_lines):
     joined = ''.join(source_lines)
 
     # Find all heading occurrences in the joined source.
-    headings = []  # list of (start_idx, end_idx, heading_text)
+    headings = []  # list of (start_idx, end_idx, prefix, heading_text)
     for m in re.finditer(r'^(#{1,6})\s+([^\n]+?)\s*$', joined, re.MULTILINE):
         prefix = m.group(1)
         text = m.group(2).strip()
         if _matches_target(text):
-            headings.append((m.start(), m.end(), text))
+            headings.append((m.start(), m.end(), prefix, text))
 
     if not headings:
         return source_lines, 0
@@ -185,7 +296,7 @@ def _demote_all_headings(source_lines):
     # source), collapse them into a single blockquote line.
     new_lines = list(source_lines)
     # Process from end to start to keep indices valid.
-    for start, end, text in reversed(headings):
+    for start, end, prefix, text in reversed(headings):
         first_line = None
         last_line = None
         for i, (lo, hi) in enumerate(line_offsets):
@@ -195,10 +306,32 @@ def _demote_all_headings(source_lines):
                 last_line = i
         if first_line is None or last_line is None:
             continue
-        # Preserve newline on the demoted line. Blockquote format:
-        # `> **<text> :**\n`.
+
+        # Absorb the contiguous run of SAME-prefix lines that follows the
+        # matched heading (#17143). Stop on anything else.
+        run_last = last_line
+        while run_last + 1 < len(source_lines):
+            follow = re.match(r'^(#{1,6})\s+(\S.*?)\s*$', source_lines[run_last + 1])
+            if not follow or follow.group(1) != prefix:
+                break
+            if _matches_target(follow.group(2).strip()):
+                break
+            run_last += 1
+
+        # Blockquote format: `> **<text> :**` for the head, plain `> <body>`
+        # for the continuations -- no bold, no appended ` :` (a continuation
+        # is mid-sentence by construction; that is the whole defect).
+        consumed = source_lines[last_line:run_last + 1]
         replacement = [f'> **{text} :**\n']
-        new_lines[first_line:last_line + 1] = replacement
+        for line in source_lines[last_line + 1:run_last + 1]:
+            body = re.sub(r'^' + re.escape(prefix) + r'\s+', '', line).rstrip('\n')
+            replacement.append(f'> {body}\n')
+        # Preserve the original terminator of the consumed range: a block
+        # that ended without a newline (last line of the cell) must not gain
+        # one.
+        if consumed and not consumed[-1].endswith('\n'):
+            replacement[-1] = replacement[-1].rstrip('\n')
+        new_lines[first_line:run_last + 1] = replacement
 
     changed_count = len(headings)
     return new_lines, changed_count
@@ -297,6 +430,10 @@ def main():
     ap.add_argument(
         '--dry-run', action='store_true',
         help='Detect changes but do not write to disk.')
+    ap.add_argument(
+        '--detect', action='store_true',
+        help='Read-only: report split-callout runs (#17143) instead of '
+             'demoting. Exit 1 when any is found.')
     args = ap.parse_args()
 
     family_dir = _resolve_dir(args.dir)
@@ -309,6 +446,24 @@ def main():
     else:
         targets = sorted(p for p in family_dir.rglob('*.ipynb')
                          if '_output' not in p.name)
+
+    if args.detect:
+        total_findings = 0
+        for p in targets:
+            if not p.exists():
+                print(f'MISSING: {p}', file=sys.stderr)
+                continue
+            findings, err = detect_notebook(p)
+            if err:
+                print(f'ERROR {p.name}: {err}', file=sys.stderr)
+                continue
+            for f in findings:
+                total_findings += 1
+                print(f'{p.name}: cell {f["cell"]} -- split callout, '
+                      f'{f["run_length"]} line(s), {f["appended_colons"]} '
+                      f'appended colon(s)')
+        print(f'\nTotal split callouts: {total_findings}')
+        return 1 if total_findings else 0
 
     total_changed = 0
     for p in targets:

@@ -42,6 +42,8 @@ Updated: 2026-09-05 — M17 HAR-LJ-Asym round-3 calibration (PR #14592, prefligh
 
 Updated: 2026-09-05 — M17 HAR-LJ-Asym round-4 (PR #14592, adjoint re-review DM `msg-20260905T001520`, 3/6 PASS / 3/6 PARTIAL) : test OOS multi-fold discriminant `test_walk_forward_lj_asym_oos_target_invariance_multi_fold` (n_splits=3, biais per-fold **distincts**, invariance per-fold bit-identique rtol 1e-12, folds antérieurs inchangés, folds postérieurs = expanding-window retrain légitime asserté comme sensibilité, train-tail > 1.0 par fold) + provenance `bounds_train_test` (`{train_end_idx = n_splits·(n//(n_splits+1)), oos_start_idx = train_end+horizon, oos_end_idx}`) relayée par `_eval_one_coin` / `aggregate_verdicts` / manifeste (`bounds_per_coin_horizon`, `fc_lj_hash_per_fold` alignés sur `per_fold_bias`) ; placeholder `if False else None` supprimé. Tests 22 → 24 verts, suite 1194 passed / 0 failed. **[M17 HAR-LJ-Asym BTC run] LIVRÉ (round-4 code) — `python har_lj_asym.py --coins BTC-USD --skip-remote --debias --horizons 1 5 10 --seeds 0 7 42 99` en 467.9 s** : h=1 **BEATS 4/4** vs HAR et M12 (p<1e-6, mean_loss_diff<0, `_coherent_beats()` strict ✓) ; h=5/h=10 INCONCLUSIVE 0/4 (p>0.05, mean_loss_diff>0 ⇒ cohérent INCONCLUSIVE). Bornes effectives BTC : `train_end=1890` (5 folds × 378 jours), `n_oos=378-382`, `n_total=2272` jours. Bit-identity cross-seed OK (`per_fold_bias` et `fc_lj_hash_per_fold` identiques sur les 4 seeds, `bounds_consistent_across_seeds=True`). Précédent c.953 `h=1 BEATS p=0.839708` réfuté — sous round-3+4 calibration le verdict reste BEATS mais devient réellement significatif. Détail dans `docs/M17_HAR_LJ_ASYM.md` section « Live BTC run (concern b — this PR) ». Manifest `scripts/results/m17_har_lj_asym.json` régénéré ; meta `manifest_m17_har_lj_asym.json` mis à jour avec `concern_addressing` round-3 + round-4.
 
+Updated: 2026-09-28 — M17 HAR-LJ-Asym revalidation sur sept actifs avec origine et cible appariées, purge horizon et calibration train-only (Epic #1454) : **NO BEATS cluster** contre HAR (6/21 couples gagnants, 2/21 perdants, 13/21 non concluants ; SOL et LTC seuls majoritaires, 2/7 actifs, sign-test unilatéral p=0,9375) et contre M12 (1/21 couple gagnant, aucun actif majoritaire, p=1). Les 4 graines OLS sont bit-identiques, pas des réplications indépendantes. L'ancien `BTC h=1 BEATS` des lignes 2026-09-04/05 ci-dessus est **SUPERSEDED** par le rejeu apparié : BTC 0/3 horizon gagnant contre HAR et M12. Agrégat et preuves de folds/dates/DM : `scripts/results/m17_har_lj_asym_cluster_aligned.json` (blob Git SHA-256 `2ca4b9ffe0582d290dfa77a3f8c47a0381e099e4eba7ecbc4e1fc221729ff6ae`, 352 102 octets) ; détail dans `docs/M17_HAR_LJ_ASYM.md`.
+
 Updated: 2026-09-05 — M18 TimesFM 2.5 zero-shot première entrée §C (issue #14768, lane myia-po-2026) : **vs Log-HAR 5/6 BEATS, 1/6 INCONCLUSIVE (BTC h=22, log-HAR numériquement meilleur mais p=0,23), 0/6 NO BEATS** — réserves : ETH h=22 p=0,0445 limite. Horizons 1/5/22 j, walk-forward 5 folds, seeds bit-identiques (GPU déterministe), débiais symétrique, DM conjonction MSE (#11010). Vrai checkpoint attesté (SHA 1d952420fba8, 43 720 séries, fail-explicit). Calibration quantile native : couverture 80 % à ±0,026 du nominal. HAR en niveaux dégénère en quasi-persistence (MSE identiques à 6 décimales, hashs distincts). Détail section M18 + `docs/M18_TimesFM.md`.
 
 Updated: 2026-09-05 — M18 correctif baseline har_rv (issue #14791, lane myia-po-2026) : la clause « HAR en niveaux dégénère en quasi-persistence » ci-dessus était **fausse — SUPERSEDES**. L'égalité har_rv == persistence (5e-14) était un bug d'alignement dans `HarRvModel.fit` (régresseurs contemporains de la cible → fit identité parfait, résidu ~1e-19, prévision = persistence exacte) ; le contrôle « hashs distincts » ne pouvait pas le détecter. Correctif : régresseurs décalés d'un pas (miroir `realized_variance.har_lag_features`) + garde `assert_baselines_distinct` (paires de baselines distinctes ≥ 1e-6 relatif sur ≥ 1 point OOS, sinon le run échoue). Re-run complet 24 cellules (checkpoint SHA inchangé, 43 720 séries, persistence/ewma/log_har bit-identiques) : **vs har_rv 6/6 BEATS +29,8/+51,1 %** (colonne tableau M18 mise à jour), `baseline_weakest_rel_sep` 0,11-0,18 ; har_rv corrigé meilleur que persistence (BTC h=1 MSE 1,044 vs 1,172). Verdict de tête #14768 inchangé (vs Log-HAR 5/6). Tests +7 (dont dents du garde prouvées sur l'alignement bugué : rouge à 2,65e-11).
@@ -49,6 +51,8 @@ Updated: 2026-09-05 — M18 correctif baseline har_rv (issue #14791, lane myia-p
 Updated: 2026-09-06 — iTransformer BTC log-RV revalidé contre HAR débiaisé train-only (#14860, lane myia-po-2026:CoursIA-2) : h=1/h=5/h=10 **NO BEATS** (4/4 seeds battues et DM p<0,05) ; var_ratio > 1 aux trois horizons — l'attention inversée (variable-as-token) ne bat pas la baseline HAR simple sur log-RV ; voir section §C iTransformer ci-dessous.
 
 Updated: 2026-09-08 — M19 MiniCPM5-2B GRPO+QLoRA sur DAPO-Math-17k, entrée §C (issue #15099 probe B, lane myia-po-2023:CoursIA) : **BEATS en trainabilité RL** vs Qwen3.5-0.8B — Δ accuracy eval held-out (40 problèmes × 4 générations, pré/post 100 steps bornés, même recette DAPO non-thinking) : MiniCPM5-2B **+0,0219 ± 0,0031** (2/2 seeds progressent, +88 % relatif, courbes saines, longueur stable) vs Qwen3.5-0.8B +0,0063 ± 0,0063 (1 seed plat, 1 seed modéré, reward train déclinant) ; intervalles ±1std disjoints. Réserves honnêtes : accuracies absolues 2-6 % (DAPO olympiaque pour ces tailles — la claim porte sur la trainabilité relative, pas sur un modèle math utilisable), et baseline 2,5× plus petite (0.8B vs 2B, désignée par l'issue). Détail section M19 + `docs/M19_MiniCPM5_GRPO.md` + manifestes `scripts/results/m19_minicpm5_grpo/`.
+
+Updated: 2026-09-13 — M12 HAR-RV-J revalidé sur sept actifs avec calibration train-only symétrique (#16004, Epic #1454, lane myia-po-2025:CoursIA) : **NO BEATS cluster** — 0/7 actifs BEATS, sign-test binomial exact unilatéral p=1,0 ; ADA NO BEATS (3/3 horizons battus en DM-MSE, p=0,021-0,026), ETH NO BEATS (h=5/h=10, p=0,029/0,036), cinq actifs INCONCLUSIVE ; 0/21 couples BEATS (5 NO BEATS, 16 INCONCLUSIVE). Le BEATS Cycle 31 (p=7,9e-7, 64/84, calibration asymétrique + pseudo-réplication 4 seeds d'un OLS déterministe) **n'est pas confirmé** — sans réfutation définitive (protocoles et fenêtres diffèrent, cinq actifs ~724 j). Biais OOS signé du candidat calibré supérieur à la baseline calibrée (+0,103/+0,095/+0,017 vs −0,013/−0,018/−0,023 aux h=1/5/10) ; les écarts les plus amples apparaissent sur les fenêtres yfinance courtes, constat descriptif sans attribution causale. Détail section M12 + `docs/M12_HAR_RV_J.md`.
 
 Total checkpoints: 70 (20 legacy ARCHIVED + 50 panier baselines)
 
@@ -142,6 +146,110 @@ Extension du protocole BTC aux sept actifs BTC, ETH, SOL, LTC, XRP, ADA et DOT, 
 - **Limite h≥2** : fermeture récursive fixe partageant la RV future prévue à 50/50 entre RV+ et RV− ; convention historique non apprise.
 - **Artefact** : `scripts/results/m16_har_asymmetric_debiased_7asset.json` — 84 lignes seed, 21 agrégats, 5+5 folds, biais signés et séries OOS alignées.
 - **Résultat historique** : conservé intact ; son `p≈0,063` utilisait implicitement la queue opposée, tandis que la revendication `BEATS` exige la queue `greater` ci-dessus.
+
+## M12 HAR-RV-J — revalidation cluster sept actifs (2026-09-13) — #16004 (Epic #1454)
+
+Revalidation de la décomposition de sauts (Andersen-Bollerslev-Diebold 2007, J_t = max(RV_t − 0,6·BPV_t, 0), Huang-Tauchen) sur le cluster BTC, ETH, SOL, LTC, XRP, ADA, DOT, horizons {1,5,10}, cinq folds expanding (refit 22 j), calibration train-only **symétrique** (60 observations, fenêtre identique pour la baseline HAR et le candidat HAR-RV-J), frais 50 bps, DM `loss_fn="mse"`. Contrat fail-closed : les 21 unités actif×horizon sont toutes évaluées ou le script termine en échec sans verdict. OLS déterministe : `n_seeds_effective=1` par unité, les labels {0,7,42,99} sont des contrôles non applicables, jamais des observations. Agrégation primaire **par actif** (BEATS si majorité stricte d'horizons BEATS, NO BEATS si au moins un horizon NO BEATS, sinon INCONCLUSIVE), puis sign-test binomial exact unilatéral sur les sept actifs — même protocole que la revalidation M16 ci-dessus.
+
+- **Verdict cluster : NO BEATS** — 0 actif BEATS sur 7, binomial exact unilatéral `p=1,000000`.
+- **Par actif** : ADA `NO BEATS` (3/3 horizons battus, DM p = 0,0207/0,0234/0,0256) ; ETH `NO BEATS` (h=5 et h=10 battus, p = 0,0288/0,0358) ; BTC, SOL, LTC, XRP, DOT `INCONCLUSIVE` (0 BEATS, 0 NO BEATS chacun).
+- **Configurations (descriptif, n=21 — horizons d'un même actif dépendants)** : 0 `BEATS`, 5 `NO BEATS`, 16 `INCONCLUSIVE` (p DM 0,065-0,676) ; médiane delta-Sharpe +0,0009.
+- **Par horizon (descriptif)** : h=1 edge −0,0119 (p méd 0,1130), h=5 +0,0053 (0,0874), h=10 −0,0095 (0,0880) ; `loss_diff` positif aux trois horizons (+3,27/+5,89/+1,95) — là où le DM tranche, il tranche contre le candidat.
+- **Biais signés OOS** (moyennes h=1/5/10) : HAR brut −0,049/−0,074/−0,091 ; HAR calibré −0,013/−0,018/−0,023 ; **HAR-RV-J calibré +0,103/+0,095/+0,017** — après calibration identique, le candidat reste plus biaisé que la baseline ; les écarts les plus amples apparaissent sur les fenêtres ~724 j (médiannes par actif : XRP +1,95, SOL −1,02, LTC +0,48, DOT −0,48, ADA −0,26, contre BTC −0,002 et ETH −0,012), constat descriptif sans attribution causale.
+- **Fenêtres** : BTC 2018-05-15→2024-08-09 (2 278 jours RV), ETH 2019-10-21→2023-12-15 (1 495), cinq actifs yfinance 2024-09-14→2026-09-13 (724 chacun).
+- **Lecture vs Cycle 31** : le `BEATS` historique (p=7,9e-7, 64/84, calibration asymétrique de la seule baseline et pseudo-réplication par 4 seeds d'un OLS déterministe) **n'est pas confirmé** sous ce protocole — sans être définitivement réfuté (protocoles et fenêtres diffèrent ; cinq actifs ne portent que ~724 jours). Que l'asymétrie de calibration du Cycle 31 portait une part de son avantage, et que la calibration du biais soit instable sur fenêtres courtes, sont des **interprétations** cohérentes avec les biais signés ci-dessus, pas des démonstrations. Cohérent avec M16 cluster (#15861) : NO BEATS.
+- **Artefacts** : `scripts/results/m12_har_rv_j/results.json` (93 727 octets dans le blob Git — biais signés, p-values DM, preuves de folds 5/5/5 sur les trois côtés HAR/HAR-calibré/HRJ, manifeste données par actif) et `m12_har_rv_j_results.csv` (43 026 octets). Sweep réel 21/21, 0 échec, 220 s. Fiche technique : `docs/M12_HAR_RV_J.md` (historique Cycle 31 préservé) ; notebook réexécuté : `m12_har_rv_j_research.ipynb`.
+
+## M11 HAR-Kelly — rejeu débiaisé trois bras (2026-09-24) — Epic #1454
+
+Rejeu du claim économique M11 (kelly_har_mu60 27/35 face au buy-and-hold) sous **calibration du biais
+train-tail** (`_fit_har_with_train_calibration`, 60 observations), avec un protocole **trois bras
+appariés** qui isole l'effet causal de l'offset des effets du changement d'échantillon de fit :
+
+| Bras | Fit | Offset | Lecture |
+|---|---|---|---|
+| `hist_raw` | train complet | aucun | ≡ `walk_forward_har(calibrate_bias=False)` — lien bit-identique au M11 historique |
+| `fit_raw` | train − 60 obs | aucun | même échantillon de fit que le bras calibré, sans l'offset |
+| `adjusted` | train − 60 obs | − biais estimé | ≡ `walk_forward_har(calibrate_bias=True)` — bras calibré |
+
+Mêmes dates OOS, mêmes cibles, walk-forward expanding 5 folds (refit 22 j), horizons {1,5,10,15,20},
+sept actifs, frais 10 bps, `kelly-cap 1.0`, mu {60,120,250}. OLS déterministe :
+`n_seeds_effective = 1` par unité. Contrat fail-closed : 35/35 combos produits, 0 manquant,
+0 dégénéré, 0 doublon, exit 0. Les identités de bras sont épinglées par des tests
+(`scripts/tests/test_simulate_har_kelly_debias.py`, 19 tests) : `hist_raw`/`adjusted` bit-identiques
+aux chemins de référence de `walk_forward_har`, invariance des prévisions au RV futur, causalité du
+flux d'information (une perturbation de prévision à t ne change aucun rendement net antérieur),
+oracle recalé sur la fenêtre [i, i+h−1] dans le bras débiaisé uniquement (le bras historique reste
+reproductible au bit près).
+
+**Provenance (diffère du panel M11b de 2026-05)** : BTC Bitstamp local 2018-05-15→2024-08-09
+(2 278 j RV) ; ETH Binance local 2019-10-21→2023-12-15 (1 495) ; cinq actifs yfinance **live**
+2024-09-25→2026-09-24 (~724 chacun) — le panel remote n'est PAS celui du verdict historique, les
+deux populations ne sont pas like-for-like.
+
+### Couche prévision — le calibrage supprime le biais signé, pas uniformément la MSE
+
+Biais signés OOS moyens sur les cinq horizons :
+
+| Actif | hist_raw | fit_raw | adjusted |
+|---|---:|---:|---:|
+| BTC | −0,434 | −0,440 | **−0,004** |
+| ETH | −0,161 | −0,132 | −0,015 |
+| ADA | +0,093 | +0,164 | −0,004 |
+| DOT | +0,018 | +0,090 | −0,001 |
+| LTC | +0,051 | +0,132 | +0,054 |
+| SOL | +0,106 | +0,166 | +0,072 |
+| XRP | −0,045 | −0,004 | +0,026 |
+
+DM causal (`adjusted` vs `fit_raw`, `loss_fn="mse"`, même échantillon de fit — l'offset est la seule
+différence) : **5 BEATS / 11 BEATEN / 19 INCONCLUSIVE** sur 35. BTC BEATS aux cinq horizons
+(p = 3,5e-05 → < 5e-07) ; LTC BEATEN aux cinq (p ≤ 0,018) ; XRP BEATEN 5/5, SOL BEATEN h=20. L'offset
+train-tail est instable sur les fenêtres ~724 j : il corrige BTC en profondeur mais dégrade LTC/XRP
+(sur-correction — le biais signé change de signe). DM vs naive-30d : `adjusted` BEATS 35/35 — HAR
+domine la baseline naïve partout, calibration ou pas.
+
+**Verdict couche prévision : INCONCLUSIVE au niveau cluster** (dépendant de l'actif) — la
+suppression du biais signé n'est PAS un gain de précision uniforme. Le DM conflated
+(`adjusted` vs `hist_raw` : 5/24/6) confirme a posteriori que la comparaison naïve
+calibré-vs-historique aurait été trompeuse (le bras calibré hérite d'un fit sur moins de données).
+
+### Couche économique — l'avantage Kelly est invariant à la calibration du biais
+
+| kelly_har_mu60 (delta Sharpe vs buy_hold) | hist_raw | fit_raw | adjusted |
+|---|---:|---:|---:|
+| Victoires /35, protocole historique non apparié | 32 | 32 | 32 |
+| Victoires /35, apparié post-warmup (dates identiques) | 31 | 31 | 31 |
+| ΔSharpe médian | +0,358 | +0,359 | +0,382 |
+
+- **Aucune bascule de signe du delta entre bras sur les 35 combos** (mu60, mu120 et mu250 :
+  0/35 chacun). Le décalage causal `adjusted − fit_raw` est de médiane −0,010, max |0,069|.
+- mu60 : 32/35 non apparié (binomial exact unilatéral p = 2,1e-07), 31/35 apparié post-warmup
+  (p = 1,7e-06). Seul ETH est faible (2/5 non apparié).
+- **L'avantage économique n'est PAS porté par la correction du biais de prévision** : identique
+  avant/après calibration, il est porté par le dimensionnement conditionné à la volatilité
+  (exposure management long-only, plancher f = 0 en tendance baissière), pas par des prévisions
+  ponctuelles débiaisées.
+- **Divulgation zero-exposure** : mu250 = 16/35 combos tout-cash (`avg_weight` = 0 : ADA/DOT 5
+  chacun, SOL/LTC/XRP 2 chacun — le mu 250 j reste négatif sur toute la fenêtre ~724 j) ;
+  mu120 = 2/35 (DOT). Ces « victoires » contre un buy-and-hold négatif sont du cash, pas un edge :
+  mu250 est hors claim. vol_target_har : 21/17/19 selon le bras (deltas médians ≈ 0, 8/35 bascules
+  de signe entre bras) — pas d'avantage, cohérent avec l'historique.
+- **Ce n'est PAS un claim §C** : la couche économique (Sharpe + sign-test) est une observation
+  économique sous hypothèses déclarées — exécution au close quotidien prix uniquement via les
+  frais 10 bps (hypothèse déclarée, pas mesurée), warmup mu60 divulgué (60 j à poids nul) et delta
+  apparié recalculé post-warmup. La jambe §C (DM-MSE) de ce même run est le verdict INCONCLUSIVE
+  cluster ci-dessus.
+
+### Artefacts
+
+- `scripts/results/m11_kelly_debiased/results_7asset_7x5.json` (361 939 octets — 525 lignes
+  stratégie, stats forecast attribuées coin×horizon, DM, provenance, missing, problems)
+- Séries complètes (35 CSV : dates, cible log-RV, trois bras) : hors dépôt, scratchpad local
+  `m11_series_7x5_v2/`
+- Tests : `scripts/tests/test_simulate_har_kelly_debias.py` — 19 tests (identités de bras,
+  non-fuite temporelle, causalité du timing, oracle [i..i+h−1], validateur fail-closed,
+  attribution coin/horizon)
+- Run : `python scripts/simulate_har_kelly.py --debias --calibration-size 60 --horizons 1 5 10 15 20 --extra-coins LTC-USD XRP-USD ADA-USD DOT-USD --expect-coins BTC-USD ETH-USD SOL-USD LTC-USD XRP-USD ADA-USD DOT-USD --mu-windows 60 120 250 --target-vol 0.15 --kelly-cap 1.0 --fee-bps 10 --out-json scripts/results/m11_kelly_debiased/results_7asset_7x5.json`
 
 ## M4 DLinear-vol — entrée §C (2026-08-14) — issue #10908
 

@@ -32,7 +32,7 @@ def Admissible (h hStar : V → NNReal) : Prop :=
 
 /-- Heuristique **consistante** (monotone) : relaxation de l'équation de Bellman le
     long de chaque arc. La consistance implique l'admissibilité
-    (`consistent_implies_admissible`), et garantit en outre que la fonction `f = g + h`
+    (`consistent_implies_admissible_bound`, cf `Astar/Consistency.lean`), et garantit en outre que la fonction `f = g + h`
     est croissante le long des chemins, donc qu'A* ne ré-expande jamais un nœud. -/
 def Consistent (h : V → NNReal) : Prop :=
   ∀ n n' : V, h n ≤ G.edge n n' + h n'

@@ -2445,8 +2445,21 @@ private theorem hashlifeResultAux_level_cellWf_step (n : Nat) (hn3 : 3 ≤ n)
                            (hashlifeResultAux (n - 1) (node se_nw se_ne se_sw se_se))
                            hr5.1 hr6.1 hr8.1 hr9.1 hr5.2 hr6.2 hr8.2 hr9.2
     -- Unfold hRA's recursive arm now that the wave facts are established.
-    simp only [hashlifeResultAux, if_neg heq, MacroCell.level]
-    exact node_level_cellWf_conjuncts n hn3 _ _ _ _
+    -- v4.33 (#16341): the elaboration of the upstream `if c.level == 2`
+    -- (Hashlife.lean:174) no longer matches `if_neg heq` after `simp only`;
+    -- case-split the unfolded `if` directly. The positive arm is vacuous:
+    -- 16 grandchildren at level (n - 2) put the node at level n ≥ 3.
+    simp only [hashlifeResultAux]
+    split
+    · exfalso
+      rename_i hcond
+      have hnode := node16_level nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+                   sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se n (by omega) hnw_nw_l
+      try rw [hnode] at hcond
+      try simp only [MacroCell.level] at hcond
+      have hn2 : n = 2 := by simpa [beq_iff_eq] using hcond
+      omega
+    · exact node_level_cellWf_conjuncts n hn3 _ _ _ _
         honw.1 hone.1 hosw.1 hose.1 honw.2 hone.2 hosw.2 hose.2
 
 /-- **(c.142) Level + well-formedness preservation of `hashlifeResultAux`**,

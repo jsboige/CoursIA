@@ -29,7 +29,7 @@ SECTIONS = [
         "**Bas-gauche `Temps d'Execution par Theoreme (ms)`** : bar chart 10 barres bleu ciel, range 28 000-74 000 ms ; pic `omega_example` ~74 000 ms, `simp_example` ~54 000 ms ; minimum `ring_example` ~28 500 ms. "
         "**Bas-droite `Tokens Utilises par Theoreme`** : bar chart 10 barres orange, range 350-3900 tokens ; pic `distrib_example` ~3900, `simp_example` ~3400 ; minimum `ring_example` ~350. "
         "Stats RGB PIL tell : `matplotlib_blanc + bar_chart_bleu_principal + bar_chart_orange + camembert_chaud` (L778-L2 ★ heatmap dark-field inverse — ici la palette est claire et le panel dominant est bleu/orange sur blanc). "
-        "Verdict pedagogique : **0 succès sur 10 tentatives** (camembert 100% Échec) = point de depart du cours Lean-7b-Examples (un LLM seul, sans LeanDojo ni tactiques structurees, echoue sur des theoremes meme simples)."
+        "Verdict pedagogique : **0 succès sur 10 tentatives** (camembert 100% Échec) = point de depart du cours Lean-07b-Examples-Python (un LLM seul, sans LeanDojo ni tactiques structurees, echoue sur des theoremes meme simples)."
     ),
     (
         'lean-torchlean.png',

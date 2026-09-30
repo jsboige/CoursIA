@@ -226,26 +226,158 @@ class WorkflowManager:
             
         return len(errors) == 0, errors
 
+    # Noeuds de commentaire : presents dans le format UI, inexistants en API.
+    NOTE_TYPES = ('Note', 'MarkdownNote')
+    # Aiguillage purement frontend (`Reroute` est absent de `/object_info` sur
+    # les instances ou il n'est pas un noeud serveur) : il ne transporte rien,
+    # donc on remonte a sa source au lieu de le filtrer -- le filtrer perdrait
+    # le lien qu'il portait.
+    REROUTE_TYPES = ('Reroute',)
+    # Widgets dont le frontend emet DEUX valeurs : la valeur et le mode de
+    # regeneration associe (ex. `seed` suivi de `control_after_generate`).
+    SEED_WIDGETS = ('seed', 'noise_seed')
+    # Types rendus par un widget ; tout le reste est un lien. `COMBO` est le
+    # type des listes de choix depuis 0.37 (les options vivent dans le dict qui
+    # suit, la ou les versions anterieures mettaient la liste en premier).
+    WIDGET_TYPES = ('INT', 'FLOAT', 'STRING', 'BOOLEAN', 'COMBO')
+
     @staticmethod
-    def convert_ui_to_api(ui_workflow: Dict[str, Any]) -> Dict[str, Any]:
-        """Convertit un workflow UI (nodes list) en format API (dict id->node)"""
-        # Note: C'est une approximation. La conversion réelle nécessite le graphe complet.
-        # Ici on extrait juste les inputs et class_type pour un usage simple.
-        api_workflow = {}
-        for node in ui_workflow.get('nodes', []):
-            if node['type'] in ['Reroute', 'Note']: continue # Ignorer les nodes utilitaires
-            
-            api_node = {
-                "class_type": node['type'],
-                "inputs": {}
-            }
-            
-            # TODO: Mapping complexe des inputs (widgets_values -> inputs)
-            # Cette fonction est un placeholder pour une implémentation future plus robuste
-            # si nécessaire. Pour l'instant, on assume que les utilisateurs fournissent
-            # des workflows déjà au format API pour l'automatisation.
-            pass
-            
+    def widget_names(class_type: str, object_info: Dict[str, Any]) -> List[str]:
+        """Noms des entrees rendues par un widget, dans l'ordre du noeud.
+
+        Un type `list` (COMBO) ou primitif est un widget ; un nom de type de
+        noeud (MODEL, IMAGE, ...) est un lien et n'a pas de valeur de widget.
+        """
+        spec = (object_info.get(class_type) or {}).get('input') or {}
+        names: List[str] = []
+        for section in ('required', 'optional'):
+            for name, definition in (spec.get(section) or {}).items():
+                if not isinstance(definition, (list, tuple)) or not definition:
+                    continue
+                kind = definition[0]
+                if isinstance(kind, list) or kind in WorkflowManager.WIDGET_TYPES:
+                    names.append(name)
+        return names
+
+    @staticmethod
+    def frontend_only_widgets(class_type: str, object_info: Dict[str, Any]) -> int:
+        """Nombre de valeurs de widget que seul le frontend connait.
+
+        `LoadImage` en porte une : le bouton d'upload, que le serveur ne declare
+        pas comme entree mais dont `object_info` donne la cle (`image_upload`).
+        Elle est stockee en FIN de `widgets_values` et n'a pas d'equivalent API.
+        """
+        spec = (object_info.get(class_type) or {}).get('input') or {}
+        count = 0
+        for section in ('required', 'optional'):
+            for definition in (spec.get(section) or {}).values():
+                if isinstance(definition, (list, tuple)) and len(definition) > 1 \
+                        and isinstance(definition[1], dict) and 'image_upload' in definition[1]:
+                    count += 1
+        return count
+
+    @staticmethod
+    def resolve_source(node_id: Any, slot: Any, by_id: Dict[Any, Any],
+                       sources: Dict[Any, Any], seen: Optional[set] = None) -> Any:
+        """Remonte une chaine de `Reroute` jusqu'au noeud qui produit vraiment."""
+        seen = set() if seen is None else seen
+        node = by_id.get(node_id)
+        if not node or node.get('type') not in WorkflowManager.REROUTE_TYPES or node_id in seen:
+            return node_id, slot
+        seen.add(node_id)
+        for entry in node.get('inputs') or []:
+            source = sources.get(entry.get('link'))
+            if source and source[0] is not None:
+                return WorkflowManager.resolve_source(source[0], source[1],
+                                                       by_id, sources, seen)
+        return node_id, slot
+
+    @staticmethod
+    def convert_ui_to_api(ui_workflow: Dict[str, Any],
+                          object_info: Dict[str, Any]) -> Dict[str, Any]:
+        """Convertit un workflow UI (liste `nodes`) en format API (dict id->node).
+
+        `object_info` (reponse de `GET /object_info`) est requis : c'est lui qui
+        donne l'ordre des widgets par classe de noeud. Sans lui, l'appariement
+        `widgets_values` <-> noms d'entrees serait devine.
+
+        Leve `ValueError` des qu'un noeud ne s'apparie pas exactement : un
+        graphe silencieusement mal apparie produirait une image fausse.
+        """
+        # id de lien -> (id du noeud source, slot de sortie source)
+        sources: Dict[Any, Any] = {}
+        for link in ui_workflow.get('links') or []:
+            if isinstance(link, list) and len(link) >= 5:
+                sources[link[0]] = (link[1], link[2])
+            elif isinstance(link, dict):
+                sources[link.get('id')] = (link.get('origin_id'), link.get('origin_slot'))
+
+        by_id = {n.get('id'): n for n in ui_workflow.get('nodes') or []}
+
+        api_workflow: Dict[str, Any] = {}
+        for node in ui_workflow.get('nodes') or []:
+            class_type = node.get('type')
+            if class_type in WorkflowManager.NOTE_TYPES \
+                    or class_type in WorkflowManager.REROUTE_TYPES:
+                continue
+            if node.get('mode') in (2, 4):  # muet / bypasse
+                continue
+
+            inputs: Dict[str, Any] = {}
+            linked: Dict[str, Any] = {}
+            for slot in node.get('inputs') or []:
+                source = sources.get(slot.get('link'))
+                if not source or source[0] is None:
+                    continue
+                origin = WorkflowManager.resolve_source(source[0], source[1],
+                                                        by_id, sources)
+                linked[slot['name']] = [str(origin[0]), origin[1]]
+
+            # `widgets_values` est positionnel sur TOUS les widgets du noeud, y
+            # compris ceux qu'un lien court-circuite (le frontend conserve la
+            # derniere valeur saisie). L'appariement se fait donc sans filtrer,
+            # et les liens ecrasent ensuite la valeur restee en place.
+            names = WorkflowManager.widget_names(class_type, object_info)
+            values = list(node.get('widgets_values') or [])
+
+            # Un combo dynamique (`COMFY_DYNAMICCOMBO_V3`, ex. `resize_type` de
+            # ResizeImageMaskNode) ouvre des sous-widgets dont le nombre depend
+            # de la valeur choisie : `/object_info` ne les declare pas, et ils
+            # s'intercalent AU MILIEU des autres widgets. Rien ne permet de les
+            # apparier sans les deviner : on refuse au lieu de produire un
+            # graphe faux.
+            spec = (object_info.get(class_type) or {}).get('input') or {}
+            for section in ('required', 'optional'):
+                for name, definition in (spec.get(section) or {}).items():
+                    if isinstance(definition, (list, tuple)) and definition \
+                            and definition[0] == 'COMFY_DYNAMICCOMBO_V3':
+                        raise ValueError(
+                            f"{class_type} (id {node.get('id')}) : combo dynamique "
+                            f"`{name}` — ses sous-widgets ne sont pas declares par "
+                            f"/object_info et ne peuvent pas etre apparies")
+
+            ignored = WorkflowManager.frontend_only_widgets(class_type, object_info)
+            if len(values) == len(names) + ignored:
+                values = values[:len(names)]
+
+            extra_seed = len(values) - len(names)
+            expanded: List[str] = []
+            for name in names:
+                expanded.append(name)
+                if name in WorkflowManager.SEED_WIDGETS and extra_seed > 0:
+                    expanded.append('control_after_generate')
+                    extra_seed -= 1
+            names = expanded
+
+            if len(values) != len(names):
+                raise ValueError(
+                    f"{class_type} (id {node.get('id')}) : {len(values)} widgets_values "
+                    f"pour {len(names)} entrees de widget {names}")
+
+            inputs.update(dict(zip(names, values)))
+            inputs.update(linked)
+            api_workflow[str(node['id'])] = {"class_type": class_type, "inputs": inputs}
+
         return api_workflow
 
     @staticmethod

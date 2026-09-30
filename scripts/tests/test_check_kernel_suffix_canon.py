@@ -84,13 +84,38 @@ def _init_repo(repo: Path) -> str:
 
 
 def _run_guard(repo: Path, cfg: Path, base: str | None = None) -> subprocess.CompletedProcess:
+    """Lance le garde, et refuse de rendre un resultat muet.
+
+    Le garde imprime TOUJOURS au moins son denominateur ("notebooks examines : N",
+    ou son equivalent JSON) avant tout verdict, y compris quand il n'a rien trouve.
+    Un stdout vide n'est donc jamais un verdict : c'est un plantage -- et son code
+    de sortie 1 est alors indiscernable d'un rouge legitime tant que le stderr
+    reste jete. Meme chose pour une trace laissee sur stderr apres une sortie
+    partielle : le contenu attendu manque, l'assertion de contenu echoue, et la
+    cause reelle est perdue.
+
+    Les deux se verifient ici, une fois, pour les treize tests du fichier : c'est
+    le point de passage unique. Cela ne repare pas la cause racine d'un plantage ;
+    cela garantit que sa prochaine occurrence la NOMME, au lieu de couter un cycle
+    de diagnostic a chaque lane qui la croise.
+    """
     args = [sys.executable, str(_SCRIPT), "--config", str(cfg)]
     if base is None:
         args += ["--scan-all"]
     else:
         args += ["--base", base, "--head", "HEAD"]
-    return subprocess.run(args, cwd=str(repo), capture_output=True, text=True,
-                          encoding="utf-8", errors="replace")
+    r = subprocess.run(args, cwd=str(repo), capture_output=True, text=True,
+                       encoding="utf-8", errors="replace")
+    if not r.stdout.strip():
+        raise AssertionError(
+            "le garde n'a rien ecrit sur stdout (rc=%s) : plantage, pas verdict.\n"
+            "--- stderr ---\n%s" % (r.returncode, r.stderr))
+    if "Traceback (most recent call last)" in r.stderr:
+        raise AssertionError(
+            "le garde a plante apres avoir commence a parler (rc=%s).\n"
+            "--- stdout ---\n%s\n--- stderr ---\n%s"
+            % (r.returncode, r.stdout, r.stderr))
+    return r
 
 
 class TestCaseCanonInAdoptedSeries(unittest.TestCase):
@@ -197,11 +222,13 @@ class TestKernelCoherence(unittest.TestCase):
             self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
             self.assertIn("canonical=1", r.stdout)
 
-    def test_lean_suffix_is_not_treated_as_a_kernel_suffix(self):
-        """Contre-epreuve d'une exclusion MESUREE : `-Lean` marque le contenu, pas
-        le moteur (le pendant Lean porte `-Native` ; 2 des 4 `-Lean` tournent sous
-        `python3`). Si quelqu'un remet `-lean` dans KERNEL_LANG_SUFFIXES, ce test
-        rougit et le renvoie a la mesure."""
+    def test_lean_suffix_on_python_kernel_reddens_post_17784(self):
+        """Inversion de l'exclusion mesuree : l'arbitrage mainteneur 25/09
+        (#17784 / #16231 c.5829840595) fait de `-Lean` un suffixe de NOYAU.
+        Un `-Lean` sous kernelspec python3 ment desormais sur le moteur : le
+        notebook Python qui pilote Lean porte `-Lean-Python`, pas `-Lean`.
+        L'ancienne contre-epreuve (`-Lean` toleré sous python3) encoderait
+        l'etat d'avant la decision ; ce test encode l'etat d'apres."""
         with tempfile.TemporaryDirectory() as td:
             repo = Path(td)
             base = _init_repo(repo)
@@ -209,12 +236,121 @@ class TestKernelCoherence(unittest.TestCase):
             _write(repo, "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Foo-Lean.ipynb",
                    _notebook("python3"))
             _git(repo, "add", "-A")
-            _git(repo, "commit", "-qm", "suffixe de contenu, pas de noyau")
+            _git(repo, "commit", "-qm", "suffixe lean sur noyau python")
+
+            r = _run_guard(repo, cfg, base)
+            self.assertEqual(r.returncode, 1,
+                             "un -Lean sous python3 doit rougir (cible : "
+                             "-Lean-Python)\n" + r.stdout + r.stderr)
+            self.assertIn("kernel_mismatch", r.stdout)
+
+    def test_lean_python_suffix_on_python_kernel_is_canonical(self):
+        """`-Lean-Python` = notebook PYTHON pilotant Lean : kernelspec python3
+        coherent (table SUFFIX_KERNEL_COMPAT, pas egalite naive)."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo)
+            cfg = _write_config(repo, [])
+            _write(repo, "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Foo-Lean-Python.ipynb",
+                   _notebook("python3"))
+            _git(repo, "add", "-A")
+            _git(repo, "commit", "-qm", "python pilote lean")
 
             r = _run_guard(repo, cfg, base)
             self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            self.assertIn("canonical=1", r.stdout)
+
+    def test_lean_suffix_on_lean_kernel_is_canonical(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo)
+            cfg = _write_config(repo, [])
+            _write(repo, "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16d-Foo-Lean.ipynb",
+                   _notebook("lean4-wsl"))
+            _git(repo, "add", "-A")
+            _git(repo, "commit", "-qm", "lean natif")
+
+            r = _run_guard(repo, cfg, base)
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            self.assertIn("canonical=1", r.stdout)
+
+    def test_lean_python_suffix_on_lean_kernel_reddens(self):
+        """Un kernelspec lean4 n'a pas besoin de suffixe compose : `-Lean-Python`
+        sur un noyau Lean ment (le compose nomme un pilote Python)."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo)
+            cfg = _write_config(repo, [])
+            _write(repo, "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16e-Foo-Lean-Python.ipynb",
+                   _notebook("lean4-wsl"))
+            _git(repo, "add", "-A")
+            _git(repo, "commit", "-qm", "compose sur noyau lean")
+
+            r = _run_guard(repo, cfg, base)
+            self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+            self.assertIn("kernel_mismatch", r.stdout)
+
+
+class TestSuffixCliquet(unittest.TestCase):
+    """Cliquet #17784 : le suffixe de noyau est cense etre TOUJOURS present sur
+    un ajout. Advisory d'abord (ligne visible, rc 0), bloquant sous
+    `--require-suffix`. Le corpus herite (~86 % sans suffixe) ne rougit pas :
+    le cliquet ne juge que le delta."""
+
+    def _added_plain(self, repo: Path) -> None:
+        _write(repo, "MyIA.AI.Notebooks/GameTheory/GameTheory-31-Plain.ipynb",
+               _notebook("python3"))
+        _git(repo, "add", "-A")
+        _git(repo, "commit", "-qm", "ajout sans suffixe")
+
+    def test_advisory_by_default_keeps_rc_zero_but_lists(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo)
+            cfg = _write_config(repo, [])
+            self._added_plain(repo)
+
+            r = _run_guard(repo, cfg, base)
+            self.assertEqual(r.returncode, 0,
+                             "phase advisory : la ligne est visible, le rc "
+                             "reste vert\n" + r.stdout + r.stderr)
+            self.assertIn("[advisory:no_kernel_suffix]", r.stdout)
+            self.assertIn("GameTheory-31-Plain.ipynb", r.stdout)
             self.assertIn("no_kernel_suffix=1", r.stdout)
-            self.assertNotIn("kernel_mismatch", r.stdout)
+
+    def test_require_suffix_reddens_on_added_without_suffix(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo)
+            cfg = _write_config(repo, [])
+            self._added_plain(repo)
+
+            r = subprocess.run(
+                [sys.executable, str(_SCRIPT), "--config", str(cfg),
+                 "--base", base, "--head", "HEAD", "--require-suffix"],
+                cwd=str(repo), capture_output=True, text=True,
+                encoding="utf-8", errors="replace")
+            self.assertEqual(r.returncode, 1,
+                             "phase bloquante : l'ajout sans suffixe rougit\n"
+                             + r.stdout + r.stderr)
+            self.assertIn("[no_kernel_suffix] "
+                          "MyIA.AI.Notebooks/GameTheory/GameTheory-31-Plain.ipynb",
+                          r.stdout)
+
+    def test_scan_all_stays_census_not_cliquet(self):
+        """Le census ne liste pas ~1100 lignes : le cliquet est un jugement de
+        DELTA, le scan-all reste un denombrement."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            _init_repo(repo)
+            cfg = _write_config(repo, [])
+            r = subprocess.run(
+                [sys.executable, str(_SCRIPT), "--config", str(cfg),
+                 "--scan-all", "--require-suffix"],
+                cwd=str(repo), capture_output=True, text=True,
+                encoding="utf-8", errors="replace")
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            self.assertNotIn("[advisory:no_kernel_suffix]", r.stdout)
 
 
 class TestDistinctStates(unittest.TestCase):

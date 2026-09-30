@@ -39,11 +39,20 @@ Usage
     python scripts/lean/check_grothendieck_readme.py --json
     python scripts/lean/check_grothendieck_readme.py --strict
     python scripts/lean/check_grothendieck_readme.py --path <lake-root>
+    python scripts/lean/check_grothendieck_readme.py --ref origin/main
 
 Defaults to the canonical grothendieck_lean lake (auto-detected via
 ``MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/``). Exit code ``0``
 on a clean README, ``1`` on any blocking drift. ``--json`` outputs a single
 JSON document on stdout (machine-parseable for the gate).
+
+Measured tree (#17512): the default reference is ``HEAD`` — the tree under
+test. A PR that adds a module aligns its prose to its own head, and the
+checker validates exactly that. Before #17512 the script measured
+``origin/main``, which fabricated an off-by-one on every module-adding PR
+(the author silenced the organ by writing main's count, then main inherited
+the undercount after merge). ``--ref`` keeps an explicit upstream
+comparison available when wanted.
 """
 from __future__ import annotations
 
@@ -102,6 +111,7 @@ class Report:
     leaf_count_disk_en: int
     leaf_count_umbrella: int
     toolchain_disk: str | None
+    ref: str = "HEAD"
     toolchain_readme_fr: list[str] = field(default_factory=list)
     toolchain_readme_en: list[str] = field(default_factory=list)
     leaf_count_claims_fr: list[int] = field(default_factory=list)
@@ -122,13 +132,18 @@ class Report:
         return any(x.severity == "blocking" for x in self.drifts)
 
 
-def _git_ls_tree_disk(lake_root: Path) -> tuple[set[str], set[str], int]:
-    """Return (fr_leaves, en_leaves, umbrella_count) from `git ls-tree -r origin/main`.
+def _git_ls_tree_disk(lake_root: Path, ref: str = "HEAD") -> tuple[set[str], set[str], int]:
+    """Return (fr_leaves, en_leaves, umbrella_count) from `git ls-tree -r <ref>`.
 
-    We shell out to git rather than walk the filesystem because the README
-    claim must be validated against the **upstream** tree, not the local
-    working copy — the local copy might have uncommitted changes that are
-    not the README's baseline.
+    We shell out to git rather than walk the filesystem so the measurement
+    is the committed tree, not uncommitted working-copy state. Since #17512
+    the default ``ref`` is ``HEAD`` — the tree under test. A PR's prose
+    must agree with its own head (the PR carries module AND prose), not
+    with ``origin/main``: measuring upstream fabricated an off-by-one on
+    every module-adding PR, because the author silenced the organ by
+    writing main's count, and main inherited the undercount after merge.
+    Pass ``ref="origin/main"`` explicitly when an upstream comparison is
+    what you want.
 
     Leaf detection: ``<LakeRoot>/<Namespace>/<Module>.lean`` (and ``_en``
     variant). The umbrella root file ``<LakeRoot>/<Namespace>.lean`` is
@@ -138,7 +153,7 @@ def _git_ls_tree_disk(lake_root: Path) -> tuple[set[str], set[str], int]:
     """
     rel = lake_root.relative_to(REPO_ROOT)
     proc = subprocess.run(
-        ["git", "ls-tree", "-r", "--name-only", "origin/main", str(rel).replace("\\", "/")],
+        ["git", "ls-tree", "-r", "--name-only", ref, str(rel).replace("\\", "/")],
         cwd=REPO_ROOT,
         check=True,
         capture_output=True,
@@ -279,17 +294,18 @@ def _extract_leaf_count_claims(readme: Path) -> tuple[list[int], list[tuple[int,
     return nums, raw
 
 
-def check_lake(lake_root: Path, strict: bool = False) -> Report:
+def check_lake(lake_root: Path, strict: bool = False, ref: str = "HEAD") -> Report:
     rpt = Report(
         lake=str(lake_root.relative_to(REPO_ROOT)) if lake_root.is_absolute() else str(lake_root),
         leaf_count_disk_fr=0,
         leaf_count_disk_en=0,
         leaf_count_umbrella=0,
         toolchain_disk=None,
+        ref=ref,
     )
 
     # 1) Disk measurement
-    disk_fr, disk_en, umbrella = _git_ls_tree_disk(lake_root)
+    disk_fr, disk_en, umbrella = _git_ls_tree_disk(lake_root, ref=ref)
     rpt.leaf_count_disk_fr = len(disk_fr)
     rpt.leaf_count_disk_en = len(disk_en)
     rpt.leaf_count_umbrella = umbrella
@@ -406,7 +422,7 @@ def check_lake(lake_root: Path, strict: bool = False) -> Report:
 def _print_human(rpt: Report, strict: bool) -> None:
     print(f"# grothendieck_lean README drift check — {rpt.lake}")
     print()
-    print(f"Disk (origin/main) : {rpt.leaf_count_disk_fr} FR + {rpt.leaf_count_disk_en} EN + {rpt.leaf_count_umbrella} umbrella")
+    print(f"Disk ({rpt.ref}) : {rpt.leaf_count_disk_fr} FR + {rpt.leaf_count_disk_en} EN + {rpt.leaf_count_umbrella} umbrella")
     print(f"Toolchain (disk)   : {rpt.toolchain_disk!r}")
     print()
     print("README.md claims:")
@@ -529,6 +545,10 @@ def main() -> int:
                    help="Promote OVERCOUNT/ORPHAN_IN_TABLE advisories to blocking "
                         "(default: blocking only on UNDERCOUNT/MISSING_IN_TABLE/TOOLCHAIN_DRIFT)")
     p.add_argument("--json", action="store_true", help="Emit a JSON document on stdout")
+    p.add_argument("--ref", default="HEAD", metavar="GIT_REF",
+                   help="Git ref whose tree the README claims are validated against "
+                        "(default: HEAD — the tree under test, #17512). Pass "
+                        "origin/main for an explicit upstream comparison.")
     p.add_argument("--inject-fake", default=None, metavar="FAKE_JSON",
                    help="Path to a JSON file with test-time drift overrides; "
                         "supported keys: counter (int), toolchain_drift (str), "
@@ -542,7 +562,7 @@ def main() -> int:
         print(f"FATAL: lake root not found: {lake}", file=sys.stderr)
         return 2
 
-    rpt = check_lake(lake, strict=args.strict)
+    rpt = check_lake(lake, strict=args.strict, ref=args.ref)
     if args.inject_fake:
         rpt = _apply_inject_fake(rpt, Path(args.inject_fake), strict=args.strict)
 

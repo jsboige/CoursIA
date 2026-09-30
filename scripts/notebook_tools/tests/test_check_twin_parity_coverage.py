@@ -41,7 +41,7 @@ UNIVERSE = {
     # convention 2 -- suffix substituted
     f"{SUD}/Sudoku-07-Norvig-Csharp.ipynb",
     f"{SUD}/Sudoku-07-Norvig-Python.ipynb",
-    f"{GT}/GameTheory-04c-NashExistence-Csharp.ipynb",
+    f"{GT}/GameTheory-04c-NashExistence-CSharp.ipynb",
     f"{GT}/GameTheory-04c-NashExistence-Python.ipynb",
     # convention 3 -- medial token
     f"{SW}/SW-10-CSharp-RDFStar.ipynb",
@@ -50,7 +50,7 @@ UNIVERSE = {
     f"{TW}/Tweety-02c-FOL-CSharp.ipynb",
     f"{SUD}/Sudoku-00-Environment-Csharp.ipynb",
     f"{SW}/SW-1-CSharp-Setup.ipynb",
-    f"{GT}/GameTheory-02-NormalForm-Csharp-Part2.ipynb",
+    f"{GT}/GameTheory-02-NormalForm-Part2-CSharp.ipynb",
 }
 
 
@@ -88,7 +88,7 @@ def test_part2_extension_is_csharp_only():
     `GameTheory-02-NormalForm-Part2`, which does not exist. No false pairing
     against the Part1 Python notebook."""
     assert python_twin_candidates(
-        f"{GT}/GameTheory-02-NormalForm-Csharp-Part2.ipynb", UNIVERSE
+        f"{GT}/GameTheory-02-NormalForm-Part2-CSharp.ipynb", UNIVERSE
     ) == []
 
 

@@ -73,6 +73,15 @@ Deux mécanismes, **sans toucher au code** :
   lève le label. Exclure les bot reviews recréerait le trou sur une
   surface plus étroite (incident fondateur documenté dans le docstring
   de `classify`).
+- **Passe émise en commentaire** : **compte** depuis #16284. Une persona
+  contrainte en jetons émet son verdict dans le fil
+  (`VERDICT: LGTM` suivi de son tag `**[Hermes]**`), et un périmètre
+  `reviews[]` seul déclarait « aucune review » sur des PR déjà revues
+  (#16133 à 12:29:47Z, #16145 à 12:31:38Z, label publié 9 et 6 min plus
+  tard). Le signal est le **tag** de persona, motif de
+  `check_unaddressed_nits` : un commentaire **nu** d'un login partagé ne
+  compte pas — `jsboige` pousse pour toutes les lanes (#13316), et la
+  seule occurrence non taguée du corpus mesuré était une **levée**.
 
 ## Pourquoi ADVISORY et pas bloquant
 
