@@ -372,19 +372,21 @@ print(f""- Mentionnez le style artistique desire"")
 print(f""- Precisez l'eclairage et l'atmosphere"")
 print(f""- Utilisez des termes techniques (8K, cinematic, etc.)"")
 print(f""- DALL-E 3 revise automatiquement vos prompts"")",,,,,,,,96a69c546f5c870d,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,a02bbf24,markdown,fr,bb9ce1f5af3ac379,"### Exercice 1 : Construction progressive de prompts
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,a02bbf24,markdown,fr,a75ff37c764ac29c,"### Exemple guidé : Construction progressive de prompts
 
 Le prompting pour la generation d'images est un art iteratif. Partir d'une description basique et ajouter progressivement des precisions (style, eclairage, composition) ameliore considerablement la qualite du résultat.
 
-**Objectif** : Construire un prompt en 3 itérations successives pour generer une image de ""robot assistant dans un bureau moderne"".
+Cet exemple guidé construit un prompt en **3 itérations successives** pour générer une image de ""robot assistant dans un bureau moderne"" :
 
-**Étapes** :
-1. Ecrivez un prompt minimaliste (description basique du sujet)
-2. Ajoutez des precisions sur le style artistique et l'eclairage
-3. Ajoutez des details techniques (resolution, composition, palette de couleurs)
-4. Comparez les trois prompts et identifiez quels éléments ont le plus d'impact
+1. Un prompt minimaliste (description basique du sujet)
+2. Ajout de precisions sur le style artistique et l'eclairage
+3. Ajout de details techniques (resolution, composition, palette de couleurs)
 
-**Indice** : Les termes techniques comme ""cinematic lighting"", ""ultra-detailed"", ""8K"", ""shallow depth of field"" guident DALL-E 3 vers un rendu plus professionnel.",,,,,,"### Упражнение 1 : Постепенное построение промптов
+La comparaison des trois niveaux identifie ensuite les éléments qui ont le plus d'impact sur le rendu.
+
+**Note** : Les termes techniques comme ""cinematic lighting"", ""ultra-detailed"", ""8K"", ""shallow depth of field"" guident DALL-E 3 vers un rendu plus professionnel.
+
+*Contribution étudiante de @liuyao0010-debug (PR #18449), intégrée comme exemple guidé.*",,,,,,"### Упражнение 1 : Постепенное построение промптов
 
 Промптинг для генерации изображений — это итеративное искусство. Начав с базового описания и постепенно добавляя уточнения (стиль, освещение, композиция), можно значительно улучшить качество результата.
 
@@ -396,22 +398,23 @@ Le prompting pour la generation d'images est un art iteratif. Partir d'une descr
 3. Добавьте технические детали (разрешение, композиция, цветовая палитра)
 4. Сравните три промпта и определите, какие элементы оказали наибольшее влияние
 
-**Подсказка** : Технические термины, такие как ""cinematic lighting"", ""ultra-detailed"", ""8K"", ""shallow depth of field"", направляют DALL-E 3 к более профессиональному рендерингу.",,bb9ce1f5af3ac379,,,,,,1113ce73c942fa9c,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,61d83ca5,code,fr,cc7a3287ac880093,"# Exercice 1 : Construction progressive de prompts
+**Подсказка** : Технические термины, такие как ""cinematic lighting"", ""ultra-detailed"", ""8K"", ""shallow depth of field"", направляют DALL-E 3 к более профессиональному рендерингу.",,a75ff37c764ac29c,,,,,,1113ce73c942fa9c,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,61d83ca5,code,fr,885f6b0ed844a865,"# Exemple guide : Construction progressive de prompts (contribution etudiante)
 
 # Etape 1 : Prompt minimaliste
-prompt_niveau_1 = ""...""  # TODO etudiant : decrivez simplement le sujet en une phrase
-# Exemple : ""A robot assistant in a modern office""
+prompt_niveau_1 = ""A robot assistant in a modern office.""
 
 # Etape 2 : Ajout de style et eclairage
-prompt_niveau_2 = ""...""  # TODO etudiant : ajoutez style artistique et eclairage
-# Indice : ajoutez ""soft natural lighting, digital art style, warm color palette""
+prompt_niveau_2 = (""A robot assistant in a modern office, ""
+                   ""digital art style, soft natural lighting, warm color palette."")
 
 # Etape 3 : Ajout de details techniques
-prompt_niveau_3 = ""...""  # TODO etudiant : ajoutez des precisions techniques
-# Indice : ajoutez ""ultra-detailed, cinematic composition, 8K, sharp focus, shallow depth of field""
+prompt_niveau_3 = (""A robot assistant in a modern office, ""
+                   ""digital art style, soft natural lighting, warm color palette, ""
+                   ""ultra-detailed, cinematic composition, 8K, sharp focus, ""
+                   ""shallow depth of field."")
 
-# Generation (decommentez pour tester)
+# Generation (commentee car pas de cle API dans Colab)
 # for i, prompt in enumerate([prompt_niveau_1, prompt_niveau_2, prompt_niveau_3], 1):
 #     print(f""\n--- Prompt niveau {i} ---"")
 #     print(f""Texte : {prompt}"")
@@ -420,9 +423,21 @@ prompt_niveau_3 = ""...""  # TODO etudiant : ajoutez des precisions techniques
 #         print(f""Prompt revise par gpt-image : {result['revised_prompt'][:200]}..."")
 
 # Etape 4 : Quels elements ont le plus d'impact ?
-observations = None  # TODO etudiant : notez vos observations
+observations = (
+    ""Niveau 1 : prompt minimal, laisse beaucoup de liberte au modele, ""
+    ""risque de rendu generique. ""
+    ""Niveau 2 : l'ajout du style et de l'eclairage devrait orienter ""
+    ""nettement la palette et l'atmosphere. ""
+    ""Niveau 3 : les termes techniques (ultra-detailed, cinematic, 8K, ""
+    ""shallow depth of field) devraient raffiner la nettete et la composition. ""
+    ""Conclusion : le style et l'eclairage sont les leviers les plus impactants ; ""
+    ""les termes techniques precisent le rendu mais ne compensent pas ""
+    ""un prompt pauvre en intention. ""
+    ""(Generation non executee : pas de cle API dans Colab.)""
+)
 
-print(""Exercice a completer"")",,,,,,,,cc7a3287ac880093,,,,,,,,
+print(""Exemple guide : construction progressive terminee."")
+print(observations)",,,,,,,,885f6b0ed844a865,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,o127drbt8o,markdown,fr,1df32d1d6efb4aef,Les exemples de prompts précédents illustrent les différentes catégories stylistiques. Passons maintenant a la generation effective : la cellule suivante envoie la requête a l'API DALL-E 3 et affiche l'image produite.,,,,,,Предыдущие примеры промптов иллюстрируют различные стилистические категории. Теперь перейдём к фактической генерации: следующая ячейка отправляет запрос к API DALL-E 3 и отображает полученное изображение.,,1df32d1d6efb4aef,,,,,,b7221fb54cb01ab9,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,82075ed6,code,fr,40cc4a7800e56664,"# Generation d'images avec les exemples
 print(""\n[generate_image] DEMONSTRATION"")
@@ -20278,3 +20293,58 @@ La classe `TeacherWorkflow` est initialisée avec les templates disponibles (`['
 MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-4-Cross-Stitch-Pattern-Maker-Legacy.ipynb,dbed0095,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,a482b4ae,code,fr,d8cfd07b7b0f3965,"# Parameters
+BATCH_MODE = ""true""
+",,,,,,,,d8cfd07b7b0f3965,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,763083b2,markdown,fr,1b83bfa2e0dd4419,"## Exercices à compléter
+
+### Exercice 4 : Le prompt tient-il ses promesses ? Mesurer sur les pixels
+
+Écrire un prompt riche est une chose ; vérifier que le modèle a réellement obéi en est une autre. L'exemple guidé ci-dessus conclut que le style et l'éclairage sont « les leviers les plus impactants » -- mais comment le **prouver** plutôt que le croire ? Plutôt que de juger à l'œil, on peut **mesurer** : `PIL` donne un accès direct aux statistiques des pixels (teinte moyenne, saturation, luminosité).
+
+**Objectif** : choisir UN axe visuel binaire, générer deux images qui ne diffèrent QUE par cet axe, puis mesurer sur les pixels si la différence promise est réellement observable.
+
+**Étapes** :
+1. Choisissez un axe visuel binaire (exemples : palette chaude vs froide, scène diurne vs nocturne, couleurs saturées vs désaturées, éclairage doux vs dramatique)
+2. Rédigez deux prompts identiques SAUF la mention de cet axe -- une seule variable change, comme dans une expérience contrôlée
+3. Générez les deux images via `generate_image()` (`quality=""low""` suffit pour cette mesure)
+4. Calculez pour chaque image une statistique PIL pertinente pour votre axe
+5. Concluez : la mesure confirme-t-elle la différence promise ? De combien ? Un seul couple d'images suffit-il à conclure ?
+
+**Indice 1** : `img.convert(""HSV"")` sépare teinte (H), saturation (S) et luminosité (V) ; `ImageStat.Stat(img_hsv).mean` donne la moyenne de chaque canal. Palette chaude ≈ H dans les rouges/jaunes (0-60°) vs froide ≈ H dans les bleus (180-240°) ; diurne vs nocturne se lit surtout sur V ; saturée vs désaturée sur S.
+
+**Indice 2** : pour décoder l'image depuis le résultat de `generate_image()` : `Image.open(BytesIO(base64.b64decode(result[""image_url""].split("","", 1)[1])))`.",,,,,,,,1b83bfa2e0dd4419,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,ccb08b37,code,fr,7b513553b6feb46b,"# Exercice 4 : Le prompt tient-il ses promesses ? (mesure sur les pixels)
+
+# Etape 1 : Axe visuel binaire choisi
+axe_choisi = None  # TODO etudiant : nommez votre axe (ex. ""palette chaude vs froide"")
+
+# Etape 2 : Deux prompts identiques sauf la mention de l'axe
+prompt_axe_a = ""...""  # TODO etudiant : version A de l'axe (ex. ""warm color palette"")
+prompt_axe_b = ""...""  # TODO etudiant : version B de l'axe (ex. ""cool color palette"")
+# Indice : ne changez QUE la mention de l'axe, gardez sujet et style identiques
+
+# Etape 3 : Generation des deux images (quality=""low"" suffit pour mesurer)
+# result_a = generate_image(prompt=prompt_axe_a, size=""1024x1024"", quality=""low"")
+# result_b = generate_image(prompt=prompt_axe_b, size=""1024x1024"", quality=""low"")
+# Indice : decoder l'image -> Image.open(BytesIO(base64.b64decode(result_a[""image_url""].split("","", 1)[1])))
+
+# Etape 4 : Mesure PIL sur chaque image
+# from PIL import ImageStat
+mesure_a = None  # TODO etudiant : statistique PIL pour l'image A
+mesure_b = None  # TODO etudiant : meme statistique pour l'image B
+# Indice : ImageStat.Stat(img.convert(""HSV"")).mean -> [H_moyen, S_moyen, V_moyen]
+
+# Etape 5 : Conclusion chiffree
+conclusion_ex4 = None  # TODO etudiant : la mesure confirme-t-elle l'axe ? de combien ?
+
+print(""Exercice a completer"")",,,,,,,,7b513553b6feb46b,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,aa0a8773,markdown,fr,c75a8541bf219abc,"## Conclusion
+
+gpt-image (la famille de generation d'images d'OpenAI utilisee depuis 2025, qui a succede a DALL-E 3) via l'API OpenAI directe illustre l'approche **boite noire managée** : on delègue entierement le pipeline de generation a un service heberge et on consomme le resultat via `generate_image(prompt, size, quality, style)`. Les parametres exposes (`size`, `quality`, `style`) restent volontairement restreints -- l'optimisation fine (sampler, scheduler, CFG) est inaccessible, ce qui est coherent avec le public vise (createurs de contenu, prototypage rapide).
+
+**Point d'attention specifique a gpt-image** : le modele **reecrit automatiquement** le prompt utilisateur pour l'enrichir (capacite heritee de DALL-E 3, conservee dans la famille gpt-image), ce qui ameliore la qualite visuelle mais peut surprendre si l'on attend un controle litteral du wording. Pour les usages pedagogiques ou de brand-compliance, cette reecriture est une contrainte a documenter aupres des etudiants.
+
+**Mise en perspective avec le reste du cours** : gpt-image s'oppose a l'approche *open weights* exploree dans les autres notebooks Foundation (Forge SD XL Turbo, Qwen-Image-Edit). Les trade-offs (qualite percue vs controle, cout vs souverainete, facilite vs transparence) structurent le paysage de la generation d'images et reviennent dans toute decision d'architecture GenAI.
+
+**Pour aller plus loin** : comparer systematiquement la meme intention creative sur gpt-image, SD XL Turbo, Qwen-Image-Edit et FLUX.1. Les variations de style, de prompt engineering requis et de fidelite au brief revelent les biais d'entrainement propres a chaque modele -- un exercice transverse eclairant pour le notebook `03-1-Multi-Model-Comparison`.",,,,,,,,c75a8541bf219abc,,,,,,,,
