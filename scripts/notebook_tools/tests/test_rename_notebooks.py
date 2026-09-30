@@ -696,5 +696,82 @@ class TestReview17801Guards(unittest.TestCase):
             self.assertEqual(rc, 0)
 
 
+class TestPathLengthNotAViolation(unittest.TestCase):
+    """#17834 : target_violation recoit un chemin relatif dans main(), et STEM_RE
+    est ancree en debut de stem. Resultat avant fix : 31/31 avertissements
+    <<prefixe absent>> sur des cibles canoniques (table SmartContracts). Le fix
+    (PR #18194, MERGED sur main 28/09) extrait le basename via
+    `new.rsplit("/", 1)[-1]` au site d'appel de main() l.828.
+
+    Cette PR n'apporte pas le fix : elle ajoute les tests de non-regression
+    qui pincent le site d'appel l.828. Avant ce PR, les tests
+    `test_long_path_canonical_returns_none` et `test_long_path_passes_through_main_loop`
+    etaient des miroirs auto-coherents : ils appliquaient `os.path.basename`
+    eux-memes avant d'appeler `target_violation`, donc ils passaient au vert
+    sur le code non corrige exactement comme sur le corrige. Le seul test
+    qui pince reellement le site d'appel est `test_main_loop_passes_basename`
+    ci-dessous : il passe par `main()` et verifie les appels a
+    `target_violation` (controle positif).
+    """
+
+    def test_main_loop_passes_basename(self):
+        """Le site d'appel l.828 doit passer le BASENAME a target_violation,
+        pas le chemin complet.
+
+        Controle positif : si quelqu'un reintroduit `target_violation(new)` au
+        lieu de `target_violation(new.rsplit("/", 1)[-1])`, ce test ROUGE --
+        le mock enregistre le chemin complet comme argument et leve.
+        """
+        captured = []
+        real_target_violation = rn.target_violation
+
+        def spy(name):
+            captured.append(name)
+            return real_target_violation(name)
+
+        full_new = (
+            "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/"
+            "00-Foundations/SC-01-Setup-Foundry-Python.ipynb"
+        )
+        old_in_repo = "MyIA.AI.Notebooks/S/S-01-Alpha.ipynb"
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            _init_repo(repo)
+            tsv = Path(str(repo) + ".table.tsv")
+            tsv.write_text(f"{old_in_repo}\t{full_new}\n", encoding="utf-8")
+            cwd = os.getcwd()
+            os.chdir(repo)
+            try:
+                with mock.patch.object(rn, "target_violation",
+                                       side_effect=spy), \
+                     mock.patch.object(rn, "run_organs", return_value=0):
+                    rc = rn.main(["--mapping", str(tsv)])
+            finally:
+                os.chdir(cwd)
+            self.assertEqual(rc, 0)
+            # L.828 a appele target_violation avec le basename de `new`,
+            # pas le chemin complet -- sinon STEM_RE detecterait le prefixe
+            # `SymbolicAI/` et imprimerait <<prefixe absent>>.
+            self.assertTrue(captured,
+                "target_violation doit etre appele au moins une fois sur la cible")
+            for arg in captured:
+                self.assertNotIn("/", arg,
+                    f"target_violation appele avec chemin complet '{arg}' "
+                    f"-- le site d'appel l.828 doit extraire le basename")
+
+    def test_infixe_kernel_toujours_detecte_apres_fix(self):
+        """Le fix ne casse pas le verdict sur infixe kernel (cas SC-7b ERC20)."""
+        self.assertEqual(
+            rn.target_violation(
+                "SC-07b-ERC20-Lean-Verification-Companion-Python.ipynb"
+            ),
+            "mot de noyau en infixe du titre",
+        )
+
+    def test_non_grammar_toujours_detecte_apres_fix(self):
+        """Cible non grammaticale (mauvais prefixe) -> toujours signalee."""
+        self.assertIsNotNone(rn.target_violation("not-a-notebook.txt"))
+
+
 if __name__ == "__main__":
     unittest.main()

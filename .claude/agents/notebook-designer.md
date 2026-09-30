@@ -115,9 +115,13 @@ Créer un plan structuré avec sections et sous-sections :
 Utiliser `scripts/notebook_tools/notebook_helpers.py` pour créer le notebook :
 
 ```python
-from scripts.notebook_helpers import NotebookHelper
+import json
+from pathlib import Path
+from scripts.notebook_tools.notebook_helpers import NotebookHelper
 
-# Créer un notebook vide
+# Créer un notebook : écrire le squelette minimal sur disque puis charger via
+# le constructeur normal (pas de create_new/__new__ dans l'API — le constructeur
+# exige un fichier existant)
 nb_dict = {
     "cells": [],
     "metadata": {
@@ -135,9 +139,9 @@ nb_dict = {
     "nbformat_minor": 5
 }
 
-helper = NotebookHelper.__new__(NotebookHelper)
-helper.path = Path(output_path)
-helper.notebook = nb_dict
+Path(output_path).write_text(
+    json.dumps(nb_dict, indent=1, ensure_ascii=False) + '\n', encoding='utf-8')
+helper = NotebookHelper(output_path)
 ```
 
 ### 4. Ajout des cellules
@@ -201,12 +205,13 @@ sections_code = {
 #### Probabilités / Infer.NET
 
 ```python
+# Cellules C# (.net-csharp) — Infer.NET s'invoque via #r/using, pas d'import Python
 sections_code = {
-    "imports": "from InferNet import *",
-    "prior_definition": "# Définir les priors\nmu_prior = ...",
-    "likelihood": "# Définir la vraisemblance\ndata_likelihood = ...",
-    "inference": "# Inférence\nengine = InferenceEngine()\nposterior = ...",
-    "analysis": "# Analyser les résultats\nprint(posterior.GetMean())"
+    "imports": "#r \"nuget: Microsoft.ML.Probabilistic\"\n#r \"nuget: Microsoft.ML.Probabilistic.Compiler\"\nusing Microsoft.ML.Probabilistic;\nusing Microsoft.ML.Probabilistic.Models;",
+    "prior_definition": "// Définir les priors\nvar muPrior = Gaussian.FromMeanAndVariance(0, 100);",
+    "likelihood": "// Définir la vraisemblance\nVariableArray<double> data = ...",
+    "inference": "// Inférence\nvar engine = new InferenceEngine();\nvar posterior = engine.Infer<Gaussian>(mu);",
+    "analysis": "// Analyser les résultats\nConsole.WriteLine(posterior.GetMean());"
 }
 ```
 
@@ -460,14 +465,14 @@ Task(
 ### Exemple 1 : Nouveau notebook ML
 
 ```
-/design-notebook
+/build-notebook new MyIA.AI.Notebooks/ML/ML-<NN>-DecisionTrees-Intro-Python.ipynb
   --topic "Decision Trees with sklearn"
   --domain ML
   --level intro
-  --kernel python3
-  --output MyIA.AI.Notebooks/ML/ML-<NN>-DecisionTrees-Intro-Python.ipynb
-  --objectives "Comprendre les arbres de décision,Implémenter avec sklearn,Visualiser l'arbre,Comparer avec Random Forest"
 ```
+
+(Le skill réel est `/build-notebook <new|improve|fix> <path> [--topic] [--domain]
+[--level] [--quality] [--max-iter]` — pas de skill `/design-notebook`.)
 
 ### Exemple 2 : Nouveau notebook GameTheory
 
@@ -530,8 +535,9 @@ Task(
 ### Scripts disponibles
 
 ```bash
-# Créer un squelette vide
-python scripts/notebook_tools/notebook_helpers.py create --kernel python3 --output new_notebook.ipynb
+# Créer un notebook : skill /build-notebook (la CLI helpers n'a pas de sous-commande
+# create — sous-commandes réelles : list, analyze, get-source, get-output, sequence,
+# validate-context, enrichment-plan, execute, detect-kernel)
 
 # Vérifier la structure après création
 python scripts/notebook_tools/notebook_tools.py skeleton new_notebook.ipynb --output markdown
@@ -543,14 +549,17 @@ python scripts/notebook_tools/notebook_tools.py validate new_notebook.ipynb --qu
 ### Helpers Python
 
 ```python
-from scripts.notebook_helpers import NotebookHelper
+import json, pathlib
+from scripts.notebook_tools.notebook_helpers import NotebookHelper
 
-# Créer un notebook from scratch
-helper = NotebookHelper.create_new(
-    path="new_notebook.ipynb",
-    kernel="python3",
-    title="Mon Nouveau Notebook"
-)
+# Créer un notebook from scratch : écrire le squelette puis charger
+# (pas de create_new dans l'API)
+nb_dict = {"cells": [], "metadata": {"kernelspec": {
+    "name": "python3", "display_name": "Python 3", "language": "python"}},
+    "nbformat": 4, "nbformat_minor": 5}
+pathlib.Path("new_notebook.ipynb").write_text(
+    json.dumps(nb_dict, indent=1), encoding="utf-8")
+helper = NotebookHelper("new_notebook.ipynb")
 
 # Ajouter des cellules
 helper.insert_cell(0, 'markdown', "# Introduction")

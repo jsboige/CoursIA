@@ -1,7 +1,7 @@
 - name: "GameTheory-6 EvolutionTrust"
   family: GameTheory/.NET-Parity
-  python: MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust.ipynb
-  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-Csharp.ipynb
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-CSharp.ipynb
   parity_level: semantic
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Bascule verdict (registre #10382, axe 5 #10459) : l'annexe axelrod PythonNet (cellule code 36, execution_count=16, `#r nuget pythonnet 3.1.0`) est installée et exécutée dans le notebook commité. Résolution CPython Windows/Linux/macOS et dépendances natives Conda Windows validées ; parity_level semantic préservé (gel #11200)."
