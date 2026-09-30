@@ -3449,3 +3449,70 @@ def test_marker_no_match_discursive_mention(monkeypatch):
     # sur la meme ligne que [INFO]).
     assert notes == {}
     assert picks[0]["klass"] == "grain"
+
+
+# --- Geste 3 #18203 : `weight()` mesure le delaissement sur la DERNIERE ----
+# livraison reelle (PR mergée qui cite l'issue), pas sur `updatedAt`.
+# -----------------------------------------------------------------------------
+
+
+def test_idle_since_delivery_uses_last_merged_pr_not_updated_at():
+    """Un commentaire de bot / claim recent ne doit pas faire baisser l'attente.
+
+    Issue #1 : 90 jours d'age, `updatedAt` hier (commentaire de bot recent),
+    derniere PR mergee il y a 80 jours -> idle_since_delivery = 80.
+    Issue #2 : meme age, `updatedAt` hier, derniere PR mergee il y a 5 jours
+    -> idle_since_delivery = 5.
+
+    Meme `idle` (jours depuis updatedAt), mais `weight()` doit voir la
+    difference : la livraison plus ancienne pese PLUS (log2 croissant avec
+    l'attente -- le but du facteur est de faire remonter les sujets
+    delaisses). Voir `weight()` ligne ~1625 : `w *= 1.0 + log2(1 + idle/14)`.
+    """
+    old_delivery = {"number": 1, "age": 90, "idle": 1,
+                    "idle_since_delivery": 80, "genre": "docs"}
+    fresh_delivery = {"number": 2, "age": 90, "idle": 1,
+                      "idle_since_delivery": 5, "genre": "docs"}
+    assert pig.weight(old_delivery, None) > pig.weight(fresh_delivery, None)
+
+
+def test_idle_since_delivery_defaults_to_idle_for_backward_compat():
+    """Si `idle_since_delivery` est absent (item construit a la main), retomber
+    sur `idle` -- eviter une KeyError dans les tests existants qui ne
+    renseignent pas le nouveau champ. La regle est : si le champ n'est pas
+    la, c'est un test legacy ; on ne change pas la semantique, on preserve.
+    """
+    legacy = {"number": 1, "age": 30, "idle": 40, "genre": "docs"}
+    fresh = {"number": 2, "age": 30, "idle": 1, "idle_since_delivery": 1,
+             "genre": "docs"}
+    # Legacy : meme comportement qu'avant le patch (poids sur `idle`).
+    assert pig.weight(legacy, None) == pig.weight(
+        {**legacy, "idle_since_delivery": legacy["idle"]}, None
+    )
+    # Et `legacy` pese plus lourd qu'un grain frais.
+    assert pig.weight(legacy, None) > pig.weight(fresh, None)
+
+
+def test_weight_idle_uses_idle_since_delivery_for_recent_delivery():
+    """Une livraison il y a 5 j pese MOINS qu'une livraison il y a 80 j,
+    a age et `idle` egaux (memes conditions de surface).
+    """
+    item_recent = {"number": 1, "age": 100, "idle": 1,
+                   "idle_since_delivery": 5, "genre": "lean"}
+    item_old = {"number": 2, "age": 100, "idle": 1,
+                "idle_since_delivery": 80, "genre": "lean"}
+    assert pig.weight(item_old, None) > pig.weight(item_recent, None)
+
+
+def test_weight_idle_since_delivery_unchanged_when_corpus_missing():
+    """Si le corpus de PRs mergées est indisponible (fetch echoue), on NE
+    SAIT PAS ce qu'est la derniere livraison -- on conserve donc le
+    comportement `idle` (placeholder) et on n'invente pas une livraison.
+    Doctrinalement : un defaut de mesure n'est pas une negligence prouvee.
+    """
+    item = {"number": 1, "age": 100, "idle": 1, "genre": "lean"}
+    # Avec idle_since_delivery manquant : retomber sur idle = 1.
+    assert pig.weight(item, None) == pig.weight(
+        {**item, "idle_since_delivery": item["idle"]}, None)
+
+
