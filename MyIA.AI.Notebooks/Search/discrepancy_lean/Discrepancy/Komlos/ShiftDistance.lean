@@ -80,14 +80,24 @@ lemma shiftDistance_symm {d : ℕ} (S : Finset (Fin d → ℤ))
   congr 1
   apply Finset.sum_congr rfl
   intro x _
-  simp [sub_neg_eq_add, abs_sub_comm]
+  -- Goal: |P x - P (x - u)| = |P x - P (x - (-u))|
+  -- ie   |P x - P (x - u)| = |P x - P (x + u)|
+  rw [show x - (-u) = x + u by ring]
+  -- Goal: |P x - P (x - u)| = |P x - P (x + u)|
+  rw [show P x - P (x + u) = -(P x - P (x + u)) * (-1) by ring]
+  rw [abs_neg]
+  rw [show -(P x - P (x + u)) = P (x + u) - P x by ring]
+  rw [abs_sub_comm]
 
 /-- Δ(P, u) = 0 quand P est identiquement nulle sur S. -/
 lemma shiftDistance_eq_zero_of_zero {d : ℕ} (S : Finset (Fin d → ℤ))
     (P : (Fin d → ℤ) → ℝ) (hP : ∀ x ∈ S, P x = 0) (u : Fin d → ℤ) :
     shiftDistance S P u = 0 := by
   unfold shiftDistance
-  simp [hP]
+  apply Finset.sum_congr rfl
+  intro x _
+  rw [hP x]
+  simp
 
 /-- Δ(P, u) ≥ 0 : c'est une demi-somme de valeurs absolues. -/
 lemma shiftDistance_nonneg {d : ℕ} (S : Finset (Fin d → ℤ))
@@ -107,7 +117,8 @@ lemma shiftDistance_le_one {d : ℕ} (S : Finset (Fin d → ℤ))
       (1 / 2 : ℝ) * (∑ x ∈ S, |P x| + ∑ x ∈ S, |P (x - u)|) := by
   unfold shiftDistance
   apply mul_le_mul_of_nonneg_left
-  · apply Finset.sum_le_sum
+  · rw [← Finset.sum_add_distrib]
+    apply Finset.sum_le_sum
     intro x _
     exact abs_sub_le _ _
   · simp
