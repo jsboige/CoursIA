@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests purs pour la sous-commande --ordinal-collisions (#18683).
+"""Tests purs pour la classification semantique ON-MAIN / MULTI-PR (#18683).
 
 Trois invariants garantis par les controles ci-dessous :
 
@@ -10,7 +10,7 @@ Trois invariants garantis par les controles ci-dessous :
   2. Les fixtures reproduisent les cas reels du tableau de l'issue
      #18683 (pistes collisionnees) sans dependre d'un depot reel.
 
-  3. Le geste de correction (_ordinal_correction_gist) nomme la voie
+  3. Le geste de correction (`ordinal_correction_gist`) nomme la voie
      `git mv PUR` (pas de re-execution, pas de contenu a toucher --
      la contiguite n'est pas testee, cf check_twin_index_collisions.py
      docstring l. 49-51) avec l'index suivant calcule sur la base.
@@ -34,7 +34,7 @@ import unittest
 # comme test_check_twin_parity.py (mecanisme de la suite de tests).
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import check_twin_parity as ctp
+import check_twin_index_collisions as ctix
 
 
 class TestClassifyOrdinalCollisions(unittest.TestCase):
@@ -63,7 +63,7 @@ class TestClassifyOrdinalCollisions(unittest.TestCase):
                 ],
             },
         }]
-        out = ctp.classify_ordinal_collisions(cross, base_ref=self.BASE)
+        out = ctix.classify_ordinal_collisions(cross, base_ref=self.BASE)
         self.assertEqual(out[0]["verdict"], "ON-MAIN")
         self.assertEqual(out[0]["pair"], "search-06-adversarialsearch")
         self.assertEqual(out[0]["index"], "0008")
@@ -86,7 +86,7 @@ class TestClassifyOrdinalCollisions(unittest.TestCase):
                 ],
             },
         }]
-        out = ctp.classify_ordinal_collisions(cross, base_ref=self.BASE)
+        out = ctix.classify_ordinal_collisions(cross, base_ref=self.BASE)
         self.assertEqual(out[0]["verdict"], "MULTI-PR")
 
     def test_multi_pr_three_heads(self):
@@ -106,7 +106,7 @@ class TestClassifyOrdinalCollisions(unittest.TestCase):
                 ],
             },
         }]
-        out = ctp.classify_ordinal_collisions(cross, base_ref=self.BASE)
+        out = ctix.classify_ordinal_collisions(cross, base_ref=self.BASE)
         self.assertEqual(out[0]["verdict"], "MULTI-PR")
 
     def test_on_main_mixed_with_multi_pr(self):
@@ -119,20 +119,20 @@ class TestClassifyOrdinalCollisions(unittest.TestCase):
              "by_ref": {"head1": ["0002-head1.yaml"],
                          "head2": ["0002-head2.yaml"]}},
         ]
-        out = ctp.classify_ordinal_collisions(cross, base_ref=self.BASE)
+        out = ctix.classify_ordinal_collisions(cross, base_ref=self.BASE)
         self.assertEqual(out[0]["verdict"], "ON-MAIN")
         self.assertEqual(out[1]["verdict"], "MULTI-PR")
 
     def test_empty_cross_is_empty(self):
         self.assertEqual(
-            ctp.classify_ordinal_collisions([], base_ref=self.BASE), [])
+            ctix.classify_ordinal_collisions([], base_ref=self.BASE), [])
 
     def test_pure_passthrough(self):
         """Les autres champs (pair, index, by_ref) sont preserves tels quel."""
         cross = [{"pair": "x", "index": "0001",
                   "by_ref": {self.BASE: ["a.yaml"], "head": ["b.yaml"]},
                   "extra_field": "preserved"}]
-        out = ctp.classify_ordinal_collisions(cross, base_ref=self.BASE)
+        out = ctix.classify_ordinal_collisions(cross, base_ref=self.BASE)
         self.assertEqual(out[0]["pair"], "x")
         self.assertEqual(out[0]["index"], "0001")
         self.assertEqual(out[0]["by_ref"], {self.BASE: ["a.yaml"],
@@ -149,7 +149,7 @@ class TestOrdinalCorrectionGist(unittest.TestCase):
     """
 
     def test_ON_MAIN_gist_mentions_git_mv(self):
-        gist = ctp._ordinal_correction_gist(
+        gist = ctix.ordinal_correction_gist(
             "csp-1-fundamentals", "0022",
             by_ref={"origin/main": ["0022-base.yaml"],
                     "head": ["0022-head.yaml"]},
@@ -159,7 +159,7 @@ class TestOrdinalCorrectionGist(unittest.TestCase):
         self.assertIn("csp-1-fundamentals", gist)
 
     def test_MULTI_PR_gist_explains_concurrence(self):
-        gist = ctp._ordinal_correction_gist(
+        gist = ctix.ordinal_correction_gist(
             "planners-6-domains", "0012",
             by_ref={"head1": ["0012-h1.yaml"],
                     "head2": ["0012-h2.yaml"]},
@@ -185,21 +185,21 @@ class TestOrdinalCollisionsFixtureFromIssue(unittest.TestCase):
                   "by_ref": {self.BASE: ["0008-base.yaml"],
                               "refs/pull/18536/head": ["0008-h.yaml"],
                               "refs/pull/18500/head": ["0008-h.yaml"]}}]
-        out = ctp.classify_ordinal_collisions(cross, base_ref=self.BASE)
+        out = ctix.classify_ordinal_collisions(cross, base_ref=self.BASE)
         self.assertEqual(out[0]["verdict"], "ON-MAIN")
 
     def test_table_entry_app_14_index_0016(self):
         cross = [{"pair": "app-14-connectfour-adversarial", "index": "0016",
                   "by_ref": {self.BASE: ["0016-base.yaml"],
                               "refs/pull/18536/head": ["0016-different.yaml"]}}]
-        out = ctp.classify_ordinal_collisions(cross, base_ref=self.BASE)
+        out = ctix.classify_ordinal_collisions(cross, base_ref=self.BASE)
         self.assertEqual(out[0]["verdict"], "ON-MAIN")
 
     def test_table_entry_planners_6_index_0012(self):
         cross = [{"pair": "planners-6-domains", "index": "0012",
                   "by_ref": {"refs/pull/18654/head": ["0012-a.yaml"],
                               "refs/pull/18537/head": ["0012-b.yaml"]}}]
-        out = ctp.classify_ordinal_collisions(cross, base_ref=self.BASE)
+        out = ctix.classify_ordinal_collisions(cross, base_ref=self.BASE)
         self.assertEqual(out[0]["verdict"], "MULTI-PR")
 
 
@@ -224,7 +224,7 @@ class TestFindConflictsIntegration(unittest.TestCase):
                 "0022": ["0022-2026-10-01-myia-ai-01-CoursIA-2.yaml"]}},
         }
         result = ctix.find_conflicts(refs)
-        out = ctp.classify_ordinal_collisions(
+        out = ctix.classify_ordinal_collisions(
             result["cross_ref"], base_ref=self.BASE)
         self.assertEqual(len(out), 1)
         self.assertEqual(out[0]["verdict"], "ON-MAIN")
@@ -240,7 +240,7 @@ class TestFindConflictsIntegration(unittest.TestCase):
                 "0012": ["0012-h2.yaml"]}},
         }
         result = ctix.find_conflicts(refs)
-        out = ctp.classify_ordinal_collisions(
+        out = ctix.classify_ordinal_collisions(
             result["cross_ref"], base_ref=self.BASE)
         self.assertEqual(len(out), 1)
         self.assertEqual(out[0]["verdict"], "MULTI-PR")
@@ -255,7 +255,7 @@ class TestFindConflictsIntegration(unittest.TestCase):
                 "0003": ["0003.yaml"]}},
         }
         result = ctix.find_conflicts(refs)
-        out = ctp.classify_ordinal_collisions(
+        out = ctix.classify_ordinal_collisions(
             result["cross_ref"], base_ref=self.BASE)
         self.assertEqual(out, [])
 

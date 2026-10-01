@@ -154,18 +154,6 @@ try:
 except ImportError:  # pragma: no cover
     yaml = None
 
-# #18683 : la sous-commande --ordinal-collisions delegue a l'organe dedie
-# `check_twin_index_collisions.py` pour la lecture multi-revisions. Import
-# paresseux : evite de plomber le demarrage des autres modes quand le module
-# jumeau n'est pas charge (CI matrix isolee, tests unitaires focalises).
-#
-# L'import direct exige que `scripts/notebook_tools/` soit sur le sys.path :
-# c'est vrai quand le script est lance depuis la racine du repo (`python
-# scripts/notebook_tools/check_twin_parity.py`), mais pas quand on l'invoque
-# via `-m scripts.notebook_tools.check_twin_parity` (le cwd n'est pas le
-# repertoire du script). On rend l'import robuste en ajoutant le repertoire
-# du module au path avant l'import -- c'est ce que fait deja
-# check_twin_index_collisions.py ligne 81 pour importer `audit_index`.
 _THIS_DIR = Path(__file__).resolve().parent
 if str(_THIS_DIR) not in sys.path:
     sys.path.insert(0, str(_THIS_DIR))
@@ -1610,65 +1598,18 @@ def _classify_per_pair(base_status: str, head_status: str) -> str:
     return "DRIFT_PRE_EXISTING"
 
 
-# --- #18683 : sous-commande --ordinal-collisions ----------------------------
-# Le verdict de l'organe `check_twin_index_collisions.py` est binaire
-# (`cross_ref` = collisions inter-revisions, peu importe combien de PRs sont
-# impliquees). L'issue #18683 demande une **classification semantique**
-# directement utilisable par un humain au merge gate :
-#
-#   ON-MAIN   la base porte deja l'index et une tete le RE-porte -> main
-#                 passera au rouge des le premier merge. C'est un refus : le
-#                 merge rendrait le garde CI definitif
-#                 `test_audit_index_unique_and_no_identical_duplicates_per_pair`
-#                 DRIFT-INTRO sur une autre PR qui n'a rien demande.
-#                 Renumeroter la tete AVANT merge.
-#   MULTI-PR  la base NE porte PAS l'index, mais deux ou plusieurs tetes
-#                 differentes le portent. La premiere mergee gagne, la
-#                 seconde renumerote. Avertissement, pas refus : c'est de
-#                 la concurrence de lanes, pas une dette heritee.
-#
-# La classification regarde quelles refs apparaissent dans `by_ref` :
-# si args.base est dans by_ref, c'est ON-MAIN ; sinon c'est MULTI-PR.
-# Ce contrat est isole du subprocess git -- la fonction prend la liste
-# `cross_ref` deja classee et la base_ref, et rend la meme liste avec un
-# champ `verdict` supplementaire. Pure, testable, independante de git.
-def classify_ordinal_collisions(cross_ref, *, base_ref):
-    """Re-classe chaque `cross_ref` en `ON-MAIN` (refus) ou `MULTI-PR`
-    (avertissement), selon que `base_ref` apparait dans `by_ref`.
-
-    Predicat distinct du `--in-tree` intra-revision : la `intra_ref`
-    (doublon dans la meme revision) releve du garde CI, pas de ce script
-    (cf. check_twin_index_collisions.py docstring lignes 35-38).
-    """
-    out = []
-    for c in cross_ref:
-        verdict = "ON-MAIN" if base_ref in c.get("by_ref", {}) else "MULTI-PR"
-        out.append({**c, "verdict": verdict})
-    return out
-
-
-def _ordinal_correction_gist(pair, index, *, by_ref, base_ref):
-    """Geste de correction nomme dans l'issue #18683, isole pour les tests.
-
-    ON-MAIN : la tete doit renumeroter SON fichier vers le premier index
-              libre (max(main)+1), par `git mv` PUR (aucune re-execution,
-              aucun contenu a toucher -- la contiguite n'est pas testee,
-              cf check_twin_index_collisions.py docstring l. 49-51).
-    MULTI-PR : la derniere tete mergee doit renumeroter ; la premiere
-              mergee passe.
-    """
-    if base_ref in by_ref:
-        return (f"renumeroter la tete vers le premier index libre de '{pair}' "
-                f"(max sur base + 1) par `git mv` PUR : "
-                f"`git mv scripts/notebook_tools/twin_pairs.d/{pair}/"
-                f"{index}-*.yaml scripts/notebook_tools/twin_pairs.d/{pair}/"
-                f"<next>-2026-10-01-myia-ai-01-CoursIA-2.yaml` "
-                "puis committer.")
-    return (f"la premiere tete mergee de '{pair}' index {index} gagne ; "
-            f"la seconde renumerote apres merge. Le geste est le meme qu'ON-MAIN "
-            f"(git mv PUR) une fois l'ordre de merge connu.")
-
-
+# --- #18683 : retrait de la sous-commande --ordinal-collisions -------------
+# Avant : une sous-commande --ordinal-collisions etait portee ici, deleguant a
+# `check_twin_index_collisions.py` pour la classification semantique ON-MAIN /
+# MULTI-PR. Le geste a ete **consolide dans l'organe cable** que
+# `merge_ready.py` appelle deja a l'etape 5bis (cf revue coordinateur du
+# 2026-10-01) : le verdict JSON inclut maintenant `verdict` et `base_ref`, le
+# verdict human affiche le verdict et le geste de correction, et les fonctions
+# `classify_ordinal_collisions` / `ordinal_correction_gist` vivent dans
+# `check_twin_index_collisions.py`. Le present fichier reste sur la diagonale
+# un-arbre-temporaire (intra-revision) qu'il juge couvre en direct, sans
+# deleguer a un second organe : on evite ainsi d'avoir deux portes pour le
+# meme verdict (#18683 reviewer).
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     p.add_argument("--registry", default=str(DEFAULT_REGISTRY),
@@ -1751,26 +1692,13 @@ def main(argv=None) -> int:
                         "d'intention. Exige un selecteur (--pair / --family / "
                         "--yes-all-pairs) pour eviter une invocation nue qui "
                         "reecrirait les 157 paires (cf #8508).")
-    p.add_argument("--ordinal-collisions", action="store_true",
-                   help="Garde de collision des numeros d'attestation twin "
-                        "(#18683, recidive #16769) : confronte les index "
-                        "`NNNN-<date>-<lane>.yaml` du registre entre la base "
-                        "(--base, defaut origin/main), la tete de travail "
-                        "(--worktree), et/ou les PRs concurrentes (--pr N "
-                        "repetable). Delegue a check_twin_index_collisions.py "
-                        "pour la lecture multi-revisions et re-classe chaque "
-                        "collision en ON-MAIN (refus : base+head portent "
-                        "l'index, le merge main->rouge) ou MULTI-PR "
-                        "(avertissement : deux heads portent l'index, "
-                        "la premiere mergee passe, la seconde renumerote). "
-                        "Mode read-only ; compatible avec --base/--pr/--worktree.")
+            # #18683 : le flag --ordinal-collisions a ete retire. Il deleguait a
+    # check_twin_index_collisions.py et a ete consolide dans l'organe cable
+    # (cf revue coordinateur 2026-10-01). Invoquer directement :
+    #   python scripts/notebook_tools/check_twin_index_collisions.py --base origin/main --worktree --json
     p.add_argument("--pr", action="append", default=[],
-                   help="PR concurrente a confronter (--ordinal-collisions). "
-                        "Repetable. Resout sa tete via `gh pr view N --json "
-                        "headRefOid`, puis fetch refs/pull/N/head.")
-    p.add_argument("--worktree", action="store_true",
-                   help="(--ordinal-collisions) inclut l'arbre de travail "
-                        "(fichiers non commites inclus) dans la confrontation.")
+                   help="PR concurrente a confronter. Repetable. Resout sa tete via "
+                        "`gh pr view N --json headRefOid`, puis fetch refs/pull/N/head.")
     args = p.parse_args(argv)
 
     # Cross-validation : --per-pair <-> --base
@@ -2033,111 +1961,12 @@ def main(argv=None) -> int:
             return 1
         return 0
 
-    # --- #18683 : mode --ordinal-collisions (lecture seule, delega a
-    # check_twin_index_collisions.py) ---
-    if args.ordinal_collisions:
-        if not _CTIX_AVAILABLE:
-            print("ERREUR: check_twin_index_collisions introuvable sur le sys.path -- "
-                  "impossible de lancer --ordinal-collisions. Verifier que "
-                  "scripts/notebook_tools/ est sur le PYTHONPATH.",
-                  file=sys.stderr)
-            return 2
-        # Resolution des PRs concurrents en tetes git. On delaisse --repo :
-        # l'organe jumeau prend `git rev-parse --show-toplevel` comme defaut,
-        # ce qui matche _repo_root(). Le seul cas divergent est un test
-        # multi-repo, jamais couvert ici.
-        head_refs = list(args.pr or [])
-        if args.worktree:
-            head_refs.append("worktree")
-        if not head_refs and not args.base:
-            print("ERREUR: --ordinal-collisions exige au moins une tete "
-                  "(--pr N repetable ou --worktree) ou --base <ref>. "
-                  "Sans deux revisions DISTINCTES et lisibles il n'y a rien "
-                  "a comparer, et 'je n'ai pas pu lire' n'est pas 'c'est propre'.",
-                  file=sys.stderr)
-            return 2
-        # Construction argv[3] pour le module jumeau. Attention : dans
-        # check_twin_index_collisions.py, `--worktree` est un FLAG
-        # (capture l'arbre de travail), pas une valeur de `--head`.
-        # Le `--base` partage de check_twin_parity.py a default=None
-        # (utilise par --per-pair sans defaut) ; pour --ordinal-collisions
-        # on force origin/main -- le contrat de collision inter-revisions
-        # est toujours pose par rapport a la base officielle.
-        base_ref = args.base or "origin/main"
-        ctix_argv = ["--base", base_ref, "--json"]
-        if args.worktree:
-            ctix_argv.append("--worktree")
-        for h in head_refs:
-            if h == "worktree":
-                continue  # deja gere ci-dessus
-            ctix_argv.extend(["--head", h])
-        # Capture de stdout : la sortie JSON du module jumeau est un contrat
-        # machine, on la reparse pour la reclassification semantique.
-        # repo_root est resolu localement -- `repo_root` global n'est pas
-        # encore assigne dans cette branche (l.1756, plus bas dans main).
-        try:
-            ctix_repo_root = Path(args.repo_root) if args.repo_root else _repo_root()
-        except SystemExit:
-            ctix_repo_root = Path.cwd()
-        proc = subprocess.run(
-            [sys.executable, "-m", "scripts.notebook_tools.check_twin_index_collisions",
-             *ctix_argv],
-            cwd=str(ctix_repo_root),
-            capture_output=True, text=True, encoding="utf-8", errors="replace",
-        )
-        if proc.returncode not in (0, 1):
-            print(f"ERREUR: check_twin_index_collisions exit {proc.returncode} :\n"
-                  f"{proc.stderr}", file=sys.stderr)
-            return proc.returncode
-        try:
-            raw = json.loads(proc.stdout or "{}")
-        except json.JSONDecodeError as exc:
-            print(f"ERREUR: sortie JSON du module jumeau illisible : {exc}\n"
-                  f"{proc.stdout[:500]}", file=sys.stderr)
-            return 2
-        cross = raw.get("cross_ref", [])
-        classified = classify_ordinal_collisions(cross, base_ref=base_ref)
-        n_on_main = sum(1 for c in classified if c["verdict"] == "ON-MAIN")
-        n_multi_pr = sum(1 for c in classified if c["verdict"] == "MULTI-PR")
-
-        if args.json:
-            print(json.dumps({
-                "mode": "ordinal_collisions",
-                "base_ref": base_ref,
-                "head_refs": head_refs,
-                "unreadable": raw.get("unreadable", {}),
-                "n_pairs": raw.get("n_pairs", 0),
-                "n_files": raw.get("n_files", 0),
-                "on_main": [c for c in classified if c["verdict"] == "ON-MAIN"],
-                "multi_pr": [c for c in classified if c["verdict"] == "MULTI-PR"],
-                "intra_ref": raw.get("intra_ref", []),
-            }, ensure_ascii=False, indent=2, sort_keys=True))
-        else:
-            print(f"revisions comparees : base={base_ref}  "
-                  f"tetes={','.join(head_refs) or '(aucune)'}")
-            print(f"paires lues : {raw.get('n_pairs', 0)}   "
-                  f"fichiers lus : {raw.get('n_files', 0)} (somme sur les revisions)")
-            if classified:
-                print("")
-                print(f"COLLISIONS ORDINALES : {len(classified)} "
-                      f"(ON-MAIN={n_on_main}, MULTI-PR={n_multi_pr})")
-                for c in classified:
-                    tag = c["verdict"]
-                    print(f"   [{tag}] {c['pair']} / index {c['index']}")
-                    for ref, names in sorted(c["by_ref"].items()):
-                        print(f"      {ref:32s} {', '.join(names)}")
-                    print(f"      geste: {_ordinal_correction_gist(c['pair'], c['index'], by_ref=c['by_ref'], base_ref=base_ref)}")
-            else:
-                print("VERDICT: OK -- aucun index en collision inter-revisions.")
-
-        # Casse 5bis merge_ready.py : ON-MAIN est bloquant, MULTI-PR est
-        # avertissement. On reproduit le contrat ici pour qu'un humain qui
-        # lance `check_twin_parity.py --ordinal-collisions` en CLI obtienne
-        # le meme rc que le gate CI : ON-MAIN seul => exit 1 ; MULTI-PR
-        # seul => exit 0 (les deux => exit 1).
-        if n_on_main:
-            return 1
-        return 0
+# --- #18683 : retrait du mode --ordinal-collisions ------------------------
+# La classification semantique ON-MAIN / MULTI-PR et le mode --ordinal-collisions
+# ont ete deplaces dans l'organe cable `check_twin_index_collisions.py` (cf
+# revue coordinateur du 2026-10-01). Lancer directement ce module produit le
+# verdict et le geste de correction. Le present script retourne ici au flux
+# historique un-arbre-temporaire (#10439 et precedents).
 
     # --- Mode historique (fleet-wide) ---
     pairs = load_registry(reg_path)
