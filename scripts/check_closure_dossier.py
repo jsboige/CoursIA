@@ -241,13 +241,19 @@ def _merged_referring_prs(repo: str, number: int) -> list[dict[str, Any]]:
         # sinon gh rend "Could not resolve to a PullRequest" et l'organe crashe
         # (mesure 2026-09-28, blocage Lot D #18140 sur #17301).
         src_repo = ((src.get("repository") or {}).get("full_name")) or repo
-        # Pas de --jq : gh l'ecrit en TEXTE BRUT, que json.loads refuse
-        # (defaut mesure c.5849452860 -- tout temoin rendait UNKNOWN rc=2).
-        row = gh_json([
-            "pr", "view", str(src["number"]), "--repo", src_repo,
-            "--json", "body",
-        ])
-        body = row.get("body") if isinstance(row, dict) else None
+        # Body preferentiellement lu depuis la timeline (source.issue.body),
+        # ce qui economise un appel `gh pr view` par PR mergee referencee.
+        # Mesure #15578 : 555 references = 4 min de latence eliminees.
+        # Fallback `gh pr view` si le champ body est absent de la timeline
+        # (defense en profondeur : payload timeline peut etre tronque sur PRs
+        # tres anciennes ou via depot soeur).
+        body = src.get("body")
+        if body is None:
+            row = gh_json([
+                "pr", "view", str(src["number"]), "--repo", src_repo,
+                "--json", "body",
+            ])
+            body = row.get("body") if isinstance(row, dict) else None
         out.append({"number": src["number"], "merged_at": pr["merged_at"],
                     "repo": src_repo,
                     "body": str(body) if body else ""})
