@@ -26,7 +26,7 @@ Updated: 2026-08-24 — Re-validation hors-biais des keepers BTC (issues #11041/
 
 Updated: 2026-08-24 — M15 LSTM-vol patch persistance biais + slice 2/2 dé-biaisé symétrique (issue #12734): patch livré, run complet dispatché au prochain cycle
 
-Updated: 2026-10-01 — M15 LSTM-vol revalidation cluster 7 actifs appariée par origine (port #18190, Epic #1454) + clôture du run différé #12734 : **NO BEATS cluster** (brute 19/21, calibrée 18/21, centrée BEATEN 18/21 ; var_ratio 1,12-1,34 sur 21/21). Le port a mesuré un défaut de convention dans le harnais M15 lui-même (join naïf refusé gap 4,25, puis relabel positionnel refusé gap 3,51 aux frontières de fold) : les verdicts §C antérieurs comparaient des fenêtres différentes. L'antécédent BTC « 2/3 BEATS » (#11034) ne survit pas à l'appariement corrigé (INCONCLUSIVE brut h=5/h=10)
+Updated: 2026-10-01 — M15 LSTM-vol revalidation cluster 7 actifs appariée par origine (port #18190, Epic #1454) + clôture du run différé #12734 : **NO BEATS cluster** (brute 19/21, calibrée 18/21, centrée BEATEN 19/21 ; var_ratio 1,12-1,34 sur 21/21). Le port a mesuré un défaut de convention dans le harnais M15 lui-même (join naïf refusé gap 4,25, puis relabel positionnel refusé gap 3,51 aux frontières de fold) : les verdicts §C antérieurs comparaient des fenêtres différentes. L'antécédent BTC « 2/3 BEATS » (#11034) ne survit pas à l'appariement corrigé (INCONCLUSIVE brut h=5/h=10)
 
 Updated: 2026-09-01 — PatchTST BTC log-RV revalidé contre HAR débiaisé train-only (#14081) : h=1 INCONCLUSIVE, h=5/h=10 NO BEATS ; var_ratio > 1 aux trois horizons
 
@@ -602,7 +602,7 @@ Agrégé par horizon (28 combos chacun) :
 | h=10 | −45,2 % | 32,79 | 0,0003 | NO BEATS | NO BEATS (p 0,0525) | BEATEN (p 0,0089) |
 
 Par cellule (21) : brute NO BEATS 19/21 (INCONCLUSIVE BTC h=5 p=0,195 / h=10 p=0,053) ; calibrée
-NO BEATS 18/21 (INCONCLUSIVE SOL h=10, XRP h=5/h=10) ; centrée BEATEN (variance) 18/21
+NO BEATS 18/21 (INCONCLUSIVE SOL h=10, XRP h=5/h=10) ; centrée BEATEN (variance) 19/21
 (INCONCLUSIVE XRP h=5/h=10). **var_ratio LSTM/HAR = 1,12-1,34, > 1 sur les 21 cellules** : le
 déficit est de la **variance** — même après retrait du biais, le LSTM est uniformément moins
 précis que HAR.

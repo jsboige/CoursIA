@@ -203,7 +203,7 @@ Agrégé par horizon (28 combos chacun) :
 | h=10 | -45,2 % | 32,79 | 0,0003 | NO BEATS | NO BEATS (p=0,0525) | BEATEN (p=0,0089) |
 
 Par cellule (21 coin x horizon) : brute NO BEATS 19/21 (INCONCLUSIVE BTC h=5/h=10) ; calibrée NO
-BEATS 18/21 (INCONCLUSIVE SOL h=10, XRP h=5/h=10) ; centrée BEATEN (variance) 18/21 (INCONCLUSIVE
+BEATS 18/21 (INCONCLUSIVE SOL h=10, XRP h=5/h=10) ; centrée BEATEN (variance) 19/21 (INCONCLUSIVE
 XRP h=5/h=10). **var_ratio LSTM/HAR > 1 partout (1,12-1,34)** : le déficit est de la
 **variance** — même après retrait du biais, le LSTM est uniformément moins précis que HAR.
 
