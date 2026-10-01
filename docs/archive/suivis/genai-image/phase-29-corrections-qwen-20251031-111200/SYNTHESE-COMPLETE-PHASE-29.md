@@ -52,7 +52,7 @@
 - Durée totale : 50h 16min
 - Scripts développés : 12 (dont 8 consolidés en master scripts)
 - Données téléchargées : ~29GB
-- Rapports créés : ~19,135 lignes de documentation
+- Rapports créés : documentation
 
 ---
 
@@ -366,9 +366,9 @@ scripts/genai-auth/
 ```
 
 **Scripts consolidés master** (Production-Ready) :
-1. [`core/install_comfyui_login.py`](../../scripts/genai-auth/core/install_comfyui_login.py) - 404 lignes, authentification
-2. [`transient-scripts/30-download-qwen-fp8-officiel-20251102-121200.py`](transient-scripts/30-download-qwen-fp8-officiel-20251102-121200.py) - 404 lignes, téléchargement modèles
-3. [`transient-scripts/31-test-generation-image-fp8-officiel-20251102-131900.py`](transient-scripts/31-test-generation-image-fp8-officiel-20251102-131900.py) - 543 lignes, génération image
+1. [`core/install_comfyui_login.py`](../../scripts/genai-auth/core/install_comfyui_login.py) - authentification
+2. [`transient-scripts/30-download-qwen-fp8-officiel-20251102-121200.py`](transient-scripts/30-download-qwen-fp8-officiel-20251102-121200.py) - téléchargement modèles
+3. [`transient-scripts/31-test-generation-image-fp8-officiel-20251102-131900.py`](transient-scripts/31-test-generation-image-fp8-officiel-20251102-131900.py) - génération image
 
 **Rapports associés** :
 - [`32-nettoyage-reorganisation-scripts-20251102-152100.md`](rapports/32-nettoyage-reorganisation-scripts-20251102-152100.md)

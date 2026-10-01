@@ -23,8 +23,18 @@ name: Evict orphan Actions caches
 #
 # Defaut : tous les lundis 03:00 UTC (apres la nuit europeenne, avant
 # l'activite US). Ajustable via workflow_dispatch.
+#
+# Reouverture de #16088 (2026-09-28) : le sweep passe AUSSI a chaque push sur
+# main. Chaque merge ecrit ses overlays CodeQL (un par langue) ; mesure du
+# 28/09, 33 overlays en ~5 h (3,96 Go) avec un quota a 10,14 / 10 Go, et le
+# cache `.lake` de knot_lean evince moins de 10 h apres sa sauvegarde. Un
+# passage hebdomadaire ne suit pas cette cadence, et le cron de ce depot
+# est servi avec des heures de retard. Le script garde les 3 overlays les
+# plus recents par famille (`--keep-latest`, defaut 3) et evince le reste.
 
 on:
+  push:
+    branches: [main]
   schedule:
     - cron: "0 3 * * 1"
   workflow_dispatch:

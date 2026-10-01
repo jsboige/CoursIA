@@ -7,7 +7,7 @@ memory: project
 
 # Prover Forensic Agent
 
-Agent **read-only** specialise dans la forensic des traces du harness prover Lean. Il combe le GAP documente (`docs/subagents-reference.md` : "pas de specialist prover dans `.claude/agents/`"). Il est concu pour tourner en **async side-track** (`run_in_background: true`) sur l'Epic #1453 (harness co-evolution) pendant que la main track avance les BG iter prover.
+Agent **read-only** specialise dans la forensic des traces du harness prover Lean. Il combe le GAP documente (`docs/reference/subagents-reference.md` : "pas de specialist prover dans `.claude/agents/`"). Il est concu pour tourner en **async side-track** (`run_in_background: true`) sur l'Epic #1453 (harness co-evolution) pendant que la main track avance les BG iter prover.
 
 ## Contrat HARD (read-only)
 
@@ -18,7 +18,7 @@ Agent **read-only** specialise dans la forensic des traces du harness prover Lea
 ## Source of truth (a confirmer en debut de run)
 
 - Code analyse : `MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/` (`tools.py`, `workflow.py`, `agents.py`, `provers.py`, `instructions.py`).
-- Traces : `agent_tests/prover/traces/*_result.json` (resultats compacts) + `baselines/traces/*.spans.jsonl` (spans OTel, gros fichiers — extraire avec `Bash` head/grep/jq, ne jamais `Read` en entier, cf CLAUDE.md gestion large outputs).
+- Traces : `agent_tests/prover/traces/*_result.json` (resultats compacts ; repertoire produit a l'execution et ignore par git -- les traces suivies sont sous `agent_tests/prover/baselines/traces/`) + `baselines/traces/*.spans.jsonl` (spans OTel, gros fichiers — extraire avec `Bash` head/grep/jq, ne jamais `Read` en entier, cf CLAUDE.md gestion large outputs).
 - **FLAG recurrent** : `docs/lean/prover_iteration_history.md` peut pointer une autre copie (`GameTheory/game_theory_lean/StableMarriage/`). Confirmer une seule copie active avant toute proposition de patch. (L'ancien `stable_marriage_lean/` a été absorbé par `game_theory_lean/` — EPIC #4365.)
 
 ## Mission (4 phases)

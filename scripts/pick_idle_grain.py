@@ -285,6 +285,7 @@ from series_saturation import (  # noqa: E402
     delivery_factor,
     fetch_merged,
     fetch_series_visits,
+    last_delivery_per_issue,
     measure_delivery,
     zone_balance,
     zone_umbrellas,
@@ -636,6 +637,13 @@ def cache_notice_lines(
 POOL_REST_PAGE = 100
 # Plafond de pagination REST du listing de PRs (le GraphQL en demande 300).
 POOL_REST_MAX_PAGES = 4
+# Plafond de pagination REST du listing d'ISSUES. #18113 : la garde
+# `[POOL TRONQUE]` de `fetch_pool` teste `len(raw)` contre POOL_FETCH_LIMIT
+# (2000), or la voie REST rend au plus pages x 100 elements BRUTS (issues ET
+# PRs), ensuite filtres des PRs -- le compte filtre ne peut JAMAIS atteindre
+# le seuil. Le signal de troncature sur cette voie est le plafond de pages
+# atteint, pas la taille du rendu.
+POOL_ISSUES_REST_MAX_PAGES = 10
 # rc distinct de « pool vide mesure » (0) et des arrets deliberes (1) : un
 # appelant doit pouvoir fail-closed sur « je n'ai pas pu lire ».
 RC_POOL_UNMEASURED = 3
@@ -653,8 +661,16 @@ class TransportUnavailable(Exception):
         super().__init__(f"GraphQL={graphql} REST={rest}")
 
 
-def _rest_pages(path: str, *, max_pages: int = 10, timeout: int = 120) -> list[dict]:
-    """Liste paginee par REST -- l'autre quota, celui qui survit au 403 GraphQL."""
+def _rest_pages(path: str, *, max_pages: int,
+                timeout: int = 120) -> tuple[list[dict], bool]:
+    """Liste paginee par REST -- l'autre quota, celui qui survit au 403 GraphQL.
+
+    Rend ``(items, hit_cap)`` : ``hit_cap`` dit que la boucle s'est arretee
+    sur son plafond de pages (derniere page PLEINE), pas sur epuisement du
+    flux. C'est le signal de troncature que les gardes de `fetch_pool` ne
+    peuvent pas calculer seules : les flux REST sont plafonnes SOUS le seuil
+    et (pour `/issues`) filtres des PRs avant comptage (#18113).
+    """
     items: list[dict] = []
     for page in range(1, max_pages + 1):
         sep = "&" if "?" in path else "?"
@@ -665,11 +681,11 @@ def _rest_pages(path: str, *, max_pages: int = 10, timeout: int = 120) -> list[d
         ).stdout
         chunk = json.loads(out)
         if not isinstance(chunk, list) or not chunk:
-            break
+            return items, False
         items.extend(chunk)
         if len(chunk) < POOL_REST_PAGE:
-            break
-    return items
+            return items, False
+    return items, True
 
 
 def _issue_rest_to_gh_shape(it: dict) -> dict:
@@ -727,10 +743,11 @@ def fetch_pool(
             graphql_err = f"{type(exc).__name__}"
         try:
             # REST /issues rend AUSSI les PRs : `pull_request` les distingue.
+            raw_items, hit_cap = _rest_pages(
+                f"repos/{REPO}/issues?state=open&sort=created&direction=desc",
+                max_pages=POOL_ISSUES_REST_MAX_PAGES)
             raw = [_issue_rest_to_gh_shape(it)
-                   for it in _rest_pages(
-                       f"repos/{REPO}/issues?state=open&sort=created&direction=desc")
-                   if "pull_request" not in it]
+                   for it in raw_items if "pull_request" not in it]
         except Exception as exc:  # noqa: BLE001 - les deux sont tombes
             raise TransportUnavailable(graphql_err, f"{type(exc).__name__}") from exc
         print(
@@ -740,6 +757,25 @@ def fetch_pool(
             "filtres qui en dependent se degradent, et le disent plus bas.",
             file=sys.stderr,
         )
+        # #18113 : le garde `len(raw) >= POOL_FETCH_LIMIT` est AVEUGLE ici --
+        # le flux brut est plafonne sous le seuil ET filtre des PRs. Le signal
+        # est le plafond de pages atteint, et ce message tient lieu de garde
+        # sur la voie REST, sinon la bascule de #17038 reintroduit la
+        # troncature muette par l'autre porte (cf #17474 pour les PRs).
+        if hit_cap:
+            print(
+                f"[POOL TRONQUE] la voie REST s'est arretee sur son plafond de "
+                f"{POOL_ISSUES_REST_MAX_PAGES} pages pleines x {POOL_REST_PAGE} "
+                f"= {POOL_ISSUES_REST_MAX_PAGES * POOL_REST_PAGE} elements "
+                "bruts (issues + PRs) : le pool est probablement plus grand. "
+                "Le compte filtre ne peut jamais atteindre POOL_FETCH_LIMIT, "
+                "donc la garde principale ne peut pas tirer sur cette voie. "
+                "Le listing va du plus recent au plus ancien : la traine est "
+                "absente de ce tirage, biaise vers le recent. Relever "
+                "POOL_ISSUES_REST_MAX_PAGES avant de s'en servir pour "
+                "conclure quoi que ce soit sur la couverture.",
+                file=sys.stderr,
+            )
         return raw
 
     try:
@@ -792,6 +828,13 @@ def fetch_pool(
             "created_at": it["createdAt"],
             "age": age_days(it["createdAt"]),
             "idle": age_days(it["updatedAt"]),
+            # Placeholder pour le geste 3 #18203 : sera ecrase juste apres le
+            # `last_delivery_per_issue` (en jours depuis la derniere PR
+            # mergée qui cite l'issue, ou `age` si aucune livraison dans la
+            # fenetre). Le `idle` ci-dessus reste utilise par les filtres
+            # `--min-idle-days` / `--max-idle-days` : un garde se justifie,
+            # l'autre non, et le facteur de poids ne doit pas les entrainer.
+            "idle_since_delivery": age_days(it["updatedAt"]),
             "updated_at": it["updatedAt"],
             "genre": declared_genre if declared_genre else infer_genre(title, labels),
             # Le genre est-il **soutenu** (declare par l'auteur, ou une regle
@@ -955,9 +998,11 @@ URN_NAMES = {"grain", "umbrella", "delivered"}
 # indiscipline, mais par conformite a une regle contradictoire.
 # Le porte sur la LANE, pas sur le modele : le picker ne connait pas le
 # moteur qui l'appelle. Liste explicite et courte, par conception.
+# `myia-ai-01:CoursIA-2` n'y figure plus depuis le 2026-09-30 : ce nom
+# designait le second dashboard du coordinateur ; il porte desormais une
+# lane WORKER (clone `D:/CoursIA-2`, MiniMax), qui ne ferme rien.
 DELIVERED_URN_LANES = frozenset({
     "myia-ai-01:CoursIA",       # coordinateur
-    "myia-ai-01:CoursIA-2",     # coordinateur (deuxieme dashboard)
     "myia-po-2025:CoursIA-2",   # adjoint (preflight #13605, #13883)
 })
 
@@ -1576,13 +1621,17 @@ def weight(item: dict, prev_genre: str | list[str] | tuple[str, ...] | set[str] 
     # Anciennete : sert "faire refluer doucement" -- la traine est la ou le
     # compte s'accumule. 6 mois pesent ~4x une issue de la semaine.
     w = 1.0 + math.log2(1.0 + item["age"] / 7.0)
-    # Delaissement : jours depuis la DERNIERE activite, distinct de l'age de
-    # creation (mesure du 2026-08-20 sur les 140 ouvertes : pearson r = 0.334,
-    # donc pas redondant). 91/140 avaient bouge dans les 24 h -- le bruit du
-    # moment ; les 12 plus inactives comptaient 9 EPICs. C'est cette population
-    # que le tirage doit atteindre : un EPIC intouche depuis 53 j pese ~2.4x un
-    # sujet du jour, assez pour remonter, trop peu pour devenir la seule veine.
-    w *= 1.0 + math.log2(1.0 + item["idle"] / 14.0)
+    # Delaissement (#18203 geste 3) : on mesure les jours depuis la DERNIERE
+    # LIVRAISON (derniere PR mergée qui cite l'issue, ou `age` si rien), pas
+    # depuis le dernier `updatedAt`. Un commentaire de bot, un ping de
+    # dispatch ou un claim remettent `updatedAt` à zéro sans livraison, et
+    # le facteur de poids en etait trompé (cf. mesure du 28/09/2026 dans
+    # #18203 : 11 des 80 issues froides avaient un `updatedAt` < 3 jours).
+    # Le champ `idle` reste utilise par les filtres `--min-idle-days` /
+    # `--max-idle-days` (fraicheur de surface, garde anti-flood) ; le facteur
+    # de poids utilise `idle_since_delivery` (fraicheur de livrable).
+    idle_factor = item.get("idle_since_delivery", item["idle"])
+    w *= 1.0 + math.log2(1.0 + idle_factor / 14.0)
     # G-VAR-3 au tirage plutot qu'en HOLD a posteriori. Tous les genres deja
     # consommes dans la session restent penalises : guard -> docs -> guard ne
     # doit pas redevenir libre au troisieme tirage (#14704).
@@ -2252,9 +2301,10 @@ def fetch_open_prs() -> list[dict]:
         return prs
     except Exception:  # noqa: BLE001 - on TENTE l'autre transport
         pass
-    raw = [_pr_rest_to_gh_shape(it) for it in _rest_pages(
+    raw_pulls, _hit_cap = _rest_pages(
         f"repos/{REPO}/pulls?state=open&sort=created&direction=desc",
-        max_pages=POOL_REST_MAX_PAGES)]
+        max_pages=POOL_REST_MAX_PAGES)
+    raw = [_pr_rest_to_gh_shape(it) for it in raw_pulls]
     print(
         f"[TRANSPORT] `gh pr list` (GraphQL) indisponible -- bascule REST, "
         f"quota distinct. {len(raw)} PRs lues.",
@@ -4910,6 +4960,45 @@ def main(argv: list[str] | None = None) -> int:
                              args.delivery_boost_max)
         for num, item in delivery_sig["items"].items()
     }
+
+    # Geste 3 #18203 : `idle_since_delivery` pour TOUT le pool, pas seulement
+    # les umbrellas. `measure_delivery` ne couvre que les umbrellas et ignore
+    # les grains -- or le facteur de poids du tirage veut une mesure sur la
+    # derniere livraison reelle, identique sur les deux classes. Cout : zero
+    # appel reseau, on reutilise le meme corpus `delivery_prs`.
+    pool_numbers = [it["number"] for it in pool]
+    last_delivery_map = last_delivery_per_issue(delivery_prs, pool_numbers)
+    # Geste 3 #18203 (CR ai-01 c.1342) : tester l'erreur de fetch, PAS le
+    # dict. `last_delivery_per_issue([], pool_numbers)` rend
+    # `{n: None pour chaque n}` (dict non vide des que le pool l'est), donc
+    # `if last_delivery_map:` est toujours vrai sur echec de fetch -- le
+    # `else` (corpus indisponible) etait inatteignable. La doctrine
+    # "defaut de mesure n'est pas negligence" impose un test sur l'erreur
+    # elle-meme, pas sur la structure du resultat.
+    if not delivery_fetch_err and last_delivery_map:
+        # Cas nominal : corpus de PRs disponible et fenetre respectee. On
+        # patche `idle_since_delivery` pour chaque item. Issue livree dans la
+        # fenetre -> jours depuis la fusion ; sinon -> `age` (l'age de
+        # creation, qui dit "issue neuve jamais livree" sans la faire passer
+        # pour "fraiche" via un `updatedAt` recent).
+        for it in pool:
+            stamp = last_delivery_map.get(it["number"])
+            if stamp:
+                when = dt.datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+                it["idle_since_delivery"] = round(
+                    (NOW - when).total_seconds() / 86400.0, 2)
+                it["last_delivery_stamp"] = stamp
+            else:
+                it["idle_since_delivery"] = it["age"]
+                it["last_delivery_stamp"] = None
+    else:
+        # Corpus indisponible : on conserve la valeur placeholder (`idle`,
+        # jours depuis `updatedAt`) -- la doctrine "defaut de mesure n'est
+        # pas negligence" s'applique. Le runner peut etre rejoue des que la
+        # fenetre `gh pr list` redevient lisible.
+        for it in pool:
+            it["idle_since_delivery"] = it["idle"]
+            it["last_delivery_stamp"] = None
 
     # Admission AVANT les urnes : un grain inadmissible ne doit pas
     # apparaitre dans le tirage, sinon il est sous les yeux quand le

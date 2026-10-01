@@ -76,7 +76,7 @@
    "url": "https://www.quantconnect.com/research/18784/digital-asset-stockpile-portfolio-construction-techniques/",
    "lastmod": "2025-03-11T23:52:19+00:00",
    "seeded_at": null,
-   "issue": null
+   "issue": 18364
   },
   "18766": {
    "url": "https://www.quantconnect.com/research/18766/reducing-option-writing-risk-with-iv-rank-and-strike-clusters/",
@@ -129,8 +129,8 @@
   "17902": {
    "url": "https://www.quantconnect.com/research/17902/bitcoin-as-a-leading-indicator/",
    "lastmod": "2025-02-14T06:21:50+00:00",
-   "seeded_at": null,
-   "issue": null
+   "seeded_at": "2026-09-30",
+   "issue": 18575
   },
   "17900": {
    "url": "https://www.quantconnect.com/research/17900/intraday-application-of-hidden-markov-models/",
@@ -177,8 +177,8 @@
   "17112": {
    "url": "https://www.quantconnect.com/research/17112/probabilistic-sharpe-ratio/",
    "lastmod": "2024-11-06T10:41:25+00:00",
-   "seeded_at": null,
-   "issue": null
+   "seeded_at": "2026-09-29",
+   "issue": 18359
   },
   "16977": {
    "url": "https://www.quantconnect.com/research/16977/greeks-and-iv-implementation/",
@@ -214,7 +214,7 @@
    "url": "https://www.quantconnect.com/research/15989/futures-trend-following-and-carry-in-different-risk-regimes/",
    "lastmod": "2026-01-02T22:16:34+00:00",
    "seeded_at": null,
-   "issue": null
+   "issue": 15549
   },
   "15959": {
    "url": "https://www.quantconnect.com/research/15959/adjusted-trend-on-futures/",
@@ -442,7 +442,7 @@
    "url": "https://www.quantconnect.com/research/15366/short-term-reversal-with-futures/",
    "lastmod": "2026-02-18T20:05:44+00:00",
    "seeded_at": null,
-   "issue": null
+   "issue": 18466
   },
   "15364": {
    "url": "https://www.quantconnect.com/research/15364/momentum-effect-in-stocks/",
@@ -867,7 +867,7 @@
   "21195": {
    "url": "https://www.quantconnect.com/research/21195/bitcoin-regime-signal-for-growth-equities/",
    "lastmod": "2026-08-21T13:40:23+00:00",
-   "seeded_at": null,
+   "seeded_at": "2026-09-30",
    "issue": 12748
   },
   "21382": {

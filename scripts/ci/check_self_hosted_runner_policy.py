@@ -100,6 +100,7 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "hooks-parity.yml",
     "notebook-exec-sequence-ratchet.yml",
     "notebook-navlink-check.yml",
+    "notebook-nav-chain-guard.yml",
     "notebook-papermill-ratchet.yml",
     # tranche 3b (#14283, meme decision, meme owner) : suite des gardes PR
     #   pure-Python. Fondue dans la meme PR que 3a -- les scinder aurait produit
@@ -488,6 +489,18 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   par Hermes (CONCERNS 19/09) : la PR routait le job self-hosted sans
     #   toucher cette allowlist fail-closed. Rollback = revert de la PR.
     "organ-duplication-advisory.yml",
+    # #14623 (owner myia-po-2024:CoursIA, PR #18595) : docs-transients
+    #   guard -- detecteur de fichiers transients (rapports/coordination)
+    #   qui doivent vivre sur le dashboard, pas dans le repo (regle
+    #   harness-hygiene, tier Ephemere). Pure-Python stdlib, garde
+    #   same-repo au niveau job (#13874, if head.repo == repository),
+    #   pull_request filtre par paths en auto-couverture des fichiers
+    #   de l'organe, workflow_dispatch pour re-run manuel. runs-on
+    #   STATIQUE jambe Linux containerisee (routage #14283 tranche 3).
+    #   Entree ajoutee au repair du rouge WORKFLOW_NOT_ALLOWED (relecture
+    #   ai-01 c.5917276825) : la PR routait le job self-hosted sans
+    #   toucher cette allowlist fail-closed. Rollback = revert de la PR.
+    "docs-transients-guard.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",

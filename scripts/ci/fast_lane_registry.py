@@ -265,6 +265,19 @@ PILOT: list[Guard] = [
         blocking=True,
     ),
     Guard(
+        name="notebook-nav-chain-guard",
+        source="notebook-nav-chain-guard.yml",
+        paths=NOTEBOOK_GLOBS + [
+            "MyIA.AI.Notebooks/**/README.md",
+            "scripts/notebook_tools/check_notebook_nav_chain.py",
+            "scripts/tests/baseline_nb_nav_chain.json",
+            ".github/workflows/notebook-nav-chain-guard.yml",
+        ],
+        argv=["python", "scripts/notebook_tools/check_notebook_nav_chain.py",
+              "--check"],
+        blocking=True,
+    ),
+    Guard(
         name="notebook-interp-positioning-guard",
         source="notebook-interp-positioning.yml",
         paths=NOTEBOOK_GLOBS + [
@@ -1166,7 +1179,7 @@ TRANCHE9: list[Guard] = [
 #   'Invalid Notebook / outputs is a required property /
 #    Using nbformat v5.10.4 and nbconvert v7.17.0'
 #
-# Le c.1082 fabrication de GameTheory-06g-Bounded-Agents-Lean.ipynb a omis
+# Le c.1082 fabrication de GameTheory-06f-Bounded-Agents-Lean.ipynb a omis
 # la cle `outputs` de 9/9 cellules code. Papermill (validator permissif) a
 # accepte, le kernel lean4-wsl n'a rien produit (hang faute de `.lake/`), la
 # cle n'a jamais ete injectee -- resultat : un notebook structurellement
@@ -1220,7 +1233,7 @@ TRANCHE10: list[Guard] = [
 # `notebook-source-collapse-ratchet.yml` a absorber.
 #
 # Le defaut fondeur est #15862 : la cellule `c989_independent_v2` de
-# GameTheory-06e-Open-Source-Game-Theory.ipynb a perdu 3116 caracteres de
+# GameTheory-06e-Open-Source-Game-Theory-Python.ipynb a perdu 3116 caracteres de
 # source (8425 -> 5309, -37.0 %) -- une table declarative et un `assert` ont
 # disparu -- et AUCUN des ~30 ratchets n'a bronche, parce que tous mesurent
 # des SORTIES, des sequences ou de la structure. Aucun ne mesurait la
@@ -1473,5 +1486,51 @@ TRANCHE15: list[Guard] = [
             "--all", "--check",
         ],
         blocking=True,
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 16 (#18048) -- garde caracteres de controle dans les sources de
+# cellules. Un outil d'ecriture qui interprete les echappements Python
+# transforme ``\a``, ``\b``, ``\f`` ou ``\v`` d'une source en caractere de
+# controle : le JSON reste valide (controles echappes \u0007/\b/\f), le
+# notebook s'execute, aucun organe ne rougissait -- mais le rendu est casse
+# (LaTeX illisible, regex affichee fausse).
+#
+# Temoins fondateurs (body #18048, tous deux en test dans
+# scripts/tests/test_check_control_chars_in_cells.py) :
+#   - POSITIF : tete f19ca6ff91 de la PR #17919 (MGS-01-Introduction
+#     cellule 10) -- 3x U+0007 dans ``$\sigma\<BEL>pprox 12$`` (intention
+#     : ``\approx``) ;
+#   - NEGATIF : main post-fix -- la cellule 18 markdown de
+#     auditer-la-conformite-visuelle.ipynb porte le texte LITERAL ``\b``
+#     (frontiere de regex, backslash + b en clair), qui ne doit JAMAIS
+#     rougir ; son U+0008 herite est repare dans la meme PR.
+#
+# Forme : delta base-vs-head sur les cellules AJOUTEES ou MODIFIEES (le
+# stock herite ne rougit pas -- une source identique a l'identique dans la
+# base est exempee), bloquant. rc=2 = incident d'entree (git/JSON), pas
+# une faute de la PR : warn_rc=(2,) le rend neutre au check-run, titre
+# distinct, non silencieux (forme hr-substitution-guard, #17941).
+# ---------------------------------------------------------------------------
+TRANCHE16: list[Guard] = [
+    Guard(
+        name="control-chars-in-cells-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**/*.ipynb",
+            "scripts/ci/check_control_chars_in_cells.py",
+            "scripts/tests/test_check_control_chars_in_cells.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/ci/check_control_chars_in_cells.py",
+            "--diff", "{base_ref}...HEAD",
+        ],
+        blocking=True,
+        needs_base=True,
+        warn_rc=(2,),
     ),
 ]

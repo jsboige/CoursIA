@@ -600,3 +600,37 @@ def test_real_registry_lives_against_main_repo() -> None:
     )
     # Exit code 0 (tout PASS en mode strict)
     assert result.returncode == 0
+
+
+def test_workflow_paths_cover_every_registry_notebook() -> None:
+    """Chaque notebook du registre REEL figure dans le filtre `paths:` de
+    `arxiv-attributions-guard.yml`.
+
+    Sans cela, une PR qui ne modifie qu'un notebook enregistre (cellules
+    inserees, citation reecrite) n'active pas la garde bloquante : la derive
+    n'apparait qu'apres merge, sur main. Mesure fondatrice (2026-09-29) :
+    #18320 a decale les cellules d'ICT-37, ajoute au registre par la passe 6
+    (#17622) sans que le filtre suive ; main est reste rouge sur Scripts Tests
+    jusqu'a #18343.
+    """
+    import yaml
+
+    real_reg = REPO_ROOT / "arxiv_attributions_registry.yaml"
+    workflow = REPO_ROOT / ".github" / "workflows" / "arxiv-attributions-guard.yml"
+    if not real_reg.exists() or not workflow.exists():
+        pytest.skip("Registre ou workflow absent")
+
+    with real_reg.open(encoding="utf-8") as f:
+        entries = yaml.safe_load(f).get("attributions", [])
+    with workflow.open(encoding="utf-8") as f:
+        wf = yaml.safe_load(f)
+    # PyYAML lit la cle `on` comme le booleen True.
+    triggers = wf.get("on", wf.get(True, {}))
+    paths = set(triggers["pull_request"]["paths"])
+
+    missing = sorted({e["notebook"] for e in entries} - paths)
+    assert not missing, (
+        "Notebooks du registre absents du filtre paths: de "
+        f"arxiv-attributions-guard.yml : {missing}. Les ajouter au filtre, "
+        "sinon une PR qui ne touche que ces notebooks esquive la garde."
+    )

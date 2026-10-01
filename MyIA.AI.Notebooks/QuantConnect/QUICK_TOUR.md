@@ -1,6 +1,6 @@
 # QuantConnect AI Trading - Quick Tour
 
-**116 stratégies backtestées (projects/) | 55 notebooks Python (Python/) | 20 patterns confirmés | Composite robuste (TrendWeather Sharpe aligné 0.948)**
+**116 stratégies backtestées (projects/) | notebooks Python (Python/) | 20 patterns confirmés | Composite robuste (TrendWeather Sharpe aligné 0.948)**
 
 Cette section contient un parcours complet de trading algorithmique sur **QuantConnect LEAN**, du débutant au déploiement live. Tout est exécutable gratuitement sur le cloud QC.
 
@@ -14,7 +14,7 @@ Cette section contient un parcours complet de trading algorithmique sur **QuantC
 
 3. **[Patterns confirmés](../../docs/qc/quantconnect.md)** — 20 patterns valides sur 30+ iterations (risk-adjusted momentum, skip-month, stop-loss -8/-12%, monthly rebalancing, anti-overfitting) et 10 anti-patterns critiques (SPY Parking, backtests courts, yfinance != QC cloud).
 
-4. **[Notebooks pédagogiques](Python/)** — 55 notebooks en 8 phases progressives (cf. classification 4-types par modalité d'exécution dans [`Python/README.md`](Python/README.md) — quantbook QC Cloud / research companion / standalone local / placeholder pédagogique) : fondations LEAN, universe/asset classes, risk management, Algorithm Framework, données alternatives, ML (RF/XGBoost), deep learning (LSTM/Transformers), RL et LLMs pour trading.
+4. **[Notebooks pédagogiques](Python/)** — notebooks en 8 phases progressives (cf. classification 4-types par modalité d'exécution dans [`Python/README.md`](Python/README.md) — quantbook QC Cloud / research companion / standalone local / placeholder pédagogique) : fondations LEAN, universe/asset classes, risk management, Algorithm Framework, données alternatives, ML (RF/XGBoost), deep learning (LSTM/Transformers), RL et LLMs pour trading.
 
 5. **[Mapping livre Jared Broad](BOOK_MAPPING.md)** — 63 exemples du livre *Hands-On AI Trading* (2025) mappés à nos notebooks et projets. 22 stratégies ML du Chapitre 6 importées.
 

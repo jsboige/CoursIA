@@ -181,6 +181,84 @@ class TestDeclaredFixtureUntouched(unittest.TestCase):
                              plan.rewrites)
 
 
+class TestHistoryAndCatalogScannedOut(unittest.TestCase):
+    """Dry-run de la tranche Lean (#17545) : les marqueurs d'historique a deux
+    composantes (``docs/archive``, ``docs/ledgers``) ne correspondaient jamais a
+    une composante de chemin, et le catalogue genere n'etait exclu que du mode
+    --propose. Les deux auraient ete reecrits."""
+
+    def test_multi_component_history_markers_and_catalog_are_skipped(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            _init_repo(repo)
+            for rel in ("docs/archive/old.md", "docs/ledgers/l.md",
+                        "scripts/results/r.md", "COURSE_CATALOG.generated.md",
+                        "docs/reference/live.md"):
+                _write(repo, rel, f"voir {OLD}\n")
+            _git(repo, "add", "-A")
+            _git(repo, "commit", "-qm", "refs")
+
+            plan = rn.scan_referents(_forms(), repo)
+            self.assertEqual(sorted(plan.rewrites), ["docs/reference/live.md"])
+
+    def test_history_marker_must_be_a_directory_not_the_file(self):
+        self.assertTrue(rn._is_history("docs/archive/sub/x.md"))
+        self.assertFalse(rn._is_history("docs/archive.md"))
+        self.assertFalse(rn._is_history("docs/reference/archive/x.md"))
+
+
+class TestMappingGrammarOnBasename(unittest.TestCase):
+    """La table porte des chemins complets : la grammaire se juge sur le nom
+    de fichier, sinon toute cible canonique est annoncee hors grammaire."""
+
+    def test_canonical_target_path_raises_no_warning(self):
+        self.assertIsNone(rn.target_violation("Lean-01-Setup-Lean-Python.ipynb"))
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            _init_repo(repo)
+            tsv = Path(str(repo) + ".table.tsv")
+            tsv.write_text(f"{OLD}\t{NEW}\n", encoding="utf-8")
+            cwd = os.getcwd()
+            os.chdir(repo)
+            try:
+                with mock.patch("sys.stdout", new_callable=__import__("io").StringIO) as out:
+                    rc = rn.main(["--mapping", str(tsv)])
+            finally:
+                os.chdir(cwd)
+            self.assertEqual(rc, 0)
+            self.assertNotIn("hors grammaire", out.getvalue())
+
+    def test_target_violation_ignores_posix_path_prefix(self):
+        """Site l.364 (#18450) : un chemin complet passe a target_violation
+        ne doit pas tomber sur la raison generique « hors grammaire » alors
+        que le basename est canonique."""
+        full = "MyIA.AI.Notebooks/Probas/Applications/Infer-20-Quotients-Python.ipynb"
+        self.assertIsNone(rn.target_violation(full))
+
+    def test_target_violation_ignores_windows_path_prefix(self):
+        full = "MyIA.AI.Notebooks\\Probas\\Applications\\Infer-20-Quotients-Python.ipynb"
+        self.assertIsNone(rn.target_violation(full))
+
+    def test_target_violation_full_path_still_flags_real_violation(self):
+        """L'extraction du basename ne doit pas avaler une vraie violation :
+        un basename hors grammaire (separateur _) garde sa raison propre,
+        pas la raison generique d'un chemin complet."""
+        full = "MyIA.AI.Notebooks/Probas/Applications/Infer_20_Quotients_Python.ipynb"
+        viol = rn.target_violation(full)
+        self.assertIsNotNone(viol)
+        self.assertIn("hors grammaire", viol)
+
+
+class TestDeclaredFixturesExist(unittest.TestCase):
+    """Une declaration perimee (fichier deplace ou supprime) protegerait un
+    chemin qui n'existe plus et laisserait le vrai se faire reecrire."""
+
+    def test_every_declared_fixture_is_a_repo_file(self):
+        root = Path(__file__).resolve().parents[3]
+        for rel in rn.FIXTURES_DECLARED:
+            self.assertTrue((root / rel).is_file(), rel)
+
+
 class TestQuartoEntryRewritten(unittest.TestCase):
     """Defaut 4 : l'entree _quarto.yml avait ete oubliee."""
 
@@ -349,6 +427,40 @@ class TestTwoCommitDiscipline(unittest.TestCase):
             ledger = (repo / rn.LEDGER_RELPATH).read_text(encoding="utf-8")
             self.assertIn(f"{OLD}\t{NEW}", ledger)
             self.assertIn("test-lane", ledger)
+
+
+    def test_moved_notebook_citing_a_moved_sibling_is_rewritten_in_place(self):
+        """#18015 : le plan de referents est scanne avant les git mv. Un
+        notebook renomme qui cite un voisin renomme figurait a son ancien
+        chemin et l'application echouait (FileNotFoundError) apres le
+        commit 1."""
+        old2 = "MyIA.AI.Notebooks/S/S-2-Beta.ipynb"
+        new2 = "MyIA.AI.Notebooks/S/S-02-Beta-Python.ipynb"
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            _init_repo(repo)
+            _write_nb(repo, old2, _nb([_md(
+                "Suite de [S-01-Alpha](S-01-Alpha.ipynb).")]))
+            _git(repo, "add", "-A")
+            _git(repo, "commit", "-qm", "voisin")
+            tsv = Path(str(repo) + ".table.tsv")
+            tsv.write_text(f"{OLD}\t{NEW}\n{old2}\t{new2}\n", encoding="utf-8")
+
+            cwd = os.getcwd()
+            os.chdir(repo)
+            try:
+                with mock.patch.object(rn, "run_organs", return_value=0):
+                    rc = rn.main(["--mapping", str(tsv), "--apply",
+                                 "--lane", "test-lane"])
+            finally:
+                os.chdir(cwd)
+            self.assertEqual(rc, 0)
+            self.assertFalse((repo / old2).exists())
+            body = (repo / new2).read_text(encoding="utf-8")
+            self.assertIn("S-01-Alpha-Python.ipynb", body)
+            self.assertNotIn("(S-01-Alpha.ipynb)", body)
+            c2 = _git(repo, "diff", "--name-status", "HEAD~1", "HEAD")
+            self.assertIn(f"M\t{new2}", c2)
 
 
 class TestMappingRefusals(unittest.TestCase):
@@ -582,6 +694,83 @@ class TestReview17801Guards(unittest.TestCase):
             self.assertFalse((repo / rn.LEDGER_RELPATH).exists())
             rc = rn.rebase_helper(apply=False, repo=repo)
             self.assertEqual(rc, 0)
+
+
+class TestPathLengthNotAViolation(unittest.TestCase):
+    """#17834 : target_violation recoit un chemin relatif dans main(), et STEM_RE
+    est ancree en debut de stem. Resultat avant fix : 31/31 avertissements
+    <<prefixe absent>> sur des cibles canoniques (table SmartContracts). Le fix
+    (PR #18194, MERGED sur main 28/09) extrait le basename via
+    `new.rsplit("/", 1)[-1]` au site d'appel de main() l.828.
+
+    Cette PR n'apporte pas le fix : elle ajoute les tests de non-regression
+    qui pincent le site d'appel l.828. Avant ce PR, les tests
+    `test_long_path_canonical_returns_none` et `test_long_path_passes_through_main_loop`
+    etaient des miroirs auto-coherents : ils appliquaient `os.path.basename`
+    eux-memes avant d'appeler `target_violation`, donc ils passaient au vert
+    sur le code non corrige exactement comme sur le corrige. Le seul test
+    qui pince reellement le site d'appel est `test_main_loop_passes_basename`
+    ci-dessous : il passe par `main()` et verifie les appels a
+    `target_violation` (controle positif).
+    """
+
+    def test_main_loop_passes_basename(self):
+        """Le site d'appel l.828 doit passer le BASENAME a target_violation,
+        pas le chemin complet.
+
+        Controle positif : si quelqu'un reintroduit `target_violation(new)` au
+        lieu de `target_violation(new.rsplit("/", 1)[-1])`, ce test ROUGE --
+        le mock enregistre le chemin complet comme argument et leve.
+        """
+        captured = []
+        real_target_violation = rn.target_violation
+
+        def spy(name):
+            captured.append(name)
+            return real_target_violation(name)
+
+        full_new = (
+            "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/"
+            "00-Foundations/SC-01-Setup-Foundry-Python.ipynb"
+        )
+        old_in_repo = "MyIA.AI.Notebooks/S/S-01-Alpha.ipynb"
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            _init_repo(repo)
+            tsv = Path(str(repo) + ".table.tsv")
+            tsv.write_text(f"{old_in_repo}\t{full_new}\n", encoding="utf-8")
+            cwd = os.getcwd()
+            os.chdir(repo)
+            try:
+                with mock.patch.object(rn, "target_violation",
+                                       side_effect=spy), \
+                     mock.patch.object(rn, "run_organs", return_value=0):
+                    rc = rn.main(["--mapping", str(tsv)])
+            finally:
+                os.chdir(cwd)
+            self.assertEqual(rc, 0)
+            # L.828 a appele target_violation avec le basename de `new`,
+            # pas le chemin complet -- sinon STEM_RE detecterait le prefixe
+            # `SymbolicAI/` et imprimerait <<prefixe absent>>.
+            self.assertTrue(captured,
+                "target_violation doit etre appele au moins une fois sur la cible")
+            for arg in captured:
+                self.assertNotIn("/", arg,
+                    f"target_violation appele avec chemin complet '{arg}' "
+                    f"-- le site d'appel l.828 doit extraire le basename")
+
+    def test_infixe_kernel_toujours_detecte_apres_fix(self):
+        """Le fix ne casse pas le verdict sur infixe kernel (cas SC-7b ERC20)."""
+        self.assertEqual(
+            rn.target_violation(
+                "SC-07b-ERC20-Lean-Verification-Companion-Python.ipynb"
+            ),
+            "mot de noyau en infixe du titre",
+        )
+
+    def test_non_grammar_toujours_detecte_apres_fix(self):
+        """Cible non grammaticale (mauvais prefixe) -> toujours signalee."""
+        self.assertIsNotNone(rn.target_violation("not-a-notebook.txt"))
 
 
 if __name__ == "__main__":

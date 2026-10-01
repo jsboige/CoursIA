@@ -39,6 +39,13 @@ ces invariants, pas des details :
   I5  dry-run par defaut ; `--apply` explicite.
   I6  deux commits : 1 = `git mv` seuls, 2 = referents (une PR = un sujet).
 
+HOOKS PRE-COMMIT : les commits de l'outil passent par les hooks du depot. Un
+hook qui CORRIGE un fichier indexe (fix-hr-separator sur un carnet renomme) ou
+qui REFUSE un fichier entier (check-subprocess-encoding sur un script dont un
+chemin est reecrit) fait echouer le commit 1 ou 2 au milieu de --apply (tranche
+socle Lean, #17545). Avant --apply : `python -m pre_commit run --files <carnets
+de la table + referents du dry-run>`, et committer ses corrections a part.
+
 USAGE
 -----
     python scripts/notebook_tools/rename_notebooks.py --propose MyIA.AI.Notebooks/SymbolicAI/Lean
@@ -118,7 +125,16 @@ CATALOG_BASENAME_PREFIX = "COURSE_CATALOG.generated"
 
 # Fixtures a nom volontairement NON reecrit : liste DECLAREE (chemins relatifs
 # au depot), remplie par chaque tranche pour ses propres series.
-FIXTURES_DECLARED: tuple[str, ...] = ()
+FIXTURES_DECLARED: tuple[str, ...] = (
+    # Cas fondateur de l'organe output-collapse (#15209) : --self-test relit le
+    # carnet par `git show 6b327a9bf:<chemin>` -- a ces SHA il ne porte que son
+    # ANCIEN nom. Le reecrire casse le self-test qui garde le job CI.
+    "scripts/notebook_tools/check_output_collapse.py",
+    ".github/workflows/notebook-output-collapse-ratchet.yml",
+    # Citations d'incidents fondateurs epinglees a des SHA (#15209, #15862,
+    # #16097...) : le nom cite est celui d'alors.
+    ".claude/rules/pr-review-discipline.md",
+)
 
 STEM_RE = re.compile(r"^(?P<prefix>[A-Za-z][A-Za-z0-9]*)-(?P<num>\d+)(?P<accr>[a-z]?)(?P<sep>[-_])(?P<title>.+)$")
 PART_RE = re.compile(r"[-_]Part(\d+)$", re.I)
@@ -249,7 +265,13 @@ def target_violation(new_name: str) -> str | None:
     Renvoie None si la cible est canonique (STEM_RE + noyau en dernier, jamais
     en infixe), sinon la raison. Une cible non canonique promet un SECOND
     renommage : la ligne de la table doit tomber en A TRANCHER, pas etre livree.
+
+    Le basename est extrait avant toute analyse : un chemin complet passe a
+    l'appel (POSIX ou Windows) recevrait a tort la raison generique « hors
+    grammaire de serie » (#18192 pour main(), l.828 ; ce site-ci, l.364,
+    #18450). La violation eventuelle doit decrire le nom, pas le chemin.
     """
+    new_name = new_name.replace("\\", "/").rsplit("/", 1)[-1]
     stem = re.sub(r"\.ipynb$", "", new_name, flags=re.I)
     m = STEM_RE.match(stem)
     if not m:
@@ -275,8 +297,13 @@ def is_excluded(rel: str) -> bool:
 
 def _is_history(rel: str) -> bool:
     parts = rel.split("/")
-    if any(marker in parts for marker in HISTORY_DIR_MARKERS):
-        return True
+    # Un marqueur a plusieurs composantes ("docs/archive") ne peut pas etre un
+    # element de `parts` : il se compare a une sous-suite de composantes.
+    for marker in HISTORY_DIR_MARKERS:
+        mparts = marker.split("/")
+        n = len(mparts)
+        if any(parts[i:i + n] == mparts for i in range(len(parts) - n)):
+            return True
     # twin_pairs.d : le PREMIER niveau (paires) se reecrit, l'historique date
     # des sous-dossiers ne se reecrit pas.
     if "twin_pairs.d" in parts:
@@ -463,24 +490,47 @@ class Plan:
     fragmented: list[tuple[str, int]] = field(default_factory=list)
 
 
+_TEXT_SUFFIXES = frozenset({
+    ".py", ".md", ".ipynb", ".yaml", ".yml", ".json", ".lean", ".cs", ".txt",
+    ".csv", ".sh", ".ps1", ".html", ".htm", ".js", ".ts", ".tex", ".cff",
+    ".bib", ".xml", ".svg", ".dot", ".cfg", ".toml", ".ini", ".rst", ".mermaid",
+})
+
+
 def scan_referents(forms_list: list[RefForms], repo: Path | None = None) -> Plan:
     repo = repo or repo_root()
     plan = Plan()
     pats = build_patterns(forms_list)
+    # Prefiltre combine : une alternation des litteraux, SANS frontieres. Tout
+    # match d'un pattern individuel (litteral + frontieres) contient le
+    # litteral, donc ce filtre ne peut jamais exclure un fichier porteurl --
+    # il ne fait qu'epargner les ~200 scans par cellule sur les fichiers sans
+    # aucune occurrence (mesure : dry-run GameTheory, 11 759 fichiers tracks,
+    # >70 min a 100 % CPU sur le chemin non prefiltre).
+    _pre = re.compile("|".join(sorted({re.escape(old) for _, _, old, _ in pats},
+                                      key=len, reverse=True)))
     ls = subprocess.run(["git", "ls-files"], cwd=repo, capture_output=True,
                         text=True, encoding="utf-8", errors="replace", check=True)
     for line in ls.stdout.splitlines():
         rel = line.strip()
         if not rel or _is_history(rel) or rel in FIXTURES_DECLARED:
             continue
+        # Le catalogue appartient a sa regeneration (I4) : jamais reecrit ici.
+        if rel.rsplit("/", 1)[-1].startswith(CATALOG_BASENAME_PREFIX):
+            continue
         p = repo / rel
+        # Un referent textuel ne vit que dans un fichier texte : ~2 200
+        # binaires pistes (png/npz/csv...) etaient lus pour echouer au decode.
+        if p.suffix.lower() not in _TEXT_SUFFIXES:
+            continue
         if not p.is_file():
             continue
         try:
             raw = p.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError):
             continue
-        raw_total = sum(len(pat.findall(raw)) for _, pat, _, _ in pats)
+        raw_total = (sum(len(pat.findall(raw)) for _, pat, _, _ in pats)
+                     if _pre.search(raw) else 0)
 
         if not rel.endswith(".ipynb"):
             if raw_total:
@@ -500,6 +550,8 @@ def scan_referents(forms_list: list[RefForms], repo: Path | None = None) -> Plan
         # et sa serialization par elements, meme quand raw_total vaut 0.
         for i, cell in enumerate(nb.get("cells", [])):
             joined = "".join(cell.get("source", []))
+            if not _pre.search(joined):
+                continue
             joined_hits = sum(len(pat.findall(joined)) for _, pat, _, _ in pats)
             if not joined_hits:
                 continue
@@ -520,9 +572,11 @@ def scan_referents(forms_list: list[RefForms], repo: Path | None = None) -> Plan
             if cell.get("cell_type") == "code":
                 continue
             blob = json.dumps(cell, ensure_ascii=False)
-            allowed += sum(len(pat.findall(blob)) for _, pat, _, _ in pats)
+            if _pre.search(blob):
+                allowed += sum(len(pat.findall(blob)) for _, pat, _, _ in pats)
         meta_blob = json.dumps(nb.get("metadata") or {}, ensure_ascii=False)
-        allowed += sum(len(pat.findall(meta_blob)) for _, pat, _, _ in pats)
+        if _pre.search(meta_blob):
+            allowed += sum(len(pat.findall(meta_blob)) for _, pat, _, _ in pats)
 
         if raw_total > allowed:
             # Fail-closed I2/I3 : le fichier melange surfaces reescrivables et
@@ -533,12 +587,15 @@ def scan_referents(forms_list: list[RefForms], repo: Path | None = None) -> Plan
 
         for i, cell in enumerate(nb.get("cells", [])):
             joined = "".join(cell.get("source", []))
-            cell_hit = [old for _, pat, old, _ in pats if pat.search(joined)]
-            for old in cell_hit[:1]:
-                if cell.get("cell_type") == "code":
-                    plan.code_cells.append((rel, i, old))
+            if _pre.search(joined):
+                cell_hit = [old for _, pat, old, _ in pats if pat.search(joined)]
+                for old in cell_hit[:1]:
+                    if cell.get("cell_type") == "code":
+                        plan.code_cells.append((rel, i, old))
             for out in cell.get("outputs", []) or []:
                 blob = json.dumps(out, ensure_ascii=False)
+                if not _pre.search(blob):
+                    continue
                 for _, pat, old, _ in pats:
                     if pat.search(blob):
                         plan.outputs.append((rel, i, old))
@@ -801,7 +858,7 @@ def main(argv: list[str] | None = None) -> int:
         print("CIBLES DEJA PRESENTES :", exist)
         return 1
     for old, new in pairs:
-        viol = target_violation(new)
+        viol = target_violation(new.rsplit("/", 1)[-1])
         if viol:
             # La table est humaine, on execute ; mais une cible non canonique
             # promet un second renommage -- le dire, ne pas le taire.
@@ -813,7 +870,8 @@ def main(argv: list[str] | None = None) -> int:
     report(plan, pairs)
 
     if not a.apply:
-        print("\n[dry-run] rien n'a ete ecrit. Relancer avec --apply.")
+        print("\n[dry-run] rien n'a ete ecrit. Avant --apply : passer les hooks "
+              "sur les fichiers ci-dessus (HOOKS PRE-COMMIT, en tete du module).")
         return 0
 
     pre = subprocess.run(["git", "rev-parse", "HEAD"], cwd=repo,
@@ -844,8 +902,13 @@ def main(argv: list[str] | None = None) -> int:
                    cwd=repo, check=True)
 
     # commit 2 : referents par surface, au texte -- add et commit nommes.
+    # Le plan a ete scanne AVANT les git mv : un notebook deplace qui cite un
+    # autre notebook deplace (lien de navigation entre voisins) y figure a son
+    # ANCIEN chemin. Le reecrire la ou il vit desormais (crash FileNotFoundError
+    # releve sur #18015).
+    moved = dict(pairs)
     done = {}
-    for rel in sorted(plan.rewrites):
+    for rel in sorted(moved.get(r, r) for r in plan.rewrites):
         n = rewrite_file(repo / rel, forms_list)
         if n:
             done[rel] = n

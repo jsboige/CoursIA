@@ -9,10 +9,9 @@
   Résultats clés :
   1. Conway (11n34) et Kinoshita-Terasaka (11n42) partagent le même
      polynôme d'Alexander (trivial) — les invariants de mutation coïncident.
-  2. Le nœud de Kinoshita-Terasaka EST slice.
-  3. Le nœud de Conway N'EST PAS smoothly slice (Piccirillo 2018/2020).
-  4. Avec le théorème de Freedman (Conway est topologiquement slice),
-     ceci donne la première dichotomie smooth/topologique explicite.
+  2. Slice et dichotomie lisse/topologique (Kinoshita-Terasaka slice,
+     Conway PAS slice lisse — Piccirillo 2018/2020 ; Conway topologiquement
+     slice — Freedman) : extraits dans `Knots.Slice_en` (issue #18397).
 
   EPIC #2874, Phase 1 (scaffolding uniquement — sorry permanent pour l'instant).
 
@@ -1385,24 +1384,23 @@ theorem alexander_trefoilMutant :
 
 /-- Discrimination control on the figure-eight knot (4_1): under the
 designated normalization (minor omitting the first row and the last column),
-the function returns −2·t² + 2·t − 1 on the corrected raw wiring.
+the function returns t³ − 2·t² + 2·t on the canonical planar code (#17595).
 
 Honesty note: this value is NOT the classical Alexander polynomial of 4_1
 (which is ±t² ∓ 3·t ± 1, i.e. t² − 3·t + 1 up to a unit factor); the
 theorem measures the value actually produced by the designated function on
 a 4-crossing wiring that forms a single loop. The trefoil (t² − t + 1) and
 the determinant |P(−1)| = 5 = det(4_1) are reproduced, but the polynomial
-shape diverges from the classical value on the 4-crossing class — anomaly
-exhaustively documented (2736 orientation-valid wirings tested, including
-the DT [4,6,8,2] wiring) in the follow-up issue opened with this PR.
-The divergence is formalized below (`alexander_figureEight_not_classical`:
-not a unit) and repaired by the signed variant
+shape diverges from the classical value — the unsigned matrix treats the
+two negative crossings of the planar code as positive. The divergence is
+formalized below (`alexander_figureEight_not_classical`: not a unit) and
+repaired by the signed variant
 (`alexander_figureEight_signed`: the exact classical value).
 -/
 theorem alexander_figureEight :
     alexanderPolynomial figureEight =
-      - (2 : Polynomial ℤ) * Polynomial.X ^ 2 + 2 * Polynomial.X - 1 := by
-  have hp : arcPartition figureEightDiagram = [[3, 4], [5, 6], [7, 8], [1, 2]] := by
+      Polynomial.X ^ 3 - (2 : Polynomial ℤ) * Polynomial.X ^ 2 + 2 * Polynomial.X := by
+  have hp : arcPartition figureEightDiagram = [[1, 2], [5, 6], [3, 4], [7, 8]] := by
     decide
   simp only [alexanderPolynomial, alexanderPolynomialAux, figureEight, hp]
   simp only [figureEightDiagram]
@@ -1422,19 +1420,21 @@ all-positive diagram — the `3_1` trefoil of `Basic.lean`, whose three
 crossings are documented positive — the matrix IS the Alexander matrix and
 the designated minor recovers the classical value. On the figure-eight
 knot `4_1` (amphichiral, two crossings of each sign in any minimal
-alternating diagram), the matrix is wrong on the negative crossings: the
-minor returns `−2t² + 2t − 1`, outside the unit class of the classical
-`t² − 3t + 1` (see `alexander_figureEight_not_classical` below) — so the
-divergence is NOT a representative artifact (no symmetrization or Conway
-normalization `Δ(1) = 1` can repair it), but a chirality artifact. The
-determinant survives: `|P(−1)| = 5 = det(4_1)`
+alternating diagram — the canonical planar code carries the signs
+`[−, −, +, +]` read by `crossingSign`), the matrix is wrong on the
+negative crossings: the minor returns `t³ − 2t² + 2t`, outside the unit
+class of the classical `t² − 3t + 1` (see
+`alexander_figureEight_not_classical` below) — so the divergence is NOT a
+representative artifact (no symmetrization or Conway normalization
+`Δ(1) = 1` can repair it), but a chirality artifact. The determinant
+survives: `|P(−1)| = 5 = det(4_1)`
 (`alexander_figureEight_eval_neg_one`).
 
 The signed variant `alexanderPolynomialSigned` takes chirality as data and
-recovers the classical value on the figure-eight: the alternating labeling
-`[−, +, −, +]` of the DT-derived diagram returns exactly `t² − 3t + 1`,
-its mirror `[+, −, +, −]` returns `t · (t² − 3t + 1)` — same unit class,
-as amphichirality demands. -/
+recovers the classical value on the figure-eight: the true labeling
+`[−, −, +, +]` returns exactly `−t · (t² − 3t + 1)`, its mirror
+`[+, +, −, −]` returns `−(t² − 3t + 1)` — same unit class, as
+amphichirality demands. -/
 
 /-- Alexander row of a **negative** crossing: Fox derivative of the mirror
 Wirtinger relation `x_o⁻¹ x_i x_o = x_out`, multiplied by the unit `t` to
@@ -1470,29 +1470,33 @@ noncomputable def alexanderPolynomialSigned (d : KnotDiagram)
 
 /-- The divergence is not a unit: the designated value on the figure-eight
 equals `ε · t^k · (t² − 3t + 1)` for NO unit `ε = ±1` and no exponent `k`.
-Proof by evaluations: at `0` the designated value returns `−1`, forcing
-`k = 0` then `ε = −1`; at `2` it returns `−5` while `ε · 2^k · (2² − 3·2 + 1)`
-then equals `1`. -/
+Proof by a sign argument at two evaluation points: at `2`, the trinomial
+equals `−1`, so the identity would require `4 = −ε · 2^k` — impossible for
+`ε = 1` (right-hand side negative); at `3`, the trinomial equals `1`, so
+the identity would require `15 = ε · 3^k` — impossible for `ε = −1`
+(right-hand side negative). Since `2^k` and `3^k` are strictly positive,
+each unit is refuted by one of the two points. -/
 theorem alexander_figureEight_not_classical :
     ¬ ∃ (k : ℕ) (ε : ℤ), ε * ε = 1 ∧
       alexanderPolynomial figureEight =
         Polynomial.C ε * Polynomial.X ^ k * (Polynomial.X ^ 2 - 3 * Polynomial.X + 1) := by
-  rintro ⟨k, ε, -, h⟩
-  rcases k with _ | k
-  · have h0 := congrArg (Polynomial.eval 0) h
-    have h2 := congrArg (Polynomial.eval 2) h
-    rw [alexander_figureEight, pow_zero] at h0 h2
-    simp only [Polynomial.eval_one, Polynomial.eval_add, Polynomial.eval_mul,
-      Polynomial.eval_sub, Polynomial.eval_C, Polynomial.eval_X, pow_two, mul_one,
-      mul_zero, add_zero, zero_add, zero_sub] at h0 h2
-    norm_num at h0 h2
-    omega
-  · have h0 := congrArg (Polynomial.eval 0) h
-    rw [alexander_figureEight, pow_succ] at h0
-    simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_sub,
-      Polynomial.eval_C, Polynomial.eval_X, pow_two, mul_assoc, mul_zero, zero_mul,
-      mul_one, add_zero, zero_add, zero_sub] at h0
-    norm_num at h0
+  rintro ⟨k, ε, hε, h⟩
+  have hε' : ε = 1 ∨ ε = -1 := by
+    rw [← pow_two] at hε
+    exact sq_eq_one_iff.mp hε
+  have h2 := congrArg (Polynomial.eval 2) h
+  rw [alexander_figureEight] at h2
+  simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_sub,
+    Polynomial.eval_pow, Polynomial.eval_C, Polynomial.eval_X] at h2
+  norm_num at h2
+  have h3 := congrArg (Polynomial.eval 3) h
+  rw [alexander_figureEight] at h3
+  simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_sub,
+    Polynomial.eval_pow, Polynomial.eval_C, Polynomial.eval_X] at h3
+  norm_num at h3
+  have h2p : (0 : ℤ) < 2 ^ k := by positivity
+  have h3p : (0 : ℤ) < 3 ^ k := by positivity
+  rcases hε' with rfl | rfl <;> omega
 
 /-- The knot determinant survives the divergence: the designated value at
 `−1` equals `−5`, so `|P(−1)| = 5 = det(4_1)` (classical: for a knot,
@@ -1502,17 +1506,17 @@ theorem alexander_figureEight_eval_neg_one :
     (alexanderPolynomial figureEight).eval (-1) = -5 := by
   rw [alexander_figureEight]
   simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_sub,
-    Polynomial.eval_X, pow_two, mul_zero, mul_one, add_zero, zero_add, zero_sub]
+    Polynomial.eval_X, pow_two, pow_three]
   norm_num
 
 /-- The signed variant recovers the classical value on the figure-eight:
-the alternating labeling `[−, +, −, +]` of the DT-derived diagram returns
-exactly `t² − 3t + 1` under the same designated minor, and its mirror
-`[+, −, +, −]` returns `t · (t² − 3t + 1)` — same unit class, as
-amphichirality of `4_1` demands. -/
+the true labeling `[−, −, +, +]` of the canonical planar code (the one
+read by `crossingSign`, cf `Jones.writhe_figureEightDiagram`) returns
+exactly `−t · (t² − 3t + 1)` under the same designated minor — the unit
+class of the classical `t² − 3t + 1`. -/
 theorem alexander_figureEight_signed :
-    alexanderPolynomialSigned figureEightDiagram [false, true, false, true]
-      = Polynomial.X ^ 2 - 3 * Polynomial.X + 1 := by
+    alexanderPolynomialSigned figureEightDiagram [false, false, true, true]
+      = -(Polynomial.X * (Polynomial.X ^ 2 - 3 * Polynomial.X + 1)) := by
   simp only [alexanderPolynomialSigned, figureEightDiagram]
   simp (config := { decide := true })
   rw [det_three_aux]
@@ -1520,12 +1524,13 @@ theorem alexander_figureEight_signed :
   simp (config := { decide := true }) [alexanderEntrySigned, alexanderEntry, alexanderEntryNeg]
   ring
 
-/-- Mirror of the previous: the opposite alternating labeling `[+, −, +, −]`
-returns `t · (t² − 3t + 1)` — same unit class, as amphichirality demands
-(the two mirror diagrams represent the same knot). -/
+/-- Mirror of the previous: the opposite labeling `[+, +, −, −]` returns
+`−(t² − 3t + 1)` — same unit class as the previous one, as
+amphichirality demands (the two mirror diagrams represent the same
+knot). -/
 theorem alexander_figureEight_signed_mirror :
-    alexanderPolynomialSigned figureEightDiagram [true, false, true, false]
-      = Polynomial.X * (Polynomial.X ^ 2 - 3 * Polynomial.X + 1) := by
+    alexanderPolynomialSigned figureEightDiagram [true, true, false, false]
+      = -(Polynomial.X ^ 2 - 3 * Polynomial.X + 1) := by
   simp only [alexanderPolynomialSigned, figureEightDiagram]
   simp (config := { decide := true })
   rw [det_three_aux]
@@ -3629,105 +3634,5 @@ theorem KT_trivial_alexander :
   rw [← hchain, Matrix.det_of_upperTriangular hT, hdiag]
 
 
-/-! ## 5. Slice knots
-
-A knot K is (smoothly) slice if it bounds a smooth properly embedded
-disk D² in the 4-ball B⁴.
-
-A knot is topologically slice if it bounds a locally flat topologically
-embedded disk in B⁴.
--/
-
-def IsSmoothlySlice (k : Knot) : Prop := sorry
-  -- Definition: ∃ (D : D² ↪ B⁴ smooth), ∂D = K
-  -- Reference: Fox & Milnor (1966), Singularities of 2-spheres in 4-space
-  -- Mathlib prerequisites:
-  --   1. Smooth manifolds (partial: Mathlib has manifolds, not smooth embeddings D²→B⁴)
-  --   2. 4-ball (not in Mathlib)
-  --   3. Properly embedded surfaces (not in Mathlib)
-
-def IsTopologicallySlice (k : Knot) : Prop := sorry
-  -- Definition: ∃ (D : D² ↪ B⁴ locally flat), ∂D = K
-  -- Mathlib prerequisites: same as smoothly slice + topological manifold theory
-
-/-! ## 6. Piccirillo's theorem (statement only)
-
-The Conway knot is NOT smoothly slice. This was proved by Lisa Piccirillo
-in 2018 (published Annals of Mathematics 2020). She was a graduate student
-at the time and solved it in under a week.
-
-Strategy (cf. "Getting a handle on the Conway knot", AMS Bulletin 2022):
-1. Construct a knot K* that has the same trace as the Conway knot
-   (the trace X_K is the 4-manifold obtained by attaching a 2-handle
-   to B⁴ along K with 0-framing)
-2. Show K* is NOT smoothly slice (via Rasmussen's s-invariant,
-   computed from Khovanov homology)
-3. By the trace embedding lemma: if Conway is smoothly slice,
-   then K* is smoothly slice → contradiction
-
-This is a **magnificent** proof strategy — attacking the problem indirectly
-by finding a "companion" knot that shares the same trace.
--/
-
-/-- Piccirillo's theorem: the Conway knot is not smoothly slice. -/
-theorem conway_not_smoothly_slice : ¬ IsSmoothlySlice conwayKnot := by
-  exact sorry
-  -- Reference: Piccirillo (2018), arXiv:1808.02923
-  -- Published: Annals of Mathematics 191(2), 2020
-  -- Lean AI Leaderboard: https://lean-lang.org/eval/problems/conway_knot_not_smoothly_slice/
-  --
-  -- Proof infrastructure needed:
-  --   1. Trace X_K of a knot (4-manifold from 0-framed 2-handle)
-  --   2. Trace embedding lemma (if K slice ↔ ∂D = K → X_K embeds in B⁴)
-  --   3. Piccirillo's companion knot K* with same trace as Conway
-  --   4. Rasmussen s-invariant of K* ≠ 0 → K* not slice
-  --   5. Khovanov homology (computes s-invariant)
-  --
-  -- Mathlib prerequisites (ALL missing):
-  --   - 4-manifolds, handle decompositions, Kirby calculus
-  --   - Khovanov homology
-  --   - Rasmussen s-invariant
-  --   - Smooth vs topological embeddings
-  --   - Freedman's surgery theorem (for topological slice)
-  --
-  -- Estimated difficulty: **decades** away from formalization in Lean.
-  -- This sorry is effectively permanent.
-
-/-! ## 7. Freedman's theorem (statement only)
-
-The Conway knot IS topologically slice, because it has trivial
-Alexander polynomial. This is a consequence of Freedman's 1982 theorem:
-every knot with trivial Alexander polynomial is topologically slice.
--/
-
-theorem conway_topologically_slice : IsTopologicallySlice conwayKnot := by
-  exact sorry
-  -- Reference: Freedman (1982), The topology of four-dimensional manifolds
-  -- Published: Journal of Differential Geometry 17(3)
-  -- Lean AI Leaderboard: https://lean-lang.org/eval/problems/conway_knot_topologically_slice/
-  --
-  -- Proof infrastructure needed:
-  --   1. Freedman's full topological surgery machinery in dimension 4
-  --   2. Disk embedding theorem
-  --   3. Topological h-cobordism theorem
-  --
-  -- Mathlib prerequisites: essentially ALL of topological 4-manifold theory
-  -- This sorry is effectively permanent.
-
-/-! ## 8. The dichotomy
-
-Together, Piccirillo + Freedman give:
-  Conway knot: topologically slice BUT NOT smoothly slice.
-
-This is the first explicit example of the smooth/topological dichotomy
-for a named knot. It illustrates that smooth structures in dimension 4
-are genuinely more restrictive than topological ones.
--/
-
-/-- The Conway knot exhibits the smooth/topological dichotomy:
-it is topologically slice but not smoothly slice. -/
-theorem conway_dichotomy :
-    IsTopologicallySlice conwayKnot ∧ ¬ IsSmoothlySlice conwayKnot := by
-  exact ⟨conway_topologically_slice, conway_not_smoothly_slice⟩
 
 end Knots_en

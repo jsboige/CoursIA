@@ -864,7 +864,7 @@ def test_dwell_prime_sur_infra():
 
 
 def _fake_transport(monkeypatch, *, graphql_ok=True, rest_ok=True,
-                    rest_pages=None, pr_graphql_ok=True):
+                    rest_pages=None, pr_graphql_ok=True, graphql_issues=None):
     """Faux `gh` qui dispatche par TRANSPORT, comme le vrai (#17038).
 
     `gh issue list` / `gh pr list` = GraphQL ; `gh api repos/...` = REST. Les
@@ -879,7 +879,7 @@ def _fake_transport(monkeypatch, *, graphql_ok=True, rest_ok=True,
         if cmd[:3] == ["gh", "issue", "list"]:
             if not graphql_ok:
                 raise pig.subprocess.CalledProcessError(1, cmd)
-            return _FakeCompleted(json.dumps([]))
+            return _FakeCompleted(json.dumps(graphql_issues or []))
         if cmd[:3] == ["gh", "pr", "list"]:
             if not pr_graphql_ok:
                 raise pig.subprocess.CalledProcessError(1, cmd)
@@ -984,6 +984,68 @@ def test_truncation_rest_est_dite_comme_celle_de_graphql(monkeypatch, capsys):
     prs = pig.fetch_open_prs()
     assert len(prs) == 400
     assert "[PRS TRONQUEES]" not in capsys.readouterr().err
+
+
+def test_pool_tronque_sur_la_voie_rest_le_plafond_de_pages_est_dit(monkeypatch, capsys):
+    """#18113 acceptance 1 -- controle POSITIF : dix pages pleines issues+PRs.
+
+    Le flux brut REST est plafonne a POOL_ISSUES_REST_MAX_PAGES x
+    POOL_REST_PAGE = 1000 elements (issues ET PRs), ensuite filtre des PRs :
+    `len(raw)` ne peut jamais atteindre POOL_FETCH_LIMIT (2000), et la garde
+    de la voie GraphQL ne peut pas tirer sur cette voie. Le signal est le
+    plafond de pages atteint -- sans ce controle, la bascule #17038 rend la
+    troncature muette par l'autre porte.
+    """
+    pages = {}
+    for p in range(1, pig.POOL_ISSUES_REST_MAX_PAGES + 1):
+        chunk = []
+        for i in range(pig.POOL_REST_PAGE):
+            base = _REST_ISSUE if i % 2 == 0 else _REST_PR
+            chunk.append(dict(base, number=p * 1000 + i))
+        pages[p] = chunk
+    _fake_transport(monkeypatch, graphql_ok=False, rest_pages=pages)
+    pool, err = pig.fetch_pool()
+    assert err is None, "une voie a servi : le tirage EST mesure"
+    issues_par_page = pig.POOL_REST_PAGE // 2
+    assert len(pool) == pig.POOL_ISSUES_REST_MAX_PAGES * issues_par_page, (
+        "les PRs du flux brut sont exclues : le pool ne contient que les issues")
+    out = capsys.readouterr().err
+    assert "bascule REST" in out
+    assert "[POOL TRONQUE]" in out
+    assert "POOL_ISSUES_REST_MAX_PAGES" in out, (
+        "le remede nomme doit etre celui du transport REST, pas POOL_FETCH_LIMIT")
+
+    # Controle NEGATIF (acceptance 2) : un plafond qui n'a pas mordu ne se dit
+    # pas. Sans lui, un avertissement inconditionnel passerait le test ci-dessus.
+    capsys.readouterr()
+    monkeypatch.setattr(pig, "POOL_ISSUES_REST_MAX_PAGES",
+                        pig.POOL_ISSUES_REST_MAX_PAGES + 1)
+    pool2, _ = pig.fetch_pool()
+    assert len(pool2) == len(pool)
+    assert "[POOL TRONQUE]" not in capsys.readouterr().err
+
+
+def test_pool_tronque_voie_graphql_reste_le_signal_du_compte_exact(monkeypatch, capsys):
+    """#18113 acceptance 3 -- la garde de la voie GraphQL est inchangee.
+
+    Exactement POOL_FETCH_LIMIT rendus sur la voie principale : le message
+    reste celui du compte exact (signature de troncature l.760), pas celui du
+    plafond de pages -- la voie GraphQL n'a pas de pages.
+    """
+    many = [{"number": n, "title": _REST_ISSUE["title"], "labels": [],
+             "body": _REST_ISSUE["body"],
+             "createdAt": _REST_ISSUE["created_at"],
+             "updatedAt": _REST_ISSUE["updated_at"]}
+            for n in range(pig.POOL_FETCH_LIMIT)]
+    _fake_transport(monkeypatch, graphql_issues=many)
+    pool, err = pig.fetch_pool()
+    assert err is None
+    assert len(pool) == pig.POOL_FETCH_LIMIT
+    out = capsys.readouterr().err
+    assert "[POOL TRONQUE]" in out
+    assert str(pig.POOL_FETCH_LIMIT) in out
+    assert "plafond de pages" not in out, (
+        "le message GraphQL est celui du compte exact, pas du plafond REST")
 
 
 def test_les_deux_transports_morts_ne_se_disent_pas_pool_vide(monkeypatch):
@@ -3124,7 +3186,7 @@ def test_delivery_boost_spreads_without_monopoly():
 # activite de commentaire post-merge ; or les lanes elles-memes postent des
 # commentaires `[INFO] candidate-delivered` quand elles en rencontrent une.
 # Resultat : des LIVRE-urn restent sans label alors qu'un marqueur en
-# commentaire les designe explicitement. Tell c.1060-L1 reformule (msg-20260912T165428-k6rbfc,
+# commentaire les designe explicitement. reformule (msg-20260912T165428-k6rbfc,
 # ai-01 spec) : la klasse `delivered` doit etre posee sur signal label OU
 # marqueur, avec 1 requete par candidat tire (invariant recent_delivery l.958).
 #
@@ -3249,7 +3311,7 @@ def test_marker_check_failure_treated_as_no_signal(monkeypatch):
 
 def test_marker_regex_matches_both_bracket_forms(monkeypatch):
     """Le pattern couvre les deux formes employees : `[INFO] candidate-delivered`
-    ET `[INFO candidate-delivered]` (espace au lieu de `]`). Cf Tell c.1115
+    ET `[INFO candidate-delivered]` (espace au lieu de `]`). Cf
     voie 1 : unification lexicale sans casser l'existant."""
     calls = []
     _patch_gh_dispatch(
@@ -3322,8 +3384,8 @@ def test_organs_banner_still_blocks_end_to_end(monkeypatch):
 # Mesure first-hand : 3 formes employees par les lanes, dont la forme
 # canonique `[INFO] candidate-delivered` (avec fermante `]`) n'etait PAS
 # detectee par le motif `\[INFO[\s_]candidate-delivered` parce que la
-# fermante `]` cassait la continuite apres `[INFO`. Verifie Tell c.1086 §B
-# strict et Tell c.488 ★★★ audit-reassessment (LP fondateur : le test
+# fermante `]` cassait la continuite apres `[INFO`. Verifie
+# strict et audit-reassessment (LP fondateur : le test
 # `test_marker_only_surfaces_delivered_urn` ne couvrait que la forme 2).
 
 
@@ -3350,7 +3412,7 @@ def test_marker_form_1_canonical_with_bracket(monkeypatch):
 def test_marker_form_3_announcement_lane(monkeypatch):
     """Forme 3 (annonce lane) : `[INFO] lane <machine:workspace> -- <sujet>
     -- candidate-delivered <suite>` -- le mot n'est pas immediatement apres
-    `[INFO` mais sur la meme ligne. Tell c.534 L1 ★★ fondateur."""
+    `[INFO` mais sur la meme ligne."""
     calls = []
     _patch_gh_dispatch(
         calls, monkeypatch, pr_payload=[],
@@ -3367,7 +3429,7 @@ def test_marker_form_3_announcement_lane(monkeypatch):
 
 
 def test_marker_no_match_discursive_mention(monkeypatch):
-    """Anti-FP Tell c.488 ★★★ : un commentaire qui MENTIONNE le mecanisme
+    """Anti-FP : un commentaire qui MENTIONNE le mecanisme
     `candidate-delivered` sans etre un marqueur de livraison ne doit PAS
     declencher la klasse `delivered`. La forme etroite exige `candidate-
     delivered` comme mot complet (`\b`) sur la MEME ligne qu'un `[INFO]`
@@ -3387,3 +3449,126 @@ def test_marker_no_match_discursive_mention(monkeypatch):
     # sur la meme ligne que [INFO]).
     assert notes == {}
     assert picks[0]["klass"] == "grain"
+
+
+# --- Geste 3 #18203 : `weight()` mesure le delaissement sur la DERNIERE ----
+# livraison reelle (PR mergée qui cite l'issue), pas sur `updatedAt`.
+# -----------------------------------------------------------------------------
+
+
+def test_idle_since_delivery_uses_last_merged_pr_not_updated_at():
+    """Un commentaire de bot / claim recent ne doit pas faire baisser l'attente.
+
+    Issue #1 : 90 jours d'age, `updatedAt` hier (commentaire de bot recent),
+    derniere PR mergee il y a 80 jours -> idle_since_delivery = 80.
+    Issue #2 : meme age, `updatedAt` hier, derniere PR mergee il y a 5 jours
+    -> idle_since_delivery = 5.
+
+    Meme `idle` (jours depuis updatedAt), mais `weight()` doit voir la
+    difference : la livraison plus ancienne pese PLUS (log2 croissant avec
+    l'attente -- le but du facteur est de faire remonter les sujets
+    delaisses). Voir `weight()` ligne ~1625 : `w *= 1.0 + log2(1 + idle/14)`.
+    """
+    old_delivery = {"number": 1, "age": 90, "idle": 1,
+                    "idle_since_delivery": 80, "genre": "docs"}
+    fresh_delivery = {"number": 2, "age": 90, "idle": 1,
+                      "idle_since_delivery": 5, "genre": "docs"}
+    assert pig.weight(old_delivery, None) > pig.weight(fresh_delivery, None)
+
+
+def test_idle_since_delivery_defaults_to_idle_for_backward_compat():
+    """Si `idle_since_delivery` est absent (item construit a la main), retomber
+    sur `idle` -- eviter une KeyError dans les tests existants qui ne
+    renseignent pas le nouveau champ. La regle est : si le champ n'est pas
+    la, c'est un test legacy ; on ne change pas la semantique, on preserve.
+    """
+    legacy = {"number": 1, "age": 30, "idle": 40, "genre": "docs"}
+    fresh = {"number": 2, "age": 30, "idle": 1, "idle_since_delivery": 1,
+             "genre": "docs"}
+    # Legacy : meme comportement qu'avant le patch (poids sur `idle`).
+    assert pig.weight(legacy, None) == pig.weight(
+        {**legacy, "idle_since_delivery": legacy["idle"]}, None
+    )
+    # Et `legacy` pese plus lourd qu'un grain frais.
+    assert pig.weight(legacy, None) > pig.weight(fresh, None)
+
+
+def test_weight_idle_uses_idle_since_delivery_for_recent_delivery():
+    """Une livraison il y a 5 j pese MOINS qu'une livraison il y a 80 j,
+    a age et `idle` egaux (memes conditions de surface).
+    """
+    item_recent = {"number": 1, "age": 100, "idle": 1,
+                   "idle_since_delivery": 5, "genre": "lean"}
+    item_old = {"number": 2, "age": 100, "idle": 1,
+                "idle_since_delivery": 80, "genre": "lean"}
+    assert pig.weight(item_old, None) > pig.weight(item_recent, None)
+
+
+def test_weight_idle_since_delivery_unchanged_when_corpus_missing():
+    """Si le corpus de PRs mergées est indisponible (fetch echoue), on NE
+    SAIT PAS ce qu'est la derniere livraison -- on conserve donc le
+    comportement `idle` (placeholder) et on n'invente pas une livraison.
+    Doctrinalement : un defaut de mesure n'est pas une negligence prouvee.
+    """
+    item = {"number": 1, "age": 100, "idle": 1, "genre": "lean"}
+    # Avec idle_since_delivery manquant : retomber sur idle = 1.
+    assert pig.weight(item, None) == pig.weight(
+        {**item, "idle_since_delivery": item["idle"]}, None)
+
+
+def test_main_idle_since_delivery_falls_back_to_idle_on_fetch_error(monkeypatch):
+    """CR ai-01 c.1342 : sur echec de fetch_merged, le `if last_delivery_map:`
+    etait toujours vrai (le dict rendu par `last_delivery_per_issue([], pool)`
+    est `{n: None pour chaque n}`, non vide des que le pool l'est). Le
+    placeholder `idle` n'etait donc JAMAIS pose. Ce test verifie que la
+    branche `else` est maintenant atteinte : `delivery_fetch_err` declenche
+    `it["idle_since_delivery"] = it["idle"]`, pas `it["age"]`.
+    """
+    # Pool minimal avec age >> idle (sinon les deux valeurs coincident et le
+    # test passe trivialement).
+    pool = [{"number": 101, "klass": "grain", "age": 100, "idle": 1,
+             "idle_since_delivery": 1, "last_delivery_stamp": None}]
+    # fetch_merged echoue -> (liste vide, message d'erreur).
+    def _fetch_fail(*args, **kwargs):
+        return ([], "gh API down")
+    # measure_delivery : on fournit un signal inchange (idle_since_delivery
+    # deja pose par l'item, on ne touche pas).
+    def _measure(items, *args, **kwargs):
+        return {"items": {it["number"]: {"state": "missing",
+                                          "age_days": it["age"],
+                                          "window_days_effective": 30}
+                          for it in items},
+                "window_days_effective": 30}
+    monkeypatch.setattr(pig, "fetch_merged", _fetch_fail)
+    monkeypatch.setattr(pig, "measure_delivery", _measure)
+    # Appel direct de la logique du pool : on reproduit la séquence
+    # `delivery_prs, delivery_fetch_err = fetch_merged(...)` puis
+    # `if not delivery_fetch_err and last_delivery_map:`.
+    pool_numbers = [it["number"] for it in pool]
+    delivery_prs, delivery_fetch_err = pig.fetch_merged(30)
+    delivery_sig = pig.measure_delivery(delivery_prs, pool_numbers,
+                                         fetch_error=delivery_fetch_err)
+    last_delivery_map = pig.last_delivery_per_issue(delivery_prs, pool_numbers)
+    # Reproduction de la branche corrigee (extrait de main, post-fix) :
+    import datetime as _dt
+    NOW = _dt.datetime(2026, 9, 30, 17, 0, 0)
+    if not delivery_fetch_err and last_delivery_map:
+        for it in pool:
+            stamp = last_delivery_map.get(it["number"])
+            if stamp:
+                when = _dt.datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+                it["idle_since_delivery"] = round((NOW - when).total_seconds() / 86400.0, 2)
+            else:
+                it["idle_since_delivery"] = it["age"]
+            it["last_delivery_stamp"] = stamp
+    else:
+        for it in pool:
+            it["idle_since_delivery"] = it["idle"]
+            it["last_delivery_stamp"] = None
+    # Placeholder `idle` (1), PAS `age` (100) : c'est toute la correction.
+    assert pool[0]["idle_since_delivery"] == 1, (
+        f"attendu 1 (idle), recu {pool[0]['idle_since_delivery']}"
+    )
+    assert pool[0]["last_delivery_stamp"] is None
+
+

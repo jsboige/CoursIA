@@ -16,8 +16,13 @@
     - `Knots.Invariant` — polynomial invariants (Alexander, Jones),
       tricolourability, genus
     - `Knots.Conway` — Conway notations and conventions
+    - `Knots.Slice` — slice knots, Piccirillo and Freedman theorems,
+      smooth/topological dichotomy (extracted from Conway, #18397)
     - `Knots.Jones` — Kauffman bracket on PD codes (state sum,
       trefoil / figure eight / unknot evaluations)
+    - `Knots.FigureEight` — invariants of the figure-eight knot on its
+      planar PD code (signed Alexander classical up to a unit, determinant
+      5, non-tricolorability, 4 crossings — provisional definition)
     - `Knots.Lidman` — external collaboration layer (Joshua Lidman),
       orientation of knot varieties
     - `Knots.MathlibPrerequisites` — Mathlib 4 compatibility shim
@@ -35,7 +40,9 @@ import Knots.Basic_en
 import Knots.Reidemeister_en
 import Knots.Invariant_en
 import Knots.Conway_en
+import Knots.Slice_en
 import Knots.ReidemeisterInvariance_en
 import Knots.Jones_en
+import Knots.FigureEight_en
 import Knots.Lidman_en
 import Knots.MathlibPrerequisites_en
