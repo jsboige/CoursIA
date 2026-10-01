@@ -44,6 +44,8 @@ Updated: 2026-09-05 — M17 HAR-LJ-Asym round-4 (PR #14592, adjoint re-review DM
 
 Updated: 2026-09-28 — M17 HAR-LJ-Asym revalidation sur sept actifs avec origine et cible appariées, purge horizon et calibration train-only (Epic #1454) : **NO BEATS cluster** contre HAR (6/21 couples gagnants, 2/21 perdants, 13/21 non concluants ; SOL et LTC seuls majoritaires, 2/7 actifs, sign-test unilatéral p=0,9375) et contre M12 (1/21 couple gagnant, aucun actif majoritaire, p=1). Les 4 graines OLS sont bit-identiques, pas des réplications indépendantes. L'ancien `BTC h=1 BEATS` des lignes 2026-09-04/05 ci-dessus est **SUPERSEDED** par le rejeu apparié : BTC 0/3 horizon gagnant contre HAR et M12. Agrégat et preuves de folds/dates/DM : `scripts/results/m17_har_lj_asym_cluster_aligned.json` (blob Git SHA-256 `2ca4b9ffe0582d290dfa77a3f8c47a0381e099e4eba7ecbc4e1fc221729ff6ae`, 352 102 octets) ; détail dans `docs/M17_HAR_LJ_ASYM.md`.
 
+Updated: 2026-09-30 — M4 DLinear-vol revalidation sur sept actifs appariée par origine (port #18190, Epic #1454) : **edge de précision confiné à BTC** — jambe recentrée BEATS sur BTC h=1/h=5 seulement (4/4 graines, p_median 2,2e-09/8,9e-05), **0/18 sur les six autres actifs** (XRP h=10 NO BEATS) ; jambe calibrée 3/21 BEATS (BTC h=1/h=5, SOL h=1 — ce dernier 0/4 en jambe brute) ; ETH h=1 `refuted-de-biased` (le BEATS Cycle 25 était le biais HAR) ; 7 couples NO BEATS en jambe brute aux horizons longs. Diagnostic d'alignement : cibles partagées identiques (gap 0,0) sur 21/21 couples, 0 refus. Manifeste : `scripts/results/m4_dlinear_vol_cluster_aligned.json` (31 406 octets) ; séries complètes hors dépôt (11 753 743 octets, #15890) : `G:\Mon Drive\MyIA\Dev\Trading\ML-Training-Pipeline\m4_dlinear_vol_cluster_full.json` ; détail dans `docs/M4_DLINEAR_VOL.md`.
+
 Updated: 2026-09-05 — M18 TimesFM 2.5 zero-shot première entrée §C (issue #14768, lane myia-po-2026) : **vs Log-HAR 5/6 BEATS, 1/6 INCONCLUSIVE (BTC h=22, log-HAR numériquement meilleur mais p=0,23), 0/6 NO BEATS** — réserves : ETH h=22 p=0,0445 limite. Horizons 1/5/22 j, walk-forward 5 folds, seeds bit-identiques (GPU déterministe), débiais symétrique, DM conjonction MSE (#11010). Vrai checkpoint attesté (SHA 1d952420fba8, 43 720 séries, fail-explicit). Calibration quantile native : couverture 80 % à ±0,026 du nominal. HAR en niveaux dégénère en quasi-persistence (MSE identiques à 6 décimales, hashs distincts). Détail section M18 + `docs/M18_TimesFM.md`.
 
 Updated: 2026-09-05 — M18 correctif baseline har_rv (issue #14791, lane myia-po-2026) : la clause « HAR en niveaux dégénère en quasi-persistence » ci-dessus était **fausse — SUPERSEDES**. L'égalité har_rv == persistence (5e-14) était un bug d'alignement dans `HarRvModel.fit` (régresseurs contemporains de la cible → fit identité parfait, résidu ~1e-19, prévision = persistence exacte) ; le contrôle « hashs distincts » ne pouvait pas le détecter. Correctif : régresseurs décalés d'un pas (miroir `realized_variance.har_lag_features`) + garde `assert_baselines_distinct` (paires de baselines distinctes ≥ 1e-6 relatif sur ≥ 1 point OOS, sinon le run échoue). Re-run complet 24 cellules (checkpoint SHA inchangé, 43 720 séries, persistence/ewma/log_har bit-identiques) : **vs har_rv 6/6 BEATS +29,8/+51,1 %** (colonne tableau M18 mise à jour), `baseline_weakest_rel_sep` 0,11-0,18 ; har_rv corrigé meilleur que persistence (BTC h=1 MSE 1,044 vs 1,172). Verdict de tête #14768 inchangé (vs Log-HAR 5/6). Tests +7 (dont dents du garde prouvées sur l'alignement bugué : rouge à 2,65e-11).
@@ -429,6 +431,37 @@ conjonction échoue de justesse sur la jambe DM à h long, cohérent avec la mes
 rerun complet 12/12 avec persistance des séries `pred_lstm`/`pred_har`/`pred_target` par combo
 (instrument PR #12745), verdict mesuré : **`refuted-de-biased` 3/3** — section dédiée ci-dessous
 (issues #11041/#11034).
+
+### M4 DLinear-vol — revalidation cluster 7 actifs appariée par origine (2026-09-30, Epic #1454)
+
+Port du protocole #18190 (fixé pour M17) : les jambes DM brute et calibrée joint désormais les
+deux walk-forwards sur leurs **dates d'origine** communes et **refuse fail-closed** si les cibles
+partagées divergent (`TARGET_MISMATCH`), au lieu de tronquer positionnellement (`[:min_len]`).
+La jambe recentrée (#12684) passait déjà par la jointure par dates ; elle hérite maintenant de la
+validation des cibles. Run : 7 actifs (BTC/ETH/SOL/LTC/XRP/ADA/DOT) × h 1/5/10 × graines 0/7/42/99,
+`--debias --loss-fn mse`, 84 combinaisons, 12 291 s.
+
+| Jambe | BEATS | NO BEATS | INCONCLUSIVE | refuted | Détail |
+|-------|------:|---------:|-------------:|--------:|--------|
+| Calibrée (verdict doc) | 3/21 | 0/21 | 18/21 | — | BTC h=1/h=5, SOL h=1 |
+| Brute (4 états) | 4/21 | 7/21 | 10/21 | — | + ETH h=1 ; NO BEATS : SOL/LTC/ADA h=10, DOT h=5/10, XRP h=5/10 |
+| Précision (recentrée) | 2/21 | 1/21 | 16/21 | 2/21 | BEATS BTC h=1/h=5 ; NO BEATS XRP h=10 ; refuted BTC h=10, ETH h=1 |
+
+**Verdict cluster : edge de précision confiné à BTC** (h=1 : +10,1 % hors biais, 4/4 graines,
+p_median 2,2e-09 ; h=5 : +7,5 %, 8,9e-05). Hors BTC : 0/18 BEATS en précision. ETH h=1 réfuté
+(porté par le biais HAR), SOL h=1 ne bat que la baseline calibrée (jambe brute 0/4, p 0,20).
+Le mécanisme se lit dans les biais : HAR sous-estime fortement la vol BTC (−0,23 à −0,45) mais est
+quasi neutre sur les petits actifs (|biais| < 0,03 sur DOT/XRP) — le levier « dé-biaser la
+baseline » n'existe pas hors BTC, et DLinear surestime les six autres actifs (+0,03 à +0,28).
+
+- **Manifeste** : `scripts/results/m4_dlinear_vol_cluster_aligned.json` (31 406 octets — verdicts,
+  diagnostics d'alignement par combo, SHA-256 par pièce du JSON complet ; `dm_target_gap_max` = 0,0
+  sur 21/21 couples, 0 refus, jointures stables across graines).
+- **Séries complètes** hors dépôt (>512 Ko, #15890) :
+  `G:\Mon Drive\MyIA\Dev\Trading\ML-Training-Pipeline\m4_dlinear_vol_cluster_full.json`
+  (11 753 743 octets, SHA-256 LF-normalisé `1d25cbc7948e2a16…` — préfixe).
+- **Régénération** : commande dans `docs/M4_DLINEAR_VOL.md` §Revalidation cluster (reprise sur
+  checkpoint JSONL, une ligne par combo).
 
 ## M15 LSTM-vol — entrée §C (2026-08-14) — issue #10941
 
