@@ -53,15 +53,16 @@ jobs:
     timeout-minutes: 10
 
     steps:
-    # #18225 (myia-ai-01:CoursIA-2, 2026-10-01) : la classe self-hosted
-    # coursia-linux peut bloquer actions/checkout@v4 sur contention hote /
-    # verrou de workspace (3 occurrences a la seconde pres du timeout declare,
-    # mesurees sur le jour cf issue #18225). Le PR gate agrege alors le
-    # constituent comme "cancelled" -> FAILURE, ce qui bloque les PRs en
-    # attendant queue du pool. Contournement operateur documente : `gh run
-    # rerun <run_id> --failed` reussit en ~10 s sur la 1re relance (mesure
-    # ce cycle c.12 sur #18621). Cote pool, drain+restart deja deploye
-    # par myia-po-2026 (cf issue #18225 dernier commentaire).
+    # #18225 (myia-ai-01:CoursIA-2, 2026-10-01) : cause non etablie, voir
+    # #18225 et #18312 (l'hypothese contention hote / verrou de workspace
+    # n'est pas confirmee ; la mesure sur #18312 designe un echec de lazy-
+    # fetch du clone partiel `blob:none` qui persiste dans le slot). Le PR
+    # gate agrege alors le constituent comme "cancelled" -> FAILURE, ce qui
+    # bloque les PRs en attendant queue du pool. Contournement operateur
+    # documente (lui mesure) : `gh run rerun <run_id> --failed` reussit en
+    # ~10 s sur la 1re relance (mesure le 2026-10-01 sur #18621). Cote pool,
+    # drain+restart deja deploye par myia-po-2026 (cf issue #18225 dernier
+    # commentaire).
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
