@@ -248,7 +248,11 @@ def measure_k_trajectory(
     for n in n_values:
         W = 1 << n  # 2^n
         k = k_trajectory(trajectory, W)
-        # Quotient discriminant publié dans #18446
+        # Quotient k / n (information par génération d'historique observé).
+        # NB : la normalisation `max(n, 1)` rend k_over_n asymétrique entre
+        # n=0 (k1/1) et n=4 (k16/4), donc le ratio publié = k16/k1 divisé
+        # par 4. Pour le discriminant on utilise **directement k_trajectory**,
+        # ratio = k_last / k_first (cf. verdict()).
         quotient = k / max(n, 1)
         results.append({
             "trajectory": trajectory_name,
@@ -303,10 +307,15 @@ def verdict(results: list[dict]) -> dict:
       4 témoins simples utilisés ici pour le confirmer.
 
     Calibration mesurée (tranche 1, ce script) :
-    - soup (3 seeds) : ratio 0.190 ± 0.005 -> SOUP-FRAGILE-CONFIRMED
+    - soup (3 seeds) : ratio brut K(t,16)/K(t,1) = 0.762, 0.759, 0.784
+      -> SOUP-FRAGILE-WEAK [0.7, 0.95)  (faible décroissance sur 4 generations)
     - programmes simples (glider, blinker, pulsar, otca_static) :
-      ratio 0.019..0.038 -> PROGRAM-REFUTED-FOR-PERIODIC
-      (l'instrument collapse les périodicités courtes, comme prévu)
+      ratio brut = 0.077..0.154 -> PROGRAM-PERIODIC-COLLAPSED
+      (l'instrument collapse les périodicités courtes, séparation ~6× vs soupes)
+    - Note historique : la version initiale utilisait k_over_n = k / max(n,1)
+      comme discriminant, ce qui introduisait un facteur ¼ dans le ratio publié
+      (mesure NanoClaw 2026-10-01T00:14Z). Le discriminant canonique est
+      désormais ratio = K(t,W_last) / K(t,W_first) brut.
     """
     by_name: dict[str, list[dict]] = {}
     for r in results:
@@ -318,9 +327,13 @@ def verdict(results: list[dict]) -> dict:
         if len(runs_sorted) < 2:
             verdicts[name] = "INCONCLUSIVE (insufficient data points)"
             continue
-        first_q = runs_sorted[0]["k_over_n"]
-        last_q = runs_sorted[-1]["k_over_n"]
-        ratio = last_q / first_q if first_q > 0 else float("inf")
+        # Ratio = K(t, W=2^n_last) / K(t, W=2^n_first) **brut**.
+        # Utiliser k_over_n donnerait un facteur asymétrique (k_over_n utilise
+        # un diviseur `max(n,1)` qui change entre n=0 et n=4 -- cf. mesure
+        # NanoClaw 2026-10-01T00:14Z). Le ratio brut est l'instrument honnête.
+        first_k = runs_sorted[0]["k_trajectory"]
+        last_k = runs_sorted[-1]["k_trajectory"]
+        ratio = last_k / first_k if first_k > 0 else float("inf")
 
         is_soup = name.startswith("soup_")
         if is_soup:

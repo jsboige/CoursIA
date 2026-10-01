@@ -247,12 +247,12 @@
     }
   ],
   "verdicts": {
-    "glider_T4": "PROGRAM-PERIODIC-COLLAPSED (ratio 0.038 < 0.7 -- périodicité courte détectée par LZ ; l'instrument collapse les programmes simples comme la soupe. Confirmé : K_trajectory mesure l'entropie, pas l'auto-entretien. Tranche 2 requise : corpus Turing-complet, ex. OTCA replicator à l'échelle ou Spartan computronium.)",
-    "blinker_T2": "PROGRAM-PERIODIC-COLLAPSED (ratio 0.026 < 0.7 -- périodicité courte détectée par LZ ; l'instrument collapse les programmes simples comme la soupe. Confirmé : K_trajectory mesure l'entropie, pas l'auto-entretien. Tranche 2 requise : corpus Turing-complet, ex. OTCA replicator à l'échelle ou Spartan computronium.)",
-    "pulsar_T3": "PROGRAM-PERIODIC-COLLAPSED (ratio 0.031 < 0.7 -- périodicité courte détectée par LZ ; l'instrument collapse les programmes simples comme la soupe. Confirmé : K_trajectory mesure l'entropie, pas l'auto-entretien. Tranche 2 requise : corpus Turing-complet, ex. OTCA replicator à l'échelle ou Spartan computronium.)",
-    "otca_static": "PROGRAM-PERIODIC-COLLAPSED (ratio 0.019 < 0.7 -- périodicité courte détectée par LZ ; l'instrument collapse les programmes simples comme la soupe. Confirmé : K_trajectory mesure l'entropie, pas l'auto-entretien. Tranche 2 requise : corpus Turing-complet, ex. OTCA replicator à l'échelle ou Spartan computronium.)",
-    "soup_d03_seed42": "SOUP-FRAGILE-CONFIRMED (ratio 0.190 < 0.7)",
-    "soup_d05_seed123": "SOUP-FRAGILE-CONFIRMED (ratio 0.190 < 0.7)",
-    "soup_d05_seed777": "SOUP-FRAGILE-CONFIRMED (ratio 0.196 < 0.7)"
+    "glider_T4": "PROGRAM-PERIODIC-COLLAPSED (ratio 0.154 < 0.7 -- périodicité courte détectée par LZ ; l'instrument collapse les programmes simples comme la soupe. Confirmé : K_trajectory mesure l'entropie, pas l'auto-entretien. Tranche 2 requise : corpus Turing-complet, ex. OTCA replicator à l'échelle ou Spartan computronium.)",
+    "blinker_T2": "PROGRAM-PERIODIC-COLLAPSED (ratio 0.104 < 0.7 -- périodicité courte détectée par LZ ; l'instrument collapse les programmes simples comme la soupe. Confirmé : K_trajectory mesure l'entropie, pas l'auto-entretien. Tranche 2 requise : corpus Turing-complet, ex. OTCA replicator à l'échelle ou Spartan computronium.)",
+    "pulsar_T3": "PROGRAM-PERIODIC-COLLAPSED (ratio 0.124 < 0.7 -- périodicité courte détectée par LZ ; l'instrument collapse les programmes simples comme la soupe. Confirmé : K_trajectory mesure l'entropie, pas l'auto-entretien. Tranche 2 requise : corpus Turing-complet, ex. OTCA replicator à l'échelle ou Spartan computronium.)",
+    "otca_static": "PROGRAM-PERIODIC-COLLAPSED (ratio 0.077 < 0.7 -- périodicité courte détectée par LZ ; l'instrument collapse les programmes simples comme la soupe. Confirmé : K_trajectory mesure l'entropie, pas l'auto-entretien. Tranche 2 requise : corpus Turing-complet, ex. OTCA replicator à l'échelle ou Spartan computronium.)",
+    "soup_d03_seed42": "SOUP-FRAGILE-WEAK (ratio 0.762 in [0.7, 0.95))",
+    "soup_d05_seed123": "SOUP-FRAGILE-WEAK (ratio 0.759 in [0.7, 0.95))",
+    "soup_d05_seed777": "SOUP-FRAGILE-WEAK (ratio 0.784 in [0.7, 0.95))"
   }
 }
