@@ -133,6 +133,30 @@ existe pour un cas nomme : `main` est rouge et le correctif ne doit pas
 attendre 2 h. Le module dit **dans le message** que la derogation a joue, pour
 qu'elle reste lisible dans le log du gate et pas seulement dans la liste des
 labels.
+
+#18686 -- le label est valide UNIQUEMENT si `main` est rouge au moment de la pose
+-------------------------------------------------------------------------------
+
+Mesure du 2026-10-01 : un label `merge-dwell-waived` a ete pose sur deux PR
+de contenu sans rapport avec un rouge `main`, en violation du cas nomme
+(docstring ci-dessus). Le coordinateur a retire les deux labels mais le
+mecanisme de garde restait lacunaire : un controle par auteur est impossible
+(le login `jsboige` est partage par toutes les lanes et par le user). Le
+fix : `evaluate()` recoit un argument `main_is_red` (None par defaut = pas de
+verification, comportement historique). `check()` lit l'etat de `main` au
+plus haut a la tete de la branche par defaut via `repos/{repo}/commits/{main_sha}/check-runs`
+et passe le verdict `True`/`False`/`None`. Le label n'est honore que si
+`main_is_red is True` ; sinon le plancher s'applique normalement (ou
+fail-closed si `main_is_red is None` et que le label est porte -- une lecture
+indisponible n'est jamais une dispense). Pas de message silencieux sur le
+cas "label present, condition non remplie" : le gate dit explicitement
+pourquoi le label n'a pas joue.
+
+Note : `is_waived()` reste une lecture de labels pure ; la verification
+supplementaire vit dans `check()` et dans `evaluate(main_is_red=...)`. Une
+lane peut toujours poser le label en prevention d'un rouge futur, mais le
+gate au moment de l'evaluation tranche sur l'etat de `main` au moment de
+l'appel -- pas au moment de la pose.
 """
 
 from __future__ import annotations
@@ -216,10 +240,19 @@ def evaluate(
     now: datetime,
     dwell_min: float,
     waived: bool = False,
+    main_is_red: "bool | None" = None,
 ) -> tuple[bool, float, str]:
     """Decide si le plancher est ecoule. Fonction PURE (testable sans reseau).
 
     Renvoie `(ok, minutes_restantes, message)`.
+
+    `main_is_red` est l'etat de `main` au moment de l'evaluation (True = rouge,
+    False = vert, None = verification indisponible). Il ne mord QUE sur la
+    branche `waived=True` du label `merge-dwell-waived` : ce label n'a de sens
+    que si `main` est rouge (cf. docstring module, section "Derogation",
+    reference #18686). `main_is_red is None` n'est PAS une dispense : la
+    verification etant indisponible, on garde le plancher (fail-closed,
+    comme partout ailleurs dans ce garde).
 
     Une horloge qui recule -- tete datee dans le futur, par decalage de machine
     ou date de committer forgee -- rend l'age negatif : le plancher n'est alors
@@ -229,9 +262,30 @@ def evaluate(
     if dwell_min <= 0:
         return True, 0.0, "dwell desactive (--dwell-min <= 0)"
     if waived:
+        if main_is_red is False:
+            # Label porte, mais main est vert : la condition documentee n'est
+            # PAS remplie. Le gate refuse de dispenser -- et le dit
+            # explicatement (pas de message silencieux sur la nature du refus,
+            # sinon un label abuse devient un rouge mysterieux).
+            return False, dwell_min, (
+                "label `{}` porte mais `main` est vert au moment de "
+                "l'evaluation -- la derogation documentee (main rouge, "
+                "correction urgente) n'est pas remplie ; plancher {:.0f} "
+                "min applique".format(WAIVER_LABEL, dwell_min)
+            )
+        if main_is_red is None:
+            # Lecture indisponible : on n'a pas la preuve que main est rouge,
+            # donc on ne dispense pas. Fail-closed, comme partout.
+            return False, dwell_min, (
+                "label `{}` porte mais l'etat de `main` est illisible "
+                "(verification indisponible) -- la derogation n'est pas "
+                "honoree sur une absence de preuve ; plancher {:.0f} min "
+                "applique".format(WAIVER_LABEL, dwell_min)
+            )
+        # main_is_red is True : cas documente, derogation honoree.
         return True, 0.0, (
-            "dwell leve par le label `{}` "
-            "(plancher {:.0f} min non applique)".format(WAIVER_LABEL, dwell_min)
+            "dwell leve par le label `{}` (main rouge verifie, "
+            "plancher {:.0f} min non applique)".format(WAIVER_LABEL, dwell_min)
         )
 
     age_min = (now - committed_at).total_seconds() / 60.0
@@ -582,6 +636,7 @@ def check(
     now: "datetime | None" = None,
     fetch=_gh_json,
     run_git=None,
+    main_is_red: "bool | None" = None,
 ) -> tuple[bool, str]:
     """Verdict reseau complet. Renvoie `(ok, message)`.
 
@@ -590,6 +645,11 @@ def check(
     commit de la branche par defaut et ne peut de toute facon pas bouger le
     `mergeState` d'une PR (documente en tete de `pr-gate.yml`). Y appliquer
     un plancher rougirait la branche par defaut sans rien gater.
+
+    `main_is_red` est l'etat de `main` au moment de l'evaluation. None =
+    lecture par defaut via `main_main_red_unverified()`. La branche
+    `waived=True` du label ne s'honore que si `main_is_red is True` (cf.
+    docstring module, ref #18686).
     """
     if dwell_min <= 0 or pr_number is None:
         return True, "dwell non applicable (hors contexte de PR ou desactive)"
@@ -601,7 +661,87 @@ def check(
     committed = last_authoritative_committed_at(
         repo, sha, base_sha, fetch=fetch, run_git=run_git
     )
+    if waived and main_is_red is None:
+        # Lecture par defaut -- une lecture indisponible rend None, et le gate
+        # refuse alors la dispense (fail-closed).
+        main_is_red = main_main_red_unverified(repo, fetch=fetch)
     ok, _remaining, message = evaluate(
-        committed, now or datetime.now(timezone.utc), dwell_min, waived
+        committed, now or datetime.now(timezone.utc), dwell_min, waived,
+        main_is_red=main_is_red,
     )
     return ok, message
+
+
+#: Nom du check "PR gate" sur la tete de main -- une de ses conclusions
+#: (success/failure) sert de proxy pour "main est-il rouge ?".
+MAIN_GATE_CHECK_NAME = "PR gate"
+
+
+#: Branche par defaut prise en charge par le gate. Le repo CoursIA a une
+#: seule branche protegee (`main`) ; un fork ou un repo pilote peut etre
+#: re-route via la CLI quand l'organe evolue (cf. extension future).
+_MAIN_BRANCH = "main"
+
+
+def main_main_red_unverified(repo: str, fetch=_gh_json) -> "bool | None":
+    """Le check `PR gate` sur la tete de `main` est-il en etat red ?
+
+    Renvoie True si au moins une jambe du check `MAIN_GATE_CHECK_NAME` sur
+    la derniere tete de `main` est rouge (conclusion `failure`), False si
+    toutes les jambes sont vertes (`success`/`skipped`/`neutral`), None si
+    la lecture est indisponible (API muette, 404, payload inattendu) OU
+    si une jambe latest est encore `pending` (pas de preuve).
+
+    Cette fonction ne s'auto-declare JAMAIS verte sur une absence de
+    preuve -- un check `pending` (la jambe n'a pas encore conclu) rend
+    `None` plutot que `False` : un merge-dwell-waived pose AVANT que la
+    jambe ne conclue ne beneficie pas d'une dispense accidentelle.
+
+    Lecture pliee selon le patron `pr-gate-stale-sweep.yml` :
+      1. `repos/{repo}/branches/{branch}` (head de la branche par defaut)
+      2. `repos/{repo}/commits/{sha}/check-runs` (avec pagination future)
+      3. verdict par dernier `started_at` par nom (fold canonical du repo)
+    """
+    try:
+        branch = fetch("repos/{}/branches/{}".format(repo, _MAIN_BRANCH))
+        if not isinstance(branch, dict):
+            return None
+        sha = ((branch.get("commit") or {}).get("sha") or "")
+        if not sha:
+            return None
+        runs = fetch("repos/{}/commits/{}/check-runs".format(repo, sha))
+    except DwellError:
+        return None
+    if not isinstance(runs, dict):
+        return None
+    check_runs = runs.get("check_runs") or []
+    # Pli latest-wins par nom (un check peut avoir plusieurs jambes au meme nom
+    # apres supersession ; la derniere `started_at` est celle qui fait foi).
+    latest = {}
+    for run in check_runs:
+        if not isinstance(run, dict):
+            continue
+        name = run.get("name") or ""
+        if name != MAIN_GATE_CHECK_NAME:
+            continue
+        started = run.get("started_at") or ""
+        if not started:
+            continue
+        if name not in latest or started > latest[name]["started_at"]:
+            latest[name] = {
+                "started_at": started,
+                "conclusion": run.get("conclusion"),
+                "status": run.get("status"),
+            }
+    if not latest:
+        return None
+    # Au moins une jambe latest rouge -> main rouge.
+    for entry in latest.values():
+        if entry["conclusion"] == "failure":
+            return True
+    # Sinon, si toutes les jambes latest sont conclues (success/skipped/neutral)
+    # -> main vert. Si l'une d'elles est encore pending -> None (pas de preuve).
+    for entry in latest.values():
+        if entry["status"] != "completed":
+            return None
+    return False

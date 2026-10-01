@@ -127,19 +127,316 @@ def test_tete_dans_le_futur_refusee():
 
 # --- derogation et desactivation --------------------------------------------
 
-def test_label_de_derogation_leve_le_plancher():
+def test_label_de_derogation_leve_le_plancher_si_main_rouge():
+    """#18686 : le label waive le plancher UNIQUEMENT si `main` est rouge.
+    Le controle positif (sans `main_is_red`) : sans lui, un test vert ne
+    distingue pas « le label a leve » de « le plancher ne mord pas »."""
     ok, _, msg = merge_dwell.evaluate(
-        NOW - timedelta(minutes=1), NOW, 120.0, waived=True
+        NOW - timedelta(minutes=1), NOW, 120.0, waived=True,
+        main_is_red=True,
     )
     assert ok is True
     assert merge_dwell.WAIVER_LABEL in msg
-    # Controle positif de la meme entree SANS derogation : sans lui, un test
-    # vert ne distingue pas « le label a leve » de « le plancher ne mord pas ».
+    # Sans derogation : le plancher mord.
     assert merge_dwell.evaluate(NOW - timedelta(minutes=1), NOW, 120.0)[0] is False
 
 
 def test_dwell_nul_desactive():
     ok, _, _ = merge_dwell.evaluate(NOW - timedelta(minutes=1), NOW, 0.0)
+    assert ok is True
+
+
+# --- #18686 : le label sans main rouge ne dispense pas ---------------------
+
+def test_label_sur_main_vert_ne_dispense_pas():
+    """Le label `merge-dwell-waived` existe pour un cas nomme : main rouge.
+    Si main est vert au moment de l'evaluation, le gate REFUSE la dispense
+    et dit pourquoi dans le message (pas de refus silencieux)."""
+    ok, remaining, msg = merge_dwell.evaluate(
+        NOW - timedelta(minutes=1), NOW, 120.0, waived=True,
+        main_is_red=False,
+    )
+    assert ok is False
+    assert remaining >= 119  # plancher integralement restant
+    assert merge_dwell.WAIVER_LABEL in msg
+    assert "main" in msg.lower()
+    assert "vert" in msg
+
+
+def test_label_sur_main_illisible_ne_dispense_pas_fail_closed():
+    """Aucune preuve que main est rouge : pas de dispense, fail-closed."""
+    ok, remaining, msg = merge_dwell.evaluate(
+        NOW - timedelta(minutes=1), NOW, 120.0, waived=True,
+        main_is_red=None,
+    )
+    assert ok is False
+    assert remaining >= 119
+    assert "illisible" in msg or "indisponible" in msg
+    assert "preuve" in msg
+
+
+def test_label_avec_main_rouge_dispense():
+    """Controle positif : main rouge + label = dispense honoree."""
+    ok, _, msg = merge_dwell.evaluate(
+        NOW - timedelta(minutes=1), NOW, 120.0, waived=True,
+        main_is_red=True,
+    )
+    assert ok is True
+    assert "main rouge verifie" in msg
+
+
+def test_label_sans_main_rouge_n_est_pas_silhouette():
+    """Le verdict du gate DOIT nommer le label meme quand la dispense est
+    refusee -- un refus silencieux transforme un label abuse en rouge
+    mysterieux, et la lane ne sait pas pourquoi son label n'a pas joue."""
+    _, _, msg = merge_dwell.evaluate(
+        NOW - timedelta(minutes=1), NOW, 120.0, waived=True,
+        main_is_red=False,
+    )
+    # Le label est dans le message, et la condition documentee est citee.
+    assert merge_dwell.WAIVER_LABEL in msg
+    assert "derogation documentee" in msg
+
+
+def test_main_illisible_rouge_inconnue_ne_peut_pas_dispenser():
+    """Un check pending sur main (verdict non conclu) ne rend pas False :
+    il rend None (cf. main_main_red_unverified). Le test verifie que
+    evaluate() traite None comme une lecture indisponible, pas comme
+    « main vert »."""
+    ok, _, msg = merge_dwell.evaluate(
+        NOW - timedelta(minutes=1), NOW, 120.0, waived=True,
+        main_is_red=None,
+    )
+    assert ok is False, "main_is_red=None ne doit jamais dispenser"
+
+
+# --- #18686 main_main_red_unverified : lecture API ----------------------------
+
+def test_main_red_unverified_renvoie_true_si_pr_gate_failure():
+    """Le check `PR gate` est en conclusion `failure` sur la tete de main :
+    main est rouge."""
+    def fetch(path):
+        if path == "repos/o/r/branches/main":
+            return {"commit": {"sha": "ba5e0000"}}
+        if path == "repos/o/r/commits/ba5e0000/check-runs":
+            return {
+                "check_runs": [
+                    {
+                        "name": merge_dwell.MAIN_GATE_CHECK_NAME,
+                        "started_at": "2026-09-07T11:55:00Z",
+                        "conclusion": "failure",
+                        "status": "completed",
+                    },
+                ],
+            }
+        raise AssertionError("chemin inattendu: " + path)
+    assert merge_dwell.main_main_red_unverified("o/r", fetch=fetch) is True
+
+
+def test_main_red_unverified_renvoie_false_si_pr_gate_success():
+    """Le check `PR gate` est en conclusion `success` : main est vert."""
+    def fetch(path):
+        if path == "repos/o/r/branches/main":
+            return {"commit": {"sha": "ba5e0000"}}
+        if path == "repos/o/r/commits/ba5e0000/check-runs":
+            return {
+                "check_runs": [
+                    {
+                        "name": merge_dwell.MAIN_GATE_CHECK_NAME,
+                        "started_at": "2026-09-07T11:55:00Z",
+                        "conclusion": "success",
+                        "status": "completed",
+                    },
+                ],
+            }
+        raise AssertionError("chemin inattendu: " + path)
+    assert merge_dwell.main_main_red_unverified("o/r", fetch=fetch) is False
+
+
+def test_main_red_unverified_renvoie_none_si_pr_gate_pending():
+    """Une jambe pending (verdict non conclu) ne rend pas False :
+    l'absence de preuve reste une absence de preuve."""
+    def fetch(path):
+        if path == "repos/o/r/branches/main":
+            return {"commit": {"sha": "ba5e0000"}}
+        if path == "repos/o/r/commits/ba5e0000/check-runs":
+            return {
+                "check_runs": [
+                    {
+                        "name": merge_dwell.MAIN_GATE_CHECK_NAME,
+                        "started_at": "2026-09-07T11:55:00Z",
+                        "conclusion": None,
+                        "status": "in_progress",
+                    },
+                ],
+            }
+        raise AssertionError("chemin inattendu: " + path)
+    assert merge_dwell.main_main_red_unverified("o/r", fetch=fetch) is None
+
+
+def test_main_red_unverified_renvoie_none_si_branches_muette():
+    def fetch(path):
+        if path == "repos/o/r/branches/main":
+            raise merge_dwell.DwellError("API muette")
+        raise AssertionError("chemin inattendu: " + path)
+    assert merge_dwell.main_main_red_unverified("o/r", fetch=fetch) is None
+
+
+def test_main_red_unverified_pli_latest_wins():
+    """Plusieurs jambes au meme nom (supersession) : seul le dernier
+    `started_at` fait foi. Mesure : la jambe la plus recente `success`
+    neutralise la `failure` anterieure."""
+    def fetch(path):
+        if path == "repos/o/r/branches/main":
+            return {"commit": {"sha": "ba5e0000"}}
+        if path == "repos/o/r/commits/ba5e0000/check-runs":
+            return {
+                "check_runs": [
+                    {
+                        "name": merge_dwell.MAIN_GATE_CHECK_NAME,
+                        "started_at": "2026-09-07T11:00:00Z",
+                        "conclusion": "failure",
+                        "status": "completed",
+                    },
+                    {
+                        "name": merge_dwell.MAIN_GATE_CHECK_NAME,
+                        "started_at": "2026-09-07T12:00:00Z",
+                        "conclusion": "success",
+                        "status": "completed",
+                    },
+                ],
+            }
+        raise AssertionError("chemin inattendu: " + path)
+    assert merge_dwell.main_main_red_unverified("o/r", fetch=fetch) is False
+
+
+def test_main_red_unverified_ignore_autres_checks():
+    """Seul `PR gate` sert de proxy ; les autres checks (CodeQL, etc.)
+    n'influent pas sur `main_is_red`."""
+    def fetch(path):
+        if path == "repos/o/r/branches/main":
+            return {"commit": {"sha": "ba5e0000"}}
+        if path == "repos/o/r/commits/ba5e0000/check-runs":
+            return {
+                "check_runs": [
+                    {
+                        "name": "CodeQL",
+                        "started_at": "2026-09-07T11:00:00Z",
+                        "conclusion": "failure",
+                        "status": "completed",
+                    },
+                    {
+                        "name": merge_dwell.MAIN_GATE_CHECK_NAME,
+                        "started_at": "2026-09-07T11:00:00Z",
+                        "conclusion": "success",
+                        "status": "completed",
+                    },
+                ],
+            }
+        raise AssertionError("chemin inattendu: " + path)
+    assert merge_dwell.main_main_red_unverified("o/r", fetch=fetch) is False
+
+
+def test_check_sans_numero_de_pr_ne_gate_rien_with_main_is_red():
+    """Le numero de PR=None desactive le plancher, y compris avec un label
+    et un main rouge simules -- le test seam n'est PAS un raccourci qui
+    passerait par les branches de verification."""
+    def boom(path):
+        raise AssertionError("aucun appel gh attendu hors contexte de PR")
+    ok, msg = merge_dwell.check(
+        "o/r", "abc", None, 120.0, fetch=boom, main_is_red=True,
+    )
+    assert ok is True
+    assert "non applicable" in msg
+
+
+def test_check_refuse_la_dispense_si_main_vert_avec_label():
+    """check() bout-en-bout : PR avec label mais main vert (lu via API).
+    Le gate refuse la dispense et cite le label + l'etat de main."""
+    def fetch(path):
+        if path == "repos/o/r/pulls/42":
+            return {
+                "labels": [{"name": merge_dwell.WAIVER_LABEL}],
+                "base": {"sha": "ba5e0000"},
+            }
+        if path == "repos/o/r/branches/main":
+            return {"commit": {"sha": "0th3r"}}
+        if path == "repos/o/r/commits/0th3r/check-runs":
+            return {
+                "check_runs": [
+                    {
+                        "name": merge_dwell.MAIN_GATE_CHECK_NAME,
+                        "started_at": "2026-09-07T11:00:00Z",
+                        "conclusion": "success",
+                        "status": "completed",
+                    },
+                ],
+            }
+        if path == "repos/o/r/commits/abc":
+            return {
+                "commit": {"committer": {"date": "2026-09-07T11:55:00Z"}},
+                "parents": [{"sha": "ba5e0000"}],
+            }
+        raise AssertionError("chemin inattendu: " + path)
+    ok, msg = merge_dwell.check("o/r", "abc", 42, 120.0, now=NOW, fetch=fetch)
+    assert ok is False
+    assert merge_dwell.WAIVER_LABEL in msg
+    assert "vert" in msg
+
+
+def test_check_honore_la_dispense_si_main_rouge_avec_label():
+    """check() bout-en-bout : PR avec label et main rouge (lu via API).
+    Le gate honore la dispense."""
+    def fetch(path):
+        if path == "repos/o/r/pulls/42":
+            return {
+                "labels": [{"name": merge_dwell.WAIVER_LABEL}],
+                "base": {"sha": "ba5e0000"},
+            }
+        if path == "repos/o/r/branches/main":
+            return {"commit": {"sha": "0th3r"}}
+        if path == "repos/o/r/commits/0th3r/check-runs":
+            return {
+                "check_runs": [
+                    {
+                        "name": merge_dwell.MAIN_GATE_CHECK_NAME,
+                        "started_at": "2026-09-07T11:00:00Z",
+                        "conclusion": "failure",
+                        "status": "completed",
+                    },
+                ],
+            }
+        if path == "repos/o/r/commits/abc":
+            return {
+                "commit": {"committer": {"date": "2026-09-07T11:55:00Z"}},
+                "parents": [{"sha": "ba5e0000"}],
+            }
+        raise AssertionError("chemin inattendu: " + path)
+    ok, msg = merge_dwell.check("o/r", "abc", 42, 120.0, now=NOW, fetch=fetch)
+    assert ok is True
+    assert "main rouge verifie" in msg
+
+
+def test_check_injecte_main_is_red_ne_consulte_pas_api():
+    """Si le caller injecte main_is_red explicitement, check() ne consulte
+    PAS l'API pour verifier (gain de temps + isolation du test seam)."""
+    def fetch(path):
+        if path == "repos/o/r/pulls/42":
+            return {
+                "labels": [{"name": merge_dwell.WAIVER_LABEL}],
+                "base": {"sha": "ba5e0000"},
+            }
+        if path == "repos/o/r/commits/abc":
+            return {
+                "commit": {"committer": {"date": "2026-09-07T11:55:00Z"}},
+                "parents": [{"sha": "ba5e0000"}],
+            }
+        # Aucune route /branches/main ou /check-runs : si elle est consultee,
+        # le test explose ici.
+        raise AssertionError("API non attendue : " + path)
+    ok, msg = merge_dwell.check(
+        "o/r", "abc", 42, 120.0, now=NOW, fetch=fetch, main_is_red=True,
+    )
     assert ok is True
 
 
