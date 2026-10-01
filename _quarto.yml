@@ -230,7 +230,7 @@ project:
     - "MyIA.AI.Notebooks/NLP/README.md"
     - "MyIA.AI.Notebooks/Probas/Applications/Percolation/README.md"
     - "MyIA.AI.Notebooks/Probas/Applications/README.md"
-    - "MyIA.AI.Notebooks/Probas/decision_theory_lean/README.md"
+    - "MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean/README.md"
     - "MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/README.md"
     - "MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/README.md"
     - "MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/README.md"
