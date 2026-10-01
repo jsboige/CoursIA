@@ -2833,6 +2833,44 @@ root  553     1  10:14 ?  bash /mnt/d/Dev/CoursIA/scripts/ci/docker/linux-runner
 )
 echo ""
 
+# --- Test 61 : #15574 item 3 -- la porte a sentinelle ignore les superviseurs waiters
+#
+# Incident mesure du 2026-10-01 (po-2024) : restart des deux jambes d'execution
+# avec waiters debout. Les superviseurs d'execution tues par TERM avant leur
+# cleanup, la sentinel STOP_FILE posee par l'ExecStop n'est retiree par personne
+# ; la porte refuse alors chaque redemarrage au motif "un superviseur est
+# vivant" qui ne liste QUE des waiters -- crash-loop des deux jambes, pool a
+# zero jusqu'a purge manuelle de la sentinel. Un superviseur waiters ne draine
+# rien : il ne doit pas tenir la porte. Meme exclusion que assert_cpu_budget
+# (test 60) -- la sentinel protege la part qui calcule, pas la part qui dort.
+echo "Test 61 : porte a sentinelle -- waiters ne tiennent pas la porte, start/lean si (#15574 item 3)"
+(
+  cd "$SCRIPT_DIR"
+  export PS_OUTPUT="root  553     1  10:14 ?  bash /mnt/d/Dev/CoursIA/scripts/ci/docker/linux-runner/supervise.sh waiters 12"
+  source_supervise
+  mkdir -p "$TEST_DIR/state-G"
+  touch "$TEST_DIR/state-G/stop"
+  # (a) sentinel + superviseurs waiters SEULS vivants -> purge, porte ouverte.
+  err="$( (stop_sentinel_gate) 2>&1 )"; rc=$?
+  if [ "$rc" = "0" ] && [ ! -f "$TEST_DIR/state-G/stop" ] && echo "$err" | grep -q "perimee"; then
+    ok "(a) waiters vivants seuls : sentinel perimee purgee, porte ouverte"
+  else
+    ko "purge attendue avec waiters vivants seuls, rc=$rc err=$err"
+  fi
+  # (b) controle negatif : un superviseur d'execution vivant tient la porte.
+  export PS_OUTPUT="root  553     1  10:14 ?  bash /mnt/d/Dev/CoursIA/scripts/ci/docker/linux-runner/supervise.sh waiters 12
+root  900     1  10:14 ?  bash /mnt/d/Dev/CoursIA/scripts/ci/docker/linux-runner/supervise.sh start 6"
+  touch "$TEST_DIR/state-G/stop"
+  err="$( (stop_sentinel_gate) 2>&1 )"; rc=$?
+  if [ "$rc" != "0" ] && [ -f "$TEST_DIR/state-G/stop" ] && echo "$err" | grep -q "un superviseur est vivant"; then
+    ok "(b) superviseur start vivant : refus conserve, sentinel conservee"
+  else
+    ko "refus attendu avec un start vivant, rc=$rc err=$err"
+  fi
+  rm -f "$TEST_DIR/state-G/stop"
+)
+echo ""
+
 # --- Verdict agrege ---------------------------------------------------------
 # `|| echo 0` serait un piege ici, et il l'a ete : `grep -c` IMPRIME "0" avant
 # de sortir 1 quand il ne trouve rien, donc le repli SUFFIXE un second zero au

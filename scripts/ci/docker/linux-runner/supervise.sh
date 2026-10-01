@@ -1356,8 +1356,18 @@ any_supervisor_alive() {
   # echappe. Ici la decision est d'EFFACER une sentinelle : rater un superviseur
   # vivant ferait repartir une seconde flotte par-dessus la premiere. On exclut
   # donc seulement soi-meme et ses propres fils.
+  #
+  # #15574 item 3 -- familles d'EXECUTION seules (start, lean). Un superviseur
+  # waiters ne draine jamais de jobs : sa presence ne protege rien qu'un
+  # demarrage violerait. Mesure 2026-10-01 po-2024 : restart des deux jambes
+  # d'execution avec waiters debout -- sentinel perimee (superviseurs tues par
+  # TERM avant leur cleanup, personne pour la retirer) + les PIDs waiters
+  # vivants -> chaque jambe crash-loope sur "un superviseur est vivant" qui ne
+  # liste QUE des waiters. Pool a zero jusqu'a purge manuelle. Meme exclusion
+  # que assert_cpu_budget : la sentinelle protege la part qui calcule, pas la
+  # part qui dort.
   me="$$"
-  out="$(ps -ef 2>/dev/null | grep -E '[s]upervise\.sh (start|waiters|lean)'          | awk -v me="$me" '$2 ~ /^[0-9]+$/ && $2 != me && $3 != me {print $2}')"
+  out="$(ps -ef 2>/dev/null | grep -E '[s]upervise\.sh (start|lean)'          | awk -v me="$me" '$2 ~ /^[0-9]+$/ && $2 != me && $3 != me {print $2}')"
   printf '%s
 ' "$out"
 }
