@@ -147,7 +147,7 @@ python scripts/lean/count_code_sorry.py --json  # distinct_code_sorry inchangé 
 ## Périmètre strict ([anti-régression](../../.claude/rules/anti-regression.md))
 
 - **Inchangé** : énoncés de théorèmes, lemmes, signatures, organisation du module, preuves
-- **Modifié** : 3 instances `Decidable` (Invariant.lean + Invariant_en.lean) ≈ 6 lignes
+- **Modifié** : 3 instances `Decidable` (Invariant.lean + Invariant_en.lean)
 - **Ajouté** : tests de décidabilité sur données synthétiques (figure-eight, trefoil, untwisted)
 - **Pas de `sorry`** (régression cachée)
 - **Pas de `native_decide`** (décision sans preuve, interdite)
@@ -232,7 +232,7 @@ error: mathlib: failed to fetch cache
 Le warning « Dependency Mathlib uses a different lean-toolchain » est documenté dans `lake update` c.1119 (addendum c.1119 ligne 173-183). La sortie `b3i6dklcr` confirme que la baseline v4.32.1 souffre du **même problème** : cache Mathlib v4.32.1 non joignable, 13 fichiers absents, build s'arrête avant Knots.Invariant.
 
 **Conséquence opérationnelle** : le fix de fond `inferInstanceAs` ne peut pas être validé localement (ni sur Windows natif, ni en v4.32.1 baseline). La validation **doit passer par le runner CI Linux pool `coursia-lean`** (déjà câblé par po-2023, tranches 2-3 #15831 + #15832). Une PR fix de fond devrait :
-1. Modifier `Knots/Invariant.lean` + `Knots/Invariant_en.lean` (~6 lignes) avec `inferInstanceAs` explicite
+1. Modifier `Knots/Invariant.lean` + `Knots/Invariant_en.lean` avec `inferInstanceAs` explicite
 2. Pousser sur la branche `fix/15829-knot-4.33-invariant-inferinstance`
 3. Déclencher le CI `lean-knot.yml` (pool `coursia-lean`, après merge des PRs po-2023 #15831 + #15832)
 4. Vérifier `lake build Knots` + `lake build Knots_en` SUCCESS sur Linux CI
