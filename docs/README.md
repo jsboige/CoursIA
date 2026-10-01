@@ -302,11 +302,11 @@ Lane des comptes rendus et audits **datés** : un transient y naît, s'y conserv
 
 | Fichier | Description |
 |---------|-------------|
-| [transients/README.md](transients/README.md) | Convention de la lane : nom daté `<YYYY-MM-DD>-<slug>.md`, en-tête gelé `> RAPPORT — <date> — <périmètre> — figé`, règle « née ici, sort par distillation », périmètre et hors-périmètre. Lane **vide à dessein** à l'ouverture : la re-vérification des fichiers listés par #14623 a mesuré que la majorité n'est pas transiente |
+| [transients/README.md](transients/README.md) | Convention de la lane : nom daté `<YYYY-MM-DD>-<slug>.md`, en-tête gelé `> RAPPORT — <date> — <périmètre> — figé`, règle « née ici, sort par distillation », **critère de sortie de `docs/archive/`** (trois voies + interdiction d'entrée des rapports datés neufs, organe `--base`), périmètre et hors-périmètre. Lane **vide à dessein** à l'ouverture : la re-vérification des fichiers listés par #14623 a mesuré que la majorité n'est pas transiente |
 
 ## Archive (docs/archive/)
 
-Documents conservés pour référence mais inactifs. Index complet : [archive/INDEX.md](archive/INDEX.md).
+Documents conservés pour référence mais inactifs. Index complet : [archive/INDEX.md](archive/INDEX.md). L'archive est un **stock à résorber, pas une destination** : critère de sortie (distillation / restauration / retrait, preuve exigée) et interdiction d'entrée des rapports datés neufs — [transients/README.md §Sortie d'archive](transients/README.md#sortie-darchive-docsarchive) (#14623).
 
 | Fichier | Description |
 |---------|-------------|

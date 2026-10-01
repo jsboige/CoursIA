@@ -25,7 +25,11 @@ name: arXiv attributions guard
 # Le filtre de chemins ne fait qu'éviter des runs inutiles : registry /
 # script / tests / workflow (self-cover #8822) + les notebooks enregistrés.
 # Une entrée NOUVELLE passe par le registre (dans paths) donc déclenche son
-# propre contrôle. Le nocturne 03:47 UTC est le filet : un rename dont le
+# propre contrôle -- mais son NOTEBOOK doit aussi entrer dans paths, sinon
+# une PR qui ne touche que ce notebook esquive la garde : mesure 2026-09-29,
+# #18320 a décalé les cellules d'ICT-37 (passe 6, #17622) sans déclencher ce
+# workflow, et main est resté rouge jusqu'à #18343. La couverture est tenue par
+# test_workflow_paths_cover_every_registry_notebook. Le nocturne 03:47 UTC est le filet : un rename dont le
 # diff ne montre que le nouveau chemin esquive le filtre per-PR ; la sweep
 # suivante le voit (RENAMED/FAIL) sur main.
 #
@@ -41,6 +45,10 @@ on:
       - 'scripts/tests/test_check_arxiv_attributions.py'
       - '.github/workflows/arxiv-attributions-guard.yml'
       - 'MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving-Python.ipynb'
+      - 'MyIA.AI.Notebooks/GenAI/PostTraining/PT_15_controle_interpretabilite.ipynb'
+      - 'MyIA.AI.Notebooks/GenAI/PostTraining/PT_16_vericoding_formal_verification.ipynb'
+      - 'MyIA.AI.Notebooks/IIT/ICT-Series/ICT-37-FLens-BeliefState.ipynb'
+      - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.9d-Features-Circulaires-Helice-Nombres.ipynb'
       - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.5-Phenomenes-de-Generalisation.ipynb'
       - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day4-Foundations/Lab8-ADK-Introduction.ipynb'
       - 'MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/research_l4_decision_transformer.ipynb'
