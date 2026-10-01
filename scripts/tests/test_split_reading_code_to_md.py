@@ -24,6 +24,16 @@ celle qui declenche.
 Les assertions sont celles du comportement CORRECT attendu : elles
 echouent tant que le bug est present. Ce fichier est une REPRODUCTION,
 pas un fix -- ``check_split_reading_cells.py`` n'est pas modifie.
+
+Origine : c.970 (livraison PR #18708). Le diagnostic a ete pose en c.968
+sur #18440 narrow (Hermes 11:33Z), la reproduction en XFAIL est livree
+en c.970 ; la mise a jour des assertions (NanoClaw review 17:35Z) est
+livree en c.973.
+
+Convention XFAIL : ``strict=True`` (defaut). Un XPASS inattendu = le
+bug est corrige ou la repro n'est plus probante -> la CI force la
+conversion en test de non-regression (par edition du fichier, pas en
+silence). Un XFAIL persistant est attendu tant que le bug est present.
 """
 import pytest
 import sys
@@ -37,33 +47,33 @@ def md(src, cid):
     return {"cell_type": "markdown", "source": src, "id": cid}
 
 
-def code(src, cid):
+def code(src, cid, output="42\n"):
     return {
         "cell_type": "code",
         "source": src,
         "id": cid,
         "execution_count": 1,
-        "outputs": [{"output_type": "stream", "text": "42\n"}],
+        "outputs": [{"output_type": "stream", "text": output}],
     }
 
 
-@pytest.mark.xfail(reason="REPRODUCTION c.968 du bug split-reading code->md ; le cliquet signale a tort -- cf docstring", strict=False)
+@pytest.mark.xfail(reason="REPRODUCTION c.970 du bug split-reading code->md ; le cliquet signale a tort -- cf docstring", strict=True)
 def test_code_to_md_conversion_not_second_reading():
     """Convertir un code avec sortie en fence markdown n'est pas une seconde
     lecture : la lecture legitime qui suit commentait la sortie du code
     original, elle n'a pas ete ajoutee."""
     base_nb = {
         "cells": [
-            code("print(100)", "c0"),
+            code("print(100)", "c0", output="100\n"),
             md("### Lecture\nLe cent.", "m1"),
-            code("print(42)", "c1"),
+            code("print(42)", "c1", output="42\n"),
             md("### Interpretation : resultat", "m2"),
         ]
     }
     # c1 devient une fence markdown, id conserve (geste reel de conversion).
     head_nb = {
         "cells": [
-            code("print(100)", "c0"),
+            code("print(100)", "c0", output="100\n"),
             md("### Lecture\nLe cent.", "m1"),
             md("```python\nprint(42)\n```", "c1"),
             md("### Interpretation : resultat", "m2"),
@@ -72,40 +82,45 @@ def test_code_to_md_conversion_not_second_reading():
     assert mod.detect_added_readings(head_nb, base_nb) == []
 
 
-@pytest.mark.xfail(reason="REPRODUCTION c.968 du bug split-reading code->md ; le cliquet rattache a tort -- cf docstring", strict=False)
+@pytest.mark.xfail(reason="REPRODUCTION c.970 du bug split-reading code->md ; le cliquet rattache a tort -- cf docstring", strict=True)
 def test_code_to_md_keeps_legitimate_reading_count():
     """La conversion code->fence ne doit faire monter le compte de lectures
     d'AUCUNE sortie : la lecture legitime reste rattachee a la sortie du
     code converti (qui disparait avec lui), la fence n'est pas une lecture.
 
-    Observation attendue du bug : en head, la lecture orpheline est ADOPTEE
-    par la sortie precedente (``print(100)``) -- son compte passe de 1 a 3
-    (lecture legitime + fence + lecture du dessus rattachees par remontee),
-    et c'est ce deficit fabrique qui arme le SECOND_READING du test 1.
-    La variante SANS code au-dessus rend bien ``{}`` en head (mesure) mais
-    ne reproduit aucun finding : elle est donc insuffisante ici.
+    Comportement observe du bug (NanoClaw review c.973 17:35Z, head
+    e7719798) : en head, la lecture orpheline est ADOPTEE par la sortie
+    precedente ``print(100)`` -- son compte passe de 1 a 3 (lecture
+    legitime + fence + lecture du dessus rattachees par remontee), c'est
+    ce deficit fabrique qui arme le SECOND_READING du test 1.
+
+    Comportement correct apres fix : la lecture legitime ``m1`` reste
+    rattachee a ``print(100)`` (compte 1, inchange par rapport a base).
+    La sortie ``print(42)`` disparait avec le code, son compte passe de 1
+    (base) a absent (head). Ni la fence ni la lecture du dessous ne sont
+    comptabilisees.
     """
     base_nb = {
         "cells": [
-            code("print(100)", "c0"),
+            code("print(100)", "c0", output="100\n"),
             md("### Lecture\nLe cent.", "m1"),
-            code("print(42)", "c1"),
+            code("print(42)", "c1", output="42\n"),
             md("### Interpretation : resultat", "m2"),
         ]
     }
     head_nb = {
         "cells": [
-            code("print(100)", "c0"),
+            code("print(100)", "c0", output="100\n"),
             md("### Lecture\nLe cent.", "m1"),
             md("```python\nprint(42)\n```", "c1"),
             md("### Interpretation : resultat", "m2"),
         ]
     }
-    assert mod.readings_by_output(head_nb) == {}
-    assert mod.readings_by_output(base_nb) == {"print(42)": 1}
+    assert mod.readings_by_output(head_nb) == {"print(100)": 1}
+    assert mod.readings_by_output(base_nb) == {"print(100)": 1, "print(42)": 1}
 
 
-@pytest.mark.xfail(reason="REPRODUCTION c.968 du bug split-reading code->md sur Lean-10 c.63 -- cf docstring", strict=False)
+@pytest.mark.xfail(reason="REPRODUCTION c.970 du bug split-reading code->md sur Lean-10 c.63 -- cf docstring", strict=True)
 def test_minimal_repro_pr_18440():
     """Topologie Lean-10-LeanDojo c.60-c.65 mesuree sur la PR #18440
     (head = 1ad120705, base = 1ad120705^) : ids reels, memes positions.
@@ -118,7 +133,7 @@ def test_minimal_repro_pr_18440():
             code(code_above, "1153046e"),
             md("### Interpretation : Prompt LLM Formate", "ve2qg725my"),
             md("### Exemple Complet avec LLM (Pseudo-code)", "51a54161"),
-            code("print(pattern_llm_pseudo)", "3bd10c11"),
+            code("print(pattern_llm_pseudo)", "3bd10c11", output="<pattern>\n"),
             md("### Interpretation : Pattern d'Integration LLM", "pvi42j6do5"),
             md(
                 "## Exercice 2 : Prompt LLM a partir de donnees LeanDojo",
