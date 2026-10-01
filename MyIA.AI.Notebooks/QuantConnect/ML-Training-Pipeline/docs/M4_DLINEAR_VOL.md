@@ -299,8 +299,8 @@ qui n'existe que contre une baseline corrigée n'est pas un edge du modèle. Aux
 — là où HAR ajoute le plus de structure, DLinear perd.
 
 Le mécanisme est lisible dans les biais : HAR sous-estime massivement la vol BTC (biais OOS
-−0,23 à −0,45, croissant avec l'horizon) mais est quasi neutre sur les petits actifs (|biais|
-< 0,13 partout, < 0,03 sur DOT/XRP) — le levier « dé-biaser la baseline » qui fabriquait l'edge
+−0,23 à −0,45, croissant avec l'horizon) mais est quasi neutre sur les petits actifs (|biais| ≤ 0,18 partout — seuls ADA h=10 (+0,138)
+et ETH h=10 (−0,173) dépassent 0,13 —, < 0,03 sur DOT/XRP) — le levier « dé-biaser la baseline » qui fabriquait l'edge
 apparent n'existe pas hors BTC. DLinear, lui, **surestime** les six autres actifs (+0,03 à
 +0,28 selon pièce et horizon) : le même profil de biais qu'en 2026-09-22, confirmé cluster.
 
