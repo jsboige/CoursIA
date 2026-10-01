@@ -1892,3 +1892,88 @@ def test_main_exits_ready_when_organ_agrees(monkeypatch, capsys):
     monkeypatch.setattr(mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []})
     monkeypatch.setattr(sys, "argv", ["check_adjoint_prevalidation.py", "123"])
     assert mod.main() == mod.EXIT_READY
+
+
+# --- #18637 : advisories sticky (marqueur en FIN de corps) et resumes de bot --
+
+_STICKY_STALE = (
+    "✅ No unanchored measurement claim detected in the notebooks this PR changed.\n\n"
+    "Scope = notebooks CHANGED in this PR.\n"
+    "<!-- Sticky Pull Request Commentstale-claim-advisory -->"
+)
+
+
+def test_sticky_advisory_pose_does_not_expire_the_dossier():
+    """#18637 acceptance (positive control) : la pose d'un advisory sticky par
+    ``github-actions[bot]`` apres le dossier laisse le verdict lisible. Mesure
+    fondatrice (2026-09-30) : 19 dossiers sur 22 perimes par ces seules poses
+    et reecritures de bot.
+    """
+    for body in (
+        _STICKY_STALE,
+        "⚠️ Factual-mislabel review needed.\n<!-- Sticky Pull Request Commentfactual-mislabel-advisory -->",
+        "<!-- REVIEW-COVERAGE:START -->\nseuil depasse\n<!-- REVIEW-COVERAGE:END -->",
+        "## Golden-Set Execution (H.7 P3)\n\n✅ **3/3** notebooks passed",
+        "## Notebook PR Validation: PASS\n\n| nb | ok |",
+        "## Notebook outputs-required (H.4 schema): **PASS** (every code cell carries an `outputs: list`)",
+    ):
+        base = _stamped_snapshot("")
+        base["comments"].pop()
+        snapshot = _stamped_snapshot(_dossier_for(base))
+        pose = _comment(body, login="github-actions[bot]")
+        pose["createdAt"] = T1
+        snapshot["comments"].append(pose)
+        verdict, errors = mod.evaluate(snapshot)
+        assert verdict == mod.VERDICT_READY, (body.splitlines()[0], errors)
+
+
+def test_sticky_advisory_rewrite_keeps_the_fingerprint():
+    """#18637 : la reecriture en place d'un advisory sticky ne change pas le hash,
+    sa presence le change toujours."""
+    base = _base_snapshot()
+    v1 = dict(base, comments=[_comment(_STICKY_STALE, "github-actions[bot]")])
+    v2 = dict(base, comments=[_comment(
+        "⚠️ Stale-claim review needed: contenu different.\n"
+        "<!-- Sticky Pull Request Commentstale-claim-advisory -->",
+        "github-actions[bot]")])
+    assert mod.surfaces_fingerprint(v1) == mod.surfaces_fingerprint(v2)
+    assert mod.surfaces_fingerprint(base) != mod.surfaces_fingerprint(v1)
+
+
+def test_sticky_forms_require_the_bot_author_and_a_listed_header():
+    """#18637 (negative controls) : un tiers qui recopie la forme perime le
+    dossier ; un en-tete sticky non liste (non consultatif) aussi ; un marqueur
+    sticky qui n'est pas en fin de corps aussi."""
+    cases = (
+        (_STICKY_STALE, "clusterManager-Myia"),
+        ("## Golden-Set Execution (H.7 P3)\ncopie", "myia-po-2023"),
+        ("## Notebook outputs-required (H.4 schema): **PASS** copie", "myia-po-2023"),
+        ("rapport\n<!-- Sticky Pull Request Commentsome-blocking-guard -->", "github-actions[bot]"),
+        ("<!-- Sticky Pull Request Commentstale-claim-advisory -->\nsuite ajoutee", "github-actions[bot]"),
+    )
+    for body, login in cases:
+        base = _stamped_snapshot("")
+        base["comments"].pop()
+        snapshot = _stamped_snapshot(_dossier_for(base))
+        row = _comment(body, login=login)
+        row["createdAt"] = T1
+        snapshot["comments"].append(row)
+        errors = _errors(snapshot)
+        assert any("discussion changed after dossier" in e for e in errors), (login, body[:40])
+
+
+def test_pre18637_stamp_stays_verifiable():
+    """#18637 transition : un dossier tamponne AVANT le correctif (empreinte
+    qui hache le corps entier du sticky) reste accepte tant que les surfaces
+    n'ont pas bouge -- le merge du correctif ne tue pas les dossiers intacts."""
+    base = _base_snapshot()
+    snap = dict(base, comments=[_comment(_STICKY_STALE, "github-actions[bot]")])
+    old = mod.pre18637_surfaces_fingerprint(snap)
+    new = mod.surfaces_fingerprint(snap)
+    assert old != new
+    rewritten = dict(base, comments=[_comment(
+        "⚠️ autre texte\n<!-- Sticky Pull Request Commentstale-claim-advisory -->",
+        "github-actions[bot]")])
+    # l'ancienne empreinte, elle, bouge avec le corps : elle ne protege que
+    # l'etat exact qu'elle a tamponne.
+    assert mod.pre18637_surfaces_fingerprint(rewritten) != old
