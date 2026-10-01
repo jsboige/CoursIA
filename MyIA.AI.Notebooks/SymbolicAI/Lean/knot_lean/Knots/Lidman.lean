@@ -78,6 +78,9 @@ KnotInfo donne u(11n102) ∈ {1, 2}. Lidman montre que la valeur exacte est 2.
 /-- Le nombre de dénouement de 11n102 est au plus 2
 (évident à partir d'un diagramme avec les changements de croisement appropriés). -/
 theorem unknotting_11n102_upper : Knot.unknottingNumber knot_11n102 ≤ 2 := by
+  rw [Knot.unknottingNumber]
+  apply Nat.sInf_le
+  simp only [Set.mem_setOf_eq, Knot.UnknottableIn]
   exact sorry
   -- Proof: exhibit 2 crossing changes that unknot the diagram
   -- Phase 3 target (once unknottingNumber is properly defined)

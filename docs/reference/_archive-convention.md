@@ -94,7 +94,7 @@ déplace une ligne, elle ne réécrit pas un total :
 
 ## Cas particuliers
 
-- **`_archive/utils/reconstruct_env.py`** (genai-stack, 17,6 KLOC récent) : vérifier si le sujet est couvert par la feature CLI avant d'archiver — peut être du vivant mal étiquetté. Tranche 3 fait l'audit.
+- **`_archive/utils/reconstruct_env.py`** (genai-stack, récent) : vérifier si le sujet est couvert par la feature CLI avant d'archiver — peut être du vivant mal étiquetté. Tranche 3 fait l'audit.
 - **`DSA AgenticDataScience/` + `PythonAgentsForDataScience/`** : dossiers ne contenant QUE des `*_output.ipynb` (sources migrées Track1/Track2) → supprimer après vérif `execution_count`/consommateurs (fantômes). Tranche séparée, hors #13749.
 - **Scripts archive sans successeur** : la ligne de travail doit être **explicitement fermée** dans le PR d'archivage (raison + lien vers la discussion de clôture). Sans cette fermeture, le script n'est pas archivable — il est juste mort.
 

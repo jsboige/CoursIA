@@ -303,16 +303,33 @@ class _FakeClip:
     def __init__(self):
         self.closed = False
         self.audio_set = None
+        self.subclipped_arg = None
+
+    # moviepy 2.x : `.subclip()` -> `.subclipped()` et `.resize()` -> `.resized()`,
+    # `.set_audio()` -> `.with_audio()` (le suffixe en -ed ou le prefixe with-
+    # distingue les methodes non-destructives des mutateurs, convention 2.x).
+    # On garde les alias 1.x (`subclip`, `resize`, `set_audio`) qui deleguent aux
+    # methodes 2.x, au cas ou du code heritage 1.x resurgirait dans la suite.
+    def subclipped(self, start, end=None):
+        self.subclipped_arg = (start, end)
+        return self
 
     def subclip(self, start, end=None):
+        return self.subclipped(start, end)
+
+    def resized(self, size):
+        self.resized_arg = size
         return self
 
     def resize(self, size):
+        return self.resized(size)
+
+    def with_audio(self, audio):
+        self.audio_set = audio
         return self
 
     def set_audio(self, audio):
-        self.audio_set = audio
-        return self
+        return self.with_audio(audio)
 
     def write_videofile(self, path, logger=None):
         self.written = path
@@ -322,6 +339,9 @@ class _FakeClip:
 
 
 def _install_moviepy_stub(video_cls=None, audio_cls=None, concat_fn=None):
+    # moviepy 2.x : `from moviepy import VideoFileClip, ...` (top-level).
+    # On expose les classes au top-level ; on garde aussi `moviepy.editor`
+    # comme alias pour les tests qui le reference encore par heritage 1.x.
     editor = ModuleType("moviepy.editor")
     if video_cls is not None:
         editor.VideoFileClip = video_cls
@@ -329,9 +349,15 @@ def _install_moviepy_stub(video_cls=None, audio_cls=None, concat_fn=None):
         editor.AudioFileClip = audio_cls
     if concat_fn is not None:
         editor.concatenate_videoclips = concat_fn
-    mod = ModuleType("moviepy")
-    mod.editor = editor
-    sys.modules["moviepy"] = mod
+    top = ModuleType("moviepy")
+    if video_cls is not None:
+        top.VideoFileClip = video_cls
+    if audio_cls is not None:
+        top.AudioFileClip = audio_cls
+    if concat_fn is not None:
+        top.concatenate_videoclips = concat_fn
+    top.editor = editor
+    sys.modules["moviepy"] = top
     sys.modules["moviepy.editor"] = editor
     return editor
 
@@ -375,7 +401,7 @@ def test_trim_video_creates_output_dir_and_writes_segment(monkeypatch, tmp_path)
     assert clip.written == str(out)
 
 
-def test_resize_video_delegates_to_resize(monkeypatch, tmp_path):
+def test_resize_video_delegates_to_resized(monkeypatch, tmp_path):
     clip = _FakeClip()
     _install_moviepy_stub(video_cls=lambda p: clip)
     out = tmp_path / "r" / "small.mp4"
@@ -387,6 +413,9 @@ def test_resize_video_delegates_to_resize(monkeypatch, tmp_path):
     assert out.parent.exists()
     assert clip.written == str(out)
     assert clip.closed is True
+    # moviepy 2.x : `.resize()` -> `.resized()`. Verifier l'API 2.x reellement
+    # appelee (et non l'alias 1.x deleguant).
+    assert clip.resized_arg == (320, 240)
 
 
 def test_add_audio_to_video_trims_audio_when_longer(monkeypatch, tmp_path):
@@ -396,10 +425,11 @@ def test_add_audio_to_video_trims_audio_when_longer(monkeypatch, tmp_path):
         def __init__(self):
             self.duration = 30.0
             self.closed = False
-            self.subclipped = None
+            self.subclipped_arg = None
 
-        def subclip(self, start, end):
-            self.subclipped = (start, end)
+        # moviepy 2.x : `.subclip()` -> `.subclipped()`.
+        def subclipped(self, start, end):
+            self.subclipped_arg = (start, end)
             return self
 
         def close(self):
@@ -416,7 +446,7 @@ def test_add_audio_to_video_trims_audio_when_longer(monkeypatch, tmp_path):
         sys.modules.pop("moviepy.editor", None)
     assert out.parent.exists()
     # Audio was trimmed because audio.duration > video.duration.
-    assert audio.subclipped == (0, 10.0)
+    assert audio.subclipped_arg == (0, 10.0)
     assert video.audio_set is audio
 
 
