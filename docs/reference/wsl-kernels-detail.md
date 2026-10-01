@@ -53,8 +53,8 @@ aucun des deux chemins ne retombe plus sur un lake stub sans rapport.
 
 ### Vérifié
 
-- GT-1 Setup : 20/20 cells, 0 errors (3.3s)
-- GT-7 ExtensiveForm : 30/30 cells, 0 errors (2s)
+- GT-1 Setup : 0 errors (3.3s)
+- GT-7 ExtensiveForm : 0 errors (2s)
 
 ## Lean 4 — setup consolidé (issue #1618)
 
