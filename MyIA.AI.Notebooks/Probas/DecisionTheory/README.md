@@ -65,7 +65,7 @@ Le parcours suit une progression unique, portée en parallèle par les deux mote
 
 ### `DecInfer/` — l'arc de référence (Infer.NET + Lean 4)
 
-Dix notebooks, dont **huit en C#/.NET Interactive** (message passing EP/VMP) et **deux à kernel Lean 4** (companions natifs de preuve formelle). C'est l'arc canonique, le plus complet ; il va des axiomes vNM (notebook 1) jusqu'au Thompson Sampling (notebook 10), avec les preuves Lean de vNM (notebook 2) et de Gittins (notebook 9) intercalées à leur place pédagogique. **Détail notebook par notebook** : [`DecInfer/README.md`](DecInfer/README.md).
+Onze notebooks, dont **huit en C#/.NET Interactive** (message passing EP/VMP) et **trois à kernel Lean 4** (companions natifs de preuve formelle). C'est l'arc canonique, le plus complet ; il va des axiomes vNM (notebook 1) jusqu'au Thompson Sampling (notebook 10), avec les preuves Lean de vNM (notebook 2), de de Finetti (notebook 2b) et de Gittins (notebook 8b) intercalées à leur place pédagogique. **Détail notebook par notebook** : [`DecInfer/README.md`](DecInfer/README.md).
 
 ### `DecPyMC/` — le miroir Python (MCMC)
 

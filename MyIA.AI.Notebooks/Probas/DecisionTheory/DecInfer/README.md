@@ -6,7 +6,7 @@ Arc autonome de **théorie de la décision bayésienne** en Infer.NET : les note
 
 **Prérequis** : le corpus bayésien [`../../Infer/`](../../Infer/README.md) (notamment [Infer-4-Bayesian-Networks](../../Infer/Infer-4-Bayesian-Networks.ipynb), [Infer-7-Skills-IRT](../../Infer/Infer-7-Skills-IRT.ipynb) pour les posteriors Beta). Aucun prérequis en théorie de la décision : les axiomes de Von Neumann-Morgenstern sont introduits ex nihilo.
 
-**Stack** : Infer.NET (.NET 9.0 + dotnet-interactive), EP/VMP par défaut. Les notebooks companions (2, 2b, 9) utilisent le **kernel Lean 4** (WSL) et le lake [`decision_theory_lean`](../decision_theory_lean/).
+**Stack** : Infer.NET (.NET 9.0 + dotnet-interactive), EP/VMP par défaut. Les notebooks companions (2, 2b, 8b) utilisent le **kernel Lean 4** (WSL) et le lake [`decision_theory_lean`](../decision_theory_lean/).
 
 ## Pourquoi un arc autonome
 
@@ -40,7 +40,7 @@ flowchart TD
     D["<b>Séquentiel</b> (8)<br/>MDPs · Bellman"]
     E["<b>Preuve & bandits</b> (9-10)<br/>Gittins (Lean) · Thompson Sampling"]
     BAY["Corpus bayésien<br/>../Infer/ (posteriors)"]
-    LAKE["Lake decision_theory_lean<br/>(companions 2, 9)"]
+    LAKE["Lake decision_theory_lean<br/>(companions 2, 2b, 8b)"]
     BAY -->|"posterior = input"| A
     A --> B --> C --> D --> E
     E -.->|"formalisation"| LAKE
@@ -133,7 +133,7 @@ Applications : A/B testing adaptatif, recommandation en ligne, essais cliniques 
 | --- | --- | --- |
 | [Corpus bayésien Infer](../../Infer/README.md) | Posteriors (Beta, gaussianes) | Le posterior est l'input de la politique de décision |
 | [PyMC](../DecPyMC/README.md) | DecPyMC-1 à DecPyMC-7 | Même arc décision en Python/NUTS (Thompson MCMC, diagnostics ArviZ) |
-| [Lake `decision_theory_lean`](../decision_theory_lean/) | Companions 2, 2b, 9 | Preuves formelles Lean 4 (vNM, de Finetti, Gittins) |
+| [Lake `decision_theory_lean`](../decision_theory_lean/) | Companions 2, 2b, 8b | Preuves formelles Lean 4 (vNM, de Finetti, Gittins) |
 | [GameTheory](../../../GameTheory/README.md) | Décision sous incertitude | Miroir : adversaire rationnel vs processus stochastique |
 | [RL](../../../RL/README.md) | MDPs (DecInfer-08) | L'agent apprend la politique par interaction |
 

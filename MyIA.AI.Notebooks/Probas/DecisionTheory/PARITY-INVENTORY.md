@@ -87,7 +87,7 @@ Trois voies possibles (à arbitrer en EPIC, pas dans cette tranche) :
 
 | Voie | Description | Effet sur les notebooks | Risque |
 |---|---|---|---|
-| **(a) Suffixe compagnon** (recommandée par le principle directeur) | Renommer `DecInfer-02-Lean-ExpectedUtility` → `DecInfer-01b-Lean-ExpectedUtility` (companion de #1, suffixe `b`). Idem `DecInfer-08b-Lean-Gittins` → `DecInfer-08b-Lean-Gittins`. Les DecInfer-03..08 restent alignés avec DecPyMC-2..7. | 2 `git mv` + réparations de liens entrants (REVIEW, datasets, manifestes) ; pas de renommage côté PyMC. | Faible (companions explicites, déjà conventionnés `App-Nb` / `SW-Nb`). |
+| **(a) Suffixe compagnon** (recommandée par le principle directeur) | Renommer `DecInfer-02-Lean-ExpectedUtility` → `DecInfer-01b-Lean-ExpectedUtility` (companion de #1, suffixe `b`). Idem `DecInfer-09-Lean-Gittins` → `DecInfer-08b-Lean-Gittins` (G4c). Les DecInfer-03..08 restent alignés avec DecPyMC-2..7. | 2 `git mv` + réparations de liens entrants (REVIEW, datasets, manifestes) ; pas de renommage côté PyMC. | Faible (companions explicites, déjà conventionnés `App-Nb` / `SW-Nb`). |
 | **(b) Re-numérotation totale PyMC** | Renommer `DecPyMC-2..7` → `DecPyMC-3..8` pour s'aligner à DecInfer. Coûteux en références entrantes. | 6 renommages + réparations systématiques des liens Python (catalogue, baselines, tests). | Élevé (les notebooks PyMC sont les plus référencés par les notebooks Causal-Bridges et autres arcs). |
 | **(c) Slot compagnon vide PyMC** | Ajouter `DecPyMC-1b` et `DecPyMC-8b` vides (companion slot non rempli) pour préserver la parité des nombres, sans toucher au contenu PyMC. | 2 fichiers stubs vides, déclaration d'absence. | Faible techniquement, fort symboliquement (pourquoi des fichiers vides ?). |
 
