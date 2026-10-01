@@ -1228,9 +1228,74 @@ def test_skipped_and_neutral_conclusions_are_not_red():
          "conclusion": "skipped", "started_at": "2026-09-20T10:00:00Z"},
         {"id": 2, "name": "coverage", "status": "completed",
          "conclusion": "neutral", "started_at": "2026-09-20T10:01:00Z"},
+        {"id": 3, "name": "PR gate", "status": "completed",
+         "conclusion": "success", "started_at": "2026-09-20T10:02:00Z"},
     ]
     verdict, errors = mod.evaluate(snapshot)
     assert verdict == mod.VERDICT_READY, errors
+
+
+_CODEQL_ONLY = [
+    {"id": i, "name": name, "status": "completed", "conclusion": "success",
+     "started_at": "2026-09-30T04:30:40Z"}
+    for i, name in enumerate(
+        ["Analyze (actions)", "Analyze (csharp)", "Analyze (python)", "CodeQL"],
+        start=1,
+    )
+]
+_ABSENT_PR_GATE = (
+    "checks claim 'latest-wins-green' is contradicted by the absence of "
+    "required check 'PR gate' on the head"
+)
+
+
+def test_head_without_pr_gate_run_is_not_green_by_vacuity():
+    """#18579 founding case (#18527, #18500): the pull_request workflows never
+    fired on the head, only the CodeQL legs ran. Every present check is green,
+    so pre-#18579 nothing contradicted the claim and the dossier read READY."""
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"] = list(_CODEQL_ONLY)
+    errors = _errors(snapshot)
+    assert any(_ABSENT_PR_GATE in error for error in errors), errors
+
+
+def test_head_with_no_check_run_at_all_is_not_green():
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"] = []
+    errors = _errors(snapshot)
+    assert any(_ABSENT_PR_GATE in error for error in errors), errors
+
+
+def test_pr_gate_in_flight_without_completed_run_is_not_green():
+    """In flight has no verdict yet: with no earlier completed run on the head,
+    the required check has said nothing and cannot be claimed green."""
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"] = list(_CODEQL_ONLY) + [
+        {"id": 9, "name": "PR gate", "status": "in_progress",
+         "conclusion": None, "started_at": "2026-09-30T10:20:00Z"}
+    ]
+    errors = _errors(snapshot)
+    assert any(_ABSENT_PR_GATE in error for error in errors), errors
+
+
+def test_pr_gate_rerun_in_flight_keeps_the_last_completed_green():
+    """Positive control: a rerun in flight falls back to the last completed
+    run of the same head, which is green -- the presence rule adds nothing."""
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"] = list(_CODEQL_ONLY) + [
+        {"id": 8, "name": "PR gate", "status": "completed",
+         "conclusion": "success", "started_at": "2026-09-30T10:00:00Z"},
+        {"id": 9, "name": "PR gate", "status": "in_progress",
+         "conclusion": None, "started_at": "2026-09-30T10:20:00Z"},
+    ]
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_blocked_dossier_is_not_refused_for_an_absent_pr_gate():
+    """The presence rule refutes a READY claim only: a BLOCKED dossier on a
+    head without CI stays readable (exit 3), it is the reason it is blocked."""
+    assert mod.check_claim_contradictions("BLOCKED", []) == []
 
 
 def test_in_flight_rerun_has_no_verdict_and_hides_nothing():
