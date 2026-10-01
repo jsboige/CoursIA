@@ -285,6 +285,7 @@ from series_saturation import (  # noqa: E402
     delivery_factor,
     fetch_merged,
     fetch_series_visits,
+    last_delivery_per_issue,
     measure_delivery,
     zone_balance,
     zone_umbrellas,
@@ -827,6 +828,13 @@ def fetch_pool(
             "created_at": it["createdAt"],
             "age": age_days(it["createdAt"]),
             "idle": age_days(it["updatedAt"]),
+            # Placeholder pour le geste 3 #18203 : sera ecrase juste apres le
+            # `last_delivery_per_issue` (en jours depuis la derniere PR
+            # mergée qui cite l'issue, ou `age` si aucune livraison dans la
+            # fenetre). Le `idle` ci-dessus reste utilise par les filtres
+            # `--min-idle-days` / `--max-idle-days` : un garde se justifie,
+            # l'autre non, et le facteur de poids ne doit pas les entrainer.
+            "idle_since_delivery": age_days(it["updatedAt"]),
             "updated_at": it["updatedAt"],
             "genre": declared_genre if declared_genre else infer_genre(title, labels),
             # Le genre est-il **soutenu** (declare par l'auteur, ou une regle
@@ -1611,13 +1619,17 @@ def weight(item: dict, prev_genre: str | list[str] | tuple[str, ...] | set[str] 
     # Anciennete : sert "faire refluer doucement" -- la traine est la ou le
     # compte s'accumule. 6 mois pesent ~4x une issue de la semaine.
     w = 1.0 + math.log2(1.0 + item["age"] / 7.0)
-    # Delaissement : jours depuis la DERNIERE activite, distinct de l'age de
-    # creation (mesure du 2026-08-20 sur les 140 ouvertes : pearson r = 0.334,
-    # donc pas redondant). 91/140 avaient bouge dans les 24 h -- le bruit du
-    # moment ; les 12 plus inactives comptaient 9 EPICs. C'est cette population
-    # que le tirage doit atteindre : un EPIC intouche depuis 53 j pese ~2.4x un
-    # sujet du jour, assez pour remonter, trop peu pour devenir la seule veine.
-    w *= 1.0 + math.log2(1.0 + item["idle"] / 14.0)
+    # Delaissement (#18203 geste 3) : on mesure les jours depuis la DERNIERE
+    # LIVRAISON (derniere PR mergée qui cite l'issue, ou `age` si rien), pas
+    # depuis le dernier `updatedAt`. Un commentaire de bot, un ping de
+    # dispatch ou un claim remettent `updatedAt` à zéro sans livraison, et
+    # le facteur de poids en etait trompé (cf. mesure du 28/09/2026 dans
+    # #18203 : 11 des 80 issues froides avaient un `updatedAt` < 3 jours).
+    # Le champ `idle` reste utilise par les filtres `--min-idle-days` /
+    # `--max-idle-days` (fraicheur de surface, garde anti-flood) ; le facteur
+    # de poids utilise `idle_since_delivery` (fraicheur de livrable).
+    idle_factor = item.get("idle_since_delivery", item["idle"])
+    w *= 1.0 + math.log2(1.0 + idle_factor / 14.0)
     # G-VAR-3 au tirage plutot qu'en HOLD a posteriori. Tous les genres deja
     # consommes dans la session restent penalises : guard -> docs -> guard ne
     # doit pas redevenir libre au troisieme tirage (#14704).
@@ -4946,6 +4958,45 @@ def main(argv: list[str] | None = None) -> int:
                              args.delivery_boost_max)
         for num, item in delivery_sig["items"].items()
     }
+
+    # Geste 3 #18203 : `idle_since_delivery` pour TOUT le pool, pas seulement
+    # les umbrellas. `measure_delivery` ne couvre que les umbrellas et ignore
+    # les grains -- or le facteur de poids du tirage veut une mesure sur la
+    # derniere livraison reelle, identique sur les deux classes. Cout : zero
+    # appel reseau, on reutilise le meme corpus `delivery_prs`.
+    pool_numbers = [it["number"] for it in pool]
+    last_delivery_map = last_delivery_per_issue(delivery_prs, pool_numbers)
+    # Geste 3 #18203 (CR ai-01 c.1342) : tester l'erreur de fetch, PAS le
+    # dict. `last_delivery_per_issue([], pool_numbers)` rend
+    # `{n: None pour chaque n}` (dict non vide des que le pool l'est), donc
+    # `if last_delivery_map:` est toujours vrai sur echec de fetch -- le
+    # `else` (corpus indisponible) etait inatteignable. La doctrine
+    # "defaut de mesure n'est pas negligence" impose un test sur l'erreur
+    # elle-meme, pas sur la structure du resultat.
+    if not delivery_fetch_err and last_delivery_map:
+        # Cas nominal : corpus de PRs disponible et fenetre respectee. On
+        # patche `idle_since_delivery` pour chaque item. Issue livree dans la
+        # fenetre -> jours depuis la fusion ; sinon -> `age` (l'age de
+        # creation, qui dit "issue neuve jamais livree" sans la faire passer
+        # pour "fraiche" via un `updatedAt` recent).
+        for it in pool:
+            stamp = last_delivery_map.get(it["number"])
+            if stamp:
+                when = dt.datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+                it["idle_since_delivery"] = round(
+                    (NOW - when).total_seconds() / 86400.0, 2)
+                it["last_delivery_stamp"] = stamp
+            else:
+                it["idle_since_delivery"] = it["age"]
+                it["last_delivery_stamp"] = None
+    else:
+        # Corpus indisponible : on conserve la valeur placeholder (`idle`,
+        # jours depuis `updatedAt`) -- la doctrine "defaut de mesure n'est
+        # pas negligence" s'applique. Le runner peut etre rejoue des que la
+        # fenetre `gh pr list` redevient lisible.
+        for it in pool:
+            it["idle_since_delivery"] = it["idle"]
+            it["last_delivery_stamp"] = None
 
     # Admission AVANT les urnes : un grain inadmissible ne doit pas
     # apparaitre dans le tirage, sinon il est sous les yeux quand le
