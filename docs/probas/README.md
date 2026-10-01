@@ -8,7 +8,7 @@ Pour la pédagogie Probabilités (notebooks étudiants Infer.NET, PyMC, Decision
 
 | Document | Sujet |
 |---|---|
-| [`../reference/probas-history.md`](../reference/probas-history.md) | **Référence pérenne** du portage Infer.NET → Python — périmètre intentionnel (combien de carnets, quelle bibliothèque pour quel concept) + recommandation PyMC v5+ / NumPyro / pgmpy / hmmlearn / Pyro. La table d'API ligne-à-ligne y est marquée *périssable* (poison si non re-testée contre la version courante). Source canonique issue #297 (CLOSED). 117 lignes. |
+| [`../reference/probas-history.md`](../reference/probas-history.md) | **Référence pérenne** du portage Infer.NET → Python — périmètre intentionnel (combien de carnets, quelle bibliothèque pour quel concept) + recommandation PyMC v5+ / NumPyro / pgmpy / hmmlearn / Pyro. La table d'API ligne-à-ligne y est marquée *périssable* (poison si non re-testée contre la version courante). Source canonique issue #297 (CLOSED). |
 | [`../reference/mbml-source-attribution.md`](../reference/mbml-source-attribution.md) | Attribution de source MBML/Infer.NET — table de correspondance carnet ↔ source canonique pour la série Probas/ (36 carnets Infer + PyMC + 2 racine vs *MBML Book* Herbrich + TrueSkill 2007 + WinBUGS/JAGS). Établie par l'audit distillation #8081 (c.803, 2026-07-23). |
 
 ## Prérequis kernel
@@ -21,7 +21,7 @@ Pour la pédagogie Probabilités (notebooks étudiants Infer.NET, PyMC, Decision
 | Lean 4 kernels (DecInfer-02, -09) | Lean 4 via WSL | `leanprover/lean4:stable` (résolution actuelle : v4.34.1 — voir [#18511](../../issues/18511) pour l'écart toolchain) | `wsl` + `elan toolchain install stable` |
 | Pont causal (`Causal-Bridges/`) | Python + ML-Training | Python 3.12+ + `dowhy`, `causal-learn` | kernel `coursia-ml-training` |
 
-Mesure datée du 2026-10-01 (cross-check `MyIA.AI.Notebooks/Probas/README.md` `CATALOG-STATUS`) : **74 carnets vivants**, décomposition `DecisionTheory=31, Infer=21, PyMC=19, Applications=3` ; maturité `BETA=73, ALPHA=1`. Tout écart entre cette phrase et le marqueur doit se résoudre **au profit du marqueur** (régénéré chaque nuit par `catalog-cron.yml` à 03:37 UTC).
+Volumes et maturité de la série : voir le marqueur `CATALOG-STATUS` dans `MyIA.AI.Notebooks/Probas/README.md` (autoritatif, régénéré chaque nuit par `catalog-cron.yml` à 03:37 UTC). Ce README documente l'**organisation thématique et les références** ; il ne duplique pas les compteurs que le catalogue tient à jour.
 
 ## Piliers SOTA couverts par la série
 
@@ -49,7 +49,7 @@ Mesure datée du 2026-10-01 (cross-check `MyIA.AI.Notebooks/Probas/README.md` `C
 |---|---|
 | API PyMC bouge à chaque release mineure — un mapping non re-vérifié est *poison* | `probas-history.md` (cf. table d'API ligne-à-ligne marquée périssable) |
 | Le kernel `lean4` sur ai-01 a un écart toolchain (repl compilé v4.30.0, toolchain résout stable=v4.34.1) — sortie en erreur de parse sous `exit 0` | issue #18511, réparation voie A en suivi |
-| DecInfer-07 cellule 34 : cwd Papermill vs dossier d'écriture `.gv` Infer.NET (sortie dégradée bannière HTML au lieu de SVG) | issue #18672, suivi de #18417 |
+| Carnet DecInfer-07, sortie d'exécution 34 : cwd Papermill vs dossier d'écriture `.gv` Infer.NET (sortie dégradée bannière HTML au lieu de SVG) | issue #18672, suivi de #18417 |
 
 ## Recherche et audits
 
