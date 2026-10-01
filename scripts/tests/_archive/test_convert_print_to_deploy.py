@@ -33,21 +33,35 @@ from pathlib import Path
 
 import pytest
 
-# Load ONLY the pure functions (skip the module-level notebook I/O loop).
-_MODULE_PATH = Path(__file__).resolve().parent.parent / "smartcontracts" / "convert_print_to_deploy.py"
-_source = _MODULE_PATH.read_text(encoding="utf-8")
-_tree = ast.parse(_source)
-# Keep top-level FunctionDef + imports; drop the module-level `notebooks` loop
-# and the SC_BASE constant (functions reference neither at call time — they take
-# `cell` as argument).
-_kept = [n for n in _tree.body if isinstance(n, (ast.FunctionDef, ast.Import, ast.ImportFrom))]
-_mod = ast.Module(body=_kept, type_ignores=[])
-_ns = {}
-exec(compile(_mod, str(_MODULE_PATH), "exec"), _ns)
+# Archive header (c.972) -- le module cible `scripts/smartcontracts/convert_print_to_deploy.py`
+# a ete archive en c.969 (`scripts/smartcontracts/_archive/convert_print_to_deploy.py`).
+# Le test chargeait le module via son chemin parent absolu -- chemin casse par l'archive.
+# Neutralisation : tous les tests sont `skipped` tant que le module n'est pas re-importable
+# depuis son ancien chemin. Pour reactiver, retirer le `pytestmark` ci-dessous ET corriger
+# le chemin de lecture du module (`_MODULE_PATH`).
+pytestmark = pytest.mark.skip(
+    reason="Module cible archive en c.969 (#18153 palier 1) -- "
+    "chemin scripts/smartcontracts/convert_print_to_deploy.py inexistant. "
+    "Voir scripts/smartcontracts/_archive/ pour la version archivee."
+)
 
-source_text = _ns["source_text"]
-make_source_list = _ns["make_source_list"]
-transform_print_cell = _ns["transform_print_cell"]
+# Sentinel d'echec d'import : declenche pytest.skip() sur chaque test sans
+# lever l'exception de module-load (qui crashait la suite CI avant ce fix).
+_MODULE_AVAILABLE = False
+try:
+    _MODULE_PATH = Path(__file__).resolve().parent.parent / "smartcontracts" / "convert_print_to_deploy.py"
+    _source = _MODULE_PATH.read_text(encoding="utf-8")
+    _tree = ast.parse(_source)
+    _kept = [n for n in _tree.body if isinstance(n, (ast.FunctionDef, ast.Import, ast.ImportFrom))]
+    _mod = ast.Module(body=_kept, type_ignores=[])
+    _ns = {}
+    exec(compile(_mod, str(_MODULE_PATH), "exec"), _ns)
+    source_text = _ns["source_text"]
+    make_source_list = _ns["make_source_list"]
+    transform_print_cell = _ns["transform_print_cell"]
+    _MODULE_AVAILABLE = True
+except (FileNotFoundError, OSError):
+    pass
 
 
 # --------------------------------------------------------------------------- #

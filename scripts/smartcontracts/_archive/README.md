@@ -6,7 +6,7 @@ S'applique au sous-dossier `_archive/` de `scripts/smartcontracts/`. Référence
 
 ## État au 2026-10-01
 
-8 fichiers archivés. Origine : sous-grain `#18153` palier 1 (axe D #16473), claim `myia-po-2023:CoursIA-2` du 2026-10-01
+Archive alimentée par le sous-grain `#18153` palier 1 (axe D #16473), claim `myia-po-2023:CoursIA-2` du 2026-10-01
 (paths: `scripts/smartcontracts/create_sc{0,15,16,18,19}_notebook.py`, `scripts/smartcontracts/create_sc24_25_26.py`,
 `scripts/smartcontracts/convert_print_to_deploy.py`, `scripts/smartcontracts/refactor_solidity_notebooks.py`,
 `scripts/smartcontracts/_archive/**`).

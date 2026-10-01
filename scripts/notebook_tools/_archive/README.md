@@ -6,23 +6,23 @@ S'applique au sous-dossier `_archive/` de `scripts/notebook_tools/`. Référence
 
 ## État au 2026-10-01
 
-11 fichiers archivés.
+Archive alimentée par deux origines (voir table ci-dessous pour la liste nominative).
 
 ### Origine 2026-09-01 (sous-grain `#13745`, claim `myia-po-2026:CoursIA-2`)
 
-- 1 fichier archivé : `_fix_leaks_batch1.py`.
+- Le fichier `_fix_leaks_batch1.py` est archivé.
 - Pool des autres candidats discriminés first-hand :
-  - 2 fantômes (`c785_insert_ackley.py`, `c786_insert_lean_descvisuelle.py` — déclarés « jamais existé sur disque ») ;
-  - 1 vivant critique (`hopf_s6_reproduction.py` — référencé ×6 par Lean-30 notebook + 2 README, INTRINSIC v4.32.1) ;
-  - 1 gris (`optimize_dvs.py` — successeur à nommer avant archivage, hors scope de cette PR).
+  - Fantômes déclarés (`c785_insert_ackley.py`, `c786_insert_lean_descvisuelle.py` — déclarés « jamais existé sur disque ») ;
+  - Vivant critique (`hopf_s6_reproduction.py` — référencé depuis la série Lean + READMEs, INTRINSIC v4.32.1) ;
+  - Gris (`optimize_dvs.py` — successeur à nommer avant archivage, hors scope de cette PR).
 
 ### Origine 2026-10-01 (sous-grain `#18153` palier 1, claim `myia-po-2023:CoursIA-2`)
 
-- **10 nouveaux fichiers archivés** (palier 1 vérifié par ai-01 dans #18153, axe D #16473) :
-  - 4 batches successeurs de `_fix_leaks_batch1.py` (`_fix_leaks_batch{2,3,4,5}_*.py`) — terminaux absolus, leurs produits sont sur `main` ;
-  - 2 insertions déclarées temporaires (`_fix_gt15b_compilation.py`, `_fix_lean34_unused_vars.py`) — produits sur `main`, codepath machine-local ;
-  - 2 insertions (`c785_insert_ackley.py`, `c786_insert_lean_descvisuelle.py`) — pas des fantômes (le README du 2026-09-01 se trompait ; ils ont été ajoutés le 2026-07-22 par #7993) ;
-  - 2 one-shots machine-local (`_exec_bdd_csharp.py`, `optimize_dvs.py`).
+- Lots palier 1 vérifiés par ai-01 dans #18153 (axe D #16473) :
+  - Batches successeurs de `_fix_leaks_batch1.py` (`_fix_leaks_batch{2,3,4,5}_*.py`) — terminaux absolus, leurs produits sont sur `main` ;
+  - Insertions déclarées temporaires (`_fix_gt15b_compilation.py`, `_fix_lean34_unused_vars.py`) — produits sur `main`, codepath machine-local ;
+  - Insertions Ackley et Lean descvisuelle (`c785_insert_ackley.py`, `c786_insert_lean_descvisuelle.py`) — pas des fantômes (le README du 2026-09-01 se trompait ; ajoutés le 2026-07-22 par #7993) ;
+  - One-shots machine-local (`_exec_bdd_csharp.py`, `optimize_dvs.py`).
 
 Correction du chapeau 2026-09-01 : les `c785/c786` ne sont pas des fantômes — ce sont des one-shots temporaires, archivés ici en 2026-10-01.
 
