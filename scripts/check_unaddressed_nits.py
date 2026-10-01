@@ -1858,7 +1858,7 @@ def _formal_concern_precedes_lift(body: str) -> bool:
 # token : COMMENT only) »), plus le verdict formel matche CONCERN_MARKERS,
 # plus le preflight rougit. Mesure : PR #13935 (GenAI tranche orphelins,
 # substance OK, 63 checks SUCCESS, scope clean) bloquee sur Hermes
-# COMMENT_WITH_CONCERNS + corps « Rien de bloquant. » — Tell NEW c.840
+# COMMENT_WITH_CONCERNS + corps « Rien de bloquant. » —
 # sustained « un detecteur qui matche des phrases doit ignorer les
 # occurrences en position de citation ou de refutation ».
 #
@@ -4128,7 +4128,7 @@ def classify(author: str, body: str) -> str | None:
     # pour le merge-gate. Garde stricte : l'exemption ne s'applique PAS
     # aux verdiicts de blocage strict (CHANGES_REQUESTED, REQUEST_CHANGES,
     # NEEDS_CHANGES, BLOCKED, SUSPECT_*, STRUCTURAL_ONLY) — verifie par
-    # `_comment_only_prefix`. Fuite classee Tell NEW c.840 ★★★ sustained.
+    # `_comment_only_prefix`. Fuite classee ★★★ sustained.
     if (
         live_concern
         and _comment_only_prefix(body)
