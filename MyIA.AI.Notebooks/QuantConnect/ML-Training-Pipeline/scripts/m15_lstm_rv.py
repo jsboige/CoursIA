@@ -400,6 +400,48 @@ def _joined_or_sentinel(series_pair: tuple, row_extra: dict) -> tuple | None:
         return None
 
 
+def _relabel_har_to_lstm_origin(
+    forecasts: pd.Series,
+    targets: pd.Series,
+    full_index: pd.DatetimeIndex,
+) -> tuple[pd.Series, pd.Series]:
+    """Relabel HAR origins onto the previous TRADING date (LSTM convention).
+
+    Measured on the first cluster combo (BTC h=1, 2026-10-01): the shared-
+    target guard REFUSED the naive join with max gap 4.25 -- the two
+    walk-forwards address different realised windows. HAR origin t uses
+    information through t-1 and addresses window [t, t+h-1]
+    (`target_window = log_rv.iloc[i:i+horizon].mean()`); the LSTM origin i
+    uses features through i-1 and its rolling target
+    (`log_rv.rolling(h).mean().shift(-h)`) addresses window [i+1, i+h].
+    Pairing HAR origin t with LSTM origin t-1 compares two forecasts of the
+    SAME realised window. The shared-target check in `joined_pair_errors`
+    validates this claim by construction on every combo.
+
+    The relabel MUST map each HAR entry to the previous date in the FULL
+    series index, never to the previous entry of the walk-forward OUTPUT:
+    both loops stop at `test_end - horizon`, so the concatenated output
+    skips h positions at each fold boundary -- a positional shift would
+    cross that boundary and pair windows one day apart (second measured
+    refusal, max gap 3.51 on the boundary dates).
+
+    Residual asymmetry (documented, conservative): at the paired origin the
+    HAR leg knows rv through t-1 while the LSTM leg knows features through
+    t-2 -- the M15 LSTM convention keeps a one-day gap between its
+    information boundary and its target window. A BEATS verdict is therefore
+    extra-strong (the LSTM beats a better-informed baseline); a BEATEN
+    verdict is confounded by that day and never read as an LSTM deficiency
+    alone.
+    """
+    locs = full_index.get_indexer(forecasts.index)
+    if (locs < 1).any():
+        raise ValueError("cannot relabel the first trading date of the series")
+    prev_dates = full_index[locs - 1]
+    fc = pd.Series(forecasts.values, index=prev_dates, name=forecasts.name)
+    tg = pd.Series(targets.values, index=prev_dates, name=targets.name)
+    return fc, tg
+
+
 def evaluate_one_combo(
     coin: str,
     horizon: int,
@@ -507,12 +549,17 @@ def evaluate_one_combo(
     _, _, _, se = ledoit_wolf_sharpe_diff_se(lstm_net, har_net)
     t_stat = delta_sharpe_lstm_vs_har / se if isinstance(se, float) and se > 1e-12 else float("nan")
 
-    # MSE comparison on log-RV
+    # MSE comparison on log-RV -- own-convention aggregates. The previous
+    # formulation evaluated the LSTM's next-window forecasts against the HAR
+    # origin-window target on HAR's dates (mixed convention -- the measured
+    # 4.25 target gap on BTC h=1, 2026-10-01): each side's aggregate now
+    # measures its own walk-forward on the window it actually forecasts,
+    # and the DM legs below carry the exact same-quantity comparison.
     target = har_out["targets"].reindex(common_fc_idx).dropna()
     har_pred_aligned = har_fc.reindex(target.index)
     lstm_pred_aligned = lstm_fc.reindex(target.index)
-    mse_har = float(np.mean((har_pred_aligned - target) ** 2))
-    mse_lstm = float(np.mean((lstm_pred_aligned - target) ** 2))
+    mse_har = float(har_out["aggregate_mse_logrv"])
+    mse_lstm = float(lstm_out["aggregate_mse_logrv"])
     mse_reduction_pct = (mse_lstm - mse_har) / mse_har * 100 if mse_har > 0 else float("nan")
 
     # Diebold-Mariano legs (pr-review §C + #1454 cluster protocol).
@@ -525,14 +572,18 @@ def evaluate_one_combo(
     dm_info: dict = {"dm_stat": float("nan"), "dm_pvalue": float("nan"),
                      "mean_loss_diff": float("nan"), "dm_verdict": "N/A"}
     row_extra: dict = {}
+    har_fc_p, har_tg_p = _relabel_har_to_lstm_origin(
+        har_out["forecasts"], har_out["targets"], rv.index
+    )
+    har_cal_fc_p, har_cal_tg_p = _relabel_har_to_lstm_origin(
+        har_cal_out["forecasts"], har_cal_out["targets"], rv.index
+    )
     raw_join = _joined_or_sentinel(
-        (lstm_out["forecasts"], lstm_out["targets"],
-         har_out["forecasts"], har_out["targets"]),
+        (lstm_out["forecasts"], lstm_out["targets"], har_fc_p, har_tg_p),
         row_extra,
     )
     cal_join = _joined_or_sentinel(
-        (lstm_out["forecasts"], lstm_out["targets"],
-         har_cal_out["forecasts"], har_cal_out["targets"]),
+        (lstm_out["forecasts"], lstm_out["targets"], har_cal_fc_p, har_cal_tg_p),
         row_extra,
     )
     har_bias_oos: float = float("nan")
@@ -1071,6 +1122,16 @@ def main() -> None:
             if any(np.isfinite(x) for x in edge_cal) else float("nan")
         )
         ctr_median = _nanmedian(ctr_diff)
+        var_ratios = [
+            r.get("lstm_variance", float("nan")) / r.get("har_variance_raw", float("nan"))
+            for r in rows
+            if np.isfinite(r.get("lstm_variance", float("nan")))
+            and np.isfinite(r.get("har_variance_raw", float("nan")))
+            and r.get("har_variance_raw", 0.0) > 0
+        ]
+        var_ratio_median = (
+            float(np.median(var_ratios)) if var_ratios else float("nan")
+        )
         if n_beaten > 0:
             verdict_sc = "NO BEATS"
         elif edge_pct >= 2.0 * edge_std_pct and dm_p_median < 0.05:
@@ -1104,6 +1165,7 @@ def main() -> None:
             "dm_centered_p_median": ctr_p_median,
             "dm_centered_mean_loss_diff_median": ctr_median,
             "verdict_sc_centered": verdict_ctr,
+            "var_ratio_lstm_over_har_median": var_ratio_median,
             "n_target_mismatch": n_mismatch,
         }
 
