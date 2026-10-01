@@ -33,11 +33,11 @@ Adaptive gradient : learning rate par paramètre, normalisé par la racine
 carrée de la somme cumulée des carrés des gradients passés. Le carnet
 souligne que cette accumulation est **non bornée** et cause la *mort* du
 learning rate en fin d'entraînement (« meurt de son accumulation infinie »,
-cellule 31). **Source** : `3.2` cellules 8-9 (validation bit-à-bit contre
+cellule 8). **Source** : `3.2` cellules 8-9 (validation bit-à-bit contre
 `torch.optim.Adagrad`, écart `0.00e+00`).
 
 ### Biais (correction de biais Adam)
-Facteur multiplicatif `1 - d / (1 - β^t)` appliqué aux estimateurs des
+Facteur multiplicatif `1 / (1 - β^t)` appliqué aux estimateurs des
 deux moments aux premiers pas, sans quoi ces estimateurs sont nuls par
 construction et l'optimiseur n'avance pas. **Source** : `3.2` cellule 11
 (code) + cellule 12 (validation). Le carnet précise que c'est un point de
@@ -59,7 +59,7 @@ le full-batch est déterministe (régime (a)), le mini-batch est bruité
 ### Momentum
 Moyenne glissante exponentielle des gradients passés (β ≈ 0.9), qui
 *accélère le mouvement cohérent et amortit l'oscillation* (analogie de
-la boule dans le ravin, cellule 31). **Source** : `3.2` cellule 5
+la boule dans le ravin, cellule 5). **Source** : `3.2` cellule 5
 (implémentation NumPy) + cellule 6 (validation).
 
 ### Nesterov
@@ -77,7 +77,7 @@ déterministe imposé par la variance du gradient stochastique. **Source** :
 constant le *respecte*.
 
 ### RMSProp
-Tieleman & Hinton, 2012 (référence cellule 33). Comme Adagrad mais la
+Tieleman & Hinton, 2012 (référence cellule 32). Comme Adagrad mais la
 somme cumulée est remplacée par une moyenne glissante exponentielle :
 le learning rate reste *vivant*. **Source** : `3.2` cellule 11
 (implémentation) + cellule 12 (validation, écart `2.22e-16`).
