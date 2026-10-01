@@ -86,7 +86,7 @@ attributions:
 
   # ===== Passe 6 — rescan du 2026-09-24 (PR #17622) =====
   - arxiv_id: "1706.00883"
-    notebook: "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-37-FLens-BeliefState.ipynb"
+    notebook: "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-37-FLens-BeliefState-Python.ipynb"
     cell_index: 7
     expected_citation: "### RRXOR (Riechers & Crutchfield 2017, arXiv:1706.00883)"
     source_pr: "#17622"
@@ -94,7 +94,7 @@ attributions:
     date: "2026-09-24"
 
   - arxiv_id: "1706.00883"
-    notebook: "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-37-FLens-BeliefState.ipynb"
+    notebook: "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-37-FLens-BeliefState-Python.ipynb"
     cell_index: 24
     expected_citation: "- **Riechers & Crutchfield 2017** — *Spectral Simplicity of Apparent Complexity, Part II*"
     source_pr: "#17622"
