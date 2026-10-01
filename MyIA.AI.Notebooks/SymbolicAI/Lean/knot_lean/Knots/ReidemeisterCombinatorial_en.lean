@@ -12,7 +12,9 @@ Why this module is separate from `Knots.Reidemeister`: the RTC machinery
 `reidemeister_equiv_equivalence`). What is missing is the **algorithmic
 backbone**:
 
-  1. a `MoveSequence` alias for `List ReidemeisterStep` (readability),
+  1. an **indexed inductive** `MoveSequence` (`KnotDiagram → KnotDiagram → Type`)
+     (the typecarries the structural coherence of sequences — the typer rejects
+     any list whose last step does not reach the claimed `d₃`),
   2. a `movesConnects` constructor that seals the RTC into a compact witness,
   3. a **bounded decidable verifier** `verifyMoves` which, for a budget `n`
      of moves allowed, enumerates all R1/R2/R3 sequences and returns `true`
@@ -54,60 +56,60 @@ import Knots.Invariant
 
 namespace Knots
 
-/-! ## 1. Alias and sequence constructor
+/-! ## 1. Sequence of moves — indexed inductive
 
-`MoveSequence` is a named alias of `List ReidemeisterStep` for the readability
-of statements: a « sequence of moves » is exactly a finite list of Reidemeister
-steps, and the name makes the types more readable to consumers (`Lidman.lean`
-in particular).
+`MoveSequence` is an **indexed inductive** `KnotDiagram → KnotDiagram → Type`
+(not an alias `List ReidemeisterStep`): a reflexive `nil` constructor and a
+`cons` constructor chaining a `ReidemeisterStep` with the tail.
+
+The dual-index structure enforces chain coherence by construction: `cons`
+requires `step : ReidemeisterStep d₁ d₂` and `tail : MoveSequence d₂ d₃`, so
+the typer rejects any list whose last step does not reach the claimed `d₃`.
+
+Convention: application order is « left → right » — `cons step tail` means
+« apply `step` first, then `tail` ».
 -/
 
-/-- A finite sequence of Reidemeister moves.
+/-- Finite sequence of Reidemeister moves.
 
-Named alias of `List ReidemeisterStep` (see `Knots.Reidemeister`): the list
-is in application order (left → right: `head` applied first).
+Indexed inductive on two `KnotDiagram`: the type carries the guarantee that
+the concatenated steps actually connect `d₁` to `d₂`.
 -/
-abbrev MoveSequence : KnotDiagram → KnotDiagram → Type :=
-  fun d₁ d₂ => List { d' // ReidemeisterStep d₁ d' }
-
-/-- A `MoveSequence` of length `0` trivially connects a diagram to itself
-(RTC reflexive, it is `ReidemeisterEquiv.refl`). -/
-def MoveSequence.nil (d : KnotDiagram) : MoveSequence d d := []
-
-/-- Concatenate a sequence with a step: `MoveSequence.cons step ms` is a
-sequence that applies `step` from `d₁`, then `ms` from `d₂` to `d₃`. The
-typer enforces diagram coherence along the chain. -/
-def MoveSequence.cons {d₁ d₂ d₃ : KnotDiagram}
-    (step : ReidemeisterStep d₁ d₂) (ms : MoveSequence d₂ d₃) :
-    MoveSequence d₁ d₃ :=
-  ⟨d₂, step⟩ :: ms
+inductive MoveSequence : KnotDiagram → KnotDiagram → Type where
+  /-- Empty sequence: a diagram connects trivially to itself. -/
+  | nil (d : KnotDiagram) : MoveSequence d d
+  /-- Chain a `ReidemeisterStep d₁ d₂` with a tail `MoveSequence d₂ d₃`. -/
+  | cons {d₁ d₂ d₃ : KnotDiagram}
+      (step : ReidemeisterStep d₁ d₂)
+      (tail : MoveSequence d₂ d₃) :
+      MoveSequence d₁ d₃
 
 /-! ## 2. Transitive closure of a sequence (`movesConnects`)
 
 The `movesConnects` constructor seals a `MoveSequence` into a proof of
 `ReidemeisterEquiv`. It is the inverse of the `ReidemeisterEquiv.step`
-constructor rendered composable: structural recursion on the list, `cons`
+constructor rendered composable: structural recursion on `MoveSequence`, `cons`
 becomes `step.trans`, `nil` becomes `refl`.
 -/
 
 /-- A sequence of moves connects `d₁` to `d₂` in the sense of `ReidemeisterEquiv`.
 
 Reconstruction by recursion on the `MoveSequence`:
-- `nil` (empty sequence) → `ReidemeisterEquiv.refl`,
-- `cons step ms` → `ReidemeisterEquiv.trans (ReidemeisterEquiv.step step)
-  (movesConnects d₂ d₃ ms)`.
+- `nil` (empty sequence) → `ReidemeisterEquiv.refl d₁`,
+- `cons step tail` → `ReidemeisterEquiv.trans (ReidemeisterEquiv.step step)
+  (movesConnects d₂ d₃ tail)`.
 
-The definition is **non-right-recursive**: `movesConnects d₂ d₃ ms` is
+The definition is **non-right-recursive**: `movesConnects d₂ d₃ tail` is
 computed before being consumed by `trans`, which keeps evaluation
 termination-safe under `decreasing_by wf_tacs`.
 -/
 def movesConnects {d₁ d₂ : KnotDiagram} :
     MoveSequence d₁ d₂ → ReidemeisterEquiv d₁ d₂
-  | [] => ReidemeisterEquiv.refl d₁
-  | (⟨_, step⟩ :: ms) =>
+  | .nil d => ReidemeisterEquiv.refl d
+  | .cons _ _ _ step tail =>
     ReidemeisterEquiv.trans
       (ReidemeisterEquiv.step step)
-      (movesConnects _ _ ms)
+      (movesConnects tail)
 
 /-- Trivially sound by construction: `movesConnects` _is_ the RTC. -/
 theorem movesConnects_sound {d₁ d₂ : KnotDiagram}

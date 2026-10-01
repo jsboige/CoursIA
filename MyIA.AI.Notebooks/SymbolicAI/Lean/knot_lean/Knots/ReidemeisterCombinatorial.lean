@@ -12,7 +12,9 @@ Pourquoi ce module est séparé de `Knots.Reidemeister` : la machinerie RTC
 `reidemeister_equiv_equivalence`). Ce qu'il manque, c'est la **colonne
 vertébrale algorithmique** :
 
-  1. un alias `MoveSequence` pour `List ReidemeisterStep` (lisibilité),
+  1. un **inductif indexé** `MoveSequence` (`KnotDiagram → KnotDiagram → Type`)
+     qui porte la cohérence structurelle des suites (le typeur refuse toute
+     liste dont le dernier pas n'aboutit pas au `d₃` annoncé),
   2. un constructeur `movesConnects` qui scelle la RTC en un témoin compact,
   3. un vérificateur **décidable borné** `verifyMoves` qui, pour un budget `n`
      de mouvements autorisés, énumère toutes les suites de R1/R2/R3 et
@@ -54,60 +56,67 @@ import Knots.Invariant
 
 namespace Knots
 
-/-! ## 1. Alias et constructeur de suite de mouvements
+/-! ## 1. Suite de mouvements — inductive indexé
 
-`MoveSequence` est un alias nommé de `List ReidemeisterStep` pour la lisibilité
-des énoncés : une « suite de mouvements » est exactement une liste finie de pas
-de Reidemeister, et le nom rend les types plus parlants aux consommateurs
-(`Lidman.lean`, en particulier).
+`MoveSequence` est un **inductif indexé** `KnotDiagram → KnotDiagram → Type`
+(et non un alias `List ReidemeisterStep`) : un constructeur `nil` réflexif et
+un constructeur `cons` qui chaîne un pas `ReidemeisterStep` avec la queue.
+
+L'indexation par `KnotDiagram` aux deux bouts impose la cohérence structurelle
+des suites : `cons` exige `step : ReidemeisterStep d₁ d₂` et
+`tail : MoveSequence d₂ d₃`, donc le typeur refuse toute liste dont le dernier
+pas n'aboutit pas au `d₃` annoncé.
+
+Convention : l'ordre est « gauche → droite » — `cons step tail` signifie
+« appliquer `step` d'abord, puis `tail` ».
 -/
 
-/-- Une suite finie de mouvements de Reidemeister.
+/-- Suite finie de mouvements de Reidemeister.
 
-Alias nommé de `List ReidemeisterStep` (voir `Knots.Reidemeister`) : la liste
-est dans l'ordre d'application (gauche → droite : `head` appliqué d'abord).
+Inductif indexé sur deux `KnotDiagram` : le type porte la garantie que la
+concaténation des pas relie bien `d₁` à `d₂`.
 -/
-abbrev MoveSequence : KnotDiagram → KnotDiagram → Type :=
-  fun d₁ d₂ => List { d' // ReidemeisterStep d₁ d' }
+inductive MoveSequence : KnotDiagram → KnotDiagram → Type where
+  /-- Suite vide : un diagramme se relie trivialement à lui-même. -/
+  | nil (d : KnotDiagram) : MoveSequence d d
+  /-- Enchaîner un pas `ReidemeisterStep d₁ d₂` avec une suite `MoveSequence d₂ d₃`. -/
+  | cons {d₁ d₂ d₃ : KnotDiagram}
+      (step : ReidemeisterStep d₁ d₂)
+      (tail : MoveSequence d₂ d₃) :
+      MoveSequence d₁ d₃
 
-/-- Une `MoveSequence` de longueur `0` connecte trivialement un diagramme à
-lui-même (RTC réflexive, c'est `ReidemeisterEquiv.refl`). -/
-def MoveSequence.nil (d : KnotDiagram) : MoveSequence d d := []
+/-! ## 2. Reconstruction RTC et soundness
 
-/-- Concaténer une suite avec un pas : `movesConnects d₁ d₂ ms ms' step` est
-une suite qui applique `ms` de `d₁` à un diagramme intermédiaire, puis le pas
-`step`. Le typeur impose la cohérence des diagrammes en bout de chaîne. -/
-def MoveSequence.cons {d₁ d₂ d₃ : KnotDiagram}
-    (step : ReidemeisterStep d₁ d₂) (ms : MoveSequence d₂ d₃) :
-    MoveSequence d₁ d₃ :=
-  ⟨d₂, step⟩ :: ms
-
-/-! ## 2. Fermeture transitive d'une suite (`movesConnects`)
-
-Le constructeur `movesConnects` scelle une `MoveSequence` en une preuve de
-`ReidemeisterEquiv`. C'est l'inverse du constructeur `ReidemeisterEquiv.step`
-rendu composable : récurrence structurelle sur la liste, `cons` devient
-`step.trans`, `nil` devient `refl`.
+`movesConnects` scelle une `MoveSequence` en une preuve de `ReidemeisterEquiv`
+: c'est l'inverse du constructeur `ReidemeisterEquiv.step` rendu composable.
+La récurrence structurelle sur l'inductif indexé force la cohérence des
+diagrammes en bout de chaîne.
 -/
 
 /-- Une suite de mouvements connecte `d₁` à `d₂` au sens de `ReidemeisterEquiv`.
 
 Reconstruction par récurrence sur la `MoveSequence` :
-- `nil` (suite vide) → `ReidemeisterEquiv.refl`,
-- `cons step ms` → `ReidemeisterEquiv.trans (ReidemeisterEquiv.step step)
-  (movesConnects d₂ d₃ ms)`.
+- `nil` (suite vide) → `ReidemeisterEquiv.refl d₁`,
+- `cons step tail` → `ReidemeisterEquiv.trans (ReidemeisterEquiv.step step)
+  (movesConnects d₂ d₃ tail)`.
 
-La définition est **non-récursive à droite** : `movesConnects d₂ d₃ ms` est
+La définition est **non-récursive à droite** : `movesConnects d₂ d₃ tail` est
 calculé avant d'être consommé par le `trans`, ce qui rend l'évaluation
 terminaison-safe sous `decreasing_by wf_tacs`.
 -/
 def movesConnects {d₁ d₂ : KnotDiagram} :
     MoveSequence d₁ d₂ → ReidemeisterEquiv d₁ d₂
-  | [] => ReidemeisterEquiv.refl d₁
-  | (⟨_, step⟩ :: ms) =>
+  | .nil d => ReidemeisterEquiv.refl d
+  | .cons _ _ _ step tail =>
     ReidemeisterEquiv.trans
       (ReidemeisterEquiv.step step)
-      (movesConnects _ _ ms)
+      (movesConnects tail)
+
+/-! ## 2.1. Soundness triviale de la RTC
+
+`movesConnects` _construit_ la RTC, donc sa soundness est l'identité. C'est
+l'API stable pour les consommateurs (cf. `Knots.Lidman`).
+-/
 
 /-- Soundness triviale par construction : `movesConnects` _est_ la RTC. -/
 theorem movesConnects_sound {d₁ d₂ : KnotDiagram}
