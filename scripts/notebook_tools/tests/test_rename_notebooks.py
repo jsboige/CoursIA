@@ -773,5 +773,41 @@ class TestPathLengthNotAViolation(unittest.TestCase):
         self.assertIsNotNone(rn.target_violation("not-a-notebook.txt"))
 
 
+class TestConflictingTargetsCaseOnly(unittest.TestCase):
+    """Defaut 8 : sur un FS insensible a la casse (NTFS), un renommage
+    case-only (-Csharp -> -CSharp) voyait sa cible « deja presente » parce
+    qu'elle EST la source -- --apply refusait toute la vague. Le garde doit
+    signaler une cible existante DISTINCTE de sa source, pas la cible
+    case-only. Le runner CI etant sensible a la casse, la vue NTFS est
+    simulee par un hardlink : deux chemins, un meme inode."""
+
+    def test_case_only_target_same_inode_is_not_a_conflict(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            src_rel = "MyIA.AI.Notebooks/S/S-03-Csharp.ipynb"
+            tgt_rel = "MyIA.AI.Notebooks/S/S-03-CSharp.ipynb"
+            src = _write_nb(repo, src_rel, _nb([_md("x")]))
+            # Sur NTFS la cible case-only « existe » deja (meme fichier) ;
+            # sur un FS sensible a la casse (CI), un hardlink produit le
+            # meme inode sous les deux chemins.
+            if not (repo / tgt_rel).exists():
+                os.link(src, repo / tgt_rel)
+            self.assertTrue((repo / tgt_rel).exists())
+            self.assertEqual(rn.conflicting_targets([(src_rel, tgt_rel)], repo),
+                             [])
+
+    def test_foreign_existing_target_is_still_a_conflict(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            # Cible preexistante a un nom SANS collision de casse avec la
+            # source : sinon l'ecriture l'ecraserait sur NTFS avant le test.
+            src_rel = "MyIA.AI.Notebooks/S/S-03-Csharp.ipynb"
+            tgt_rel = "MyIA.AI.Notebooks/S/S-09-Foreign.ipynb"
+            _write_nb(repo, src_rel, _nb([_md("source")]))
+            _write_nb(repo, tgt_rel, _nb([_md("etranger")]))
+            self.assertEqual(rn.conflicting_targets([(src_rel, tgt_rel)], repo),
+                             [tgt_rel])
+
+
 if __name__ == "__main__":
     unittest.main()

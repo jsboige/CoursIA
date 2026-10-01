@@ -113,7 +113,7 @@ Trois séries se prennent **à côté** de ce parcours, selon ce qui vous attire
 |---|---|---|---|---|---|
 | [Argumentation](Argument_Analysis/README.md) | Analyse argumentative outillée : Toulmin, sophismes, sémantiques de Dung, orchestration d'agents LLM validés par Tweety | les bases de Tweety, une clé d'API | [Argumentation-00-Setup-Tweety-Python](Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb) | Licence | Python |
 | [SymbolicLearning](SymbolicLearning/README.md) | Apprentissage à partir de connaissances (AIMA ch. 19) : Version Space, EBL, programmation logique inductive, automates, neuro-symbolique | Python seul | [SL-1-LogicalLearning](SymbolicLearning/SL-1-LogicalLearning.ipynb) | Licence | Python · C# |
-| [Geometry](Geometry/README.md) | Démonstration automatique en géométrie : vérification probabiliste, bases de Gröbner, méthode de Wu | la géométrie du lycée | [Geometry-01-From-Figure-To-Equation](Geometry/Geometry-01-From-Figure-To-Equation.ipynb) | Découverte | Python |
+| [Geometry](Lean/Geometry/README.md) | Démonstration automatique en géométrie : vérification probabiliste, bases de Gröbner, méthode de Wu | la géométrie du lycée | [Geometry-01-From-Figure-To-Equation](Lean/Geometry/Geometry-01-From-Figure-To-Equation.ipynb) | Découverte | Python |
 
 ## Les séries en bref
 
@@ -180,12 +180,13 @@ Le dossier s'appelle encore `Argument_Analysis/`, mais la série s'appelle Argum
 Un même théorème, le milieu de l'hypoténuse équidistant des trois sommets, traverse des méthodes de plus en plus fortes.
 
 - **Parcours léger** — 01 à 03 :
-  - [01](Geometry/Geometry-01-From-Figure-To-Equation.ipynb) (Découverte) : on vérifie le théorème numériquement (Schwartz–Zippel) ;
-  - [02](Geometry/Geometry-02-From-Equation-To-Proof.ipynb) (Licence) : on le démontre exactement par bases de Gröbner, en traitant les non-dégénérescences par saturation ;
-  - [03](Geometry/Geometry-03-Wu-Method-Python.ipynb) (Licence) : on le redémontre par la méthode de Wu, qui fait apparaître ces conditions explicitement.
-- **Pour approfondir** — [03b](Geometry/Geometry-03b-Ritt-Decomposition-Python.ipynb) : le théorème du papillon et la décomposition de Ritt, avec le bord dégénéré où l'énoncé est muet et non faux.
-- **À venir** — le raisonnement du géomètre (DD+AR) et un pont formel vers Lean.
-- [README de la série Geometry](Geometry/README.md) : programme gradué (Epic #17544) et état.
+  - [01](Lean/Geometry/Geometry-01-From-Figure-To-Equation.ipynb) (Découverte) : on vérifie le théorème numériquement (Schwartz–Zippel) ;
+  - [02](Lean/Geometry/Geometry-02-From-Equation-To-Proof.ipynb) (Licence) : on le démontre exactement par bases de Gröbner, en traitant les non-dégénérescences par saturation ;
+  - [03](Lean/Geometry/Geometry-03-Wu-Method-Python.ipynb) (Licence) : on le redémontre par la méthode de Wu, qui fait apparaître ces conditions explicitement ;
+  - [04](Lean/Geometry/Geometry-04-DD-AR-Python.ipynb) (Licence) : on le prouve par règles (DD) puis par l'algèbre (AR), le duo symbolique d'AlphaGeometry — et un énoncé faux y est réfuté deux fois.
+- **Pour approfondir** — [03b](Lean/Geometry/Geometry-03b-Ritt-Decomposition-Python.ipynb) : le théorème du papillon et la décomposition de Ritt, avec le bord dégénéré où l'énoncé est muet et non faux.
+- **À venir** — un pont formel vers Lean.
+- [README de la série Geometry](Lean/Geometry/README.md) : programme gradué (Epic #17544) et état.
 
 ### Hors série
 

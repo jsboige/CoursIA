@@ -2,19 +2,26 @@
 # the 2025-Epita-Intelligence-Symbolique project
 # (https://github.com/jsboigeEpita/2025-Epita-Intelligence-Symbolique),
 # Copyright (c) 2025 jsboigeEpita, MIT License.
-# Source commit: a8025f60 (2026-07-02) "feat(conv-c): de-templatised PM prompt +
-# designation backfill + pipeline cap (#1334 phase 3/3) (#1345)".
+# Source commit: bfff7542 (2026-09-29) "fix(env): one provider of libiomp5md.dll
+# in the gate solve, torch loads in CI (#2856) (#2861)".
 # Verbatim import rationale: see NOTICE-EPITA at the root of this directory.
 #
 # Verbatim integrity: file content below this header is byte-for-byte identical
-# to the upstream source at the cited commit. No CoursIA modification
-# (downstream consumers wrap or extend, never replace the verbatim block).
+# to the upstream source at the cited commit, minus the deliberate perimeter
+# documented below (no other CoursIA modification -- downstream consumers wrap
+# or extend, never replace the verbatim block).
 # Note: the upstream copy is **partial** (See NOTICE-EPITA, section "Partial
-# copies" + issue #14026): 8 CoursIA-only lines, 370 upstream lines absent
-# (designation machinery -- deliberate perimeter of EPIC #4960, not a drift).
-# core/shared_state.py
+# copies" + issue #14026): the designation machinery + structured-arg surface
+# are deliberately absent (EPIC #4960 perimeter, not a drift):
+# DesignationRecord, record_designation, _designation_fingerprint,
+# _designation_delta_summary, backfill_last_designation_for, record_cap_breach,
+# record_designation_unresolved, record_unresolved_designation,
+# set_source_metadata, add_structured_arg_status.
+# Re-vendored 2026-09-29 a8025f60 -> bfff7542 (audit #18478): the retained
+# perimeter had evolved upstream (13 symbols, incl. the #1942 quality-unit
+# contract); drift note in NOTICE-EPITA.
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from typing import Dict, List, Any, Optional, cast
 import logging
 
@@ -44,6 +51,55 @@ class ArgumentProfile:
     formal_results: List[Dict[str, Any]] = field(default_factory=list)
 
 
+# CoursIA-only divergence (documented in NOTICE-EPITA, drift note for
+# _shared_state.py, audit #18478): upstream get_weak_arguments imports
+# quality_fraction from argumentation_analysis.plugins.narrative_synthesis_plugin
+# (bfff7542 l.277) -- a module outside the vendoring perimeter. The function is
+# inlined VERBATIM from that source; same definition, one place.
+def quality_fraction(entry: Any) -> Optional[float]:
+    """Normalize a STORED quality entry to the [0, 1] reader scale (#1942).
+
+    ``overall`` is the SUM of per-virtue [0, 1] scores over the EVALUATED
+    virtues -- not a 0-1 average, not a note sur 10 (three unit contracts
+    disagreed on this before #1942: the evaluator sums, two LLM-facing
+    descriptions said 0-1). The denominator is ``len(scores)``: post-#1923
+    the tri-state machinery leaves inapplicable virtues absent, so the
+    ceiling varies by input unit ({2, 6, 8} measured on real texts). Same
+    semantics as the trace-side ``_quality_fraction`` of #1907 -- the share
+    of the reachable ceiling that held; ``None`` = unmeasured, never 0.
+    """
+    if not isinstance(entry, dict):
+        return None
+    overall = entry.get("overall")
+    scores = entry.get("scores")
+    if (
+        not isinstance(overall, (int, float))
+        or not isinstance(scores, dict)
+        or not scores
+    ):
+        return None
+    return float(overall) / len(scores)
+
+def count_designation_turns(trace: Any) -> int:
+    """Number of genuine PM designations in a deliberation trace (#1765).
+
+    A :class:`DesignationRecord` carries **no** ``record_type`` (it is the
+    ``asdict`` of the dataclass); every non-designation entry declares one.
+    Counting by allow-list — "a designation is a record with no marker" —
+    instead of by exclusion list ("everything that is not a ``cap_breach``")
+    is what keeps this number honest when a marker type is added.
+
+    #1765: this is the single definition. #1751 flipped the orchestrator's
+    copy to the allow-list and left the state snapshot's copy on the exclusion
+    list, so the same field name reported two different numbers — and the
+    inflated one was the one handed to the agents (``get_current_state_snapshot``
+    defaults to ``summarize=True``). One name, one calculation, two callers.
+    """
+    return sum(
+        1 for r in trace or [] if isinstance(r, dict) and r.get("record_type") is None
+    )
+
+
 class RhetoricalAnalysisState:
     """Représente l'état partagé d'une analyse rhétorique collaborative."""
 
@@ -55,7 +111,9 @@ class RhetoricalAnalysisState:
     identified_fallacies: Dict[
         str, Dict[str, str]
     ]  # {fallacy_id: {type:..., justification:..., target_argument_id?:...}}
-    belief_sets: Dict[str, Dict[str, str]]  # {bs_id: {logic_type:..., content:...}}
+    belief_sets: Dict[
+        str, Dict[str, Any]
+    ]  # {bs_id: {logic_type:..., content:..., propositions?:[...]}}
     query_log: List[
         Dict[str, str]
     ]  # [{log_id:..., belief_set_id:..., query:..., raw_result:...}]
@@ -80,9 +138,26 @@ class RhetoricalAnalysisState:
         self.errors: List[Dict[str, Any]] = []
         self.final_conclusion = None
         self._next_agent_designated = None
+        # #1737: dernière sélection de fenêtre de lecture par site —
+        # {site: {"status": ..., "offset": ..., "window": ...}}. Écrit par
+        # reading_window.selected_text, lu par le rapport (build_narrative).
+        self.reading_window_status: Dict[str, Dict[str, Any]] = {}
         state_logger.debug(
             f"Nouvelle instance RhetoricalAnalysisState créée (id: {id(self)}) avec texte (longueur: {len(initial_text)})."
         )
+
+    def record_reading_window(self, site: str, selection: Any) -> None:
+        """#1737 — enregistre la sélection de fenêtre d'un site de lecture.
+
+        Le statut tri-état (selected / no_punctuated_span_found / empty_input
+        / short_input) doit rester visible jusqu'au rapport : un statut que
+        personne ne relit est la forme #1019.
+        """
+        self.reading_window_status[site] = {
+            "status": getattr(selection, "status", str(selection)),
+            "offset": getattr(selection, "offset", 0),
+            "window": getattr(selection, "window", 0),
+        }
 
     def _generate_id(self, prefix: str, current_dict_or_list: Any) -> str:
         """Génère un ID simple basé sur la taille actuelle."""
@@ -153,11 +228,24 @@ class RhetoricalAnalysisState:
         )
         return fallacy_id
 
-    def add_belief_set(self, logic_type: str, content: str) -> str:
-        """Ajoute un belief set formel et retourne son ID."""
+    def add_belief_set(
+        self,
+        logic_type: str,
+        content: str,
+        propositions: Optional[List[str]] = None,
+    ) -> str:
+        """Ajoute un belief set formel et retourne son ID.
+
+        ``propositions`` (PL) est conservé quand il est fourni : l'agent
+        propositionnel n'interroge que des propositions déclarées, donc un
+        belief set reconstruit sans elles ne donne aucune requête (#2643).
+        """
         normalized_type = logic_type.strip().lower().replace(" ", "_")
         bs_id = self._generate_id(f"{normalized_type}_bs", self.belief_sets)
-        self.belief_sets[bs_id] = {"logic_type": logic_type, "content": content}
+        entry: Dict[str, Any] = {"logic_type": logic_type, "content": content}
+        if propositions is not None:
+            entry["propositions"] = list(propositions)
+        self.belief_sets[bs_id] = entry
         state_logger.info(f"Belief Set ajouté: {bs_id} - Type: {logic_type}")
         state_logger.debug(f"État belief_sets après ajout {bs_id}: {self.belief_sets}")
         return bs_id
@@ -350,6 +438,15 @@ class RhetoricalAnalysisState:
                 "tasks_answered": list(self.answers.keys()),
                 "conclusion_present": self.final_conclusion is not None,
                 "next_agent_designated": self._next_agent_designated,
+                # CONV-C #1334: deliberation trace (count only in the summary;
+                # full records via the non-summarized snapshot / direct field).
+                # #1765: allow-list, via the single definition. This snapshot is
+                # what ``get_current_state_snapshot`` hands the agents, so an
+                # exclusion list here made the PM read its own absorbed
+                # designations (#1751 markers) as conduction turns it had spent.
+                "deliberation_turn_count": count_designation_turns(
+                    getattr(self, "deliberation_trace", [])
+                ),
             }
         else:
             return cast(Dict[str, Any], json.loads(self.to_json(indent=None)))
@@ -433,6 +530,16 @@ class UnifiedAnalysisState(RhetoricalAnalysisState):
         self.dialogue_results: List[Dict[str, Any]] = []
         self.probabilistic_results: List[Dict[str, Any]] = []
         self.bipolar_results: List[Dict[str, Any]] = []
+        # Structured-argumentation honest-absent status (FP-17 #1236). The
+        # formalisms ASPIC+/ABA/SETAF/weighted/bipolar require a text→structured
+        # translator (defeasible rules, assumptions+contraries, collective
+        # attacks, weights, support-relations) that is NOT wired — the
+        # translation-gap diagnosed in FP-4 (#1201). On real corpora they run on
+        # auto-shaped synthetic input, so an empty extension list means "never
+        # genuinely fed structured input", NOT "evaluated, found nothing". This
+        # map records that distinction per capability so the snapshot/report can
+        # surface it instead of a silent [] (#1019). Keyed by capability name.
+        self.structured_arg_status: Dict[str, Dict[str, Any]] = {}
         # Logic agent analysis results (#71 formal verification)
         self.fol_analysis_results: List[Dict[str, Any]] = []
         self.fol_signature: List[str] = []  # Pre-declared sorts/types (#348)
@@ -447,8 +554,54 @@ class UnifiedAnalysisState(RhetoricalAnalysisState):
         self.workflow_results: Dict[str, Any] = {}
         # Narrative synthesis (#351)
         self.narrative_synthesis: str = ""
+        # Restitution Acte II — dialectical narrative by argumentative movement
+        # (Epic #1134 / R3 #1137). LLM-conducted, woven per spec §4. Consumed by
+        # the R6 renderer to populate RestitutionActs.act2_narrative. Empty until
+        # the act2_narrative phase runs; the renderer reports the gap honestly.
+        self.act2_narrative: str = ""
+        # Restitution Acte I — mise en situation (framing): genre, enjeux,
+        # spectre attendu (derived from taxonomy common_contexts), game-theoretic
+        # read. Epic #1134 / R2 #1136. LLM-conducted, produced BEFORE the
+        # microscope (the only act that may anticipate, spec §1.1). Consumed by
+        # the R6 renderer to populate RestitutionActs.act1_framing. Empty until
+        # the act1_framing phase runs; the renderer reports the gap honestly.
+        self.act1_framing: str = ""
+        # Restitution Acte III — actionable conclusion: gated verdict + balanced
+        # appréciations + que-faire (contrer / points faibles à viser / what-next
+        # game-theoretic). Epic #1134 / R4 #1138. LLM-conducted, gated on G1–G4
+        # (#1008 §3) + the verdict band (coverage-adapted from #1008 §2).
+        # Consumed by the R6 renderer to populate RestitutionActs.act3_conclusion.
+        # Empty until the act3_conclusion phase runs; the renderer reports the gap
+        # honestly.
+        self.act3_conclusion: str = ""
+        # #1914 — the interpretive question Acte I closes on (extracted from
+        # the narrative's marker line). Written by the act1 lanes, READ by
+        # build_act3_evidence so the conclusion's response beat answers the
+        # question the framing actually posed. Empty when Acte I posed none
+        # (no LLM / no marker line) — honest absence, never fabricated.
+        self.interpretive_question: str = ""
+        # #1608 — per-act degradation motifs (the *why* an act ran degraded:
+        # readability-gate band, virtuous-mode shift, etc.). The acts return
+        # ``degraded`` as a dict of motifs (``ActNResult.degraded``); the act
+        # invokers surface it as ``output["degraded_reasons"]`` and the act
+        # state writers persist it here, keyed by capability. Surfacing the
+        # motifs in the state (rather than letting them die in the return
+        # value) lets the renderer attribute a degraded act to its true cause
+        # — fail-loud, not fail-hard (#1019). Anti-pendule: only populated
+        # when an act genuinely recorded motifs; an act that succeeded stays
+        # empty (never marked degraded by default).
+        self.restitution_acts_degraded: Dict[str, Dict[str, str]] = {}
         # PP #715: source-level metadata for qualitative synthesis
         self.source_metadata: Dict[str, str] = {}
+        # Epic #1258 / Track 1 #1259 — déanonymisation du pipeline de travail.
+        # True (default for CLI/local) = the working state carries REAL source
+        # metadata (speaker, arena, stakes); prompt builders DROP the opaque-ID
+        # directives so the readable restitution names the real speaker/arena.
+        # False restores the opaque-ID discipline verbatim (the git/dashboard/API
+        # export paths run opaque; the export BOUNDARY guard is Track 3
+        # sanitize_state, NOT this flag). Threaded via state because the build_*
+        # prompt builders cannot see ``context`` (#1259).
+        self.deanonymized: bool = True
         # PL 2-pass pipeline: shared atom inventory (#547)
         self.atomic_propositions: Dict[str, List[str]] = {}
         # FOL 2-pass pipeline: shared signature per source (#544)
@@ -469,6 +622,18 @@ class UnifiedAnalysisState(RhetoricalAnalysisState):
         # RA-4 #1049: Strategic NL journaling bridge
         self.strategic_objectives: List[Dict[str, Any]] = []
         self.strategic_decisions_log: List[Dict[str, Any]] = []
+        # CONV-C #1334: deliberation trace of the conversational PM. Each
+        # DesignationRecord (agent designated + motivation + trigger + state
+        # fingerprint before/after + delta) is the shared material of (1) the
+        # CONV-A/C metrics (non-round-robin conduction), (2) the #708 anti-
+        # runaway audit, (3) CONV-D Act II. Appended by record_designation();
+        # the PM writes a record BEFORE designating (fingerprint_before), and
+        # the conversational _run_phase backfills fingerprint_after/delta when
+        # the designated agent returns. Stored as plain dicts (via asdict) so
+        # the trace serializes with the rest of __dict__ (to_json); the
+        # DesignationRecord dataclass is the typed constructor. One spine, no
+        # second state object.
+        self.deliberation_trace: List[Dict[str, Any]] = []
 
     def add_trace_entry(
         self,
@@ -476,18 +641,56 @@ class UnifiedAnalysisState(RhetoricalAnalysisState):
         agent: str,
         reacts_to: List[str],
         summary: str,
+        anchor: Optional[Dict[str, int]] = None,
+        move: Optional[str] = None,
     ) -> None:
-        """Record a specialist commentary entry (Track UU #724)."""
+        """Record a specialist commentary entry (Track UU #724).
+
+        #2295 — optional ``anchor``/``move`` carry the argumentative sequence:
+        ``anchor`` is ``{"offset": int, "length": int}`` in the source text
+        (same shape spirit as the #1737 reading-window primitive; the entry
+        speaks FROM a measured span, never a fabricated offset 0), and
+        ``move`` is one of ``TRACE_MOVE_VOCABULARY``. Both absent on legacy
+        entries — the 17 existing writers are untouched.
+        """
         summary = summary[:280]
         import time as _time
 
-        entry = {
+        if move is not None and move not in self.TRACE_MOVE_VOCABULARY:
+            raise ValueError(
+                f"add_trace_entry: move '{move}' hors vocabulaire fermé "
+                f"{self.TRACE_MOVE_VOCABULARY} (#2295)"
+            )
+        if anchor is not None:
+            if (
+                not isinstance(anchor, dict)
+                or not isinstance(anchor.get("offset"), int)
+                or not isinstance(anchor.get("length"), int)
+                or anchor["offset"] < 0
+                # #2315 rebase: a zero-length anchor designates nothing —
+                # the span must be non-empty (main accepted >= 0).
+                or anchor["length"] <= 0
+                or isinstance(anchor.get("offset"), bool)
+                or isinstance(anchor.get("length"), bool)
+            ):
+                raise ValueError(
+                    f"add_trace_entry: anchor invalide {anchor!r} — attendu "
+                    "{'offset': int >= 0, 'length': int > 0} (#2295)"
+                )
+        # Dict[str, Any]: the entry mixes str leaves, a List[str] (reacts_to)
+        # and the optional int dict (anchor) — the trace container is already
+        # List[Dict[str, Any]] (line 611).
+        entry: Dict[str, Any] = {
             "phase": phase,
             "agent": agent,
             "reacts_to": reacts_to,
             "summary": summary,
             "timestamp": _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime()),
         }
+        if anchor is not None:
+            entry["anchor"] = {"offset": anchor["offset"], "length": anchor["length"]}
+        if move is not None:
+            entry["move"] = move
         self.analysis_trace.append(entry)
         state_logger.info(
             f"Trace: [{agent}] ({phase}, reacts_to={reacts_to}) → {summary[:60]}..."
@@ -500,8 +703,16 @@ class UnifiedAnalysisState(RhetoricalAnalysisState):
         strategy: str,
         score: float,
         target_arg_id: Optional[str] = None,
+        validation: Optional[Dict[str, Any]] = None,
     ) -> str:
-        """Add a counter-argument result."""
+        """Add a counter-argument result.
+
+        G6 (#1180): ``validation`` carries the populated ``ValidationResult``
+        verdict (is_valid_attack / original_survives / counter_succeeds /
+        logical_consistency / formal_representation) so the restitution report
+        (Acte II/III) can cite counter-argument *validity*, not just existence.
+        Stored only when non-empty (honest — never fabricated).
+        """
         ca_id = self._generate_id("ca", self.counter_arguments)
         entry = {
             "id": ca_id,
@@ -512,6 +723,8 @@ class UnifiedAnalysisState(RhetoricalAnalysisState):
         }
         if target_arg_id:
             entry["target_arg_id"] = target_arg_id
+        if validation:
+            entry["validation"] = validation
         self.counter_arguments.append(entry)
         state_logger.info(f"Counter-argument added: {ca_id} (strategy: {strategy})")
         return ca_id
@@ -529,7 +742,9 @@ class UnifiedAnalysisState(RhetoricalAnalysisState):
         Args:
             arg_id: Argument identifier (from LLM or pipeline).
             scores: Per-virtue scores dict.
-            overall: Aggregated note_finale.
+            overall: Sum of the per-virtue [0, 1] scores over the EVALUATED
+                virtues (#1942) — not a 0-1 average and not a note sur 10;
+                readers normalize by dividing by ``len(scores)``.
             llm_assessment: Optional LLM-generated qualitative narrative (#290).
             resolved_arg_id: If provided, store under this canonical arg_id instead.
         """
@@ -577,9 +792,21 @@ class UnifiedAnalysisState(RhetoricalAnalysisState):
         return df_id
 
     def add_governance_decision(
-        self, method: str, winner: str, scores: Dict[str, float]
+        self,
+        method: str,
+        winner: str,
+        scores: Dict[str, float],
+        extraction_method: Optional[str] = None,
     ) -> str:
-        """Add a governance voting decision."""
+        """Add a governance voting decision.
+
+        Track E #1281 — ``extraction_method`` carries the honest origin signal
+        (``"llm"`` | ``"heuristic"`` | ``None``) so the restitution can frame
+        the verdict correctly: an LLM-produced assessment is NOT a genuine
+        multi-agent deliberation, and must not be dressed as procedural
+        legitimacy. ``None`` preserves backward compat for callers that don't
+        supply it (the restitution then falls back to its prior framing).
+        """
         gd_id = self._generate_id("gov", self.governance_decisions)
         entry = {
             "id": gd_id,
@@ -587,6 +814,8 @@ class UnifiedAnalysisState(RhetoricalAnalysisState):
             "winner": winner,
             "scores": scores,
         }
+        if extraction_method:
+            entry["extraction_method"] = extraction_method
         self.governance_decisions.append(entry)
         state_logger.info(f"Governance decision added: {gd_id} ({method}: {winner})")
         return gd_id
@@ -688,31 +917,67 @@ class UnifiedAnalysisState(RhetoricalAnalysisState):
         return rk_id
 
     def add_aspic_result(
-        self, reasoner_type: str, extensions: List[Any], statistics: Dict[str, Any]
+        self,
+        reasoner_type: str,
+        extensions: List[Any],
+        statistics: Dict[str, Any],
+        attacks: Optional[List[Dict[str, Any]]] = None,
     ) -> str:
-        """Add an ASPIC+ analysis result."""
+        """Add an ASPIC+ analysis result.
+
+        #1649 (#1678 #1679): ``attacks`` carries the qualified attack list
+        produced by ``ASPICHandler.analyze_aspic_framework`` — a list of dicts
+        shaped ``{attacker_rule, attacker_premises, target, scope}`` with
+        ``scope`` in ``{undercut, rebut, undermine, unresolved}``. The field
+        is the singular contribution of ASPIC+ (#1649): without it the
+        projection is a Dung copy and the axis loses its only reason to
+        exist. ``attacks`` defaults to ``None`` so all 3-arg callers
+        (SK plugin wrappers, tests, fixtures) stay backward compatible;
+        ``None`` is serialized as the empty list so readers never see the
+        distinction. The Semantic Kernel plugin wrappers
+        (``state_manager_plugin.py``, ``phase_scoped_state.py``) keep the
+        3-arg signature by design — the LLM does not write attacks, the
+        writer does, post-handler.
+        """
         as_id = self._generate_id("aspic", self.aspic_results)
         entry = {
             "id": as_id,
             "reasoner_type": reasoner_type,
             "extensions": extensions,
             "statistics": statistics,
+            "attacks": list(attacks) if attacks is not None else [],
         }
         self.aspic_results.append(entry)
         state_logger.info(f"ASPIC+ result added: {as_id} (reasoner: {reasoner_type})")
         return as_id
 
     def add_belief_revision_result(
-        self, method: str, original: List[str], revised: List[str]
+        self,
+        method: str,
+        original: List[str],
+        revised: List[str],
+        minimal_retraction: Optional[Dict[str, Any]] = None,
     ) -> str:
-        """Add a belief revision result."""
+        """Add a belief revision result.
+
+        ``minimal_retraction`` (#1646) carries the axis's singular structural
+        insight — the smallest set of beliefs whose removal restores consistency
+        (a minimum correction subset), as ``{cardinality, options, ...}``. It is
+        computed JVM-free by ``_invoke_belief_revision`` (mirroring the bipolar
+        insight wiring, #1645), so it is populated even on the honest-degraded
+        path. ``None`` means "not computed" (callers that pre-date the insight,
+        or an honest degrade of the insight itself); the reader names it only when
+        the cardinality is >= 1.
+        """
         br_id = self._generate_id("brevision", self.belief_revision_results)
-        entry = {
+        entry: Dict[str, Any] = {
             "id": br_id,
             "method": method,
             "original": original,
             "revised": revised,
         }
+        if minimal_retraction is not None:
+            entry["minimal_retraction"] = minimal_retraction
         self.belief_revision_results.append(entry)
         state_logger.info(f"Belief revision result added: {br_id} (method: {method})")
         return br_id
@@ -751,15 +1016,31 @@ class UnifiedAnalysisState(RhetoricalAnalysisState):
         return pr_id
 
     def add_bipolar_result(
-        self, framework_type: str, arguments: List[str], supports: List[List[str]]
+        self,
+        framework_type: str,
+        arguments: List[str],
+        supports: List[List[str]],
+        support_cycles: Optional[List[List[str]]] = None,
+        articulation_points: Optional[List[Dict[str, Any]]] = None,
     ) -> str:
-        """Add a bipolar argumentation framework result."""
+        """Add a bipolar argumentation framework result.
+
+        ``support_cycles`` (#1645) carries the axis's distinctive structural
+        insight — groups of arguments locked in a mutual-support cycle (circular
+        authority). ``articulation_points`` (#1645 PR2) carries the second
+        insight — arguments that are the sole support of at least one other.
+        Both are computed JVM-free over the ``supports`` edges, so they are
+        populated even on the honest-degraded path. Default to empty lists so
+        callers that pre-date the insight store an honest "none detected".
+        """
         bp_id = self._generate_id("bipolar", self.bipolar_results)
         entry = {
             "id": bp_id,
             "framework_type": framework_type,
             "arguments": arguments,
             "supports": supports,
+            "support_cycles": support_cycles or [],
+            "articulation_points": articulation_points or [],
         }
         self.bipolar_results.append(entry)
         state_logger.info(f"Bipolar result added: {bp_id} (type: {framework_type})")
@@ -772,8 +1053,17 @@ class UnifiedAnalysisState(RhetoricalAnalysisState):
         inferences: List[str],
         confidence: float = 0.0,
         arg_id: Optional[str] = None,
+        message: Optional[str] = None,
     ) -> str:
-        """Add a first-order logic analysis result."""
+        """Add a first-order logic analysis result.
+
+        #1278 (Track B): ``message`` is an optional provenance field (mirrors the
+        PL sibling's ``message``). It carries the honest status — e.g.
+        ``unavailable:no-translation`` / ``unavailable:parse-fail`` — so downstream
+        consumers (restitution, measurement matrix) can confirm the entry is a
+        real solver decision OR an explicit degradation, never a silent
+        "trivially consistent sur vide" (#1019).
+        """
         fol_id = self._generate_id("fol", self.fol_analysis_results)
         entry = {
             "id": fol_id,
@@ -784,6 +1074,8 @@ class UnifiedAnalysisState(RhetoricalAnalysisState):
         }
         if arg_id:
             entry["arg_id"] = arg_id
+        if message:
+            entry["message"] = message
         self.fol_analysis_results.append(entry)
         state_logger.info(f"FOL analysis added: {fol_id} (consistent={consistent})")
         return fol_id
@@ -794,10 +1086,20 @@ class UnifiedAnalysisState(RhetoricalAnalysisState):
         satisfiable: bool,
         model: Optional[Dict[str, bool]] = None,
         arg_id: Optional[str] = None,
+        axiom_count: Optional[int] = None,
+        query_count: Optional[int] = None,
+        message: Optional[str] = None,
     ) -> str:
-        """Add a propositional logic analysis result."""
+        """Add a propositional logic analysis result.
+
+        #1208 (FP-10): the real PySAT verdict (satisfiable + genuine model)
+        is persisted here. ``axiom_count``/``query_count``/``message`` are
+        optional provenance fields so downstream consumers (restitution, the
+        measurement matrix) can confirm the entry carries a real solver
+        decision, not a hollow counter.
+        """
         pl_id = self._generate_id("pl", self.propositional_analysis_results)
-        entry = {
+        entry: Dict[str, Any] = {
             "id": pl_id,
             "formulas": formulas,
             "satisfiable": satisfiable,
@@ -805,6 +1107,12 @@ class UnifiedAnalysisState(RhetoricalAnalysisState):
         }
         if arg_id:
             entry["arg_id"] = arg_id
+        if axiom_count is not None:
+            entry["axiom_count"] = axiom_count
+        if query_count is not None:
+            entry["query_count"] = query_count
+        if message:
+            entry["message"] = message
         self.propositional_analysis_results.append(entry)
         state_logger.info(f"PL analysis added: {pl_id} (satisfiable={satisfiable})")
         return pl_id
@@ -814,8 +1122,16 @@ class UnifiedAnalysisState(RhetoricalAnalysisState):
         formulas: List[str],
         valid: bool,
         modalities: List[str],
+        message: Optional[str] = None,
     ) -> str:
-        """Add a modal logic analysis result."""
+        """Add a modal logic analysis result.
+
+        #1279 (Track C): ``message`` is an optional provenance field (mirrors the
+        FOL/PL siblings). It carries the honest status — e.g.
+        ``unavailable:no-translation`` / ``unavailable:no-solver`` (OOM) — so
+        downstream consumers can confirm the entry is a real solver decision OR
+        an explicit degradation, never a silent None (#1019).
+        """
         ml_id = self._generate_id("modal", self.modal_analysis_results)
         entry = {
             "id": ml_id,
@@ -823,6 +1139,8 @@ class UnifiedAnalysisState(RhetoricalAnalysisState):
             "valid": valid,
             "modalities": modalities,
         }
+        if message:
+            entry["message"] = message
         self.modal_analysis_results.append(entry)
         state_logger.info(f"Modal analysis added: {ml_id} (valid={valid})")
         return ml_id
@@ -945,12 +1263,43 @@ class UnifiedAnalysisState(RhetoricalAnalysisState):
 
         return profile
 
-    def get_weak_arguments(self, threshold: float = 5.0) -> List[ArgumentProfile]:
-        """Return ArgumentProfiles for arguments whose quality overall < threshold."""
+    def get_weak_arguments(self, threshold: float = 0.5) -> List[ArgumentProfile]:
+        """Return ArgumentProfiles whose quality FRACTION is below ``threshold``.
+
+        The fraction is ``overall / len(scores)`` -- the share of the applicable
+        maximum that held -- per the single unit contract declared on
+        :meth:`add_quality_score` (#1942). ``threshold`` is therefore a fraction
+        in [0, 1]: ``0.5`` is the weak bar. It is **not** a note sur 10.
+
+        Arguments carrying no usable quality entry are *unmeasured*, not weak,
+        and are never returned: a missing measurement is not a zero (#1019),
+        which is also why ``quality_fraction`` returns ``None`` rather than 0.
+
+        Args:
+            threshold: Fraction bar in [0, 1]. Defaults to the weak bar 0.5.
+
+        Returns:
+            ArgumentProfiles whose measured fraction is strictly below
+            ``threshold``, in ``identified_arguments`` order.
+
+        Raises:
+            ValueError: if ``threshold`` exceeds 1.0. A share of an attainable
+                maximum cannot exceed 1, so such a call was written against the
+                pre-#1942 note-sur-10 contract; normalising it silently would
+                return *every* scored argument. Fail loud instead (#1951).
+        """
+        if threshold > 1.0:
+            raise ValueError(
+                f"get_weak_arguments(threshold={threshold}) is not a fraction: "
+                "since #1942 quality 'overall' is the SUM of per-virtue [0, 1] "
+                "scores and readers divide by len(scores), so the comparison "
+                "scale is [0, 1], not a note sur 10. Divide the pre-#1942 "
+                "threshold by 10 (5.0 -> 0.5, the weak bar)."
+            )
         weak = []
         for arg_id in self.identified_arguments:
-            qs = self.argument_quality_scores.get(arg_id)
-            if qs is not None and qs.get("overall", 10.0) < threshold:
+            fraction = quality_fraction(self.argument_quality_scores.get(arg_id))
+            if fraction is not None and fraction < threshold:
                 weak.append(self.get_argument_profile(arg_id))
         return weak
 
@@ -1078,8 +1427,23 @@ class UnifiedAnalysisState(RhetoricalAnalysisState):
                     "dialogue_result_count": len(self.dialogue_results),
                     "probabilistic_result_count": len(self.probabilistic_results),
                     "bipolar_result_count": len(self.bipolar_results),
+                    # FP-17 (#1236): surface the FULL honest-absent map even in
+                    # the summarized snapshot — a count would re-hide the very
+                    # distinction (absent_no_translator vs evaluated) this field
+                    # exists to expose (#1019). The map is small (≤5 entries).
+                    "structured_arg_status": dict(self.structured_arg_status),
                     "fol_analysis_count": len(self.fol_analysis_results),
                     "propositional_analysis_count": len(
+                        self.propositional_analysis_results
+                    ),
+                    # #1208 (FP-10): expose the real PL entries (verdict +
+                    # genuine PySAT model + counts) in the summarized snapshot
+                    # too, not just the counter. The state IS the contract;
+                    # a count alone hides whether the verdict is real or a
+                    # fabricated placeholder. This list is already in the
+                    # state object — surfacing it subtracts the masking, it
+                    # does not add a counterweight.
+                    "propositional_analysis_results": list(
                         self.propositional_analysis_results
                     ),
                     "modal_analysis_count": len(self.modal_analysis_results),
@@ -1113,6 +1477,7 @@ class UnifiedAnalysisState(RhetoricalAnalysisState):
                     "dialogue_results": self.dialogue_results,
                     "probabilistic_results": self.probabilistic_results,
                     "bipolar_results": self.bipolar_results,
+                    "structured_arg_status": self.structured_arg_status,
                     "fol_analysis_results": self.fol_analysis_results,
                     "propositional_analysis_results": self.propositional_analysis_results,
                     "modal_analysis_results": self.modal_analysis_results,
@@ -1133,3 +1498,5 @@ module_logger.debug("Module core.shared_state chargé.")
 
 # Créer un alias SharedState pour maintenir la compatibilité avec le code existant
 SharedState = RhetoricalAnalysisState
+
+
