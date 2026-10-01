@@ -390,6 +390,7 @@ _BOT_ONLY_PREFIX_MARKERS: tuple[str, ...] = (
     "<!-- REVIEW-COVERAGE:START -->",  # scripts/review_coverage.py (advisory)
     "## Golden-Set Execution (H.7 P3)",  # notebook-execution-required.yml, resume cosmetique
     "## Notebook PR Validation: ",  # notebook-execution-required.yml, resume cosmetique
+    "## Notebook outputs-required (H.4 schema): ",  # notebook-outputs-required.yml, PATCH en place
 )
 
 

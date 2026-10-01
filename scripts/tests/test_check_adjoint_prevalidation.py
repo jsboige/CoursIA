@@ -1850,6 +1850,7 @@ def test_sticky_advisory_pose_does_not_expire_the_dossier():
         "<!-- REVIEW-COVERAGE:START -->\nseuil depasse\n<!-- REVIEW-COVERAGE:END -->",
         "## Golden-Set Execution (H.7 P3)\n\n✅ **3/3** notebooks passed",
         "## Notebook PR Validation: PASS\n\n| nb | ok |",
+        "## Notebook outputs-required (H.4 schema): **PASS** (every code cell carries an `outputs: list`)",
     ):
         base = _stamped_snapshot("")
         base["comments"].pop()
@@ -1881,6 +1882,7 @@ def test_sticky_forms_require_the_bot_author_and_a_listed_header():
     cases = (
         (_STICKY_STALE, "clusterManager-Myia"),
         ("## Golden-Set Execution (H.7 P3)\ncopie", "myia-po-2023"),
+        ("## Notebook outputs-required (H.4 schema): **PASS** copie", "jsboige"),
         ("rapport\n<!-- Sticky Pull Request Commentsome-blocking-guard -->", "github-actions[bot]"),
         ("<!-- Sticky Pull Request Commentstale-claim-advisory -->\nsuite ajoutee", "github-actions[bot]"),
     )
