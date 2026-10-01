@@ -106,8 +106,8 @@ la base : un id neuf (cellule ajoutee reellement) n'est pas couvert, ce qui
 preserve la sensibilite du cliquet aux ajouts reels. Deuxieme pass couvert
 dans la liste ``attached`` : exclure les cellules dont l'id existait deja en
 base (le main loop les a traitees comme reecritures, pas comme ajouts).
-Repro : ``scripts/tests/test_split_reading_code_to_md.py`` (3 tests), plus
-self-test 7 (negatif 4 dans ``self_test()`` ci-dessous).
+Repro : self-test 7 (negatif 4 dans ``self_test()`` ci-dessous), qui pinne
+la topologie du FP #18602 (PR #18440, Lean-10 c.60-c.65).
 
 Mode CLIQUET (#17044) : ``--base-ref <ref> [--head HEAD]`` compare chaque carnet
 modifie entre la base et la tete et rend le verdict du cliquet -- rouge
