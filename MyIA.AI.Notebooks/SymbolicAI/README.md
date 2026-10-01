@@ -182,9 +182,10 @@ Un même théorème, le milieu de l'hypoténuse équidistant des trois sommets, 
 - **Parcours léger** — 01 à 03 :
   - [01](Lean/Geometry/Geometry-01-From-Figure-To-Equation.ipynb) (Découverte) : on vérifie le théorème numériquement (Schwartz–Zippel) ;
   - [02](Lean/Geometry/Geometry-02-From-Equation-To-Proof.ipynb) (Licence) : on le démontre exactement par bases de Gröbner, en traitant les non-dégénérescences par saturation ;
-  - [03](Lean/Geometry/Geometry-03-Wu-Method-Python.ipynb) (Licence) : on le redémontre par la méthode de Wu, qui fait apparaître ces conditions explicitement.
+  - [03](Lean/Geometry/Geometry-03-Wu-Method-Python.ipynb) (Licence) : on le redémontre par la méthode de Wu, qui fait apparaître ces conditions explicitement ;
+  - [04](Lean/Geometry/Geometry-04-DD-AR-Python.ipynb) (Licence) : on le prouve par règles (DD) puis par l'algèbre (AR), le duo symbolique d'AlphaGeometry — et un énoncé faux y est réfuté deux fois.
 - **Pour approfondir** — [03b](Lean/Geometry/Geometry-03b-Ritt-Decomposition-Python.ipynb) : le théorème du papillon et la décomposition de Ritt, avec le bord dégénéré où l'énoncé est muet et non faux.
-- **À venir** — le raisonnement du géomètre (DD+AR) et un pont formel vers Lean.
+- **À venir** — un pont formel vers Lean.
 - [README de la série Geometry](Lean/Geometry/README.md) : programme gradué (Epic #17544) et état.
 
 ### Hors série
