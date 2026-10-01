@@ -177,7 +177,8 @@ fait son travail :
 **Correctif** : chaque entrée HAR est relabelisée sur la **date boursière précédente de l'index
 complet** (`_relabel_har_to_lstm_origin(..., full_index)`), jamais sur l'entrée précédente de la
 sortie. Diagnostic indépendant : gap exactement 0,0 sur 2 276 dates BTC h=1 ; sur le run complet,
-gap max 3,6e-15 (ULP flottant) et 0 cellule TARGET_MISMATCH sur 21. Test de régression avec sortie
+gap max 3,6e-15 (ULP flottant) et aucune cellule TARGET_MISMATCH sur les 21 agrégats coin×horizon.
+Test de régression avec sortie
 HAR à trou de fold (`test_relabel_survives_fold_boundaries_in_the_har_output`).
 
 **Conséquence sur l'historique** : les verdicts §C antérieurs de M15 comparaient les prévisions
@@ -203,7 +204,7 @@ Agrégé par horizon (28 combos chacun) :
 
 Par cellule (21 coin x horizon) : brute NO BEATS 19/21 (INCONCLUSIVE BTC h=5/h=10) ; calibrée NO
 BEATS 18/21 (INCONCLUSIVE SOL h=10, XRP h=5/h=10) ; centrée BEATEN (variance) 18/21 (INCONCLUSIVE
-XRP h=5/h=10). **var_ratio LSTM/HAR > 1 sur les 21 cellules (1,12-1,34)** : le déficit est de la
+XRP h=5/h=10). **var_ratio LSTM/HAR > 1 partout (1,12-1,34)** : le déficit est de la
 **variance** — même après retrait du biais, le LSTM est uniformément moins précis que HAR.
 
 Ceci étend au cluster 7 actifs le verdict `refuted-de-biased` BTC du 2026-08-24, avec une structure
