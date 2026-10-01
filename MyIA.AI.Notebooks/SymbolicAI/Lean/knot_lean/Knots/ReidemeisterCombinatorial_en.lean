@@ -80,7 +80,7 @@ typer enforces diagram coherence along the chain. -/
 def MoveSequence.cons {d₁ d₂ d₃ : KnotDiagram}
     (step : ReidemeisterStep d₁ d₂) (ms : MoveSequence d₂ d₃) :
     MoveSequence d₁ d₃ :=
-  ⟨⟨d₂, step⟩⟩ :: ms
+  ⟨d₂, step⟩ :: ms
 
 /-! ## 2. Transitive closure of a sequence (`movesConnects`)
 

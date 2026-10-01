@@ -80,7 +80,7 @@ une suite qui applique `ms` de `d₁` à un diagramme intermédiaire, puis le pa
 def MoveSequence.cons {d₁ d₂ d₃ : KnotDiagram}
     (step : ReidemeisterStep d₁ d₂) (ms : MoveSequence d₂ d₃) :
     MoveSequence d₁ d₃ :=
-  ⟨⟨d₂, step⟩⟩ :: ms
+  ⟨d₂, step⟩ :: ms
 
 /-! ## 2. Fermeture transitive d'une suite (`movesConnects`)
 
