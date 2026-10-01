@@ -218,16 +218,56 @@ class RhetoricalAnalysisState:
         for arg_desc in arguments:
             self.add_argument(arg_desc)
 
+    # Contrats de clés tolérés pour add_identified_fallacies (defaut #18395) :
+    # l'agent LLM appelle le tool bulk avec des clés libres — gpt-4o-mini
+    # envoyait {"nom", "explication"}, les modeles post-bascule claudish
+    # envoient {"type", "explanation", "target"}. Le parseur strict laissait
+    # tout aux valeurs par defaut ("Type Inconnu" + cible jamais lue), ce que
+    # le validateur de contenu c.13 rejette comme FALLACIES_FORM_ONLY.
+    _FALLACY_TYPE_KEYS = ("nom", "type", "fallacy_type", "name", "type_sophisme")
+    _FALLACY_JUSTIFICATION_KEYS = (
+        "explication",
+        "justification",
+        "explanation",
+        "raison",
+        "description",
+    )
+    _FALLACY_TARGET_KEYS = (
+        "cible",
+        "target_argument_id",
+        "target_id",
+        "target",
+        "argument_cible",
+    )
+
+    @classmethod
+    def _fallacy_field(cls, data: Dict[str, str], keys: tuple, default) -> object:
+        """Première valeur non vide parmi les clés tolérées, sinon le défaut."""
+        for key in keys:
+            value = data.get(key)
+            if value is not None and str(value).strip() != "":
+                return value
+        return default
+
     def add_identified_fallacies(self, fallacies: List[Dict[str, str]]) -> None:
         """Ajoute une liste de sophismes identifiés."""
         state_logger.info(f"Ajout de {len(fallacies)} sophismes identifiés...")
         for fallacy_data in fallacies:
             self.add_fallacy(
-                fallacy_type=fallacy_data.get("nom", "Type Inconnu"),
-                justification=fallacy_data.get(
-                    "explication", "Justification manquante"
+                fallacy_type=self._fallacy_field(
+                    fallacy_data, self._FALLACY_TYPE_KEYS, "Type Inconnu"
                 ),
-                family=fallacy_data.get("famille", ""),
+                justification=self._fallacy_field(
+                    fallacy_data,
+                    self._FALLACY_JUSTIFICATION_KEYS,
+                    "Justification manquante",
+                ),
+                target_arg_id=self._fallacy_field(
+                    fallacy_data, self._FALLACY_TARGET_KEYS, None
+                ),
+                family=self._fallacy_field(
+                    fallacy_data, ("famille", "family"), ""
+                ),
                 taxonomy_path=fallacy_data.get("taxonomy_path", ""),
             )
 
