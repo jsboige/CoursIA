@@ -106,7 +106,7 @@ termination-safe under `decreasing_by wf_tacs`.
 def movesConnects {d₁ d₂ : KnotDiagram} :
     MoveSequence d₁ d₂ → ReidemeisterEquiv d₁ d₂
   | .nil d => ReidemeisterEquiv.refl d
-  | .cons _ _ _ step tail =>
+  | .cons step tail =>
     ReidemeisterEquiv.trans
       (ReidemeisterEquiv.step step)
       (movesConnects tail)
