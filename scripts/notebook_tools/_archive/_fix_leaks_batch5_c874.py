@@ -1,7 +1,7 @@
 # Archive header (standard _archive convention, 2026-08, docs/reference/_archive-convention.md)
 # - Date archived     : 2026-10-01
 # - Superseded by     : none (closed dead-end — batch 5 of #1205, `detect_solution_leaks.py` gate covers; PR #14071 absorbed)
-# - Verdict recorded in : PR #14071 'fix(lean): relabel c874 solution leaks as Exemple guide (#1205 Batch 5)' + #13745 thread + #14153 palier 1 (axe D #16473)
+# - Verdict recorded in : PR #14071 'fix(lean): relabel c874 solution leaks as Exemple guide (#1205 Batch 5)' + #13745 thread + #18153 palier 1 (axe D #16473)
 #
 # Per-function disposition :
 # - main body          : abandoned — one-shot terminated, no consumer; kept verbatim for forensic replay

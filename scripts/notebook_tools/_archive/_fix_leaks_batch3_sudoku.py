@@ -1,7 +1,7 @@
 # Archive header (standard _archive convention, 2026-08, docs/reference/_archive-convention.md)
 # - Date archived     : 2026-10-01
 # - Superseded by     : none (closed dead-end — batch 3 of #1205, `detect_solution_leaks.py` gate covers; PR #10049 absorbed)
-# - Verdict recorded in : PR #10049 'fix(sudoku): relabel solution leaks as Exemple guide (#1205 Batch 3)' + #13745 thread + #14153 palier 1 (axe D #16473)
+# - Verdict recorded in : PR #10049 'fix(sudoku): relabel solution leaks as Exemple guide (#1205 Batch 3)' + #13745 thread + #18153 palier 1 (axe D #16473)
 #
 # Per-function disposition :
 # - main body          : abandoned — one-shot terminated, no consumer; kept verbatim for forensic replay
