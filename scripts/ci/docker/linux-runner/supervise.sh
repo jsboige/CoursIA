@@ -69,8 +69,10 @@
 #   COURSIA_RUNNER_DEVICE_WRITE_BPS     plafond d'ecriture PAR conteneur, en
 #   COURSIA_RUNNER_DEVICE_READ_BPS      octets/s (ex. 41943040 = 40 Mio/s).
 #   COURSIA_RUNNER_BLKIO_DEVICE         device porteur ; auto-detecte si vide.
-#   COURSIA_RUNNER_CPU_BUDGET           somme MAX de vCPU, toutes familles
-#                                       confondues. 0 = pas de garde.
+#   COURSIA_RUNNER_CPU_BUDGET           somme MAX de vCPU des familles
+#                                       d'EXECUTION (start, lean) -- les
+#                                       waiters, oisifs, en sont EXCLUS
+#                                       (#15574 item 3). 0 = pas de garde.
 #   COURSIA_RUNNER_BUDGET_GB            part de RAM hote que la CI s'autorise,
 #                                       toutes familles confondues. SEULE borne
 #                                       de RESSOURCE non inerte (defaut
@@ -1149,12 +1151,22 @@ family_cpus_of() {
 # Ferme le trou nomme dans cmd_lean depuis #14337 :
 #   « La somme des caps CPU des familles actives n'est gardee par RIEN --
 #     c'est l'operateur qui dimensionne. »
-# Un cap `--cpus` est PAR CONTENEUR : 12 waiters a 1 vCPU sont conformes un a
-# un et prennent 12 coeurs ensemble. Le seul endroit ou la somme existe est
-# ici, avant de lancer la famille suivante.
+# Un cap `--cpus` est PAR CONTENEUR : 8 slots a 3 vCPU et 2 lean a 6 vCPU
+# sont conformes un a un et prennent 36 coeurs ensemble. Le seul endroit ou
+# la somme existe est ici, avant de lancer la famille suivante.
 #
 # Refus, jamais avertissement : depasser le budget est exactement l'etat qui a
 # gele la machine, et un demarrage refuse se repare en une commande.
+#
+# #15574 item 3 (arbitrage coordinateur 2026-10-01) : la famille `waiters`
+# ne compte PAS dans la somme -- ni comme famille deja active, ni comme
+# demande nouvelle. Un waiter existe pour absorber l'attente du PR gate : il
+# est oisif la quasi-totalite du temps, son cap --cpus est un PLAFOND qu'il
+# n'atteint jamais, pas une reservation. Le budget garde la part qui calcule
+# (start, lean), pas la part qui dort ; compter 12 waiters a 1 vCPU y
+# inscrivait 12 vCPU fantomes et affamait les familles d'execution. Le terme
+# reste AFFICHE, marque « exclu » : ce qui sort de la somme doit se lire,
+# pas disparaitre.
 assert_cpu_budget() {
   local new_fam="$1" new_n="$2" new_cpus="$3"
   [ "${CPU_BUDGET:-0}" = "0" ] && return 0
@@ -1164,14 +1176,24 @@ assert_cpu_budget() {
     [ -z "${n:-}" ] && continue
     c="$(family_cpus_of "$pid" "$fam")"
     sub="$(awk -v a="$n" -v b="$c" 'BEGIN{printf "%.2f", a*b}')"
+    if [ "$fam" = "waiters" ]; then
+      detail="$detail
+  deja actif : $fam n=$n cpus=$c -> $sub (exclu du budget : oisif, #15574)"
+      continue
+    fi
     total="$(awk -v a="$total" -v b="$sub" 'BEGIN{printf "%.2f", a+b}')"
     detail="$detail
   deja actif : $fam n=$n cpus=$c -> $sub"
   done < <(supervisor_families)
   sub="$(awk -v a="$new_n" -v b="$new_cpus" 'BEGIN{printf "%.2f", a*b}')"
-  total="$(awk -v a="$total" -v b="$sub" 'BEGIN{printf "%.2f", a+b}')"
-  detail="$detail
+  if [ "$new_fam" = "waiters" ]; then
+    detail="$detail
+  demande    : $new_fam n=$new_n cpus=$new_cpus -> $sub (exclu du budget : oisif, #15574)"
+  else
+    total="$(awk -v a="$total" -v b="$sub" 'BEGIN{printf "%.2f", a+b}')"
+    detail="$detail
   demande    : $new_fam n=$new_n cpus=$new_cpus -> $sub"
+  fi
   if awk -v t="$total" -v b="$CPU_BUDGET" 'BEGIN{exit !(t > b)}'; then
     die "budget CPU inter-familles depasse : $total vCPU demandes pour un plafond de $CPU_BUDGET.$detail
 
