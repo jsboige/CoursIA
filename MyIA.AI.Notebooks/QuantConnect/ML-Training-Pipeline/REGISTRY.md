@@ -26,6 +26,8 @@ Updated: 2026-08-24 — Re-validation hors-biais des keepers BTC (issues #11041/
 
 Updated: 2026-08-24 — M15 LSTM-vol patch persistance biais + slice 2/2 dé-biaisé symétrique (issue #12734): patch livré, run complet dispatché au prochain cycle
 
+Updated: 2026-10-01 — M15 LSTM-vol revalidation cluster 7 actifs appariée par origine (port #18190, Epic #1454) + clôture du run différé #12734 : **NO BEATS cluster** (brute 19/21, calibrée 18/21, centrée BEATEN 18/21 ; var_ratio 1,12-1,34 sur 21/21). Le port a mesuré un défaut de convention dans le harnais M15 lui-même (join naïf refusé gap 4,25, puis relabel positionnel refusé gap 3,51 aux frontières de fold) : les verdicts §C antérieurs comparaient des fenêtres différentes. L'antécédent BTC « 2/3 BEATS » (#11034) ne survit pas à l'appariement corrigé (INCONCLUSIVE brut h=5/h=10)
+
 Updated: 2026-09-01 — PatchTST BTC log-RV revalidé contre HAR débiaisé train-only (#14081) : h=1 INCONCLUSIVE, h=5/h=10 NO BEATS ; var_ratio > 1 aux trois horizons
 
 Updated: 2026-09-02 — M16 HAR asymétrique BTC revalidé contre HAR débiaisé train-only (#1454) : h=1 INCONCLUSIVE, h=5/h=10 BEATS ; verdict brut 3/3 réfuté
@@ -561,6 +563,65 @@ uniquement, aucune stratégie dérivée, borne crypto 10 bps non imputée.
   biais uniquement ; décomposition `mse = biais² + var` vérifiée au 1e-12 par seed). Artefacts
   hors repo (`results/` gitignoré) — instrument de persistance : PR #12745.
 - **Verdict §C recentré** : **0/3 BEATS, 0/3 INCONCLUSIVE, 3/3 NO BEATS** — `refuted-de-biased`.
+
+## M15 LSTM-vol — revalidation cluster appariée par origine (2026-10-01) — Epic #1454, port #18190, clôture #12734
+
+Le protocole d'appariement par origine (#18190, validé sur M4/#18650) est porté au harnais M15 et
+le run complet différé par #12734 est livré sous forme étendue : **cluster 7 actifs**
+(BTC/ETH/SOL/LTC/XRP/ADA/DOT) x 3 horizons x 4 seeds = 84 combos, `loss_fn=mse`, refit 110,
+hidden 64, GPU RTX 3070 Laptop, runtime réel ~82 min (restart checkpoint inclus). Les jambes DM
+joignent les deux walk-forwards sur leurs dates d'origine communes, valident la cible partagée
+d'abord, et **refusent** (`TARGET_MISMATCH`) plutôt que de comparer en silence. Trois jambes :
+HAR brute, HAR calibrée train-only, erreurs centrées (variance).
+
+### Le défaut de convention que le port a mesuré (résultat principal)
+
+Le garde shared-target a refusé **deux fois** avant toute mesure valide — le protocole fait son
+travail : (1) join naïf refusé (BTC h=1, gap 4,25) — cible LSTM `[i+1, i+h]` vs cible HAR
+`[i, i+h-1]` : **les verdicts §C antérieurs de M15 comparaient des prévisions de fenêtres
+différentes** ; (2) relabel positionnel refusé (gap 3,51) — les boucles s'arrêtent à
+`test_end - horizon`, la sortie HAR concaténée saute h positions à chaque frontière de fold, et le
+décalage positionnel `values[1:]` franchit la frontière. Correctif : relabel sur la **date
+boursière précédente de l'index complet** (`_relabel_har_to_lstm_origin(..., full_index)`), test
+de régression `test_relabel_survives_fold_boundaries_in_the_har_output`. Sur le run complet :
+gap max 3,6e-15 (ULP flottant), 0 cellule TARGET_MISMATCH sur 21, n_joined min 545.
+
+**Asymétrie résiduelle documentée** : à l'origine appariée, HAR connaît `rv` jusqu'à `t-1`, le
+LSTM ses features jusqu'à `t-2` (convention M15 : un jour de trou entre frontière d'information et
+fenêtre cible). Direction conservatrice — le verdict BEATEN ci-dessous n'est jamais lu comme une
+déficience LSTM seule.
+
+### Verdicts
+
+Agrégé par horizon (28 combos chacun) :
+
+| Horizon | edge MSE | σ | dm_p_median | brute | calibrée | centrée (variance) |
+|---|---|---|---|---|---|---|
+| h=1  | −20,8 % | 7,04  | 0,0001 | NO BEATS | NO BEATS (p 0,0006) | BEATEN (p 0,0024) |
+| h=5  | −30,3 % | 18,04 | 0,0004 | NO BEATS | NO BEATS (p 0,0104) | BEATEN (p 0,0026) |
+| h=10 | −45,2 % | 32,79 | 0,0003 | NO BEATS | NO BEATS (p 0,0525) | BEATEN (p 0,0089) |
+
+Par cellule (21) : brute NO BEATS 19/21 (INCONCLUSIVE BTC h=5 p=0,195 / h=10 p=0,053) ; calibrée
+NO BEATS 18/21 (INCONCLUSIVE SOL h=10, XRP h=5/h=10) ; centrée BEATEN (variance) 18/21
+(INCONCLUSIVE XRP h=5/h=10). **var_ratio LSTM/HAR = 1,12-1,34, > 1 sur les 21 cellules** : le
+déficit est de la **variance** — même après retrait du biais, le LSTM est uniformément moins
+précis que HAR.
+
+**Lecture** : (1) le verdict `refuted-de-biased` BTC du 2026-08-24 est **étendu au cluster 7
+actifs** avec une structure plus tranchée — là où l'edge BTC publié était le biais² de HAR, la
+mesure corrigée montre un déficit de précision qui ne dépend pas de la convention de biais ;
+(2) l'antécédent BTC-only hidden=64 refit-110 « 2/3 BEATS » (#11034, jambe brute) **ne survit pas
+à l'appariement corrigé** — ses cellules h=5/h=10 sont INCONCLUSIVE brutes et NO BEATS calibrées :
+le « BEATS » était porté par la convention mixte, pas par le modèle ; (3) M15 reste non-keeper.
+
+- **Manifeste committé** : `scripts/results/m15_lstm_rv_cluster_aligned.json` (politique #15890 —
+  verdicts + diagnostics d'alignement par cellule + ancres SHA-256 par coin, aucune série).
+- **Séries complètes** : `G:\Mon Drive\MyIA\Dev\Trading\ML-Training-Pipeline\m15_lstm_rv_cluster_full.json`
+  (12,3 Mo ; sha256 LF `909244cb…d67d818`, octets bruts `4e7167e5…d79abd`).
+- **Notebook §8.5** : `m15_lstm_rv_sc_validation.ipynb` cellule de lecture du manifeste, exécutée
+  (0 erreur) — la fermeture #12734 « keeper vérifiable post-hoc » est effective : verdicts,
+  décompositions et erreurs par combo rejouables sans ré-entraînement.
+- **Détail** : `docs/M15_LSTM_RV.md` section « Revalidation cluster appariée par origine ».
 
 ## PatchTST-vol BTC — revalidation hors biais (2026-09-01) — issue #14081
 

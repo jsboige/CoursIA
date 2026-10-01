@@ -152,3 +152,67 @@ case. A distinct §C-conformant M15 entry exists for BTC-only hidden=64 refit-11
 h=5/h=10, issue #11034) -- see `REGISTRY.md`; it is a different configuration, not the retracted claim.
 
 Runtime (§C run): h=32 ~4.5h (16036s, RTX 3070 Laptop).
+
+## Revalidation cluster appariée par origine (2026-10-01)
+
+Le protocole #18190 (appariement par origine, porté depuis M4/#18650) a été appliqué au run cluster
+7 actifs x 3 horizons x 4 seeds (84 combos, mse, refit 110, hidden 64, GPU). Les jambes DM joignent
+les deux walk-forwards sur leurs dates d'origine communes et **refusent** sur mismatch de cible
+partagée — jamais de troncature positionnelle.
+
+### Défaut de convention mesuré (le résultat principal du port)
+
+Le garde shared-target a refusé **deux fois** avant toute mesure valide — c'est le protocole qui
+fait son travail :
+
+1. **Join naïf refusé** (BTC h=1, gap max 4,25) : les deux walk-forwards adressent des fenêtres
+   réalisées différentes. Cible LSTM à l'origine `i` = `log_rv.rolling(h).mean().shift(-h)` ->
+   fenêtre `[i+1, i+h]` (features jusqu'à `i-1`, via `seq = feat_vals[i-window:i]`). Cible HAR à
+   l'origine `t` = `log_rv.iloc[t:t+h].mean()` -> fenêtre `[t, t+h-1]` (info `rv[:t]`).
+2. **Relabel positionnel refusé** (gap max 3,51) : les boucles s'arrêtent à `test_end - horizon`,
+   donc la sortie HAR concaténée **saute h positions à chaque frontière de fold** — un décalage
+   positionnel (`values[1:]`) franchit la frontière et apparie des fenêtres décalées d'un jour sur
+   les dates de frontière.
+
+**Correctif** : chaque entrée HAR est relabelisée sur la **date boursière précédente de l'index
+complet** (`_relabel_har_to_lstm_origin(..., full_index)`), jamais sur l'entrée précédente de la
+sortie. Diagnostic indépendant : gap exactement 0,0 sur 2 276 dates BTC h=1 ; sur le run complet,
+gap max 3,6e-15 (ULP flottant) et 0 cellule TARGET_MISMATCH sur 21. Test de régression avec sortie
+HAR à trou de fold (`test_relabel_survives_fold_boundaries_in_the_har_output`).
+
+**Conséquence sur l'historique** : les verdicts §C antérieurs de M15 comparaient les prévisions
+next-window du LSTM aux cibles origin-window du HAR — convention mixte. En particulier le BTC-only
+hidden=64 refit-110 « 2/3 BEATS » (#11034) ne survit pas à l'appariement corrigé : ses cellules
+h=5/h=10 sont INCONCLUSIVE en jambe brute (p=0,195 / 0,053) et NO BEATS en jambe calibrée.
+
+**Asymétrie résiduelle documentée** : à l'origine appariée, la jambe HAR connaît `rv` jusqu'à
+`t-1` tandis que la jambe LSTM connaît ses features jusqu'à `t-2` (la convention M15 garde un jour
+de trou entre frontière d'information et fenêtre cible). Direction conservatrice : un verdict BEATS
+n'en serait que plus fort ; le verdict BEATEN ci-dessous n'est jamais lu comme une déficience LSTM
+seule.
+
+### Verdicts cluster (3 jambes : brute / calibrée / centrée-variance)
+
+Agrégé par horizon (28 combos chacun) :
+
+| Horizon | edge MSE | sigma | dm_p_median | brute | calibrée | centrée (variance) |
+|---|---|---|---|---|---|---|
+| h=1  | -20,8 % | 7,04  | 0,0001 | NO BEATS | NO BEATS (p=0,0006) | BEATEN (p=0,0024) |
+| h=5  | -30,3 % | 18,04 | 0,0004 | NO BEATS | NO BEATS (p=0,0104) | BEATEN (p=0,0026) |
+| h=10 | -45,2 % | 32,79 | 0,0003 | NO BEATS | NO BEATS (p=0,0525) | BEATEN (p=0,0089) |
+
+Par cellule (21 coin x horizon) : brute NO BEATS 19/21 (INCONCLUSIVE BTC h=5/h=10) ; calibrée NO
+BEATS 18/21 (INCONCLUSIVE SOL h=10, XRP h=5/h=10) ; centrée BEATEN (variance) 18/21 (INCONCLUSIVE
+XRP h=5/h=10). **var_ratio LSTM/HAR > 1 sur les 21 cellules (1,12-1,34)** : le déficit est de la
+**variance** — même après retrait du biais, le LSTM est uniformément moins précis que HAR.
+
+Ceci étend au cluster 7 actifs le verdict `refuted-de-biased` BTC du 2026-08-24, avec une structure
+plus tranchée : là où l'edge BTC publié était le biais² de HAR, la mesure corrigée montre un
+déficit de précision (variance) qui ne dépend pas de la convention de biais.
+
+Manifeste compact committé : `scripts/results/m15_lstm_rv_cluster_aligned.json` (politique #15890) ;
+séries complètes hors dépôt :
+`G:\Mon Drive\MyIA\Dev\Trading\ML-Training-Pipeline\m15_lstm_rv_cluster_full.json`
+(12,3 Mo ; sha256 LF 909244cb...d67d818, octets bruts 4e7167e5...d79abd). Runtime réel ~82 min
+(84 combos, RTX 3070 Laptop ; le champ `elapsed_s` du manifeste mesure le dernier process,
+restart checkpoint inclus).
