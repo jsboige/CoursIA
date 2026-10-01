@@ -58,11 +58,14 @@ jobs:
 
       - name: Compteurs quantitatifs ajoutes en prose
         run: |
-          # `checkout@v4` avec `fetch-depth: 2` ne tire que le HEAD et son
-          # parent -- `origin/<base_ref>` n'est PAS present. Un fetch
-          # explicite depth=1 le ramene. Le commentaire anterieur precisait
-          # qu'un `--depth=0` etait invalide (entier positif exige) ; ce
-          # fetch est depth=1, donc legal, et tient en quelques Ko.
-          git fetch --depth=1 origin "${{ github.base_ref }}" -q
+          # `checkout@v4` avec `fetch-depth: 2` pose le merge ref
+          # `refs/pull/N/merge` ; le merge commit a comme premier parent le
+          # cote base. Sur evenement `pull_request`, `HEAD^1` est ce parent
+          # direct, present par construction (depth=2), merge-base resolu
+          # en parent direct : le diff rend exactement les fichiers du
+          # plateau GitHub. Plus de fetch de la base -> fini la course
+          # `no merge base` quand `main` bouge entre construction du merge
+          # ref et le fetch depth=1 (cf #18629, fix miro sur
+          # docs-transients-guard dans #18595 tete 41af837).
           python scripts/notebook_tools/check_prose_quantitative_claims.py \
-            --diff "origin/${{ github.base_ref }}...HEAD" --strict
+            --diff "HEAD^1...HEAD" --strict
