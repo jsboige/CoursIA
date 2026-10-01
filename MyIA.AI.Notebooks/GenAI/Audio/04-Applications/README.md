@@ -32,7 +32,7 @@ Ce module présente des cas d'usage concrets et des workflows de production pour
 
 ### Pipeline Audiobook Agentique (Epic #1028)
 
-Pipeline complet de 7 notebooks pour générer un audiobook à partir d'un texte littéraire, avec sélection de voix, annotation prosodique et compilation finale.
+Pipeline complet pour générer un audiobook à partir d'un texte littéraire, avec sélection de voix, annotation prosodique et compilation finale.
 
 | # | Notebook | Pass | Contenu | Service | VRAM |
 | --- | ---------- | ------ | --------- | --------- | ------ |
@@ -60,7 +60,7 @@ Trois satellites : la **compréhension** (MERT2, 04-15), la **génération** ([Y
 | 15 | [04-15-MERT2-Music-Understanding](04-15-MERT2-Music-Understanding.ipynb) | Embeddings MERT2 (632 M, self-supervised, poids CC BY-NC 4.0) : corpus contrôlé 3 motifs × 4 timbres × 2 transpositions, similarité cosinus, retrieval contexte long FullSong (medley 120 s), sondes linéaires LOO motif vs timbre sur couches L1/L23/L24 | Local GPU (kernel `mert2-gpu`, pins torch 2.6.0 / transformers 4.53.2) | ~4 GB |
 | 16 | [04-16-SheetSage2-Audio-To-Score](04-16-SheetSage2-Audio-To-Score.ipynb) | Transcription audio vers partition éditable : SheetSage2 (677 M, base MERT-v2-FullSong + adaptateurs), cinq têtes (mélodie, accords, temps forts, tonalité, structure), artefacts ABC/MIDI/événements horodatés, comparaison à vérité-terrain connue par construction, cycle symbolique→audio→symbolique mesuré | Local GPU (kernel `sheetsage2-gpu`) ; poids CC BY-NC 4.0 (usage commercial interdit) | ~8 GB |
 
-> **Note (consolidation #13741)** : un sibling pédagogique plus minimal (re-voicing CP-SAT + MIDI synthèse, 9 cellules, 51 Ko) a été archivé sous [`MyIA.AI.Notebooks/GenAI/Audio/_archive/04-14-VoiceLeading-RenduGenAI.ipynb`](../_archive/04-14-VoiceLeading-RenduGenAI.ipynb) pour éliminer le doublon de slot 04-14. Le contenu reste préservé (re-voicing, synthèse MIDI, MusicGen, spectrogrammes, export WAV) ; ce notebook canonique `Rendu-GenAI` (5.16 Mo, 27 cellules, version complète re-exécutée #13398) reste la référence.
+> **Note (consolidation #13741)** : un sibling pédagogique plus minimal (re-voicing CP-SAT + MIDI synthèse, 9 cellules, 51 Ko) a été archivé sous [`MyIA.AI.Notebooks/GenAI/Audio/_archive/04-14-VoiceLeading-RenduGenAI.ipynb`](../_archive/04-14-VoiceLeading-RenduGenAI.ipynb) pour éliminer le doublon de slot 04-14. Le contenu reste préservé (re-voicing, synthèse MIDI, MusicGen, spectrogrammes, export WAV) ; ce notebook canonique `Rendu-GenAI` (version complète re-exécutée #13398) reste la référence.
 
 **Flux du pipeline audiobook** :
 
