@@ -185,6 +185,14 @@ BLOCKING_FIELDS = (
 # `neutral` are not failures; anything else completed (failure, timed_out,
 # cancelled, action_required, startup_failure, stale...) does (#16957).
 GREEN_CONCLUSIONS = {"success", "skipped", "neutral"}
+
+# Checks whose presence on the head is required for `checks: latest-wins-green`
+# to hold -- not merely their conclusion (#18579). Branch protection for `main`
+# is not readable without admin rights (404 under `myia-ai-01`, #9991), so the
+# list lives here. `PR gate` is the check required by main protection; the
+# rest grow as protection grows.
+REQUIRED_CHECKS = ["PR gate"]
+
 START = "[ADJOINT PREFLIGHT]"
 END = "[/ADJOINT PREFLIGHT]"
 SHA_RE = re.compile(r"[0-9a-f]{40}")
@@ -654,7 +662,18 @@ def check_claim_contradictions(
     if claim != "latest-wins-green":
         return []
     contradictions = []
-    for name, run in sorted(latest_wins_check_runs(check_runs).items()):
+    latest = latest_wins_check_runs(check_runs)
+    # Required checks absent from the head are a contradiction -- the claim is
+    # that *all* required checks ran green, and a missing run says none of
+    # that. Without this branch, a head with no CI at all would satisfy the
+    # claim by vacuity (#18579).
+    for required in REQUIRED_CHECKS:
+        if required not in latest:
+            contradictions.append(
+                "checks claim 'latest-wins-green' is contradicted by missing "
+                f"required check '{required}' (no completed run on the head)"
+            )
+    for name, run in sorted(latest.items()):
         conclusion = (run.get("conclusion") or "").lower()
         if conclusion in GREEN_CONCLUSIONS:
             continue

@@ -1224,9 +1224,12 @@ def test_latest_wins_red_older_run_loses_to_newer_green():
 def test_skipped_and_neutral_conclusions_are_not_red():
     snapshot = _snapshot(_body())
     snapshot["checkRuns"] = [
-        {"id": 1, "name": "codeql", "status": "completed",
+        {"id": 1, "name": "PR gate", "status": "completed",
+         "conclusion": "success", "started_at": "2026-09-20T09:59:00Z",
+         "output": {"title": "PR gate -- all green"}},
+        {"id": 2, "name": "codeql", "status": "completed",
          "conclusion": "skipped", "started_at": "2026-09-20T10:00:00Z"},
-        {"id": 2, "name": "coverage", "status": "completed",
+        {"id": 3, "name": "coverage", "status": "completed",
          "conclusion": "neutral", "started_at": "2026-09-20T10:01:00Z"},
     ]
     verdict, errors = mod.evaluate(snapshot)
@@ -1827,3 +1830,48 @@ def test_main_exits_ready_when_organ_agrees(monkeypatch, capsys):
     monkeypatch.setattr(mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []})
     monkeypatch.setattr(sys, "argv", ["check_adjoint_prevalidation.py", "123"])
     assert mod.main() == mod.EXIT_READY
+
+
+# ---------------------------------------------------------------------------
+# Required-checks vacuity guard (#18579)
+# ---------------------------------------------------------------------------
+
+def test_required_check_absent_from_head_refuses_ready():
+    """A head that carries no completed run of `PR gate` cannot claim
+    `checks: latest-wins-green` -- the claim is that *all* required checks
+    ran green, and a missing run says none of that (#18579)."""
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"] = [
+        {"id": 1, "name": "codeql", "status": "completed",
+         "conclusion": "success", "started_at": "2026-09-20T10:00:00Z",
+         "output": {"title": "codeql ok"}},
+    ]
+    contradictions = mod.check_claim_contradictions(
+        "latest-wins-green", snapshot["checkRuns"]
+    )
+    assert any("missing required check 'PR gate'" in c for c in contradictions), contradictions
+
+
+def test_required_check_absent_vacuously_with_no_runs_at_all_refuses_ready():
+    """A head with no run at all (CodeQL excluded by branch protection scope)
+    cannot satisfy `latest-wins-green` by vacuity (#18579)."""
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"] = []
+    contradictions = mod.check_claim_contradictions(
+        "latest-wins-green", snapshot["checkRuns"]
+    )
+    assert any("missing required check 'PR gate'" in c for c in contradictions), contradictions
+
+
+def test_required_check_in_flight_without_completed_run_refuses_ready():
+    """A `PR gate` run still in flight is not a completed run; the absence of
+    a completed run says the head never saw the check (#18579)."""
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"] = [
+        {"id": 1, "name": "PR gate", "status": "in_progress",
+         "conclusion": None, "started_at": "2026-09-20T10:00:00Z"},
+    ]
+    contradictions = mod.check_claim_contradictions(
+        "latest-wins-green", snapshot["checkRuns"]
+    )
+    assert any("missing required check 'PR gate'" in c for c in contradictions), contradictions
