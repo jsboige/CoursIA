@@ -255,6 +255,47 @@ DELIVERY_NONE_IN_WINDOW = "none_in_window"  # mesure valide, aucune declaration
 DELIVERY_DELIVERED = "delivered"          # livraison datee, age calculable
 
 
+# --- Date de derniere livraison reelle pour le POOL ENTIER (#18203 geste 3) -
+#
+# `measure_delivery` ne couvre que les umbrellas (un sous-ensemble du pool).
+# La geste 3 veut mesurer l'attente d'une issue sur sa **derniere livraison**
+# (la derniere PR mergée qui la cite), pas sur son `updatedAt` -- un commentaire
+# de bot, un ping de dispatch ou un claim remettent `updatedAt` à zéro sans
+# livraison, et le facteur de poids du tirage en est trompé. Cette fonction
+# étend la mesure à toutes les issues du pool, pour que `weight()` puisse
+# pondérer l'attente sur la livraison et non plus sur l'activite.
+#
+# Sortie : `dict[int, str | None]` -- `None` si l'issue n'a aucune livraison
+# dans le corpus de PRs mergées (l'appelant doit alors retomber sur l'age de
+# creation pour ne pas laisser un silence se lire comme "fraicheur").
+def last_delivery_per_issue(prs, issue_numbers):
+    """Map issue -> `mergedAt` (ISO) de la PR la plus recente qui la cite, ou None.
+
+    Coût : zero appel reseau supplementaire -- c'est un regroupement du meme
+    corpus `delivery_prs` deja fetché pour `measure_delivery`. Le balayage est
+    O(N*M) sur N PRs * M issues, sans hash, parce que le pool fait < 1k
+    issues et la fenetre plafonne à `MERGED_FETCH_LIMIT` PRs.
+
+    Convention : `cited_issues(pr)` est la seule definition de "declare servir
+    une issue" (voir `#13435`). Le label `candidate-delivered` n'entre pas
+    ici -- c'est un signal de cycle (label pose par un workflow quotidien),
+    pas une livraison tracable sur le graphe de PRs.
+    """
+    requested = {int(n) for n in issue_numbers}
+    last: dict[int, str] = {}
+    for pr in prs or []:
+        if not pr.get("mergedAt"):
+            continue
+        stamp = pr["mergedAt"]
+        for num in cited_issues(pr):
+            if num in requested:
+                # max par comparaison lexicographique d'ISO 8601 (meme TZ)
+                cur = last.get(num)
+                if cur is None or stamp > cur:
+                    last[num] = stamp
+    return {n: last.get(n) for n in requested}
+
+
 def delivery_factor(state, age_days, window_days, boost_max):
     """Facteur theorique d'age de livraison, gradue de 1.0 a 1.0 + boost_max.
 
