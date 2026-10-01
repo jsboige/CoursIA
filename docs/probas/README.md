@@ -30,8 +30,9 @@ Volumes et maturité de la série : voir le marqueur `CATALOG-STATUS` dans `MyIA
 | **Inférence exacte** (réseaux bayésiens structurés) | Infer-3, Infer-4, PyMC-03, PyMC-04 | `Variable.BayesianNetwork` (Infer.NET), `pgmpy` (Python) |
 | **Échantillonnage MCMC / NUTS** | PyMC-01..19-*, DecPyMC-* | PyMC v5+ (NUTS par défaut), JAX backend optionnel |
 | **Message passing déterministe (EP/VMP)** | Infer-1..19-*, DecInfer-* (C#) | Infer.NET (Microsoft) — EP par défaut, Gibbs échantillonneur en option |
-| **Inférence causale (Pearl, échelle 1→3)** | PyMC-05, DecPyMC-01..03, DecisionTheory/Causal-Bridges (DoWhy 1-5) | `dowhy`, `causal-learn` (PC/GES/LiNGAM), backdoor/front-door/IV |
-| **Modèles hiérarchiques / IRT** | Infer-12, PyMC-12 | PyMC v5+, modèles multi-niveaux |
+| **Inférence causale** (Pearl, échelle 1→3) | Infer-5, PyMC-05, DecPyMC-01..03, DecisionTheory/Causal-Bridges (DoWhy 1-5) | `dowhy`, `causal-learn` (PC/GES/LiNGAM), backdoor/front-door/IV |
+| **Modèles hiérarchiques** (multi-niveaux, partial pooling) | Infer-12, PyMC-12 | PyMC v5+, modèles multi-niveaux |
+| **IRT / Skills rating** (compétences annotées, partial pooling par item) | Infer-7-Skills-IRT, PyMC-07-Skills-IRT | PyMC v5+, modèles de compétences annotées |
 | **TrueSkill** | Infer-08, PyMC-08 | TrueSkill 2007 (Herbrich), approximation EP/VMP |
 | **LDA / Topic Models** | Infer-11, PyMC-11 | NumPyro (LDA performant), PyMC v5 |
 | **HMM / Séquences** | Infer-14, PyMC-14 | `hmmlearn`, NumPyro |
@@ -66,4 +67,4 @@ Volumes et maturité de la série : voir le marqueur `CATALOG-STATUS` dans `MyIA
 - [`docs/README.md`](../README.md) — index racine de la documentation déportée (cf. section `Référence`).
 - [`.claude/rules/anti-regression.md`](../../.claude/rules/anti-regression.md) — protection contre le remplacement d'un carnet de contenu par un stub.
 
-This file lives at `docs/probas/README.md`, served as the entry page for anything Probas in `docs/`. It mirrors the discoverability index pattern of `docs/lean/README.md` and `docs/genai/README.md` (no CLAUDE.md reference yet — to be added when the corpus grows past a single discovery page).
+This file lives at `docs/probas/README.md`, served as the entry page for anything Probas in `docs/`. It mirrors the discoverability index pattern of `docs/lean/README.md` (no `docs/genai/README.md` yet — `docs/genai/` ships discovery documents per-subject rather than a single index).

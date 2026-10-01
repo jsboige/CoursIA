@@ -137,7 +137,7 @@ Index de découvrabilité pour la série Probabilités (`MyIA.AI.Notebooks/Proba
 | [reference/probas-history.md](reference/probas-history.md) | **Référence pérenne** du portage Infer.NET → Python (`Probas/`) — périmètre intentionnel (combien de carnets, quelle bibliothèque pour quel concept) + recommandation PyMC/NumPyro/pgmpy/hmmlearn/Pyro. Source canonique issue #297. Le mapping d'API ligne-à-ligne y est explicitement marqué *périssable* (poison si non re-testé). |
 | [reference/mbml-source-attribution.md](reference/mbml-source-attribution.md) | Attribution de source MBML/Infer.NET — table de correspondance carnet ↔ source canonique pour la série Probas/ (36 carnets Infer + PyMC + 2 racine vs *MBML Book* Herbrich + TrueSkill 2007 + WinBUGS/JAGS). Établie audit distillation #8081 (c.803, 2026-07-23). Les 4 sous-items de backfill/archivage extraits en issues filles #8702-#8705. Réqualification #7422 (déplacement audit/ → reference/, retrait des verdicts/décisions de cycle). |
 
-> Note : `mbml-source-attribution.md` est listé ici dans la section Probabilités, mais figure aussi dans la section Lean par inertie historique (placement initial c.803). Le présent déplacement restaure le classement par thème ; ne pas réintroduire la copie Lean.
+> Note : `mbml-source-attribution.md` figure ici dans la section Probabilités ; une copie Lean existait par inertie historique (placement initial c.803), retirée par ce déplacement. Ne pas réintroduire la copie Lean.
 
 ## ICT (docs/ict/)
 
