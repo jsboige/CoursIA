@@ -133,6 +133,10 @@ ADJOINT_LANE = "myia-po-2025:CoursIA-2"
 # malformed lane string fails closed rather than passing as "some lane".
 QUALIFYING_LANES = frozenset({
     "myia-ai-01:CoursIA",
+    # Worker lane on the coordinator's machine (clone `D:/CoursIA-2`, opened
+    # 2026-09-30). The machine does not make it the coordinator: it attests
+    # for other lanes like any worker, never for its own pull requests.
+    "myia-ai-01:CoursIA-2",
     "myia-po-2023:CoursIA",
     "myia-po-2023:CoursIA-2",
     "myia-po-2024:CoursIA",
