@@ -65,7 +65,7 @@ la boule dans le ravin, cellule 5). **Source** : `3.2` cellule 5
 ### Nesterov
 Variante du momentum qui *regarde un pas devant* : la vélocité est
 calculée en appliquant d'abord le momentum aux paramètres, puis en
-évaluant le gradient à ces paramètres «展望és ». **Source** : `3.2`
+évaluant le gradient à ces paramètres « extrapolés ». **Source** : `3.2`
 cellule 19 (Exercice 1) — distinction explicite avec le momentum
 classique dans l'énoncé.
 
