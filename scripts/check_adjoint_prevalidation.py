@@ -133,6 +133,10 @@ ADJOINT_LANE = "myia-po-2025:CoursIA-2"
 # malformed lane string fails closed rather than passing as "some lane".
 QUALIFYING_LANES = frozenset({
     "myia-ai-01:CoursIA",
+    # Worker lane on the coordinator's machine (clone `D:/CoursIA-2`, opened
+    # 2026-09-30). The machine does not make it the coordinator: it attests
+    # for other lanes like any worker, never for its own pull requests.
+    "myia-ai-01:CoursIA-2",
     "myia-po-2023:CoursIA",
     "myia-po-2023:CoursIA-2",
     "myia-po-2024:CoursIA",
@@ -185,6 +189,13 @@ BLOCKING_FIELDS = (
 # `neutral` are not failures; anything else completed (failure, timed_out,
 # cancelled, action_required, startup_failure, stale...) does (#16957).
 GREEN_CONCLUSIONS = {"success", "skipped", "neutral"}
+# Checks whose PRESENCE a `latest-wins-green` claim requires (#18579). Only
+# present checks can contradict the claim, so a head where the pull_request
+# workflows never fired (CodeQL legs only, or nothing at all) read green by
+# vacuity. `PR gate` is the check the protection of `main` requires; the
+# protection itself is not readable without admin rights (404 under
+# myia-ai-01, #9991), hence the list lives here.
+REQUIRED_CHECK_NAMES = ("PR gate",)
 START = "[ADJOINT PREFLIGHT]"
 END = "[/ADJOINT PREFLIGHT]"
 SHA_RE = re.compile(r"[0-9a-f]{40}")
@@ -324,7 +335,9 @@ _BOT_MARKER_GUARDS: tuple[str, ...] = (
 # dette reglee). Pas de second marqueur-statique ici.
 
 
-def _comment_body_for_fingerprint(row: dict[str, Any]) -> str:
+def _comment_body_for_fingerprint(
+    row: dict[str, Any], bot_forms_18637: bool = True
+) -> str:
     """Corps a hacher : le marqueur seul pour un commentaire de bot marker-garde.
 
     Un corps qui COMMENCE par un marqueur connu est reduit a ce marqueur : la
@@ -333,10 +346,14 @@ def _comment_body_for_fingerprint(row: dict[str, Any]) -> str:
     deplace) continuent de le faire.
     """
     body = row.get("body") or ""
-    for marker in _BOT_MARKER_GUARDS:
-        if body.startswith(marker):
-            return marker
-    return body
+    if not bot_forms_18637:
+        # Normalisation d'avant #18637, gardee pour les dossiers deja poses.
+        for marker in _BOT_MARKER_GUARDS:
+            if body.startswith(marker):
+                return marker
+        return body
+    key = _bot_advisory_key(row)
+    return key if key is not None else body
 
 
 # #17818 : la PREMIERE POSE d'un commentaire consultatif de bot marker-garde
@@ -353,6 +370,62 @@ def _comment_body_for_fingerprint(row: dict[str, Any]) -> str:
 BOT_ADVISORY_LOGIN = "github-actions[bot]"
 
 
+# #18637 : les autres commentaires consultatifs de bot. Mesure 2026-09-30
+# 21:50Z : sur 22 PRs refusees « discussion changed after dossier », 19 ne
+# l'etaient que par des commentaires de `github-actions[bot]` hors de la liste
+# ci-dessus -- les poses et reecritures des advisories `stale-claim` et
+# `factual-mislabel` (ajoutees le jour meme a toutes les PRs ouvertes), et les
+# resumes cosmetiques des gardes notebook, re-edites a chaque run.
+# Deux formes :
+# - marocchino/sticky-pull-request-comment place son marqueur EN FIN de corps
+#   (`<!-- Sticky Pull Request Comment<header> -->`), jamais a l'offset 0 ;
+# - trois resumes de bot sans marqueur HTML, reconnus par leur premiere ligne.
+# Les deux formes exigent l'auteur `github-actions[bot]` : un humain qui les
+# recopie perime toujours le dossier. Seuls des en-tetes CONSULTATIFS sont
+# listes -- leur verdict, quand il existe, vit dans un check-run que le champ
+# `checks:` du dossier atteste deja.
+_BOT_STICKY_ADVISORY_HEADERS: frozenset[str] = frozenset({
+    "ascii-flowchart-advisory",
+    "degraded-mode-advisory",
+    "factual-mislabel-advisory",
+    "markdown-claims-output-advisory",
+    "organ-duplication-advisory",
+    "outputs-text-fragmentation-advisory",
+    "render-volume-delta-advisory",
+    "stale-claim-advisory",
+})
+_STICKY_MARKER_RE = re.compile(
+    r"<!-- Sticky Pull Request Comment(?P<header>[A-Za-z0-9_-]+) -->\s*\Z"
+)
+_BOT_ONLY_PREFIX_MARKERS: tuple[str, ...] = (
+    "<!-- REVIEW-COVERAGE:START -->",  # scripts/review_coverage.py (advisory)
+    "## Golden-Set Execution (H.7 P3)",  # notebook-execution-required.yml, resume cosmetique
+    "## Notebook PR Validation: ",  # notebook-execution-required.yml, resume cosmetique
+    "## Notebook outputs-required (H.4 schema): ",  # notebook-outputs-required.yml, PATCH en place
+)
+
+
+def _bot_advisory_key(row: dict[str, Any]) -> str | None:
+    """Le marqueur qui identifie un commentaire consultatif de bot, sinon None.
+
+    `_BOT_MARKER_GUARDS` garde son contrat historique (prefixe, tout auteur) ;
+    les formes de #18637 exigent en plus l'auteur `github-actions[bot]`.
+    """
+    body = row.get("body") or ""
+    for marker in _BOT_MARKER_GUARDS:
+        if body.startswith(marker):
+            return marker
+    if _login(row) != BOT_ADVISORY_LOGIN:
+        return None
+    for marker in _BOT_ONLY_PREFIX_MARKERS:
+        if body.startswith(marker):
+            return marker
+    match = _STICKY_MARKER_RE.search(body)
+    if match and match.group("header") in _BOT_STICKY_ADVISORY_HEADERS:
+        return match.group(0).strip()
+    return None
+
+
 def _is_bot_advisory_pose(row: dict[str, Any]) -> bool:
     """True pour la premiere pose d'un commentaire consultatif de bot marker-garde.
 
@@ -363,8 +436,7 @@ def _is_bot_advisory_pose(row: dict[str, Any]) -> bool:
     """
     if _login(row) != BOT_ADVISORY_LOGIN:
         return False
-    body = row.get("body") or ""
-    return any(body.startswith(marker) for marker in _BOT_MARKER_GUARDS)
+    return _bot_advisory_key(row) is not None
 
 
 def _review_body_has_reserve_marker(author: str, body: str) -> bool:
@@ -459,6 +531,7 @@ def _fingerprint_payload(
     comment_limit: int | None = None,
     neutral_after: str | None = None,
     include_checks: bool = False,
+    bot_forms_18637: bool = True,
 ) -> dict[str, Any]:
     """Payload canonique de la fingerprint — factorise pour le diagnostic.
 
@@ -487,7 +560,7 @@ def _fingerprint_payload(
                 "id": row.get("id"),
                 "author": author(row),
                 "createdAt": row.get("createdAt"),
-                "body": _comment_body_for_fingerprint(row),
+                "body": _comment_body_for_fingerprint(row, bot_forms_18637),
             }
             for row in comments
         ],
@@ -613,7 +686,29 @@ def legacy_surfaces_fingerprint(
     stamp.
     """
     return _digest(
-        _fingerprint_payload(snapshot, comment_limit, neutral_after, True)
+        _fingerprint_payload(
+            snapshot, comment_limit, neutral_after, True, bot_forms_18637=False
+        )
+    )
+
+
+def pre18637_surfaces_fingerprint(
+    snapshot: dict[str, Any],
+    comment_limit: int | None = None,
+    neutral_after: str | None = None,
+) -> str:
+    """Empreinte d'avant #18637 : les commentaires de bot hors
+    ``_BOT_MARKER_GUARDS`` y sont haches sur leur corps ENTIER.
+
+    Gardee pour que les dossiers poses avant #18637 restent verifiables tant
+    que leurs surfaces n'ont pas bouge. Ce digest hache strictement plus de
+    contenu que l'empreinte courante : l'accepter n'affaiblit rien. A retirer
+    quand aucun dossier ouvert ne porte plus ce tampon.
+    """
+    return _digest(
+        _fingerprint_payload(
+            snapshot, comment_limit, neutral_after, False, bot_forms_18637=False
+        )
     )
 
 
@@ -654,7 +749,21 @@ def check_claim_contradictions(
     if claim != "latest-wins-green":
         return []
     contradictions = []
-    for name, run in sorted(latest_wins_check_runs(check_runs).items()):
+    verdicts = latest_wins_check_runs(check_runs)
+    # A required check with no completed run on the head is a contradiction
+    # too: an absent check cannot be green (#18579). `None` means the snapshot
+    # carries no check-runs at all (never the case live, where
+    # `_head_check_runs` always fills the list) and keeps the historic reading.
+    if check_runs is not None:
+        for name in REQUIRED_CHECK_NAMES:
+            if name not in verdicts:
+                contradictions.append(
+                    "checks claim 'latest-wins-green' is contradicted by the "
+                    f"absence of required check '{name}' on the head (no "
+                    "completed run: the pull_request workflows may never have "
+                    "fired, #18579)"
+                )
+    for name, run in sorted(verdicts.items()):
         conclusion = (run.get("conclusion") or "").lower()
         if conclusion in GREEN_CONCLUSIONS:
             continue
@@ -869,7 +978,12 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
     legacy_fingerprint = legacy_surfaces_fingerprint(
         snapshot, dossier.comment_index, dossier.created_at
     )
-    if f.get("surfaces-sha256") not in {live_fingerprint, legacy_fingerprint}:
+    pre18637_fingerprint = pre18637_surfaces_fingerprint(
+        snapshot, dossier.comment_index, dossier.created_at
+    )
+    if f.get("surfaces-sha256") not in {
+        live_fingerprint, legacy_fingerprint, pre18637_fingerprint
+    }:
         # #16931 defaut 3 (mesure 16928) : deux hachages opaques sont
         # inexploitables — la lane refabrique le dossier EN AVEUGLE. Le refus
         # nomme la surface divergente, comme check_unaddressed_nits --json

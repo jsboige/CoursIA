@@ -23,7 +23,7 @@ from unittest import mock
 import pytest
 
 # Mirror the import style from test_strip_machine_paths.py
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[3]
 SCRIPTS_SECURITY = REPO_ROOT / "scripts" / "security"
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 

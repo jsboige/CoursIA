@@ -64,7 +64,7 @@ References academiques avec couverture par notebook + bibliotheques + formalisat
 1. **Decompte avant le pourquoi** -- bandeau de chiffres en gras en ouverture (`GenAI/README.md:12`). Les chiffres font foi dans `COURSE_CATALOG.generated.md` ; le README ouvre sur la pedagogie.
 2. **Duplication parent/enfant quasi-verbatim** -- ex. « l'audio, parent pauvre » present dans `GenAI/README.md:58` ET `GenAI/Audio/README.md:12`. Regle : le parent resume en un paragraphe + lien ; le detail appartient a l'enfant.
 3. **Ponts copies-colles** -- bloc « Cross-series bridges » au format identique dans 9 READMEs sur 12, connexions generiques d'une ligne (`ML/README.md:264-269`). Cf. format section 9.
-4. **FAQ hypertrophiees** -- souvent le plus gros bloc du fichier (`Sudoku/README.md:606-668` : 63 lignes ; `GameTheory/README.md:354-420` : 67 lignes). Borner a ~6 questions ; le surplus remonte dans l'intro ou part en doc dediee.
+4. **FAQ hypertrophiees** -- souvent le plus gros bloc du fichier (`Sudoku/README.md:606-668` ; `GameTheory/README.md:354-420`). Borner a ~6 questions ; le surplus remonte dans l'intro ou part en doc dediee.
 5. **Navigation absente** -- generaliser la barre de `GenAI/Image/README.md:3` (cf. section 2).
 
 ## Regles de redaction (heritees de la passe Partie 1)
@@ -83,5 +83,5 @@ Les blocs CATALOG-STATUS et `COURSE_CATALOG.generated.*` sont **bot-owned** : ja
 
 - **1 livrable par PR** : une serie, ou un petit lot coherent de 4-6 sous-series. Pas de composite.
 - **Conserver les specificites legitimes** de chaque serie (miroirs C#/Python, phases, sous-series) : le gabarit normalise la structure, pas le contenu.
-- **Cibles prioritaires (bimodalite niveau 2)** : remonter les stubs (`GenAI/CaseStudies` 61 lignes, `QuantConnect/projects` 86, `Search/Part1` 111) vers le gabarit ; reequilibrer les tres longs (`Probas/Infer` 1069 lignes) sans perte de contenu réel.
+- **Cibles prioritaires (bimodalite niveau 2)** : remonter les stubs (`GenAI/CaseStudies`, `QuantConnect/projects`, `Search/Part1`) vers le gabarit ; reequilibrer les tres longs (`Probas/Infer`) sans perte de contenu réel.
 - **Enrichissement** : rapprocher chaque entrée de table du contenu réel du notebook (ce qu'il demontre, point cle), pour prolonger les intros du README principal.

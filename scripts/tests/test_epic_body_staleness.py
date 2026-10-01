@@ -369,3 +369,28 @@ def test_list_open_epics_keeps_only_epics(monkeypatch):
     monkeypatch.setattr(_MODULE, "_gh_json", lambda args: rows)
 
     assert [epic.number for epic in _MODULE.list_open_epics("example/repo")] == [1, 3]
+
+
+def test_daily_sweep_workflow_runs_staleness_detector_advisory():
+    """#18203 geste 4: the analyzer is wired into the daily EPIC sweep.
+
+    On `main` the workflow never invokes epic_body_staleness.py: the analyzer
+    exists but nothing schedules it, so a stale body stays invisible between
+    two manual looks. Wiring contract asserted here: the sweep job invokes
+    the analyzer, its payload goes to the run summary, and the invocation is
+    guarded so a failed fetch never reds the advisory job.
+    """
+    wf_path = (
+        Path(__file__).resolve().parents[2]
+        / ".github" / "workflows" / "epic-neglect-sweep.yml"
+    )
+    text = wf_path.read_text(encoding="utf-8")
+    assert "epic_body_staleness.py" in text, (
+        "the daily sweep must run the staleness analyzer"
+    )
+    assert "GITHUB_STEP_SUMMARY" in text, (
+        "the staleness payload goes to the run summary"
+    )
+    assert "if ! python scripts/epic_body_staleness.py" in text, (
+        "the invocation is guarded: advisory means a failed fetch warns, never reds"
+    )

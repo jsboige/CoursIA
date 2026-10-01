@@ -601,5 +601,72 @@ theorem Reidemeister3Connected.arcPartition_covered_iff {d₁ d₂ : KnotDiagram
     obtain ⟨C, hC, hz, _⟩ := heq.mpr ⟨D, hD, hzD, hzD⟩
     exact ⟨C, hC, hz⟩
 
+/-! ## 6. L'invariance naive est refutee (forme explicite, acceptance de #16650)
+
+La section 4 a mesure les deux valeurs du mineur designe du temoin pour la
+**meme** donnee de chiralite `[true, true, true, true, true]` : cote X,
+`t³ - t²` (theoreme temoin de la brique 4) ; cote Y, `0` — la chirurgie
+aligne la ligne du croisement reecrit sur celle du kink, le rang tombe a 3,
+et **tout** mineur 4×4 s'annule. Aucune unite `ε · t^k` ne relie `t³ - t²`
+a `0` : c'est la refutation formelle de l'invariance « a une unite pres »
+pour `alexanderPolynomialSigned` sur les diagrammes porteurs de kink.
+
+Le temoin est R3-connecte (`reidemeister3Connected_satisfiable`) : le
+contre-exemple est interne au lake, kernel-verifie, sans hypothese
+supplementaire. Portee — ce que la refutation ne dit pas :
+
+* l'argument de reindexation du cas `i ≥ 1` (section 1) n'est pas touche :
+  il concerne les diagrammes ou le triangle est hors de la ligne supprimee,
+  et la section 5 en etablit la premisse generale ;
+* toute variante positive devra s'en tenir aux diagrammes sans kink (ou
+  prendre l'hypothese de rang `n - 1` du classique, rappelee en section 4),
+  ou rendre le couple (ligne, colonne) supprime adaptatif ;
+* la remontee au niveau de la matrice (fin de section 5) ne repare pas la
+  refutation : le contre-exemple partage deja la **meme** partition d'arcs
+  des deux cotes (controle de la section 3), la chirurgie n'y joue donc pas
+  sur les colonnes — c'est la **ligne** reecrite qui s'aligne sur celle du
+  kink.
+-/
+
+/-- Refutation explicite de l'invariance « a une unite pres » : sur la paire
+    temoin R3-connectee, pour la donnee de chiralite commune `[true, true,
+    true, true, true]`, aucune unite `ε · t^k` (`ε = ±1`) ne relie les deux
+    valeurs du polynome signe — cote X `t³ - t²` (non nul : valeur `4` en
+    `2`), cote Y `0`. C'est la reponse a la branche « ou refutation
+    documentee et motivee » de l'acceptance de #16650. -/
+theorem reidemeister3Connected_alexanderSigned_witness_not_unit_related :
+    ¬ ∃ (k : ℕ) (ε : ℤ), ε * ε = 1 ∧
+      alexanderPolynomialSigned
+        { crossings := [⟨1, 2, 7, 8⟩, ⟨3, 7, 9, 4⟩, ⟨9, 8, 5, 6⟩,
+                        ⟨1, 2, 10, 10⟩, ⟨3, 4, 5, 6⟩], numEdges := 10 }
+        [true, true, true, true, true]
+      = Polynomial.C ε * Polynomial.X ^ k *
+        alexanderPolynomialSigned
+          { crossings := [⟨3, 4, 9, 7⟩, ⟨9, 2, 5, 8⟩, ⟨7, 8, 1, 6⟩,
+                          ⟨1, 2, 10, 10⟩, ⟨3, 4, 5, 6⟩], numEdges := 10 }
+          [true, true, true, true, true] := by
+  rintro ⟨k, ε, -, h⟩
+  rw [reidemeister3Connected_alexanderSigned_witness_X,
+    reidemeister3Connected_alexanderSigned_witness_Y_zero, mul_zero] at h
+  have h2 := congrArg (Polynomial.eval (2 : ℤ)) h
+  simp only [Polynomial.eval_sub, Polynomial.eval_pow, Polynomial.eval_X,
+    Polynomial.eval_zero] at h2
+  norm_num at h2
+
+/-- **L'invariance naive de `alexanderPolynomialSigned` est refutee** : il
+    existe une paire de diagrammes R3-connectes et une donnee de chiralite
+    commune pour lesquelles aucune unite `ε · t^k` ne relie les deux valeurs
+    du polynome signe. Le couple temoin de
+    `reidemeister3Connected_satisfiable` suffit — forme existentielle de la
+    refutation ponctuelle ci-dessus. -/
+theorem reidemeister3Connected_alexanderSigned_invariance_refuted :
+    ∃ (d₁ d₂ : KnotDiagram) (s : List Bool),
+      Reidemeister3Connected d₁ d₂ ∧
+      ¬ ∃ (k : ℕ) (ε : ℤ), ε * ε = 1 ∧
+        alexanderPolynomialSigned d₁ s =
+          Polynomial.C ε * Polynomial.X ^ k * alexanderPolynomialSigned d₂ s :=
+  ⟨_, _, [true, true, true, true, true], reidemeister3Connected_satisfiable,
+    reidemeister3Connected_alexanderSigned_witness_not_unit_related⟩
+
 end Knots
 
