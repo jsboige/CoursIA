@@ -97,6 +97,13 @@ on:
       # declencheur sur ses propres sources -- argumentation_lib/** ne fait pas
       # partie de scripts/**, donc une PR qui vendorise un module + ses tests
       # n'executait jamais la suite (#10416 pattern). Miroir push/pull_request.
+      # Complement #18681 : la suite argumentation (302 tests dont 2 sous
+      # argumentation_lib/) vit sous ce prefixe ; PR #18490 a casse 2 tests
+      # (test_argumentation_state.py:473/:484, ValueError _shared_state.py:1292)
+      # avec 94 checks verts -- scripts-tests.yml ne s'est pas declenche parce
+      # qu'aucun chemin ne matchait la PR ne touchant que argumentation_lib/.
+      # On aligne le trigger avec le run effectif (la commande pytest ligne 347
+      # inclut deja MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis).
       - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/argumentation_lib/**'
       - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/tests/**'
   pull_request:
@@ -135,11 +142,8 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/**'
       - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/ontologies/**'
       - 'scripts/fallacy_detection/**'
-      # #18392 texte->PL : la suite pytest de Argument_Analysis/tests (collectee
-      # par le job ci-dessous, cible Argument_Analysis entiere) n'avait AUCUN
-      # declencheur sur ses propres sources -- argumentation_lib/** ne fait pas
-      # partie de scripts/**, donc une PR qui vendorise un module + ses tests
-      # n'executait jamais la suite (#10416 pattern). Miroir push/pull_request.
+      # #18392 texte->PL + complement #18681 : voir le bloc push: ci-dessus --
+      # alignement trigger/run effectif pour la suite argumentation.
       - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/argumentation_lib/**'
       - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/tests/**'
   workflow_dispatch:
