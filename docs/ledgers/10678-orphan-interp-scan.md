@@ -45,7 +45,7 @@ Vérification cell-by-cell (manuelle) pour distinguer MISPLACED vs LEGIT :
 
 Le bug c.237 **n'est pas dans la classification** mais dans le **manque de heuristique sémantique** : la regex keywords → code contenant ces keywords pourrait détecter des cas comme 02-SK-Advanced cell[34] où l'interp parle de "Multi-Result" mais le code précédent est `analyze_diversity`.
 
-Patch suggéré (5 lignes dans `check_interp_positioning.py`) :
+Patch suggéré dans `check_interp_positioning.py` :
 
 ```python
 # AVANT (c.237 — légitime seulement pour legit cases)
@@ -309,7 +309,7 @@ Voir aussi : [rapport c.237 original](10678-interp-positioning-audit.md) (24 CHE
 
 ## Recommandation Phase 3 (PR #10682)
 
-Le script `check_interp_positioning.py` doit corriger ce blind spot en 5 lignes :
+Le script `check_interp_positioning.py` doit corriger ce blind spot :
 
 ```python
 # AVANT (c.237 bug)
