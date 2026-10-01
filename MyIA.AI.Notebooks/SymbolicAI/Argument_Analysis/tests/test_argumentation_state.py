@@ -475,9 +475,9 @@ class TestWeakAndFallacious:
         u = UnifiedAnalysisState("t")
         u.add_argument("faible")
         u.add_argument("fort")
-        u.add_quality_score("arg_1", {}, overall=2.0)   # < 5.0 -> faible
-        u.add_quality_score("arg_2", {}, overall=8.0)   # >= 5.0 -> ok
-        weak = u.get_weak_arguments(threshold=5.0)
+        u.add_quality_score("arg_1", {"clarity": 0.2}, overall=0.2)   # fraction 0.2 < 0.5 -> faible
+        u.add_quality_score("arg_2", {"clarity": 0.8}, overall=0.8)   # fraction 0.8 >= 0.5 -> ok
+        weak = u.get_weak_arguments(threshold=0.5)
         weak_ids = [p.arg_id for p in weak]
         assert weak_ids == ["arg_1"]
 
@@ -485,7 +485,7 @@ class TestWeakAndFallacious:
         """Un arg sans score qualité n'est pas 'faible' (pas de score du tout)."""
         u = UnifiedAnalysisState("t")
         u.add_argument("no score")
-        assert u.get_weak_arguments(threshold=5.0) == []
+        assert u.get_weak_arguments(threshold=0.5) == []
 
     def test_get_fallacious_arguments(self):
         """Args cibles d'au moins 1 sophisme (target valide)."""
