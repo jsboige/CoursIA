@@ -182,33 +182,66 @@ _FENCE_RE = re.compile(r"^(```|~~~)")
 
 
 def has_hr_separator(rel_path: str) -> bool:
-    """True si une cellule markdown porte un `---` en separateur horizontal.
+    """True si un fichier (notebook .ipynb OU .md) porte un `---` hr separator.
 
-    Ignore les `---` a l'interieur d'un bloc de code, et les `---` qui
-    SOULIGNENT du texte (titre setext H2) : seul un `---` precede d'une ligne
-    vide ou du debut de cellule ouvre un bloc de metadonnees.
+    Detection issue #11451 (notebooks) etendue aux .md par #18422. Un `---`
+    seul en debut de cellule-ligne (apres une ligne vide ou au tout debut)
+    ouvre un bloc `yaml_metadata_block` que Quarto interprete en YAML ->
+    `YAMLException` -> AUCUNE page publiee.
+
+    Regles distinguees :
+      - `.ipynb` : on parse le JSON et on itere sur `cells` (markdown uniquement)
+      - `.md` : on lit le texte brut ligne par ligne (memes regles setext / fence)
+
+    Dans les deux cas on ignore :
+      - les `---` a l'interieur d'un bloc de code fence (``` ou ~~~)
+      - les `---` qui SOULIGNENT du texte (titre setext H2) : seul un `---`
+        precede d'une ligne vide ou du debut de cellule-ligne ouvre un bloc.
     """
     try:
-        nb = json.loads((REPO_ROOT / rel_path).read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return False  # illisible ici : laisser la CI trancher
-    for cell in nb.get("cells", []):
-        if cell.get("cell_type") != "markdown":
+        content = (REPO_ROOT / rel_path).read_text(encoding="utf-8")
+    except OSError:
+        return False  # fichier inexistant / illisible : laisser la CI trancher
+    # Branche notebook (.ipynb) : JSON, on itere sur les cellules markdown
+    if rel_path.endswith(".ipynb"):
+        try:
+            nb = json.loads(content)
+        except ValueError:
+            return False  # JSON invalide : laisser la CI trancher
+        for cell in nb.get("cells", []):
+            if cell.get("cell_type") != "markdown":
+                continue
+            src = cell.get("source")
+            text = "".join(src) if isinstance(src, list) else (src or "")
+            if _text_has_hr(text):
+                return True
+        return False
+    # Branche markdown (.md) : texte brut, on scanne ligne a ligne
+    if rel_path.endswith(".md"):
+        return _text_has_hr(content)
+    # Autres extensions : pas de garde
+    return False
+
+
+def _text_has_hr(text: str) -> bool:
+    """Helper : True si le texte markdown porte un `---` hr separator.
+
+    Reprend la logique de la garde #11451 : un `---` seul en debut de
+    cellule-ligne (apres une ligne vide ou au tout debut) ouvre un bloc
+    YAML. Les `---` dans un bloc fence ou en soulignement setext sont ignores.
+    """
+    lines = text.split("\n")
+    in_fence = False
+    for i, line in enumerate(lines):
+        if _FENCE_RE.match(line.strip()):
+            in_fence = not in_fence
             continue
-        src = cell.get("source")
-        text = "".join(src) if isinstance(src, list) else (src or "")
-        lines = text.split("\n")
-        in_fence = False
-        for i, line in enumerate(lines):
-            if _FENCE_RE.match(line.strip()):
-                in_fence = not in_fence
-                continue
-            if in_fence:
-                continue
-            if line.rstrip() == "---":
-                prev = lines[i - 1].strip() if i > 0 else ""
-                if prev == "":
-                    return True
+        if in_fence:
+            continue
+        if line.rstrip() == "---":
+            prev = lines[i - 1].strip() if i > 0 else ""
+            if prev == "":
+                return True
     return False
 
 
