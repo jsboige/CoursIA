@@ -1,3 +1,11 @@
+# Archive header (standard _archive convention, 2026-08, docs/reference/_archive-convention.md)
+# - Date archived     : 2026-10-01
+# - Superseded by     : none (closed dead-end — codepath machine-local; BDD execution driver with no surviving consumer)
+# - Verdict recorded in : issue #13745 umbrella 'notebook_tools orphans' + #14153 palier 1 (axe D #16473)
+#
+# Per-function disposition :
+# - main body          : abandoned — one-shot terminated, no consumer; kept verbatim for forensic replay
+
 """
 Execute Sudoku-14-BDD-CSharp.ipynb cell-by-cell via .net-csharp kernel.
 Uses jupyter_client to connect to the kernel, execute each code cell,

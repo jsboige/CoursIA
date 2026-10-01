@@ -1,3 +1,12 @@
+# Archive header (standard _archive convention, 2026-08, docs/reference/_archive-convention.md)
+# - Date archived     : 2026-10-01
+# - Superseded by     : none (closed dead-end ; test orphelin archivé avec son module - `scripts/smartcontracts/convert_print_to_deploy.py` - déplacement couplé palier 1 #18153)
+# - Verdict recorded in : #18153 palier 1 (axe D #16473)
+#
+# Per-test disposition :
+# - test_solve_method (3 tests) : abandoned — l'implémentation per-dessus est archivée ; tests conservés à des fins de réexécution différée si le module ressuscite un jour (forensic replay).
+#                                  Les 3 fonctions testées (`source_text`, `make_source_list`, `transform_print_cell`) ne sont plus chargées par aucun autre code.
+
 """Tests for ``scripts/smartcontracts/convert_print_to_deploy.py`` (pure functions).
 
 ``convert_print_to_deploy.py`` is a **one-shot migration script** that rewrites
