@@ -28,7 +28,7 @@ pédagogique. Historique : 5 sorry à la création, déchargés à **2** (baseli
 **0 sorry**.
 
 ² Deux notebooks câblés sous `Probas/DecisionTheory/DecInfer/` : **DecInfer-02**
-(Lean Expected Utility) et **DecInfer-09** (Lean Gittins — preuves en cellules Lean).
+(Lean Expected Utility) et **DecInfer-08b** (Lean Gittins — preuves en cellules Lean).
 La série Infer « Decision » (.NET Interactive) reste le companion conceptuel
 utilité/décision.
 
@@ -162,7 +162,7 @@ documenté historiquement — a été supprimé du dépôt.)*
 ## Notes transverses
 
 - **Couverture** : cet inventaire couvre les **deux** lakes de `Probas/` —
-  `decision_theory_lean` (racine série) et `percolation_lean`
+  `decision_theory_lean` (`DecisionTheory/`, descendu auprès de ses consommateurs #4362) et `percolation_lean`
   (`Applications/Percolation/`, intégré ici par P3 de #14873 ; le Total historique
   ne comptait pas `percolation_lean` (créé après lui, #14927)).
 - **Honnêteté des jalons ouverts (G.3/G.9)** : `decision_theory_lean` documente ses jalons

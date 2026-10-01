@@ -91,7 +91,7 @@ class TestLooksNav:
     def test_marker_in_the_CELL_not_the_line(self):
         # Sudoku-06 : le bloc est une TABLE sous un titre, donc marqueur et liens
         # sont sur DEUX lignes. Portee ligne = faux orphelin mesure.
-        assert cnc._looks_nav("Sudoku-05-PSO", "Sudoku-05-PSO-Csharp.ipynb", "table row", True)
+        assert cnc._looks_nav("Sudoku-05-PSO", "Sudoku-05-PSO-CSharp.ipynb", "table row", True)
 
     def test_prose_filename_in_backticks_is_not_an_edge(self):
         # GameTheory-24b : `Suite du banc toy \`GameTheory-18c-Humour-Banc-Python.ipynb\``
