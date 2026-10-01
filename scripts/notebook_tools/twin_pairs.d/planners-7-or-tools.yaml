@@ -19,6 +19,7 @@
     equivalent, asymetrie mineure de lib viz n'impactant pas le semantisme). `parity_level: native-both`
     preserve : parite engine.
   known_differences:
+    - "#navfix 03-Advanced (PR a venir) : le twin C# n'avait AUCUNE ligne Navigation (orphelin -- 6-C# pointait >> vers lui, il ne pointait nulle part). Ligne posee en miroir du twin Python, cibles chaine C# : << ../02-Classical/Planners-6-Domains-Csharp.ipynb | Index | Planners-8-Temporal-Csharp.ipynb >>. Divergence de liens nav VOLONTAIRE, hors perimetre de comparaison contenu."
     - "Concept : planification orientee satisfaction de contraintes (Job-Shop scheduling, CP-SAT)."
     - "Python : OR-Tools CP-SAT Python bindings (solveur SOTA). C# : deux tranches — Tranche 1 from-scratch BCL .NET (0 NuGet, backtracking + propagation, enseigne les mecanismes) + Tranche 2 Google.OrTools CP-SAT natif .NET (moteur de production, depuis 2026-08-11)."
     - "Parite engine (native-both depuis 2026-08-11) : les deux cotes atteignent un moteur CP-SAT de production (Python OR-Tools, C# Google.OrTools). Le from-scratch C# reste EN PLUS (jamais a la place), critere owner #10382. Meme exemple de reference : exemple OR-Tools \"a simple example of a job shop problem\" (3 jobs / 3 machines, 8 operations, makespan OPTIMAL = 11 des deux cotes)."
