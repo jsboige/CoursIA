@@ -77,8 +77,7 @@ $SecuredServices = @(
     "genai.epf.open-webui.myia.io",
     "epita.open-webui.myia.io",
     "tika.open-webui.myia.io",
-    "pauwels.open-webui.myia.io",
-    "michelle.myia.io"
+    "pauwels.open-webui.myia.io"
 )
 
 # =============================================================================
