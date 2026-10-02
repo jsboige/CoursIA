@@ -42,6 +42,8 @@
 import Knots.Basic_en
 import Knots.Reidemeister_en
 import Knots.Invariant_en
+import Knots.Mutation_en
+import Knots.ConwayPD_en
 import Knots.Conway_en
 import Knots.Slice_en
 import Knots.ReidemeisterInvariance_en
