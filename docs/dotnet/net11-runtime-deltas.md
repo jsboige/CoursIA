@@ -121,7 +121,7 @@ de la chaîne notebook complète sous .NET 11 RC (kernel, Roslyn scripting, ML.N
 
 - **Logs BDN — 45 = 5 bancs × 3 passes × 3 runtimes** : gist [d434d4dc](https://gist.github.com/jsboige/d434d4dc48db03a37bab05259921d4be) (secret, accessible par lien), manifeste `SHA256SUMS.txt` inclus, empreinte SHA-256 du manifeste `47951d824eccec4e0974142405734623c332b2ae79dd74bd9a234bbc3514c052`. Chaque log porte son header `// Runtime=.NET X.Y.Z` (9.0.20 / 10.0.12 / 11.0.0) ; l'interleave des passes se lit sur les timestamps consécutifs — ex. MGS : passe 1 à 12:23:05/08/11, passe 2 à 12:24:18/21/23, passe 3 à 12:24:48/51/53.
 - **SHA exacts des bancs mesurés** (branche `feature/benchmarkdotnet-baseline`, clones depth-1) : MetaGeneticSharp `365a4fb2384f` · Z3.Linq `b804c30859e9` · Automata `abaabd1b6518` · semantic-fleet `ff0dfb47c052` · Argumentum `709e6d05f6c2`.
-- **Traces carnets (volet wall-clock)** : les copies temporaires n'ont pas été préservées à la mesure — défaut de protocole assumé, la re-mesure avec préservation des artefacts exécutés est programmée sur l'issue de suivi dédiée. Les carnets prouvent la compatibilité, pas le delta : l'instrument de mesure reste les bancs ci-dessus.
+- **Traces carnets (volet wall-clock)** : les copies temporaires n'ont pas été préservées à la mesure — défaut de protocole assumé, la re-mesure avec préservation des artefacts exécutés est programmée sur l'issue #18878. Les carnets prouvent la compatibilité, pas le delta : l'instrument de mesure reste les bancs ci-dessus.
 
 ## Reproduire
 
