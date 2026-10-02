@@ -84,6 +84,13 @@ def _default_runner(cmd, **kwargs):  # pragma: no cover - trivial default
     return subprocess.run(cmd, **kwargs)
 
 
+def _now():
+    """Horloge du détecteur, injectable en test (fixtures ancrées à une date
+    fixe : sans injection, un test de main() devient rouge 24 h après sa
+    rédaction, le churn des fixtures sortant de la fenêtre --window-hours)."""
+    return datetime.now(timezone.utc)
+
+
 def _parse_ts(value: str) -> datetime:
     """ISO-8601 GitHub (« 2026-09-05T20:21:00Z ») -> datetime UTC aware.
 
@@ -272,7 +279,7 @@ def main(argv: Optional[list] = None) -> int:
                         help="rc=2 si au moins une détection (pour cron)")
     args = parser.parse_args(argv)
 
-    now = datetime.now(timezone.utc)
+    now = _now()
     try:
         prs = fetch_open_prs(args.repo, limit=args.limit)
         candidates = analyze(

@@ -16,7 +16,7 @@ Une **veille** (texte connu et non traité) figure dans le tableau comme une lig
 | Recherche en sûreté de l'IA — veille | — | veille | *International AI Safety Report 2026* (arXiv 2602.21012) et ses deux *Key Updates* | non traité |
 | Recherche en sûreté de l'IA — veille | — | veille | *Towards Guaranteed Safe AI* | non traité (#16761) |
 | Science ouverte et évaluation | — (section de Leiden tant qu'il n'y a pas de pratique propre) | section | UNESCO Open Science, FAIR, DORA | traité (section du document Leiden) |
-| Fondateurs de la discipline | — (`aima-armature.md` à créer, arc E de Epic #17528) | armature | AIMA 4e, textes de position des auteurs, position « benchmark-driven AI » (OpenReview 2026) | non traité |
+| Fondateurs de la discipline | [`aima-armature.md`](aima-armature.md) | armature | AIMA 4e, textes de position des auteurs, position « benchmark-driven AI » (ICML 2026) | traité (#17541) |
 | Lecture interne transversale | [`grothendieckian-lens.md`](../grothendieckian-lens.md) | lens | — | traité (clé de lecture) |
 
 ## Règles d'agrégation
