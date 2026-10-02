@@ -38,3 +38,14 @@ lean_lib «PetersTour» where
   -- aussi : sans cela, PetersTour_en.lean n'est jamais élaboré et un Lean CI
   -- vert est un faux pass (orphan-trap #6749). Même pattern que sudoku_lean.
   globs := #[`PetersTour, `PetersTour_en]
+
+/-
+  Tranche 1 du plan #17988 (issue parente) — socle de définitions du core
+  d'approbation (Becker-Greger-Peters 2026, arXiv 2609.11912).
+
+  `ApprovalDefs` (FR) et `ApprovalDefs_en` (EN) forment une paire i18n #4980
+  (sibling byte-identical hors commentaires). Le glob EN est explicite pour
+  éviter l'orphan-trap #6749. Voir `scripts/lean/check_i18n_siblings.py`.
+-/
+lean_lib «ApprovalDefs» where
+  globs := #[`ApprovalDefs, `ApprovalDefs_en]
