@@ -59,21 +59,41 @@ namespace Szpiro_en
 /-- Admissible factorization `N = D * M` in the sense of Pasten 2026
 (definition preceding Theorem 1.1): `D` and `M` coprime, `D` squarefree, and
 `D` with an **even** number of prime factors. -/
-@[reducible]
 def AdmissibleFactorization (D M : ℕ) : Prop :=
-  D.gcd M = 1 ∧ Squarefree D ∧ D.primeFactorsList.length % 2 = 0
+  D.gcd M = 1 ∧ Squarefree D ∧ Even D.primeFactorsList.length
 
 /-- `N = 30 = 2·3·5`: the trivial factorization (`D = 1`, zero prime factors
-— zero is even) is admissible. First row of the notebook §2 table. -/
-theorem admissible_trente_triviale : AdmissibleFactorization 1 30 := by decide
+— zero is even) is admissible. First row of the notebook §2 table. (`decide`
+cannot evaluate `primeFactorsList` — well-founded recursion, not
+kernel-executable: each fact is proved by the matching Mathlib lemma, only
+`gcd` is decided.) -/
+theorem admissible_trente_triviale : AdmissibleFactorization 1 30 :=
+  ⟨by decide, squarefree_one, by rw [Nat.primeFactorsList_one]; exact ⟨0, rfl⟩⟩
 
-/-- `N = 30`: `D = 15 = 3·5` (two prime factors, even) is admissible. -/
-theorem admissible_trente_quinze : AdmissibleFactorization 15 2 := by decide
+/-- `N = 30`: `D = 15 = 3·5` (two prime factors, even) is admissible.
+`Squarefree 15` goes through `squarefree_iff_nodup_primeFactorsList` and the
+permutation `15 = 3·5` (lemmas `perm_primeFactorsList_mul_of_coprime` and
+`primeFactorsList_prime`). -/
+theorem admissible_trente_quinze : AdmissibleFactorization 15 2 := by
+  have hp3 : Nat.Prime 3 := by norm_num
+  have hp5 : Nat.Prime 5 := by norm_num
+  have hperm : (15 : ℕ).primeFactorsList ~ₚ [3, 5] := by
+    have h15 : (15 : ℕ) = 3 * 5 := by decide
+    rw [h15, Nat.perm_primeFactorsList_mul_of_coprime
+      (by decide : Nat.Coprime 3 5), Nat.primeFactorsList_prime hp3,
+      Nat.primeFactorsList_prime hp5]
+  refine ⟨by decide, ?_, ?_⟩
+  · exact Nat.squarefree_iff_nodup_primeFactorsList.2 (hperm.nodup_iff.2 (by decide))
+  · exact ⟨1, hperm.length_eq.trans rfl⟩
 
 /-- Parity counter-example of notebook §2: `D = 2` has exactly **one** prime
 factor (odd), so `30 = 2·15` is NOT admissible — although `gcd(2, 15) = 1`
-and `2` is squarefree. The parity constraint alone carries the exclusion. -/
-theorem non_admissible_trente_deux : ¬AdmissibleFactorization 2 15 := by decide
+and `2` is squarefree. The parity constraint alone carries the exclusion
+(`primeFactorsList_two`, then `odd_one`). -/
+theorem non_admissible_trente_deux : ¬AdmissibleFactorization 2 15 := by
+  intro h
+  rw [Nat.primeFactorsList_two] at h
+  exact Nat.not_odd_iff_even.2 h.2.2 Nat.odd_one
 
 /-- φ(15) = 8: the value used by notebook §2 (`borne_11`) for the best
 admissible factorization of `N = 30`. -/

@@ -53,22 +53,41 @@ namespace Szpiro
 /-- Factorisation admissible `N = D * M` au sens de Pasten 2026 (définition qui
 précède le théorème 1.1) : `D` et `M` premiers entre eux, `D` sans facteur
 carré, et `D` comptant un nombre **pair** de facteurs premiers. -/
-@[reducible]
 def AdmissibleFactorization (D M : ℕ) : Prop :=
-  D.gcd M = 1 ∧ Squarefree D ∧ D.primeFactorsList.length % 2 = 0
+  D.gcd M = 1 ∧ Squarefree D ∧ Even D.primeFactorsList.length
 
 /-- `N = 30 = 2·3·5` : la factorisation triviale (`D = 1`, zéro facteur premier
-— zéro est pair) est admissible. Première ligne du tableau du carnet §2. -/
-theorem admissible_trente_triviale : AdmissibleFactorization 1 30 := by decide
+— zéro est pair) est admissible. Première ligne du tableau du carnet §2.
+(`decide` ne peut pas évaluer `primeFactorsList` — récursion bien fondée,
+inexécutable par le noyau : chaque fait est prouvé par le lemme Mathlib
+correspondant, `gcd` seul reste décidé.) -/
+theorem admissible_trente_triviale : AdmissibleFactorization 1 30 :=
+  ⟨by decide, squarefree_one, by rw [Nat.primeFactorsList_one]; exact ⟨0, rfl⟩⟩
 
-/-- `N = 30` : `D = 15 = 3·5` (deux facteurs premiers, pair) est admissible. -/
-theorem admissible_trente_quinze : AdmissibleFactorization 15 2 := by decide
+/-- `N = 30` : `D = 15 = 3·5` (deux facteurs premiers, pair) est admissible.
+`Squarefree 15` passe par `squarefree_iff_nodup_primeFactorsList` et la
+permutation `15 = 3·5` (lemmes `perm_primeFactorsList_mul_of_coprime` et
+`primeFactorsList_prime`). -/
+theorem admissible_trente_quinze : AdmissibleFactorization 15 2 := by
+  have hp3 : Nat.Prime 3 := by norm_num
+  have hp5 : Nat.Prime 5 := by norm_num
+  have hperm : (15 : ℕ).primeFactorsList ~ₚ [3, 5] := by
+    have h15 : (15 : ℕ) = 3 * 5 := by decide
+    rw [h15, Nat.perm_primeFactorsList_mul_of_coprime
+      (by decide : Nat.Coprime 3 5), Nat.primeFactorsList_prime hp3,
+      Nat.primeFactorsList_prime hp5]
+  refine ⟨by decide, ?_, ?_⟩
+  · exact Nat.squarefree_iff_nodup_primeFactorsList.2 (hperm.nodup_iff.2 (by decide))
+  · exact ⟨1, hperm.length_eq.trans rfl⟩
 
 /-- Contre-exemple de parité du carnet §2 : `D = 2` a exactement **un** facteur
 premier (impair), donc `30 = 2·15` n'est PAS admissible — bien que
 `gcd(2, 15) = 1` et que `2` soit sans facteur carré. La contrainte de parité
-porte seule l'exclusion. -/
-theorem non_admissible_trente_deux : ¬AdmissibleFactorization 2 15 := by decide
+porte seule l'exclusion (`primeFactorsList_two`, puis `odd_one`). -/
+theorem non_admissible_trente_deux : ¬AdmissibleFactorization 2 15 := by
+  intro h
+  rw [Nat.primeFactorsList_two] at h
+  exact Nat.not_odd_iff_even.2 h.2.2 Nat.odd_one
 
 /-- φ(15) = 8 : la valeur utilisée par le carnet §2 (`borne_11`) pour la
 meilleure factorisation admissible de `N = 30`. -/
