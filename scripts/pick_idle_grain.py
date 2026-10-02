@@ -270,6 +270,7 @@ def _has_delivered_marker(issue_number: int) -> bool | None:
 # le compteur par issue ne peut pas porter. Voir scripts/series_saturation.py
 # pour le diagnostic complet (EPIC decoupe en 9 filles = 9 veines invisibles).
 from series_saturation import (  # noqa: E402
+    BELT_WINDOW_DAYS,
     CONSOLIDATION,
     DEFAULT_WINDOW_DAYS,
     DELIVERY_DELIVERED,
@@ -5056,26 +5057,35 @@ def main(argv: list[str] | None = None) -> int:
         # forme precedente ("REFUS DE TIRAGE", sortie 2, aucun candidat) rendait
         # un travail nomme sous l'apparence d'un vide, et se declenchait
         # d'autant plus souvent que la lane etait active.
-        if args.json:
-            # Rouge et WIP se composent : le grain reste le premier rouge
-            # quand les deux declenchent (la reparation est la sequence la
-            # plus urgente), sinon c'est la PR la plus ancienne de la file
-            # WIP -- dans les deux cas le consommateur machine lit un grain
-            # et un nom de travail, pas un motif de refus.
-            assignment = None
-            grain = None
-            if red_hit:
-                assignment = "reparer-son-rouge"
-                grain = (backlog.get("red") or [None])[0]
-            if wip_hit:
-                assignment = ((assignment + "+") if assignment else "") + "drainer-son-wip"
-                grain = grain or (backlog.get("wip_prs") or [None])[0]
+        # Mode --belt (#18832) : on n'imprime PAS le rappel rouge/wip en
+        # standalone -- il sera fusionne dans l'objet JSON du tapis (cle
+        # `repair`) pour rendre UN SEUL document. Cf #18866 point 2.
+        assignment = None
+        grain = None
+        if red_hit:
+            assignment = "reparer-son-rouge"
+            grain = (backlog.get("red") or [None])[0]
+        if wip_hit:
+            assignment = ((assignment + "+") if assignment else "") + "drainer-son-wip"
+            grain = grain or (backlog.get("wip_prs") or [None])[0]
+        if args.belt and args.json:
+            # Conserve pour fusion dans la sortie tapis plus bas.
+            repair_payload = {
+                "assignment": assignment or "drainer-son-wip",
+                "grain": grain,
+                "red_hours": args.red_hours,
+                **backlog,
+            }
+        elif args.json:
+            # Mode nominal hors --belt : impression standalone du garde
+            # rouge/WIP, puis fin de la commande.
             print(json.dumps({"lane": args.lane, "mode": "repair",
                               "assignment": assignment or "drainer-son-wip",
                               "grain": grain,
                               "red_hours": args.red_hours,
                               "lane_record": lane_record, **backlog},
                              ensure_ascii=False, indent=2))
+            return 0
         else:
             if red_hit:
                 print_red_assignment(args.lane, backlog, args.red_hours)
@@ -5086,6 +5096,8 @@ def main(argv: list[str] | None = None) -> int:
             # Apres l'assignation : l'en-tete "FILE DE REPARATION" doit rester
             # la premiere ligne lue (test pinne), l'ardoise vient en rappel.
             print_lane_record(lane_record)
+            if not args.belt:
+                return 0
         # #18832 spec : "les gardes restent en amont du tapis et produisent
         # LEUR sortie, jamais un silence". Mais le tapis ne refuse JAMAIS :
         # une lane avec un rouge doit quand meme recevoir la tete du tapis,
@@ -5093,8 +5105,6 @@ def main(argv: list[str] | None = None) -> int:
         # coordinateur, review 5391008313, point 4). On ne return PAS ici en
         # mode --belt : on imprime le rappel rouge, puis on enchaîne sur le
         # tapis qui produit ses grains.
-        if not args.belt:
-            return 0
         # Mode --belt : on continue pour tirer la tete du tapis en plus du
         # rappel rouge/wip deja imprime. La sortie reste sans aucun vide.
     if not args.json:
@@ -5152,16 +5162,23 @@ def main(argv: list[str] | None = None) -> int:
     # fetch repasse par le meme payload cache que fetch_series_visits : hit,
     # pas de requete gh supplementaire. Fenetre identique a celle de la
     # saturation, pour que les deux mesures se lisent ensemble.
+    # Mode --belt (#18832, #18866) : la fenetre par defaut (14 j) oublie les
+    # livraisons au-dela, et `belt_sort_key` reclasse alors l'issue a sa
+    # date de creation. On bascule sur `BELT_WINDOW_DAYS` (90 j), qui couvre
+    # un tour complet de la file au regime lent (10-20 grains/jour). La cle
+    # de cache integre `days` (cf fetch_merged identity), donc le payload
+    # 14 j et 90 j ne se chevauchent pas.
+    delivery_window_days = BELT_WINDOW_DAYS if args.belt else DEFAULT_WINDOW_DAYS
     umbrella_numbers = [it["number"] for it in pool if it["klass"] == "umbrella"]
     delivery_prs, delivery_fetch_err = fetch_merged(
-        DEFAULT_WINDOW_DAYS,
+        delivery_window_days,
         cache=payload_cache,
         cache_mode=effective_cache_mode,
         cache_status=cache_status,
         cache_ttl_seconds=SERIES_CACHE_TTL_SECONDS,
     )
     delivery_sig = measure_delivery(
-        delivery_prs, umbrella_numbers, now=NOW, days=DEFAULT_WINDOW_DAYS,
+        delivery_prs, umbrella_numbers, now=NOW, days=delivery_window_days,
         fetch_error=delivery_fetch_err)
     delivery_weights = {
         num: delivery_factor(item["state"], item["age_days"],
@@ -5341,12 +5358,21 @@ def main(argv: list[str] | None = None) -> int:
                 } for it in belt_picks},
                 "withheld": [{"number": it["number"], "title": it["title"],
                               "cause": c} for it, c in belt_withheld],
-                "last_delivery_window_days": DEFAULT_WINDOW_DAYS,
+                "last_delivery_window_days": delivery_window_days,
                 "substance_drought": {"triggered": False, "measured": False,
                                       "run": 0, "mode": "belt-bypassed"},
                 "lane_record": lane_record,
                 "cache": cache_status,
             }
+            # #18866 point 2 : la sortie --json rend UN document. Si le
+            # garde rouge/WIP s'est declenche, sa charge utile est fusionnee
+            # sous la cle `repair` (memes champs que le document standalone
+            # du mode non-belt). Sinon la cle est None, ce qui dit au
+            # consommateur que la lane n'a pas de reparation a faire.
+            if "repair_payload" in locals():
+                out_belt["repair"] = repair_payload
+            else:
+                out_belt["repair"] = None
             print(json.dumps(out_belt, ensure_ascii=False, indent=2))
         else:
             # Sortie texte : un tableau compact, aligne sur la volee
