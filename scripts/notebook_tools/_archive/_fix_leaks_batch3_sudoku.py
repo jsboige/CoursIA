@@ -1,12 +1,22 @@
-"""Batch fix Probas/Infer solution leaks — Issue #1205 Batch 2.
+# Archive header (standard _archive convention, 2026-08, docs/reference/_archive-convention.md)
+# - Date archived     : 2026-10-01
+# - Superseded by     : none (closed dead-end — batch 3 of #1205, `detect_solution_leaks.py` gate covers; PR #10049 absorbed)
+# - Verdict recorded in : PR #10049 'fix(sudoku): relabel solution leaks as Exemple guide (#1205 Batch 3)' + #13745 thread + #18153 palier 1 (axe D #16473)
+#
+# Per-function disposition :
+# - main body          : abandoned — one-shot terminated, no consumer; kept verbatim for forensic replay
 
-Strategy: Same as Batch 1 (Search series).
+"""Batch fix Sudoku series solution leaks — Issue #1205 Batch 3.
+
+Strategy: Same as Batch 1 (Search) + Batch 2 (Probas/Infer).
 For each HIGH leak detected by detect_solution_leaks.py:
 - The markdown cell contains "Exercice N" header(s) but the following code cell
   contains a complete worked solution.
 - Fix: relabel ALL occurrences of "Exercice/Exercise" -> "Exemple guide" in the
   markdown cell, including section headers like "## 8. Exercice" and individual
   exercise headers.
+- Additional pass: relabel // EXERCICE comments in C# code cells and
+  # EXERCICE comments in Python code cells.
 """
 
 import json
@@ -18,24 +28,24 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 NB_ROOT = REPO_ROOT / "MyIA.AI.Notebooks"
 
 AFFECTED = {
-    "Probas/Infer/Infer-1-Setup.ipynb": [28],
-    "Probas/Infer/Infer-10-Crowdsourcing.ipynb": [39, 44],
-    "Probas/Infer/Infer-11-Sequences.ipynb": [47, 56],
-    "Probas/Infer/Infer-12-Recommenders.ipynb": [66, 73],
-    "Probas/Infer/Infer-13-Debugging.ipynb": [34, 41],
-    "Probas/Infer/Infer-14-Decision-Utility-Foundations.ipynb": [33, 36],
-    "Probas/Infer/Infer-15-Decision-Utility-Money.ipynb": [36],
-    "Probas/Infer/Infer-16-Decision-Multi-Attribute.ipynb": [35, 43],
-    "Probas/Infer/Infer-17-Decision-Networks.ipynb": [42],
-    "Probas/Infer/Infer-18-Decision-Value-Information.ipynb": [38],
-    "Probas/Infer/Infer-19-Decision-Expert-Systems.ipynb": [36],
-    "Probas/Infer/Infer-3-Factor-Graphs.ipynb": [38],
-    "Probas/Infer/Infer-4-Bayesian-Networks.ipynb": [52],
-    "Probas/Infer/Infer-5-Skills-IRT.ipynb": [57, 64, 66],
-    "Probas/Infer/Infer-6-TrueSkill.ipynb": [47, 51],
-    "Probas/Infer/Infer-7-Classification.ipynb": [43],
-    "Probas/Infer/Infer-8-Model-Selection.ipynb": [41, 50],
-    "Probas/Infer/Infer-9-Topic-Models.ipynb": [42, 47],
+    "Sudoku/Sudoku-01-Backtracking-CSharp.ipynb": [11],
+    "Sudoku/Sudoku-10-ORTools-CSharp.ipynb": [24],
+    "Sudoku/Sudoku-10-ORTools-Python.ipynb": [16],
+    "Sudoku/Sudoku-11-Choco-CSharp.ipynb": [20],
+    "Sudoku/Sudoku-12-Z3-CSharp.ipynb": [19, 21, 23, 25],
+    "Sudoku/Sudoku-14-BDD-CSharp.ipynb": [32],
+    "Sudoku/Sudoku-15-Infer-CSharp.ipynb": [35],
+    "Sudoku/Sudoku-17-LLM-Python.ipynb": [26, 30],
+    "Sudoku/Sudoku-18-Comparison-Python.ipynb": [46],
+    "Sudoku/Sudoku-02-DancingLinks-CSharp.ipynb": [18],
+    "Sudoku/Sudoku-02-DancingLinks-Python.ipynb": [25],
+    "Sudoku/Sudoku-03-Genetic-CSharp.ipynb": [16],
+    "Sudoku/Sudoku-04-SimulatedAnnealing-CSharp.ipynb": [34],
+    "Sudoku/Sudoku-04-SimulatedAnnealing-Python.ipynb": [28, 30, 32],
+    "Sudoku/Sudoku-07-Norvig-CSharp.ipynb": [28],
+    "Sudoku/Sudoku-08-HumanStrategies-Python.ipynb": [31],
+    "Sudoku/Sudoku-09-GraphColoring-CSharp.ipynb": [28],
+    "Sudoku/Sudoku-09-GraphColoring-Python.ipynb": [19],
 }
 
 EXERCICE_LINE_RE = re.compile(
@@ -48,8 +58,13 @@ EXERCICE_SECTION_RE = re.compile(
     re.MULTILINE | re.IGNORECASE,
 )
 
-EXERCICE_CODE_COMMENT_RE = re.compile(
+EXERCICE_CSHARP_COMMENT_RE = re.compile(
     r'^(//[ \t]*)(Exercice[s]?|Exercise[s]?)([ \t]*[:.]?[ \t]*)([^\n]*)',
+    re.MULTILINE | re.IGNORECASE,
+)
+
+EXERCICE_PYTHON_COMMENT_RE = re.compile(
+    r'^(#[ \t]*)(Exercice[s]?|Exercise[s]?)([ \t]*[:.]?[ \t]*)([^\n]*)',
     re.MULTILINE | re.IGNORECASE,
 )
 
@@ -87,13 +102,22 @@ def fix_section_headers(nb: dict) -> int:
 
 
 def fix_code_cell_comments(nb: dict) -> int:
-    """Relabel EXERCICE comments in code cells (e.g., '// EXERCICE : Completez...')."""
+    """Relabel EXERCICE comments in code cells (C# // and Python #)."""
     fixed = 0
     for cell in nb['cells']:
         if cell.get('cell_type') != 'code':
             continue
         source_text = ''.join(cell.get('source', []))
-        new_source, count = EXERCICE_CODE_COMMENT_RE.subn(r'\1Exemple guide\3\4', source_text)
+
+        # Try C# style first
+        new_source, count = EXERCICE_CSHARP_COMMENT_RE.subn(
+            r'\1Exemple guide\3\4', source_text,
+        )
+        # Then Python style
+        new_source, count2 = EXERCICE_PYTHON_COMMENT_RE.subn(
+            r'\1Exemple guide\3\4', new_source,
+        )
+        count += count2
         if count == 0:
             continue
         new_lines = new_source.split('\n')
