@@ -30,6 +30,16 @@ def test_peak_and_halt_survive_a_restart(tmp_path):
     assert not restored.check_order(sleeve_capital=1070.0, order_notional=10.0, gross_exposure_after=10.0)
 
 
+def test_a_halted_gate_still_lets_a_position_shrink():
+    gate = RiskGate(RISK, 1000.0)
+    gate.update_equity(850.0)
+    assert gate.halted
+    assert not gate.check_order(sleeve_capital=850.0, order_notional=50.0, gross_exposure_after=900.0)
+    assert gate.check_order(
+        sleeve_capital=850.0, order_notional=800.0, gross_exposure_after=0.0, reduces_exposure=True
+    )
+
+
 def test_save_leaves_no_temporary_file(tmp_path):
     path = tmp_path / "risk.json"
     RiskGate(RISK, 1000.0).save(path)

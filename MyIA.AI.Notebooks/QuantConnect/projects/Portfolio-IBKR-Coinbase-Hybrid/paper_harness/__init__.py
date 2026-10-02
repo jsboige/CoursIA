@@ -23,5 +23,6 @@ Status (2026-06-28):
   across restarts (``RiskGate.save`` / ``RiskGate.load``).
 - Rebalancing planner (``rebalance.py``): inverse-volatility target weights
   and whole-share order planning, unit-tested.
-- Orchestrator: TODO (next cycle).
+- Orchestrator core (``orchestrator.run_cycle``): one dry-run-by-default
+  rebalancing cycle against any ``Broker``; the IBKR adapter is still TODO.
 """

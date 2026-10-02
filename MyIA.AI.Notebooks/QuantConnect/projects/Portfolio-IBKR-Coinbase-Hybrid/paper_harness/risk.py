@@ -141,19 +141,27 @@ class RiskGate:
         sleeve_capital: float,
         order_notional: float,
         gross_exposure_after: float,
+        reduces_exposure: bool = False,
     ) -> RiskDecision:
         """Validate a proposed order before submission.
 
         Parameters are what an execution sleeve can compute just before
         sending: the sleeve's current capital base, the notional of the new
         order, and the resulting gross exposure (sum of abs positions).
+
+        ``reduces_exposure=True`` marks an order that only shrinks an existing
+        position (a sell of a long holding). Such an order passes even when the
+        gate is halted or the order is large: a breaker exists to cut risk, so
+        it must never prevent going back to cash.
         """
-        if self.halted:
-            return RiskDecision(False, f"halted: {self.halt_reason}")
         if sleeve_capital <= 0:
             return RiskDecision(False, "sleeve capital <= 0")
         if order_notional < 0:
             return RiskDecision(False, "negative notional")
+        if reduces_exposure:
+            return RiskDecision(True, "reduces exposure")
+        if self.halted:
+            return RiskDecision(False, f"halted: {self.halt_reason}")
 
         single = order_notional / sleeve_capital
         if single > self.risk.max_position_pct:
