@@ -71,11 +71,16 @@ référencent les phases de [aima-walk.md](aima-walk.md).
 
 ### RCA IA (apprenants) — les 12 blocs
 
+Les listes de ce rapport sont la **projection exacte** de la table de
+cartographie ci-dessus : chaque étape citée porte le tag correspondant dans
+la colonne Compétences — toute divergence serait une erreur de transcription,
+pas une règle de comptage implicite (relève Hermes #18829, 4 écarts corrigés).
+
 | Aspect \ Niveau | Comprendre | Appliquer | Créer |
 |---|---|---|---|
 | 1. Perspective centrée sur l'humain | — | — | — |
 | 2. Éthique de l'IA | partiel (ét. 22) | partiel (ét. 22, 23) | — |
-| 3. Techniques et applications | **ét. 2, 3, 6, 10, 12, 13, 15, 19, 24, 25** | **ét. 3, 4, 7, 9, 11, 13, 14, 16, 17, 18, 19, 21, 22** | — |
+| 3. Techniques et applications | **ét. 2, 3, 4, 6, 10, 12, 13, 15, 19, 24, 25** | **ét. 3, 4, 5, 7, 9, 11, 13, 14, 16, 17, 18, 19, 21, 22** | — |
 | 4. Conception de systèmes d'IA | ét. 1, 8, 18 | ét. 5, 23 | ét. 17, 20, 21 |
 
 Lecture : le parcours est **massivement un parcours « Techniques » (aspect 3) aux niveaux
@@ -93,9 +98,10 @@ composés, pipeline RAG), boucles de rétroaction (HER, GRPO, CFR).
   vérifiabilité des sources (vérifié dans leurs sources, cellules d'objectifs). Aucune étape ne
   pratique l'« éthique dès la conception » (niveau Créer) : nulle part l'apprenant ne conçoit un
   système en intégrant un critère éthique comme contrainte de conception.
-- **Niveau Créer (vertical) : 3 blocs sur 12, tous côté aspect 4.** Le parcours fait exécuter et
-  comprendre ; il ne fait presque jamais **cocréer** un outil d'IA. Seule exception réelle : la
-  famille HER/GRPO/CFR, où l'apprenant règle la boucle d'apprentissage elle-même.
+- **Niveau Créer (vertical) : 1 bloc sur 12 (RCA-4K), couvert par 3 étapes (17, 20, 21).** Le
+  parcours fait exécuter et comprendre ; il ne fait presque jamais **cocréer** un outil d'IA.
+  Seule exception réelle : la famille HER/GRPO/CFR, où l'apprenant règle la boucle
+  d'apprentissage elle-même.
 
 ### RCE IA (enseignants) — niveau aspect, pour un enseignant qui suivrait le parcours
 
@@ -112,8 +118,8 @@ composés, pipeline RAG), boucles de rétroaction (HER, GRPO, CFR).
 | Idée | Couverture |
 |---|---|
 | 1. Perception | **absente** — aucun carnet du parcours ne traite capteurs, vision ni parole |
-| 2. Représentation et raisonnement | **ét. 1-3, 6, 8-15, 18, 24** — l'ossature du parcours |
-| 3. Apprentissage | **ét. 5, 7, 16, 17, 19-21** — GA, MCTS, Axelrod, RL |
+| 2. Représentation et raisonnement | **ét. 1-3, 6, 8, 10, 11, 13-15** — l'ossature du parcours |
+| 3. Apprentissage | **ét. 5, 7, 16, 19, 21** — GA, MCTS, Axelrod, RL |
 | 4. Interaction naturelle | **ét. 22-24** — LLM : prompting, RAG, modèles de raisonnement |
 | 5. Impact social | **marginale** : uniquement la section enjeux éthiques de l'ét. 22 — un encadré, pas une pratique |
 
