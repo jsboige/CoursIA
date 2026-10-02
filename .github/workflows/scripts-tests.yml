@@ -97,6 +97,13 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/**'
       - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/ontologies/**'
       - 'scripts/fallacy_detection/**'
+      # #18392 texte->PL : la suite pytest de Argument_Analysis/tests (collectee
+      # par le job ci-dessous, cible Argument_Analysis entiere) n'avait AUCUN
+      # declencheur sur ses propres sources -- argumentation_lib/** ne fait pas
+      # partie de scripts/**, donc une PR qui vendorise un module + ses tests
+      # n'executait jamais la suite (#10416 pattern). Miroir push/pull_request.
+      - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/argumentation_lib/**'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/tests/**'
   pull_request:
     branches: [main]
     types: [opened, synchronize, edited, reopened]
@@ -136,6 +143,13 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/**'
       - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/ontologies/**'
       - 'scripts/fallacy_detection/**'
+      # #18392 texte->PL : la suite pytest de Argument_Analysis/tests (collectee
+      # par le job ci-dessous, cible Argument_Analysis entiere) n'avait AUCUN
+      # declencheur sur ses propres sources -- argumentation_lib/** ne fait pas
+      # partie de scripts/**, donc une PR qui vendorise un module + ses tests
+      # n'executait jamais la suite (#10416 pattern). Miroir push/pull_request.
+      - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/argumentation_lib/**'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/tests/**'
   workflow_dispatch:
 
 permissions:

@@ -183,6 +183,65 @@ def exit_code(cross: list, intra: list, *, in_tree: bool) -> int:
     return 0
 
 
+# --- #18683 : classification semantique des collisions inter-revisions -------
+# Le verdict de l'organe est binaire (`cross_ref` = collisions inter-revisions,
+# peu importe combien de PRs sont impliquees). L'issue #18683 demande une
+# **classification semantique** directement utilisable par un humain au merge
+# gate :
+#
+#   ON-MAIN   la base porte deja l'index et une tete le RE-porte -> main
+#                 passera au rouge des le premier merge. C'est un refus : le
+#                 merge rendrait le garde CI definitif
+#                 `test_audit_index_unique_and_no_identical_duplicates_per_pair`
+#                 DRIFT-INTRO sur une autre PR qui n'a rien demande.
+#                 Renumeroter la tete AVANT merge.
+#   MULTI-PR  la base NE porte PAS l'index, mais deux ou plusieurs tetes
+#                 differentes le portent. La premiere mergee gagne, la
+#                 seconde renumerote. Avertissement, pas refus : c'est de
+#                 la concurrence de lanes, pas une dette heritee.
+#
+# La classification regarde quelles refs apparaissent dans `by_ref` :
+# si args.base est dans by_ref, c'est ON-MAIN ; sinon c'est MULTI-PR.
+# Ce contrat est isole du subprocess git -- la fonction prend la liste
+# `cross_ref` deja classee et la base_ref, et rend la meme liste avec un
+# champ `verdict` supplementaire. Pure, testable, independante de git.
+def classify_ordinal_collisions(cross_ref, *, base_ref):
+    """Re-classe chaque `cross_ref` en `ON-MAIN` (refus) ou `MULTI-PR`
+    (avertissement), selon que `base_ref` apparait dans `by_ref`.
+
+    Predicat distinct du `--in-tree` intra-revision : la `intra_ref`
+    (doublon dans la meme revision) releve du garde CI, pas de ce script
+    (cf. docstring lignes 35-38).
+    """
+    out = []
+    for c in cross_ref:
+        verdict = "ON-MAIN" if base_ref in c.get("by_ref", {}) else "MULTI-PR"
+        out.append({**c, "verdict": verdict})
+    return out
+
+
+def ordinal_correction_gist(pair, index, *, by_ref, base_ref):
+    """Geste de correction nomme dans l'issue #18683, isole pour les tests.
+
+    ON-MAIN : la tete doit renumeroter SON fichier vers le premier index
+              libre (max(main)+1), par `git mv` PUR (aucune re-execution,
+              aucun contenu a toucher -- la contiguite n'est pas testee,
+              cf check_twin_index_collisions.py docstring l. 49-51).
+    MULTI-PR : la derniere tete mergee doit renumeroter ; la premiere
+              mergee passe.
+    """
+    if base_ref in by_ref:
+        return (f"renumeroter la tete vers le premier index libre de '{pair}' "
+                f"(max sur base + 1) par `git mv` PUR : "
+                f"`git mv scripts/notebook_tools/twin_pairs.d/{pair}/"
+                f"{index}-*.yaml scripts/notebook_tools/twin_pairs.d/{pair}/"
+                f"<next>-2026-10-01-myia-ai-01-CoursIA-2.yaml` "
+                "puis committer.")
+    return (f"la premiere tete mergee de '{pair}' index {index} gagne ; "
+            f"la seconde renumerote apres merge. Le geste est le meme qu'ON-MAIN "
+            f"(git mv PUR) une fois l'ordre de merge connu.")
+
+
 def main(argv: list | None = None) -> int:
     ap = argparse.ArgumentParser(
         description="Collisions d'index twin-pairs entre revisions (main x PRs).")
@@ -241,14 +300,20 @@ def main(argv: list | None = None) -> int:
     unreadable_note = (", ".join("%s illisible" % r for r in sorted(unreadable))
                        or "aucune")
     if args.json:
+        # Classification semantique (#18683) : pour chaque cross_ref, un verdict
+        # ON-MAIN (refus) ou MULTI-PR (avertissement) selon que args.base est
+        # dans by_ref. Pure, sans git -- la fonction vit dans ce module pour
+        # etre au plus pres de l'organe que merge_ready 5bis appelle deja.
+        cross_classified = classify_ordinal_collisions(cross, base_ref=args.base)
         print(json.dumps({
             "refs": sorted(refs),
             "unreadable": unreadable,
             "n_pairs": len({p for reg in refs.values() for p in reg}),
             "n_files": sum(len(v) for reg in refs.values()
                            for d in reg.values() for v in d.values()),
-            "cross_ref": cross,
+            "cross_ref": cross_classified,
             "intra_ref": intra,
+            "base_ref": args.base,
             "in_tree_checked": bool(args.in_tree),
         }, indent=2, sort_keys=True))
     else:
@@ -266,10 +331,14 @@ def main(argv: list | None = None) -> int:
         if cross:
             print("")
             print("COLLISIONS INTER-REVISIONS (%d)" % len(cross))
+            # Classification semantique (#18683) au plus pres de l'organe
             for c in cross:
-                print("   %s / index %s" % (c["pair"], c["index"]))
+                verdict = "ON-MAIN" if args.base in c.get("by_ref", {}) else "MULTI-PR"
+                print("   %s / index %s   [%s]" % (c["pair"], c["index"], verdict))
                 for ref, names in c["by_ref"].items():
                     print("      %-28s %s" % (ref, ", ".join(names)))
+                print("      geste: %s" % ordinal_correction_gist(
+                    c["pair"], c["index"], by_ref=c["by_ref"], base_ref=args.base))
             print("")
             print("Le merge produira deux fichiers au meme index dans cette paire.")
             print("Le POSTERIEUR cede l'index : renommer SON fichier vers le premier")
@@ -300,7 +369,17 @@ def main(argv: list | None = None) -> int:
     if not args.json:
         print("")
         if cross:
-            print("VERDICT: COLLISION (%d inter-revisions)" % len(cross))
+            n_on_main = sum(1 for c in cross if args.base in c.get("by_ref", {}))
+            n_multi = len(cross) - n_on_main
+            verdict_suffix = ""
+            if n_on_main and n_multi:
+                verdict_suffix = " (ON-MAIN=%d refus, MULTI-PR=%d avertissement)" % (
+                    n_on_main, n_multi)
+            elif n_on_main:
+                verdict_suffix = " (ON-MAIN=%d refus)" % n_on_main
+            elif n_multi:
+                verdict_suffix = " (MULTI-PR=%d avertissement)" % n_multi
+            print("VERDICT: COLLISION (%d inter-revisions)%s" % (len(cross), verdict_suffix))
         elif intra and args.in_tree:
             print("VERDICT: COLLISION (%d intra-revision)" % len(intra))
         elif intra:

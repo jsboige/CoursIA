@@ -119,7 +119,7 @@ Pour les applications de planification par contraintes et temporelles :
 #### Parcours neuro-symbolique (~6h, recherche)
 Pour les approches combinées apprentissage profond + symbolique :
 1. `0-Setup` → `1-Introduction` → `4-Fast-Downward`
-2. `10-LLM-Planning` → `11-Unified-Planning` → `12-LOOP` → `14-LLM-Space-Reducer`
+2. `10-LLM-Planning` → `11-Unified-Planning` → `12-LOOP` → `10b-LLM-Space-Reducer`
 
 ## Quel parcours choisir ?
 
