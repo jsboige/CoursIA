@@ -99,10 +99,12 @@ open MacroCell
 /-! ## `Hashable Grid`: structural 64-bit hash
 
 `Grid = List (Int × Int)` has a derived `BEq` via `List` and `Prod`. The
-structural `Hashable` follows the `MacroCell.contentHash` convention:
-`mixHash` on pairs ordered canonically (sortDedup) to neutralise the list
-ordering (the insertion order of live cells does not change semantics, but
-changes `BEq` until we sortDedup). -/
+structural `Hashable` hashes the list as-is: a recursive `mixHash` fold over
+pairs in insertion order. The memoisation key is therefore the list
+*representation* of the `Grid`, not its cell set: two grids equal as sets but
+differently ordered occupy two distinct cache entries. The hash remains
+lawful with respect to the derived `BEq` (both are order-sensitive: equal
+lists produce the same UInt64). -/
 
 /-- Structural 64-bit hash of a `Grid`. -/
 def Grid.contentHash : Grid → UInt64

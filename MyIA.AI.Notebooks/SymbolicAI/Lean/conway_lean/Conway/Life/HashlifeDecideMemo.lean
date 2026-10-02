@@ -100,10 +100,12 @@ open MacroCell
 /-! ## `Hashable Grid` : hash structurel 64-bit
 
 `Grid = List (Int × Int)` dispose d'un `BEq` derivé via `List` et `Prod`. Le
-`Hashable` structurel suit la convention de `MacroCell.contentHash` :
-`mixHash` sur les paires triees par ordre canonique (sortDedup) pour neutraliser
-l'ordre de la liste (l'ordre d'insertion des cellules vivantes ne change rien à
-la semantique, mais change le `BEq` tant qu'on n'a pas sorti-dedup). -/
+`Hashable` structurel hache la liste en l'état : pli recursif `mixHash` sur
+les paires dans l'ordre d'insertion. La clé de mémoïsation est donc la
+représentation-liste de la `Grid`, pas son ensemble de cellules : deux Grids
+égales ensemblistement mais ordonnées différemment occupent deux entrées de
+cache distinctes. Le hash reste lawful vis-à-vis du `BEq` derivé (les deux
+sont sensibles à l'ordre : deux listes égales produisent le même UInt64). -/
 
 /-- Hachage structurel 64-bit d'une `Grid`. -/
 def Grid.contentHash : Grid → UInt64
