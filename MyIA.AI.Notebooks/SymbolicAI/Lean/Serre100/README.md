@@ -18,6 +18,7 @@ Le geste « distillation » : prendre un énoncé ou une construction centrale d
 | 08 | [08-serre-dans-mathlib.ipynb](08-serre-dans-mathlib.ipynb) | Tour des cinq « Serre » de Mathlib — le versant preuves du diptyque (index : grain 9 #16374) | Lean 4 (kernel `lean4-wsl`, lake [`serre100_lean/`](serre100_lean/)) |
 | 09 | [09-congruences-tau-lacunarite-delta.ipynb](09-congruences-tau-lacunarite-delta.ipynb) | τ de Ramanujan — congruence mod 691, borne de Deligne, lacunarité des puissances de η (Euler, Jacobi, Serre) | Python stdlib + matplotlib |
 | 10 | [10-empilements-borne-lp-cohn-elkies.ipynb](10-empilements-borne-lp-cohn-elkies.ipynb) | Bornes d'empilements de sphères par LP (Cohn–Elkies, lignée Odlyzko–Serre) — Poisson mesuré, LP naïf autopsié, LP certifié par intervalles | numpy + scipy (HiGHS) + matplotlib |
+| 13 | [13-jacobi-kronecker-reciprocite-II.ipynb](13-jacobi-kronecker-reciprocite-II.ipynb) | Loi de réciprocité quadratique II — symbole de Jacobi `(d/n)` (n impair) et extension Kronecker `(d/n)` ; algorithme d'Euler-Legendre O(log n) ; conducteur des corps quadratiques de Heegner | Python stdlib (math.isqrt) |
 
 ## Conventions
 
