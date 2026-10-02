@@ -135,7 +135,7 @@ theorem decideMemoOK_empty (p : Grid → Bool) : DecideMemoOK DecideMemoCache.em
 
 /-- Inserer une liaison correcte preserve la correction du cache. -/
 theorem DecideMemoOK.insert {m : DecideMemoCache} {p : Grid → Bool}
-    (hm : DecideMemoOK m p) {g : Grid} (hr : p g = b) :
+    (hm : DecideMemoOK m p) {g : Grid} {b : Bool} (hr : p g = b) :
     DecideMemoOK (m.insert g b) p := by
   intro d r h
   rw [Std.HashMap.getElem?_insert] at h
@@ -144,7 +144,7 @@ theorem DecideMemoOK.insert {m : DecideMemoCache} {p : Grid → Bool}
     have hkey : (g : Grid) = d := eq_of_beq heq
     subst hkey
     injection h with h'
-    exact h'.symm.trans hr
+    exact h'.symm.trans hr.symm
   next _ =>
     exact hm d r h
 
@@ -194,6 +194,7 @@ theorem decideMemoRun_to_decide (g : Grid) (p : Grid → Bool) (m : DecideMemoCa
     (hm : DecideMemoOK m p) :
     decide ((decideMemoRun g p m).2 = p g) = true := by
   rw [decideMemoRun_correct g p m hm]
+  exact decide_eq_true rfl
 
 end Life
 end Conway
