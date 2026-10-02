@@ -113,7 +113,9 @@ Fenêtre 2018-01-01 → 2025-06-01, `main.py` avec ses paramètres par défaut.
 
 **Verdict : NO BEATS.** Le volet crypto ne bat pas le BTC détenu en Sharpe (0.681 contre
 0.694). En revanche, il réduit le drawdown maximal d'une quinzaine de points (64.7 % contre
-79.9 %), et son Calmar est meilleur (0.46 contre 0.40). Aucun PSR ne dépasse 10 % : aucune
+79.9 %), et son Calmar est meilleur (0.46 contre 0.40) — sur cette fenêtre seulement : hors
+échantillon, le BTC détenu a le plus faible drawdown (voir la sensibilité à `ibkr_alloc`
+plus bas). Aucun PSR ne dépasse 10 % : aucune
 de ces différences n'est statistiquement significative. Le portefeuille 50/50 reste sous la
 cible de Sharpe 1.0-1.3 de ce README.
 
@@ -149,7 +151,47 @@ décompose ainsi :
 
 **Verdict Phase 3 en compte USD : NO BEATS, dépendant du régime.** Le correctif de devise
 relève nettement le walk-forward, mais l'avantage reste sous 2 écarts-types et dépend
-fortement de la fenêtre. La sensibilité à `ibkr_alloc` n'a pas été re-mesurée en USD.
+fortement de la fenêtre.
+
+**Sensibilité à `ibkr_alloc` (compte USD, frais natifs).** Même code ; seul varie le poids du
+volet IBKR (`ibkr_alloc=1` : volet IBKR seul ; `ibkr_alloc=0` : volet crypto seul). La
+dernière ligne de chaque tableau est la référence BTC détenu, sans frais.
+
+Fenêtre 2018-01-01 → 2025-06-01 :
+
+| `ibkr_alloc` | Ordres | Sharpe | CAGR | MaxDD | PSR | Backtest |
+|--------------|--------|--------|------|-------|-----|----------|
+| 1.0 (IBKR seul) | 432 | 0.288 | 7.5% | 19.3% | 0.9% | `bfd0101f` |
+| 0.6 | 618 | 0.637 | 18.6% | 34.5% | 9.1% | `3a8ed80e` |
+| 0.5 (défaut) | 619 | 0.648 | 21.0% | 40.2% | 9.4% | `ebe12706` |
+| 0.4 | 610 | 0.656 | 23.1% | 45.9% | 9.4% | `1035fd89` |
+| 0.0 (crypto seul) | 174 | 0.681 | 29.8% | 64.7% | 9.2% | `7deee9e0` |
+| BTC détenu | 1 | 0.694 | 31.7% | 79.9% | 8.3% | `7995aecc` |
+
+Hors échantillon 2023-01-01 → 2025-06-01 :
+
+| `ibkr_alloc` | Ordres | Sharpe | CAGR | MaxDD | PSR | Backtest |
+|--------------|--------|--------|------|-------|-----|----------|
+| 1.0 (IBKR seul) | 143 | 0.495 | 13.5% | 11.8% | 15.1% | `aaa80999` |
+| 0.6 | 206 | 1.022 | 29.4% | 17.4% | 42.4% | `5f9586bd` |
+| 0.5 (défaut) | 201 | 1.038 | 33.2% | 19.2% | 42.6% | `affc6d09` |
+| 0.4 | 193 | 1.046 | 36.9% | 20.9% | 42.4% | `e9fe390e` |
+| 0.0 (crypto seul) | 57 | 1.076 | 51.0% | 33.0% | 41.0% | `2e952776` |
+| BTC détenu | 1 | **1.924** | 113.2% | 28.1% | 76.0% | `92dcbc1b` |
+
+Trois constats :
+
+- **Le mélange déplace le couple rendement/drawdown, pas le Sharpe.** Dès que la crypto est
+  présente, le Sharpe varie de moins de 0.06 entre 60/40 et 0/100, sur les deux fenêtres ;
+  CAGR et MaxDD montent ensemble avec la part crypto. C'est le régime de marché, pas le
+  mélange, qui fait le Sharpe — conclusion déjà tirée en Phase 3.
+- **Le volet IBKR seul est faible** : Sharpe 0.288 sur 2018-2025 (PSR 0.9 %), 0.495 hors
+  échantillon. Le Sharpe du portefeuille vient de la crypto ; le volet IBKR sert surtout à
+  amortir le drawdown.
+- **Hors échantillon, le BTC détenu bat le volet crypto sur tous les critères, drawdown
+  compris** (MaxDD 28.1 % contre 33.0 %). La réduction de drawdown constatée sur 2018-2025
+  vient des krachs de 2018 et 2022, que la fenêtre récente ne contient pas : elle ne suffit
+  pas, à elle seule, à justifier le volet face à une simple détention de BTC.
 
 ### Analyse fee-switch (fenêtre 2018-2025, sleeve 50/50)
 
