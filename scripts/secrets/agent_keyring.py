@@ -23,6 +23,9 @@ Sous-commandes
     list        noms des entrees (JAMAIS les valeurs)
     show        une entree, masquee
     get         une valeur, vers un fichier .env gitignore
+    set         ecrit une entree : valeur sur stdin, refus si une copie en conflit
+                du coffre existe a cote de lui (ecrivain unique)
+    run         execute une commande, variables injectees dans son seul environnement
     gh-login    tuyaute un jeton directement dans `gh auth login --with-token`
     verify      les entrees attendues sont-elles la, et le jeton repond-il ?
 
@@ -285,6 +288,102 @@ def find_entry(kp, title: str, group: str | None):
     if not hits and group:
         hits = [e for e in iter_entries(kp, None) if wanted in entry_key(e)]
     return hits[0] if hits else None
+
+
+# --------------------------------------------------------------------------
+# ecrivain unique -- garde de copie en conflit
+# --------------------------------------------------------------------------
+
+# Le coffre est UN fichier binaire, synchronise par le client Drive. Deux
+# machines qui l'ecrivent dans la meme fenetre de synchronisation produisent une
+# copie en conflit, et le client ne fusionne PAS un binaire. Le defaut ne se voit
+# qu'au moment ou une entree manque -- d'ou un controle AVANT l'ecriture.
+#
+# Motifs des clients : Google Drive suffixe `(1)`, Dropbox `(conflicted copy
+# <date>)`, OneDrive un suffixe machine. Le motif est cherche dans le NOM, et
+# seulement sur un fichier qui partage deja le radical du coffre.
+_CONFLICT_MARKER_RE = re.compile(r"\(\s*\d+\s*\)|conflict|conflit|konflikt", re.I)
+
+
+def conflict_copies(path: Path) -> list[Path]:
+    """Copies en conflit du coffre, a cote de lui (liste vide en regime sain)."""
+    parent = path.parent
+    if not parent.is_dir():
+        return []
+    stem = path.stem.lower()
+    suffix = path.suffix.lower()
+    out = []
+    try:
+        siblings = list(parent.iterdir())
+    except OSError:
+        return []
+    for sib in siblings:
+        if sib.name == path.name:
+            continue
+        try:
+            if not sib.is_file() or sib.suffix.lower() != suffix:
+                continue
+        except OSError:
+            continue
+        if not sib.name.lower().startswith(stem):
+            continue
+        if _CONFLICT_MARKER_RE.search(sib.name):
+            out.append(sib)
+    return sorted(out)
+
+
+def vault_digest(path: Path) -> str | None:
+    """Empreinte courte du fichier de coffre, ou None s'il est illisible.
+
+    Sert de postcondition d'ecriture : un `save()` qui rend la main sans que le
+    fichier change n'a rien ecrit, et c'est exactement le genre d'echec qui
+    passerait pour un succes.
+    """
+    import hashlib
+
+    try:
+        return hashlib.sha256(path.read_bytes()).hexdigest()[:12]
+    except OSError:
+        return None
+
+
+def group_for_write(kp, name: str | None):
+    """Le groupe de destination, cree s'il manque.
+
+    `kp.add_entry` exige un groupe existant : sans cette resolution, la premiere
+    ecriture dans un coffre neuf echouerait sur une erreur pykeepass qui ne dit
+    pas ce qui manque.
+    """
+    if not name:
+        return kp.root_group
+    found = kp.find_groups(name=name, first=True)
+    return found if found is not None else kp.add_group(kp.root_group, name)
+
+
+def child_returncode(rc: int) -> int:
+    """`subprocess` rend -N pour un fils mort d'un signal, le shell 128+N.
+
+    Rendre -N tel quel ferait lire 255 pour SIGKILL a qui teste `$?`.
+    """
+    return 128 + abs(rc) if rc < 0 else rc
+
+
+_ENV_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+
+def parse_env_pair(pair: str) -> tuple[str, str]:
+    """`VAR=ENTREE` -> (VAR, ENTREE).
+
+    Leve ValueError sur toute autre forme : une paire mal formee est une erreur
+    d'appel, et elle se refuse AVANT d'ouvrir le coffre.
+    """
+    name, sep, entry = pair.partition("=")
+    if not sep or not name.strip() or not entry.strip():
+        raise ValueError(f"paire mal formee : '{pair}' (attendu VAR=ENTREE)")
+    name = name.strip()
+    if not _ENV_NAME_RE.match(name):
+        raise ValueError(f"nom de variable invalide : '{name}'")
+    return name, entry.strip()
 
 
 # --------------------------------------------------------------------------
@@ -662,6 +761,161 @@ def cmd_gh_login(args) -> int:
 
 
 # --------------------------------------------------------------------------
+# ecriture et injection
+# --------------------------------------------------------------------------
+
+def _read_secret_stdin() -> str | None:
+    """La valeur ne passe JAMAIS par argv : `ps` la montrerait a tout le monde.
+
+    Seul le terminateur de ligne est retire -- une valeur peut legitimement
+    commencer ou finir par une espace, et la rogner fabriquerait un secret
+    silencieusement different de celui qu'on croit avoir range.
+    """
+    if getattr(sys.stdin, "isatty", lambda: False)():
+        print("DEFECT: stdin est un terminal -- piper la valeur.", file=sys.stderr)
+        print("  printf '%s' \"$SECRET\" | python scripts/secrets/agent_keyring.py "
+              "set <entree> --from-stdin", file=sys.stderr)
+        return None
+    return sys.stdin.read().rstrip("\r\n")
+
+
+def cmd_set(args) -> int:
+    """Ecrit une entree dans le coffre -- ecrivain unique, garde de conflit.
+
+    Deux refus AVANT toute ouverture, et une postcondition APRES l'ecriture :
+    c'est la seule facon de distinguer un `save()` qui a atteint le disque d'un
+    `save()` qui a rendu la main sans rien ecrire.
+    """
+    path = vault_path()
+
+    copies = conflict_copies(path)
+    if copies:
+        print("DEFECT: copie(s) en conflit a cote du coffre :", file=sys.stderr)
+        for copie in copies:
+            try:
+                taille = f"{copie.stat().st_size} octets"
+            except OSError:
+                taille = "taille illisible"
+            print(f"  {copie.name}  ({taille})", file=sys.stderr)
+        print("  Le client de synchronisation ne fusionne PAS un binaire : ecrire", file=sys.stderr)
+        print("  maintenant perdrait l'une des deux moities. Reporter a la main ce", file=sys.stderr)
+        print("  qui manque d'un cote, supprimer la copie, puis relancer.", file=sys.stderr)
+        print("  Aucune ecriture faite.", file=sys.stderr)
+        return EXIT_DEFECT
+
+    value = _read_secret_stdin()
+    if value is None:
+        return EXIT_DEFECT
+    if not value.strip():
+        print("DEFECT: valeur vide sur stdin -- rien a ecrire.", file=sys.stderr)
+        return EXIT_DEFECT
+
+    before = vault_digest(path)
+    if before is None:
+        print(f"UNKNOWN: coffre illisible : {path}", file=sys.stderr)
+        return EXIT_UNKNOWN
+
+    kp = open_vault()
+    entry = find_entry(kp, args.entry, args.group)
+    created = entry is None
+    if created:
+        entry = kp.add_entry(group_for_write(kp, args.group), args.entry,
+                             args.username or "", value, url=args.url or None)
+    else:
+        entry.password = value
+        if args.username:
+            entry.username = args.username
+        if args.url:
+            entry.url = args.url
+    kp.save()
+
+    after = vault_digest(path)
+    if after is None or after == before:
+        print(f"DEFECT: le fichier de coffre n'a pas change ({before} -> {after}) --",
+              file=sys.stderr)
+        print("  l'ecriture n'a pas atteint le disque.", file=sys.stderr)
+        return EXIT_DEFECT
+
+    # Relire DEPUIS LE DISQUE : l'objet en memoire porte forcement la valeur
+    # qu'on vient de lui poser, il ne prouve donc rien.
+    kp2 = open_vault()
+    entry2 = find_entry(kp2, args.entry, args.group)
+    expected = fingerprint(value)
+    if entry2 is None or fingerprint(entry2.password or "") != expected:
+        print(f"DEFECT: relecture du coffre : '{args.entry}' ne rend pas la valeur "
+              "ecrite.", file=sys.stderr)
+        return EXIT_DEFECT
+
+    print(f"OK  entree {'creee' if created else 'mise a jour'} : '{entry2.title}' "
+          f"(groupe {entry2.group.name if entry2.group else '-'})")
+    print(f"    secret    : {secret_kind(value)}")
+    print(f"    empreinte : {expected}  (valeur non imprimee)")
+    print(f"    coffre    : {before} -> {after}")
+
+    # La fenetre entre le controle initial et l'ecriture est reelle : le client
+    # de synchronisation peut deposer une copie pendant qu'on ecrit.
+    tardives = conflict_copies(path)
+    if tardives:
+        print("DEFECT: copie(s) en conflit apparue(s) PENDANT l'ecriture :", file=sys.stderr)
+        for copie in tardives:
+            print(f"  {copie.name}", file=sys.stderr)
+        print("  L'ecriture a eu lieu ; comparer ce que porte chaque fichier avant", file=sys.stderr)
+        print("  de poursuivre.", file=sys.stderr)
+        return EXIT_DEFECT
+    return EXIT_OK
+
+
+def cmd_run(args) -> int:
+    """Execute une commande avec des variables injectees dans son seul environnement.
+
+    Paires EXPLICITES (`--env VAR=ENTREE`) : jamais le coffre entier, qui
+    verserait tous les secrets de la flotte dans chaque processus enfant.
+    """
+    paires: list[tuple[str, str]] = []
+    vus: set[str] = set()
+    for raw in (args.env or []):
+        try:
+            nom, entree = parse_env_pair(raw)
+        except ValueError as exc:
+            print(f"DEFECT: {exc}", file=sys.stderr)
+            return EXIT_DEFECT
+        if nom in vus:
+            print(f"DEFECT: variable '{nom}' nommee deux fois.", file=sys.stderr)
+            return EXIT_DEFECT
+        vus.add(nom)
+        paires.append((nom, entree))
+    if not paires:
+        print("DEFECT: aucune paire --env VAR=ENTREE.", file=sys.stderr)
+        return EXIT_DEFECT
+
+    commande = list(args.command)
+    if commande and commande[0] == "--":
+        commande = commande[1:]
+    if not commande:
+        print("DEFECT: aucune commande apres `--`.", file=sys.stderr)
+        return EXIT_DEFECT
+
+    kp = open_vault()
+    injecte: dict[str, str] = {}
+    for nom, nom_entree in paires:
+        entry = find_entry(kp, nom_entree, args.group)
+        if entry is None:
+            print(f"DEFECT: entree '{nom_entree}' absente (pour {nom}).", file=sys.stderr)
+            return EXIT_DEFECT
+        if not entry.password:
+            print(f"DEFECT: champ password vide sur '{entry.title}' (pour {nom}).",
+                  file=sys.stderr)
+            return EXIT_DEFECT
+        injecte[nom] = entry.password
+
+    for nom, nom_entree in paires:
+        print(f"    {nom} <- '{nom_entree}'  {fingerprint(injecte[nom])}", file=sys.stderr)
+
+    res = subprocess.run(commande, env={**os.environ, **injecte})
+    return child_returncode(res.returncode)
+
+
+# --------------------------------------------------------------------------
 # doctor / verify
 # --------------------------------------------------------------------------
 
@@ -801,6 +1055,20 @@ def main() -> int:
     gh.add_argument("entry")
     gh.add_argument("--account", help="login GitHub attendu en retour")
     gh.set_defaults(func=cmd_gh_login)
+
+    st = sub.add_parser("set", help="ecrire/creer une entree (ecrivain unique)")
+    st.add_argument("entry")
+    st.add_argument("--from-stdin", action="store_true", required=True,
+                    help="la valeur est lue sur stdin -- jamais en argument")
+    st.add_argument("--username")
+    st.add_argument("--url")
+    st.set_defaults(func=cmd_set)
+
+    rn = sub.add_parser("run", help="executer une commande, variables injectees dans son environnement")
+    rn.add_argument("--env", action="append", metavar="VAR=ENTREE", default=None,
+                    help="paire repetable ; seules les paires nommees sont injectees")
+    rn.add_argument("command", nargs=argparse.REMAINDER, help="commande, apres `--`")
+    rn.set_defaults(func=cmd_run)
 
     sub.add_parser("verify", help="les entrees attendues sont-elles la ?").set_defaults(func=cmd_verify)
 
