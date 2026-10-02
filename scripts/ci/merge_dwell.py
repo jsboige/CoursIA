@@ -618,49 +618,79 @@ def _default_branch(repo: str, fetch=_gh_json) -> str:
 
 
 def _main_red_motif(repo: str, fetch=_gh_json) -> "str | None":
-    """#18686 + #18790 : motif de rouge STRICT de la branche par defaut, ou None si vert.
+    """#18686 + #18790 + #18796 : motif de rouge observable sur la branche
+    par defaut, ou None si vert.
 
-    Pli latest-wins par `started_at` sur le check `PR gate` UNIQUEMENT :
-    les autres checks (CodeQL, Gitleaks, ADK, etc.) peuvent etre rouges
-    sans bloquer un merge -- leur rouge ne justifie pas une derogation
-    DWELL. Le check `PR gate` est l'UNIQUE check requis (`required_status_
-    checks.contexts = ["PR gate"]`) dans la protection de branche ; un autre
-    check rouge sur main ne s'oppose pas au merge d'une PR.
+    Pli latest-wins par `created_at` sur les **workflows dont le rouge sur
+    `main` ne se reflete pas forcement sur la PR candidate**. La liste
+    canonique est : workflows `push: main` path-filtered qui n'ont PAS de
+    trigger `pull_request`. Un rouge sur `main` de l'un d'eux rougit le check
+    de la PR candidate SI elle touche les paths concernes -- mais une PR qui
+    ne touche pas les paths aura son check PR vert. La derogation vise
+    precisement ce cas : main est reellement rouge, mais la PR n'a aucun
+    moyen de le voir.
 
-    Renvoie le motif releve (nom du check en echec) pour que le message de
-    derogation reste justifiable a la relecture.
+    A ce jour (2026-10-02) le seul workflow repondant a ce critere est
+    `Scripts & Notebook-Tools Tests` (`scripts-tests.yml`, push: main,
+    path-filter sur `scripts/**` ; pas de trigger `pull_request`). Le gate
+    regarde le dernier run de ce workflow sur main : `failure` -> la
+    derogation peut jouer ; `success` ou absent -> main vert, la
+    derogation ne franchise pas.
 
-    Une couleur ILLISIBLE ne vaut PAS rouge : None, la derogation ne franchise
-    jamais sur une absence de preuve -- fail-closed, comme l'exemption de
-    rafraichissement de base. Pas de DwellError ici : un label dont la
-    condition ne peut pas etre prouvee retombe sur le plancher NORMAL, le gate
-    continue de mesurer sans refuser.
+    Pourquoi PAS les check-runs du commit de tete (l'ancienne approche) :
+    `.github/workflows/pr-gate.yml` ne tourne que sur `pull_request`, donc
+    il n'y a aucun check-run `PR gate` sur la tete de main -- `latest`
+    reste `None`, et la derogation ne s'ouvrait jamais, meme quand main
+    etait reellement rouge (mesure du 2026-10-02 par myia-ai-01, tete
+    `d8b7bb9628`, aucun check-run `PR gate` ; deux seuls workflows avec
+    ce nom sont `Re-aggregate stale PR gate verdicts` et `PR gate sweep
+    health advisory`, tous deux verts).
+
+    Renvoie le motif releve (nom du workflow en echec) pour que le
+    message de derogation reste justifiable a la relecture.
+
+    Une couleur ILLISIBLE ne vaut PAS rouge : None, la derogation ne
+    franchise jamais sur une absence de preuve -- fail-closed, comme
+    l'exemption de rafraichissement de base. Pas de DwellError ici : un
+    label dont la condition ne peut pas etre prouvee retombe sur le
+    plancher NORMAL, le gate continue de mesurer sans refuser.
     """
+    # Liste des workflows dont un rouge sur main peut legitimer la
+    # derogation. Garder cette liste explicite et documentee -- derivee
+    # des .github/workflows/*.yml, pas construite a la main sur un
+    # tirage du picker.
+    MAIN_RED_WORKFLOWS = (
+        "Scripts & Notebook-Tools Tests",  # scripts-tests.yml
+    )
     try:
         branch = _default_branch(repo, fetch)
         runs = fetch(
-            "repos/{}/commits/{}/check-runs?per_page=100".format(repo, branch)
+            "repos/{}/actions/runs?branch={}&per_page=100&status=completed".format(
+                repo, branch
+            )
         )
     except DwellError:
         return None
-    entries = runs.get("check_runs") if isinstance(runs, dict) else None
+    entries = runs.get("workflow_runs") if isinstance(runs, dict) else None
     if not isinstance(entries, list):
         return None
-    # Pli latest-wins par nom (PR gate) puis par started_at.
+    # Pli latest-wins par nom puis par created_at.
     latest = None
     for run in entries:
         if not isinstance(run, dict):
             continue
-        if run.get("name") != "PR gate":
+        if run.get("name") not in MAIN_RED_WORKFLOWS:
             continue
-        started = run.get("started_at") or ""
-        if latest is None or started > (latest.get("started_at") or ""):
+        created = run.get("created_at") or ""
+        if latest is None or created > (latest.get("created_at") or ""):
             latest = run
     if latest is None:
         return None
-    if latest.get("status") == "completed" and latest.get("conclusion") == "failure":
-        return "main rouge: check `{}` en echec sur {}".format(
-            latest.get("name") or "?", branch
+    if latest.get("conclusion") == "failure":
+        return "main rouge: workflow `{}` en echec sur {} (run {})".format(
+            latest.get("name") or "?",
+            branch,
+            (latest.get("html_url") or "").rsplit("/", 1)[-1] or "?",
         )
     return None
 

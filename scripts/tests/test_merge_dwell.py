@@ -880,11 +880,11 @@ def test_q67_date_et_sha_suivent_la_meme_remontee():
 
 # --- 8. #18686 -- le label merge-dwell-waived ne joue que si main est rouge --
 
-def _pr_with_label_fetch(check_runs=None, red_read_fails=False):
+def _pr_with_label_fetch(workflow_runs=None, red_read_fails=False):
     """Fetch fake pour une PR JEUNE (tete a 11:55, NOW=12:00) portant le label.
 
-    `check_runs` : liste de dict check-run de la tete de `main` (branch
-    par defaut renvoyee par `repos/o/r`). `red_read_fails` : la lecture de la
+    `workflow_runs` : liste de dict workflow-runs sur `main` (branch par
+    defaut renvoyee par `repos/o/r`). `red_read_fails` : la lecture de la
     couleur de main leve DwellError (API muette)."""
     def fetch(path):
         if path == "repos/o/r/pulls/42":
@@ -898,10 +898,10 @@ def _pr_with_label_fetch(check_runs=None, red_read_fails=False):
             if red_read_fails:
                 raise merge_dwell.DwellError("repos muet")
             return {"default_branch": "main"}
-        if path == "repos/o/r/commits/main/check-runs?per_page=100":
+        if path == "repos/o/r/actions/runs?branch=main&per_page=100&status=completed":
             if red_read_fails:
-                raise merge_dwell.DwellError("check-runs muets")
-            return {"check_runs": check_runs}
+                raise merge_dwell.DwellError("actions/runs muets")
+            return {"workflow_runs": workflow_runs or []}
         raise AssertionError("chemin inattendu: " + path)
     return fetch
 
@@ -912,9 +912,11 @@ def test_18686_label_main_vert_le_plancher_est_garde():
     posait le label sur du contenu sans aucun rapport avec un rouge."""
     ok, msg = merge_dwell.check(
         "o/r", "abc", 42, 120.0, now=NOW,
-        fetch=_pr_with_label_fetch(check_runs=[
-            {"name": "PR gate", "status": "completed", "conclusion": "success"},
-            {"name": "pytest", "status": "completed", "conclusion": "success"},
+        fetch=_pr_with_label_fetch(workflow_runs=[
+            {"name": "Scripts & Notebook-Tools Tests", "conclusion": "success",
+             "created_at": "2026-09-07T10:00:00Z"},
+            {"name": "Re-aggregate stale PR gate verdicts", "conclusion": "success",
+             "created_at": "2026-09-07T11:00:00Z"},
         ]),
     )
     assert ok is False, "main vert : le label ne doit PAS lever le plancher"
@@ -925,59 +927,65 @@ def test_18686_label_main_vert_le_plancher_est_garde():
 
 
 def test_18686_label_main_rouge_le_plancher_est_leve_avec_motif():
-    """Critere de fermeture 2 : label pose alors que `main` PR-gate-rouge --
-    le gate leve le plancher ET le motif releve vit dans le message."""
+    """Critere de fermeture 2 : label pose alors que `main` a Scripts Tests
+    en failure -- le gate leve le plancher ET le motif releve vit dans le
+    message. C'est le seul cas qui ouvre la derogation en pratique (le check
+    `PR gate` ne tourne pas sur main, c'est l'objection de myia-ai-01 sur
+    #18796)."""
     ok, msg = merge_dwell.check(
         "o/r", "abc", 42, 120.0, now=NOW,
-        fetch=_pr_with_label_fetch(check_runs=[
-            {"name": "PR gate", "status": "completed", "conclusion": "failure"},
-            {"name": "notebook-guard", "status": "completed",
-             "conclusion": "success"},
+        fetch=_pr_with_label_fetch(workflow_runs=[
+            {"name": "Scripts & Notebook-Tools Tests", "conclusion": "failure",
+             "created_at": "2026-09-07T10:30:00Z",
+             "html_url": "https://github.com/o/r/actions/runs/12345"},
+            {"name": "Re-aggregate stale PR gate verdicts", "conclusion": "success",
+             "created_at": "2026-09-07T11:00:00Z"},
         ]),
     )
-    assert ok is True, "main PR gate rouge : la derogation doit jouer"
+    assert ok is True, "main Scripts Tests rouge : la derogation doit jouer"
     assert "dwell leve par le label" in msg
-    assert "main rouge: check `PR gate` en echec sur main" in msg, (
+    assert "main rouge: workflow `Scripts & Notebook-Tools Tests` en echec" in msg, (
         "le motif doit rester lisible dans le log du gate"
     )
 
 
 def test_18790_rouge_non_PR_gate_ne_leve_pas_la_derogation():
-    """#18790 : un check NON-PR-gate rouge sur main ne leve PAS la derogation.
-
-    C'est le delta : avant, _main_red_motif acceptait tout check en failure.
-    Maintenant, seul le check `PR gate` (REQUIRED dans la protection de
-    branche) ouvre la derogation. Un rouge CodeQL ou Gitleaks sur main ne
-    bloque aucun merge -- il ne justifie donc pas un bypass DWELL."""
+    """#18790 : un workflow non-listé rouge sur main ne leve PAS la
+    derogation. Le critère est explicite (MAIN_RED_WORKFLOWS) : un rouge
+    CodeQL ou Gitleaks sur main ne bloque aucun merge -- il ne justifie
+    donc pas un bypass DWELL."""
     ok, msg = merge_dwell.check(
         "o/r", "abc", 42, 120.0, now=NOW,
-        fetch=_pr_with_label_fetch(check_runs=[
-            {"name": "PR gate", "status": "completed", "conclusion": "success"},
-            {"name": "notebook-guard", "status": "completed",
-             "conclusion": "failure"},
+        fetch=_pr_with_label_fetch(workflow_runs=[
+            {"name": "CodeQL", "conclusion": "failure",
+             "created_at": "2026-09-07T09:00:00Z"},
+            {"name": "Scripts & Notebook-Tools Tests", "conclusion": "success",
+             "created_at": "2026-09-07T10:00:00Z"},
         ]),
     )
     assert ok is False, (
-        "main avec rouge non-PR-gate uniquement : le label ne doit PAS "
-        "lever le plancher (PR gate est vert)"
+        "main avec rouge non-listé uniquement : le label ne doit PAS "
+        "lever le plancher (Scripts Tests est vert)"
     )
     assert "condition non remplie" in msg
 
 
 def test_18790_latest_wins_parmi_runs_PR_gate_multiples():
     """#18790 : parmi plusieurs runs `PR gate` sur main, le pli latest-wins
-    par `started_at` selectionne le bon verdict. Cas : un run PR gate rouge
-    recent est pris en compte ; un vert anterieur est ignore."""
+    par `created_at` selectionne le bon verdict. Cas : un run Scripts Tests
+    rouge recent est pris en compte ; un vert anterieur est ignore."""
     ok, msg = merge_dwell.check(
         "o/r", "abc", 42, 120.0, now=NOW,
-        fetch=_pr_with_label_fetch(check_runs=[
-            {"name": "PR gate", "status": "completed", "conclusion": "success",
-             "started_at": "2026-09-07T11:50:00Z"},
-            {"name": "PR gate", "status": "completed", "conclusion": "failure",
-             "started_at": "2026-09-07T11:55:00Z"},
+        fetch=_pr_with_label_fetch(workflow_runs=[
+            {"name": "Scripts & Notebook-Tools Tests", "conclusion": "success",
+             "created_at": "2026-09-07T11:50:00Z",
+             "html_url": "https://github.com/o/r/actions/runs/1"},
+            {"name": "Scripts & Notebook-Tools Tests", "conclusion": "failure",
+             "created_at": "2026-09-07T11:55:00Z",
+             "html_url": "https://github.com/o/r/actions/runs/2"},
         ]),
     )
-    assert ok is True, "le run le plus recent (failure PR gate) leve la derogation"
+    assert ok is True, "le run le plus recent (failure Scripts Tests) leve la derogation"
     assert "dwell leve par le label" in msg
 
 
@@ -994,13 +1002,16 @@ def test_18686_couleur_de_main_illisible_ne_leve_pas():
     assert "condition non remplie" in msg
 
 
-def test_18686_check_run_en_cours_ne_compte_pas_comme_rouge():
-    """Un check-run NON complete (status in_progress) n'est ni vert ni rouge :
-    seul un `completed`/`failure` prouve le rouge."""
+def test_18796_workflow_en_cours_ne_compte_pas_comme_rouge():
+    """Un workflow-run NON complete (status in_progress / conclusion null)
+    n'est ni vert ni rouge : seul un `completed`/`failure` prouve le rouge.
+    Meme esprit que l'ancien test_18686_check_run_en_cours_ne_compte_pas_comme_rouge,
+    transpose au nouveau schema workflow_runs / MAIN_RED_WORKFLOWS."""
     ok, _ = merge_dwell.check(
         "o/r", "abc", 42, 120.0, now=NOW,
-        fetch=_pr_with_label_fetch(check_runs=[
-            {"name": "PR gate", "status": "in_progress", "conclusion": None},
+        fetch=_pr_with_label_fetch(workflow_runs=[
+            {"name": "Scripts & Notebook-Tools Tests", "status": "in_progress",
+             "conclusion": None, "created_at": "2026-09-07T11:55:00Z"},
         ]),
     )
     assert ok is False
