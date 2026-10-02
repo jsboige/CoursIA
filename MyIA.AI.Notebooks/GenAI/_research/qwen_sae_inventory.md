@@ -34,7 +34,7 @@ Variantes L0_100 également publiées sur 9B et 8B (cf. §« Variantes L0_100 »
 | **L0 (top-k)** | 50 strict | `trace.meta["k"] = 50` |
 | **Layers SAE publiés** | 0–31 (couche residuelle après chaque decoder layer) | Model card HF |
 | **Couche harnais ICT** | 16 (`frac=0.5161`, mi-réseau) | `trace.meta["layer"]` + `sae_traces.py:resolve_capture_layer` |
-| **VRAM pic mesurée (bf16)** | 16,7 Gio (modèle 9B) + ~1 Gio SAE → ~17,7 Gio | notebook `ICT-21-SAETrajectoires.ipynb` §`13350192` |
+| **VRAM pic mesurée (bf16)** | 16,7 Gio (modèle 9B) + ~1 Gio SAE → ~17,7 Gio | notebook `ICT-21-SAETrajectoires-Python.ipynb` §`13350192` |
 | **d_model / # layers base** | 4096 / 32 | `meta["d_model"]` + model card |
 
 **Mesures de qualité (relevées firsthand sur les `.npz` committés)** :
@@ -63,7 +63,7 @@ Variantes L0_100 également publiées sur 9B et 8B (cf. §« Variantes L0_100 »
 | **L0 (top-k)** | 50 strict | `trace.meta["k"] = 50` |
 | **Layers SAE publiés** | 0–23 | Model card HF |
 | **Couche harnais ICT** | 12 / 23 (`frac=0.5217`, mi-réseau — `--layer-frac 0.5` arrondi) | `trace.meta["layer_frac"]` |
-| **VRAM pic mesurée (bf16)** | 3,6 Gio (entraîné) / 4,5 Gio (contrôle — permutation embedding) | notebook `ICT-21-SAETrajectoires.ipynb` §`57c90848` |
+| **VRAM pic mesurée (bf16)** | 3,6 Gio (entraîné) / 4,5 Gio (contrôle — permutation embedding) | notebook `ICT-21-SAETrajectoires-Python.ipynb` §`57c90848` |
 | **Déterminisme** | Re-extraction bit-stable (écart max = 0 sur les `vals`, écart 1-3 octets = longueur champ `date` méta) | idem §`57c90848` |
 | **d_model / # layers base** | 2048 / 24 | `meta["d_model"]` + model card |
 
@@ -164,7 +164,7 @@ L'inventaire établit **3 tailles** candidates, dont **2 déjà câblées** (ext
 - **Issue livrable** : #10356 — Phase 1 deliverable 4
 - **Préréquis harnais** : #8236 (ICT strate 6 SAE), PR #10337 MERGED 2026-08-09 (seconde échelle SAE appariée)
 - **Code harnais** : `MyIA.AI.Notebooks/IIT/ICT-Series/scripts/extract_sae_traces.py` + `MyIA.AI.Notebooks/IIT/ICT-Series/ict/sae_traces.py` + `MyIA.AI.Notebooks/IIT/ICT-Series/tests/test_sae_cross_scale.py`
-- **Notebooks consommateurs** : `ICT-21-SAETrajectoires.ipynb` (Gate 10/11 PASS) + `ICT-SAE-JLens-TeteATete.ipynb` (Gate 22-24 #5635)
+- **Notebooks consommateurs** : `ICT-21-SAETrajectoires-Python.ipynb` (Gate 10/11 PASS) + `ICT-SAE-JLens-TeteATete.ipynb` (Gate 22-24 #5635)
 - **Traces committées** : `MyIA.AI.Notebooks/IIT/ICT-Series/traces/ict21_sae_layer16_{trained,control}.npz` + `ict21_sae_qwen35-2b-base_layer12of24_{trained,control}.npz`
 - **Qwen-Scope paper** : arXiv:2605.11887 — *Scaling Sparse Autoencoders on Qwen3.5*
 - **Phase 1 autres livrables** : #10360 (survey SOTA MERGED) + #10363 (Jessynoo extraction MERGED) ; reste deliverable 2 (datasets landscape)
