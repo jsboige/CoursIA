@@ -47,6 +47,7 @@ import Grothendieck.Fppf
 import Grothendieck.Godement
 import Grothendieck.GodementFunctor
 import Grothendieck.GodementMono
+import Grothendieck.GodementAcyclicity
 import Grothendieck.GodementResolution
 import Grothendieck.KanExtensions
 import Grothendieck.LawvereTierney
@@ -195,6 +196,15 @@ Substance réelle :
   Godement est posée — le complexe `0 → F → C⁰F → C⁰(C⁰F) → ⋯` avec
   null-homotopie `μ ≫ d⁰ = 0` et exactitude en degré 0 (mono sur les
   faisceaux). L'acyclicité aux degrés supérieurs est la Partie 88.
+- `Grothendieck.GodementAcyclicity` (Partie 88) : l'**énoncé moral** de
+  l'acyclicité du complexe de Godement est posé — `H^n(C⁰F) = 0` pour
+  `n ≥ 1`, qui ouvre la cohomologie Čech comme une instance du complexe.
+  La stratégie est explicite en docstring (God58 II.5) : `C⁰F` flasque
+  (P84) + lemme de Godement II.5.1 (`Γ` préserve l'exactitude sur les
+  flasques) — la preuve complète `acyclic_godementF` est `sorry`
+  assumée (calibration `#1453`). Un **lemme technique prouvé** est livré :
+  `flasque_section_zero` (le cas simple du lemme de Godement II.5.1,
+  restriction au germe en un point).
 
 Tous les `sorry`s ne sont pas comblés — la plupart sont des échafaudages
 intentionnels pour le prouveur multi-agent (cf. Epic #1453).
@@ -302,6 +312,15 @@ Substance (English):
   resolution is posed — the complex `0 → F → C⁰F → C⁰(C⁰F) → ⋯` with
   null-homotopy `μ ≫ d⁰ = 0` and exactness at degree 0 (mono on sheaves).
   Acyclicity at higher degrees is Part 88.
+- `Grothendieck.GodementAcyclicity` (Part 88): the **moral statement** of
+  acyclicity of the Godement complex is posed — `H^n(C⁰F) = 0` for
+  `n ≥ 1`, opening Čech cohomology as an instance of the complex. The
+  strategy is explicited in docstring (God58 II.5): `C⁰F` flasque (P84)
+  + Godement II.5.1 lemma (`Γ` preserves exactness on flasques) — the
+  complete proof `acyclic_godementF` is `sorry`-assumed (calibration
+  `#1453`). One **technical lemma proved** is delivered:
+  `flasque_section_zero` (the simple case of Godement II.5.1, restricted
+  to the germ at a point).
 
 Not all `sorry`s are filled — most are intentional scaffolds for the
 multi-agent prover (cf. Epic #1453).
