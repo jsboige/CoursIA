@@ -1,0 +1,24 @@
+date: '2026-09-29'
+by: myia-po-2027:CoursIA-2
+python_sha: c7a41fe37c6c294530f3d7e1dc8035135632576f
+csharp_sha: c4e9157d2b318356c7c446779b0681517bef47a9
+content_python_sha: bc8de2f9786de4250acbb97f31154b0ef47e9ff31890d8d8c9845cb781948cd5
+content_csharp_sha: 90b1ed14401fb3ca5fb7e27daf11465cf2a6782f5a56254b447e972a249d202a
+reason: >-
+  Re-attestation de parite a la tete fusionnee -- merge de main dans cette
+  branche, apres que le gate CI eut signale cette paire en DRIFT_INTRODUCED.
+  Le gate evalue l'arbre du commit de MERGE (refs/pull/N/merge), et non la
+  tete de branche : l'attestation precedente etait exacte pour la tete de
+  branche mais ne couvrait pas le contenu que main avait apporte entre-
+  temps, d'ou un --update local en no-op et un gate rouge simultanes. main
+  apporte au jumeau Python une mise a jour de la ligne de navigation
+  (liaison croisee des jumeaux, vague de navigation #17419) ; cette PR
+  convertit le separateur decoratif standalone du jumeau C# (markdown-only
+  des deux cotes). Diff mesure par comparaison de blobs JSON : une ligne de
+  source par cellule markdown concernee ; nombre de cellules, sorties,
+  execution_count et metadata byte-identiques. Les blobs attestes ici sont
+  ceux de la tete fusionnee (3d0f081f3f7b), identique a l'arbre de l'auto-
+  merge GitHub. Le snapshot perime de cette lane a ete supprime (collision
+  d'index avec l'entree de main, cf #17363) ; l'historique le preserve.
+  Aucun strip outile posterieur en attente. parity_level native-both
+  intacte.

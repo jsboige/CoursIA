@@ -1,7 +1,7 @@
 - name: "Sudoku-05 PSO"
   family: Sudoku
   python: MyIA.AI.Notebooks/Sudoku/Sudoku-05-PSO-Python.ipynb
-  csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-05-PSO-Csharp.ipynb
+  csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-05-PSO-CSharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Flip SOTA-OK (2026-08-22, post #11954) : les DEUX cotes branchent desormais un moteur metaheuristique de production sur ce notebook. Python = mealpy (PyPI, MIT, 233+ metaheuristiques) execute nativement -- Tranche mealpy 3 seeds (epoch=300, pop=60) : erreurs residuelles 8/4/6 conflits (seeds 42/7/99), non resolu, meme verdict que le jumeau C# (encodage continu -> paysage discontinu, le moteur ne compense pas l'encodage). C# = PythonNet bridge vers mealpy (#11954) en plus de GeneticSharp 3.1.4 (Tranche 2) et du compound MGS ParticleSwarmOptimization (Tranche 3, fitness -35). L'asymetrie lib-PY / from-scratch-C# qui fondait le RECOVERABLE-LOCAL n'existe plus. Note nuance (c.140, #10382) preservee : les tranches C# GeneticSharp/MGS restent des ponts sur la famille metaheuristique voisine (bucket mealpy/simanneal -> MGS). Verifier les entrees known_differences pour le detail des tranches."

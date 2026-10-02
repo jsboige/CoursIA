@@ -158,8 +158,8 @@ Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules
 | Notebook | Drainable |
 |---|---|
 | `MyIA.AI.Notebooks\Sudoku\Sudoku-03-Genetic-Python.ipynb` | 70 |
-| `MyIA.AI.Notebooks\Sudoku\Sudoku-18-Comparison-Csharp.ipynb` | 64 |
-| `MyIA.AI.Notebooks\Sudoku\Sudoku-13-SymbolicAutomata-Csharp.ipynb` | 61 |
+| `MyIA.AI.Notebooks\Sudoku\Sudoku-18-Comparison-CSharp.ipynb` | 64 |
+| `MyIA.AI.Notebooks\Sudoku\Sudoku-13-SymbolicAutomata-CSharp.ipynb` | 61 |
 | `MyIA.AI.Notebooks\Sudoku\Sudoku-18-Comparison-Python.ipynb` | 53 |
 | `MyIA.AI.Notebooks\Sudoku\Sudoku-04-SimulatedAnnealing-Python.ipynb` | 51 |
 
