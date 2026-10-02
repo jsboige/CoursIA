@@ -3,8 +3,9 @@
 > **Issue** : #18771 (P1, mesure centrale de l'EPIC #18695). Prérequis satisfaits : pin
 > dotnet-interactive canonique 1.0.712001 (#18766, décision ai-01 du 02/10), 3 carnets types
 > sélectionnés (#18769), 5 bancs baseline (#18770).
-> **Chiffres attendus** : [`net11-toub-digest.md`](net11-toub-digest.md) (article Toub,
-> baseline .NET 10.0.12). **Chiffres mesurés ci-dessous** : baseline .NET 9.0.20 / 10.0.12 /
+> **Chiffres attendus** : `net11-toub-digest.md` (article Toub, baseline .NET 10.0.12 —
+> fichier en approche par la PR #18772, même dossier cible). **Chiffres mesurés ci-dessous** :
+> baseline .NET 9.0.20 / 10.0.12 /
 > 11.0.0-rc.1.26425.128 sur notre matériel.
 > **Mesure** : myia-po-2026, 2026-10-02.
 
