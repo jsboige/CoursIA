@@ -77,11 +77,12 @@ permutation `15 = 3·5` (lemmas `perm_primeFactorsList_mul_of_coprime` and
 theorem admissible_trente_quinze : AdmissibleFactorization 15 2 := by
   have hp3 : Nat.Prime 3 := by norm_num
   have hp5 : Nat.Prime 5 := by norm_num
-  have hperm : (15 : ℕ).primeFactorsList ~ [3, 5] := by
+  have hperm : List.Perm (15 : ℕ).primeFactorsList [3, 5] := by
     have h15 : (15 : ℕ) = 3 * 5 := by decide
     rw [h15, Nat.perm_primeFactorsList_mul_of_coprime
       (by decide : Nat.Coprime 3 5), Nat.primeFactorsList_prime hp3,
       Nat.primeFactorsList_prime hp5]
+    exact List.Perm.refl _
   refine ⟨by decide, ?_, ?_⟩
   · exact Nat.squarefree_iff_nodup_primeFactorsList.2 (hperm.nodup_iff.2 (by decide))
   · exact ⟨1, hperm.length_eq.trans rfl⟩
@@ -95,7 +96,7 @@ theorem non_admissible_trente_deux : ¬AdmissibleFactorization 2 15 := by
   unfold AdmissibleFactorization at h
   rw [Nat.primeFactorsList_two] at h
   have h1 : Even 1 := h.2.2
-  exact Nat.not_odd_iff_even.2 h1 Nat.odd_one
+  exact Nat.not_odd_iff_even.2 h1 odd_one
 
 /-- φ(15) = 8: the value used by notebook §2 (`borne_11`) for the best
 admissible factorization of `N = 30`. -/
