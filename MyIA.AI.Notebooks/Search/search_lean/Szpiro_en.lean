@@ -74,12 +74,12 @@ theorem admissible_trente_triviale : AdmissibleFactorization 1 30 :=
 Proof by rewriting with the `primeFactorsList` equations (the idiom of
 Mathlib's own `primeFactorsList_two`): `Squarefree` via
 `squarefree_iff_nodup_primeFactorsList`, parity on the reduced list. -/
-theorem admissible_trente_quinze : AdmissibleFactorization 15 2 :=
-  ⟨by decide,
-    by apply (Nat.squarefree_iff_nodup_primeFactorsList).mp
-       rw [Nat.squarefree_two]
-       simp [Nat.primeFactorsList],
-    by apply (even_iff_two_dvd).mpr (by decide : (2 : ℕ) ∣ 15.primeFactorsList.length)⟩
+theorem admissible_trente_quinze : AdmissibleFactorization 15 2 := by
+  refine ⟨by decide, ?_, ?_⟩
+  · have h : Squarefree 15 := Nat.squarefree_iff_nodup_primeFactorsList.2 (by simp [Nat.primeFactorsList])
+    exact h
+  · have h : Even 15.primeFactorsList.length := (even_iff_two_dvd).mpr (by decide)
+    exact h
 
 /-- Parity counter-example of notebook §2: `D = 2` has exactly **one** prime
 factor (odd), so `30 = 2·15` is NOT admissible — although `gcd(2, 15) = 1`

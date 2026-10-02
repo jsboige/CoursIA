@@ -68,12 +68,12 @@ theorem admissible_trente_triviale : AdmissibleFactorization 1 30 :=
 Preuve par réécriture sur les équations de `primeFactorsList` (idiome de
 `primeFactorsList_two` dans Mathlib) : `Squarefree` via
 `squarefree_iff_nodup_primeFactorsList`, parité sur la liste réduite. -/
-theorem admissible_trente_quinze : AdmissibleFactorization 15 2 :=
-  ⟨by decide,
-    by apply (Nat.squarefree_iff_nodup_primeFactorsList).mp
-       rw [Nat.squarefree_two]
-       simp [Nat.primeFactorsList],
-    by apply (even_iff_two_dvd).mpr (by decide : (2 : ℕ) ∣ 15.primeFactorsList.length)⟩
+theorem admissible_trente_quinze : AdmissibleFactorization 15 2 := by
+  refine ⟨by decide, ?_, ?_⟩
+  · have h : Squarefree 15 := Nat.squarefree_iff_nodup_primeFactorsList.2 (by simp [Nat.primeFactorsList])
+    exact h
+  · have h : Even 15.primeFactorsList.length := (even_iff_two_dvd).mpr (by decide)
+    exact h
 
 /-- Contre-exemple de parité du carnet §2 : `D = 2` a exactement **un** facteur
 premier (impair), donc `30 = 2·15` n'est PAS admissible — bien que
