@@ -198,13 +198,46 @@ def test_main_json_and_fail_on_findings_rc2(monkeypatch, capsys):
     """--json rend findings + compteurs ; --fail-on-findings -> rc=2 sur
     détection, rc=0 sans le drapeau. Le fake runner dispatche les deux
     phases : pr list, puis pr view par candidate (dernier commit hors
-    fenêtre — la candidate reste un finding)."""
+    fenêtre — la candidate reste un finding).
+
+    Note #18840 : ``main()`` résout ``now = datetime.now(timezone.utc)``,
+    alors que les helpers ``_pr``/``_ts`` sont figés sur le ``NOW`` du
+    module (2026-10-01 12:00 UTC) — quand le module est importé plus tard
+    qu'à l'origine (cache pytest, changement de fuseau, ré-exécution),
+    les commentaires « 1 h avant NOW » tombent hors de la fenêtre de 24 h
+    mesurée depuis l'horloge réelle, et l'analyse rend 0 finding. Le
+    fake_runner doit donc ancrer ses timestamps sur l'horloge qu'utilise
+    ``main()``, pas sur le NOW gelé.
+    """
+    from datetime import datetime, timedelta, timezone as _tz
+    live_now = datetime.now(_tz.utc)
+
+    def _live_ts(hours_ago):
+        return (live_now - timedelta(hours=hours_ago)).strftime(
+            "%Y-%m-%dT%H:%M:%SZ")
+
+    def _live_pr(number, age_hours, comments=()):
+        return {
+            "number": number,
+            "title": f"PR synthétique #{number}",
+            "createdAt": _live_ts(age_hours),
+            "mergeable": "MERGEABLE",
+            "comments": [
+                {
+                    "author": {"login": c[0]},
+                    "createdAt": _live_ts(c[1]),
+                    "body": c[2],
+                }
+                for c in comments
+            ],
+        }
+
     def fake_runner(cmd, **kwargs):
         if "list" in cmd:
             return FakeProc(stdout=json.dumps(
-                [_pr(14821, 120, comments=_humans(7))]))
+                [_live_pr(14821, 120, comments=_humans(7))]))
         return FakeProc(stdout=json.dumps(
-            {"commits": [{"committedDate": _ts(100)}]}))
+            {"commits": [{"committedDate": _live_ts(100)}]}))
 
     _patch_runner(monkeypatch, fake_runner)
     assert sdd.main(["--fail-on-findings", "--limit", "10"]) == 2
