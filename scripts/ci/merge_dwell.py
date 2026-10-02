@@ -133,6 +133,28 @@ existe pour un cas nomme : `main` est rouge et le correctif ne doit pas
 attendre 2 h. Le module dit **dans le message** que la derogation a joue, pour
 qu'elle reste lisible dans le log du gate et pas seulement dans la liste des
 labels.
+
+#18686 -- la derogation est VERIFIEE, pas crue
+----------------------------------------------
+
+Le login `jsboige` etant partage par toutes les lanes et par le user, aucun
+controle par auteur de l'evenement ne distingue personne : le 01/10, une lane
+a pose le label elle-meme sur deux PRs de contenu sans aucun rapport avec un
+`main` rouge. Le gate verifie desormais lui-meme la condition que cette
+section nommait deja : le label ne joue QUE si la tete de la branche par
+defaut porte un check-run COMPLETE en conclusion `failure` (un rouge de `main`,
+quelle que soit la suite qui le porte -- on ne re-resout pas « la suite que la
+PR repare » : c'est une lecture de plus par PR labellisee, et un rouge est un
+rouge). Le motif releve (nom du check en echec) est rendu dans le message.
+
+Sinon le message dit « label present, condition non remplie » et le plancher
+s'applique normalement. Une couleur de `main` ILLISIBLE ne vaut pas rouge :
+la derogation ne franchise jamais sur une absence de preuve -- fail-closed,
+comme l'exemption de rafraichissement plus haut. Le cas « issue de rouge main
+citee dans le body » de l'organe n'est PAS implante : une citation d'issue
+ouverte est porte par la moitie des PRs du depot, l'accepter rendrait la
+derogation atteignable par n'importe quel body -- exactement le bypass que
+l'organe vient de subir. Arbitrage documente dans la PR.
 """
 
 from __future__ import annotations
@@ -216,6 +238,7 @@ def evaluate(
     now: datetime,
     dwell_min: float,
     waived: bool = False,
+    waiver_motif: str = "",
 ) -> tuple[bool, float, str]:
     """Decide si le plancher est ecoule. Fonction PURE (testable sans reseau).
 
@@ -225,13 +248,21 @@ def evaluate(
     ou date de committer forgee -- rend l'age negatif : le plancher n'est alors
     PAS ecoule, et le message le dit. Traiter le futur comme « tres vieux »
     serait la seule facon de transformer ce garde en passe-plat.
+
+    `waiver_motif` (#18686) : quand la derogation est VERIFIEE, le motif releve
+    (le check de `main` en echec) est rendu dans le message pour rester lisible
+    dans le log du gate -- une derogation sans motif publie serait une ligne de
+    label que rien ne justifie au moment de la relire.
     """
     if dwell_min <= 0:
         return True, 0.0, "dwell desactive (--dwell-min <= 0)"
     if waived:
+        suffix = " -- {}".format(waiver_motif) if waiver_motif else ""
         return True, 0.0, (
-            "dwell leve par le label `{}` "
-            "(plancher {:.0f} min non applique)".format(WAIVER_LABEL, dwell_min)
+            "dwell leve par le label `{}`{} "
+            "(plancher {:.0f} min non applique)".format(
+                WAIVER_LABEL, suffix, dwell_min
+            )
         )
 
     age_min = (now - committed_at).total_seconds() / 60.0
@@ -570,8 +601,54 @@ def is_waived(repo: str, pr_number: int, fetch=_gh_json) -> bool:
     Un echec de lecture n'est PAS une derogation : il remonte en `DwellError`
     et le gate refuse (rule 1). Lire « pas de label » d'une API muette est
     exactement le zero propre que le harnais interdit de croire.
+
+    #18686 : ceci ne dit PAS que la derogation JOUE -- seulement que le label
+    est pose. La condition (main rouge) est verifiee par `_main_red_motif`,
+    consommee par `check`.
     """
     return _labels_carry_waiver(_pr_payload(repo, pr_number, fetch))
+
+
+def _default_branch(repo: str, fetch=_gh_json) -> str:
+    payload = fetch("repos/{}".format(repo))
+    branch = payload.get("default_branch") if isinstance(payload, dict) else None
+    if not branch:
+        raise DwellError("pas de default_branch sur {}".format(repo))
+    return branch
+
+
+def _main_red_motif(repo: str, fetch=_gh_json) -> "str | None":
+    """#18686 : motif de rouge de la branche par defaut, ou None si vert.
+
+    Lit les check-runs de la TETE de la branche par defaut : tout check-run
+    COMPLETE en conclusion `failure` vaut rouge, quelle que soit la suite qui
+    le porte. Renvoie le motif releve (nom du check en echec) pour que le
+    message de derogation reste justifiable a la relecture.
+
+    Une couleur ILLISIBLE ne vaut PAS rouge : None, la derogation ne franchise
+    jamais sur une absence de preuve -- fail-closed, comme l'exemption de
+    rafraichissement de base. Pas de DwellError ici : un label dont la
+    condition ne peut pas etre prouvee retombe sur le plancher NORMAL, le gate
+    continue de mesurer sans refuser.
+    """
+    try:
+        branch = _default_branch(repo, fetch)
+        runs = fetch(
+            "repos/{}/commits/{}/check-runs?per_page=100".format(repo, branch)
+        )
+    except DwellError:
+        return None
+    entries = runs.get("check_runs") if isinstance(runs, dict) else None
+    if not isinstance(entries, list):
+        return None
+    for run in entries:
+        if not isinstance(run, dict):
+            continue
+        if run.get("status") == "completed" and run.get("conclusion") == "failure":
+            return "main rouge: check `{}` en echec sur {}".format(
+                run.get("name") or "?", branch
+            )
+    return None
 
 
 def check(
@@ -590,11 +667,29 @@ def check(
     commit de la branche par defaut et ne peut de toute facon pas bouger le
     `mergeState` d'une PR (documente en tete de `pr-gate.yml`). Y appliquer
     un plancher rougirait la branche par defaut sans rien gater.
+
+    #18686 : le label `merge-dwell-waived` ne leve le plancher que si `main`
+    est VERIFIE rouge (`_main_red_motif`). Sinon le message le dit
+    (« label present, condition non remplie ») et le plancher s'applique.
     """
     if dwell_min <= 0 or pr_number is None:
         return True, "dwell non applicable (hors contexte de PR ou desactive)"
     pr = _pr_payload(repo, pr_number, fetch=fetch)
     waived = _labels_carry_waiver(pr)
+    waiver_motif = ""
+    unmet_note = ""
+    if waived:
+        motif = _main_red_motif(repo, fetch)
+        if motif is None:
+            waived = False
+            unmet_note = (
+                " -- label `{}` present mais condition non remplie "
+                "(main vert ou couleur illisible) : plancher applique".format(
+                    WAIVER_LABEL
+                )
+            )
+        else:
+            waiver_motif = motif
     base_sha = ((pr.get("base") or {}).get("sha") or "")
     if not base_sha:
         raise DwellError("pas de base.sha sur la PR #{}".format(pr_number))
@@ -602,6 +697,7 @@ def check(
         repo, sha, base_sha, fetch=fetch, run_git=run_git
     )
     ok, _remaining, message = evaluate(
-        committed, now or datetime.now(timezone.utc), dwell_min, waived
+        committed, now or datetime.now(timezone.utc), dwell_min, waived,
+        waiver_motif=waiver_motif,
     )
-    return ok, message
+    return ok, message + unmet_note

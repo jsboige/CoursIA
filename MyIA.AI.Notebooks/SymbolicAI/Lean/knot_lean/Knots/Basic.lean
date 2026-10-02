@@ -84,7 +84,7 @@ structure PDCrossing where
   e2 : Nat  -- dessus entrant
   e3 : Nat  -- dessous sortant
   e4 : Nat  -- dessus sortant
-  deriving BEq, Repr
+  deriving BEq, DecidableEq, Repr
 
 /-- Un diagramme de noeud est une liste de croisements PD avec un nombre de croisements. -/
 structure KnotDiagram where
@@ -96,7 +96,7 @@ structure KnotDiagram where
   -- un diagramme intermediaire dont la bonne formation ne vaut que sous les
   -- hypotheses de la relation, donc un invariant intrinseque rendrait le mouvement
   -- non statable (voir la rationale de conception sur l'issue #8604).
-  deriving Repr
+  deriving DecidableEq, Repr
 
 /-! ## 5. Noeud
 

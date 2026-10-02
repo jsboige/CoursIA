@@ -190,41 +190,41 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | [Sudoku-00 : Environnement et Classes de Base (C#)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-00-Environment-Csharp.ipynb) | BETA | Oui |
-| 2 | [Sudoku-01 : Résolution par Backtracking](../../MyIA.AI.Notebooks/Sudoku/Sudoku-01-Backtracking-Csharp.ipynb) | BETA | Oui |
+| 1 | [Sudoku-00 : Environnement et Classes de Base (C#)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-00-Environment-CSharp.ipynb) | BETA | Oui |
+| 2 | [Sudoku-01 : Résolution par Backtracking](../../MyIA.AI.Notebooks/Sudoku/Sudoku-01-Backtracking-CSharp.ipynb) | BETA | Oui |
 | 3 | [Sudoku-01 : Resolution par Backtracking (Python)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-01-Backtracking-Python.ipynb) | BETA | Oui |
-| 4 | [Résolution de Sudoku avec Algorithm X et Dancing Links](../../MyIA.AI.Notebooks/Sudoku/Sudoku-02-DancingLinks-Csharp.ipynb) | BETA | Oui |
+| 4 | [Résolution de Sudoku avec Algorithm X et Dancing Links](../../MyIA.AI.Notebooks/Sudoku/Sudoku-02-DancingLinks-CSharp.ipynb) | BETA | Oui |
 | 5 | [Sudoku-Python-DancingLinks : Dancing Links / Algorithm…](../../MyIA.AI.Notebooks/Sudoku/Sudoku-02-DancingLinks-Python.ipynb) | BETA | Oui |
-| 6 | [Sudoku-03 : Résolution par Algorithme Génétique (C#)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-03-Genetic-Csharp.ipynb) | BETA | Oui |
+| 6 | [Sudoku-03 : Résolution par Algorithme Génétique (C#)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-03-Genetic-CSharp.ipynb) | BETA | Oui |
 | 7 | [Sudoku-Python-Genetic : Algorithme Génétique (Python)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-03-Genetic-Python.ipynb) | BETA | Oui |
-| 8 | [Résolution de Sudoku par Recuit Simulé](../../MyIA.AI.Notebooks/Sudoku/Sudoku-04-SimulatedAnnealing-Csharp.ipynb) | BETA | Oui |
+| 8 | [Résolution de Sudoku par Recuit Simulé](../../MyIA.AI.Notebooks/Sudoku/Sudoku-04-SimulatedAnnealing-CSharp.ipynb) | BETA | Oui |
 | 9 | [Sudoku-04 : Recuit Simule (Python)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-04-SimulatedAnnealing-Python.ipynb) | BETA | Oui |
-| 10 | [Sudoku-05 : Particle Swarm Optimization (PSO)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-05-PSO-Csharp.ipynb) | BETA | Oui |
+| 10 | [Sudoku-05 : Particle Swarm Optimization (PSO)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-05-PSO-CSharp.ipynb) | BETA | Oui |
 | 11 | [Sudoku-05 : Particle Swarm Optimization (Python)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-05-PSO-Python.ipynb) | BETA | Oui |
-| 12 | [Sudoku-06 : Résolution par CSP Académique (AIMA)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-06-AIMA-CSP-Csharp.ipynb) | BETA | Oui |
+| 12 | [Sudoku-06 : Résolution par CSP Académique (AIMA)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-06-AIMA-CSP-CSharp.ipynb) | BETA | Oui |
 | 13 | [Sudoku-06 : Résolution par CSP Académique (Python)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-06-AIMA-CSP-Python.ipynb) | BETA | Oui |
-| 14 | [Sudoku-07 : Résolution par Propagation de Contraintes…](../../MyIA.AI.Notebooks/Sudoku/Sudoku-07-Norvig-Csharp.ipynb) | BETA | Oui |
+| 14 | [Sudoku-07 : Résolution par Propagation de Contraintes…](../../MyIA.AI.Notebooks/Sudoku/Sudoku-07-Norvig-CSharp.ipynb) | BETA | Oui |
 | 15 | [Sudoku-07 : Résolution par Propagation de Contraintes…](../../MyIA.AI.Notebooks/Sudoku/Sudoku-07-Norvig-Python.ipynb) | BETA | Oui |
-| 16 | [Résolution de Sudoku par Stratégies Humaines](../../MyIA.AI.Notebooks/Sudoku/Sudoku-08-HumanStrategies-Csharp.ipynb) | BETA | Oui |
+| 16 | [Résolution de Sudoku par Stratégies Humaines](../../MyIA.AI.Notebooks/Sudoku/Sudoku-08-HumanStrategies-CSharp.ipynb) | BETA | Oui |
 | 17 | [Sudoku-08 : Resolution par Stratégies Humaines (Python)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-08-HumanStrategies-Python.ipynb) | BETA | Oui |
-| 18 | [Notebook 9: Résolution de Sudoku par Coloration de…](../../MyIA.AI.Notebooks/Sudoku/Sudoku-09-GraphColoring-Csharp.ipynb) | BETA | Oui |
+| 18 | [Notebook 9: Résolution de Sudoku par Coloration de…](../../MyIA.AI.Notebooks/Sudoku/Sudoku-09-GraphColoring-CSharp.ipynb) | BETA | Oui |
 | 19 | [Sudoku-09 : Coloration de Graphe (Python)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-09-GraphColoring-Python.ipynb) | BETA | Oui |
-| 20 | [Sudoku-10 : Résolution avec OR-Tools (C#)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-Csharp.ipynb) | BETA | Oui |
+| 20 | [Sudoku-10 : Résolution avec OR-Tools (C#)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-CSharp.ipynb) | BETA | Oui |
 | 21 | [Sudoku-10-ORTools-Python : OR-Tools CP-SAT (Python)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-Python.ipynb) | BETA | Oui |
-| 22 | [Sudoku-11-Choco-Csharp : Solveur Choco via IKVM](../../MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Csharp.ipynb) | BETA | Oui |
+| 22 | [Sudoku-11-Choco-CSharp : Solveur Choco via IKVM](../../MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-CSharp.ipynb) | BETA | Oui |
 | 23 | [Notebook 11: Résolution de Sudoku avec Choco Constraint…](../../MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Python.ipynb) | BETA | Oui |
-| 24 | [Sudoku-12 : Résolution avec Z3 SMT Solver (C#)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-12-Z3-Csharp.ipynb) | BETA | Oui |
+| 24 | [Sudoku-12 : Résolution avec Z3 SMT Solver (C#)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-12-Z3-CSharp.ipynb) | BETA | Oui |
 | 25 | [Sudoku-12-Z3-Python : Z3 SMT Solver (Python)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-12-Z3-Python.ipynb) | BETA | Oui |
-| 26 | [Sudoku 12b : Linq2Z3 — l'histoire d'un binding, de 81…](../../MyIA.AI.Notebooks/Sudoku/Sudoku-12b-Z3-Linq2Z3-Csharp.ipynb) | BETA | Oui |
-| 27 | [Sudoku-13 : Le Sudoku comme Regex Symbolique -…](../../MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb) | BETA | Oui |
+| 26 | [Sudoku 12b : Linq2Z3 — l'histoire d'un binding, de 81…](../../MyIA.AI.Notebooks/Sudoku/Sudoku-12b-Z3-Linq2Z3-CSharp.ipynb) | BETA | Oui |
+| 27 | [Sudoku-13 : Le Sudoku comme Regex Symbolique -…](../../MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-CSharp.ipynb) | BETA | Oui |
 | 28 | [Sudoku-13 : Le Sudoku comme Regex Symbolique — twin…](../../MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb) | BETA | Oui |
-| 29 | [Sudoku-14 : Automates avec BDD/MDD - Approche Pure](../../MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb) | BETA | Oui |
+| 29 | [Sudoku-14 : Automates avec BDD/MDD - Approche Pure](../../MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-CSharp.ipynb) | BETA | Oui |
 | 30 | [Sudoku-14 : Automates avec BDD/MDD - Approche Pure…](../../MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Python.ipynb) | BETA | Oui |
-| 31 | [Résolution de Sudoku avec Infer.NET](../../MyIA.AI.Notebooks/Sudoku/Sudoku-15-Infer-Csharp.ipynb) | BETA | Oui |
+| 31 | [Résolution de Sudoku avec Infer.NET](../../MyIA.AI.Notebooks/Sudoku/Sudoku-15-Infer-CSharp.ipynb) | BETA | Oui |
 | 32 | [Sudoku-15-Infer-Python : Resolution Probabiliste avec…](../../MyIA.AI.Notebooks/Sudoku/Sudoku-15-Infer-Python.ipynb) | BETA | Oui |
 | 33 | [Sudoku-16 : Résolution par Réseaux de Neurones](../../MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb) | BETA | Non |
 | 34 | [Notebook 17: Resolution de Sudoku avec Large Language…](../../MyIA.AI.Notebooks/Sudoku/Sudoku-17-LLM-Python.ipynb) | BETA | Non |
-| 35 | [Comparaison des Solveurs de Sudoku](../../MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Csharp.ipynb) | BETA | Oui |
+| 35 | [Comparaison des Solveurs de Sudoku](../../MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-CSharp.ipynb) | BETA | Oui |
 | 36 | [Comparaison des Solveurs de Sudoku](../../MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Python.ipynb) | BETA | Oui |
 | 37 | [Sudoku-18b - Comparaison statistique honnête de…](../../MyIA.AI.Notebooks/Sudoku/Sudoku-18b-Statistical-Comparison-Python.ipynb) | BETA | Oui |
-| 38 | [Sudoku-19 — Soundness de la propagation de contraintes…](../../MyIA.AI.Notebooks/Sudoku/Sudoku-19-Lean-Propagation.ipynb) | BETA | Oui |
+| 38 | [Sudoku-19 — Soundness de la propagation de contraintes…](../../MyIA.AI.Notebooks/Sudoku/Sudoku-19-Lean-Propagation-Lean.ipynb) | BETA | Oui |
