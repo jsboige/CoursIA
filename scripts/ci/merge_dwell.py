@@ -618,12 +618,17 @@ def _default_branch(repo: str, fetch=_gh_json) -> str:
 
 
 def _main_red_motif(repo: str, fetch=_gh_json) -> "str | None":
-    """#18686 : motif de rouge de la branche par defaut, ou None si vert.
+    """#18686 + #18790 : motif de rouge STRICT de la branche par defaut, ou None si vert.
 
-    Lit les check-runs de la TETE de la branche par defaut : tout check-run
-    COMPLETE en conclusion `failure` vaut rouge, quelle que soit la suite qui
-    le porte. Renvoie le motif releve (nom du check en echec) pour que le
-    message de derogation reste justifiable a la relecture.
+    Pli latest-wins par `started_at` sur le check `PR gate` UNIQUEMENT :
+    les autres checks (CodeQL, Gitleaks, ADK, etc.) peuvent etre rouges
+    sans bloquer un merge -- leur rouge ne justifie pas une derogation
+    DWELL. Le check `PR gate` est l'UNIQUE check requis (`required_status_
+    checks.contexts = ["PR gate"]`) dans la protection de branche ; un autre
+    check rouge sur main ne s'oppose pas au merge d'une PR.
+
+    Renvoie le motif releve (nom du check en echec) pour que le message de
+    derogation reste justifiable a la relecture.
 
     Une couleur ILLISIBLE ne vaut PAS rouge : None, la derogation ne franchise
     jamais sur une absence de preuve -- fail-closed, comme l'exemption de
@@ -641,13 +646,22 @@ def _main_red_motif(repo: str, fetch=_gh_json) -> "str | None":
     entries = runs.get("check_runs") if isinstance(runs, dict) else None
     if not isinstance(entries, list):
         return None
+    # Pli latest-wins par nom (PR gate) puis par started_at.
+    latest = None
     for run in entries:
         if not isinstance(run, dict):
             continue
-        if run.get("status") == "completed" and run.get("conclusion") == "failure":
-            return "main rouge: check `{}` en echec sur {}".format(
-                run.get("name") or "?", branch
-            )
+        if run.get("name") != "PR gate":
+            continue
+        started = run.get("started_at") or ""
+        if latest is None or started > (latest.get("started_at") or ""):
+            latest = run
+    if latest is None:
+        return None
+    if latest.get("status") == "completed" and latest.get("conclusion") == "failure":
+        return "main rouge: check `{}` en echec sur {}".format(
+            latest.get("name") or "?", branch
+        )
     return None
 
 

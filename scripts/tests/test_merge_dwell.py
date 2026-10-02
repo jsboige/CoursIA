@@ -925,8 +925,30 @@ def test_18686_label_main_vert_le_plancher_est_garde():
 
 
 def test_18686_label_main_rouge_le_plancher_est_leve_avec_motif():
-    """Critere de fermeture 2 : label pose alors que `main` est rouge -- le gate
-    leve le plancher ET le motif releve (check en echec) vit dans le message."""
+    """Critere de fermeture 2 : label pose alors que `main` PR-gate-rouge --
+    le gate leve le plancher ET le motif releve vit dans le message."""
+    ok, msg = merge_dwell.check(
+        "o/r", "abc", 42, 120.0, now=NOW,
+        fetch=_pr_with_label_fetch(check_runs=[
+            {"name": "PR gate", "status": "completed", "conclusion": "failure"},
+            {"name": "notebook-guard", "status": "completed",
+             "conclusion": "success"},
+        ]),
+    )
+    assert ok is True, "main PR gate rouge : la derogation doit jouer"
+    assert "dwell leve par le label" in msg
+    assert "main rouge: check `PR gate` en echec sur main" in msg, (
+        "le motif doit rester lisible dans le log du gate"
+    )
+
+
+def test_18790_rouge_non_PR_gate_ne_leve_pas_la_derogation():
+    """#18790 : un check NON-PR-gate rouge sur main ne leve PAS la derogation.
+
+    C'est le delta : avant, _main_red_motif acceptait tout check en failure.
+    Maintenant, seul le check `PR gate` (REQUIRED dans la protection de
+    branche) ouvre la derogation. Un rouge CodeQL ou Gitleaks sur main ne
+    bloque aucun merge -- il ne justifie donc pas un bypass DWELL."""
     ok, msg = merge_dwell.check(
         "o/r", "abc", 42, 120.0, now=NOW,
         fetch=_pr_with_label_fetch(check_runs=[
@@ -935,11 +957,28 @@ def test_18686_label_main_rouge_le_plancher_est_leve_avec_motif():
              "conclusion": "failure"},
         ]),
     )
-    assert ok is True, "main rouge : la derogation doit jouer"
-    assert "dwell leve par le label" in msg
-    assert "main rouge: check `notebook-guard` en echec sur main" in msg, (
-        "le motif doit rester lisible dans le log du gate"
+    assert ok is False, (
+        "main avec rouge non-PR-gate uniquement : le label ne doit PAS "
+        "lever le plancher (PR gate est vert)"
     )
+    assert "condition non remplie" in msg
+
+
+def test_18790_latest_wins_parmi_runs_PR_gate_multiples():
+    """#18790 : parmi plusieurs runs `PR gate` sur main, le pli latest-wins
+    par `started_at` selectionne le bon verdict. Cas : un run PR gate rouge
+    recent est pris en compte ; un vert anterieur est ignore."""
+    ok, msg = merge_dwell.check(
+        "o/r", "abc", 42, 120.0, now=NOW,
+        fetch=_pr_with_label_fetch(check_runs=[
+            {"name": "PR gate", "status": "completed", "conclusion": "success",
+             "started_at": "2026-09-07T11:50:00Z"},
+            {"name": "PR gate", "status": "completed", "conclusion": "failure",
+             "started_at": "2026-09-07T11:55:00Z"},
+        ]),
+    )
+    assert ok is True, "le run le plus recent (failure PR gate) leve la derogation"
+    assert "dwell leve par le label" in msg
 
 
 def test_18686_couleur_de_main_illisible_ne_leve_pas():
