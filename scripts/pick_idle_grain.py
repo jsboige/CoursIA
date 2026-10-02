@@ -3860,13 +3860,14 @@ def upsert_orphans_comment(number: int, body: str) -> None:
 def belt_sort_key(it: dict) -> tuple:
     """Cle de tri deterministe pour le tapis roulant.
 
-    None en tete (jamais servis), puis ISO ascending (plus ancienne date
-    en tete), puis numero croissant.
+    Spec #18832 : **une seule ligne de temps** -- derniere PR mergee citant
+    l'issue, sinon date de creation, sinon NOW. La plus ancienne en tete.
+    Une sous-issue tout juste creee repart en queue, pas en tete.
+
+    Tri : (stamp ISO asc, numero asc).
     """
-    stamp = it.get("last_delivery_stamp")
-    if stamp is None:
-        return (0, "", it.get("created_at", ""), it.get("number", 0))
-    return (1, stamp, it.get("created_at", ""), it.get("number", 0))
+    stamp = it.get("last_delivery_stamp") or it.get("created_at") or NOW.isoformat()
+    return (stamp, it.get("number", 0))
 
 
 def belt_filter(
