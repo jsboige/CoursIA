@@ -6666,7 +6666,7 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling-CSharp.ipynb,ec9ec87d,markdo
 
 Le notebook [CSP-4-Scheduling.ipynb](CSP-4-Scheduling.ipynb) (version Python) présente le JSSP, le RCPSP et le Nurse Scheduling avec OR-Tools CP-SAT (pip `ortools`). **Ce binôme .NET** reprend les trois mêmes problèmes avec le **même moteur** via son binding officiel NuGet `Google.OrTools` : même cœur C++, mêmes contraintes globales, API idiomatique .NET. Objectif : démontrer la **parité Python/.NET** de la série CSP (cf. epic [#4956](https://github.com/jsboige/CoursIA/issues/4956)) — ici au niveau le plus fort du registre de parité, *native-both* : les deux jumeaux invoquent le solveur natif de leur écosystème.
 
-> La route Choco-solver (Java) via IKVM reste démontrée dans la série : [Sudoku-11-Choco-Csharp.ipynb](../../Sudoku/Sudoku-11-Choco-Csharp.ipynb) et les binômes CSP-1/2/3/5/7.
+> La route Choco-solver (Java) via IKVM reste démontrée dans la série : [Sudoku-11-Choco-CSharp.ipynb](../../Sudoku/Sudoku-11-Choco-CSharp.ipynb) et les binômes CSP-1/2/3/5/7.
 
 > *Ancres savantes -- Brucker, P. (2007), Scheduling Algorithms (5e éd.), Springer (job-shop scheduling et ordonnancements à contraintes de ressources) ; Herroelen, W., De Reyck, B. & Demeulemeester, E. (1998), Resource-Constrained Project Scheduling: A Survey of Recent Developments, Computers & Opérations Research 25(4):279-302 (RCPSP, méthodes exactes et heuristiques) ; Burke, E.K. et al. (2004), The State of the Art of Nurse Rostering, Journal of Scheduling 7(6):441-499 (survey de référence sur le Nurse Scheduling Problem).*",,,,,,,,8b6d4ec05005d9ae,,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling-CSharp.ipynb,26727e5b,code,fr,003ee51c0c5e2a9e,"// Configuration du répertoire de travail
@@ -6704,7 +6704,7 @@ Le solveur est chargé via le package officiel `Google.OrTools` (Apache-2.0, mai
 
 ### Pourquoi CP-SAT natif pour l'ordonnancement
 
-Le scheduling (`IntervalVar`, `NoOverlap`, `Cumulative`) est natif en CP-SAT : c'est le terrain où OR-Tools brille pour l'ordonnancement (design option b, [#4956](https://github.com/jsboige/CoursIA/issues/4956)). La route alternative — Choco-solver (Java) via IKVM — est démontrée dans les binômes CSP-1/2/3/5/7 de cette même série et dans [Sudoku-11-Choco-Csharp](../../Sudoku/Sudoku-11-Choco-Csharp.ipynb) : les deux sont des moteurs SOTA réels, le choix est documenté par binôme dans le registre de parité.",,,,,,,,5e53243e14064d62,,,,,,,,
+Le scheduling (`IntervalVar`, `NoOverlap`, `Cumulative`) est natif en CP-SAT : c'est le terrain où OR-Tools brille pour l'ordonnancement (design option b, [#4956](https://github.com/jsboige/CoursIA/issues/4956)). La route alternative — Choco-solver (Java) via IKVM — est démontrée dans les binômes CSP-1/2/3/5/7 de cette même série et dans [Sudoku-11-Choco-CSharp](../../Sudoku/Sudoku-11-Choco-CSharp.ipynb) : les deux sont des moteurs SOTA réels, le choix est documenté par binôme dans le registre de parité.",,,,,,,,5e53243e14064d62,,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling-CSharp.ipynb,7f2ca686,code,fr,cf255e109854a395,"// Configuration IKVM 8.15.0 pour Choco-solver -- exécution réelle en-kernel (See #4956, See #3801)
 //
 // Deux verrous documentés dans #4711 (Sudoku-11) sont levés ici :
@@ -7102,12 +7102,12 @@ Ce notebook a démontré la **parité Python/.NET** sur trois problèmes d'ordon
 3. **Objectif** : `cp.AddMaxEquality(makespan, ends)` puis `cp.Minimize(makespan)`.
 4. **Sommes linéaires** : `LinearExpr.Sum(list)` et `LinearExpr.Constant(c)` remplacent le `sum(...)` natif Python.
 5. **Convergence des jumeaux** : makespans optimaux 11/10/42 identiques au [binôme Python](CSP-4-Scheduling.ipynb) — même moteur, même optimal, deux écosystèmes.
-6. **Route alternative vivante** : la même série démontre Choco-solver (Java) via IKVM dans les binômes CSP-1/2/3/5/7 et [Sudoku-11-Choco-Csharp](../../Sudoku/Sudoku-11-Choco-Csharp.ipynb).
+6. **Route alternative vivante** : la même série démontre Choco-solver (Java) via IKVM dans les binômes CSP-1/2/3/5/7 et [Sudoku-11-Choco-CSharp](../../Sudoku/Sudoku-11-Choco-CSharp.ipynb).
 
 ### Voir aussi
 
 - [CSP-4-Scheduling.ipynb](CSP-4-Scheduling.ipynb) — jumeau Python (OR-Tools CP-SAT, pip)
-- [Sudoku-11-Choco-Csharp.ipynb](../../Sudoku/Sudoku-11-Choco-Csharp.ipynb) — la route Choco-solver via IKVM
+- [Sudoku-11-Choco-CSharp.ipynb](../../Sudoku/Sudoku-11-Choco-CSharp.ipynb) — la route Choco-solver via IKVM
 - [EPIC #4956](https://github.com/jsboige/CoursIA/issues/4956) — parité .NET ⇄ Python des séries de notebooks",,,,,,,,9c1748f7148d189e,,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb,d3c0280c,markdown,fr,fc297d6314f2a0de,"# CSP-4-Scheduling : Problèmes d'Ordonnancement
 
@@ -8348,7 +8348,7 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization-CSharp.ipynb,d4aa935a,mark
 
 ## Pourquoi ce notebook ?
 
-Le notebook [CSP-5-Optimization.ipynb](CSP-5-Optimization.ipynb) (version Python) présente 4 problèmes d'optimisation combinatoire résolus avec OR-Tools CP-SAT. **Ce binôme .NET** reprend les 4 mêmes problèmes en utilisant **Choco-solver** (Java → IKVM → .NET Interactive). Cible : démontrer la **parité Python/.NET** sur l'optimisation (cf. epic [#4956](https://github.com/jsboige/CoursIA/issues/4956)) en réutilisant la jurisprudence [Sudoku-11-Choco-Csharp](../../Sudoku/Sudoku-11-Choco-Csharp.ipynb) + [CSP-4-Scheduling-CSharp](CSP-4-Scheduling-CSharp.ipynb).
+Le notebook [CSP-5-Optimization.ipynb](CSP-5-Optimization.ipynb) (version Python) présente 4 problèmes d'optimisation combinatoire résolus avec OR-Tools CP-SAT. **Ce binôme .NET** reprend les 4 mêmes problèmes en utilisant **Choco-solver** (Java → IKVM → .NET Interactive). Cible : démontrer la **parité Python/.NET** sur l'optimisation (cf. epic [#4956](https://github.com/jsboige/CoursIA/issues/4956)) en réutilisant la jurisprudence [Sudoku-11-Choco-CSharp](../../Sudoku/Sudoku-11-Choco-CSharp.ipynb) + [CSP-4-Scheduling-CSharp](CSP-4-Scheduling-CSharp.ipynb).
 
 > *Ancres savantes -- Martello, S. & Toth, P. (1990), Knapsack Problems: Algorithms and Computer Implementations, John Wiley & Sons (référence canonique sur le 0/1 knapsack) ; Gilmore, P.C. & Gomory, R.E. (1961), A Linear Programming Approach to the Cutting-Stock Problem, Opérations Research 9(6):849-859 (cutting-stock pattern generation) ; Markowitz, H. (1952), Portfolio Sélection, Journal of Finance 7(1):77-91 (fondation de l'optimisation de portefeuille, variance quadratique hors scope CP pur — on utilise ici une approximation linéaire par moyenne-variance bornée).*",,,,,,,,25c713d294067f63,,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization-CSharp.ipynb,62efa269,code,fr,9a9738701d2f1784,"// Configuration du répertoire de travail (pattern FindCspDir)
@@ -8853,7 +8853,7 @@ Ce notebook a présenté quatre problèmes classiques d'optimisation combinatoir
 
 - [CSP-5-Optimization.ipynb](CSP-5-Optimization.ipynb) — version Python (OR-Tools CP-SAT), instances distinctes
 - [CSP-4-Scheduling-CSharp.ipynb](CSP-4-Scheduling-CSharp.ipynb) — tranche 1, parangonnage JSSP/RCPSP/Nurse
-- [Sudoku-11-Choco-Csharp.ipynb](../../Sudoku/Sudoku-11-Choco-Csharp.ipynb) — jurisprudence IKVM 8.15.0 + Choco
+- [Sudoku-11-Choco-CSharp.ipynb](../../Sudoku/Sudoku-11-Choco-CSharp.ipynb) — jurisprudence IKVM 8.15.0 + Choco
 - [PR #4711](https://github.com/jsboige/CoursIA/pull/4711) — diagnostic des deux verrous IKVM levés
 - [EPIC #4956](https://github.com/jsboige/CoursIA/issues/4956) — parité .NET ⇄ Python des séries de notebooks
 - [Issue #5005](https://github.com/jsboige/CoursIA/issues/5005) — bug kernel iopub post-`#r ""nuget:""` (tracking output capture)

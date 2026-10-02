@@ -65,6 +65,16 @@ mkdir -p "$COURSIA_RUNNER_STATE_DIR"
 # nommer sa cause.
 export COURSIA_RUNNER_BUDGET_GB="${COURSIA_RUNNER_BUDGET_GB:-42}"
 
+# BUDGET CPU INTER-FAMILLES (#15574 item 3, arbitrage coordinateur du
+# 2026-10-01, comment 5933689033) -- MEME NOMBRE que coursia-runner-start.sh.
+# assert_cpu_budget somme les familles d'EXECUTION (start + lean ; les
+# waiters, oisifs, en sont exclus) et refuse le demarrage au depassement.
+# Valeur 30, pas les 24 de l'arbitrage : docker 6x3 + lean 2x6 = 30, et a 24
+# cette jambe-ci serait REFUSEE au demarrage -- le verrou « service failed »
+# que l'arbitrage citait precisement pour l'ecarter. Le garde est inerte a 0
+# ou absent (etat anterieur de la machine).
+export COURSIA_RUNNER_CPU_BUDGET="${COURSIA_RUNNER_CPU_BUDGET:-30}"
+
 cd "$REPO_DIR" || exit 1
 
 if [ "$ARG" = "stop" ]; then
