@@ -27,23 +27,23 @@ Deux faits, dans l'ordre du récit :
    est posée (image de `C⁰F` par l'unité de `C⁰`). Le `ShortComplex` lui-même
    `F --μ→ C⁰F --d⁰→ C⁰²F` exige le champ `zero : μ ≫ d⁰ = 0` qui est
    **volontairement non-posé** ici (Tell c.1453 strict, named frontier
-   `acyclic_godementF` traité en Partie 88). L'allongement au complexe
-   complet `0 → F → C⁰F → C⁰²F → ⋯` est l'objet de la Partie 88 (préservation
-   des noyaux par `C⁰`).
+   traité en Partie 89). L'allongement au complexe complet
+   `0 → F → C⁰F → C⁰²F → ⋯` est l'objet de la Partie 88 (préservation
+   des noyaux par `C⁰` -- voir `GodementAcyclicity.lean`).
 2. `godementResolution_exact₀` : **exactitude en degré 0** — pour tout ouvert
    `U`, le morphisme `(toGodement F).app (op U) : F(U) ⟶ C⁰F(U)` est injectif
    quand `F` est un faisceau (`injective_toGodement_of_isSheaf`, P84, rejoué).
    Le résultat d'exactitude aux degrés supérieurs demanderait le théorème
-   d'acyclicité `H^n(C⁰F) = 0` pour `n ≥ 1`, qui est l'objet de la Partie 88.
+   d'acyclicité `H^n(C⁰F) = 0` pour `n ≥ 1`, qui est l'objet de la Partie 89.
 
 **Null-homotopie `μ ≫ d⁰ = 0`** : statement **volontairement non-posé** ici
 (Tell c.1453 strict — aucun `sorry` non-autorisé hors module de calibration).
 La preuve est plus profonde qu'elle n'en a l'air et fait partie du **named
-frontier** traité en Partie 88 (`acyclic_godementF`).
+frontier** traité en Partie 89.
 
 Ce qui est acquis est ce qui est prouvé : la résolution canonique de Godement
 **est posée** et son **degré 0 est exact**. L'acyclicité aux degrés supérieurs
-est la frontière nommée, à traiter en Partie 88 (God58 II.5).
+est la frontière nommée, à traiter en Partie 89 (God58 II.5).
 
 ## Références
 
@@ -51,7 +51,7 @@ est la frontière nommée, à traiter en Partie 88 (God58 II.5).
     Chap. II §4.1. La résolution canonique de Godement `0 → F → C⁰F → C⁰²F → ⋯`.
   - R. Godement, *Topologie algébrique et théorie des faisceaux* [God58],
     Chap. II §5. Acyclicité `H^n(C⁰F) = 0` pour `n ≥ 1`, frontière de la Partie
-    88.
+    89.
 -/
 
 universe u
@@ -78,17 +78,15 @@ noncomputable def godementDZero (F : X.Presheaf AddCommGrpCat.{u}) :
 -- (Tell c.1453 strict — aucun `sorry` non-autorisé hors module de calibration).
 -- Cette question requiert une identification **point-par-point** des germes
 -- qui est plus profonde qu'elle n'en a l'air, et fait partie du **named
--- frontier** traité en Partie 88 (`acyclic_godementF`). On pose donc
--- **uniquement** la différentielle degré 0 (ci-dessus) et la null-homotopie
--- demeure un statement ouvert. Voir `acyclic_godementF` en Partie 88.
+-- frontier** traité en Partie 89. On pose donc **uniquement** la différentielle
+-- degré 0 (ci-dessus) et la null-homotopie demeure un statement ouvert.
 
 -- NOTE : le `ShortComplex` Mathlib 4 exige `zero : f ≫ g = 0` comme champ,
 -- avec default `by cat_disch`. Or `toGodement F ≫ godementDiff F = 0` est
 -- la **null-homotopie** `μ ≫ d⁰ = 0`, qui est le **named frontier** reporté
 -- par cette Partie 87 (Tell c.1453 strict — statement volontairement non-posé,
--- preuve attendue en Partie 88 `acyclic_godementF`). Le default `by cat_disch`
--- échoue donc systématiquement, et fournir une preuve explicite violerait
--- Tell c.1453 strict.
+-- preuve attendue en Partie 89). Le default `by cat_disch` échoue donc
+-- systématiquement, et fournir une preuve explicite violerait Tell c.1453 strict.
 --
 -- Conséquence : `godementResolutionKernel` n'est **pas** posé comme
 -- `ShortComplex` ici. La chaîne tronquée `F --μ→ C⁰F --d⁰→ C⁰²F` est posée
@@ -100,7 +98,7 @@ noncomputable def godementDZero (F : X.Presheaf AddCommGrpCat.{u}) :
 `(toGodement F).app (op U) : F(U) ⟶ C⁰F(U)` est injectif quand `F` est un
 faisceau. C'est précisément le contenu de `injective_toGodement_of_isSheaf`
 (P84), rejoué sur chaque ouvert. La réciproque (`ker(d⁰) ⊆ im(μ)`) est l'objet
-de la Partie 88 (acyclicité `H¹ = 0`). -/
+de la Partie 89 (acyclicité `H¹ = 0`). -/
 theorem godementResolution_exact₀ (F : X.Presheaf AddCommGrpCat.{u})
     (hF : TopCat.Presheaf.IsSheaf F)
     (U : Opens X) :

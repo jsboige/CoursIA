@@ -27,23 +27,23 @@ its own opens). Two facts, in narrative order:
    is posed (image of `C⁰F` by the unit of `C⁰`). The `ShortComplex` itself
    `F --μ→ C⁰F --d⁰→ C⁰²F` requires the field `zero : μ ≫ d⁰ = 0` which is
    **voluntarily not posed** here (Tell c.1453 strict, named frontier
-   `acyclic_godementF` treated in Part 88). Lengthening to the full complex
+   this statement treated in Part 89). Lengthening to the full complex
    `0 → F → C⁰F → C⁰²F → ⋯` is the object of Part 88 (kernel preservation
    by `C⁰`).
 2. `godementResolution_exact₀`: **exactness at degree 0** — for every open
    `U`, `(toGodement F).app (op U) : F(U) ⟶ C⁰F(U)` is injective when `F`
    is a sheaf (`injective_toGodement_of_isSheaf`, P84, replayed). Exactness
    at higher degrees requires the acyclicity theorem `H^n(C⁰F) = 0` for
-   `n ≥ 1`, which is the object of Part 88.
+   `n ≥ 1`, which is the object of Part 89.
 
 **Null-homotopy `μ ≫ d⁰ = 0`**: statement **voluntarily not posed** here
 (Tell c.1453 strict — no unauthorized `sorry` outside calibration module).
 The proof is deeper than it appears and belongs to the **named frontier**
-treated in Part 88 (`acyclic_godementF`).
+treated in Part 89.
 
 What is acquired is what is proven: the canonical Godement resolution **is
 posed** and its **degree 0 is exact** (per open `U`). Acyclicity at higher
-degrees is the named frontier, to be addressed in Part 88 (God58 II.5).
+degrees is the named frontier, to be addressed in Part 89 (God58 II.5).
 
 i18n (EPIC #4980) — OK-CONSUMER sibling: this `_en` file imports its FR
 counterpart `Grothendieck.GodementResolution` and re-exports the same
@@ -56,7 +56,7 @@ sole document is the English docstring at the top of the module.
   - R. Godement, *Topologie algébrique et théorie des faisceaux* [God58],
     Chap. II §4.1. The canonical Godement resolution `0 → F → C⁰F → C⁰²F → ⋯`.
   - R. Godement, *Topologie algébrique et théorie des faisceaux* [God58],
-    Chap. II §5. Acyclicity `H^n(C⁰F) = 0` for `n ≥ 1`, frontier of Part 88.
+    Chap. II §5. Acyclicity `H^n(C⁰F) = 0` for `n ≥ 1`, frontier of Part 89.
 -/
 
 universe u
@@ -78,7 +78,7 @@ variable {X : TopCat.{u}}
 -- **The composite `μ ≫ d⁰`** : statement **voluntarily not posed** here
 -- (Tell c.1453 strict — no unauthorized `sorry` outside calibration module).
 -- The proof is deeper than it appears and belongs to the **named frontier**
--- treated in Part 88 (`acyclic_godementF`). The companion module
+-- treated in Part 89. The companion module
 -- `GodementResolution.lean` (FR) does not declare this theorem.
 -- (no corresponding `theorem godementDiff_zero` in this `_en` file)
 
@@ -90,7 +90,7 @@ variable {X : TopCat.{u}}
 -- **NOTE**: the `ShortComplex godementResolutionKernel` is **voluntarily
 -- not posed** in the FR companion module (the `zero : f ≫ g = 0` default
 -- `by cat_disch` cannot prove `toGodement F ≫ godementDiff F = 0` without
--- the null-homotopy, which is the named frontier deferred to Part 88). The
+-- the null-homotopy, which is the named frontier deferred to Part 89). The
 -- EN sibling therefore does not re-export a `ShortComplex` either — the
 -- chain is stated morphisme by morphisme (`μ`, `d⁰`) above.
 -- (no corresponding `def godementResolutionKernel` in this `_en` file)
@@ -99,6 +99,6 @@ variable {X : TopCat.{u}}
 -- `Grothendieck.godementResolution_exact₀` via the OK-CONSUMER import — for
 -- every open `U`, the morphism `(toGodement F).app (op U) : F(U) ⟶ C⁰F(U)`
 -- is injective when `F` is a sheaf. The converse (`ker(d⁰) ⊆ im(μ)`) is
--- the object of Part 88 (acyclicity `H¹ = 0`).
+-- the object of Part 89 (acyclicity `H¹ = 0`).
 
 end Grothendieck_en
