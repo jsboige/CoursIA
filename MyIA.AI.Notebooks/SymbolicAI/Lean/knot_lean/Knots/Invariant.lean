@@ -2232,6 +2232,98 @@ theorem trefoil_crossing_number :
   unfold Knot.crossingNumberOfDiagram Knot.diagram trefoil trefoilDiagram
   decide
 
+/-! ### Le minimum vrai (Phase 4a) : définition et invariance
+
+`Knot.crossingNumber` (Phase 3, cf `Knots.Basic`) compte les croisements du
+diagramme courant — une borne SUPÉRIEURE provisoire. Le vrai nombre de
+croisements est le minimum, pris sur tous les diagrammes équivalents au sens
+de Reidemeister. `ReidemeisterEquiv` existe déjà et est une relation
+d'équivalence prouvée (`reidemeister_equiv_equivalence`, `Knots.Reidemeister`) :
+le minimum se définit donc MAINTENANT sur cette classe abstraite. Aucune
+finitude de la classe n'est requise — ℕ est bien ordonné et la classe contient
+le diagramme courant, donc `sInf` d'une partie non vide de ℕ est bien défini.
+
+Ce qui est prouvé ici : le minimum est un INVARIANT du nœud au sens de
+`KnotEquiv`, le diagramme courant le majore, et l'unknot le réalise
+exactement (0). Ce qui reste ouvert (Phase 4+) : CALCULER ce minimum — la
+procédure de recherche requiert les mouvements de Reidemeister concrets
+(chirurgie sur les codes PD) et une exploration bornée. Aucun nouveau
+`sorry` n'est introduit. -/
+
+/-- `k` réalise le compte `n` : il existe un diagramme équivalent à celui de
+`k` (au sens de `ReidemeisterEquiv`) dont la liste de croisements a
+exactement `n` éléments. -/
+def Knot.RealizesCrossingCount (k : Knot) (n : ℕ) : Prop :=
+  ∃ d : KnotDiagram, ReidemeisterEquiv k.diagram d ∧ d.crossings.length = n
+
+/-- Nombre de croisements minimal : `sInf` des comptes réalisables. C'est la
+définition Phase 4a du vrai nombre de croisements ; `Knot.crossingNumber`
+(Phase 3) en reste la borne supérieure calculable. Bien défini sans finitude
+de la classe d'équivalence : ℕ est bien ordonné et l'ensemble est non vide
+(witness : le diagramme courant). La définition est `noncomputable` : `sInf`
+sur ℕ passe par `Nat.instInfSet`, non exécutable — c'est une fonction de
+classe abstraite, pas un algorithme (le calcul reste Phase 4+). -/
+noncomputable def Knot.minimalCrossingNumber (k : Knot) : Nat :=
+  sInf {n | k.RealizesCrossingCount n}
+
+/-- Réflexivité : le diagramme courant réalise son propre compte de
+croisements. -/
+theorem realizesCrossingCount_reflects (k : Knot) :
+    k.RealizesCrossingCount k.diagram.crossings.length :=
+  ⟨k.diagram, ReidemeisterEquiv.refl _, rfl⟩
+
+/-- Non-vacuité : l'ensemble des comptes réalisables contient au moins le
+compte du diagramme courant. -/
+theorem realizableCrossingCounts_nonempty (k : Knot) :
+    {n | k.RealizesCrossingCount n}.Nonempty :=
+  ⟨_, realizesCrossingCount_reflects k⟩
+
+/-- Borne supérieure : le minimum est inférieur ou égal au compte du
+diagramme courant (`crossingNumberOfDiagram`), donc à `crossingNumber`
+Phase 3 (définitionnellement égal). -/
+theorem minimalCrossingNumber_le (k : Knot) :
+    k.minimalCrossingNumber ≤ k.crossingNumberOfDiagram :=
+  Nat.sInf_le (realizesCrossingCount_reflects k)
+
+/-- Diagrammes équivalents ⇒ mêmes comptes réalisables : les classes de
+Reidemeister de deux diagrammes équivalents coïncident (symétrie +
+transitivité de `ReidemeisterEquiv`). -/
+theorem realizesCrossingCount_congr {d₁ d₂ : KnotDiagram}
+    (h : ReidemeisterEquiv d₁ d₂) {n : ℕ}
+    (h₁ : ∃ d, ReidemeisterEquiv d₁ d ∧ d.crossings.length = n) :
+    ∃ d, ReidemeisterEquiv d₂ d ∧ d.crossings.length = n := by
+  obtain ⟨d, hd, hn⟩ := h₁
+  exact ⟨d, ReidemeisterEquiv.trans (reidemeister_equiv_symm h) hd, hn⟩
+
+/-- **Invariance** : le nombre de croisements minimal est un invariant du
+nœud au sens de `KnotEquiv` — deux nœuds équivalents ont le même minimum. -/
+theorem minimalCrossingNumber_invariant {k₁ k₂ : Knot} (h : KnotEquiv k₁ k₂) :
+    k₁.minimalCrossingNumber = k₂.minimalCrossingNumber := by
+  unfold Knot.minimalCrossingNumber
+  apply congrArg sInf
+  ext n
+  constructor
+  · intro hn
+    exact realizesCrossingCount_congr h hn
+  · intro hn
+    exact realizesCrossingCount_congr (reidemeister_equiv_symm h) hn
+
+/-- L'unknot réalise exactement 0 : son diagramme standard n'a aucun
+croisement, et aucun compte n'est strictement négatif. Première valeur
+EXACTE du minimum — obtenue sans classification. -/
+theorem unknot_minimalCrossingNumber : unknot.minimalCrossingNumber = 0 := by
+  have h0 : unknot.RealizesCrossingCount 0 :=
+    ⟨unknotDiagram, ReidemeisterEquiv.refl _, rfl⟩
+  have hle : unknot.minimalCrossingNumber ≤ 0 := Nat.sInf_le h0
+  omega
+
+/-- Le trefoil : borne supérieure 3, via `trefoil_crossing_number`
+(définition Phase 3). L'égalité stricte minimal = 3 requiert la
+classification des nœuds à ≤ 2 croisements, hors de portée du lac. -/
+theorem trefoil_minimalCrossingNumber_le :
+    trefoil.minimalCrossingNumber ≤ 3 :=
+  (minimalCrossingNumber_le trefoil).trans trefoil_crossing_number.le
+
 /-! ## 7. Nombre de denouement
 
 Le nombre de denouement u(K) est le nombre minimum de changements de

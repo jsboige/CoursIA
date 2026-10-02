@@ -679,7 +679,7 @@ def test_class5_does_not_break_sudoku13_control() -> None:
     classes wallclock.
 
     Controle synthetique sur lignes verbatim de la cellule 43 de
-    Sudoku-13-SymbolicAutomata-Csharp (banc d'essai). L'ancienne version
+    Sudoku-13-SymbolicAutomata-CSharp (banc d'essai). L'ancienne version
     scannait le notebook reel (attendu >= 25 wallclock) ; la vague #9434
     draine la serie Sudoku en continu (26 -> 0 sur ce notebook), un
     controle sur fichier reel re-casserait a chaque drain. Le sens du test
@@ -989,7 +989,7 @@ def test_empty_explicit_scan_is_error_residu3(tmp_path: Path) -> None:
 def test_silence_pacing_duration_with_lecture_qualifier() -> None:
     """Frontiere : « N min (lecture + execution) » = pacing (effort humain).
 
-    Cas reel ICT-19-EnjeuBattery cell[0] : « 45 min (lecture + execution
+    Cas reel ICT-19-EnjeuBattery-Python cell[0] : « 45 min (lecture + execution
     sequentielle) ». C'est l'estimation d'effort demande a l'etudiant, pas une
     duree machine -- meme rationale que le pacing deja exempte (arbitrage
     jsboige 14:05:37Z #9434). La duree PRECEDE la parenthese (inhabituel), ce

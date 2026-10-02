@@ -4590,7 +4590,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb,ygg3
 
 > **Note technique** : Ce mini-Sudoku illustre comment les automates symboliques peuvent modéliser des problèmes de satisfaction de contraintes (CSP). Z3 exprime les contraintes de manière déclarative, et le solveur trouve automatiquement les solutions valides. Pour un Sudoku 9x9 complet, cette approche scale beaucoup mieux qu'un algorithme de backtracking naïf.
 
-**En complément — prédicat `Distinct`** : c'est le prédicat `Distinct` de Z3 qui vérifie que toutes les variables d'une liste ont des valeurs différentes — il modélise directement les contraintes Sudoku. Pour une application complète, voir [Sudoku-13-SymbolicAutomata-Csharp](../../Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb).
+**En complément — prédicat `Distinct`** : c'est le prédicat `Distinct` de Z3 qui vérifie que toutes les variables d'une liste ont des valeurs différentes — il modélise directement les contraintes Sudoku. Pour une application complète, voir [Sudoku-13-SymbolicAutomata-CSharp](../../Sudoku/Sudoku-13-SymbolicAutomata-CSharp.ipynb).
 ",,,,,,,,6120b5e148c968cd,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb,0ae6ae26,markdown,fr,cc57958bef39e04e,"### Interpretation : Mini-Sudoku comme Automate
 
@@ -4609,7 +4609,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb,0ae6
 
 **Point cle** : Le predicat `Distinct` de Z3 verifie que toutes les variables d'une liste ont des valeurs differentes, ce qui modelise directement les contraintes Sudoku.
 
-> **Pour aller plus loin** : Voir [Sudoku-13-SymbolicAutomata-Csharp](../../Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb) pour une application complete.",,,,,,,,cc57958bef39e04e,,,,,,,,
+> **Pour aller plus loin** : Voir [Sudoku-13-SymbolicAutomata-CSharp](../../Sudoku/Sudoku-13-SymbolicAutomata-CSharp.ipynb) pour une application complete.",,,,,,,,cc57958bef39e04e,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb,1188a93a,markdown,fr,3cfbfb114c41dc7c,"## 7. Automata.Net - Pourquoi Pas ?
 
 ### 7.1 La librairie Automata.Net
@@ -4678,7 +4678,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb,8164
 
 ### Pour aller plus loin
 
-- **Sudoku** : [Sudoku-13-SymbolicAutomata-Csharp](../../Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb)
+- **Sudoku** : [Sudoku-13-SymbolicAutomata-CSharp](../../Sudoku/Sudoku-13-SymbolicAutomata-CSharp.ipynb)
 - **SymbolicAI** : [SymbolicAI/SymbolicAI](../../SymbolicAI/README.md)
 - **Applications** : [App-1-NQueens](../Applications/CSP/App-1-NQueens.ipynb)",,,,,,,,f21258dfa888a5e1,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb,05b6c839,markdown,fr,b62d4e7abdb999da,"## 9. Exemple guide
@@ -4903,7 +4903,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb,b652
 
 **Series connexes** : 
 - [Sudoku-12-Z3-Python](../../Sudoku/Sudoku-12-Z3-Python.ipynb) - Bases de Z3
-- [Sudoku-13-SymbolicAutomata-Csharp](../../Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb) - Sudoku solver par automates symboliques",,,,,,,,92545b98846465e5,,,,,,,,
+- [Sudoku-13-SymbolicAutomata-CSharp](../../Sudoku/Sudoku-13-SymbolicAutomata-CSharp.ipynb) - Sudoku solver par automates symboliques",,,,,,,,92545b98846465e5,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb,40a6ca12,markdown,fr,22e8316ad04555fc,"## Conclusion
 
 Ce notebook a presente les **automates symboliques**, une extension des automates finis classiques qui levent la limitation fondamentale des alphabets finis.

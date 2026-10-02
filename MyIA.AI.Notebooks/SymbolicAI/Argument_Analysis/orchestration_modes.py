@@ -137,6 +137,19 @@ def _mk(mode, success, duration, done, total, killed, fill, scope, **flags):
     )
 
 
+#: Modes connus de l'instrument ``scripts/compare_orchestration_modes.py``
+#: mais absents du snapshot embarque (daté du 2026-09-15, postérieur au carnet
+#: ``compare_orchestration_modes_compared.ipynb`` mais antérieur à la livraison
+#: #2456 du 2026-09-23 qui a rendu ``conversation_real`` réellement opérant :
+#: ``ConversationOrchestrator(mode=real, informal + FOL agents, LLM + Tweety)``).
+#: Audit #18435. Le carnet annonce **sept** modes mesurés ; l'instrument en
+#: balaie **huit** aujourd'hui, dont celui-ci. Pour ne pas perdre l'information
+#: (convention ``fallacy_rules.py`` : on ne jette pas ce que l'audit a
+#: mesuré), on **annonce** le 8e mode ici et le carnet le signale.
+KNOWN_UNMEASURED_MODES = (
+    "conversation_real",  # builder L859, kernel L1358, runner L1380, scope L1408
+)
+
 #: Les deux runs committes du sas — meme modele, meme corpus, meme modes ;
 #: seul le budget change (180 s puis 600 s).
 RUNS = {
