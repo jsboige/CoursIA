@@ -23,7 +23,7 @@ Reprendre le travail sur cette lane : lire les directives coordinateur, puis enc
 **Un seul geste ouvre le choix, et il etablit la priorite tout seul :**
 
 ```bash
-python scripts/pick_idle_grain.py --lane <machine:workspace> --prev-genre <genre1[,genre2]> [--prev-genre <genre3>]
+python scripts/pick_idle_grain.py --belt --lane <machine:workspace>
 ```
 
 **P0 — Reparer SON PROPRE rouge.** La commande rend en **sortie 0** une file de reparation quand cette lane porte des PRs **bloquees et ouvertes depuis plus de 24 h** : la premiere devient `grain`, la liste complete reste dans `backlog`. **C'est la premiere file de la session**, avant tout grain neuf ; la drainer ne termine pas la session. La raison est mecanique, pas disciplinaire : une PR rouge ne peut etre reparee **que par sa lane** — le coordinateur ne peut ni rebaser ni corriger a sa place — donc tant que la lane ne revient pas dessus, elle reste ouverte indefiniment pendant que les PRs du jour, elles, mergent. C'est exactement ce qui produit le residu de vieilles PRs.
@@ -34,9 +34,9 @@ python scripts/pick_idle_grain.py --lane <machine:workspace> --prev-genre <genre
 
 **P1 — Missions coordinateur** : DM HIGH, puis steers dashboard de ma lane.
 
-**P2 — Travail en cours** : tache `[CLAIMED]` par cette lane non terminee, deep-queue de la lane si posee sur le dashboard.
+**P2 — Travail en cours** : tache `[CLAIMED]` par cette lane non terminee.
 
-**P3 — Le tirage** (sortie 0) : les candidats rendus forment une **file sequentielle**, pas un menu limite a un seul choix. Le pool est **tout l'ouvert, cross-lane** — la lane est une etiquette de reporting, pas une frontiere de travail : rien n'est "le turf d'un autre". Prendre les candidats compatibles dans l'ordre, poser le claim avant chaque edition, livrer, puis passer au suivant sans attendre review, CI, DWELL ou merge du precedent. Les filtres de labels/age/inactivite orientent la premiere passe ; s'ils la vident, le picker les relache automatiquement tout en conservant exclusions explicites, urnes autorisees, claims et signaux de livraison. Une poignee locale epuisee n'est jamais une fin de session. Le cache borne est automatique ; `--cache refresh` force les mesures partageables, `--cache off` diagnostique sans disque, `--cache-status` explique `hit/miss/stale`. Regles completes : [proactive-coordination.md](../rules/proactive-coordination.md) (plancher multi-grain, variete R6, "rien a faire" avec >0 issues ouvertes = echec de methode).
+**P3 — Le tapis** (sortie 0) : `--belt` rend **tout l'ouvert, cross-lane**, trie par **derniere visite** (derniere PR mergee qui cite l'issue ; une issue jamais servie passe devant), la plus ancienne en tete. La lane est une etiquette de reporting, pas une frontiere de travail : rien n'est "le turf d'un autre". Prendre les candidats **dans l'ordre**, poser le claim avant chaque edition, livrer, puis passer au suivant sans attendre review, CI, DWELL ou merge du precedent ; une issue servie repart en queue d'elle-meme. Le tapis ne pondere pas et ne refuse jamais : pas de preference de famille, de serie ni d'EPIC, et pas de repli sur une EPIC "maison". Un candidat ne se saute que pour une barriere reelle (GPU-only, vision-only), dite dans le rapport de cycle ; un claim vivant d'une autre lane est deja retenu par le tapis. Un EPIC en tete se sert par un sous-grain, jamais par un claim de l'EPIC entier. Le tirage pondere (sans `--belt`) reste un outil de diagnostic, il ne choisit plus le grain. Regles completes : [proactive-coordination.md](../rules/proactive-coordination.md) (plancher multi-grain, "rien a faire" avec >0 issues ouvertes = echec de methode).
 
 ### Phase 3 : Travailler et livrer
 

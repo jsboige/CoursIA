@@ -3899,6 +3899,7 @@ def belt_sort_key(it: dict) -> tuple:
 def belt_filter(
     admitted: list[dict],
     args,
+    urns: set[str] | None = None,
 ) -> list[dict]:
     """Filtre le pool admissible pour le mode --belt.
 
@@ -3906,11 +3907,20 @@ def belt_filter(
     urnes), sauf l'admissibilite par DWELL/zone -- le tapis ne refuse
     JAMAIS, par contrat (cf issue #18832). Les bornes du tapis sont
     uniquement celles que le caller passe en CLI.
+
+    ``urns`` : urnes EFFECTIVES, deja passees par
+    ``apply_delivered_urn_gate`` (#15069). Le caller ``main`` les fournit
+    toujours ; relire ``args.urns`` brut rendrait l'urne ``delivered``
+    (presente par defaut) a une lane worker, qui ne doit jamais la recevoir.
+    ``None`` garde la lecture de ``args.urns`` pour les appels sans lane.
     """
     excluded_issues_set = {int(v) for v in _csv_values(args.exclude_issue)}
     required_labels_set = set(_csv_values(args.require_label))
     excluded_labels_set = set(_csv_values(args.exclude_label))
-    selected_urns_set = {v.casefold() for v in _csv_values([args.urns])}
+    if urns is None:
+        selected_urns_set = {v.casefold() for v in _csv_values([args.urns])}
+    else:
+        selected_urns_set = {v.casefold() for v in urns}
 
     def _keep(item: dict) -> bool:
         n = item["number"]
@@ -5248,7 +5258,7 @@ def main(argv: list[str] | None = None) -> int:
             metrics = belt_report_metrics(pool, closed_7d=None)
             print_belt_report(metrics)
             return 0
-        belt_pool = belt_filter(admitted, args)
+        belt_pool = belt_filter(admitted, args, urns=selected_urns)
         belt_pool.sort(key=belt_sort_key)
         # Verification des claims tenes par une autre lane : on regarde
         # plus large que `args.grains` pour tolerer un remplacement si
