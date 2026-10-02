@@ -154,16 +154,6 @@ try:
 except ImportError:  # pragma: no cover
     yaml = None
 
-_THIS_DIR = Path(__file__).resolve().parent
-if str(_THIS_DIR) not in sys.path:
-    sys.path.insert(0, str(_THIS_DIR))
-try:
-    import check_twin_index_collisions as _ctix  # noqa: E402
-    _CTIX_AVAILABLE = True
-except ImportError:  # pragma: no cover
-    _ctix = None
-    _CTIX_AVAILABLE = False
-
 # --- pression de fork (#16111) ----------------------------------------------
 # Un `BlockingIOError` (EAGAIN, errno 11) au fork/clone n'est pas une erreur de
 # git : c'est le noyau qui refuse un processus de plus, table de processus
@@ -1598,18 +1588,6 @@ def _classify_per_pair(base_status: str, head_status: str) -> str:
     return "DRIFT_PRE_EXISTING"
 
 
-# --- #18683 : retrait de la sous-commande --ordinal-collisions -------------
-# Avant : une sous-commande --ordinal-collisions etait portee ici, deleguant a
-# `check_twin_index_collisions.py` pour la classification semantique ON-MAIN /
-# MULTI-PR. Le geste a ete **consolide dans l'organe cable** que
-# `merge_ready.py` appelle deja a l'etape 5bis (cf revue coordinateur du
-# 2026-10-01) : le verdict JSON inclut maintenant `verdict` et `base_ref`, le
-# verdict human affiche le verdict et le geste de correction, et les fonctions
-# `classify_ordinal_collisions` / `ordinal_correction_gist` vivent dans
-# `check_twin_index_collisions.py`. Le present fichier reste sur la diagonale
-# un-arbre-temporaire (intra-revision) qu'il juge couvre en direct, sans
-# deleguer a un second organe : on evite ainsi d'avoir deux portes pour le
-# meme verdict (#18683 reviewer).
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     p.add_argument("--registry", default=str(DEFAULT_REGISTRY),
@@ -1692,13 +1670,6 @@ def main(argv=None) -> int:
                         "d'intention. Exige un selecteur (--pair / --family / "
                         "--yes-all-pairs) pour eviter une invocation nue qui "
                         "reecrirait les 157 paires (cf #8508).")
-            # #18683 : le flag --ordinal-collisions a ete retire. Il deleguait a
-    # check_twin_index_collisions.py et a ete consolide dans l'organe cable
-    # (cf revue coordinateur 2026-10-01). Invoquer directement :
-    #   python scripts/notebook_tools/check_twin_index_collisions.py --base origin/main --worktree --json
-    p.add_argument("--pr", action="append", default=[],
-                   help="PR concurrente a confronter. Repetable. Resout sa tete via "
-                        "`gh pr view N --json headRefOid`, puis fetch refs/pull/N/head.")
     args = p.parse_args(argv)
 
     # Cross-validation : --per-pair <-> --base
@@ -1960,13 +1931,6 @@ def main(argv=None) -> int:
                 )
             return 1
         return 0
-
-# --- #18683 : retrait du mode --ordinal-collisions ------------------------
-# La classification semantique ON-MAIN / MULTI-PR et le mode --ordinal-collisions
-# ont ete deplaces dans l'organe cable `check_twin_index_collisions.py` (cf
-# revue coordinateur du 2026-10-01). Lancer directement ce module produit le
-# verdict et le geste de correction. Le present script retourne ici au flux
-# historique un-arbre-temporaire (#10439 et precedents).
 
     # --- Mode historique (fleet-wide) ---
     pairs = load_registry(reg_path)
