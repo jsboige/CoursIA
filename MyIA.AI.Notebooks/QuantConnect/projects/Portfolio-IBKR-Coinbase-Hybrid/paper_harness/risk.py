@@ -123,7 +123,16 @@ class RiskGate:
             self.halt_reason = reason
 
     def clear_halt(self) -> None:
-        """Manual reset after review: also lifts the liquidation, not a halved exposure."""
+        """Manual reset after review.
+
+        Clearing a drawdown liquidation also restarts the measure from a new peak, taken at
+        the next equity mark: the sleeve goes back to paper, and with the old peak that mark
+        would trip the breaker again at once. A daily-loss halt keeps its peak and halving.
+        """
+        if self.liquidate:
+            self.peak_equity = 0.0
+            self.reduced = False
+            self.alert = None
         self.halted = False
         self.halt_reason = None
         self.liquidate = False

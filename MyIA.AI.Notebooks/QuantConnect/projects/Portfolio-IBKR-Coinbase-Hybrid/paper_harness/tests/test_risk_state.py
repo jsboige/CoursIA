@@ -96,7 +96,26 @@ def test_liquidation_and_halving_survive_a_restart(tmp_path):
     restored = RiskGate.load(risk, tmp_path / "r.json", 1000.0)
     assert restored.liquidate and restored.exposure_scale == 0.0
     restored.clear_halt()  # manual reset after review lifts the liquidation
-    assert restored.exposure_scale == 0.5
+    assert restored.exposure_scale == 1.0
+
+
+def test_clearing_a_liquidation_restarts_from_a_new_peak():
+    gate = RiskGate(RiskConfig(max_dd_pct=0.25, daily_var_pct=0.5, vol_spike_threshold=2.0), 1000.0)
+    gate.update_equity(700.0)
+    gate.clear_halt()
+    assert gate.update_equity(690.0).allowed and gate.exposure_scale == 1.0
+    assert not gate.update_equity(500.0).allowed and gate.liquidate  # -27.5 % from the new peak
+
+
+def test_clearing_a_daily_halt_keeps_the_peak_and_the_halving():
+    risk = RiskConfig(max_dd_pct=0.25, daily_var_pct=0.05, vol_spike_threshold=2.0,
+                      alert_dd_pct=0.11, alert_halves=True)
+    gate = RiskGate(risk, 1000.0)
+    gate.reset_day(1000.0)
+    gate.update_equity(880.0)  # -12 %: daily halt and first threshold
+    assert gate.halted and not gate.liquidate and gate.reduced
+    gate.clear_halt()
+    assert gate.peak_equity == 1000.0 and gate.exposure_scale == 0.5
 
 
 def test_state_file_without_the_new_flags_keeps_a_drawdown_halt_liquidating(tmp_path):
