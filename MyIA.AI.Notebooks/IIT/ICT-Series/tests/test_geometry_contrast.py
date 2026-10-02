@@ -169,3 +169,77 @@ def test_dense_meta_misaligned_refused(monkeypatch, tmp_path, field, value):
     _write_dense(dense_path, meta_overrides={field: value})
     with pytest.raises(ValueError, match=field):
         gc.contrast(TRACES, dense=dense_path)
+
+
+# --------------------------------------------------------------------------- #
+# Artefact committé (#17740, rapport quadri-instruments) : falsifiabilité —
+# les nombres publiés se recalculent depuis l'artefact lui-même (précédent
+# test_stratification.control_published), sans ré-exécuter la mesure (le npz
+# dense, 16,3 Mo, reste hors dépôt : sa re-exécution exige `regenerate`).
+# --------------------------------------------------------------------------- #
+
+import json  # noqa: E402
+
+RUNS = Path(__file__).parent.parent / "runs"
+ARTIFACT = RUNS / "quadri_instruments_contrast.json"
+
+
+@pytest.fixture(scope="module")
+def artifact():
+    if not ARTIFACT.exists():
+        pytest.skip("artefact quadri-instruments non encore committé")
+    return json.loads(ARTIFACT.read_text(encoding="utf-8"))
+
+
+def test_artifact_reports_four_instruments_separately(artifact):
+    m = artifact["measurement"]
+    for key in ("sae_jlens", "f_lens", "s_lens", "per_set_summary"):
+        assert key in m, key
+    assert "score" not in m, "aucun score composite: quatre instruments séparés"
+    assert m["f_lens"]["status"] == "measured"
+    assert m["s_lens"]["status"] == "measured"
+
+
+def test_artifact_carries_substrate_provenance(artifact):
+    sub = artifact["substrate"]
+    assert sub["dense_npz"] == "ict25_dense_layer16_trained.npz"
+    sha = sub["sha256"]
+    assert isinstance(sha, str) and len(sha) == 64
+    int(sha, 16)  # empreinte hexadécimale, pas une valeur arbitraire
+    assert sub["bytes"] > 0
+    assert "regenerate" in artifact and artifact["tool"]["n_null"] >= 200
+
+
+def test_artifact_counts_recompute_from_per_prompt(artifact):
+    sae_jlens = artifact["measurement"]["sae_jlens"]
+    recomputed = {"colocalized": 0, "dissociated": 0, "chance": 0,
+                  "undefined": 0}
+    for row in sae_jlens["per_prompt"]:
+        recomputed[row["verdict"]] += 1
+    assert recomputed == sae_jlens["counts"], (
+        "les comptes publiés ne sont pas la distribution des verdicts par prompt")
+
+
+def test_artifact_per_set_summary_recomputes(artifact):
+    m = artifact["measurement"]
+    by_set_sae = {}
+    for row in m["sae_jlens"]["per_prompt"]:
+        by_set_sae.setdefault(row["prompt"][0], []).append(row["verdict"])
+    by_set_flens = {}
+    for row in m["f_lens"]["per_prompt"]:
+        by_set_flens.setdefault(row["prompt"][0], []).append(row["nc_at"]["90"])
+    by_set_slens = {}
+    for row in m["s_lens"]["per_prompt"]:
+        by_set_slens.setdefault(row["prompt"][0], []).append(row["r2"])
+    for row in m["per_set_summary"]:
+        name = row["set"]
+        # forme publiée : Counter nul-élagué (les comptes à zéro sont omis,
+        # cf. geometry_contrast._per_set_summary) — recalculer dans la même forme.
+        verdicts = {v: n for v, n in (
+            (v, by_set_sae[name].count(v))
+            for v in ("colocalized", "dissociated", "chance", "undefined")) if n}
+        assert row["sae_jlens_verdicts"] == verdicts
+        assert row["flens_nc90_mean"] == pytest.approx(
+            sum(by_set_flens[name]) / len(by_set_flens[name]), abs=1e-9)
+        assert row["slens_r2_mean"] == pytest.approx(
+            sum(by_set_slens[name]) / len(by_set_slens[name]), abs=1e-9)
