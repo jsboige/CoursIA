@@ -1,3 +1,11 @@
+# Archive header (standard _archive convention, 2026-08, docs/reference/_archive-convention.md)
+# - Date archived     : 2026-10-01
+# - Superseded by     : none (closed dead-end ; migration terminée, test orphelin archivé avec — `scripts/tests/test_convert_print_to_deploy.py` → `_archive/`. Phase 2 manuelle par carnet)
+# - Verdict recorded in : #18153 palier 1 + test orphan archivé + #18153 palier 1 (axe D #16473)
+#
+# Per-function disposition :
+# - main body          : abandoned — one-shot terminated, no consumer; kept verbatim for forensic replay
+
 """Convert print(CONTRACT) cells to compile_and_deploy() + interaction cells.
 
 Pattern detection:
