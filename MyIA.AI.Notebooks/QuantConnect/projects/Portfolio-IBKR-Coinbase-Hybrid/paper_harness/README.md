@@ -23,7 +23,8 @@ le sleeve crypto seul sur Coinbase, sleeve IBKR en backtest parallèle.
 | Composant | Statut |
 |-----------|--------|
 | `config.py` (loader `.env` typé) | livré (ajout `CoinbaseConfig`) |
-| `risk.py` (circuit-breakers) | livré, dry-run validé |
+| `risk.py` (circuit-breakers) | livré, dry-run validé ; état persistant (`save`/`load`) ajouté |
+| `rebalance.py` (poids inverse-volatilité → ordres en parts entières) | livré, testé (`tests/`) |
 | `coinbase_sleeve.py` (wrapper coinbase-advanced-py, **MiCA**) | livré, **SOTA-OK code** (API vérifiée firsthand) |
 | `smoke_test_coinbase.py` (validation read-only) | livré, exit 2 = USER-HAND sans creds |
 | `binance_sleeve.py` (wrapper python-binance testnet, **legacy**) | livré, SOTA-OK (pré-MiCA) |
@@ -87,10 +88,36 @@ Sortie attendue (IBKR) : `managed acct`, `net_liq`, `total_cash`, `buying_power`
 `positions: N`, puis dry-run des 3 cas breakers (sane → ALLOW, oversized → BLOCK,
 gross → BLOCK). Exit code 0 = SOTA-OK.
 
+## Rééquilibrage et état du disjoncteur
+
+`rebalance.py` sépare le calcul de l'exécution, en deux fonctions pures que l'orchestrateur
+appellera avant tout ordre :
+
+- `inverse_vol_weights` calcule les poids cibles de la règle `Cloud-VolTargeting` v2 : chaque
+  ligne reçoit `budget / volatilité réalisée` (21 rendements quotidiens), plafonné à 50 %, et le
+  total est ramené à 100 % s'il le dépasse ; le reste demeure en liquidités. La convention
+  (rendements simples, écart-type d'échantillon) est celle du backtest de recherche ; un test
+  vérifie la parité avec le calcul pandas à `1e-10` près.
+- `plan_orders` traduit ces poids en ordres signés en **parts entières** (arrondi inférieur),
+  ventes avant achats. Une bande de tolérance (`band`, en fraction de l'équité) ignore les
+  échanges trop petits pour justifier leur commission, un notionnel minimum (`min_notional`)
+  écarte les ordres qu'un courtier facturerait au minimum, et une réserve (`cash_reserve`)
+  garde de quoi payer les frais.
+
+`RiskGate.save` / `RiskGate.load` conservent le pic d'équité, l'équité d'ouverture et un
+éventuel arrêt dans un fichier JSON, écrit de façon atomique. Sans cela, un redémarrage du
+programme remettrait le disjoncteur à zéro. Un fichier illisible lève une erreur plutôt que
+de repartir d'un état vierge.
+
+```bash
+python -m pytest paper_harness/tests -q
+```
+
 ## Suite (cycles suivants)
 
-1. `orchestrator.py` : boucle de rebalancement, routing des target par sleeve,
-   appel systématique à `RiskGate` avant chaque ordre, logging fills vs backtest.
+1. `orchestrator.py` : boucle de rebalancement (calendrier mensuel, `inverse_vol_weights`
+   puis `plan_orders`), appel systématique à `RiskGate` avant chaque ordre, état persisté
+   entre deux exécutions, logging fills vs backtest.
 2. Premier ordre paper (BTC spot sur Coinbase sandbox ; équity IBKR derrière
    "Read-Only API" OFF côté gateway) derrière circuit-breakers relus — **après**
    obtention des creds Coinbase USER-HAND.

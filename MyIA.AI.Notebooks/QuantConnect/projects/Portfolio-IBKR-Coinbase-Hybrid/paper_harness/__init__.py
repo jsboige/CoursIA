@@ -19,6 +19,9 @@ Status (2026-06-28):
 - IBKR sleeve: DONE + SOTA-OK (validated live against IB Gateway paper,
   account summary + positions read surface). Order placement gated on the
   gateway's "Read-Only API" being OFF (USER-HAND) + a reviewed orchestrator.
-- Risk / circuit breakers: implemented, dry-run validated.
+- Risk / circuit breakers: implemented, dry-run validated; state persists
+  across restarts (``RiskGate.save`` / ``RiskGate.load``).
+- Rebalancing planner (``rebalance.py``): inverse-volatility target weights
+  and whole-share order planning, unit-tested.
 - Orchestrator: TODO (next cycle).
 """

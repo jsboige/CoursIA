@@ -13,13 +13,22 @@ Breakers (mirrors ``.env`` RISK_* and the parent README "Circuit-breaker
   the sleeve capital.
 - gross exposure: block an order that would push gross exposure above
   ``max_gross_exposure`` of the sleeve capital.
+
+Persistence: :meth:`RiskGate.save` / :meth:`RiskGate.load` keep the peak
+equity, the day-start equity and a halt across restarts. Without them a
+restart would reset the drawdown reference and clear a tripped breaker.
 """
 from __future__ import annotations
 
+import json
+import os
 from dataclasses import dataclass
-from typing import Optional
+from pathlib import Path
+from typing import Any, Optional
 
 from .config import RiskConfig
+
+_STATE_KEYS = ("starting_capital", "peak_equity", "day_start_equity", "halted", "halt_reason")
 
 
 @dataclass(frozen=True)
@@ -86,6 +95,43 @@ class RiskGate:
     def clear_halt(self) -> None:
         self.halted = False
         self.halt_reason = None
+
+    # -- persistence ------------------------------------------------------
+
+    def to_state(self) -> dict[str, Any]:
+        return {key: getattr(self, key) for key in _STATE_KEYS}
+
+    @classmethod
+    def from_state(cls, risk: RiskConfig, state: dict[str, Any]) -> "RiskGate":
+        missing = [key for key in _STATE_KEYS if key not in state]
+        if missing:
+            raise ValueError(f"risk state is missing {missing}")
+        gate = cls(risk, float(state["starting_capital"]))
+        gate.peak_equity = float(state["peak_equity"])
+        gate.day_start_equity = float(state["day_start_equity"])
+        gate.halted = bool(state["halted"])
+        gate.halt_reason = state["halt_reason"]
+        return gate
+
+    def save(self, path: Path) -> None:
+        """Write the state atomically (temporary file, then rename)."""
+        path = Path(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_suffix(path.suffix + ".tmp")
+        tmp.write_text(json.dumps(self.to_state(), indent=2), encoding="utf-8")
+        os.replace(tmp, path)
+
+    @classmethod
+    def load(cls, risk: RiskConfig, path: Path, starting_capital: float) -> "RiskGate":
+        """Restore the gate saved at ``path``, or start a fresh one if none exists.
+
+        An unreadable file raises instead of starting fresh: silently
+        forgetting a tripped breaker is the failure this method prevents.
+        """
+        path = Path(path)
+        if not path.is_file():
+            return cls(risk, starting_capital)
+        return cls.from_state(risk, json.loads(path.read_text(encoding="utf-8")))
 
     # -- pre-trade checks -------------------------------------------------
 
