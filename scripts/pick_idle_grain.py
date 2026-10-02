@@ -5252,6 +5252,18 @@ def main(argv: list[str] | None = None) -> int:
             if belt_withheld:
                 held = ", ".join(f"#{it['number']} ({c})" for it, c in belt_withheld[:5])
                 print(f"   tenus par une autre lane (skip + replacement) : {held}")
+            # #18832 spec : la fenetre collision entre tirage et pose du
+            # [CLAIMED] reste ouverte tant que la lane n'a pas poste le
+            # claim. On rappelle ici que la lane doit poser le claim
+            # AVANT toute autre action sur la tete du tapis -- sinon deux
+            # lanes peuvent croire leur chacune leur copie de la meme issue.
+            # Le picker n'a pas de flag --dry-run ; la fenetre collision
+            # reste ouverte par construction et la lane DOIT poser le
+            # claim avant edition (cf lane-claim-protocol.md regle 1).
+            if belt_picks:
+                top = belt_picks[0]
+                print(f"   ACTION REQUISE : poser [CLAIMED] lane {args.lane} sur "
+                      f"#{top['number']} avant edition -- cf lane-claim-protocol.")
             print()
         if args.json:
             # Surface JSON compatible avec la volee ponderee : `picks`,
