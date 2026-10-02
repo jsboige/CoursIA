@@ -198,7 +198,13 @@ def test_main_json_and_fail_on_findings_rc2(monkeypatch, capsys):
     """--json rend findings + compteurs ; --fail-on-findings -> rc=2 sur
     détection, rc=0 sans le drapeau. Le fake runner dispatche les deux
     phases : pr list, puis pr view par candidate (dernier commit hors
-    fenêtre — la candidate reste un finding)."""
+    fenêtre — la candidate reste un finding).
+
+    #18840 : horloge gelée via ``now=NOW`` — les fixtures ci-dessus sont
+    stampées relativement au NOW du module (2026-10-01T12:00Z) ; sans
+    injection, main() lit l'horloge réelle et les commentaires fixture
+    sortent de la fenêtre 24h dès que le mur dépasse NOW+24h (le test
+    est devenu rouge au calendrier, sans aucun commit)."""
     def fake_runner(cmd, **kwargs):
         if "list" in cmd:
             return FakeProc(stdout=json.dumps(
@@ -207,10 +213,10 @@ def test_main_json_and_fail_on_findings_rc2(monkeypatch, capsys):
             {"commits": [{"committedDate": _ts(100)}]}))
 
     _patch_runner(monkeypatch, fake_runner)
-    assert sdd.main(["--fail-on-findings", "--limit", "10"]) == 2
-    assert sdd.main(["--limit", "10"]) == 0
+    assert sdd.main(["--fail-on-findings", "--limit", "10"], now=NOW) == 2
+    assert sdd.main(["--limit", "10"], now=NOW) == 0
     capsys.readouterr()  # vide le buffer : la sortie --json doit être seule
-    rc = sdd.main(["--json", "--limit", "10"])
+    rc = sdd.main(["--json", "--limit", "10"], now=NOW)
     assert rc == 0
     payload = json.loads(capsys.readouterr().out)
     assert payload["scanned"] == 1

@@ -255,7 +255,7 @@ def format_finding(f: dict) -> str:
     )
 
 
-def main(argv: Optional[list] = None) -> int:
+def main(argv: Optional[list] = None, now: Optional[datetime] = None) -> int:
     parser = argparse.ArgumentParser(
         description="Détection de deadlock soft (#15511 P2) — mesure, pas gate.")
     parser.add_argument("--repo", default=DEFAULT_REPO)
@@ -272,7 +272,8 @@ def main(argv: Optional[list] = None) -> int:
                         help="rc=2 si au moins une détection (pour cron)")
     args = parser.parse_args(argv)
 
-    now = datetime.now(timezone.utc)
+    if now is None:  # pragma: no cover - trivial default
+        now = datetime.now(timezone.utc)
     try:
         prs = fetch_open_prs(args.repo, limit=args.limit)
         candidates = analyze(
