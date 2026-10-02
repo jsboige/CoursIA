@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-Argument_Analysis
-pedagogical_count: 36
-breakdown: Argument_Analysis=36
-maturity: BETA=34, ALPHA=1, DRAFT=1
+pedagogical_count: 32
+breakdown: Argument_Analysis=32
+maturity: BETA=30, ALPHA=1, DRAFT=1
 -->
 
 [← SmartContracts](../SmartContracts/README.md) | [↑ SymbolicAI](../README.md) | [SymbolicLearning →](../SymbolicLearning/README.md)

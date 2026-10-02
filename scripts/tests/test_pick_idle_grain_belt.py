@@ -501,3 +501,130 @@ def test_belt_filter_keeps_delivered_for_coordinator_lane():
     kept = {it["number"] for it in pig.belt_filter(pool, args, urns=urns)}
     assert kept == {70, 71}
 
+
+# ==================================================================
+# Tests #18866 : mode --belt --json = un seul document JSON.
+# La cle `repair` fusionne le rappel rouge/WIP qui etait sinon imprime
+# en double (deux objets JSON sur la sortie standard). La fenetre
+# `last_delivery_window_days` elargit a 90 j pour ne pas oublier les
+# livraisons au-dela des 14 j par defaut.
+# ==================================================================
+
+
+def _state_red():
+    """Retourne un etat GraphQL shape compatible `fetch_pr_states`."""
+    return {"checks": [("PR gate", "FAILURE", True)],
+            "mergeable": "MERGEABLE",
+            "reviews": []}
+
+
+def _patch_belt_network(monkeypatch, prs, red_state):
+    """Patche le strict minimum pour faire passer `main --belt --json`
+    jusqu'au bloc `out_belt` sans toucher au reseau.
+
+    Le test reste en memoire : pas de `fetch_pool` reel (un pool vide
+    court-circuite la volee ponderee et le tapis no-op). `red_backlog`
+    reste fonctionnel : il voit 1 PR rouge de la lane, declenche le garde,
+    et le `repair_payload` est calcule pour la fusion.
+    """
+    monkeypatch.setattr(pig, "fetch_open_prs", lambda: prs)
+    # fetch_pool = reseau reel (gh issue list). En mode test, on rend
+    # un pool vide pour court-circuiter la volee ponderee et garder
+    # la sortie compacte.
+    monkeypatch.setattr(pig, "fetch_pool",
+                        lambda **k: ([], None))
+    monkeypatch.setattr(pig, "fetch_pr_states",
+                        lambda nums: {n: red_state for n in nums if n in {p["number"] for p in prs}})
+    monkeypatch.setattr(pig, "unaddressed_review_points", lambda nums: {18844: 1} if prs else {})
+    monkeypatch.setattr(pig, "fetch_lane_record_prs", lambda **k: ([], None))
+    monkeypatch.setattr(pig, "fetch_main_head_probe", lambda *a, **k: None)
+    # Le tapis fait un check_claims : on rend toujours FREE.
+    monkeypatch.setattr(pig, "check_claims",
+                        lambda nums, lane: {n: (pig.CLAIM_CODE_FREE, "libre")
+                                            for n in nums})
+
+
+def test_belt_json_emits_single_document_when_red_present(monkeypatch, capsys):
+    """`--belt --json` produit UN SEUL document JSON parseable.
+
+    Avant le fix (#18866 point 2), la branche rouge du main() faisait
+    `print(json.dumps(...))` puis retournait 0 sans condition sur
+    `args.belt`. Le tapis re-imprimait son propre JSON juste apres. Le
+    consommateur lisait DEUX objets, et `json.loads` se cassait sur
+    `Extra data`.
+
+    Apres le fix, en mode belt, le rappel rouge est mis sous la cle
+    `repair` du document du tapis, et la sortie reste UN document.
+    """
+    red = _state_red()
+    prs = [{
+        "number": 18844,
+        "title": "PR rouge de la lane",
+        "body": "Grain: MED/guard -- lane myia-po-2024:CoursIA-2",
+        "createdAt": "2026-09-30T12:00:00Z",
+        "isDraft": False,
+    }]
+    _patch_belt_network(monkeypatch, prs, red)
+
+    rc = pig.main(["--lane", "myia-po-2024:CoursIA-2",
+                   "--belt", "--json"])
+
+    assert rc == 0
+    out = capsys.readouterr().out
+    # CRITIQUE : UN seul document JSON. Si le fix est casse, on a
+    # DEUX objets et `json.loads` leve `Extra data`.
+    payload = json.loads(out)
+    # `mode` est l'identifiant du tapis -- la fusion a bien eu lieu.
+    assert payload["mode"] == "belt"
+    # Le repair est fusionne (non-None) : le garde rouge s'est declenche.
+    assert payload["repair"] is not None
+    assert payload["repair"]["assignment"] == "reparer-son-rouge"
+    assert payload["repair"]["grain"]["number"] == 18844
+    # La fenetre de livraisons en mode belt fait 90 j, pas 14 j.
+    assert payload["last_delivery_window_days"] == 90
+
+
+def test_belt_json_repair_key_absent_when_no_red(monkeypatch, capsys):
+    """`--belt --json` sans garde rouge : `repair` est None.
+
+    Controle positif du test precedent : la cle `repair` existe
+    toujours (les consommateurs peuvent compter dessus), mais sa valeur
+    est None quand la lane n'a pas de reparation a faire, distinct
+    d'une cle absente (qui signalerait un schema inconsistant).
+    """
+    _patch_belt_network(monkeypatch, prs=[], red_state=_state_red())
+
+    rc = pig.main(["--lane", "myia-po-2024:CoursIA-2", "--belt", "--json"])
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["mode"] == "belt"
+    assert payload["repair"] is None
+    assert payload["last_delivery_window_days"] == 90
+
+
+def test_non_belt_json_red_still_emits_standalone_repair(monkeypatch, capsys):
+    """Regression check : hors `--belt`, le mode repair reste standalone.
+
+    Sans ce controle, le refactor pourrait fusionner par erreur la cle
+    `repair` dans le mode non-belt et briser la volee ponderee.
+    L'ancien contrat -- `mode: "repair"`, pas de `mode: belt` -- est
+    preserve pour le consommateur de la volee.
+    """
+    red = _state_red()
+    prs = [{
+        "number": 18844,
+        "title": "PR rouge de la lane",
+        "body": "Grain: MED/guard -- lane myia-po-2024:CoursIA-2",
+        "createdAt": "2026-09-30T12:00:00Z",
+        "isDraft": False,
+    }]
+    _patch_belt_network(monkeypatch, prs, red)
+
+    rc = pig.main(["--lane", "myia-po-2024:CoursIA-2", "--json"])
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    # Le mode reste `repair`, pas `belt` : la volee ponderee est inchangee.
+    assert payload["mode"] == "repair"
+    assert payload["grain"]["number"] == 18844
