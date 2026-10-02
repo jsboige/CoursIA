@@ -1067,6 +1067,174 @@ theorem pulsar_hcap_of_period_mod :
   hcap_of_period_mod pulsar pulsar_canonical (by decide)
     pulsar_period_three_kernel pulsar_hwin
 
+/-! ### Dyadic witnesses `T = 2`: the blinker and the toad (tranche 12, admission)
+
+The docstring of `hashlife_correct_margin_of_period` announces the witnesses
+of its class ("blinker `T = 2`, toad `T = 2`, beacon `T = 3`"). The pulsar
+(tranche 8b) covers its **non-dyadic** part; the two **dyadic** witnesses were
+missing. Since `2 ∣ 2^level` as soon as `level ≥ 1`, the `hcap_of_period`
+chain admits them **directly** — without the containment relaxation (`_mod`)
+that period 3 required.
+
+Both blinker phases and the toad's phase 0 are the `Conway.Life` bestiary
+definitions (L206-212), reused as-is: the only new literal is the toad's
+second phase. Periods are proved by the **kernel** reducer (composition of the
+step equations), without consuming `blinker_period_two` or `toad_period_two`:
+those bestiary lemmas yield `isOscillator g 2 = true`, a `Bool`-valued form
+that does not provide the equality `evolve T g = g` required by
+`hcap_of_period`. -/
+/-- Second phase of the toad (6 cells, box `[0, 3] × [-1, 2]`), obtained by
+applying the rule to the bestiary phase 0. Sorted literal. -/
+def toadP2 : Grid :=
+  [(0, 0), (0, 1), (1, 2), (2, -1), (3, 0), (3, 1)]
+set_option maxRecDepth 1000000 in
+/-- The toad's second phase is already canonical (sorted, duplicate-free):
+certified by the kernel, then converted through `canonical_sortDedup`. -/
+theorem toadP2_canonical : Canonical toadP2 := by
+  have h : toadP2 = sortDedup toadP2 := by decide
+  rw [h]
+  exact canonical_sortDedup _
+set_option maxRecDepth 1000000 in
+/-- The toad's phase 0, taken from the bestiary, is canonical. -/
+theorem toad_canonical : Canonical toad := by
+  have h : toad = sortDedup toad := by decide
+  rw [h]
+  exact canonical_sortDedup _
+set_option maxRecDepth 1000000 in
+/-- The bestiary horizontal blinker is canonical. -/
+theorem blinker_h_canonical : Canonical blinker_h := by
+  have h : blinker_h = sortDedup blinker_h := by decide
+  rw [h]
+  exact canonical_sortDedup _
+set_option maxRecDepth 1000000 in
+/-- Likewise for the vertical phase. -/
+theorem blinker_v_canonical : Canonical blinker_v := by
+  have h : blinker_v = sortDedup blinker_v := by decide
+  rw [h]
+  exact canonical_sortDedup _
+set_option maxRecDepth 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- Step equations of the blinker, by the **kernel** reducer: the bestiary
+`Bool` form (`blinker_step`) does not provide the equality. -/
+theorem blinker_h_step : step blinker_h = blinker_v := by decide
+set_option maxRecDepth 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- Likewise, vertical phase to horizontal phase: the period-2 loop. -/
+theorem blinker_v_step : step blinker_v = blinker_h := by decide
+set_option maxRecDepth 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- Step equation of the toad: phase 0 to the second phase. -/
+theorem toad_step : step toad = toadP2 := by decide
+set_option maxRecDepth 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- Likewise, second phase to phase 0: the period-2 loop is closed. -/
+theorem toadP2_step : step toadP2 = toad := by decide
+/-- Phase chain under `evolve 1`: horizontal blinker. -/
+theorem blinker_ev1 : evolve 1 blinker_h = blinker_v := blinker_h_step
+/-- Phase chain: vertical blinker. -/
+theorem blinkerV_ev1 : evolve 1 blinker_v = blinker_h := blinker_v_step
+/-- Phase chain: toad, phase 0. -/
+theorem toad_ev1 : evolve 1 toad = toadP2 := toad_step
+/-- Phase chain: toad, second phase. -/
+theorem toadP2_ev1 : evolve 1 toadP2 = toad := toadP2_step
+set_option maxRecDepth 1000000 in
+/-- Reconstruction frame of the horizontal blinker: box `[0, 2] × [0, 0]`,
+offset `(-2, -2)`. -/
+theorem blinker_frame_off : (gridToMacroCellWithOffset blinker_h).1 = (-2, -2) := by decide
+set_option maxRecDepth 1000000 in
+/-- Level of the horizontal blinker's frame: side `max(2, 0) + 5 = 7` →
+level 3, frame `[-2, 6)²`. -/
+theorem blinker_frame_lvl : (gridToMacroCellWithOffset blinker_h).2.level = 3 := by decide
+set_option maxRecDepth 1000000 in
+/-- Frame of the vertical phase: box `[1, 1] × [-1, 1]`, offset `(-1, -3)`. -/
+theorem blinkerV_frame_off : (gridToMacroCellWithOffset blinker_v).1 = (-1, -3) := by decide
+set_option maxRecDepth 1000000 in
+/-- Level of the vertical phase's frame: level 3. -/
+theorem blinkerV_frame_lvl : (gridToMacroCellWithOffset blinker_v).2.level = 3 := by decide
+set_option maxRecDepth 1000000 in
+/-- Toad frame, phase 0: box `[0, 3] × [0, 1]`, offset `(-2, -2)`. -/
+theorem toad_frame_off : (gridToMacroCellWithOffset toad).1 = (-2, -2) := by decide
+set_option maxRecDepth 1000000 in
+/-- Level of the toad's frame, phase 0: side `max(3, 1) + 5 = 8` → level 3. -/
+theorem toad_frame_lvl : (gridToMacroCellWithOffset toad).2.level = 3 := by decide
+set_option maxRecDepth 1000000 in
+/-- Frame of the toad's second phase: box `[0, 3] × [-1, 2]`, offset
+`(-2, -3)`. -/
+theorem toadP2_frame_off : (gridToMacroCellWithOffset toadP2).1 = (-2, -3) := by decide
+set_option maxRecDepth 1000000 in
+/-- Level of the second phase's frame: level 3. -/
+theorem toadP2_frame_lvl : (gridToMacroCellWithOffset toadP2).2.level = 3 := by decide
+/-- Period 2 of the blinker proved by the **kernel**: composition of the two
+step equations. -/
+theorem blinker_period_two_kernel : evolve 2 blinker_h = blinker_h := by
+  rw [evolve_two, blinker_ev1, blinkerV_ev1]
+/-- Period 2 of the toad proved by the **kernel**. -/
+theorem toad_period_two_kernel : evolve 2 toad = toad := by
+  rw [evolve_two, toad_ev1, toadP2_ev1]
+/-- Dyadic divisibility of the blinker: both phases have level-3 frames and
+`2 ∣ 2^3`. This finite premise is what separates this class from the
+pulsar's (`3 ∤ 2^level`). -/
+theorem blinker_hdiv : ∀ i, i < 2 →
+    2 ∣ 2 ^ (gridToMacroCellWithOffset (evolve i blinker_h)).2.level := by
+  intro i hi
+  interval_cases i
+  · rw [evolve_zero, blinker_frame_lvl]
+    decide
+  · rw [blinker_ev1, blinkerV_frame_lvl]
+    decide
+/-- Dyadic divisibility of the toad: both phases have level-3 frames. -/
+theorem toad_hdiv : ∀ i, i < 2 →
+    2 ∣ 2 ^ (gridToMacroCellWithOffset (evolve i toad)).2.level := by
+  intro i hi
+  interval_cases i
+  · rw [evolve_zero, toad_frame_lvl]
+    decide
+  · rw [toad_ev1, toadP2_frame_lvl]
+    decide
+/-- Containment of the 4 phase combinations `(r, i) < 2 × 2` of the blinker:
+each image `evolve i (evolve r blinker_h)` lives in the reconstruction frame
+of phase `r`. Both phases fit in a level-3 frame (side 8), which absorbs the
+offset between phases. -/
+theorem blinker_hwin : ∀ r, r < 2 → ∀ i, i < 2 → ∀ p ∈ evolve i (evolve r blinker_h),
+    (gridToMacroCellWithOffset (evolve r blinker_h)).1.1 ≤ p.1 ∧
+      p.1 < (gridToMacroCellWithOffset (evolve r blinker_h)).1.1
+        + (2 ^ (gridToMacroCellWithOffset (evolve r blinker_h)).2.level : Int) ∧
+    (gridToMacroCellWithOffset (evolve r blinker_h)).1.2 ≤ p.2 ∧
+      p.2 < (gridToMacroCellWithOffset (evolve r blinker_h)).1.2
+        + (2 ^ (gridToMacroCellWithOffset (evolve r blinker_h)).2.level : Int) := by
+  intro r hr i hi
+  interval_cases r <;> interval_cases i <;>
+    simp only [evolve_zero, blinker_ev1, blinkerV_ev1] <;>
+    first
+    | (rw [blinker_frame_off, blinker_frame_lvl]; decide)
+    | (rw [blinkerV_frame_off, blinkerV_frame_lvl]; decide)
+/-- Containment of the 4 phase combinations `(r, i) < 2 × 2` of the toad. -/
+theorem toad_hwin : ∀ r, r < 2 → ∀ i, i < 2 → ∀ p ∈ evolve i (evolve r toad),
+    (gridToMacroCellWithOffset (evolve r toad)).1.1 ≤ p.1 ∧
+      p.1 < (gridToMacroCellWithOffset (evolve r toad)).1.1
+        + (2 ^ (gridToMacroCellWithOffset (evolve r toad)).2.level : Int) ∧
+    (gridToMacroCellWithOffset (evolve r toad)).1.2 ≤ p.2 ∧
+      p.2 < (gridToMacroCellWithOffset (evolve r toad)).1.2
+        + (2 ^ (gridToMacroCellWithOffset (evolve r toad)).2.level : Int) := by
+  intro r hr i hi
+  interval_cases r <;> interval_cases i <;>
+    simp only [evolve_zero, toad_ev1, toadP2_ev1] <;>
+    first
+    | (rw [toad_frame_off, toad_frame_lvl]; decide)
+    | (rw [toadP2_frame_off, toadP2_frame_lvl]; decide)
+/-- Capstone: the blinker is admitted through `hcap_of_period` — first
+**dyadic** witness of the periodic class. For every horizon `t`, the
+reconstruction of `evolve t blinker_h` is captured by Hashlife. -/
+theorem blinker_hcap_of_period :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t blinker_h)).2 = true :=
+  hcap_of_period blinker_h blinker_h_canonical (by decide)
+    blinker_period_two_kernel blinker_hdiv
+/-- Capstone: the toad is admitted through `hcap_of_period`. -/
+theorem toad_hcap_of_period :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t toad)).2 = true :=
+  hcap_of_period toad toad_canonical (by decide)
+    toad_period_two_kernel toad_hdiv
+
 
 /-! ## Translation invariance of the reconstruction (tranche 3, step 7, brick 1)
 
