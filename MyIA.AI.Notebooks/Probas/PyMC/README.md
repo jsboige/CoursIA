@@ -137,6 +137,7 @@ Ces corrections sont **éditoriales** (prose, pas de modification des figures su
 | 17 | [PyMC-17-Kalman-Filter](PyMC-17-Kalman-Filter.ipynb) | 55 min | Système dynamique linéaire gaussien, récursion de filtrage fermée, value-add MCMC (estimation Q/R/drift) |
 | 18 | [PyMC-18-Change-Point](PyMC-18-Change-Point.ipynb) | 50 min | Change-point bayésien, `DiscreteUniform` + `switch`, catastrophes minières (Poisson), entropie |
 | 19 | [PyMC-19-Survival-Analysis](PyMC-19-Survival-Analysis.ipynb) | 50 min | Analyse de survie, exponentiel conjugué (Gamma), Weibull `k` inféré directement (NUTS), sélection LOO (arviZ), censure à droite exécutée (naïf vs `S(c_i)` vs Kaplan–Meier) |
+| 20 | [PyMC-Observabilite-OTel](PyMC-Observabilite-OTel.ipynb) | 40 min | Instrumentation OpenTelemetry d'un modèle hiérarchique (spans console `pymc.compile.*` / `pymc.sample`, attributs du run, capture mémoire) — le miroir Python de la série Aspire/OTel |
 
 > **Théorie de la décision** : les notebooks décisionnels (utilité espérée, EVPI, MDPs, bandits, plus la jambe actuarielle) forment désormais une sous-série autonome dans [DecisionTheory/DecPyMC/](../DecisionTheory/DecPyMC/README.md) (1 à 12), miroir Python de [DecisionTheory/DecInfer/](../DecisionTheory/DecInfer/README.md).
 

@@ -22,4 +22,4 @@ Stratégie ML d'ensemble combinant la régression Ridge, le Random Forest et le 
 
 ## Fichiers
 
-- `main.py` — Stratégie (269 lignes, `MLEnsembleAlgorithm`)
+- `main.py` — Stratégie (`MLEnsembleAlgorithm`)
