@@ -56,7 +56,18 @@
 | PromptSignature.Matches | 2.843 | 3.054 | 2.750 | +7.4 % | −3.3 % | −10.0 % | 2.77 KB (identique) — INCONCLUSIF (µs, variance > delta) |
 | PromptTransform.InterpolateKeys (regex) | 16.33 | 22.32 | 18.15 | +36.7 % | +11.1 % | −18.7 % | 22.56 KB / 23.1 KB / 23.4 KB — passes dispersées : **INCONCLUSIF** |
 
-## Carnets types (rejeu complet, wall-clock process, kernel spawn inclus)
+## Banc 5 — Argumentum (unités : us ; AssetConverter, TFM net9.0-windows)
+
+| Benchmark | net9 | net10 | net11 | 9→10 | 9→11 | 10→11 | Alloc 9/10/11 |
+|---|---:|---:|---:|---:|---:|---:|---|
+| Rule.LoadFromContent (50 règles multilingues) | 1714.1 | 2142.7 | 1806.4 | +25.0 % | +5.4 % | **−15.7 %** | 165.02 / 164.58 / 165.07 KB |
+| Rule.LoadFromContent (500 règles multilingues) | 5124.1 | 5314.9 | 4615.0 | +3.7 % | −9.9 % | **−13.2 %** | 855.06 / 854.66 / 854.83 KB |
+| Timestamping DateTime.Now ×1000 | 296.8 | 217.8 | 128.5 | **−26.6 %** | **−56.7 %** | **−41.0 %** | 57.66 / 57.66 / 57.98 KB |
+
+Le 9→10 de Rule.LoadFromContent 50 (+25 %) est contre-intuitif et non confirmé par la variante
+500 règles (+3,7 %) : à re-mesurer fenêtre calme avant de le considérer comme une régression.
+
+
 
 **Plafond structurel prouvé** : le kernel canon `dotnet-interactive` **1.0.712001** cible
 `Microsoft.NETCore.App 10.0.0` — sous un `DOTNET_ROOT` .NET 9 seul, le kernel refuse de
@@ -67,12 +78,12 @@ carnets mesure **10 vs 11** seulement.
 
 Mesure = wall-clock du process complet (spawn kernel + compilations Roslyn + exécution),
 1 run par (carnet × runtime), kernel `.net-csharp` canon 1.0.712001, copies temporaires
-exécutées dans leur dossier de série (chemins de données relatifs), 0 cellule modifiée.
+exécutées dans leur dossier de série (chemins de données relatifs), aucune cellule du dépôt modifiée.
 
 | Carnet | net10 | net11 (RC) | Delta | État |
 |---|---:|---:|---:|---|
-| ML-5-TimeSeries (16 cells) | 16.7 s | 16.2 s | −3 % | **27 OK / 0 erreur des deux côtés** — compat .NET 11 prouvée, delta < bruit wall-clock (n=1) : **nul mesuré** |
-| Infer-2-Gaussian-Mixtures (27 cells) | 24.4 s | 23.5 s | −3.7 % | idem — compat prouvée, pas de régression |
+| ML-5-TimeSeries | 16.7 s | 16.2 s | −3 % | **27 OK / 0 erreur des deux côtés** — compat .NET 11 prouvée, delta < bruit wall-clock (n=1) : **nul mesuré** |
+| Infer-2-Gaussian-Mixtures | 24.4 s | 23.5 s | −3.7 % | idem — compat prouvée, pas de régression |
 
 Lecture honnête : le wall-clock carnet est dominé par le démarrage kernel + Roslyn ; un gain
 runtime de −10 % sur les seules cellules de calcul serait invisible ici. Les bancs ci-dessus
@@ -84,6 +95,8 @@ de la chaîne notebook complète sous .NET 11 RC (kernel, Roslyn scripting, ML.N
 | Axe | Attendu (digest, baseline .NET 10) | Mesuré 10→11 | Mesuré 9→10 (rattrapage) | Verdict |
 |---|---|---|---|---|
 | JSON serialize/round-trip (semantic-fleet) | Writer escape-heavy 0,26 (×3,9) | **−14,6 % / −21,6 %** | −42,8 % / −38,8 % | **conforme en signe, inférieur en amplitude** — notre DTO n'est pas escape-heavy pur ; le gros morceau est le rattrapage 9→10 |
+| DateTime.Now + timestamps (Argumentum) | **0,45 (×2,2)** | **−41,0 %** | −26,6 % | **conforme en signe, amplitude relative −25 %** (×1,7 mesuré vs ×2,2 article, sous charge CI) — l'axe le mieux vérifié du digest sur nos charges |
+| Rule parsing multilingue (Argumentum) | (String.Split via agrégats, hors ratios article) | −13,2 % / −15,7 % | +3,7 % / +25 % (anomalie non confirmée, cf banc 5) | gain 11 réel sur le parsing de règles ; le 9→10 de la variante 50 règles à re-mesurer fenêtre calme |
 | Collections/LINQ (MGS) | FindAll 0,30 · SequenceEqual ×7,7 | ~0 à +17 % (GC-sensible) | −6 à −26 % | **non couvert** (nos bancs n'exercent pas ces API précises) ; côté 11 : nul/inconclusif |
 | Charge native-dominée (Z3.Linq) | (rien de spécifique promis) | −0,3 à −6,7 % | −5 à −10 % | **rattrapage 10 réel (marshaling), gain 11 nul** |
 | Allocation-heavy pipeline (Automata) | (Stores covariants 0,56 etc.) | +4,1 % / INCONCLUSIF EvilRegex | −10,9 % | **rattrapage 10 réel ; 11 non prouvé sur cette charge** (allocs identiques au Ko près — cohérent : nos pipelines allouent par design, pas par défaut runtime) |
@@ -91,10 +104,12 @@ de la chaîne notebook complète sous .NET 11 RC (kernel, Roslyn scripting, ML.N
 
 ## Synthèse pour la décision P2 (LTS vs GA, escalade user)
 
-1. **Le vrai levier mesuré est le saut .NET 9 → 10** : −5 à −43 % selon la charge (JSON et
-   marshaling en tête). C'est aussi ce que le kernel canon impose déjà.
-2. **.NET 11 RC n'ajoute, sur nos charges réelles, qu'un gain JSON** (−15 à −22 % 10→11) ;
-   les autres axes sont plats, non couverts ou inconvissables sous charge CI.
+1. **Le vrai levier mesuré est le saut .NET 9 → 10** : −5 à −43 % selon la charge (JSON,
+   DateTime.Now et marshaling en tête). C'est aussi ce que le kernel canon impose déjà.
+2. **.NET 11 RC ajoute, sur nos charges réelles, deux gains mesurés** : JSON (−15 à −22 %
+   10→11) et DateTime.Now/timestamps (**−41 %** 10→11, l'axe le mieux vérifié du digest) ;
+   parsing de règles Argumentum −13/−16 % ; les autres axes sont plats, non couverts ou
+   inconvissables sous charge CI.
 3. Les axes « vedettes » du digest (×3,9 escape, ×7,7 SequenceEqual, BigInteger ×2) ne sont
    pas exercés par nos charges : **si l'EPIC veut les départager, il faut des bancs ciblés
    API** (extension naturelle de #18770), pas nos charges représentatives.
