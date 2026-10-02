@@ -5060,7 +5060,17 @@ def main(argv: list[str] | None = None) -> int:
             # Apres l'assignation : l'en-tete "FILE DE REPARATION" doit rester
             # la premiere ligne lue (test pinne), l'ardoise vient en rappel.
             print_lane_record(lane_record)
-        return 0
+        # #18832 spec : "les gardes restent en amont du tapis et produisent
+        # LEUR sortie, jamais un silence". Mais le tapis ne refuse JAMAIS :
+        # une lane avec un rouge doit quand meme recevoir la tete du tapis,
+        # et la sortie ne doit jamais etre sans grain (cf CHANGES_REQUESTED
+        # coordinateur, review 5391008313, point 4). On ne return PAS ici en
+        # mode --belt : on imprime le rappel rouge, puis on enchaîne sur le
+        # tapis qui produit ses grains.
+        if not args.belt:
+            return 0
+        # Mode --belt : on continue pour tirer la tete du tapis en plus du
+        # rappel rouge/wip deja imprime. La sortie reste sans aucun vide.
     if not args.json:
         print_nits_gap(backlog)
         print_base_inherited(backlog)
