@@ -17,7 +17,7 @@
   `zero_pad_series.json`, les README et navlinks — chaque renommage est une tranche à part
   (cf `zero_pad_series.json::_how_to_extend` : « Migrer une série est une tranche à part,
   avec ses README et ses navlinks »).
-- **Sources mesurées** : arbre `Probas/Infer/` (21 notebooks) et `Probas/PyMC/` (19 notebooks)
+- **Sources mesurées** : arbre `Probas/Infer/` (21 carnets) et `Probas/PyMC/` (19 carnets)
   au HEAD ci-dessus ; les 19 paires `probas-*.yaml` du registre `twin_pairs.d` ; le registre
   `zero_pad_series.json` (#15489) ; extraction programmatique préfixe/numéro/accrétion/titre
   par stem (script jetable, non committé).
@@ -25,9 +25,9 @@
 ## Vue d'ensemble
 
 ```
-Probas/Infer/   (C#/.NET Interactive — 21 notebooks)
+Probas/Infer/   (C#/.NET Interactive — 21 carnets)
   └── Infer-1   Setup                     (pad divergent)      ─┐
-        Infer-1b  Premiers-Modeles          (NON APPARIÉ, C#)    │ 10 fichiers
+        Infer-1b  Premiers-Modeles          (NON APPARIÉ, C#)    │ 10 noms
         Infer-2   Gaussian-Mixtures         (pad divergent)      │ à numéro
         Infer-2b  Debugging-Bonnes-Pratiques (pad + titre)       │ non zero-padé
         Infer-3 … Infer-9                   (pad divergent)      │ (série NON déclarée
@@ -35,7 +35,7 @@ Probas/Infer/   (C#/.NET Interactive — 21 notebooks)
                                                                   ─┘
         Infer-10 … Infer-19                 (alignés)           — 10 paires alignées
 
-Probas/PyMC/    (Python — 19 notebooks, SÉRIE DÉCLARÉE zero-pad #15489)
+Probas/PyMC/    (Python — 19 carnets, SÉRIE DÉCLARÉE zero-pad #15489)
   └── PyMC-01 … PyMC-09 (pairs de 1-9 côté C#), PyMC-02b, PyMC-10 … PyMC-19
 ```
 
@@ -66,7 +66,7 @@ paire, du titre.
 | `Infer-1b-Premiers-Modeles.ipynb` | C# | `1b` | numéro non zero-padé (la série PyMC n'a pas de `01b`) — extension unilatérale C# à documenter, ou future paire `PyMC-01b` |
 | `Infer-08b-TrueSkill-Formules-Fermees-CSharp.ipynb` | C# | `08b` | **double non-canonicité** : (a) zero-pad `08b` alors que toute la série Infer est à numéro nu — incohérent dans les DEUX conventions ; (b) suffixe kernel `-CSharp` DANS le titre, redondant avec le préfixe de série `Infer` (doctrine : le kernel ne vit que dans le suffixe canonique) |
 
-Aucune extension unilatérale côté Python : les 19 notebooks PyMC sont tous appariés.
+Aucune extension unilatérale côté Python : les 19 carnets PyMC sont tous appariés.
 
 ## 3. Trous de l'arc
 
