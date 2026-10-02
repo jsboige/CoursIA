@@ -5,12 +5,13 @@
 #
 # Parametres machine : NAME_PREFIX (po-2024 -> myia-po-2024-linux-docker) et
 # N slots vivent dans le wrapper coursia-runner-start.sh (N porte par
-# l'argument ExecStart). po-2024 est passe de 8 a 12 slots le 2026-09-09
-# (mission P0 ai-01, msg-20260909T011024-jgamgp : famine 682 en queue / 10 in_progress,
-# marge CPU mesuree nproc=16 loadavg=0.08 autorise 12 slots × 3 vCPU = 36 vCPU
-# sur 16 nproc, overcommit 2.25× acceptable en pratique). Le defaut wrapper
-# (N=4) reste le filet -- `start 12` ici est l'intention explicite pour cette
-# machine, pas une dependance au defaut.
+# l'argument ExecStart). Historique de dimensionnement : 8 -> 12 slots le
+# 2026-09-09 (famine 682 en queue, marge CPU loadavg=0.08), ramene a 8 le
+# 2026-09-22, puis a 6 le 2026-10-01 (#15574 item 3, arbitrage coordinateur
+# comment 5933689033) : 6 x 3 vCPU = 18 vCPU docker, + 2 lean x 6 = 30 vCPU
+# d'execution pour 16 disponibles -- le budget COURSIA_RUNNER_CPU_BUDGET=30
+# du wrapper garde cette somme. Le defaut wrapper (N=4) reste le filet --
+# `start 6` ici est l'intention explicite pour cette machine.
 [Unit]
 Description=CoursIA Linux runners supervisor (docker slots)
 # #15095 : Requires+BindsTo INVERSE le choix Wants= de #14347 item 2. Le
@@ -36,7 +37,7 @@ StartLimitBurst=5
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/coursia-runner-start.sh start 12
+ExecStart=/usr/local/bin/coursia-runner-start.sh start 6
 ExecStop=/usr/local/bin/coursia-runner-start.sh stop
 Restart=always
 RestartSec=30

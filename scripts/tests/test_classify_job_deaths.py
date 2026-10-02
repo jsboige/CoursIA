@@ -309,6 +309,197 @@ def test_worker_death_is_counted_as_infrastructural():
     assert "AUTRES=0" in text
 
 
+# --------------------------------------------------------------------------
+# Famille GIT_OBJECT_MISSING (#18312) : l'hote ne trouve pas un objet git,
+# au checkout ou a la comparaison de base. Annotations mesurees le 28/09.
+# --------------------------------------------------------------------------
+
+ANN_COULD_NOT_READ = [
+    {"message": "Node.js 20 is deprecated. The following actions target "
+                "Node.js 20 but are being forced to run on Node.js 24"},
+    {"message": "fatal: Could not read 8f2a9b1c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a"},
+    {"message": "Process completed with exit code 128."},
+]
+
+ANN_PROMISOR = [
+    {"message": "error: Could not fetch 4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3"
+                "e4f5a6 from promisor remote"},
+    {"message": "fetch-pack: invalid index-pack output"},
+    {"message": "Process completed with exit code 128."},
+]
+
+ANN_EXIT_128_CHECKOUT = [{"message": "Process completed with exit code 128."}]
+
+ANN_EXIT_128_TESTS = [
+    {"message": "Process completed with exit code 128."},
+]
+
+
+def _checkout_failure_job() -> dict:
+    """Forme mesuree (jobs 108980481356, 108947216571) : l'etape Checkout
+    conclut `failure`, annotation generique exit 128."""
+    steps = [
+        {"number": 1, "name": "Set up job", "conclusion": "success"},
+        {"number": 2, "name": "Checkout PR", "conclusion": "failure"},
+        {"number": 3, "name": "Post Run actions/checkout@v4",
+         "conclusion": "success"},
+    ]
+    return {
+        "id": 108980481356,
+        "name": "Drift check",
+        "conclusion": "failure",
+        "runner_name": "myia-ai-01-wsl-4",
+        "steps": steps,
+    }
+
+
+def _drift_failure_job() -> dict:
+    """Forme mesuree (job 108750636316, MD Hierarchy Drift Advisory) : c'est
+    l'etape de COMPARAISON de base qui echoue -- le clone etait incomplet,
+    git va chercher l'objet a la demande et echoue."""
+    steps = [
+        {"number": 1, "name": "Set up job", "conclusion": "success"},
+        {"number": 2, "name": "Checkout PR", "conclusion": "success"},
+        {"number": 3, "name": "Drift check vs baseline", "conclusion": "failure"},
+    ]
+    return {
+        "id": 108750636316,
+        "name": "MD Hierarchy Drift Advisory",
+        "conclusion": "failure",
+        "runner_name": "myia-ai-01-wsl-5",
+        "steps": steps,
+    }
+
+
+def _run(job_id: int) -> dict:
+    return {
+        "id": job_id,
+        "name": "Workflow",
+        "conclusion": "failure",
+        "created_at": "2026-09-28T08:40:00Z",
+        "updated_at": "2026-09-28T08:47:00Z",
+        "head_sha": "f" * 40,
+    }
+
+
+def _classified(job: dict, annotations: list[dict], log_calls: list | None = None):
+    """analyse_runs sur un run d'un seul job, fetchs monkeypatches."""
+    import classify_job_deaths as mod
+
+    orig = (mod.fetch_run_jobs, mod.fetch_annotations, mod.fetch_job_log)
+    mod.fetch_run_jobs = lambda run_id: [job]
+    mod.fetch_annotations = lambda job_id: annotations
+    if log_calls is not None:
+        mod.fetch_job_log = (
+            lambda job_id: log_calls.append(job_id) or LOG_TEARDOWN_DEATH
+        )
+    else:
+        mod.fetch_job_log = lambda job_id: ""
+    try:
+        payload = mod.analyse_runs([_run(job["id"])])
+    finally:
+        mod.fetch_run_jobs, mod.fetch_annotations, mod.fetch_job_log = orig
+    return payload["rows"][0]["class"]
+
+
+def test_git_object_missing_could_not_read_beats_step_failure():
+    """Le defaut mesure : le drift check conclut `failure` -> REAL_STEP_FAILURE,
+    alors que l'annotation nomme l'objet introuvable. La reclassification
+    tranche par l'annotation DEJA chargee : le log n'est jamais fetch."""
+    log_calls: list[int] = []
+    klass = _classified(
+        _drift_failure_job(), ANN_COULD_NOT_READ, log_calls=log_calls
+    )
+    assert klass == "GIT_OBJECT_MISSING"
+    assert log_calls == [], "le log a ete fetch pour une annotation tranchee"
+
+
+def test_git_object_missing_promisor_remote_beats_step_failure():
+    """Signature 2 : fetch promisor interrompu, sur l'etape Checkout elle-meme
+    (job 108953753880) -- l'etape en echec est un checkout, la famille
+    s'applique par les deux branches du predicat."""
+    assert _classified(_checkout_failure_job(), ANN_PROMISOR) == "GIT_OBJECT_MISSING"
+
+
+def test_checkout_step_exit_128_is_git_object_missing():
+    """Signature 3 : exit 128 nu sur une etape de checkout (jobs 108980481356,
+    108947216571) -- retenue parce que TOUTES les etapes en echec sont des
+    checkouts."""
+    assert (
+        _classified(_checkout_failure_job(), ANN_EXIT_128_CHECKOUT)
+        == "GIT_OBJECT_MISSING"
+    )
+
+
+def test_exit_128_on_a_test_step_stays_content_failure():
+    """Garde anti-blanchiment : exit 128 sur `Run tests` reste un rouge de
+    contenu. La signature 3 exige le nom d'etape checkout, sinon tout exit
+    128 serait une mere de parc."""
+    job = _step_failure_job()
+    assert (
+        _classified(job, ANN_EXIT_128_TESTS) == "REAL_STEP_FAILURE"
+    )
+
+
+def test_could_not_read_without_a_sha_is_not_the_family():
+    """Le verbe seul ne suffit pas : "Could not read config.json" est un
+    message de contenu, seul le couple verbe + hexa designe l'operation git
+    sur un objet du depot."""
+    import classify_job_deaths as mod
+
+    job = _step_failure_job()
+    ann = [{"message": "Could not read config.json"}]
+    assert mod.git_object_missing(job, ann) is False
+
+
+def test_git_object_missing_is_counted_as_infrastructural():
+    """Meme exigence que pour OOM et WORKER_DEATH : la classe entre dans la
+    SOMME infra et son detail -- sinon le census annonce une famille #18312
+    comme un rouge de contenu."""
+    import classify_job_deaths as mod
+
+    assert "GIT_OBJECT_MISSING" in mod.INFRA_DEATH_CLASSES
+    payload = {
+        "counts": {"GIT_OBJECT_MISSING": 3, "REAL_STEP_FAILURE": 1},
+        "rows": [],
+    }
+    text = mod.render_markdown(payload)
+    assert "morts infrastructurelles : **3**" in text
+    assert "GIT_OBJECT_MISSING=3" in text
+    assert "AUTRES=0" in text
+
+
+def test_empty_branch_omits_the_branch_filter():
+    """#18312 : sur pull_request, le parametre API ``branch`` designe la HEAD
+    de la PR -- ``branch=main&event=pull_request`` rend 0 run. Une branche
+    vide doit OMITTRE le parametre, pas l'envoyer vide : c'est la seule forme
+    qui balaye toutes branches comme la mesure fondatrice."""
+    import classify_job_deaths as mod
+
+    captured: list[str] = []
+
+    def fake_gh_api(path: str, params: str = "") -> dict:
+        captured.append(params)
+        return {"workflow_runs": []}
+
+    orig = mod.gh_api
+    mod.gh_api = fake_gh_api
+    try:
+        mod.iter_red_runs("", "pull_request", "2026-09-28..2026-09-29", 10)
+    finally:
+        mod.gh_api = orig
+    assert captured, "aucun appel emis"
+    assert all("branch=" not in p for p in captured), captured
+
+    captured.clear()
+    mod.gh_api = fake_gh_api
+    try:
+        mod.iter_red_runs("main", "push", "2026-09-28..2026-09-29", 10)
+    finally:
+        mod.gh_api = orig
+    assert all("branch=main&" in p for p in captured), captured
+
+
 def test_fetch_job_log_tolerates_blob_not_found_only():
     """Un blob absent (job tue avant l'upload) rend "" ; toute autre panne
     (auth, reseau) doit remonter bruyamment -- sinon l'instrument perdrait
@@ -518,6 +709,8 @@ def test_hours_and_created_are_mutually_exclusive():
         ],
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
     )
     assert result.returncode == 2
     assert "not allowed with" in result.stderr

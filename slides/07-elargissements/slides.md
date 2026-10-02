@@ -194,7 +194,7 @@ layout: dense
   - La conscience est un espace de travail ou différentes parties du cerveau partagent des informations
   - Applications: Modèles d'attention, tâches complexes
   - Rôle important de l'inconscient
-  - *Notebook : [ICT-24-WorkspaceIgnition](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb) — ignition d'un workspace global, mesure empirique du basculement.*
+  - *Notebook : [ICT-24-WorkspaceIgnition-Python](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb) — ignition d'un workspace global, mesure empirique du basculement.*
 - **Integrated Information Theory (IIT)**
   - La conscience est mesuree par le degré d'integration de l'information (Phi)
   - Introduit la notion de systèmes physiques conscients
@@ -258,7 +258,7 @@ layout: dense
 - **Vers une science de la conscience**
   - Au-dela du debat philosophique, la mesure impose une discipline
   - Le depot porte les deux outils (IIT-01, ICT-24) ; les utiliser en parallele montre ce qu'aucun ne montre seul
-  - *Notebooks : [IIT-01-IntroToPyPhi](../../MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb) (calcul exact de Φ) · [ICT-24-WorkspaceIgnition](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb) (ignition et integration).*
+  - *Notebooks : [IIT-01-IntroToPyPhi](../../MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb) (calcul exact de Φ) · [ICT-24-WorkspaceIgnition-Python](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb) (ignition et integration).*
 
 ---
 
@@ -785,7 +785,7 @@ des cibles **directement citees dans les slides ci-dessus** (chemins relatifs au
 
 - **Conscience et theories de l'esprit**
   - [IIT-01-IntroToPyPhi](../../MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb) — calcul exact de Phi sur systemes booleens
-  - [ICT-24-WorkspaceIgnition](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb) — ignition du workspace global (GWT)
+  - [ICT-24-WorkspaceIgnition-Python](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb) — ignition du workspace global (GWT)
 - **Argumentation formelle et debat structure**
   - [Argument_Analysis_Dung_AF_Semantics](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-03-Dung-AF-Semantics-Python.ipynb) — semantiques de Dung, value alignment
   - [Argument_Analysis_Toulmin_Model](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-01-Toulmin-Model-Python.ipynb) — modele de Toulmin, debat falsifiable
