@@ -302,6 +302,10 @@ def find_entry(kp, title: str, group: str | None):
 # Motifs des clients : Google Drive suffixe `(1)`, Dropbox `(conflicted copy
 # <date>)`, OneDrive un suffixe machine. Le motif est cherche dans le NOM, et
 # seulement sur un fichier qui partage deja le radical du coffre.
+# LIMITE : la regex ci-dessous couvre Drive et Dropbox ; le suffixe machine de
+# OneDrive ne porte AUCUN marqueur textuel stable (une heuristique sur des noms
+# de machine serait fragile) -- il n'est PAS detecte. Le coffre de ce parc est
+# synchronise par Drive, ou la garde est complete.
 _CONFLICT_MARKER_RE = re.compile(r"\(\s*\d+\s*\)|conflict|conflit|konflikt", re.I)
 
 
@@ -848,7 +852,11 @@ def cmd_set(args) -> int:
 
     print(f"OK  entree {'creee' if created else 'mise a jour'} : '{entry2.title}' "
           f"(groupe {entry2.group.name if entry2.group else '-'})")
-    print(f"    secret    : {secret_kind(value)}")
+    # Le kind se lit sur l'entree RELUE du disque, jamais sur la valeur stdin :
+    # la source stdin est ce que CodeQL suit jusqu'au print (alerte 148), et la
+    # relecture classifie ce que le coffre porte reellement apres l'aller-retour
+    # -- la forme testee par la comparaison d'empreinte ci-dessus.
+    print(f"    secret    : {secret_kind(entry2.password)}")
     print(f"    empreinte : {expected}  (valeur non imprimee)")
     print(f"    coffre    : {before} -> {after}")
 
