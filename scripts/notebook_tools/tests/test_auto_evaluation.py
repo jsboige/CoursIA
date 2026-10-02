@@ -13,19 +13,27 @@ Couvre le contrat observe par l'organe `check_auto_evaluation_presence.py` :
   (cf regex de l'organe)
 """
 
+import importlib.util
 import sys
 from pathlib import Path
 
-# Neutralise le bloc `if __name__ == "__main__"` au niveau module si on
-# decide plus tard d'enrichir le module. Le bloc actuel n'eat pas un
-# boucle sys.argv, mais on garde le pattern par coherence avec
-# test_alpha_diag.py.
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+# Charge explicitement `scripts/notebook_tools/auto_evaluation.py` par son
+# path absolu. La CI Scripts Tests (CPU) ajoute `scripts/notebook_tools/tests`
+# a sys.path, ce qui ferait resolver `import auto_evaluation` vers un fichier
+# homonyme d'une autre serie (ex. MyIA.AI.Notebooks/ML/DataScienceWithAgents/
+# auto_evaluation.py) et masquerait le nouveau module. Le chargement par
+# fichier rend la resolution certaine, peu importe l'ordre de sys.path.
+_MODULE_PATH = Path(__file__).resolve().parent.parent / "auto_evaluation.py"
+_SPEC = importlib.util.spec_from_file_location("auto_evaluation", _MODULE_PATH)
+auto_evaluation = importlib.util.module_from_spec(_SPEC)
+_SPEC.loader.exec_module(auto_evaluation)
+sys.modules["auto_evaluation"] = auto_evaluation
 
 import pytest
 
-import auto_evaluation
-from auto_evaluation import MOMENTS, bilan_session, question
+MOMENTS = auto_evaluation.MOMENTS
+bilan_session = auto_evaluation.bilan_session
+question = auto_evaluation.question
 
 
 # -----------------------------------------------------------------------------
@@ -356,19 +364,23 @@ def test_bilan_session_initial_vide():
 
 def test_bilan_session_compte_les_moments(monkeypatch):
     """bilan_session() cumule les questions par moment."""
-    # On vide l'etat partage en reimportant le module -- le registre
-    # interne est recree vide. On utilise importlib.reload pour ne pas
-    # casser la reference au module.
+    # On vide l'etat partage en rechargeant le module via le meme chemin
+    # que l'init -- spec_from_file_location rend le reload possible.
     import importlib
 
-    importlib.reload(auto_evaluation)
-    # Reimportation des noms relies au module recharge.
-    global question, bilan_session, MOMENTS  # noqa: PLW0603
-    from auto_evaluation import MOMENTS, bilan_session, question  # noqa: F401
+    spec = importlib.util.spec_from_file_location("auto_evaluation", _MODULE_PATH)
+    fresh = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(fresh)
+    sys.modules["auto_evaluation"] = fresh
+    # Mise a jour des noms du module global pour les asserts ci-dessous.
+    globals()["question"] = fresh.question
+    globals()["bilan_session"] = fresh.bilan_session
+    globals()["MOMENTS"] = fresh.MOMENTS
+    globals()["auto_evaluation"] = fresh
 
     # Mode non-interactif : on injecte un get_ipython qui rend None
     # dans le namespace du module (equivalent Papermill).
-    monkeypatch.setattr(auto_evaluation, "get_ipython", lambda: None, raising=False)
+    monkeypatch.setattr(fresh, "get_ipython", lambda: None, raising=False)
 
     for moment in ("avant", "pendant", "apres", "avant"):
         question(
