@@ -20,6 +20,7 @@
 -/
 
 import Knots.Basic_en
+import Knots.Reidemeister_en
 
 namespace Knots_en
 

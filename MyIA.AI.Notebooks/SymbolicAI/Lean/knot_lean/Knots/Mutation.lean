@@ -13,6 +13,7 @@
 -/
 
 import Knots.Basic
+import Knots.Reidemeister
 
 namespace Knots
 
