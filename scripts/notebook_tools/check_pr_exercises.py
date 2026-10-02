@@ -103,6 +103,12 @@ class NotebookVerdict:
     credited_lost: int = 0
     credited_lost_unexempted: int = 0
     credited_lost_titles: list[str] = field(default_factory=list)
+    # #18761 — visible status of the credited-diff computation. 'ok' if the diff
+    # was computed; 'skipped' if no base_ref; 'error: <type>' if it failed.
+    # The advisory workflow reads this to decide whether to pose the
+    # 'credited-examples-lost' label (only when status == 'ok' AND
+    # credited_lost_unexempted > 0).
+    credited_diff_status: str = "skipped"
 
 
 @dataclass
@@ -126,20 +132,36 @@ class CheckResult:
         "measured, below threshold" (below_threshold) and one for "could not
         measure" (unparseable). The workflow raises each when its count is > 0,
         and crucially never claims "all conform" while ``unverified > 0``.
+
+        #18761: the ``credited_diff_statuses`` field exposes per-notebook the
+        status of the credited-diff computation. The advisory NEVER poses the
+        ``credited-examples-lost`` label when ANY notebook reports a non-OK
+        status (i.e. ``error: ...``); it reports a "diff-error" advisory
+        instead, so a broken diff doesn't masquerade as "0 verified".
         """
         n_sub = len(self.sub_threshold)
         n_parse = len(self.parse_errors)
         n_ok = len(self.ok)
         n_out = len(self.out_of_corpus)
+        # #18761 — agrège les statuts du credited-diff sur l'ensemble des
+        # notebooks in-corpus. Une seule erreur bloque la pose du label
+        # credited-examples-lost.
+        diff_statuses = [
+            v.credited_diff_status
+            for v in (self.sub_threshold + self.ok + self.parse_errors)
+        ]
+        diff_errors = [s for s in diff_statuses if s.startswith("error:")]
         return {
             "labels": {
                 "below_threshold": {"name": LABEL_NAME, "count": n_sub},
                 "unparseable": {"name": LABEL_UNPARSEABLE, "count": n_parse},
-                # #18740 — nouveau label (le workflow ne le leve pas encore ;
-                # c'est une PR de suivi, voir issue).
+                # #18740 / #18761 -- label pose ONLY si tous les credited-diff
+                # ont reussi (pas d'error: dans diff_statuses) ET count > 0.
                 "credited_examples_lost": {
                     "name": "credited-examples-lost",
-                    "count": self.credited_lost_unexempted_total,
+                    "count": self.credited_lost_unexempted_total
+                    if not diff_errors else 0,
+                    "blocked_by_errors": len(diff_errors),
                 },
             },
             "summary": {
@@ -159,11 +181,18 @@ class CheckResult:
                 # #18740
                 "credited_lost_total": self.credited_lost_total,
                 "credited_lost_unexempted": self.credited_lost_unexempted_total,
+                # #18761
+                "credited_diff_errors": len(diff_errors),
             },
             "sub_threshold": [asdict(v) for v in self.sub_threshold],
             "ok": [asdict(v) for v in self.ok],
             "out_of_corpus": [asdict(v) for v in self.out_of_corpus],
             "parse_errors": [asdict(v) for v in self.parse_errors],
+            # #18761 -- detail de chaque credited-diff pour le log.
+            "credited_diff_per_notebook": [
+                {"path": v.path, "status": v.credited_diff_status}
+                for v in (self.sub_threshold + self.ok + self.parse_errors)
+            ],
         }
 
 
@@ -242,11 +271,17 @@ def check_notebooks(
                 verdict.credited_lost = len(diff["lost"])
                 verdict.credited_lost_unexempted = len(lost_unexempted)
                 verdict.credited_lost_titles = [e["title"] for e in lost_unexempted]
+                verdict.credited_diff_status = "ok"
                 result.credited_lost_total += len(diff["lost"])
                 result.credited_lost_unexempted_total += len(lost_unexempted)
             except Exception as exc:  # pragma: no cover -- git blob may fail
+                # #18761 -- surface the error visibly: status='error: <type>'
+                # is the only field the advisory workflow relies on to NOT
+                # pose the label. detail carries the message for the log.
+                err_type = type(exc).__name__
+                verdict.credited_diff_status = f"error: {err_type}"
                 verdict.detail = (
-                    verdict.detail + f" | credited-diff error: {type(exc).__name__}"
+                    verdict.detail + f" | credited-diff error: {err_type}: {exc}"
                 ).strip(" |")
 
         if cnt.count < threshold:

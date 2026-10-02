@@ -40,6 +40,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -173,18 +174,26 @@ def _read_nb(path: Path) -> dict:
 def _read_git_blob(ref: str, nb_path: str) -> Path:
     """Dump le notebook sur la ref git vers un fichier temporaire, retourne le Path.
 
-    Utilise `git show <ref>:<path>`. Le fichier ecrit est
-    ``/tmp/<basename>-<ref_sanitized>.ipynb`` ; on ne le supprime pas
-    (le caller nettoie s'il veut, on reste conservateur).
+    Utilise `git show <ref>:<path>`. Le fichier ecrit est un tempfile
+    portable (``tempfile.mkstemp``, pas ``Path('/tmp')`` -- ce dernier
+    casse sous Windows et n'est pas garanti sous Linux sans $TMPDIR).
+    On ne supprime pas le fichier (le caller nettoie s'il veut, on reste
+    conservateur).
     """
+    import tempfile
     blob = subprocess.check_output(
         ["git", "show", f"{ref}:{nb_path}"],
         stderr=subprocess.PIPE, encoding="utf-8", errors="replace",
     )
     safe = re.sub(r"[^A-Za-z0-9._-]", "_", ref)
-    tmp = Path("/tmp") / f"{Path(nb_path).name}-{safe}.ipynb"
-    tmp.write_text(blob, encoding="utf-8")
-    return tmp
+    stem = Path(nb_path).stem
+    fd, name = tempfile.mkstemp(
+        suffix=".ipynb",
+        prefix=f"{stem}-{safe}-",
+    )
+    os.close(fd)
+    Path(name).write_text(blob, encoding="utf-8")
+    return Path(name)
 
 
 def count_credited_examples(nb: dict) -> list[dict]:
