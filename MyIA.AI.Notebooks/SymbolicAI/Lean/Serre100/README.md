@@ -18,6 +18,7 @@ Le geste « distillation » : prendre un énoncé ou une construction centrale d
 | 08 | [08-serre-dans-mathlib.ipynb](08-serre-dans-mathlib.ipynb) | Tour des cinq « Serre » de Mathlib — le versant preuves du diptyque (index : grain 9 #16374) | Lean 4 (kernel `lean4-wsl`, lake [`serre100_lean/`](serre100_lean/)) |
 | 09 | [09-congruences-tau-lacunarite-delta.ipynb](09-congruences-tau-lacunarite-delta.ipynb) | τ de Ramanujan — congruence mod 691, borne de Deligne, lacunarité des puissances de η (Euler, Jacobi, Serre) | Python stdlib + matplotlib |
 | 10 | [10-empilements-borne-lp-cohn-elkies.ipynb](10-empilements-borne-lp-cohn-elkies.ipynb) | Bornes d'empilements de sphères par LP (Cohn–Elkies, lignée Odlyzko–Serre) — Poisson mesuré, LP naïf autopsié, LP certifié par intervalles | numpy + scipy (HiGHS) + matplotlib |
+| 15 | [15-quatre-carres-lagrange.ipynb](15-quatre-carres-lagrange.ipynb) | Théorème de Lagrange — tout entier est somme de quatre carrés ; algorithme de Lagrange/Jacobi, formule de Jacobi pour r₄(n), identité de Brahmagupta–Fibonacci (quaternions) | Python stdlib (math.isqrt) |
 
 ## Conventions
 
