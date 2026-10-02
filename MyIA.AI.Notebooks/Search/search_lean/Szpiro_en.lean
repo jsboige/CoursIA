@@ -76,8 +76,8 @@ Mathlib's own `primeFactorsList_two`): `Squarefree` via
 `squarefree_iff_nodup_primeFactorsList`, parity on the reduced list. -/
 theorem admissible_trente_quinze : AdmissibleFactorization 15 2 := by
   refine ⟨by decide, ?_, ?_⟩
-  · exact (Nat.squarefree_iff_nodup_primeFactorsList (by decide)).2 (by simp [Nat.primeFactorsList])
-  · have h15 : Nat.primeFactorsList 15 = [3, 5] := by simp [Nat.primeFactorsList]
+  · exact (Nat.squarefree_iff_nodup_primeFactorsList (by decide)).2 (by simp)
+  · have h15 : Nat.primeFactorsList 15 = [3, 5] := by simp
     rw [h15]
     exact ⟨1, rfl⟩
 

@@ -70,8 +70,8 @@ Preuve par réécriture sur les équations de `primeFactorsList` (idiome de
 `squarefree_iff_nodup_primeFactorsList`, parité sur la liste réduite. -/
 theorem admissible_trente_quinze : AdmissibleFactorization 15 2 := by
   refine ⟨by decide, ?_, ?_⟩
-  · exact (Nat.squarefree_iff_nodup_primeFactorsList (by decide)).2 (by simp [Nat.primeFactorsList])
-  · have h15 : Nat.primeFactorsList 15 = [3, 5] := by simp [Nat.primeFactorsList]
+  · exact (Nat.squarefree_iff_nodup_primeFactorsList (by decide)).2 (by simp)
+  · have h15 : Nat.primeFactorsList 15 = [3, 5] := by simp
     rw [h15]
     exact ⟨1, rfl⟩
 
