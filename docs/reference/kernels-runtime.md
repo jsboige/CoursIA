@@ -173,7 +173,7 @@ Les **4 notebooks de la strate Φ** — ceux dont les outputs **committés** vie
 |---|---|---:|---|---|---|
 | `ICT-01-PhiTrajectories-Python` | 10 · 4 → 4 | aucune dérive | aucun | 0 `exec_count` nul, 0 erreur | — |
 | `ICT-05-CausalEmergence-Python` | 10 · 0 → 0 | aucune dérive | aucun | 0 / 0 | 12 s |
-| `ICT-18-ArrowOfTimeReversibilization` | 14 · 1 → 1 | aucune dérive | aucun | 0 / 0 | 7 s |
+| `ICT-18-ArrowOfTimeReversibilization-Python` | 14 · 1 → 1 | aucune dérive | aucun | 0 / 0 | 7 s |
 | `ICT-Synthese-CrossSubstrat` | 14 · 1 → 1 | aucune dérive | aucun | 0 / 0 | 55 s |
 
 Et le garde lui-même, sur l'état **commité** : `OK: 0 kernel-drift regression across **4** changed notebooks`.
