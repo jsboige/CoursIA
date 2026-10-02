@@ -10,15 +10,14 @@ name: Local path waiver guard
 on:
   issue_comment:
     types: [created, edited]
+  # Pas de filtre `paths:` (#18853, review ai-01 5395319838) : il supprimait le
+  # run `pull_request` sur presque toutes les PRs, or c'est la SEULE surface ou
+  # l'avertissement s'affiche sur la PR -- le run `issue_comment` s'attache a
+  # `main`, jamais a la tete de PR. Un garde dont le verdict doit rester visible
+  # sur la PR ne peut pas etre filtre par chemins ; le sparse-checkout suffit au
+  # gain de temps (91 s -> ~6 s).
   pull_request:
     types: [opened, synchronize, reopened]
-    paths:
-      - 'scripts/check_local_path_waivers.py'
-      # Self-cover (#8822) : un workflow filtre par chemins doit lister son
-      # propre fichier en premier. Sans cela, la PR qui retire le dernier
-      # chemin filtre ne le re-declenche plus -- le job ne peut alors plus ni
-      # re-mesurer ni retirer ce qu'il a pose, et son verdict survit a sa cause.
-      - '.github/workflows/local-path-waiver-guard.yml'
   workflow_dispatch:
     inputs:
       pr_number:
