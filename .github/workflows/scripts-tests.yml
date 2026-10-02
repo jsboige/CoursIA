@@ -47,6 +47,11 @@ on:
       # run hermetically without agent_framework (see pytest step).
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/forensic_guards.py'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_forensic_guards.py'
+      # #18709 provider gate: the suite stubs the LLM stack at import (test
+      # file top) so it collects on a bare CPU runner -- wiring it here makes
+      # the credential gate an effective CI guard (finding Hermes PR #18722).
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/provider_gate.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_provider_gate_18709.py'
       # #11349 native_decide ratchet rewire: scripts/lean/tests/test_proof_integrity_audit_wiring.py
       # pins the conway_lean proof-integrity-audit allow-list to the build-enumerated
       # footprint (61 names after #11368). The test lives under scripts/** so its only
@@ -111,6 +116,9 @@ on:
       # #6790 prover forensic-guards (mirror of the push paths above).
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/forensic_guards.py'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_forensic_guards.py'
+      # #18709 provider gate (mirror of the PR paths above).
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/provider_gate.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_provider_gate_18709.py'
       # #11349 native_decide ratchet rewire (mirror of the push paths above).
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.lean'
@@ -341,6 +349,7 @@ jobs:
             MyIA.AI.Notebooks/QuantConnect/scripts/tests \
             MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_bg_tree_lock.py \
             MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_forensic_guards.py \
+            MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_provider_gate_18709.py \
             MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/tests \
             scripts/secrets/tests \
             scripts/quantconnect/tests \

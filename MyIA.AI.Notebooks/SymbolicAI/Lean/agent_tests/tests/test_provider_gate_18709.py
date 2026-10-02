@@ -15,11 +15,67 @@ overrides, (2) la semantique diagnosis (gate seulement si active/override),
 
 import sys
 import tempfile
+import types
 import unittest
 from pathlib import Path
 from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+
+def _stub_llm_stack_if_absent() -> None:
+    """Stub la stack LLM absente des runners CI nus (finding Hermes PR #18722).
+
+    ``prover/__init__`` tire ``provers``/``workflow``/``config`` qui importent
+    ``agent_framework`` / ``agent_framework_openai`` au top-level : sur un
+    runner CPU sans la stack, ces imports cassent la COLLECTE pytest avant
+    meme que les fixtures ne jouent. Ces tests ne declenchent jamais d'appel
+    LLM (constructeur mocke via mock.patch.object), des placeholders
+    suffisent. Si la vraie stack est presente (machine de dev), elle est
+    utilisee telle quelle -- le stub ne s'active que sur ImportError.
+    """
+    try:
+        import agent_framework  # noqa: F401
+        return  # vraie stack disponible : rien a stubber
+    except ImportError:
+        pass
+
+    class _Placeholder:
+        def __init__(self, *args, **kwargs):
+            raise RuntimeError(
+                "stub agent_framework : suite jouee sans stack LLM"
+            )
+
+        @classmethod
+        def __class_getitem__(cls, item):  # annotations generiques
+            return cls                      # (WorkflowContext[ProofMessage])
+
+    def _handler(*args, **kwargs):
+        # Decorateur : usage nu ``@handler`` (workflow.py) -- pass-through.
+        if len(args) == 1 and not kwargs and callable(args[0]):
+            return args[0]
+        return lambda f: f
+
+    af = types.ModuleType("agent_framework")
+    for name in (
+        "Agent",
+        "ChatOptions",
+        "Executor",
+        "WorkflowBuilder",
+        "WorkflowContext",
+        "Case",
+        "Default",
+        "ToolResultCompactionStrategy",
+    ):
+        setattr(af, name, _Placeholder)
+    af.handler = _handler
+    sys.modules["agent_framework"] = af
+    afo = types.ModuleType("agent_framework_openai")
+    afo.OpenAIChatCompletionClient = _Placeholder
+    sys.modules["agent_framework_openai"] = afo
+
+
+_stub_llm_stack_if_absent()
 
 from prover import run_prover_bg as inner  # noqa: E402
 from prover.provider_gate import (  # noqa: E402
