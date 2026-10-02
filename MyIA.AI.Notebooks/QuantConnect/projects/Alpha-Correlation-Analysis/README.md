@@ -124,7 +124,7 @@ jupyter nbconvert --execute "MyIA.AI.Notebooks/QuantConnect/projects/Alpha-Corre
 
 ## Fichiers
 
-- `quantbook.ipynb` — 38 cellules (37 code + 1 markdown d'origine). **Source unique de vérité** pour les chiffres. Outputs cell[22]/[28]/[34]/[36] préservés. Disclaimer #8772 en cell[2].
+- `quantbook.ipynb` — **Source unique de vérité** pour les chiffres. Outputs cell[22]/[28]/[34]/[36] préservés. Disclaimer #8772 en cell[2].
 - `README.md` (ce fichier) — Vue d'ensemble + multi-source + lecture honnête (c.1285 fix).
 
 ## Références
