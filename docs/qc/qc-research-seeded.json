@@ -15,8 +15,8 @@
   "21066": {
    "url": "https://www.quantconnect.com/research/21066/intraday-volume-periodicity/",
    "lastmod": "2026-07-29T18:05:32+00:00",
-   "seeded_at": "2026-10-02",
-   "issue": 18804
+   "seeded_at": null,
+   "issue": null
   },
   "21050": {
    "url": "https://www.quantconnect.com/research/21050/cross-asset-etf-momentum-with-a-correlation-based-short-hedge/",
