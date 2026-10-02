@@ -82,6 +82,12 @@ def test_quoted_dormant_stance_is_not_live():
     [
         "Statut corrigé : ce fut un oubli, pas une position.",
         "Statut corrigé. Ce n'était pas une position, juste un oubli.",
+        # Measured 2026-10-01: the three rectification phrasings the #13906
+        # repair pattern produces, each suppressing the stance signal while
+        # the dormant wording survives below in preserved historical prose.
+        "Les mentions « ne pas démarrer » du corps historique ci-dessous ne décrivent plus son état.",
+        "La contradiction institutionnelle décrite ci-dessous ne tient plus sous sa forme initiale.",
+        "Nouvelle classe de faux positif du signal 2, mesurée ce jour.",
     ],
 )
 def test_explicit_corrected_status_overrides_preserved_historical_prose(correction):
@@ -96,6 +102,34 @@ def test_explicit_corrected_status_overrides_preserved_historical_prose(correcti
     )
 
     assert analyze_epics([epic], [_pr(6542, "See #1210")]) == []
+
+
+def test_rectification_header_unquotes_stance_on_measured_11690_shape():
+    """Regression (2026-10-01): #11690 stayed flagged after its rectification.
+
+    The rectification lives in prose under a heading, the dormant wording in
+    preserved historical prose below it (not in a block quote, so the quote
+    exclusion cannot apply). The retraction marker must suppress the stance
+    signal while the unrecorded-delivery signal stays independent.
+    """
+    epic = Epic(
+        11690,
+        "[EPIC][ICT] Consolidation de la serie",
+        (
+            "## État de travail vérifié le 2026-09-08\n\n"
+            "**La lecture a démarré et a livré.** Les mentions « ne pas démarrer » "
+            "du corps historique ci-dessous ne décrivent plus son état.\n\n"
+            "---\n\n"
+            "## Corps historique conservé intégralement\n\n"
+            "**Cette issue n'est pas à démarrer.** Elle existe pour fixer le mandat."
+        ),
+    )
+
+    findings = analyze_epics([epic], [_pr(17861, "See #11690")])
+    assert len(findings) == 1
+    assert findings[0].unrecorded_merged == (17861,)
+    assert findings[0].stance_contradicted is False
+    assert findings[0].stance_pattern is None
 
 
 @pytest.mark.parametrize(

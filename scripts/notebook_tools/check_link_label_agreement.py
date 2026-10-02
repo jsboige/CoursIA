@@ -4,10 +4,10 @@
 Pourquoi cet outil existe
 -------------------------
 Incident fondateur #13645. Le renommage `ICT-15d-NerveDiscriminant.ipynb` ->
-`ICT-15j-NerveDiscriminant.ipynb` (commit `641be890a4`, refactor(notebooks,#12375))
+`ICT-15j-NerveDiscriminant-Python.ipynb` (commit `641be890a4`, refactor(notebooks,#12375))
 a mis a jour le **href** et laisse le **texte affiche** a l'ancien identifiant :
 
-    [ICT-15d](../../IIT/ICT-Series/ICT-15j-NerveDiscriminant.ipynb)
+    [ICT-15d](../../IIT/ICT-Series/ICT-15j-NerveDiscriminant-Python.ipynb)
 
 Un lecteur qui suit « ICT-15d » atterrit sur ICT-15j. Le defaut a ete trouve a
 l'oeil, dans un notebook Lean qui n'etait meme pas dans le perimetre du renommage.
@@ -121,11 +121,11 @@ def cell_sources(nb_path: Path):
 
 SELF_TEST_CASES = [
     # (source, nb_findings_attendus, intitule)
-    ("L'erreur du premier Cech affine ([ICT-15d](../../IIT/ICT-Series/ICT-15j-NerveDiscriminant.ipynb)) "
+    ("L'erreur du premier Cech affine ([ICT-15d](../../IIT/ICT-Series/ICT-15j-NerveDiscriminant-Python.ipynb)) "
      "ne se corrige pas...", 1, "#13645 verbatim -- doit ROUGIR"),
-    ("[ICT-15j](../../IIT/ICT-Series/ICT-15j-NerveDiscriminant.ipynb)", 0, "libelle exact -- doit passer"),
-    ("[le notebook sur le nerf](ICT-15j-NerveDiscriminant.ipynb)", 0, "libelle en prose -- doit passer"),
-    ("[ICT-15j -- Nerve Discriminant](ICT-15j-NerveDiscriminant.ipynb)", 0, "libelle titre complet -- doit passer"),
+    ("[ICT-15j](../../IIT/ICT-Series/ICT-15j-NerveDiscriminant-Python.ipynb)", 0, "libelle exact -- doit passer"),
+    ("[le notebook sur le nerf](ICT-15j-NerveDiscriminant-Python.ipynb)", 0, "libelle en prose -- doit passer"),
+    ("[ICT-15j -- Nerve Discriminant](ICT-15j-NerveDiscriminant-Python.ipynb)", 0, "libelle titre complet -- doit passer"),
     ("[Lean-16](../Lean/Lean-16e-Something.ipynb)", 1, "lettre perdue au libelle -- doit ROUGIR"),
     ("[GameTheory-03e](GameTheory-03e-Chambers.ipynb)", 0, "accretion coherente -- doit passer"),
     ("[voir Search-9](Search-11c-Advanced.ipynb)", 1, "numero different -- doit ROUGIR"),
