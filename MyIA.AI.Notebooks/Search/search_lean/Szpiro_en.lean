@@ -59,6 +59,7 @@ namespace Szpiro_en
 /-- Admissible factorization `N = D * M` in the sense of Pasten 2026
 (definition preceding Theorem 1.1): `D` and `M` coprime, `D` squarefree, and
 `D` with an **even** number of prime factors. -/
+@[reducible]
 def AdmissibleFactorization (D M : ℕ) : Prop :=
   D.gcd M = 1 ∧ Squarefree D ∧ D.primeFactorsList.length % 2 = 0
 

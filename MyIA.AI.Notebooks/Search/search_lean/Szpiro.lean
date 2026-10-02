@@ -53,6 +53,7 @@ namespace Szpiro
 /-- Factorisation admissible `N = D * M` au sens de Pasten 2026 (définition qui
 précède le théorème 1.1) : `D` et `M` premiers entre eux, `D` sans facteur
 carré, et `D` comptant un nombre **pair** de facteurs premiers. -/
+@[reducible]
 def AdmissibleFactorization (D M : ℕ) : Prop :=
   D.gcd M = 1 ∧ Squarefree D ∧ D.primeFactorsList.length % 2 = 0
 
