@@ -3,7 +3,6 @@ Copyright (c) 2026 CoursIA. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import Grothendieck.GodementMono
-import Mathlib.Algebra.Category.Grp.Kernels
 
 /-!
 # La résolution canonique de Godement : la suite `F → C⁰F → C⁰²F → ⋯`
@@ -83,24 +82,19 @@ noncomputable def godementDZero (F : X.Presheaf AddCommGrpCat.{u}) :
 -- **uniquement** la différentielle degré 0 (ci-dessus) et la null-homotopie
 -- demeure un statement ouvert. Voir `acyclic_godementF` en Partie 88.
 
-/-- Le **complexe court de Godement tronqué au degré 1** : `F --μ→ C⁰F --d⁰→ C⁰²F`,
-avec `μ := toGodement F` (l'unité de `C⁰`) et `d⁰ := godementDiff F` (l'image
-de `C⁰F` par `C⁰`).
-
-**NOTE** : le `ShortComplex` Mathlib 4 exige `zero : f ≫ g = 0` comme champ,
-avec default `by cat_disch`. Or `toGodement F ≫ godementDiff F = 0` est
-la **null-homotopie** `μ ≫ d⁰ = 0`, qui est le **named frontier** reporté
-par cette Partie 87 (Tell c.1453 strict — statement volontairement non-posé,
-preuve attendue en Partie 88 `acyclic_godementF`). Le default `by cat_disch`
-échoue donc systématiquement, et fournir une preuve explicite violerait
-Tell c.1453 strict.
-
-**Conséquence** : `godementResolutionKernel` n'est **pas** posé comme
-`ShortComplex` ici. La chaîne tronquée `F --μ→ C⁰F --d⁰→ C⁰²F` est posée
-**morphisme par morphisme** (`μ` est `toGodement F`, `d⁰` est `godementDiff F`),
-et l'allongement au complexe `0 → F → C⁰F → C⁰²F → C⁰³F → ⋯` est l'objet
-de la Partie 88 (préservation des noyaux par `C⁰`). -/
--- (Le `ShortComplex godementResolutionKernel` est volontairement NON-POSÉ ici.)
+-- NOTE : le `ShortComplex` Mathlib 4 exige `zero : f ≫ g = 0` comme champ,
+-- avec default `by cat_disch`. Or `toGodement F ≫ godementDiff F = 0` est
+-- la **null-homotopie** `μ ≫ d⁰ = 0`, qui est le **named frontier** reporté
+-- par cette Partie 87 (Tell c.1453 strict — statement volontairement non-posé,
+-- preuve attendue en Partie 88 `acyclic_godementF`). Le default `by cat_disch`
+-- échoue donc systématiquement, et fournir une preuve explicite violerait
+-- Tell c.1453 strict.
+--
+-- Conséquence : `godementResolutionKernel` n'est **pas** posé comme
+-- `ShortComplex` ici. La chaîne tronquée `F --μ→ C⁰F --d⁰→ C⁰²F` est posée
+-- **morphisme par morphisme** (`μ` est `toGodement F`, `d⁰` est `godementDiff F`),
+-- et l'allongement au complexe `0 → F → C⁰F → C⁰²F → C⁰³F → ⋯` est l'objet
+-- de la Partie 88 (préservation des noyaux par `C⁰`).
 
 /-- **L'exactitude en degré 0** : pour tout ouvert `U`, le morphisme
 `(toGodement F).app (op U) : F(U) ⟶ C⁰F(U)` est injectif quand `F` est un

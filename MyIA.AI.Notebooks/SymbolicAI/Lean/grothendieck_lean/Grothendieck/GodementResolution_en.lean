@@ -3,7 +3,6 @@ Copyright (c) 2026 CoursIA. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import Grothendieck.GodementResolution
-import Mathlib.Algebra.Category.Grp.Kernels
 
 /-!
 # The canonical Godement resolution: the chain `F → C⁰F → C⁰²F → ⋯`
@@ -68,21 +67,13 @@ namespace Grothendieck_en
 
 variable {X : TopCat.{u}}
 
-/-- The canonical morphism `C⁰F → C⁰(C⁰F)`: the image of `C⁰F` by the natural
-transformation `toGodement` (the unit `F → C⁰F` of the `C⁰` functor). This is
-the **degree-0 differential** of the Godement complex.
-OK-CONSUMER sibling: re-exported from `Grothendieck.godementDiff`. -/
-noncomputable def godementDiff (F : X.Presheaf AddCommGrpCat.{u}) :
-    Grothendieck.godementPresheaf F ⟶
-      Grothendieck.godementPresheaf (Grothendieck.godementPresheaf F) :=
-  Grothendieck.godementDiff F
-
-/-- **The degree-0 differential viewed as morphism**: `d⁰ : C⁰F → C⁰(C⁰F)`.
-OK-CONSUMER sibling: re-exported from `Grothendieck.godementDZero`. -/
-noncomputable def godementDZero (F : X.Presheaf AddCommGrpCat.{u}) :
-    Grothendieck.godementPresheaf F ⟶
-      Grothendieck.godementPresheaf (Grothendieck.godementPresheaf F) :=
-  Grothendieck.godementDZero F
+-- **OK-CONSUMER sibling**: the declarations `godementDiff`, `godementDZero`,
+-- and `godementResolution_exact₀` are imported from
+-- `Grothendieck.GodementResolution` (FR) and accessed in the
+-- `Grothendieck_en` namespace as `Grothendieck.godementDiff`,
+-- `Grothendieck.godementDZero`, and `Grothendieck.godementResolution_exact₀`.
+-- We do not redeclare them here to keep bodies byte-identical with FR
+-- (the OK-CONSUMER i18n invariant of [docs/lean/i18n-sibling-patterns.md]).
 
 -- **The composite `μ ≫ d⁰`** : statement **voluntarily not posed** here
 -- (Tell c.1453 strict — no unauthorized `sorry` outside calibration module).
@@ -104,16 +95,10 @@ noncomputable def godementDZero (F : X.Presheaf AddCommGrpCat.{u}) :
 -- chain is stated morphisme by morphisme (`μ`, `d⁰`) above.
 -- (no corresponding `def godementResolutionKernel` in this `_en` file)
 
-/-- **Exactness at degree 0**: for every open `U`, the morphism
-`(toGodement F).app (op U) : F(U) ⟶ C⁰F(U)` is injective when `F` is a sheaf.
-This is precisely the content of `injective_toGodement_of_isSheaf` (P84),
-replayed on each open. The converse (`ker(d⁰) ⊆ im(μ)`) is the object of
-Part 88 (acyclicity `H¹ = 0`).
-OK-CONSUMER sibling: re-exported from `Grothendieck.godementResolution_exact₀`. -/
-theorem godementResolution_exact₀ (F : X.Presheaf AddCommGrpCat.{u})
-    (hF : TopCat.Presheaf.IsSheaf F)
-    (U : Opens X) :
-    Function.Injective ((Grothendieck.toGodement F).app (op U)) :=
-  Grothendieck.godementResolution_exact₀ F hF U
+-- **Exactness at degree 0** is inherited from
+-- `Grothendieck.godementResolution_exact₀` via the OK-CONSUMER import — for
+-- every open `U`, the morphism `(toGodement F).app (op U) : F(U) ⟶ C⁰F(U)`
+-- is injective when `F` is a sheaf. The converse (`ker(d⁰) ⊆ im(μ)`) is
+-- the object of Part 88 (acyclicity `H¹ = 0`).
 
 end Grothendieck_en
