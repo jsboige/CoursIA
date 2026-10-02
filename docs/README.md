@@ -125,9 +125,19 @@ Iteration history prover, intractable diagnosis, LLM endpoints. **Index du sous-
 | [lean/mimo-converse-cartography.md](lean/mimo-converse-cartography.md) | Cartographie converse MIMO (#11152) — correspondance brique → source, mesurée le 2026-08-16 sur le Mathlib et le SLT du manifest `mimo_lean` courant |
 | [lean/junctions-scan-po-2026.md](lean/junctions-scan-po-2026.md) | Scan des jonctions NTFS Mathlib sur `myia-po-2026` (2026-09-01) — #13962, enfant de #4362 (mutualisation du cluster) |
 | [lean/cluster-junctions-c857.md](lean/cluster-junctions-c857.md) | Scan de mutualisation Mathlib à l'échelle du cluster (c.857, po-2024, 2026-09-02) — pendant du précédent, vue multi-machines |
-| [reference/mbml-source-attribution.md](reference/mbml-source-attribution.md) | Attribution de source MBML/Infer.NET — table de correspondance notebook ↔ source canonique pour la série Probas/ (36 notebooks Infer + PyMC + 2 racine vs *MBML Book* Herbrich + TrueSkill 2007 + WinBUGS/JAGS). Établie audit distillation #8081 (c.803, 2026-07-23). Les 4 sous-items de backfill/archivage extraits en issues filles #8702-#8705. Réqualification #7422 (déplacement audit/ → reference/, retrait des verdicts/décisions de cycle). |
 
 > Note : `lean/stable_marriage_intractable_diagnosis.md` a été déplacé vers [archive/lean-intractable-diagnosis/stable-marriage.md](archive/lean-intractable-diagnosis/stable-marriage.md) (archivé c.696).
+
+## Probabilités (docs/probas/)
+
+Index de découvrabilité pour la série Probabilités (`MyIA.AI.Notebooks/Probas/`) — symétrique des sections Lean et GenAI. **Index du sous-répertoire :** [probas/README.md](probas/README.md) — point d'entrée qui regroupe les références déportées (portage Infer.NET → Python, attribution MBML, piliers SOTA, prérequis kernel, pièges). Établi par po-2027 (#18671) en cycle du 2026-10-01.
+
+| Fichier | Description |
+|---------|-------------|
+| [reference/probas-history.md](reference/probas-history.md) | **Référence pérenne** du portage Infer.NET → Python (`Probas/`) — périmètre intentionnel (combien de carnets, quelle bibliothèque pour quel concept) + recommandation PyMC/NumPyro/pgmpy/hmmlearn/Pyro. Source canonique issue #297. Le mapping d'API ligne-à-ligne y est explicitement marqué *périssable* (poison si non re-testé). |
+| [reference/mbml-source-attribution.md](reference/mbml-source-attribution.md) | Attribution de source MBML/Infer.NET — table de correspondance carnet ↔ source canonique pour la série Probas/ (36 carnets Infer + PyMC + 2 racine vs *MBML Book* Herbrich + TrueSkill 2007 + WinBUGS/JAGS). Établie audit distillation #8081 (c.803, 2026-07-23). Les 4 sous-items de backfill/archivage extraits en issues filles #8702-#8705. Réqualification #7422 (déplacement audit/ → reference/, retrait des verdicts/décisions de cycle). |
+
+> Note : `mbml-source-attribution.md` figure ici dans la section Probabilités ; une copie Lean existait par inertie historique (placement initial c.803), retirée par ce déplacement. Ne pas réintroduire la copie Lean.
 
 ## ICT (docs/ict/)
 

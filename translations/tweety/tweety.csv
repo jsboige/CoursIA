@@ -19520,7 +19520,7 @@ L'Epic [#4667](../../../../../issues/4667) (port C# / IKVM de la serie Tweety) a
 
 > *Le runtime IKVM s'initialise-t-il dans `dotnet-interactive` ?*
 
-Les précédentes tentatives (cf. notebook `Sudoku-11-Choco-Csharp.ipynb` avant [#4711](https://github.com/jsboige/CoursIA/pull/4711)) butaient sur deux verrous :
+Les précédentes tentatives (cf. notebook `Sudoku-11-Choco-CSharp.ipynb` avant [#4711](https://github.com/jsboige/CoursIA/pull/4711)) butaient sur deux verrous :
 
 1. `Could not load file or assembly 'System.Text.Json, Version=8.0.0.5'` - conflit d'assembly entre IKVM 8.15 et la version fournie par `dotnet-interactive`.
 2. `Could not locate ikvm home path` - IKVM 8.15 ne consulte pas la variable d'env `IKVM_HOME` ; il lit `AppContext[""IKVM.Home""]`.

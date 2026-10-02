@@ -1,5 +1,5 @@
 """
-Execute Sudoku-14-BDD-Csharp.ipynb cell-by-cell via .net-csharp kernel.
+Execute Sudoku-14-BDD-CSharp.ipynb cell-by-cell via .net-csharp kernel.
 Uses jupyter_client to connect to the kernel, execute each code cell,
 capture outputs, and save the notebook back with results.
 """
@@ -8,7 +8,7 @@ import time
 import sys
 from jupyter_client import KernelManager
 
-NB_PATH = r"d:\dev\CoursIA\MyIA.AI.Notebooks\Sudoku\Sudoku-14-BDD-Csharp.ipynb"
+NB_PATH = r"d:\dev\CoursIA\MyIA.AI.Notebooks\Sudoku\Sudoku-14-BDD-CSharp.ipynb"
 
 print(f"Loading notebook: {NB_PATH}")
 with open(NB_PATH, "r", encoding="utf-8") as f:
