@@ -233,3 +233,90 @@ quatre états est celle de M5 (`BEATS` / `NO BEATS` / `refuted-de-biased` / `INC
 il projette un niveau que la fin d'échantillon ne confirme pas. Ce biais ne sauve aucun verdict
 — il le plombe : sur SOL, la baseline HAR *surestime aussi*, et leurs biais s'annulent presque,
 ce qui rend la comparaison brute moins défavorable à HAR qu'elle ne devrait.
+
+## Revalidation cluster appariée par origine — 2026-09-30
+
+Le run Cycle 25 ci-dessus et le keeper run 2026-09-22 partagent un défaut de protocole que la
+revalidation cluster M17 (#18190) a exposé puis corrigé pour sa famille : les jambes DM **brute**
+et **calibrée** appariaient les erreurs des deux walk-forwards par **troncation positionnelle**
+(`errors[:min_len]`). Tant que DLinear et HAR émettent exactement les mêmes dates d'origine, la
+troncation est invisible ; dès qu'un fold est sauté d'un côté (`dropna` HAR, garde
+`train_slice_end < 10` DLinear), elle compare silencieusement des jours — donc des cibles —
+différents. La jambe recentrée (`dm_centered_*`, #12684) jointait déjà sur les dates ; les deux
+autres jambes non.
+
+Le correctif porte le protocole #18190 sur M4 :
+
+1. **Jointure par date d'origine** — `joined_pair_errors` (organe partagé `bias_metrics.py`)
+   joint les deux séries d'erreurs sur leurs dates communes (inner join), comme la jambe
+   recentrée le faisait déjà.
+2. **Validation des cibles partagées, fail-closed** — sur les dates jointes, les deux cibles
+   doivent être la même quantité réalisée (moyenne des `horizon` prochains log-RV) à 1e-8 près.
+   Un écart lève un verdict `TARGET_MISMATCH` explicite sur la combo (enregistré, jamais une
+   comparaison silencieuse de pertes incommensurables). La tolérance couvre l'ordre d'association
+   flottant (`np.mean` vs moyenne pandas), pas un vrai écart de cible.
+3. **Purge des cibles apprises** — vérifiée par construction : `train_slice_end = train_end -
+   seq_len - horizon + 1` borne la dernière cible d'entraînement à `train_end - 1`, avant la
+   frontière test (`test_start = train_end`). Aucune cible apprise ne franchit sa frontière.
+
+Run cluster : 7 actifs (BTC, ETH, SOL, LTC, XRP, ADA, DOT) × 3 horizons (1/5/10) × 4 graines
+(0/7/42/99), `--debias --loss-fn mse`, config publiée inchangée (`seq_len` 22, 5 folds, refit 22,
+100 époques, `decompose=False`). 84 combinaisons, 21 couples actif-horizon, 12 291 s. Diagnostic
+d'alignement : `dm_target_gap_max` = 0,0 sur les 21 couples, 0 refus, jointures stables across
+graines (BTC 1890/1870/1845, ETH 1240/1220/1195, cinq autres actifs 595/575/550).
+
+### Verdicts cluster
+
+| Actif | h | jambe calibrée (verdict doc) | jambe brute (4 états) | jambe précision (recentrée) | edge calibré | biais HAR OOS |
+|-------|---|------------------------------|-----------------------|-----------------------------|-------------:|--------------:|
+| BTC | 1  | **BEATS** (4/4, p 8,7e-11) | BEATS | **BEATS** (4/4, p 2,2e-09) | +10,9 % | −0,227 |
+| BTC | 5  | **BEATS** (4/4, p 8,7e-04) | BEATS | **BEATS** (4/4, p 8,9e-05) | +10,5 % | −0,343 |
+| BTC | 10 | INCONCLUSIVE (p 7,3e-02) | BEATS | refuted-de-biased | +9,6 % | −0,450 |
+| ETH | 1  | INCONCLUSIVE | BEATS | refuted-de-biased | +2,3 % | −0,081 |
+| ETH | 5  | INCONCLUSIVE | INCONCLUSIVE | INCONCLUSIVE | +1,5 % | −0,129 |
+| ETH | 10 | INCONCLUSIVE | INCONCLUSIVE | INCONCLUSIVE | +3,0 % | −0,173 |
+| SOL | 1  | **BEATS** (4/4, p 3,8e-03) | INCONCLUSIVE | INCONCLUSIVE (1/4) | +9,0 % | +0,063 |
+| SOL | 5  | INCONCLUSIVE | INCONCLUSIVE | INCONCLUSIVE | +5,2 % | +0,095 |
+| SOL | 10 | INCONCLUSIVE | **NO BEATS** | INCONCLUSIVE | +1,1 % | +0,127 |
+| LTC | 1/5/10 | INCONCLUSIVE | INCONCLUSIVE | INCONCLUSIVE | −0,3/+1,2/+4,1 % | +0,03 à +0,09 |
+| XRP | 1  | INCONCLUSIVE | INCONCLUSIVE | INCONCLUSIVE | −0,7 % | −0,012 |
+| XRP | 5  | INCONCLUSIVE | **NO BEATS** | INCONCLUSIVE | −0,2 % | −0,018 |
+| XRP | 10 | INCONCLUSIVE | **NO BEATS** | **NO BEATS** (4/4, p 3,3e-02) | +0,2 % | −0,016 |
+| ADA | 1/5 | INCONCLUSIVE | INCONCLUSIVE | INCONCLUSIVE | +1,0/+0,2 % | +0,07/+0,10 |
+| ADA | 10 | INCONCLUSIVE | **NO BEATS** | INCONCLUSIVE | −6,2 % | +0,138 |
+| DOT | 1  | INCONCLUSIVE | INCONCLUSIVE | INCONCLUSIVE | −2,0 % | +0,012 |
+| DOT | 5  | INCONCLUSIVE | **NO BEATS** | INCONCLUSIVE | −0,3 % | +0,014 |
+| DOT | 10 | INCONCLUSIVE | **NO BEATS** | INCONCLUSIVE | +0,8 % | +0,028 |
+
+**Verdict cluster : l'edge de précision de M4 est un phénomène BTC.** Sur la jambe recentrée,
+seuls BTC h=1 et BTC h=5 passent la conjonction (4/4 graines, p médian < 1e-04) ; **0/18 couples
+BEATS sur les six autres actifs**, dont XRP h=10 en `NO BEATS` significatif. Le « 5/21 BEATS » du
+run Cycle 25 ne survit pas au-delà de BTC : **ETH h=1** est `refuted-de-biased` (le BEATS brut
+était porté par le biais HAR, comme le keeper 2026-09-22 l'avait mesuré sur 3 pièces) et **SOL
+h=1** ne bat que la baseline *calibrée* — jambe brute 0/4 (p 0,20) et recentrée 1/4 : un edge
+qui n'existe que contre une baseline corrigée n'est pas un edge du modèle. Aux horizons longs
+(h=10 surtout), la jambe brute bascule : 7 couples `NO BEATS` (SOL, XRP×2, ADA, DOT×2, LTC h=10)
+— là où HAR ajoute le plus de structure, DLinear perd.
+
+Le mécanisme est lisible dans les biais : HAR sous-estime massivement la vol BTC (biais OOS
+−0,23 à −0,45, croissant avec l'horizon) mais est quasi neutre sur les petits actifs (|biais| ≤ 0,18 partout — seuls ADA h=10 (+0,138)
+et ETH h=10 (−0,173) dépassent 0,13 —, < 0,03 sur DOT/XRP) — le levier « dé-biaser la baseline » qui fabriquait l'edge
+apparent n'existe pas hors BTC. DLinear, lui, **surestime** les six autres actifs (+0,03 à
++0,28 selon pièce et horizon) : le même profil de biais qu'en 2026-09-22, confirmé cluster.
+
+**Ce que cette section ne rétro-modifie pas** : les sections précédentes restent le verdict de
+leurs jambes respectives (brute pour Cycle 25, recentrée pour le keeper) ; la présente ajoute la
+lecture cluster aux jambes appariées par origine. Les verdicts publiés de BTC h=1/h=5 sont
+**confirmés** ; ETH h=1 et SOL h=1 sont **rétrogradés** (refuté / calibré-seulement) par la
+mesure la plus complète du dépôt sur M4.
+
+Artefacts :
+
+| Fichier | Rôle |
+|---------|------|
+| `scripts/results/m4_dlinear_vol_cluster_aligned.json` | Manifeste compact in-repo (31 406 octets) : verdicts par couple, diagnostics d'alignement, SHA-256 par pièce des lignes complètes |
+| `G:\Mon Drive\MyIA\Dev\Trading\ML-Training-Pipeline\m4_dlinear_vol_cluster_full.json` | JSON complet avec séries par observation (11 753 743 octets, > 512 Ko → hors dépôt #15890) |
+
+Empreinte du manifeste (SHA-256, CRLF normalisé LF) : `1d25cbc7948e2a16` (préfixe — valeur
+complète dans le champ `artifact.sha256`). Régénération :
+`python scripts/dlinear_vol.py --coins BTC-USD ETH-USD SOL-USD LTC-USD XRP-USD ADA-USD DOT-USD --horizons 1 5 10 --seeds 0 7 42 99 --debias --loss-fn mse --out-json <full.json> --manifest-out results/m4_dlinear_vol_cluster_aligned.json` (reprise sur checkpoint : chaque combo terminé est appendé en JSONL et sauté au redémarrage).

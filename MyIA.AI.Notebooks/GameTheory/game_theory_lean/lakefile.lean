@@ -18,7 +18,7 @@ require mathlib from git
 -- module. Les absorptions de modules suivront en PR dediees (c.300+).
 --
 -- c.306 (po-2026) : ajout d'un second `lean_lib CooperativeGames` qui suit
--- le pattern `decision_theory_lean` (cf `Probas/decision_theory_lean/lakefile.lean`
+-- le pattern `decision_theory_lean` (cf `Probas/DecisionTheory/decision_theory_lean/lakefile.lean`
 -- ou `Gittins`/`Utility`/`Coherence` cohabitent comme libs distinctes du
 -- meme package `decision_theory_lean`). Cela valide la structure multi-lib
 -- du lake cible sans coupler `StableMarriage` et `CooperativeGames`

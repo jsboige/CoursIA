@@ -81,7 +81,7 @@ structure PDCrossing where
   e2 : Nat  -- incoming over
   e3 : Nat  -- outgoing under
   e4 : Nat  -- outgoing over
-  deriving BEq, Repr
+  deriving BEq, DecidableEq, Repr
 
 /-- A knot diagram is a list of PD-crossings with a crossing count. -/
 structure KnotDiagram where
@@ -93,7 +93,7 @@ structure KnotDiagram where
   -- intermediate diagram whose well-formedness holds only under the
   -- relation's hypotheses, so an intrinsic invariant would make the move
   -- unstatable (see design rationale on issue #8604).
-  deriving Repr
+  deriving DecidableEq, Repr
 
 /-! ## 5. Knot
 

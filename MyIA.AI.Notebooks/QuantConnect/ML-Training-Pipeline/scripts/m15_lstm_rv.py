@@ -31,6 +31,7 @@ Env: conda coursia-ml-training (Python 3.11, PyTorch 2.x + CUDA).
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 import time
@@ -61,6 +62,11 @@ from dm_test import diebold_mariano_test  # noqa: E402
 from realized_variance import (  # noqa: E402
     daily_realized_variance,
     realized_variance_to_log,
+)
+from bias_metrics import (  # noqa: E402
+    _dm_centered_mse,
+    _mse_decomposition,
+    joined_pair_errors,
 )
 
 COINS = ["BTC-USD", "ETH-USD", "SOL-USD", "LTC-USD", "XRP-USD", "ADA-USD", "DOT-USD"]
@@ -380,6 +386,62 @@ def _sharpe_ann(returns: np.ndarray) -> float:
     return (mu / sigma) * np.sqrt(365) if sigma > 1e-12 else float("nan")
 
 
+def _joined_or_sentinel(series_pair: tuple, row_extra: dict) -> tuple | None:
+    """`joined_pair_errors` wrapper that records the refusal instead of dying.
+
+    A ValueError from the shared-target check means the two walk-forwards did
+    not observe the same realised quantity on their common dates: the DM is
+    refused (TARGET_MISMATCH) rather than silently run on mispaired errors.
+    """
+    try:
+        return joined_pair_errors(*series_pair)
+    except ValueError as exc:
+        row_extra.setdefault("dm_target_refusal", str(exc))
+        return None
+
+
+def _relabel_har_to_lstm_origin(
+    forecasts: pd.Series,
+    targets: pd.Series,
+    full_index: pd.DatetimeIndex,
+) -> tuple[pd.Series, pd.Series]:
+    """Relabel HAR origins onto the previous TRADING date (LSTM convention).
+
+    Measured on the first cluster combo (BTC h=1, 2026-10-01): the shared-
+    target guard REFUSED the naive join with max gap 4.25 -- the two
+    walk-forwards address different realised windows. HAR origin t uses
+    information through t-1 and addresses window [t, t+h-1]
+    (`target_window = log_rv.iloc[i:i+horizon].mean()`); the LSTM origin i
+    uses features through i-1 and its rolling target
+    (`log_rv.rolling(h).mean().shift(-h)`) addresses window [i+1, i+h].
+    Pairing HAR origin t with LSTM origin t-1 compares two forecasts of the
+    SAME realised window. The shared-target check in `joined_pair_errors`
+    validates this claim by construction on every combo.
+
+    The relabel MUST map each HAR entry to the previous date in the FULL
+    series index, never to the previous entry of the walk-forward OUTPUT:
+    both loops stop at `test_end - horizon`, so the concatenated output
+    skips h positions at each fold boundary -- a positional shift would
+    cross that boundary and pair windows one day apart (second measured
+    refusal, max gap 3.51 on the boundary dates).
+
+    Residual asymmetry (documented, conservative): at the paired origin the
+    HAR leg knows rv through t-1 while the LSTM leg knows features through
+    t-2 -- the M15 LSTM convention keeps a one-day gap between its
+    information boundary and its target window. A BEATS verdict is therefore
+    extra-strong (the LSTM beats a better-informed baseline); a BEATEN
+    verdict is confounded by that day and never read as an LSTM deficiency
+    alone.
+    """
+    locs = full_index.get_indexer(forecasts.index)
+    if (locs < 1).any():
+        raise ValueError("cannot relabel the first trading date of the series")
+    prev_dates = full_index[locs - 1]
+    fc = pd.Series(forecasts.values, index=prev_dates, name=forecasts.name)
+    tg = pd.Series(targets.values, index=prev_dates, name=targets.name)
+    return fc, tg
+
+
 def evaluate_one_combo(
     coin: str,
     horizon: int,
@@ -424,9 +486,13 @@ def evaluate_one_combo(
     if len(features) < 200:
         return None
 
-    # HAR Classic baseline
+    # HAR Classic baseline (raw + train-calibrated legs, #1454 cluster protocol)
     try:
         har_out = walk_forward_har(rv, horizon=horizon, n_splits=N_SPLITS, refit_every=REFIT_EVERY)
+        har_cal_out = walk_forward_har(
+            rv, horizon=horizon, n_splits=N_SPLITS, refit_every=REFIT_EVERY,
+            calibrate_bias=True,
+        )
     except Exception:
         return None
 
@@ -483,47 +549,121 @@ def evaluate_one_combo(
     _, _, _, se = ledoit_wolf_sharpe_diff_se(lstm_net, har_net)
     t_stat = delta_sharpe_lstm_vs_har / se if isinstance(se, float) and se > 1e-12 else float("nan")
 
-    # MSE comparison on log-RV
+    # MSE comparison on log-RV -- own-convention aggregates. The previous
+    # formulation evaluated the LSTM's next-window forecasts against the HAR
+    # origin-window target on HAR's dates (mixed convention -- the measured
+    # 4.25 target gap on BTC h=1, 2026-10-01): each side's aggregate now
+    # measures its own walk-forward on the window it actually forecasts,
+    # and the DM legs below carry the exact same-quantity comparison.
     target = har_out["targets"].reindex(common_fc_idx).dropna()
     har_pred_aligned = har_fc.reindex(target.index)
     lstm_pred_aligned = lstm_fc.reindex(target.index)
-    mse_har = float(np.mean((har_pred_aligned - target) ** 2))
-    mse_lstm = float(np.mean((lstm_pred_aligned - target) ** 2))
+    mse_har = float(har_out["aggregate_mse_logrv"])
+    mse_lstm = float(lstm_out["aggregate_mse_logrv"])
     mse_reduction_pct = (mse_lstm - mse_har) / mse_har * 100 if mse_har > 0 else float("nan")
 
-    # Diebold-Mariano on log-RV forecast errors (pr-review §C).
+    # Diebold-Mariano legs (pr-review §C + #1454 cluster protocol).
     # errors_model = LSTM, errors_baseline = HAR: dm < 0 => LSTM wins.
+    # All DM legs join the two walk-forwards on their common ORIGIN dates and
+    # validate the shared targets first (#18190 protocol, ported from M4 PR
+    # #18650): positional pairing silently compares different days as soon as
+    # the two date indexes diverge (fold skips, the NaN guard at LSTM
+    # prediction time drops days HAR still forecasts).
     dm_info: dict = {"dm_stat": float("nan"), "dm_pvalue": float("nan"),
                      "mean_loss_diff": float("nan"), "dm_verdict": "N/A"}
+    row_extra: dict = {}
+    har_fc_p, har_tg_p = _relabel_har_to_lstm_origin(
+        har_out["forecasts"], har_out["targets"], rv.index
+    )
+    har_cal_fc_p, har_cal_tg_p = _relabel_har_to_lstm_origin(
+        har_cal_out["forecasts"], har_cal_out["targets"], rv.index
+    )
+    raw_join = _joined_or_sentinel(
+        (lstm_out["forecasts"], lstm_out["targets"], har_fc_p, har_tg_p),
+        row_extra,
+    )
+    cal_join = _joined_or_sentinel(
+        (lstm_out["forecasts"], lstm_out["targets"], har_cal_fc_p, har_cal_tg_p),
+        row_extra,
+    )
     har_bias_oos: float = float("nan")
     har_errors: list = []
     lstm_errors: list = []
-    try:
-        har_err = (har_pred_aligned - target).values.astype(float)
-        lstm_err = (lstm_pred_aligned - target).values.astype(float)
-        # Issue #12734 (slice 2/2): persistence of OOS bias + raw errors enables
-        # the HAR-debiased + DM-on-centered-errors mode without re-running. Keep
-        # `har_bias_oos` even when downstream (pr-review §C) does not consume it,
-        # so the JSON is auditable post-hoc. Persist the raw errors under the
-        # SAME guard as the DM block (both series finite && len>=10), so the
-        # btc_m15 wrapper only sees a complete, analyzable pair and never a
-        # partial/NaN series it would silently mis-analyze.
-        if len(har_err) >= 10 and np.all(np.isfinite(har_err)):
-            har_bias_oos = float(np.mean(har_err))
-        if len(har_err) >= 10 and np.all(np.isfinite(har_err)) and np.all(np.isfinite(lstm_err)):
-            har_errors = har_err.tolist()
-            lstm_errors = lstm_err.tolist()
+    if raw_join is not None and cal_join is not None and min(
+        raw_join["n_joined"], cal_join["n_joined"]
+    ) >= 10:
+        har_err = raw_join["b_errors"]
+        lstm_err = raw_join["a_errors"]
+        # Issue #12734 (slice 2/2): persist the OOS bias and the raw errors
+        # that actually fed the DM legs, so the debiased/centered re-analysis
+        # runs post-hoc without re-executing the sweep.
+        har_bias_oos = float(np.mean(har_err))
+        har_errors = har_err.tolist()
+        lstm_errors = lstm_err.tolist()
+        try:
             dm = diebold_mariano_test(
                 lstm_err, har_err, loss_fn=loss_fn, horizon=horizon
             )
-            dm_info = {
+            cal_dm = diebold_mariano_test(
+                raw_join["a_errors"], cal_join["b_errors"],
+                loss_fn=loss_fn, horizon=horizon,
+            )
+            dm_info.update({
                 "dm_stat": float(dm.dm_statistic),
                 "dm_pvalue": float(dm.p_value),
                 "mean_loss_diff": float(dm.mean_loss_diff),
                 "dm_verdict": _dm_verdict_label(dm.p_value, dm.mean_loss_diff),
-            }
-    except ValueError:
-        pass
+                "calibrated_dm_stat": float(cal_dm.dm_statistic),
+                "calibrated_dm_pvalue": float(cal_dm.p_value),
+                "calibrated_dm_mean_loss_diff": float(cal_dm.mean_loss_diff),
+                "calibrated_dm_verdict": _dm_verdict_label(
+                    cal_dm.p_value, cal_dm.mean_loss_diff
+                ),
+                "dm_raw_n_aligned": raw_join["n_joined"],
+                "dm_cal_n_aligned": cal_join["n_joined"],
+                "dm_target_gap_max": max(
+                    raw_join["target_gap_max"], cal_join["target_gap_max"]
+                ),
+            })
+        except ValueError:
+            dm_info.update({
+                "dm_verdict": "DM_FAILED",
+                "calibrated_dm_verdict": "DM_FAILED",
+            })
+    elif raw_join is None or cal_join is None:
+        dm_info.update({
+            "dm_verdict": "TARGET_MISMATCH",
+            "calibrated_dm_verdict": "TARGET_MISMATCH",
+        })
+    else:
+        dm_info.update({
+            "dm_verdict": "INSUFFICIENT_DATA",
+            "calibrated_dm_verdict": "INSUFFICIENT_DATA",
+        })
+
+    # Bias report + precision leg (Epic #1454, pattern M4): MSE = bias^2 +
+    # variance lets an edge be carried by baseline miscalibration (#12745
+    # measured har_bias_oos around -0.23 on BTC). The centered-DM leg isolates
+    # the pure variance differential (#10961).
+    lstm_decomp = (
+        _mse_decomposition(raw_join["a_errors"]) if raw_join is not None else {}
+    )
+    har_decomp_raw = (
+        _mse_decomposition(raw_join["b_errors"]) if raw_join is not None else {}
+    )
+    if raw_join is not None:
+        dm_centered = _dm_centered_mse(
+            raw_join["a_errors"], raw_join["b_errors"], horizon=horizon
+        )
+        n_aligned_centered = raw_join["n_joined"]
+    else:
+        dm_centered = {
+            "dm_stat": float("nan"),
+            "dm_pvalue": float("nan"),
+            "dm_verdict": "TARGET_MISMATCH",
+            "mean_loss_diff": float("nan"),
+        }
+        n_aligned_centered = 0
 
     # Per-observation persistence (lesson #12684): out-of-bias (recentred
     # error) DM re-validation and direct bias attribution require the forecast
@@ -568,6 +708,44 @@ def evaluate_one_combo(
         "har_bias_oos": har_bias_oos,
         "har_errors": har_errors,
         "lstm_errors": lstm_errors,
+        "har_calibrated_mse_logrv": float(har_cal_out["aggregate_mse_logrv"]),
+        "lstm_debiased_mse_logrv": lstm_decomp.get("variance", float("nan")),
+        "har_debiased_mse_logrv": har_decomp_raw.get("variance", float("nan")),
+        "edge_calibrated_pct": (
+            (har_cal_out["aggregate_mse_logrv"] - mse_lstm)
+            / har_cal_out["aggregate_mse_logrv"] * 100
+            if np.isfinite(har_cal_out["aggregate_mse_logrv"])
+            and har_cal_out["aggregate_mse_logrv"] > 0
+            else float("nan")
+        ),
+        "edge_debiased_pct": (
+            (har_decomp_raw.get("variance", float("nan"))
+             - lstm_decomp.get("variance", float("nan")))
+            / har_decomp_raw["variance"] * 100
+            if raw_join is not None
+            and np.isfinite(har_decomp_raw.get("variance", float("nan")))
+            and har_decomp_raw.get("variance", 0.0) > 0
+            else float("nan")
+        ),
+        "lstm_bias_sq": lstm_decomp.get("bias_sq", float("nan")),
+        "lstm_variance": lstm_decomp.get("variance", float("nan")),
+        "har_bias_sq_raw": har_decomp_raw.get("bias_sq", float("nan")),
+        "har_variance_raw": har_decomp_raw.get("variance", float("nan")),
+        "har_bias_share_of_mse": (
+            har_decomp_raw["bias_sq"] / har_decomp_raw["mse"]
+            if raw_join is not None
+            and np.isfinite(har_decomp_raw.get("mse", float("nan")))
+            and har_decomp_raw.get("mse", 0.0) > 0
+            else float("nan")
+        ),
+        "dm_centered_stat": dm_centered["dm_stat"],
+        "dm_centered_pvalue": dm_centered["dm_pvalue"],
+        "dm_centered_verdict": dm_centered["dm_verdict"],
+        "dm_centered_mean_loss_diff": dm_centered.get(
+            "mean_loss_diff", float("nan")
+        ),
+        "n_aligned_centered": int(n_aligned_centered),
+        "dm_target_refusal": row_extra.get("dm_target_refusal", ""),
         **dm_info,
         **persistence,
     }
@@ -592,6 +770,86 @@ def _csv_list(value: str) -> list[str]:
 
 def _csv_int_list(value: str) -> list[int]:
     return [int(s.strip()) for s in value.split(",") if s.strip()]
+
+
+def _sha256_text(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def _write_cluster_manifest(
+    manifest_path: Path,
+    all_rows: list[dict],
+    per_coin_horizon: dict[str, dict],
+    out_path: Path,
+    args: argparse.Namespace,
+    elapsed_s: float,
+) -> None:
+    """Compact in-repo cluster manifest (results-artifact-policy #15890).
+
+    The full run JSON embeds per-observation forecast series and exceeds the
+    512 KB CI bar; the manifest keeps every verdict, the per-combo alignment
+    diagnostics and per-coin SHA-256 anchors of the full rows, so the
+    aggregate stays falsifiable in-repo without shipping the series.
+    """
+    per_coin: dict[str, list[dict]] = {}
+    for r in all_rows:
+        per_coin.setdefault(r["coin"], []).append(r)
+
+    alignment = []
+    for key, cell in sorted(per_coin_horizon.items()):
+        coin, h = key.split("|h=")
+        seed_rows = [r for r in per_coin.get(coin, []) if r.get("horizon") == int(h)]
+        n_joined = [
+            r.get("dm_cal_n_aligned") for r in seed_rows
+            if r.get("dm_cal_n_aligned") is not None
+        ]
+        gaps = [
+            r.get("dm_target_gap_max") for r in seed_rows
+            if r.get("dm_target_gap_max") is not None
+        ]
+        alignment.append({
+            "cell": key,
+            "dm_cal_n_aligned_min": min(n_joined) if n_joined else None,
+            "dm_cal_n_aligned_max": max(n_joined) if n_joined else None,
+            "dm_target_gap_max": max(gaps) if gaps else None,
+            "n_target_mismatch": cell.get("n_target_mismatch", 0),
+        })
+
+    full_text = out_path.read_text(encoding="utf-8")
+    manifest = {
+        "protocol": (
+            "paired-origin cluster revalidation (#18190 port): DM legs join "
+            "walk-forwards on common origin dates and refuse on shared-target "
+            "mismatch, never positional truncation"
+        ),
+        "config": {
+            "coins": sorted(per_coin.keys()),
+            "horizons": args.horizons if args.horizons is not None else HORIZONS,
+            "seeds": args.seeds if args.seeds is not None else SEEDS,
+            "window": WINDOW,
+            "hidden_size": args.hidden_size,
+            "n_splits": N_SPLITS,
+            "refit_every": args.refit_every,
+            "loss_fn": args.loss_fn,
+            "fee_bps": args.fee_bps,
+        },
+        "elapsed_s": elapsed_s,
+        "total_rows": len(all_rows),
+        "artifact": {
+            "path": out_path.name,
+            "bytes": out_path.stat().st_size,
+            "sha256": _sha256_text(full_text),
+        },
+        "per_coin_sha256": {
+            coin: _sha256_text(json.dumps(rows, sort_keys=True, default=str))
+            for coin, rows in sorted(per_coin.items())
+        },
+        "alignment": alignment,
+        "aggregated": per_coin_horizon,
+    }
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    print(f"[manifest] wrote {manifest_path} ({manifest_path.stat().st_size} bytes)")
 
 
 def main() -> None:
@@ -654,6 +912,16 @@ def main() -> None:
         help=(
             "Hold out all data >= Jan 1st of YEAR from training/walk-forward "
             "(for separate OOS verdict). Example: --oos-strict 2027"
+        ),
+    )
+    parser.add_argument(
+        "--manifest-out",
+        type=Path,
+        default=None,
+        help=(
+            "Write the compact cluster manifest (verdicts + alignment "
+            "diagnostics + per-coin SHA anchors of the full rows) to this "
+            "path, per the results-artifact policy #15890."
         ),
     )
     parser.add_argument(
@@ -813,36 +1081,116 @@ def main() -> None:
     # when LSTM improves MSE, the inverse of dlinear_vol.py (positive = model
     # better). edge_pct below restores the dlinear convention (positive = LSTM
     # reduces MSE) so the conjunction reads identically.
-    per_horizon_sc: dict[int, dict] = {}
-    for h in horizons:
-        h_rows = [r for r in combos if r["horizon"] == h]
-        if not h_rows:
-            continue
-        reduction_pcts = [r.get("mse_reduction_pct", float("nan")) for r in h_rows]
-        p_values = [r.get("dm_pvalue", float("nan")) for r in h_rows]
-        edge_std_pct = float(np.nanstd(reduction_pcts)) if len(reduction_pcts) > 1 else 0.0
-        dm_p_median = float(np.nanmedian(p_values))
-        mean_reduction = float(np.nanmean(reduction_pcts)) if any(
-            np.isfinite(x) for x in reduction_pcts) else float("nan")
+    # Cluster protocol (#1454, port #18190): each cell reports THREE legs --
+    # raw HAR, train-calibrated HAR (offset removed), centered (variance-only
+    # differential) -- so an edge carried by baseline miscalibration reads as
+    # such instead of as model precision.
+    def _nanmedian(vals: list[float]) -> float:
+        return (
+            float(np.nanmedian(vals))
+            if any(np.isfinite(x) for x in vals) else float("nan")
+        )
+
+    def _sc_cell(rows: list[dict]) -> dict:
+        p_raw = [r.get("dm_pvalue", float("nan")) for r in rows]
+        p_cal = [r.get("calibrated_dm_pvalue", float("nan")) for r in rows]
+        p_ctr = [r.get("dm_centered_pvalue", float("nan")) for r in rows]
+        reduction_pcts = [r.get("mse_reduction_pct", float("nan")) for r in rows]
+        edge_cal = [r.get("edge_calibrated_pct", float("nan")) for r in rows]
+        ctr_diff = [r.get("dm_centered_mean_loss_diff", float("nan")) for r in rows]
+        mean_reduction = (
+            float(np.nanmean(reduction_pcts))
+            if any(np.isfinite(x) for x in reduction_pcts) else float("nan")
+        )
         edge_pct = -mean_reduction if np.isfinite(mean_reduction) else float("nan")
-        n_beaten = sum(1 for r in h_rows if r.get("dm_verdict") == "BEATEN BY baseline")
+        edge_std_pct = (
+            float(np.nanstd(reduction_pcts))
+            if sum(1 for x in reduction_pcts if np.isfinite(x)) > 1 else 0.0
+        )
+        n_beaten = sum(1 for r in rows if r.get("dm_verdict") == "BEATEN BY baseline")
+        n_beaten_cal = sum(
+            1 for r in rows if r.get("calibrated_dm_verdict") == "BEATEN BY baseline"
+        )
+        n_mismatch = sum(
+            1 for r in rows if r.get("dm_verdict") == "TARGET_MISMATCH"
+        )
+        dm_p_median = _nanmedian(p_raw)
+        cal_p_median = _nanmedian(p_cal)
+        ctr_p_median = _nanmedian(p_ctr)
+        mean_edge_cal = (
+            float(np.nanmean(edge_cal))
+            if any(np.isfinite(x) for x in edge_cal) else float("nan")
+        )
+        ctr_median = _nanmedian(ctr_diff)
+        var_ratios = [
+            r.get("lstm_variance", float("nan")) / r.get("har_variance_raw", float("nan"))
+            for r in rows
+            if np.isfinite(r.get("lstm_variance", float("nan")))
+            and np.isfinite(r.get("har_variance_raw", float("nan")))
+            and r.get("har_variance_raw", 0.0) > 0
+        ]
+        var_ratio_median = (
+            float(np.median(var_ratios)) if var_ratios else float("nan")
+        )
         if n_beaten > 0:
             verdict_sc = "NO BEATS"
         elif edge_pct >= 2.0 * edge_std_pct and dm_p_median < 0.05:
             verdict_sc = "BEATS"
         else:
             verdict_sc = "INCONCLUSIVE"
-        per_horizon_sc[h] = {
+        if n_beaten_cal > 0:
+            verdict_cal = "NO BEATS"
+        elif (
+            np.isfinite(mean_edge_cal) and mean_edge_cal > 0 and cal_p_median < 0.05
+        ):
+            verdict_cal = "BEATS"
+        else:
+            verdict_cal = "INCONCLUSIVE"
+        if ctr_p_median < 0.05 and np.isfinite(ctr_median):
+            verdict_ctr = "BEATS (variance)" if ctr_median < 0 else "BEATEN (variance)"
+        else:
+            verdict_ctr = "INCONCLUSIVE"
+        return {
             "mean_reduction_pct": mean_reduction,
             "edge_pct": edge_pct,
             "edge_std_pct": edge_std_pct,
             "dm_p_median": dm_p_median,
             "n_beaten": n_beaten,
-            "n_rows": len(h_rows),
+            "n_rows": len(rows),
             "verdict_sc": verdict_sc,
+            "edge_calibrated_pct_mean": mean_edge_cal,
+            "calibrated_dm_p_median": cal_p_median,
+            "n_beaten_calibrated": n_beaten_cal,
+            "verdict_sc_calibrated": verdict_cal,
+            "dm_centered_p_median": ctr_p_median,
+            "dm_centered_mean_loss_diff_median": ctr_median,
+            "verdict_sc_centered": verdict_ctr,
+            "var_ratio_lstm_over_har_median": var_ratio_median,
+            "n_target_mismatch": n_mismatch,
         }
-        print(f"\n§C h={h}: edge={edge_pct:+.1f}% (σ={edge_std_pct:.2f}) "
-              f"dm_p_median={dm_p_median:.4f} beaten={n_beaten} -> {verdict_sc}")
+
+    per_horizon_sc: dict[int, dict] = {}
+    for h in horizons:
+        h_rows = [r for r in combos if r["horizon"] == h]
+        if not h_rows:
+            continue
+        cell = _sc_cell(h_rows)
+        per_horizon_sc[h] = cell
+        print(f"\n§C h={h}: edge={cell['edge_pct']:+.1f}% (σ={cell['edge_std_pct']:.2f}) "
+              f"dm_p_median={cell['dm_p_median']:.4f} beaten={cell['n_beaten']} "
+              f"-> raw={cell['verdict_sc']} | cal={cell['verdict_sc_calibrated']} "
+              f"(p={cell['calibrated_dm_p_median']:.4f}) | "
+              f"centered={cell['verdict_sc_centered']} "
+              f"(p={cell['dm_centered_p_median']:.4f})")
+
+    per_coin_horizon_sc: dict[str, dict] = {}
+    for coin in coins:
+        for h in horizons:
+            ch_rows = [
+                r for r in combos if r["coin"] == coin and r["horizon"] == h
+            ]
+            if ch_rows:
+                per_coin_horizon_sc[f"{coin}|h={h}"] = _sc_cell(ch_rows)
 
     # Save
     results = {
@@ -866,6 +1214,7 @@ def main() -> None:
         "verdict": verdict,
         "loss_fn": loss_fn,
         "per_horizon_sc": per_horizon_sc,
+        "per_coin_horizon_sc": per_coin_horizon_sc,
         "runtime_s": elapsed,
         "combos": combos,
     }
@@ -876,6 +1225,12 @@ def main() -> None:
     # CSV
     df = pd.DataFrame(combos)
     df.to_csv(results_dir / "m15_lstm_rv_results.csv", index=False)
+
+    if args.manifest_out is not None:
+        _write_cluster_manifest(
+            args.manifest_out, combos, per_coin_horizon_sc,
+            results_dir / "results.json", args, elapsed,
+        )
 
     print(f"\nResults saved to {results_dir}")
 
