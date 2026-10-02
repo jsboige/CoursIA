@@ -70,9 +70,10 @@ Preuve par réécriture sur les équations de `primeFactorsList` (idiome de
 `squarefree_iff_nodup_primeFactorsList`, parité sur la liste réduite. -/
 theorem admissible_trente_quinze : AdmissibleFactorization 15 2 :=
   ⟨by decide,
-    by apply Nat.squarefree_iff_nodup_primeFactorsList.2
+    by apply Nat.squarefree_iff_nodup_primeFactorsList.mp
+       rw [Nat.squarefree_two]
        simp [Nat.primeFactorsList],
-    by show Even 2; exact ⟨1, rfl⟩⟩
+    by apply (even_iff_two_dvd).mpr (by decide : (2:ℕ) ∣ 15.primeFactorsList.length)⟩
 
 /-- Contre-exemple de parité du carnet §2 : `D = 2` a exactement **un** facteur
 premier (impair), donc `30 = 2·15` n'est PAS admissible — bien que
