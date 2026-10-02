@@ -2,7 +2,7 @@
 
 [← Série Probas](../../README.md) | [↑ Arc Théorie de la Décision](../README.md) | [Corpus bayésien PyMC (Python) →](../../PyMC/README.md) | [Arc décision Infer.NET (C#) →](../DecInfer/README.md) | [Lake Lean `decision_theory_lean` →](../decision_theory_lean/)
 
-Arc autonome de **théorie de la décision bayésienne** en PyMC : 8 notebooks (socle 1-7 + capstone 08) qui prolongent la modélisation probabiliste (le corpus bayésien [`../../PyMC/`](../../PyMC/README.md)) jusqu'au **choix d'action sous incertitude**. Un posterior n'est pas une fin — c'est l'**input** d'une politique optimale. Cette série formalise ce passage, de l'utilité espérée aux processus markoviens et aux bandits bayésiens MCMC. L'extension actuarielle descend en sous-série dédiée : **[Actuariat/](../Actuariat/README.md)** (T1-T5, 5 notebooks), présentée par le capstone du slot 08.
+Arc autonome de **théorie de la décision bayésienne** en PyMC — le socle (1-7) et son capstone (08) — qui prolongent la modélisation probabiliste (le corpus bayésien [`../../PyMC/`](../../PyMC/README.md)) jusqu'au **choix d'action sous incertitude**. Un posterior n'est pas une fin — c'est l'**input** d'une politique optimale. Cette série formalise ce passage, de l'utilité espérée aux processus markoviens et aux bandits bayésiens MCMC. L'extension actuarielle descend en sous-série dédiée : **[Actuariat/](../Actuariat/README.md)** (T1-T5), présentée par le capstone du slot 08.
 
 **Prérequis** : le corpus bayésien [`../../PyMC/`](../../PyMC/README.md) (notamment [PyMC-04-Bayesian-Networks](../../PyMC/PyMC-04-Bayesian-Networks.ipynb)). Aucun prérequis en théorie de la décision : les axiomes de Von Neumann-Morgenstern sont introduits ex nihilo.
 

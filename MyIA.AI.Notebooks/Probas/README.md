@@ -304,7 +304,7 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 | 18 | Change-Point | Switch bayésien, catastrophes minières (Poisson) |
 | 19 | Survival Analysis | Weibull inféré directement, sélection LOO arviZ |
 
-> **Note** : l'arc **théorie de la décision** PyMC (8 notebooks : socle 1-7 + capstone 08) vit dans [`DecisionTheory/DecPyMC/`](DecisionTheory/DecPyMC/README.md) (socle `DecPyMC-1..7` + capstone `DecPyMC-08` ; l'ancienne jambe actuarielle 8-12 vit dans [`DecisionTheory/Actuariat/`](DecisionTheory/Actuariat/README.md), T1-T5), voir tableau dédié ci-dessous.
+> **Note** : l'arc **théorie de la décision** PyMC (socle 1-7 + capstone 08) vit dans [`DecisionTheory/DecPyMC/`](DecisionTheory/DecPyMC/README.md) (socle `DecPyMC-1..7` + capstone `DecPyMC-08` ; l'ancienne jambe actuarielle 8-12 vit dans [`DecisionTheory/Actuariat/`](DecisionTheory/Actuariat/README.md), T1-T5), voir tableau dédié ci-dessous.
 
 ## Série Infer.NET (corpus bayésien + accretions 1b/2b · arc décision C# et companions Lean 4)
 
@@ -323,7 +323,7 @@ La série C#/.NET se scinde en deux arcs : le **corpus bayésien** (socle numér
 
 Les **notebooks Infer.NET C#** (corpus bayésien et accretions + arc décision) et les **notebooks Lean 4** de l'arc décision sont détaillés individuellement dans [*Ce que chaque notebook apporte*](#ce-que-chaque-notebook-apporte) ci-dessous (apport pédagogique par notebook) ; le contenu exhaustif — patterns avancés, exercices corrigés — vit dans [Infer/README.md](Infer/README.md), [DecisionTheory/DecInfer/README.md](DecisionTheory/DecInfer/README.md) et [DecisionTheory/DecPyMC/README.md](DecisionTheory/DecPyMC/README.md).
 
-## Série PyMC (19 corpus notebooks, Python + 13 notebooks décision DecisionTheory — DecPyMC 8 + Actuariat 5)
+## Série PyMC (19 corpus notebooks, Python + les notebooks décision DecisionTheory — socle DecPyMC et sa sous-série Actuariat)
 
 Port Python des modèles Infer.NET, utilisant l'échantillonnage MCMC (NUTS) au lieu du message passing. Permet de comparer les deux approches d'inférence sur des modèles identiques. La série `PyMC/` suit la même numérotation que la série Infer (le numéro 6 n'existe pas — le debugging vit en accrétion `PyMC-02b` jumelle de `Infer-2b` ; l'ex-`Infer-20` (quotients et fibres), kernel Python autonome désormais dans `Applications/`, n'a pas de jumeau) — fondations 1-3, modèles classiques 4-13 (réseaux bayésiens, inférence causale, IRT, TrueSkill, classification, sélection de modèles, topic models, modèles hiérarchiques, crowdsourcing), puis frontières 14-19 (séquences/HMM, recommandation, processus gaussien épars, filtre de Kalman, change-point, analyse de survie) ; l'apport pédagogique de chacun est détaillé dans le [tableau de la série PyMC](#série-pymc) ci-dessus. Le cœur de l'arc décision vit dans `DecisionTheory/DecPyMC/` (socle 1-7 + capstone 08 ; l'arc actuariel T1-T5 vit dans `DecisionTheory/Actuariat/`).
 
