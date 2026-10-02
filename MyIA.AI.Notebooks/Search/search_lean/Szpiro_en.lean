@@ -71,21 +71,13 @@ theorem admissible_trente_triviale : AdmissibleFactorization 1 30 :=
   ⟨by decide, squarefree_one, by rw [Nat.primeFactorsList_one]; exact ⟨0, rfl⟩⟩
 
 /-- `N = 30`: `D = 15 = 3·5` (two prime factors, even) is admissible.
-`Squarefree 15` goes through `squarefree_iff_nodup_primeFactorsList` and the
-permutation `15 = 3·5` (lemmas `perm_primeFactorsList_mul_of_coprime` and
-`primeFactorsList_prime`). -/
-theorem admissible_trente_quinze : AdmissibleFactorization 15 2 := by
-  have hp3 : Nat.Prime 3 := by norm_num
-  have hp5 : Nat.Prime 5 := by norm_num
-  have hperm : List.Perm (15 : ℕ).primeFactorsList [3, 5] := by
-    have h15 : (15 : ℕ) = 3 * 5 := by decide
-    rw [h15, Nat.perm_primeFactorsList_mul_of_coprime
-      (by decide : Nat.Coprime 3 5), Nat.primeFactorsList_prime hp3,
-      Nat.primeFactorsList_prime hp5]
-    exact List.Perm.refl _
-  refine ⟨by decide, ?_, ?_⟩
-  · exact Nat.squarefree_iff_nodup_primeFactorsList.2 (hperm.nodup_iff.2 (by decide))
-  · exact ⟨1, hperm.length_eq.trans rfl⟩
+Proof by rewriting with the `primeFactorsList` equations (the idiom of
+Mathlib's own `primeFactorsList_two`): `Squarefree` via
+`squarefree_iff_nodup_primeFactorsList`, parity on the reduced list. -/
+theorem admissible_trente_quinze : AdmissibleFactorization 15 2 :=
+  ⟨by decide,
+    by simp [Nat.squarefree_iff_nodup_primeFactorsList, Nat.primeFactorsList],
+    by simp [Nat.primeFactorsList]; exact ⟨1, rfl⟩⟩
 
 /-- Parity counter-example of notebook §2: `D = 2` has exactly **one** prime
 factor (odd), so `30 = 2·15` is NOT admissible — although `gcd(2, 15) = 1`
