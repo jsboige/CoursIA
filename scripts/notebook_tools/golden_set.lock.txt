@@ -31,6 +31,10 @@ networkx==3.6.1
 # Diagnostics OLS (VIF, het_white) — pinnes pour 2.3-Regression-lineaire-logistique (#12659)
 statsmodels==0.14.6
 scipy==1.17.0
+# Wrapper _TqdmSilent (GT-13d chargeur de socle #17891 / #17964) -- neutralise le bruit verbose=True
+# dans MCCFRSolver.train (cf cellule 2 chargeur). Pas requis pour la CI : OPENSPIEL_AVAILABLE=False
+# court-circuite la lib pyspiel, mais tqdm reste importe par le wrapper lui-meme.
+tqdm==4.70.0
 
 # --- Utilitaire manifeste ---
 PyYAML==6.0.3
