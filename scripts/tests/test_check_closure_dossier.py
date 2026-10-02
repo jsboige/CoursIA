@@ -386,6 +386,24 @@ def test_template_rend_les_champs_mecaniques():
     assert "REPLACE_WITH_CLOSE_OR_KEEP" in out
 
 
+def test_template_rempli_tel_quel_se_parse():
+    """Remplir chaque REPLACE_WITH sur place doit donner un dossier valide :
+    l'item d'acceptation est rendu sous `acceptance:`, pas apres
+    `comments-reviewed` (#18480 : le gabarit rempli sur place etait refuse)."""
+    snap = _snapshot(comments=[_comment("x")])
+    out = render_template(snap, "myia-po-2026:CoursIA-3")
+    filled = (out
+              .replace("REPLACE_WITH_CLOSE_OR_KEEP", "CLOSE")
+              .replace("REPLACE_WITH_none_OR_followup_#M_OR_waiver:_<motif daté>",
+                       "none")
+              .replace("REPLACE_WITH <critère du body> -> <PR#/commit/fichier:ligne>",
+                       "critere du body -> #17901"))
+    assert "REPLACE" not in filled
+    dossier, errors = parse_dossier(filled, 0, "jsboige")
+    assert errors == []
+    assert dossier.fields["verdict"] == "CLOSE"
+
+
 def test_main_rc_close_0_keep_3_refuse_1_inconnu_2(monkeypatch, capsys):
     close_snap = _snapshot(comments=[_comment(_dossier_body())])
     keep_snap = _snapshot(comments=[

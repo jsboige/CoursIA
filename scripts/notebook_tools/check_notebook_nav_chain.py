@@ -185,7 +185,7 @@ def _looks_nav(text: str, target: str, line: str, cell_is_nav: bool) -> bool:
          marqueur et les liens sont sur deux lignes differentes :
 
              ## Navigation
-             | [Sudoku-05-PSO](Sudoku-05-PSO-Csharp.ipynb) | | [Sudoku-07-...](...) |
+             | [Sudoku-05-PSO](Sudoku-05-PSO-CSharp.ipynb) | | [Sudoku-07-...](...) |
 
     Ce qui n'est **pas** une arete, volontairement : une mention en prose (nom de
     fichier entre `backticks`), une liste « voir aussi » titree, un lien de
