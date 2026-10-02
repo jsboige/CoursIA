@@ -3988,10 +3988,17 @@ def belt_report_metrics(
 
 def print_belt_report(metrics: tuple[float | None, int | None, int]) -> None:
     """Sortie texte de `--belt --report` (cf #18832 acceptance)."""
-    max_gap, closed_7d, sample = metrics
-    print(f"belt --report : ecart_max_depuis_derniere_visite = "
-          f"{max_gap} j (sur {sample} issues avec livraison)")
-    print(f"belt --report : issues fermees sur 7 j = {closed_7d or 0}")
+    min_gap, closed_7d, sample = metrics
+    print(f"belt --report : ecart_min_depuis_derniere_visite = "
+          f"{min_gap} j (sur {sample} issues avec livraison)")
+    # `closed_7d` peut etre None (non mesure) : on imprime alors "non mesure"
+    # au lieu d'inventer un 0 par `or 0` -- un compteur absent ne vaut pas
+    # un compteur nul, cf le deuxieme des deux nombres demandes par #18832.
+    if closed_7d is None:
+        closed_str = "non mesure (compteur externe a fournir)"
+    else:
+        closed_str = str(closed_7d)
+    print(f"belt --report : issues fermees sur 7 j = {closed_str}")
 
 
 def print_red_assignment(lane: str, backlog: dict, threshold_hours: float) -> None:
