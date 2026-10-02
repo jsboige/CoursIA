@@ -425,6 +425,9 @@ layout: compact
 - **Notre Curriculum V2** (deck 3) integre ces lecons : S3 HMM Regime, S4 Ridge, M12 HAR-RV-J, M15 LSTM
 - Portfolio recommande : Sharpe 1.12, MaxDD -17.7% (signal S3 + weights S4)
 
+<img src="./images/lstm_cell.png" style="position:absolute; top:70px; right:24px; width:230px;" alt="Cellule LSTM : portes sigma et tanh, etats c_t et h_t" />
+<img src="./images/rnn_unrolled.png" style="position:absolute; top:250px; right:24px; width:230px;" alt="Reseau recurrent deroule sur les pas de temps (horizons de prediction)" />
+
 ---
 layout: compact
 ---
@@ -540,6 +543,8 @@ imageClass: mid-right visible
 - **Contagion Financiere** (risque systemique)
   - 2008 (Lehman) et 2020 (COVID) : tous les actifs baissent en même temps
   - Diversifier entre classes decorreles, mais les correlations augmentent en crise
+
+<img src="./images/ted_spread.png" style="position:absolute; bottom:20px; right:24px; width:270px; border:1px solid #ccc;" alt="TED Spread (LIBOR - T-bills 3 mois), 1986-2015 : pic de crise 2007-08" />
 
 </div>
 <div v-click="2">
