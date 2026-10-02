@@ -86,6 +86,8 @@ exécutées dans leur dossier de série (chemins de données relatifs), aucune c
 | ML-5-TimeSeries | 16.7 s | 16.2 s | −3 % | **27 OK / 0 erreur des deux côtés** — compat .NET 11 prouvée, delta < bruit wall-clock (n=1) : **nul mesuré** |
 | Infer-2-Gaussian-Mixtures | 24.4 s | 23.5 s | −3.7 % | idem — compat prouvée, pas de régression |
 
+**Re-mesure calme du 02/10 soir (#18878, artefacts préservés au gist)** : ML-5-TimeSeries 13,0 s (net10) → **9,4 s** (net11) ; Infer-2-Gaussian-Mixtures 21,0 s → 21,2 s. Les deux séries (charge CI du matin : −3 %/−3,7 % ; calme du soir : −28 %/+1 %) divergent plus entre elles qu'entre runtimes — la dispersion inter-séances domine, ce qui **confirme** la lecture ci-dessous : le wall-clock carnet mesure le lancement kernel + Roslyn, pas le delta runtime. Ce que la re-mesure prouve et préserve : compatibilité complète sous 11.0.0-rc.1 (17/17 et 28/28 cellules code, 0 erreur, runtime imprimé dans l'artefact).
+
 Lecture honnête : le wall-clock carnet est dominé par le démarrage kernel + Roslyn ; un gain
 runtime de −10 % sur les seules cellules de calcul serait invisible ici. Les bancs ci-dessus
 restent l'instrument de mesure ; les carnets prouvent la **non-régression et la compatibilité**
@@ -121,7 +123,7 @@ de la chaîne notebook complète sous .NET 11 RC (kernel, Roslyn scripting, ML.N
 
 - **Logs BDN — 45 = 5 bancs × 3 passes × 3 runtimes** : gist [d434d4dc](https://gist.github.com/jsboige/d434d4dc48db03a37bab05259921d4be) (secret, accessible par lien), manifeste `SHA256SUMS.txt` inclus, empreinte SHA-256 du manifeste `47951d824eccec4e0974142405734623c332b2ae79dd74bd9a234bbc3514c052`. Chaque log porte son header `// Runtime=.NET X.Y.Z` (9.0.20 / 10.0.12 / 11.0.0) ; l'interleave des passes se lit sur les timestamps consécutifs — ex. MGS : passe 1 à 12:23:05/08/11, passe 2 à 12:24:18/21/23, passe 3 à 12:24:48/51/53.
 - **SHA exacts des bancs mesurés** (branche `feature/benchmarkdotnet-baseline`, clones depth-1) : MetaGeneticSharp `365a4fb2384f` · Z3.Linq `b804c30859e9` · Automata `abaabd1b6518` · semantic-fleet `ff0dfb47c052` · Argumentum `709e6d05f6c2`.
-- **Traces carnets (volet wall-clock)** : les copies temporaires n'ont pas été préservées à la mesure — défaut de protocole assumé, la re-mesure avec préservation des artefacts exécutés est programmée sur l'issue #18878. Les carnets prouvent la compatibilité, pas le delta : l'instrument de mesure reste les bancs ci-dessus.
+- **Traces carnets (volet wall-clock) — re-mesurées et préservées (#18878, 02/10 soir, machine calme)** : 4 artefacts exécutés versés dans le même gist [d434d4dc](https://gist.github.com/jsboige/d434d4dc48db03a37bab05259921d4be). Chaque artefact porte une **cellule probe** qui imprime le runtime effectif (`.NET 10.0.12` / `.NET 11.0.0-rc.1.26425.128` — les versions exactes des Conditions), toutes ses cellules code exécutées (ML-5 : **17/17** ; Infer-2 : **28/28**) et **0 erreur**. Empreintes SHA-256 : ML-5 net10 `8bf83441ef846b7e` · net11 `acf51fa1c1e4ff81` · Infer-2 net10 `e755acaadb67fe1c` · net11 `fb832217406e6bfa` (complets dans `SHA256SUMS-notebooks.txt` du gist).
 
 ## Reproduire
 
