@@ -62,7 +62,6 @@ project:
     - "MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/README.md"
     - "MyIA.AI.Notebooks/GameTheory/minimax_lean/README.md"
     - "MyIA.AI.Notebooks/GameTheory/README.md"
-    - "MyIA.AI.Notebooks/GameTheory/repeated_games_lean/README.md"
     - "MyIA.AI.Notebooks/GameTheory/scripts/README.md"
     - "MyIA.AI.Notebooks/GameTheory/social_choice_lean/README.md"
     - "MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters/README.md"
