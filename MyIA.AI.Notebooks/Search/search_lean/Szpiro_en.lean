@@ -60,7 +60,7 @@ namespace Szpiro_en
 (definition preceding Theorem 1.1): `D` and `M` coprime, `D` squarefree, and
 `D` with an **even** number of prime factors. -/
 def AdmissibleFactorization (D M : ℕ) : Prop :=
-  D.gcd M = 1 ∧ Squarefree D ∧ Even D.factorList.length
+  D.gcd M = 1 ∧ Squarefree D ∧ Even D.primeFactorsList.length
 
 /-- `N = 30 = 2·3·5`: the trivial factorization (`D = 1`, zero prime factors
 — zero is even) is admissible. First row of the notebook §2 table. -/
@@ -106,7 +106,7 @@ printed by `delta_modele(1, 1)` in notebook §3 (same convention: full
 classical discriminant). -/
 theorem delta_E : E.Δ = -496 := by
   simp only [WeierstrassCurve.Δ, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
-    WeierstrassCurve.b₆, WeierstrassCurve.b₈]
+    WeierstrassCurve.b₆, WeierstrassCurve.b₈, E]
   norm_num
 
 /-- `Δ ≠ 0`, hence the curve `E` is nonsingular — elliptic in the sense of

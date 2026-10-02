@@ -54,7 +54,7 @@ namespace Szpiro
 précède le théorème 1.1) : `D` et `M` premiers entre eux, `D` sans facteur
 carré, et `D` comptant un nombre **pair** de facteurs premiers. -/
 def AdmissibleFactorization (D M : ℕ) : Prop :=
-  D.gcd M = 1 ∧ Squarefree D ∧ Even D.factorList.length
+  D.gcd M = 1 ∧ Squarefree D ∧ Even D.primeFactorsList.length
 
 /-- `N = 30 = 2·3·5` : la factorisation triviale (`D = 1`, zéro facteur premier
 — zéro est pair) est admissible. Première ligne du tableau du carnet §2. -/
@@ -101,7 +101,7 @@ imprimée par `delta_modele(1, 1)` dans le carnet §3 (même convention :
 discriminant classique complet). -/
 theorem delta_E : E.Δ = -496 := by
   simp only [WeierstrassCurve.Δ, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
-    WeierstrassCurve.b₆, WeierstrassCurve.b₈]
+    WeierstrassCurve.b₆, WeierstrassCurve.b₈, E]
   norm_num
 
 /-- `Δ ≠ 0`, donc la courbe `E` est non singulière — elliptique au sens de
