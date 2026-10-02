@@ -1728,8 +1728,27 @@ def draw(items: list[dict], n: int, rng: random.Random,
     return picked
 
 
-def _summarize_claim(out: str, returncode: int) -> str:
-    """Reduit la sortie de ``check_lane_claim.py`` a un verdict d'une ligne.
+# Codes machine du verdict de claim (utilises par le tapis roulant belt).
+# Le tapis ne s'appuie QUE sur ces 4 chaines ; tout autre verdict tombe dans
+# la categorie par defaut ``UNCHECKED`` et declenche une verification au fil
+# de l'eau. La phrase humaine reste jointe pour affichage / log.
+CLAIM_CODE_FREE = "FREE"
+CLAIM_CODE_FREE_STALE = "FREE_STALE"
+CLAIM_CODE_OWNED_BY_ME = "OWNED_BY_ME"
+CLAIM_CODE_BLOCKED = "BLOCKED"
+CLAIM_CODE_UNCHECKED = "UNCHECKED"
+CLAIM_CODE_ERROR = "ERROR"
+
+
+def _summarize_claim(out: str, returncode: int) -> tuple[str, str]:
+    """Reduit la sortie de ``check_lane_claim.py`` a un verdict (code, humain).
+
+    Retourne un tuple ``(code, human)`` :
+    - ``code`` ∈ {FREE, FREE_STALE, OWNED_BY_ME, BLOCKED, UNCHECKED, ERROR}
+      est consommable par machine (le tapis roulant belt l'utilise pour
+      decider de servir ou retenir -- le motif de TEST du 6e point
+      CHANGES_REQUESTED #18836, post-c.56).
+    - ``human`` est la phrase lisible prete a etre affichee.
 
     La sortie melange une phrase humaine (uniquement quand c'est bloque) puis
     un objet JSON. Prendre la premiere ligne telle quelle affichait ``{`` des
@@ -1748,17 +1767,18 @@ def _summarize_claim(out: str, returncode: int) -> str:
         if isinstance(data, dict):
             blocking = data.get("blocking_lanes") or []
             if blocking:
-                return "BLOQUE par " + ", ".join(blocking)
+                return CLAIM_CODE_BLOCKED, "BLOQUE par " + ", ".join(blocking)
             if data.get("my_active_claim"):
-                return "deja claim par cette lane"
+                return CLAIM_CODE_OWNED_BY_ME, "deja claim par cette lane"
             stale = data.get("stale_claims") or []
             if stale:
-                return f"libre (claim perime : {', '.join(map(str, stale))})"
-            return "libre"
+                return (CLAIM_CODE_FREE_STALE,
+                        f"libre (claim perime : {', '.join(map(str, stale))})")
+            return CLAIM_CODE_FREE, "libre"
     first = out.strip().splitlines()
     if first:
-        return first[0][:60]
-    return f"exit={returncode}"
+        return CLAIM_CODE_ERROR, first[0][:60]
+    return CLAIM_CODE_ERROR, f"exit={returncode}"
 
 
 def _utf8_child_env() -> dict:
@@ -1783,8 +1803,12 @@ def _utf8_child_env() -> dict:
     return {**os.environ, "PYTHONIOENCODING": "utf-8"}
 
 
-def check_claims(numbers: list[int], lane: str) -> dict[int, str]:
+def check_claims(numbers: list[int], lane: str) -> dict[int, tuple[str, str]]:
     """Verif claims sur les seuls candidats tires (N appels, pas 140).
+
+    Retourne ``{n: (code, human)}`` ou ``code`` ∈ {FREE, FREE_STALE,
+    OWNED_BY_ME, BLOCKED, ERROR} est consommable par machine, et ``human``
+    est la phrase lisible prete a etre affichee.
 
     ``--lane`` est **requis** par ``check_lane_claim.py`` : sans lui, l'appel
     sort en erreur d'usage et chaque candidat affichait ``usage: ...`` a la
@@ -1802,7 +1826,8 @@ def check_claims(numbers: list[int], lane: str) -> dict[int, str]:
             verdicts[n] = _summarize_claim(r.stdout or r.stderr or "",
                                            r.returncode)
         except Exception as exc:  # noqa: BLE001 - diagnostic best-effort
-            verdicts[n] = f"(check indisponible: {type(exc).__name__})"
+            verdicts[n] = (CLAIM_CODE_ERROR,
+                           f"(check indisponible: {type(exc).__name__})")
     return verdicts
 
 
@@ -1905,9 +1930,10 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
                 pool = [it for it in pool
                         if it["number"] not in drawn]
                 for c in cand:
-                    v = verdicts.get(c["number"], "")
-                    if v.startswith("BLOQUE par"):
-                        conflicts.append((c, "CLAIM : " + v + (
+                    v_code, v_human = verdicts.get(c["number"],
+                                                   (CLAIM_CODE_ERROR, ""))
+                    if v_code == CLAIM_CODE_BLOCKED:
+                        conflicts.append((c, "CLAIM : " + v_human + (
                             ". Une autre lane tient ce grain -- ecrire dessus "
                             "produirait la collision, pas le livrable. Candidat "
                             "remplace dans la meme urne.")))
@@ -5227,21 +5253,49 @@ def main(argv: list[str] | None = None) -> int:
         # Verification des claims tenes par une autre lane : on regarde
         # plus large que `args.grains` pour tolerer un remplacement si
         # la tete de file est tenue. Cout borne : au plus `grains + 4`
-        # requetes `gh`.
+        # requetes `gh`. _summarize_claim rend un tuple (code, human) ; le
+        # tapis ne regarde QUE le code machine (cf CHANGES_REQUESTED #18836
+        # point 6 -- le verbe "CLEAR" humain est reserve a l'affichage).
         belt_check_window = max(args.grains + 4, 8)
         belt_check_window = min(belt_check_window, len(belt_pool))
         belt_check_nums = [it["number"] for it in belt_pool[:belt_check_window]]
         belt_claims = check_claims(belt_check_nums, args.lane)
         belt_picks: list[dict] = []
         belt_withheld: list[tuple[dict, str]] = []
-        for it in belt_pool:
+        # Garde-fou : on n'itère pas plus loin que la fenetre + un certain
+        # quota au cas ou le pool est entierement BLOQUE. Sans plafond, un
+        # tapis sans service appellerait `check_claims` indefiniment.
+        # max_iters = min(grains * 5 + 50, len(belt_pool)) borne l'explosion.
+        max_iters = min(args.grains * 5 + 50, len(belt_pool))
+        # ``checked`` accumule les numeros qui ont deja fait l'objet d'un
+        # appel ``gh`` pour eviter les repetitions au fil de l'eau.
+        checked: set[int] = set(belt_check_nums)
+        for i, it in enumerate(belt_pool):
+            if i >= max_iters:
+                break
             if len(belt_picks) >= args.grains:
                 break
-            verdict = belt_claims.get(it["number"], "CLEAR")
-            if verdict == "CLEAR":
-                belt_picks.append(it)
+            n = it["number"]
+            if n in belt_claims:
+                code, human = belt_claims[n]
             else:
-                belt_withheld.append((it, verdict))
+                # Verification au fil de l'eau : on n'a pas regarde plus
+                # loin que `belt_check_window` initialement ; un item hors
+                # fenetre qui n'est pas dans `belt_claims` doit etre verifie
+                # ICI, sinon le tapis le sert sans l'avoir jamais teste -- le
+                # bug fondateur du 6e CHANGES_REQUESTED.
+                extra = check_claims([n], args.lane)
+                code, human = extra.get(n, (CLAIM_CODE_ERROR, "(no check)"))
+                belt_claims[n] = (code, human)
+                checked.add(n)
+            if code == CLAIM_CODE_BLOCKED:
+                belt_withheld.append((it, human))
+            else:
+                # FREE, FREE_STALE, OWNED_BY_ME, ERROR -- servable.
+                # ERROR (check indisponible, parse rate...) est servable par
+                # defaut : on ne peut pas refuser un grain faute d'avoir pu
+                # verifier son claim, ce serait introduire un faux BLOQUE.
+                belt_picks.append(it)
         # Banniere legere : le tapis ne refuse jamais, mais rappelle
         # les DWELL/zone pour le lecteur (information sans journal).
         if not args.json:
@@ -5251,7 +5305,7 @@ def main(argv: list[str] | None = None) -> int:
                   f"picks : {len(belt_picks)}.")
             if belt_withheld:
                 held = ", ".join(f"#{it['number']} ({c})" for it, c in belt_withheld[:5])
-                print(f"   tenus par une autre lane (skip + replacement) : {held}")
+                print(f"   BLOQUE par une autre lane (skip + replacement) : {held}")
             # #18832 spec : la fenetre collision entre tirage et pose du
             # [CLAIMED] reste ouverte tant que la lane n'a pas poste le
             # claim. On rappelle ici que la lane doit poser le claim
@@ -5269,6 +5323,9 @@ def main(argv: list[str] | None = None) -> int:
             # Surface JSON compatible avec la volee ponderee : `picks`,
             # `claims`, `withheld` -- les consommateurs existants
             # (`continue` skill, dashboards) ne lisent pas d'autres champs.
+            # ``claims`` rend maintenant un objet ``{code, human}`` par item
+            # servi : le code machine est ce que le tapis a tranche, le
+            # human reste lisible. Cf CHANGES_REQUESTED #18836 point 6.
             out_belt = {
                 "mode": "belt",
                 "lane": args.lane,
@@ -5276,8 +5333,12 @@ def main(argv: list[str] | None = None) -> int:
                 "belt_pool_size": len(belt_pool),
                 "filter_active": filter_active,
                 "picks": belt_picks,
-                "claims": {str(it["number"]): belt_claims.get(it["number"], "CLEAR")
-                           for it in belt_picks},
+                "claims": {str(it["number"]): {
+                    "code": (belt_claims.get(it["number"],
+                                              (CLAIM_CODE_ERROR, "(no check)"))[0]),
+                    "human": (belt_claims.get(it["number"],
+                                               (CLAIM_CODE_ERROR, "(no check)"))[1]),
+                } for it in belt_picks},
                 "withheld": [{"number": it["number"], "title": it["title"],
                               "cause": c} for it, c in belt_withheld],
                 "last_delivery_window_days": DEFAULT_WINDOW_DAYS,
@@ -5449,7 +5510,8 @@ def main(argv: list[str] | None = None) -> int:
             "lane": args.lane, "seed_src": seed_src,
             "session_genres_penalized": list(args.prev_genre),
             "pool": {k: len(v) for k, v in by_class.items()},
-            "picks": picks, "claims": {str(k): v for k, v in claims.items()},
+            "picks": picks, "claims": {str(k): {"code": code, "human": human}
+                                  for k, (code, human) in claims.items()},
             "withheld": [{"number": it["number"], "title": it["title"],
                           "cause": c} for it, c in withheld],
             "dwell_hours": args.dwell_hours,
@@ -5640,7 +5702,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"{p['klass']:<10} #{p['number']:<7} {p['age']:>4}j {p['idle']:>5}j {vus:>4}  "
               f"{p['genre']:<15}{mark} {p['weight']:>5}  {p['title'][:62]}")
         if p["number"] in claims:
-            print(f"{'':>10} {'':>8} {'':>5} {'':>6} {'':>4}  claim: {claims[p['number']]}")
+            _code, _human = claims[p["number"]]
+            print(f"{'':>10} {'':>8} {'':>5} {'':>6} {'':>4}  claim: {_code} ({_human})")
         if p["number"] in delivery:
             note = delivery[p["number"]]
             head, sep, tail = note.partition("-> ")
