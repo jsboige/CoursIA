@@ -32,7 +32,7 @@ Sceller un protocole dont la grandeur centrale est mathématiquement inatteignab
 
 Pour chaque substrat (`gray_scott`, `axelrod`, `grokking`, `may`) :
 
-1. **Charger** les 30 fenêtres × 3 sections locales depuis l'export ICT-15c (relecture idempotente : `np.load(...)` du fichier `.npy` produit par `ICT-15c-MetaProxyObstruction.ipynb` cellule de sortie).
+1. **Charger** les 30 fenêtres × 3 sections locales depuis l'export ICT-15c (relecture idempotente : `np.load(...)` du fichier `.npy` produit par `ICT-15c-MetaProxyObstruction-Python.ipynb` cellule de sortie).
 2. **Mettre à plat** : `sections_substrat = sections.reshape(n_fenetres × n_proxys, n_features) = (90, n_features)`. Les 90 points sont l'**input géométrique** du nerf.
 3. **Vietoris-Rips** sur les 90 points : arête si `‖s_i − s_j‖ ≤ ε`, avec ε balayé sur la filtration complète (`gudhi` produit le diagramme nativement — pas de médiane à choisir).
 4. **Persistance** : `gudhi.simplex_tree.SimplexTree` → `persistence(homology_dimensions=[1])` → extraction des `intervals_b1` (list de `(birth, death)`).
