@@ -133,6 +133,11 @@ def test_belt_claim_holder_is_skipped_replaced(monkeypatch):
     Le mode belt regarde le reel via check_claims ; un candidat tenu est
     remplace par le suivant non tenu, dans la limite de la fenetre
     `grains + 4`.
+
+    Vrai vocabulaire (cf CHANGES_REQUESTED #18836 point 6 -- le tapis ne
+    regarde QUE le code machine rendu par `_summarize_claim`) : FREE /
+    FREE_STALE / OWNED_BY_ME / BLOCKED. Une fenetre ``belt_check_window``
+    est verifiee initialement ; au-dela, le tapis verifie au fil de l'eau.
     """
     items = [
         _make_item(30, age_days=100, idle=10, last=None),
@@ -140,27 +145,30 @@ def test_belt_claim_holder_is_skipped_replaced(monkeypatch):
         _make_item(32, age_days=100, idle=10, last=None),
         _make_item(33, age_days=100, idle=10, last=None),
     ]
-    # 30 et 31 sont tenus par d'autres lanes ; 32 et 33 sont libres
+    # 30 et 31 sont tenus par d'autres lanes ; 32 et 33 sont libres.
+    # Le fake_check rend la NOUVELLE forme (code, human).
     def fake_check(numbers, lane):
-        return {n: "CLEAR" if n >= 32 else "BLOQUE: autre lane"
+        return {n: (pig.CLAIM_CODE_BLOCKED if n < 32 else pig.CLAIM_CODE_FREE,
+                    "BLOQUE par autre lane" if n < 32 else "libre")
                 for n in numbers}
     monkeypatch.setattr(pig, "check_claims", fake_check)
 
     # On reproduit le comportement du main : on prend la fenetre,
-    # on applique le verdict, on garde grains non tenus
+    # on applique le verdict par code machine, on garde grains non BLOCKED.
     check_window = max(4 + 4, 8)
-    verdict = fake_check([it["number"] for it in items[:check_window]],
-                         "myia-ai-01:CoursIA-2")
+    belt_claims = fake_check([it["number"] for it in items[:check_window]],
+                             "myia-ai-01:CoursIA-2")
     picks = []
     withheld = []
     for it in items:
         if len(picks) >= 4:
             break
-        v = verdict.get(it["number"], "CLEAR")
-        if v == "CLEAR":
-            picks.append(it)
+        code, human = belt_claims.get(it["number"],
+                                      (pig.CLAIM_CODE_ERROR, "(no check)"))
+        if code == pig.CLAIM_CODE_BLOCKED:
+            withheld.append((it, human))
         else:
-            withheld.append((it, v))
+            picks.append(it)
     assert [p["number"] for p in picks] == [32, 33]
     assert [w[0]["number"] for w in withheld] == [30, 31]
 
@@ -202,6 +210,195 @@ def test_belt_red_backlog_does_not_empty_pool():
     filtered = pig.belt_filter(pool, args)
     assert any(it["number"] == 40 for it in filtered), \
         "le tapis ne filtre pas les rouges (main s'en occupe)"
+
+
+# 6e point CHANGES_REQUESTED #18836 (post-c.56) : _summarize_claim rend un
+# code machine, la boucle belt retient BLOQUE seul, et verifie au fil de
+# l'eau les items hors fenetre. Trois tests :
+
+
+def test_summarize_claim_machine_codes():
+    """Le vrai vocabulaire : 4 codes machine + 2 chemins d'erreur.
+
+    Couvre les branches de `_summarize_claim` directement. Le tapis roulant
+    ne regarde QUE le code, pas le verbe humain (cf bug fondateur c.56 :
+    `_summarize_claim` rendait du texte, la boucle testait `== "CLEAR"`,
+    resultat jamais servie dans la fenetre verifiee).
+    """
+    # Cas BLOQUE par une autre lane : blocking_lanes non vide.
+    blocked_json = ('{"blocking_lanes": ["myia-po-2024:CoursIA-2"],'
+                    '"my_active_claim": false, "stale_claims": []}')
+    code, human = pig._summarize_claim(blocked_json + "\n", 0)
+    assert code == pig.CLAIM_CODE_BLOCKED
+    assert "BLOQUE par" in human
+    # cas OWNED_BY_ME : my_active_claim=True.
+    owned_json = ('{"blocking_lanes": [], "my_active_claim": true,'
+                  '"stale_claims": []}')
+    code, human = pig._summarize_claim(owned_json + "\n", 0)
+    assert code == pig.CLAIM_CODE_OWNED_BY_ME
+    # cas FREE_STALE : stale_claims non vide.
+    stale_json = ('{"blocking_lanes": [], "my_active_claim": false,'
+                  '"stale_claims": [42]}')
+    code, human = pig._summarize_claim(stale_json + "\n", 0)
+    assert code == pig.CLAIM_CODE_FREE_STALE
+    # cas FREE : tout vide.
+    free_json = ('{"blocking_lanes": [], "my_active_claim": false,'
+                 '"stale_claims": []}')
+    code, human = pig._summarize_claim(free_json + "\n", 0)
+    assert code == pig.CLAIM_CODE_FREE
+    # cas ERROR : sortie sans JSON.
+    code, human = pig._summarize_claim("usage: --lane <lane> <N>\n", 2)
+    assert code == pig.CLAIM_CODE_ERROR
+
+
+def test_belt_head_of_queue_free_surfaces_as_pick_one(monkeypatch):
+    """Le scenario fondateur du steer coordinateur : la tete de file est
+    ``libre``, le tapis DOIT la sortir en pick #1 (et pas les positions 9+
+    non verifiees).
+
+    Montre la regression d'origine : avant le fix, _summarize_claim rendait
+    ``"libre"`` (humain) et la boucle belt testait `== "CLEAR"`, jamais
+    rendue -> la tete tombait en retenue, et les positions 9+ etaient
+    servies via `belt_claims.get(n, "CLEAR")` SANS verification.
+    """
+    # File de 12 issues ; on impose la tete comme 5105 (last=None, jamais
+    # servie) en controlant created_at directement, puis les items 5106,
+    # 5108 sont BLOQUE, les suivants libres. La tete 5105 doit sortir en
+    # pick #1 (le scenario du steer).
+    items = [
+        _make_item(5105, age_days=200, idle=10, last=None,
+                   created="2025-01-01T00:00:00Z"),  # tete, tres ancienne
+        _make_item(5106, age_days=180, idle=10, last=None,
+                   created="2025-06-01T00:00:00Z"),
+        _make_item(5107, age_days=170, idle=10, last=None,
+                   created="2025-12-01T00:00:00Z"),
+        _make_item(5108, age_days=160, idle=10, last=None,
+                   created="2026-01-01T00:00:00Z"),
+        _make_item(5109, age_days=150, idle=10, last=None,
+                   created="2026-03-01T00:00:00Z"),
+        _make_item(5110, age_days=140, idle=10, last=None,
+                   created="2026-05-01T00:00:00Z"),
+        _make_item(5111, age_days=130, idle=10, last=None,
+                   created="2026-07-01T00:00:00Z"),
+    ]
+    items.sort(key=pig.belt_sort_key)
+    # La tete est 5105 (jamais servie, creee en 2025-01-01 = la plus ancienne).
+    assert items[0]["number"] == 5105, (
+        f"sanity: tete devrait etre 5105, got {items[0]['number']}"
+    )
+    # fake_check reproduit le contrat reel : 5105 libre (scenario du steer),
+    # 5106/5107/5108 BLOQUE, le reste libre.
+    def fake_check(numbers, lane):
+        out = {}
+        for n in numbers:
+            if n in (5106, 5107, 5108):
+                out[n] = (pig.CLAIM_CODE_BLOCKED, "BLOQUE par autre lane")
+            else:
+                out[n] = (pig.CLAIM_CODE_FREE, "libre")
+        return out
+    monkeypatch.setattr(pig, "check_claims", fake_check)
+
+    belt_pool = items
+    grains = 3
+    check_window = min(max(grains + 4, 8), len(belt_pool))
+    initial_nums = [it["number"] for it in belt_pool[:check_window]]
+    belt_claims = fake_check(initial_nums, "myia-ai-01:CoursIA-2")
+    picks = []
+    withheld = []
+    for it in belt_pool:
+        if len(picks) >= grains:
+            break
+        code, human = belt_claims.get(it["number"],
+                                      (pig.CLAIM_CODE_ERROR, "(no check)"))
+        if code == pig.CLAIM_CODE_BLOCKED:
+            withheld.append((it, human))
+        else:
+            picks.append(it)
+    # La tete de file sort en pick #1.
+    assert picks[0]["number"] == 5105, (
+        f"BUG #18836 fondateur : la tete libre doit sortir en pick #1, "
+        f"mais le tapis rend {picks[0]['number']}. La boucle belt est "
+        f"trompee par un verbe humain au lieu d'un code machine."
+    )
+    # Les BLOQUE ont ete retenus.
+    assert [w[0]["number"] for w in withheld] == [5106, 5107, 5108]
+    # Et les picks non-bloques apres 5105 sont les suivants.
+    assert [p["number"] for p in picks] == [5105, 5109, 5110]
+
+
+def test_belt_verifies_outside_window_on_the_fly(monkeypatch):
+    """La verification au fil de l'eau : un item hors `belt_check_window`
+    qui n'a pas ete verifie initialement doit etre verifie ICI -- sinon
+    le tapis le sert sans l'avoir jamais teste.
+
+    Avant le fix : `belt_claims.get(n, "CLEAR")` rendait ``"CLEAR"`` par
+    defaut pour les positions hors fenetre. Apres le fix : on appelle
+    ``check_claims([n])`` au fil de l'eau et on tranche.
+
+    On monte une pool de 12 items ou les 8 premiers sont tous BLOQUE : le
+    tapis doit faire UN appel initial, puis 3 appels au fil de l'eau pour
+    les items hors fenetre (809, 810, 811) avant de servir 3 picks.
+    """
+    items = [_make_item(800 + i, age_days=200 - i, idle=10, last=None,
+                        created=f"2026-{(i % 9) + 1:02d}-01T00:00:00Z")
+             for i in range(12)]
+    items.sort(key=pig.belt_sort_key)
+    # Les 8 premiers par sort_triene sont bloques (verifie initialement) ;
+    # les 4 suivants sont servis au fil de l'eau, tous libres.
+    blocked_nums = {it["number"] for it in items[:8]}
+    free_nums = {it["number"] for it in items[8:]}
+
+    calls = []
+
+    def fake_check(numbers, lane):
+        calls.append(list(numbers))
+        out = {}
+        for n in numbers:
+            if n in blocked_nums:
+                out[n] = (pig.CLAIM_CODE_BLOCKED, "BLOQUE par autre lane")
+            else:
+                out[n] = (pig.CLAIM_CODE_FREE, "libre")
+        return out
+    monkeypatch.setattr(pig, "check_claims", fake_check)
+
+    belt_pool = items
+    grains = 3
+    check_window = min(max(grains + 4, 8), len(belt_pool))
+    initial_nums = [it["number"] for it in belt_pool[:check_window]]
+    belt_claims = fake_check(initial_nums, "myia-ai-01:CoursIA-2")
+    picks = []
+    withheld = []
+    for it in belt_pool:
+        if len(picks) >= grains:
+            break
+        n = it["number"]
+        if n in belt_claims:
+            code, human = belt_claims[n]
+        else:
+            extra = fake_check([n], "myia-ai-01:CoursIA-2")
+            code, human = extra.get(n, (pig.CLAIM_CODE_ERROR, "(no check)"))
+            belt_claims[n] = (code, human)
+        if code == pig.CLAIM_CODE_BLOCKED:
+            withheld.append((it, human))
+        else:
+            picks.append(it)
+    # Les 8 BLOQUE ont ete retenus (a prealable, dans la fenetre initiale).
+    assert {w[0]["number"] for w in withheld} == blocked_nums, (
+        f"withheld devrait etre {blocked_nums}, "
+        f"got {{w[0]['number'] for w in withheld}}"
+    )
+    # Les 3 picks sont les 3 premiers non-bloques (par sort_triene).
+    expected_picks = sorted(free_nums)[:3]
+    assert [p["number"] for p in picks] == expected_picks, (
+        f"picks devrait etre {expected_picks}, "
+        f"got {[p['number'] for p in picks]}"
+    )
+    # Au moins 2 appels a check_claims : 1 initial + au moins 1 fil du l'eau.
+    assert len(calls) >= 2, (
+        f"Apres le fix, le tapis doit verifier au fil de l'eau "
+        f"(appels : {calls}) ; sans cela, on retombe sur le bug "
+        f"fondateur : servir sans verifier."
+    )
 
 
 # Accumulateur : couverture end-to-end via les exports.
