@@ -76,10 +76,10 @@ Mathlib's own `primeFactorsList_two`): `Squarefree` via
 `squarefree_iff_nodup_primeFactorsList`, parity on the reduced list. -/
 theorem admissible_trente_quinze : AdmissibleFactorization 15 2 := by
   refine ⟨by decide, ?_, ?_⟩
-  · have h : Squarefree 15 := Nat.squarefree_iff_nodup_primeFactorsList.2 (by simp [Nat.primeFactorsList])
-    exact h
-  · have h : Even 15.primeFactorsList.length := (even_iff_two_dvd).mpr (by decide)
-    exact h
+  · exact (Nat.squarefree_iff_nodup_primeFactorsList (by decide)).2 (by simp [Nat.primeFactorsList])
+  · have h15 : Nat.primeFactorsList 15 = [3, 5] := by simp [Nat.primeFactorsList]
+    rw [h15]
+    exact ⟨1, rfl⟩
 
 /-- Parity counter-example of notebook §2: `D = 2` has exactly **one** prime
 factor (odd), so `30 = 2·15` is NOT admissible — although `gcd(2, 15) = 1`
