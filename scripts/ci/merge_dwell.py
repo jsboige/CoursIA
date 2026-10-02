@@ -617,37 +617,63 @@ def _default_branch(repo: str, fetch=_gh_json) -> str:
     return branch
 
 
+#: Liste des workflows dont un rouge sur `main` peut legitimer la derogation
+#: `merge-dwell-waived`. Chaque entree est le couple (yml_path, display_name) :
+#: le `yml_path` est l'identifiant du fichier sous `.github/workflows/` (utilise
+#: dans l'API `actions/workflows/{file}/runs`) ; le `display_name` est le nom
+#: GitHub visible dans la liste des workflow-runs (celui qu'on retrouve dans
+#: la reponse `workflow_runs[].name`). La liste reste explicite et documentee
+#: pour qu'une derive silencieuse d'un nom GitHub ne fausse pas le verdict.
+#:
+#: Pourquoi cette liste : un workflow `push: main` path-filtered qui n'a PAS
+#: de trigger `pull_request` peut etre rouge sur main sans rougir la PR
+#: candidate (la PR ne touche pas les paths concernes). C'est precisement le
+#: cas que la derogation vise : main est reellement rouge, mais la PR n'a
+#: aucun moyen de le voir. A ce jour (2026-10-02) le seul workflow repondant
+#: a ce critere est `Scripts & Notebook-Tools Tests` (scripts-tests.yml,
+#: push main, paths `scripts/**`, pas de trigger pull_request).
+MAIN_RED_WORKFLOWS = (
+    # (yml_path, display_name)
+    ("scripts-tests.yml", "Scripts & Notebook-Tools Tests"),
+)
+
+
 def _main_red_motif(repo: str, fetch=_gh_json) -> "str | None":
     """#18686 + #18790 + #18796 : motif de rouge observable sur la branche
     par defaut, ou None si vert.
 
-    Pli latest-wins par `created_at` sur les **workflows dont le rouge sur
-    `main` ne se reflete pas forcement sur la PR candidate**. La liste
-    canonique est : workflows `push: main` path-filtered qui n'ont PAS de
-    trigger `pull_request`. Un rouge sur `main` de l'un d'eux rougit le check
-    de la PR candidate SI elle touche les paths concernes -- mais une PR qui
-    ne touche pas les paths aura son check PR vert. La derogation vise
-    precisement ce cas : main est reellement rouge, mais la PR n'a aucun
-    moyen de le voir.
+    Pour chaque workflow de `MAIN_RED_WORKFLOWS`, lit le DERNIER run sur
+    `main` via l'API workflow-directe
+    `repos/{repo}/actions/workflows/{yml_path}/runs?branch={branch}&event=push
+    &status=completed&per_page=1`. Le premier run rendu est le verdict le
+    plus frais de ce workflow sur main, **independamment de son anciennete**
+    (limite de la fenetre globale du commit de tete : un merge non lie aux
+    paths du workflow peut evict le run hors de la fenetre de 100 -- CR
+    ai-01 2026-10-02 18:55Z sur #18796).
 
-    A ce jour (2026-10-02) le seul workflow repondant a ce critere est
-    `Scripts & Notebook-Tools Tests` (`scripts-tests.yml`, push: main,
-    path-filter sur `scripts/**` ; pas de trigger `pull_request`). Le gate
-    regarde le dernier run de ce workflow sur main : `failure` -> la
-    derogation peut jouer ; `success` ou absent -> main vert, la
-    derogation ne franchise pas.
+    Pli latest-wins par `created_at` parmi les workflows consideres : un seul
+    verdict de rouge suffit, le plus frais gagne. La liste explicite reste
+    documentee plus haut ; un nom GitHub derive rend `latest` vide, jamais
+    un faux positif.
+
+    Renvoie le motif releve (nom GitHub du workflow en echec + id du run)
+    pour que le message de derogation reste justifiable a la relecture.
 
     Pourquoi PAS les check-runs du commit de tete (l'ancienne approche) :
     `.github/workflows/pr-gate.yml` ne tourne que sur `pull_request`, donc
     il n'y a aucun check-run `PR gate` sur la tete de main -- `latest`
     reste `None`, et la derogation ne s'ouvrait jamais, meme quand main
     etait reellement rouge (mesure du 2026-10-02 par myia-ai-01, tete
-    `d8b7bb9628`, aucun check-run `PR gate` ; deux seuls workflows avec
-    ce nom sont `Re-aggregate stale PR gate verdicts` et `PR gate sweep
-    health advisory`, tous deux verts).
+    `d8b7bb9628`, aucun check-run `PR gate`).
 
-    Renvoie le motif releve (nom du workflow en echec) pour que le
-    message de derogation reste justifiable a la relecture.
+    Pourquoi PAS `actions/runs?branch=main&per_page=100` (l'approche
+    fenetre globale, 32968cb51) : la fenetre de 100 runs sur main couvre
+    typiquement 30-40 minutes, et chaque merge ajoute une vingtaine de
+    runs d'autres workflows. Apres 35 a 40 minutes sans merge sous
+    `scripts/**`, le dernier run de `Scripts & Notebook-Tools Tests` sort
+    de la fenetre -- `latest` redevient `None`, et un main reellement
+    rouge redevient invisible (mesure du 2026-10-02 18:55Z, tete
+    `32968cb51` : 100 runs sur main couvraient 35 minutes seulement).
 
     Une couleur ILLISIBLE ne vaut PAS rouge : None, la derogation ne
     franchise jamais sur une absence de preuve -- fail-closed, comme
@@ -655,44 +681,46 @@ def _main_red_motif(repo: str, fetch=_gh_json) -> "str | None":
     label dont la condition ne peut pas etre prouvee retombe sur le
     plancher NORMAL, le gate continue de mesurer sans refuser.
     """
-    # Liste des workflows dont un rouge sur main peut legitimer la
-    # derogation. Garder cette liste explicite et documentee -- derivee
-    # des .github/workflows/*.yml, pas construite a la main sur un
-    # tirage du picker.
-    MAIN_RED_WORKFLOWS = (
-        "Scripts & Notebook-Tools Tests",  # scripts-tests.yml
-    )
     try:
         branch = _default_branch(repo, fetch)
-        runs = fetch(
-            "repos/{}/actions/runs?branch={}&per_page=100&status=completed".format(
-                repo, branch
-            )
-        )
     except DwellError:
         return None
-    entries = runs.get("workflow_runs") if isinstance(runs, dict) else None
-    if not isinstance(entries, list):
-        return None
-    # Pli latest-wins par nom puis par created_at.
     latest = None
-    for run in entries:
+    for _yml, display_name in MAIN_RED_WORKFLOWS:
+        try:
+            payload = fetch(
+                "repos/{}/actions/workflows/{}/runs"
+                "?branch={}&event=push&status=completed&per_page=1".format(
+                    repo, _yml, branch
+                )
+            )
+        except DwellError:
+            return None
+        entries = (
+            payload.get("workflow_runs") if isinstance(payload, dict) else None
+        )
+        if not isinstance(entries, list) or not entries:
+            continue
+        run = entries[0]
         if not isinstance(run, dict):
             continue
-        if run.get("name") not in MAIN_RED_WORKFLOWS:
+        # Garde-fou : le display_name GitHub doit matcher le display_name
+        # canonique de l'entree. Un changement de nom cote GitHub ne fait
+        # PAS evoluer silencieusement le verdict : on ignore le run.
+        if run.get("name") != display_name:
+            continue
+        if run.get("conclusion") != "failure":
             continue
         created = run.get("created_at") or ""
         if latest is None or created > (latest.get("created_at") or ""):
             latest = run
     if latest is None:
         return None
-    if latest.get("conclusion") == "failure":
-        return "main rouge: workflow `{}` en echec sur {} (run {})".format(
-            latest.get("name") or "?",
-            branch,
-            (latest.get("html_url") or "").rsplit("/", 1)[-1] or "?",
-        )
-    return None
+    return "main rouge: workflow `{}` en echec sur {} (run {})".format(
+        latest.get("name") or "?",
+        branch,
+        (latest.get("html_url") or "").rsplit("/", 1)[-1] or "?",
+    )
 
 
 def check(
