@@ -207,6 +207,11 @@ def test_main_json_and_fail_on_findings_rc2(monkeypatch, capsys):
             {"commits": [{"committedDate": _ts(100)}]}))
 
     _patch_runner(monkeypatch, fake_runner)
+    # Ancrer l'horloge de main() au NOW des fixtures : sans injection, le
+    # now réel dérive d'un jour et le churn (commentaires à <24 h de NOW)
+    # sort de la fenêtre — la conjonction casse et le test rougit 24 h
+    # après sa rédaction (mesuré le 2026-10-02 sur main, rc 0 != 2).
+    monkeypatch.setattr(sdd, "_now", lambda: NOW)
     assert sdd.main(["--fail-on-findings", "--limit", "10"]) == 2
     assert sdd.main(["--limit", "10"]) == 0
     capsys.readouterr()  # vide le buffer : la sortie --json doit être seule
