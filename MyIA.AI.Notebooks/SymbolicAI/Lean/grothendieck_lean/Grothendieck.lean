@@ -47,6 +47,7 @@ import Grothendieck.Fppf
 import Grothendieck.Godement
 import Grothendieck.GodementFunctor
 import Grothendieck.GodementMono
+import Grothendieck.GodementResolution
 import Grothendieck.KanExtensions
 import Grothendieck.LawvereTierney
 import Grothendieck.LeftExact
@@ -182,6 +183,18 @@ Substance réelle :
 - `Grothendieck.YonedaLemma` : lemme de Yoneda — plongement pleinement
   fidèle d'une catégorie C dans la catégorie de foncteurs [C^op, Ens],
   c_{x} ↦ Hom_C(-, x) (Grothendieck 1960, CatAlg).
+- `Grothendieck.Godement` (Partie 84) : le faisceau C⁰ = produit des tiges ;
+  flasque sans hypothèse sur F, faisceau, unité injective sur les faisceaux.
+- `Grothendieck.GodementFunctor` (Partie 85) : endofoncteur C⁰ sur les préfaisceaux
+  de groupes abéliens, unité naturelle `F → C⁰F` ; la préservation des monos
+  est reportée à la Partie 86.
+- `Grothendieck.GodementMono` (Partie 86) : C⁰ préserve les monomorphismes
+  (instance `PreservesMonomorphisms`) — prérequis nommé par la Partie 85,
+  fil du complexe de Godement.
+- `Grothendieck.GodementResolution` (Partie 87) : la résolution canonique de
+  Godement est posée — le complexe `0 → F → C⁰F → C⁰(C⁰F) → ⋯` avec
+  null-homotopie `μ ≫ d⁰ = 0` et exactitude en degré 0 (mono sur les
+  faisceaux). L'acyclicité aux degrés supérieurs est la Partie 88.
 
 Tous les `sorry`s ne sont pas comblés — la plupart sont des échafaudages
 intentionnels pour le prouveur multi-agent (cf. Epic #1453).
@@ -277,6 +290,18 @@ Substance (English):
 - `Grothendieck.YonedaLemma`: Yoneda lemma — fully faithful embedding of a
   category C into the functor category [C^op, Set], c_{x} ↦ Hom_C(-, x)
   (Grothendieck 1960, CatAlg).
+- `Grothendieck.Godement` (Part 84): the C⁰ sheaf = product of stalks;
+  flasque without hypothesis on F, sheaf, unit injective on sheaves.
+- `Grothendieck.GodementFunctor` (Part 85): endofunctor C⁰ on presheaves of
+  abelian groups, natural unit `F → C⁰F`; preservation of monos is deferred to
+  Part 86.
+- `Grothendieck.GodementMono` (Part 86): C⁰ preserves monomorphisms
+  (instance `PreservesMonomorphisms`) — prerequisite named by Part 85,
+  thread of the Godement complex.
+- `Grothendieck.GodementResolution` (Part 87): the canonical Godement
+  resolution is posed — the complex `0 → F → C⁰F → C⁰(C⁰F) → ⋯` with
+  null-homotopy `μ ≫ d⁰ = 0` and exactness at degree 0 (mono on sheaves).
+  Acyclicity at higher degrees is Part 88.
 
 Not all `sorry`s are filled — most are intentional scaffolds for the
 multi-agent prover (cf. Epic #1453).
