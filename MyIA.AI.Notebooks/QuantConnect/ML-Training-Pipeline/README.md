@@ -568,9 +568,9 @@ Trois familles d'artefacts, trois emplacements distincts, **un seul verdict cano
 
 **Règle d'or** : un répertoire `<exp>/` = une expérience = un verdict. Pas de JSON plats au racine de `scripts/results/`.
 
-#### Dérogations historiques connues (4 fichiers plats à migrer)
+#### Dérogations historiques connues (fichiers plats à migrer)
 
-Ces 4 fichiers violent la convention (JSON plat à la racine de `scripts/results/` au lieu d'un sous-répertoire `<exp>/`). Ils sont **référencés en dur** par `m4_dlinear_vol_sc_validation.ipynb` (chemins `Path(...)` dans 4 cellules), `scripts/btc_vol.py` (default argparse) et `REGISTRY.md` (commandes `--out-json`). La migration est **non triviale** : déplacer les JSON casserait les consommateurs. Décision : **garder en l'état, flagger ici**, et traiter dans une PR dédiée quand les chemins seront refactorés en `Path(__file__).parent / "<exp>"`.
+Ces fichiers violent la convention (JSON plat à la racine de `scripts/results/` au lieu d'un sous-répertoire `<exp>/`). Ils sont **référencés en dur** par `m4_dlinear_vol_sc_validation.ipynb` (chemins `Path(...)` dans des cellules), `scripts/btc_vol.py` (default argparse) et `REGISTRY.md` (commandes `--out-json`). La migration est **non triviale** : déplacer les JSON casserait les consommateurs. Décision : **garder en l'état, flagger ici**, et traiter dans une PR dédiée quand les chemins seront refactorés en `Path(__file__).parent / "<exp>"`.
 
 | Fichier plat | Réf. canonique cible | Statut |
 |---|---|---|
