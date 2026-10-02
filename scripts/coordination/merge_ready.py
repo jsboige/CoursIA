@@ -842,12 +842,14 @@ def twin_collision_reason(
             return "twin-index-collision"
         cross_ref = data.get("cross_ref") or []
         base_ref = data.get("base_ref") or "origin/main"
-        # Si AUCUN verdict n'est expose par la collision, l'organe est anterieur
-        # a #18683 / #18725 : on ne peut pas distinguer ON-MAIN de MULTI-PR,
-        # et un ON-MAIN fait rougir `main` CI des le premier merge. Fail-closed
-        # : on garde le motif historique ``twin-index-collision`` jusqu'a ce
-        # que l'organe expose son verdict. Pas de confiance silencieuse.
-        if not any(
+        # Verdict requis sur CHAQUE collision : si UNE collision n'a pas de
+        # verdict reconnu (organe anterieur a #18683 / #18725, ou verdict
+        # inconnu/None), on ne peut pas distinguer ON-MAIN de MULTI-PR, et
+        # un ON-MAIN ferait rougir `main` CI des le premier merge. Fail-closed
+        # : on garde le motif historique ``twin-index-collision`` tant que la
+        # classification de toutes les collisions n'est pas acquise. Pas de
+        # confiance silencieuse sur un mix verdict-connu + verdict-absent.
+        if not all(
             isinstance(c, dict) and c.get("verdict") in ("ON-MAIN", "MULTI-PR")
             for c in cross_ref
         ):
