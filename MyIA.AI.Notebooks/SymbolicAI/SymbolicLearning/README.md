@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-SymbolicLearning
-pedagogical_count: 26
-breakdown: SymbolicLearning=26
-maturity: BETA=24, ALPHA=2
+pedagogical_count: 27
+breakdown: SymbolicLearning=27
+maturity: BETA=25, ALPHA=2
 -->
 
 ## Présentation
