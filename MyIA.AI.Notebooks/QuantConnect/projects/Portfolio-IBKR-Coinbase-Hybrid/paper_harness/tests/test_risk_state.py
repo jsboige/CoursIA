@@ -58,3 +58,50 @@ def test_incomplete_state_raises(tmp_path):
     path.write_text(json.dumps({"peak_equity": 1.0}), encoding="utf-8")
     with pytest.raises(ValueError, match="missing"):
         RiskGate.load(RISK, path, starting_capital=1000.0)
+
+
+FIRST = RiskConfig(max_dd_pct=0.25, daily_var_pct=0.5, vol_spike_threshold=2.0, alert_dd_pct=0.11)
+
+
+def test_first_threshold_alone_only_alerts():
+    gate = RiskGate(FIRST, 1000.0)
+    assert gate.update_equity(880.0)  # -12 %: alert, orders still allowed
+    assert "first loss threshold" in gate.alert
+    assert gate.exposure_scale == 1.0 and not gate.halted
+    gate.update_equity(900.0)
+    assert gate.alert is None
+
+
+def test_halving_comes_back_at_half_the_threshold_not_at_it():
+    risk = RiskConfig(max_dd_pct=0.25, daily_var_pct=0.5, vol_spike_threshold=2.0,
+                      alert_dd_pct=0.11, alert_halves=True)
+    gate = RiskGate(risk, 1000.0)
+    gate.update_equity(880.0)
+    assert gate.exposure_scale == 0.5
+    gate.update_equity(900.0)  # -10 %: back above the threshold, still halved
+    assert gate.exposure_scale == 0.5
+    gate.update_equity(950.0)  # -5 %: within half the threshold, full exposure
+    assert gate.exposure_scale == 1.0
+
+
+def test_liquidation_and_halving_survive_a_restart(tmp_path):
+    risk = RiskConfig(max_dd_pct=0.25, daily_var_pct=0.5, vol_spike_threshold=2.0,
+                      alert_dd_pct=0.11, alert_halves=True)
+    gate = RiskGate(risk, 1000.0)
+    gate.update_equity(880.0)
+    gate.save(tmp_path / "r.json")
+    assert RiskGate.load(risk, tmp_path / "r.json", 1000.0).exposure_scale == 0.5
+    gate.update_equity(700.0)  # -30 %: second threshold
+    gate.save(tmp_path / "r.json")
+    restored = RiskGate.load(risk, tmp_path / "r.json", 1000.0)
+    assert restored.liquidate and restored.exposure_scale == 0.0
+    restored.clear_halt()  # manual reset after review lifts the liquidation
+    assert restored.exposure_scale == 0.5
+
+
+def test_state_file_without_the_new_flags_keeps_a_drawdown_halt_liquidating(tmp_path):
+    path = tmp_path / "old.json"
+    path.write_text(json.dumps({"starting_capital": 1000.0, "peak_equity": 1200.0,
+                                "day_start_equity": 1070.0, "halted": True,
+                                "halt_reason": "max drawdown 10.83% >= 10.00%"}), encoding="utf-8")
+    assert RiskGate.load(RISK, path, 1000.0).exposure_scale == 0.0
