@@ -1,3 +1,11 @@
+# Archive header (standard _archive convention, 2026-08, docs/reference/_archive-convention.md)
+# - Date archived     : 2026-10-01
+# - Superseded by     : none (closed dead-end ; refactor terminé, phase 2 manuelle par carnet)
+# - Verdict recorded in : #18153 palier 1 + #18153 palier 1 (axe D #16473)
+#
+# Per-function disposition :
+# - main body          : abandoned — one-shot terminated, no consumer; kept verbatim for forensic replay
+
 """Refactor Solidity notebooks: add web3.py setup cell and update navigation.
 
 This script adds a web3.py/anvil connection cell at the top of each Solidity notebook,

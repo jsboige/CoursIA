@@ -1,3 +1,11 @@
+# Archive header (standard _archive convention, 2026-08, docs/reference/_archive-convention.md)
+# - Date archived     : 2026-10-01
+# - Superseded by     : none (closed dead-end — one-shot compilation fix for GameTheory-15b notebook; declared temporary in header)
+# - Verdict recorded in : issue #13745 umbrella 'notebook_tools orphans' + #18153 palier 1 (axe D #16473)
+#
+# Per-function disposition :
+# - main body          : abandoned — one-shot terminated, no consumer; kept verbatim for forensic replay
+
 """
 One-shot fixer for GameTheory-15b-Lean-CooperativeGames-Lean.ipynb compilation errors.
 
