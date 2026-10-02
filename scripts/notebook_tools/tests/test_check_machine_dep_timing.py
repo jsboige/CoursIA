@@ -679,7 +679,7 @@ def test_class5_does_not_break_sudoku13_control() -> None:
     classes wallclock.
 
     Controle synthetique sur lignes verbatim de la cellule 43 de
-    Sudoku-13-SymbolicAutomata-Csharp (banc d'essai). L'ancienne version
+    Sudoku-13-SymbolicAutomata-CSharp (banc d'essai). L'ancienne version
     scannait le notebook reel (attendu >= 25 wallclock) ; la vague #9434
     draine la serie Sudoku en continu (26 -> 0 sur ce notebook), un
     controle sur fichier reel re-casserait a chaque drain. Le sens du test

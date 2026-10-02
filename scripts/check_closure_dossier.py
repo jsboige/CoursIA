@@ -487,8 +487,15 @@ def render_template(snapshot: dict[str, Any], lane: str) -> str:
         ("open-prs", str(len(snapshot["open_prs"]))),
         ("comments-reviewed", str(n_comments)),
     )
-    lines = [START, *(f"{key}: {value}" for key, value in fields)]
-    lines.append("  - REPLACE_WITH <critère du body> -> <PR#/commit/fichier:ligne>")
+    lines = [START]
+    for key, value in fields:
+        lines.append(f"{key}: {value}".rstrip())
+        if key == "acceptance":
+            # Les items vivent SOUS `acceptance:` : poses apres
+            # `comments-reviewed`, ils sont lus comme lignes malformees et le
+            # dossier rempli tel quel est refuse (mesure sur #18480).
+            lines.append(
+                "  - REPLACE_WITH <critère du body> -> <PR#/commit/fichier:ligne>")
     lines.append(END)
     return "\n".join(lines)
 
