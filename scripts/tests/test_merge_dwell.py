@@ -876,3 +876,131 @@ def test_q67_date_et_sha_suivent_la_meme_remontee():
         "o/r", "m3rg3", "ba5e", fetch=fetch, run_git=_git_proving("7ee0"),
     )
     assert when.isoformat().startswith("2026-09-07T09:00:00")
+
+
+# --- 8. #18686 -- le label merge-dwell-waived ne joue que si main est rouge --
+
+def _pr_with_label_fetch(check_runs=None, red_read_fails=False):
+    """Fetch fake pour une PR JEUNE (tete a 11:55, NOW=12:00) portant le label.
+
+    `check_runs` : liste de dict check-run de la tete de `main` (branch
+    par defaut renvoyee par `repos/o/r`). `red_read_fails` : la lecture de la
+    couleur de main leve DwellError (API muette)."""
+    def fetch(path):
+        if path == "repos/o/r/pulls/42":
+            return {
+                "labels": [{"name": merge_dwell.WAIVER_LABEL}],
+                "base": {"sha": "ba5e0000"},
+            }
+        if path == "repos/o/r/commits/abc":
+            return {"commit": {"committer": {"date": "2026-09-07T11:55:00Z"}}}
+        if path == "repos/o/r":
+            if red_read_fails:
+                raise merge_dwell.DwellError("repos muet")
+            return {"default_branch": "main"}
+        if path == "repos/o/r/commits/main/check-runs?per_page=100":
+            if red_read_fails:
+                raise merge_dwell.DwellError("check-runs muets")
+            return {"check_runs": check_runs}
+        raise AssertionError("chemin inattendu: " + path)
+    return fetch
+
+
+def test_18686_label_main_vert_le_plancher_est_garde():
+    """Critere de fermeture 1 : label pose alors que `main` est vert -- le gate
+    garde le plancher. C'est le geste du 01/10 (#18502, #18676) : une lane
+    posait le label sur du contenu sans aucun rapport avec un rouge."""
+    ok, msg = merge_dwell.check(
+        "o/r", "abc", 42, 120.0, now=NOW,
+        fetch=_pr_with_label_fetch(check_runs=[
+            {"name": "PR gate", "status": "completed", "conclusion": "success"},
+            {"name": "pytest", "status": "completed", "conclusion": "success"},
+        ]),
+    )
+    assert ok is False, "main vert : le label ne doit PAS lever le plancher"
+    assert "condition non remplie" in msg
+    assert msg.startswith("tete du 2026-09-07T11:55:00Z"), (
+        "le plancher doit se mesurer normalement, comme si le label etait absent"
+    )
+
+
+def test_18686_label_main_rouge_le_plancher_est_leve_avec_motif():
+    """Critere de fermeture 2 : label pose alors que `main` est rouge -- le gate
+    leve le plancher ET le motif releve (check en echec) vit dans le message."""
+    ok, msg = merge_dwell.check(
+        "o/r", "abc", 42, 120.0, now=NOW,
+        fetch=_pr_with_label_fetch(check_runs=[
+            {"name": "PR gate", "status": "completed", "conclusion": "success"},
+            {"name": "notebook-guard", "status": "completed",
+             "conclusion": "failure"},
+        ]),
+    )
+    assert ok is True, "main rouge : la derogation doit jouer"
+    assert "dwell leve par le label" in msg
+    assert "main rouge: check `notebook-guard` en echec sur main" in msg, (
+        "le motif doit rester lisible dans le log du gate"
+    )
+
+
+def test_18686_couleur_de_main_illisible_ne_leve_pas():
+    """Fail-closed : une couleur de main illisible ne vaut PAS rouge -- la
+    derogation ne franchise jamais sur une absence de preuve. Le plancher
+    s'applique normalement, le gate ne refuse pas (ce n'est pas une erreur
+    d'etat de PR, c'est une derogation non prouvee)."""
+    ok, msg = merge_dwell.check(
+        "o/r", "abc", 42, 120.0, now=NOW,
+        fetch=_pr_with_label_fetch(red_read_fails=True),
+    )
+    assert ok is False
+    assert "condition non remplie" in msg
+
+
+def test_18686_check_run_en_cours_ne_compte_pas_comme_rouge():
+    """Un check-run NON complete (status in_progress) n'est ni vert ni rouge :
+    seul un `completed`/`failure` prouve le rouge."""
+    ok, _ = merge_dwell.check(
+        "o/r", "abc", 42, 120.0, now=NOW,
+        fetch=_pr_with_label_fetch(check_runs=[
+            {"name": "PR gate", "status": "in_progress", "conclusion": None},
+        ]),
+    )
+    assert ok is False
+
+
+def test_18686_sans_label_la_couleur_de_main_n_est_pas_lue():
+    """Economie ET neutralite : une PR non labellisee ne declenche AUCUNE
+    lecture de la couleur de main -- le guard n'ajoute de latence qu'au cas
+    qu'il sert a juger."""
+    def fetch(path):
+        if path == "repos/o/r/pulls/42":
+            return {"labels": [], "base": {"sha": "ba5e0000"}}
+        if path == "repos/o/r/commits/abc":
+            return {"commit": {"committer": {"date": "2026-09-07T11:55:00Z"}}}
+        raise AssertionError(
+            "lecture inattendue hors derogation labellisee: " + path
+        )
+
+    ok, msg = merge_dwell.check("o/r", "abc", 42, 120.0, now=NOW, fetch=fetch)
+    assert ok is False
+    assert "condition non remplie" not in msg
+
+
+def test_18686_label_invalide_ne_casse_pas_le_message_relisible():
+    """Le note « condition non remplie » est APPENQUE apres le message de
+    plancher : la forme relisible par le picker (#15910) doit tenir."""
+    ok, _, msg = merge_dwell.evaluate(
+        NOW - timedelta(minutes=7), NOW, 120.0, waived=False
+    )
+    parsed = merge_dwell.parse_pending_message(msg + " -- label `x` present")
+    assert parsed is not None and parsed["remaining_min"] == 113
+
+
+def test_18686_evaluate_rend_le_motif_de_derogation():
+    """Le motif vit dans le message de derogation -- une derogation sans
+    motif publie serait une ligne de label que rien ne justifie."""
+    ok, _, msg = merge_dwell.evaluate(
+        NOW - timedelta(minutes=1), NOW, 120.0, waived=True,
+        waiver_motif="main rouge: check `PR gate` en echec sur main",
+    )
+    assert ok is True
+    assert "main rouge: check `PR gate` en echec sur main" in msg
