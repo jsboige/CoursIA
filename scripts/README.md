@@ -119,9 +119,9 @@ resync par le moteur Argumentum (T3, gated #1650 Phase 1) viennent dans les tran
 ```
 
 Chaque script PowerShell possède un jumeau bash de comportement équivalent
-(`scripts/environment/README.md` documente les différences de port). Le seul
-script Windows-only du dépôt est `scripts/genai-stack/Configure-IISAuthentication.ps1`
-(IIS n'existe pas sur Mac/Linux) — pas de jumeau bash prévu.
+(`scripts/environment/README.md` documente les différences de port). Le dépôt
+ne contient aucun script Windows-only : la seule authentification IIS active
+est celle de SearXNG, gérée manuellement au cas-par-cas (cf. issue #18839).
 
 ## Validation Lean
 

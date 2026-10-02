@@ -65,6 +65,6 @@ spécifiques Unix :
 ## Cas intrinsèquement Windows
 
 Aucun script de ce répertoire n'est intrinsèquement Windows-only : les outils
-sous-jacents (`python`, `dotnet`, `jupyter`) sont multiplateformes. Le seul cas
-Windows-only du dépôt est `scripts/genai-stack/Configure-IISAuthentication.ps1`
-(IIS n'existe pas sur Mac/Linux) — documenté dans #10644, pas de jumeau bash prévu.
+sous-jacents (`python`, `dotnet`, `jupyter`) sont multiplateformes. Le dépôt
+ne contient aucun script Windows-only : la seule authentification IIS active
+est celle de SearXNG, gérée manuellement au cas-par-cas (cf. issue #18839).
