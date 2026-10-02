@@ -34,6 +34,14 @@ Convention XFAIL : ``strict=True`` (defaut). Un XPASS inattendu = le
 bug est corrige ou la repro n'est plus probante -> la CI force la
 conversion en test de non-regression (par edition du fichier, pas en
 silence). Un XFAIL persistant est attendu tant que le bug est present.
+
+Cycle c.1001 : main (commit ``24511147e`` / PR #18604) a fixe le bug
+pour ``detect_added_readings`` et la topologie reelle Lean-10 c.63 (les
+tests 1 et 3 passent donc en regression). Le test 2
+(``readings_by_output``, helper single-notebook) reste en xfail strict :
+le helper a un bug separe que le carve-out principal ne touche pas (cf
+message commit ``24511147e``). A chaque XPASS sur test 2 = signal que
+le helper a ete corrige -> retirer ce xfail.
 """
 import pytest
 import sys
@@ -57,7 +65,6 @@ def code(src, cid, output="42\n"):
     }
 
 
-@pytest.mark.xfail(reason="REPRODUCTION c.970 du bug split-reading code->md ; le cliquet signale a tort -- cf docstring", strict=True)
 def test_code_to_md_conversion_not_second_reading():
     """Convertir un code avec sortie en fence markdown n'est pas une seconde
     lecture : la lecture legitime qui suit commentait la sortie du code
@@ -120,7 +127,6 @@ def test_code_to_md_keeps_legitimate_reading_count():
     assert mod.readings_by_output(base_nb) == {"print(100)": 1, "print(42)": 1}
 
 
-@pytest.mark.xfail(reason="REPRODUCTION c.970 du bug split-reading code->md sur Lean-10 c.63 -- cf docstring", strict=True)
 def test_minimal_repro_pr_18440():
     """Topologie Lean-10-LeanDojo c.60-c.65 mesuree sur la PR #18440
     (head = 1ad120705, base = 1ad120705^) : ids reels, memes positions.
