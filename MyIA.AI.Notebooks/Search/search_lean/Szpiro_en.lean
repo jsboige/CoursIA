@@ -60,7 +60,7 @@ namespace Szpiro_en
 (definition preceding Theorem 1.1): `D` and `M` coprime, `D` squarefree, and
 `D` with an **even** number of prime factors. -/
 def AdmissibleFactorization (D M : ℕ) : Prop :=
-  D.gcd M = 1 ∧ Squarefree D ∧ Even D.primeFactorsList.length
+  D.gcd M = 1 ∧ Squarefree D ∧ D.primeFactorsList.length % 2 = 0
 
 /-- `N = 30 = 2·3·5`: the trivial factorization (`D = 1`, zero prime factors
 — zero is even) is admissible. First row of the notebook §2 table. -/

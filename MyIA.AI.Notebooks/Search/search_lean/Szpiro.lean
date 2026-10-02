@@ -54,7 +54,7 @@ namespace Szpiro
 précède le théorème 1.1) : `D` et `M` premiers entre eux, `D` sans facteur
 carré, et `D` comptant un nombre **pair** de facteurs premiers. -/
 def AdmissibleFactorization (D M : ℕ) : Prop :=
-  D.gcd M = 1 ∧ Squarefree D ∧ Even D.primeFactorsList.length
+  D.gcd M = 1 ∧ Squarefree D ∧ D.primeFactorsList.length % 2 = 0
 
 /-- `N = 30 = 2·3·5` : la factorisation triviale (`D = 1`, zéro facteur premier
 — zéro est pair) est admissible. Première ligne du tableau du carnet §2. -/
