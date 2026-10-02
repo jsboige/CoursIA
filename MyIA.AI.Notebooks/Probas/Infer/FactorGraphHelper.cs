@@ -121,10 +121,55 @@ public static class FactorGraphHelper
     /// l'emploie declenche un CS1701. DisplayAs ne prend qu'une chaine et un
     /// type MIME, et rend le meme SVG sans le div d'enrobage (cf #14122).
     /// </summary>
+    /// <summary>
+    /// Liste des repertoires candidats ou Infer.NET peut avoir ecrit les artefacts
+    /// Model_*.gv / Model_*.svg. En kernel .NET Interactive, le cwd d'Infer.NET
+    /// n'est pas garanti etre celui du notebook : on cherche donc dans plusieurs
+    /// endroits (cwd du process, cwd alternatif, dossier courant, dossier du
+    /// binaire) et on agrege. Voir issue #18672.
+    /// </summary>
+    private static string[] GetFactorGraphSearchDirectories()
+    {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var list = new List<string>();
+        void Add(string? p)
+        {
+            if (string.IsNullOrEmpty(p)) return;
+            try
+            {
+                var full = Path.GetFullPath(p);
+                if (Directory.Exists(full) && seen.Add(full))
+                {
+                    list.Add(full);
+                }
+            }
+            catch
+            {
+                // chemin invalide -> on ignore
+            }
+        }
+
+        Add(Environment.CurrentDirectory);
+        // cwd alternatif selon l'OS (certains hosts basculent sur / ou %TEMP%)
+        Add(Directory.GetCurrentDirectory());
+        // dossier du binaire en cours (sert de repli pour un worker sans cwd)
+        try { Add(AppContext.BaseDirectory); } catch { }
+        // %TEMP% local : dernier recours quand aucun cwd n'est defini
+        try { Add(Path.GetTempPath()); } catch { }
+
+        return list.ToArray();
+    }
+
     public static string GetLatestFactorGraphHtml(int maxWidth = 800)
     {
-        var gvFiles = Directory.GetFiles(Environment.CurrentDirectory, "Model_*.gv");
-        var svgFiles = Directory.GetFiles(Environment.CurrentDirectory, "Model_*.svg");
+        var gvFiles = GetFactorGraphSearchDirectories()
+            .SelectMany(d => SafeEnumerateFiles(d, "Model_*.gv"))
+            .Distinct()
+            .ToArray();
+        var svgFiles = GetFactorGraphSearchDirectories()
+            .SelectMany(d => SafeEnumerateFiles(d, "Model_*.svg"))
+            .Distinct()
+            .ToArray();
 
         // Prefere reconvertir le .gv le plus recent (la source de verite produite
         // par la derniere inference) quand Graphviz est disponible, pour que le
@@ -146,6 +191,18 @@ public static class FactorGraphHelper
         }
 
         return ConvertAndGetLatestGvHtml(maxWidth);
+    }
+
+    private static IEnumerable<string> SafeEnumerateFiles(string dir, string pattern)
+    {
+        try
+        {
+            return Directory.EnumerateFiles(dir, pattern, SearchOption.TopDirectoryOnly);
+        }
+        catch
+        {
+            return Array.Empty<string>();
+        }
     }
 
     /// <summary>
@@ -233,7 +290,10 @@ public static class FactorGraphHelper
     /// </summary>
     public static string ConvertAndGetLatestGvHtml(int maxWidth = 800)
     {
-        var gvFiles = Directory.GetFiles(Environment.CurrentDirectory, "Model_*.gv");
+        var gvFiles = GetFactorGraphSearchDirectories()
+            .SelectMany(d => SafeEnumerateFiles(d, "Model_*.gv"))
+            .Distinct()
+            .ToArray();
 
         if (gvFiles.Length == 0)
         {
@@ -255,8 +315,11 @@ public static class FactorGraphHelper
     /// </summary>
     public static int CleanupGeneratedFiles()
     {
-        var files = Directory.GetFiles(Environment.CurrentDirectory, "Model_*.gv")
-            .Concat(Directory.GetFiles(Environment.CurrentDirectory, "Model_*.svg"));
+        var files = GetFactorGraphSearchDirectories()
+            .SelectMany(d => SafeEnumerateFiles(d, "Model_*.gv"))
+            .Concat(GetFactorGraphSearchDirectories()
+                .SelectMany(d => SafeEnumerateFiles(d, "Model_*.svg")))
+            .Distinct();
 
         int count = 0;
         foreach (var file in files)
