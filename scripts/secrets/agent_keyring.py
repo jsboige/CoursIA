@@ -852,11 +852,10 @@ def cmd_set(args) -> int:
 
     print(f"OK  entree {'creee' if created else 'mise a jour'} : '{entry2.title}' "
           f"(groupe {entry2.group.name if entry2.group else '-'})")
-    # Le kind se lit sur l'entree RELUE du disque, jamais sur la valeur stdin :
-    # la source stdin est ce que CodeQL suit jusqu'au print (alerte 148), et la
-    # relecture classifie ce que le coffre porte reellement apres l'aller-retour
-    # -- la forme testee par la comparaison d'empreinte ci-dessus.
-    print(f"    secret    : {secret_kind(entry2.password)}")
+    # Le kind n'est pas imprime par `set` : toute expression qui lit la valeur
+    # (stdin ou relecture coffre apres ecriture) porte le taint CodeQL jusqu'au
+    # print (alertes 148 puis 149), et la valeur ne sort QUE sous forme
+    # d'empreinte PBKDF2. Le kind d'une entree s'affiche via `show`.
     print(f"    empreinte : {expected}  (valeur non imprimee)")
     print(f"    coffre    : {before} -> {after}")
 
