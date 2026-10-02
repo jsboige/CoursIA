@@ -217,6 +217,7 @@ Le répertoire `docs/` contient :
 | [INTRO-GENAI.md](docs/INTRO-GENAI.md) | Introduction pratique à l'IA générative |
 | [CLUSTER-ORCHESTRATION.md](docs/CLUSTER-ORCHESTRATION.md) | Orchestration cluster (coordinateur/workers, MCPs maison, RooSync) — le vibe-coding à l'échelle d'une flotte |
 | [CARTE-ESPACES.md](docs/CARTE-ESPACES.md) | Carte des espaces de la série (#14526) : inventaire mesuré des workspaces et voisins, classification, arborescence cible et plan de PRs atomiques |
+| [ROSTER-MACHINES.md](docs/ROSTER-MACHINES.md) | Roster daté des identités machine:workspace du cluster (#14527) : quatre groupes (actifs, dormants, joignables par WAKE, redondants) par faisceau de preuves, en attente du choix utilisateur |
 | [Claude-Code/docs/](Claude-Code/docs/) | Documentation Claude Code (installation, concepts, aide-mémoire) |
 | [Roo-Code/docs/](Roo-Code/docs/) | Documentation Roo Code (installation, guide) |
 | [activites/](../activites/) | Activités pédagogiques (déménagées hors Vibe-Coding, #18223 — lieu unique `GenAI/activites/`) |

@@ -96,6 +96,19 @@ signalait :
     d'exercice (garde-fou d'origine, test
     ``test_carveout_ne_couvre_pas_un_titre_de_section``).
 
+Carve-out #18602 (Tell c.935-L1 ★★) -- conversion code->md en place : quand
+une cellule de code EXECUTE (avec ``execution_count`` ou ``outputs``) est
+convertie en cellule markdown (fence ````python``, meme id, meme position
+index), elle n'est PAS une lecture ajoutee : la lecture md qui suit reste
+legitime et son rattachement a la sortie precedente (compte par sortie) ne
+bouge pas. La garde discrimine par id commun positionnel entre la tete et
+la base : un id neuf (cellule ajoutee reellement) n'est pas couvert, ce qui
+preserve la sensibilite du cliquet aux ajouts reels. Deuxieme pass couvert
+dans la liste ``attached`` : exclure les cellules dont l'id existait deja en
+base (le main loop les a traitees comme reecritures, pas comme ajouts).
+Repro : self-test 7 (negatif 4 dans ``self_test()`` ci-dessous), qui pinne
+la topologie du FP #18602 (PR #18440, Lean-10 c.60-c.65).
+
 Mode CLIQUET (#17044) : ``--base-ref <ref> [--head HEAD]`` compare chaque carnet
 modifie entre la base et la tete et rend le verdict du cliquet -- rouge
 seulement si la PR **augmente** ce que l'organe voit sur un carnet qu'elle
@@ -116,11 +129,13 @@ touche :
     carnet absent de la base comme « ajoute » ferait rougir la PR entiere sur un
     probleme de fetch.
 
-``--self-test`` joue six controles, hors git et hors reseau : trois positifs
+``--self-test`` joue sept controles, hors git et hors reseau : trois positifs
 (lecture empilee nommee ; lecture ajoutee SANS en-tete, invisible au detecteur
 consecutive ; fusion blanche **plus** une lecture ajoutee sur une AUTRE sortie)
-et trois negatifs (deux lectures fusionnees en une ; modification de code sans
-lecture ajoutee ; encart sans code execute au-dessus).
+et quatre negatifs (deux lectures fusionnees en une ; modification de code sans
+lecture ajoutee ; encart sans code execute au-dessus ; carve-out #18602
+code->md : la lecture legitime qui suit la conversion n'est pas ajoutee -- voir
+bloc dedie ci-dessus).
 
 Codes de retour : 0 = aucun finding ; 1 = cible introuvable, fichier designe
 illisible, ou base irresoluble ; 2 = findings (avec --fail-on-findings). En mode
@@ -792,6 +807,27 @@ def detect_added_readings(head_nb: dict, base_nb: dict | None,
 
         prev_role, next_role = _classify_context(head_cells, idx)
         key = _output_key_above(head_cells, idx)
+        # Carve-out #18602 (etendu) : si en base, la cellule a l'index courant
+        # etait un **code** execute (conversion code->md en tete, par
+        # exemple un pseudo-code squelettique transforme en bloc markdown),
+        # et que la cellule de tete au meme index porte un id qui **etait**
+        # deja celui de la cellule de base (meme identite, juste le type
+        # change), la cellule de tete n'est PAS une lecture nouvelle. Sa
+        # presence dans le releve tient a la conversion, pas a une lecture
+        # ajoutee. La classer en SECOND_READING produit un faux positif.
+        # On garde la garde stricte : il faut que l'id de la cellule de tete
+        # etait celui d'une cellule code en base -- les cellules sans id ou
+        # avec un id neuf (lecture ajoutee avant du code existant par
+        # exemple) ne sont pas couvertes.
+        head_id_now = cell.get("id")
+        if (idx < len(base_cells)
+                and base_cells[idx].get("cell_type") == "code"
+                and (base_cells[idx].get("execution_count") is not None
+                     or base_cells[idx].get("outputs"))
+                and head_id_now
+                and base_cells[idx].get("id") == head_id_now):
+            base_counter[src] += 1
+            continue
         # Le COMPTE prime sur la topologie (#17044, decision c.5836401913). Une
         # cellule rattachee a une sortie qui porte plus de lectures qu'en base
         # EST une seconde lecture, quoi qu'en dise sa place : posee devant la
@@ -866,6 +902,32 @@ def detect_added_readings(head_nb: dict, base_nb: dict | None,
             if i not in reported and i not in pend and i not in exempted_idx
             and _output_key_above(head_cells, i) == key
         ]
+        # Carve-out #18602 : si une lecture de tete est attribuee a cette sortie
+        # alors que la cellule **courante** (idx) en tete est un markdown dont
+        # la cellule de base au meme idx etait un **code execute** ET que ces
+        # deux cellules portent le **meme id** (conversion code->md en place
+        # -- pseudo-code squelettique transforme en fence), c'est un
+        # rattachement factice : la cellule n'est PAS une lecture ajoutee,
+        # c'est la trace de la conversion. Le ratchet l'a deja eliminee dans
+        # la boucle principale via le carve-out d'id, mais le second pass la
+        # retrouve par ``_output_key_above``. On l'elimine ici avec la meme
+        # garde stricte (id commun).
+        # Meme logique pour les cellules dont l'id existait en base : le main
+        # loop les a traitees comme reecritures (``is_rewrite=True``), pas
+        # comme additions -- le second pass ne doit pas les ressortir.
+        if base_nb is not None:
+            base_cells = base_nb.get("cells", [])
+            base_ids = {b.get("id") for b in base_cells if b.get("id")}
+            attached = [
+                i for i in attached
+                if not (i < len(base_cells)
+                        and head_cells[i].get("id")
+                        and base_cells[i].get("id") == head_cells[i].get("id")
+                        and base_cells[i].get("cell_type") == "code"
+                        and (base_cells[i].get("execution_count") is not None
+                             or base_cells[i].get("outputs")))
+                and not (head_cells[i].get("id") in base_ids)
+            ]
         moved = [i for i in attached if cell_source(head_cells[i]) not in held]
         rest = [i for i in attached if cell_source(head_cells[i]) in held]
         for idx in (pend + moved + rest)[:remaining]:
@@ -1159,6 +1221,37 @@ def self_test() -> int:
         f"added={[(f['type'], f['cells']) for f in added6]} "
         f"compte par sortie {dict(readings_by_output(base6))} -> "
         f"{dict(readings_by_output(head6))}",
+    ))
+
+    # Negatif 4 -- carve-out #18602 : conversion code->md en place NE signale
+    # PAS la lecture legitime qui suit. Topologie mesuree sur Lean-10-LeanDojo
+    # c.60-c.65 (PR #18440) : un code execute (sortie) devient une fence
+    # markdown a meme id / meme position ; la lecture md qui suit reste
+    # legitime et n'est pas ajoutee. La garde discrimine par id commun
+    # positionnel (cf. decision c.935-L1 ★★).
+    code_md_conv = (
+        "code",
+        "print(pattern_llm_pseudo)",
+        "3bd10c11",
+    )
+    fence = (
+        "markdown",
+        "```python\nprint(pattern_llm_pseudo)\n```",
+        "3bd10c11",
+    )
+    base7 = _nb([
+        code_md_conv,
+        lecture,
+    ])
+    head7 = _nb([
+        fence,
+        lecture,
+    ])
+    added7 = detect_added_readings(head7, base7)
+    checks.append((
+        "negatif 4 carve-out #18602 code->md ne signale pas la lecture suivante",
+        not added7,
+        f"added={[f['type'] for f in added7]}",
     ))
 
     ok = True
