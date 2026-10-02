@@ -228,11 +228,23 @@ class AnalysisRunner:
         llm_service_id: str,
         state: RhetoricalAnalysisState,
         max_turns: int = 20,
+        max_informal_turns: int | None = None,
+        max_formal_turns: int | None = None,
     ):
         self.kernel = kernel
         self.llm_service_id = llm_service_id
         self.state = state
         self.max_turns = max_turns
+        # Per-phase budget (#18776) : when None, fall back to max_turns // 2
+        # (legacy behaviour, preserves existing tests/contracts).
+        self.max_informal_turns = (
+            max_informal_turns if max_informal_turns is not None
+            else max_turns // 2
+        )
+        self.max_formal_turns = (
+            max_formal_turns if max_formal_turns is not None
+            else max_turns // 2
+        )
 
         # Register StateManagerPlugin on kernel
         if "StateManager" not in [p.name for p in kernel.plugins.values()]:
@@ -281,7 +293,7 @@ class AnalysisRunner:
             async for response in group_chat.invoke():
                 turn_count += 1
                 _logger.info(f"  Turn {turn_count}: {response.name} responded")
-                if turn_count >= self.max_turns // 2:
+                if turn_count >= self.max_informal_turns:
                     break
             results["phases"].append({
                 "name": "informal",
@@ -322,7 +334,7 @@ class AnalysisRunner:
             async for response in group_chat2.invoke():
                 turn_count += 1
                 _logger.info(f"  Turn {turn_count}: {response.name} responded")
-                if turn_count >= self.max_turns // 2:
+                if turn_count >= self.max_formal_turns:
                     break
             results["phases"].append({
                 "name": "formal",
