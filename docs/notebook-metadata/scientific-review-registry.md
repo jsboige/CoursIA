@@ -146,7 +146,7 @@ Les 3 entrées suivantes posent le **pilote fondateur** sur les 3 contre-exemple
 ```yaml
 # Pilote fondateur — evidence_pr pointe désormais sur des PRs MERGÉES (vérification first-hand, objection §B.2 levée)
 # Vérification first-hand c.1022 : `git log origin/main --oneline -- <notebook>` → PRs MERGED réelles qui touchent chaque notebook.
-- notebook_path: Sudoku/Sudoku-11-Choco-Csharp.ipynb
+- notebook_path: Sudoku/Sudoku-11-Choco-CSharp.ipynb
   confidence: established
   reviewed_code_sha: 5644b152ff6f34020c678f36fca16430e3133a9b456a2ea13c59ffce78a749cc
   reviewer: jsboige@gmail.com
@@ -154,14 +154,14 @@ Les 3 entrées suivantes posent le **pilote fondateur** sur les 3 contre-exemple
   evidence_pr: "#7794"
   review_scope: correctness
   notes: "c.997/c.1022 pilote axe 3 — PR #7794 'Sudoku-11-Choco reconcile 1-50 ms claim with 728 ms cold-start output' = correctness factuel"
-- notebook_path: Sudoku/Sudoku-12-Z3-Csharp.ipynb
+- notebook_path: Sudoku/Sudoku-12-Z3-CSharp.ipynb
   confidence: established
   reviewed_code_sha: 71f76c5ba9c96c7de49b2146c598418dc97cc3e9549ce3460edba943fdba0d52
   reviewer: jsboige@gmail.com
   review_date: 2026-09-08
   evidence_pr: "#9926"
   review_scope: correctness
-  notes: "c.997/c.1022 pilote axe 3 — PR #9926 'add 2 interpretation cells to Sudoku-12-Z3-Csharp' = correctness"
+  notes: "c.997/c.1022 pilote axe 3 — PR #9926 'add 2 interpretation cells to Sudoku-12-Z3-CSharp' = correctness"
 - notebook_path: Sudoku/Sudoku-18-Comparison-Python.ipynb
   confidence: established
   reviewed_code_sha: e85e8279191a1db08ad9866f560d55eb7dd3e2394d7808b530dd9372304a67a8
