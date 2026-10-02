@@ -13,6 +13,9 @@
       diagrammes, PD-codes, Gauss codes, Dowker-Thistlethwaite)
     - `Knots.Reidemeister` — mouvements de Reidemeister (RI, RII,
       RIII) et invariance des invariants
+    - `Knots.ReidemeisterMoves` — suite de mouvements vérifiable par le
+      noyau (organe #18611 : inductif data + vérificateurs Bool +
+      soundness vers `ReidemeisterEquiv`)
     - `Knots.Invariant` — invariants polynomiaux (Alexander,
       Jones), tricoloriabilité, genre
     - `Knots.Conway` — notations et conventions de Conway
@@ -42,6 +45,7 @@ import Knots.Invariant
 import Knots.Conway
 import Knots.Slice
 import Knots.ReidemeisterInvariance
+import Knots.ReidemeisterMoves
 import Knots.Jones
 import Knots.FigureEight
 import Knots.Lidman
