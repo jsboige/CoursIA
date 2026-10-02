@@ -3948,27 +3948,42 @@ def belt_report_metrics(
 ) -> tuple[float | None, int | None, int]:
     """Mode --belt --report : deux nombres, point.
 
-    1. `max_gap_days` : ecart maximal (en jours) depuis la derniere visite
-       parmi les issues ouvertes portant une livraison. `None` si aucune
-       livraison mesurable.
+    1. `min_gap_days` : ecart (en jours) depuis la visite la MOINS recente
+       parmi les issues ouvertes -- jamais-servies incluses a leur date de
+       creation. La spec #18832 demande **une seule ligne de temps** :
+       derniere PR mergee qui cite l'issue, sinon date de creation. C'est
+       le MIN, pas le max (le max valait la livraison la plus fraiche,
+       d'ou `0.0 j` dans le body initial, ce qui ne dit rien).
+       `None` si le pool est vide.
     2. `closed_7d` : nombre d'issues fermees sur 7 j (compteur externe,
        fourni par le caller -- `last_delivery_per_issue` ne lit que les
        merges cites).
 
-    Rend le triplet `(max_gap_days, closed_7d, sample_size)`. Le rendu
+    Rend le triplet `(min_gap_days, closed_7d, sample_size)`. Le rendu
     console vit dans `print_belt_report`.
     """
-    stamps = [it.get("last_delivery_stamp") for it in pool
-              if it.get("last_delivery_stamp")]
-    if not stamps:
+    if not pool:
         return None, closed_7d, 0
-    max_gap = dt.datetime(1970, 1, 1, tzinfo=dt.timezone.utc)
-    for s in stamps:
-        when = dt.datetime.fromisoformat(s.replace("Z", "+00:00"))
-        if when > max_gap:
-            max_gap = when
-    max_gap_days = round((NOW - max_gap).total_seconds() / 86400.0, 2)
-    return max_gap_days, closed_7d, len(stamps)
+    candidate_stamps: list[dt.datetime] = []
+    for it in pool:
+        stamp = it.get("last_delivery_stamp")
+        if stamp:
+            candidate_stamps.append(
+                dt.datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+            )
+            continue
+        # Jamais servie : la date de creation tient lieu de derniere visite.
+        created = it.get("created_at")
+        if created:
+            candidate_stamps.append(
+                dt.datetime.fromisoformat(created.replace("Z", "+00:00"))
+            )
+    if not candidate_stamps:
+        return None, closed_7d, len(pool)
+    # La spec demande la visite la moins recente = MIN.
+    min_stamp = min(candidate_stamps)
+    min_gap_days = round((NOW - min_stamp).total_seconds() / 86400.0, 2)
+    return min_gap_days, closed_7d, len(pool)
 
 
 def print_belt_report(metrics: tuple[float | None, int | None, int]) -> None:
