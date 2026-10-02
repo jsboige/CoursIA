@@ -8,6 +8,7 @@ Notebooks rétrospectifs : les outils d'avant Stable Diffusion (2021-2022) qui o
 
 | # | Notebook | Contenu | Publication |
 |---|----------|---------|-------------|
+| 0 | [05-0-Generateurs-Symboliques](05-0-Generateurs-Symboliques.ipynb) | Les moteurs symboliques d'avant l'apprentissage : tortue Logo (rosace), L-systèmes (courbe de Koch), automates cellulaires (règle 110, Game of Life) — la description courte engendre l'image riche, mesuré comme un ratio de compression (x1030 / x2365) | Abelson & diSessa (Turtle, années 60-80) ; Lindenmayer 1968 ; Conway 1970 ; Wolfram 1982 |
 | 2 | [05-2-CLIPasso-Semantic-Sketching](05-2-CLIPasso-Semantic-Sketching.ipynb) | Le sketching sémantique : abstraction contrôlée par le nombre de traits (grilles 32/16/8/4 — chameau du papier + robot masqué U²-Net), coût du fond non extrait (A/B masqué/brut), contraste sémantique vs signal (Canny) | Vinker et al., SIGGRAPH 2022 ([arXiv:2202.05822](https://arxiv.org/abs/2202.05822)) |
 | 1 | [05-1-DiscoDiffusion-CLIP-Guided-Diffusion](05-1-DiscoDiffusion-CLIP-Guided-Diffusion.ipynb) | La CLIP-guided diffusion pré-Stable-Diffusion : UNet KL-openai 512 pixel-space + CLIP ViT-L/14 comme fonction de perte (cutouts, distance sphérique), conditionnement de Song et al., grille `clip_gs` × `sat_scale`, même prompt contre Z-Image (ce que l'espace latent a changé) | Crowson 2021 ; Dhariwal & Nichol 2021 ([arXiv:2105.05233](https://arxiv.org/abs/2105.05233)) ; Radford et al. 2021 ([arXiv:2103.00020](https://arxiv.org/abs/2103.00020)) |
 
