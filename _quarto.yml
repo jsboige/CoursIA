@@ -1316,6 +1316,7 @@ project:
     - "MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-5-Value-Information.ipynb"
     - "MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-6-Expert-Systems.ipynb"
     - "MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-7-Sequential.ipynb"
+    - "MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-08-Actuariat-Capstone.ipynb"
     - "MyIA.AI.Notebooks/Probas/Infer/Infer-08b-TrueSkill-Formules-Fermees-CSharp.ipynb"
     - "MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb"
     - "MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb"
