@@ -319,12 +319,20 @@ def _catalog_with_pending_renames(manifest):
     l'entree que la regeneration produira (``analyze_notebook``), et seulement si le
     catalogue est en retard sur l'arbre (au moins un chemin catalogue absent du disque).
     Un chemin du manifeste absent du disque reste absent : le test echoue comme avant.
+
+    Un renommage a deux moities : la regeneration produira l'entree du NOUVEAU chemin
+    (miroir : l'ajout ci-dessous) ET la disparition de l'ancien (miroir : le prune).
+    Sans le prune, les anciens chemins restent dans ``catalog_paths`` et l'assertion
+    ``dec_pymc <= selected`` exige la selection de carnets qui n'existent plus (#14873,
+    descente DecPyMC-8..12 -> Actuariat/).
     """
     catalog = json.loads(gp.CATALOG_PATH.read_text(encoding="utf-8"))
     root = generate_catalog.NOTEBOOKS_DIR
     known = {entry["path"] for entry in catalog}
     if all((root / path).is_file() for path in known):
         return catalog
+    catalog = [entry for entry in catalog if (root / entry["path"]).is_file()]
+    known = {entry["path"] for entry in catalog}
     for group in manifest["branches"] + manifest["accretions"]:
         for path in group["notebooks"]:
             if path not in known and (root / path).is_file():
@@ -389,7 +397,9 @@ class TestActuariatManifest:
         assert ids[4:] == accretions
         # 690 depuis l'auto-regen du catalogue #17928 : GT-15-CooperativeGames
         # est passee de 45min a 1h, +15 min sur le speed-run.
-        expected_duration = 690
+        # 705 depuis la descente actuarielle #14873 : le capstone DecPyMC-08
+        # (15 min) rejoint la branche decision-sous-incertitude.
+        expected_duration = 705
         if "series-temporelles" in accretions:
             expected_duration += 90
         if "validation-hors-echantillon" in accretions:
@@ -397,7 +407,7 @@ class TestActuariatManifest:
         assert compiled["duration_minutes"] == expected_duration
         assert compiled["known_duration_minutes"] == expected_duration
         assert [len(group["notebooks"]) for group in compiled["groups"]] == [
-            6, 4, 5, 3, *([3] * len(accretions))
+            6, 5, 5, 3, *([3] * len(accretions))
         ]
         assert compiled["groups"][3]["prerequisites"] == ["actuariat"]
         assert [notebook["path"] for notebook in compiled["groups"][3]["notebooks"]] == [
