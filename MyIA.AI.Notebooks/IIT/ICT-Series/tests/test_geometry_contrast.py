@@ -85,3 +85,87 @@ def test_skipped_prompt_refused(monkeypatch):
 def test_invalid_null_count_refused():
     with pytest.raises(ValueError, match="n_null"):
         gc.contrast(TRACES, n_null=1)
+
+
+# --------------------------------------------------------------------------- #
+# Capture dense (#17740) : F-Lens et S-Lens mesurés sur le même substrat,
+# ou absences explicites — jamais d'accord nul par silence.
+# --------------------------------------------------------------------------- #
+
+def _colocalize_stub(*args, **kwargs):
+    return {
+        "n_skipped": 0, "n_prompts": 1, "n_colocalized": 0,
+        "n_dissociated": 0, "n_chance": 0, "n_undefined": 1,
+        "per_prompt": [{"prompt": ("set", 0), "verdict": "undefined",
+                        "n_ign_a": 0, "n_ign_b": 0}],
+    }
+
+
+def _write_dense(path, *, tokens=None, meta_overrides=None):
+    import json
+    tokens = np.array(tokens if tokens is not None
+                      else ["one", "two", "three", "four", "five",
+                             "six", "seven", "eight"])
+    meta = {"model": "same", "layer": 16, "seed": 42,
+            "variant": "trained", "d_model": 8}
+    meta.update(meta_overrides or {})
+    rng = np.random.default_rng(0)
+    np.savez_compressed(
+        path,
+        **{"set__0__tokens": tokens.astype(str),
+           "set__0__resid": rng.standard_normal((len(tokens), 8)
+                                                ).astype(np.float16),
+           "__meta__": np.array(json.dumps(meta))})
+
+
+def test_dense_absent_keeps_absences_explicit(monkeypatch, tmp_path):
+    _pair(monkeypatch)
+    monkeypatch.setattr(gc, "colocalize_lenses", _colocalize_stub)
+    result = gc.contrast(TRACES, dense=tmp_path / "absent.npz")
+    assert result["f_lens"]["status"] == "not_comparable"
+    assert result["s_lens"]["status"] == "not_comparable"
+    assert "per_set_summary" not in result
+
+
+def test_dense_measured_when_aligned(monkeypatch, tmp_path):
+    # Paire sae/jlens de 8 tokens, alignée avec la capture dense par défaut
+    # (le split S-Lens pooled exige plus de 3 tokens pour un R2 défini).
+    tokens = np.array(["one", "two", "three", "four", "five",
+                       "six", "seven", "eight"])
+    meta = {"model": "same", "layer": 16, "seed": 42, "variant": "trained"}
+    sae = {"meta": dict(meta), "prompts": {("set", 0): {"tokens": tokens}}}
+    jlens = {"meta": dict(meta),
+             "prompts": {("set", 0): {"tokens": tokens.copy()}}}
+    monkeypatch.setattr(gc.sae_traces, "load_traces", lambda path: sae)
+    monkeypatch.setattr(gc.jlens_traces, "load_traces", lambda path: jlens)
+    monkeypatch.setattr(gc, "colocalize_lenses", _colocalize_stub)
+    dense_path = tmp_path / "dense.npz"
+    _write_dense(dense_path)
+    result = gc.contrast(TRACES, dense=dense_path)
+    assert result["f_lens"]["status"] == "measured"
+    assert result["s_lens"]["status"] == "measured"
+    assert "cross_instrument_reading" in result
+    rows = result["per_set_summary"]
+    assert [row["set"] for row in rows] == ["set"]
+    assert rows[0]["sae_jlens_verdicts"] == {"undefined": 1}
+    assert rows[0]["flens_nc90_mean"] > 0
+    assert rows[0]["slens_r2_mean"] is not None
+
+
+def test_dense_tokens_misaligned_refused(monkeypatch, tmp_path):
+    _pair(monkeypatch)
+    monkeypatch.setattr(gc, "colocalize_lenses", _colocalize_stub)
+    dense_path = tmp_path / "dense.npz"
+    _write_dense(dense_path, tokens=["one", "DIFFERENT", "three"])
+    with pytest.raises(ValueError, match="tokens"):
+        gc.contrast(TRACES, dense=dense_path)
+
+
+@pytest.mark.parametrize("field,value", [("model", "other"), ("seed", 7)])
+def test_dense_meta_misaligned_refused(monkeypatch, tmp_path, field, value):
+    _pair(monkeypatch)
+    monkeypatch.setattr(gc, "colocalize_lenses", _colocalize_stub)
+    dense_path = tmp_path / "dense.npz"
+    _write_dense(dense_path, meta_overrides={field: value})
+    with pytest.raises(ValueError, match=field):
+        gc.contrast(TRACES, dense=dense_path)

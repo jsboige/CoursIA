@@ -46,7 +46,7 @@ Notebook compagnon Lean :
   `gittins_index_monotone_discount` = **0 sorry** (prouvés, ce dernier via le port
   `Float→ℝ` PR #5272). Les modules **`Utility` et `Coherence` entiers = 0 sorry**
   (entièrement prouvés, jalon ouvert documenté non `sorry`-backed).
-- **i18n (#4980)** : les 3 modules `Gittins` existent en siblings FR + EN
+- **i18n (#4980)** : les modules `Gittins` existent en siblings FR + EN
   (`Basic_en`/`Discount_en`/`GittinsTheorem_en`, `namespace Gittins_en`), preuves
   byte-identiques (les 2 INTRINSIC sorries de `gittins_optimality` sont mirorrés
   fidèlement — d'où le total lake standalone-sorry = 4). `Utility` et `Coherence`
