@@ -71,7 +71,7 @@ permutation `15 = 3·5` (lemmes `perm_primeFactorsList_mul_of_coprime` et
 theorem admissible_trente_quinze : AdmissibleFactorization 15 2 := by
   have hp3 : Nat.Prime 3 := by norm_num
   have hp5 : Nat.Prime 5 := by norm_num
-  have hperm : (15 : ℕ).primeFactorsList ~ₚ [3, 5] := by
+  have hperm : (15 : ℕ).primeFactorsList ~ [3, 5] := by
     have h15 : (15 : ℕ) = 3 * 5 := by decide
     rw [h15, Nat.perm_primeFactorsList_mul_of_coprime
       (by decide : Nat.Coprime 3 5), Nat.primeFactorsList_prime hp3,
@@ -86,8 +86,10 @@ premier (impair), donc `30 = 2·15` n'est PAS admissible — bien que
 porte seule l'exclusion (`primeFactorsList_two`, puis `odd_one`). -/
 theorem non_admissible_trente_deux : ¬AdmissibleFactorization 2 15 := by
   intro h
+  unfold AdmissibleFactorization at h
   rw [Nat.primeFactorsList_two] at h
-  exact Nat.not_odd_iff_even.2 h.2.2 Nat.odd_one
+  have h1 : Even 1 := h.2.2
+  exact Nat.not_odd_iff_even.2 h1 Nat.odd_one
 
 /-- φ(15) = 8 : la valeur utilisée par le carnet §2 (`borne_11`) pour la
 meilleure factorisation admissible de `N = 30`. -/
