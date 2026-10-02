@@ -3,21 +3,22 @@ r"""Detect Aliyun OSS signed-URL fragments in tracked files.
 
 Why: gitleaks `Secret Scan` failed on PR #17434 (c.820, 2026-09-24) because two
 GenAI image metadata JSONs contained `image_url_signed_full` with a 24-hour
-presigned URL carrying `Signature=FfViql...` + `OSSAccessKeyId=LTAI5tRDTcy...`
-(20 chars). Tell c.820 / secrets-hygiene rule 1: a presigned Signature IS a
-secret derived from the provider's SecretAccessKey, even when the AccessKey
-itself looks like a public identifier. The merge-gate intercepted it; the
-follow-up is to make sure the same shape never lands again.
+presigned URL carrying `Signature=<token>` + `OSSAccessKeyId=LTAI****` (masked
+example -- real values are 20 chars after the LTAI prefix). Tell c.820 /
+secrets-hygiene rule 1: a presigned Signature IS a secret derived from the
+provider's SecretAccessKey, even when the AccessKey itself looks like a public
+identifier. The merge-gate intercepted it; the follow-up is to make sure the
+same shape never lands again.
 
 Pattern (a 3-tuple signature) -- the organ, and only the organ:
     Signature=<base64-like token>     (URL fragment inside the query string)
-    OSSAccessKeyId=LTAI5t...         (Aliyun's AccessKey prefix is LTAI / STS.)
-    X-OSS-Security-Token=<opaque>    (STS session token, sibling of OSSAccessKeyId)
+    OSSAccessKeyId=LTAI<...>          (Aliyun's AccessKey prefix is LTAI / STS.)
+    X-OSS-Security-Token=<opaque>     (STS session token, sibling of OSSAccessKeyId)
 
 Aliyun AccessKey prefixes are documented (LTAI for permanent, LT for STS), but
-the organ does not key on a prefix -- it key on the fragment WHOLE key, which
+the organ does not key on a prefix -- it keys on the fragment WHOLE key, which
 is the universal signature form across providers. A user could legitimately
-write `Signature: <placeholder>` in prose; we exempt short matches (< 40 chars)
+write `Signature: <placeholder>` in prose; we exempt short matches (< 28 chars)
 and matches containing only word chars (which would be template/placeholder
 syntax).
 
@@ -33,9 +34,16 @@ The detector is local (no GH API), exits 0/1/2:
     ERROR     git or filesystem failure              (exit 2)
 
 Usage:
-    python scripts/ci/detect_oss_signature.py            # lint
+    python scripts/ci/detect_oss_signature.py            # lint (json/ipynb)
     python scripts/ci/detect_oss_signature.py --json     # structured verdicts
-    python scripts/ci/detect_oss_signature.py --strict   # also flag comments mentioning Signature
+    python scripts/ci/detect_oss_signature.py --strict   # also flag prose comments mentioning Signature in py/cs/md
+
+The `--strict` flag opens a SECOND pathspec filter (py/cs/md), separate from
+the default json/ipynb scope: previously the strict path iterated over the
+json/ipynb file list and then filtered on py/cs/md -- which never matched
+anything (CR myia-ai-01 22:36Z on PR #18835). The second filter now reads
+its own list from `git ls-files -- '*.py' '*.cs' '*.md'`, so prose comments
+mentioning `Signature=` are actually reachable.
 """
 from __future__ import annotations
 
@@ -50,15 +58,21 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 
 # Pathspec filters for `git ls-files` -- cheap on Windows (avoids the 12k
 # file enumeration of the full repo scope).
-PATHSPECS = ["*.json", "*.ipynb"]
+DEFAULT_PATHSPECS = ["*.json", "*.ipynb"]
+# Strict mode reads a SEPARATE file list -- iterating over DEFAULT_PATHSPECS
+# and re-filtering on py/cs/md is structurally empty by construction.
+STRICT_PATHSPECS = ["*.py", "*.cs", "*.md"]
 
 # The 3 fragment keys that together mark a presigned URL.
 FRAGMENT_KEYS = ("Signature", "OSSAccessKeyId", "X-OSS-Security-Token")
 
 # Minimum length of a "real" signature value -- a 24-char placeholder in prose
 # does not trigger the organ. Real Aliyun signatures are 28 base64-ish chars
-# after URL-decoding; STS tokens 32+.
-MIN_VALUE_LEN = 40
+# after URL-decoding; STS tokens 32+. Threshold lowered from 40 -> 28 to
+# match the documented signature length (a Signature= realistic isolated in
+# prose would otherwise pass under the old threshold -- CR myia-ai-01 22:36Z
+# on PR #18835).
+MIN_VALUE_LEN = 28
 
 # Patterns keyed on the canonical Aliyun fragment shape.
 PATTERNS = [
@@ -108,6 +122,8 @@ def classify(rel: str) -> str:
         return "json"
     if rel.endswith(".ipynb"):
         return "ipynb"
+    if rel.endswith((".py", ".cs", ".md")):
+        return "prose"
     return "other"
 
 
@@ -118,7 +134,7 @@ def main() -> int:
                     help="also flag prose comments mentioning Signature (more FPs)")
     args = ap.parse_args()
 
-    files = list_tracked_files(PATHSPECS)
+    files = list_tracked_files(DEFAULT_PATHSPECS)
     if files is None:
         sys.stderr.write("ERROR: git ls-files failed; cannot scan\n")
         return 2
@@ -138,12 +154,14 @@ def main() -> int:
         })
 
     if args.strict:
-        # Flag any `Signature` mention in prose comments. False-positive prone;
-        # use only for audit, not as a default gate.
+        # Second pathspec filter -- py/cs/md only. The previous iteration
+        # over `files` (json/ipynb) re-filtered on these suffixes and could
+        # never retain anything; the second list is now read separately.
+        strict_files = list_tracked_files(STRICT_PATHSPECS) or []
         PROSE_RE = re.compile(r"#\s*Signature=|//\s*Signature=")
-        for rel in files:
+        for rel in strict_files:
             p = REPO_ROOT / rel
-            if not p.is_file() or not rel.endswith((".py", ".cs", ".md", ".ipynb")):
+            if not p.is_file():
                 continue
             try:
                 text = p.read_text(encoding="utf-8", errors="replace")
@@ -165,7 +183,7 @@ def main() -> int:
                   sys.stdout, ensure_ascii=False, indent=2)
         sys.stdout.write("\n")
     else:
-        print(f"{verdict} -- scanned {len(files)} files matching {PATHSPECS}")
+        print(f"{verdict} -- scanned {len(files)} files matching {DEFAULT_PATHSPECS}")
         if findings:
             print(f"  found {len(findings)} file(s) with matches:")
             for f in findings:
