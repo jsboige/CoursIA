@@ -267,8 +267,11 @@ DIAGNOSTIC_RE = re.compile(
 # PR commit; the base is the merge base the issue names.
 SELF_TEST_BASE = "244c7c54f032"
 SELF_TEST_HEAD = "7a355873de32"
+# The path is the one the notebook had AT THOSE TWO COMMITS, not its current
+# name: a rename sweep must not rewrite it (#18001 did, and the replay then
+# read nothing and failed on every run).
 SELF_TEST_NOTEBOOK = (
-    "MyIA.AI.Notebooks/GameTheory/GameTheory-06e-Open-Source-Game-Theory-Python.ipynb")
+    "MyIA.AI.Notebooks/GameTheory/GameTheory-06e-Open-Source-Game-Theory.ipynb")
 SELF_TEST_CELL = "c989_independent_v2"
 
 # Structural founding case (#16110), replayed the same way. The head is the

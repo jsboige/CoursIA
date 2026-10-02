@@ -1,3 +1,11 @@
+# Archive header (standard _archive convention, 2026-08, docs/reference/_archive-convention.md)
+# - Date archived     : 2026-10-01
+# - Superseded by     : none (closed dead-end ; SC-24/25/26 sur main)
+# - Verdict recorded in : PR generator SC-24-25-26 + #18153 thread + #18153 palier 1 (axe D #16473)
+#
+# Per-function disposition :
+# - main body          : abandoned — one-shot terminated, no consumer; kept verbatim for forensic replay
+
 """Create SC-24, SC-25, SC-26 notebooks for 06-Real-World."""
 import json, os
 

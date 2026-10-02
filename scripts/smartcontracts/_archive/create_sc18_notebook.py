@@ -1,3 +1,11 @@
+# Archive header (standard _archive convention, 2026-08, docs/reference/_archive-convention.md)
+# - Date archived     : 2026-10-01
+# - Superseded by     : none (closed dead-end ; notebook SC-18 sur main)
+# - Verdict recorded in : PR generator notebook SC-18 + #18153 thread + #18153 palier 1 (axe D #16473)
+#
+# Per-function disposition :
+# - main body          : abandoned — one-shot terminated, no consumer; kept verbatim for forensic replay
+
 """Generate SC-18-Vyper-Python.ipynb - Smart Contracts en Python-like. Delete after use."""
 import json
 import os
