@@ -9820,7 +9820,7 @@ Cet hommage montre qu'une partie du langage de Grothendieck vit déjà dans Math
 
 Un même concept, dans CoursIA, se decline d'abord en **simulation** (calcul, experimentation, visualisation) puis, quand c'est possible, en **preuve formelle** (verification mecanique, certification). Les mêmes theoremes de choix social (Arrow, Sen) vivent en Python pedagogique *et* en Lean certifie. Le même Sudoku se resout par recherche, par contraintes, ou par SAT. Ce geste -- changer de representation jusqu'a ce que la difficulte se dissolve -- est précisément celui que Grothendieck decrit dans *Recoltes et Semailles* : non pas forcer la noix, mais laisser la mer monter.
 
-La cle de lecture [La mer qui monte](../../../docs/cadrage/grothendieckian-lens.md) deploye ce fil conducteur a travers l'ensemble du depot, montrant que le geste grothendieckien n'est pas reserve aux mathematiques formelles. Il est la méthode même de l'IA digne de confiance : re-representer la sortie incertaine d'un modèle dans un cadre verifiable.
+La cle de lecture [La mer qui monte](../../../docs/grothendieckian-lens.md) deploye ce fil conducteur a travers l'ensemble du depot, montrant que le geste grothendieckien n'est pas reserve aux mathematiques formelles. Il est la méthode même de l'IA digne de confiance : re-representer la sortie incertaine d'un modèle dans un cadre verifiable.
 
 Quant a la formalisation du *langage* de Grothendieck dans Mathlib -- les schemas, les faisceaux, le site etale -- elle poursuit sa route dans l'Epic [#1646](https://github.com/jsboige/CoursIA/issues/1646). Ce notebook est un hommage ; le travail continue.
 
