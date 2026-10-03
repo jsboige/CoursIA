@@ -31,9 +31,25 @@ name: Evict orphan Actions caches
 # passage hebdomadaire ne suit pas cette cadence, et le cron de ce depot
 # est servi avec des heures de retard. Le script garde les 3 overlays les
 # plus recents par famille (`--keep-latest`, defaut 3) et evince le reste.
+#
+# #18309 (2026-10-03) : le declenchement sur push passe AVANT l'ecriture
+# qu'il doit borner -- chaque overlay est ecrit ~25-30 min apres son push,
+# le temps de l'analyse CodeQL, donc une rafale de N merges laisse ses
+# overlays en attente du push SUIVANT. Le sweep se declenche desormais
+# aussi a la COMPLETION du workflow CodeQL (default setup, workflow
+# dynamique "CodeQL" -- visible dans actions/workflows, id 301766627 ;
+# `workflow_run` le voit par son nom, precedents in-repo :
+# pr-gate-rerun, variation-tag-guard, etc.). Un evenement par SHA pousse
+# (le default setup est un run unique multi-langages), file dans le groupe
+# de concurrence existant. Le trigger push reste : il borne les orphelins
+# non-CodeQL et le residu des analyses echouees.
 
 on:
   push:
+    branches: [main]
+  workflow_run:
+    workflows: [CodeQL]
+    types: [completed]
     branches: [main]
   schedule:
     - cron: "0 3 * * 1"
@@ -59,6 +75,21 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      # #18309 -- mesure embarquee : le default setup etant un workflow
+      # dynamique, l'emission d'evenements workflow_run par son nom ("CodeQL")
+      # est la question ouverte de l'issue. Ce step journalise le contexte du
+      # declencheur a CHAQUE passage : si les logs des prochains merges montrent
+      # des lignes event_name=workflow_run, la piste 1 est confirmee ;
+      # sinon (push/schedule seulement), le trigger est inert et la piste 2
+      # (balayage differe dans le job de push) devient la voie suivante.
+      - name: Log trigger context (measurement for #18309)
+        run: |
+          echo "event_name=${{ github.event_name }}"
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            echo "triggering_workflow=${{ github.event.workflow_run.name }}"
+            echo "triggering_conclusion=${{ github.event.workflow_run.conclusion }}"
+            echo "triggering_head_sha=${{ github.event.workflow_run.head_sha }}"
+          fi
       - name: Checkout
         uses: actions/checkout@v4
         with:
