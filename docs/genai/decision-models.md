@@ -2,13 +2,13 @@
 
 > **Statut** : Pli 1/4 de #18204. **Cadrage et relevé** uniquement. Aucune substitution de notebook dans cette PR. La **vérification locale** (rejouer 2-3 tranches de benchmarks) requiert un GPU 24 Go et sort du périmètre de cette lane (RTX 3070 8GB = `RECOVERABLE-MACHINE`).
 >
-> **Date du relevé** : 2026-10-03. **Source primaire** : Hugging Face, espace `multimodalart/jev-decision-index`, édition `0.2.1` du 2026-09-28 (`data/index.json`, 70 implémentations sur ~120 000 requêtes, 42 benchmarks statiques).
+> **Date du relevé** : 2026-10-03. **Source primaire** : Hugging Face, espace `multimodalart/jev-decision-index`, édition `0.2.1` du 2026-09-28 (`data/index.json`, 70 implémentations sur ~120 000 requêtes, 38 benchmarks statiques).
 
 ## 1. Périmètre de mesure
 
 ### 1.1 Source
 
-L'index `multimodalart/jev-decision-index` agrège cinq catégories normalisées dans le score `balanced_skill` (connaissances, langue, recherche, outils, arts). Les benchmarks ne sont pas moyennés entre eux : un score adapté n'est pas comparable à un classement natif de fournisseur.
+L'index `multimodalart/jev-decision-index` agrège cinq catégories scorées (six déclarées dans `data/index.json` : knowledge, language, retrieval, tools, arts, games — la 6ᵉ est `jev_only: true`, repliée dans knowledge) dans le score `balanced_skill` (connaissances, langue, recherche, outils, arts). Les benchmarks ne sont pas moyennés entre eux : un score adapté n'est pas comparable à un classement natif de fournisseur.
 
 ### 1.2 Format de sortie
 
@@ -101,7 +101,7 @@ Les modèles de décision posés sur un encodeur (famille `laya`, `Lavoir`, `GLi
 
 ### 5.1 Matériel requis
 
-L'index utilise « un GPU par run » sur 42 benchmarks statiques. Sur une carte 24 Go, les modèles de la shortlistoire (4-9 B denses, 26 B-A4B quantisé) sont servables. Sur RTX 3070 8GB (po-2024), aucun de la shortlistoire ne tient en précision pleine — quantifié 4-bit, `JPT-4B` et `Jet v6.2` tiennent ; `JPT-9B`, `Winnow-12B`, `Surogate Rune 26B-A4B` sortent.
+L'index utilise « un GPU par run » sur 38 benchmarks statiques. Sur une carte 24 Go, les modèles de la shortlistoire (4-9 B denses, 26 B-A4B quantisé) sont servables. Sur RTX 3070 8GB (po-2024), aucun de la shortlistoire ne tient en précision pleine — quantifié 4-bit, `JPT-4B` et `Jet v6.2` tiennent ; `JPT-9B`, `Winnow-12B`, `Surogate Rune 26B-A4B` sortent.
 
 ### 5.2 Verdict SOTA
 
@@ -118,7 +118,7 @@ Si la machine est disponible, le Pli 2 (à déplier par le coordinateur) fournir
 
 ### 6.1 Index primaire
 
-- Hugging Face : `multimodalart/jev-decision-index`, édition `0.2.1`, fichier `data/index.json` (2026-09-28). Mesure 70 implémentations sur ~120 000 requêtes, 42 benchmarks statiques.
+- Hugging Face : `multimodalart/jev-decision-index`, édition `0.2.1`, fichier `data/index.json` (2026-09-28). Mesure 70 implémentations sur ~120 000 requêtes, 38 benchmarks statiques.
 
 ### 6.2 Notes de lecture
 
