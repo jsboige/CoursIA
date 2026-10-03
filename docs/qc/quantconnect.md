@@ -10,8 +10,7 @@ Le repo contient déjà plusieurs documents canoniques. **Ne pas dupliquer ici**
 |----------|------|---------------------|
 | [MyIA.AI.Notebooks/QuantConnect/README.md](../../MyIA.AI.Notebooks/QuantConnect/README.md) | Entrée série pédagogique | Catalog des 27+ notebooks Python, structure series |
 | [MyIA.AI.Notebooks/QuantConnect/GETTING-STARTED.md](../../MyIA.AI.Notebooks/QuantConnect/GETTING-STARTED.md) | Setup utilisateur | Première prise en main QC + LEAN |
-| [MyIA.AI.Notebooks/QuantConnect/BOOK_MAPPING.md](../../MyIA.AI.Notebooks/QuantConnect/BOOK_MAPPING.md) | Mapping livre Jared | 63 exemples / 71 deliverables HandsOnAITradingBook -> nos notebooks/projects |
-| [MyIA.AI.Notebooks/QuantConnect/docs/HANDSON_AI_TRADING_MAPPING.md](../../MyIA.AI.Notebooks/QuantConnect/docs/HANDSON_AI_TRADING_MAPPING.md) | Mapping détaillé Ch06 | 22 strategies ML du livre |
+| [MyIA.AI.Notebooks/QuantConnect/BOOK_MAPPING.md](../../MyIA.AI.Notebooks/QuantConnect/BOOK_MAPPING.md) | Inventaire du livre de Jared Broad | exemples du livre *Hands-On AI Trading* : statut, ressources du dépôt, statut QC |
 | [MyIA.AI.Notebooks/QuantConnect/docs/HANDSON_DATA_REQUIREMENTS.md](../../MyIA.AI.Notebooks/QuantConnect/docs/HANDSON_DATA_REQUIREMENTS.md) | Besoins datasets livre | Datasets requis par exemple |
 | [MyIA.AI.Notebooks/QuantConnect/docs/PAPER_TRADING_ARCHITECTURE.md](../../MyIA.AI.Notebooks/QuantConnect/docs/PAPER_TRADING_ARCHITECTURE.md) | Pédagogie paper trading | Architecture paper -> live, brokers IBKR/Binance |
 | [MyIA.AI.Notebooks/QuantConnect/docs/PAPER_TO_LIVE_TRANSITION.md](../../MyIA.AI.Notebooks/QuantConnect/docs/PAPER_TO_LIVE_TRANSITION.md) | Procédure transition | Checklist paper -> live |
