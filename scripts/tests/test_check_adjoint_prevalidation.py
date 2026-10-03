@@ -2186,7 +2186,8 @@ def test_render_emitted_dossier_ready_round_trips_through_the_gate():
 def test_render_emitted_dossier_blocked_carries_rc3():
     snapshot = _base_snapshot()
     snapshot["checkRuns"][0]["conclusion"] = "failure"
-    block, verdict, reasons = mod.render_emitted_dossier(snapshot)
+    probe = lambda pr: {"blocked": False, "blocking": []}  # noqa: E731
+    block, verdict, reasons = mod.render_emitted_dossier(snapshot, probe=probe)
     assert verdict == mod.VERDICT_BLOCKED
     assert any("PR gate" in r or "latest-wins" in r for r in reasons)
     assert "verdict: BLOCKED" in block
@@ -2212,6 +2213,7 @@ def test_main_derive_verdict_mode_blocked_rc3(monkeypatch, capsys):
     snapshot["checkRuns"][0]["conclusion"] = "failure"
     monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
     monkeypatch.setattr(mod.gh_identity, "pin_gh_token", lambda: None)
+    monkeypatch.setattr(mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []})
     monkeypatch.setattr(
         sys, "argv", ["check_adjoint_prevalidation.py", "--derive-verdict", "123"]
     )
