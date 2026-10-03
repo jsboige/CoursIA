@@ -45,6 +45,13 @@ le sleeve crypto seul sur Coinbase, sleeve IBKR en backtest parallèle.
 - Circuit-breakers (`risk.py`) : drawdown max (`RISK_MAX_DD_PCT`), perte journalière
   (`RISK_DAILY_VAR_PCT`), taille de position unitaire (`RISK_MAX_POSITION_PCT`),
   exposition brute (`RISK_MAX_GROSS_EXPOSURE`). Tout ordre passe par `RiskGate.check_order`.
+- Deux seuils de baisse depuis le pic. Le second (`RISK_MAX_DD_PCT`) arrête la stratégie
+  **et liquide** : les cibles passent à zéro, seules les ventes partent. Le premier
+  (`RISK_ALERT_DD_PCT`, désactivé par défaut) lève une alerte dans le rapport de cycle ; avec
+  `RISK_ALERT_HALVES=true`, il divise aussi l'exposition par deux, et l'exposition revient à
+  100 % quand la baisse est revenue à la moitié du seuil (pas au seuil, ce qui ferait
+  osciller). Une perte journalière au-delà de `RISK_DAILY_VAR_PCT` bloque les achats sans
+  liquider.
 - Aucun secret n'est imprimé ; les credentials vivent uniquement dans le `.env` gitigné.
 
 ## SOTA-OK (Prong A)
@@ -114,11 +121,15 @@ de repartir d'un état vierge.
 
 `orchestrator.run_cycle` enchaîne ces briques autour d'un courtier (tout objet qui fournit
 `equity`, `positions`, `prices` et `place`) : marquage de l'équité dans le `RiskGate`, poids
-cibles éventuellement réduits (`exposure_scale`, par exemple 0,5 après un premier seuil de
-perte, 0 pour revenir au cash), correspondance signal → ligne échangée (un signal sur un ETF
+cibles éventuellement réduits (le plus petit des deux `exposure_scale`, celui de la
+configuration et celui du `RiskGate` : 0,5 après le premier seuil s'il réduit, 0 après le
+second), correspondance signal → ligne échangée (un signal sur un ETF
 américain peut piloter une ligne UCITS européenne), plan d'ordres, contrôle de chaque ordre
 par le `RiskGate`, puis journal JSONL et sauvegarde de l'état. Le mode **dry-run** est le
 défaut : rien n'est envoyé tant que `dry_run=False` n'est pas passé explicitement.
+
+Le rapport de cycle (`CycleReport`) porte l'échelle appliquée (`scale`) et l'alerte du
+premier seuil (`alert`), pour que l'appelant la transmette.
 
 Un ordre qui ne fait que réduire une position détenue (`reduces_exposure=True`) passe même
 quand le disjoncteur est déclenché : un disjoncteur sert à couper le risque, il ne doit jamais
