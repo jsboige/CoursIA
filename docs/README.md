@@ -10,9 +10,9 @@ Fichiers présents directement à la racine du répertoire `docs/`. Triage initi
 |---------|---------|--------|
 | [README.md](README.md) (ce fichier) | **KEEP** | Index vivant — **146** `*.md` live sous `docs/` (hors `archive/`, figée à dessein), **tous atteignables** depuis cet index directement ou via un index de sous-répertoire (mesure c.886, complétion des 42 manquants). L'atteignabilité est la bonne métrique : un doc cité par `lean/README.md` ou `ict/README.md` est dans l'index, pas absent |
 | [index.qmd](index.qmd) | **KEEP + repair** | Portail Quarto miroir du `index.md` racine — 3 liens cassés détectés (lean/README.md → lean/coordinator-workflow.md ; ../parcours.qmd → ../../parcours.qmd ; ../COURSE_CATALOG.generated.md → ../../COURSE_CATALOG.generated.md) — corrigés c.805 |
-| [grothendieckian-lens.md](grothendieckian-lens.md) | **KEEP** | Manifesto pédagogique transversal (116 lignes), durable, lié depuis `index.md` racine + docs/README.md ; aucune rot détectée |
+| [grothendieckian-lens.md](cadrage/grothendieckian-lens.md) | **KEEP** | Manifesto pédagogique transversal (116 lignes), durable, lié depuis `index.md` racine + docs/README.md ; aucune rot détectée |
 | [magnifica-humanitas-dialogue.md](magnifica-humanitas-dialogue.md) | **nouveau** (2026-08-17) | Dialogue avec l'encyclique *Magnifica Humanitas* (Léon XIV, 2026) — le programme du dépôt confronté, § par §, aux appels du texte (vérification comme bien commun, désarmement, choix social, écologie, éducation) ; tensions conservées. #11359 |
-| [leiden-declaration-position.md](leiden-declaration-position.md) | **nouveau** (2026-08-26) | Positionnement de CoursIA face à la Déclaration de Leiden sur l’IA et les mathématiques : principes confrontés aux artefacts, lacunes nommées, engagements mesurables et tensions conservées. #13105 |
+| [leiden-declaration-position.md](cadrage/leiden-declaration-position.md) | **nouveau** (2026-08-26) | Positionnement de CoursIA face à la Déclaration de Leiden sur l’IA et les mathématiques : principes confrontés aux artefacts, lacunes nommées, engagements mesurables et tensions conservées. #13105 |
 | [PARCOURS.md](PARCOURS.md) | **KEEP** | Schéma maturité 3 axes (éditorial / reproductibilité / revue scientifique) — décompose le `maturity` monolithique du catalogue (5 valeurs mélangées) en 3 préoccupations orthogonales auditables indépendamment. ACCEPTÉ 2026-07-23, pilote c.763 critères 1-3. Linked #8051. 110 lignes. Triage #7422 (c.911, po-2023) |
 | [qc-research-issue-template.md](qc-research-issue-template.md) | **doublon** (à réconcilier) | Ébauche du template de sous-issue QC-research (EPIC #11698), 2487 o. La version canonique est [qc/qc-research-issue-template.md](qc/qc-research-issue-template.md) (8226 o) : c'est elle que `scripts/notebook_tools/qc_research_monitor.py:54` lit comme `TEMPLATE_PATH`, et elle seule porte les conventions de titre/labels, le cap journalier, les 5 anti-patterns et les 4 exemples de verdict. Cette copie racine n'est référencée nulle part — indexée ici pour être visible plutôt que supprimée en silence, la disposition relevant d'un grain dédié |
 | [data-policy.md](data-policy.md) | **nouveau** (2026-09-02) | Politique de données (cadrage) : 4 catégories (curée / brute téléchargeable + fetch / checkpoint documenté / trace régénérable) + arbitrage par cas, périmètre restreint assumé par po-2024:CoursIA-2. #13742 |
@@ -202,9 +202,9 @@ Schémas canoniques de métadonnées par notebook : registre datasets (licence +
 
 | Fichier | Description |
 |---------|-------------|
-| [grothendieckian-lens.md](grothendieckian-lens.md) | Clé de lecture grothendieckienne du dépôt (changement de représentation, certification A/B/C) |
+| [grothendieckian-lens.md](cadrage/grothendieckian-lens.md) | Clé de lecture grothendieckienne du dépôt (changement de représentation, certification A/B/C) |
 | [magnifica-humanitas-dialogue.md](magnifica-humanitas-dialogue.md) | Dialogue avec l'encyclique *Magnifica Humanitas* — le dépôt face aux appels de Léon XIV sur l'IA (convergences citées § par §, tensions gardées) |
-| [leiden-declaration-position.md](leiden-declaration-position.md) | Positionnement face à la Déclaration de Leiden — preuve, attribution, revue, autonomie et digestion mathématique reliées à des artefacts vérifiables |
+| [leiden-declaration-position.md](cadrage/leiden-declaration-position.md) | Positionnement face à la Déclaration de Leiden — preuve, attribution, revue, autonomie et digestion mathématique reliées à des artefacts vérifiables |
 
 ## Internationalisation & Traduction (docs/i18n/, docs/translation/)
 
