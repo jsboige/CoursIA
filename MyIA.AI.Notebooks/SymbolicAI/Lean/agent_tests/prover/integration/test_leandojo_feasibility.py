@@ -198,3 +198,86 @@ def test_run_all_checks_propagates_python_cap(feas, monkeypatch):
     python_check = next(r for r in results if r.name == "python 3.10-3.12")
     assert python_check.ok is False
     assert any(not r.ok for r in results), "at least one check must FAIL on 3.13"
+
+
+# -- Coverage for the remaining failure modes (c.92 adjoint review) ---------
+# Per the post-fix CONCERNS at 8c96a67d6 (comment 5965129533): the test
+# suite above exercises pin mismatch, elan missing, toolchain pin/default
+# mismatch, but does NOT cover (a) `pip show` exit non-zero (package absent
+# or pip broken), (b) `import lean_dojo` raising (package installed but
+# broken), (c) `elan`/`lean` commands returning non-zero. The next three
+# tests close that gap using monkeypatched subprocess / import hooks.
+
+
+def test_lean_dojo_pip_show_failure_detected(feas, monkeypatch):
+    """`check_lean_dojo_installed` must FAIL when `pip show lean-dojo`
+    returns non-zero (package absent, pip broken, or venv missing). Mocks
+    `subprocess.run` to simulate a failing pip invocation.
+    """
+    class _FakeProc:
+        returncode = 1
+        stdout = ""
+        stderr = "ERROR: Package not found"
+
+    monkeypatch.setattr(feas.subprocess, "run", lambda *a, **kw: _FakeProc())
+    r = feas.check_lean_dojo_installed()
+    assert r.ok is False
+    assert "pip show lean-dojo failed" in r.detail
+    # The verdict must point the operator at the install command, not
+    # leave them guessing.
+    assert "pip install" in r.detail
+
+
+def test_lean_dojo_import_failure_detected(feas, monkeypatch):
+    """`check_lean_dojo_importable` must FAIL when `import lean_dojo`
+    raises (package present in `pip show` but broken on disk, e.g.
+    abi3 mismatch, missing compiled extension). Mocks `importlib.import_module`
+    to raise ImportError, then asserts the verdict still surfaces the cause.
+    """
+
+    def _raise(*args, **kwargs):
+        raise ImportError("libc10.so: cannot open shared object file")
+
+    monkeypatch.setattr(feas.importlib, "import_module", _raise)
+    r = feas.check_lean_dojo_importable()
+    assert r.ok is False
+    assert "import failed" in r.detail
+    assert "libc10.so" in r.detail
+
+
+def test_elan_command_failure_detected(feas, monkeypatch):
+    """`check_elan_available` must FAIL when `elan --version` exits non-zero
+    (elan on PATH but broken installation). Mocks both `shutil.which` and
+    `subprocess.run` -- the control must distinguish "elan missing" (already
+    covered) from "elan present but failing".
+    """
+    monkeypatch.setattr(feas.shutil, "which", lambda _: "/usr/bin/elan")
+
+    class _FakeProc:
+        returncode = 127
+        stdout = ""
+        stderr = "elan: error: unable to find toolchain"
+
+    monkeypatch.setattr(feas.subprocess, "run", lambda *a, **kw: _FakeProc())
+    r = feas.check_elan_available()
+    assert r.ok is False
+    assert "exit 127" in r.detail
+
+
+def test_lean_command_failure_detected(feas, monkeypatch):
+    """`check_lean_default_toolchain` must FAIL when `lean --version` exits
+    non-zero (lean on PATH but broken). Complements the existing
+    `test_lean_default_toolchain_mismatch_detected` which only covers the
+    version-string case.
+    """
+    monkeypatch.setattr(feas.shutil, "which", lambda _: "/usr/bin/lean")
+
+    class _FakeProc:
+        returncode = 2
+        stdout = ""
+        stderr = "lean: error: toolchain not configured"
+
+    monkeypatch.setattr(feas.subprocess, "run", lambda *a, **kw: _FakeProc())
+    r = feas.check_lean_default_toolchain()
+    assert r.ok is False
+    assert "exit 2" in r.detail
