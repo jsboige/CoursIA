@@ -53,30 +53,39 @@ def _scan() -> dict:
         encoding="utf-8",
         errors="replace",
     )
-    violations: list[dict] = []
-    # Les violations partent sur stderr (file=sys.stderr dans regen_quarto_render.py l.503).
-    for raw in (proc.stderr or "").splitlines():
-        m = VIOLATION_RE.match(raw.strip())
-        if m:
-            violations.append({"class": m.group(1), "readme": m.group(2), "href": m.group(3)})
-    # stdout porte le resume lisible ; on extrait n_readmes pour information.
-    # Format: "README-link audit: 402 rendered-subtree READMEs, 2432 violation(s), ..."
-    n_readmes = 0
+    # Discriminant : un scan REUSSI doit avoir (rc=0 ou rc=1) ET un resume lisible
+    # sur stdout. rc=2 = invocation error (script absent, etc.) ; traceback sans
+    # resume = scan reellement casse. Ces deux cas NE DOIVENT PAS devenir un scan
+    # vide reussi : c'etait le defaut adjoint c23 confirme sur #18970.
+    summary_line = None
     for raw in (proc.stdout or "").splitlines():
         if "README-link audit:" in raw:
-            try:
-                n_readmes = int(raw.split("rendered-subtree READMEs")[0].rsplit(" ", 1)[-1])
-            except (ValueError, IndexError):
-                # Fallback : split sur " rendered-subtree READMEs," et split sur espace.
-                try:
-                    n_readmes = int(raw.split(" rendered-subtree READMEs,")[0].rsplit(" ", 1)[-1])
-                except (ValueError, IndexError):
-                    n_readmes = 0
+            summary_line = raw
             break
+    scan_ok = proc.returncode in (0, 1) and summary_line is not None
+    violations: list[dict] = []
+    n_readmes = 0
+    if scan_ok:
+        # Les violations partent sur stderr (file=sys.stderr dans regen_quarto_render.py l.503).
+        for raw in (proc.stderr or "").splitlines():
+            m = VIOLATION_RE.match(raw.strip())
+            if m:
+                violations.append({"class": m.group(1), "readme": m.group(2), "href": m.group(3)})
+        # Format: "README-link audit: 402 rendered-subtree READMEs, 2432 violation(s), ..."
+        try:
+            n_readmes = int(summary_line.split("rendered-subtree READMEs")[0].rsplit(" ", 1)[-1])
+        except (ValueError, IndexError):
+            # Fallback : split sur " rendered-subtree READMEs," et split sur espace.
+            try:
+                n_readmes = int(summary_line.split(" rendered-subtree READMEs,")[0].rsplit(" ", 1)[-1])
+            except (ValueError, IndexError):
+                n_readmes = 0
     return {
         "violations": violations,
         "n_violations": len(violations),
         "n_readmes": n_readmes,
+        "scan_ok": scan_ok,
+        "scan_rc": proc.returncode,
     }
 
 
@@ -89,7 +98,17 @@ def main() -> int:
     # Sortie sur stdout : le moteur fast-lane capture stdout via payload_of()
     # et l'ecrit dans {name}.head.json (puis base.json apres bascule phase 2).
     print(json.dumps(payload, ensure_ascii=False))
-    # Toujours rc=0 en argv : seul delta_argv tranche (cf docstring module).
+    if not payload.get("scan_ok"):
+        # L'invocation ou l'execution ont echoue (rc=2 ou traceback sans resume).
+        # La CI doit le voir distinctement d'un scan propre, sinon une indisponibilite
+        # du scanner devient un faux "aucune nouvelle violation".
+        print(
+            f"::error::dump_readme_link_violations: scanner rc={payload.get('scan_rc')} "
+            f"sans resume lisible -- argv distinguant le succes d'un echec d'invocation.",
+            file=sys.stderr,
+        )
+        return 1
+    # Toujours rc=0 en argv sur succes : seul delta_argv tranche (cf docstring module).
     return 0
 
 
