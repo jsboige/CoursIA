@@ -65,7 +65,9 @@ print(f""Sector Universe: {len(SECTORS)} ETFs"")",,,,,,,,1ce0449ce0e4c709,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,ea7ab798,markdown,fr,f691b8809610ff46,"## Téléchargement de l'univers sectoriel
 
 On charge l'historique des 9 ETF sectoriels et du VIX depuis 2010 (sortie de la crise financière : on évite ainsi le régime 2008-2009 dont la dynamique de volatilité écraserait tout signal momentum ultérieur). Le point important est la **reproductibilité** : un cache fige les données téléchargées via `yfinance`, de sorte que deux exécutions du notebook — aujourd'hui et dans six mois — travaillent sur la même trajectoire. Sans cette précaution, toute optimisation serait non-comparable d'une exécution à l'autre, et le « meilleur Sharpe » deviendrait une cible mouvante.
-","Downloading historical data for sector ETFs (XLK, XLF, XLE, XLV, XLI, etc.) via yfinance since 2010 for the Sector-Momentum backtest.",,,,,,,f691b8809610ff46,ec0c4ae7ad0444f3,,,,,,,
+","## Downloading the sector universe
+
+We load the history of the 9 sector ETFs and the VIX since 2010 (past the financial crisis: this avoids the 2008-2009 regime whose volatility dynamics would crush any subsequent momentum signal). The key point is **reproducibility**: a cache freezes the data downloaded via `yfinance`, so that two runs of the notebook — today and six months from now — work on the same trajectory. Without this precaution, any optimization would be non-comparable from one run to the next, and the ""best Sharpe"" would become a moving target.",,,,,,,f691b8809610ff46,30e8fb91a247fc28,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,faf9fe11,code,fr,8bc2370e10581b5b,"# Download data with cache
 print(""Loading sector data..."")
 sector_data = {}
@@ -83,7 +85,9 @@ print(f""Sectors loaded: {len(sector_data)}"")",,,,,,,,8bc2370e10581b5b,,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,6b8b3c7e,markdown,fr,eedc9e22d5d4d7aa,"## Calibration du filtre VIX
 
 Le filtre VIX défend la stratégie : il suspend le rééquilibrage quand la volatilité implicite du marché entre en régime hostile. Calibrer son seuil est un arbitrage coût/bénéfice — un seuil trop bas filtre trop souvent et laisse le stratège hors-marché pendant les rebonds ; un seuil trop haut ne filtre plus que les crises extrêmes et laisse passer la volatilité ordinaire. La cellule suivante mesure la **distribution empirique** du VIX (moyenne, médiane, percentiles) pour ancrer ce seuil dans la statistique réelle de l'échantillon plutôt que dans une règle arbitraire.
-","Statistical analysis of the VIX (mean, median, 75th/90th percentiles) to calibrate the volatility filter of the Sector-Momentum strategy.",,,,,,,eedc9e22d5d4d7aa,7f4a0de96f2003ba,,,,,,,
+","## Calibrating the VIX filter
+
+The VIX filter defends the strategy: it suspends rebalancing when the market's implied volatility enters a hostile regime. Calibrating its threshold is a cost/benefit trade-off — a threshold set too low filters too often and leaves the strategist out of the market during rebounds; a threshold set too high only filters extreme crises and lets ordinary volatility through. The next cell measures the **empirical distribution** of the VIX (mean, median, percentiles) to anchor this threshold in the actual statistics of the sample rather than in an arbitrary rule.",,,,,,,eedc9e22d5d4d7aa,d0e33749e9cda653,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,f1ef90af,code,fr,c4d02d06a381e857,"# Analyze VIX for filter optimization
 print(""VIX Statistics:"")
 print(f""  Mean: {vix_close.mean():.2f}"")
@@ -100,7 +104,9 @@ for threshold in [20, 25, 30]:
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,afaaafbf,markdown,fr,b3f47c8e21c62597,"## Calcul du facteur momentum
 
 Le momentum classe les secteurs par rendement passé sur la fenêtre de *lookback*. Le présupposé comportemental est l'**under-reaction** : les prix intègrent lentement l'information, si bien que les secteurs qui ont surperformé continuent statistically de le faire sur l'horizon court-moyen. La fenêtre de 126 jours (~6 mois) est le choix par défaut de la littérature (Jegadeesh-Titman), mais elle n'est pas nécessairement optimale pour des ETF sectoriels dont la rotation de cycle peut être plus rapide — c'est précisément ce que le grid search va trancher.
-",The momentum factor is calculated on past returns to rank and select the assets of the Sector-Momentum strategy.,,,,,,,b3f47c8e21c62597,9bee0ce483fa8f12,,,,,,,
+","## Computing the momentum factor
+
+Momentum ranks sectors by past return over the *lookback* window. The behavioral premise is **under-reaction**: prices incorporate information slowly, so sectors that have outperformed keep doing so statistically over the short-to-medium horizon. The 126-day window (~6 months) is the default choice of the literature (Jegadeesh-Titman), but it is not necessarily optimal for sector ETFs whose cycle rotation can be faster — this is precisely what the grid search will settle.",,,,,,,b3f47c8e21c62597,8fffab77d7902421,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,4d0544d6,code,fr,87c66ec2fe8bf1e5,"# Calculate momentum signals
 def calculate_momentum(prices, lookback=126):
     """"""
@@ -137,7 +143,9 @@ for sector, count in top_counts.items():
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,5aaedb66,markdown,fr,153b7393738f3ef2,"## Backtest de la configuration courante
 
 Le backtest calcule la trajectoire de richesse de la stratégie sur l'échantillon et en déduit deux métriques complémentaires : le **ratio de Sharpe** (rendement ajusté de la volatilité — pénalise un signal bruité) et le **drawdown maximal** (perte de pic à creux — pénalise un signal dont la volétile vient ruin). Les deux sont nécessaires : un Sharpe élevé obtenu au prix d'un drawdown profond n'est pas investissable, parce qu'un investisseur réel abandonnerait la stratégie avant le rebond. La cellule suivante apply les paramètres courants (126/25/1.5) pour établir la **baseline** que l'optimisation devra battre.
-","The ratios (Sharpe, drawdown) are calculated from the backtest returns to evaluate the quality of the Sector-Momentum strategy.",,,,,,,153b7393738f3ef2,b8fad967f24c3b5e,,,,,,,
+","## Backtest of the current configuration
+
+The backtest computes the strategy's wealth trajectory over the sample and derives two complementary metrics from it: the **Sharpe ratio** (volatility-adjusted return — penalizes a noisy signal) and the **maximum drawdown** (peak-to-trough loss — penalizes a signal whose volatility leads to ruin). Both are necessary: a high Sharpe obtained at the price of a deep drawdown is not investable, because a real investor would abandon the strategy before the rebound. The next cell applies the current parameters (126/25/1.5) to establish the **baseline** that the optimization must beat.",,,,,,,153b7393738f3ef2,b164bc0d52e6c346,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,1c22d59e,code,fr,4d33aa2c695c831c,"# Backtest sector momentum strategy (numpy-optimized)
 def backtest_sector_momentum(sector_data, vix_data,
                               lookback=126,
@@ -224,7 +232,9 @@ print(f""  Max Drawdown: {result['max_drawdown']*100:.1f}%"")",,,,,,,,4d33aa2c69
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,eb08467b,markdown,fr,298e17de7983df46,"## Grid search sur les quatre leviers
 
 Le grid search balaye 320 combinaisons (5 *lookback* × 4 seuils VIX × 4 leviers × 4 *top_n*) et retient, pour chacune, le Sharpe réalisé. C'est un **balayage exhaustif en échantillon** : il trouve la configuration qui aurait été optimale sur cette trajectoire passée. La précaution est de ne pas confondre « optimal en échantillon » et « optimal à venir » — avec 320 combinaisons testées sur une seule trajectoire de 15 ans, le risque de surajustement est réel. La lecture des résultats doit donc privilégier les **tendances stables** (un paramètre qui gagne sur plusieurs configurations voisines) plutôt que le singleton absolu du top-1, et c'est ce que le tableau des 15 meilleures combinaisons permet de faire.
-","Performance metrics (Sharpe, CAGR, drawdown) are aggregated over the optimization results to identify Pareto-optimal configurations.",,,,,,,298e17de7983df46,39d4bf802e4aae26,,,,,,,
+","## Grid search over the four levers
+
+The grid search sweeps 320 combinations (5 *lookbacks* x 4 VIX thresholds x 4 leverages x 4 *top_n*) and records, for each, the realized Sharpe. This is an **exhaustive in-sample sweep**: it finds the configuration that would have been optimal on this past trajectory. The precaution is not to confuse ""optimal in-sample"" with ""optimal going forward"" — with 320 combinations tested on a single 15-year trajectory, the overfitting risk is real. Reading the results should therefore favor **stable trends** (a parameter that wins across several neighboring configurations) over the absolute top-1 singleton, and this is exactly what the table of the 15 best combinations allows.",,,,,,,298e17de7983df46,41df37d40c533b20,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,080a2bd8,code,fr,940e4e54c144498e,"# Grid search for optimal parameters
 def grid_search_sector_momentum(sector_data, vix_data):
     results = []
@@ -299,25 +309,32 @@ Sharpe attendu (en échantillon) : **~2.0**, contre **1.65** pour la baseline 12
 ### Réserve méthodologique
 
 Le drawdown maximal affiché pour la configuration optimisée (~-6 %) semble bas au regard du rendement cumulé (~3720x) et demande à être **vérifié** : sur un rendement de cet ordre, un drawdown de 6 % est mécaniquement suspect (soit la métrique est calculée sur une base différente de la baseline, soit le levier n'est pas appliqué uniformément dans le grid). Avant tout déploiement, il faut reconcilier l'échelle du drawdown entre la baseline (-120 % à levier 1.5) et le grid (-6 %), et confirmer que le levier est effectivement appliqué. C'est la différence entre un backtest présentable et un backtest investissable.
-","## Research Findings & Recommendations
+","## Conclusions and recommendations
 
-### Analysis Summary
-Based on the grid search:
+### Reading the grid search results
 
-1. **Optimal Lookback**: The sweet spot for momentum calculation period
-2. **VIX Threshold**: Balances risk reduction vs. opportunity cost
-3. **Leverage**: Higher leverage increases returns but also drawdown
-4. **Top N Sectors**: Diversification vs. concentration trade-off
+The sweep reveals four regularities more robust than the top-1 singleton:
 
-### Recommended Parameters
+1. **Short lookback (90 days > 126 days)** — sector momentum decays fast; a ~3-month signal beats the 6-month canon of the individual-stocks literature. This is consistent with a cycle rotation faster than *stock-picking* momentum.
+2. **Concentration (top_n = 2)** — holding only the 2 best sectors systematically beats diversification (top_n = 3 or 4). The signal is strong enough that concentration amplifies it rather than damping it.
+3. **Sharpe insensitive to leverage** — the 4 best rows have leverages from 1.0 to 2.0 and **the same Sharpe** (2.016). This is expected: leverage scales return and volatility proportionally, so risk-adjusted return does not move. Optimizing Sharpe over leverage is an **illusion** — leverage is a risk-tolerance choice, not a signal parameter.
+4. **High VIX threshold (35 > 25)** — the filter wins by being rarely active. At 35, only ~6% of days are filtered; at 25, ~29%. The VIX filter costs more (missed opportunities) than it protects, on this sample.
+
+### Recommended configuration
 
 ```python
-# In main.py or Alpha model
-LOOKBACK_PERIOD = <VALUE>  # From grid search
-VIX_THRESHOLD = <VALUE>  # From grid search
-LEVERAGE = <VALUE>  # From grid search
-TOP_N_SECTORS = <VALUE>  # From grid search
-```",,,,,,,9db08478b2c6fcc3,041bc7bd8eca3c76,,,,,,,
+# In main.py or the Alpha model
+LOOKBACK_PERIOD = 90    # 3-month momentum > 6-month (fast decay of the sector signal)
+VIX_THRESHOLD = 35      # minimal filtering — the VIX costs more than it protects here
+LEVERAGE = 1.0          # Sharpe is insensitive to leverage; 1.0 = no ruin possible
+TOP_N_SECTORS = 2       # concentration — the signal is strong enough to amplify it
+```
+
+Expected Sharpe (in-sample): **~2.0**, versus **1.65** for the 126/25/1.5 baseline.
+
+### Methodological caveat
+
+The maximum drawdown shown for the optimized configuration (~-6%) looks low given the cumulative return (~3720x) and needs to be **verified**: on a return of that order, a 6% drawdown is mechanically suspicious (either the metric is computed on a different basis than the baseline, or leverage is not applied uniformly in the grid). Before any deployment, the drawdown scale must be reconciled between the baseline (-120% at 1.5x leverage) and the grid (-6%), and leverage confirmed as actually applied. That is the difference between a presentable backtest and an investable one.",,,,,,,9db08478b2c6fcc3,62dee4d746f5e69c,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,d9361768,markdown,fr,24680f41b6430f65,"# Why 7 Months of Bull Market is NOT a Valid Backtest
 
 ## Le problème du Sharpe gonflé
@@ -359,7 +376,7 @@ The Sector-Momentum strategy currently shows a **Sharpe of 2.53** over the perio
 - **Leverage sensitivity**: 2x vs 1.5x vs 1x across different regimes
 
 **Pedagogical conclusion**: A 7-month backtest in a bull market has no predictive value.",,,,,,,24680f41b6430f65,052692e7bb9621b4,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,2a44d004,code,fr,5e2740964a42538d,"# Setup et chargement des donnees (version standalone avec cache)
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,2a44d004,code,fr,1d323981d1acc9da,"# Setup et chargement des donnees (version standalone avec cache)
 import pandas as pd
 import numpy as np
 from datetime import datetime
@@ -391,9 +408,17 @@ sector_etfs = {
 # Liste des tickers a charger (secteurs + SPY)
 tickers = ['SPY'] + list(sector_etfs.keys())
 
-# Charger historique 2015-01-01 -> maintenant via cache
+# Charger historique 2015-01-01 -> borne de fin FIGEE via cache
+# D2 (EPIC #9768) : une borne `datetime.now()` fait glisser la fenetre a chaque
+# execution. Deux consequences, toutes deux nuisibles ici :
+#   - les chiffres de ce notebook (Sharpe, drawdown, nb de semaines) changent sans
+#     qu'aucune ligne de code n'ait bouge, ce qui perime la prose d'interpretation ;
+#   - la cle du cache Parquet embarque les bornes, donc une borne mobile cree une
+#     nouvelle cle chaque jour et le cache ne peut jamais servir.
+# La borne est figee a la date du run committe, pour que les sorties ci-dessous
+# restent reproductibles a l'identique.
 start_date = '2015-01-01'
-end_date = datetime.now().strftime('%Y-%m-%d')
+end_date = '2026-04-23'   # borne exclusive cote yfinance -> derniere seance 2026-04-22
 
 print(f""Chargement des donnees: {start_date} -> {end_date}"")
 print(f""Tickers: {', '.join(tickers)}"")
@@ -411,11 +436,13 @@ for ticker in prices.columns:
     first_date = prices[ticker].first_valid_index()
     last_date = prices[ticker].last_valid_index()
     non_null = prices[ticker].notna().sum()
-    print(f""  {ticker}: {first_date.date()} -> {last_date.date()} ({non_null} jours)"")",,,,,,,,5e2740964a42538d,,,,,,,,
+    print(f""  {ticker}: {first_date.date()} -> {last_date.date()} ({non_null} jours)"")",,,,,,,,1d323981d1acc9da,,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,a69be2f9,markdown,fr,60b878e007c34c72,"## Régimes de marché et momentum hebdomadaire
 
 Le momentum sectoriel ne vit pas dans un monde stationnaire : il **dépend du régime**. On agrège donc les données en fréquence hebdomadaire (réduit le bruit haute-fréquence sans perdre le signal de rotation) et on identifie les régimes *bull/bear/crash* (2015-2019 bull, 2020 COVID, 2021 recovery, 2022 bear, 2023-2025 AI bull) qui serviront à découper l'analyse de sensibilité. L'enjeu est de ne pas mesurer une performance « moyenne » qui lisse un régime favorable avec un crash — c'est précisément ce que le Sharpe 2.53 sur 7 mois de bull fait, et ce que la décomposition par régime va démasquer.
-",Volatility regimes (low/high) are identified to dynamically adapt the exposure of the Sector-Momentum strategy.,,,,,,,60b878e007c34c72,57f894736bc0f027,,,,,,,
+","## Market regimes and weekly momentum
+
+Sector momentum does not live in a stationary world: it **depends on the regime**. We therefore aggregate the data at weekly frequency (reduces high-frequency noise without losing the rotation signal) and identify the *bull/bear/crash* regimes (2015-2019 bull, 2020 COVID, 2021 recovery, 2022 bear, 2023-2025 AI bull) that will serve to slice the sensitivity analysis. The stake is not to measure an ""average"" performance that smooths a favorable regime with a crash — this is exactly what the 2.53 Sharpe over 7 months of bull does, and what the regime decomposition will unmask.",,,,,,,60b878e007c34c72,96ec2fe83f1b190a,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,2c205053,code,fr,d578959d661356cd,"# Detection des regimes de marche et calcul du momentum hebdomadaire
 
 # SPY regime detection (simple: SMA200)
@@ -458,7 +485,9 @@ for period_name, (start, end) in regime_periods.items():
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,750ead53,markdown,fr,70b854ebb036cd33,"## Backtest sur l'échantillon complet (le verdict du Sharpe réel)
 
 On applique la configuration courante (levier 2x) sur l'ensemble de l'échantillon 2018-2026 — pas seulement les 7 mois du backtest trompeur. C'est le moment où l'inflation du Sharpe se révèle : la cellule suivante produit le Sharpe **réel** sur ~8 ans, et la chute par rapport à 2.53 est la leçon centrale du notebook. Un backtest honnête inclut les bear markets ; un backtest qui les évite est une publicité, pas une validation.
-","Ratios (Sharpe, drawdown) are calculated over several backtest windows to evaluate the robustness of the Sector-Momentum strategy.",,,,,,,70b854ebb036cd33,5bdb9662ddae119b,,,,,,,
+","## Backtest on the full sample (the verdict of the real Sharpe)
+
+We apply the current configuration (2x leverage) over the entire 2018-2026 sample — not just the 7 months of the misleading backtest. This is the moment the Sharpe inflation is revealed: the next cell produces the **real** Sharpe over ~8 years, and the fall from 2.53 is the notebook's central lesson. An honest backtest includes bear markets; a backtest that avoids them is an advertisement, not a validation.",,,,,,,70b854ebb036cd33,ede7b4316f60f248,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,654ce44b,code,fr,3e08aeb441c6c52f,"# Backtest vectorise: Sector Momentum avec leverage variable
 
 def sector_momentum_backtest(weekly_returns, weekly_momentum, leverage=2.0, min_sectors=1):
@@ -554,7 +583,9 @@ print(""=""*60)",,,,,,,,3e08aeb441c6c52f,,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,ed89bfec,markdown,fr,8d1f68dfd6b882d6,"## Sensibilité au levier, par régime
 
 C'est l'analyse la plus révélatrice. On balaye trois niveaux de levier (1x, 1.5x, 2x) **dans chaque régime séparément**. Le présupposé naïf est « plus de levier = plus de Sharpe » : la cellule suivante montre que c'est **faux**. Le levier amplifie le rendement ET la volatilité dans les mêmes proportions, donc le Sharpe (rendement/volatilité) est invariant au levier dans chaque régime — mais le drawdown maximal, lui, explose. C'est la distinction cruciale : le levier n'améliore jamais le rendement ajusté du risque, il ne fait qu'aggraver la ruine quand le régime tourne.
-",The cumulative return curve and drawdown periods of the Sector-Momentum strategy are displayed for risk analysis.,,,,,,,8d1f68dfd6b882d6,db8f844a07b60dba,,,,,,,
+","## Leverage sensitivity, by regime
+
+This is the most revealing analysis. We sweep three leverage levels (1x, 1.5x, 2x) **within each regime separately**. The naive assumption is ""more leverage = more Sharpe"": the next cell shows this is **false**. Leverage amplifies return AND volatility in the same proportions, so the Sharpe (return/volatility) is invariant to leverage within each regime — but the maximum drawdown explodes. This is the crucial distinction: leverage never improves risk-adjusted return; it only worsens ruin when the regime turns.",,,,,,,8d1f68dfd6b882d6,324ee6c4ebdb21d8,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,6712f99a,code,fr,eb19a2d957e1f86d,"# Analyse de sensibilite au leverage par regime
 
 leverage_levels = [1.0, 1.5, 2.0]
@@ -659,7 +690,9 @@ print(""=""*80)",,,,,,,,eb19a2d957e1f86d,,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,7980c28a,markdown,fr,d391e4fde645ad6f,"## Validation walk-forward (le test ultime d'honnêteté)
 
 Le walk-forward est l'antidote au surajustement. On entraîne le choix de levier sur une fenêtre passée (2 ans), puis on teste sur une fenêtre future (6 mois) que le modèle n'a **jamais vue**. On répète sur toute la période, en glissant la fenêtre. Si la stratégie marche vraiment, le Sharpe hors-échantillon tiendra ; si elle était surajustée, il s'effondrera. Le verdict de la cellule suivante est sans appel : le walk-forward choisit systématiquement le levier **le plus bas** (1.0x) — l'optimiseur lui-même refuse le 2x qui avait produit le Sharpe 2.53 trompeur.
-",The rolling Sharpe ratio is plotted over the entire period to validate that the sector rotation strategy remains effective over time.,,,,,,,d391e4fde645ad6f,6b4f180e47e6b03a,,,,,,,
+","## Walk-forward validation (the ultimate honesty test)
+
+Walk-forward is the antidote to overfitting. We train the leverage choice on a past window (2 years), then test on a future window (6 months) the model has **never seen**. We repeat over the whole period, sliding the window. If the strategy genuinely works, the out-of-sample Sharpe will hold; if it was overfit, it will collapse. The next cell's verdict is unambiguous: the walk-forward systematically picks the **lowest** leverage (1.0x) — the optimizer itself refuses the 2x that had produced the misleading 2.53 Sharpe.",,,,,,,d391e4fde645ad6f,be7e5785de860190,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,9baab11f,code,fr,8fb543dd93ccd653,"# Walk-forward validation: train 2 ans, test 6 mois
 
 print(""Walk-Forward Validation (Train 2 ans, Test 6 mois)"")
@@ -860,7 +893,7 @@ To improve robustness:
 4. **Expect a realistic Sharpe**: 0.5-0.8 over 10 years instead of 2.53 over 7 months
 
 **Pedagogical lesson**: Robustness > in-sample performance. Always test on bear markets.",,,,,,,dd10cc7737e6fc9d,a5a9ed1b2eb271d2,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,7fe018bc,code,fr,ec7423d1512e8c7b,"# Recommendations JSON pour implementation
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,7fe018bc,code,fr,a1388a78b7373531,"# Recommendations JSON pour implementation
 
 import json
 
@@ -874,9 +907,9 @@ recommendations = {
         {
             ""change"": ""Extend backtest period"",
             ""from"": ""set_start_date(2024, 1, 1); set_end_date(2024, 7, 20)"",
-            ""to"": ""set_start_date(2015, 1, 1); # Remove set_end_date"",
+            ""to"": ""set_start_date(2015, 1, 1); set_end_date(2025, 1, 1)"",
             ""file"": ""main.py"",
-            ""reason"": ""7 months is too short, must include bear markets (2022, 2020)""
+            ""reason"": ""7 months is too short, must include bear markets (2022, 2020); the end bound stays explicit so the window does not slide with the wall clock (D2, EPIC #9768)""
         },
         {
             ""change"": ""Reduce leverage in PCM"",
@@ -921,10 +954,12 @@ print(json.dumps(recommendations, indent=2))
 
 # Sauvegarder dans un fichier JSON
 output_path = ""recommendations_robustness.json""
-with open(output_path, 'w') as f:
+# newline explicite : sans lui, une regeneration sous Windows reecrit les 48
+# lignes en CRLF et produit un diff integral sans aucun changement de fond.
+with open(output_path, 'w', newline='\n') as f:
     json.dump(recommendations, f, indent=2)
 
-print(f""\nRecommendations sauvegardees dans: {output_path}"")",,,,,,,,ec7423d1512e8c7b,,,,,,,,
+print(f""\nRecommendations sauvegardees dans: {output_path}"")",,,,,,,,a1388a78b7373531,,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-cd9d09f1,markdown,fr,11d60724eda41ca5,"# Analyse de Canaux Multi-Échelles avec ZigZag et Lignes de Régression Pondérées
 
 Ce notebook explore une approche d'analyse technique multi-échelles pour l'actif BTCUSDT (sur Binance), basée sur l'identification de pivots via l'indicateur ZigZag et la construction de canaux de tendance hiérarchiques (Macro, Méso, Micro).
