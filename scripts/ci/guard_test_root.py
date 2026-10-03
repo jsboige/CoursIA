@@ -69,6 +69,37 @@ PYTEST_INVOCATION_RE = re.compile(
     re.MULTILINE,
 )
 
+# Options pytest qui sont BOOLEENNES (sans valeur). Une option
+# booleenne ne doit pas declencher `skip_next` dans le parser -- sinon
+# le token suivant (un chemin) est avale comme valeur de l'option.
+# Cf. CONCERNS adjoint po-2025 c.9 sur #18951 : `pytest --verbose
+# scripts/notebook_tools/tests/` rendait `paths=[]` car `--verbose`
+# etait traite comme `--xxx` (valeur) et le chemin etait avale.
+# Reference : https://docs.pytest.org/en/stable/reference/reference.html#command-line-flags
+PYTEST_BOOLEAN_OPTIONS: frozenset[str] = frozenset({
+    # Short boolean
+    "-v", "-q", "-s", "-x", "-l", "-h",
+    # Long boolean
+    "--verbose", "--quiet", "--exitfirst", "--capture=no", "-s",
+    "--strict", "--strict-markers", "--strict-config",
+    "--doctest-modules", "--doctest-ellipsis", "--doctest-glob",
+    "--continue-on-collection-errors",
+    "--co", "--collect-only",
+    "--showlocals",
+    "--lf", "--last-failed",
+    "--ff", "--failed-first",
+    "--sw", "--stepwise",
+    "--sw-skip", "--stepwise-skip",
+    "--nf", "--new-first",
+    "--cache-show", "--cache-clear",
+    "--ci",
+    "--runxfail",
+    "--no-header", "--no-summary", "--no-cov", "--no-cov-on-fail",
+    "--benchmark-disable", "--benchmark-only", "--benchmark-skip",
+    "--help", "--version",
+    "-h",
+})
+
 
 def parse_collected_paths(workflow: Path) -> list[str]:
     """Lit la liste des chemins collectes par pytest depuis le YAML.
@@ -94,10 +125,18 @@ def parse_collected_paths(workflow: Path) -> list[str]:
     m = _find_pytest_invocation(text)
     if m is None:
         return []
-    pytest_end = m.end()
+    # Si le match provient d'un scalaire YAML decode, on travaille sur
+    # la version decodee (le match pointe sur du texte decode, pas sur
+    # le texte brut). Cf. CONCERNS adjoint po-2025 c.9 sur #18951.
+    if _is_decoded_match(m):
+        work_text = m.decoded_text
+        pytest_end = m.end()
+    else:
+        work_text = text
+        pytest_end = m.end()
     # Capture du bloc d'arguments. On collecte toutes les lignes qui
     # font partie du meme appel pytest (meme bloc YAML, ou inline).
-    rest = text[pytest_end:]
+    rest = work_text[pytest_end:]
     lines = rest.split("\n")
     args_lines: list[str] = []
     if lines:
@@ -111,7 +150,7 @@ def parse_collected_paths(workflow: Path) -> list[str]:
     # qu'on est dans le meme bloc YAML. Une ligne vide, une ligne en
     # col 0 (sans indentation), ou une ligne qui commence par `-`/`#`
     # met fin au bloc.
-    base_indent = _line_indent(text, m.start())
+    base_indent = _line_indent(work_text, m.start())
     for line in lines[1:]:
         if not line.strip():
             break  # ligne vide
@@ -145,7 +184,22 @@ def parse_collected_paths(workflow: Path) -> list[str]:
         # au token suivant -- ici on l'ignore.
         if tok.startswith("-"):
             if tok.startswith("--"):
-                skip_next = True
+                # Option longue. Trois cas :
+                # 1) `--xxx=VAL` : la valeur est dans le meme token, pas
+                #    de skip_next necessaire.
+                # 2) `--xxx` (sans `=`) ET dans PYTEST_BOOLEAN_OPTIONS :
+                #    option booleenne, pas de skip_next necessaire.
+                # 3) `--xxx` (sans `=`) ET hors set : on suppose qu'elle
+                #    prend une valeur au token suivant (skip_next).
+                # Cf. CONCERNS adjoint po-2025 c.9 sur #18951 : cas
+                # `--verbose` (booleen) traitait le chemin suivant comme
+                # valeur, d'ou `paths=[]`.
+                if "=" in tok:
+                    pass  # valeur inline, on ignore le token
+                elif tok in PYTEST_BOOLEAN_OPTIONS:
+                    pass  # booleen, pas de skip_next
+                else:
+                    skip_next = True
             continue
         if tok.isdigit():
             continue
@@ -179,13 +233,92 @@ def _line_indent_of(line: str) -> int:
 
 def _find_pytest_invocation(text: str) -> re.Match | None:
     """Trouve le premier appel pytest qui n'est pas dans un commentaire
-    YAML ni dans une chaine quotée. Heuristique : on considere pytest
-    comme un appel si (a) la ligne ne commence pas par `#`, et (b) le
-    caractere immediatement precedent pytest sur la ligne (apres le
-    whitespace) n'est pas une quote ouvrante, et (c) pytest est suivi
-    d'un separateur d'argument (`\\s` ou fin de ligne) -- un `pytest-x`
-    dans une dependances pip n'est pas un appel.
+    YAML ni dans une chaine quotée non-scalaire. Heuristique : on
+    considere pytest comme un appel si (a) la ligne ne commence pas
+    par `#`, et (b) pytest est precede d'un whitespace ou debut de
+    ligne, et (c) pytest est suivi d'un separateur d'argument (`\\s` ou
+    fin de ligne) -- un `pytest-x` dans une dependances pip n'est pas
+    un appel.
+
+    Cas special CONCERNS adjoint po-2025 c.9 sur #18951 : un
+    `run: "python -m pytest scripts/notebook_tools/tests/ -q"` est un
+    **scalaire YAML valide** (la ligne entiere est entre quotes, c'est
+    legal en GitHub Actions). L'ancienne implementation rejetait
+    pytest dans cette chaîne (quote_count impair) et rendait
+    `paths=[]`. Le fix : si la ligne est un scalaire YAML entre
+    quotes et contient pytest, on decode le contenu (retire les
+    quotes) et on re-matche la regex sur la version decodee.
+
+    Renvoie soit un match direct sur `text`, soit un objet
+    ``_DecodedMatch`` (namedtuple-like) qui wrap un match interne +
+    le texte decode. Voir ``_is_decoded_match``.
     """
+    return _find_pytest_in_decoded_or_raw(text)
+
+
+def _is_decoded_match(m) -> bool:
+    """Vrai si le match provient d'un scalaire YAML decode."""
+    return isinstance(m, _DecodedMatch)
+
+
+class _DecodedMatch:
+    """Wrapper d'un re.Match + le texte decode sur lequel il a ete
+    trouve. Necessaire parce que ``re.Match`` n'accepte pas
+    l'attribution d'attributs (objet immutable)."""
+    __slots__ = ("match", "decoded_text")
+
+    def __init__(self, match: re.Match, decoded_text: str):
+        self.match = match
+        self.decoded_text = decoded_text
+
+    def start(self) -> int:
+        return self.match.start()
+
+    def end(self) -> int:
+        return self.match.end()
+
+
+def _find_pytest_in_decoded_or_raw(text: str):
+    """Implementation complete : essaie d'abord sur le texte brut, puis
+    sur les scalaires YAML decodes (run: "..." ou run: '...')."""
+    m = _find_pytest_raw(text)
+    if m is not None:
+        return m
+    for _line_start, _line_end, decoded in _iter_yaml_scalar_lines(text):
+        m = _find_pytest_raw(decoded)
+        if m is not None:
+            return _DecodedMatch(m, decoded)
+    return None
+
+
+def _iter_yaml_scalar_lines(text: str):
+    """Iterateur sur les lignes de la forme `cle: "..."` ou `cle: '...'`
+    ou `- cle: "..."` (sequence item). Renvoie (line_start, line_end, decoded)."""
+    for line in text.splitlines(keepends=True):
+        stripped = line.lstrip()
+        # Forme : `key: "value"`, `key: 'value'`, ou `- key: "value"`
+        # (sequence item contenant un mapping).
+        if ":" not in stripped:
+            continue
+        # Retirer le prefix `- ` (sequence item) si present.
+        if stripped.startswith("-"):
+            stripped = stripped[1:].lstrip()
+        if ":" not in stripped:
+            continue
+        key, _, rest = stripped.partition(":")
+        rest = rest.strip()
+        if not key.replace("-", "").replace("_", "").isalnum():
+            continue
+        if len(rest) >= 2 and rest[0] == rest[-1] and rest[0] in ('"', "'"):
+            decoded = rest[1:-1]
+            line_start = text.find(line)
+            line_end = line_start + len(line)
+            yield (line_start, line_end, decoded)
+
+
+def _find_pytest_raw(text: str) -> re.Match | None:
+    """Recherche brute d'un appel pytest dans `text`. Renvoie le match
+    ou None. Cf. CONCERNS c.86 (sans-xdist) et c.87 (inline)."""
     for m in PYTEST_INVOCATION_RE.finditer(text):
         line_start = text.rfind("\n", 0, m.start()) + 1
         line_end = text.find("\n", m.end())
@@ -198,11 +331,8 @@ def _find_pytest_invocation(text: str) -> re.Match | None:
             continue
         # Quote check : sur la portion de ligne jusqu'au debut de pytest,
         # compter les apostrophes et guillemets. Si le compte est
-        # impair, pytest est dans une chaine YAML quotée et n'est pas
-        # un appel.
-        # Important : ne pas inclure le caractere juste avant pytest
-        # qui est forcement un whitespace (sinon la regex lookbehind
-        # n'aurait pas matche).
+        # impair, pytest est dans une chaîne YAML non-scalaire et
+        # n'est pas un appel.
         prefix = line[: m.start() - line_start]
         quote_count = sum(1 for c in prefix if c in ("'", '"'))
         if quote_count % 2 == 1:

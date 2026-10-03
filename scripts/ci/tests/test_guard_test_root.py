@@ -440,3 +440,68 @@ def test_parse_filters_long_option_values(tmp_path):
     assert paths == ["scripts/tests"], (
         f"Options et valeurs filtrees ; seul le chemin reste. paths={paths!r}"
     )
+
+
+def test_parse_verbose_boolean_does_not_eat_next_path(tmp_path):
+    """CONCERNS adjoint po-2025 c.9 sur #18951 : un appel
+    `pytest --verbose scripts/notebook_tools/tests/` rendait
+    `paths=[]` car `--verbose` (option BOOLEENNE) etait traite comme
+    une option a valeur (skip_next=True), et le chemin suivant etait
+    avale. Le fix : distinguer les options booleennes (dans
+    PYTEST_BOOLEAN_OPTIONS) des options a valeur. `--verbose` ne doit
+    pas declencher skip_next."""
+    wf = tmp_path / "verbose.yml"
+    wf.write_text(
+        "name: verbose\n"
+        "on: [push]\n"
+        "jobs:\n"
+        "  t:\n"
+        "    steps:\n"
+        "      - run: pytest --verbose scripts/notebook_tools/tests/ -q\n"
+    )
+    paths = guard.parse_collected_paths(wf)
+    assert paths == ["scripts/notebook_tools/tests/"], (
+        f"`--verbose` est booleen, ne doit pas manger le chemin. paths={paths!r}"
+    )
+
+
+def test_parse_quoted_yaml_scalar_extracts_paths(tmp_path):
+    """CONCERNS adjoint po-2025 c.9 sur #18951 : un run YAML sous
+    forme de scalaire quoté `run: \"python -m pytest scripts/notebook_tools/tests/ -q\"`
+    etait rejete (pytest dans une chaîne quotée, quote_count impair).
+    Or, en GitHub Actions, ce scalaire est execute tel quel. Le fix :
+    decoder le contenu du scalaire et relancer la detection. La garde
+    doit extraire les chemins corrects et detecter un test racine."""
+    wf = tmp_path / "quoted.yml"
+    wf.write_text(
+        "name: quoted\n"
+        "on: [push]\n"
+        "jobs:\n"
+        "  t:\n"
+        "    steps:\n"
+        '      - run: "python -m pytest scripts/notebook_tools/tests/ -q"\n'
+    )
+    paths = guard.parse_collected_paths(wf)
+    assert paths == ["scripts/notebook_tools/tests/"], (
+        f"Scalaire YAML quoté doit etre decode. paths={paths!r}"
+    )
+
+
+def test_parse_long_option_with_equals_value_does_not_eat_next(tmp_path):
+    """Les options `--xxx=VAL` (valeur inline) ne doivent pas
+    declencher skip_next : la valeur est dans le meme token. Cas
+    typique : `--junitxml=report.xml` ne doit pas manger le chemin
+    suivant comme valeur."""
+    wf = tmp_path / "junitxml.yml"
+    wf.write_text(
+        "name: junitxml\n"
+        "on: [push]\n"
+        "jobs:\n"
+        "  t:\n"
+        "    steps:\n"
+        "      - run: pytest --junitxml=report.xml scripts/tests/ -q\n"
+    )
+    paths = guard.parse_collected_paths(wf)
+    assert paths == ["scripts/tests/"], (
+        f"`--junitxml=VAL` doit etre absorbé inline. paths={paths!r}"
+    )
