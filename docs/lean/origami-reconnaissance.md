@@ -1,7 +1,7 @@
 # Origami géométrie différentielle — Pli 1 reconnaissance (issue #18205, sources tierces + emplacement)
 
 > **Statut** : Pli 1/3 de l'EPIC origami géométrie différentielle (#18205).
-> **Périmètre de cette PR** : sub-grains 3 (sources tierces) et 4 (emplacement proposé). **AUCUNE** livraison de lake, **AUCUN** build des fermetures Poincaré/Morse/de Rham/Bonnet-Myers — ces sub-grains sortent du périmètre 30 min et de la capacité po-2024 (Lean toolchain disponible mais build lake d'enveloppe 17555 modules/4.7M lignes = `RECOVERABLE-MACHINE`).
+> **Périmètre de cette PR** : sub-grains 3 (sources tierces) et 4 (emplacement proposé). **AUCUNE** livraison de lake, **AUCUN** build des fermetures Poincaré/Morse/de Rham/Bonnet-Myers — ces sub-grains sortent du périmètre 30 min et de la capacité po-2024 (Lean toolchain disponible mais build lake d'enveloppe -- volumetrie Mesure c.1422 = `RECOVERABLE-MACHINE`).
 >
 > **Date du relevé** : 2026-10-03. **Source primaire** : dépôt amont `qinz1yang/differential-geometry`, release `v0.1.3`.
 
@@ -88,7 +88,7 @@ Sub-grains NON couverts par cette PR, à déplier en Pli 2 par le coordinateur :
 1. **Petites fermetures** : lake d'enveloppe minimal épinglé sur `v0.1.3`, `lake build` sur Morse/de Rham/Bonnet-Myers, `#print axioms` sur un théorème de chacune, mesure du temps et de la mémoire.
 2. **Build témoin de Poincaré** : machine forte requise, `#print axioms DifferentialGeometry.Topology.poincare_conjecture`, journal dans le body de la PR.
 
-Verdict SOTA pour Pli 2 : **`RECOVERABLE-MACHINE`** (po-2023 ou po-2024 GPU/CPU 64 GB+, Lean toolchain déjà présente sur po-2024 mais build 17555 modules/4.7M lignes sort du périmètre 30 min).
+Verdict SOTA pour Pli 2 : **`RECOVERABLE-MACHINE`** (po-2023 ou po-2024 GPU/CPU 64 GB+, Lean toolchain déjà présente sur po-2024 mais build -- volumetrie Mesure c.1422 sort du périmètre 30 min).
 
 ## 5. Pli 3 — Usages (à déplier)
 
@@ -123,7 +123,7 @@ Voir section 2.1.
 ### 7.2 Conformité
 
 - Tell c.4 strict fondateur applicable : 3 sources vérifiées firsthand = (1) l'upstream `qinz1yang/differential-geometry` référencé, (2) la convention i18n Pattern A `_lean` suffix vérifiée sur 4 lakes existants, (3) le périmètre Pli 1 **déclaré** dans la PR (sub-grains 3+4 seulement).
-- Tell c.8236 strict applicable : po-2024 Lean toolchain INVOCABLE mais build lake 17555 modules = `RECOVERABLE-MACHINE` (Pli 2).
+- Tell c.8236 strict applicable : po-2024 Lean toolchain INVOCABLE mais build lake -- volumetrie Mesure c.1422 = `RECOVERABLE-MACHINE` (Pli 2).
 - Tell c.970-L2 ★★ reaffirmed 42e observation : narrow-cache tari, **créer un sous-grain** dans un EPIC libre (#18205 Pli 1 sources tierces + emplacement) est la voie de sortie structurelle.
 - Tell c.11900 strict reaffirmed 18e : aucun claim conflictuel sur #18205.
 - Tell c.1502 strict fondateur : lane ne merge pas, ripe-signal nominatif.
