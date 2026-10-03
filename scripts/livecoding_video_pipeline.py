@@ -864,13 +864,22 @@ def run_pipeline(
             # loudnorm + fade-out coordonne) — remplace le mux PoC.
             video_webm = Path(str(capture_result["video_webm"]))
             audio_wav = Path(str(capture_result["audio_wav"]))
-            duration_v = probe_duration_ffprobe(video_webm)
+            try:
+                duration_v = probe_duration_ffprobe(video_webm)
+                duration_src = "video"
+            except RuntimeError:
+                # webm MediaRecorder sans duree de conteneur ni de flux
+                # (mesure 2026-10-03) : le WAV navigateur, PCM, expose
+                # toujours la duree — meme fenetre de capture.
+                duration_v = probe_duration_ffprobe(audio_wav)
+                duration_src = "wav navigateur (webm sans Cues)"
             audible = [
                 t for t in tts_tracks if float(t["start_s"]) < duration_v - 1.0
             ]
             mix_cmd = mix_final_ffmpeg(
                 video_webm, audio_wav, audible, Path(output_path),
                 loudnorm_lufs=ffmpeg_loudnorm_lufs,
+                duration_override=duration_v,
             )
             proc = subprocess.run(
                 mix_cmd, capture_output=True, text=True,
@@ -882,8 +891,8 @@ def run_pipeline(
                 f"LIVREE : {output_path} "
                 f"({Path(output_path).stat().st_size} octets, loudnorm "
                 f"{ffmpeg_loudnorm_lufs} LUFS + TP -1.5, {len(audible)}/"
-                f"{len(tts_tracks)} segments TTS mixes sur {duration_v:.1f} s, "
-                f"fade-out coordonne video+audio)"
+                f"{len(tts_tracks)} segments TTS mixes sur {duration_v:.1f} s "
+                f"[duree : {duration_src}], fade-out coordonne video+audio)"
             )
         else:
             final_mix = f"PoC mux ffmpeg LIVRE : {capture_result['final_mp4']} (etape 6 = capture + TTS ensemble)"
@@ -1132,16 +1141,32 @@ def synthesize_narration_tts(
 
 
 def probe_duration_ffprobe(media: Path) -> float:
-    """Duree (secondes) d'un media via ffprobe."""
+    """Duree (secondes) d'un media via ffprobe.
+
+    Essaie la duree du conteneur (``format=duration``) puis celle du
+    flux (``stream=duration``) : les webm produits par MediaRecorder
+    (etape 4) n'exposent souvent AUCUNE duree de conteneur — fichier
+    finalise sans Cues, mesure sur la demo du 2026-10-03 : N/A sur les
+    deux entrees pour capture.webm, 90.85 s pour le WAV navigateur.
+    Echec explicite si aucune source n'expose de duree.
+    """
     import subprocess
 
-    proc = subprocess.run(
-        ["ffprobe", "-v", "error", "-show_entries", "format=duration",
-         "-of", "csv=p=0", str(media)],
-        capture_output=True, text=True, encoding="utf-8", errors="replace")
-    if proc.returncode != 0:
-        raise RuntimeError(f"ffprobe a echoue sur {media} : {proc.stderr[-400:]}")
-    return float(proc.stdout.strip())
+    for entries in ("format=duration", "stream=duration"):
+        proc = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", entries,
+             "-of", "csv=p=0", str(media)],
+            capture_output=True, text=True, encoding="utf-8", errors="replace")
+        if proc.returncode != 0:
+            raise RuntimeError(
+                f"ffprobe a echoue sur {media} : {proc.stderr[-400:]}")
+        value = proc.stdout.strip().splitlines()[0].strip() if proc.stdout.strip() else ""
+        if value and value != "N/A":
+            return float(value)
+    raise RuntimeError(
+        f"{media} n'expose aucune duree (format et stream = N/A — "
+        "conteneur MediaRecorder sans Cues : utiliser le WAV navigateur "
+        "comme reference de duree)")
 
 
 def mix_final_ffmpeg(
@@ -1151,18 +1176,25 @@ def mix_final_ffmpeg(
     out_mp4: Path,
     loudnorm_lufs: float = -14.0,
     fade_out_s: float = 3.0,
+    duration_override: Optional[float] = None,
 ) -> List[str]:
     """Etape 6 : commande de mixage final ffmpeg (critere 4 : -14 LUFS
     sans clipping ; fade-out coordonne musique + video).
 
-    Lit la duree video (ffprobe), retarde chaque segment TTS a son
-    ``start_s`` (``adelay ... all=1``), superpose au WAV navigateur via
-    ``amix ... normalize=0``, enchaine ``loudnorm`` (I=lufs, TP=-1.5 —
-    plafond de true peak anti-clipping) puis ``afade`` sortant, et fade
-    video synchronise sur ``[0:v]``. Retourne la commande complete
-    (testable en unitaire sans l'executer).
+    Lit la duree video (ffprobe) sauf ``duration_override`` fourni —
+    les webm MediaRecorder n'exposent aucune duree (mesure 2026-10-03),
+    le caller retombe alors sur la duree du WAV navigateur. Retarde
+    chaque segment TTS a son ``start_s`` (``adelay ... all=1``),
+    superpose au WAV navigateur via ``amix ... normalize=0``, enchaine
+    ``loudnorm`` (I=lufs, TP=-1.5 — plafond de true peak anti-clipping)
+    puis ``afade`` sortant, et fade video synchronise sur ``[0:v]``.
+    Retourne la commande complete (testable en unitaire sans
+    l'executer).
     """
-    duration = probe_duration_ffprobe(video_webm)
+    duration = (
+        duration_override if duration_override is not None
+        else probe_duration_ffprobe(video_webm)
+    )
     fade_start = max(0.0, duration - fade_out_s)
 
     cmd: List[str] = [

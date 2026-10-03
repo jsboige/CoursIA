@@ -1014,3 +1014,63 @@ class TestCliEtapes36:
         assert "--tts-engine" in result.stdout
         assert "--tts-gateway" in result.stdout
         assert "--tts-out-dir" in result.stdout
+
+class TestProbeDurationFfprobe:
+    """Probe de duree : chaine format -> stream -> erreur explicite
+    (les webm MediaRecorder n'exposent AUCUNE duree — mesure
+    2026-10-03 : N/A sur les deux entrees pour capture.webm)."""
+
+    def test_parse_la_duree_conteneur(self, monkeypatch):
+        import subprocess as subprocess_mod
+
+        def _fake_run(cmd, **kwargs):
+            return SimpleNamespace(returncode=0, stdout="62.500\n", stderr="")
+
+        monkeypatch.setattr(subprocess_mod, "run", _fake_run)
+        assert probe_duration_ffprobe(Path("x.mp4")) == 62.5
+
+    def test_fallback_stream_quand_format_na(self, monkeypatch):
+        import subprocess as subprocess_mod
+        calls = []
+
+        def _fake_run(cmd, **kwargs):
+            calls.append(cmd)
+            # format=duration -> N/A ; stream=duration -> 58.2
+            stdout = "N/A\n" if "format=duration" in cmd else "58.200000\n"
+            return SimpleNamespace(returncode=0, stdout=stdout, stderr="")
+
+        monkeypatch.setattr(subprocess_mod, "run", _fake_run)
+        assert probe_duration_ffprobe(Path("x.webm")) == 58.2
+        assert len(calls) == 2
+
+    def test_aucune_duree_erreur_explicite(self, monkeypatch):
+        import subprocess as subprocess_mod
+
+        def _fake_run(cmd, **kwargs):
+            return SimpleNamespace(returncode=0, stdout="N/A\n", stderr="")
+
+        monkeypatch.setattr(subprocess_mod, "run", _fake_run)
+        with pytest.raises(RuntimeError, match="aucune duree"):
+            probe_duration_ffprobe(Path("capture.webm"))
+
+
+class TestMixDurationOverride:
+    """duration_override : le caller retombe sur la duree du WAV
+    navigateur quand le webm n'expose rien — aucun appel ffprobe."""
+
+    def test_override_court_circuite_le_probe(self, monkeypatch):
+        import scripts.livecoding_video_pipeline as pl
+
+        def _probe_fail(media):
+            raise AssertionError("probe ne doit pas etre appele")
+
+        monkeypatch.setattr(pl, "probe_duration_ffprobe", _probe_fail)
+        cmd = mix_final_ffmpeg(
+            Path("video.webm"), Path("browser.wav"),
+            [{"index": 0, "start_s": 5.0, "end_s": 9.0, "intensity": 0.5,
+              "speed": 1.0, "wav": "s.wav", "bytes": 1}],
+            Path("o.mp4"), duration_override=90.85,
+        )
+        fc = cmd[cmd.index("-filter_complex") + 1]
+        assert "st=87.850" in fc  # 90.85 - 3.0
+        assert cmd[cmd.index("-t") + 1] == "90.850"
