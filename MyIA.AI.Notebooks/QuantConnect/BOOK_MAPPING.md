@@ -104,7 +104,7 @@ Algorithmes LEAN complets sur données de marché. Les exemples 04, 08, 18 et 19
 | 08/02 | Stoploss — ML Placed Stop Loss | [Stoploss-Volatility-ML](projects/Stoploss-Volatility-ML/) | COVERED | Needs-improvement (tranche 17) | stop placé par régression Lasso |
 | 08/03 | Stoploss — ML Put Option Hedge | — | GAP | — | |
 | 09 | ML Trading Pairs Selection | [ML-EnhancedPairs](projects/ML-EnhancedPairs/), [ETF-Pairs](projects/ETF-Pairs/) | PARTIAL | Vivant (ML-EnhancedPairs) | cointégration présente ; ni PCA ni OPTICS pour la sélection des paires |
-| 10 | Stock Selection through Clustering Fundamental Data | [Clustering-Fundamentals-ML](projects/Clustering-Fundamentals-ML/) | COVERED | Needs-improvement | |
+| 10 | Stock Selection through Clustering Fundamental Data | [Clustering-Fundamentals-ML](projects/Clustering-Fundamentals-ML/) | PARTIAL | Needs-improvement | la version actuelle (v4) classe les actions par z-scores de 8 facteurs fondamentaux, sans PCA ni `LGBMRanker` |
 | 11 | Inverse Volatility Rank and Allocate to Future Contracts | [InverseVolatility-Rank](projects/InverseVolatility-Rank/) | COVERED | Needs-improvement / near-BROKEN | |
 | 12 | Trading Costs Optimization | [TradingCosts-Optimization](projects/TradingCosts-Optimization/) | COVERED | Démo | |
 | 13 | PCA Statistical Arbitrage Mean Reversion | [PCA-StatArbitrage](projects/PCA-StatArbitrage/), [QC-Py-Cloud-06-PCA-StatArb](Python/QC-Py-Cloud-06-PCA-StatArb.ipynb) | COVERED | Needs-improvement (tranche 15) | |
@@ -142,12 +142,13 @@ Les projets [RL-DQN-Trading](projects/RL-DQN-Trading/) et [Reinforcement-Learnin
 
 Cette section compare, exemple par exemple, le chiffre annoncé par le livre et celui de notre reproduction ([#18900](https://github.com/jsboige/CoursIA/issues/18900), une tranche de chapitre à la fois). Les chiffres du livre viennent de son texte et des fichiers `footnotes.txt` de son dépôt (commit `e025f21`). Les nôtres viennent de [qc-strategies-status.md](../../docs/qc/qc-strategies-status.md) et des README des projets. Tous sont des Sharpe calculés par QuantConnect, sauf mention contraire.
 
-**Règle de verdict.** Elle a été écrite et publiée sur [#18900](https://github.com/jsboige/CoursIA/issues/18900) avant tout rejeu ([règle de base](https://github.com/jsboige/CoursIA/issues/18900#issuecomment-5968388318), [complément pour le chapitre 06](https://github.com/jsboige/CoursIA/issues/18900#issuecomment-5968451024)) :
+**Règle de verdict.** Elle a été écrite et publiée sur [#18900](https://github.com/jsboige/CoursIA/issues/18900) avant tout rejeu ([règle de base](https://github.com/jsboige/CoursIA/issues/18900#issuecomment-5968388318), [complément pour le chapitre 06](https://github.com/jsboige/CoursIA/issues/18900#issuecomment-5968451024), [complément pour la tranche 2](https://github.com/jsboige/CoursIA/issues/18900#issuecomment-5972434603)) :
 
 - `REPRODUIT` : notre Sharpe s'écarte du Sharpe du livre d'au plus 0,25, avec le même signe. Quand le livre donne un intervalle, issu d'un balayage de paramètres, l'écart est nul à l'intérieur ; à l'extérieur, il vaut la distance à la borne la plus proche. CAGR et pire baisse ne sont jugés que si le livre les donne.
 - `ÉCART` : l'écart dépasse la tolérance. Une issue fille en cherche la cause, et un écart n'est dit « expliqué » que si sa cause est mesurée.
 - `NON COMPARABLE` : le texte du livre n'annonce aucun chiffre de backtest pour l'exemple.
 - Si nos conditions diffèrent de celles du livre, aucun verdict n'est rendu avant un **rejeu dans les conditions du livre**. Le rejeu reprend la fenêtre et le capital du livre, son modèle de courtage par défaut (la ligne `set_brokerage_model` de notre projet est retirée) et ses paramètres publiés ; notre code reste inchangé par ailleurs. Le diff exact de chaque rejeu est donné sur l'issue.
+- Borne à zéro : quand le livre ne publie qu'un signe (tous les Sharpe du balayage positifs, ou toutes les combinaisons profitables), une tolérance de 0,25 contredirait la condition « même signe ». Le test porte alors sur le signe seul : Sharpe > 0, ou `Net Profit` de QuantConnect > 0. C'est un test faible : il dit que notre reproduction ne contredit pas le livre, pas qu'elle en reproduit un chiffre.
 
 ### 06 — exemples 01 à 07 (tranche 1)
 
@@ -176,6 +177,37 @@ Cette section compare, exemple par exemple, le chiffre annoncé par le livre et 
 - 01 : le texte nomme `BTCUSD` ; le notebook charge `BTCUSDT` sur Binance.
 - 03 : le texte cite 0,5548 et 0,5277 et la matrice de confusion `[592 1559]` ; le notebook du dépôt rend 0,5561 et 0,5309, et `[609 1542]`.
 - 07 : le texte retient 3 jours de détention ; `footnotes.txt` publie 2 jours dans ses paramètres de backtest, tout en notant que 3 jours donnent le meilleur Sharpe. Le rejeu suit le texte. Les deux valeurs sont dans le balayage dont tous les Sharpe sont ≥ 0,7.
+
+### 06 — exemples 08 à 13 (tranche 2)
+
+Pour 08/02, 11 et 13, le livre ne publie qu'un signe : la règle de la borne à zéro s'applique. Les paramètres publiés de ces trois exemples sont tous dans le balayage auquel la borne se rapporte.
+
+| # | Chiffre du livre | Conditions du livre | Notre chiffre | Nos conditions | Verdict |
+|---|------------------|---------------------|---------------|----------------|---------|
+| 08/01 | 17 des 20 seuils de stop battent le buy-and-hold de KO (Sharpe 0,263) ; paramètre publié : 0,95 | 2018-12-31 → 2024-04-01, capital 100 k, KO, stop fixe en pourcentage | — | aucune reproduction (`GAP`) | sans objet |
+| 08/02 | les 30 combinaisons du balayage ont un Sharpe positif, 28 dépassent 0,263 ; paramètres publiés : 3 mois d'historique, écart de stop 0,01, `alpha_exponent` 4 | 2018-12-31 → 2024-04-01, capital 100 k, KO, VIX comme facteur de volatilité | Sharpe 0,291, CAGR 7,83 %, pire baisse 20,0 %. **Rejeu dans les conditions du livre : Sharpe 0,24, CAGR 6,87 %, pire baisse 20,5 %, profit net 41,8 %, 746 ordres** | code du projet : 2015-01-01 → 2026-03-01, 1 mois d'historique, modèle de frais de nos campagnes comparatives ; volatilité réalisée de SPY à la place du VIX (absent de QC Cloud) ; rejeu : conditions du livre, paramètres publiés | `REPRODUIT` (borne à zéro) : 0,24 > 0 |
+| 08/03 | aucun chiffre | 2018-12-31 → 2024-04-01, capital 100 k, KO et ses puts hebdomadaires | — | aucune reproduction (`GAP`) | sans objet |
+| 09 | 1357 paires testées, 30 retenues ; aucun backtest | notebook de recherche | — | [ML-EnhancedPairs](projects/ML-EnhancedPairs/) : cointégration sans PCA ni OPTICS (`PARTIAL`) | `NON COMPARABLE` : un décompte de paires n'est pas un backtest |
+| 10 | tous les Sharpe du balayage sont ≥ 0 ; paramètres publiés : univers liquide de 100, univers final de 10, 365 jours d'historique, 5 composantes | 2018-12-31 → 2024-04-01, capital 100 k, PCA puis `LGBMRanker` | Sharpe 0,142, CAGR 3,37 %, pire baisse 65,3 % (2015-2026, mesure de la version v3, PCA et `GradientBoostingRegressor`) | la version actuelle (v4) classe par z-scores de 8 facteurs fondamentaux, sans PCA ni `LGBMRanker` | sans objet, pas de rejeu : notre projet ne met pas en œuvre le modèle du livre (ligne passée en `PARTIAL`) |
+| 11 | toutes les combinaisons du balayage sont profitables ; paramètres publiés : 3 mois pour l'écart-type, 3 mois pour l'ATR, 365 jours d'apprentissage | 2018-12-31 → 2024-04-01, capital 100 M, contrats à terme de front month, `Ridge` | Sharpe 0,124, CAGR 4,13 %, pire baisse 41,0 %. **Rejeu dans les conditions du livre : Sharpe 0,124, CAGR 4,13 %, pire baisse 41,0 %, profit net 23,7 %, 532 ordres** | code du dépôt : 2015-01-01 → 2024-04-01, capital 100 M, modèle de frais de nos campagnes comparatives, trois surcouches de risque propres au projet (`weight_multiplier`, `max_position_pct`, `stop_loss_pct`) ; notre chiffre vient du projet QuantConnect 29463533, dont le code est déjà dans les conditions du livre ; rejeu : copie de ce code à l'octet près, surcouches gardées | `REPRODUIT` (borne à zéro) : profit net de 23,7 % > 0 |
+| 12 | 774 ordres moins chers (42,36 %), 28 inchangés, 13 plus chers ; aucune statistique de backtest | 2023-01-01 → 2024-01-01, cryptomonnaies, démonstration d'un modèle de coûts | — | [TradingCosts-Optimization](projects/TradingCosts-Optimization/), démonstration | `NON COMPARABLE` |
+| 13 | toutes les combinaisons du balayage sont profitables, Sharpe maximal à 3 composantes et 126 jours ; paramètres publiés : 3 composantes, 63 jours, seuil de z-score 1,5, univers de 100 | 2019-01-01 → 2024-04-01, capital 1 M | Sharpe 0,165, CAGR 5,34 %, pire baisse 35,9 %. **Rejeu dans les conditions du livre : Sharpe 0,211, CAGR 6,34 %, pire baisse 34,7 %, profit net 38,1 %, 1658 ordres** | code du projet : 2015-01-01 → 2024-01-01, capital 1 M, 60 jours d'historique, modèle de frais de nos campagnes comparatives ; `LinearRegression` à la place de `sm.OLS` avec constante (mêmes résidus) ; rejeu : conditions du livre, paramètres publiés | `REPRODUIT` (borne à zéro) : profit net de 38,1 % > 0 |
+
+Nos chiffres hors rejeu viennent de [qc-strategies-status.md](../../docs/qc/qc-strategies-status.md). Pour l'exemple 13, cette page date sa mesure de 2015-2026, alors que le code du projet s'arrête au 2024-01-01. Pour l'exemple 11, notre chiffre a été mesuré sur le projet QuantConnect 29463533, dont le `main.py` diffère de celui du dépôt par deux lignes : début au 2018-12-31 au lieu du 2015-01-01, et pas de ligne `set_brokerage_model`. Ce code est celui du rejeu, à l'octet près : le rejeu redonne le même Sharpe, le même CAGR et la même pire baisse ; seul le PSR change (1,9 % sur la page de statut, 0,8 % au rejeu).
+
+**Rejeux** (projets QuantConnect séparés, une exécution chacun) :
+
+- 08/02 : projet 37309010, backtest `3e0d8c17982c9acc9d544fccf9260a09` ; PSR 1,7 %.
+- 13 : projet 37309113, backtest `a0205f4b3e052a526d3fc25de8acdc70` ; PSR 1,4 %.
+- 11 : projet 37309271, backtest `a30271d032a6f4e54c2f2ed3bbb90381` ; PSR 0,8 %.
+
+**Ce que les verdicts de la tranche 2 disent, et ce qu'ils ne disent pas.** Le livre ne publie, pour ces exemples, qu'un signe sur tout un balayage. Le rejeu confirme ce signe aux paramètres publiés ; il ne dit rien de la place du rejeu dans le balayage, ni de la qualité de la stratégie. Les PSR des rejeux (1,7 % pour 08/02, 1,4 % pour 13, 0,8 % pour 11) le rappellent : un Sharpe positif sur cinq ans n'est pas un avantage établi.
+
+**Écarts internes au livre** (tranche 2) :
+
+- 08/01 : le texte et `footnotes.txt` publient un stop à 0,95 ; la valeur par défaut du code est 0,99, dans la zone où le livre dit que le Sharpe s'effondre (≥ 0,985).
+- 08/02 : le texte et `footnotes.txt` publient 3 mois d'historique ; la valeur par défaut du code est 1. Le rejeu suit le texte.
+- 13 : le texte et `footnotes.txt` publient 63 jours ; la valeur par défaut du code est 60, hors du balayage, dont le pas est de 21 jours. Le rejeu suit le texte.
 
 ---
 
