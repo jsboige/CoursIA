@@ -34763,13 +34763,13 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41-SAE-GeometrieFeatures-Python.ipynb,5514f
 - Harnais : Epic #10355 (traces npz commitees), organe `ict/scale_free.py`,
   organe `ict/sae_dictionary.py`.
 ",,,,,,,,4d95484c97929c1a,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,226c0ff6,markdown,fr,24282410ed5d6cae,"# ICT-42 — Crosscoder : diffuser deux modèles, distilled reasoning vs base
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,226c0ff6,markdown,fr,cbb1644fe905b64e,"# ICT-41b — Crosscoder : diffuser deux modèles, distilled reasoning vs base
 
 > **Arc A2 — géométrie du latent** (Epic #16741), suite directe d'ICT-41, SAE mono-modèle (issue #16747, en cours d'intégration via la PR #16859). Paper source : **R05** — Baek & Tegmark, *Towards Understanding Distilled Reasoning Models: A Representational Approach* ([arXiv:2503.03730](https://arxiv.org/2503.03730)).
 
 ICT-41 isolait la géométrie d'UN modèle avec un SAE. Ici on met **deux modèles côte à côte** dans un même dictionnaire de features : le modèle distillé `DeepSeek-R1-Distill-Qwen-1.5B` (qui a « appris à raisonner » par distillation de traces DeepSeek-R1) et sa base `Qwen2.5-Math-1.5B` (avant distillation). L'outil est le **crosscoder** : chaque feature possède un décodeur **par modèle**, et le rapport des normes des décodeurs — le **NRN** — dit si une feature est *partagée* (les deux modèles l'utilisent pareil), *distillée-only* (le distillé l'a acquise pendant la distillation) ou *base-only*.
 
-La question causale du papier : les features distillées-only portent-elles le comportement « over-thinking » du raisonnement long ? On la teste à échelle mini — et on verra que **certaines réponses du papier ne se reproduisent pas à cette échelle** : c'est précisément l'intérêt méthodologique.",,,,,,,,24282410ed5d6cae,,,,,,,,
+La question causale du papier : les features distillées-only portent-elles le comportement « over-thinking » du raisonnement long ? On la teste à échelle mini — et on verra que **certaines réponses du papier ne se reproduisent pas à cette échelle** : c'est précisément l'intérêt méthodologique.",,,,,,,,cbb1644fe905b64e,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,934895f9,markdown,fr,16e8778ab95eef31,> **Statut épistémique** — **Sans verdict à ce jour** : aucune ligne de la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md) ne concerne ce notebook ; son statut épistémique sera porté par la matrice le cas échéant.,,,,,,,,16e8778ab95eef31,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,528ea9db,markdown,fr,92aad3db608c582c,"## Prérequis & avertissement d'exécution
 
@@ -35180,12 +35180,12 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,72
 - Génération gloutonne (do_sample=False) pour la reproductibilité ; le papier échantillonne — les longueurs absolues ne se comparent pas directement.
 - Parallelogram : 4/6 quadruples mono-token seulement, verdict genre **non reproducteur** du papier à 1.5B (base 1,0694 légèrement sous distillé 1,0832) sur UN quadruple — illustratif, l'exercice 3 commence la mesure par classe.
 - Déterminisme strict (`use_deterministic_algorithms`, cuBLAS workspace fixe, TF32 off) : chaque ré-exécution redonne les mêmes chiffres — les lectures de ce notebook sont ancrées sur ces sorties-là.",,,,,,,,7bd6fac7eeff01ce,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,19592f65,markdown,fr,ec96cf2278f506bb,"## Références
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,19592f65,markdown,fr,f3b4810f063531bc,"## Références
 
 - Baek, J. & Tegmark, M. (2025). *Towards Understanding Distilled Reasoning Models: A Representational Approach*. [arXiv:2503.03730](https://arxiv.org/abs/2503.03730) — Eq 3-7 (§3), Table 1 & Fig 1 (§4), ablation/steering (§5), parallelogram (Fig 4).
 - Dataset : [open-thoughts/OpenThoughts-114k](https://huggingface.co/datasets/open-thoughts/OpenThoughts-114k).
 - Modèles : [DeepSeek-R1-Distill-Qwen-1.5B](https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B), [Qwen2.5-Math-1.5B](https://huggingface.co/Qwen/Qwen2.5-Math-1.5B).
-- Précédent série : ICT-41-SAE-GeometrieFeatures-Python, SAE mono-modèle (issue #16747, PR #16859 en cours d'intégration) ; cadre général [README de la série](README.md).",,,,,,,,ec96cf2278f506bb,,,,,,,,
+- Précédent série : ICT-41-SAE-GeometrieFeatures-Python, SAE mono-modèle (issue #16747, PR #16859 en cours d'intégration) ; cadre général [README de la série](README.md).",,,,,,,,f3b4810f063531bc,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-InoculationBifurcation-Pilot-Python.ipynb,1ec2e165,markdown,fr,2d0ccb49373b045d,"# ICT-42 — Inoculation et bifurcation représentationnelle (pilote multi-échelle)
 
 **Navigation** : [Index](README.md) | [<< ICT-21b Calibration](ICT-21b-SAECalibration-Python.ipynb) | [Tete-a-tete SAE<->J-space >>](ICT-SAE-JLens-TeteATete.ipynb)
@@ -35860,14 +35860,14 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-43-Calibration-MultiEchelle-Python.ipynb,ic
 5. **Inventaire daté** : mesuré au Hub tel qu'il existe au moment de l'exécution — le dépôt `W32K-L0_100` du 30B-A3B est ainsi absent de l'énumération des 14 dépôts (jamais publié ou retiré), son `W32K-L0_50` restant la ligne 3 de la table. Toute re-exécution re-mesure.
 
 *Suite (Phase 1) : fit J-lens par taille à `couche_ancre`, report qualité de sonde (accuracy/AUC `control` vs `trained`). See #8236.*",,,,,,,,55e1003f2faec4e5,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,782a8370,markdown,fr,ad76d588f4ac609d,"# ICT-44 — La géométrie de la vérité : une direction dans l'espace latent ?
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,782a8370,markdown,fr,83923ccd52661082,"# ICT-44 — La géométrie de la vérité : une direction dans l'espace latent ?
 **Navigation** : [Index](README.md) | [43 — Calibration multi-échelle](ICT-43-Calibration-MultiEchelle-Python.ipynb) | [45 — Inoculation & bifurcation 9B](ICT-45-InoculationBifurcation-9B-Python.ipynb)
 
-> **Arc cartes blanches** (Epic #16741) — scoping #16760, grain #16890. Suite directe d'ICT-41 (issue #16747 — géométrie SAE mono-modèle) et d'ICT-42 (issue #16749 — crosscoder de distillation). Paper source : **Marks & Tegmark, « The Geometry of Truth »** (COLM 2024, [arXiv:2310.06824](https://arxiv.org/2310.06824)) — cité à la fois par notre paper R05 (crosscoder) et par R11 §2.2.2, qui fait de la **connaissance du vrai tout en affirmant le faux** sa définition de la malhonnêteté.
+> **Arc cartes blanches** (Epic #16741) — scoping #16760, grain #16890. Suite directe d'ICT-41 (issue #16747 — géométrie SAE mono-modèle) et d'ICT-41b (issue #16749 — crosscoder de distillation). Paper source : **Marks & Tegmark, « The Geometry of Truth »** (COLM 2024, [arXiv:2310.06824](https://arxiv.org/2310.06824)) — cité à la fois par notre paper R05 (crosscoder) et par R11 §2.2.2, qui fait de la **connaissance du vrai tout en affirmant le faux** sa définition de la malhonnêteté.
 
 **La question.** Un LLM « croit-il » ce qu'il dit ? Peut-on lire la vérité d'un énoncé *dans ses activations*, sans lire sa sortie ? La piste : une **direction linéaire** — le residual stream contiendrait, quelque part, un axe vrai/faux. Le papier l'établit à l'échelle LLaMA-2 (7B/13B/70B) par une chaîne à trois jambes : localiser (patching), mesurer (PCA + sondes), **trancher (interventions causales)**. Nous répliquons la chaîne complète à échelle mini — paire Qwen 1.5B (base Math vs distillée R1) + un regard 7B — avec les datasets officiels du papier.
 
-**Avertissement d'échelle (honnête, G.2).** Le papier montre que la structure linéaire **émerge avec l'échelle** : à 7B les PC captent la surface (« eighty »), à 13B les axes s'opposent, à 70B ils s'alignent. À 1.5B, attendez-vous à un signal **partiel** — ce notebook documente ce que font nos modèles, pas ce que fait un 70B.",,,,,,,,ad76d588f4ac609d,,,,,,,,
+**Avertissement d'échelle (honnête, G.2).** Le papier montre que la structure linéaire **émerge avec l'échelle** : à 7B les PC captent la surface (« eighty »), à 13B les axes s'opposent, à 70B ils s'alignent. À 1.5B, attendez-vous à un signal **partiel** — ce notebook documente ce que font nos modèles, pas ce que fait un 70B.",,,,,,,,83923ccd52661082,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,674194b7,markdown,fr,16e8778ab95eef31,> **Statut épistémique** — **Sans verdict à ce jour** : aucune ligne de la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md) ne concerne ce notebook ; son statut épistémique sera porté par la matrice le cas échéant.,,,,,,,,16e8778ab95eef31,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,3e0d9c49,markdown,fr,30150dae38dba5da,"## Le débat que ce papier tranche (en surface)
 
@@ -36196,9 +36196,9 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,3bc365e0,co
 # copier interv_run avec fin = fin - 1, mesurer NIE f->t de la sonde MM cities+neg_cities
 result = None  # TODO etudiant
 print(""Exercice a completer"")",,,,,,,,b9bfb476c665e1c7,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,85846e73,markdown,fr,ad726ce9bcf2150e,"## 5. Notre pont : la direction de vérité survit-elle à la distillation ?
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,85846e73,markdown,fr,278c29e9b5c9af3e,"## 5. Notre pont : la direction de vérité survit-elle à la distillation ?
 
-Question **hors papier**, née de notre arc : ICT-42 a montré qu'un crosscoder sépare features partagées et features distilled-only (NRN). La direction de vérité mass-mean de `cities` — $\theta_{mm}^{base}$ et $\theta_{mm}^{dist}$ dans le **même espace** (les deux modèles ont d = 1536, tokenizers alignés) — se ressemblent-elles ? cos(θ_base, θ_dist) par couche : proche de 1, la vérité est un axe hérité ; proche de 0, la distillation l'a réécrite ailleurs.",,,,,,,,ad726ce9bcf2150e,,,,,,,,
+Question **hors papier**, née de notre arc : ICT-41b a montré qu'un crosscoder sépare features partagées et features distilled-only (NRN). La direction de vérité mass-mean de `cities` — $\theta_{mm}^{base}$ et $\theta_{mm}^{dist}$ dans le **même espace** (les deux modèles ont d = 1536, tokenizers alignés) — se ressemblent-elles ? cos(θ_base, θ_dist) par couche : proche de 1, la vérité est un axe hérité ; proche de 0, la distillation l'a réécrite ailleurs.",,,,,,,,278c29e9b5c9af3e,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,476f1a1a,code,fr,58f665572a2dc915,"del model; torch.cuda.empty_cache()
 model, tok = load_model(""dist15"")   # acts_for lit les globaux tok/model
 ACTS_D = {}
