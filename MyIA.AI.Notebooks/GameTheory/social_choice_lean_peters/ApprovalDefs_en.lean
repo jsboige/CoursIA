@@ -25,6 +25,12 @@
 -/
 
 import SocialChoice.Profile
+import Mathlib.Data.Finset.Basic
+import Mathlib.Data.Finset.Lattice.Basic
+import Mathlib.Data.Fintype.Basic
+import Mathlib.Data.Rat.Cast.Defs
+import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+import Mathlib.Order.Lattice
 
 namespace ApprovalDefs_en
 
@@ -44,10 +50,10 @@ def Committee (A : Type) [Fintype A] (k : ℕ) : Type :=
 
 /-- Happiness of a voter `v` under a committee `S`: the number of candidates
     approved by `v` that lie in `S`. -/
-def Happiness {V A : Type} [instV : Fintype V] [instA : Fintype A]
+def Happiness {V A : Type} [instV : Fintype V] [instA : Fintype A] [DecidableEq A]
     (P : ApprovalProfile V A) (S : Committee A P.committeeSize)
     (v : V) : ℕ :=
-  (P.ballots v).approved ∩ S.val |>.card
+  ((P.ballots v).approved).filter (fun x => x ∈ S.val) |>.card
 
 /-- Payment function: vector of payments to voters, constrained to zero sum
     (payments transfer money to voters, financed by a total zero budget). -/
@@ -76,7 +82,7 @@ structure PaymentFunction (V : Type) [Fintype V] where
     The weights are strictly positive whenever `p.v > -1`. The `zero_sum`
     constraint alone does not imply it (`p = (-2, 2)` sums to zero);
     Tranche 2 will state `p.v > -1` as an explicit assumption. -/
-def ApprovalAggregateUtility {V A : Type} [instV : Fintype V] [instA : Fintype A]
+def ApprovalAggregateUtility {V A : Type} [instV : Fintype V] [instA : Fintype A] [DecidableEq A]
     (P : ApprovalProfile V A) (S : Committee A P.committeeSize)
     (p : PaymentFunction V) : ℚ :=
   ∑ v, (1 : ℚ) / (1 + p.payments v) * (Happiness P S v : ℚ)

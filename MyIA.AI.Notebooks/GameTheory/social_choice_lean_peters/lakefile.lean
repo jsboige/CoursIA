@@ -47,5 +47,6 @@ lean_lib «PetersTour» where
   (sibling byte-identical hors commentaires). Le glob EN est explicite pour
   éviter l'orphan-trap #6749. Voir `scripts/lean/check_i18n_siblings.py`.
 -/
+@[default_target]
 lean_lib «ApprovalDefs» where
   globs := #[`ApprovalDefs, `ApprovalDefs_en]
