@@ -79,7 +79,7 @@ Complémentaire, sans doublon. `social_choice_lean` utilise un `PrefOrder` perso
 ## Statut EPIC #4365 (anti-proliferation GT 6→2)
 
 Ce lake est **explicitement hors du périmètre d'absorption** dans
-[`game_theory_lean/`](../game_theory_lean/) au titre de l'EPIC #4365 Phase 4
+[`game_theory_lean/`](../../game_theory_lean/) au titre de l'EPIC #4365 Phase 4
 (regrouper les lakes cohesifs post-convergence). L'historique du statut :
 
 1. **Verrouillage amont (`INTRINSIC`, levé depuis)** : au moment de la
@@ -87,7 +87,7 @@ Ce lake est **explicitement hors du périmètre d'absorption** dans
    [`DominikPeters/SocialChoiceLean`](https://github.com/DominikPeters/SocialChoiceLean)
    était pinné à `355075e3` sur la famille `v4.27.0-rc1`, et son port vers la
    cible post-#4364 n'était pas sous notre contrôle — verdict `INTRINSIC` au
-   sens de [`sota-not-workaround.md`](../../../.claude/rules/sota-not-workaround.md).
+   sens de [`sota-not-workaround.md`](../../../../.claude/rules/sota-not-workaround.md).
    **Ce verrou a été levé par l'amont lui-même** : depuis le 2026-08-21
    (#12134, commit `d8ec0b08ba`), le pin effectif est Peters `94a4c650` /
    Mathlib `520045ab` sur `lean-toolchain` `v4.32.1` — la famille du reste
@@ -149,7 +149,7 @@ choix social en Lean 4.
 
 ### Complémentaire, pas doublon
 
-Ce projet et [`social_choice_lean/`](../social_choice_lean/) couvrent la même
+Ce projet et [`social_choice_lean/`](../../social_choice_lean/) couvrent la même
 théorie au travers de **cadres différents** : Peters utilise le `LinearOrder`
 strict de Mathlib, tandis que `social_choice_lean/` utilise le `PrefOrder`
 réflexif-total-transitif (plus proche de la tradition d'économie du bien-être).
@@ -161,5 +161,5 @@ preuves.
 - **Notebook compagnon** : prévu (pas encore créé) — un tour pédagogique des résultats
   de Peters, auquel ce projet servirait de backend.
 - **Amont** : [`DominikPeters/SocialChoiceLean`](https://github.com/DominikPeters/SocialChoiceLean) (MIT).
-- **Nos preuves** : [`social_choice_lean/`](../social_choice_lean/) — Arrow / Sen /
+- **Nos preuves** : [`social_choice_lean/`](../../social_choice_lean/) — Arrow / Sen /
   électeur médian dans le cadre `PrefOrder`.
