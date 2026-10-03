@@ -35,12 +35,35 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_WORKFLOW = REPO_ROOT / ".github" / "workflows" / "scripts-tests.yml"
 
-# On matche le bloc pytest multi-lignes : pytest \ puis les chemins
-# (termines par \) jusqu'a `-n ` qui signale la fin des args pytest.
+
+class PytestBlockNotFound(Exception):
+    """Le workflow contient `pytest` mais le bloc multi-lignes ne matche
+    pas. C'est un defaut de lecture -- le garde ne peut pas verifier
+    quoi que ce soit et DOIT le signaler plutot que rendre `ok=True` a
+    tort. Cf. CONCERNS coordinateur (c.86) sur #18896."""
+
+# On matche le bloc pytest multi-lignes : pytest (ou `python -m pytest`)
+# suivi de `\` puis les chemins (termines par \). La fin du bloc est
+# signalee par une ligne qui ne se termine PAS par \ (apres, pytest
+# prend d'autres options : -n, -q, --dist, --tb, ...). Cf. #18896
+# (CONCERNS c.86) : la version precedente exigeait `-n` en fin de
+# bloc, ce qui rendait l extraction VIDE pour les workflows pytest
+# valides sans xdist (python -m pytest scripts/notebook_tools/tests/ -q)
+# -- le garde rendait alors ok=True sans rien verifier.
+#
+# Strategie : capturer toutes les lignes consecutives se terminant par
+# `\`, en arretant des qu'une ligne ne se termine PAS par `\` (ou fin
+# de fichier). Le `+?` non-greedy consomme le minimum de lignes
+# consecutives, et le lookahead garantit qu'on s'arrete a la premiere
+# ligne non-`-terminee-par-\`.
+PYTEST_INVOCATION_RE = re.compile(
+    r"(?:python\s+(?:-m\s+)?|pytest(?:\s+-m\s+\S+)?\s+)?pytest\s*\\[ \t]*\n",
+    re.MULTILINE,
+)
 PYTEST_BLOCK_RE = re.compile(
-    r"pytest\s*\\\s*\n"
-    r"((?:[^\n]*\\\s*\n)+?)"
-    r"\s*-n\s",
+    PYTEST_INVOCATION_RE.pattern
+    + r"((?:.*\\[ \t]*\n)+?)"
+    + r"(?:[^\\\n]*\n|\Z)",
     re.MULTILINE,
 )
 
@@ -52,11 +75,29 @@ def parse_collected_paths(workflow: Path) -> list[str]:
     bloc, on nettoie les continuations de ligne, on splitte sur les espaces,
     on filtre tout ce qui ressemble a un flag (-x, --dist, ...) ou un
     nombre.
+
+    Si le workflow ne contient pas du tout `pytest`, on rend une liste
+    vide (le workflow n'est pas dans le scope de cette garde). Si le
+    workflow contient `pytest` mais que le bloc multi-lignes ne matche
+    pas (pattern en-dessous du reel, ou format inhabituel), on leve
+    ``PytestBlockNotFound`` : le garde DOIT refuser plutot que rendre
+    ``ok=True`` sans rien verifier (#18896 c.86).
     """
     text = workflow.read_text(encoding="utf-8")
+    # Le mot "pytest" peut apparaitre dans un nom de fichier (no-pytest.yml),
+    # un commentaire, un nom de job, etc. On ne leve l'exception que si le
+    # workflow contient un APPEL pytest multi-lignes (pytest \ en fin de
+    # ligne, apres indentation YAML ou apres `python -m`). C'est le signe
+    # qu'un bloc DEVRAIT etre reconnu.
+    if not PYTEST_INVOCATION_RE.search(text):
+        return []
     match = PYTEST_BLOCK_RE.search(text)
     if not match:
-        return []
+        raise PytestBlockNotFound(
+            f"{workflow} contient `pytest \\` mais PYTEST_BLOCK_RE ne matche "
+            f"pas le bloc multi-lignes ; le garde ne peut pas verifier. "
+            f"Cf. CONCERNS coordinateur (c.86) sur #18896."
+        )
     block = match.group(1)
     joined = re.sub(r"\s*\\\s*\n\s*", " ", block)
     tokens = joined.split()
@@ -172,6 +213,13 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         collected = parse_collected_paths(args.workflow)
+    except PytestBlockNotFound as e:
+        # #18896 (c.86) : si le workflow contient `pytest` mais que le
+        # pattern multi-lignes ne matche pas, c'est un defaut de lecture
+        # -- le garde rendait `ok=True` sans rien verifier. On remonte
+        # un statut explicite (rc=2) et un message qui nomme la cause.
+        print(f"FAIL: {e}", file=sys.stderr)
+        return 2
     except Exception as e:
         print(f"FAIL: impossible de parser {args.workflow}: {e}", file=sys.stderr)
         return 2
@@ -180,7 +228,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.json:
         out = {
-            "workflow": str(args.workflow.relative_to(REPO_ROOT)),
+            "workflow": str(args.workflow.resolve().relative_to(REPO_ROOT)),
             "collected_paths": collected,
             "violations": [str(v.relative_to(REPO_ROOT)) for v in violations],
             "ok": not violations,
@@ -197,7 +245,11 @@ def main(argv: list[str] | None = None) -> int:
             print(f"\nDeplacer dans le sous-dossier collecte adapte.")
             return 1
         print(f"OK: tous les test_*.py sont dans les chemins collectes.")
-        print(f"Chemins collectes (lus depuis {args.workflow.relative_to(REPO_ROOT)}) :")
+        try:
+            wf_display = args.workflow.resolve().relative_to(REPO_ROOT)
+        except ValueError:
+            wf_display = args.workflow
+        print(f"Chemins collectes (lus depuis {wf_display}) :")
         for c in collected:
             print(f"  - {c}")
 
