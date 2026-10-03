@@ -78,17 +78,45 @@ jobs:
           # Fix : `2>&1` fusionne stdout+stderr AVANT le grep, dans les DEUX
           # passes (PR + base). Le temoin est la run suivant ce commit :
           # une STALE_LINK injectee doit faire `NOUVELLES >= 1` (=exit 1).
-          # Sortie de la PR (head)
+          #
+          # F3 (Tell c.16866 / adjoint review 24) -- les `|| true` aux
+          # lignes 84, 86, 89, 91 mangeaient les pannes scanner / checkout :
+          # un `grep` qui ne matche pas (parce que le scanner est tombe)
+          # rendait `pr_violations.txt` VIDE avec exit 0 ; un `git checkout`
+          # rate sur la base faisait travailler le second scan sur le
+          # working tree PR -- et la comparaison `comm -23 PR base` rendait
+          # un delta vide, donc NEW=0, donc exit 0, alors que rien n'avait
+          # ete verifie. Voie propre : capturer le rc de chaque etape
+          # SANS `|| true`, et rouge si l'une a echoue. Le temoin est
+          # `/tmp/scan_status.txt` : chaque ligne nomme la passe et son rc.
+          # Si une ligne contient "FAIL", le job rouge meme avec NEW=0.
+          : > /tmp/scan_status.txt
+          set +e
           python scripts/regen_quarto_render.py --check-readme-links \
             2>&1 | grep -E '^::error::STALE_LINK ' \
-            | sort -u > /tmp/pr_violations.txt || true
+            | sort -u > /tmp/pr_violations.txt
+          PR_RC=$?
+          echo "PR_SCAN rc=${PR_RC}" >> /tmp/scan_status.txt
           # Sortie de la base (main)
-          git checkout "${BASE_SHA}" -- MyIA.AI.Notebooks scripts/regen_quarto_render.py _quarto.yml 2>/dev/null || true
+          git checkout "${BASE_SHA}" -- MyIA.AI.Notebooks scripts/regen_quarto_render.py _quarto.yml 2>/dev/null
+          CHECKOUT_BASE_RC=$?
+          echo "CHECKOUT_BASE rc=${CHECKOUT_BASE_RC}" >> /tmp/scan_status.txt
           python scripts/regen_quarto_render.py --check-readme-links \
             2>&1 | grep -E '^::error::STALE_LINK ' \
-            | sort -u > /tmp/base_violations.txt || true
+            | sort -u > /tmp/base_violations.txt
+          BASE_RC=$?
+          echo "BASE_SCAN rc=${BASE_RC}" >> /tmp/scan_status.txt
           # Retour au working tree PR
-          git checkout HEAD -- MyIA.AI.Notebooks scripts/regen_quarto_render.py _quarto.yml 2>/dev/null || true
+          git checkout HEAD -- MyIA.AI.Notebooks scripts/regen_quarto_render.py _quarto.yml 2>/dev/null
+          CHECKOUT_BACK_RC=$?
+          echo "CHECKOUT_BACK rc=${CHECKOUT_BACK_RC}" >> /tmp/scan_status.txt
+          set -e
+          # Temoin de panne : si un rc != 0, on rouge avec le diagnostic.
+          if grep -qE 'rc=([0-9]?[1-9][0-9]*|[2-9][0-9]?)$' /tmp/scan_status.txt; then
+            echo "::error::Panne scanner ou checkout -- garde non exercable (Tell c.16866 / adjoint c24) :"
+            cat /tmp/scan_status.txt
+            exit 1
+          fi
           # Delta = PR \ base
           comm -23 /tmp/pr_violations.txt /tmp/base_violations.txt > /tmp/delta_violations.txt
           NEW=$(wc -l < /tmp/delta_violations.txt | tr -d ' ')
