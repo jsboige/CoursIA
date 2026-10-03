@@ -697,7 +697,11 @@ def test_is_scannable_matches_on_relative_parts_only(tmp_path):
 # FineTuning/FT-05-ModelMerging-Routing. Each reintroduced pair makes this
 # test red until the declaration is updated knowingly — a skipif would
 # re-arm silently and a >= 0 threshold would stay green forever.
-EXPECTED_PAIR_COUNT = 2
+# 2026-10-03 (#1650 tranche FT, PR #18968): +2 paires T4 — FineTuning/
+# FT-01-Introduction-FineTuning + FT-03-Supervised-FineTuning. Total branche:
+# 4 (les paires Sector-Momentum #18966 et XGBoost #18972 portent chacune
+# leur propre bump de declaration au merge — l'ordre des merges fixe le total).
+EXPECTED_PAIR_COUNT = 4
 
 
 def _collect_parity_failures(repo_root: Path,
