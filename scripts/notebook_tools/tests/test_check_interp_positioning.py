@@ -26,7 +26,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-SCRIPTS_DIR = Path(__file__).resolve().parent
+SCRIPTS_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 from check_interp_positioning import (  # noqa: E402
@@ -429,7 +429,7 @@ class TestRealNotebooks(unittest.TestCase):
     """
 
     def setUp(self):
-        self.repo_root = SCRIPTS_DIR.parent.parent
+        self.repo_root = SCRIPTS_DIR.parent
 
     def _misplaced(self, relpath: str) -> list[dict] | None:
         nb = self.repo_root / relpath

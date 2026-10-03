@@ -37,7 +37,7 @@ import pytest
 
 # cell_order_ci.py does sys.path.insert on its own dir at import, but we load
 # it explicitly to control the import path.
-_MODULE_DIR = Path(__file__).resolve().parent
+_MODULE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_MODULE_DIR))
 
 import cell_order_ci as ci  # noqa: E402
