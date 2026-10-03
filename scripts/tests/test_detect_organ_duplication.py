@@ -128,9 +128,9 @@ def test_negative_consumer_no_collision(tmp_path, capsys):
     """Controle negatif : un consommateur (ICT-12e, PR #13664) ajoute des
     definitions qui ne collisionnent avec aucun organe de l'index."""
     mod = _load_detector()
-    patch = _write(tmp_path, "consumer.diff", """diff --git a/MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12e-Value-of-Information-Animat.ipynb b/MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12e-Value-of-Information-Animat.ipynb
---- a/MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12e-Value-of-Information-Animat.ipynb
-+++ b/MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12e-Value-of-Information-Animat.ipynb
+    patch = _write(tmp_path, "consumer.diff", """diff --git a/MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12e-Value-of-Information-Animat-Python.ipynb b/MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12e-Value-of-Information-Animat-Python.ipynb
+--- a/MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12e-Value-of-Information-Animat-Python.ipynb
++++ b/MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12e-Value-of-Information-Animat-Python.ipynb
 @@ -1,3 +1,5 @@
 +import pymc as pm
 +import numpy as np

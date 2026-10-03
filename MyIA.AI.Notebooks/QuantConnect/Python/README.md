@@ -2,7 +2,7 @@
 series: QuantConnect-Python
 pedagogical_count: 60
 breakdown: Python=60
-maturity: DRAFT=32, BETA=20, ALPHA=8
+maturity: DRAFT=33, BETA=19, ALPHA=8
 -->
 
 # QuantConnect Python Notebooks
@@ -276,7 +276,7 @@ Le fil rouge : la **rigueur méthodologique** — l'audit d'exécution honnête 
 2. **Exécuter sur QC Cloud** : les notebooks marqués `[QC CLOUD]` nécessitent QuantConnect Cloud (gratuit) — copier le code dans un projet QC Lab.
 3. **Consulter les projets associés** : chaque notebook pédagogique a un `main.py` correspondant dans `../projects/` pour exécution backtest réelle.
 4. **Approfondir le RL** : si le trading RL vous intéresse, enchaîner QC-Py-25 (intro RL) → 32 (DQN) → 33 (PPO) → 34 (SAC/A2C) dans l'ordre.
-5. **Lire le livre** : *Hands-On AI Trading* (Jared Broad, 2025), dont les 22 exemples sont mappés à ces notebooks (cf. `../BOOK_MAPPING.md`).
+5. **Lire le livre** : *Hands-On AI Trading* (Jared Broad, 2025), dont les exemples sont rattachés à ces notebooks dans [BOOK_MAPPING.md](../BOOK_MAPPING.md).
 6. **Retour au README principal** : pour la vue d'ensemble de la série QuantConnect complète (incluant les 50+ projets de stratégies backtestées) et les cross-series bridges.
 
 > **Rappel honnête** : le trading algorithmique est un domaine où l'overfitting est la règle. La discipline du walk-forward, du multi-seed et du out-of-sample strict — enseignée tout au long de cette sous-série — est ce qui sépare une stratégie robuste d'une illusion statistique.

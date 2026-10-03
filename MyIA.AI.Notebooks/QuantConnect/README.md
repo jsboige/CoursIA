@@ -4,7 +4,7 @@
 series: QuantConnect
 pedagogical_count: 115
 breakdown: Python=60, projects=49, ML-Training-Pipeline=4, kelly_lean=2
-maturity: BETA=65, DRAFT=37, ALPHA=12, TEMPLATE=1
+maturity: BETA=64, DRAFT=38, ALPHA=12, TEMPLATE=1
 -->
 
 > **Note éditoriale — counts kernels par sous-série** : Le marqueur CATALOG-STATUS agrégé ci-dessus reste **autoritatif** pour la décomposition par **sous-série** (Python / projects / ML-Training-Pipeline / kelly_lean). En revanche, pour les décomptes par **kernel** (Python vs Lean 4) **au sein** d'une sous-série — c'est-à-dire la répartition technique par interpréteur —, **ce README reste autoritatif** car la décomposition langagière par sous-série n'est pas dans le marqueur agrégé. Cette granularité est documentée ici par lecture directe des `metadata.kernelspec.language` des notebooks :
@@ -349,8 +349,7 @@ Voir [partner-course-quant-trading/README.md](partner-course-quant-trading/READM
 ### Guides de démarrage
 
 - **[GETTING-STARTED.md](GETTING-STARTED.md)** : Guide de démarrage détaillé
-- **[docs/HANDSON_AI_TRADING_MAPPING.md](docs/HANDSON_AI_TRADING_MAPPING.md)** : Mapping avec le livre "Hands-On AI Trading"
-- **[BOOK_MAPPING.md](BOOK_MAPPING.md)** : Mapping notebooks ↔ chapitres
+- **[BOOK_MAPPING.md](BOOK_MAPPING.md)** : inventaire des exemples du livre *Hands-On AI Trading*, rattachés aux notebooks et aux projets
 - **[docs/qc_strategies_catalog.md](docs/qc_strategies_catalog.md)** : Catalogue strategies QC Cloud
 - **[docs/HANDSON_DATA_REQUIREMENTS.md](docs/HANDSON_DATA_REQUIREMENTS.md)** : Datasets requis
 - **[docs/PAPER_TRADING_ARCHITECTURE.md](docs/PAPER_TRADING_ARCHITECTURE.md)** / **[docs/PAPER_TO_LIVE_TRANSITION.md](docs/PAPER_TO_LIVE_TRANSITION.md)** : Paper trading
@@ -609,7 +608,7 @@ Le fil rouge : **la rigueur méthodologique**. Le catalogue de 36 baselines vér
 1. **Approfondir une voie** : choisir un domaine (RL, Transformers, factor investing) et creuser les notebooks avancés correspondants (QC-Py-30/31 pour le DL, QC-Py-32/33/34 pour le RL, QC-Py-21/24 pour l'optimisation de portefeuille).
 2. **Construire un composite** : combiner plusieurs Alpha Models via l'Algorithm Framework (cf. `Framework_Composite_TrendWeather`, le leader robuste du catalogue) — la diversification batte l'optimisation fine d'un signal unique.
 3. **Paper trading** : déployer une stratégie sur QuantConnect Paper Brokerage ou IBKR/Binance (cf. `docs/PAPER_TRADING_ARCHITECTURE.md`) pour valider en temps réel avant tout capital réel.
-4. **Suivre le livre** : *Hands-On AI Trading* (Jared Broad, 2025) — les **22 exemples** (sections 06 Applied ML + 07 RL + 08 Risk Mgmt) sont mappés aux notebooks de cette série (**20 fermes + 2 ⚠️ partiels** : section 06 ex.01 Trend Scanning + section 08 ex.02 AI corrective, cf. [`docs/HANDSON_AI_TRADING_MAPPING.md`](docs/HANDSON_AI_TRADING_MAPPING.md) pour le statut détaillé de chaque exemple).
+4. **Suivre le livre** : *Hands-On AI Trading* (Jared Broad, 2025) — chaque exemple du livre est rattaché aux notebooks et aux projets de cette série dans [BOOK_MAPPING.md](BOOK_MAPPING.md), avec son statut (couvert, partiel, ébauche, absent).
 5. **Explorer les cross-series bridges** ci-dessus : les techniques ML, GenAI, Probas et Search se combinent toutes avec le trading algorithmique.
 6. **Consulter le catalogue** : [docs/qc/qc-comparative-backtests.md](../../docs/qc/qc-comparative-backtests.md) pour les 36 baselines vérifiées, leurs diagnostics de robustesse et les caveats de reproductibilité.
 

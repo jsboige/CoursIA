@@ -876,3 +876,293 @@ def test_q67_date_et_sha_suivent_la_meme_remontee():
         "o/r", "m3rg3", "ba5e", fetch=fetch, run_git=_git_proving("7ee0"),
     )
     assert when.isoformat().startswith("2026-09-07T09:00:00")
+
+
+# --- 8. #18686 -- le label merge-dwell-waived ne joue que si main est rouge --
+
+def _pr_with_label_fetch(workflow_runs=None, red_read_fails=False,
+                          workflow_runs_by_yml=None):
+    """Fetch fake pour une PR JEUNE (tete a 11:55, NOW=12:00) portant le label.
+
+    `workflow_runs` : liste de dict workflow-runs sur `main` pour le workflow
+    canonique `Scripts & Notebook-Tools Tests` (yml `scripts-tests.yml`).
+    Raccourci : si `workflow_runs_by_yml` est fourni, il surcharge par yml.
+
+    `red_read_fails` : la lecture de la couleur de main leve DwellError
+    (API muette) pour le workflow canonique.
+    """
+    by_yml = dict(workflow_runs_by_yml or {})
+    if workflow_runs is not None and "scripts-tests.yml" not in by_yml:
+        by_yml["scripts-tests.yml"] = workflow_runs
+
+    def fetch(path):
+        if path == "repos/o/r/pulls/42":
+            return {
+                "labels": [{"name": merge_dwell.WAIVER_LABEL}],
+                "base": {"sha": "ba5e0000"},
+            }
+        if path == "repos/o/r/commits/abc":
+            return {"commit": {"committer": {"date": "2026-09-07T11:55:00Z"}}}
+        if path == "repos/o/r":
+            if red_read_fails:
+                raise merge_dwell.DwellError("repos muet")
+            return {"default_branch": "main"}
+        # API workflow-directe : un seul yml par appel.
+        for yml, runs in by_yml.items():
+            expected = (
+                "repos/o/r/actions/workflows/{}/runs"
+                "?branch=main&event=push&status=completed&per_page=1"
+            ).format(yml)
+            if path == expected:
+                if red_read_fails:
+                    raise merge_dwell.DwellError("actions/workflows muets")
+                return {"workflow_runs": runs or []}
+        raise AssertionError("chemin inattendu: " + path)
+    return fetch
+
+
+def test_18686_label_main_vert_le_plancher_est_garde():
+    """Critere de fermeture 1 : label pose alors que `main` est vert -- le gate
+    garde le plancher. C'est le geste du 01/10 (#18502, #18676) : une lane
+    posait le label sur du contenu sans aucun rapport avec un rouge."""
+    ok, msg = merge_dwell.check(
+        "o/r", "abc", 42, 120.0, now=NOW,
+        fetch=_pr_with_label_fetch(workflow_runs=[
+            {"name": "Scripts & Notebook-Tools Tests", "conclusion": "success",
+             "created_at": "2026-09-07T10:00:00Z"},
+            {"name": "Re-aggregate stale PR gate verdicts", "conclusion": "success",
+             "created_at": "2026-09-07T11:00:00Z"},
+        ]),
+    )
+    assert ok is False, "main vert : le label ne doit PAS lever le plancher"
+    assert "condition non remplie" in msg
+    assert msg.startswith("tete du 2026-09-07T11:55:00Z"), (
+        "le plancher doit se mesurer normalement, comme si le label etait absent"
+    )
+
+
+def test_18686_label_main_rouge_le_plancher_est_leve_avec_motif():
+    """Critere de fermeture 2 : label pose alors que `main` a Scripts Tests
+    en failure -- le gate leve le plancher ET le motif releve vit dans le
+    message. C'est le seul cas qui ouvre la derogation en pratique (le check
+    `PR gate` ne tourne pas sur main, c'est l'objection de myia-ai-01 sur
+    #18796)."""
+    ok, msg = merge_dwell.check(
+        "o/r", "abc", 42, 120.0, now=NOW,
+        fetch=_pr_with_label_fetch(workflow_runs=[
+            {"name": "Scripts & Notebook-Tools Tests", "conclusion": "failure",
+             "created_at": "2026-09-07T10:30:00Z",
+             "html_url": "https://github.com/o/r/actions/runs/12345"},
+            {"name": "Re-aggregate stale PR gate verdicts", "conclusion": "success",
+             "created_at": "2026-09-07T11:00:00Z"},
+        ]),
+    )
+    assert ok is True, "main Scripts Tests rouge : la derogation doit jouer"
+    assert "dwell leve par le label" in msg
+    assert "main rouge: workflow `Scripts & Notebook-Tools Tests` en echec" in msg, (
+        "le motif doit rester lisible dans le log du gate"
+    )
+
+
+def test_18790_rouge_non_PR_gate_ne_leve_pas_la_derogation():
+    """#18790 : un workflow non-listé rouge sur main ne leve PAS la
+    derogation. Le critère est explicite (MAIN_RED_WORKFLOWS) : un rouge
+    CodeQL ou Gitleaks sur main ne bloque aucun merge -- il ne justifie
+    donc pas un bypass DWELL."""
+    ok, msg = merge_dwell.check(
+        "o/r", "abc", 42, 120.0, now=NOW,
+        fetch=_pr_with_label_fetch(workflow_runs=[
+            {"name": "CodeQL", "conclusion": "failure",
+             "created_at": "2026-09-07T09:00:00Z"},
+            {"name": "Scripts & Notebook-Tools Tests", "conclusion": "success",
+             "created_at": "2026-09-07T10:00:00Z"},
+        ]),
+    )
+    assert ok is False, (
+        "main avec rouge non-listé uniquement : le label ne doit PAS "
+        "lever le plancher (Scripts Tests est vert)"
+    )
+    assert "condition non remplie" in msg
+
+
+def test_18790_latest_wins_parmi_runs_PR_gate_multiples():
+    """#18790 : parmi plusieurs runs `Scripts & Notebook-Tools Tests` sur main,
+    le pli latest-wins par `created_at` selectionne le bon verdict. Cas : un
+    run Scripts Tests rouge recent est pris en compte ; un vert anterieur
+    est ignore.
+
+    Note : avec l'API workflow-directe (per_page=1) le serveur rend lui-meme
+    le run le plus recent -- le pli latest-wins defense-en-profondeur contre
+    une eventuelle divergence de tri. On passe ici le `failure` recent en
+    tete de liste pour exercer le chemin 'run rouge -> lever la derogation'."""
+    ok, msg = merge_dwell.check(
+        "o/r", "abc", 42, 120.0, now=NOW,
+        fetch=_pr_with_label_fetch(workflow_runs=[
+            {"name": "Scripts & Notebook-Tools Tests", "conclusion": "failure",
+             "created_at": "2026-09-07T11:55:00Z",
+             "html_url": "https://github.com/o/r/actions/runs/2"},
+        ]),
+    )
+    assert ok is True, "le run le plus recent (failure Scripts Tests) leve la derogation"
+    assert "dwell leve par le label" in msg
+
+
+def test_18686_couleur_de_main_illisible_ne_leve_pas():
+    """Fail-closed : une couleur de main illisible ne vaut PAS rouge -- la
+    derogation ne franchise jamais sur une absence de preuve. Le plancher
+    s'applique normalement, le gate ne refuse pas (ce n'est pas une erreur
+    d'etat de PR, c'est une derogation non prouvee)."""
+    ok, msg = merge_dwell.check(
+        "o/r", "abc", 42, 120.0, now=NOW,
+        fetch=_pr_with_label_fetch(red_read_fails=True),
+    )
+    assert ok is False
+    assert "condition non remplie" in msg
+
+
+def test_18796_workflow_en_cours_ne_compte_pas_comme_rouge():
+    """Un workflow-run NON complete (status in_progress / conclusion null)
+    n'est ni vert ni rouge : seul un `completed`/`failure` prouve le rouge.
+    Meme esprit que l'ancien test_18686_check_run_en_cours_ne_compte_pas_comme_rouge,
+    transpose au nouveau schema workflow_runs / MAIN_RED_WORKFLOWS."""
+    ok, _ = merge_dwell.check(
+        "o/r", "abc", 42, 120.0, now=NOW,
+        fetch=_pr_with_label_fetch(workflow_runs=[
+            {"name": "Scripts & Notebook-Tools Tests", "status": "in_progress",
+             "conclusion": None, "created_at": "2026-09-07T11:55:00Z"},
+        ]),
+    )
+    assert ok is False
+
+
+def test_18686_sans_label_la_couleur_de_main_n_est_pas_lue():
+    """Economie ET neutralite : une PR non labellisee ne declenche AUCUNE
+    lecture de la couleur de main -- le guard n'ajoute de latence qu'au cas
+    qu'il sert a juger."""
+    def fetch(path):
+        if path == "repos/o/r/pulls/42":
+            return {"labels": [], "base": {"sha": "ba5e0000"}}
+        if path == "repos/o/r/commits/abc":
+            return {"commit": {"committer": {"date": "2026-09-07T11:55:00Z"}}}
+        raise AssertionError(
+            "lecture inattendue hors derogation labellisee: " + path
+        )
+
+    ok, msg = merge_dwell.check("o/r", "abc", 42, 120.0, now=NOW, fetch=fetch)
+    assert ok is False
+    assert "condition non remplie" not in msg
+
+
+def test_18686_label_invalide_ne_casse_pas_le_message_relisible():
+    """Le note « condition non remplie » est APPENQUE apres le message de
+    plancher : la forme relisible par le picker (#15910) doit tenir."""
+    ok, _, msg = merge_dwell.evaluate(
+        NOW - timedelta(minutes=7), NOW, 120.0, waived=False
+    )
+    parsed = merge_dwell.parse_pending_message(msg + " -- label `x` present")
+    assert parsed is not None and parsed["remaining_min"] == 113
+
+
+def test_18686_evaluate_rend_le_motif_de_derogation():
+    """Le motif vit dans le message de derogation -- une derogation sans
+    motif publie serait une ligne de label que rien ne justifie."""
+    ok, _, msg = merge_dwell.evaluate(
+        NOW - timedelta(minutes=1), NOW, 120.0, waived=True,
+        waiver_motif="main rouge: check `PR gate` en echec sur main",
+    )
+    assert ok is True
+    assert "main rouge: check `PR gate` en echec sur main" in msg
+
+
+# --- 9. #18796 (round 2) -- l'API workflow-directe reste correcte quand le
+# run est plus ancien que la fenetre de 100 runs d'autres workflows ---
+
+def test_18796_workflow_direct_indépendant_de_la_fenetre_globale():
+    """#18796 round 2 (CR ai-01 18:55Z) : un main reellement rouge sur
+    `scripts-tests.yml` DOIT lever la derogation meme si le dernier run de
+    ce workflow est plus ancien que 100 runs d'autres workflows sur main
+    (cas reel mesure le 2026-10-02 18:33Z : 100 runs sur main couvraient
+    35 minutes ; apres 35-40 min sans merge sous `scripts/**`, le run
+    `scripts-tests.yml` sort de la fenetre globale, et l'approche
+    `actions/runs?branch=main&per_page=100` rendait `None`).
+
+    L'API workflow-directe `actions/workflows/scripts-tests.yml/runs
+    ?per_page=1` n'a pas cette borne -- elle rend le DERNIER run du
+    workflow, quelle que soit son anciennete. Le test exerce cette voie
+    en passant un run `failure` vieux de 2h, et verifie que la
+    derogation leve bien, et que le motif releve reste lisible."""
+    import datetime as _dt
+    now = _dt.datetime(2026, 10, 2, 18, 0, 0, tzinfo=_dt.timezone.utc)
+    two_hours_ago = (now - _dt.timedelta(hours=2)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    ok, msg = merge_dwell.check(
+        "o/r", "abc", 42, 120.0, now=now,
+        fetch=_pr_with_label_fetch(workflow_runs_by_yml={
+            "scripts-tests.yml": [
+                {"name": "Scripts & Notebook-Tools Tests",
+                 "conclusion": "failure",
+                 "created_at": two_hours_ago,
+                 "html_url": "https://github.com/o/r/actions/runs/12345"},
+            ],
+        }),
+    )
+    assert ok is True, (
+        "un run Scripts Tests failure vieux de 2h DOIT lever la derogation "
+        "via l'API workflow-directe, sans dependre de la fenetre globale"
+    )
+    assert "dwell leve par le label" in msg
+    assert "main rouge: workflow `Scripts & Notebook-Tools Tests`" in msg
+    assert "12345" in msg, "l'id du run doit etre dans le motif (lecture a la relecture)"
+
+
+def test_18796_workflow_direct_run_success_ne_leve_pas():
+    """Garde-fou : un run `success` (meme vieux de 2h) sur le workflow
+    canonique ne leve PAS la derogation -- la fenetre de 100 ne sert
+    plus, mais le verdict `success` reste vert par nature.
+
+    La tete de PR est fixee a 7 minutes avant NOW (avant le plancher
+    120 min), pour que la seule issue soit bien le verdict 'success'
+    de main et non un plancher deja expire."""
+    import datetime as _dt
+    now = _dt.datetime(2026, 10, 2, 18, 0, 0, tzinfo=_dt.timezone.utc)
+    two_hours_ago = (now - _dt.timedelta(hours=2)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    head_at = (now - _dt.timedelta(minutes=7)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    def fetch(path):
+        if path == "repos/o/r/pulls/42":
+            return {
+                "labels": [{"name": merge_dwell.WAIVER_LABEL}],
+                "base": {"sha": "ba5e0000"},
+            }
+        if path == "repos/o/r/commits/abc":
+            return {"commit": {"committer": {"date": head_at}}}
+        if path == "repos/o/r":
+            return {"default_branch": "main"}
+        if path == (
+            "repos/o/r/actions/workflows/scripts-tests.yml/runs"
+            "?branch=main&event=push&status=completed&per_page=1"
+        ):
+            return {"workflow_runs": [
+                {"name": "Scripts & Notebook-Tools Tests",
+                 "conclusion": "success",
+                 "created_at": two_hours_ago,
+                 "html_url": "https://github.com/o/r/actions/runs/99999"},
+            ]}
+        raise AssertionError("chemin inattendu: " + path)
+
+    ok, msg = merge_dwell.check("o/r", "abc", 42, 120.0, now=now, fetch=fetch)
+    assert ok is False, "main Scripts Tests vert : le label ne leve pas la derogation"
+    assert "condition non remplie" in msg
+
+
+def test_18796_workflow_direct_aucun_run_ne_leve_pas():
+    """Garde-fou : si le workflow n'a aucun run sur main (par exemple
+    workflow tout neuf jamais declenche), la derogation ne leve pas --
+    le label ne joue qu'avec une couleur de main VERIFIEE rouge."""
+    ok, msg = merge_dwell.check(
+        "o/r", "abc", 42, 120.0, now=NOW,
+        fetch=_pr_with_label_fetch(workflow_runs_by_yml={
+            "scripts-tests.yml": [],
+        }),
+    )
+    assert ok is False
+    assert "condition non remplie" in msg

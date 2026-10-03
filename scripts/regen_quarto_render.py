@@ -141,6 +141,18 @@ NOTEBOOK_EXCLUDE_MARKERS = (
 # l'historique git du fichier. Laisser ce tuple vide sauf raison mesuree.
 NOTEBOOK_EXCLUDE_FILES = ()
 
+# Sous-arbres `docs/` dont les `*.md` non-README sont rendus en HTML par
+# Quarto (issue #18422, Axe C #4211 etendu des READMEs aux .md simples).
+# Le constat (audit Playwright 2026-09-29) : la page docs/ du site sert ses
+# liens .md en markdown brut, alors que les READMEs siblings sont rendus
+# HTML. Meme mecanisme : lister explicitement dans project.render car Quarto
+# 1.7 n'etend pas `**/*.md` dans project.render (cf. header du fichier).
+# La garde `has_hr_separator` (#11451) s'applique a ces .md comme aux
+# notebooks : 24.5 % des docs/*.md portent un `---` hr qui declenche
+# le meme YAMLException (49 fichiers mesures au 2026-10-01, exclus du rendu).
+# Memes EXCLUDE_MARKERS (archive, vendored) que les READMEs.
+DOCS_MD_SUBTREES = ("docs/",)
+
 # --- Garde de separateur horizontal `---` (issue #11451) --------------------
 #
 # Une ligne `---` seule dans une cellule markdown ouvre un bloc
@@ -170,33 +182,66 @@ _FENCE_RE = re.compile(r"^(```|~~~)")
 
 
 def has_hr_separator(rel_path: str) -> bool:
-    """True si une cellule markdown porte un `---` en separateur horizontal.
+    """True si un fichier (notebook .ipynb OU .md) porte un `---` hr separator.
 
-    Ignore les `---` a l'interieur d'un bloc de code, et les `---` qui
-    SOULIGNENT du texte (titre setext H2) : seul un `---` precede d'une ligne
-    vide ou du debut de cellule ouvre un bloc de metadonnees.
+    Detection issue #11451 (notebooks) etendue aux .md par #18422. Un `---`
+    seul en debut de cellule-ligne (apres une ligne vide ou au tout debut)
+    ouvre un bloc `yaml_metadata_block` que Quarto interprete en YAML ->
+    `YAMLException` -> AUCUNE page publiee.
+
+    Regles distinguees :
+      - `.ipynb` : on parse le JSON et on itere sur `cells` (markdown uniquement)
+      - `.md` : on lit le texte brut ligne par ligne (memes regles setext / fence)
+
+    Dans les deux cas on ignore :
+      - les `---` a l'interieur d'un bloc de code fence (``` ou ~~~)
+      - les `---` qui SOULIGNENT du texte (titre setext H2) : seul un `---`
+        precede d'une ligne vide ou du debut de cellule-ligne ouvre un bloc.
     """
     try:
-        nb = json.loads((REPO_ROOT / rel_path).read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return False  # illisible ici : laisser la CI trancher
-    for cell in nb.get("cells", []):
-        if cell.get("cell_type") != "markdown":
+        content = (REPO_ROOT / rel_path).read_text(encoding="utf-8")
+    except OSError:
+        return False  # fichier inexistant / illisible : laisser la CI trancher
+    # Branche notebook (.ipynb) : JSON, on itere sur les cellules markdown
+    if rel_path.endswith(".ipynb"):
+        try:
+            nb = json.loads(content)
+        except ValueError:
+            return False  # JSON invalide : laisser la CI trancher
+        for cell in nb.get("cells", []):
+            if cell.get("cell_type") != "markdown":
+                continue
+            src = cell.get("source")
+            text = "".join(src) if isinstance(src, list) else (src or "")
+            if _text_has_hr(text):
+                return True
+        return False
+    # Branche markdown (.md) : texte brut, on scanne ligne a ligne
+    if rel_path.endswith(".md"):
+        return _text_has_hr(content)
+    # Autres extensions : pas de garde
+    return False
+
+
+def _text_has_hr(text: str) -> bool:
+    """Helper : True si le texte markdown porte un `---` hr separator.
+
+    Reprend la logique de la garde #11451 : un `---` seul en debut de
+    cellule-ligne (apres une ligne vide ou au tout debut) ouvre un bloc
+    YAML. Les `---` dans un bloc fence ou en soulignement setext sont ignores.
+    """
+    lines = text.split("\n")
+    in_fence = False
+    for i, line in enumerate(lines):
+        if _FENCE_RE.match(line.strip()):
+            in_fence = not in_fence
             continue
-        src = cell.get("source")
-        text = "".join(src) if isinstance(src, list) else (src or "")
-        lines = text.split("\n")
-        in_fence = False
-        for i, line in enumerate(lines):
-            if _FENCE_RE.match(line.strip()):
-                in_fence = not in_fence
-                continue
-            if in_fence:
-                continue
-            if line.rstrip() == "---":
-                prev = lines[i - 1].strip() if i > 0 else ""
-                if prev == "":
-                    return True
+        if in_fence:
+            continue
+        if line.rstrip() == "---":
+            prev = lines[i - 1].strip() if i > 0 else ""
+            if prev == "":
+                return True
     return False
 
 
@@ -259,6 +304,46 @@ def git_tracked_readmes() -> list[str]:
     return paths
 
 
+def git_tracked_docs_md() -> list[str]:
+    """Return repo-relative POSIX paths of every git-tracked ``*.md`` under
+    DOCS_MD_SUBTREES, excluding vendored/archived subtrees and files with a
+    ``---`` hr separator (issue #11451, applique aux .md comme aux notebooks).
+
+    Memes garde-fous que ``git_tracked_readmes`` :
+      - ``-c core.quotePath=false`` (paths UTF-8 bruts, cf. commentaires ci-dessus)
+      - ``EXCLUDE_MARKERS`` (archive, vendored)
+      - ``has_hr_separator`` (#11451) : exclut les 49 fichiers mesurant un hr
+        en debut de cellule-ligne (24.5 % du corpus au 2026-10-01). La garde
+        est AUTO-RESORBANTE : un futur passage qui convertit `---` en `***`
+        reintegre le fichier sans toucher a ce script.
+      - Exclusion des README.md (deja comptabilises par ``git_tracked_readmes``
+        pour rester single-source-of-truth).
+    """
+    patterns = []
+    for tree in DOCS_MD_SUBTREES:
+        patterns.append(tree + "*.md")
+        patterns.append(tree + "**/*.md")
+    out = subprocess.run(
+        ["git", "-C", str(REPO_ROOT), "-c", "core.quotePath=false", "ls-files", *patterns],
+        capture_output=True, text=True, encoding="utf-8", errors="replace", check=True,
+    )
+    paths = []
+    for line in out.stdout.splitlines():
+        p = line.strip()
+        if not p or p == "README.md":
+            continue
+        if p.endswith("/README.md"):
+            continue  # READMEs geres par git_tracked_readmes()
+        if any(bad in p for bad in EXCLUDE_MARKERS):
+            continue
+        if has_hr_separator(p):
+            continue  # cf. garde `---` ci-dessus (#11451)
+        paths.append(p)
+    # Sort for deterministic diffs (by path, case-insensitive)
+    paths.sort(key=lambda s: s.lower())
+    return paths
+
+
 def build_render_block() -> list[str]:
     """Build the YAML lines for the project.render list."""
     lines = ["project:", "  type: site", "  output-dir: _site", "  render:"]
@@ -276,6 +361,19 @@ def build_render_block() -> list[str]:
     lines.append('    - "README.md"')
     for p in readmes:
         lines.append(f'    - "{p}"')
+    # docs/*.md (non-README) rendus en HTML (issue #18422, etend Axe C #4211).
+    # Meme mecanisme que les READMEs : liste explicite par garde de Quarto 1.7
+    # (cf. header). Les fichiers avec `---` hr sont exclus (garde #11451,
+    # auto-resorbante : un futur passage `---` -> `***` les reintegre sans
+    # toucher a ce script).
+    docs_md = git_tracked_docs_md()
+    if docs_md:
+        lines.append("    # docs/*.md rendus en HTML (issue #18422). Meme mecanisme")
+        lines.append("    # que les READMEs : liste explicite (globs non etendus en Quarto 1.7).")
+        lines.append("    # Garde `---` (#11451) appliquee auto-resorbante.")
+        lines.append(f"    # {len(docs_md)} docs/*.md (sous-arbre docs/, hors README/archive/hr).")
+        for p in docs_md:
+            lines.append(f'    - "{p}"')
     # Notebooks rendered to HTML (EPIC #10921, pilote Search #10923). Explicit
     # list (globs do not expand in Quarto 1.7, see README comment above).
     notebooks = git_tracked_notebooks()
@@ -435,14 +533,18 @@ def main() -> int:
                   "Run: python scripts/regen_quarto_render.py", file=sys.stderr)
             return 1
         n = len(git_tracked_readmes()) + 1
+        n_docs = len(git_tracked_docs_md())
         nb = len(git_tracked_notebooks())
-        print(f"_quarto.yml render list up to date ({n} READMEs, {nb} notebooks).")
+        print(f"_quarto.yml render list up to date "
+              f"({n} READMEs, {n_docs} docs/*.md, {nb} notebooks).")
         return 0
 
     QUARTO_YML.write_text(proposed, encoding="utf-8")
     n = len(git_tracked_readmes()) + 1
+    n_docs = len(git_tracked_docs_md())
     nb = len(git_tracked_notebooks())
-    print(f"_quarto.yml updated: render list now includes {n} READMEs, {nb} notebooks.")
+    print(f"_quarto.yml updated: render list now includes "
+          f"{n} READMEs, {n_docs} docs/*.md, {nb} notebooks.")
     return 0
 
 

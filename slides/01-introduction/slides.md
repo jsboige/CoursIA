@@ -255,6 +255,8 @@ image: ./images/img_005.jpg
 
 # État de l'art (2/2)
 
+<img src="./images/img_006.jpg" style="position:absolute; top:14px; right:30px; width:190px; background:#fff; border:1px solid #ccc;" alt="Logo ImageNet, jeu de donnees de reference dont le deep learning a domine la classification en 2012" />
+
 **Deep Learning et NLP (2010-2019)**
 
 - **2012** : deep learning domine ImageNet (reconnaissance d'images quasi humaine)
@@ -458,6 +460,7 @@ image: ./images/img_021.png
 ---
 
 <img src="./pptx-reference/slide-27.png" style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain;" alt="Intelligence de la recherche - taxonomie" />
+<img src="./images/img_027.jpg" style="position:absolute; bottom:24px; right:30px; width:240px; border:1px solid #ccc;" alt="Recherche de chemin dans un plan : trajectoires et points de passage" />
 
 ---
 
@@ -466,6 +469,7 @@ image: ./images/img_021.png
 ---
 
 <img src="./pptx-reference/slide-29.png" style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain;" alt="Intelligence de l'incertitude - taxonomie" />
+<img src="./images/img_023.png" style="position:absolute; top:14px; right:30px; width:200px; border:1px solid #ccc; background:#fff;" alt="Graphe de decision (MDP) : etats, actions et probabilites de transition" />
 
 ---
 
