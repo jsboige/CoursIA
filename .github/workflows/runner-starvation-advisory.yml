@@ -84,6 +84,10 @@ jobs:
             starve_minutes: "15"
     steps:
       - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github/workflows/runner-starvation-advisory.yml
+            scripts/ci/check_runner_starvation.py
       - name: Measure starvation on ${{ matrix.label }}
         env:
           GH_TOKEN: ${{ github.token }}
