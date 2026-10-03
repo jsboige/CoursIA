@@ -172,6 +172,7 @@ scripts/
   eval_kronos_zeroshot.py          # Évaluation zero-shot Kronos (AAAI 2026, 4 tailles)
   eval_finstsb.py                  # Évaluation per-regime style FinTSB (4 régimes)
   eval_existing_checkpoints.py     # Pipeline complet : WF + baselines + régimes + coûts transaction
+  shadow_replay.py                 # Suivi en ombre : candidates gelées par SHA, rejeu mensuel, CSV en ajout seul (#18923)
 
   # --- Infrastructure ---
   checkpoint_utils.py              # Shared sauvegarde checkpoint PyTorch (model.pt + metadata.json)
@@ -293,6 +294,7 @@ Modules support : `har_model.py`, `realized_variance.py`, `intraday_loader.py`, 
 | eval_kronos_zeroshot.py | Kronos zero-shot | AAAI 2026, pre-trained sur 12B K-lines, 4 tailles modèle (4M-499M) |
 | eval_finstsb.py | Évaluation per-regime | 4 régimes (uptrend/downtrend/volatility/black_swan) |
 | eval_existing_checkpoints.py | Évaluation pipeline complet | WF + baselines + per-regime + coûts transaction pour tout checkpoint |
+| shadow_replay.py | Suivi en ombre des candidates | Gel par SHA, rejeu mensuel du code gelé, CSV en ajout seul ; règles et commandes dans `shadow/README.md` (#18923) |
 
 ### Construction de dataset
 
