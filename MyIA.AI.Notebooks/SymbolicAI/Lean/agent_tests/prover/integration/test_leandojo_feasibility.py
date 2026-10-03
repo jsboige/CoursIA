@@ -2,14 +2,17 @@
 
 These tests assert the **prereq table** the integration work relies on. The
 goal is to lock the c.76 verdict (RECOVERABLE-LOCAL) so any future drift in
-the installability of lean-dojo 2.2.0 + Lean 4.11.0 surfaces in CI rather
-than at integration time.
+the installability of lean-dojo 2.2.0 + Lean 4.11.0 surfaces when the suite
+is executed locally (pytest invocation, developer machine or follow-up CI
+cabling a verifier dedicated to this suite -- not the current PR).
 
 The tests load the module under test via importlib (file path) to avoid
 dragging the parent package's heavy imports (`agent_framework`, etc.) into
-this minimal prereq check. The real CI run will exercise both: this test
-under the lean_dojo_venv, and the heavier integration tests under the
-prover's full venv.
+this minimal prereq check. Cablage CI sur `lean_dojo_venv` ou sur le venv
+complet du prouveur = intention non livree dans cette PR (cf. body PR,
+section "Hors scope" : "Verrou CI yaml dedie (workflow
+`lean-dojo-feasibility.yml` sur push/PR) : reste une PR distincte
+preferable, distincte du verdict SOTA et de ses tests locaux").
 """
 
 from __future__ import annotations
