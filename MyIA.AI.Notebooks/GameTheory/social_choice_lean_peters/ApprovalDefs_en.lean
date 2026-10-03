@@ -64,8 +64,14 @@ structure PaymentFunction (V : Type) [Fintype V] where
     This definition serves as a **proxy** for `HarmonicEntropy` (which will
     introduce the logarithm via `Mathlib.Analysis.SpecialFunctions.Log` in
     Tranche 3). The proxy is sufficient to express the technical lemmas of
-    Tranche 2 (monotonicity, concavity) that do not depend on the log
-    itself.
+    Tranche 2 (monotonicity) that do not depend on the log itself.
+    Concavity of `ApprovalAggregateUtility` **is not** a generally true
+    property: an exact counterexample refutes it (two voters approve the
+    same candidate, singleton committee, so `Happiness=(1,1)`; for
+    `p=(a,-a)`, `U(a) = 1/(1+a) + 1/(1-a)`, and `U(0)=2`, `U(±1/2)=8/3`,
+    which contradicts `2 ≥ 8/3`). The Tranche 2 lemma will target a
+    measurable property (monotonicity in `S` or in `p`), not concavity in
+    `a`.
 
     The weights are strictly positive whenever `p.v > -1` (an assumption
     Tranche 2 will document as standard for budget-neutral payments). -/
