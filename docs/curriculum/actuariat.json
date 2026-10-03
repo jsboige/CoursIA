@@ -1,5 +1,5 @@
 {
-  "description": "Parcours Actuariat : le socle conserve DecPyMC-1 à DecPyMC-12 dans leur ordre pédagogique, sans réduire la décision sous incertitude aux seules applications d'assurance. Les détours restent optionnels et indépendants ; ils enseignent des méthodes transférables, non des prérequis actuariels universels.",
+  "description": "Parcours Actuariat : le socle décisionnel DecPyMC-1 à 7 mène au capstone DecPyMC-08, qui ouvre la sous-série Actuariat T1-T5 (Actuariat-01 à 05, ex-DecPyMC-8 à 12) ; le parcours conserve l'ordre pédagogique sans réduire la décision sous incertitude aux seules applications d'assurance. Les détours restent optionnels et indépendants ; ils enseignent des méthodes transférables, non des prérequis actuariels universels.",
   "branches": [
     {
       "id": "fondations-probabilistes",
@@ -16,30 +16,37 @@
     {
       "id": "decision-sous-incertitude",
       "description": "DecPyMC-4 à 7 : réseaux de décision, valeur de l'information, systèmes experts et décisions séquentielles, avant les cas d'assurance.",
-      "prerequisites": ["fondations-probabilistes"],
+      "prerequisites": [
+        "fondations-probabilistes"
+      ],
       "notebooks": [
         "Probas/DecisionTheory/DecPyMC/DecPyMC-4-Decision-Networks.ipynb",
         "Probas/DecisionTheory/DecPyMC/DecPyMC-5-Value-Information.ipynb",
         "Probas/DecisionTheory/DecPyMC/DecPyMC-6-Expert-Systems.ipynb",
-        "Probas/DecisionTheory/DecPyMC/DecPyMC-7-Sequential.ipynb"
+        "Probas/DecisionTheory/DecPyMC/DecPyMC-7-Sequential.ipynb",
+        "Probas/DecisionTheory/DecPyMC/DecPyMC-08-Actuariat-Capstone.ipynb"
       ]
     },
     {
       "id": "actuariat",
-      "description": "DecPyMC-8 à 12 : crédibilité, tarification, ruine, valeur de l'information en souscription et fréquence-sévérité hiérarchique. Aucun chapitre de la série canonique n'est élagué.",
-      "prerequisites": ["decision-sous-incertitude"],
+      "description": "Sous-série Actuariat T1-T5 (ex-DecPyMC-8 à 12) : prime pure et chargement, fréquence × sévérité hiérarchique, crédibilité, ruine, valeur de l'information en souscription. Aucun chapitre de la série canonique n'est élagué.",
+      "prerequisites": [
+        "decision-sous-incertitude"
+      ],
       "notebooks": [
-        "Probas/DecisionTheory/DecPyMC/DecPyMC-8-Actuarial-Credibility.ipynb",
-        "Probas/DecisionTheory/DecPyMC/DecPyMC-9-Prime-Pure-Chargement.ipynb",
-        "Probas/DecisionTheory/DecPyMC/DecPyMC-10-Ruine-Lundberg.ipynb",
-        "Probas/DecisionTheory/DecPyMC/DecPyMC-11-Valeur-Info-Souscription.ipynb",
-        "Probas/DecisionTheory/DecPyMC/DecPyMC-12-Freq-Sev-Hierarchique.ipynb"
+        "Probas/DecisionTheory/Actuariat/Actuariat-01-Prime-Pure-Chargement.ipynb",
+        "Probas/DecisionTheory/Actuariat/Actuariat-02-Freq-Sev-Hierarchique.ipynb",
+        "Probas/DecisionTheory/Actuariat/Actuariat-03-Actuarial-Credibility.ipynb",
+        "Probas/DecisionTheory/Actuariat/Actuariat-04-Ruine-Lundberg.ipynb",
+        "Probas/DecisionTheory/Actuariat/Actuariat-05-Valeur-Info-Souscription.ipynb"
       ]
     },
     {
       "id": "theorie-des-jeux",
       "description": "Prolongement Python après l'actuariat : étudier la valeur de Shapley et la stabilité du cœur sur les jeux coopératifs, approfondir la valeur d'un groupe fusionné, puis analyser l'antisélection en assurance avec les contrats concurrents de Rothschild–Stiglitz. Les premiers exemples de coopération ne sont pas des modèles d'assurance ; le jeu d'aéroport appartient au jumeau C# non retenu. Ces notebooks ne modélisent pas la réassurance ; la formalisation Lean du screening relève d'un parcours distinct avec changement de noyau explicite.",
-      "prerequisites": ["actuariat"],
+      "prerequisites": [
+        "actuariat"
+      ],
       "notebooks": [
         "GameTheory/GameTheory-15-CooperativeGames-Python.ipynb",
         "GameTheory/GameTheory-15f-Shapley-Groupes-Python.ipynb",

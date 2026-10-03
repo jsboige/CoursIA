@@ -732,16 +732,6 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.3d-Modele-Gaussien-LDA-QDA.ipynb",
-      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.5c-Equite-Sous-Groupes.ipynb",
-      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.0-Theorie-Information.ipynb",
       "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning"
     },
@@ -887,6 +877,21 @@
     },
     {
       "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Probas/DecisionTheory/Actuariat/Actuariat-02-Freq-Sev-Hierarchique.ipynb",
+      "series": "MyIA.AI.Notebooks/Probas/DecisionTheory/Actuariat"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Probas/DecisionTheory/Actuariat/Actuariat-03-Actuarial-Credibility.ipynb",
+      "series": "MyIA.AI.Notebooks/Probas/DecisionTheory/Actuariat"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Probas/DecisionTheory/Actuariat/Actuariat-04-Ruine-Lundberg.ipynb",
+      "series": "MyIA.AI.Notebooks/Probas/DecisionTheory/Actuariat"
+    },
+    {
+      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-02-Dowhy-Estimand-Intervention.ipynb",
       "series": "MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges"
     },
@@ -929,21 +934,6 @@
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08b-Lean-Gittins.ipynb",
       "series": "MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-10-Ruine-Lundberg.ipynb",
-      "series": "MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-12-Freq-Sev-Hierarchique.ipynb",
-      "series": "MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-8-Actuarial-Credibility.ipynb",
-      "series": "MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC"
     },
     {
       "kind": "orphan_entry",
@@ -1702,16 +1692,6 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Lean-Grothendieck.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15c-Lean-Grothendieck-Companion.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16g-Conway-Canons.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
     },
@@ -1759,16 +1739,6 @@
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-36-Structures-Finies-MUH-Lean.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5b-Lean-Relaxation.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-6-Domains-Csharp.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical"
     },
     {
       "kind": "orphan_entry",
@@ -1952,8 +1922,8 @@
     },
     {
       "kind": "unreachable",
-      "notebook": "MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-11-Valeur-Info-Souscription.ipynb",
-      "series": "MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC"
+      "notebook": "MyIA.AI.Notebooks/Probas/DecisionTheory/Actuariat/Actuariat-05-Valeur-Info-Souscription.ipynb",
+      "series": "MyIA.AI.Notebooks/Probas/DecisionTheory/Actuariat"
     },
     {
       "kind": "unreachable",
@@ -2101,6 +2071,14 @@
     {
       "series": "MyIA.AI.Notebooks/NLP",
       "notebooks": 5
+    },
+    {
+      "series": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation",
+      "notebooks": 6
+    },
+    {
+      "series": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced",
+      "notebooks": 6
     },
     {
       "series": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic",
