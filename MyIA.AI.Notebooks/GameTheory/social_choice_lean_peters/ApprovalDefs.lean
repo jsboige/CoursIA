@@ -65,11 +65,17 @@ structure PaymentFunction (V : Type) [Fintype V] where
     Cette définition sert de **proxy** à `HarmonicEntropy` (qui introduira le
     logarithme via `Mathlib.Analysis.SpecialFunctions.Log` à la Tranche 3).
     Le proxy est suffisant pour exprimer les lemmes techniques de Tranche 2
-    (monotonie, concavité) qui ne dépendent pas du log lui-même.
+    (monotonie en la composition du comité) qui ne dépendent pas du log
+    lui-même.
 
-    Les poids sont strictement positifs dès lors que `p.v > -1` (hypothèse
-    que la Tranche 2 documentera comme standard pour les paiements
-    budgétairement neutres). -/
+    Aucune concavité n'est promise dans la dimension des paiements : pour
+    deux votants de bonheurs égaux et `p = (a, -a)`, l'agrégat vaut
+    `1/(1+a) + 1/(1-a)`, soit 2 en `a = 0` et 8/3 en `a = ±1/2` — convexe,
+    pas concave (contre-exemple mesuré en arithmétique exacte c.5969321192).
+
+    Les poids sont strictement positifs dès lors que `p.v > -1`. La
+    contrainte `zero_sum` seule ne l'implique pas (`p = (-2, 2)` est de
+    somme nulle) ; la Tranche 2 posera `p.v > -1` comme hypothèse explicite. -/
 def ApprovalAggregateUtility {V A : Type} [instV : Fintype V] [instA : Fintype A]
     (P : ApprovalProfile V A) (S : Committee A P.committeeSize)
     (p : PaymentFunction V) : ℚ :=

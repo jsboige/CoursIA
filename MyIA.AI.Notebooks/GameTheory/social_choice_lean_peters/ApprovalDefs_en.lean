@@ -64,11 +64,18 @@ structure PaymentFunction (V : Type) [Fintype V] where
     This definition serves as a **proxy** for `HarmonicEntropy` (which will
     introduce the logarithm via `Mathlib.Analysis.SpecialFunctions.Log` in
     Tranche 3). The proxy is sufficient to express the technical lemmas of
-    Tranche 2 (monotonicity, concavity) that do not depend on the log
-    itself.
+    Tranche 2 (monotonicity in committee composition) that do not depend on
+    the log itself.
 
-    The weights are strictly positive whenever `p.v > -1` (an assumption
-    Tranche 2 will document as standard for budget-neutral payments). -/
+    No concavity is claimed in the payment dimension: for two voters with
+    equal happiness and `p = (a, -a)`, the aggregate equals
+    `1/(1+a) + 1/(1-a)`, i.e. 2 at `a = 0` and 8/3 at `a = ±1/2` — convex,
+    not concave (counter-example measured in exact arithmetic, see review
+    c.5969321192).
+
+    The weights are strictly positive whenever `p.v > -1`. The `zero_sum`
+    constraint alone does not imply it (`p = (-2, 2)` sums to zero);
+    Tranche 2 will state `p.v > -1` as an explicit assumption. -/
 def ApprovalAggregateUtility {V A : Type} [instV : Fintype V] [instA : Fintype A]
     (P : ApprovalProfile V A) (S : Committee A P.committeeSize)
     (p : PaymentFunction V) : ℚ :=
