@@ -76,6 +76,7 @@ import Conway.Life.AdversarialBattery
 import Conway.Life.HashlifeCorrectness
 import Conway.Life.LightCone
 import Conway.Life.Oscillators
+import Conway.Life.PatternTour
 
 namespace Conway
 namespace Life
@@ -2093,6 +2094,99 @@ theorem hickersonC3_hcap_of_spaceship_mod :
     ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t hickersonC3)).2 = true :=
   hcap_of_spaceship_mod hickersonC3 hickersonC3_canonical (by decide) (-1, 0)
     hickersonC3_spaceship hickersonC3_hwin (by norm_num) (by norm_num)
+
+/-! ### Témoins phares : glider et LWSS (tranche 11, admission)
+
+Les deux **vaisseaux** que la docstring de `hashlife_correct_margin_of_spaceship`
+annonçait — glider (`p = 4`, `v = (1, -1)`, « la vérifie strictement ») et LWSS (`p = 4`,
+`v = (0, 2)`, « atteint la borne exactement ») — sont admis par la **chaîne dyadique**
+`hcap_of_spaceship`. Pour `p = 4 = 2²`, la prémisse de divisibilité `4 ∣ 2^level` est
+acquise **dès que le niveau atteint `log₂ p = 2`** : elle vaut donc pour les deux témoins,
+dont les cadres se reconstruisent aux niveaux **3** (glider, côté 7) et **4** (LWSS, côté
+9). Chaque `hdiv` se clôt par le noyau sur les quatre phases (calcul fini) ; le
+relâchement par containment de la tranche 9 n'est pas requis pour des témoins de
+période 4.
+
+**Note preuve.** Les témoins Bool du bestiaire (`Life.glider_spaceship`,
+`PatternTour.lwss_is_spaceship`) sont déjà certifiés par le réducteur du **noyau**
+(`decide` sur `isSpaceship`, Bool) ; le pont vers l'égalité de listes est `beq_iff_eq`
+— aucun `native_decide`, aucun axiome ajouté. -/
+
+/-- Le littéral du glider est canonique (trié, sans doublon) : le noyau le
+    certifie, puis `canonical_sortDedup` convertit. -/
+theorem glider_canonical : Canonical glider := by
+  have h : glider = sortDedup glider := by decide
+  rw [h]
+  exact canonical_sortDedup _
+
+/-- Relation de vaisseau du glider en égalité de listes : le témoin Bool
+    `glider_spaceship` (déjà noyau-certifié) transporté en `Prop`. -/
+theorem glider_ship4 : evolve 4 glider = shift (1, -1) glider :=
+  beq_iff_eq.mp glider_spaceship
+
+/-- Cadre de reconstruction du glider : offset `(-2, -2)` (marge 2 autour de
+    la boîte `[0, 2]²`). -/
+theorem glider_frame_off : (gridToMacroCellWithOffset glider).1 = (-2, -2) := by decide
+
+/-- Niveau du cadre du glider : côté `max(2+5, 2+5) = 7` → niveau **3** — mesuré.
+    Comme `3 ≥ log₂ 4 = 2`, la divisibilité `4 ∣ 2³ = 8` tient : le glider relève
+    de la chaîne dyadique, comme le LWSS. -/
+theorem glider_frame_lvl : (gridToMacroCellWithOffset glider).2.level = 3 := by decide
+
+/-- Le littéral du LWSS est canonique. -/
+theorem lwss_canonical : Canonical lwss := by
+  have h : lwss = sortDedup lwss := by decide
+  rw [h]
+  exact canonical_sortDedup _
+
+/-- Relation de vaisseau du LWSS en égalité de listes (témoin Bool
+    `lwss_is_spaceship` de `PatternTour`, noyau-certifié). -/
+theorem lwss_ship4 : evolve 4 lwss = shift (0, 2) lwss :=
+  beq_iff_eq.mp lwss_is_spaceship
+
+/-- Cadre de reconstruction du LWSS : offset `(-2, -2)` (marge 2 autour de
+    la boîte `[0, 3] × [0, 4]`). -/
+theorem lwss_frame_off : (gridToMacroCellWithOffset lwss).1 = (-2, -2) := by decide
+
+/-- Niveau du cadre du LWSS : côté `max(3+5, 4+5) = 9` → niveau 4 — la chaîne
+    dyadique s'applique (`4 ∣ 2⁴`), exactement comme la docstring l'annonçait. -/
+theorem lwss_frame_lvl : (gridToMacroCellWithOffset lwss).2.level = 4 := by decide
+
+/-- Divisibilité de la période sur les quatre phases du LWSS : chaque
+    `evolve i lwss` (`i < 4`) se reconstruit au niveau 4, donc `4 ∣ 2⁴`. Le
+    calcul par le noyau est fini : 4 phases, ≤ 17 cellules. -/
+theorem lwss_hdiv :
+    ∀ i, i < 4 → 4 ∣ 2 ^ (gridToMacroCellWithOffset (evolve i lwss)).2.level := by
+  intro i hi
+  interval_cases i <;> decide
+
+set_option maxRecDepth 1000000 in
+/-- Divisibilité de la période sur les quatre phases du glider : chaque
+    `evolve i glider` (`i < 4`) se reconstruit au niveau 3 (mesuré pour les
+    quatre phases), et `4 ∣ 2³`. Le calcul par le noyau est fini : 4 phases,
+    grilles de 5 cellules. -/
+theorem glider_hdiv :
+    ∀ i, i < 4 → 4 ∣ 2 ^ (gridToMacroCellWithOffset (evolve i glider)).2.level := by
+  intro i hi
+  interval_cases i <;> decide
+
+/-- Capstone : le **glider** est admis par `hcap_of_spaceship` — la chaîne
+    dyadique, comme le LWSS (`p = 4 = 2²` divise `2^level` dès `level ≥ 2` ;
+    cadre de niveau 3). La borne de vitesse tient strictement
+    (`2·|1| = 2 < 4`, `2·|-1| = 2 < 4`) : pour tout horizon `t`, la reconstruction
+    de `evolve t glider` est capturée par Hashlife. -/
+theorem glider_hcap_of_spaceship :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t glider)).2 = true :=
+  hcap_of_spaceship glider glider_canonical (by decide) (1, -1) glider_ship4
+    glider_hdiv (by norm_num) (by norm_num)
+
+/-- Capstone : le **LWSS** est admis par `hcap_of_spaceship` — la borne de
+    vitesse exacte (`2·|2| = 4 ≤ 4`) et la divisibilité dyadique (`4 ∣ 2⁴`,
+    cadre de niveau 4) que la docstring annonçait. -/
+theorem lwss_hcap_of_spaceship :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t lwss)).2 = true :=
+  hcap_of_spaceship lwss lwss_canonical (by decide) (0, 2) lwss_ship4
+    lwss_hdiv (by norm_num) (by norm_num)
 
 /-! ## Sanity-checks sur le bestiaire
 
