@@ -56,15 +56,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      # `regen_quarto_render.py` lit la render-list et les READMEs git-tracked :
-      # ne depend que du repo, aucun service externe.
-      - name: Detect STALE_LINK (raw .ipynb links vs .html renders)
-        run: python scripts/regen_quarto_render.py --check-readme-links
-
-      - name: Compute delta (new STALE_LINK on this PR vs main)
-        # La regle #18911 : la PR ne peut PAS ajouter de nouvelle violation STALE_LINK.
-        # On charge le SHA de base (main) et on compare les sorties des deux arbres.
-        # La PR introduit une nouvelle violation = exit 1.
+      # La PR ne doit PAS introduire de nouvelle violation STALE_LINK
+      # (defaut fondateur #13025). On compare la PR (head) a la base (main)
+      # et on rougit UNIQUEMENT sur les violations NOUVELLES -- le backlog
+      # historique (2428 violations mesure 2026-10-03) reste au sweep par
+      # famille en aval (#18911 acceptation #2).
+      - name: Compute delta (new STALE_LINK on this PR vs base)
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
@@ -83,9 +80,13 @@ jobs:
           # Delta = PR \ base
           comm -23 /tmp/pr_violations.txt /tmp/base_violations.txt > /tmp/delta_violations.txt
           NEW=$(wc -l < /tmp/delta_violations.txt | tr -d ' ')
-          echo "PR introduced ${NEW} new STALE_LINK(s) (vs ${BASE_SHA:-base})"
+          BASE_N=$(wc -l < /tmp/base_violations.txt | tr -d ' ')
+          PR_N=$(wc -l < /tmp/pr_violations.txt | tr -d ' ')
+          echo "STALE_LINK base (${BASE_SHA:0:7}): ${BASE_N}"
+          echo "STALE_LINK head (PR): ${PR_N}"
+          echo "STALE_LINK NOUVELLES sur cette PR: ${NEW}"
           if [ "${NEW}" -gt 0 ]; then
-            echo "::error::Nouvelle violation STALE_LINK sur cette PR (defaut $)"
+            echo "::error::Nouvelle violation STALE_LINK sur cette PR (defaut #13025, PR-body #18911) :"
             cat /tmp/delta_violations.txt
             exit 1
           fi
@@ -96,3 +97,12 @@ jobs:
         # canonique qui sera utilise pour les vagues de sweep en aval.
         run: |
           python -m pytest scripts/notebook_tools/tests/test_fix_ipynb_links.py -v
+
+      - name: Audit total (advisory -- backlog connu de 2428)
+        # Audit SANS gating : rend le compteur global pour information. Le delta
+        # ci-dessus a deja rougi ou pas sur les NOUVELLES violations, le backlog
+        # historique reste un travail de sweep en aval (voir #18911 acceptation #2).
+        continue-on-error: true
+        run: |
+          python scripts/regen_quarto_render.py --check-readme-links 2>&1 \
+            | tail -3 || true
