@@ -81,6 +81,8 @@ import Conway.Life.Hashlife
 import Conway.Life.Computation
 import Conway.Life.HashlifeCorrectness
 import Conway.Life.HashlifeMemo
+import Conway.Life.HashlifeDecideMemo
+import Conway.Life.HashlifeDecideMemoBench
 import Conway.Life.HashlifeMarginDemo
 import Conway.Life.ConeGeometry
 import Conway.Life.LightCone
