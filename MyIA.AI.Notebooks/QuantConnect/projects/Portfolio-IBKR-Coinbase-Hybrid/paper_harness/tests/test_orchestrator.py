@@ -86,6 +86,15 @@ def test_zero_exposure_scale_goes_to_cash(tmp_path):
     assert all(o.allowed for o in report.orders)
 
 
+def test_zero_exposure_scale_goes_to_cash_with_the_default_band(tmp_path):
+    # Two holdings of 2 % each, under the default 3 % band: an exit sells them anyway.
+    cfg = CycleConfig(signal_to_line=CFG.signal_to_line, exposure_scale=0.0)
+    assert cfg.band == 0.03
+    broker = FakeBroker(10_000.0, {"SXR8": 4, "IUSM": 10}, {"SXR8": 50.0, "IUSM": 20.0})
+    _run(tmp_path, broker, cfg=cfg, dry_run=False)
+    assert sorted(broker.placed) == [("IUSM", -10), ("SXR8", -4)]
+
+
 def test_cycle_appends_to_the_journal_and_persists_the_peak(tmp_path):
     broker = FakeBroker(11_000.0, {}, {"SXR8": 50.0, "IUSM": 20.0})
     _run(tmp_path, broker)

@@ -102,7 +102,10 @@ appellera avant tout ordre :
   ventes avant achats. Une bande de tolérance (`band`, en fraction de l'équité) ignore les
   échanges trop petits pour justifier leur commission, un notionnel minimum (`min_notional`)
   écarte les ordres qu'un courtier facturerait au minimum, et une réserve (`cash_reserve`)
-  garde de quoi payer les frais.
+  garde de quoi payer les frais. Une cible nulle est une **sortie**, pas un rééquilibrage :
+  la position est vendue en entier, quelle que soit sa taille, sans bande ni notionnel
+  minimum. Sinon un retour au cash laisserait en place toute position plus petite que la
+  bande.
 
 `RiskGate.save` / `RiskGate.load` conservent le pic d'équité, l'équité d'ouverture et un
 éventuel arrêt dans un fichier JSON, écrit de façon atomique. Sans cela, un redémarrage du

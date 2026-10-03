@@ -114,6 +114,11 @@ def plan_orders(
     the targets. Every symbol held but absent from ``target_weights`` has a
     target of zero. A symbol without a positive price raises ``ValueError``:
     planning blind would be worse than not planning.
+
+    A zero target is an exit, not a rebalance: the whole holding is sold
+    whatever its size, and neither ``band`` nor ``min_notional`` applies.
+    Otherwise a return to cash (``exposure_scale=0``, a liquidating breaker)
+    would leave every holding smaller than the band in place.
     """
     if equity <= 0:
         raise ValueError("equity must be positive")
@@ -132,7 +137,8 @@ def plan_orders(
         if delta == 0:
             continue
         value = abs(delta) * price
-        if value < band * equity or value < min_notional:
+        exit_line = target_w == 0.0
+        if not exit_line and (value < band * equity or value < min_notional):
             continue
         orders.append(
             OrderIntent(

@@ -85,6 +85,15 @@ def test_plan_skips_orders_below_the_minimum_notional():
     assert plan_orders({"A": 0.02}, {}, {"A": 5.0}, equity=1000.0, min_notional=25.0) == []
 
 
+def test_a_zero_target_sells_the_whole_holding_whatever_its_size():
+    # 1 share = 1 % of equity: a rebalance would skip it, an exit must not.
+    orders = plan_orders({"A": 0.0}, {"A": 1}, {"A": 100.0}, 10_000.0, band=0.03, min_notional=500.0)
+    assert [(o.symbol, o.quantity) for o in orders] == [("A", -1)]
+    # A line held but absent from the targets is an exit too.
+    orders = plan_orders({}, {"B": 2}, {"B": 10.0}, 10_000.0, band=0.03)
+    assert [(o.symbol, o.quantity) for o in orders] == [("B", -2)]
+
+
 def test_plan_keeps_a_cash_reserve_for_fees():
     orders = plan_orders({"A": 1.0}, {}, {"A": 10.0}, equity=1000.0, cash_reserve=0.01)
     assert orders[0].quantity == 99
