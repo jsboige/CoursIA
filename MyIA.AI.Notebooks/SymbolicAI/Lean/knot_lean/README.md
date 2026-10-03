@@ -6,7 +6,7 @@ avec sorry stratégiques commentés (références papier + prérequis Mathlib).
 Epic #2874 (Phase 5 en cours). Toolchain `v4.33.0` (migration #14773, débloquée sur ce lake
 par #15829 ; suite de la convergence #11325, cf #11256).
 
-## État des sorries (vérifié 2026-09-14 sur l'arbre rebasé de #15440, **8 réels**)
+## État des sorries (vérifié 2026-09-14 sur l'arbre rebasé de #15440, **8 réels** ; bumpé à **9** par #18615)
 
 Deux comptes, selon le filtre CI :
 
@@ -17,18 +17,20 @@ Deux comptes, selon le filtre CI :
 | `Knots/Invariant.lean` | **0** | 5 |
 | `Knots/Conway.lean` | 4 | 9 |
 | `Knots/Lidman.lean` | 2 | 4 |
+| `Knots/ReidemeisterCombinatorial.lean` | 1 | 1 |
 | `Knots/MathlibPrerequisites.lean` | 0 | 2 |
-| **Total** | **8** | **25** |
+| **Total** | **9** | **26** |
 
-- **sorry réels** = ce qui manque vraiment comme preuve. **8** au total (code-only
+- **sorry réels** = ce qui manque vraiment comme preuve. **9** au total (code-only
   après strip `--`/`/- -/`, mesuré par `scripts/lean/count_code_sorry.py` champ
-  `distinct_code_sorry`, baseline CI `lean-knot.yml` recalibrée à `"8"`
-  par #15440), tous stables : 0 dans `Invariant.lean`
+  `distinct_code_sorry`, baseline CI `lean-knot.yml` recalibrée à `"9"`
+  par #18615), tous stables : 0 dans `Invariant.lean`
   (`Knot.unknottingNumber` **DISCHARGÉ par #15082** : redéfini via `Nat.sInf` de
   `{n | k.UnknottableIn n}` + témoin `unknot_unknottingNumber = 0` prouvé —
   0 sorry résiduel, voir § Phase 5 / § #14992 pour la modélisation indexée
   des changements de croisement et l'accessibilité Reidemeister), 2
-  `reidemeister_theorem` (PL), 4 Conway (les 2 defs `IsSmoothlySlice` /
+  `reidemeister_theorem` (PL), 4 Slice (extraits de Conway par #18397 ;
+  les 2 defs `IsSmoothlySlice` /
   `IsTopologicallySlice := sorry` + les 2 bornes `conway_not_smoothly_slice`
   et `conway_topologically_slice`), 2 Lidman. Les
   **2 résiduels §9.1 `fox`/`col` du backward transfer ont été DISCHARGÉS par
@@ -39,7 +41,7 @@ Deux comptes, selon le filtre CI :
   **bi-implication R1 connectée est COMPLÈTE** (forward #3000 + backward
   #3124/#11227).
 
-- **Baisse historique 17 → 16 → 14 → 11 → 10 → 8** : #8766 a déchargé `trefoil_not_unknot`
+- **Baisse historique 17 → 16 → 14 → 11 → 10 → 8 → 9** : #8766 a déchargé `trefoil_not_unknot`
   (composition), #9966 a surélevé à 17 (wall du wrapper
   `tricolorable_forward_r1`), puis le wall a été déchargé (16) et #11227 a
   clos fox/col (14) ; la lecture fine par fichier au 2026-08-28 (post-strip
@@ -53,6 +55,11 @@ Deux comptes, selon le filtre CI :
   (`conway_trivial_alexander`, nœud 11n34, et `KT_trivial_alexander`, nœud
   11n42), amenant le baseline à 8** — les deux preuves sont dans le même diff,
   donc c'est ce seul commit qui porte `10 → 8` (§ ci-dessous).
+  **#18615 a introduit `Knots.ReidemeisterCombinatorial` (squelette d'organe
+  tranche 1, issue #18611) : 1 sorry réel dans `verifyMoves_sound` (énoncé
+  cible d'organe — la soundness du squelette se prouve trivialement par `rfl`
+  + `ReidemeisterEquiv.refl` sur le cas `d₁ = d'`, mais la version pleine qui
+  consomme `oneStepWitnesses` est l'objet de PR2+). Baseline bumpée à 9.**
   #11276 a ajouté **sans sorry** le transfer `tricolorable_forward_r2_up`
   PROVEN + les murs nommés `r2_append_only_wall` (L1061) et
   `r3_determined_wall` (L1214) qui bornent l'iff maître sous le modèle libre.
@@ -71,16 +78,17 @@ Deux comptes, selon le filtre CI :
   le mot-bounded `\bsorry\b`. La CI gate sur baseline **8** (alignée avec
   `LEAN_INVENTORY.md`, voir #13312).
 
-La CI `.github/workflows/lean-knot.yml` gate sur le **real-mode baseline 8**
+La CI `.github/workflows/lean-knot.yml` gate sur le **real-mode baseline 9**
 (alignement post-#13312, mesure 2026-09-13 ; historique : prose-header 25→28
 dans #3124, baissée à 27 après #3163, re-bumpée à 28 par #3003 ;
 switch prose-header→real à baseline 17 le 2026-07-11 ; 16 après #8766, re-17
 par #9966, 16 au wall discharge, 14 après #11227, **11 après mesure
 `count_code_sorry.py` 2026-08-28**, **10 après #15082** (`Knot.unknottingNumber`
 DISCHARGÉ via `Nat.sInf` — voir § Phase 5 / § #14992), **8 après #15440** (les
-deux bornes d'Alexander de Conway) : toute PR qui ajoute
-un sorry réel fait monter le compte real et échoue la CI, sauf justification
-documentée dans le
+deux bornes d'Alexander de Conway), **9 après #18615** (squelette d'organe
+`ReidemeisterCombinatorial` — 1 sorry dans `verifyMoves_sound`) : toute PR
+qui ajoute un sorry réel fait monter le compte real et échoue la CI, sauf
+justification documentée dans le
 body PR.
 
 ## Pourquoi `10 → 8` et non `10 → 9 → 8`
@@ -350,7 +358,8 @@ Référence : Fox (1962), A quick trip through knot theory ; Adams, *The Knot Bo
 | `Knots/Basic.lean` | Définitions (Knot, Link, PD-code, nœuds nommés), `KnotDiagram.wf` | 0 |
 | `Knots/Reidemeister.lean` | Mouvements R1/R2/R3 (modèle Phase 5), `ReidemeisterEquiv`, symétries | 2 |
 | `Knots/Invariant.lean` | 3-colorabilité (Fox), crossing number, contre-exemple PR1, bi-implication R1 connectée (#3000 + #3124/#11227), transfer R2-up + murs nommés (#11276), marquee `tricolorable_invariant` (#11958), `unknottingNumber` via `Nat.sInf` (#15082) | 0 |
-| `Knots/Conway.lean` | Nœud de Conway (11n34), Piccirillo, dichotomie lisse/topologique | 6 |
+| `Knots/Conway.lean` | Nœud de Conway (11n34), mutation, codes PD Conway/KT, arcPartition, Alexander trivial | 0 |
+| `Knots/Slice.lean` | Nœuds slice, Piccirillo, Freedman, dichotomie lisse/topologique (extrait de Conway, #18397) | 4 |
 | `Knots/Lidman.lean` | 11n102, unknotting number = 2 | 2 |
 | `Knots/MathlibPrerequisites.lean` | Index des prérequis Mathlib manquants par tier | 0 |
 

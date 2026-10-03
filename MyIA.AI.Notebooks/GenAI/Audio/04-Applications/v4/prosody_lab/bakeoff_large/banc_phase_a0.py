@@ -58,17 +58,25 @@ def run_client(client_name: str, text: str, out_wav: str, **client_kwargs) -> di
 
 def measure_prosody(wav_path: str) -> dict:
     """Délègue à scripts/tts_verification/verify_prosody.py --single."""
+    rel_script = Path("scripts") / "tts_verification" / "verify_prosody.py"
     repo_root = BAKEOFF_ROOT.resolve()
-    for _ in range(5):
-        if (repo_root / "scripts" / "tts_verification" / "verify_prosody.py").exists():
+    # Remontee jusqu'au marqueur reel (.git du worktree, ou le script lui-meme),
+    # jamais une borne fixe : BAKEOFF_ROOT est a 7 niveaux sous la racine, et une
+    # borne a 5 s'arretait sur GenAI/ -- rendant "not found" un organe qui existe (#18442).
+    # Un .gitignore intermediaire ne doit pas arreter la remontee (cf. clients/cosyvoice3.py).
+    while repo_root != repo_root.parent:
+        if (repo_root / rel_script).exists() or (repo_root / ".git").exists():
             break
         repo_root = repo_root.parent
-    script = repo_root / "scripts" / "tts_verification" / "verify_prosody.py"
+    script = repo_root / rel_script
     if not script.exists():
         return {"error": f"verify_prosody.py not found at {script}"}
     try:
         out = subprocess.run(
-            [sys.executable, str(script), "--single", wav_path, "--json"],
+            # `--single` imprime deja le rapport JSON sur stdout ; `--json` attend un
+            # CHEMIN et n'est honore que par la branche `--audio-dir` de l'organe
+            # (verify_prosody.py:391,408). Le passer nu faisait sortir argparse en rc=2.
+            [sys.executable, str(script), "--single", wav_path],
             capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300,
         )
         if out.returncode == 0 and out.stdout.strip():

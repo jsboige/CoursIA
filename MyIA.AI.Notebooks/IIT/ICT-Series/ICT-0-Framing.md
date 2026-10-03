@@ -316,8 +316,8 @@ IIT/
 ├── ICT-07-ScaleFreeSignatures-Python.ipynb        # ✅ signatures scale-free & criticalité (loi de Borel τ=3/2)
 ├── ICT-08-AttractorLandscapesEWS-Python.ipynb     # ✅ strate 2 : paysages d'attracteurs + early-warning signals
 ├── ICT-09-AgencyRegeneration-Python.ipynb         # ✅ strate 2 : agence = régénération réaction-diffusion (Gray-Scott)
-├── ICT-10-CatastropheGrammar.ipynb        # ✅ charnière strate 2→3 : grammaire des catastrophes (fronce, pli, lacet de prédation)
-├── ICT-22b-CausalInterventionEngine.ipynb # ✅ moteur d'intervention causal — 5 ops, contrôles appariés, format Gate 24 (accrétion du palier 22, #15479)
+├── ICT-10-CatastropheGrammar-Python.ipynb        # ✅ charnière strate 2→3 : grammaire des catastrophes (fronce, pli, lacet de prédation)
+├── ICT-22b-CausalInterventionEngine-Python.ipynb # ✅ moteur d'intervention causal — 5 ops, contrôles appariés, format Gate 24 (accrétion du palier 22, #15479)
 └── ict/
     ├── self_sorting.py      # ✅ modèle vue-cellule (Cell, SelfSortingArray, scheduler)
     ├── kin_sorting.py       # ✅ règles enrichies : réparation bidirectionnelle + affinité kin
@@ -438,11 +438,11 @@ l'énoncé de D2 (#7746) est terme à terme, dans l'ordre :
 
 | D2 — « cinq expériences du jeu évolutif » | notebook livré | lettre au README |
 |---|---|---|
-| vocabulaire fixe | [ICT-26-SignalingConvention](ICT-26-SignalingConvention.ipynb) | A — convention |
-| invention de symboles | [ICT-27-SymbolInvention](ICT-27-SymbolInvention.ipynb) | B — invention |
-| seuil $\rho_c$ | [ICT-28-CollectiveAdoption](ICT-28-CollectiveAdoption.ipynb) | C — adoption |
-| inoculation | [ICT-29-ConceptInoculation](ICT-29-ConceptInoculation.ipynb) | D — inoculation |
-| inhibition de l'innovation | [ICT-30-InhibitedInvention](ICT-30-InhibitedInvention.ipynb) | E — inhibition |
+| vocabulaire fixe | [ICT-26-SignalingConvention-Python](ICT-26-SignalingConvention-Python.ipynb) | A — convention |
+| invention de symboles | [ICT-27-SymbolInvention-Python](ICT-27-SymbolInvention-Python.ipynb) | B — invention |
+| seuil $\rho_c$ | [ICT-28-CollectiveAdoption-Python](ICT-28-CollectiveAdoption-Python.ipynb) | C — adoption |
+| inoculation | [ICT-29-ConceptInoculation-Python](ICT-29-ConceptInoculation-Python.ipynb) | D — inoculation |
+| inhibition de l'innovation | [ICT-30-InhibitedInvention-Python](ICT-30-InhibitedInvention-Python.ipynb) | E — inhibition |
 
 Le README **cite déjà #7746** comme Epic de sa « strate 7 » : les deux cartes s'accordaient donc sur
 l'objet et divergeaient seulement sur son axe. Ces cinq notebooks sont des **pattes, pas des
@@ -462,10 +462,10 @@ n'apparaissait jusqu'ici dans aucune des deux cartes. Leur nature se lit pourtan
 | Document | Nature | Axe |
 |---|---|---|
 | [ICT-Life-SubstratCertifie](ICT-Life-SubstratCertifie.ipynb) | calibration du substrat GOL (B3/S23, correction certifiée en Lean) | vertical — substrat |
-| [ICT-32-StratificationCausaleLife](ICT-32-StratificationCausaleLife.ipynb) | apportionment de Hoel **sur** ce substrat | vertical — substrat |
-| [ICT-33-SoupCollisions](ICT-33-SoupCollisions.ipynb) | ensembles ouverts et bruit macro **sur** ce substrat | vertical — substrat |
-| [ICT-31-ContrasteTroisSubstrats](ICT-31-ContrasteTroisSubstrats.ipynb) | contraste mesuré **entre** bistable, Gray-Scott et GOL | transverse — cross-substrat |
-| [ICT-34-BancRecollementLectures](ICT-34-BancRecollementLectures.ipynb) | banc de recollement de quatre lectures, un seul verdict | transverse — cross-substrat |
+| [ICT-32-StratificationCausaleLife-Python](ICT-32-StratificationCausaleLife-Python.ipynb) | apportionment de Hoel **sur** ce substrat | vertical — substrat |
+| [ICT-33-SoupCollisions-Python](ICT-33-SoupCollisions-Python.ipynb) | ensembles ouverts et bruit macro **sur** ce substrat | vertical — substrat |
+| [ICT-31-ContrasteTroisSubstrats-Python](ICT-31-ContrasteTroisSubstrats-Python.ipynb) | contraste mesuré **entre** bistable, Gray-Scott et GOL | transverse — cross-substrat |
+| [ICT-34-BancRecollementLectures-Python](ICT-34-BancRecollementLectures-Python.ipynb) | banc de recollement de quatre lectures, un seul verdict | transverse — cross-substrat |
 
 **Les deux derniers sont des pattes**, par le critère même de la divergence 3 : ils portent sur
 plusieurs substrats à la fois. **Les trois premiers appellent un barreau**, et ce barreau n'est
@@ -557,9 +557,9 @@ qu'au vu de ce qu'une expérience explicite en mesure.
 La batterie de l'**ENJEU** — auto-maintien / retour au bassin attracteur `B` après une
 perturbation contrefactuelle `do(·)` (Pearl, fil rouge causalité ICT-5), fusionnée à la batterie
 MOYEN d'ICT-18 sur le banc de substrats S1-S5 de l'ICT-Synthèse (S5 = *pur dissipateur* = contrôle
-négatif **obligatoire**) — est **livrée** : [ICT-19](ICT-19-EnjeuBattery.ipynb) (#5489, cadrage B
+négatif **obligatoire**) — est **livrée** : [ICT-19](ICT-19-EnjeuBattery-Python.ipynb) (#5489, cadrage B
 verrouillé user 2026-07-06) puis raffinée par
-[ICT-19b](ICT-19b-EnjeuBattery-Raffinement.ipynb) (#5728, mesure S4 en espace de champ ; renommée
+[ICT-19b](ICT-19b-EnjeuBattery-Raffinement-Python.ipynb) (#5728, mesure S4 en espace de champ ; renommée
 **ICT-19b**, #7260). Le livrable est la **paire** `{I_thermo, I_stake}` (jamais un indice agrégé),
 séparée par les gates falsifiables ENJEU-1 / ENJEU-2, sur la **distinction sémantique** :
 réversibilité *thermodynamique* (detailed balance, `σ=0` — le MOYEN que `I_thermo` mesure) ↔

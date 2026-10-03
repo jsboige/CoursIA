@@ -21,7 +21,7 @@ Les scripts `scripts/fix_*.py` / `scripts/recycle_*.py` à la racine sont des on
 | `batch_reexecute.py` | Re-exécution Papermill en lot |
 | `dotnet_executor.py`, `exec_dotnet_persist.py`, `exec_single_cell.py` | Exécution .NET Interactive : moteur cell-by-cell canonique (`dotnet_executor.py`), wrapper CLI historique (`exec_dotnet_persist.py`) et exécution ciblée |
 | `execute_qcpy_docker.py`, `qc_quantbook_execute.py` | Exécution QuantConnect (Quantbooks via Docker/QC Cloud) |
-| `_exec_bdd_csharp.py` | Exécution C# BDD interne |
+| `_exec_bdd_csharp.py` | **Archivé** 2026-10-01 (palier 1 #18153) — voir `scripts/notebook_tools/_archive/README.md` |
 
 #### `notebook_tools.py execute` — Options avancées
 
@@ -140,7 +140,7 @@ La migration Plotly-CDN → SVG inline `text/html` (canon ai-01 `svg-6927-canon.
 | `qc_classify.py` | Classification stratégies QC (BROKEN/NEEDS_IMPROVEMENT/HEALTHY) |
 | `epita_prcon_autograde.py` | Autograde EPITA Programmation par Contraintes |
 | `weekly_digest.py` | Digest hebdomadaire d'activité |
-| `fix_audio_dependencies.py`, `optimize_dvs.py` | Dépendances audio / optimisation |
+| `fix_audio_dependencies.py` | Dépendances audio ; `optimize_dvs.py` **archivé** 2026-10-01 (palier 1 #18153) |
 | `_alpha_diag.py`, `generate_16e.py` | Diagnostics ponctuels |
 
 ## Audit, coûts & fidélité — `scripts/audit/`
@@ -212,7 +212,7 @@ Pipeline d'audit qualité et de **matrice de coût** (EPIC #8056) + audit séman
 
 ## Tests — `scripts/tests/` + `scripts/notebook_tools/tests/`
 
-`scripts/tests/` regroupe **56 fichiers** de test (1701 tests) ; `scripts/notebook_tools/tests/` en regroupe **82** (3199 tests — couvre les modules notebook_tools : CLI, helpers, skeleton, lint, catalogue, qualité C.1/C.2/C.3, leak detection, forensic, execution, enrich, reporting), soit **4900 tests au total** (snapshot `pytest --collect-only` 2026-07-21). Couverture de `scripts/tests/` par domaine :
+`scripts/tests/` regroupe des fichiers de test (1701 tests) ; `scripts/notebook_tools/tests/` en regroupe aussi (3199 tests — couvre les modules notebook_tools : CLI, helpers, skeleton, lint, catalogue, qualité C.1/C.2/C.3, leak detection, forensic, execution, enrich, reporting), soit **4900 tests au total** (snapshot `pytest --collect-only` 2026-07-21). Couverture de `scripts/tests/` par domaine :
 
 | Domaine | Fichiers | Modules couverts |
 | ------- | -------- | --------------- |
@@ -221,7 +221,7 @@ Pipeline d'audit qualité et de **matrice de coût** (EPIC #8056) + audit séman
 | **smartcontracts/** | 2 | validate_sc_notebooks.py |
 | **extract-titles (top-level)** | 4 | extract_pptx_titles.py, extract_slidev_titles.py, extract_titles.py, extract_readme_figures.py |
 | **ml/** | 1 | garch_baseline |
-| **autres (top-level + misc)** | 27 | check_docs_links, convert_print_to_deploy, regen_quarto_render, quarto_render_timing (mesure phases #14597), render_envs (secrets), scan_student_forks, series_progress_manager, update_navigation, validate_qc_projects, execute_sudoku_python, execute_qcpy_docker, translation_sync, translate_csv, detect_{ascii_workaround,blank_figures,svg_decimal_commas}, verify_{prosody,transcript}, audit_exposed_services, auth_manager, configure_max_quantization, container_startup, download_yfinance, manage_crypto_archive, notebook_tools_pure, repair_genai_notebooks, validation_dispatch |
+| **autres (top-level + misc)** | 26 | check_docs_links, regen_quarto_render, quarto_render_timing (mesure phases #14597), render_envs (secrets), scan_student_forks, series_progress_manager, update_navigation, validate_qc_projects, execute_sudoku_python, execute_qcpy_docker, translation_sync, translate_csv, detect_{ascii_workaround,blank_figures,svg_decimal_commas}, verify_{prosody,transcript}, audit_exposed_services, auth_manager, configure_max_quantization, container_startup, download_yfinance, manage_crypto_archive, notebook_tools_pure, repair_genai_notebooks, validation_dispatch |
 
 Lancer la suite : `python -m pytest scripts/tests/ -v` (depuis la racine du repo).
 

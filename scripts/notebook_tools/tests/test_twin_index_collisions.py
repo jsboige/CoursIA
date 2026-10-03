@@ -163,18 +163,24 @@ def _has_ref(ref: str) -> bool:
         capture_output=True).returncode == 0
 
 
-@pytest.mark.skipif(not _has_ref("origin/main"),
-                    reason="origin/main absent (checkout detache en CI)")
-def test_le_registre_de_main_ne_porte_aucun_doublon_intra_revision():
+def test_le_registre_de_la_revision_testee_ne_porte_aucun_doublon_intra_revision():
     """Controle positif : le predicat du garde CI, rejoue par cet organe sur le
-    registre reel de `origin/main`. Si ce test rougit alors que le garde CI est
-    vert, c'est que les deux instruments ont diverge -- le defaut que
-    `audit_index` existe pour empecher."""
-    reg = registry_of_ref("origin/main", REPO)
+    registre reel de la revision testee. Si ce test rougit alors que le garde CI
+    est vert, c'est que les deux instruments ont diverge -- le defaut que
+    `audit_index` existe pour empecher.
+
+    La revision lue est `HEAD`, pas `origin/main` (#18558). Sur une PR, le
+    checkout CI est la ref de merge : `HEAD` est donc `main` tel qu'il sera
+    apres le merge, et sur `main` c'est `main` lui-meme. Lire `origin/main` en
+    direct faisait rougir ce test sur TOUTES les PRs des qu'un doublon arrivait
+    sur `main`, y compris sur la PR qui le corrigeait : le correctif ne pouvait
+    plus passer le gate requis, et aucun compte ne pouvait le merger."""
+    reg = registry_of_ref("HEAD", REPO)
     assert reg, "registre vide : la lecture des revisions est cassee"
-    got = find_conflicts({"origin/main": reg})
+    got = find_conflicts({"HEAD": reg})
     assert got["intra_ref"] == [], (
-        "doublon d'index intra-revision sur origin/main : %s" % got["intra_ref"])
+        "doublon d'index intra-revision sur la revision testee : %s"
+        % got["intra_ref"])
     assert got["cross_ref"] == []
 
 

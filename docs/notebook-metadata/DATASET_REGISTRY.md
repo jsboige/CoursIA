@@ -110,7 +110,7 @@ Chaque ligne du registre respecte le schéma :
 | `MyIA.AI.Notebooks/QuantConnect/datasets/yfinance/crypto_panier/MATIC-USD_2018-01-01_2026-05-01.csv` | 212 473 | `ca495bcc9d870d0d…` | CC-BY-4.0 | marche-public | yfinance MATIC-USD | — |
 | `MyIA.AI.Notebooks/QuantConnect/datasets/yfinance/crypto_panier/XRP-USD_2018-01-01_2026-05-01.csv` | 298 419 | `fb2efd891f510bb0…` | CC-BY-4.0 | marche-public | yfinance XRP-USD | — |
 
-> **Note QC.** Le répertoire `QuantConnect/datasets/yfinance/crypto_panier/` contient **10 fichiers** (BTC, ETH, ADA, AVAX, DOT, LINK, LTC, MATIC, SOL, XRP). Tous sont **référencés** ci-dessus avec leur SHA256 vérifié firsthand (c.798, 2026-07-23) ; ils sont **isomorphes** (même format yfinance OHLCV), licence identique (CC-BY-4.0).
+> **Note QC.** Le répertoire `QuantConnect/datasets/yfinance/crypto_panier/` contient les fichiers du panier (BTC, ETH, ADA, AVAX, DOT, LINK, LTC, MATIC, SOL, XRP). Tous sont **référencés** ci-dessus avec leur SHA256 vérifié firsthand (c.798, 2026-07-23) ; ils sont **isomorphes** (même format yfinance OHLCV), licence identique (CC-BY-4.0).
 
 ### SymbolicAI / Argument_Analysis (2)
 

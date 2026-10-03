@@ -125,9 +125,19 @@ Iteration history prover, intractable diagnosis, LLM endpoints. **Index du sous-
 | [lean/mimo-converse-cartography.md](lean/mimo-converse-cartography.md) | Cartographie converse MIMO (#11152) — correspondance brique → source, mesurée le 2026-08-16 sur le Mathlib et le SLT du manifest `mimo_lean` courant |
 | [lean/junctions-scan-po-2026.md](lean/junctions-scan-po-2026.md) | Scan des jonctions NTFS Mathlib sur `myia-po-2026` (2026-09-01) — #13962, enfant de #4362 (mutualisation du cluster) |
 | [lean/cluster-junctions-c857.md](lean/cluster-junctions-c857.md) | Scan de mutualisation Mathlib à l'échelle du cluster (c.857, po-2024, 2026-09-02) — pendant du précédent, vue multi-machines |
-| [reference/mbml-source-attribution.md](reference/mbml-source-attribution.md) | Attribution de source MBML/Infer.NET — table de correspondance notebook ↔ source canonique pour la série Probas/ (36 notebooks Infer + PyMC + 2 racine vs *MBML Book* Herbrich + TrueSkill 2007 + WinBUGS/JAGS). Établie audit distillation #8081 (c.803, 2026-07-23). Les 4 sous-items de backfill/archivage extraits en issues filles #8702-#8705. Réqualification #7422 (déplacement audit/ → reference/, retrait des verdicts/décisions de cycle). |
 
 > Note : `lean/stable_marriage_intractable_diagnosis.md` a été déplacé vers [archive/lean-intractable-diagnosis/stable-marriage.md](archive/lean-intractable-diagnosis/stable-marriage.md) (archivé c.696).
+
+## Probabilités (docs/probas/)
+
+Index de découvrabilité pour la série Probabilités (`MyIA.AI.Notebooks/Probas/`) — symétrique des sections Lean et GenAI. **Index du sous-répertoire :** [probas/README.md](probas/README.md) — point d'entrée qui regroupe les références déportées (portage Infer.NET → Python, attribution MBML, piliers SOTA, prérequis kernel, pièges). Établi par po-2027 (#18671) en cycle du 2026-10-01.
+
+| Fichier | Description |
+|---------|-------------|
+| [reference/probas-history.md](reference/probas-history.md) | **Référence pérenne** du portage Infer.NET → Python (`Probas/`) — périmètre intentionnel (combien de carnets, quelle bibliothèque pour quel concept) + recommandation PyMC/NumPyro/pgmpy/hmmlearn/Pyro. Source canonique issue #297. Le mapping d'API ligne-à-ligne y est explicitement marqué *périssable* (poison si non re-testé). |
+| [reference/mbml-source-attribution.md](reference/mbml-source-attribution.md) | Attribution de source MBML/Infer.NET — table de correspondance carnet ↔ source canonique pour la série Probas/ (36 carnets Infer + PyMC + 2 racine vs *MBML Book* Herbrich + TrueSkill 2007 + WinBUGS/JAGS). Établie audit distillation #8081 (c.803, 2026-07-23). Les 4 sous-items de backfill/archivage extraits en issues filles #8702-#8705. Réqualification #7422 (déplacement audit/ → reference/, retrait des verdicts/décisions de cycle). |
+
+> Note : `mbml-source-attribution.md` figure ici dans la section Probabilités ; une copie Lean existait par inertie historique (placement initial c.803), retirée par ce déplacement. Ne pas réintroduire la copie Lean.
 
 ## ICT (docs/ict/)
 
@@ -296,9 +306,17 @@ Les autres documents de cadrage vivent au premier niveau de `docs/` (Grothendiec
 |---------|-------------|
 | [ml/tsad-benchmark-flaws.md](ml/tsad-benchmark-flaws.md) | Défauts des benchmarks TSAD (détection d'anomalies sur séries temporelles) et place du *Matrix Profile* — note de référence compagnon des notebooks ML-10. Sert à ne pas présenter comme un résultat ce qui est un artefact de protocole d'évaluation |
 
+## Rapports transients (docs/transients/)
+
+Lane des comptes rendus et audits **datés** : un transient y naît, s'y conserve le temps que sa conclusion soit distillée dans le document pérenne qui la porte, puis sort. Ce n'est **pas** `docs/archive/` — un stock à résorber, où l'on ne dépose pas un rapport de plus pour qu'il y reste. Convention et organe : [transients/README.md](transients/README.md), `scripts/check_docs_transients_lane.py` (#14623).
+
+| Fichier | Description |
+|---------|-------------|
+| [transients/README.md](transients/README.md) | Convention de la lane : nom daté `<YYYY-MM-DD>-<slug>.md`, en-tête gelé `> RAPPORT — <date> — <périmètre> — figé`, règle « née ici, sort par distillation », **critère de sortie de `docs/archive/`** (trois voies + interdiction d'entrée des rapports datés neufs, organe `--base`), périmètre et hors-périmètre. Lane **vide à dessein** à l'ouverture : la re-vérification des fichiers listés par #14623 a mesuré que la majorité n'est pas transiente |
+
 ## Archive (docs/archive/)
 
-Documents conservés pour référence mais inactifs. Index complet : [archive/INDEX.md](archive/INDEX.md).
+Documents conservés pour référence mais inactifs. Index complet : [archive/INDEX.md](archive/INDEX.md). L'archive est un **stock à résorber, pas une destination** : critère de sortie (distillation / restauration / retrait, preuve exigée) et interdiction d'entrée des rapports datés neufs — [transients/README.md §Sortie d'archive](transients/README.md#sortie-darchive-docsarchive) (#14623).
 
 | Fichier | Description |
 |---------|-------------|
@@ -335,6 +353,7 @@ docs/
                      + pré-enregistrements grade T (protocoles scellés avant mesure)
   ledgers/           Ledgers d'audit cumulatifs par Epic (#3801, #10466, #10678, #11690, #12204)
   suivis/            Suivis de cycle (transitions de série)
+  transients/        Rapports transients datés (en-tête gelé) — convention + organe (#14623)
   cadrage/           Documents épistémiques de cadrage — index par communauté interlocutrice (#17525)
   grothendieckian-lens.md  Clé de lecture transversale du dépôt
   PARCOURS.md        Schéma maturité 3 axes (éditorial / reproductibilité / revue) — #8051

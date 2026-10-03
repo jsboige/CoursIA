@@ -108,10 +108,10 @@ Le pointeur `MGS-10 cell[8]`, lui, est devenu **exact** entre-temps, mais par ac
 | État | Notebooks |
 |---|---|
 | **Converti** (SVG inline, plus de CDN dans la source) | `App-7b-Wordle-CSharp`, `MGS-10-CenterBias` |
-| **Partiel** (SVG inline **et** cellules CDN résiduelles) | `GameTheory-03-Topology2x2-CSharp`, `Infer-17-Kalman-Filter`, `Sudoku-18-Comparison-Csharp` |
+| **Partiel** (SVG inline **et** cellules CDN résiduelles) | `GameTheory-03-Topology2x2-CSharp`, `Infer-17-Kalman-Filter`, `Sudoku-18-Comparison-CSharp` |
 | **Non converti** (CDN seul → blanc en statique) | `Infer-11-Topic-Models`, `Infer-12-Modeles-Hierarchiques`, `DecInfer-06-Value-Information`, `DecInfer-07-Expert-Systems`, `DecInfer-08-Sequential` |
 
-Mesure reproductible : source de cellule de code contenant `PlotSvg` / `cdn.plot.ly` / `PlotlyHtml`, sur `git ls-files "*.ipynb"`. Les 5 « non converti » + 3 « partiel » sont le reste du rollout #6927 sous l'EPIC #3801.
+Mesure reproductible : source de cellule de code contenant `PlotSvg` / `cdn.plot.ly` / `PlotlyHtml`, sur `git ls-files "*.ipynb"`. Les « non converti » + « partiel » sont le reste du rollout #6927 sous l'EPIC #3801.
 
 ## Refactor possible (memo)
 

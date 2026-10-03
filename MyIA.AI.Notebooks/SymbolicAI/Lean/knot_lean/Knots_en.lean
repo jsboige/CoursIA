@@ -13,9 +13,14 @@
       diagrams, PD-codes, Gauss codes, Dowker-Thistlethwaite notation)
     - `Knots.Reidemeister` — Reidemeister moves (RI, RII, RIII) and
       invariance of the polynomial / combinatorial invariants
+    - `Knots.ReidemeisterMoves` — kernel-verifiable sequences of moves
+      (organ #18611: data inductive + Bool verifiers + soundness into
+      `ReidemeisterEquiv`)
     - `Knots.Invariant` — polynomial invariants (Alexander, Jones),
       tricolourability, genus
     - `Knots.Conway` — Conway notations and conventions
+    - `Knots.Slice` — slice knots, Piccirillo and Freedman theorems,
+      smooth/topological dichotomy (extracted from Conway, #18397)
     - `Knots.Jones` — Kauffman bracket on PD codes (state sum,
       trefoil / figure eight / unknot evaluations)
     - `Knots.FigureEight` — invariants of the figure-eight knot on its
@@ -38,7 +43,9 @@ import Knots.Basic_en
 import Knots.Reidemeister_en
 import Knots.Invariant_en
 import Knots.Conway_en
+import Knots.Slice_en
 import Knots.ReidemeisterInvariance_en
+import Knots.ReidemeisterMoves_en
 import Knots.Jones_en
 import Knots.FigureEight_en
 import Knots.Lidman_en

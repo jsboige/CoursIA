@@ -213,6 +213,26 @@ MACHINE_PATH_PATTERNS = (
     re.compile(r"/mnt/[a-z]/[A-Za-z0-9_.-]{2,32}/"),
 )
 
+# A web URL is data, not a path of the executing machine. University
+# personal pages live under /home/<user>/ on the SERVER
+# (https://www.ccs.neu.edu/home/<user>/...), and an LLM answer that cites one
+# carries it verbatim: measured on #18567, GenAI/Texte 06, where a web-search
+# summary cited a course PDF and the gate reported a machine path. URLs are
+# removed from a COPY of the text before path matching, as banners are before
+# failure matching. Two forms stay visible on purpose: file:// URLs (they ARE
+# local paths) and URLs of a local server (localhost, 127.0.0.1, 0.0.0.0),
+# whose path can mirror the executing machine's tree.
+_WEB_URL = re.compile(
+    r"https?://(?!(?:localhost|127\.0\.0\.1|0\.0\.0\.0)(?:[:/]|$))"
+    r"[^\s\"'<>)\]]+",
+    re.IGNORECASE)
+
+
+def _path_probe(text):
+    """Copy of ``text`` without its web URLs, for MACHINE_PATH matching."""
+    return _WEB_URL.sub(" ", text)
+
+
 _PATH_WITNESSES = (
     "D:" + BS + "dev" + BS + "CoursIA-2-c1301-231-fbpy" + BS + "MyIA.AI.Notebooks",
     "/home/agent/CoursIA/MyIA.AI.Notebooks",
@@ -467,8 +487,9 @@ def scan(nb):
             if m:
                 found["TOOL_FAILURE"].append((idx, m.group(0)[:120]))
                 break
+        path_probe = _path_probe(text)
         for pat in MACHINE_PATH_PATTERNS:
-            for m in pat.finditer(text):
+            for m in pat.finditer(path_probe):
                 found["MACHINE_PATH"].append((idx, m.group(0)[:120]))
     # #14513: a machine path can also sit in document/cell metadata, invisible
     # to the output-only loop above -- the exact hole that let PT_11c's
@@ -476,8 +497,9 @@ def scan(nb):
     # path (#14272 / #13891). Scan string-valued metadata too, so the gate
     # sees the surface the convention (secrets-hygiene rule 6) allows fixing.
     for loc, text in metadata_texts(nb):
+        path_probe = _path_probe(text)
         for pat in MACHINE_PATH_PATTERNS:
-            for m in pat.finditer(text):
+            for m in pat.finditer(path_probe):
                 found["MACHINE_PATH"].append((loc, m.group(0)[:120]))
     return found
 
@@ -566,6 +588,20 @@ def self_test(cwd=None):
         if hit:
             failures.append("benign text matched " + str(hit) + ": "
                             + repr(benign))
+
+    # URL controls (#18567): a cited web page under /home/<user>/ is silent,
+    # while a local-server URL, a file:// URL and a bare path sitting next to
+    # a web URL still fire.
+    web_cite = ("4. RAG vs Fine-tuning: "
+                "https://www.ccs.neu.edu/home/alina/classes/Fall2024/Lecture11.pdf")
+    if any(p.search(_path_probe(web_cite)) for p in MACHINE_PATH_PATTERNS):
+        failures.append("web URL read as a machine path: " + repr(web_cite))
+    for leak in ("http://localhost:8888/files/home/agent/CoursIA/x.ipynb",
+                 "file:///home/agent/CoursIA/x.ipynb",
+                 "voir https://example.org/a puis /home/agent/CoursIA/y.py"):
+        if not any(p.search(_path_probe(leak)) for p in MACHINE_PATH_PATTERNS):
+            failures.append("machine path hidden by the URL filter: "
+                            + repr(leak))
 
 
     # Benign banner: matched by "not available", neutralised by

@@ -67,7 +67,7 @@ listing:
       - "Applications/Pyro_RSA_Hyperbole.ipynb"
       - "Applications/Percolation/Percolation-Supercritique.ipynb"
       - "Applications/Percolation/Percolation-Lean.ipynb"
-      - "Infer/Infer-20-Quotients-et-Fibres.ipynb"
+      - "Applications/Quotients-Fibres-Recollement-Python.ipynb"
     type: grid
     sort: "filename"
     page-size: 24
@@ -87,7 +87,7 @@ La série Probas comporte **4 sous-séries principales + applications standalone
 |------------|-----------|-------|-------|
 | **[Infer](Infer/README.md) (C#/.NET Interactive)** | 19 (+ Setup + accretion Infer-1b + _output.ipynb) | Infer.NET, EP/VMP | Corpus bayésien : fondations, modèles classiques (IRT, TrueSkill, LDA, HMM), frontières (causalité, GP, hiérarchiques, Kalman, change-point, survie) |
 | **[PyMC](PyMC/README.md) (Python)** | 14 (+ Setup) | PyMC, NUTS | Mêmes modèles qu'Infer, en MCMC : NUTS, diagnostics (R-hat, ESS), posterior predictive checks |
-| **[DecisionTheory/Infer](DecisionTheory/DecInfer/README.md) (C#/.NET)** | 10 (Lean : 2, 9) | Infer.NET + Lean 4 | Utility espérée, EVPI, MDPs, bandits, **preuves formelles Lean** de vNM et Gittins (lake `decision_theory_lean/`) |
+| **[DecisionTheory/Infer](DecisionTheory/DecInfer/README.md) (C#/.NET)** | 10 (Lean : 02, 02b, 08b) | Infer.NET + Lean 4 | Utility espérée, EVPI, MDPs, bandits, **preuves formelles Lean** de vNM et Gittins (lake `decision_theory_lean/`) |
 | **[DecisionTheory/DecPyMC](DecisionTheory/DecPyMC/README.md) (Python)** | 7 | PyMC | Mêmes modèles de décision, en sampling |
 | **[DecisionTheory/Causal-Bridges](DecisionTheory/Causal-Bridges/)** | 1 | Python/Z3 | Do-Calculus, jumeaux causaux inter-domaines |
 | **Applications (standalone)** | 1 | Python | Pyro_RSA_Hyperbole (Pyro RSA) |
@@ -135,10 +135,11 @@ Gaussian Process creux, modèles hiérarchiques, filtre de Kalman, change-point 
 
 ## Théorie de la décision — Infer.NET + Lean 4
 
-Arc **autonome** de **théorie de la décision bayésienne** : axiomes Von Neumann-Morgenstern, utilité espérée, EVPI, réseaux de décision, MDPs (itération valeur/politique), Thompson Sampling. Deux notebooks sont des **companions Lean 4** (kernel WSL + lake `decision_theory_lean`) qui prouvent formellement :
+Arc **autonome** de **théorie de la décision bayésienne** : axiomes Von Neumann-Morgenstern, utilité espérée, EVPI, réseaux de décision, MDPs (itération valeur/politique), Thompson Sampling. Trois notebooks sont des **companions Lean 4** (kernel WSL + lake `decision_theory_lean`) qui prouvent formellement :
 
-- **Infer-2-Lean-ExpectedUtility** : direction sound du théorème vNM (utilité linéaire sur des loteries).
-- **Infer-9-Lean-Gittins** : indice de Gittins, SFABP (Single-Family Action-Bandit Processes).
+- **DecInfer-02-Lean-ExpectedUtility** : direction sound du théorème vNM (utilité linéaire sur des loteries).
+- **DecInfer-02b-Lean-Coherence** : cohérence de de Finetti — Dutch Book, caractérisation mono-livret des bornes de probabilité.
+- **DecInfer-08b-Lean-Gittins** : indice de Gittins, SFABP (Single-Family Action-Bandit Processes).
 
 ::: {#dt-infer}
 :::
@@ -188,7 +189,7 @@ pip install pymc arviz numpy pandas matplotlib
 jupyter notebook MyIA.AI.Notebooks/Probas/PyMC/
 ```
 
-**Pour les companions Lean 4** (`Infer-2-Lean-ExpectedUtility.ipynb`, `Infer-9-Lean-Gittins.ipynb`) : WSL + elan toolchain + kernel Lean4 Jupyter. Cf [`decision_theory_lean/install_wsl_kernel.md`](decision_theory_lean/README.md). Les preuves sont **déjà validées localement** (lake `decision_theory_lean` build SUCCESS) ; les notebooks servent de vitrine pédagogique.
+**Pour les companions Lean 4** (`DecInfer-02-Lean-ExpectedUtility.ipynb`, `DecInfer-02b-Lean-Coherence.ipynb`, `DecInfer-08b-Lean-Gittins.ipynb`) : WSL + elan toolchain + kernel Lean4 Jupyter. Cf [`decision_theory_lean/install_wsl_kernel.md`](decision_theory_lean/README.md). Les preuves sont **déjà validées localement** (lake `decision_theory_lean` build SUCCESS) ; les notebooks servent de vitrine pédagogique.
 
 ## Ressources complémentaires
 

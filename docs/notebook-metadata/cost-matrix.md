@@ -7,7 +7,7 @@
 
 ## Pourquoi ce schéma
 
-L'open-courseware CoursIA héberge **300+ notebooks** (Python + .NET Interactive + Lean) répartis sur ~10 familles thématiques. Les **contraintes de ressources** pour les exécuter varient de **zéro** (notebook CPU Python pur, déterministe, < 1 min) à **des dizaines de $ API** (GenAI/Image avec DALL-E 3, GPT-5, Flux) ou **GPU VRAM 24+ GB** (Qwen-Image-Edit 2509, SD-3.5 large). Sans schéma structuré :
+L'open-courseware CoursIA héberge des notebooks (Python + .NET Interactive + Lean) répartis sur ~10 familles thématiques. Les **contraintes de ressources** pour les exécuter varient de **zéro** (notebook CPU Python pur, déterministe, < 1 min) à **des dizaines de $ API** (GenAI/Image avec DALL-E 3, GPT-5, Flux) ou **GPU VRAM 24+ GB** (Qwen-Image-Edit 2509, SD-3.5 large). Sans schéma structuré :
 
 1. **L'étudiant fork le repo et tente d'exécuter en aveugle** → `OutOfMemoryError` CUDA, `RateLimitError` OpenAI, ou `AttributeError: QuantBook not available`.
 2. **Le coordinateur ne peut pas filtrer** "quels notebooks sont exécutables sur la machine CPU-only de l'étudiant EPITA ?" sans lire le notebook cellule par cellule.
@@ -52,7 +52,7 @@ bloc `---\n...\n---` est promue par markdown-it en **setext-H2 supersize**
 
 ### Migration & backward-compat
 
-La migration de masse des ~100 notebooks existants se fait **par tranches famille**
+La migration de masse des notebooks existants se fait **par tranches famille**
 (rollout c.795/796/797 pattern), chaque lane migrant sa famille opportuniste. Le
 vérificateur [`check_cost_metadata.py`](../../scripts/audit/check_cost_metadata.py)
 lit **`metadata['cost']` d'abord**, retombe sur le scan de cellule `---...---` en
@@ -68,7 +68,7 @@ table markdown rendue** ou un **badge** suffit — jamais reproduire le YAML bru
 > 💰 **Coût** : gratuit (CPU local, ~3 min). Pas de compte externe requis.
 ```
 
-Ne pas sur-scoper 100 notebooks avec une table rendue — `metadata.cost` reste la
+Ne pas sur-scoper les notebooks avec une table rendue — `metadata.cost` reste la
 source de vérité, le badge est un confort de lecture.
 
 ### Champs obligatoires vs optionnels
@@ -647,6 +647,6 @@ Acceptance partiel (4/5 vérifiables firsthand maintenant, 1/5 attend revue aval
 |-------|-------|
 | c.795 | Validation litmus 5 sur l'échantillon c.793 + peupl. ML (ML.NET, GenAI/Image complet) |
 | c.796 | Peuplement Search Part1-3 + Lean lakes principales |
-| c.797 | Peuplement QC (27 notebooks) + ICT |
+| c.797 | Peuplement QC + ICT |
 | c.798 | Génération colonne catalogue (cron) + sync CI anti-drift |
 | c.799+ | Roulement famille par famille jusqu'à ~80% de couverture |

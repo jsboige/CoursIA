@@ -2,7 +2,7 @@
 series: QuantConnect-Python
 pedagogical_count: 60
 breakdown: Python=60
-maturity: DRAFT=32, BETA=20, ALPHA=8
+maturity: DRAFT=33, BETA=19, ALPHA=8
 -->
 
 # QuantConnect Python Notebooks
