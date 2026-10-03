@@ -95,6 +95,20 @@ def test_zero_exposure_scale_goes_to_cash_with_the_default_band(tmp_path):
     assert sorted(broker.placed) == [("IUSM", -10), ("SXR8", -4)]
 
 
+def test_halted_gate_with_zero_exposure_plans_and_sends_every_sale(tmp_path):
+    # Breaker tripped and a return to cash asked, default band: allowing sales is not
+    # enough, they must also be planned -- including the holding under the band (2 %).
+    gate = RiskGate(RISK, 10_000.0)
+    gate.update_equity(12_000.0)
+    gate.update_equity(10_000.0)
+    gate.save(tmp_path / "risk.json")
+    cfg = CycleConfig(signal_to_line=CFG.signal_to_line, exposure_scale=0.0)
+    broker = FakeBroker(10_000.0, {"SXR8": 40, "IUSM": 10}, {"SXR8": 50.0, "IUSM": 20.0})
+    report = _run(tmp_path, broker, cfg=cfg, dry_run=False)
+    assert sorted(broker.placed) == [("IUSM", -10), ("SXR8", -40)]
+    assert all(o.allowed for o in report.orders)
+
+
 def test_cycle_appends_to_the_journal_and_persists_the_peak(tmp_path):
     broker = FakeBroker(11_000.0, {}, {"SXR8": 50.0, "IUSM": 20.0})
     _run(tmp_path, broker)
