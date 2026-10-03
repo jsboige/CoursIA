@@ -19,7 +19,8 @@ lake exe cache get   # oleans Mathlib pré-compilées (toolchain v4.33.0)
 lake build           # 0 sorry — le lac est intégralement prouvé
 ```
 
-La CI ([`lean-geometry.yml`](../../../.github/workflows/lean-geometry.yml))
+La CI
+([`lean-geometry.yml`](https://github.com/jsboige/CoursIA/blob/main/.github/workflows/lean-geometry.yml))
 rejoue le build et le gate proof-integrity (axiomes) sur chaque PR touchant le
 lac.
 
