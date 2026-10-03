@@ -157,7 +157,7 @@ Le cœur de la thèse « composants > métaphores ». On introduit `Match` (disp
 
 ### 3 — Eukaryote
 
-On cesse de traiter la population comme un sac homogène. Le modèle eucaryote partitionne la population en sous-populations spécialisées portées par des chromosomes composites — chaque compartiment peut avoir sa propre métaheuristique. C'est une configuration qu'aucune bibliothèque monolithique grand public n'offre directement, et qui devient naturelle une fois la composition maîtrisée.
+On cesse de traiter la population comme un sac homogène. Le modèle eucaryote partitionne le génome en chromosomes composites (analogie caryotype — chaque sous-chromosome porte sa métaheuristique) ; les N individus restent présents dans chaque compartiment via leur tranche de gène. C'est une configuration qu'aucune bibliothèque monolithique grand public n'offre directement, et qui devient naturelle une fois la composition maîtrisée.
 
 ### 4 — Islands
 
