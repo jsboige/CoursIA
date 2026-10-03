@@ -308,6 +308,27 @@ PILOT: list[Guard] = [
         blocking=True,
     ),
     Guard(
+        # #18911 sweep : la PR ne doit pas introduire de nouvelle violation
+        # STALE_LINK (README pointant un .ipynb alors qu'un .html sibling
+        # est servi sur Pages). Bright lines documentees dans
+        # scripts/regen_quarto_render.py :readme_link_violations.
+        # Le workflow dedie (readme-ipynb-links-guard.yml) fait la delta ; ici
+        # on enchaine l'audit baseline-first pour ne pas re-cloner.
+        name="readme-ipynb-links-guard",
+        source="readme-ipynb-links-guard.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/README.md",
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "_quarto.yml",
+            "scripts/regen_quarto_render.py",
+            "scripts/notebook_tools/fix_ipynb_links.py",
+            ".github/workflows/readme-ipynb-links-guard.yml",
+        ],
+        argv=["python", "scripts/regen_quarto_render.py",
+              "--check-readme-links"],
+        blocking=True,
+    ),
+    Guard(
         name="self-hosted-runner-policy",
         source="fast-lane-shadow.yml",
         paths=[

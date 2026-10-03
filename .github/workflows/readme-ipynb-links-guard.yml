@@ -1,0 +1,98 @@
+name: readme-ipynb-links-guard
+
+# Durable guard for the #13025 / #18911 defect class: README files in rendered
+# subtrees (those that participate in the Quarto build per `scripts/regen_quarto_render.py`)
+# linking raw `.ipynb` paths when a sibling `.html` render exists. The raw link
+# 404s on the GitHub Pages deployment, while the sibling render is served there.
+#
+# Detection reuses `scripts/regen_quarto_render.py --check-readme-links` :
+# the file already enumerates the violations in three classes (STALE_LINK,
+# BROKEN, DEAD_RENDER) and documents the bright lines. This workflow fails
+# the PR if any STALE_LINK is introduced -- new violations are never allowed,
+# and the merge-gate does not see the legacy backlog (2428 violations already
+# committed, see #18911 -- they are sweep material for follow-up PRs).
+#
+# Scope: main-repo READMEs and the `regen_quarto_render.py` + new fixer only.
+# Submodules are separate repos with their own CI.
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'MyIA.AI.Notebooks/**/README.md'
+      - 'MyIA.AI.Notebooks/**/*.ipynb'
+      - '_quarto.yml'
+      - 'scripts/regen_quarto_render.py'
+      - 'scripts/notebook_tools/fix_ipynb_links.py'
+      - 'scripts/notebook_tools/tests/test_fix_ipynb_links.py'
+      - '.github/workflows/readme-ipynb-links-guard.yml'
+  push:
+    branches: [ main ]
+    paths:
+      - 'MyIA.AI.Notebooks/**/README.md'
+      - 'MyIA.AI.Notebooks/**/*.ipynb'
+      - '_quarto.yml'
+      - 'scripts/regen_quarto_render.py'
+      - 'scripts/notebook_tools/fix_ipynb_links.py'
+  workflow_dispatch:
+
+# Annule les runs obsolètes (memes PR / push en rafale)
+concurrency:
+  group: readme-ipynb-links-guard-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check:
+    name: Audit README -> .ipynb links
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # `regen_quarto_render.py` lit la render-list et les READMEs git-tracked :
+      # ne depend que du repo, aucun service externe.
+      - name: Detect STALE_LINK (raw .ipynb links vs .html renders)
+        run: python scripts/regen_quarto_render.py --check-readme-links
+
+      - name: Compute delta (new STALE_LINK on this PR vs main)
+        # La regle #18911 : la PR ne peut PAS ajouter de nouvelle violation STALE_LINK.
+        # On charge le SHA de base (main) et on compare les sorties des deux arbres.
+        # La PR introduit une nouvelle violation = exit 1.
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          # Sortie de la PR (head)
+          python scripts/regen_quarto_render.py --check-readme-links \
+            | grep -E '^::error::STALE_LINK ' \
+            | sort -u > /tmp/pr_violations.txt || true
+          # Sortie de la base (main)
+          git checkout "${BASE_SHA}" -- MyIA.AI.Notebooks scripts/regen_quarto_render.py _quarto.yml 2>/dev/null || true
+          python scripts/regen_quarto_render.py --check-readme-links \
+            | grep -E '^::error::STALE_LINK ' \
+            | sort -u > /tmp/base_violations.txt || true
+          # Retour au working tree PR
+          git checkout HEAD -- MyIA.AI.Notebooks scripts/regen_quarto_render.py _quarto.yml 2>/dev/null || true
+          # Delta = PR \ base
+          comm -23 /tmp/pr_violations.txt /tmp/base_violations.txt > /tmp/delta_violations.txt
+          NEW=$(wc -l < /tmp/delta_violations.txt | tr -d ' ')
+          echo "PR introduced ${NEW} new STALE_LINK(s) (vs ${BASE_SHA:-base})"
+          if [ "${NEW}" -gt 0 ]; then
+            echo "::error::Nouvelle violation STALE_LINK sur cette PR (defaut $)"
+            cat /tmp/delta_violations.txt
+            exit 1
+          fi
+          echo "Aucune nouvelle violation STALE_LINK sur cette PR."
+
+      - name: Smoke test the new fixer (#18911)
+        # Verifie que `fix_ipynb_links.py` reste fonctionnel -- c'est l'outil
+        # canonique qui sera utilise pour les vagues de sweep en aval.
+        run: |
+          python -m pytest scripts/notebook_tools/tests/test_fix_ipynb_links.py -v
