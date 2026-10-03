@@ -270,6 +270,7 @@ def _has_delivered_marker(issue_number: int) -> bool | None:
 # le compteur par issue ne peut pas porter. Voir scripts/series_saturation.py
 # pour le diagnostic complet (EPIC decoupe en 9 filles = 9 veines invisibles).
 from series_saturation import (  # noqa: E402
+    BELT_WINDOW_DAYS,
     CONSOLIDATION,
     DEFAULT_WINDOW_DAYS,
     DELIVERY_DELIVERED,
@@ -1728,8 +1729,27 @@ def draw(items: list[dict], n: int, rng: random.Random,
     return picked
 
 
-def _summarize_claim(out: str, returncode: int) -> str:
-    """Reduit la sortie de ``check_lane_claim.py`` a un verdict d'une ligne.
+# Codes machine du verdict de claim (utilises par le tapis roulant belt).
+# Le tapis ne s'appuie QUE sur ces 4 chaines ; tout autre verdict tombe dans
+# la categorie par defaut ``UNCHECKED`` et declenche une verification au fil
+# de l'eau. La phrase humaine reste jointe pour affichage / log.
+CLAIM_CODE_FREE = "FREE"
+CLAIM_CODE_FREE_STALE = "FREE_STALE"
+CLAIM_CODE_OWNED_BY_ME = "OWNED_BY_ME"
+CLAIM_CODE_BLOCKED = "BLOCKED"
+CLAIM_CODE_UNCHECKED = "UNCHECKED"
+CLAIM_CODE_ERROR = "ERROR"
+
+
+def _summarize_claim(out: str, returncode: int) -> tuple[str, str]:
+    """Reduit la sortie de ``check_lane_claim.py`` a un verdict (code, humain).
+
+    Retourne un tuple ``(code, human)`` :
+    - ``code`` ∈ {FREE, FREE_STALE, OWNED_BY_ME, BLOCKED, UNCHECKED, ERROR}
+      est consommable par machine (le tapis roulant belt l'utilise pour
+      decider de servir ou retenir -- le motif de TEST du 6e point
+      CHANGES_REQUESTED #18836, post-c.56).
+    - ``human`` est la phrase lisible prete a etre affichee.
 
     La sortie melange une phrase humaine (uniquement quand c'est bloque) puis
     un objet JSON. Prendre la premiere ligne telle quelle affichait ``{`` des
@@ -1748,17 +1768,18 @@ def _summarize_claim(out: str, returncode: int) -> str:
         if isinstance(data, dict):
             blocking = data.get("blocking_lanes") or []
             if blocking:
-                return "BLOQUE par " + ", ".join(blocking)
+                return CLAIM_CODE_BLOCKED, "BLOQUE par " + ", ".join(blocking)
             if data.get("my_active_claim"):
-                return "deja claim par cette lane"
+                return CLAIM_CODE_OWNED_BY_ME, "deja claim par cette lane"
             stale = data.get("stale_claims") or []
             if stale:
-                return f"libre (claim perime : {', '.join(map(str, stale))})"
-            return "libre"
+                return (CLAIM_CODE_FREE_STALE,
+                        f"libre (claim perime : {', '.join(map(str, stale))})")
+            return CLAIM_CODE_FREE, "libre"
     first = out.strip().splitlines()
     if first:
-        return first[0][:60]
-    return f"exit={returncode}"
+        return CLAIM_CODE_ERROR, first[0][:60]
+    return CLAIM_CODE_ERROR, f"exit={returncode}"
 
 
 def _utf8_child_env() -> dict:
@@ -1783,8 +1804,12 @@ def _utf8_child_env() -> dict:
     return {**os.environ, "PYTHONIOENCODING": "utf-8"}
 
 
-def check_claims(numbers: list[int], lane: str) -> dict[int, str]:
+def check_claims(numbers: list[int], lane: str) -> dict[int, tuple[str, str]]:
     """Verif claims sur les seuls candidats tires (N appels, pas 140).
+
+    Retourne ``{n: (code, human)}`` ou ``code`` ∈ {FREE, FREE_STALE,
+    OWNED_BY_ME, BLOCKED, ERROR} est consommable par machine, et ``human``
+    est la phrase lisible prete a etre affichee.
 
     ``--lane`` est **requis** par ``check_lane_claim.py`` : sans lui, l'appel
     sort en erreur d'usage et chaque candidat affichait ``usage: ...`` a la
@@ -1802,7 +1827,8 @@ def check_claims(numbers: list[int], lane: str) -> dict[int, str]:
             verdicts[n] = _summarize_claim(r.stdout or r.stderr or "",
                                            r.returncode)
         except Exception as exc:  # noqa: BLE001 - diagnostic best-effort
-            verdicts[n] = f"(check indisponible: {type(exc).__name__})"
+            verdicts[n] = (CLAIM_CODE_ERROR,
+                           f"(check indisponible: {type(exc).__name__})")
     return verdicts
 
 
@@ -1905,9 +1931,10 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
                 pool = [it for it in pool
                         if it["number"] not in drawn]
                 for c in cand:
-                    v = verdicts.get(c["number"], "")
-                    if v.startswith("BLOQUE par"):
-                        conflicts.append((c, "CLAIM : " + v + (
+                    v_code, v_human = verdicts.get(c["number"],
+                                                   (CLAIM_CODE_ERROR, ""))
+                    if v_code == CLAIM_CODE_BLOCKED:
+                        conflicts.append((c, "CLAIM : " + v_human + (
                             ". Une autre lane tient ce grain -- ecrire dessus "
                             "produirait la collision, pas le livrable. Candidat "
                             "remplace dans la meme urne.")))
@@ -3843,6 +3870,165 @@ def upsert_orphans_comment(number: int, body: str) -> None:
             check=True, timeout=60)
 
 
+# #18832 (mandat user 02/10) : tapis roulant -- la file des issues ouvertes
+# triee par derniere livraison, la plus ancienne en tete. Pas de loterie, pas
+# de ponderation. La derniere livraison est la date de fusion de la PR
+# mergée la plus recente qui cite l'issue. Une issue jamais servie prend
+# la valeur `None`, classee AVANT les dates -- c'est elle qui ouvre la file,
+# pas une date arbitraire. A egalite de date, `created_at` croissant puis
+# `number` croissant -- deterministe a l'execution par le seul input.
+#
+# Les autres gardes (rouge, WIP, secheresse de substance) restent en amont
+# du tapis : ils produisent LEUR sortie (la file de reparation), pas un
+# silence. Le tapis prend la releve quand la voie ponderee rendrait vide
+# ou biaise vers le recent. Les filtres actifs (exclusions, urnes) restent
+# appliques, et les issues tenues par une autre lane sont sautees comme
+# dans la voie normale -- aucun court-circuit de ce contrat.
+def belt_sort_key(it: dict) -> tuple:
+    """Cle de tri deterministe pour le tapis roulant.
+
+    Spec #18832 : **une seule ligne de temps** -- derniere PR mergee citant
+    l'issue, sinon date de creation, sinon NOW. La plus ancienne en tete.
+    Une sous-issue tout juste creee repart en queue, pas en tete.
+
+    Tri : (stamp ISO asc, numero asc).
+    """
+    stamp = it.get("last_delivery_stamp") or it.get("created_at") or NOW.isoformat()
+    return (stamp, it.get("number", 0))
+
+
+def belt_filter(
+    admitted: list[dict],
+    args,
+) -> list[dict]:
+    """Filtre le pool admissible pour le mode --belt.
+
+    Meme jeu de filtres que la voie ponderee (exclusions, labels, bornes,
+    urnes), sauf l'admissibilite par DWELL/zone -- le tapis ne refuse
+    JAMAIS, par contrat (cf issue #18832). Les bornes du tapis sont
+    uniquement celles que le caller passe en CLI.
+    """
+    excluded_issues_set = {int(v) for v in _csv_values(args.exclude_issue)}
+    required_labels_set = set(_csv_values(args.require_label))
+    excluded_labels_set = set(_csv_values(args.exclude_label))
+    selected_urns_set = {v.casefold() for v in _csv_values([args.urns])}
+
+    def _keep(item: dict) -> bool:
+        n = item["number"]
+        if n in excluded_issues_set:
+            return False
+        labels = set(item.get("labels") or [])
+        if required_labels_set and not required_labels_set.issubset(labels):
+            return False
+        if excluded_labels_set and excluded_labels_set.intersection(labels):
+            return False
+        if args.min_age_days and item.get("age", 0) < args.min_age_days:
+            return False
+        if args.max_age_days is not None and item.get("age", 0) > args.max_age_days:
+            return False
+        if args.min_idle_days and item.get("idle", 0) < args.min_idle_days:
+            return False
+        if args.max_idle_days is not None and item.get("idle", 0) > args.max_idle_days:
+            return False
+        urn = item.get("klass") or "grain"
+        if urn not in selected_urns_set:
+            return False
+        return True
+
+    return [it for it in admitted if _keep(it)]
+
+
+def draw_belt(
+    admitted: list[dict],
+    args,
+) -> list[dict]:
+    """Mode --belt : trie le pool admissible et tire `args.grains` candidats.
+
+    Cout : 0 requete `gh` supplementaire. Les dates de derniere livraison
+    sont deja patchees sur les items (`last_delivery_stamp`) par la phase
+    du fetch_pool. Le tri est en memoire, O(N log N) sur N <= ~1k.
+
+    Applique dans l'ordre :
+    1. exclusions explicites (`args.exclude_issue`)
+    2. labels requis / exclus
+    3. bornes d'age / idle
+    4. urnes (memes que la voie ponderee)
+
+    Les claims tenes par une autre lane ne sont pas elimines ici -- c'est
+    le caller (`main`) qui les passe par `check_claims` sur la fenetre et
+    retire les tenus. La fonction double : le modele du tapis roulant est
+    deterministe, et le check de claims doit toujours regarder le reel,
+    jamais d'abord un re-cache local.
+
+    La file ne refuse JAMAIS (cf issue #18832) : le tapis prend la releve
+    quand la voie ponderee rendrait vide ou biaise vers le recent. Un DWELL
+    ou un avis de zone ne vide pas la sortie : il figure en rappel dans la
+    banniere texte, pas dans le predicat de selection.
+    """
+    filtered = belt_filter(admitted, args)
+    filtered.sort(key=belt_sort_key)
+    return filtered[:args.grains]
+
+
+def belt_report_metrics(
+    pool: list[dict],
+    closed_7d: int | None,
+) -> tuple[float | None, int | None, int]:
+    """Mode --belt --report : deux nombres, point.
+
+    1. `min_gap_days` : ecart (en jours) depuis la visite la MOINS recente
+       parmi les issues ouvertes -- jamais-servies incluses a leur date de
+       creation. La spec #18832 demande **une seule ligne de temps** :
+       derniere PR mergee qui cite l'issue, sinon date de creation. C'est
+       le MIN, pas le max (le max valait la livraison la plus fraiche,
+       d'ou `0.0 j` dans le body initial, ce qui ne dit rien).
+       `None` si le pool est vide.
+    2. `closed_7d` : nombre d'issues fermees sur 7 j (compteur externe,
+       fourni par le caller -- `last_delivery_per_issue` ne lit que les
+       merges cites).
+
+    Rend le triplet `(min_gap_days, closed_7d, sample_size)`. Le rendu
+    console vit dans `print_belt_report`.
+    """
+    if not pool:
+        return None, closed_7d, 0
+    candidate_stamps: list[dt.datetime] = []
+    for it in pool:
+        stamp = it.get("last_delivery_stamp")
+        if stamp:
+            candidate_stamps.append(
+                dt.datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+            )
+            continue
+        # Jamais servie : la date de creation tient lieu de derniere visite.
+        created = it.get("created_at")
+        if created:
+            candidate_stamps.append(
+                dt.datetime.fromisoformat(created.replace("Z", "+00:00"))
+            )
+    if not candidate_stamps:
+        return None, closed_7d, len(pool)
+    # La spec demande la visite la moins recente = MIN.
+    min_stamp = min(candidate_stamps)
+    min_gap_days = round((NOW - min_stamp).total_seconds() / 86400.0, 2)
+    return min_gap_days, closed_7d, len(pool)
+
+
+def print_belt_report(metrics: tuple[float | None, int | None, int]) -> None:
+    """Sortie texte de `--belt --report` (cf #18832 acceptance)."""
+    min_gap, closed_7d, sample = metrics
+    print(f"belt --report : ecart_min_depuis_derniere_visite = "
+          f"{min_gap} j (sur {sample} issues avec livraison)")
+    # `closed_7d` peut etre None (non mesure) : on imprime alors "non mesure"
+    # au lieu d'inventer un 0 par `or 0` -- un compteur absent ne vaut pas
+    # un compteur nul, cf le deuxieme des deux nombres demandes par #18832.
+    if closed_7d is None:
+        closed_str = "non mesure (compteur externe a fournir)"
+    else:
+        closed_str = str(closed_7d)
+    print(f"belt --report : issues fermees sur 7 j = {closed_str}")
+
+
 def print_red_assignment(lane: str, backlog: dict, threshold_hours: float) -> None:
     red = backlog["red"]
     triggers = backlog.get("triggers") or []
@@ -4573,6 +4759,18 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--umbrellas", type=int, default=2, help="candidats urne 'umbrella' (defaut 2)")
     ap.add_argument("--delivered", type=int, default=2, help="candidats urne 'delivered' (defaut 2)")
     ap.add_argument("--reroll", type=int, default=0, help="decale la graine pour un nouveau tirage")
+    ap.add_argument("--belt", action="store_true",
+                    help="#18832 mode 'tapis roulant' : trie le pool ouvert "
+                         "par date de derniere livraison (None = jamais servie en "
+                         "tete, sinon ISO ascending), puis par createdAt puis par "
+                         "numero. Pas de ponderation, pas d'urne. Les gardes "
+                         "(rouge, WIP, secheresse) restent en tete et rende la "
+                         "file comme rappel, jamais comme motif de vide.")
+    ap.add_argument("--report", action="store_true",
+                    help="avec --belt : affiche deux nombres - ecart maximal (en "
+                         "jours) depuis la derniere visite sur les issues "
+                         "ouvertes, et nombre d'issues fermees sur 7 j. Mode "
+                         "rapport, pas de tirage.")
     ap.add_argument("--no-check-claims", dest="check_claims",
                     action="store_false",
                     help="ne pas verifier les claims sur les tires "
@@ -4682,6 +4880,8 @@ def main(argv: list[str] | None = None) -> int:
         ap.error("--wip-cap doit etre positif ou nul (0 desactive le garde)")
     if not args.lane and not args.orphans_report and args.admissible is None:
         ap.error("--lane est requis (--orphans-report et --admissible s'en dispensent)")
+    if args.report and not args.belt:
+        ap.error("--report n'a de sens qu'avec --belt (mode rapport du tapis roulant)")
     for low_name, high_name in (
         ("min_age_days", "max_age_days"),
         ("min_idle_days", "max_idle_days"),
@@ -4857,26 +5057,35 @@ def main(argv: list[str] | None = None) -> int:
         # forme precedente ("REFUS DE TIRAGE", sortie 2, aucun candidat) rendait
         # un travail nomme sous l'apparence d'un vide, et se declenchait
         # d'autant plus souvent que la lane etait active.
-        if args.json:
-            # Rouge et WIP se composent : le grain reste le premier rouge
-            # quand les deux declenchent (la reparation est la sequence la
-            # plus urgente), sinon c'est la PR la plus ancienne de la file
-            # WIP -- dans les deux cas le consommateur machine lit un grain
-            # et un nom de travail, pas un motif de refus.
-            assignment = None
-            grain = None
-            if red_hit:
-                assignment = "reparer-son-rouge"
-                grain = (backlog.get("red") or [None])[0]
-            if wip_hit:
-                assignment = ((assignment + "+") if assignment else "") + "drainer-son-wip"
-                grain = grain or (backlog.get("wip_prs") or [None])[0]
+        # Mode --belt (#18832) : on n'imprime PAS le rappel rouge/wip en
+        # standalone -- il sera fusionne dans l'objet JSON du tapis (cle
+        # `repair`) pour rendre UN SEUL document. Cf #18866 point 2.
+        assignment = None
+        grain = None
+        if red_hit:
+            assignment = "reparer-son-rouge"
+            grain = (backlog.get("red") or [None])[0]
+        if wip_hit:
+            assignment = ((assignment + "+") if assignment else "") + "drainer-son-wip"
+            grain = grain or (backlog.get("wip_prs") or [None])[0]
+        if args.belt and args.json:
+            # Conserve pour fusion dans la sortie tapis plus bas.
+            repair_payload = {
+                "assignment": assignment or "drainer-son-wip",
+                "grain": grain,
+                "red_hours": args.red_hours,
+                **backlog,
+            }
+        elif args.json:
+            # Mode nominal hors --belt : impression standalone du garde
+            # rouge/WIP, puis fin de la commande.
             print(json.dumps({"lane": args.lane, "mode": "repair",
                               "assignment": assignment or "drainer-son-wip",
                               "grain": grain,
                               "red_hours": args.red_hours,
                               "lane_record": lane_record, **backlog},
                              ensure_ascii=False, indent=2))
+            return 0
         else:
             if red_hit:
                 print_red_assignment(args.lane, backlog, args.red_hours)
@@ -4887,7 +5096,17 @@ def main(argv: list[str] | None = None) -> int:
             # Apres l'assignation : l'en-tete "FILE DE REPARATION" doit rester
             # la premiere ligne lue (test pinne), l'ardoise vient en rappel.
             print_lane_record(lane_record)
-        return 0
+            if not args.belt:
+                return 0
+        # #18832 spec : "les gardes restent en amont du tapis et produisent
+        # LEUR sortie, jamais un silence". Mais le tapis ne refuse JAMAIS :
+        # une lane avec un rouge doit quand meme recevoir la tete du tapis,
+        # et la sortie ne doit jamais etre sans grain (cf CHANGES_REQUESTED
+        # coordinateur, review 5391008313, point 4). On ne return PAS ici en
+        # mode --belt : on imprime le rappel rouge, puis on enchaîne sur le
+        # tapis qui produit ses grains.
+        # Mode --belt : on continue pour tirer la tete du tapis en plus du
+        # rappel rouge/wip deja imprime. La sortie reste sans aucun vide.
     if not args.json:
         print_nits_gap(backlog)
         print_base_inherited(backlog)
@@ -4943,16 +5162,23 @@ def main(argv: list[str] | None = None) -> int:
     # fetch repasse par le meme payload cache que fetch_series_visits : hit,
     # pas de requete gh supplementaire. Fenetre identique a celle de la
     # saturation, pour que les deux mesures se lisent ensemble.
+    # Mode --belt (#18832, #18866) : la fenetre par defaut (14 j) oublie les
+    # livraisons au-dela, et `belt_sort_key` reclasse alors l'issue a sa
+    # date de creation. On bascule sur `BELT_WINDOW_DAYS` (90 j), qui couvre
+    # un tour complet de la file au regime lent (10-20 grains/jour). La cle
+    # de cache integre `days` (cf fetch_merged identity), donc le payload
+    # 14 j et 90 j ne se chevauchent pas.
+    delivery_window_days = BELT_WINDOW_DAYS if args.belt else DEFAULT_WINDOW_DAYS
     umbrella_numbers = [it["number"] for it in pool if it["klass"] == "umbrella"]
     delivery_prs, delivery_fetch_err = fetch_merged(
-        DEFAULT_WINDOW_DAYS,
+        delivery_window_days,
         cache=payload_cache,
         cache_mode=effective_cache_mode,
         cache_status=cache_status,
         cache_ttl_seconds=SERIES_CACHE_TTL_SECONDS,
     )
     delivery_sig = measure_delivery(
-        delivery_prs, umbrella_numbers, now=NOW, days=DEFAULT_WINDOW_DAYS,
+        delivery_prs, umbrella_numbers, now=NOW, days=delivery_window_days,
         fetch_error=delivery_fetch_err)
     delivery_weights = {
         num: delivery_factor(item["state"], item["age_days"],
@@ -5027,6 +5253,154 @@ def main(argv: list[str] | None = None) -> int:
         "max_idle_days": args.max_idle_days,
         "urns": sorted(selected_urns),
     }
+
+    # Mode --belt (cf #18832) : court-circuit avant la voie ponderee. Le tapis
+    # roulant prend la releve quand la voie ponderee rendrait vide ou
+    # biaise. Les filtres actifs (memes cles que `filter_active`) sont
+    # appliques par `belt_filter` ; les bornes du tapis sont
+    # strictement celles passees en CLI.
+    if args.belt:
+        # Mode rapport : deux nombres, pas de tirage.
+        if args.report:
+            metrics = belt_report_metrics(pool, closed_7d=None)
+            print_belt_report(metrics)
+            return 0
+        belt_pool = belt_filter(admitted, args)
+        belt_pool.sort(key=belt_sort_key)
+        # Verification des claims tenes par une autre lane : on regarde
+        # plus large que `args.grains` pour tolerer un remplacement si
+        # la tete de file est tenue. Cout borne : au plus `grains + 4`
+        # requetes `gh`. _summarize_claim rend un tuple (code, human) ; le
+        # tapis ne regarde QUE le code machine (cf CHANGES_REQUESTED #18836
+        # point 6 -- le verbe "CLEAR" humain est reserve a l'affichage).
+        belt_check_window = max(args.grains + 4, 8)
+        belt_check_window = min(belt_check_window, len(belt_pool))
+        belt_check_nums = [it["number"] for it in belt_pool[:belt_check_window]]
+        belt_claims = check_claims(belt_check_nums, args.lane)
+        belt_picks: list[dict] = []
+        belt_withheld: list[tuple[dict, str]] = []
+        # Garde-fou : on n'itère pas plus loin que la fenetre + un certain
+        # quota au cas ou le pool est entierement BLOQUE. Sans plafond, un
+        # tapis sans service appellerait `check_claims` indefiniment.
+        # max_iters = min(grains * 5 + 50, len(belt_pool)) borne l'explosion.
+        max_iters = min(args.grains * 5 + 50, len(belt_pool))
+        # ``checked`` accumule les numeros qui ont deja fait l'objet d'un
+        # appel ``gh`` pour eviter les repetitions au fil de l'eau.
+        checked: set[int] = set(belt_check_nums)
+        for i, it in enumerate(belt_pool):
+            if i >= max_iters:
+                break
+            if len(belt_picks) >= args.grains:
+                break
+            n = it["number"]
+            if n in belt_claims:
+                code, human = belt_claims[n]
+            else:
+                # Verification au fil de l'eau : on n'a pas regarde plus
+                # loin que `belt_check_window` initialement ; un item hors
+                # fenetre qui n'est pas dans `belt_claims` doit etre verifie
+                # ICI, sinon le tapis le sert sans l'avoir jamais teste -- le
+                # bug fondateur du 6e CHANGES_REQUESTED.
+                extra = check_claims([n], args.lane)
+                code, human = extra.get(n, (CLAIM_CODE_ERROR, "(no check)"))
+                belt_claims[n] = (code, human)
+                checked.add(n)
+            if code == CLAIM_CODE_BLOCKED:
+                belt_withheld.append((it, human))
+            else:
+                # FREE, FREE_STALE, OWNED_BY_ME, ERROR -- servable.
+                # ERROR (check indisponible, parse rate...) est servable par
+                # defaut : on ne peut pas refuser un grain faute d'avoir pu
+                # verifier son claim, ce serait introduire un faux BLOQUE.
+                belt_picks.append(it)
+        # Banniere legere : le tapis ne refuse jamais, mais rappelle
+        # les DWELL/zone pour le lecteur (information sans journal).
+        if not args.json:
+            print(f"#18832 mode tapis roulant -- "
+                  f"pool trie par derniere visite, la plus ancienne en tite.")
+            print(f"   file complete : {len(belt_pool)} issues ; "
+                  f"picks : {len(belt_picks)}.")
+            if belt_withheld:
+                held = ", ".join(f"#{it['number']} ({c})" for it, c in belt_withheld[:5])
+                print(f"   BLOQUE par une autre lane (skip + replacement) : {held}")
+            # #18832 spec : la fenetre collision entre tirage et pose du
+            # [CLAIMED] reste ouverte tant que la lane n'a pas poste le
+            # claim. On rappelle ici que la lane doit poser le claim
+            # AVANT toute autre action sur la tete du tapis -- sinon deux
+            # lanes peuvent croire leur chacune leur copie de la meme issue.
+            # Le picker n'a pas de flag --dry-run ; la fenetre collision
+            # reste ouverte par construction et la lane DOIT poser le
+            # claim avant edition (cf lane-claim-protocol.md regle 1).
+            if belt_picks:
+                top = belt_picks[0]
+                print(f"   ACTION REQUISE : poser [CLAIMED] lane {args.lane} sur "
+                      f"#{top['number']} avant edition -- cf lane-claim-protocol.")
+            print()
+        if args.json:
+            # Surface JSON compatible avec la volee ponderee : `picks`,
+            # `claims`, `withheld` -- les consommateurs existants
+            # (`continue` skill, dashboards) ne lisent pas d'autres champs.
+            # ``claims`` rend maintenant un objet ``{code, human}`` par item
+            # servi : le code machine est ce que le tapis a tranche, le
+            # human reste lisible. Cf CHANGES_REQUESTED #18836 point 6.
+            out_belt = {
+                "mode": "belt",
+                "lane": args.lane,
+                "pool_initial": len(admitted),
+                "belt_pool_size": len(belt_pool),
+                "filter_active": filter_active,
+                "picks": belt_picks,
+                "claims": {str(it["number"]): {
+                    "code": (belt_claims.get(it["number"],
+                                              (CLAIM_CODE_ERROR, "(no check)"))[0]),
+                    "human": (belt_claims.get(it["number"],
+                                               (CLAIM_CODE_ERROR, "(no check)"))[1]),
+                } for it in belt_picks},
+                "withheld": [{"number": it["number"], "title": it["title"],
+                              "cause": c} for it, c in belt_withheld],
+                "last_delivery_window_days": delivery_window_days,
+                "substance_drought": {"triggered": False, "measured": False,
+                                      "run": 0, "mode": "belt-bypassed"},
+                "lane_record": lane_record,
+                "cache": cache_status,
+            }
+            # #18866 point 2 : la sortie --json rend UN document. Si le
+            # garde rouge/WIP s'est declenche, sa charge utile est fusionnee
+            # sous la cle `repair` (memes champs que le document standalone
+            # du mode non-belt). Sinon la cle est None, ce qui dit au
+            # consommateur que la lane n'a pas de reparation a faire.
+            if "repair_payload" in locals():
+                out_belt["repair"] = repair_payload
+            else:
+                out_belt["repair"] = None
+            print(json.dumps(out_belt, ensure_ascii=False, indent=2))
+        else:
+            # Sortie texte : un tableau compact, aligne sur la volee
+            # ponderee. Meme format de colonnes : urn, age, inact, vus,
+            # genre, p, titre.
+            header = (f"{'urne':<10} {'age':>4} {'inact':>5} {'vus':>4} "
+                      f"{'genre':<14} {'p':>5}  titre")
+            print(header)
+            print("-" * len(header))
+            for it in belt_picks:
+                urn = it.get("klass", "grain")
+                age = int(it.get("age", 0))
+                inact = int(it.get("idle", 0))
+                vus = visits.get(it["number"], 0)
+                genre = it.get("genre", "")
+                stamp = it.get("last_delivery_stamp")
+                # Le titre est precede du marqueur "jamais servie" quand
+                # `last_delivery_stamp` est None : c'est lui que la file
+                # remonte en tete, il merite un signe visible.
+                marker = "[NEVER] " if stamp is None else ""
+                title = it.get("title", "")[:60]
+                print(f"{urn:<10} {age:>4}j {inact:>5}j {vus:>4} "
+                      f"{genre:<14} {'-':>5}  {marker}{title}")
+            print()
+            print("Belt : pool trie par date de derniere livraison (None = "
+                  "jamais servie, classe en tete). Deterministe, sans "
+                  "ponderation.")
+        return 0
     filtered, filter_funnel = filter_candidates_with_continuity(
         admitted,
         exclude_issues=excluded_issues,
@@ -5162,7 +5536,8 @@ def main(argv: list[str] | None = None) -> int:
             "lane": args.lane, "seed_src": seed_src,
             "session_genres_penalized": list(args.prev_genre),
             "pool": {k: len(v) for k, v in by_class.items()},
-            "picks": picks, "claims": {str(k): v for k, v in claims.items()},
+            "picks": picks, "claims": {str(k): {"code": code, "human": human}
+                                  for k, (code, human) in claims.items()},
             "withheld": [{"number": it["number"], "title": it["title"],
                           "cause": c} for it, c in withheld],
             "dwell_hours": args.dwell_hours,
@@ -5353,7 +5728,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"{p['klass']:<10} #{p['number']:<7} {p['age']:>4}j {p['idle']:>5}j {vus:>4}  "
               f"{p['genre']:<15}{mark} {p['weight']:>5}  {p['title'][:62]}")
         if p["number"] in claims:
-            print(f"{'':>10} {'':>8} {'':>5} {'':>6} {'':>4}  claim: {claims[p['number']]}")
+            _code, _human = claims[p["number"]]
+            print(f"{'':>10} {'':>8} {'':>5} {'':>6} {'':>4}  claim: {_code} ({_human})")
         if p["number"] in delivery:
             note = delivery[p["number"]]
             head, sep, tail = note.partition("-> ")

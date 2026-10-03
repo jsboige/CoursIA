@@ -1248,7 +1248,7 @@ class TestCorpusScope:
         """
         for stem, expect in [
             ("Lean-01-Setup-Lean-Python", "setup"),
-            ("Sudoku-00-Environment-Csharp", "setup"),
+            ("Sudoku-00-Environment-CSharp", "setup"),
             ("SC-01-Setup-Foundry-Python", "setup"),
             ("Argument_Analysis_Agentic-0-init_agent", "setup"),
             ("Lean-03-Propositions-Proofs-Lean", "lean"),
@@ -1469,8 +1469,8 @@ class TestPathFormInvariance:
         root = tmp_path / "nb_root"
         family = root / "Sudoku"
         family.mkdir(parents=True)
-        _write_nb(family / "Sudoku-01-Backtracking-Csharp.ipynb", [])
-        _write_nb(family / "Sudoku-00-Environment-Csharp.ipynb", [])
+        _write_nb(family / "Sudoku-01-Backtracking-CSharp.ipynb", [])
+        _write_nb(family / "Sudoku-00-Environment-CSharp.ipynb", [])
         _write_nb(root / "GradeBook.ipynb", [])  # the only TRUE top-of-tree file
         monkeypatch.setattr(count_exercises, "NOTEBOOKS_DIR", root)
 
@@ -1478,11 +1478,11 @@ class TestPathFormInvariance:
         # are NOT top-of-tree (GradeBook is). On buggy code both returned
         # ("tooling", None) and corpus_scope(family) yielded an empty list.
         assert _classify(
-            family / "Sudoku-01-Backtracking-Csharp.ipynb",
+            family / "Sudoku-01-Backtracking-CSharp.ipynb",
             standard_threshold=3, root=family,
         ) == ("standard", 3)
         assert _classify(
-            family / "Sudoku-00-Environment-Csharp.ipynb",
+            family / "Sudoku-00-Environment-CSharp.ipynb",
             standard_threshold=3, root=family,
         ) == ("setup", 0)
         corpus, removed = corpus_scope(family)

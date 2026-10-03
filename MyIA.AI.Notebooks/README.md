@@ -10,9 +10,9 @@ Le catalogue rassemble **plusieurs centaines de notebooks pédagogiques** répar
 
 <!-- CATALOG-STATUS
 series: ALL
-total: 1312
-breakdown: SymbolicAI=307, GenAI=247, Search=155, ML=120, QuantConnect=115, GameTheory=109, IIT=90, Probas=74, Sudoku=38, RL=36, Complexity=9, CaseStudies=6, NLP=5, cross-series=1
-maturity: BETA=1160, DRAFT=84, ALPHA=64, TEMPLATE=4
+total: 1340
+breakdown: SymbolicAI=312, GenAI=257, Search=156, ML=126, QuantConnect=115, GameTheory=109, IIT=93, Probas=76, Sudoku=38, RL=36, Complexity=9, CaseStudies=6, NLP=5, Compression=1, cross-series=1
+maturity: BETA=1179, DRAFT=89, ALPHA=68, TEMPLATE=4
 -->
 
 <sub>*Marqueur auto-régénéré quotidiennement par `.github/workflows/catalog-cron.yml` (file [`COURSE_CATALOG.generated.md`](../COURSE_CATALOG.generated.md) — source de vérité sur les volumes et la maturité). Toute PR qui modifierait ce bloc est signalée par `catalog-drift.yml` (read-only, catalog-pr-hygiene R1).*</sub>
@@ -90,8 +90,7 @@ Search
 Probas
 ├── Infer/ - notebooks Infer.NET (graphes de facteurs, C#)
 ├── PyMC/ - notebooks PyMC (MCMC, Python) — miroir Infer
-├── DecisionTheory/ - Arc décision DecInfer 1-10 (vNM, Gittins, Thompson) + Causal-Bridges (do(·) Pearl cross-paradigmes)
-└── decision_theory_lean/ - Axiomes VNM + Gittins (Lean 4)
+└── DecisionTheory/ - Arc décision DecInfer 1-10 (vNM, Gittins, Thompson) + Causal-Bridges (do(·) Pearl cross-paradigmes) + lake decision_theory_lean (axiomes VNM + Gittins)
 
 Sudoku
 └── (à plat) - 19 problèmes × N méthodes : Backtracking → CNN/LLM
@@ -104,7 +103,7 @@ Complexity
 GameTheory
 ├── (à plat) - Nash, Minimax, Coopétition, MARL, Mechanism Design
 ├── SocialChoice/ - Arrow, Sen, Condorcet (Lean 4)
-└── *_lean/ + lean_game_defs(_ext)/ - 8 lakes (game_theory_lean [Arrow, Shapley, Stable Marriage], conway_cgt_lean, minimax_lean, repeated_games_lean, social_choice_lean, social_choice_lean_peters [lake de référence externe], lean_game_defs, lean_game_defs_ext — ces deux derniers en `lakefile.toml`, pas `.lean`)
+└── *_lean/ + lean_game_defs(_ext)/ - 9 lakes (game_theory_lean [Arrow, Shapley, Stable Marriage], conway_cgt_lean, minimax_lean, assignment_lean, asymmetric_information_lean, social_choice_lean, social_choice_lean_peters [lake de référence externe], lean_game_defs, lean_game_defs_ext — ces deux derniers en `lakefile.toml`, pas `.lean`)
 
 ML
 ├── ML.Net/ - Tutoriels ML.NET C# (classification, régression, clustering)
@@ -301,7 +300,7 @@ Le Niveau 3 promet de « prouver ce qu'on a calculé » ; le dépôt tient cette
 | **SymbolicAI** (Lean) | `knot_lean` (tricolorabilité Fox GF(3) + Piccirillo), `conway_lean` (Free Will Theorem 0 sorry), `grothendieck_lean` | Nœud trinôme / sliceness, théorème du libre arbitre (Kochen-Specker), visite catégorielle | SymbolicAI/Lean-16a (Conway) + 17a/b (Nœuds) + 15b (Grothendieck) |
 | **SymbolicAI** (SC) | `erc20_lean` | Pas de réentrance ERC-20 (cf. `#4047`) | SmartContracts/Erc20 |
 | **Search** | `search_lean` | Consistance + heuristique admissible = optimalité (cf. `#4048`) | Search-3 (A*) + Search-03d, Part1-Foundations |
-| **Probas** | `decision_theory_lean/VNM` | Axiomes VNM ⇔ utilité espérée (cf. `#4049`) | DecisionTheory/DecInfer-01..02 (VNM) + DecInfer-09 (Gittins) |
+| **Probas** | `decision_theory_lean/VNM` | Axiomes VNM ⇔ utilité espérée (cf. `#4049`) | DecisionTheory/DecInfer-01..02 (VNM) + DecInfer-08b (Gittins) |
 | **QuantConnect** | `kelly_lean` | Kelly `g(f) ≤ g(f*)` + unicité (cf. `#4052`) | QuantConnect QC-Py-10 Risk Management |
 | **GameTheory** | `game_theory_lean` (SocialChoice + CooperativeGames, absorption `#4365`) | Impossibilité d'Arrow + Bondareva-Shapley (0 sorry) | GameTheory/16b-* Choix social |
 

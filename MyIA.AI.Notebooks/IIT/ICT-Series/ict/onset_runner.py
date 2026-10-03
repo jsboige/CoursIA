@@ -1,4 +1,4 @@
-"""Runner onset engineering parametre — port fidele de ICT-25-InoculationRL.ipynb cellule 35.
+"""Runner onset engineering parametre — port fidele de ICT-25-InoculationRL-Python.ipynb cellule 35.
 
 Protocole d'origine (#17702, artefact onset_results.json) : 2 bras (W = signal
 affaibli / S = few-shot fort) x 4 seeds x 120 steps @ Qwen2.5-0.5B-Instruct,
