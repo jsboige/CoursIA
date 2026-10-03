@@ -78,6 +78,12 @@ def _body(**changes: str) -> str:
         "scope": "pass",
         "domain": "pass",
         "verdict": "READY",
+        # #18933 : un READY est le rendu de l'organe -- provenance par defaut.
+        "organ": "check_adjoint_prevalidation.py",
+        "organ-command": (
+            "python scripts/check_adjoint_prevalidation.py --derive-verdict 123"
+        ),
+        "organ-rc": "0",
     }
     fields.update(changes)
     lines = [mod.START, *(f"{key}: {value}" for key, value in fields.items()), mod.END]
@@ -609,6 +615,11 @@ def _filled(template: str) -> str:
     verdicts = {
         "complete": "true", "body": "read", "checks": "latest-wins-green",
         "b0": "clear", "scope": "pass", "domain": "pass", "verdict": "READY",
+        "organ": "check_adjoint_prevalidation.py",
+        "organ-command": (
+            "python scripts/check_adjoint_prevalidation.py --derive-verdict 123"
+        ),
+        "organ-rc": "0",
     }
     lines = []
     for line in template.splitlines():
@@ -1977,3 +1988,248 @@ def test_pre18637_stamp_stays_verifiable():
     # l'ancienne empreinte, elle, bouge avec le corps : elle ne protege que
     # l'etat exact qu'elle a tamponne.
     assert mod.pre18637_surfaces_fingerprint(rewritten) != old
+
+
+# --- #18933 : un READY est le rendu d'un organe, pas une appreciation --------
+# Invariant B de #17020. Incident fondateur 2026-09-20 : 5 dossiers Haiku
+# READY par defaut. Trois mecanismes : (1) provenance REQUIRED sur READY,
+# (2) derive_verdict = l'organe rederive le verdict des mesures vivantes,
+# (3) render_emitted_dossier = l'emetteur rend un dossier dont le verdict et
+# la provenance viennent de l'organe. Un dossier BLOCKED n'a pas de
+# provenance a porter : les champs restent OPTIONNELS hors READY.
+
+
+def _no_provenance() -> dict:
+    return {"organ": "", "organ-command": "", "organ-rc": ""}
+
+
+def _fill_reading_acts(block: str) -> str:
+    """Le geste de la lane emettrice : remplir les actes de lecture du --emit."""
+    fill = {
+        "complete: REPLACE_WITH_true": "complete: true",
+        "body: REPLACE_WITH_read": "body: read",
+        "checks: REPLACE_WITH_latest-wins-green_OR_BLOCKED": "checks: latest-wins-green",
+        "b0: REPLACE_WITH_clear_OR_blocked": "b0: clear",
+        "scope: REPLACE_WITH_pass_OR_fail": "scope: pass",
+        "domain: REPLACE_WITH_pass_OR_not-applicable_OR_fail": "domain: pass",
+    }
+    for old, new in fill.items():
+        assert old in block, old
+        block = block.replace(old, new, 1)
+    assert "REPLACE_WITH" not in block
+    return block
+
+
+def test_ready_without_provenance_is_refused():
+    """Un READY sans organ/organ-command/organ-rc = une appreciation."""
+    snapshot = _snapshot(_body(**_no_provenance()))
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict != mod.VERDICT_READY
+    assert any("organ is required when verdict is READY" in e for e in errors)
+    assert any("organ-command is required when verdict is READY" in e for e in errors)
+    assert any("organ-rc is required when verdict is READY" in e for e in errors)
+
+
+def test_ready_with_wrong_organ_name_is_refused():
+    snapshot = _snapshot(_body(organ="haiku_opinion.py"))
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict != mod.VERDICT_READY
+    assert any("organ must be 'check_adjoint_prevalidation.py'" in e for e in errors)
+
+
+def test_ready_with_wrong_organ_command_is_refused():
+    snapshot = _snapshot(
+        _body(**{"organ-command": "python scripts/check_adjoint_prevalidation.py 123"})
+    )
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict != mod.VERDICT_READY
+    assert any(
+        "organ-command must invoke 'check_adjoint_prevalidation.py"
+        " --derive-verdict 123'" in e
+        for e in errors
+    )
+
+
+def test_ready_with_wrong_pr_in_command_is_refused():
+    snapshot = _snapshot(
+        _body(**{"organ-command": (
+            "python scripts/check_adjoint_prevalidation.py --derive-verdict 999"
+        )})
+    )
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict != mod.VERDICT_READY
+    assert any("--derive-verdict 123" in e for e in errors)
+
+
+def test_ready_with_nonzero_organ_rc_is_refused():
+    snapshot = _snapshot(_body(**{"organ-rc": "3"}))
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict != mod.VERDICT_READY
+    assert any("organ-rc must be '0'" in e for e in errors)
+
+
+def test_blocked_dossier_needs_no_provenance():
+    """BLOCKED ne coute rien a prouver : les champs restent optionnels."""
+    changes = {"verdict": "BLOCKED", "b0": "blocked"}
+    changes.update(_no_provenance())
+    snapshot = _snapshot(_body(**changes))
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_BLOCKED
+    assert not any("organ" in e for e in errors)
+
+
+def test_derive_verdict_ready_when_all_green():
+    verdict, reasons = mod.derive_verdict(
+        _base_snapshot(), lambda pr: {"blocked": False, "blocking": []}
+    )
+    assert verdict == mod.VERDICT_READY and reasons == []
+
+
+def test_derive_verdict_names_each_blocking_measurement():
+    """Chaque mesure bloquante est nommee : check rouge, draft, thread, B.0."""
+    snapshot = _base_snapshot()
+    snapshot["checkRuns"][0]["conclusion"] = "failure"
+    snapshot["isDraft"] = True
+    snapshot["threads"].append({"isResolved": False})
+    probe = lambda pr: {  # noqa: E731
+        "blocked": True,
+        "blocking": [{"kind": "nit", "author": "u", "src": "c"}],
+    }
+    verdict, reasons = mod.derive_verdict(snapshot, probe)
+    assert verdict == mod.VERDICT_BLOCKED
+    assert any("PR gate" in r or "latest-wins" in r for r in reasons), reasons
+    assert any("draft" in r for r in reasons)
+    assert any("unresolved review thread" in r for r in reasons)
+    assert any("unlifted remark" in r for r in reasons)
+
+
+def test_derive_verdict_probes_b0_by_default(monkeypatch):
+    probe, calls = _organ(False)
+    monkeypatch.setattr(mod, "probe_b0", probe)
+    mod.derive_verdict(_base_snapshot())
+    assert calls == [123]
+
+
+def test_refute_ready_verdict_demotes_when_organ_no_longer_derives():
+    """Dossier READY, mais la tete a tourne : check rouge au snapshot."""
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"][0]["conclusion"] = "failure"
+    verdict, dossier = _ready_dossier()
+    verdict, errors, dossier = mod.refute_ready_verdict(
+        snapshot, verdict, [], dossier,
+        lambda pr: {"blocked": False, "blocking": []},
+    )
+    assert verdict == "" and dossier is None
+    assert len(errors) == 1
+    assert "no longer derived by the organ" in errors[0]
+    assert "check_adjoint_prevalidation.py --derive-verdict" in errors[0]
+
+
+def test_refute_ready_verdict_keeps_ready_when_derived():
+    verdict, dossier = _ready_dossier()
+    out = mod.refute_ready_verdict(
+        _base_snapshot(), verdict, [], dossier,
+        lambda pr: {"blocked": False, "blocking": []},
+    )
+    assert out == (mod.VERDICT_READY, [], dossier)
+
+
+def test_refute_ready_verdict_preserves_b0_errors_and_skips_probe():
+    """Regression #18933 : les erreurs du refute b0 ne sont plus ecrasees,
+    et le probe n'est pas paye quand le verdict n'est plus READY."""
+    probe, calls = _organ(True, [{"kind": "nit", "author": "u", "src": "c"}])
+    verdict, errors, dossier = mod.refute_ready_verdict(
+        _base_snapshot(), "", ["b0 claim 'clear' is contradicted by ..."], None, probe
+    )
+    assert verdict == "" and dossier is None
+    assert errors == ["b0 claim 'clear' is contradicted by ..."]
+    assert calls == []
+
+
+def test_refute_ready_verdict_appends_its_error_after_b0_errors():
+    """b0 leve ET la tete a tourne : les deux raisons survivent ensemble."""
+    snapshot = _base_snapshot()
+    snapshot["checkRuns"][0]["conclusion"] = "failure"
+    b0_errors = ["b0 claim 'clear' is contradicted by ..."]
+    ready_verdict, ready_dossier = _ready_dossier()
+    verdict, errors, dossier = mod.refute_ready_verdict(
+        snapshot, ready_verdict, b0_errors, ready_dossier,
+        lambda pr: {"blocked": False, "blocking": []},
+    )
+    assert verdict == "" and dossier is None
+    assert errors[0] == b0_errors[0]
+    assert "no longer derived by the organ" in errors[1]
+
+
+def test_render_emitted_dossier_ready_round_trips_through_the_gate():
+    """L'emission verifiable : le dossier rendu par --emit, ses actes de
+    lecture remplis, PASSE le gate (provenance comprise)."""
+    snapshot = _snapshot()  # pre-dossier : c'est l'emetteur qui part du template
+    probe = lambda pr: {"blocked": False, "blocking": []}  # noqa: E731
+    block, verdict, reasons = mod.render_emitted_dossier(snapshot, probe=probe)
+    assert verdict == mod.VERDICT_READY and reasons == []
+    assert "verdict: READY" in block
+    assert block.count("organ:") == 1  # in-place, pas de cle dupliquee
+    assert "organ: check_adjoint_prevalidation.py" in block
+    assert (
+        "organ-command: python scripts/check_adjoint_prevalidation.py"
+        " --derive-verdict 123" in block
+    )
+    assert "organ-rc: 0" in block
+    # round-trip : la lane remplit les actes de lecture, poste, le gate valide.
+    carrying = _snapshot(_body())
+    carrying["comments"][-1]["body"] = _fill_reading_acts(block)
+    verdict, errors = mod.evaluate(carrying)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_render_emitted_dossier_blocked_carries_rc3():
+    snapshot = _base_snapshot()
+    snapshot["checkRuns"][0]["conclusion"] = "failure"
+    block, verdict, reasons = mod.render_emitted_dossier(snapshot)
+    assert verdict == mod.VERDICT_BLOCKED
+    assert any("PR gate" in r or "latest-wins" in r for r in reasons)
+    assert "verdict: BLOCKED" in block
+    assert "organ-rc: 3" in block
+    assert block.count("organ:") == 1
+
+
+def test_main_derive_verdict_mode_is_organ_only(monkeypatch, capsys):
+    """--derive-verdict : l'organe imprime le verdict, rc 0/3, pas de gate."""
+    snapshot = _base_snapshot()
+    monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
+    monkeypatch.setattr(mod.gh_identity, "pin_gh_token", lambda: None)
+    monkeypatch.setattr(mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []})
+    monkeypatch.setattr(
+        sys, "argv", ["check_adjoint_prevalidation.py", "--derive-verdict", "123"]
+    )
+    assert mod.main() == mod.EXIT_READY
+    assert capsys.readouterr().out.strip() == "READY"
+
+
+def test_main_derive_verdict_mode_blocked_rc3(monkeypatch, capsys):
+    snapshot = _base_snapshot()
+    snapshot["checkRuns"][0]["conclusion"] = "failure"
+    monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
+    monkeypatch.setattr(mod.gh_identity, "pin_gh_token", lambda: None)
+    monkeypatch.setattr(
+        sys, "argv", ["check_adjoint_prevalidation.py", "--derive-verdict", "123"]
+    )
+    assert mod.main() == mod.EXIT_BLOCKED_WITH_SUBSTANCE
+    assert capsys.readouterr().out.strip() == "BLOCKED"
+
+
+def test_main_emit_mode_prints_a_dossier_that_passes(monkeypatch, capsys):
+    snapshot = _snapshot()
+    monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
+    monkeypatch.setattr(mod.gh_identity, "pin_gh_token", lambda: None)
+    monkeypatch.setattr(mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []})
+    monkeypatch.setattr(
+        sys, "argv", ["check_adjoint_prevalidation.py", "--emit", "123"]
+    )
+    assert mod.main() == mod.EXIT_READY
+    block = capsys.readouterr().out
+    assert "verdict: READY" in block and "organ-rc: 0" in block
+    carrying = _snapshot(_body())
+    carrying["comments"][-1]["body"] = _fill_reading_acts(block)
+    assert mod.evaluate(carrying)[0] == mod.VERDICT_READY

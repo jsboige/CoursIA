@@ -221,6 +221,14 @@ REQUIRED_FIELDS = {
     "domain",
     "verdict",
 }
+# #18933 (invariant B de #17020) : provenance du verdict. Champs OPTIONNELS au
+# parse (un dossier BLOCKED ou legacy n'en porte pas), REQUIRED quand le
+# verdict est READY -- un READY doit etre le rendu de l'organe, pas une
+# appreciation (incident 2026-09-20 : 5 dossiers Haiku READY par defaut sur
+# #16364/#16365/#16379/#16386, dont un Solution-leak HIGH).
+VERDICT_ORGAN_FIELDS = ("organ", "organ-command", "organ-rc")
+ORGAN_NAME = "check_adjoint_prevalidation.py"
+
 INTEGER_FIELDS = {
     "pr",
     "comments-reviewed",
@@ -296,7 +304,9 @@ def parse_dossier(
         fields[key] = value
 
     missing = sorted(REQUIRED_FIELDS - fields.keys())
-    unknown = sorted(fields.keys() - REQUIRED_FIELDS)
+    unknown = sorted(
+        fields.keys() - REQUIRED_FIELDS - set(VERDICT_ORGAN_FIELDS)
+    )
     if missing:
         errors.append("missing fields: " + ", ".join(missing))
     if unknown:
@@ -854,6 +864,70 @@ def refute_ready_b0(
     return verdict, [], dossier
 
 
+def derive_verdict(
+    snapshot: dict[str, Any], probe: Any = None
+) -> tuple[str, list[str]]:
+    """#18933 -- le verdict DERIVE de l'organe, pas ecrit par l'emetteur.
+
+    L'organe refait au moment de l'appel les mesures que le gate refait a
+    l'evaluation : latest-wins des checks (requis + verts), B.0 (organe
+    ``check_unaddressed_nits``), threads non resolus, draft. Renvoie
+    ``(VERDICT_READY, [])`` quand toutes sont vertes, sinon
+    ``(VERDICT_BLOCKED, raisons)``. C'est le rendu de CETTE fonction -- via
+    ``--derive-verdict`` -- qu'un dossier READY doit citer (organ,
+    organ-command, organ-rc) et que le gate reexecute
+    (``refute_ready_verdict``). Les actes de lecture (body lu, scope,
+    domaine) restent des champs du dossier : ils ne determinent plus le
+    verdict, ils l'accompagnent.
+    """
+    reasons: list[str] = list(
+        check_claim_contradictions(
+            "latest-wins-green", snapshot.get("checkRuns")
+        )
+    )
+    if snapshot.get("isDraft"):
+        reasons.append("draft pull request cannot be READY")
+    unresolved = sum(
+        not (thread.get("isResolved", False))
+        for thread in snapshot.get("threads") or []
+    )
+    if unresolved:
+        reasons.append(f"{unresolved} unresolved review thread(s)")
+    reasons.extend(
+        b0_claim_contradictions("clear", (probe or probe_b0)(snapshot["number"]))
+    )
+    if reasons:
+        return VERDICT_BLOCKED, reasons
+    return VERDICT_READY, []
+
+
+def refute_ready_verdict(
+    snapshot: dict[str, Any],
+    verdict: str,
+    errors: list[str],
+    dossier: Dossier | None,
+    probe: Any = None,
+) -> tuple[str, list[str], Dossier | None]:
+    """Demote a READY verdict that the organ no longer derives (#18933).
+
+    Meme geste que ``refute_ready_b0`` : le gate rederive le verdict des
+    mesures vivantes a la tete. Un dossier READY dont le verdict n'est plus
+    derive (check rouge, thread ouvert, B.0 leve, draft) est REFUSE (rc 1),
+    pas requalifie en BLOCKED -- un dossier dont l'affirmation cles est
+    fausse ne merite pas la confiance sur ses autres champs. Seul READY est
+    redecompose : BLOCKED et dossier absent ne coutent rien.
+    """
+    if verdict != VERDICT_READY or dossier is None:
+        return verdict, errors, dossier
+    derived, reasons = derive_verdict(snapshot, probe)
+    if derived != VERDICT_READY:
+        return "", [*errors, (
+            "verdict claim 'READY' is no longer derived by the organ "
+            f"({ORGAN_NAME} --derive-verdict) at the head: " + "; ".join(reasons)
+        )], None
+    return verdict, errors, dossier
+
+
 def carrying_lane(snapshot: dict[str, Any]) -> str | None:
     """Return the lane that carries this pull request, from its `Grain:` tag.
 
@@ -918,6 +992,35 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
                 errors.append(f"{key} must be {value!r} when verdict is READY")
         if f.get("domain") not in {"pass", "not-applicable"}:
             errors.append("domain must be 'pass' or 'not-applicable' when verdict is READY")
+        # #18933 -- un READY doit etre le rendu d'un organe : provenance
+        # obligatoire et exacte. Sans elle, le verdict est une appreciation.
+        for key in VERDICT_ORGAN_FIELDS:
+            if not f.get(key, "").strip():
+                errors.append(
+                    f"{key} is required when verdict is READY -- the verdict "
+                    "must be the render of the organ, not an appreciation "
+                    "(#18933)"
+                )
+        if f.get("organ") and f.get("organ") != ORGAN_NAME:
+            errors.append(
+                f"organ must be {ORGAN_NAME!r} when verdict is READY, got "
+                f"{f.get('organ')!r} (#18933)"
+            )
+        command = f.get("organ-command", "")
+        if command and not re.search(
+            rf"{re.escape(ORGAN_NAME)}\s+--derive-verdict\s+{snapshot.get('number')}\b",
+            command,
+        ):
+            errors.append(
+                "organ-command must invoke '"
+                f"{ORGAN_NAME} --derive-verdict {snapshot.get('number')}' "
+                f"when verdict is READY, got {command!r} (#18933)"
+            )
+        if f.get("organ-rc") and f.get("organ-rc") != "0":
+            errors.append(
+                "organ-rc must be '0' (the organ derived READY at emission) "
+                f"when verdict is READY, got {f.get('organ-rc')!r} (#18933)"
+            )
         # The claim is not taken on faith: it is checked against the live
         # latest-wins verdicts, naming any contradicting check (#16957).
         errors.extend(
@@ -1414,8 +1517,52 @@ def render_template(snapshot: dict[str, Any], lane: str = ADJOINT_LANE) -> str:
         ("scope", "REPLACE_WITH_pass_OR_fail"),
         ("domain", "REPLACE_WITH_pass_OR_not-applicable_OR_fail"),
         ("verdict", "REPLACE_WITH_READY_OR_BLOCKED"),
+        # #18933 -- provenance du verdict : un READY cite l'organe qui l'a
+        # derive. Optionnel sur BLOCKED (supprimer les trois lignes ou les
+        # remplir), REQUIRED sur READY.
+        ("organ", "REPLACE_WITH_check_adjoint_prevalidation.py"),
+        (
+            "organ-command",
+            "REPLACE_WITH_python scripts/check_adjoint_prevalidation.py"
+            f" --derive-verdict {snapshot['number']}",
+        ),
+        ("organ-rc", "REPLACE_WITH_0_OR_3"),
     )
     return "\n".join([START, *(f"{key}: {value}" for key, value in fields), END])
+
+
+def render_emitted_dossier(
+    snapshot: dict[str, Any], lane: str = ADJOINT_LANE, probe: Any = None
+) -> tuple[str, str, list[str]]:
+    """#18933 -- rendre un dossier COMPLET : verdict DERIVE + provenance.
+
+    Le rendu part du template mecanique (``render_template``), remplace la
+    ligne ``verdict:`` par le verdict derive par l'organe et insere le bloc
+    de provenance (organ / organ-command / organ-rc) avant END. Seuls les
+    actes de lecture (complete/body/scope/domain, et le champ bloquant a
+    nommer si BLOCKED) restent a remplir par la lane emettrice. Renvoie
+    (bloc, verdict, raisons) -- l'emetteur rapporte le rc mesure
+    (0 READY / 3 BLOCKED) sans le choisir.
+    """
+    template = render_template(snapshot, lane)
+    verdict, reasons = derive_verdict(snapshot, probe)
+    organ_rc = EXIT_READY if verdict == VERDICT_READY else EXIT_BLOCKED_WITH_SUBSTANCE
+    provenance = {
+        "verdict": str(verdict),
+        "organ": ORGAN_NAME,
+        "organ-command": (
+            "python scripts/" f"{ORGAN_NAME} --derive-verdict {snapshot['number']}"
+        ),
+        "organ-rc": str(organ_rc),
+    }
+    lines = []
+    for line in template.split("\n"):
+        key = line.split(":", 1)[0] if ":" in line else None
+        if key in provenance and line.startswith(key + ":"):
+            lines.append(f"{key}: {provenance[key]}")
+        else:
+            lines.append(line)
+    return "\n".join(lines), verdict, reasons
 
 
 def main() -> int:
@@ -1448,9 +1595,45 @@ def main() -> int:
         action="store_true",
         help="render a complete dossier template from the live snapshot",
     )
+    parser.add_argument(
+        "--derive-verdict",
+        action="store_true",
+        help="ORGAN MODE (#18933): derive the verdict from the live "
+        "measurements (latest-wins checks + B.0 organ + unresolved threads "
+        "+ draft), print it and exit 0 (READY) / 3 (BLOCKED). A READY "
+        "dossier cites this command and its rc.",
+    )
+    parser.add_argument(
+        "--emit",
+        action="store_true",
+        help="render a COMPLETE dossier (#18933): mechanical fields + "
+        "verdict DERIVED by the organ + provenance "
+        "(organ/organ-command/organ-rc). Only the reading acts "
+        "(complete/body/scope/domain) stay for the emitting lane to fill.",
+    )
     args = parser.parse_args()
     try:
         snapshot = load_snapshot(args.pr)
+        if args.derive_verdict:
+            verdict, reasons = derive_verdict(snapshot)
+            print(verdict)
+            for reason in reasons:
+                print(f"- {reason}", file=sys.stderr)
+            return (
+                EXIT_READY if verdict == VERDICT_READY
+                else EXIT_BLOCKED_WITH_SUBSTANCE
+            )
+        if args.emit:
+            block, verdict, reasons = render_emitted_dossier(
+                snapshot, args.lane
+            )
+            print(block)
+            for reason in reasons:
+                print(f"# derived-blocked: {reason}", file=sys.stderr)
+            return (
+                EXIT_READY if verdict == VERDICT_READY
+                else EXIT_BLOCKED_WITH_SUBSTANCE
+            )
         if args.template:
             print(render_template(snapshot, args.lane))
             warning = restamp_warning(snapshot)
@@ -1476,6 +1659,9 @@ def main() -> int:
         verdict, errors, dossier = evaluate_with_dossier(snapshot)
         if not errors:
             verdict, errors, dossier = refute_ready_b0(args.pr, verdict, dossier)
+            verdict, errors, dossier = refute_ready_verdict(
+                snapshot, verdict, errors, dossier
+            )
     except (
         RuntimeError,
         KeyError,
