@@ -2,7 +2,7 @@
 
 [← Série Probas](../../README.md) | [↑ Arc Théorie de la Décision](../README.md) | [Corpus bayésien PyMC (Python) →](../../PyMC/README.md) | [Arc décision Infer.NET (C#) →](../DecInfer/README.md) | [Lake Lean `decision_theory_lean` →](../decision_theory_lean/)
 
-Arc autonome de **théorie de la décision bayésienne** en PyMC : 12 notebooks qui prolongent la modélisation probabiliste (le corpus bayésien [`../../PyMC/`](../../PyMC/README.md)) jusqu'au **choix d'action sous incertitude**. Un posterior n'est pas une fin — c'est l'**input** d'une politique optimale. Cette série formalise ce passage, de l'utilité espérée aux processus markoviens et aux bandits bayésiens MCMC, puis l'étend à la **jambe actuarielle** (notebooks 8-12).
+Arc autonome de **théorie de la décision bayésienne** en PyMC — le socle (1-7) et son capstone (08) — qui prolongent la modélisation probabiliste (le corpus bayésien [`../../PyMC/`](../../PyMC/README.md)) jusqu'au **choix d'action sous incertitude**. Un posterior n'est pas une fin — c'est l'**input** d'une politique optimale. Cette série formalise ce passage, de l'utilité espérée aux processus markoviens et aux bandits bayésiens MCMC. L'extension actuarielle descend en sous-série dédiée : **[Actuariat/](../Actuariat/README.md)** (T1-T5), présentée par le capstone du slot 08.
 
 **Prérequis** : le corpus bayésien [`../../PyMC/`](../../PyMC/README.md) (notamment [PyMC-04-Bayesian-Networks](../../PyMC/PyMC-04-Bayesian-Networks.ipynb)). Aucun prérequis en théorie de la décision : les axiomes de Von Neumann-Morgenstern sont introduits ex nihilo.
 
@@ -23,13 +23,9 @@ Jusqu'à la restructuration de la série, la théorie de la décision était imb
 | 5 | [DecPyMC-5-Value-Information](DecPyMC-5-Value-Information.ipynb) | 45 min | EVPI, EVSI, valeur de l'information |
 | 6 | [DecPyMC-6-Expert-Systems](DecPyMC-6-Expert-Systems.ipynb) | 50 min | Systèmes experts, Minimax, regret |
 | 7 | [DecPyMC-7-Sequential](DecPyMC-7-Sequential.ipynb) | 60 min | MDPs, itération valeur/politique, bandits, Thompson Sampling MCMC, POMDPs |
-| 8 | [DecPyMC-8-Actuarial-Credibility](DecPyMC-8-Actuarial-Credibility.ipynb) | ~50 min | Crédibilité actuarielle de Bühlmann–Straub : hiérarchie contractuelle, hétérogénéité |
-| 9 | [DecPyMC-9-Prime-Pure-Chargement](DecPyMC-9-Prime-Pure-Chargement.ipynb) | ~50 min | Du risque à la prime : prime pure, chargement, prime commerciale |
-| 10 | [DecPyMC-10-Ruine-Lundberg](DecPyMC-10-Ruine-Lundberg.ipynb) | ~55 min | Ruine et capital : processus de Cramér–Lundberg, inégalité de Lundberg |
-| 11 | [DecPyMC-11-Valeur-Info-Souscription](DecPyMC-11-Valeur-Info-Souscription.ipynb) | ~45 min | Valeur de l'information en souscription |
-| 12 | [DecPyMC-12-Freq-Sev-Hierarchique](DecPyMC-12-Freq-Sev-Hierarchique.ipynb) | ~50 min | Fréquence × sévérité hiérarchique : le partial pooling en assurance |
+| 8 | [DecPyMC-08-Actuariat-Capstone](DecPyMC-08-Actuariat-Capstone.ipynb) | ~15 min | Capstone : l'escalier vers la sous-série **[Actuariat](../Actuariat/README.md)** (T1-T5) — suite de [DecPyMC-7](DecPyMC-7-Sequential.ipynb) |
 
-**Durée totale** : ~10h
+**Durée totale** : ~6h (socle) — la sous-série [Actuariat](../Actuariat/README.md) porte ses ~4h propres
 
 ## Aperçu — la décision sous incertitude en images
 
@@ -99,6 +95,6 @@ Là où l'arc [Infer.NET](../DecInfer/README.md) calcule les posteriors de bandi
 
 ## Conclusion
 
-La théorie de la décision bayésienne ferme la boucle ouverte par le corpus bayésien : un posterior n'est utile que s'il informe une **action**. De l'**utilité espérée** (DecPyMC-1) aux **MDPs** et **bandits MCMC** (DecPyMC-7), puis à la **jambe actuarielle** (DecPyMC-8-12), cet arc montre que décider sous incertitude est un calcul rigoureux — et l'arc miroir [Infer.NET](../DecInfer/README.md) l'ancre en plus dans la **preuve formelle** Lean 4 (indice de Gittins, théorème vNM).
+La théorie de la décision bayésienne ferme la boucle ouverte par le corpus bayésien : un posterior n'est utile que s'il informe une **action**. De l'**utilité espérée** (DecPyMC-1) aux **MDPs** et **bandits MCMC** (DecPyMC-7), puis au **capstone actuariel** (DecPyMC-08) qui ouvre la sous-série [**Actuariat**](../Actuariat/README.md) (T1-T5), cet arc montre que décider sous incertitude est un calcul rigoureux — et l'arc miroir [Infer.NET](../DecInfer/README.md) l'ancre en plus dans la **preuve formelle** Lean 4 (indice de Gittins, théorème vNM).
 
 Bonne exploration de la théorie de la décision bayésienne en PyMC !
