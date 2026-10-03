@@ -138,3 +138,69 @@ def test_controle_negatif_sur_le_depot():
     assert "findings" in payload
     assert "scanned_files" in payload
     assert payload["min_value_len"] == 28, "MIN_VALUE_LEN doit etre 28 dans la sortie JSON"
+
+
+def test_caller_workflow_json_passe_dirty_comme_dirty_avec_findings(tmp_path: Path):
+    """Le caller workflow-shape (avec --json) doit classer DIRTY comme DIRTY et exposer findings.
+
+    Steer adjoint c22 (2026-10-03) sur PR #18895 : sans --json, stdout est
+    du texte formate (CLEAN -- scanned ... / DIRTY -- ...) -- un reel DIRTY
+    serait classe UNKNOWN au lieu de hit. Le fix aligne l'appel (--json) et
+    pose ce temoin positif qui prouve que la chaîne complete tient.
+
+    Le test execute le script via subprocess (comme le step workflow) avec
+    --json, parse la sortie JSON, et verifie que :
+    - le verdict est bien 'DIRTY' (pas '?')
+    - findings expose au moins un match
+    - le RC est 1 (le gate rougit)
+
+    REPO_ROOT_OVERRIDE permet au script de scanner le repo fixture minimal
+    (sinon il scannerait le depot CoursIA-2 reel et ne trouverait pas la
+    fixture -- 1871 fichiers vs 1 fichier dirty).
+    """
+    # Genere une fixture DIRTY temporaire dans tmp_path, et fait passer
+    # `git ls-files` sur ce dossier via un repo git local minimal.
+    import subprocess as sp
+
+    repo = tmp_path / "fixture_repo"
+    repo.mkdir()
+    sp.run(["git", "init", "-q"], cwd=repo, check=True)
+    sp.run(["git", "config", "user.email", "test@example.com"], cwd=repo, check=True)
+    sp.run(["git", "config", "user.name", "test"], cwd=repo, check=True)
+
+    # Fichier DIRTY : signature= avec token de 32 chars + OSSAccessKeyId valide
+    dirty = repo / "dirty.json"
+    dirty.write_text(
+        '{"image_url_signed_full": "https://bucket.oss.aliyuncs.com/img.png'
+        '?Signature=ABCDEFGHIJKLMNOPQRSTUVWXYZ012345&OSSAccessKeyId=LTAI5tRDTcyABcdEFgh"}',
+        encoding="utf-8",
+    )
+    sp.run(["git", "add", "dirty.json"], cwd=repo, check=True)
+    sp.run(["git", "commit", "-q", "-m", "fixture"], cwd=repo, check=True)
+
+    # Appelle le script avec --json dans ce repo minimal. pathspecs default
+    # *.json/*.ipynb matche dirty.json. REPO_ROOT_OVERRIDE dit au script de
+    # prendre ce repo-la comme racine (sinon il prend CoursIA-2 par defaut).
+    cmd = [sys.executable, str(SCRIPT), "--json"]
+    proc = sp.run(
+        cmd, capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
+        cwd=repo, timeout=180,
+        env={**__import__("os").environ, "REPO_ROOT_OVERRIDE": str(repo)},
+    )
+    assert proc.returncode == 1, (
+        f"DIRTY reel doit retourner RC=1, vu {proc.returncode} (stdout={proc.stdout[:200]}, stderr={proc.stderr[:200]})"
+    )
+    payload = json.loads(proc.stdout)
+    assert payload["verdict"] == "DIRTY", (
+        f"verdict doit etre 'DIRTY', vu {payload['verdict']!r} -- si c'est '?' le caller workflow-shape "
+        f"fait json.load sur stdout non-JSON (defaut releve par adjoint c22 sur #18895)"
+    )
+    assert len(payload.get("findings", [])) >= 1, (
+        f"findings doit exposer au moins un match pour le porteur de la PR, "
+        f"vu {len(payload.get('findings', []))} finding(s) -- sans findings, un DIRTY reel "
+        f"rougit sans diagnostic derrierrable (defaut adjoint c22)"
+    )
+    f = payload["findings"][0]
+    assert f["file"] == "dirty.json"
+    assert len(f["hits"]) >= 1

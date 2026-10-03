@@ -49,12 +49,19 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+# REPO_ROOT derive du script par defaut ; surchargeable via
+# l'env REPO_ROOT_OVERRIDE pour les tests qui scannent un repo minimal
+# isole (cf test_caller_workflow_json_passe_dirty_comme_dirty_avec_findings).
+# Sans cette surcharge, le test temoin positif ne pourrait pas executer le
+# script sur une fixture : il scannera toujours le depot CoursIA-2 reel.
+_DEFAULT_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+REPO_ROOT = Path(os.environ["REPO_ROOT_OVERRIDE"]) if os.environ.get("REPO_ROOT_OVERRIDE") else _DEFAULT_REPO_ROOT
 
 # Pathspec filters for `git ls-files` -- cheap on Windows (avoids the 12k
 # file enumeration of the full repo scope).
