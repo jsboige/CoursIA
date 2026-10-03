@@ -25,7 +25,9 @@ le sleeve crypto seul sur Coinbase, sleeve IBKR en backtest parallèle.
 | `config.py` (loader `.env` typé) | livré (ajout `CoinbaseConfig`) |
 | `risk.py` (circuit-breakers) | livré, dry-run validé ; état persistant (`save`/`load`) ajouté |
 | `rebalance.py` (poids inverse-volatilité → ordres en parts entières) | livré, testé (`tests/`) |
-| `orchestrator.py` (`run_cycle` : un cycle de rééquilibrage, dry-run par défaut) | cœur livré, testé contre un courtier factice ; adaptateur IBKR à écrire |
+| `orchestrator.py` (`run_cycle` : un cycle de rééquilibrage, dry-run par défaut) | cœur livré, testé contre un courtier factice |
+| `ibkr_broker.py` (adaptateur IBKR de `Broker` : lignes UCITS, comptabilité de poche) | livré (2026-10-03), testé contre un faux client IB ; cycle à blanc validé en lecture seule sur IB Gateway paper |
+| `ibkr_cycle.py` (un cycle en ligne de commande, à blanc par défaut) | livré (2026-10-03) |
 | `coinbase_sleeve.py` (wrapper coinbase-advanced-py, **MiCA**) | livré, **SOTA-OK code** (API vérifiée firsthand) |
 | `smoke_test_coinbase.py` (validation read-only) | livré, exit 2 = USER-HAND sans creds |
 | `binance_sleeve.py` (wrapper python-binance testnet, **legacy**) | livré, SOTA-OK (pré-MiCA) |
@@ -130,11 +132,64 @@ si le plafond par ligne de la stratégie dépasse `RISK_MAX_POSITION_PCT`, sans 
 python -m pytest paper_harness/tests -q
 ```
 
+## Adaptateur IBKR et cycle en ligne de commande
+
+`ibkr_broker.IBKRBroker` implémente `Broker` sur une connexion `ib_insync` à IB Gateway
+**paper**, pour la version UCITS de la stratégie : des lignes européennes cotées en euros
+sur Xetra, pilotées par des signaux calculés sur les ETF américains équivalents
+(`SIGNAL_TO_LINE`, ou `SIGNAL_TO_LINE_SMALL` pour des lignes à petit prix de part qui
+arrondissent mieux une petite poche). Quatre choix le structurent :
+
+- **Contrats par identifiant IBKR (`conId`).** Un ticker Xetra n'est pas toujours le
+  symbole IBKR : la ligne iShares $ Treasury 7-10 ans (distribuante) se traite sous
+  `IUSM` sur Xetra, mais son symbole IBKR est `BTMA`, et une recherche par le symbole
+  `IUSM` ne résout rien. `UCITS_LINES` désigne donc chaque ligne par son `conId`, vérifié
+  sur une session paper.
+- **Comptabilité de poche, jamais la valeur du compte.** Un compte paper porte un capital
+  fictif bien plus grand que la poche, et plusieurs poches peuvent partager un compte. La
+  valeur de la poche est celle de *ses* lignes plus *son* cash, tenus dans un
+  `SleeveLedger` (fichier JSON écrit de façon atomique). Le registre se construit à partir
+  des exécutions étiquetées par l'`orderRef` de la poche, comptées une seule fois par
+  `execId`, commissions comprises, même quand leur rapport arrive après l'exécution. Il est
+  confronté aux positions du compte : la poche peut détenir moins que le compte (une autre
+  poche détient le reste), jamais plus (`LedgerDriftError`).
+- **Prix.** Instantané différé (type 3) quand le temps réel n'est pas abonné, puis la
+  clôture précédente, puis la dernière barre quotidienne. Sans aucun des trois, l'adaptateur
+  lève une erreur plutôt que de planifier à l'aveugle ; `price_sources` dit lequel a servi.
+- **Ordres.** Ordres limites avec un collier (`collar=0.005` : un achat au plus 0,5 %
+  au-dessus du prix de référence), refusés si le compte n'est pas un compte paper (préfixe
+  `D`) ou si la connexion est en lecture seule. `place` attend les exécutions et les
+  enregistre avant de rendre la main, pour que les ventes d'un cycle financent ses achats.
+
+`ibkr_cycle` enchaîne un cycle complet depuis la ligne de commande, **à blanc par défaut**
+(connexion en lecture seule, rien n'est envoyé). Le registre et l'état du disjoncteur
+vivent dans `--state-dir`, hors du dépôt par défaut (`~/.paper_harness`) :
+
+```bash
+# premier passage : attribuer à la poche une somme fictive du compte paper
+python -m paper_harness.ibkr_cycle --initial-cash 100000 --small-lines --max-position-pct 0.5
+# passages suivants : le registre est réutilisé
+python -m paper_harness.ibkr_cycle --small-lines --max-position-pct 0.5
+# envoyer les ordres paper (« Read-Only API » décoché sur la passerelle)
+python -m paper_harness.ibkr_cycle --small-lines --max-position-pct 0.5 --send
+```
+
+Codes de sortie : 0 cycle fait, 2 refus (compte non paper, configuration incohérente),
+3 échec de connexion. `--max-position-pct` doit couvrir le plafond par ligne de la
+stratégie (50 %) : avec la valeur par défaut de `RISK_MAX_POSITION_PCT` (25 %), le cycle
+refuse de démarrer plutôt que de laisser le `RiskGate` bloquer chaque achat de taille
+pleine.
+
+Validation du 2026-10-03, en lecture seule contre IB Gateway paper (samedi, marchés
+fermés) : les quatre lignes se résolvent par `conId`, les prix différés sont lus, les
+signaux américains (`ADJUSTED_LAST`) suffisent au calcul des poids, et le cycle planifie
+un achat par ligne sur la poche fictive sans rien envoyer. Un second passage réutilise le
+registre sans le réinitialiser.
+
 ## Suite (cycles suivants)
 
-1. Adaptateur IBKR de `Broker` pour `run_cycle` : contrats sur bourse européenne
-   (exchange, devise), prix et équité dans une même devise, validés contre IB Gateway
-   paper ; puis déclenchement mensuel et comparaison des fills au backtest.
+1. Premier cycle envoyé sur le compte paper (« Read-Only API » décoché côté
+   passerelle), puis déclenchement mensuel et comparaison des exécutions au backtest.
 2. Premier ordre paper (BTC spot sur Coinbase sandbox ; équity IBKR derrière
    "Read-Only API" OFF côté gateway) derrière circuit-breakers relus — **après**
    obtention des creds Coinbase USER-HAND.

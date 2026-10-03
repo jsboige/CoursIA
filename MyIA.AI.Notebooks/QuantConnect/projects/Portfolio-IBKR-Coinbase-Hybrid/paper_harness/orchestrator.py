@@ -16,9 +16,9 @@
 7. append one JSON line to the journal and save the gate state.
 
 The broker is anything that implements :class:`Broker`; prices, positions
-and equity must share one currency. No adapter is wired here: the IBKR one
-needs European contracts (exchange, currency) validated against a running
-IB Gateway first.
+and equity must share one currency. The IBKR adapter lives in
+:mod:`paper_harness.ibkr_broker`; :mod:`paper_harness.ibkr_cycle` runs one
+cycle with it from the command line.
 """
 from __future__ import annotations
 
@@ -41,7 +41,12 @@ class Broker(Protocol):
     def prices(self, symbols: Sequence[str]) -> dict[str, float]: ...
 
     def place(self, symbol: str, quantity: int) -> str:
-        """Send a market order for ``quantity`` shares (signed); return its id."""
+        """Send a marketable order for ``quantity`` shares (signed); return its id.
+
+        Marketable means a market order, or a limit order with a collar: the
+        adapter chooses. An adapter that books its fills before returning
+        lets the sells of a cycle fund its buys.
+        """
         ...
 
 
