@@ -1,9 +1,11 @@
-# `search_lean` — Optimalité de A* en Lean 4
+# `search_lean` — Optimalité de A* en Lean 4 · ancrage Szpiro--Pasten 2026
 
 Mini-projet Lean 4 (avec [Mathlib](https://github.com/leanprover-community/mathlib4))
 formalisant le **cœur mathématique de l'optimalité de A*** : la borne en `f` sous
 heuristique *admissible* — le mécanisme exact de l'argument d'optimalité
-([Hart, Nilsson & Raphael, 1968](https://doi.org/10.1109/TSSC.1968.300136)).
+([Hart, Nilsson & Raphael, 1968](https://doi.org/10.1109/TSSC.1968.300136)) —
+et, depuis [#16549](https://github.com/jsboige/CoursIA/issues/16549), le module
+`Szpiro` qui ancre dans Mathlib les bornes de Szpiro--Pasten 2026 (hommage à Serre).
 
 > **Issue** : [#4048](https://github.com/jsboige/CoursIA/issues/4048) —
 > **Roadmap** : [#4038](https://github.com/jsboige/CoursIA/issues/4038) —
@@ -60,6 +62,7 @@ cf #4048) : la **borne en `f`** qui est le mécanisme exact d'optimalité de A*.
 - [`Astar/Heuristic.lean`](Astar/Heuristic.lean) — `Admissible`, `Consistent`.
 - [`Astar/Optimality.lean`](Astar/Optimality.lean) — théorème phare (`admissible_le_suffix_cost`, anciennement `admissible_implies_optimal`).
 - [`Astar/Consistency.lean`](Astar/Consistency.lean) — `consistent_implies_path_bound` (consistance ⟹ admissibilité, téléscopage).
+- [`Szpiro.lean`](Szpiro.lean) / [`Szpiro_en.lean`](Szpiro_en.lean) — ancrage Mathlib des bornes de Pasten 2026 (#16549, voir section dédiée).
 
 ## Théorème phare
 
@@ -186,6 +189,27 @@ flowchart TD
     MONO --> EFF
 ```
 
+## Szpiro — ancrage Mathlib des bornes de Pasten 2026 (#16549)
+
+Le module [`Szpiro.lean`](Szpiro.lean) (miroir EN : [`Szpiro_en.lean`](Szpiro_en.lean))
+est le sibling Lean du carnet
+[`App-32-Szpiro-Pasten-2026.ipynb`](../Applications/Search/App-32-Szpiro-Pasten-2026.ipynb) :
+Pasten 2026, *Improved Bounds for Szpiro's Conjecture* (arXiv 2609.17390) rend la borne
+`h(E) ≪ N·log log N` **inconditionnelle** — elle était connue sous GRH — et prouve
+`h(E) ≪_S N` pour les courbes semistables hors d'un ensemble fini.
+
+La hauteur de Faltings `h(E)` n'existant pas dans Mathlib, les énoncés du papier sont
+cités en prose fidèle (théorème 1.1, corollaires 1.2-1.3) **sans être formellement
+prouvés** ; le module ancre ce qui, lui, se vérifie mécaniquement :
+
+- la **factorisation admissible** `N = DM` (`AdmissibleFactorization` : `gcd(D,M) = 1`,
+  `D` sans facteur carré, nombre **pair** de facteurs premiers), contrôlée sur les
+  exemples `N = 30` du carnet — dont le contre-exemple de parité `D = 2` ;
+- l'**identité `M·φ(D) ≤ N`** (`borne_shape_le_N`, conséquence de `φ(D) ≤ D`) : la
+  quantité du théorème 1.1 ne dépasse jamais `N` ;
+- le **discriminant** de la courbe témoin `E : y² = x³ + x + 1` (`delta_E : Δ = -496`,
+  même convention que `delta_modele` du carnet) et sa non-singularité (`E_est_elliptique`).
+
 ## Construction
 
 ```bash
@@ -194,7 +218,7 @@ lake build Astar     # build de la librairie
 ```
 
 Prérequis : [elan](https://github.com/leanprover/elan) (toolchain
-`leanprover/lean4:v4.31.0-rc1`, voir `lean-toolchain`).
+`leanprover/lean4:v4.33.0`, voir `lean-toolchain`).
 
 ## État et suite
 
@@ -216,5 +240,8 @@ Phases suivantes (suivi #4048) :
 
 - P. E. Hart, N. J. Nilsson, B. Raphael, *A Formal Basis for the Heuristic Determination
   of Minimum Cost Paths*, IEEE Trans. Syst. Sci. Cybern. **4**(2), 1968.
+- H. Pasten, *Improved Bounds for Szpiro's Conjecture*, arXiv 2609.17390 (2026),
+  archivé `G:\Mon Drive\MyIA\IA\Bibliographie IA\NumberTheory\` — carnet compagnon
+  [`App-32-Szpiro-Pasten-2026.ipynb`](../Applications/Search/App-32-Szpiro-Pasten-2026.ipynb).
 - S. Russell, P. Norvig, *Artificial Intelligence: A Modern Approach*, §3.5 (A* Search).
 - Notebooks compagnons : [`Search-02-Uninformed.ipynb`](../Part1-Foundations/Search-02-Uninformed.html), [`Search-03-Informed.ipynb`](../Part1-Foundations/Search-03-Informed.ipynb) (le notebook historique [`Exploration_non_informée_et_informée_intro.ipynb`](../_archive/Exploration_non_informée_et_informée_intro.ipynb) est archivé depuis 2026-07-03).

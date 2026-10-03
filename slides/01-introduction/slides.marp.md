@@ -439,8 +439,6 @@ L'IA est une discipline profondement interdisciplinaire :
 
 <img src="images/img_023.png" width="130">
 
-<img src="images/img_026.png" width="130">
-
 <img src="images/img_027.jpg" width="130">
 
 </div>

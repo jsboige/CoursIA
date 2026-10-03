@@ -10,9 +10,9 @@ Le catalogue rassemble **plusieurs centaines de notebooks pédagogiques** répar
 
 <!-- CATALOG-STATUS
 series: ALL
-total: 1312
-breakdown: SymbolicAI=307, GenAI=247, Search=155, ML=120, QuantConnect=115, GameTheory=109, IIT=90, Probas=74, Sudoku=38, RL=36, Complexity=9, CaseStudies=6, NLP=5, cross-series=1
-maturity: BETA=1160, DRAFT=84, ALPHA=64, TEMPLATE=4
+total: 1340
+breakdown: SymbolicAI=312, GenAI=257, Search=156, ML=126, QuantConnect=115, GameTheory=109, IIT=93, Probas=76, Sudoku=38, RL=36, Complexity=9, CaseStudies=6, NLP=5, Compression=1, cross-series=1
+maturity: BETA=1179, DRAFT=89, ALPHA=68, TEMPLATE=4
 -->
 
 <sub>*Marqueur auto-régénéré quotidiennement par `.github/workflows/catalog-cron.yml` (file [`COURSE_CATALOG.generated.md`](../COURSE_CATALOG.generated.md) — source de vérité sur les volumes et la maturité). Toute PR qui modifierait ce bloc est signalée par `catalog-drift.yml` (read-only, catalog-pr-hygiene R1).*</sub>
@@ -23,7 +23,7 @@ Dernière mise à jour : 2026-08-05
 
 **[GenAI](GenAI/README.md)** — Tout ce qui se génère : images (SDXL, Flux, Qwen), audio — du TTS au pipeline complet d'audiobook —, vidéo, et le travail des LLMs (RAG, raisonnement, fine-tuning LoRA). La série a un parti pris d'atelier : on ne se contente pas d'appeler des APIs, on héberge les modèles soi-même sur une stack Docker dédiée ([00-GenAI-Environment](GenAI/00-GenAI-Environment/README.md)), ce qui change tout à ce qu'on comprend de leurs coûts et de leurs limites. Elle culmine avec l'orchestration Semantic Kernel, quatre études de cas étudiantes et les ateliers de vibe-coding (Claude Code, Roo Code).
 
-**[QuantConnect](QuantConnect/README.md)** — Le ML appliqué à un domaine qui ne pardonne pas : les marchés. Un cours Python progressif mène du premier backtest à un portefeuille de stratégies cataloguées (cf. breakdown `QuantConnect=105` du marqueur et l'inventaire [`docs/qc/qc-strategies-status.md`](../docs/qc/qc-strategies-status.md) pour la classification 4-types + statut best-guess de chaque projet). Les algorithmes emblématiques — GARCH, Kelly, ensembles — y côtoient les **22 exemples** (sections 06 Applied ML + 07 RL + 08 Risk Mgmt) du livre *Hands-On AI Trading* — **20 fermes + 2 ⚠️ partiels** (section 06 ex.01 Trend Scanning + section 08 ex.02 AI corrective, cf. [`docs/HANDSON_AI_TRADING_MAPPING.md`](QuantConnect/docs/HANDSON_AI_TRADING_MAPPING.md) pour le statut détaillé de chaque exemple). La leçon transversale vaut bien au-delà de la finance : une discipline de validation — walk-forward, multi-seed, coûts de transaction — sans laquelle tout résultat de ML est une illusion d'optique. Le pipeline d'entraînement associé (ML-Training-Pipeline) en est la démonstration grandeur nature : un **Ladder** d'architectures testées (cf. [QC README — section ML-Training-Pipeline](QuantConnect/README.md)) dont seule une fraction bat le baseline après validation multi-seed — un verdict d'honnêteté que la série assume comme résultat pédagogique à part entière.
+**[QuantConnect](QuantConnect/README.md)** — Le ML appliqué à un domaine qui ne pardonne pas : les marchés. Un cours Python progressif mène du premier backtest à un portefeuille de stratégies cataloguées (cf. breakdown `QuantConnect=105` du marqueur et l'inventaire [`docs/qc/qc-strategies-status.md`](../docs/qc/qc-strategies-status.md) pour la classification 4-types + statut best-guess de chaque projet). Les algorithmes emblématiques — GARCH, Kelly, ensembles — y côtoient les exemples du livre *Hands-On AI Trading*, rattachés aux notebooks et aux projets de la série dans l'[inventaire du livre](QuantConnect/BOOK_MAPPING.md), qui donne le statut de chaque exemple. La leçon transversale vaut bien au-delà de la finance : une discipline de validation — walk-forward, multi-seed, coûts de transaction — sans laquelle tout résultat de ML est une illusion d'optique. Le pipeline d'entraînement associé (ML-Training-Pipeline) en est la démonstration grandeur nature : un **Ladder** d'architectures testées (cf. [QC README — section ML-Training-Pipeline](QuantConnect/README.md)) dont seule une fraction bat le baseline après validation multi-seed — un verdict d'honnêteté que la série assume comme résultat pédagogique à part entière.
 
 **[SymbolicAI](SymbolicAI/README.md)** — Le pôle « comprendre et prouver » du dépôt, et sa série la plus vaste : preuves formelles Lean 4 (théorème d'Arrow, Kochen-Specker, hommages à Grothendieck et Conway), smart contracts Solidity testés et déployés sur testnet, Web sémantique RDF/SPARQL, logiques d'argumentation (Tweety), planification PDDL et apprentissage symbolique (ILP, automates, neuro-symbolique). C'est ici que la dualité simulation / preuve prend sa forme la plus aboutie : ce que les autres séries calculent, celle-ci cherche à le certifier.
 
@@ -185,7 +185,7 @@ Le dépôt sert ainsi doublement de support de cours : par son contenu, et comme
 - **LEAN Engine**: Backtesting, live trading, optimisation
 - **sklearn / XGBoost / PyTorch**: Modèles ML financiers
 - **QuantConnect Cloud**: projets et backtests cloud (volume exact → [CATALOG-STATUS](#catalog-status) ci-dessus + [hub QuantConnect](QuantConnect/README.md))
-- **Hands-On AI Trading**: les **22 exemples** (sections 06 Applied ML + 07 RL + 08 Risk Mgmt) sont mappés aux notebooks de la série — **20 fermes + 2 ⚠️ partiels** (section 06 ex.01 Trend Scanning + section 08 ex.02 AI corrective, cf. [QC README](QuantConnect/README.md) + [`docs/HANDSON_AI_TRADING_MAPPING.md`](QuantConnect/docs/HANDSON_AI_TRADING_MAPPING.md) pour le détail périmètre et le statut ferme/partiel de chaque exemple)
+- **Hands-On AI Trading**: les exemples du livre (chapitres 04 à 08) sont rattachés aux notebooks et aux projets de la série, avec le statut de chaque exemple (couvert, partiel, ébauche, absent) : [inventaire du livre](QuantConnect/BOOK_MAPPING.md)
 
 ### Infrastructure
 - **Docker**: services GenAI (cf. [00-GenAI-Environment](GenAI/00-GenAI-Environment/README.md) pour la stack complète)

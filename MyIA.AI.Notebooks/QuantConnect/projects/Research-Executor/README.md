@@ -8,7 +8,7 @@
 
 ## Description
 
-Framework that executes 8 embedded research notebooks as a QC algorithm within a 2-day backtest window (2024-01-02 to 2024-01-03). Uses a MockQB class to simulate QuantBook environment for notebooks. The embedded research topics include: asset class momentum, commodity term structure, defensive ETF rotation, short harvest, macro factor rotation, Piotroski F-score, puppies of the Dow, and volatility regime ML. Saves executed notebooks to the QC object store.
+Framework that executes embedded research notebooks as a QC algorithm within a 2-day backtest window (2024-01-02 to 2024-01-03). Uses a MockQB class to simulate QuantBook environment for notebooks. The embedded research topics include: asset class momentum, commodity term structure, defensive ETF rotation, short harvest, macro factor rotation, Piotroski F-score, puppies of the Dow, and volatility regime ML. Saves executed notebooks to the QC object store.
 
 ## How to Run
 
@@ -29,13 +29,13 @@ papermill runner.ipynb output.ipynb
 
 | Method | Rebalance | Key Parameters |
 |--------|-----------|----------------|
-| Research harness (8 notebooks) | N/A (execution framework) | 2-day window, MockQB simulation, Object Store output |
+| Research harness | N/A (execution framework) | 2-day window, MockQB simulation, Object Store output |
 
 ## Files
 
 | File | Description |
 |------|-------------|
-| `main.py` | Research executor algorithm that runs 8 embedded notebooks via MockQB |
+| `main.py` | Research executor algorithm that runs embedded notebooks via MockQB |
 | `runner.ipynb` | Jupyter notebook runner for the research executor |
 | `research_asset_class_momentum.ipynb` | Asset class momentum research notebook |
 | `research_commodity_term_structure.ipynb` | Commodity term structure research notebook |
