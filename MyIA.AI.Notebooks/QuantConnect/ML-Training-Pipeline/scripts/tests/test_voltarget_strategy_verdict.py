@@ -169,3 +169,38 @@ class TestRv21Check:
         chart["series"]["GLD"]["values"].append([_ts("2008-05-20"), 0.99])
         with pytest.raises(ValueError, match="GLD"):
             vs.qc_monthly_rv21(chart, self.rebal)
+
+
+class TestCalendarEffect:
+    idx = pd.bdate_range("2010-01-01", periods=400)
+
+    def _run(self, shift: float) -> tuple[dict, dict]:
+        noise = np.random.default_rng(5).normal(0.0, 0.01, len(self.idx))
+        returns = {vs.BASELINE: pd.Series(noise + shift, index=self.idx),
+                   "har": pd.Series(noise, index=self.idx)}
+        stats = {m: {k: float(r.mean()) for k in vs.REPORTED} | {"n_days": len(r)}
+                 for m, r in returns.items()}
+        return returns, stats
+
+    def test_same_run_gives_zero(self):
+        ret, st = self._run(0.0)
+        out = vs.calendar_effect(ret, st, ret, st)
+        assert out["rv21_minus_reference_rv21"]["diff"] == 0.0
+        assert all(v == 0.0 for v in out["stats_by_calendar"]["har"]["delta"].values())
+
+    def test_side_by_side_and_baseline_gap(self):
+        now, now_st = self._run(0.001)                       # fixed calendar does better
+        ref, ref_st = self._run(0.0)
+        out = vs.calendar_effect(now, now_st, ref, ref_st)
+        row = out["stats_by_calendar"][vs.BASELINE]
+        assert set(row) == {"this_run", "reference", "delta"}
+        assert set(row["this_run"]) == set(vs.REPORTED)       # n_days stays out of the table
+        assert row["delta"]["sharpe"] == pytest.approx(0.001, abs=1e-6)
+        gap = out["rv21_minus_reference_rv21"]
+        assert gap["diff"] > 0 and gap["ci95"][0] > 0          # same noise: the gap is the shift
+
+    def test_sessions_must_match(self):
+        now, now_st = self._run(0.0)
+        ref = {m: r.iloc[1:] for m, r in now.items()}
+        with pytest.raises(ValueError, match="same sessions"):
+            vs.calendar_effect(now, now_st, ref, now_st)
