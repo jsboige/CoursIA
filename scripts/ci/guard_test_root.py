@@ -44,6 +44,22 @@ class PytestBlockNotFound(Exception):
     adjoint po-2025 (c.87) sur #18951 (inline pytest + derniere ligne
     sans continuation)."""
 
+
+class UnknownPytestOption(Exception):
+    """Le bloc pytest utilise une option longue hors des deux sets
+    documentes (booleen ou a-valeur). Le garde REFUSE plutot que de
+    supposer que l'option prend une valeur au token suivant -- cette
+    supposition est un faux vert mesure par l'adjoint po-2025 c.93 sur
+    #18951 (comment 5967232538) : `pytest --trace-config X Y` rendait
+    `paths=[Y]` parce que `--trace-config` etait suppose prendre une
+    valeur, X etait avale, et le test racine etait invisible.
+
+    Cf. CONCERNS adjoint po-2025 c.93 sur #18951 : la politique est
+    "toute option longue doit etre dans un set explicite (booleen ou
+    a-valeur) ou on refuse" -- extension de la politique c.86 "soit on
+    mesure, soit on refuse" a la classe d'arite.
+    """
+
 # On matche un APPEL pytest complet : `pytest` (ou `python -m pytest`)
 # suivi d'une liste d'arguments qui peut tenir sur 1 ligne (inline) ou
 # sur N lignes (multi-lignes YAML block scalar, chaque ligne
@@ -104,6 +120,34 @@ PYTEST_BOOLEAN_OPTIONS: frozenset[str] = frozenset({
     # Documentation flags (c.92 -- no value, exit immediately).
     "--help", "--version",
     "-h",
+})
+
+# Options pytest qui prennent une VALEUR au token suivant (ou via `=`).
+# Une option a valeur DOIT declencher `skip_next` pour avaler le token
+# suivant comme valeur. Si une option longue n'est ni dans
+# PYTEST_BOOLEAN_OPTIONS ni dans PYTEST_VALUE_OPTIONS, le garde REFUSE
+# plutot que de supposer son arite -- politique "toute option longue doit
+# etre dans un set explicite ou on refuse" (extension c.94 de la politique
+# c.86 "soit on mesure, soit on refuse", CONCERNS adjoint po-2025 c.93
+# sur #18951).
+#
+# Source : grep sur `.github/workflows/*.yml` pour `--xxx=VAL` et
+# `--xxx VAL`. 3 options mesurees au c.94 :
+#   --durations : affiche les N tests les plus lents
+#   --durations-min : filtre par seuil (en secondes)
+#   --tb : format de traceback (short/long/line/no/auto/native)
+# Cf. https://docs.pytest.org/en/stable/reference/reference.html#command-line-flags
+PYTEST_VALUE_OPTIONS: frozenset[str] = frozenset({
+    "--durations",
+    "--durations-min",
+    "--tb",
+    # c.94 : --dist est utilise dans .github/workflows/scripts-tests.yml
+    # sous la forme `-n 4 --dist loadscope --tb=short -q`. Sans
+    # whitelist, la nouvelle politique "refuser les options longues
+    # hors set" (c.94) leve `UnknownPytestOption` sur le workflow
+    # reel du depot. Cf. test_parse_with_xdist_returns_all_paths +
+    # test_parse_filters_long_option_values.
+    "--dist",
 })
 
 
@@ -190,22 +234,33 @@ def parse_collected_paths(workflow: Path) -> list[str]:
         # au token suivant -- ici on l'ignore.
         if tok.startswith("-"):
             if tok.startswith("--"):
-                # Option longue. Trois cas :
+                # Option longue. Quatre cas :
                 # 1) `--xxx=VAL` : la valeur est dans le meme token, pas
                 #    de skip_next necessaire.
                 # 2) `--xxx` (sans `=`) ET dans PYTEST_BOOLEAN_OPTIONS :
                 #    option booleenne, pas de skip_next necessaire.
-                # 3) `--xxx` (sans `=`) ET hors set : on suppose qu'elle
-                #    prend une valeur au token suivant (skip_next).
-                # Cf. CONCERNS adjoint po-2025 c.9 sur #18951 : cas
-                # `--verbose` (booleen) traitait le chemin suivant comme
-                # valeur, d'ou `paths=[]`.
+                # 3) `--xxx` (sans `=`) ET dans PYTEST_VALUE_OPTIONS :
+                #    option a valeur, skip_next necessaire.
+                # 4) `--xxx` (sans `=`) ET hors set : REFUS. Politique
+                #    "toute option longue doit etre dans un set explicite
+                #    ou on refuse" (c.94, CONCERNS adjoint po-2025 c.93
+                #    sur #18951, comment 5967232538) : on ne peut pas
+                #    deviner l'arite d'une option non documentee, donc
+                #    `skip_next=True` silencieux est un faux vert
+                #    potentiel (cf. `--trace-config`).
                 if "=" in tok:
                     pass  # valeur inline, on ignore le token
                 elif tok in PYTEST_BOOLEAN_OPTIONS:
                     pass  # booleen, pas de skip_next
+                elif tok in PYTEST_VALUE_OPTIONS:
+                    skip_next = True  # option a valeur
                 else:
-                    skip_next = True
+                    raise UnknownPytestOption(
+                        f"option pytest longue inconnue : {tok!r}. "
+                        f"Ajouter a PYTEST_BOOLEAN_OPTIONS (booleen) ou "
+                        f"PYTEST_VALUE_OPTIONS (a valeur), ou utiliser "
+                        f"`--xxx=VAL` si la valeur est connue."
+                    )
             continue
         if tok.isdigit():
             continue
@@ -454,6 +509,14 @@ def main(argv: list[str] | None = None) -> int:
         # pattern multi-lignes ne matche pas, c'est un defaut de lecture
         # -- le garde rendait `ok=True` sans rien verifier. On remonte
         # un statut explicite (rc=2) et un message qui nomme la cause.
+        print(f"FAIL: {e}", file=sys.stderr)
+        return 2
+    except UnknownPytestOption as e:
+        # #18951 (c.94) : si le workflow contient une option pytest
+        # longue hors des sets documentes, c'est un defaut de politique
+        # -- le garde ne peut pas deviner l'arite, donc refuser plutot
+        # que rendre `ok=True` en supposant `skip_next` (faux vert
+        # mesure par l'adjoint po-2025 c.93 sur `--trace-config`).
         print(f"FAIL: {e}", file=sys.stderr)
         return 2
     except Exception as e:

@@ -531,3 +531,104 @@ def test_parse_disable_warnings_boolean_does_not_eat_next(tmp_path):
         f"`--disable-warnings` est booleen, ne doit pas manger le chemin. "
         f"paths={paths!r}"
     )
+
+
+# ---------------------------------------------------------------------------
+# 7. CONCERNS adjoint po-2025 c.93 sur #18951 : politique "toute option
+#    longue doit etre dans un set explicite ou on refuse" (c.94).
+# ---------------------------------------------------------------------------
+#
+# Le contrat : une option pytest longue (--xxx) doit etre soit dans
+# PYTEST_BOOLEAN_OPTIONS (booleen), soit dans PYTEST_VALUE_OPTIONS (a valeur),
+# soit utilisee sous `--xxx=VAL`. Toute option longue hors set REFUSE
+# (UnknownPytestOption) plutot que de supposer `skip_next=True` -- parce
+# que l'arite est inconnue et la supposition est un faux vert potentiel
+# (cas mesure : `--trace-config`, qui n'est pas booleen et qui a fait
+# avaler `scripts/tests/` comme valeur sur #18951).
+
+
+def test_parse_durations_value_option_eats_next(tmp_path):
+    """Option a valeur whitelisee : `--durations=25` et `--durations 25`
+    ne doivent pas ajouter `25` aux chemins collectes. La politique
+    c.94 distingue booleen / a-valeur, donc `--durations 25` declenche
+    skip_next correctement (la valeur `25` est absorbee)."""
+    wf = tmp_path / "durations.yml"
+    wf.write_text(
+        "name: durations\n"
+        "on: [push]\n"
+        "jobs:\n"
+        "  t:\n"
+        "    steps:\n"
+        "      - run: pytest --durations 25 scripts/tests/ -q\n"
+    )
+    paths = guard.parse_collected_paths(wf)
+    assert paths == ["scripts/tests/"], (
+        f"`--durations 25` doit avaler `25` comme valeur. paths={paths!r}"
+    )
+
+
+def test_parse_tb_value_option_eats_next(tmp_path):
+    """Option a valeur whitelisee : `--tb short` ne doit pas ajouter
+    `short` aux chemins collectes. Pareil que `--durations`."""
+    wf = tmp_path / "tb.yml"
+    wf.write_text(
+        "name: tb\n"
+        "on: [push]\n"
+        "jobs:\n"
+        "  t:\n"
+        "    steps:\n"
+        "      - run: pytest --tb short scripts/tests/ -q\n"
+    )
+    paths = guard.parse_collected_paths(wf)
+    assert paths == ["scripts/tests/"], (
+        f"`--tb short` doit avaler `short` comme valeur. paths={paths!r}"
+    )
+
+
+def test_parse_unknown_long_option_raises(tmp_path):
+    """Politique c.94 : une option longue hors PYTEST_BOOLEAN_OPTIONS et
+    PYTEST_VALUE_OPTIONS leve `UnknownPytestOption`. Le main rend rc=2.
+
+    Cas fondateur : `--trace-config` (adjoint po-2025 c.93, comment
+    5967232538) -- pytest 3.14 l'accepte silencieusement (pas dans
+    `--help`) et son arite est inconnue. Avant c.94, le repli
+    `skip_next=True` faisait avaler le chemin suivant comme valeur
+    (faux vert). Apres c.94, lever une exception explicite."""
+    wf = tmp_path / "trace_config.yml"
+    wf.write_text(
+        "name: trace-config\n"
+        "on: [push]\n"
+        "jobs:\n"
+        "  t:\n"
+        "    steps:\n"
+        "      - run: pytest --trace-config scripts/tests/ -q\n"
+    )
+    import pytest
+    with pytest.raises(guard.UnknownPytestOption) as exc_info:
+        guard.parse_collected_paths(wf)
+    # Le message doit nommer l'option pour faciliter le diagnostic.
+    assert "--trace-config" in str(exc_info.value), (
+        f"Le message doit nommer l'option inconnue. got: {exc_info.value!r}"
+    )
+
+
+def test_main_returns_2_on_unknown_pytest_option(tmp_path, capsys):
+    """Le main intercepte `UnknownPytestOption` et rend rc=2 avec un
+    message explicite sur stderr (meme contrat que `PytestBlockNotFound`)."""
+    wf = tmp_path / "unknown_opt.yml"
+    wf.write_text(
+        "name: unknown-opt\n"
+        "on: [push]\n"
+        "jobs:\n"
+        "  t:\n"
+        "    steps:\n"
+        "      - run: pytest --made-up-flag scripts/tests/ -q\n"
+    )
+    rc = guard.main(["--workflow", str(wf), "--json"])
+    captured = capsys.readouterr()
+    assert rc == 2, (
+        f"`UnknownPytestOption` doit donner rc=2 (refus), got {rc}. stderr={captured.err!r}"
+    )
+    assert "--made-up-flag" in captured.err, (
+        f"Le message d'erreur doit nommer l'option. stderr={captured.err!r}"
+    )
