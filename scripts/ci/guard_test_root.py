@@ -96,6 +96,12 @@ PYTEST_BOOLEAN_OPTIONS: frozenset[str] = frozenset({
     "--runxfail",
     "--no-header", "--no-summary", "--no-cov", "--no-cov-on-fail",
     "--benchmark-disable", "--benchmark-only", "--benchmark-skip",
+    # c.92 adjoint review (comment 5966800233) : --disable-warnings
+    # and its alias --disable-pytest-warnings are recognized by
+    # `python -m pytest --help` and were missing from this list.
+    # Without them, `pytest --disable-warnings X/` ate X as a value.
+    "--disable-warnings", "--disable-pytest-warnings",
+    # Documentation flags (c.92 -- no value, exit immediately).
     "--help", "--version",
     "-h",
 })

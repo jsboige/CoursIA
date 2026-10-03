@@ -505,3 +505,29 @@ def test_parse_long_option_with_equals_value_does_not_eat_next(tmp_path):
     assert paths == ["scripts/tests/"], (
         f"`--junitxml=VAL` doit etre absorbé inline. paths={paths!r}"
     )
+
+
+def test_parse_disable_warnings_boolean_does_not_eat_next(tmp_path):
+    """CONCERNS adjoint po-2025 c.92 sur #18951 (comment 5966800233) :
+    `pytest --disable-warnings scripts/tests/ -q` rendait
+    `paths=[scripts/tests/]` comme collectes -- mais
+    `PYTEST_BOOLEAN_OPTIONS` ne contenait pas `--disable-warnings`,
+    donc le token etait traite comme une option a valeur (skip_next),
+    et `scripts/tests/` etait avale. Resultat : paths=[] + ok=True,
+    faux vert sur un run qui pose un test racine. Le fix : ajouter
+    `--disable-warnings` et son alias `--disable-pytest-warnings`
+    a la liste des booleens reconnus."""
+    wf = tmp_path / "disable_warnings.yml"
+    wf.write_text(
+        "name: dw\n"
+        "on: [push]\n"
+        "jobs:\n"
+        "  t:\n"
+        "    steps:\n"
+        "      - run: pytest --disable-warnings scripts/tests/ -q\n"
+    )
+    paths = guard.parse_collected_paths(wf)
+    assert paths == ["scripts/tests/"], (
+        f"`--disable-warnings` est booleen, ne doit pas manger le chemin. "
+        f"paths={paths!r}"
+    )
