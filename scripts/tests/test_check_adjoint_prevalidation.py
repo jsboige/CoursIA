@@ -2233,3 +2233,107 @@ def test_main_emit_mode_prints_a_dossier_that_passes(monkeypatch, capsys):
     carrying = _snapshot(_body())
     carrying["comments"][-1]["body"] = _fill_reading_acts(block)
     assert mod.evaluate(carrying)[0] == mod.VERDICT_READY
+
+
+# --- #18934 : un READY qui recouvre un BLOCKED le refute par son nom ---------
+# Invariant C de #17020. Incident fondateur 2026-09-20 : le masquage d'un
+# dossier valide par un dossier posterieur moins rigoureux etait intra-login
+# -- le defaut vit dans la RELATION entre dossiers successifs, pas dans
+# l'identite de l'emetteur. A tete constante, un READY doit citer l'ancien
+# BLOCKED (supersedes) et nommer ce qu'il refute (supersedes-why).
+
+
+OTHER_HEAD = "f" * 40
+
+
+def _stacked_dossiers(first: dict, second: dict) -> dict:
+    """Snapshot a deux dossiers sur la MEME tete : BLOCKED (index 1) puis
+    second (index 2). Chaque dossier temoigne des commentaires qui le
+    precedent (comments-reviewed == comment_index, surfaces-sha256 sur le
+    prefixe) -- sinon l'evaluation echouerait pour la mauvaise raison.
+    """
+    snapshot = _base_snapshot()
+    first_fields = {"verdict": "BLOCKED", "b0": "blocked", "comments-reviewed": "1"}
+    first_fields.update(first)
+    first_fields["surfaces-sha256"] = mod.surfaces_fingerprint(snapshot, 1)
+    snapshot["comments"].append(_comment(_body(**first_fields)))
+
+    second_fields = {"comments-reviewed": "2"}
+    second_fields.update(second)
+    second_fields["surfaces-sha256"] = mod.surfaces_fingerprint(snapshot, 2)
+    snapshot["comments"].append(_comment(_body(**second_fields)))
+    return snapshot
+
+
+def test_mute_contradiction_is_refused_and_names_the_covered_dossier():
+    """READY muet sur BLOCKED meme tete : refus rc 1, l'ancien est nomme."""
+    snapshot = _stacked_dossiers({}, {})
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == ""
+    assert len(errors) == 1
+    error = errors[0]
+    assert "mute contradiction (#18934)" in error
+    assert "comment 2 of 3" in error  # l'ancien BLOCKED, pas le READY
+    assert "supersedes: 2" in error
+
+
+def test_ready_with_supersedes_and_why_stands():
+    """La refutation nommee debloque : citation exacte + raison non vide."""
+    snapshot = _stacked_dossiers(
+        {},
+        {"supersedes": "2", "supersedes-why": "B.0 levered: nit lifted in c3"},
+    )
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_supersedes_citing_the_wrong_comment_is_refused():
+    snapshot = _stacked_dossiers({}, {"supersedes": "1", "supersedes-why": "x"})
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == ""
+    assert any("supersedes: 2" in e for e in errors)
+
+
+def test_supersedes_without_why_is_refused():
+    snapshot = _stacked_dossiers({}, {"supersedes": "2", "supersedes-why": "  "})
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == ""
+    assert any("supersedes-why is empty" in e for e in errors)
+
+
+def test_changed_head_means_nothing_to_refute():
+    """A tete changee l'ancien est deja perime par exact-head : pas de
+    contradiction, le READY n'a rien a citer."""
+    snapshot = _stacked_dossiers({"head": OTHER_HEAD}, {})
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_blocked_over_ready_needs_no_refutation():
+    """La direction conservatrice serre, elle ne debloque pas : rien a exiger."""
+    snapshot = _stacked_dossiers(
+        {"verdict": "READY", "b0": "clear"},
+        {"verdict": "BLOCKED", "b0": "blocked"},
+    )
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_BLOCKED
+    assert errors == []
+
+
+def test_stray_supersedes_on_a_lone_ready_is_tolerated():
+    """Champs optionnels hors contradiction : un dossier sans aine sur la
+    meme tete ne peut pas etre refuse pour les porter."""
+    snapshot = _snapshot(_body(supersedes="7", **{"supersedes-why": "nostalgia"}))
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_main_refuses_mute_contradiction_with_rc1(monkeypatch, capsys):
+    snapshot = _stacked_dossiers({}, {})
+    monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
+    monkeypatch.setattr(mod.gh_identity, "pin_gh_token", lambda: None)
+    monkeypatch.setattr(mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []})
+    monkeypatch.setattr(sys, "argv", ["check_adjoint_prevalidation.py", "123"])
+    assert mod.main() == mod.EXIT_NO_DOSSIER
+    out = capsys.readouterr().out
+    assert "NO-DOSSIER" in out and "mute contradiction (#18934)" in out

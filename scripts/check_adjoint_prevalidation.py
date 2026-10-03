@@ -229,6 +229,13 @@ REQUIRED_FIELDS = {
 VERDICT_ORGAN_FIELDS = ("organ", "organ-command", "organ-rc")
 ORGAN_NAME = "check_adjoint_prevalidation.py"
 
+# #18934 (invariant C de #17020) : refutation d'un dossier precedent. Un
+# dossier READY qui recouvre un dossier BLOCKED a tete constante doit citer
+# l'ancien (supersedes: numero du commentaire) et nommer ce qu'il refute
+# (supersedes-why). Champs OPTIONNELS au parse et hors contradiction --
+# un dossier sans aine sur la meme tete n'a rien a citer.
+SUPERSEDES_FIELDS = ("supersedes", "supersedes-why")
+
 INTEGER_FIELDS = {
     "pr",
     "comments-reviewed",
@@ -305,7 +312,10 @@ def parse_dossier(
 
     missing = sorted(REQUIRED_FIELDS - fields.keys())
     unknown = sorted(
-        fields.keys() - REQUIRED_FIELDS - set(VERDICT_ORGAN_FIELDS)
+        fields.keys()
+        - REQUIRED_FIELDS
+        - set(VERDICT_ORGAN_FIELDS)
+        - set(SUPERSEDES_FIELDS)
     )
     if missing:
         errors.append("missing fields: " + ", ".join(missing))
@@ -1150,6 +1160,60 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
     return errors
 
 
+def mute_contradictions(
+    dossier: Dossier,
+    candidates: list[tuple[Dossier, list[str]]],
+    comment_count: int,
+) -> list[str]:
+    """#18934 -- un READY qui recouvre un BLOCKED a tete constante refute par son nom.
+
+    « Le dernier dossier gagne » : sans cette garde, un READY peut recouvrir
+    en silence un BLOCKED anterieur du meme compte -- le masquage mesure le
+    2026-09-20 etait intra-login, la preuve que le defaut vit dans la
+    RELATION entre dossiers successifs, pas dans l'identite de l'emetteur ;
+    il survit donc a tout elargissement d'auteurs. La contradiction se joue
+    a tete constante (``head`` egaux) : a tete changee, l'ancien dossier est
+    deja perime par exact-head et il n'y a rien a refuter.
+
+    Le nouveau dossier doit porter ``supersedes: <numero du commentaire de
+    l'ancien>`` (position 1-based dans le fil, celle que restamp_warning
+    affiche deja) et ``supersedes-why: <texte>`` nommant ce qui est refute :
+    preuve apportee, erreur de l'ancien, ou perimetre different. Muette, la
+    contradiction refuse le dossier (rc 1) -- l'option A de la prescription,
+    fail-closed comme le reste du gate. La direction conservatrice (BLOCKED
+    apres READY) n'exige rien : elle serre, elle ne debloque pas.
+    """
+    if dossier.fields.get("verdict") != VERDICT_READY:
+        return []
+    covered = next(
+        (
+            previous
+            for previous, _errors in reversed(candidates[:-1])
+            if previous.fields.get("verdict") == VERDICT_BLOCKED
+            and previous.fields.get("head") == dossier.fields.get("head")
+        ),
+        None,
+    )
+    if covered is None:
+        return []
+    position = str(covered.comment_index + 1)
+    if dossier.fields.get("supersedes", "").strip() != position:
+        return [
+            "mute contradiction (#18934): verdict READY covers the BLOCKED "
+            f"dossier by {covered.author} from {covered.created_at} (comment "
+            f"{position} of {comment_count}) at the same head without refuting "
+            f"it -- set 'supersedes: {position}' and 'supersedes-why: <what "
+            "changed or what the BLOCKED dossier got wrong>"
+        ]
+    if not dossier.fields.get("supersedes-why", "").strip():
+        return [
+            "mute contradiction (#18934): supersedes cites comment "
+            f"{position} but supersedes-why is empty -- name what is refuted "
+            "(proof brought, the old dossier's error, or a different scope)"
+        ]
+    return []
+
+
 def evaluate_with_dossier(
     snapshot: dict[str, Any],
 ) -> tuple[str, list[str], Dossier | None]:
@@ -1186,6 +1250,7 @@ def evaluate_with_dossier(
 
     dossier, errors = candidates[-1]
     errors = [*errors, *validate_dossier(dossier, snapshot)]
+    errors.extend(mute_contradictions(dossier, candidates, len(comments)))
     # A dossier is a snapshot. Any later comment invalidates it, including a
     # reply that claims the PR is still ready -- unless the coordinator itself
     # wrote it, which it cannot be unaware of (see _is_own_later_act), or it
