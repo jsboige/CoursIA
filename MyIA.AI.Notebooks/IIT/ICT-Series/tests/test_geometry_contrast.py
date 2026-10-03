@@ -184,11 +184,32 @@ RUNS = Path(__file__).parent.parent / "runs"
 ARTIFACT = RUNS / "quadri_instruments_contrast.json"
 
 
+def _load_artifact(path: Path) -> dict:
+    # Falsifiabilité (suivi prévalidation #18913) : l'artefact est un livrable
+    # mandat de cette PR — s'il disparaît, la suite doit ROUGIR (perte du
+    # livrable), jamais verdir en sautant. Témoin négatif :
+    # test_artifact_fixture_fails_when_artifact_missing.
+    if not path.exists():
+        raise FileNotFoundError(
+            f"artefact mandaté introuvable : {path} — livrable #17740 perdu ;"
+            " sa régénération exige un run dense (mode regenerate)"
+        )
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
 @pytest.fixture(scope="module")
 def artifact():
-    if not ARTIFACT.exists():
-        pytest.skip("artefact quadri-instruments non encore committé")
-    return json.loads(ARTIFACT.read_text(encoding="utf-8"))
+    return _load_artifact(ARTIFACT)
+
+
+def test_artifact_fixture_fails_when_artifact_missing(tmp_path):
+    # Témoin négatif (suivi prévalidation #18913) : un artefact disparu fait
+    # échouer la fixture (FileNotFoundError), jamais verdir par un skip
+    # silencieux. Ce témoin peut échouer : si la garde retombait sur un skip,
+    # _load_artifact ne lèverait plus et ce test rougerait.
+    missing = tmp_path / "quadri_instruments_contrast.json"
+    with pytest.raises(FileNotFoundError, match="artefact mandaté introuvable"):
+        _load_artifact(missing)
 
 
 def test_artifact_reports_four_instruments_separately(artifact):
