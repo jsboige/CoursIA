@@ -95,7 +95,10 @@ jobs:
       - name: Smoke test the new fixer (#18911)
         # Verifie que `fix_ipynb_links.py` reste fonctionnel -- c'est l'outil
         # canonique qui sera utilise pour les vagues de sweep en aval.
+        # Le runner Ubuntu n'a pas pytest par defaut (#18970 -- "No module
+        # named pytest") : on l'installe avant d'executer les tests.
         run: |
+          python -m pip install --quiet pytest
           python -m pytest scripts/notebook_tools/tests/test_fix_ipynb_links.py -v
 
       - name: Audit total (advisory -- backlog connu de 2428)
