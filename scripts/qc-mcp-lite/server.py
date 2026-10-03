@@ -6,6 +6,7 @@ Exposes only the QC REST endpoints used in backtesting workflows:
 - backtest: create_backtest, read_backtest, list_backtests
 - project: list_projects, read_project
 - file: read_file, update_file_contents, create_file
+- charts: read_backtest_chart (writes to disk, returns series point counts)
 
 Auth: QC_API_USER_ID + QC_API_ACCESS_TOKEN env vars.
   Uses SHA256(token:timestamp) + Basic auth + Timestamp header.
@@ -18,10 +19,12 @@ Config: see docs/quantconnect.md for .mcp.json setup.
 
 import base64
 import hashlib
+import json
 import os
 import time
 from collections import deque
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Optional
 
 import requests
@@ -310,12 +313,15 @@ def list_projects(name_contains: str = "") -> dict:
 
 @mcp.tool()
 def read_project(project_id: int) -> dict:
-    """Read a single project's details and files."""
+    """Read a single project's details and list its files (name, size)."""
     data = _api_post(
         "/projects/read",
         {"projectId": project_id},
     )
     proj = data.get("projects", [{}])[0] if data.get("projects") else data
+    # /projects/read does not carry the files: listing them from it always
+    # showed `files: []`, even on a project holding main.py (#18938).
+    files = _api_post("/files/read", {"projectId": project_id}).get("files", [])
     return {
         "projectId": proj.get("projectId", project_id),
         "name": proj.get("name", ""),
@@ -323,8 +329,8 @@ def read_project(project_id: int) -> dict:
         "language": proj.get("language", ""),
         "organizationId": proj.get("organizationId", ""),
         "files": [
-            {"name": f.get("name", ""), "content": f.get("content", "")[:200]}
-            for f in (proj.get("files") or [])
+            {"name": f.get("name", ""), "size": len(f.get("content", ""))}
+            for f in files
         ],
     }
 
@@ -372,6 +378,57 @@ def create_file(project_id: int, name: str, content: str = "") -> dict:
         {"projectId": project_id, "name": name, "content": content},
     )
     return {"success": data.get("success", True), "name": name}
+
+
+# ─── Backtest charts ──────────────────────────────────────────────────
+
+CHART_POLL_ATTEMPTS = 20
+CHART_POLL_WAIT = 3.0
+
+
+@mcp.tool()
+def read_backtest_chart(
+    project_id: int,
+    backtest_id: str,
+    name: str,
+    start: int,
+    end: int,
+    out_path: str,
+    count: int = 100,
+) -> dict:
+    """Write one backtest chart (e.g. "Strategy Equity", or a custom chart) to a JSON file.
+
+    `start` and `end` are Unix timestamps; `count` is the number of points
+    requested. Returns the path, and per series its point count and first and
+    last timestamps, never the values: a daily series over 20 years must not
+    transit through the agent's context. QC answers `status: loading` while it
+    builds the chart; the request is repeated a bounded number of times.
+    """
+    body = {"projectId": project_id, "backtestId": backtest_id, "name": name,
+            "count": count, "start": start, "end": end}
+    data = _api_post("/backtests/chart/read", body)
+    for _ in range(CHART_POLL_ATTEMPTS):
+        if "chart" in data:
+            break
+        time.sleep(CHART_POLL_WAIT)
+        data = _api_post("/backtests/chart/read", body)
+    chart = data.get("chart")
+    if chart is None:
+        raise TimeoutError(
+            f"chart {name!r} still {data.get('status', 'missing')} "
+            f"after {CHART_POLL_ATTEMPTS} polls"
+        )
+    path = Path(out_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(chart), encoding="utf-8")
+    series = {}
+    for key, s in (chart.get("series") or {}).items():
+        values = s.get("values") or []
+        times = [v[0] if isinstance(v, list) else v.get("x") for v in values if v]
+        series[key] = {"points": len(values),
+                       "first": times[0] if times else None,
+                       "last": times[-1] if times else None}
+    return {"path": str(path), "name": chart.get("name", name), "series": series}
 
 
 # ─── Entry point ──────────────────────────────────────────────────────
