@@ -274,14 +274,40 @@ n'est pas modifié au-delà du fix) applique le protocole de la famille #1454 :
 
 **Lecture** : (1) le claim #14778 se **reproduit exactement** sur son périmètre — BTC h=1
 vs log_har mesure +19,7 % (p≈0), chiffre identique au run original, et ETH reste BEATS
-3/3 horizons ; (2) la **généralisation** ne passe pas : sur les cinq actifs chargés via
-yfinance (~721 jours horaires contre 2 277 pour BTC), l'edge ne réplique plus à
-h≥5 — chaque horizon non significatif est INCONCLUSIVE, **aucun n'est NO BEATS** vs
-log_har. Le verdict cluster NO BEATS (3/7, p=0,7734) dit « pas de preuve d'un edge
-cluster-wide », pas « réfuté partout » ; il est porté par une perte de puissance sur
-séries courtes, exactement le profil mesuré pour M4 (edge confiné aux longues séries).
+3/3 horizons ; (2) la **généralisation** ne passe pas : à h=1, 6 des 7 actifs battent
+log_har (tous sauf DOT) ; à h≥5, l'edge ne se maintient en BEATS que sur BTC, ETH et
+**SOL** (+9,27 %, p=0,028 à h=5) — LTC, XRP, ADA et DOT, les quatre actifs yfinance à
+historique court (~721 jours horaires contre 2 277 pour BTC), passent en INCONCLUSIVE à
+h≥5 sans qu'**aucun horizon ne soit NO BEATS** vs log_har. Le verdict cluster NO BEATS
+(3/7, p=0,7734) dit « pas de preuve d'un edge cluster-wide », pas « réfuté partout » ;
+il est porté par une perte de puissance sur séries courtes, exactement le profil mesuré
+pour M4 (edge confiné aux longues séries).
 (3) Contre har_rv, la majorité 5/7 ne suffit pas (p=0,2266) — la baseline HAR recalibrée
 reste la référence non battue de la famille, cohérent avec M12/M15/M16/M17.
+
+### Rapport de biais signé (critère §C-7, reprise de la prévalidation c.2026-10-03)
+
+Convention : `signed_bias_debiased` = moyenne des erreurs signées OOS par fold, échelle
+log-vol débiaisée ; négatif = sous-estimation. Vue cluster, 7 actifs × h{1,5,10} (n=21
+configurations, graine 0 — les graines bit-identiques sont des contrôles).
+
+| Modèle | biais signé moyen | Verdict cluster (tsfm vs lui) |
+|---|---:|---|
+| har_rv | −0,0278 | INCONCLUSIVE 5/7 (p=0,2266) |
+| persistence | −0,0301 | BEATS 7/7 (p=0,0078) |
+| ewma | −0,0491 | NO BEATS 2/7 (p=0,9375) |
+| **tsfm** | **−0,0522** | — |
+| log_har | −0,0686 | NO BEATS 3/7 (p=0,7734) |
+
+Lecture : tsfm est **moins sous-estimateur que log_har** (−0,052 vs −0,069 ;
+SOL h=1 : −0,0282 vs −0,0416 ; h=5 : −0,0567 vs −0,0743) mais **plus biaisé que
+persistence et har_rv**. En conséquence : (a) le seul BEATS cluster (vs persistence)
+n'est **pas** porté par le biais — tsfm y est plus biaisé que la baseline, l'edge vient
+de la précision ; (b) vs log_har, l'avantage de biais ne suffit pas à faire passer le
+sign-test ; (c) la jambe `linear` (contrôle de biais, #10961 CE1) est INCONCLUSIVE sur
+SOL (p=0,40 / 0,38) alors que la jambe MSE y donne BEATS — conformément au protocole,
+la conjonction porte sur la perte de précision (MSE), `linear` ne remplace jamais la
+jambe principale.
 
 **Conséquence ping-pong GPU (#1454)** : aucun job `[GPU-QUEUE]` ne se justifie pour M18 —
 le goulot n'est pas le compute mais la **profondeur de données** (séries hourly >2 ans

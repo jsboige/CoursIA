@@ -78,10 +78,11 @@ contrairement à M4/M15).
 - **Verdict cluster : NO BEATS contre la référence log_har** — 3/7 actifs BEATS
   (BTC, ETH, SOL), p=0,7734, dans les DEUX vues. Le claim #14778 « 5/6 BEATS vs
   Log-HAR » se reproduit exactement sur son périmètre (BTC h=1 +19,7 % p≈0, ETH
-  BEATS 3/3) mais **ne généralise pas** : sur les cinq actifs yfinance (~721 j
-  horaires vs 2 277 pour BTC), l'edge ne réplique plus à h≥5 — aucun horizon NO
-  BEATS vs log_har (perte de puissance, pas réfutation ; profil M4 : edge confiné
-  aux longues séries).
+  BEATS 3/3) mais **ne généralise pas** : à h=1, 6/7 actifs BEATS (tous sauf DOT) ;
+  à h≥5 l'edge ne tient en BEATS que sur BTC, ETH et SOL (+9,27 % p=0,028 à h=5) —
+  LTC, XRP, ADA et DOT (les quatre actifs yfinance à ~721 j horaires vs 2 277 pour
+  BTC) passent INCONCLUSIVE à h≥5, aucun horizon NO BEATS vs log_har (perte de
+  puissance, pas réfutation ; profil M4 : edge confiné aux longues séries).
 - vs persistence : **BEATS 7/7** (p=0,0078, les deux vues). vs ewma : NO BEATS 2/7
   (p=0,9375, vue cluster). vs har_rv : INCONCLUSIVE 5/7 (p=0,2266) — la baseline
   HAR recalibrée reste la référence non battue de la famille (M12/M15/M16/M17).
