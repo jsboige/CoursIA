@@ -105,7 +105,7 @@ Forex                  -0.32   -0.32   1    ▏
 QuantConnect/
 ├── README.md                    # Vue d'ensemble
 ├── QUICK_TOUR.md                # Visite guidée (2 min)
-├── BOOK_MAPPING.md              # Mapping livre Jared Broad (63 exemples)
+├── BOOK_MAPPING.md              # Inventaire des exemples du livre de Jared Broad
 ├── projects/                    # 116 strategies de trading
 │   ├── catalog.json             # Catalogue machine-readable
 │   ├── README.md                # Tableau performance
@@ -146,5 +146,5 @@ Les notebooks pédagogiques `Python/QC-Py-*` couvrent les concepts ; les projets
 - [Quick Tour](../QUICK_TOUR.md) — Vue d'ensemble en 2 minutes
 - [Patterns confirmés](../../../docs/qc/quantconnect.md) — 20 patterns + 10 anti-patterns
 - [Catalogue détaillé](../projects/STRATEGIES_DETAIL.md) — Toutes les strategies par catégorie
-- [Livre Jared Broad](../BOOK_MAPPING.md) — 63 exemples du livre *Hands-On AI Trading*
+- [Livre Jared Broad](../BOOK_MAPPING.md) — inventaire des exemples du livre *Hands-On AI Trading*
 - [Catalogue QC Cloud](qc_strategies_catalog.md) — Métriques par strategy avec Cloud IDs

@@ -1,203 +1,206 @@
-# Hands-On AI Trading — Book-to-Series Mapping
+# Hands-On AI Trading — inventaire des exemples du livre
 
-Maps the 63 examples (71 deliverables) from [HandsOnAITradingBook](https://github.com/QuantConnect/HandsOnAITradingBook) (Jared Broad) to our QuantConnect notebooks and projects.
+Ce fichier est **l'inventaire de référence** : il rattache chaque exemple du livre *Hands-On AI Trading with Python, QuantConnect, and AWS* (Jared Broad, 2025) aux notebooks et aux projets de ce dépôt. [docs/HANDSON_AI_TRADING_MAPPING.md](docs/HANDSON_AI_TRADING_MAPPING.md) renvoie ici.
 
-Status: `COVERED` = we have equivalent content, `PARTIAL` = partial coverage, `GAP` = no equivalent.
+**Référence** : dépôt [QuantConnect/HandsOnAITradingBook](https://github.com/QuantConnect/HandsOnAITradingBook), commit `e025f21` (2025-12-20), dossiers `00` et `04` à `08`. Le chapitre 06 et les suivants contiennent des algorithmes LEAN complets ; les chapitres 04 et 05 contiennent des scripts autonomes sur données synthétiques.
 
----
+## Comment lire les tableaux
 
-## Ch04 — Dataset Preparation (21 scripts)
+| Statut | Sens |
+|--------|------|
+| `COVERED` | une ressource du dépôt implémente en code la technique de l'exemple (cellule de notebook ou `main.py`) |
+| `PARTIAL` | la technique est présente, mais sur un autre problème, ou seulement pour une partie de l'exemple |
+| `STUB` | un projet porte le nom de l'exemple mais ne contient pas encore de code (README seul) |
+| `GAP` | aucune ressource du dépôt ne couvre l'exemple |
 
-All standalone Python scripts using synthetic data. Not QuantConnect algorithms.
+**Méthode (2026-10-03).** Les appels caractéristiques de chaque exemple (`Lasso(`, `GaussianHMM`, `LGBMRanker`, `MarkovRegression`…) ont été recherchés dans les cellules de code des notebooks `Python/` et dans les fichiers `.py` et `.ipynb` de `projects/` et `research/`. Le README de chaque projet a ensuite été lu pour confirmer l'exemple visé. Le statut dit si la technique est présente. Il ne dit pas si la reproduction est fidèle au livre (même univers, mêmes résultats) : cette comparaison est l'objet de [#18900](https://github.com/jsboige/CoursIA/issues/18900).
 
-| # | Book Example | ML Technique | Our Resource | Status |
-|---|-------------|-------------|-------------|--------|
-| 01 | ExploratoryDataAnalysis (Sweetviz) | EDA | QC-Py-03 Data Management | PARTIAL |
-| 02 | IdentifyingMissingData | NaN detection | QC-Py-03 | PARTIAL |
-| 03 | BoxPlotOutliers | Box plot | — | GAP |
-| 04 | ZScoreOutliers | Z-score | — | GAP |
-| 05 | IQROutliers | IQR | — | GAP |
-| 06 | RemovingOutliers | Filter Z<=2 | — | GAP |
-| 07 | TransformingOutliers | Log transform | — | GAP |
-| 08 | CappingFlooringOutliers | Winsorization | — | GAP |
-| 09 | FeatureEngineering | MA, RSI, BB, lagged returns | **QC-Py-18 ML Features Engineering** | COVERED |
-| 10 | Normalization | MinMaxScaler | QC-Py-18 | PARTIAL |
-| 11 | Standardization | StandardScaler | QC-Py-18 | PARTIAL |
-| 12 | StationaryTransform | Differencing + ADF | QC-Py-18 | PARTIAL |
-| 13 | ADFTest + FracDiff | ADF + fractional diff (Lopez de Prado) | — | GAP |
-| 14 | EngleGrangerTest | Cointegration | **PairsTrading/research.ipynb** | COVERED |
-| 15 | HurstCoefficient | Mean-reverting vs trending | — | GAP |
-| 16 | CorrelationAnalysis | Pearson + heatmap | QC-Py-03 | PARTIAL |
-| 17 | FeatureImportance (RF) | RF importance + corr drop | QC-Py-18 | PARTIAL |
-| 18 | AutoIdentificationFeatures (RFE) | Recursive Feature Elimination | — | GAP |
-| 19 | PCA | Principal Components | **QC-Py-21 Portfolio Optimization ML** | COVERED |
-| 20 | DataSplit | Train/test 80/20 | QC-Py-18 (implicit) | PARTIAL |
-| 21 | KFoldCrossValidation | 5-fold CV + RF | QC-Py-15 Parameter Optimization | PARTIAL |
+**Colonne « Statut QC ».** Elle reprend le statut du projet tel qu'il figure le 2026-10-03 dans [qc-strategies-status.md](../../docs/qc/qc-strategies-status.md). Ce fichier fait foi pour les backtests QC Cloud (Sharpe, CAGR, pire baisse, période).
 
-**Coverage**: 3 COVERED, 13 PARTIAL, 5 GAP.
-**Priority gaps**: FracDiff (#13), Hurst (#15), RFE (#18), outlier methods (#03-08).
+Chaque ressource est un lien relatif vers un chemin qui existe sur `main`. Ce fichier est dans le périmètre de `scripts/check_docs_links.py` : un lien cassé y est détecté par la CI.
 
 ---
 
-## Ch05 — Model Choice (18 scripts)
+## 00 — Bibliothèques du livre
 
-Standalone ML scripts using synthetic data.
+Outils internes du livre, sans exemple de stratégie à reproduire.
 
-| # | Book Example | Model Family | Our Resource | Status |
-|---|-------------|-------------|-------------|--------|
-| 01 | LinearRegression | Regression | **QC-Py-20 ML Regression Prediction** | COVERED |
-| 02 | PolynomialRegression | Poly degree 2 | — | GAP |
-| 03 | LassoRegression | L1 regularization | — | GAP |
-| 04 | RidgeRegression | L2 regularization | — | GAP |
-| 05 | MarkovSwitchingDynamicRegression | Regime switching (statsmodels) | **QC-Py-Cloud-05 RegimeSwitching** | COVERED |
-| 06 | DecisionTreeRegression | DT regressor | — | GAP |
-| 07 | SVMWaveletForecasting | SVR + wavelet | — | GAP |
-| 08 | SVRGridSearch | SVR hyperopt | — | GAP |
-| 09 | MulticlassRF (LightGBM) | Gradient boosting | **projects/ML-XGBoost** | PARTIAL |
-| 10 | LogisticRegression | Binary classification | — | GAP |
-| 11 | HiddenMarkovModels | GaussianHMM (hmmlearn) | **QC-Py-Cloud-05 RegimeSwitching** | COVERED |
-| 12 | GaussianNaiveBayes | GNB classification | — | GAP |
-| 13 | CNN + LSTM | Deep learning (Keras) | **QC-Py-30 LSTM Training**, **QC-Py-31 Transformer Training** | COVERED |
-| 14 | LGBRanker | Learning-to-rank | **projects/ML-RandomForest**, **projects/ML-XGBoost** | PARTIAL |
-| 15 | OPTICSClustering | Density clustering | — | GAP |
-| 16 | OpenAILanguageModel | GPT-4 sentiment | **QC-Py-17 Sentiment Analysis** | COVERED |
-| 17 | AmazonChronosModel | Chronos-T5 forecasting | **projects/Chronos-Foundation-Forecasting** | COVERED |
-| 18 | FinBERTModel | FinBERT NLP | **QC-Py-Cloud-01-FinBERT-Sentiment** | COVERED |
-
-**Coverage**: 7 COVERED, 2 PARTIAL, 9 GAP.
-**Priority gaps**: Lasso/Ridge (#03-04), DT (#06), SVM+Wavelet (#07-08), GNB (#12), OPTICS (#15). Lower priority: PolyReg (#02), Logistic (#10).
+| Module | Rôle | Équivalent dans le dépôt |
+|--------|------|--------------------------|
+| `backtestlib` | `rough_daily_backtest()`, courbe de capital approchée | [QC-Py-12-Backtesting-Analysis](Python/QC-Py-12-Backtesting-Analysis.ipynb) (courbe de capital, pire baisse) |
+| `tearsheet` | graphiques de performance | [QC-Py-12-Backtesting-Analysis](Python/QC-Py-12-Backtesting-Analysis.ipynb), [QC-Py-14-Portfolio-Construction-Execution](Python/QC-Py-14-Portfolio-Construction-Execution.ipynb) |
 
 ---
 
-## Ch06 — Applied Machine Learning (19 examples, 27 sub-items)
+## 04 — Préparation des données (`04 Step 2 - Dataset Preparation`)
 
-Full QuantConnect LEAN algorithms using real market data. Core chapter.
-
-| # | Book Example | Technique | Our Resource | Status |
-|---|-------------|-----------|-------------|--------|
-| 01 | ML Trend Scanning (MLFinLab) | Trend labels + BTC | — | GAP (requires MLFinLab license) |
-| 02 | Factor Preprocessing Regime Detection | RF + factor engineering | **RegimeSwitching/research.ipynb** | PARTIAL |
-| 03 | Reversion vs Trending Classification | NN momentum/reversion | **TrendFilteredMeanReversion/** | PARTIAL |
-| 04/01 | HMM Equities (SPY/TLT) | Markov regime | **RegimeSwitching/**, **DynamicVIXSpyRegime-QC** | COVERED |
-| 04/02 | HMM Equity Options (SPY) | Regime + options | **Options-VGT/** | PARTIAL |
-| 04/03 | HMM Index Options (SPX) | Regime + index options | — | GAP |
-| 05 | FX SVM Wavelet Forecasting | SVR + wavelet + forex | — | GAP |
-| 06 | Dividend Harvesting | DT regression + yields | — | GAP |
-| 07 | Stock Splits Effect | Linear regression | — | GAP |
-| 08/01 | Fixed Stop Loss (benchmark) | No ML | **QC-Py-09 Order Types** | PARTIAL |
-| 08/02 | ML Placed Stop Loss | Lasso + VIX/ATR | — | GAP |
-| 08/03 | ML Put Option Hedge | Lasso + options hedge | — | GAP |
-| 09 | ML Pairs Selection | PCA + OPTICS + cointegration | **PairsTrading/** | COVERED |
-| 10 | Stock Selection Clustering | PCA + LGBMRanker | **projects/SectorMomentum/** | COVERED |
-| 11 | Inverse Vol Futures | Ridge + futures | — | GAP |
-| 12 | Trading Costs Optimization | DT regression + BTC | — | GAP |
-| 13 | PCA Statistical Arbitrage | PCA + mean reversion | — | GAP |
-| 14 | Temporal CNN Prediction | 1D-CNN + QQQ | **projects/Temporal-CNN-Prediction** | COVERED |
-| 15 | Gaussian Classifier Direction | GNB + tech sector | — | GAP |
-| 16 | LLM Tiingo News Summarization | GPT + TSLA | **QC-Py-Cloud-01-FinBERT-Sentiment** | PARTIAL |
-| 17 | Head Shoulders CNN Pattern | CNN + USDCAD | — | GAP |
-| 18/01 | Chronos Base Model | Chronos-T5 + portfolio | **projects/Chronos-Foundation-Forecasting** | COVERED |
-| 18/02 | Chronos Fine-Tuned | Chronos fine-tune | **projects/Chronos-Foundation-Forecasting** | COVERED |
-| 19/01 | FinBERT Base Model | FinBERT + volatile stocks | **QC-Py-Cloud-01-FinBERT-Sentiment** | COVERED |
-| 19/02 | FinBERT Fine-Tuned | FinBERT fine-tune | — | GAP |
-
-**Coverage**: 9 COVERED, 5 PARTIAL, 13 GAP.
-**Priority gaps**: SVM Wavelet (#05), Dividend Harvesting (#06), ML Stop Loss (#08/02-03), PCA Stat Arb (#13), Trading Costs (#12). Nice-to-have: HMM Index Options (#04/03), Head Shoulders CNN (#17), FX specific (#05).
+| # | Script du livre | Technique | Ressource du dépôt | Statut |
+|---|-----------------|-----------|--------------------|--------|
+| 01 | ExploratoryDataAnalysis | analyse exploratoire (Sweetviz) | [QC-Py-04-Research-Workflow](Python/QC-Py-04-Research-Workflow.ipynb), [QC-Py-18-ML-Features-Engineering](Python/QC-Py-18-ML-Features-Engineering.ipynb) (`describe()`, pas de Sweetviz) | PARTIAL |
+| 02 | IdentifyingMissingData | détection des valeurs manquantes | [QC-Py-31-Transformer-Training](Python/QC-Py-31-Transformer-Training.ipynb) (`isna().sum()` par colonne) | COVERED |
+| 03 | UsingBoxPlotToIdentifyOutliers | boîte à moustaches | [Ensemble-DLinear-TFT](projects/Ensemble-DLinear-TFT/) (compare des Sharpe, ne repère pas de valeurs aberrantes) | PARTIAL |
+| 04 | UsingZScoreToIdentifyOutliers | score z | [QC-Py-18-ML-Features-Engineering](Python/QC-Py-18-ML-Features-Engineering.ipynb) | COVERED |
+| 05 | UsingIQRToIdentifyOutliers | écart interquartile | — | GAP |
+| 06 | RemovingOutliers | filtrage des valeurs aberrantes | [QC-Py-18-ML-Features-Engineering](Python/QC-Py-18-ML-Features-Engineering.ipynb) | PARTIAL |
+| 07 | TransformingOutliers | transformation logarithmique | [QC-Py-18-ML-Features-Engineering](Python/QC-Py-18-ML-Features-Engineering.ipynb) (logarithme de la capitalisation, sans lien explicite avec les valeurs aberrantes) | PARTIAL |
+| 08 | CappingFlooringOutliers | écrêtage (winsorisation) | [QC-Py-18-ML-Features-Engineering](Python/QC-Py-18-ML-Features-Engineering.ipynb) (`clip`) | COVERED |
+| 09 | FeatureEngineering | moyennes mobiles, RSI, bandes de Bollinger, rendements décalés | [QC-Py-18-ML-Features-Engineering](Python/QC-Py-18-ML-Features-Engineering.ipynb) | COVERED |
+| 10 | Normalization | `MinMaxScaler` | [QC-Py-18-ML-Features-Engineering](Python/QC-Py-18-ML-Features-Engineering.ipynb) | COVERED |
+| 11 | Standardization | `StandardScaler` | [QC-Py-18-ML-Features-Engineering](Python/QC-Py-18-ML-Features-Engineering.ipynb) | COVERED |
+| 12 | TransformingTimeSeriesFeaturesToStationary | différenciation | [QC-Py-18-ML-Features-Engineering](Python/QC-Py-18-ML-Features-Engineering.ipynb) | COVERED |
+| 13 | ADFTest | test ADF, différenciation fractionnaire | [ML-EnhancedPairs](projects/ML-EnhancedPairs/) (`adfuller`, sans différenciation fractionnaire) | PARTIAL |
+| 14 | Engle-GrangerTest | cointégration | [ETF-Pairs](projects/ETF-Pairs/), [ML-EnhancedPairs](projects/ML-EnhancedPairs/) (`coint`) | COVERED |
+| 15 | HurstCoefficient | exposant de Hurst | [ML-Reversion-Trending](projects/ML-Reversion-Trending/) | COVERED |
+| 16 | CorrelationAnalysis | corrélation de Pearson, carte de chaleur | [QC-Py-03-Data-Management](Python/QC-Py-03-Data-Management.ipynb), [QC-Py-18-ML-Features-Engineering](Python/QC-Py-18-ML-Features-Engineering.ipynb) | COVERED |
+| 17 | FeatureImportanceAnalysis | importance des variables (forêt aléatoire) | [QC-Py-18-ML-Features-Engineering](Python/QC-Py-18-ML-Features-Engineering.ipynb), [QC-Py-19-ML-Supervised-Classification](Python/QC-Py-19-ML-Supervised-Classification.ipynb) | COVERED |
+| 18 | AutoIdentificationOfFeatures | élimination récursive des variables (RFE) | — | GAP |
+| 19 | PCA | analyse en composantes principales | [PCA-StatArbitrage](projects/PCA-StatArbitrage/), [QC-Py-Cloud-06-PCA-StatArb](Python/QC-Py-Cloud-06-PCA-StatArb.ipynb) | COVERED |
+| 20 | DataSplit | séparation apprentissage / test | [QC-Py-21-Portfolio-Optimization-ML](Python/QC-Py-21-Portfolio-Optimization-ML.ipynb) (`train_test_split`) | COVERED |
+| 21 | KFoldCrossValidation | validation croisée | [QC-Py-19-ML-Supervised-Classification](Python/QC-Py-19-ML-Supervised-Classification.ipynb), [QC-Py-20-ML-Regression-Prediction](Python/QC-Py-20-ML-Regression-Prediction.ipynb) (`TimeSeriesSplit`, variante temporelle) | PARTIAL |
 
 ---
 
-## Ch07 — Reinforcement Learning (1 example)
+## 05 — Choix, entraînement et application du modèle (`05 Step 3 - Model Choice, Training, and Application`)
 
-| # | Book Example | Technique | Our Resource | Status |
-|---|-------------|-----------|-------------|--------|
-| 01 | RL Hedging Options (AAPL) | Policy Gradient + delta hedging | **QC-Py-32 RL DQN Trading**, **QC-Py-33 RL PPO Trading**, **projects/Reinforcement-Learning-Trading** | PARTIAL |
-
-**Coverage**: 0 COVERED, 1 PARTIAL, 0 GAP.
-**Gap analysis**: Our RL notebooks cover DQN/PPO/SAC/A2C for equity trading, but NOT options delta hedging. The book's approach (PyTorch policy gradient for delta prediction) is unique.
-
----
-
-## Ch08 — Risk Management & Optimization (2 examples)
-
-| # | Book Example | Technique | Our Resource | Status |
-|---|-------------|-----------|-------------|--------|
-| 01 | Conditional Portfolio Optimization | PredictNow.ai CPO (external) | **RiskParity/**, **QC-Py-10 Risk Portfolio Mgmt** | PARTIAL |
-| 02 | Corrective AI (EURUSD) | PredictNow.ai CAI (external) | — | GAP |
-
-**Coverage**: 0 COVERED, 1 PARTIAL, 1 GAP.
-**Note**: Both rely on PredictNow.ai external API (paid service). Our RiskParity covers optimization concepts without external dependency.
-
----
-
-## Shared Libraries (00)
-
-| Module | Content | Our Equivalent | Status |
-|--------|---------|---------------|--------|
-| backtestlib | `rough_daily_backtest()` equity curve | QC-Py-12 Backtesting Analysis | COVERED |
-| tearsheet | Performance plot generation | QC-Py-12 + QC framework | COVERED |
+| # | Script du livre | Modèle | Ressource du dépôt | Statut |
+|---|-----------------|--------|--------------------|--------|
+| 01 | LinearRegression | régression linéaire | [QC-Py-20-ML-Regression-Prediction](Python/QC-Py-20-ML-Regression-Prediction.ipynb) | COVERED |
+| 02 | PolynomialRegression | régression polynomiale | — | GAP |
+| 03 | LassoRegression | régularisation L1 | [QC-Py-20-ML-Regression-Prediction](Python/QC-Py-20-ML-Regression-Prediction.ipynb), [Stoploss-Volatility-ML](projects/Stoploss-Volatility-ML/) | COVERED |
+| 04 | RidgeRegression | régularisation L2 | [QC-Py-20-ML-Regression-Prediction](Python/QC-Py-20-ML-Regression-Prediction.ipynb), [ML-Regression](projects/ML-Regression/) | COVERED |
+| 05 | MarkovSwitchingDynamicRegression | régression à changement de régime (statsmodels) | [Markov-Regime-Detection](projects/Markov-Regime-Detection/) (`MarkovRegression`) | COVERED |
+| 06 | DecisionTreeRegression | arbre de régression | [Dividend-Harvesting-ML](projects/Dividend-Harvesting-ML/), [TradingCosts-Optimization](projects/TradingCosts-Optimization/) | COVERED |
+| 07 | SupportVectorMachinesRegressionWithWaveletForecasting | SVR et ondelettes | [ML-FX-SVM-Wavelet](projects/ML-FX-SVM-Wavelet/), [SVM-Wavelet-Forecasting](projects/SVM-Wavelet-Forecasting/) | COVERED |
+| 08 | SVRGridSearch | SVR et recherche en grille | [QC-Py-20-ML-Regression-Prediction](Python/QC-Py-20-ML-Regression-Prediction.ipynb) (`SVR`, `GridSearchCV`) | COVERED |
+| 09 | MulticlassRandomForestModel | forêt aléatoire multiclasse | [QC-Py-19-ML-Supervised-Classification](Python/QC-Py-19-ML-Supervised-Classification.ipynb), [ML-RandomForest](projects/ML-RandomForest/) | COVERED |
+| 10 | LogisticRegression | régression logistique | [ML-TextClassification](projects/ML-TextClassification/) (sur des titres de presse simulés, pas sur des prix) | PARTIAL |
+| 11 | HiddenMarkovModels | `GaussianHMM` (hmmlearn) | [Markov-Regime-Detection](projects/Markov-Regime-Detection/), [HMM-KMeans-Voting](projects/HMM-KMeans-Voting/), [QC-Py-24-Autoencoders-Anomaly](Python/QC-Py-24-Autoencoders-Anomaly.ipynb) | COVERED |
+| 12 | GaussianNaiveBayes | classifieur bayésien naïf gaussien | [ML-Gaussian-Classifier](projects/ML-Gaussian-Classifier/), [Gaussian-Direction-Classifier](projects/Gaussian-Direction-Classifier/) | COVERED |
+| 13 | ConvolutionalNeuralNetworks | réseau convolutif | [ML-Temporal-CNN](projects/ML-Temporal-CNN/), [ML-HeadShoulders-CNN](projects/ML-HeadShoulders-CNN/) | COVERED |
+| 14 | LGBRankerRanking | apprentissage du classement (`LGBMRanker`) | [Clustering-Fundamentals-ML](projects/Clustering-Fundamentals-ML/) | COVERED |
+| 15 | OPTICSClustering | partitionnement par densité (OPTICS) | — | GAP |
+| 16 | OpenAILanguageModel | modèle de langage OpenAI | [QC-Py-26-LLM-Trading-Signals](Python/QC-Py-26-LLM-Trading-Signals.ipynb), [ML-LLM-Summarization](projects/ML-LLM-Summarization/) | COVERED |
+| 17 | AmazonChronosModel | Chronos (prévision de séries) | [ML-Chronos-Foundation](projects/ML-Chronos-Foundation/), [Chronos-Foundation-Forecasting](projects/Chronos-Foundation-Forecasting/) | COVERED |
+| 18 | FinBERTModel | FinBERT (sentiment financier) | [QC-Py-Cloud-01-FinBERT-Sentiment](Python/QC-Py-Cloud-01-FinBERT-Sentiment.ipynb), [ML-FinBERT-Sentiment](projects/ML-FinBERT-Sentiment/) | COVERED |
 
 ---
 
-## Summary
+## 06 — Apprentissage automatique appliqué (`06 Applied Machine Learning`)
 
-| Chapter | COVERED | PARTIAL | GAP | Total |
-|---------|---------|---------|-----|-------|
-| Ch04 Dataset Preparation | 3 | 13 | 5 | 21 |
-| Ch05 Model Choice | 7 | 2 | 9 | 18 |
-| Ch06 Applied ML | 9 | 5 | 13 | 27 |
-| Ch07 RL Hedging | 0 | 1 | 0 | 1 |
-| Ch08 Risk Management | 0 | 1 | 1 | 2 |
-| Shared Libraries | 2 | 0 | 0 | 2 |
-| **Total** | **21** | **22** | **28** | **71** |
+Algorithmes LEAN complets sur données de marché. Les exemples 04, 08, 18 et 19 du livre ont plusieurs variantes, inventoriées séparément.
 
-**Coverage rate**: 30% COVERED, 31% PARTIAL, 39% GAP.
-
----
-
-## Priority Gaps (recommended additions)
-
-### Tier 1 — High value, complements existing content
-
-| Gap | Book Example | Why valuable | Suggested notebook |
-|-----|-------------|-------------|-------------------|
-| FracDiff stationarity | Ch04 #13 | Core technique (Lopez de Prado Advances in Financial ML) | QC-Py-18b or extend QC-Py-18 |
-| Hurst exponent | Ch04 #15 | Mean-reverting vs trending classification | Extend QC-Py-18 or PairsTrading |
-| Outlier detection suite | Ch04 #03-08 | Data cleaning pipeline | QC-Py-18c or extend QC-Py-18 |
-| Lasso/Ridge regression | Ch05 #03-04 | Regularization basics for quant | QC-Py-20b or extend QC-Py-20 |
-| SVM + Wavelet forecasting | Ch06 #05 | Unique hybrid signal processing | QC-Py-24 (new) |
-| ML Stop Loss placement | Ch06 #08/02-03 | Practical risk management | QC-Py-10b or extend QC-Py-10 |
-| PCA Statistical Arbitrage | Ch06 #13 | Classic quant strategy | QC-Py-25 (new) |
-| Trading Costs optimization | Ch06 #12 | Execution quality | QC-Py-26 (new) |
-
-### Tier 2 — Nice to have, specialized domains
-
-| Gap | Book Example | Why valuable | Notes |
-|-----|-------------|-------------|-------|
-| RL Options Hedging | Ch07 #01 | Unique RL application | Needs options data + PyTorch |
-| HMM Index Options | Ch06 #04/03 | Options + regime | European-style SPX specific |
-| Head Shoulders CNN | Ch06 #17 | Pattern recognition | Image-like chart processing |
-| Dividend Harvesting | Ch06 #06 | Fundamental + ML | Requires dividend data |
-| FinBERT Fine-Tuned | Ch06 #19/02 | NLP advanced | Labeled dataset construction |
-| Chronos Fine-Tuned | Ch06 #18/02 | Foundation model tuning | Already partially in our Chronos project |
-| DecisionTreeRegression | Ch05 #06 | Interpretable ML | Basic, gap in curriculum |
-| GaussianNaiveBayes | Ch05 #12 | Simple classifier | Basic, gap in curriculum |
-| OPTICS Clustering | Ch05 #15 | Advanced clustering | Complements PCA coverage |
-| RFE Feature Selection | Ch04 #18 | Auto feature selection | Complements QC-Py-18 |
-
-### Tier 3 — External dependency or niche
-
-| Gap | Book Example | Notes |
-|-----|-------------|-------|
-| ML Trend Scanning | Ch06 #01 | Requires MLFinLab license |
-| PredictNow.ai CPO/CAI | Ch08 #01-02 | External paid API |
-| FX SVM Wavelet | Ch06 #05 | Forex-specific, could adapt to equity |
-| Stock Splits | Ch06 #07 | Event-driven, niche |
+| # | Exemple du livre | Projet(s) du dépôt | Statut | Statut QC | Remarque |
+|---|------------------|--------------------|--------|-----------|----------|
+| 01 | ML Trend Scanning with MLFinlab | [ML-Trend-Scanning](projects/ML-Trend-Scanning/) | COVERED | Needs-improvement | étiquetage par balayage de tendance réécrit sans MLFinLab (licence payante) |
+| 02 | Factor Preprocessing Techniques for Regime Detection | — | GAP | — | notebook de recherche dans le livre ; aucune reproduction |
+| 03 | Reversion vs Trending - Strategy Selection by Classification | [ML-Reversion-Trending](projects/ML-Reversion-Trending/) | COVERED | Needs-improvement | classifieur `GradientBoostingClassifier` et exposant de Hurst |
+| 04/01 | Alpha by Hidden Markov Models — Equities | [Markov-Regime-Detection](projects/Markov-Regime-Detection/) | COVERED | Needs-improvement | |
+| 04/02 | Alpha by Hidden Markov Models — Equity Options | — | GAP | — | |
+| 04/03 | Alpha by Hidden Markov Models — Index Options | — | GAP | — | |
+| 05 | FX SVM Wavelet Forecasting | [ML-FX-SVM-Wavelet](projects/ML-FX-SVM-Wavelet/), [SVM-Wavelet-Forecasting](projects/SVM-Wavelet-Forecasting/) | COVERED | Needs-improvement / near-BROKEN (ML-FX-SVM-Wavelet) ; Vivant (SVM-Wavelet-Forecasting) | deux reproductions du même exemple |
+| 06 | Dividend Harvesting Selection of High-Yield Assets | [Dividend-Harvesting-ML](projects/Dividend-Harvesting-ML/) | COVERED | Needs-improvement | |
+| 07 | Effect of Positive-Negative Splits | [Positive-Negative-Splits-ML](projects/Positive-Negative-Splits-ML/) | COVERED | Edge (tranche 17) | |
+| 08/01 | Stoploss — Benchmark Fixed Percentage Stop Loss | — | GAP | — | variante de référence, sans apprentissage |
+| 08/02 | Stoploss — ML Placed Stop Loss | [Stoploss-Volatility-ML](projects/Stoploss-Volatility-ML/) | COVERED | Needs-improvement (tranche 17) | stop placé par régression Lasso |
+| 08/03 | Stoploss — ML Put Option Hedge | — | GAP | — | |
+| 09 | ML Trading Pairs Selection | [ML-EnhancedPairs](projects/ML-EnhancedPairs/), [ETF-Pairs](projects/ETF-Pairs/) | PARTIAL | Vivant (ML-EnhancedPairs) | cointégration présente ; ni PCA ni OPTICS pour la sélection des paires |
+| 10 | Stock Selection through Clustering Fundamental Data | [Clustering-Fundamentals-ML](projects/Clustering-Fundamentals-ML/) | COVERED | Needs-improvement | |
+| 11 | Inverse Volatility Rank and Allocate to Future Contracts | [InverseVolatility-Rank](projects/InverseVolatility-Rank/) | COVERED | Needs-improvement / near-BROKEN | |
+| 12 | Trading Costs Optimization | [TradingCosts-Optimization](projects/TradingCosts-Optimization/) | COVERED | Démo | |
+| 13 | PCA Statistical Arbitrage Mean Reversion | [PCA-StatArbitrage](projects/PCA-StatArbitrage/), [QC-Py-Cloud-06-PCA-StatArb](Python/QC-Py-Cloud-06-PCA-StatArb.ipynb) | COVERED | Needs-improvement (tranche 15) | |
+| 14 | Temporal CNN Prediction | [ML-Temporal-CNN](projects/ML-Temporal-CNN/), [Temporal-CNN-Prediction](projects/Temporal-CNN-Prediction/), [QC-Py-Cloud-07-TemporalCNN](Python/QC-Py-Cloud-07-TemporalCNN.ipynb) | COVERED | Needs-improvement (ML-Temporal-CNN) ; Needs-improvement, meilleur de sa cohorte (Temporal-CNN-Prediction) | `Temporal-CNN-Prediction` utilise un `MLPClassifier`, sans convolution |
+| 15 | Gaussian Classifier for Direction Prediction | [ML-Gaussian-Classifier](projects/ML-Gaussian-Classifier/), [Gaussian-Direction-Classifier](projects/Gaussian-Direction-Classifier/) | COVERED | Needs-improvement (les deux) | |
+| 16 | LLM Summarization of Tiingo News Articles | [ML-LLM-Summarization](projects/ML-LLM-Summarization/), [QC-Py-26-LLM-Trading-Signals](Python/QC-Py-26-LLM-Trading-Signals.ipynb) | COVERED | Needs-improvement (tranche 12) | |
+| 17 | Head Shoulders Pattern Matching with CNN | [ML-HeadShoulders-CNN](projects/ML-HeadShoulders-CNN/) | COVERED | Vivant | |
+| 18/01 | Amazon Chronos Model — Base Model | [ML-Chronos-Foundation](projects/ML-Chronos-Foundation/), [Chronos-Foundation-Forecasting](projects/Chronos-Foundation-Forecasting/) | COVERED | Needs-improvement (les deux, tranche 14) | |
+| 18/02 | Amazon Chronos Model — Fine-Tuned Model | — | GAP | — | aucun ré-entraînement de Chronos dans le dépôt |
+| 19/01 | FinBERT Model — Base Model | [ML-FinBERT-Sentiment](projects/ML-FinBERT-Sentiment/), [QC-Py-Cloud-01-FinBERT-Sentiment](Python/QC-Py-Cloud-01-FinBERT-Sentiment.ipynb) | COVERED | Needs-improvement (tranche 12) | le portage ne produit pas de transaction sur QC Cloud : [#18903](https://github.com/jsboige/CoursIA/issues/18903) |
+| 19/02 | FinBERT Model — Fine-Tuned Model | — | GAP | — | aucun ré-entraînement de FinBERT dans le dépôt |
 
 ---
 
-## Cross-references
+## 07 — Couverture par apprentissage par renforcement (`07 Better Hedging with Reinforcement Learning`)
 
-- Our QC Python series: `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-XX`
-- Our QC projects: `MyIA.AI.Notebooks/QuantConnect/projects/`
-- Book repo: https://github.com/QuantConnect/HandsOnAITradingBook
-- Book website: https://www.hands-on-ai-trading.com/
+| # | Exemple du livre | Projet(s) du dépôt | Statut | Statut QC | Remarque |
+|---|------------------|--------------------|--------|-----------|----------|
+| 01 | Reinforcement Learning of Hedging Options | [RL-Options-Hedging](projects/RL-Options-Hedging/) | STUB | BROKEN (backtest QC sans code dans le dépôt) | portage suivi par [#18902](https://github.com/jsboige/CoursIA/issues/18902) |
+
+Les projets [RL-DQN-Trading](projects/RL-DQN-Trading/) et [Reinforcement-Learning-Trading](projects/Reinforcement-Learning-Trading/), ainsi que les notebooks [QC-Py-25-Reinforcement-Learning](Python/QC-Py-25-Reinforcement-Learning.ipynb) et [QC-Py-32-RL-DQN-Trading](Python/QC-Py-32-RL-DQN-Trading.ipynb), appliquent l'apprentissage par renforcement au trading d'actions, pas à la couverture d'options. Leurs README les rattachent au chapitre 07, mais ils ne reproduisent pas cet exemple.
+
+---
+
+## 08 — IA pour la gestion du risque et l'optimisation (`08 AI for Risk Management and Optimization`)
+
+| # | Exemple du livre | Projet(s) du dépôt | Statut | Statut QC | Remarque |
+|---|------------------|--------------------|--------|-----------|----------|
+| 01 | Conditional Portfolio Optimization Applied | [Portfolio-Optimization-ML](projects/Portfolio-Optimization-ML/), [QC-Py-21-Portfolio-Optimization-ML](Python/QC-Py-21-Portfolio-Optimization-ML.ipynb) | PARTIAL | Recherche-phase | optimisation de portefeuille sans le service PredictNow.ai du livre (API payante) |
+| 02 | Application of Corrective Artificial Intelligence Applied | [Corrective-AI](projects/Corrective-AI/) | STUB | Stub | portage suivi par [#18901](https://github.com/jsboige/CoursIA/issues/18901) |
+
+---
+
+## Ressources du dépôt mal rattachées au livre
+
+Ces README citent le livre, mais l'exemple qu'ils nomment ne correspond pas à leur contenu. Les corriger relève d'une PR sur chaque projet.
+
+| Ressource | Ce que dit son README | Ce qu'elle contient |
+|-----------|----------------------|---------------------|
+| [LSTM-Forecasting](projects/LSTM-Forecasting/) | « Ch06/Ex07 » | prévision par LSTM ; l'exemple 07 du ch. 06 porte sur les splits d'actions |
+| [RL-DQN-Trading](projects/RL-DQN-Trading/), [Reinforcement-Learning-Trading](projects/Reinforcement-Learning-Trading/) | chapitre 07 | DQN sur actions, sans couverture d'options |
+| [ML-DeepLearning](projects/ML-DeepLearning/) | « chapitre 13.6 » | le livre n'a pas de chapitre 13 dans son dépôt de code |
+
+---
+
+## Projets apparentés hors exemples du livre
+
+Ces projets n'ont pas d'exemple correspondant dans le livre, mais illustrent des notions qu'il utilise.
+
+| Projet | Notion |
+|--------|--------|
+| [EMA-Cross-Alpha](projects/EMA-Cross-Alpha/) | croisement de moyennes mobiles, première brique avant l'apprentissage |
+| [DualMomentum](projects/DualMomentum/) | momentum (repérage de tendance) |
+| [MeanReversion](projects/MeanReversion/) | retour à la moyenne |
+| [AllWeather](projects/AllWeather/) | allocation de portefeuille |
+| [ETF-Pairs](projects/ETF-Pairs/) | trading de paires |
+| [Sector-Momentum](partner-course-quant-trading/examples/Sector-Momentum/) | momentum sectoriel |
+| [Crypto-LSTM-Prediction](projects/Crypto-LSTM-Prediction/), [Sector-ML-Classification](projects/Sector-ML-Classification/) | apprentissage profond et classification, en phase de recherche |
+
+---
+
+## Exemples sans reproduction
+
+| Exemple | Suite |
+|---------|-------|
+| 04/05, 04/18 | écart interquartile et élimination récursive des variables : scripts courts sur données synthétiques, portage à regrouper dans un notebook de préparation des données |
+| 05/02, 05/15 | régression polynomiale et OPTICS ; portage à regrouper dans un notebook de modèles |
+| 06/02 | régimes par prétraitement de facteurs : portage à ouvrir |
+| 06/04/02, 06/04/03 | variantes options du modèle de Markov caché : portage à ouvrir |
+| 06/08/01, 06/08/03 | stop fixe de référence et couverture par put : portage à ouvrir, dans [Stoploss-Volatility-ML](projects/Stoploss-Volatility-ML/) |
+| 06/09 | sélection des paires par PCA et OPTICS : à compléter dans [ML-EnhancedPairs](projects/ML-EnhancedPairs/) |
+| 06/18/02, 06/19/02 | ré-entraînement de Chronos et de FinBERT : portage à ouvrir (calcul GPU) |
+| 07/01 | [#18902](https://github.com/jsboige/CoursIA/issues/18902) |
+| 08/01 | exclusion : le livre appelle l'API payante PredictNow.ai ; le dépôt garde une optimisation sans service externe |
+| 08/02 | [#18901](https://github.com/jsboige/CoursIA/issues/18901) (méta-étiquetage sans l'API PredictNow.ai) |
+
+---
+
+## Utiliser cet inventaire
+
+1. Lire d'abord l'exemple dans le livre, pour la théorie.
+2. Ouvrir la ressource du dépôt correspondante : un notebook `Python/QC-Py-*` pour la pratique pas à pas, un projet `projects/*` pour l'algorithme complet.
+3. Adapter l'exemple dans ses propres projets sur QuantConnect Cloud.
+
+| Aspect | Livre | Dépôt CoursIA |
+|--------|-------|---------------|
+| Langage | Python | Python (C# pour une partie des projets) |
+| Exécution | QC Cloud et LEAN CLI | QC Cloud et QuantBook |
+| Approche | apprentissage automatique appliqué au trading | trading algorithmique complet, des fondations à l'IA |
+| Données | jeux de données QC propres à chaque exemple | données standard de QC |
+
+Le livre se concentre sur l'apprentissage automatique appliqué. La série `Python/` couvre aussi les fondations, qu'il vaut mieux maîtriser avant les exemples du livre : plateforme et données (QC-Py-01 à 04), univers, ordres et risque (05 à 10), indicateurs, backtest et Algorithm Framework (11 à 15). Les notebooks 16 et suivants correspondent aux chapitres 04 à 08 du livre.
+
+## Liens
+
+- Livre : [Hands-On AI Trading with Python, QuantConnect, and AWS](https://www.hands-on-ai-trading.com/)
+- Code du livre : https://github.com/QuantConnect/HandsOnAITradingBook
+- Statut des stratégies du dépôt : [docs/qc/qc-strategies-status.md](../../docs/qc/qc-strategies-status.md)
+- Documentation QuantConnect : https://www.quantconnect.com/docs
