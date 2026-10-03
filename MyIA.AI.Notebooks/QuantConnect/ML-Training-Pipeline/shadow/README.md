@@ -48,7 +48,7 @@ Colonnes de `passes.csv` :
 | `fees` | coût de transaction cumulé, en fraction de l'équité de départ |
 | `fee_model` | hypothèse de frais recopiée du registre |
 
-Sharpe, CAGR et pire baisse reprennent les définitions du verdict de la 5a (`voltarget_strategy_verdict.py`, #18943) : une candidate suivie en ombre se compare directement à ses chiffres.
+Sharpe, CAGR et pire baisse viennent de `scripts/strategy_metrics.py`, le module que partage aussi le verdict de la 5a (`voltarget_strategy_verdict.py`, #18943) : une candidate suivie en ombre se compare directement à ses chiffres.
 
 ## Contrat d'une candidate locale
 

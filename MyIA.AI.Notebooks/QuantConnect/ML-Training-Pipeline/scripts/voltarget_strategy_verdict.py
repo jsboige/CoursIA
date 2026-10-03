@@ -41,6 +41,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from strategy_metrics import cagr, max_drawdown, sharpe
+
 TICKERS = ["SPY", "QQQ", "IEF", "GLD"]
 BASELINE = "rv21"
 CANDIDATES = ["har", "tsfm"]
@@ -112,10 +114,6 @@ def series_values(chart: dict, key: str) -> pd.Series:
     return pd.Series(ys, index=_ny_dates(ts)).groupby(level=0).last().sort_index()
 
 
-def _sharpe(r: np.ndarray, axis: int | None = None) -> np.ndarray:
-    return r.mean(axis=axis) / r.std(axis=axis, ddof=1) * math.sqrt(TRADING_DAYS)
-
-
 def circular_block_diff(returns_a: pd.Series, returns_b: pd.Series,
                         block: int = BLOCK, draws: int = DRAWS,
                         seed: int = RNG_SEED, chunk: int = 500) -> dict:
@@ -138,8 +136,8 @@ def circular_block_diff(returns_a: pd.Series, returns_b: pd.Series,
         hi = min(draws, lo + chunk)
         starts = rng.integers(0, n, size=(hi - lo, n_blocks))
         pos = ((starts[:, :, None] + offsets) % n).reshape(hi - lo, -1)[:, :n]
-        diffs[lo:hi] = _sharpe(a[pos], axis=1) - _sharpe(b[pos], axis=1)
-    return {"observed": float(_sharpe(a) - _sharpe(b)),
+        diffs[lo:hi] = sharpe(a[pos], axis=1) - sharpe(b[pos], axis=1)
+    return {"observed": float(sharpe(a) - sharpe(b)),
             "p_one_sided": float((diffs <= 0).mean()),
             "ci95": [float(np.quantile(diffs, 0.025)), float(np.quantile(diffs, 0.975))]}
 
@@ -169,14 +167,14 @@ def variant_stats(rets: pd.Series, exposure: dict, turnover: dict,
     fraction of the portfolio (0.41 at the first rebalance, measured).
     """
     years = (rets.index[-1] - rets.index[0]).days / 365.25
-    wealth = (1.0 + rets).cumprod()
+    r = rets.to_numpy()
     gross = _in_block(series_values(exposure, "Equity - Long Ratio")
                       + series_values(exposure, "Equity - Short Ratio"))
     turn = _in_block(series_values(turnover, "Portfolio Turnover"))
     out = {"n_days": int(len(rets)),
-           "sharpe": round(float(_sharpe(rets.to_numpy())), 4),
-           "cagr": round(float(wealth.iloc[-1] ** (1.0 / years) - 1.0), 4),
-           "max_drawdown": round(float((wealth / wealth.cummax() - 1.0).min()), 4),
+           "sharpe": round(float(sharpe(r)), 4),
+           "cagr": round(cagr(r, years), 4),
+           "max_drawdown": round(max_drawdown(r), 4),
            "gross_exposure_mean": round(float(gross.mean()), 4),
            "turnover_chart_mean": round(float(turn.mean()), 6)}
     if qc_stats:

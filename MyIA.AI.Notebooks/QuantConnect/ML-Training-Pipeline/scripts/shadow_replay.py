@@ -27,7 +27,8 @@ dictionnaire :
 - `turnover` : la rotation journaliere (fraction de l'equite echangee), un par seance ;
 - `fees` : le cout de transaction cumule sur la periode, en fraction de l'equite de depart.
 
-Sharpe, CAGR et pire baisse reprennent les definitions de `voltarget_strategy_verdict.py` (#18943) :
+Sharpe, CAGR et pire baisse viennent de `strategy_metrics.py`, le module partage avec le verdict
+de la 5a (`voltarget_strategy_verdict.py`, #18943) :
 Sharpe = moyenne / ecart-type (ddof=1) * sqrt(252) des rendements nets, taux sans risque nul ;
 CAGR = produit des (1 + r) a la puissance 1 / annees, moins 1, les annees etant les jours
 calendaires entre la premiere et la derniere seance divises par 365,25 ; pire baisse = minimum
@@ -60,6 +61,8 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import numpy as np
+
+from strategy_metrics import cagr, max_drawdown, sharpe
 
 REGISTRY_FIELDS = ("id", "kind", "sha", "frozen_on", "entrypoint", "params", "fee_model")
 KINDS = ("local", "qc")
@@ -170,14 +173,12 @@ def metrics(dates, net_returns, turnover, fees: float) -> dict:
     years = (dt.date.fromisoformat(dates[-1]) - dt.date.fromisoformat(dates[0])).days / 365.25
     if years <= 0:
         raise ValueError("dates must span at least one calendar day")
-    equity = np.cumprod(1.0 + r)
-    sd = r.std(ddof=1)
     return {
         "n_days": int(r.size),
         # Ecart-type nul : Sharpe non defini, laisse vide dans le CSV.
-        "sharpe_net": round(float(r.mean() / sd * np.sqrt(252)), 4) if sd > 0 else None,
-        "cagr": round(float(equity[-1] ** (1.0 / years) - 1.0), 4),
-        "max_drawdown": round(float((equity / np.maximum.accumulate(equity) - 1.0).min()), 4),
+        "sharpe_net": round(float(sharpe(r)), 4) if r.std(ddof=1) > 0 else None,
+        "cagr": round(cagr(r, years), 4),
+        "max_drawdown": round(max_drawdown(r), 4),
         "turnover": round(float(np.mean(np.asarray(turnover, dtype=float))), 6),
         "fees": round(float(fees), 6),
     }
