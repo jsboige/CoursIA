@@ -256,3 +256,61 @@ def test_web_url_in_metadata_silent():
     nb_ = {"cells": [], "nbformat": 4, "nbformat_minor": 5,
            "metadata": {"source": "https://example.edu/home/alice/notes/"}}
     assert scan(nb_)["MACHINE_PATH"] == []
+
+
+# --- DECLARED_FALLBACK axis (#18916) ---------------------------------------
+# Demo-mode stubs (#18893, Lean-10) print their fallback banner from the
+# cell's own source. The soft motif in the OUTPUT is exempted from
+# TOOL_FAILURE iff the SOURCE declares it: literal substring, or the [SKIP]
+# marker on both sides. Every other shape still fires.
+
+STUB_LITERAL_SRC = "print('[SKIP] LeanDojo non disponible')"
+STUB_INTERP_SRC = ("try:\n    import lean_dojo\n"
+                   "except Exception as e:\n"
+                   "    print(f'[SKIP] LeanRunner indisponible: {e}')")
+STUB_INTERP_OUT = ("[SKIP] LeanRunner indisponible: LeanDojo not available. "
+                   "Install with: pip install lean-dojo")
+
+
+def test_declared_fallback_literal_source_exempted():
+    got = scan(nb(cell(STUB_LITERAL_SRC, "[SKIP] LeanDojo non disponible")))
+    assert got["TOOL_FAILURE"] == []
+    assert len(got["DECLARED_FALLBACK"]) == 1
+    assert got["DECLARED_FALLBACK"][0][0] == 0
+
+
+def test_declared_fallback_skip_marker_interpolated_exempted():
+    got = scan(nb(cell(STUB_INTERP_SRC, STUB_INTERP_OUT)))
+    assert got["TOOL_FAILURE"] == []
+    assert len(got["DECLARED_FALLBACK"]) == 1
+
+
+def test_undeclared_soft_motif_still_fires():
+    got = scan(nb(cell("print(result)", "Graphviz non disponible")))
+    assert len(got["TOOL_FAILURE"]) == 1
+    assert got["DECLARED_FALLBACK"] == []
+
+
+def test_declared_stub_does_not_mask_real_failure():
+    got = scan(nb(cell(STUB_LITERAL_SRC,
+                       "[SKIP] LeanDojo non disponible\n"
+                       "bash: dot: command not found")))
+    assert got["TOOL_FAILURE"], "hard pattern must win over the exemption"
+
+
+def test_declared_fallback_never_gates():
+    """compare() doit rapporter la classe sans la faire regresser."""
+    from check_output_failure_text import compare
+    paths = ["nb.ipynb"]
+    base_nb = nb(cell("print('ok')", "ok"))
+    head_nb = nb(cell(STUB_LITERAL_SRC, "[SKIP] LeanDojo non disponible"))
+    import check_output_failure_text as m
+    orig = m.read_notebook_at
+    m.read_notebook_at = lambda ref, path, cwd=None: (
+        base_nb if ref == "b" else head_nb)
+    try:
+        rows = compare("b", "h", paths)
+    finally:
+        m.read_notebook_at = orig
+    assert rows[0]["regressed"] is False
+    assert rows[0]["classes"]["DECLARED_FALLBACK"]["delta"] == 1
