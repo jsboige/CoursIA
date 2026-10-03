@@ -277,6 +277,45 @@ PILOT: list[Guard] = [
               "--check"],
         blocking=True,
     ),
+    # F2 #18970 -- garde delta-only sur les violations STALE_LINK /
+    # BROKEN / DEAD_RENDER. L'audit BRUT de `regen_quarto_render.py
+    # --check-readme-links` rend 2432 violations au 2026-10-03 : un argv
+    # qui enverrait cette commande en blocking=True rougirait systematiquement
+    # toute PR touchant un README de serie ou un notebook rendu. Le delta
+    # argv (3-temps : HEAD capture -> base capture -> comparateur) ne
+    # rougit QUE sur les violations NOUVELLES introduites par la PR,
+    # laissant le backlog historique au sweep par famille en aval (#18911
+    # acceptation #2). Temoin verifie localement : une STALE_LINK injectee
+    # dans HEAD fait `NOUVELLES=1` (=exit 1), un PR sans nouvelle
+    # violation passe (exit 0) sur le meme depot.
+    Guard(
+        name="readme-ipynb-links-guard",
+        source="readme-ipynb-links-guard.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/README.md",
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "_quarto.yml",
+            "scripts/regen_quarto_render.py",
+            "scripts/notebook_tools/dump_readme_link_violations.py",
+            "scripts/notebook_tools/diff_readme_link_violations.py",
+            ".github/workflows/readme-ipynb-links-guard.yml",
+        ],
+        # Le dump imprime le JSON sur stdout ; le moteur fast-lane le
+        # capture via payload_of() et l'ecrit dans {name}.head.json (puis
+        # base.json apres bascule phase 2). Le comparator recoit les deux.
+        argv=["python",
+              "scripts/notebook_tools/dump_readme_link_violations.py"],
+        delta_argv=["python",
+                    "scripts/notebook_tools/diff_readme_link_violations.py",
+                    "{base_json}", "{head_json}"],
+        swap_paths=[
+            "MyIA.AI.Notebooks",
+            "scripts/regen_quarto_render.py",
+            "_quarto.yml",
+        ],
+        blocking=True,
+        needs_base=True,
+    ),
     Guard(
         name="notebook-interp-positioning-guard",
         source="notebook-interp-positioning.yml",
@@ -305,27 +344,6 @@ PILOT: list[Guard] = [
               "--check",
               "--baseline",
               "scripts/notebook_tools/markdown_rendering_baseline.json"],
-        blocking=True,
-    ),
-    Guard(
-        # #18911 sweep : la PR ne doit pas introduire de nouvelle violation
-        # STALE_LINK (README pointant un .ipynb alors qu'un .html sibling
-        # est servi sur Pages). Bright lines documentees dans
-        # scripts/regen_quarto_render.py :readme_link_violations.
-        # Le workflow dedie (readme-ipynb-links-guard.yml) fait la delta ; ici
-        # on enchaine l'audit baseline-first pour ne pas re-cloner.
-        name="readme-ipynb-links-guard",
-        source="readme-ipynb-links-guard.yml",
-        paths=[
-            "MyIA.AI.Notebooks/**/README.md",
-            "MyIA.AI.Notebooks/**/*.ipynb",
-            "_quarto.yml",
-            "scripts/regen_quarto_render.py",
-            "scripts/notebook_tools/fix_ipynb_links.py",
-            ".github/workflows/readme-ipynb-links-guard.yml",
-        ],
-        argv=["python", "scripts/regen_quarto_render.py",
-              "--check-readme-links"],
         blocking=True,
     ),
     Guard(

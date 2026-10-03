@@ -69,14 +69,23 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           set -euo pipefail
+          # F1 (Tell c.16866 / Hermes review 09:33Z) -- les violations
+          # `::error::STALE_LINK` partent sur STDERR (regen_quarto_render.py
+          # l.503 `print(..., file=sys.stderr)`), le `grep` du round 1 ne
+          # capturait que stdout et rendait `NEW=0` alors qu'une violation
+          # etait presente. Fautes fondateures mesurees : run 37109571492
+          # du 2026-10-03 -- 1 violation reelle dans le log, 0 dans le delta.
+          # Fix : `2>&1` fusionne stdout+stderr AVANT le grep, dans les DEUX
+          # passes (PR + base). Le temoin est la run suivant ce commit :
+          # une STALE_LINK injectee doit faire `NOUVELLES >= 1` (=exit 1).
           # Sortie de la PR (head)
           python scripts/regen_quarto_render.py --check-readme-links \
-            | grep -E '^::error::STALE_LINK ' \
+            2>&1 | grep -E '^::error::STALE_LINK ' \
             | sort -u > /tmp/pr_violations.txt || true
           # Sortie de la base (main)
           git checkout "${BASE_SHA}" -- MyIA.AI.Notebooks scripts/regen_quarto_render.py _quarto.yml 2>/dev/null || true
           python scripts/regen_quarto_render.py --check-readme-links \
-            | grep -E '^::error::STALE_LINK ' \
+            2>&1 | grep -E '^::error::STALE_LINK ' \
             | sort -u > /tmp/base_violations.txt || true
           # Retour au working tree PR
           git checkout HEAD -- MyIA.AI.Notebooks scripts/regen_quarto_render.py _quarto.yml 2>/dev/null || true
