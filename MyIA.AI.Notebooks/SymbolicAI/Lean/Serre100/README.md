@@ -21,6 +21,7 @@ Le geste « distillation » : prendre un énoncé ou une construction centrale d
 | 11 | [11-corps-quadratiques-reciprocite-quadratique.ipynb](11-corps-quadratiques-reciprocite-quadratique.ipynb) | Corps quadratiques : $\\mathbb{Q}(\\sqrt{D})$, symbole de Kronecker, décomposition $p = a^2 + b^2$, théorème des deux carrés (Fermat), table des petits discriminants — index #18586 | Python stdlib |
 | 11 | [11-corps-quadratiques-reciprocite-quadratique.ipynb](11-corps-quadratiques-reciprocite-quadratique.ipynb) | Corps quadratiques imaginaires — réciprocité quadratique, Fermat des deux carrés / deux triangulaires, densités de Chebotarev via symbole de Kronecker, conjecture de Stark-Heegner (neuf nombres) | Python stdlib |
 | 12 | [12-formes-quadratiques-binaires-nombre-classes.ipynb](12-formes-quadratiques-binaires-nombre-classes.ipynb) | Formes quadratiques binaires $ax^2 + bxy + cy^2$, conditions de réduction, bijection classes d'idéaux $\\leftrightarrow$ formes réduites, formule analytique $h(D) = \\frac{w\\sqrt{|D|}}{2\\pi} L(1, \\chi_D)$, théorème de Stark-Heegner ($h = 1$ pour les 9 discriminants) | Python stdlib |
+| 14 | [14-formes-quadratiques-composition-gauss.ipynb](14-formes-quadratiques-composition-gauss.ipynb) | Composition des formes quadratiques binaires (Gauss) — réduction, énumération des formes réduites, calcul de h(D), vérification du théorème de Stark–Heegner sur les 9 corps de Heegner | Python stdlib (math.isqrt) |
 
 ## Conventions
 
