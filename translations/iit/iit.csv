@@ -22798,7 +22798,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12d-InhibitedActionAnimat-Python.ipynb,92dc
 2. La variation de la chute d'entropie reflète la **vitesse** du repli sur le no-op sous $\alpha=0$ (l'animat passe $\hat c < 0.3$ plus ou moins tôt selon sa trajectoire), pas une ambiguïté du verdict — les deux extrêmes (0.741 et 0.942) décrivent la même pathologie.
 3. **Le pont $I(R)$ (section 5) est déterministe** : noyau analytique, aucun tirage aléatoire — sa robustesse est structurelle, pas statistique ; il n'entre pas dans ce protocole.
 4. **Portée honnête** : $n = 5$ seeds établit la *stabilité des verdicts* (aucune bascule, marges confortables), pas une estimation fine des tailles d'effet — l'écart-type échantillonnal n'est lui-même connu qu'à ~35 % près ($1/\sqrt{2(n{-}1)}$).",,,,,,,,642bb8b2c47557af,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12e-Value-of-Information-Animat-Python.ipynb,16fa55d8,markdown,fr,088f45292f10452d,"# ICT-12e — Valeur de l'information pour l'animat incarné : EVPI / EVSI (#13569)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12e-Value-of-Information-Animat-Python.ipynb,16fa55d8,markdown,fr,a85e634fd30a9c48,"# ICT-12e — Valeur de l'information pour l'animat incarné : EVPI / EVSI (#13569)
 
 **Sous-série ICT** (trajectoires intégrées, Epic #4588), **strate 3** — la jambe
 de l'animat décisionnel. Suite du Cran A: [ICT-12](ICT-12-ValenceFieldsAndAnimats-Python.ipynb)
@@ -22815,7 +22815,7 @@ howardienne) existe déjà **trois fois** dans le dépôt, dans deux moteurs :
 |---|---|---|
 | [`DecInfer-06`](../../Probas/DecisionTheory/DecInfer/DecInfer-06-Value-Information.ipynb) | Infer.NET | bayésien déterministe |
 | [`DecPyMC-5`](../../Probas/DecisionTheory/DecPyMC/DecPyMC-5-Value-Information.ipynb) | PyMC | bayésien + MCMC |
-| [`DecPyMC-11`](../../Probas/DecisionTheory/DecPyMC/DecPyMC-11-Valeur-Info-Souscription.ipynb) | PyMC | cas appliqué (souscription) |
+| [`Actuariat-05`](../../Probas/DecisionTheory/Actuariat/Actuariat-05-Valeur-Info-Souscription.ipynb) | PyMC | cas appliqué (souscription) |
 
 **Le double portage Infer.NET / PyMC est un atout, pas une redondance** : il
 donne un contrôle croisé gratuit. Un EVSI calculé par les deux moteurs et qui
@@ -22824,7 +22824,7 @@ ré-implémente rien : il **appelle** l'interface canonique `ict.voi` (tranche 1
 et **consomme** le comparateur cross-engine `voi/` (tranche 3/3) qui fait tourner
 les deux moteurs sur le même contrat JSON et journalise l'accord/désaccord.
 
-**Navigation** : [**Index**](README.md) | [<< ICT-12d](ICT-12d-InhibitedActionAnimat-Python.ipynb) | [ICT-13 >>](ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb)",,,,,,,,088f45292f10452d,,,,,,,,
+**Navigation** : [**Index**](README.md) | [<< ICT-12d](ICT-12d-InhibitedActionAnimat-Python.ipynb) | [ICT-13 >>](ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb)",,,,,,,,a85e634fd30a9c48,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12e-Value-of-Information-Animat-Python.ipynb,statut-epistemique,markdown,fr,16e8778ab95eef31,> **Statut épistémique** — **Sans verdict à ce jour** : aucune ligne de la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md) ne concerne ce notebook ; son statut épistémique sera porté par la matrice le cas échéant.,,,,,,,,16e8778ab95eef31,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12e-Value-of-Information-Animat-Python.ipynb,3be31b23,code,fr,904d28e8d915d1c7,"# Setup — même convention que les notebooks ICT voisins : le package `ict` est dans le cwd.
 import warnings
@@ -41300,7 +41300,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12d-InhibitedActionAnimat-Python.ipynb,92dc
 2. La variation de la chute d'entropie reflète la **vitesse** du repli sur le no-op sous $\alpha=0$ (l'animat passe $\hat c < 0.3$ plus ou moins tôt selon sa trajectoire), pas une ambiguïté du verdict — les deux extrêmes (0.741 et 0.942) décrivent la même pathologie.
 3. **Le pont $I(R)$ (section 5) est déterministe** : noyau analytique, aucun tirage aléatoire — sa robustesse est structurelle, pas statistique ; il n'entre pas dans ce protocole.
 4. **Portée honnête** : $n = 5$ seeds établit la *stabilité des verdicts* (aucune bascule, marges confortables), pas une estimation fine des tailles d'effet — l'écart-type échantillonnal n'est lui-même connu qu'à ~35 % près ($1/\sqrt{2(n{-}1)}$).",,,,,,,,642bb8b2c47557af,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12e-Value-of-Information-Animat-Python.ipynb,16fa55d8,markdown,fr,088f45292f10452d,"# ICT-12e — Valeur de l'information pour l'animat incarné : EVPI / EVSI (#13569)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12e-Value-of-Information-Animat-Python.ipynb,16fa55d8,markdown,fr,a85e634fd30a9c48,"# ICT-12e — Valeur de l'information pour l'animat incarné : EVPI / EVSI (#13569)
 
 **Sous-série ICT** (trajectoires intégrées, Epic #4588), **strate 3** — la jambe
 de l'animat décisionnel. Suite du Cran A: [ICT-12](ICT-12-ValenceFieldsAndAnimats-Python.ipynb)
@@ -41317,7 +41317,7 @@ howardienne) existe déjà **trois fois** dans le dépôt, dans deux moteurs :
 |---|---|---|
 | [`DecInfer-06`](../../Probas/DecisionTheory/DecInfer/DecInfer-06-Value-Information.ipynb) | Infer.NET | bayésien déterministe |
 | [`DecPyMC-5`](../../Probas/DecisionTheory/DecPyMC/DecPyMC-5-Value-Information.ipynb) | PyMC | bayésien + MCMC |
-| [`DecPyMC-11`](../../Probas/DecisionTheory/DecPyMC/DecPyMC-11-Valeur-Info-Souscription.ipynb) | PyMC | cas appliqué (souscription) |
+| [`Actuariat-05`](../../Probas/DecisionTheory/Actuariat/Actuariat-05-Valeur-Info-Souscription.ipynb) | PyMC | cas appliqué (souscription) |
 
 **Le double portage Infer.NET / PyMC est un atout, pas une redondance** : il
 donne un contrôle croisé gratuit. Un EVSI calculé par les deux moteurs et qui
@@ -41326,7 +41326,7 @@ ré-implémente rien : il **appelle** l'interface canonique `ict.voi` (tranche 1
 et **consomme** le comparateur cross-engine `voi/` (tranche 3/3) qui fait tourner
 les deux moteurs sur le même contrat JSON et journalise l'accord/désaccord.
 
-**Navigation** : [**Index**](README.md) | [<< ICT-12d](ICT-12d-InhibitedActionAnimat-Python.ipynb) | [ICT-13 >>](ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb)",,,,,,,,088f45292f10452d,,,,,,,,
+**Navigation** : [**Index**](README.md) | [<< ICT-12d](ICT-12d-InhibitedActionAnimat-Python.ipynb) | [ICT-13 >>](ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb)",,,,,,,,a85e634fd30a9c48,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12e-Value-of-Information-Animat-Python.ipynb,statut-epistemique,markdown,fr,16e8778ab95eef31,> **Statut épistémique** — **Sans verdict à ce jour** : aucune ligne de la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md) ne concerne ce notebook ; son statut épistémique sera porté par la matrice le cas échéant.,,,,,,,,16e8778ab95eef31,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12e-Value-of-Information-Animat-Python.ipynb,3be31b23,code,fr,904d28e8d915d1c7,"# Setup — même convention que les notebooks ICT voisins : le package `ict` est dans le cwd.
 import warnings

@@ -127,17 +127,21 @@ dotnet build -c Release           # bin/Release/net9.0 : Search-05
 
 > **Limite connue sous Linux** ([#17654](https://github.com/jsboige/CoursIA/issues/17654)). Deux causes, mesurées sur un clone vierge : (1) MGS-08, MGS-09, MGS-11, MGS-13 et MGS-14 écrivent leurs `#r` avec des séparateurs `\` (`..\MetaGeneticSharp\...`), que Linux ne reconnaît pas (`CS0006: Metadata file ... could not be found`, mesuré sur MGS-08) ; (2) les notebooks graphiques MGS-04, MGS-08, MGS-09, MGS-11, MGS-13, MGS-14 et MGS-15 préchargent le natif SkiaSharp depuis `runtimes/win-*/native/libSkiaSharp.dll`, et le build du fork ne produit aucun `libSkiaSharp.so` (pas de référence à `SkiaSharp.NativeAssets.Linux`) : `DllNotFoundException`, mesuré sur MGS-04 et MGS-15. Les autres notebooks MGS ne sont pas concernés (MGS-01 et MGS-06 passent).
 
-**Reproductibilité.** Les résultats numériques de MGS-1 à MGS-9 sont **stochastiques** (le RNG du framework n'y est pas seedé) : les outputs committés sont une exécution valide, les valeurs varient d'une exécution à l'autre. À partir de MGS-10, les bancs sont seedés pour devenir **reproduisibles** :
+**Reproductibilité.** Le corpus est **seedé** : `MGS-01` à `MGS-09` initialisent explicitement le RNG avant la création de la population initiale (`FastRandomRandomization.ResetSeed` ; `SeededRandomization` pour `MGS-09`) — campagne [#17863](https://github.com/jsboige/CoursIA/issues/17863), contrôles deux-exécutions à l'appui — et les bancs à partir de `MGS-10` sont seedés pour devenir **reproduisibles** :
 
 | Notebook | Strategy | Verdict |
 |----------|----------|---------|
 | **MGS-10** | `ResetSeed(masterSeed)` une fois avant la suite | reproduisible (biais central) |
 | **MGS-11** | `ResetSeed(42)` avant chaque banc | reproductible (caveat : graine unique, pas multi-graines) |
 | **MGS-12** | reseed avant chaque paire optimiseur | reproductible (caveat : dim 2, budget large → $\Delta \approx 0$ pour tous ; cf exercice 2) |
+| **MGS-13** | rotations/décalages par `RotationMatrices.Seeded(n, seed)` / `ShiftedFitness.Seeded(...)` | reproductible (seul écart résiduel = blob bootstrap du kernel — [#17863](https://github.com/jsboige/CoursIA/issues/17863)) |
 | **MGS-14** | multi-seed (5 graines) avant chaque archipel | reproduisible (synergie robuste sur Ackley, absente sur Rastrigin) |
+| **MGS-15** | `SampleLandscape(..., seed = 42)` / `RandomWalk(..., seed = 7)` | reproductible (seul écart résiduel = blob bootstrap du kernel — [#17863](https://github.com/jsboige/CoursIA/issues/17863)) |
 | **MGS-17** | multi-seed (5 graines {7,42,99,123,777}) | reproduisible (`DynamicProbability` déterministe, pas de RNG interne) |
 | **MGS-19** | multi-seed (3 graines {7,42,99}) avant chaque course | reproduisible (banc Metropolis-vs-Pairwise + limite frozen) |
 | **MGS-21** | multi-seed (4 graines {0,1,7,42}) par cellule du plan croisé, `FastRandomRandomization.ResetSeed(seed)` avant création de population | reproduisible (croisement 2×2, 4/4 résolutions en R2/GA, déterminisme vérifié sur 3 exécutions) |
+
+Le contrôle « deux exécutions → sorties identiques » vaut hors le seul blob de bootstrap du kernel (adresse/PID éphémères), et à condition de bâtir les DLL `#r` depuis le gitlink courant du fork : un `bin/` antérieur au correctif de seed par pixel rend les rendus N-D non déterministes (avertissement mesuré le 2026-10-02, cf. #18820).
 
 Règle C.2 : les notebooks sont committés **avec leurs outputs** (exécution réelle, kernel .NET).
 

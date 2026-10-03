@@ -20,6 +20,7 @@ Le geste « distillation » : prendre un énoncé ou une construction centrale d
 | 10 | [10-empilements-borne-lp-cohn-elkies.ipynb](10-empilements-borne-lp-cohn-elkies.ipynb) | Bornes d'empilements de sphères par LP (Cohn–Elkies, lignée Odlyzko–Serre) — Poisson mesuré, LP naïf autopsié, LP certifié par intervalles | numpy + scipy (HiGHS) + matplotlib |
 | 11 | [11-corps-quadratiques-reciprocite-quadratique.ipynb](11-corps-quadratiques-reciprocite-quadratique.ipynb) | Corps quadratiques imaginaires — réciprocité quadratique, Fermat des deux carrés / deux triangulaires, densités de Chebotarev via symbole de Kronecker, conjecture de Stark-Heegner (neuf nombres) | Python stdlib |
 | 13 | [13-jacobi-kronecker-reciprocite-II.ipynb](13-jacobi-kronecker-reciprocite-II.ipynb) | Loi de réciprocité quadratique II — symbole de Jacobi `(d/n)` (n impair) et extension Kronecker `(d/n)` ; algorithme d'Euler-Legendre O(log n) ; conducteur des corps quadratiques de Heegner | Python stdlib (math.isqrt) |
+| 14 | [14-formes-quadratiques-composition-gauss.ipynb](14-formes-quadratiques-composition-gauss.ipynb) | Composition des formes quadratiques binaires (Gauss) — réduction, énumération des formes réduites, calcul de h(D), vérification du théorème de Stark–Heegner sur les 9 corps de Heegner | Python stdlib (math.isqrt) |
 
 ## Conventions
 
