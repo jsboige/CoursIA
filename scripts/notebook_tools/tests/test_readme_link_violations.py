@@ -108,3 +108,66 @@ def test_diff_fails_on_injected_stale_link(tmp_path: Path) -> None:
     # sur STDERR (le workflow greperait sans 2>&1 sinon). C'est la condition
     # qui a fait rougir le run originel 37109571492 sans etre vue.
     assert "::error::STALE_LINK WITNESS_README.md -> WITNESS.ipynb" in proc.stderr
+
+
+# ---------------------------------------------------------------------------
+# C23 / c.1443 -- propagation des pannes du scanner (adjoint po-2025).
+# Un defaut du wrapper transforme une indisponibilite (rc=2 / script absent
+# ou rc=1 + traceback sans resume) en scan vide reussi, ce qui masquerait
+# une nouvelle violation. Les 2 tests ci-dessous sont discriminants : le fix
+# doit faire retourner rc != 0 a main() et scan_ok=False dans le payload,
+# distinct du cas "scan propre rc=0".
+# ---------------------------------------------------------------------------
+
+
+def _scan_via_dump_with_fake(monkeypatch: pytest.MonkeyPatch, fake_proc: subprocess.CompletedProcess) -> subprocess.CompletedProcess:
+    """Patche subprocess.run du module + lance le script via python et ferme spawn.
+
+    Monkeypatch ne peut pas traverser la frontiere du process, donc on ne peut
+    pas patcher le subprocess depuis l'exterieur du script. A la place, on
+    importe le module, on patche directement subprocess.run DU MODULE, et on
+    appelle main() du module.
+    """
+    pass
+
+
+def test_dump_exits_nonzero_on_rc2_script_absent(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Témoin négatif : rc=2 (script absent) NE DOIT PAS retourner 0.
+
+    Avant le fix, le wrapper retournait un payload vide avec rc=0,
+    ce qui faisait passer une indisponibilite du scanner pour un scan
+    propre (delta_argv ne voyait aucune nouvelle violation).
+    """
+    import scripts.notebook_tools.dump_readme_link_violations as mod
+
+    fake = subprocess.CompletedProcess(
+        args=["python", "scripts/regen_quarto_render.py", "--check-readme-links"],
+        returncode=2,
+        stdout="",
+        stderr="python: can't open file 'scripts/regen_quarto_render.py': [Errno 2] No such file or directory\n",
+    )
+    monkeypatch.setattr(mod.subprocess, "run", lambda *a, **kw: fake)
+    rc = mod.main()
+    # Si rc!=0, capture le payload via capfd (le main imprime sur stdout)
+    assert rc != 0, f"dump aurait du exit != 0, exit={rc}"
+
+
+def test_dump_exits_nonzero_on_rc1_traceback_no_summary(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Témoin négatif : rc=1 + traceback sans resume NE DOIT PAS retourner 0.
+
+    Avant le fix, le wrapper ne regardait que stderr (violations) et ignorait
+    stdout (resume). Un traceback produit du stdout non-resume, ce qui
+    rendait n_readmes=0 mais RC=0 du wrapper -- indistinguable d'un scan
+    propre.
+    """
+    import scripts.notebook_tools.dump_readme_link_violations as mod
+
+    fake = subprocess.CompletedProcess(
+        args=["python", "scripts/regen_quarto_render.py", "--check-readme-links"],
+        returncode=1,
+        stdout="Traceback (most recent call last):\n  File \"regen_quarto_render.py\", line 100, in <module>\n    raise ValueError()\nValueError\n",
+        stderr="",
+    )
+    monkeypatch.setattr(mod.subprocess, "run", lambda *a, **kw: fake)
+    rc = mod.main()
+    assert rc != 0, f"dump aurait du exit != 0, exit={rc}"
