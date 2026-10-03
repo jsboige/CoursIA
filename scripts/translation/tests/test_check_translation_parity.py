@@ -697,11 +697,14 @@ def test_is_scannable_matches_on_relative_parts_only(tmp_path):
 # FineTuning/FT-05-ModelMerging-Routing. Each reintroduced pair makes this
 # test red until the declaration is updated knowingly — a skipif would
 # re-arm silently and a >= 0 threshold would stay green forever.
+# 2026-10-03 (#1650 tranche Sector-Momentum, PR #18966, desormais sur main):
+# +2 paires T4 — deep_research_optimization + research_robustness
+# (examples/Sector-Momentum). Total main : 4.
 # 2026-10-03 (#1650 tranche XGBoost, PR #18972): +1 paire T4 —
-# kit-transitoire/02-ML-XGBoost/research_en. Total branche : 3 (Sector-
-# Momentum #18966 et FT #18968 portent chacune leur propre bump de
-# declaration au merge — l'ordre des merges fixe le total final, 7).
-EXPECTED_PAIR_COUNT = 3
+# kit-transitoire/02-ML-XGBoost/research_en. Total branche apres fusion de
+# main : 5 (Sector-Momentum deja sur main, FT #18968 porte son propre bump au
+# merge — l'ordre des merges fixe le total final, 7).
+EXPECTED_PAIR_COUNT = 5
 
 
 def _collect_parity_failures(repo_root: Path,

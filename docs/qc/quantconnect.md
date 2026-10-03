@@ -105,7 +105,7 @@ L'absence d'un appel `SetEndDate` (Python : `self.set_end_date(...)`) **n'est pa
 
 Le MCP Docker officiel charge un schema d'outils volumineux (~40k tokens). Pour les workflows de backtest standard, le dépôt fournit un wrapper Python léger **`scripts/qc-mcp-lite/server.py`** (~10 outils, schema <5k tokens) qui re-expose l'API QC v2 sans conteneur Docker.
 
-Outils exposes : `create_compile`, `read_compile`, `create_backtest`, `read_backtest` (Sharpe/CAGR/MaxDD), `list_backtests`, `list_projects`, `read_project`, `read_file`, `create_file`, `update_file_contents`. Auth = pattern QC v2 (`SHA256(token:timestamp)` + header `Basic userId:hash`). Rate limiting 10 appels/min applique in-process (même limite fleet-wide).
+Outils exposes : `create_compile`, `read_compile`, `create_backtest`, `read_backtest` (Sharpe/CAGR/MaxDD), `read_backtest_chart` (graphique écrit sur disque : equity, exposition, rotation, graphique personnalisé), `list_backtests`, `list_projects`, `read_project`, `read_file`, `create_file`, `update_file_contents`. Auth = pattern QC v2 (`SHA256(token:timestamp)` + header `Basic userId:hash`). Rate limiting 10 appels/min applique in-process (même limite fleet-wide).
 
 Config `.mcp.json` (remplace l'entrée Docker `qc-mcp` ; secrets dans `.env` gitignore, **JAMAIS inline**) :
 
