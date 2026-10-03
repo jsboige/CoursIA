@@ -47,6 +47,8 @@ import Grothendieck.Fppf
 import Grothendieck.Godement
 import Grothendieck.GodementFunctor
 import Grothendieck.GodementMono
+import Grothendieck.GodementAcyclicity
+import Grothendieck.GodementResolution
 import Grothendieck.KanExtensions
 import Grothendieck.LawvereTierney
 import Grothendieck.LeftExact
@@ -182,6 +184,28 @@ Substance réelle :
 - `Grothendieck.YonedaLemma` : lemme de Yoneda — plongement pleinement
   fidèle d'une catégorie C dans la catégorie de foncteurs [C^op, Ens],
   c_{x} ↦ Hom_C(-, x) (Grothendieck 1960, CatAlg).
+- `Grothendieck.Godement` (Partie 84) : le faisceau C⁰ = produit des tiges ;
+  flasque sans hypothèse sur F, faisceau, unité injective sur les faisceaux.
+- `Grothendieck.GodementFunctor` (Partie 85) : endofoncteur C⁰ sur les préfaisceaux
+  de groupes abéliens, unité naturelle `F → C⁰F` ; la préservation des monos
+  est reportée à la Partie 86.
+- `Grothendieck.GodementMono` (Partie 86) : C⁰ préserve les monomorphismes
+  (instance `PreservesMonomorphisms`) — prérequis nommé par la Partie 85,
+  fil du complexe de Godement.
+- `Grothendieck.GodementResolution` (Partie 87) : la résolution canonique de
+  Godement est posée — le complexe `0 → F → C⁰F → C⁰(C⁰F) → ⋯` avec
+  null-homotopie `μ ≫ d⁰ = 0` et exactitude en degré 0 (mono sur les
+  faisceaux). L'allongement au degré 1 est la Partie 88 ; l'acyclicité aux
+  degrés supérieurs est la Partie 89.
+- `Grothendieck.GodementAcyclicity` (Partie 88) : l'**énoncé moral** de
+  l'**allongement de la chaîne tronquée au degré 1** est posé — la
+  différentielle `d¹ : C⁰²F → C⁰³F` est construite comme l'image de `d⁰` par
+  l'unité de `C⁰` ré-appliquée au préfaisceau `C⁰F`. La stratégie pour la
+  **null-homotopie** `μ ≫ d⁰ = 0` et l'**acyclicité** `H^n(C⁰F) = 0` pour
+  `n ≥ 1` reste explicite en docstring (God58 II.5) : `C⁰F` flasque (P84)
+  + lemme de Godement II.5.1 (`Γ` préserve l'exactitude sur les flasques)
+  — la **preuve complète** `acyclic_godementF` est une **frontière nommée**
+  traitée en Partie 89 (calibration `#1453`).
 
 Tous les `sorry`s ne sont pas comblés — la plupart sont des échafaudages
 intentionnels pour le prouveur multi-agent (cf. Epic #1453).
@@ -277,6 +301,26 @@ Substance (English):
 - `Grothendieck.YonedaLemma`: Yoneda lemma — fully faithful embedding of a
   category C into the functor category [C^op, Set], c_{x} ↦ Hom_C(-, x)
   (Grothendieck 1960, CatAlg).
+- `Grothendieck.Godement` (Part 84): the C⁰ sheaf = product of stalks;
+  flasque without hypothesis on F, sheaf, unit injective on sheaves.
+- `Grothendieck.GodementFunctor` (Part 85): endofunctor C⁰ on presheaves of
+  abelian groups, natural unit `F → C⁰F`; preservation of monos is deferred to
+  Part 86.
+- `Grothendieck.GodementMono` (Part 86): C⁰ preserves monomorphisms
+  (instance `PreservesMonomorphisms`) — prerequisite named by Part 85,
+  thread of the Godement complex.
+- `Grothendieck.GodementResolution` (Part 87): the canonical Godement
+  resolution is posed — the complex `0 → F → C⁰F → C⁰(C⁰F) → ⋯` with
+  null-homotopy `μ ≫ d⁰ = 0` and exactness at degree 0 (mono on sheaves).
+  Lengthening at degree 1 is Part 88; acyclicity at higher degrees is Part 89.
+- `Grothendieck.GodementAcyclicity` (Part 88): the **chain lengthening**
+  at degree 1 is posed — the differential `d¹ : C⁰²F → C⁰³F` is built as
+  the image of `d⁰` by the unit of `C⁰` re-applied to the presheaf `C⁰F`.
+  The strategy for the **null-homotopy** `μ ≫ d⁰ = 0` and the **acyclicity**
+  `H^n(C⁰F) = 0` for `n ≥ 1` is explicited in docstring (God58 II.5):
+  `C⁰F` flasque (P84) + Godement II.5.1 lemma (`Γ` preserves exactness on
+  flasques) — the **complete proof** `acyclic_godementF` is a **named
+  frontier** to be treated in Part 89 (calibration `#1453`).
 
 Not all `sorry`s are filled — most are intentional scaffolds for the
 multi-agent prover (cf. Epic #1453).
