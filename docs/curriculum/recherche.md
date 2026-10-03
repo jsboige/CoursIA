@@ -216,7 +216,7 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 59 | [ICT-39 — Composition de regards](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-39-CompositionRegards-Python.ipynb) | BETA | Oui |
 | 60 | [ICT-40b — Cognition analogique : les ondes cérébrales…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-40b-AnalogCognitionWaves-Python.ipynb) | BETA | Non |
 | 61 | [Geometrie des features SAE : galaxy, atome, dense --…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41-SAE-GeometrieFeatures-Python.ipynb) | BETA | Oui |
-| 62 | [ICT-42 — Crosscoder : diffuser deux modèles, distilled…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb) | BETA | Non |
+| 62 | [ICT-41b — Crosscoder : diffuser deux modèles, distilled…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb) | BETA | Non |
 | 63 | [ICT-44 — La géométrie de la vérité : une direction dans…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb) | BETA | Non |
 | 64 | [ICT-46 — Strate 7 : freebits de second ordre, le banc…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-46-Strate7-FreeCoordinates-Python.ipynb) | BETA | Oui |
 | 65 | [ICT — Annexe : la contextualité du zoo de proxys est un…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Annexe-ProxyContextuality.ipynb) | BETA | Oui |
