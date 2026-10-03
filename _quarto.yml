@@ -603,7 +603,7 @@ project:
     - "docs/ledgers/15615-gradation-foundations.md"
     - "docs/ledgers/17375-md-content-loss-justified.md"
     - "docs/ledgers/18493-counter-scan-classification.md"
-    - "docs/leiden-declaration-position.md"
+    - "docs/cadrage/leiden-declaration-position.md"
     - "docs/ml/bdh-evaluation.md"
     - "docs/ml/tsad-benchmark-flaws.md"
     - "docs/notebook-metadata/cost-matrix.md"

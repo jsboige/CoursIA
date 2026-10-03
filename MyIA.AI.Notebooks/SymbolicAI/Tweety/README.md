@@ -720,7 +720,7 @@ La version est configurable dans `Tweety-01-Setup-Python.ipynb` (variable `TWEET
 | **[SemanticWeb](../SemanticWeb/)** | Logique de Description / OWL | La logique de Description (Tweety-3) est le fondement du raisonnement OWL : les ontologies OWL DL (SW-6/SW-7) utilisent les mêmes solveurs DL que Tweety. |
 | **[GameTheory](../../GameTheory/)** | Théorie du vote | Le notebook 9 (Préférences/Vote) couvre les concepts de choix social formalisés dans `game_theory_lean/SocialChoice/` (Arrow, Sen, Voting). |
 | **[Planners](../Planners/)** | Planification argumentative | Les dialogues argumentatifs (notebook 8) peuvent être modélisés comme des problèmes de planification PDDL. |
-| Lecture transversale | [La mer qui monte](../../../docs/grothendieckian-lens.md) | Grille de lecture grothendieckienne du dépôt : changement de représentation, certification A/B/C |
+| Lecture transversale | [La mer qui monte](../../../docs/cadrage/grothendieckian-lens.md) | Grille de lecture grothendieckienne du dépôt : changement de représentation, certification A/B/C |
 
 ## Conclusion / Prochaines étapes
 
@@ -738,7 +738,7 @@ Tweety est l'outil où **le raisonnement devient explicite et vérifiable** — 
 - **Certifiez** : les SAT/SMT solvers de Tweety et la vérification formelle partagent le même socle. La série **[Lean](../Lean/)** pousse la logique jusqu'à la preuve de programmes ; **[SmartContracts](../SmartContracts/)** (SC-14) l'applique aux invariants Solidity.
 - **Reliez aux ontologies** : la logique de description de Tweety-3 est le moteur de raisonnement OWL. La série **[SemanticWeb](../SemanticWeb/)** (SW-6/SW-7) en fait le cœur des graphes de connaissances.
 - **Élargissez au choix social** : le notebook 9 (vote, préférences) est la porte d'entrée vers la théorie du choix social formalisée en Lean dans la série **[GameTheory](../../GameTheory/)** (Arrow, Sen, Voting).
-- Les six ponts détaillés ci-dessus (`## Ponts avec les autres séries`) cartographient l'ensemble de ces connexions ; la [Lecture transversale](../../../docs/grothendieckian-lens.md) les relie au fil rouge du dépôt.
+- Les six ponts détaillés ci-dessus (`## Ponts avec les autres séries`) cartographient l'ensemble de ces connexions ; la [Lecture transversale](../../../docs/cadrage/grothendieckian-lens.md) les relie au fil rouge du dépôt.
 
 ### Le fil rouge
 
