@@ -170,13 +170,12 @@ Ces projets n'ont pas d'exemple correspondant dans le livre, mais illustrent des
 
 | Exemple | Suite |
 |---------|-------|
-| 04/05, 04/18 | écart interquartile et élimination récursive des variables : scripts courts sur données synthétiques, portage à regrouper dans un notebook de préparation des données |
-| 05/02, 05/15 | régression polynomiale et OPTICS ; portage à regrouper dans un notebook de modèles |
-| 06/02 | régimes par prétraitement de facteurs : portage à ouvrir |
-| 06/04/02, 06/04/03 | variantes options du modèle de Markov caché : portage à ouvrir |
-| 06/08/01, 06/08/03 | stop fixe de référence et couverture par put : portage à ouvrir, dans [Stoploss-Volatility-ML](projects/Stoploss-Volatility-ML/) |
-| 06/09 | sélection des paires par PCA et OPTICS : à compléter dans [ML-EnhancedPairs](projects/ML-EnhancedPairs/) |
-| 06/18/02, 06/19/02 | ré-entraînement de Chronos et de FinBERT : portage à ouvrir (calcul GPU) |
+| 04/05, 04/18, 05/02, 05/15 | [#18957](https://github.com/jsboige/CoursIA/issues/18957) : écart interquartile, élimination récursive des variables, régression polynomiale, OPTICS (scripts courts sur données synthétiques, à porter dans QC-Py-18 à 20) |
+| 06/02 | [#18958](https://github.com/jsboige/CoursIA/issues/18958) : régimes par prétraitement de facteurs |
+| 06/04/02, 06/04/03 | [#18959](https://github.com/jsboige/CoursIA/issues/18959) : variantes options du modèle de Markov caché |
+| 06/08/01, 06/08/03 | [#18960](https://github.com/jsboige/CoursIA/issues/18960) : stop fixe de référence et couverture par put, dans [Stoploss-Volatility-ML](projects/Stoploss-Volatility-ML/) |
+| 06/09 | [#18961](https://github.com/jsboige/CoursIA/issues/18961) : sélection des paires par PCA et OPTICS, dans [ML-EnhancedPairs](projects/ML-EnhancedPairs/) |
+| 06/18/02, 06/19/02 | [#18962](https://github.com/jsboige/CoursIA/issues/18962) : ré-entraînement de Chronos et de FinBERT (calcul GPU) |
 | 07/01 | [#18902](https://github.com/jsboige/CoursIA/issues/18902) |
 | 08/01 | exclusion : le livre appelle l'API payante PredictNow.ai ; le dépôt garde une optimisation sans service externe |
 | 08/02 | [#18901](https://github.com/jsboige/CoursIA/issues/18901) (méta-étiquetage sans l'API PredictNow.ai) |
