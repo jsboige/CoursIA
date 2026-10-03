@@ -50,6 +50,19 @@ REPO = "jsboige/CoursIA"
 # 28 aout : chaque jour, pris seul, avait l'air calme.
 DEFAULT_WINDOW_DAYS = 14
 
+# Mode --belt (cf #18832, #18866) : la fenetre par defaut (14 j) oublie les
+# livraisons au-dela, et `belt_sort_key` reclasse alors l'issue a sa date
+# de creation (comme si elle n'avait jamais ete servie). Une vieille issue
+# servie il y a 15 a 30 jours passe devant une issue de juin-aout que
+# personne n'a jamais servie, ce qui contredit la regle du tapis. La
+# fenetre doit etre nettement plus longue qu'un tour complet de la file :
+# avec ~100 grains/jour et ~500 issues ouvertes, un tour fait ~5 j, et
+# une lane a regime lent (10-20 grains/jour) complete un tour en 25-50 j.
+# 90 j couvrent les deux regimes. Le plafond `MERGED_FETCH_LIMIT = 400`
+# borne le corpus de toute facon -- si la fenetre depasse 400 PRs, le
+# tapis sert avec ce qui rentre, comme la volee ponderee aujourd'hui.
+BELT_WINDOW_DAYS = 90
+
 # Amortissement plus mordant que celui par issue : une zone qui a deja recu
 # quatre notebooks neufs dans la quinzaine n'a pas besoin du cinquieme.
 SERIES_SCALE_DEFAULT = 2.0

@@ -305,7 +305,7 @@ FOUNDING_PARAGRAPH = (
     "8-12). L'arc decision est en outre certifie par un lake "
     "compagnon **Lean 4** ([`decision_theory_lean`]"
     "(decision_theory_lean/)) et ses **2 notebooks a kernel Lean** "
-    "(DecInfer-02, utilite esperee vNM ; DecInfer-09, indice de "
+    "(DecInfer-02, utilite esperee vNM ; DecInfer-08b, indice de "
     "Gittins) : les identites d'escompte y sont demontrees "
     "(`0 sorry`), le theoreme d'optimalite restant enonce -- sa "
     "preuve complete attend une formalisation des MDP absente de "

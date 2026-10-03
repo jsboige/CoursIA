@@ -1,8 +1,8 @@
 <!-- CATALOG-STATUS
 series: SymbolicAI-SMT
-pedagogical_count: 46
-breakdown: SMT=46
-maturity: BETA=45, DRAFT=1
+pedagogical_count: 47
+breakdown: SMT=47
+maturity: BETA=46, DRAFT=1
 -->
 
 # SMT - Satisfiability Modulo Theories

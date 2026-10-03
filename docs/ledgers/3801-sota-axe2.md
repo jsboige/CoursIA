@@ -2557,6 +2557,8 @@ Part of #3801, #1621
 | Auditeur | `myia-po-2025:CoursIA` |
 | Verdict agrégé | **SOTA-OK** (14/14 SOTA-OK, 14/14 DISCRIMINATING) |
 
+> **Note 2026-09-30 (post-audit)** : `PyMC-06-Debugging` a été renommé `PyMC-02b-Debugging-Python` (#17808, labellisation #14873, parité de numéro rétablie avec `Infer-2b`) — les noms du tableau ci-dessous sont ceux à la date d'audit (2026-07-12). Résidu de référence découvert par #18622.
+
 ### Synthèse (14 notebooks, 452 cellules, 187 cellules code)
 
 | Nb | Cells | Code | EXEC | Err | Stubs C.1 | Kernel | Outils SOTA | Verdict |

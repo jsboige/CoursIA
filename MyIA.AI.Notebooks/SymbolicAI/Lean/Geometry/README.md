@@ -12,7 +12,7 @@ Le programme est **gradué** : chaque notebook principal ne suppose que ce qui l
 | 02 | Geometry-02 — Prouver par l'algèbre | Licence | Idéal engendré par les hypothèses, appartenance, bases de Gröbner (`sympy.groebner`), conditions de non-dégénérescence | À venir |
 | 03 | [Geometry-03-Wu-Method-Python.ipynb](Geometry-03-Wu-Method-Python.ipynb) | Licence | Pseudo-division, ensemble caractéristique (basic-set de Chou), test de Wu, non-dégénérescences auto-générées ; vérification croisée Gröbner (Rabinowitsch) ; fil rouge (milieu de l'hypoténuse) et Ceva ; témoin négatif (un énoncé faux rejeté) | Livré (#17511) |
 | 03b | [Geometry-03b-Ritt-Decomposition-Python.ipynb](Geometry-03b-Ritt-Decomposition-Python.ipynb) | Licence | Accrétion du 03 : le théorème du papillon — la conclusion est un quotient, scission de Ritt, bord dégénéré où l'énoncé est **muet** et non faux, contrôle sur 400 figures | Livré (#17511) |
-| 04 | Geometry-04 — Raisonner comme un géomètre | Licence | Base de déduction à règles (DD) et raisonnement algébrique (AR), la moitié symbolique d'AlphaGeometry | À venir |
+| 04 | [Geometry-04-DD-AR-Python.ipynb](Geometry-04-DD-AR-Python.ipynb) | Licence | Base de déduction à règles (DD) et raisonnement algébrique (AR), la moitié symbolique d'AlphaGeometry : fermeture à point fixe, trace de preuve lisible, la limite combinatoire sans construction, AR (`sympy.groebner`) en oracle ; fil rouge et témoin négatif réfuté deux fois | Livré |
 | 04b | Geometry-04b — IMO-AG-30 | Recherche | Wu associé à DD+AR (Sinha et al. 2024), proposeur neuronal | À venir |
 | 05 | Geometry-05 — Pont formel | Recherche | Un théorème de 02/03 énoncé et prouvé en Lean/Mathlib : que garantit « prouvé par Gröbner » ? | À venir |
 
@@ -24,9 +24,10 @@ Le **théorème du milieu de l'hypoténuse** traverse 01, 02 et 03 :
 
 - en 01, on le **vérifie numériquement** sur 10 000 figures, et on mesure ce que cette vérification prouve (preuve probabiliste Schwartz–Zippel) et ne prouve pas ;
 - en 02, on le **démontre** : la conclusion appartient à l'idéal des hypothèses, décidée exactement par Gröbner ;
-- en 03, on le **redémontre** par la méthode de Wu, avec les conditions de non-dégénérescence explicites.
+- en 03, on le **redémontre** par la méthode de Wu, avec les conditions de non-dégénérescence explicites ;
+- en 04, on le regarde par **DD + AR** : la fermeture de règles démontre le combinatoire, s'arrête devant le métrique — et l'algèbre prouve le reste, avec un énoncé faux réfuté deux fois.
 
-Trois regards sur le même objet — on compare des *méthodes*, pas des exemples.
+Quatre regards sur le même objet — on compare des *méthodes*, pas des exemples.
 
 ## Prérequis et coût
 
@@ -34,6 +35,7 @@ Trois regards sur le même objet — on compare des *méthodes*, pas des exemple
 - **01** : ~5 s de bout en bout (10 000 tirages vectorisés), générateur semé — reproductibilité HIGH.
 - **03** : ~3 s de bout en bout (chaînes caractéristiques déterministes, tie-break par expression) — reproductibilité HIGH, sorties committées sur `main`. Détail coût : bloc `metadata.cost` du notebook.
 - **03b** : ~4 s de bout en bout (sympy exact + 400 figures évaluées, graine fixe) — reproductibilité HIGH ; détail coût : bloc `metadata.cost` du notebook.
+- **04** : ~3 s de bout en bout (fermeture DD déterministe + une base de Gröbner à 5 inconnues) — reproductibilité HIGH, sorties committées.
 - **Publics** : Découverte (01) suppose la géométrie du lycée ; Licence (02–04) suppose 01 et une première familiarité avec l'algèbre linéaire ; Recherche (04b, 05) suppose la série ou une maturité en vérification formelle.
 
 ## Pourquoi une série de plus

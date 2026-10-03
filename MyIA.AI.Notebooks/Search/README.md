@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: Search
-pedagogical_count: 155
-breakdown: Applications=59, Part1-Foundations=43, Part4-Metaheuristics=35, Part2-CSP=18
-maturity: BETA=141, ALPHA=9, DRAFT=5
+pedagogical_count: 156
+breakdown: Applications=59, Part1-Foundations=43, Part4-Metaheuristics=35, Part2-CSP=18, Discrepancy=1
+maturity: BETA=141, ALPHA=9, DRAFT=6
 -->
 
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ SymbolicAI](../SymbolicAI/README.md)
@@ -229,7 +229,7 @@ Le levier .NET retenu a dépendu de la dépendance sous-jacente de chaque notebo
 
 | Cible | Dépendance Python | Levier .NET retenu | Remarque |
 |-------|-------------------|-------------|----------------------|
-| CSP-1 à CSP-9 (modélisation par contraintes) | `ortools` (CSP-3 à CSP-8) | **Choco-solver** via **IKVM** (CSP-1/2/3/4/5/7) ; **Google.OrTools** NuGet natif (CSP-6/8) ; from-scratch Yokoo DisCSP (CSP-9) | Précédent fondateur : `Sudoku-11-Choco-Csharp` (Choco via IKVM) et son binôme `Sudoku-11-Choco-Python` |
+| CSP-1 à CSP-9 (modélisation par contraintes) | `ortools` (CSP-3 à CSP-8) | **Choco-solver** via **IKVM** (CSP-1/2/3/4/5/7) ; **Google.OrTools** NuGet natif (CSP-6/8) ; from-scratch Yokoo DisCSP (CSP-9) | Précédent fondateur : `Sudoku-11-Choco-CSharp` (Choco via IKVM) et son binôme `Sudoku-11-Choco-Python` |
 | Search-9 Linear Programming | `pulp` | **Google.OrTools** (NuGet natif, GLOP / PDLP) | Port direct, sans IKVM |
 | Recherche d'états et jeux (Search-1 à Search-8) | aucune dépendance lourde | **.NET Interactive** pur, structures from-scratch | BFS/DFS/A*, Minimax/MCTS, DLX directement portés |
 | Applications (App-1 à App-20) | `ortools`, `pygad`, stdlib | Mix from-scratch / OR-Tools natif / GeneticSharp selon le sujet | 20 binômes complets |

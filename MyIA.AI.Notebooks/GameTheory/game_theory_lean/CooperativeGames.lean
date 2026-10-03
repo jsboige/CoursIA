@@ -22,7 +22,7 @@
   valide `decision_theory_lean/Gittins.lean` qui n'importe que les
   modules FR et laisse les `_en` discovers par `globs := #[<Lib>.*]`).
 
-  Pattern miroir : `Probas/decision_theory_lean/{Gittins,Utility,
+  Pattern miroir : `Probas/DecisionTheory/decision_theory_lean/{Gittins,Utility,
   Coherence}.lean` (lakefile `globs := #[<Lib>.*]` auto-devoile les
   siblings `_en` sans aggregator EN separe).
 
