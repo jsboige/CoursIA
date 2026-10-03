@@ -58,7 +58,7 @@ class VolTargetingAlgorithm(QCAlgorithm):
                 security.set_fee_model(NotionalFeeModel(float(self.fee_bps)))
 
         self.schedule.on(
-            self.date_rules.month_start(),
+            self.date_rules.month_start("SPY"),
             self.time_rules.after_market_open("SPY", 30),
             self.rebalance
         )
