@@ -16,7 +16,7 @@ Cette section contient un parcours complet de trading algorithmique sur **QuantC
 
 4. **[Notebooks pédagogiques](Python/)** — notebooks en 8 phases progressives (cf. classification 4-types par modalité d'exécution dans [`Python/README.md`](Python/README.md) — quantbook QC Cloud / research companion / standalone local / placeholder pédagogique) : fondations LEAN, universe/asset classes, risk management, Algorithm Framework, données alternatives, ML (RF/XGBoost), deep learning (LSTM/Transformers), RL et LLMs pour trading.
 
-5. **[Mapping livre Jared Broad](BOOK_MAPPING.md)** — 63 exemples du livre *Hands-On AI Trading* (2025) mappés à nos notebooks et projets. 22 stratégies ML du Chapitre 6 importées.
+5. **[Inventaire du livre de Jared Broad](BOOK_MAPPING.md)** — exemples du livre *Hands-On AI Trading* (2025) rattachés à nos notebooks et projets, avec leur statut.
 
 ## Démarrer en 5 minutes
 
