@@ -149,6 +149,8 @@ layout: default
 - V = Visite
 - W = Wumpus
 
+<img src="./images/img_004.png" style="position:absolute; top:60px; right:20px; height:300px;" alt="Grille du Wumpus annotee avec les symboles P?, W!, A, O, L, B, V, OK" />
+
 
 ---
 layout: default

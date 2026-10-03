@@ -24,9 +24,9 @@ complement. L'inventaire ci-dessous remplace la lecture en aveugle de
 | **Catalogue & dashboards** | `generate_catalog.py`, `verify_catalog_readme.py`, `catalog_coverage.py`, `fix_catalog_drift.py`, `generate_health_dashboard.py`, `weekly_digest.py`, `extract_readme_figures.py` | Artefacts catalogue (#2632) + figures README + dashboards |
 | **Audit & regression** | `audit_c1_c3.py`, `audit_solution_leaks.py`, `regression_scan.py`, `forensic_scan.py`, `diagnose_broken.py` | Audits structurels C.1/C.3 + fuite solution (#4970) + regression cluster + diagnostics |
 | **Extraction & parsing** | `notebook_tools.py`, `notebook_helpers.py`, `notebook_lint.py`, `extract_notebook_skeleton.py`, `count_exercises.py`, `count_notebooks_by_series.py`, `expand_catalog_markers.py`, `golden_set.yml`, `golden_set.lock.txt` | CLI multi-famille + helpers parsing + golden set |
-| **C# / .NET persistence** | `_exec_bdd_csharp.py`, `_fix_gt15b_compilation.py`, `_fix_lean34_unused_vars.py` | Diagnostic + fix cibles C# specifiques (GT-15, Lean34) |
-| **Leak-fix batch (legacy)** | `_fix_leaks_batch{1,2_probas,3_sudoku,4_remaining}.py`, `restructure_sw_2613.py` | Migration SW (#2613) + de-leak batchs legacy 2026 |
-| **Divers** | `_alpha_diag.py`, `cell_order_ci.py`, `fix_audio_dependencies.py`, `flatten_import_notebook.py`, `generate_16e.py`, `generate_parcours.py`, `optimize_dvs.py`, `epita_prcon_autograde.py`, `sudoku_validate_outputs.py` | Cibles specifiques (diagnostics, EPITA autograde, parcours 16e) |
+| **C# / .NET persistence** | — (archivés : `_exec_bdd_csharp.py`, `_fix_gt15b_compilation.py`, `_fix_lean34_unused_vars.py` → `scripts/notebook_tools/_archive/`) | Diagnostic + fix cibles C# specifiques (GT-15, Lean34) ; voir `_archive/README.md` (palier 1 #18153, 2026-10-01) |
+| **Leak-fix batch (legacy)** | `_fix_leaks_batch1.py` (archivé), `restructure_sw_2613.py` | Migration SW (#2613) + de-leak batch 1 legacy 2026 ; batches 2-5 archivés 2026-10-01 (`_archive/README.md` palier 1 #18153) |
+| **Divers** | `_alpha_diag.py`, `cell_order_ci.py`, `fix_audio_dependencies.py`, `flatten_import_notebook.py`, `generate_16e.py`, `generate_parcours.py`, `epita_prcon_autograde.py`, `sudoku_validate_outputs.py` | Cibles specifiques (diagnostics, EPITA autograde, parcours 16e) ; `optimize_dvs.py` archivé 2026-10-01 (`_archive/README.md` palier 1 #18153) |
 
 Tests unitaires dans `scripts/notebook_tools/tests/`.
 

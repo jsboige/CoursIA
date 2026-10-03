@@ -393,7 +393,9 @@ class TestActuariatManifest:
         if "series-temporelles" in accretions:
             expected_duration += 90
         if "validation-hors-echantillon" in accretions:
-            expected_duration += 105
+            # +120 depuis le regen catalogue 63720b90 (#18875) : QC-Py-12b-Backtest-Validity
+            # est passee de 30min a 45min, +15 min sur l'accretion.
+            expected_duration += 120
         assert compiled["duration_minutes"] == expected_duration
         assert compiled["known_duration_minutes"] == expected_duration
         assert [len(group["notebooks"]) for group in compiled["groups"]] == [
