@@ -90,34 +90,94 @@ jobs:
           # SANS `|| true`, et rouge si l'une a echoue. Le temoin est
           # `/tmp/scan_status.txt` : chaque ligne nomme la passe et son rc.
           # Si une ligne contient "FAIL", le job rouge meme avec NEW=0.
+          #
+          # F4 (adjoint c25) -- le V2 confondait "scan qui trouve des
+          # violations" (rc=1 normal) et "vraie panne scanner" (rc=2+).
+          # PIPESTATUS[@] donne le rc de chaque etape du pipe, separe
+          # du rc final. La voie : si PY_RC >= 2 (ou PY_RC=1 mais le
+          # stdout est vide alors qu'on a le droit d'attendre un
+          # inventaire) c'est une panne ; si GREP_RC=1 seul c'est "pas
+          # de match" (legitime, pas une panne). Témoins explicites
+          # par categorie : /tmp/scan_kind.txt nomme propre/backlog/
+          # nouvelle_violation/panne_scanner/panne_checkout.
           : > /tmp/scan_status.txt
+          : > /tmp/scan_kind.txt
           set +e
-          python scripts/regen_quarto_render.py --check-readme-links \
-            2>&1 | grep -E '^::error::STALE_LINK ' \
+          python scripts/regen_quarto_render.py --check-readme-links 2>/tmp/python_stderr.txt \
+            | grep -E '^::error::STALE_LINK ' \
             | sort -u > /tmp/pr_violations.txt
-          PR_RC=$?
-          echo "PR_SCAN rc=${PR_RC}" >> /tmp/scan_status.txt
+          PYPIPE_RC=("${PIPESTATUS[@]}")
+          PY_RC=${PYPIPE_RC[0]}
+          GREP_RC=${PYPIPE_RC[1]}
+          SORT_RC=${PYPIPE_RC[2]}
+          echo "PR python_rc=${PY_RC} grep_rc=${GREP_RC} sort_rc=${SORT_RC}" >> /tmp/scan_status.txt
+          # Tri des cas pour le PR
+          if [ "${PY_RC}" -ge 2 ]; then
+            echo "panne_scanner" >> /tmp/scan_kind.txt
+            echo "::error::Scanner en panne sur PR (rc=${PY_RC}) -- le script ne s'est pas execute."
+            cat /tmp/python_stderr.txt
+            exit 1
+          fi
+          if [ "${SORT_RC}" -ne 0 ]; then
+            echo "panne_scanner" >> /tmp/scan_kind.txt
+            echo "::error::sort en panne sur PR (rc=${SORT_RC})"
+            exit 1
+          fi
+          PR_VIOLATIONS=$(wc -l < /tmp/pr_violations.txt | tr -d ' ')
+          if [ "${PR_VIOLATIONS}" -gt 0 ]; then
+            echo "nouvelle_violation OU backlog" >> /tmp/scan_kind.txt
+          else
+            echo "propre" >> /tmp/scan_kind.txt
+          fi
           # Sortie de la base (main)
           git checkout "${BASE_SHA}" -- MyIA.AI.Notebooks scripts/regen_quarto_render.py _quarto.yml 2>/dev/null
           CHECKOUT_BASE_RC=$?
           echo "CHECKOUT_BASE rc=${CHECKOUT_BASE_RC}" >> /tmp/scan_status.txt
-          python scripts/regen_quarto_render.py --check-readme-links \
-            2>&1 | grep -E '^::error::STALE_LINK ' \
+          if [ "${CHECKOUT_BASE_RC}" -ne 0 ]; then
+            echo "panne_checkout" >> /tmp/scan_kind.txt
+            echo "::error::git checkout base en panne (rc=${CHECKOUT_BASE_RC}) -- la comparaison delta est invalide."
+            exit 1
+          fi
+          python scripts/regen_quarto_render.py --check-readme-links 2>/tmp/python_stderr_base.txt \
+            | grep -E '^::error::STALE_LINK ' \
             | sort -u > /tmp/base_violations.txt
-          BASE_RC=$?
-          echo "BASE_SCAN rc=${BASE_RC}" >> /tmp/scan_status.txt
+          PYPIPE_RC=("${PIPESTATUS[@]}")
+          BASE_PY_RC=${PYPIPE_RC[0]}
+          BASE_GREP_RC=${PYPIPE_RC[1]}
+          BASE_SORT_RC=${PYPIPE_RC[2]}
+          echo "BASE python_rc=${BASE_PY_RC} grep_rc=${BASE_GREP_RC} sort_rc=${BASE_SORT_RC}" >> /tmp/scan_status.txt
+          if [ "${BASE_PY_RC}" -ge 2 ]; then
+            echo "panne_scanner" >> /tmp/scan_kind.txt
+            echo "::error::Scanner en panne sur base (rc=${BASE_PY_RC}) -- le script ne s'est pas execute."
+            cat /tmp/python_stderr_base.txt
+            exit 1
+          fi
+          if [ "${BASE_SORT_RC}" -ne 0 ]; then
+            echo "panne_scanner" >> /tmp/scan_kind.txt
+            echo "::error::sort en panne sur base (rc=${BASE_SORT_RC})"
+            exit 1
+          fi
+          BASE_VIOLATIONS=$(wc -l < /tmp/base_violations.txt | tr -d ' ')
+          if [ "${BASE_VIOLATIONS}" -gt 0 ]; then
+            # Backlog historique -- c'est attendu, pas une nouvelle violation
+            echo "backlog" >> /tmp/scan_kind.txt
+          else
+            echo "propre" >> /tmp/scan_kind.txt
+          fi
           # Retour au working tree PR
           git checkout HEAD -- MyIA.AI.Notebooks scripts/regen_quarto_render.py _quarto.yml 2>/dev/null
           CHECKOUT_BACK_RC=$?
           echo "CHECKOUT_BACK rc=${CHECKOUT_BACK_RC}" >> /tmp/scan_status.txt
-          set -e
-          # Temoin de panne : si un rc != 0, on rouge avec le diagnostic.
-          if grep -qE 'rc=([0-9]?[1-9][0-9]*|[2-9][0-9]?)$' /tmp/scan_status.txt; then
-            echo "::error::Panne scanner ou checkout -- garde non exercable (Tell c.16866 / adjoint c24) :"
-            cat /tmp/scan_status.txt
+          if [ "${CHECKOUT_BACK_RC}" -ne 0 ]; then
+            echo "panne_checkout" >> /tmp/scan_kind.txt
+            echo "::error::git checkout retour en panne (rc=${CHECKOUT_BACK_RC})"
             exit 1
           fi
-          # Delta = PR \ base
+          set -e
+          # Témoin global : categorisation finale
+          KIND=$(sort -u /tmp/scan_kind.txt | tr '\n' ',' | sed 's/,$//')
+          echo "Scan kind: ${KIND}"
+          # Delta = PR \ base (nouvelles violations = PR a des violations que la base n'a pas)
           comm -23 /tmp/pr_violations.txt /tmp/base_violations.txt > /tmp/delta_violations.txt
           NEW=$(wc -l < /tmp/delta_violations.txt | tr -d ' ')
           BASE_N=$(wc -l < /tmp/base_violations.txt | tr -d ' ')
