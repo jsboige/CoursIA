@@ -210,14 +210,14 @@ Une section par palier qui ouvre des lettres. Chaque lettre est **facultative** 
 | 03c-DL | [Tweety-3-Advanced-Logics-Csharp](Tweety-3-Advanced-Logics-Csharp.ipynb) | DL/ML/QBF/CL .NET — **DRAFT** : conflits de noms DLL entre `logics.ml` + `logics.cl` + `logics.qbf` simultanés |
 | 03c-CL | [Tweety-3-Conditional-Logics-Csharp](Tweety-3-Conditional-Logics-Csharp.ipynb) | Logique conditionnelle .NET (IKVM) — raisonneur `cl` réel |
 | 03c-Dung | [Tweety-3-Dung-Csharp](Tweety-3-Dung-Csharp.ipynb) | Argumentation de Dung .NET (IKVM, c.182 PR #5194) — `NaiveDlReasoner` |
-| 03c-ML | [Tweety-3-ModalLogic-Csharp](Tweety-3-ModalLogic-CSharp.ipynb) | Logique modale .NET (IKVM) — `MlReasoner` réel |
+| 03c-ML | [Tweety-3-ModalLogic-Csharp](Tweety-3-ModalLogic-Csharp.ipynb) | Logique modale .NET (IKVM) — `MlReasoner` réel |
 | 03c-QBF | [Tweety-3-QBF-Csharp](Tweety-3-QBF-Csharp.ipynb) | QBF .NET (IKVM, c.185 PR #5202) — solveur QBF réel |
 
 #### Autour de 04 — belief revision et ASPIC+
 
 | Lettre | Notebook | Ce que cette lettre ajoute |
 |---|---|---|
-| 04c-BR | [Tweety-4-Belief-Revision-Csharp](Tweety-4-Belief-Revision-CSharp.ipynb) | Belief Revision .NET (IKVM) : `Revision`/`MUSMaxSAT` réels |
+| 04c-BR | [Tweety-4-Belief-Revision-Csharp](Tweety-4-Belief-Revision-Csharp.ipynb) | Belief Revision .NET (IKVM) : `Revision`/`MUSMaxSAT` réels |
 | 04c-Aspic | [Tweety-4-Aspic-Csharp](Tweety-4-Aspic-Csharp.ipynb) | ASPIC+ .NET (IKVM) — `AspicArgumentation` réel |
 
 #### Autour de 05 — argumentation abstraite et compagnons Lean
@@ -225,7 +225,7 @@ Une section par palier qui ouvre des lettres. Chaque lettre est **facultative** 
 | Lettre | Notebook | Ce que cette lettre ajoute |
 |---|---|---|
 | 05b | [Tweety-5b-Lean-Argumentation](Tweety-5b-Lean-Argumentation.ipynb) | **Compagnon natif** (kernel Lean) : preuve formelle 0-sorry de Dung dans le lake `argumentation_lean` (grounded = point fixe Knaster–Tarski), `#check` + `#print axioms` in-kernel (UNLOCK c.127, jonction Mathlib #2611) |
-| 05c | [Tweety-5-Abstract-Argumentation-Csharp](Tweety-5-Abstract-Argumentation-CSharp.ipynb) | Twin C# Dung AF **from-scratch** (BCL .NET, pas IKVM/JVM) : fonction caractéristique, acceptabilité, ensembles admissibles/complets, sémantiques grounded (plus petit point fixe) / stable / preferred, labeling 3 valeurs (in/out/undec), génération aléatoire, 3 exercices |
+| 05c | [Tweety-5-Abstract-Argumentation-Csharp](Tweety-5-Abstract-Argumentation-Csharp.ipynb) | Twin C# Dung AF **from-scratch** (BCL .NET, pas IKVM/JVM) : fonction caractéristique, acceptabilité, ensembles admissibles/complets, sémantiques grounded (plus petit point fixe) / stable / preferred, labeling 3 valeurs (in/out/undec), génération aléatoire, 3 exercices |
 | 05d | [Tweety-5d-Stable-Synthesis-Lean](Tweety-5d-Stable-Synthesis-Lean.ipynb) | **Synthèse certifiée** d'extensions stables (Loi II #12205, variante `-c`, #13597) : spécification → **Z3** (générateur ≠ vérificateur) → témoin `{1, 2, 5}` → certificat Lean `by decide` dans le lake `argumentation_lean` (module `Argumentation.Synthesis` + sibling `_en`, i18n #4980) ; cas UNSAT du 3-cycle certifié (`afB_no_stable`) |
 | 05e | [Tweety-5e-Propositional-Lab-Lean](Tweety-5e-Propositional-Lab-Lean.ipynb) | **Compagnon transversal** (tranche A de l'EPIC #15066) : trois formules-témoins (`SYL` valide, `ORB` satisfiable non valide, `CONTR` insatisfiable) traversent **trois lectures** — Tweety via JPype (verdicts et contre-modèles **calculés**), recomptage Python indépendant des 8 mondes du fragment `{a, b, c}`, certification du kernel Lean natif sur **Foundation (FFL)** au commit épinglé ; la même chaîne de formule est sérialisée pour les deux moteurs (SOTA, aucune réimplémentation jouet) |
 
@@ -257,7 +257,7 @@ Le palier 07 est porté par le **07a** (Python) et son jumeau **07ac** (C#) ; le
 | Lettre | Notebook | Ce que cette lettre ajoute |
 |---|---|---|
 | 10c | [Tweety-10-MLN-Csharp](Tweety-10-MLN-Csharp.ipynb) | MLN porté .NET (IKVM, c.188 PR #5209) — `MarkovLogicNetwork`, vrais appels |
-| 11c | [Tweety-11-Causal-Csharp](Tweety-11-Causal-CSharp.ipynb) | Twin C# moteur causal booléen from-scratch .NET : do-operator, contrefactuels par mondes jumeaux |
+| 11c | [Tweety-11-Causal-Csharp](Tweety-11-Causal-Csharp.ipynb) | Twin C# moteur causal booléen from-scratch .NET : do-operator, contrefactuels par mondes jumeaux |
 
 ### Sous-série Argumentation — Argumentum
 
