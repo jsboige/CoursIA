@@ -23,14 +23,15 @@ le sleeve crypto seul sur Coinbase, sleeve IBKR en backtest parallèle.
 | Composant | Statut |
 |-----------|--------|
 | `config.py` (loader `.env` typé) | livré (ajout `CoinbaseConfig`) |
-| `risk.py` (circuit-breakers) | livré, dry-run validé |
+| `risk.py` (circuit-breakers) | livré, dry-run validé ; état persistant (`save`/`load`) ajouté |
+| `rebalance.py` (poids inverse-volatilité → ordres en parts entières) | livré, testé (`tests/`) |
+| `orchestrator.py` (`run_cycle` : un cycle de rééquilibrage, dry-run par défaut) | cœur livré, testé contre un courtier factice ; adaptateur IBKR à écrire |
 | `coinbase_sleeve.py` (wrapper coinbase-advanced-py, **MiCA**) | livré, **SOTA-OK code** (API vérifiée firsthand) |
 | `smoke_test_coinbase.py` (validation read-only) | livré, exit 2 = USER-HAND sans creds |
 | `binance_sleeve.py` (wrapper python-binance testnet, **legacy**) | livré, SOTA-OK (pré-MiCA) |
 | `smoke_test_binance.py` (validation read-only live) | livré (legacy) |
 | `ibkr_sleeve.py` (wrapper ib_insync) | livré, **SOTA-OK** (validé live, surface read-only) |
 | `smoke_test_ibkr.py` (validation read-only live) | livré |
-| `orchestrator.py` (boucle principale + routing) | **TODO** (cycle suivant) |
 
 ## Sécurité
 
@@ -87,10 +88,53 @@ Sortie attendue (IBKR) : `managed acct`, `net_liq`, `total_cash`, `buying_power`
 `positions: N`, puis dry-run des 3 cas breakers (sane → ALLOW, oversized → BLOCK,
 gross → BLOCK). Exit code 0 = SOTA-OK.
 
+## Rééquilibrage et état du disjoncteur
+
+`rebalance.py` sépare le calcul de l'exécution, en deux fonctions pures que l'orchestrateur
+appellera avant tout ordre :
+
+- `inverse_vol_weights` calcule les poids cibles de la règle `Cloud-VolTargeting` v2 : chaque
+  ligne reçoit `budget / volatilité réalisée` (21 rendements quotidiens), plafonné à 50 %, et le
+  total est ramené à 100 % s'il le dépasse ; le reste demeure en liquidités. La convention
+  (rendements simples, écart-type d'échantillon) est celle du backtest de recherche ; un test
+  vérifie la parité avec le calcul pandas à `1e-10` près.
+- `plan_orders` traduit ces poids en ordres signés en **parts entières** (arrondi inférieur),
+  ventes avant achats. Une bande de tolérance (`band`, en fraction de l'équité) ignore les
+  échanges trop petits pour justifier leur commission, un notionnel minimum (`min_notional`)
+  écarte les ordres qu'un courtier facturerait au minimum, et une réserve (`cash_reserve`)
+  garde de quoi payer les frais. Une cible nulle est une **sortie**, pas un rééquilibrage :
+  la position est vendue en entier, quelle que soit sa taille, sans bande ni notionnel
+  minimum. Sinon un retour au cash laisserait en place toute position plus petite que la
+  bande.
+
+`RiskGate.save` / `RiskGate.load` conservent le pic d'équité, l'équité d'ouverture et un
+éventuel arrêt dans un fichier JSON, écrit de façon atomique. Sans cela, un redémarrage du
+programme remettrait le disjoncteur à zéro. Un fichier illisible lève une erreur plutôt que
+de repartir d'un état vierge.
+
+`orchestrator.run_cycle` enchaîne ces briques autour d'un courtier (tout objet qui fournit
+`equity`, `positions`, `prices` et `place`) : marquage de l'équité dans le `RiskGate`, poids
+cibles éventuellement réduits (`exposure_scale`, par exemple 0,5 après un premier seuil de
+perte, 0 pour revenir au cash), correspondance signal → ligne échangée (un signal sur un ETF
+américain peut piloter une ligne UCITS européenne), plan d'ordres, contrôle de chaque ordre
+par le `RiskGate`, puis journal JSONL et sauvegarde de l'état. Le mode **dry-run** est le
+défaut : rien n'est envoyé tant que `dry_run=False` n'est pas passé explicitement.
+
+Un ordre qui ne fait que réduire une position détenue (`reduces_exposure=True`) passe même
+quand le disjoncteur est déclenché : un disjoncteur sert à couper le risque, il ne doit jamais
+empêcher le retour au cash. Les achats restent bloqués. `run_cycle` refuse aussi de démarrer
+si le plafond par ligne de la stratégie dépasse `RISK_MAX_POSITION_PCT`, sans quoi le
+`RiskGate` bloquerait chaque achat de taille pleine.
+
+```bash
+python -m pytest paper_harness/tests -q
+```
+
 ## Suite (cycles suivants)
 
-1. `orchestrator.py` : boucle de rebalancement, routing des target par sleeve,
-   appel systématique à `RiskGate` avant chaque ordre, logging fills vs backtest.
+1. Adaptateur IBKR de `Broker` pour `run_cycle` : contrats sur bourse européenne
+   (exchange, devise), prix et équité dans une même devise, validés contre IB Gateway
+   paper ; puis déclenchement mensuel et comparaison des fills au backtest.
 2. Premier ordre paper (BTC spot sur Coinbase sandbox ; équity IBKR derrière
    "Read-Only API" OFF côté gateway) derrière circuit-breakers relus — **après**
    obtention des creds Coinbase USER-HAND.
