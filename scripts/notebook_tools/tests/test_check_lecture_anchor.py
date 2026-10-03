@@ -15,7 +15,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 from check_lecture_anchor import (  # noqa: E402
     CLOSURE_RE, LECTURE_RE, STUB_RE, is_exempt, scan_cells,
 )

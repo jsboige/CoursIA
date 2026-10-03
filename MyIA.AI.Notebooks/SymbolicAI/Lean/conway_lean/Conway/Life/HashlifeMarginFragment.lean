@@ -76,6 +76,7 @@ import Conway.Life.AdversarialBattery
 import Conway.Life.HashlifeCorrectness
 import Conway.Life.LightCone
 import Conway.Life.Oscillators
+import Conway.Life.PatternTour
 
 namespace Conway
 namespace Life
@@ -1064,6 +1065,174 @@ theorem pulsar_hcap_of_period_mod :
   hcap_of_period_mod pulsar pulsar_canonical (by decide)
     pulsar_period_three_kernel pulsar_hwin
 
+/-! ### Témoins dyadiques `T = 2` : le clignotant et le crapaud (tranche 12, admission)
+
+La docstring de `hashlife_correct_margin_of_period` annonce les témoins de sa
+classe (« clignotant `T = 2`, crapaud `T = 2`, phare `T = 3` »). Le pulsar
+(tranche 8b) en couvre la partie **non dyadique** ; les deux témoins
+**dyadiques** manquaient. Puisque `2 ∣ 2^level` dès `level ≥ 1`, la chaîne
+`hcap_of_period` les admet **directement** — sans le relâchement par
+containment (`_mod`) que la période 3 exigeait.
+
+Les deux phases du clignotant et la phase 0 du crapaud sont les définitions du
+bestiaire `Conway.Life` (L206-212), réutilisées telles quelles : le seul
+littéral neuf est la seconde phase du crapaud. Les périodes sont prouvées par
+le réducteur du **noyau** (composition des équations de step), sans consommer
+`blinker_period_two` ni `toad_period_two` : ces lemmes du bestiaire rendent
+`isOscillator g 2 = true`, une forme `Bool` qui ne fournit pas l'égalité
+`evolve T g = g` exigée par `hcap_of_period`. -/
+/-- Seconde phase du crapaud (6 cellules, boîte `[0, 3] × [-1, 2]`), obtenue en
+appliquant la règle à la phase 0 du bestiaire. Littéral trié. -/
+def toadP2 : Grid :=
+  [(0, 0), (0, 1), (1, 2), (2, -1), (3, 0), (3, 1)]
+set_option maxRecDepth 1000000 in
+/-- La seconde phase du crapaud est déjà canonique (triée, sans doublon) : le
+noyau le certifie, puis `canonical_sortDedup` convertit. -/
+theorem toadP2_canonical : Canonical toadP2 := by
+  have h : toadP2 = sortDedup toadP2 := by decide
+  rw [h]
+  exact canonical_sortDedup _
+set_option maxRecDepth 1000000 in
+/-- La phase 0 du crapaud, reprise du bestiaire, est canonique. -/
+theorem toad_canonical : Canonical toad := by
+  have h : toad = sortDedup toad := by decide
+  rw [h]
+  exact canonical_sortDedup _
+set_option maxRecDepth 1000000 in
+/-- Le clignotant horizontal du bestiaire est canonique. -/
+theorem blinker_h_canonical : Canonical blinker_h := by
+  have h : blinker_h = sortDedup blinker_h := by decide
+  rw [h]
+  exact canonical_sortDedup _
+set_option maxRecDepth 1000000 in
+/-- Idem pour la phase verticale. -/
+theorem blinker_v_canonical : Canonical blinker_v := by
+  have h : blinker_v = sortDedup blinker_v := by decide
+  rw [h]
+  exact canonical_sortDedup _
+set_option maxRecDepth 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- Équations de step du clignotant, par le réducteur du **noyau** : la forme
+`Bool` du bestiaire (`blinker_step`) ne rend pas l'égalité. -/
+theorem blinker_h_step : step blinker_h = blinker_v := by decide
+set_option maxRecDepth 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- Idem, phase verticale vers phase horizontale : la boucle de période 2. -/
+theorem blinker_v_step : step blinker_v = blinker_h := by decide
+set_option maxRecDepth 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- Équation de step du crapaud : phase 0 vers la seconde phase. -/
+theorem toad_step : step toad = toadP2 := by decide
+set_option maxRecDepth 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- Idem, seconde phase vers phase 0 : la boucle de période 2 est fermée. -/
+theorem toadP2_step : step toadP2 = toad := by decide
+/-- Chaîne des phases sous `evolve 1` : clignotant horizontal. -/
+theorem blinker_ev1 : evolve 1 blinker_h = blinker_v := blinker_h_step
+/-- Chaîne des phases : clignotant vertical. -/
+theorem blinkerV_ev1 : evolve 1 blinker_v = blinker_h := blinker_v_step
+/-- Chaîne des phases : crapaud, phase 0. -/
+theorem toad_ev1 : evolve 1 toad = toadP2 := toad_step
+/-- Chaîne des phases : crapaud, seconde phase. -/
+theorem toadP2_ev1 : evolve 1 toadP2 = toad := toadP2_step
+set_option maxRecDepth 1000000 in
+/-- Cadre de reconstruction du clignotant horizontal : boîte `[0, 2] × [0, 0]`,
+offset `(-2, -2)`. -/
+theorem blinker_frame_off : (gridToMacroCellWithOffset blinker_h).1 = (-2, -2) := by decide
+set_option maxRecDepth 1000000 in
+/-- Niveau du cadre du clignotant horizontal : côté `max(2, 0) + 5 = 7` →
+niveau 3, cadre `[-2, 6)²`. -/
+theorem blinker_frame_lvl : (gridToMacroCellWithOffset blinker_h).2.level = 3 := by decide
+set_option maxRecDepth 1000000 in
+/-- Cadre de la phase verticale : boîte `[1, 1] × [-1, 1]`, offset `(-1, -3)`. -/
+theorem blinkerV_frame_off : (gridToMacroCellWithOffset blinker_v).1 = (-1, -3) := by decide
+set_option maxRecDepth 1000000 in
+/-- Niveau du cadre de la phase verticale : niveau 3. -/
+theorem blinkerV_frame_lvl : (gridToMacroCellWithOffset blinker_v).2.level = 3 := by decide
+set_option maxRecDepth 1000000 in
+/-- Cadre du crapaud, phase 0 : boîte `[0, 3] × [0, 1]`, offset `(-2, -2)`. -/
+theorem toad_frame_off : (gridToMacroCellWithOffset toad).1 = (-2, -2) := by decide
+set_option maxRecDepth 1000000 in
+/-- Niveau du cadre du crapaud, phase 0 : côté `max(3, 1) + 5 = 8` → niveau 3. -/
+theorem toad_frame_lvl : (gridToMacroCellWithOffset toad).2.level = 3 := by decide
+set_option maxRecDepth 1000000 in
+/-- Cadre de la seconde phase du crapaud : boîte `[0, 3] × [-1, 2]`, offset
+`(-2, -3)`. -/
+theorem toadP2_frame_off : (gridToMacroCellWithOffset toadP2).1 = (-2, -3) := by decide
+set_option maxRecDepth 1000000 in
+/-- Niveau du cadre de la seconde phase : niveau 3. -/
+theorem toadP2_frame_lvl : (gridToMacroCellWithOffset toadP2).2.level = 3 := by decide
+/-- Période 2 du clignotant prouvée par le **noyau** : composition des deux
+équations de step. -/
+theorem blinker_period_two_kernel : evolve 2 blinker_h = blinker_h := by
+  rw [evolve_two, blinker_ev1, blinkerV_ev1]
+/-- Période 2 du crapaud prouvée par le **noyau**. -/
+theorem toad_period_two_kernel : evolve 2 toad = toad := by
+  rw [evolve_two, toad_ev1, toadP2_ev1]
+/-- Divisibilité dyadique du clignotant : les deux phases sont de niveau 3, et
+`2 ∣ 2^3`. C'est la prémisse finie qui distingue cette classe de celle du
+pulsar (`3 ∤ 2^level`). -/
+theorem blinker_hdiv : ∀ i, i < 2 →
+    2 ∣ 2 ^ (gridToMacroCellWithOffset (evolve i blinker_h)).2.level := by
+  intro i hi
+  interval_cases i
+  · rw [evolve_zero, blinker_frame_lvl]
+    decide
+  · rw [blinker_ev1, blinkerV_frame_lvl]
+    decide
+/-- Divisibilité dyadique du crapaud : les deux phases sont de niveau 3. -/
+theorem toad_hdiv : ∀ i, i < 2 →
+    2 ∣ 2 ^ (gridToMacroCellWithOffset (evolve i toad)).2.level := by
+  intro i hi
+  interval_cases i
+  · rw [evolve_zero, toad_frame_lvl]
+    decide
+  · rw [toad_ev1, toadP2_frame_lvl]
+    decide
+/-- Containment des 4 combinaisons de phases `(r, i) < 2 × 2` du clignotant :
+l'image `evolve i (evolve r blinker_h)` vit dans le cadre de reconstruction de
+la phase `r`. Les deux phases tiennent dans un cadre de niveau 3 (côté 8), qui
+absorbe le décalage d'une phase à l'autre. -/
+theorem blinker_hwin : ∀ r, r < 2 → ∀ i, i < 2 → ∀ p ∈ evolve i (evolve r blinker_h),
+    (gridToMacroCellWithOffset (evolve r blinker_h)).1.1 ≤ p.1 ∧
+      p.1 < (gridToMacroCellWithOffset (evolve r blinker_h)).1.1
+        + (2 ^ (gridToMacroCellWithOffset (evolve r blinker_h)).2.level : Int) ∧
+    (gridToMacroCellWithOffset (evolve r blinker_h)).1.2 ≤ p.2 ∧
+      p.2 < (gridToMacroCellWithOffset (evolve r blinker_h)).1.2
+        + (2 ^ (gridToMacroCellWithOffset (evolve r blinker_h)).2.level : Int) := by
+  intro r hr i hi
+  interval_cases r <;> interval_cases i <;>
+    simp only [evolve_zero, blinker_ev1, blinkerV_ev1] <;>
+    first
+    | (rw [blinker_frame_off, blinker_frame_lvl]; decide)
+    | (rw [blinkerV_frame_off, blinkerV_frame_lvl]; decide)
+/-- Containment des 4 combinaisons de phases `(r, i) < 2 × 2` du crapaud. -/
+theorem toad_hwin : ∀ r, r < 2 → ∀ i, i < 2 → ∀ p ∈ evolve i (evolve r toad),
+    (gridToMacroCellWithOffset (evolve r toad)).1.1 ≤ p.1 ∧
+      p.1 < (gridToMacroCellWithOffset (evolve r toad)).1.1
+        + (2 ^ (gridToMacroCellWithOffset (evolve r toad)).2.level : Int) ∧
+    (gridToMacroCellWithOffset (evolve r toad)).1.2 ≤ p.2 ∧
+      p.2 < (gridToMacroCellWithOffset (evolve r toad)).1.2
+        + (2 ^ (gridToMacroCellWithOffset (evolve r toad)).2.level : Int) := by
+  intro r hr i hi
+  interval_cases r <;> interval_cases i <;>
+    simp only [evolve_zero, toad_ev1, toadP2_ev1] <;>
+    first
+    | (rw [toad_frame_off, toad_frame_lvl]; decide)
+    | (rw [toadP2_frame_off, toadP2_frame_lvl]; decide)
+/-- Capstone : le clignotant est admis par `hcap_of_period` — premier témoin
+**dyadique** de la classe périodique. Pour tout horizon `t`, la reconstruction
+de `evolve t blinker_h` est capturée par Hashlife. -/
+theorem blinker_hcap_of_period :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t blinker_h)).2 = true :=
+  hcap_of_period blinker_h blinker_h_canonical (by decide)
+    blinker_period_two_kernel blinker_hdiv
+/-- Capstone : le crapaud est admis par `hcap_of_period`. -/
+theorem toad_hcap_of_period :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t toad)).2 = true :=
+  hcap_of_period toad toad_canonical (by decide)
+    toad_period_two_kernel toad_hdiv
+
 
 /-! ## Invariance par translation de la reconstruction (tranche 3, étape 7, brique 1)
 
@@ -1925,6 +2094,99 @@ theorem hickersonC3_hcap_of_spaceship_mod :
     ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t hickersonC3)).2 = true :=
   hcap_of_spaceship_mod hickersonC3 hickersonC3_canonical (by decide) (-1, 0)
     hickersonC3_spaceship hickersonC3_hwin (by norm_num) (by norm_num)
+
+/-! ### Témoins phares : glider et LWSS (tranche 11, admission)
+
+Les deux **vaisseaux** que la docstring de `hashlife_correct_margin_of_spaceship`
+annonçait — glider (`p = 4`, `v = (1, -1)`, « la vérifie strictement ») et LWSS (`p = 4`,
+`v = (0, 2)`, « atteint la borne exactement ») — sont admis par la **chaîne dyadique**
+`hcap_of_spaceship`. Pour `p = 4 = 2²`, la prémisse de divisibilité `4 ∣ 2^level` est
+acquise **dès que le niveau atteint `log₂ p = 2`** : elle vaut donc pour les deux témoins,
+dont les cadres se reconstruisent aux niveaux **3** (glider, côté 7) et **4** (LWSS, côté
+9). Chaque `hdiv` se clôt par le noyau sur les quatre phases (calcul fini) ; le
+relâchement par containment de la tranche 9 n'est pas requis pour des témoins de
+période 4.
+
+**Note preuve.** Les témoins Bool du bestiaire (`Life.glider_spaceship`,
+`PatternTour.lwss_is_spaceship`) sont déjà certifiés par le réducteur du **noyau**
+(`decide` sur `isSpaceship`, Bool) ; le pont vers l'égalité de listes est `beq_iff_eq`
+— aucun `native_decide`, aucun axiome ajouté. -/
+
+/-- Le littéral du glider est canonique (trié, sans doublon) : le noyau le
+    certifie, puis `canonical_sortDedup` convertit. -/
+theorem glider_canonical : Canonical glider := by
+  have h : glider = sortDedup glider := by decide
+  rw [h]
+  exact canonical_sortDedup _
+
+/-- Relation de vaisseau du glider en égalité de listes : le témoin Bool
+    `glider_spaceship` (déjà noyau-certifié) transporté en `Prop`. -/
+theorem glider_ship4 : evolve 4 glider = shift (1, -1) glider :=
+  beq_iff_eq.mp glider_spaceship
+
+/-- Cadre de reconstruction du glider : offset `(-2, -2)` (marge 2 autour de
+    la boîte `[0, 2]²`). -/
+theorem glider_frame_off : (gridToMacroCellWithOffset glider).1 = (-2, -2) := by decide
+
+/-- Niveau du cadre du glider : côté `max(2+5, 2+5) = 7` → niveau **3** — mesuré.
+    Comme `3 ≥ log₂ 4 = 2`, la divisibilité `4 ∣ 2³ = 8` tient : le glider relève
+    de la chaîne dyadique, comme le LWSS. -/
+theorem glider_frame_lvl : (gridToMacroCellWithOffset glider).2.level = 3 := by decide
+
+/-- Le littéral du LWSS est canonique. -/
+theorem lwss_canonical : Canonical lwss := by
+  have h : lwss = sortDedup lwss := by decide
+  rw [h]
+  exact canonical_sortDedup _
+
+/-- Relation de vaisseau du LWSS en égalité de listes (témoin Bool
+    `lwss_is_spaceship` de `PatternTour`, noyau-certifié). -/
+theorem lwss_ship4 : evolve 4 lwss = shift (0, 2) lwss :=
+  beq_iff_eq.mp lwss_is_spaceship
+
+/-- Cadre de reconstruction du LWSS : offset `(-2, -2)` (marge 2 autour de
+    la boîte `[0, 3] × [0, 4]`). -/
+theorem lwss_frame_off : (gridToMacroCellWithOffset lwss).1 = (-2, -2) := by decide
+
+/-- Niveau du cadre du LWSS : côté `max(3+5, 4+5) = 9` → niveau 4 — la chaîne
+    dyadique s'applique (`4 ∣ 2⁴`), exactement comme la docstring l'annonçait. -/
+theorem lwss_frame_lvl : (gridToMacroCellWithOffset lwss).2.level = 4 := by decide
+
+/-- Divisibilité de la période sur les quatre phases du LWSS : chaque
+    `evolve i lwss` (`i < 4`) se reconstruit au niveau 4, donc `4 ∣ 2⁴`. Le
+    calcul par le noyau est fini : 4 phases, ≤ 17 cellules. -/
+theorem lwss_hdiv :
+    ∀ i, i < 4 → 4 ∣ 2 ^ (gridToMacroCellWithOffset (evolve i lwss)).2.level := by
+  intro i hi
+  interval_cases i <;> decide
+
+set_option maxRecDepth 1000000 in
+/-- Divisibilité de la période sur les quatre phases du glider : chaque
+    `evolve i glider` (`i < 4`) se reconstruit au niveau 3 (mesuré pour les
+    quatre phases), et `4 ∣ 2³`. Le calcul par le noyau est fini : 4 phases,
+    grilles de 5 cellules. -/
+theorem glider_hdiv :
+    ∀ i, i < 4 → 4 ∣ 2 ^ (gridToMacroCellWithOffset (evolve i glider)).2.level := by
+  intro i hi
+  interval_cases i <;> decide
+
+/-- Capstone : le **glider** est admis par `hcap_of_spaceship` — la chaîne
+    dyadique, comme le LWSS (`p = 4 = 2²` divise `2^level` dès `level ≥ 2` ;
+    cadre de niveau 3). La borne de vitesse tient strictement
+    (`2·|1| = 2 < 4`, `2·|-1| = 2 < 4`) : pour tout horizon `t`, la reconstruction
+    de `evolve t glider` est capturée par Hashlife. -/
+theorem glider_hcap_of_spaceship :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t glider)).2 = true :=
+  hcap_of_spaceship glider glider_canonical (by decide) (1, -1) glider_ship4
+    glider_hdiv (by norm_num) (by norm_num)
+
+/-- Capstone : le **LWSS** est admis par `hcap_of_spaceship` — la borne de
+    vitesse exacte (`2·|2| = 4 ≤ 4`) et la divisibilité dyadique (`4 ∣ 2⁴`,
+    cadre de niveau 4) que la docstring annonçait. -/
+theorem lwss_hcap_of_spaceship :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t lwss)).2 = true :=
+  hcap_of_spaceship lwss lwss_canonical (by decide) (0, 2) lwss_ship4
+    lwss_hdiv (by norm_num) (by norm_num)
 
 /-! ## Sanity-checks sur le bestiaire
 
