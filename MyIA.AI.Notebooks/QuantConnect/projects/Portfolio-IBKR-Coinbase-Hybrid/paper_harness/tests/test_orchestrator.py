@@ -77,6 +77,21 @@ def test_drawdown_breaker_liquidates_the_book(tmp_path):
     assert all(o.allowed and o.quantity < 0 for o in report.orders)
 
 
+def test_drawdown_breaker_liquidates_a_holding_under_the_default_band(tmp_path):
+    # The breaker alone asks for cash (manual scale left at 1): a 2 % holding, under
+    # the default 3 % band, is sold with the rest.
+    gate = RiskGate(RISK, 10_000.0)
+    gate.update_equity(12_000.0)
+    gate.update_equity(10_000.0)
+    gate.save(tmp_path / "risk.json")
+    cfg = CycleConfig(signal_to_line=CFG.signal_to_line)
+    assert cfg.band == 0.03 and cfg.exposure_scale == 1.0
+    broker = FakeBroker(10_000.0, {"SXR8": 60, "IUSM": 10}, {"SXR8": 50.0, "IUSM": 20.0})
+    report = _run(tmp_path, broker, cfg=cfg, dry_run=False)
+    assert report.scale == 0.0
+    assert sorted(broker.placed) == [("IUSM", -10), ("SXR8", -60)]
+
+
 def test_daily_loss_halt_lets_sells_through_and_blocks_buys(tmp_path):
     gate = RiskGate(RISK, 10_000.0)
     gate.update_equity(9_600.0)  # -4 % in the session, -4 % from the peak: no liquidation
