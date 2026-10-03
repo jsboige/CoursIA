@@ -635,11 +635,12 @@ example : verifyR1Fwd
     Ici les croisements sont exactement ceux du témoin ci-dessus, seul
     l'ordre diffère : le kink `⟨1,5,6,6⟩` est inséré à l'indice 1, avant
     le croisement réécrit `⟨5,2,3,4⟩`. `verifyR1` (les deux orientations)
-    rend faux : un kink « au milieu » n'est exprimable dans AUCUN des deux
-    langages — l'ordre des croisements est invariant sous les trois moves
-    (R1/R2 ajoutent et suppriment en fin, R3 réécrit sur place), donc la
-    paire n'est reliée par aucune chaîne. Cohérence Prop/Bool, pas un
-    défaut de l'organe. -/
+    rend faux : le pas R1 est refusé pour cette paire dans les deux
+    langages. Portée volontairement bornée : cet exemple tranche le pas
+    R1 seul — il n'établit PAS que la paire soit dépourvue de toute chaîne
+    de moves (la clôture transitive, par exemple via une réécriture R3
+    d'indices intérieurs, n'est ni prouvée ni réfutée ici). Cohérence
+    Prop/Bool sur le pas, pas un défaut de l'organe. -/
 example : verifyR1
     { crossings := [⟨1,2,3,4⟩, ⟨1,2,3,4⟩], numEdges := 4 }
     { crossings := [⟨1,2,3,4⟩, ⟨1,5,6,6⟩, ⟨5,2,3,4⟩], numEdges := 6 }

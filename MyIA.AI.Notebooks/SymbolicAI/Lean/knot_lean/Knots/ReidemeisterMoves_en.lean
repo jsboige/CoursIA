@@ -640,10 +640,12 @@ example : verifyR1Fwd
     crossings are exactly those of the witness above, only the order
     differs: the kink `⟨1,5,6,6⟩` sits at index 1, before the rewritten
     crossing `⟨5,2,3,4⟩`. `verifyR1` (both orientations) returns false:
-    a "middle" kink is expressible in NEITHER language — the crossing
-    order is invariant under the three moves (R1/R2 append and remove at
-    the end, R3 rewrites in place), so no chain connects the pair.
-    Prop/Bool consistency, not an organ defect. -/
+    the R1 step is refused for this pair in both languages. Deliberately
+    bounded scope: this example decides the R1 step alone — it does NOT
+    establish that no chain of moves connects the pair (transitive
+    closure, e.g. via an R3 rewrite of interior indices, is neither
+    proved nor refuted here). Prop/Bool consistency on the step, not an
+    organ defect. -/
 example : verifyR1
     { crossings := [⟨1,2,3,4⟩, ⟨1,2,3,4⟩], numEdges := 4 }
     { crossings := [⟨1,2,3,4⟩, ⟨1,5,6,6⟩, ⟨5,2,3,4⟩], numEdges := 6 }
