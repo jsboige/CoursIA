@@ -36,10 +36,13 @@ on:
       - 'scripts/notebook_tools/fix_ipynb_links.py'
   workflow_dispatch:
 
-# Annule les runs obsolètes (memes PR / push en rafale)
+# Annule les runs obsolètes (memes PR / push en rafale). Forme fix de
+# #13372 -- `cancel-in-progress: ${{ github.event_name == 'pull_request' }}`
+# evite l'annulation en cascade sur push main consecutifs (defaut fondateur
+# porte par check_concurrency_conj.py).
 concurrency:
   group: readme-ipynb-links-guard-${{ github.event_name }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
