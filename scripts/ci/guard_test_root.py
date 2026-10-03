@@ -40,30 +40,32 @@ class PytestBlockNotFound(Exception):
     """Le workflow contient `pytest` mais le bloc multi-lignes ne matche
     pas. C'est un defaut de lecture -- le garde ne peut pas verifier
     quoi que ce soit et DOIT le signaler plutot que rendre `ok=True` a
-    tort. Cf. CONCERNS coordinateur (c.86) sur #18896."""
+    tort. Cf. CONCERNS coordinateur (c.86) sur #18896 + CONCERNS
+    adjoint po-2025 (c.87) sur #18951 (inline pytest + derniere ligne
+    sans continuation)."""
 
-# On matche le bloc pytest multi-lignes : pytest (ou `python -m pytest`)
-# suivi de `\` puis les chemins (termines par \). La fin du bloc est
-# signalee par une ligne qui ne se termine PAS par \ (apres, pytest
-# prend d'autres options : -n, -q, --dist, --tb, ...). Cf. #18896
-# (CONCERNS c.86) : la version precedente exigeait `-n` en fin de
-# bloc, ce qui rendait l extraction VIDE pour les workflows pytest
-# valides sans xdist (python -m pytest scripts/notebook_tools/tests/ -q)
-# -- le garde rendait alors ok=True sans rien verifier.
+# On matche un APPEL pytest complet : `pytest` (ou `python -m pytest`)
+# suivi d'une liste d'arguments qui peut tenir sur 1 ligne (inline) ou
+# sur N lignes (multi-lignes YAML block scalar, chaque ligne
+# indentee). La fin de l'appel est signalee par une ligne vide, un
+# retour en col 0 (debut d'une autre cle YAML), ou la fin de fichier.
+# Cf. #18896 (CONCERNS c.86) : la version precedente exigeait `-n` en
+# fin de bloc, ce qui rendait l extraction VIDE pour les workflows
+# pytest valides sans xdist. Cf. #18951 (CONCERNS c.87) : la version
+# c.86 ne capturait pas la derniere ligne d'arguments sans
+# continuation, et ignorait completement les appels inline -- le
+# contrat "soit on mesure, soit on refuse" n'etait pas tenu sur ces
+# deux cas.
 #
-# Strategie : capturer toutes les lignes consecutives se terminant par
-# `\`, en arretant des qu'une ligne ne se termine PAS par `\` (ou fin
-# de fichier). Le `+?` non-greedy consomme le minimum de lignes
-# consecutives, et le lookahead garantit qu'on s'arrete a la premiere
-# ligne non-`-terminee-par-\`.
+# Strategie : on trouve la ligne qui contient `pytest` (eventuellement
+# apres `python -m`). Le bloc d'arguments est forme de toutes les
+# lignes consecutives qui sont (a) NON VIDES, (b) indentées au moins
+# autant que la ligne `pytest` (donc on reste dans le meme bloc YAML),
+# et (c) qui ne sont pas une autre cle YAML (commencent par un
+# alphabetique ou un caractere special YAML). La ligne peut finir par
+# `\` (multi-lignes) ou par autre chose (fin de l'appel).
 PYTEST_INVOCATION_RE = re.compile(
-    r"(?:python\s+(?:-m\s+)?|pytest(?:\s+-m\s+\S+)?\s+)?pytest\s*\\[ \t]*\n",
-    re.MULTILINE,
-)
-PYTEST_BLOCK_RE = re.compile(
-    PYTEST_INVOCATION_RE.pattern
-    + r"((?:.*\\[ \t]*\n)+?)"
-    + r"(?:[^\\\n]*\n|\Z)",
+    r"(?:(?<=\s)|(?<=\A)|(?<=\=))(?:python[ \t]+(?:-m[ \t]+)?)?pytest(?=[ \t]+\S)",
     re.MULTILINE,
 )
 
@@ -71,44 +73,142 @@ PYTEST_BLOCK_RE = re.compile(
 def parse_collected_paths(workflow: Path) -> list[str]:
     """Lit la liste des chemins collectes par pytest depuis le YAML.
 
-    Les arguments de pytest sont multi-lignes, termines par \\. On extrait le
-    bloc, on nettoie les continuations de ligne, on splitte sur les espaces,
-    on filtre tout ce qui ressemble a un flag (-x, --dist, ...) ou un
-    nombre.
+    Strategie : on cherche le premier appel `pytest` (avec ou sans
+    `python -m`). Une fois trouve, on collecte tous les tokens qui
+    suivent sur la meme ligne (cas inline) et sur les lignes suivantes
+    qui sont dans le meme bloc YAML (meme niveau d'indentation ou plus,
+    ou continuation par backslash). On s'arrete a la premiere ligne qui :
+      - est vide, ou
+      - commence en col 0 (sortie du bloc YAML), ou
+      - commence par un caractere YAML (`-`, `#`, etc., debut d'une
+        autre entree de liste).
 
     Si le workflow ne contient pas du tout `pytest`, on rend une liste
-    vide (le workflow n'est pas dans le scope de cette garde). Si le
-    workflow contient `pytest` mais que le bloc multi-lignes ne matche
-    pas (pattern en-dessous du reel, ou format inhabituel), on leve
+    vide (le workflow n'est pas dans le scope de cette garde). Si
+    `pytest` est present mais qu'on ne peut pas extraire d'arguments
+    (par exemple "pytest \" seul sans chemins), on leve
     ``PytestBlockNotFound`` : le garde DOIT refuser plutot que rendre
-    ``ok=True`` sans rien verifier (#18896 c.86).
+    ``ok=True`` sans rien verifier (#18896 c.86, #18951 c.87).
     """
     text = workflow.read_text(encoding="utf-8")
-    # Le mot "pytest" peut apparaitre dans un nom de fichier (no-pytest.yml),
-    # un commentaire, un nom de job, etc. On ne leve l'exception que si le
-    # workflow contient un APPEL pytest multi-lignes (pytest \ en fin de
-    # ligne, apres indentation YAML ou apres `python -m`). C'est le signe
-    # qu'un bloc DEVRAIT etre reconnu.
-    if not PYTEST_INVOCATION_RE.search(text):
+    m = _find_pytest_invocation(text)
+    if m is None:
         return []
-    match = PYTEST_BLOCK_RE.search(text)
-    if not match:
-        raise PytestBlockNotFound(
-            f"{workflow} contient `pytest \\` mais PYTEST_BLOCK_RE ne matche "
-            f"pas le bloc multi-lignes ; le garde ne peut pas verifier. "
-            f"Cf. CONCERNS coordinateur (c.86) sur #18896."
-        )
-    block = match.group(1)
-    joined = re.sub(r"\s*\\\s*\n\s*", " ", block)
+    pytest_end = m.end()
+    # Capture du bloc d'arguments. On collecte toutes les lignes qui
+    # font partie du meme appel pytest (meme bloc YAML, ou inline).
+    rest = text[pytest_end:]
+    lines = rest.split("\n")
+    args_lines: list[str] = []
+    if lines:
+        # La ligne qui contient pytest (apres le mot pytest) -- cas
+        # inline : on prend tout jusqu'au \n.
+        first_line = lines[0]
+        # Si la ligne se termine par `\\`, c'est une continuation.
+        first_has_cont = first_line.rstrip().endswith("\\")
+        args_lines.append(first_line)
+    # Pour les lignes suivantes (cas multi-lignes), on continue tant
+    # qu'on est dans le meme bloc YAML. Une ligne vide, une ligne en
+    # col 0 (sans indentation), ou une ligne qui commence par `-`/`#`
+    # met fin au bloc.
+    base_indent = _line_indent(text, m.start())
+    for line in lines[1:]:
+        if not line.strip():
+            break  # ligne vide
+        line_indent = _line_indent_of(line)
+        # Si on est dans une continuation `\\`, on accepte les lignes
+        # indentees jusqu'a la fin du bloc.
+        if line_indent == 0:
+            break  # retour en col 0 : sortie du bloc YAML
+        if line.lstrip().startswith(("-", "#")) and line_indent <= base_indent:
+            break  # nouvelle entree de liste ou commentaire en col 0
+        # On accepte la ligne (avec ou sans \).
+        args_lines.append(line)
+        if not line.rstrip().endswith("\\"):
+            # Derniere ligne du bloc d'arguments.
+            break
+    # Joindre les lignes en nettoyant les continuations.
+    joined = " ".join(args_lines)
+    joined = re.sub(r"[ \t]*\\[ \t]*\n[ \t]*", " ", joined)
+    # Filtrer les `\` orphelins (sans continuation) et les separateurs
+    # YAML residuels.
+    joined = re.sub(r"(?<!\\)\\(?!\S)", "", joined)
     tokens = joined.split()
     paths: list[str] = []
+    skip_next = False
     for tok in tokens:
+        if skip_next:
+            skip_next = False
+            continue
+        # Filtre : flags (-x, -n 4) et leurs valeurs (--dist loadscope,
+        # --tb short). Une option longue `--xxx` peut prendre une valeur
+        # au token suivant -- ici on l'ignore.
         if tok.startswith("-"):
+            if tok.startswith("--"):
+                skip_next = True
             continue
         if tok.isdigit():
             continue
         paths.append(tok)
+    # Si l'invocation matche mais qu'on n'a extrait aucun chemin, c'est
+    # que pytest est appele avec uniquement des flags (par exemple
+    # `pytest \` puis `-q`). Le garde ne peut rien mesurer -- il DOIT
+    # refuser plutot que rendre `ok=True` sans rien verifier.
+    if not paths:
+        raise PytestBlockNotFound(
+            f"{workflow} contient un appel pytest mais aucun chemin "
+            f"n'a pu etre extrait (args trouves : {tokens!r}). Le "
+            f"garde ne peut pas verifier. Cf. CONCERNS coordinateur "
+            f"(c.86) sur #18896 et CONCERNS adjoint po-2025 (c.87) "
+            f"sur #18951."
+        )
     return paths
+
+
+def _line_indent(text: str, pos: int) -> int:
+    """Indentation de la ligne qui contient la position pos dans text."""
+    start = text.rfind("\n", 0, pos) + 1
+    line = text[start:pos]
+    return len(line) - len(line.lstrip())
+
+
+def _line_indent_of(line: str) -> int:
+    """Indentation d'une ligne donnee."""
+    return len(line) - len(line.lstrip())
+
+
+def _find_pytest_invocation(text: str) -> re.Match | None:
+    """Trouve le premier appel pytest qui n'est pas dans un commentaire
+    YAML ni dans une chaine quotée. Heuristique : on considere pytest
+    comme un appel si (a) la ligne ne commence pas par `#`, et (b) le
+    caractere immediatement precedent pytest sur la ligne (apres le
+    whitespace) n'est pas une quote ouvrante, et (c) pytest est suivi
+    d'un separateur d'argument (`\\s` ou fin de ligne) -- un `pytest-x`
+    dans une dependances pip n'est pas un appel.
+    """
+    for m in PYTEST_INVOCATION_RE.finditer(text):
+        line_start = text.rfind("\n", 0, m.start()) + 1
+        line_end = text.find("\n", m.end())
+        if line_end == -1:
+            line_end = len(text)
+        line = text[line_start:line_end]
+        stripped = line.lstrip()
+        # Commentaire YAML : skip.
+        if stripped.startswith("#"):
+            continue
+        # Quote check : sur la portion de ligne jusqu'au debut de pytest,
+        # compter les apostrophes et guillemets. Si le compte est
+        # impair, pytest est dans une chaine YAML quotée et n'est pas
+        # un appel.
+        # Important : ne pas inclure le caractere juste avant pytest
+        # qui est forcement un whitespace (sinon la regex lookbehind
+        # n'aurait pas matche).
+        prefix = line[: m.start() - line_start]
+        quote_count = sum(1 for c in prefix if c in ("'", '"'))
+        if quote_count % 2 == 1:
+            continue
+        return m
+    return None
 
 
 def _is_collected(entry: Path, collected_dirs: set[Path], collected_files: set[Path]) -> bool:

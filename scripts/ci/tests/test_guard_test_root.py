@@ -89,8 +89,11 @@ def test_parse_without_xdist_returns_paths(tmp_path):
 
 
 def test_parse_without_any_pytest_options(tmp_path):
-    """Bloc pytest sans aucune option en queue (juste les chemins).
-    Le pattern matche car le bloc se termine a la derniere ligne `\\`."""
+    """Bloc pytest valide SANS continuation sur la derniere ligne de
+    chemins. C'est le cas CONCERNS adjoint c.87 : la derniere ligne
+    d'arguments DOIT etre incluse dans l'extraction, sinon le scope
+    (ici `scripts/notebook_tools/tests`) disparait du controle. Le
+    pattern accepte la derniere ligne avec ou sans `\\` final."""
     wf = tmp_path / "bare.yml"
     wf.write_text(
         "name: bare\n"
@@ -104,9 +107,10 @@ def test_parse_without_any_pytest_options(tmp_path):
         "            scripts/notebook_tools/tests\n"
     )
     paths = guard.parse_collected_paths(wf)
-    # Le dernier chemin n'a pas de \\ final -- il est ignore par le pattern.
-    # Le pattern exige au moins une ligne se terminant par \\.
-    assert paths == ["scripts/tests"]
+    # La derniere ligne (sans `\\`) doit etre incluse -- sinon le scope
+    # `scripts/notebook_tools/tests` disparait et un test racine
+    # `test_uncollected.py` n'est pas detecte.
+    assert paths == ["scripts/tests", "scripts/notebook_tools/tests"]
 
 
 # ---------------------------------------------------------------------------
@@ -137,11 +141,12 @@ def test_parse_pytest_no_multiline_block_raises(tmp_path):
         guard.parse_collected_paths(wf)
 
 
-def test_parse_inline_pytest_returns_empty(tmp_path):
-    """Un workflow avec pytest INLINE (pas de convention multi-lignes
-    avec `\\`) rend une liste vide : le garde n'a pas de convention
-    a appliquer. C'est distinct du cas pytest-sans-bloc-matche
-    (test_parse_pytest_no_multiline_block_raises), ou on leve."""
+def test_parse_inline_pytest_extracts_paths(tmp_path):
+    """Un workflow avec pytest INLINE (`pytest scripts/tests/ -q`,
+    pas de continuation `\\`) DOIT extraire le chemin. C'est le
+    CONCERNS adjoint c.87 sur #18951 : avant c.87, les appels inline
+    etaient completement ignores (paths=[]) et un test racine etait
+    invisible. La garde pretendait `ok:true` sans rien mesurer."""
     wf = tmp_path / "inline.yml"
     wf.write_text(
         "name: inline\n"
@@ -149,10 +154,10 @@ def test_parse_inline_pytest_returns_empty(tmp_path):
         "jobs:\n"
         "  t:\n"
         "    steps:\n"
-        "      - run: pytest scripts/tests/ -q\n"  # inline, pas multi-lignes
+        "      - run: pytest scripts/tests/ -q\n"
     )
     paths = guard.parse_collected_paths(wf)
-    assert paths == []
+    assert paths == ["scripts/tests/"]
 
 
 def test_parse_no_pytest_at_all_returns_empty(tmp_path):
@@ -194,7 +199,14 @@ def test_main_returns_2_on_pytest_block_not_found(tmp_path, capsys):
     rc = guard.main(["--workflow", str(wf), "--json"])
     captured = capsys.readouterr()
     assert rc == 2
-    assert "PYTEST_BLOCK_RE ne matche pas" in captured.err
+    # c.87 : on peut etre leve par PYTEST_BLOCK_RE.search qui ne match
+    # pas (regex obsolete) ou par paths vide apres extraction (appel
+    # pytest sans chemins). Les deux cas rendent rc=2 et un message
+    # FAIL explicite sur stderr.
+    assert (
+        "PYTEST_BLOCK_RE ne matche pas" in captured.err
+        or "aucun chemin" in captured.err
+    ), f"Message d'erreur inattendu: {captured.err!r}"
 
 
 def test_main_returns_0_on_clean_workflow(tmp_path, capsys, monkeypatch):
@@ -282,4 +294,149 @@ def test_no_xdist_with_root_test_detects_violation(tmp_path, monkeypatch):
         f"find_violations doit detecter test_uncollected.py a la racine de "
         f"scripts/notebook_tools/ ; avant le fix c.86, paths etait [] et "
         f"violations etait [] aussi. violations={violations!r}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# 6. CONCERNS adjoint po-2025 (c.87) sur #18951
+# ---------------------------------------------------------------------------
+#
+# Deux cas que la version c.86 ne gerait pas :
+#  - bloc valide SANS continuation sur la derniere ligne (le scope
+#    `scripts/notebook_tools/tests` disparaissait de l'extraction)
+#  - appel inline (`pytest scripts/notebook_tools/tests/ -q`, sans
+#    `\` de continuation) etait completement ignore
+#
+# Les deux cas rendent `paths: []` et `ok: true` malgre un test racine,
+# ce qui viole le contrat "soit on mesure, soit on refuse".
+# On les couvre ici avec les memes fixtures que le temoin precedent.
+
+
+def test_inline_pytest_detects_root_test_violation(tmp_path, monkeypatch):
+    """Temoignage du CONCERNS c.87 #18951 cas 1 : un workflow avec
+    `python -m pytest scripts/notebook_tools/tests/ -q` (inline, pas de
+    `\\`) doit extraire le chemin et signaler `test_uncollected.py` a
+    la racine de scripts/notebook_tools/. Avant c.87, le pattern
+    matchait que les appels multi-lignes : `PYTEST_INVOCATION_RE`
+    exigeait `\\` final, donc cet appel etait completement ignore,
+    `paths` etait `[]`, `ok` etait `true`, et le test racine invisible."""
+    nb_dir = tmp_path / "scripts" / "notebook_tools"
+    nb_dir.mkdir(parents=True)
+    (nb_dir / "tests").mkdir()
+    (nb_dir / "tests" / "test_alpha.py").write_text("# test\n")
+    (nb_dir / "test_uncollected.py").write_text("# orphan\n")
+
+    wf = tmp_path / "inline.yml"
+    wf.write_text(
+        "name: inline\n"
+        "on: [push]\n"
+        "jobs:\n"
+        "  t:\n"
+        "    steps:\n"
+        "      - run: python -m pytest scripts/notebook_tools/tests/ -q\n"
+    )
+
+    monkeypatch.setattr(guard, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(guard, "_in_scope", lambda p: True)
+
+    paths = guard.parse_collected_paths(wf)
+    assert paths == ["scripts/notebook_tools/tests/"], (
+        f"Appel inline doit etre extrait : paths={paths!r}"
+    )
+
+    violations = guard.find_violations(paths)
+    assert any("test_uncollected.py" in str(v) for v in violations), (
+        f"find_violations doit detecter test_uncollected.py ; "
+        f"violations={violations!r}"
+    )
+
+
+def test_block_without_final_continuation_extracts_first(tmp_path, monkeypatch):
+    """Temoignage du CONCERNS c.87 #18951 cas 2 : un workflow avec
+    `pytest \\` puis `scripts/tests/ \\` puis `scripts/notebook_tools/tests/`
+    (sans `\\` sur la derniere ligne) doit extraire les DEUX chemins.
+    Avant c.87, le pattern s'arretait a la premiere ligne sans `\\`,
+    donc `scripts/notebook_tools/tests/` etait ignore, et le scope
+    notebook_tools disparaissait du controle."""
+    nb_dir = tmp_path / "scripts" / "notebook_tools"
+    nb_dir.mkdir(parents=True)
+    (nb_dir / "tests").mkdir()
+    (nb_dir / "tests" / "test_alpha.py").write_text("# test\n")
+    (nb_dir / "test_uncollected.py").write_text("# orphan\n")
+
+    wf = tmp_path / "no_final_cont.yml"
+    wf.write_text(
+        "name: no-final-cont\n"
+        "on: [push]\n"
+        "jobs:\n"
+        "  t:\n"
+        "    steps:\n"
+        "      - run: |\n"
+        "          pytest \\\n"
+        "            scripts/tests \\\n"
+        "            scripts/notebook_tools/tests/\n"
+    )
+
+    monkeypatch.setattr(guard, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(guard, "_in_scope", lambda p: True)
+
+    paths = guard.parse_collected_paths(wf)
+    assert paths == ["scripts/tests", "scripts/notebook_tools/tests/"], (
+        f"Les deux chemins doivent etre extraits ; avant c.87, le "
+        f"second etait ignore. paths={paths!r}"
+    )
+
+    violations = guard.find_violations(paths)
+    assert any("test_uncollected.py" in str(v) for v in violations), (
+        f"find_violations doit detecter test_uncollected.py a la racine ; "
+        f"violations={violations!r}"
+    )
+
+
+def test_pytest_with_only_flags_raises(tmp_path):
+    """Temoignage CONCERNS c.87 : un appel pytest avec uniquement des
+    flags (pas de chemin) doit lever `PytestBlockNotFound`. C'est le
+    cas `pytest \\` puis `-q` sans aucun chemin -- le garde ne peut
+    rien mesurer, donc il DOIT refuser plutot que rendre `ok=True`.
+    Avant c.87, le test_parse_pytest_no_multiline_block_raises etait
+    deja couvert pour `PYTEST_BLOCK_RE` qui ne matche pas, mais pas
+    pour ce cas ou le bloc matche mais ne contient que des flags."""
+    wf = tmp_path / "only_flags.yml"
+    wf.write_text(
+        "name: only-flags\n"
+        "on: [push]\n"
+        "jobs:\n"
+        "  t:\n"
+        "    steps:\n"
+        "      - run: |\n"
+        "          pytest \\\n"
+        "          -q\n"
+    )
+    import pytest
+    with pytest.raises(guard.PytestBlockNotFound):
+        guard.parse_collected_paths(wf)
+
+
+def test_parse_filters_long_option_values(tmp_path):
+    """Les options `--xxx valeur` (ex. `--dist loadscope`) ne doivent
+    pas ajouter `valeur` a la liste des chemins collectes. C'est un
+    filtre de token, pas un changement de pattern -- mais le test
+    documente la convention."""
+    wf = tmp_path / "with_dist.yml"
+    wf.write_text(
+        "name: with-dist\n"
+        "on: [push]\n"
+        "jobs:\n"
+        "  t:\n"
+        "    steps:\n"
+        "      - run: |\n"
+        "          pytest \\\n"
+        "            scripts/tests \\\n"
+        "            -n 4 --dist loadscope --tb short -q\n"
+    )
+    paths = guard.parse_collected_paths(wf)
+    # `loadscope` (valeur de `--dist`) et `short` (valeur de `--tb`)
+    # doivent etre filtres, ainsi que `-n`, `4`, `--dist`, `--tb`, `-q`.
+    assert paths == ["scripts/tests"], (
+        f"Options et valeurs filtrees ; seul le chemin reste. paths={paths!r}"
     )
