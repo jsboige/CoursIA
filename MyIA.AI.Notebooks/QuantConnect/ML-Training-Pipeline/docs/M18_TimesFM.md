@@ -210,3 +210,97 @@ Environnement : `mcp-jupyter-py310` (torch 2.6.0+cu124, timesfm 3.0.1,
 checkpoint `google/timesfm-2.5-200m-pytorch` SHA consigné dans le manifeste).
 Inférence GPU déterministe (vérifiée : appels répétés bit-identiques) — les
 4 seeds servent d'audit de bit-identité, précédent M17 OLS.
+
+## Revalidation cluster 7 actifs — 2026-10-03 (Epic #1454)
+
+### Fix préalable : le harnais produisait un manifeste vide en exit 0
+
+En préparant le run cluster, le harnais s'est révélé cassé depuis la refonte M16 de
+`har_asymmetric.py` : `_load_panel` retourne `(panel, failures)` et `main()` assignait le
+tuple entier — `coin not in panel` testait l'appartenance au **tuple**, toujours faux,
+chaque actif skippé en silence, manifeste écrit avec `n_tsfm_series_served: 0` et exit 0.
+Correctif : unpack + `validate_requested_panel` (organe existant) + garde fail-closed
+(0 série servie → `SystemExit`). Toute reproduction documentée ci-dessus était donc
+silencieusement vide depuis la refonte ; elle fonctionne à nouveau (smoke BTC 2 folds :
+6552 séries servies).
+
+### Protocole
+
+Run complet sur RTX 3070 (rôle pionnier du ping-pong GPU #1454) : 7 actifs (BTC, ETH,
+SOL, LTC, XRP, ADA, DOT) × horizons {1, 5, 10, 22} × graines {0, 7, 42, 99} —
+1462,9 s, 126 368 séries servies, SHA checkpoint inchangé (`1d952420fba8`). Inférence
+déterministe bit-identique (graines = contrôles d'audit, jamais des observations —
+précédent M17/M18 OLS) ; `n_seeds_effective = 1`.
+
+La couche d'agrégation `scripts/m18_tsfm_cluster.py` (additive — le benchmark lui-même
+n'est pas modifié au-delà du fix) applique le protocole de la famille #1454 :
+
+1. **Repli par actif** (règle M16) : BEATS sur majorité stricte d'horizons BEATS, NO
+   BEATS dès qu'un horizon est NO BEATS (sans majorité BEATS), sinon INCONCLUSIVE.
+2. **Sign-test binomial exact unilatéral** (`alternative="greater"`, n=7 actifs) —
+   identique à M16/M12/M17.
+3. **Deux vues d'horizons** : `cluster` {1, 5, 10} (comparabilité M4/M15/M16/M17) et
+   `protocol` {1, 5, 22} (continuité du claim d'origine #14768).
+4. **4 baselines** : persistence, ewma, **log_har** (référence déclarée du protocole
+   #14768), har_rv.
+5. **Alignement** : contrairement à M4/M15, les deux jambes DM vivent dans **un seul
+   walk-forward intra-harnais** — baseline et TimesFM sont scorés sur les mêmes indices
+   de fold par construction ; il n'existe pas de jointure cross-harness à mesurer. Le
+   manifeste consigne ce fait au lieu de le laisser tacite (leçon M15 : l'alignement se
+   déclare, il ne se suppose pas).
+6. **Fail-closed** : les 112 lignes (7×4×4) summary doivent exister, toutes
+   `seeds_bit_identical`.
+
+### Résultats mesurés
+
+**Verdict cluster par baseline** (sign-test binomial exact unilatéral, n=7 actifs) :
+
+| Vue | vs persistence | vs ewma | vs **log_har** (référence) | vs har_rv |
+|---|---|---|---|---|
+| `cluster` {1,5,10} | **BEATS** 7/7, p=0,0078 | NO BEATS 2/7, p=0,9375 | **NO BEATS** 3/7, p=0,7734 | INCONCLUSIVE 5/7, p=0,2266 |
+| `protocol` {1,5,22} | **BEATS** 7/7, p=0,0078 | INCONCLUSIVE 4/7, p=0,5000 | **NO BEATS** 3/7, p=0,7734 | INCONCLUSIVE 5/7, p=0,2266 |
+
+**Détail par actif vs log_har** (vue cluster) :
+
+| Actif | Verdict | h=1 | h=5 | h=10 |
+|---|---|---|---|---|
+| BTC | **BEATS** | BEATS +19,7 % (p≈0) | BEATS +8,5 % (p=0,0015) | INCONCL. +3,3 % |
+| ETH | **BEATS** | BEATS +7,6 % (p≈0) | BEATS +10,7 % (p=0,0002) | BEATS +13,0 % (p=0,0029) |
+| SOL | **BEATS** | BEATS +9,7 % (p=0,0010) | BEATS +9,3 % (p=0,0281) | INCONCL. +8,5 % |
+| LTC | INCONCLUSIVE | BEATS +5,6 % (p=0,0185) | INCONCL. +3,9 % | INCONCL. +1,7 % |
+| XRP | INCONCLUSIVE | BEATS +6,1 % (p=0,0227) | INCONCL. +2,3 % | INCONCL. −0,9 % |
+| ADA | INCONCLUSIVE | BEATS +7,3 % (p=0,0016) | INCONCL. +7,7 % (p=0,0537) | INCONCL. +6,9 % |
+| DOT | INCONCLUSIVE | INCONCL. +3,6 % (p=0,0744) | INCONCL. +2,2 % | INCONCL. +0,7 % |
+
+**Lecture** : (1) le claim #14778 se **reproduit exactement** sur son périmètre — BTC h=1
+vs log_har mesure +19,7 % (p≈0), chiffre identique au run original, et ETH reste BEATS
+3/3 horizons ; (2) la **généralisation** ne passe pas : sur les cinq actifs chargés via
+yfinance (~721 jours horaires contre 2 277 pour BTC), l'edge ne réplique plus à
+h≥5 — chaque horizon non significatif est INCONCLUSIVE, **aucun n'est NO BEATS** vs
+log_har. Le verdict cluster NO BEATS (3/7, p=0,7734) dit « pas de preuve d'un edge
+cluster-wide », pas « réfuté partout » ; il est porté par une perte de puissance sur
+séries courtes, exactement le profil mesuré pour M4 (edge confiné aux longues séries).
+(3) Contre har_rv, la majorité 5/7 ne suffit pas (p=0,2266) — la baseline HAR recalibrée
+reste la référence non battue de la famille, cohérent avec M12/M15/M16/M17.
+
+**Conséquence ping-pong GPU (#1454)** : aucun job `[GPU-QUEUE]` ne se justifie pour M18 —
+le goulot n'est pas le compute mais la **profondeur de données** (séries hourly >2 ans
+pour les cinq actifs distants). Élargir le panel est un problème de sources, pas de GPU.
+
+### Artefacts et reproduction
+
+- Manifeste compact : `scripts/results/m18_tsfm_cluster_aligned.json` (36 301 octets —
+  verdicts par vue/baseline/actif, ancres SHA-256 par actif, discipline de graines,
+  provenance du checkpoint ; politique #15890).
+- Séries complètes hors dépôt :
+  `G:\Mon Drive\MyIA\Dev\Trading\ML-Training-Pipeline\m18_tsfm_cluster_full.json`
+  (905 349 octets).
+- Reproduction :
+
+```bash
+python scripts/m18_tsfm_benchmark.py --coins BTC-USD ETH-USD SOL-USD LTC-USD \
+    XRP-USD ADA-USD DOT-USD --horizons 1 5 10 22 \
+    --out-json <scratchpad>/m18_tsfm_cluster_full.json
+python scripts/m18_tsfm_cluster.py --full-json <scratchpad>/m18_tsfm_cluster_full.json \
+    --out-json scripts/results/m18_tsfm_cluster_aligned.json
+```
