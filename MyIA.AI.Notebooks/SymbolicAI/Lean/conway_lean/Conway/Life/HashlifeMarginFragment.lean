@@ -1064,6 +1064,174 @@ theorem pulsar_hcap_of_period_mod :
   hcap_of_period_mod pulsar pulsar_canonical (by decide)
     pulsar_period_three_kernel pulsar_hwin
 
+/-! ### Témoins dyadiques `T = 2` : le clignotant et le crapaud (tranche 12, admission)
+
+La docstring de `hashlife_correct_margin_of_period` annonce les témoins de sa
+classe (« clignotant `T = 2`, crapaud `T = 2`, phare `T = 3` »). Le pulsar
+(tranche 8b) en couvre la partie **non dyadique** ; les deux témoins
+**dyadiques** manquaient. Puisque `2 ∣ 2^level` dès `level ≥ 1`, la chaîne
+`hcap_of_period` les admet **directement** — sans le relâchement par
+containment (`_mod`) que la période 3 exigeait.
+
+Les deux phases du clignotant et la phase 0 du crapaud sont les définitions du
+bestiaire `Conway.Life` (L206-212), réutilisées telles quelles : le seul
+littéral neuf est la seconde phase du crapaud. Les périodes sont prouvées par
+le réducteur du **noyau** (composition des équations de step), sans consommer
+`blinker_period_two` ni `toad_period_two` : ces lemmes du bestiaire rendent
+`isOscillator g 2 = true`, une forme `Bool` qui ne fournit pas l'égalité
+`evolve T g = g` exigée par `hcap_of_period`. -/
+/-- Seconde phase du crapaud (6 cellules, boîte `[0, 3] × [-1, 2]`), obtenue en
+appliquant la règle à la phase 0 du bestiaire. Littéral trié. -/
+def toadP2 : Grid :=
+  [(0, 0), (0, 1), (1, 2), (2, -1), (3, 0), (3, 1)]
+set_option maxRecDepth 1000000 in
+/-- La seconde phase du crapaud est déjà canonique (triée, sans doublon) : le
+noyau le certifie, puis `canonical_sortDedup` convertit. -/
+theorem toadP2_canonical : Canonical toadP2 := by
+  have h : toadP2 = sortDedup toadP2 := by decide
+  rw [h]
+  exact canonical_sortDedup _
+set_option maxRecDepth 1000000 in
+/-- La phase 0 du crapaud, reprise du bestiaire, est canonique. -/
+theorem toad_canonical : Canonical toad := by
+  have h : toad = sortDedup toad := by decide
+  rw [h]
+  exact canonical_sortDedup _
+set_option maxRecDepth 1000000 in
+/-- Le clignotant horizontal du bestiaire est canonique. -/
+theorem blinker_h_canonical : Canonical blinker_h := by
+  have h : blinker_h = sortDedup blinker_h := by decide
+  rw [h]
+  exact canonical_sortDedup _
+set_option maxRecDepth 1000000 in
+/-- Idem pour la phase verticale. -/
+theorem blinker_v_canonical : Canonical blinker_v := by
+  have h : blinker_v = sortDedup blinker_v := by decide
+  rw [h]
+  exact canonical_sortDedup _
+set_option maxRecDepth 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- Équations de step du clignotant, par le réducteur du **noyau** : la forme
+`Bool` du bestiaire (`blinker_step`) ne rend pas l'égalité. -/
+theorem blinker_h_step : step blinker_h = blinker_v := by decide
+set_option maxRecDepth 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- Idem, phase verticale vers phase horizontale : la boucle de période 2. -/
+theorem blinker_v_step : step blinker_v = blinker_h := by decide
+set_option maxRecDepth 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- Équation de step du crapaud : phase 0 vers la seconde phase. -/
+theorem toad_step : step toad = toadP2 := by decide
+set_option maxRecDepth 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- Idem, seconde phase vers phase 0 : la boucle de période 2 est fermée. -/
+theorem toadP2_step : step toadP2 = toad := by decide
+/-- Chaîne des phases sous `evolve 1` : clignotant horizontal. -/
+theorem blinker_ev1 : evolve 1 blinker_h = blinker_v := blinker_h_step
+/-- Chaîne des phases : clignotant vertical. -/
+theorem blinkerV_ev1 : evolve 1 blinker_v = blinker_h := blinker_v_step
+/-- Chaîne des phases : crapaud, phase 0. -/
+theorem toad_ev1 : evolve 1 toad = toadP2 := toad_step
+/-- Chaîne des phases : crapaud, seconde phase. -/
+theorem toadP2_ev1 : evolve 1 toadP2 = toad := toadP2_step
+set_option maxRecDepth 1000000 in
+/-- Cadre de reconstruction du clignotant horizontal : boîte `[0, 2] × [0, 0]`,
+offset `(-2, -2)`. -/
+theorem blinker_frame_off : (gridToMacroCellWithOffset blinker_h).1 = (-2, -2) := by decide
+set_option maxRecDepth 1000000 in
+/-- Niveau du cadre du clignotant horizontal : côté `max(2, 0) + 5 = 7` →
+niveau 3, cadre `[-2, 6)²`. -/
+theorem blinker_frame_lvl : (gridToMacroCellWithOffset blinker_h).2.level = 3 := by decide
+set_option maxRecDepth 1000000 in
+/-- Cadre de la phase verticale : boîte `[1, 1] × [-1, 1]`, offset `(-1, -3)`. -/
+theorem blinkerV_frame_off : (gridToMacroCellWithOffset blinker_v).1 = (-1, -3) := by decide
+set_option maxRecDepth 1000000 in
+/-- Niveau du cadre de la phase verticale : niveau 3. -/
+theorem blinkerV_frame_lvl : (gridToMacroCellWithOffset blinker_v).2.level = 3 := by decide
+set_option maxRecDepth 1000000 in
+/-- Cadre du crapaud, phase 0 : boîte `[0, 3] × [0, 1]`, offset `(-2, -2)`. -/
+theorem toad_frame_off : (gridToMacroCellWithOffset toad).1 = (-2, -2) := by decide
+set_option maxRecDepth 1000000 in
+/-- Niveau du cadre du crapaud, phase 0 : côté `max(3, 1) + 5 = 8` → niveau 3. -/
+theorem toad_frame_lvl : (gridToMacroCellWithOffset toad).2.level = 3 := by decide
+set_option maxRecDepth 1000000 in
+/-- Cadre de la seconde phase du crapaud : boîte `[0, 3] × [-1, 2]`, offset
+`(-2, -3)`. -/
+theorem toadP2_frame_off : (gridToMacroCellWithOffset toadP2).1 = (-2, -3) := by decide
+set_option maxRecDepth 1000000 in
+/-- Niveau du cadre de la seconde phase : niveau 3. -/
+theorem toadP2_frame_lvl : (gridToMacroCellWithOffset toadP2).2.level = 3 := by decide
+/-- Période 2 du clignotant prouvée par le **noyau** : composition des deux
+équations de step. -/
+theorem blinker_period_two_kernel : evolve 2 blinker_h = blinker_h := by
+  rw [evolve_two, blinker_ev1, blinkerV_ev1]
+/-- Période 2 du crapaud prouvée par le **noyau**. -/
+theorem toad_period_two_kernel : evolve 2 toad = toad := by
+  rw [evolve_two, toad_ev1, toadP2_ev1]
+/-- Divisibilité dyadique du clignotant : les deux phases sont de niveau 3, et
+`2 ∣ 2^3`. C'est la prémisse finie qui distingue cette classe de celle du
+pulsar (`3 ∤ 2^level`). -/
+theorem blinker_hdiv : ∀ i, i < 2 →
+    2 ∣ 2 ^ (gridToMacroCellWithOffset (evolve i blinker_h)).2.level := by
+  intro i hi
+  interval_cases i
+  · rw [evolve_zero, blinker_frame_lvl]
+    decide
+  · rw [blinker_ev1, blinkerV_frame_lvl]
+    decide
+/-- Divisibilité dyadique du crapaud : les deux phases sont de niveau 3. -/
+theorem toad_hdiv : ∀ i, i < 2 →
+    2 ∣ 2 ^ (gridToMacroCellWithOffset (evolve i toad)).2.level := by
+  intro i hi
+  interval_cases i
+  · rw [evolve_zero, toad_frame_lvl]
+    decide
+  · rw [toad_ev1, toadP2_frame_lvl]
+    decide
+/-- Containment des 4 combinaisons de phases `(r, i) < 2 × 2` du clignotant :
+l'image `evolve i (evolve r blinker_h)` vit dans le cadre de reconstruction de
+la phase `r`. Les deux phases tiennent dans un cadre de niveau 3 (côté 8), qui
+absorbe le décalage d'une phase à l'autre. -/
+theorem blinker_hwin : ∀ r, r < 2 → ∀ i, i < 2 → ∀ p ∈ evolve i (evolve r blinker_h),
+    (gridToMacroCellWithOffset (evolve r blinker_h)).1.1 ≤ p.1 ∧
+      p.1 < (gridToMacroCellWithOffset (evolve r blinker_h)).1.1
+        + (2 ^ (gridToMacroCellWithOffset (evolve r blinker_h)).2.level : Int) ∧
+    (gridToMacroCellWithOffset (evolve r blinker_h)).1.2 ≤ p.2 ∧
+      p.2 < (gridToMacroCellWithOffset (evolve r blinker_h)).1.2
+        + (2 ^ (gridToMacroCellWithOffset (evolve r blinker_h)).2.level : Int) := by
+  intro r hr i hi
+  interval_cases r <;> interval_cases i <;>
+    simp only [evolve_zero, blinker_ev1, blinkerV_ev1] <;>
+    first
+    | (rw [blinker_frame_off, blinker_frame_lvl]; decide)
+    | (rw [blinkerV_frame_off, blinkerV_frame_lvl]; decide)
+/-- Containment des 4 combinaisons de phases `(r, i) < 2 × 2` du crapaud. -/
+theorem toad_hwin : ∀ r, r < 2 → ∀ i, i < 2 → ∀ p ∈ evolve i (evolve r toad),
+    (gridToMacroCellWithOffset (evolve r toad)).1.1 ≤ p.1 ∧
+      p.1 < (gridToMacroCellWithOffset (evolve r toad)).1.1
+        + (2 ^ (gridToMacroCellWithOffset (evolve r toad)).2.level : Int) ∧
+    (gridToMacroCellWithOffset (evolve r toad)).1.2 ≤ p.2 ∧
+      p.2 < (gridToMacroCellWithOffset (evolve r toad)).1.2
+        + (2 ^ (gridToMacroCellWithOffset (evolve r toad)).2.level : Int) := by
+  intro r hr i hi
+  interval_cases r <;> interval_cases i <;>
+    simp only [evolve_zero, toad_ev1, toadP2_ev1] <;>
+    first
+    | (rw [toad_frame_off, toad_frame_lvl]; decide)
+    | (rw [toadP2_frame_off, toadP2_frame_lvl]; decide)
+/-- Capstone : le clignotant est admis par `hcap_of_period` — premier témoin
+**dyadique** de la classe périodique. Pour tout horizon `t`, la reconstruction
+de `evolve t blinker_h` est capturée par Hashlife. -/
+theorem blinker_hcap_of_period :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t blinker_h)).2 = true :=
+  hcap_of_period blinker_h blinker_h_canonical (by decide)
+    blinker_period_two_kernel blinker_hdiv
+/-- Capstone : le crapaud est admis par `hcap_of_period`. -/
+theorem toad_hcap_of_period :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t toad)).2 = true :=
+  hcap_of_period toad toad_canonical (by decide)
+    toad_period_two_kernel toad_hdiv
+
 
 /-! ## Invariance par translation de la reconstruction (tranche 3, étape 7, brique 1)
 
