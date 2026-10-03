@@ -44,13 +44,20 @@ class LeanDojoPrereq:
 
 
 def check_python_version() -> LeanDojoPrereq:
-    """Python >= 3.10 is the floor for lean-dojo 2.2.0."""
+    """Python 3.10-3.12 is the supported range for lean-dojo 2.2.0.
+
+    PyPI metadata (https://pypi.org/pypi/lean-dojo/2.2.0/json) declares
+    Requires-Python: <=3.12,>=3.9. Versions 3.13+ are NOT supported by
+    this pin -- installation requires ``--ignore-requires-python`` and the
+    runtime may break in unsupported ways. The control rejects 3.13+ so
+    the verdict stays honest about the supported range.
+    """
     major, minor = sys.version_info[:2]
-    ok = (major, minor) >= (3, 10)
+    ok = (3, 10) <= (major, minor) <= (3, 12)
     return LeanDojoPrereq(
-        "python>=3.10",
+        "python 3.10-3.12",
         ok,
-        f"detected {major}.{minor}",
+        f"detected {major}.{minor} (supported: 3.10-3.12 per Requires-Python)",
     )
 
 
