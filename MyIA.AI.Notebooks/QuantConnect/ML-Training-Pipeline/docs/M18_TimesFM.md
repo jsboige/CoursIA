@@ -248,8 +248,8 @@ n'est pas modifié au-delà du fix) applique le protocole de la famille #1454 :
    de fold par construction ; il n'existe pas de jointure cross-harness à mesurer. Le
    manifeste consigne ce fait au lieu de le laisser tacite (leçon M15 : l'alignement se
    déclare, il ne se suppose pas).
-6. **Fail-closed** : les 112 lignes (7×4×4) summary doivent exister, toutes
-   `seeds_bit_identical`.
+6. **Fail-closed** : toutes les lignes summary attendues (un ensemble par
+   actif × horizon × graine) doivent exister, chacune `seeds_bit_identical`.
 
 ### Résultats mesurés
 
