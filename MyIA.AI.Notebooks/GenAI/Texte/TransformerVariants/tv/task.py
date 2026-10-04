@@ -723,3 +723,359 @@ def _agrege_multi_seed(brut: list) -> dict:
         "brut": brut,
         "n_graines": len(brut),
     }
+
+
+# =============================================================================
+# v5 -- Marche guidee : copies locales chainees (chaque pas STRICTEMENT plus simple)
+# =============================================================================
+# Reponse au bilan v4 : la famille marqueur/pointeur embarquait le meme binding
+# valeur->position a chaque etape de chaine. La v5 construit la famille demandee
+# par l'arbitrage ai-01 (DM ai01-c0606) : un marqueur part de p0, la sequence
+# porte K instructions de deplacement local (GAUCHE/ICI/DROITE), la reponse est
+# la valeur a la position finale. Chaque pas de chaine = mise a jour de position
+# ADJACENTE depuis la derniere position emise + une instruction a position fixe
+# -- une operation locale a 2 couches, sans binding valeur->position. Mesure v5
+# (4 graines, 300 pas) : toujours pas de separation positive ; a K=3 l'ecart est
+# significatif EN DEFAVEUR du CoT (DM p ~ 0.005). Le volet se clot.
+
+
+def instructions_marche(vocab: Vocab) -> tuple[int, int, int]:
+    """Jetons d'instruction (GAUCHE, ICI, DROITE) = deplacements (-1, 0, +1)."""
+    return vocab.VOCAB, vocab.VOCAB + 1, vocab.VOCAB + 2
+
+
+def vocab_marche(vocab: Vocab) -> int:
+    """Taille du vocabulaire answer-only de la marche (+3 jetons d'instruction)."""
+    return vocab.VOCAB + 3
+
+
+def offset_pos_marche(vocab: Vocab) -> int:
+    """Premier jeton POS_j (j dans [0, L)) ; POS_j = offset + j."""
+    return vocab.VOCAB + 3
+
+
+def jeton_pas_marche(vocab: Vocab) -> int:
+    """Jeton PAS, marqueur de transition de la chaine CoT de la marche."""
+    return offset_pos_marche(vocab) + vocab.N_MARQUEURS
+
+
+def vocab_marche_cot(vocab: Vocab) -> int:
+    """Taille du vocabulaire CoT (+3 instructions, +L jetons POS, +1 PAS)."""
+    return jeton_pas_marche(vocab) + 1
+
+
+def _tirage_marche(
+    n: int, K: int, gen: torch.Generator, vocab: Vocab
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Tire valeurs, instructions et positions d'une marche guidee.
+
+    Instructions echantillonnees CONDITIONNELLEMENT : a chaque pas, uniforme
+    parmi les deplacements qui maintiennent la marche dans [0, L). Le tirage
+    precede tout formatage : les modes answer-only et CoT voient les memes
+    instances (appariement par exemple requis par le test DM).
+
+    Retourne (valeurs (n, L), instrs (n, K), positions (n, K+1)) avec
+    positions[:, 0] = p0 = L // 2.
+    """
+    L = vocab.N_MARQUEURS
+    valeurs = torch.randint(0, L, (n, L), generator=gen)
+    base = torch.tensor(instructions_marche(vocab))
+    deltas = torch.tensor([-1, 0, 1])
+    instrs = torch.empty(n, K, dtype=torch.long)
+    positions = torch.empty(n, K + 1, dtype=torch.long)
+    p = torch.full((n,), L // 2, dtype=torch.long)
+    positions[:, 0] = p
+    for k in range(K):
+        # legalite de chaque delta pour chaque item -> tirage uniforme conditionne
+        cible_pos = p.unsqueeze(1) + deltas.unsqueeze(0)  # (n, 3)
+        legal = (cible_pos >= 0) & (cible_pos < L)  # (n, 3)
+        u = torch.rand(n, 1, generator=gen) * legal.sum(1, keepdim=True)
+        rang = u.floor().long()  # rang du delta choisi parmi les legaux
+        cum = torch.cumsum(legal.long(), dim=1)
+        col = (cum <= rang).sum(dim=1)  # premiere colonne ou le cumul depasse le rang
+        instrs[:, k] = base[col]
+        p = p + deltas[col]
+        positions[:, k + 1] = p
+    return valeurs, instrs, positions
+
+
+def lot_marche(n: int, gen: torch.Generator, vocab: Vocab, K: int) -> Lot:
+    """Marche guidee answer-only : [v_0..v_{L-1}, d_1..d_K, REQUETE].
+
+    Pas de remplissage : T = L + K + 1, l'attention n'est pas diluee. La cible
+    est la valeur a la position finale de la marche (hasard 1/L).
+    """
+    valeurs, instrs, positions = _tirage_marche(n, K, gen, vocab)
+    requete = torch.full((n, 1), vocab.JETON_REQUETE, dtype=torch.long)
+    x = torch.cat([valeurs, instrs, requete], dim=1)
+    y = valeurs.gather(1, positions[:, K].unsqueeze(1)).squeeze(1)
+    return Lot(x=x, y=y, q=positions[:, K])
+
+
+def lot_marche_cot(
+    n: int, gen: torch.Generator, vocab: Vocab, K: int
+) -> tuple[torch.Tensor, torch.Tensor, list[torch.Tensor]]:
+    """Marche guidee avec chaine CoT de copies locales chainees.
+
+    Sequence : [v_0..v_{L-1}, d_1..d_K, REQUETE, PAS, POS_p1, PAS, POS_p2,
+    ..., PAS, ANSWER]. Chaine de taille fixe 2K+1 (miroir de la v3). Chaque
+    slot POS_pk recite la position apres le k-ieme deplacement -- la mise a
+    jour est ADJACENTE (derniere position emise + instruction a position fixe),
+    sans binding valeur->position : c'est le pas strictement plus simple.
+
+    Retourne (x, cible, positions_intermediaires) ou positions_intermediaires[k]
+    est le vecteur (n,) des positions attendues apres le pas k+1.
+    """
+    L = vocab.N_MARQUEURS
+    valeurs, instrs, positions = _tirage_marche(n, K, gen, vocab)
+    requete = torch.full((n, 1), vocab.JETON_REQUETE, dtype=torch.long)
+    pas = jeton_pas_marche(vocab)
+    offset = offset_pos_marche(vocab)
+    chaine = torch.empty(n, 2 * K + 1, dtype=torch.long)
+    for k in range(K):
+        chaine[:, 2 * k] = pas
+        chaine[:, 2 * k + 1] = offset + positions[:, k + 1]
+    cible = valeurs.gather(1, positions[:, K].unsqueeze(1)).squeeze(1)
+    chaine[:, -1] = cible
+    x = torch.cat([valeurs, instrs, requete, chaine], dim=1)
+    intermediaires = [positions[:, k + 1].clone() for k in range(K)]
+    return x, cible, intermediaires
+
+
+@torch.no_grad()
+def evaluer_marche(
+    modele, vocab: Vocab, K: int, n: int = 512, graine: int = 99
+) -> tuple[float, float]:
+    """Exactitude et perplexite cible de la marche guidee (answer-only)."""
+    gen = torch.Generator().manual_seed(graine)
+    lot = lot_marche(n, gen, vocab, K)
+    logits = modele(lot.x)[:, -1]
+    perte = F.cross_entropy(logits, lot.y)
+    exactitude = (logits.argmax(-1) == lot.y).float().mean()
+    return exactitude.item(), math.exp(perte.item())
+
+
+@torch.no_grad()
+def evaluer_marche_cot(
+    modele, vocab: Vocab, K: int, n: int = 512, graine: int = 99
+) -> tuple[float, list[float]]:
+    """Exactitude cible + exactitude de chaque pas POS de la chaine (CoT).
+
+    La prediction de chaque slot POS se lit a la position qui le precede ; la
+    cible finale se lit a l'avant-derniere position (convention v3/v4).
+    """
+    gen = torch.Generator().manual_seed(graine)
+    x, cible, intermediaires = lot_marche_cot(n, gen, vocab, K)
+    logits = modele(x)
+    n_chaine = 2 * K + 1
+    T = x.shape[1]
+    offset = offset_pos_marche(vocab)
+    pas = []
+    for k in range(K):
+        slot = 2 * k + 1  # slot de chaine portant POS_{p_{k+1}}
+        pred = logits[:, T - n_chaine + slot - 1]
+        # cible = JETON POS (offset + position), pas l'indice brut de position
+        pas.append((pred.argmax(-1) == offset + intermediaires[k]).float().mean().item())
+    pred_cible = logits[:, T - 2]
+    exactitude = (pred_cible.argmax(-1) == cible).float().mean().item()
+    return exactitude, pas
+
+
+@torch.no_grad()
+def exactitude_marche_par_exemple(
+    modele, vocab: Vocab, K: int, n: int = 512, graine: int = 99
+) -> torch.Tensor:
+    """Vecteur bool (n,) de correction par exemple -- appariement DM."""
+    gen = torch.Generator().manual_seed(graine)
+    lot = lot_marche(n, gen, vocab, K)
+    return modele(lot.x)[:, -1].argmax(-1) == lot.y
+
+
+@torch.no_grad()
+def exactitude_marche_cot_par_exemple(
+    modele, vocab: Vocab, K: int, n: int = 512, graine: int = 99
+) -> torch.Tensor:
+    """Vecteur bool (n,) de correction cible par exemple, mode CoT."""
+    gen = torch.Generator().manual_seed(graine)
+    x, cible, _ = lot_marche_cot(n, gen, vocab, K)
+    return modele(x)[:, -2].argmax(-1) == cible
+
+
+def entrainer_marche(
+    modele, vocab: Vocab, K: int, graine: int,
+    pas: int = 300, batch: int = 32, lr: float = 3e-3,
+) -> tuple[float, float, float]:
+    """Entrainement answer-only sur la marche guidee. Renvoie (acc, ppl, sec)."""
+    torch.manual_seed(graine)
+    opt = torch.optim.Adam(modele.parameters(), lr=lr)
+    gen = torch.Generator().manual_seed(1234 + graine)
+    debut = time.perf_counter()
+    for _ in range(pas):
+        lot = lot_marche(batch, gen, vocab, K)
+        perte = F.cross_entropy(modele(lot.x)[:, -1], lot.y)
+        opt.zero_grad()
+        perte.backward()
+        opt.step()
+    secondes = time.perf_counter() - debut
+    acc, ppl = evaluer_marche(modele, vocab, K)
+    return acc, ppl, secondes
+
+
+def entrainer_marche_cot(
+    modele, vocab: Vocab, K: int, graine: int,
+    pas: int = 300, batch: int = 32, lr: float = 3e-3,
+) -> tuple[float, list[float], float]:
+    """Entrainement CoT sur la marche : supervise chaque token de la chaine 2K+1."""
+    torch.manual_seed(graine)
+    opt = torch.optim.Adam(modele.parameters(), lr=lr)
+    gen = torch.Generator().manual_seed(1234 + graine)
+    n_chaine = 2 * K + 1
+    V = vocab_marche_cot(vocab)
+    debut = time.perf_counter()
+    for _ in range(pas):
+        x, _, _ = lot_marche_cot(batch, gen, vocab, K)
+        logits = modele(x)
+        T = x.shape[1]
+        cible_shift = x[:, T - n_chaine:]
+        logits_pred = logits[:, T - n_chaine - 1:-1]
+        perte = F.cross_entropy(
+            logits_pred.reshape(-1, V), cible_shift.reshape(-1)
+        )
+        opt.zero_grad()
+        perte.backward()
+        opt.step()
+    secondes = time.perf_counter() - debut
+    acc, pas_acc = evaluer_marche_cot(modele, vocab, K)
+    return acc, pas_acc, secondes
+
+
+def entrainer_marche_multi_seed(
+    fabrique_modele, vocab: Vocab, K: int, graines: list[int],
+    pas: int = 300, batch: int = 32, lr: float = 3e-3,
+) -> dict:
+    """Mesure multi-seed answer-only sur la marche (meme contrat que la v4)."""
+    brut = []
+    for graine in graines:
+        torch.manual_seed(graine)
+        modele = fabrique_modele(vocab)
+        acc, ppl, sec = entrainer_marche(
+            modele, vocab, K=K, graine=graine, pas=pas, batch=batch, lr=lr
+        )
+        brut.append((graine, acc, ppl, sec))
+    return _agrege_multi_seed(brut)
+
+
+def entrainer_marche_cot_multi_seed(
+    fabrique_modele, vocab: Vocab, K: int, graines: list[int],
+    pas: int = 300, batch: int = 32, lr: float = 3e-3,
+) -> dict:
+    """Mesure multi-seed CoT sur la marche : cible + pas POS par graine."""
+    brut = []
+    for graine in graines:
+        torch.manual_seed(graine)
+        modele = fabrique_modele(vocab)
+        acc, pas_acc, sec = entrainer_marche_cot(
+            modele, vocab, K=K, graine=graine, pas=pas, batch=batch, lr=lr
+        )
+        brut.append((graine, acc, pas_acc, sec))
+    accs = [b[1] for b in brut]
+    return {
+        "acc_moy": statistics.fmean(accs),
+        "acc_std": statistics.pstdev(accs) if len(accs) > 1 else 0.0,
+        "pas_moy": [statistics.fmean([b[2][j] for b in brut]) for j in range(len(brut[0][2]))],
+        "secondes": sum(b[3] for b in brut),
+        "brut": brut,
+        "n_graines": len(graines),
+    }
+
+
+def _dm_apparie(pertes_modele: list[list[float]], pertes_base: list[list[float]],
+                h: int = 1) -> tuple[float, float]:
+    """Diebold-Mariano sur pertes 0/1 par exemple appariees (HAC, sans scipy).
+
+    d = perte_modele - perte_base ; dm > 0 = le modele est MOINS bon que la
+    base. p bilateral via math.erf. h retards de correction autocorrelation.
+    """
+    d = [m - b for m, b in zip(pertes_modele, pertes_base)]
+    n = len(d)
+    dbar = statistics.fmean(d)
+
+    def gamma(l: int) -> float:
+        if l == 0:
+            return sum((x - dbar) ** 2 for x in d) / n
+        return sum((d[i] - dbar) * (d[i + l] - dbar)
+                   for i in range(n - l)) / n
+
+    var = gamma(0) + 2 * sum(gamma(l) for l in range(1, h + 1))
+    dm = dbar / math.sqrt(max(var, 1e-12) / n)
+    p = 2 * (1 - 0.5 * (1 + math.erf(abs(dm) / math.sqrt(2))))
+    return dm, p
+
+
+def mesurer_marche_paire(
+    fabrique_answer, fabrique_cot, vocab: Vocab, K: int, graines: list[int],
+    pas: int = 300, batch: int = 32, lr: float = 3e-3,
+    n_eval: int = 512, graine_eval: int = 99,
+) -> dict:
+    """Mesure appariee complete answer-only vs CoT sur la marche guidee.
+
+    Pour chaque graine : entraine les deux modes, evalue l'exactitude ET la
+    correction par exemple (memes instances -- le tirage d'eval ne depend que
+    de graine_eval). Rend l'edge cross-seed (delta moyen / ecart-type) et le
+    DM apparie sur pertes 0/1 poolnees par exemple -- les deux jambes du
+    critere de separation (edge >= 2 sigma ET DM p < 0.05).
+    """
+    accs_a, accs_c, ppls = [], [], []
+    perte_a_par_ex, perte_c_par_ex = [], []
+    pas_tous = []
+    secondes = 0.0
+    for graine in graines:
+        torch.manual_seed(graine)
+        m_a = fabrique_answer(vocab)
+        acc_a, ppl_a, sec_a = entrainer_marche(
+            m_a, vocab, K=K, graine=graine, pas=pas, batch=batch, lr=lr
+        )
+        torch.manual_seed(graine)
+        m_c = fabrique_cot(vocab)
+        acc_c, pas_acc, sec_c = entrainer_marche_cot(
+            m_c, vocab, K=K, graine=graine, pas=pas, batch=batch, lr=lr
+        )
+        correct_a = exactitude_marche_par_exemple(
+            m_a, vocab, K, n=n_eval, graine=graine_eval)
+        correct_c = exactitude_marche_cot_par_exemple(
+            m_c, vocab, K, n=n_eval, graine=graine_eval)
+        accs_a.append(acc_a)
+        accs_c.append(acc_c)
+        ppls.append(ppl_a)
+        pas_tous.append(pas_acc)
+        secondes += sec_a + sec_c
+        perte_a_par_ex.append([1.0 - bool(c) for c in correct_a.tolist()])
+        perte_c_par_ex.append([1.0 - bool(c) for c in correct_c.tolist()])
+    # pooling par exemple : memes instances entre graines, la moyenne par
+    # exemple est le vecteur de pertes appariees du DM
+    p_a = [statistics.fmean(col) for col in zip(*perte_a_par_ex)]
+    p_c = [statistics.fmean(col) for col in zip(*perte_c_par_ex)]
+    dm, pval = _dm_apparie(p_c, p_a)
+    deltas = [c - a for c, a in zip(accs_c, accs_a)]
+    d_moy = statistics.fmean(deltas)
+    d_std = statistics.pstdev(deltas) if len(deltas) > 1 else 0.0
+    edge = (d_moy / d_std) if d_std > 0 else (float("inf") if d_moy > 0 else 0.0)
+    return {
+        "K": K,
+        "graines": graines,
+        "acc_answer": accs_a,
+        "acc_cot": accs_c,
+        "acc_answer_moy": statistics.fmean(accs_a),
+        "acc_answer_std": statistics.pstdev(accs_a) if len(accs_a) > 1 else 0.0,
+        "acc_cot_moy": statistics.fmean(accs_c),
+        "acc_cot_std": statistics.pstdev(accs_c) if len(accs_c) > 1 else 0.0,
+        "ppl_answer_moy": statistics.fmean(ppls),
+        "rapport_cot_answer": statistics.fmean(accs_c) / statistics.fmean(accs_a),
+        "pas_pos_moy": [statistics.fmean([p[j] for p in pas_tous])
+                        for j in range(K)],
+        "delta_par_graine": deltas,
+        "edge_sigma": edge,
+        "dm_stat": dm,
+        "dm_p": pval,
+        "secondes": secondes,
+    }
