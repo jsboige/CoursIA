@@ -875,6 +875,41 @@ def twin_collision_reason(
     return f"twin-collision-unreadable:rc={res.returncode}"
 
 
+def base_ref_liveness(
+    runner: Runner, gh_env: dict[str, str], base_ref_name: str
+) -> str:
+    """Etape 5ter, suite (#19014) : la base non-`main` peut etre **vivante**
+    (une PR ouverte dont la tete est cette branche) ou **morte** (la PR
+    porteuse a ete fermee ou squash-marigee, la branche n'est rattachee a
+    aucune PR ouverte). Le gate (#19002) refuse les deux ; merge_ready
+    porte le meme refus en defense en profondeur, mais doit nommer lequel
+    des deux s'applique -- une lane qui lit ``base-live-not-main`` doit
+    attendre le merge de la PR porteuse, une lane qui lit ``base-gone``
+    doit retargeter sur ``main`` (cf. git-workflow.md L898 collision guard).
+
+    La distinction se fait sur la liste ``gh pr list --state all`` filtree
+    sur ``head:<base_ref_name>``. Une PR OPEN avec cette tete = live,
+    sinon (CLOSE/MERGED/absente) = gone. Erreur REST = ``unreadable``
+    (fail-CLOSED : on ne declare pas un etat qu'on n'a pas mesure)."""
+    res = runner.run(
+        ["gh", "pr", "list", "--repo", REPO, "--state", "all",
+         "--search", f"head:{base_ref_name}",
+         "--json", "number,state", "--limit", "5"],
+        env=gh_env,
+    )
+    if res.returncode != 0:
+        return "unreadable"
+    rows = _json_stdout(res, "gh pr list --search head:")
+    if not isinstance(rows, list):
+        return "unreadable"
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        if str(row.get("state") or "").upper() == "OPEN":
+            return "live"
+    return "gone"
+
+
 def mergeable_state_and_head(
     runner: Runner, pr: int, gh_env: dict[str, str]
 ) -> tuple[str, str]:
@@ -994,17 +1029,25 @@ def evaluate_pr(
     reason = twin_collision_reason(runner, pr, gate_head, view.get("files") or [])
     if reason is not None:
         return skip(reason)
-    # 5ter. defense en profondeur : la base de la PR doit etre `main` (#19002).
-    # Le gate a deja refuse READY si la base n'est pas `main`, mais un gate
-    # anterieur a #19002 (ou un rc 0 accidente) ne suffit pas : merge_ready
-    # est l'organe qui **execute** le merge, et il doit verifier lui-meme.
-    # Le `view` charge a l'etape 0 porte la base via `PR_VIEW_FIELDS` ; on
-    # la lit ici pour eviter un round-trip REST supplementaire. La base
-    # morte (squash-mergee ou fermee) porte un nom qui n'est pas `main`,
-    # donc la verification tient pour les deux cas de la mesure #19002.
+    # 5ter. defense en profondeur : la base de la PR doit etre `main` (#19002,
+    # distingue en #19014). Le gate a deja refuse READY si la base n'est pas
+    # `main`, mais un gate anterieur a #19002 (ou un rc 0 accidente) ne
+    # suffit pas : merge_ready est l'organe qui **execute** le merge, et il
+    # doit verifier lui-meme. Le `view` charge a l'etape 0 porte la base via
+    # `PR_VIEW_FIELDS` ; on la lit ici pour eviter un round-trip REST
+    # supplementaire. La base morte (squash-mergee ou fermee) et la base
+    # empilee sur une PR ouverte (vivante) portent toutes deux un nom qui
+    # n'est pas `main` ; le gate les refuse toutes les deux, mais la lane
+    # n'a pas le meme geste a faire (retargeter vs. attendre) -- d'ou les
+    # deux motifs distincts `base-gone` et `base-live-not-main`.
     base_ref_name = view.get("baseRefName") or ""
     if base_ref_name != "main":
-        return skip(f"base-not-main:{base_ref_name}")
+        liveness = base_ref_liveness(runner, gh_env, base_ref_name)
+        if liveness == "live":
+            return skip(f"base-live-not-main:{base_ref_name}")
+        if liveness == "gone":
+            return skip(f"base-gone:{base_ref_name}")
+        return skip(f"base-not-main-unreadable:{base_ref_name}")
     # 6. REST : mergeable + tete.
     state, live_head = mergeable_state_and_head(runner, pr, gh_env)
     if state != "clean":

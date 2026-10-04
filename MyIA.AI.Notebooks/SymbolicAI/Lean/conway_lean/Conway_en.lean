@@ -34,6 +34,12 @@
     - `Conway.CHSH` — classical boundary of the CHSH Bell inequality
       (Clauser-Horne-Shimony-Holt 1969): every deterministic local strategy
       with binary outcomes has a score of absolute value exactly 2.
+    - `Conway.CHSHFreeWill` — bridge between the CHSH series and the Free
+      Will Theorem: a local deterministic model of the CHSH game as response
+      functions of the hidden state (locality by signature, the structural
+      analogue of MIN) cannot realize a score beyond 2 in any state, while
+      quantum mechanics reaches 2√2 — the same indeterminism conclusion as
+      the FWT, through the statistical route.
     - `Conway.CollatzLike` — Collatz-type generalizations (3n+1),
       Syracuse conjecture reformalized in Lean.
     - `Conway.Angel` — Conway's Angel problem (1996 / 2002 *Angel
@@ -63,6 +69,7 @@ import Conway.Life_en
 import Conway.KochenSpecker_en
 import Conway.FreeWillTheorem_en
 import Conway.CHSH_en
+import Conway.CHSHFreeWill_en
 import Conway.MathlibMap_en
 import Conway.CollatzLike_en
 import Conway.FractranLemmas_en

@@ -45,7 +45,7 @@ on:
         type: string
         required: true
       target-modules:
-        description: "Comma-separated dotted module names to check (e.g. 'Knots.Basic,Knots.Conway'). Per-module, theorem/lemma/def/axiom/instance/structure/inductive decls are enumerated from the source file. May also be '*' (issue #10889): the module list is then derived at runtime by walking every *.lean under project-path (minus .lake/, .git, node_modules, .venv, lakefile*, lean-toolchain) -- exactly what `lake build` compiles -- so the gate cannot drift out of view of newly added modules."
+        description: "Comma-separated dotted module names to check (e.g. 'Knots.Basic,Knots.Conway'). Per-module, theorem/lemma/def/axiom/instance/structure/inductive decls are enumerated from the source file. May also be '*' (issue #10889): the module list is then derived at runtime by walking every *.lean under project-path (minus .lake/, .git, node_modules, .venv, lakefile*, lean-toolchain) -- the same set `lake -R build` would elaborate, modulo the lean_lib orphan trap #19015 (a file in a non-default lib, or in no lean_lib, is never built; covered by the dedicated `lean_lib orphan check` step below)."
         type: string
         required: true
       include-i18n-siblings:
@@ -67,6 +67,25 @@ on:
           mirror of a gate that can never go red.
         type: boolean
         default: true
+      strict-orphan-check:
+        description: >-
+          Issue #19015: whether the lean_lib orphan gate runs in --strict mode.
+          Default false (advisory: orphans are reported but the job does not
+          fail). Set true ONLY for lakes that have been audited clean — a green
+          CI on a lake with an orphan says nothing about the orphan's axioms.
+          A false positive here (orphan flagged that is actually intentional)
+          is opt-out per-file via `orphan-exclude`.
+        type: boolean
+        default: false
+      orphan-exclude:
+        description: >-
+          Issue #19015: lake-relative path of a .lean file to whitelist as an
+          intentional orphan (e.g. ``GameTheory.lean`` for EPIC #4365's
+          skeleton aggregator). Comma-separated, repeatable; consumed by
+          ``scripts/lean/check_lean_orphans.py --exclude``. Ignored unless
+          ``strict-orphan-check: true``.
+        type: string
+        default: ""
 
 # A reusable workflow cannot request more than its caller grants. #8951 gave the
 # callers (lean-conway.yml, lean-knot.yml) `permissions: {contents: read}`, which
@@ -207,6 +226,52 @@ jobs:
     # root where no lake exists. `lake build` (which has a correct
     # `working-directory` and no `cd`) succeeded, so the job looked like an
     # axiom violation while it was really a "no lake here" error. See #8712.
+    - name: Run lean_lib orphan check (#19015)
+      # Issue #19015: a green ``lake -R build`` compiles only ``@[default_target]``
+      # libs. Any .lean file in a non-default lib (or in no lean_lib at all)
+      # is never elaborated -- the axiom check above then runs on a vacuous
+      # view. This step closes the gap by enumerating the union of every
+      # lean_lib's globs and reporting any file that is neither in a globs
+      # nor imported by one. Strict-mode is opt-in per lake via
+      # ``strict-orphan-check: true``; otherwise the step is advisory
+      # (``if: always()`` so it runs even on a failed axiom step, surfacing
+      # the orphan as a probable cause for the failure).
+      if: always()
+      env:
+        DISPLAY_NAME: ${{ inputs.display-name }}
+        PROJECT_PATH: ${{ inputs.project-path }}
+        STRICT: ${{ inputs.strict-orphan-check }}
+        EXCLUDE: ${{ inputs.orphan-exclude }}
+      run: |
+        set +e
+        cd "$GITHUB_WORKSPACE"
+        EXCLUDES=""
+        if [ -n "$EXCLUDE" ]; then
+          # Comma-separated list -> repeated --exclude flags.
+          IFS=',' read -ra TOKS <<< "$EXCLUDE"
+          for tok in "${TOKS[@]}"; do
+            tok_trim="$(echo "$tok" | xargs)"
+            [ -n "$tok_trim" ] && EXCLUDES="$EXCLUDES --exclude $tok_trim"
+          done
+        fi
+        if [ "$STRICT" = "true" ]; then
+          # In strict mode, propagate the script exit code (1 on orphan, 0 clean).
+          python scripts/lean/check_lean_orphans.py \
+            --project-path "$PROJECT_PATH" \
+            --lakefile "$PROJECT_PATH/lakefile.lean" \
+            --name "$DISPLAY_NAME" \
+            --strict $EXCLUDES
+        else
+          # Advisory: always exit 0 so the gate does not block on a known
+          # intentional orphan (e.g. ``GameTheory.lean`` on game_theory_lean,
+          # EPIC #4365 skeleton). The ORPHAN list still goes to the job log
+          # for review.
+          python scripts/lean/check_lean_orphans.py \
+            --project-path "$PROJECT_PATH" \
+            --lakefile "$PROJECT_PATH/lakefile.lean" \
+            --name "$DISPLAY_NAME" $EXCLUDES
+          exit 0
+        fi
     - name: Run axiom check
       env:
         MODULES: ${{ inputs.target-modules }}

@@ -45,6 +45,12 @@ Substance réelle :
 - `Conway.CHSH` : frontière classique de l’inégalité de Bell CHSH
   (Clauser-Horne-Shimony-Holt 1969) — toute stratégie locale déterministe
   à réponses binaires a un score de valeur absolue exactement égal à 2.
+- `Conway.CHSHFreeWill` : pont entre la série CHSH et le théorème du libre
+  arbitre — un modèle local déterministe du jeu CHSH en fonctions de
+  l’état caché (localité par signature, analogue de MIN) ne peut réaliser
+  un score au-delà de 2 dans aucun état, alors que la mécanique quantique
+  atteint 2√2 : la même conclusion d’indéterminisme que le FWT, par la
+  route statistique.
 - `Conway.CollatzLike` : généralisations de type Collatz (3n+1) — la
   conjecture de Syracuse reformalisée en Lean.
 - `Conway.Angel` : problème de l'Ange de Conway (J. Conway 1996 / 2002
@@ -91,5 +97,6 @@ import Conway.Life.Novelty
 import Conway.KochenSpecker
 import Conway.FreeWillTheorem
 import Conway.CHSH
+import Conway.CHSHFreeWill
 import Conway.MathlibMap
 import Conway.CollatzLike
