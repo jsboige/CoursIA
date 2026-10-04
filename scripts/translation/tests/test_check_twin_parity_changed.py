@@ -17,6 +17,7 @@ sont reproduites sur des notebooks minimaux hermetiques.
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -24,10 +25,13 @@ import pytest
 
 HERE = Path(__file__).resolve().parent
 TRANSLATION_DIR = HERE.parent
+CI_DIR = HERE.parents[1] / "ci"
 sys.path.insert(0, str(TRANSLATION_DIR))
+sys.path.insert(0, str(CI_DIR))
 
 import check_twin_parity_changed as t  # noqa: E402
 import check_translation_parity as p  # noqa: E402
+from fast_lane_registry import TRANCHE17  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -185,3 +189,44 @@ def test_main_red_on_unreadable_twin(tmp_path, monkeypatch):
     monkeypatch.setattr(t, "changed_notebooks", lambda rr, d: ["demo_en.ipynb"])
     rc = t.main(["--repo-root", str(tmp_path), "--diff", "fake...range"])
     assert rc == 1
+
+
+# ---------------------------------------------------------------------------
+# Cablage de la tranche 17 dans le moteur (#19118)
+#
+# Un garde enregistre mais jamais somme par le moteur ne tourne jamais : le
+# defaut est silencieux par construction, et ``twin-parity-guard`` est
+# ``blocking=True`` sur ``**/*.ipynb`` -- son omission future ne se verrait
+# nulle part. Ces deux tests ferment ce trou.
+# ---------------------------------------------------------------------------
+
+
+def test_tranche17_enregistree_avec_contrat():
+    """Le contrat du garde : blocage, base requise, warn_rc, argv de diff."""
+    assert len(TRANCHE17) == 1
+    guard = TRANCHE17[0]
+    assert guard.name == "twin-parity-guard"
+    assert guard.blocking is True
+    assert guard.needs_base is True
+    assert guard.warn_rc == (2,)
+    assert "--diff" in guard.argv and "{base_ref}...HEAD" in guard.argv
+    assert "**/*.ipynb" in guard.paths
+    assert "scripts/translation/check_twin_parity_changed.py" in guard.paths
+
+
+def test_tranche17_cablee_dans_le_moteur():
+    # Import + somme : la lecture se fait par TOKEN, jamais par adjacence
+    # litterale. La parite d'origine (« TRANCHE17, Guard, ») rougissait des
+    # qu'une tranche posterieure s'inserait entre TRANCHE17 et Guard -- or
+    # l'objet surveille est l'omission de cablage, pas l'ordre des tranches
+    # (meme correctif que TRANCHE16, #19118).
+    #
+    # Falsifiabilite : retirer `+ TRANCHE17` de la somme rougit ce test.
+    src = (CI_DIR / "fast_lane.py").read_text(encoding="utf-8")
+    imported = re.search(r"from fast_lane_registry import \((.*?)\)", src, re.S)
+    assert imported, "bloc d'import de fast_lane_registry introuvable"
+    names = [n.strip() for n in imported.group(1).replace("\n", " ").split(",")]
+    assert "TRANCHE17" in names, "TRANCHE17 importee mais absente : cablage rompu"
+    summed = re.search(r"\bguards = \[(.*?)\]", src, re.S)
+    assert summed, "expression de somme des tranches introuvable"
+    assert re.search(r"\+\s*TRANCHE17\b", summed.group(1)), "TRANCHE17 non sommee par le moteur"
