@@ -44,9 +44,12 @@ L'heuristique d'ancrage prend la cellule de code précédente ; quand celle-ci e
 
 Filtre mécanique (prose portant à la fois une référence en avant — « qui suit », « ci-dessous » — et « exercice N ») : une seule cellule sur les 46. **Ne pas re-dispatcher cette sous-classe** : une réparation en masse produirait 45 éditions aveugles.
 
-## Confirmed — ancrage de lecture réellement mal placé
+## Confirmed — prose de lecture fausse (corrigée) ; l'ancrage reste dans la classe FP
 
-- QC-Py-04-Research-Workflow c33 : seconde interprétation de la volatilité rolling, dont la prose annonce « l'exercice 1 **qui suit** », alors que l'exercice 1 (c31-c32) se trouve **au-dessus** d'elle — la prose désignait une cellule située en arrière. Corrigé par déplacement de la cellule entre c30 et c31 : la prose redevient vraie, et l'ancrage repasse du stub à la cellule de code qui produit les valeurs citées (c29, 3 outputs). Vérifié après coup : `check_density_anchor.py` ne rapporte plus cette cellule.
+- QC-Py-04-Research-Workflow c33 : seconde interprétation de la volatilité rolling, dont la prose annonce « l'exercice 1 **qui suit** », alors que l'exercice 1 (c31-c32, titre + stub) se trouve **au-dessus** d'elle. Le défaut réel est la **prose**, pas la position de la cellule.
+- **Le déplacement est le mauvais correctif, et le rouge CI l'a mesuré** : placer c33 entre c30 et c31 rend la prose vraie mais crée **trois cellules markdown consécutives** (c30 interprétation · c33 transition · titre de l'exercice 1) — `SECOND_READING` du cliquet `scripts/notebook_tools/check_split_reading_cells.py` (base 0 → head 1, **bloquant**). **Les deux organes se contredisent** : satisfaire l'ancrage par déplacement viole le cliquet de lecture scindée. Ne pas re-proposer ce déplacement.
+- **Correctif retenu** : un mot (`qui suit` → `ci-dessus`), aucun déplacement, aucun changement de structure (`git diff --numstat` → 1/1). Vérifié : `check_split_reading_cells.py --base-ref origin/main --head HEAD --fail-on-findings` → base 0, head 0, `regressed: false`.
+- **L'ancrage de c33 reste signalé** (ancre = stub d'exercice, 42 octets) et **appartient à la classe FP documentée ci-dessus** : cellule de transition placée après le bloc d'exercice, qui cite l'exercice qu'elle introduit ; sa prose est désormais exacte. Ne pas re-dispatcher.
 
 ## Step 1 — vérification mécanique (script)
 
