@@ -59,6 +59,29 @@ Proxys déclarés (non spécifiés par la fiche) :
 | Jaune | [`zone1_dd`, `zone2_dd`) | 50 % | 50 % |
 | Rouge | ≥ `zone2_dd` | — | 100 % |
 
+## Invalidation des résultats v2/v3 (mesurée, 2026-10-04)
+
+Les runs `f41b0eed` (base v2), la grille OAT 7/7, le run corrélations et le
+run `fee_mult=2` ci-dessous décrivent une implémentation **buguée** : l'appel
+`self.history(self.dividends, ...)` lève une `AttributeError` sur Lean master
+v18155 (« object has no attribute 'dividends' »), attrapée par le `except` du
+filtre → **tout titre était rejeté, la jambe dividende n'a jamais investi**.
+La stratégie effectivement mesurée est « SPY-ou-cash » (verte = SPY, jaune =
+50 % SPY + 50 % cash, rouge = cash), pas la rotation de la fiche.
+
+Preuve : logs du run `781-fee2-2018-2026` (projet 37317779) et du run
+`781-corr-2018-2024` (projet 37320712) — centaines de lignes « dividend
+history error … has no attribute 'dividends' » (qui ont de surcroît épuisé le
+quota de 100 kb de logs) ; « Lowest Capacity Asset : SPY » (aucun titre
+individuel tradé). Les axes « non-mordants » de la grille (`top_n`,
+`min_yield`) s'expliquent par ce bug, pas par un goulot du filtre.
+
+Fix : `self.history(Dividend, symbol, ...)` (la classe `Dividend`, pas
+l'instance inexistante `self.dividends`). La base, la grille OAT, les
+corrélations et le run à frais doublés doivent être **rejoués** sur le code
+corrigé — les sections ci-dessous restent visibles comme comportement mesuré
+de la version buguée, pour la traçabilité, jusqu'à remplacement.
+
 ## Résultat de base (2018-2026, frais IBKR)
 
 Backtest `781-base-2018-2026-ibkr-v2` (`f41b0eed`, projet 37317779, 2195 jours,
@@ -132,9 +155,9 @@ Lecture d'ensemble :
 | Point | État |
 |-------|------|
 | 1. Cloner le projet source | Non réalisable (accès refusé) → réimplémentation déclarée, DM envoyé au coordinateur pour le canal d'accès de la flotte |
-| 2. Backtest frais IBKR | **Livré** : v2 `f41b0eed` Completed (Sharpe 0,404 / CAGR 9,22 % / DD 16,4 %) |
-| 3. Mesures + comparaisons | **SPY détenu et 60/40 livrés** ; corrélations ETF : projet compagnon [ThreeZone781Correlation](../ThreeZone781Correlation/) (cloud 37320712) déployé, compile BuildSuccess, run en cours |
-| 4. Verdict + robustesse | **Grille OAT livrée** (7/7 backtests, table ci-dessus) ; restent : frais doublés (`fee_mult`=2), sous-périodes, puis verdict BEATS/NO BEATS/INCONCLUSIVE |
+| 2. Backtest frais IBKR | **Invalidé** (bug jambe dividende — voir « Invalidation ») ; re-run de base sur code corrigé lancé |
+| 3. Mesures + comparaisons | Benchmarks SPY détenu et 60/40 **valides** (aucun titre dividende requis) ; corrélations ETF mesurées puis invalidées, à rejouer |
+| 4. Verdict + robustesse | **Grille OAT invalidée** (elle mesurait une SPY-ou-cash) ; à rejouer sur code corrigé, puis verdict |
 | 5. Couverture données fondamentales | Vérification à venir (trous rendement/payout sur 2018-2026) |
 | 6. Gel du code au verdict | À venir |
 

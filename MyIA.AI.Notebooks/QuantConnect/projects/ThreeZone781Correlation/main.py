@@ -134,8 +134,11 @@ class ThreeZone781Correlation(QCAlgorithm):
         if symbol in self._div_cache:
             return self._div_cache[symbol]
         try:
+            # Type de donnees Dividend (la classe, pas une instance) : la forme
+            # self.history(self.dividends, ...) leve une AttributeError sur
+            # QCAlgorithm (Lean master 18155) et rejettait TOUT titre.
             df = self.history(
-                self.dividends, symbol,
+                Dividend, symbol,
                 timedelta(days=365 * (self.div_hist_years + 1)),
             )
         except Exception as exc:
