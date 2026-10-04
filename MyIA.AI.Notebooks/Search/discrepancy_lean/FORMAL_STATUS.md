@@ -152,7 +152,7 @@ branche, jamais `main`. Issue de suivi : #17845.
 | **k2** | **Lemme 1.4** — induction simultanée sur `n` et `d` (la noix de cette voie) | fini + induction | k1 |
 | **k3** | Lemme 4.1 — densité-tente, FTC sur segments, Cauchy–Schwarz `L²`, `TV ≤ ‖v‖₂/√12` | analyse | `norm_image_sub_le` (re-vérifier au pin) |
 | **k4** | Lemme 1.5 — discrétisation sur la grille, cas rationnel | fini | k3 |
-| **k5** | Assemblage Thm 1.2 sur `ℚ` (témoin `36`) + corollaires (`KomlosBansalJiangWeak`, Beck–Fiala régulier `72√k`) + notebooks `Search-09c`/`Search-09d` (ligne « course aux bornes » du 22/09/2026) | assemblage | k2, k4 |
+| **k5** | Assemblage Thm 1.2 sur `ℚ` (témoin `36`) + corollaires (`KomlosBansalJiangWeak`, Beck–Fiala régulier `72√k`) + notebooks `Search-09c`/`Discrepancy-02` (ligne « course aux bornes » du 22/09/2026) | assemblage | k2, k4 |
 
 **Deux routes, non exclusives** — à trancher au premier cycle d'implémentation :
 

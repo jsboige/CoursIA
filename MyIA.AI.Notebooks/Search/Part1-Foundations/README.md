@@ -87,7 +87,7 @@ Les trois premiers notebooks forment le socle commun — on y apprend à poser u
 - **Recherche dans les jeux** : Search-3 puis Search-6 (AdversarialSearch) puis Search-7 (MCTS)
 - **Couverture exacte** : Search-2 puis Search-8 (DancingLinks)
 - **Boîte à outils de graphes** : Search-2 puis Search-2b (NetworkX, ou son jumeau C#) puis Search-2c (QuikGraph)
-- **Indépendants** : Search-9 (LinearProgramming, algèbre linéaire requise), Search-09b (SpuriousMinima, sa suite semidéfinie : Search-9 recommandé au préalable), Search-09c (CombinatorialDiscrepancy, relaxation/arrondi — écho du fil optimisation) suivi de son compagnon formel Search-09d (Lean, kernel `lean4-wsl` : Search-09c recommandé au préalable), Search-11c (Empirical-Algorithm-Selection, distillation benchmark cross-paradigmes : aucun prérequis, écho App-14), Search-12a (Composer-Regards, lecture avant/arrière d'un même terrain : Search-3 recommandé au préalable, op 12 du chantier ICT #12204), Search-13a (Traverser-Murs-Certifies, chemin minimal certifié à travers une bande de cellules coûteuses : Search-2 recommandé au préalable, op 13 du chantier ICT #12204), Search-03f (Reparer-Localement-Sous-Garantie, repair incrémental LPA\* avec garantie d'optimalité transportée : Search-3 recommandé au préalable, op 6 du chantier ICT #12204) et Search-10 (SymbolicAutomata, liens avec SymbolicAI/SMT/Z3-Linq2Z3)
+- **Indépendants** : Search-9 (LinearProgramming, algèbre linéaire requise), Search-09b (SpuriousMinima, sa suite semidéfinie : Search-9 recommandé au préalable), Search-09c (CombinatorialDiscrepancy, relaxation/arrondi — écho du fil optimisation) suivi de son compagnon formel Discrepancy-02 (Lean, kernel `lean4-wsl` : Search-09c recommandé au préalable), Search-11c (Empirical-Algorithm-Selection, distillation benchmark cross-paradigmes : aucun prérequis, écho App-14), Search-12a (Composer-Regards, lecture avant/arrière d'un même terrain : Search-3 recommandé au préalable, op 12 du chantier ICT #12204), Search-13a (Traverser-Murs-Certifies, chemin minimal certifié à travers une bande de cellules coûteuses : Search-2 recommandé au préalable, op 13 du chantier ICT #12204), Search-03f (Reparer-Localement-Sous-Garantie, repair incrémental LPA\* avec garantie d'optimalité transportée : Search-3 recommandé au préalable, op 6 du chantier ICT #12204) et Search-10 (SymbolicAutomata, liens avec SymbolicAI/SMT/Z3-Linq2Z3)
 
 ```mermaid
 flowchart LR
@@ -117,7 +117,7 @@ Les fondamentaux de cette partie (formalisation, backtracking, heuristiques) son
 | `z3-solver` | Search-10 (Symbolic Automata), Search-11c (SMT) |
 | OpenSpiel | Search-7 (MCTS) : requiert WSL ou Linux |
 | `cvxpy` | Search-09b (relaxation SDP, solveur CLARABEL embarqué) |
-| Kernel `lean4-wsl` | Search-09d : kernel Jupyter Lean 4 + miroir local du lake [`discrepancy_lean`](../discrepancy_lean/README.md) (Mathlib 4 via les packages du dépôt) — cf. [`docs/reference/wsl-kernels-detail.md`](../../../docs/reference/wsl-kernels-detail.md) |
+| Kernel `lean4-wsl` | Discrepancy-02 : kernel Jupyter Lean 4 + miroir local du lake [`discrepancy_lean`](../discrepancy_lean/README.md) (Mathlib 4 via les packages du dépôt) — cf. [`docs/reference/wsl-kernels-detail.md`](../../../docs/reference/wsl-kernels-detail.md) |
 | `QuikGraph 2.5.0` (NuGet) | Search-2c (parité C#) : nécessite .NET Interactive, installable via `dotnet tool install --global Microsoft.dotnet-interactive` |
 
 Pour le setup complet, voir le [README de la série Search](../README.md).
@@ -147,7 +147,7 @@ Couverture par notebook des sources fondatrices mobilisées dans cette partie :
 | Search-5 (GeneticAlgorithms) | Holland, J. H. (1975) — *Adaptation in Natural and Artificial Systems*. University of Michigan Press. Origine des algorithmes génétiques. |
 | Search-7 (MCTS) | Browne, C. B., Powley, E., et al. (2012) — « A Survey of Monte Carlo Tree Search Methods », *IEEE Trans. on Computational Intelligence and AI in Games* 4(1). |
 | Search-8 (DancingLinks) | Knuth, D. E. (2000) — « Dancing Links », dans *Millennial Perspectives in Computer Science* (Springer). |
-| Search-09d (conjecture de Komlós) | Matoušek, J. (1999) — *Geometric Discrepancy: An Illustrated Guide*, Springer. Contexte classique de la conjecture de Komlós (disc ≤ C pour colonnes unitaires) ; les énoncés `KomlosConjecture` / `BansalJiangLargeDegree` / `KomlosBansalJiangWeak` formalisés dans [`discrepancy_lean/Komlos.lean`](../discrepancy_lean/Discrepancy/Komlos.lean) suivent les régimes de Bansal & Jiang (2025, arXiv:2508.03961 — cf. Search-09c). |
+| Discrepancy-02 (conjecture de Komlós) | Matoušek, J. (1999) — *Geometric Discrepancy: An Illustrated Guide*, Springer. Contexte classique de la conjecture de Komlós (disc ≤ C pour colonnes unitaires) ; les énoncés `KomlosConjecture` / `BansalJiangLargeDegree` / `KomlosBansalJiangWeak` formalisés dans [`discrepancy_lean/Komlos.lean`](../discrepancy_lean/Discrepancy/Komlos.lean) suivent les régimes de Bansal & Jiang (2025, arXiv:2508.03961 — cf. Search-09c). |
 | Search-11 (Metaheuristics) | Kennedy, J., & Eberhart, R. (1995) — « Particle Swarm Optimization », *Proc. IEEE Int. Conf. on Neural Networks*. Origine du PSO. |
 
 ## FAQ

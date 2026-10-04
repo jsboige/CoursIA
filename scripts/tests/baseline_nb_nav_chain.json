@@ -1867,11 +1867,6 @@
     },
     {
       "kind": "unreachable",
-      "notebook": "MyIA.AI.Notebooks/Search/Discrepancy/Discrepancy-02-Komlos-Lean.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Part1-Foundations"
-    },
-    {
-      "kind": "unreachable",
       "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Part2-CSP"
     },
