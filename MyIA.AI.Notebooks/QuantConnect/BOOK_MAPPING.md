@@ -92,7 +92,7 @@ Algorithmes LEAN complets sur données de marché. Les exemples 04, 08, 18 et 19
 | # | Exemple du livre | Projet(s) du dépôt | Statut | Statut QC | Remarque |
 |---|------------------|--------------------|--------|-----------|----------|
 | 01 | ML Trend Scanning with MLFinlab | [ML-Trend-Scanning](projects/ML-Trend-Scanning/) | COVERED | Needs-improvement | étiquetage par balayage de tendance réécrit sans MLFinLab (licence payante) |
-| 02 | Factor Preprocessing Techniques for Regime Detection | — | GAP | — | notebook de recherche dans le livre ; aucune reproduction |
+| 02 | Factor Preprocessing Techniques for Regime Detection | [QC-Py-28c-Factor-Preprocessing-Regime](Python/QC-Py-28c-Factor-Preprocessing-Regime.ipynb) | COVERED | — | port du `research.ipynb` du livre ; la partie locale tourne sur une série synthétique à régimes (convention de la série), le livre ne fournissant qu'un notebook QuantBook. Ajoute la mesure absente du livre : la classe majoritaire de la fenêtre de test, qu'aucun des quatre prétraitements ne dépasse (#18958) |
 | 03 | Reversion vs Trending - Strategy Selection by Classification | [ML-Reversion-Trending](projects/ML-Reversion-Trending/) | COVERED | Needs-improvement | classifieur `GradientBoostingClassifier` et exposant de Hurst |
 | 04/01 | Alpha by Hidden Markov Models — Equities | [Markov-Regime-Detection](projects/Markov-Regime-Detection/) | COVERED | Needs-improvement | |
 | 04/02 | Alpha by Hidden Markov Models — Equity Options | — | GAP | — | |
@@ -212,7 +212,6 @@ Ces projets n'ont pas d'exemple correspondant dans le livre, mais illustrent des
 | Exemple | Suite |
 |---------|-------|
 | 04/05, 04/18, 05/02, 05/15 | [#18957](https://github.com/jsboige/CoursIA/issues/18957) : écart interquartile, élimination récursive des variables, régression polynomiale, OPTICS (scripts courts sur données synthétiques, à porter dans QC-Py-18 à 20) |
-| 06/02 | [#18958](https://github.com/jsboige/CoursIA/issues/18958) : régimes par prétraitement de facteurs |
 | 06/04/02, 06/04/03 | [#18959](https://github.com/jsboige/CoursIA/issues/18959) : variantes options du modèle de Markov caché |
 | 06/08/01, 06/08/03 | [#18960](https://github.com/jsboige/CoursIA/issues/18960) : stop fixe de référence et couverture par put, dans [Stoploss-Volatility-ML](projects/Stoploss-Volatility-ML/) |
 | 06/09 | [#18961](https://github.com/jsboige/CoursIA/issues/18961) : sélection des paires par PCA et OPTICS, dans [ML-EnhancedPairs](projects/ML-EnhancedPairs/) |

@@ -75,6 +75,7 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-27-Production-Deployment | NON EXÉCUTÉ | |
 | QC-Py-28-Market-Regime-Detection | NON EXÉCUTÉ | |
 | QC-Py-28b-Macro-Cycle-Regimes | EXÉCUTÉ | cellules locales exécutées + run QC Cloud 2016-2026 (diagnostic → allocation) |
+| QC-Py-28c-Factor-Preprocessing-Regime | EXÉCUTÉ | cellules locales exécutées sur série synthétique à régimes (port du livre 06/02, issue #18958) |
 | QC-Py-29-Derivatives-Valuation | EXÉCUTÉ | cellules locales exécutées (BS / arbre CRR / Monte-Carlo : convergence, grecques, scénario liquidité) |
 | QC-Py-30-LSTM-Training | EXÉCUTÉ | |
 | QC-Py-31-Transformer-Training | EXÉCUTÉ | |
@@ -197,6 +198,7 @@ Chaque notebook de la série rend visible un geste quantitatif distinct, dans un
 | [QC-Py-27-Production-Deployment](QC-Py-27-Production-Deployment.ipynb) | Déploiement live, monitoring |
 | [QC-Py-28-Market-Regime-Detection](QC-Py-28-Market-Regime-Detection.ipynb) | Détection de régimes de marché |
 | [QC-Py-28b-Macro-Cycle-Regimes](QC-Py-28b-Macro-Cycle-Regimes.ipynb) | Macro et régimes : diagnostic composite borné, indicateurs → budget de risque |
+| [QC-Py-28c-Factor-Preprocessing-Regime](QC-Py-28c-Factor-Preprocessing-Regime.ipynb) | Prétraitement de facteurs (FFD, standardisation, ACP) pour la détection de régime — port du livre 06/02, comparaison à la classe majoritaire |
 | [QC-Py-29-Derivatives-Valuation](QC-Py-29-Derivatives-Valuation.ipynb) | Valorisation d'un dérivé : Black-Scholes, arbre binomial et Monte-Carlo sur le même contrat — précision, convergence, flexibilité, coût, liquidité |
 
 ## Entraînement ML (QC-Py-30 à 32)
