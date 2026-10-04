@@ -11,6 +11,13 @@ class MLEnhancedPairsAlgorithm(QCAlgorithm):
     - Use ML classifier to predict entry/exit timing
     - Features: Z-score, half-life, volatility regime
     - Long/short based on prediction and pair dynamics
+
+    Pair-selection modes (book ch. 06-09, #18961):
+    - useClusterPairs=false (default): the fixed etf_pairs list, unchanged.
+    - useClusterPairs=true: monthly PCA(3) on standardized 3y daily returns,
+      OPTICS clustering of the factor exposures, and candidate pairs drawn
+      from within each cluster -- grouping BEFORE cointegration, as the
+      reference notebook does on a larger universe.
     """
 
     def Initialize(self):
@@ -41,6 +48,12 @@ class MLEnhancedPairsAlgorithm(QCAlgorithm):
         self.max_half_life = 60
         self.max_pairs = 3
 
+        # Cluster mode (book 06-09): pairs discovered by PCA + OPTICS each
+        # month instead of the fixed list. Default off = current behavior.
+        self.use_cluster_pairs = self.GetParameter("useClusterPairs", "false").lower() == "true"
+        self.cluster_lookback_years = 3
+        self.cluster_pairs = list(self.etf_pairs)
+
         # Rebalance schedule
         self.Schedule.On(self.DateRules.EveryDay("SPY"),
                          self.TimeRules.AfterMarketOpen("SPY", 30),
@@ -51,9 +64,64 @@ class MLEnhancedPairsAlgorithm(QCAlgorithm):
                          self.TimeRules.AfterMarketOpen("SPY", 30),
                          self.TrainModel)
 
+        # Refresh the clustering monthly (first trading day of the month:
+        # month_start WITH a symbol -- a bare month_start skips months whose
+        # 1st is not a trading day, #18941).
+        if self.use_cluster_pairs:
+            self.Schedule.On(self.DateRules.MonthStart("SPY"),
+                             self.TimeRules.AfterMarketOpen("SPY", 30),
+                             self.UpdateClusterPairs)
+
         self.model = None
         self.scaler = None
         self.active_pairs = []
+
+    def candidate_pairs(self):
+        """Pairs to evaluate this cycle: fixed list, or cluster-discovered."""
+        return self.cluster_pairs if self.use_cluster_pairs else self.etf_pairs
+
+    def UpdateClusterPairs(self):
+        """PCA(3) + OPTICS grouping of the universe (book 06-09, step 1-2).
+
+        Standardize 3y of daily returns, reduce to 3 principal components,
+        cluster the factor exposures with OPTICS, then draw candidate pairs
+        from within each cluster. Noise points (label -1) join no pair.
+        """
+        from sklearn.preprocessing import StandardScaler
+        from sklearn.decomposition import PCA
+        from sklearn.cluster import OPTICS
+        from itertools import combinations
+
+        window = int(252 * self.cluster_lookback_years)
+        history = self.History(list(self.symbols.values()), window, Resolution.Daily)
+        if history.empty:
+            return
+
+        closes = history['close'].unstack(level=0)
+        symbol_to_ticker = {str(v): k for k, v in self.symbols.items()}
+        closes.columns = [symbol_to_ticker.get(str(c), str(c)) for c in closes.columns]
+
+        returns = closes.pct_change().dropna()
+        if returns.shape[1] < 4 or len(returns) < 60:
+            return
+
+        standardized = StandardScaler().fit_transform(returns)
+        pca = PCA(n_components=3, random_state=0)
+        exposures = pca.fit(standardized).components_.T  # assets x components
+        labels = OPTICS().fit(exposures).labels_
+
+        tickers = list(returns.columns)
+        pairs = []
+        for cluster_id in sorted(set(labels)):
+            if cluster_id == -1:
+                continue  # noise: asset joins no pair
+            members = [tickers[i] for i, lab in enumerate(labels) if lab == cluster_id]
+            pairs.extend(combinations(members, 2))
+
+        if pairs:
+            self.cluster_pairs = pairs
+        self.Debug(f"[cluster] clusters={len(set(labels)) - (1 if -1 in labels else 0)}"
+                   f" noise={(labels == -1).sum()} candidate_pairs={len(pairs)}")
 
     def TrainModel(self):
         """Train ML model for entry/exit prediction."""
@@ -93,7 +161,7 @@ class MLEnhancedPairsAlgorithm(QCAlgorithm):
         features_list = []
         labels_list = []
 
-        for ticker1, ticker2 in self.etf_pairs:
+        for ticker1, ticker2 in self.candidate_pairs():
             if ticker1 not in closes.columns or ticker2 not in closes.columns:
                 continue
 
@@ -212,7 +280,7 @@ class MLEnhancedPairsAlgorithm(QCAlgorithm):
         # Evaluate each pair
         pair_scores = []
 
-        for ticker1, ticker2 in self.etf_pairs:
+        for ticker1, ticker2 in self.candidate_pairs():
             if ticker1 not in closes.columns or ticker2 not in closes.columns:
                 continue
 

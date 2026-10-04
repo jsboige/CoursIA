@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI
-pedagogical_count: 314
-breakdown: Lean=84, SMT=47, Tweety=39, Argument_Analysis=32, SmartContracts=31, SemanticWeb=28, SymbolicLearning=27, Planners=25, root=1
-maturity: BETA=301, ALPHA=9, DRAFT=4
+pedagogical_count: 317
+breakdown: Lean=87, SMT=47, Tweety=39, Argument_Analysis=32, SmartContracts=31, SemanticWeb=28, SymbolicLearning=27, Planners=25, root=1
+maturity: BETA=304, ALPHA=9, DRAFT=4
 -->
 
 L'intelligence artificielle n'est pas qu'apprentissage automatique et réseaux de neurones. Une grande partie de l'IA classique repose sur le **raisonnement symbolique** : représenter la connaissance sous forme de propositions, de règles et de structures logiques, puis dériver mécaniquement de nouvelles conclusions. C'est cette tradition — des systèmes experts des années 80 aux assistants de preuve modernes comme Lean 4 — que cette famille de séries explore.
@@ -370,7 +370,7 @@ Nombre de notebooks par série, noyaux et maturité : le bloc `CATALOG-STATUS` e
 - [Search](../Search/README.md) et [Sudoku](../Sudoku/README.md) : résolution par contraintes et SAT.
 - [GameTheory](../GameTheory/README.md) : choix social, théorie des jeux, formalisations Lean.
 - [Probas](../Probas/README.md) : programmation probabiliste avec Infer.NET.
-- La [lecture transversale](../../docs/grothendieckian-lens.md) relie ces séries par une même grille : changement de représentation et niveaux de certification.
+- La [lecture transversale](../../docs/cadrage/grothendieckian-lens.md) relie ces séries par une même grille : changement de représentation et niveaux de certification.
 
 ## Ressources
 

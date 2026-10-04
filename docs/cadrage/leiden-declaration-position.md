@@ -4,7 +4,7 @@
 
 La [Déclaration de Leiden sur l’intelligence artificielle et les mathématiques](https://leidendeclaration.ai/) a été publiée le 2 juin 2026, déposée sous le DOI [`10.5281/zenodo.20302944`](https://doi.org/10.5281/zenodo.20302944) et endossée par l’[International Mathematical Union](https://www.mathunion.org/fileadmin/documents/2026-06/IMU_AO_CL_8_2026.pdf). Elle est issue d’un groupe de travail réuni au Lorentz Center en septembre 2025.
 
-Ce document n’est ni une paraphrase de la Déclaration, ni une déclaration d’adhésion sans réserve. Il situe CoursIA face à ses valeurs, confronte ces valeurs à des artefacts vérifiables du dépôt et nomme les écarts qui restent ouverts. Il suit en cela deux précédents du projet : le [dialogue avec *Magnifica Humanitas*](magnifica-humanitas-dialogue.md), qui répond à un texte externe par des objets concrets, et la [clé de lecture grothendieckienne](grothendieckian-lens.md), qui conserve les changements de cadre, les échecs et les niveaux de certification.
+Ce document n’est ni une paraphrase de la Déclaration, ni une déclaration d’adhésion sans réserve. Il situe CoursIA face à ses valeurs, confronte ces valeurs à des artefacts vérifiables du dépôt et nomme les écarts qui restent ouverts. Il suit en cela deux précédents du projet : le [dialogue avec *Magnifica Humanitas*](../magnifica-humanitas-dialogue.md), qui répond à un texte externe par des objets concrets, et la [clé de lecture grothendieckienne](grothendieckian-lens.md), qui conserve les changements de cadre, les échecs et les niveaux de certification.
 
 Le texte est daté. Un workflow, un registre ou un notebook cité ici peut évoluer ; le lien vers l’artefact prime sur la déclaration de conformité.
 
@@ -64,12 +64,12 @@ Ces deux directions ne sont pas séparables : un *verifier* qui s’appuie sur d
 
 | Principe de Leiden | Pratique CoursIA actuelle | Preuve consultable | Lacune reconnue | Engagement |
 |---|---|---|---|---|
-| La preuve vise certitude **et** compréhension | Les notebooks combinent exécution, narration, exemples et exercices ; les preuves Lean sont relues au-delà du simple build | [Règles de validation H.1–H.7](reference/regles-validation-detail.md), [discipline de review Lean](../.claude/rules/pr-review-discipline.md), série [Lean](../MyIA.AI.Notebooks/SymbolicAI/Lean/README.md) | Un build vert ne mesure ni la lisibilité ni la digestion | Appliquer d’abord la grille de l’Epic #13105 aux résultats existants de CoursIA où l’écart d’exposition est vérifié, puis aux futurs résultats majeurs au fil de leur création |
-| Attribution et responsabilité humaines | Les sources, auteurs et artefacts amont doivent être nommés ; une attribution douteuse bloque une conclusion | [Verify Before Claiming](../.claude/rules/verify-before-claiming.md), [registre d’attribution MBML](reference/mbml-source-attribution.md), [anti-régression](../.claude/rules/anti-regression.md) | La provenance n’est pas encore uniforme dans tous les notebooks historiques | Traiter chaque lacune actionnable par une issue dédiée, avec source primaire et correction vérifiable |
-| Transparence et vérification indépendante | Outputs réels committés, exécution end-to-end, comptage des axiomes et validation après modification | [Règles notebooks](../CLAUDE.md#c-notebooks-3-règles-user-2026-04-26), [couverture proof-integrity](reference/lean-axiom-coverage.md), [PARCOURS](PARCOURS.md) | La couverture `proof-integrity` n’atteint pas encore tous les lakes | Étendre la couverture sans présenter les lakes non câblés comme déjà certifiés |
-| Standards partagés d’évaluation | Les axes éditorial, reproductibilité et revue scientifique sont séparés ; les reviews substantielles sont enregistrées | [PARCOURS](PARCOURS.md), [registre de revues éditoriales](notebook-metadata/editorial-review-registry.md), [carte de revue](notebook-metadata/EDITORIAL_REVIEW_CARD.md) | Les registres restent partiels et la qualité pédagogique garde une part de jugement humain | Nommer la portée de chaque review et refuser l’auto-promotion par métrique unique |
-| Compréhension, jugement et autonomie | Le dépôt privilégie les outils ouverts, locaux ou reproductibles lorsque c’est possible ; les limites des services externes sont documentées | [Services GenAI](genai/genai-services.md), [matrice de coût](notebook-metadata/cost-matrix.md), [politique de taille et reproductibilité](reference/repo-size-policy.md) | Modèles, GPU, APIs et plateformes cloud créent encore des dépendances réelles | Rendre chaque dépendance visible et distinguer `RECOVERABLE-*` d’une impossibilité intrinsèque |
-| Ouverture et partage | Notebooks, scripts, preuves et sorties pédagogiques sont versionnés dans le dépôt ; les données et licences sont inventoriées | [Registre datasets](notebook-metadata/DATASET_REGISTRY.md), [THIRD_PARTY_NOTICES](../THIRD_PARTY_NOTICES.md), [politique SOTA](../.claude/rules/sota-not-workaround.md) | Ouverture du code ne signifie pas gratuité énergétique, accès universel aux modèles ou licence uniforme des sources | Publier les coûts, licences et prérequis au même niveau que les résultats |
+| La preuve vise certitude **et** compréhension | Les notebooks combinent exécution, narration, exemples et exercices ; les preuves Lean sont relues au-delà du simple build | [Règles de validation H.1–H.7](../reference/regles-validation-detail.md), [discipline de review Lean](../../.claude/rules/pr-review-discipline.md), série [Lean](../../MyIA.AI.Notebooks/SymbolicAI/Lean/README.md) | Un build vert ne mesure ni la lisibilité ni la digestion | Appliquer d’abord la grille de l’Epic #13105 aux résultats existants de CoursIA où l’écart d’exposition est vérifié, puis aux futurs résultats majeurs au fil de leur création |
+| Attribution et responsabilité humaines | Les sources, auteurs et artefacts amont doivent être nommés ; une attribution douteuse bloque une conclusion | [Verify Before Claiming](../../.claude/rules/verify-before-claiming.md), [registre d’attribution MBML](../reference/mbml-source-attribution.md), [anti-régression](../../.claude/rules/anti-regression.md) | La provenance n’est pas encore uniforme dans tous les notebooks historiques | Traiter chaque lacune actionnable par une issue dédiée, avec source primaire et correction vérifiable |
+| Transparence et vérification indépendante | Outputs réels committés, exécution end-to-end, comptage des axiomes et validation après modification | [Règles notebooks](../CLAUDE.md#c-notebooks-3-règles-user-2026-04-26), [couverture proof-integrity](../reference/lean-axiom-coverage.md), [PARCOURS](../PARCOURS.md) | La couverture `proof-integrity` n’atteint pas encore tous les lakes | Étendre la couverture sans présenter les lakes non câblés comme déjà certifiés |
+| Standards partagés d’évaluation | Les axes éditorial, reproductibilité et revue scientifique sont séparés ; les reviews substantielles sont enregistrées | [PARCOURS](../PARCOURS.md), [registre de revues éditoriales](../notebook-metadata/editorial-review-registry.md), [carte de revue](../notebook-metadata/EDITORIAL_REVIEW_CARD.md) | Les registres restent partiels et la qualité pédagogique garde une part de jugement humain | Nommer la portée de chaque review et refuser l’auto-promotion par métrique unique |
+| Compréhension, jugement et autonomie | Le dépôt privilégie les outils ouverts, locaux ou reproductibles lorsque c’est possible ; les limites des services externes sont documentées | [Services GenAI](../genai/genai-services.md), [matrice de coût](../notebook-metadata/cost-matrix.md), [politique de taille et reproductibilité](../reference/repo-size-policy.md) | Modèles, GPU, APIs et plateformes cloud créent encore des dépendances réelles | Rendre chaque dépendance visible et distinguer `RECOVERABLE-*` d’une impossibilité intrinsèque |
+| Ouverture et partage | Notebooks, scripts, preuves et sorties pédagogiques sont versionnés dans le dépôt ; les données et licences sont inventoriées | [Registre datasets](../notebook-metadata/DATASET_REGISTRY.md), [THIRD_PARTY_NOTICES](../../THIRD_PARTY_NOTICES.md), [politique SOTA](../../.claude/rules/sota-not-workaround.md) | Ouverture du code ne signifie pas gratuité énergétique, accès universel aux modèles ou licence uniforme des sources | Publier les coûts, licences et prérequis au même niveau que les résultats |
 
 ## Ce que nos artefacts démontrent — et ce qu’ils ne démontrent pas
 
@@ -77,13 +77,13 @@ Ces deux directions ne sont pas séparables : un *verifier* qui s’appuie sur d
 
 CoursIA exige que les notebooks committés conservent leurs sorties et que toute cellule de code modifiée soit ré-exécutée. Cette règle combat une forme directe de plausible-but-false : un récit qui affirme un résultat que le livrable ne produit pas. Elle interdit aussi de maquiller manuellement une sortie ; la cause doit être corrigée puis l’exécution rejouée.
 
-Cette discipline démontre qu’une sortie a été produite dans un environnement donné. Elle ne démontre pas, à elle seule, que l’expérience répond à la bonne question, que le problème n’est pas dégénéré ou que l’interprétation est juste. Les critères de [validation réelle](reference/regles-validation-detail.md) et de [vrai outil SOTA](../.claude/rules/sota-not-workaround.md) existent précisément pour éviter ce glissement.
+Cette discipline démontre qu’une sortie a été produite dans un environnement donné. Elle ne démontre pas, à elle seule, que l’expérience répond à la bonne question, que le problème n’est pas dégénéré ou que l’interprétation est juste. Les critères de [validation réelle](../reference/regles-validation-detail.md) et de [vrai outil SOTA](../../.claude/rules/sota-not-workaround.md) existent précisément pour éviter ce glissement.
 
 ### 2. Vérification formelle
 
 Les lakes Lean permettent d’interroger les axiomes, de construire les modules et, lorsque le workflow est câblé sur la cible, de contrôler l’intégrité des preuves. CoursIA distingue explicitement `sorryAx`, `native_decide.*` et `Classical.choice` plutôt que de réduire la confiance à l’absence textuelle de `sorry`.
 
-Cette précision reste incomplète : la [carte de couverture](reference/lean-axiom-coverage.md) montre que tous les lakes ne sont pas atteints par le même gate. Un succès hors cible n’est donc jamais présenté comme une preuve sur cible.
+Cette précision reste incomplète : la [carte de couverture](../reference/lean-axiom-coverage.md) montre que tous les lakes ne sont pas atteints par le même gate. Un succès hors cible n’est donc jamais présenté comme une preuve sur cible.
 
 ### 3. Exposition et digestion
 
@@ -93,7 +93,7 @@ L’[inventaire de veille Palomar](https://github.com/jsboige/CoursIA/issues/131
 
 ### 4. Revue humaine
 
-Le [registre de revues éditoriales](notebook-metadata/editorial-review-registry.md) refuse qu’un notebook soit promu par simple ancienneté ou auto-évaluation. La portée de la review — typographie, faits, pédagogie, substance ou revue complète — est nommée.
+Le [registre de revues éditoriales](../notebook-metadata/editorial-review-registry.md) refuse qu’un notebook soit promu par simple ancienneté ou auto-évaluation. La portée de la review — typographie, faits, pédagogie, substance ou revue complète — est nommée.
 
 Le registre ne prétend pas couvrir tout le dépôt. Il constitue un mécanisme de responsabilité, non une preuve que tout artefact absent serait mauvais ou que tout artefact présent serait définitif.
 
@@ -101,9 +101,9 @@ Le registre ne prétend pas couvrir tout le dépôt. Il constitue un mécanisme 
 
 ### Arguments plausibles mais faux
 
-La réponse ne peut pas être seulement stylistique. CoursIA combine exécution, sorties réelles, contrôles de régression, tests, revue du diff et, pour Lean, inspection des axiomes. Les règles [Verify Before Claiming](../.claude/rules/verify-before-claiming.md) et [Audit Reassessment](../.claude/rules/audit-reassessment.md) imposent de confronter les verdicts automatisés au code réel, car un audit peut lui-même produire un faux positif.
+La réponse ne peut pas être seulement stylistique. CoursIA combine exécution, sorties réelles, contrôles de régression, tests, revue du diff et, pour Lean, inspection des axiomes. Les règles [Verify Before Claiming](../../.claude/rules/verify-before-claiming.md) et [Audit Reassessment](../../.claude/rules/audit-reassessment.md) imposent de confronter les verdicts automatisés au code réel, car un audit peut lui-même produire un faux positif.
 
-**Risque résiduel :** un check peut être vert tout en mesurant le mauvais objet. Le dépôt conserve plusieurs études de cas de ce phénomène dans [Quand la vérification est verte et le système est cassé](reference/verification-verte-systeme-casse.md).
+**Risque résiduel :** un check peut être vert tout en mesurant le mauvais objet. Le dépôt conserve plusieurs études de cas de ce phénomène dans [Quand la vérification est verte et le système est cassé](../reference/verification-verte-systeme-casse.md).
 
 ### Exploitation du corpus et mauvaise attribution
 
@@ -113,7 +113,7 @@ Les datasets, sources pédagogiques, lakes et logiciels tiers doivent être reli
 
 ### Distorsion des incitations
 
-Un nombre de preuves, de PRs, de cellules ou de notebooks n’est pas une mesure suffisante du progrès. Le [protocole de variation](../.claude/rules/variation-protocol.md) sépare contenu et méta-outillage et exige qu’un cycle ajoute quelque chose qu’un lecteur ou un étudiant puisse utiliser.
+Un nombre de preuves, de PRs, de cellules ou de notebooks n’est pas une mesure suffisante du progrès. Le [protocole de variation](../../.claude/rules/variation-protocol.md) sépare contenu et méta-outillage et exige qu’un cycle ajoute quelque chose qu’un lecteur ou un étudiant puisse utiliser.
 
 **Risque résiduel :** toute métrique peut devenir une cible. Les tags `DEEP/MED/LIGHT`, les densités et les gates restent des instruments de triage ; la décision se relit contre le livrable.
 
@@ -141,7 +141,7 @@ La formalisation rend des hypothèses et des dépendances inspectables. Elle peu
 
 ### Ouverture contre coût
 
-Versionner les sorties et les dépendances améliore la reproductibilité, mais augmente la taille du dépôt, le temps de CI et l’empreinte de calcul. La [politique de taille](reference/repo-size-policy.md) assume ce compromis et demande de mesurer le coût plutôt que de l’effacer.
+Versionner les sorties et les dépendances améliore la reproductibilité, mais augmente la taille du dépôt, le temps de CI et l’empreinte de calcul. La [politique de taille](../reference/repo-size-policy.md) assume ce compromis et demande de mesurer le coût plutôt que de l’effacer.
 
 ### Infrastructure locale contre dépendances
 
@@ -194,9 +194,9 @@ CoursIA partage la direction de ces principes, avec une portée volontairement b
 
 ### Correspondances avec nos engagements
 
-- **Ouverture contre coût.** L’initiative demande que les poids, le code et les évaluations soient publiés et reproductibles ([open-math-model](https://sair.foundation/open-math-model/), *Open Development*). CoursIA tient le même engagement par ses notebooks versionnés, ses proofs vérifiables (`lake build` + `proof-integrity`) et ses sorties pédagogiques committées. La [politique de taille](reference/repo-size-policy.md) assume explicitement que cette ouverture augmente le coût de calcul et de stockage : le compromis est mesuré, jamais effacé.
-- **Données aux sources documentées.** L’initiative exige que les données d’entraînement viennent avec des sources et permissions compatibles, et que les utilisateurs consentent explicitement à tout usage ([open-math-model](https://sair.foundation/open-math-model/), *The Mathematical Community Owns the Data*). CoursIA rejoint ce principe par le [registre de datasets](notebook-metadata/DATASET_REGISTRY.md), par le [registre d’attribution MBML](reference/mbml-source-attribution.md), et par la règle [Verify Before Claiming](../.claude/rules/verify-before-claiming.md) qui refuse les attributions extrapolées.
-- **Licences ouvertes.** L’initiative cite Apache 2.0, MIT et CC BY 4.0 ([open-math-model](https://sair.foundation/open-math-model/), *Shared Intellectual Property*). Les dépendances du dépôt sont inventoriées dans [THIRD_PARTY_NOTICES](../THIRD_PARTY_NOTICES.md) et la règle [bibliography-hygiene](../.claude/rules/bibliography-hygiene.md) refuse le commit de publications sous droits.
+- **Ouverture contre coût.** L’initiative demande que les poids, le code et les évaluations soient publiés et reproductibles ([open-math-model](https://sair.foundation/open-math-model/), *Open Development*). CoursIA tient le même engagement par ses notebooks versionnés, ses proofs vérifiables (`lake build` + `proof-integrity`) et ses sorties pédagogiques committées. La [politique de taille](../reference/repo-size-policy.md) assume explicitement que cette ouverture augmente le coût de calcul et de stockage : le compromis est mesuré, jamais effacé.
+- **Données aux sources documentées.** L’initiative exige que les données d’entraînement viennent avec des sources et permissions compatibles, et que les utilisateurs consentent explicitement à tout usage ([open-math-model](https://sair.foundation/open-math-model/), *The Mathematical Community Owns the Data*). CoursIA rejoint ce principe par le [registre de datasets](../notebook-metadata/DATASET_REGISTRY.md), par le [registre d’attribution MBML](../reference/mbml-source-attribution.md), et par la règle [Verify Before Claiming](../../.claude/rules/verify-before-claiming.md) qui refuse les attributions extrapolées.
+- **Licences ouvertes.** L’initiative cite Apache 2.0, MIT et CC BY 4.0 ([open-math-model](https://sair.foundation/open-math-model/), *Shared Intellectual Property*). Les dépendances du dépôt sont inventoriées dans [THIRD_PARTY_NOTICES](../../THIRD_PARTY_NOTICES.md) et la règle [bibliography-hygiene](../../.claude/rules/bibliography-hygiene.md) refuse le commit de publications sous droits.
 - **Gouvernance publique et indépendance de recherche.** L’initiative énonce que la communauté mathématique doit gouverner l’initiative, et que les partenariats industriels doivent préserver l’indépendance de recherche ([open-math-model](https://sair.foundation/open-math-model/), *Open Community and Governance*). CoursIA traduit ce principe par son inscription comme soutien — pas comme financeur, contributeur de calcul, ou membre d’un comité — et par sa séparation explicite entre dépendance industrielle et autonomie ([Engagement 9 — Autonomie mesurée](#engagements-coursia)).
 - **Infrastructure locale contre dépendances.** L’initiative demande que les modèles soient exécutables indépendamment ([open-math-model](https://sair.foundation/open-math-model/), *Models Shaped by the Community*). Le dépôt héberge localement les poids ouverts lorsque c’est possible et documente ses dépendances cloud ou propriétaires par composant.
 
@@ -204,7 +204,7 @@ CoursIA partage la direction de ces principes, avec une portée volontairement b
 
 L’accord avec SAIR est rendu concret par deux pratiques déjà tenues dans le dépôt :
 
-- **Les lakes Lean servent d’évaluations reproductibles.** Quand un workflow `lake build` est câblé et que `proof-integrity` est vert sur la cible, le résultat est inspectable par quiconque dispose de la toolchain. La [carte de couverture](reference/lean-axiom-coverage.md) rend cette discipline explicite et évite de présenter des lacs non câblés comme déjà certifiés.
+- **Les lakes Lean servent d’évaluations reproductibles.** Quand un workflow `lake build` est câblé et que `proof-integrity` est vert sur la cible, le résultat est inspectable par quiconque dispose de la toolchain. La [carte de couverture](../reference/lean-axiom-coverage.md) rend cette discipline explicite et évite de présenter des lacs non câblés comme déjà certifiés.
 - **Le harnais de prouveur et ses traces forensiques** ([Epic #1453](https://github.com/jsboige/CoursIA/issues/1453)) tiennent un journal des tentatives, des succès et des plafonds sur petits modèles. Cette pratique alimente la Boussole et donne à l’accord un contenu vérifiable plutôt qu’une déclaration de principe.
 
 ### Ce que nous ne revendiquons pas
