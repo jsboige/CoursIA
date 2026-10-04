@@ -5,45 +5,55 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import Grothendieck.GodementResolution
 
 /-!
-# The canonical Godement resolution: the chain `F → C⁰F → C⁰²F → ⋯`
+# The iterated unit sequence `F → C⁰F → C⁰²F → ⋯` — and why it is not
+the canonical resolution
 
 Continuation of Part 86 and next thread of the lake [God58, Chap. II §4.1]. Part 86
 closed the prerequisite named by Part 85: `C⁰` preserves monomorphisms
 (`godementFunctor_preservesMonomorphisms`). With the flasquity of `C⁰F`
 (`isFlasque_godementPresheaf`, P84) and the injectivity of `F → C⁰F` on
-sheaves (`injective_toGodement_of_isSheaf`, P84), we now have the **three**
-minimal ingredients to pose the **canonical Godement resolution** of a presheaf
-`F` of abelian groups on `X`:
+sheaves (`injective_toGodement_of_isSheaf`, P84), this module poses the
+**iterated unit sequence** of a presheaf `F` of abelian groups on `X`:
 
 ```
-  0 → F --μ--> C⁰F --d⁰--> C⁰(C⁰F) --d¹--> C⁰(C⁰(C⁰F)) → ⋯
+  F --μ--> C⁰F --μ(C⁰F)--> C⁰²F --μ(C⁰²F)--> C⁰³F → ⋯
 ```
 
-with `μ` the germ at each point and `dⁿ` the canonical restriction-difference
-(`godementDiff` construction below, by product of the restrictions of `C⁰F` to
-its own opens). Two facts, in narrative order:
+where every arrow is the unit `toGodement` evaluated at the source presheaf:
+the second arrow, `godementUnitIter`, is exactly `toGodement (F := C⁰F)`, the
+unit re-applied.
 
-1. `godementDiff` and `godementDZero`: the degree-0 differential `d⁰ := C⁰F → C⁰²F`
-   is posed (image of `C⁰F` by the unit of `C⁰`). The `ShortComplex` itself
-   `F --μ→ C⁰F --d⁰→ C⁰²F` requires the field `zero : μ ≫ d⁰ = 0` which is
-   **voluntarily not posed** here (Tell c.1453 strict, named frontier
-   `acyclic_godementF` treated in Part 88). Lengthening to the full complex
-   `0 → F → C⁰F → C⁰²F → ⋯` is the object of Part 88 (kernel preservation
-   by `C⁰`).
-2. `godementResolution_exact₀`: **exactness at degree 0** — for every open
-   `U`, `(toGodement F).app (op U) : F(U) ⟶ C⁰F(U)` is injective when `F`
-   is a sheaf (`injective_toGodement_of_isSheaf`, P84, replayed). Exactness
-   at higher degrees requires the acyclicity theorem `H^n(C⁰F) = 0` for
-   `n ≥ 1`, which is the object of Part 88.
+## What this sequence is not
 
-**Null-homotopy `μ ≫ d⁰ = 0`**: statement **voluntarily not posed** here
-(Tell c.1453 strict — no unauthorized `sorry` outside calibration module).
-The proof is deeper than it appears and belongs to the **named frontier**
-treated in Part 88 (`acyclic_godementF`).
+This sequence of morphisms is **not** a complex, hence not the canonical
+Godement resolution. The theorem `godementUnit_comp_injective` below shows it:
+on a sheaf `F`, the composite `μ ≫ μ(C⁰F)` is **injective** on every open —
+the composite of the unit (injective on sheaves, P84) and the re-applied unit
+(injective without hypothesis, since `C⁰F` is always a sheaf, P84). On a
+non-zero section the composite stays non-zero (elementary witness: one point,
+the constant sheaf `ℤ`, the section `1`). The equality `μ ≫ d⁰ = 0` required
+of a differential is therefore not an open statement nor a postponed proof:
+it is **false** for this morphism.
 
-What is acquired is what is proven: the canonical Godement resolution **is
-posed** and its **degree 0 is exact** (per open `U`). Acyclicity at higher
-degrees is the named frontier, to be addressed in Part 88 (God58 II.5).
+The canonical construction of [God58, Chap. II §4.1] goes at each step through
+the **cokernel of the unit** and its embedding into the next Godement term;
+re-applying the unit without this cokernel does not replace it. Building the
+true differential of the canonical resolution (via `coker μ`) is the **named
+frontier** treated in Part 89.
+
+## What this module poses, honestly
+
+1. `godementUnitIter`: the second arrow `C⁰F ⟶ C⁰²F`, defined as
+   `toGodement (F := C⁰F)` — the re-applied unit, named for what it is.
+   (The alias `godementDZero` of the first versions of this PR, which called
+   it a "degree-0 differential", is withdrawn: the name was mathematically
+   unfaithful, and no proof depended on it.)
+2. `godementUnit_comp_injective`: the **witness** described above — the
+   composite `μ ≫ μ(C⁰F)` is injective on sheaves, so the unit sequence
+   admits no complex-like null-composition.
+3. `godementUnit_injective_of_isSheaf`: injectivity of `μ` on sheaves
+   (`injective_toGodement_of_isSheaf`, P84, replayed) — the exactness of
+   `0 → F → C⁰F` **at F**, the only exactness fact posed at this stage.
 
 i18n (EPIC #4980) — OK-CONSUMER sibling: this `_en` file imports its FR
 counterpart `Grothendieck.GodementResolution` and re-exports the same
@@ -54,9 +64,10 @@ sole document is the English docstring at the top of the module.
 ## References
 
   - R. Godement, *Topologie algébrique et théorie des faisceaux* [God58],
-    Chap. II §4.1. The canonical Godement resolution `0 → F → C⁰F → C⁰²F → ⋯`.
+    Chap. II §4.1. The canonical resolution `0 → F → C⁰F → C¹F → ⋯`, each step
+    of which goes through the cokernel of the unit.
   - R. Godement, *Topologie algébrique et théorie des faisceaux* [God58],
-    Chap. II §5. Acyclicity `H^n(C⁰F) = 0` for `n ≥ 1`, frontier of Part 88.
+    Chap. II §5. Acyclicity `H^n(C⁰F) = 0` for `n ≥ 1`, frontier of Part 89.
 -/
 
 universe u
@@ -67,38 +78,33 @@ namespace Grothendieck_en
 
 variable {X : TopCat.{u}}
 
--- **OK-CONSUMER sibling**: the declarations `godementDiff`, `godementDZero`,
--- and `godementResolution_exact₀` are imported from
--- `Grothendieck.GodementResolution` (FR) and accessed in the
--- `Grothendieck_en` namespace as `Grothendieck.godementDiff`,
--- `Grothendieck.godementDZero`, and `Grothendieck.godementResolution_exact₀`.
--- We do not redeclare them here to keep bodies byte-identical with FR
--- (the OK-CONSUMER i18n invariant of [docs/lean/i18n-sibling-patterns.md]).
+-- **OK-CONSUMER sibling**: the declarations `godementUnitIter`,
+-- `godementUnit_comp_injective`, and `godementUnit_injective_of_isSheaf`
+-- are imported from `Grothendieck.GodementResolution` (FR) and accessed in
+-- the `Grothendieck_en` namespace as `Grothendieck.godementUnitIter`,
+-- `Grothendieck.godementUnit_comp_injective`, and
+-- `Grothendieck.godementUnit_injective_of_isSheaf`. We do not redeclare them
+-- here to keep bodies byte-identical with FR (the OK-CONSUMER i18n invariant
+-- of [docs/lean/i18n-sibling-patterns.md]).
 
--- **The composite `μ ≫ d⁰`** : statement **voluntarily not posed** here
--- (Tell c.1453 strict — no unauthorized `sorry` outside calibration module).
--- The proof is deeper than it appears and belongs to the **named frontier**
--- treated in Part 88 (`acyclic_godementF`). The companion module
--- `GodementResolution.lean` (FR) does not declare this theorem.
--- (no corresponding `theorem godementDiff_zero` in this `_en` file)
-
--- **The truncated Godement chain at degree 1**: `F --μ→ C⁰F --d⁰→ C⁰²F`,
--- with `μ := toGodement F` (the unit of `C⁰`) and `d⁰ := godementDiff F` (the
--- image of `C⁰F` by `C⁰`). Preservation of kernels by `C⁰` (Part 88) will
--- lengthen this chain into the full complex `0 → F → C⁰F → C⁰²F → C⁰³F → ⋯`.
+-- **The iterated unit sequence at degree 1**: `F --μ→ C⁰F --μ(C⁰F)→ C⁰²F`,
+-- with `μ := toGodement F` (the unit of `C⁰`) and `μ(C⁰F) := godementUnitIter F`
+-- (the unit re-applied to `C⁰F`). This is a sequence of morphisms, **not** a
+-- complex: `godementUnit_comp_injective` proves the composite injective on
+-- sheaves, so `μ ≫ μ(C⁰F) = 0` is false in general.
 --
--- **NOTE**: the `ShortComplex godementResolutionKernel` is **voluntarily
--- not posed** in the FR companion module (the `zero : f ≫ g = 0` default
--- `by cat_disch` cannot prove `toGodement F ≫ godementDiff F = 0` without
--- the null-homotopy, which is the named frontier deferred to Part 88). The
--- EN sibling therefore does not re-export a `ShortComplex` either — the
--- chain is stated morphisme by morphisme (`μ`, `d⁰`) above.
--- (no corresponding `def godementResolutionKernel` in this `_en` file)
+-- **NOTE**: no `ShortComplex` is posed in the FR companion module — the field
+-- `zero : f ≫ g = 0` cannot hold for this composite, which is exactly what
+-- the witness theorem proves. The true differential of the canonical
+-- resolution (through the cokernel of the unit, [God58] II §4.1) is the
+-- named frontier of Part 89. The EN sibling therefore re-exports neither a
+-- `ShortComplex` nor a null-composition statement.
 
--- **Exactness at degree 0** is inherited from
--- `Grothendieck.godementResolution_exact₀` via the OK-CONSUMER import — for
--- every open `U`, the morphism `(toGodement F).app (op U) : F(U) ⟶ C⁰F(U)`
--- is injective when `F` is a sheaf. The converse (`ker(d⁰) ⊆ im(μ)`) is
--- the object of Part 88 (acyclicity `H¹ = 0`).
+-- **Injectivity at F** is inherited from
+-- `Grothendieck.godementUnit_injective_of_isSheaf` via the OK-CONSUMER import
+-- — for every open `U`, the morphism `(toGodement F).app (op U) : F(U) ⟶ C⁰F(U)`
+-- is injective when `F` is a sheaf. This is the only exactness fact posed:
+-- exactness at the term `C⁰F` (and acyclicity `H¹ = 0`) requires the true
+-- differential of the canonical resolution — Part 89.
 
 end Grothendieck_en

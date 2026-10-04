@@ -349,6 +349,19 @@ def analyse(inbound, outbound, series):
     Une serie sans entree (chaine bouclee) est jugee depuis son depart le plus
     couvrant -- jamais declaree saine par defaut.
 
+    Vue INTRA-SERIE du statut d'entree (#19076). Le statut d'entree est calcule
+    sur le graphe **global** : un lien venu d'une AUTRE serie suffit a retirer a
+    un carnet son statut d'entree dans la sienne, sans qu'aucune chaine de
+    navigation interne ne le rattache pour autant (cas fondateur : 07-Aspire,
+    ancree depuis GenAI/SemanticKernel par #18987, reclassee `unreachable` et
+    baseline realigne sous l'arbitrage coordinateur option b, PR #19075).
+    La divergence entre les deux vues est **RAPPORTEE**, jamais jugee : chaque
+    serie publie `externally_anchored` (carnets sans lien entrant INTRA-serie
+    mais pourvus d'un lien entrant exterieur, avec leurs sources). `findings`
+    et le baseline sont **inchanges** tant que l'arbitrage (a)/(b) de #19076
+    n'est pas rendu -- l'information est la matiere de cet arbitrage, pas sa
+    substitution.
+
     Une serie n'est jugee que si elle **exhibe** une convention de navigation,
     c'est-a-dire au moins une arete INTERNE. Sans cela le dossier n'est pas une
     serie navigable (dossier de recherche, de scripts, de brouillons) : le juger
@@ -404,6 +417,22 @@ def analyse(inbound, outbound, series):
         unreachable = sorted(
             (nb for nb in members if nb not in entry_set and nb not in reach), key=_rel
         )
+        # Vue INTRA-SERIE (#19076). `externally_anchored` = carnet sans lien
+        # entrant INTRA-serie, mais pourvu d'au moins un lien entrant exterieur :
+        # il est l'entree legitime de sa serie pour le lecteur qui la parcourt,
+        # et pourtant le graphe global le voit « atteint ». Les sources sont
+        # publiees -- sans elles la classification serait un constat muet.
+        # INFORMATIF : n'entre pas dans `findings`, ne bouge aucun verdict et
+        # ne touche pas le baseline (l'arbitrage (a)/(b) de #19076 est ouvert).
+        externally_anchored = []
+        for nb in sorted(members, key=_rel):
+            sources = inbound.get(nb)
+            if not sources or any(src in member_set for src in sources):
+                continue
+            externally_anchored.append({
+                "notebook": _rel(nb),
+                "sources": sorted({_rel(src) for src in sources}),
+            })
         # Une seule entree = serie saine par construction : pas de finding.
         if len(entries) > 1:
             for nb in entries:
@@ -431,6 +460,7 @@ def analyse(inbound, outbound, series):
             "chain_starts": len(chain_starts),
             "independent_chains": len(independent_heads),
             "unreachable": [_rel(nb) for nb in unreachable],
+            "externally_anchored": externally_anchored,
         })
     findings.sort(key=lambda f: (f["kind"], f["notebook"]))
     return {"findings": findings, "wrapped": wrapped,
@@ -683,6 +713,20 @@ def main(argv=None):
                   f"(aucune entree ; jugee(s) depuis un depart arbitraire) : "
                   f"{', '.join(s['series'] for s in report['wrapped'][:4])}"
                   f"{' ...' if len(report['wrapped']) > 4 else ''}")
+        anchored = [(s["series"], a) for s in report["series"]
+                    for a in s.get("externally_anchored", ())]
+        if anchored:
+            # Vue intra-serie publiee, JAMAIS comptee comme finding : le carnet
+            # est l'entree de sa serie pour qui la parcourt, et « atteint » pour
+            # le graphe global. L'ecart est la matiere de l'arbitrage #19076.
+            print(f"INFO: {len(anchored)} carnet(s) ENTREE(s) DE LEUR SERIE "
+                  f"ancree(s) depuis une AUTRE serie (informatif, hors findings "
+                  f"-- arbitrage #19076) :")
+            for serie, a in anchored[:4]:
+                print(f"  {a['notebook']}  <- {', '.join(a['sources'])}"
+                      f"  (serie {serie})")
+            if len(anchored) > 4:
+                print(f"  ... et {len(anchored) - 4} autre(s)")
         if not findings:
             print(f"OK: chaque notebook est atteignable dans sa serie "
                   f"({len(report['series'])} serie(s) jugee(s), "
