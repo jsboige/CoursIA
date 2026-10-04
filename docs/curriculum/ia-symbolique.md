@@ -378,7 +378,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 33 | [Révision de Croyances et Incohérence](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision.ipynb) | BETA | Oui |
 | 34 | [Tweety-5 : Argumentation Abstraite de Dung (C# / .NET)…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5-Abstract-Argumentation-Csharp.ipynb) | BETA | Oui |
 | 35 | [Argumentation Abstraite (Dung)](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5-Abstract-Argumentation.ipynb) | BETA | Oui |
-| 36 | [Tweety-5b — Théorie de l'argumentation de Dung…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation-Lean.ipynb) | BETA | Non |
+| 36 | [Tweety-5b — Théorie de l'argumentation de Dung…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Argumentation-Lean.ipynb) | BETA | Non |
 | 37 | [Tweety-5d — Synthèse certifiée d'extensions stables :…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5d-Stable-Synthesis-Lean-Python.ipynb) | BETA | Non |
 | 38 | [Tweety-5e — Laboratoire propositionnel : validité,…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5e-Propositional-Lab-Lean-Python.ipynb) | BETA | Non |
 | 39 | [Tweety .NET - Probe Phase 1 axe 2 : initialisation du…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/_probes/Tweety-IKVM-Init-Probe.ipynb) | BETA | Oui |
