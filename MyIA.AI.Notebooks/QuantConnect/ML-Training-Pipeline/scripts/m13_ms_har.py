@@ -915,7 +915,12 @@ def main() -> None:
     }
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(out_path, "w") as f:
+    # newline="\n" + encoding : l'empreinte declaree par _write_cluster_manifest est
+    # calculee sur le texte normalise en LF (read_text normalise CRLF -> LF) ; les
+    # octets sur disque doivent etre ce texte-la, sinon le couple (bytes, sha256)
+    # du manifeste decrit deux jeux d'octets differents (meme correctif que
+    # merge_m13_partials.py -- dlinear_vol.py / m15_lstm_rv.py : issue dediee).
+    with open(out_path, "w", encoding="utf-8", newline="\n") as f:
         json.dump(results, f, indent=2, default=str)
 
     if combos:
