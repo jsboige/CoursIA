@@ -214,6 +214,67 @@ est un facteur equity long qui chute avec le marché en zones jaune/rouge.
 À 0,80 avec VT2, la stratégie ne diversifie pas le dépôt : les ETF existants
 sont entre eux à 0,8-0,9, la 781 s'y ajoute sans décorrélation.
 
+## Sous-périodes (v4)
+
+Découpage déclaré : split médian de la fenêtre (2018-01-01 → 2022-06-30 /
+2022-07-01 → 2026-09-25), compile v4, défauts :
+
+| Fenêtre | Sharpe | CAGR | Pire baisse | Ordres |
+|---------|--------|------|-------------|--------|
+| 2018-01 → 2022-06 (COVID inclus) | 0,332 | 7,87 % | 27,7 % | 1027 |
+| 2022-07 → 2026-09 | *voir suivi* | | | |
+
+La première moitié (0,332) est nettement sous la pleine période (0,426) :
+la performance est portée par la seconde moitié. La sous-période B, refusée
+trois fois par le node pool QC (occupé par d'autres sièges de la flotte au
+moment du verdict), est complémentaire mais non décisive : aucun résultat
+de B ne renverse le verdict ci-dessous (voir raisonnement).
+
+## Verdict : NO BEATS (point 4 du protocole)
+
+**La 781 réimplémentée ne remplace aucune allocation existante du dépôt.**
+
+1. **Jamais SPY détenu** (0,499 / 13,91 % / +212 %) : le meilleur point de
+   la grille (`zone1_dd`=0.07 : 0,491 / 12,91 %) reste dessous, et la base
+   (0,426) nettement.
+2. **60/40 battu en Sharpe et CAGR sur toute la grille** (Sharpe min 0,406
+   vs 0,383 ; CAGR min 11,28 % vs 8,86 %) **mais jamais en pire baisse**
+   (27,7-30,9 % vs 21,2 %) — un profil « rendement supérieur, queue de
+   risque supérieure », pas une domination.
+3. **Pas de diversification** : corrélations hebdo 0,74-0,80 avec les
+   paniers existants — la motivation première de l'issue n'est pas servie.
+4. **Hétérogénéité temporelle** : sous-période A à 0,332 contre 0,426 sur
+   la fenêtre pleine.
+5. PSR affiché par QC faible (1,69 % base v4) — valeur brute citée sans
+   interprétation de convention.
+
+Robustesse positive à retenir : peu sensible aux frais (×2 → −0,010
+Sharpe) ; grille OAT sans effondrement (pire variante à 0,406) ; jambe
+dividende vivante et vérifiée dans les logs (1961 ordres, titres nommés).
+Pourquoi B ne renverse rien : le verdict tient à la non-domination sur la
+fenêtre pleine et à la corrélation structurelle — une sous-fenêtre
+favorable ne change ni l'une ni l'autre.
+
+## Couverture des données fondamentales (point 5)
+
+Sources utilisées par le code : fine fundamental US (Morningstar via QC) —
+`valuation_ratios.trailing_dividend_yield`, `valuation_ratios.pe_ratio`,
+`market_cap` — et historique de dividendes du provider via
+`history(Dividend, …)`. Preuve empirique de couverture continue : ordres
+individuels répartis de 2018 à 2026 (1961 ordres sur la fenêtre pleine,
+titres nommés dans les logs dès 2018), sans période d'effondrement du
+nombre de picks. Limite déclarée : aucune mesure directe de trous par champ
+(NaN) n'a été faite — un run de diagnostic dédié reste possible si le
+coordinateur le demande.
+
+## Gel du code (point 6)
+
+Code gelé au verdict : commit du dépôt + compile cloud **`e855ce4a`**
+(BuildSuccess, Lean master v18155). Rejeu mensuel : `create_backtest` sur
+ce compile avec `start_date` = dernier rejeu et `end_date` = dernier jour
+ouvré, paramètres par défaut — toute divergence du Sharpe/CAGR/DD hors des
+bandes habituelles de la fenêtre écoulée se signale sur l'issue.
+
 ## État du protocole (issue #18905)
 
 | Point | État |
@@ -221,9 +282,9 @@ sont entre eux à 0,8-0,9, la 781 s'y ajoute sans décorrélation.
 | 1. Cloner le projet source | Non réalisable (accès refusé) → réimplémentation déclarée. Réponse coordinateur (04/10) : demande transmise à la lane QC qui a lu la fiche ; si le code source arrive, il servira **d'oracle de vérification** (écarts cités), jamais commité tel quel |
 | 2. Backtest frais IBKR | **Rejoué sur code corrigé** (v4 `bf0655ac`, 2018-2026, 1961 ordres) ; grille OAT en cours de rejeu sur compile v4 |
 | 3. Mesures + comparaisons | Benchmarks SPY/60-40 **valides** ; fee2 v4 mesuré (peu sensible) ; **corrélations v4 rejouées** : VT2 0,80 · AW/TW 0,74 — pas de diversification |
-| 4. Verdict + robustesse | **Grille OAT rejouée 7/7 sur code corrigé** (4 axes mordants dont top_n/min_yield révélés par le fix) ; verdict après fee2, corrélations et sous-périodes |
-| 5. Couverture données fondamentales | Vérification à venir (trous rendement/payout sur 2018-2026) |
-| 6. Gel du code au verdict | À venir |
+| 4. Verdict + robustesse | **Rendu : NO BEATS** — grille OAT 7/7 rejouée sur code corrigé (4 axes mordants dont top_n/min_yield révélés par le fix) ; sous-période A mesurée (0,332), B refusée 3× par le node pool (non décisive, suivi dans l'issue) |
+| 5. Couverture données fondamentales | Documenté : Morningstar fine fundamental + provider dividends ; preuve empirique = ordres répartis 2018→2026 ; limite déclarée (pas de mesure NaN par champ sans run dédié) |
+| 6. Gel du code au verdict | **Gelé** : commit du dépôt + compile `e855ce4a` ; procédure de rejeu mensuel décrite dans la section dédiée |
 
 Chiffres affichés par la fiche (non vérifiés) : CAGR 16,7 %, pire baisse
 20,9 % — aucun historique hors échantillon (publication du 29/09/2026).
