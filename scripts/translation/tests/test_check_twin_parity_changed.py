@@ -214,6 +214,24 @@ def test_tranche17_enregistree_avec_contrat():
     assert "scripts/translation/check_twin_parity_changed.py" in guard.paths
 
 
+def test_tranche17_est_absorbee():
+    """`blocking=True` sans `absorbed=True` est une declaration sans effet.
+
+    Le job always-on lance `fast_lane.py --shadow`, et le moteur calcule
+    `effective_shadow = args.shadow and not guard.absorbed` : un garde non
+    absorbe emet sous `fast-lane (ombre): ` avec une conclusion NEUTRE et
+    n'entre pas dans `blocking_failed`. Le garde tournait donc en observation
+    permanente alors que son contrat annonce un blocage -- il n'aurait pas
+    arrete une PR de la forme #18844.
+
+    Falsifiabilite : retirer `absorbed=True` du registre rougit ce test.
+    """
+    assert TRANCHE17[0].absorbed is True, (
+        "twin-parity-guard declare blocking=True mais sans absorbed=True : "
+        "le moteur l'emet en ombre avec une conclusion neutre, il ne bloque rien"
+    )
+
+
 def test_tranche17_cablee_dans_le_moteur():
     # Import + somme : la lecture se fait par TOKEN, jamais par adjacence
     # litterale. La parite d'origine (« TRANCHE17, Guard, ») rougissait des

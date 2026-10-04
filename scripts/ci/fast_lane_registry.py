@@ -1615,6 +1615,16 @@ TRANCHE17: list[Guard] = [
             "--diff", "{base_ref}...HEAD",
         ],
         blocking=True,
+        # `absorbed=True` (#19118, reserve de revue) : le job always-on lance
+        # `fast_lane.py --shadow`, et `effective_shadow = args.shadow and not
+        # guard.absorbed`. Sans absorption, ce garde emettait
+        # `fast-lane (ombre): twin-parity-guard` avec une conclusion neutre et
+        # n'entrait pas dans `blocking_failed` : `blocking=True` etait une
+        # declaration sans effet, et une PR de la forme #18844 (CODE_DRIFT
+        # d0d7a23d) serait passee. Meme convention que les autres gardes natifs
+        # absorbes (TRANCHE8/9/10/14) : un garde sans workflow d'origine n'a
+        # aucun autre emetteur de son nom de check-run.
+        absorbed=True,
         needs_base=True,
         warn_rc=(2,),
     ),

@@ -656,9 +656,16 @@ def _drive_mixed_emission(monkeypatch, pilot_rc, tranche_rc):
                     blocking=True, paths=["**/*.ipynb"], absorbed=True)
     monkeypatch.setattr(fl, "PILOT", [pilot])
     monkeypatch.setattr(fl, "TRANCHE1", [tranche])
-    monkeypatch.setattr(fl, "TRANCHE2", [])
-    monkeypatch.setattr(fl, "TRANCHE4", [])
-    monkeypatch.setattr(fl, "TRANCHE5", [])
+    # Toutes les AUTRES tranches doivent etre videes : n'en vider que quelques-unes
+    # laissait tourner les gardes REELLES des tranches oubliees. Leur rc etait
+    # injecte par le faux `run_argv` ci-dessous (`pilot_rc` pour tout argv
+    # autre que `cmd-tranche`), donc un absorbe reel rendait `rc=1` et faisait
+    # rougir le job -- mesure du 2026-10-05 sur #19118 : TRANCHE15/16/17,
+    # absorbees, faisaient echouer le test de contraste du pilote, qui
+    # mesurait alors le registre au lieu de la lane a deux gardes.
+    for _tranche in sorted(n for n in vars(fl) if n.startswith("TRANCHE")):
+        if _tranche != "TRANCHE1":
+            monkeypatch.setattr(fl, _tranche, [])
     monkeypatch.setattr(fl, "changed_files", lambda _ref: ["x.ipynb"])
     monkeypatch.setattr(
         fl, "run_argv",
