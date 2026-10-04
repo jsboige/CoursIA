@@ -34,6 +34,10 @@ cd CoursIA
 python -m venv .venv
 source .venv/bin/activate   # ou .venv\Scripts\activate sous Windows
 pip install jupyter papermill
+
+# Vérifier que la machine satisfait le profil avant d'ouvrir le 1er notebook
+python scripts/notebook_tools/learner_preflight.py --parcours local
+
 jupyter notebook MyIA.AI.Notebooks/
 ```
 
