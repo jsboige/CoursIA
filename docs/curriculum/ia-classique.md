@@ -44,9 +44,9 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 13 | [App-20 — Benchmark comparatif des solveurs Sudoku…](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-20-SudokuBenchmark-Python.ipynb) | BETA | Oui |
 | 14 | [App-20b : Benchmark compare des solveurs Sudoku (jumeau…](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-20b-SudokuBenchmark-CSharp.ipynb) | BETA | Oui |
 | 15 | [Voice Leading Minimal par Affectation — l'algorithme de…](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-21-VoiceLeading.ipynb) | BETA | Oui |
-| 16 | [App-22 : Coloration d'arêtes et conjecture de Tutte](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-22-EdgeColoring-Tutte.ipynb) | BETA | Oui |
-| 17 | [App-23 - Factorio Belt Balancer (CP-SAT borne)](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-23-Factorio-Balancer.ipynb) | BETA | Oui |
-| 18 | [App-26 — Covering Arrays : tester les interactions…](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-26-CoveringArrays-Guarantee-Audit.ipynb) | BETA | Oui |
+| 16 | [App-22 : Coloration d'arêtes et conjecture de Tutte](../../MyIA.AI.Notebooks/Search/Applications/Research/Research-01-EdgeColoring-Tutte-Python.ipynb) | BETA | Oui |
+| 17 | [App-23 - Factorio Belt Balancer (CP-SAT borne)](../../MyIA.AI.Notebooks/Search/Applications/Research/Research-02-Factorio-Balancer-Python.ipynb) | BETA | Oui |
+| 18 | [App-26 — Covering Arrays : tester les interactions…](../../MyIA.AI.Notebooks/Search/Applications/Research/Research-05-CoveringArrays-Guarantee-Audit-Python.ipynb) | BETA | Oui |
 | 19 | [App-2b : Coloration de graphes — Jumeau C#](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-2b-GraphColoring-CSharp.ipynb) | BETA | Oui |
 | 20 | [App-3 : Nurse Scheduling (Planification des horaires…](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-3-NurseScheduling.ipynb) | BETA | Oui |
 | 21 | [App-3b : Nurse Scheduling — Twin C# (planification de…](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-3b-NurseScheduling-CSharp.ipynb) | BETA | Oui |
@@ -72,21 +72,21 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 41 | [App-18c — Rustuna vs Optuna : mesurer un portage Rust…](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-18c-HyperparameterTuning-Rustuna-vs-Optuna.ipynb) | BETA | Oui |
 | 42 | [App-22 — Sélection empirique d'algorithmes : trois…](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-22-AlgorithmSelection-Python.ipynb) | BETA | Oui |
 | 43 | [App-23 — Cryptanalyse différentielle de PRESENT par SAT](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-23-PRESENT-Differential-Cryptanalysis-SAT.ipynb) | BETA | Oui |
-| 44 | [App-24 — MAPF : auditer les garanties des solveurs](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-24-MAPF-Guarantee-Audit.ipynb) | BETA | Non |
-| 45 | [App-25 — Enchères combinatoires : Winner Determination…](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-25-CombinatorialAuctions-WDP-VCG.ipynb) | BETA | Oui |
+| 44 | [App-24 — MAPF : auditer les garanties des solveurs](../../MyIA.AI.Notebooks/Search/Applications/Research/Research-03-MAPF-Guarantee-Audit-Python.ipynb) | BETA | Non |
+| 45 | [App-25 — Enchères combinatoires : Winner Determination…](../../MyIA.AI.Notebooks/Search/Applications/Research/Research-04-CombinatorialAuctions-WDP-VCG-Python.ipynb) | BETA | Oui |
 | 46 | [App-27 — Sparse index tracking](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-27-Sparse-Index-Tracking-Walk-Forward.ipynb) | BETA | Oui |
-| 47 | [App-28 — Learning to branch](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-28-LearningToBranch-Generalization-Audit.ipynb) | BETA | Oui |
-| 48 | [App-29 — Équilibrage de chaîne d'assemblage (SALBP)](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-29-SALBP-AssemblyLineBalancing-Audit.ipynb) | BETA | Oui |
-| 49 | [App-30 — Ordonnancement d'assemblage orbital](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-30-OrbitalAssembly-Certificate-Audit.ipynb) | BETA | Oui |
-| 50 | [App-31 — RCPSP/max : quand la faisabilité devient le…](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-31-RCPSP-Max-Feasibility-Bounds.ipynb) | BETA | Oui |
-| 51 | [App-33 — Neural diving : un plongeur appris pour CP-SAT](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-33-NeuralDiving-Coloration.ipynb) | BETA | Oui |
+| 47 | [App-28 — Learning to branch](../../MyIA.AI.Notebooks/Search/Applications/Research/Research-06-LearningToBranch-Generalization-Audit-Python.ipynb) | BETA | Oui |
+| 48 | [App-29 — Équilibrage de chaîne d'assemblage (SALBP)](../../MyIA.AI.Notebooks/Search/Applications/Research/Research-07-SALBP-AssemblyLineBalancing-Audit-Python.ipynb) | BETA | Oui |
+| 49 | [App-30 — Ordonnancement d'assemblage orbital](../../MyIA.AI.Notebooks/Search/Applications/Research/Research-08-OrbitalAssembly-Certificate-Audit-Python.ipynb) | BETA | Oui |
+| 50 | [App-31 — RCPSP/max : quand la faisabilité devient le…](../../MyIA.AI.Notebooks/Search/Applications/Research/Research-09-RCPSP-Max-Feasibility-Bounds-Python.ipynb) | BETA | Oui |
+| 51 | [App-33 — Neural diving : un plongeur appris pour CP-SAT](../../MyIA.AI.Notebooks/Search/Applications/Research/Research-11-NeuralDiving-Coloration-Python.ipynb) | BETA | Oui |
 | 52 | [App-9 : Detection de bords par algorithmes génétiques](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-9-EdgeDetection.ipynb) | BETA | Oui |
 | 53 | [TP : Conception d'Algorithmes Génétiques avec…](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-9b-EdgeDetection-CSharp.ipynb) | BETA | Oui |
 | 54 | [App-14-ConnectFour-Adversarial-CSharp — Jumeau C# :…](../../MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-Adversarial-CSharp.ipynb) | BETA | Oui |
 | 55 | [App-14 - Connect Four : Benchmark Adversarial Search](../../MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-Adversarial.ipynb) | BETA | Oui |
 | 56 | [App-14b : Puissance 4 -- Comparaison d'algorithmes IA…](../../MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb) | BETA | Oui |
 | 57 | [App-14c (C#) : Puissance 4 -- Comparaison d'algorithmes…](../../MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb) | BETA | Oui |
-| 58 | [App-32 — Szpiro : Pasten 2026 rend N log log N…](../../MyIA.AI.Notebooks/Search/Applications/Search/App-32-Szpiro-Pasten-2026.ipynb) | BETA | Oui |
+| 58 | [App-32 — Szpiro : Pasten 2026 rend N log log N…](../../MyIA.AI.Notebooks/Search/Applications/Research/Research-10-Szpiro-Pasten-2026-Python.ipynb) | BETA | Oui |
 
 ## Search/Part1-Foundations (44 notebooks)
 

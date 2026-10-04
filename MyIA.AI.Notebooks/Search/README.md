@@ -147,7 +147,7 @@ Problèmes du monde réel adaptés de projets étudiants. Chaque application est
 | 12 (C#) | [App-19-ProceduralGeneration-WFC-CSharp](Applications/CSP/App-19-ProceduralGeneration-WFC-CSharp.ipynb) | ~45 min | Twin C# du 12 : WFC from-scratch (entropie de Shannon + propagation AC-3 + backtracking) (See #4956) | Marathon |
 | 13 | [App-20-SudokuBenchmark-Python](Applications/CSP/App-20-SudokuBenchmark-Python.html) | ~50 min | Benchmark 4 solveurs Sudoku (backtracking naïf → optimisé → contraintes) sur banc Easy/Medium/Hard : dénombrement du travail | Synthèse série |
 | 13 (C#) | [App-20b-SudokuBenchmark-CSharp](Applications/CSP/App-20b-SudokuBenchmark-CSharp.html) | ~50 min | Twin C# du 13 : mêmes solveurs from-scratch en .NET, comparaison des écosystèmes | Jumeau .NET |
-| 16 | [App-26-CoveringArrays-Guarantee-Audit](Applications/CSP/App-26-CoveringArrays-Guarantee-Audit.ipynb) | ~55 min | Covering Arrays : oracle constraint-aware, set cover CP-SAT exact, bornes et baselines IPOG/AETG-like — distillation PrCon H4 (Valérian Pichot) | Projet étudiant (PrCon PR #58) |
+| 16 | [Research-05-CoveringArrays-Guarantee-Audit-Python](Applications/CSP/Research-05-CoveringArrays-Guarantee-Audit-Python.ipynb) | ~55 min | Covering Arrays : oracle constraint-aware, set cover CP-SAT exact, bornes et baselines IPOG/AETG-like — distillation PrCon H4 (Valérian Pichot) | Projet étudiant (PrCon PR #58) |
 
 Les autres jumeaux C# de la sous-série CSP (N-Queens, GraphColoring, NurseScheduling, JobShop, Timetabling, Minesweeper, Wordle, MiniZinc, Picross, SportsScheduling) suivent le même principe : ré-implémentation .NET du notebook Python de référence, solveurs from-scratch ou OR-Tools natif selon le sujet (marathon #4956).
 

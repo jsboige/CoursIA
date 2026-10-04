@@ -50,7 +50,7 @@ Initial full execution:
 
 ```bash
 python scripts/notebook_tools/notebook_tools.py execute \
-  MyIA.AI.Notebooks/Search/Applications/CSP/App-26-CoveringArrays-Guarantee-Audit.ipynb \
+  MyIA.AI.Notebooks/Search/Applications/Research/Research-05-CoveringArrays-Guarantee-Audit-Python.ipynb \
   --timeout 180
 ```
 

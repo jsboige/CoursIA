@@ -1222,7 +1222,7 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/CSP/App-23-Factorio-Balancer.ipynb",
+      "notebook": "MyIA.AI.Notebooks/Search/Applications/Research/Research-02-Factorio-Balancer-Python.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Applications/CSP"
     },
     {
@@ -1267,7 +1267,7 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-24-MAPF-Guarantee-Audit.ipynb",
+      "notebook": "MyIA.AI.Notebooks/Search/Applications/Research/Research-03-MAPF-Guarantee-Audit-Python.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Applications/Hybrid"
     },
     {
@@ -1277,17 +1277,17 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-28-LearningToBranch-Generalization-Audit.ipynb",
+      "notebook": "MyIA.AI.Notebooks/Search/Applications/Research/Research-06-LearningToBranch-Generalization-Audit-Python.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Applications/Hybrid"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-30-OrbitalAssembly-Certificate-Audit.ipynb",
+      "notebook": "MyIA.AI.Notebooks/Search/Applications/Research/Research-08-OrbitalAssembly-Certificate-Audit-Python.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Applications/Hybrid"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-33-NeuralDiving-Coloration.ipynb",
+      "notebook": "MyIA.AI.Notebooks/Search/Applications/Research/Research-11-NeuralDiving-Coloration-Python.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Applications/Hybrid"
     },
     {
@@ -1302,7 +1302,7 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/Search/App-32-Szpiro-Pasten-2026.ipynb",
+      "notebook": "MyIA.AI.Notebooks/Search/Applications/Research/Research-10-Szpiro-Pasten-2026-Python.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Applications/Search"
     },
     {

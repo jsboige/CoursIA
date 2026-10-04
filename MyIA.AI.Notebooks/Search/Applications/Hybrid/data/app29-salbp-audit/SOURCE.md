@@ -26,7 +26,7 @@ Le notebook exécuté produit :
 Commande de reproduction depuis la racine CoursIA :
 
 ```powershell
-python scripts/notebook_tools/notebook_tools.py execute MyIA.AI.Notebooks/Search/Applications/Hybrid/App-29-SALBP-AssemblyLineBalancing-Audit.ipynb --timeout 300 --verbose
+python scripts/notebook_tools/notebook_tools.py execute MyIA.AI.Notebooks/Search/Applications/Research/Research-07-SALBP-AssemblyLineBalancing-Audit-Python.ipynb --timeout 300 --verbose
 ```
 
 Environnement de la collecte : Windows 11, Python 3.13, OR-Tools CP-SAT, PuLP/CBC, pandas, NumPy et matplotlib. Les versions exactes sont enregistrées dans les métadonnées de `provenance.json` lors de l'exécution.

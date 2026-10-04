@@ -4,7 +4,7 @@ import Mathlib
 # Szpiro — ancrage Mathlib des bornes de Pasten 2026 (hommage à Serre)
 
 Sibling Lean du carnet
-[`App-32-Szpiro-Pasten-2026.ipynb`](../Applications/Search/App-32-Szpiro-Pasten-2026.ipynb)
+[`Research-10-Szpiro-Pasten-2026-Python.ipynb`](../Applications/Search/Research-10-Szpiro-Pasten-2026-Python.ipynb)
 (issue #16549, option A) : Pasten 2026, *Improved Bounds for Szpiro's Conjecture*,
 arXiv 2609.17390 (preprint, 261 Ko, archivé `Bibliographie IA\NumberTheory`).
 
