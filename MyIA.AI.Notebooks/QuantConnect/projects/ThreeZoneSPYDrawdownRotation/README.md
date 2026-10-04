@@ -82,37 +82,57 @@ corrélations et le run à frais doublés doivent être **rejoués** sur le code
 corrigé — les sections ci-dessous restent visibles comme comportement mesuré
 de la version buguée, pour la traçabilité, jusqu'à remplacement.
 
-## Résultat de base (2018-2026, frais IBKR)
+## Résultat de base v4 (2018-2026, frais IBKR, code corrigé)
 
-Backtest `781-base-2018-2026-ibkr-v2` (`f41b0eed`, projet 37317779, 2195 jours,
-91 ordres) :
+Backtest `781-base-2018-2026-ibkr-v4-fix-dividend` (`bf0655ac`, projet
+37317779, compile `e855ce4a`, 2195 jours, **1961 ordres**) :
 
 | Mesure | Valeur |
 |--------|--------|
-| Sharpe | 0,404 |
-| CAGR | 9,22 % |
-| Pire baisse | 16,4 % |
-| Profit net total | +116,1 % |
-| PSR | 1,5 % |
+| Sharpe | 0,426 |
+| CAGR | 11,48 % |
+| Pire baisse | 27,7 % |
+| Profit net total | +158,5 % |
+| PSR | 1,69 % |
+
+Preuve que la jambe dividende investit (vs la v2 buguée à 91 ordres) :
+1961 ordres, et les logs du run montrent des `set_holdings` sur des titres
+individuels nommés (WMB, DH, NWL, CCL, MET, FD, OXY…), sans aucune ligne
+« dividend history error ». Les « Backtest Handled Error : … does not have
+an accurate price » résiduelles sont bénines : premier ciblage d'un titre
+admis avant sa première barre daily (l'ordre part à la revue suivante).
 
 Comparaisons (même fenêtre, mêmes frais — projet
 [ThreeZone781Benchmarks](../ThreeZone781Benchmarks/)) :
 
 | Run | Sharpe | CAGR | Pire baisse | Total |
 |-----|--------|------|-------------|-------|
-| **781 réimplémentée** | **0,404** | **9,22 %** | **16,4 %** | **+116 %** |
+| **781 réimplémentée v4** | **0,426** | **11,48 %** | **27,7 %** | **+158 %** |
 | SPY détenu (`43fa2e07`) | 0,499 | 13,91 % | 33,6 % | +212 % |
 | 60/40 SPY/IEF (`d4a2b089`) | 0,383 | 8,86 % | 21,2 % | +110 % |
 
-Lecture mesurée : la rotation **domine le 60/40 sur les trois axes**
-(Sharpe, CAGR, drawdown) et divise la pire baisse du SPY détenu par deux
-(16,4 % vs 33,6 %) au prix de 4,7 points de CAGR annuel. Profil défensif —
-pas un dominant du SPY en rendement absolu. Verdict différé aux volets
-restants (grille de robustesse, frais doublés, corrélations, sous-périodes).
+Lecture mesurée : la 781 corrigée **bat le 60/40 en Sharpe et en CAGR**
+mais **cède sur la pire baisse** (27,7 % vs 21,2 %) — la dominance sur les
+trois axes mesurée en v2 était un artefact du cash (jambe dividende morte =
+zone rouge 100 % cash, DD 16,4 %). La vraie 781 prend un portefeuille
+d'actions à dividende en zone rouge : plus de rendement, plus de drawdown.
+Elle réduit toujours le drawdown du SPY détenu (27,7 % vs 33,6 %) mais
+beaucoup moins que la version buguée ne le laissait croire. Aucun dominant
+du SPY en rendement absolu. Verdict différé aux rejeux (grille OAT, frais
+doublés, corrélations, sous-périodes).
 
-Rotation annuelle (proxy déclaré : ordres/an sur la fenêtre) : 781 ≈ 10,4
-ordres/an (91 ordres sur 8,73 ans) ; 60/40 ≈ 19,8/an (173 ordres) ; SPY
-détenu 1 ordre.
+Rotation annuelle (proxy déclaré : ordres/an sur la fenêtre) : 781 v4 ≈
+224,6 ordres/an (1961 ordres sur 8,73 ans — le rebalancement hebdo du
+portefeuille dividende en zones jaune/rouge porte l'activité) ; 60/40 ≈
+19,8/an (173 ordres) ; SPY détenu 1 ordre.
+
+## Résultat v2 invalidé (traçabilité)
+
+Backtest `781-base-2018-2026-ibkr-v2` (`f41b0eed`, 2195 jours, 91 ordres) :
+Sharpe 0,404 · CAGR 9,22 % · pire baisse 16,4 % · +116,1 % · PSR 1,5 %.
+Ce run décrivait la « SPY-ou-cash » (voir « Invalidation » ci-dessus) — la
+lecture initiale de dominance défensive sur le 60/40 (trois axes) et de pire
+baisse divisée par deux venait du cash, pas de la stratégie.
 
 ## Grille de robustesse (OAT, 7 variantes)
 
@@ -155,7 +175,7 @@ Lecture d'ensemble :
 | Point | État |
 |-------|------|
 | 1. Cloner le projet source | Non réalisable (accès refusé) → réimplémentation déclarée, DM envoyé au coordinateur pour le canal d'accès de la flotte |
-| 2. Backtest frais IBKR | **Invalidé** (bug jambe dividende — voir « Invalidation ») ; re-run de base sur code corrigé lancé |
+| 2. Backtest frais IBKR | **Rejoué sur code corrigé** (v4 `bf0655ac`, 2018-2026, 1961 ordres) ; grille OAT en cours de rejeu sur compile v4 |
 | 3. Mesures + comparaisons | Benchmarks SPY détenu et 60/40 **valides** (aucun titre dividende requis) ; corrélations ETF mesurées puis invalidées, à rejouer |
 | 4. Verdict + robustesse | **Grille OAT invalidée** (elle mesurait une SPY-ou-cash) ; à rejouer sur code corrigé, puis verdict |
 | 5. Couverture données fondamentales | Vérification à venir (trous rendement/payout sur 2018-2026) |
