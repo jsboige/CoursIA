@@ -104,7 +104,11 @@ Quatre causes, dont la derniere est arrivee en dernier et couvre le plus :
    rend la cause distincte « check requis non conclu » -- le geste est la
    reprise coordinateur, jamais une reparation de lane ;
 2. **conflit avec main** ;
-3. **CHANGES_REQUESTED non leve** ;
+3. **CHANGES_REQUESTED non leve** -- mais seulement si l'organe B.0 n'a pas
+   deja evalue la PR et ne l'a pas declaree claire. GitHub conserve la
+   derniere review PAR AUTEUR : un CR dont la reserve a ete levee par une
+   review TIERCE ulterieure reste affiche a jamais, et le compter ferait
+   reparer une PR que le merge-gate accepte (#18829) ;
 4. **point de review non leve** (mandat 2026-08-24 : "ne plus produire tant
    qu'il leur reste des points a traiter dans leurs vieilles PRs, ca doit leur
    etre propose en premier lieu"). Les trois premieres causes sont
@@ -270,6 +274,7 @@ def _has_delivered_marker(issue_number: int) -> bool | None:
 # le compteur par issue ne peut pas porter. Voir scripts/series_saturation.py
 # pour le diagnostic complet (EPIC decoupe en 9 filles = 9 veines invisibles).
 from series_saturation import (  # noqa: E402
+    BELT_WINDOW_DAYS,
     CONSOLIDATION,
     DEFAULT_WINDOW_DAYS,
     DELIVERY_DELIVERED,
@@ -2870,6 +2875,7 @@ def blocking_causes(state: dict, *, age_hours: float | None = None,
                     resolved_keys_by_name: dict[str, set[str]] | None = None,
                     dwell_by_name: dict[str, dict] | None = None,
                     gate_evidence: dict[str, tuple[list[str], list[str]]] | None = None,
+                    review_points_clear: bool = False,
                     ) -> list[str]:
     """Causes qui empechent VRAIMENT le merge, formulees en geste de reparation.
 
@@ -2890,6 +2896,17 @@ def blocking_causes(state: dict, *, age_hours: float | None = None,
     un rouge substance. La cause est formulee comme geste = commentaire
     + `--ignore-red` ou `rerun/updater-branch` selon le cas -- la lane peut
     poser un acte (commenter) mais ne peut pas derainer la file seule.
+
+    `review_points_clear` (defaut False = fail-closed) : l'appelant declare que
+    l'organe du merge-gate B.0 a EVALUE les surfaces de review de cette PR et
+    n'y a trouve aucun point non leve. Un `CHANGES_REQUESTED` encore affiche
+    n'est alors PAS une cause -- GitHub conserve la derniere review PAR AUTEUR,
+    donc la reserve d'un tiers reste `CHANGES_REQUESTED` a jamais meme quand une
+    review TIERCE posterieure l'a levee ; l'organe, lui, lit la levee. Mesure
+    fondatrice #18829 : CR Hermes du 02/10 10:29Z, leve par ai-01 le 04/10
+    02:35Z, organe rc=0 -- et le picker ouvrait quand meme une file de
+    reparation sur la PR, premier geste de la lane. Defaut False : sans verdict
+    d'organe (panne, PR jamais evaluee) la cause est CONSERVEE.
 
     Le critere reste PASSIF si `age_hours` ou `saturation_hours` ne sont pas
     fournis (defaut=None), ce qui preserve la signature utilisee par les 12
@@ -3008,6 +3025,13 @@ def blocking_causes(state: dict, *, age_hours: float | None = None,
             latest[review["author"]["login"]] = review
     for login, review in latest.items():
         if review["state"] == "CHANGES_REQUESTED":
+            if review_points_clear:
+                # Cf la docstring : l'organe a evalue les surfaces de review et
+                # n'a rien trouve de non leve. L'etat natif est alors un residu
+                # de GitHub (derniere review PAR AUTEUR), pas un verdict vivant.
+                # Le compter ferait ouvrir une file de reparation sur une PR que
+                # le merge-gate accepte (#18829).
+                continue
             causes.append(f"CHANGES_REQUESTED non leve ({login})")
     # 3ᵉ declencheur `file_saturation` (cf issue #12830) : aucun check n'a
     # demarre (PENDING/QUEUED partout), pas de conflit, pas de CHANGES_REQUESTED
@@ -3201,6 +3225,11 @@ def unaddressed_review_points(numbers: list[int]) -> dict[int, int]:
     l'appelant DIT que la surface n'a pas ete regardee (cf `nits_unavailable`).
     Une erreur de CONTRAT avec l'organe (TypeError/AttributeError), en revanche,
     n'est pas une PR illisible : elle est relancee pour rester visible (#15139).
+
+    Valeur rendue : le NOMBRE de points non leves, `0` pour une PR evaluee et
+    declaree claire, et AUCUNE entree pour une PR non evaluee (panne par-PR,
+    exception avalee). Le `0` porte l'information « evaluee, claire » ; une
+    entree manquante reste traitee comme non evaluee (#18829).
     """
     if not numbers:
         return {}
@@ -3225,8 +3254,17 @@ def unaddressed_review_points(numbers: list[int]) -> dict[int, int]:
             raise
         except Exception:  # noqa: BLE001 - une PR illisible ne bloque pas les autres
             continue
-        if result.get("blocked"):
-            out[n] = len(result.get("blocking") or [])
+        blocking = result.get("blocking") or []
+        if blocking:
+            out[n] = len(blocking)
+        elif not result.get("blocked"):
+            # #18829 : l'organe a EVALUE cette PR et la declare claire. Le 0 est
+            # une INFORMATION, pas une absence -- sans cette entree, l'appelant
+            # ne distingue pas « evaluee, claire » de « jamais evaluee » et doit
+            # conserver la cause par defaut (fail-closed). C'est ce 0 qui
+            # autorise `blocking_causes` a ignorer un `CHANGES_REQUESTED` natif
+            # deja leve.
+            out[n] = 0
     return out
 
 
@@ -3510,7 +3548,11 @@ def red_backlog(lane: str, threshold_hours: float,
                                  infra_rerun=set(infra_rerun),
                                  resolved_keys_by_name=keys_by_name,
                                  dwell_by_name=dwell_by_name,
-                                 gate_evidence=gate_evidence_for(state, gate_cache))
+                                 gate_evidence=gate_evidence_for(state, gate_cache),
+                                 # `== 0` et non `not ...` : une PR ABSENTE du
+                                 # dict n'a pas ete evaluee par l'organe, et la
+                                 # cause doit alors etre conservee (fail-closed).
+                                 review_points_clear=nits_by_pr.get(pr["number"]) == 0)
         n_nits = nits_by_pr.get(pr["number"], 0)
         if n_nits:
             # Un point de review non leve est une cause A PART ENTIERE : la PR
@@ -3899,6 +3941,7 @@ def belt_sort_key(it: dict) -> tuple:
 def belt_filter(
     admitted: list[dict],
     args,
+    urns: set[str] | None = None,
 ) -> list[dict]:
     """Filtre le pool admissible pour le mode --belt.
 
@@ -3906,11 +3949,20 @@ def belt_filter(
     urnes), sauf l'admissibilite par DWELL/zone -- le tapis ne refuse
     JAMAIS, par contrat (cf issue #18832). Les bornes du tapis sont
     uniquement celles que le caller passe en CLI.
+
+    ``urns`` : urnes EFFECTIVES, deja passees par
+    ``apply_delivered_urn_gate`` (#15069). Le caller ``main`` les fournit
+    toujours ; relire ``args.urns`` brut rendrait l'urne ``delivered``
+    (presente par defaut) a une lane worker, qui ne doit jamais la recevoir.
+    ``None`` garde la lecture de ``args.urns`` pour les appels sans lane.
     """
     excluded_issues_set = {int(v) for v in _csv_values(args.exclude_issue)}
     required_labels_set = set(_csv_values(args.require_label))
     excluded_labels_set = set(_csv_values(args.exclude_label))
-    selected_urns_set = {v.casefold() for v in _csv_values([args.urns])}
+    if urns is None:
+        selected_urns_set = {v.casefold() for v in _csv_values([args.urns])}
+    else:
+        selected_urns_set = {v.casefold() for v in urns}
 
     def _keep(item: dict) -> bool:
         n = item["number"]
@@ -5056,26 +5108,35 @@ def main(argv: list[str] | None = None) -> int:
         # forme precedente ("REFUS DE TIRAGE", sortie 2, aucun candidat) rendait
         # un travail nomme sous l'apparence d'un vide, et se declenchait
         # d'autant plus souvent que la lane etait active.
-        if args.json:
-            # Rouge et WIP se composent : le grain reste le premier rouge
-            # quand les deux declenchent (la reparation est la sequence la
-            # plus urgente), sinon c'est la PR la plus ancienne de la file
-            # WIP -- dans les deux cas le consommateur machine lit un grain
-            # et un nom de travail, pas un motif de refus.
-            assignment = None
-            grain = None
-            if red_hit:
-                assignment = "reparer-son-rouge"
-                grain = (backlog.get("red") or [None])[0]
-            if wip_hit:
-                assignment = ((assignment + "+") if assignment else "") + "drainer-son-wip"
-                grain = grain or (backlog.get("wip_prs") or [None])[0]
+        # Mode --belt (#18832) : on n'imprime PAS le rappel rouge/wip en
+        # standalone -- il sera fusionne dans l'objet JSON du tapis (cle
+        # `repair`) pour rendre UN SEUL document. Cf #18866 point 2.
+        assignment = None
+        grain = None
+        if red_hit:
+            assignment = "reparer-son-rouge"
+            grain = (backlog.get("red") or [None])[0]
+        if wip_hit:
+            assignment = ((assignment + "+") if assignment else "") + "drainer-son-wip"
+            grain = grain or (backlog.get("wip_prs") or [None])[0]
+        if args.belt and args.json:
+            # Conserve pour fusion dans la sortie tapis plus bas.
+            repair_payload = {
+                "assignment": assignment or "drainer-son-wip",
+                "grain": grain,
+                "red_hours": args.red_hours,
+                **backlog,
+            }
+        elif args.json:
+            # Mode nominal hors --belt : impression standalone du garde
+            # rouge/WIP, puis fin de la commande.
             print(json.dumps({"lane": args.lane, "mode": "repair",
                               "assignment": assignment or "drainer-son-wip",
                               "grain": grain,
                               "red_hours": args.red_hours,
                               "lane_record": lane_record, **backlog},
                              ensure_ascii=False, indent=2))
+            return 0
         else:
             if red_hit:
                 print_red_assignment(args.lane, backlog, args.red_hours)
@@ -5086,6 +5147,8 @@ def main(argv: list[str] | None = None) -> int:
             # Apres l'assignation : l'en-tete "FILE DE REPARATION" doit rester
             # la premiere ligne lue (test pinne), l'ardoise vient en rappel.
             print_lane_record(lane_record)
+            if not args.belt:
+                return 0
         # #18832 spec : "les gardes restent en amont du tapis et produisent
         # LEUR sortie, jamais un silence". Mais le tapis ne refuse JAMAIS :
         # une lane avec un rouge doit quand meme recevoir la tete du tapis,
@@ -5093,8 +5156,6 @@ def main(argv: list[str] | None = None) -> int:
         # coordinateur, review 5391008313, point 4). On ne return PAS ici en
         # mode --belt : on imprime le rappel rouge, puis on enchaîne sur le
         # tapis qui produit ses grains.
-        if not args.belt:
-            return 0
         # Mode --belt : on continue pour tirer la tete du tapis en plus du
         # rappel rouge/wip deja imprime. La sortie reste sans aucun vide.
     if not args.json:
@@ -5152,16 +5213,23 @@ def main(argv: list[str] | None = None) -> int:
     # fetch repasse par le meme payload cache que fetch_series_visits : hit,
     # pas de requete gh supplementaire. Fenetre identique a celle de la
     # saturation, pour que les deux mesures se lisent ensemble.
+    # Mode --belt (#18832, #18866) : la fenetre par defaut (14 j) oublie les
+    # livraisons au-dela, et `belt_sort_key` reclasse alors l'issue a sa
+    # date de creation. On bascule sur `BELT_WINDOW_DAYS` (90 j), qui couvre
+    # un tour complet de la file au regime lent (10-20 grains/jour). La cle
+    # de cache integre `days` (cf fetch_merged identity), donc le payload
+    # 14 j et 90 j ne se chevauchent pas.
+    delivery_window_days = BELT_WINDOW_DAYS if args.belt else DEFAULT_WINDOW_DAYS
     umbrella_numbers = [it["number"] for it in pool if it["klass"] == "umbrella"]
     delivery_prs, delivery_fetch_err = fetch_merged(
-        DEFAULT_WINDOW_DAYS,
+        delivery_window_days,
         cache=payload_cache,
         cache_mode=effective_cache_mode,
         cache_status=cache_status,
         cache_ttl_seconds=SERIES_CACHE_TTL_SECONDS,
     )
     delivery_sig = measure_delivery(
-        delivery_prs, umbrella_numbers, now=NOW, days=DEFAULT_WINDOW_DAYS,
+        delivery_prs, umbrella_numbers, now=NOW, days=delivery_window_days,
         fetch_error=delivery_fetch_err)
     delivery_weights = {
         num: delivery_factor(item["state"], item["age_days"],
@@ -5248,7 +5316,7 @@ def main(argv: list[str] | None = None) -> int:
             metrics = belt_report_metrics(pool, closed_7d=None)
             print_belt_report(metrics)
             return 0
-        belt_pool = belt_filter(admitted, args)
+        belt_pool = belt_filter(admitted, args, urns=selected_urns)
         belt_pool.sort(key=belt_sort_key)
         # Verification des claims tenes par une autre lane : on regarde
         # plus large que `args.grains` pour tolerer un remplacement si
@@ -5341,12 +5409,21 @@ def main(argv: list[str] | None = None) -> int:
                 } for it in belt_picks},
                 "withheld": [{"number": it["number"], "title": it["title"],
                               "cause": c} for it, c in belt_withheld],
-                "last_delivery_window_days": DEFAULT_WINDOW_DAYS,
+                "last_delivery_window_days": delivery_window_days,
                 "substance_drought": {"triggered": False, "measured": False,
                                       "run": 0, "mode": "belt-bypassed"},
                 "lane_record": lane_record,
                 "cache": cache_status,
             }
+            # #18866 point 2 : la sortie --json rend UN document. Si le
+            # garde rouge/WIP s'est declenche, sa charge utile est fusionnee
+            # sous la cle `repair` (memes champs que le document standalone
+            # du mode non-belt). Sinon la cle est None, ce qui dit au
+            # consommateur que la lane n'a pas de reparation a faire.
+            if "repair_payload" in locals():
+                out_belt["repair"] = repair_payload
+            else:
+                out_belt["repair"] = None
             print(json.dumps(out_belt, ensure_ascii=False, indent=2))
         else:
             # Sortie texte : un tableau compact, aligne sur la volee

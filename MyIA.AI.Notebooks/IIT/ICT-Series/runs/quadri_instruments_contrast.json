@@ -1,0 +1,1015 @@
+{
+  "artifact": "quadri_instruments_contrast",
+  "contract": "Contraste a quatre instruments sur une capture dense des memes residus layer-16 (SAE ICT-21, J-Lens ICT-24, F-Lens, S-Lens). Les quatre instruments sont rapportes SEPAREMENT : aucun score composite. Une absence de mesure n'est jamais un accord nul.",
+  "generated": "2026-10-02",
+  "tool": {
+    "module": "ict.geometry_contrast",
+    "commit": "c89b374943",
+    "n_null": 200
+  },
+  "substrate": {
+    "dense_npz": "ict25_dense_layer16_trained.npz",
+    "sha256": "0d74c878c528032c1cbb6441b6c9969e2350ab52b1502a66ddf7d3838425ee31",
+    "bytes": 17085047,
+    "location": "G:\\Mon Drive\\MyIA\\IA\\ICT-traces\\ (hors depot, 16,3 Mo) -- capture GPU ai-01 2026-10-02T18:11-18:13Z apres le merge #18837 ; copie locale ai-01 D:\\Backups\\ict25\\",
+    "capture_pr": 18837
+  },
+  "regenerate": "deposer ict25_dense_layer16_trained.npz dans traces/ puis python -m ict.geometry_contrast > runs/quadri_instruments_contrast.json",
+  "measurement": {
+    "substrate": {
+      "model": "Qwen/Qwen3.5-9B-Base",
+      "layer": 16,
+      "seed": 42,
+      "prompts": 20
+    },
+    "sae_jlens": {
+      "counts": {
+        "colocalized": 0,
+        "dissociated": 0,
+        "chance": 4,
+        "undefined": 16
+      },
+      "per_prompt": [
+        {
+          "prompt": [
+            "code_python",
+            0
+          ],
+          "verdict": "chance",
+          "sae_ignitions": 2,
+          "jlens_ignitions": 1
+        },
+        {
+          "prompt": [
+            "code_python",
+            1
+          ],
+          "verdict": "undefined",
+          "sae_ignitions": 0,
+          "jlens_ignitions": 1
+        },
+        {
+          "prompt": [
+            "code_python",
+            2
+          ],
+          "verdict": "undefined",
+          "sae_ignitions": 8,
+          "jlens_ignitions": 0
+        },
+        {
+          "prompt": [
+            "code_python",
+            3
+          ],
+          "verdict": "undefined",
+          "sae_ignitions": 0,
+          "jlens_ignitions": 0
+        },
+        {
+          "prompt": [
+            "dialogue",
+            0
+          ],
+          "verdict": "undefined",
+          "sae_ignitions": 2,
+          "jlens_ignitions": 0
+        },
+        {
+          "prompt": [
+            "dialogue",
+            1
+          ],
+          "verdict": "undefined",
+          "sae_ignitions": 3,
+          "jlens_ignitions": 0
+        },
+        {
+          "prompt": [
+            "dialogue",
+            2
+          ],
+          "verdict": "undefined",
+          "sae_ignitions": 0,
+          "jlens_ignitions": 0
+        },
+        {
+          "prompt": [
+            "dialogue",
+            3
+          ],
+          "verdict": "undefined",
+          "sae_ignitions": 1,
+          "jlens_ignitions": 0
+        },
+        {
+          "prompt": [
+            "math",
+            0
+          ],
+          "verdict": "undefined",
+          "sae_ignitions": 0,
+          "jlens_ignitions": 0
+        },
+        {
+          "prompt": [
+            "math",
+            1
+          ],
+          "verdict": "undefined",
+          "sae_ignitions": 0,
+          "jlens_ignitions": 0
+        },
+        {
+          "prompt": [
+            "math",
+            2
+          ],
+          "verdict": "undefined",
+          "sae_ignitions": 0,
+          "jlens_ignitions": 0
+        },
+        {
+          "prompt": [
+            "math",
+            3
+          ],
+          "verdict": "undefined",
+          "sae_ignitions": 0,
+          "jlens_ignitions": 1
+        },
+        {
+          "prompt": [
+            "narrative_en",
+            0
+          ],
+          "verdict": "undefined",
+          "sae_ignitions": 1,
+          "jlens_ignitions": 0
+        },
+        {
+          "prompt": [
+            "narrative_en",
+            1
+          ],
+          "verdict": "undefined",
+          "sae_ignitions": 1,
+          "jlens_ignitions": 0
+        },
+        {
+          "prompt": [
+            "narrative_en",
+            2
+          ],
+          "verdict": "chance",
+          "sae_ignitions": 1,
+          "jlens_ignitions": 1
+        },
+        {
+          "prompt": [
+            "narrative_en",
+            3
+          ],
+          "verdict": "chance",
+          "sae_ignitions": 1,
+          "jlens_ignitions": 1
+        },
+        {
+          "prompt": [
+            "prose_fr",
+            0
+          ],
+          "verdict": "undefined",
+          "sae_ignitions": 0,
+          "jlens_ignitions": 0
+        },
+        {
+          "prompt": [
+            "prose_fr",
+            1
+          ],
+          "verdict": "chance",
+          "sae_ignitions": 2,
+          "jlens_ignitions": 1
+        },
+        {
+          "prompt": [
+            "prose_fr",
+            2
+          ],
+          "verdict": "undefined",
+          "sae_ignitions": 0,
+          "jlens_ignitions": 0
+        },
+        {
+          "prompt": [
+            "prose_fr",
+            3
+          ],
+          "verdict": "undefined",
+          "sae_ignitions": 1,
+          "jlens_ignitions": 0
+        }
+      ],
+      "interpretation": "Le verdict chance ne démontre pas une dissociation : les prompts où au moins une lentille n'allume rien restent indéfinis. SAE top-k exact, J-Lens top-k partiel (directions non observées)."
+    },
+    "f_lens": {
+      "status": "measured",
+      "top_k": 16,
+      "n_null": 200,
+      "per_prompt": [
+        {
+          "prompt": [
+            "code_python",
+            0
+          ],
+          "nc_at": {
+            "80": 61,
+            "90": 96,
+            "95": 125,
+            "99": 167
+          },
+          "evr_top": [
+            0.07538,
+            0.06285,
+            0.04043,
+            0.0343,
+            0.03271,
+            0.03073,
+            0.02835,
+            0.02596
+          ],
+          "n_tokens": 191,
+          "dim": 4096
+        },
+        {
+          "prompt": [
+            "code_python",
+            1
+          ],
+          "nc_at": {
+            "80": 42,
+            "90": 65,
+            "95": 85,
+            "99": 114
+          },
+          "evr_top": [
+            0.09397,
+            0.05523,
+            0.05039,
+            0.04267,
+            0.04107,
+            0.03761,
+            0.0356,
+            0.03256
+          ],
+          "n_tokens": 130,
+          "dim": 4096
+        },
+        {
+          "prompt": [
+            "code_python",
+            2
+          ],
+          "nc_at": {
+            "80": 61,
+            "90": 100,
+            "95": 135,
+            "99": 185
+          },
+          "evr_top": [
+            0.09497,
+            0.05515,
+            0.04803,
+            0.03763,
+            0.03683,
+            0.03378,
+            0.02548,
+            0.02464
+          ],
+          "n_tokens": 212,
+          "dim": 4096
+        },
+        {
+          "prompt": [
+            "code_python",
+            3
+          ],
+          "nc_at": {
+            "80": 43,
+            "90": 66,
+            "95": 84,
+            "99": 110
+          },
+          "evr_top": [
+            0.08096,
+            0.07151,
+            0.06365,
+            0.04705,
+            0.03901,
+            0.03575,
+            0.02945,
+            0.02728
+          ],
+          "n_tokens": 123,
+          "dim": 4096
+        },
+        {
+          "prompt": [
+            "dialogue",
+            0
+          ],
+          "nc_at": {
+            "80": 51,
+            "90": 80,
+            "95": 104,
+            "99": 135
+          },
+          "evr_top": [
+            0.08061,
+            0.05903,
+            0.04282,
+            0.04059,
+            0.03705,
+            0.03312,
+            0.03243,
+            0.02869
+          ],
+          "n_tokens": 151,
+          "dim": 4096
+        },
+        {
+          "prompt": [
+            "dialogue",
+            1
+          ],
+          "nc_at": {
+            "80": 56,
+            "90": 88,
+            "95": 115,
+            "99": 151
+          },
+          "evr_top": [
+            0.09833,
+            0.05703,
+            0.04166,
+            0.03722,
+            0.03467,
+            0.02995,
+            0.02626,
+            0.02607
+          ],
+          "n_tokens": 167,
+          "dim": 4096
+        },
+        {
+          "prompt": [
+            "dialogue",
+            2
+          ],
+          "nc_at": {
+            "80": 40,
+            "90": 61,
+            "95": 77,
+            "99": 97
+          },
+          "evr_top": [
+            0.10203,
+            0.0548,
+            0.0483,
+            0.04468,
+            0.03843,
+            0.03558,
+            0.03334,
+            0.03072
+          ],
+          "n_tokens": 107,
+          "dim": 4096
+        },
+        {
+          "prompt": [
+            "dialogue",
+            3
+          ],
+          "nc_at": {
+            "80": 53,
+            "90": 81,
+            "95": 104,
+            "99": 134
+          },
+          "evr_top": [
+            0.09547,
+            0.05702,
+            0.04562,
+            0.03809,
+            0.035,
+            0.03142,
+            0.02726,
+            0.0262
+          ],
+          "n_tokens": 147,
+          "dim": 4096
+        },
+        {
+          "prompt": [
+            "math",
+            0
+          ],
+          "nc_at": {
+            "80": 65,
+            "90": 104,
+            "95": 137,
+            "99": 182
+          },
+          "evr_top": [
+            0.08006,
+            0.06035,
+            0.04027,
+            0.03817,
+            0.0331,
+            0.03129,
+            0.02889,
+            0.02308
+          ],
+          "n_tokens": 204,
+          "dim": 4096
+        },
+        {
+          "prompt": [
+            "math",
+            1
+          ],
+          "nc_at": {
+            "80": 40,
+            "90": 63,
+            "95": 82,
+            "99": 108
+          },
+          "evr_top": [
+            0.10444,
+            0.07004,
+            0.0549,
+            0.0478,
+            0.03779,
+            0.0354,
+            0.03152,
+            0.02825
+          ],
+          "n_tokens": 122,
+          "dim": 4096
+        },
+        {
+          "prompt": [
+            "math",
+            2
+          ],
+          "nc_at": {
+            "80": 47,
+            "90": 73,
+            "95": 95,
+            "99": 124
+          },
+          "evr_top": [
+            0.09286,
+            0.05115,
+            0.04899,
+            0.04624,
+            0.03654,
+            0.03604,
+            0.03403,
+            0.03004
+          ],
+          "n_tokens": 137,
+          "dim": 4096
+        },
+        {
+          "prompt": [
+            "math",
+            3
+          ],
+          "nc_at": {
+            "80": 53,
+            "90": 82,
+            "95": 107,
+            "99": 139
+          },
+          "evr_top": [
+            0.07193,
+            0.06969,
+            0.04439,
+            0.03937,
+            0.03471,
+            0.03273,
+            0.02998,
+            0.0264
+          ],
+          "n_tokens": 153,
+          "dim": 4096
+        },
+        {
+          "prompt": [
+            "narrative_en",
+            0
+          ],
+          "nc_at": {
+            "80": 40,
+            "90": 59,
+            "95": 74,
+            "99": 91
+          },
+          "evr_top": [
+            0.07325,
+            0.06811,
+            0.05249,
+            0.04863,
+            0.04286,
+            0.03912,
+            0.03412,
+            0.03104
+          ],
+          "n_tokens": 98,
+          "dim": 4096
+        },
+        {
+          "prompt": [
+            "narrative_en",
+            1
+          ],
+          "nc_at": {
+            "80": 38,
+            "90": 55,
+            "95": 68,
+            "99": 84
+          },
+          "evr_top": [
+            0.07971,
+            0.05741,
+            0.05546,
+            0.04714,
+            0.04423,
+            0.03962,
+            0.03798,
+            0.03207
+          ],
+          "n_tokens": 91,
+          "dim": 4096
+        },
+        {
+          "prompt": [
+            "narrative_en",
+            2
+          ],
+          "nc_at": {
+            "80": 37,
+            "90": 54,
+            "95": 67,
+            "99": 82
+          },
+          "evr_top": [
+            0.08016,
+            0.07078,
+            0.06607,
+            0.04198,
+            0.04098,
+            0.03421,
+            0.03299,
+            0.03075
+          ],
+          "n_tokens": 89,
+          "dim": 4096
+        },
+        {
+          "prompt": [
+            "narrative_en",
+            3
+          ],
+          "nc_at": {
+            "80": 38,
+            "90": 55,
+            "95": 69,
+            "99": 86
+          },
+          "evr_top": [
+            0.08263,
+            0.06976,
+            0.05331,
+            0.05064,
+            0.04209,
+            0.03398,
+            0.03249,
+            0.03115
+          ],
+          "n_tokens": 93,
+          "dim": 4096
+        },
+        {
+          "prompt": [
+            "prose_fr",
+            0
+          ],
+          "nc_at": {
+            "80": 50,
+            "90": 76,
+            "95": 99,
+            "99": 130
+          },
+          "evr_top": [
+            0.09263,
+            0.05117,
+            0.04476,
+            0.04236,
+            0.03714,
+            0.03221,
+            0.02903,
+            0.02822
+          ],
+          "n_tokens": 145,
+          "dim": 4096
+        },
+        {
+          "prompt": [
+            "prose_fr",
+            1
+          ],
+          "nc_at": {
+            "80": 46,
+            "90": 69,
+            "95": 88,
+            "99": 113
+          },
+          "evr_top": [
+            0.0626,
+            0.0588,
+            0.05611,
+            0.04678,
+            0.03807,
+            0.03579,
+            0.03327,
+            0.02905
+          ],
+          "n_tokens": 124,
+          "dim": 4096
+        },
+        {
+          "prompt": [
+            "prose_fr",
+            2
+          ],
+          "nc_at": {
+            "80": 39,
+            "90": 59,
+            "95": 76,
+            "99": 98
+          },
+          "evr_top": [
+            0.08338,
+            0.07479,
+            0.0566,
+            0.0437,
+            0.0421,
+            0.03941,
+            0.03452,
+            0.03115
+          ],
+          "n_tokens": 108,
+          "dim": 4096
+        },
+        {
+          "prompt": [
+            "prose_fr",
+            3
+          ],
+          "nc_at": {
+            "80": 39,
+            "90": 58,
+            "95": 74,
+            "99": 97
+          },
+          "evr_top": [
+            0.08137,
+            0.06453,
+            0.05538,
+            0.04604,
+            0.04268,
+            0.04095,
+            0.03377,
+            0.03076
+          ],
+          "n_tokens": 107,
+          "dim": 4096
+        }
+      ],
+      "alignment": {
+        "same_set": {
+          "frobenius_alignment": {
+            "n_pairs": 30,
+            "mean": 0.478207979432181,
+            "min": 0.3791050684861308,
+            "max": 0.5662691725761698
+          },
+          "max_principal_angle_deg": {
+            "n_pairs": 30,
+            "mean": 89.09864878598842,
+            "min": 86.71604206432191,
+            "max": 89.88963461575918
+          }
+        },
+        "cross_set": {
+          "frobenius_alignment": {
+            "n_pairs": 160,
+            "mean": 0.3692912556472773,
+            "min": 0.2884284016640564,
+            "max": 0.4750054307890122
+          },
+          "max_principal_angle_deg": {
+            "n_pairs": 160,
+            "mean": 89.5919921245808,
+            "min": 88.17386978596883,
+            "max": 89.99837580609376
+          }
+        },
+        "null_paired": {
+          "frobenius_alignment": {
+            "mean": 0.06256290783866217,
+            "q95": 0.06722051288530773
+          },
+          "max_principal_angle_deg": {
+            "mean": 89.83880185660672,
+            "q05": 89.61849951888101
+          }
+        },
+        "verdicts": {
+          "same_set_beyond_null_q95": true,
+          "cross_set_beyond_null_q95": true
+        }
+      },
+      "interpretation": "NC@p : nombre de composantes pour p % de variance cumulee. frobenius_alignment = ||B1t B2||_F / sqrt(k) : 1.0 = memes sous-espaces, ~sqrt(k/dim) pour deux sous-espaces aleatoires ; la nulle appariee fixe le seuil q95. Un verdict faux n'est pas une absence de structure — c'est une structure indistinguable du hasard a ce seuil, rapportee comme telle."
+    },
+    "s_lens": {
+      "status": "measured",
+      "alpha": 0.01,
+      "train_frac": 0.7,
+      "pooled": {
+        "exact_hit": 0.043209876543209874,
+        "rmse": 12.066892721924129,
+        "r2": 0.9334313126547299,
+        "n_test": 810
+      },
+      "shuffle_control": {
+        "exact_hit": 0.011111111111111112,
+        "rmse": 81.53679286061966,
+        "r2": -2.039389367723304,
+        "n_test": 810
+      },
+      "per_prompt": [
+        {
+          "prompt": [
+            "code_python",
+            0
+          ],
+          "exact_hit": 0.0,
+          "rmse": 81.71506808033575,
+          "r2": -23.670021002612952,
+          "n_test": 57
+        },
+        {
+          "prompt": [
+            "code_python",
+            1
+          ],
+          "exact_hit": 0.0,
+          "rmse": 38.07494792692009,
+          "r2": -10.445013102402706,
+          "n_test": 39
+        },
+        {
+          "prompt": [
+            "code_python",
+            2
+          ],
+          "exact_hit": 0.0,
+          "rmse": 90.36768289801935,
+          "r2": -22.930602527053424,
+          "n_test": 64
+        },
+        {
+          "prompt": [
+            "code_python",
+            3
+          ],
+          "exact_hit": 0.0,
+          "rmse": 52.74411704434282,
+          "r2": -23.40299897181873,
+          "n_test": 37
+        },
+        {
+          "prompt": [
+            "dialogue",
+            0
+          ],
+          "exact_hit": 0.0,
+          "rmse": 57.39497822364279,
+          "r2": -18.530732363393852,
+          "n_test": 45
+        },
+        {
+          "prompt": [
+            "dialogue",
+            1
+          ],
+          "exact_hit": 0.0,
+          "rmse": 60.963912044629375,
+          "r2": -16.846811869317197,
+          "n_test": 50
+        },
+        {
+          "prompt": [
+            "dialogue",
+            2
+          ],
+          "exact_hit": 0.03125,
+          "rmse": 41.262992372530384,
+          "r2": -18.972252663173027,
+          "n_test": 32
+        },
+        {
+          "prompt": [
+            "dialogue",
+            3
+          ],
+          "exact_hit": 0.0,
+          "rmse": 52.40895504923934,
+          "r2": -16.03378957738412,
+          "n_test": 44
+        },
+        {
+          "prompt": [
+            "math",
+            0
+          ],
+          "exact_hit": 0.0,
+          "rmse": 75.48990795751999,
+          "r2": -17.38298775301561,
+          "n_test": 61
+        },
+        {
+          "prompt": [
+            "math",
+            1
+          ],
+          "exact_hit": 0.0,
+          "rmse": 35.07739078894335,
+          "r2": -9.793187232984625,
+          "n_test": 37
+        },
+        {
+          "prompt": [
+            "math",
+            2
+          ],
+          "exact_hit": 0.0,
+          "rmse": 55.66056314925603,
+          "r2": -21.129273500659416,
+          "n_test": 41
+        },
+        {
+          "prompt": [
+            "math",
+            3
+          ],
+          "exact_hit": 0.0,
+          "rmse": 59.095091467557964,
+          "r2": -18.814069988987473,
+          "n_test": 46
+        },
+        {
+          "prompt": [
+            "narrative_en",
+            0
+          ],
+          "exact_hit": 0.0,
+          "rmse": 38.58597395400698,
+          "r2": -20.2696769425615,
+          "n_test": 29
+        },
+        {
+          "prompt": [
+            "narrative_en",
+            1
+          ],
+          "exact_hit": 0.0,
+          "rmse": 35.90241177677621,
+          "r2": -20.246975352569223,
+          "n_test": 27
+        },
+        {
+          "prompt": [
+            "narrative_en",
+            2
+          ],
+          "exact_hit": 0.0,
+          "rmse": 32.8143000814771,
+          "r2": -16.74909268962464,
+          "n_test": 27
+        },
+        {
+          "prompt": [
+            "narrative_en",
+            3
+          ],
+          "exact_hit": 0.0,
+          "rmse": 41.83197844759158,
+          "r2": -25.818611813636274,
+          "n_test": 28
+        },
+        {
+          "prompt": [
+            "prose_fr",
+            0
+          ],
+          "exact_hit": 0.0,
+          "rmse": 61.10987555440301,
+          "r2": -23.249460326458586,
+          "n_test": 43
+        },
+        {
+          "prompt": [
+            "prose_fr",
+            1
+          ],
+          "exact_hit": 0.0,
+          "rmse": 51.339477966920846,
+          "r2": -22.120543841367994,
+          "n_test": 37
+        },
+        {
+          "prompt": [
+            "prose_fr",
+            2
+          ],
+          "exact_hit": 0.0,
+          "rmse": 41.76954096608113,
+          "r2": -19.4656252494678,
+          "n_test": 32
+        },
+        {
+          "prompt": [
+            "prose_fr",
+            3
+          ],
+          "exact_hit": 0.0,
+          "rmse": 42.66400381622047,
+          "r2": -20.351521661354546,
+          "n_test": 32
+        }
+      ],
+      "interpretation": "R2/rmse de la lecture ridge de la position absolue. pooled : split aleatoire, positions repetees cross-contexte ; par prompt : split contiguous, positions held-out non vues (extrapolation). shuffle_control : etiquettes du train permutees, held-out intact — plancher empirique du probe. La self-location de reference (variable->valeur) exige l'oracle des bancs synthetiques : elle n'est pas mesuree ici."
+    },
+    "per_set_summary": [
+      {
+        "set": "code_python",
+        "sae_jlens_verdicts": {
+          "chance": 1,
+          "undefined": 3
+        },
+        "flens_nc90_mean": 81.75,
+        "slens_r2_mean": -20.112158900971952
+      },
+      {
+        "set": "dialogue",
+        "sae_jlens_verdicts": {
+          "undefined": 4
+        },
+        "flens_nc90_mean": 77.5,
+        "slens_r2_mean": -17.59589661831705
+      },
+      {
+        "set": "math",
+        "sae_jlens_verdicts": {
+          "undefined": 4
+        },
+        "flens_nc90_mean": 80.5,
+        "slens_r2_mean": -16.77987961891178
+      },
+      {
+        "set": "narrative_en",
+        "sae_jlens_verdicts": {
+          "undefined": 2,
+          "chance": 2
+        },
+        "flens_nc90_mean": 55.75,
+        "slens_r2_mean": -20.77108919959791
+      },
+      {
+        "set": "prose_fr",
+        "sae_jlens_verdicts": {
+          "undefined": 3,
+          "chance": 1
+        },
+        "flens_nc90_mean": 65.5,
+        "slens_r2_mean": -21.29678776966223
+      }
+    ],
+    "cross_instrument_reading": "Quatre instruments, quatre lectures distinctes du même substrat (co-localisation temporelle SAE/J-Lens, géométrie factorisée F-Lens, décodabilité positionnelle S-Lens) : les lignes de per_set_summary se lisent ensemble, jamais sommées. Une ligne où un instrument voit de la structure et l'autre pas est le signal, pas un bruit à lisser."
+  }
+}

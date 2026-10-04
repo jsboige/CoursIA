@@ -36,18 +36,24 @@ from scripts.livecoding_video_pipeline import (
     NARRATION_PLANS,
     NARRATION_SYSTEM_PROMPT,
     NARRATION_BANK,
+    TTS_ENGINES,
     NarrationSegment,
     STYLES,
     StrudelStyle,
+    _load_env_files,
     build_repl_url,
     compose_narration,
     compose_strudel,
     cycles_for_duration,
+    mix_final_ffmpeg,
     mux_ffmpeg,
     narration_to_json,
     parse_strudel_highlights,
+    probe_duration_ffprobe,
     run_pipeline,
     style_cps,
+    synthesize_narration_tts,
+    tts_speed_for_intensity,
     validate_narration,
 )
 from scripts.livecoding_video_pipeline import main as pipeline_main
@@ -761,3 +767,310 @@ class TestCLIInvocation:
         assert rc == 2
         err = capsys.readouterr().err
         assert "OPENAI_API_KEY" in err
+
+
+# --- Etapes 3 et 6 : TTS expressif + mixage final (#15604) -------------------
+
+
+def _fake_wav(size: int = 2048) -> bytes:
+    """WAV synthetique minimal (en-tete RIFF valide pour le sniff)."""
+    return (
+        b"RIFF" + (size - 8).to_bytes(4, "little") + b"WAVE"
+        + b"\x00" * (size - 12)
+    )
+
+
+class TestTtsSpeedForIntensity:
+    """3 paliers distincts (critere 3 de l'acceptance : au moins 3
+    variations de pace — parametre speed mesure EFFECTIF sur kokoro,
+    cf docstring de la fonction)."""
+
+    def test_trois_paliers_distincts(self):
+        speeds = {tts_speed_for_intensity(i) for i in (0.05, 0.5, 0.95)}
+        assert len(speeds) == 3
+
+    def test_valeurs_mesurees(self):
+        assert tts_speed_for_intensity(0.1) == 0.85   # pose
+        assert tts_speed_for_intensity(0.5) == 1.0    # neutre
+        assert tts_speed_for_intensity(0.9) == 1.15   # elance
+
+    def test_bornes_inclusives(self):
+        # 0.34 pose -> neutre, 0.67 neutre -> elance (strict <)
+        assert tts_speed_for_intensity(0.339) == 0.85
+        assert tts_speed_for_intensity(0.34) == 1.0
+        assert tts_speed_for_intensity(0.669) == 1.0
+        assert tts_speed_for_intensity(0.67) == 1.15
+
+
+class TestLoadEnvFiles:
+    def test_charge_sans_ecraser(self, tmp_path, monkeypatch):
+        (tmp_path / "docker-configurations/services/tts-multi").mkdir(parents=True)
+        env = tmp_path / "docker-configurations/services/tts-multi/.env"
+        env.write_text(
+            "# commentaire\nTTS_GATEWAY_API_KEY=testkey123\nOTHER=x\n",
+            encoding="utf-8")
+        monkeypatch.setenv("OTHER", "dejavalue")
+        _load_env_files(tmp_path)
+        import os
+        assert os.environ["TTS_GATEWAY_API_KEY"] == "testkey123"
+        assert os.environ["OTHER"] == "dejavalue"  # jamais ecrase
+        monkeypatch.delenv("TTS_GATEWAY_API_KEY")
+
+    def test_fichier_absent_silencieux(self, tmp_path):
+        # un repo_root sans .env ne leve pas
+        _load_env_files(tmp_path / "inexistant")
+
+
+class TestSynthesizeNarrationTts:
+    """Etape 3 : payload OpenAI-compatible, sniff RIFF, erreurs
+    explicites avec verdict RECOVERABLE-LOCAL (regle F)."""
+
+    def _segments(self):
+        return [
+            NarrationSegment(
+                start_s=0.0, end_s=8.0,
+                text="Premiere voix posee sur l'accord.", intensity=0.1),
+            NarrationSegment(
+                start_s=8.0, end_s=16.0,
+                text="Deuxieme voix elancee.", intensity=0.9),
+        ]
+
+    def _mock_urlopen(self, monkeypatch, responses):
+        """Mocke urllib.request.urlopen ; responses = liste de bytes
+        (un par appel) ou d'exceptions a lever."""
+        import urllib.request
+        state = {"calls": []}
+
+        class _Resp:
+            def __init__(self, data):
+                self._data = data
+
+            def read(self):
+                return self._data
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+        def _fake_urlopen(request, timeout=None):
+            state["calls"].append(request)
+            item = responses[len(state["calls"]) - 1]
+            if isinstance(item, Exception):
+                raise item
+            return _Resp(item)
+
+        monkeypatch.setattr(urllib.request, "urlopen", _fake_urlopen)
+        return state
+
+    def test_moteur_inconnu_erreur_explicite(self, tmp_path):
+        with pytest.raises(RuntimeError, match="moteur TTS inconnu"):
+            synthesize_narration_tts(
+                self._segments(), engine="inexistant", out_dir=tmp_path)
+
+    def test_payload_wav_et_speeds(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("TTS_GATEWAY_API_KEY", "testkey123")
+        state = self._mock_urlopen(
+            monkeypatch, [_fake_wav(), _fake_wav(4096)])
+        tracks = synthesize_narration_tts(
+            self._segments(), engine="kokoro", out_dir=tmp_path,
+            gateway="http://gateway.test")
+
+        assert len(tracks) == len(state["calls"]) == 2
+        # payload OpenAI-compatible : model/input/voice/speed
+        payload = json.loads(state["calls"][0].data.decode("utf-8"))
+        assert payload["model"] == "kokoro"
+        assert payload["input"] == "Premiere voix posee sur l'accord."
+        assert payload["voice"] == "af_sky"
+        assert payload["speed"] == 0.85  # intensity 0.1 -> palier pose
+        # Bearer present quand la cle est resolue
+        assert state["calls"][0].get_header(
+            "Authorization") == "Bearer testkey123"
+        # un WAV sniffe RIFF par segment, speeds differents (critere 3)
+        assert (tmp_path / "segment_000.wav").read_bytes()[:4] == b"RIFF"
+        assert (tmp_path / "segment_001.wav").is_file()
+        assert tracks[0]["speed"] == 0.85
+        assert tracks[1]["speed"] == 1.15
+        assert tracks[1]["bytes"] == 4096
+
+    def test_reponse_non_wav_erreur(self, tmp_path, monkeypatch):
+        monkeypatch.delenv("TTS_GATEWAY_API_KEY", raising=False)
+        self._mock_urlopen(monkeypatch, [b"MP3DATA-not-a-wav"])
+        with pytest.raises(RuntimeError, match="pas un RIFF/WAV"):
+            synthesize_narration_tts(
+                self._segments(), engine="kokoro", out_dir=tmp_path,
+                gateway="http://gateway.test")
+
+    def test_http_503_verdict_recoverable_local(self, tmp_path, monkeypatch):
+        import urllib.error
+        monkeypatch.delenv("TTS_GATEWAY_API_KEY", raising=False)
+        err = urllib.error.HTTPError(
+            "http://g/tada", 503, "Service unavailable", {}, None)
+        self._mock_urlopen(monkeypatch, [err])
+        with pytest.raises(RuntimeError, match="RECOVERABLE-LOCAL"):
+            synthesize_narration_tts(
+                self._segments(), engine="tada", out_dir=tmp_path,
+                gateway="http://gateway.test")
+
+
+class TestMixFinalFfmpeg:
+    """Etape 6 : filtergraph adelay/amix/loudnorm/afade + fade video
+    coordonne. La commande est construite sans etre executee (test
+    unitaire CI sans ffmpeg)."""
+
+    TRACKS = [
+        {"index": 0, "start_s": 2.5, "end_s": 10.0, "intensity": 0.5,
+         "speed": 1.0, "wav": "out/tts/segment_000.wav", "bytes": 2048},
+        {"index": 1, "start_s": 41.0, "end_s": 48.0, "intensity": 0.9,
+         "speed": 1.15, "wav": "out/tts/segment_001.wav", "bytes": 2048},
+    ]
+
+    def test_filtergraph_complet(self, monkeypatch):
+        import scripts.livecoding_video_pipeline as pl
+        monkeypatch.setattr(pl, "probe_duration_ffprobe", lambda m: 60.0)
+        cmd = mix_final_ffmpeg(
+            Path("video.webm"), Path("browser.wav"), self.TRACKS,
+            Path("final.mp4"))
+        fc = cmd[cmd.index("-filter_complex") + 1]
+        # adelay au start_s de chaque segment (ms, tous canaux)
+        assert "adelay=2500:all=1[t0]" in fc
+        assert "adelay=41000:all=1[t1]" in fc
+        # amix sans normalisation + loudnorm -14 LUFS + plafond TP -1.5
+        assert "amix=inputs=3:duration=longest:normalize=0" in fc
+        assert "loudnorm=I=-14.0:TP=-1.5:LRA=11" in fc
+        # fade-out coordonne video ET audio sur les 3 dernieres secondes
+        assert "[0:v]fade=t=out:st=57.000:d=3.0[vout]" in fc
+        assert "afade=t=out:st=57.000:d=3.0[aout]" in fc
+        # duree caguee sur la video + maps des flux filtres
+        assert cmd[cmd.index("-t") + 1] == "60.000"
+        assert "[vout]" in cmd and "[aout]" in cmd
+        assert str(Path("final.mp4")) == cmd[-1]
+
+    def test_lufs_parametrable_et_zero_piste(self, monkeypatch):
+        import scripts.livecoding_video_pipeline as pl
+        monkeypatch.setattr(pl, "probe_duration_ffprobe", lambda m: 90.0)
+        cmd = mix_final_ffmpeg(
+            Path("v.webm"), Path("b.wav"), [], Path("o.mp4"),
+            loudnorm_lufs=-16.0)
+        fc = cmd[cmd.index("-filter_complex") + 1]
+        assert "loudnorm=I=-16.0:TP=-1.5" in fc
+        assert "amix=inputs=1:duration=longest:normalize=0" in fc
+        assert "st=87.000" in fc  # fade sur les 3 dernieres secondes
+
+    def test_video_courte_fade_depuis_zero(self, monkeypatch):
+        import scripts.livecoding_video_pipeline as pl
+        monkeypatch.setattr(pl, "probe_duration_ffprobe", lambda m: 2.0)
+        cmd = mix_final_ffmpeg(
+            Path("v.webm"), Path("b.wav"), self.TRACKS[:1], Path("o.mp4"))
+        fc = cmd[cmd.index("-filter_complex") + 1]
+        assert "st=0.000" in fc  # max(0, 2 - 3) borne a zero
+
+
+class TestRunPipelineEtape3:
+    """Cablage de l'etape 3 dans l'orchestrateur (synthese mockee :
+    le test CI ne fait pas d'appel reseau)."""
+
+    @staticmethod
+    def _fake_tracks(segments, **kwargs):
+        out_dir = Path(kwargs.get("out_dir", "out/tts"))
+        return [
+            {"index": i, "start_s": s.start_s, "end_s": s.end_s,
+             "intensity": s.intensity, "speed": 1.0,
+             "wav": str(out_dir / f"segment_{i:03d}.wav"), "bytes": 2048}
+            for i, s in enumerate(segments)
+        ]
+
+    def test_sans_moteur_tts_deferred(self):
+        result = run_pipeline(
+            style_name="trance", duration_seconds=120,
+            output_path="out/x.mp4")
+        assert result["tts"] == "deferred"
+        assert "etape 3 (TTS) deferred" in result["verdict"]
+        assert "etape 6 (mix final) deferred" in result["verdict"]
+
+    def test_avec_moteur_synthese_cablee(self, monkeypatch, tmp_path):
+        import scripts.livecoding_video_pipeline as pl
+        monkeypatch.setattr(
+            pl, "synthesize_narration_tts", self._fake_tracks)
+        result = run_pipeline(
+            style_name="trance", duration_seconds=120,
+            output_path=str(tmp_path / "x.mp4"), tts_engine="kokoro")
+        assert result["tts"].startswith("LIVREE : ")
+        assert "moteur kokoro" in result["tts"]
+        assert "etape 3 (TTS kokoro" in result["verdict"]
+        # sans capture, l'etape 6 reste deferred (pas de video a mixer)
+        assert "etape 6 (mix final) deferred" in result["verdict"]
+
+
+class TestCliEtapes36:
+    def test_help_documente_le_tts(self):
+        result = subprocess.run(
+            [sys.executable, "scripts/livecoding_video_pipeline.py", "--help"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+        )
+        assert "--tts-engine" in result.stdout
+        assert "--tts-gateway" in result.stdout
+        assert "--tts-out-dir" in result.stdout
+
+class TestProbeDurationFfprobe:
+    """Probe de duree : chaine format -> stream -> erreur explicite
+    (les webm MediaRecorder n'exposent AUCUNE duree — mesure
+    2026-10-03 : N/A sur les deux entrees pour capture.webm)."""
+
+    def test_parse_la_duree_conteneur(self, monkeypatch):
+        import subprocess as subprocess_mod
+
+        def _fake_run(cmd, **kwargs):
+            return SimpleNamespace(returncode=0, stdout="62.500\n", stderr="")
+
+        monkeypatch.setattr(subprocess_mod, "run", _fake_run)
+        assert probe_duration_ffprobe(Path("x.mp4")) == 62.5
+
+    def test_fallback_stream_quand_format_na(self, monkeypatch):
+        import subprocess as subprocess_mod
+        calls = []
+
+        def _fake_run(cmd, **kwargs):
+            calls.append(cmd)
+            # format=duration -> N/A ; stream=duration -> 58.2
+            stdout = "N/A\n" if "format=duration" in cmd else "58.200000\n"
+            return SimpleNamespace(returncode=0, stdout=stdout, stderr="")
+
+        monkeypatch.setattr(subprocess_mod, "run", _fake_run)
+        assert probe_duration_ffprobe(Path("x.webm")) == 58.2
+        assert len(calls) == 2
+
+    def test_aucune_duree_erreur_explicite(self, monkeypatch):
+        import subprocess as subprocess_mod
+
+        def _fake_run(cmd, **kwargs):
+            return SimpleNamespace(returncode=0, stdout="N/A\n", stderr="")
+
+        monkeypatch.setattr(subprocess_mod, "run", _fake_run)
+        with pytest.raises(RuntimeError, match="aucune duree"):
+            probe_duration_ffprobe(Path("capture.webm"))
+
+
+class TestMixDurationOverride:
+    """duration_override : le caller retombe sur la duree du WAV
+    navigateur quand le webm n'expose rien — aucun appel ffprobe."""
+
+    def test_override_court_circuite_le_probe(self, monkeypatch):
+        import scripts.livecoding_video_pipeline as pl
+
+        def _probe_fail(media):
+            raise AssertionError("probe ne doit pas etre appele")
+
+        monkeypatch.setattr(pl, "probe_duration_ffprobe", _probe_fail)
+        cmd = mix_final_ffmpeg(
+            Path("video.webm"), Path("browser.wav"),
+            [{"index": 0, "start_s": 5.0, "end_s": 9.0, "intensity": 0.5,
+              "speed": 1.0, "wav": "s.wav", "bytes": 1}],
+            Path("o.mp4"), duration_override=90.85,
+        )
+        fc = cmd[cmd.index("-filter_complex") + 1]
+        assert "st=87.850" in fc  # 90.85 - 3.0
+        assert cmd[cmd.index("-t") + 1] == "90.850"

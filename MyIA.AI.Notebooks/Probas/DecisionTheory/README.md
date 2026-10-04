@@ -4,12 +4,13 @@
 
 Un posterior n'est pas une fin en soi : c'est l'**entrée** d'une décision. Savoir que la tumeur est maligne avec 70 % de probabilité ne dit pas s'il faut opérer ; connaître la distribution de rendement d'un actif ne dit pas combien y investir. Cet arc prolonge la modélisation probabiliste de la série [Probas](../README.md) jusqu'au **choix d'action sous incertitude** : comment transformer une croyance quantifiée en la meilleure décision possible, et comment **prouver** que cette décision est optimale.
 
-L'arc rassemble des notebooks répartis en trois traitements complémentaires du même socle théorique, plus un lake Lean 4 qui en certifie les théorèmes phares :
+L'arc rassemble des notebooks répartis en trois traitements complémentaires du même socle théorique — plus leur extension actuarielle descendue en sous-série dédiée — et un lake Lean 4 qui en certifie les théorèmes phares :
 
 | Composant | Notebooks | Stack | Ce qu'il apporte |
 |-----------|-----------|-------|------------------|
 | [`DecInfer/`](DecInfer/README.md) | Arc C# + companions **Lean 4** | Infer.NET (.NET 9) + kernel Lean | L'arc de référence : des axiomes vNM aux MDP et bandits, avec ses companions à **preuve formelle native** |
-| [`DecPyMC/`](DecPyMC/README.md) | 12 (Python) | PyMC (NUTS/MCMC) | Le miroir Python : mêmes concepts, échantillonnage stochastique, diagnostics ArviZ, puis la **jambe actuarielle** (8-12) |
+| [`DecPyMC/`](DecPyMC/README.md) | 8 = socle 1-7 + capstone 08 (Python) | PyMC (NUTS/MCMC) | Le miroir Python : mêmes concepts, échantillonnage stochastique, diagnostics ArviZ ; le capstone (08) ouvre la sous-série Actuariat |
+| [`Actuariat/`](Actuariat/README.md) | 5 (Python) | PyMC (NUTS/MCMC) | La **sous-série actuarielle** T1-T5 : prime pure, fréquence × sévérité, crédibilité, ruine, valeur de l'information en souscription |
 | [`Causal-Bridges/`](Causal-Bridges/README.md) | 4 (Python) | `dowhy` (PyWhy) | Le **capstone causal** : l'échelle de Pearl et le do-calculus, plus les méthodes quasi-expérimentales (DiD, RDD, contrôle synthétique) |
 | [`decision_theory_lean`](decision_theory_lean/) | *(lake, hors compte)* | Lean 4 + Mathlib | La **couche de certification** : utilité espérée vNM, cohérence de de Finetti, escompte de Gittins, démontrés `0 sorry` |
 
@@ -69,7 +70,7 @@ Onze notebooks, dont **huit en C#/.NET Interactive** (message passing EP/VMP) et
 
 ### `DecPyMC/` — le miroir Python (MCMC)
 
-Douze notebooks Python (`DecPyMC-1..12`) qui rejouent les mêmes concepts par échantillonnage NUTS et diagnostics ArviZ. Le miroir n'est pas une simple traduction : il expose des variantes propres au paradigme stochastique (diagnostic hiérarchique multi-sites, profils de risque par inférence, état latent à test imparfait). Les notebooks **8-12** forment la **jambe actuarielle** de l'arc — le passage de la décision bayésienne au métier de l'assurance : crédibilité de Bühlmann–Straub (DecPyMC-8), du risque à la prime pure et commerciale (DecPyMC-9), ruine et processus de Cramér–Lundberg (DecPyMC-10), valeur de l'information en souscription (DecPyMC-11), fréquence × sévérité hiérarchique (DecPyMC-12). **Détail** : [`DecPyMC/README.md`](DecPyMC/README.md).
+L'extension actuarielle — le passage de la décision bayésienne au métier de l'assurance : prime pure et chargement (T1), fréquence × sévérité hiérarchique (T2), crédibilité de Bühlmann–Straub (T3), ruine et processus de Cramér–Lundberg (T4), valeur de l'information en souscription (T5) — descend en sous-série dédiée : [**Actuariat/**](Actuariat/README.md) (ex-DecPyMC-8 à 12, régradués T1-T5).
 
 ### `Causal-Bridges/` — le capstone causal (dowhy)
 
