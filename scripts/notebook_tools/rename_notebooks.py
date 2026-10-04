@@ -38,6 +38,9 @@ ces invariants, pas des details :
   I4  historique, catalogue, fixtures declarees : exclus par listes explicites.
   I5  dry-run par defaut ; `--apply` explicite.
   I6  deux commits : 1 = `git mv` seuls, 2 = referents (une PR = un sujet).
+      Un renommage de casse seule passe par un nom-relais, et le commit 1 ne
+      nomme pas ses chemins (git refuse un pathspec des que l'index porte une
+      variante de casse -- #19159).
 
 HOOKS PRE-COMMIT : les commits de l'outil passent par les hooks du depot. Un
 hook qui CORRIGE un fichier indexe (fix-hr-separator sur un carnet renomme) ou
@@ -629,6 +632,92 @@ def conflicting_targets(pairs: list[tuple[str, str]], repo: Path) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# Mouvement des fichiers et garde de commit (#19159)
+# ---------------------------------------------------------------------------
+# Un renommage de CASSE SEULE (-Csharp -> -CSharp) est un cas a part sur un FS
+# insensible a la casse : il faut deux temps pour que l'INDEX enregistre la
+# casse cible, et le commit ne peut pas nommer ses chemins. Mesure en issue
+# (#19159) : quatre sequences testees, un `git mv` direct laisse l'index sur
+# l'ancienne graphie, et `git commit -- <chemins>` est refuse par git des que
+# l'index porte une variante de casse du chemin nomme (`will not add file
+# alias`) -- meme quand l'index porte deja la bonne casse.
+
+class MoveError(RuntimeError):
+    """Un `git mv` a echoue. Le message porte la sortie git brute."""
+
+
+def _git_run(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(["git", *args], cwd=repo, capture_output=True, text=True,
+                          encoding="utf-8", errors="replace")
+
+
+def _case_tmp_rel(repo: Path, new: str) -> str:
+    """Nom-relais, dans le MEME dossier, pour un renommage de casse seule."""
+    dossier, base = os.path.split(new)
+    index = 0
+    while True:
+        nom = f".rename-case-{index}-{base}"
+        rel = f"{dossier}/{nom}" if dossier else nom
+        if not (repo / rel).exists():
+            return rel
+        index += 1
+
+
+def move_file(repo: Path, old: str, new: str) -> list[str]:
+    """`git mv` d'un fichier ; en DEUX temps quand seule la casse change.
+
+    Le detour par un nom-relais est ce qui fait passer l'index sur la casse
+    cible : `git mv N-Csharp.ipynb N-CSharp.ipynb` laisse l'index sur
+    `N-Csharp.ipynb` et le commit suivant echoue (#19159). Rend les deux
+    graphies, pour la verification d'ensemble de `commit_moves`.
+    """
+    etapes = [(old, new)]
+    if old != new and old.lower() == new.lower():
+        tmp = _case_tmp_rel(repo, new)
+        etapes = [(old, tmp), (tmp, new)]
+    for src, dst in etapes:
+        r = _git_run(repo, "mv", src, dst)
+        if r.returncode != 0:
+            raise MoveError(f"git mv {src} -> {dst} : {(r.stderr or r.stdout).strip()[:200]}")
+    return [old, new]
+
+
+def staged_paths(repo: Path) -> list[str]:
+    """Tous les chemins touches par l'index -- les DEUX cotes d'un renommage.
+
+    `--name-only` ne rend que le nouveau nom d'un renommage ; `--name-status`
+    rend `R100\t<ancien>\t<nouveau>`, ce dont la garde a besoin.
+    """
+    r = _git_run(repo, "diff", "--cached", "--name-status")
+    if r.returncode != 0:
+        raise MoveError(f"git diff --cached : {(r.stderr or r.stdout).strip()[:200]}")
+    out: list[str] = []
+    for ligne in r.stdout.splitlines():
+        out += [p for p in ligne.split("\t")[1:] if p]
+    return out
+
+
+def commit_moves(repo: Path, expected: set[str], msg: str) -> int:
+    """Commit 1 : les mouvements SEULS, sans pathspec.
+
+    Le pathspec portait la garantie « ne committer que ses propres mouvements »
+    mais git le refuse sur un renommage de casse seule (#19159). La garantie
+    est donc rendue autrement : l'ensemble stage est verifie AVANT le commit,
+    et un chemin etranger fait refuser la passe sans rien committer.
+    """
+    etrangers = sorted({p for p in staged_paths(repo) if p not in expected})
+    if etrangers:
+        print("INDEX ETRANGER -- refus de committer. Chemins hors mouvements :")
+        for p in etrangers:
+            print("   ", p)
+        return 1
+    r = _git_run(repo, "commit", "-m", msg)
+    if r.returncode != 0:
+        print(f"[commit 1] echec : {(r.stdout + r.stderr).strip()[:300]}")
+    return r.returncode
+
+
+# ---------------------------------------------------------------------------
 # --mapping : chargement (TSV ou commentaire d'issue)
 # ---------------------------------------------------------------------------
 
@@ -914,17 +1003,24 @@ def main(argv: list[str] | None = None) -> int:
         print(dirty[:600])
         return 1
 
-    # commit 1 : git mv seuls (R100 visibles, aucun contenu modifie) -- chemins
-    # NOMMES, jamais un commit qui attrape l'index entier.
-    move_paths: list[str] = []
-    for old, new in pairs:
-        (repo / new).parent.mkdir(parents=True, exist_ok=True)
-        subprocess.run(["git", "mv", old, new], cwd=repo, check=True)
-        move_paths += [old, new]
+    # commit 1 : git mv seuls (R100 visibles, aucun contenu modifie). La garde
+    # « ne committer que ses propres mouvements » vit dans `commit_moves` --
+    # verification de l'ensemble stage, pas pathspec : git refuse un pathspec
+    # des qu'un renommage de casse seule est dans l'index (#19159).
+    expected: set[str] = set()
+    try:
+        for old, new in pairs:
+            (repo / new).parent.mkdir(parents=True, exist_ok=True)
+            expected.update(move_file(repo, old, new))
+    except MoveError as exc:
+        print(f"MOUVEMENT INTERROMPU : {exc}")
+        print("Des renommages peuvent etre presents sur le disque SANS etre "
+              "committes : les committer ou les retirer avant de relancer.")
+        return 1
     msg1 = (f"rename(#16231): git mv purs ({len(pairs)} notebooks)\n\n"
             f"Table : {a.mapping}, pilotee par rename_notebooks.py.")
-    subprocess.run(["git", "commit", "-m", msg1, "--", *move_paths],
-                   cwd=repo, check=True)
+    if commit_moves(repo, expected, msg1) != 0:
+        return 1
 
     # commit 2 : referents par surface, au texte -- add et commit nommes.
     # Le plan a ete scanne AVANT les git mv : un notebook deplace qui cite un
