@@ -192,20 +192,25 @@ Substance réelle :
 - `Grothendieck.GodementMono` (Partie 86) : C⁰ préserve les monomorphismes
   (instance `PreservesMonomorphisms`) — prérequis nommé par la Partie 85,
   fil du complexe de Godement.
-- `Grothendieck.GodementResolution` (Partie 87) : la résolution canonique de
-  Godement est posée — le complexe `0 → F → C⁰F → C⁰(C⁰F) → ⋯` avec
-  null-homotopie `μ ≫ d⁰ = 0` et exactitude en degré 0 (mono sur les
-  faisceaux). L'allongement au degré 1 est la Partie 88 ; l'acyclicité aux
-  degrés supérieurs est la Partie 89.
-- `Grothendieck.GodementAcyclicity` (Partie 88) : l'**énoncé moral** de
-  l'**allongement de la chaîne tronquée au degré 1** est posé — la
-  différentielle `d¹ : C⁰²F → C⁰³F` est construite comme l'image de `d⁰` par
-  l'unité de `C⁰` ré-appliquée au préfaisceau `C⁰F`. La stratégie pour la
-  **null-homotopie** `μ ≫ d⁰ = 0` et l'**acyclicité** `H^n(C⁰F) = 0` pour
-  `n ≥ 1` reste explicite en docstring (God58 II.5) : `C⁰F` flasque (P84)
-  + lemme de Godement II.5.1 (`Γ` préserve l'exactitude sur les flasques)
-  — la **preuve complète** `acyclic_godementF` est une **frontière nommée**
-  traitée en Partie 89 (calibration `#1453`).
+- `Grothendieck.GodementResolution` (Partie 87) : la **suite des unités
+  itérées** `F → C⁰F → C⁰²F` est posée (`godementUnitIter`, l'unité de `C⁰`
+  réappliquée), avec le **témoin** `godementUnit_comp_injective` : sur les
+  faisceaux, le composé `μ ≫ μ(C⁰F)` est injectif, donc cette suite de
+  morphismes n'est **pas un complexe** — `μ ≫ d⁰ = 0` est faux pour ce
+  morphisme, ce n'est pas un énoncé différé. L'exactitude en F (`0 → F → C⁰F`,
+  mono sur les faisceaux) est le seul fait d'exactitude posé. La vraie
+  différentielle de la résolution canonique (conoyau de l'unité, God58 II.4.1)
+  et l'acyclicité aux degrés supérieurs sont la Partie 89.
+- `Grothendieck.GodementAcyclicity` (Partie 88) : l'**allongement de la suite
+  des unités au maillon suivant** — le morphisme `C⁰²F → C⁰³F`
+  (`godementUnitIter_at_iterate`) est l'unité réappliquée au préfaisceau
+  itéré `C⁰F` ; égalité de définition (`godementUnitIter_at_iterate_def`) et
+  extension structurelle de la suite de deux à trois flèches
+  (`godementUnitChain_extends`). Aucune propriété de complexe, de
+  null-composition ni d'**acyclicité** `H^n(C⁰F) = 0` n'est posée ni promise :
+  elles exigent d'abord la vraie différentielle (conoyau de l'unité,
+  God58 II.4.1), **frontière nommée** traitée en Partie 89 (calibration
+  `#1453`).
 
 Tous les `sorry`s ne sont pas comblés — la plupart sont des échafaudages
 intentionnels pour le prouveur multi-agent (cf. Epic #1453).
@@ -309,18 +314,24 @@ Substance (English):
 - `Grothendieck.GodementMono` (Part 86): C⁰ preserves monomorphisms
   (instance `PreservesMonomorphisms`) — prerequisite named by Part 85,
   thread of the Godement complex.
-- `Grothendieck.GodementResolution` (Part 87): the canonical Godement
-  resolution is posed — the complex `0 → F → C⁰F → C⁰(C⁰F) → ⋯` with
-  null-homotopy `μ ≫ d⁰ = 0` and exactness at degree 0 (mono on sheaves).
-  Lengthening at degree 1 is Part 88; acyclicity at higher degrees is Part 89.
-- `Grothendieck.GodementAcyclicity` (Part 88): the **chain lengthening**
-  at degree 1 is posed — the differential `d¹ : C⁰²F → C⁰³F` is built as
-  the image of `d⁰` by the unit of `C⁰` re-applied to the presheaf `C⁰F`.
-  The strategy for the **null-homotopy** `μ ≫ d⁰ = 0` and the **acyclicity**
-  `H^n(C⁰F) = 0` for `n ≥ 1` is explicited in docstring (God58 II.5):
-  `C⁰F` flasque (P84) + Godement II.5.1 lemma (`Γ` preserves exactness on
-  flasques) — the **complete proof** `acyclic_godementF` is a **named
-  frontier** to be treated in Part 89 (calibration `#1453`).
+- `Grothendieck.GodementResolution` (Part 87): the **iterated unit
+  sequence** `F → C⁰F → C⁰²F` is posed (`godementUnitIter`, the unit of `C⁰`
+  re-applied), together with the **witness** `godementUnit_comp_injective`:
+  on sheaves, the composite `μ ≫ μ(C⁰F)` is injective, so this sequence of
+  morphisms is **not a complex** — `μ ≫ d⁰ = 0` is false for this morphism,
+  not a deferred statement. Exactness at F (`0 → F → C⁰F`, mono on sheaves)
+  is the only exactness fact posed. The true differential of the canonical
+  resolution (cokernel of the unit, God58 II.4.1) and acyclicity at higher
+  degrees are Part 89.
+- `Grothendieck.GodementAcyclicity` (Part 88): the **lengthening of the unit
+  sequence by one link** — the morphism `C⁰²F → C⁰³F`
+  (`godementUnitIter_at_iterate`) is the unit re-applied at the iterated
+  presheaf `C⁰F`; definitional equality (`godementUnitIter_at_iterate_def`)
+  and structural extension of the sequence from two to three arrows
+  (`godementUnitChain_extends`). No complex property, no null-composition
+  and no **acyclicity** `H^n(C⁰F) = 0` is posed or promised: they first
+  require the true differential (cokernel of the unit, God58 II.4.1),
+  **named frontier** to be treated in Part 89 (calibration `#1453`).
 
 Not all `sorry`s are filled — most are intentional scaffolds for the
 multi-agent prover (cf. Epic #1453).

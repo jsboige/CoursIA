@@ -5,59 +5,53 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import Grothendieck.GodementAcyclicity
 
 /-!
-# Iteration of `C⁰` on kernels: the truncated chain `F → C⁰F → C⁰²F → C⁰³F`
+# Iterating the Godement unit: lengthening the sequence `F → C⁰F → C⁰²F → C⁰³F`
 
 Continuation of Parts 84-87 and next thread of the lake [God58, Chap. II §4.1].
-Part 87 posed the degree-0 differential `d⁰ := C⁰F → C⁰²F` (morphism
-`godementDiff`) and exactness at degree 0 (`godementResolution_exact₀`). This
-Part 88 **lengthens the truncated chain by one link**: the differential
-`d¹ : C⁰²F → C⁰³F` is obtained as the image by `C⁰` of `d⁰`. The truncated
-chain length is now 3 (morphisms), namely `0 → F → C⁰F → C⁰²F → C⁰³F` truncated
-to `F → C⁰F → C⁰²F`.
+Part 87 posed the **iterated unit sequence** `F → C⁰F → C⁰²F` (morphism
+`godementUnitIter`), its injectivity witness (`godementUnit_comp_injective`)
+and exactness at F (`godementUnit_injective_of_isSheaf`). This Part 88
+**lengthens the sequence by one link**: the morphism `C⁰²F ⟶ C⁰³F` is the
+unit re-applied at the iterated presheaf `C⁰F`. The unit sequence now has
+three arrows: `F → C⁰F → C⁰²F → C⁰³F`.
 
 ## Three facts, in narrative order
 
-1. `godementDiff_iterated`: the differential `d¹ : C⁰²F → C⁰³F` is **defined**
-   as `godementDiff (godementPresheaf F)` — this is the application of the
-   `godementDiff` construction to the presheaf `C⁰F` (which is a legitimate
-   presheaf on `X`). This definition is **type-correct**: `C⁰(C⁰F)` is also
-   a presheaf of abelian groups on `X`.
-2. `godementResolution_kernel_iterated`: the composition `d⁰ ≫ d¹ F` is
-   identically `godementDiff (godementPresheaf F)` (which is precisely `d¹`),
-   and the **null-homotopy** `μ ≫ d⁰ = 0` holds at degree 0 by naturality of
-   `toGodement` and preservation of zero morphisms by `C⁰` (P85).
-3. `godementResolution_extends_chain`: the truncated chain extends from length 2
-   (P87) to length 3 (P88) — a **structural extension** by composition of
+1. `godementUnitIter_at_iterate`: the morphism `C⁰²F ⟶ C⁰³F` is **defined**
+   as `godementUnitIter (godementPresheaf F)` — the application of the Part 87
+   construction to the presheaf `C⁰F` (a legitimate presheaf on `X`). This
+   definition is **type-correct**: `C⁰(C⁰F)` is also a presheaf of abelian
+   groups on `X`.
+2. `godementUnitIter_at_iterate_def`: the **definitional equality** —
+   `godementUnitIter_at_iterate F` is by construction exactly
+   `godementUnitIter (godementPresheaf F)`. This is an `rfl` equality: it
+   names the link, it proves no algebraic property.
+3. `godementUnitChain_extends`: the unit sequence goes from two arrows (P87)
+   to three arrows (P88) — a **structural extension** by composition of
    existing morphisms.
 
 ## What this Part poses vs. what it leaves open
 
-**Posed**: the lengthening of the truncated chain by one link, by **explicit
-construction** of `d¹ : C⁰²F → C⁰³F` and **identification** of the iterated
-differential. The three facts above are **proved** by re-execution of the
-constructions of P85 and P87 (`C⁰` is an endofunctor on
+**Posed**: the lengthening of the unit sequence by one link, by **explicit
+construction** of the morphism `C⁰²F ⟶ C⁰³F` and **identification** of the
+iterated unit at the next level. The three facts above are **proved** by
+re-execution of the constructions of P85 and P87 (`C⁰` is an endofunctor on
 `X.Presheaf AddCommGrpCat`, and preserves morphisms).
 
-**Not posed**: the **strict acyclicity** of the Godement complex
-`H^n(C⁰F) = 0` for `n ≥ 1` (God58 II.5.1 — preservation of exactness by `Γ`
-on flasque presheaves). This Part **lengthens the chain by one link** but
-**does not prove acyclicity**: it is a deep theorem requiring the
-instance `IsSheaf G` and the preservation of exactness by `Γ`, and
-belongs to the **named frontier** tracked outside this delivery.
-
-## Why this is honest at this stage
-
-Lengthening the chain by kernel preservation is **structural**: `C⁰` is an
-endofunctor that preserves morphisms, and `C⁰F` is a presheaf of abelian
-groups on `X` (so `C⁰(C⁰F)` is too). **Acyclicity** `H^n(C⁰F) = 0` is a
-distinct statement — it additionally requires that `Γ = lim` preserves
-flasques and that `Γ` preserves exactness on flasques. This is precisely
-what this Part 88 does not pose.
+**Not posed** — for a reason: the unit sequence is **not a complex**
+(`godementUnit_comp_injective`, P87: the composite of two units is injective
+on sheaves, hence non-zero on any non-zero section). Any question of
+**exactness** (`ker/im`), **null-composition** or **acyclicity**
+`H^n(C⁰F) = 0` for `n ≥ 1` (God58 II.5.1) first requires the **true**
+differential of the canonical resolution — the one going through the cokernel
+of the unit at each step ([God58] II §4.1). This is the **named frontier** of
+Part 89, tracked outside this delivery.
 
 ## References
 
   - R. Godement, *Topologie algébrique et théorie des faisceaux* [God58],
-    Chap. II §4.1. Iteration of the functor `C⁰` on kernels.
+    Chap. II §4.1. The canonical resolution through the cokernel of the unit,
+    to be distinguished from the unit iteration posed here.
   - R. Godement, *Topologie algébrique et théorie des faisceaux* [God58],
     Chap. II §5. Acyclicity `H^n(C⁰F) = 0` for `n ≥ 1` — **named frontier**
     of this delivery.
@@ -77,26 +71,22 @@ namespace Grothendieck_en
 
 variable {X : TopCat.{u}}
 
--- **OK-CONSUMER sibling**: the declarations `godementDiff_iterated`,
--- `godementResolution_kernel_iterated`, and `godementResolution_extends_chain`
--- are imported from `Grothendieck.GodementAcyclicity` (FR) and accessed in the
--- `Grothendieck_en` namespace as `Grothendieck.godementDiff_iterated`,
--- `Grothendieck.godementResolution_kernel_iterated`, and
--- `Grothendieck.godementResolution_extends_chain`. We do not redeclare them
--- here to keep bodies byte-identical with FR (the OK-CONSUMER i18n invariant
--- of [docs/lean/i18n-sibling-patterns.md]).
+-- **OK-CONSUMER sibling**: the declarations `godementUnitIter_at_iterate`,
+-- `godementUnitIter_at_iterate_def`, and `godementUnitChain_extends` are
+-- imported from `Grothendieck.GodementAcyclicity` (FR) and accessed in the
+-- `Grothendieck_en` namespace as `Grothendieck.godementUnitIter_at_iterate`,
+-- `Grothendieck.godementUnitIter_at_iterate_def`, and
+-- `Grothendieck.godementUnitChain_extends`. We do not redeclare them here to
+-- keep bodies byte-identical with FR (the OK-CONSUMER i18n invariant of
+-- [docs/lean/i18n-sibling-patterns.md]).
 
--- **The truncated Godement chain at degree 3**: `F → C⁰F → C⁰²F → C⁰³F`,
--- obtained at this Part 88 (compared to the un-truncated 2-step chain at
--- Part 87). The full infinite complex
--- `0 → F → C⁰F → C⁰²F → C⁰³F → ⋯` is **acyclique** (God58 II.5) at
--- `n ≥ 1` when `F` is a sheaf — **named frontier** of this delivery,
--- not part of this Part.
-
--- **The null-homotopy** `μ ≫ d⁰ = 0` is inherited from
--- `Grothendieck.godementResolution_kernel_iterated` via the OK-CONSUMER import
--- — the composition `d⁰ ≫ d¹ F` is identically `d¹ F` by definition of the
--- latter. The acyclicity `H^n(C⁰F) = 0` for `n ≥ 1` is the **named frontier**
--- deferred beyond this delivery (Part 89+).
+-- **The unit sequence at three arrows**: `F → C⁰F → C⁰²F → C⁰³F`, obtained at
+-- this Part 88 (compared to the two-arrow sequence of Part 87). This is a
+-- sequence of morphisms, **not** a complex — `godementUnit_comp_injective`
+-- (P87) proves the composite of two units injective on sheaves, so no
+-- null-composition holds. The full canonical resolution, its differential
+-- (through the cokernel of the unit, [God58] II §4.1) and the acyclicity
+-- `H^n(C⁰F) = 0` for `n ≥ 1` are the **named frontier** of Part 89 — not
+-- part of this Part.
 
 end Grothendieck_en
