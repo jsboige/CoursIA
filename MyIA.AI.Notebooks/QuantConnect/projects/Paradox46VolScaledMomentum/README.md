@@ -90,7 +90,7 @@ mêmes fenêtres — seuls les tickers changent.
 | 1x, sous-période B | 2022-07-01 → 2026-09-25 | 0,306 | 12,774 % | 32,100 % | 66,485 % | 240 | `a76b157ab7079746c0f3f182b7f81881` |
 
 (Runs relancés séquentiellement le 2026-10-04, nœud par nœud selon la
-disponibilité du pool de calcul ; les 11 lignes sont complètes.)
+disponibilité du pool de calcul ; la table est complète.)
 
 Lecture v2 (détailée dans le verdict) :
 
