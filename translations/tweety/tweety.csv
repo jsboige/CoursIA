@@ -1,5 +1,5 @@
 notebook,cell_id,cell_type,src_lang,src_hash,text_fr,text_en,text_es,text_ar,text_fa,text_zh,text_ru,text_pt,hash_fr,hash_en,hash_es,hash_ar,hash_fa,hash_zh,hash_ru,hash_pt,translate_policy
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Python.ipynb,8cbaf7ae,markdown,fr,c78ac9964c814d07,"# Tweety-10 — Markov Logic Networks (MLN)
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,8cbaf7ae,markdown,fr,c78ac9964c814d07,"# Tweety-10 — Markov Logic Networks (MLN)
 
 **Navigation** : [← Tweety-9-Préférences](Tweety-9-Preferences.ipynb) | [Index](Tweety-1-Setup.ipynb) | [README](README.md)
 
@@ -25,7 +25,7 @@ MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Python.ipynb,8cbaf7ae,markdown
 > le pont evoke dans l'introduction du README — *« L'intersection [symbolique / statistique] est le front
 > actif de la recherche »* — en reunissant la logique du premier ordre (Phase 1, NB 2) et le raisonnement
 > probabiliste (Phase 4, NB 7b) au sein d'un même formalisme : la **FOL pondérée**.",,,,,,,,c78ac9964c814d07,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Python.ipynb,d7490a5c,code,fr,234e4ec523fce6d3,"# --- Initialisation JVM Tweety (cf. Tweety-1-Setup) + imports MLN ---
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,d7490a5c,code,fr,234e4ec523fce6d3,"# --- Initialisation JVM Tweety (cf. Tweety-1-Setup) + imports MLN ---
 import os, sys
 TWEETY_DIR = os.path.dirname(os.path.abspath(""__file__"")) if ""__file__"" in dir() else os.getcwd()
 # En execution notebook, os.getcwd() == dossier Tweety (papermill --cwd / nbconvert depuis le dossier)
@@ -60,7 +60,7 @@ from org.tweetyproject.logics.fol.parser import FolParser
 FolFormula_class = jpype.JClass(""org.tweetyproject.logics.fol.syntax.FolFormula"")
 
 print(""Imports MLN reussis : MlnFormula, MarkovLogicNetwork, reasoners (naive + sampling)."")",,,,,,,,234e4ec523fce6d3,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Python.ipynb,ee5fc466,markdown,fr,97a2ed645c4e5daa,"### Interpretation de l'initialisation
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,ee5fc466,markdown,fr,97a2ed645c4e5daa,"### Interpretation de l'initialisation
 
 **Succes** : la JVM est demarree avec les **42 JARs** Tweety 1.30 (dont `mln-1.30.jar`), et le module
 MLN est charge.
@@ -78,7 +78,7 @@ MLN est charge.
 > déjà parsees, chacune enveloppee dans un `MlnFormula` avec son poids. On construit donc le réseau
 > **par programmation** : on parse une `FolFormula` (syntaxe du NB 2) puis on l'enveloppe.
 > C'est plus transparent pedagogiquement : on voit le poids etre associe explicitement.",,,,,,,,97a2ed645c4e5daa,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Python.ipynb,c22c7095,markdown,fr,28ac2cfb0b9fb675,"## Partie 1 : De la logique du premier ordre a la logique pondérée
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,c22c7095,markdown,fr,28ac2cfb0b9fb675,"## Partie 1 : De la logique du premier ordre a la logique pondérée
 
 ### 1.1 Le constat : la FOL est binaire (et donc fragile)
 
@@ -117,7 +117,7 @@ est satisfaite dans ce monde (ses *groundings* satisfaits).
 > **Le decalage conceptuel** : en FOL, une règle est vraie ou fausse. En MLN, une règle a un **poids** qui
 > contrôle *a quel point* elle est vraie. La logique devient une limite (poids $\to \infty$) d'un
 > raisonnement fondamentalement **probabiliste**.",,,,,,,,28ac2cfb0b9fb675,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Python.ipynb,25b61506,markdown,fr,f2f808f309fe52e7,"### 1.3 Construire une `MlnFormula` : stricte vs pondérée
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,25b61506,markdown,fr,f2f808f309fe52e7,"### 1.3 Construire une `MlnFormula` : stricte vs pondérée
 
 On réutilise le `FolParser` du notebook 2 pour obtenir une `FolFormula`, puis on l'enveloppe.
 Deux constructeurs importants :
@@ -128,7 +128,7 @@ Deux constructeurs importants :
 | `MlnFormula(formula, weight)` | **pondérée** — tendance de force `weight` | `False` |
 
 Verifions-le sur une même formule.",,,,,,,,f2f808f309fe52e7,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Python.ipynb,1290b553,code,fr,644887f66e26ae8a,"# --- 1.3 Strict vs pondere : deux facettes d'une meme regle ---
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,1290b553,code,fr,644887f66e26ae8a,"# --- 1.3 Strict vs pondere : deux facettes d'une meme regle ---
 if not jvm_ready:
     print(""ERREUR: JVM non demarree. Executez la cellule d'initialisation."")
 else:
@@ -159,7 +159,7 @@ else:
     print(""   isStrict ="", f_pond.isStrict(), ""| getWeight ="", f_pond.getWeight())
 
     print(""\n=> Meme formule FOL, deux statuts logiques differents selon le poids."")",,,,,,,,644887f66e26ae8a,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Python.ipynb,ef6ba7c3,markdown,fr,21e25a661398e534,"### Interpretation : deux statuts pour une même formule
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,ef6ba7c3,markdown,fr,21e25a661398e534,"### Interpretation : deux statuts pour une même formule
 
 **Sortie attendue** :
 ```
@@ -183,7 +183,7 @@ Formule pondérée (poids 2.5) :
 > produit $\exp(1000) = \infty$, donc un calcul $\infty/\infty = \texttt{nan}$. Le reasoner renvoie
 > alors des probabilites `nan` — un echec bruyant et correct. La règle stricte se déclenche avec le
 > **constructeur sans poids**, pas avec un gros nombre.",,,,,,,,21e25a661398e534,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Python.ipynb,4c99baa1,markdown,fr,bcb76b152f7155b7,"## Partie 2 : L'exemple canonique — friends / smokers / cancer
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,4c99baa1,markdown,fr,bcb76b152f7155b7,"## Partie 2 : L'exemple canonique — friends / smokers / cancer
 
 L'exemple de référence de Richardson & Domingos (2006) modelise l'influence sociale sur le tabagisme
 et le cancer. Trois predicats :
@@ -203,7 +203,7 @@ et le cancer. Trois predicats :
 
 On s'attend a ce que le tabagisme (puis le cancer) se **propagent** le long de la chaîne d'amitie
 `anna → bob → carl`, avec une probabilite decroissante.",,,,,,,,bcb76b152f7155b7,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Python.ipynb,94bba1d0,code,fr,8642fef76bfaa44d,"# --- 2. Exemple guide : friends / smokers / cancer (Richardson & Domingos) ---
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,94bba1d0,code,fr,8642fef76bfaa44d,"# --- 2. Exemple guide : friends / smokers / cancer (Richardson & Domingos) ---
 if not jvm_ready:
     print(""ERREUR: JVM non demarree."")
 else:
@@ -241,7 +241,7 @@ else:
                   ""Cancer(anna)"", ""Cancer(bob)"", ""Cancer(carl)""]:
         p = float(reasoner_sc.query(mln_sc, pf_sc(atome)))
         print(f""  P({atome:16s}) = {p:.4f}"")",,,,,,,,8642fef76bfaa44d,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Python.ipynb,5a5dd2ec,markdown,fr,0aab8c877d58990a,"### Interpretation : propagation d'influence le long du réseau
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,5a5dd2ec,markdown,fr,0aab8c877d58990a,"### Interpretation : propagation d'influence le long du réseau
 
 **Sortie typique** :
 
@@ -270,12 +270,12 @@ se **propage de maniere graduee**, ce qu'aucune logique pure ne sait faire.
 
 > C'est tout l'apport des MLN : **unifier le raisonnement logique (structure des règles) et
 > l'inference probabiliste (gestion de l'incertitude)**.",,,,,,,,0aab8c877d58990a,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Python.ipynb,ae2ab80b,markdown,fr,b3e64e6fc1a134e0,"## Partie 3 : Comment les poids modelent la croyance
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,ae2ab80b,markdown,fr,b3e64e6fc1a134e0,"## Partie 3 : Comment les poids modelent la croyance
 
 La même règle, selon son poids, se comporte differemment. Faisons varier le poids de la règle
 `Smokes(X) => Cancer(X)` de `0` (règle inexistante) a `5` (règle quasi-strict) et observons
 l'effet sur `P(Cancer(bob))`.",,,,,,,,b3e64e6fc1a134e0,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Python.ipynb,ed316df0,code,fr,ddcfdeb028df6af3,"# --- 3. Sweep du poids : du purement statistique au quasi-logique ---
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,ed316df0,code,fr,ddcfdeb028df6af3,"# --- 3. Sweep du poids : du purement statistique au quasi-logique ---
 if not jvm_ready:
     print(""ERREUR: JVM non demarree."")
 else:
@@ -320,7 +320,7 @@ else:
     plt.tight_layout()
     plt.show()
 ",,,,,,,,ddcfdeb028df6af3,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Python.ipynb,92435341,markdown,fr,3f346173a4f1a5be,"### Interpretation : le spectre logique ↔ statistique  *(valeurs arrondies depuis la sortie committée ci-dessus ; le reasoner `ApproximateNaiveMlnReasoner` est **déterministe** sur ce petit domaine (`DefaultSubsetIterator`, énumération exhaustive car 2^N <= 200000 atomes) : les marginales sont **reproductibles** à 4 décimales d'une exécution à l'autre (vérifié firsthand, delta=0 sur 2 runs))*
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,92435341,markdown,fr,3f346173a4f1a5be,"### Interpretation : le spectre logique ↔ statistique  *(valeurs arrondies depuis la sortie committée ci-dessus ; le reasoner `ApproximateNaiveMlnReasoner` est **déterministe** sur ce petit domaine (`DefaultSubsetIterator`, énumération exhaustive car 2^N <= 200000 atomes) : les marginales sont **reproductibles** à 4 décimales d'une exécution à l'autre (vérifié firsthand, delta=0 sur 2 runs))*
 
 **Sortie typique** :
 
@@ -352,7 +352,7 @@ un continuum de « force de croyance » entre *faux* (0) et *vrai* (1).
 > performant) resolvent le même problème SAT a des vitesses différentes, ici le **naive reasoner**
 > (exact, lent sur grands domaines) et le **sampling reasoner** (rapide, approximatif) donnent le
 > même résultat a une precision pres. On compare les deux dans la partie 5.",,,,,,,,3f346173a4f1a5be,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Python.ipynb,8cca5242,markdown,fr,2e2f77e7a1173a1f,"## Partie 4 : Le paradoxe des exceptions — le pingouin qui ne vole pas
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,8cca5242,markdown,fr,2e2f77e7a1173a1f,"## Partie 4 : Le paradoxe des exceptions — le pingouin qui ne vole pas
 
 Voici le cas ou les MLN brillent et ou la FOL classique echoue.
 
@@ -369,7 +369,7 @@ Or les pingouins ne volent pas. Pour sauver la cohérence, il faut ajouter des d
 Un pingouin (qui est aussi un oiseau) déclenche les deux règles, mais la règle stricte
 **domine** : il ne vole pas. Un oiseau ordinaire ne déclenche que la règle pondérée : il vole
 *probablement*, sans certitude.",,,,,,,,2e2f77e7a1173a1f,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Python.ipynb,49e0a657,code,fr,df0a542d3d7f2857,"# --- 4. Le paradoxe du pingouin : exception stricte vs regle ponderee ---
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,49e0a657,code,fr,df0a542d3d7f2857,"# --- 4. Le paradoxe du pingouin : exception stricte vs regle ponderee ---
 if not jvm_ready:
     print(""ERREUR: JVM non demarree."")
 else:
@@ -409,7 +409,7 @@ else:
 
     print(""\n=> tweety (pingouin) ne vole pas : 0.0 (l'exception stricte domine)."")
     print(""=> robin (oiseau ordinaire) vole probablement : ~0.79 (regle ponderee seule)."")",,,,,,,,df0a542d3d7f2857,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Python.ipynb,d32a84d1,markdown,fr,99ee66a0113f58e7,"### Interpretation : la logique pondérée gere les exceptions nativement
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,d32a84d1,markdown,fr,99ee66a0113f58e7,"### Interpretation : la logique pondérée gere les exceptions nativement
 
 **Sortie typique** :
 ```
@@ -440,7 +440,7 @@ les oiseaux volent.
 > en faisant varier le **poids** des règles — un oiseau vole *en général* (poids), un pingouin *jamais*
 > (strict). C'est aussi la graine de l'**argumentation defeasible** (cf. [Tweety-6](Tweety-6-Structured-Argumentation.ipynb)),
 > ou les règles ont des priorites.",,,,,,,,99ee66a0113f58e7,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Python.ipynb,bf2ebbac,markdown,fr,712f0d9629ce064c,"## Partie 5 : Trois familles de reasoners MLN
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,bf2ebbac,markdown,fr,712f0d9629ce064c,"## Partie 5 : Trois familles de reasoners MLN
 
 Comme pour les solveurs SAT du notebook 2 (Sat4j portable vs CaDiCaL natif), Tweety propose
 plusieurs reasoners MLN aux compromis différents :
@@ -455,7 +455,7 @@ plusieurs reasoners MLN aux compromis différents :
 > `ApproximateNaive` et `SimpleSampling` sont **purement Java** (dans le JAR) et tournent partout.
 
 Comparons les deux reasoners Java sur la même requête (`P(Cancer(carl))` du réseau de la partie 2) :",,,,,,,,712f0d9629ce064c,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Python.ipynb,6350c0ea,code,fr,13626bdd7f7043ae,"# --- 5. Comparaison naive (exact) vs sampling (approximatif) ---
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,6350c0ea,code,fr,13626bdd7f7043ae,"# --- 5. Comparaison naive (exact) vs sampling (approximatif) ---
 if not jvm_ready:
     print(""ERREUR: JVM non demarree."")
 else:
@@ -480,7 +480,7 @@ else:
     print(f""  Ecart absolu              : {abs(p_exact - p_samp):.4f}"")
     print(""\n=> Le sampling est beaucoup plus rapide mais legerement imprecis."")
     print(""   Pour un notebook pedagogique, l'exact (naive) reste preferable si le domaine est petit."")",,,,,,,,13626bdd7f7043ae,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Python.ipynb,f182b31e,markdown,fr,2145b63f9d68ad02,"### Interpretation : exact vs approximatif
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,f182b31e,markdown,fr,2145b63f9d68ad02,"### Interpretation : exact vs approximatif
 
 **Sortie typique** :
 ```
@@ -503,7 +503,7 @@ MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Python.ipynb,f182b31e,markdown
 > Comme au notebook 2 (ou l'on choisissait Sat4j pour la portabilite et CaDiCaL pour la vitesse),
 > le choix du reasoner MLN depend du **domaine** : petit → exact ; grand → sampling. C'est une
 > decision d'ingenierie, pas un defaut de l'outil.",,,,,,,,2145b63f9d68ad02,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Python.ipynb,49c879e8,markdown,fr,1b753762ef0faf4e,"## Exercice 1 : Etendre le réseau social
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,49c879e8,markdown,fr,1b753762ef0faf4e,"## Exercice 1 : Etendre le réseau social
 
 ### Contexte
 
@@ -520,13 +520,13 @@ Le réseau de la partie 2 contient 3 personnes. On veut y ajouter un 4e individu
 
 - réutilisez exactement la signature `sig_sc` et le parser `p_sc` de la partie 2 (ajoutez juste la constante et le fait)
 - Reconstruisez un nouveau `MarkovLogicNetwork` avec les mêmes règles pondérées + le fait supplémentaire",,,,,,,,1b753762ef0faf4e,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Python.ipynb,2bc6ded2,code,fr,3285aa7881bbf2ef,"# --- Exercice 1 : etendre le reseau social a un 4e individu ---
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,2bc6ded2,code,fr,3285aa7881bbf2ef,"# --- Exercice 1 : etendre le reseau social a un 4e individu ---
 # TODO etudiant : ajoutez dave, le fait Friends(carl,dave), et requerer P(Cancer(dave))
 # Etape 1 : sig_sc.add(Constant(""dave"", person))
 # Etape 2 : construire un nouveau MLN avec le fait supplementaire Friends(carl,dave)
 # Etape 3 : requerir P(Cancer(dave)) avec ApproximateNaiveMlnReasoner
 print(""Exercice a completer"")",,,,,,,,3285aa7881bbf2ef,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Python.ipynb,c10884c9,markdown,fr,2d698cdb19735357,"## Exercice 2 : Un MLN de diagnostic medical
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,c10884c9,markdown,fr,2d698cdb19735357,"## Exercice 2 : Un MLN de diagnostic medical
 
 ### Contexte
 
@@ -548,13 +548,13 @@ Querir `P(Symptome(grippe))`. Faites varier le poids de la règle 2 et observez 
 
 - Suivez le même patron que la partie 2 : `FolSignature` + `Predicate` + `MlnFormula`
 - La règle `!Maladie(X) => !Symptome(X)` represente l'absence de maladie comme cause d'absence de symptome",,,,,,,,2d698cdb19735357,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Python.ipynb,33d6928f,code,fr,87804cb22c6a43a8,"# --- Exercice 2 : MLN de diagnostic medical ---
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,33d6928f,code,fr,87804cb22c6a43a8,"# --- Exercice 2 : MLN de diagnostic medical ---
 # TODO etudiant : construisez le MLN de diagnostic et requerir P(Symptome(grippe))
 # Etape 1 : signature (sort Patient, predicats Maladie/1, Symptome/1, constante grippe)
 # Etape 2 : MLN avec fait strict + 2 regles ponderees
 # Etape 3 : sweep du poids de ""Maladie=>Symptome"" et afficher P(Symptome(grippe))
 print(""Exercice a completer"")",,,,,,,,87804cb22c6a43a8,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Python.ipynb,2c9879e2,markdown,fr,a1e23e523556b04b,"## Exercice 3 : Trouver le seuil ou une règle devient ""effet strict""
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,2c9879e2,markdown,fr,a1e23e523556b04b,"## Exercice 3 : Trouver le seuil ou une règle devient ""effet strict""
 
 ### Contexte
 
@@ -572,13 +572,13 @@ A partir de quel poids la règle est-elle *pratiquement* stricte (i.e. `P(Cancer
 
 - réutilisez le code du sweep de la partie 3
 - Le poids « effectivement strict » est celui ou `P > 0.99` et cesse d'augmenter de maniere sensible",,,,,,,,a1e23e523556b04b,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Python.ipynb,a7a4e79c,code,fr,2bcf0e892ce73e61,"# --- Exercice 3 : seuil ou une regle ponderee devient quasi-strict ---
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,a7a4e79c,code,fr,2bcf0e892ce73e61,"# --- Exercice 3 : seuil ou une regle ponderee devient quasi-strict ---
 # TODO etudiant : bouclez sur les poids [3,5,7,10,15,20] et trouvez le seuil P>0.99
 # Etape 1 : reprendre la construction MLN de la partie 3
 # Etape 2 : pour chaque poids, calculer P(Cancer(bob))
 # Etape 3 : identifier le seuil et le comparer a la version strict
 print(""Exercice a completer"")",,,,,,,,2bcf0e892ce73e61,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Python.ipynb,47e3fbba,markdown,fr,c704c71e75db859d,"---
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,47e3fbba,markdown,fr,c704c71e75db859d,"---
 
 ## Resume
 
@@ -611,8 +611,8 @@ Ce notebook a couvert :
 ---
 
 **Navigation** : [← Tweety-9-Préférences](Tweety-9-Preferences.ipynb) | [Index](Tweety-1-Setup.ipynb) | [README](README.md)",,,,,,,,c704c71e75db859d,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-CSharp.ipynb,4b764a33,markdown,fr,4a501ef48aa6e9b5,"# Tweety-10 — Markov Logic Networks (MLN) en .NET (C# / IKVM)**Navigation** : [← Tweety-9-Préférences](Tweety-9-Preferences.ipynb) | [Index](./README.md) | [Tweety-11-Causal-Python →](Tweety-11-Causal-Python.ipynb)**Module** : `org.tweetyproject.logics.mln` (Tweety 1.30) — compilé via IKVM 8.15 + .NET 8.0**Clé** : `See #4667` (EPIC Tweety .NET — 11ème port C#)**Recette build** : `dotnet-build/build-tweety-mln-shade.pom.xml` (maven-shade-plugin 3.5.3) + `dotnet-build/build-TweetyMlnShade.csproj` (IKVM 8.15.0, net8.0)## Objectifs pedagogiquesA la fin de ce notebook, vous saurez :1. **Construire un MLN** : faits stricts (poids = infini) et règles pondérées (poids fini) à partir de formules FOL2. **Interroger un MLN** : `query(mln, formula)` retourne une probabilité marginale3. **Comprendre le spectre logique ↔ statistique** : un poids croissant rend la règle de plus en plus stricte4. **Diagnostiquer un domaine** : utiliser le réseau de Markov pour propager des croyances (ex. médical, social, fraude)## Prérequis- Avoir exécuté [Tweety-2-Basic-Logics-Csharp.ipynb](Tweety-2-Basic-Logics-Csharp.ipynb) (notebook 2) pour `FolSignature`/`FolParser`/`FolFormula`- Avoir exécuté [Tweety-3-ModalLogic-Csharp.ipynb](Tweety-3-ModalLogic-Csharp.ipynb) (notebook 3) pour la logique modale (transversale)- Notions de base en FOL et en réseaux de Markov (loi de Boltzmann sur les mondes possibles)",,,,,,,,4a501ef48aa6e9b5,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-CSharp.ipynb,4f5ecc42,code,fr,3929c19c98d59e9c,"// --- Initialisation runtime IKVM + chargement DLL MLN (rebuild C190 IKVM 8.14) ---
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Csharp.ipynb,4b764a33,markdown,fr,4a501ef48aa6e9b5,"# Tweety-10 — Markov Logic Networks (MLN) en .NET (C# / IKVM)**Navigation** : [← Tweety-9-Préférences](Tweety-9-Preferences.ipynb) | [Index](./README.md) | [Tweety-11-Causal →](Tweety-11-Causal.ipynb)**Module** : `org.tweetyproject.logics.mln` (Tweety 1.30) — compilé via IKVM 8.15 + .NET 8.0**Clé** : `See #4667` (EPIC Tweety .NET — 11ème port C#)**Recette build** : `dotnet-build/build-tweety-mln-shade.pom.xml` (maven-shade-plugin 3.5.3) + `dotnet-build/build-TweetyMlnShade.csproj` (IKVM 8.15.0, net8.0)## Objectifs pedagogiquesA la fin de ce notebook, vous saurez :1. **Construire un MLN** : faits stricts (poids = infini) et règles pondérées (poids fini) à partir de formules FOL2. **Interroger un MLN** : `query(mln, formula)` retourne une probabilité marginale3. **Comprendre le spectre logique ↔ statistique** : un poids croissant rend la règle de plus en plus stricte4. **Diagnostiquer un domaine** : utiliser le réseau de Markov pour propager des croyances (ex. médical, social, fraude)## Prérequis- Avoir exécuté [Tweety-2-Basic-Logics-Csharp.ipynb](Tweety-2-Basic-Logics-Csharp.ipynb) (notebook 2) pour `FolSignature`/`FolParser`/`FolFormula`- Avoir exécuté [Tweety-3-ModalLogic-Csharp.ipynb](Tweety-3-ModalLogic-Csharp.ipynb) (notebook 3) pour la logique modale (transversale)- Notions de base en FOL et en réseaux de Markov (loi de Boltzmann sur les mondes possibles)",,,,,,,,4a501ef48aa6e9b5,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Csharp.ipynb,4f5ecc42,code,fr,3929c19c98d59e9c,"// --- Initialisation runtime IKVM + chargement DLL MLN (rebuild C190 IKVM 8.14) ---
 #r ""nuget: IKVM, 8.14.0""
 #r ""org.tweetyproject.tweety-mln.dll""
 // IKVM.Home DOIT etre connu du static initializer (JVM.Properties) AVANT tout appel Java.
@@ -647,10 +647,10 @@ System.Console.WriteLine(""IKVM home="" + (File.Exists(Path.Combine(ikvmHome, ""
 System.Console.WriteLine($""DLL MLN reference chargee (chemin masque pour portabilite)."");
 
 ",,,,,,,,3929c19c98d59e9c,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-CSharp.ipynb,d0c6d2d9,markdown,fr,3c7fab3e89996d23,"### Interprétation de l'initialisation**Succès** : la DLL `org.tweetyproject.tweety-mln.dll` (≈14 MB) est chargée dans le runtime .NET via IKVM. Elle contient l'intégralité du module `logics-mln` de Tweety 1.30 (Markov Logic Networks) + ses dépendances transitives `logics-fol` (First-Order Logic) et `logics-pcl` (Probabilistic Conditional Logic), compilées depuis le JAR `tweety-mln-full-1.30.jar` (12.9 MB).**Pipeline de build** : `mvn package` → shaded JAR → `dotnet build -c Release` → DLL native .NET (cf. recette C182/C183/C185/C186/C187, voir `build-tweety-mln-shade.pom.xml` et `build-TweetyMlnShade.csproj`).**Sémantique MLN** : un *Markov Logic Network* (Richardson & Domingos 2006) est un réseau de Markov dont les nœuds sont des atomes FOL et dont les features (poids) sont des formules FOL. Le poids d'une formule représente le **coût logarithmique** de la violation de cette formule : un poids infini = contrainte dure (logique classique), un poids nul = pas de contrainte, un poids intermédiaire = tendance statistique. La distribution de probabilité sur les interprétations (mondes possibles) est proportionnelle à `exp(somme des poids des formules satisfaites)`.",,,,,,,,3c7fab3e89996d23,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-CSharp.ipynb,feb426e7,markdown,fr,f3ef20c9d45689cc,"## Partie 1
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Csharp.ipynb,d0c6d2d9,markdown,fr,3c7fab3e89996d23,"### Interprétation de l'initialisation**Succès** : la DLL `org.tweetyproject.tweety-mln.dll` (≈14 MB) est chargée dans le runtime .NET via IKVM. Elle contient l'intégralité du module `logics-mln` de Tweety 1.30 (Markov Logic Networks) + ses dépendances transitives `logics-fol` (First-Order Logic) et `logics-pcl` (Probabilistic Conditional Logic), compilées depuis le JAR `tweety-mln-full-1.30.jar` (12.9 MB).**Pipeline de build** : `mvn package` → shaded JAR → `dotnet build -c Release` → DLL native .NET (cf. recette C182/C183/C185/C186/C187, voir `build-tweety-mln-shade.pom.xml` et `build-TweetyMlnShade.csproj`).**Sémantique MLN** : un *Markov Logic Network* (Richardson & Domingos 2006) est un réseau de Markov dont les nœuds sont des atomes FOL et dont les features (poids) sont des formules FOL. Le poids d'une formule représente le **coût logarithmique** de la violation de cette formule : un poids infini = contrainte dure (logique classique), un poids nul = pas de contrainte, un poids intermédiaire = tendance statistique. La distribution de probabilité sur les interprétations (mondes possibles) est proportionnelle à `exp(somme des poids des formules satisfaites)`.",,,,,,,,3c7fab3e89996d23,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Csharp.ipynb,feb426e7,markdown,fr,f3ef20c9d45689cc,"## Partie 1
  : De la logique du premier ordre à la logique pondérée### 1.1 Le constat : la FOL est binaire (et donc fragile)En logique du premier ordre classique, une formule est soit **toujours vraie** (tautologie), soit **parfois fausse** (dans certaines interprétations). Une règle comme « les oiseaux volent » s'écrit `∀x. Bird(x) ⇒ Flies(x)`. **Mais alors, que fait-on du pingouin ?** En FOL, soit on abandonne la règle (on perd la généralisation), soit on l'accepte (on classifie mal les pingouins).### 1.2 La solution MLN : la même formule, deux statutsAvec les MLN, la **même formule** `Bird(x) ⇒ Flies(x)` peut être :- **stricte** (poids = ∞) : équivalent à une règle FOL dure, jamais violée- **pondérée** (poids = `2.5` par exemple) : la règle est *presque* toujours vraie, mais peut être violée si d'autres règles (strictes) l'exigent (ex. `Penguin(x) ⇒ ¬Flies(x)`)### 1.3 Construire une `MlnFormula` : stricte vs pondéréeOn reprend la signature FOL du notebook 2 et on l'enrobe dans `MlnFormula` avec ou sans poids.",,,,,,,,f3ef20c9d45689cc,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-CSharp.ipynb,7453cc17,code,fr,f22065cc0d721d4c,"// --- Cell[4] : reconstruction C190 (IKVM 8.14 fix) ---
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Csharp.ipynb,7453cc17,code,fr,f22065cc0d721d4c,"// --- Cell[4] : reconstruction C190 (IKVM 8.14 fix) ---
 // MLN simple : 2 formules ponderees
 using org.tweetyproject.logics.commons.syntax;
 using org.tweetyproject.logics.commons.syntax.interfaces;
@@ -688,8 +688,8 @@ System.Console.WriteLine($""MLN avec {mln.size()} formules ponderees : {mln.toSt
 
 
 ",,,,,,,,f22065cc0d721d4c,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-CSharp.ipynb,07f0300f,markdown,fr,e0548ae6120a005c,"### Interprétation : deux statuts pour une même formule**Sortie typique** :```Formule STRICTE :  !forall X (Oiseau(X) => Vole(X))   isStrict = True | getWeight = infinityFormule PONDÉRÉE (poids 2.5) :  2.5 !forall X (Oiseau(X) => Vole(X))   isStrict = False | getWeight = 2.5```**Points clés** :1. `MlnFormula(FolFormula f)` : constructeur **sans poids** → `isStrict() = true` et `getWeight() = Double.POSITIVE_INFINITY` (règle FOL dure, jamais violée par le solveur).2. `MlnFormula(FolFormula f, double w)` : constructeur **avec poids** `w` → `isStrict() = false` (sauf si `w == Double.POSITIVE_INFINITY`) et `getWeight() = w` (tendance statistique).3. **Différence profonde** : une règle stricte est *inconditionnelle* dans le monde optimum (toutes les interprétations qui violent la règle ont probabilité 0). Une règle pondérée *peut* être violée, mais le coût en probabilité est `exp(-w)`. Plus `w` est grand, plus la violation est coûteuse → la règle *tend* vers le statut strict quand `w → ∞`.",,,,,,,,e0548ae6120a005c,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-CSharp.ipynb,b8b992ce,markdown,fr,cf3e191b1c627932,"## Diagnostic IKVM — corrigé : le reasoner MLN est invocable
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Csharp.ipynb,07f0300f,markdown,fr,e0548ae6120a005c,"### Interprétation : deux statuts pour une même formule**Sortie typique** :```Formule STRICTE :  !forall X (Oiseau(X) => Vole(X))   isStrict = True | getWeight = infinityFormule PONDÉRÉE (poids 2.5) :  2.5 !forall X (Oiseau(X) => Vole(X))   isStrict = False | getWeight = 2.5```**Points clés** :1. `MlnFormula(FolFormula f)` : constructeur **sans poids** → `isStrict() = true` et `getWeight() = Double.POSITIVE_INFINITY` (règle FOL dure, jamais violée par le solveur).2. `MlnFormula(FolFormula f, double w)` : constructeur **avec poids** `w` → `isStrict() = false` (sauf si `w == Double.POSITIVE_INFINITY`) et `getWeight() = w` (tendance statistique).3. **Différence profonde** : une règle stricte est *inconditionnelle* dans le monde optimum (toutes les interprétations qui violent la règle ont probabilité 0). Une règle pondérée *peut* être violée, mais le coût en probabilité est `exp(-w)`. Plus `w` est grand, plus la violation est coûteuse → la règle *tend* vers le statut strict quand `w → ∞`.",,,,,,,,e0548ae6120a005c,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Csharp.ipynb,b8b992ce,markdown,fr,cf3e191b1c627932,"## Diagnostic IKVM — corrigé : le reasoner MLN est invocable
 
 Le diagnostic précédent de ce notebook (« `Assembly.GetTypes()` retourne 0 types → bug IKVM 8.15, reasoner bloqué ») était **faux en mécanisme** — vérifié firsthand le 2026-08-20 :
 
@@ -699,9 +699,9 @@ Le diagnostic précédent de ce notebook (« `Assembly.GetTypes()` retourne 0 ty
 
 Les cellules 8 / 11 / 14 / 17 invoquent désormais le **vrai reasoner Java** (même moteur que le jumeau Python) : marginales multi-atomes, sweep de poids, paradoxe du pingouin avec exception stricte, comparaison exact-vs-sampling. Le cas 1-atome en forme fermée (cell[11] partie A) est conservé comme **ancre analytique** : il valide le régime du moteur sur un domaine factorisable à la main.
 ",,,,,,,,cf3e191b1c627932,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-CSharp.ipynb,2b86a3c0,markdown,fr,778dfca8b07d86d9,"## Partie 2
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Csharp.ipynb,2b86a3c0,markdown,fr,778dfca8b07d86d9,"## Partie 2
  : L'exemple canonique — friends / smokers / cancerL'exemple de référence de **Richardson & Domingos (2006)** met en scène un petit réseau social : 3 personnes, des liens d'amitié, le fait de fumer, et la probabilité de cancer. Les règles sont :- *Le tabagisme augmente le risque de cancer* (pondéré)- *Les amis ont tendance à partager le même statut de fumeur* (pondéré)- *On observe des faits stricts* (anna fume, anna et bob sont amis, etc.)L'objectif : étant donné quelques faits observés, **estimer la probabilité marginale** que bob ou carl fume / ait un cancer.",,,,,,,,778dfca8b07d86d9,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-CSharp.ipynb,061aa5d3,code,fr,d98c017e4cdedfad,"// --- Cell[8] : exemple canonique MLN reseau social (Richardson & Domingos 2006) ---
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Csharp.ipynb,061aa5d3,code,fr,d98c017e4cdedfad,"// --- Cell[8] : exemple canonique MLN reseau social (Richardson & Domingos 2006) ---
 using org.tweetyproject.logics.commons.syntax;
 using org.tweetyproject.logics.commons.syntax.interfaces;
 using org.tweetyproject.logics.fol.syntax;
@@ -763,7 +763,7 @@ foreach (var (label, atome) in new (string, FolFormula)[] {
     Console.WriteLine(Inv($""  {label,-17} | {p:F4}""));
 }
 ",,,,,,,,d98c017e4cdedfad,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-CSharp.ipynb,0c5e37ba,markdown,fr,ed599f630e13880f,"### Interprétation : marginales a posteriori du réseau social
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Csharp.ipynb,0c5e37ba,markdown,fr,ed599f630e13880f,"### Interprétation : marginales a posteriori du réseau social
 
 **Sortie réelle** (reasoner exact `ApproximateNaiveMlnReasoner`, même moteur Java que le jumeau Python/JPype) :
 
@@ -778,7 +778,7 @@ MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-CSharp.ipynb,0c5e37ba,markdown
 
 **Lecture** : (1) les marginales de tabagisme de bob et carl sont **identiques** — la règle `Friends(X,Y) && Smokes(X) => Smokes(Y)` [w=2] propage l'influence d'anna vers bob, puis de bob vers carl avec la même force. (2) Le cancer suit le tabac avec un léger flou : `Cancer(anna) = 0.9526` (fumer est certain, mais la règle w=3 n'est pas stricte — le monde « anna fume sans cancer » garde un poids non nul `exp(-3)`) ; bob et carl, qui ne fument qu'à 73%, tombent à 0.8301. (3) **Symétrie structurelle = symétrie probabiliste** : le MLN ne connaît que les formules et les faits ; bob et carl jouent des rôles isomorphes dans le réseau, donc marginales égales — une vérification croisée gratuite de la cohérence du calcul.
 ",,,,,,,,ed599f630e13880f,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-CSharp.ipynb,91ebc523,markdown,fr,8391e31e46aaf9f1,"## Partie 3 : Comment les poids modèlent la croyance
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Csharp.ipynb,91ebc523,markdown,fr,8391e31e46aaf9f1,"## Partie 3 : Comment les poids modèlent la croyance
 
 La même règle, selon son poids, se comporte différemment. Faisons varier le poids de la règle `Smokes(X) => Cancer(X)` et observons l'évolution de `P(Cancer(bob))` :
 
@@ -792,7 +792,7 @@ La même règle, selon son poids, se comporte différemment. Faisons varier le p
 | ∞ | Strict (équivalent FOL classique) |
 
 C'est le **spectre logique ↔ statistique** : le MLN interpole continûment entre la logique (poids infini) et la statistique pure (poids 0).",,,,,,,,8391e31e46aaf9f1,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-CSharp.ipynb,c0116066,code,fr,b7eb31f034a4b72b,"// --- Cell[11] : le spectre logique-statistique - ancre analytique + vrai reasoner ---
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Csharp.ipynb,c0116066,code,fr,b7eb31f034a4b72b,"// --- Cell[11] : le spectre logique-statistique - ancre analytique + vrai reasoner ---
 using org.tweetyproject.logics.commons.syntax;
 using org.tweetyproject.logics.commons.syntax.interfaces;
 using org.tweetyproject.logics.fol.syntax;
@@ -858,7 +858,7 @@ Console.WriteLine();
 Console.WriteLine(""Courbe de saturation : w=0 -> 0.5 (aucune contrainte) ; w croissant -> P -> 1"");
 Console.WriteLine(""(asymptote quasi-logique JAMAIS atteinte : une MLN reste probabiliste)."");
 ",,,,,,,,b7eb31f034a4b72b,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-CSharp.ipynb,eccbcf7e,markdown,fr,00a86f8d7dfd1ab2,"### Interprétation : le spectre logique ↔ statistique
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Csharp.ipynb,eccbcf7e,markdown,fr,00a86f8d7dfd1ab2,"### Interprétation : le spectre logique ↔ statistique
 
 **Partie A (forme fermée)** : sur le MLN trivial à 1 atome, la distribution se calcule exactement à la main : `Z(w) = exp(w) + 1`, d'où la **sigmoïde** `P(a) = sigma(w)`. À `w = 0` : distribution uniforme (0.5). À `w → +inf` : fait dur (P → 1). C'est l'**ancre analytique** qui valide le régime du moteur.
 
@@ -872,9 +872,9 @@ MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-CSharp.ipynb,eccbcf7e,markdown
 
 > **Point pédagogique** : c'est LE spectre des MLN. Une MLN n'est pas « logique OU statistique » — elle couvre continûment tout l'entre-deux, le poids étant le curseur : `w = 0` (indifférence statistique pure), `w` fini (tendance souple), `w = +inf` (FOL classique dure).
 ",,,,,,,,00a86f8d7dfd1ab2,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-CSharp.ipynb,3acd4e28,markdown,fr,ad011aaa4cf3eaae,"## Partie 4
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Csharp.ipynb,3acd4e28,markdown,fr,ad011aaa4cf3eaae,"## Partie 4
  : Le paradoxe des exceptions — le pingouin qui ne vole pasVoici le cas où les MLN brillent et où la FOL classique échoue : la **généralisation avec exception**.- **tweety** est un pingouin (et un oiseau)- **robin** est un oiseau (ordinaire)- *Règle stricte* : les pingouins ne volent pas- *Règle pondérée* : la plupart des oiseaux volent (poids 2.0)Comment le MLN gère-t-il ce paradoxe ? La règle stricte `Penguin(X) => !Flies(X)` doit dominer pour tweety, mais pas pour robin.",,,,,,,,ad011aaa4cf3eaae,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-CSharp.ipynb,38183d9d,code,fr,944942298eae5f4c,"// --- Cell[14] : paradoxe du pingouin - exception STRICTE vs regle ponderee ---
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Csharp.ipynb,38183d9d,code,fr,944942298eae5f4c,"// --- Cell[14] : paradoxe du pingouin - exception STRICTE vs regle ponderee ---
 using org.tweetyproject.logics.commons.syntax;
 using org.tweetyproject.logics.commons.syntax.interfaces;
 using org.tweetyproject.logics.fol.syntax;
@@ -932,7 +932,7 @@ Console.WriteLine(""=> tweety (pingouin) ne vole pas : 0.0 -- l'exception STRICT
 Console.WriteLine(""   ou un pingouin vole a une probabilite nulle)."");
 Console.WriteLine(""=> robin (oiseau ordinaire) vole probablement : ~0.79 (regle ponderee seule)."");
 ",,,,,,,,944942298eae5f4c,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-CSharp.ipynb,5c1c0fb3,markdown,fr,28ca6397a46a0326,"### Interprétation : la logique pondérée gère les exceptions nativement
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Csharp.ipynb,5c1c0fb3,markdown,fr,28ca6397a46a0326,"### Interprétation : la logique pondérée gère les exceptions nativement
 
 **Sortie réelle** (reasoner exact) :
 
@@ -953,7 +953,7 @@ MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-CSharp.ipynb,5c1c0fb3,markdown
 
 > **Leçon** : les exceptions sont le talon d'Achille de la logique classique. Les MLN les absorbent en faisant varier le **statut** des règles — strict (sans poids) pour la loi dure, pondéré pour la tendance générale.
 ",,,,,,,,28ca6397a46a0326,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-CSharp.ipynb,d0968923,markdown,fr,3ac1ad715dc85ac1,"## Partie 5 : Trois familles de raisonneurs MLN
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Csharp.ipynb,d0968923,markdown,fr,3ac1ad715dc85ac1,"## Partie 5 : Trois familles de raisonneurs MLN
 
 Comme pour les solveurs SAT du notebook 2 (Sat4j portable vs CaDiCaL natif), Tweety propose plusieurs raisonneurs MLN aux compromis exact vs approximatif :
 
@@ -965,7 +965,7 @@ Comme pour les solveurs SAT du notebook 2 (Sat4j portable vs CaDiCaL natif), Twe
 
 > **Note** : `SimpleMlnReasoner` requiert un binaire externe non installé. Les deux premiers sont **purement Java** (dans la DLL) et tournent partout — c'est eux que la cellule suivante compare sur la même requête `P(Cancer(carl))` du réseau de la partie 2.
 ",,,,,,,,3ac1ad715dc85ac1,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-CSharp.ipynb,01f10d37,code,fr,48740f94bd07e4e9,"// --- Cell[17] : comparaison exact (enumeration) vs approximatif (sampling) ---
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Csharp.ipynb,01f10d37,code,fr,48740f94bd07e4e9,"// --- Cell[17] : comparaison exact (enumeration) vs approximatif (sampling) ---
 using org.tweetyproject.logics.commons.syntax;
 using org.tweetyproject.logics.commons.syntax.interfaces;
 using org.tweetyproject.logics.fol.syntax;
@@ -1023,7 +1023,7 @@ Console.WriteLine();
 Console.WriteLine(""=> Le sampling est plus rapide mais legerement imprecis (et fluctue d'un run a l'autre)."");
 Console.WriteLine(""   Pour un domaine petit, l'exact (enumeration) reste preferable."");
 ",,,,,,,,48740f94bd07e4e9,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-CSharp.ipynb,556a2203,markdown,fr,c81f5927f8399c62,"### Interprétation : exact vs approximatif
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Csharp.ipynb,556a2203,markdown,fr,c81f5927f8399c62,"### Interprétation : exact vs approximatif
 
 **Sortie réelle** (mesurée au Stopwatch, domaine ~15 atomes ground) :
 
@@ -1040,9 +1040,9 @@ MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-CSharp.ipynb,556a2203,markdown
 
 > Comme au notebook 2 (Sat4j portable vs CaDiCaL natif), le choix du reasoner est une **décision d'ingénierie** pilotée par la taille du domaine : exactitude quand elle est atteignable, approximation contrôlée quand elle ne l'est pas.
 ",,,,,,,,c81f5927f8399c62,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-CSharp.ipynb,14efc9df,markdown,fr,7dc8f9c0aee61679,"## Exercices (#2161 — 3 exos conformes)Les exercices suivent la convention `.claude/rules/three-exercises-per-notebook.md` : ils sont **stubbés** (sans `raise NotImplementedError`, cf règle C.1) et **répartis** dans le notebook, chacun précédé d'un contexte et d'objectifs.### Exercice 1
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Csharp.ipynb,14efc9df,markdown,fr,7dc8f9c0aee61679,"## Exercices (#2161 — 3 exos conformes)Les exercices suivent la convention `.claude/rules/three-exercises-per-notebook.md` : ils sont **stubbés** (sans `raise NotImplementedError`, cf règle C.1) et **répartis** dans le notebook, chacun précédé d'un contexte et d'objectifs.### Exercice 1
  : Étendre le réseau social**Contexte** : Le réseau de la partie 2 contient 3 personnes (anna, bob, carl). On veut y ajouter un 4ᵉ individu **dave** et observer la propagation de l'influence.**Objectif** :- Ajouter `dave` à la signature (sort `Person`)- Ajouter le fait que `Friends(carl, dave)` (pondéré ou strict ?)- Requérir `P(Smokes(dave))` et `P(Cancer(dave))` après la propagation**Indice** : il faut propager le tabagisme le long de la chaîne `anna → bob → carl → dave` via la règle d'amitié pondérée.### Exercice 2 : Un MLN de diagnostic médical**Contexte** : On veut modéliser un raisonnement de diagnostic : certaines maladies causent des symptômes, et des tests médicaux confirment/infirment les maladies.**Objectif** :- Créer un MLN avec : `Grippe(X) => Fievre(X)` (poids 2.0), `Covid(X) => Fievre(X)` (poids 2.5), `Fievre(X) => TestPositif(X)` (poids 1.5)- Ajouter le fait : `Fievre(marie)` (observé)- Requérir `P(Grippe(marie))` et `P(Covid(marie))` — quelle maladie est la plus probable ?**Indice** : les deux maladies expliquent la fièvre, mais la Covid a un poids légèrement plus élevé pour `Fievre`. Le MLN doit gérer cette **ambiguïté** correctement.### Exercice 3 : Trouver le seuil où une règle devient « quasi-stricte »**Contexte** : Dans la partie 3, on a vu que `P(Cancer(bob))` augmente avec le poids de la règle `Smokes(X) => Cancer(X)`. On veut déterminer **à partir de quel poids** la règle est *effectivement stricte* (probabilité de violation < 0.01).**Objectif** :- Boucler sur les poids `[3, 5, 7, 10, 15, 20]` et observer `P(¬Cancer(bob))` (i.e. `1 - P(Cancer(bob))`)- Identifier le poids à partir duquel la probabilité de violation passe sous 0.01 (i.e. la règle est quasi-stricte)**Indice** : plus le poids est grand, plus la violation coûte `exp(-w)`. Pour un domaine de 3 personnes, le seuil est autour de `w = 5-7` (cf partie 3).",,,,,,,,7dc8f9c0aee61679,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-CSharp.ipynb,d6d059ee,code,fr,231a65f578d8108d,"// --- Exercice 1 : étendre le réseau social à un 4ᵉ individu ---
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Csharp.ipynb,d6d059ee,code,fr,231a65f578d8108d,"// --- Exercice 1 : étendre le réseau social à un 4ᵉ individu ---
 // TODO étudiant : ajoutez 'dave' à la signature (sort Person), ajoutez le fait Friends(carl, dave), ajoutez éventuellement dave fume (fait strict) ou pas, puis requérez P(Smokes(dave)) et P(Cancer(dave)).
 
 // Cellule stub C.1-conforme : pas de raise NotImplementedError (le notebook
@@ -1056,7 +1056,7 @@ MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-CSharp.ipynb,d6d059ee,code,fr,
 
 Console.WriteLine(""// --- Exercice 1 : étendre le réseau social à un 4ᵉ individu --- = Exercice a completer"");
 ",,,,,,,,231a65f578d8108d,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-CSharp.ipynb,d6b456d3,code,fr,36f66479c08c6d27,"// --- Exercice 2 : MLN de diagnostic médical ---
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Csharp.ipynb,d6b456d3,code,fr,36f66479c08c6d27,"// --- Exercice 2 : MLN de diagnostic médical ---
 // TODO étudiant : construisez un MLN de diagnostic médical (sort Patient + constante 'marie' + prédicats Grippe, Covid, Fievre, TestPositif). Règles pondérées : Grippe(X) => Fievre(X) [w=2.0], Covid(X) => Fievre(X) [w=2.5], Fievre(X) => TestPositif(X) [w=1.5]. Fait strict : Fievre(marie). Requérir P(Grippe(marie)) et P(Covid(marie)).
 
 // Cellule stub C.1-conforme : pas de raise NotImplementedError (le notebook
@@ -1070,7 +1070,7 @@ MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-CSharp.ipynb,d6b456d3,code,fr,
 
 Console.WriteLine(""// --- Exercice 2 : MLN de diagnostic médical --- = Exercice a completer"");
 ",,,,,,,,36f66479c08c6d27,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-CSharp.ipynb,44567848,code,fr,24bdfb208ecdff97,"// --- Exercice 3 : seuil où une règle pondérée devient quasi-stricte ---
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Csharp.ipynb,44567848,code,fr,24bdfb208ecdff97,"// --- Exercice 3 : seuil où une règle pondérée devient quasi-stricte ---
 // TODO étudiant : bouclez sur les poids [3, 5, 7, 10, 15, 20] et observez P(¬Cancer(bob)) = 1 - P(Cancer(bob)). Identifiez le poids à partir duquel la probabilité de violation passe sous 0.01.
 
 // Cellule stub C.1-conforme : pas de raise NotImplementedError (le notebook
@@ -1084,13 +1084,13 @@ MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-CSharp.ipynb,44567848,code,fr,
 
 Console.WriteLine(""// --- Exercice 3 : seuil où une règle pondérée devient quasi-stricte --- = Exercice a completer"");
 ",,,,,,,,24bdfb208ecdff97,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-CSharp.ipynb,b5cf8af4,markdown,fr,a6f0a4420757602f,"## RésuméCe notebook a couvert :- **Le concept de MLN** : une formule FOL + un poids, unifiant logique symbolique et raisonnement statistique (Richardson & Domingos 2006). Poids = `+∞` (strict, FOL classique) ou `w` fini (tendance statistique, coût `exp(-w)` par violation).- **La construction d'un MLN** : `MarkovLogicNetwork` (extends `BeliefSet<MlnFormula, FolSignature>`) qui contient des `MlnFormula` (stricte ou pondérée) construites à partir de `FolFormula`.- **L'interrogation** : `ApproximateNaiveMlnReasoner.query(mln, formula)` retourne une probabilité marginale. Alternatives : `SimpleSamplingMlnReasoner` (Monte-Carlo), `AlchemyMlnReasoner` (wrapper natif, optionnel).- **Le spectre logique ↔ statistique** : `w = 0` = aucune contrainte, `w = 5+` = quasi-stricte, `w = +∞` = FOL classique.- **L'exception gérée nativement** : une règle stricte (poids `+∞`) domine une règle pondérée concurrente dans le même domaine (cf paradoxe du pingouin).**Cas d'usage industriels** :- **Diagnostic médical** : combiner des symptômes observés (stricts) avec des connaissances médicales générales (pondérées)- **Extraction d'information** : fusionner plusieurs extractions bruitées avec des poids de confiance- **Détection de fraude** : règles métier (strictes) + signaux statistiques (pondérés)- **Réseaux sociaux** : modéliser la diffusion d'influence ou de comportements**Limites des MLN** :- L'inférence est **#P-complète** dans le cas général (Domingos & Richardson 2006)- Le choix des poids est **empirique** (appris par optimization ou fixé à la main)- Pour des domaines > 30 atomes, l'énumération naïve est intractable → préférer MCMC/sampling## Pour aller plus loin- **Notebook suivant** : [Tweety-11-Causal-Python.ipynb](Tweety-11-Causal-Python.ipynb) — réseaux causaux (Pearl, do-calculus)- **Référence** : Richardson, M., & Domingos, P. (2006). *Markov logic networks*. Machine Learning, 62(1-2), 107-136.- **Documentation Tweety** : <https://tweetyproject.org/api/1.30/org/tweetyproject/logics/mln/package-summary.html>- **Code source** : `dotnet-build/build-tweety-mln-shade.pom.xml` (Maven shade) + `build-TweetyMlnShade.csproj` (IKVM) → `org.tweetyproject.tweety-mln.dll` (≈14 MB)",,,,,,,,a6f0a4420757602f,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,9735acd3,markdown,fr,4f993a65d1f31790,"# Tweety-11 — Raisonnement Causal : du do-calculus aux contrefactuels
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Csharp.ipynb,b5cf8af4,markdown,fr,a6f0a4420757602f,"## RésuméCe notebook a couvert :- **Le concept de MLN** : une formule FOL + un poids, unifiant logique symbolique et raisonnement statistique (Richardson & Domingos 2006). Poids = `+∞` (strict, FOL classique) ou `w` fini (tendance statistique, coût `exp(-w)` par violation).- **La construction d'un MLN** : `MarkovLogicNetwork` (extends `BeliefSet<MlnFormula, FolSignature>`) qui contient des `MlnFormula` (stricte ou pondérée) construites à partir de `FolFormula`.- **L'interrogation** : `ApproximateNaiveMlnReasoner.query(mln, formula)` retourne une probabilité marginale. Alternatives : `SimpleSamplingMlnReasoner` (Monte-Carlo), `AlchemyMlnReasoner` (wrapper natif, optionnel).- **Le spectre logique ↔ statistique** : `w = 0` = aucune contrainte, `w = 5+` = quasi-stricte, `w = +∞` = FOL classique.- **L'exception gérée nativement** : une règle stricte (poids `+∞`) domine une règle pondérée concurrente dans le même domaine (cf paradoxe du pingouin).**Cas d'usage industriels** :- **Diagnostic médical** : combiner des symptômes observés (stricts) avec des connaissances médicales générales (pondérées)- **Extraction d'information** : fusionner plusieurs extractions bruitées avec des poids de confiance- **Détection de fraude** : règles métier (strictes) + signaux statistiques (pondérés)- **Réseaux sociaux** : modéliser la diffusion d'influence ou de comportements**Limites des MLN** :- L'inférence est **#P-complète** dans le cas général (Domingos & Richardson 2006)- Le choix des poids est **empirique** (appris par optimization ou fixé à la main)- Pour des domaines > 30 atomes, l'énumération naïve est intractable → préférer MCMC/sampling## Pour aller plus loin- **Notebook suivant** : [Tweety-11-Causal.ipynb](Tweety-11-Causal.ipynb) — réseaux causaux (Pearl, do-calculus)- **Référence** : Richardson, M., & Domingos, P. (2006). *Markov logic networks*. Machine Learning, 62(1-2), 107-136.- **Documentation Tweety** : <https://tweetyproject.org/api/1.30/org/tweetyproject/logics/mln/package-summary.html>- **Code source** : `dotnet-build/build-tweety-mln-shade.pom.xml` (Maven shade) + `build-TweetyMlnShade.csproj` (IKVM) → `org.tweetyproject.tweety-mln.dll` (≈14 MB)",,,,,,,,a6f0a4420757602f,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb,9735acd3,markdown,fr,4f993a65d1f31790,"# Tweety-11 — Raisonnement Causal : du do-calculus aux contrefactuels
 
 | | |
 |---|---|
 | **Série** | [TweetyProject](README.md) — Notebook 11 (Synthèse) |
-| **Précédent** | [Tweety-10-MLN-Python](Tweety-10-MLN-Python.ipynb) (Markov Logic Networks) |
+| **Précédent** | [Tweety-10-MLN](Tweety-10-MLN.ipynb) (Markov Logic Networks) |
 | **Suivant** | — (fin de la série) |
 | **Module Tweety** | `org.tweetyproject.causal` (causal-1.30.jar) |
 | **Durée estimée** | ~50 min |
@@ -1123,7 +1123,7 @@ Ce notebook est **complémentaire** de Tweety-5 §4.4, **non redondant** :
 | API Tweety | `ArgumentationBasedCausalReasoner.query(observations)` | `InterventionalStatement`, `CounterfactualStatement`, `do(X)` |
 
 Tweety-5 répond à *« que déduire de ce que je vois ? »* ; Tweety-11 répond à *« que se passerait-il si j'agissais différemment ? »*.",,,,,,,,4f993a65d1f31790,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,13dd2ed6,markdown,fr,ef005137acf33453,"## 1. Pourquoi la causalité ? — L'échelle de Pearl
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb,13dd2ed6,markdown,fr,ef005137acf33453,"## 1. Pourquoi la causalité ? — L'échelle de Pearl
 
 La logique classique (notebooks 1-4) et probabiliste (Tweety-10 MLN) répondent à la question **« que peut-on déduire d'un ensemble de croyances ? »**. Mais elles sont **aveugles à la direction causale** : un théorème de Bayes ne distingue pas « le baromètre baisse → orage » de « l'orage → le baromère baisse ».
 
@@ -1138,7 +1138,7 @@ La logique classique (notebooks 1-4) et probabiliste (Tweety-10 MLN) répondent 
 Le saut du niveau 1 au niveau 2 est **révolutionnaire** : $P(y \mid x) \neq P(y \mid do(x))$ en présence d'un **confondeur** (cause commune). C'est la frontière entre *corrélation* et *causalité*, inaccessible à la statistique seule.
 
 > **L'idée centrale du do-calculus** : `do(X = x)` ne signifie pas « observer X = x » mais **« forcer X à valoir x en remplaçant son équation causale par une constante »**. Cette opération *rompt* tous les liens entrants vers X, isolant l'effet causal propre de X sur le reste du système.",,,,,,,,ef005137acf33453,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,2ef2100c,markdown,fr,514790a2fb50c523,"### 1.1 Structural Causal Model (SCM)
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb,2ef2100c,markdown,fr,514790a2fb50c523,"### 1.1 Structural Causal Model (SCM)
 
 Un SCM encode un graphe causal comme un système d'**équations structurelles** :
 
@@ -1147,12 +1147,12 @@ $$X_i = f_i(\text{Parents}(X_i), U_i)$$
 où $U_i$ est un bruit exogène (les *atomes de fond* chez Tweety). Dans ce notebook, nous travaillons en logique propositionnelle déterministe : chaque atome *explicable* est défini comme une formule PL de ses parents, et chaque atome *de fond* est une cause racine (non expliquée dans le modèle).
 
 La sémantique est **symbolique** (raisonnement argumentatif sur les mondes possibles), pas numérique — Tweety fait de la causalité *qualitative*, complémentaire de l'approche bayésienne numérique.",,,,,,,,514790a2fb50c523,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,30a75239,markdown,fr,5b762e3e4b87c4fb,"## 2. Configuration du backend causal Tweety (règle F)
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb,30a75239,markdown,fr,5b762e3e4b87c4fb,"## 2. Configuration du backend causal Tweety (règle F)
 
 Ce notebook exige le JAR `causal-1.30.jar` (module `org.tweetyproject.causal`), invoqué via **JPype** (pont Python↔JVM). Aucune simulation, aucun stub : toutes les requêtes ci-dessous sont exécutées par le vrai moteur causal de Tweety.
 
 **Règle F (fail-loud)** : si l'API causale n'est pas invocable, le notebook **échoue bruyamment** plutôt que de produire une sortie de substitution.",,,,,,,,5b762e3e4b87c4fb,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,fa1c7c2a,code,fr,f5206730e9fb5e7f,"import os, sys
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb,fa1c7c2a,code,fr,f5206730e9fb5e7f,"import os, sys
 
 TWEETY_DIR = os.path.abspath(""."")   # ce notebook vit dans le dossier Tweety/
 assert os.path.isfile(os.path.join(TWEETY_DIR, ""tweety_init.py"")), \
@@ -1163,7 +1163,7 @@ sys.path.insert(0, os.getcwd())
 from tweety_init import init_tweety
 ok = init_tweety(verbose=False)
 print(""Backend Tweety initialise :"", ok)",,,,,,,,f5206730e9fb5e7f,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,1843c2e5,code,fr,95fe94c91d051dd3,"# Verification fail-loud : le module causal est-il reellement present ?
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb,1843c2e5,code,fr,95fe94c91d051dd3,"# Verification fail-loud : le module causal est-il reellement present ?
 import glob
 causal_jars = [j for j in glob.glob(os.path.join(TWEETY_DIR, ""libs"", ""*.jar""))
                if ""causal"" in os.path.basename(j).lower()]
@@ -1178,7 +1178,7 @@ from org.tweetyproject.causal.semantics import InterventionalStatement, Counterf
 from org.tweetyproject.causal.reasoner import ArgumentationBasedCausalReasoner, ArgumentationBasedCounterfactualReasoner
 print(""Imports causaux OK : StructuralCausalModel, CausalKnowledgeBase, ""
       ""InterventionalStatement, CounterfactualStatement, 2 reasoners"")",,,,,,,,95fe94c91d051dd3,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,dfa3cf69,markdown,fr,1aaff38c88f29ade,"**Carte de l'API causale** (vérifiée par réflexion sur `causal-1.30.jar`) :
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb,dfa3cf69,markdown,fr,1aaff38c88f29ade,"**Carte de l'API causale** (vérifiée par réflexion sur `causal-1.30.jar`) :
 
 | Classe | Rôle |
 |--------|------|
@@ -1190,7 +1190,7 @@ MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,dfa3cf69,markd
 | `ArgumentationBasedCounterfactualReasoner` | Requêtes contrefactuelles (via twin model) |
 
 > **Note API** : un atome explicable a **exactement une** équation causale. Pour exprimer « $X$ arrive si $A$ **ou** $B$ », on passe une formule composée `A || B`, pas deux appels séparés (le second lèverait `Atom already exists in the model`).",,,,,,,,1aaff38c88f29ade,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,7af9f887,markdown,fr,6443ce8291ec9715,"## 3. Exemple 1 — Le baromètre de Pearl (confondeur à 3 nœuds)
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb,7af9f887,markdown,fr,6443ce8291ec9715,"## 3. Exemple 1 — Le baromètre de Pearl (confondeur à 3 nœuds)
 
 Scénario canonique de la littérature causale. Trois propositions :
 
@@ -1199,7 +1199,7 @@ Scénario canonique de la littérature causale. Trois propositions :
 - **`rain`** (il pleut) — expliqué par `storm`.
 
 Le graphe causal est donc `storm → drops` et `storm → rain` : **`storm` est un confondeur** de `drops` et `rain`. Intuitivement, observer que le baromètre baisse *prédit* la pluie (corrélation), mais **forcer** le baromètre à baisser ne fait *pas* pleuvoir (pas de causalité).",,,,,,,,6443ce8291ec9715,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,6f096fa8,code,fr,e95bbb2ea7bd8c92,"plp = PlParser()
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb,6f096fa8,code,fr,e95bbb2ea7bd8c92,"plp = PlParser()
 def F(s):
     """"""Raccourci : parse une formule PL depuis une chaine.""""""
     return plp.parseFormula(s)
@@ -1215,12 +1215,12 @@ barometer.addExplainableAtom(rain,  storm)    # rain   <=> storm
 
 print(""SCM barometre :"")
 print(barometer.prettyPrint())",,,,,,,,e95bbb2ea7bd8c92,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,5b75fde5,markdown,fr,d3537b4cfd5758db,"Le graphe causal : `storm → {drops, rain}`. La structure `drops <=> storm` et `rain <=> storm` encode les deux flèches sortant de `storm`.
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb,5b75fde5,markdown,fr,d3537b4cfd5758db,"Le graphe causal : `storm → {drops, rain}`. La structure `drops <=> storm` et `rain <=> storm` encode les deux flèches sortant de `storm`.
 
 ### 3.1 Niveau 1 — Observation (corrélation)
 
 *Sachant que le baromètre baisse, pleut-il ?*",,,,,,,,d3537b4cfd5758db,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,f6a041ba,code,fr,eaa0b44ebcdb4015,"# Base de connaissance causale : on couvre les 2 mondes possibles pour l'atome de fond
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb,f6a041ba,code,fr,eaa0b44ebcdb4015,"# Base de connaissance causale : on couvre les 2 mondes possibles pour l'atome de fond
 ckb_bar = CausalKnowledgeBase(barometer)
 ckb_bar.addAssumption(storm)
 ckb_bar.addAssumption(Negation(storm))
@@ -1231,27 +1231,27 @@ obs_reasoner = ArgumentationBasedCausalReasoner()
 p_rain_if_drops = obs_reasoner.query(ckb_bar, [drops], rain)
 print(""[OBSERVATION] observe(drops=True) -> pleut-il ?"", p_rain_if_drops)
 print(""  -> Le barometre predit la pluie : P(rain | drops) = True (correlation via storm)"")",,,,,,,,eaa0b44ebcdb4015,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,ad94b809,markdown,fr,175558c864c790a9,"**Lecture** : `observe(drops) → rain = True`. Statistiquement correct — le baromètre baisse et la pluie sont corrélés via l'orage. Mais cela *n'établit aucune causalité* du baromètre vers la pluie.
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb,ad94b809,markdown,fr,175558c864c790a9,"**Lecture** : `observe(drops) → rain = True`. Statistiquement correct — le baromètre baisse et la pluie sont corrélés via l'orage. Mais cela *n'établit aucune causalité* du baromètre vers la pluie.
 
 ### 3.2 Niveau 2 — Intervention `do(drops)` (causalité)
 
 *Si je **force** le baromètre à baisser (je le débranche et je le règle à la main), pleut-il ?*",,,,,,,,175558c864c790a9,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,827dc149,code,fr,c5422d3af970a42e,"# NIVEAU 2 : intervention do(drops=True)
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb,827dc149,code,fr,c5422d3af970a42e,"# NIVEAU 2 : intervention do(drops=True)
 do_stmt = InterventionalStatement()
 do_stmt.addIntervention(drops, True)     # do(drops) = True
 do_stmt.setConclusion(rain)
 p_rain_if_do_drops = obs_reasoner.query(ckb_bar, do_stmt)
 print(""[INTERVENTION] do(drops=True)     -> pleut-il ?"", p_rain_if_do_drops)
 print(""  -> Forcer le barometre NE FAIT PAS pleuvoir : P(rain | do(drops)) = False"")",,,,,,,,c5422d3af970a42e,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,84dceabb,markdown,fr,b585e1b6acd6eb68,"**Lecture** : `do(drops) → rain = False`. C'est la **signature du do-calculus** :
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb,84dceabb,markdown,fr,b585e1b6acd6eb68,"**Lecture** : `do(drops) → rain = False`. C'est la **signature du do-calculus** :
 
 $$\boxed{P(\text{rain} \mid \text{drops}) = \text{True} \quad \neq \quad P(\text{rain} \mid do(\text{drops})) = \text{False}}$$
 
 L'intervention `do(drops)` a **remplacé l'équation** `drops <=> storm` par la constante `True`, **rompant** le lien `storm → drops`. Il ne reste alors aucun chemin de `drops` vers `rain`. C'est exactement ce que la statistique seule ne sait pas exprimer.",,,,,,,,b585e1b6acd6eb68,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,50811ecd,markdown,fr,10f5baf1d4e2118f,"### 3.3 Visualiser l'opérateur `do`
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb,50811ecd,markdown,fr,10f5baf1d4e2118f,"### 3.3 Visualiser l'opérateur `do`
 
 La méthode `intervene(prop, bool)` renvoie un **nouveau SCM** où l'équation de `prop` est remplacée par une constante. Comparons avant/après :",,,,,,,,10f5baf1d4e2118f,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,0da3f5c4,code,fr,13307bee977e38d4,"print(""SCM original :"")
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb,0da3f5c4,code,fr,13307bee977e38d4,"print(""SCM original :"")
 print(""  "", barometer.prettyPrint().replace(""\n"", ""\n   ""))
 
 print(""\nSCM apres do(drops=True) :"")
@@ -1259,7 +1259,7 @@ barometer_do = barometer.intervene(drops, True)
 print(""  "", barometer_do.prettyPrint().replace(""\n"", ""\n   ""))
 print(""\n=> L'equation 'drops <=> storm' est devenue 'drops <=> +' (constante)."")
 print(""   Le lien storm -> drops est ROMPU : drops ne depend plus de storm."")",,,,,,,,13307bee977e38d4,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,ee9c27b7,markdown,fr,23fad40b71faa796,"## 4. Exemple 2 — Le réseau Sprinkler (Pearl, 4 nœuds, chemins multiples)
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb,ee9c27b7,markdown,fr,23fad40b71faa796,"## 4. Exemple 2 — Le réseau Sprinkler (Pearl, 4 nœuds, chemins multiples)
 
 Le scénario le plus enseigné en causalité (Pearl, *Causality* 2009). Quatre propositions :
 
@@ -1271,7 +1271,7 @@ Le scénario le plus enseigné en causalité (Pearl, *Causality* 2009). Quatre p
 Graphe : `cloudy → sprinkler`, `cloudy → rain`, `{sprinkler, rain} → wet`.
 
 Ici, `sprinkler` et `rain` sont **corrélés** (via `cloudy`) sans que l'un cause l'autre. C'est le piège classique : observer qu'il pleut « prédit » que l'arrosage est actif, mais **forcer la pluie** n'active pas l'arrosage.",,,,,,,,23fad40b71faa796,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,177e8844,code,fr,89b0df7be7908d08,"cloudy    = Proposition(""cloudy"")
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb,177e8844,code,fr,89b0df7be7908d08,"cloudy    = Proposition(""cloudy"")
 sprinkler = Proposition(""sprinkler"")
 rain2     = Proposition(""rain"")
 wet       = Proposition(""wet"")
@@ -1289,10 +1289,10 @@ ckb_sp = CausalKnowledgeBase(sprinkler_net)
 ckb_sp.addAssumption(cloudy)
 ckb_sp.addAssumption(Negation(cloudy))
 print(""Base causale prete (assomptions sur cloudy : les 2 mondes)."")",,,,,,,,89b0df7be7908d08,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,30235578,markdown,fr,9af872e6a73eff96,"### 4.1 Observation vs Intervention — le paradoxe levé
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb,30235578,markdown,fr,9af872e6a73eff96,"### 4.1 Observation vs Intervention — le paradoxe levé
 
 Comparons `observe(rain)` et `do(rain)` sur leur effet sur `sprinkler` :",,,,,,,,9af872e6a73eff96,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,351240b3,code,fr,9a099c9da50e2194,"print(""=== Correlation vs Causalite dans le reseau Sprinkler ===\n"")
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb,351240b3,code,fr,9a099c9da50e2194,"print(""=== Correlation vs Causalite dans le reseau Sprinkler ===\n"")
 
 # (a) OBSERVATION : observe(rain=True) -> sprinkler ?
 p_sprinkler_if_rain = obs_reasoner.query(ckb_sp, [rain2], sprinkler)
@@ -1317,7 +1317,7 @@ print(""       (causalite directe preservee : sprinkler CAUSE wet)\n"")
 
 print(""=> P(sprinkler | observe rain) != P(sprinkler | do rain)"")
 print(""   Signature du do-calculus : l'intervention isole l'effet causal propre."")",,,,,,,,9a099c9da50e2194,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,e9415e3f,markdown,fr,aab002beb4c17b68,"**Lecture comparée** :
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb,e9415e3f,markdown,fr,aab002beb4c17b68,"**Lecture comparée** :
 
 | Requête | Résultat | Interprétation |
 |---------|----------|----------------|
@@ -1326,12 +1326,12 @@ MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,e9415e3f,markd
 | `do(sprinkler=True) → wet` | `True` | Causalité directe préservée : l'arrosage mouille l'herbe |
 
 C'est exactement la distinction qui permet de répondre à des questions d'action : *« faut-il activer l'arrosage pour compenser le manque de pluie ? »* — la statistique ne sait pas, le SCM oui.",,,,,,,,aab002beb4c17b68,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,4674113b,markdown,fr,5868219919186024,"### 4.2 Niveau 3 — Requête contrefactuelle
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb,4674113b,markdown,fr,5868219919186024,"### 4.2 Niveau 3 — Requête contrefactuelle
 
 Le 3ᵉ niveau de Pearl : *« sachant que l'herbe est mouillée, **si l'arrosage avait été désactivé**, l'herbe aurait-elle été mouillée quand même ? »*
 
 Cela requiert un **twin model** — un monde contrefactuel où l'intervention contrefactuelle est appliquée tout en conservant les observations du monde réel. Tweety l'encode via `CounterfactualStatement` + `ArgumentationBasedCounterfactualReasoner`.",,,,,,,,5868219919186024,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,f019fbe5,code,fr,649e42d8f0a6c1b6,"cf_reasoner = ArgumentationBasedCounterfactualReasoner()
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb,f019fbe5,code,fr,649e42d8f0a6c1b6,"cf_reasoner = ArgumentationBasedCounterfactualReasoner()
 
 # CONTREFACTUEL : observe(wet=True) ; si sprinkler avait ete False, wet aurait-il eu lieu ?
 cf = CounterfactualStatement()
@@ -1341,20 +1341,20 @@ cf.setConclusion(wet)                         # question : wet dans le monde con
 result_cf = cf_reasoner.query(ckb_sp, cf)
 print(f""[CONTREFACTUEL] observe(wet=True) ; 'si sprinkler avait ete OFF, herbe mouillee ?' {result_cf}"")
 print(""  -> Oui : sous cloudy=True, rain aurait mouille l'herbe meme sans arrosage."")",,,,,,,,649e42d8f0a6c1b6,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,c445074c,markdown,fr,2dfcbe142d8c561f,"**Lecture** : le contrefactuel répond `True` — sachant que l'herbe est mouillée (et donc probablement `cloudy=True`), si l'arrosage avait été coupé, il aurait **quand même plu**, et l'herbe aurait été mouillée. C'est le raisonnement contrefactuel qui sous-tend la **responsabilité causale** et l'attribution de blâme en droit ou en médecine.
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb,c445074c,markdown,fr,2dfcbe142d8c561f,"**Lecture** : le contrefactuel répond `True` — sachant que l'herbe est mouillée (et donc probablement `cloudy=True`), si l'arrosage avait été coupé, il aurait **quand même plu**, et l'herbe aurait été mouillée. C'est le raisonnement contrefactuel qui sous-tend la **responsabilité causale** et l'attribution de blâme en droit ou en médecine.
 
 > **Contrainte API** : `CounterfactualStatement` exige au moins une `addAssumption` par atome de fond (ici `cloudy`), faute de quoi le reasoner lève `IllegalArgumentException: There must be at least one assumption for each background atom`. Nous avons couvert les deux mondes (`cloudy` et `¬cloudy`) pour énumérer l'incertitude exogène.",,,,,,,,2dfcbe142d8c561f,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,163e159e,markdown,fr,d39e58b06479f43a,"## 5. Exercices
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb,163e159e,markdown,fr,d39e58b06479f43a,"## 5. Exercices
 
 Les trois exercices suivent la convention C.1 (stubs sans erreur volontaire). Complétez-les en vous inspirant des exemples ci-dessus ; le notebook doit rester exécutable de bout en bout.",,,,,,,,d39e58b06479f43a,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,c697090a,markdown,fr,225fdcac69b63c77,"### Exercice 1 — Construire un SCM (éducation et revenu)
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb,c697090a,markdown,fr,225fdcac69b63c77,"### Exercice 1 — Construire un SCM (éducation et revenu)
 
 Construisez un SCM modélisant : `ability` (aptitude, atome de fond) cause à la fois `education` (niveau d'études) et `income` (revenu). Autrement dit, `ability` est un **confondeur**.
 
 1. Définissez les propositions et le SCM (3 atomes).
 2. Ajoutez les équations structurelles.
 3. Vérifiez que `observe(education=True)` prédit `income=True`, mais que `do(education=True)` ne le fait plus (ou plus faiblement).",,,,,,,,225fdcac69b63c77,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,d3e3fb49,code,fr,0e9d63c29599611c,"# Exercice 1 : a completer
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb,d3e3fb49,code,fr,0e9d63c29599611c,"# Exercice 1 : a completer
 ability   = Proposition(""ability"")
 education = Proposition(""education"")
 income    = Proposition(""income"")
@@ -1371,7 +1371,7 @@ result_do      = None  # TODO etudiant
 
 print(""Exercice 1 a completer"")
 print(""  (attendu : observe(education) -> income True ; do(education) -> income False/plus faible)"")",,,,,,,,0e9d63c29599611c,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,203f618f,markdown,fr,00661bc5af891d92,"### Exercice 2 — Prédire l'effet d'une intervention
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb,203f618f,markdown,fr,00661bc5af891d92,"### Exercice 2 — Prédire l'effet d'une intervention
 
 Dans le réseau Sprinkler (`sprinkler_net` déjà construit), prédisez **puis vérifiez** :
 
@@ -1379,25 +1379,25 @@ Dans le réseau Sprinkler (`sprinkler_net` déjà construit), prédisez **puis v
 2. `do(wet=True) → rain` ? (intervention sur un effet — que se passe-t-il ?)
 
 Réfléchissez au résultat attendu **avant** d'exécuter, puis confirmez avec le reasoner.",,,,,,,,00661bc5af891d92,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,f3e62799,code,fr,60b60bf005ae3f23,"# Exercice 2 : a completer
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb,f3e62799,code,fr,60b60bf005ae3f23,"# Exercice 2 : a completer
 # TODO etudiant : construire 2 InterventionalStatement et interroger ckb_sp
 # Indice : do(wet=True) sur un EFFET ne remonte pas la causalite (le graphe est oriente).
 
 ex2_a = None  # TODO etudiant : do(cloudy=True) -> wet
 ex2_b = None  # TODO etudiant : do(wet=True)    -> rain
 print(""Exercice 2 a completer"")",,,,,,,,60b60bf005ae3f23,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,f32e6729,markdown,fr,d9d66e56c1a47e45,"### Exercice 3 — Requête contrefactuelle
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb,f32e6729,markdown,fr,d9d66e56c1a47e45,"### Exercice 3 — Requête contrefactuelle
 
 Formulez un contrefactuel sur le réseau Sprinkler : *« sachant qu'il pleut (`rain=True`), **si `cloudy` avait été faux**, aurait-il plu quand même ? »*
 
 Construisez un `CounterfactualStatement`, ajoutez l'observation, l'intervention contrefactuelle, et la conclusion. N'oubliez pas les assumptions sur `cloudy`.",,,,,,,,d9d66e56c1a47e45,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,69fd3c7b,code,fr,10aa9948af953da2,"# Exercice 3 : a completer
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb,69fd3c7b,code,fr,10aa9948af953da2,"# Exercice 3 : a completer
 # TODO etudiant : CounterfactualStatement sur ckb_sp
 #   observe(rain=True) ; cf-intervention cloudy=False ; conclusion = rain
 cf_ex3 = None  # TODO etudiant
 print(""Exercice 3 a completer"")
 print(""  (reflechir : cloudy est la cause de rain ; si cloudy avait ete faux, rain n'aurait pas eu lieu)"")",,,,,,,,10aa9948af953da2,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,62648150,markdown,fr,68fa93b99911ab14,"## 6. Synthèse — L'échelle de Pearl dans Tweety
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb,62648150,markdown,fr,68fa93b99911ab14,"## 6. Synthèse — L'échelle de Pearl dans Tweety
 
 | Niveau | Question | API Tweety | Opérateur mathématique |
 |--------|----------|------------|------------------------|
@@ -1422,12 +1422,12 @@ Le moteur causal de Tweety est **qualitatif** (booléen) : il ne calcule pas de 
 - **Judea Pearl**, *Causality: Models, Reasoning, and Inference* (Cambridge, 2009) — la référence formelle du do-calculus.
 - **Pearl & Mackenzie**, *The Book of Why* (2018) — version accessible, l'échelle causale.
 - **[Tweety-5-Abstract-Argumentation](Tweety-5-Abstract-Argumentation.ipynb) §4.4** — la couche observationnelle / diagnostique, complémentaire de ce notebook.
-- **[Tweety-10-MLN-Python](Tweety-10-MLN-Python.ipynb)** — l'autre pont symbolique/statistique (FOL pondérée), au niveau 1 de l'échelle.
+- **[Tweety-10-MLN](Tweety-10-MLN.ipynb)** — l'autre pont symbolique/statistique (FOL pondérée), au niveau 1 de l'échelle.
 
 ---
 
 *Notebook 11/11 de la série TweetyProject — capstone de synthèse sur le raisonnement causal.*",,,,,,,,68fa93b99911ab14,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,773b01a6,markdown,fr,22e46bb3e2696585,"## 7. Aller plus loin — le même do-calculus, d'autres paradigmes
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb,773b01a6,markdown,fr,22e46bb3e2696585,"## 7. Aller plus loin — le même do-calculus, d'autres paradigmes
 
 Tweety traite la causalité en **logique propositionnelle** : `do(X)` y est *qualitatif* — un atome forcé, un SCM réécrit, une réponse vrai/faux. C'est idéal pour *voir* la différence entre `observe` et `do` sans se noyer dans les nombres, mais Tweety **ne chiffre pas** un effet causal (« de combien la probabilité de pluie change-t-elle ? ») ni ne lève quantitativement un paradoxe de Simpson. Les séries probabilistes du dépôt reprennent **exactement ce notebook** avec des distributions :
 
@@ -1436,9 +1436,9 @@ Tweety traite la causalité en **logique propositionnelle** : `do(X)` y est *qua
 - **[ICT-5 — Émergence Causale](../../IIT/ICT-Series/ICT-5-CausalEmergence.ipynb)** : le même `do` monte d'un cran — la distribution d'intervention uniforme `p(C)` *est* `do(X_t = x)` appliqué à tout le micro-état, et mesure à **quelle échelle** un système réalise le plus de travail causal (émergence).
 
 > **Vue d'ensemble des quatre paradigmes** : la section « Ponts causaux : le do-calculus de Pearl à travers les paradigmes » du [README IIT](../../IIT/README.md) cartographie comment le symbolique (ce notebook), le bayésien par message passing, le MCMC et la théorie de l'information instancient le même opérateur `do(·)`.",,,,,,,,22e46bb3e2696585,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-CSharp.ipynb,22185c95,markdown,fr,8661fa44d1db2541,"# Tweety-11 — Inférence causale & do-calculus (twin C# from-scratch)
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Csharp.ipynb,22185c95,markdown,fr,8661fa44d1db2541,"# Tweety-11 — Inférence causale & do-calculus (twin C# from-scratch)
 
-Ce notebook est le **jumeau C# / .NET** de [Tweety-11-Causal-Python.ipynb](Tweety-11-Causal-Python.ipynb) — marathon de parité #4956.
+Ce notebook est le **jumeau C# / .NET** de [Tweety-11-Causal.ipynb](Tweety-11-Causal.ipynb) — marathon de parité #4956.
 
 La version Python s'appuie sur **Tweety `causal-1.30.jar`** (via JPype) : un reasoner causal **argumentatif** construit sur
 des *Structural Causal Models* booléens. Ce twin C# **réimplémente le moteur causal from-scratch** (BCL .NET 9, 0 NuGet)
@@ -1448,7 +1448,7 @@ la sémantique contrefactuelle. La lib Java Tweety = `RECOVERABLE-MACHINE` (Pyth
 **Pourquoi from-scratch ?** L'enjeu pédagogique de l'inférence causale (Pearl) n'est pas d'appeler une boîte noire,
 mais de *voir* pourquoi `P(rain | observe drops) != P(rain | do drops)`. Cela exige d'exposer le graphe causal orienté,
 la surgery `do(X)` qui rompt les liens entrants, et l'évaluation des mondes possibles.",,,,,,,,8661fa44d1db2541,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-CSharp.ipynb,613cd651,markdown,fr,4469172acdb17489,"## 1. Moteur causal — modèles structurels booléens
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Csharp.ipynb,613cd651,markdown,fr,4469172acdb17489,"## 1. Moteur causal — modèles structurels booléens
 
 Un **Structural Causal Model (SCM)** booléen est un DAG d'atomes propositionnels :
 - les **atomes de fond** (exogènes) sont les causes racines, libres ;
@@ -1456,7 +1456,7 @@ Un **Structural Causal Model (SCM)** booléen est un DAG d'atomes propositionnel
 
 Étant donné une assignation des atomes de fond, tous les atomes expliqués sont **déterminés** par propagation
 (le graphe est acyclique). Un *monde possible* = une assignation complète cohérente avec les équations.",,,,,,,,4469172acdb17489,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-CSharp.ipynb,27e6a6d2,code,fr,dc5b3a095a0133fa,"using System;
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Csharp.ipynb,27e6a6d2,code,fr,dc5b3a095a0133fa,"using System;
 using System.Linq;
 using System.Text;
 using System.Collections.Generic;
@@ -1464,7 +1464,7 @@ using System.Collections.Generic;
 static void Show(string s) { s.Display(); }
 Show(""Moteur d'inference causale (Boolean structural causal models, from-scratch)."");
 ",,,,,,,,dc5b3a095a0133fa,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-CSharp.ipynb,4e8ecb7c,code,fr,3c708baf273a23c3,"#nullable enable
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Csharp.ipynb,4e8ecb7c,code,fr,3c708baf273a23c3,"#nullable enable
 // --- Formule booleenne sur des atomes : || && ! ( ) + (vrai) - (faux) ---
 public sealed class Formula
 {
@@ -1630,7 +1630,7 @@ public sealed class StructuralCausalModel
 
 Show(""StructuralCausalModel + parser de formules + propagation + Intervene (do-operator) prets."");
 ",,,,,,,,3c708baf273a23c3,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-CSharp.ipynb,1ad2c98d,markdown,fr,bf005ba20cc0d632,"## 2. Reasoner causal — observation, intervention, contrefactuel
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Csharp.ipynb,1ad2c98d,markdown,fr,bf005ba20cc0d632,"## 2. Reasoner causal — observation, intervention, contrefactuel
 
 Trois types de requêtes causales (Pearl) :
 
@@ -1640,7 +1640,7 @@ Trois types de requêtes causales (Pearl) :
 
 > Convention : une requête renvoie **True** si la conclusion est **etablie dans tous les mondes consistants**
 > (si elle est vraie dans certains et fausse dans d'autres, la reponse est **False** = non determine).",,,,,,,,bf005ba20cc0d632,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-CSharp.ipynb,e3fc1ddb,code,fr,9db6c7344baa1ba1,"#nullable enable
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Csharp.ipynb,e3fc1ddb,code,fr,9db6c7344baa1ba1,"#nullable enable
 // Base de connaissance causale : enveloppe le SCM (tous les mondes du modele sont candidats).
 public sealed class CausalKnowledgeBase
 {
@@ -1711,13 +1711,13 @@ public sealed class CausalReasoner
 
 Show(""CausalKnowledgeBase + InterventionalStatement + CounterfactualStatement + CausalReasoner prets."");
 ",,,,,,,,9db6c7344baa1ba1,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-CSharp.ipynb,7f7d8cbd,markdown,fr,86f3debc07b4c7aa,"## 3. Le baromètre — corrélation n'est pas causalité
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Csharp.ipynb,7f7d8cbd,markdown,fr,86f3debc07b4c7aa,"## 3. Le baromètre — corrélation n'est pas causalité
 
 Exemple canonique : un baromètre qui tombe (`drops`) et la pluie (`rain`) sont **toutes deux causées** par l'orage (`storm`).
 Observer le baromètre prédit la pluie (corrélation). **Forcer** le baromètre ne fait PAS pleuvoir (pas de lien causal `drops -> rain`).
 
 > C'est la distinction fondamentale `P(rain | drops) != P(rain | do drops)`.",,,,,,,,86f3debc07b4c7aa,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-CSharp.ipynb,2282ed95,code,fr,4ff5f93ef1177e57,"var storm = ""storm""; var drops = ""drops""; var rain = ""rain"";
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Csharp.ipynb,2282ed95,code,fr,4ff5f93ef1177e57,"var storm = ""storm""; var drops = ""drops""; var rain = ""rain"";
 
 var barometer = new StructuralCausalModel();
 barometer.AddBackgroundAtom(storm);            // storm = cause racine exogene
@@ -1727,7 +1727,7 @@ barometer.AddExplainableAtom(rain,  ""storm"");  // rain   <=> storm
 Show(""SCM barometre :"");
 Show(barometer.PrettyPrint());
 ",,,,,,,,4ff5f93ef1177e57,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-CSharp.ipynb,3ec954e4,code,fr,2ed3fb0080029bc1,"var ckb_bar = new CausalKnowledgeBase(barometer);
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Csharp.ipynb,3ec954e4,code,fr,2ed3fb0080029bc1,"var ckb_bar = new CausalKnowledgeBase(barometer);
 var reasoner = new CausalReasoner();
 
 // NIVEAU 1 : observation (correlation)
@@ -1743,9 +1743,9 @@ bool p_rain_if_do_drops = reasoner.Query(ckb_bar, do_drops);
 Show($""[INTERVENTION] do(drops=True)     -> pleut-il ? {p_rain_if_do_drops}"");
 Show(""  -> Forcer le barometre NE FAIT PAS pleuvoir : P(rain | do(drops)) = False"");
 ",,,,,,,,2ed3fb0080029bc1,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-CSharp.ipynb,84511081,markdown,fr,db9672d3db33104b,"**Visualisation de la chirurgie** : `do(drops=True)` remplace l'équation `drops <=> storm` par `drops <=> +` (constante).
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Csharp.ipynb,84511081,markdown,fr,db9672d3db33104b,"**Visualisation de la chirurgie** : `do(drops=True)` remplace l'équation `drops <=> storm` par `drops <=> +` (constante).
 Le lien `storm -> drops` est **rompu** — `drops` ne dépend plus de `storm`.",,,,,,,,db9672d3db33104b,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-CSharp.ipynb,61fc580d,code,fr,c6f532e03c2e54ac,"Show(""SCM original :"");
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Csharp.ipynb,61fc580d,code,fr,c6f532e03c2e54ac,"Show(""SCM original :"");
 Show(""  "" + barometer.PrettyPrint().Replace(""\n"", ""\n  ""));
 
 Show(""\nSCM apres do(drops=True) :"");
@@ -1754,11 +1754,11 @@ Show(""  "" + barometer_do.PrettyPrint().Replace(""\n"", ""\n  ""));
 Show(""\n=> L'equation 'drops <=> storm' est devenue 'drops <=> +' (constante)."");
 Show(""   Le lien storm -> drops est ROMPU : drops ne depend plus de storm."");
 ",,,,,,,,c6f532e03c2e54ac,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-CSharp.ipynb,fa30c257,markdown,fr,41554741e25955af,"## 4. Réseau Sprinkler — isoler l'effet causal propre
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Csharp.ipynb,fa30c257,markdown,fr,41554741e25955af,"## 4. Réseau Sprinkler — isoler l'effet causal propre
 
 Un SCM plus riche : `cloudy` cause `sprinkler` et `rain` ; tous deux causent `wet`.
 C'est lejouet classique pour montrer que `do(rain)` casse le confondeur `cloudy` tandis que `do(sprinkler)` préserve la causalité directe vers `wet`.",,,,,,,,41554741e25955af,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-CSharp.ipynb,f59585fe,code,fr,93f75457b44bb369,"var cloudy = ""cloudy""; var sprinkler = ""sprinkler""; var rain2 = ""rain""; var wet = ""wet"";
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Csharp.ipynb,f59585fe,code,fr,93f75457b44bb369,"var cloudy = ""cloudy""; var sprinkler = ""sprinkler""; var rain2 = ""rain""; var wet = ""wet"";
 
 var sprinkler_net = new StructuralCausalModel();
 sprinkler_net.AddBackgroundAtom(cloudy);
@@ -1772,7 +1772,7 @@ Show(sprinkler_net.PrettyPrint());
 var ckb_sp = new CausalKnowledgeBase(sprinkler_net);
 Show(""Base causale prete."");
 ",,,,,,,,93f75457b44bb369,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-CSharp.ipynb,5fe956b6,code,fr,a99fd33781cc6aa9,"Show(""=== Correlation vs Causalite dans le reseau Sprinkler ===\n"");
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Csharp.ipynb,5fe956b6,code,fr,a99fd33781cc6aa9,"Show(""=== Correlation vs Causalite dans le reseau Sprinkler ===\n"");
 
 // (a) OBSERVATION : observe(rain=True) -> sprinkler ?
 bool p_sp_if_rain = reasoner.Query(ckb_sp, new List<string> { rain2 }, sprinkler);
@@ -1798,13 +1798,13 @@ Show(""       (causalite directe preservee : sprinkler CAUSE wet)\n"");
 Show(""=> P(sprinkler | observe rain) != P(sprinkler | do rain)"");
 Show(""   Signature du do-calculus : l'intervention isole l'effet causal propre."");
 ",,,,,,,,a99fd33781cc6aa9,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-CSharp.ipynb,5571b2be,markdown,fr,d00cdad8dd2fcd03,"## 5. Raisonnement contrefactuel — mondes possibles
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Csharp.ipynb,5571b2be,markdown,fr,d00cdad8dd2fcd03,"## 5. Raisonnement contrefactuel — mondes possibles
 
 Un **contrefactuel** : « on a observé `wet=True` ; si `sprinkler` avait été OFF, l'herbe aurait-elle tout de même été mouillée ? »
 
 Sémantique des mondes possibles : on fixe le monde réel (observé), on applique l'intervention contrefactuelle
 en gardant les variables exogènes **fixes**, puis on ré-évalue la conclusion dans le monde contrefactuel.",,,,,,,,d00cdad8dd2fcd03,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-CSharp.ipynb,55b0ab33,code,fr,a643cfab5f373c38,"var cf = new CounterfactualStatement();
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Csharp.ipynb,55b0ab33,code,fr,a643cfab5f373c38,"var cf = new CounterfactualStatement();
 cf.AddObservation(wet, true);                  // monde reel : on a observe wet=True
 cf.AddCounterfactualIntervention(sprinkler, false); // monde contrefactuel : sprinkler=False
 cf.SetConclusion(wet);                         // question : wet dans le monde contrefactuel ?
@@ -1813,7 +1813,7 @@ bool result_cf = reasoner.Query(ckb_sp, cf);
 Show($""[CONTREFACTUEL] observe(wet=True) ; 'si sprinkler avait ete OFF, herbe mouillee ?' {result_cf}"");
 Show(""  -> Oui : sous cloudy=True, rain aurait mouille l'herbe meme sans arrosage."");
 ",,,,,,,,a643cfab5f373c38,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-CSharp.ipynb,4125a1a9,markdown,fr,87c4e406b68497e0,"## 7. Exercices
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Csharp.ipynb,4125a1a9,markdown,fr,87c4e406b68497e0,"## 7. Exercices
 
 ### Exercice 1 — Conclondant caché (ability / education / income)
 
@@ -1822,7 +1822,7 @@ Comparez `observe(education=True) -> income` (biaisé par le conclondant) et `do
 
 > Indice : avec `ability` comme cause commune, l'observation `education` **porte** l'information sur `ability` (donc sur `income`),
 > mais l'intervention `do(education)` coupe ce lien — l'effet direct devrait tomber à False.",,,,,,,,87c4e406b68497e0,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-CSharp.ipynb,f46df358,code,fr,e632f1486c92c7f1,"#nullable enable
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Csharp.ipynb,f46df358,code,fr,e632f1486c92c7f1,"#nullable enable
 // Exercice 1 : a completer
 var ability = ""ability""; var education = ""education""; var income = ""income"";
 
@@ -1839,11 +1839,11 @@ bool? result_do      = null;  // TODO etudiant
 Show(""Exercice 1 a completer"");
 Show(""  (attendu : observe(education) -> income True ; do(education) -> income False)"");
 ",,,,,,,,e632f1486c92c7f1,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-CSharp.ipynb,1fbe9474,markdown,fr,f95e0c41d950c381,"### Exercice 2 — L'intervention ne remonte pas la causalité
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Csharp.ipynb,1fbe9474,markdown,fr,f95e0c41d950c381,"### Exercice 2 — L'intervention ne remonte pas la causalité
 
 Sur `ckb_sp`, comparez `do(cloudy=True) -> wet` (cause ancêtre, effet transmis) et `do(wet=True) -> rain`.
 Le graphe est **orienté** : forcer un effet ne propage rien vers ses causes.",,,,,,,,f95e0c41d950c381,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-CSharp.ipynb,307c3e0a,code,fr,67a107c4800ad889,"#nullable enable
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Csharp.ipynb,307c3e0a,code,fr,67a107c4800ad889,"#nullable enable
 // Exercice 2 : a completer
 // TODO etudiant : construire 2 InterventionalStatement et interroger ckb_sp
 // Indice : do(wet=True) sur un EFFET ne remonte pas la causalite (le graphe est oriente).
@@ -1852,11 +1852,11 @@ InterventionalStatement? ex2_a = null;  // TODO etudiant : do(cloudy=True) -> we
 InterventionalStatement? ex2_b = null;  // TODO etudiant : do(wet=True)    -> rain
 Show(""Exercice 2 a completer"");
 ",,,,,,,,67a107c4800ad889,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-CSharp.ipynb,51d8cf5f,markdown,fr,3c0e262576aebb6b,"### Exercice 3 — Contrefactuel sur la cause
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Csharp.ipynb,51d8cf5f,markdown,fr,3c0e262576aebb6b,"### Exercice 3 — Contrefactuel sur la cause
 
 Construisez un `CounterfactualStatement` sur `ckb_sp` : `observe(rain=True)` ; intervention contrefactuelle `cloudy=False` ;
 conclusion `rain`. Réfléchissez : `cloudy` est la **cause** de `rain` — si `cloudy` avait été faux, `rain` aurait-il eu lieu ?",,,,,,,,3c0e262576aebb6b,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-CSharp.ipynb,3d4bfc0a,code,fr,727d087b9a758912,"#nullable enable
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Csharp.ipynb,3d4bfc0a,code,fr,727d087b9a758912,"#nullable enable
 // Exercice 3 : a completer
 // TODO etudiant : CounterfactualStatement sur ckb_sp
 //   observe(rain=True) ; cf-intervention cloudy=False ; conclusion = rain
@@ -1864,7 +1864,7 @@ CounterfactualStatement? cf_ex3 = null;  // TODO etudiant
 Show(""Exercice 3 a completer"");
 Show(""  (reflechir : cloudy est la cause de rain ; si cloudy avait ete faux, rain n'aurait pas eu lieu)"");
 ",,,,,,,,727d087b9a758912,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-CSharp.ipynb,02c12c96,markdown,fr,93a6086885ca426d,"---
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Csharp.ipynb,02c12c96,markdown,fr,93a6086885ca426d,"---
 
 ## Synthèse
 
@@ -1879,7 +1879,7 @@ Ce twin C# a réimplémenté **from-scratch** les trois piliers de l'inférence 
 La lib Tweety `causal-1.30.jar` (reasoner **argumentatif**) fournit la même sémantique en boîte noire ;
 l'implémentation from-scratch rend **visible** pourquoi l'intervention isole l'effet causal propre — la valeur pédagogique.
 
-**Voir aussi** : [Tweety-11-Causal-Python.ipynb](Tweety-11-Causal-Python.ipynb) (Python + Tweety jar), marathon #4956, EPIC #3801.
+**Voir aussi** : [Tweety-11-Causal.ipynb](Tweety-11-Causal.ipynb) (Python + Tweety jar), marathon #4956, EPIC #3801.
 
 ### Pour aller plus loin
 
@@ -11919,7 +11919,7 @@ Ce notebook couvre maintenant **deux tranches** :
 
 - **§4.2 (suite) appels `isEquivalent` effectifs** : wrapper C# dedie encapsulant les `EquivalenceKernel` (parametre cache) + `Semantics` enum pour les 9 notions. Pedagogie : comparer AF1 vs AF3 (identiques) vs AF1 vs AF2 (inverse) sur les 9 notions, etablir le diagnostic empirique de Strong vs Standard vs Expansion.
 - **§4.3 Explications** (`SufficientExplanationReasoner`, `DialecticalSequenceExplanationReasoner`) — necessite un nouveau shade `tweety-arg-explanations-shade.dll` bundlant `dung` + `explanations-1.30.jar`.
-- **§4.4 Raisonnement causal** (`ArgumentationBasedCausalReasoner`, `StructuralCausalModel`) — necessite shade `tweety-causal-shade.dll`. Pedagogiquement couvert cote C# par [Tweety-11-Causal-CSharp.ipynb](Tweety-11-Causal-CSharp.ipynb) (from-scratch BCL .NET 9, moteur causal booleen, do-calculus, contrefactuels).
+- **§4.4 Raisonnement causal** (`ArgumentationBasedCausalReasoner`, `StructuralCausalModel`) — necessite shade `tweety-causal-shade.dll`. Pedagogiquement couvert cote C# par [Tweety-11-Causal-Csharp.ipynb](Tweety-11-Causal-Csharp.ipynb) (from-scratch BCL .NET 9, moteur causal booleen, do-calculus, contrefactuels).
 
 ### References
 
@@ -11933,7 +11933,7 @@ Ce notebook couvre maintenant **deux tranches** :
 
 *Tranches 1 + 2 du twin .NET⇔Python (EPIC #4956 marathon). Argumentation de Dung = 1er concept (apres les logiques de Tweety-2/3). Tranche 1 = pedagogie from-scratch ; Tranche 2 = integration lib Tweety reelle via IKVM (mandat user 2026-07-22 : « on est arrive a ramener Tweety a portee de Csharp en retrogradant la version Java pour la rendre compatible avec IKVM, ca n'est pas pour ne pas completer le from scratch par de la vraie integration »).*
 ",,,,,,,,9f625d4737deaa6c,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation-Lean.ipynb,00b4f9a8,markdown,fr,88219a85cae084b3,"# Tweety-5b — Théorie de l'argumentation de Dung (companion formel natif)
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation.ipynb,00b4f9a8,markdown,fr,88219a85cae084b3,"# Tweety-5b — Théorie de l'argumentation de Dung (companion formel natif)
 
 Ce notebook est le **companion formel** du lake [`argumentation_lean`](argumentation_lean/),
 dont la lib `Argumentation` prouve les résultats fondateurs de la théorie de
@@ -11954,25 +11954,25 @@ Mathlib #2611).
 > ⚠️ À l'exécution, la première cellule (`import`) peut prendre **~3 min** :
 > le kernel charge les oleans Mathlib via la jonction NTFS. Les suivantes sont
 > instantanées.",,,,,,,,88219a85cae084b3,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation-Lean.ipynb,1c48670e,markdown,fr,f6d61f94e4b5ad2a,"## 1. Import des modules du lake `argumentation_lean`
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation.ipynb,1c48670e,markdown,fr,f6d61f94e4b5ad2a,"## 1. Import des modules du lake `argumentation_lean`
 
 Le lake est structuré en 5 modules (`Basic`, `Characteristic`, `Extensions`,
 `Fundamental`, `Grounded`) sous les namespaces `Argumentation` / `Argumentation.AF`.
 On importe les 5 modules (la config `submodules` du lake ne build pas l'umbrella
 racine — on cible directement les modules qui portent les définitions).",,,,,,,,f6d61f94e4b5ad2a,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation-Lean.ipynb,adb210cb,code,fr,867b4ecb77241894,"import Argumentation.Basic
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation.ipynb,adb210cb,code,fr,867b4ecb77241894,"import Argumentation.Basic
 import Argumentation.Characteristic
 import Argumentation.Extensions
 import Argumentation.Fundamental
 import Argumentation.Grounded
 open Argumentation",,,,,,,,867b4ecb77241894,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation-Lean.ipynb,0521d05a,markdown,fr,a4a57dc3d55481b5,"## 2. Preuve sans `sorry` — `#print axioms`
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation.ipynb,0521d05a,markdown,fr,a4a57dc3d55481b5,"## 2. Preuve sans `sorry` — `#print axioms`
 
 Le théorème phare `grounded_fixed` (point fixe de l'extension grounded) ne dépend que
 des **3 axiomes standards de Lean** (`propext`, `Classical.choice`, `Quot.sound`) — pas
 de `sorryAx` — ce qui prouve que la preuve est **complète** (0 sorry).",,,,,,,,a4a57dc3d55481b5,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation-Lean.ipynb,c222dd71,code,fr,81bad40e7c6381a6,#print axioms AF.grounded_fixed,,,,,,,,81bad40e7c6381a6,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation-Lean.ipynb,91f6d7f7,markdown,fr,6e256cf67ab9fd29,"## 3. Cadre d'argumentation (Dung) — sans-conflit, défense
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation.ipynb,c222dd71,code,fr,81bad40e7c6381a6,#print axioms AF.grounded_fixed,,,,,,,,81bad40e7c6381a6,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation.ipynb,91f6d7f7,markdown,fr,6e256cf67ab9fd29,"## 3. Cadre d'argumentation (Dung) — sans-conflit, défense
 
 Le module `Argumentation/Basic.lean` pose le cadre abstrait de Dung :
 
@@ -11983,12 +11983,12 @@ Le module `Argumentation/Basic.lean` pose le cadre abstrait de Dung :
 La **monotonie de la défense** (`defends_mono`) est le fait combinatoire clé : si `S ⊆ T`
 et `S` défend `a`, alors `T` défend aussi `a`. C'est la croissance de la fonction
 caractéristique, cœur du point fixe de Dung.",,,,,,,,6e256cf67ab9fd29,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation-Lean.ipynb,6c9e3935,code,fr,b0e9364292df621e,"#check AF
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation.ipynb,6c9e3935,code,fr,b0e9364292df621e,"#check AF
 #check AF.conflictFree
 #check AF.defends
 #check AF.conflictFree_empty
 #check AF.defends_mono",,,,,,,,b0e9364292df621e,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation-Lean.ipynb,84702814,markdown,fr,45d80513ace81c8e,"### Lecture : modélisation d'un débat
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation.ipynb,84702814,markdown,fr,45d80513ace81c8e,"### Lecture : modélisation d'un débat
 
 | Symbole Lean | Lecture |
 |--------------|---------|
@@ -11997,7 +11997,7 @@ MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation-Lean.ipynb,8470
 | `defends S a` | tout attaquant de `a` est contre-attaqué par `S` |
 | `conflictFree_empty` | l'ensemble vide est trivialement sans conflit |
 | `defends_mono` | la défense est monotone en l'ensemble défenseur |",,,,,,,,45d80513ace81c8e,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation-Lean.ipynb,9bf67aa5,markdown,fr,5ca6672e1e968008,"## 4. La fonction caractéristique comme morphisme monotone
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation.ipynb,9bf67aa5,markdown,fr,5ca6672e1e968008,"## 4. La fonction caractéristique comme morphisme monotone
 
 Le module `Argumentation/Characteristic.lean` définit la **fonction caractéristique**
 de Dung `F(S) = { a | S défend a }`, bundlée comme un **morphisme d'ordre monotone**
@@ -12005,17 +12005,17 @@ de Dung `F(S) = { a | S défend a }`, bundlée comme un **morphisme d'ordre mono
 point fixe** `F.lfp` — c'est le théorème phare `grounded_fixed`.
 
 L'identité `a ∈ F(S) ⇔ S défend a` (`mem_characteristic_iff`) rend la réécriture directe.",,,,,,,,5ca6672e1e968008,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation-Lean.ipynb,218f80f0,code,fr,738dbfe8b33469b8,"#check AF.characteristic
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation.ipynb,218f80f0,code,fr,738dbfe8b33469b8,"#check AF.characteristic
 #check AF.mem_characteristic_iff
 #check AF.characteristic_eq_defendedBy",,,,,,,,738dbfe8b33469b8,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation-Lean.ipynb,cc21ebcf,markdown,fr,878470770bf398c5,"### Lecture : `F` est un morphisme d'ordre
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation.ipynb,cc21ebcf,markdown,fr,878470770bf398c5,"### Lecture : `F` est un morphisme d'ordre
 
 | Symbole Lean | Lecture |
 |--------------|---------|
 | `AF.characteristic` | `Set α →o Set α` (OrderHom monotone) |
 | `mem_characteristic_iff` | `a ∈ F(S) ⇔ defends S a` |
 | `characteristic_eq_defendedBy` | `F(S) = defendedBy S` (identité) |",,,,,,,,878470770bf398c5,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation-Lean.ipynb,9c55544a,markdown,fr,662d43ab2f6635be,"## 5. Les cinq extensions et leur hiérarchie
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation.ipynb,9c55544a,markdown,fr,662d43ab2f6635be,"## 5. Les cinq extensions et leur hiérarchie
 
 Le module `Argumentation/Extensions.lean` définit les **cinq sémantiques** de Dung,
 de la plus faible à la plus forte :
@@ -12025,21 +12025,21 @@ de la plus faible à la plus forte :
 - `grounded` — le plus petit point fixe de `F` (Knaster–Tarski), *l'extension minimale*.
 - `Preferred S` — extension complète **maximale** pour l'inclusion (Définition 10).
 - `Stable S` — sans conflit + attaque tout argument hors de `S` (Définition 12).",,,,,,,,662d43ab2f6635be,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation-Lean.ipynb,65ba8e9b,code,fr,a707a427d6cab91f,"#check AF.Admissible
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation.ipynb,65ba8e9b,code,fr,a707a427d6cab91f,"#check AF.Admissible
 #check AF.Complete
 #check AF.grounded
 #check AF.Preferred
 #check AF.Stable",,,,,,,,a707a427d6cab91f,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation-Lean.ipynb,aef702ff,markdown,fr,5eb6f8cfd27b337b,"## 6. La Fundamental Lemma de Dung
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation.ipynb,aef702ff,markdown,fr,5eb6f8cfd27b337b,"## 6. La Fundamental Lemma de Dung
 
 Le module `Argumentation/Fundamental.lean` prouve la **Fundamental Lemma** (Dung 1995,
 Lemme 1) : si `S` est admissible et défend `a`, alors `S ∪ {a}` est admissible. C'est la
 **clé de l'existence des extensions preferred** — elle garantit qu'on peut toujours
 étendre une extension admissible défendable, d'où l'existence de maximaux.",,,,,,,,5eb6f8cfd27b337b,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation-Lean.ipynb,0b86f3a7,code,fr,e91f6df08da11882,"#check AF.fundamental_lemma
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation.ipynb,0b86f3a7,code,fr,e91f6df08da11882,"#check AF.fundamental_lemma
 #check AF.fundamental_lemma_defends
 #check AF.fundamental_lemma_defends_self",,,,,,,,e91f6df08da11882,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation-Lean.ipynb,b2683094,markdown,fr,df9b8b69e48df7f2,"## 7. Théorème phare : le point fixe de l'extension grounded
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation.ipynb,b2683094,markdown,fr,df9b8b69e48df7f2,"## 7. Théorème phare : le point fixe de l'extension grounded
 
 Le module `Argumentation/Grounded.lean` prouve le résultat central :
 
@@ -12047,10 +12047,10 @@ Le module `Argumentation/Grounded.lean` prouve le résultat central :
   de la fonction caractéristique (identité de Knaster–Tarski via `OrderHom.map_lfp`).
 - `grounded_defends_iff_mem` : `a ∈ grounded ⇔ grounded défend a`.
 - `grounded_least_complete` : `grounded` est la **plus petite extension complète**.",,,,,,,,df9b8b69e48df7f2,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation-Lean.ipynb,73c8bb86,code,fr,1781bb2a1263d542,"#check AF.grounded_fixed
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation.ipynb,73c8bb86,code,fr,1781bb2a1263d542,"#check AF.grounded_fixed
 #check AF.grounded_defends_iff_mem
 #check AF.grounded_least_complete",,,,,,,,1781bb2a1263d542,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation-Lean.ipynb,57320792,markdown,fr,630f1ff45ca31e15,"### Lecture : grounded = plus petit point fixe (Knaster–Tarski)
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation.ipynb,57320792,markdown,fr,630f1ff45ca31e15,"### Lecture : grounded = plus petit point fixe (Knaster–Tarski)
 
 | Théorème | Conclusion |
 |----------|-----------|
@@ -12060,7 +12060,7 @@ MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation-Lean.ipynb,5732
 
 L'extension grounded est donc **la plus prudente** : exactement ce que tout argument
 défendu itérativement à partir de l'ensemble vide.",,,,,,,,630f1ff45ca31e15,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation-Lean.ipynb,25aac6d1,markdown,fr,77e5ed98e0c8d329,"## 8. La chaîne causale complète
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation.ipynb,25aac6d1,markdown,fr,77e5ed98e0c8d329,"## 8. La chaîne causale complète
 
 Les cinq modules composent une chaîne unique, du cadre abstrait au point fixe :
 
@@ -12069,7 +12069,7 @@ Les cinq modules composent une chaîne unique, du cadre abstrait au point fixe :
 3. **`Extensions`** — les 5 sémantiques (Admissible → Complete → grounded → Preferred → Stable).
 4. **`Fundamental`** — la Fundamental Lemma (étendre un admissible défendable ⟹ admissible).
 5. **`Grounded`** — `F(grounded) = grounded` (point fixe ⟹ grounded est la plus petite complète).",,,,,,,,77e5ed98e0c8d329,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation-Lean.ipynb,60ecf40f,markdown,fr,897ff9f23199eb1b,"## 9. Exercices
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation.ipynb,60ecf40f,markdown,fr,897ff9f23199eb1b,"## 9. Exercices
 
 ### Exercice 1 — Sans-conflit et défense sur un mini-cadre (Python)
 
@@ -12084,7 +12084,7 @@ def conflict_free(S, attacks):
     #                ses deux extremites dans S.
     return None  # TODO
 ```",,,,,,,,897ff9f23199eb1b,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation-Lean.ipynb,683873f1,markdown,fr,1ab3a6986e9516ae,"### Exercice 2 — L'ensemble vide est sans conflit
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation.ipynb,683873f1,markdown,fr,1ab3a6986e9516ae,"### Exercice 2 — L'ensemble vide est sans conflit
 
 Prouvez en Lean que l'ensemble vide est sans conflit (c'est un cas particulier de
 `conflictFree_empty`, mais essayez de le refaire à la main).
@@ -12093,7 +12093,7 @@ Prouvez en Lean que l'ensemble vide est sans conflit (c'est un cas particulier d
 -- TODO etudiant : formaliser conflictFree_empty a la main
 -- example (af : AF α) : af.conflictFree (∅ : Set α) := by sorry
 ```",,,,,,,,1ab3a6986e9516ae,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation-Lean.ipynb,a6447b07,markdown,fr,abc572d7fa6f9fdb,"### Exercice 3 — Un cadre sans extension stable (contre-exemple)
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation.ipynb,a6447b07,markdown,fr,abc572d7fa6f9fdb,"### Exercice 3 — Un cadre sans extension stable (contre-exemple)
 
 Un cycle de 3 arguments (`a` attaque `b`, `b` attaque `c`, `c` attaque `a`) n'admet
 **pas** d'extension stable : tout ensemble sans-conflit laisse au moins un argument
@@ -12104,7 +12104,7 @@ non attaqué. Justifiez sur papier, puis proposez la formalisation Lean du contr
 -- def threeCycle : AF (Fin 3) := ⟨fun i j => ...⟩
 -- example : ¬ ∃ S, (threeCycle).Stable S := by sorry
 ```",,,,,,,,abc572d7fa6f9fdb,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation-Lean.ipynb,ee5e472f,markdown,fr,15f8f342bf1d3d5b,"## Conclusion
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation.ipynb,ee5e472f,markdown,fr,15f8f342bf1d3d5b,"## Conclusion
 
 Ce companion **natif** exhibe la preuve formelle 0-sorry de la théorie de l'argumentation
 de Dung dans le kernel Lean lui-même : `#check` et `#print axioms` rendent les signatures
@@ -18637,7 +18637,7 @@ else:
 ",,,,,,,,477fba278bdfc32a,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-9-Preferences-Csharp.ipynb,t9cs-md-title,markdown,fr,c4a269c14e397a7c,"# Préférences et Théorie du Vote en C# / .NET (port natif IKVM)
 
-**Navigation** : [<- Tweety-8-Agent-Dialogues](Tweety-8-Agent-Dialogues.ipynb) | [Index](Tweety-1-Setup.ipynb) | [Tweety-10-MLN-CSharp ->](Tweety-10-MLN-CSharp.ipynb)
+**Navigation** : [<- Tweety-8-Agent-Dialogues](Tweety-8-Agent-Dialogues.ipynb) | [Index](Tweety-1-Setup.ipynb) | [Tweety-10-MLN-Csharp ->](Tweety-10-MLN-Csharp.ipynb)
 
 > **Serie Tweety -- port C#/.NET natif (EPIC [#4667](https://github.com/jsboige/CoursIA/issues/4667)).**
 > Ce notebook exploite le module **`org.tweetyproject.preferences`** de [TweetyProject](https://tweetyproject.org/) **sans JVM** :
@@ -19230,7 +19230,7 @@ Cette serie couvre les principaux modules de TweetyProject 1.30 en C#/.NET natif
 
 ---
 
-**Navigation** : [<- Tweety-8-Agent-Dialogues](Tweety-8-Agent-Dialogues.ipynb) | [Index](Tweety-1-Setup.ipynb) | [Tweety-10-MLN-CSharp ->](Tweety-10-MLN-CSharp.ipynb)",,,,,,,,e8400f194e015cf0,,,,,,,,
+**Navigation** : [<- Tweety-8-Agent-Dialogues](Tweety-8-Agent-Dialogues.ipynb) | [Index](Tweety-1-Setup.ipynb) | [Tweety-10-MLN-Csharp ->](Tweety-10-MLN-Csharp.ipynb)",,,,,,,,e8400f194e015cf0,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-9-Preferences-Csharp.ipynb,t9cs-md-jury,markdown,fr,5811baa465b7e830,"## Exemple guide : Système de Vote pour un Jury
 
 Concevez un système de vote pour un jury de 5 membres evaluant 4 projets.
@@ -19697,14 +19697,14 @@ Reprenez les exercices des notebooks C# existants (`Tweety-2-Basic-Logics-Csharp
 1. Créez un fichier `Addition.java` avec une classe `Arith` exposant `static int add(int a, int b)`. Compilez avec `javac --release 8`, empaquetez, convertissez via ikvmc, et appelez depuis un notebook C# dans ce kernel.
 2. Modifiez le probe pour passer un argument : `Probe.greet(String name)` retournant `""Bonjour "" + name`. Verifiez que les chaînes Unicode (avec accents) survivent au round-trip Java -> IKVM -> .NET.
 3. Explorez l'integration Maven : ajoutez un `<IkvmReference>` sur un JAR du dossier `libs/` (par exemple `commons-math-2.2.jar`, Java 5 = IKVM-chargeable) et appelez `org.apache.commons.math.util.MathUtils.factorial(5)`.",,,,,,,,7dea55ba0aa955d0,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-CSharp.ipynb,a1b2c3d4,markdown,fr,ef0d060484907927,"**Lecture du résultat — la signature du do-calculus.** Le réseau Sprinkler montre pourquoi *observer* n'est pas *intervenir*. La variable `cloudy` est un **facteur de confusion** (*confounder*) : elle cause à la fois `rain` (nuage → pluie) et `sprinkler` (nuage → on n'arrose pas), ce qui crée une corrélation fallacieuse entre `rain` et `sprinkler`. C'est pourquoi `observe(rain=True)` re monte vers `sprinkler` (P = True) : l'observation circule par le **chemin du dos** `sprinkler ← cloudy → rain`.
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Csharp.ipynb,a1b2c3d4,markdown,fr,ef0d060484907927,"**Lecture du résultat — la signature du do-calculus.** Le réseau Sprinkler montre pourquoi *observer* n'est pas *intervenir*. La variable `cloudy` est un **facteur de confusion** (*confounder*) : elle cause à la fois `rain` (nuage → pluie) et `sprinkler` (nuage → on n'arrose pas), ce qui crée une corrélation fallacieuse entre `rain` et `sprinkler`. C'est pourquoi `observe(rain=True)` re monte vers `sprinkler` (P = True) : l'observation circule par le **chemin du dos** `sprinkler ← cloudy → rain`.
 
 L'intervention `do(rain=True)` **chirurgie** ce chemin : elle rompt `cloudy → rain` et fixe `rain` depuis l'extérieur du système. La remontée vers `sprinkler` disparaît (P = False) — une intervention ne remonte pas le courant causal. En revanche, `do(sprinkler=True) → wet` reste vraie : aucun confondeur sur ce chemin, la causalité **directe** est préservée.
 
 La dernière ligne formalise la leçon centrale de Pearl : `P(sprinkler | observe rain) ≠ P(sprinkler | do rain)`. Cette inégalité — invisible à la seule statistique observationnelle — est exactement ce que le do-calculus permet de calculer, en identifiant puis en « chirurgiant » les chemins du dos (*backdoor paths*) qui mêlent corrélation et causalité.",,,,,,,,ef0d060484907927,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-CSharp.ipynb,a3c3afb8,markdown,fr,ab6f2245a1462dfa,"## 6. Parité jpype ⇔ IKVM — le moteur causal TweetyProject via le pont .NET
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Csharp.ipynb,a3c3afb8,markdown,fr,ab6f2245a1462dfa,"## 6. Parité jpype ⇔ IKVM — le moteur causal TweetyProject via le pont .NET
 
-Le jumeau Python ([Tweety-11-Causal-Python.ipynb](Tweety-11-Causal-Python.ipynb)) charge la **même** librairie Java
+Le jumeau Python ([Tweety-11-Causal.ipynb](Tweety-11-Causal.ipynb)) charge la **même** librairie Java
 TweetyProject `org.tweetyproject.causal` (v1.30) via **jpype** ; ce twin C# charge la **même** librairie
 via **IKVM** (pont Java⇄.NET). C'est la parité visée par la série (#10381) : deux écosystèmes, un moteur de production.
 
@@ -19715,7 +19715,7 @@ c'est la sémantique de TweetyProject.
 
 La DLL `org.tweetyproject.tweety-causal.dll` (shade IKVM 8.15, v1.30) expose **13/13** classes causales actives —
 la 14ᵉ (`SimpleCausalReasoner`) est du code mort commenté en amont (PR #10566, leçon `tweety8-gate`).",,,,,,,,ab6f2245a1462dfa,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-CSharp.ipynb,7af77e3e,code,fr,5520d3e90e3f9ab0,"// Chargement du pont IKVM (TweetyProject v1.30 -> .NET) — recette éprouvée (cf. Tweety-5 §4.1.2).
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Csharp.ipynb,7af77e3e,code,fr,5520d3e90e3f9ab0,"// Chargement du pont IKVM (TweetyProject v1.30 -> .NET) — recette éprouvée (cf. Tweety-5 §4.1.2).
 #r ""nuget: IKVM, 8.15.0""
 #r ""nuget: IKVM.Image, 8.15.0""
 #r ""nuget: IKVM.Image.runtime.win-x64, 8.15.0""
@@ -19746,7 +19746,7 @@ AppContext.SetData(""IKVM.Home"", ikvmHome);
 
 var causalDll = ""org.tweetyproject.tweety-causal.dll"";
 Show($""DLL causale chargée : {AssemblyName.GetAssemblyName(causalDll)} ({new FileInfo(causalDll).Length / 1024.0:F0} Ko)"");",,,,,,,,5520d3e90e3f9ab0,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-CSharp.ipynb,18e57bc6,code,fr,25adcb2b6d955acd,"// Réseau Sprinkler via le VRAI moteur TweetyProject (même scénario qu'en §4, pour comparer directement).
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Csharp.ipynb,18e57bc6,code,fr,25adcb2b6d955acd,"// Réseau Sprinkler via le VRAI moteur TweetyProject (même scénario qu'en §4, pour comparer directement).
 var ikvmAsm = Assembly.LoadFrom(""org.tweetyproject.tweety-causal.dll"");
 var IKVM_SCM  = ikvmAsm.GetType(""org.tweetyproject.causal.syntax.StructuralCausalModel"");
 var IKVM_Prop = ikvmAsm.GetType(""org.tweetyproject.logics.pl.syntax.Proposition"");
@@ -19781,7 +19781,7 @@ Show(ikvmPretty.Invoke(ikvmDoSpr, null).ToString());
 
 Show(""\n=> 'sprinkler <=> cloudy' est devenu 'sprinkler <=> +' (constante) : le moteur Java"");
 Show(""   coupe bien le lien cloudy -> sprinkler, exactement comme la chirurgie from-scratch du §3."");",,,,,,,,25adcb2b6d955acd,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-CSharp.ipynb,7c9dd2d6,markdown,fr,cd73908623bfae00,"**Parité confirmée.** Le moteur causal TweetyProject (Java, via IKVM) produit **exactement** la même
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Csharp.ipynb,7c9dd2d6,markdown,fr,cd73908623bfae00,"**Parité confirmée.** Le moteur causal TweetyProject (Java, via IKVM) produit **exactement** la même
 chirurgie que l'implémentation from-scratch du §3–§4 : `do(sprinkler=True)` remplace l'équation
 `sprinkler <=> cloudy` par la constante `+` (vrai), rompant le lien `cloudy -> sprinkler`.
 
@@ -19794,7 +19794,7 @@ que le moteur de référence les reproduit (IKVM).
 > étoilées `sprinkler*`, `wet*` sont les copies contrefactuelles du §5), et le reasoner argumentatif
 > `ArgumentationBasedCausalReasoner` résout les requêtes via SAT (sat4j). Ces capacités supplémentaires du
 > moteur Java sont accessibles par le même pont IKVM.",,,,,,,,cd73908623bfae00,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-CSharp.ipynb,diag-refuted-10471,markdown,fr,686bc096e416e0f9,"> **Plafond upstream du pont causal — diagnostic réfuté (PR #10471).**
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Csharp.ipynb,diag-refuted-10471,markdown,fr,686bc096e416e0f9,"> **Plafond upstream du pont causal — diagnostic réfuté (PR #10471).**
 > La v1 du shade IKVM ne matérialisait que **5 des 14 classes** du contrat `org.tweetyproject.causal.*` —
 > un verdict INTRINSIC avait été posé au registre SOTA (#3801). Les 9 classes alors réputées inaccessibles :
 > `CausalParser`, `AbstractArgumentationBasedCausalReasoner`, `AbstractCausalReasoner`,
