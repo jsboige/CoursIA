@@ -314,3 +314,105 @@ def test_declared_fallback_never_gates():
         m.read_notebook_at = orig
     assert rows[0]["regressed"] is False
     assert rows[0]["classes"]["DECLARED_FALLBACK"]["delta"] == 1
+
+
+# --- Base-conditioned exemption (#19038 review, ai-01) ---------------------
+# The two anchors alone cannot tell a declared demo stub from a degradation
+# SUFFERED at re-execution: every try/except cell carries its banner as a
+# literal in its own source. A banner that REPLACES a substantial base output
+# is a capability loss (#3473 / #11685) and must keep gating.
+
+GRAPHVIZ_SRC = ("try:\n"
+                "    import graphviz\n"
+                "    g = graphviz.Digraph(); g.edge('a', 'b'); display(g)\n"
+                "except ImportError:\n"
+                "    print('Graphviz non disponible : rendu du graphe saute')")
+BANNER_OUT = "Graphviz non disponible : rendu du graphe saute"
+
+
+def id_cell(cid, source, outputs):
+    return {"cell_type": "code", "id": cid, "source": source,
+            "outputs": outputs}
+
+
+def stream(text):
+    return [{"output_type": "stream", "name": "stdout", "text": text}]
+
+
+RENDER = [{"output_type": "display_data",
+           "data": {"image/svg+xml": "<svg/>",
+                    "text/plain": "<graphviz.Digraph object>"}}]
+
+
+def test_declared_banner_replacing_a_base_render_still_fires():
+    """The hole ai-01 reproduced: base renders, head prints only its banner."""
+    base = {"cells": [id_cell("c-gv", GRAPHVIZ_SRC, RENDER)]}
+    head = {"cells": [id_cell("c-gv", GRAPHVIZ_SRC, stream(BANNER_OUT))]}
+
+    got = scan(head, base_nb=base)
+
+    assert len(got["TOOL_FAILURE"]) == 1, "a lost render must keep gating"
+    assert not got["DECLARED_FALLBACK"]
+
+
+def test_declared_fallback_kept_when_base_was_already_in_fallback():
+    base = {"cells": [id_cell("c-gv", GRAPHVIZ_SRC, stream(BANNER_OUT))]}
+    head = {"cells": [id_cell("c-gv", GRAPHVIZ_SRC, stream(BANNER_OUT))]}
+
+    got = scan(head, base_nb=base)
+
+    assert not got["TOOL_FAILURE"]
+    assert len(got["DECLARED_FALLBACK"]) == 1
+
+
+def test_declared_fallback_kept_for_a_cell_new_at_head():
+    base = {"cells": [id_cell("c-gv", GRAPHVIZ_SRC, RENDER)]}
+    head = {"cells": [id_cell("c-new", GRAPHVIZ_SRC, stream(BANNER_OUT))]}
+
+    got = scan(head, base_nb=base)
+
+    assert not got["TOOL_FAILURE"], "a cell with no base carrier is a stub"
+    assert len(got["DECLARED_FALLBACK"]) == 1
+
+
+def test_declared_banner_over_a_mime_only_render_still_fires():
+    """A figure has no text/plain repr -- it must still count as content."""
+    base = {"cells": [id_cell("c-gv", GRAPHVIZ_SRC,
+                              [{"output_type": "display_data",
+                                "data": {"image/svg+xml": "<svg/>"}}])]}
+    head = {"cells": [id_cell("c-gv", GRAPHVIZ_SRC, stream(BANNER_OUT))]}
+
+    got = scan(head, base_nb=base)
+
+    assert len(got["TOOL_FAILURE"]) == 1
+
+
+def test_without_a_base_the_exemption_is_unchanged():
+    """scan() without base_nb keeps its historical classification."""
+    head = {"cells": [id_cell("c-gv", GRAPHVIZ_SRC, stream(BANNER_OUT))]}
+
+    got = scan(head)
+
+    assert not got["TOOL_FAILURE"]
+    assert len(got["DECLARED_FALLBACK"]) == 1
+
+
+def test_compare_gates_a_banner_that_replaces_a_render():
+    """End-to-end: the ratchet goes red on the very shape it must catch."""
+    from check_output_failure_text import compare
+    import check_output_failure_text as m
+
+    paths = ["nb.ipynb"]
+    base_nb = {"cells": [id_cell("c-gv", GRAPHVIZ_SRC, RENDER)]}
+    head_nb = {"cells": [id_cell("c-gv", GRAPHVIZ_SRC, stream(BANNER_OUT))]}
+    orig = m.read_notebook_at
+    m.read_notebook_at = lambda ref, path, cwd=None: (
+        base_nb if ref == "b" else head_nb)
+    try:
+        rows = compare("b", "h", paths)
+    finally:
+        m.read_notebook_at = orig
+
+    assert rows[0]["regressed"] is True
+    assert rows[0]["classes"]["TOOL_FAILURE"]["delta"] == 1
+    assert rows[0]["classes"]["DECLARED_FALLBACK"]["delta"] == 0
