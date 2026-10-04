@@ -136,9 +136,9 @@ DIFFERE : un chemin identique est la reservation la plus forte qui soit, jamais
 un soi-meme. Le pendant est teste symetriquement (une cible que MA propre
 revision porte reste a moi).
 
-QUATRE DIAGNOSTICS D'ACCRETION (advisory, #19144)
--------------------------------------------------
-Le meme organe porte depuis #19144 quatre lectures de la regle
+TROIS DIAGNOSTICS D'ACCRETION (advisory, #19144)
+------------------------------------------------
+Le meme organe porte depuis #19144 trois lectures de la regle
 `notebook-accretion-numbering.md`, toutes **informatives** : elles ne changent
 JAMAIS le code retour (main() ne rend 1 que sur les conflits de slot
 pre-existants) et n'empechent aucun merge. Elles rendent lisible, avant
@@ -151,10 +151,6 @@ l'arbitrage humain, ce qu'une PR fait a la numerotation d'une branche :
                    les trois defauts anciens (`GameTheory-03`, `Lean-16`,
                    `Tweety-7`) ne sont signales QUE si cette PR y pose une
                    lettre, jamais au titre de l'etat herite
-    MAX_PLUS_ONE   un numero canonique egal au max du repertoire + 1, sans
-                   ligne `Slot:` dans le corps de la PR -- l'auteur doit dire
-                   si ce numero ouvre un nouveau palier, ou quel parent a ete
-                   ecarte et pourquoi (regle §3/§5)
     PENDING_TABLE  la revision ajoute un notebook (ou edite le README) d'un
                    repertoire dont la table de renommage est publiee et NON
                    appliquee -- source : les entrees `reserved` de la table
@@ -166,11 +162,8 @@ diagnostic. Un test le prouve en falsifiabilite (cf `test_check_slot_reservation
 
 **Source indisponible.** La base illisible fait deja remonter `RuntimeError` ->
 sortie 2 (cf `main`) : l'accretion est calculee dans le meme bloc `try`, donc elle
-ne peut pas « ne rien trouver » la ou elle n'a rien pu lire. Le corps de la PR est
-la seule entree NON-git ; il vient de `--body-file` / `--body`, sinon de
-`ACCRETION_PR_BODY`, sinon de la charge d'evenement `GITHUB_EVENT_PATH`. Aucun des
-trois : MAX_PLUS_ONE n'est pas rendu, et le statut ECRIT `not_supplied` -- une
-mesure qu'on n'a pas faite ne s'imprime pas comme un constat.
+ne peut pas « ne rien trouver » la ou elle n'a rien pu lire. Les trois constats se
+lisent sur des sources git ; aucun ne depend d'une entree fournie par l'auteur.
 
 Sortie : 0 = tous les slots examines sont libres (ou exempts) ; 1 = au moins un
 conflit ; 2 = erreur d'invocation, ou controle de self-test non satisfait (le
@@ -189,10 +182,6 @@ Usage
 
     # Sans reseau (CI, voie rapide) : sources arbre + revision + declarees
     python scripts/notebook_tools/check_slot_reservation.py --offline
-
-    # Accretion (advisory) : declarer le slot ouvert par un numero terminal
-    python scripts/notebook_tools/check_slot_reservation.py --offline \
-        --body-file "$RUNNER_TEMP/pr_body.md"
 
     # Advisory SEUL (check-run dedie, ne redit pas le verdict de slot)
     python scripts/notebook_tools/check_slot_reservation.py --offline --accretion-only
@@ -516,7 +505,7 @@ def examine(targets, occupants, releases):
 
 # --------------------------------------------------------------- accretion
 #
-# Les quatre diagnostics d'accretion (#19144). Ils lisent la regle
+# Les trois diagnostics d'accretion (#19144). Ils lisent la regle
 # `notebook-accretion-numbering.md` sur les notebooks AJOUTES par la revision et
 # rendent des **constats**, jamais un verdict : `main` ne lit pas cette liste pour
 # son code retour (cf docstring -- un constat mal fonde coute une phrase a
@@ -524,7 +513,6 @@ def examine(targets, occupants, releases):
 
 ACCRETION_DEPTH = "DEPTH"
 ACCRETION_NO_BASE = "NO_BASE"
-ACCRETION_MAX_PLUS_ONE = "MAX_PLUS_ONE"
 ACCRETION_PENDING_TABLE = "PENDING_TABLE"
 
 # Plafond de branche de la regle §4. C'est une LETTRE, pas un compte : `03f` est
@@ -539,13 +527,6 @@ ACCRETION_MAX_LETTER = "f"
 # `declared_claims` l'ignore, et pourquoi ce diagnostic la relit pour son compte
 # plutot que de lui inventer un index.
 PENDING_TABLE_KIND = "pending_table"
-
-# Variable d'environnement qui porte le corps de la PR en CI. Meme canal in-memory
-# que `MD_CONTENT_LOSS_PR_BODY` (#13491) : le corps ne transite jamais par un
-# fichier ecrit depuis le shell, ce qui ferme le motif CodeQL
-# `actions/code-injection`. `GITHUB_EVENT_PATH` reste la source de repli, et
-# `--body` / `--body-file` priment sur les deux.
-ACCRETION_BODY_ENV = "ACCRETION_PR_BODY"
 
 
 def _accretion_of(path):
@@ -589,20 +570,6 @@ def _has_base(d, series, number, everything):
     return False
 
 
-def _has_slot_line(body):
-    """Le corps declare-t-il le slot ouvert par un numero max+1 ? (regle §3/§5)
-
-    La decoration markdown est retiree des DEUX bouts : `**Slot:**` et `- Slot : …`
-    declarent la meme chose. N'en reconnaitre qu'une seule ecrirait une regle que
-    l'auteur ne peut pas deviner, et le diagnostic accuserait un corps correct.
-    """
-    for line in (body or "").splitlines():
-        s = line.strip().strip("*_`#>+- \t").lower()
-        if s.startswith("slot:") or s.startswith("slot :"):
-            return True
-    return False
-
-
 def pending_tables(doc):
     """Repertoires dont une table de renommage est publiee et NON appliquee."""
     out = []
@@ -615,45 +582,13 @@ def pending_tables(doc):
     return out
 
 
-def body_from_env(env=None, path=None):
-    """Corps de la PR lu dans l'environnement du runner. Deux canaux, dans l'ordre :
-
-    1. `ACCRETION_PR_BODY` -- la variable in-memory, meme patron que
-       `MD_CONTENT_LOSS_PR_BODY` (#13491) : le corps n'est jamais ecrit sur le
-       disque du runner par un `printf` du shell, ce qui ferme le motif CodeQL
-       `actions/code-injection` que ce patron a ete introduit pour eviter ;
-    2. `GITHUB_EVENT_PATH` -- la charge d'evenement, deja sur le disque du runner,
-       qui ne demande aucune modification du workflow. La voie rapide ne transporte
-       pas le corps dans son argv (`substitute` ne connait que `base_ref` et
-       `changed_paths`) : c'est cette source qui rend MAX_PLUS_ONE mesurable en CI,
-       c'est-a-dire la ou il sert.
-
-    Rend `(texte, source)` et jamais une exception : `(None, motif)` est ce qui
-    permet d'ecrire « non mesure » plutot que de conclure a tort.
-    """
-    env = os.environ if env is None else env
-    if isinstance(env.get(ACCRETION_BODY_ENV), str):
-        return env[ACCRETION_BODY_ENV], "env"
-    p = path or env.get("GITHUB_EVENT_PATH")
-    if not p:
-        return None, "no_event"
-    try:
-        payload = json.loads(Path(p).read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return None, "event_unreadable"
-    body = (payload.get("pull_request") or {}).get("body")
-    if not isinstance(body, str):
-        return None, "no_pr_body"
-    return body, "event"
-
-
 def _finding(kind, path, detail, slot=None, d=None):
     return {"kind": kind, "path": path, "dir": d if d is not None else split_dir(path)[0],
             "slot": slot, "detail": detail}
 
 
-def accretion_findings(added, base_files, readmes, body, body_supplied, doc):
-    """Les quatre constats d'accretion sur les notebooks ajoutes/renommes (#19144).
+def accretion_findings(added, base_files, readmes, doc):
+    """Les trois constats d'accretion sur les notebooks ajoutes/renommes (#19144).
 
     `--no-renames` cote appelant (comme le garde de slot) : un rename arrive donc
     ici comme un ajout, et c'est voulu -- la modification du nom est precisement ce
@@ -707,25 +642,6 @@ def accretion_findings(added, base_files, readmes, body, body_supplied, doc):
                 detail=("aucun `%s-%s-*.ipynb` sans lettre dans le repertoire : la base occupe "
                         "le slot `a` (regle §2), une lettre sans base ouvre une branche fantome"
                         % (series, number))))
-
-        # MAX_PLUS_ONE -- le numero est le max de la serie + 1. Le corps est
-        # l'unique entree NON-git de ce diagnostic : sans lui la ligne `Slot:` ne
-        # peut pas etre lue, et un « pas trouve » y serait indiscernable d'un « pas
-        # regarde » (cf status[SOURCE_ACCRETION]["body"] -- jamais silencieux).
-        if body_supplied:
-            numbers = []
-            for o in everything:
-                if split_dir(o)[0] != d or _same_render(o, p):
-                    continue
-                other = _accretion_of(o)
-                if other and other[0] == series:
-                    numbers.append(int(other[1]))
-            if numbers and int(number) == max(numbers) + 1 and not _has_slot_line(body):
-                findings.append(_finding(
-                    ACCRETION_MAX_PLUS_ONE, p, slot=slot,
-                    detail=("numero max+1 de la serie (`%s`) sans ligne `Slot:` dans le corps : "
-                            "dire s'il ouvre un palier, ou quel parent a ete ecarte et pourquoi"
-                            % slot)))
 
     return findings
 
@@ -813,53 +729,39 @@ def _scenario(targets, occupants, releases, want):
 
 # Chaque cas porte la FORME qui a produit le defaut reel, pas une forme inventee :
 # `Search-03g` (la tete de #19109 avant reparation), `Search-12a` (lettre sans
-# base, mesure du 04/10), `ICT-45` (max+1, commit ab3e6e4fde), le twin C# de
-# `GT-02c` (negatif §7). Les temoins sont rejoues sur l'historique par
-# `scripts/tests/test_check_slot_reservation.py`.
+# base, mesure du 04/10), le twin C# de `GT-02c` (negatif §7). Les temoins sont
+# rejoues sur l'historique par `scripts/tests/test_check_slot_reservation.py`.
 _ACCRETION_CASES = [
-    # (label, added, base, readmes, body, body_supplied, doc, want)
+    # (label, added, base, readmes, doc, want)
     ("VRAI POSITIF  DEPTH : lettre au-dela de `f`",
      ["s/Search-03g-Neuf.ipynb"],
-     ["s/Search-03-A.ipynb", "s/Search-03f-B.ipynb"], [], "", False, None,
+     ["s/Search-03-A.ipynb", "s/Search-03f-B.ipynb"], [], None,
      ["DEPTH"]),
     ("NEGATIF       DEPTH : `03f` est la derniere lettre licite",
      ["s/Search-03f-B.ipynb"],
-     ["s/Search-03-A.ipynb", "s/Search-03e-C.ipynb"], [], "", False, None, []),
+     ["s/Search-03-A.ipynb", "s/Search-03e-C.ipynb"], [], None, []),
     ("VRAI POSITIF  NO_BASE : lettre posee sans base dans la serie",
      ["s/Search-12a-Neuf.ipynb"],
-     ["s/Search-11-A.ipynb"], [], "", False, None, ["NO_BASE"]),
+     ["s/Search-11-A.ipynb"], [], None, ["NO_BASE"]),
     ("NEGATIF       NO_BASE : la base existe (lettre legitime)",
      ["s/Search-12a-Neuf.ipynb"],
-     ["s/Search-12-A.ipynb"], [], "", False, None, []),
-    ("VRAI POSITIF  MAX_PLUS_ONE : max de la serie + 1 sans ligne `Slot:`",
-     ["i/ICT-45-Neuf.ipynb"],
-     ["i/ICT-43-A.ipynb", "i/ICT-44-B.ipynb"], [], "Grain: DEEP/x", True, None,
-     ["MAX_PLUS_ONE"]),
-    ("NEGATIF       MAX_PLUS_ONE : `**Slot:**` declare le palier",
-     ["i/ICT-45-Neuf.ipynb"],
-     ["i/ICT-43-A.ipynb", "i/ICT-44-B.ipynb"], [], "**Slot:** ouvre le palier 9B",
-     True, None, []),
-    ("NEGATIF       MAX_PLUS_ONE : corps absent = NON MESURE, jamais conclu",
-     ["i/ICT-45-Neuf.ipynb"],
-     ["i/ICT-43-A.ipynb", "i/ICT-44-B.ipynb"], [], "", False, None, []),
-    ("NEGATIF       MAX_PLUS_ONE : serie neuve (aucun autre numero)",
-     ["n/ICT-01-Neuf.ipynb"], [], [], "", True, None, []),
+     ["s/Search-12-A.ipynb"], [], None, []),
     ("NEGATIF       §7 twin : le -CSharp d'un Python DEJA dans la base",
      ["g/GT-02c-Twins-Csharp.ipynb"],
-     ["g/GT-02c-Twins-Python.ipynb"], [], "", True, None, []),
+     ["g/GT-02c-Twins-Python.ipynb"], [], None, []),
     ("VRAI POSITIF  §7 twins NEUFS : la lettre est bien introduite (UN constat)",
      ["s/Search-03g-Neuf-Python.ipynb", "s/Search-03g-Neuf-CSharp.ipynb"],
-     ["s/Search-03-A.ipynb"], [], "", True, None, ["DEPTH"]),
+     ["s/Search-03-A.ipynb"], [], None, ["DEPTH"]),
     ("VRAI POSITIF  PENDING_TABLE : carnet ajoute dans une serie en renommage",
-     ["t/Tweety-09-Neuf.ipynb"], [], [], "", True,
+     ["t/Tweety-09-Neuf.ipynb"], [], [],
      {"reserved": [{"kind": "pending_table", "dir": "t", "note": "#16231"}]},
      ["PENDING_TABLE"]),
     ("VRAI POSITIF  PENDING_TABLE : PR qui n'edite QUE le README de la serie",
-     [], [], ["t/README.md"], "", True,
+     [], [], ["t/README.md"],
      {"reserved": [{"kind": "pending_table", "dir": "t", "note": "#16231"}]},
      ["PENDING_TABLE"]),
     ("NEGATIF       PENDING_TABLE : un `index` reserve n'active PAS le diagnostic",
-     ["t/Tweety-09-Neuf.ipynb"], [], [], "", True,
+     ["t/Tweety-09-Neuf.ipynb"], [], [],
      {"reserved": [{"index": "9", "dir": "t", "holder": "lane x"}]}, []),
 ]
 
@@ -982,10 +884,10 @@ def self_test():
               % ("OK" if ok else "KO", label, got, want))
 
     print("")
-    print("--- accretion (advisory #19144) : quatre constats, positifs ET negatifs ---")
-    for label, added, base, readmes, body, supplied, doc, want in _ACCRETION_CASES:
+    print("--- accretion (advisory #19144) : trois constats, positifs ET negatifs ---")
+    for label, added, base, readmes, doc, want in _ACCRETION_CASES:
         got = sorted({f["kind"] for f in accretion_findings(
-            added, base, readmes, body, supplied, doc)})
+            added, base, readmes, doc)})
         ok = got == sorted(want)
         ko += 0 if ok else 1
         print("  %-4s %-66s -> %s (attendu %s)"
@@ -1019,11 +921,8 @@ def main(argv=None):
     ap.add_argument("--limit", type=int, default=500,
                     help="plafond de PRs lues (defaut 500 ; le defaut de gh est 30)")
     ap.add_argument("--repo", default=None, help="override du depot pour gh")
-    ap.add_argument("--body-file", default=None,
-                    help="corps de la PR (fichier) -- entree du constat MAX_PLUS_ONE")
-    ap.add_argument("--body", default=None, help="corps de la PR (texte)")
     ap.add_argument("--no-accretion", action="store_true",
-                    help="desactiver les quatre constats d'accretion (advisory, #19144)")
+                    help="desactiver les trois constats d'accretion (advisory, #19144)")
     ap.add_argument("--accretion-only", action="store_true",
                     help="ne rendre QUE les constats d'accretion (code retour 0) -- "
                          "le mode du check-run advisory, qui ne doit pas redire le "
@@ -1039,34 +938,6 @@ def main(argv=None):
         print("ERREUR : --accretion-only et --no-accretion s'excluent.",
               file=sys.stderr)
         return 2
-
-    # Le corps est l'unique entree NON-git des constats d'accretion : son absence
-    # n'est pas une reponse, c'est une mesure qu'on n'a pas faite (cf status).
-    event_note = ""
-    if a.body is not None and a.body_file is not None:
-        print("ERREUR : --body et --body-file s'excluent (une seule source de corps).",
-              file=sys.stderr)
-        return 2
-    if a.body_file is not None:
-        try:
-            body, body_state = Path(a.body_file).read_text(encoding="utf-8"), "supplied"
-        except OSError as e:
-            print("ERREUR : corps illisible (%s) : %s" % (a.body_file, e), file=sys.stderr)
-            return 2
-    elif a.body is not None:
-        body, body_state = a.body, "supplied"
-    else:
-        # Voie rapide (#19144) : le corps vit dans l'environnement du runner, pas
-        # dans l'argv -- sans cette source, MAX_PLUS_ONE serait structurellement
-        # muet en CI, c'est-a-dire la ou il sert.
-        event_body, event_state = body_from_env()
-        if event_body is not None:
-            # La source REELLE est reportee, pas supposee : `ACCRETION_PR_BODY` et
-            # la charge d'evenement ne se diagnostiquent pas de la meme facon quand
-            # le corps manque.
-            body, body_state = event_body, event_state
-        else:
-            body, body_state, event_note = "", "not_supplied", event_state
 
     mode = "target" if a.target else "revision"
     status: dict[str, dict] = {}
@@ -1116,12 +987,9 @@ def main(argv=None):
             readmes = changed_readmes_at(a.base, a.head)
         except RuntimeError:
             readmes = []          # le README est une source de confort, jamais un motif d'echec
-        accretion = accretion_findings(rev_added, base_files, readmes, body,
-                                       body_state in ("supplied", "env", "event"), declared_doc)
+        accretion = accretion_findings(rev_added, base_files, readmes, declared_doc)
     status[SOURCE_ACCRETION] = {"status": "disabled" if a.no_accretion else "ok",
-                                "body": body_state, "count": len(accretion)}
-    if event_note:
-        status[SOURCE_ACCRETION]["event"] = event_note
+                                "count": len(accretion)}
 
     if a.json:
         print(json.dumps({
@@ -1180,10 +1048,6 @@ def main(argv=None):
         print("accretion : desactivee (--no-accretion)")
     else:
         print("accretion (advisory -- n'affecte AUCUN code retour) :")
-        if body_state == "not_supplied":
-            print("  corps de PR non fourni (%s) : MAX_PLUS_ONE n'est PAS mesure "
-                  "(--body-file / --body, ACCRETION_PR_BODY, GITHUB_EVENT_PATH) -- "
-                  "les trois autres constats sont lus" % (event_note or "aucune source"))
         if not accretion:
             print("  aucun constat sur les notebooks ajoutes")
         for f in accretion:

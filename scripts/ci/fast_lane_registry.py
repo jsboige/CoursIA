@@ -485,10 +485,9 @@ PILOT: list[Guard] = [
     # cause. Ici la conclusion `neutral` porte le SEUL signal d'accretion, et le
     # code retour reste 0 quel que soit le nombre de constats.
     #
-    # Le corps de la PR n'est pas dans l'argv -- `substitute` ne connait que
-    # `base_ref` et `changed_paths`. L'organe le lit dans la charge d'evenement
-    # (`GITHUB_EVENT_PATH`) : sans cette source, MAX_PLUS_ONE serait muet en CI,
-    # c'est-a-dire exactement la ou il sert.
+    # Les trois constats d'accretion se lisent tous sur des sources git (base,
+    # revision, table `slot_reservations.json`) : aucun ne depend du corps de la
+    # PR, donc l'argv de la voie rapide suffit.
     Guard(
         name="accretion-advisory",
         source=FAST_LANE_NATIVE,

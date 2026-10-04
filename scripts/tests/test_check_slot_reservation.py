@@ -30,7 +30,6 @@ Trois pieges sont tendus, et chaque classe de test en couvre un :
 from __future__ import annotations
 
 import json
-import os
 import subprocess
 import sys
 import tempfile
@@ -553,7 +552,7 @@ def _has_history(*shas: str) -> bool:
 
 
 class TestAccretionEndToEnd(unittest.TestCase):
-    """Les quatre constats d'accretion (#19144), de bout en bout par le CLI.
+    """Les trois constats d'accretion (#19144), de bout en bout par le CLI.
 
     Le contrat qui porte tout le reste : **advisory**. Aucun constat ne change le
     code retour -- un organe advisory qui rougit est un organe qu'on desactive,
@@ -606,83 +605,6 @@ class TestAccretionEndToEnd(unittest.TestCase):
             self.assertEqual(json.loads(r.stdout)["conflicts"], 2,
                              "le conflit reste RAPPELE, il ne fait plus rougir")
 
-    def test_a_slot_line_in_the_body_silences_max_plus_one(self):
-        with tempfile.TemporaryDirectory() as td:
-            repo = Path(td)
-            base = _init_repo(repo, [SERIES + "/ICT-43-A.ipynb",
-                                     SERIES + "/ICT-44-B.ipynb"])
-            _write(repo, SERIES + "/ICT-45-C.ipynb")
-            _commit(repo)
-
-            self.assertIn("MAX_PLUS_ONE", _run(repo, base, "--body", "no slot line").stdout)
-            declared = _run(repo, base, "--body", "## Summary\nSlot: palier 9B\n")
-            self.assertNotIn("MAX_PLUS_ONE", declared.stdout)
-
-    def test_the_body_is_read_from_a_github_event_payload(self):
-        """La voie rapide ne transporte pas le corps dans l'argv : la charge
-        d'evenement est la source qui rend MAX_PLUS_ONE mesurable en CI."""
-        with tempfile.TemporaryDirectory() as td:
-            repo = Path(td)
-            base = _init_repo(repo, [SERIES + "/ICT-43-A.ipynb",
-                                     SERIES + "/ICT-44-B.ipynb"])
-            _write(repo, SERIES + "/ICT-45-C.ipynb")
-            _commit(repo)
-
-            payload = Path(td) / "event.json"
-            payload.write_text(json.dumps({"pull_request": {"body": "rien"}}),
-                               encoding="utf-8")
-            r = subprocess.run(
-                [sys.executable, str(_SCRIPT), "--base", base, "--head", "HEAD",
-                 "--offline", "--reservations", str(repo / "none.json"), "--json"],
-                cwd=str(repo), capture_output=True, text=True, encoding="utf-8",
-                errors="replace", env=dict(os.environ, GITHUB_EVENT_PATH=str(payload)))
-            d = json.loads(r.stdout)
-            self.assertEqual(d["sources"]["accretion"]["body"], "event")
-            self.assertEqual([f["kind"] for f in d["accretion"]], ["MAX_PLUS_ONE"])
-
-    def test_the_in_memory_env_var_primes_over_the_event_payload(self):
-        """`ACCRETION_PR_BODY` d'abord : le canal #13491, sans ecriture disque."""
-        with tempfile.TemporaryDirectory() as td:
-            repo = Path(td)
-            base = _init_repo(repo, [SERIES + "/ICT-43-A.ipynb",
-                                     SERIES + "/ICT-44-B.ipynb"])
-            _write(repo, SERIES + "/ICT-45-C.ipynb")
-            _commit(repo)
-
-            payload = Path(td) / "event.json"
-            payload.write_text(json.dumps({"pull_request": {"body": "rien"}}),
-                               encoding="utf-8")
-            r = subprocess.run(
-                [sys.executable, str(_SCRIPT), "--base", base, "--head", "HEAD",
-                 "--offline", "--reservations", str(repo / "none.json"), "--json"],
-                cwd=str(repo), capture_output=True, text=True, encoding="utf-8",
-                errors="replace",
-                env=dict(os.environ, GITHUB_EVENT_PATH=str(payload),
-                         ACCRETION_PR_BODY="## Summary\nSlot: palier 9B\n"))
-            d = json.loads(r.stdout)
-            self.assertEqual(d["sources"]["accretion"]["body"], "env")
-            self.assertEqual(d["accretion"], [],
-                             "la variable in-memory doit primer sur la charge d'evenement")
-
-    def test_an_absent_body_is_declared_unmeasured_never_concluded(self):
-        """Sans corps, MAX_PLUS_ONE n'est pas « absent » : il n'est pas MESURE."""
-        with tempfile.TemporaryDirectory() as td:
-            repo = Path(td)
-            base = _init_repo(repo, [SERIES + "/ICT-43-A.ipynb",
-                                     SERIES + "/ICT-44-B.ipynb"])
-            _write(repo, SERIES + "/ICT-45-C.ipynb")
-            _commit(repo)
-
-            env = {k: v for k, v in os.environ.items() if k != "GITHUB_EVENT_PATH"}
-            r = subprocess.run(
-                [sys.executable, str(_SCRIPT), "--base", base, "--head", "HEAD",
-                 "--offline", "--reservations", str(repo / "none.json"), "--json"],
-                cwd=str(repo), capture_output=True, text=True, encoding="utf-8",
-                errors="replace", env=env)
-            d = json.loads(r.stdout)
-            self.assertEqual(d["sources"]["accretion"]["body"], "not_supplied")
-            self.assertEqual(d["accretion"], [])
-
     def test_a_declared_pending_table_fires_on_a_readme_only_revision(self):
         with tempfile.TemporaryDirectory() as td:
             repo = Path(td)
@@ -721,10 +643,6 @@ _HISTORY_CASES = [
      "Search-12a-Composer-Regards.ipynb"),
     ("ad17a578365b68eafbda7aa8c374b28af9c1b940", "NO_BASE",
      "Search-13a-Traverser-Murs-Certifies.ipynb"),
-    ("6a422f0214b17cd57cacf4d2ccf40982c202cc80", "MAX_PLUS_ONE",
-     "ICT-44-GeometryOfTruth-Python.ipynb"),
-    ("ab3e6e4fde8b99164ec5ea09ea2883638121abec", "MAX_PLUS_ONE",
-     "ICT-45-InoculationBifurcation-9B.ipynb"),
 ]
 
 
@@ -735,9 +653,9 @@ class TestAccretionOnRealHistory(unittest.TestCase):
     pense ; ces cinq-la viennent du depot, pas de l'imagination du redacteur.
     """
 
-    def _findings(self, sha, body=""):
+    def _findings(self, sha):
         r = subprocess.run([sys.executable, str(_SCRIPT), "--offline", "--json",
-                            "--base", sha + "^", "--head", sha, "--body", body],
+                            "--base", sha + "^", "--head", sha],
                            cwd=str(_REPO_ROOT), capture_output=True, text=True,
                            encoding="utf-8", errors="replace")
         self.assertIn(r.returncode, (0, 1), r.stdout + r.stderr)
@@ -751,15 +669,6 @@ class TestAccretionOnRealHistory(unittest.TestCase):
             kinds = {f["kind"] for f in self._findings(sha) if f["path"].endswith(name)}
             self.assertIn(kind, kinds,
                           "le temoin %s devait sortir %s sur %s" % (sha[:10], kind, name))
-
-    def test_the_slot_line_silences_max_plus_one(self):
-        sha = "ab3e6e4fde8b99164ec5ea09ea2883638121abec"
-        if not _has_history(sha):
-            self.skipTest("historique absent")
-        kinds = {f["kind"] for f in self._findings(
-            sha, body="## Summary\nSlot: ICT-45 ouvre le palier 9B.\n")}
-        self.assertNotIn("MAX_PLUS_ONE", kinds,
-                         "la ligne `Slot:` doit suffire, sinon la regle n'est pas respectueuse")
 
     def test_the_csharp_twin_of_an_existing_python_notebook_is_not_an_accretion(self):
         sha = "35695217e99b1b9da9c7d5c265f2f848266dab07"
