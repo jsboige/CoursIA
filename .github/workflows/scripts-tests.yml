@@ -519,6 +519,21 @@ jobs:
           if [ "$N" -lt "$ARGUMENT_ANALYSIS_TESTS_FLOOR" ]; then echo "::error::Coverage regression: $N tests collected, floor=$ARGUMENT_ANALYSIS_TESTS_FLOOR."; exit 1; fi
           echo "OK: $N tests collected (floor=$ARGUMENT_ANALYSIS_TESTS_FLOOR)."
 
+      # #18981 : garde anti-recidive #18888 -- un test_*.py pose a la racine
+      # d'un module (scripts/notebook_tools/, scripts/lean/, etc.) n'est
+      # execute par aucune des jambes ci-dessus. La garde lit la liste des
+      # chemins collectes depuis CE workflow (l.355-371) et verifie qu'aucun
+      # test_*.py n'apparait dans un dossier parent d'un chemin collecte sans
+      # etre dans le sous-dossier collecte lui-meme. Verifiee localement le
+      # 2026-10-03 : rc=0 sur main, rc=1 sur une branche jetable ou un
+      # test_xxx_junk.py a ete pose a scripts/notebook_tools/. La garde est
+      # stdlib-only, pas de dep a ajouter au pip install. if: always() pour
+      # que la garde rougisse meme si pytest est rouge.
+      - name: guard_test_root (#18888 anti-recidive)
+        if: always()
+        run: |
+          python scripts/ci/guard_test_root.py
+
   adk-contracts:
     name: ADK runtime contracts (18)
     # #15058: #13572 makes Track2-GoogleADK/utils/test_adk_runtime_contracts.py

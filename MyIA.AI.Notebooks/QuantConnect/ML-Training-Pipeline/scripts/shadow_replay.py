@@ -27,14 +27,25 @@ dictionnaire :
 - `turnover` : la rotation journaliere (fraction de l'equite echangee), un par seance ;
 - `fees` : le cout de transaction cumule sur la periode, en fraction de l'equite de depart.
 
-Sharpe, CAGR et pire baisse reprennent les definitions de `voltarget_strategy_verdict.py` (#18943) :
+Sharpe, CAGR et pire baisse viennent de `strategy_metrics.py`, le module partage avec le verdict
+de la 5a (`voltarget_strategy_verdict.py`, #18943) :
 Sharpe = moyenne / ecart-type (ddof=1) * sqrt(252) des rendements nets, taux sans risque nul ;
 CAGR = produit des (1 + r) a la puissance 1 / annees, moins 1, les annees etant les jours
 calendaires entre la premiere et la derniere seance divises par 365,25 ; pire baisse = minimum
 de equite / maximum courant - 1.
 
-Le rejeu QuantConnect (backtest par le MCP, dates passees en parametres) n'est pas dans ce
-module : il depend de la lecture des graphiques (#18939). Il rendra la meme ligne de CSV.
+Rejeu QuantConnect, en deux temps autour du MCP (l'API QC ne s'appelle que par lui) :
+
+1. `plan-qc` extrait du depot les fichiers du projet **au SHA gele**, et ecrit un plan : projet
+   QC dedie, empreintes des fichiers, parametres (`start` = D, `end` = date du passage),
+   nom du backtest, plage du graphique a lire ;
+2. l'operateur pousse ces fichiers par le MCP, lance le backtest avec ces parametres, attend
+   `completed: true`, puis enregistre la sortie de `read_backtest` et le graphique `shadow` lu
+   par `read_backtest_chart` (#18939) dans le dossier du plan ;
+3. `ingest-qc` relit les deux fichiers et rend la meme ligne de CSV que le rejeu local.
+
+Point d'entree d'une candidate QC : `chemin/du/projet:identifiant_du_projet_QC`. Contrat de la
+candidate : voir `shadow/qc_example/main.py` et `shadow/README.md`.
 """
 from __future__ import annotations
 
@@ -47,8 +58,11 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import numpy as np
+
+from strategy_metrics import cagr, max_drawdown, sharpe
 
 REGISTRY_FIELDS = ("id", "kind", "sha", "frozen_on", "entrypoint", "params", "fee_model")
 KINDS = ("local", "qc")
@@ -159,14 +173,12 @@ def metrics(dates, net_returns, turnover, fees: float) -> dict:
     years = (dt.date.fromisoformat(dates[-1]) - dt.date.fromisoformat(dates[0])).days / 365.25
     if years <= 0:
         raise ValueError("dates must span at least one calendar day")
-    equity = np.cumprod(1.0 + r)
-    sd = r.std(ddof=1)
     return {
         "n_days": int(r.size),
         # Ecart-type nul : Sharpe non defini, laisse vide dans le CSV.
-        "sharpe_net": round(float(r.mean() / sd * np.sqrt(252)), 4) if sd > 0 else None,
-        "cagr": round(float(equity[-1] ** (1.0 / years) - 1.0), 4),
-        "max_drawdown": round(float((equity / np.maximum.accumulate(equity) - 1.0).min()), 4),
+        "sharpe_net": round(float(sharpe(r)), 4) if r.std(ddof=1) > 0 else None,
+        "cagr": round(cagr(r, years), 4),
+        "max_drawdown": round(max_drawdown(r), 4),
         "turnover": round(float(np.mean(np.asarray(turnover, dtype=float))), 6),
         "fees": round(float(fees), 6),
     }
@@ -249,6 +261,138 @@ def replay_local(repo: Path, candidate: dict, pass_date: str,
     return row
 
 
+# ---------------------------------------------------------------- rejeu QuantConnect
+
+QC_CHART = "shadow"
+QC_EQUITY_SERIES = [f"e{k}" for k in range(5)]
+QC_RESERVED_PARAMS = ("start", "end")
+QC_FILE_LIMIT = 64000   # caracteres par fichier de projet QC
+
+
+def qc_entrypoint(candidate: dict) -> tuple[str, int]:
+    """`chemin/du/projet:identifiant` -> (chemin relatif a la racine du depot, identifiant QC)."""
+    if candidate["kind"] != "qc":
+        raise ValueError(f"{candidate['id']} is a {candidate['kind']} candidate, not qc")
+    path, _, project = candidate["entrypoint"].rpartition(":")
+    if not path or not project.isdigit():
+        raise ValueError(f"{candidate['id']}: qc entrypoint must be 'project/dir:<QC project id>'")
+    return path.rstrip("/"), int(project)
+
+
+def _unix(day: str) -> int:
+    return int(dt.datetime.combine(dt.date.fromisoformat(day), dt.time(),
+                                   tzinfo=dt.timezone.utc).timestamp())
+
+
+def plan_qc(repo: Path, candidate: dict, pass_date: str, out_dir: Path) -> dict:
+    """Ecrit dans `out_dir/<id>/` les fichiers du projet au SHA gele et le plan du passage."""
+    project_dir, project_id = qc_entrypoint(candidate)
+    clash = sorted(set(candidate["params"]) & set(QC_RESERVED_PARAMS))
+    if clash:
+        raise ValueError(f"{candidate['id']}: params {clash} are reserved for the replay dates")
+    names = [n for n in _git(repo, "ls-tree", "-r", "--name-only", candidate["sha"], "--",
+                             project_dir).splitlines() if n.endswith(".py")]
+    if not names:
+        raise ValueError(f"{candidate['id']}: no .py file under {project_dir} at {candidate['sha'][:10]}")
+    target = out_dir / candidate["id"]
+    files = []
+    for name in names:
+        content = subprocess.run(["git", "-C", str(repo), "show", f"{candidate['sha']}:{name}"],
+                                 check=True, capture_output=True).stdout
+        rel = name[len(project_dir) + 1:]
+        if len(content.decode("utf-8")) > QC_FILE_LIMIT:
+            raise ValueError(f"{candidate['id']}: {rel} exceeds the QC file limit ({QC_FILE_LIMIT})")
+        dest = target / "files" / rel
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_bytes(content)
+        files.append({"name": rel, "sha256": hashlib.sha256(content).hexdigest(),
+                      "bytes": len(content)})
+    span = (dt.date.fromisoformat(pass_date) - dt.date.fromisoformat(candidate["frozen_on"])).days
+    plan = {"candidate": candidate["id"], "sha": candidate["sha"],
+            "frozen_on": candidate["frozen_on"], "pass_date": pass_date,
+            "qc_project_id": project_id, "project_dir": project_dir, "files": files,
+            "parameters": {"start": candidate["frozen_on"], "end": pass_date,
+                           **{k: str(v) for k, v in candidate["params"].items()}},
+            "backtest_name": f"shadow-{candidate['id']}-{pass_date}",
+            "chart": QC_CHART, "chart_start": _unix(candidate["frozen_on"]),
+            "chart_end": _unix(pass_date) + 86400, "chart_count": span + 10}
+    (target / "plan.json").write_text(json.dumps(plan, indent=2) + "\n", encoding="utf-8")
+    return plan
+
+
+def _chart_points(chart: dict, key: str) -> list[tuple[int, float]]:
+    """Points [t, v], [t, o, h, l, c] (cloture) ou {x, y} d'une serie, tries par date."""
+    s = (chart.get("series") or {}).get(key)
+    if not s or not s.get("values"):
+        raise ValueError(f"chart {QC_CHART!r}: missing series {key!r}")
+    pts = [(v["x"], v["y"]) if isinstance(v, dict) else (v[0], v[-1]) for v in s["values"]]
+    return sorted(pts)
+
+
+def _session(ts: int) -> str:
+    """Date de seance d'un horodatage QC, lue a New York (seances actions US)."""
+    return dt.datetime.fromtimestamp(ts, ZoneInfo("America/New_York")).date().isoformat()
+
+
+def qc_daily_equity(chart: dict) -> tuple[list[str], list[float]]:
+    """Fusionne e0..e4 en une cloture par seance, et verifie l'alternance.
+
+    La candidate trace la seance k dans `e{k % 5}` : rangees par date, les series doivent
+    donc se succeder e0, e1, e2, e3, e4, e0... Un point perdu ou en trop casse ce cycle.
+    """
+    points = sorted((t, k, v) for k, key in enumerate(QC_EQUITY_SERIES)
+                    for t, v in _chart_points(chart, key))
+    for i, (t, k, _) in enumerate(points):
+        if k != i % 5:
+            raise ValueError(f"equity interleaving broken at point {i} ({_session(t)}): "
+                             f"series e{k}, expected e{i % 5}")
+    dates = [_session(t) for t, _, _ in points]
+    if len(set(dates)) != len(dates):
+        raise ValueError("two equity points on the same session")
+    return dates, [v for _, _, v in points]
+
+
+def ingest_qc(candidate: dict, plan: dict, backtest: dict, chart: dict,
+              series_dir: Path | None = None) -> dict:
+    """Ligne de CSV d'un passage QC, a partir de la sortie de `read_backtest` et du graphique."""
+    if (plan["candidate"], plan["sha"], plan["frozen_on"]) != (
+            candidate["id"], candidate["sha"], candidate["frozen_on"]):
+        raise ValueError(f"plan does not match the frozen candidate {candidate['id']}")
+    if backtest.get("error"):
+        raise RuntimeError(f"{candidate['id']}: backtest failed: {backtest['error']}")
+    if backtest.get("completed") is not True:
+        raise ValueError(f"{candidate['id']}: backtest not completed, read it again later")
+    if backtest.get("name") != plan["backtest_name"]:
+        raise ValueError(f"{candidate['id']}: backtest {backtest.get('name')!r} is not "
+                         f"{plan['backtest_name']!r}")
+    dates, equity = qc_daily_equity(chart)
+    if dates[0] < plan["frozen_on"] or dates[-1] > plan["pass_date"]:
+        raise ValueError(f"{candidate['id']}: equity {dates[0]}..{dates[-1]} outside "
+                         f"{plan['frozen_on']}..{plan['pass_date']}")
+    costs = {}
+    for key in ("fees", "turnover"):
+        t, v = _chart_points(chart, key)[-1]
+        if _session(t) != dates[-1]:
+            raise ValueError(f"{candidate['id']}: last {key} point {_session(t)} is not on the "
+                             f"last session {dates[-1]}")
+        costs[key] = v
+    eq = np.asarray(equity, dtype=float)
+    returns = eq[1:] / eq[:-1] - 1.0
+    turnover = np.full(returns.size, costs["turnover"] / max(returns.size, 1))
+    row = {"candidate": candidate["id"], "sha": candidate["sha"],
+           "frozen_on": candidate["frozen_on"], "pass_date": plan["pass_date"],
+           "period_end": dates[-1], "fee_model": candidate["fee_model"],
+           **metrics(dates, returns, turnover, costs["fees"])}
+    if series_dir is not None:
+        series_dir.mkdir(parents=True, exist_ok=True)
+        with (series_dir / f"{candidate['id']}_{plan['pass_date']}.csv").open(
+                "w", encoding="utf-8", newline="") as f:
+            w = csv.writer(f, lineterminator="\n")
+            w.writerow(["date", "equity"])
+            w.writerows(zip(dates, equity))
+    return row
+
+
 # ---------------------------------------------------------------- CLI
 
 def main(argv: list[str] | None = None) -> int:
@@ -261,7 +405,7 @@ def main(argv: list[str] | None = None) -> int:
     f.add_argument("--id", required=True)
     f.add_argument("--kind", choices=KINDS, required=True)
     f.add_argument("--entrypoint", required=True,
-                   help="local : module.py:fonction ; qc : identifiant du projet QC dedie")
+                   help="local : module.py:fonction ; qc : chemin/du/projet:identifiant_du_projet_QC")
     f.add_argument("--sha", required=True, help="commit gele (resolu en SHA complet)")
     f.add_argument("--params", default="{}", help="parametres, en JSON")
     f.add_argument("--fee-model", required=True, help="hypothese de frais, ex. '5bps notional'")
@@ -277,6 +421,18 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--pass-date", default=dt.date.today().isoformat())
     r.add_argument("--repo", type=Path, default=Path("."))
     r.add_argument("--series-dir", type=Path, default=None,
+                   help="dossier hors depot pour les series journalieres")
+
+    p = sub.add_parser("plan-qc", help="preparer le rejeu des candidates QC dues")
+    p.add_argument("--pass-date", default=dt.date.today().isoformat())
+    p.add_argument("--repo", type=Path, default=Path("."))
+    p.add_argument("--out-dir", type=Path, required=True,
+                   help="dossier hors depot : un sous-dossier par candidate")
+
+    g = sub.add_parser("ingest-qc", help="ajouter la ligne d'un passage QC termine")
+    g.add_argument("--plan-dir", type=Path, required=True,
+                   help="dossier d'une candidate, avec plan.json, backtest.json et chart.json")
+    g.add_argument("--series-dir", type=Path, default=None,
                    help="dossier hors depot pour les series journalieres")
 
     a = ap.parse_args(argv)
@@ -300,7 +456,28 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(entry, ensure_ascii=False))
         return 0
 
+    if a.cmd == "ingest-qc":
+        plan = json.loads((a.plan_dir / "plan.json").read_text(encoding="utf-8"))
+        candidate = next((c for c in candidates if c["id"] == plan["candidate"]), None)
+        if candidate is None:
+            print(f"INVALID {plan['candidate']}: not in the registry")
+            return 1
+        row = ingest_qc(candidate, plan,
+                        json.loads((a.plan_dir / "backtest.json").read_text(encoding="utf-8")),
+                        json.loads((a.plan_dir / "chart.json").read_text(encoding="utf-8")),
+                        a.series_dir)
+        append_row(a.csv, row)
+        print(json.dumps(row, ensure_ascii=False))
+        return 0
+
     todo = due(candidates, rows, a.pass_date)
+    if a.cmd == "plan-qc":
+        for c in (c for c in todo if c["kind"] == "qc"):
+            plan = plan_qc(a.repo, c, a.pass_date, a.out_dir)
+            print(json.dumps({k: plan[k] for k in ("candidate", "qc_project_id", "backtest_name",
+                                                   "parameters")}, ensure_ascii=False))
+        return 0
+
     if a.cmd == "due":
         for c in todo:
             print(f"{c['id']} {c['kind']} frozen_on={c['frozen_on']} sha={c['sha'][:10]}")
@@ -312,7 +489,7 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(row, ensure_ascii=False))
     skipped = [c["id"] for c in todo if c["kind"] != "local"]
     if skipped:
-        print(f"SKIPPED (QC replay not in this module): {' '.join(skipped)}")
+        print(f"SKIPPED (qc candidates, replay with plan-qc then ingest-qc): {' '.join(skipped)}")
     return 0
 
 

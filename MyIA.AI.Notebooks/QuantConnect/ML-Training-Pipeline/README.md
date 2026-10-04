@@ -294,7 +294,7 @@ Modules support : `har_model.py`, `realized_variance.py`, `intraday_loader.py`, 
 | eval_kronos_zeroshot.py | Kronos zero-shot | AAAI 2026, pre-trained sur 12B K-lines, 4 tailles modèle (4M-499M) |
 | eval_finstsb.py | Évaluation per-regime | 4 régimes (uptrend/downtrend/volatility/black_swan) |
 | eval_existing_checkpoints.py | Évaluation pipeline complet | WF + baselines + per-regime + coûts transaction pour tout checkpoint |
-| shadow_replay.py | Suivi en ombre des candidates | Gel par SHA, rejeu mensuel du code gelé, CSV en ajout seul ; règles et commandes dans `shadow/README.md` (#18923) |
+| shadow_replay.py | Suivi en ombre des candidates | Gel par SHA, rejeu mensuel du code gelé (local, ou backtest QC via `plan-qc` puis `ingest-qc`), CSV en ajout seul ; règles et commandes dans `shadow/README.md` (#18923) |
 
 ### Construction de dataset
 

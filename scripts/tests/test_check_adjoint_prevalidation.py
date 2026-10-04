@@ -1977,3 +1977,56 @@ def test_pre18637_stamp_stays_verifiable():
     # l'ancienne empreinte, elle, bouge avec le corps : elle ne protege que
     # l'etat exact qu'elle a tamponne.
     assert mod.pre18637_surfaces_fingerprint(rewritten) != old
+
+
+# --- #19002 : la base doit etre `main` pour READY -------------------------
+# Mesure du 2026-10-03 : 4 PRs a base != main dans le pool ouvert, dont
+# #18819 (base squash-mergee) et #18993 (base fermee sans merge). Avant
+# #19002, le gate rendait rc=0 READY sur ces PRs, et merge_ready fusionnait
+# dans la branche morte. La regle : un dossier READY exige une base
+# `main` ; sinon, refus. Trois tests : un temoin positif (base main, le
+# chemin nominal inchange), un temoin negatif sur une base de feature
+# encore ouverte (#18985/#18967), un temoin negatif sur une base dont la
+# PR porteuse est fermee ou mergee (#18819/#18993).
+
+
+def test_base_main_does_not_change_a_ready_dossier():
+    """Temooin positif : une PR a base main, dossier READY canonique,
+    verdict READY inchange. Le chemin nominal n'est pas casse par #19002."""
+    snapshot = _snapshot(_body())
+    assert snapshot["baseRefName"] == "main"
+    verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+    assert not errors
+
+
+def test_base_feature_open_refuses_ready_and_names_the_base():
+    """Temooin negatif : PR empilee sur une branche de feature encore
+    ouverte (#18985 / #18967). Le gate refuse READY et nomme la base
+    pour que la lane sache ou retargeter."""
+    snapshot = _snapshot(_body())
+    snapshot["baseRefName"] = "docs/qc-book-inventory-reconciliation"
+    verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+    assert verdict == "", verdict
+    assert dossier is None, dossier
+    assert any("baseRefName must be 'main'" in e for e in errors), errors
+    # Le message nomme la base fautive -- la lane en a besoin pour le
+    # retarget, et la regle sans le nom forcerait a rouvrir le PR.
+    assert any(
+        "docs/qc-book-inventory-reconciliation" in e for e in errors
+    ), errors
+
+
+def test_base_dead_refuses_ready_and_names_the_base():
+    """Temooin negatif : PR empilee sur une branche dont la PR porteuse
+    est fermee ou squash-mergee (#18819 / #18993). Meme verdict que la
+    base de feature, avec un nom different -- le gate refuse dans les
+    deux cas parce que son contrat ne sait pas dire 'cette base est
+    morte' (et n'a pas besoin de le dire : retarget sur main)."""
+    snapshot = _snapshot(_body())
+    snapshot["baseRefName"] = "renum/17063-complexity-05b"  # #18819
+    verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+    assert verdict == "", verdict
+    assert dossier is None, dossier
+    assert any("baseRefName must be 'main'" in e for e in errors), errors
+    assert any("renum/17063-complexity-05b" in e for e in errors), errors

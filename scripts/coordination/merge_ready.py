@@ -502,7 +502,7 @@ def list_open_prs(runner: Runner, gh_env: dict[str, str]) -> list[int]:
 #: review se classe sans appel supplementaire (l'oid de review y figure, mesure
 #: du 2026-09-25 : ``gh pr view --json reviews`` rend ``commit.oid``).
 PR_VIEW_FIELDS = (
-    "number,title,isDraft,body,headRefName,headRefOid,baseRefOid,files,"
+    "number,title,isDraft,body,headRefName,headRefOid,baseRefName,baseRefOid,files,"
     "changedFiles,comments,reviews"
 )
 
@@ -994,6 +994,17 @@ def evaluate_pr(
     reason = twin_collision_reason(runner, pr, gate_head, view.get("files") or [])
     if reason is not None:
         return skip(reason)
+    # 5ter. defense en profondeur : la base de la PR doit etre `main` (#19002).
+    # Le gate a deja refuse READY si la base n'est pas `main`, mais un gate
+    # anterieur a #19002 (ou un rc 0 accidente) ne suffit pas : merge_ready
+    # est l'organe qui **execute** le merge, et il doit verifier lui-meme.
+    # Le `view` charge a l'etape 0 porte la base via `PR_VIEW_FIELDS` ; on
+    # la lit ici pour eviter un round-trip REST supplementaire. La base
+    # morte (squash-mergee ou fermee) porte un nom qui n'est pas `main`,
+    # donc la verification tient pour les deux cas de la mesure #19002.
+    base_ref_name = view.get("baseRefName") or ""
+    if base_ref_name != "main":
+        return skip(f"base-not-main:{base_ref_name}")
     # 6. REST : mergeable + tete.
     state, live_head = mergeable_state_and_head(runner, pr, gh_env)
     if state != "clean":
