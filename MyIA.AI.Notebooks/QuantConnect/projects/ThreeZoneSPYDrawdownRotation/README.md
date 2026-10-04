@@ -176,13 +176,51 @@ morts par construction (picks toujours vides) et la « sensibilité » de z2
 mesurait le moment exact des bascules SPY/cash. Chiffres conservés dans
 l'historique du fichier (commit `cd56c2512a`).
 
+## Sensibilité aux frais (v4)
+
+Run `781-fee2-2018-2026-v4` (`b9f133ba`, compile v4, frais IBKR ×2) :
+
+| Mesure | base v4 | frais ×2 | Écart |
+|--------|---------|----------|-------|
+| Sharpe | 0,426 | 0,416 | −0,010 |
+| CAGR | 11,48 % | 11,27 % | −0,21 pt |
+| Pire baisse | 27,7 % | 27,7 % | — |
+| Total | +158,5 % | +154,4 % | −4,1 pts |
+
+Le doublement des frais coûte 0,010 de Sharpe : la stratégie est **peu
+sensible aux frais** — l'activité (~225 ordres/an) porte sur des large caps
+liquides dont les frais IBKR sont déjà très bas. Le run fee2 v2
+(0,402 / 9,20 % / 89 ordres) décrivait la SPY-ou-cash (invalidé).
+
+## Corrélations aux allocations du dépôt (v4)
+
+Run `781-corr-2018-2024-v4-fix-dividend` (`28a33e39`, projet
+[ThreeZone781Correlation](../ThreeZone781Correlation/), fenêtre commune
+2018-2024, Pearson des retours hebdomadaires, statistiques custom du
+rapport) :
+
+| Panier | corr v4 | corr v2 (invalidée) |
+|--------|---------|---------------------|
+| VT2 (SPY/QQQ/IEF/GLD, poids égaux) | **0,8025** | 0,5989 |
+| AW (AllWeather v5.0) | 0,7395 | 0,5006 |
+| TW (sleeve AllWeather du TrendWeather) | 0,7395 | 0,5006 |
+
+(TW ≡ AW par construction du proxy.) Le run v4 : Sharpe 0,42 / +110,0 % /
+pire baisse 27,7 % / 1772 ordres sur 2018-2024.
+
+Lecture : la vraie 781 est **nettement plus corrélée** aux allocations ETF
+que la SPY-ou-cash mesurée en v2 ne le laissait croire — la jambe dividende
+est un facteur equity long qui chute avec le marché en zones jaune/rouge.
+À 0,80 avec VT2, la stratégie ne diversifie pas le dépôt : les ETF existants
+sont entre eux à 0,8-0,9, la 781 s'y ajoute sans décorrélation.
+
 ## État du protocole (issue #18905)
 
 | Point | État |
 |-------|------|
 | 1. Cloner le projet source | Non réalisable (accès refusé) → réimplémentation déclarée. Réponse coordinateur (04/10) : demande transmise à la lane QC qui a lu la fiche ; si le code source arrive, il servira **d'oracle de vérification** (écarts cités), jamais commité tel quel |
 | 2. Backtest frais IBKR | **Rejoué sur code corrigé** (v4 `bf0655ac`, 2018-2026, 1961 ordres) ; grille OAT en cours de rejeu sur compile v4 |
-| 3. Mesures + comparaisons | Benchmarks SPY détenu et 60/40 **valides** (aucun titre dividende requis) ; corrélations ETF mesurées puis invalidées, à rejouer |
+| 3. Mesures + comparaisons | Benchmarks SPY/60-40 **valides** ; fee2 v4 mesuré (peu sensible) ; **corrélations v4 rejouées** : VT2 0,80 · AW/TW 0,74 — pas de diversification |
 | 4. Verdict + robustesse | **Grille OAT rejouée 7/7 sur code corrigé** (4 axes mordants dont top_n/min_yield révélés par le fix) ; verdict après fee2, corrélations et sous-périodes |
 | 5. Couverture données fondamentales | Vérification à venir (trous rendement/payout sur 2018-2026) |
 | 6. Gel du code au verdict | À venir |
