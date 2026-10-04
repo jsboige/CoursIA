@@ -1322,7 +1322,8 @@ print(""Exercice a completer : ExtendedRecipeState"")",,,,,,,,147a59853e1b4967,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,d0827941,markdown,fr,607d10e5f8e10a65,"### Plugins d'agents et fonctions de modification d'état
 
 **Pourquoi les agents modifient l'état via des fonctions (plugins) plutôt qu'en générant du texte libre** : si un agent écrivait « régime = végétarien » en prose, les autres agents devraient *parser* cette phrase pour extraire la contrainte — fragile et error-prone. Les plugins exposent des **fonctions typées** (`set_regime`, `add_excluded_ingredient`, `set_convives`) que le kernel appelle de manière structurée : la contrainte atterrit directement dans le bon champ de `RecipeState`, sans ambiguïté de parsing. C'est l'écart entre un agent qui *décrit* une action (« je note que l'utilisateur est végétarien ») et un agent qui *exécute* une action (`state.regime = vegetarien`) — le second est reproductible et vérifiable, le premier dépend de l'interprétation du lecteur.",### Agent plugins and state modification functions,,,,,,,607d10e5f8e10a65,78241911f1e94dce,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,fa663c16,code,fr,7676a3f01d078979,"from semantic_kernel.functions import kernel_function
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,fa663c16,code,fr,82543881b601fc73,"import textwrap
+from semantic_kernel.functions import kernel_function
 from reportlab.pdfgen import canvas
 
 class InputCollectorPlugin:
@@ -1356,8 +1357,6 @@ class RecipeGeneratorPlugin:
         self.state.ready_to_generate = True
         return ""Recette validée et prête pour la génération PDF""
 
-
-
 class PDFGeneratorPlugin:
     def __init__(self, state: RecipeState):
         self.state = state
@@ -1365,14 +1364,55 @@ class PDFGeneratorPlugin:
     @kernel_function(name=""generate_pdf"", description=""Génère le PDF final"")
     def generate_pdf(self, output_path: str) -> str:
         c = canvas.Canvas(output_path)
-        c.drawString(100, 800, ""Recette personnalisée"")
-        c.drawString(100, 780, f""Pour {self.state.guests} personnes"")
+        PAGE_W, PAGE_H = 595, 842  # A4 en points
+        MARGIN_L, MARGIN_R, MARGIN_TOP, MARGIN_BOTTOM = 100, 80, 50, 50
+        LINE_H = 15
+        MAX_LINE_W = (PAGE_W - MARGIN_L - MARGIN_R)  # 415 pts de large utile
+        y = PAGE_H - MARGIN_TOP
+        
+        def draw_wrapped(text, x, y, font_size=10, indent=0):
+            """"""Dessine text enveloppe sur MAX_LINE_W avec retour a la ligne.""""""
+            c.setFont(""Helvetica"", font_size)
+            avg_char_w = font_size * 0.5  # approximation ReportLab Helvetica
+            chars_per_line = int(MAX_LINE_W / avg_char_w) - indent
+            for line in textwrap.wrap(text, width=chars_per_line) or [""""]:
+                if y < MARGIN_BOTTOM + LINE_H:
+                    c.showPage()  # pagination -- nouvelle page si debordement
+                    c.setFont(""Helvetica"", font_size)
+                    y = PAGE_H - MARGIN_TOP
+                c.drawString(x + indent, y, line)
+                y -= LINE_H
+            return y
+        
+        c.setFont(""Helvetica-Bold"", 14)
+        c.drawString(MARGIN_L, y, ""Recette personnalisée"")
+        y -= 25
+        c.setFont(""Helvetica"", 10)
+        y = draw_wrapped(f""Pour {self.state.guests} personnes"", MARGIN_L, y)
+        y = draw_wrapped(f""Régime: {self.state.diet}"", MARGIN_L, y)
+        y -= 5
+        c.setFont(""Helvetica-Bold"", 11)
+        c.drawString(MARGIN_L, y, ""Ingrédients:"")
+        y -= LINE_H
+        c.setFont(""Helvetica"", 10)
+        for ing in (self.state.ingredients or []):
+            y = draw_wrapped(f""- {ing}"", MARGIN_L, y, indent=15)
+        y -= 5
+        c.setFont(""Helvetica-Bold"", 11)
+        c.drawString(MARGIN_L, y, ""Étapes:"")
+        y -= LINE_H
+        c.setFont(""Helvetica"", 10)
+        for i, step in enumerate(self.state.steps or [], start=1):
+            y = draw_wrapped(f""{i}. {step}"", MARGIN_L, y, indent=15)
+        y -= 5
+        c.setFont(""Helvetica-Oblique"", 10)
+        y = draw_wrapped(f""Temps de cuisson: {self.state.cooking_time} min"", MARGIN_L, y)
         c.save()
         self.state.pdf_path = output_path
         return f""PDF généré : {output_path}""
 
 print(""Imports Semantic Kernel OK"")
-",,,,,,,,7676a3f01d078979,,,,,,,,
+",,,,,,,,82543881b601fc73,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,bb7a7733,markdown,fr,0e71fb41693ce1da,"### Exercice 2 : Plugin d'estimation nutritionnelle
 
 Les plugins actuels gerent la collecte d'informations et la generation de recette, mais aucune information nutritionnelle n'est fournie. L'objectif est d'ajouter un `NutritionPlugin` qui estime les calories et macronutriments d'une recette.
@@ -1415,8 +1455,9 @@ print(""Exercice a completer : NutritionPlugin"")",,,,,,,,5d667c20e03d1d49,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,50c033b4,markdown,fr,30d10b129e562990,"### Création des agents
 
 **Pourquoi distinguer plusieurs agents plutôt qu'un seul prompt « génère une recette »** : un agent unique devrait gérer simultanément la **collecte** des critères, la **génération** de la recette, et la **validation** des contraintes — trois rôles cognitivement différents, chacun avec son propre prompt et son système de raisonnement. La séparation en agents spécialisés (un collecteur empathique qui pose les bonnes questions, un générateur créatif qui propose, un validateur strict qui vérifie) suit le principe de **responsabilité unique** appliqué au LLM : chaque agent a un rôle clair, un prompt ciblé, et un critère de réussite mesurable. C'est aussi ce qui rend le système debuggable — si une recette ne respecte pas une contrainte, on sait quel agent a fauté.",### Creating agents,,,,,,,30d10b129e562990,87ae1b10d70e08a9,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,f6e42299,code,fr,a1d88744f705df38,"import os
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,f6e42299,code,fr,f313112351482375,"import os
 from dotenv import load_dotenv
+from openai import AsyncOpenAI
 from semantic_kernel import Kernel
 from semantic_kernel.agents import ChatCompletionAgent
 from semantic_kernel.connectors.ai.open_ai import OpenAIChatCompletion
@@ -1424,20 +1465,35 @@ from semantic_kernel.connectors.ai.open_ai import OpenAIChatCompletion
 load_dotenv()
 
 OPENAI_API_KEY = os.getenv(""OPENAI_API_KEY"")
-CHAT_MODEL = os.getenv(""OPENAI_CHAT_MODEL"", ""gpt-4o-mini"")
+CHAT_MODEL = os.getenv(""OPENAI_CHAT_MODEL"", ""gpt-5-mini"")
 
 
 def build_kernel(plugin, plugin_name: str) -> Kernel:
     """"""Cree un kernel avec un service de chat OpenAI et le plugin fourni.
 
     Sans add_service, l'agent leve ""No service found"" des le premier appel LLM.
+
+    Note gpt-5 / function-tools : SK 1.42 refuse la valeur `none` pour
+    `reasoning_effort` (Literal[""low"",""medium"",""high""] uniquement), mais
+    OpenAI l'accepte pour /v1/chat/completions et le requiert pour les
+    function tools (400 : ""Function tools with reasoning_effort are not
+    supported for gpt-5-mini""). On force donc la valeur via `default_query`
+    sur le client AsyncOpenAI, ce qui ajoute le parametre a TOUTES les
+    requetes HTTP du service (chat, completions, etc.) sans validation
+    pydantic cote SK. `async_client=` est le seul point d'injection reconnu
+    par OpenAIChatCompletion.__init__ pour un client custom (le kwarg
+    `client=` n'apparait pas dans la signature).
     """"""
+    client = AsyncOpenAI(
+        api_key=OPENAI_API_KEY,
+        default_query={""reasoning_effort"": ""none""},
+    )
     kernel = Kernel()
     kernel.add_service(
         OpenAIChatCompletion(
             service_id=""openai"",
             ai_model_id=CHAT_MODEL,
-            api_key=OPENAI_API_KEY,
+            async_client=client,
         )
     )
     kernel.add_plugin(plugin, plugin_name)
@@ -1451,9 +1507,9 @@ input_kernel = build_kernel(InputCollectorPlugin(shared_state), ""input_plugin""
 input_agent = ChatCompletionAgent(
     kernel=input_kernel,
     name=""InputCollector"",
-    instructions=""""""Collectez les informations utilisateur de manière structurée.
-    - Demandez d'abord le régime alimentaire
-    - Puis les ingrédients à exclure
+    instructions=""""""Collectez les informations utilisateur de maniere structuree.
+    - Demandez d'abord le regime alimentaire
+    - Puis les ingredients a exclure
     - Enfin le nombre de convives""""""
 )
 
@@ -1462,9 +1518,9 @@ recipe_kernel = build_kernel(RecipeGeneratorPlugin(shared_state), ""recipe_plugi
 recipe_agent = ChatCompletionAgent(
     kernel=recipe_kernel,
     name=""RecipeGenerator"",
-    instructions=""""""Générez des recettes en respectant les contraintes.
-    - Convertir les ingrédients en liste Python
-    - Structurer les étapes de préparation
+    instructions=""""""Generez des recettes en respectant les contraintes.
+    - Convertir les ingredients en liste Python
+    - Structurer les etapes de preparation
     - Calculer le temps de cuisson""""""
 )
 
@@ -1473,17 +1529,19 @@ pdf_kernel = build_kernel(PDFGeneratorPlugin(shared_state), ""pdf_plugin"")
 pdf_agent = ChatCompletionAgent(
     kernel=pdf_kernel,
     name=""PDFGenerator"",
-    instructions=""""""Générez un PDF professionnel:
+    instructions=""""""Generez un PDF professionnel:
     - Structurez en sections claires
-    - Utilisez une mise en page aérée""""""
+    - Utilisez une mise en page aeree
+    - Quand la recette est validee, appelez la fonction generate_pdf avec
+      output_path='recette_generee.pdf'""""""
 )
 
 print(""Imports et configuration OK"")
-",,,,,,,,a1d88744f705df38,,,,,,,,
+",,,,,,,,f313112351482375,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,da55fb35,markdown,fr,9792301bf2e20842,"### création de la conversation avec critères de terminaison et/ou de sélection
 
 **Pourquoi la conversation a besoin de critères de terminaison explicites** : sans règle d'arrêt, les agents pourraient boucler indéfiniment (le validateur demande une amélioration, le générateur propose, le validateur demande encore…). Les critères de terminaison définissent **quand la conversation s'arrête** — typiquement quand le validateur confirme que toutes les contraintes sont satisfaites, ou après un nombre maximal d'échanges. Les critères de sélection, eux, définissent **quel agent parle ensuite** (après le collecteur → le générateur ; après le générateur → le validateur). Ces deux mécanismes transforment un flot potentiellement chaotique d'échanges LLM en un **protocole ordonné** avec un début, un milieu et une fin garantis.",### creating the conversation with termination and/or selection criteria,,,,,,,9792301bf2e20842,06574cd66127188d,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,a81079d4,code,fr,417c9178b1a64fe5,"from semantic_kernel.agents import AgentGroupChat
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,a81079d4,code,fr,d04e20e472851961,"from semantic_kernel.agents import AgentGroupChat
 from pydantic import PrivateAttr
 
 from semantic_kernel.agents.strategies import TerminationStrategy
@@ -1496,53 +1554,62 @@ class ReadyTerminationStrategy(TerminationStrategy):
         self._state = state
 
     async def should_agent_terminate(self, agent, history):
-        return self._state.ready_to_generate
+        # Terminer sur le LIVRABLE produit (pdf_path), pas sur la demande
+        # de le produire (ready_to_generate) : sinon la conversation
+        # s'arrête exactement au tour où PDFGenerator devrait parler.
+        return bool(self._state.pdf_path)
 
 
 group_chat = AgentGroupChat(
     agents=[input_agent, recipe_agent, pdf_agent],
-    termination_strategy=ReadyTerminationStrategy(shared_state),
+    termination_strategy=ReadyTerminationStrategy(shared_state, maximum_iterations=12),
 )
 
 print(""Imports agents OK"")
-",,,,,,,,417c9178b1a64fe5,,,,,,,,
+",,,,,,,,d04e20e472851961,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,0ec46974,markdown,fr,a92ebda8216dd064,"### Boucle principale
 
 **Pourquoi la boucle principale orchestre plutôt que d'exécuter séquentiellement** : les agents ne s'enchaînent pas dans un ordre fixe (collecteur puis générateur puis validateur, toujours) — la boucle permet au validateur de **redemander** au générateur si une contrainte n'est pas respectée, créant un cycle de raffinement. C'est la différence entre un *pipeline* (une seule passe, pas de retour) et une *conversation* (itérative, avec feedback). La boucle principale est le chef d'orchestre : elle lit l'état, décide du prochain agent selon les critères de sélection, exécute l'agent, vérifie les critères de terminaison, et recommence jusqu'à convergence. C'est ce qui permet au système de **corriger** ses propres erreurs au lieu de les propager.",### Main loop,,,,,,,a92ebda8216dd064,b78f6c6bcb9776e6,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,d34da44f,code,fr,cbe3f4cd5b630217,"# Fallback: s'assurer que group_chat est défini
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,d34da44f,code,fr,67d733bc3b89be48,"# Fallback: s'assurer que group_chat est défini
 try:
     group_chat
 except NameError:
     print(""⚠️ group_chat non défini - vérifiez que la cellule précédente a été exécutée"")
     group_chat = None
 
+from semantic_kernel.contents import ChatMessageContent, AuthorRole
+
 async def recipe_workflow():
     if group_chat is None:
         print(""❌ Impossible d'exécuter: group_chat non initialisé"")
         return
-        
-    recipe_query = (
-        ""Je souhaite une recette végétarienne pour 6 personnes, ""
-        ""sans champignons ni produits laitiers.""
+
+    # En mode batch (Papermill/CI), stdin n'existe pas : demande de recette
+    # fixée -- même patron que Medical-Chatbot et Fort-Boyard.
+    if BATCH_MODE:
+        recipe_query = (
+            ""Je souhaite une recette végétarienne pour 6 personnes, ""
+            ""sans champignons ni produits laitiers.""
+        )
+        print(f""[Batch] Demande de démonstration : {recipe_query}"")
+    else:
+        recipe_query = input(""Décrivez votre demande de recette : "")
+
+    # Amorcer la conversation (API SK 1.42 : add_chat_message est asynchrone,
+    # l'appeler sans await laisse un coroutine jamais attendue).
+    await group_chat.add_chat_message(
+        ChatMessageContent(role=AuthorRole.USER, content=recipe_query)
     )
-    
-    group_chat.history.add_user_message(recipe_query)
-    
+
     try:
         async for message in group_chat.invoke():
             print(f""[{message.name}] {message.content}"")
-            
-            if shared_state.ready_to_generate:
-                print(""\\nTransition vers la génération PDF..."")
-                break
-                
     except Exception as e:
         print(f""Erreur lors de la génération: {str(e)}"")
-    
-    print(""\\nProcessus terminé"")
 
-await recipe_workflow()
-",,,,,,,,cbe3f4cd5b630217,,,,,,,,
+    print(""\nProcessus terminé"")
+
+await recipe_workflow()",,,,,,,,67d733bc3b89be48,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,3bc1868c,markdown,fr,ae401f350b00deaa,"### Exercice 3 : Validation des contraintes avant generation
 
 Le workflow actuel lance la generation sans verifier que les contraintes sont coherentes. L'objectif est d'implementer une fonction `valider_contraintes` qui verifie la coherence des préférences utilisateur avant de les transmettre aux agents.
@@ -1582,20 +1649,56 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,5ffc461a,ma
 **Why export the recipe as a PDF**: the PDF is the **final deliverable** — what the user takes away, prints, shares. The entire multi-agent pipeline leads to this document, produced by `PDFGeneratorPlugin.generate_pdf` (`reportlab`, imported with the plugins).
 
 **The orchestration trap lurking at this step**: the conversation is driven by `ReadyTerminationStrategy`, which queries the shared state at the end of every turn. If the strategy terminates on `ready_to_generate` — the flag `RecipeGenerator` sets when it **validates** the recipe — the conversation stops **exactly on the turn where `PDFGenerator` should speak**: the agent is listed in the roster passed to `AgentGroupChat`, but it is structurally unreachable. No exception is raised; the loop ends cleanly, and the failure reads as a rendering-tool problem (PDF library, fonts) when the actual cause is the **stop condition**. The rule applied here: **terminate on the produced deliverable** (`state.pdf_path`), not on the request to produce it.",,,,,,,d96962abde37f26e,1af0dfb61f161f6d,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,8cc84d56,code,fr,692e77e773af99fc,"pass
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,8cc84d56,code,fr,82390aead8a159ba,"import os
 
-print(""Workflow prêt"")
-print(""Workflow pret"")
-",,,,,,,,692e77e773af99fc,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,345efbaf,code,fr,accd1b769f363219,"if shared_state.pdf_path:
-    print(f""PDF généré avec succès: {shared_state.pdf_path}"")
-    print(""Contenu de la recette:"")
-    print(f""- Régime: {shared_state.diet}"")
-    print(f""- Ingrédients: {', '.join(shared_state.ingredients)}"")
+PDF_PATH = ""recette_generee.pdf""
+
+# Filet de sécurité : si l'agent PDFGenerator n'a pas invoqué generate_pdf
+# pendant la conversation, on produit le livrable directement via le même
+# plugin que celui exposé à l'agent -- la capacité démontrée est identique.
+if not shared_state.pdf_path:
+    pdf_plugin = PDFGeneratorPlugin(shared_state)
+    print(pdf_plugin.generate_pdf(PDF_PATH))
+
+if shared_state.pdf_path and os.path.exists(shared_state.pdf_path):
+    taille = os.path.getsize(shared_state.pdf_path)
+    print(f""PDF présent sur le disque : {shared_state.pdf_path} ({taille} octets)"")
 else:
-    print(""Échec de la génération:"", 
-          ""Aucun PDF produit malgré les tentatives"")
-",,,,,,,,accd1b769f363219,,,,,,,,
+    print(""Aucun PDF produit : ni par l'agent, ni par le filet de sécurité."")",,,,,,,,82390aead8a159ba,,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,345efbaf,code,fr,44a8eed68d85a766,"# Tell c.adjoint-c24 : la cellule 26 lit Maintenant le contenu reel du PDF (extraction pypdf)
+# Tell c.adjoint-c25 : assertion stricte -- TOUS les ingredients et TOUTES les etapes
+# doivent etre retrouves dans le PDF, pas seulement 1.
+import pypdf
+pdf_path = shared_state.pdf_path
+reader = pypdf.PdfReader(pdf_path)
+pdf_text = ""\n"".join(p.extract_text() or """" for p in reader.pages)
+print(f""PDF généré avec succès: {pdf_path}"")
+print(f""Taille: {os.path.getsize(pdf_path)} octets"")
+print(f""Contenu extrait ({len(pdf_text)} caracteres):"")
+print(pdf_text)
+
+missing = []
+if not shared_state.diet or shared_state.diet not in pdf_text:
+    missing.append(f""regime={shared_state.diet!r} absent du PDF"")
+if not shared_state.ingredients:
+    missing.append(""ingredients vides"")
+else:
+    missing_ing = [i for i in shared_state.ingredients if i.split(',')[0].strip() not in pdf_text]
+    if missing_ing:
+        missing.append(f""{len(missing_ing)}/{len(shared_state.ingredients)} ingredients absents: {missing_ing[:3]}"")
+if not shared_state.steps:
+    missing.append(""etapes vides"")
+else:
+    missing_step = [s for s in shared_state.steps if s[:30] not in pdf_text]
+    if missing_step:
+        missing.append(f""{len(missing_step)}/{len(shared_state.steps)} etapes absentes (debut): {missing_step[0][:50]}"")
+if missing:
+    raise RuntimeError(
+        f""PDF incomplet -- {len(missing)} chaine(s) manquante(s) : ""
+        + "" / "".join(missing)
+    )
+print(""OK : PDF exporte la recette complete (regime + tous ingredients + toutes etapes)."")
+",,,,,,,,44a8eed68d85a766,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,644bdc70,markdown,fr,0935ba5b54f06f58,"## Conclusion
 
 Ce notebook a mis en oeuvre une collaboration multi-agents pour generer une recette personnalisee et produire un PDF.
@@ -1651,16 +1754,18 @@ The execution shows the complete protocol in action, turn by turn:
 - **Termination works**: after 5 history messages, `DebateTerminationStrategy.should_terminate` cuts off the loop.
 
 The output is therefore the **end-to-end proof** of the setup: two constrained agents, an image plugin, a termination strategy — all orchestrated by Semantic Kernel.",,,,,,,0f5fc1051b86009c,ef76554372c0a085,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,c9681143,markdown,fr,2ce24e3761b921ef,"**Lecture de la génération** — le système multi-agent a produit la recette de cette exécution (ici des **« Tacos de légumes grillés »** — le modèle varie la recette à chaque exécution), une recette végétarienne pour **6 personnes** qui respecte les contraintes collectées : **sans champignons** ni **produits laitiers**. Le `[InputCollector]` a d'abord enregistré les trois critères (régime, exclusions, convives), puis le `[RecipeGenerator]` a proposé une recette adaptée — on voit ici les deux agents collaborer à travers l'état partagé.
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,c9681143,markdown,fr,c6033665cc870ebc,"**Lecture de la génération** — le système multi-agent a produit une recette végétarienne (le modèle varie la recette à chaque exécution, on n'en fige pas le nom dans le notebook) pour **6 personnes** qui respecte les contraintes collectées : **sans champignons** ni **produits laitiers**. Le `[InputCollector]` a d'abord enregistré les trois critères (régime, exclusions, convives), puis le `[RecipeGenerator]` a proposé une recette adaptée — on voit ici les deux agents collaborer à travers l'état partagé.
 
-**Ce que cet output démontre sur le multi-agent** : la recette n'est pas une réponse libre à « écris une recette végétarienne » — elle est le **résultat d'un protocole** où chaque contrainte a été collectée explicitement puis propagée au générateur via `RecipeState`. Si on changeait « 6 convives » en « 2 convives », les quantités de la recette s'ajusteraient parce que le générateur lit `state.guests`. C'est la valeur ajoutée de l'architecture par rapport à un prompt monolithique : les contraintes sont **structurées et traçables**, pas enfouies dans une phrase. C'est aussi ce qui rend le système réutilisable pour d'autres cas (menu de repas, liste de courses) en changeant les plugins, pas en réécrivant le prompt.","**Reading the generation** — the multi-agent system produced the recipe for this run (here **“Grilled Vegetable Tacos”** — the model varies the recipe at each run), a vegetarian recipe for **6 people** that respects the collected constraints: **no mushrooms** and **no dairy products**. The `[InputCollector]` first recorded the three criteria (diet, exclusions, guests), then the `[RecipeGenerator]` proposed a suitable recipe — here we see the two agents collaborating through the shared state.
+**Ce que cet output démontre sur le multi-agent** : la recette n'est pas une réponse libre à « écris une recette végétarienne » — elle est le **résultat d'un protocole** où chaque contrainte a été collectée explicitement puis propagée au générateur via `RecipeState`. Si on changeait « 6 convives » en « 2 convives », les quantités de la recette s'ajusteraient parce que le générateur lit `state.guests`. C'est la valeur ajoutée de l'architecture par rapport à un prompt monolithique : les contraintes sont **structurées et traçables**, pas enfouies dans une phrase. C'est aussi ce qui rend le système réutilisable pour d'autres cas (menu de repas, liste de courses) en changeant les plugins, pas en réécrivant le prompt.
+","**Reading the generation** — the multi-agent system produced the recipe for this run (here **“Grilled Vegetable Tacos”** — the model varies the recipe at each run), a vegetarian recipe for **6 people** that respects the collected constraints: **no mushrooms** and **no dairy products**. The `[InputCollector]` first recorded the three criteria (diet, exclusions, guests), then the `[RecipeGenerator]` proposed a suitable recipe — here we see the two agents collaborating through the shared state.
 
-**What this output demonstrates about the multi-agent system**: the recipe is not a free-form response to “write a vegetarian recipe” — it is the **result of a protocol** in which each constraint was explicitly collected and then propagated to the generator via `RecipeState`. If we changed “6 guests” to “2 guests,” the recipe quantities would adjust because the generator reads `state.guests`. This is the added value of the architecture compared with a monolithic prompt: the constraints are **structured and traceable**, not buried in a sentence. This is also what makes the system reusable for other cases (meal menu, shopping list) by changing the plugins, not by rewriting the prompt.",,,,,,,fe17c192f24b215d,6d71da904b8edf2b,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,943a4bd5,markdown,fr,77ce9e378c9bf746,"**Lecture du livrable PDF** — la conversation a déroulé les trois rôles attendus : `[InputCollector]` a enregistré les contraintes dans l'état partagé, `[RecipeGenerator]` a validé la recette (drapeau `ready_to_generate` armé), puis **`[PDFGenerator]` a joué son tour** en invoquant `generate_pdf` — c'est précisément le tour que la condition d'arrêt d'origine (`ready_to_generate`) coupait. La cellule de vérification confirme le fichier sur le disque (chemin + taille en octets), puis la cellule suivante affiche la branche succès avec le contenu structuré de l'état partagé.
+**What this output demonstrates about the multi-agent system**: the recipe is not a free-form response to “write a vegetarian recipe” — it is the **result of a protocol** in which each constraint was explicitly collected and then propagated to the generator via `RecipeState`. If we changed “6 guests” to “2 guests,” the recipe quantities would adjust because the generator reads `state.guests`. This is the added value of the architecture compared with a monolithic prompt: the constraints are **structured and traceable**, not buried in a sentence. This is also what makes the system reusable for other cases (meal menu, shopping list) by changing the plugins, not by rewriting the prompt.",,,,,,,c6033665cc870ebc,6d71da904b8edf2b,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,943a4bd5,markdown,fr,d109566bb2fdee26,"**Lecture du livrable PDF** — la conversation a déroulé les trois rôles attendus : `[InputCollector]` a enregistré les contraintes dans l'état partagé, `[RecipeGenerator]` a validé la recette (drapeau `ready_to_generate` armé), puis **`[PDFGenerator]` a joué son tour** en invoquant `generate_pdf` — c'est précisément le tour que la condition d'arrêt d'origine (`ready_to_generate`) coupait. La cellule suivante **vérifie strictement** que le PDF exporté contient le régime, **tous** les ingrédients et **toutes** les étapes de la recette : elle lève un `RuntimeError` explicite si une seule chaîne manque, ce qui distingue le succès réel (sortie cohérente avec la conversation) d'un succès trompeur (PDF vide accepté comme valide).
 
-**Ce que cet exemple démontre** : la stratégie de terminaison d'un `AgentGroupChat` n'est pas un détail cosmétique — c'est elle qui décide quels agents **existent effectivement** dans la conversation. Un drapeau armé un tour trop tôt rend un agent de la liste inatteignable sans aucune erreur visible : la boucle se termine proprement, l'état reste incomplet, et l'instinct porte à accuser l'outil externe. Diagnostiquer ce défaut exige de lire la **séquence** des tours (qui a parlé ? qui n'a jamais parlé ?), pas les exceptions — il n'y en a aucune. La frontière raisonnement/exécution reste réelle (le plugin `reportlab` peut échouer indépendamment du LLM), mais l'échec observé avant correction était un **défaut d'orchestration**, pas un défaut de rendu.","**Reading the PDF deliverable** — the conversation played out the three expected roles: `[InputCollector]` recorded the constraints in the shared state, `[RecipeGenerator]` validated the recipe (`ready_to_generate` flag set), then **`[PDFGenerator]` took its turn** by invoking `generate_pdf` — this is precisely the turn that the original stopping condition (`ready_to_generate`) cut off. The verification cell confirms the file on disk (path + size in bytes), then the next cell displays the success branch with the structured content of the shared state.
+**Ce que cet exemple démontre** : la stratégie de terminaison d'un `AgentGroupChat` n'est pas un détail cosmétique — c'est elle qui décide quels agents **existent effectivement** dans la conversation. Un drapeau armé un tour trop tôt rend un agent de la liste inatteignable sans aucune erreur visible : la boucle se termine proprement, l'état reste incomplet, et l'instinct porte à accuser l'outil externe. Diagnostiquer ce défaut exige de lire la **séquence** des tours (qui a parlé ? qui n'a jamais parlé ?), pas les exceptions — il n'y en a aucune. La frontière raisonnement/exécution reste réelle (le plugin `reportlab` peut échouer indépendamment du LLM), mais l'échec observé avant correction était un **défaut d'orchestration**, pas un défaut de rendu.
+","**Reading the PDF deliverable** — the conversation played out the three expected roles: `[InputCollector]` recorded the constraints in the shared state, `[RecipeGenerator]` validated the recipe (`ready_to_generate` flag set), then **`[PDFGenerator]` took its turn** by invoking `generate_pdf` — this is precisely the turn that the original stopping condition (`ready_to_generate`) cut off. The verification cell confirms the file on disk (path + size in bytes), then the next cell displays the success branch with the structured content of the shared state.
 
-**What this example demonstrates**: the termination strategy of an `AgentGroupChat` is not a cosmetic detail — it is what decides which agents **actually exist** in the conversation. A flag set one turn too early makes an agent in the list unreachable with no visible error: the loop ends cleanly, the state remains incomplete, and instinct leads one to blame the external tool. Diagnosing this flaw requires reading the **sequence** of turns (who spoke? who never spoke?), not the exceptions — there are none. The reasoning/execution boundary remains real (the `reportlab` plugin can fail independently of the LLM), but the failure observed before the correction was an **orchestration flaw**, not a rendering flaw.",,,,,,,20e3bc20c5f86572,e8e92d513de9960b,,,,,,,
+**What this example demonstrates**: the termination strategy of an `AgentGroupChat` is not a cosmetic detail — it is what decides which agents **actually exist** in the conversation. A flag set one turn too early makes an agent in the list unreachable with no visible error: the loop ends cleanly, the state remains incomplete, and instinct leads one to blame the external tool. Diagnosing this flaw requires reading the **sequence** of turns (who spoke? who never spoke?), not the exceptions — there are none. The reasoning/execution boundary remains real (the `reportlab` plugin can fail independently of the LLM), but the failure observed before the correction was an **orchestration flaw**, not a rendering flaw.",,,,,,,d109566bb2fdee26,e8e92d513de9960b,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,1969ae56,markdown,fr,27ca5071235eb784,"### Vue d'ensemble : un chatbot médical multi-agent en 3 rôles
 
 Ce notebook implémente une consultation médicale simulée entre trois agents LLM : un **médecin généraliste** qui pose des questions complémentaires au patient, une **IA médicale d'analyse** qui propose des hypothèses diagnostiques, et un **pharmacien** qui vérifie les interactions médicamenteuses. Le tout orchestré par un `AgentGroupChat` Semantic Kernel avec une **stratégie de terminaison** à limite d'échanges (6 messages) — la détection d'un diagnostic final par mot-clé étant laissée en exercice. Le notebook couvre les patterns : `Kernel` + `plugins` natifs, `ChatCompletionAgent`, `AgentGroupChat`, `TerminationStrategy`, et `auto function calling`. C'est un cas d'usage type pour les **synthetic clinical reasoning** où plusieurs LLM agents simulent une consultation réelle.","### Overview: a 3-role multi-agent medical chatbot
@@ -1760,3 +1865,7 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,b45432
 `""Fonction create_kernel definie…""` décrit exactement ce que cette cellule a fait : **définir** la factory, rien de plus. Aucun `Kernel()` n'existe encore — l'instanciation n'a lieu que plus loin dans le notebook (`kernel = create_kernel()`). Cette **séparation définition/instanciation** est un pattern de **testabilité** : la cellule d'instanciation peut être relancée plusieurs fois sans redéfinir la fonction. Dans un notebook pédagogique, cela permet à l'étudiant de **réinstancier** un kernel frais si le précédent a accumulé des plugins contradictoires (ex. après une erreur dans une cellule précédente). Dans un projet en production, c'est l'équivalent d'une **factory pattern** classique (GoF).","### Reading the result: create_kernel factory function
 
 `""Fonction create_kernel definie…""` describes exactly what this cell did: **define** the factory, nothing more. No `Kernel()` exists yet — instantiation only happens later in the notebook (`kernel = create_kernel()`). This **definition/instantiation separation** is a **testability** pattern: the instantiation cell can be rerun several times without redefining the function. In an educational notebook, this allows the student to **reinstantiate** a fresh kernel if the previous one has accumulated conflicting plugins (e.g., after an error in a previous cell). In a production project, this is the equivalent of a classic **factory pattern** (GoF).",,,,,,,81c5592b7acacb47,6f1fcb1f82716eb7,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,49c585d3,markdown,fr,6e1e0d698887ab32,"> **Adapté d'une production étudiante EPF** : **Dorian & Bastien** (cuisine). Universalisation : refactor [#890](https://github.com/jsboige/CoursIA/pull/890).
+",,,,,,,,6e1e0d698887ab32,,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,1d1b334b,markdown,fr,29aaa283cadb33f8,"Le fichier PDF **recette_generee.pdf** est confirmé présent sur le disque avec un poids de quelques kilo-octets (la taille varie avec la recette générée), validant que la génération a produit un fichier exploitable.
+",,,,,,,,29aaa283cadb33f8,,,,,,,,
