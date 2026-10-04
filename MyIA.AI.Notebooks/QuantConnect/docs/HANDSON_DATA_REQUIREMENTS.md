@@ -40,16 +40,9 @@ Ce document documente les prérequis de données pour les exemples du livre qui 
 
 ### Ex19 - FinBERT Model
 
-**Concept**: Utiliser FinBERT (BERT fine-tuned pour la finance) pour analyser du texte financier.
+**Concept**: Utiliser FinBERT (BERT fine-tuné pour la finance) pour analyser du texte financier.
 
-**Prérequis**:
-- **Modèle FinBERT**: Hugging Face `ProsusAI/finbert`
-- **Infrastructure**: GPU pour inference (modèle BERT ~400MB)
-- **Données**: Textes financières (news, rapports)
-
-**Pourquoi pas de backtest direct**: FinBERT nécessite une infrastructure GPU externe et des données textuelles non disponibles dans QC.
-
-**Alternative QC**: Utiliser un modèle de sentiment plus simple basé sur des indicateurs techniques.
+**Retiré de cette liste** (2026-10-05, issue #18903) : le backtest direct est fait. `ProsusAI/finbert` est pré-caché sur les nœuds QC Cloud (`local_files_only=True`), l'inférence s'exécute **dans l'algorithme** (variante PyTorch), et TiingoNews y est gratuit. L'ancien prérequis « GPU externe + données textuelles non disponibles » était doublement faux. Voir `projects/ML-FinBERT-Sentiment/` (projet cloud 29936073, README avec métriques).
 
 ---
 
