@@ -1797,12 +1797,12 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Csharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Tweety"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-12-Grounded-Via-TweetyProject.ipynb",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-12-Grounded-Via-TweetyProject-Python.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Tweety"
     },
     {
@@ -1812,7 +1812,7 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation.ipynb",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation-Lean.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Tweety"
     },
     {
