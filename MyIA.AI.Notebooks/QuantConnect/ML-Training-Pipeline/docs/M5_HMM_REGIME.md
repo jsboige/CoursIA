@@ -217,7 +217,7 @@ partout, `dm_target_gap_max = 0.0`, **zéro** `TARGET_MISMATCH` (test dédié
 
 | Actif | h=1 | h=5 | h=10 |
 |---|---|---|---|
-| BTC | INCONCLUSIVE / INCONCLUSIVE | INCONCLUSIVE / NO BEATS | NO BEATS / NO BEATS (−99,0 %) |
+| BTC | INCONCLUSIVE / INCONCLUSIVE | INCONCLUSIVE / NO BEATS | INCONCLUSIVE / NO BEATS (−99,0 % ; brut −28,3 %) |
 | ETH | **BEATS / BEATS (+8,7 %)** | INCONCLUSIVE / NO BEATS | NO BEATS / NO BEATS (−66,2 %) |
 | SOL | INCONCLUSIVE / **BEATS (+5,7 %)** | INCONCLUSIVE / INCONCLUSIVE | NO BEATS / NO BEATS |
 | LTC | **BEATS / BEATS (+11,7 %)** | INCONCLUSIVE / INCONCLUSIVE | NO BEATS / NO BEATS |
@@ -231,7 +231,7 @@ Lecture en trois lignes :
    BTC reste INCONCLUSIVE — cohérent avec l'analyse de biais ci-dessus : la HAR BTC porte le
    biais OOS le plus fort du cluster (−0,227 à h=1, −0,450 à h=10), l'edge brut y était porté
    par la correction de cette baseline mal calée. SOL bascule INCONCLUSIVE → BEATS sur la jambe
-   de précision : son modèle de régime est *plus* biaisé que sa baseline (+0,116 vs +0,071),
+   de précision : son modèle de régime est *plus* biaisé que sa baseline (+0,115 vs +0,071),
    et le recentrage rend l'avantage de précision significatif.
 2. **h=5 : uniformément INCONCLUSIVE** (7/7, sauf BTC/ETH dé-biaisés NO BEATS qui amorcent la
    dégradation longue). Aucun actif ne paie le modèle de régime à cet horizon.
@@ -243,7 +243,7 @@ Lecture en trois lignes :
 où le régime réduit le biais (−0,181 vs −0,227 à h=1) ; sur les 5 actifs yfinance le modèle de
 régime est systématiquement *plus* biaisé que sa baseline (ex. SOL +0,218 vs +0,163 à h=10) —
 leurs edges h=1 sont donc portés par la **précision**, pas par le biais, ce que la jambe
-recentrée confirme (dm_centered_p < 0,011 sur toutes les cellules BEATS).
+recentrée confirme (dm_centered_p < 0,012 sur toutes les cellules BEATS).
 
 **Artefacts** — manifeste compact in-repo `scripts/results/m5_hmm_regime_cluster_aligned.json`
 (verdicts, alignement, SHA-256 par cellule) ; JSON complet et séries par
