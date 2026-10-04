@@ -1135,6 +1135,12 @@ def main(argv=None):
             "accretion": accretion,
             "accretion_count": len(accretion),
         }, indent=2, ensure_ascii=False))
+        # `--accretion-only` vaut aussi en JSON : le mode advisory ne porte aucun
+        # verdict, et un consommateur machine qui lirait un code retour 1 ici
+        # croirait a un echec de l'advisory alors qu'il lit un conflit de slot --
+        # c'est-a-dire le verdict de l'AUTRE garde.
+        if a.accretion_only:
+            return 0
         return 1 if conflicts else 0
 
     # Le denombrement de CHAQUE source est imprime, y compris quand il vaut

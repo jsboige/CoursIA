@@ -592,6 +592,20 @@ class TestAccretionEndToEnd(unittest.TestCase):
                              + only.stdout + only.stderr)
             self.assertNotIn("CONFLIT DE SLOT", only.stdout)
 
+    def test_accretion_only_is_honoured_in_json_too(self):
+        """Le mode advisory ne porte aucun verdict -- y compris en sortie machine."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo, [SERIES + "/04-1-Previous.ipynb"])
+            _write(repo, SERIES + "/04-2-Alpha.ipynb")
+            _write(repo, SERIES + "/04-2-Beta.ipynb")
+            _commit(repo)
+
+            r = _run(repo, base, "--accretion-only", "--json")
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            self.assertEqual(json.loads(r.stdout)["conflicts"], 2,
+                             "le conflit reste RAPPELE, il ne fait plus rougir")
+
     def test_a_slot_line_in_the_body_silences_max_plus_one(self):
         with tempfile.TemporaryDirectory() as td:
             repo = Path(td)
