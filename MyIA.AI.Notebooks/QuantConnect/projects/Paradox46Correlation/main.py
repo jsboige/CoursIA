@@ -84,9 +84,14 @@ class Paradox46Correlation(QCAlgorithm):
         self.etf_symbols = {t: self.add_equity(t, Resolution.DAILY).symbol
                             for t in etf_tickers}
 
-        # series hebdo : panier ombre normalise chaque mois (rebalance
-        # mensuel exact : chaque mois repart des poids cibles).
-        self._basket_base = {}  # valeur sum(w*close) au debut du mois
+        # series hebdo : panier ombre en ALLOCATIONS DE CAPITAL. Au rebalance
+        # mensuel, les quantites sont fixees aux prix du jour (w_i * notional /
+        # prix_i) ; entre deux rebalances la valeur est chainee de vendredi en
+        # vendredi -- le rendement ne s'efface pas au franchissement de mois
+        # (reserve adjoint #19082, temoin 3).
+        self.basket_notional = 1_000_000.0  # base arbitraire, seuls les ratios comptent
+        self._basket_qty = {}  # {panier: {ticker: quantite}} au rebalance mensuel
+        self._basket_prev = {}  # {panier: valeur au vendredi precedent}
         self._last_equity = None
         self._weekly = []  # {date, <panier>: ret, "P46": ret}
 
@@ -102,7 +107,7 @@ class Paradox46Correlation(QCAlgorithm):
         self.schedule.on(
             self.date_rules.month_start(self._bench),
             self.time_rules.after_market_open(self._bench, 45),
-            self._reset_basket_base,
+            self._reset_baskets,
         )
         # Echantillonnage hebdo le vendredi avant cloture (garde weekday).
         self.schedule.on(
@@ -122,12 +127,18 @@ class Paradox46Correlation(QCAlgorithm):
         if len(closes) < self.w_inter + 1:
             return None
 
-        rets = closes[1:] / closes[:-1] - 1.0
+        # Rendement du jour = recent / veille (plus recent en tete : element i
+        # sur element i+1). Signe inverse dans l'ancienne forme -- reserve
+        # adjoint #19082, temoin 2.
+        rets = closes[:-1] / closes[1:] - 1.0
 
         def window_return(n):
             if len(closes) < n + 1:
                 return None
-            return closes[0] / closes[-1 - n] - 1.0
+            # Cloture d'il y a n seances a l'indice n (plus recent en tete) ;
+            # l'ancien closes[-1-n] indexait depuis la fin de l'historique
+            # (reserve adjoint #19082, temoin 1).
+            return closes[0] / closes[n] - 1.0
 
         r_s = window_return(self.w_short)
         r_m = window_return(self.w_medium)
@@ -184,15 +195,22 @@ class Paradox46Correlation(QCAlgorithm):
 
     # --- paniers ombre -------------------------------------------------------
 
-    def _basket_sum(self, closes, weights):
-        return sum(w * closes.get(t, 0.0) for t, w in weights.items())
+    def _basket_value(self, closes, qty):
+        return sum(q * closes.get(t, 0.0) for t, q in qty.items())
 
-    def _reset_basket_base(self):
+    def _reset_baskets(self):
         closes = self._current_closes()
         if not closes:
             return
         for name, weights in self.baskets.items():
-            self._basket_base[name] = self._basket_sum(closes, weights)
+            # Allocation de capital : chaque poids w_i alloue w_i du notional
+            # en titres au prix de rebalance. Entre deux rebalances les poids
+            # derivent avec les prix (portefeuille ombre achete-au-rebalance,
+            # pas poids x prix remesures chaque semaine).
+            self._basket_qty[name] = {
+                t: w * self.basket_notional / closes[t]
+                for t, w in weights.items() if t in closes and closes[t] > 0
+            }
 
     def _current_closes(self):
         closes = {}
@@ -205,15 +223,20 @@ class Paradox46Correlation(QCAlgorithm):
         if self.time.weekday() != 4:  # vendredi
             return
         closes = self._current_closes()
-        if not closes or not self._basket_base:
+        if not closes or not self._basket_qty:
             return
 
         row = {"date": str(self.time.date())}
-        for name, weights in self.baskets.items():
-            base = self._basket_base.get(name)
-            if base:
-                value = self._basket_sum(closes, weights)
-                row[name] = value / base - 1.0
+        for name, qty in self._basket_qty.items():
+            # Rendement vendredi-a-vendredi de la valeur chainee : le
+            # rebalance mensuel change les quantites, jamais la chaine --
+            # meme convention que la jambe P46 (equity / equity du vendredi
+            # precedent).
+            value = self._basket_value(closes, qty)
+            prev = self._basket_prev.get(name)
+            if prev:
+                row[name] = value / prev - 1.0
+            self._basket_prev[name] = value
         equity = float(self.portfolio.total_portfolio_value)
         if self._last_equity:
             row["P46"] = equity / self._last_equity - 1.0

@@ -130,12 +130,20 @@ class Paradox46VolScaledMomentum(QCAlgorithm):
         if len(closes) < max(self.w_inter, 1) + 1:
             return None
 
-        rets = closes[1:] / closes[:-1] - 1.0
+        # Rendement du jour = recent / veille (plus recent en tete : element i
+        # sur element i+1). closes[1:]/closes[:-1] donnait veille/recent, signe
+        # inverse (RSI nul sur hausse monotone, vol et penalite de surachat
+        # mesures a l'envers -- reserve adjoint #19082, temoin 2).
+        rets = closes[:-1] / closes[1:] - 1.0
 
         def window_return(n):
             if len(closes) < n + 1:
                 return None
-            return closes[0] / closes[-1 - n] - 1.0
+            # Plus recent en tete : la cloture d'il y a n seances est a
+            # l'indice n. closes[-1-n] designait la (n+1)-ieme plus ANCIENNE
+            # de l'historique : la fenetre dependait de la profondeur
+            # demandee, pas de n (reserve adjoint #19082, temoin 1).
+            return closes[0] / closes[n] - 1.0
 
         r_s = window_return(self.w_short)
         r_m = window_return(self.w_medium)
