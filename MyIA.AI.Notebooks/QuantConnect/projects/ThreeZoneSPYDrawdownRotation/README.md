@@ -226,7 +226,7 @@ Découpage déclaré : split médian de la fenêtre (2018-01-01 → 2022-06-30 /
 
 La première moitié (0,332) est nettement sous la pleine période (0,426) :
 la performance est portée par la seconde moitié. La sous-période B, refusée
-trois fois par le node pool QC (occupé par d'autres sièges de la flotte au
+cinq fois par le node pool QC (occupé par d'autres sièges de la flotte au
 moment du verdict), est complémentaire mais non décisive : aucun résultat
 de B ne renverse le verdict ci-dessous (voir raisonnement).
 
