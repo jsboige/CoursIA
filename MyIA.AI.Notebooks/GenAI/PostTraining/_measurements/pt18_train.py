@@ -107,7 +107,12 @@ def metrics_from_logits(pairs, temps=(1.0, 1.0, 1.0)):
         T = temps[qt] if qt < len(temps) else 1.0
         q = np.exp((z / T) - np.max(z / T))
         q = q / q.sum()
-        conf = float(q[label])
+        # Top-1 confidence: the probability the model reports for the decision it
+        # actually makes. `q[label]` (la classe vraie) est une quantite d'oracle,
+        # indisponible a l'inference : elle alimentait l'ECE et le tri de la courbe
+        # de couverture, ce qui rendait la courbe parfaite par construction (mesure :
+        # 1.000 d'exactitude a 50% de couverture). Voir la discussion dans le carnet.
+        conf = float(np.max(q))
         correct = int(np.argmax(q) == label)
         per_qt_conf[qt].append(conf)
         per_qt_correct[qt].append(correct)

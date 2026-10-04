@@ -64,7 +64,11 @@ def eval_run(arm, seed, device):
         lines.append({
             "idx": idx, "qtype": int(qt), "label": int(label),
             "loss_mse": loss_mse,
-            "conf": float(q[label]),
+            # `conf` = confiance top-1 (celle que le modele rapporte pour sa propre
+            # decision) ; `p_true` conserve la masse donnee a la classe vraie, qui est
+            # une quantite d'oracle -- nommee pour ce qu'elle est, jamais "conf".
+            "conf": float(np.max(q)),
+            "p_true": float(q[label]),
             "correct": int(np.argmax(q) == label),
         })
     out_path = os.path.join(out_dir, "predictions.jsonl")
