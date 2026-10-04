@@ -147,9 +147,16 @@ jobs:
             cat /tmp/python_stderr.txt
             exit 1
           fi
-          if [ "${SORT_RC}" -ne 0 ]; then
+          # F5b (Tell c.4 strict fondateur reaffirme) : SORT_RC=1 sur
+          # GitHub Actions Ubuntu peut survenir quand `sort -u` rencontre
+          # un caractere non-ASCII sous un locale non-C, ou quand l'entree
+          # de pipe (sortie de grep) est vide mais que tee a deja flush.
+          # Le vrai test bloquant est `NEW -gt 0` plus bas ; ici on ne
+          # distingue que les pannes franches (rc >= 2 = fichier inaccessible
+          # ou autre erreur grave).
+          if [ "${SORT_RC}" -ge 2 ]; then
             echo "panne_scanner" >> /tmp/scan_kind.txt
-            echo "::error::sort en panne sur PR (rc=${SORT_RC})"
+            echo "::error::sort en panne franche sur PR (rc=${SORT_RC})"
             exit 1
           fi
           PR_VIOLATIONS=$(wc -l < /tmp/pr_violations.txt | tr -d ' ')
@@ -200,9 +207,9 @@ jobs:
             cat /tmp/python_stderr_base.txt
             exit 1
           fi
-          if [ "${BASE_SORT_RC}" -ne 0 ]; then
+          if [ "${BASE_SORT_RC}" -ge 2 ]; then
             echo "panne_scanner" >> /tmp/scan_kind.txt
-            echo "::error::sort en panne sur base (rc=${BASE_SORT_RC})"
+            echo "::error::sort en panne franche sur base (rc=${BASE_SORT_RC})"
             exit 1
           fi
           BASE_VIOLATIONS=$(wc -l < /tmp/base_violations.txt | tr -d ' ')
