@@ -123,6 +123,7 @@ Hamilton, J.D. (1989) "A New Approach to the Economic Analysis of Nonstationary 
 Corsi, F. (2009) "A Simple Approximate Long-Memory Model of Realized Volatility", Journal of Financial Econometrics, 7(2), 174-196.
 
 
+
 ## Revalidation cluster appariée par origine (2026-10-04)
 
 Le protocole #18190 (appariement par origine, porté depuis M4/#18650 puis M15/#18664) a été
@@ -171,4 +172,4 @@ Agrégé par horizon (7 actifs chacun), et par cellule (21 couples coin x horizo
 
 Par cellule : **BEATS** 0/21 ; **NO BEATS** 20/21 ; **refuted-de-biased** 0/21 ; **INCONCLUSIVE** 1/21.
 
-Manifeste compact committé : `scripts/results/m13_ms_har_cluster_aligned.json` (politique #15890, 13819 octets). Artefact complet (hors dépôt) : `m13_ms_har_cluster_full.json`, 152346 octets, sha256 `e78561eb06a7…` ; runtime mesuré 1795 s pour 105 lignes. Le champ `elapsed_s` mesure le groupe le plus long, pas la somme des trois groupes parallèles.
+Manifeste compact committé : `scripts/results/m13_ms_har_cluster_aligned.json` (politique #15890, 13819 octets). Artefact complet (hors dépôt) : `m13_ms_har_cluster_full.json`, 152346 octets, sha256 `e78561eb06a7…` ; runtime mesuré 1795 s. Le champ `elapsed_s` mesure le groupe le plus long, pas la somme des trois groupes parallèles.

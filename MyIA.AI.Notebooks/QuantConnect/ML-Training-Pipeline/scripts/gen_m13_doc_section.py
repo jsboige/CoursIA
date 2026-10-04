@@ -148,12 +148,14 @@ def build_section(manifest: dict) -> str:
     lines.append(f"Par cellule : {counts}.\n")
 
     art = manifest["artifact"]
+    # Pas de compteur de lignes en prose (#9377 : les donnees quantitatives sont tenues
+    # par le manifeste, pas par la doc -- prose-counts refuse un compte en ligne ajoutee).
     lines.append(
         f"Manifeste compact committé : `scripts/results/{MANIFEST_PATH.name}` "
         f"(politique #15890, {MANIFEST_PATH.stat().st_size if MANIFEST_PATH.exists() else '?'} octets). "
         f"Artefact complet (hors dépôt) : `{art['path']}`, {art['bytes']} octets, "
-        f"sha256 `{art['sha256'][:12]}…` ; runtime mesuré {_fmt(manifest['elapsed_s'], 0)} s "
-        f"pour {manifest['total_rows']} lignes. Le champ `elapsed_s` mesure le groupe le plus long, "
+        f"sha256 `{art['sha256'][:12]}…` ; runtime mesuré {_fmt(manifest['elapsed_s'], 0)} s. "
+        f"Le champ `elapsed_s` mesure le groupe le plus long, "
         f"pas la somme des trois groupes parallèles."
     )
     return "\n".join(lines) + "\n"
