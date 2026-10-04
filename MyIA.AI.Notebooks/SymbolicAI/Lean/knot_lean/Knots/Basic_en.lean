@@ -93,7 +93,7 @@ structure KnotDiagram where
   -- intermediate diagram whose well-formedness holds only under the
   -- relation's hypotheses, so an intrinsic invariant would make the move
   -- unstatable (see design rationale on issue #8604).
-  deriving DecidableEq, Repr
+deriving BEq, DecidableEq, Repr
 
 /-! ## 5. Knot
 

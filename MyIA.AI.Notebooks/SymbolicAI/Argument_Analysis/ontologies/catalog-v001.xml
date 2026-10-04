@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Millésime : argumentum_fallacies.owl vendoré depuis ArgumentumGames/Argumentum commit c86b71ff2 (2026-08-30) via CoursIA PR #13554. Toute re-synchronisation exige la re-exécution des carnets consommateurs (cf. Argumentation-Onto-01 section 5). -->
 <catalog prefer="public" xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog">
     <group id="Folder Repository, directory=, recursive=true, Auto-Update=true, version=2" prefer="public" xml:base="">
         <uri id="Automatically generated entry, Timestamp=1745529154756" name="duplicate:https://www.argumentum.games/argumentum_fallacies.owl" uri="argumentum_fallacies.archive.owl"/>

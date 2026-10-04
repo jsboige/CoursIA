@@ -96,7 +96,7 @@ structure KnotDiagram where
   -- un diagramme intermediaire dont la bonne formation ne vaut que sous les
   -- hypotheses de la relation, donc un invariant intrinseque rendrait le mouvement
   -- non statable (voir la rationale de conception sur l'issue #8604).
-  deriving DecidableEq, Repr
+deriving BEq, DecidableEq, Repr
 
 /-! ## 5. Noeud
 

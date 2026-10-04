@@ -1379,7 +1379,7 @@ extension, pas une redite.
 - [`docs/ict/synthese-invariants-dissociations-obstructions.md`](../../../docs/ict/synthese-invariants-dissociations-obstructions.md)
   ([#7399](https://github.com/jsboige/CoursIA/issues/7399)) — grille
   3-régimes (invariants / dissociations / obstructions).
-- [`docs/grothendieckian-lens.md`](../../../docs/grothendieckian-lens.md)
+- [`docs/cadrage/grothendieckian-lens.md`](../../../docs/cadrage/grothendieckian-lens.md)
   ([#7299](https://github.com/jsboige/CoursIA/issues/7299)) — langage
   cohomologique (grade A) + lecture ICT (grade C, cf. A2).
 

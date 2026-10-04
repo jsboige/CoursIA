@@ -74,6 +74,16 @@ Critères de retrait (cf issue #14195 acceptance) :
    cannot be moved or removed") : le prononcer REFUSE evite un FAILED a
    chaque passe --apply. Les gitignorés **non-cache** (`.env` laissé, ...)
    sont signalés (`ignored=...`) sans bloquer le retrait.
+7. **Fenetre « agent vivant » sur content_on_main (#18494)** : le retrait
+   par contenu deja integre (`HEAD` ancetre de `origin/main`, predicat 5
+   de l'issue #17771) est un critere de CONTENU, pas d'ACTIVITE. Un agent
+   vivant en phase de lecture (worktree propre, branche sans commit propre,
+   avant sa premiere edition) y est indiscernable d'un worktree abandonne.
+   Un marqueur d'activite recent -- mtime de `.lane-owner`, a defaut mtime
+   du dossier -- plus jeune que la fenetre (`--activity-window-h`, defaut
+   6 h) fait REFUSER le retrait (`reason=recent_activity:<age>h`). Des que
+   le marqueur depasse la fenetre, le worktree redevient retirable : le
+   refus protege la phase de travail, il ne conserve rien indefiniment.
 
 Ancre PR : `gh pr list --state all --search "head:<branch>"` (autoritative,
 cf matrice a 4 ancres de `.claude/rules/git-workflow.md` §orphan-branch-scan).
@@ -198,6 +208,7 @@ import shutil
 import subprocess
 import sys
 import traceback
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -502,6 +513,39 @@ def read_lane_owner(wt_path: str) -> Optional[str]:
         if stripped:
             return stripped[:64]
     return None
+
+
+def recent_activity_age_hours(wt_path: str,
+                              now: Optional[float] = None) -> float:
+    """Age en heures du marqueur d'activite le plus recent du worktree.
+
+    #18494 : un worktree sans commit propre peut etre celui d'un agent
+    VIVANT en phase de lecture (spawn lance, pas encore sa premiere
+    edition). Deux marqueurs, du plus fiable au moins fiable :
+
+    - mtime de `.lane-owner`, pose par le spawn a la creation ;
+    - a defaut, mtime du dossier du worktree lui-meme (les agents
+      ecrivent tot : `.ipynb`, caches -- en phase de lecture seule, seule
+      la creation du worktree marque le dossier).
+
+    Retourne l'age du plus recent des deux. Chemin illisible : +inf (aucune
+    activite prouvable, le worktree n'est pas protege par cette garde).
+    """
+    now = time.time() if now is None else now
+    candidates: list = []
+    lane_owner = Path(wt_path) / ".lane-owner"
+    try:
+        if lane_owner.exists():
+            candidates.append(lane_owner.stat().st_mtime)
+    except OSError:
+        pass
+    try:
+        candidates.append(Path(wt_path).stat().st_mtime)
+    except OSError:
+        pass
+    if not candidates:
+        return float("inf")
+    return (now - max(candidates)) / 3600.0
 
 
 def same_worktree_path(a: str, b: str) -> bool:
@@ -1079,12 +1123,16 @@ def lookup_pr_for_detached_head(wt_path: str) -> Optional[dict]:
 
 
 def diagnose_worktree(wt_path: str, current_path: str,
-                      head_sha: Optional[str] = None) -> WorktreeStatus:
+                      head_sha: Optional[str] = None,
+                      activity_window_h: float = 6.0) -> WorktreeStatus:
     """Diagnostic complet d'un worktree.
 
     `head_sha` (fourni par `list_worktrees`, porcelain) sert uniquement a
     la garde oid du cache de verdicts MERGED (#15369) : sans lui, l'etage
     cache est saute, jamais consulte a l'aveugle.
+
+    `activity_window_h` : fenetre de la garde « agent vivant » (#18494),
+    appliquee au retrait par contenu deja integre (predicat content_on_main).
     """
     info = get_worktree_info(wt_path, current_path)
 
@@ -1332,7 +1380,36 @@ def diagnose_worktree(wt_path: str, current_path: str,
     # committee ni untracked non tolere (sinon ``uncommitted_source_changes``
     # / ``untolerated_untracked`` seraient sortis). Le worktree ne porte
     # plus rien que main ne contienne deja.
+    #
+    # #18494 -- la fenetre « agent vivant ». `content_on_main` est un
+    # critere de CONTENU, pas d'ACTIVITE : un agent vivant traverse
+    # necessairement un etat « worktree propre + branche sans commit
+    # propre » (sa phase de lecture, avant la premiere edition), et un
+    # `--apply` dans cette fenetre detruit son plan de travail en cours.
+    # Un marqueur d'activite recent (`.lane-owner` ou mtime du dossier)
+    # fait donc REFUSER le retrait ; passe la fenetre, plus rien ne le
+    # protege -- le refus couvre la phase de travail, pas la conservation.
     if info["branch"] and head_is_ancestor_of_main(wt_path):
+        age_h = recent_activity_age_hours(wt_path)
+        if age_h < activity_window_h:
+            return WorktreeStatus(
+                path=wt_path,
+                branch=info["branch"],
+                is_current=False,
+                pr_state=None,
+                pr_number=None,
+                pr_url=None,
+                ahead_count=info["ahead_count"],
+                has_source_dirty=info["has_source_dirty"],
+                untracked_paths=info["untracked"],
+                decision="REFUSE",
+                refusal_reason=f"recent_activity:{age_h:.1f}h",
+                has_submodules=info["has_submodules"],
+                blocking_untracked=info.get("blocking_untracked", []),
+                ignored_extra=info.get("ignored_extra", []),
+                lane_owner=info.get("lane_owner"),
+                content_on_main=True,
+            )
         return WorktreeStatus(
             path=wt_path,
             branch=info["branch"],
@@ -1651,6 +1728,17 @@ def main() -> int:
              "sur le dashboard workspace si refused > N (#3895). Desactive "
              "par defaut ; la tache planifiee passe 20.",
     )
+    p.add_argument(
+        "--activity-window-h",
+        type=float,
+        default=6.0,
+        metavar="H",
+        help="Fenetre « agent vivant » (#18494) : un worktree sans commit "
+             "propre dont un marqueur d'activite (.lane-owner, a defaut "
+             "mtime du dossier) est plus jeune que H heures est REFUSE "
+             "(reason=recent_activity:<age>h) au lieu d'etre retire par "
+             "content_on_main. Defaut 6.0.",
+    )
     args = p.parse_args()
 
     cwd = args.path or "."
@@ -1696,7 +1784,8 @@ def main() -> int:
         try:
             statuses.append(
                 diagnose_worktree(
-                    wt["path"], current_path, head_sha=wt.get("head_sha")
+                    wt["path"], current_path, head_sha=wt.get("head_sha"),
+                    activity_window_h=args.activity_window_h,
                 )
             )
         except RuntimeError as e:

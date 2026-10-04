@@ -47,6 +47,11 @@ on:
       # run hermetically without agent_framework (see pytest step).
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/forensic_guards.py'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_forensic_guards.py'
+      # #18709 provider gate: the suite stubs the LLM stack at import (test
+      # file top) so it collects on a bare CPU runner -- wiring it here makes
+      # the credential gate an effective CI guard (finding Hermes PR #18722).
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/provider_gate.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_provider_gate_18709.py'
       # #11349 native_decide ratchet rewire: scripts/lean/tests/test_proof_integrity_audit_wiring.py
       # pins the conway_lean proof-integrity-audit allow-list to the build-enumerated
       # footprint (61 names after #11368). The test lives under scripts/** so its only
@@ -118,6 +123,9 @@ on:
       # #6790 prover forensic-guards (mirror of the push paths above).
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/forensic_guards.py'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_forensic_guards.py'
+      # #18709 provider gate (mirror of the PR paths above).
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/provider_gate.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_provider_gate_18709.py'
       # #11349 native_decide ratchet rewire (mirror of the push paths above).
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.lean'
@@ -355,6 +363,7 @@ jobs:
             MyIA.AI.Notebooks/QuantConnect/scripts/tests \
             MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_bg_tree_lock.py \
             MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_forensic_guards.py \
+            MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_provider_gate_18709.py \
             MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/tests \
             scripts/secrets/tests \
             scripts/quantconnect/tests \
@@ -509,6 +518,21 @@ jobs:
           if [ -z "$N" ] || [ "$N" -eq 0 ]; then echo "::error::--collect-only returned no tests — the collection crashed (distinct from a coverage drop)."; exit 1; fi
           if [ "$N" -lt "$ARGUMENT_ANALYSIS_TESTS_FLOOR" ]; then echo "::error::Coverage regression: $N tests collected, floor=$ARGUMENT_ANALYSIS_TESTS_FLOOR."; exit 1; fi
           echo "OK: $N tests collected (floor=$ARGUMENT_ANALYSIS_TESTS_FLOOR)."
+
+      # #18981 : garde anti-recidive #18888 -- un test_*.py pose a la racine
+      # d'un module (scripts/notebook_tools/, scripts/lean/, etc.) n'est
+      # execute par aucune des jambes ci-dessus. La garde lit la liste des
+      # chemins collectes depuis CE workflow (l.355-371) et verifie qu'aucun
+      # test_*.py n'apparait dans un dossier parent d'un chemin collecte sans
+      # etre dans le sous-dossier collecte lui-meme. Verifiee localement le
+      # 2026-10-03 : rc=0 sur main, rc=1 sur une branche jetable ou un
+      # test_xxx_junk.py a ete pose a scripts/notebook_tools/. La garde est
+      # stdlib-only, pas de dep a ajouter au pip install. if: always() pour
+      # que la garde rougisse meme si pytest est rouge.
+      - name: guard_test_root (#18888 anti-recidive)
+        if: always()
+        run: |
+          python scripts/ci/guard_test_root.py
 
   adk-contracts:
     name: ADK runtime contracts (18)

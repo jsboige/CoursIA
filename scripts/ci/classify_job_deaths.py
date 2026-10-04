@@ -263,13 +263,27 @@ def fetch_job_log(job_id: int) -> str:
     l'instrument perdrait precisement la cause qu'il doit nommer.
     """
     url = f"repos/{REPO_SLUG}/actions/jobs/{job_id}/logs"
+    # `--allow-escape-sequences` : les logs de job contiennent regulierement
+    # des sequences d'echappement ANSI (couleurs de steps), et les gh >= 2.63
+    # refusent de les sortir sans ce drapeau — c'est la panne qui tuait le
+    # census a chaque tir depuis le 22/09 (#19095, run 37202480910). Le repli
+    # couvre les gh anterieurs au garde-fou, qui sortaient le log sans rien
+    # demander et rejetteraient le drapeau inconnu.
     result = subprocess.run(
-        ["gh", "api", url],
+        ["gh", "api", "--allow-escape-sequences", url],
         capture_output=True,
         timeout=120,
         encoding="utf-8",
         errors="replace",
     )
+    if result.returncode != 0 and "unknown flag" in (result.stderr or ""):
+        result = subprocess.run(
+            ["gh", "api", url],
+            capture_output=True,
+            timeout=120,
+            encoding="utf-8",
+            errors="replace",
+        )
     body = result.stdout or ""
     if result.returncode != 0:
         if "BlobNotFound" in body or "BlobNotFound" in (result.stderr or ""):

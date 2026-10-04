@@ -31,6 +31,7 @@ from server import (
     list_backtests,
     list_projects,
     read_backtest,
+    read_backtest_chart,
     read_compile,
     read_file,
     read_project,
@@ -628,25 +629,71 @@ class TestListProjects:
 
 @patch.dict("os.environ", _DUMMY_ENV)
 class TestReadProject:
-    def test_reads_single_project(self):
-        long_content = "print('hello world, this is more than 200 chars' + 'x' * 200)"
-        mock_resp = _mock_api_response({
+    def test_lists_files_from_files_endpoint(self):
+        """Regression #18938: /projects/read carries no files, so listing them
+        from it always gave `files: []` on a project holding main.py."""
+        project = _mock_api_response({
             "projects": [{
                 "projectId": 42,
                 "name": "MyProject",
                 "description": "Test project",
                 "language": "Python",
                 "organizationId": "org1",
-                "files": [{"name": "main.py", "content": long_content}],
             }]
         })
-        with patch("requests.post", return_value=mock_resp):
+        files = _mock_api_response({
+            "files": [{"name": "main.py", "content": "x" * 500}, {"name": "util.py", "content": ""}]
+        })
+        with patch("requests.post", side_effect=[project, files]) as mock_post:
             result = read_project(42)
-            assert result["projectId"] == 42
-            assert result["name"] == "MyProject"
-            assert len(result["files"]) == 1
-            # Content is truncated to 200 chars
-            assert len(result["files"][0]["content"]) <= 200
+        assert result["projectId"] == 42
+        assert result["organizationId"] == "org1"
+        assert result["files"] == [{"name": "main.py", "size": 500},
+                                   {"name": "util.py", "size": 0}]
+        assert mock_post.call_args_list[1].args[0].endswith("/files/read")
+
+
+@patch.dict("os.environ", _DUMMY_ENV)
+class TestReadBacktestChart:
+    CHART = {
+        "name": "Strategy Equity",
+        "chartType": 0,
+        "series": {
+            "Equity": {"name": "Equity", "values": [[1167782400, 100000.0, 100100.0, 99900.0,
+                                                     100050.0],
+                                                    [1167868800, 100050.0, 100300.0, 100000.0,
+                                                     100200.0]]},
+            "Return": {"name": "Return", "values": [{"x": 1167782400, "y": 0.0}]},
+            "Empty": {"name": "Empty", "values": []},
+        },
+    }
+
+    def test_polls_while_loading_then_writes_chart(self, tmp_path):
+        loading = _mock_api_response({"progress": 0.4, "status": "loading", "success": True})
+        ready = _mock_api_response({"chart": self.CHART, "success": True})
+        out = tmp_path / "charts" / "equity.json"
+        with patch("requests.post", side_effect=[loading, ready]) as mock_post,                 patch("server.time.sleep"):
+            result = read_backtest_chart(7, "bt1", "Strategy Equity", 0, 2000000000,
+                                         str(out), count=5000)
+        assert mock_post.call_args_list[0].args[0].endswith("/backtests/chart/read")
+        assert mock_post.call_args_list[0].kwargs["json"] == {
+            "projectId": 7, "backtestId": "bt1", "name": "Strategy Equity",
+            "count": 5000, "start": 0, "end": 2000000000}
+        assert json.loads(out.read_text(encoding="utf-8")) == self.CHART
+        assert result["path"] == str(out)
+        assert result["series"] == {
+            "Equity": {"points": 2, "first": 1167782400, "last": 1167868800},
+            "Return": {"points": 1, "first": 1167782400, "last": 1167782400},
+            "Empty": {"points": 0, "first": None, "last": None},
+        }
+
+    def test_still_loading_after_polls_is_a_named_error(self, tmp_path):
+        loading = _mock_api_response({"progress": 0.1, "status": "loading", "success": True})
+        out = tmp_path / "c.json"
+        with patch("requests.post", return_value=loading), patch("server.time.sleep"):
+            with pytest.raises(TimeoutError, match="loading"):
+                read_backtest_chart(7, "bt1", "Strategy Equity", 0, 1, str(out))
+        assert not out.exists()
 
 
 @patch.dict("os.environ", _DUMMY_ENV)
