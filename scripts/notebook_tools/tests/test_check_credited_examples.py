@@ -327,6 +327,46 @@ def test_blob_absent_false_for_invalid_ref(tmp_path):
         os.chdir(old)
 
 
+def test_blob_absent_true_when_path_on_disk_missing_from_ref(tmp_path):
+    """Non-regression review 5407534311 : notebook AJOUTE (present sur
+    disque, absent de la base). La prose git est « exists on disk, but not
+    in » — l'ancien filtre sur « does not exist » rendait False et le git
+    show plantait la CLI sur chaque notebook ajoute."""
+    import os
+    repo = _mk_git_repo(tmp_path)
+    (repo / "ajoute.ipynb").write_text(json.dumps(_mk_nb([
+        _mk_md_cell("### Exemple : truc\n\ncrédité #1\n", "a"),
+    ])), encoding="utf-8")
+    old = os.getcwd()
+    os.chdir(repo)
+    try:
+        assert _blob_absent_from_ref("HEAD", "ajoute.ipynb") is True
+    finally:
+        os.chdir(old)
+
+
+def test_cli_added_notebook_on_disk_zero_base_examples(tmp_path, capsys):
+    """Non-regression review 5407534311, niveau CLI : un notebook ajoute
+    (present sur disque, absent de la base) rend 0 exemple de base, sans
+    exception."""
+    import os
+    repo = _mk_git_repo(tmp_path)
+    (repo / "ajoute.ipynb").write_text(json.dumps(_mk_nb([
+        _mk_md_cell("### Exemple : truc\n\ncrédité #1\n", "a"),
+    ])), encoding="utf-8")
+    old = os.getcwd()
+    os.chdir(repo)
+    try:
+        from check_credited_examples import main
+        rc = main(["ajoute.ipynb", "--base", "HEAD", "--json"])
+        assert rc == 0
+        out = json.loads(capsys.readouterr().out)
+        assert out["base_examples"] == []
+        assert len(out["head_examples"]) == 1
+    finally:
+        os.chdir(old)
+
+
 if __name__ == "__main__":
     import pytest
     sys.exit(pytest.main([__file__, "-v"]))

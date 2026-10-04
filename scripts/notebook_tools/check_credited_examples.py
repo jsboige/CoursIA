@@ -199,24 +199,31 @@ def _read_git_blob(ref: str, nb_path: str) -> Path:
 def _blob_absent_from_ref(ref: str, nb_path: str) -> bool:
     """True UNIQUEMENT pour « chemin absent de la ref » (fichier ajoute).
 
-    ``git cat-file -e`` rend rc 128 pour l'absence de chemin ET pour une
-    ref invalide (mesure Windows/Linux git >= 2.40 : « fatal: path 'x'
-    does not exist in 'ref' » vs « fatal: invalid object name 'ref'. ») —
-    le discriminateur fiable est donc le **message** stderr, pas le code :
-    - « does not exist » : absence légitime -> True (zéro exemples de
-      base, l'équivalent d'un fichier ajouté) ;
-    - tout autre message (ref inconnue/ambiguë, dépôt cassé...) : False,
-      et le ``git show`` qui suit échouera **bruyamment** — sans cette
-      sonde, toute erreur git était avalée en faux zéro et blanchissait
-      une perte réelle d'exemples crédités.
+    La ref est d'abord validee (``git rev-parse --verify --quiet``) : si
+    elle est invalide, la sonde rend False et le ``git show`` qui suit
+    echoue bruyamment — sans cette garde, toute erreur git serait
+    avaluee en faux zero et blanchirait une perte reelle d'exemples
+    credites. Ref valide + ``git cat-file -e`` en echec = le chemin est
+    absent de la ref (fichier ajoute) -> True.
+
+    Le discriminateur n'est PAS la prose stderr de git : elle varie selon
+    que le chemin existe sur disque (« fatal: path 'x' exists on disk,
+    but not in '<ref>'. » — le cas nominal d'un notebook ajoute, la CLI
+    lisant la tete sur disque) ou non (« does not exist in »), et selon
+    la locale (review 5407534311 : l'ancien filtre sur « does not
+    exist » faisait planter la CLI sur chaque notebook ajoute).
     """
+    v = subprocess.run(
+        ["git", "rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}"],
+        capture_output=True, encoding="utf-8", errors="replace",
+    )
+    if v.returncode != 0:
+        return False
     p = subprocess.run(
         ["git", "cat-file", "-e", f"{ref}:{nb_path}"],
         capture_output=True, encoding="utf-8", errors="replace",
     )
-    if p.returncode == 0:
-        return False
-    return "does not exist" in (p.stderr or "")
+    return p.returncode != 0
 
 
 def count_credited_examples(nb: dict) -> list[dict]:
