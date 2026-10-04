@@ -103,20 +103,23 @@ jobs:
           : > /tmp/scan_status.txt
           : > /tmp/scan_kind.txt
           set +e
-          python scripts/regen_quarto_render.py --check-readme-links 2>/tmp/python_stderr.txt \
+          # F1 (Hermes review af2a967985) : les violations ::error::STALE_LINK
+          # partent sur STDERR (regen_quarto_render.py:504) -- 2>&1 les fusionne
+          # dans le pipe pour que grep les voie (sinon faux vert structurel).
+          python scripts/regen_quarto_render.py --check-readme-links 2>&1 \
             | tee /tmp/python_stdout.txt \
             | grep -E '^::error::STALE_LINK ' \
             | sort -u > /tmp/pr_violations.txt
           PYPIPE_RC=("${PIPESTATUS[@]}")
           PY_RC=${PYPIPE_RC[0]}
-          GREP_RC=${PYPIPE_RC[1]}
-          SORT_RC=${PYPIPE_RC[2]}
+          GREP_RC=${PYPIPE_RC[2]}
+          SORT_RC=${PYPIPE_RC[3]}
           echo "PR python_rc=${PY_RC} grep_rc=${GREP_RC} sort_rc=${SORT_RC}" >> /tmp/scan_status.txt
           # Tri des cas pour le PR
           if [ "${PY_RC}" -ge 2 ]; then
             echo "panne_scanner" >> /tmp/scan_kind.txt
             echo "::error::Scanner en panne sur PR (rc=${PY_RC}) -- le script ne s'est pas execute."
-            cat /tmp/python_stderr.txt
+            cat /tmp/python_stdout.txt
             exit 1
           fi
           # F6 (Tell c.4 / adjoint c26) -- PY_RC=1 sans resume stdout = crash
@@ -126,7 +129,7 @@ jobs:
             else
               echo "panne_scanner" >> /tmp/scan_kind.txt
               echo "::error::Scanner en crash sur PR (rc=1, pas de resume stdout) -- voir stderr."
-              cat /tmp/python_stderr.txt
+              cat /tmp/python_stdout.txt
               exit 1
             fi
           fi
@@ -136,7 +139,7 @@ jobs:
           if [ "${GREP_RC}" -ge 2 ]; then
             echo "panne_scanner" >> /tmp/scan_kind.txt
             echo "::error::grep en panne sur PR (rc=${GREP_RC}) -- regex ou entree invalide."
-            cat /tmp/python_stderr.txt
+            cat /tmp/python_stdout.txt
             exit 1
           fi
           if [ "${SORT_RC}" -ge 2 ]; then
@@ -159,19 +162,19 @@ jobs:
             echo "::error::git checkout base en panne (rc=${CHECKOUT_BASE_RC}) -- la comparaison delta est invalide."
             exit 1
           fi
-          python scripts/regen_quarto_render.py --check-readme-links 2>/tmp/python_stderr_base.txt \
+          python scripts/regen_quarto_render.py --check-readme-links 2>&1 \
             | tee /tmp/python_stdout_base.txt \
             | grep -E '^::error::STALE_LINK ' \
             | sort -u > /tmp/base_violations.txt
           PYPIPE_RC=("${PIPESTATUS[@]}")
           BASE_PY_RC=${PYPIPE_RC[0]}
-          BASE_GREP_RC=${PYPIPE_RC[1]}
-          BASE_SORT_RC=${PYPIPE_RC[2]}
+          BASE_GREP_RC=${PYPIPE_RC[2]}
+          BASE_SORT_RC=${PYPIPE_RC[3]}
           echo "BASE python_rc=${BASE_PY_RC} grep_rc=${BASE_GREP_RC} sort_rc=${BASE_SORT_RC}" >> /tmp/scan_status.txt
           if [ "${BASE_PY_RC}" -ge 2 ]; then
             echo "panne_scanner" >> /tmp/scan_kind.txt
             echo "::error::Scanner en panne sur base (rc=${BASE_PY_RC}) -- le script ne s'est pas execute."
-            cat /tmp/python_stderr_base.txt
+            cat /tmp/python_stdout_base.txt
             exit 1
           fi
           # F6 -- idem passe base : rc=1 sans resume = crash
@@ -181,7 +184,7 @@ jobs:
             else
               echo "panne_scanner" >> /tmp/scan_kind.txt
               echo "::error::Scanner en crash sur base (rc=1, pas de resume stdout) -- voir stderr."
-              cat /tmp/python_stderr_base.txt
+              cat /tmp/python_stdout_base.txt
               exit 1
             fi
           fi
@@ -189,7 +192,7 @@ jobs:
           if [ "${BASE_GREP_RC}" -ge 2 ]; then
             echo "panne_scanner" >> /tmp/scan_kind.txt
             echo "::error::grep en panne sur base (rc=${BASE_GREP_RC}) -- regex ou entree invalide."
-            cat /tmp/python_stderr_base.txt
+            cat /tmp/python_stdout_base.txt
             exit 1
           fi
           if [ "${BASE_SORT_RC}" -ge 2 ]; then
