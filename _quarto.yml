@@ -2131,7 +2131,7 @@ project:
     - "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5-Abstract-Argumentation-Csharp.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5-Abstract-Argumentation.ipynb"
-    - "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation-Lean.ipynb"
+    - "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Argumentation-Lean.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5d-Stable-Synthesis-Lean-Python.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5e-Propositional-Lab-Lean-Python.ipynb"
 site:
