@@ -1,17 +1,21 @@
-"""Measure static harness size per lane.
+"""Measure static harness size (bytes) for the current lane.
 
 Issue #11554 Phase 1 -- le fork claudish journalise le trafic Anthropic au hub
 (po-2023) et peut mesurer le prefixe stable injecte. Ce script est la version
 **statique** (wc -c des fichiers du harnais) -- l'integration claudish est Phase
 1b et reste a faire par l'operateur hub.
 
-Livrable : un JSON par machine avec harness_chars (CLAUDE.md + rules/ + MEMORY.md
-du projet + du global) + ratio vs main 2026-08-18 (mesure 195470 chars).
+Livrable : un JSON par machine avec harness_bytes (CLAUDE.md + rules/ + MEMORY.md
+du projet + du global). Le total ne compte que le harnais **effectivement charge
+a chaque requete** : un fichier de `.claude/rules/` portant un frontmatter
+`paths:` ne se charge que si la session touche les chemins vises (CLAUDE.md,
+"Regles modulaires") -- ces regles sont sommees a part
+(`project_rules_path_gated_bytes`), hors total. Delta vs main 2026-08-18
+(mesure 195470 octets).
 
 Usage :
     python scripts/traffic-live/measure_harness_size.py --machine myia-po-2023 --workspace CoursIA-2
-    python scripts/traffic-live/measure_harness_size.py --all-lanes
-    python scripts/traffic-live/measure_harness_size.py --all-lanes --json
+    python scripts/traffic-live/measure_harness_size.py --machine myia-po-2023 --workspace CoursIA-2 --json
 
 Prerequis :
 - Python 3.10+
@@ -42,13 +46,15 @@ class HarnessSize:
     machine: str
     workspace: str
     lane: str
-    project_claude_md_chars: int
-    project_rules_chars: int
+    project_claude_md_bytes: int
+    project_rules_bytes: int
     project_rules_count: int
-    project_memory_md_chars: int
-    global_claude_md_chars: int
-    global_rules_chars: int
-    total_chars: int
+    project_rules_path_gated_bytes: int
+    project_rules_path_gated_count: int
+    project_memory_md_bytes: int
+    global_claude_md_bytes: int
+    global_rules_bytes: int
+    total_bytes: int
     baseline_2026_08_18: int
     delta_vs_baseline: int
     delta_pct: float
@@ -59,6 +65,28 @@ def _safe_wc_c(path: Path) -> int:
         return path.stat().st_size
     except (FileNotFoundError, OSError):
         return 0
+
+
+def _has_paths_frontmatter(path: Path) -> bool:
+    """True si le fichier porte un frontmatter YAML avec une cle ``paths:``.
+
+    Un fichier de ``.claude/rules/`` avec ``paths:`` n'est charge que si la
+    session touche les chemins vises (CLAUDE.md, "Regles modulaires") : il ne
+    fait pas partie du harnais charge a chaque requete, et est somme a part.
+    """
+    try:
+        with path.open(encoding="utf-8", errors="replace") as fh:
+            if fh.readline().strip() != "---":
+                return False
+            for line in fh:
+                s = line.strip()
+                if s == "---":
+                    return False
+                if s.startswith("paths:"):
+                    return True
+    except OSError:
+        return False
+    return False
 
 
 def _global_user_claude_md() -> Path:
@@ -104,28 +132,33 @@ def measure(
 ) -> HarnessSize:
     project_claude = _safe_wc_c(_project_claude_md(repo_root))
     project_rules_dir = _project_rules_dir(repo_root)
-    project_rules_chars = 0
+    project_rules_bytes = 0
     project_rules_count = 0
+    path_gated_bytes = 0
+    path_gated_count = 0
     if project_rules_dir.exists():
         for f in project_rules_dir.glob("*.md"):
-            project_rules_chars += _safe_wc_c(f)
-            project_rules_count += 1
+            if _has_paths_frontmatter(f):
+                path_gated_bytes += _safe_wc_c(f)
+                path_gated_count += 1
+            else:
+                project_rules_bytes += _safe_wc_c(f)
+                project_rules_count += 1
     project_memory = _safe_wc_c(_project_memory_md(repo_root))
 
     global_claude = _safe_wc_c(_global_user_claude_md())
     global_rules_dir = _global_user_rules_dir()
-    global_rules_chars = 0
+    global_rules_bytes = 0
     if global_rules_dir.exists():
         for f in global_rules_dir.glob("*.md"):
-            global_rules_chars += _safe_wc_c(f)
-    global_memory = project_memory  # MEMORY.md is per-project, not per-user
+            global_rules_bytes += _safe_wc_c(f)
 
     total = (
         project_claude
-        + project_rules_chars
+        + project_rules_bytes
         + project_memory
         + global_claude
-        + global_rules_chars
+        + global_rules_bytes
     )
     delta = total - BASELINE_2026_08_18
     delta_pct = (delta / BASELINE_2026_08_18) * 100 if BASELINE_2026_08_18 else 0.0
@@ -134,28 +167,19 @@ def measure(
         machine=machine,
         workspace=workspace,
         lane=lane,
-        project_claude_md_chars=project_claude,
-        project_rules_chars=project_rules_chars,
+        project_claude_md_bytes=project_claude,
+        project_rules_bytes=project_rules_bytes,
         project_rules_count=project_rules_count,
-        project_memory_md_chars=project_memory,
-        global_claude_md_chars=global_claude,
-        global_rules_chars=global_rules_chars,
-        total_chars=total,
+        project_rules_path_gated_bytes=path_gated_bytes,
+        project_rules_path_gated_count=path_gated_count,
+        project_memory_md_bytes=project_memory,
+        global_claude_md_bytes=global_claude,
+        global_rules_bytes=global_rules_bytes,
+        total_bytes=total,
         baseline_2026_08_18=BASELINE_2026_08_18,
         delta_vs_baseline=delta,
         delta_pct=round(delta_pct, 1),
     )
-
-
-DEFAULT_LANES = [
-    ("myia-po-2023", "CoursIA-2"),
-    ("myia-po-2024", "CoursIA-2"),
-    ("myia-po-2025", "CoursIA-2"),
-    ("myia-po-2026", "CoursIA-2"),
-    ("myia-po-2027", "CoursIA-2"),
-    ("myia-ai-01", "CoursIA"),
-    ("myia-ai-01", "CoursIA-2"),
-]
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -171,11 +195,6 @@ def main(argv: list[str] | None = None) -> int:
         help="path to CoursIA clone (default: cwd)",
     )
     parser.add_argument(
-        "--all-lanes",
-        action="store_true",
-        help="iterate DEFAULT_LANES (note: only the current machine's home is read)",
-    )
-    parser.add_argument(
         "--json",
         action="store_true",
         help="emit JSON instead of human-readable table",
@@ -184,32 +203,29 @@ def main(argv: list[str] | None = None) -> int:
 
     repo_root = Path(args.repo).resolve()
 
-    if args.all_lanes:
-        results = [measure(m, w, f"{m}:{w}", repo_root) for m, w in DEFAULT_LANES]
-    elif args.machine and args.workspace:
+    if args.machine and args.workspace:
         lane = args.lane or f"{args.machine}:{args.workspace}"
         results = [measure(args.machine, args.workspace, lane, repo_root)]
     else:
         host = socket.gethostname()
-        parser.error(
-            f"--machine and --workspace required (host={host}); or pass --all-lanes"
-        )
+        parser.error(f"--machine and --workspace required (host={host})")
 
     if args.json:
         print(json.dumps([asdict(r) for r in results], indent=2, ensure_ascii=False))
     else:
-        print(f"Baseline main 2026-08-18 = {BASELINE_2026_08_18:,} chars")
+        print(f"Baseline main 2026-08-18 = {BASELINE_2026_08_18:,} bytes")
         print()
         for r in results:
             print(
                 f"lane {r.lane}\n"
-                f"  project CLAUDE.md     = {r.project_claude_md_chars:>7,} chars\n"
-                f"  project .claude/rules = {r.project_rules_chars:>7,} chars ({r.project_rules_count} files)\n"
-                f"  project MEMORY.md     = {r.project_memory_md_chars:>7,} chars\n"
-                f"  global  CLAUDE.md     = {r.global_claude_md_chars:>7,} chars\n"
-                f"  global  rules/        = {r.global_rules_chars:>7,} chars\n"
-                f"  TOTAL                 = {r.total_chars:>7,} chars\n"
-                f"  delta vs baseline     = {r.delta_vs_baseline:>+7,} chars ({r.delta_pct:+.1f} %)"
+                f"  project CLAUDE.md          = {r.project_claude_md_bytes:>7,} bytes\n"
+                f"  project .claude/rules      = {r.project_rules_bytes:>7,} bytes ({r.project_rules_count} auto-loaded)\n"
+                f"  project rules path-gated   = {r.project_rules_path_gated_bytes:>7,} bytes ({r.project_rules_path_gated_count} files, hors total)\n"
+                f"  project MEMORY.md          = {r.project_memory_md_bytes:>7,} bytes\n"
+                f"  global  CLAUDE.md          = {r.global_claude_md_bytes:>7,} bytes\n"
+                f"  global  rules/             = {r.global_rules_bytes:>7,} bytes\n"
+                f"  TOTAL (charge a chaque requete) = {r.total_bytes:>7,} bytes\n"
+                f"  delta vs baseline          = {r.delta_vs_baseline:>+7,} bytes ({r.delta_pct:+.1f} %)"
             )
     return 0
 
