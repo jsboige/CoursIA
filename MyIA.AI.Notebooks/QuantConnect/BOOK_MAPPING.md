@@ -237,6 +237,19 @@ Pour 14 et 15, le texte ne donne pas de Sharpe, mais le balayage de paramètres 
 - 14 : l'univers publié (3) n'est pas dans le balayage, dont les valeurs sont 2, 4, …, 10. L'intervalle du balayage sert donc de fourchette pour la stratégie, pas de chiffre pour le paramètre publié.
 - 17 : le texte et `footnotes.txt` disent « toutes les combinaisons sont profitables », mais l'échelle du balayage va d'environ −135 à −20 en Sharpe. Les deux ne se contredisent pas forcément : le Sharpe de QuantConnect retranche le taux sans risque, et une stratégie presque toujours hors du marché a une volatilité proche de zéro, ce qui rend son Sharpe très négatif même avec de petits gains. C'est pourquoi la borne de 17 porte sur le profit net et non sur le Sharpe.
 
+### 08 — gestion du risque et optimisation (tranche 4)
+
+| # | Chiffre du livre | Conditions du livre | Notre chiffre | Nos conditions | Verdict |
+|---|------------------|---------------------|---------------|----------------|---------|
+| 02 | Sharpe 0,88, CAGR 3,5 % (primaire seule) | OOS oct. 2021 → janv. 2023, barres 1 minute EBS, sans frais | R1 tel quel : Sharpe −0,976, CAGR −6,20 % ; R2 ordres au milieu de la fourchette : Sharpe −0,143, CAGR 0,77 % ; rejeu R2 fenêtres décalées : −1 h Sharpe 0,300, CAGR 4,559 % ; **+1 h Sharpe 0,559, CAGR 6,614 %, pire baisse 3,6 %** | rejeux projet QC 37336051, fenêtre du livre, EURUSD OANDA minute, frais nuls (mid-fill), stratégie primaire seule | `ÉCART` — cause mesurée : l'horodatage des fenêtres (+1 h porte le Sharpe −0,143 → 0,559 et le CAGR 0,77 % → 6,61 %, au-dessus du livre ; PSR 26,5 %) ; l'écart de Sharpe résiduel reste porté par la source EBS vs OANDA, candidate non mesurée (barres EBS non partagées, aucune voie gratuite) — détail [#19114](https://github.com/jsboige/CoursIA/issues/19114) |
+
+**Rejeux** (projet QuantConnect 37336051, une exécution chacun) :
+
+- R1 : backtest `38c7614524d8fa7d3bfeeabfbe968dca` ; R2 : `935c5f7588034b0054cb9457fc8565b1` ([#18901](https://github.com/jsboige/CoursIA/issues/18901) c.5979189139).
+- #19114 fenêtres décalées : −1 h `2aa0f3158a23c28d829e3029216a62fc` (Sharpe 0,300, PSR 16,6 %) ; 0 h `527d371c1031b814ce9d5bbccd8cd756` ; +1 h `91a067e098d3009b22ecc0fbfcd7285e`.
+
+**Ce que le verdict `ÉCART` de l'exemple 02 dit, et ce qu'il ne dit pas.** L'heure des fenêtres est la variable dominante de l'écart : transcrire 3-9 / 11-15 ET les fenêtres définies par le livre sur barres EBS sous-performait ; à +1 h (4-10 / 12-16 ET), le CAGR dépasse le livre (6,6 % vs 3,5 %) et le Sharpe en couvre 64 %. Ce n'est pas une reproduction : c'est la mesure d'une sensibilité forte, sur des barres OANDA, sans frais dans les deux conventions. Le PSR du décalage gagnant (26,5 %) rappelle qu'un Sharpe 0,56 sur quinze mois n'est pas un avantage établi. Sans barres EBS, la cause « source de données » reste ouverte pour l'écart de Sharpe résiduel.
+
 ---
 
 ## Ressources du dépôt mal rattachées au livre
