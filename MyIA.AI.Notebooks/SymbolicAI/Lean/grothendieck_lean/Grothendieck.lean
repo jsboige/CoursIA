@@ -49,6 +49,7 @@ import Grothendieck.GodementFunctor
 import Grothendieck.GodementMono
 import Grothendieck.GodementAcyclicity
 import Grothendieck.GodementResolution
+import Grothendieck.GodementCanonicalDiff
 import Grothendieck.KanExtensions
 import Grothendieck.LawvereTierney
 import Grothendieck.LeftExact
@@ -211,6 +212,18 @@ Substance réelle :
   elles exigent d'abord la vraie différentielle (conoyau de l'unité,
   God58 II.4.1), **frontière nommée** traitée en Partie 89 (calibration
   `#1453`).
+- `Grothendieck.GodementCanonicalDiff` (Partie 89) : le **pas canonique de
+  Godement** — la frontière nommée par les Parties 87-88 est traitée. Pour
+  tout morphisme `f : A ⟶ B`, le pas canonique `godementStep` est la composée
+  `B ⟶ C⁰(coker f)` (projection du conoyau puis unité du conoyau), et la
+  **null-composition** `f ≫ godementStep f = 0` est **prouvée**
+  (`comp_godementStep_zero`, condition universelle du conoyau). La
+  différentielle de degré 0 `godementCanonicalDZero = godementStep μ` donne
+  `μ ≫ d⁰ = 0` (`toGodement_comp_godementCanonicalDZero`) : le début de la
+  résolution augmentée `0 → F → C⁰F → C⁰(coker μ)` **est un complexe** — le
+  contraire exact du témoin de la Partie 87 pour l'itération. L'exactitude en
+  `C⁰F`, l'itération du pas aux degrés suivants et l'**acyclicité**
+  `H^n(C⁰F) = 0` restent la frontière nommée de la Partie 90.
 
 Tous les `sorry`s ne sont pas comblés — la plupart sont des échafaudages
 intentionnels pour le prouveur multi-agent (cf. Epic #1453).
@@ -332,6 +345,18 @@ Substance (English):
   and no **acyclicity** `H^n(C⁰F) = 0` is posed or promised: they first
   require the true differential (cokernel of the unit, God58 II.4.1),
   **named frontier** to be treated in Part 89 (calibration `#1453`).
+- `Grothendieck.GodementCanonicalDiff` (Part 89): the **Godement canonical
+  step** — the named frontier of Parts 87-88 is treated. For every morphism
+  `f : A ⟶ B`, the canonical step `godementStep` is the composite
+  `B ⟶ C⁰(coker f)` (cokernel projection then unit of the cokernel), and the
+  **null-composition** `f ≫ godementStep f = 0` is **proved**
+  (`comp_godementStep_zero`, universal condition of the cokernel). The
+  degree-0 differential `godementCanonicalDZero = godementStep μ` yields
+  `μ ≫ d⁰ = 0` (`toGodement_comp_godementCanonicalDZero`): the start of the
+  augmented resolution `0 → F → C⁰F → C⁰(coker μ)` **is a complex** — the
+  exact opposite of the Part 87 witness for the iterated unit. Exactness at
+  `C⁰F`, iteration of the step at higher degrees, and **acyclicity**
+  `H^n(C⁰F) = 0` remain the named frontier of Part 90.
 
 Not all `sorry`s are filled — most are intentional scaffolds for the
 multi-agent prover (cf. Epic #1453).
