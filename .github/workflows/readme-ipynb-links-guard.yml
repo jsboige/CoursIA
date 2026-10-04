@@ -104,6 +104,7 @@ jobs:
           : > /tmp/scan_kind.txt
           set +e
           python scripts/regen_quarto_render.py --check-readme-links 2>/tmp/python_stderr.txt \
+            | tee /tmp/python_stdout.txt \
             | grep -E '^::error::STALE_LINK ' \
             | sort -u > /tmp/pr_violations.txt
           PYPIPE_RC=("${PIPESTATUS[@]}")
@@ -115,6 +116,34 @@ jobs:
           if [ "${PY_RC}" -ge 2 ]; then
             echo "panne_scanner" >> /tmp/scan_kind.txt
             echo "::error::Scanner en panne sur PR (rc=${PY_RC}) -- le script ne s'est pas execute."
+            cat /tmp/python_stderr.txt
+            exit 1
+          fi
+          # F6 (Tell c.4 / adjoint c26) -- PY_RC=1 sans resume stdout est un
+          # crash Python (RuntimeError, exception non interceptee), pas un
+          # audit legitime. Le scanner en mode --check-readme-links rend
+          # rc=1 UNIQUEMENT quand des violations sont trouvees, et dans ce
+          # cas le stdout contient forcement le resume 'README-link audit:
+          # N rendered-subtree READMEs, M violation(s)'. Sans ce resume et
+          # rc=1, c'est un crash. Temoin : stdout doit contenir
+          # 'README-link audit:' (via tee /tmp/python_stdout.txt) -> sinon
+          # on refuse.
+          if [ "${PY_RC}" -eq 1 ]; then
+            if grep -q "README-link audit:" /tmp/python_stdout.txt; then
+              : # resume present -- l'audit a echoue normalement (violations)
+            else
+              echo "panne_scanner" >> /tmp/scan_kind.txt
+              echo "::error::Scanner en crash sur PR (rc=1, pas de resume stdout) -- voir stderr."
+              cat /tmp/python_stderr.txt
+              exit 1
+            fi
+          fi
+          # F7 (Tell c.4 / adjoint c26) -- grep rc=2 (regex malformee ou
+          # fichier absent) doit etre refuse, pas ignore. Avant V4, seul
+          # rc=1 etait distingue de rc=0 -- rc=2 passait inapercu.
+          if [ "${GREP_RC}" -ge 2 ]; then
+            echo "panne_scanner" >> /tmp/scan_kind.txt
+            echo "::error::grep en panne sur PR (rc=${GREP_RC}) -- regex ou entree invalide."
             cat /tmp/python_stderr.txt
             exit 1
           fi
@@ -139,9 +168,10 @@ jobs:
             exit 1
           fi
           python scripts/regen_quarto_render.py --check-readme-links 2>/tmp/python_stderr_base.txt \
+            | tee /tmp/python_stdout_base.txt \
             | grep -E '^::error::STALE_LINK ' \
             | sort -u > /tmp/base_violations.txt
-          PYPIPE_RC=("${PIPESTATUS[@]}")
+          PYPIPE_RC=("${PIPESTATUS[@]")}
           BASE_PY_RC=${PYPIPE_RC[0]}
           BASE_GREP_RC=${PYPIPE_RC[1]}
           BASE_SORT_RC=${PYPIPE_RC[2]}
@@ -149,6 +179,24 @@ jobs:
           if [ "${BASE_PY_RC}" -ge 2 ]; then
             echo "panne_scanner" >> /tmp/scan_kind.txt
             echo "::error::Scanner en panne sur base (rc=${BASE_PY_RC}) -- le script ne s'est pas execute."
+            cat /tmp/python_stderr_base.txt
+            exit 1
+          fi
+          # F6 -- idem passe base : rc=1 sans resume = crash
+          if [ "${BASE_PY_RC}" -eq 1 ]; then
+            if grep -q "README-link audit:" /tmp/python_stdout_base.txt; then
+              : # resume present
+            else
+              echo "panne_scanner" >> /tmp/scan_kind.txt
+              echo "::error::Scanner en crash sur base (rc=1, pas de resume stdout) -- voir stderr."
+              cat /tmp/python_stderr_base.txt
+              exit 1
+            fi
+          fi
+          # F7 -- idem passe base : grep rc=2 refuse
+          if [ "${BASE_GREP_RC}" -ge 2 ]; then
+            echo "panne_scanner" >> /tmp/scan_kind.txt
+            echo "::error::grep en panne sur base (rc=${BASE_GREP_RC}) -- regex ou entree invalide."
             cat /tmp/python_stderr_base.txt
             exit 1
           fi
