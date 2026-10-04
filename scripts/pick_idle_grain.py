@@ -3925,17 +3925,138 @@ def upsert_orphans_comment(number: int, body: str) -> None:
 # ou biaise vers le recent. Les filtres actifs (exclusions, urnes) restent
 # appliques, et les issues tenues par une autre lane sont sautees comme
 # dans la voie normale -- aucun court-circuit de ce contrat.
+# Mandat user 2026-10-04 : le tapis avance au claim, pas au merge. Mesure
+# fondatrice du meme jour : l'EPIC #7265 n'avait plus vu de merge depuis
+# aout ; po-2027:CoursIA l'a servie a 09:50Z en creant la sous-issue #19088
+# et en reservant CELLE-CI, donc l'EPIC est restee en tete de file, ni
+# reservee ni visitee, et po-2024:CoursIA l'a tiree a 19:49Z -- deux lanes
+# sur le meme patrimoine le meme jour.
+# Une visite, c'est desormais la plus recente de trois dates :
+#   1. la derniere PR mergee qui cite l'issue (`last_delivery_stamp`) ;
+#   2. le dernier `[CLAIMED]` / `[CLAIMED-AMEND]` pose sur l'issue, toutes
+#      lanes (`last_claim_stamp`, lu sur la tete de file par
+#      `settle_belt_head`) ;
+#   3. la creation de la plus recente sous-issue ouverte qui la nomme comme
+#      parent (`last_child_stamp`, `apply_child_visits`, zero appel reseau).
+_CLAIM_VISIT_RE = re.compile(r"^\s*\[CLAIMED(?:-AMEND)?\]", re.MULTILINE)
+_PARENT_BODY_RE = re.compile(r"(?i)\bpart of #(\d+)")
+_PARENT_TITLE_RE = re.compile(r"^\s*\[#(\d+)\b")
+
+
+def belt_visit_stamp(it: dict) -> str | None:
+    """Derniere visite connue de l'issue, ``None`` si elle n'a jamais ete servie.
+
+    Les trois dates sont des ISO 8601 UTC serveur (suffixe ``Z``) : l'ordre
+    lexicographique est l'ordre chronologique.
+    """
+    stamps = [s for s in (it.get("last_delivery_stamp"),
+                          it.get("last_claim_stamp"),
+                          it.get("last_child_stamp")) if s]
+    return max(stamps) if stamps else None
+
+
 def belt_sort_key(it: dict) -> tuple:
     """Cle de tri deterministe pour le tapis roulant.
 
-    Spec #18832 : **une seule ligne de temps** -- derniere PR mergee citant
-    l'issue, sinon date de creation, sinon NOW. La plus ancienne en tete.
-    Une sous-issue tout juste creee repart en queue, pas en tete.
+    Spec #18832 : **une seule ligne de temps** -- derniere visite (merge
+    d'une PR citant l'issue, claim pose sur elle, ou creation d'une
+    sous-issue qui la nomme ; cf `belt_visit_stamp`), sinon date de
+    creation, sinon NOW. La plus ancienne en tete. Une sous-issue tout juste
+    creee repart en queue, pas en tete, et pousse son parent avec elle.
 
     Tri : (stamp ISO asc, numero asc).
     """
-    stamp = it.get("last_delivery_stamp") or it.get("created_at") or NOW.isoformat()
+    stamp = belt_visit_stamp(it) or it.get("created_at") or NOW.isoformat()
     return (stamp, it.get("number", 0))
+
+
+def parent_refs(it: dict) -> set[int]:
+    """Parents nommes par une issue : prefixe de titre ``[#N`` et ``Part of #N``.
+
+    ``Part of #N`` est la syntaxe de lien sure de git-workflow.md ; le
+    prefixe de titre est la forme des sous-grains d'EPIC (``[#7265 -
+    pepite A3] ...``). Une issue ne se nomme pas elle-meme.
+    """
+    refs = {int(m) for m in _PARENT_BODY_RE.findall(it.get("body") or "")}
+    m = _PARENT_TITLE_RE.match(it.get("title") or "")
+    if m:
+        refs.add(int(m.group(1)))
+    refs.discard(it.get("number"))
+    return refs
+
+
+def apply_child_visits(pool: list[dict], targets: list[dict]) -> dict[int, str]:
+    """Pose ``last_child_stamp`` sur ``targets`` : creer une sous-issue visite le parent.
+
+    ``pool`` = toutes les issues ouvertes lues (corps et date de creation deja
+    charges par `fetch_pool`) : zero appel reseau. Rend ``{parent: stamp}``.
+    """
+    latest: dict[int, str] = {}
+    for child in pool:
+        created = child.get("created_at")
+        if not created:
+            continue
+        for parent in parent_refs(child):
+            if created > latest.get(parent, ""):
+                latest[parent] = created
+    for it in targets:
+        stamp = latest.get(it["number"])
+        if stamp:
+            it["last_child_stamp"] = stamp
+    return latest
+
+
+def latest_claim_stamp(issue_number: int) -> str | None:
+    """``createdAt`` serveur du dernier ``[CLAIMED]``/``[CLAIMED-AMEND]`` de l'issue.
+
+    Toutes lanes confondues : une reservation est une visite, quelle que soit
+    la lane qui la pose. Cout : 1 requete. ``None`` si aucun claim ou si la
+    lecture echoue -- l'issue garde alors sa date de merge, comme avant.
+    """
+    try:
+        out = subprocess.run(
+            ["gh", "issue", "view", str(issue_number), "--repo", REPO,
+             "--json", "comments"],
+            capture_output=True, text=True, encoding="utf-8", check=True,
+            timeout=30,
+        ).stdout
+        comments = (json.loads(out) or {}).get("comments") or []
+    except Exception:  # noqa: BLE001 - sonde best-effort, l'issue garde son merge
+        return None
+    stamps = [c.get("createdAt") for c in comments
+              if isinstance(c, dict) and c.get("createdAt")
+              and _CLAIM_VISIT_RE.search(c.get("body") or "")]
+    return max(stamps) if stamps else None
+
+
+def settle_belt_head(
+    belt_pool: list[dict],
+    need: int,
+    probe: Callable[[int], str | None],
+    max_probes: int,
+) -> set[int]:
+    """Lit les claims de la tete de file jusqu'a ce que ses ``need`` premieres places soient stables.
+
+    Une issue reservee depuis son dernier merge recule a la date de sa
+    reservation ; la place liberee est prise par la suivante, qui est lue a
+    son tour. Trie ``belt_pool`` en place et rend les numeros sondes. Le
+    plafond ``max_probes`` borne le cout reseau si toute la tete est reservee.
+    """
+    probed: set[int] = set()
+    belt_pool.sort(key=belt_sort_key)
+    while len(probed) < max_probes:
+        todo = [it for it in belt_pool[:need] if it["number"] not in probed]
+        if not todo:
+            break
+        for it in todo:
+            if len(probed) >= max_probes:
+                break
+            probed.add(it["number"])
+            stamp = probe(it["number"])
+            if stamp:
+                it["last_claim_stamp"] = stamp
+        belt_pool.sort(key=belt_sort_key)
+    return probed
 
 
 def belt_filter(
@@ -4810,6 +4931,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--umbrellas", type=int, default=2, help="candidats urne 'umbrella' (defaut 2)")
     ap.add_argument("--delivered", type=int, default=2, help="candidats urne 'delivered' (defaut 2)")
     ap.add_argument("--reroll", type=int, default=0, help="decale la graine pour un nouveau tirage")
+    ap.add_argument("--belt-merge-only", dest="belt_merge_only",
+                    action="store_true",
+                    help="tapis : ne compter comme visite que le merge d'une "
+                         "PR citant l'issue (ordre d'avant le 2026-10-04 ; "
+                         "par defaut, un claim et la creation d'une sous-issue "
+                         "comptent aussi)")
     ap.add_argument("--belt", action="store_true",
                     help="#18832 mode 'tapis roulant' : trie le pool ouvert "
                          "par date de derniere livraison (None = jamais servie en "
@@ -5326,6 +5453,13 @@ def main(argv: list[str] | None = None) -> int:
         # point 6 -- le verbe "CLEAR" humain est reserve a l'affichage).
         belt_check_window = max(args.grains + 4, 8)
         belt_check_window = min(belt_check_window, len(belt_pool))
+        # Le tapis avance au claim, pas au merge (mandat user 2026-10-04,
+        # cf `belt_visit_stamp`). La sous-issue d'abord (gratuit), puis les
+        # claims de la tete de file. `--belt-merge-only` rend l'ancien ordre.
+        if not args.belt_merge_only:
+            apply_child_visits(pool, belt_pool)
+            settle_belt_head(belt_pool, belt_check_window, latest_claim_stamp,
+                             max_probes=belt_check_window * 3 + 12)
         belt_check_nums = [it["number"] for it in belt_pool[:belt_check_window]]
         belt_claims = check_claims(belt_check_nums, args.lane)
         belt_picks: list[dict] = []
@@ -5439,18 +5573,18 @@ def main(argv: list[str] | None = None) -> int:
                 inact = int(it.get("idle", 0))
                 vus = visits.get(it["number"], 0)
                 genre = it.get("genre", "")
-                stamp = it.get("last_delivery_stamp")
+                stamp = belt_visit_stamp(it)
                 # Le titre est precede du marqueur "jamais servie" quand
-                # `last_delivery_stamp` est None : c'est lui que la file
-                # remonte en tete, il merite un signe visible.
+                # aucune visite n'est connue (ni merge, ni claim, ni
+                # sous-issue) : c'est elle que la file remonte en tete.
                 marker = "[NEVER] " if stamp is None else ""
                 title = it.get("title", "")[:60]
                 print(f"{urn:<10} {age:>4}j {inact:>5}j {vus:>4} "
                       f"{genre:<14} {'-':>5}  {marker}{title}")
             print()
-            print("Belt : pool trie par date de derniere livraison (None = "
-                  "jamais servie, classe en tete). Deterministe, sans "
-                  "ponderation.")
+            print("Belt : pool trie par date de derniere visite -- merge, "
+                  "claim ou sous-issue (None = jamais servie, classee par sa "
+                  "creation). Deterministe, sans ponderation.")
         return 0
     filtered, filter_funnel = filter_candidates_with_continuity(
         admitted,

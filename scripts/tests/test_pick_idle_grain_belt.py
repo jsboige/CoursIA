@@ -542,6 +542,8 @@ def _patch_belt_network(monkeypatch, prs, red_state):
     monkeypatch.setattr(pig, "check_claims",
                         lambda nums, lane: {n: (pig.CLAIM_CODE_FREE, "libre")
                                             for n in nums})
+    # Le tapis lit aussi les claims comme visites : jamais de reseau en test.
+    monkeypatch.setattr(pig, "latest_claim_stamp", lambda n: None)
 
 
 def test_belt_json_emits_single_document_when_red_present(monkeypatch, capsys):
@@ -628,3 +630,135 @@ def test_non_belt_json_red_still_emits_standalone_repair(monkeypatch, capsys):
     # Le mode reste `repair`, pas `belt` : la volee ponderee est inchangee.
     assert payload["mode"] == "repair"
     assert payload["grain"]["number"] == 18844
+
+
+# Le tapis avance au claim, pas au merge (mandat user 2026-10-04).
+# Mesure fondatrice : l'EPIC #7265 servie le matin par une sous-issue
+# reservee (#19088) est restee en tete de file, et une seconde lane l'a
+# tiree le soir.
+
+
+def test_belt_visit_stamp_is_latest_of_merge_claim_child():
+    it = _make_item(1, age_days=90, idle=1, last="2026-08-01T00:00:00Z")
+    assert pig.belt_visit_stamp(it) == "2026-08-01T00:00:00Z"
+    it["last_claim_stamp"] = "2026-10-04T19:49:00Z"
+    it["last_child_stamp"] = "2026-10-04T09:50:00Z"
+    assert pig.belt_visit_stamp(it) == "2026-10-04T19:49:00Z"
+    never = _make_item(2, age_days=90, idle=1, last=None)
+    assert pig.belt_visit_stamp(never) is None
+
+
+def test_belt_claim_moves_issue_behind_unvisited_ones():
+    """Une issue reservee depuis son dernier merge passe derriere une issue
+    plus recente jamais visitee, sans attendre de merge."""
+    old = _make_item(10, age_days=90, idle=1, last="2026-08-01T00:00:00Z",
+                     created="2026-07-01T00:00:00Z")
+    newer = _make_item(11, age_days=30, idle=1, last=None,
+                       created="2026-09-01T00:00:00Z")
+    pool = [old, newer]
+    claims = {10: "2026-10-04T19:49:00Z"}
+    probed = pig.settle_belt_head(pool, need=2, probe=claims.get, max_probes=10)
+    assert [it["number"] for it in pool] == [11, 10]
+    assert probed == {10, 11}
+    assert old["last_claim_stamp"] == "2026-10-04T19:49:00Z"
+
+
+def test_belt_claim_older_than_merge_changes_nothing():
+    it = _make_item(12, age_days=90, idle=1, last="2026-09-20T00:00:00Z",
+                    created="2026-07-01T00:00:00Z")
+    other = _make_item(13, age_days=30, idle=1, last="2026-09-25T00:00:00Z",
+                       created="2026-09-01T00:00:00Z")
+    pool = [other, it]
+    pig.settle_belt_head(pool, need=2, probe={12: "2026-09-01T00:00:00Z"}.get,
+                         max_probes=10)
+    assert [x["number"] for x in pool] == [12, 13]
+
+
+def test_belt_settle_reads_the_freed_slot_until_head_is_stable():
+    """Toute la tete est reservee : chaque place liberee est lue a son tour,
+    et la premiere issue non reservee finit en tete."""
+    pool = [_make_item(20 + k, age_days=90, idle=1, last=None,
+                       created=f"2026-07-0{k + 1}T00:00:00Z") for k in range(5)]
+    claims = {20: "2026-10-04T10:00:00Z", 21: "2026-10-04T11:00:00Z",
+              22: "2026-10-04T12:00:00Z"}
+    probed = pig.settle_belt_head(pool, need=2, probe=claims.get, max_probes=10)
+    assert [it["number"] for it in pool][:2] == [23, 24]
+    assert {20, 21, 22, 23, 24} <= probed
+
+
+def test_belt_settle_is_bounded_by_max_probes():
+    pool = [_make_item(40 + k, age_days=90, idle=1, last=None,
+                       created=f"2026-07-{k + 1:02d}T00:00:00Z") for k in range(20)]
+    calls = []
+
+    def probe(n):
+        calls.append(n)
+        return f"2026-10-04T{len(calls):02d}:00:00Z"
+
+    pig.settle_belt_head(pool, need=3, probe=probe, max_probes=7)
+    assert len(calls) == 7
+
+
+def test_belt_child_issue_visits_its_parent_7265_scenario():
+    """Cas fondateur : la sous-issue #19088 (titre ``[#7265 ...``) creee a
+    09:50Z fait passer l'EPIC #7265 derriere une issue d'aout jamais servie."""
+    epic = _make_item(7265, age_days=78, idle=0, klass="umbrella",
+                      last="2026-08-13T00:00:00Z",
+                      created="2026-07-18T00:00:00Z")
+    august = _make_item(14000, age_days=40, idle=3, last=None,
+                        created="2026-08-25T00:00:00Z")
+    child = _make_item(19088, age_days=0, idle=0, last=None,
+                       created="2026-10-04T09:50:00Z")
+    child["title"] = "[#7265 · pépite A3] Object explorer metadata-driven"
+    child["body"] = "Pepite A3 de l'EPIC #7265."
+    belt_pool = [epic, august]
+    latest = pig.apply_child_visits([epic, august, child], belt_pool)
+    assert latest[7265] == "2026-10-04T09:50:00Z"
+    assert epic["last_child_stamp"] == "2026-10-04T09:50:00Z"
+    belt_pool.sort(key=pig.belt_sort_key)
+    assert [it["number"] for it in belt_pool] == [14000, 7265]
+
+
+def test_parent_refs_reads_part_of_and_title_prefix_not_self():
+    it = _make_item(500, age_days=1, idle=0)
+    it["title"] = "[#16231] renommer ICT-45"
+    it["body"] = "Part of #4362. See #9999.\nPart of #500 (soi-meme)"
+    assert pig.parent_refs(it) == {16231, 4362}
+    plain = _make_item(501, age_days=1, idle=0)
+    plain["body"] = "See #4362 et Refs #12"
+    assert pig.parent_refs(plain) == set()
+
+
+def test_latest_claim_stamp_reads_claims_of_any_lane(monkeypatch):
+    payload = {"comments": [
+        {"createdAt": "2026-10-04T09:50:12Z",
+         "body": "[CLAIMED] lane myia-po-2027:CoursIA -- T1"},
+        {"createdAt": "2026-10-04T10:50:00Z",
+         "body": "[CLAIMED-AMEND] lane myia-po-2027:CoursIA -- paths: a/**"},
+        {"createdAt": "2026-10-04T12:00:00Z",
+         "body": "T1 livree. Le [CLAIMED] du matin reste valable."},
+        {"createdAt": "2026-10-04T13:00:00Z",
+         "body": "> [CLAIMED] cite dans une reponse"},
+    ]}
+
+    class _R:
+        stdout = json.dumps(payload)
+
+    monkeypatch.setattr(pig.subprocess, "run", lambda *a, **k: _R())
+    assert pig.latest_claim_stamp(19088) == "2026-10-04T10:50:00Z"
+
+
+def test_latest_claim_stamp_read_failure_is_none(monkeypatch):
+    def boom(*a, **k):
+        raise OSError("gh absent")
+
+    monkeypatch.setattr(pig.subprocess, "run", boom)
+    assert pig.latest_claim_stamp(1) is None
+
+
+def test_belt_merge_only_flag_is_accepted(monkeypatch, capsys):
+    _patch_belt_network(monkeypatch, prs=[], red_state=_state_red())
+    rc = pig.main(["--lane", "myia-po-2024:CoursIA-2", "--belt",
+                   "--belt-merge-only", "--json"])
+    assert rc == 0
+    assert json.loads(capsys.readouterr().out)["mode"] == "belt"
