@@ -222,13 +222,14 @@ Découpage déclaré : split médian de la fenêtre (2018-01-01 → 2022-06-30 /
 | Fenêtre | Sharpe | CAGR | Pire baisse | Ordres |
 |---------|--------|------|-------------|--------|
 | 2018-01 → 2022-06 (COVID inclus) | 0,332 | 7,87 % | 27,7 % | 1027 |
-| 2022-07 → 2026-09 | *voir suivi* | | | |
+| 2022-07 → 2026-09 | 0,597 | 15,66 % | 17,4 % | 934 |
 
-La première moitié (0,332) est nettement sous la pleine période (0,426) :
-la performance est portée par la seconde moitié. La sous-période B, refusée
-cinq fois par le node pool QC (occupé par d'autres sièges de la flotte au
-moment du verdict), est complémentaire mais non décisive : aucun résultat
-de B ne renverse le verdict ci-dessous (voir raisonnement).
+La performance est **portée par la seconde moitié** : 0,332 (A, COVID
+inclus) contre 0,597 (B), pour 0,426 sur la fenêtre pleine — hétérogénéité
+temporelle confirmée par les deux bouts. (La sous-période B, refusée cinq
+fois par un node pool QC occupé par d'autres sièges de la flotte, a été
+posée dès libération ; les deux lectures sous-jacentes du verdict ont été
+écrites avant sa mesure et ne changent pas.)
 
 ## Verdict : NO BEATS (point 4 du protocole)
 
@@ -282,7 +283,7 @@ bandes habituelles de la fenêtre écoulée se signale sur l'issue.
 | 1. Cloner le projet source | Non réalisable (accès refusé) → réimplémentation déclarée. Réponse coordinateur (04/10) : demande transmise à la lane QC qui a lu la fiche ; si le code source arrive, il servira **d'oracle de vérification** (écarts cités), jamais commité tel quel |
 | 2. Backtest frais IBKR | **Rejoué sur code corrigé** (v4 `bf0655ac`, 2018-2026, 1961 ordres) ; grille OAT en cours de rejeu sur compile v4 |
 | 3. Mesures + comparaisons | Benchmarks SPY/60-40 **valides** ; fee2 v4 mesuré (peu sensible) ; **corrélations v4 rejouées** : VT2 0,80 · AW/TW 0,74 — pas de diversification |
-| 4. Verdict + robustesse | **Rendu : NO BEATS** — grille OAT 7/7 rejouée sur code corrigé (4 axes mordants dont top_n/min_yield révélés par le fix) ; sous-période A mesurée (0,332), B refusée 3× par le node pool (non décisive, suivi dans l'issue) |
+| 4. Verdict + robustesse | **Rendu : NO BEATS** — grille OAT 7/7 rejouée sur code corrigé (4 axes mordants dont top_n/min_yield révélés par le fix) ; **sous-périodes A (0,332) et B (0,597) mesurées** — hétérogénéité temporelle confirmée, verdict inchangé |
 | 5. Couverture données fondamentales | Documenté : Morningstar fine fundamental + provider dividends ; preuve empirique = ordres répartis 2018→2026 ; limite déclarée (pas de mesure NaN par champ sans run dédié) |
 | 6. Gel du code au verdict | **Gelé** : commit du dépôt + compile `e855ce4a` ; procédure de rejeu mensuel décrite dans la section dédiée |
 
