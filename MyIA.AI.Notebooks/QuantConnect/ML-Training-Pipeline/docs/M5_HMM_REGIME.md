@@ -209,7 +209,7 @@ par combo, 622 s CPU.
 **Spécificité M5 du port** : les deux jambes (HAR à commutation de régime et HAR classique)
 sortent de la **même boucle** walk-forward, donc le join par date attendu est l'**identité** —
 la garde fail-closed de `joined_pair_errors` n'y corrige rien, elle est la **preuve** que le
-harnais n'a jamais comparé positionnellement. Sur les 21 cellules : `dm_n_aligned == n_preds`
+harnais n'a jamais comparé positionnellement. Sur chaque cellule : `dm_n_aligned == n_preds`
 partout, `dm_target_gap_max = 0.0`, **zéro** `TARGET_MISMATCH` (test dédié
 `test_hmm_regime_cluster_origin_pairing.py`, 6 tests).
 
@@ -243,10 +243,10 @@ Lecture en trois lignes :
 où le régime réduit le biais (−0,181 vs −0,227 à h=1) ; sur les 5 actifs yfinance le modèle de
 régime est systématiquement *plus* biaisé que sa baseline (ex. SOL +0,218 vs +0,163 à h=10) —
 leurs edges h=1 sont donc portés par la **précision**, pas par le biais, ce que la jambe
-recentrée confirme (dm_centered_p < 0,011 sur les 6 cellules BEATS).
+recentrée confirme (dm_centered_p < 0,011 sur toutes les cellules BEATS).
 
 **Artefacts** — manifeste compact in-repo `scripts/results/m5_hmm_regime_cluster_aligned.json`
-(verdicts, alignement, SHA-256 par cellule) ; JSON complet (126 lignes) et séries par
+(verdicts, alignement, SHA-256 par cellule) ; JSON complet et séries par
 observation hors dépôt : `G:\Mon Drive\MyIA\Dev\Trading\ML-Training-Pipeline\m5_hmm_regime_cluster_full.json`
 (+ `m5_hmm_regime_series.csv`), précédent #18664.
 
