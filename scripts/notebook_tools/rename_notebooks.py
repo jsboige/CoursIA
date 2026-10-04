@@ -113,7 +113,11 @@ LEAN_DRIVE_RES = (
 
 # Un nom qui porte une de ces queues pretend piloter Lean ; sous noyau Python
 # SANS preuve citee, la cible ne se devine pas (review #17801 point 2).
-LEAN_CLAIM_TAILS = LEAN_LEGACY_TAILS
+# `-lean-python` en fait partie : c'est le suffixe que l'outil produit LUI-MEME
+# quand la preuve existe, donc un nom qui le porte sans preuve revendique autant
+# qu'un `-Lean` -- et le retrait en point fixe (#19157) le ferait disparaitre en
+# silence au profit de `-Python`.
+LEAN_CLAIM_TAILS = LEAN_LEGACY_TAILS + ("-lean-python",)
 
 # Exclusions EXPLICITES (I4) : jamais devinees par heuristique.
 EXCLUDED_BASENAMES = {"research.ipynb"}
@@ -208,6 +212,33 @@ def lean_drive_proof(nb: dict) -> tuple[int, str] | None:
 # Nom canonique
 # ---------------------------------------------------------------------------
 
+# Le suffixe de noyau se consomme d'un BLOC : `-Lean-Python` est UN suffixe, pas
+# deux mots. Plus long d'abord, sinon `lean-python` serait coupe en `lean`.
+_FINAL_KERNEL_RE = re.compile(r"[-_]+(?:lean-python|lean|python|csharp)$", re.I)
+
+# Mot de noyau dans le TITRE : la grammaire l'exclut (le suffixe seul nomme le
+# noyau), en infixe comme EN TETE -- `Lean-Argumentation-Lean` repete le noyau,
+# ce que la regle d'accretion §1 refuse. Une cible qui en porte un sera renommee
+# une seconde fois -- review #17801 point 3 : elle tombe en A TRANCHER au lieu
+# d'etre proposee.
+_KERNEL_INFIX_RE = re.compile(r"(?:^|[-_])(?:lean|python|csharp)(?=[-_]|$)", re.I)
+
+
+def _strip_final_kernel(title: str) -> str:
+    """Retire le suffixe de noyau final, EN POINT FIXE et d'un bloc.
+
+    `-Lean-Python` est UN suffixe : n'en retirer que le dernier mot laissait
+    `-Lean` dans le titre, que `canonical_target` re-suffixait en
+    `-Lean-Lean-Python` (#19157). Le point fixe consomme aussi les empilements
+    herites (`-Python-Python`), ce qui rend la cible idempotente.
+    """
+    while True:
+        reduit = _FINAL_KERNEL_RE.sub("", title)
+        if reduit == title:
+            return title
+        title = reduit
+
+
 def canonical_target(filename: str, kernel_suffix: str) -> str:
     """Nom canonique d'un fichier pour un suffixe de noyau donne.
 
@@ -218,7 +249,11 @@ def canonical_target(filename: str, kernel_suffix: str) -> str:
     m = STEM_RE.match(stem)
     if not m:
         # Nom hors grammaire de serie (index nu, prefixe absent) : on se borne
-        # a apposer le suffixe de noyau, acte minimal sans risque.
+        # a apposer le suffixe de noyau, acte minimal sans risque -- mais en
+        # retirant d'abord un suffixe DEJA present, sinon la cible en empile un
+        # second a chaque passage (`Diagnostic-Medical` -> `-Python-Python`,
+        # mesure #19157 : 2824 cas d'idempotence sur l'arbre).
+        stem = _strip_final_kernel(stem)
         return f"{stem}-{_cap(kernel_suffix)}.ipynb"
     prefix, num, accr = m.group("prefix"), m.group("num"), m.group("accr")
     title = m.group("title")
@@ -245,29 +280,23 @@ def canonical_target(filename: str, kernel_suffix: str) -> str:
             title = re.sub(r"^Lean[-_]", "", title, flags=re.I)
             title = re.sub(r"[-_]Lean(?=[-_]|$)", "", title, flags=re.I)
 
-    # Le titre ne se termine jamais par le mot du noyau qu'on va apposer --
+    # Le titre ne se termine jamais par le suffixe de noyau qu'on va apposer --
     # dans N'IMPORTELLE casse heritee (`-Csharp` compte, mesure de l'arbre :
-    # 114 fichiers).
-    title = re.sub(r"[-_]+(?:lean|python|csharp)$", "", title, flags=re.I)
+    # 114 fichiers). Retrait en point fixe : cf `_strip_final_kernel` (#19157).
+    title = _strip_final_kernel(title)
 
     title = title.strip("-_ ")
     body = f"{title}{part}" if title else part.lstrip("-")
     return f"{prefix}-{num.zfill(2)}{accr}-{body}-{_cap(kernel_suffix)}.ipynb"
 
 
-# Mot de noyau en INFIXE de titre : la grammaire l'exclut (le suffixe seul nomme
-# le noyau). Une cible qui en porte un sera renommee une seconde fois -- review
-# #17801 point 3 : elle tombe en A TRANCHER au lieu d'etre proposee.
-_KERNEL_INFIX_RE = re.compile(r"[-_](?:lean|python|csharp)(?=[-_]|$)", re.I)
-_FINAL_KERNEL_RE = re.compile(r"[-_]+(?:lean-python|lean|python|csharp)$", re.I)
-
-
 def target_violation(new_name: str) -> str | None:
     """Pourquoi la cible calculee ne satisfait PAS elle-meme la grammaire.
 
     Renvoie None si la cible est canonique (STEM_RE + noyau en dernier, jamais
-    en infixe), sinon la raison. Une cible non canonique promet un SECOND
-    renommage : la ligne de la table doit tomber en A TRANCHER, pas etre livree.
+    repete dans le titre -- ni en infixe, ni EN TETE), sinon la raison. Une cible
+    non canonique promet un SECOND renommage : la ligne de la table doit tomber
+    en A TRANCHER, pas etre livree.
 
     Le basename est extrait avant toute analyse : un chemin complet passe a
     l'appel (POSIX ou Windows) recevrait a tort la raison generique « hors

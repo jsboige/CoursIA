@@ -901,5 +901,121 @@ class TestCaseOnlyRenameCommits(unittest.TestCase):
             self.assertEqual(_git(repo, "rev-parse", "HEAD").strip(), base)
 
 
+class Test19157IdempotenceEtNoyauEnTete(unittest.TestCase):
+    """#19157 defauts 1 et 2 : `canonical_target` n'etait pas idempotent sur un
+    nom deja en `-Lean-Python`, et un mot de noyau EN TETE de titre passait sous
+    le radar de `target_violation`.
+
+    Les tests ci-dessous fabriquent le defaut et pincent le verdict. La
+    contre-epreuve d'ensemble est le diff de `--propose` sur tout l'arbre, cite
+    dans le body de la PR (critere 5 de l'issue) : 5 cibles mortes qui
+    redeviennent CONFORME, 44 cibles qui repetent le noyau qui tombent en
+    A TRANCHER.
+    """
+
+    SIX_TWEETY = (
+        "Tweety-02d-FOL-Lab-Lean-Python.ipynb",
+        "Tweety-02e-Preuves-Hilbert-Gentzen-Lean-Python.ipynb",
+        "Tweety-02f-Modal-Zoo-Lean-Python.ipynb",
+        "Tweety-03b-Modal-Lab-Lean-Python.ipynb",
+        "Tweety-05d-Stable-Synthesis-Lean-Python.ipynb",
+        "Tweety-05e-Propositional-Lab-Lean-Python.ipynb",
+    )
+
+    def test_1_idempotence_sur_tout_l_arbre(self):
+        """Critere 1 : `canonical_target(canonical_target(x, k), k) ==
+        canonical_target(x, k)` sur tout `MyIA.AI.Notebooks`.
+
+        Les quatre suffixes sont eprouves, pas seulement le noyau detecte : la
+        propriete doit tenir pour tout appel, y compris ceux qu'un appelant
+        ferait avec un autre noyau.
+        """
+        root = Path(__file__).resolve().parents[3] / "MyIA.AI.Notebooks"
+        noms = sorted({p.name for p in root.rglob("*.ipynb")})
+        self.assertGreater(len(noms), 1000, f"arbre de notebooks absent sous {root}")
+        for nom in noms:
+            for noyau in ("python", "csharp", "lean", "lean-python"):
+                une_fois = rn.canonical_target(nom, noyau)
+                with self.subTest(notebook=nom, noyau=noyau):
+                    self.assertEqual(rn.canonical_target(une_fois, noyau), une_fois)
+
+    def test_1b_idempotence_hors_grammaire(self):
+        """Le retour anticipe (nom hors grammaire de serie) empilait lui aussi :
+        `Diagnostic-Medical` -> `-Python` -> `-Python-Python`."""
+        for nom, noyau, cible in (
+            ("Diagnostic-Medical.ipynb", "python", "Diagnostic-Medical-Python.ipynb"),
+            ("Diagnostic-Medical-Python.ipynb", "python", "Diagnostic-Medical-Python.ipynb"),
+            ("SmartGrid-Energy-Lean.ipynb", "lean", "SmartGrid-Energy-Lean.ipynb"),
+        ):
+            with self.subTest(notebook=nom):
+                self.assertEqual(rn.canonical_target(nom, noyau), cible)
+
+    def test_2_les_six_noms_tweety_sortent_conformes(self):
+        """Critere 2 : les six cibles de la serie Tweety sont deja canoniques."""
+        for nom in self.SIX_TWEETY:
+            with self.subTest(notebook=nom):
+                self.assertEqual(rn.canonical_target(nom, "lean-python"), nom)
+                self.assertIsNone(rn.target_violation(nom))
+
+    def test_3_noyau_en_tete_de_titre_detecte(self):
+        """Critere 3 : un mot de noyau en tete de titre est un infixe comme un
+        autre -- `_KERNEL_INFIX_RE` exigeait un separateur AVANT le mot."""
+        self.assertEqual(
+            rn.target_violation("Tweety-05b-Lean-Argumentation-Lean.ipynb"),
+            "mot de noyau en infixe du titre",
+        )
+        # Le nom d'avant #19150 produit exactement cette cible : le meme verdict
+        # doit tomber sur le nom reellement present dans l'arbre au moment du
+        # --propose.
+        self.assertEqual(
+            rn.canonical_target("Tweety-5b-Lean-Argumentation.ipynb", "lean"),
+            "Tweety-05b-Lean-Argumentation-Lean.ipynb",
+        )
+
+    def test_3b_pas_de_faux_positif_sur_un_mot_qui_contient_le_noyau(self):
+        """Le mot doit etre ENTIER : `Pythonic` et `Lean4` ne sont pas des mots
+        de noyau, et un titre qui commence par autre chose reste conforme."""
+        for nom in ("GameTheory-02-NormalForm-Python.ipynb",
+                    "X-01-Pythonic-Intro-Python.ipynb",
+                    "X-01-Lean4-Intro-Lean.ipynb",
+                    "Tweety-02d-FOL-Lab-Lean-Python.ipynb"):
+            with self.subTest(notebook=nom):
+                self.assertIsNone(rn.target_violation(nom))
+
+    def test_4_lean_python_sans_preuve_ne_devient_pas_python(self):
+        """Le retrait en point fixe ne doit pas EFFACER une revendication Lean :
+        un nom en `-Lean-Python` sous noyau python SANS preuve citee tombe en
+        A TRANCHER, comme la queue `-Lean` (#17801 point 2) -- jamais un
+        `-Python` silencieux."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            _init_repo(repo)
+            _write_nb(repo, "MyIA.AI.Notebooks/S/S-01-Swaps-Lean-Python.ipynb",
+                      _nb([_md("swaps"), _code("print('aucun appel lake')")]))
+            _git(repo, "add", "-A")
+            _git(repo, "commit", "-qm", "serie")
+            table = rn.propose("MyIA.AI.Notebooks/S", repo)
+            self.assertIn("A TRANCHER", table)
+            self.assertIn("sans preuve", table)
+            self.assertNotIn("S-01-Swaps-Python.ipynb", table)
+
+    def test_4b_la_preuve_citee_rend_le_suffixe_lean_python_stable(self):
+        """Controle symetrique : AVEC la preuve, la cible garde `-Lean-Python`
+        et n'est plus empilee -- c'est le cas des six Tweety."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            _init_repo(repo)
+            _write_nb(repo, "MyIA.AI.Notebooks/S/S-01-FOL-Lab-Lean-Python.ipynb",
+                      _nb([_md("lab"),
+                           _code('run_wsl(f"cd {to_wsl(LAKE_DIR)} && '
+                                 'lake build FormalLogic.FolBridge")')]))
+            _git(repo, "add", "-A")
+            _git(repo, "commit", "-qm", "serie")
+            table = rn.propose("MyIA.AI.Notebooks/S", repo)
+            self.assertIn("`MyIA.AI.Notebooks/S/S-01-FOL-Lab-Lean-Python.ipynb` | "
+                          "`MyIA.AI.Notebooks/S/S-01-FOL-Lab-Lean-Python.ipynb`", table)
+            self.assertIn("CONFORME", table)
+
+
 if __name__ == "__main__":
     unittest.main()
