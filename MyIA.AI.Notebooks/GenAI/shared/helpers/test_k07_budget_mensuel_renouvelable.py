@@ -4,8 +4,7 @@
 Charge la source des cellules `1f127d45` (cell 10) et `b097a42e` (cell 11) du
 carnet `09e_Production_Exploitation.ipynb` via nbformat, les exécute dans un
 namespace isolé, importe les vrais `trajectoire` et `verifier_alerte`, et
-exerce la logique de K07 (#18736) sans réécrire la fonction (cf Tell c.4
-strict : le témoin doit être discriminant, pas un PASS-sur-défaut).
+exerce la logique de K07 (#18736) sans réécrire la fonction (le témoin doit être discriminant, pas un PASS-sur-défaut).
 
 Couvre le passage du budget annuel cumulatif au budget mensuel renouvelable
 (issue #18736 acceptance) :
@@ -214,7 +213,7 @@ def test_verifier_alerte_hors_fenetre():
     )
 
 
-# --- Témoin négatif (Tell c.4 strict fondateur) ---
+# --- Témoin négatif ---
 
 
 def test_regression_cumul_annuel_detectee():

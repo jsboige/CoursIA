@@ -20,7 +20,7 @@ Hasard exactitude :
   indépendamment de la question ; le mécanisme à apprendre est la sélection conditionnelle,
   pas la simple mémorisation).
 
-Tell c.1493 strict fondateur nuance — **origine** : ces deux tâches sont dérivées de TV-00b
+**origine** : ces deux tâches sont dérivées de TV-00b
 cellule 26 (la single-hop), avec extension multi-sauts. La structure est volontairement
 minimale pour qu'un transformer jouet (~100K params) puisse la résoudre avec marge en
 CPU, et qu'un entraînement CoT-vs-answer-only y soit discriminable.
@@ -182,7 +182,7 @@ def lot_multi_hop_cot(
     (les q_idx QUESTION_j + leur transition) AVANT la cible finale. C'est précisément
     le « CoT supervisé » de Huang et al. 2026.
 
-    Tell c.1493 strict fondateur nuance : la chaîne est supervisée par entropie croisée
+    la chaîne est supervisée par entropie croisée
     sur **chaque token de la chaîne intermédiaire** (pas seulement la cible finale).
 
     Note : l'évaluation (evaluer_multi_hop_cot) lit la cible au dernier token ET
@@ -271,7 +271,7 @@ def entrainer(
 ) -> tuple[float, float, float]:
     """Entraîne un modèle sur la tâche choisie, renvoie (exactitude, perplexite, secondes).
 
-    Tell c.1493 strict fondateur nuance — multi-seed : cette fonction utilise UNE graine.
+    multi-seed : cette fonction utilise UNE graine.
     La mesure multi-seed (≥4) est dans le grain de mesure suivant (TV-03 v2), portée par
     :func:`entrainer_multi_seed`.
     """
@@ -307,7 +307,7 @@ def entrainer_multi_seed(
 ) -> dict:
     """Mesure multi-seed (≥4) : moyenne, écart-type, secondes totales.
 
-    Tell c.1493 strict fondateur nuance — la mesure multi-seed par graine est attendue par
+    la mesure multi-seed par graine est attendue par
     le protocole PR review-discipline §C (≥4 graines parmi 0/1/7/42/99). On expose moyenne,
     écart-type et liste brute pour permettre les vérifs edge≥2σ / DM cross-seed.
 
@@ -362,7 +362,7 @@ def evaluer_multi_hop_cot(modele, vocab: Vocab, T_cot: int, n: int = 512, graine
     - exactitude = la cible finale (dernier token) est-elle correcte ?
     - perplexité moyenne sur les tokens de la chaîne (pas seulement la cible finale).
 
-    Tell c.1493 strict fondateur nuance : on lit la sortie sur **toute la chaîne**, pas
+    on lit la sortie sur **toute la chaîne**, pas
     uniquement la dernière position. L'exactitude cible reste la métrique principale
     (réponse à la question = discriminant H.2).
     """
@@ -390,7 +390,7 @@ def entrainer_cot(
 ) -> tuple[float, float, float]:
     """Entraînement CoT supervisé sur la tâche multi-sauts. Renvoie (acc, ppl, sec).
 
-    Tell c.1493 strict fondateur nuance : la perte supervise **la chaîne entière**
+    la perte supervise **la chaîne entière**
     (chaque token PAS/RECAP_j/cible doit être prédit correctement). Le gradient
     coule donc à travers toute la séquence de génération.
     """
