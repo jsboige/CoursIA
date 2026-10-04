@@ -23,6 +23,15 @@ namespace MyIA.AI.Shared.Search.Graph;
 /// l'autre — sans lui, deux strategies a egalite de priorite exploreraient des arbres
 /// differents et la comparaison des compteurs ne prouverait rien.
 /// </para>
+/// <para>
+/// <b>Trois regimes de memoire</b>, et c'est leur confusion qui produisait les defauts
+/// corriges en #19142 : une memoire <b>par cout</b> avec reouverture pour les strategies
+/// dont la file est ordonnee par le cout (cout uniforme, A*) ; une memoire <b>par
+/// ensemble d'etats vus</b> — developpes <i>et</i> en file — pour les autres strategies en
+/// mode graphe ; <b>aucune memoire</b> en mode arbre. Un elagage par le cout n'a de sens
+/// que dans le premier regime : applique a la largeur, il jette une entree au seul motif
+/// qu'elle coute plus cher, alors que la largeur ne classe pas par cout.
+/// </para>
 /// </remarks>
 /// <typeparam name="TState">Type de l'etat.</typeparam>
 /// <typeparam name="TAction">Type de l'action.</typeparam>
@@ -30,6 +39,14 @@ public sealed class GraphSearch<TState, TAction>
 {
     private PriorityQueue<SearchNode<TState, TAction>, (double Priority, long Rank)> _frontier = new();
     private long _rank;
+
+    /// <summary>
+    /// Strategie reellement jouee par le <see cref="Run"/> en cours. Elle differe de
+    /// <see cref="Strategy"/> pendant l'approfondissement iteratif, dont chaque
+    /// iteration joue une profondeur limitee : <see cref="Push"/> doit lire
+    /// celle-ci, sinon le rang est croissant et chaque iteration se comporte en largeur.
+    /// </summary>
+    private SearchStrategy _effective;
 
     /// <summary>Strategie de file ; largeur d'abord par defaut.</summary>
     public SearchStrategy Strategy { get; init; } = SearchStrategy.BreadthFirst;
@@ -44,15 +61,33 @@ public sealed class GraphSearch<TState, TAction>
     /// <summary>
     /// Estimation du cout restant jusqu'au but. Obligatoire pour
     /// <see cref="SearchStrategy.GreedyBestFirst"/> et <see cref="SearchStrategy.AStar"/>,
-    /// ignoree ailleurs. Admissible (jamais surestimee) pour que A* reste optimal.
+    /// ignoree ailleurs.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Admissible</b> (jamais surestimee) suffit : A* rouvre un etat deja developpe
+    /// lorsqu'un chemin strictement moins cher y mene, donc une heuristique admissible
+    /// mais <b>incoherente</b> reste optimale. Exiger la coherence en plus serait une
+    /// restriction du contrat, pas une consequence de l'algorithme.
+    /// </para>
+    /// <para>
+    /// L'admissibilite n'est en revanche <b>pas verifiee</b> a l'execution : une
+    /// heuristique qui surestime rend A* sous-optimal, y compris avec la reouverture.
+    /// </para>
+    /// </remarks>
     public Func<TState, double>? Heuristic { get; init; }
 
     /// <summary>
-    /// Vrai pour une recherche en arbre (aucun ensemble des etats developpes) ; faux par
-    /// defaut, c'est-a-dire recherche en graphe. Le patrimoine exposait ce choix via
-    /// <c>QueueSearchType</c>.
+    /// Vrai pour une recherche en arbre ; faux par defaut, c'est-a-dire recherche en
+    /// graphe. Le patrimoine exposait ce choix via <c>QueueSearchType</c>.
     /// </summary>
+    /// <remarks>
+    /// En mode arbre il n'y a <b>aucune memoire</b> : ni ensemble des etats developpes,
+    /// ni tableau des couts connus. Un etat atteint par deux chemins est donc developpe
+    /// deux fois, et les compteurs sont plus eleves qu'en mode graphe — c'est la
+    /// semantique du mode, pas un surcout. Sur un graphe avec cycle, la recherche peut
+    /// ne pas terminer : le mode arbre suppose un espace d'etats en arbre (AIMA §3.3).
+    /// </remarks>
     public bool TreeSearch { get; init; }
 
     /// <summary>Noeuds developpes lors du dernier <see cref="Solve"/>.</summary>
@@ -113,28 +148,50 @@ public sealed class GraphSearch<TState, TAction>
         SearchStrategy strategy,
         int depthLimit)
     {
+        _effective = strategy;
         _frontier = new PriorityQueue<SearchNode<TState, TAction>, (double, long)>();
         _rank = 0;
 
+        // Regime de memoire. Les trois sont exclusifs et se lisaient autrefois l'un
+        // dans l'autre :
+        //   - cout-ordonne : la file classe par le cout, donc « entree perimee » et
+        //     reouverture ont un sens (cout uniforme, A*) ;
+        //   - graphe sans cout : la file ne classe pas par cout, on retient les etats
+        //     VUS (developpes et en file) et le premier chemin rencontre gagne ;
+        //   - arbre : aucune memoire, aucun elagage.
+        bool costOrdered = strategy is SearchStrategy.UniformCost or SearchStrategy.AStar;
+        bool remember = !TreeSearch;
+
         Dictionary<TState, double> bestKnown = new();
         HashSet<TState> explored = new();
+        HashSet<TState> inFrontier = new();
 
         SearchNode<TState, TAction> root = new(problem.InitialState, null, default, 0.0, 0);
-        bestKnown[problem.InitialState] = 0.0;
+        if (costOrdered)
+        {
+            bestKnown[problem.InitialState] = 0.0;
+        }
+
         Push(root, Priority(strategy, root));
+        inFrontier.Add(problem.InitialState);
 
         while (_frontier.Count > 0)
         {
             SearchNode<TState, TAction> node = _frontier.Dequeue();
+            inFrontier.Remove(node.State);
 
-            if (!TreeSearch && explored.Contains(node.State))
+            if (remember && !costOrdered && explored.Contains(node.State))
             {
                 continue;
             }
 
-            // Entree perimee : un chemin moins cher vers le meme etat a ete trouve
-            // apres sa mise en file.
-            if (bestKnown.TryGetValue(node.State, out double known) && known < node.PathCost)
+            // Entree perimee : un chemin MOINS CHER vers le meme etat a ete trouve
+            // apres sa mise en file. Ce test n'a de sens que si la file est ordonnee
+            // par le cout. Applique a la largeur (#19142), il jetait l'entree d'un
+            // etat atteint en une action parce qu'un chemin plus cher... mais plus
+            // court en actions existait derriere : la largeur rendait 3 actions la ou
+            // son contrat en demande 2.
+            if (costOrdered && bestKnown.TryGetValue(node.State, out double known) && known < node.PathCost)
             {
                 continue;
             }
@@ -146,7 +203,7 @@ public sealed class GraphSearch<TState, TAction>
                 return new SearchOutcome<TState, TAction>(node, ExpandedNodes, GeneratedNodes, MaxFrontierSize);
             }
 
-            if (!TreeSearch)
+            if (remember)
             {
                 explored.Add(node.State);
             }
@@ -162,19 +219,32 @@ public sealed class GraphSearch<TState, TAction>
                 double cost = node.PathCost + problem.StepCost(node.State, action, next);
                 GeneratedNodes++;
 
-                if (!TreeSearch && explored.Contains(next))
+                if (costOrdered)
                 {
+                    // Memoire par cout : on ne repousse pas un successeur deja atteint
+                    // aussi bien ou mieux. Un etat deja DEVELOPPE peut en revanche etre
+                    // rouvert si le nouveau chemin est strictement moins cher -- c'est
+                    // ce qui rend A* optimal sous admissibilite seule, sans exiger la
+                    // coherence de l'heuristique (#19142, temoin a h incoherente).
+                    if (bestKnown.TryGetValue(next, out double best) && best <= cost)
+                    {
+                        continue;
+                    }
+
+                    bestKnown[next] = cost;
+                }
+                else if (remember && (explored.Contains(next) || inFrontier.Contains(next)))
+                {
+                    // Sans cout dans la priorite, la file ne sait pas departager deux
+                    // chemins vers le meme etat : on garde le PREMIER rencontre. C'est
+                    // le contrat de la largeur (le minimum d'actions, car la file est
+                    // depilee par profondeur croissante) et celui de la profondeur.
                     continue;
                 }
 
-                if (bestKnown.TryGetValue(next, out double best) && best <= cost)
-                {
-                    continue;
-                }
-
-                bestKnown[next] = cost;
                 SearchNode<TState, TAction> child = new(next, node, action, cost, node.Depth + 1);
                 Push(child, Priority(strategy, child));
+                inFrontier.Add(next);
             }
         }
 
@@ -191,7 +261,10 @@ public sealed class GraphSearch<TState, TAction>
 
     private void Push(SearchNode<TState, TAction> node, double priority)
     {
-        bool depthFirst = Strategy is SearchStrategy.DepthFirst or SearchStrategy.DepthLimited;
+        // La strategie de l'ITERATION, pas celle de l'instance : pendant
+        // l'approfondissement iteratif, `Strategy` vaut IterativeDeepening et le rang
+        // serait croissant, donc chaque iteration se comporterait en largeur (#19142).
+        bool depthFirst = _effective is SearchStrategy.DepthFirst or SearchStrategy.DepthLimited;
         _rank++;
         _frontier.Enqueue(node, (priority, depthFirst ? -_rank : _rank));
 
