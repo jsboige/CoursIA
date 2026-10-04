@@ -38,13 +38,39 @@ l'ObjectStore du run.
 > code v1, explicitement séparées**, remplacées par le run v2 relancé le
 > 2026-10-04.
 
-### Recalcul v2 (code corrigé, lancé le 2026-10-04)
+### Recalcul v2 (code corrigé, QC Cloud, 2026-10-04)
 
-| Panier | Corrélation hebdo (période pleine 2018-2024) |
+> Run `5bc6e8102a95a81881333994489580f2` (mode `unlevered`, fenêtre
+> 2018-01-01 → 2024-12-31, 1 761 dates, 433 ordres, Sharpe 0,124) — valeurs
+> lues dans la ligne `CORRELATIONS {...}` du log du run.
+
+**Période pleine 2018-2024** :
+
+| Panier | Corrélation hebdo avec la stratégie 46 sans levier |
 |---|---:|
-| VT2 | *(en file)* |
-| AW | *(en file)* |
-| TW | *(en file)* |
+| VT2 | **0,305** |
+| AW | 0,229 |
+| TW | 0,229 |
+
+Par année civile (VT2 / AW=TW) :
+
+| Année | VT2 | AW/TW |
+|---|---:|---:|
+| 2018 | 0,615 | 0,536 |
+| 2019 | **−0,010** | −0,198 |
+| 2020 | 0,227 | 0,135 |
+| 2021 | 0,209 | 0,173 |
+| 2022 | 0,307 | 0,293 |
+| 2023 | 0,324 | 0,246 |
+| 2024 | 0,530 | 0,452 |
+
+Lecture v2 : la correction **renforce** la décorrélation (0,23-0.31 sur la
+période pleine contre 0.34-0.38 en v1 ; 2019 bascule négatif) — le noyau
+momentum corrigé décorelle encore plus des paniers statiques. Mais la jambe
+stratégie elle-même s'affaiblit fortement (Sharpe 0,124 contre 0,463 en v1) :
+le potentiel de diversification existe toujours, porté par un moteur au
+rendement corrigé plus faible — voir le verdict de
+`Paradox46VolScaledMomentum/`.
 
 ### Mesures historiques — code v1 (avant correction #19082, remplacées)
 

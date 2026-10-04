@@ -78,20 +78,39 @@ mêmes fenêtres — seuls les tickers changent.
 | Run | Fenêtre | Sharpe | CAGR | Pire baisse | Profit net | Orders | ID run |
 |---|---|---:|---:|---:|---:|---:|---|
 | 1x (équivalent sans levier) | 2018-01-01 → 2026-09-25 | **0,291** | **9,920 %** | 45,300 % | 128,540 % | 512 | `71a60f097050ec032241ef35325f4485` |
-| Levier x3 | 2018-01-01 → 2026-09-25 | *(en cours)* | | | | | `58cdef38fe6d0305857d25832d8d7890` |
-| 1x, fenêtre fiche (5 ans) | 2021-10-01 → 2026-09-25 | *(en file)* | | | | | — |
-| Levier x3, fenêtre fiche (5 ans) | 2021-10-01 → 2026-09-25 | *(en file)* | | | | | — |
-| 1x, frais x2 | 2018-01-01 → 2026-09-25 | *(en file)* | | | | | — |
-| 1x, momentum rapide 10/42/84 | 2018-01-01 → 2026-09-25 | *(en file)* | | | | | — |
-| 1x, momentum lent 42/126/189 | 2018-01-01 → 2026-09-25 | *(en file)* | | | | | — |
-| 1x, SMA 100 | 2018-01-01 → 2026-09-25 | *(en file)* | | | | | — |
-| 1x, SMA 200 | 2018-01-01 → 2026-09-25 | *(en file)* | | | | | — |
-| 1x, sous-période A | 2018-01-01 → 2022-06-30 | *(en file)* | | | | | — |
-| 1x, sous-période B | 2022-07-01 → 2026-09-25 | *(en file)* | | | | | — |
+| Levier x3 | 2018-01-01 → 2026-09-25 | 0,397 | 6,175 % | **84,200 %** | 68,818 % | 651 | `58cdef38fe6d0305857d25832d8d7890` |
+| 1x, fenêtre fiche (5 ans) | 2021-10-01 → 2026-09-25 | 0,226 | 9,223 % | 36,800 % | 55,280 % | 274 | `2469cbebb421e474753d018bb72b9fb5` |
+| Levier x3, fenêtre fiche (5 ans) | 2021-10-01 → 2026-09-25 | 0,609 | **22,510 %** | 77,500 % | 175,299 % | 321 | `6b0961ace579074348c57ef3511fac70` |
+| 1x, frais x2 | 2018-01-01 → 2026-09-25 | 0,391 | 13,433 % | 36,900 % | 200,849 % | 498 | `f9c9f1f2a380f4ee185d09237eab0251` |
+| 1x, momentum rapide 10/42/84 | 2018-01-01 → 2026-09-25 | **0,426** | **14,326 %** | 31,100 % | 222,179 % | 456 | `3dfc52636e590f8f1f1743d6eb9c8cb4` |
+| 1x, momentum lent 42/126/189 | 2018-01-01 → 2026-09-25 | 0,386 | 13,349 % | 43,200 % | 198,917 % | 462 | `5a4660df999efaf20dcc403bc85f5caf` |
+| 1x, SMA 100 | 2018-01-01 → 2026-09-25 | 0,416 | 14,664 % | 46,300 % | 230,615 % | 444 | `8f7f9fb754dcc398b7b5e25429f5f30c` |
+| 1x, SMA 200 | 2018-01-01 → 2026-09-25 | 0,500 | 17,145 % | 48,100 % | 298,630 % | 431 | `520e061861b285bf2d68b2a84e8eddf3` |
+| 1x, sous-période A | 2018-01-01 → 2022-06-30 | 0,222 | 5,423 % | 32,500 % | 26,810 % | 273 | `0b25c6dd52803c50f4d177ce91a6442b` |
+| 1x, sous-période B | 2022-07-01 → 2026-09-25 | 0,306 | 12,774 % | 32,100 % | 66,485 % | 240 | `a76b157ab7079746c0f3f182b7f81881` |
 
-(Les runs v2 sont relancés séquentiellement selon la disponibilité des
-nœuds de calcul de l'organisation ; les valeurs remplissent ce tableau au
-fil des complétions.)
+(Runs relancés séquentiellement le 2026-10-04, nœud par nœud selon la
+disponibilité du pool de calcul ; les 11 lignes sont complètes.)
+
+Lecture v2 (détailée dans le verdict) :
+
+- **La correction renverse le face-à-face avec SPY** : le noyau 1x perd
+  maintenant sur les TROIS axes contre SPY détenu (0,291 vs 0,499 · 9,92 %
+  vs 13,91 % · 45,3 % vs 33,6 %) — l'« avantage modeste » de la version v1
+  était un artefact des deux défauts de fenêtres et de sens des rendements.
+- **Le levier reste dominé** : x3 rend moins que sa jumelle 1x sur la longue
+  fenêtre (6,18 % vs 9,92 %) pour 84,2 % de pire baisse ; sur la fenêtre
+  favorable de la fiche il multiplie le CAGR (9,22 % → 22,51 %) au prix de
+  77,5 % — le chiffre affiché (82,5 %) reste non reproduit.
+- **La base reste le point faible de sa propre grille** (0,291 ; rapide
+  0,426 · SMA200 0,500), mais **aucune variante ne franchit le bar** :
+  SMA200 égalise le Sharpe de SPY (0,500 vs 0,499) avec 48,1 % de pire
+  baisse — l'anti-cherry-pick tient dans les deux sens.
+- **Sensibilité aux frais non monotone** (x2 : 0,391 > base 0,291) : la
+  trajectoire d'equity diverge dès les premiers ordres changés — on y lit
+  la sensibilité chaotique de la rotation, pas une hiérarchie de coûts.
+- **Sous-périodes faibles toutes les deux** (A : 0,222 · B : 0,306) : aucun
+  régime ne porte le résultat.
 
 ### Mesures historiques — code v1 (avant correction #19082, remplacées)
 
@@ -133,40 +152,43 @@ Lecture (détailée dans le verdict) :
 - **Sous-périodes homogènes** (A : 0,498 · B : 0,554) : pas de régime unique
   portant tout le résultat.
 
+#### Verdict historique (code v1)
+
+**NO BEATS** au bar pré-engagé — mais le noyau 1x « battait SPY détenu sur
+les trois axes » (0,530 / 17,861 % / 28,300 % vs 0,499 / 13,907 % / 33,600 %)
+et s'arrêtait au seuil du 60/40 sur l'axe risque. **Ce face-à-face est
+renversé par la correction** (voir le verdict v2) : l'avantage venait des
+défauts de méthode, pas de la sélection.
+
 ## Verdict
 
-> **Provisoire (code v1).** Ce verdict repose sur les mesures historiques
-> ci-dessus ; il est rejoué sur les runs v2 dès leur complétion.
-
 **NO BEATS** au bar pré-engagé (battre les DEUX benchmarks — SPY détenu et
-60/40 — sur les TROIS axes : Sharpe, CAGR, pire baisse). Barres de référence
-mesurées (runs compagnons `Paradox46Benchmarks/`, mêmes frais IBKR, même
-fenêtre 2018-01-01 → 2026-09-25) :
+60/40 — sur les TROIS axes : Sharpe, CAGR, pire baisse) — et le face-à-face
+v1 « bat SPY sur les trois axes » **est renversé par la correction**. Barres
+de référence mesurées (runs compagnons `Paradox46Benchmarks/`, mêmes frais
+IBKR, même fenêtre 2018-01-01 → 2026-09-25 — purs buy & hold, non affectés
+par la correction) :
 
 | | Sharpe | CAGR | Pire baisse | Verdict 1x vs ce bench |
 |---|---:|---:|---:|---|
-| Stratégie 46 **sans levier** | 0,530 | 17,861 % | 28,300 % | — |
-| SPY détenu | 0,499 | 13,907 % | 33,600 % | **battu sur les 3 axes** |
-| 60/40 | 0,383 | 8,858 % | 21,200 % | battu en Sharpe/CAGR, **pas en pire baisse** (28,3 % > 21,2 %) |
+| Stratégie 46 **sans levier** (v2) | 0,291 | 9,920 % | 45,300 % | — |
+| SPY détenu | 0,499 | 13,907 % | 33,600 % | **SPY gagne sur les 3 axes** |
+| 60/40 | 0,383 | 8,858 % | 21,200 % | 60/40 gagne en Sharpe et pire baisse, perd en CAGR (8,9 % < 9,9 %) |
 
-Le noyau sans levier fait donc mieux que SPY détenu sur les trois axes — un
-résultat réel mais modeste (écart de Sharpe +0,03, PSR 3,4 % vs 2,9 % :
-l'écart n'est pas statistiquement décisif) — et s'arrête au seuil du 60/40 sur
-l'axe risque. Deux fragilités mesurées par la grille :
+Le noyau sans levier, une fois les fenêtres et le sens des rendements
+corrigés, **ne bat plus SPY détenu sur aucun axe**. L'avantage mesuré en v1
+disparaissait avec les fenêtres lues au mauvais endroit de l'historique et le
+RSI inversé — la pénalité dite « de surachat » frappait en réalité les actifs
+en survente, et les fenêtres effectives dépendaient de la profondeur
+d'historique demandée. La grille confirme que ce n'est pas un point isolé :
+la meilleure variante (SMA 200 : 0,500 / 17,1 % / 48,1 %) égalise tout au
+plus le Sharpe de SPY avec une pire baisse 43 % plus profonde.
 
-- **frais x2** : le face-à-face avec SPY bascule (Sharpe 0,484 < 0,499, pire
-  baisse 34,2 % > 33,6 %) — l'avantage ne survit pas à un doublement des
-  frais ;
-- **momentum lent** (42/126/189) : perd contre SPY sur les trois axes (0,320 /
-  10,8 % / 41,6 %) — la famille momentum de la fiche va de « bat SPY » à
-  « perd contre SPY » selon la vitesse choisie, et la base n'en est qu'un
-  point.
-
-**Le levier, lui, est dominé** : sur la longue fenêtre la version x3 rend MOINS
-que sa propre jumelle 1x (16,9 % vs 17,9 %) pour 85,7 % de pire baisse ; sur la
-fenêtre favorable de la fiche il multiplie le CAGR (18,3 % → 49,8 %) au prix de
-70,4 % de pire baisse — et **le chiffre affiché par la fiche (CAGR 82,5 %,
-pire baisse 41 %) n'est pas reproduit** (49,8 % / 70,4 % mesurés, frais IBKR,
+**Le levier reste dominé** : sur la longue fenêtre le x3 rend MOINS que sa
+propre jumelle 1x (6,2 % vs 9,9 %) pour 84,2 % de pire baisse ; sur la
+fenêtre favorable de la fiche il multiplie le CAGR (9,2 % → 22,5 %) au prix
+de 77,5 % de pire baisse — et **le chiffre affiché par la fiche (CAGR 82,5 %,
+pire baisse 41 %) n'est pas reproduit** (22,5 % / 77,5 % mesurés, frais IBKR,
 même fenêtre 5 ans).
 
 ## Comment exécuter
