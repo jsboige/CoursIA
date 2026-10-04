@@ -65,10 +65,21 @@ jobs:
       # historique (2428 violations mesure 2026-10-03) reste au sweep par
       # famille en aval (#18911 acceptation #2).
       - name: Compute delta (new STALE_LINK on this PR vs base)
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           set -euo pipefail
+          # Base de comparaison calculee au RUN, pas figee a l'ouverture de
+          # la PR : `github.event.pull_request.base.sha` ne suit PAS les
+          # avances de main -- les notebooks entres sur main apres
+          # l'ouverture (ex. Search-03f, #19013) apparaissaient comme
+          # "nouveaux" sur la PR (mesure : base figee 1741 vs head 1751,
+          # 10 faux nouveaux). Sur le merge-ref, merge-base origin/main
+          # HEAD = main courant ; sur push main, la base = HEAD^1.
+          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+            BASE_SHA=$(git merge-base origin/main HEAD)
+          else
+            BASE_SHA=$(git rev-parse HEAD^1)
+          fi
+          echo "BASE_SHA calcule: ${BASE_SHA}"
           # F1 (Tell c.16866 / Hermes review 09:33Z) -- les violations
           # `::error::STALE_LINK` partent sur STDERR (regen_quarto_render.py
           # l.503 `print(..., file=sys.stderr)`), le `grep` du round 1 ne
