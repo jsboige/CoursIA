@@ -62,6 +62,10 @@ SCAN_SCOPES = [
     ".claude/rules/",
     ".claude/agents/",
     ".claude/skills/",
+    # Book inventory (#18899): every row must point at a path that exists on
+    # main. The two former inventories drifted apart because no organ watched
+    # their links -- this one is now the single inventory, so it is checked.
+    "MyIA.AI.Notebooks/QuantConnect/BOOK_MAPPING.md",
 ]
 
 # Deck scope (#15867). `slides/<deck>/slides.md` was watched by NO organ: the

@@ -255,6 +255,8 @@ image: ./images/img_005.jpg
 
 # État de l'art (2/2)
 
+<img src="./images/img_006.jpg" style="position:absolute; top:14px; right:30px; width:190px; background:#fff; border:1px solid #ccc;" alt="Logo ImageNet, jeu de donnees de reference dont le deep learning a domine la classification en 2012" />
+
 **Deep Learning et NLP (2010-2019)**
 
 - **2012** : deep learning domine ImageNet (reconnaissance d'images quasi humaine)

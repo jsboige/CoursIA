@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-SemanticKernel
-pedagogical_count: 21
-breakdown: SemanticKernel=21
-maturity: BETA=16, TEMPLATE=3, DRAFT=2
+pedagogical_count: 22
+breakdown: SemanticKernel=22
+maturity: BETA=17, TEMPLATE=3, DRAFT=2
 -->
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Génération de texte](../Texte/README.md)
@@ -50,6 +50,7 @@ Ces notebooks appliquent Semantic Kernel à des cas d'usage concrets. Ils font p
 | [Créateur de mail personnalisé](Créateur%20de%20mail%20personnalisé.ipynb) | Python | Workflow multi-agents SK (InputCollector, EmailGenerator) pour la rédaction de courriels | 3 |
 | [fort-boyard-csharp](fort-boyard-csharp.ipynb) | C# (.NET) | AgentGroupChat : duel Père Fouras vs Laurent Jalabert (jeu de devinette) | 3 |
 | [fort-boyard-python](fort-boyard-python.ipynb) | Python | Contrepartie Python du duel Fort Boyard (TerminationStrategy personnalisee) | 3 |
+| [Semantic-fleet-Radix-PromptMatcher](Semantic-fleet-Radix-PromptMatcher.ipynb) | C# (.NET) | **Routage MultiConnector par préfixe** : matcher radix-tree de l'organe réel du sous-module `semantic-fleet` (plus long préfixe) vs scan O(n), incluant le branchement drop-in du délégué `PromptMatcher` | 3 |
 
 ## Templates
 

@@ -76,6 +76,7 @@ import Conway.Life.AdversarialBattery
 import Conway.Life.HashlifeCorrectness
 import Conway.Life.LightCone
 import Conway.Life.Oscillators
+import Conway.Life.PatternTour
 
 namespace Conway
 namespace Life
@@ -2094,6 +2095,99 @@ theorem hickersonC3_hcap_of_spaceship_mod :
   hcap_of_spaceship_mod hickersonC3 hickersonC3_canonical (by decide) (-1, 0)
     hickersonC3_spaceship hickersonC3_hwin (by norm_num) (by norm_num)
 
+/-! ### Témoins phares : glider et LWSS (tranche 11, admission)
+
+Les deux **vaisseaux** que la docstring de `hashlife_correct_margin_of_spaceship`
+annonçait — glider (`p = 4`, `v = (1, -1)`, « la vérifie strictement ») et LWSS (`p = 4`,
+`v = (0, 2)`, « atteint la borne exactement ») — sont admis par la **chaîne dyadique**
+`hcap_of_spaceship`. Pour `p = 4 = 2²`, la prémisse de divisibilité `4 ∣ 2^level` est
+acquise **dès que le niveau atteint `log₂ p = 2`** : elle vaut donc pour les deux témoins,
+dont les cadres se reconstruisent aux niveaux **3** (glider, côté 7) et **4** (LWSS, côté
+9). Chaque `hdiv` se clôt par le noyau sur les quatre phases (calcul fini) ; le
+relâchement par containment de la tranche 9 n'est pas requis pour des témoins de
+période 4.
+
+**Note preuve.** Les témoins Bool du bestiaire (`Life.glider_spaceship`,
+`PatternTour.lwss_is_spaceship`) sont déjà certifiés par le réducteur du **noyau**
+(`decide` sur `isSpaceship`, Bool) ; le pont vers l'égalité de listes est `beq_iff_eq`
+— aucun `native_decide`, aucun axiome ajouté. -/
+
+/-- Le littéral du glider est canonique (trié, sans doublon) : le noyau le
+    certifie, puis `canonical_sortDedup` convertit. -/
+theorem glider_canonical : Canonical glider := by
+  have h : glider = sortDedup glider := by decide
+  rw [h]
+  exact canonical_sortDedup _
+
+/-- Relation de vaisseau du glider en égalité de listes : le témoin Bool
+    `glider_spaceship` (déjà noyau-certifié) transporté en `Prop`. -/
+theorem glider_ship4 : evolve 4 glider = shift (1, -1) glider :=
+  beq_iff_eq.mp glider_spaceship
+
+/-- Cadre de reconstruction du glider : offset `(-2, -2)` (marge 2 autour de
+    la boîte `[0, 2]²`). -/
+theorem glider_frame_off : (gridToMacroCellWithOffset glider).1 = (-2, -2) := by decide
+
+/-- Niveau du cadre du glider : côté `max(2+5, 2+5) = 7` → niveau **3** — mesuré.
+    Comme `3 ≥ log₂ 4 = 2`, la divisibilité `4 ∣ 2³ = 8` tient : le glider relève
+    de la chaîne dyadique, comme le LWSS. -/
+theorem glider_frame_lvl : (gridToMacroCellWithOffset glider).2.level = 3 := by decide
+
+/-- Le littéral du LWSS est canonique. -/
+theorem lwss_canonical : Canonical lwss := by
+  have h : lwss = sortDedup lwss := by decide
+  rw [h]
+  exact canonical_sortDedup _
+
+/-- Relation de vaisseau du LWSS en égalité de listes (témoin Bool
+    `lwss_is_spaceship` de `PatternTour`, noyau-certifié). -/
+theorem lwss_ship4 : evolve 4 lwss = shift (0, 2) lwss :=
+  beq_iff_eq.mp lwss_is_spaceship
+
+/-- Cadre de reconstruction du LWSS : offset `(-2, -2)` (marge 2 autour de
+    la boîte `[0, 3] × [0, 4]`). -/
+theorem lwss_frame_off : (gridToMacroCellWithOffset lwss).1 = (-2, -2) := by decide
+
+/-- Niveau du cadre du LWSS : côté `max(3+5, 4+5) = 9` → niveau 4 — la chaîne
+    dyadique s'applique (`4 ∣ 2⁴`), exactement comme la docstring l'annonçait. -/
+theorem lwss_frame_lvl : (gridToMacroCellWithOffset lwss).2.level = 4 := by decide
+
+/-- Divisibilité de la période sur les quatre phases du LWSS : chaque
+    `evolve i lwss` (`i < 4`) se reconstruit au niveau 4, donc `4 ∣ 2⁴`. Le
+    calcul par le noyau est fini : 4 phases, ≤ 17 cellules. -/
+theorem lwss_hdiv :
+    ∀ i, i < 4 → 4 ∣ 2 ^ (gridToMacroCellWithOffset (evolve i lwss)).2.level := by
+  intro i hi
+  interval_cases i <;> decide
+
+set_option maxRecDepth 1000000 in
+/-- Divisibilité de la période sur les quatre phases du glider : chaque
+    `evolve i glider` (`i < 4`) se reconstruit au niveau 3 (mesuré pour les
+    quatre phases), et `4 ∣ 2³`. Le calcul par le noyau est fini : 4 phases,
+    grilles de 5 cellules. -/
+theorem glider_hdiv :
+    ∀ i, i < 4 → 4 ∣ 2 ^ (gridToMacroCellWithOffset (evolve i glider)).2.level := by
+  intro i hi
+  interval_cases i <;> decide
+
+/-- Capstone : le **glider** est admis par `hcap_of_spaceship` — la chaîne
+    dyadique, comme le LWSS (`p = 4 = 2²` divise `2^level` dès `level ≥ 2` ;
+    cadre de niveau 3). La borne de vitesse tient strictement
+    (`2·|1| = 2 < 4`, `2·|-1| = 2 < 4`) : pour tout horizon `t`, la reconstruction
+    de `evolve t glider` est capturée par Hashlife. -/
+theorem glider_hcap_of_spaceship :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t glider)).2 = true :=
+  hcap_of_spaceship glider glider_canonical (by decide) (1, -1) glider_ship4
+    glider_hdiv (by norm_num) (by norm_num)
+
+/-- Capstone : le **LWSS** est admis par `hcap_of_spaceship` — la borne de
+    vitesse exacte (`2·|2| = 4 ≤ 4`) et la divisibilité dyadique (`4 ∣ 2⁴`,
+    cadre de niveau 4) que la docstring annonçait. -/
+theorem lwss_hcap_of_spaceship :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t lwss)).2 = true :=
+  hcap_of_spaceship lwss lwss_canonical (by decide) (0, 2) lwss_ship4
+    lwss_hdiv (by norm_num) (by norm_num)
+
 /-! ## Sanity-checks sur le bestiaire
 
 Le fragment `supportInMargin` est **décidable** (instance `Decidable (BoxAssezGrandN)`,
@@ -2131,6 +2225,182 @@ theorem cexBlock1_supportInMargin_k2 : supportInMargin cexBlock1 2 :=
     cellules vivantes à contraindre — `List.all` sur `[]` vacuously true). -/
 theorem cexEmpty1_supportInMargin_k0 : supportInMargin cexEmpty1 0 :=
   supportInMargin_trivial _ _
+
+/-! ## Tranche 14 — compositionalité : union disjointe (#13483)
+
+La loi de localité manquante du programme : deux configurations aux supports
+séparés de plus de `2·t` évoluent indépendamment — l'évolution de l'union est
+l'union des évolutions, au sens de l'adhérence (`evolve_union_mem`). C'est la brique d'assemblage des
+classes admises (nature morte, oscillateur, vaisseau) : le contenu réel des
+motifs Life est une juxtaposition de pièces de ces classes. Le transfert de
+capture (bornes de boîte des parties → `jumpCapturedF` de la reconstruction
+de l'union, via le corridor `jumpCapturedF_of_dilation`) est la tranche
+suivante : il exige la géométrie du rendu paddé, la cloison déjà nommée par
+ce corridor.
+-/
+
+/-- **Tranche 14, maillon 1(a) — accord local union/partie.** Sur la boîte
+    Chebyshev-`t` d'un point `q` proche de `g₁` (témoin `hnear`), l'union
+    `g₁ ++ g₂` et `g₁` seul rendent le même état : toute cellule vivante de
+    `g₂` dans la boîte serait à distance `≤ 2·t` du témoin (triangulaire),
+    contredisant la séparation **stricte** `2·t < d` — le cas d'égalité
+    (`2·t = d`) laisse la boîte toucher les deux supports, d'où le strict. -/
+theorem union_agrees_with_left (t : Nat) (g₁ g₂ : Grid) (q : Int × Int)
+    (hnear : ∃ p, p ∈ g₁ ∧ chebDist p q ≤ t)
+    (hsep : ∀ p ∈ g₁, ∀ r ∈ g₂, 2 * t < chebDist p r) :
+    ∀ r, chebDist q r ≤ t → isAlive (g₁ ++ g₂) r = isAlive g₁ r := by
+  intro r hqr
+  obtain ⟨p, hp₁, hpq⟩ := hnear
+  have hg₂r : r ∉ g₂ := by
+    intro hrmem
+    have hle := hsep p hp₁ r hrmem
+    have htri : chebDist p r ≤ chebDist p q + chebDist q r := chebDist_triangle p r q
+    omega
+  cases hb : isAlive (g₁ ++ g₂) r with
+  | true =>
+    have hm := (isAlive_true_iff_mem _ r).mp hb
+    rw [List.mem_append] at hm
+    rcases hm with h | h
+    · exact ((isAlive_true_iff_mem g₁ r).mpr h).symm
+    · exact absurd h hg₂r
+  | false =>
+    cases hc : isAlive g₁ r with
+    | true =>
+      have hu : r ∈ g₁ := (isAlive_true_iff_mem g₁ r).mp hc
+      have hcontr : isAlive (g₁ ++ g₂) r = true :=
+        (isAlive_true_iff_mem _ r).mpr (List.mem_append.mpr (Or.inl hu))
+      rw [hb] at hcontr
+      exact Bool.noConfusion hcontr
+    | false => rfl
+
+/-- **Tranche 14, maillon 0 — l'union au sens `isAlive`.** Brique purement
+    ensembliste (aucune séparation exigée, aucun pas de temps) : l'état de
+    l'append est le « ou » des états des parties. Sert au cas `t = 0` de la
+    loi d'union et au pont d'ordre d'append. -/
+theorem isAlive_append_or (g₁ g₂ : Grid) (q : Int × Int) :
+    isAlive (g₁ ++ g₂) q = (isAlive g₁ q || isAlive g₂ q) := by
+  cases hA : isAlive g₁ q with
+  | true =>
+      have hm : q ∈ g₁ ++ g₂ :=
+        List.mem_append.mpr (Or.inl ((isAlive_true_iff_mem g₁ q).mp hA))
+      rw [(isAlive_true_iff_mem _ q).mpr hm, Bool.true_or]
+  | false =>
+      cases hB : isAlive g₂ q with
+      | true =>
+          have hm : q ∈ g₁ ++ g₂ :=
+            List.mem_append.mpr (Or.inr ((isAlive_true_iff_mem g₂ q).mp hB))
+          rw [(isAlive_true_iff_mem _ q).mpr hm, Bool.false_or]
+      | false =>
+          have hU : isAlive (g₁ ++ g₂) q = false := by
+            cases hd : isAlive (g₁ ++ g₂) q with
+            | false => rfl
+            | true =>
+                have hmem := (isAlive_true_iff_mem _ q).mp hd
+                rw [List.mem_append] at hmem
+                rcases hmem with h | h
+                · rw [(isAlive_true_iff_mem g₁ q).mpr h] at hA
+                  exact Bool.noConfusion hA
+                · rw [(isAlive_true_iff_mem g₂ q).mpr h] at hB
+                  exact Bool.noConfusion hB
+          rw [hU, Bool.false_or]
+
+/-- **Tranche 14, maillon 1(b) — la loi d'union pointwise.** Sous séparation
+    stricte `2·t < d` des supports initiaux, l'état en un point quelconque
+    après `t` générations de l'union est le « ou » des états des parties :
+    près de `g₁` l'union évolue comme `g₁` seul (accord local) et `g₂` y est
+    mort (cône + triangulaire) ; hors des deux cônes, tout est mort. -/
+theorem evolve_union (t : Nat) (g₁ g₂ : Grid)
+    (hsep : ∀ p ∈ g₁, ∀ r ∈ g₂, 2 * t < chebDist p r) (q : Int × Int) :
+    isAlive (evolve t (g₁ ++ g₂)) q =
+      (isAlive (evolve t g₁) q || isAlive (evolve t g₂) q) := by
+  by_cases hn₁ : ∃ p, p ∈ g₁ ∧ chebDist p q ≤ t
+  · have hagree : ∀ r, chebDist q r ≤ t → isAlive (g₁ ++ g₂) r = isAlive g₁ r :=
+      union_agrees_with_left t g₁ g₂ q hn₁ hsep
+    have hbow : isAlive (evolve t (g₁ ++ g₂)) q = isAlive (evolve t g₁) q :=
+      evolve_box_agree t (g₁ ++ g₂) g₁ q hagree
+    have hdead : isAlive (evolve t g₂) q = false := by
+      cases hd : isAlive (evolve t g₂) q with
+      | false => rfl
+      | true =>
+        obtain ⟨r, hr₂, hrq⟩ := evolve_reach_chebyshev t g₂ q hd
+        obtain ⟨p, hp₁, hpq⟩ := hn₁
+        have hle := hsep p hp₁ r ((isAlive_true_iff_mem g₂ r).mp hr₂)
+        have htri : chebDist p r ≤ chebDist p q + chebDist q r :=
+          chebDist_triangle p r q
+        have hcomm : chebDist q r = chebDist r q := chebDist_comm q r
+        omega
+    rw [hbow, hdead, Bool.or_false]
+  · by_cases hn₂ : ∃ p, p ∈ g₂ ∧ chebDist p q ≤ t
+    · have hseps : ∀ p ∈ g₂, ∀ r ∈ g₁, 2 * t < chebDist p r := by
+        intro p hp r hr
+        have hle := hsep r hr p hp
+        rw [chebDist_comm]
+        exact hle
+      have hagree : ∀ r, chebDist q r ≤ t → isAlive (g₂ ++ g₁) r = isAlive g₂ r :=
+        union_agrees_with_left t g₂ g₁ q hn₂ hseps
+      have hbow : isAlive (evolve t (g₂ ++ g₁)) q = isAlive (evolve t g₂) q :=
+        evolve_box_agree t (g₂ ++ g₁) g₂ q hagree
+      have hdead : isAlive (evolve t g₁) q = false := by
+        cases hd : isAlive (evolve t g₁) q with
+        | false => rfl
+        | true =>
+          obtain ⟨r, hr₁, hrq⟩ := evolve_reach_chebyshev t g₁ q hd
+          obtain ⟨p, hp₂, hpq⟩ := hn₂
+          have hle := hseps p hp₂ r ((isAlive_true_iff_mem g₁ r).mp hr₁)
+          have htri : chebDist p r ≤ chebDist p q + chebDist q r :=
+            chebDist_triangle p r q
+          have hcomm : chebDist q r = chebDist r q := chebDist_comm q r
+          omega
+      have hswap : isAlive (evolve t (g₁ ++ g₂)) q = isAlive (evolve t (g₂ ++ g₁)) q := by
+        cases t with
+        | zero =>
+            show isAlive (g₁ ++ g₂) q = isAlive (g₂ ++ g₁) q
+            rw [isAlive_append_or g₁ g₂ q, isAlive_append_or g₂ g₁ q]
+            cases isAlive g₁ q <;> cases isAlive g₂ q <;> rfl
+        | succ n =>
+            exact congrArg (isAlive · q) (evolve_congr (fun p =>
+              List.mem_append.trans (or_comm.trans List.mem_append.symm))
+              (Nat.succ_le_succ (Nat.zero_le n)))
+      rw [hswap, hbow, hdead, Bool.false_or]
+    · have hdead₁ : isAlive (evolve t g₁) q = false := by
+        cases hd : isAlive (evolve t g₁) q with
+        | false => rfl
+        | true =>
+          obtain ⟨p, hp₁, hpq⟩ := evolve_reach_chebyshev t g₁ q hd
+          exact absurd ⟨p, (isAlive_true_iff_mem g₁ p).mp hp₁, hpq⟩ hn₁
+      have hdead₂ : isAlive (evolve t g₂) q = false := by
+        cases hd : isAlive (evolve t g₂) q with
+        | false => rfl
+        | true =>
+          obtain ⟨p, hp₂, hpq⟩ := evolve_reach_chebyshev t g₂ q hd
+          exact absurd ⟨p, (isAlive_true_iff_mem g₂ p).mp hp₂, hpq⟩ hn₂
+      have hdeadU : isAlive (evolve t (g₁ ++ g₂)) q = false := by
+        cases hd : isAlive (evolve t (g₁ ++ g₂)) q with
+        | false => rfl
+        | true =>
+          obtain ⟨p, hpU, hpq⟩ := evolve_reach_chebyshev t (g₁ ++ g₂) q hd
+          have hmemU : p ∈ g₁ ++ g₂ := (isAlive_true_iff_mem _ p).mp hpU
+          rw [List.mem_append] at hmemU
+          rcases hmemU with h | h
+          · exact absurd ⟨p, h, hpq⟩ hn₁
+          · exact absurd ⟨p, h, hpq⟩ hn₂
+      rw [hdeadU, hdead₁, hdead₂, Bool.false_or]
+
+/-- **Tranche 14, maillon 1(c) — trajectoire de l'union, forme ensembliste.**
+    Sous séparation stricte `2·t < d` des supports initiaux, l'adhérence de
+    l'évolution de l'union est l'union des adhérences des évolutions. La forme
+    « liste littérale » `evolve t (g₁ ++ g₂) = evolve t g₁ ++ evolve t g₂` est
+    fausse pour `t ≥ 1` : l'énumération canonique de `evolve` (ordre
+    lexicographique, `canonical_evolve_of_pos`) entrelace les points de parties
+    séparées partageant une colonne, là où l'append les bloque — l'ordre n'est
+    pas préservé, seul le support l'est. C'est la brique de compositionalité
+    que consommera le transfert de capture (tranche 14b) : boîtes de
+    trajectoire des parties → boîte de l'union, raisonnement en adhérence. -/
+theorem evolve_union_mem (t : Nat) (g₁ g₂ : Grid)
+    (hsep : ∀ p ∈ g₁, ∀ r ∈ g₂, 2 * t < chebDist p r) (q : Int × Int) :
+    q ∈ evolve t (g₁ ++ g₂) ↔ (q ∈ evolve t g₁ ∨ q ∈ evolve t g₂) := by
+  simp only [← isAlive_true_iff_mem]
+  rw [evolve_union t g₁ g₂ hsep q, Bool.or_eq_true]
 
 /-! ## Synthèse — le fragment est non vide et l'énoncé-cadre est honnête
 

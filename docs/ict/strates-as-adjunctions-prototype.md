@@ -111,7 +111,7 @@ Le JSON committé est vérifié contre une ré-exécution fraîche par le test a
 ## 6. Crédit témoin & sources
 
 - **Schreiber, U.** « Perì Pantheōrías », *nLab*, 2025-03-08 (notes pour *Theories of Everything with Curt Jaimungal*). Vérifié firsthand : la page **ne parle pas** de conscience (cf. [#8182](https://github.com/jsboige/CoursIA/issues/8182) § « Précaution cardinale »). L'importation est donc **structurelle** (vocabulaire modal), pas thématique.
-- **ICT strates** : cadrage `docs/grothendieckian-lens.md` § « deux axes » + `docs/ict/dissociations-matrix.md` (matrice 4-objets `(s, q, π, W)`).
+- **ICT strates** : cadrage `docs/cadrage/grothendieckian-lens.md` § « deux axes » + `docs/ict/dissociations-matrix.md` (matrice 4-objets `(s, q, π, W)`).
 - **Cohomologie Čech** : `ICT-15d-CechObstruction-Python.ipynb` + `dissociations-matrix.md` § ICT-15d-corr.
 - **Adjonction Forgetful ⊣ Free** : forme catégorielle classique (Mac Lane, *Categories for the Working Mathematician*, Springer 1998, ISBN 978-0387984032). Grade A (mathématique), importation grade C.
 - **Tresse** : [#7738](https://github.com/jsboige/CoursIA/issues/7738) CLOSED — la cartographie Thom/Grothendieck/Schmidhuber/Friston est posée.
@@ -130,6 +130,6 @@ Le JSON committé est vérifié contre une ré-exécution fraîche par le test a
 - **Tresse conceptuelle** : [#7738](https://github.com/jsboige/CoursIA/issues/7738) — CLOSED, cadrage livré.
 - **Substrat-test proposé** : ICT-12c `PregnanceAnimat` (`MyIA.AI.Notebooks/IIT/ICT-Series/ict/pregnance_animat.py`).
 - **Matrice de dissociation** : `docs/ict/dissociations-matrix.md` (la case « s ⟂ π » est déjà testée).
-- **Lens grothendieckienne** : `docs/grothendieckian-lens.md` § *« Quand le recollement échoue — l'obstruction pour seul invariant »* (témoignage de Schreiber en prose, pas une section nommée).
+- **Lens grothendieckienne** : `docs/cadrage/grothendieckian-lens.md` § *« Quand le recollement échoue — l'obstruction pour seul invariant »* (témoignage de Schreiber en prose, pas une section nommée).
 
 — myia-po-2027:CoursIA-2, c.1331p258, prototype grade C

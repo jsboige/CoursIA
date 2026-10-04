@@ -167,6 +167,16 @@ VERDICT_READY = "READY"
 VERDICT_BLOCKED = "BLOCKED"
 CANONICAL_VERDICTS = (VERDICT_READY, VERDICT_BLOCKED)
 
+# The branch a PR must target for a dossier to claim READY. Any other base
+# means the PR is stacked on top of another PR whose own merge state the
+# dossier cannot carry -- a READY here would authorize a merge into a
+# branch the gate has no jurisdiction on, including a branch that has been
+# squash-merged (the work is already on `main` via a different path) or
+# abandoned (the work is dead and the merge would resurrect nothing).
+# #19002: the measure of 2026-10-03 caught 4 such PRs in the open pool
+# (table in #19002 body), two of them (#18819, #18993) with a dead base.
+CANONICAL_BASE = "main"
+
 EXIT_READY = 0
 EXIT_NO_DOSSIER = 1
 EXIT_UNKNOWN = 2
@@ -835,10 +845,11 @@ def probe_b0(pr: int) -> dict[str, Any]:
     """Run the B.0 organ on ``pr``. A failure to measure is fail-closed.
 
     The import is lazy because the probe runs only for a dossier that claims
-    READY: BLOCKED and absent dossiers never load the organ. A failure to
-    import it is a failure to measure like any other -- it surfaces as
-    ``RuntimeError``, which ``main`` reports as UNKNOWN (exit 2), never as a
-    traceback.
+    READY (``refute_ready_b0``) or BLOCKED with b0 as its sole blocking field
+    (``recheck_blocked_b0``, #19093): absent dossiers and other BLOCKED
+    reasons never load the organ. A failure to import it is a failure to
+    measure like any other -- it surfaces as ``RuntimeError``, which ``main``
+    reports as UNKNOWN (exit 2), never as a traceback.
     """
     try:
         try:
@@ -948,6 +959,45 @@ def refute_ready_verdict(
             f"({ORGAN_NAME} --derive-verdict) at the head: " + "; ".join(reasons)
         )], None
     return verdict, errors, dossier
+def recheck_blocked_b0(
+    pr: int,
+    verdict: str,
+    dossier: Dossier | None,
+    probe: Any = None,
+) -> tuple[str, list[str], Dossier | None]:
+    """Expire a BLOCKED dossier whose only blocking field, ``b0``, no longer blocks.
+
+    Symmetric of ``refute_ready_b0`` (#19093). The READY probe compares the
+    dossier's ``b0: clear`` claim with the live organ; this one asks the mirror
+    question -- a dossier that attested ``b0: blocked`` for a remark a later
+    lift has extinguished must not keep answering rc=3 forever. Measured
+    instance (2026-10-04, #19012): dossier BLOCKED at 02:49Z for a review
+    reserve, the coordinator's APPROVE lifts it at 06:13Z on the same head,
+    and the gate still answered rc=3 at 10:24Z -- the pull request slept 4 h.
+    Cause: ``surfaces_fingerprint`` neutralizes the coordinator's own later
+    reviews (``_is_own_later_act``), so a lift by the coordinator expires
+    neither a READY nor a BLOCKED stamp.
+
+    Only the b0-ONLY case expires, and only toward a re-stamp: the answer
+    becomes the no-dossier outcome (exit 1), which routes the pull request to
+    a third-party lane for a fresh dossier -- never back to the author as
+    mergeable. Any other blocking field (checks, scope, domain) keeps the
+    dossier standing: its reason may still hold.
+    """
+    if verdict != VERDICT_BLOCKED or dossier is None:
+        return verdict, [], dossier
+    if blocking_fields(dossier) != ["b0"]:
+        return verdict, [], dossier
+    result = (probe or probe_b0)(pr)
+    if result and result.get("blocked"):
+        return verdict, [], dossier
+    return "", [
+        "dossier BLOCKED for b0 only, but the live B.0 organ "
+        f"(check_unaddressed_nits.py) no longer blocks PR #{pr} -- the "
+        "dossier's stated reason is extinguished, a re-stamp is required: "
+        "a third-party lane must post a fresh dossier (never merge on "
+        "this one)"
+    ], None
 
 
 def carrying_lane(snapshot: dict[str, Any]) -> str | None:
@@ -1050,6 +1100,22 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
                 f.get("checks", ""), snapshot.get("checkRuns")
             )
         )
+        # A READY dossier must target the default branch. A PR stacked on a
+        # feature branch carries a base whose own merge state lives outside
+        # this dossier's jurisdiction -- including the dead branches the
+        # measure of 2026-10-03 caught (squash-merged or abandoned, see
+        # #19002). The dossier cannot attest a merge into a branch it has
+        # not seen, so the gate refuses READY when the base is anything
+        # other than `main`. The error names the base so the lane knows
+        # which branch to retarget onto (the lane, not the gate, owns the
+        # retarget: a base bump is a content decision, see git-workflow.md
+        # L898 collision guard).
+        base = snapshot.get("baseRefName")
+        if base != CANONICAL_BASE:
+            errors.append(
+                f"baseRefName must be {CANONICAL_BASE!r} when verdict is READY "
+                f"(got {base!r}); retarget the PR before stamping a new dossier"
+            )
     elif verdict == VERDICT_BLOCKED and not blocking_fields(dossier):
         # Un BLOCKED qui ne nomme aucun champ bloquant est inerte : il occupe la
         # surface de gate sans dire quoi reparer, et ai-01 ne peut ni merger ni
@@ -1739,6 +1805,8 @@ def main() -> int:
             verdict, errors, dossier = refute_ready_verdict(
                 snapshot, verdict, errors, dossier
             )
+        if not errors:
+            verdict, errors, dossier = recheck_blocked_b0(args.pr, verdict, dossier)
     except (
         RuntimeError,
         KeyError,

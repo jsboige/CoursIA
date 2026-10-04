@@ -4,6 +4,8 @@
 
 Auto-generated: 2026-05-03 22:29
 
+Updated: 2026-10-03 — M18 TimesFM 2.5 revalidation cluster 7 actifs (Epic #1454, défrichage 3070) : **NO BEATS cluster vs log_har** (3/7 actifs BEATS — BTC, ETH, SOL — p=0,7734, les deux vues {1,5,10}/{1,5,22}) ; le « 5/6 BEATS » #14778 se reproduit exactement sur BTC/ETH mais ne généralise pas aux cinq actifs yfinance courts (~721 j) — aucun horizon NO BEATS, perte de puissance (profil M4). vs har_rv INCONCLUSIVE 5/7 (p=0,2266). Fix harnais au passage : manifeste vide en exit 0 depuis la refonte M16 de `_load_panel` (tuple non unpacké)
+
 Updated: 2026-05-06 — Stage -1 Panier baselines: 18 BEATS, 32 FAILS across 50 experiments (26 symbols x 2 models)
 
 Updated: 2026-06-12 — Ladder #1409 verdicts consolidated; legacy SPY-single checkpoints marked ARCHIVED
@@ -59,6 +61,43 @@ Updated: 2026-09-08 — M19 MiniCPM5-2B GRPO+QLoRA sur DAPO-Math-17k, entrée §
 Updated: 2026-09-13 — M12 HAR-RV-J revalidé sur sept actifs avec calibration train-only symétrique (#16004, Epic #1454, lane myia-po-2025:CoursIA) : **NO BEATS cluster** — 0/7 actifs BEATS, sign-test binomial exact unilatéral p=1,0 ; ADA NO BEATS (3/3 horizons battus en DM-MSE, p=0,021-0,026), ETH NO BEATS (h=5/h=10, p=0,029/0,036), cinq actifs INCONCLUSIVE ; 0/21 couples BEATS (5 NO BEATS, 16 INCONCLUSIVE). Le BEATS Cycle 31 (p=7,9e-7, 64/84, calibration asymétrique + pseudo-réplication 4 seeds d'un OLS déterministe) **n'est pas confirmé** — sans réfutation définitive (protocoles et fenêtres diffèrent, cinq actifs ~724 j). Biais OOS signé du candidat calibré supérieur à la baseline calibrée (+0,103/+0,095/+0,017 vs −0,013/−0,018/−0,023 aux h=1/5/10) ; les écarts les plus amples apparaissent sur les fenêtres yfinance courtes, constat descriptif sans attribution causale. Détail section M12 + `docs/M12_HAR_RV_J.md`.
 
 Total checkpoints: 70 (20 legacy ARCHIVED + 50 panier baselines)
+
+## M18 TimesFM 2.5 — revalidation cluster 7 actifs (2026-10-03) — Epic #1454
+
+Port du protocole de la famille #1454 (M16/M12/M17) au lead zero-shot de #14778 : 7
+actifs (BTC, ETH, SOL, LTC, XRP, ADA, DOT) × horizons {1, 5, 10, 22} × graines
+{0, 7, 42, 99} bit-identiques (inférence déterministe — `n_seeds_effective=1`),
+repli par actif (règle M16) + sign-test binomial exact unilatéral, deux vues
+(`cluster` {1,5,10}, `protocol` {1,5,22}), quatre baselines. Run RTX 3070 (rôle
+pionnier du ping-pong GPU #1454) : 1462,9 s, 126 368 séries servies, SHA checkpoint
+inchangé (`1d952420fba8`). Couche d'agrégation additive
+`scripts/m18_tsfm_cluster.py` (+11 tests) ; alignement intra-harnais consigné (un
+seul walk-forward sert les deux jambes — pas de jointure cross-harness à mesurer,
+contrairement à M4/M15).
+
+- **Verdict cluster : NO BEATS contre la référence log_har** — 3/7 actifs BEATS
+  (BTC, ETH, SOL), p=0,7734, dans les DEUX vues. Le claim #14778 « 5/6 BEATS vs
+  Log-HAR » se reproduit exactement sur son périmètre (BTC h=1 +19,7 % p≈0, ETH
+  BEATS 3/3) mais **ne généralise pas** : à h=1, 6/7 actifs BEATS (tous sauf DOT) ;
+  à h≥5 l'edge ne tient en BEATS que sur BTC, ETH et SOL (+9,27 % p=0,028 à h=5) —
+  LTC, XRP, ADA et DOT (les quatre actifs yfinance à ~721 j horaires vs 2 277 pour
+  BTC) passent INCONCLUSIVE à h≥5, aucun horizon NO BEATS vs log_har (perte de
+  puissance, pas réfutation ; profil M4 : edge confiné aux longues séries).
+- vs persistence : **BEATS 7/7** (p=0,0078, les deux vues). vs ewma : NO BEATS 2/7
+  (p=0,9375, vue cluster). vs har_rv : INCONCLUSIVE 5/7 (p=0,2266) — la baseline
+  HAR recalibrée reste la référence non battue de la famille (M12/M15/M16/M17).
+- **Conséquence ping-pong GPU** : aucun `[GPU-QUEUE]` pour M18 — le goulot est la
+  profondeur de données (séries hourly longues pour les cinq actifs distants), pas
+  le compute.
+- **Fix incident** : le harnais `m18_tsfm_benchmark.py` produisait un manifeste
+  VIDE en exit 0 depuis la refonte M16 de `har_asymmetric` (`_load_panel` retourne
+  `(panel, failures)`, tuple assigné entier → tout actif skippé en silence,
+  « 0 series served »). Fix : unpack + `validate_requested_panel` + garde
+  fail-closed (0 série → `SystemExit`). 49 tests verts, smoke 6552 séries servies.
+- **Manifeste** : `scripts/results/m18_tsfm_cluster_aligned.json` (36 301 octets) ;
+  séries complètes hors dépôt (#15890) :
+  `G:\Mon Drive\MyIA\Dev\Trading\ML-Training-Pipeline\m18_tsfm_cluster_full.json`
+  (905 349 octets) ; détail dans `docs/M18_TimesFM.md` §Revalidation cluster.
 
 ## M19 MiniCPM5-2B GRPO+QLoRA DAPO — entrée §C (2026-09-08) — issue #15099 probe B
 

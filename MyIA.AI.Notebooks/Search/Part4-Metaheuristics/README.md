@@ -17,7 +17,7 @@ Contrairement aux Parties 1 et 2 (notebooks Python avec OR-Tools, DEAP, mealpy),
 Les Parties 1-2 enseignent à *choisir* une métaheuristique face à un problème ; cette partie enseigne à en *construire* et en *combiner*. La motivation est double :
 
 - **Pédagogique.** Reconstruire WOA ou EO à partir de primitives (`Match`, `Container`, `Scoped`, contrôle-flux géométrique) force à comprendre *pourquoi* chaque étape existe — là où importer `mealpy` ou `scipy` masque le mécanisme derrière un appel de fonction. C'est le même réflexe qu'écrire un A* à la main avant d'utiliser `networkx`.
-- **Ingénierie.** La composition ouvre des configurations qu'aucune bibliothèque monolithique n'offre directement : sous-populations spécialisées (Eukaryote), migration entre îles (Islands), métaheuristiques hybrides assemblées par grammaire fluente. Ces patterns existent dans la littérature mais sont rares dans les libs grand public.
+- **Ingénierie.** La composition ouvre des configurations qu'aucune bibliothèque monolithique n'offre directement : partition du génome en chromosomes composites (Eukaryote — analogie caryotype, chaque sous-chromosome porte sa métaheuristique), partition de la population en îles migratoires (Islands), métaheuristiques hybrides assemblées par grammaire fluente. Ces patterns existent dans la littérature mais sont rares dans les libs grand public.
 
 L'enseignement transversal rejoint celui des Parties 1-2 : aucune métaheuristique ne domine partout (cf [Search-11](../Part1-Foundations/Search-11-Metaheuristics.ipynb)), et la bonne réponse à un problème d'optimisation est rarement « l'algorithme X » mais plutôt « la bonne composition de primitives pour ce paysage de fitness ».
 
@@ -38,7 +38,7 @@ MetaGeneticSharp vise le point que les autres n'occupent pas : **l'expressivité
 
 1. **Reconstruire** une métaheuristique publiée (WOA, EO) à partir de primitives composables plutôt que d'en importer une boîte noire
 2. **Composer** des métaheuristiques via la grammaire fluente (`Match`, `Container`, `Scoped`) pour assembler des configurations hybrides
-3. **Structurer** une population en sous-populations spécialisées (Eukaryote) ou en îles migratoires (Islands)
+3. **Structurer** une recherche par partition du génome en chromosomes composites (Eukaryote — chaque sous-chromosome porte une métaheuristique) ou par partition de la population en îles migratoires (Islands)
 4. **Évaluer** quand une composition custom bat une métaheuristique monolithique sur un paysage de fitness donné
 
 ## Notebooks
@@ -49,7 +49,7 @@ Cette partie se compose de notebooks .NET Interactive (C#), hébergés dans ce r
 |---|----------|-------------|------------------------|-------|
 | 1 | [MGS-01-Introduction](MGS-01-Introduction.ipynb) | Moteur autonome `MetaGeneticAlgorithm` | `DefaultMetaHeuristic`, `NoOp`, fitness quadratique | ~40 min |
 | 2 | [MGS-02-Composition](MGS-02-Composition.ipynb) | Assemblage déclaratif | `Match`, contrôle-flux, grammaire fluente | ~45 min |
-| 3 | [MGS-03-Eukaryote](MGS-03-Eukaryote.ipynb) | Sous-populations spécialisées | chromosomes composites, partitionnement | ~50 min |
+| 3 | [MGS-03-Eukaryote](MGS-03-Eukaryote.ipynb) | Partition du génome en chromosomes composites | `EukaryoteChromosome` (caryotype), sous-chromosomes, métaheuristique par compartiment | ~50 min |
 | 4 | [MGS-04-Islands](MGS-04-Islands.ipynb) | Modèle insulaire | populations structurées, migration entre îles | ~50 min |
 | 5 | [MGS-05-CompoundMetaheuristics](MGS-05-CompoundMetaheuristics.ipynb) | Reconstruire les composés publiés (WOA/EO/FBI) | `MetaHeuristicsService`, `WhaleOptimisationAlgorithm`, `EquilibriumOptimizer`, factory `CreateMetaHeuristicByName` | ~50 min |
 | 6 | [MGS-06-Benchmarks](MGS-06-Benchmarks.ipynb) | Comparaison honnête | `KnownFunctions`, composé WOA vs Uniform vs Islands | ~50 min |
@@ -87,7 +87,7 @@ L'arc se résume en onze vagues conceptuelles, chacune posant la brique que la s
 ```mermaid
 flowchart LR
     W1["<b>Socle &amp; composition</b><br/>MGS-1 — Moteur autonome<br/>MGS-2 — Grammaire fluente<br/>(Match, Container, Scoped)"]
-    W2["<b>Structuration de population</b><br/>MGS-3 — Eukaryote<br/>(sous-populations)<br/>MGS-4 — Islands (migration)"]
+    W2["<b>Structuration de population</b><br/>MGS-3 — Eukaryote<br/>(partition du génome en chromosomes<br/>composites, analogie caryotype)<br/>MGS-4 — Islands (migration)"]
     W3["<b>Composés publiés &amp; confrontation</b><br/>MGS-5 — Reconstruire WOA/EO/FBI<br/>MGS-6 — Benchmarks<br/>(No-Free-Lunch)<br/>MGS-7 — TSP combinatoire"]
     W4["<b>Paysages de fitness</b><br/>MGS-7b/7c/7d — Projection N-D<br/>MGS-8 — Landscape Explorer<br/>MGS-9 — Everest (relief réel)"]
     W5["<b>Biais &amp; mesure falsifiable</b><br/>MGS-10 — Biais central<br/>(Kudela 2022)<br/>MGS-11 — Synergie d'îles<br/>(verdict négatif)"]
@@ -157,7 +157,7 @@ Le cœur de la thèse « composants > métaphores ». On introduit `Match` (disp
 
 ### 3 — Eukaryote
 
-On cesse de traiter la population comme un sac homogène. Le modèle eucaryote partitionne la population en sous-populations spécialisées portées par des chromosomes composites — chaque compartiment peut avoir sa propre métaheuristique. C'est une configuration qu'aucune bibliothèque monolithique grand public n'offre directement, et qui devient naturelle une fois la composition maîtrisée.
+On cesse de traiter la population comme un sac homogène. Le modèle eucaryote partitionne le génome en chromosomes composites (analogie caryotype — chaque sous-chromosome porte sa métaheuristique) ; les N individus restent présents dans chaque compartiment via leur tranche de gène. C'est une configuration qu'aucune bibliothèque monolithique grand public n'offre directement, et qui devient naturelle une fois la composition maîtrisée.
 
 ### 4 — Islands
 
@@ -319,7 +319,7 @@ Les métaheuristiques reconstruites dans cette partie suivent les articles fonda
 Cette quatrième partie a changé la question : non plus *« quelle métaheuristique choisir »* (Parties 1-2), mais *« comment construire et combiner des métaheuristiques à partir de primitives »*. L'arc pédagogique, porté par les notebooks C# .NET 9 de la série au-dessus de [MetaGeneticSharp](https://github.com/jsboige/MetaGeneticSharp), démontre la thèse **composants > métaphores** :
 
 - **Le moteur autonome** (MGS-1, MGS-2) — un `MetaGeneticAlgorithm` qui pilote l'évolution sans dépendre de la classe `GeneticAlgorithm` amont, et la grammaire fluente (`Match`, `Container`, `Scoped`) qui permet d'assembler une métaheuristique en quelques lignes déclaratives lisibles. C'est le socle : tout le reste compose au-dessus.
-- **La structuration de population** (MGS-3, MGS-4) — le modèle eucaryote (sous-populations spécialisées portées par des chromosomes composites) et le modèle insulaire (îles migratoires) : deux configurations qu'aucune bibliothèque monolithique grand public n'offre directement, et qui deviennent naturelles une fois la composition maîtrisée.
+- **La structuration de population** (MGS-3, MGS-4) — le modèle eucaryote (partition du génome en chromosomes composites, analogie caryotype — chaque sous-chromosome porte sa propre métaheuristique) et le modèle insulaire (îles migratoires) : deux configurations qu'aucune bibliothèque monolithique grand public n'offre directement, et qui deviennent naturelles une fois la composition maîtrisée.
 
 - **La reconstruction des composés publiés** (MGS-5) — WOA, EO, FBI : pour chaque algorithme du catalogue, le parcours en trois temps (description → reconstruction depuis les primitives `BuildMainHeuristic()` → raccourci factory prouvant l'équivalence). C'est l'argument poussé jusqu'à la **preuve** : reconstruire un algorithme bio-inspiré *démontre* son mécanisme au lieu de le cacher derrière une métaphore animale (critique de Sørensen, 2015).
 

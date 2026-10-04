@@ -1044,7 +1044,7 @@ returns = prices.pct_change().dropna()
 
 - [SESSION5_PATTERNS.md](../projects/_docs/SESSION5_PATTERNS.md) - AlphaModel Framework
 - [README.md](../projects/README.md) - Stratégies QuantConnect
-- [HANDSON_AI_TRADING_MAPPING.md](../docs/HANDSON_AI_TRADING_MAPPING.md) - Mapping notebooks projets
+- [BOOK_MAPPING.md](../BOOK_MAPPING.md) - Inventaire des exemples du livre *Hands-On AI Trading*
 
 ### Contribution
 

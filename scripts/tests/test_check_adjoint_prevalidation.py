@@ -1751,8 +1751,15 @@ def test_blocked_dossier_on_frozen_campaign_keeps_its_own_message(
     monkeypatch, capsys
 ):
     """Le gel ne re-ecrit pas un verdict BLOCKED : deja non mergeable, il
-    garde son message propre (l'exemption READY-only du check)."""
-    snapshot = _snapshot_with(title=FROZEN_TITLE, verdict="BLOCKED", b0="blocked")
+    garde son message propre (l'exemption READY-only du check). Le dossier
+    porte un second motif (checks) : le re-jeu B.0 de #19093 ne l'expire pas,
+    on teste bien le gel sur un BLOCKED intact."""
+    snapshot = _snapshot_with(
+        title=FROZEN_TITLE,
+        verdict="BLOCKED",
+        b0="blocked",
+        checks="BLOCKED:gate rouge",
+    )
     rc = _run_main(monkeypatch, snapshot)
     assert rc == mod.EXIT_BLOCKED_WITH_SUBSTANCE
     assert capsys.readouterr().out.startswith("BLOCKED-WITH-SUBSTANCE")
@@ -1903,6 +1910,73 @@ def test_main_exits_ready_when_organ_agrees(monkeypatch, capsys):
     monkeypatch.setattr(mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []})
     monkeypatch.setattr(sys, "argv", ["check_adjoint_prevalidation.py", "123"])
     assert mod.main() == mod.EXIT_READY
+
+
+# --- #19093 : un dossier BLOCKED dont le seul motif b0 est eteint expire ------
+# Mesure fondatrice (2026-10-04, #19012) : dossier BLOCKED 02:49Z pour une
+# reserve de review, APPROVE coordinateur 06:13Z sur la meme tete, le gate
+# repondait toujours rc=3 a 10:24Z -- la PR a dormi 4 h. La fingerprint
+# neutralise les reviews posterieures du coordinateur (_is_own_later_act),
+# donc sa levee n'expire pas le tampon : c'est le re-jeu de l'organe B.0 qui
+# tranche, symetriquement au re-jeu des claims `b0: clear` (#17698).
+
+
+def _blocked_b0_snapshot(**changes: str):
+    """Dossier BLOCKED dont b0 est le SEUL champ bloquant (acceptance #19093)."""
+    fields = {"verdict": "BLOCKED", "b0": "blocked:reserve vivante"}
+    fields.update(changes)
+    return _snapshot_with(**fields)
+
+
+def test_blocked_b0_only_expired_when_organ_no_longer_blocks(monkeypatch, capsys):
+    """Acceptance 1 : organ rc=0 -> le gate ne rend PAS 3 et nomme le re-tampon."""
+    snapshot = _blocked_b0_snapshot()
+    monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
+    monkeypatch.setattr(mod.gh_identity, "pin_gh_token", lambda: None)
+    monkeypatch.setattr(mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []})
+    monkeypatch.setattr(sys, "argv", ["check_adjoint_prevalidation.py", "123"])
+    assert mod.main() == mod.EXIT_NO_DOSSIER
+    out = capsys.readouterr().out
+    assert "NO-DOSSIER" in out
+    assert "no longer blocks PR #123" in out
+    assert "re-stamp" in out and "third-party lane" in out
+
+
+def test_blocked_b0_only_stands_when_organ_still_blocks(monkeypatch, capsys):
+    """Acceptance 2 (temoin negatif) : organ rc=1 -> le gate rend toujours 3."""
+    snapshot = _blocked_b0_snapshot()
+    monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
+    monkeypatch.setattr(mod.gh_identity, "pin_gh_token", lambda: None)
+    monkeypatch.setattr(
+        mod,
+        "probe_b0",
+        lambda pr: {"blocked": True, "blocking": [{"kind": "nit", "author": "u", "src": "c"}]},
+    )
+    monkeypatch.setattr(sys, "argv", ["check_adjoint_prevalidation.py", "123"])
+    assert mod.main() == mod.EXIT_BLOCKED_WITH_SUBSTANCE
+    assert capsys.readouterr().out.startswith("BLOCKED-WITH-SUBSTANCE")
+
+
+def test_blocked_with_other_motif_not_touched_by_the_recheck(monkeypatch, capsys):
+    """Acceptance 3 : un autre motif bloquant (checks) garde son dossier,
+    meme quand l'organe B.0 ne bloque plus -- sa raison peut tenir encore."""
+    snapshot = _blocked_b0_snapshot(checks="BLOCKED:gate rouge")
+    monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
+    monkeypatch.setattr(mod.gh_identity, "pin_gh_token", lambda: None)
+    monkeypatch.setattr(mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []})
+    monkeypatch.setattr(sys, "argv", ["check_adjoint_prevalidation.py", "123"])
+    assert mod.main() == mod.EXIT_BLOCKED_WITH_SUBSTANCE
+    assert capsys.readouterr().out.startswith("BLOCKED-WITH-SUBSTANCE")
+
+
+def test_recheck_blocked_b0_never_probes_a_non_blocked_verdict():
+    """Le probe n'est paye que pour un dossier BLOCKED existant : ni READY,
+    ni dossier absent (symetrique de test_b0_probe_not_paid_...)."""
+    probe, calls = _organ(False)
+    verdict, dossier = _ready_dossier()
+    assert mod.recheck_blocked_b0(123, verdict, dossier, probe) == (verdict, [], dossier)
+    assert mod.recheck_blocked_b0(123, "", None, probe) == ("", [], None)
+    assert calls == []
 
 
 # --- #18637 : advisories sticky (marqueur en FIN de corps) et resumes de bot --
@@ -2365,3 +2439,54 @@ def test_main_refuses_mute_contradiction_with_rc1(monkeypatch, capsys):
     assert mod.main() == mod.EXIT_NO_DOSSIER
     out = capsys.readouterr().out
     assert "NO-DOSSIER" in out and "mute contradiction (#18934)" in out
+# --- #19002 : la base doit etre `main` pour READY -------------------------
+# Mesure du 2026-10-03 : 4 PRs a base != main dans le pool ouvert, dont
+# #18819 (base squash-mergee) et #18993 (base fermee sans merge). Avant
+# #19002, le gate rendait rc=0 READY sur ces PRs, et merge_ready fusionnait
+# dans la branche morte. La regle : un dossier READY exige une base
+# `main` ; sinon, refus. Trois tests : un temoin positif (base main, le
+# chemin nominal inchange), un temoin negatif sur une base de feature
+# encore ouverte (#18985/#18967), un temoin negatif sur une base dont la
+# PR porteuse est fermee ou mergee (#18819/#18993).
+
+
+def test_base_main_does_not_change_a_ready_dossier():
+    """Temooin positif : une PR a base main, dossier READY canonique,
+    verdict READY inchange. Le chemin nominal n'est pas casse par #19002."""
+    snapshot = _snapshot(_body())
+    assert snapshot["baseRefName"] == "main"
+    verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+    assert not errors
+
+
+def test_base_feature_open_refuses_ready_and_names_the_base():
+    """Temooin negatif : PR empilee sur une branche de feature encore
+    ouverte (#18985 / #18967). Le gate refuse READY et nomme la base
+    pour que la lane sache ou retargeter."""
+    snapshot = _snapshot(_body())
+    snapshot["baseRefName"] = "docs/qc-book-inventory-reconciliation"
+    verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+    assert verdict == "", verdict
+    assert dossier is None, dossier
+    assert any("baseRefName must be 'main'" in e for e in errors), errors
+    # Le message nomme la base fautive -- la lane en a besoin pour le
+    # retarget, et la regle sans le nom forcerait a rouvrir le PR.
+    assert any(
+        "docs/qc-book-inventory-reconciliation" in e for e in errors
+    ), errors
+
+
+def test_base_dead_refuses_ready_and_names_the_base():
+    """Temooin negatif : PR empilee sur une branche dont la PR porteuse
+    est fermee ou squash-mergee (#18819 / #18993). Meme verdict que la
+    base de feature, avec un nom different -- le gate refuse dans les
+    deux cas parce que son contrat ne sait pas dire 'cette base est
+    morte' (et n'a pas besoin de le dire : retarget sur main)."""
+    snapshot = _snapshot(_body())
+    snapshot["baseRefName"] = "renum/17063-complexity-05b"  # #18819
+    verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+    assert verdict == "", verdict
+    assert dossier is None, dossier
+    assert any("baseRefName must be 'main'" in e for e in errors), errors
+    assert any("renum/17063-complexity-05b" in e for e in errors), errors
