@@ -705,7 +705,9 @@ def test_is_scannable_matches_on_relative_parts_only(tmp_path):
 # #18966 + 1 XGBoost).
 # 2026-10-03 (#1650 tranche FT, PR #18968): +2 paires T4 -- FineTuning/
 # FT-01-Introduction-FineTuning + FT-03-Supervised-FineTuning. Total apres fusion : 7.
-EXPECTED_PAIR_COUNT = 7
+# 2026-10-05 (#1650 tranche FT-02, QLoRA-Quantization): +1 paire T4 --
+# FineTuning/FT-02-QLoRA-Quantization. Total apres fusion : 8.
+EXPECTED_PAIR_COUNT = 8
 
 
 def _collect_parity_failures(repo_root: Path,
