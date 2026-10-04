@@ -60,6 +60,16 @@ from .task import (
     entrainer_multi_seed,
     entrainer_cot,
     entrainer_multi_seed_cot,
+    question_indirection,
+    vocab_indirection,
+    lot_indirection,
+    lot_indirection_cot,
+    evaluer_indirection,
+    evaluer_indirection_cot,
+    entrainer_indirection,
+    entrainer_indirection_cot,
+    entrainer_indirection_multi_seed,
+    entrainer_indirection_cot_multi_seed,
 )
 
 __all__ = [
@@ -83,4 +93,14 @@ __all__ = [
     "entrainer_multi_seed",
     "entrainer_cot",
     "entrainer_multi_seed_cot",
+    "question_indirection",
+    "vocab_indirection",
+    "lot_indirection",
+    "lot_indirection_cot",
+    "evaluer_indirection",
+    "evaluer_indirection_cot",
+    "entrainer_indirection",
+    "entrainer_indirection_cot",
+    "entrainer_indirection_multi_seed",
+    "entrainer_indirection_cot_multi_seed",
 ]
