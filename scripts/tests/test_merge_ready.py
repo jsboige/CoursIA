@@ -88,6 +88,10 @@ def default_view(
         "isDraft": draft,
         "body": body if body is not None else GRAIN_MED,
         "headRefOid": head,
+        # baseRefName is the branch the PR is targeting. The merge-ready
+        # defense-in-depth check (#19002) refuses anything other than
+        # `main`. Tests that need a non-`main` base override this field.
+        "baseRefName": "main",
         "baseRefOid": BASE,
         "files": [{"path": p} for p in files],
         "changedFiles": len(files),
@@ -148,6 +152,7 @@ class ScriptedRunner:
         gate_stderr: str = "",
         fetch_rc: int = 0,
         twin_rc: int = 0,
+        twin_stdout: str = "",
         commits: dict[str, dict] | None = None,
         auto_tree: str | None = None,
     ):
@@ -165,6 +170,10 @@ class ScriptedRunner:
         self.gate_stderr = gate_stderr
         self.fetch_rc = fetch_rc
         self.twin_rc = twin_rc
+        # stdout de l'organe twin : porte le JSON classifie quand twin_rc=1.
+        # Vide par defaut (les tests historiques ``twin-index-collision``
+        # n'attendent pas de classification).
+        self.twin_stdout = twin_stdout
         # Remontee first-parent de merge_dwell (etape 2ter) : payloads de
         # ``repos/.../commits/<sha>`` et arbre rendu par ``git merge-tree``.
         self.commits = commits or {}
@@ -234,7 +243,7 @@ class ScriptedRunner:
         if c[:1] == ["git"] and "fetch" in c:
             return mr.RunResult(self.fetch_rc, "", "")
         if len(c) > 1 and "check_twin_index_collisions.py" in c[1]:
-            return mr.RunResult(self.twin_rc, "", "")
+            return mr.RunResult(self.twin_rc, self.twin_stdout, "")
         raise AssertionError("commande non scriptee : " + " ".join(c))
 
     def sleep(self, seconds: float) -> None:
@@ -953,6 +962,66 @@ def test_twin_fetch_failure_is_fail_closed(tmp_path):
     assert not any("check_twin_index_collisions.py" in f for f in runner.flat())
 
 
+def test_twin_mixed_multipr_and_unknown_then_fails_closed(tmp_path):
+    """#18823 : un mix MULTI-PR + verdict absent/inconnu doit refuser, pas
+    laisser passer comme avertissement seul. La classification d'UNE
+    collision illisible ne peut pas se deduire des autres."""
+    view = default_view(files=(TWIN_FILE,))
+    twin_stdout = json.dumps({
+        "cross_ref": [
+            {"pair": "sw-5-linked-data", "index": "0012",
+             "verdict": "MULTI-PR"},
+            {"pair": "sw-5-linked-data", "index": "0012",
+             "verdict": None},
+        ],
+        "base_ref": "origin/main",
+    })
+    runner = ScriptedRunner(views={123: view}, twin_rc=1,
+                            twin_stdout=twin_stdout)
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "skipped"
+    assert lines[0]["reason"] == "twin-index-collision"
+
+
+def test_twin_pure_multipr_warns_only(tmp_path):
+    """Quand toutes les collisions portent MULTI-PR, l'organe laisse passer
+    avec avertissement seul (la premiere mergee gagne)."""
+    view = default_view(files=(TWIN_FILE,))
+    twin_stdout = json.dumps({
+        "cross_ref": [
+            {"pair": "sw-5-linked-data", "index": "0012",
+             "verdict": "MULTI-PR"},
+            {"pair": "sw-5-linked-data", "index": "0012",
+             "verdict": "MULTI-PR"},
+        ],
+        "base_ref": "origin/main",
+    })
+    runner = ScriptedRunner(views={123: view}, twin_rc=1,
+                            twin_stdout=twin_stdout)
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "would-merge"
+
+
+def test_twin_pure_onmain_skips(tmp_path):
+    """Quand au moins une collision est ON-MAIN, l'organe skip dur et
+    nomme la premiere collision ON-MAIN dans le motif."""
+    view = default_view(files=(TWIN_FILE,))
+    twin_stdout = json.dumps({
+        "cross_ref": [
+            {"pair": "sw-5-linked-data", "index": "0012",
+             "verdict": "ON-MAIN"},
+            {"pair": "sw-5-linked-data", "index": "0013",
+             "verdict": "MULTI-PR"},
+        ],
+        "base_ref": "origin/main",
+    })
+    runner = ScriptedRunner(views={123: view}, twin_rc=1,
+                            twin_stdout=twin_stdout)
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "skipped"
+    assert lines[0]["reason"].startswith("twin-collision-on-main:sw-5-linked-data/0012")
+
+
 # --- 2ter. approbation du coordinateur (Q67, arbitrage user 2026-09-28) ----------
 
 
@@ -1099,3 +1168,63 @@ def test_tete_du_gate_differente_de_la_tete_lue(tmp_path):
     )
     _, lines, _ = run_organ(tmp_path, ScriptedRunner(views={123: view}))
     assert lines[-1]["reason"] == "head-moved"
+
+
+# --- #19002 : defense en profondeur sur la base -----------------------------
+# Le gate refuse deja READY si la base n'est pas `main` (cf test_base_*
+# dans test_check_adjoint_prevalidation.py). Merge_ready verifie
+# independamment : un rc 0 accidente du gate, un gate anterieur a #19002,
+# ou un chemin futur qui court-circuiterait le gate ne doit pas suffire
+# a merger dans une branche morte. Trois tests : temoin positif (base
+# main, chemin nominal inchange), temoin negatif sur une base de feature
+# ouverte (#18985/#18967), temoin negatif sur une base morte (#18819).
+
+
+def test_base_main_does_not_change_merge_ready_outcome(tmp_path):
+    """Temooin positif : avec `view.baseRefName = 'main'`, le merge_ready
+    n'invoque pas la nouvelle raison de skip. Le chemin nominal d'une
+    PR a base main reste inchange."""
+    runner = ScriptedRunner(views={123: default_view()})
+    assert runner.views[123]["baseRefName"] == "main"
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    # Le verdict par defaut d'un ScriptedRunner est would-merge (gate_rc=0
+    # et tous les autres controles passent). Ce qui compte ici : aucune
+    # ligne ne porte le motif `base-not-main:` (le champ reason est None
+    # sur les merges reussis, donc on teste avec get(..., "")).
+    for line in lines:
+        reason = line.get("reason") or ""
+        assert "base-not-main" not in reason, lines
+
+
+def test_base_feature_open_triggers_base_not_main_skip(tmp_path):
+    """Temooin negatif : PR empilee sur une branche de feature encore
+    ouverte. merge_ready refuse avec un motif `base-not-main:<branche>`
+    qui nomme la base, en defense en profondeur contre un gate qui
+    aurait laisse passer. Le gate est simule a rc=0 READY (comme si
+    une version anterieure du gate avait ete deployee) ; seul le check
+    merge_ready arrete la machine."""
+    view = default_view()
+    view["baseRefName"] = "feature/voltargeting-vol-forecast-sizing"  # #18967
+    runner = ScriptedRunner(views={123: view})
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0  # l'organe termine, il a juste skip
+    assert lines[-1]["verdict"] == "skipped"
+    # Le motif inclut la branche fautive -- sans le nom, la lane
+    # devrait rouvrir le PR pour savoir ou retargeter.
+    assert "base-not-main:feature/voltargeting-vol-forecast-sizing" in lines[-1]["reason"]
+
+
+def test_base_dead_triggers_base_not_main_skip(tmp_path):
+    """Temooin negatif : PR empilee sur une branche dont la PR porteuse
+    est fermee ou squash-mergee. Meme refus que la base de feature :
+    merge_ready ne distingue pas 'morte' de 'vivante' (c'est un attribut
+    de la base, pas du merge_ready), il exige `main` et c'est tout.
+    La lane fait la retarget (cf. git-workflow.md L898 collision guard).
+    Verifie sur la branche morte de #18819 (squash-mergee le 02/10)."""
+    view = default_view()
+    view["baseRefName"] = "renum/17063-complexity-05b"  # #18819
+    runner = ScriptedRunner(views={123: view})
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "skipped"
+    assert "base-not-main:renum/17063-complexity-05b" in lines[-1]["reason"]

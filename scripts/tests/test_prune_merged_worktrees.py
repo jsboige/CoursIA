@@ -2023,7 +2023,7 @@ class TestRefusalReport3895:
             {"path": s.path, "branch": s.branch} for s in statuses])
         monkeypatch.setattr(
             pmw, "diagnose_worktree",
-            lambda path, cur, head_sha=None:
+            lambda path, cur, head_sha=None, activity_window_h=6.0:
                 next(s for s in statuses if s.path == path),
         )
         monkeypatch.setattr(

@@ -32,6 +32,7 @@ from check_closure_dossier import (  # noqa: E402
     render_template,
     validate_dossier,
     main,
+    _merged_referring_prs,
 )
 
 
@@ -587,3 +588,81 @@ def test_pr_cross_repo_ne_satisfait_pas_le_raccourci_des_prs_citees(monkeypatch)
     verdict, errors, _ = evaluate(snap)
     assert verdict == "REFUSED"
     assert any("cited PR #31 is not MERGED" in e for e in errors)
+
+
+# --- _merged_referring_prs : body depuis timeline -----------------------------
+
+def test_merged_referring_prs_lit_body_depuis_timeline(monkeypatch):
+    """Le body d'une PR mergée doit être lu depuis la timeline (source.issue.body)
+    quand il est présent, sans `gh pr view` supplémentaire.
+
+    Mesure : sur #15578, 555 references = 4 min de latence eliminees (1 appel
+    gh api de moins par referencee). Ce test verifie le fast-path.
+    """
+    timeline = [
+        {"event": "cross-referenced",
+         "source": {"type": "issue",
+                    "issue": {"number": 17901,
+                              "body": "Grain: DEEP/notebook-python -- lane X",
+                              "pull_request": {"merged_at": "2026-09-19T10:00:00Z"},
+                              "repository": {"full_name": "o/r"}}}},
+    ]
+    def fake_gh_json(args):
+        assert args[0] == "api", f"appel inattendu: {args}"
+        return timeline
+    monkeypatch.setattr(ccd, "gh_json", fake_gh_json)
+    out = _merged_referring_prs("o/r", 15578)
+    assert len(out) == 1
+    assert out[0]["number"] == 17901
+    assert out[0]["merged_at"] == "2026-09-19T10:00:00Z"
+    assert out[0]["repo"] == "o/r"
+    assert out[0]["body"] == "Grain: DEEP/notebook-python -- lane X"
+
+
+def test_merged_referring_prs_fallback_gh_pr_view_si_body_absent(monkeypatch):
+    """Si la timeline ne porte pas le body (PR tres ancienne ou depot soeur
+    tronque), fallback explicite vers `gh pr view --json body`.
+    Defense en profondeur : ne JAMAIS perdre un body qu'on avait avant ce fix.
+    """
+    timeline = [
+        {"event": "cross-referenced",
+         "source": {"type": "issue",
+                    "issue": {"number": 17901,
+                              "pull_request": {"merged_at": "2026-09-19T10:00:00Z"},
+                              "repository": {"full_name": "o/r"}}}}  # body absent
+    ]
+    calls = []
+    def fake_gh_json(args):
+        calls.append(args[:2])
+        if args[0] == "api":
+            return timeline
+        if args[:2] == ["pr", "view"]:
+            return {"body": "Body depuis fallback"}
+        raise AssertionError(f"appel inattendu: {args}")
+    monkeypatch.setattr(ccd, "gh_json", fake_gh_json)
+    out = _merged_referring_prs("o/r", 15578)
+    assert len(out) == 1
+    assert out[0]["body"] == "Body depuis fallback"
+    # On a bien appele gh pr view en fallback
+    assert ["pr", "view"] in [c[:2] for c in calls]
+
+
+def test_merged_referring_prs_ignore_les_cross_ref_non_merged(monkeypatch):
+    """Un cross-reference sans pull_request.merged_at ne doit pas être inclus.
+    Verifie qu'on ne perd pas le filtre existant en ajoutant le fast-path.
+    """
+    timeline = [
+        {"event": "cross-referenced",
+         "source": {"type": "issue",
+                    "issue": {"number": 17901,
+                              "body": "Pas mergé",
+                              "pull_request": {"merged_at": None},
+                              "repository": {"full_name": "o/r"}}}},
+        {"event": "commented"},  # autre event, ignoré
+    ]
+    def fake_gh_json(args):
+        return timeline
+    monkeypatch.setattr(ccd, "gh_json", fake_gh_json)
+    out = _merged_referring_prs("o/r", 15578)
+    assert out == []
+

@@ -15,10 +15,10 @@ Notebooks dans `SymbolicAI/SemanticWeb/`, `SymbolicAI/SmartContract/`, `Search/`
 | Prerequis | Version | Verification |
 |-----------|---------|-------------|
 | .NET SDK | 8.0 + 9.0 + 10.0 (10.0 requis par `dotnet restore MyIA.CoursIA.sln` : cinq projets `net10.0`) | `dotnet --list-sdks` |
-| dotnet-interactive | **1.0.617701** (verifie sur ai-01, cf ci-dessous) | `dotnet interactive --version` |
+| dotnet-interactive | **1.0.712001** (canon depuis le 02/10/2026, decision #18766 — historique ci-dessous) | `dotnet interactive --version` |
 | Jupyter kernels `.net-csharp`, `.net-fsharp`, `.net-powershell` | auto-installes | `jupyter kernelspec list` |
 
-Installation : `dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.617701` puis `dotnet interactive jupyter install`. **Preciser la version** : une installation sans `--version` prend le dernier build publie, aujourd'hui 1.0.712001, qui a casse `#!import` sur ai-01 (cf tableau ci-dessous ; non reproduit sur po-2024, cf [Divergence po-2024](#divergence-po-2024-du-2026-08-16-11157--le-pin-netait-jamais-installe)).
+Installation : `dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001` puis `dotnet interactive jupyter install`. **Preciser la version** : une installation sans `--version` prend le dernier build publie, qui peut differer du canon et deriver d'une machine a l'autre sans qu'aucun `dotnet interactive --version` de routine ne signale l'ecart — il faut comparer au canon (cf [Divergence po-2024](#divergence-po-2024-du-2026-08-16-11157--le-pin-netait-jamais-installe) : le pin n'y avait jamais ete installe).
 
 **Execution** : `python scripts/notebook_tools/notebook_tools.py execute <notebook>` — qui pilote Papermill avec `--kernel .net-csharp`. Le kernel preserve l'etat entre cellules, `#!import` compris.
 
@@ -43,25 +43,25 @@ Cette borne **n'etablit pas** que le blocage `#r "nuget:"` est faux pour les 103
 grep -c '#r "nuget:' <notebook>     # 0  ->  RECOVERABLE-LOCAL : executer pour de vrai
 ```
 
-### Version : 1.0.617701, pas « >= 1.0.700 »
+### Version : canon 1.0.712001 depuis le 02/10/2026 (decision #18766)
 
 | Version | Etat | Preuve |
 |---------|------|--------|
 | 1.0.522904 | a eviter | bug Roslyn |
 | 1.0.552801 | ancien pin — **ne plus viser** : hote net8.0-only, bloque les notebooks qui referencent des DLL `net9.0` | [`Search/Part4-Metaheuristics/README.md`](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/README.md) (MGS-6 a MGS-9, `MetaGeneticSharp.Extensions`) |
-| **1.0.617701** | **cible** — cellule C# et `#!import` OK | verifie firsthand sur ai-01 le 2026-07-25 : `notebook_tools.py execute` sur un notebook `.net-csharp` (SUCCESS 4,4 s, `execution_count: 1`) et sur une paire `#!import helper.ipynb` + appel de la methode importee (SUCCESS 3,8 s, cellule 2 imprime le resultat) |
-| 1.0.712001 | a eviter | `#!import` casse (`ArgumentNullException`) — bloque la re-execution de `Sudoku-15-Infer-CSharp` (#8485, #8525) et le pivot d'env #8369. **Nuance (2026-08-16)** : non reproduit sur po-2024 — run complet Sudoku-15 0 erreur sous ce build (cf [Divergence po-2024](#divergence-po-2024-du-2026-08-16-11157--le-pin-netait-jamais-installe)) ; le breakage est au minimum contextuel, le verdict « a eviter » reste le standard tant qu'ai-01 n'a pas tranche un eventual depin |
+| 1.0.617701 | ancien canon (jusqu'au 02/10/2026) — cellule C# et `#!import` OK, embarque Roslyn 4.12 (plafond de packages, cf section suivante) | verifie firsthand sur ai-01 le 2026-07-25 : `notebook_tools.py execute` sur un notebook `.net-csharp` (SUCCESS 4,4 s, `execution_count: 1`) et sur une paire `#!import helper.ipynb` + appel de la methode importee (SUCCESS 3,8 s, cellule 2 imprime le resultat) |
+| **1.0.712001** | **canon (depuis le 02/10/2026, decision coordinateur #18766)** — hote net10.0, Roslyn 5.x (plafond leve) | verifie firsthand sur po-2026 le 02/10/2026 (`dotnet tool list -g`) et sur po-2024 le 2026-08-16 (run complet `Sudoku-15-Infer-CSharp` 0 erreur, `#!import` propre, AutoML OK — cf [Divergence po-2024](#divergence-po-2024-du-2026-08-16-11157--le-pin-netait-jamais-installe)). L'incident `#!import` `ArgumentNullException` (#8485, #8525) n'a ete vu que sur ai-01 (juillet 2026), jamais reproduit ailleurs : qualifie **contextuel** par la decision #18766 — si l'erreur reapparait sur ai-01 sous ce build, c'est une reparation locale (regle F), pas un retour du canon |
 
-Une contrainte `>= 1.0.700` figurait ici : elle est **fausse et nuisible** — elle exclut le pin qu'elle citait dans la meme ligne (552801 < 700) et n'admet, aujourd'hui, que la version cassee. Un `#!import` en echec est un **defaut d'environnement reparable en une commande** (regle F), jamais un blocage utilisateur :
+Une contrainte `>= 1.0.700` figurait ici : elle est **fausse et nuisible** — elle exclurait des builds fonctionnels selon la date et n'est pas un critere de validite ; le critere est le canon ci-dessus, pas une borne de version. Un `#!import` en echec est un **defaut d'environnement reparable en une commande** (regle F), jamais un blocage utilisateur :
 
 ```bash
-dotnet tool update --global Microsoft.dotnet-interactive --version 1.0.617701
+dotnet tool update --global Microsoft.dotnet-interactive --version 1.0.712001
 dotnet interactive jupyter install
 ```
 
-**Canon `language_info.version` : C# 13.0 (#17679, décision coordinateur 2026-09-26).** L'environnement épinglé du dépôt (SDK 10.0.112, dotnet-interactive 1.0.617701) émet **C# 13.0** ; les notebooks encore stampés `12.0` (34 au constat du 2026-09-24, artefacts d'exécutions sous SDK 8) convergent à leur re-exécution. La dérive `12.0 -> 13.0` est donc **attendue et couverte par C.4** : le `Kernel drift guard` la tient pour verte via sa table d'acceptation `CANONICAL_LANGUAGE_TRANSITIONS` ([`check_kernel_drift.py`](../../scripts/notebook_tools/check_kernel_drift.py)) — la transition inverse (`13.0 -> 12.0`) et tout changement de `kernelspec.name` restent rouges.
+**Canon `language_info.version` : C# 13.0 (#17679, décision coordinateur 2026-09-26).** L'environnement épinglé du dépôt (SDK 10.0.112, dotnet-interactive 1.0.617701) émet **C# 13.0** ; les notebooks encore stampés `12.0` (34 au constat du 2026-09-24, artefacts d'exécutions sous SDK 8) convergent à leur re-exécution. **Note (02/10/2026)** : cette mesure date du canon dni 1.0.617701 ; sous le nouveau canon 1.0.712001 (hote net10.0, Roslyn 5.x), le stamp `language_info.version` sera re-mesuré a la premiere re-execution d'un notebook .NET — si un drift `13.0 -> 14.0` apparait, il suit la meme voie decisionnelle que #17679. La dérive `12.0 -> 13.0` est donc **attendue et couverte par C.4** : le `Kernel drift guard` la tient pour verte via sa table d'acceptation `CANONICAL_LANGUAGE_TRANSITIONS` ([`check_kernel_drift.py`](../../scripts/notebook_tools/check_kernel_drift.py)) — la transition inverse (`13.0 -> 12.0`) et tout changement de `kernelspec.name` restent rouges.
 
-### Consequence du pin : plafond Roslyn 4.12.0.0 sur les packages NuGet
+### Consequence du pin : plafond Roslyn 4.12.0.0 sur les packages NuGet (canon 1.0.617701)
 
 Le pin n'est pas gratuit. `1.0.617701` **embarque Roslyn 4.12.0.0** (`Microsoft.CodeAnalysis.CSharp.dll`, FileVersion `4.1200.24.57207`, mesure firsthand sur ai-01 le 2026-08-16 dans `.dotnet/tools/.store/.../tools/net9.0/any/`). Tout package reference par `#r "nuget: ..."` qui **exige** une version superieure echoue au chargement :
 
@@ -70,7 +70,7 @@ System.IO.FileNotFoundException: Could not load file or assembly
 'Microsoft.CodeAnalysis.CSharp, Version=4.13.0.0, ...'
 ```
 
-**Un `#r "nuget: Microsoft.CodeAnalysis.CSharp, 4.13.0"` ne repare PAS ce cas** : le kernel a deja charge son propre Roslyn dans l'ALC au demarrage, et `#r` ne substitue pas une assembly deja resolue. Le correctif est donc **toujours cote package**, jamais cote kernel — remonter le kernel casserait `#!import` sur tout le depot (tableau ci-dessus).
+**Un `#r "nuget: Microsoft.CodeAnalysis.CSharp, 4.13.0"` ne repare PAS ce cas** : le kernel a deja charge son propre Roslyn dans l'ALC au demarrage, et `#r` ne substitue pas une assembly deja resolue. Le correctif est donc **toujours cote package** (s'aligner sur le Roslyn embarque par le build du kernel en cours).
 
 Instance mesuree (#11104, ML-3 AutoML) :
 
@@ -80,6 +80,8 @@ Instance mesuree (#11104, ML-3 AutoML) :
 | `Microsoft.ML.AutoML` **0.22.3** | `[4.9.2, )` | **OK** — satisfait par 4.12.0.0 |
 
 `0.22.3` prend `Microsoft.ML [4.0.3, )`, borne **ouverte** : le pin `Microsoft.ML, 5.0.0` du notebook reste valide. Mesure de bout en bout apres bascule : **10/10 cellules, 0 erreur, 86,1 s**.
+
+**Ce plafond est leve par le canon 1.0.712001 (02/10/2026, #18766)** : ce build embarque Roslyn 5.x (FileVersion `5.0.25.56712` mesure sur po-2024, hote `net10.0`) — les dependances `[4.13.0, )` (ex. AutoML 0.23.0) passent sous le nouveau canon. Le downgrade `0.23.0 -> 0.22.3` de ML-3 reste valide (bornes ouvertes, pas de raison de rebasculer). La section ci-dessus se lit desormais comme l'historique du canon 1.0.617701.
 
 Verifier la dependance d'un package avant d'incriminer le kernel :
 
@@ -106,7 +108,7 @@ dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.617701
 dotnet interactive jupyter install
 ```
 
-Verifications post-reparation sur po-2024 : version `1.0.617701+fb2fd802...` confirmee, `#!import` minimal OK (`FORTY_TWO=42`), AutoML 0.22.3 OK (RSquared 0,996). Le pin reste le standard fleet ; un eventuel depin vers un build recent (qui embarque Roslyn >= 4.13 et leverait le plafond de packages) est une decision coordinateur, a appuyer sur un essai croise ai-01 x po-2024 reproduisant les deux tableaux ci-dessus.
+Verifications post-reparation sur po-2024 : version `1.0.617701+fb2fd802...` confirmee, `#!import` minimal OK (`FORTY_TWO=42`), AutoML 0.22.3 OK (RSquared 0,996). **Epilogue (02/10/2026, #18766)** : le depin a eu lieu — le canon fleet passe a `1.0.712001`, exactement le build sur lequel po-2024 tournait lors de cette divergence. La divergence est fermee par montee du canon (po-2024 etait « en avance »), la reparation historique ci-dessus reste documentee pour la methode (uninstall + install pinne quand `dotnet tool update` refuse le downgrade). Mesures de conformite flotte en cours sur #18766 : po-2026 verifiee 1.0.712001, ai-01 montee par sa lane soeur (test `#!import` en `--tool-path` isole d'abord), po-2023/po-2025/po-2027 mesures demandees.
 
 ## Python 3.10+ (notebooks Python)
 
@@ -173,7 +175,7 @@ Les **4 notebooks de la strate Φ** — ceux dont les outputs **committés** vie
 |---|---|---:|---|---|---|
 | `ICT-01-PhiTrajectories-Python` | 10 · 4 → 4 | aucune dérive | aucun | 0 `exec_count` nul, 0 erreur | — |
 | `ICT-05-CausalEmergence-Python` | 10 · 0 → 0 | aucune dérive | aucun | 0 / 0 | 12 s |
-| `ICT-18-ArrowOfTimeReversibilization` | 14 · 1 → 1 | aucune dérive | aucun | 0 / 0 | 7 s |
+| `ICT-18-ArrowOfTimeReversibilization-Python` | 14 · 1 → 1 | aucune dérive | aucun | 0 / 0 | 7 s |
 | `ICT-Synthese-CrossSubstrat` | 14 · 1 → 1 | aucune dérive | aucun | 0 / 0 | 55 s |
 
 Et le garde lui-même, sur l'état **commité** : `OK: 0 kernel-drift regression across **4** changed notebooks`.
@@ -252,7 +254,7 @@ Incident 2026-05-06 : training MoE tenté directement sur Python 3.14 système :
 #### .NET
 
 - SDKs : 8.0.x, 9.0.x, 10.0.x
-- dotnet-interactive : **1.0.617701** (installe, verifie 2026-07-25 — cf [tableau des versions](#version--10617701-pas--100700))
+- dotnet-interactive : **1.0.617701** au dernier inventaire (2026-05-23) — canon fleet **1.0.712001** depuis le 02/10/2026 (cf [tableau des versions](#version--canon-10712001-depuis-le-02102026-decision-18766)) ; re-mesure demande sur #18766, mise a niveau si differe
 - Kernels : `.net-csharp`, `.net-fsharp`, `.net-powershell`
 
 #### Jupyter kernels (10 registered)

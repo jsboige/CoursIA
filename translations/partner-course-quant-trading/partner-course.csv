@@ -65,7 +65,9 @@ print(f""Sector Universe: {len(SECTORS)} ETFs"")",,,,,,,,1ce0449ce0e4c709,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,ea7ab798,markdown,fr,f691b8809610ff46,"## Téléchargement de l'univers sectoriel
 
 On charge l'historique des 9 ETF sectoriels et du VIX depuis 2010 (sortie de la crise financière : on évite ainsi le régime 2008-2009 dont la dynamique de volatilité écraserait tout signal momentum ultérieur). Le point important est la **reproductibilité** : un cache fige les données téléchargées via `yfinance`, de sorte que deux exécutions du notebook — aujourd'hui et dans six mois — travaillent sur la même trajectoire. Sans cette précaution, toute optimisation serait non-comparable d'une exécution à l'autre, et le « meilleur Sharpe » deviendrait une cible mouvante.
-","Downloading historical data for sector ETFs (XLK, XLF, XLE, XLV, XLI, etc.) via yfinance since 2010 for the Sector-Momentum backtest.",,,,,,,f691b8809610ff46,ec0c4ae7ad0444f3,,,,,,,
+","## Downloading the sector universe
+
+We load the history of the 9 sector ETFs and the VIX since 2010 (past the financial crisis: this avoids the 2008-2009 regime whose volatility dynamics would crush any subsequent momentum signal). The key point is **reproducibility**: a cache freezes the data downloaded via `yfinance`, so that two runs of the notebook — today and six months from now — work on the same trajectory. Without this precaution, any optimization would be non-comparable from one run to the next, and the ""best Sharpe"" would become a moving target.",,,,,,,f691b8809610ff46,30e8fb91a247fc28,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,faf9fe11,code,fr,8bc2370e10581b5b,"# Download data with cache
 print(""Loading sector data..."")
 sector_data = {}
@@ -83,7 +85,9 @@ print(f""Sectors loaded: {len(sector_data)}"")",,,,,,,,8bc2370e10581b5b,,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,6b8b3c7e,markdown,fr,eedc9e22d5d4d7aa,"## Calibration du filtre VIX
 
 Le filtre VIX défend la stratégie : il suspend le rééquilibrage quand la volatilité implicite du marché entre en régime hostile. Calibrer son seuil est un arbitrage coût/bénéfice — un seuil trop bas filtre trop souvent et laisse le stratège hors-marché pendant les rebonds ; un seuil trop haut ne filtre plus que les crises extrêmes et laisse passer la volatilité ordinaire. La cellule suivante mesure la **distribution empirique** du VIX (moyenne, médiane, percentiles) pour ancrer ce seuil dans la statistique réelle de l'échantillon plutôt que dans une règle arbitraire.
-","Statistical analysis of the VIX (mean, median, 75th/90th percentiles) to calibrate the volatility filter of the Sector-Momentum strategy.",,,,,,,eedc9e22d5d4d7aa,7f4a0de96f2003ba,,,,,,,
+","## Calibrating the VIX filter
+
+The VIX filter defends the strategy: it suspends rebalancing when the market's implied volatility enters a hostile regime. Calibrating its threshold is a cost/benefit trade-off — a threshold set too low filters too often and leaves the strategist out of the market during rebounds; a threshold set too high only filters extreme crises and lets ordinary volatility through. The next cell measures the **empirical distribution** of the VIX (mean, median, percentiles) to anchor this threshold in the actual statistics of the sample rather than in an arbitrary rule.",,,,,,,eedc9e22d5d4d7aa,d0e33749e9cda653,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,f1ef90af,code,fr,c4d02d06a381e857,"# Analyze VIX for filter optimization
 print(""VIX Statistics:"")
 print(f""  Mean: {vix_close.mean():.2f}"")
@@ -100,7 +104,9 @@ for threshold in [20, 25, 30]:
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,afaaafbf,markdown,fr,b3f47c8e21c62597,"## Calcul du facteur momentum
 
 Le momentum classe les secteurs par rendement passé sur la fenêtre de *lookback*. Le présupposé comportemental est l'**under-reaction** : les prix intègrent lentement l'information, si bien que les secteurs qui ont surperformé continuent statistically de le faire sur l'horizon court-moyen. La fenêtre de 126 jours (~6 mois) est le choix par défaut de la littérature (Jegadeesh-Titman), mais elle n'est pas nécessairement optimale pour des ETF sectoriels dont la rotation de cycle peut être plus rapide — c'est précisément ce que le grid search va trancher.
-",The momentum factor is calculated on past returns to rank and select the assets of the Sector-Momentum strategy.,,,,,,,b3f47c8e21c62597,9bee0ce483fa8f12,,,,,,,
+","## Computing the momentum factor
+
+Momentum ranks sectors by past return over the *lookback* window. The behavioral premise is **under-reaction**: prices incorporate information slowly, so sectors that have outperformed keep doing so statistically over the short-to-medium horizon. The 126-day window (~6 months) is the default choice of the literature (Jegadeesh-Titman), but it is not necessarily optimal for sector ETFs whose cycle rotation can be faster — this is precisely what the grid search will settle.",,,,,,,b3f47c8e21c62597,8fffab77d7902421,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,4d0544d6,code,fr,87c66ec2fe8bf1e5,"# Calculate momentum signals
 def calculate_momentum(prices, lookback=126):
     """"""
@@ -137,7 +143,9 @@ for sector, count in top_counts.items():
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,5aaedb66,markdown,fr,153b7393738f3ef2,"## Backtest de la configuration courante
 
 Le backtest calcule la trajectoire de richesse de la stratégie sur l'échantillon et en déduit deux métriques complémentaires : le **ratio de Sharpe** (rendement ajusté de la volatilité — pénalise un signal bruité) et le **drawdown maximal** (perte de pic à creux — pénalise un signal dont la volétile vient ruin). Les deux sont nécessaires : un Sharpe élevé obtenu au prix d'un drawdown profond n'est pas investissable, parce qu'un investisseur réel abandonnerait la stratégie avant le rebond. La cellule suivante apply les paramètres courants (126/25/1.5) pour établir la **baseline** que l'optimisation devra battre.
-","The ratios (Sharpe, drawdown) are calculated from the backtest returns to evaluate the quality of the Sector-Momentum strategy.",,,,,,,153b7393738f3ef2,b8fad967f24c3b5e,,,,,,,
+","## Backtest of the current configuration
+
+The backtest computes the strategy's wealth trajectory over the sample and derives two complementary metrics from it: the **Sharpe ratio** (volatility-adjusted return — penalizes a noisy signal) and the **maximum drawdown** (peak-to-trough loss — penalizes a signal whose volatility leads to ruin). Both are necessary: a high Sharpe obtained at the price of a deep drawdown is not investable, because a real investor would abandon the strategy before the rebound. The next cell applies the current parameters (126/25/1.5) to establish the **baseline** that the optimization must beat.",,,,,,,153b7393738f3ef2,b164bc0d52e6c346,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,1c22d59e,code,fr,4d33aa2c695c831c,"# Backtest sector momentum strategy (numpy-optimized)
 def backtest_sector_momentum(sector_data, vix_data,
                               lookback=126,
@@ -224,7 +232,9 @@ print(f""  Max Drawdown: {result['max_drawdown']*100:.1f}%"")",,,,,,,,4d33aa2c69
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,eb08467b,markdown,fr,298e17de7983df46,"## Grid search sur les quatre leviers
 
 Le grid search balaye 320 combinaisons (5 *lookback* × 4 seuils VIX × 4 leviers × 4 *top_n*) et retient, pour chacune, le Sharpe réalisé. C'est un **balayage exhaustif en échantillon** : il trouve la configuration qui aurait été optimale sur cette trajectoire passée. La précaution est de ne pas confondre « optimal en échantillon » et « optimal à venir » — avec 320 combinaisons testées sur une seule trajectoire de 15 ans, le risque de surajustement est réel. La lecture des résultats doit donc privilégier les **tendances stables** (un paramètre qui gagne sur plusieurs configurations voisines) plutôt que le singleton absolu du top-1, et c'est ce que le tableau des 15 meilleures combinaisons permet de faire.
-","Performance metrics (Sharpe, CAGR, drawdown) are aggregated over the optimization results to identify Pareto-optimal configurations.",,,,,,,298e17de7983df46,39d4bf802e4aae26,,,,,,,
+","## Grid search over the four levers
+
+The grid search sweeps 320 combinations (5 *lookbacks* x 4 VIX thresholds x 4 leverages x 4 *top_n*) and records, for each, the realized Sharpe. This is an **exhaustive in-sample sweep**: it finds the configuration that would have been optimal on this past trajectory. The precaution is not to confuse ""optimal in-sample"" with ""optimal going forward"" — with 320 combinations tested on a single 15-year trajectory, the overfitting risk is real. Reading the results should therefore favor **stable trends** (a parameter that wins across several neighboring configurations) over the absolute top-1 singleton, and this is exactly what the table of the 15 best combinations allows.",,,,,,,298e17de7983df46,41df37d40c533b20,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,080a2bd8,code,fr,940e4e54c144498e,"# Grid search for optimal parameters
 def grid_search_sector_momentum(sector_data, vix_data):
     results = []
@@ -299,25 +309,32 @@ Sharpe attendu (en échantillon) : **~2.0**, contre **1.65** pour la baseline 12
 ### Réserve méthodologique
 
 Le drawdown maximal affiché pour la configuration optimisée (~-6 %) semble bas au regard du rendement cumulé (~3720x) et demande à être **vérifié** : sur un rendement de cet ordre, un drawdown de 6 % est mécaniquement suspect (soit la métrique est calculée sur une base différente de la baseline, soit le levier n'est pas appliqué uniformément dans le grid). Avant tout déploiement, il faut reconcilier l'échelle du drawdown entre la baseline (-120 % à levier 1.5) et le grid (-6 %), et confirmer que le levier est effectivement appliqué. C'est la différence entre un backtest présentable et un backtest investissable.
-","## Research Findings & Recommendations
+","## Conclusions and recommendations
 
-### Analysis Summary
-Based on the grid search:
+### Reading the grid search results
 
-1. **Optimal Lookback**: The sweet spot for momentum calculation period
-2. **VIX Threshold**: Balances risk reduction vs. opportunity cost
-3. **Leverage**: Higher leverage increases returns but also drawdown
-4. **Top N Sectors**: Diversification vs. concentration trade-off
+The sweep reveals four regularities more robust than the top-1 singleton:
 
-### Recommended Parameters
+1. **Short lookback (90 days > 126 days)** — sector momentum decays fast; a ~3-month signal beats the 6-month canon of the individual-stocks literature. This is consistent with a cycle rotation faster than *stock-picking* momentum.
+2. **Concentration (top_n = 2)** — holding only the 2 best sectors systematically beats diversification (top_n = 3 or 4). The signal is strong enough that concentration amplifies it rather than damping it.
+3. **Sharpe insensitive to leverage** — the 4 best rows have leverages from 1.0 to 2.0 and **the same Sharpe** (2.016). This is expected: leverage scales return and volatility proportionally, so risk-adjusted return does not move. Optimizing Sharpe over leverage is an **illusion** — leverage is a risk-tolerance choice, not a signal parameter.
+4. **High VIX threshold (35 > 25)** — the filter wins by being rarely active. At 35, only ~6% of days are filtered; at 25, ~29%. The VIX filter costs more (missed opportunities) than it protects, on this sample.
+
+### Recommended configuration
 
 ```python
-# In main.py or Alpha model
-LOOKBACK_PERIOD = <VALUE>  # From grid search
-VIX_THRESHOLD = <VALUE>  # From grid search
-LEVERAGE = <VALUE>  # From grid search
-TOP_N_SECTORS = <VALUE>  # From grid search
-```",,,,,,,9db08478b2c6fcc3,041bc7bd8eca3c76,,,,,,,
+# In main.py or the Alpha model
+LOOKBACK_PERIOD = 90    # 3-month momentum > 6-month (fast decay of the sector signal)
+VIX_THRESHOLD = 35      # minimal filtering — the VIX costs more than it protects here
+LEVERAGE = 1.0          # Sharpe is insensitive to leverage; 1.0 = no ruin possible
+TOP_N_SECTORS = 2       # concentration — the signal is strong enough to amplify it
+```
+
+Expected Sharpe (in-sample): **~2.0**, versus **1.65** for the 126/25/1.5 baseline.
+
+### Methodological caveat
+
+The maximum drawdown shown for the optimized configuration (~-6%) looks low given the cumulative return (~3720x) and needs to be **verified**: on a return of that order, a 6% drawdown is mechanically suspicious (either the metric is computed on a different basis than the baseline, or leverage is not applied uniformly in the grid). Before any deployment, the drawdown scale must be reconciled between the baseline (-120% at 1.5x leverage) and the grid (-6%), and leverage confirmed as actually applied. That is the difference between a presentable backtest and an investable one.",,,,,,,9db08478b2c6fcc3,62dee4d746f5e69c,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,d9361768,markdown,fr,24680f41b6430f65,"# Why 7 Months of Bull Market is NOT a Valid Backtest
 
 ## Le problème du Sharpe gonflé
@@ -359,7 +376,7 @@ The Sector-Momentum strategy currently shows a **Sharpe of 2.53** over the perio
 - **Leverage sensitivity**: 2x vs 1.5x vs 1x across different regimes
 
 **Pedagogical conclusion**: A 7-month backtest in a bull market has no predictive value.",,,,,,,24680f41b6430f65,052692e7bb9621b4,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,2a44d004,code,fr,5e2740964a42538d,"# Setup et chargement des donnees (version standalone avec cache)
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,2a44d004,code,fr,1d323981d1acc9da,"# Setup et chargement des donnees (version standalone avec cache)
 import pandas as pd
 import numpy as np
 from datetime import datetime
@@ -391,9 +408,17 @@ sector_etfs = {
 # Liste des tickers a charger (secteurs + SPY)
 tickers = ['SPY'] + list(sector_etfs.keys())
 
-# Charger historique 2015-01-01 -> maintenant via cache
+# Charger historique 2015-01-01 -> borne de fin FIGEE via cache
+# D2 (EPIC #9768) : une borne `datetime.now()` fait glisser la fenetre a chaque
+# execution. Deux consequences, toutes deux nuisibles ici :
+#   - les chiffres de ce notebook (Sharpe, drawdown, nb de semaines) changent sans
+#     qu'aucune ligne de code n'ait bouge, ce qui perime la prose d'interpretation ;
+#   - la cle du cache Parquet embarque les bornes, donc une borne mobile cree une
+#     nouvelle cle chaque jour et le cache ne peut jamais servir.
+# La borne est figee a la date du run committe, pour que les sorties ci-dessous
+# restent reproductibles a l'identique.
 start_date = '2015-01-01'
-end_date = datetime.now().strftime('%Y-%m-%d')
+end_date = '2026-04-23'   # borne exclusive cote yfinance -> derniere seance 2026-04-22
 
 print(f""Chargement des donnees: {start_date} -> {end_date}"")
 print(f""Tickers: {', '.join(tickers)}"")
@@ -411,11 +436,13 @@ for ticker in prices.columns:
     first_date = prices[ticker].first_valid_index()
     last_date = prices[ticker].last_valid_index()
     non_null = prices[ticker].notna().sum()
-    print(f""  {ticker}: {first_date.date()} -> {last_date.date()} ({non_null} jours)"")",,,,,,,,5e2740964a42538d,,,,,,,,
+    print(f""  {ticker}: {first_date.date()} -> {last_date.date()} ({non_null} jours)"")",,,,,,,,1d323981d1acc9da,,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,a69be2f9,markdown,fr,60b878e007c34c72,"## Régimes de marché et momentum hebdomadaire
 
 Le momentum sectoriel ne vit pas dans un monde stationnaire : il **dépend du régime**. On agrège donc les données en fréquence hebdomadaire (réduit le bruit haute-fréquence sans perdre le signal de rotation) et on identifie les régimes *bull/bear/crash* (2015-2019 bull, 2020 COVID, 2021 recovery, 2022 bear, 2023-2025 AI bull) qui serviront à découper l'analyse de sensibilité. L'enjeu est de ne pas mesurer une performance « moyenne » qui lisse un régime favorable avec un crash — c'est précisément ce que le Sharpe 2.53 sur 7 mois de bull fait, et ce que la décomposition par régime va démasquer.
-",Volatility regimes (low/high) are identified to dynamically adapt the exposure of the Sector-Momentum strategy.,,,,,,,60b878e007c34c72,57f894736bc0f027,,,,,,,
+","## Market regimes and weekly momentum
+
+Sector momentum does not live in a stationary world: it **depends on the regime**. We therefore aggregate the data at weekly frequency (reduces high-frequency noise without losing the rotation signal) and identify the *bull/bear/crash* regimes (2015-2019 bull, 2020 COVID, 2021 recovery, 2022 bear, 2023-2025 AI bull) that will serve to slice the sensitivity analysis. The stake is not to measure an ""average"" performance that smooths a favorable regime with a crash — this is exactly what the 2.53 Sharpe over 7 months of bull does, and what the regime decomposition will unmask.",,,,,,,60b878e007c34c72,96ec2fe83f1b190a,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,2c205053,code,fr,d578959d661356cd,"# Detection des regimes de marche et calcul du momentum hebdomadaire
 
 # SPY regime detection (simple: SMA200)
@@ -458,7 +485,9 @@ for period_name, (start, end) in regime_periods.items():
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,750ead53,markdown,fr,70b854ebb036cd33,"## Backtest sur l'échantillon complet (le verdict du Sharpe réel)
 
 On applique la configuration courante (levier 2x) sur l'ensemble de l'échantillon 2018-2026 — pas seulement les 7 mois du backtest trompeur. C'est le moment où l'inflation du Sharpe se révèle : la cellule suivante produit le Sharpe **réel** sur ~8 ans, et la chute par rapport à 2.53 est la leçon centrale du notebook. Un backtest honnête inclut les bear markets ; un backtest qui les évite est une publicité, pas une validation.
-","Ratios (Sharpe, drawdown) are calculated over several backtest windows to evaluate the robustness of the Sector-Momentum strategy.",,,,,,,70b854ebb036cd33,5bdb9662ddae119b,,,,,,,
+","## Backtest on the full sample (the verdict of the real Sharpe)
+
+We apply the current configuration (2x leverage) over the entire 2018-2026 sample — not just the 7 months of the misleading backtest. This is the moment the Sharpe inflation is revealed: the next cell produces the **real** Sharpe over ~8 years, and the fall from 2.53 is the notebook's central lesson. An honest backtest includes bear markets; a backtest that avoids them is an advertisement, not a validation.",,,,,,,70b854ebb036cd33,ede7b4316f60f248,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,654ce44b,code,fr,3e08aeb441c6c52f,"# Backtest vectorise: Sector Momentum avec leverage variable
 
 def sector_momentum_backtest(weekly_returns, weekly_momentum, leverage=2.0, min_sectors=1):
@@ -554,7 +583,9 @@ print(""=""*60)",,,,,,,,3e08aeb441c6c52f,,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,ed89bfec,markdown,fr,8d1f68dfd6b882d6,"## Sensibilité au levier, par régime
 
 C'est l'analyse la plus révélatrice. On balaye trois niveaux de levier (1x, 1.5x, 2x) **dans chaque régime séparément**. Le présupposé naïf est « plus de levier = plus de Sharpe » : la cellule suivante montre que c'est **faux**. Le levier amplifie le rendement ET la volatilité dans les mêmes proportions, donc le Sharpe (rendement/volatilité) est invariant au levier dans chaque régime — mais le drawdown maximal, lui, explose. C'est la distinction cruciale : le levier n'améliore jamais le rendement ajusté du risque, il ne fait qu'aggraver la ruine quand le régime tourne.
-",The cumulative return curve and drawdown periods of the Sector-Momentum strategy are displayed for risk analysis.,,,,,,,8d1f68dfd6b882d6,db8f844a07b60dba,,,,,,,
+","## Leverage sensitivity, by regime
+
+This is the most revealing analysis. We sweep three leverage levels (1x, 1.5x, 2x) **within each regime separately**. The naive assumption is ""more leverage = more Sharpe"": the next cell shows this is **false**. Leverage amplifies return AND volatility in the same proportions, so the Sharpe (return/volatility) is invariant to leverage within each regime — but the maximum drawdown explodes. This is the crucial distinction: leverage never improves risk-adjusted return; it only worsens ruin when the regime turns.",,,,,,,8d1f68dfd6b882d6,324ee6c4ebdb21d8,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,6712f99a,code,fr,eb19a2d957e1f86d,"# Analyse de sensibilite au leverage par regime
 
 leverage_levels = [1.0, 1.5, 2.0]
@@ -659,7 +690,9 @@ print(""=""*80)",,,,,,,,eb19a2d957e1f86d,,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,7980c28a,markdown,fr,d391e4fde645ad6f,"## Validation walk-forward (le test ultime d'honnêteté)
 
 Le walk-forward est l'antidote au surajustement. On entraîne le choix de levier sur une fenêtre passée (2 ans), puis on teste sur une fenêtre future (6 mois) que le modèle n'a **jamais vue**. On répète sur toute la période, en glissant la fenêtre. Si la stratégie marche vraiment, le Sharpe hors-échantillon tiendra ; si elle était surajustée, il s'effondrera. Le verdict de la cellule suivante est sans appel : le walk-forward choisit systématiquement le levier **le plus bas** (1.0x) — l'optimiseur lui-même refuse le 2x qui avait produit le Sharpe 2.53 trompeur.
-",The rolling Sharpe ratio is plotted over the entire period to validate that the sector rotation strategy remains effective over time.,,,,,,,d391e4fde645ad6f,6b4f180e47e6b03a,,,,,,,
+","## Walk-forward validation (the ultimate honesty test)
+
+Walk-forward is the antidote to overfitting. We train the leverage choice on a past window (2 years), then test on a future window (6 months) the model has **never seen**. We repeat over the whole period, sliding the window. If the strategy genuinely works, the out-of-sample Sharpe will hold; if it was overfit, it will collapse. The next cell's verdict is unambiguous: the walk-forward systematically picks the **lowest** leverage (1.0x) — the optimizer itself refuses the 2x that had produced the misleading 2.53 Sharpe.",,,,,,,d391e4fde645ad6f,be7e5785de860190,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,9baab11f,code,fr,8fb543dd93ccd653,"# Walk-forward validation: train 2 ans, test 6 mois
 
 print(""Walk-Forward Validation (Train 2 ans, Test 6 mois)"")
@@ -860,7 +893,7 @@ To improve robustness:
 4. **Expect a realistic Sharpe**: 0.5-0.8 over 10 years instead of 2.53 over 7 months
 
 **Pedagogical lesson**: Robustness > in-sample performance. Always test on bear markets.",,,,,,,dd10cc7737e6fc9d,a5a9ed1b2eb271d2,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,7fe018bc,code,fr,ec7423d1512e8c7b,"# Recommendations JSON pour implementation
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,7fe018bc,code,fr,a1388a78b7373531,"# Recommendations JSON pour implementation
 
 import json
 
@@ -874,9 +907,9 @@ recommendations = {
         {
             ""change"": ""Extend backtest period"",
             ""from"": ""set_start_date(2024, 1, 1); set_end_date(2024, 7, 20)"",
-            ""to"": ""set_start_date(2015, 1, 1); # Remove set_end_date"",
+            ""to"": ""set_start_date(2015, 1, 1); set_end_date(2025, 1, 1)"",
             ""file"": ""main.py"",
-            ""reason"": ""7 months is too short, must include bear markets (2022, 2020)""
+            ""reason"": ""7 months is too short, must include bear markets (2022, 2020); the end bound stays explicit so the window does not slide with the wall clock (D2, EPIC #9768)""
         },
         {
             ""change"": ""Reduce leverage in PCM"",
@@ -921,10 +954,12 @@ print(json.dumps(recommendations, indent=2))
 
 # Sauvegarder dans un fichier JSON
 output_path = ""recommendations_robustness.json""
-with open(output_path, 'w') as f:
+# newline explicite : sans lui, une regeneration sous Windows reecrit les 48
+# lignes en CRLF et produit un diff integral sans aucun changement de fond.
+with open(output_path, 'w', newline='\n') as f:
     json.dump(recommendations, f, indent=2)
 
-print(f""\nRecommendations sauvegardees dans: {output_path}"")",,,,,,,,ec7423d1512e8c7b,,,,,,,,
+print(f""\nRecommendations sauvegardees dans: {output_path}"")",,,,,,,,a1388a78b7373531,,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-cd9d09f1,markdown,fr,11d60724eda41ca5,"# Analyse de Canaux Multi-Échelles avec ZigZag et Lignes de Régression Pondérées
 
 Ce notebook explore une approche d'analyse technique multi-échelles pour l'actif BTCUSDT (sur Binance), basée sur l'identification de pivots via l'indicateur ZigZag et la construction de canaux de tendance hiérarchiques (Macro, Méso, Micro).
@@ -8800,9 +8835,9 @@ print(f""Tickers: {', '.join(tickers)}"")",,,,,,,,876b683f9b597ad2,,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/02-ML-XGBoost/research.ipynb,cell-70d7edfe,markdown,fr,ebd91622eea3b437,"## 1. Exploration des données sectorielles
 
 Téléchargement de 10 ans de données quotidiennes (2016–2026) pour les 9 ETF sectoriels + SPY. L'exploration ne sert pas seulement à vérifier que les données chargent : elle établit le **benchmark**. Chaque secteur a un profil rendement/risque propre, et le Sharpe annualisé sur la période nous dit quelle performance une stratégie *buy-and-hold* passive obtiendrait. La stratégie ML devra battre ce benchmark pour justifier sa complexité — sinon, elle ne fait que reproduire le marché en ajoutant du bruit et des coûts de transaction.
-","## 1. Exploration of sector data
+","## 1. Exploring the sector data
 
-Downloading 10 years of history (2015–2024) and analyzing cross-returns.",,,,,,,ebd91622eea3b437,c2935cc55975f53d,,,,,,,
+Downloading 10 years of daily data (2016-2026) for the 9 sector ETFs + SPY. The exploration does not merely check that the data loads: it establishes the **benchmark**. Each sector has its own return/risk profile, and the annualized Sharpe over the period tells us what a passive *buy-and-hold* strategy would achieve. The ML strategy must beat this benchmark to justify its complexity — otherwise it merely replicates the market while adding noise and transaction costs.",,,,,,,ebd91622eea3b437,a019427014ec5831,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/02-ML-XGBoost/research.ipynb,cell-99971972,code,fr,ed1776aa30b73267,"# Download 10 years of daily data
 history = qb.history(list(symbols.values()) + [spy], 2520, Resolution.DAILY)
 print(f""Data shape: {history.shape}"")
@@ -8829,9 +8864,7 @@ MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/02-M
 Le modèle XGBoost utilise 20 features techniques, soit 6 de plus que le RandomForest : aux indicateurs standards (RSI, Bollinger, MACD, Momentum) s'ajoutent Stochastique, ATR ratio, volatilité 5j, rendements 1j/5j/20j et ratios SMA supplémentaires. L'hypothèse est que ces features supplémentaires capturent le **régime de volatilité** et la dynamique court-terme que le RandomForest ne voyait pas. C'est une hypothèse à confronter aux données : si l'importance des features montre que les nouvelles variables dominent, l'extension était justifiée ; si ce sont toujours les mêmes (mom_50, vol_20), l'apport est marginal.
 ","## 2. Feature Engineering (20 indicators)
 
-The XGBoost model uses 20 technical features, i.e. 6 more than the RandomForest:
-- Standard indicators: RSI, Bollinger, MACD, Momentum
-**Additional features**: Stochastic, ATR ratio, 5-day volatility, 1-day/5-day/20-day returns, additional SMA ratios",,,,,,,9ada2533aae48528,51adc7d37ff7311d,,,,,,,
+The XGBoost model uses 20 technical features, 6 more than the RandomForest: on top of the standard indicators (RSI, Bollinger, MACD, Momentum) it adds Stochastic, ATR ratio, 5-day volatility, 1/5/20-day returns and additional SMA ratios. The hypothesis is that these extra features capture the **volatility regime** and short-term dynamics that the RandomForest could not see. This is a hypothesis to confront with the data: if feature importance shows the new variables dominating, the extension was justified; if it is still the same ones (mom_50, vol_20), the contribution is marginal.",,,,,,,9ada2533aae48528,4dd81046d5560f4f,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/02-ML-XGBoost/research.ipynb,cell-fc6b143e,code,fr,ce16bf2e88337823,"from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import cross_val_score
@@ -8960,16 +8993,9 @@ Configuration de référence du `main.py`. On utilise `GradientBoostingRegressor
 Paramètres : `n_estimators=100`, `max_depth=4`, `learning_rate=0.05`, `min_samples_leaf=15`, `subsample=0.8`.
 ","## 3. Iteration 1: GBM Baseline (100 trees, depth 4, lr=0.05)
 
-Reference configuration from main.py. Uses GradientBoostingRegressor in regression mode
-(prediction of future return rather than binary classification).
+Reference configuration from `main.py`. We use `GradientBoostingRegressor` in **regression** mode — predicting the continuous future return (rather than a binary up/down classification) differentiates sectors beyond mere positive/negative, and orders signals by strength. The training window is 3 years (756 days): a trade-off between enough data to estimate 20 features and signal relevance (a 2018 market is not a 2024 market). Validation uses 5-fold cross-validation on the training sample.
 
-Parameters:
-- n_estimators = 100
-- max_depth = 4
-- learning_rate = 0.05
-- min_samples_leaf = 15
-- subsample = 0.8
-- Training window = 3 years (756 days)",,,,,,,7940280d470c770c,7e712a0646e60548,,,,,,,
+Parameters: `n_estimators=100`, `max_depth=4`, `learning_rate=0.05`, `min_samples_leaf=15`, `subsample=0.8`.",,,,,,,7940280d470c770c,221cd062dae0ac1c,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/02-ML-XGBoost/research.ipynb,cell-852b8b77,code,fr,2e6bcefe64649d08,"# Iteration 1: GBM Baseline
 gbm1 = GradientBoostingRegressor(
     n_estimators=100, max_depth=4, learning_rate=0.05,
@@ -9004,12 +9030,9 @@ plt.show()",,,,,,,,bd480d5dece7f056,,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/02-ML-XGBoost/research.ipynb,cell-e688cbc3,markdown,fr,4fcaf84ff285604a,"## 4. Itération 2 : GBM Optimisé (lr ajusté, features sélectionnées)
 
 La deuxième itération tente deux leviers classiques d'optimisation : (1) **sélection de features** — ne garder que les 10 plus importantes (importance > 0.03) pour réduire le bruit et le surajustement ; (2) **lr plus agressif** (0.1 vs 0.05) avec plus d'arbres (200 vs 100) et un subsample plus faible (0.7 vs 0.8) pour plus de randomness. L'intention est d'améliorer la généralisation. Le verdict de la cellule suivante est **contre-intuitif et honnête** : cette ""optimisation"" dégrade la performance, et c'est une leçon aussi importante qu'un succès.
-","## 4. Iteration 2: Optimized GBM (adjusted lr, selected features)
+","## 4. Iteration 2: Optimized GBM (tuned lr, selected features)
 
-Tested hypotheses:
-- Higher learning rate (0.1) with more estimators (200)
-- Removal of the least important features
-- Subsample reduced to 0.7 for more regularization",,,,,,,4fcaf84ff285604a,3071468fb18b15ea,,,,,,,
+The second iteration pulls two classic optimization levers: (1) **feature selection** — keep only the 10 most important (importance > 0.03) to reduce noise and overfitting; (2) **more aggressive lr** (0.1 vs 0.05) with more trees (200 vs 100) and a lower subsample (0.7 vs 0.8) for more randomness. The intent is to improve generalization. The next cell's verdict is **counter-intuitive and honest**: this ""optimization"" degrades performance, and that is a lesson as valuable as a success.",,,,,,,4fcaf84ff285604a,91adb2e67ec68f4b,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/02-ML-XGBoost/research.ipynb,cell-6dd76863,code,fr,9c924acdd695769b,"# Iteration 2: Feature selection + adjusted learning rate
 top_features = importance[importance > 0.03].index.tolist()
 print(f""Selected {len(top_features)}/{len(X.columns)} features (importance > 0.03):"")
@@ -9049,10 +9072,9 @@ for ticker in tickers:
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/02-ML-XGBoost/research.ipynb,cell-40187a37,markdown,fr,1e1e787bd6304577,"## 5. Analyse des prédictions par régime (Bull/Bear)
 
 Comparer la qualité des prédictions en régime haussier vs baissier est crucial : un modèle qui prédit bien en bull mais rate les bear n'est pas investissable, parce que les pertes en bear annulent les gains en bull (et le drawdown tue la composabilité). L'idéal serait un échantillon équilibré entre régimes. La cellule suivante tente cette décomposition — et son verdict (skip pour données insuffisantes) est lui-même une information.
-","## 5. Analysis of Predictions by Regime (Bull/Bear)
+","## 5. Prediction analysis by regime (Bull/Bear)
 
-Comparison of the model’s predictions in bull mode (SPY > SMA200) vs bear mode (SPY < SMA200).
-Bear mode reduces the number of positions to 2 and requires a higher prediction threshold.",,,,,,,1e1e787bd6304577,a339f6b88af657c7,,,,,,,
+Comparing prediction quality in bullish versus bearish regimes is crucial: a model that predicts well in bull but misses bear is not investable, because bear losses cancel bull gains (and drawdown kills compounding). The ideal would be a sample balanced across regimes. The next cell attempts this decomposition — and its verdict (skip for insufficient data) is itself information.",,,,,,,1e1e787bd6304577,84deee200747526e,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/02-ML-XGBoost/research.ipynb,cell-4ee3fae2,code,fr,d3e3af1826e9193c,"# Regime analysis: bull vs bear prediction quality
 # Reuse SPY close data from cell 3 batch history (close_prices has all symbols including SPY)
 spy_col = [c for c in close_prices.columns if 'SPY' in str(c)]
@@ -9116,7 +9138,7 @@ MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/02-M
 Mapping des paramètres retenus entre le notebook de recherche et le `main.py` exécutable en production. C'est l'étape où la recherche se transforme en stratégie déployable : les hyperparamètres validés (ou, ici, le constat d'absence de signal) déterminent ce que l'algorithme en production fera réellement. La calibration honnête consiste à reporter les paramètres **tels que mesurés**, pas tels qu'on aurait voulu qu'ils soient.
 ","## 6. Calibration to main.py
 
-Mapping of the selected parameters between the research notebook and the final main.py.",,,,,,,f21cb4615774f093,78801021a3674eca,,,,,,,
+Mapping of the retained parameters between the research notebook and the production-executable `main.py`. This is the step where research turns into a deployable strategy: the validated hyperparameters (or, here, the finding of no signal) determine what the production algorithm will actually do. Honest calibration means reporting the parameters **as measured**, not as one would have liked them to be.",,,,,,,f21cb4615774f093,0fac020facdab38f,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/02-ML-XGBoost/research.ipynb,cell-47aed2cb,code,fr,ef2d3c7889845a5c,"print(""=""*60)
 print(""CALIBRATION: research.ipynb -> main.py"")
 print(""=""*60)
@@ -9623,13 +9645,13 @@ MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/03-F
 - **Adaptive circuit breaker**: dynamic threshold 15% in bull, 20% in bear (avoids false triggers in turbulent regimes).
 - **Reference OOS backtest**: compare the main.py results (QC Cloud 2015-2024) to the §5 proxy to quantify the cost of the simplification.",,,,,,,586761dff16e7c74,cd960ddad1e4e757,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,deepresearch-interp-data,markdown,fr,eb7391b18e56944c,"**Lecture des sorties.** L'univers charge 9 ETF sectoriels couvrant ~15 ans de cotation (3804 jours de VIX). Les `hit` du cache confirment que la trajectoire est figée : le notebook est reproductible. Notons que `XLI` (Industrials) apparaît dans la liste de téléchargement de la prose mais pas dans l'univers final des 9 — l'univers effectif est XLK/XLF/XLV/XLY/XLP/XLE/XLB/XLU/XLRE, soit la décomposition Sector SPDR canonique. C'est un point à garder en tête pour l'interprétation : le signal momentum porte sur ces 9 rotateurs, pas sur un panier plus large.
-",,,,,,,,eb7391b18e56944c,,,,,,,,
+","**Reading the outputs.** The universe loads 9 sector ETFs covering ~15 years of quotes (3,804 days of VIX). The cache `hit`s confirm the trajectory is frozen: the notebook is reproducible. Note that `XLI` (Industrials) appears in the prose's download list but not in the final 9-ETF universe — the effective universe is XLK/XLF/XLV/XLY/XLP/XLE/XLB/XLU/XLRE, the canonical Sector SPDR decomposition. Keep this in mind for interpretation: the momentum signal applies to these 9 rotators, not to a broader basket.",,,,,,,eb7391b18e56944c,70a736aa231c533e,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,deepresearch-interp-vix,markdown,fr,0d20c56000abf6d8,"**Lecture des statistiques VIX.** La distribution est **asymétrique à droite** : moyenne 18.36, médiane 16.59 — l'écart signale une longue queue de valeurs hautes (crises). Le percentile 90 à 27.02 et les jours au-dessus de 30 (6.4 % seulement) montrent que le régime extrême est rare mais marqué. Deux conséquences pour le calibrage du filtre : (1) un seuil absolu de 25 filtre ~29.2 % des jours (au-dessus de la moyenne), ce qui est **beaucoup** pour un filtre défensif ; (2) un seuil de 35 ne filtre que les ~6 % de jours de panique franche. Le grid search tranchera lequel des deux protège réellement le Sharpe — l'intuition « filtrer plus = plus sûr » n'est pas garantie, car chaque jour filtré est aussi un rebond manqué.
-",,,,,,,,0d20c56000abf6d8,,,,,,,,
+","**Reading the VIX statistics.** The distribution is **right-skewed**: mean 18.36, median 16.59 — the gap signals a long tail of high values (crises). The 90th percentile at 27.02 and the days above 30 (only 6.4%) show that the extreme regime is rare but marked. Two consequences for calibrating the filter: (1) an absolute threshold of 25 filters ~29.2% of days (above the mean), which is **a lot** for a defensive filter; (2) a threshold of 35 only filters the ~6% of outright panic days. The grid search will decide which of the two actually protects the Sharpe — the intuition ""filter more = safer"" is not guaranteed, because every filtered day is also a missed rebound.",,,,,,,0d20c56000abf6d8,9acac5904e546b14,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,deepresearch-interp-momentum,markdown,fr,b50b444cb4593bf9,"**Lecture des scores momentum.** À la date la plus récente, XLF (Financials) et XLY (Consumer Discretionary) dominent (1.55, 1.52), tandis que XLV (Healthcare) est négatif (-0.29) — une carte typique de régime *risk-on* où les valeurs cycliques mènent et les défensives décrochent. Le tableau de fréquence est plus instructif : Utilities arrive en tête (650 occurrences dans le top), devant Technology (640). C'est **contre-intuitif** pour une stratégie « momentum » (Utilities = défensif), et c'est précisément le signal que le momentum sectoriels capture mal seul : la persistance dépend du régime. C'est un argument pour le *dual momentum* (relatif + absolu) — le relatif seul raterait pourquoi Utilities, peu volatil, persiste si souvent.
-",,,,,,,,b50b444cb4593bf9,,,,,,,,
+","**Reading the momentum scores.** At the most recent date, XLF (Financials) and XLY (Consumer Discretionary) dominate (1.55, 1.52), while XLV (Healthcare) is negative (-0.29) — a typical *risk-on* regime map where cyclicals lead and defensives lag. The frequency table is more instructive: Utilities come out on top (650 occurrences in the top), ahead of Technology (640). This is **counter-intuitive** for a ""momentum"" strategy (Utilities = defensive), and it is precisely the signal that sector momentum alone captures poorly: persistence depends on the regime. This is an argument for *dual momentum* (relative + absolute) — relative alone would miss why low-volatility Utilities persist so often.",,,,,,,b50b444cb4593bf9,bb34f73fd1563cd5,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,deepresearch-interp-backtest,markdown,fr,fca89f1f06e6545d,"**Lecture de la baseline.** Sharpe 1.653 est un point de départ solide. Le signal d'alarme est le **drawdown de -120.7 %** : avec un levier de 1.5, la stratégie a perdu à un creux plus que la totalité du capital non levé. Concrètement, un investisseur ayant mis 100 $ aurait vu le levier le pousser en territoire de *margin call* avant le rebond. Un drawdown > 100 % n'est pas un détail de présentation — c'est la signature d'une stratégie **non-survivable** à ce levier. C'est la première chose que l'optimisation doit corriger (en réduisant le levier ou la concentration), avant même de chercher à monter le Sharpe. Un Sharpe de 1.65 qui tue son porteur en route n'est pas un résultat investissable.
-",,,,,,,,fca89f1f06e6545d,,,,,,,,
+","**Reading the baseline.** A Sharpe of 1.653 is a solid starting point. The alarm signal is the **-120.7% drawdown**: with 1.5x leverage, the strategy lost at its trough more than the entire unlevered capital. Concretely, an investor who put in $100 would have been pushed into *margin call* territory by the leverage before the rebound. A drawdown > 100% is not a presentation detail — it is the signature of a strategy that is **not survivable** at this leverage. This is the first thing the optimization must fix (by reducing leverage or concentration), before even trying to raise the Sharpe. A 1.65 Sharpe that kills its holder along the way is not an investable result.",,,,,,,fca89f1f06e6545d,d00c601cc88f310a,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,deepresearch-interp-gridsearch,markdown,fr,c31ca88cb2cb3399,"**Lecture du grid search.** Les 15 meilleures combinaisons dessinent un motif lisible :
 
 - **LevierSharpe-invariant** : les 4 premières lignes (levier 1.0 à 2.0) partagent le même Sharpe (2.016) et le même drawdown. Le levier ne crée pas de valeur ajustée du risque — il scale rendement et volatilité de pair. C'est la propriété fondamentale du levier en marché efficient, et elle dit que **le « bon » levier est un choix de tolérance, pas une variable à optimiser**.
@@ -9638,11 +9660,18 @@ MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Mome
 - **Seuil VIX = 35** : le filtre gagne à rester quasi-inactif. Sur cet échantillon, filtrer coûte plus qu'il ne protège.
 
 **Réserve** : le drawdown affiché (~-6 %) pour ~3720x de rendement cumulé est **mécaniquement suspect**. À reconcilier avec la baseline avant déploiement.
-",,,,,,,,c31ca88cb2cb3399,,,,,,,,
+","**Reading the grid search.** The top 15 combinations draw a readable pattern:
+
+- **Leverage is Sharpe-invariant**: the first 4 rows (leverage 1.0 to 2.0) share the same Sharpe (2.016) and the same drawdown. Leverage does not create risk-adjusted value — it scales return and volatility in lockstep. This is the fundamental property of leverage in an efficient market, and it says that **the ""right"" leverage is a tolerance choice, not a variable to optimize**.
+- **Lookback 90 > 126**: the sector momentum signal lives shorter than the canonical 6-month. The baseline's default parameter was not optimal.
+- **top_n = 2 everywhere**: concentration in the top 2 sectors beats diversification. The signal is strong enough to be amplified rather than damped.
+- **VIX threshold = 35**: the filter is best left almost inactive. On this sample, filtering costs more than it protects.
+
+**Caveat**: the displayed drawdown (~-6%) for ~3720x cumulative return is **mechanically suspect**. To be reconciled with the baseline before deployment.",,,,,,,c31ca88cb2cb3399,84dd9599ecea9892,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,robustness-fr-interp-3,markdown,fr,3bc1c94e7980e61d,"**Lecture des régimes.** L'échantillon couvre 410 semaines hebdomadaires. Les premières valeurs de momentum hebdomadaire montrent la structure attendue : des rendements sectoriels divergents (XLK +2.3 %, XLV +3.1 % sur une même semaine de juillet 2018) — c'est cette divergence que la stratégie exploite en allouant aux secteurs les plus forts. LaNaN initiale correspond à la fenêtre de calcul du momentum (il faut quelques semaines pour établir le signal). Notons que la période 2018-2026 englobe **délibérément** le crash COVID (2020) et le bear market inflationniste (2022) : sans ces deux régimes hostiles, aucune conclusion de robustesse n'est possible.
-",,,,,,,,3bc1c94e7980e61d,,,,,,,,
+","**Reading the regimes.** The sample covers 410 weekly observations. The first weekly momentum values show the expected structure: divergent sector returns (XLK +2.3%, XLV +3.1% in the same July 2018 week) — this divergence is what the strategy exploits by allocating to the strongest sectors. The initial NaNs correspond to the momentum computation window (it takes a few weeks to establish the signal). Note that the 2018-2026 period **deliberately** spans the COVID crash (2020) and the inflationary bear market (2022): without these two hostile regimes, no robustness conclusion is possible.",,,,,,,3bc1c94e7980e61d,28f0087e321c497d,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,robustness-fr-interp-5,markdown,fr,a94cfb8f89df85c2,"**Le verdict du Sharpe réel.** Sur ~8 ans (2018-2026), le Sharpe tombe à **0.697** — contre **2.53** affiché sur les 7 mois de bull market. C'est une chute de **72 %**, exactement l'ordre de grandeur annoncé en intro (0.5-0.8 attendu). Le drawdown maximal grimpe à **-45.8 %** avec le levier 2x. La conclusion est tranchée : le Sharpe 2.53 n'était pas une performance de stratégie, c'était l'artifact d'une fenêtre choisie dans le seul régime favorable. `avg_sectors_selected: 6.1` indique aussi que la stratégie sélectionne en moyenne 6 secteurs sur 9 — une diversification large, pas la concentration top-2 du notebook d'optimisation. C'est cohérent avec un signal momentum plus diffus en régime réel qu'en optimisation in-sample.
-",,,,,,,,a94cfb8f89df85c2,,,,,,,,
+","**The real-Sharpe verdict.** Over ~8 years (2018-2026), the Sharpe drops to **0.697** — versus **2.53** displayed over the 7 months of bull market. That is a **72%** collapse, exactly the order of magnitude announced in the intro (0.5-0.8 expected). The maximum drawdown climbs to **-45.8%** at 2x leverage. The conclusion is clear-cut: the 2.53 Sharpe was not strategy performance, it was the artifact of a window picked in the only favorable regime. `avg_sectors_selected: 6.1` also indicates that the strategy selects on average 6 sectors out of 9 — broad diversification, not the top-2 concentration of the optimization notebook. This is consistent with a more diffuse momentum signal in the live regime than in in-sample optimization.",,,,,,,a94cfb8f89df85c2,7bde3c3c3206c28c,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,robustness-fr-interp-7,markdown,fr,412293ff936bd033,"**Lecture de la sensibilité par régime.** Le tableau confirme trois faits décisifs :
 
 1. **Le Sharpe est invariant au levier dans chaque régime** — 0.35 partout en Bull 2015-2019, 2.45 partout en Recovery 2021, -0.08 partout en COVID et Bear 2022. Le levier ne crée **jamais** de valeur ajustée du risque : il scale rendement et volatilité de pair. C'est la propriété mathématique fondamentale du levier, et elle dit que tout « Sharpe optimal » trouvé en balayant le levier est une illusion d'optimiseur.
@@ -9650,7 +9679,13 @@ MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Mome
 3. **Le Sharpe dépend du régime, pas du levier** — Recovery 2021 = 2.45 (excellent), COVID 2020 et Bear 2022 = -0.08 (négatif). La stratégie ne « marche pas » dans l'absolu : elle marche en tendance, et explose en reversal. C'est le profil de risque propre au momentum (crash factor), documenté depuis 2020.
 
 Le levier « optimal » n'est donc pas celui qui maximise le Sharpe (tous égaux) — c'est celui que le drawdown tolérable autorise. 1.0x survit à tout ; 2.0x ne survit pas à 2022.
-",,,,,,,,412293ff936bd033,,,,,,,,
+","**Reading the per-regime sensitivity.** The table confirms three decisive facts:
+
+1. **Sharpe is invariant to leverage within each regime** — 0.35 everywhere in Bull 2015-2019, 2.45 everywhere in Recovery 2021, -0.08 everywhere in COVID and Bear 2022. Leverage **never** creates risk-adjusted value: it scales return and volatility in lockstep. This is the fundamental mathematical property of leverage, and it says that any ""optimal Sharpe"" found by sweeping leverage is an optimizer illusion.
+2. **Drawdown, however, is not invariant** — it explodes with leverage: Bull -19.8% → -36.4%, Bear 2022 -25.4% → **-45.8%**. This is the hidden cost of leverage: it does not change the expectation, it changes **survivability**. A -45.8% drawdown at 2x leverage means a $100 investor went down to $54 at the trough — if they gave up there (and most do), they crystallized the loss before the rebound.
+3. **Sharpe depends on the regime, not on leverage** — Recovery 2021 = 2.45 (excellent), COVID 2020 and Bear 2022 = -0.08 (negative). The strategy does not ""work"" in absolute terms: it works in trends, and blows up in reversals. This is the risk profile specific to momentum (crash factor), documented since 2020.
+
+The ""optimal"" leverage is therefore not the one that maximizes Sharpe (all equal) — it is the one the tolerable drawdown allows. 1.0x survives everything; 2.0x does not survive 2022.",,,,,,,412293ff936bd033,6b506014657eb5e5,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,robustness-fr-interp-9,markdown,fr,6d16a694043229c8,"**Lecture du walk-forward.** Sur 11 fenêtres test hors-échantillon, le verdict est nuancé mais honnête :
 
 - **Sharpe moyen test : 1.20**, return moyen +7.2 % par période de 6 mois. La stratégie a une valeur prédictive réelle — ce n'est pas du bruit.
@@ -9658,22 +9693,30 @@ MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Mome
 - **La variance est énorme** : le test 2024-06→2024-12 atteint **+3.41** (le meilleur, AI bull), mais le test 2021-12→2022-06 plonge à **-2.19** (le bear market kill). Un Sharpe moyen de 1.20 cache cette dispersion — c'est pourquoi le drawdown maximal moyen (-8.1 %) est un meilleur guide pour l'investisseur que le Sharpe moyen.
 
 **La contradiction apparente** : l'observation finale du code dit « 1.5x est un compromis robuste », mais les données montrent que le walk-forward choisit 1.0x à chaque fois. Le « 1.5x » est un choix humain (tolérance au drawdown intermédiaire), pas une conclusion de l'optimisation — l'optimisation, elle, dit 1.0x. Cette distinction méritait d'être nommée.
-",,,,,,,,6d16a694043229c8,,,,,,,,
+","**Reading the walk-forward.** Over 11 out-of-sample test windows, the verdict is nuanced but honest:
+
+- **Mean test Sharpe: 1.20**, mean return +7.2% per 6-month period. The strategy has real predictive value — it is not noise.
+- **The chosen optimal leverage is ALWAYS 1.0x** (the lowest). Faced with data it has not seen, the optimizer systematically refuses the misleading backtest's 2x. This is the signature of a model that ""knows"" (via the walk-forward) that high leverage is dangerous out-of-sample.
+- **The variance is huge**: the 2024-06→2024-12 test reaches **+3.41** (the best, AI bull), but the 2021-12→2022-06 test plunges to **-2.19** (the bear market kill). A mean Sharpe of 1.20 hides this dispersion — which is why the mean maximum drawdown (-8.1%) is a better guide for the investor than the mean Sharpe.
+
+**The apparent contradiction**: the code's final observation says ""1.5x is a robust compromise"", but the data shows the walk-forward picks 1.0x every time. The ""1.5x"" is a human choice (intermediate drawdown tolerance), not an optimization conclusion — the optimization itself says 1.0x. This distinction deserved to be named.",,,,,,,6d16a694043229c8,591e7433236efcf8,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,robustness-fr-interp-11,markdown,fr,2c25e853fcd648b1,"**Lecture des recommandations.** Le JSON final codifie la leçon en changements concrets pour `main.py` : étendre la période (inclure 2020 et 2022), réduire le levier 2→1.5. C'est la traduction opérationnelle du verdict du walk-forward. Le `current_sharpe: 2.53` reste documenté comme le chiffre **à ne pas faire confiance** — il est conservé non comme une performance, mais comme la preuve du défaut que cette analyse démasque.
 
 **Ce que ce notebook enseigne, au-delà des chiffres.** Un backtest n'est valide que s'il inclut les régimes hostiles ; un Sharpe sans drawdown est une moitié de mesure ; un levier qui n'a pas été testé hors-échantillon est un pari. La robustesse n'est pas un Sharpe élevé — c'est un Sharpe qui **tient** quand le régime tourne, et un drawdown qu'un investisseur réel peut traverser sans abandonner.
-",,,,,,,,2c25e853fcd648b1,,,,,,,,
+","**Reading the recommendations.** The final JSON codifies the lesson as concrete changes for `main.py`: extend the period (include 2020 and 2022), reduce leverage 2→1.5. This is the operational translation of the walk-forward verdict. The `current_sharpe: 2.53` remains documented as the number **not to be trusted** — it is kept not as a performance, but as the proof of the defect this analysis exposes.
+
+**What this notebook teaches, beyond the numbers.** A backtest is only valid if it includes hostile regimes; a Sharpe without a drawdown is half a measurement; a leverage that has not been tested out-of-sample is a gamble. Robustness is not a high Sharpe — it is a Sharpe that **holds** when the regime turns, and a drawdown a real investor can live through without giving up.",,,,,,,2c25e853fcd648b1,f87378a56e02ee80,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/02-ML-XGBoost/research.ipynb,xgboost-interp-benchmark,markdown,fr,b7799847f88d3120,"**Lecture du benchmark.** Sur 2015-2024 annualisé, XLY (Consumer Discretionary) domine avec un Sharpe de **1.074**, tandis que XLI (Industrials) ferme la marche à **0.428** — un écart du simple au double. SPY, le benchmark passif, est à **0.665**. C'est la barre à franchir : une stratégie de rotation sectorielle doit battre 0.665 en Sharpe pour justifier sa complexité par rapport à un simple achat-and-hold de SPY. Notons aussi l'**inversion d'intuition** : XLK (Technology) n'est que 4ᵉ (0.637) malgré le contexte AI — la période 2015-2024 lisse le rallye 2023-2025 avec des années plates (2015-2017). C'est un avertissement contre l'extrapolation d'un régime récent.
-",,,,,,,,b7799847f88d3120,,,,,,,,
+","**Reading the benchmark.** Annualized over 2015-2024, XLY (Consumer Discretionary) dominates with a Sharpe of **1.074**, while XLI (Industrials) brings up the rear at **0.428** — a two-to-one spread. SPY, the passive benchmark, sits at **0.665**. That is the bar to clear: a sector-rotation strategy must beat 0.665 in Sharpe to justify its complexity over simply buying and holding SPY. Note also the **intuition inversion**: XLK (Technology) ranks only 4th (0.637) despite the AI context — the 2015-2024 period smooths the 2023-2025 rally with flat years (2015-2017). A warning against extrapolating a recent regime.",,,,,,,b7799847f88d3120,fed90f20bcb57d16,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/02-ML-XGBoost/research.ipynb,xgboost-interp-training,markdown,fr,e8467203a6df4d2b,"**Lecture du jeu d'entraînement.** 6624 échantillons, 20 features, target = rendement forward 20 jours. La statistique critique est la **cible elle-même** : mean = 0.0126, std = 0.0466. Le ratio signal/bruit est défavorable — le rendement moyen sur 20 jours est petit (~1.3 %) devant sa volatilité (~4.7 %). Un modèle qui prédirait simplement la moyenne aurait une erreur (RMSE) d'environ 0.0466. C'est le **plancher à battre** : la cellule suivante va montrer si le GBM fait mieux que ce plancher, et de combien.
-",,,,,,,,e8467203a6df4d2b,,,,,,,,
+","**Reading the training set.** 6624 samples, 20 features, target = 20-day forward return. The critical statistic is the **target itself**: mean = 0.0126, std = 0.0466. The signal-to-noise ratio is unfavorable — the average 20-day return is small (~1.3%) against its volatility (~4.7%). A model that simply predicted the mean would have an error (RMSE) of about 0.0466. That is the **floor to beat**: the next cell will show whether the GBM does better than this floor, and by how much.",,,,,,,e8467203a6df4d2b,2bcf04e89bf47ffa,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/02-ML-XGBoost/research.ipynb,xgboost-interp-r2-baseline,markdown,fr,bf4fdb1ac6834916,"**Lecture du R² baseline — le verdict difficile.** Le R² en 5-fold CV est de **0.0067** (±0.0844). Pour contexte, un R² de 0 signifie « aussi bon que prédire la moyenne » ; un R² de 1 est une prédiction parfaite. **0.0067 est statistiquement indistinguable de zéro** — l'intervalle de confiance (±0.0844) englobe largement 0. Le RMSE de **0.0461** contre une target_std de 0.0466 donne un ratio de **0.9909** : le modèle ne réduit l'erreur que de ~1 % par rapport à la moyenne. En clair, **le GBM n'apprend presque rien** du signal momentum sectoriel sur cette cible. Les features les plus importantes (vol_20 : 0.21, mom_50 : 0.15, atr_ratio : 0.10) sont des indicateurs de volatilité et de momentum, mais leur pouvoir prédictif sur le rendement futur 20j est marginal. Ce n'est pas un échec du modèle — c'est la réalité du signal : les rendements sectoriels à 20 jours sont dominés par le bruit, pas par des features techniques observables.
-",,,,,,,,bf4fdb1ac6834916,,,,,,,,
+","**Reading the baseline R² — the hard verdict.** The 5-fold CV R² is **0.0067** (±0.0844). For context, an R² of 0 means ""as good as predicting the mean""; an R² of 1 is a perfect prediction. **0.0067 is statistically indistinguishable from zero** — the confidence interval (±0.0844) comfortably spans 0. The RMSE of **0.0461** against a target_std of 0.0466 gives a ratio of **0.9909**: the model reduces error by only ~1% relative to the mean. Plainly, **the GBM learns almost nothing** from the sector momentum signal on this target. The most important features (vol_20: 0.21, mom_50: 0.15, atr_ratio: 0.10) are volatility and momentum indicators, but their predictive power over the 20-day future return is marginal. This is not a model failure — it is the reality of the signal: 20-day sector returns are dominated by noise, not by observable technical features.",,,,,,,bf4fdb1ac6834916,e1bc53a5c8bd54d2,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/02-ML-XGBoost/research.ipynb,xgboost-interp-iter2,markdown,fr,59b9919660706b0f,"**Lecture de l'itération 2 — l'optimisation qui dégrade.** La sélection de 10 features sur 20 et le lr plus agressif (0.1) produisent un R² de **-0.0815** (±0.1382) — **pire** que la baseline (0.0067), et pire même que la moyenne (R² = 0). Le delta R² de **-0.0882** est sans ambiguïté : l'""optimisation"" a dégradé le modèle. Pourquoi ? Deux effets cumulés : (1) supprimer 10 features retire du signal (même faible) avec le bruit ; (2) un lr de 0.1 sur 200 arbres surajuste l'échantillon d'entraînement, et la CV 5-fold le sanctionne. C'est la leçon classique du ML appliqué à la finance : sur un signal faible (R² ≈ 0), **l'optimisation agressive amplifie le surajustement** plutôt que de découvrir de la structure. La conclusion honnête est que la baseline (itération 1) est préférable, et que la marge d'amélioration par hyperparamétrage est négligeable tant que le signal fondamental est absent.
-",,,,,,,,59b9919660706b0f,,,,,,,,
+","**Reading iteration 2 — the optimization that degrades.** Selecting 10 features out of 20 and the more aggressive lr (0.1) produce an R² of **-0.0815** (±0.1382) — **worse** than the baseline (0.0067), and worse even than the mean (R² = 0). The R² delta of **-0.0882** is unambiguous: the ""optimization"" degraded the model. Why? Two compounding effects: (1) dropping 10 features removes (weak) signal along with the noise; (2) an lr of 0.1 over 200 trees overfits the training sample, and the 5-fold CV punishes it. This is the classic lesson of ML applied to finance: on a weak signal (R² ≈ 0), **aggressive optimization amplifies overfitting** rather than uncovering structure. The honest conclusion is that the baseline (iteration 1) is preferable, and that the room for improvement through hyperparameter tuning is negligible as long as the fundamental signal is absent.",,,,,,,59b9919660706b0f,b2f7a12df98574f7,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/02-ML-XGBoost/research.ipynb,xgboost-interp-predictions,markdown,fr,be4a683c79252a13,"**Lecture des prédictions courantes.** À la date la plus récente, le modèle itération 2 prédit des rendements 20j positifs pour 8 secteurs sur 9, avec XLK en tête (**+8.46 %** prédit) et XLE seul en HOLD (**-0.56 %**). Cette unanimité bullish est suspecte : un modèle qui prédit ""acheter presque tout"" ressemble à un biais de la moyenne plutôt qu'à un signal de rotation. La rotation sectorielle a valeur quand elle **différencie** les secteurs ; ici l'écart prédit XLK vs XLV (0.0846 vs 0.0093) est réel, mais la magnitude absolue (+8.46 % sur 20 jours) est irréaliste au regard du rendement moyen historique (1.26 %). Le modèle, ayant appris un signal faible, **extrapole avec une confiance non justifiée** — un artefact classique du GBM sur données bruitées.
-",,,,,,,,be4a683c79252a13,,,,,,,,
+","**Reading the current predictions.** At the most recent date, the iteration-2 model predicts positive 20-day returns for 8 sectors out of 9, with XLK on top (**+8.46%** predicted) and XLE alone in HOLD (**-0.56%**). This bullish unanimity is suspicious: a model that predicts ""buy almost everything"" resembles a mean bias rather than a rotation signal. Sector rotation has value when it **differentiates** sectors; here the predicted XLK vs XLV spread (0.0846 vs 0.0093) is real, but the absolute magnitude (+8.46% over 20 days) is unrealistic given the historical average return (1.26%). Having learned a weak signal, the model **extrapolates with unjustified confidence** — a classic GBM artifact on noisy data.",,,,,,,be4a683c79252a13,ce95961b8af371be,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/02-ML-XGBoost/research.ipynb,xgboost-interp-regime,markdown,fr,88b827877aeb778b,"**Lecture du skip régime.** L'analyse bull/bear ne peut pas se faire : données insuffisantes (besoin de ≥ 20 observations par régime). C'est un **skip honnête**, pas un échec silencieux : le notebook le dit au lieu de fabriquer un verdict sur 5 points. C'est aussi une limite structurelle — avec un rebalancing bi-weekly et 10 ans de données, on n'accumule pas assez d'observations par régime pour une statistique fiable. La leçon pour l'itération suivante : si l'analyse de régime est importante, il faut soit élargir la fenêtre, soit densifier les rebalancements, soit changer de définition de régime.
-",,,,,,,,88b827877aeb778b,,,,,,,,
+","**Reading the regime skip.** The bull/bear analysis cannot be done: insufficient data (it needs ≥ 20 observations per regime). This is an **honest skip**, not a silent failure: the notebook says so instead of manufacturing a verdict on 5 points. It is also a structural limit — with bi-weekly rebalancing and 10 years of data, one does not accumulate enough observations per regime for reliable statistics. The lesson for the next iteration: if regime analysis matters, either widen the window, densify rebalancing, or change the regime definition.",,,,,,,88b827877aeb778b,c10da896cca62c7b,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/02-ML-XGBoost/research.ipynb,xgboost-interp-calibration,markdown,fr,98790c76cf95f60c,"**Lecture de la calibration.** Les paramètres retenus sont ceux de l'itération 1 (baseline) — le verdict de l'itération 2 a convaincu de garder la configuration de référence. C'est une calibration **défensive** : face à un signal faible (R² ≈ 0), on ne risque pas d'hyperparamètres agressifs. Le rebalancing bi-weekly et la fenêtre de training 3 ans restent les choix opérationnels. La calibration honnête ici n'est pas ""voici les meilleurs paramètres"" mais ""voici les paramètres qui ne dégradent pas un signal déjà marginal"".
-",,,,,,,,98790c76cf95f60c,,,,,,,,
+","**Reading the calibration.** The retained parameters are those of iteration 1 (baseline) — iteration 2's verdict convinced us to keep the reference configuration. This is a **defensive** calibration: faced with a weak signal (R² ≈ 0), one does not risk aggressive hyperparameters. Bi-weekly rebalancing and the 3-year training window remain the operational choices. The honest calibration here is not ""here are the best parameters"" but ""here are the parameters that do not degrade an already marginal signal"".",,,,,,,98790c76cf95f60c,a16dc8928c0500ae,,,,,,,
