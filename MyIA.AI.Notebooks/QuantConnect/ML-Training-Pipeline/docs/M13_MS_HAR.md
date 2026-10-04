@@ -121,3 +121,54 @@ Regime-switching adds complexity but degrades forecast quality relative to singl
 
 Hamilton, J.D. (1989) "A New Approach to the Economic Analysis of Nonstationary Time Series and the Business Cycle", Econometrica, 57(2), 357-384.
 Corsi, F. (2009) "A Simple Approximate Long-Memory Model of Realized Volatility", Journal of Financial Econometrics, 7(2), 174-196.
+
+
+## Revalidation cluster appariée par origine (2026-10-04)
+
+Le protocole #18190 (appariement par origine, porté depuis M4/#18650 puis M15/#18664) a été
+appliqué au run cluster 7 actifs x 3 horizons x 4 seeds (84 combos, `mse`). Les jambes DM joignent
+les deux walk-forwards sur leurs dates d'origine communes et **refusent** sur mismatch de cible
+partagée — jamais de troncature positionnelle.
+
+### Ce que le port change sur M13
+
+Contrairement à M15 — où le garde a refusé deux fois avant toute mesure valide et a mis au jour un
+défaut de convention réel — M13 produit ses deux jambes depuis la **même série `rv`** sur le
+**même découpage** : l'appariement y est attendu **l'identité**, et le garde est ici la **preuve**
+que la comparaison porte bien sur les mêmes jours, pas un correctif.
+
+Ce que le port ajoute est ailleurs, et il porte sur le **verdict publié** :
+
+1. **Le verdict publié est un sign-test binomial** (`_binomial_pvalue_one_sided` ; l'original
+   n'importe ni DM ni `bias_metrics`, vérifié à la source) sur **84 combos traités comme
+   indépendants** (`NO BEATS`, 39/84, p=0,7774), et il porte sur le **Sharpe** — pas sur le MSE.
+   Deux réserves distinctes : (a) quatre graines d'un EM déterministe sur la même fenêtre ne sont
+   pas quatre réplications indépendantes (même constat que la ligne REGISTRY M17 : « les 4 graines
+   OLS sont bit-identiques, pas des réplications indépendantes »), donc le dénominateur 84
+   sur-déclare la puissance ; (b) aucune jambe DM, aucune jambe dé-biaisée, aucun rapport de biais
+   par modèle. Le port **ajoute** donc une lecture §C sur le **MSE** ; il ne réfute pas le verdict
+   Sharpe publié, qui porte sur une autre métrique.
+2. **La cible de la jambe HAR servait aux DEUX prévisions** — `target = har_out["targets"]...`
+   puis `ms_pred = ms_fc.reindex(target.index)` (`origin/main` lignes 441-443, vérifié) : toute
+   divergence entre les cibles réalisées des deux jambes était silencieusement ignorée. Le port
+   donne à chaque jambe **sa propre cible** et fait refuser le join si les deux divergent
+   (`target_tol=1e-8`). Le défaut était **latent** — les deux jambes partageant la même série `rv`
+   et le même découpage, les cibles coïncident — et le garde le **prouve** au lieu de le supposer.
+
+### Diagnostic d'alignement
+
+Le garde shared-target a refusé **0** fois sur les 21 agrégats coin x horizon ; gap max sur les cibles partagées **0,0** ; longueurs appariées 538–1890. L'appariement est donc l'identité, mesurée et non supposée.
+
+### Verdicts cluster (jambe brute / jambe dé-biaisée)
+
+Agrégé par horizon (7 actifs chacun), et par cellule (21 couples coin x horizon) :
+
+| Horizon | edge MSE moyen | edge MSE hors biais | dm_p_median | verdicts par actif (brut) | verdicts par actif (dé-biaisé) |
+|---|---|---|---|---|---|
+| h=1 | -803,9 % | -812,3 % | 0,0000 | NO BEATS 7/7 | NO BEATS 7/7 |
+| h=5 | -15388,6 % | -16090,6 % | 0,0000 | NO BEATS 7/7 | NO BEATS 7/7 |
+| h=10 | -304566,5 % | -325016,7 % | 0,0000 | NO BEATS 6/7 ; INCONCLUSIVE 1/7 | NO BEATS 6/7 ; INCONCLUSIVE 1/7 |
+
+Par cellule : **BEATS** 0/21 ; **NO BEATS** 20/21 ; **refuted-de-biased** 0/21 ; **INCONCLUSIVE** 1/21.
+
+Manifeste compact committé : `scripts/results/m13_ms_har_cluster_aligned.json` (politique #15890, 13819 octets). Artefact complet (hors dépôt) : `m13_ms_har_cluster_full.json`, 152346 octets, sha256 `e78561eb06a7…` ; runtime mesuré 1795 s pour 105 lignes. Le champ `elapsed_s` mesure le groupe le plus long, pas la somme des trois groupes parallèles.

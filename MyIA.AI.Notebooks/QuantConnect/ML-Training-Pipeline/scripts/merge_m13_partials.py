@@ -121,7 +121,12 @@ def main(argv: list[str] | None = None) -> None:
     merged = merge(results_dir)
 
     full_out.parent.mkdir(parents=True, exist_ok=True)
-    with open(full_out, "w", encoding="utf-8") as f:
+    # newline="" : le fichier doit etre ecrit en LF sur toute plateforme. Sans cela,
+    # Windows ecrit du CRLF et le sha256 declare par le manifeste -- calcule par
+    # _sha256_text sur le texte normalise en LF -- ne correspond plus aux octets sur
+    # disque : n'importe quel lecteur qui verifie `sha256sum` sur l'artefact obtient
+    # un desaccord. La taille (bytes) et l'empreinte doivent decrire les memes octets.
+    with open(full_out, "w", encoding="utf-8", newline="\n") as f:
         json.dump(merged, f, indent=2, default=str)
     print(f"Merged artifact: {full_out} ({full_out.stat().st_size} bytes, "
           f"{len(merged['combos'])} combos, {len(merged['aggregates'])} aggregates)")
