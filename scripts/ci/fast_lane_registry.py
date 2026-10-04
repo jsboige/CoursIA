@@ -472,6 +472,36 @@ PILOT: list[Guard] = [
         blocking=True,
         needs_base=True,
     ),
+    # Advisory d'accretion (#19144) : le MEME organe, lu par son autre bout. Le
+    # garde ci-dessus repond « ce nom est-il libre ? » et rougit ; celui-ci repond
+    # « ce nom respecte-t-il la regle d'accretion ? » et ne rougit jamais. Le
+    # corpus de la regle avait un trou mesure -- #19109 et #19112 ajoutaient `03g`
+    # puis `03h` a une branche plafonnee a `f`, tous checks verts et un dossier
+    # READY -- parce que les organes existants lisaient la GRAMMAIRE du nom
+    # (#17784) ou sa COLLISION (#15489), jamais sa PROFONDEUR.
+    #
+    # `--accretion-only` : sans lui, ce second check-run redirait le verdict de
+    # slot du premier, et deux check-runs rougiraient ensemble pour une seule
+    # cause. Ici la conclusion `neutral` porte le SEUL signal d'accretion, et le
+    # code retour reste 0 quel que soit le nombre de constats.
+    #
+    # Le corps de la PR n'est pas dans l'argv -- `substitute` ne connait que
+    # `base_ref` et `changed_paths`. L'organe le lit dans la charge d'evenement
+    # (`GITHUB_EVENT_PATH`) : sans cette source, MAX_PLUS_ONE serait muet en CI,
+    # c'est-a-dire exactement la ou il sert.
+    Guard(
+        name="accretion-advisory",
+        source=FAST_LANE_NATIVE,
+        paths=NOTEBOOK_GLOBS + [
+            "scripts/notebook_tools/check_slot_reservation.py",
+            "scripts/notebook_tools/slot_reservations.json",
+            "scripts/notebook_tools/naming_canon.py",
+        ],
+        argv=["python", "scripts/notebook_tools/check_slot_reservation.py",
+              "--base", "{base_ref}", "--head", "HEAD", "--offline", "--accretion-only"],
+        blocking=False,
+        needs_base=True,
+    ),
 ]
 
 

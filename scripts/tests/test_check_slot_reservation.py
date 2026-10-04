@@ -30,6 +30,7 @@ Trois pieges sont tendus, et chaque classe de test en couvre un :
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -531,6 +532,234 @@ class TestRemovalReaderContract(unittest.TestCase):
         self.assertEqual(removed, {})
         self.assertEqual(called, [])
         self.assertEqual(status["open_prs_removed"]["status"], "not_needed")
+
+
+_REPO_ROOT = _SCRIPT.parent.parent.parent
+
+
+def _has_history(*shas: str) -> bool:
+    """Le clone porte-t-il ces commits ? (les checkouts CI sont souvent superficiels)
+
+    Un temoin d'historique absent se DIT -- `skipTest` -- plutot que de rendre un
+    vert qui ne prouve rien : c'est la meme discipline que le garde lui-meme.
+    """
+    for sha in shas:
+        r = subprocess.run(["git", "cat-file", "-e", sha + "^{commit}"],
+                           cwd=str(_REPO_ROOT), capture_output=True, text=True,
+                           encoding="utf-8", errors="replace")
+        if r.returncode != 0:
+            return False
+    return True
+
+
+class TestAccretionEndToEnd(unittest.TestCase):
+    """Les quatre constats d'accretion (#19144), de bout en bout par le CLI.
+
+    Le contrat qui porte tout le reste : **advisory**. Aucun constat ne change le
+    code retour -- un organe advisory qui rougit est un organe qu'on desactive,
+    et c'est exactement ce que #16762 -> #16786 a mis deux iterations a montrer.
+    """
+
+    def test_depth_is_reported_while_the_exit_code_stays_zero(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo, [SERIES + "/Search-03-Informed.ipynb",
+                                     SERIES + "/Search-03f-Reparer.ipynb"])
+            _write(repo, SERIES + "/Search-03g-Neuf.ipynb")
+            _commit(repo)
+
+            r = _run(repo, base)
+            self.assertEqual(r.returncode, 0,
+                             "un constat advisory ne rougit JAMAIS le garde\n"
+                             + r.stdout + r.stderr)
+            self.assertIn("DEPTH", r.stdout)
+
+    def test_accretion_only_says_nothing_about_a_real_slot_conflict(self):
+        """Le check-run dedie ne redit pas le verdict du garde bloquant."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo, [SERIES + "/04-1-Previous.ipynb"])
+            _write(repo, SERIES + "/04-2-Alpha.ipynb")
+            _write(repo, SERIES + "/04-2-Beta.ipynb")
+            _commit(repo)
+
+            plain = _run(repo, base)
+            self.assertEqual(plain.returncode, 1, plain.stdout + plain.stderr)
+
+            only = _run(repo, base, "--accretion-only")
+            self.assertEqual(only.returncode, 0,
+                             "le mode advisory ne porte aucun verdict de slot\n"
+                             + only.stdout + only.stderr)
+            self.assertNotIn("CONFLIT DE SLOT", only.stdout)
+
+    def test_a_slot_line_in_the_body_silences_max_plus_one(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo, [SERIES + "/ICT-43-A.ipynb",
+                                     SERIES + "/ICT-44-B.ipynb"])
+            _write(repo, SERIES + "/ICT-45-C.ipynb")
+            _commit(repo)
+
+            self.assertIn("MAX_PLUS_ONE", _run(repo, base, "--body", "no slot line").stdout)
+            declared = _run(repo, base, "--body", "## Summary\nSlot: palier 9B\n")
+            self.assertNotIn("MAX_PLUS_ONE", declared.stdout)
+
+    def test_the_body_is_read_from_a_github_event_payload(self):
+        """La voie rapide ne transporte pas le corps dans l'argv : la charge
+        d'evenement est la source qui rend MAX_PLUS_ONE mesurable en CI."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo, [SERIES + "/ICT-43-A.ipynb",
+                                     SERIES + "/ICT-44-B.ipynb"])
+            _write(repo, SERIES + "/ICT-45-C.ipynb")
+            _commit(repo)
+
+            payload = Path(td) / "event.json"
+            payload.write_text(json.dumps({"pull_request": {"body": "rien"}}),
+                               encoding="utf-8")
+            r = subprocess.run(
+                [sys.executable, str(_SCRIPT), "--base", base, "--head", "HEAD",
+                 "--offline", "--reservations", str(repo / "none.json"), "--json"],
+                cwd=str(repo), capture_output=True, text=True, encoding="utf-8",
+                errors="replace", env=dict(os.environ, GITHUB_EVENT_PATH=str(payload)))
+            d = json.loads(r.stdout)
+            self.assertEqual(d["sources"]["accretion"]["body"], "event")
+            self.assertEqual([f["kind"] for f in d["accretion"]], ["MAX_PLUS_ONE"])
+
+    def test_the_in_memory_env_var_primes_over_the_event_payload(self):
+        """`ACCRETION_PR_BODY` d'abord : le canal #13491, sans ecriture disque."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo, [SERIES + "/ICT-43-A.ipynb",
+                                     SERIES + "/ICT-44-B.ipynb"])
+            _write(repo, SERIES + "/ICT-45-C.ipynb")
+            _commit(repo)
+
+            payload = Path(td) / "event.json"
+            payload.write_text(json.dumps({"pull_request": {"body": "rien"}}),
+                               encoding="utf-8")
+            r = subprocess.run(
+                [sys.executable, str(_SCRIPT), "--base", base, "--head", "HEAD",
+                 "--offline", "--reservations", str(repo / "none.json"), "--json"],
+                cwd=str(repo), capture_output=True, text=True, encoding="utf-8",
+                errors="replace",
+                env=dict(os.environ, GITHUB_EVENT_PATH=str(payload),
+                         ACCRETION_PR_BODY="## Summary\nSlot: palier 9B\n"))
+            d = json.loads(r.stdout)
+            self.assertEqual(d["sources"]["accretion"]["body"], "env")
+            self.assertEqual(d["accretion"], [],
+                             "la variable in-memory doit primer sur la charge d'evenement")
+
+    def test_an_absent_body_is_declared_unmeasured_never_concluded(self):
+        """Sans corps, MAX_PLUS_ONE n'est pas « absent » : il n'est pas MESURE."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo, [SERIES + "/ICT-43-A.ipynb",
+                                     SERIES + "/ICT-44-B.ipynb"])
+            _write(repo, SERIES + "/ICT-45-C.ipynb")
+            _commit(repo)
+
+            env = {k: v for k, v in os.environ.items() if k != "GITHUB_EVENT_PATH"}
+            r = subprocess.run(
+                [sys.executable, str(_SCRIPT), "--base", base, "--head", "HEAD",
+                 "--offline", "--reservations", str(repo / "none.json"), "--json"],
+                cwd=str(repo), capture_output=True, text=True, encoding="utf-8",
+                errors="replace", env=env)
+            d = json.loads(r.stdout)
+            self.assertEqual(d["sources"]["accretion"]["body"], "not_supplied")
+            self.assertEqual(d["accretion"], [])
+
+    def test_a_declared_pending_table_fires_on_a_readme_only_revision(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo, [SERIES + "/Tweety-01-Setup-Python.ipynb"])
+            _write(repo, SERIES + "/README.md", "# Serie\n")
+            _commit(repo)
+
+            table = Path(td) / "res.json"
+            table.write_text(json.dumps({"reserved": [
+                {"kind": "pending_table", "dir": SERIES, "note": "#16231"}]}),
+                encoding="utf-8")
+            r = _run(repo, base, reservations=str(table))
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            self.assertIn("PENDING_TABLE", r.stdout)
+
+
+class TestSelfTestTable(unittest.TestCase):
+    """La table d'auto-controle est un GATE, pas une commande qu'on pense a lancer."""
+
+    def test_self_test_passes(self):
+        r = subprocess.run([sys.executable, str(_SCRIPT), "--self-test"],
+                           capture_output=True, text=True, encoding="utf-8",
+                           errors="replace")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("SUCCES", r.stdout)
+
+
+# Temoins NOMMES par l'issue #19144, rejoues sur l'historique REEL du depot. Le
+# SHA est celui du commit qui AJOUTE le carnet : la base est son parent, donc le
+# temoin ne depend pas de l'etat courant de `main` (un `main` qui avance ne peut
+# pas lui faire perdre son sens -- seulement un clone superficiel, qui se DIT).
+_HISTORY_CASES = [
+    ("520539d70f05a824bed946ec46d6ce5ae5aab1ce", "DEPTH",
+     "GameTheory-06g-Simulation-Based-Program-Equilibria.ipynb"),
+    ("44f7bb55f792e6998bc0db380a5e2734e7fe989a", "NO_BASE",
+     "Search-12a-Composer-Regards.ipynb"),
+    ("ad17a578365b68eafbda7aa8c374b28af9c1b940", "NO_BASE",
+     "Search-13a-Traverser-Murs-Certifies.ipynb"),
+    ("6a422f0214b17cd57cacf4d2ccf40982c202cc80", "MAX_PLUS_ONE",
+     "ICT-44-GeometryOfTruth-Python.ipynb"),
+    ("ab3e6e4fde8b99164ec5ea09ea2883638121abec", "MAX_PLUS_ONE",
+     "ICT-45-InoculationBifurcation-9B.ipynb"),
+]
+
+
+class TestAccretionOnRealHistory(unittest.TestCase):
+    """Les temoins du 04/10, rejoues : positifs nommes, negatifs nommes.
+
+    Un jeu de cas ecrit a la main ne contient que les formes auxquelles on a
+    pense ; ces cinq-la viennent du depot, pas de l'imagination du redacteur.
+    """
+
+    def _findings(self, sha, body=""):
+        r = subprocess.run([sys.executable, str(_SCRIPT), "--offline", "--json",
+                            "--base", sha + "^", "--head", sha, "--body", body],
+                           cwd=str(_REPO_ROOT), capture_output=True, text=True,
+                           encoding="utf-8", errors="replace")
+        self.assertIn(r.returncode, (0, 1), r.stdout + r.stderr)
+        return json.loads(r.stdout)["accretion"]
+
+    def test_named_positive_controls(self):
+        missing = [s for s, _, _ in _HISTORY_CASES if not _has_history(s)]
+        if missing:
+            self.skipTest("historique absent (clone superficiel ?) : %s" % missing)
+        for sha, kind, name in _HISTORY_CASES:
+            kinds = {f["kind"] for f in self._findings(sha) if f["path"].endswith(name)}
+            self.assertIn(kind, kinds,
+                          "le temoin %s devait sortir %s sur %s" % (sha[:10], kind, name))
+
+    def test_the_slot_line_silences_max_plus_one(self):
+        sha = "ab3e6e4fde8b99164ec5ea09ea2883638121abec"
+        if not _has_history(sha):
+            self.skipTest("historique absent")
+        kinds = {f["kind"] for f in self._findings(
+            sha, body="## Summary\nSlot: ICT-45 ouvre le palier 9B.\n")}
+        self.assertNotIn("MAX_PLUS_ONE", kinds,
+                         "la ligne `Slot:` doit suffire, sinon la regle n'est pas respectueuse")
+
+    def test_the_csharp_twin_of_an_existing_python_notebook_is_not_an_accretion(self):
+        sha = "35695217e99b1b9da9c7d5c265f2f848266dab07"
+        if not _has_history(sha):
+            self.skipTest("historique absent")
+        self.assertEqual(self._findings(sha), [],
+                         "un jumeau C# ajoute au slot de son Python n'est pas une accretion (§7)")
+
+    def test_a_clean_reclassification_reports_nothing(self):
+        sha = "34f95b718e42c2044770241fdce68b6cd1b0c3ae"
+        if not _has_history(sha):
+            self.skipTest("historique absent")
+        self.assertEqual(self._findings(sha), [],
+                         "le reclassement 42 -> 41b (#18986) est propre")
 
 
 if __name__ == "__main__":
