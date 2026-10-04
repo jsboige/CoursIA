@@ -204,3 +204,104 @@ def test_caller_workflow_json_passe_dirty_comme_dirty_avec_findings(tmp_path: Pa
     f = payload["findings"][0]
     assert f["file"] == "dirty.json"
     assert len(f["hits"]) >= 1
+
+
+# Valeurs de fixture -- distinctives, jamais commitees, servent d'aiguille.
+_FX_SIG_TOKEN = "ZzQ9SignedUrlTokenValue0123456789"   # >= MIN_VALUE_LEN
+_FX_ACCESS_KEY = "LTAI5tZzFixtureKeyAlpha99"
+
+
+def _dirty_repo(tmp_path: Path, name: str, content: str) -> Path:
+    """Repo git minimal avec un unique fichier `name` portant `content`."""
+    import subprocess as sp
+    repo = tmp_path / "fixture_repo"
+    repo.mkdir()
+    sp.run(["git", "init", "-q"], cwd=repo, check=True)
+    sp.run(["git", "config", "user.email", "test@example.com"], cwd=repo, check=True)
+    sp.run(["git", "config", "user.name", "test"], cwd=repo, check=True)
+    (repo / name).write_text(content, encoding="utf-8")
+    sp.run(["git", "add", name], cwd=repo, check=True)
+    sp.run(["git", "commit", "-q", "-m", "fixture"], cwd=repo, check=True)
+    return repo
+
+
+def _scan_payload(repo: Path, extra: list[str] | None = None) -> subprocess.CompletedProcess:
+    import os
+    return subprocess.run(
+        [sys.executable, str(SCRIPT), "--json"] + (extra or []),
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        cwd=repo, timeout=180,
+        env={**os.environ, "REPO_ROOT_OVERRIDE": str(repo)},
+    )
+
+
+def test_le_payload_ne_porte_aucun_fragment_de_secret_en_clair(tmp_path: Path):
+    """Invariant : la charge utile est `cat`-ee dans un log PUBLIC.
+
+    Le step `Detecteur OSS signature fragments` (always-on-guards.yml) fait
+    `cat /tmp/oss_sig.json`, puis re-imprime chaque `match` dans une
+    annotation `::error::`. Les deux consommateurs heritent de ce que
+    l'organe met dans sa charge utile : si `match`/`context` portaient la
+    valeur detectee, le secret partirait en clair dans un log public.
+
+    Controle positif double -- sans lui le test passerait a vide :
+    (a) le verdict est DIRTY (donc la fixture a bien ete attrapee) ;
+    (b) le marqueur de masquage est present (donc le masquage a bien tourne).
+    """
+    repo = _dirty_repo(
+        tmp_path, "dirty.json",
+        '{"image_url_signed_full": "https://bucket.oss.aliyuncs.com/img.png'
+        f'?Signature={_FX_SIG_TOKEN}&OSSAccessKeyId={_FX_ACCESS_KEY}"}}',
+    )
+    proc = _scan_payload(repo)
+    assert proc.returncode == 1, f"DIRTY doit rendre RC=1, vu {proc.returncode}"
+    payload = json.loads(proc.stdout)
+
+    # (a) controle positif de detection
+    assert payload["verdict"] == "DIRTY", "la fixture doit etre attrapee, sinon le test est vide"
+    hits = payload["findings"][0]["hits"]
+    assert len(hits) >= 1
+
+    # (b) controle positif de masquage
+    assert any("<redacted len=" in h["match"] for h in hits), (
+        f"aucun marqueur de masquage dans les hits : {[h['match'] for h in hits]}"
+    )
+
+    # L'invariant : aucun fragment de valeur en clair dans la charge utile.
+    assert _FX_SIG_TOKEN not in proc.stdout, "le token de signature fuit en clair"
+    assert _FX_ACCESS_KEY not in proc.stdout, "la cle d'acces fuit en clair"
+    for h in hits:
+        assert _FX_SIG_TOKEN[:12] not in h["match"], f"prefixe de token dans match : {h['match']}"
+        assert _FX_SIG_TOKEN[:12] not in h.get("context", ""), f"prefixe de token dans context : {h['context']}"
+        # Le diagnostic survit : fichier + ligne + motif restent exploitables.
+        assert isinstance(h["line"], int) and h["line"] > 0
+        assert h["pattern"]
+
+
+def test_branche_strict_masque_aussi_la_prose(tmp_path: Path):
+    """Le second filtre (py/cs/md) masque la valeur comme le filtre json/ipynb."""
+    repo = _dirty_repo(
+        tmp_path, "note.md",
+        f"<!-- exemple -->\n# Signature={_FX_SIG_TOKEN}\n",
+    )
+    proc = _scan_payload(repo, extra=["--strict"])
+    assert proc.returncode == 1, f"--strict doit rendre RC=1, vu {proc.returncode}"
+    payload = json.loads(proc.stdout)
+    assert payload["verdict"] == "DIRTY"
+    prose = [f for f in payload["findings"] if f["surface"] == "prose"]
+    assert prose, "la branche --strict doit trouver la mention en prose"
+    assert _FX_SIG_TOKEN not in proc.stdout, "le token fuit par la branche --strict"
+
+
+def test_redact_line_blanchit_la_valeur_et_garde_le_contexte():
+    """Unite : `redact_line` retire la valeur, garde la cle et le reste de la ligne."""
+    sys.path.insert(0, str(REPO_ROOT / "scripts" / "ci"))
+    import detect_oss_signature as mod  # type: ignore
+
+    line = f'{{"url": "https://b.oss.aliyuncs.com/i.png?Signature={_FX_SIG_TOKEN}&x=1"}}'
+    out = mod.redact_line(line)
+    assert _FX_SIG_TOKEN not in out, f"valeur encore presente : {out}"
+    assert "<redacted len=" in out, f"marqueur absent : {out}"
+    assert "Signature=" in out and '"x": "1"' in out or "&x=1" in out, (
+        f"le contexte exploitable a ete perdu : {out}"
+    )

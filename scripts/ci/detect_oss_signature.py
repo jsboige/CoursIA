@@ -33,6 +33,17 @@ The detector is local (no GH API), exits 0/1/2:
     DIRTY     at least one match found               (exit 1)
     ERROR     git or filesystem failure              (exit 2)
 
+Masking -- the payload is consumed by a PUBLIC log. The caller workflow
+`cat`s this JSON (`always-on-guards.yml`, step "Detecteur OSS signature
+fragments") and then re-prints every `match` inside a `::error::` annotation,
+so whatever this organ puts in `match`/`context` ends up readable by anyone.
+A finding therefore never carries the detected value: `match` and `context`
+expose the key, the line and a non-reversible digest -- never the fragment.
+The value IS the secret (a presigned Signature is derived from the provider's
+SecretAccessKey), so masking happens HERE, at the single source both
+consumers inherit. Cf secrets-hygiene rule 6 and the adjoint bound on
+PR #18895 (2026-10-04T01:12:52Z).
+
 Usage:
     python scripts/ci/detect_oss_signature.py            # lint (json/ipynb)
     python scripts/ci/detect_oss_signature.py --json     # structured verdicts
@@ -48,6 +59,7 @@ mentioning `Signature=` are actually reachable.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -102,6 +114,30 @@ def list_tracked_files(pathspecs: list[str]) -> list[str] | None:
     return [line.strip() for line in out.stdout.splitlines() if line.strip()]
 
 
+def redact(value: str) -> str:
+    """Return a non-reversible stand-in for a detected secret value.
+
+    The payload built from this organ reaches a PUBLIC CI log (see the module
+    docstring, "Masking"). Length + a short digest let a PR author confirm
+    "that is my token" without the log carrying the token itself.
+    """
+    digest = hashlib.sha256(value.encode("utf-8", "replace")).hexdigest()[:12]
+    return f"<redacted len={len(value)} sha256:{digest}>"
+
+
+def redact_line(line: str) -> str:
+    """Blank every fragment-value occurrence inside `line`, keep the rest.
+
+    A context line carries the secret by definition -- it is the line the
+    match was found on. Redacting the matched spans (and only those) keeps
+    the diagnostic readable: the surrounding JSON key, the file and the line
+    number all survive.
+    """
+    for pat in PATTERNS:
+        line = pat.sub(lambda m: redact(m.group(0)), line)
+    return line
+
+
 def scan_file(path: Path) -> list[dict]:
     """Return matches found in `path`, with line context."""
     try:
@@ -117,8 +153,11 @@ def scan_file(path: Path) -> list[dict]:
             hits.append({
                 "line": line_no,
                 "pattern": pat.pattern[:48] + "...",
-                "match": m.group(0)[:80] + ("..." if len(m.group(0)) > 80 else ""),
-                "context": line[:200],
+                # Redacted at the source: `match` and `context` are printed in
+                # clear by BOTH consumers (the workflow `cat`s the JSON, then
+                # re-prints `match` in a ::error:: annotation). See "Masking".
+                "match": redact(m.group(0)),
+                "context": redact_line(line)[:200],
             })
     return hits
 
@@ -180,7 +219,8 @@ def main() -> int:
                         "file": rel,
                         "surface": "prose",
                         "hits": [{"line": line_no, "pattern": "comment-mention",
-                                  "match": line[:120], "context": line[:200]}],
+                                  "match": redact_line(line)[:120],
+                                  "context": redact_line(line)[:200]}],
                     })
 
     verdict = "DIRTY" if findings else "CLEAN"
