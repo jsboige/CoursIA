@@ -9,7 +9,7 @@
 Un dossier `_archive/` sans convention devient un **puits de code mort** : on y dépose des scripts superseded, mais sans en-tête de disposition, personne ne sait s'ils sont **encore vivants mal étiquettés** ou **réellement abandonnés**. Le bilan mesuré sur le dépôt en 2026-08 :
 
 - 11 emplacements `_archive/` dispersés (125 fichiers au total au 2026-08), conventions hétérogènes.
-- `scripts/genai-stack/_archive/` (constat empirique au 2026-08, **hors scope PR actuelle**) : 28 fichiers (37 % du répertoire) — code mort, certains cassés auto-admis. **Cible de la tranche 3** (cf table lignes 73-85).
+- `scripts/genai-stack/_archive/` (constat empirique au 2026-08) : le plus gros stock du dépôt — code mort, certains cassés auto-admis. **Tranche 3 livrée le 2026-10-04** (cf table ci-dessous).
 - `scripts/_archive/one_shot_fixes/` + `one_shots_post_463/` + `recycle_csp/` (constat empirique au 2026-08) : ~30 fichiers dont les README de disposition n'appliquaient pas encore tous le standard. **Cible de la tranche 2** (cf table lignes 73-85).
 
 Le coût d'un `_archive/` non standardisé = **découverte impossible** : aucun successeur nommé, aucun verdict enregistré, aucun moyen de savoir si le script peut être ressuscité ou doit être supprimé.
@@ -68,7 +68,7 @@ Exception : si un dossier `_archive/` ne contient que des **données** (pas de s
 
 ## Application — les emplacements recensés
 
-État au **2026-09-25**. Ce qui a changé depuis le recensement de 2026-08 :
+État au **2026-10-04**. Ce qui a changé depuis le recensement de 2026-08 :
 `GenAI/Audio`, `docker-configurations` et `notebook_tools` n'y figuraient pas.
 La table ci-dessous est l'inventaire courant — chaque tranche de l'umbrella en
 déplace une ligne, elle ne réécrit pas un total :
@@ -84,9 +84,10 @@ déplace une ligne, elle ne réécrit pas un total :
 | `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/_archive/` | ✅ | ✅ (registre de disposition au niveau `_archive/` ajouté le 2026-09-25 — tranche #13749 ; il pointe le README du lot daté `2026-07-04-Neurosymbolic-EML-precurseur-SL12/`, qui porte l'analyse) |
 | `MyIA.AI.Notebooks/SymbolicAI/Tweety/scripts/_archive/` | ✅ | ✅ (tranche #13749 du 2026-09-25 : registre + en-tête de disposition ajouté à `reorganize_tweety.py`) |
 | `scripts/_archive/` | ✅ | ✅ (registre parent ajouté le 2026-09-25 — tranche #13749 ; il indexe `c8257-lean18-enrichment/`, `one_shot_fixes/`, `one_shots_post_463/` et `recycle_csp/`. La ligne précédente marquait `✅` sur les seules sous-archives de #9535 et ne citait pas `c8257-lean18-enrichment/`, archivée plus tard par #14251) |
-| `scripts/genai-stack/_archive/` | ❌ | tranche 3 — le plus gros stock constaté (2026-08), peut nécessiter un split ; **à la lane `myia-po-2027:CoursIA-2`** (claim scoped `{core,utils}`) |
+| `scripts/genai-stack/_archive/` | ✅ | ✅ (tranche #13749 du 2026-10-04 — lane `myia-po-2027:CoursIA-2` : registre 4 colonnes dans `ARCHIVE_README.md`, nom historique **préservé** car les en-têtes per-fichier et le README parent pointent dessus ; en-têtes de disposition standard ajoutés aux `.ps1` ; les `.py` gardent leurs en-têtes hérités format court, qui nomment successeur + registre) |
 | `scripts/notebook_tools/_archive/` | ✅ | partiel (registre sans en-tête de disposition pour le script) |
 | `scripts/sudoku/_archive/` | ✅ | ✅ (tranche #13749 du 2026-09-25 : registre 4 colonnes ; les en-têtes per-fichier existaient déjà) |
+| `scripts/tests/_archive/` | ✅ | ✅ (tranche #13749 du 2026-10-04 : registre ajouté ; l'en-tête standard existait déjà sur `test_convert_print_to_deploy.py`, palier 1 #18153) |
 | `slides/S4-trading-algorithmique/_archive/` | ✅ | ✅ (registre — une ligne par fichier archivé) |
 | `docker-configurations/_archive-20251125/` | ✅ | non audité |
 
@@ -94,7 +95,7 @@ déplace une ligne, elle ne réécrit pas un total :
 
 ## Cas particuliers
 
-- **`_archive/utils/reconstruct_env.py`** (genai-stack, récent) : vérifier si le sujet est couvert par la feature CLI avant d'archiver — peut être du vivant mal étiquetté. Tranche 3 fait l'audit.
+- **`_archive/utils/reconstruct_env.py`** (genai-stack) : audit fait le 2026-10-04 (tranche #13749) — le sujet **est couvert** par le CLI (`genai.py auth reconstruct-env`, câblé `commands/auth.py` → `core/auth_manager.py::reconstruct_env_file`) : du mort correctement étiqueté, pas du vivant mal étiqueté.
 - **`DSA AgenticDataScience/` + `PythonAgentsForDataScience/`** : dossiers ne contenant QUE des `*_output.ipynb` (sources migrées Track1/Track2) → supprimer après vérif `execution_count`/consommateurs (fantômes). Tranche séparée, hors #13749.
 - **Scripts archive sans successeur** : la ligne de travail doit être **explicitement fermée** dans le PR d'archivage (raison + lien vers la discussion de clôture). Sans cette fermeture, le script n'est pas archivable — il est juste mort.
 
