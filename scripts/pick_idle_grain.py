@@ -3933,12 +3933,14 @@ def upsert_orphans_comment(number: int, body: str) -> None:
 # sur le meme patrimoine le meme jour.
 # Une visite, c'est desormais la plus recente de trois dates :
 #   1. la derniere PR mergee qui cite l'issue (`last_delivery_stamp`) ;
-#   2. le dernier `[CLAIMED]` / `[CLAIMED-AMEND]` pose sur l'issue, toutes
-#      lanes (`last_claim_stamp`, lu sur la tete de file par
-#      `settle_belt_head`) ;
+#   2. le plus recent claim ENCORE ACTIF sur l'issue, toutes lanes
+#      (`last_claim_stamp`, lu sur la tete de file par `settle_belt_head`) ;
+#      la grammaire et la reduction sont celles de l'organe
+#      `check_lane_claim.py` (`active_claim_stamp`), jamais une regex propre :
+#      un claim rendu (`[RELEASED]`, `[DONE]`, livraison fermee) n'a pas
+#      servi l'issue, qui reprend son rang ;
 #   3. la creation de la plus recente sous-issue ouverte qui la nomme comme
 #      parent (`last_child_stamp`, `apply_child_visits`, zero appel reseau).
-_CLAIM_VISIT_RE = re.compile(r"^\s*\[CLAIMED(?:-AMEND)?\]", re.MULTILINE)
 _PARENT_BODY_RE = re.compile(r"(?i)\bpart of #(\d+)")
 _PARENT_TITLE_RE = re.compile(r"^\s*\[#(\d+)\b")
 
@@ -4006,12 +4008,35 @@ def apply_child_visits(pool: list[dict], targets: list[dict]) -> dict[int, str]:
     return latest
 
 
+def active_claim_stamp(
+    comments: list[dict],
+    pr_states: dict[int, str] | None = None,
+) -> str | None:
+    """``createdAt`` serveur du plus recent claim encore actif, toutes lanes.
+
+    Lecture et reduction deleguees a l'organe des claims (#19147, reserve
+    tierce) : ``_sort_events`` lit les marqueurs avec sa grammaire (decorations
+    markdown et non-ASCII tolerees, blocs fence neutralises, mentions en milieu
+    de ligne ignorees), ``compute_active_claims`` rejoue ouvertures, amendements,
+    overrides et clotures. Un claim clos ne laisse aucune date : l'issue
+    reprend le rang que lui donnent ses merges. ``pr_states`` est transmis au
+    reducteur pour les ``[DELIVERED]`` (injection testable, comme dans
+    l'organe).
+    """
+    from check_lane_claim import _sort_events, compute_active_claims
+
+    active, _unattributed = compute_active_claims(
+        _sort_events({"comments": comments}), pr_states)
+    stamps = [ev.created_at for ev in active.values() if ev.created_at]
+    return max(stamps) if stamps else None
+
+
 def latest_claim_stamp(issue_number: int) -> str | None:
-    """``createdAt`` serveur du dernier ``[CLAIMED]``/``[CLAIMED-AMEND]`` de l'issue.
+    """Date du plus recent claim actif de l'issue (cf `active_claim_stamp`).
 
     Toutes lanes confondues : une reservation est une visite, quelle que soit
-    la lane qui la pose. Cout : 1 requete. ``None`` si aucun claim ou si la
-    lecture echoue -- l'issue garde alors sa date de merge, comme avant.
+    la lane qui la pose. Cout : 1 requete. ``None`` si aucun claim actif ou si
+    la lecture echoue -- l'issue garde alors sa date de merge, comme avant.
     """
     try:
         out = subprocess.run(
@@ -4021,12 +4046,10 @@ def latest_claim_stamp(issue_number: int) -> str | None:
             timeout=30,
         ).stdout
         comments = (json.loads(out) or {}).get("comments") or []
+        return active_claim_stamp(
+            [c for c in comments if isinstance(c, dict)])
     except Exception:  # noqa: BLE001 - sonde best-effort, l'issue garde son merge
         return None
-    stamps = [c.get("createdAt") for c in comments
-              if isinstance(c, dict) and c.get("createdAt")
-              and _CLAIM_VISIT_RE.search(c.get("body") or "")]
-    return max(stamps) if stamps else None
 
 
 def settle_belt_head(

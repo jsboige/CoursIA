@@ -729,16 +729,121 @@ def test_parent_refs_reads_part_of_and_title_prefix_not_self():
     assert pig.parent_refs(plain) == set()
 
 
+def _claim(at: str, body: str) -> dict:
+    return {"createdAt": at, "body": body, "author": {"login": "jsboige"}}
+
+
+def test_active_claim_stamp_reads_decorated_markers_like_the_organ():
+    """Reserve tierce #19147, point 1 : la grammaire est celle de
+    ``check_lane_claim.py`` (#10906, #12711), pas une regex propre au tapis."""
+    for body in (
+        "**[CLAIMED] lane myia-po-2027:CoursIA -- T1**",
+        "## [CLAIMED] lane myia-po-2027:CoursIA -- T1",
+        "- [CLAIMED] lane myia-po-2027:CoursIA -- T1",
+        "> [CLAIMED] lane myia-po-2027:CoursIA -- T1",
+        "→[CLAIMED] lane myia-po-2027:CoursIA -- T1",
+        "[claimed] lane myia-po-2027:CoursIA -- T1",
+    ):
+        assert pig.active_claim_stamp(
+            [_claim("2026-10-04T09:50:12Z", body)]) == "2026-10-04T09:50:12Z", body
+
+
+def test_active_claim_stamp_ignores_quoted_and_midline_mentions():
+    """Une citation en bloc fence, une mention en milieu de ligne, un marqueur
+    sans lane ne sont pas des reservations."""
+    fenced = ("Le gabarit est :\n```\n[CLAIMED] lane myia-po-2027:CoursIA"
+              " -- T1\n```\n")
+    comments = [
+        _claim("2026-10-04T09:00:00Z", fenced),
+        _claim("2026-10-04T10:00:00Z",
+               "T1 livree. Le [CLAIMED] du matin reste valable."),
+        _claim("2026-10-04T11:00:00Z", "> [CLAIMED] cite sans lane"),
+    ]
+    assert pig.active_claim_stamp(comments) is None
+
+
+def test_active_claim_stamp_released_claim_gives_the_rank_back():
+    """Point 2 de la reserve : un claim rendu n'a pas servi l'issue."""
+    comments = [
+        _claim("2026-10-04T09:50:12Z",
+               "[CLAIMED] lane myia-po-2027:CoursIA -- T1"),
+        _claim("2026-10-04T12:00:00Z",
+               "[RELEASED] lane myia-po-2027:CoursIA -- rendu"),
+    ]
+    assert pig.active_claim_stamp(comments) is None
+    for close in ("DONE", "ABANDONED", "CANCELLED"):
+        assert pig.active_claim_stamp([
+            comments[0],
+            _claim("2026-10-04T12:00:00Z",
+                   f"[{close}] lane myia-po-2027:CoursIA"),
+        ]) is None, close
+
+
+def test_active_claim_stamp_keeps_the_lane_still_holding_it():
+    """Une lane rend, une autre tient encore : la date est celle du claim
+    encore actif, pas la plus recente de toutes."""
+    comments = [
+        _claim("2026-10-04T08:00:00Z",
+               "[CLAIMED] lane myia-po-2024:CoursIA -- B"),
+        _claim("2026-10-04T09:00:00Z",
+               "[CLAIMED] lane myia-po-2027:CoursIA -- A"),
+        _claim("2026-10-04T12:00:00Z",
+               "[RELEASED] lane myia-po-2027:CoursIA -- rendu"),
+    ]
+    assert pig.active_claim_stamp(comments) == "2026-10-04T08:00:00Z"
+
+
+def test_active_claim_stamp_delivered_follows_the_pr_state():
+    """``[DELIVERED]`` suit la semantique v2 de l'organe (#12386) : PR ouverte
+    ou mergee = encore tenue, PR fermee sans merge = rendue."""
+    def comments():
+        return [
+            _claim("2026-10-04T09:00:00Z",
+                   "[CLAIMED] lane myia-po-2027:CoursIA -- T1"),
+            _claim("2026-10-04T15:00:00Z",
+                   "[DELIVERED] lane myia-po-2027:CoursIA -- PR #19999"),
+        ]
+    assert pig.active_claim_stamp(
+        comments(), {19999: "OPEN"}) == "2026-10-04T15:00:00Z"
+    assert pig.active_claim_stamp(comments(), {19999: "CLOSED"}) is None
+
+
+def test_belt_released_issue_returns_ahead_of_visited_ones():
+    """Bout en bout sur le tri : apres un ``[RELEASED]``, l'issue repasse
+    devant une issue visitee plus recemment."""
+    claim = _claim("2026-10-04T09:00:00Z",
+                   "[CLAIMED] lane myia-po-2027:CoursIA -- T1")
+    release = _claim("2026-10-04T12:00:00Z",
+                     "[RELEASED] lane myia-po-2027:CoursIA -- rendu")
+
+    def order(comments):
+        pool = [
+            _make_item(100, age_days=60, idle=0,
+                       last="2026-08-01T00:00:00Z",
+                       created="2026-07-01T00:00:00Z"),
+            _make_item(200, age_days=10, idle=0,
+                       last="2026-09-20T00:00:00Z",
+                       created="2026-09-01T00:00:00Z"),
+        ]
+        pig.settle_belt_head(
+            pool, need=2,
+            probe=lambda n: pig.active_claim_stamp(comments)
+            if n == 100 else None,
+            max_probes=4)
+        return [it["number"] for it in pool]
+
+    assert order([claim]) == [200, 100]            # tenue : elle recule
+    assert order([claim, release]) == [100, 200]   # rendue : elle revient
+
+
 def test_latest_claim_stamp_reads_claims_of_any_lane(monkeypatch):
     payload = {"comments": [
-        {"createdAt": "2026-10-04T09:50:12Z",
-         "body": "[CLAIMED] lane myia-po-2027:CoursIA -- T1"},
-        {"createdAt": "2026-10-04T10:50:00Z",
-         "body": "[CLAIMED-AMEND] lane myia-po-2027:CoursIA -- paths: a/**"},
-        {"createdAt": "2026-10-04T12:00:00Z",
-         "body": "T1 livree. Le [CLAIMED] du matin reste valable."},
-        {"createdAt": "2026-10-04T13:00:00Z",
-         "body": "> [CLAIMED] cite dans une reponse"},
+        _claim("2026-10-04T09:50:12Z",
+               "[CLAIMED] lane myia-po-2027:CoursIA -- T1"),
+        _claim("2026-10-04T10:50:00Z",
+               "[CLAIMED-AMEND] lane myia-po-2027:CoursIA -- paths: a/**"),
+        _claim("2026-10-04T12:00:00Z",
+               "T1 livree. Le [CLAIMED] du matin reste valable."),
     ]}
 
     class _R:
