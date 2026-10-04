@@ -247,9 +247,20 @@ def test_analyze_median_overall():
 # --- main -------------------------------------------------------------------
 
 
+class _FrozenDatetime(datetime):
+    """Horloge figee pres des fixtures : main() calcule `since = now - --days`."""
+
+    @classmethod
+    def now(cls, tz=None):
+        return cls(2026, 10, 2, 12, 0, tzinfo=tz)
+
+
 def test_main_json_shape(capsys, monkeypatch):
     runs = {"workflow_runs": [_run(1, _ts(60))], "next_page_url": None}
     jobs = {1: {"jobs": [_job("Scripts Tests (CPU)", "myia-po-2024-linux-docker-4", _ts(0), _ts(30))]}}
+    # Sans horloge figee, le run du 2026-10-01 sort de la fenetre --days 3
+    # des le 2026-10-04 12:00Z et le test rougit toutes les PRs (#15574).
+    monkeypatch.setattr(crv, "datetime", _FrozenDatetime)
     real_collect = crv.collect_jobs
     monkeypatch.setattr(
         crv, "collect_jobs", lambda *a, **k: real_collect(*a, **{**k, "runner": FakeRunner(runs, jobs)})

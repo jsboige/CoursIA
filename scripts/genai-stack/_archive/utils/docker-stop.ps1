@@ -1,4 +1,8 @@
 #Requires -Version 7.0
+# Archive header (standard _archive convention, 2026-08, docs/reference/_archive-convention.md)
+# - Date archived       : 2026-02 (consolidation genai-stack)
+# - Superseded by       : genai.py docker stop (scripts/genai-stack/genai.py)
+# - Verdict recorded in : _archive/ARCHIVE_README.md (registre 4 colonnes) ; #18838
 <#
 .SYNOPSIS
     Arrêt des services Docker GenAI

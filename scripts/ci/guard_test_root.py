@@ -23,6 +23,12 @@ Usage :
     python scripts/ci/guard_test_root.py             # exit 1 si regression
     python scripts/ci/guard_test_root.py --json      # sortie JSON
     python scripts/ci/guard_test_root.py --workflow <path>  # override YAML
+
+Codes de sortie (#19026) : 1 = violation trouvee ; 2 = la garde a derive de
+la forme du workflow (bloc pytest introuvable -- mettre a jour
+PYTEST_BLOCK_RE) ou workflow illisible. Une garde qui ne trouve plus son
+bloc doit echouer bruyamment : rendre rc=0 sur liste vide serait un vert
+silencieux exactement egal a une garde retiree.
 """
 from __future__ import annotations
 
@@ -45,18 +51,23 @@ PYTEST_BLOCK_RE = re.compile(
 )
 
 
-def parse_collected_paths(workflow: Path) -> list[str]:
+def parse_collected_paths(workflow: Path) -> list[str] | None:
     """Lit la liste des chemins collectes par pytest depuis le YAML.
 
     Les arguments de pytest sont multi-lignes, termines par \\. On extrait le
     bloc, on nettoie les continuations de ligne, on splitte sur les espaces,
     on filtre tout ce qui ressemble a un flag (-x, --dist, ...) ou un
     nombre.
+
+    Rend None -- pas [] -- quand le bloc pytest n'est plus trouve (#19026) :
+    une liste vide lue comme « aucune violation » faisait de la garde un
+    vert silencieux des que PYTEST_BLOCK_RE derivait de la forme du
+    workflow. None signale la derive ; l'appelant echoue bruyamment.
     """
     text = workflow.read_text(encoding="utf-8")
     match = PYTEST_BLOCK_RE.search(text)
     if not match:
-        return []
+        return None
     block = match.group(1)
     joined = re.sub(r"\s*\\\s*\n\s*", " ", block)
     tokens = joined.split()
@@ -100,6 +111,11 @@ def _in_scope(parent: Path) -> bool:
 
 def find_violations(collected_paths: list[str]) -> list[Path]:
     """Liste les test_*.py qui ne sont dans aucun chemin collecte.
+
+    Contrat : collected_paths est une liste VALIDE (eventuellement vide, auquel
+    cas il n'y a rien a scanner et la fonction rend []). La distinction « bloc
+    pytest introuvable » vs « bloc trouve » est tranchee en amont par
+    parse_collected_paths (None) -- jamais ici.
 
     Strategie :
     - Pour chaque chemin collecte, distinguer fichier vs dossier.
@@ -174,6 +190,27 @@ def main(argv: list[str] | None = None) -> int:
         collected = parse_collected_paths(args.workflow)
     except Exception as e:
         print(f"FAIL: impossible de parser {args.workflow}: {e}", file=sys.stderr)
+        return 2
+
+    if collected is None:
+        # #19026 : bloc pytest introuvable = la forme du workflow a derive.
+        # Distinction obligatoire avec « bloc trouve, aucune violation » :
+        # l'un est une panne de la garde, l'autre est son verdict sain.
+        drift_msg = (
+            f"FAIL: bloc pytest introuvable dans {args.workflow} -- "
+            "garde derivee de la forme du workflow, mettre a jour PYTEST_BLOCK_RE"
+        )
+        if args.json:
+            out = {
+                "workflow": str(args.workflow.relative_to(REPO_ROOT)),
+                "error": "pytest_block_not_found",
+                "collected_paths": [],
+                "violations": [],
+                "ok": False,
+            }
+            print(json.dumps(out, indent=2, ensure_ascii=False))
+        else:
+            print(drift_msg, file=sys.stderr)
         return 2
 
     violations = find_violations(collected)

@@ -7,16 +7,23 @@ returns a :class:`RiskDecision` for each proposed action.
 
 Breakers (mirrors ``.env`` RISK_* and the parent README "Circuit-breaker
 -10% MaxDD" requirement):
-- drawdown: halt when live drawdown from peak equity >= ``max_dd_pct``.
-- daily loss: halt when session loss >= ``daily_var_pct``.
+- drawdown (second loss threshold): halt **and liquidate** when live drawdown
+  from peak equity >= ``max_dd_pct``; :attr:`RiskGate.exposure_scale` drops to 0.
+- first loss threshold (optional, ``alert_dd_pct``): raise an alert when the
+  drawdown reaches it. With ``alert_halves`` the exposure is also halved, and
+  comes back to 100 % once the drawdown has recovered to half the threshold
+  (hysteresis: re-arming at the threshold itself would flip on every wiggle).
+- daily loss: halt when session loss >= ``daily_var_pct``. New buys stop; the
+  book is not liquidated (a single bad session is an operational signal).
 - single position: block an order whose notional > ``max_position_pct`` of
   the sleeve capital.
 - gross exposure: block an order that would push gross exposure above
   ``max_gross_exposure`` of the sleeve capital.
 
 Persistence: :meth:`RiskGate.save` / :meth:`RiskGate.load` keep the peak
-equity, the day-start equity and a halt across restarts. Without them a
-restart would reset the drawdown reference and clear a tripped breaker.
+equity, the day-start equity, a halt, a liquidation and a halved exposure
+across restarts. Without them a restart would reset the drawdown reference
+and clear a tripped breaker.
 """
 from __future__ import annotations
 
@@ -29,6 +36,8 @@ from typing import Any, Optional
 from .config import RiskConfig
 
 _STATE_KEYS = ("starting_capital", "peak_equity", "day_start_equity", "halted", "halt_reason")
+# Added after the first state files were written: default to False when absent.
+_OPTIONAL_STATE_KEYS = ("liquidate", "reduced")
 
 
 @dataclass(frozen=True)
@@ -55,6 +64,16 @@ class RiskGate:
         self.day_start_equity = starting_capital
         self.halted = False
         self.halt_reason: Optional[str] = None
+        self.liquidate = False   # second threshold tripped: target exposure 0
+        self.reduced = False     # first threshold, halving mode: target exposure 0.5
+        self.alert: Optional[str] = None   # set by the latest update_equity, not persisted
+
+    @property
+    def exposure_scale(self) -> float:
+        """Multiplier the strategy applies to its target weights."""
+        if self.liquidate:
+            return 0.0
+        return 0.5 if self.reduced else 1.0
 
     # -- accounting state -------------------------------------------------
 
@@ -74,10 +93,21 @@ class RiskGate:
         if self.day_start_equity > 0:
             daily = (self.day_start_equity - equity) / self.day_start_equity
 
+        self.alert = None
         if dd >= self.risk.max_dd_pct:
             self._halt(f"max drawdown {dd:.2%} >= {self.risk.max_dd_pct:.2%}")
+            self.liquidate = True
         elif daily >= self.risk.daily_var_pct:
             self._halt(f"daily loss {daily:.2%} >= {self.risk.daily_var_pct:.2%}")
+
+        first = self.risk.alert_dd_pct
+        if first is not None:
+            if dd >= first:
+                self.alert = f"first loss threshold: drawdown {dd:.2%} >= {first:.2%}"
+                if self.risk.alert_halves:
+                    self.reduced = True
+            elif self.reduced and dd <= first / 2:
+                self.reduced = False
 
         if self.halted:
             return RiskDecision(False, self.halt_reason or "halted")
@@ -93,13 +123,24 @@ class RiskGate:
             self.halt_reason = reason
 
     def clear_halt(self) -> None:
+        """Manual reset after review.
+
+        Clearing a drawdown liquidation also restarts the measure from a new peak, taken at
+        the next equity mark: the sleeve goes back to paper, and with the old peak that mark
+        would trip the breaker again at once. A daily-loss halt keeps its peak and halving.
+        """
+        if self.liquidate:
+            self.peak_equity = 0.0
+            self.reduced = False
+            self.alert = None
         self.halted = False
         self.halt_reason = None
+        self.liquidate = False
 
     # -- persistence ------------------------------------------------------
 
     def to_state(self) -> dict[str, Any]:
-        return {key: getattr(self, key) for key in _STATE_KEYS}
+        return {key: getattr(self, key) for key in _STATE_KEYS + _OPTIONAL_STATE_KEYS}
 
     @classmethod
     def from_state(cls, risk: RiskConfig, state: dict[str, Any]) -> "RiskGate":
@@ -111,6 +152,10 @@ class RiskGate:
         gate.day_start_equity = float(state["day_start_equity"])
         gate.halted = bool(state["halted"])
         gate.halt_reason = state["halt_reason"]
+        # A file from before the liquidation flag: a drawdown halt meant liquidation.
+        default_liq = gate.halted and str(gate.halt_reason or "").startswith("max drawdown")
+        gate.liquidate = bool(state.get("liquidate", default_liq))
+        gate.reduced = bool(state.get("reduced", False))
         return gate
 
     def save(self, path: Path) -> None:
