@@ -32,6 +32,22 @@ Liste des items déjà reclassés par le protocole [.claude/rules/audit-reassess
 - SC-22 Solana-Anchor (6/6 exec 0 err — print-based demos are only viable approach for Solana/Rust in Python kernel)
 - SC-11 LLM-Assisted (15/15 exec 0 err — exercise stubs correctly have empty outputs)
 
+## FP connus — organe `check_density_anchor`, ancre « stub d'exercice »
+
+Mesuré le 2026-10-04 sur `MyIA.AI.Notebooks/QuantConnect/Python/*.ipynb` : 46 findings de la sous-classe `ancre = stub d'exercice` / `ancre sans aucun output (stub d'exercice)`. **45 sont des faux positifs.**
+
+L'heuristique d'ancrage prend la cellule de code précédente ; quand celle-ci est un stub d'exercice, elle conclut que la cellule de lecture commente le stub. Or la cellule de lecture est presque toujours un **récapitulatif de fin de section** ou un **titre de la section suivante**, placé après le bloc d'exercice par construction :
+
+- `### <section> — ce qu'il faut retenir` : cite des valeurs mesurées dans des cellules **antérieures** (QC-Py-21 c30 cite α = 0.020, mesuré en c24 — ce n'est pas la réponse de l'exercice 2) ;
+- `### Limites de ...`, `## Partie N : ...`, `### Feature Importance Preview` : titres de section, sans rapport avec le stub ;
+- `> **Interprétation**` d'une autre partie, déplacée par une consolidation (QC-Py-22 c37/c48, renvois transversaux #13756).
+
+Filtre mécanique (prose portant à la fois une référence en avant — « qui suit », « ci-dessous » — et « exercice N ») : une seule cellule sur les 46. **Ne pas re-dispatcher cette sous-classe** : une réparation en masse produirait 45 éditions aveugles.
+
+## Confirmed — ancrage de lecture réellement mal placé
+
+- QC-Py-04-Research-Workflow c33 : seconde interprétation de la volatilité rolling, dont la prose annonce « l'exercice 1 **qui suit** », alors que l'exercice 1 (c31-c32) se trouve **au-dessus** d'elle — la prose désignait une cellule située en arrière. Corrigé par déplacement de la cellule entre c30 et c31 : la prose redevient vraie, et l'ancrage repasse du stub à la cellule de code qui produit les valeurs citées (c29, 3 outputs). Vérifié après coup : `check_density_anchor.py` ne rapporte plus cette cellule.
+
 ## Step 1 — vérification mécanique (script)
 
 ```python
