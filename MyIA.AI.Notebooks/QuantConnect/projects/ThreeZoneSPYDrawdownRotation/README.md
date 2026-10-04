@@ -180,7 +180,7 @@ l'historique du fichier (commit `cd56c2512a`).
 
 | Point | État |
 |-------|------|
-| 1. Cloner le projet source | Non réalisable (accès refusé) → réimplémentation déclarée, DM envoyé au coordinateur pour le canal d'accès de la flotte |
+| 1. Cloner le projet source | Non réalisable (accès refusé) → réimplémentation déclarée. Réponse coordinateur (04/10) : demande transmise à la lane QC qui a lu la fiche ; si le code source arrive, il servira **d'oracle de vérification** (écarts cités), jamais commité tel quel |
 | 2. Backtest frais IBKR | **Rejoué sur code corrigé** (v4 `bf0655ac`, 2018-2026, 1961 ordres) ; grille OAT en cours de rejeu sur compile v4 |
 | 3. Mesures + comparaisons | Benchmarks SPY détenu et 60/40 **valides** (aucun titre dividende requis) ; corrélations ETF mesurées puis invalidées, à rejouer |
 | 4. Verdict + robustesse | **Grille OAT rejouée 7/7 sur code corrigé** (4 axes mordants dont top_n/min_yield révélés par le fix) ; verdict après fee2, corrélations et sous-périodes |
