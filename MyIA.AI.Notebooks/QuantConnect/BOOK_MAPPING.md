@@ -134,7 +134,7 @@ Les projets [RL-DQN-Trading](projects/RL-DQN-Trading/) et [Reinforcement-Learnin
 | # | Exemple du livre | Projet(s) du dépôt | Statut | Statut QC | Remarque |
 |---|------------------|--------------------|--------|-----------|----------|
 | 01 | Conditional Portfolio Optimization Applied | [Portfolio-Optimization-ML](projects/Portfolio-Optimization-ML/), [QC-Py-21-Portfolio-Optimization-ML](Python/QC-Py-21-Portfolio-Optimization-ML.ipynb) | PARTIAL | Recherche-phase | optimisation de portefeuille sans le service PredictNow.ai du livre (API payante) |
-| 02 | Application of Corrective Artificial Intelligence Applied | [Corrective-AI](projects/Corrective-AI/) | STUB | Stub | portage suivi par [#18901](https://github.com/jsboige/CoursIA/issues/18901) |
+| 02 | Application of Corrective Artificial Intelligence Applied | [Corrective-AI](projects/Corrective-AI/) | COVERED | Backteste | portage [#18901](https://github.com/jsboige/CoursIA/issues/18901) : primaire Breedon-Ranaldo + méta-étiquetage sans predictnow.ai (payant) |
 
 ---
 
