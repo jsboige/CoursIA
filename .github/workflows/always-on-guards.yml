@@ -1440,6 +1440,69 @@ jobs:
         continue-on-error: true
         run: python scripts/ci/check_secret_paths_ignored.py --repo .
 
+      # #18835 -- detecteur OSS signature (Aliyun presigned URL fragments
+      # dans JSON / notebook outputs / prose py-cs-md en mode --strict).
+      # Avant ce PR, l'organe etait isole, jamais arme (CR myia-ai-01
+      # 22:36Z sur PR #18835 : "Organe non arme. Aucun workflow ne
+      # l'appelle : en l'etat, il ne protege rien"). Le cabler ici, dans
+      # always-on-guards, lui donne la couverture complete (chaque PR est
+      # executee). Controle positif : la fixture DIRTY generee dans le
+      # test `test_detect_oss_signature.py` confirme la detection ; le
+      # controle negatif sur le depot (test `test_controle_negatif_sur_le_depot`)
+      # verifie que l'organe repond et structure sa sortie sans faux
+      # rouge sur main.
+      - name: "Detecteur OSS signature fragments (#18835)"
+        id: oss_signature
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          # --json obligatoire : sans lui, stdout est du texte formate
+          # (CLEAN -- scanned ... / DIRTY -- ...), pas du JSON, et le
+          # parsing ci-dessous classerait un reel DIRTY comme UNKNOWN
+          # (cote step : RC != 0 mais verdict illisible -> branche else
+          # -> exit 1 sans findings exposes). Cf steer adjoint c22
+          # (2026-10-03) sur PR #18895 : "le caller always-on appelle
+          # detect_oss_signature.py SANS --json puis fait json.load sur
+          # stdout -- un positif DIRTY serait classe UNKNOWN au lieu de
+          # hit (fail-open de l'organe)".
+          python3 scripts/ci/detect_oss_signature.py --json > /tmp/oss_sig.json 2>/tmp/oss_sig.err && RC=0 || RC=$?
+          if [ -s /tmp/oss_sig.err ]; then
+            echo "--- helper stderr ---"
+            cat /tmp/oss_sig.err
+          fi
+          echo "--- verdict ---"
+          cat /tmp/oss_sig.json 2>/dev/null || true
+
+          if [ "$RC" -eq 0 ]; then
+            echo "Aucun fragment OSS signature detecte en scope json/ipynb -- job passes."
+            exit 0
+          fi
+
+          VERDICT=$(python3 -c "import json; print(json.load(open('/tmp/oss_sig.json')).get('verdict','?'))" 2>/dev/null || echo "?")
+          if [ "$VERDICT" = "DIRTY" ]; then
+            # Findings exposes dans le log du step pour que le porteur
+            # de la PR voie QUOI a ete detecte et OU (fichier + ligne).
+            # Sans cela, un DIRTY reel n'etait qu'une ligne rouge sans
+            # diagnostic derrierrable -- steer adjoint c22.
+            echo "::error::Fragment OSS signature detecte dans le scope (json/ipynb) -- bloquant (#18835). Findings exposes dans /tmp/oss_sig.json."
+            python3 - <<'PY' 2>/dev/null || true
+          import json
+          try:
+              p = json.load(open('/tmp/oss_sig.json'))
+              for f in p.get('findings', []):
+                  print(f"::error::  {f.get('surface','?'):>4} {f.get('file','?')}")
+                  for h in f.get('hits', [])[:3]:
+                      print(f"::error::    L{h.get('line','?')} {h.get('pattern','?')[:48]} :: {h.get('match','?')[:80]}")
+          except Exception as e:
+              print(f"::warning::findings non exposés ({e})")
+          PY
+            exit 1
+          fi
+
+          echo "::error::Verdict non-DIRTY ou illisible -- verdict UNKNOWN, ce n'est PAS un fragment detecte. Sortie de l'organe : $(cat /tmp/oss_sig.json 2>/dev/null || echo 'absent')."
+          exit 1
+
       # -----------------------------------------------------------------
       # AGREGAT : la couleur du job. Un organe bloquant echoue -> rouge.
       # Les organes advisory ne figurent pas ici (ils sortent toujours 0 ;
@@ -1471,6 +1534,7 @@ jobs:
           check results_weight "${{ steps.results_weight.outcome }}"
           check grothendieck_umbrella "${{ steps.grothendieck_umbrella.outcome }}"
           check secret_paths_ignored "${{ steps.secret_paths_ignored.outcome }}"
+          check oss_signature "${{ steps.oss_signature.outcome }}"
           if [ -n "$FAILED" ]; then
             echo "::error::Organes bloquants en echec :$FAILED (le detail est dans les steps correspondants ci-dessus)."
             exit 1

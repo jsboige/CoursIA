@@ -470,7 +470,7 @@ cp .env.example .env
 
 ## Lecture transversale
 
-La série SemanticWeb illustre un mouvement profond du dépôt CoursIA : **prendre des données non-structurées et les re-représenter dans un cadre vérifiable**. RDF donne un sens formel à du JSON, OWL ajoute le raisonnement, SHACL ajoute la validation, GraphRAG ancre les LLMs sur des faits. Ce geste — trouver la représentation où le problème se dissout — traverse toutes les séries du dépôt, des CSP (Search) aux preuves Lean (SymbolicAI). La clé de lecture [La mer qui monte](../../../docs/grothendieckian-lens.md) développe ce fil conducteur.
+La série SemanticWeb illustre un mouvement profond du dépôt CoursIA : **prendre des données non-structurées et les re-représenter dans un cadre vérifiable**. RDF donne un sens formel à du JSON, OWL ajoute le raisonnement, SHACL ajoute la validation, GraphRAG ancre les LLMs sur des faits. Ce geste — trouver la représentation où le problème se dissout — traverse toutes les séries du dépôt, des CSP (Search) aux preuves Lean (SymbolicAI). La clé de lecture [La mer qui monte](../../../docs/cadrage/grothendieckian-lens.md) développe ce fil conducteur.
 
 ---
 
