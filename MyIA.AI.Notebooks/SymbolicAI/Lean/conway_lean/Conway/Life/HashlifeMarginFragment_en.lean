@@ -2225,6 +2225,183 @@ theorem cexBlock1_supportInMargin_k2 : supportInMargin cexBlock1 2 :=
 theorem cexEmpty1_supportInMargin_k0 : supportInMargin cexEmpty1 0 :=
   supportInMargin_trivial _ _
 
+/-! ## Tranche 14 — compositionality: disjoint union (#13483)
+
+The missing locality law of the program: two configurations whose supports are
+separated by more than `2·t` evolve independently — the evolution of the union
+is the union of the evolutions, in the membership sense (`evolve_union_mem`). This is the assembly brick
+of the admitted classes (still life, oscillator, spaceship): the actual
+content of Life patterns is a juxtaposition of pieces from these classes. The
+capture transfer (trajectory boxes of the parts → `jumpCapturedF` of the
+union's reconstruction, via the `jumpCapturedF_of_dilation` corridor) is the
+next tranche: it requires the padded-render geometry, the cloison already
+named by that corridor.
+-/
+
+/-- **Tranche 14, link 1(a) — local agreement of union and part.** On the
+    Chebyshev-`t` box of a point `q` near `g₁` (witness `hnear`), the union
+    `g₁ ++ g₂` and `g₁` alone render the same state: any live cell of `g₂` in
+    the box would be at distance `≤ 2·t` from the witness (triangle),
+    contradicting the **strict** separation `2·t < d` — the equality case
+    (`2·t = d`) lets the box touch both supports, hence the strict bound. -/
+theorem union_agrees_with_left (t : Nat) (g₁ g₂ : Grid) (q : Int × Int)
+    (hnear : ∃ p, p ∈ g₁ ∧ chebDist p q ≤ t)
+    (hsep : ∀ p ∈ g₁, ∀ r ∈ g₂, 2 * t < chebDist p r) :
+    ∀ r, chebDist q r ≤ t → isAlive (g₁ ++ g₂) r = isAlive g₁ r := by
+  intro r hqr
+  obtain ⟨p, hp₁, hpq⟩ := hnear
+  have hg₂r : r ∉ g₂ := by
+    intro hrmem
+    have hle := hsep p hp₁ r hrmem
+    have htri : chebDist p r ≤ chebDist p q + chebDist q r := chebDist_triangle p r q
+    omega
+  cases hb : isAlive (g₁ ++ g₂) r with
+  | true =>
+    have hm := (isAlive_true_iff_mem _ r).mp hb
+    rw [List.mem_append] at hm
+    rcases hm with h | h
+    · exact ((isAlive_true_iff_mem g₁ r).mpr h).symm
+    · exact absurd h hg₂r
+  | false =>
+    cases hc : isAlive g₁ r with
+    | true =>
+      have hu : r ∈ g₁ := (isAlive_true_iff_mem g₁ r).mp hc
+      have hcontr : isAlive (g₁ ++ g₂) r = true :=
+        (isAlive_true_iff_mem _ r).mpr (List.mem_append.mpr (Or.inl hu))
+      rw [hb] at hcontr
+      exact Bool.noConfusion hcontr
+    | false => rfl
+
+/-- **Tranche 14, link 0 — union in the `isAlive` sense.** Purely
+    set-theoretic brick (no separation required, no time step): the state
+    of an append is the "or" of the states of the parts. Serves the `t = 0`
+    case of the union law and the append-order bridge. -/
+theorem isAlive_append_or (g₁ g₂ : Grid) (q : Int × Int) :
+    isAlive (g₁ ++ g₂) q = (isAlive g₁ q || isAlive g₂ q) := by
+  cases hA : isAlive g₁ q with
+  | true =>
+      have hm : q ∈ g₁ ++ g₂ :=
+        List.mem_append.mpr (Or.inl ((isAlive_true_iff_mem g₁ q).mp hA))
+      rw [(isAlive_true_iff_mem _ q).mpr hm, Bool.true_or]
+  | false =>
+      cases hB : isAlive g₂ q with
+      | true =>
+          have hm : q ∈ g₁ ++ g₂ :=
+            List.mem_append.mpr (Or.inr ((isAlive_true_iff_mem g₂ q).mp hB))
+          rw [(isAlive_true_iff_mem _ q).mpr hm, Bool.false_or]
+      | false =>
+          have hU : isAlive (g₁ ++ g₂) q = false := by
+            cases hd : isAlive (g₁ ++ g₂) q with
+            | false => rfl
+            | true =>
+                have hmem := (isAlive_true_iff_mem _ q).mp hd
+                rw [List.mem_append] at hmem
+                rcases hmem with h | h
+                · rw [(isAlive_true_iff_mem g₁ q).mpr h] at hA
+                  exact Bool.noConfusion hA
+                · rw [(isAlive_true_iff_mem g₂ q).mpr h] at hB
+                  exact Bool.noConfusion hB
+          rw [hU, Bool.false_or]
+
+/-- **Tranche 14, link 1(b) — the pointwise union law.** Under strict
+    separation `2·t < d` of the initial supports, the state at any point
+    after `t` generations of the union is the "or" of the states of the
+    parts: near `g₁` the union evolves like `g₁` alone (local agreement) and
+    `g₂` is dead there (cone + triangle); outside both cones, everything is
+    dead. -/
+theorem evolve_union (t : Nat) (g₁ g₂ : Grid)
+    (hsep : ∀ p ∈ g₁, ∀ r ∈ g₂, 2 * t < chebDist p r) (q : Int × Int) :
+    isAlive (evolve t (g₁ ++ g₂)) q =
+      (isAlive (evolve t g₁) q || isAlive (evolve t g₂) q) := by
+  by_cases hn₁ : ∃ p, p ∈ g₁ ∧ chebDist p q ≤ t
+  · have hagree : ∀ r, chebDist q r ≤ t → isAlive (g₁ ++ g₂) r = isAlive g₁ r :=
+      union_agrees_with_left t g₁ g₂ q hn₁ hsep
+    have hbow : isAlive (evolve t (g₁ ++ g₂)) q = isAlive (evolve t g₁) q :=
+      evolve_box_agree t (g₁ ++ g₂) g₁ q hagree
+    have hdead : isAlive (evolve t g₂) q = false := by
+      cases hd : isAlive (evolve t g₂) q with
+      | false => rfl
+      | true =>
+        obtain ⟨r, hr₂, hrq⟩ := evolve_reach_chebyshev t g₂ q hd
+        obtain ⟨p, hp₁, hpq⟩ := hn₁
+        have hle := hsep p hp₁ r ((isAlive_true_iff_mem g₂ r).mp hr₂)
+        have htri : chebDist p r ≤ chebDist p q + chebDist q r :=
+          chebDist_triangle p r q
+        have hcomm : chebDist q r = chebDist r q := chebDist_comm q r
+        omega
+    rw [hbow, hdead, Bool.or_false]
+  · by_cases hn₂ : ∃ p, p ∈ g₂ ∧ chebDist p q ≤ t
+    · have hseps : ∀ p ∈ g₂, ∀ r ∈ g₁, 2 * t < chebDist p r := by
+        intro p hp r hr
+        have hle := hsep r hr p hp
+        rw [chebDist_comm]
+        exact hle
+      have hagree : ∀ r, chebDist q r ≤ t → isAlive (g₂ ++ g₁) r = isAlive g₂ r :=
+        union_agrees_with_left t g₂ g₁ q hn₂ hseps
+      have hbow : isAlive (evolve t (g₂ ++ g₁)) q = isAlive (evolve t g₂) q :=
+        evolve_box_agree t (g₂ ++ g₁) g₂ q hagree
+      have hdead : isAlive (evolve t g₁) q = false := by
+        cases hd : isAlive (evolve t g₁) q with
+        | false => rfl
+        | true =>
+          obtain ⟨r, hr₁, hrq⟩ := evolve_reach_chebyshev t g₁ q hd
+          obtain ⟨p, hp₂, hpq⟩ := hn₂
+          have hle := hseps p hp₂ r ((isAlive_true_iff_mem g₁ r).mp hr₁)
+          have htri : chebDist p r ≤ chebDist p q + chebDist q r :=
+            chebDist_triangle p r q
+          have hcomm : chebDist q r = chebDist r q := chebDist_comm q r
+          omega
+      have hswap : isAlive (evolve t (g₁ ++ g₂)) q = isAlive (evolve t (g₂ ++ g₁)) q := by
+        cases t with
+        | zero =>
+            show isAlive (g₁ ++ g₂) q = isAlive (g₂ ++ g₁) q
+            rw [isAlive_append_or g₁ g₂ q, isAlive_append_or g₂ g₁ q]
+            cases isAlive g₁ q <;> cases isAlive g₂ q <;> rfl
+        | succ n =>
+            exact congrArg (isAlive · q) (evolve_congr (fun p =>
+              List.mem_append.trans (or_comm.trans List.mem_append.symm))
+              (Nat.succ_le_succ (Nat.zero_le n)))
+      rw [hswap, hbow, hdead, Bool.false_or]
+    · have hdead₁ : isAlive (evolve t g₁) q = false := by
+        cases hd : isAlive (evolve t g₁) q with
+        | false => rfl
+        | true =>
+          obtain ⟨p, hp₁, hpq⟩ := evolve_reach_chebyshev t g₁ q hd
+          exact absurd ⟨p, (isAlive_true_iff_mem g₁ p).mp hp₁, hpq⟩ hn₁
+      have hdead₂ : isAlive (evolve t g₂) q = false := by
+        cases hd : isAlive (evolve t g₂) q with
+        | false => rfl
+        | true =>
+          obtain ⟨p, hp₂, hpq⟩ := evolve_reach_chebyshev t g₂ q hd
+          exact absurd ⟨p, (isAlive_true_iff_mem g₂ p).mp hp₂, hpq⟩ hn₂
+      have hdeadU : isAlive (evolve t (g₁ ++ g₂)) q = false := by
+        cases hd : isAlive (evolve t (g₁ ++ g₂)) q with
+        | false => rfl
+        | true =>
+          obtain ⟨p, hpU, hpq⟩ := evolve_reach_chebyshev t (g₁ ++ g₂) q hd
+          have hmemU : p ∈ g₁ ++ g₂ := (isAlive_true_iff_mem _ p).mp hpU
+          rw [List.mem_append] at hmemU
+          rcases hmemU with h | h
+          · exact absurd ⟨p, h, hpq⟩ hn₁
+          · exact absurd ⟨p, h, hpq⟩ hn₂
+      rw [hdeadU, hdead₁, hdead₂, Bool.false_or]
+
+/-- **Tranche 14, link 1(c) — trajectory of the union, membership form.**
+    Under strict separation `2·t < d` of the initial supports, the membership
+    of the evolution of the union is the union of the memberships of the
+    evolutions. The "literal list" form `evolve t (g₁ ++ g₂) = evolve t g₁ ++
+    evolve t g₂` is false for `t ≥ 1`: the canonical enumeration of `evolve`
+    (lexicographic order, `canonical_evolve_of_pos`) interleaves points of
+    separated parts sharing a column, where the append keeps them blocked —
+    order is not preserved, only the support is. This is the compositionality
+    brick that the capture transfer (tranche 14b) will consume: trajectory
+    boxes of the parts → box of the union, membership reasoning. -/
+theorem evolve_union_mem (t : Nat) (g₁ g₂ : Grid)
+    (hsep : ∀ p ∈ g₁, ∀ r ∈ g₂, 2 * t < chebDist p r) (q : Int × Int) :
+    q ∈ evolve t (g₁ ++ g₂) ↔ (q ∈ evolve t g₁ ∨ q ∈ evolve t g₂) := by
+  simp only [← isAlive_true_iff_mem]
+  rw [evolve_union t g₁ g₂ hsep q, Bool.or_eq_true]
+
 /-! ## Synthesis — the fragment is non-empty and the framework statement is honest
 
 `supportInMargin` is decidable and witnessed on the bestiary (above). The framework
