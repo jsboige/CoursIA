@@ -2103,6 +2103,32 @@ def test_derive_verdict_names_each_blocking_measurement():
     assert any("unlifted remark" in r for r in reasons)
 
 
+def test_derive_verdict_blocked_when_merged():
+    """#18984 -- une PR MERGED ne peut pas etre READY (constat adjoint 04/10).
+
+    validate_dossier exigeait deja state OPEN ; la derivation l'omettait :
+    sur un snapshot MERGED aux checks verts, derive_verdict rendait READY.
+    """
+    snapshot = _base_snapshot()
+    snapshot["state"] = "MERGED"
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}
+    )
+    assert verdict == mod.VERDICT_BLOCKED
+    assert any("state must be OPEN" in r for r in reasons), reasons
+
+
+def test_derive_verdict_blocked_when_empty_diff():
+    """#18984 -- un diff vide n'a rien a squasher, READY impossible."""
+    snapshot = _base_snapshot()
+    snapshot["changedFiles"] = 0
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}
+    )
+    assert verdict == mod.VERDICT_BLOCKED
+    assert any("non-empty diff" in r for r in reasons), reasons
+
+
 def test_derive_verdict_probes_b0_by_default(monkeypatch):
     probe, calls = _organ(False)
     monkeypatch.setattr(mod, "probe_b0", probe)

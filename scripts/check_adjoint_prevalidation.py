@@ -881,7 +881,9 @@ def derive_verdict(
 
     L'organe refait au moment de l'appel les mesures que le gate refait a
     l'evaluation : latest-wins des checks (requis + verts), B.0 (organe
-    ``check_unaddressed_nits``), threads non resolus, draft. Renvoie
+    ``check_unaddressed_nits``), threads non resolus, draft -- et, depuis
+    le constat adjoint du 04/10 (PR #18984) : etat OPEN et diff non vide,
+    les deux predicats que ``validate_dossier`` exigeait deja. Renvoie
     ``(VERDICT_READY, [])`` quand toutes sont vertes, sinon
     ``(VERDICT_BLOCKED, raisons)``. C'est le rendu de CETTE fonction -- via
     ``--derive-verdict`` -- qu'un dossier READY doit citer (organ,
@@ -903,6 +905,16 @@ def derive_verdict(
     )
     if unresolved:
         reasons.append(f"{unresolved} unresolved review thread(s)")
+    # Les deux predicats que validate_dossier exigeait deja mais que la
+    # derivation initiale omettait (constat adjoint 04/10, PR #18984) :
+    # une PR MERGED ou CLOSED ne peut pas etre READY, et un diff vide
+    # n'a rien a squasher -- garder derive et validate symetriques.
+    if snapshot.get("state") != "OPEN":
+        reasons.append(
+            f"pull request state must be OPEN, live={snapshot.get('state')}"
+        )
+    if snapshot.get("changedFiles") == 0:
+        reasons.append("READY requires a non-empty diff: 0 files changed")
     reasons.extend(
         b0_claim_contradictions("clear", (probe or probe_b0)(snapshot["number"]))
     )
