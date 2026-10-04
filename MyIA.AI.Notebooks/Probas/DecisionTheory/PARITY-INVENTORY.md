@@ -8,6 +8,11 @@
 > `NUMBERING-DRIFT` livrée par [PR #13017](https://github.com/jsboige/CoursIA/pull/13017) (po-2023).
 > Sans inventaire, le verdict NUMBERING-DRIFT ne dispose pas d'un mapping de référence pour
 > argumenter les tranches de renommage à venir.
+>
+> **Etat mesuré au 2026-10-02** : l'arc actuariel (ex-DecPyMC-8 à 12) est descendu en sous-série dédiée
+> [`Actuariat/`](Actuariat/README.md) — régraduation T1-T5 = `Actuariat-01..05` (arbitrage #14873 G3).
+> Le présent document reste le snapshot pré-merge du HEAD `87dffc2bd9c` : ses références à
+> DecPyMC-8/9/12 décrivent l'état historique au moment de la tranche P0 et sont conservées telles quelles.
 
 ## Périmètre strict de la tranche
 

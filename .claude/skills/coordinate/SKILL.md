@@ -24,6 +24,12 @@ Cycle de coordination du cluster CoursIA. **Reserve au coordinateur ai-01** : un
 5. **Tout ce qui est delegable EST delegue**, sans arbitrage au cas par cas. Attendre le cron suivant pour recuperer un resultat est gratuit — verbatim : « tu peux tout a fait attendre un cron pour economiser tes tokens, on n'est pas a 4h pres sauf crise a gerer ».
 6. **Le contenu appartient au coordinateur adjoint** (`myia-po-2025:CoursIA-2`) : notebooks, series, pedagogie. ai-01 ne garde que les PRs de **CI et de harnais**. Entrer dans le corps d'une PR de contenu est par defaut une faute de budget.
 7. **Les taches lourdes** (tests, builds lake, trainings, papermill) se lancent en arriere-plan **AU DEBUT de la phase de travail reel**, pour travailler en foreground pendant leur execution.
+8. **Bornes de sondage (recommandées — [#16144](https://github.com/jsboige/CoursIA/issues/16144), [plan du 14/09](https://github.com/jsboige/CoursIA/issues/16144#issuecomment-5663038997), item 1) — le re-sondage d'un etat est un doublon payant.** Mesure fondatrice : 825 `gh pr view` sur 90 PRs en un cycle de 13 h, dont #15917 relue 29 fois en 6 salves pendant des attentes ; 61 % des PRs ouvertes n'ont jamais ete mergees. Deux bornes :
+   - **B2 — un etat de PR lu n'est pas re-sonde avant plusieurs minutes, sauf changement d'etat signale** (notification, Monitor arme, `--watch`). La borne vise la **persistance du sondage pendant une attente**, pas la repetition dans un meme tour — la mesure du 14/09 n'a trouve aucun doublon intra-tour.
+   - **B3 — ne pas rouvrir une PR dont le blocage est deja connu et date** (DWELL a echeance, reserve non levee, rouge attribue a une lane) : consulter la date une fois, pas le dossier a chaque tour.
+   Les bornes B1 et B2-bis du plan d'origine (ne pas re-sonder ce qu'une surveillance couvre deja) ne se re-encodent pas ici : la regle flotte « une condition asynchrone a **un seul observateur** ; ne jamais poller en parallele d'une notification existante » (CLAUDE.md global, chargee dans chaque session) les porte deja.
+   **Avertissement porte par le plan lui-meme** : la prose seule a echoue quatre fois le matin du 14/09 (lecons deja ecrites, non recuperees au moment du geste) — l'organe `scripts/check_pr_repoll.py` (item 2 du plan, forme proposee dans [#16144](https://github.com/jsboige/CoursIA/issues/16144)) reste du, decision a ai-01. Ces bornes sont le filet court-terme, pas le correctif.
+9. **Lecon version-client (2026-09-12, [#16144](https://github.com/jsboige/CoursIA/issues/16144)) — CC >= 2.1.269 a retire du prompt generique les bornes implicites** (rumination, perimetre, delegation) : trois harnais distincts ont bascule a la meme minute lors du passage 2.1.268 -> 2.1.269 (1 985 -> 4 430, 1 813 -> 3 468, 1 325 -> 2 548 OUT/req en controle same-lane). Le runtime ne les reintroduira pas. **Toute montee de version future du poste client s'audite par paires same-lane avant generalisation** — le 12/09 a bascule quatre lanes d'un coup, sans prevision ni controle.
 
 ## Process
 
@@ -62,6 +68,22 @@ Les phases ci-dessous s'executent sous le budget defini par la section `## Budge
 9. **MAJ memoire maintenant, pas en fin de cycle** : `coordinator-durable-state.md` si l'etat durable a bouge. Repoussee a la fin, elle saute quand le cycle deborde -- et le cycle suivant re-derive ce qu'il savait deja.
 
 **Budget** : ces neuf points sont **clos avant** d'ouvrir la Phase 4. S'ils ne le sont pas a la fin des 30 minutes, ce sont eux qu'on termine -- pas le merge qu'on commence.
+
+### Phase 3bis - Taches de fond : les deux ping-pongs (mandat user 2026-10-03)
+
+Deux circuits asynchrones tournent **pendant** que le cycle merge. Ce sont deux circuits distincts : l'entrainement n'est pas une branche du proving. Le coordinateur ne fait pas leur travail ; il verifie a chaque cycle que chaque boucle tourne, et il relance le maillon qui manque.
+
+| Ping-pong | Ce qui tourne | Qui lance | Qui exploite le resultat | Rendez-vous |
+|---|---|---|---|---|
+| **Proving** | passes du harnais prover (`agent_tests/prover`) | la lane qui tient le harnais | la forensic CoursIA, qui rend des lecons a la passe suivante | #1453 |
+| **GPU** | entrainements et experiences | ai-01 sur son GPU d'experiences (grande echelle) ; les lanes a petit GPU defrichent a petite echelle | la lane qui a defriche, ou qui porte le carnet | #1454 |
+
+1. **Lancer AU DEBUT de la phase de travail reel, en arriere-plan, puis PARTIR.** La prochaine action porte sur un autre track (merge-gate, dispatch). Jamais de poll au premier plan sur un run qu'on vient de lancer : la notification de fin est le seul observateur. Une exception : un controle de surete juste apres le lancement (le run est-il sur le bon device ?).
+2. **GPU : etat, puis reservation.** Lire `nvidia-smi --query-gpu=index,memory.used,utilization.gpu,temperature.gpu --format=csv` et la derniere observation du ledger `gpu-reservation` (dashboard `CoursIA-gpu-reservation-ledger`). GPU d'experiences sous 500 MiB et aucune reservation `held` : lancer le prochain job de la file #1454 (commande remise par la lane qui defriche, ou complement multi-seed d'un run deja livre). Reserver **avant** de charger (`python scripts/coordination/debt_ledger.py append --ledger gpu-reservation`, avec echeance), puis poster l'observation ; passer en `released` a la fin.
+3. **GPU : garde-fous.** Le device se pose **explicitement**, d'apres la topologie mesuree de la machine (`nvidia-smi -L`). Sur ai-01, les GPU 0+1 portent le vLLM de la flotte : un runner qui fixe lui-meme `CUDA_VISIBLE_DEVICES` se neutralise ou se contourne, jamais ne se lance tel quel. Un seul job GPU a la fois, abandon au-dela de 85 °C, worktree detache dedie, sorties hors depot.
+4. **Proving : verifier la boucle, pas la refaire.** Derniere passe et sa trace sur #1453, forensic rendue ou non, lecons reinjectees ou non dans la passe suivante. Le maillon manquant se **dispatche nommement** (DM + pointeur dashboard) a la lane qui le porte.
+5. **Rendre.** Un run termine produit un artefact (traces, JSONL, carnet de sortie) remis a la lane qui l'exploite, par DM et commentaire sur l'issue de rendez-vous. Il n'entre dans le depot que par la PR de la lane proprietaire du carnet ou du script.
+6. **Rapport.** Le `[DONE]` porte une ligne `[BG] proving: <derniere passe / forensic> | gpu: <job, device, debut, fin prevue> ou libre`. Un GPU d'experiences vide sans raison ecrite est une dette du cycle, a lever au suivant.
 
 ### Phase 4 - Merge PAR LA QUEUE, sur dossiers premaches
 

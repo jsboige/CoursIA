@@ -425,6 +425,21 @@ Deux pièges font échouer un cache écrit « au feeling » :
 
 **Résiduel honnête** : A2/A3 (contrôles positif et négatif sur un **log de job** réel) ne sont pas satisfaits par cette tranche. Ils exigent une image **reconstruite et redéployée**, puis un job réel : la preuve qu'on peut apporter sans déploiement s'arrête au contenu de l'image, et c'est ce qui est mesuré ci-dessus.
 
+#### A2/A3 — les contrôles positif et négatif, mesurés sur jobs réels (#16654)
+
+Le résiduel ci-dessus est refermé le 2026-10-03 : image reconstruite (`docker build` du `linux-runner`, seed à 11 archives, `setup-python` à `a26af69be951a…` — le SHA même de la preuve A1) et **deux jobs réels** exécutés dessus (run `37093241932`, jobs `111117851523`/`111117939237`, tous deux succès), depuis un slot éphémère à **label unique** `seed-a23` enregistré par `ACTIONS_RUNNER_INPUT_*` puis désenregistré nativement après un job — aucun job de la flotte (pools `coursia-*`) ne peut atterrir sur ce label, et la flotte de production n'a pas été touchée : le contrôle démontre le comportement de l'image reconstruite, pas un redéploiement des slots po-2024.
+
+**Où la preuve se lit** — pas dans le libellé du journal de job : « Download action repository » y figure **même sur hit** (c'est le nom d'étape, pas un événement réseau). La preuve vit dans le **journal de diagnostic du runner** (`/opt/runner/_diag/Worker_*.log`, niveau INFO) et dans l'état du répertoire de cache mesuré après le job (`docker cp` du conteneur mort, comparé à la baseline du build) :
+
+| contrôle | diagnostic du runner (INFO, horodaté) | `/opt/actions-cache` après le job |
+|---|---|---|
+| **A2 — hit** : `actions/setup-python@<SHA seedé>` | `Found action archive '/opt/actions-cache/actions_setup-python/a26af69….tar.gz' in cache directory` ; **zéro** requête codeload, zéro « Save archive » | byte-identique à la baseline — aucune écriture |
+| **A3 — miss** : `actions/setup-java@v4` (absent du seed) | cache consulté, non trouvé → `Save archive 'https://codeload.github.com/actions/setup-java/tar.gz/cf277c60…'` → `Request URL: … Http Status: OK` (~1 s) | **inchangé** |
+
+**Le « cache enrichi » attendu par #16654 est réfuté par la mesure.** Sur miss, l'archive téléchargée atterrit dans `_work/_actions/_temp_<guid>/`, jamais dans le répertoire de cache : `ACTIONS_RUNNER_ACTION_ARCHIVE_CACHE` est **en lecture seule au runtime** — seule l'image (le seed au build) y écrit. Une action absente du seed se télécharge donc **à chaque job**, sans exception ni apprentissage. C'est le renfort de fait du garde zéro-trou (`test_action_cache_seed_guard.py`) : puisque rien ne peut enrichir le cache au run, seul le build ferme la porte.
+
+Le workflow de contrôle vit sur une branche jetable (`ci/16654-seed-a23-control`, supprimée après capture) : le garde seed interdit par design la présence de `setup-java` sur `main`, ce qui est exactement le contrôle négatif voulu. Pour rejouer : reconstruire l'image, pousser une branche portant deux jobs `runs-on: [self-hosted, <label unique>]` (action seedée épinglée au SHA du build / action absente du seed), enregistrer un conteneur éphémère avec ce label, puis lire `Worker_*.log` et comparer le cache avant/après.
+
 ### Mode persistent — le conteneur qui retire le maillon superviseur (#14329)
 
 Le superviseur hôte n'existe que parce que les runners sont `--ephemeral` : un runner éphémère traite **au plus un job** puis se désenregistre, donc un processus hôte doit reminter un token et relancer un conteneur à chaque job — et ce processus hôte est exactement le maillon qui meurt au logoff (mesure du reboot 2026-09-02 : flotte retombée à 1 runner, tous les `PR gate` gelés en STARVED). L'idée user : « un conteneur en autorestart qui fait le polling tout seul ».
