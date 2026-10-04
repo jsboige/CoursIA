@@ -341,6 +341,11 @@
       "series": "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire"
     },
     {
+      "kind": "unreachable",
+      "notebook": "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/07-Aspire-SemanticFleet-MultiConnector.ipynb",
+      "series": "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire"
+    },
+    {
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/08-Aspire-AsyncFFI-Dotnet.ipynb",
       "series": "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire"
@@ -657,7 +662,7 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb",
+      "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb",
       "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
     },
     {
@@ -1832,11 +1837,6 @@
     },
     {
       "kind": "unreachable",
-      "notebook": "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/07-Aspire-SemanticFleet-MultiConnector.ipynb",
-      "series": "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire"
-    },
-    {
-      "kind": "unreachable",
       "notebook": "MyIA.AI.Notebooks/GenAI/PostTraining/PT_03_dpo_direct_preference.ipynb",
       "series": "MyIA.AI.Notebooks/GenAI/PostTraining"
     },
@@ -1934,7 +1934,7 @@
   "wrapped": [
     {
       "series": "MyIA.AI.Notebooks/Complexity",
-      "notebooks": 10
+      "notebooks": 9
     },
     {
       "series": "MyIA.AI.Notebooks/GenAI/00-GenAI-Environment",
@@ -1955,10 +1955,6 @@
     {
       "series": "MyIA.AI.Notebooks/GenAI/Image/03-Orchestration",
       "notebooks": 4
-    },
-    {
-      "series": "MyIA.AI.Notebooks/GenAI/Image/05-History",
-      "notebooks": 3
     },
     {
       "series": "MyIA.AI.Notebooks/GenAI/Texte",
