@@ -77,6 +77,7 @@ jobs:
           HEAD: ${{ github.event.pull_request.head.sha || '' }}
           LABEL_BELOW: exercises-below-threshold
           LABEL_UNPARSEABLE: exercises-unparseable
+          LABEL_CREDITED_LOST: credited-examples-lost
         run: |
           set -uo pipefail
 
@@ -124,14 +125,32 @@ jobs:
 
           # Advisory: ALWAYS exit 0. The job never fails; the actionable signal
           # is the pair of LABELS decided from the JSON payload below.
-          python scripts/notebook_tools/check_pr_exercises.py --json --stdin \
-            < changed_ipynb.txt > payload.json
+          # #18761 -- credited examples diff needs --base + --pr-body-file so
+          # the diff is measured against THIS PR (not skipped). The default
+          # (no --base) skips the diff (preserves backward compat).
+          PR_BODY_FILE=""
+          if [ -n "${PR_NUMBER:-}" ]; then
+            PR_BODY_FILE=$(mktemp)
+            gh pr view "$PR_NUMBER" --json body -q .body > "$PR_BODY_FILE" 2>/dev/null || echo "" > "$PR_BODY_FILE"
+          fi
+          if [ -n "${BASE:-}" ] && [ -n "${PR_BODY_FILE:-}" ] && [ -s "$PR_BODY_FILE" ]; then
+            python scripts/notebook_tools/check_pr_exercises.py --json --stdin \
+              --base "$BASE" --pr-body-file "$PR_BODY_FILE" \
+              < changed_ipynb.txt > payload.json
+          else
+            python scripts/notebook_tools/check_pr_exercises.py --json --stdin \
+              < changed_ipynb.txt > payload.json
+          fi
           cat payload.json
 
           SUB=$(python -c "import json; print(json.load(open('payload.json'))['summary']['below_threshold'])")
           PARSE=$(python -c "import json; print(json.load(open('payload.json'))['summary']['unverified'])")
+          CREDITED_LOST=$(python -c "import json; print(json.load(open('payload.json'))['summary'].get('credited_lost_unexempted', 0))")
+          CREDITED_DIFF_ERRORS=$(python -c "import json; print(json.load(open('payload.json'))['summary'].get('credited_diff_errors', 0))")
           echo "Below-threshold notebooks: $SUB"
           echo "Unverified (parse errors): $PARSE"
+          echo "Credited examples lost (unexempted): $CREDITED_LOST"
+          echo "Credited-diff errors: $CREDITED_DIFF_ERRORS"
 
           # Issue #8819: TWO distinct labels. "Could not measure" (unparseable)
           # and "measured, below threshold" call for different reactions, so they
@@ -141,6 +160,12 @@ jobs:
             "A modified notebook is below the >=3 exercises convention (#2161)" "D93F0B"
           ensure_label "$LABEL_UNPARSEABLE" \
             "A modified notebook could not be parsed -- NOT verified (#8819)" "BFD4F2"
+          # #18761 — credited-examples-lost: pose UNIQUEMENT si tous les
+          # credited-diff ont reussi (CREDITED_DIFF_ERRORS == 0). Une erreur
+          # de diff ne fait PAS poser le label (c'est l'advisory
+          # diff-error-not-blocked qui porte le signal a la place).
+          ensure_label "$LABEL_CREDITED_LOST" \
+            "A credited example was lost in this PR without a 'exemples-loss:' declaration (#18740, #18761)" "FBCA04"
 
           # Review #8820 (Blocage 3): if check_pr_exercises.py died (truncated
           # JSON, ImportError, OOM), payload.json is unreadable, the two
@@ -159,6 +184,15 @@ jobs:
             echo "::error::exercises payload illisible (check_pr_exercises.py produced no usable JSON) -- the gate measured NOTHING; conformity neither claimed nor denied."
             set_label "$LABEL_UNPARSEABLE"
             exit 0
+          fi
+          # #18761 -- meme garde pour CREDITED_LOST et CREDITED_DIFF_ERRORS :
+          # un payload illisible ne pose AUCUN label credited-examples-lost.
+          if ! [ "${CREDITED_LOST:-}" -eq "${CREDITED_LOST:-}" ] 2>/dev/null \
+             || ! [ "${CREDITED_DIFF_ERRORS:-}" -eq "${CREDITED_DIFF_ERRORS:-}" ] 2>/dev/null; then
+            echo "::warning::credited-diff payload illisible -- label $LABEL_CREDITED_LOST NOT raised (diff measurement never happened)."
+            unset_label "$LABEL_CREDITED_LOST"
+            CREDITED_LOST=0
+            CREDITED_DIFF_ERRORS=0
           fi
 
           if [ "$SUB" -gt 0 ]; then
@@ -183,6 +217,26 @@ jobs:
             unset_label "$LABEL_UNPARSEABLE"
           fi
 
+          # #18761 -- credited-examples-lost label. On le pose UNIQUEMENT
+          # si TOUS les credited-diff ont reussi (CREDITED_DIFF_ERRORS == 0)
+          # ET qu'au moins un exemple credit-e a ete perdu sans exemption.
+          # Si le diff a echoue, on log un warning sans poser le label --
+          # le silence a ce niveau serait la repetition du piege fondateur
+          # (perte silencieuse de 3 exemples credites a #18553).
+          if [ "$CREDITED_DIFF_ERRORS" -gt 0 ]; then
+            echo "::warning::$CREDITED_DIFF_ERRORS notebook(s) had a credited-diff error -- label $LABEL_CREDITED_LOST NOT raised (false-zero trap avoided, #18761)."
+            unset_label "$LABEL_CREDITED_LOST"
+          elif [ "$CREDITED_LOST" -gt 0 ]; then
+            if [ "$NOCTURNE" -eq 1 ]; then
+              echo "::warning::$CREDITED_LOST credited example(s) lost in the last-24h window without 'exemples-loss:' declaration (#18740)."
+            else
+              echo "::warning::$CREDITED_LOST credited example(s) lost without 'exemples-loss:' declaration (#18740, #18761). See the '$LABEL_CREDITED_LOST' label."
+            fi
+            set_label "$LABEL_CREDITED_LOST"
+          else
+            unset_label "$LABEL_CREDITED_LOST"
+          fi
+
           # The closing line asserts ONLY what was measured (issue #8819). The
           # job never claims "all conform" while unverified > 0 -- that was the
           # original defect (a gate that reassures while the true state sleeps).
@@ -190,6 +244,10 @@ jobs:
             echo "RESULT: $PARSE notebook(s) NOT verified (parse error) -- conformity neither claimed nor denied."
           elif [ "$SUB" -gt 0 ]; then
             echo "RESULT: $SUB notebook(s) below threshold -- labelled."
+          elif [ "$CREDITED_DIFF_ERRORS" -gt 0 ]; then
+            echo "RESULT: $CREDITED_DIFF_ERRORS notebook(s) had credited-diff error -- label NOT raised (false-zero avoided, #18761)."
+          elif [ "$CREDITED_LOST" -gt 0 ]; then
+            echo "RESULT: $CREDITED_LOST credited example(s) lost without exemption -- labelled."
           else
             echo "RESULT: all in-corpus modified notebooks meet their threshold (verified)."
           fi
