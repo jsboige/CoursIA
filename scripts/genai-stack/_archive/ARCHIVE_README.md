@@ -1,56 +1,67 @@
-# Archive - Scripts Legacy GenAI Stack
+# Registre d'archive — Scripts legacy GenAI Stack
 
-Ce repertoire contient les fichiers archives lors de la consolidation de fevrier 2026.
-Ces fichiers sont conserves pour reference mais ne sont plus utilises activement.
+Registre de disposition au standard de la [convention `_archive/`](../../../docs/reference/_archive-convention.md)
+(colonnes : Script | Verdict | Superseded by | Verdict recorded in).
 
-## Pourquoi ces fichiers sont archives
+Ce répertoire contient les fichiers archivés lors de la **consolidation de février 2026**, qui a
+remplacé les scripts éparpillés du stack par le CLI unifié `genai.py` (`scripts/genai-stack/genai.py`,
+modules `commands/{docker,validate,notebooks,models,gpu,auth}.py` + `config.py`). Tous les verdicts
+ci-dessous sont **datés de cette consolidation**, sauf mention contraire.
 
-La consolidation a remplace ~35 scripts eparpilles par un CLI unifie `genai.py` avec 6 modules
-(`commands/docker.py`, `commands/validate.py`, `commands/notebooks.py`, `commands/models.py`,
-`commands/gpu.py`, `commands/auth.py`) et une configuration partagee (`config.py`).
+**Nom de fichier historique préservé.** Le registre s'appelle `ARCHIVE_README.md` (et non
+`README.md`) parce que les en-têtes per-fichier `# ARCHIVED: ...` de chaque script archivé, ainsi
+que la ligne du README parent (`scripts/genai-stack/README.md`), pointent sur ce nom — le renommer
+casserait ces références sans gain de substance.
 
-## Fichiers depuis core/
+**Colonne « Verdict recorded in ».** La consolidation de février 2026 **précède l'entrée du répertoire
+dans git** : l'intégralité de `scripts/genai-stack/` n'est trackée que depuis #18838 (2026-10-02),
+qui a committé ces fichiers déjà archivés, avec leurs en-têtes. Le verdict durable vit donc dans ce
+registre ; #18838 en est la preuve d'entrée en git.
 
-| Fichier | Raison | Remplace par |
-|---------|--------|-------------|
-| `validate_mission_documentation.py` | Valide des docs de mission nov 2025 inexistantes | - |
-| `test_correction_setup_complete.py` | Importe `setup_complete_qwen` inexistant (CASSE) | - |
-| `diagnose_comfyui_auth.py` | Importe `docker_qwen_manager` inexistant (CASSE) | `genai.py auth audit` |
-| `deploy_comfyui_auth.py` | Deploiement one-shot | `genai.py docker start` |
-| `cleanup_comfyui_auth.py` | Nettoyage one-shot | `genai.py auth` |
-| `validate_genai_ecosystem.py` | 873 lignes, chevauche validate.py | `genai.py validate --full` |
+## Fichiers depuis `core/`
 
-## Fichiers depuis utils/ (tout le repertoire)
+| Script | Verdict | Superseded by | Verdict recorded in |
+|--------|---------|---------------|---------------------|
+| `cleanup_comfyui_auth.py` | OBSOLETE — nettoyage one-shot | `genai.py auth` | ce registre ; #18838 |
+| `deploy_comfyui_auth.py` | OBSOLETE — déploiement one-shot | `genai.py docker start` | ce registre ; #18838 |
+| `diagnose_comfyui_auth.py` | BROKEN — import `docker_qwen_manager` inexistant | `genai.py auth audit` | ce registre ; #18838 |
+| `test_correction_setup_complete.py` | BROKEN — import `setup_complete_qwen` inexistant | none — closed dead-end | ce registre ; #18838 |
+| `validate_genai_ecosystem.py` | OBSOLETE — volumineux, chevauche `validate.py` | `genai.py validate --full` | ce registre ; #18838 |
+| `validate_mission_documentation.py` | OBSOLETE — valide des docs de mission nov 2025 inexistantes | none — closed dead-end | ce registre ; #18838 |
 
-| Fichier | Raison | Remplace par |
-|---------|--------|-------------|
-| `comfyui_client_helper.py` | 1418 lignes, remplace par core/comfyui_client.py (269 lignes) | `core/comfyui_client.py` |
-| `validate_genai_stack.py` | Remplace par validate_stack.py puis commands/validate.py | `genai.py validate` |
-| `validate_mission_documentation.py` | DOUBLON EXACT de core/ | - |
-| `token_manager.py` | Remplace par core/auth_manager.py | `genai.py auth` |
-| `token_synchronizer.py` | Remplace par core/auth_manager.py sync | `genai.py auth sync` |
-| `validate_tokens_simple.py` | Remplace par core/auth_manager.py audit | `genai.py auth audit` |
-| `reconstruct_env.py` | Remplace par core/auth_manager.py reconstruct-env | `genai.py auth reconstruct-env` |
-| `consolidated_tests.py` | Importe token_manager + comfyui_client_helper (legacy) | `genai.py validate` |
-| `diagnostic_utils.py` | Jamais appele depuis aucun script actif | - |
-| `diagnostic_model_paths.py` | Script one-shot Phase 29, probleme resolu | - |
-| `validate_all_models.py` | Remplace par validate_stack.py --full | `genai.py validate --full` |
-| `benchmark.py` | Hardcode login/password, auth par cookie obsolete | - |
-| `workflow_utils.py` | Remplace par core/comfyui_client.py WorkflowManager | `core/comfyui_client.py` |
-| `validate_gpu_cuda.py` | Absorbe dans commands/gpu.py | `genai.py gpu --detailed` |
-| `test_forge_connectivity.py` | Absorbe dans commands/validate.py | `genai.py validate --check-forge` |
-| `test_forge_notebook.py` | 3 lignes papermill | `genai.py notebooks` |
-| `debug_proxy.py` | Proxy debug ponctuel | - |
-| `docker-setup.ps1` | Remplace par docker_manager.py/genai.py docker | `genai.py docker start` |
-| `docker-start.ps1` | Remplace par docker_manager.py/genai.py docker | `genai.py docker start` |
-| `docker-stop.ps1` | Remplace par docker_manager.py/genai.py docker | `genai.py docker stop` |
+## Fichiers depuis `utils/` (tout le répertoire)
 
-## Fichier depuis racine
+| Script | Verdict | Superseded by | Verdict recorded in |
+|--------|---------|---------------|---------------------|
+| `benchmark.py` | OBSOLETE — hardcode login/password, auth par cookie obsolète | none — closed dead-end (ne pas ressusciter : identifiants en dur) | ce registre ; #18838 |
+| `comfyui_client_helper.py` | OBSOLETE — remplacé par un client plus compact | `core/comfyui_client.py` | ce registre ; #18838 |
+| `consolidated_tests.py` | BROKEN — importe `token_manager` + `comfyui_client_helper` (legacy) | `genai.py validate` | ce registre ; #18838 |
+| `debug_proxy.py` | OBSOLETE — proxy debug ponctuel | none — closed dead-end | ce registre ; #18838 |
+| `diagnostic_model_paths.py` | OBSOLETE — one-shot Phase 29, problème résolu | none — closed dead-end | ce registre ; #18838 |
+| `diagnostic_utils.py` | OBSOLETE — jamais appelé depuis aucun script actif | none — closed dead-end | ce registre ; #18838 |
+| `docker-setup.ps1` | OBSOLETE — remplacé par `docker_manager.py` / `genai.py docker` | `genai.py docker start` | ce registre ; #18838 |
+| `docker-start.ps1` | OBSOLETE — remplacé par `docker_manager.py` / `genai.py docker` | `genai.py docker start` | ce registre ; #18838 |
+| `docker-stop.ps1` | OBSOLETE — remplacé par `docker_manager.py` / `genai.py docker` | `genai.py docker stop` | ce registre ; #18838 |
+| `reconstruct_env.py` | OBSOLETE — remplacé par `core/auth_manager.py` | `genai.py auth reconstruct-env` (successeur vérifié le 2026-10-04 : action câblée dans `commands/auth.py` → `core/auth_manager.py::reconstruct_env_file`) | ce registre ; #18838 |
+| `test_forge_connectivity.py` | OBSOLETE — absorbé dans `commands/validate.py` | `genai.py validate --check-forge` | ce registre ; #18838 |
+| `test_forge_notebook.py` | OBSOLETE — simple appel papermill | `genai.py notebooks` | ce registre ; #18838 |
+| `token_manager.py` | OBSOLETE — remplacé par `core/auth_manager.py` | `genai.py auth` | ce registre ; #18838 |
+| `token_synchronizer.py` | OBSOLETE — remplacé par `core/auth_manager.py` sync | `genai.py auth sync` | ce registre ; #18838 |
+| `validate_all_models.py` | OBSOLETE — remplacé par `validate_stack.py --full` | `genai.py validate --full` | ce registre ; #18838 |
+| `validate_genai_stack.py` | OBSOLETE — remplacé par `validate_stack.py` puis `commands/validate.py` | `genai.py validate` | ce registre ; #18838 |
+| `validate_gpu_cuda.py` | OBSOLETE — absorbé dans `commands/gpu.py` | `genai.py gpu --detailed` | ce registre ; #18838 |
+| `validate_mission_documentation.py` | DOUBLON EXACT de `core/validate_mission_documentation.py` | none — doublon | ce registre ; #18838 |
+| `validate_tokens_simple.py` | OBSOLETE — remplacé par `core/auth_manager.py` audit | `genai.py auth audit` | ce registre ; #18838 |
+| `workflow_utils.py` | OBSOLETE — remplacé par `core/comfyui_client.py` WorkflowManager | `core/comfyui_client.py` | ce registre ; #18838 |
 
-| Fichier | Raison | Remplace par |
-|---------|--------|-------------|
-| `manage-genai-stack.ps1` | PowerShell remplace par Python multi-plateforme | `genai.py docker` |
+## Fichier depuis la racine
+
+| Script | Verdict | Superseded by | Verdict recorded in |
+|--------|---------|---------------|---------------------|
+| `manage-genai-stack.ps1` | OBSOLETE — PowerShell remplacé par du Python multi-plateforme | `genai.py docker` | ce registre ; #18838 |
 
 ## Date d'archivage
 
-Fevrier 2026 - Consolidation genai-stack
+Février 2026 — consolidation genai-stack. Registre reconstruit au standard 4 colonnes le
+2026-10-04 (tranche #13749), en préservant l'intégralité des raisons et successeurs du registre
+initial.
