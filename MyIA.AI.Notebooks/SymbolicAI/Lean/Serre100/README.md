@@ -8,17 +8,17 @@ Le geste « distillation » : prendre un énoncé ou une construction centrale d
 
 | # | Notebook | Source / écho | Outil |
 |---|----------|---------------|-------|
-| 01 | [01-corps-finis-borne-hasse.ipynb](01-corps-finis-borne-hasse.html) | *A Course in Arithmetic* ch. 1-2 (et en fond, la borne de Hasse-Weil que Serre a tant maniée) | Python stdlib + matplotlib |
-| 02 | [02-valeurs-zeta-multiples-finies.ipynb](02-valeurs-zeta-multiples-finies.html) | Adèles et valeurs zêta multiples finies | Python stdlib |
-| 03 | [03-cohomologie-cech-espaces-finis.ipynb](03-cohomologie-cech-espaces-finis.html) | Pont Serre–Grothendieck : cohomologie de Čech calculée sur espaces finis | Python stdlib |
-| 04 | [04-lemme-yoneda-categories-finies.ipynb](04-lemme-yoneda-categories-finies.html) | Lemme de Yoneda calculé sur catégories finies | Python stdlib |
-| 05 | [05-table-de-caracteres.ipynb](05-table-de-caracteres.html) | Tables de caractères — squelette combinatoire des groupes finis | Python stdlib |
-| 06 | [06-bulles-minkowski.ipynb](06-bulles-minkowski.html) | Les bulles diaboliques de Minkowski — géométrie des nombres | Python stdlib |
-| 07 | [07-zeros-fonctions-l-gaps-gue.ipynb](07-zeros-fonctions-l-gaps-gue.html) | Zéros de fonctions L, gaps et statistique GUE — l'autre versant de l'œuvre (contre-exemple de Terjanian cité) | Python stdlib |
+| 01 | [01-corps-finis-borne-hasse.ipynb](01-corps-finis-borne-hasse.ipynb) | *A Course in Arithmetic* ch. 1-2 (et en fond, la borne de Hasse-Weil que Serre a tant maniée) | Python stdlib + matplotlib |
+| 02 | [02-valeurs-zeta-multiples-finies.ipynb](02-valeurs-zeta-multiples-finies.ipynb) | Adèles et valeurs zêta multiples finies | Python stdlib |
+| 03 | [03-cohomologie-cech-espaces-finis.ipynb](03-cohomologie-cech-espaces-finis.ipynb) | Pont Serre–Grothendieck : cohomologie de Čech calculée sur espaces finis | Python stdlib |
+| 04 | [04-lemme-yoneda-categories-finies.ipynb](04-lemme-yoneda-categories-finies.ipynb) | Lemme de Yoneda calculé sur catégories finies | Python stdlib |
+| 05 | [05-table-de-caracteres.ipynb](05-table-de-caracteres.ipynb) | Tables de caractères — squelette combinatoire des groupes finis | Python stdlib |
+| 06 | [06-bulles-minkowski.ipynb](06-bulles-minkowski.ipynb) | Les bulles diaboliques de Minkowski — géométrie des nombres | Python stdlib |
+| 07 | [07-zeros-fonctions-l-gaps-gue.ipynb](07-zeros-fonctions-l-gaps-gue.ipynb) | Zéros de fonctions L, gaps et statistique GUE — l'autre versant de l'œuvre (contre-exemple de Terjanian cité) | Python stdlib |
 | 08 | [08-serre-dans-mathlib-Lean.ipynb](08-serre-dans-mathlib-Lean.html) | Tour des cinq « Serre » de Mathlib — le versant preuves du diptyque (index : grain 9 #16374) | Lean 4 (kernel `lean4-wsl`, lake [`serre100_lean/`](serre100_lean/)) |
-| 09 | [09-congruences-tau-lacunarite-delta.ipynb](09-congruences-tau-lacunarite-delta.html) | τ de Ramanujan — congruence mod 691, borne de Deligne, lacunarité des puissances de η (Euler, Jacobi, Serre) | Python stdlib + matplotlib |
-| 10 | [10-empilements-borne-lp-cohn-elkies.ipynb](10-empilements-borne-lp-cohn-elkies.html) | Bornes d'empilements de sphères par LP (Cohn–Elkies, lignée Odlyzko–Serre) — Poisson mesuré, LP naïf autopsié, LP certifié par intervalles | numpy + scipy (HiGHS) + matplotlib |
-| 11 | [11-corps-quadratiques-reciprocite-quadratique.ipynb](11-corps-quadratiques-reciprocite-quadratique.html) | Corps quadratiques imaginaires — réciprocité quadratique, Fermat des deux carrés / deux triangulaires, densités de Chebotarev via symbole de Kronecker, conjecture de Stark-Heegner (neuf nombres) | Python stdlib |
+| 09 | [09-congruences-tau-lacunarite-delta.ipynb](09-congruences-tau-lacunarite-delta.ipynb) | τ de Ramanujan — congruence mod 691, borne de Deligne, lacunarité des puissances de η (Euler, Jacobi, Serre) | Python stdlib + matplotlib |
+| 10 | [10-empilements-borne-lp-cohn-elkies.ipynb](10-empilements-borne-lp-cohn-elkies.ipynb) | Bornes d'empilements de sphères par LP (Cohn–Elkies, lignée Odlyzko–Serre) — Poisson mesuré, LP naïf autopsié, LP certifié par intervalles | numpy + scipy (HiGHS) + matplotlib |
+| 11 | [11-corps-quadratiques-reciprocite-quadratique.ipynb](11-corps-quadratiques-reciprocite-quadratique.ipynb) | Corps quadratiques imaginaires — réciprocité quadratique, Fermat des deux carrés / deux triangulaires, densités de Chebotarev via symbole de Kronecker, conjecture de Stark-Heegner (neuf nombres) | Python stdlib |
 | 12 | [12-formes-quadratiques-binaires-nombre-classes.ipynb](12-formes-quadratiques-binaires-nombre-classes.ipynb) | Formes quadratiques binaires $ax^2 + bxy + cy^2$, conditions de réduction, bijection classes d'idéaux $\\leftrightarrow$ formes réduites, formule analytique $h(D) = \\frac{w\\sqrt{|D|}}{2\\pi} L(1, \\chi_D)$, théorème de Stark-Heegner ($h = 1$ pour les 9 discriminants fondamentaux) | Python stdlib |
 | 13 | [13-jacobi-kronecker-reciprocite-II.ipynb](13-jacobi-kronecker-reciprocite-II.ipynb) | Loi de réciprocité quadratique II — symbole de Jacobi `(d/n)` (n impair) et extension Kronecker `(d/n)` ; algorithme d'Euler-Legendre O(log n) ; conducteur des corps quadratiques de Heegner | Python stdlib (math.isqrt) |
 | 14 | [14-formes-quadratiques-composition-gauss.ipynb](14-formes-quadratiques-composition-gauss.ipynb) | Composition des formes quadratiques binaires (Gauss) — réduction, énumération des formes réduites, calcul de h(D), vérification du théorème de Stark–Heegner sur les 9 corps de Heegner | Python stdlib (math.isqrt) |
