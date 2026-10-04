@@ -1543,6 +1543,7 @@ project:
     - "MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-27-Production-Deployment.ipynb"
     - "MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-28-Market-Regime-Detection.ipynb"
     - "MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-28b-Macro-Cycle-Regimes.ipynb"
+    - "MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-28c-Factor-Preprocessing-Regime.ipynb"
     - "MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-29-Derivatives-Valuation.ipynb"
     - "MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-30-LSTM-Training.ipynb"
     - "MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-31-Transformer-Training.ipynb"
