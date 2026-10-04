@@ -78,7 +78,7 @@ Toute PR qui **ajoute** un notebook numerote porte dans son body une ligne qui d
 - `Slot: palier <N> -- <motif>` : un nouveau numero canonique, quand le contenu ouvre un palier du survol ;
 - `Slot: accretion de <N> (<lettre>)` : une lettre sous le notebook analogue, quand le contenu approfondit un palier existant (§1-§2, dans la limite de §4).
 
-Le numero libre le plus haut pris par disponibilite est le tell « numero d'opportunite » du §3 (instances du 2026-10-04 : ICT-44, ICT-45, ICT-47). La ligne force la decision avant l'ecriture ; l'organe #19144 verifie apres coup profondeur, base de lettre et max+1 sur les noms ajoutes.
+Le numero libre le plus haut pris par disponibilite est le tell « numero d'opportunite » du §3 (instance mesuree du 2026-10-04 : ICT-45, ramene en ICT-42b par #19153 ; ICT-43 et ICT-47 examines le meme jour sont restes en place sur argument de contenu). La ligne force la decision avant l'ecriture ; l'organe #19144 verifie apres coup profondeur, base de lettre et max+1 sur les noms ajoutes.
 
 ## 5. Protocole (HARD, l'ordre compte)
 
