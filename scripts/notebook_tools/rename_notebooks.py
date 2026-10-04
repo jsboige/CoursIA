@@ -485,9 +485,59 @@ class Plan:
     moves: list[tuple[str, str]] = field(default_factory=list)
     rewrites: dict[str, int] = field(default_factory=dict)      # fichier -> nb
     mixed_refused: list[str] = field(default_factory=list)      # ipynb I2/I3 fail-closed
+    path_refused: list[tuple[str, str]] = field(default_factory=list)  # fichier, ancien -- #19154
     code_cells: list[tuple[str, int, str]] = field(default_factory=list)
     outputs: list[tuple[str, int, str]] = field(default_factory=list)
     fragmented: list[tuple[str, int]] = field(default_factory=list)
+
+
+def _path_context_hits(raw: str, forms_list: list[RefForms],
+                       carrier_rel: str = "") -> list[str]:
+    """Occurrences du NOM DE FICHIER ancien employees comme segment de chemin
+    -- c'est-a-dire immédiatement precedees de `/` -- pour les paires dont le
+    renommage CHANGE DE DOSSIER (#19154).
+
+    Reecriture de leur seul basename fabriquerait un chemin dont le prefixe
+    n'est plus valide (lien relatif `../../prefix/OldName.ipynb` -> 404
+    silencieux une fois le notebook deplace). Ces occurrences demandent un
+    recalcul du prefixe selon l'emplacement du porteur, que l'organe ne fait
+    pas : il les REFUSE. Fail-closed assume : un sur-refus ne casse rien, la
+    reecriture d'un lien casse la navigation.
+
+    Les occurrences couvertes par la forme COMPLETE (`full`, chemin depuis la
+    racine) ne sont pas des hits : leur prefixe est remplace en meme temps que
+    le nom, correctement. Seul le nom de fichier `foo.ipynb` et sa forme
+    urlencodee `foo%20bar.ipynb` sont examines -- le stem nu n'est jamais un
+    segment de chemin.
+    """
+    hits: list[str] = []
+    for f in forms_list:
+        old_dir = f.old_rel.rsplit("/", 1)[0] if "/" in f.old_rel else ""
+        new_dir = f.new_rel.rsplit("/", 1)[0] if "/" in f.new_rel else ""
+        if old_dir == new_dir:
+            continue  # meme dossier : le prefixe relatif reste valide
+        if carrier_rel == f.old_rel:
+            # Le fichier RENOMME lui-meme : ses auto-mentions (prose,
+            # metadata.papermill au chemin machine) ne sont pas des liens de
+            # navigation vers le renomme.
+            continue
+        covered = list(re.finditer(
+            r"(?<![\w-])" + re.escape(f.full) + r"(?![\w-])", raw))
+        # Litteraux tries par longueur decroissante : le filename contient le
+        # stem (urlencode == stem sans espace), une seule occurrence ne doit
+        # produire qu'UN hit -- le literal le plus long.
+        seen: list[tuple[int, int]] = []
+        for literal in sorted({f.filename, f.urlencoded}, key=len, reverse=True):
+            for m in re.finditer(
+                    r"/" + re.escape(literal) + r"(?![\w-])", raw):
+                span = (m.start() + 1, m.end())      # le literal, sans le `/`
+                if any(s <= span[0] and span[1] <= e for s, e in seen):
+                    continue                          # deja couvert par un plus long
+                if not any(c.start() < m.start() + 1 and
+                           m.end() <= c.end() for c in covered):
+                    seen.append(span)
+                    hits.append(literal)
+    return hits
 
 
 _TEXT_SUFFIXES = frozenset({
@@ -501,6 +551,11 @@ def scan_referents(forms_list: list[RefForms], repo: Path | None = None) -> Plan
     repo = repo or repo_root()
     plan = Plan()
     pats = build_patterns(forms_list)
+    # #19154 : la garde path-context ne concerne que les renommages qui
+    # changent de dossier ; sans aucun deplacement, cout nul.
+    dir_change = [f for f in forms_list
+                  if (f.old_rel.rsplit("/", 1)[0] if "/" in f.old_rel else "")
+                  != (f.new_rel.rsplit("/", 1)[0] if "/" in f.new_rel else "")]
     # Prefiltre combine : une alternation des litteraux, SANS frontieres. Tout
     # match d'un pattern individuel (litteral + frontieres) contient le
     # litteral, donc ce filtre ne peut jamais exclure un fichier porteurl --
@@ -532,8 +587,28 @@ def scan_referents(forms_list: list[RefForms], repo: Path | None = None) -> Plan
         raw_total = (sum(len(pat.findall(raw)) for _, pat, _, _ in pats)
                      if _pre.search(raw) else 0)
 
+        # #19154 : un referent en CONTEXTE DE CHEMIN ne peut pas etre reecrit
+        # sans recalculer son prefixe -- chose que l'organe ne fait pas. Deux
+        # signatures : (a) le nom precede de `/` (lien `../prefix/Old.ipynb`,
+        # valide depuis n'importe quel dossier) ; (b) le nom NU cite par un
+        # porteur du DOSSIER D'ORIGINE (lien voisin `(Old.ipynb)`, resolu
+        # contre ce dossier avant comme apres -- mesure : Search-12a cite
+        # Search-11d en nu). Refus fail-closed, passage manuel. Le fichier
+        # RENOMME lui-meme est exclu de (b) : ses auto-mentions (prose,
+        # metadata.papermill) ne sont pas des liens de navigation.
+        path_hits = (_path_context_hits(raw, dir_change, rel)
+                     if raw_total else [])
+        cdir = rel.rsplit("/", 1)[0] if "/" in rel else ""
+        same_dir = [f for f in dir_change
+                    if rel != f.old_rel
+                    and cdir == (f.old_rel.rsplit("/", 1)[0]
+                                 if "/" in f.old_rel else "")]
+
         if not rel.endswith(".ipynb"):
-            if raw_total:
+            if raw_total and (path_hits or same_dir):
+                plan.path_refused.append(
+                    (rel, path_hits[0] if path_hits else same_dir[0].filename))
+            elif raw_total:
                 plan.rewrites[rel] = raw_total
             continue
 
@@ -582,6 +657,11 @@ def scan_referents(forms_list: list[RefForms], repo: Path | None = None) -> Plan
             # Fail-closed I2/I3 : le fichier melange surfaces reescrivables et
             # protegees, ou porte une occurrence hors zones connues.
             plan.mixed_refused.append(rel)
+        elif allowed and (path_hits or same_dir):
+            # #19154 : surfaces saines mais lien relatif dont le prefixe
+            # deviendrait faux -- refuser plutot que committer un 404.
+            plan.path_refused.append(
+                (rel, path_hits[0] if path_hits else same_dir[0].filename))
         elif allowed:
             plan.rewrites[rel] = allowed
 
@@ -775,6 +855,10 @@ def report(plan: Plan, pairs: list[tuple[str, str]]) -> None:
         print(f"== FICHIERS REFUSES (surfaces melangees, fail-closed I2/I3) : {len(plan.mixed_refused)} -- passage manuel requis")
         for rel in plan.mixed_refused:
             print(f"   {rel}")
+    if plan.path_refused:
+        print(f"== LIENS RELATIFS REFUSES (changement de dossier, prefixe non recalculable, #19154) : {len(plan.path_refused)} -- passage manuel requis")
+        for rel, old in plan.path_refused:
+            print(f"   {rel} cite `{old}` dans un chemin relatif")
     if plan.fragmented:
         print(f"== REFERENCES FRAGMENTEES (source JSON scindee en elements) : {len(plan.fragmented)} -- manuel")
         for rel, i in plan.fragmented:

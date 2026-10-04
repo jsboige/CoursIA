@@ -385,6 +385,138 @@ class TestPapermillMetadataRewritten(unittest.TestCase):
                              "/abs/old/S-01-Alpha-Python.ipynb")
 
 
+class TestRelativeLinkDirChangeRefused(unittest.TestCase):
+    """#19154 : le prefixe d'un lien relatif n'est PAS recalcule au renommage.
+    Quand le renommage change de dossier, reecrire le seul basename fabrique un
+    chemin dont le prefixe ne mene plus nulle part (mesure : Search-09d ->
+    Discrepancy-02, lien ../../Search/Part1-Foundations/... -> 404 silencieux).
+    Refus fail-closed, miroir de I2/I3 : le porteur est liste, jamais reecrit."""
+
+    OLD_X = "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09d-Komlos.ipynb"
+    NEW_X = "MyIA.AI.Notebooks/Discrepancy/Discrepancy-02-Komlos-Lean.ipynb"
+
+    def _forms_x(self):
+        return [rn.ref_forms(self.OLD_X, self.NEW_X)]
+
+    def _repo(self, repo, extra_writes):
+        _init_repo(repo)
+        _write_nb(repo, self.OLD_X, _nb([_md("Cible du renommage.")]))
+        for rel, body in extra_writes:
+            if rel.endswith(".ipynb"):
+                _write_nb(repo, rel, body)
+            else:
+                _write(repo, rel, body)
+        _git(repo, "add", "-A")
+        _git(repo, "commit", "-qm", "carriers")
+
+    def test_relative_link_dir_change_is_refused(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            rel = "MyIA.AI.Notebooks/Search/Part2-Structures/notes.md"
+            link = "[Komlos](../../Search/Part1-Foundations/Search-09d-Komlos.ipynb)"
+            self._repo(repo, [(rel, f"Voir {link} puis conclure.\n")])
+
+            plan = rn.scan_referents(self._forms_x(), repo)
+
+            self.assertIn((rel, "Search-09d-Komlos.ipynb"), plan.path_refused)
+            self.assertNotIn(rel, plan.rewrites)
+            # Rien n'est ecrit : l'ancien lien survit au scan (passage manuel).
+            self.assertIn("../../Search/Part1-Foundations/Search-09d-Komlos.ipynb",
+                          (repo / rel).read_text(encoding="utf-8"))
+
+    def test_relative_link_in_notebook_markdown_is_refused(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            rel = "MyIA.AI.Notebooks/Search/Part2-Structures/Search-10-Zeta.ipynb"
+            nb = _nb([_md("Voir [Komlos](../../Search/Part1-Foundations/"
+                          "Search-09d-Komlos.ipynb).")])
+            self._repo(repo, [(rel, nb)])
+
+            plan = rn.scan_referents(self._forms_x(), repo)
+
+            self.assertIn((rel, "Search-09d-Komlos.ipynb"), plan.path_refused)
+            self.assertNotIn(rel, plan.rewrites)
+            self.assertNotIn(rel, plan.mixed_refused)
+
+    def test_full_repo_root_path_still_rewritten(self):
+        """La forme COMPLETE (chemin depuis la racine) embarque son prefixe :
+        remplacee en bloc, elle reste juste -- ce n'est pas un hit."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            rel = "MyIA.AI.Notebooks/Search/README.md"
+            self._repo(repo, [(rel, f"chapitres:\n  - {self.OLD_X}\n")])
+
+            plan = rn.scan_referents(self._forms_x(), repo)
+
+            self.assertIn(rel, plan.rewrites)
+            self.assertEqual(plan.path_refused, [])
+            rn.rewrite_file(repo / rel, self._forms_x())
+            self.assertIn(self.NEW_X, (repo / rel).read_text(encoding="utf-8"))
+
+    def test_same_directory_rename_keeps_relative_links_rewritable(self):
+        """Regression : meme dossier -> le prefixe relatif reste valide, la
+        garde ne doit pas tirer (comportement inchange depuis l'origine)."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            rel = "MyIA.AI.Notebooks/S/notes.md"
+            _init_repo(repo)
+            _write(repo, rel, "[alpha](S/S-01-Alpha.ipynb) voisin.\n")
+            _git(repo, "add", "-A")
+            _git(repo, "commit", "-qm", "same-dir carrier")
+
+            plan = rn.scan_referents(_forms(), repo)
+
+            self.assertIn(rel, plan.rewrites)
+            self.assertEqual(plan.path_refused, [])
+
+    def test_bare_prose_mention_still_rewritten_under_dir_change(self):
+        """Frontiere de la garde : une mention de PROSE (nom non precede de
+        `/`, porteur HORS du dossier d'origine) reste reecrite -- c'est le nom
+        qui change, pas un chemin."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            rel = "MyIA.AI.Notebooks/Search/Part2-Structures/notes.md"
+            self._repo(repo, [(rel, "Le carnet Search-09d-Komlos.ipynb "
+                                    "introduisait la borne.\n")])
+
+            plan = rn.scan_referents(self._forms_x(), repo)
+
+            self.assertIn(rel, plan.rewrites)
+            self.assertEqual(plan.path_refused, [])
+
+    def test_same_dir_neighbor_bare_link_is_refused(self):
+        """Signature (b) : un voisin du dossier d'origine lie le nom NU --
+        `(Search-09d-Komlos.ipynb)` resolu contre ce dossier. Apres
+        deplacement, la reecriture du basename fabrique un 404 dans le dossier
+        d'origine lui-meme (mesure : Search-12a cite Search-11d en nu)."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            rel = "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-Tau.ipynb"
+            nb = _nb([_md("Precedent : [Komlos](Search-09d-Komlos.ipynb).")])
+            self._repo(repo, [(rel, nb)])
+
+            plan = rn.scan_referents(self._forms_x(), repo)
+
+            self.assertIn((rel, "Search-09d-Komlos.ipynb"), plan.path_refused)
+            self.assertNotIn(rel, plan.rewrites)
+
+    def test_renamed_file_itself_still_rewritten(self):
+        """Le fichier renomme est EXCLU de la signature (b) : ses
+        auto-mentions (metadata.papermill, prose) ne sont pas des liens de
+        navigation -- les refuser bloquerait la tolerance #1 pour rien."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            nb = _nb([_md("Ce carnet Search-09d-Komlos.ipynb etend la borne.")])
+            nb["metadata"]["papermill"] = {
+                "input_path": "/abs/old/Search-09d-Komlos.ipynb"}
+            self._repo(repo, [(self.OLD_X, nb)])
+
+            plan = rn.scan_referents(self._forms_x(), repo)
+
+            self.assertIn(self.OLD_X, plan.rewrites)
+            self.assertEqual(plan.path_refused, [])
+
+
 class TestTwoCommitDiscipline(unittest.TestCase):
     """Invariant I6 : commit 1 = git mv purs (R100), commit 2 = referents.
     Le registre est ecrit ; les organes tournent en fin de passe (stubbes ici :
