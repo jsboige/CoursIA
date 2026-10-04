@@ -119,6 +119,7 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 88 | [GameTheory-18 : Open Games et Lentilles -- la…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-18-Open-Games-et-Lentilles-Python.ipynb) | BETA | Oui |
 | 89 | [GameTheory-18b : Casser la composition — où la…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-18b-Casser-la-Composition-Python.ipynb) | BETA | Oui |
 | 90 | [GameTheory-24 : Banc de calibration — humour, forme…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-18c-Humour-Banc-Python.ipynb) | BETA | Oui |
+| 91 | [GameTheory-18d : Banc humour — passer à l'échelle](../../MyIA.AI.Notebooks/GameTheory/GameTheory-18d-Humour-Banc-Dur-Python.ipynb) | BETA | Non |
 | 92 | [GameTheory-19 : L'abstraction a dette mesurable](../../MyIA.AI.Notebooks/GameTheory/GameTheory-19-Abstraction-a-Dette-Python.ipynb) | BETA | Oui |
 | 93 | [GameTheory 24b : Le temoin d'impossibilite](../../MyIA.AI.Notebooks/GameTheory/GameTheory-20b-Chemin-Minimal-Temoins-Impossibilite-Python.ipynb) | BETA | Oui |
 | 94 | [GameTheory 20c : Le chemin minimal sur un second…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-20c-Chemin-Minimal-3x2-Ordinal-Python.ipynb) | BETA | Oui |
@@ -215,7 +216,7 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 59 | [ICT-39 — Composition de regards](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-39-CompositionRegards-Python.ipynb) | BETA | Oui |
 | 60 | [ICT-40b — Cognition analogique : les ondes cérébrales…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-40b-AnalogCognitionWaves-Python.ipynb) | BETA | Non |
 | 61 | [Geometrie des features SAE : galaxy, atome, dense --…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41-SAE-GeometrieFeatures-Python.ipynb) | BETA | Oui |
-| 62 | [ICT-42 — Crosscoder : diffuser deux modèles, distilled…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb) | BETA | Non |
+| 62 | [ICT-41b — Crosscoder : diffuser deux modèles, distilled…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb) | BETA | Non |
 | 63 | [ICT-44 — La géométrie de la vérité : une direction dans…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb) | BETA | Non |
 | 64 | [ICT-46 — Strate 7 : freebits de second ordre, le banc…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-46-Strate7-FreeCoordinates-Python.ipynb) | BETA | Oui |
 | 65 | [ICT — Annexe : la contextualité du zoo de proxys est un…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Annexe-ProxyContextuality.ipynb) | BETA | Oui |

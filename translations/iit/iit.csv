@@ -34763,21 +34763,21 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41-SAE-GeometrieFeatures-Python.ipynb,5514f
 - Harnais : Epic #10355 (traces npz commitees), organe `ict/scale_free.py`,
   organe `ict/sae_dictionary.py`.
 ",,,,,,,,4d95484c97929c1a,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,226c0ff6,markdown,fr,24282410ed5d6cae,"# ICT-42 — Crosscoder : diffuser deux modèles, distilled reasoning vs base
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,226c0ff6,markdown,fr,cbb1644fe905b64e,"# ICT-41b — Crosscoder : diffuser deux modèles, distilled reasoning vs base
 
 > **Arc A2 — géométrie du latent** (Epic #16741), suite directe d'ICT-41, SAE mono-modèle (issue #16747, en cours d'intégration via la PR #16859). Paper source : **R05** — Baek & Tegmark, *Towards Understanding Distilled Reasoning Models: A Representational Approach* ([arXiv:2503.03730](https://arxiv.org/2503.03730)).
 
 ICT-41 isolait la géométrie d'UN modèle avec un SAE. Ici on met **deux modèles côte à côte** dans un même dictionnaire de features : le modèle distillé `DeepSeek-R1-Distill-Qwen-1.5B` (qui a « appris à raisonner » par distillation de traces DeepSeek-R1) et sa base `Qwen2.5-Math-1.5B` (avant distillation). L'outil est le **crosscoder** : chaque feature possède un décodeur **par modèle**, et le rapport des normes des décodeurs — le **NRN** — dit si une feature est *partagée* (les deux modèles l'utilisent pareil), *distillée-only* (le distillé l'a acquise pendant la distillation) ou *base-only*.
 
-La question causale du papier : les features distillées-only portent-elles le comportement « over-thinking » du raisonnement long ? On la teste à échelle mini — et on verra que **certaines réponses du papier ne se reproduisent pas à cette échelle** : c'est précisément l'intérêt méthodologique.",,,,,,,,24282410ed5d6cae,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,934895f9,markdown,fr,16e8778ab95eef31,> **Statut épistémique** — **Sans verdict à ce jour** : aucune ligne de la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md) ne concerne ce notebook ; son statut épistémique sera porté par la matrice le cas échéant.,,,,,,,,16e8778ab95eef31,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,528ea9db,markdown,fr,92aad3db608c582c,"## Prérequis & avertissement d'exécution
+La question causale du papier : les features distillées-only portent-elles le comportement « over-thinking » du raisonnement long ? On la teste à échelle mini — et on verra que **certaines réponses du papier ne se reproduisent pas à cette échelle** : c'est précisément l'intérêt méthodologique.",,,,,,,,cbb1644fe905b64e,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,934895f9,markdown,fr,16e8778ab95eef31,> **Statut épistémique** — **Sans verdict à ce jour** : aucune ligne de la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md) ne concerne ce notebook ; son statut épistémique sera porté par la matrice le cas échéant.,,,,,,,,16e8778ab95eef31,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,528ea9db,markdown,fr,92aad3db608c582c,"## Prérequis & avertissement d'exécution
 
 - **GPU requis** (~4 Go de VRAM libres) — deux modèles 1.5B chargés **séquentiellement** en bf16, puis en lockstep CPU+GPU pour l'ablation causale. Environnement : `coursia-ml-training` (torch 2.6 + transformers 5.2 + datasets 5.0).
 - **Durée totale ~20-25 min** : capture d'activations (~8 min), entraînement du crosscoder (~6 min), analyses, ablation lockstep (~4 min).
 - Les poids Hugging Face (7 Go au total) sont attendus dans le cache HF local ; sinon le premier téléchargement les récupère. On fixe `HF_HOME` vers le cache provisionné de la machine si absent.
 - **Échelle mini assumée** : 307 200 tokens capturés vs 200 M dans le papier, dictionnaire K=4096 vs 32768. Chaque section signale honnêtement ce que l'échelle permet et ne permet pas de conclure.",,,,,,,,92aad3db608c582c,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,a0caf98c,code,fr,07050a0992d381b4,"import json, os, time
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,a0caf98c,code,fr,07050a0992d381b4,"import json, os, time
 import numpy as np
 
 os.environ.setdefault(""HF_HOME"", ""D:/hf-cache-crosscoder"")
@@ -34799,7 +34799,7 @@ SEED = 0
 torch.manual_seed(SEED)
 np.random.seed(SEED)
 print(""cuda:"", torch.cuda.is_available(), ""| work:"", WORK)",,,,,,,,07050a0992d381b4,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,eefc126d,markdown,fr,0a4e29d1f4033769,"## 1. Le crosscoder en cinq équations (R05 §3)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,eefc126d,markdown,fr,0a4e29d1f4033769,"## 1. Le crosscoder en cinq équations (R05 §3)
 
 Notation : $i \in \{A, B\}$ avec $A$ = base, $B$ = distillé ; $a^{(i)}(x_j)$ = activation du residual stream **en entrée de la couche mi-profondeur** (couche 14 sur 28 pour nos deux modèles) au token $x_j$.
 
@@ -34816,19 +34816,19 @@ Le tri des features se fait sur le rapport des normes L1 des décodeurs :
 $$\mathrm{RDN}_k = \frac{\lVert W_{\mathrm{dec}}^{(B),k}\rVert_1}{\lVert W_{\mathrm{dec}}^{(A),k}\rVert_1} \qquad \mathrm{NRN}_k = \frac{\mathrm{RDN}_k}{1+\mathrm{RDN}_k} \tag{6-7}$$
 
 **Lecture du NRN** : $0{,}5$ = partagé ; $\to 1$ = distillée-only ; $\to 0$ = base-only. C'est l'axe qui trie tout le notebook.",,,,,,,,0a4e29d1f4033769,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,f9bb276d,code,fr,1a457bb969096fe2,"N_TRACES, MAX_TOK = 800, 384      # corpus mini : 307 200 tokens
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,f9bb276d,code,fr,1a457bb969096fe2,"N_TRACES, MAX_TOK = 800, 384      # corpus mini : 307 200 tokens
 K_FEATURES, STEPS, LAM, LR, BS = 4096, 8000, 2e-3, 1e-3, 2048
 THRESH_SURGICAL, THRESH_WIDE = 0.6, 0.5
 PAIR = [(""distilled"", ""deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B""),
         (""base"", ""Qwen/Qwen2.5-Math-1.5B"")]
 print(f""corpus {N_TRACES} traces x {MAX_TOK} tok max, K={K_FEATURES}, ""
       f""steps={STEPS}, lambda={LAM}"")",,,,,,,,1a457bb969096fe2,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,2e9948ed,markdown,fr,6b5321a7d6d32e6b,"## 2. Corpus : les traces OpenThoughts, pas les énoncés
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,2e9948ed,markdown,fr,6b5321a7d6d32e6b,"## 2. Corpus : les traces OpenThoughts, pas les énoncés
 
 R05 entraîne son crosscoder sur 200 M de tokens d'`open-thoughts/OpenThoughts-114k` — des **traces de raisonnement générées par DeepSeek-R1**. Détail de schéma qui a son importance : le dataset est au format **ShareGPT** (`conversations` : tours `user`/`assistant`), pas un champ `problem`.
 
 On capture donc **énoncé + début de trace** (384 tokens) : c'est dans la trace que vivent les marqueurs « Wait », « Therefore », « Alternatively », « But » qui serviront à l'annotation. On filtre le boilerplate TACO (des dizaines d'énoncés identiques « Generate an executable Python function... ») et les doublons.",,,,,,,,6b5321a7d6d32e6b,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,f57a4b68,code,fr,b2296c496ad2922e,"from datasets import load_dataset
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,f57a4b68,code,fr,b2296c496ad2922e,"from datasets import load_dataset
 
 TACO = ""Generate an executable Python function""
 ds = load_dataset(""open-thoughts/OpenThoughts-114k"", split=""train"", streaming=True)
@@ -34848,12 +34848,12 @@ assert len(texts) >= N_TRACES // 2
 json.dump(texts, open(os.path.join(WORK, ""texts.json""), ""w"", encoding=""utf-8""),
           ensure_ascii=False)
 print(""traces retenues:"", len(texts))",,,,,,,,b2296c496ad2922e,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,4a79a7f4,markdown,fr,569bae07249a4169,"### Exercice 1 — un sélecteur mono-domaine
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,4a79a7f4,markdown,fr,569bae07249a4169,"### Exercice 1 — un sélecteur mono-domaine
 
 Le corpus ci-dessus mélange maths, code, sciences. Pour cibler les features de raisonnement *mathématique*, écrire `select_math(texts)` qui ne garde que les traces dont l'énoncé contient au moins un indice mathématique (par ex. `$`, `\(`, `equation`, `integer`, `triangle`...), puis relancer la capture sur ce sous-corpus et comparer la distribution NRN.
 
 *Indice : inspecter `texts[:20]` pour voir à quoi ressemblent les énoncés ; la comparaison NRN se fait avec la cellule histogramme de la section 4.*",,,,,,,,569bae07249a4169,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,568d8457,code,fr,f457e47d2e5c9625,"def select_math(texts, min_len=40):
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,568d8457,code,fr,f457e47d2e5c9625,"def select_math(texts, min_len=40):
     # TODO etudiant : retourner la sous-liste des traces mathematiques
     # Etape 1 : definir une liste de mots-indices (equation, integer, triangle, ...)
     # Etape 2 : ne garder que texts contenant au moins un indice
@@ -34863,10 +34863,10 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,568
 
 sel = select_math(texts)
 print(""Exercice a completer - select_math renvoie:"", sel)",,,,,,,,f457e47d2e5c9625,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,4e143441,markdown,fr,6b2cd21982b2a114,"## 3. Capture du residual stream, couche mi-profondeur
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,4e143441,markdown,fr,6b2cd21982b2a114,"## 3. Capture du residual stream, couche mi-profondeur
 
 Les deux modèles **partagent la même famille de tokenizer** (Qwen2.5) : sur nos 4 prompts de fumée, les ids étaient **identiques token à token** — condition nécessaire pour aligner les positions des deux modèles dans le crosscoder. On capture `hidden_states[mid]` = l'entrée de la couche 14 (sur 28), en bf16 GPU, séquentiellement.",,,,,,,,6b2cd21982b2a114,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,b5bdb154,code,fr,33e494d333c2a5b2,"from transformers import AutoModelForCausalLM, AutoTokenizer
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,b5bdb154,code,fr,33e494d333c2a5b2,"from transformers import AutoModelForCausalLM, AutoTokenizer
 
 def capture(role, repo, texts):
     tok = AutoTokenizer.from_pretrained(repo)
@@ -34895,11 +34895,11 @@ acts = {}
 for role, repo in PAIR:
     acts[role] = capture(role, repo, texts)
 print(f""capture en {time.time()-t0:.0f}s"")",,,,,,,,33e494d333c2a5b2,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,cf5e3380,markdown,fr,ec2c786bef0adbd9,"**Lecture (ancrée sur cette exécution).** VRAM pic : **3 734 MiB** (distillé) puis **3 288 MiB** (base) — la cohabitation avec le serveur d'embeddings résident est juste, d'où le chargement **séquentiel** et le `empty_cache()` entre les deux ; capture totale ~2,5 min. Les 800 tronçons de 384 tokens donnent exactement 307 200 positions par modèle. L'alignement des tokenizers a été vérifié en amont (ids égaux sur prompts témoins) : la position $j$ désigne le **même token** pour $A$ et $B$.",,,,,,,,ec2c786bef0adbd9,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,41fad215,markdown,fr,649ae09ee6ac0a7d,"## 4. Le mini-crosscoder (Eq 3-5)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,cf5e3380,markdown,fr,ec2c786bef0adbd9,"**Lecture (ancrée sur cette exécution).** VRAM pic : **3 734 MiB** (distillé) puis **3 288 MiB** (base) — la cohabitation avec le serveur d'embeddings résident est juste, d'où le chargement **séquentiel** et le `empty_cache()` entre les deux ; capture totale ~2,5 min. Les 800 tronçons de 384 tokens donnent exactement 307 200 positions par modèle. L'alignement des tokenizers a été vérifié en amont (ids égaux sur prompts témoins) : la position $j$ désigne le **même token** pour $A$ et $B$.",,,,,,,,ec2c786bef0adbd9,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,41fad215,markdown,fr,649ae09ee6ac0a7d,"## 4. Le mini-crosscoder (Eq 3-5)
 
 Implémentation littérale : encodeurs $W_{\mathrm{enc}}^{(A)}, W_{\mathrm{enc}}^{(B)}$ (le ReLU agit sur la **somme** des deux projections), décodeurs $W_{\mathrm{dec}}^{(A)}, W_{\mathrm{dec}}^{(B)}$, pénalité de parcimonie = normes L2 des colonnes décodeur pondérées par $f_k$. Adam + cosine, 8000 pas, lots de 2048 positions.",,,,,,,,649ae09ee6ac0a7d,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,3d510b82,code,fr,d92b3e85a12f999a,"d = acts[""base""].shape[1]
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,3d510b82,code,fr,d92b3e85a12f999a,"d = acts[""base""].shape[1]
 a_b = torch.from_numpy(acts[""base""]).float().cuda()
 a_d = torch.from_numpy(acts[""distilled""]).float().cuda()
 n = a_b.shape[0]
@@ -34929,7 +34929,7 @@ for step in range(STEPS):
         dens = (torch.relu(a_b[:8192] @ W_eb.T + a_d[:8192] @ W_ed.T + b_e) > 0).float().mean().item()
         hist.append((step+1, loss.item(), dens))
         print(f""step {step+1}/{STEPS} loss={loss.item():.5f} act>0={dens:.3f}"")",,,,,,,,d92b3e85a12f999a,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,d3571e91,code,fr,9abe39eb32df6de8,"with torch.no_grad():
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,d3571e91,code,fr,9abe39eb32df6de8,"with torch.no_grad():
     num = torch.zeros(2, device=""cuda""); den = torch.zeros(2, device=""cuda"")
     fmax = torch.zeros(K_FEATURES, device=""cuda"")
     CH = 65536
@@ -34946,22 +34946,22 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,d35
 print(f""EV base={ev_b:.3f} distilled={ev_d:.3f} dead={dead:.3f}"")
 print(f""NRN: median={np.median(nrn):.3f} frac>0.55={float((nrn>0.55).mean()):.3f} ""
       f""frac<0.45={float((nrn<0.45).mean()):.3f}"")",,,,,,,,9abe39eb32df6de8,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,47344923,code,fr,62b67b4cb1a54113,"import matplotlib.pyplot as plt
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,47344923,code,fr,62b67b4cb1a54113,"import matplotlib.pyplot as plt
 fig, ax = plt.subplots(figsize=(7, 3.2))
 ax.hist(nrn[nrn > 0], bins=80, color=""#3b6ea5"")
 ax.axvline(0.5, color=""k"", ls=""--"", lw=1, label=""NRN = 0.5 (partage)"")
 ax.set_xlabel(""NRN""); ax.set_ylabel(""features""); ax.legend()
 ax.set_title(f""Distribution NRN - {K_FEATURES} features (median {np.median(nrn):.3f})"")
 plt.tight_layout(); plt.show()",,,,,,,,62b67b4cb1a54113,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,854bccd1,markdown,fr,c2f3802e06a41ddf,"**Lecture (ancrée sur cette exécution).** Trois chiffres à retenir du run : EV **0,988 base / 0,976 distillé** (le crosscoder reconstruit presque tout le stream), **17,8 % de features mortes**, densité d'activation ~2,8 % en fin d'entraînement. La distribution NRN est **piquée à 0,498** — comme la Fig. 1 du papier : la grande majorité des features sont partagées, avec une queue fine de chaque côté (**0,9 % au-dessus de 0,55**, 2,1 % en dessous de 0,45).
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,854bccd1,markdown,fr,c2f3802e06a41ddf,"**Lecture (ancrée sur cette exécution).** Trois chiffres à retenir du run : EV **0,988 base / 0,976 distillé** (le crosscoder reconstruit presque tout le stream), **17,8 % de features mortes**, densité d'activation ~2,8 % en fin d'entraînement. La distribution NRN est **piquée à 0,498** — comme la Fig. 1 du papier : la grande majorité des features sont partagées, avec une queue fine de chaque côté (**0,9 % au-dessus de 0,55**, 2,1 % en dessous de 0,45).
 
 **Leçon d'échelle (vérifiée en amont)** : avec 64k tokens et $\lambda = 3\cdot10^{-4}$, la queue distilled-only est **vide** (0 feature > 0,55) — il a fallu monter à ~300k tokens **et** $\lambda = 2\cdot10^{-3}$ pour la voir émerger, au prix d'un léger recul de l'EV. La spécialisation des décodeurs n'est pas gratuite : c'est la parcimonie qui la force.",,,,,,,,c2f3802e06a41ddf,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,5f548bcf,markdown,fr,1fbd90bf1c30a4e3,"### Exercice 2 — NRN en normes L2
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,5f548bcf,markdown,fr,1fbd90bf1c30a4e3,"### Exercice 2 — NRN en normes L2
 
 L'Eq 6 utilise les normes **L1** des décodeurs. Recalculer le NRN avec les normes **L2** (`W_dd.norm(dim=0)` au lieu de `W_dd.abs().sum(0)`) et comparer : le classement des 10 features distilled-only change-t-il ? Quelques features passent-elles le seuil 0,55 dans un sens ou l'autre ?
 
 *Indice : `np.argsort` sur les deux versions ; comparer les ensembles avec `np.intersect1d`.*",,,,,,,,1fbd90bf1c30a4e3,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,16d7bccc,code,fr,156322483b2fa71d,"def nrn_with(norm_fn):
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,16d7bccc,code,fr,156322483b2fa71d,"def nrn_with(norm_fn):
     # TODO etudiant : renvoyer le vecteur NRN (Eq 7) avec la norme demandee
     # Etape 1 : rdn = norm_fn(W_dd) / norm_fn(W_db)  (colonnes decoder)
     # Etape 2 : nrn = rdn / (1 + rdn)
@@ -34970,10 +34970,10 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,16d
 
 nrn_l2 = nrn_with(lambda W: W.norm(dim=0))
 print(""Exercice a completer - nrn_l2 ="", None if nrn_l2 is None else nrn_l2.shape)",,,,,,,,156322483b2fa71d,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,0d8afc88,markdown,fr,b2305a7afcbbe815,"## 5. Annotation : où les features distilled-only s'activent-elles ?
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,0d8afc88,markdown,fr,b2305a7afcbbe815,"## 5. Annotation : où les features distilled-only s'activent-elles ?
 
 Deux jambes d'annotation : (i) la **fenêtre d'activation maximale** de chaque top-feature (à la Table 1 du papier), (ii) un test quantitatif d'**enrichissement** — les positions des marqueurs « Wait / Therefore / Alternatively / But » sont-elles plus activées que les autres sur les features distilled-only ?",,,,,,,,b2305a7afcbbe815,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,de68ab5f,code,fr,c114b2f716b6a10e,"from transformers import AutoTokenizer
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,de68ab5f,code,fr,c114b2f716b6a10e,"from transformers import AutoTokenizer
 tok = AutoTokenizer.from_pretrained(PAIR[1][1])
 MARKERS = {""Wait"": [], ""Therefore"": [], ""Alternatively"": [], ""But"": []}
 off = 0
@@ -34987,7 +34987,7 @@ for t, L in zip(texts, np.load(os.path.join(WORK, ""seg_base.npy""))):
     off += int(L)
 for mk, v in MARKERS.items():
     print(f""marqueur {mk}: {len(v)} positions"")",,,,,,,,c114b2f716b6a10e,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,b9676b2f,code,fr,cb7861f9ce9afe56,"sel = torch.from_numpy(nrn).float().cuda() > 0.55
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,b9676b2f,code,fr,cb7861f9ce9afe56,"sel = torch.from_numpy(nrn).float().cuda() > 0.55
 print(""features distilled-only (NRN>0.55):"", int(sel.sum()))
 W_eb_s, W_ed_s, b_s = W_eb[sel].detach(), W_ed[sel].detach(), b_e[sel].detach()
 msum = torch.zeros(n, device=""cuda"")
@@ -35003,10 +35003,10 @@ for mk, pos in MARKERS.items():
     pos = np.asarray(pos)
     on, off_ = ms[pos].mean(), np.delete(ms, pos).mean()
     print(f""{mk}: n={len(pos)} act_ON={on:.3f} act_OFF={off_:.3f} ratio={on/max(off_,1e-9):.2f}"")",,,,,,,,cb7861f9ce9afe56,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,7a615e61,markdown,fr,9d16123ae2e3c6f0,"**Lecture — un résultat MIXTE, affiché tel quel (ancré sur cette exécution).** Sur nos 36 features distilled-only, le ratio d'enrichissement vaut **Therefore 1,68 · But 0,95 · Alternatively 0,71 · Wait 0,54** : un seul marqueur sur quatre (**Therefore**, $n = 103$ positions) est réellement enrichi, les trois autres sont neutres ou déplétés. Là où le crosscoder 32768-features/200M-tokens du papier trouve des features « self-reflection » qui tirent les « Wait », le nôtre n'offre qu'un signal **partiel et fragile** : l'enrichissement Therefore repose sur peu de positions, et le marqueur le plus iconique du R1 (« Wait ») est au contraire **déplété** (0,54).
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,7a615e61,markdown,fr,9d16123ae2e3c6f0,"**Lecture — un résultat MIXTE, affiché tel quel (ancré sur cette exécution).** Sur nos 36 features distilled-only, le ratio d'enrichissement vaut **Therefore 1,68 · But 0,95 · Alternatively 0,71 · Wait 0,54** : un seul marqueur sur quatre (**Therefore**, $n = 103$ positions) est réellement enrichi, les trois autres sont neutres ou déplétés. Là où le crosscoder 32768-features/200M-tokens du papier trouve des features « self-reflection » qui tirent les « Wait », le nôtre n'offre qu'un signal **partiel et fragile** : l'enrichissement Therefore repose sur peu de positions, et le marqueur le plus iconique du R1 (« Wait ») est au contraire **déplété** (0,54).
 
 C'est la jambe 2 de la leçon méthodo (section 8) : **une fenêtre d'activation suggère, un test quantitatif décide** — et ici il décide « signal partiel, pas la lecture sémantique du papier ». Afficher « les features distilled-only capturent le raisonnement » sur la seule base de Therefore aurait été de la complaisance ; afficher les quatre ratios est la mesure honnête.",,,,,,,,9d16123ae2e3c6f0,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,1f4f32be,code,fr,07663878046f0f23,"order = np.argsort(-nrn)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,1f4f32be,code,fr,07663878046f0f23,"order = np.argsort(-nrn)
 picks = list(order[:6])
 offs, all_ids = [], []
 o = 0
@@ -35027,15 +35027,15 @@ for j, k in enumerate(picks):
     win = tok.decode(all_ids[ti][lo:hi]).replace(""\n"", "" "")
     print(f""[k={k}] NRN={nrn[k]:.3f} actmax={float(f_pick[pos, j]):.1f}"")
     print(f""    ...{win}..."")",,,,,,,,07663878046f0f23,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,b5a69c35,markdown,fr,4bd5ebf96b1fd5ba,"**Lecture des fenêtres (cette exécution).** Les top-features distilled-only (NRN 0,62-0,67) s'ancrent sur des **énoncés mathématiques structurés** : instruction de format `\boxed{}` (k=3697), extremum $3f(x)^2+2g(x)$ (k=131), coloration vert/jaune de lettres (k=3561), jeu de partages « who can't split a pile anymore… first player guarantee a win » (k=1062), identité trigonométrique (k=1894), hypoténuse et altitude (k=3282). La spécialisation distillée s'est donc portée sur la **structure des problèmes**, pas sur les marqueurs Wait/Therefore purs que la Table 1 du papier isole à 200M tokens — cohérent avec l'enrichissement partiel mesuré juste avant.",,,,,,,,4bd5ebf96b1fd5ba,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,e6941011,markdown,fr,a48bf0cadee28c1a,"## 6. Ablation causale lockstep — « What is 5 - 1? »
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,b5a69c35,markdown,fr,4bd5ebf96b1fd5ba,"**Lecture des fenêtres (cette exécution).** Les top-features distilled-only (NRN 0,62-0,67) s'ancrent sur des **énoncés mathématiques structurés** : instruction de format `\boxed{}` (k=3697), extremum $3f(x)^2+2g(x)$ (k=131), coloration vert/jaune de lettres (k=3561), jeu de partages « who can't split a pile anymore… first player guarantee a win » (k=1062), identité trigonométrique (k=1894), hypoténuse et altitude (k=3282). La spécialisation distillée s'est donc portée sur la **structure des problèmes**, pas sur les marqueurs Wait/Therefore purs que la Table 1 du papier isole à 200M tokens — cohérent avec l'enrichissement partiel mesuré juste avant.",,,,,,,,4bd5ebf96b1fd5ba,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,e6941011,markdown,fr,a48bf0cadee28c1a,"## 6. Ablation causale lockstep — « What is 5 - 1? »
 
 La jambe causale : pendant la **génération** du modèle distillé, on retire du residual stream (entrée couche 14) la contribution des features ablatées :
 
 $$h' = h - \sum_{k \, \mathrm{ablatées}} f_k \cdot W_{\mathrm{dec}}^{(B),k}$$
 
 Intervention **delta chirurgicale** — on ne remplace pas le stream par la reconstruction, on ne soustrait que les features ciblées. Le crosscoder exige les activations des **deux** modèles : le base tourne sur CPU en lockstep (la VRAM est déjà occupée). Deux seuils : **chirurgical** (NRN > 0,6, 11 features) et **large** (NRN > 0,5, seuil du papier, 1 665 features ≈ 41 % du dictionnaire).",,,,,,,,a48bf0cadee28c1a,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,6aed86c6,code,fr,65a6d626e2571eb7,"bas_cpu = AutoModelForCausalLM.from_pretrained(PAIR[1][1], dtype=torch.float32,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,6aed86c6,code,fr,65a6d626e2571eb7,"bas_cpu = AutoModelForCausalLM.from_pretrained(PAIR[1][1], dtype=torch.float32,
                                                device_map=""cpu"").eval()
 dis = AutoModelForCausalLM.from_pretrained(PAIR[0][1], dtype=torch.bfloat16,
                                            device_map=""cuda"").eval()
@@ -35098,7 +35098,7 @@ for label, th in [(""baseline (aucune)"", None), (""chirurgical NRN>0.6"", THRES
     print(f""--- {label}: {ntok} tokens ---"")
     print(txt[:400].replace(""\n"", "" | ""))
 hdl.remove()",,,,,,,,65a6d626e2571eb7,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,b6f512c8,markdown,fr,72be0e04c07d4cbc,"**Lecture (ancrée sur cette exécution).** Trois régimes nettement séparés :
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,b6f512c8,markdown,fr,72be0e04c07d4cbc,"**Lecture (ancrée sur cette exécution).** Trois régimes nettement séparés :
 
 | Régime | Features ablatées | Durée | Tokens générés | Comportement |
 |---|---|---|---|---|
@@ -35107,10 +35107,10 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,b6f
 | large NRN > 0,5 | 1665 | ≈3 min | **150 (plafond)** | dégénérescence en boucle : « 5 minus 1 is is 4? Wait, no… » répété, pas d'EOS |
 
 Deux enseignements honnêtes : (1) **ce checkpoint 1.5B ne sur-réfléchit pas** sur « What is 5 - 1? » en décodage glouton — la baseline fait 79 tokens, il n'y a rien à « raccourcir », le terrain du papier (over-thinking visible) n'est pas reproduit ici ; (2) l'ablation au seuil large du papier, appliquée à un crosscoder mini, **détruit** la génération (boucle de répétition) au lieu de l'épurer — la revendication causale du papier repose sur un crosscoder entraîné sur 600× plus de tokens. La jambe causale **réfute la transposition naïve** : c'est exactement pourquoi on la montre.",,,,,,,,72be0e04c07d4cbc,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,b81be4a1,markdown,fr,aa482437a42a9de7,"## 7. Parallelogram loss — la géométrie sémantique (exercice CPU)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,b81be4a1,markdown,fr,aa482437a42a9de7,"## 7. Parallelogram loss — la géométrie sémantique (exercice CPU)
 
 Dernière mesure du papier (Fig. 4) : sur des quadruples d'analogies $(a, b, c, d)$ (genre : man:woman :: king:queen), on PCA les activations puis on mesure $\lVert E_a - E_b + E_c - E_d \rVert$ — un parallélogramme parfait l'annule. Le papier constate que le distillé 14B **bat** sa base : des représentations plus structurées. Version mini : mots mono-token, activations mi-couche, PCA sur les mots du quadruple.",,,,,,,,aa482437a42a9de7,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,f3cdbfe5,code,fr,1306abfe21ad0798,"QUADS = [(""man"", ""woman"", ""king"", ""queen""),
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,f3cdbfe5,code,fr,1306abfe21ad0798,"QUADS = [(""man"", ""woman"", ""king"", ""queen""),
           (""paris"", ""france"", ""berlin"", ""germany""),
           (""rome"", ""italy"", ""madrid"", ""spain""),
           (""walk"", ""walked"", ""swim"", ""swam""),
@@ -35136,7 +35136,7 @@ words = sorted({w for q in ok_quads for w in q})
 acts_w = {role: word_act(repo, words) for role, repo in PAIR}
 for role in acts_w:
     print(role, ""captures"")",,,,,,,,1306abfe21ad0798,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,b8ce792b,code,fr,255f3b43f6eeb52e,"def parallelogram_loss(act_dict, quad):
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,b8ce792b,code,fr,255f3b43f6eeb52e,"def parallelogram_loss(act_dict, quad):
     # PCA sur les 4 mots du quadruple (a 4 points, PCA -> 3 dims utiles)
     E = np.stack([act_dict[w] for w in quad])
     E = E - E.mean(0)
@@ -35149,12 +35149,12 @@ GENRE = (""man"", ""woman"", ""king"", ""queen"")
 for role in acts_w:
     if all(w in acts_w[role] for w in GENRE):
         print(f""{role}: parallelogram genre = {parallelogram_loss(acts_w[role], GENRE):.4f}"")",,,,,,,,255f3b43f6eeb52e,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,7d0ccef9,markdown,fr,83749bbb67b62364,"### Exercice 3 — parallelogram loss sur la classe capitale-pays
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,7d0ccef9,markdown,fr,83749bbb67b62364,"### Exercice 3 — parallelogram loss sur la classe capitale-pays
 
 La cellule précédente calcule la perte du parallélogramme pour la classe **genre** : **distillé 1,0832 vs base 1,0694** — à cette échelle la base est (très légèrement) plus structurée, l'inverse du constat 14B du papier : un seul quadruple, verdict illustratif. À vous pour la classe **capitale-pays** (le quadruple `paris|france|berlin|germany` est le seul mono-token de cette classe dans notre vocabulaire — cf. la liste `ok_quads` imprimée) : (1) calculer la perte pour ce quadruple et chaque modèle avec `parallelogram_loss`, (2) comparer au verdict genre, (3) dire ce qu'un seul quadruple permet — et ne permet pas — de conclure.
 
 *Indice : réutiliser `acts_w[role]` ; pour aller plus loin, construire d'autres quadruples capitale-pays mono-token et étendre la classe avant de comparer les moyennes.*",,,,,,,,83749bbb67b62364,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,a1056bad,code,fr,c0cf48434f4ee2c9,"def parallelogram_class_summary(role, quad_list):
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,a1056bad,code,fr,c0cf48434f4ee2c9,"def parallelogram_class_summary(role, quad_list):
     # TODO etudiant : renvoyer (moyenne, ecart-type) des parallelogram losses
     # Etape 1 : boucler sur quad_list avec parallelogram_loss(acts_w[role], q)
     # Etape 2 : moyenne et ecart-type (np.mean / np.std)
@@ -35163,7 +35163,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,a10
 
 CAPS = [q for q in ok_quads if q[0] in (""paris"", ""rome"")]
 print(""Exercice a completer - CAPS ="", CAPS)",,,,,,,,c0cf48434f4ee2c9,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,8e6317c8,markdown,fr,a59d163e5c01d574,"## 8. Leçon méthodo : les trois jambes de preuve
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,8e6317c8,markdown,fr,a59d163e5c01d574,"## 8. Leçon méthodo : les trois jambes de preuve
 
 Ce notebook a délibérément croisé trois façons de répondre à « cette feature porte-t-elle le raisonnement distillé ? » :
 
@@ -35172,7 +35172,7 @@ Ce notebook a délibérément croisé trois façons de répondre à « cette fea
 3. **Causale** (ablation pendant la génération) : la seule qui établisse un rôle — et qui ici **réfute la transposition** du seuil papier à un crosscoder mini (chirurgical 11 features inoffensif, large 1665 features destructeur).
 
 **La conclusion honnête de la version mini** : le crosscoder 1.5B/307k tokens reproduit la *statistique* du papier (pic NRN à 0,5, queues fines) mais pas encore sa *lecture sémantique* (features self-reflection) ni son *intervention causale*. Les trois jambes s'accordent sur la même frontière : entre 307k et 200M tokens, ce n'est pas la même science.",,,,,,,,a59d163e5c01d574,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,72ae4afd,markdown,fr,7bd6fac7eeff01ce,"## Limites assumées
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,72ae4afd,markdown,fr,7bd6fac7eeff01ce,"## Limites assumées
 
 - **307 200 tokens vs 200 M** (facteur ~650) ; K=4096 vs 32768 ; une seule couche (mi-profondeur) ; une seule paire (1.5B) contre 1.5B/7B/14B dans le papier.
 - Corpus 100 % OpenThoughts — le papier mêlait aussi RedPajama (texte général) : sans cette seconde source, la pression à spécialiser les features « raisonnement » est différente.
@@ -35180,12 +35180,12 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,72a
 - Génération gloutonne (do_sample=False) pour la reproductibilité ; le papier échantillonne — les longueurs absolues ne se comparent pas directement.
 - Parallelogram : 4/6 quadruples mono-token seulement, verdict genre **non reproducteur** du papier à 1.5B (base 1,0694 légèrement sous distillé 1,0832) sur UN quadruple — illustratif, l'exercice 3 commence la mesure par classe.
 - Déterminisme strict (`use_deterministic_algorithms`, cuBLAS workspace fixe, TF32 off) : chaque ré-exécution redonne les mêmes chiffres — les lectures de ce notebook sont ancrées sur ces sorties-là.",,,,,,,,7bd6fac7eeff01ce,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,19592f65,markdown,fr,ec96cf2278f506bb,"## Références
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,19592f65,markdown,fr,f3b4810f063531bc,"## Références
 
 - Baek, J. & Tegmark, M. (2025). *Towards Understanding Distilled Reasoning Models: A Representational Approach*. [arXiv:2503.03730](https://arxiv.org/abs/2503.03730) — Eq 3-7 (§3), Table 1 & Fig 1 (§4), ablation/steering (§5), parallelogram (Fig 4).
 - Dataset : [open-thoughts/OpenThoughts-114k](https://huggingface.co/datasets/open-thoughts/OpenThoughts-114k).
 - Modèles : [DeepSeek-R1-Distill-Qwen-1.5B](https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B), [Qwen2.5-Math-1.5B](https://huggingface.co/Qwen/Qwen2.5-Math-1.5B).
-- Précédent série : ICT-41-SAE-GeometrieFeatures-Python, SAE mono-modèle (issue #16747, PR #16859 en cours d'intégration) ; cadre général [README de la série](README.md).",,,,,,,,ec96cf2278f506bb,,,,,,,,
+- Précédent série : ICT-41-SAE-GeometrieFeatures-Python, SAE mono-modèle (issue #16747, PR #16859 en cours d'intégration) ; cadre général [README de la série](README.md).",,,,,,,,f3b4810f063531bc,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-InoculationBifurcation-Pilot-Python.ipynb,1ec2e165,markdown,fr,2d0ccb49373b045d,"# ICT-42 — Inoculation et bifurcation représentationnelle (pilote multi-échelle)
 
 **Navigation** : [Index](README.md) | [<< ICT-21b Calibration](ICT-21b-SAECalibration-Python.ipynb) | [Tete-a-tete SAE<->J-space >>](ICT-SAE-JLens-TeteATete.ipynb)
@@ -35860,14 +35860,14 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-43-Calibration-MultiEchelle-Python.ipynb,ic
 5. **Inventaire daté** : mesuré au Hub tel qu'il existe au moment de l'exécution — le dépôt `W32K-L0_100` du 30B-A3B est ainsi absent de l'énumération des 14 dépôts (jamais publié ou retiré), son `W32K-L0_50` restant la ligne 3 de la table. Toute re-exécution re-mesure.
 
 *Suite (Phase 1) : fit J-lens par taille à `couche_ancre`, report qualité de sonde (accuracy/AUC `control` vs `trained`). See #8236.*",,,,,,,,55e1003f2faec4e5,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,782a8370,markdown,fr,ad76d588f4ac609d,"# ICT-44 — La géométrie de la vérité : une direction dans l'espace latent ?
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,782a8370,markdown,fr,83923ccd52661082,"# ICT-44 — La géométrie de la vérité : une direction dans l'espace latent ?
 **Navigation** : [Index](README.md) | [43 — Calibration multi-échelle](ICT-43-Calibration-MultiEchelle-Python.ipynb) | [45 — Inoculation & bifurcation 9B](ICT-45-InoculationBifurcation-9B-Python.ipynb)
 
-> **Arc cartes blanches** (Epic #16741) — scoping #16760, grain #16890. Suite directe d'ICT-41 (issue #16747 — géométrie SAE mono-modèle) et d'ICT-42 (issue #16749 — crosscoder de distillation). Paper source : **Marks & Tegmark, « The Geometry of Truth »** (COLM 2024, [arXiv:2310.06824](https://arxiv.org/2310.06824)) — cité à la fois par notre paper R05 (crosscoder) et par R11 §2.2.2, qui fait de la **connaissance du vrai tout en affirmant le faux** sa définition de la malhonnêteté.
+> **Arc cartes blanches** (Epic #16741) — scoping #16760, grain #16890. Suite directe d'ICT-41 (issue #16747 — géométrie SAE mono-modèle) et d'ICT-41b (issue #16749 — crosscoder de distillation). Paper source : **Marks & Tegmark, « The Geometry of Truth »** (COLM 2024, [arXiv:2310.06824](https://arxiv.org/2310.06824)) — cité à la fois par notre paper R05 (crosscoder) et par R11 §2.2.2, qui fait de la **connaissance du vrai tout en affirmant le faux** sa définition de la malhonnêteté.
 
 **La question.** Un LLM « croit-il » ce qu'il dit ? Peut-on lire la vérité d'un énoncé *dans ses activations*, sans lire sa sortie ? La piste : une **direction linéaire** — le residual stream contiendrait, quelque part, un axe vrai/faux. Le papier l'établit à l'échelle LLaMA-2 (7B/13B/70B) par une chaîne à trois jambes : localiser (patching), mesurer (PCA + sondes), **trancher (interventions causales)**. Nous répliquons la chaîne complète à échelle mini — paire Qwen 1.5B (base Math vs distillée R1) + un regard 7B — avec les datasets officiels du papier.
 
-**Avertissement d'échelle (honnête, G.2).** Le papier montre que la structure linéaire **émerge avec l'échelle** : à 7B les PC captent la surface (« eighty »), à 13B les axes s'opposent, à 70B ils s'alignent. À 1.5B, attendez-vous à un signal **partiel** — ce notebook documente ce que font nos modèles, pas ce que fait un 70B.",,,,,,,,ad76d588f4ac609d,,,,,,,,
+**Avertissement d'échelle (honnête, G.2).** Le papier montre que la structure linéaire **émerge avec l'échelle** : à 7B les PC captent la surface (« eighty »), à 13B les axes s'opposent, à 70B ils s'alignent. À 1.5B, attendez-vous à un signal **partiel** — ce notebook documente ce que font nos modèles, pas ce que fait un 70B.",,,,,,,,83923ccd52661082,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,674194b7,markdown,fr,16e8778ab95eef31,> **Statut épistémique** — **Sans verdict à ce jour** : aucune ligne de la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md) ne concerne ce notebook ; son statut épistémique sera porté par la matrice le cas échéant.,,,,,,,,16e8778ab95eef31,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,3e0d9c49,markdown,fr,30150dae38dba5da,"## Le débat que ce papier tranche (en surface)
 
@@ -36196,9 +36196,9 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,3bc365e0,co
 # copier interv_run avec fin = fin - 1, mesurer NIE f->t de la sonde MM cities+neg_cities
 result = None  # TODO etudiant
 print(""Exercice a completer"")",,,,,,,,b9bfb476c665e1c7,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,85846e73,markdown,fr,ad726ce9bcf2150e,"## 5. Notre pont : la direction de vérité survit-elle à la distillation ?
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,85846e73,markdown,fr,278c29e9b5c9af3e,"## 5. Notre pont : la direction de vérité survit-elle à la distillation ?
 
-Question **hors papier**, née de notre arc : ICT-42 a montré qu'un crosscoder sépare features partagées et features distilled-only (NRN). La direction de vérité mass-mean de `cities` — $\theta_{mm}^{base}$ et $\theta_{mm}^{dist}$ dans le **même espace** (les deux modèles ont d = 1536, tokenizers alignés) — se ressemblent-elles ? cos(θ_base, θ_dist) par couche : proche de 1, la vérité est un axe hérité ; proche de 0, la distillation l'a réécrite ailleurs.",,,,,,,,ad726ce9bcf2150e,,,,,,,,
+Question **hors papier**, née de notre arc : ICT-41b a montré qu'un crosscoder sépare features partagées et features distilled-only (NRN). La direction de vérité mass-mean de `cities` — $\theta_{mm}^{base}$ et $\theta_{mm}^{dist}$ dans le **même espace** (les deux modèles ont d = 1536, tokenizers alignés) — se ressemblent-elles ? cos(θ_base, θ_dist) par couche : proche de 1, la vérité est un axe hérité ; proche de 0, la distillation l'a réécrite ailleurs.",,,,,,,,278c29e9b5c9af3e,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,476f1a1a,code,fr,58f665572a2dc915,"del model; torch.cuda.empty_cache()
 model, tok = load_model(""dist15"")   # acts_for lit les globaux tok/model
 ACTS_D = {}
@@ -53265,429 +53265,6 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41-SAE-GeometrieFeatures-Python.ipynb,5514f
 - Harnais : Epic #10355 (traces npz commitees), organe `ict/scale_free.py`,
   organe `ict/sae_dictionary.py`.
 ",,,,,,,,4d95484c97929c1a,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,226c0ff6,markdown,fr,24282410ed5d6cae,"# ICT-42 — Crosscoder : diffuser deux modèles, distilled reasoning vs base
-
-> **Arc A2 — géométrie du latent** (Epic #16741), suite directe d'ICT-41, SAE mono-modèle (issue #16747, en cours d'intégration via la PR #16859). Paper source : **R05** — Baek & Tegmark, *Towards Understanding Distilled Reasoning Models: A Representational Approach* ([arXiv:2503.03730](https://arxiv.org/2503.03730)).
-
-ICT-41 isolait la géométrie d'UN modèle avec un SAE. Ici on met **deux modèles côte à côte** dans un même dictionnaire de features : le modèle distillé `DeepSeek-R1-Distill-Qwen-1.5B` (qui a « appris à raisonner » par distillation de traces DeepSeek-R1) et sa base `Qwen2.5-Math-1.5B` (avant distillation). L'outil est le **crosscoder** : chaque feature possède un décodeur **par modèle**, et le rapport des normes des décodeurs — le **NRN** — dit si une feature est *partagée* (les deux modèles l'utilisent pareil), *distillée-only* (le distillé l'a acquise pendant la distillation) ou *base-only*.
-
-La question causale du papier : les features distillées-only portent-elles le comportement « over-thinking » du raisonnement long ? On la teste à échelle mini — et on verra que **certaines réponses du papier ne se reproduisent pas à cette échelle** : c'est précisément l'intérêt méthodologique.",,,,,,,,24282410ed5d6cae,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,934895f9,markdown,fr,16e8778ab95eef31,> **Statut épistémique** — **Sans verdict à ce jour** : aucune ligne de la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md) ne concerne ce notebook ; son statut épistémique sera porté par la matrice le cas échéant.,,,,,,,,16e8778ab95eef31,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,528ea9db,markdown,fr,92aad3db608c582c,"## Prérequis & avertissement d'exécution
-
-- **GPU requis** (~4 Go de VRAM libres) — deux modèles 1.5B chargés **séquentiellement** en bf16, puis en lockstep CPU+GPU pour l'ablation causale. Environnement : `coursia-ml-training` (torch 2.6 + transformers 5.2 + datasets 5.0).
-- **Durée totale ~20-25 min** : capture d'activations (~8 min), entraînement du crosscoder (~6 min), analyses, ablation lockstep (~4 min).
-- Les poids Hugging Face (7 Go au total) sont attendus dans le cache HF local ; sinon le premier téléchargement les récupère. On fixe `HF_HOME` vers le cache provisionné de la machine si absent.
-- **Échelle mini assumée** : 307 200 tokens capturés vs 200 M dans le papier, dictionnaire K=4096 vs 32768. Chaque section signale honnêtement ce que l'échelle permet et ne permet pas de conclure.",,,,,,,,92aad3db608c582c,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,a0caf98c,code,fr,07050a0992d381b4,"import json, os, time
-import numpy as np
-
-os.environ.setdefault(""HF_HOME"", ""D:/hf-cache-crosscoder"")
-os.environ.setdefault(""CUBLAS_WORKSPACE_CONFIG"", "":4096:8"")
-import torch
-
-# Determinisme strict (patron flotte QC) : sans lui, chaque re-execution
-# re-entraine un crosscoder legerement different et les lectures chiffrees
-# du notebook seraient perimees des la passe suivante.
-torch.use_deterministic_algorithms(True)
-torch.backends.cudnn.deterministic = True
-torch.backends.cudnn.benchmark = False
-torch.backends.cuda.matmul.allow_tf32 = False
-torch.backends.cudnn.allow_tf32 = False
-import tempfile
-WORK = os.path.join(tempfile.gettempdir(), ""ict42"")
-os.makedirs(WORK, exist_ok=True)
-SEED = 0
-torch.manual_seed(SEED)
-np.random.seed(SEED)
-print(""cuda:"", torch.cuda.is_available(), ""| work:"", WORK)",,,,,,,,07050a0992d381b4,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,eefc126d,markdown,fr,0a4e29d1f4033769,"## 1. Le crosscoder en cinq équations (R05 §3)
-
-Notation : $i \in \{A, B\}$ avec $A$ = base, $B$ = distillé ; $a^{(i)}(x_j)$ = activation du residual stream **en entrée de la couche mi-profondeur** (couche 14 sur 28 pour nos deux modèles) au token $x_j$.
-
-$$f(x_j) = \mathrm{ReLU}\!\left(\sum_{i=A,B} W_{\mathrm{enc}}^{(i)}\, a^{(i)}(x_j) + b_{\mathrm{enc}}\right) \tag{3}$$
-
-$$a'^{(i)}(x_j) = W_{\mathrm{dec}}^{(i)}\, f(x_j) + b_{\mathrm{dec}}^{(i)} \tag{4}$$
-
-La perte (5) couple reconstruction (MSE) et parcimonie pondérée par l'activation — chaque feature paie $\sum_i \lVert W_{\mathrm{dec}}^{(i),k}\rVert_2$ proportionnellement à $f_k(x_j)$ :
-
-$$\mathcal{L} = \sum_{i=A,B} \lVert a'^{(i)} - a^{(i)}\rVert^2 + \sum_k f_k(x_j) \sum_{i=A,B} \lVert W_{\mathrm{dec}}^{(i),k}\rVert_2 \tag{5}$$
-
-Le tri des features se fait sur le rapport des normes L1 des décodeurs :
-
-$$\mathrm{RDN}_k = \frac{\lVert W_{\mathrm{dec}}^{(B),k}\rVert_1}{\lVert W_{\mathrm{dec}}^{(A),k}\rVert_1} \qquad \mathrm{NRN}_k = \frac{\mathrm{RDN}_k}{1+\mathrm{RDN}_k} \tag{6-7}$$
-
-**Lecture du NRN** : $0{,}5$ = partagé ; $\to 1$ = distillée-only ; $\to 0$ = base-only. C'est l'axe qui trie tout le notebook.",,,,,,,,0a4e29d1f4033769,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,f9bb276d,code,fr,1a457bb969096fe2,"N_TRACES, MAX_TOK = 800, 384      # corpus mini : 307 200 tokens
-K_FEATURES, STEPS, LAM, LR, BS = 4096, 8000, 2e-3, 1e-3, 2048
-THRESH_SURGICAL, THRESH_WIDE = 0.6, 0.5
-PAIR = [(""distilled"", ""deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B""),
-        (""base"", ""Qwen/Qwen2.5-Math-1.5B"")]
-print(f""corpus {N_TRACES} traces x {MAX_TOK} tok max, K={K_FEATURES}, ""
-      f""steps={STEPS}, lambda={LAM}"")",,,,,,,,1a457bb969096fe2,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,2e9948ed,markdown,fr,6b5321a7d6d32e6b,"## 2. Corpus : les traces OpenThoughts, pas les énoncés
-
-R05 entraîne son crosscoder sur 200 M de tokens d'`open-thoughts/OpenThoughts-114k` — des **traces de raisonnement générées par DeepSeek-R1**. Détail de schéma qui a son importance : le dataset est au format **ShareGPT** (`conversations` : tours `user`/`assistant`), pas un champ `problem`.
-
-On capture donc **énoncé + début de trace** (384 tokens) : c'est dans la trace que vivent les marqueurs « Wait », « Therefore », « Alternatively », « But » qui serviront à l'annotation. On filtre le boilerplate TACO (des dizaines d'énoncés identiques « Generate an executable Python function... ») et les doublons.",,,,,,,,6b5321a7d6d32e6b,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,f57a4b68,code,fr,b2296c496ad2922e,"from datasets import load_dataset
-
-TACO = ""Generate an executable Python function""
-ds = load_dataset(""open-thoughts/OpenThoughts-114k"", split=""train"", streaming=True)
-texts, seen = [], set()
-for ex in ds:
-    conv = ex.get(""conversations"") or []
-    if len(conv) < 2 or conv[0].get(""from"") != ""user"" or conv[1].get(""from"") != ""assistant"":
-        continue
-    user, asst = conv[0][""value""].strip(), conv[1][""value""].strip()
-    if not (40 <= len(user) <= 600) or user.startswith(TACO) or user in seen:
-        continue
-    seen.add(user)
-    texts.append(user + ""\n\n"" + asst)
-    if len(texts) >= N_TRACES:
-        break
-assert len(texts) >= N_TRACES // 2
-json.dump(texts, open(os.path.join(WORK, ""texts.json""), ""w"", encoding=""utf-8""),
-          ensure_ascii=False)
-print(""traces retenues:"", len(texts))",,,,,,,,b2296c496ad2922e,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,4a79a7f4,markdown,fr,569bae07249a4169,"### Exercice 1 — un sélecteur mono-domaine
-
-Le corpus ci-dessus mélange maths, code, sciences. Pour cibler les features de raisonnement *mathématique*, écrire `select_math(texts)` qui ne garde que les traces dont l'énoncé contient au moins un indice mathématique (par ex. `$`, `\(`, `equation`, `integer`, `triangle`...), puis relancer la capture sur ce sous-corpus et comparer la distribution NRN.
-
-*Indice : inspecter `texts[:20]` pour voir à quoi ressemblent les énoncés ; la comparaison NRN se fait avec la cellule histogramme de la section 4.*",,,,,,,,569bae07249a4169,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,568d8457,code,fr,f457e47d2e5c9625,"def select_math(texts, min_len=40):
-    # TODO etudiant : retourner la sous-liste des traces mathematiques
-    # Etape 1 : definir une liste de mots-indices (equation, integer, triangle, ...)
-    # Etape 2 : ne garder que texts contenant au moins un indice
-    # Etape 3 : verifier qu'il reste assez de traces (>100) sinon elargir
-    result = None  # TODO etudiant
-    return result
-
-sel = select_math(texts)
-print(""Exercice a completer - select_math renvoie:"", sel)",,,,,,,,f457e47d2e5c9625,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,4e143441,markdown,fr,6b2cd21982b2a114,"## 3. Capture du residual stream, couche mi-profondeur
-
-Les deux modèles **partagent la même famille de tokenizer** (Qwen2.5) : sur nos 4 prompts de fumée, les ids étaient **identiques token à token** — condition nécessaire pour aligner les positions des deux modèles dans le crosscoder. On capture `hidden_states[mid]` = l'entrée de la couche 14 (sur 28), en bf16 GPU, séquentiellement.",,,,,,,,6b2cd21982b2a114,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,b5bdb154,code,fr,33e494d333c2a5b2,"from transformers import AutoModelForCausalLM, AutoTokenizer
-
-def capture(role, repo, texts):
-    tok = AutoTokenizer.from_pretrained(repo)
-    model = AutoModelForCausalLM.from_pretrained(repo, dtype=torch.bfloat16,
-                                                 device_map=""cuda"").eval()
-    mid = model.config.num_hidden_layers // 2
-    rows, seg = [], []
-    torch.cuda.reset_peak_memory_stats()
-    with torch.no_grad():
-        for t in texts:
-            enc = tok(t, return_tensors=""pt"", truncation=True, max_length=MAX_TOK).to(""cuda"")
-            out = model(**enc, output_hidden_states=True)
-            rows.append(out.hidden_states[mid][0].float().cpu().numpy())
-            seg.append(len(enc.input_ids[0]))
-    acts = np.concatenate(rows, axis=0)
-    d_model = model.config.hidden_size
-    pic = round(torch.cuda.max_memory_allocated() / 2**20)
-    del model; torch.cuda.empty_cache()
-    np.save(os.path.join(WORK, f""acts_{role}.npy""), acts)
-    np.save(os.path.join(WORK, f""seg_{role}.npy""), np.asarray(seg, dtype=np.int32))
-    print(f""{role}: mid={mid} d={d_model} tokens={acts.shape[0]} VRAMpic={pic}MiB"")
-    return acts
-
-t0 = time.time()
-acts = {}
-for role, repo in PAIR:
-    acts[role] = capture(role, repo, texts)
-print(f""capture en {time.time()-t0:.0f}s"")",,,,,,,,33e494d333c2a5b2,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,cf5e3380,markdown,fr,ec2c786bef0adbd9,"**Lecture (ancrée sur cette exécution).** VRAM pic : **3 734 MiB** (distillé) puis **3 288 MiB** (base) — la cohabitation avec le serveur d'embeddings résident est juste, d'où le chargement **séquentiel** et le `empty_cache()` entre les deux ; capture totale ~2,5 min. Les 800 tronçons de 384 tokens donnent exactement 307 200 positions par modèle. L'alignement des tokenizers a été vérifié en amont (ids égaux sur prompts témoins) : la position $j$ désigne le **même token** pour $A$ et $B$.",,,,,,,,ec2c786bef0adbd9,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,41fad215,markdown,fr,649ae09ee6ac0a7d,"## 4. Le mini-crosscoder (Eq 3-5)
-
-Implémentation littérale : encodeurs $W_{\mathrm{enc}}^{(A)}, W_{\mathrm{enc}}^{(B)}$ (le ReLU agit sur la **somme** des deux projections), décodeurs $W_{\mathrm{dec}}^{(A)}, W_{\mathrm{dec}}^{(B)}$, pénalité de parcimonie = normes L2 des colonnes décodeur pondérées par $f_k$. Adam + cosine, 8000 pas, lots de 2048 positions.",,,,,,,,649ae09ee6ac0a7d,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,3d510b82,code,fr,d92b3e85a12f999a,"d = acts[""base""].shape[1]
-a_b = torch.from_numpy(acts[""base""]).float().cuda()
-a_d = torch.from_numpy(acts[""distilled""]).float().cuda()
-n = a_b.shape[0]
-torch.manual_seed(SEED)  # init du dictionnaire reproductible run a run
-W_eb = (torch.randn(K_FEATURES, d) / d**0.5).cuda().requires_grad_(True)
-W_ed = (torch.randn(K_FEATURES, d) / d**0.5).cuda().requires_grad_(True)
-W_db = (torch.randn(d, K_FEATURES) / K_FEATURES**0.5).cuda().requires_grad_(True)
-W_dd = (torch.randn(d, K_FEATURES) / K_FEATURES**0.5).cuda().requires_grad_(True)
-b_e = torch.zeros(K_FEATURES, device=""cuda"", requires_grad=True)
-b_db = a_b.mean(0).clone().requires_grad_(True)
-b_dd = a_d.mean(0).clone().requires_grad_(True)
-opt = torch.optim.Adam([W_eb, W_ed, W_db, W_dd, b_e, b_db, b_dd], lr=LR)
-sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, STEPS)
-scale = a_b.pow(2).mean().item()
-hist = []
-for step in range(STEPS):
-    idx = torch.randint(0, n, (BS,), device=""cuda"")
-    xb, xd = a_b[idx], a_d[idx]
-    f = torch.relu(xb @ W_eb.T + xd @ W_ed.T + b_e)          # Eq 3
-    rb = f @ W_db.T + b_db                                    # Eq 4
-    rd = f @ W_dd.T + b_dd
-    sparsity = (f * (W_db.norm(dim=0) + W_dd.norm(dim=0))).sum(1).mean()  # Eq 5
-    loss = (((rb-xb).pow(2).mean() + (rd-xd).pow(2).mean()) / scale
-            + LAM * sparsity / scale)
-    opt.zero_grad(set_to_none=True); loss.backward(); opt.step(); sched.step()
-    if (step+1) % 1000 == 0:
-        dens = (torch.relu(a_b[:8192] @ W_eb.T + a_d[:8192] @ W_ed.T + b_e) > 0).float().mean().item()
-        hist.append((step+1, loss.item(), dens))
-        print(f""step {step+1}/{STEPS} loss={loss.item():.5f} act>0={dens:.3f}"")",,,,,,,,d92b3e85a12f999a,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,d3571e91,code,fr,9abe39eb32df6de8,"with torch.no_grad():
-    num = torch.zeros(2, device=""cuda""); den = torch.zeros(2, device=""cuda"")
-    fmax = torch.zeros(K_FEATURES, device=""cuda"")
-    CH = 65536
-    for s in range(0, n, CH):
-        f_c = torch.relu(a_b[s:s+CH] @ W_eb.T + a_d[s:s+CH] @ W_ed.T + b_e)
-        rb = f_c @ W_db.T + b_db; rd = f_c @ W_dd.T + b_dd
-        num[0] += (rb - a_b[s:s+CH]).pow(2).sum(); num[1] += (rd - a_d[s:s+CH]).pow(2).sum()
-        den[0] += a_b[s:s+CH].pow(2).sum();         den[1] += a_d[s:s+CH].pow(2).sum()
-        fmax = torch.maximum(fmax, f_c.max(0).values)
-    ev_b, ev_d = (1 - num/den).tolist()
-    rdn = W_dd.abs().sum(0) / W_db.abs().sum(0).clamp_min(1e-8)   # Eq 6 (normes L1)
-    nrn = (rdn / (1 + rdn)).cpu().numpy()                          # Eq 7
-    dead = (fmax == 0).float().mean().item()
-print(f""EV base={ev_b:.3f} distilled={ev_d:.3f} dead={dead:.3f}"")
-print(f""NRN: median={np.median(nrn):.3f} frac>0.55={float((nrn>0.55).mean()):.3f} ""
-      f""frac<0.45={float((nrn<0.45).mean()):.3f}"")",,,,,,,,9abe39eb32df6de8,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,47344923,code,fr,62b67b4cb1a54113,"import matplotlib.pyplot as plt
-fig, ax = plt.subplots(figsize=(7, 3.2))
-ax.hist(nrn[nrn > 0], bins=80, color=""#3b6ea5"")
-ax.axvline(0.5, color=""k"", ls=""--"", lw=1, label=""NRN = 0.5 (partage)"")
-ax.set_xlabel(""NRN""); ax.set_ylabel(""features""); ax.legend()
-ax.set_title(f""Distribution NRN - {K_FEATURES} features (median {np.median(nrn):.3f})"")
-plt.tight_layout(); plt.show()",,,,,,,,62b67b4cb1a54113,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,854bccd1,markdown,fr,c2f3802e06a41ddf,"**Lecture (ancrée sur cette exécution).** Trois chiffres à retenir du run : EV **0,988 base / 0,976 distillé** (le crosscoder reconstruit presque tout le stream), **17,8 % de features mortes**, densité d'activation ~2,8 % en fin d'entraînement. La distribution NRN est **piquée à 0,498** — comme la Fig. 1 du papier : la grande majorité des features sont partagées, avec une queue fine de chaque côté (**0,9 % au-dessus de 0,55**, 2,1 % en dessous de 0,45).
-
-**Leçon d'échelle (vérifiée en amont)** : avec 64k tokens et $\lambda = 3\cdot10^{-4}$, la queue distilled-only est **vide** (0 feature > 0,55) — il a fallu monter à ~300k tokens **et** $\lambda = 2\cdot10^{-3}$ pour la voir émerger, au prix d'un léger recul de l'EV. La spécialisation des décodeurs n'est pas gratuite : c'est la parcimonie qui la force.",,,,,,,,c2f3802e06a41ddf,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,5f548bcf,markdown,fr,1fbd90bf1c30a4e3,"### Exercice 2 — NRN en normes L2
-
-L'Eq 6 utilise les normes **L1** des décodeurs. Recalculer le NRN avec les normes **L2** (`W_dd.norm(dim=0)` au lieu de `W_dd.abs().sum(0)`) et comparer : le classement des 10 features distilled-only change-t-il ? Quelques features passent-elles le seuil 0,55 dans un sens ou l'autre ?
-
-*Indice : `np.argsort` sur les deux versions ; comparer les ensembles avec `np.intersect1d`.*",,,,,,,,1fbd90bf1c30a4e3,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,16d7bccc,code,fr,156322483b2fa71d,"def nrn_with(norm_fn):
-    # TODO etudiant : renvoyer le vecteur NRN (Eq 7) avec la norme demandee
-    # Etape 1 : rdn = norm_fn(W_dd) / norm_fn(W_db)  (colonnes decoder)
-    # Etape 2 : nrn = rdn / (1 + rdn)
-    result = None  # TODO etudiant
-    return result
-
-nrn_l2 = nrn_with(lambda W: W.norm(dim=0))
-print(""Exercice a completer - nrn_l2 ="", None if nrn_l2 is None else nrn_l2.shape)",,,,,,,,156322483b2fa71d,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,0d8afc88,markdown,fr,b2305a7afcbbe815,"## 5. Annotation : où les features distilled-only s'activent-elles ?
-
-Deux jambes d'annotation : (i) la **fenêtre d'activation maximale** de chaque top-feature (à la Table 1 du papier), (ii) un test quantitatif d'**enrichissement** — les positions des marqueurs « Wait / Therefore / Alternatively / But » sont-elles plus activées que les autres sur les features distilled-only ?",,,,,,,,b2305a7afcbbe815,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,de68ab5f,code,fr,c114b2f716b6a10e,"from transformers import AutoTokenizer
-tok = AutoTokenizer.from_pretrained(PAIR[1][1])
-MARKERS = {""Wait"": [], ""Therefore"": [], ""Alternatively"": [], ""But"": []}
-off = 0
-for t, L in zip(texts, np.load(os.path.join(WORK, ""seg_base.npy""))):
-    ids = tok(t, return_tensors=""pt"", truncation=True, max_length=MAX_TOK).input_ids[0]
-    for p, s in enumerate(tok.convert_ids_to_tokens(ids)):
-        clean = s.replace(""Ġ"", """").replace(""Ċ"", "" "")
-        for mk in MARKERS:
-            if clean == mk or (clean.startswith(mk) and len(clean) <= len(mk) + 2):
-                MARKERS[mk].append(off + p)
-    off += int(L)
-for mk, v in MARKERS.items():
-    print(f""marqueur {mk}: {len(v)} positions"")",,,,,,,,c114b2f716b6a10e,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,b9676b2f,code,fr,cb7861f9ce9afe56,"sel = torch.from_numpy(nrn).float().cuda() > 0.55
-print(""features distilled-only (NRN>0.55):"", int(sel.sum()))
-W_eb_s, W_ed_s, b_s = W_eb[sel].detach(), W_ed[sel].detach(), b_e[sel].detach()
-msum = torch.zeros(n, device=""cuda"")
-with torch.no_grad():
-    CH = 131072
-    for s in range(0, n, CH):
-        f_s = torch.relu(a_b[s:s+CH] @ W_eb_s.T + a_d[s:s+CH] @ W_ed_s.T + b_s)
-        msum[s:s+CH] = f_s.sum(1)
-ms = msum.cpu().numpy()
-for mk, pos in MARKERS.items():
-    if not len(pos):
-        continue
-    pos = np.asarray(pos)
-    on, off_ = ms[pos].mean(), np.delete(ms, pos).mean()
-    print(f""{mk}: n={len(pos)} act_ON={on:.3f} act_OFF={off_:.3f} ratio={on/max(off_,1e-9):.2f}"")",,,,,,,,cb7861f9ce9afe56,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,7a615e61,markdown,fr,9d16123ae2e3c6f0,"**Lecture — un résultat MIXTE, affiché tel quel (ancré sur cette exécution).** Sur nos 36 features distilled-only, le ratio d'enrichissement vaut **Therefore 1,68 · But 0,95 · Alternatively 0,71 · Wait 0,54** : un seul marqueur sur quatre (**Therefore**, $n = 103$ positions) est réellement enrichi, les trois autres sont neutres ou déplétés. Là où le crosscoder 32768-features/200M-tokens du papier trouve des features « self-reflection » qui tirent les « Wait », le nôtre n'offre qu'un signal **partiel et fragile** : l'enrichissement Therefore repose sur peu de positions, et le marqueur le plus iconique du R1 (« Wait ») est au contraire **déplété** (0,54).
-
-C'est la jambe 2 de la leçon méthodo (section 8) : **une fenêtre d'activation suggère, un test quantitatif décide** — et ici il décide « signal partiel, pas la lecture sémantique du papier ». Afficher « les features distilled-only capturent le raisonnement » sur la seule base de Therefore aurait été de la complaisance ; afficher les quatre ratios est la mesure honnête.",,,,,,,,9d16123ae2e3c6f0,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,1f4f32be,code,fr,07663878046f0f23,"order = np.argsort(-nrn)
-picks = list(order[:6])
-offs, all_ids = [], []
-o = 0
-for t in texts:
-    ids = tok(t, return_tensors=""pt"", truncation=True, max_length=MAX_TOK).input_ids[0]
-    offs.append((o, o + len(ids))); all_ids.append(ids); o += len(ids)
-f_pick = torch.zeros(n, len(picks), device=""cuda"")
-with torch.no_grad():
-    CH = 131072
-    for s in range(0, n, CH):
-        f_c = torch.relu(a_b[s:s+CH] @ W_eb.T + a_d[s:s+CH] @ W_ed.T + b_e)
-        f_pick[s:s+CH] = f_c[:, picks]
-for j, k in enumerate(picks):
-    pos = int(f_pick[:, j].argmax())
-    ti = next(i for i, (s0, _) in enumerate(offs) if s0 <= pos < offs[i][1])
-    s0, _ = offs[ti]
-    lo, hi = max(0, pos - s0 - 22), pos - s0 + 8
-    win = tok.decode(all_ids[ti][lo:hi]).replace(""\n"", "" "")
-    print(f""[k={k}] NRN={nrn[k]:.3f} actmax={float(f_pick[pos, j]):.1f}"")
-    print(f""    ...{win}..."")",,,,,,,,07663878046f0f23,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,b5a69c35,markdown,fr,4bd5ebf96b1fd5ba,"**Lecture des fenêtres (cette exécution).** Les top-features distilled-only (NRN 0,62-0,67) s'ancrent sur des **énoncés mathématiques structurés** : instruction de format `\boxed{}` (k=3697), extremum $3f(x)^2+2g(x)$ (k=131), coloration vert/jaune de lettres (k=3561), jeu de partages « who can't split a pile anymore… first player guarantee a win » (k=1062), identité trigonométrique (k=1894), hypoténuse et altitude (k=3282). La spécialisation distillée s'est donc portée sur la **structure des problèmes**, pas sur les marqueurs Wait/Therefore purs que la Table 1 du papier isole à 200M tokens — cohérent avec l'enrichissement partiel mesuré juste avant.",,,,,,,,4bd5ebf96b1fd5ba,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,e6941011,markdown,fr,a48bf0cadee28c1a,"## 6. Ablation causale lockstep — « What is 5 - 1? »
-
-La jambe causale : pendant la **génération** du modèle distillé, on retire du residual stream (entrée couche 14) la contribution des features ablatées :
-
-$$h' = h - \sum_{k \, \mathrm{ablatées}} f_k \cdot W_{\mathrm{dec}}^{(B),k}$$
-
-Intervention **delta chirurgicale** — on ne remplace pas le stream par la reconstruction, on ne soustrait que les features ciblées. Le crosscoder exige les activations des **deux** modèles : le base tourne sur CPU en lockstep (la VRAM est déjà occupée). Deux seuils : **chirurgical** (NRN > 0,6, 11 features) et **large** (NRN > 0,5, seuil du papier, 1 665 features ≈ 41 % du dictionnaire).",,,,,,,,a48bf0cadee28c1a,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,6aed86c6,code,fr,65a6d626e2571eb7,"bas_cpu = AutoModelForCausalLM.from_pretrained(PAIR[1][1], dtype=torch.float32,
-                                               device_map=""cpu"").eval()
-dis = AutoModelForCausalLM.from_pretrained(PAIR[0][1], dtype=torch.bfloat16,
-                                           device_map=""cuda"").eval()
-MID = dis.config.num_hidden_layers // 2
-
-@torch.no_grad()
-def base_mid(ids):
-    o = bas_cpu(input_ids=ids.to(""cpu""), output_hidden_states=True)
-    return o.hidden_states[MID][0].to(""cuda"", torch.float32)
-
-state = {""ids"": None, ""mask"": None}
-
-def hook(module, args, kwargs):
-    if state[""ids""] is None:
-        return None
-    h = args[0] if args else kwargs[""hidden_states""]
-    seq = h.shape[1]
-    hb = base_mid(state[""ids""][:, -seq:])
-    hd = h[0].float()
-    fv = torch.relu(hd @ W_ed.T + hb @ W_eb.T + b_e)
-    delta = (fv * state[""mask""]) @ W_dd.T
-    h_new = (hd - delta).to(h.dtype)[None]
-    if args:
-        return (h_new,) + tuple(args[1:]), kwargs
-    kwargs[""hidden_states""] = h_new
-    return None, kwargs
-
-hdl = dis.model.layers[MID].register_forward_pre_hook(hook, with_kwargs=True)
-
-def generate(prompt, thresh, max_new=150):
-    enc = tok(prompt, return_tensors=""pt"").to(""cuda"")
-    state[""mask""] = (torch.from_numpy(nrn).float().cuda() > thresh).float()
-    gen = enc.input_ids.clone(); state[""ids""] = gen.clone()
-    for _ in range(max_new):
-        with torch.no_grad():
-            nxt = int(dis(input_ids=gen).logits[0, -1].argmax())
-        if nxt == tok.eos_token_id:
-            break
-        gen = torch.cat([gen, torch.tensor([[nxt]], device=""cuda"")], dim=1)
-        state[""ids""] = gen
-    txt = tok.decode(gen[0][enc.input_ids.shape[1]:], skip_special_tokens=True)
-    return gen.shape[1] - enc.input_ids.shape[1], txt
-
-PROMPT = ""What is 5 - 1?""
-for label, th in [(""baseline (aucune)"", None), (""chirurgical NRN>0.6"", THRESH_SURGICAL),
-                  (""large NRN>0.5 (seuil papier)"", THRESH_WIDE)]:
-    if th is None:
-        state[""ids""] = None
-        enc = tok(PROMPT, return_tensors=""pt"").to(""cuda"")
-        with torch.no_grad():
-            out = dis.generate(**enc, max_new_tokens=150, do_sample=False,
-                               pad_token_id=tok.eos_token_id)
-        ntok, txt = out.shape[1] - enc.input_ids.shape[1], tok.decode(
-            out[0][enc.input_ids.shape[1]:], skip_special_tokens=True)
-    else:
-        t0 = time.time()
-        n_ab = int((torch.from_numpy(nrn) > th).sum())
-        ntok, txt = generate(PROMPT, th)
-        print(f""[{label}: {n_ab} features ablatees, {time.time()-t0:.0f}s]"")
-    print(f""--- {label}: {ntok} tokens ---"")
-    print(txt[:400].replace(""\n"", "" | ""))
-hdl.remove()",,,,,,,,65a6d626e2571eb7,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,b6f512c8,markdown,fr,72be0e04c07d4cbc,"**Lecture (ancrée sur cette exécution).** Trois régimes nettement séparés :
-
-| Régime | Features ablatées | Durée | Tokens générés | Comportement |
-|---|---|---|---|---|
-| baseline | 0 | — | **79** | réponse directe, déjà concise |
-| chirurgical NRN > 0,6 | 11 | ≈1 min | **79** | préservé (dérive cosmétique : « Final Answer » au lieu de « Conclusion ») |
-| large NRN > 0,5 | 1665 | ≈3 min | **150 (plafond)** | dégénérescence en boucle : « 5 minus 1 is is 4? Wait, no… » répété, pas d'EOS |
-
-Deux enseignements honnêtes : (1) **ce checkpoint 1.5B ne sur-réfléchit pas** sur « What is 5 - 1? » en décodage glouton — la baseline fait 79 tokens, il n'y a rien à « raccourcir », le terrain du papier (over-thinking visible) n'est pas reproduit ici ; (2) l'ablation au seuil large du papier, appliquée à un crosscoder mini, **détruit** la génération (boucle de répétition) au lieu de l'épurer — la revendication causale du papier repose sur un crosscoder entraîné sur 600× plus de tokens. La jambe causale **réfute la transposition naïve** : c'est exactement pourquoi on la montre.",,,,,,,,72be0e04c07d4cbc,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,b81be4a1,markdown,fr,aa482437a42a9de7,"## 7. Parallelogram loss — la géométrie sémantique (exercice CPU)
-
-Dernière mesure du papier (Fig. 4) : sur des quadruples d'analogies $(a, b, c, d)$ (genre : man:woman :: king:queen), on PCA les activations puis on mesure $\lVert E_a - E_b + E_c - E_d \rVert$ — un parallélogramme parfait l'annule. Le papier constate que le distillé 14B **bat** sa base : des représentations plus structurées. Version mini : mots mono-token, activations mi-couche, PCA sur les mots du quadruple.",,,,,,,,aa482437a42a9de7,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,f3cdbfe5,code,fr,1306abfe21ad0798,"QUADS = [(""man"", ""woman"", ""king"", ""queen""),
-          (""paris"", ""france"", ""berlin"", ""germany""),
-          (""rome"", ""italy"", ""madrid"", ""spain""),
-          (""walk"", ""walked"", ""swim"", ""swam""),
-          (""big"", ""bigger"", ""small"", ""smaller""),
-          (""slow"", ""slower"", ""fast"", ""faster"")]
-ok_quads = [q for q in QUADS if all(len(tok("" "" + w).input_ids) == 1 for w in q)]
-print(f""{len(ok_quads)}/{len(QUADS)} quadruples mono-token:"", [""|"".join(q) for q in ok_quads])
-
-def word_act(model_repo, words):
-    m2 = AutoModelForCausalLM.from_pretrained(model_repo, dtype=torch.bfloat16,
-                                              device_map=""cuda"").eval()
-    mid2 = m2.config.num_hidden_layers // 2
-    out = {}
-    with torch.no_grad():
-        for w in words:
-            enc = tok("" "" + w, return_tensors=""pt"").to(""cuda"")
-            o = m2(**enc, output_hidden_states=True)
-            out[w] = o.hidden_states[mid2][0, -1].float().cpu().numpy()
-    del m2; torch.cuda.empty_cache()
-    return out
-
-words = sorted({w for q in ok_quads for w in q})
-acts_w = {role: word_act(repo, words) for role, repo in PAIR}
-for role in acts_w:
-    print(role, ""captures"")",,,,,,,,1306abfe21ad0798,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,b8ce792b,code,fr,255f3b43f6eeb52e,"def parallelogram_loss(act_dict, quad):
-    # PCA sur les 4 mots du quadruple (a 4 points, PCA -> 3 dims utiles)
-    E = np.stack([act_dict[w] for w in quad])
-    E = E - E.mean(0)
-    U, S, Vt = np.linalg.svd(E, full_matrices=False)
-    Ep = E @ Vt[:3].T
-    a, b, c, d = Ep
-    return float(np.linalg.norm(a - b + c - d) / (S[0] + 1e-9))
-
-GENRE = (""man"", ""woman"", ""king"", ""queen"")
-for role in acts_w:
-    if all(w in acts_w[role] for w in GENRE):
-        print(f""{role}: parallelogram genre = {parallelogram_loss(acts_w[role], GENRE):.4f}"")",,,,,,,,255f3b43f6eeb52e,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,7d0ccef9,markdown,fr,83749bbb67b62364,"### Exercice 3 — parallelogram loss sur la classe capitale-pays
-
-La cellule précédente calcule la perte du parallélogramme pour la classe **genre** : **distillé 1,0832 vs base 1,0694** — à cette échelle la base est (très légèrement) plus structurée, l'inverse du constat 14B du papier : un seul quadruple, verdict illustratif. À vous pour la classe **capitale-pays** (le quadruple `paris|france|berlin|germany` est le seul mono-token de cette classe dans notre vocabulaire — cf. la liste `ok_quads` imprimée) : (1) calculer la perte pour ce quadruple et chaque modèle avec `parallelogram_loss`, (2) comparer au verdict genre, (3) dire ce qu'un seul quadruple permet — et ne permet pas — de conclure.
-
-*Indice : réutiliser `acts_w[role]` ; pour aller plus loin, construire d'autres quadruples capitale-pays mono-token et étendre la classe avant de comparer les moyennes.*",,,,,,,,83749bbb67b62364,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,a1056bad,code,fr,c0cf48434f4ee2c9,"def parallelogram_class_summary(role, quad_list):
-    # TODO etudiant : renvoyer (moyenne, ecart-type) des parallelogram losses
-    # Etape 1 : boucler sur quad_list avec parallelogram_loss(acts_w[role], q)
-    # Etape 2 : moyenne et ecart-type (np.mean / np.std)
-    result = None  # TODO etudiant
-    return result
-
-CAPS = [q for q in ok_quads if q[0] in (""paris"", ""rome"")]
-print(""Exercice a completer - CAPS ="", CAPS)",,,,,,,,c0cf48434f4ee2c9,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,8e6317c8,markdown,fr,a59d163e5c01d574,"## 8. Leçon méthodo : les trois jambes de preuve
-
-Ce notebook a délibérément croisé trois façons de répondre à « cette feature porte-t-elle le raisonnement distillé ? » :
-
-1. **Feature-token** (fenêtre d'activation max) : *suggère* une interprétation — nos fenêtres montrent des énoncés mathématiques structurés (`\boxed{}`, jeux de partages, trigonométrie). Mais une fenêtre est une anecdote choisie : elle ne prouve rien.
-2. **Feature-raisonnement** (enrichissement sur marqueurs) : test quantitatif — qui ici **rectifie** la lecture naïve : un seul marqueur enrichi sur quatre (Therefore 1,68), le plus iconique (« Wait ») déplété à 0,54. Un signal partiel n'est pas une lecture sémantique établie.
-3. **Causale** (ablation pendant la génération) : la seule qui établisse un rôle — et qui ici **réfute la transposition** du seuil papier à un crosscoder mini (chirurgical 11 features inoffensif, large 1665 features destructeur).
-
-**La conclusion honnête de la version mini** : le crosscoder 1.5B/307k tokens reproduit la *statistique* du papier (pic NRN à 0,5, queues fines) mais pas encore sa *lecture sémantique* (features self-reflection) ni son *intervention causale*. Les trois jambes s'accordent sur la même frontière : entre 307k et 200M tokens, ce n'est pas la même science.",,,,,,,,a59d163e5c01d574,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,72ae4afd,markdown,fr,7bd6fac7eeff01ce,"## Limites assumées
-
-- **307 200 tokens vs 200 M** (facteur ~650) ; K=4096 vs 32768 ; une seule couche (mi-profondeur) ; une seule paire (1.5B) contre 1.5B/7B/14B dans le papier.
-- Corpus 100 % OpenThoughts — le papier mêlait aussi RedPajama (texte général) : sans cette seconde source, la pression à spécialiser les features « raisonnement » est différente.
-- Détection des marqueurs par token exact capitalisé (Wait/Therefore/Alternatively/But) : couvre les formes majeures des traces R1, pas toutes les variantes.
-- Génération gloutonne (do_sample=False) pour la reproductibilité ; le papier échantillonne — les longueurs absolues ne se comparent pas directement.
-- Parallelogram : 4/6 quadruples mono-token seulement, verdict genre **non reproducteur** du papier à 1.5B (base 1,0694 légèrement sous distillé 1,0832) sur UN quadruple — illustratif, l'exercice 3 commence la mesure par classe.
-- Déterminisme strict (`use_deterministic_algorithms`, cuBLAS workspace fixe, TF32 off) : chaque ré-exécution redonne les mêmes chiffres — les lectures de ce notebook sont ancrées sur ces sorties-là.",,,,,,,,7bd6fac7eeff01ce,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,19592f65,markdown,fr,ec96cf2278f506bb,"## Références
-
-- Baek, J. & Tegmark, M. (2025). *Towards Understanding Distilled Reasoning Models: A Representational Approach*. [arXiv:2503.03730](https://arxiv.org/abs/2503.03730) — Eq 3-7 (§3), Table 1 & Fig 1 (§4), ablation/steering (§5), parallelogram (Fig 4).
-- Dataset : [open-thoughts/OpenThoughts-114k](https://huggingface.co/datasets/open-thoughts/OpenThoughts-114k).
-- Modèles : [DeepSeek-R1-Distill-Qwen-1.5B](https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B), [Qwen2.5-Math-1.5B](https://huggingface.co/Qwen/Qwen2.5-Math-1.5B).
-- Précédent série : ICT-41-SAE-GeometrieFeatures-Python, SAE mono-modèle (issue #16747, PR #16859 en cours d'intégration) ; cadre général [README de la série](README.md).",,,,,,,,ec96cf2278f506bb,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-InoculationBifurcation-Pilot-Python.ipynb,1ec2e165,markdown,fr,2d0ccb49373b045d,"# ICT-42 — Inoculation et bifurcation représentationnelle (pilote multi-échelle)
 
 **Navigation** : [Index](README.md) | [<< ICT-21b Calibration](ICT-21b-SAECalibration-Python.ipynb) | [Tete-a-tete SAE<->J-space >>](ICT-SAE-JLens-TeteATete.ipynb)
@@ -54362,447 +53939,6 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-43-Calibration-MultiEchelle-Python.ipynb,ic
 5. **Inventaire daté** : mesuré au Hub tel qu'il existe au moment de l'exécution — le dépôt `W32K-L0_100` du 30B-A3B est ainsi absent de l'énumération des 14 dépôts (jamais publié ou retiré), son `W32K-L0_50` restant la ligne 3 de la table. Toute re-exécution re-mesure.
 
 *Suite (Phase 1) : fit J-lens par taille à `couche_ancre`, report qualité de sonde (accuracy/AUC `control` vs `trained`). See #8236.*",,,,,,,,55e1003f2faec4e5,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,782a8370,markdown,fr,ad76d588f4ac609d,"# ICT-44 — La géométrie de la vérité : une direction dans l'espace latent ?
-**Navigation** : [Index](README.md) | [43 — Calibration multi-échelle](ICT-43-Calibration-MultiEchelle-Python.ipynb) | [45 — Inoculation & bifurcation 9B](ICT-45-InoculationBifurcation-9B-Python.ipynb)
-
-> **Arc cartes blanches** (Epic #16741) — scoping #16760, grain #16890. Suite directe d'ICT-41 (issue #16747 — géométrie SAE mono-modèle) et d'ICT-42 (issue #16749 — crosscoder de distillation). Paper source : **Marks & Tegmark, « The Geometry of Truth »** (COLM 2024, [arXiv:2310.06824](https://arxiv.org/2310.06824)) — cité à la fois par notre paper R05 (crosscoder) et par R11 §2.2.2, qui fait de la **connaissance du vrai tout en affirmant le faux** sa définition de la malhonnêteté.
-
-**La question.** Un LLM « croit-il » ce qu'il dit ? Peut-on lire la vérité d'un énoncé *dans ses activations*, sans lire sa sortie ? La piste : une **direction linéaire** — le residual stream contiendrait, quelque part, un axe vrai/faux. Le papier l'établit à l'échelle LLaMA-2 (7B/13B/70B) par une chaîne à trois jambes : localiser (patching), mesurer (PCA + sondes), **trancher (interventions causales)**. Nous répliquons la chaîne complète à échelle mini — paire Qwen 1.5B (base Math vs distillée R1) + un regard 7B — avec les datasets officiels du papier.
-
-**Avertissement d'échelle (honnête, G.2).** Le papier montre que la structure linéaire **émerge avec l'échelle** : à 7B les PC captent la surface (« eighty »), à 13B les axes s'opposent, à 70B ils s'alignent. À 1.5B, attendez-vous à un signal **partiel** — ce notebook documente ce que font nos modèles, pas ce que fait un 70B.",,,,,,,,ad76d588f4ac609d,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,674194b7,markdown,fr,16e8778ab95eef31,> **Statut épistémique** — **Sans verdict à ce jour** : aucune ligne de la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md) ne concerne ce notebook ; son statut épistémique sera porté par la matrice le cas échéant.,,,,,,,,16e8778ab95eef31,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,3e0d9c49,markdown,fr,30150dae38dba5da,"## Le débat que ce papier tranche (en surface)
-
-Les sondes de vérité existaient (Azaria & Mitchell, Burns et al.), mais Levinstein & Herrmann ont montré qu'elles **généralisent mal** — une sonde entraînée sur des énoncés vrais/faux peut capter autre chose que la vérité : la probabilité du texte, son sujet, sa structure. Le papier répond par un protocole :
-
-1. **Datasets curés** — énoncés simples, inambigus, générés par templates (villes/pays, traductions espagnol-anglais, comparaisons de nombres), avec leurs **négations** et des conjonctions — pour que la vérité soit la *seule* variable qui bouge ;
-2. **Un contrôle `likely`** — du texte non factuel dont la fin est le token le plus probable ou le 100e : si la « direction de vérité » n'était qu'une direction de probabilité du texte, les sondes entraînées sur `likely` devraient marcher ailleurs ;
-3. **Le test causal** — une sonde qui classe bien ne suffit pas : on *pousse* les activations le long de sa direction et on regarde si le modèle change de verdict. C'est la jambe qui distingue **corrélation** et **implication causale**.
-
-Une remarque de méthode qui nous servira : le papier préfère la sonde **mass-mean** (direction $\theta_{mm} = \mu_+ - \mu_-$, différence des moyennes des activations vraies/fausses) à la régression logistique — et démontre (Thm F.1) que pour des données gaussiennes homoscédastiques, la LR converge vers $\Sigma^{-1}\theta$ : la LR *incline sa frontière* pour éviter l'interférence des features non-orthogonales, quand $\theta_{mm}$ pointe la feature elle-même.",,,,,,,,30150dae38dba5da,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,1d26f12c,markdown,fr,bf1154e22c2b67b5,"## Plan
-
-1. **Localiser** — carte de patching : quelles positions/couches portent le verdict ?
-2. **Mesurer** — PCA des représentations, alignement entre datasets, sondes LR vs mass-mean et généralisation OOD ;
-3. **Trancher** — interventions causales le long des directions de sondes (NIE) ;
-4. **Notre pont** (hors papier) — la direction de vérité survit-elle à la **distillation** ? cos(θ_base, θ_distillé) ;
-5. **Échelle** — un regard 7B (quantifié 4-bit, observation qualitative).
-
-Exécution complète ≈ 15 min (GPU ~6 GiB libres requis ; chargements séquentiels).",,,,,,,,bf1154e22c2b67b5,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,6f0ebbee,code,fr,92e20c10ba842c19,"import os, json, math, time, urllib.request
-os.environ.setdefault(""HF_HOME"", ""D:/hf-cache-crosscoder"")
-os.environ[""CUBLAS_WORKSPACE_CONFIG""] = "":4096:8""
-import torch
-torch.use_deterministic_algorithms(True)
-torch.backends.cudnn.deterministic = True
-torch.backends.cudnn.benchmark = False
-torch.backends.cuda.matmul.allow_tf32 = False
-torch.backends.cudnn.allow_tf32 = False
-torch.manual_seed(0)
-import numpy as np
-import pandas as pd
-SEED = 0
-rng = np.random.RandomState(SEED)
-from ict.probes import anchored_pc1, pca_stats, probe_accuracy, train_probes
-import matplotlib.pyplot as plt
-print(""torch"", torch.__version__, ""cuda"", torch.cuda.is_available())
-print(""determinisme actif ; TF32 off"")",,,,,,,,92e20c10ba842c19,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,27674afc,code,fr,230001e79872f831,"DATA_DIR = ""got_data""
-BASE = ""https://raw.githubusercontent.com/saprmarks/geometry-of-truth/main/datasets/""
-FILES = [""cities.csv"", ""neg_cities.csv"", ""sp_en_trans.csv"", ""neg_sp_en_trans.csv"",
-         ""larger_than.csv"", ""smaller_than.csv"", ""likely.csv"", ""common_claim_true_false.csv""]
-os.makedirs(DATA_DIR, exist_ok=True)
-for f in FILES:
-    dst = os.path.join(DATA_DIR, f)
-    if not os.path.exists(dst):
-        urllib.request.urlretrieve(BASE + f, dst)
-        print(""telecharge"", f)
-DS = {}
-for key, f in [(""cities"",""cities.csv""),(""neg_cities"",""neg_cities.csv""),
-               (""sp_en_trans"",""sp_en_trans.csv""),(""neg_sp_en_trans"",""neg_sp_en_trans.csv""),
-               (""larger_than"",""larger_than.csv""),(""smaller_than"",""smaller_than.csv""),
-               (""likely"",""likely.csv""),(""common_claim"",""common_claim_true_false.csv"")]:
-    df = pd.read_csv(os.path.join(DATA_DIR, f))
-    DS[key] = (df[""statement""].astype(str).tolist(), df[""label""].astype(int).to_numpy())
-    print(f""{key:22s} {len(df):6d} enonces, {df['label'].mean():.2f} proportion vraie"")
-print()
-print(""Exemples cities :"", DS[""cities""][0][:2], ""| label"", DS[""cities""][1][:2])
-print(""Exemples sp_en  :"", DS[""sp_en_trans""][0][:2], ""| label"", DS[""sp_en_trans""][1][:2])
-print(""Exemple likely  :"", DS[""likely""][0][0][:80], ""..."")",,,,,,,,230001e79872f831,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,ca12d537,markdown,fr,19f5232a432babeb,"### Lecture des données
-
-Les datasets officiels du papier (dépôt `saprmarks/geometry-of-truth`) — **jamais regénérés en jouet** : chaque CSV est la donnée réelle de la recherche. `cities` et `neg_cities` sont appariés (même ville, pays correct vs incorrect, puis négation), `sp_en_trans` teste une mémoire de traduction, `larger_than`/`smaller_than` des comparaisons de nombres écrits en lettres — et `likely` n'est **pas factuel du tout** : c'est le contrôle probabilité-vs-vérité. `common_claim` (non curé) servira d'exercice.",,,,,,,,19f5232a432babeb,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,93ab0aa1,markdown,fr,962c3c98bec59688,"## 1. Localiser : la carte de patching
-
-Protocole du papier §3, sur un couple d'énoncés jumeaux $p_T$ / $p_F$ (même ville, pays vrai vs faux) dans un prompt few-shot « This statement is: TRUE/FALSE ». Pour chaque position de token et chaque couche, on **remplace** l'activation du residual stream de $p_F$ par celle de $p_T$ — et on mesure $\Delta(\log P(\text{TRUE}) - \log P(\text{FALSE}))$ au token final. Le papier y voit trois groupes : (a) le sujet (« Chicago »), (b) la **fin d'énoncé / ponctuation** — l'information résumée de tout l'énoncé —, (c) les couches adjacentes à la tête de décodage.",,,,,,,,962c3c98bec59688,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,3e221477,code,fr,43c25d79e717fb0b,"from transformers import AutoModelForCausalLM, AutoTokenizer
-MODEL_SPECS = {""base15"": ""Qwen/Qwen2.5-Math-1.5B"",
-               ""dist15"": ""deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B"",
-               ""dist7b"": ""deepseek-ai/DeepSeek-R1-Distill-Qwen-7B""}
-DEV = ""cuda""; DTYPE = torch.bfloat16
-CAP_LAYERS = [6, 11, 14, 20]   # indices de bloc ; activation capturee = sortie du bloc l
-MID = 14                        # couche mediane (28 blocs), analogue du layer 15/32 du papier
-
-def load_model(name, quant4=False):
-    tok = AutoTokenizer.from_pretrained(MODEL_SPECS[name])
-    tok.padding_side = ""left""   # critique: la derniere position doit etre le vrai dernier token
-    if tok.pad_token is None:
-        tok.pad_token = tok.eos_token
-    kw = dict(dtype=DTYPE, device_map=DEV)
-    if quant4:
-        from transformers import BitsAndBytesConfig
-        kw[""quantization_config""] = BitsAndBytesConfig(
-            load_in_4bit=True, bnb_4bit_compute_dtype=DTYPE,
-            bnb_4bit_quant_type=""nf4"", bnb_4bit_use_double_quant=True)
-    model = AutoModelForCausalLM.from_pretrained(MODEL_SPECS[name], **kw)
-    model.eval()
-    return model, tok
-
-model, tok = load_model(""base15"")
-N_LAYERS = len(model.model.layers); D_MODEL = model.config.hidden_size
-print(f""base15 : {N_LAYERS} blocs, d={D_MODEL}, couche sonde = bloc {MID} (sortie)"")",,,,,,,,43c25d79e717fb0b,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,2c4fd9b9,code,fr,eac1463eed09acb2,"P_PREFIX = ""The city of Tokyo is in Japan. This statement is: TRUE\nThe city of Hanoi is in Poland. This statement is: FALSE\n""
-TAIL = "" This statement is:""
-t_TRUE = tok("" TRUE"", add_special_tokens=False)[""input_ids""][0]
-t_FALSE = tok("" FALSE"", add_special_tokens=False)[""input_ids""][0]
-print(""ids TRUE/FALSE :"", tok("" TRUE"", add_special_tokens=False)[""input_ids""],
-      tok("" FALSE"", add_special_tokens=False)[""input_ids""])
-
-@torch.no_grad()
-def dlp(prompts, batch=16):
-    out = []
-    for i in range(0, len(prompts), batch):
-        enc = tok(prompts[i:i+batch], return_tensors=""pt"", padding=True).to(DEV)
-        logits = model(**enc).logits[:, -1, :].to(torch.float32)
-        lp = torch.log_softmax(logits, -1)
-        out += (lp[:, t_TRUE] - lp[:, t_FALSE]).tolist()
-    return np.array(out)
-
-STMT_T = ""The city of Krasnodar is in Russia.""
-STMT_F = ""The city of Krasnodar is in South Africa.""
-pT, pF = P_PREFIX + STMT_T + TAIL, P_PREFIX + STMT_F + TAIL
-base = float(dlp([pF])[0])
-encT = tok(pT, return_tensors=""pt"").to(DEV)
-n_tok = encT[""input_ids""].shape[1]
-hsT = model(**encT, output_hidden_states=True).hidden_states
-grid = np.zeros((N_LAYERS, n_tok))
-t0 = time.time()
-for l in range(N_LAYERS):
-    for pos in range(n_tok):
-        def hook(module, args, output, _l=l, _pos=pos):
-            h = output[0] if isinstance(output, tuple) else output
-            h[0, _pos] = hsT[_l+1][0, _pos].to(h.dtype)
-            return None
-        hd = model.model.layers[l].register_forward_hook(hook)
-        grid[l, pos] = float(dlp([pF])[0]) - base
-        hd.remove()
-print(f""grille {N_LAYERS}x{n_tok} en {time.time()-t0:.0f}s ; base dLP = {base:.2f} ; max = {grid.max():.2f}"")
-toks = tok.convert_ids_to_tokens(encT[""input_ids""][0].tolist())
-am = np.unravel_index(grid.argmax(), grid.shape)
-print(f""argmax: couche {am[0]}, position {am[1]} = token {toks[am[1]]!r} (0={toks[0]!r}, fin={toks[-1]!r})"")
-fig, ax = plt.subplots(figsize=(11, 4.2))
-im = ax.imshow(grid, aspect=""auto"", cmap=""magma"")
-ax.set_xlabel(""position du token""); ax.set_ylabel(""couche (bloc)"")
-ax.set_title(""Patching Krasnodar (pays faux -> vrai) : delta logP(TRUE)-logP(FALSE), base15"")
-xt = list(range(0, n_tok, 3)); ax.set_xticks(xt); ax.set_xticklabels([toks[i] for i in xt], rotation=90, fontsize=6)
-fig.colorbar(im, ax=ax, label=""delta dLP"")
-plt.tight_layout(); plt.show()",,,,,,,,eac1463eed09acb2,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,eea9312e,markdown,fr,1365001051f9f06e,"### Lecture — où vit le verdict
-
-La carte parle d'elle-même : le patch le plus efficace ne se trouve **ni sur le sujet seul, ni sur le token de sortie, mais à l'intersection** — les positions du **pays** (la seule chose qui diffère entre les deux énoncés) et surtout du **point final** (argmax : couche 13, position 39, qui est le token `'.'` ; effet 0,88 contre un dLP de base -0,38). C'est le groupe (b) du papier : le point final de l'énoncé porte, aux blocs médians, l'information-résumé de toute la phrase. La colonne brillante en bas de la grille (dernière position, couches hautes) est le groupe (c) — le canal de décodage : y patcher change le token lu sans recalcul. Notez la largeur du plateau : à 1.5B la causalité est étalée sur plusieurs couches adjacentes, pas concentrée en un point chirurgical — le papier voit la même largeur à 7B, qui se resserre à 13B/70B.",,,,,,,,1365001051f9f06e,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,6e1bc294,markdown,fr,c1f0665399ae0c6d,"## 2. Mesurer : géométrie PCA et sondes
-
-Le papier §4 visualise les activations de fin d'énoncé **sans prompt few-shot**, couche médiane, centrées. Si vrai/faux se séparent dans les 2 premiers PC, la vérité est (au moins) un axe linéarisé. La question fine : les axes de séparation des *différents* datasets s'**alignent-ils** ? Le papier voit à 13B les axes de `larger_than`/`smaller_than` **antipodaux**, qui s'alignent à 70B — l'abstraction « vérité » émerge avec l'échelle.",,,,,,,,c1f0665399ae0c6d,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,3e2bd34a,code,fr,947a956d2afe542c,"SUB = {""cities"": 600, ""neg_cities"": 600, ""larger_than"": 500, ""smaller_than"": 500,
-       ""sp_en_trans"": 354, ""neg_sp_en_trans"": 354, ""likely"": 400}
-
-def sample(key):
-    s, y = DS[key]; n = min(SUB[key], len(s))
-    idx = np.random.RandomState(SEED).choice(len(s), n, replace=False)
-    return [s[i] for i in idx], y[idx]
-
-@torch.no_grad()
-def acts_for(statements, layers, batch=24, max_len=96):
-    out = {l: [] for l in layers}
-    for i in range(0, len(statements), batch):
-        enc = tok(statements[i:i+batch], return_tensors=""pt"", padding=True,
-                  truncation=True, max_length=max_len).to(DEV)
-        hs = model(**enc, output_hidden_states=True).hidden_states
-        for l in layers:
-            out[l].append(hs[l+1][:, -1, :].to(torch.float32).cpu().numpy())
-    return {l: np.concatenate(v, 0) for l, v in out.items()}
-
-ACTS = {}
-t0 = time.time()
-for key in SUB:
-    s, y = sample(key)
-    st = [x if x.endswith(""."") else x + ""."" for x in s]
-    a = acts_for(st, CAP_LAYERS)
-    ACTS[key] = {""y"": y, ""acts"": a}
-    print(f""acts {key}: {len(st)} ({time.time()-t0:.0f}s)"")",,,,,,,,947a956d2afe542c,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,08117c17,code,fr,6895b2743e93b6b5,"# pca_stats : sonde de la serie, factorisee dans l'organe ict.probes (#17737).
-
-rows = []
-for key in ACTS:
-    a, _, _ = pca_stats(ACTS[key][""acts""][MID], ACTS[key][""y""])
-    rows.append({""dataset"": key, ""acc_signe_PC1"": round(a, 3)})
-df_pca = pd.DataFrame(rows)
-print(df_pca.to_string(index=False))
-
-fig, axes = plt.subplots(1, 3, figsize=(13, 3.8))
-for ax, key in zip(axes, [""cities"", ""sp_en_trans"", ""larger_than""]):
-    _, Z, _ = pca_stats(ACTS[key][""acts""][MID], ACTS[key][""y""])
-    y = ACTS[key][""y""]
-    ax.scatter(Z[y == 0, 0], Z[y == 0, 1], s=4, alpha=0.5, label=""faux"", c=""#d95f02"")
-    ax.scatter(Z[y == 1, 0], Z[y == 1, 1], s=4, alpha=0.5, label=""vrai"", c=""#1b9e77"")
-    ax.set_title(key); ax.set_xlabel(""PC1""); ax.set_ylabel(""PC2""); ax.legend(fontsize=7)
-fig.suptitle(f""PCA des activations de fin d'enonce (bloc {MID}, sans few-shot), base15"", y=1.02)
-plt.tight_layout(); plt.show()
-
-# anchored_pc1 : idem, organe ict.probes (signe ancre par label).
-
-align = {}
-for l in CAP_LAYERS:
-    p1 = anchored_pc1(ACTS[""cities""][""acts""][l], ACTS[""cities""][""y""])
-    p2 = anchored_pc1(ACTS[""neg_cities""][""acts""][l], ACTS[""neg_cities""][""y""])
-    pl = anchored_pc1(ACTS[""larger_than""][""acts""][l], ACTS[""larger_than""][""y""])
-    ps = anchored_pc1(ACTS[""smaller_than""][""acts""][l], ACTS[""smaller_than""][""y""])
-    align[l] = {""cities~neg_cities"": round(float(p1 @ p2), 3),
-                ""larger~smaller"": round(float(pl @ ps), 3)}
-print(""\nalignement PC1 (signes ancores par label) par couche :"", json.dumps(align, indent=1))",,,,,,,,6895b2743e93b6b5,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,9d1d3e71,markdown,fr,63e06e6b03cac3fb,"### Lecture — géométrie
-
-Deux régimes nettement séparés dans le tableau :
-
-1. **Villes et traductions** : pc1_acc 0,86 (cities), 0,89 (sp_en), 0,93 (neg_sp_en) — la vérité y est **le** premier axe de variation des activations de fin d'énoncé, sans aucune supervision. La baseline du papier est répliquée : la structure existe déjà à 1.5B sur ces datasets de « mémoire de faits ».
-2. **Nombres et négations de villes** : pc1_acc 0,56 (neg_cities), 0,58/0,56 (larger/smaller) — quasi le hasard. La comparaison de nombres écrits en toutes lettres n'est pas linéarisée à cette échelle.
-
-Et l'**alignement** (signes ancrés par corrélation au label — sans cet ancrage la comparaison serait sans signification, le signe d'un vecteur propre étant arbitraire) raconte l'histoire la plus riche : `larger~smaller` vaut -0,98 au bloc 6, -0,89 au bloc 14, puis **+0,84 au bloc 20**. Les directions de vérité des deux datasets de comparaison sont **antipodales** aux couches basses et médianes — la signature que le papier attribue à LLaMA-2-13B (Fig. 8 : deux axes de *surface*, « plus grand » vs « plus petit », qui s'opposent au lieu de fusionner) — puis **s'alignent** dans les couches hautes, la signature 70B. La trajectoire inter-échelles du papier est ici visible **couche par couche dans un seul modèle 1.5B**. Pendant ce temps `cities~neg_cities` reste jamais aligné (-0,80 au bloc 6, ~0,1 ensuite) : l'axe des villes et celui de leurs négations ne fusionnent pas à cette échelle. **La direction de vérité unique est un aboutissement, pas un point de départ.**",,,,,,,,63e06e6b03cac3fb,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,0a25c9a0,markdown,fr,7fc40e338108fab9,"## 3. Sondes : LR contre mass-mean, et la généralisation
-
-Les sondes viennent de l'organe de la série [`ict/probes.py`](ict/probes.py) (extrait par #17737) : ce carnet les **exerce**, il ne les réimplémente pas.
-
-Trois sondes : **LR** (régression logistique), **MM** ($\theta_{mm} = \mu_+ - \mu_-$), **MM-IID** ($\sigma(\theta_{mm}^\top \Sigma^{-1} x)$, Thm F.1 — la frontière de LDA qui suit la direction de la feature). Entraînées sur un dataset, testées sur **tous** — dont les négations et `likely` : une sonde qui aurait appris « probable vs improbable » meurt sur les datasets où vérité et probabilité sont **anti-corrélées** (le papier mesure r = −0.63 sur `neg_cities`).",,,,,,,,7fc40e338108fab9,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,8bcea32e,code,fr,2f3aa1ba60a39a33,"# train_probes / probe_accuracy : organes de la serie (ict.probes, #17737) --
-# le carnet exerce l'organe, il ne reimplémente pas le probing.
-
-TRAIN_SETS = {
-    ""cities"": (""cities"", None),
-    ""cities+neg_cities"": ((""cities"", ""neg_cities""), None),
-    ""larger_than"": (""larger_than"", None),
-    ""larger+smaller"": ((""larger_than"", ""smaller_than""), None),
-    ""likely"": (""likely"", None),
-}
-def gather(keys):
-    if isinstance(keys, tuple):
-        X = np.concatenate([ACTS[k][""acts""][MID] for k in keys])
-        y = np.concatenate([ACTS[k][""y""] for k in keys])
-    else:
-        X, y = ACTS[keys][""acts""][MID], ACTS[keys][""y""]
-    return X, y
-
-TEST_KEYS = [""cities"", ""neg_cities"", ""sp_en_trans"", ""neg_sp_en_trans"",
-             ""larger_than"", ""smaller_than"", ""likely""]
-rows = []
-for tname, (keys, _) in TRAIN_SETS.items():
-    X, y = gather(keys)
-    thetas, mu = train_probes(X, y)
-    for pname, th in thetas.items():
-        row = {""train"": tname, ""probe"": pname}
-        for tk in TEST_KEYS:
-            Xte, yte = ACTS[tk][""acts""][MID], ACTS[tk][""y""]
-            row[tk] = round(probe_accuracy(th, mu, Xte, yte), 2)
-        rows.append(row)
-df_gen = pd.DataFrame(rows)
-pd.set_option(""display.width"", 200)
-print(df_gen.to_string(index=False))",,,,,,,,2f3aa1ba60a39a33,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,e5bf76c7,markdown,fr,37e22d27e9de02c0,"### Lecture — sondes
-
-Les lignes qui portent tout le résultat du papier §5.3 :
-
-- **`cities` → `neg_cities`** : MM 0,49, LR 0,23 — la négation **tue** la sonde (LR passe *sous* le hasard : elle a appris « pays associé = vrai », signal que la négation inverse exactement). Une sonde à 100 % en distribution peut être sémantiquement vide.
-- **`cities+neg_cities` → `neg_cities`** : MM 0,74 — entraîner sur les énoncés **et leurs négations** répare le transfert. C'est le remède du papier, répliqué ici à l'identique.
-- **`cities+neg_cities` → `sp_en_trans`** : MM 0,84 contre LR 0,46 et MMIID 0,32 — mieux que réparé : le remède **débloque le transfert abstrait** vers un dataset de nature différente (traductions), que la sonde pure `cities` ne touchait pas (0,54). Et l'écart MM/LR est ici béant : c'est la leçon centrale du papier — le mass-mean pointe la *feature*, la frontière optimale pointe le *bruit de surface*.
-- **La ligne `likely`** : la sonde MM entraînée sur du probable/improbable classifie `likely` à 0,69 mais les datasets factuels au hasard (0,58 sur cities) — la direction mass-mean de la probabilité du texte n'est pas une direction de vérité. Nuance honnête : la **LR** de la même ligne transfère partiellement sur sp_en (0,74) — la frontière de séparation probable/improbable recoupe en partie celle des traductions vraies/fausses (des régularités de fréquence existent dans ces données), mais la *direction* elle-même reste non transférante. Le contrôle fait son travail pour la sonde du papier ; le cas LR montre pourquoi il faut le lire avec les trois colonnes.
-- **`larger_than` → `smaller_than`** : MM 0,28 — transfert *inférieur au hasard*, cohérent avec l'antipodalité de la section 2.
-
-Une lecture d'hygiène enfin : les 1.00 en distribution de LR (cities, larger_than) se lisent avec suspicion — ici n ≈ d (~600-1200 énoncés d'entraînement, dimension 1536) : la régression logistique peut séparer n'importe quoi en grande dimension. C'est *hors* distribution que les sondes disent la vérité sur ce qu'elles ont appris.",,,,,,,,37e22d27e9de02c0,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,4a2df284,markdown,fr,072ef7aedad95f34,"### Exercice 1 — construire le contrôle « négation des nombres »
-
-Le papier contrôle `larger_than` vs `smaller_than` (même contenu, vérité opposée). Construisez **`neg_larger_than`** : prenez 200 énoncés de `larger_than` et insérez « not » (« x is not larger than y »), avec le label inversé. Puis mesurez : la sonde MM entraînée sur `larger_than` classe-t-elle `neg_larger_than` ? Et une sonde entraînée sur `larger+smaller` ?
-
-**Indices** : (1) le CSV `larger_than.csv` a des colonnes `statement`/`label` — l'insertion est un simple `str.replace` ; (2) réutilisez `acts_for` puis `probe_accuracy` (organe `ict.probes`) ; (3) comparez vos deux accuracy à la colonne `neg_cities` du tableau ci-dessus.",,,,,,,,072ef7aedad95f34,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,9e575219,code,fr,f4d018d46e1e00b2,"# Exercice 1 -- a completer
-# 1. neg_statements = [s.replace("" is larger than "", "" is not larger than "") for s in ...]
-# 2. labels inverses
-# 3. extraire les activations, mesurer probe_acc des sondes MM de larger_than et larger+smaller
-result = None  # TODO etudiant
-print(""Exercice a completer"")",,,,,,,,f4d018d46e1e00b2,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,3f5f90ba,markdown,fr,5c66d76a32a4b5fa,"## 4. Trancher : interventions causales (NIE)
-
-Le test décisif (papier §6) : sur le prompt few-shot espagnol, on ajoute/soustrait $\theta$ (normalisé pour que $p(\mu_- + \theta) = p(\mu_+)$) **à la position du point final de l'énoncé**, au bloc médian — la position (b) localisée en §1. Le **NIE** (effet indirect normalisé) vaut 1 si l'intervention rend les faux énoncés aussi « TRUE » que les vrais, 0 si elle ne fait rien. Le papier : MM bat LR **7 fois sur 8** — la direction la plus causale n'est pas celle de la meilleure frontière de classification.",,,,,,,,5c66d76a32a4b5fa,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,32f02dfe,code,fr,d5d1c86b7a46cd9c,"SP_PREFIX = ""The Spanish word 'fruta' means 'goat'. This statement is: FALSE\nThe Spanish word 'carne' means 'meat'. This statement is: TRUE\n""
-s_sp_all, y_sp = DS[""sp_en_trans""]
-n_tail = len(tok(TAIL, add_special_tokens=False)[""input_ids""])
-
-@torch.no_grad()
-def interv_run(theta_t, sign, idxs, batch=16):
-    pdiffs = []
-    for i in range(0, len(idxs), batch):
-        jj = idxs[i:i+batch]
-        prompts = [SP_PREFIX + s_sp_all[j] + TAIL for j in jj]
-        enc = tok(prompts, return_tensors=""pt"", padding=True).to(DEV)
-        fin = enc[""input_ids""].shape[1] - n_tail - 1
-        def hook(module, args, output, _f=fin):
-            h = output[0] if isinstance(output, tuple) else output
-            h[:, _f] = (h[:, _f].to(torch.float32) + sign * theta_t.to(h.device)).to(h.dtype)
-            return None
-        hd = model.model.layers[MID].register_forward_hook(hook)
-        logits = model(**enc).logits[:, -1, :].to(torch.float32)
-        hd.remove()
-        lp = torch.log_softmax(logits, -1)
-        pdiffs += (lp[:, t_TRUE] - lp[:, t_FALSE]).tolist()
-    return float(np.mean(pdiffs))
-
-mT = np.where(y_sp == 1)[0]; mF = np.where(y_sp == 0)[0]
-zero_th = torch.zeros(D_MODEL, dtype=torch.float32)
-baseT = interv_run(zero_th, 0, mT); baseF = interv_run(zero_th, 0, mF)
-rows = []
-for tname, (keys, _) in TRAIN_SETS.items():
-    X, y = gather(keys)
-    thetas, mu = train_probes(X, y)
-    for pname in [""MM"", ""LR""]:
-        th = torch.tensor(thetas[pname], dtype=torch.float32)
-        PDp = interv_run(th, +1, mF)   # faux + theta  -> devrait aller vers TRUE
-        PDm = interv_run(th, -1, mT)   # vrais - theta -> devrait aller vers FALSE
-        nie_ft = (PDp - baseF) / (baseT - baseF)
-        nie_tf = (PDm - baseT) / (baseF - baseT)
-        rows.append({""train"": tname, ""probe"": pname,
-                     ""NIE f->t"": round(nie_ft, 2), ""NIE t->f"": round(nie_tf, 2)})
-df_nie = pd.DataFrame(rows)
-print(df_nie.to_string(index=False))",,,,,,,,d5d1c86b7a46cd9c,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,1074cb88,markdown,fr,2f0f701eefdb3dd2,"### Lecture — interventions
-
-**À 1.5B, les interventions sont faibles** : le meilleur NIE plafonne à 0,05, la plupart sous 0.05 — et le contraste est instructif avec la section 1 : le **patch** du pays déplace le verdict de 0,88 (un levier causal fort existe, localisé), mais *pousser les activations le long des directions de sondes* ne déplace le verdict que de 0,05× l'écart vrai/faux. Les directions de sonde corrèlent avec le verdict sans avoir de prise causale forte dessus.
-
-- **Ce qui réplique** : l'**ordre** — MM ≥ LR dans la quasi-totalité des configurations (regardez les paires à entraînement fixe : 3× en médiane). La direction mass-mean est plus *causale* que la frontière optimale de classification : exactement la hiérarchie du papier.
-- **Ce qui ne réplique pas** : les **magnitudes** — le papier obtient des NIE de l'ordre de 0.5-1.0 à 13B/70B. À 1.5B, la vérité est *représentée* (sections 2-3) mais le circuit qui l'utilise n'est pas (encore) pilotable par une seule direction linéaire.
-
-C'est toute la différence entre **corrélation lisible** et **implication causale** — et la raison pour laquelle une chaîne à trois jambes vaut mieux qu'une sonde seule. Un notebook qui s'arrêterait à la section 3 conclurait « direction de vérité trouvée » ; les interventions disent : *pas à cette échelle*.",,,,,,,,2f0f701eefdb3dd2,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,b11c6281,markdown,fr,aea7acdf388d23de,"### Exercice 2 — intervenir à une autre position
-
-Les interventions ci-dessus ciblent le **point final** de l'énoncé (groupe (b)). Testez la position **du dernier mot de contenu** (celle avant le point) : le NIE de la sonde MM `cities+neg_cities` y est-il plus fort, plus faible ? qu'est-ce que cela dit sur la localisation du résumé de vérité ?
-
-**Indices** : (1) la position vaut `fin - 1` ; (2) une seule ligne du hook change ; (3) mesurez uniquement NIE f->t pour comparer.",,,,,,,,aea7acdf388d23de,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,3bc365e0,code,fr,b9bfb476c665e1c7,"# Exercice 2 -- a completer
-# copier interv_run avec fin = fin - 1, mesurer NIE f->t de la sonde MM cities+neg_cities
-result = None  # TODO etudiant
-print(""Exercice a completer"")",,,,,,,,b9bfb476c665e1c7,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,85846e73,markdown,fr,ad726ce9bcf2150e,"## 5. Notre pont : la direction de vérité survit-elle à la distillation ?
-
-Question **hors papier**, née de notre arc : ICT-42 a montré qu'un crosscoder sépare features partagées et features distilled-only (NRN). La direction de vérité mass-mean de `cities` — $\theta_{mm}^{base}$ et $\theta_{mm}^{dist}$ dans le **même espace** (les deux modèles ont d = 1536, tokenizers alignés) — se ressemblent-elles ? cos(θ_base, θ_dist) par couche : proche de 1, la vérité est un axe hérité ; proche de 0, la distillation l'a réécrite ailleurs.",,,,,,,,ad726ce9bcf2150e,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,476f1a1a,code,fr,58f665572a2dc915,"del model; torch.cuda.empty_cache()
-model, tok = load_model(""dist15"")   # acts_for lit les globaux tok/model
-ACTS_D = {}
-t0 = time.time()
-for key in [""cities"", ""neg_cities"", ""sp_en_trans""]:
-    s, y = sample(key)
-    st = [x if x.endswith(""."") else x + ""."" for x in s]
-    ACTS_D[key] = {""y"": y, ""acts"": acts_for(st, CAP_LAYERS)}
-print(f""extraction dist15 ({time.time()-t0:.0f}s)"")
-a_dist, _, _ = pca_stats(ACTS_D[""cities""][""acts""][MID], ACTS_D[""cities""][""y""])
-print(f""pc1 cities dist15 = {a_dist} (base15 = {pca_stats(ACTS['cities']['acts'][MID], ACTS['cities']['y'])[0]})"")
-
-bridge = {}
-for l in CAP_LAYERS:
-    n = len(ACTS_D[""cities""][""y""])
-    Xb, yb = ACTS[""cities""][""acts""][l][:n], ACTS[""cities""][""y""][:n]
-    Xd, yd = ACTS_D[""cities""][""acts""][l], ACTS_D[""cities""][""y""]
-    tb = Xb[yb == 1].mean(0) - Xb[yb == 0].mean(0)
-    td = Xd[yd == 1].mean(0) - Xd[yd == 0].mean(0)
-    bridge[l] = round(float(tb @ td / (np.linalg.norm(tb) * np.linalg.norm(td))), 3)
-print(""cos(theta_mm base15, theta_mm dist15) par bloc :"", bridge)
-plt.figure(figsize=(5.5, 3.2))
-plt.bar([str(l) for l in bridge], list(bridge.values()), color=""#756bb1"")
-plt.axhline(0, color=""k"", lw=0.5); plt.ylabel(""cosinus"")
-plt.title(""Direction de verite cities : base vs distille (meme espace d=1536)"")
-plt.tight_layout(); plt.show()",,,,,,,,58f665572a2dc915,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,4818eb93,markdown,fr,a340c756c1d1fadb,"### Lecture — pont distillation
-
-Cosinus 0,54–0,76 selon la couche, jamais 1, jamais 0 : la direction de vérité `cities` est **partiellement héritée** par le modèle distillé. La distillation a conservé le squelette de la représentation factuelle (un axe vrai/faux dans la même région de l'espace) tout en la **réorientant** — cohérent avec ce qu'ICT-42 voyait du crosscoder : un socle de features partagées base↔distillé, et par-dessus des features distilled-only (les marqueurs de raisonnement). La direction de vérité appartient au **socle** — mais la ligne `pc1 cities` imprimée ci-dessus dit que le socle lui-même a été dilué (0,86 → 0,66 après distillation) : hériter d'une direction n'est pas préserver sa netteté.",,,,,,,,a340c756c1d1fadb,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,ba0be811,markdown,fr,cb1256b81ea8812a,"## 6. Échelle : un regard 7B (quantifié)
-
-Le papier fonde son claim d'émergence sur la comparaison 7B → 13B → 70B. Notre échelle s'arrête à 7B — en **4-bit nf4** (contrainte VRAM locale : ~6 GiB libres à côté des services résidents). Verdict SOTA honnête : c'est une **observation qualitative de tendance** — la quantification perturbe les activations, la fidélité de sonde à la fraction de pourcent près exigerait le bf16 sur une machine plus dotée (RECOVERABLE-MACHINE).",,,,,,,,cb1256b81ea8812a,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,bbdc2fe8,code,fr,fb65a6351f168864,"del model; torch.cuda.empty_cache()
-model7, tok7 = load_model(""dist7b"", quant4=True)
-nl7 = len(model7.model.layers); mid7 = nl7 // 2
-print(f""dist7b 4-bit : {nl7} blocs, d={model7.config.hidden_size}, sonde au bloc {mid7}"")
-
-@torch.no_grad()
-def acts7(statements, layer, batch=8, max_len=96):
-    out = []
-    for i in range(0, len(statements), batch):
-        enc = tok7(statements[i:i+batch], return_tensors=""pt"", padding=True,
-                   truncation=True, max_length=max_len).to(DEV)
-        hs = model7(**enc, output_hidden_states=True).hidden_states
-        out.append(hs[layer+1][:, -1, :].to(torch.float32).cpu().numpy())
-    return np.concatenate(out, 0)
-
-a7 = {}
-t0 = time.time()
-for key, n in [(""cities"", 400), (""neg_cities"", 400), (""sp_en_trans"", 354),
-               (""neg_sp_en_trans"", 354), (""larger_than"", 300), (""smaller_than"", 300)]:
-    s, y = DS[key]
-    idx = np.random.RandomState(SEED).choice(len(s), n, replace=False)
-    st = [s[i] if s[i].endswith(""."") else s[i] + ""."" for i in idx]
-    a7[key] = (acts7(st, mid7), y[idx])
-    print(f""acts7 {key} ({time.time()-t0:.0f}s)"")
-
-pca7 = {k: round(pca_stats(v[0], v[1])[0], 3) for k, v in a7.items()}
-print(""7B pc1_acc :"", pca7)
-Xtr7 = np.concatenate([a7[""cities""][0], a7[""neg_cities""][0]])
-ytr7 = np.concatenate([a7[""cities""][1], a7[""neg_cities""][1]])
-th7, mu7 = train_probes(Xtr7, ytr7)
-gen7 = {p: {tk: round(probe_accuracy(t, mu7, a7[tk][0], a7[tk][1]), 2)
-            for tk in [""sp_en_trans"", ""neg_sp_en_trans"", ""larger_than"", ""smaller_than""]}
-        for p, t in th7.items()}
-print(""7B generalisation (train cities+neg) :"", json.dumps(gen7, indent=1))
-del model7; torch.cuda.empty_cache()",,,,,,,,fb65a6351f168864,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,35ffc441,markdown,fr,d7ed3b4c5a99e137,"### Lecture — échelle
-
-Le tableau 7B converge qualitativement avec le papier : `cities` tombe à 0,51 (au hasard) alors que `sp_en` tient à 0,92 et `neg_sp_en` à 0,95 — le papier décrit le 7B comme captant des *clusters de surface* là où le 13B linéarise ; ici « surface » veut dire : la vérité est linéaire là où elle est mémoire directe (traductions), pas là où il faut calculer (villes : associer un pays). Et la généralisation `cities+neg_cities` → tests donne **MM au hasard (0,50 partout)**, LR devant (0,54–0,59) — l'inverse de la hiérarchie 1.5B et du papier à grande échelle : à 7B (et en 4-bit), la direction mass-mean n'est pas encore la bonne sonde. Rappelez la réserve de validité : nf4, une seule couche — **tendance, pas fraction**.",,,,,,,,d7ed3b4c5a99e137,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,b8c35bba,markdown,fr,ce875f5bbf5e0107,"### Exercice 3 — sonde sur le non-curé (`common_claim`)
-
-Tous nos tests jusqu'ici portaient sur des énoncés curés, simples, inambigus — le périmètre que le papier se donne (App A : la « vérité » = factualité d'énoncés déclaratifs simples ; pas le question-answering, pas la tromperie, pas la conformité). Le dataset `common_claim` (Casper et al., énoncés générés par GPT-3, étiquetés par des humains) sort de ce périmètre : énoncés ambigus, controversés, parfois mal formés. La sonde MM `cities+neg_cities` du 1.5B y résiste-t-elle ?
-
-**Indices** : (1) téléchargez déjà fait — `DS['common_claim']` ; (2) sous-échantillonnez 400 énoncés, extrayez au bloc MID (réutilisez `acts_for` — pensez à recharger `base15` si le modèle 7B l'a évincé) ; (3) comparez l'accuracy à celle du même probe sur `sp_en_trans` ; (4) un accuracy proche du hasard n'est pas un échec de code : c'est la **limite de périmètre** du papier, mesurée sur nos modèles.",,,,,,,,ce875f5bbf5e0107,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,764b3c68,code,fr,0a0d882b18e10703,"# Exercice 3 -- a completer
-# 1. echantillonner common_claim
-# 2. extraire les activations (recharger base15 au besoin)
-# 3. mesurer probe_acc de la sonde MM cities+neg_cities
-result = None  # TODO etudiant
-print(""Exercice a completer"")",,,,,,,,0a0d882b18e10703,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,1d124214,markdown,fr,c288aff42c524de4,"## Synthèse — ce que la chaîne a établi
-
-La méthode trois jambes (une feature **suggère** / une sonde **décide** / une intervention **tranche**) appliquée à la vérité :
-
-1. **Localisation** le verdict vit aux couches médianes, sur le pays et surtout le point final (argmax couche 13 = le token `'.'`, effet 0,88) ; 2. **Géométrie** vrai/faux est le premier axe pour villes/traductions (pc1 0,86) mais pas pour les nombres, dont les directions ancrées larger/smaller sont **antipodales** aux couches médianes (-0,89) puis s'alignent au bloc 20 (+0,84) ; 3. **Sondes** négation tue le transfert (0,49) ; énoncés+négations le réparent (0,74) et débloquent l'abstraction (MM 0,84 vs LR 0,46) ; le contrôle `likely` isole probabilité ≠ vérité ; 4. **Causalité** corrélation sans préhension causale forte à cette échelle (NIE ≤ 0,05 contre un patch à 0,88) ; l'ordre MM>LR réplique, les magnitudes non ; 5. **Pont distillation** direction partiellement héritée (cos 0,54–0,76) mais diluée (0,86 → 0,66) ; 6. **Échelle** le 7B quantifié confirme la trajectoire du papier (cities au hasard 0,51, traductions linéaires 0,92, MM au hasard en généralisation).
-
-La réponse honnête à la question du titre : à notre échelle, la vérité d'un énoncé simple est une direction **lisible** dans le residual stream dès 1.5B — représentée, corrélée, transférable entre domaines via l'entraînement sur négations — mais **pas encore un levier causal** : la représenter n'est pas l'utiliser, et l'abstraction complète (un axe unique pour tous les domaines) reste un fait d'échelle. Et la réserve épistémique du papier reste la nôtre : une direction de vérité pour des énoncés **simples** n'est pas un détecteur de mensonge — R11 §2.2.2 veut détecter *le fait de connaître le vrai en affirmant le faux*, et ce notebook n'a mesuré que la première moitié : ce que le modèle représente, pas ce qu'il *choisit* d'affirmer.",,,,,,,,c288aff42c524de4,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,fa7fb0de,markdown,fr,18d097b3a1567af2,"## Limites
-
-- **Échelle** : 1.5B principal, 7B en 4-bit qualitatif — le papier établit l'émergence à 7/13/70B bf16 ; nos verdicts sont des tendances à petite échelle.
-- **Langue** : datasets anglais, modèles entraînés anglais ; la factualité FR (accords, genre) est un autre phénomène.
-- **Périmètre vérité** : factualité d'énoncés simples (App A du papier) — pas QA, pas tromperie, pas conformité ; l'exercice 3 en mesure le bord.
-- **Une couche de sonde** : bloc médian, choix du papier (13B → 15/32) transposé (28 → 14) ; l'alignement par couche (§2) montre que le choix n'est pas innocent.
-- **Datasets non couverts (narrowing #16890)** : le depot officiel porte aussi `counterfact_true/false` et les conjonctions/disjonctions — le scoping d'origine les mentionnait. Ils ne sont pas charges ici : a 1.5B, trois datasets supplementaires d'extraction (x couches x ~500 enonces) alourdissaient le run pedagogique sans deplacer la question de transfert deja tranchee par les negations (0,49 -> 0,74). Le protocole `acts_for`/`train_probes` s'y applique tel quel — piste d'extension documentee, pas un trou muet.
-
-## Références
-
-- Marks & Tegmark, *The Geometry of Truth* (COLM 2024), arXiv:2310.06824 — datasets : `github.com/saprmarks/geometry-of-truth` (Geonames CC-BY ; sp_en : curation manuelle des auteurs ; companies : Azaria & Mitchell ; common_claim : Casper et al.).
-- Notre arc : ICT-41 (issue #16747 — géométrie SAE) ; ICT-42 (issue #16749 — crosscoder R05, arXiv:2503.03730) ; R11 — Singapore Consensus (arXiv:2608.14611) §2.2.2 ; scoping #16760, grain #16890.
-- Théorie : Thm F.1 (LR = Σ⁻¹θ en gaussien homoscédastique) ; LEACE / Belrose et al. (Thm G.1 : direction diff-in-means = effacement linéaire optimal de nullité 1).
-- Meng, Bau, Andonian & Belinkov, *Locating and Editing Factual Associations in GPT* (ROME, NeurIPS 2022), arXiv:2202.05262 — la ligne cousine de notre carte de patching (section 1) : meme question (ou vit le fait ?), reponse par causal tracing puis *edition* des poids MLP ; ce notebook s'arrete a l'observation, l'edition reste hors perimetre.",,,,,,,,18d097b3a1567af2,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,2824b3e9,markdown,fr,4d57e6bdbdb20331,"# ICT-45 — Inoculation et bifurcation : la troisième échelle (9B)
 **Navigation** : [Index](README.md) | [44 — Geometry of Truth](ICT-44-GeometryOfTruth-Python.ipynb) | [46 — Strate 7 : freebits de second ordre](ICT-46-Strate7-FreeCoordinates-Python.ipynb)
 
