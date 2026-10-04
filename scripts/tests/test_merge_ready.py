@@ -88,6 +88,10 @@ def default_view(
         "isDraft": draft,
         "body": body if body is not None else GRAIN_MED,
         "headRefOid": head,
+        # baseRefName is the branch the PR is targeting. The merge-ready
+        # defense-in-depth check (#19002) refuses anything other than
+        # `main`. Tests that need a non-`main` base override this field.
+        "baseRefName": "main",
         "baseRefOid": BASE,
         "files": [{"path": p} for p in files],
         "changedFiles": len(files),
@@ -1164,3 +1168,63 @@ def test_tete_du_gate_differente_de_la_tete_lue(tmp_path):
     )
     _, lines, _ = run_organ(tmp_path, ScriptedRunner(views={123: view}))
     assert lines[-1]["reason"] == "head-moved"
+
+
+# --- #19002 : defense en profondeur sur la base -----------------------------
+# Le gate refuse deja READY si la base n'est pas `main` (cf test_base_*
+# dans test_check_adjoint_prevalidation.py). Merge_ready verifie
+# independamment : un rc 0 accidente du gate, un gate anterieur a #19002,
+# ou un chemin futur qui court-circuiterait le gate ne doit pas suffire
+# a merger dans une branche morte. Trois tests : temoin positif (base
+# main, chemin nominal inchange), temoin negatif sur une base de feature
+# ouverte (#18985/#18967), temoin negatif sur une base morte (#18819).
+
+
+def test_base_main_does_not_change_merge_ready_outcome(tmp_path):
+    """Temooin positif : avec `view.baseRefName = 'main'`, le merge_ready
+    n'invoque pas la nouvelle raison de skip. Le chemin nominal d'une
+    PR a base main reste inchange."""
+    runner = ScriptedRunner(views={123: default_view()})
+    assert runner.views[123]["baseRefName"] == "main"
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    # Le verdict par defaut d'un ScriptedRunner est would-merge (gate_rc=0
+    # et tous les autres controles passent). Ce qui compte ici : aucune
+    # ligne ne porte le motif `base-not-main:` (le champ reason est None
+    # sur les merges reussis, donc on teste avec get(..., "")).
+    for line in lines:
+        reason = line.get("reason") or ""
+        assert "base-not-main" not in reason, lines
+
+
+def test_base_feature_open_triggers_base_not_main_skip(tmp_path):
+    """Temooin negatif : PR empilee sur une branche de feature encore
+    ouverte. merge_ready refuse avec un motif `base-not-main:<branche>`
+    qui nomme la base, en defense en profondeur contre un gate qui
+    aurait laisse passer. Le gate est simule a rc=0 READY (comme si
+    une version anterieure du gate avait ete deployee) ; seul le check
+    merge_ready arrete la machine."""
+    view = default_view()
+    view["baseRefName"] = "feature/voltargeting-vol-forecast-sizing"  # #18967
+    runner = ScriptedRunner(views={123: view})
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0  # l'organe termine, il a juste skip
+    assert lines[-1]["verdict"] == "skipped"
+    # Le motif inclut la branche fautive -- sans le nom, la lane
+    # devrait rouvrir le PR pour savoir ou retargeter.
+    assert "base-not-main:feature/voltargeting-vol-forecast-sizing" in lines[-1]["reason"]
+
+
+def test_base_dead_triggers_base_not_main_skip(tmp_path):
+    """Temooin negatif : PR empilee sur une branche dont la PR porteuse
+    est fermee ou squash-mergee. Meme refus que la base de feature :
+    merge_ready ne distingue pas 'morte' de 'vivante' (c'est un attribut
+    de la base, pas du merge_ready), il exige `main` et c'est tout.
+    La lane fait la retarget (cf. git-workflow.md L898 collision guard).
+    Verifie sur la branche morte de #18819 (squash-mergee le 02/10)."""
+    view = default_view()
+    view["baseRefName"] = "renum/17063-complexity-05b"  # #18819
+    runner = ScriptedRunner(views={123: view})
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "skipped"
+    assert "base-not-main:renum/17063-complexity-05b" in lines[-1]["reason"]
