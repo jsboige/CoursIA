@@ -612,4 +612,43 @@ theorem reidemeister3Connected_witness_movesConnects :
   unfold movesConnects
   decide
 
+/-! ## 7. Completeness (⇐) — the canonical witness decides
+
+The header documents completeness (`Reidemeister1Connected d d' →
+verifyR1Fwd d d' = true`) as future work, backed by a plausibility
+argument: the verifier extracts witnesses exactly in the shape of the
+surgery of the definitions. The two bounded examples below **measure**
+that alignment on the decisive case raised by the 03/10 forensic
+(#18611): the NON-final kink. Measured verdict: both languages speak the
+same surgery — per-move completeness is a **lemma to prove** (induction
+on the existential of the definition), not a statement to weaken. -/
+
+/-- Completeness direction held on the canonical witness: the pair (d₁, d₂)
+    whose `reidemeister1Connected_satisfiable` (Reidemeister.lean) proves it
+    satisfies the Prop passes the Bool verifier. On the Prop side the kink
+    is appended by `++ [C]` (hence always last in the list), on the Bool
+    side it is read by `getLast?` — same shape, kernel `decide` returns
+    true. -/
+example : verifyR1Fwd
+    { crossings := [⟨1,2,3,4⟩, ⟨1,2,3,4⟩], numEdges := 4 }
+    { crossings := [⟨1,2,3,4⟩, ⟨5,2,3,4⟩, ⟨1,5,6,6⟩], numEdges := 6 }
+    = true := by decide
+
+/-- The NON-final kink is not a completeness gap: the Prop rules it out
+    from the start (the surgery is `set i Y' ++ [C]`, the kink is ALWAYS
+    appended last) and the verifier refuses it just the same. Here the
+    crossings are exactly those of the witness above, only the order
+    differs: the kink `⟨1,5,6,6⟩` sits at index 1, before the rewritten
+    crossing `⟨5,2,3,4⟩`. `verifyR1` (both orientations) returns false:
+    the R1 step is refused for this pair in both languages. Deliberately
+    bounded scope: this example decides the R1 step alone — it does NOT
+    establish that no chain of moves connects the pair (transitive
+    closure, e.g. via an R3 rewrite of interior indices, is neither
+    proved nor refuted here). Prop/Bool consistency on the step, not an
+    organ defect. -/
+example : verifyR1
+    { crossings := [⟨1,2,3,4⟩, ⟨1,2,3,4⟩], numEdges := 4 }
+    { crossings := [⟨1,2,3,4⟩, ⟨1,5,6,6⟩, ⟨5,2,3,4⟩], numEdges := 6 }
+    = false := by decide
+
 end Knots_en

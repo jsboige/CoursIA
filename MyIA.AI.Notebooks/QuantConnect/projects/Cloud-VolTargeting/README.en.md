@@ -35,6 +35,8 @@ Fresh backtest via QC Cloud MCP, 2026-08-07 (`VolTargeting-v1-honest-read-2026-0
 
 **Verdict: NO-BEATS.** Vol targeting on SPY alone underperforms buy-and-hold SPY: CAGR 6.7% for a 38.2% drawdown, Sharpe 0.207.
 
+Ces métriques précèdent la correction du calendrier de rééquilibrage (#18941). `date_rules.month_start()` sans symbole sautait les mois dont le 1er n'est pas un jour de bourse ; le code actuel rééquilibre à la première séance de chaque mois (`month_start("SPY")`). L'effet du correctif est mesuré sur la variante v2 dans #18921 (expérience 5a-bis) ; la v1 n'a pas été rebacktestée depuis.
+
 ## Honest read (v1 variant)
 
 v1 scales the SPY allocation from realized volatility: `allocation = vol_target / realized_vol`, clamped between 30% and 150%. Weaknesses observed over 2018-2025:

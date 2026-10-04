@@ -61,6 +61,11 @@ jobs:
           # clone partiel, pas de contenu hors portee (serie #11843).
           sparse-checkout: |
             scripts/ci
+      # #17407 : `python` nu n'est pas expose par les slots natifs du parc
+      # coursia-linux (contrat image seulement — l'organe est stdlib-only).
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
       - name: Compare runner version pin to GitHub requirement
         env:
           GH_TOKEN: ${{ github.token }}

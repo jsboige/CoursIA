@@ -99,6 +99,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import grain_tag as gt  # noqa: E402
+from variation_base_main import filter_base_main as _filter_base_main  # noqa: E402
 from variation_light_cap import (  # noqa: E402
     canonicalize_genre,
     genre_counts_light,
@@ -338,8 +339,11 @@ def resolve_merged_prev_genre(merged_prs: list[dict] | None, lane: str | None) -
     while the PR sat open passes despite real adjacency).
 
     `merged_prs` is the list `gh pr list --state merged --json
-    number,body,mergedAt` returns -- the same data source as
-    variation_light_cap.py --replay. Each PR is attributed to a lane through
+    number,body,mergedAt,baseRefName` returns -- the same data source as
+    variation_light_cap.py --replay. The `baseRefName` field is filtered
+    upstream (see `scripts/variation_base_main.py`, #18940) so that PRs
+    stacked on a feature branch are not counted as a lane's previous
+    merge in the adjacency check. Each PR is attributed to a lane through
     the SAME extractor as the gate (`grain_tag.parse_grain_tag`), so this
     organ never diverges from the guard on what a tag is. Returns
     ``(genre, pr_number)`` for the most recent lane-attributed PR with a
@@ -660,6 +664,12 @@ def main(argv: list[str] | None = None) -> int:
                 "reason": f"#15739 recalcul autonome : fenetre de merges illisible ({e}).",
             }), file=sys.stderr)
             return 2
+        # Filtre --base main (#18940) : elimine les PRs empilees sur une
+        # branche de feature du comptage d'adjacence. Voir
+        # scripts/variation_base_main.py pour le contrat.
+        merged_prs = _filter_base_main(
+            merged_prs, warn=lambda m: print(m, file=sys.stderr)
+        )
         g_probe = gt.parse_grain_tag(body)
         merged_prev = resolve_merged_prev_genre(
             merged_prs, g_probe["lane"] if g_probe else None)
@@ -690,6 +700,13 @@ def main(argv: list[str] | None = None) -> int:
             try:
                 with open(args.merged_prs_file, encoding="utf-8") as f:
                     merged_prs = json.load(f)
+                # Filtre --base main (#18940) : voir scripts/variation_base_main.py
+                # pour le contrat. Sans ce filtre, un fichier de merges datant
+                # d'avant le fix declencherait de faux adjacents (PRs empilees
+                # sur une branche de feature).
+                merged_prs = _filter_base_main(
+                    merged_prs, warn=lambda m: print(m, file=sys.stderr)
+                )
                 g = gt.parse_grain_tag(body)
                 merged_prev = resolve_merged_prev_genre(merged_prs, g["lane"] if g else None)
                 if merged_prev[0] is None and merged_prs:

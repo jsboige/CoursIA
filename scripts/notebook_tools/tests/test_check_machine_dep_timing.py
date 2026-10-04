@@ -989,7 +989,7 @@ def test_empty_explicit_scan_is_error_residu3(tmp_path: Path) -> None:
 def test_silence_pacing_duration_with_lecture_qualifier() -> None:
     """Frontiere : « N min (lecture + execution) » = pacing (effort humain).
 
-    Cas reel ICT-19-EnjeuBattery cell[0] : « 45 min (lecture + execution
+    Cas reel ICT-19-EnjeuBattery-Python cell[0] : « 45 min (lecture + execution
     sequentielle) ». C'est l'estimation d'effort demande a l'etudiant, pas une
     duree machine -- meme rationale que le pacing deja exempte (arbitrage
     jsboige 14:05:37Z #9434). La duree PRECEDE la parenthese (inhabituel), ce

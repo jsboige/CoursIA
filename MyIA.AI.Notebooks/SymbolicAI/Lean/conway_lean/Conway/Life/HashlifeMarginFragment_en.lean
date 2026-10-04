@@ -75,6 +75,7 @@ import Conway.Life.AdversarialBattery_en
 import Conway.Life.HashlifeCorrectness
 import Conway.Life.LightCone_en
 import Conway.Life.Oscillators_en
+import Conway.Life.PatternTour_en
 
 namespace Conway_en
 open Conway
@@ -1067,6 +1068,174 @@ theorem pulsar_hcap_of_period_mod :
   hcap_of_period_mod pulsar pulsar_canonical (by decide)
     pulsar_period_three_kernel pulsar_hwin
 
+/-! ### Dyadic witnesses `T = 2`: the blinker and the toad (tranche 12, admission)
+
+The docstring of `hashlife_correct_margin_of_period` announces the witnesses
+of its class ("blinker `T = 2`, toad `T = 2`, beacon `T = 3`"). The pulsar
+(tranche 8b) covers its **non-dyadic** part; the two **dyadic** witnesses were
+missing. Since `2 ∣ 2^level` as soon as `level ≥ 1`, the `hcap_of_period`
+chain admits them **directly** — without the containment relaxation (`_mod`)
+that period 3 required.
+
+Both blinker phases and the toad's phase 0 are the `Conway.Life` bestiary
+definitions (L206-212), reused as-is: the only new literal is the toad's
+second phase. Periods are proved by the **kernel** reducer (composition of the
+step equations), without consuming `blinker_period_two` or `toad_period_two`:
+those bestiary lemmas yield `isOscillator g 2 = true`, a `Bool`-valued form
+that does not provide the equality `evolve T g = g` required by
+`hcap_of_period`. -/
+/-- Second phase of the toad (6 cells, box `[0, 3] × [-1, 2]`), obtained by
+applying the rule to the bestiary phase 0. Sorted literal. -/
+def toadP2 : Grid :=
+  [(0, 0), (0, 1), (1, 2), (2, -1), (3, 0), (3, 1)]
+set_option maxRecDepth 1000000 in
+/-- The toad's second phase is already canonical (sorted, duplicate-free):
+certified by the kernel, then converted through `canonical_sortDedup`. -/
+theorem toadP2_canonical : Canonical toadP2 := by
+  have h : toadP2 = sortDedup toadP2 := by decide
+  rw [h]
+  exact canonical_sortDedup _
+set_option maxRecDepth 1000000 in
+/-- The toad's phase 0, taken from the bestiary, is canonical. -/
+theorem toad_canonical : Canonical toad := by
+  have h : toad = sortDedup toad := by decide
+  rw [h]
+  exact canonical_sortDedup _
+set_option maxRecDepth 1000000 in
+/-- The bestiary horizontal blinker is canonical. -/
+theorem blinker_h_canonical : Canonical blinker_h := by
+  have h : blinker_h = sortDedup blinker_h := by decide
+  rw [h]
+  exact canonical_sortDedup _
+set_option maxRecDepth 1000000 in
+/-- Likewise for the vertical phase. -/
+theorem blinker_v_canonical : Canonical blinker_v := by
+  have h : blinker_v = sortDedup blinker_v := by decide
+  rw [h]
+  exact canonical_sortDedup _
+set_option maxRecDepth 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- Step equations of the blinker, by the **kernel** reducer: the bestiary
+`Bool` form (`blinker_step`) does not provide the equality. -/
+theorem blinker_h_step : step blinker_h = blinker_v := by decide
+set_option maxRecDepth 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- Likewise, vertical phase to horizontal phase: the period-2 loop. -/
+theorem blinker_v_step : step blinker_v = blinker_h := by decide
+set_option maxRecDepth 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- Step equation of the toad: phase 0 to the second phase. -/
+theorem toad_step : step toad = toadP2 := by decide
+set_option maxRecDepth 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- Likewise, second phase to phase 0: the period-2 loop is closed. -/
+theorem toadP2_step : step toadP2 = toad := by decide
+/-- Phase chain under `evolve 1`: horizontal blinker. -/
+theorem blinker_ev1 : evolve 1 blinker_h = blinker_v := blinker_h_step
+/-- Phase chain: vertical blinker. -/
+theorem blinkerV_ev1 : evolve 1 blinker_v = blinker_h := blinker_v_step
+/-- Phase chain: toad, phase 0. -/
+theorem toad_ev1 : evolve 1 toad = toadP2 := toad_step
+/-- Phase chain: toad, second phase. -/
+theorem toadP2_ev1 : evolve 1 toadP2 = toad := toadP2_step
+set_option maxRecDepth 1000000 in
+/-- Reconstruction frame of the horizontal blinker: box `[0, 2] × [0, 0]`,
+offset `(-2, -2)`. -/
+theorem blinker_frame_off : (gridToMacroCellWithOffset blinker_h).1 = (-2, -2) := by decide
+set_option maxRecDepth 1000000 in
+/-- Level of the horizontal blinker's frame: side `max(2, 0) + 5 = 7` →
+level 3, frame `[-2, 6)²`. -/
+theorem blinker_frame_lvl : (gridToMacroCellWithOffset blinker_h).2.level = 3 := by decide
+set_option maxRecDepth 1000000 in
+/-- Frame of the vertical phase: box `[1, 1] × [-1, 1]`, offset `(-1, -3)`. -/
+theorem blinkerV_frame_off : (gridToMacroCellWithOffset blinker_v).1 = (-1, -3) := by decide
+set_option maxRecDepth 1000000 in
+/-- Level of the vertical phase's frame: level 3. -/
+theorem blinkerV_frame_lvl : (gridToMacroCellWithOffset blinker_v).2.level = 3 := by decide
+set_option maxRecDepth 1000000 in
+/-- Toad frame, phase 0: box `[0, 3] × [0, 1]`, offset `(-2, -2)`. -/
+theorem toad_frame_off : (gridToMacroCellWithOffset toad).1 = (-2, -2) := by decide
+set_option maxRecDepth 1000000 in
+/-- Level of the toad's frame, phase 0: side `max(3, 1) + 5 = 8` → level 3. -/
+theorem toad_frame_lvl : (gridToMacroCellWithOffset toad).2.level = 3 := by decide
+set_option maxRecDepth 1000000 in
+/-- Frame of the toad's second phase: box `[0, 3] × [-1, 2]`, offset
+`(-2, -3)`. -/
+theorem toadP2_frame_off : (gridToMacroCellWithOffset toadP2).1 = (-2, -3) := by decide
+set_option maxRecDepth 1000000 in
+/-- Level of the second phase's frame: level 3. -/
+theorem toadP2_frame_lvl : (gridToMacroCellWithOffset toadP2).2.level = 3 := by decide
+/-- Period 2 of the blinker proved by the **kernel**: composition of the two
+step equations. -/
+theorem blinker_period_two_kernel : evolve 2 blinker_h = blinker_h := by
+  rw [evolve_two, blinker_ev1, blinkerV_ev1]
+/-- Period 2 of the toad proved by the **kernel**. -/
+theorem toad_period_two_kernel : evolve 2 toad = toad := by
+  rw [evolve_two, toad_ev1, toadP2_ev1]
+/-- Dyadic divisibility of the blinker: both phases have level-3 frames and
+`2 ∣ 2^3`. This finite premise is what separates this class from the
+pulsar's (`3 ∤ 2^level`). -/
+theorem blinker_hdiv : ∀ i, i < 2 →
+    2 ∣ 2 ^ (gridToMacroCellWithOffset (evolve i blinker_h)).2.level := by
+  intro i hi
+  interval_cases i
+  · rw [evolve_zero, blinker_frame_lvl]
+    decide
+  · rw [blinker_ev1, blinkerV_frame_lvl]
+    decide
+/-- Dyadic divisibility of the toad: both phases have level-3 frames. -/
+theorem toad_hdiv : ∀ i, i < 2 →
+    2 ∣ 2 ^ (gridToMacroCellWithOffset (evolve i toad)).2.level := by
+  intro i hi
+  interval_cases i
+  · rw [evolve_zero, toad_frame_lvl]
+    decide
+  · rw [toad_ev1, toadP2_frame_lvl]
+    decide
+/-- Containment of the 4 phase combinations `(r, i) < 2 × 2` of the blinker:
+each image `evolve i (evolve r blinker_h)` lives in the reconstruction frame
+of phase `r`. Both phases fit in a level-3 frame (side 8), which absorbs the
+offset between phases. -/
+theorem blinker_hwin : ∀ r, r < 2 → ∀ i, i < 2 → ∀ p ∈ evolve i (evolve r blinker_h),
+    (gridToMacroCellWithOffset (evolve r blinker_h)).1.1 ≤ p.1 ∧
+      p.1 < (gridToMacroCellWithOffset (evolve r blinker_h)).1.1
+        + (2 ^ (gridToMacroCellWithOffset (evolve r blinker_h)).2.level : Int) ∧
+    (gridToMacroCellWithOffset (evolve r blinker_h)).1.2 ≤ p.2 ∧
+      p.2 < (gridToMacroCellWithOffset (evolve r blinker_h)).1.2
+        + (2 ^ (gridToMacroCellWithOffset (evolve r blinker_h)).2.level : Int) := by
+  intro r hr i hi
+  interval_cases r <;> interval_cases i <;>
+    simp only [evolve_zero, blinker_ev1, blinkerV_ev1] <;>
+    first
+    | (rw [blinker_frame_off, blinker_frame_lvl]; decide)
+    | (rw [blinkerV_frame_off, blinkerV_frame_lvl]; decide)
+/-- Containment of the 4 phase combinations `(r, i) < 2 × 2` of the toad. -/
+theorem toad_hwin : ∀ r, r < 2 → ∀ i, i < 2 → ∀ p ∈ evolve i (evolve r toad),
+    (gridToMacroCellWithOffset (evolve r toad)).1.1 ≤ p.1 ∧
+      p.1 < (gridToMacroCellWithOffset (evolve r toad)).1.1
+        + (2 ^ (gridToMacroCellWithOffset (evolve r toad)).2.level : Int) ∧
+    (gridToMacroCellWithOffset (evolve r toad)).1.2 ≤ p.2 ∧
+      p.2 < (gridToMacroCellWithOffset (evolve r toad)).1.2
+        + (2 ^ (gridToMacroCellWithOffset (evolve r toad)).2.level : Int) := by
+  intro r hr i hi
+  interval_cases r <;> interval_cases i <;>
+    simp only [evolve_zero, toad_ev1, toadP2_ev1] <;>
+    first
+    | (rw [toad_frame_off, toad_frame_lvl]; decide)
+    | (rw [toadP2_frame_off, toadP2_frame_lvl]; decide)
+/-- Capstone: the blinker is admitted through `hcap_of_period` — first
+**dyadic** witness of the periodic class. For every horizon `t`, the
+reconstruction of `evolve t blinker_h` is captured by Hashlife. -/
+theorem blinker_hcap_of_period :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t blinker_h)).2 = true :=
+  hcap_of_period blinker_h blinker_h_canonical (by decide)
+    blinker_period_two_kernel blinker_hdiv
+/-- Capstone: the toad is admitted through `hcap_of_period`. -/
+theorem toad_hcap_of_period :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t toad)).2 = true :=
+  hcap_of_period toad toad_canonical (by decide)
+    toad_period_two_kernel toad_hdiv
+
 
 /-! ## Translation invariance of the reconstruction (tranche 3, step 7, brick 1)
 
@@ -1925,6 +2094,98 @@ theorem hickersonC3_hcap_of_spaceship_mod :
     ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t hickersonC3)).2 = true :=
   hcap_of_spaceship_mod hickersonC3 hickersonC3_canonical (by decide) (-1, 0)
     hickersonC3_spaceship hickersonC3_hwin (by norm_num) (by norm_num)
+
+/-! ### Flagship witnesses: glider and LWSS (tranche 11, admission)
+
+The two **spaceships** announced by the docstring of `hashlife_correct_margin_of_spaceship`
+— the glider (`p = 4`, `v = (1, -1)`, "satisfies it strictly") and the LWSS (`p = 4`,
+`v = (0, 2)`, "hits the bound exactly") — are admitted by the **dyadic chain**
+`hcap_of_spaceship`. For `p = 4 = 2²`, the divisibility premise `4 ∣ 2^level` holds
+**as soon as the level reaches `log₂ p = 2`**: it is therefore available for both
+witnesses, whose frames reconstruct at levels **3** (glider, side 7) and **4** (LWSS,
+side 9). Each `hdiv` is closed by the kernel over its four phases (finite computation);
+the tranche 9 containment relaxation is not required for period-4 witnesses.
+
+**Proof note.** The bestiaire's Bool witnesses (`Life.glider_spaceship`,
+`PatternTour.lwss_is_spaceship`) are already certified by the **kernel** reducer (`decide`
+on `isSpaceship`, a Bool); the bridge to list equality is `beq_iff_eq` — no
+`native_decide`, no added axiom. -/
+
+/-- The glider literal is canonical (sorted, duplicate-free): the kernel
+    certifies it, then `canonical_sortDedup` converts. -/
+theorem glider_canonical : Canonical glider := by
+  have h : glider = sortDedup glider := by decide
+  rw [h]
+  exact canonical_sortDedup _
+
+/-- The glider's spaceship relation as a list equality: the Bool witness
+    `glider_spaceship` (already kernel-certified) lifted to `Prop`. -/
+theorem glider_ship4 : evolve 4 glider = shift (1, -1) glider :=
+  beq_iff_eq.mp glider_spaceship
+
+/-- The glider's reconstruction frame: offset `(-2, -2)` (margin 2 around the
+    `[0, 2]²` box). -/
+theorem glider_frame_off : (gridToMacroCellWithOffset glider).1 = (-2, -2) := by decide
+
+/-- The glider's frame level: side `max(2+5, 2+5) = 7` → level **3** — measured.
+    Since `3 ≥ log₂ 4 = 2`, the divisibility `4 ∣ 2³ = 8` holds: the glider goes
+    through the dyadic chain, like the LWSS. -/
+theorem glider_frame_lvl : (gridToMacroCellWithOffset glider).2.level = 3 := by decide
+
+/-- The LWSS literal is canonical. -/
+theorem lwss_canonical : Canonical lwss := by
+  have h : lwss = sortDedup lwss := by decide
+  rw [h]
+  exact canonical_sortDedup _
+
+/-- The LWSS's spaceship relation as a list equality (Bool witness
+    `lwss_is_spaceship` from `PatternTour`, kernel-certified). -/
+theorem lwss_ship4 : evolve 4 lwss = shift (0, 2) lwss :=
+  beq_iff_eq.mp lwss_is_spaceship
+
+/-- The LWSS's reconstruction frame: offset `(-2, -2)` (margin 2 around the
+    `[0, 3] × [0, 4]` box). -/
+theorem lwss_frame_off : (gridToMacroCellWithOffset lwss).1 = (-2, -2) := by decide
+
+/-- The LWSS's frame level: side `max(3+5, 4+5) = 9` → level 4 — the dyadic
+    chain applies (`4 ∣ 2⁴`), exactly as the docstring announced. -/
+theorem lwss_frame_lvl : (gridToMacroCellWithOffset lwss).2.level = 4 := by decide
+
+/-- Divisibility of the period over the LWSS's four phases: each
+    `evolve i lwss` (`i < 4`) reconstructs at level 4, hence `4 ∣ 2⁴`. The
+    kernel computation is finite: 4 phases, ≤ 17 cells. -/
+theorem lwss_hdiv :
+    ∀ i, i < 4 → 4 ∣ 2 ^ (gridToMacroCellWithOffset (evolve i lwss)).2.level := by
+  intro i hi
+  interval_cases i <;> decide
+
+set_option maxRecDepth 1000000 in
+/-- Divisibility of the period over the glider's four phases: each
+    `evolve i glider` (`i < 4`) reconstructs at level 3 (measured for all
+    four phases), and `4 ∣ 2³`. The kernel computation is finite: 4 phases,
+    5-cell grids. -/
+theorem glider_hdiv :
+    ∀ i, i < 4 → 4 ∣ 2 ^ (gridToMacroCellWithOffset (evolve i glider)).2.level := by
+  intro i hi
+  interval_cases i <;> decide
+
+/-- Capstone: the **glider** is admitted by `hcap_of_spaceship` — the dyadic
+    chain, like the LWSS (`p = 4 = 2²` divides `2^level` as soon as `level ≥ 2`;
+    level-3 frame). The speed bound holds strictly (`2·|1| = 2 < 4`,
+    `2·|-1| = 2 < 4`): for every horizon `t`, the reconstruction of
+    `evolve t glider` is captured by Hashlife. -/
+theorem glider_hcap_of_spaceship :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t glider)).2 = true :=
+  hcap_of_spaceship glider glider_canonical (by decide) (1, -1) glider_ship4
+    glider_hdiv (by norm_num) (by norm_num)
+
+/-- Capstone: the **LWSS** is admitted by `hcap_of_spaceship` — the exact speed
+    bound (`2·|2| = 4 ≤ 4`) and the dyadic divisibility (`4 ∣ 2⁴`, level-4
+    frame) announced by the docstring. -/
+theorem lwss_hcap_of_spaceship :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t lwss)).2 = true :=
+  hcap_of_spaceship lwss lwss_canonical (by decide) (0, 2) lwss_ship4
+    lwss_hdiv (by norm_num) (by norm_num)
 
 /-! ## Sanity checks on the bestiary
 

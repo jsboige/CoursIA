@@ -33,14 +33,20 @@ C'est ce que cette bibliothèque fait. Les modules :
   - `MUH.Encoding` : encodage selon Tegmark §c (`# of sets | # of relations |
     sizes... | rels...`) et complexité `H(s) = Σᵢ log₂(2 + kᵢ)` (§d).
   - `MUH.Boolean` : algèbre de Boole à 2 éléments, **exemples canoniques**
-    (Sheffer à 1 générateur ; F/T/NOT/AND à 4 générateurs — Tegmark eq. (A1)-(A2)).
-    L'**équivalence Sheffer ↔ 4 générateurs** est hors-scope de cette PR ;
-    voir #16958 pour le suivi.
+    (Sheffer à 1 générateur ; F/T/NOT/AND à 4 générateurs — Tegmark eq. (A1)-(A2)),
+    et les **six identités Sheffer prouvées** (T, F, ¬, &, ∨, → exprimés
+    par NAND seul — eq. (A2)).
   - `MUH.Cyclic` : groupes cycliques C₂ et C₃ (Tegmark §2b).
-  - `MUH.Decidable` : **squelette énumératif documenté** (Tegmark §1 in fine).
-    Le code livré est un **stub** (`decideEq` compare `nSets`,
-    `ClosedUnderComp` est `trivial`) — **pas** un algorithme énumératif haltant.
-    L'implémentation complète est hors-scope ; voir #16958. -/
+  - `MUH.Aut` : le groupe Aut(S) — « Aut(S) is a group (easy to see) »
+    (Annexe A §1 in fine) : les cinq axiomes de groupe sont démontrés
+    (`aut_isGroup`), sans Mathlib.
+  - `MUH.Examples` : calcul explicite des groupes d'automorphismes :
+    `Aut(C₃) = {id, x ↦ 2x}` (exhaustivité prouvée) et `Aut(C₂) = {id}`.
+  - `MUH.Decidable` : décidabilité (Tegmark §1 in fine) sur la classe
+    restreinte : `decideEq` compare les en-têtes (ensembles, cardinaux,
+    nombre de relations), et le décideur de tables binaires est **prouvé
+    correct** (`sameBinaryOperation_eq_iff`). L'énumération d'arité
+    quelconque reste ouverte ; voir #16958. -/
 
 
 /-- Sous-bibliothèques de la MUH, exposées en un seul import. -/
@@ -48,4 +54,6 @@ import MUH.Structure
 import MUH.Encoding
 import MUH.Boolean
 import MUH.Cyclic
+import MUH.Aut
+import MUH.Examples
 import MUH.Decidable

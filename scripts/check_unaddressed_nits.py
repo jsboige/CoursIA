@@ -204,6 +204,24 @@ _ROLE_PREFIX_RE = re.compile(
     r"|CLAIMED\b|ESCALATION\b|PROPOSAL\b|GRAIN\b)"
     r"[A-Za-z][\w.\-]*\s*\]"
 )
+# #18937 — lanes d'attache des roles (coordinator-discipline R6). Le role
+# ADJOINT parle depuis la lane myia-po-2025:CoursIA-2 : sa levee signee
+# de cette lane leve sa reserve role (piste 2 de #18937).
+_ROLE_LANE_ALIASES = {
+    "ADJOINT": "myia-po-2025:CoursIA-2",
+}
+
+
+def _bracket_token(match) -> str:
+    """Token normalise d'un prefixe entre crochets : ``[ADJOINT]`` ->
+    ``ADJOINT`` ; ``[myia-po-2025:CoursIA-2 suite]`` -> premier mot en
+    majuscules. Sert a apparier role<->role et role<->lane d'attache
+    (#18937) sans dependre d'un groupe capturant des regex historiques.
+    """
+    inner = match.group(0).strip()[1:-1].strip()
+    return inner.split()[0].upper() if inner else ""
+
+
 # #14503 — reserves enoncees en PROSE ordinaire par une persona, sans aucun
 # prefixe de verdict (CONCERN_MARKERS muet). Jeu SERRE, mesure sur le corpus
 # des 200 dernieres PRs mergees (controle 3 de l'issue) : le fail-CLOSED pur
@@ -4586,6 +4604,33 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                 return True
             if lift_has_persona and not nit_has_persona:
                 return False  # #14850 scope : lift persona ne leve pas user
+            # Voie 1b -- lift ROLE leve la reserve du MEME role ; la
+            # lane d'attache du role leve la reserve de ce role
+            # (#18937). Cas fondateur PR #18849 : l'adjoint (lane
+            # myia-po-2025:CoursIA-2, coordinator-discipline R6) pose une
+            # reserve `[ADJOINT] CONCERNS` puis la leve lui-meme -- ses
+            # deux formes SIGNEES (`[ADJOINT] ...` et
+            # `[myia-po-2025:CoursIA-2] ...`) restaient bloquees (voie 2 :
+            # un prefixe de lane ne leve qu'une reserve de lane ; voie 3 :
+            # exclut tout lift a prefixe de role) tandis que la forme NON
+            # signee passait -- organe inverse. Un role se leve par sa
+            # signature de role ou par sa lane d'attache ; role tiers,
+            # lane tierce et reserve user voix nue restent hors scope
+            # (pas de return False ici : la chute vers les voies 2/3
+            # garde leur fail-closed).
+            lift_role_m = _ROLE_PREFIX_RE.search(stripped_lift)
+            nit_role_m = _ROLE_PREFIX_RE.search(stripped_nit)
+            if lift_role_m and nit_role_m:
+                if (_bracket_token(lift_role_m)
+                        == _bracket_token(nit_role_m)):
+                    return True  # piste 1 : role <-> role
+            if nit_role_m:
+                nit_role = _bracket_token(nit_role_m)
+                for lane_m in _CROSS_LANE_LIFT_RE.finditer(stripped_lift):
+                    if (_ROLE_LANE_ALIASES.get(nit_role, "").upper()
+                            == _bracket_token(lane_m)):
+                        return True  # piste 2 : lane d'attache du role
+            
             # Voie 2 -- lift CROSS-LANE scope aux reserves CROSS-LANE.
             # Un commentaire preface d'une lane tierce `[owner:workspace]`
             # ne leve que les reserves de CETTE lane. Si la reserve est
