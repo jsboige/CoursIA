@@ -17,15 +17,40 @@
 #   zone1_dd, zone2_dd : seuils de drawdown des zones (defauts 0.05 / 0.10)
 #   top_n : taille du portefeuille dividende (defaut 20)
 #   min_yield, payout_min, payout_max, div_hist_years : filtres dividende
+#   fee_mult : multiplicateur des frais IBKR (defaut 1.0 = identite ;
+#     2.0 = test de sensibilite du point 4 du protocole)
+#   start_date, end_date : fenetre (defauts 2018-01-01 / 2026-09-25)
 
 from AlgorithmImports import *
+
+
+class _ScaledFeeModel(FeeModel):
+    """Frais IBKR mis a l'echelle (test de sensibilite, point 4 du protocole).
+
+    A multiplicateur 1.0, le fee de base est retourne tel quel (identite
+    stricte : la comparabilite avec le run de base et les runs OAT est
+    preservee).
+    """
+
+    def __init__(self, multiplier):
+        self._multiplier = multiplier
+        self._base = InteractiveBrokersFeeModel()
+
+    def get_order_fee(self, parameters):
+        fee = self._base.get_order_fee(parameters)
+        if fee is None or self._multiplier == 1.0:
+            return fee
+        amount = float(fee.value.amount) * self._multiplier
+        return OrderFee(CashAmount(amount, fee.value.currency))
 
 
 class ThreeZoneSPYDrawdownRotation(QCAlgorithm):
 
     def initialize(self):
-        self.set_start_date(2018, 1, 1)
-        self.set_end_date(2026, 9, 25)
+        start = self.get_parameter("start_date", "2018-01-01").split("-")
+        end = self.get_parameter("end_date", "2026-09-25").split("-")
+        self.set_start_date(int(start[0]), int(start[1]), int(start[2]))
+        self.set_end_date(int(end[0]), int(end[1]), int(end[2]))
         self.set_cash(100000)
 
         # Modele de frais Interactive Brokers (protocole issue #18905, point 2).
@@ -39,6 +64,8 @@ class ThreeZoneSPYDrawdownRotation(QCAlgorithm):
         self.payout_min = float(self.get_parameter("payout_min", "0.05"))
         self.payout_max = float(self.get_parameter("payout_max", "0.80"))
         self.div_hist_years = int(self.get_parameter("div_hist_years", "10"))
+        # Multiplicateur de frais (sensibilite point 4, defaut = identite).
+        self.fee_mult = float(self.get_parameter("fee_mult", "1"))
 
         self.spy = self.add_equity("SPY", Resolution.DAILY).symbol
 
@@ -63,7 +90,7 @@ class ThreeZoneSPYDrawdownRotation(QCAlgorithm):
         self._zone = None
 
     def _ibkr_fees(self, security):
-        security.set_fee_model(InteractiveBrokersFeeModel())
+        security.set_fee_model(_ScaledFeeModel(self.fee_mult))
 
     # --- Univers -------------------------------------------------------------
 

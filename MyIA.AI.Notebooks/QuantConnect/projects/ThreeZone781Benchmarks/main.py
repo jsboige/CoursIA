@@ -5,6 +5,21 @@
 from AlgorithmImports import *
 
 
+class _ScaledFeeModel(FeeModel):
+    """Frais IBKR mis a l'echelle (identite a 1.0, cf #18905 point 4)."""
+
+    def __init__(self, multiplier):
+        self._multiplier = multiplier
+        self._base = InteractiveBrokersFeeModel()
+
+    def get_order_fee(self, parameters):
+        fee = self._base.get_order_fee(parameters)
+        if fee is None or self._multiplier == 1.0:
+            return fee
+        amount = float(fee.value.amount) * self._multiplier
+        return OrderFee(CashAmount(amount, fee.value.currency))
+
+
 class Bench781(QCAlgorithm):
 
     def initialize(self):
@@ -15,6 +30,7 @@ class Bench781(QCAlgorithm):
         self.set_security_initializer(self._ibkr_fees)
 
         self.mode = self.get_parameter("mode", "spy")
+        self.fee_mult = float(self.get_parameter("fee_mult", "1"))
 
         self.spy = self.add_equity("SPY", Resolution.DAILY).symbol
         self.ief = None
@@ -29,7 +45,7 @@ class Bench781(QCAlgorithm):
         )
 
     def _ibkr_fees(self, security):
-        security.set_fee_model(InteractiveBrokersFeeModel())
+        security.set_fee_model(_ScaledFeeModel(self.fee_mult))
 
     def _rebalance(self):
         if self.mode == "6040":
