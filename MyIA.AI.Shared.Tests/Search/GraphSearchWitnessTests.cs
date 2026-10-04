@@ -227,6 +227,48 @@ public sealed class GraphSearchWitnessTests
     }
 
     /// <summary>
+    /// Residu du temoin 3 — le mode arbre doit primer sur la memoire par COUT.
+    ///
+    /// Sur le meme graphe S -> { A, B } -> C -> G a couts unitaires, le regime
+    /// cout-ordonne consultait et remplissait <c>bestKnown</c> meme en mode
+    /// arbre : cout uniforme et A* (h nulle) developpaient 5 noeuds comme le
+    /// graphe, au lieu des 6 de la reference sans dedoublonnage (S, A, B, C,
+    /// C', G — C developpe deux fois). Le cout du chemin reste optimal dans
+    /// les deux modes ; c'est le contrat de memoire qui divergeait.
+    /// </summary>
+    [Fact]
+    public void TreeSearchShouldPrimeOverCostMemoryForCostOrderedStrategies()
+    {
+        Digraph problem = new(
+            "S",
+            "G",
+            new Dictionary<string, (string Next, double Cost)[]>
+            {
+                ["S"] = new[] { ("A", 1d), ("B", 1d) },
+                ["A"] = new[] { ("C", 1d) },
+                ["B"] = new[] { ("C", 1d) },
+                ["C"] = new[] { ("G", 1d) },
+            });
+
+        foreach (SearchStrategy strategy in new[]
+                 { SearchStrategy.UniformCost, SearchStrategy.AStar })
+        {
+            // h nulle pour A* : cout uniforme deguise, l'accent porte sur la memoire.
+            Func<string, double>? h = strategy == SearchStrategy.AStar ? _ => 0d : null;
+            SearchOutcome<string, string> graph = Search(strategy, h).Solve(problem)!;
+            SearchOutcome<string, string> tree =
+                Search(strategy, h, treeSearch: true).Solve(problem)!;
+
+            Assert.Equal(5, graph.ExpandedNodes);
+            Assert.Equal(6, tree.ExpandedNodes);
+            // Le cout optimal ne depend pas du regime de memoire ici.
+            Assert.Equal(graph.PathCost, tree.PathCost, 3);
+            _output.WriteLine($"{strategy} : graphe={graph.ExpandedNodes} "
+                              + $"arbre={tree.ExpandedNodes} cout={tree.PathCost:0}");
+        }
+    }
+
+    /// <summary>
     /// Temoin 4 — l'approfondissement iteratif empilait en FIFO.
     ///
     /// <c>Push</c> lisait la strategie de l'<b>instance</b> (IterativeDeepening) au

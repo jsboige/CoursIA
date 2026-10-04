@@ -155,11 +155,16 @@ public sealed class GraphSearch<TState, TAction>
         // Regime de memoire. Les trois sont exclusifs et se lisaient autrefois l'un
         // dans l'autre :
         //   - cout-ordonne : la file classe par le cout, donc « entree perimee » et
-        //     reouverture ont un sens (cout uniforme, A*) ;
+        //     reouverture ont un sens (cout uniforme, A*) -- en mode GRAPHE
+        //     seulement : le mode arbre prime sur cette memoire comme sur toute
+        //     autre (#19142 residuel) ;
         //   - graphe sans cout : la file ne classe pas par cout, on retient les etats
         //     VUS (developpes et en file) et le premier chemin rencontre gagne ;
-        //   - arbre : aucune memoire, aucun elagage.
-        bool costOrdered = strategy is SearchStrategy.UniformCost or SearchStrategy.AStar;
+        //   - arbre : aucune memoire, aucun elagage -- pour TOUTE strategie, y
+        //     compris cout-ordonnee (un UCS arbre redéveloppe C sur le temoin
+        //     S-{A,B}-C-G, 6 developpements contre 5 en graphe).
+        bool costOrdered = !TreeSearch
+            && strategy is SearchStrategy.UniformCost or SearchStrategy.AStar;
         bool remember = !TreeSearch;
 
         Dictionary<TState, double> bestKnown = new();
