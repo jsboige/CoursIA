@@ -25,10 +25,33 @@ l'ObjectStore du run.
 
 ## Résultats
 
+> **Recalcul en cours (code v2).** La review adjointe de PR #19082 a relevé
+> que ce projet mesurait les paniers ombres en poids×prix (portefeuille à
+> nombres de titres pondérés, pas à allocations de capital : 50/50 sur
+> 100/10 → 100/20 donne +9,09 % au lieu de +50 %) avec une base
+> début-de-mois (rendements cumulés intra-mois, effacés au franchissement de
+> mois), et que sa jambe stratégie portait les mêmes défauts de fenêtres et
+> de sens des rendements que le projet principal. Corrigé au commit
+> `1d3584d8` : quantités fixées aux prix de rebalance (allocation de
+> capital), rendements hebdo chainés vendredi-à-vendredi comme la jambe P46.
+> Les valeurs ci-dessous restent publiées comme **mesures historiques du
+> code v1, explicitement séparées**, remplacées par le run v2 relancé le
+> 2026-10-04.
+
+### Recalcul v2 (code corrigé, lancé le 2026-10-04)
+
+| Panier | Corrélation hebdo (période pleine 2018-2024) |
+|---|---:|
+| VT2 | *(en file)* |
+| AW | *(en file)* |
+| TW | *(en file)* |
+
+### Mesures historiques — code v1 (avant correction #19082, remplacées)
+
 > Run QC Cloud `3632c4a5f4ea219e3714cd27d32012d6` (2026-10-04, mode `unlevered`,
-> fenêtre 2018-01-01 → 2024-12-31, 1 761 dates, 305 ordres, Sharpe 0,463) —
-> valeurs lues dans le log du run (ligne `CORRELATIONS {...}`) et dans
-> `paradox46_correlations.json` (ObjectStore).
+> fenêtre 2018-01-01 → 2024-12-31, 1 761 dates, 305 ordres, Sharpe 0,463,
+> code v1) — valeurs lues dans le log du run (ligne `CORRELATIONS {...}`) et
+> dans `paradox46_correlations.json` (ObjectStore).
 
 **Période pleine 2018-2024** :
 
@@ -50,7 +73,7 @@ Par année civile (VT2 / AW=TW) :
 | 2023 | 0,459 | 0,394 |
 | 2024 | 0,494 | 0,438 |
 
-Lecture : contrairement à la stratégie 781 évaluée juste avant (corrélations
+Lecture (code v1, provisoire) : contrairement à la stratégie 781 évaluée juste avant (corrélations
 0,74-0,80, voir `ThreeZone781Correlation/`), le noyau 1x de la stratégie 46
 est **peu corrélé** aux allocations du dépôt (0,34-0,38 sur la période pleine,
 jamais > 0,54 par année) : la rotation sectorielle momentum quotidienne avec

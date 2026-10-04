@@ -61,11 +61,46 @@ mêmes fenêtres — seuls les tickers changent.
 
 ## Résultats (frais IBKR, fenêtres réelles)
 
+> **Recalcul en cours (code v2).** La review adjointe de PR #19082 a relevé
+> trois défauts de méthode dans `_stats` — fenêtres de momentum indexées
+> depuis la fin de l'historique (`closes[-1-n]`), rendements quotidiens
+> inversés (RSI/volatilité/pénalité de surachat mesurés à l'envers), et,
+> dans le projet compagnon, paniers ombres en poids×prix — corrigés au
+> commit `1d3584d8` (témoins déterministes avant/après : fenêtre 21 sur
+> rampe 1→140 : 5,3636 → 0,1765 ; RSI sur hausse monotone : 0 → 100).
+> Les runs v1 ci-dessous restent publiés comme **mesures historiques du
+> code précédent, explicitement séparées** ; ils sont remplacés run par run
+> par les runs v2 relancés le 2026-10-04 (section suivante). Les conclusions
+> ne porteront que sur les valeurs v2.
+
+### Recalcul v2 (code corrigé, QC Cloud, lancés le 2026-10-04)
+
+| Run | Fenêtre | Sharpe | CAGR | Pire baisse | Profit net | Orders | ID run |
+|---|---|---:|---:|---:|---:|---:|---|
+| 1x (équivalent sans levier) | 2018-01-01 → 2026-09-25 | **0,291** | **9,920 %** | 45,300 % | 128,540 % | 512 | `71a60f097050ec032241ef35325f4485` |
+| Levier x3 | 2018-01-01 → 2026-09-25 | *(en cours)* | | | | | `58cdef38fe6d0305857d25832d8d7890` |
+| 1x, fenêtre fiche (5 ans) | 2021-10-01 → 2026-09-25 | *(en file)* | | | | | — |
+| Levier x3, fenêtre fiche (5 ans) | 2021-10-01 → 2026-09-25 | *(en file)* | | | | | — |
+| 1x, frais x2 | 2018-01-01 → 2026-09-25 | *(en file)* | | | | | — |
+| 1x, momentum rapide 10/42/84 | 2018-01-01 → 2026-09-25 | *(en file)* | | | | | — |
+| 1x, momentum lent 42/126/189 | 2018-01-01 → 2026-09-25 | *(en file)* | | | | | — |
+| 1x, SMA 100 | 2018-01-01 → 2026-09-25 | *(en file)* | | | | | — |
+| 1x, SMA 200 | 2018-01-01 → 2026-09-25 | *(en file)* | | | | | — |
+| 1x, sous-période A | 2018-01-01 → 2022-06-30 | *(en file)* | | | | | — |
+| 1x, sous-période B | 2022-07-01 → 2026-09-25 | *(en file)* | | | | | — |
+
+(Les runs v2 sont relancés séquentiellement selon la disponibilité des
+nœuds de calcul de l'organisation ; les valeurs remplissent ce tableau au
+fil des complétions.)
+
+### Mesures historiques — code v1 (avant correction #19082, remplacées)
+
 > Tous les chiffres de cette section proviennent des runs listés (IDs cités),
-> exécutés via QC Cloud le 2026-10-04. Aucun chiffre de la fiche n'est
+> exécutés via QC Cloud le 2026-10-04 sous le code v1 (défauts de fenêtres et
+> de sens des rendements décrits ci-dessus). Aucun chiffre de la fiche n'est
 > recopié comme mesure.
 
-### Stratégie 46, runs complets (frais IBKR, QC Cloud, 2026-10-04)
+#### Stratégie 46, runs complets (frais IBKR, QC Cloud, 2026-10-04, code v1)
 
 | Run | Fenêtre | Sharpe | CAGR | Pire baisse | Profit net | Orders | ID run |
 |---|---|---:|---:|---:|---:|---:|---|
@@ -99,6 +134,9 @@ Lecture (détailée dans le verdict) :
   portant tout le résultat.
 
 ## Verdict
+
+> **Provisoire (code v1).** Ce verdict repose sur les mesures historiques
+> ci-dessus ; il est rejoué sur les runs v2 dès leur complétion.
 
 **NO BEATS** au bar pré-engagé (battre les DEUX benchmarks — SPY détenu et
 60/40 — sur les TROIS axes : Sharpe, CAGR, pire baisse). Barres de référence
