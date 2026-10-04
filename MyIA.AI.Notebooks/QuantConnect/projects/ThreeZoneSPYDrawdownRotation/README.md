@@ -87,14 +87,54 @@ Lecture mesurée : la rotation **domine le 60/40 sur les trois axes**
 pas un dominant du SPY en rendement absolu. Verdict différé aux volets
 restants (grille de robustesse, frais doublés, corrélations, sous-périodes).
 
+Rotation annuelle (proxy déclaré : ordres/an sur la fenêtre) : 781 ≈ 10,4
+ordres/an (91 ordres sur 8,73 ans) ; 60/40 ≈ 19,8/an (173 ordres) ; SPY
+détenu 1 ordre.
+
+## Grille de robustesse (OAT, 7 variantes)
+
+Sept backtests sur le même compile v2 (`4449fda8`, source identique au run de
+base), un paramètre à la fois (mode déclaré ci-dessus) :
+
+| Variante | Sharpe | CAGR | Pire baisse | Ordres | Lecture |
+|----------|--------|------|-------------|--------|---------|
+| **base (défauts)** | **0,404** | **9,22 %** | **16,4 %** | **91** | référence |
+| `zone1_dd`=0.04 | 0,365 | 8,57 % | 14,8 % | 107 | rotation plus précoce → dégrade |
+| `zone1_dd`=0.07 | 0,432 | 9,94 % | 16,3 % | 59 | rester investi SPY paie |
+| `zone2_dd`=0.08 | 0,317 | 7,92 % | 13,8 % | 80 | les deux sens dégradent |
+| `zone2_dd`=0.12 | 0,341 | 8,35 % | 21,3 % | 97 | défaut 0.10 = point fort local |
+| `top_n`=10 | 0,404 | 9,22 % | 16,4 % | 91 | non-mordant (identique à la base) |
+| `min_yield`=0.025 | 0,404 | 9,22 % | 16,4 % | 91 | non-mordant (identique à la base) |
+| `min_yield`=0.04 | 0,402 | 9,22 % | 16,4 % | 91 | quasi non-mordant |
+
+Lecture d'ensemble :
+
+- **Les seuls axes qui mordent sont les seuils de zones** (`zone1_dd`,
+  `zone2_dd`) — précisément les seuils que la fiche ne publie pas.
+  `zone1_dd` est monotone (plus le seuil est haut, mieux cela vaut sur cette
+  fenêtre) ; `zone2_dd` est non monotone et son défaut 0.10 est un point
+  fort local en Sharpe.
+- **`top_n` et `min_yield` ne mordent pas** : le filtre d'historique de
+  dividende est le goulot — il n'admet jamais plus de ~10 titres à chaque
+  revue, et le top-40 trié par rendement décroissant est saturé de titres
+  ≥ 3 %. Baisser le seuil ne change pas la sélection ; le plafond de 20
+  titres ne contraint jamais. (`min_yield`=0.04 montre un Sharpe de 0,402
+  avec profit identique au centime près : écart sous la résolution des
+  statistiques QC.)
+- **La dominance sur le 60/40 n'est pas robuste aux seuils** : 3 des 7
+  variantes (`z1=0.04`, `z2=0.08`, `z2=0.12`) tombent sous le Sharpe du
+  60/40 (0,383). La domination mesurée aux défauts dépend du choix exact
+  des seuils de zones, non publiés par la fiche.
+- Aucune variante ne bat SPY détenu (0,499).
+
 ## État du protocole (issue #18905)
 
 | Point | État |
 |-------|------|
 | 1. Cloner le projet source | Non réalisable (accès refusé) → réimplémentation déclarée, DM envoyé au coordinateur pour le canal d'accès de la flotte |
 | 2. Backtest frais IBKR | **Livré** : v2 `f41b0eed` Completed (Sharpe 0,404 / CAGR 9,22 % / DD 16,4 %) |
-| 3. Mesures + comparaisons | **SPY détenu et 60/40 livrés** ; corrélations ETF à venir |
-| 4. Verdict + robustesse | **Grille OAT en cours** (7 backtests, mode déclaré ci-dessus) ; verdict BEATS/NO BEATS/INCONCLUSIVE à venir |
+| 3. Mesures + comparaisons | **SPY détenu et 60/40 livrés** ; corrélations ETF : projet compagnon [ThreeZone781Correlation](../ThreeZone781Correlation/) (cloud 37320712) déployé, compile BuildSuccess, run en cours |
+| 4. Verdict + robustesse | **Grille OAT livrée** (7/7 backtests, table ci-dessus) ; restent : frais doublés (`fee_mult`=2), sous-périodes, puis verdict BEATS/NO BEATS/INCONCLUSIVE |
 | 5. Couverture données fondamentales | Vérification à venir (trous rendement/payout sur 2018-2026) |
 | 6. Gel du code au verdict | À venir |
 
