@@ -341,7 +341,7 @@
       "series": "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire"
     },
     {
-      "kind": "orphan_entry",
+      "kind": "unreachable",
       "notebook": "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/07-Aspire-SemanticFleet-MultiConnector.ipynb",
       "series": "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire"
     },
