@@ -464,6 +464,44 @@ def test_belt_report_metrics_computes_max_gap():
     assert max_gap is not None and max_gap > 0
 
 
+# #15069 sous le tapis : l'urne `delivered` est presente dans le defaut de
+# `--urns`. La voie ponderee la retire pour une lane worker via
+# `apply_delivered_urn_gate` ; le tapis doit recevoir ces urnes EFFECTIVES,
+# pas relire `args.urns` brut (sinon le mode par defaut de /continue sert
+# des fermetures a des lanes qui ne ferment rien).
+
+
+def test_belt_filter_honours_delivered_gate_for_worker_lane():
+    pool = [
+        _make_item(70, age_days=90, idle=30, klass="delivered"),
+        _make_item(71, age_days=80, idle=20, klass="grain"),
+        _make_item(72, age_days=70, idle=10, klass="umbrella"),
+    ]
+    args = _FakeArgs()
+    selected = {v.casefold() for v in pig._csv_values([args.urns])}
+    urns, notice = pig.apply_delivered_urn_gate(
+        "myia-po-2023:CoursIA", args.urns, "grain,umbrella,delivered",
+        selected)
+    assert notice is not None
+    kept = {it["number"] for it in pig.belt_filter(pool, args, urns=urns)}
+    assert kept == {71, 72}
+
+
+def test_belt_filter_keeps_delivered_for_coordinator_lane():
+    pool = [
+        _make_item(70, age_days=90, idle=30, klass="delivered"),
+        _make_item(71, age_days=80, idle=20, klass="grain"),
+    ]
+    args = _FakeArgs()
+    selected = {v.casefold() for v in pig._csv_values([args.urns])}
+    urns, notice = pig.apply_delivered_urn_gate(
+        "myia-ai-01:CoursIA", args.urns, "grain,umbrella,delivered",
+        selected)
+    assert notice is None
+    kept = {it["number"] for it in pig.belt_filter(pool, args, urns=urns)}
+    assert kept == {70, 71}
+
+
 # ==================================================================
 # Tests #18866 : mode --belt --json = un seul document JSON.
 # La cle `repair` fusionne le rappel rouge/WIP qui etait sinon imprime

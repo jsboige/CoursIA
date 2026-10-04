@@ -1,6 +1,6 @@
 """V0 narrow du pipeline livecoding-video (issue #15604, homage a une voix tierce).
 
-**Scope** (V0 c.573 + etape 2 c.1215 + etape 4 c.580) :
+**Scope** (V0 c.573 + etape 2 c.1215 + etape 4 c.580 + etapes 3/6) :
 Etape 1 (composition Strudel multi-pistes) livree en V0. Etape 4
 (capture navigateur) livree ensuite : le REPL strudel.cc est pilote
 par Playwright headed — pattern injecte par hash d'URL, visuals
@@ -14,10 +14,12 @@ deterministe (defaut, offline) ou moteur LLM optionnel (client
 OpenAI-compat via ``OPENAI_API_KEY``), valides par
 :func:`validate_narration` (garde anti-nomination d'artiste incluse —
 ce n'est PAS un detecteur de verbatim, cf la limitation documentee
-sur :func:`validate_narration`). Les etapes
-restantes (3 TTS, 5 visualizer custom, 6 mixage ffmpeg complet)
-restent documentation-ONLY (pas de pipeline
-squelette qui pretend faire ce qu'il ne fait pas).
+sur :func:`validate_narration`). Etape 3 (TTS expressif via le
+gateway tts-multi) et etape 6 (mixage ffmpeg loudnorm + fade-out
+coordonne) livrees ; seule l'etape 5 (visualizer custom) reste
+differee en V1. Les etapes non demandees restent marquees
+'deferred' en sortie (pas de pipeline squelette qui pretend faire ce
+qu'il ne fait pas).
 
 **Etats cles** (cf issue #15604 et c.446 demucs Phase A deferree) :
 - Composition Strudel via template parametrable (PAS de LLM libre en
@@ -30,15 +32,21 @@ squelette qui pretend faire ce qu'il ne fait pas).
 - Etape 2 narration timestampee : LIVREE (c.1215) — moteur template
   deterministe par defaut + moteur LLM optionnel, sortie JSON segments
   (unite d'entree de l'etape 3 TTS et des sous-titres de l'etape 6).
-- Etape 3 TTS Kokoro/FishAudio : `scripts/audiobook_pipeline.py`
-  deja disponible, integration differee a un cycle c.574+.
+- Etape 3 TTS expressif : LIVREE — gateway tts-multi (port 8196), moteurs
+  kokoro (latence min, deploye) et tada (expressivite max, verdict
+  benchmark #17244 — requiert le service tts-tada du compose), 3 paliers
+  de speed derives de l'intensite du segment (parametre mesure EFFECTIF
+  sur kokoro le 2026-10-03 : 308 444 octets a speed 0.8 contre 218 444
+  a speed 1.2 sur le meme texte).
 - Etape 4 capture Playwright sur `https://strudel.cc/` : LIVREE (c.580).
   Le risque « routage audio Windows (VB-Cable/BlackHole)» est leve par
   design : l'audio vient de l'export offline NATIF du REPL (rendu
   OfflineAudioContext cote strudel.cc), pas d'une capture systeme.
 - Etape 5 visualizer custom : V1 only.
-- Etape 6 mixage ffmpeg : `scripts/audiobook_pipeline.py` a deja
-  l'integration loudnorm -14 LUFS + fade-out.
+- Etape 6 mixage ffmpeg : LIVREE — chaque segment TTS retarde a son
+  start_s (adelay), superpose au WAV navigateur (amix normalize=0),
+  loudnorm -14 LUFS / TP -1.5 (plafond anti-clipping), fade-out video +
+  audio coordonnes sur les 3 dernieres secondes.
 
 **Voie 3 B.0** : voie du retrait consenti d'une voix tierce tenue
 (bibliography-hygiene §2, audit-cross-source-distillation §3.1,
@@ -763,11 +771,15 @@ def run_pipeline(
     headless: bool = False,
     narration_engine: str = "template",
     narration_json_path: Optional[str] = None,
+    tts_engine: Optional[str] = None,
+    tts_gateway: Optional[str] = None,
+    tts_out_dir: Optional[str] = None,
 ) -> Dict[str, object]:
     """Orchestrateur : compose le script Strudel, genere la narration
-    timestampee (etape 2) et documente les autres etapes.
+    timestampee (etape 2), la synthetise en WAV expressifs (etape 3) et
+    mixe le mp4 final (etape 6 quand capture + TTS sont demandes).
 
-    Retourne un dict avec une cle par etape ; les etapes non livrees
+    Retourne un dict avec une cle par etape ; les etapes non demandees
     portent la valeur 'deferred...'. C'est un contrat HONNETE (Tell
     c.1102) : pas de pipeline squelette qui pretend faire ce qu'il ne
     fait pas.
@@ -776,14 +788,19 @@ def run_pipeline(
     - style_name : style musical (cf :func:`compose_strudel`).
     - duration_seconds : duree cible en secondes.
     - output_path : chemin du fichier .mp4 final (sans --capture, ce
-      chemin n'est PAS cree : l'integrateur ffmpeg est deferred).
-    - tts_voice : voix TTS Kokoro/FishAudio (optionnel, deferred).
-    - playwright_url : URL du navigateur Strudel (deferred).
-    - ffmpeg_loudnorm_lufs : cible loudness (deferred).
+      chemin n'est PAS cree : le mux ffmpeg n'a pas de video a mixer).
+    - tts_voice : voix TTS (defaut = voix du moteur, cf TTS_ENGINES).
+    - playwright_url : URL du navigateur Strudel (etape 4).
+    - ffmpeg_loudnorm_lufs : cible loudness du mix final (etape 6).
     - narration_engine : moteur de l'etape 2 ('template' deterministe
       par defaut, ou 'llm' — cf :func:`compose_narration`).
     - narration_json_path : si fourni, ecrit les segments valides dans
       ce fichier JSON (entree reelle de l'etape 3 TTS).
+    - tts_engine : moteur de l'etape 3 ('kokoro' | 'tada', cf
+      :func:`synthesize_narration_tts`) ; None = etape differee.
+    - tts_gateway : URL du gateway tts-multi (defaut : variable
+      TTS_GATEWAY_URL puis http://localhost:8196).
+    - tts_out_dir : dossier des WAV de segments (defaut : <output>/tts).
 
     Retourne : dict avec cles 'strudel_script', 'narration' (liste de
     dicts segments), 'tts', 'browser_capture', 'visualizer',
@@ -808,9 +825,28 @@ def run_pipeline(
             narration_to_json(narration_segments), encoding="utf-8"
         )
 
+    tts_tracks: List[Dict[str, object]] = []
+    tts: object = "deferred"
+    if tts_engine is not None:
+        tts_out = Path(tts_out_dir) if tts_out_dir else Path(output_path).parent / "tts"
+        tts_tracks = synthesize_narration_tts(
+            narration_segments,
+            engine=tts_engine,
+            voice=tts_voice,
+            out_dir=tts_out,
+            gateway=tts_gateway,
+        )
+        speeds = sorted({str(t["speed"]) for t in tts_tracks})
+        tts = (
+            f"LIVREE : {len(tts_tracks)} segments WAV (moteur {tts_engine}, "
+            f"voix {tts_voice or TTS_ENGINES[tts_engine][1]}, speeds {speeds})"
+        )
+
     browser_capture: object = f"deferred ({playwright_url})"
     final_mix: object = f"deferred ({output_path}, loudnorm {ffmpeg_loudnorm_lufs} LUFS)"
     if capture:
+        import subprocess
+
         capture_result = capture_repl_session(
             pattern=strudel,
             output_dir=Path(output_path).parent,
@@ -823,20 +859,58 @@ def run_pipeline(
             f"({capture_result['mp4_bytes']} octets, video webm "
             f"{capture_result['video_bytes']} + wav {capture_result['wav_bytes']})"
         )
-        final_mix = f"PoC mux ffmpeg LIVRE : {capture_result['final_mp4']} (loudnorm complet = etape 6)"
+        if tts_tracks:
+            # Etape 6 : mix final (wav navigateur + voix TTS retardees,
+            # loudnorm + fade-out coordonne) — remplace le mux PoC.
+            video_webm = Path(str(capture_result["video_webm"]))
+            audio_wav = Path(str(capture_result["audio_wav"]))
+            try:
+                duration_v = probe_duration_ffprobe(video_webm)
+                duration_src = "video"
+            except RuntimeError:
+                # webm MediaRecorder sans duree de conteneur ni de flux
+                # (mesure 2026-10-03) : le WAV navigateur, PCM, expose
+                # toujours la duree — meme fenetre de capture.
+                duration_v = probe_duration_ffprobe(audio_wav)
+                duration_src = "wav navigateur (webm sans Cues)"
+            audible = [
+                t for t in tts_tracks if float(t["start_s"]) < duration_v - 1.0
+            ]
+            mix_cmd = mix_final_ffmpeg(
+                video_webm, audio_wav, audible, Path(output_path),
+                loudnorm_lufs=ffmpeg_loudnorm_lufs,
+                duration_override=duration_v,
+            )
+            proc = subprocess.run(
+                mix_cmd, capture_output=True, text=True,
+                encoding="utf-8", errors="replace")
+            if proc.returncode != 0:
+                raise RuntimeError(
+                    f"ffmpeg a echoue ({proc.returncode}) : {proc.stderr[-800:]}")
+            final_mix = (
+                f"LIVREE : {output_path} "
+                f"({Path(output_path).stat().st_size} octets, loudnorm "
+                f"{ffmpeg_loudnorm_lufs} LUFS + TP -1.5, {len(audible)}/"
+                f"{len(tts_tracks)} segments TTS mixes sur {duration_v:.1f} s "
+                f"[duree : {duration_src}], fade-out coordonne video+audio)"
+            )
+        else:
+            final_mix = f"PoC mux ffmpeg LIVRE : {capture_result['final_mp4']} (etape 6 = capture + TTS ensemble)"
 
     return {
         "strudel_script": strudel,
         "narration": [asdict(s) for s in narration_segments],
-        "tts": "deferred" if tts_voice is None else f"requested={tts_voice}",
+        "tts": tts if tts_engine is not None else ("deferred" if tts_voice is None else f"requested={tts_voice} (moteur absent)"),
         "browser_capture": browser_capture,
         "visualizer": "deferred (V1 only — capture Strudel inclut scope/pianoroll)",
         "final_mix": final_mix,
         "verdict": (
             "Etape 1 (composition) + etape 2 (narration timestampee, "
-            f"moteur {narration_engine}) + etape 4 (capture navigateur : "
-            "export WAV offline natif + MediaRecorder + mux ffmpeg) livrees ; "
-            "etapes 3/5/6 deferred avec claim explicite par phase."
+            f"moteur {narration_engine})"
+            + (f" + etape 3 (TTS {tts_engine}, 3 paliers de speed)" if tts_engine else " ; etape 3 (TTS) deferred")
+            + (" + etape 4 (capture navigateur)" if capture else " ; etape 4 (capture) deferred")
+            + (" + etape 6 (mix final loudnorm/fade)" if capture and tts_engine else " ; etape 6 (mix final) deferred")
+            + " ; etape 5 (visualizer custom) = V1 only."
         ),
     }
 
@@ -922,6 +996,237 @@ def mux_ffmpeg(video_webm: Path, audio_wav: Path, out_mp4: Path) -> List[str]:
         "-shortest",
         str(out_mp4),
     ]
+
+
+# --- Etape 3 : TTS expressif via le gateway tts-multi (#15604) ----------------
+
+TTS_GATEWAY_DEFAULT = "http://localhost:8196"
+# (chemin, voix par defaut). Verdict benchmark #17244 : tada = expressivite
+# maximale sans clonage (prosodie + emotion HumeAI), kokoro = latence minimale.
+# Deploiement mesure sur po-2023 (2026-10-03) : kokoro sain, tada ABSENT du
+# `docker ps` (gateway 503 "Name or service not known") — le service tts-tada
+# existe dans le compose (build torch cu126 + modele 3B, volume tada-cache
+# inexistant ici) mais n'y est pas lance.
+TTS_ENGINES: Dict[str, Tuple[str, str]] = {
+    "kokoro": ("/v1/audio/speech", "af_sky"),
+    "tada": ("/tada/v1/audio/speech", "default"),
+}
+
+
+def _load_env_files(repo_root: Path) -> None:
+    """Charge les paires KEY=VALUE des .env locaux (sans dependance dotenv).
+
+    Ordre de resolution (le premier gagne, os.environ n'est JAMAIS ecrase) :
+    ``MyIA.AI.Notebooks/GenAI/.env`` puis
+    ``docker-configurations/services/tts-multi/.env`` — la cle du gateway
+    vit dans ce dernier (mesure 2026-10-03 : speech endpoints 401 sans
+    Bearer, 200 avec).
+    """
+    for name in (
+        "MyIA.AI.Notebooks/GenAI/.env",
+        "docker-configurations/services/tts-multi/.env",
+    ):
+        path = repo_root / name
+        if not path.is_file():
+            continue
+        for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, _, value = line.partition("=")
+            key = key.strip()
+            if key and key not in os.environ:
+                os.environ[key] = value.strip().strip('"').strip("'")
+
+
+def tts_speed_for_intensity(intensity: float) -> float:
+    """Mappe l'intensite [0, 1] sur 3 paliers de speed (critere 3 : au
+    moins 3 variations pitch/intensity/pace).
+
+    Parametre mesure EFFECTIF sur kokoro (2026-10-03, meme texte) :
+    speed 0.8 -> 308 444 octets, speed 1.2 -> 218 444 octets — la duree
+    audio varie inversement au speed, le gateway ne l'ignore pas.
+    """
+    if intensity < 0.34:
+        return 0.85  # pose
+    if intensity < 0.67:
+        return 1.0  # neutre
+    return 1.15  # elance
+
+
+def synthesize_narration_tts(
+    segments: List[NarrationSegment],
+    engine: str = "kokoro",
+    voice: Optional[str] = None,
+    out_dir: Path = Path("out/tts"),
+    gateway: Optional[str] = None,
+    timeout_s: float = 120.0,
+) -> List[Dict[str, object]]:
+    """Etape 3 : synthetise chaque segment en WAV via le gateway tts-multi.
+
+    Appel OpenAI-compatible (pattern du benchmark #17244, mesure live
+    2026-10-03) : POST ``{gateway}{path}`` avec ``{"model", "input",
+    "voice", "speed"}`` et Bearer ``TTS_GATEWAY_API_KEY`` quand la cle
+    est resolue. Reponse attendue : RIFF/WAVE (verifie par sniff
+    d'en-tete — pas d'extension aveugle).
+
+    Retourne un dict par segment ``{index, start_s, end_s, intensity,
+    speed, wav, bytes}`` et ecrit ``out_dir/segment_NNN.wav``. Echec =
+    RuntimeError explicite avec verdict RECOVERABLE-LOCAL quand le
+    gateway nomme le remede (regle F : reparer, jamais contourner).
+    """
+    import urllib.error
+    import urllib.request
+
+    if engine not in TTS_ENGINES:
+        raise RuntimeError(
+            f"moteur TTS inconnu : {engine} (choix : {sorted(TTS_ENGINES)})")
+    path, default_voice = TTS_ENGINES[engine]
+    voice = voice or default_voice
+
+    _load_env_files(Path(__file__).resolve().parents[1])
+    gateway = gateway or os.environ.get("TTS_GATEWAY_URL", TTS_GATEWAY_DEFAULT)
+    api_key = os.environ.get("TTS_GATEWAY_API_KEY", "")
+
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    tracks: List[Dict[str, object]] = []
+    for idx, seg in enumerate(segments):
+        speed = tts_speed_for_intensity(seg.intensity)
+        payload = json.dumps({
+            "model": engine,
+            "input": seg.text,
+            "voice": voice,
+            "speed": speed,
+        }).encode("utf-8")
+        headers = {"Content-Type": "application/json"}
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+        request = urllib.request.Request(
+            f"{gateway}{path}", data=payload, headers=headers, method="POST")
+        try:
+            with urllib.request.urlopen(request, timeout=timeout_s) as resp:
+                data = resp.read()
+        except urllib.error.HTTPError as exc:
+            hint = ""
+            if exc.code == 503:
+                hint = (
+                    f" — gateway 503 : le backend '{engine}' n'est pas deploye "
+                    "(RECOVERABLE-LOCAL : docker compose up -d tts-tada dans "
+                    "docker-configurations/services/tts-multi/)")
+            raise RuntimeError(
+                f"gateway TTS HTTP {exc.code} sur le segment #{idx}{hint}"
+            ) from exc
+        except urllib.error.URLError as exc:
+            raise RuntimeError(
+                f"gateway TTS injoignable ({gateway}) : {exc.reason} "
+                "(RECOVERABLE-LOCAL : docker compose up -d dans "
+                "docker-configurations/services/tts-multi/)") from exc
+        if not (data[:4] == b"RIFF" and data[8:12] == b"WAVE"):
+            raise RuntimeError(
+                f"segment #{idx} : reponse inattendue (pas un RIFF/WAV — "
+                f"{len(data)} octets commencant par {data[:8]!r})")
+        wav_path = out_dir / f"segment_{idx:03d}.wav"
+        wav_path.write_bytes(data)
+        tracks.append({
+            "index": idx,
+            "start_s": seg.start_s,
+            "end_s": seg.end_s,
+            "intensity": seg.intensity,
+            "speed": speed,
+            "wav": str(wav_path),
+            "bytes": len(data),
+        })
+    return tracks
+
+
+def probe_duration_ffprobe(media: Path) -> float:
+    """Duree (secondes) d'un media via ffprobe.
+
+    Essaie la duree du conteneur (``format=duration``) puis celle du
+    flux (``stream=duration``) : les webm produits par MediaRecorder
+    (etape 4) n'exposent souvent AUCUNE duree de conteneur — fichier
+    finalise sans Cues, mesure sur la demo du 2026-10-03 : N/A sur les
+    deux entrees pour capture.webm, 90.85 s pour le WAV navigateur.
+    Echec explicite si aucune source n'expose de duree.
+    """
+    import subprocess
+
+    for entries in ("format=duration", "stream=duration"):
+        proc = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", entries,
+             "-of", "csv=p=0", str(media)],
+            capture_output=True, text=True, encoding="utf-8", errors="replace")
+        if proc.returncode != 0:
+            raise RuntimeError(
+                f"ffprobe a echoue sur {media} : {proc.stderr[-400:]}")
+        value = proc.stdout.strip().splitlines()[0].strip() if proc.stdout.strip() else ""
+        if value and value != "N/A":
+            return float(value)
+    raise RuntimeError(
+        f"{media} n'expose aucune duree (format et stream = N/A — "
+        "conteneur MediaRecorder sans Cues : utiliser le WAV navigateur "
+        "comme reference de duree)")
+
+
+def mix_final_ffmpeg(
+    video_webm: Path,
+    browser_wav: Path,
+    tts_tracks: List[Dict[str, object]],
+    out_mp4: Path,
+    loudnorm_lufs: float = -14.0,
+    fade_out_s: float = 3.0,
+    duration_override: Optional[float] = None,
+) -> List[str]:
+    """Etape 6 : commande de mixage final ffmpeg (critere 4 : -14 LUFS
+    sans clipping ; fade-out coordonne musique + video).
+
+    Lit la duree video (ffprobe) sauf ``duration_override`` fourni —
+    les webm MediaRecorder n'exposent aucune duree (mesure 2026-10-03),
+    le caller retombe alors sur la duree du WAV navigateur. Retarde
+    chaque segment TTS a son ``start_s`` (``adelay ... all=1``),
+    superpose au WAV navigateur via ``amix ... normalize=0``, enchaine
+    ``loudnorm`` (I=lufs, TP=-1.5 — plafond de true peak anti-clipping)
+    puis ``afade`` sortant, et fade video synchronise sur ``[0:v]``.
+    Retourne la commande complete (testable en unitaire sans
+    l'executer).
+    """
+    duration = (
+        duration_override if duration_override is not None
+        else probe_duration_ffprobe(video_webm)
+    )
+    fade_start = max(0.0, duration - fade_out_s)
+
+    cmd: List[str] = [
+        "ffmpeg", "-y",
+        "-i", str(video_webm),
+        "-i", str(browser_wav),
+    ]
+    for track in tts_tracks:
+        cmd += ["-i", str(track["wav"])]
+
+    filters = [f"[0:v]fade=t=out:st={fade_start:.3f}:d={fade_out_s}[vout]"]
+    mix_labels = ["[1:a]"]
+    for k, track in enumerate(tts_tracks):
+        delay_ms = int(round(float(track["start_s"]) * 1000))
+        filters.append(f"[{2 + k}:a]adelay={delay_ms}:all=1[t{k}]")
+        mix_labels.append(f"[t{k}]")
+    filters.append(
+        "".join(mix_labels)
+        + f"amix=inputs={len(mix_labels)}:duration=longest:normalize=0,"
+        + f"loudnorm=I={loudnorm_lufs}:TP=-1.5:LRA=11,"
+        + f"afade=t=out:st={fade_start:.3f}:d={fade_out_s}[aout]")
+
+    cmd += [
+        "-filter_complex", ";".join(filters),
+        "-map", "[vout]", "-map", "[aout]",
+        "-c:v", "libx264", "-crf", "18", "-pix_fmt", "yuv420p",
+        "-c:a", "aac", "-b:a", "192k",
+        "-t", f"{duration:.3f}",
+        "-movflags", "+faststart",
+        str(out_mp4),
+    ]
+    return cmd
 
 
 def capture_repl_session(
@@ -1021,9 +1326,11 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="livecoding_video_pipeline",
         description="Pipeline livecoding-video (#15604). Compose un "
-        "script Strudel multi-pistes par template (etape 1) et la "
-        "narration poetique timestampee (etape 2) ; les etapes 3/5/6 "
-        "restent deferred.",
+        "script Strudel multi-pistes par template (etape 1), la "
+        "narration poetique timestampee (etape 2), la synthese TTS "
+        "expressive via le gateway tts-multi (etape 3, --tts-engine), "
+        "la capture navigateur (etape 4, --capture) et le mixage final "
+        "loudnorm + fade-out coordonne (etape 6, capture + TTS).",
     )
     parser.add_argument(
         "--style",
@@ -1049,9 +1356,29 @@ def _build_arg_parser() -> argparse.ArgumentParser:
         help="chemin du fichier .mp4 final (deferred, default: out/livecoding_V0.mp4)",
     )
     parser.add_argument(
+        "--tts-engine",
+        choices=sorted(TTS_ENGINES.keys()),
+        default=None,
+        help="etape 3 : moteur TTS via le gateway tts-multi (kokoro = "
+             "latence min, deploye ; tada = expressivite max, verdict "
+             "#17244, requiert le service tts-tada) — absent = etape deferee",
+    )
+    parser.add_argument(
         "--tts-voice",
         default=None,
-        help="voix TTS Kokoro/FishAudio (optionnel, deferred en V0)",
+        help="voix TTS (defaut : voix du moteur — af_sky pour kokoro, "
+             "default pour tada)",
+    )
+    parser.add_argument(
+        "--tts-gateway",
+        default=None,
+        help="URL du gateway tts-multi (defaut : $TTS_GATEWAY_URL puis "
+             "http://localhost:8196)",
+    )
+    parser.add_argument(
+        "--tts-out-dir",
+        default=None,
+        help="dossier des WAV de segments TTS (defaut : <output>/tts)",
     )
     parser.add_argument(
         "--capture",
@@ -1101,6 +1428,9 @@ def main(argv: Optional[List[str]] = None) -> int:
             headless=args.headless,
             narration_engine=args.narration_engine,
             narration_json_path=args.narration_json,
+            tts_engine=args.tts_engine,
+            tts_gateway=args.tts_gateway,
+            tts_out_dir=args.tts_out_dir,
         )
     except RuntimeError as exc:
         # Echec explicite (ex. moteur llm sans cle) — pas de fallback

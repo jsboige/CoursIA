@@ -1,6 +1,6 @@
 # ML-FX-SVM-Wavelet (HandsOn Ex05)
 
-**Classe d'actifs :** Forex (4 paires : EURUSD, AUDUSD, USDJPY, USDCAD)
+**Classe d'actifs :** Forex (4 paires : EURJPY, GBPUSD, AUDCAD, NZDCHF)
 **ID projet Cloud :** Aucun (local uniquement)
 
 ## Description

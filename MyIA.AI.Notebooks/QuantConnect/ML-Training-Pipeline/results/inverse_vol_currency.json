@@ -1,0 +1,405 @@
+{
+  "experiment": "inverse_vol_currency (#19072)",
+  "preregistration": "https://github.com/jsboige/CoursIA/issues/19072",
+  "window": {
+    "hold_start": "2005-01-01",
+    "hold_end": "2026-09-30",
+    "half_split": "2015-12-01",
+    "sessions": 5436,
+    "rebalances": 261
+  },
+  "parameters": {
+    "lookback": 21,
+    "max_weight": 0.5,
+    "band": 0.03,
+    "fee": 0.0005,
+    "targets": [
+      0.015,
+      0.025,
+      0.04
+    ],
+    "verdict_target": 0.025,
+    "seeds": [
+      0,
+      1,
+      7,
+      42,
+      99
+    ],
+    "draws": 10000,
+    "day_block": 21,
+    "month_block": 6
+  },
+  "data": {
+    "source": "Yahoo Finance via panier_loader.ensure_symbol (auto_adjust=True)",
+    "sha256": {
+      "SPY": "9bdab66a8e58a125036634d8862dacc0f46a2739141c530efa8ac458e389cab7",
+      "QQQ": "ce6185f773214d3d8166f7764dac5acf5a386d146fe40f0a079698b4338cb9e6",
+      "IEF": "4e18ed3bb19d4e78144e44d36f0761fba7f7ffdc0eecc2861b59196d1a7b82d1",
+      "GLD": "60b0ea99d5254933ddc891db9f139d217c143e061335dc3180aeda6dc65eba58",
+      "EURUSD=X": "58546bf591a9f0e218e9f8ed5833eccb1ed622d74d19ff24cb6860505effa8b7",
+      "SXR8.DE": "4bd1568bb79318b1ae0437c8480da818e88cd04119c73c3e59ce05ff04d8049d",
+      "SXRV.DE": "963e11deb70d0ca7bf782b994da201ef00ee7cd1d8137a562ad8e99be45babf7",
+      "IUSM.DE": "e890079d5e7706d1263e51cf423e5c155e1974c6acd0c48bee240e096639222b",
+      "4GLD.DE": "49f5e6a8f046b4d7310036bfba23c469fdce43cfe2018a15a48c8b31c7ed5945"
+    },
+    "fx_median": 1.1901,
+    "fx_dropped_dates": [
+      "2008-01-08",
+      "2008-02-08",
+      "2008-09-08",
+      "2008-10-08",
+      "2008-12-08"
+    ],
+    "common_sessions": 5468
+  },
+  "H1": {
+    "statistic_mean_d": 0.111837,
+    "p_one_sided_max": 0.0,
+    "p_by_seed": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "ci95_seed0": [
+      0.08859,
+      0.135812
+    ],
+    "p_holm": 0.0,
+    "halves_mean_d": [
+      0.131354,
+      0.09232
+    ],
+    "months": 260,
+    "months_unscored": [
+      "2008-08"
+    ],
+    "pairs": 1040,
+    "by_line": {
+      "GLD": {
+        "U": {
+          "rms_log_error": 0.3915,
+          "bias_log": 0.0834
+        },
+        "F": {
+          "rms_log_error": 0.3491,
+          "bias_log": 0.0024
+        },
+        "months": 260
+      },
+      "IEF": {
+        "U": {
+          "rms_log_error": 0.6239,
+          "bias_log": 0.5269
+        },
+        "F": {
+          "rms_log_error": 0.3079,
+          "bias_log": 0.0033
+        },
+        "months": 260
+      },
+      "QQQ": {
+        "U": {
+          "rms_log_error": 0.4231,
+          "bias_log": 0.1094
+        },
+        "F": {
+          "rms_log_error": 0.3641,
+          "bias_log": 0.0026
+        },
+        "months": 260
+      },
+      "SPY": {
+        "U": {
+          "rms_log_error": 0.4647,
+          "bias_log": 0.1607
+        },
+        "F": {
+          "rms_log_error": 0.3753,
+          "bias_log": 0.0009
+        },
+        "months": 260
+      }
+    },
+    "verdict": "BEATS"
+  },
+  "sharpe_comparison": {
+    "0.015": {
+      "diff_sharpe_F_minus_U": 0.0789,
+      "p_one_sided_max": 0.054,
+      "p_by_seed": [
+        0.054,
+        0.0518,
+        0.0503,
+        0.052,
+        0.0446
+      ],
+      "ci95_seed0": [
+        -0.0158,
+        0.1726
+      ],
+      "halves": [
+        0.0781,
+        0.0863
+      ]
+    },
+    "0.025": {
+      "diff_sharpe_F_minus_U": 0.0503,
+      "p_one_sided_max": 0.117,
+      "p_by_seed": [
+        0.117,
+        0.116,
+        0.1169,
+        0.1147,
+        0.1117
+      ],
+      "ci95_seed0": [
+        -0.0324,
+        0.1322
+      ],
+      "halves": [
+        0.0607,
+        0.0453
+      ]
+    },
+    "0.04": {
+      "diff_sharpe_F_minus_U": 0.0264,
+      "p_one_sided_max": 0.2089,
+      "p_by_seed": [
+        0.2018,
+        0.2011,
+        0.2089,
+        0.2005,
+        0.1945
+      ],
+      "ci95_seed0": [
+        -0.0354,
+        0.0864
+      ],
+      "halves": [
+        0.0226,
+        0.0308
+      ]
+    }
+  },
+  "strategies": {
+    "0.015": {
+      "U": {
+        "sharpe": 0.849,
+        "cagr": 0.0524,
+        "max_drawdown": -0.0773,
+        "vol_annual": 0.063,
+        "mean_target_weight": {
+          "SPY": 0.1264,
+          "QQQ": 0.0984,
+          "IEF": 0.2738,
+          "GLD": 0.1059
+        },
+        "mean_gross_exposure": 0.6045,
+        "turnover_per_year": 1.7066,
+        "fees_total": 0.01855,
+        "min_cash_weight": -0.0013
+      },
+      "F": {
+        "sharpe": 0.928,
+        "cagr": 0.0445,
+        "max_drawdown": -0.0687,
+        "vol_annual": 0.0485,
+        "mean_target_weight": {
+          "SPY": 0.1042,
+          "QQQ": 0.0862,
+          "IEF": 0.1628,
+          "GLD": 0.0971
+        },
+        "mean_gross_exposure": 0.4502,
+        "turnover_per_year": 1.0529,
+        "fees_total": 0.01144,
+        "min_cash_weight": 0.1467
+      }
+    },
+    "0.025": {
+      "U": {
+        "sharpe": 0.8903,
+        "cagr": 0.0814,
+        "max_drawdown": -0.1298,
+        "vol_annual": 0.0936,
+        "mean_target_weight": {
+          "SPY": 0.1889,
+          "QQQ": 0.1473,
+          "IEF": 0.379,
+          "GLD": 0.1618
+        },
+        "mean_gross_exposure": 0.8771,
+        "turnover_per_year": 2.0042,
+        "fees_total": 0.02178,
+        "min_cash_weight": -0.0512
+      },
+      "F": {
+        "sharpe": 0.9406,
+        "cagr": 0.0735,
+        "max_drawdown": -0.1019,
+        "vol_annual": 0.0794,
+        "mean_target_weight": {
+          "SPY": 0.1703,
+          "QQQ": 0.1408,
+          "IEF": 0.2654,
+          "GLD": 0.1593
+        },
+        "mean_gross_exposure": 0.7359,
+        "turnover_per_year": 1.9219,
+        "fees_total": 0.02089,
+        "min_cash_weight": -0.0475
+      }
+    },
+    "0.04": {
+      "U": {
+        "sharpe": 0.9011,
+        "cagr": 0.0969,
+        "max_drawdown": -0.1397,
+        "vol_annual": 0.1102,
+        "mean_target_weight": {
+          "SPY": 0.2275,
+          "QQQ": 0.1827,
+          "IEF": 0.3625,
+          "GLD": 0.2048
+        },
+        "mean_gross_exposure": 0.9775,
+        "turnover_per_year": 1.862,
+        "fees_total": 0.02024,
+        "min_cash_weight": -0.0671
+      },
+      "F": {
+        "sharpe": 0.9275,
+        "cagr": 0.096,
+        "max_drawdown": -0.1311,
+        "vol_annual": 0.1056,
+        "mean_target_weight": {
+          "SPY": 0.2214,
+          "QQQ": 0.1844,
+          "IEF": 0.3261,
+          "GLD": 0.2102
+        },
+        "mean_gross_exposure": 0.9422,
+        "turnover_per_year": 1.8954,
+        "fees_total": 0.0206,
+        "min_cash_weight": -0.0698
+      }
+    }
+  },
+  "H2": {
+    "diff_sharpe_F_minus_U": 0.0503,
+    "p_one_sided_max": 0.117,
+    "p_by_seed": [
+      0.117,
+      0.116,
+      0.1169,
+      0.1147,
+      0.1117
+    ],
+    "ci95_seed0": [
+      -0.0324,
+      0.1322
+    ],
+    "halves": [
+      0.0607,
+      0.0453
+    ],
+    "p_holm": 0.117,
+    "verdict": "INCONCLUSIVE"
+  },
+  "L_control": {
+    "lines": {
+      "SPY": "SXR8.DE",
+      "QQQ": "SXRV.DE",
+      "IEF": "IUSM.DE",
+      "GLD": "4GLD.DE"
+    },
+    "months": 195,
+    "first_month": "2010-07",
+    "by_line": {
+      "GLD": {
+        "U": {
+          "rms_log_error": 0.4125,
+          "bias_log": -0.1
+        },
+        "F": {
+          "rms_log_error": 0.4605,
+          "bias_log": -0.2549
+        },
+        "L": {
+          "rms_log_error": 0.3976,
+          "bias_log": 0.0078
+        },
+        "months": 195
+      },
+      "IEF": {
+        "U": {
+          "rms_log_error": 0.5369,
+          "bias_log": 0.3561
+        },
+        "F": {
+          "rms_log_error": 0.3805,
+          "bias_log": -0.1666
+        },
+        "L": {
+          "rms_log_error": 0.328,
+          "bias_log": 0.0026
+        },
+        "months": 195
+      },
+      "QQQ": {
+        "U": {
+          "rms_log_error": 0.4685,
+          "bias_log": 0.0289
+        },
+        "F": {
+          "rms_log_error": 0.432,
+          "bias_log": -0.0927
+        },
+        "L": {
+          "rms_log_error": 0.4349,
+          "bias_log": -0.0021
+        },
+        "months": 195
+      },
+      "SPY": {
+        "U": {
+          "rms_log_error": 0.5233,
+          "bias_log": 0.0357
+        },
+        "F": {
+          "rms_log_error": 0.4953,
+          "bias_log": -0.1433
+        },
+        "L": {
+          "rms_log_error": 0.5132,
+          "bias_log": 0.0098
+        },
+        "months": 195
+      }
+    },
+    "mean_d_U_minus_F": {
+      "observed": 0.040737,
+      "ci95_seed0": [
+        0.013399,
+        0.069211
+      ]
+    },
+    "mean_d_U_minus_L": {
+      "observed": 0.058382,
+      "ci95_seed0": [
+        0.018673,
+        0.091963
+      ]
+    },
+    "mean_d_F_minus_L": {
+      "observed": 0.017645,
+      "ci95_seed0": [
+        -0.027594,
+        0.049597
+      ]
+    }
+  }
+}

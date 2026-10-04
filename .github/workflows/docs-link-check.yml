@@ -35,6 +35,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # #17407 : les slots natifs du parc coursia-linux n'exposent pas `python`
+      # nu (contrat image seulement). setup-python aligne ce job sur les 23
+      # workflows sains du depot et le rend insensible au placement.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
       - name: Check docs/ links
         # No --quiet: on failure, print each new broken link (source:line -> target)
         # so the CI log is self-diagnosing. On success the output is a single summary

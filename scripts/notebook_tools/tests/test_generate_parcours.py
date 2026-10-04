@@ -5,6 +5,7 @@ check_coverage. Uses synthetic catalog entries.
 """
 
 import json
+import re
 import sys
 from pathlib import Path
 from typing import ClassVar
@@ -319,12 +320,20 @@ def _catalog_with_pending_renames(manifest):
     l'entree que la regeneration produira (``analyze_notebook``), et seulement si le
     catalogue est en retard sur l'arbre (au moins un chemin catalogue absent du disque).
     Un chemin du manifeste absent du disque reste absent : le test echoue comme avant.
+
+    Un renommage a deux moities : la regeneration produira l'entree du NOUVEAU chemin
+    (miroir : l'ajout ci-dessous) ET la disparition de l'ancien (miroir : le prune).
+    Sans le prune, les anciens chemins restent dans ``catalog_paths`` et l'assertion
+    ``dec_pymc <= selected`` exige la selection de carnets qui n'existent plus (#14873,
+    descente DecPyMC-8..12 -> Actuariat/).
     """
     catalog = json.loads(gp.CATALOG_PATH.read_text(encoding="utf-8"))
     root = generate_catalog.NOTEBOOKS_DIR
     known = {entry["path"] for entry in catalog}
     if all((root / path).is_file() for path in known):
         return catalog
+    catalog = [entry for entry in catalog if (root / entry["path"]).is_file()]
+    known = {entry["path"] for entry in catalog}
     for group in manifest["branches"] + manifest["accretions"]:
         for path in group["notebooks"]:
             if path not in known and (root / path).is_file():
@@ -333,6 +342,63 @@ def _catalog_with_pending_renames(manifest):
                     catalog.append(entry)
                     known.add(path)
     return catalog
+
+
+# ---------------------------------------------------------------------------
+# #18889 oracle: duree parser independent of generate_parcours.compile_parcours.
+# The canonical regex lives in generate_parcours.py (L365) and is meant to be
+# authoritative. The oracle below is intentionally a different shape (split
+# tokens, accept the closed enum of strings the catalogue emits) so a future
+# change to one parser does not silently make the other agree. The two
+# parsers are kept independent so a fixture drift in the catalogue (e.g.
+# #17928 / #18875) shows up as a test failure rather than a hidden lock.
+# ---------------------------------------------------------------------------
+
+_DUREE_HEURES_RE = re.compile(r"^\s*(\d+)\s*h(?:\s*(\d+))?\s*$", re.IGNORECASE)
+_DUREE_MINUTES_RE = re.compile(r"^\s*(\d+)\s*min\s*$", re.IGNORECASE)
+
+
+def _parse_duree_to_minutes(s: str) -> int:
+    """Convert a closed-enum duree_estimee to minutes. Raises ValueError on
+    any string the catalogue is not known to emit, including the "2h+"
+    sentinel (which the canonical parser also rejects -> None)."""
+    if not isinstance(s, str):
+        raise ValueError(f"duree_estimee non-string: {s!r}")
+    m = _DUREE_HEURES_RE.match(s)
+    if m:
+        return 60 * int(m.group(1)) + (int(m.group(2)) if m.group(2) else 0)
+    m = _DUREE_MINUTES_RE.match(s)
+    if m:
+        return int(m.group(1))
+    raise ValueError(f"duree_estimee non reconnue: {s!r}")
+
+
+def _expected_total_minutes(manifest, catalog, branch_or_accretion_ids,
+                            *, notebook_paths=None):
+    """Sum of oracle-parsed minutes for the notebooks in the given groups.
+
+    The catalogue in memory is the source of truth (closed-enum strings only).
+    A missing or unrecognized duree_estimee fails loud (ValueError) -- the
+    test never silently substitutes a sentinel. Use ``notebook_paths`` to
+    restrict to a list of paths (e.g. an accretion's own notebooks) when the
+    group lookup is ambiguous.
+    """
+    if notebook_paths is not None:
+        paths = list(notebook_paths)
+    else:
+        paths = []
+        for gid in branch_or_accretion_ids:
+            group = next((g for g in manifest["branches"] + manifest["accretions"]
+                          if g["id"] == gid), None)
+            assert group is not None, f"groupe absent du manifeste: {gid}"
+            paths.extend(group["notebooks"])
+    by_path = {entry["path"]: entry for entry in catalog}
+    total = 0
+    for path in paths:
+        entry = by_path.get(path)
+        assert entry is not None, f"chemin absent du catalogue: {path}"
+        total += _parse_duree_to_minutes(entry["duree_estimee"])
+    return total
 
 
 class TestActuariatManifest:
@@ -387,19 +453,24 @@ class TestActuariatManifest:
         assert ids[:4] == ["fondations-probabilistes", "decision-sous-incertitude",
                            "actuariat", "theorie-des-jeux"]
         assert ids[4:] == accretions
-        # 690 depuis l'auto-regen du catalogue #17928 : GT-15-CooperativeGames
-        # est passee de 45min a 1h, +15 min sur le speed-run.
-        expected_duration = 690
-        if "series-temporelles" in accretions:
-            expected_duration += 90
-        if "validation-hors-echantillon" in accretions:
-            # +120 depuis le regen catalogue 63720b90 (#18875) : QC-Py-12b-Backtest-Validity
-            # est passee de 30min a 45min, +15 min sur l'accretion.
-            expected_duration += 120
+        # #18889: derive the expected duration from the catalogue the test
+        # already loads, via an independent oracle (different regex than
+        # compile_parcours). A future catalogue regen #9377 that bumps a
+        # carnet's duree_estimee (#17928 GT-15, #18875 QC-Py-12b) does not
+        # break the test -- the test follows the catalogue rather than
+        # locking a snapshot of it.
+        speed_run = ["fondations-probabilistes", "decision-sous-incertitude",
+                     "actuariat", "theorie-des-jeux"]
+        expected_duration = _expected_total_minutes(manifest, catalog, speed_run)
+        for accretion_id in accretions:
+            accretion_paths = next(a["notebooks"] for a in manifest["accretions"]
+                                   if a["id"] == accretion_id)
+            expected_duration += _expected_total_minutes(
+                manifest, catalog, [accretion_id], notebook_paths=accretion_paths)
         assert compiled["duration_minutes"] == expected_duration
         assert compiled["known_duration_minutes"] == expected_duration
         assert [len(group["notebooks"]) for group in compiled["groups"]] == [
-            6, 4, 5, 3, *([3] * len(accretions))
+            6, 5, 5, 3, *([3] * len(accretions))
         ]
         assert compiled["groups"][3]["prerequisites"] == ["actuariat"]
         assert [notebook["path"] for notebook in compiled["groups"][3]["notebooks"]] == [
@@ -418,6 +489,44 @@ class TestActuariatManifest:
             qc = detour["notebooks"][-1]
             assert qc["path"] == "QuantConnect/Python/QC-Py-12b-Backtest-Validity.ipynb"
             assert qc["execution_constraints"]["requires_cloud"] is True
+
+    def test_oracle_reads_catalogue_alteration_moves_sum(self):
+        """Negative control: an in-memory duree_estimee bump must move the
+        oracle sum, proving the test reads the catalogue rather than a
+        captured snapshot. The bump is on a carnet that already exists in
+        the manifest; the same shape of drift that #17928 and #18875
+        produced."""
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        catalog = _catalog_with_pending_renames(manifest)
+        speed_run = ["fondations-probabilistes", "decision-sous-incertitude",
+                     "actuariat", "theorie-des-jeux"]
+        baseline = _expected_total_minutes(manifest, catalog, speed_run)
+        # +15 min on DecPyMC-2 (45min -> 1h)
+        target = next(entry for entry in catalog
+                      if entry["path"] == "Probas/DecisionTheory/DecPyMC/DecPyMC-2-Utility-Money.ipynb")
+        target["duree_estimee"] = "1h"
+        after = _expected_total_minutes(manifest, catalog, speed_run)
+        assert after == baseline + 15, (
+            f"L oracle ne suit pas le catalogue : baseline={baseline}, apres+15min={after}"
+        )
+
+    def test_oracle_tolerates_simulated_accretion_regen(self):
+        """Positive control: a +15 min bump on QC-Py-12b in the
+        validation-hors-echantillon accretion must keep the sum in sync
+        with the catalogue (the oracle follows it, not a snapshot)."""
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        catalog = _catalog_with_pending_renames(manifest)
+        accretions = ["validation-hors-echantillon"]
+        accretion_paths = next(a["notebooks"] for a in manifest["accretions"]
+                               if a["id"] == "validation-hors-echantillon")
+        baseline = _expected_total_minutes(manifest, catalog, accretions,
+                                           notebook_paths=accretion_paths)
+        target = next(entry for entry in catalog
+                      if entry["path"] == "QuantConnect/Python/QC-Py-12b-Backtest-Validity.ipynb")
+        target["duree_estimee"] = "1h"  # 45min -> 1h, +15min
+        after = _expected_total_minutes(manifest, catalog, accretions,
+                                        notebook_paths=accretion_paths)
+        assert after == baseline + 15
 
 
 class TestFailClosedWrite:

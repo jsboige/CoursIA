@@ -57,6 +57,11 @@ listing:
     type: grid
     sort: "filename"
     page-size: 24
+  - id: dt-actuariat
+    contents: "DecisionTheory/Actuariat/Actuariat-*.ipynb"
+    type: grid
+    sort: "filename"
+    page-size: 24
   - id: dt-causal-bridges
     contents: "DecisionTheory/Causal-Bridges/*.ipynb"
     type: grid
@@ -81,14 +86,15 @@ listing:
 
 ## Vue d'ensemble
 
-La série Probas comporte **4 sous-séries principales + applications standalone**, totalisant ~58 notebooks. Deux moteurs d'inférence sont volontairement juxtaposés (Infer.NET C# exact par message passing, PyMC Python MCMC par NUTS) sur les mêmes modèles pour faire valoir leurs compromis. Les deux arcs — bayésien (corpus principal 1-19/1-14) et décision (10 + 7 notebooks) — sont **physiquement séparés** (depuis #4725) tout en préservant le continuum pédagogique.
+La série Probas comporte **4 sous-séries principales + applications standalone**, totalisant ~58 notebooks. Deux moteurs d'inférence sont volontairement juxtaposés (Infer.NET C# exact par message passing, PyMC Python MCMC par NUTS) sur les mêmes modèles pour faire valoir leurs compromis. Les deux arcs — bayésien (corpus principal 1-19/1-14) et décision (10 + 8 + 5 notebooks) — sont **physiquement séparés** (depuis #4725) tout en préservant le continuum pédagogique.
 
 | Sous-série | Notebooks | Stack | Focus |
 |------------|-----------|-------|-------|
 | **[Infer](Infer/README.md) (C#/.NET Interactive)** | 19 (+ Setup + accretion Infer-1b + _output.ipynb) | Infer.NET, EP/VMP | Corpus bayésien : fondations, modèles classiques (IRT, TrueSkill, LDA, HMM), frontières (causalité, GP, hiérarchiques, Kalman, change-point, survie) |
 | **[PyMC](PyMC/README.md) (Python)** | 14 (+ Setup) | PyMC, NUTS | Mêmes modèles qu'Infer, en MCMC : NUTS, diagnostics (R-hat, ESS), posterior predictive checks |
 | **[DecisionTheory/Infer](DecisionTheory/DecInfer/README.md) (C#/.NET)** | 10 (Lean : 02, 02b, 08b) | Infer.NET + Lean 4 | Utility espérée, EVPI, MDPs, bandits, **preuves formelles Lean** de vNM et Gittins (lake `decision_theory_lean/`) |
-| **[DecisionTheory/DecPyMC](DecisionTheory/DecPyMC/README.md) (Python)** | 7 | PyMC | Mêmes modèles de décision, en sampling |
+| **[DecisionTheory/DecPyMC](DecisionTheory/DecPyMC/README.md) (Python)** | 8 (socle 7 + capstone) | PyMC | Mêmes modèles de décision, en sampling |
+| **[DecisionTheory/Actuariat](DecisionTheory/Actuariat/README.md) (Python)** | 5 | PyMC | Sous-série actuarielle T1-T5 : tarification, crédibilité, ruine, valeur de l'information |
 | **[DecisionTheory/Causal-Bridges](DecisionTheory/Causal-Bridges/)** | 1 | Python/Z3 | Do-Calculus, jumeaux causaux inter-domaines |
 | **Applications (standalone)** | 1 | Python | Pyro_RSA_Hyperbole (Pyro RSA) |
 
