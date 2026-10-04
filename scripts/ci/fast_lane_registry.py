@@ -277,6 +277,45 @@ PILOT: list[Guard] = [
               "--check"],
         blocking=True,
     ),
+    # F2 #18970 -- garde delta-only sur les violations STALE_LINK /
+    # BROKEN / DEAD_RENDER. L'audit BRUT de `regen_quarto_render.py
+    # --check-readme-links` rend 2432 violations au 2026-10-03 : un argv
+    # qui enverrait cette commande en blocking=True rougirait systematiquement
+    # toute PR touchant un README de serie ou un notebook rendu. Le delta
+    # argv (3-temps : HEAD capture -> base capture -> comparateur) ne
+    # rougit QUE sur les violations NOUVELLES introduites par la PR,
+    # laissant le backlog historique au sweep par famille en aval (#18911
+    # acceptation #2). Temoin verifie localement : une STALE_LINK injectee
+    # dans HEAD fait `NOUVELLES=1` (=exit 1), un PR sans nouvelle
+    # violation passe (exit 0) sur le meme depot.
+    Guard(
+        name="readme-ipynb-links-guard",
+        source="readme-ipynb-links-guard.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/README.md",
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "_quarto.yml",
+            "scripts/regen_quarto_render.py",
+            "scripts/notebook_tools/dump_readme_link_violations.py",
+            "scripts/notebook_tools/diff_readme_link_violations.py",
+            ".github/workflows/readme-ipynb-links-guard.yml",
+        ],
+        # Le dump imprime le JSON sur stdout ; le moteur fast-lane le
+        # capture via payload_of() et l'ecrit dans {name}.head.json (puis
+        # base.json apres bascule phase 2). Le comparator recoit les deux.
+        argv=["python",
+              "scripts/notebook_tools/dump_readme_link_violations.py"],
+        delta_argv=["python",
+                    "scripts/notebook_tools/diff_readme_link_violations.py",
+                    "{base_json}", "{head_json}"],
+        swap_paths=[
+            "MyIA.AI.Notebooks",
+            "scripts/regen_quarto_render.py",
+            "_quarto.yml",
+        ],
+        blocking=True,
+        needs_base=True,
+    ),
     Guard(
         name="notebook-interp-positioning-guard",
         source="notebook-interp-positioning.yml",
@@ -487,6 +526,9 @@ TRANCHE1: list[Guard] = [
             # `scripts/check_docs_links.py`; pinned by
             # `test_deck_scope_is_wired_into_the_fast_lane`.
             "slides/**",
+            # Book inventory (#18899): scanned as a single file, so the gate
+            # must fire when it changes. Mirror of SCAN_SCOPES.
+            "MyIA.AI.Notebooks/QuantConnect/BOOK_MAPPING.md",
             "scripts/check_docs_links.py",
         ],
         argv=["python", "scripts/check_docs_links.py", "--check",

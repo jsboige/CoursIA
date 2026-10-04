@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI
-pedagogical_count: 312
-breakdown: Lean=82, SMT=47, Tweety=39, Argument_Analysis=32, SmartContracts=31, SemanticWeb=28, SymbolicLearning=27, Planners=25, root=1
-maturity: BETA=299, ALPHA=9, DRAFT=4
+pedagogical_count: 314
+breakdown: Lean=84, SMT=47, Tweety=39, Argument_Analysis=32, SmartContracts=31, SemanticWeb=28, SymbolicLearning=27, Planners=25, root=1
+maturity: BETA=301, ALPHA=9, DRAFT=4
 -->
 
 L'intelligence artificielle n'est pas qu'apprentissage automatique et réseaux de neurones. Une grande partie de l'IA classique repose sur le **raisonnement symbolique** : représenter la connaissance sous forme de propositions, de règles et de structures logiques, puis dériver mécaniquement de nouvelles conclusions. C'est cette tradition — des systèmes experts des années 80 aux assistants de preuve modernes comme Lean 4 — que cette famille de séries explore.
@@ -100,20 +100,20 @@ L'ordre proposé ci-dessous n'est pas une obligation : chaque série se suit seu
 
 | Étape | Série | Ce qu'on y apprend | Porte d'entrée | Public | Noyau |
 |---|---|---|---|---|---|
-| 1 | [Tweety](Tweety/README.md) | Logiques formelles, révision de croyances, argumentation abstraite et structurée, raisonnement incertain et causal | [Tweety-01-Setup-Python](Tweety/Tweety-01-Setup-Python.ipynb) | Licence | Python (JPype) · C# |
-| 2 | [SemanticWeb](SemanticWeb/README.md) | RDF, SPARQL, données liées, RDFS et OWL, SHACL, graphes de connaissances | [SW-2b-Python-RDFBasics](SemanticWeb/SW-2b-Python-RDFBasics.ipynb) · [SW-1-CSharp-Setup](SemanticWeb/SW-1-CSharp-Setup.ipynb) | Découverte → Licence | Python · C# |
-| 3 | [Lean](Lean/README.md) | Types dépendants, Curry-Howard, quantificateurs, tactiques, Mathlib4 | [Lean-01-Setup-Lean-Python](Lean/Lean-01-Setup-Lean-Python.ipynb) | Licence → Recherche | Lean (WSL) · Python |
-| 4 | [SMT / Z3](SMT/README.md) | Satisfiabilité modulo théories, du premier `solve()` aux preuves par `unsat` | [Z3-01-Introduction-Python](SMT/Z3-API/Z3-01-Introduction-Python.ipynb) · [C#](SMT/Z3-API/Z3-01-Introduction-CSharp.ipynb) | Découverte → Licence | Python · C# |
-| 5 | [Planners](Planners/README.md) | PDDL, recherche dans l'espace d'états, heuristiques, CP-SAT, planification temporelle et hiérarchique | [Planners-0-Setup](Planners/00-Environment/Planners-0-Setup.ipynb) | Licence | Python · C# |
-| 6 | [SmartContracts](SmartContracts/README.md) | Solidity, standards de jetons, DeFi, gouvernance, tests et vérification, cryptographie | [SC-00-Cypherpunk-Origins-Python](SmartContracts/00-Foundations/SC-00-Cypherpunk-Origins-Python.ipynb) | Découverte → Licence | Python (Foundry) |
+| 1 | [Tweety](Tweety/README.md) | Logiques formelles, révision de croyances, argumentation abstraite et structurée, raisonnement incertain et causal | [Tweety-01-Setup-Python](Tweety/Tweety-01-Setup-Python.html) | Licence | Python (JPype) · C# |
+| 2 | [SemanticWeb](SemanticWeb/README.md) | RDF, SPARQL, données liées, RDFS et OWL, SHACL, graphes de connaissances | [SW-2b-Python-RDFBasics](SemanticWeb/SW-2b-Python-RDFBasics.html) · [SW-1-CSharp-Setup](SemanticWeb/SW-1-CSharp-Setup.html) | Découverte → Licence | Python · C# |
+| 3 | [Lean](Lean/README.md) | Types dépendants, Curry-Howard, quantificateurs, tactiques, Mathlib4 | [Lean-01-Setup-Lean-Python](Lean/Lean-01-Setup-Lean-Python.html) | Licence → Recherche | Lean (WSL) · Python |
+| 4 | [SMT / Z3](SMT/README.md) | Satisfiabilité modulo théories, du premier `solve()` aux preuves par `unsat` | [Z3-01-Introduction-Python](SMT/Z3-API/Z3-01-Introduction-Python.html) · [C#](SMT/Z3-API/Z3-01-Introduction-CSharp.html) | Découverte → Licence | Python · C# |
+| 5 | [Planners](Planners/README.md) | PDDL, recherche dans l'espace d'états, heuristiques, CP-SAT, planification temporelle et hiérarchique | [Planners-0-Setup](Planners/00-Environment/Planners-0-Setup.html) | Licence | Python · C# |
+| 6 | [SmartContracts](SmartContracts/README.md) | Solidity, standards de jetons, DeFi, gouvernance, tests et vérification, cryptographie | [SC-00-Cypherpunk-Origins-Python](SmartContracts/00-Foundations/SC-00-Cypherpunk-Origins-Python.html) | Découverte → Licence | Python (Foundry) |
 
 Trois séries se prennent **à côté** de ce parcours, selon ce qui vous attire :
 
 | Série | Ce qu'on y apprend | Ce qu'elle suppose | Porte d'entrée | Public | Noyau |
 |---|---|---|---|---|---|
-| [Argumentation](Argument_Analysis/README.md) | Analyse argumentative outillée : Toulmin, sophismes, sémantiques de Dung, orchestration d'agents LLM validés par Tweety | les bases de Tweety, une clé d'API | [Argumentation-00-Setup-Tweety-Python](Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb) | Licence | Python |
-| [SymbolicLearning](SymbolicLearning/README.md) | Apprentissage à partir de connaissances (AIMA ch. 19) : Version Space, EBL, programmation logique inductive, automates, neuro-symbolique | Python seul | [SL-1-LogicalLearning](SymbolicLearning/SL-1-LogicalLearning.ipynb) | Licence | Python · C# |
-| [Geometry](Lean/Geometry/README.md) | Démonstration automatique en géométrie : vérification probabiliste, bases de Gröbner, méthode de Wu | la géométrie du lycée | [Geometry-01-From-Figure-To-Equation](Lean/Geometry/Geometry-01-From-Figure-To-Equation.ipynb) | Découverte | Python |
+| [Argumentation](Argument_Analysis/README.md) | Analyse argumentative outillée : Toulmin, sophismes, sémantiques de Dung, orchestration d'agents LLM validés par Tweety | les bases de Tweety, une clé d'API | [Argumentation-00-Setup-Tweety-Python](Argument_Analysis/Argumentation-00-Setup-Tweety-Python.html) | Licence | Python |
+| [SymbolicLearning](SymbolicLearning/README.md) | Apprentissage à partir de connaissances (AIMA ch. 19) : Version Space, EBL, programmation logique inductive, automates, neuro-symbolique | Python seul | [SL-1-LogicalLearning](SymbolicLearning/SL-1-LogicalLearning.html) | Licence | Python · C# |
+| [Geometry](Lean/Geometry/README.md) | Démonstration automatique en géométrie : vérification probabiliste, bases de Gröbner, méthode de Wu | la géométrie du lycée | [Geometry-01-From-Figure-To-Equation](Lean/Geometry/Geometry-01-From-Figure-To-Equation.html) | Découverte | Python |
 
 ## Les séries en bref
 
@@ -180,17 +180,17 @@ Le dossier s'appelle encore `Argument_Analysis/`, mais la série s'appelle Argum
 Un même théorème, le milieu de l'hypoténuse équidistant des trois sommets, traverse des méthodes de plus en plus fortes.
 
 - **Parcours léger** — 01 à 03 :
-  - [01](Lean/Geometry/Geometry-01-From-Figure-To-Equation.ipynb) (Découverte) : on vérifie le théorème numériquement (Schwartz–Zippel) ;
-  - [02](Lean/Geometry/Geometry-02-From-Equation-To-Proof.ipynb) (Licence) : on le démontre exactement par bases de Gröbner, en traitant les non-dégénérescences par saturation ;
-  - [03](Lean/Geometry/Geometry-03-Wu-Method-Python.ipynb) (Licence) : on le redémontre par la méthode de Wu, qui fait apparaître ces conditions explicitement ;
-  - [04](Lean/Geometry/Geometry-04-DD-AR-Python.ipynb) (Licence) : on le prouve par règles (DD) puis par l'algèbre (AR), le duo symbolique d'AlphaGeometry — et un énoncé faux y est réfuté deux fois.
-- **Pour approfondir** — [03b](Lean/Geometry/Geometry-03b-Ritt-Decomposition-Python.ipynb) : le théorème du papillon et la décomposition de Ritt, avec le bord dégénéré où l'énoncé est muet et non faux.
+  - [01](Lean/Geometry/Geometry-01-From-Figure-To-Equation.html) (Découverte) : on vérifie le théorème numériquement (Schwartz–Zippel) ;
+  - [02](Lean/Geometry/Geometry-02-From-Equation-To-Proof.html) (Licence) : on le démontre exactement par bases de Gröbner, en traitant les non-dégénérescences par saturation ;
+  - [03](Lean/Geometry/Geometry-03-Wu-Method-Python.html) (Licence) : on le redémontre par la méthode de Wu, qui fait apparaître ces conditions explicitement ;
+  - [04](Lean/Geometry/Geometry-04-DD-AR-Python.html) (Licence) : on le prouve par règles (DD) puis par l'algèbre (AR), le duo symbolique d'AlphaGeometry — et un énoncé faux y est réfuté deux fois.
+- **Pour approfondir** — [03b](Lean/Geometry/Geometry-03b-Ritt-Decomposition-Python.html) : le théorème du papillon et la décomposition de Ritt, avec le bord dégénéré où l'énoncé est muet et non faux.
 - **À venir** — un pont formel vers Lean.
 - [README de la série Geometry](Lean/Geometry/README.md) : programme gradué (Epic #17544) et état.
 
 ### Hors série
 
-- [OR-tools-Stiegler](OR-tools-Stiegler.ipynb) (C#) : le problème du régime de Stigler, programmation linéaire avec OR-Tools.
+- [OR-tools-Stiegler](OR-tools-Stiegler.html) (C#) : le problème du régime de Stigler, programmation linéaire avec OR-Tools.
 
 ## Installation
 
@@ -370,7 +370,7 @@ Nombre de notebooks par série, noyaux et maturité : le bloc `CATALOG-STATUS` e
 - [Search](../Search/README.md) et [Sudoku](../Sudoku/README.md) : résolution par contraintes et SAT.
 - [GameTheory](../GameTheory/README.md) : choix social, théorie des jeux, formalisations Lean.
 - [Probas](../Probas/README.md) : programmation probabiliste avec Infer.NET.
-- La [lecture transversale](../../docs/grothendieckian-lens.md) relie ces séries par une même grille : changement de représentation et niveaux de certification.
+- La [lecture transversale](../../docs/cadrage/grothendieckian-lens.md) relie ces séries par une même grille : changement de représentation et niveaux de certification.
 
 ## Ressources
 
