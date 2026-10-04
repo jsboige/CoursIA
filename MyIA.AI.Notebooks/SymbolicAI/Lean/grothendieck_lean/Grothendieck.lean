@@ -191,10 +191,12 @@ Substance réelle :
 - `Grothendieck.GodementMono` (Partie 86) : C⁰ préserve les monomorphismes
   (instance `PreservesMonomorphisms`) — prérequis nommé par la Partie 85,
   fil du complexe de Godement.
-- `Grothendieck.GodementResolution` (Partie 87) : la résolution canonique de
-  Godement est posée — le complexe `0 → F → C⁰F → C⁰(C⁰F) → ⋯` avec
-  null-homotopie `μ ≫ d⁰ = 0` et exactitude en degré 0 (mono sur les
-  faisceaux). L'acyclicité aux degrés supérieurs est la Partie 88.
+- `Grothendieck.GodementResolution` (Partie 87) : la différentielle degré 0
+  `d⁰` de la résolution canonique de Godement est posée (sans `ShortComplex`),
+  avec exactitude en degré 0 (mono sur les faisceaux). La null-homotopie
+  `μ ≫ d⁰ = 0` est volontairement non-posée — frontière nommée
+  `acyclic_godementF`, renvoyée à la Partie 88 avec l'acyclicité aux degrés
+  supérieurs.
 
 Tous les `sorry`s ne sont pas comblés — la plupart sont des échafaudages
 intentionnels pour le prouveur multi-agent (cf. Epic #1453).
@@ -298,10 +300,11 @@ Substance (English):
 - `Grothendieck.GodementMono` (Part 86): C⁰ preserves monomorphisms
   (instance `PreservesMonomorphisms`) — prerequisite named by Part 85,
   thread of the Godement complex.
-- `Grothendieck.GodementResolution` (Part 87): the canonical Godement
-  resolution is posed — the complex `0 → F → C⁰F → C⁰(C⁰F) → ⋯` with
-  null-homotopy `μ ≫ d⁰ = 0` and exactness at degree 0 (mono on sheaves).
-  Acyclicity at higher degrees is Part 88.
+- `Grothendieck.GodementResolution` (Part 87): the degree-0 differential `d⁰`
+  of the canonical Godement resolution is posed (without `ShortComplex`),
+  with exactness at degree 0 (mono on sheaves). The null-homotopy
+  `μ ≫ d⁰ = 0` is voluntarily not posed — named frontier `acyclic_godementF`,
+  deferred to Part 88 along with acyclicity at higher degrees.
 
 Not all `sorry`s are filled — most are intentional scaffolds for the
 multi-agent prover (cf. Epic #1453).
