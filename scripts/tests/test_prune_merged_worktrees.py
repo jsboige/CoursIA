@@ -2353,3 +2353,106 @@ class TestErrorContract:
         source = Path(pmw.__file__).read_text(encoding="utf-8")
         assert "sys.exit(run())" in source
         assert "sys.exit(main())" not in source
+
+
+class TestScanRootMultiFarms:
+    """Maintenance#64 -- la cible du scan suit `--path` / le repo du cwd,
+    sans regresser le repli schtasks (cwd hors repo -> repo du script).
+
+    Regression mesuree : depuis #18219, `current_repo_root()` ancre sur
+    `__file__` sans autre issue -- le wrapper fleet
+    `recycle_worktrees_fleet.ps1` scannait N fois sa ferme d'origine en
+    croyant couvrir les autres (rapports nightly identiques, fermes
+    jamais auditees, exit 1 sur chevauchement transitoire 04:27).
+    """
+
+    @staticmethod
+    def _git_repo(path):
+        path.mkdir(parents=True, exist_ok=True)
+        subprocess.run(["git", "-C", str(path), "init", "-q"], check=True)
+        return str(path.resolve())
+
+    def _capture_root(self, monkeypatch, argv_extra, chdir_to):
+        """main() in-process ; list_worktrees capture la racine visee."""
+        seen = {}
+
+        def spy():
+            seen["root"] = pmw.current_repo_root()
+            return []
+
+        monkeypatch.setattr(pmw, "_SCAN_ROOT_OVERRIDE", None)
+        monkeypatch.setattr(pmw, "list_worktrees", spy)
+        monkeypatch.setattr(pmw, "diagnose_worktree", lambda *a, **k: None)
+        monkeypatch.setattr(
+            pmw, "get_pr_resolution",
+            lambda: pmw.PrResolution(cache_path=None),
+        )
+        monkeypatch.setattr(
+            sys, "argv", ["prune_merged_worktrees.py", *argv_extra],
+        )
+        monkeypatch.chdir(chdir_to)
+        rc = pmw.main()
+        return rc, seen.get("root")
+
+    def test_path_redirects_scan_to_target_farm(self, tmp_path, monkeypatch):
+        """Contrat #18219 enfin tenu : --path <ferme> => scan de <ferme>.
+
+        Avant Maintenance#64, le scan restait ancre sur la ferme du script
+        quel que soit le --path : les deux fermes ephemeres ci-dessous
+        distinguent farmA (cwd d'appel) de farmB (cible du scan).
+        """
+        farm_a = self._git_repo(tmp_path / "farmA")
+        farm_b = self._git_repo(tmp_path / "farmB")
+        rc, root = self._capture_root(
+            monkeypatch, ["--path", farm_b], chdir_to=farm_a)
+        assert rc == 0
+        assert root == farm_b, "le scan doit viser la ferme du --path"
+
+    def test_path_outside_any_repo_fails_loud(self, tmp_path, monkeypatch):
+        """Un --path hors depot sort en 2 au lieu de scanner en silence la
+        ferme d'origine -- l'echec bruyant est la seule couverture honnete
+        (le repli silencieux etait le mensonge de couverture #64)."""
+        not_a_repo = tmp_path / "no-repo"
+        not_a_repo.mkdir()
+        (not_a_repo / "fichier.txt").write_text("x", encoding="utf-8")
+        rc, root = self._capture_root(
+            monkeypatch, ["--path", str(not_a_repo)], chdir_to=tmp_path)
+        assert rc == 2
+        assert root is None
+
+    def test_cwd_repo_wins_without_path(self, tmp_path, monkeypatch):
+        """Wrapper `cd <ferme> ; python <script>` : le repo du cwd est vise
+        (priorite 2 -- l'autre style d'invocation du wrapper fleet)."""
+        self._git_repo(tmp_path / "farmA")
+        farm_b = self._git_repo(tmp_path / "farmB")
+        rc, root = self._capture_root(monkeypatch, [], chdir_to=farm_b)
+        assert rc == 0
+        assert root == farm_b
+
+    def test_non_repo_cwd_falls_back_to_script_repo(
+            self, tmp_path, monkeypatch):
+        """Schtasks #14473/#17904 : cwd hors repo (System32-like) => le
+        repo hebergeant ce script -- le contrat que #18219 etablit et que
+        les priorites 1-2 ne doivent pas regresser."""
+        plain = tmp_path / "system32-like"
+        plain.mkdir()
+        rc, root = self._capture_root(monkeypatch, [], chdir_to=plain)
+        assert rc == 0
+        expected = pmw._ancestor_repo_root(
+            Path(pmw.__file__).resolve().parent)
+        assert expected is not None, "script hors depot : test invalide"
+        assert root == expected
+
+    def test_cwd_priority_is_not_memoized(self, tmp_path, monkeypatch):
+        """La priorite cwd (2) ne s'ecrit pas dans le cache : changer de
+        cwd change la cible -- seul le repli stable (3) se memoise."""
+        farm_b = self._git_repo(tmp_path / "farmB")
+        plain = tmp_path / "elsewhere"
+        plain.mkdir()
+        monkeypatch.setattr(pmw, "_SCAN_ROOT_OVERRIDE", None)
+        monkeypatch.chdir(farm_b)
+        assert pmw.current_repo_root() == farm_b
+        monkeypatch.chdir(plain)
+        expected = pmw._ancestor_repo_root(
+            Path(pmw.__file__).resolve().parent)
+        assert pmw.current_repo_root() == expected
