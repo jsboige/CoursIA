@@ -124,9 +124,14 @@ def run_cycle(
     held = broker.positions()
     symbols = sorted(set(weights) | {s for s, q in held.items() if q})
     prices = broker.prices(symbols)
+    # The sleeve's cash, read from the same marks as its equity: the plan's buys
+    # must fit in it plus the sells, or the adapter refuses a buy after the
+    # sells have gone out (#19113).
+    cash = equity - sum(q * prices[s] for s, q in held.items() if q)
     plan = plan_orders(
         weights, held, prices, equity,
         band=cfg.band, min_notional=cfg.min_notional, cash_reserve=cfg.cash_reserve,
+        cash=cash,
     )
 
     report = CycleReport(
