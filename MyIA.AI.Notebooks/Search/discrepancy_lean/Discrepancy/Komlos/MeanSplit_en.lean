@@ -37,8 +37,17 @@ It is this order-1 moment preservation that carries k2's statement : Lemma 1.4
 concludes `μ(P) + ∑ ε_i v_i ∈ conv(supp P)`, a claim about the **barycentre**,
 not about the mass.
 
-**Deferred to k2 (Lemma 1.4)** : the entropy lemma and the simultaneous
-induction on `n` and `d`. The detailed state lives in `FORMAL_STATUS.md`.
+**What remains for k2 (Lemma 1.4) — a list measured against the oracle, not
+assumed.** The formal oracle of that lemma (`gdahia/Komlos`,
+`Komlos/SignedSums.lean`) **consumes this `mean_split`** (l.54) and proceeds by
+**induction on `n` alone** (l.37), the ambient space growing at each split
+(`E × ℝ`). Measured on this lake, what is missing: the **pullback triple**
+(`exists_sign_mul_add_eq`, `add_smul_mem_convexHull`, `pullback`), the finitary
+counterpart of `mean_mem_convexHull`, `sum_smul_inl`, the **convexity machinery**
+(no occurrence of `convexHull` in this lake, while the conclusion is one) and the
+**dimension transport** that replaces the generality of `E` here. The detailed
+state lives in `FORMAL_STATUS.md`. The earlier wording "entropy lemma" is
+**retracted** : it has no referent in the oracle.
 -/
 
 import Discrepancy.Komlos.SplitBit_en

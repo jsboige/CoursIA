@@ -37,8 +37,17 @@ C'est cette conservation du moment d'ordre 1 qui porte l'énoncé de k2 : le
 Lemme 1.4 conclut `μ(P) + ∑ ε_i v_i ∈ conv(supp P)`, une affirmation sur le
 **barycentre**, pas sur la masse.
 
-**Reporté à k2 (Lemma 1.4)** : le lemme d'entropie et l'induction simultanée
-sur `n` et `d`. L'état détaillé vit dans `FORMAL_STATUS.md`.
+**Ce qui reste à k2 (Lemma 1.4) — liste mesurée contre l'oracle, pas supposée.**
+L'oracle formel de ce lemme (`gdahia/Komlos`, `Komlos/SignedSums.lean`) **consomme
+ce `mean_split`** (l.54) et procède par **induction sur `n` seul** (l.37), l'espace
+ambiant croissant à chaque scission (`E × ℝ`). Mesuré sur ce lake, ce qui manque :
+le **triple de pullback** (`exists_sign_mul_add_eq`, `add_smul_mem_convexHull`,
+`pullback`), le pendant fini de `mean_mem_convexHull`, `sum_smul_inl`, la
+**machinerie de convexité** (aucune occurrence de `convexHull` dans ce lake, alors
+que la conclusion en est une) et le **transport de dimension** qui y remplace la
+généralité de `E`. L'état détaillé vit dans `FORMAL_STATUS.md`. Le libellé
+antérieur « lemme d'entropie » est **retiré** : il n'a aucun référent dans
+l'oracle.
 -/
 
 import Discrepancy.Komlos.SplitBit
