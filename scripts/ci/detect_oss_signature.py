@@ -4,7 +4,7 @@ r"""Detect Aliyun OSS signed-URL fragments in tracked files.
 Why: gitleaks `Secret Scan` failed on PR #17434 (c.820, 2026-09-24) because two
 GenAI image metadata JSONs contained `image_url_signed_full` with a 24-hour
 presigned URL carrying `Signature=<token>` + `OSSAccessKeyId=LTAI****` (masked
-example -- real values are 20 chars after the LTAI prefix). Tell c.820 /
+example -- real values are 20 chars after the LTAI prefix).
 secrets-hygiene rule 1: a presigned Signature IS a secret derived from the
 provider's SecretAccessKey, even when the AccessKey itself looks like a public
 identifier. The merge-gate intercepted it; the follow-up is to make sure the
