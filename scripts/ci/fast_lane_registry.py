@@ -80,6 +80,15 @@ class Guard:
     swap_paths: list[str] = field(default_factory=list)
     iterates_paths: bool = False  # voir `run_iter` dans fast_lane.py
     absorbed: bool = False  # tranche d'absorption #12567 : nom canonique + conclusion reelle, meme en lane ombre
+    # Motif d'ombre DECLARE (#19168). Un garde `blocking=True` qui n'est pas
+    # absorbe n'est pas compte par `blocking_failed` et emet sous
+    # `fast-lane (ombre): ` avec une conclusion neutre : son `blocking=True`
+    # est alors une declaration sans effet. Deux etats sont legitimes --
+    # absorbe (il bloque vraiment), ou volontairement en ombre, et dans ce
+    # second cas le motif ET le critere de bascule s'ecrivent ICI. Sans cette
+    # declaration, la classe entiere est invisible : `test_fast_lane.py`
+    # rougit des qu'un garde bloquant n'est ni absorbe ni declare.
+    shadow_reason: str = ""
     # Codes de retour traites comme SUCCES au-dela de 0. Les detecteurs de
     # la serie figure/texte rendent rc=1 sur defaut et rc=2 sur fichier
     # INTROUVABLE (mesure firsthand : un JSON corrompu rend rc=0 avec une
@@ -131,6 +140,31 @@ FAST_LANE_NATIVE = "(garde natif de la voie rapide : aucun workflow d'origine)"
 NOTEBOOK_GLOBS = ["**/*.ipynb"]
 
 # ---------------------------------------------------------------------------
+# Motifs d'ombre declares du lot pilote (#19168). Trois situations distinctes,
+# mesurees le 2026-10-05, et non des variantes de redaction :
+#   - 9 gardes ont un workflow d'origine qui declenche encore sur `pull_request` :
+#     le blocage est porte par lui, la voie rapide ne fait qu'observer ;
+#   - 2 gardes ont un workflow d'origine qui ne declenche PAS sur `pull_request`
+#     (`perimeter-review-guard`, `self-hosted-runner-policy`) : aucun autre
+#     emetteur de leur nom de check-run ;
+#   - 4 gardes sont natives de la voie rapide : meme situation, sans workflow.
+# Les deux dernieres categories sont donc inertes aujourd'hui -- c'est declare
+# ici, pas repare, parce que la bascule du lot pilote entier est le geste du
+# programme #12567 et non celui de cette correction.
+PILOT_SHADOW_WORKFLOW_ENCORE_ACTIF = (
+    "phase pilote #11835 : le workflow d'origine porte encore le declencheur "
+    "`pull_request`, c'est lui qui bloque ; la voie rapide observe. Critere de "
+    "bascule : absorber quand ce declencheur sera retire (programme #12567).")
+PILOT_SHADOW_SANS_EMETTEUR = (
+    "phase pilote #11835, aucun autre emetteur : le workflow d'origine ne "
+    "declenche pas sur `pull_request`. Critere de bascule : absorber, ou retirer "
+    "la garde.")
+PILOT_SHADOW_NATIF = (
+    "phase pilote #11835, garde natif : aucun workflow d'origine, donc aucun autre "
+    "emetteur du nom de check-run. Critere de bascule : absorber (convention des "
+    "tranches depuis TRANCHE8).")
+
+
 # Lot pilote (#11835). Dix gardes choisis pour couvrir les formes que le
 # moteur doit savoir traiter, et non pour leur nombre :
 #
@@ -170,6 +204,7 @@ PILOT: list[Guard] = [
             "--scan-all", "--check", "--exclude-submodules",
         ],
         blocking=True,
+        shadow_reason=PILOT_SHADOW_WORKFLOW_ENCORE_ACTIF,
     ),
     Guard(
         name="pip-leak-guard",
@@ -182,6 +217,7 @@ PILOT: list[Guard] = [
         swap_paths=["MyIA.AI.Notebooks"],
         blocking=True,
         needs_base=True,
+        shadow_reason=PILOT_SHADOW_WORKFLOW_ENCORE_ACTIF,
     ),
     Guard(
         name="solution-leak-guard",
@@ -204,6 +240,7 @@ PILOT: list[Guard] = [
                                  # le stock ne rougit personne (lignes AJOUTEES
                                  # seules), une PR qui rouvre la veine rougit
         needs_base=True,
+        shadow_reason=PILOT_SHADOW_WORKFLOW_ENCORE_ACTIF,
     ),
     Guard(
         name="perimeter-review-guard",
@@ -212,6 +249,7 @@ PILOT: list[Guard] = [
         argv=["python", "scripts/check_pr_perimeter.py", "{pr_number}",
               "--scan-thread"],
         blocking=True,
+        shadow_reason=PILOT_SHADOW_SANS_EMETTEUR,
     ),
     # Issue #14683 : garde substitution hr silencieuse. L'organe
     # `scripts/ci/check_hr_substitution.py` detecte les 4 notations CommonMark
@@ -232,6 +270,7 @@ PILOT: list[Guard] = [
         argv=["python", "scripts/ci/check_hr_substitution.py", "{pr_number}"],
         blocking=True,
         warn_rc=(2,),
+        shadow_reason=PILOT_SHADOW_NATIF,
     ),
     # -- extension pilote (5 -> 9) ------------------------------------------
     # Pattern 1 : execute une fois par chemin matchant (boucle bash d'origine
@@ -251,6 +290,7 @@ PILOT: list[Guard] = [
         ],
         blocking=True,
         iterates_paths=True,
+        shadow_reason=PILOT_SHADOW_WORKFLOW_ENCORE_ACTIF,
     ),
     Guard(
         name="notebook-navlink-check",
@@ -263,6 +303,7 @@ PILOT: list[Guard] = [
         argv=["python", "scripts/notebook_tools/check_notebook_navlinks.py",
               "--check"],
         blocking=True,
+        shadow_reason=PILOT_SHADOW_WORKFLOW_ENCORE_ACTIF,
     ),
     Guard(
         name="notebook-nav-chain-guard",
@@ -276,6 +317,7 @@ PILOT: list[Guard] = [
         argv=["python", "scripts/notebook_tools/check_notebook_nav_chain.py",
               "--check"],
         blocking=True,
+        shadow_reason=PILOT_SHADOW_WORKFLOW_ENCORE_ACTIF,
     ),
     # F2 #18970 -- garde delta-only sur les violations STALE_LINK /
     # BROKEN / DEAD_RENDER. L'audit BRUT de `regen_quarto_render.py
@@ -315,6 +357,7 @@ PILOT: list[Guard] = [
         ],
         blocking=True,
         needs_base=True,
+        shadow_reason=PILOT_SHADOW_WORKFLOW_ENCORE_ACTIF,
     ),
     Guard(
         name="notebook-interp-positioning-guard",
@@ -328,6 +371,7 @@ PILOT: list[Guard] = [
               "--check",
               "--baseline", "scripts/notebook_tools/interp_positioning_baseline.json"],
         blocking=True,
+        shadow_reason=PILOT_SHADOW_WORKFLOW_ENCORE_ACTIF,
     ),
     Guard(
         name="markdown-rendering-guard",
@@ -345,6 +389,7 @@ PILOT: list[Guard] = [
               "--baseline",
               "scripts/notebook_tools/markdown_rendering_baseline.json"],
         blocking=True,
+        shadow_reason=PILOT_SHADOW_WORKFLOW_ENCORE_ACTIF,
     ),
     Guard(
         name="self-hosted-runner-policy",
@@ -359,6 +404,7 @@ PILOT: list[Guard] = [
         argv=["python", "scripts/ci/check_self_hosted_runner_policy.py",
               "--check"],
         blocking=True,
+        shadow_reason=PILOT_SHADOW_SANS_EMETTEUR,
     ),
     # -- extension c.1339 (10 -> 11) ----------------------------------------
     # Ferme un angle mort du merge-gate mesure le 2026-08-24 (#12753) : aucun
@@ -389,6 +435,7 @@ PILOT: list[Guard] = [
               "--base", "{base_ref}", "--head", "HEAD"],
         blocking=True,
         needs_base=True,
+        shadow_reason=PILOT_SHADOW_NATIF,
     ),
 
     # Defaut 3 de #15489 : "aucun garde dedie n'impose la casse canonique
@@ -425,6 +472,7 @@ PILOT: list[Guard] = [
               "--base", "{base_ref}", "--head", "HEAD"],
         blocking=True,
         needs_base=True,
+        shadow_reason=PILOT_SHADOW_NATIF,
     ),
     # Cliquet #17784, phase ADVISORY : le meme organe liste en advisory les
     # notebooks AJOUTES sans suffixe de noyau (grammaire #16231 : le suffixe
@@ -471,6 +519,7 @@ PILOT: list[Guard] = [
               "--base", "{base_ref}", "--head", "HEAD", "--offline"],
         blocking=True,
         needs_base=True,
+        shadow_reason=PILOT_SHADOW_NATIF,
     ),
 ]
 
@@ -1528,6 +1577,13 @@ TRANCHE15: list[Guard] = [
             "--all", "--check",
         ],
         blocking=True,
+        # `absorbed=True` (#19168) : sans lui le garde emettait
+        # `fast-lane (ombre): lake-direct-invocation-guard` avec une
+        # conclusion neutre et n'entrait pas dans `blocking_failed` -- son
+        # `blocking=True` ne bloquait rien. Verifie vert sur `main` avant
+        # absorption (`--all --check` -> rc=0, 6 fichiers en dette tous
+        # allowlistes), donc l'absorption ne rougit aucune PR existante.
+        absorbed=True,
     ),
 ]
 
@@ -1572,6 +1628,13 @@ TRANCHE16: list[Guard] = [
             "--diff", "{base_ref}...HEAD",
         ],
         blocking=True,
+        # `absorbed=True` (#19168) : mesure de l'issue sur la tete
+        # `34e045d3` de #19098 -- le check-run sortait sous
+        # `fast-lane (ombre): control-chars-in-cells-guard`, conclusion
+        # neutre, hors `blocking_failed`. Verifie vert sur `main` avant
+        # absorption (`--diff origin/main...HEAD` -> rc=0), donc l'absorption
+        # ne rougit aucune PR par dette heritee.
+        absorbed=True,
         needs_base=True,
         warn_rc=(2,),
     ),
