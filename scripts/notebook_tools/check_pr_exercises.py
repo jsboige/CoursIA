@@ -34,10 +34,13 @@ key ``credited_examples_lost``. The dedicated ``exemples-loss:`` exemption
 marker (analogue of plan-loss: from #14532) is honored if a ``--pr-body-file``
 is passed.
 
-The CI workflow (``exercises-advisory.yml``) does not yet raise the new
-label ``credited-examples-lost`` -- that wiring is a follow-up PR (the issue
-explicitly defers it). This script exposes the verdict regardless so it is
-visible in logs and via ``--json``.
+Le câblage CI existe (``exercises-advisory.yml`` : ``--base`` + body +
+label ``credited-examples-lost``) mais est **présent, dormant sous les
+déclencheurs actuels** : le workflow ne tourne que sur ``schedule`` et
+``workflow_dispatch`` (tranche 1 de #12817), qui n'ouvrent pas de contexte
+PR -- la branche crédités est donc toujours sautée et le label ne peut pas
+être posé. Faire tirer ce câblage est suivi par #19101. Ce script expose le
+verdict regardless (logs + ``--json``) pour les passes locales.
 
 Usage:
     python check_pr_exercises.py --paths a.ipynb b.ipynb

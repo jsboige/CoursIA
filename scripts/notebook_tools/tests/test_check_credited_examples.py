@@ -19,6 +19,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from check_credited_examples import (  # noqa: E402
     _CREDIT_INLINE_RE,
     _EXEMPTION_LINE_PREFIX_RE,
+    _blob_absent_from_ref,
     _cell_title,
     _exemption_markers,
     _extract_credit,
@@ -253,6 +254,77 @@ def test_exemption_line_prefix_shape():
     assert m is not None
     assert m.group("nb") == "NB"
     assert m.group("rest") == "rest"
+
+
+# --- 7. _blob_absent_from_ref : absence legitime != autre erreur git ---------
+
+def _mk_git_repo(tmp_path: Path) -> Path:
+    """Mini depot git avec un commit initial contenant un notebook."""
+    import subprocess
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    nb = repo / "nb.ipynb"
+    nb.write_text(json.dumps(_mk_nb([
+        _mk_md_cell("### Exemple : truc\n\ncrédité #1\n", "a"),
+    ])), encoding="utf-8")
+    for cmd in (
+        ["git", "init", "-q"],
+        ["git", "config", "user.email", "t@t"],
+        ["git", "config", "user.name", "t"],
+        ["git", "add", "nb.ipynb"],
+        ["git", "commit", "-qm", "init"],
+    ):
+        subprocess.run(cmd, cwd=repo, check=True, capture_output=True)
+    return repo
+
+
+def test_blob_absent_false_when_path_present(tmp_path):
+    import subprocess
+    repo = _mk_git_repo(tmp_path)
+    sha = subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=repo,
+        capture_output=True, text=True, check=True,
+        encoding="utf-8", errors="replace",
+    ).stdout.strip()
+    # la sonde tourne depuis le depot (cwd), le chemin relatif existe
+    p = subprocess.run(
+        ["git", "-C", str(repo), "cat-file", "-e", f"{sha}:nb.ipynb"],
+        capture_output=True,
+    )
+    assert p.returncode == 0
+    # comportement de la sonde via un appel direct dans le cwd du repo
+    import os
+    old = os.getcwd()
+    os.chdir(repo)
+    try:
+        assert _blob_absent_from_ref("HEAD", "nb.ipynb") is False
+    finally:
+        os.chdir(old)
+
+
+def test_blob_absent_true_when_path_missing(tmp_path):
+    import os
+    repo = _mk_git_repo(tmp_path)
+    old = os.getcwd()
+    os.chdir(repo)
+    try:
+        # chemin jamais commis : absence legitime -> True (fichier ajoute)
+        assert _blob_absent_from_ref("HEAD", "autre.ipynb") is True
+    finally:
+        os.chdir(old)
+
+
+def test_blob_absent_false_for_invalid_ref(tmp_path):
+    import os
+    repo = _mk_git_repo(tmp_path)
+    old = os.getcwd()
+    os.chdir(repo)
+    try:
+        # ref inconnue : PAS une absence (rc 128) -> False, le git show
+        # qui suit doit echouer bruyamment au lieu de produire un faux zero
+        assert _blob_absent_from_ref("refs/heads/inexistante", "nb.ipynb") is False
+    finally:
+        os.chdir(old)
 
 
 if __name__ == "__main__":

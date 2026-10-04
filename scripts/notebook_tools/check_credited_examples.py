@@ -196,6 +196,29 @@ def _read_git_blob(ref: str, nb_path: str) -> Path:
     return Path(name)
 
 
+def _blob_absent_from_ref(ref: str, nb_path: str) -> bool:
+    """True UNIQUEMENT pour « chemin absent de la ref » (fichier ajoute).
+
+    ``git cat-file -e`` rend rc 128 pour l'absence de chemin ET pour une
+    ref invalide (mesure Windows/Linux git >= 2.40 : « fatal: path 'x'
+    does not exist in 'ref' » vs « fatal: invalid object name 'ref'. ») —
+    le discriminateur fiable est donc le **message** stderr, pas le code :
+    - « does not exist » : absence légitime -> True (zéro exemples de
+      base, l'équivalent d'un fichier ajouté) ;
+    - tout autre message (ref inconnue/ambiguë, dépôt cassé...) : False,
+      et le ``git show`` qui suit échouera **bruyamment** — sans cette
+      sonde, toute erreur git était avalée en faux zéro et blanchissait
+      une perte réelle d'exemples crédités.
+    """
+    p = subprocess.run(
+        ["git", "cat-file", "-e", f"{ref}:{nb_path}"],
+        capture_output=True, encoding="utf-8", errors="replace",
+    )
+    if p.returncode == 0:
+        return False
+    return "does not exist" in (p.stderr or "")
+
+
 def count_credited_examples(nb: dict) -> list[dict]:
     """Liste des cellules Exemple creditees dans un notebook deja parse.
 
@@ -257,24 +280,28 @@ def main(argv: list[str] | None = None) -> int:
 
     base_examples: list[dict] = []
     if args.base:
-        try:
+        # chemin absent de la base = fichier ajoute -> 0 legitime ; toute
+        # AUTRE erreur git reste bruyante (un faux zero ici blanchirait
+        # une perte reelle d'exemples credites).
+        if _blob_absent_from_ref(args.base, args.path):
+            base_examples = []
+        else:
             base_path = _read_git_blob(args.base, args.path)
             base_nb = _read_nb(base_path)
             base_examples = count_credited_examples(base_nb)
-        except subprocess.CalledProcessError:
-            # base = fichier ajoute, pas dans l'historique -- equivalent a "0"
-            base_examples = []
 
     # Si --head est fourni, le contenu "tete" est lu sur ref plutot que
     # sur le fichier de travail. Cela permet de rejouer le test sur une
-    # branche feature sans avoir a checkout le worktree.
+    # branche feature sans avoir a checkout le worktree. Symetrie du cote
+    # base : absence legitime (chemin absent de la ref) = 0, toute autre
+    # erreur git reste bruyante (faux zero = fausse perte ici).
     if args.head:
-        try:
+        if _blob_absent_from_ref(args.head, args.path):
+            head_examples = []
+        else:
             head_path = _read_git_blob(args.head, args.path)
             head_nb = _read_nb(head_path)
             head_examples = count_credited_examples(head_nb)
-        except subprocess.CalledProcessError:
-            head_examples = []
 
     diff = diff_examples(base_examples, head_examples)
     exemptions: list[dict] = []
