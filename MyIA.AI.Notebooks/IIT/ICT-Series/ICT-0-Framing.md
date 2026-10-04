@@ -528,7 +528,7 @@ d'attracteurs est engendré par la dynamique elle-même**, et lève ces limites 
   sémiophysique** de R. Thom, tenu *sans complaisance* — chaque image (saillance, prégnance, actant) attachée
   à une grandeur calculée sur la fronce canonique, le caveat de non-prédictivité (Thom lui-même) explicite.
 
-  > **Note de rigueur (audit #4, [#7733](https://github.com/jsboige/CoursIA/issues/7733)).** Le **représentant interne `p̂`** mesuré dans ICT-10/12/14 est un **anticipateur** (extrapolation à partir du signal observé) ; il n'est **PAS** la **prégnance thomienne**, qui est chez R. Thom « un fluide invasif qui se propage de forme saillante en forme saillante » — une *section locale* au sens de Grothendieck, pas une grandeur interne à l'agent. L'identification `p̂ ≡ prégnance` relèverait d'une lecture spéculative des deux côtés : chez Thom, la prégnance est biologique et transférable ; ici, `p̂` est représentationnel et contraint. La correspondance `p̂ ↔ anticipation` du Ch.2 « Le Langage » de Thom est **nommée** (cf. ligne 394 ci-dessus), pas démontrée — le grade C documentaire est explicitement reconnu (`docs/grothendieckian-lens.md` §3, ligne 41-43, en fait le cadrage canonique). Cf. note de rigueur dédiée en fin de document.
+  > **Note de rigueur (audit #4, [#7733](https://github.com/jsboige/CoursIA/issues/7733)).** Le **représentant interne `p̂`** mesuré dans ICT-10/12/14 est un **anticipateur** (extrapolation à partir du signal observé) ; il n'est **PAS** la **prégnance thomienne**, qui est chez R. Thom « un fluide invasif qui se propage de forme saillante en forme saillante » — une *section locale* au sens de Grothendieck, pas une grandeur interne à l'agent. L'identification `p̂ ≡ prégnance` relèverait d'une lecture spéculative des deux côtés : chez Thom, la prégnance est biologique et transférable ; ici, `p̂` est représentationnel et contraint. La correspondance `p̂ ↔ anticipation` du Ch.2 « Le Langage » de Thom est **nommée** (cf. ligne 394 ci-dessus), pas démontrée — le grade C documentaire est explicitement reconnu (`docs/cadrage/grothendieckian-lens.md` §3, ligne 41-43, en fait le cadrage canonique). Cf. note de rigueur dédiée en fin de document.
 
 Les notebooks suivants (**ICT-11/12** profils d'agence causale et renormalisation causale,
 **ICT-Synthèse**) poursuivront la même règle : *ne pas ouvrir cinq fronts à la fois* — une métaphore
@@ -612,14 +612,14 @@ poursuit). Spec de cadrage complète : **#5483** ; reframe parent triade moyen /
 | | `p̂` (représentant interne ICT) | Prégnance (R. Thom, *Sémiophysique*) |
 |---|---|---|
 | **Nature** | Anticipateur représentationnel — extrapolation du signal observé (persistance, moyenne mobile, AR(1) testées en baseline) | « Fluide invasif qui se propage de forme saillante en forme saillante » |
-| **Localisation mathématique** | Grandeur interne à l'agent (`ICT-10`, mesure sur 3 familles de trajectoires × 3 baselines adverses) | *Section locale* d'un site au sens de Grothendieck (cf. `docs/grothendieckian-lens.md` § 3) |
+| **Localisation mathématique** | Grandeur interne à l'agent (`ICT-10`, mesure sur 3 familles de trajectoires × 3 baselines adverses) | *Section locale* d'un site au sens de Grothendieck (cf. `docs/cadrage/grothendieckian-lens.md` § 3) |
 | **Statut épistémique** | **Mesurée** : banc durci, verdict régime-dépendant (réel sur trajectoire lisse 5/5 graines, illusoire sur dérive et créneau) | **Nommée / spéculative** : pas de mesure correspondante dans le dépôt |
 | **Transférabilité** | Non-transférable — apprentissage spécifique par agent | Transférable — passe de forme saillante en forme saillante (propriété biologique thomienne) |
-| **Référence canonique** | ICT-10 charnière strate 2→3 | `docs/grothendieckian-lens.md:41` (cadrage Grothendieck + Thom explicite) |
+| **Référence canonique** | ICT-10 charnière strate 2→3 | `docs/cadrage/grothendieckian-lens.md:41` (cadrage Grothendieck + Thom explicite) |
 
 La correspondance **`p̂ ↔ anticipation`** du Ch.2 « Le Langage » de Thom (cf. ligne 394) est *nommée* dans le dépôt — pas démontrée. L'identification **`p̂ ≡ prégnance`** relèverait d'une lecture **spéculative des deux côtés**, à éviter :
 
 - chez Thom, la *prégnance* est **biologique** et **transférable** (analogue sémiotique d'une substance invasive) ;
 - ici, `p̂` est **représentationnel** et **contraint** (sortie d'un algorithme d'extrapolation).
 
-Le grade C documentaire est **explicitement reconnu** dans `docs/grothendieckian-lens.md` § 3 (« une direction et non un théorème livré ») ; cette note de rigueur rend la même prudence lisible côté ICT. Pré-enregistré : [#7733](https://github.com/jsboige/CoursIA/issues/7733) (mandat user 2026-07-20, audit #4).
+Le grade C documentaire est **explicitement reconnu** dans `docs/cadrage/grothendieckian-lens.md` § 3 (« une direction et non un théorème livré ») ; cette note de rigueur rend la même prudence lisible côté ICT. Pré-enregistré : [#7733](https://github.com/jsboige/CoursIA/issues/7733) (mandat user 2026-07-20, audit #4).

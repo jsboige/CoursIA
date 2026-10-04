@@ -103,7 +103,7 @@ Algorithmes LEAN complets sur données de marché. Les exemples 04, 08, 18 et 19
 | 08/01 | Stoploss — Benchmark Fixed Percentage Stop Loss | — | GAP | — | variante de référence, sans apprentissage |
 | 08/02 | Stoploss — ML Placed Stop Loss | [Stoploss-Volatility-ML](projects/Stoploss-Volatility-ML/) | COVERED | Needs-improvement (tranche 17) | stop placé par régression Lasso |
 | 08/03 | Stoploss — ML Put Option Hedge | — | GAP | — | |
-| 09 | ML Trading Pairs Selection | [ML-EnhancedPairs](projects/ML-EnhancedPairs/), [ETF-Pairs](projects/ETF-Pairs/) | PARTIAL | Vivant (ML-EnhancedPairs) | cointégration présente ; ni PCA ni OPTICS pour la sélection des paires |
+| 09 | ML Trading Pairs Selection | [ML-EnhancedPairs](projects/ML-EnhancedPairs/), [ETF-Pairs](projects/ETF-Pairs/) | COVERED | Vivant (ML-EnhancedPairs) | PCA(3) + OPTICS mensuels pour grouper l'univers avant cointégration, derrière le paramètre `useClusterPairs` (mode défaut inchangé) — #18961 |
 | 10 | Stock Selection through Clustering Fundamental Data | [Clustering-Fundamentals-ML](projects/Clustering-Fundamentals-ML/) | COVERED | Needs-improvement | |
 | 11 | Inverse Volatility Rank and Allocate to Future Contracts | [InverseVolatility-Rank](projects/InverseVolatility-Rank/) | COVERED | Needs-improvement / near-BROKEN | |
 | 12 | Trading Costs Optimization | [TradingCosts-Optimization](projects/TradingCosts-Optimization/) | COVERED | Démo | |
@@ -135,6 +135,47 @@ Les projets [RL-DQN-Trading](projects/RL-DQN-Trading/) et [Reinforcement-Learnin
 |---|------------------|--------------------|--------|-----------|----------|
 | 01 | Conditional Portfolio Optimization Applied | [Portfolio-Optimization-ML](projects/Portfolio-Optimization-ML/), [QC-Py-21-Portfolio-Optimization-ML](Python/QC-Py-21-Portfolio-Optimization-ML.ipynb) | PARTIAL | Recherche-phase | optimisation de portefeuille sans le service PredictNow.ai du livre (API payante) |
 | 02 | Application of Corrective Artificial Intelligence Applied | [Corrective-AI](projects/Corrective-AI/) | STUB | Stub | portage suivi par [#18901](https://github.com/jsboige/CoursIA/issues/18901) |
+
+---
+
+## Résultats du livre face à nos reproductions
+
+Cette section compare, exemple par exemple, le chiffre annoncé par le livre et celui de notre reproduction ([#18900](https://github.com/jsboige/CoursIA/issues/18900), une tranche de chapitre à la fois). Les chiffres du livre viennent de son texte et des fichiers `footnotes.txt` de son dépôt (commit `e025f21`). Les nôtres viennent de [qc-strategies-status.md](../../docs/qc/qc-strategies-status.md) et des README des projets. Tous sont des Sharpe calculés par QuantConnect, sauf mention contraire.
+
+**Règle de verdict.** Elle a été écrite et publiée sur [#18900](https://github.com/jsboige/CoursIA/issues/18900) avant tout rejeu ([règle de base](https://github.com/jsboige/CoursIA/issues/18900#issuecomment-5968388318), [complément pour le chapitre 06](https://github.com/jsboige/CoursIA/issues/18900#issuecomment-5968451024)) :
+
+- `REPRODUIT` : notre Sharpe s'écarte du Sharpe du livre d'au plus 0,25, avec le même signe. Quand le livre donne un intervalle, issu d'un balayage de paramètres, l'écart est nul à l'intérieur ; à l'extérieur, il vaut la distance à la borne la plus proche. CAGR et pire baisse ne sont jugés que si le livre les donne.
+- `ÉCART` : l'écart dépasse la tolérance. Une issue fille en cherche la cause, et un écart n'est dit « expliqué » que si sa cause est mesurée.
+- `NON COMPARABLE` : le texte du livre n'annonce aucun chiffre de backtest pour l'exemple.
+- Si nos conditions diffèrent de celles du livre, aucun verdict n'est rendu avant un **rejeu dans les conditions du livre**. Le rejeu reprend la fenêtre et le capital du livre, son modèle de courtage par défaut (la ligne `set_brokerage_model` de notre projet est retirée) et ses paramètres publiés ; notre code reste inchangé par ailleurs. Le diff exact de chaque rejeu est donné sur l'issue.
+
+### 06 — exemples 01 à 07 (tranche 1)
+
+| # | Chiffre du livre | Conditions du livre | Notre chiffre | Nos conditions | Verdict |
+|---|------------------|---------------------|---------------|----------------|---------|
+| 01 | précision de classification 51,2 % | notebook de recherche, BTC quotidien, 2016-2024 | Sharpe 0,328, CAGR 7,1 %, pire baisse 29,4 % | algorithme LEAN, SPY, TLT et GLD, 2015-2024, `RandomForestClassifier` | `NON COMPARABLE` : une précision n'est pas un backtest |
+| 02 | précisions 0,6101 / 0,5849 / 0,5882 / 0,5962 (quatre prétraitements des facteurs) | notebook de recherche, SPY quotidien, 2000-2024 | — | aucune reproduction (`GAP`) | sans objet |
+| 03 | précision 0,5548 dans l'échantillon, 0,5277 hors échantillon | notebook de recherche, SPY, TLT et VIX quotidiens, 1990-2024 | Sharpe 0,571, CAGR 10,51 %, pire baisse 19,6 % (2015-2024) ; 0,495, 9,85 %, 20,7 % (2018-2025) | algorithme LEAN, cinq ETF (SPY, TLT, GLD, IWM, EFA), `GradientBoostingClassifier` et exposant de Hurst | `NON COMPARABLE` : une précision n'est pas un backtest, et notre projet ne mesure pas de précision |
+| 04/01 | aucun chiffre dans le texte ; le tearsheet ne montre que des courbes (capital final d'environ 1,4 fois le départ et pire baisse proche de 35 %, lus à l'œil) | 2019-01-01 → 2024-01-01, capital 1 M, SPY et TLT en données minute, bascule complète SPY ↔ TLT à chaque changement de régime, 3 ans d'historique | Sharpe 0,375, CAGR 8,44 %, pire baisse 24,4 % | 2015 → 2026, capital 100 k, SPY, TLT et GLD en données quotidiennes, pondérations partielles revues en début de mois | `NON COMPARABLE` |
+| 04/02, 04/03 | — | — | — | aucune reproduction (`GAP`) | sans objet |
+| 05 | aucun chiffre dans le texte ; les tearsheets ne montrent que des courbes | 2019-01-01 → 2024-04-01, capital 1 M, EURJPY, GBPUSD, AUDCAD, NZDCHF | ML-FX-SVM-Wavelet : Sharpe 0,153, CAGR 4,29 %, pire baisse 21,2 % ; SVM-Wavelet-Forecasting : pas de mesure | ML-FX-SVM-Wavelet : 2015-2024, mêmes paires, courtage OANDA | `NON COMPARABLE` |
+| 06 | Sharpe de 0,476 à 0,617 sur tout le balayage, toujours positif ; paramètres publiés : univers de 100, 5 ans d'historique | 2019-01-01 → 2024-04-01, capital 1 M, courtage par défaut | Sharpe 0,468, CAGR 12,66 %, pire baisse 30,6 % (2015-2026). **Rejeu dans les conditions du livre : Sharpe 0,638, CAGR 17,87 %, pire baisse 31,5 %, 1301 ordres** | notre mesure : 2015-01-01 → 2026-03-01, modèle de frais de nos campagnes comparatives ; rejeu : conditions du livre, paramètres publiés | `REPRODUIT` : 0,638 dépasse de 0,021 la borne haute du balayage (0,617), dans la tolérance de 0,25 |
+| 07 | tous les Sharpe ≥ 0,7 sur le balayage, le meilleur à 3 jours de détention | 2019-01-01 → 2024-04-01, capital 100 k, courtage par défaut ; paramètres publiés : 4 positions au plus, 4 ans d'apprentissage | Sharpe 1,066, CAGR 41,11 %, pire baisse 34,10 % (2015-01 → 2024-04) ; 1,511, 75,72 %, 37,60 % (2018-2024). **Rejeu dans les conditions du livre : Sharpe 1,343, CAGR 65,87 %, pire baisse 37,6 %, 235 ordres** | nos deux mesures : modèle de frais de nos campagnes comparatives ; rejeu : conditions du livre, 3 jours de détention | `REPRODUIT` : 1,343 est dans l'intervalle annoncé (≥ 0,7) |
+
+**Rejeux** (projets QuantConnect séparés, une exécution chacun) :
+
+- 07 : projet 37295024, backtest `a7dd583491a45d77ab4a74a365573460` ; PSR 62,0 %.
+- 06 : projet 37295108, backtest `009ff61bd41bc25832870bd613cbc65f` ; PSR 13,0 %. Comparé au code du livre au niveau de l'arbre syntaxique, notre `main.py` n'en diffère que par une garde (`if prediction_sum <= 0: return`, qui évite une division par zéro) et par des renommages ; le modèle est le même `DecisionTreeRegressor(random_state=0)`.
+
+**Ce que le verdict `REPRODUIT` de l'exemple 06 dit, et ce qu'il ne dit pas.** Le rejeu tombe juste au-dessus du balayage du livre, aux paramètres que le livre publie : l'ordre de grandeur est reproduit, la position exacte dans le balayage ne l'est pas. Notre propre mesure (0,468 sur 2015-2026, avec le modèle de frais de nos campagnes) est plus basse, sans que ce rejeu permette de dire si l'écart vient de la fenêtre ou des frais : il change les deux à la fois.
+
+**Ce que le verdict `REPRODUIT` de l'exemple 07 dit, et ce qu'il ne dit pas.** Le livre ne publie qu'un plancher : le rejeu le confirme, il ne reproduit pas un chiffre précis. Notre propre mesure sur 2015-2024 (Sharpe 1,066, PSR 34,9 %) reste plus basse que sur la fenêtre du livre : l'effet est concentré sur 2018-2024, comme l'écrit déjà le [README du projet](projects/Positive-Negative-Splits-ML/).
+
+**Écarts internes au livre.** Le texte et le code de son dépôt ne disent pas toujours la même chose :
+
+- 01 : le texte nomme `BTCUSD` ; le notebook charge `BTCUSDT` sur Binance.
+- 03 : le texte cite 0,5548 et 0,5277 et la matrice de confusion `[592 1559]` ; le notebook du dépôt rend 0,5561 et 0,5309, et `[609 1542]`.
+- 07 : le texte retient 3 jours de détention ; `footnotes.txt` publie 2 jours dans ses paramètres de backtest, tout en notant que 3 jours donnent le meilleur Sharpe. Le rejeu suit le texte. Les deux valeurs sont dans le balayage dont tous les Sharpe sont ≥ 0,7.
 
 ---
 
