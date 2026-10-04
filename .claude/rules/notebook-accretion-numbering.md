@@ -71,6 +71,15 @@ Mesure du 2026-09-04 : **80 des 83 branches accretees tiennent la norme** (≤ 4
 
 Fusionner **n'est pas supprimer** : « Consolider != Archiver » s'applique integralement — chaque contenu absorbe est preserve et cite, ligne a ligne, dans le notebook cible.
 
+## 4bis. Ajouter un notebook : la ligne `Slot:` (sign-off user 2026-10-04)
+
+Toute PR qui **ajoute** un notebook numerote porte dans son body une ligne qui dit ou il se range :
+
+- `Slot: palier <N> -- <motif>` : un nouveau numero canonique, quand le contenu ouvre un palier du survol ;
+- `Slot: accretion de <N> (<lettre>)` : une lettre sous le notebook analogue, quand le contenu approfondit un palier existant (§1-§2, dans la limite de §4).
+
+Le numero libre le plus haut pris par disponibilite est le tell « numero d'opportunite » du §3 (instances du 2026-10-04 : ICT-44, ICT-45, ICT-47). La ligne force la decision avant l'ecriture ; l'organe #19144 verifie apres coup profondeur, base de lettre et max+1 sur les noms ajoutes.
+
 ## 5. Protocole (HARD, l'ordre compte)
 
 1. **Lire le contenu**, pas les titres. Un mapping derive de titres et de volumes est une hypothese : l'annoncer comme telle.
