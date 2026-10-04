@@ -15,7 +15,9 @@ model assigns to the TRUE class -- to two consumers:
 Both now use the top-1 confidence `max(q)`, which is what a deployed selector
 actually has. The committed aggregate `pt18_per_run_metrics.jsonl` predates the
 fix, so it is regenerated here from the SAME checkpoints, the SAME `eval_items.pt`
-and the SAME functions the training script used: no retraining, no new split, no
+and the SAME functions the training script used -- including the `before_T1`
+phase (one inference of the pinned base model), whose committed values carry the
+oracle signature and are never reused: no retraining, no new split, no
 new item order.
 
 `acc`, `nll` and `brier` do not read `conf`: this script compares each regenerated
@@ -115,19 +117,27 @@ def main():
     eval_items = torch.load(os.path.join(RUNS_DIR, "eval_items.pt"), weights_only=False)
     print(f"eval_items: {len(eval_items)} decisions | meta carried over: {meta_keys}", flush=True)
 
-    # before_T1 depends on the base model and eval_items only: one measurement
-    # serves every line (the committed file carries one distinct value for 12).
-    before = None
+    # before_T1 is recomputed unconditionally from the pinned base model: the
+    # committed value predates the max(q) selector fix (its coverage curve
+    # carries the oracle signature cov == acc/c), so reusing it would carry the
+    # bug forward. One measurement serves every line; drift is reported.
+    old_before = None
     for m in old.values():
         if m.get("before_T1"):
-            before = m["before_T1"]
+            old_before = m["before_T1"]
             break
-    if before is None:
-        model, tok = build_base(device)
-        before = pooled_slice(metrics_from_logits(collect_logits(model, eval_items, tok, device)))
-        print(f"before_T1 (modele de base): {json.dumps(before)}", flush=True)
-        del model
-        torch.cuda.empty_cache()
+    model, tok = build_base(device)
+    before = pooled_slice(metrics_from_logits(collect_logits(model, eval_items, tok, device)))
+    print(f"before_T1 (modele de base): {json.dumps(before)}", flush=True)
+    if old_before:
+        drift = [
+            f"{k}: {old_before[k]} -> {before[k]}"
+            for k in ("acc", "nll", "brier")
+            if abs(old_before[k] - before[k]) > 1e-9
+        ]
+        print(f"before_T1 drift vs committed (acc/nll/brier): {drift or 'aucun'}", flush=True)
+    del model
+    torch.cuda.empty_cache()
 
     rows = []
     for arm, seed in order:
