@@ -103,7 +103,7 @@ Algorithmes LEAN complets sur données de marché. Les exemples 04, 08, 18 et 19
 | 08/01 | Stoploss — Benchmark Fixed Percentage Stop Loss | — | GAP | — | variante de référence, sans apprentissage |
 | 08/02 | Stoploss — ML Placed Stop Loss | [Stoploss-Volatility-ML](projects/Stoploss-Volatility-ML/) | COVERED | Needs-improvement (tranche 17) | stop placé par régression Lasso |
 | 08/03 | Stoploss — ML Put Option Hedge | — | GAP | — | |
-| 09 | ML Trading Pairs Selection | [ML-EnhancedPairs](projects/ML-EnhancedPairs/), [ETF-Pairs](projects/ETF-Pairs/) | PARTIAL | Vivant (ML-EnhancedPairs) | cointégration présente ; ni PCA ni OPTICS pour la sélection des paires |
+| 09 | ML Trading Pairs Selection | [ML-EnhancedPairs](projects/ML-EnhancedPairs/), [ETF-Pairs](projects/ETF-Pairs/) | COVERED | Vivant (ML-EnhancedPairs) | PCA(3) + OPTICS mensuels pour grouper l'univers avant cointégration, derrière le paramètre `useClusterPairs` (mode défaut inchangé) — #18961 |
 | 10 | Stock Selection through Clustering Fundamental Data | [Clustering-Fundamentals-ML](projects/Clustering-Fundamentals-ML/) | COVERED | Needs-improvement | |
 | 11 | Inverse Volatility Rank and Allocate to Future Contracts | [InverseVolatility-Rank](projects/InverseVolatility-Rank/) | COVERED | Needs-improvement / near-BROKEN | |
 | 12 | Trading Costs Optimization | [TradingCosts-Optimization](projects/TradingCosts-Optimization/) | COVERED | Démo | |
