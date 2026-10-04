@@ -370,7 +370,7 @@ Nombre de notebooks par série, noyaux et maturité : le bloc `CATALOG-STATUS` e
 - [Search](../Search/README.md) et [Sudoku](../Sudoku/README.md) : résolution par contraintes et SAT.
 - [GameTheory](../GameTheory/README.md) : choix social, théorie des jeux, formalisations Lean.
 - [Probas](../Probas/README.md) : programmation probabiliste avec Infer.NET.
-- La [lecture transversale](../../docs/grothendieckian-lens.md) relie ces séries par une même grille : changement de représentation et niveaux de certification.
+- La [lecture transversale](../../docs/cadrage/grothendieckian-lens.md) relie ces séries par une même grille : changement de représentation et niveaux de certification.
 
 ## Ressources
 

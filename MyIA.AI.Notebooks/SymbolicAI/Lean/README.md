@@ -632,7 +632,7 @@ Le notebook Lean-17a donne le contexte historique (noeud de Conway, slice-genre,
 
 ### Lecture transversale
 
-[La mer qui monte](../../../docs/grothendieckian-lens.md) : une grille de lecture grothendieckienne du dépôt (changement de représentation, certification A/B/C).
+[La mer qui monte](../../../docs/cadrage/grothendieckian-lens.md) : une grille de lecture grothendieckienne du dépôt (changement de représentation, certification A/B/C).
 
 ## FAQ
 
