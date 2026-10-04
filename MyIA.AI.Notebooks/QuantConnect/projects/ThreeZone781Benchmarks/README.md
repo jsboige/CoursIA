@@ -18,9 +18,12 @@ ceteris paribus.
 
 ## Résultats
 
-| Run | Sharpe | CAGR | Pire baisse |
-|-----|--------|------|-------------|
-| bench-spy-2018-2026 (`43fa2e07`) | à venir | | |
-| bench-6040-2018-2026 | à venir | | |
+| Run | Sharpe | CAGR | Pire baisse | Total |
+|-----|--------|------|-------------|-------|
+| bench-spy-2018-2026 (`43fa2e07`) | 0,499 | 13,91 % | 33,6 % | +212 % |
+| bench-6040-2018-2026 (`d4a2b089`) | 0,383 | 8,86 % | 21,2 % | +110 % |
+
+Rappel : la 781 réimplémentée rend 0,404 / 9,22 % / 16,4 % sur la même
+fenêtre — elle domine le 60/40 sur les trois axes.
 
 Table remplie à mesure des runs (protocole en cours).

@@ -50,14 +50,42 @@ Proxys déclarés (non spécifiés par la fiche) :
 | Jaune | [`zone1_dd`, `zone2_dd`) | 50 % | 50 % |
 | Rouge | ≥ `zone2_dd` | — | 100 % |
 
+## Résultat de base (2018-2026, frais IBKR)
+
+Backtest `781-base-2018-2026-ibkr-v2` (`f41b0eed`, projet 37317779, 2195 jours,
+91 ordres) :
+
+| Mesure | Valeur |
+|--------|--------|
+| Sharpe | 0,404 |
+| CAGR | 9,22 % |
+| Pire baisse | 16,4 % |
+| Profit net total | +116,1 % |
+| PSR | 1,5 % |
+
+Comparaisons (même fenêtre, mêmes frais — projet
+[ThreeZone781Benchmarks](../ThreeZone781Benchmarks/)) :
+
+| Run | Sharpe | CAGR | Pire baisse | Total |
+|-----|--------|------|-------------|-------|
+| **781 réimplémentée** | **0,404** | **9,22 %** | **16,4 %** | **+116 %** |
+| SPY détenu (`43fa2e07`) | 0,499 | 13,91 % | 33,6 % | +212 % |
+| 60/40 SPY/IEF (`d4a2b089`) | 0,383 | 8,86 % | 21,2 % | +110 % |
+
+Lecture mesurée : la rotation **domine le 60/40 sur les trois axes**
+(Sharpe, CAGR, drawdown) et divise la pire baisse du SPY détenu par deux
+(16,4 % vs 33,6 %) au prix de 4,7 points de CAGR annuel. Profil défensif —
+pas un dominant du SPY en rendement absolu. Verdict différé aux volets
+restants (grille de robustesse, frais doublés, corrélations, sous-périodes).
+
 ## État du protocole (issue #18905)
 
 | Point | État |
 |-------|------|
 | 1. Cloner le projet source | Non réalisable (accès refusé) → réimplémentation déclarée, DM envoyé au coordinateur pour le canal d'accès de la flotte |
-| 2. Backtest frais IBKR | Projet QC 37317779 créé, compile `BuildSuccess` ; backtest de base différé (saturation du node pool flotte au 04/10) |
-| 3. Mesures + comparaisons | À venir (60/40, SPY détenu, corrélations) |
-| 4. Verdict + robustesse | À venir |
+| 2. Backtest frais IBKR | **Livré** : v2 `f41b0eed` Completed (Sharpe 0,404 / CAGR 9,22 % / DD 16,4 %) |
+| 3. Mesures + comparaisons | **SPY détenu et 60/40 livrés** ; corrélations ETF à venir |
+| 4. Verdict + robustesse | À venir (grille fixée ci-dessus, non encore exécutée) |
 | 5. Couverture données fondamentales | Vérification à venir (trous rendement/payout sur 2018-2026) |
 | 6. Gel du code au verdict | À venir |
 
