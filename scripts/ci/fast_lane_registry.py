@@ -487,6 +487,9 @@ TRANCHE1: list[Guard] = [
             # `scripts/check_docs_links.py`; pinned by
             # `test_deck_scope_is_wired_into_the_fast_lane`.
             "slides/**",
+            # Book inventory (#18899): scanned as a single file, so the gate
+            # must fire when it changes. Mirror of SCAN_SCOPES.
+            "MyIA.AI.Notebooks/QuantConnect/BOOK_MAPPING.md",
             "scripts/check_docs_links.py",
         ],
         argv=["python", "scripts/check_docs_links.py", "--check",
