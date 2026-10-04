@@ -1474,17 +1474,17 @@ jobs:
             # Sans cela, un DIRTY reel n'etait qu'une ligne rouge sans
             # diagnostic derrierrable -- steer adjoint c22.
             echo "::error::Fragment OSS signature detecte dans le scope (json/ipynb) -- bloquant (#18835). Findings exposes dans /tmp/oss_sig.json."
-            python3 -c "
-import json
-try:
-    p = json.load(open('/tmp/oss_sig.json'))
-    for f in p.get('findings', []):
-        print(f\"::error::  {f.get('surface','?'):>4} {f.get('file','?')}\")
-        for h in f.get('hits', [])[:3]:
-            print(f\"::error::    L{h.get('line','?')} {h.get('pattern','?')[:48]} :: {h.get('match','?')[:80]}\")
-except Exception as e:
-    print(f\"::warning::findings non exposés ({e})\")
-" 2>/dev/null || true
+            python3 - <<'PY' 2>/dev/null || true
+          import json
+          try:
+              p = json.load(open('/tmp/oss_sig.json'))
+              for f in p.get('findings', []):
+                  print(f"::error::  {f.get('surface','?'):>4} {f.get('file','?')}")
+                  for h in f.get('hits', [])[:3]:
+                      print(f"::error::    L{h.get('line','?')} {h.get('pattern','?')[:48]} :: {h.get('match','?')[:80]}")
+          except Exception as e:
+              print(f"::warning::findings non exposés ({e})")
+          PY
             exit 1
           fi
 
