@@ -147,13 +147,6 @@ jobs:
             cat /tmp/python_stderr.txt
             exit 1
           fi
-          # F5b (Tell c.4 strict fondateur reaffirme) : SORT_RC=1 sur
-          # GitHub Actions Ubuntu peut survenir quand `sort -u` rencontre
-          # un caractere non-ASCII sous un locale non-C, ou quand l'entree
-          # de pipe (sortie de grep) est vide mais que tee a deja flush.
-          # Le vrai test bloquant est `NEW -gt 0` plus bas ; ici on ne
-          # distingue que les pannes franches (rc >= 2 = fichier inaccessible
-          # ou autre erreur grave).
           if [ "${SORT_RC}" -ge 2 ]; then
             echo "panne_scanner" >> /tmp/scan_kind.txt
             echo "::error::sort en panne franche sur PR (rc=${SORT_RC})"
