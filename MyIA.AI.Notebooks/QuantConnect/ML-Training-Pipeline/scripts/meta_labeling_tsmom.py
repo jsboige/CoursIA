@@ -46,7 +46,8 @@ sys.path.insert(0, str(SCRIPTS_DIR))
 from L1_tsmom import compute_tsmom_signal, compute_vol_scale  # noqa: E402
 from diebold_mariano import diebold_mariano_test  # noqa: E402
 from panier_loader import PANIER_GROUPS, ensure_symbol  # noqa: E402
-from voltarget_strategy_verdict import _sharpe, circular_block_diff, holm  # noqa: E402
+from strategy_metrics import sharpe  # noqa: E402
+from voltarget_strategy_verdict import circular_block_diff, holm  # noqa: E402
 
 ASSET_CLASSES = {
     "broad": PANIER_GROUPS["us_equity_broad"],
@@ -308,7 +309,7 @@ def series_stats(sim: pd.DataFrame) -> dict:
     years = (rets.index[-1] - rets.index[0]).days / 365.25
     wealth = (1.0 + rets).cumprod()
     return {"n_days": int(len(rets)),
-            "sharpe": round(float(_sharpe(rets.to_numpy())), 4),
+            "sharpe": round(float(sharpe(rets.to_numpy())), 4),
             "cagr": round(float(wealth.iloc[-1] ** (1.0 / years) - 1.0), 4),
             "max_drawdown": round(float((wealth / wealth.cummax() - 1.0).min()), 4),
             "turnover_mean": round(float(sim.loc[BLOCK_START:BLOCK_END, "turnover"].mean()), 6),
@@ -385,14 +386,14 @@ def run(data_dir: Path, series_dir: Path | None) -> dict:
     sims = {"primary": primary}
     for v in VARIANTS:
         sims[v] = simulate(closes, variant_weights(weights, block, p_mean, v))
-    primary_sharpe = float(_sharpe(block_returns(primary).to_numpy()))
+    primary_sharpe = float(sharpe(block_returns(primary).to_numpy()))
 
     per_seed = {v: {} for v in VARIANTS}
     for seed, p in probs.items():
         for v in VARIANTS:
             sim = simulate(closes, variant_weights(weights, block, p, v))
             per_seed[v][str(seed)] = round(
-                float(_sharpe(block_returns(sim).to_numpy())) - primary_sharpe, 4)
+                float(sharpe(block_returns(sim).to_numpy())) - primary_sharpe, 4)
 
     placebo = {v: {} for v in VARIANTS}
     for seed in PLACEBO_SEEDS:
@@ -400,7 +401,7 @@ def run(data_dir: Path, series_dir: Path | None) -> dict:
         for v in VARIANTS:
             sim = simulate(closes, variant_weights(weights, block, p, v))
             placebo[v][str(seed)] = round(
-                float(_sharpe(block_returns(sim).to_numpy())) - primary_sharpe, 4)
+                float(sharpe(block_returns(sim).to_numpy())) - primary_sharpe, 4)
 
     boots = {v: circular_block_diff(block_returns(sims[v]), block_returns(primary))
              for v in VARIANTS}
