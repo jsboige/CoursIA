@@ -134,41 +134,47 @@ Ce run décrivait la « SPY-ou-cash » (voir « Invalidation » ci-dessus) — l
 lecture initiale de dominance défensive sur le 60/40 (trois axes) et de pire
 baisse divisée par deux venait du cash, pas de la stratégie.
 
-## Grille de robustesse (OAT, 7 variantes)
+## Grille de robustesse v4 (OAT, 7 variantes, code corrigé)
 
-Sept backtests sur le même compile v2 (`4449fda8`, source identique au run de
-base), un paramètre à la fois (mode déclaré ci-dessus) :
+Sept backtests sur le compile v4 (`e855ce4a`, source identique au run de
+base v4), un paramètre à la fois (mode déclaré ci-dessus) :
 
 | Variante | Sharpe | CAGR | Pire baisse | Ordres | Lecture |
 |----------|--------|------|-------------|--------|---------|
-| **base (défauts)** | **0,404** | **9,22 %** | **16,4 %** | **91** | référence |
-| `zone1_dd`=0.04 | 0,365 | 8,57 % | 14,8 % | 107 | rotation plus précoce → dégrade |
-| `zone1_dd`=0.07 | 0,432 | 9,94 % | 16,3 % | 59 | rester investi SPY paie |
-| `zone2_dd`=0.08 | 0,317 | 7,92 % | 13,8 % | 80 | les deux sens dégradent |
-| `zone2_dd`=0.12 | 0,341 | 8,35 % | 21,3 % | 97 | défaut 0.10 = point fort local |
-| `top_n`=10 | 0,404 | 9,22 % | 16,4 % | 91 | non-mordant (identique à la base) |
-| `min_yield`=0.025 | 0,404 | 9,22 % | 16,4 % | 91 | non-mordant (identique à la base) |
-| `min_yield`=0.04 | 0,402 | 9,22 % | 16,4 % | 91 | quasi non-mordant |
+| **base (défauts)** | **0,426** | **11,48 %** | **27,7 %** | **1961** | référence |
+| `zone1_dd`=0.04 | 0,418 | 11,28 % | 27,7 % | 2193 | quasi-neutre, léger coût |
+| `zone1_dd`=0.07 | **0,491** | **12,91 %** | 27,7 % | 1551 | meilleur point de la grille |
+| `zone2_dd`=0.08 | 0,421 | 11,37 % | 27,7 % | 2001 | quasi-neutre |
+| `zone2_dd`=0.12 | 0,424 | 11,46 % | 27,7 % | 1967 | quasi-neutre |
+| `top_n`=10 | 0,406 | 11,31 % | **30,9 %** | 1296 | mord : panier moins diversifié |
+| `min_yield`=0.025 | 0,434 | 11,64 % | 29,5 % | 2147 | mord : panier élargi, DD en hausse |
+| `min_yield`=0.04 | 0,415 | 11,65 % | 30,4 % | 889 | mord : panier restreint, DD en hausse |
 
-Lecture d'ensemble :
+Lecture d'ensemble (v4) :
 
-- **Les seuls axes qui mordent sont les seuils de zones** (`zone1_dd`,
-  `zone2_dd`) — précisément les seuils que la fiche ne publie pas.
-  `zone1_dd` est monotone (plus le seuil est haut, mieux cela vaut sur cette
-  fenêtre) ; `zone2_dd` est non monotone et son défaut 0.10 est un point
-  fort local en Sharpe.
-- **`top_n` et `min_yield` ne mordent pas** : le filtre d'historique de
-  dividende est le goulot — il n'admet jamais plus de ~10 titres à chaque
-  revue, et le top-40 trié par rendement décroissant est saturé de titres
-  ≥ 3 %. Baisser le seuil ne change pas la sélection ; le plafond de 20
-  titres ne contraint jamais. (`min_yield`=0.04 montre un Sharpe de 0,402
-  avec profit identique au centime près : écart sous la résolution des
-  statistiques QC.)
-- **La dominance sur le 60/40 n'est pas robuste aux seuils** : 3 des 7
-  variantes (`z1=0.04`, `z2=0.08`, `z2=0.12`) tombent sous le Sharpe du
-  60/40 (0,383). La domination mesurée aux défauts dépend du choix exact
-  des seuils de zones, non publiés par la fiche.
-- Aucune variante ne bat SPY détenu (0,499).
+- **`zone1_dd` est l'axe vif** : monotone sur la fenêtre — rester investi
+  SPY plus longtemps paie (0,418 → 0,426 → 0,491). Le seuil 5 % de la
+  description n'est pas un optimum local.
+- **`zone2_dd` est plat** (0,421-0,426) : la « sensibilité violente »
+  mesurée en v2 (0,317-0,341) était un artefact du bug, pas une propriété
+  de la stratégie.
+- **`top_n` et `min_yield` mordent désormais** (bit-identiques à la base en
+  v2) — via le drawdown surtout : le défaut 20 titres / 3 % est un point de
+  diversification favorable (DD 27,7 % contre 29,5-30,9 % pour tout écart).
+- **Toutes les variantes battent le 60/40 en Sharpe** (minimum 0,406 >
+  0,383) et en CAGR (minimum 11,28 % > 8,86 %) ; **aucune ne le bat en
+  pire baisse** (27,7-30,9 % contre 21,2 %).
+- `zone1_dd`=0.07 (0,491) frôle SPY détenu (0,499) — aucune variante ne
+  le bat.
+
+### Grille v2 invalidée (traçabilité)
+
+La table v2 d'origine (seuls z1/z2 « mordaient », `top_n`/`min_yield`
+bit-identiques à la base, lu alors comme un « goulot du filtre dividende à
+~10 titres ») décrivait la SPY-ou-cash : les axes « non-mordants » étaient
+morts par construction (picks toujours vides) et la « sensibilité » de z2
+mesurait le moment exact des bascules SPY/cash. Chiffres conservés dans
+l'historique du fichier (commit `cd56c2512a`).
 
 ## État du protocole (issue #18905)
 
@@ -177,7 +183,7 @@ Lecture d'ensemble :
 | 1. Cloner le projet source | Non réalisable (accès refusé) → réimplémentation déclarée, DM envoyé au coordinateur pour le canal d'accès de la flotte |
 | 2. Backtest frais IBKR | **Rejoué sur code corrigé** (v4 `bf0655ac`, 2018-2026, 1961 ordres) ; grille OAT en cours de rejeu sur compile v4 |
 | 3. Mesures + comparaisons | Benchmarks SPY détenu et 60/40 **valides** (aucun titre dividende requis) ; corrélations ETF mesurées puis invalidées, à rejouer |
-| 4. Verdict + robustesse | **Grille OAT invalidée** (elle mesurait une SPY-ou-cash) ; à rejouer sur code corrigé, puis verdict |
+| 4. Verdict + robustesse | **Grille OAT rejouée 7/7 sur code corrigé** (4 axes mordants dont top_n/min_yield révélés par le fix) ; verdict après fee2, corrélations et sous-périodes |
 | 5. Couverture données fondamentales | Vérification à venir (trous rendement/payout sur 2018-2026) |
 | 6. Gel du code au verdict | À venir |
 
