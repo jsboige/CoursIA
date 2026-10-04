@@ -1,8 +1,19 @@
 # RL Options Hedging (Ch07-01)
 
-**Type:** Stub (planned exercise, code files not yet created)
+**Type:** Port en cours (tranche 1 livrée : code du livre porté ; backtests et verdict en cours) — issue #18902
 
 **Hands-On AI Trading**, Chapter 7-01 — Deep Hedging with Reinforcement Learning
+
+## Port du livre (tranche 1)
+
+`main.py` + `aihedging/` sont portés **verbatim** du dépôt compagnon
+[`QuantConnect/HandsOnAITradingBook`](https://github.com/QuantConnect/HandsOnAITradingBook),
+dossier `07 Better Hedging with Reinforcement Learning / 01 Reinforcement Learning of
+Hedging Options` (`aihedging/model.py` vérifié byte-identique à la source au port).
+L'exemple du livre opère sur **TSLA** ; l'adaptation au plan SPY ci-dessous (call ATM
+30 jours, baseline delta BS avec/sans frais, variance + CVaR 95 % sur 2020 / 2022 /
+période calme, verdict) est livrée aux tranches suivantes. `research.ipynb` sera
+committé exécuté via QC Cloud (jamais de markdown de contournement).
 
 ## Objective
 
