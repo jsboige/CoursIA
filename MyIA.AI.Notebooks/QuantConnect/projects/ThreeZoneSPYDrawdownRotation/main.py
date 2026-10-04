@@ -79,16 +79,15 @@ class ThreeZoneSPYDrawdownRotation(QCAlgorithm):
     def _select_fine(self, fine):
         picked = []
         for f in fine:
-            dy = f.valuation_ratios.dividend_yield
-            ey = f.valuation_ratios.earning_yield
+            dy = f.valuation_ratios.trailing_dividend_yield
+            pe = f.valuation_ratios.pe_ratio
             if not dy or dy < self.min_yield:
                 continue
-            # Taux de distribution approxime par rendement du dividende sur
-            # rendement des benefices (proxy declare : champ direct instable
-            # d'une source fondamentale a l'autre).
-            if not ey or ey <= 0:
+            # Taux de distribution approxime par rendement x P/E (equivalent
+            # de DY/EY, champs garantis ; PE negatif = pertes -> rejete).
+            if not pe or pe <= 0:
                 continue
-            payout = dy / ey
+            payout = dy * pe
             if not (self.payout_min <= payout <= self.payout_max):
                 continue
             if f.market_cap < 2e9:
