@@ -158,6 +158,56 @@ def test_is_waived_lit_le_label():
     ) is False
 
 
+# --- #19069 : un run cancelled ne masque pas le verdict de main --------------
+
+def _runs_fetch(runs, default_branch="main"):
+    """fetch factice : sert la branche par defaut, puis les runs donnes."""
+    def fetch(path):
+        if path == "repos/o/r":
+            return {"default_branch": default_branch}
+        return {"workflow_runs": runs}
+    return fetch
+
+
+#: Reproduit la mesure du 2026-10-04 06:30Z (issue #19069) : les deux runs
+#: de la passe de merge de 06:12Z sont cancelled, le dernier run reellement
+#: conclu (02:49Z) est rouge -- la derogation doit s'ouvrir sur CE run.
+_CANCELLED_THEN_RED = [
+    {"id": 37182134615, "name": "Scripts & Notebook-Tools Tests",
+     "conclusion": "cancelled", "created_at": "2026-10-04T06:12:33Z",
+     "html_url": "https://github.com/o/r/actions/runs/37182134615"},
+    {"id": 37182125212, "name": "Scripts & Notebook-Tools Tests",
+     "conclusion": "cancelled", "created_at": "2026-10-04T06:12:22Z",
+     "html_url": "https://github.com/o/r/actions/runs/37182125212"},
+    {"id": 37172203393, "name": "Scripts & Notebook-Tools Tests",
+     "conclusion": "failure", "created_at": "2026-10-04T02:49:04Z",
+     "html_url": "https://github.com/o/r/actions/runs/37172203393"},
+]
+
+
+def test_19069_deux_cancelled_puis_failure_la_derogation_souvre():
+    motif = merge_dwell._main_red_motif(
+        "o/r", fetch=_runs_fetch(_CANCELLED_THEN_RED)
+    )
+    assert motif is not None
+    assert "37172203393" in motif
+
+
+def test_19069_dernier_run_conclu_vert_ferme_la_derogation():
+    runs = _CANCELLED_THEN_RED[:2] + [
+        dict(_CANCELLED_THEN_RED[2], conclusion="success")
+    ]
+    assert merge_dwell._main_red_motif("o/r", fetch=_runs_fetch(runs)) is None
+
+
+def test_19069_runs_tous_sans_verdict_ferme_la_derogation():
+    # Fail-closed : une couleur illisible ne vaut PAS rouge (pas de preuve,
+    # pas de derogation) -- le plancher NORMAL continue de mesurer.
+    assert merge_dwell._main_red_motif(
+        "o/r", fetch=_runs_fetch(_CANCELLED_THEN_RED[:2])
+    ) is None
+
+
 def test_head_committed_at_leve_sans_date():
     with pytest.raises(merge_dwell.DwellError):
         merge_dwell.head_committed_at(
@@ -911,7 +961,7 @@ def _pr_with_label_fetch(workflow_runs=None, red_read_fails=False,
         for yml, runs in by_yml.items():
             expected = (
                 "repos/o/r/actions/workflows/{}/runs"
-                "?branch=main&event=push&status=completed&per_page=1"
+                "?branch=main&event=push&status=completed&per_page=10"
             ).format(yml)
             if path == expected:
                 if red_read_fails:
@@ -991,10 +1041,10 @@ def test_18790_latest_wins_parmi_runs_PR_gate_multiples():
     run Scripts Tests rouge recent est pris en compte ; un vert anterieur
     est ignore.
 
-    Note : avec l'API workflow-directe (per_page=1) le serveur rend lui-meme
-    le run le plus recent -- le pli latest-wins defense-en-profondeur contre
-    une eventuelle divergence de tri. On passe ici le `failure` recent en
-    tete de liste pour exercer le chemin 'run rouge -> lever la derogation'."""
+    Note : avec l'API workflow-directe (per_page=10) le serveur rend lui-meme
+    les runs les plus recents du workflow -- le pli latest-wins reste une
+    defense-en-profondeur contre une eventuelle divergence de tri. Depuis
+    #19069, les runs `cancelled`/`skipped` sont sautes cote client."""
     ok, msg = merge_dwell.check(
         "o/r", "abc", 42, 120.0, now=NOW,
         fetch=_pr_with_label_fetch(workflow_runs=[
@@ -1087,8 +1137,8 @@ def test_18796_workflow_direct_indépendant_de_la_fenetre_globale():
     `actions/runs?branch=main&per_page=100` rendait `None`).
 
     L'API workflow-directe `actions/workflows/scripts-tests.yml/runs
-    ?per_page=1` n'a pas cette borne -- elle rend le DERNIER run du
-    workflow, quelle que soit son anciennete. Le test exerce cette voie
+    ?per_page=10` n'a pas cette borne -- elle rend les DERNIERS runs du
+    workflow, quelle que soit leur anciennete. Le test exerce cette voie
     en passant un run `failure` vieux de 2h, et verifie que la
     derogation leve bien, et que le motif releve reste lisible."""
     import datetime as _dt
@@ -1139,7 +1189,7 @@ def test_18796_workflow_direct_run_success_ne_leve_pas():
             return {"default_branch": "main"}
         if path == (
             "repos/o/r/actions/workflows/scripts-tests.yml/runs"
-            "?branch=main&event=push&status=completed&per_page=1"
+            "?branch=main&event=push&status=completed&per_page=10"
         ):
             return {"workflow_runs": [
                 {"name": "Scripts & Notebook-Tools Tests",
