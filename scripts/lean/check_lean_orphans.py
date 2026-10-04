@@ -10,9 +10,11 @@ on ``social_choice_lean_peters`` passed every gate while compiling nothing.
 
 This script closes that gap by parsing ``lakefile.lean``, unioning the globs
 of every ``lean_lib`` declared, walking ``<project>/**/*.lean``, and reporting
-any file not covered. The report is FAIL by default
-(``exit 1``); a deliberate ``--advisory`` flag keeps the same output at
-``exit 0`` for callers that want visibility without a gate.
+any file not covered. Default mode is advisory (orphans listed, ``exit 0``);
+the ``--strict`` flag turns the report into a hard gate (``exit 1`` on any
+orphan). The CLI defaults to advisory to keep callers that have not opted into
+strict gating from breaking — CI wiring in ``lean-axiom.yml`` flips the gate on
+explicitly per job.
 
 Scope:
 - ``lean_lib`` only (the Lake construct that defines a compilation unit).
@@ -79,9 +81,14 @@ def _read_libs_and_globs(lakefile_text: str) -> list[tuple[str, list[str]]]:
     in the repo (2026-10-03 audit) uses the same form, and broadening
     it would risk silently mis-parsing a future construct.
     """
-    # Step 1: locate every ``lean_lib <name>`` (with optional default_target).
+    # Step 1: locate every ``lean_lib <name>`` (with optional ``@[default_target]``).
+    # The ``@[default_target]`` attribute is OPTIONAL — the Lake native default
+    # is ``roots := #[name], globs := roots.map Glob.one`` (LeanLibConfig.lean:30-46
+    # on Lean 4 v4.33.0), so a ``lean_lib Foo where`` without ``globs`` already
+    # builds ``Foo.lean`` at the lake root. Accepting both forms keeps the parser
+    # faithful to the source.
     decl_re = re.compile(
-        r"@?\[default_target\]\s*lean_lib\s+(?P<name>[«`]?[\w«»`-]+[»`]?)",
+        r"(?:@\[default_target\]\s*)?lean_lib\s+(?P<name>[«`]?[\w«»`-]+[»`]?)",
         re.MULTILINE,
     )
     # Step 2: extract the globs list ``#[`Foo, `Bar, .submodules `Baz, ...]``
@@ -110,9 +117,22 @@ def _read_libs_and_globs(lakefile_text: str) -> list[tuple[str, list[str]]]:
                 body_end = idx
                 break
         body = lakefile_text[body_start:body_end]
-        g = globs_re.search(body)
+        # Strip Lake ``--`` line comments before matching ``globs := #[...]``.
+        # Some lakefiles in this repo carry an in-body example of the very
+        # construct (``-- \`globs := #[`Foo, `Foo_en]``), and the naive
+        # regex would silently pick that example up instead of the real
+        # clause (c27 regression found by reading the c26 adjoint reserve
+        # verbatim against ``conway_cgt_lean/lakefile.lean:62``).
+        body_no_comments = re.sub(r"--[^\n]*", "", body)
+        g = globs_re.search(body_no_comments)
         if not g:
-            libs.append((name, []))
+            # No ``globs := #[...]`` clause — apply the Lake native default
+            # (``LeanLibConfig.lean:30-46`` on v4.33.0): ``globs = roots.map Glob.one``
+            # with ``roots = #[name]``. So ``lean_lib Foo where`` builds ``Foo.lean``
+            # at the lake root by default; treating this as ``globs = []`` would
+            # mis-report ``Foo.lean`` as an orphan on every lib without an explicit
+            # ``globs := #[...]`` clause.
+            libs.append((name, [name]))
             continue
         globs_raw = g.group("inner")
         # Split on top-level commas only (not on commas inside ``[...]``).
@@ -174,55 +194,65 @@ def _glob_covers_file(glob_token: str, rel_path: Path) -> bool:
 def _covered_modules(lake_root: Path, globs: list[str]) -> set[Path]:
     r"""Return the set of .lean files explicitly listed by the union of globs.
 
-    The Lake ``globs := #[`X.*, `X_en]`` form covers both ``X/Foo.lean``
-    (recursive under ``X/``) AND the umbrella ``X.lean`` at the lake root
-    (the module that ties the namespace together, e.g. ``Conway.lean``
-    declares ``namespace Conway`` and the umbrella opening). The audit
-    of every lake on origin/main (2026-10-03) shows that this is the
-    intended form: the ``X.lean`` umbrella IS compiled. The script must
-    reflect that, otherwise it reports a green lake as full of orphans.
+    Faithful to Lake's native ``Glob.matches`` (Lake/Config/Glob.lean:46-50 on
+    Lean 4 v4.33.0) and ``LeanLibConfig.isBuildableModule``
+    (Lake/Config/LeanLibConfig.lean:75-77):
 
-    Also handles the synthetic ``__submodules__\`Name`` marker produced by
-    ``_read_libs_and_globs`` when the lakefile uses ``.submodules \`Name``:
-    that directive expands to every submodule of namespace ``Name`` (incl.
-    the ``Name`` umbrella itself and all ``Name.Foo`` descendants, plus
-    their ``_en`` siblings).
+      - ``Glob.one n``         : ``m == n`` (single leaf at lake root)
+      - ``Glob.submodules n``  : ``n.isPrefixOf m && n != m`` (strict)
+      - ``Glob.andSubmodules n``: ``n.isPrefixOf m`` (non-strict: leaf + submodules)
+
+    The DSL sugar ``\`Name.*`` desugars to ``Glob.andSubmodules \`Name``
+    (Lake/Config/Glob.lean:30-32), and ``.submodules \`Name`` to
+    ``Glob.submodules \`Name``.
+
+    Crucially, **none of these constructs perform any implicit i18n expansion**:
+    ``_en`` siblings must be declared as separate tokens in ``globs := #[...]``
+    (``Foo`` covers only ``Foo.lean``; ``Foo_en`` is a different plain token
+    covering ``Foo_en.lean``). An earlier version of this helper added
+    ``_en`` siblings implicitly, which silently turned orphans into covered
+    files on lakes that happened to declare the FR token only — a false
+    negative against the very gate the script exists to provide.
+
+    Three token flavours are recognised here, mapped from the regex above:
+
+      - ``Name``        (plain):         covers ``<lake_root>/<Name>.lean`` only.
+      - ``Name.*``      (andSubmodules): covers ``<lake_root>/<Name>.lean`` and
+                                        every ``<lake_root>/<Name>/X.lean`` for
+                                        ``X != Name`` (non-strict prefix).
+      - ``__submodules__\`Name`` (DSL): covers every ``<lake_root>/<Name>/X.lean``
+                                        for ``X != Name`` (strict prefix).
     """
     covered: set[Path] = set()
     for g in globs:
         if g.startswith("__submodules__`"):
+            # ``.submodules `Name`` (DSL sugar for ``Glob.submodules \`Name``) :
+            # strict-prefix submodule glob, the leaf ``Name.lean`` at the lake
+            # root is NOT covered (matches would require ``Name != Name``).
             prefix = g[len("__submodules__`"):].rstrip("`")
-            # ``.submodules `Name`` -> every ``Name/...`` file (recursive),
-            # plus ``Name_en/...`` for the i18n sibling.
-            for candidate_dir in (lake_root / prefix, lake_root / (prefix + "_en")):
-                if candidate_dir.is_dir():
-                    for p in candidate_dir.rglob("*.lean"):
-                        covered.add(p)
-            # Also the umbrella ``Name.lean`` at lake root.
-            for umbrella in (lake_root / f"{prefix}.lean", lake_root / f"{prefix}_en.lean"):
-                if umbrella.is_file():
-                    covered.add(umbrella)
+            candidate_dir = lake_root / prefix
+            if candidate_dir.is_dir():
+                for p in candidate_dir.rglob("*.lean"):
+                    covered.add(p)
             continue
         if g.endswith(".*"):
+            # ``\`Name.*`` desugars to ``Glob.andSubmodules \`Name``: the leaf
+            # ``Name.lean`` at the lake root IS covered (``Name IS prefix of
+            # Name``) and every ``Name/X.lean`` for ``X != Name`` is too.
             prefix = g[:-2]
-            # (a) the FR subtree ``<lake_root>/<prefix>/**`` and the
-            # corresponding EN sibling subtree ``<lake_root>/<prefix>_en/``.
-            for candidate_dir in (lake_root / prefix, lake_root / (prefix + "_en")):
-                if candidate_dir.is_dir():
-                    for p in candidate_dir.rglob("*.lean"):
-                        covered.add(p)
-            # (b) the umbrella ``<prefix>.lean`` at the lake root --
-            # the module that ``namespace <prefix>`` opens.
-            umbrella = lake_root / f"{prefix}.lean"
-            if umbrella.is_file():
-                covered.add(umbrella)
-        else:
-            # Plain token: covers ``<Name>.lean`` and ``<Name>_en.lean``
-            # at the lake root.
-            for stem in (g, g + "_en"):
-                p = lake_root / (stem + ".lean")
-                if p.is_file():
+            leaf = lake_root / f"{prefix}.lean"
+            if leaf.is_file():
+                covered.add(leaf)
+            candidate_dir = lake_root / prefix
+            if candidate_dir.is_dir():
+                for p in candidate_dir.rglob("*.lean"):
                     covered.add(p)
+            continue
+        # Plain token (``\`Name``) : ``Glob.one Name`` matches ``Name == m``
+        # only — covers the single leaf ``<lake_root>/<Name>.lean``.
+        leaf = lake_root / f"{g}.lean"
+        if leaf.is_file():
+            covered.add(leaf)
     return covered
 
 

@@ -68,7 +68,12 @@ def test_covered_modules_umbrella(tmp_lake: Path) -> None:
 
 
 def test_submodules_marker(tmp_path: Path) -> None:
-    """The ``.submodules `Knots`` Lake DSL directive must be recognised."""
+    """The ``.submodules `Knots`` Lake DSL directive must be recognised.
+
+    Faithful to Lake's native ``Glob.submodules n`` (strict prefix, the leaf
+    ``Knots.lean`` is NOT covered; only ``n.isPrefixOf m && n != m``). The
+    ``Knots_en`` plain token covers ``Knots_en.lean`` at the lake root.
+    """
     lake = tmp_path / "knot"
     lake.mkdir()
     (lake / "lakefile.lean").write_text(
@@ -85,9 +90,119 @@ def test_submodules_marker(tmp_path: Path) -> None:
     all_globs = [g for _, globs in libs for g in globs]
     assert "__submodules__`Knots" in all_globs
     covered = check_lean_orphans._covered_modules(lake, all_globs)
-    assert (lake / "Knots.lean") in covered
+    # ``.submodules `Knots`` is a STRICT-prefix glob: ``Knots.lean`` at the
+    # lake root is NOT covered (would require ``Knots != Knots``).
+    assert (lake / "Knots.lean") not in covered
     assert (lake / "Knots" / "Foo.lean") in covered
+    # ``Knots_en`` is a plain token — covers ``Knots_en.lean`` at the root only.
     assert (lake / "Knots_en.lean") in covered
+
+
+def test_default_no_globs_covers_root(tmp_path: Path) -> None:
+    """Lake native default (no ``globs := #[...]``) builds ``<Name>.lean``.
+
+    Regression for the adjoint reserve (c26): ``lean_lib Foo where`` (no globs
+    clause) maps to ``roots = #[Foo], globs = roots.map Glob.one`` per
+    ``LeanLibConfig.lean:30-46``. Treating it as ``globs = []`` would falsely
+    report ``Foo.lean`` as orphan.
+    """
+    lake = tmp_path / "default_lib"
+    lake.mkdir()
+    (lake / "lakefile.lean").write_text(
+        "lean_lib «Foo» where\n"
+    )
+    (lake / "Foo.lean").write_text("namespace Foo\nend Foo\n")
+    (lake / "Bar.lean").write_text("namespace Bar\nend Bar\n")
+    libs = check_lean_orphans._read_libs_and_globs(
+        (lake / "lakefile.lean").read_text()
+    )
+    assert libs == [("Foo", ["Foo"])]  # Lake default applied
+    all_globs = [g for _, globs in libs for g in globs]
+    covered = check_lean_orphans._covered_modules(lake, all_globs)
+    assert (lake / "Foo.lean") in covered
+    assert (lake / "Bar.lean") not in covered  # Bar is genuinely orphan
+
+
+def test_no_implicit_en_sibling(tmp_path: Path) -> None:
+    r"""Plain token ``\`Foo`` does NOT implicitly cover ``Foo_en.lean``.
+
+    Regression for the adjoint reserve (c26): Lake ``Glob.one Foo`` returns
+    ``m == Foo`` only — no implicit i18n expansion. An earlier version of the
+    helper added ``_en`` siblings, silently blanching ``Foo_en.lean`` whenever
+    the FR token was declared without an explicit ``Foo_en`` token.
+    """
+    lake = tmp_path / "implicit_en"
+    lake.mkdir()
+    (lake / "lakefile.lean").write_text(
+        "@[default_target]\nlean_lib «Foo» where\n"
+        "  globs := #[`Foo]\n"
+    )
+    (lake / "Foo.lean").write_text("namespace Foo\nend Foo\n")
+    (lake / "Foo_en.lean").write_text("namespace Foo_en\nend Foo_en\n")
+    libs = check_lean_orphans._read_libs_and_globs(
+        (lake / "lakefile.lean").read_text()
+    )
+    all_globs = [g for _, globs in libs for g in globs]
+    covered = check_lean_orphans._covered_modules(lake, all_globs)
+    assert (lake / "Foo.lean") in covered
+    # CRITICAL — this is the regression we're guarding.
+    assert (lake / "Foo_en.lean") not in covered
+
+
+def test_and_submodules_covers_root_and_subdirs(tmp_path: Path) -> None:
+    r"""``\`Foo.*`` desugars to ``Glob.andSubmodules \`Foo`` (non-strict prefix).
+
+    Both ``Foo.lean`` at the lake root AND every ``Foo/X.lean`` for ``X != Foo``
+    are covered. No implicit ``_en`` sibling.
+    """
+
+
+def test_globs_clause_skips_line_comments(tmp_path: Path) -> None:
+    r"""``--`` line comments must not leak into the ``globs := #[...]`` parse.
+
+    Regression c27: ``conway_cgt_lean/lakefile.lean:62`` carries an in-body
+    example ``-- \`globs := #[`Foo, `Foo_en]`` -- the naive regex silently
+    matched that example as the lib's globs instead of the real clause below.
+    Stripping ``--[^\n]*`` before searching fixes it.
+    """
+    lake = tmp_path / "commented"
+    lake.mkdir()
+    (lake / "lakefile.lean").write_text(
+        "@[default_target]\nlean_lib «Real» where\n"
+        "  -- Verified in vitro: `globs := #[`Foo, `Foo_en]` compiles both .olean.\n"
+        "  globs := #[`Real]\n"
+    )
+    (lake / "Real.lean").write_text("namespace Real\nend Real\n")
+    (lake / "Foo.lean").write_text("namespace Foo\nend Foo\n")
+    libs = check_lean_orphans._read_libs_and_globs(
+        (lake / "lakefile.lean").read_text()
+    )
+    # The comment example must NOT pollute the parse -- ``Foo`` would otherwise
+    # be silently added to ``Real``'s globs and ``Foo.lean`` would never appear
+    # as an orphan.
+    assert libs == [("Real", ["Real"])]
+    lake = tmp_path / "and_sub"
+    lake.mkdir()
+    (lake / "lakefile.lean").write_text(
+        "@[default_target]\nlean_lib «Foo» where\n"
+        "  globs := #[`Foo.*]\n"
+    )
+    (lake / "Foo.lean").write_text("namespace Foo\nend Foo\n")
+    (lake / "Foo" / "Bar.lean").parent.mkdir()
+    (lake / "Foo" / "Bar.lean").write_text("namespace Foo.Bar\nend\n")
+    (lake / "Foo_en" / "Bar.lean").parent.mkdir(parents=True)
+    (lake / "Foo_en" / "Bar.lean").write_text("namespace Foo_en.Bar\nend\n")
+    (lake / "Foo_en.lean").write_text("namespace Foo_en\nend Foo_en\n")
+    libs = check_lean_orphans._read_libs_and_globs(
+        (lake / "lakefile.lean").read_text()
+    )
+    all_globs = [g for _, globs in libs for g in globs]
+    covered = check_lean_orphans._covered_modules(lake, all_globs)
+    assert (lake / "Foo.lean") in covered  # non-strict prefix includes leaf
+    assert (lake / "Foo" / "Bar.lean") in covered
+    # The implicit ``_en`` sibling is NOT covered — must be declared explicitly.
+    assert (lake / "Foo_en" / "Bar.lean") not in covered
+    assert (lake / "Foo_en.lean") not in covered
 
 
 def test_discover_excludes(tmp_lake: Path) -> None:
