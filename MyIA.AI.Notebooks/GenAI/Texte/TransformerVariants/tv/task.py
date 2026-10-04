@@ -495,3 +495,231 @@ def entrainer_multi_seed_cot(
         "brut": brut,
         "n_graines": len(graines),
     }
+
+
+# =============================================================================
+# v4 -- Taches d'indirection : lectures DEPENDANTES, chaine CoT informative
+# =============================================================================
+# Mesure v4 (4 graines, 300 pas) : la separation CoT/answer-only de Huang et al.
+# 2026 ne se reproduit PAS sur ce regime jouet -- answer-only compose 2-3 lectures
+# dependantes en un seul forward (~0.73), la chaine informative n'aide pas (~0.63).
+# Cause de design mesuree : chaque etape de la chaine embarque le meme binding
+# valeur->position que la composition directe, donc la chaine ne decompose pas le
+# calcul difficile en etapes plus simples (precondition d'un gap positif, cf bilan v4).
+
+import statistics
+import time
+
+
+def question_indirection(vocab: Vocab) -> int:
+    """Indice du jeton QUESTION Indirection (premier jeton libre apres REQUETE)."""
+    return vocab.VOCAB
+
+
+def vocab_indirection(vocab: Vocab) -> int:
+    """Taille du vocabulaire etendu pour l'indirection (+1 jeton QUESTION_IND)."""
+    return vocab.VOCAB + 1
+
+
+def _tirage_indirection(n: int, Q: int, gen: torch.Generator, vocab: Vocab, double: bool):
+    """Tire marqueurs + pointeurs + cible pour la tache d'indirection.
+
+    Les porteurs de pointeur ont une valeur contrainte a [1, Q) : la cible n'est
+    jamais le porteur lui-meme et chaque indice emis designe une position valide.
+    Valeurs libres des autres marqueurs : [0, N_MARQUEURS).
+    """
+    marqueurs = torch.randint(0, vocab.N_MARQUEURS, (n, Q), generator=gen)
+    v = torch.randint(1, Q, (n, 1), generator=gen)
+    marqueurs[:, 0:1] = v
+    if double:
+        w = torch.randint(1, Q, (n, 1), generator=gen)
+        marqueurs.scatter_(1, v, w)  # le marqueur pointe devient lui-meme pointeur
+        cible = marqueurs.gather(1, marqueurs.gather(1, v))
+        return marqueurs, cible.squeeze(1), (v.squeeze(1), w.squeeze(1))
+    cible = marqueurs.gather(1, v)
+    return marqueurs, cible.squeeze(1), (v.squeeze(1),)
+
+
+def lot_indirection(n: int, T: int, gen: torch.Generator, vocab: Vocab, double: bool = False) -> Lot:
+    """Tache d'indirection answer-only : [M_0..M_{Q-1}, remplissage, QUESTION_IND, REQUETE].
+
+    Composer en UN forward : lire v = valeur(M_0), puis extraire la valeur du
+    marqueur en position v (double : une lecture de plus). Contrairement au
+    multi-sauts v3, les lectures sont DEPENDANTES : la deuxieme depend du RESULTAT
+    de la premiere, pas du seul jeton QUESTION.
+    """
+    Q = vocab.N_QUESTIONS + 1
+    marqueurs, cible, _ = _tirage_indirection(n, Q, gen, vocab, double)
+    n_remp = T - Q - 2
+    assert n_remp >= 0, f"T={T} trop court pour Q={Q} marqueurs + 2 jetons"
+    remplissage = torch.randint(
+        vocab.N_MARQUEURS, vocab.taille_remplissage, (n, n_remp), generator=gen
+    )
+    q_ind = torch.full((n, 1), question_indirection(vocab), dtype=torch.long)
+    req = torch.full((n, 1), vocab.JETON_REQUETE, dtype=torch.long)
+    x = torch.cat([marqueurs, remplissage, q_ind, req], dim=1)
+    return Lot(x=x, y=cible, q=marqueurs[:, 0])
+
+
+def lot_indirection_cot(
+    n: int, T_cot: int, gen: torch.Generator, vocab: Vocab, double: bool = False
+) -> tuple[torch.Tensor, torch.Tensor, list[torch.Tensor]]:
+    """Indirection avec chaine CoT INFORMATIVE : [.., QUESTION_IND, REQUETE, v, (w,) cible].
+
+    La chaine recite le RESULTAT de chaque lecture -- v (puis w en double) -- valeurs
+    DEPENDANTES de l'entree. Contrairement a la chaine constante de la v3, chaque
+    token de chaine porte une information que le modele doit produire.
+
+    Retourne (x, cible, [v] ou [v, w]).
+    """
+    L = 3 if double else 2
+    Q = vocab.N_QUESTIONS + 1
+    marqueurs, cible, pointeurs = _tirage_indirection(n, Q, gen, vocab, double)
+    n_remp = T_cot - Q - 2 - L
+    assert n_remp >= 0, f"T_cot={T_cot} trop court pour Q={Q} + 2 + L={L}"
+    remplissage = torch.randint(
+        vocab.N_MARQUEURS, vocab.taille_remplissage, (n, n_remp), generator=gen
+    )
+    q_ind = torch.full((n, 1), question_indirection(vocab), dtype=torch.long)
+    req = torch.full((n, 1), vocab.JETON_REQUETE, dtype=torch.long)
+    chaine = torch.stack(list(pointeurs) + [cible], dim=1)
+    x = torch.cat([marqueurs, remplissage, q_ind, req, chaine], dim=1)
+    return x, cible, list(pointeurs)
+
+
+@torch.no_grad()
+def evaluer_indirection(
+    modele, vocab: Vocab, T: int, n: int = 1024, graine: int = 99, double: bool = False
+) -> tuple[float, float]:
+    """Exactitude et perplexite cible de la tache d'indirection (answer-only)."""
+    gen = torch.Generator().manual_seed(graine)
+    lot = lot_indirection(n, T, gen, vocab, double=double)
+    logits = modele(lot.x)[:, -1]
+    perte = F.cross_entropy(logits, lot.y)
+    exactitude = (logits.argmax(-1) == lot.y).float().mean()
+    return exactitude.item(), math.exp(perte.item())
+
+
+@torch.no_grad()
+def evaluer_indirection_cot(
+    modele, vocab: Vocab, T_cot: int, n: int = 1024, graine: int = 99, double: bool = False
+) -> tuple[float, list[float]]:
+    """Exactitude cible + exactitude de chaque pas de chaine (CoT informatif).
+
+    La prediction de la chaine se lit a la position precedant chaque token de
+    chaine ; la cible finale se lit a l'avant-derniere position (le logit qui
+    predit le dernier token emis, cf evaluer_multi_hop_cot v3).
+    """
+    gen = torch.Generator().manual_seed(graine)
+    x, cible, pointeurs = lot_indirection_cot(n, T_cot, gen, vocab, double=double)
+    L = len(pointeurs) + 1
+    logits = modele(x)
+    pas = []
+    for j, p in enumerate(pointeurs):
+        pos = logits[:, T_cot - L + j - 1]
+        pas.append((pos.argmax(-1) == p).float().mean().item())
+    pos_cible = logits[:, T_cot - 2]
+    exactitude = (pos_cible.argmax(-1) == cible).float().mean().item()
+    return exactitude, pas
+
+
+def entrainer_indirection(
+    modele, vocab: Vocab, T: int, graine: int, double: bool = False,
+    pas: int = 300, batch: int = 32, lr: float = 3e-3,
+) -> tuple[float, float, float]:
+    """Entrainement answer-only sur la tache d'indirection. Renvoie (acc, ppl, sec)."""
+    torch.manual_seed(graine)
+    opt = torch.optim.Adam(modele.parameters(), lr=lr)
+    gen = torch.Generator().manual_seed(1234 + graine)
+    debut = time.perf_counter()
+    for _ in range(pas):
+        lot = lot_indirection(batch, T, gen, vocab, double=double)
+        perte = F.cross_entropy(modele(lot.x)[:, -1], lot.y)
+        opt.zero_grad()
+        perte.backward()
+        opt.step()
+    secondes = time.perf_counter() - debut
+    acc, ppl = evaluer_indirection(modele, vocab, T, double=double)
+    return acc, ppl, secondes
+
+
+def entrainer_indirection_cot(
+    modele, vocab: Vocab, T_cot: int, graine: int, double: bool = False,
+    pas: int = 300, batch: int = 32, lr: float = 3e-3,
+) -> tuple[float, list[float], float]:
+    """Entrainement CoT informatif : supervise chaque token de la chaine.
+
+    La perte est la somme des entropies croiseses des predictions de v (puis w)
+    et de la cible -- chaque pas de chaine est pousse vers sa valeur cible.
+    """
+    torch.manual_seed(graine)
+    opt = torch.optim.Adam(modele.parameters(), lr=lr)
+    gen = torch.Generator().manual_seed(1234 + graine)
+    L = 3 if double else 2
+    debut = time.perf_counter()
+    for _ in range(pas):
+        x, cible, pointeurs = lot_indirection_cot(batch, T_cot, gen, vocab, double=double)
+        logits = modele(x)
+        perte = F.cross_entropy(logits[:, T_cot - L - 1], pointeurs[0])
+        for j in range(1, len(pointeurs)):
+            perte = perte + F.cross_entropy(logits[:, T_cot - L + j - 1], pointeurs[j])
+        perte = perte + F.cross_entropy(logits[:, T_cot - 2], cible)
+        opt.zero_grad()
+        perte.backward()
+        opt.step()
+    secondes = time.perf_counter() - debut
+    acc, pas_acc = evaluer_indirection_cot(modele, vocab, T_cot, double=double)
+    return acc, pas_acc, secondes
+
+
+def entrainer_indirection_multi_seed(
+    fabrique_modele, vocab: Vocab, T: int, graines: list[int], double: bool = False,
+    pas: int = 300, batch: int = 32, lr: float = 3e-3,
+) -> dict:
+    """Mesure multi-seed answer-only sur l'indirection (meme contrat que entrainer_multi_seed)."""
+    brut = []
+    for graine in graines:
+        modele = fabrique_modele(vocab)
+        acc, ppl, sec = entrainer_indirection(
+            modele, vocab, T=T, graine=graine, double=double, pas=pas, batch=batch, lr=lr
+        )
+        brut.append((graine, acc, ppl, sec))
+    return _agrege_multi_seed(brut)
+
+
+def entrainer_indirection_cot_multi_seed(
+    fabrique_modele, vocab: Vocab, T_cot: int, graines: list[int], double: bool = False,
+    pas: int = 300, batch: int = 32, lr: float = 3e-3,
+) -> dict:
+    """Mesure multi-seed CoT informatif : cible + pas intermediaires par graine."""
+    brut = []
+    for graine in graines:
+        modele = fabrique_modele(vocab)
+        acc, pas_acc, sec = entrainer_indirection_cot(
+            modele, vocab, T_cot=T_cot, graine=graine, double=double, pas=pas, batch=batch, lr=lr
+        )
+        brut.append((graine, acc, pas_acc, sec))
+    accs = [b[1] for b in brut]
+    return {
+        "acc_moy": statistics.fmean(accs),
+        "acc_std": statistics.pstdev(accs) if len(accs) > 1 else 0.0,
+        "pas_moy": [statistics.fmean([b[2][j] for b in brut]) for j in range(len(brut[0][2]))],
+        "secondes": sum(b[3] for b in brut),
+        "brut": brut,
+        "n_graines": len(graines),
+    }
+
+
+def _agrege_multi_seed(brut: list) -> dict:
+    """Agregation commune des mesures multi-seed (acc/ppl, moyenne + ecart-type)."""
+    accs = [b[1] for b in brut]
+    ppls = [b[2] for b in brut]
+    return {
+        "acc_moy": statistics.fmean(accs),
+        "acc_std": statistics.pstdev(accs) if len(accs) > 1 else 0.0,
+        "ppl_moy": statistics.fmean(ppls),
+        "ppl_std": statistics.pstdev(ppls) if len(ppls) > 1 else 0.0,
+        "secondes": sum(b[3] for b in brut),
+        "brut": brut,
+        "n_graines": len(brut),
+    }
