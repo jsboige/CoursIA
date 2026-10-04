@@ -76,7 +76,7 @@ Ce document. Lecture first-hand Causal-Bridges/README.md + Do-Calculus-Bridge.ip
       2. **Conditionnelle ≠ do** : montrer que `ConditionalShap(X=x_i)` (loi $P(X_{S^c} \mid X_S=x_S)$) **sur-estime** $do(X=x_i)$ à cause des corrélés — mesure numérique de l'écart marginal vs conditionnel.
       3. **Causal Shapley (Heskes 2020 [R7])** : appliquer $v(S) = \mathbb{E}[f(X) \mid do(X_S = x_S)]$ via `dowhy` sur le DAG, séparer contributions directes vs indirectes. Comparer aux 1 et 2.
     - Accepte **R6 (Janzing)** comme la référence canonique de la base marginale-interventionnelle, **R7 (Heskes)** comme la référence opérationnelle de la construction causale. [CLAUDE.md § G.1](../../CLAUDE.md) vérif first-hand c.741 : R6 et R7 doivent être cités verbatim, pas paraphrasés.
-  - **Section 6 — Ponts** : renvois explicites vers `Do-Calculus-Bridge.ipynb`, `DoWhy-1-Estimand-et-Intervention.ipynb`, `DoWhy-2-Contrefactuel-Individuel.ipynb`, `Infer-5-Causal-Inference.ipynb`, `PyMC-05-Causal-Inference.ipynb`, `Tweety-11-Causal.ipynb`.
+  - **Section 6 — Ponts** : renvois explicites vers `Do-Calculus-Bridge.ipynb`, `DoWhy-1-Estimand-et-Intervention.ipynb`, `DoWhy-2-Contrefactuel-Individuel.ipynb`, `Infer-5-Causal-Inference.ipynb`, `PyMC-05-Causal-Inference.ipynb`, `Tweety-11-Causal-Python.ipynb`.
   - **Section 7 — Note explicatif ≠ causal** : 5 lignes + référence R4 §3.3 + R3 §2.4.
   - **Exercices** : 3-4 stubs conformes C.1 (pas d'erreur volontaire).
 - Exécution locale Papermill (règle H.1 + C.2 — outputs réels).

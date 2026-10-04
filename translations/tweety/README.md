@@ -6,7 +6,7 @@
 
 | Fichier | Série | Notebooks | Cellules |
 |---------|-------|-----------|----------|
-| [`tweety.csv`](tweety.csv) | `SymbolicAI/Tweety/` (top-level) | 31 (`Tweety-1-Setup` → `Tweety-11-Causal`, parité Python ⇄ C# `-Csharp`, + branches `2b/2c/3-*/4/5b/7a/7b`) | 864 (517 markdown + 347 code, 20 colonnes) |
+| [`tweety.csv`](tweety.csv) | `SymbolicAI/Tweety/` (top-level) | 31 (`Tweety-1-Setup` → `Tweety-11-Causal-Python`, parité Python ⇄ C# `-Csharp`, + branches `2b/2c/3-*/4/5b/7a/7b`) | 864 (517 markdown + 347 code, 20 colonnes) |
 
 **Schéma** : 20 colonnes (#4957 §1). `src_lang=fr`, `src_hash` (sha256-16) + `text_fr` remplies ; colonnes cibles (`text_en/es/ar/...`) vides pour le moteur T3 Argumentum (#1650 Phase 1).
 

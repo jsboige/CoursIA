@@ -3143,7 +3143,7 @@ pas seulement son usage. C'est la différence entre *invoquer* un vérificateur 
 
 > Pour les preuves formelles des théorèmes d'inclusion et d'existence (grounded est
 > l'extension complète minimale, stable peut être vide), voir le notebook Lean
-> [Tweety-5b](../Tweety/Tweety-5b-Lean-Argumentation.ipynb).",,,,,,,,c9be74e4e797ffb7,,,,,,,,
+> [Tweety-5b](../Tweety/Tweety-5b-Lean-Argumentation-Lean.ipynb).",,,,,,,,c9be74e4e797ffb7,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-03-Dung-AF-Semantics-Python.ipynb,7600fb71,markdown,fr,2d4b847cccf57723,"## 6. Exercices
 
 Les trois exercices suivants approfondissent la théorie. Ils sont laissés **incomplets**
@@ -3245,7 +3245,7 @@ l'acceptabilité argumentative.
   applique ces sémantiques via TweetyProject (JVM) sur des AF plus grands, où l'énumération
   exhaustive devient prohibitif. Le notebook [2-formal §6](Argumentation-05-Formal-Verification-Python.ipynb)
   en fait usage dans le pipeline agentique.
-- **Prouver les théorèmes** : [Tweety-5b-Lean](../Tweety/Tweety-5b-Lean-Argumentation.ipynb)
+- **Prouver les théorèmes** : [Tweety-5b-Lean](../Tweety/Tweety-5b-Lean-Argumentation-Lean.ipynb)
   formalise en Lean les inclusions ($\text{grounded} \subseteq \text{preferred}$) et les
   conditions d'existence de la sémantique stable.
 - **Argumentation structurée** : le formalisme abstrait de Dung ignore le contenu des
