@@ -169,19 +169,24 @@ def _runs_fetch(runs, default_branch="main"):
     return fetch
 
 
-#: Reproduit la mesure du 2026-10-04 06:30Z (issue #19069) : les deux runs
-#: de la passe de merge de 06:12Z sont cancelled, le dernier run reellement
-#: conclu (02:49Z) est rouge -- la derogation doit s'ouvrir sur CE run.
+#: Reproduit une fenetre REELLE de main rouge masquee par des cancelled
+#: (issue #19069). Sur `main`, le run 37225392464 (`failure`, 18:41:19Z,
+#: conclu 18:51:54Z) est suivi de deux runs `cancelled` (18:42:18Z,
+#: 18:42:36Z) nes de la concurrence du workflow en passe de merge en rafale.
+#: `per_page=1` rendait en tete un `cancelled` sans verdict -- la derogation
+#: restait fermee alors que main etait rouge ; le correctif saute les runs
+#: sans verdict et ouvre sur 37225392464. (L'API rend les runs du plus
+#: recent au plus ancien : cancelled d'abord, le rouge ensuite.)
 _CANCELLED_THEN_RED = [
-    {"id": 37182134615, "name": "Scripts & Notebook-Tools Tests",
-     "conclusion": "cancelled", "created_at": "2026-10-04T06:12:33Z",
-     "html_url": "https://github.com/o/r/actions/runs/37182134615"},
-    {"id": 37182125212, "name": "Scripts & Notebook-Tools Tests",
-     "conclusion": "cancelled", "created_at": "2026-10-04T06:12:22Z",
-     "html_url": "https://github.com/o/r/actions/runs/37182125212"},
-    {"id": 37172203393, "name": "Scripts & Notebook-Tools Tests",
-     "conclusion": "failure", "created_at": "2026-10-04T02:49:04Z",
-     "html_url": "https://github.com/o/r/actions/runs/37172203393"},
+    {"id": 37225475490, "name": "Scripts & Notebook-Tools Tests",
+     "conclusion": "cancelled", "created_at": "2026-10-04T18:42:36Z",
+     "html_url": "https://github.com/o/r/actions/runs/37225475490"},
+    {"id": 37225454684, "name": "Scripts & Notebook-Tools Tests",
+     "conclusion": "cancelled", "created_at": "2026-10-04T18:42:18Z",
+     "html_url": "https://github.com/o/r/actions/runs/37225454684"},
+    {"id": 37225392464, "name": "Scripts & Notebook-Tools Tests",
+     "conclusion": "failure", "created_at": "2026-10-04T18:41:19Z",
+     "html_url": "https://github.com/o/r/actions/runs/37225392464"},
 ]
 
 
@@ -190,7 +195,7 @@ def test_19069_deux_cancelled_puis_failure_la_derogation_souvre():
         "o/r", fetch=_runs_fetch(_CANCELLED_THEN_RED)
     )
     assert motif is not None
-    assert "37172203393" in motif
+    assert "37225392464" in motif
 
 
 def test_19069_dernier_run_conclu_vert_ferme_la_derogation():

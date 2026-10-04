@@ -632,10 +632,14 @@ def _default_branch(repo: str, fetch=_gh_json) -> str:
 #: reellement rouge, mais la PR n'a aucun moyen de le voir. A ce jour
 #: (2026-10-04) le seul workflow repondant a ce critere est `Scripts &
 #: Notebook-Tools Tests` (scripts-tests.yml : declencheurs push main ET
-#: pull_request, tous deux filtres `scripts/**` -- une PR hors `scripts/**`
-#: ne le declenche sur aucun des deux, #19069 corrige ici la mention
-#: erronee « pas de trigger pull_request » portee par la version initiale
-#: de ce commentaire).
+#: pull_request, tous deux filtres par la MEME liste de chemins -- les deux
+#: incluent `tests/**`, `pytest.ini`, `.github/workflows/**` et une poignee
+#: de sujets hors `scripts/` (registre d'attributions, `conway_lean/**`,
+#: `prosody_lab/syllable_pitch.py`, `Track2-GoogleADK/**`, ...). Une PR qui
+#: ne touche AUCUN de ces chemins ne le declenche sur aucun des deux. #19069
+#: corrige ici deux mentions erronees successives : « pas de trigger
+#: pull_request » (version initiale) puis « une PR hors `scripts/**` », qui
+#: ignorait `tests/**` et `.github/workflows/**` (releve Hermes).
 MAIN_RED_WORKFLOWS = (
     # (yml_path, display_name)
     ("scripts-tests.yml", "Scripts & Notebook-Tools Tests"),
