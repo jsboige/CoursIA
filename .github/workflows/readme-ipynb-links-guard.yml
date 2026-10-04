@@ -119,15 +119,7 @@ jobs:
             cat /tmp/python_stderr.txt
             exit 1
           fi
-          # F6 (Tell c.4 / adjoint c26) -- PY_RC=1 sans resume stdout est un
-          # crash Python (RuntimeError, exception non interceptee), pas un
-          # audit legitime. Le scanner en mode --check-readme-links rend
-          # rc=1 UNIQUEMENT quand des violations sont trouvees, et dans ce
-          # cas le stdout contient forcement le resume 'README-link audit:
-          # N rendered-subtree READMEs, M violation(s)'. Sans ce resume et
-          # rc=1, c'est un crash. Temoin : stdout doit contenir
-          # 'README-link audit:' (via tee /tmp/python_stdout.txt) -> sinon
-          # on refuse.
+          # F6 (Tell c.4 / adjoint c26) -- PY_RC=1 sans resume stdout = crash
           if [ "${PY_RC}" -eq 1 ]; then
             if grep -q "README-link audit:" /tmp/python_stdout.txt; then
               : # resume present -- l'audit a echoue normalement (violations)
