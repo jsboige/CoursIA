@@ -32,6 +32,13 @@ name: Split-reading ratchet (identity, manual dispatch)
 # Wiring : scripts/ci/fast_lane_registry.py :: TRANCHE14.
 # Identite : Guard.name == job.name (cf check_absorbed_check_run_identity.py).
 # Tests : scripts/tests/test_check_split_reading_cells.py.
+#
+# Carve-out meta-notes (#18606, decision ai-01 30/09, voie 2) : une cellule
+# markdown AJOUTEE portant un tag metadata de la liste fermee
+# (audit-notice / sota-notice / source-notice) declare une meta-note, pas une
+# lecture -- non signalée, budget de sa sortie non consommé, et l'exemption
+# est RENDUE dans le résumé du check-run (notebook, id de cellule, tag).
+# Cellules ajoutées seulement : réécriture ou déplacement ne se blanchit pas.
 
 on:
   workflow_dispatch:

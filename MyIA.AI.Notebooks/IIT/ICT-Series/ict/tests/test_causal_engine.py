@@ -37,6 +37,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from ict.causal_engine import (  # noqa: E402
+    _ALIGNMENT_KEYS_FALLBACK,
     ALIGNMENT_KEYS,
     EffectChannels,
     InterventionRecord,
@@ -53,6 +54,7 @@ from ict.causal_engine import (  # noqa: E402
     selectivity_verdict,
     sham_of,
     symmetric_doses,
+    trace_contract_module,
 )
 
 
@@ -398,6 +400,79 @@ class TestGate6RejouabiliteEtContrat(unittest.TestCase):
         for key in ("contract_version", "instrument", "layer", "model",
                     "run", "seed", "prompt_set"):
             self.assertIn(key, ALIGNMENT_KEYS)
+
+
+class TestDelegationContratCanonique(unittest.TestCase):
+    """Tranche 5/n (#15479) : la delegation au canonique ``ict.trace_contract``
+    (merge #15525) ne derive pas.
+
+    ``causal_engine`` ne garde le litteral ALIGNMENT_KEYS et la comparaison
+    locale qu'en REPLI quand le canonique n'est pas importable ; ces tests
+    verrouillent l'egalite des deux sources des que le canonique resolve.
+    """
+
+    def test_alignment_keys_egale_le_canonique(self) -> None:
+        tc = trace_contract_module()
+        if tc is None:
+            self.skipTest("ict.trace_contract non importable")
+        # Parite porte sur le REPLI statique, pas sur ALIGNMENT_KEYS (deja
+        # assigne depuis le canonique quand il resolve) : une evolution d'un
+        # seul des deux cotes fait echouer ce test — garde non tautologique.
+        self.assertEqual(tuple(_ALIGNMENT_KEYS_FALLBACK), tuple(tc.ALIGNMENT_KEYS))
+
+    def test_assert_alignment_meme_verdict_que_check_alignment(self) -> None:
+        tc = trace_contract_module()
+        if tc is None:
+            self.skipTest("ict.trace_contract non importable")
+        spec = _clamp_spec()
+        rec_a = InterventionRecord(
+            spec=spec, alignment=spec.alignment(model="toy-a"),
+            sha_before="x", sha_after="y",
+        )
+        rec_b = InterventionRecord(
+            spec=spec, alignment=spec.alignment(model="toy-b"),
+            sha_before="x", sha_after="y",
+        )
+        keys = [k for k in ALIGNMENT_KEYS
+                if k in rec_a.alignment and k in rec_b.alignment]
+        diffs = tc.check_alignment(rec_a.alignment, rec_b.alignment, keys=keys)
+        self.assertTrue(diffs, "le canonique doit signaler le champ model divergent")
+        self.assertTrue(any(d.startswith("model") for d in diffs))
+        with self.assertRaises(ValueError) as ctx:  # ...et la delegation le rapporte
+            assert_alignment(rec_a, rec_b)
+        self.assertIn("model", str(ctx.exception))
+
+    def test_liste_divergente_comparee_par_la_voie_canonique(self) -> None:
+        # seed en liste : le canonique compare element-wise (list(va) != list(vb)),
+        # voie reprise par la delegation — pas une copie locale de la regle.
+        tc = trace_contract_module()
+        if tc is None:
+            self.skipTest("ict.trace_contract non importable")
+        spec = _clamp_spec()
+        al_a = spec.alignment(model="toy")
+        al_a["seed"] = [11, 12]
+        al_b = spec.alignment(model="toy")
+        al_b["seed"] = [11, 13]
+        rec_a = InterventionRecord(
+            spec=spec, alignment=al_a, sha_before="x", sha_after="y")
+        rec_b = InterventionRecord(
+            spec=spec, alignment=al_b, sha_before="x", sha_after="y")
+        with self.assertRaises(ValueError) as ctx:
+            assert_alignment(rec_a, rec_b)
+        self.assertIn("seed", str(ctx.exception))
+
+    def test_cle_absente_d_un_cote_ne_bloque_pas(self) -> None:
+        # champs optionnels du sidecar : l'absence n'est pas un desalignement
+        # (difference assumee avec check_alignment sur manifestes complets)
+        spec = _clamp_spec()
+        al_a = spec.alignment(model="toy")
+        al_b = dict(al_a)
+        al_b.pop("run")  # cle presente cote A, absente cote B : toleree
+        rec_a = InterventionRecord(
+            spec=spec, alignment=al_a, sha_before="x", sha_after="y")
+        rec_b = InterventionRecord(
+            spec=spec, alignment=al_b, sha_before="x", sha_after="y")
+        assert_alignment(rec_a, rec_b)  # pas d'exception
 
 
 if __name__ == "__main__":

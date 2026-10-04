@@ -235,7 +235,7 @@ Première exécution du gradient calibration Conway sur une lane **sans clés ex
 - **Proofs proved manually (agent-guided):** 15+ (including all GS invariants, lattice, Bondareva forward/backward)
 - **Prover infrastructure iterations:** 7 (F6–F11, B3)
 - **Remaining sorrys:** 6 (5 rural hospitals cluster + 1 Bondareva hCore)
-- **Prover history files:** 20 JSON files in `agent_tests/prover/`
+- **Prover history files:** JSON files in `agent_tests/prover/`
 
 ---
 

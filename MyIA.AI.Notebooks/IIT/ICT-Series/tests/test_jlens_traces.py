@@ -214,6 +214,10 @@ CALIBRATION_META = {
     "meta_model", "meta_layers", "meta_n_fit",
     "meta_max_seq_len", "meta_skip_first", "meta_n_eval",
 }
+# Provenance optionnelle du lens consomme (mode --lens-repo, 9B #8236) :
+# presente seulement quand la calib part d'un lens publie. sha256 tronque
+# a 16 hex minuscules ; provenance = source ASCII imprimable.
+CALIBRATION_META_OPTIONAL = {"meta_lens_sha256", "meta_provenance"}
 
 
 def _assert_calib_jlens_schema(path: Path) -> None:
@@ -233,8 +237,14 @@ def _assert_calib_jlens_schema(path: Path) -> None:
         assert skip_first.shape == (1,) and int(skip_first[0]) == 16
         assert n_eval.shape == (len(CALIBRATION_SETS),)
         assert np.all(n_eval == 4)
+        if "meta_lens_sha256" in trace.files:
+            sha = "".join(chr(int(code)) for code in trace["meta_lens_sha256"])
+            assert len(sha) == 16 and all(c in "0123456789abcdef" for c in sha)
+        if "meta_provenance" in trace.files:
+            provenance = "".join(chr(int(code)) for code in trace["meta_provenance"])
+            assert provenance and provenance.isprintable()
 
-        metric_keys = set(trace.files) - CALIBRATION_META
+        metric_keys = set(trace.files) - CALIBRATION_META - CALIBRATION_META_OPTIONAL
         expected = {
             f"{set_name}__{int(layer)}"
             for set_name in CALIBRATION_SETS

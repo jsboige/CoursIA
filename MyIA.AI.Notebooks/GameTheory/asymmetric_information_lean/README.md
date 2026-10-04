@@ -19,13 +19,13 @@ notebook `CoursIA`.
 
 ## Exposition (notebooks consommateurs)
 
-- **`GameTheory-17c-Lean-Lemons-Certificat.ipynb`** (companion natif, kernel
+- **`GameTheory-17c-Lean-Lemons-Certificat-Lean.ipynb`** (companion natif, kernel
   `lean4-wsl`) : importe `AsymmetricInformation.Lemons` et exécute le
   certificat en direct — `poolingTenable_iff_cross` (seuil exact),
   `poolingTenable_mono` (plancher), `#print axioms`, balayage du prior
   (falaise à π = 75 % sur le marché-seuil) et spirale de prix des trois
   régimes (#13200).
-- **`GameTheory-17b-Asymmetric-Information.ipynb`** (Python) : les quatre
+- **`GameTheory-17b-Asymmetric-Information-Python.ipynb`** (Python) : les quatre
   modèles en simulation — point fixe de participation, signal coûteux,
   screening, règle anticipative.
 

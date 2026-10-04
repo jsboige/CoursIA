@@ -192,6 +192,7 @@ print(f"Winner: {'MR' if mr_sharpe > mom_sharpe else 'Momentum'}")
 ```python
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt="""
     Tu es un agent qc-research-notebook.
 
@@ -220,6 +221,7 @@ Task(
 ```python
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt="""
     Tu es un agent qc-research-notebook.
 

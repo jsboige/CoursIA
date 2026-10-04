@@ -137,7 +137,7 @@ Le sweep historique comparait les MSE de deux prévisionneurs dont les biais OOS
 
 Les biais résiduels sont proches de zéro (`biais² ≤ 2,6e-5`) : l'écart restant porte essentiellement sur la variance des erreurs. Le résultat brut était gonflé, surtout aux horizons longs (+23,6 %/+36,7 % → +3,4 %/+5,1 %), mais le signal ne disparaît pas. **Verdict BTC révisé : 2/3 BEATS, 1/3 INCONCLUSIVE, 0/3 NO BEATS.** M16 reste un keeper BTC moyen/long horizon ; h=1 est retiré du claim. Le verdict cluster historique reste `NO BEATS`.
 
-L'OLS est déterministe : les quatre seeds sont bit-identiques et servent de contrôle de reproductibilité. `edge/σ` cross-seed est donc non applicable, pas artificiellement infini. Le notebook `m3_har_asymmetric_semivariance.ipynb` recalcule les MSE depuis les prévisions persistées et porte 8/8 cellules code exécutées.
+L'OLS est déterministe : les quatre seeds sont bit-identiques et servent de contrôle de reproductibilité. `edge/σ` cross-seed est donc non applicable, pas artificiellement infini. Le notebook `m3_har_asymmetric_semivariance.ipynb` recalcule les MSE depuis les prévisions persistées.
 
 ```bash
 python scripts/har_asymmetric.py \
@@ -199,7 +199,7 @@ Le test principal réduit d'abord les trois horizons à un verdict par actif, pu
 
 Ces fenêtres hétérogènes interdisent d'interpréter les écarts entre actifs comme un panel temporel homogène. Pour `h ≥ 2`, la récursion partage chaque RV future prévue à 50/50 entre RV+ et RV−. Cette fermeture est une convention fixe, non un paramètre appris ; elle est conservée pour la comparabilité avec M16 historique, mais limite l'interprétation des résultats h=5 et h=10.
 
-L'artefact `scripts/results/m16_har_asymmetric_debiased_7asset.json` contient 84 lignes de contrôle, 21 agrégats actif×horizon, les cinq folds des deux modèles, les biais signés, les prédictions et cibles OOS alignées, le manifeste des sources et le verdict cluster. Le notebook historique reste inchangé : cette revalidation est produite par le script, sans édition manuelle de sortie de cellule.
+L'artefact `scripts/results/m16_har_asymmetric_debiased_7asset.json` contient 21 agrégats actif×horizon, les cinq folds des deux modèles, les biais signés, les prédictions et cibles OOS alignées, le manifeste des sources et le verdict cluster. Le notebook historique reste inchangé : cette revalidation est produite par le script, sans édition manuelle de sortie de cellule.
 
 ## References
 

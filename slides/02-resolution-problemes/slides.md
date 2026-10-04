@@ -371,7 +371,7 @@ Les stratégies non informées (aveugle) utilisent uniquement la définition du 
 
 - Bidirectionnelle
 
-<small>**Corpus** — implémentations Python+C# comparées dans [`Search-02-Uninformed.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed.ipynb) (BFS, UCS, DFS, DLS, IDS, bidirectionnelle sur taquin et graphe Roumanie). 9 notebooks de cette famille (Search-01 à Search-09b) documentent les variantes et leurs complexités mesurées.</small>
+<small>**Corpus** — implémentations Python+C# comparées dans [`Search-02-Uninformed.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed.ipynb) (BFS, UCS, DFS, DLS, IDS, bidirectionnelle sur taquin et graphe Roumanie). Les notebooks de cette famille (Search-01 à Search-09b) documentent les variantes et leurs complexités mesurées.</small>
 
 ---
 

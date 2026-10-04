@@ -35,6 +35,12 @@ Modes:
 - ``PR_NUMBER`` (check mode): fetch the PR's issue comments via ``gh`` and
   exit 1 with one line per finding (hand-run before a merge). With
   ``--report-only``: ``::warning`` annotations, exit 0 -- the CI wiring.
+- Either mode, when ``gh`` did not ANSWER (quota exhausted, network down,
+  binary absent): verdict ``UNKNOWN``, and no verdict at all on the surface
+  -- a guard never judges a surface it did not read (#16164, #14849).
+  ``--report-only`` then honours its own exit-0 contract with a
+  ``::warning``; the hand-run exits 2, distinct from 0 (clean) and 1
+  (findings), so "could not read" is confusable with neither.
 - ``--scan-plage START END``: measurement mode (acceptance 3). Enumerates
   repo comments newest-first via the issue-comments listing endpoint,
   keeps those attached to items numbered START..END, reports findings by
@@ -132,6 +138,19 @@ def comment_findings(comments: list[dict]) -> list[Finding]:
 # --- gh plumbing --------------------------------------------------------------
 
 
+class InstrumentUnavailable(RuntimeError):
+    """``gh`` n'a pas repondu : la garde n'a rien lu (#18324).
+
+    Distinct d'un ``gh`` qui repond : un quota GraphQL epuise, une coupure
+    reseau ou un binaire absent ne disent rien de la surface visee. Deux
+    precedents du depot portent la meme regle -- ``check_exec_ratchet``
+    sort en 2, « "n'a pas pu mesurer" n'est pas "a mesure 0" » (#16164), et
+    ``check_gh_comment_traps`` rend ``UNKNOWN``, « infrastructure never
+    forges a red » (#14849). Un garde ne rend jamais un verdict sur une
+    surface qu'il n'a pas lue.
+    """
+
+
 def _gh_json(args: list[str]) -> str:
     proc = subprocess.run(
         ["gh", *args],
@@ -142,7 +161,7 @@ def _gh_json(args: list[str]) -> str:
         errors="replace",
     )
     if proc.returncode != 0:
-        raise RuntimeError(
+        raise InstrumentUnavailable(
             f"gh {' '.join(args[:3])} failed (exit {proc.returncode}): {proc.stderr.strip()}"
         )
     return proc.stdout
@@ -154,7 +173,20 @@ def pr_comments(pr_number: int) -> list[dict]:
 
 
 def check(pr_number: int, report_only: bool = False) -> int:
-    findings = comment_findings(pr_comments(pr_number))
+    try:
+        findings = comment_findings(pr_comments(pr_number))
+    except InstrumentUnavailable as exc:
+        # #18324. Le wiring CI est ``--report-only``, dont le contrat EST
+        # exit 0 ; l'exception le violait en sortant en 1 sur un quota
+        # epuise, et ce 1 remontait dans ``PR gate`` (requis) -- la PR
+        # victime payait pour l'incident d'infrastructure. Ici : UNKNOWN,
+        # et aucun verdict sur la surface.
+        print(
+            "::warning title=Local-path guard uninstrumented::gh n'a pas "
+            f"repondu -- verdict UNKNOWN, la garde n'a pas lu la PR #{pr_number} ; "
+            f"ce n'est pas un « 0 finding ». ({exc})"
+        )
+        return 0 if report_only else 2
     for f in findings:
         if report_only:
             # Arbitrage ai-01 #16780 : la FUITE est rendue visible mais ne
@@ -253,11 +285,23 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--scan-plage", nargs=2, type=int, metavar=("START", "END"),
                     help="measurement mode: scan comments of items START..END")
     args = ap.parse_args(argv)
-    if args.scan_plage:
-        return scan_plage(args.scan_plage[0], args.scan_plage[1])
-    if args.pr_number is None:
-        ap.error("give a PR number, or --scan-plage START END")
-    return check(args.pr_number, report_only=args.report_only)
+    try:
+        if args.scan_plage:
+            return scan_plage(args.scan_plage[0], args.scan_plage[1])
+        if args.pr_number is None:
+            ap.error("give a PR number, or --scan-plage START END")
+        return check(args.pr_number, report_only=args.report_only)
+    except InstrumentUnavailable as exc:
+        # « Exit 0 always -- a measurement is not a verdict » (mode
+        # --scan-plage) vaut pour des FINDINGS, pas pour une mesure qui n'a
+        # pas eu lieu : exit 2, comme check_exec_ratchet (#16164).
+        print(f"instrument indisponible : {exc}", file=sys.stderr)
+        print(
+            "la garde n'a rien mesure -- relancer, ne pas lire ceci comme "
+            "« 0 finding ».",
+            file=sys.stderr,
+        )
+        return 2
 
 
 if __name__ == "__main__":

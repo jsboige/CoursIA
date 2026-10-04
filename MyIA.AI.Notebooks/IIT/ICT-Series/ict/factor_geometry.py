@@ -1,6 +1,6 @@
 """Primitives numpy-only de geometrie factorisee (F-Lens), extraites d'ICT-36.
 
-Origine : ``ICT-36-FLens-FactoredGeometry.ipynb`` (PR #15514, grain #15478),
+Origine : ``ICT-36-FLens-FactoredGeometry-Python.ipynb`` (PR #15514, grain #15478),
 cellules 5, 7 et 14. L'extraction vers le paquet ``ict/`` repond a la
 remarque propriétaire du 2026-09-10 (« ça mérite surtout un module Python
 qui viendra outiller d'autres composants ») formalisee par l'issue #15943 :

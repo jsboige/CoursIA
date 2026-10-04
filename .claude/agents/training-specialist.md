@@ -1,6 +1,6 @@
 ---
 name: training-specialist
-description: Orchestrate ML model training in the QuantConnect ML-Training-Pipeline (RL/PPO, Decision Transformer, LSTM, transformer, mamba, PatchTST, iTransformer, MoE, GNN). Thermal-safe GPU training, walk-forward + multi-seed + Diebold-Mariano validation, registry/checkpoint management. Use as the async side-track for Epic #1454 (Training & Post-Training).
+description: Orchestrate ML model training in the QuantConnect ML-Training-Pipeline (RL/DQN, Decision Transformer, LSTM, transformer, mamba, PatchTST, iTransformer, MoE, GNN). Thermal-safe GPU training, walk-forward + multi-seed + Diebold-Mariano validation, registry/checkpoint management. Use as the async side-track for Epic #1454 (Training & Post-Training).
 model: sonnet
 memory: project
 skills:
@@ -25,7 +25,7 @@ from gpu_training import batch_thermal_check, get_gpu_temp, setup_amp
 ```
 Appele typiquement `batch_thermal_check(n_batches, check_every=5, max_temp=80, cool_sleep=30)` — **MAX_TEMP=80C** (crash threshold ~96C, marge 16C), `cool_sleep=30` = la pause GPU quand la temperature depasse le seuil ("ventilation par sleep"). AMP active via `setup_amp()`.
 
-**RISQUE A CONNAITRE (verifie 2026-05-23)** : `gpu_training.py` n'est PAS present sur disque dans le repo. Chaque `train_*.py` a un fallback `try/except ImportError` qui remplace le watchdog par un **no-op** (`def batch_thermal_check(*a, **kw): pass`, `get_gpu_temp() -> 0`). **Si le module manque, la protection thermique est silencieusement desactivee.** Avant tout run GPU reel :
+**RISQUE A CONNAITRE** : `gpu_training.py` est suivi sous `MyIA.AI.Notebooks/QuantConnect/shared/gpu_training.py` (avec son test), hors de `scripts/`. Chaque `train_*.py` a un fallback `try/except ImportError` qui remplace le watchdog par un **no-op** (`def batch_thermal_check(*a, **kw): pass`, `get_gpu_temp() -> 0`). **Si le module manque, la protection thermique est silencieusement desactivee.** Avant tout run GPU reel :
 1. Verifier que `gpu_training` est importable depuis `scripts/` (pas le stub) : `python -c "from gpu_training import batch_thermal_check, get_gpu_temp; print(get_gpu_temp())"` doit retourner une temperature non nulle.
 2. Si le module est absent : ne pas lancer un long run GPU sans protection — restaurer/fournir le module, ou monitorer la temperature manuellement (`nvidia-smi`). Documenter le choix.
 

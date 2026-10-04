@@ -43,10 +43,9 @@ DEFAULT_URNS = "grain,umbrella,delivered"
 
 def test_entitled_lanes_are_exactly_the_short_list():
     """Liste explicite et courte, par conception (#15069) : le
-    coordinateur (deux dashboards) et l'adjoint. Rien d'autre."""
+    coordinateur et l'adjoint. Rien d'autre."""
     assert DELIVERED_URN_LANES == frozenset({
         "myia-ai-01:CoursIA",
-        "myia-ai-01:CoursIA-2",
         "myia-po-2025:CoursIA-2",
     })
 
@@ -72,6 +71,7 @@ WORKER_LANES = [
     "myia-po-2023:CoursIA-2",
     "myia-po-2026:CoursIA-2",
     "myia-po-2027:CoursIA-2",
+    "myia-ai-01:CoursIA-2",  # lane worker sur la machine du coordinateur (2026-09-30)
     "myia-po-2025:CoursIA-2-x",  # prefixe de l'adjoint != adjoint
     "myia-po-2026:CoursIA",
     "myia-po-2023:CoursIA",

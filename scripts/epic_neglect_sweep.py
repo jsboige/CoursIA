@@ -26,7 +26,8 @@ measures EPIC neglect FLEET-wide -- different cadence, different consumer
 
 What it measures
 ----------------
-For each OPEN issue labeled `EPIC`: days since `updatedAt` (`inact`) and the
+For each OPEN issue recognized as an EPIC -- label `EPIC` OR title prefix
+`[EPIC]` (#18203): days since `updatedAt` (`inact`) and the
 number of MERGED PRs citing `#N` (title or body) within the window of the
 last `--merged-limit` merged PRs. The window is the REAL span of that fetch
 (min..max mergedAt) and is WRITTEN in the report -- a ranking without a
@@ -262,16 +263,30 @@ def _repo_default() -> str:
     return out or "jsboige/CoursIA"
 
 
+EPIC_TITLE_PREFIX = "[EPIC]"
+
+
+def is_epic(d: dict) -> bool:
+    """Pure recognition predicate: label `EPIC` OR title prefix `[EPIC]` (#18203).
+
+    The two conventions coexist on this repo: most EPICs carry the label, some
+    only carry the title prefix. A sweep that reads one channel misses the
+    other half -- so recognition is label-OR-title. Prefix (not substring): a
+    plain issue mentioning "[EPIC]" mid-title is not an EPIC. Case-insensitive
+    to match the label's own tolerance.
+    """
+    if any(lb.get("name") == EPIC_LABEL for lb in (d.get("labels") or [])):
+        return True
+    title = (d.get("title") or "").strip().upper()
+    return title.startswith(EPIC_TITLE_PREFIX)
+
+
 def list_open_epics(repo: str) -> list[Epic]:
     raw = _gh_json([
         "issue", "list", "--repo", repo, "--state", "open",
         "--limit", "400", "--json", "number,title,createdAt,updatedAt,labels",
     ]) or []
-    return [
-        Epic.from_gh_dict(d)
-        for d in raw
-        if any(lb.get("name") == EPIC_LABEL for lb in (d.get("labels") or []))
-    ]
+    return [Epic.from_gh_dict(d) for d in raw if is_epic(d)]
 
 
 def list_recent_merged_prs(repo: str, limit: int) -> list[MergedPr]:
@@ -381,6 +396,15 @@ def _self_test() -> int:
     # Citation parser.
     check("citation parser reads title+body",
           MergedPr(1, "x #12", "See #34", now).cited_issues() == {12, 34})
+    # EPIC recognition: label OR title prefix (#18203).
+    check("epic recognized by label",
+          is_epic({"title": "x", "labels": [{"name": "EPIC"}]}))
+    check("epic recognized by title prefix without label",
+          is_epic({"title": "[EPIC] Tirage des grains", "labels": []}))
+    check("plain issue not an epic",
+          not is_epic({"title": "Bug report", "labels": []}))
+    check("mid-title mention not an epic",
+          not is_epic({"title": "Note about [EPIC] conventions", "labels": []}))
 
     if failures:
         print(f"SELF-TEST FAILED ({len(failures)} control(s)): {failures}")

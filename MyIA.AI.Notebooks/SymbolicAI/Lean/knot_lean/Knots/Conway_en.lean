@@ -9,10 +9,11 @@
   Résultats clés :
   1. Conway (11n34) et Kinoshita-Terasaka (11n42) partagent le même
      polynôme d'Alexander (trivial) — les invariants de mutation coïncident.
-  2. Le nœud de Kinoshita-Terasaka EST slice.
-  3. Le nœud de Conway N'EST PAS smoothly slice (Piccirillo 2018/2020).
-  4. Avec le théorème de Freedman (Conway est topologiquement slice),
-     ceci donne la première dichotomie smooth/topologique explicite.
+  2. Slice et dichotomie lisse/topologique (Kinoshita-Terasaka slice,
+     Conway PAS slice lisse — Piccirillo 2018/2020 ; Conway topologiquement
+     slice — Freedman) : extraits dans `Knots.Slice_en` (issue #18397).
+     Conway mutation and the PD codes of both knots: extracted into
+     `Knots.Mutation` and `Knots.ConwayPD` (issue #18397, tranche 2).
 
   EPIC #2874, Phase 1 (scaffolding uniquement — sorry permanent pour l'instant).
 
@@ -35,6 +36,8 @@
 
 import Knots.Basic_en
 import Knots.Invariant_en
+import Knots.Mutation_en
+import Knots.ConwayPD_en
 
 import Mathlib.Algebra.Polynomial.Basic
 import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
@@ -42,282 +45,6 @@ import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
 open Knots_en
 
 namespace Knots_en
-
-/-! ## 1. Conway mutation
-
-A Conway mutation takes a knot K with a Conway sphere (meets K in 4 points),
-cuts along the sphere, rotates 180°, and reglues. Mutation preserves:
-- Alexander polynomial
-- Jones polynomial
-- Knot genus
-
-The Conway knot and Kinoshita-Terasaka knot are related by mutation.
--/
-
-/-- A Conway sphere: an S² meeting the knot transversely in 4 points. -/
-structure ConwaySphere where
-  -- The 4 intersection points on the knot
-  points : Fin 4 → Nat
-  -- TODO: proper geometric definition
-
-/-! ### Combinatorial translation of mutation at the PD level
-
-Mutation is geometric (cut along a Conway sphere, rotate 180°, reglue), but
-PL topology — gluing manifolds with boundary — is out of reach of Mathlib.
-The retained combinatorial translation: a 180° rotation of a 2-strand tangle
-acts on its 4 boundary points as an element of the Klein group
-{id, (12)(34), (13)(24), (14)(23)} — the three half-turns and the identity.
-At the PD-code level, mutating a window of crossings = permuting the label
-positions within each crossing of the window.
-
-Mutation preserves the crossing count (lemma `mutateWindow_length`) — this
-is what makes the negative control below decidable.
--/
-
-/-- 180° rotations of a 2-strand tangle: the Klein group on the four
-boundary points {id, (12)(34), (13)(24), (14)(23)}. Every element is its
-own inverse. -/
-inductive KleinRot where
-  | id : KleinRot
-  | r12 : KleinRot
-  | r13 : KleinRot
-  | r14 : KleinRot
-
-/-- Action of a Klein rotation on a PD crossing: the labels (values) are
-preserved, their positions are permuted. -/
-def KleinRot.apply (ρ : KleinRot) (c : PDCrossing) : PDCrossing :=
-  match ρ with
-  | .id => c
-  | .r12 => ⟨c.e2, c.e1, c.e4, c.e3⟩
-  | .r13 => ⟨c.e3, c.e4, c.e1, c.e2⟩
-  | .r14 => ⟨c.e4, c.e3, c.e2, c.e1⟩
-
-theorem KleinRot.apply_involutive (ρ : KleinRot) (c : PDCrossing) :
-    ρ.apply (ρ.apply c) = c := by
-  cases ρ <;> cases c <;> rfl
-
-/-- Mutation of a window [i, j) of the crossing list: crossings outside the
-window are unchanged, those inside are rotated by ρ. Empty window (j ≤ i):
-identity. Full window: the whole diagram. -/
-def mutateWindow : List PDCrossing → Nat → Nat → KleinRot → List PDCrossing
-  | [], _, _, _ => []
-  | c :: cs', 0, 0, _ => c :: cs'
-  | c :: cs', 0, j+1, ρ => ρ.apply c :: mutateWindow cs' 0 j ρ
-  | c :: cs', _+1, 0, _ => c :: cs'
-  | c :: cs', i+1, j+1, ρ => c :: mutateWindow cs' i j ρ
-
-/-- Mutation preserves the crossing count. -/
-theorem mutateWindow_length (cs : List PDCrossing) (i j : Nat) (ρ : KleinRot) :
-    (mutateWindow cs i j ρ).length = cs.length := by
-  induction cs generalizing i j with
-  | nil => rfl
-  | cons c cs' ih =>
-    match i, j with
-    | 0, 0 => rfl
-    | 0, _+1 => simp [mutateWindow, ih]
-    | _+1, 0 => rfl
-    | _+1, _+1 => simp [mutateWindow, ih]
-
-/-- Mutation is involutive: mutating the same window twice with the same
-rotation returns the initial list (every Klein element is its own inverse). -/
-theorem mutateWindow_involutive (cs : List PDCrossing) (i j : Nat) (ρ : KleinRot) :
-    mutateWindow (mutateWindow cs i j ρ) i j ρ = cs := by
-  induction cs generalizing i j with
-  | nil => rfl
-  | cons c cs' ih =>
-    match i, j with
-    | 0, 0 => rfl
-    | 0, j+1 =>
-      simp only [mutateWindow]
-      rw [ih 0 j, KleinRot.apply_involutive]
-    | _+1, 0 => rfl
-    | _+1, _+1 => simp only [mutateWindow, ih _ _]
-
-/-- Two diagrams are mutants if there exist a window and a Klein rotation
-mapping the crossing list of one onto the other. -/
-def AreMutantDiagrams (d₁ d₂ : KnotDiagram) : Prop :=
-  ∃ (i j : Nat) (ρ : KleinRot), mutateWindow d₁.crossings i j ρ = d₂.crossings
-
-/-- Two knots are mutants if they admit representative diagrams (in the
-Reidemeister sense) that are mutants. The existential quantifier over
-representatives is essential: mutation does not necessarily apply to the
-designated diagrams, but to diagrams of the same isotopy classes. -/
-def AreMutants (k₁ k₂ : Knot) : Prop :=
-  ∃ (d₁ d₂ : KnotDiagram),
-    ReidemeisterEquiv k₁.diagram d₁ ∧
-    ReidemeisterEquiv k₂.diagram d₂ ∧
-    AreMutantDiagrams d₁ d₂
-
-/-! ### Elementary theory: reflexivity and symmetry
-
-Reflexivity: empty window. Symmetry: involutivity of `mutateWindow` (every
-Klein rotation is its own inverse). Transitivity is false in general for
-mutation (composing two mutations on different windows is not a one-shot
-mutation) — this is NOT an equivalence relation, and that is correct.
--/
-/- NOTE: no transitivity claimed — mutation composes rotations over
-potentially different windows, which is not a one-shot rotation. -/
-
-/-- Empty window: mutation is the identity there, for any list. -/
-theorem mutateWindow_zero_window (cs : List PDCrossing) (ρ : KleinRot) :
-    mutateWindow cs 0 0 ρ = cs := by
-  cases cs with
-  | nil => rfl
-  | cons _ _ => rfl
-
-theorem AreMutantDiagrams.refl (d : KnotDiagram) : AreMutantDiagrams d d :=
-  ⟨0, 0, .id, mutateWindow_zero_window d.crossings .id⟩
-
-theorem AreMutantDiagrams.symm {d₁ d₂ : KnotDiagram} (h : AreMutantDiagrams d₁ d₂) :
-    AreMutantDiagrams d₂ d₁ := by
-  obtain ⟨i, j, ρ, hmut⟩ := h
-  refine ⟨i, j, ρ, ?_⟩
-  rw [← hmut]
-  exact mutateWindow_involutive d₁.crossings i j ρ
-
-theorem AreMutants.refl (k : Knot) : AreMutants k k :=
-  ⟨k.diagram, k.diagram, ReidemeisterEquiv.refl k.diagram,
-    ReidemeisterEquiv.refl k.diagram, AreMutantDiagrams.refl k.diagram⟩
-
-theorem AreMutants.symm {k₁ k₂ : Knot} (h : AreMutants k₁ k₂) : AreMutants k₂ k₁ := by
-  obtain ⟨d₁, d₂, hd₁, hd₂, hmut⟩ := h
-  exact ⟨d₂, d₁, hd₂, hd₁, AreMutantDiagrams.symm hmut⟩
-
-/-! ### Controls: the definition discriminates
-
-A definition catching neither a mutant pair nor a counterexample would be a
-disguised `True` and removing the `sorry` would be cosmetic. Two controls:
-
-- NEGATIVE (`not_areMutantDiagrams_trefoil_unknot`): mutation preserves the
-  crossing count, so the trefoil (3 crossings) and the unknot (0) are not
-  mutants — at the designated-diagram level.
-- POSITIVE (`areMutants_trefoil_mutant`): a non-trivial mutation (full
-  window, r12 rotation) is captured by the definition.
-
-NOTE (limit of the canonical witness): the designated diagrams
-`conwayKnotDiagram` and `kinoshitaTerasakaDiagram` (corrected census PD
-codes, cf. §2) share their first five crossings and differ at crossings 6
-to 11 — no one-shot map superposes them.
-`AreMutants conwayKnot kinoshitaTerasakaKnot` will require an intermediate
-diagram (Reidemeister isotopy) — later sub-grain.
--/
-
-/-- Negative control: trefoil and unknot are not mutants (mutation preserves
-the crossing count). -/
-theorem not_areMutantDiagrams_trefoil_unknot :
-    ¬ AreMutantDiagrams trefoilDiagram unknotDiagram := by
-  intro ⟨i, j, ρ, hmut⟩
-  have hlen := mutateWindow_length trefoilDiagram.crossings i j ρ
-  simp only [unknotDiagram] at hmut
-  rw [hmut] at hlen
-  simp [trefoilDiagram] at hlen
-
-/-- The trefoil mutant by r12 over the full window. -/
-def trefoilMutantDiagram : KnotDiagram where
-  crossings := mutateWindow trefoilDiagram.crossings 0 3 KleinRot.r12
-  numEdges := 6
-
-def trefoilMutant : Knot where
-  diagram := trefoilMutantDiagram
-
-/-- Positive control: the definition catches a non-trivial mutation (full
-window, non-identity rotation). -/
-theorem areMutantDiagrams_trefoil_mutant :
-    AreMutantDiagrams trefoilDiagram trefoilMutantDiagram :=
-  ⟨0, 3, .r12, rfl⟩
-
-theorem areMutants_trefoil_mutant : AreMutants trefoil trefoilMutant :=
-  ⟨trefoilDiagram, trefoilMutantDiagram, ReidemeisterEquiv.refl _,
-    ReidemeisterEquiv.refl _, areMutantDiagrams_trefoil_mutant⟩
-
-/-! ## 2. The Conway knot (11n34)
-
-11 crossings in the Rolfsen table. Discovered by Conway (1970).
-Trivial Alexander polynomial. Topologically slice (Freedman).
-Not smoothly slice (Piccirillo 2018).
-
-PD-code from the KnotInfo census (generated by spherogram 2.4.1),
-**corrected**: the code committed by #12892 was not connected — its
-crossing 11 `⟨21, 22, 22, 21⟩` used only edges {21, 22}, a component
-isolated from the rest of the diagram, and edge 19 appeared twice within
-its own crossing `⟨19, 14, 20, 19⟩`. The `wf` control (labels in [1, 22],
-each exactly twice) does not see connectivity: the defect passed.
-Measured consequence: the crossing-11 row was entirely zero in the
-designated minor → determinant 0, and the original
-`conway_trivial_alexander` statement (`= 1`) was false under the designated
-normalization. The tuples below are the (t₁, t₂, t₃, t₀) rotation of the
-census tuples, so that the over-strand sits at positions (e2, e4) of this
-file's convention. Verified designated target (Python probe faithful to the
-construction, validated on 3₁/4₁/5₁): minor = −t⁶, a unit — Δ = 1
-classically.
--/
-
-def conwayKnotDiagram : KnotDiagram where
-  crossings := [
-    ⟨1, 4, 22, 3⟩,
-    ⟨7, 2, 6, 1⟩,
-    ⟨3, 8, 2, 7⟩,
-    ⟨4, 12, 5, 11⟩,
-    ⟨12, 6, 13, 5⟩,
-    ⟨16, 9, 15, 8⟩,
-    ⟨9, 21, 10, 20⟩,
-    ⟨17, 11, 18, 10⟩,
-    ⟨13, 19, 14, 18⟩,
-    ⟨19, 15, 20, 14⟩,
-    ⟨22, 17, 21, 16⟩
-  ]
-  numEdges := 22
-
-/-- Control: the corrected code is well-formed in the `wf` sense (each label
-of [1, 22] exactly twice). The previous disconnected code also passed this
-control — the arc control is what distinguishes. -/
-theorem conway_wf : conwayKnotDiagram.wf = true := by
-  decide
-
-/-- Control: the arc partition of the corrected code — stated in §4
-(`conway_arcPartition`), after `arcPartition` is defined. -/
-
-def conwayKnot : Knot where
-  diagram := conwayKnotDiagram
-
-/-! ## 3. The Kinoshita-Terasaka knot (11n42)
-
-Also 11 crossings. Shares the trivial Alexander polynomial with 11n34.
-IS smoothly slice (bounds a disk in B⁴).
-Mutant of the Conway knot.
-
-Census PD-code corrected as in §2 (the previous code was connected but
-carried intra-crossing repeated edges at crossings 10 and 11 —
-`⟨19, 14, 20, 19⟩` and `⟨21, 12, 22, 21⟩` — yielding a non-unit designated
-minor of degree 7, false for Δ = 1). Same (t₁, t₂, t₃, t₀) rotation.
-Verified designated target: minor = t⁵, a unit.
--/
-
-def kinoshitaTerasakaDiagram : KnotDiagram where
-  crossings := [
-    ⟨1, 4, 22, 3⟩,
-    ⟨7, 2, 6, 1⟩,
-    ⟨3, 8, 2, 7⟩,
-    ⟨4, 12, 5, 11⟩,
-    ⟨12, 6, 13, 5⟩,
-    ⟨17, 9, 18, 8⟩,
-    ⟨9, 15, 10, 14⟩,
-    ⟨20, 11, 19, 10⟩,
-    ⟨14, 19, 13, 18⟩,
-    ⟨15, 21, 16, 20⟩,
-    ⟨21, 17, 22, 16⟩
-  ]
-  numEdges := 22
-
-/-- `wf` control of the corrected KT code (cf. `conway_wf`). -/
-theorem kinoshitaTerasaka_wf : kinoshitaTerasakaDiagram.wf = true := by
-  decide
-
-/-- Control: arc partition of the corrected KT code — stated in §4
-(`kinoshitaTerasaka_arcPartition`). -/
-
-def kinoshitaTerasakaKnot : Knot where
-  diagram := kinoshitaTerasakaDiagram
 
 /-! ## 4. Same Alexander polynomial
 
@@ -1385,24 +1112,23 @@ theorem alexander_trefoilMutant :
 
 /-- Discrimination control on the figure-eight knot (4_1): under the
 designated normalization (minor omitting the first row and the last column),
-the function returns −2·t² + 2·t − 1 on the corrected raw wiring.
+the function returns t³ − 2·t² + 2·t on the canonical planar code (#17595).
 
 Honesty note: this value is NOT the classical Alexander polynomial of 4_1
 (which is ±t² ∓ 3·t ± 1, i.e. t² − 3·t + 1 up to a unit factor); the
 theorem measures the value actually produced by the designated function on
 a 4-crossing wiring that forms a single loop. The trefoil (t² − t + 1) and
 the determinant |P(−1)| = 5 = det(4_1) are reproduced, but the polynomial
-shape diverges from the classical value on the 4-crossing class — anomaly
-exhaustively documented (2736 orientation-valid wirings tested, including
-the DT [4,6,8,2] wiring) in the follow-up issue opened with this PR.
-The divergence is formalized below (`alexander_figureEight_not_classical`:
-not a unit) and repaired by the signed variant
+shape diverges from the classical value — the unsigned matrix treats the
+two negative crossings of the planar code as positive. The divergence is
+formalized below (`alexander_figureEight_not_classical`: not a unit) and
+repaired by the signed variant
 (`alexander_figureEight_signed`: the exact classical value).
 -/
 theorem alexander_figureEight :
     alexanderPolynomial figureEight =
-      - (2 : Polynomial ℤ) * Polynomial.X ^ 2 + 2 * Polynomial.X - 1 := by
-  have hp : arcPartition figureEightDiagram = [[3, 4], [5, 6], [7, 8], [1, 2]] := by
+      Polynomial.X ^ 3 - (2 : Polynomial ℤ) * Polynomial.X ^ 2 + 2 * Polynomial.X := by
+  have hp : arcPartition figureEightDiagram = [[1, 2], [5, 6], [3, 4], [7, 8]] := by
     decide
   simp only [alexanderPolynomial, alexanderPolynomialAux, figureEight, hp]
   simp only [figureEightDiagram]
@@ -1422,19 +1148,21 @@ all-positive diagram — the `3_1` trefoil of `Basic.lean`, whose three
 crossings are documented positive — the matrix IS the Alexander matrix and
 the designated minor recovers the classical value. On the figure-eight
 knot `4_1` (amphichiral, two crossings of each sign in any minimal
-alternating diagram), the matrix is wrong on the negative crossings: the
-minor returns `−2t² + 2t − 1`, outside the unit class of the classical
-`t² − 3t + 1` (see `alexander_figureEight_not_classical` below) — so the
-divergence is NOT a representative artifact (no symmetrization or Conway
-normalization `Δ(1) = 1` can repair it), but a chirality artifact. The
-determinant survives: `|P(−1)| = 5 = det(4_1)`
+alternating diagram — the canonical planar code carries the signs
+`[−, −, +, +]` read by `crossingSign`), the matrix is wrong on the
+negative crossings: the minor returns `t³ − 2t² + 2t`, outside the unit
+class of the classical `t² − 3t + 1` (see
+`alexander_figureEight_not_classical` below) — so the divergence is NOT a
+representative artifact (no symmetrization or Conway normalization
+`Δ(1) = 1` can repair it), but a chirality artifact. The determinant
+survives: `|P(−1)| = 5 = det(4_1)`
 (`alexander_figureEight_eval_neg_one`).
 
 The signed variant `alexanderPolynomialSigned` takes chirality as data and
-recovers the classical value on the figure-eight: the alternating labeling
-`[−, +, −, +]` of the DT-derived diagram returns exactly `t² − 3t + 1`,
-its mirror `[+, −, +, −]` returns `t · (t² − 3t + 1)` — same unit class,
-as amphichirality demands. -/
+recovers the classical value on the figure-eight: the true labeling
+`[−, −, +, +]` returns exactly `−t · (t² − 3t + 1)`, its mirror
+`[+, +, −, −]` returns `−(t² − 3t + 1)` — same unit class, as
+amphichirality demands. -/
 
 /-- Alexander row of a **negative** crossing: Fox derivative of the mirror
 Wirtinger relation `x_o⁻¹ x_i x_o = x_out`, multiplied by the unit `t` to
@@ -1470,29 +1198,33 @@ noncomputable def alexanderPolynomialSigned (d : KnotDiagram)
 
 /-- The divergence is not a unit: the designated value on the figure-eight
 equals `ε · t^k · (t² − 3t + 1)` for NO unit `ε = ±1` and no exponent `k`.
-Proof by evaluations: at `0` the designated value returns `−1`, forcing
-`k = 0` then `ε = −1`; at `2` it returns `−5` while `ε · 2^k · (2² − 3·2 + 1)`
-then equals `1`. -/
+Proof by a sign argument at two evaluation points: at `2`, the trinomial
+equals `−1`, so the identity would require `4 = −ε · 2^k` — impossible for
+`ε = 1` (right-hand side negative); at `3`, the trinomial equals `1`, so
+the identity would require `15 = ε · 3^k` — impossible for `ε = −1`
+(right-hand side negative). Since `2^k` and `3^k` are strictly positive,
+each unit is refuted by one of the two points. -/
 theorem alexander_figureEight_not_classical :
     ¬ ∃ (k : ℕ) (ε : ℤ), ε * ε = 1 ∧
       alexanderPolynomial figureEight =
         Polynomial.C ε * Polynomial.X ^ k * (Polynomial.X ^ 2 - 3 * Polynomial.X + 1) := by
-  rintro ⟨k, ε, -, h⟩
-  rcases k with _ | k
-  · have h0 := congrArg (Polynomial.eval 0) h
-    have h2 := congrArg (Polynomial.eval 2) h
-    rw [alexander_figureEight, pow_zero] at h0 h2
-    simp only [Polynomial.eval_one, Polynomial.eval_add, Polynomial.eval_mul,
-      Polynomial.eval_sub, Polynomial.eval_C, Polynomial.eval_X, pow_two, mul_one,
-      mul_zero, add_zero, zero_add, zero_sub] at h0 h2
-    norm_num at h0 h2
-    omega
-  · have h0 := congrArg (Polynomial.eval 0) h
-    rw [alexander_figureEight, pow_succ] at h0
-    simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_sub,
-      Polynomial.eval_C, Polynomial.eval_X, pow_two, mul_assoc, mul_zero, zero_mul,
-      mul_one, add_zero, zero_add, zero_sub] at h0
-    norm_num at h0
+  rintro ⟨k, ε, hε, h⟩
+  have hε' : ε = 1 ∨ ε = -1 := by
+    rw [← pow_two] at hε
+    exact sq_eq_one_iff.mp hε
+  have h2 := congrArg (Polynomial.eval 2) h
+  rw [alexander_figureEight] at h2
+  simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_sub,
+    Polynomial.eval_pow, Polynomial.eval_C, Polynomial.eval_X] at h2
+  norm_num at h2
+  have h3 := congrArg (Polynomial.eval 3) h
+  rw [alexander_figureEight] at h3
+  simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_sub,
+    Polynomial.eval_pow, Polynomial.eval_C, Polynomial.eval_X] at h3
+  norm_num at h3
+  have h2p : (0 : ℤ) < 2 ^ k := by positivity
+  have h3p : (0 : ℤ) < 3 ^ k := by positivity
+  rcases hε' with rfl | rfl <;> omega
 
 /-- The knot determinant survives the divergence: the designated value at
 `−1` equals `−5`, so `|P(−1)| = 5 = det(4_1)` (classical: for a knot,
@@ -1502,17 +1234,17 @@ theorem alexander_figureEight_eval_neg_one :
     (alexanderPolynomial figureEight).eval (-1) = -5 := by
   rw [alexander_figureEight]
   simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_sub,
-    Polynomial.eval_X, pow_two, mul_zero, mul_one, add_zero, zero_add, zero_sub]
+    Polynomial.eval_X, pow_two, pow_three]
   norm_num
 
 /-- The signed variant recovers the classical value on the figure-eight:
-the alternating labeling `[−, +, −, +]` of the DT-derived diagram returns
-exactly `t² − 3t + 1` under the same designated minor, and its mirror
-`[+, −, +, −]` returns `t · (t² − 3t + 1)` — same unit class, as
-amphichirality of `4_1` demands. -/
+the true labeling `[−, −, +, +]` of the canonical planar code (the one
+read by `crossingSign`, cf `Jones.writhe_figureEightDiagram`) returns
+exactly `−t · (t² − 3t + 1)` under the same designated minor — the unit
+class of the classical `t² − 3t + 1`. -/
 theorem alexander_figureEight_signed :
-    alexanderPolynomialSigned figureEightDiagram [false, true, false, true]
-      = Polynomial.X ^ 2 - 3 * Polynomial.X + 1 := by
+    alexanderPolynomialSigned figureEightDiagram [false, false, true, true]
+      = -(Polynomial.X * (Polynomial.X ^ 2 - 3 * Polynomial.X + 1)) := by
   simp only [alexanderPolynomialSigned, figureEightDiagram]
   simp (config := { decide := true })
   rw [det_three_aux]
@@ -1520,12 +1252,13 @@ theorem alexander_figureEight_signed :
   simp (config := { decide := true }) [alexanderEntrySigned, alexanderEntry, alexanderEntryNeg]
   ring
 
-/-- Mirror of the previous: the opposite alternating labeling `[+, −, +, −]`
-returns `t · (t² − 3t + 1)` — same unit class, as amphichirality demands
-(the two mirror diagrams represent the same knot). -/
+/-- Mirror of the previous: the opposite labeling `[+, +, −, −]` returns
+`−(t² − 3t + 1)` — same unit class as the previous one, as
+amphichirality demands (the two mirror diagrams represent the same
+knot). -/
 theorem alexander_figureEight_signed_mirror :
-    alexanderPolynomialSigned figureEightDiagram [true, false, true, false]
-      = Polynomial.X * (Polynomial.X ^ 2 - 3 * Polynomial.X + 1) := by
+    alexanderPolynomialSigned figureEightDiagram [true, true, false, false]
+      = -(Polynomial.X ^ 2 - 3 * Polynomial.X + 1) := by
   simp only [alexanderPolynomialSigned, figureEightDiagram]
   simp (config := { decide := true })
   rw [det_three_aux]
@@ -3629,105 +3362,5 @@ theorem KT_trivial_alexander :
   rw [← hchain, Matrix.det_of_upperTriangular hT, hdiag]
 
 
-/-! ## 5. Slice knots
-
-A knot K is (smoothly) slice if it bounds a smooth properly embedded
-disk D² in the 4-ball B⁴.
-
-A knot is topologically slice if it bounds a locally flat topologically
-embedded disk in B⁴.
--/
-
-def IsSmoothlySlice (k : Knot) : Prop := sorry
-  -- Definition: ∃ (D : D² ↪ B⁴ smooth), ∂D = K
-  -- Reference: Fox & Milnor (1966), Singularities of 2-spheres in 4-space
-  -- Mathlib prerequisites:
-  --   1. Smooth manifolds (partial: Mathlib has manifolds, not smooth embeddings D²→B⁴)
-  --   2. 4-ball (not in Mathlib)
-  --   3. Properly embedded surfaces (not in Mathlib)
-
-def IsTopologicallySlice (k : Knot) : Prop := sorry
-  -- Definition: ∃ (D : D² ↪ B⁴ locally flat), ∂D = K
-  -- Mathlib prerequisites: same as smoothly slice + topological manifold theory
-
-/-! ## 6. Piccirillo's theorem (statement only)
-
-The Conway knot is NOT smoothly slice. This was proved by Lisa Piccirillo
-in 2018 (published Annals of Mathematics 2020). She was a graduate student
-at the time and solved it in under a week.
-
-Strategy (cf. "Getting a handle on the Conway knot", AMS Bulletin 2022):
-1. Construct a knot K* that has the same trace as the Conway knot
-   (the trace X_K is the 4-manifold obtained by attaching a 2-handle
-   to B⁴ along K with 0-framing)
-2. Show K* is NOT smoothly slice (via Rasmussen's s-invariant,
-   computed from Khovanov homology)
-3. By the trace embedding lemma: if Conway is smoothly slice,
-   then K* is smoothly slice → contradiction
-
-This is a **magnificent** proof strategy — attacking the problem indirectly
-by finding a "companion" knot that shares the same trace.
--/
-
-/-- Piccirillo's theorem: the Conway knot is not smoothly slice. -/
-theorem conway_not_smoothly_slice : ¬ IsSmoothlySlice conwayKnot := by
-  exact sorry
-  -- Reference: Piccirillo (2018), arXiv:1808.02923
-  -- Published: Annals of Mathematics 191(2), 2020
-  -- Lean AI Leaderboard: https://lean-lang.org/eval/problems/conway_knot_not_smoothly_slice/
-  --
-  -- Proof infrastructure needed:
-  --   1. Trace X_K of a knot (4-manifold from 0-framed 2-handle)
-  --   2. Trace embedding lemma (if K slice ↔ ∂D = K → X_K embeds in B⁴)
-  --   3. Piccirillo's companion knot K* with same trace as Conway
-  --   4. Rasmussen s-invariant of K* ≠ 0 → K* not slice
-  --   5. Khovanov homology (computes s-invariant)
-  --
-  -- Mathlib prerequisites (ALL missing):
-  --   - 4-manifolds, handle decompositions, Kirby calculus
-  --   - Khovanov homology
-  --   - Rasmussen s-invariant
-  --   - Smooth vs topological embeddings
-  --   - Freedman's surgery theorem (for topological slice)
-  --
-  -- Estimated difficulty: **decades** away from formalization in Lean.
-  -- This sorry is effectively permanent.
-
-/-! ## 7. Freedman's theorem (statement only)
-
-The Conway knot IS topologically slice, because it has trivial
-Alexander polynomial. This is a consequence of Freedman's 1982 theorem:
-every knot with trivial Alexander polynomial is topologically slice.
--/
-
-theorem conway_topologically_slice : IsTopologicallySlice conwayKnot := by
-  exact sorry
-  -- Reference: Freedman (1982), The topology of four-dimensional manifolds
-  -- Published: Journal of Differential Geometry 17(3)
-  -- Lean AI Leaderboard: https://lean-lang.org/eval/problems/conway_knot_topologically_slice/
-  --
-  -- Proof infrastructure needed:
-  --   1. Freedman's full topological surgery machinery in dimension 4
-  --   2. Disk embedding theorem
-  --   3. Topological h-cobordism theorem
-  --
-  -- Mathlib prerequisites: essentially ALL of topological 4-manifold theory
-  -- This sorry is effectively permanent.
-
-/-! ## 8. The dichotomy
-
-Together, Piccirillo + Freedman give:
-  Conway knot: topologically slice BUT NOT smoothly slice.
-
-This is the first explicit example of the smooth/topological dichotomy
-for a named knot. It illustrates that smooth structures in dimension 4
-are genuinely more restrictive than topological ones.
--/
-
-/-- The Conway knot exhibits the smooth/topological dichotomy:
-it is topologically slice but not smoothly slice. -/
-theorem conway_dichotomy :
-    IsTopologicallySlice conwayKnot ∧ ¬ IsSmoothlySlice conwayKnot := by
-  exact ⟨conway_topologically_slice, conway_not_smoothly_slice⟩
 
 end Knots_en

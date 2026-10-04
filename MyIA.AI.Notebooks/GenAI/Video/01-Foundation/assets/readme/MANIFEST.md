@@ -17,7 +17,7 @@ Bornes EPIC #5654 P1 respectées : ≤200 KB/fichier, ≤1200 px max-dim.
 | `vid1-esrgan2.png` | `01-4-Video-Enhancement-ESRGAN.ipynb` | 16 | 1 | PNG | 1200×230 | 85,2 KB | Enhancement ESRGAN — panorama |
 | `vid1-animatediff.png` | `01-5-AnimateDiff-Introduction.ipynb` | 10 | 3 | PNG | 500×252 | 195,7 KB | Génération AnimateDiff — animation |
 
-**Diversité couverte** : 5 notebooks fondamentaux (Opérations, Compréhension GPT-5, Analyse Qwen-VL, Enhancement ESRGAN, AnimateDiff). Total : 6 figures, 493,3 KB, max 195,7 KB/fichier. Toutes PNG. AnimateDiff (195,7 KB) : source dense 2,1 MB, downscale 500px — sous la borne dure 200 KB.
+**Diversité couverte** : notebooks fondamentaux (Opérations, Compréhension GPT-5, Analyse Qwen-VL, Enhancement ESRGAN, AnimateDiff). Total : 6 figures, 493,3 KB, max 195,7 KB/fichier. Toutes PNG. AnimateDiff (195,7 KB) : source dense 2,1 MB, downscale 500px — sous la borne dure 200 KB.
 
 ## Audit G.1 firsthand (lecture visuelle 2026-07-10, myia-po-2023)
 

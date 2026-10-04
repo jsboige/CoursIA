@@ -19,6 +19,16 @@
     Les junctions NTFS ne requierent PAS d'elevation admin. La suppression
     d'une junction (`cmd /c rmdir`) ne supprime que le lien, jamais la cible.
 
+    Validation du cache (#18584) : un cache pre-existant n'est reutilise que
+    s'il est peuple (sources Mathlib presentes), porte son .git et pointe sur
+    la revision du groupe. Un reste vide ou avorte est purge et repeuple
+    depuis un donneur ; sans donneur, le groupe est skip AVANT toute jonction
+    (incident #13962 : jonctions vers un cache vide, puis `lake build` tentant
+    un checkout sur le repo parent). Avant tout `lake build`, la presence de
+    .git dans le checkout mathlib jonctionne est verifiee -- sans elle, lake
+    refusé (isolation git du repo parent). Le Rollback purge les restes de
+    cache invalides au lieu de les laisser empoisonner le Apply suivant.
+
 .PARAMETER Mode
     Scan     : inventaire des projets, groupes mutualisables, economies estimees. Aucune modification.
     Apply    : cree le cache partage + junctions pour les groupes eligibles. Reversible (backups .bak-2611 + share-state.json).
@@ -177,6 +187,36 @@ function Get-ShareStatePath([string]$GroupId) {
     return Join-Path (Join-Path $CacheRoot $GroupId) 'share-state.json'
 }
 
+# --- Validation du cache (#18584) ---
+# Un cache pre-existant n'est reutilisable QUE s'il est peuple, porte son .git
+# (sinon `git` des commandes lake remonte au repo parent CoursIA) et pointe sur
+# la revision attendue du groupe. Incident fondateur 30/09 (#13962) : un reste
+# VIDE d'une tentative echouee etait jonctionne tel quel vers tous les membres.
+
+function Test-CacheValid([string]$CacheMathlib, [string]$ExpectedRev) {
+    if (-not (Test-Path -LiteralPath $CacheMathlib)) {
+        return @{ Valid = $false; Reason = 'introuvable' }
+    }
+    $gitDir = Join-Path $CacheMathlib '.git'
+    if (-not (Test-Path -LiteralPath $gitDir)) {
+        return @{ Valid = $false; Reason = "pas de .git ($gitDir) -- git opererait sur le repo parent" }
+    }
+    # Non-vide : au-dela du .git, un checkout Mathlib a des sources (Mathlib.lean, Mathlib/).
+    $hasSources = (Test-Path -LiteralPath (Join-Path $CacheMathlib 'Mathlib.lean')) -or
+                  (Test-Path -LiteralPath (Join-Path $CacheMathlib 'Mathlib'))
+    if (-not $hasSources) {
+        return @{ Valid = $false; Reason = 'aucune source Mathlib (Mathlib.lean / Mathlib/) -- reste de tentative echouee' }
+    }
+    $headRev = (& git -C $CacheMathlib rev-parse HEAD 2>$null)
+    if ($LASTEXITCODE -ne 0 -or -not $headRev) {
+        return @{ Valid = $false; Reason = 'rev-parse HEAD illisible dans le cache' }
+    }
+    if ($headRev -ne $ExpectedRev) {
+        return @{ Valid = $false; Reason = "revision $headRev != attendue $ExpectedRev" }
+    }
+    return @{ Valid = $true; Reason = "rev $headRev" }
+}
+
 # --- Scan ---
 
 function Invoke-Scan {
@@ -268,22 +308,36 @@ function Invoke-Apply {
 
         Write-Host "`n=== Apply groupe $groupId ($($members.Count) a traiter, $($alreadyDone.Count) deja junctionne(s)) ==="
 
-        # 1. Donneur : cache existant, sinon membre au plus gros .lake/build (traces les plus completes).
+        # 1. Donneur : cache existant VALIDE (#18584), sinon membre au plus gros
+        # .lake/build (traces les plus completes). Un cache invalide (vide, sans
+        # .git, mauvaise revision) est purge puis repeuple depuis un donneur ;
+        # sans donneur disponible, le groupe est skip AVANT toute jonction.
+        $expectedRev = $g.Group[0].MathlibRev
+        $cacheCheck = Test-CacheValid $cacheMathlib $expectedRev
         $donorRelPath = $null
-        if (-not (Test-Path -LiteralPath $cacheMathlib)) {
+        if ($cacheCheck.Valid) {
+            Write-Host "Cache existant valide reutilise ($($cacheCheck.Reason)) : $cacheMathlib"
+        } else {
+            if ($cacheCheck.Reason -ne 'introuvable') {
+                Write-Warning "Cache pre-existant INVALIDE ($($cacheCheck.Reason)) : $cacheMathlib"
+            }
             $candidates = $members | Where-Object HasCheckout |
                 Sort-Object { Get-DirSizeGB (Join-Path $_.MathlibDir '.lake\build') } -Descending
             if (-not $candidates) {
-                Write-Warning "Groupe $groupId : aucun checkout physique a promouvoir en donneur, skip."
+                # Pas de purge ici : des jonctions existantes pourraient viser ce
+                # chemin -- purger sans pouvoir repeupler les laisserait dangling.
+                Write-Warning "Groupe $groupId : cache invalide et aucun checkout physique a promouvoir en donneur -- skip AVANT toute jonction."
                 continue
+            }
+            if ($cacheCheck.Reason -ne 'introuvable') {
+                Write-Warning "Purge du cache invalide puis repopulation depuis le donneur."
+                Remove-DirRobust $cacheMathlib
             }
             $donor = $candidates[0]
             $donorRelPath = $donor.RelPath
             Write-Host "Donneur : $($donor.RelPath) -> $cacheMathlib"
             New-Item -ItemType Directory -Force -Path $cacheDir | Out-Null
             Move-Item -LiteralPath $donor.MathlibDir -Destination $cacheMathlib
-        } else {
-            Write-Host "Cache existant reutilise : $cacheMathlib"
         }
 
         # 2. Junctions pour tous les membres (donneur inclus, son dossier vient d'etre deplace).
@@ -329,6 +383,15 @@ function Invoke-Apply {
 
             # 3. Verification optionnelle : lake build a travers la junction.
             if ($Build) {
+                # Isolation git (#18584) : sans .git dans le checkout mathlib jonctionne,
+                # le clone/checkout que tente `lake build` remonte au repo parent CoursIA
+                # et mute l'arbre du depot. On refuse de lancer lake dans ce cas.
+                if (-not (Test-Path -LiteralPath (Join-Path $m.MathlibDir '.git'))) {
+                    Write-Host " FAILED — pas de .git dans $($m.MathlibDir) : lake build refuse (isolation git, #18584), rollback de ce membre"
+                    Restore-Member $m
+                    $stateMembers = @($stateMembers | Where-Object { $_.relPath -ne $m.RelPath })
+                    continue
+                }
                 Write-Host "  lake build $($m.RelPath) ..." -NoNewline
                 Push-Location $m.ProjDir
                 try {
@@ -491,7 +554,18 @@ function Invoke-Rollback {
         if (-not $remaining) {
             Remove-Item -LiteralPath $sf.FullName
             if ((Test-Path -LiteralPath $cacheMathlib)) {
-                Write-Host "Etat efface. Le cache mathlib reste sur disque (groupe applique sur cache pre-existant) : verifier avant suppression manuelle."
+                # #18584 : un reste VIDE ou sans .git est un poison pour le Apply
+                # suivant (jonction vers rien) -- purge systematique. Un cache
+                # peuple (groupe applique sur cache pre-existant) reste sur disque.
+                $leftoverCheck = Test-CacheValid $cacheMathlib $state.mathlibRev
+                if ($leftoverCheck.Valid) {
+                    Write-Host "Etat efface. Le cache mathlib reste sur disque (popule, rev $($leftoverCheck.Reason)) : verifier avant suppression manuelle."
+                } else {
+                    Write-Warning "Reste de cache invalide purge ($($leftoverCheck.Reason)) : $cacheMathlib"
+                    Remove-DirRobust $cacheMathlib
+                    Remove-Item -LiteralPath $sf.Directory.FullName -Force -ErrorAction SilentlyContinue
+                    Write-Host "Etat efface, reste invalide purge."
+                }
             } else {
                 Remove-Item -LiteralPath $sf.Directory.FullName -Force -ErrorAction SilentlyContinue
                 Write-Host "Etat efface, cache $($state.groupId) restitue au donneur."

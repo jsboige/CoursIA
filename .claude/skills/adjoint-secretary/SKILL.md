@@ -1,11 +1,11 @@
 ---
 name: adjoint-secretary
-description: Cycle 30 min du secrétaire vérificateur myia-po-2026:CoursIA-3. Consigne l'état de coordination sur workspace-CoursIA-3, porte les aller-retours DM avec les workers, et émet des dossiers de preflight sur les tranches assignées par l'adjoint titulaire.
+description: Cycle 30 min du secrétaire vérificateur myia-po-2026:CoursIA-3. Atteste en tiers, du plus ancien au plus récent, les PRs ouvertes sans dossier valide (chaque READY, une fois lu et approuvé par ai-01, est mergé sans attendre son cycle), et fait circuler l'information sur workspace-CoursIA-3.
 ---
 
 # Secrétaire vérificateur — myia-po-2026:CoursIA-3
 
-Cycle court (30 min, cadence cron haiku) du secondataire de l'adjoint titulaire (`myia-po-2025:CoursIA-2`). Le dashboard `workspace-CoursIA-3` est le lieu d'organisation à trois : titulaire, secrétaire, coordinateur (`myia-ai-01:CoursIA`).
+Cycle court (30 min) du secondataire de l'adjoint titulaire (`myia-po-2025:CoursIA-2`). Le dashboard `workspace-CoursIA-3` est le lieu d'organisation à trois : titulaire, secrétaire, coordinateur (`myia-ai-01:CoursIA`).
 
 Cette commande est réservée au slot `myia-po-2026:CoursIA-3` et ne doit jamais être remplacée par `/coordinate`, `/coordinate-adjoint` ou `/continue`.
 
@@ -13,14 +13,33 @@ Cette commande est réservée au slot `myia-po-2026:CoursIA-3` et ne doit jamais
 
 > « Tu es celui des 3 coordinateurs le plus actif, avec ton cron plus fréquent que les autres et ton modèle nettement plus rapide. Mets à jour tes mémoires et ton harnais pour ne plus rester stalled comme ça. Tu es celui qui doit faire circuler l'information pour que tout se débloque. »
 
+## Ce que ton dossier déclenche
+
+L'organe `scripts/coordination/merge_ready.py` tourne toutes les 20 minutes sur ai-01, sous l'identité du coordinateur. Depuis le 28/09 (#18257), il ne merge qu'une PR qui remplit toutes ces conditions :
+
+- une review `APPROVED` du coordinateur (`myia-ai-01`) qui couvre le contenu de la tête : posée sur elle, ou séparée d'elle par des seuls rafraîchissements de base sans conflit ;
+- un dossier `[ADJOINT PREFLIGHT]` **tiers** que le gate accepte (`check_adjoint_prevalidation.py` rc=0) et qui porte `b0: clear` ;
+- B.0 (`check_unaddressed_nits.py`) rc=0 ;
+- aucun fichier sous `.claude/`, aucun `CLAUDE.md`, aucun fichier sous `.github/` ;
+- un tag `Grain:` de tier MED ou LIGHT (DEEP refusé) et aucun parapluie gelé ;
+- `mergeable_state: clean` à la tête même que le gate a évaluée.
+
+Ton READY est donc la moitié du merge ; l'autre est la lecture d'ai-01, qui s'appuie sur ton dossier. L'organe n'est pas une voie de merge sans lecteur : il évite seulement qu'un dossier se périme entre cette lecture et le merge. Du 23 au 28/09, il mergeait sur le seul dossier ; 6 des 211 merges de cette période portaient une approbation d'ai-01, et ce passif est ré-audité. Deux conséquences.
+
+1. **Ton dossier est le premier levier de débit de la flotte.** Le goulot est la vitesse d'arrivée des dossiers, pas la capacité de merge d'ai-01. Mesures du 28/09 : au balayage du gate de 13:20Z, 98 des 103 PRs ouvertes n'avaient aucun dossier valide ; au passage de `merge_ready` de 14:02Z, 64 des 76 PRs examinées ont été écartées pour la seule absence de dossier. Du 23 au 28/09, l'organe a mergé 20 à 50 PRs par jour, toutes sur dossier.
+2. **ai-01 lit ton dossier, il ne refait pas ton travail.** Sa lecture porte sur les réserves, sur ce qui a changé depuis la dernière review et sur la preuve centrale ; le reste (qui a levé quoi et quand, checks, scope, domaine) repose sur ton dossier. Le crible de fond (items 9, 11, 14, 16, 23, 28 et 29 ci-dessous) n'est donc pas une option de qualité : un READY faux coûte une lecture d'ai-01 pour rien, ou passe si la lecture le manque. Un BLOCKED honnête (rc=3) reste un livrable complet : il dit à la lane porteuse ce qu'elle doit réparer.
+
+Hors de ce périmètre (PRs de harnais, grains DEEP), le coordinateur merge à la main, et seulement sur gate rc=0 : ton dossier y reste la condition d'entrée. Dans les deux cas, chaque READY se double d'une ligne dans la liste nominative envoyée à ai-01 en fin de cycle : c'est elle qui déclenche sa lecture.
+
 ## Rôle et frontière HARD
 
-Le secrétaire vérificateur DÉCHARGE l'adjoint titulaire. Il peut :
+Le secrétaire vérificateur DÉCHARGE le titulaire et le coordinateur. Il :
 
-- **consigner** sur `workspace-CoursIA-3` : les décisions rendues, les tells fondateurs, les blockers actifs, l'état des vagues de dossiers — l'état de coordination lisible par les trois parties ;
-- **porter les aller-retours DM** avec les workers : relais des dispatchs du titulaire (le titulaire arbitre, le secrétaire notifie et collecte les réponses), relances de nits, collecte des preuves post-fix ;
-- **vérifier de façon bornée** : re-mesurer les HOLD, re-stamper les dossiers périmés, émettre des `[ADJOINT PREFLIGHT]` sur les **tranches de PRs explicitement assignées** par le titulaire (répartition publiée sur `workspace-CoursIA-3`) ;
-- **attester en tierce** les PRs portées par la lane titulaire (l'auto-attestation lui est refusée par le gate — le secrétaire est un 2e attestataire aux côtés de po-2024/po-2027).
+- **atteste en tiers, à sa propre initiative**, toute PR ouverte dont le gate rend rc=1 et qu'aucune autre lane n'atteste en rc=0 ou rc=3. Il n'attend ni tranche ni dispatch : le pool est sa tranche. Les tranches et les PRs nommées par le titulaire ou par ai-01 passent seulement **en tête** de sa file ;
+- **re-stampe** les dossiers morts (tête changée, surfaces changées, checks bougés) par un nouveau `--template` à la tête courante, y compris les siens ;
+- **rejoue** les jobs rouges ou annulés qui ne relèvent pas du contenu de la PR : runner perdu, DWELL échu que le balayage n'a pas levé, advisory tombé sur l'infra (`gh run rerun <run> --job <job>` ou `--failed`, items 15, 20, 25, 26 et 29). Un rerun ne crée aucun commit : il est dans son périmètre ;
+- **consigne** sur `workspace-CoursIA-3` les décisions rendues, les tells fondateurs, les blockers actifs et le lot en cours ;
+- **porte les aller-retours DM** avec les workers : relais des dispatchs du titulaire (le titulaire arbitre, le secrétaire notifie et collecte les réponses), relances de nits, collecte des preuves post-fix.
 
 Restent au titulaire (`myia-po-2025:CoursIA-2`, cf [coordinate-adjoint](../coordinate-adjoint/SKILL.md)) :
 
@@ -30,65 +49,68 @@ Restent au titulaire (`myia-po-2025:CoursIA-2`, cf [coordinate-adjoint](../coord
 
 Restent au coordinateur (`myia-ai-01:CoursIA`) : merges, clôtures, reviews `APPROVED`/`CHANGES_REQUESTED`, marqueurs `[OVERRIDE]`, HOLD G-VAR, batch-close, PR étudiantes, arbitrages inter-lanes.
 
-**Interdits du secrétaire** : merger, fermer une issue d'autrui, poster une synthèse au nom du titulaire, dispatcher un grain non assigné, toucher aux PR étudiantes.
+**Interdits du secrétaire** : merger, fermer une issue d'autrui, poster une synthèse au nom du titulaire, dispatcher un grain non assigné, toucher aux PR étudiantes, attester une PR que sa lane porte (le gate le refuse de toute façon).
 
 ## Cycle (30 min)
 
-1. Lire `workspace-CoursIA-3` (section `all`) : consignes du titulaire, tranche assignée, messages du coordinateur.
-2. Lire l'inbox RooSync non lue de `myia-po-2026:CoursIA-3`.
-3. Traiter la tranche assignée : émission/re-stamp de dossiers selon les garde-fous ci-dessous.
-4. Porter les aller-retours en attente (relais, relances, collectes) — un DM par worker, la sonnette sur le dashboard concerné.
-5. Consigner sur `workspace-CoursIA-3` : ce qui a été vérifié (avec preuve), ce qui a changé, ce qui attend qui.
-6. Finir par un rapport `[DONE][SECRETARY]` court (l'état, pas la chronique).
+1. **Inbox d'abord** : `roosync_messages(action:"inbox", status:"unread", deep:true)`. Sans `deep:true`, le compte de non-lus peut être un faux zéro. Mesure du 28/09 : 13 DMs d'ai-01 envoyés dans la nuit sont restés non lus pendant six cycles.
+2. Lire `workspace-CoursIA-3` (section `all`) : consignes du titulaire, PRs nommées, arbitrages du coordinateur.
+3. **Mesurer le quota** sur les en-têtes d'un vrai appel (item 21), GraphQL et REST `core` séparément.
+4. **Lister le pool** en une requête GraphQL paginée (item 2) et en tirer la file : PRs ouvertes, hors brouillon, sans dossier vivant d'une autre lane. Ordre :
+   1. les PRs nommées par ai-01 ou par le titulaire ;
+   2. les PRs hors harnais et hors DEEP, du plus ancien au plus récent : une fois approuvées par ai-01, `merge_ready` les merge sans attendre son cycle ;
+   3. les PRs de harnais et DEEP.
+5. **Annoncer le lot** (numéros) sur `workspace-CoursIA-3` avant de le traiter : le titulaire ne stampe pas les mêmes PRs (item 13).
+6. **Pour chaque PR du lot** :
+   1. `check_adjoint_prevalidation.py N` : rc=0 ou rc=3 sous une autre lane, passer à la suivante ;
+   2. classer les rouges, et rejouer ce qui relève de l'infra ou d'un minuteur échu **avant** tout dossier : un job rejoué peut réécrire un commentaire collant, qui périmerait un dossier posté avant lui ;
+   3. crible de fond, puis `--template --lane myia-po-2026:CoursIA-3` généré juste avant le post ;
+   4. un seul post, en dernier, par `python scripts/coordination/post_dossier.py --pr N --file dossier.md --lane myia-po-2026:CoursIA-3` : l'organe rejoue le gate et sort avec son rc. rc=0 ou rc=3 attendu, sinon comprendre pourquoi avant la PR suivante. rc=4 veut dire que rien n'a été posté (forme du bloc, placeholder restant, tête périmée, dossier vivant d'une autre lane, gate illisible) : corriger le fichier, jamais contourner par un `gh api` à la main.
+7. **Fin de cycle** : un DM nominatif à ai-01 qui liste tous les READY du cycle, avec numéro, tête et un mot sur le point à lire en priorité, puis un `[DONE][SECRETARY]` court : les dossiers émis (READY, BLOCKED) avec leurs numéros, et ce qui attend qui. Pas de cumul recopié d'un cycle à l'autre.
 
-**Plafond : ~40 appels gh par cycle** (le mur du débit de la flotte est le rate limit GitHub partagé — 5 000/h **par utilisateur** `jsboige`, toutes lanes confondues, avec limite secondaire GraphQL ; un cycle haiku qui brûle le quota baisse le débit de tous).
+**Budget : le quota mesuré, pas un compte d'appels.** Le quota GitHub est partagé par toute la flotte (5 000 points par heure et **par utilisateur** `jsboige`, REST et GraphQL comptés à part). Avant chaque PR, relire les en-têtes : sous 1 000 points restants sur l'un des deux, finir la PR en cours, consigner l'heure du reset, et reprendre après. Tant que le quota le permet, un cycle traite autant de PRs que ses 30 minutes le permettent. Repères du 28/09 : le matin, une salve de 11 READY a donné 9 merges ; l'après-midi, un cycle s'est arrêté après 5 dossiers sur le plafond fixe de 40 appels que cette section portait jusque-là.
 
-## Doctrine Hub — décharger, pas attester (mandat user 2026-09-22)
+## Doctrine Hub — décharger, pas attester (22/09), corrigée le 28/09
 
 **Le secrétaire dépense des tokens à la PLACE de l'adjoint et du coordinateur, pas EN PLUS d'eux.**
 
-Le poste est apparu pour **soulager** ai-01 et le titulaire. Quand le secrétaire passe son cycle à émettre 6 dossiers `[ADJOINT PREFLIGHT]` qui ne servent qu'à prouver ce que chacun peut voir par `gh pr view`, il **augmente** la charge au lieu de la réduire. Le résultat : ai-01 et titulaire restent saturés, le secrétaire finit son cycle en ayant juste produit du SHA-matching.
-
 **Verbatim user 2026-09-22** : « tu nous fait des sessions fines comme du papier à cigarette alors qu'on a toujours 300+ PRs en vol et que je te rappelle que ton rôle est de dépenser des tokens que l'adjoint et le coordinateur n'auront pas à dépenser. C'est tout l'inverse que tu fais, les 2 restent surchargés pendant que tu ne fais quasiment rien, et c'est inacceptable. »
 
-### Hiérarchie des gestes (du plus utile au moins utile)
+La doctrine du 22/09 en avait tiré une hiérarchie qui plaçait les DMs au coordinateur avant les dossiers, et réservait les dossiers aux dispatchs nominatifs. Elle reposait sur un constat d'avant `merge_ready` : 158 PRs attestées pour 10 mergées, parce qu'un dossier attendait le cycle d'ai-01 et périssait en attendant. Depuis le 23/09, un dossier ne périt plus en attendant le cycle d'ai-01 : `merge_ready` merge dès que le dossier et l'approbation d'ai-01 sont réunis (condition d'approbation ajoutée le 28/09). Le constat s'est inversé, et la hiérarchie avec lui. Le geste qui dépense tes tokens à la place de ceux d'ai-01 et du titulaire, c'est le dossier tiers ; ce qui leur coûte, c'est un cycle qui n'en émet pas.
 
-**Niveau 1 — Ce qui décharge vraiment les autres** (faire en priorité) :
+### Hiérarchie des gestes
 
-1. **Push paquets nominatifs DM ai-01** : 30 PRs avec diff/auteur/âge/verdict exact-head → il merge en 1 passe (mesure fondatrice `ai01-c29-lot-secretaire-14` : 10/10 converties en merge vs 15/53 et 2/54 sans tri nominatif).
-2. **Alerte titulaire sur CHANGES_REQUESTED à désamorcer** : 1 DM par PR en CHANGES_REQUESTED non levée avec motif exact → il sait exactement laquelle regarder.
-3. **Push liste nominative PRs CONFLICT aux porteurs** : 1 commentaire PR par PR en CONFLICT pour qu'ils rebasent → ça débloque le merge sans intervention coordinateur.
-4. **Surveillance quota GraphQL** : `gh api rate_limit` deep + tracker `{rest, graphql}` séparément. Alerter ai-01 si porte fermée.
-5. **Surveillance runners saturation** : suivre les signalements de check rouge CI systemic, escalader en DM ai-01 quand 6+ PRs sont bloquées par la même cause.
+**Niveau 1 — attester** : le cycle ci-dessus. Dossiers exact-head, crible de fond, re-stamps des dossiers morts, reruns.
 
-**Niveau 2 — Ce qui peut être utile si le pool le demande** (à faire après le Niveau 1) :
+**Niveau 2 — faire circuler**, en marge du Niveau 1 :
 
-6. **Dossiers `[ADJOINT PREFLIGHT]` nominatifs exact-head** : quand ai-01 ou titulaire **demande explicitement** un dossier sur une PR précise, ou quand un dispatch nominatif est posté dans l'inbox.
-7. **Préfight B.0 / nits non levés** : lister dans un DM les PRs avec `check_unaddressed_nits.py rc=1` pour qu'ai-01 puisse décider lecture par lecture.
+- la liste nominative à ai-01 de tous les READY, avec numéro, tête et verdict : c'est elle qui déclenche sa lecture. Mesure : sur liste nominative, 10 PRs sur 10 converties en merge ; sur un cumul non nommé, 15 sur 53 ;
+- une alerte au porteur de chaque PR en `CHANGES_REQUESTED` non levée ou `CONFLICTING`, avec le motif exact : un commentaire ou un DM par PR. Le porteur se lit dans le tag `Grain: ... lane`, jamais dans l'auteur GitHub : `jsboige` est le login de toutes les lanes. Mesure du 28/09 : #18034 et #18192, lues « sans lane à réveiller » parce qu'écrites par `jsboige`, sont portées par `myia-po-2024:CoursIA-2` ;
+- quota et runners : une alerte quand la mesure le justifie (porte GraphQL fermée, six PRs ou plus bloquées par la même cause d'infra), pas un relevé à chaque cycle.
 
-**Niveau 3 — À éviter** (le notaire) :
+### Ce qui n'est pas un cycle
 
-- Émettre 6 dossiers/salve/cycle en oldest-first quand personne ne les demande. **consomme du quota GraphQL** sans augmenter le taux de merge.
-- PATCH/correction de dossiers périmés. Le delta de conversion est nul.
-- Diagnostiquer en détail des motifs gate (DWELL, kernels drift) hors périmètre secrétaire.
-- Cycle bloqué à re-gater 6 PRs pour avoir 4 READY + 2 BLOCKED — c'est le travail d'un bot, pas d'un hub.
+- **La surveillance passive** : relire l'état du pool, le consigner, ne rien attester. Mesure du 28/09 : huit cycles consécutifs sans aucun dossier, de 09:52Z à 12:41Z, alors que 98 PRs n'avaient aucun dossier valide au balayage de 13:20Z.
+- **Attendre une tranche, un dispatch ou une réponse d'ai-01** avant d'attester.
+- **Laisser en l'état** un DWELL échu que le balayage n'a pas levé, ou un job annulé, au motif que « ce n'est pas mon périmètre » : le rerun l'est.
+- **Tenir un dossier refusé ou mort pour une protection** (item 13).
+- **Demander à ai-01 de merger sur `CLEAN`** : il ne merge que sur gate rc=0, et c'est ton dossier qui produit ce rc=0.
+- **Recopier** d'un cycle à l'autre des listes d'état et des cumuls inchangés.
 
 ### Critère de succès d'un cycle
 
-**Un cycle est utile si et seulement si** ai-01 ou titulaire peut merger ou travailler sur **plus de PRs à la fin du cycle qu'au début**. Le hub fournit l'info en avance ; il n'atteste pas l'info après.
-
-**Anti-pattern** : terminer un cycle avec « 4 READY + 2 BLOCKED posés » sans que la file de merge d'ai-01 n'ait bougé. **Le hub a augmenté la charge au lieu de la réduire.**
+Un cycle est utile si des PRs sortent de la file grâce à lui : READY remis à ai-01 en liste nominative, puis lus et mergés, BLOCKED qui disent à la lane porteuse quoi réparer. La mesure se lit au cycle suivant : combien des dossiers émis ont été mergés, combien le gate a refusés après le post, et pourquoi. Un dossier refusé après le post (tête ou surfaces bougées, dossier qui n'était pas le dernier commentaire) est le vrai gaspillage : il a coûté le crible sans rien livrer.
 
 ## Émission de dossiers — garde-fous obligatoires
 
-Référence complète : [coordinate-adjoint §Émission de dossiers](../coordinate-adjoint/SKILL.md). Les quatre non-négociables :
+Référence complète : [coordinate-adjoint §Émission de dossiers](../coordinate-adjoint/SKILL.md). Les non-négociables :
 
 1. **Instrument de mesure des checks (arbitrage ai-01 2026-09-21 + RECTIF 12:09Z)** : lire `commits/<sha>/check-runs` — **jamais** `actions/runs` (un `attempt=2` y garde l'ancien id plus petit : organe `dedupe_latest`, `scripts/pr_gate.py` l.537, mesure #11416). Dédup **obligatoire** (17 noms dupliqués mesurés sur #16263) par clé canonique `(started_at, id)` dans cet ordre — jamais `created_at`, jamais `id` seul — et **paginer** (`--paginate` : total_count 101 > per_page 100 mesuré sur #16263).
-2. **Le gate en échec imprime sur STDOUT** : avant tout post de dossier, exiger (a) rc=0 du `--template`, (b) `head -1` du fichier = `[ADJOINT PREFLIGHT]`, (c) placeholders `REPLACE_WITH` présents dans le template source. `grep -c REPLACE_WITH = 0` est un **faux-OK** sur une ligne d'erreur `UNKNOWN -- ...`.
+2. **Le gate en échec imprime sur STDOUT** : avant tout post de dossier, exiger rc=0 du `--template`. `grep -c REPLACE_WITH = 0` est un **faux-OK** sur une ligne d'erreur `UNKNOWN -- ...`. La forme du fichier (ligne 1 = `[ADJOINT PREFLIGHT]`, aucun `REPLACE_WITH` restant, grammaire du bloc) est vérifiée par `post_dossier.py`, qui refuse de poster sinon (#18412).
 3. **Le gate ne lit pas l'état de merge** : un dossier READY exige la vérification `mergeable` côté attestant (`CONFLICTING` → BLOCKED conflit ; `UNKNOWN` → HOLD re-mesure).
-4. **Dossier posé EN DERNIER** : toute prose postée après le dossier le périmé (surfaces-sha256). En fenêtre rate-limited GraphQL : fallback REST (`gh api repos/jsboige/CoursIA/issues/N/comments --input payload.json`, payload `{"body": "..."}` hors shell — `-f body=` interdit, `gh-posting-hygiene` HARD 1), template régénéré après la fenêtre.
+4. **Dossier posé EN DERNIER** : toute prose postée après le dossier le périmé (surfaces-sha256). Le post passe par `post_dossier.py`, qui poste en REST `--input` et relit le corps publié (`gh-posting-hygiene` HARD 1 et 2). En fenêtre GraphQL épuisée, le gate est illisible et l'organe refuse de poster : attendre le reset, puis régénérer le template. **Un re-stamp est un nouveau post, jamais un PATCH du dossier précédent** : `--template` compte les commentaires existants, ancien dossier compris, et le gate exclut du compte le seul dossier qu'il évalue. Posté comme nouveau commentaire, le compte tombe juste ; collé par PATCH dans l'ancien dossier, il est faux d'une unité.
 5. **DWELL = minuteur, pas un défaut de contenu** : un rouge `PR gate: DWELL -- ... ecoule a <HH:MM>Z. Rien a corriger dans le code` ne se répare PAS par push (chaque push ré-arme le plancher 120 min depuis la nouvelle tête) ; un dossier BLOCKED qui le nomme est un livrable valide, le merge suit l'échéance. `gh pr update-branch` ne ré-arme PAS le plancher depuis #16149. Corollaire : `statusCheckRollup` ment sur ~20 % des candidates (mesuré ai-01 2026-09-21) — ne jamais en faire un verdict.
-6. **Lane qualifiée AVANT émission** : vérifier que la lane du dossier figure dans `QUALIFYING_LANES` du gate (`scripts/check_adjoint_prevalidation.py` l.102-113) — une lane hors liste rend `NO-DOSSIER` quelle que soit la qualité des mesures (6 commentaires invalides mesurés cycles 1-2).
+6. **Lane qualifiée AVANT émission** : vérifier que la lane du dossier figure dans `QUALIFYING_LANES` (`scripts/check_adjoint_prevalidation.py`) — une lane hors liste rend `NO-DOSSIER` quelle que soit la qualité des mesures (6 commentaires invalides mesurés cycles 1-2).
 
 Un BLOCKED honnête est un livrable valide (le gate rend rc=3) ; ne jamais écrire READY pour être visible.
 
@@ -134,9 +156,11 @@ Un BLOCKED honnête est un livrable valide (le gate rend rc=3) ; ne jamais écri
 
     Mesure fondatrice du 2026-09-22 à 23:50Z : sur 32 READY envoyés après le seul crible de fond, 14 étaient NO-DOSSIER (stamps legacy dont les checks avaient bougé après le redémarrage d'un pool, et un `[RIPE-SIGNAL]` posté après le dossier) et 1 avait B.0 rc=1 (réserve NanoClaw sur une base non mergée). Après re-stamp : 30 sur 32 mergeables.
 
-13. **Deux attestants ne stampent pas la même PR**. Un dossier posté par-dessus un dossier `--template` vivant change les surfaces et le périme. Un dossier composé à la main, sans `--template`, ne survit pas au premier check qui bouge. Les deux attestants peuvent ainsi s'annuler, et la PR sort de la file d'ai-01 avec **zéro** dossier valide. Avant chaque post, un appel `check_adjoint_prevalidation.py N` : s'il rend 0 sous une autre lane attestante, ne pas poster. Partager les PRs sur `workspace-CoursIA-3`, et générer toujours avec `--template`.
+13. **Deux attestants ne stampent pas la même PR, mais seul un dossier vivant protège**. Un dossier posté par-dessus un dossier `--template` vivant change les surfaces et le périme. Un dossier composé à la main, sans `--template`, ne survit pas au premier check qui bouge. Les deux attestants peuvent ainsi s'annuler, et la PR sort de la file d'ai-01 avec **zéro** dossier valide. Avant chaque post, un appel `check_adjoint_prevalidation.py N` : s'il rend 0 ou 3 sous une autre lane attestante, ne pas poster. **Un dossier que le gate refuse (rc=1) ne protège rien** : auto-attestation par la lane porteuse, tête ou surfaces périmées, champ inconnu, ce n'est pas un dossier, et la PR est à toi. Ton propre dossier mort ne la protège pas davantage : il se re-stampe à la tête courante. Partager les PRs sur `workspace-CoursIA-3`, et générer toujours avec `--template`.
 
     Mesure fondatrice du 2026-09-23 (00:10Z, puis 00:21-00:30Z) : sur #17312, #17384, #17414 et #17423, le titulaire a posté par-dessus des dossiers secrétaire rc=0. Ses dossiers rendaient eux-mêmes rc=1 (« surfaces not fully attested »). Il a fallu re-stamper les quatre.
+
+    Mesure inverse du 2026-09-28 : #18047, prérequis du socle Lean, portait un dossier auto-attesté par sa lane porteuse, que le gate refusait. Lue comme protégée par cet item, la PR est restée huit cycles sans dossier valide. Le même jour, #18105, #18071, #18059 et #18051 étaient dans le même cas.
 14. **Le crible par diff mot à mot ne voit pas les défauts en cellule code : diff par jetons obligatoire sur toute passe d'accents**. En cellule code, séparer ce qui a changé :
     - jetons de code, hors commentaires et chaînes : un identifiant renommé d'un seul côté donne une `NameError` au Run All ;
     - chaînes seulement : si la sortie est identique octet pour octet au merge-base, elle est périmée (C.2).
@@ -172,7 +196,7 @@ Un BLOCKED honnête est un livrable valide (le gate rend rc=3) ; ne jamais écri
     - mesurer le quota par `gh api graphql -i -f query='query{rateLimit{remaining resetAt}}'` ;
     - avant de consigner un B.0 rc=1, vérifier que la sortie commence par `BLOCKED` et non par `Traceback` ;
     - avertir les trois dashboards (cross-post) avec l'heure du reset, puis reprendre les mesures après.
-22. **Un advisory rouge interdit READY : le gate le compte dans `latest-wins-green`**. `check_adjoint_prevalidation.py` range tout check-run de la tête dans le prédicat, requis ou non (`GREEN_CONCLUSIONS = {success, skipped, neutral}`, l.141). Une PR `mergeable_state: unstable`, dont le seul rouge est un advisory comme `Markdown table syntax advisory (label, non-blocking)`, reste donc mergeable pour GitHub, mais son dossier ne peut pas porter `checks: latest-wins-green` sans être contredit. Mesure fondatrice : #16897 et #16785, le 23/09 à 11:58Z. Le dossier y est BLOCKED, et le paquet d'ai-01 doit nommer l'advisory en cause, pas un défaut de PR.
+22. **Un advisory rouge interdit READY : le gate le compte dans `latest-wins-green`**. `check_adjoint_prevalidation.py` range tout check-run de la tête dans le prédicat, requis ou non (`GREEN_CONCLUSIONS = {success, skipped, neutral}`). Une PR `mergeable_state: unstable`, dont le seul rouge est un advisory comme `Markdown table syntax advisory (label, non-blocking)`, reste donc mergeable pour GitHub, mais son dossier ne peut pas porter `checks: latest-wins-green` sans être contredit. Mesure fondatrice : #16897 et #16785, le 23/09 à 11:58Z. Le dossier y est BLOCKED, et le paquet d'ai-01 doit nommer l'advisory en cause, pas un défaut de PR.
 23. **Un exercice est une cellule code stub, pas un énoncé markdown**. `three-exercises-per-notebook` définit l'exercice comme une *cellule code avec stub* (`pass` / `return None` / `print("Exercice a completer")` / `result = None  # TODO`). Pour un notebook **neuf** (point 1), avant d'écrire `domain: pass`, vérifier que chaque `### Exercice N` est suivi d'une cellule `code`. Mesure fondatrice : #16785 (SL-14 AI Feynman) le 23/09. Les cellules 22 à 24 portaient trois énoncés, chacun suivi directement de markdown : 0 exercice au sens de la règle, alors que le dossier du 21/09 disait `domain: pass`. Réserve 🟡 `5794432303`. Instrument : lire la liste `cells` et, pour chaque en-tête d'exercice, le `cell_type` de la cellule suivante.
 24. **Une PR CLEAN dont la base est une branche morte ne livre rien : mesurer la base avant `scope: pass`**. Le gate ne lit pas `baseRefName`. Une PR empilée dont la PR de base a été mergée (ou fermée) reste `CLEAN` et verte, mais son merge atterrit sur une branche que plus rien ne porte vers `main`. Instrument, pour toute base non-`main` : `gh pr list --state all --search "head:<baseRefName>"`. Base `MERGED` ou `CLOSED` → `scope: fail`, geste de lane : retarget vers la branche vivante (`gh pr edit N --base …`) si la PR de base a été mergée par commit de merge, `git rebase --onto origin/main <ancienne tête de base>` si elle a été squash-mergée (le squash réécrit les SHA : `compare main...<tête>` remonte alors les fichiers de la base). Mesure fondatrice du 23/09 à 12:14Z : 4 PR CLEAN sur 38 (#16987, #16988, #16989, #17429), dont une stampée `scope: pass`. Corollaire, même cycle : une levée qui cite un SHA absent des commits de la PR se vérifie par `commits/<sha>/branches-where-head` — deux fois (#16989, #17123), le correctif était resté sur une branche latérale. Si son parent est la tête de la PR et qu'il ne touche aucune source de cellule code, l'avance rapide `git push origin <sha>:refs/heads/<branche de la PR>` exécute l'intention déclarée de la lane (règle 0 de `proactive-coordination`) ; s'il touche une cellule code, la ré-exécution C.2 revient à la lane.
 25. **Un PR gate rouge sur une cause redevenue verte ne se relève pas seul : rejouer le run du gate**. Le PR gate agrège les checks au moment de son run. Si le rouge qu'il nomme passe au vert ensuite, il garde son FAIL tant que le balayage horaire `pr-gate-stale-sweep.yml` (cron `7 * * * *`) ne l'a pas ré-agrégé, et GitHub sert ce cron en retard, parfois pas du tout. Détection : dernier PR gate en `FAILURE`, titre qui ne commence pas par `DWELL`, aucun autre check rouge ni en cours. Remède : `gh run rerun <run id du PR gate>`, qui ré-agrège à l'état courant. Pas de push, pas d'`update-branch` : les deux déclenchent une rafale CI pour rien. Le même geste lève une vague `DWELL` échue quand le balayage n'est pas passé. Mesure fondatrice du 23/09 : #17537 (Always-on guards rouge à 10:39Z, vert à 11:18Z, gate toujours FAIL à 12:30Z, dernier balayage servi à 11:30Z), rejoué à 12:34Z et READY dans la foulée ; #17530, même classe.

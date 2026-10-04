@@ -245,7 +245,7 @@ def main(argv: list[str] | None = None) -> int:
         sys.stdout.write("\n")
         return 0
 
-    # Ecriture : newline final obligatoire (Tell c.1424-L5 ★★).
+    # Ecriture : newline final obligatoire.
     text = json.dumps(manifest, indent=2, ensure_ascii=False) + "\n"
     MANIFEST.write_text(text, encoding="utf-8")
     print(f"OK: manifeste ecrit -> {MANIFEST}")

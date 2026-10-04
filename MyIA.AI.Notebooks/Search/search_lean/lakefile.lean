@@ -42,3 +42,16 @@ lean_lib «Astar» where
 @[default_target]
 lean_lib «Astar_en» where
   globs := #[`Astar_en]
+
+-- #16549 (option A, sibling Lean du carnet App-32) : ancrage Mathlib des
+-- bornes de Szpiro--Pasten 2026 (factorisation admissible, identité M·φ(D) ≤ N,
+-- discriminant de la courbe témoin). Module racine unique, pas de sous-modules.
+@[default_target]
+lean_lib «Szpiro» where
+  globs := #[`Szpiro]
+
+-- Miroir EN du module Szpiro (sibling pair #4980, miroir auto-contenu) :
+-- même code byte-identique hors docstrings, namespace `Szpiro_en`.
+@[default_target]
+lean_lib «Szpiro_en» where
+  globs := #[`Szpiro_en]

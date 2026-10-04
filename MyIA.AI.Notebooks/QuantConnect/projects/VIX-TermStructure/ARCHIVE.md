@@ -101,7 +101,7 @@ d'archive documentee) reste un pattern reproductible.
 
 ## Classification Issue #7575
 
-`quantbook.ipynb` est classifie `PREEXISTING_UNEXEC` (8 cellules code
+`quantbook.ipynb` est classifie `PREEXISTING_UNEXEC` (cellules code
 sans `execution_count`) parce que les outputs dependent de `qb.history()`
 sur CBOE VIX data qui necessite le **QC Cloud research kernel** (pas
 disponible en local bare CPU). **Le projet est archive** :

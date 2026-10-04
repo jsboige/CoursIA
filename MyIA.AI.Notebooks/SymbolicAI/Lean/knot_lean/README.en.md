@@ -22,8 +22,9 @@ Two counts, depending on the filter:
 - **real sorries** (`exact sorry`, `:= sorry`, `:= by sorry`) = what's actually
   missing as a proof. **8** total: **0 in `Invariant.lean`** (the master
   `tricolorable_invariant` is PROVEN, #11958; `Knot.unknottingNumber` closed by
-  #15082 via `Nat.sInf`), 2 `reidemeister_theorem` (PL topology), 4 Conway
-  (2 undefined definitions `IsSmoothlySlice`/`IsTopologicallySlice` + the 2
+  #15082 via `Nat.sInf`), 2 `reidemeister_theorem` (PL topology), 4 Slice
+  (extracted from Conway by #18397;
+  2 undefined definitions `IsSmoothlySlice`/`IsTopologicallySlice` + the 2
   Piccirillo/Freedman theorem sorries — the 2 Alexander bounds
   `conway_trivial_alexander`/`KT_trivial_alexander` were discharged by the
   #14821 split, #15440/#15460),
@@ -350,7 +351,8 @@ Reference: Fox (1962), *A quick trip through knot theory*; Adams,
 | `Knots/Basic.lean` | Definitions (Knot, Link, PD-code, named knots), `KnotDiagram.wf` | 0 |
 | `Knots/Reidemeister.lean` | R1/R2/R3 moves (Phase 5 model), `ReidemeisterEquiv`, symmetries | 2 |
 | `Knots/Invariant.lean` | 3-colorability (Fox), crossing number, PR1 counter-example, connected R1 bi-implication (#3000 + #3124/#11227), R2-up transfer + named walls (#11276), master `tricolorable_invariant` (#11958), `unknottingNumber` via `Nat.sInf` (#15082) | 0 |
-| `Knots/Conway.lean` | Conway knot (11n34), Piccirillo, smooth/topological dichotomy | 4 |
+| `Knots/Conway.lean` | Conway knot (11n34), mutation, Conway/KT PD codes, arcPartition, trivial Alexander | 0 |
+| `Knots/Slice.lean` | Slice knots, Piccirillo, Freedman, smooth/topological dichotomy (extracted from Conway, #18397) | 4 |
 | `Knots/Lidman.lean` | 11n102, unknotting number = 2 | 2 |
 | `Knots/MathlibPrerequisites.lean` | Index of missing Mathlib prerequisites by tier | 0 |
 

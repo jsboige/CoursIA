@@ -377,7 +377,7 @@ def python_twin_candidates(csharp_path: str, known_paths: set[str]) -> list[str]
     qu'une classe a tort en « C#-only » tout ce qui suit les deux autres :
 
         Tweety-10-MLN-Csharp.ipynb      <-> Tweety-10-MLN.ipynb          (suffixe retire)
-        Sudoku-07-Norvig-Csharp.ipynb    <-> Sudoku-07-Norvig-Python.ipynb (suffixe substitue)
+        Sudoku-07-Norvig-CSharp.ipynb    <-> Sudoku-07-Norvig-Python.ipynb (suffixe substitue)
         SW-10-CSharp-RDFStar.ipynb      <-> SW-10-Python-RDFStar.ipynb   (position mediale)
 
     Fonction pure : `known_paths` est l'univers des chemins connus (typiquement

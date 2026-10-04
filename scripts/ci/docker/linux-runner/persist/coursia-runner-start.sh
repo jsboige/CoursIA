@@ -57,6 +57,39 @@ export COURSIA_RUNNER_TOOLCACHE_VOLUME="coursia-runner-toolcache"
 # d'erreur ne nommerait pas la divergence -- il parlerait de memoire en vol.
 export COURSIA_RUNNER_BUDGET_GB=42
 
+# BUDGET CPU INTER-FAMILLES (#15574 item 3, arbitrage coordinateur du
+# 2026-10-01, comment 5933689033). supervise.sh le lit (assert_cpu_budget) :
+# somme des caps CPU des familles d'EXECUTION -- cette jambe-ci (start) et la
+# jambe lean ; les waiters, oisifs, en sont EXCLUS depuis la meme decision.
+# Refus au demarrage au depassement, jamais avertissement. Inerte a 0 ou
+# absent : c'etait l'etat anterieur de cette machine, et la mesure #18673
+# (637 jobs lourds / 7 j, p90/mediane ~9,4x, co-residence 0 -> 3+ voisins :
+# mediane x21) a nomme la sur-souscription 48 vCPU declares / 16 disponibles
+# comme mecanisme.
+#
+# DEUX ECARTS CONSIGNES par rapport au texte de l'arbitrage :
+#   - 30, pas 24 : docker 6x3 + lean 2x6 = 30. A 24, la jambe lean serait
+#     REFUSEE au demarrage (le garde somme les familles d'execution, waiters
+#     exclus -- test 60 de test_supervise_guards.sh le demontre sur les deux
+#     sens) : exactement le verrou « service failed » que l'arbitrage citait
+#     pour ECARTER le budget 16. 30 est le plus petit budget ou la flotte
+#     ordonnee (docker 6 + lean 2) demarre -- sur-souscription 1,875x au
+#     lieu de 3,0x.
+#   - le service passe de start 8 a start 6 (conforme a l'arbitrage) dans
+#     coursia-runner.service : la reduction de 24 a 18 vCPU docker vit la.
+#
+# Point de retour mesure J+7 (prevu par l'arbitrage) : rejeu de
+# characterize_runner_variance.py sur la meme fenetre ; si le ratio
+# p90/mediane des jobs lourds ne descend pas sous 5x, passage a 16 avec
+# right-sizing -- qui devra alors aussi redimensionner la jambe lean, sinon
+# elle seule depasse le budget.
+#
+# LES DEUX JAMBES D'EXECUTION PORTENT LE MEME NOMBRE (runner et lean) : le
+# garde fire au demarrage de chacune et somme l'autre. La jambe waiters n'en
+# declare pas : depuis l'exclusion, un demarrage de waiters n'ajoute rien a
+# la somme -- la declarer serait du decor.
+export COURSIA_RUNNER_CPU_BUDGET=30
+
 # #15095 : echec immediat si le demon du socket epingle ne repond pas --
 # AVANT tout demarrage de slot et tout fetch de registration token (gh).
 # Sans cette garde, un daemon arrete + Restart=always = le superviseur

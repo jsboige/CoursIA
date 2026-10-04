@@ -110,10 +110,11 @@ def test_attempt_started_at_falls_back_when_never_started():
 class FakeGh:
     """Dispatch gh_api/_run_gh par path ; enregistre les cancel."""
 
-    def __init__(self, run=None, check_runs=(), statuses=()):
+    def __init__(self, run=None, check_runs=(), statuses=(), cancel_refusal=""):
         self.run = run
         self.check_runs = list(check_runs)
         self.statuses = list(statuses)  # consommes par les sondes post-cancel
+        self.cancel_refusal = cancel_refusal  # stderr du POST /cancel
         self.cancels = []
         self.lookups = []
 
@@ -134,6 +135,10 @@ class FakeGh:
             self.cancels.append(args[-1])
             import types
 
+            if self.cancel_refusal:
+                return types.SimpleNamespace(
+                    returncode=1, stdout="", stderr=self.cancel_refusal
+                )
             return types.SimpleNamespace(returncode=0, stdout="", stderr="")
         raise AssertionError(f"appel _run_gh inattendu: {args}")
 
@@ -195,6 +200,92 @@ def test_revive_timeout_downgrades_to_skip(monkeypatch, tmp_path):
     _rc, action, _rid = _drive(monkeypatch, tmp_path, fake, extra=["--wait-max-sec", "0"])
     assert action == "skip"
     assert fake.cancels  # le cancel a bien ete tente
+
+
+# --- refus de cancel : terminal vs transitoire (#10928 4e cause) -------------
+#
+# Mesure 2026-09-28 sur #18243 : la tentative de re-run 2 du run 36452308519
+# est `status=queued` depuis 16:36Z avec 0 job et AUCUN check-run `PR gate`,
+# tandis que `gh run rerun` repond « already running » et le POST /cancel
+# repond 409. Les DEUX leviers sont fermes : c'est l'impasse que #17680 ferme,
+# atteinte par une route que #17680 n'avait pas prevue. Le message historique
+# (« next sweep retries ») y est faux -- le sweep rejoue la meme requete.
+
+# Forme exacte rendue par l'API (stderr de `gh api`), mesuree firsthand.
+REFUSAL_RERUN_NOT_QUEUED = (
+    'gh: Cannot cancel a workflow re-run that has not yet queued. (HTTP 409)\n'
+    '{"message":"Cannot cancel a workflow re-run that has not yet queued.",'
+    '"documentation_url":"https://docs.github.com/rest/actions/workflow-runs'
+    '#cancel-a-workflow-run","status":"409"}'
+)
+REFUSAL_ALREADY_COMPLETED = (
+    "Cannot cancel a workflow run that is completed. (HTTP 409)"
+)
+
+
+def test_classify_refusal_tells_the_two_apart():
+    """Les deux refus terminaux mesures sont `terminal` ; tout le reste --
+    y compris un message jamais vu -- reste `transient`."""
+    assert route.classify_refusal(REFUSAL_RERUN_NOT_QUEUED) == "terminal"
+    assert route.classify_refusal(REFUSAL_ALREADY_COMPLETED) == "terminal"
+    # Controle negatif : un refus inconnu ne doit PAS etre classe terminal --
+    # sinon on remplacerait une fausse promesse de retry par une fausse
+    # impasse, et le sweep renoncerait sur une condition qui se resorbe.
+    assert route.classify_refusal("HTTP 429: rate limit exceeded") == "transient"
+    assert route.classify_refusal("") == "transient"
+
+
+def test_terminal_cancel_refusal_emits_impasse(monkeypatch, tmp_path):
+    """Tentative queued morte + refus terminal -> action=impasse, et le cancel
+    a bien ete tente (le refus est mesure, pas suppose)."""
+    fake = FakeGh(
+        run=run_payload(run_started_at=None, updated_at="2026-09-23T18:52:00Z"),
+        cancel_refusal=REFUSAL_RERUN_NOT_QUEUED,
+    )
+    rc, action, run_id = _drive(monkeypatch, tmp_path, fake)
+    assert rc == 0
+    assert action == "impasse"
+    assert run_id == "35895035044"
+    assert fake.cancels == ["repos/jsboige/CoursIA/actions/runs/35895035044/cancel"]
+
+
+def test_impasse_is_never_a_rerun(monkeypatch, tmp_path):
+    """L'impasse ne doit pas deguiser un rerun : `gh run rerun` est refuse sur
+    ce run (« already running »), donc l'emettre relancerait la meme boucle."""
+    fake = FakeGh(
+        run=run_payload(run_started_at=None, updated_at="2026-09-23T18:52:00Z"),
+        cancel_refusal=REFUSAL_RERUN_NOT_QUEUED,
+    )
+    _rc, action, _rid = _drive(monkeypatch, tmp_path, fake)
+    assert action != "rerun"
+
+
+def test_transient_cancel_refusal_keeps_the_retry_promise(monkeypatch, tmp_path):
+    """Controle negatif du chemin : un refus transitoire garde `skip`, qui est
+    la bonne reponse -- le prochain sweep peut reellement aboutir."""
+    fake = FakeGh(
+        run=run_payload(run_started_at=None, updated_at="2026-09-23T18:52:00Z"),
+        cancel_refusal="HTTP 429: rate limit exceeded",
+    )
+    _rc, action, _rid = _drive(monkeypatch, tmp_path, fake)
+    assert action == "skip"
+
+
+def test_impasse_has_no_consumer_in_the_workflow():
+    """Propriete de surete : `impasse` doit rester INERTE cote workflow. Un job
+    qui le consommerait rouvrirait un levier (rerun ou POST) sur une population
+    ou les deux sont deja refuses -- et le POST rouvrirait le danger d'AND
+    #11519, puisque contrairement a #16624 un run EXISTE sur ce SHA."""
+    data = _load(WORKFLOW)
+    consumed = {
+        job.get("if", "")
+        for job in data["jobs"].values()
+    }
+    assert not any("impasse" in cond for cond in consumed), (
+        "un job consomme desormais l'action `impasse` : verifier que ce levier "
+        "n'est pas deja refuse (rerun) et qu'il ne POSTe pas de check-run "
+        "jumeau sur un SHA qui porte deja un run (#11519)"
+    )
 
 
 def test_completed_failure_routes_rerun_no_cancel(monkeypatch, tmp_path):

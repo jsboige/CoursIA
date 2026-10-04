@@ -102,17 +102,19 @@ Validation complète avec analyse pédagogique.
 ### 1. Validation structurelle
 
 ```python
-from scripts.notebook_tools import NotebookValidator
-from scripts.notebook_helpers import NotebookHelper
+from scripts.notebook_tools.notebook_tools import NotebookValidator
+from scripts.notebook_tools.notebook_helpers import NotebookHelper
 
 validator = NotebookValidator(notebook_path)
 helper = NotebookHelper(notebook_path)
 
-# Vérifier le format JSON
-is_valid_json = validator.validate_json_format()
+# Validation structurelle : JSON + metadata via validate_structure()
+# (notebook_tools.py:604 — pas de validate_json_format/validate_metadata)
+validation = validator.validate_structure()
+is_valid_json = validation.valid_json
 
 # Vérifier les metadata
-metadata_valid = validator.validate_metadata()
+metadata_valid = validation.has_metadata
 required_fields = ['kernelspec', 'language_info']
 for field in required_fields:
     if field not in helper.notebook.get('metadata', {}):
@@ -146,7 +148,7 @@ if empty_cells:
 import ast
 
 for idx, cell in enumerate(helper.cells):
-    if cell['cell_type'] == 'code' and helper.get_kernel_name() == 'python3':
+    if cell['cell_type'] == 'code' and helper.notebook.get('metadata', {}).get('kernelspec', {}).get('name', '') == 'python3':
         code = helper.get_cell_source(idx)
 
         # Ignorer les magic commands
@@ -163,7 +165,7 @@ for idx, cell in enumerate(helper.cells):
 
 ```python
 # Vérifier les imports et syntaxe basique
-if helper.get_kernel_name() in ['.net-csharp', '.net-fsharp']:
+if helper.notebook.get('metadata', {}).get('kernelspec', {}).get('name', '') in ['.net-csharp', '.net-fsharp']:
     for idx, cell in enumerate(helper.cells):
         if cell['cell_type'] == 'code':
             code = helper.get_cell_source(idx)
@@ -215,6 +217,7 @@ Utiliser l'agent **notebook-executor** :
 # Exécuter le notebook
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt=f"""
     Tu es un agent notebook-executor.
     Exécute le notebook: {notebook_path}
@@ -225,12 +228,16 @@ Task(
     description="Execute for validation"
 )
 
-# Analyser le rapport d'exécution
-execution_report = read_execution_report()
-
-# Compter les erreurs
-error_count = sum(1 for r in execution_report['results'] if not r['success'])
-timeout_count = sum(1 for r in execution_report['results'] if 'timeout' in r.get('error', '').lower())
+# Analyser les sorties réellement écrites dans le notebook
+# (aucune API read_execution_report n'existe — inspecter via le helper)
+error_count = 0
+timeout_count = 0
+for idx in helper.find_code_cells():
+    is_err, err_text = helper.has_cell_error(idx)
+    if is_err:
+        error_count += 1
+        if err_text and 'timeout' in str(err_text).lower():
+            timeout_count += 1
 
 if error_count > 0:
     errors.append(f"Execution errors: {error_count} cells failed")
@@ -283,7 +290,12 @@ recommended_ratios = {
     'advanced': (0.50, 0.60)
 }
 
-level = detect_notebook_level(notebook_path)  # intro, intermediate, advanced
+# Heuristique de niveau (aucune detect_notebook_level n'existe) : titres markdown
+headers = [line for idx in helper.find_markdown_cells()
+           for line in helper.get_cell_source(idx).split('\n')
+           if line.startswith('#')]
+level = 'advanced' if any('avanc' in h.lower() for h in headers) else (
+    'intermediate' if len(headers) > 5 else 'intro')
 min_ratio, max_ratio = recommended_ratios.get(level, (0.40, 0.60))
 
 if code_ratio < min_ratio:
@@ -419,6 +431,7 @@ if fix_errors:
             if not result['success']:
                 Task(
                     subagent_type="general-purpose",
+                    model="sonnet",
                     prompt=f"""
                     Tu es un agent notebook-cell-iterator.
                     Corrige la cellule {result['cell_index']} du notebook {notebook_path}
@@ -633,6 +646,7 @@ if validation_report['summary']['execution']['status'] != 'PASS':
     for error in validation_report['errors']:
         Task(
             subagent_type="general-purpose",
+            model="sonnet",
             prompt=f"notebook-cell-iterator: fix cell {error['cell']}",
             description=f"Fix {error['type']}"
         )
@@ -641,6 +655,7 @@ if validation_report['summary']['execution']['status'] != 'PASS':
 if validation_report['warnings'].any(lambda w: w['type'] == 'consecutive_code'):
     Task(
         subagent_type="general-purpose",
+        model="sonnet",
         prompt=f"notebook-enricher: enrich {notebook_path}",
         description="Add explanations"
     )
@@ -656,6 +671,7 @@ validation_report_v2 = validate_notebook(notebook_path, validation_level="standa
 ```python
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt="""
     Agent notebook-validator.
 
@@ -673,6 +689,7 @@ Task(
 ```python
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt="""
     Agent notebook-validator.
 
@@ -695,6 +712,7 @@ notebooks = glob("MyIA.AI.Notebooks/GameTheory/*.ipynb")
 for nb in notebooks:
     Task(
         subagent_type="general-purpose",
+        model="sonnet",
         prompt=f"""
         Agent notebook-validator.
         Notebook: {nb}
@@ -783,16 +801,18 @@ Utiliser `/validate-genai` pour une validation rapide de la stack :
 ### Helpers Python
 
 ```python
-from scripts.notebook_tools import NotebookValidator, NotebookAnalyzer
+from scripts.notebook_tools.notebook_tools import NotebookValidator, NotebookAnalyzer
 
-# Valider
+# Valider : structure + contenu (le flow pédagogique est inclus dans
+# validate_content — notebook_tools.py:676 ; pas de validate_all/pedagogical_score)
 validator = NotebookValidator(notebook_path)
-results = validator.validate_all()
+structure = validator.validate_structure()
+content_issues = validator.validate_content()
 
 # Analyser
 analyzer = NotebookAnalyzer(notebook_path)
 skeleton = analyzer.get_skeleton()
-print(f"Score pédagogique: {analyzer.pedagogical_score()}")
+print(f"Statut structure: {structure.status}, problèmes de contenu: {len(content_issues)}")
 ```
 
 ## Bonnes pratiques

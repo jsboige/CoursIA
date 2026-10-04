@@ -761,12 +761,12 @@ Intelligence Artificielle -- V
 
 # Pour aller plus loin : Notebooks
 
-- **Introduction** : `GameTheory/GameTheory-01-Setup.ipynb`
-- **Équilibre de Nash** : `GameTheory/GameTheory-04-NashEquilibrium.ipynb`, `GameTheory-04c-NashExistence-Python.ipynb`, `GameTheory-04b-Lean-NashExistence.ipynb`
-- **Jeux Bayesiens** : `GameTheory/GameTheory-11-BayesianGames.ipynb`, `GameTheory-11b-Lean-BayesianGamesExt.ipynb`
-- **Mecanismes** : `GameTheory/GameTheory-16-MechanismDesign.ipynb`, `GameTheory-16c-Extraction-de-Revenu-DSIC-IR.ipynb`
-- **Jeux differentiels** : `GameTheory/GameTheory-14-DifferentialGames.ipynb`
-- **RL et Multi-Agent** : `GameTheory/GameTheory-17-MultiAgent-RL.ipynb`, `GameTheory-13-ImperfectInfo-CFR.ipynb`
+- **Introduction** : `GameTheory/GameTheory-01-Setup-Python.ipynb`
+- **Équilibre de Nash** : `GameTheory/GameTheory-04-NashEquilibrium-Python.ipynb`, `GameTheory-04c-NashExistence-Python.ipynb`, `GameTheory-04b-Lean-NashExistence-Lean.ipynb`
+- **Jeux Bayesiens** : `GameTheory/GameTheory-11-BayesianGames-Python.ipynb`, `GameTheory-11b-Lean-BayesianGamesExt-Lean.ipynb`
+- **Mecanismes** : `GameTheory/GameTheory-16-MechanismDesign-Python.ipynb`, `GameTheory-16c-Extraction-de-Revenu-DSIC-IR-Python.ipynb`
+- **Jeux differentiels** : `GameTheory/GameTheory-14-DifferentialGames-Python.ipynb`
+- **RL et Multi-Agent** : `GameTheory/GameTheory-17-MultiAgent-RL-Python.ipynb`, `GameTheory-13-ImperfectInfo-CFR-Python.ipynb`
 
 > **Note** : Les notebooks GameTheory utilisent OpenSpiel et necessitent un kernel WSL.
 

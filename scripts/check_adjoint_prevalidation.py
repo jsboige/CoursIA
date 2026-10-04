@@ -133,6 +133,10 @@ ADJOINT_LANE = "myia-po-2025:CoursIA-2"
 # malformed lane string fails closed rather than passing as "some lane".
 QUALIFYING_LANES = frozenset({
     "myia-ai-01:CoursIA",
+    # Worker lane on the coordinator's machine (clone `D:/CoursIA-2`, opened
+    # 2026-09-30). The machine does not make it the coordinator: it attests
+    # for other lanes like any worker, never for its own pull requests.
+    "myia-ai-01:CoursIA-2",
     "myia-po-2023:CoursIA",
     "myia-po-2023:CoursIA-2",
     "myia-po-2024:CoursIA",
@@ -163,6 +167,16 @@ VERDICT_READY = "READY"
 VERDICT_BLOCKED = "BLOCKED"
 CANONICAL_VERDICTS = (VERDICT_READY, VERDICT_BLOCKED)
 
+# The branch a PR must target for a dossier to claim READY. Any other base
+# means the PR is stacked on top of another PR whose own merge state the
+# dossier cannot carry -- a READY here would authorize a merge into a
+# branch the gate has no jurisdiction on, including a branch that has been
+# squash-merged (the work is already on `main` via a different path) or
+# abandoned (the work is dead and the merge would resurrect nothing).
+# #19002: the measure of 2026-10-03 caught 4 such PRs in the open pool
+# (table in #19002 body), two of them (#18819, #18993) with a dead base.
+CANONICAL_BASE = "main"
+
 EXIT_READY = 0
 EXIT_NO_DOSSIER = 1
 EXIT_UNKNOWN = 2
@@ -185,6 +199,13 @@ BLOCKING_FIELDS = (
 # `neutral` are not failures; anything else completed (failure, timed_out,
 # cancelled, action_required, startup_failure, stale...) does (#16957).
 GREEN_CONCLUSIONS = {"success", "skipped", "neutral"}
+# Checks whose PRESENCE a `latest-wins-green` claim requires (#18579). Only
+# present checks can contradict the claim, so a head where the pull_request
+# workflows never fired (CodeQL legs only, or nothing at all) read green by
+# vacuity. `PR gate` is the check the protection of `main` requires; the
+# protection itself is not readable without admin rights (404 under
+# myia-ai-01, #9991), hence the list lives here.
+REQUIRED_CHECK_NAMES = ("PR gate",)
 START = "[ADJOINT PREFLIGHT]"
 END = "[/ADJOINT PREFLIGHT]"
 SHA_RE = re.compile(r"[0-9a-f]{40}")
@@ -324,7 +345,9 @@ _BOT_MARKER_GUARDS: tuple[str, ...] = (
 # dette reglee). Pas de second marqueur-statique ici.
 
 
-def _comment_body_for_fingerprint(row: dict[str, Any]) -> str:
+def _comment_body_for_fingerprint(
+    row: dict[str, Any], bot_forms_18637: bool = True
+) -> str:
     """Corps a hacher : le marqueur seul pour un commentaire de bot marker-garde.
 
     Un corps qui COMMENCE par un marqueur connu est reduit a ce marqueur : la
@@ -333,10 +356,14 @@ def _comment_body_for_fingerprint(row: dict[str, Any]) -> str:
     deplace) continuent de le faire.
     """
     body = row.get("body") or ""
-    for marker in _BOT_MARKER_GUARDS:
-        if body.startswith(marker):
-            return marker
-    return body
+    if not bot_forms_18637:
+        # Normalisation d'avant #18637, gardee pour les dossiers deja poses.
+        for marker in _BOT_MARKER_GUARDS:
+            if body.startswith(marker):
+                return marker
+        return body
+    key = _bot_advisory_key(row)
+    return key if key is not None else body
 
 
 # #17818 : la PREMIERE POSE d'un commentaire consultatif de bot marker-garde
@@ -353,6 +380,62 @@ def _comment_body_for_fingerprint(row: dict[str, Any]) -> str:
 BOT_ADVISORY_LOGIN = "github-actions[bot]"
 
 
+# #18637 : les autres commentaires consultatifs de bot. Mesure 2026-09-30
+# 21:50Z : sur 22 PRs refusees « discussion changed after dossier », 19 ne
+# l'etaient que par des commentaires de `github-actions[bot]` hors de la liste
+# ci-dessus -- les poses et reecritures des advisories `stale-claim` et
+# `factual-mislabel` (ajoutees le jour meme a toutes les PRs ouvertes), et les
+# resumes cosmetiques des gardes notebook, re-edites a chaque run.
+# Deux formes :
+# - marocchino/sticky-pull-request-comment place son marqueur EN FIN de corps
+#   (`<!-- Sticky Pull Request Comment<header> -->`), jamais a l'offset 0 ;
+# - trois resumes de bot sans marqueur HTML, reconnus par leur premiere ligne.
+# Les deux formes exigent l'auteur `github-actions[bot]` : un humain qui les
+# recopie perime toujours le dossier. Seuls des en-tetes CONSULTATIFS sont
+# listes -- leur verdict, quand il existe, vit dans un check-run que le champ
+# `checks:` du dossier atteste deja.
+_BOT_STICKY_ADVISORY_HEADERS: frozenset[str] = frozenset({
+    "ascii-flowchart-advisory",
+    "degraded-mode-advisory",
+    "factual-mislabel-advisory",
+    "markdown-claims-output-advisory",
+    "organ-duplication-advisory",
+    "outputs-text-fragmentation-advisory",
+    "render-volume-delta-advisory",
+    "stale-claim-advisory",
+})
+_STICKY_MARKER_RE = re.compile(
+    r"<!-- Sticky Pull Request Comment(?P<header>[A-Za-z0-9_-]+) -->\s*\Z"
+)
+_BOT_ONLY_PREFIX_MARKERS: tuple[str, ...] = (
+    "<!-- REVIEW-COVERAGE:START -->",  # scripts/review_coverage.py (advisory)
+    "## Golden-Set Execution (H.7 P3)",  # notebook-execution-required.yml, resume cosmetique
+    "## Notebook PR Validation: ",  # notebook-execution-required.yml, resume cosmetique
+    "## Notebook outputs-required (H.4 schema): ",  # notebook-outputs-required.yml, PATCH en place
+)
+
+
+def _bot_advisory_key(row: dict[str, Any]) -> str | None:
+    """Le marqueur qui identifie un commentaire consultatif de bot, sinon None.
+
+    `_BOT_MARKER_GUARDS` garde son contrat historique (prefixe, tout auteur) ;
+    les formes de #18637 exigent en plus l'auteur `github-actions[bot]`.
+    """
+    body = row.get("body") or ""
+    for marker in _BOT_MARKER_GUARDS:
+        if body.startswith(marker):
+            return marker
+    if _login(row) != BOT_ADVISORY_LOGIN:
+        return None
+    for marker in _BOT_ONLY_PREFIX_MARKERS:
+        if body.startswith(marker):
+            return marker
+    match = _STICKY_MARKER_RE.search(body)
+    if match and match.group("header") in _BOT_STICKY_ADVISORY_HEADERS:
+        return match.group(0).strip()
+    return None
+
+
 def _is_bot_advisory_pose(row: dict[str, Any]) -> bool:
     """True pour la premiere pose d'un commentaire consultatif de bot marker-garde.
 
@@ -363,8 +446,7 @@ def _is_bot_advisory_pose(row: dict[str, Any]) -> bool:
     """
     if _login(row) != BOT_ADVISORY_LOGIN:
         return False
-    body = row.get("body") or ""
-    return any(body.startswith(marker) for marker in _BOT_MARKER_GUARDS)
+    return _bot_advisory_key(row) is not None
 
 
 def _review_body_has_reserve_marker(author: str, body: str) -> bool:
@@ -459,6 +541,7 @@ def _fingerprint_payload(
     comment_limit: int | None = None,
     neutral_after: str | None = None,
     include_checks: bool = False,
+    bot_forms_18637: bool = True,
 ) -> dict[str, Any]:
     """Payload canonique de la fingerprint — factorise pour le diagnostic.
 
@@ -487,7 +570,7 @@ def _fingerprint_payload(
                 "id": row.get("id"),
                 "author": author(row),
                 "createdAt": row.get("createdAt"),
-                "body": _comment_body_for_fingerprint(row),
+                "body": _comment_body_for_fingerprint(row, bot_forms_18637),
             }
             for row in comments
         ],
@@ -613,7 +696,29 @@ def legacy_surfaces_fingerprint(
     stamp.
     """
     return _digest(
-        _fingerprint_payload(snapshot, comment_limit, neutral_after, True)
+        _fingerprint_payload(
+            snapshot, comment_limit, neutral_after, True, bot_forms_18637=False
+        )
+    )
+
+
+def pre18637_surfaces_fingerprint(
+    snapshot: dict[str, Any],
+    comment_limit: int | None = None,
+    neutral_after: str | None = None,
+) -> str:
+    """Empreinte d'avant #18637 : les commentaires de bot hors
+    ``_BOT_MARKER_GUARDS`` y sont haches sur leur corps ENTIER.
+
+    Gardee pour que les dossiers poses avant #18637 restent verifiables tant
+    que leurs surfaces n'ont pas bouge. Ce digest hache strictement plus de
+    contenu que l'empreinte courante : l'accepter n'affaiblit rien. A retirer
+    quand aucun dossier ouvert ne porte plus ce tampon.
+    """
+    return _digest(
+        _fingerprint_payload(
+            snapshot, comment_limit, neutral_after, False, bot_forms_18637=False
+        )
     )
 
 
@@ -654,7 +759,21 @@ def check_claim_contradictions(
     if claim != "latest-wins-green":
         return []
     contradictions = []
-    for name, run in sorted(latest_wins_check_runs(check_runs).items()):
+    verdicts = latest_wins_check_runs(check_runs)
+    # A required check with no completed run on the head is a contradiction
+    # too: an absent check cannot be green (#18579). `None` means the snapshot
+    # carries no check-runs at all (never the case live, where
+    # `_head_check_runs` always fills the list) and keeps the historic reading.
+    if check_runs is not None:
+        for name in REQUIRED_CHECK_NAMES:
+            if name not in verdicts:
+                contradictions.append(
+                    "checks claim 'latest-wins-green' is contradicted by the "
+                    f"absence of required check '{name}' on the head (no "
+                    "completed run: the pull_request workflows may never have "
+                    "fired, #18579)"
+                )
+    for name, run in sorted(verdicts.items()):
         conclusion = (run.get("conclusion") or "").lower()
         if conclusion in GREEN_CONCLUSIONS:
             continue
@@ -706,10 +825,11 @@ def probe_b0(pr: int) -> dict[str, Any]:
     """Run the B.0 organ on ``pr``. A failure to measure is fail-closed.
 
     The import is lazy because the probe runs only for a dossier that claims
-    READY: BLOCKED and absent dossiers never load the organ. A failure to
-    import it is a failure to measure like any other -- it surfaces as
-    ``RuntimeError``, which ``main`` reports as UNKNOWN (exit 2), never as a
-    traceback.
+    READY (``refute_ready_b0``) or BLOCKED with b0 as its sole blocking field
+    (``recheck_blocked_b0``, #19093): absent dossiers and other BLOCKED
+    reasons never load the organ. A failure to import it is a failure to
+    measure like any other -- it surfaces as ``RuntimeError``, which ``main``
+    reports as UNKNOWN (exit 2), never as a traceback.
     """
     try:
         try:
@@ -743,6 +863,47 @@ def refute_ready_b0(
     if refuted:
         return "", refuted, None
     return verdict, [], dossier
+
+
+def recheck_blocked_b0(
+    pr: int,
+    verdict: str,
+    dossier: Dossier | None,
+    probe: Any = None,
+) -> tuple[str, list[str], Dossier | None]:
+    """Expire a BLOCKED dossier whose only blocking field, ``b0``, no longer blocks.
+
+    Symmetric of ``refute_ready_b0`` (#19093). The READY probe compares the
+    dossier's ``b0: clear`` claim with the live organ; this one asks the mirror
+    question -- a dossier that attested ``b0: blocked`` for a remark a later
+    lift has extinguished must not keep answering rc=3 forever. Measured
+    instance (2026-10-04, #19012): dossier BLOCKED at 02:49Z for a review
+    reserve, the coordinator's APPROVE lifts it at 06:13Z on the same head,
+    and the gate still answered rc=3 at 10:24Z -- the pull request slept 4 h.
+    Cause: ``surfaces_fingerprint`` neutralizes the coordinator's own later
+    reviews (``_is_own_later_act``), so a lift by the coordinator expires
+    neither a READY nor a BLOCKED stamp.
+
+    Only the b0-ONLY case expires, and only toward a re-stamp: the answer
+    becomes the no-dossier outcome (exit 1), which routes the pull request to
+    a third-party lane for a fresh dossier -- never back to the author as
+    mergeable. Any other blocking field (checks, scope, domain) keeps the
+    dossier standing: its reason may still hold.
+    """
+    if verdict != VERDICT_BLOCKED or dossier is None:
+        return verdict, [], dossier
+    if blocking_fields(dossier) != ["b0"]:
+        return verdict, [], dossier
+    result = (probe or probe_b0)(pr)
+    if result and result.get("blocked"):
+        return verdict, [], dossier
+    return "", [
+        "dossier BLOCKED for b0 only, but the live B.0 organ "
+        f"(check_unaddressed_nits.py) no longer blocks PR #{pr} -- the "
+        "dossier's stated reason is extinguished, a re-stamp is required: "
+        "a third-party lane must post a fresh dossier (never merge on "
+        "this one)"
+    ], None
 
 
 def carrying_lane(snapshot: dict[str, Any]) -> str | None:
@@ -816,6 +977,22 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
                 f.get("checks", ""), snapshot.get("checkRuns")
             )
         )
+        # A READY dossier must target the default branch. A PR stacked on a
+        # feature branch carries a base whose own merge state lives outside
+        # this dossier's jurisdiction -- including the dead branches the
+        # measure of 2026-10-03 caught (squash-merged or abandoned, see
+        # #19002). The dossier cannot attest a merge into a branch it has
+        # not seen, so the gate refuses READY when the base is anything
+        # other than `main`. The error names the base so the lane knows
+        # which branch to retarget onto (the lane, not the gate, owns the
+        # retarget: a base bump is a content decision, see git-workflow.md
+        # L898 collision guard).
+        base = snapshot.get("baseRefName")
+        if base != CANONICAL_BASE:
+            errors.append(
+                f"baseRefName must be {CANONICAL_BASE!r} when verdict is READY "
+                f"(got {base!r}); retarget the PR before stamping a new dossier"
+            )
     elif verdict == VERDICT_BLOCKED and not blocking_fields(dossier):
         # Un BLOCKED qui ne nomme aucun champ bloquant est inerte : il occupe la
         # surface de gate sans dire quoi reparer, et ai-01 ne peut ni merger ni
@@ -869,7 +1046,12 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
     legacy_fingerprint = legacy_surfaces_fingerprint(
         snapshot, dossier.comment_index, dossier.created_at
     )
-    if f.get("surfaces-sha256") not in {live_fingerprint, legacy_fingerprint}:
+    pre18637_fingerprint = pre18637_surfaces_fingerprint(
+        snapshot, dossier.comment_index, dossier.created_at
+    )
+    if f.get("surfaces-sha256") not in {
+        live_fingerprint, legacy_fingerprint, pre18637_fingerprint
+    }:
         # #16931 defaut 3 (mesure 16928) : deux hachages opaques sont
         # inexploitables — la lane refabrique le dossier EN AVEUGLE. Le refus
         # nomme la surface divergente, comme check_unaddressed_nits --json
@@ -881,7 +1063,9 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
             "discussion surfaces changed or were not fully attested: "
             f"surface divergente = {divergent}; "
             f"dossier={f.get('surfaces-sha256', '?')}, live={live_fingerprint} "
-            "(legacy stamps whose checks moved need one --template re-stamp)"
+            "(legacy stamps whose checks moved need one --template re-stamp; "
+            "a re-stamp is a NEW comment posted right after --template -- a "
+            "PATCHed dossier never matches, the template counts it)"
         )
 
     comparisons = {
@@ -1232,6 +1416,38 @@ def load_snapshot(pr: int) -> dict[str, Any]:
     return snapshot
 
 
+def restamp_warning(snapshot: dict[str, Any]) -> str | None:
+    """Name the only re-stamp gesture that can pass when a dossier already exists.
+
+    `render_template` counts EVERY comment present, the existing dossier
+    included, while the gate counts only the comments BEFORE the dossier it
+    reads (`dossier.comment_index`) and fingerprints those. A dossier
+    re-stamped by PATCH therefore always lands one comment short of its own
+    template: `comments-reviewed is stale: dossier=N+1, live=N`. The gate reads
+    the LAST dossier of the pull request, so a NEW comment posted right after
+    the template matches exactly. Measured on #18072, #17985 and #18134
+    (2026-09-28): three PATCH re-stamps refused, the cause read as rerolling
+    checks, which the fingerprint does not cover since #16957.
+    """
+    for index in range(len(snapshot.get("comments") or []) - 1, -1, -1):
+        comment = snapshot["comments"][index]
+        dossier, _errors = parse_dossier(
+            comment.get("body") or "",
+            index,
+            _login(comment),
+            comment.get("createdAt") or "",
+        )
+        if dossier is not None:
+            return (
+                f"a dossier already exists (comment {index + 1} of "
+                f"{len(snapshot['comments'])}, by {_login(comment)}): this "
+                "template counts it. Re-stamp = POST this block as a NEW "
+                "comment, with no other comment in between; never PATCH the "
+                "existing dossier, it can never match its own template."
+            )
+    return None
+
+
 def render_template(snapshot: dict[str, Any], lane: str = ADJOINT_LANE) -> str:
     """Render the mechanical fields; the emitting lane sets the verdict fields.
 
@@ -1305,6 +1521,9 @@ def main() -> int:
         snapshot = load_snapshot(args.pr)
         if args.template:
             print(render_template(snapshot, args.lane))
+            warning = restamp_warning(snapshot)
+            if warning:
+                print(f"WARNING: {warning}", file=sys.stderr)
             return 0
         if args.fingerprint:
             print(surfaces_fingerprint(snapshot))
@@ -1325,6 +1544,8 @@ def main() -> int:
         verdict, errors, dossier = evaluate_with_dossier(snapshot)
         if not errors:
             verdict, errors, dossier = refute_ready_b0(args.pr, verdict, dossier)
+        if not errors:
+            verdict, errors, dossier = recheck_blocked_b0(args.pr, verdict, dossier)
     except (
         RuntimeError,
         KeyError,

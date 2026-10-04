@@ -307,6 +307,7 @@ def apply_action(action, notebook_path):
     if agent == 'notebook-cell-iterator':
         Task(
             subagent_type="general-purpose",
+            model="sonnet",
             prompt=f"""
             Tu es un agent notebook-cell-iterator.
             Lis .claude/agents/notebook-cell-iterator.md
@@ -322,6 +323,7 @@ def apply_action(action, notebook_path):
     elif agent == 'notebook-enricher':
         Task(
             subagent_type="general-purpose",
+            model="sonnet",
             prompt=f"""
             Tu es un agent notebook-enricher.
             Lis .claude/agents/notebook-enricher.md
@@ -335,6 +337,7 @@ def apply_action(action, notebook_path):
     elif agent == 'notebook-cleaner':
         Task(
             subagent_type="general-purpose",
+            model="sonnet",
             prompt=f"""
             Tu es un agent notebook-cleaner.
             Lis .claude/agents/notebook-cleaner.md
@@ -516,6 +519,7 @@ overall_score = (
 ```python
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt="""
     Tu es un agent notebook-iterative-builder.
     Lis .claude/agents/notebook-iterative-builder.md
@@ -539,6 +543,7 @@ Task(
 ```python
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt="""
     Tu es un agent notebook-iterative-builder.
     Lis .claude/agents/notebook-iterative-builder.md
@@ -559,6 +564,7 @@ Task(
 ```python
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt="""
     Tu es un agent notebook-iterative-builder.
     Lis .claude/agents/notebook-iterative-builder.md
@@ -579,6 +585,7 @@ Task(
 ```python
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt="""
     Tu es un agent notebook-iterative-builder.
 

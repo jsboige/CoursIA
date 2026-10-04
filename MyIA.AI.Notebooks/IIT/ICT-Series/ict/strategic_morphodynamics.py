@@ -7,8 +7,9 @@ d'implementation, des tournois round-robin, la dynamique de replicateur, et l'on
 cartographie les **bassins d'invasion**.
 
 La theorie (grim trigger, seuil $\\delta \\ge (T-R)/(T-P)$, Folk theorem) est
-traitee **par renvoi** a GameTheory-6c (merge `182bf33cc`) et, quand il sera
-livre, au lake formel `repeated_games_lean` (#4880). Ce module ne re-derive pas
+traitee **par renvoi** a GameTheory-6c (merge `182bf33cc`) et au lake formel
+`game_theory_lean/RepeatedGames` (#4880, absorbe depuis l'ancien
+`repeated_games_lean`). Ce module ne re-derive pas
 la theorie des jeux repetes : il **verifie numeriquement** ses previsions et
 cartographie la morphologie des regimes.
 

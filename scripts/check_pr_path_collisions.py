@@ -221,7 +221,7 @@ HISTORICAL_STRONG_PAIRS: tuple[tuple[int, int, str, int], ...] = (
      13508),
     # Full double-delivery of the same notebook; the worse one was merged.
     (12737, 13385,
-     "MyIA.AI.Notebooks/GameTheory/GameTheory-04-NashEquilibrium.ipynb",
+     "MyIA.AI.Notebooks/GameTheory/GameTheory-04-NashEquilibrium-Python.ipynb",
      13313),
 )
 

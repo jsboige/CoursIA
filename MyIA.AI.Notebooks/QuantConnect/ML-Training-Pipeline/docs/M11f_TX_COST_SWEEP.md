@@ -90,7 +90,7 @@
 ## Fichiers
 
 - Verdict (this) : `MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/docs/M11f_TX_COST_SWEEP.md`
-- Script : `scripts/m11f_tx_cost_sweep.py` (~250 lines, reuses `simulate_har_kelly` + LW2008 SE)
+- Script : `scripts/m11f_tx_cost_sweep.py` (reuses `simulate_har_kelly` + LW2008 SE)
 - Results : `results/m11f_tx_cost_sweep/results.{csv,json}` (35 combos × 5 fee levels = 175 rows)
 
 ## Cross-references

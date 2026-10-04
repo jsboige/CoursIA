@@ -74,7 +74,20 @@ STATUS_CONTEXT_RE = re.compile(
     r"(?:^|\b)(?:statut|status|priorit[ée]|priority)\b",
     re.IGNORECASE,
 )
-ACTIVE_OVERRIDE_RE = re.compile(r"\bstatut\s+corrig[ée]\b", re.IGNORECASE)
+# A rectification header that explicitly withdraws the stale stance suppresses
+# the stance signal: the historical prose below it is preserved by design (the
+# #13906 repair pattern), so its dormant wording is no longer a live stance.
+# Markers are the phrases that pattern actually produces, measured on #1210,
+# #11690, #13902 and #13906 (2026-10-01).
+RETRACTION_MARKER_RE = re.compile(
+    r"(?:"
+    r"statut\s+corrig[ée]"  # explicit status correction (#1210)
+    r"|ne\s+d[ée]criv\w+\s+plus\s+(?:leur\s+|son\s+)?[ée]tat"  # #11690 header
+    r"|ne\s+tient\s+plus"  # #13902 measured block
+    r"|faux\s+positif\s+du\s+signal"  # #13906 measured block
+    r")",
+    re.IGNORECASE,
+)
 
 
 @dataclass(frozen=True)
@@ -172,7 +185,7 @@ def prose_lines_for_stance(title: str, body: str) -> list[str]:
 
 def dormant_stance(title: str, body: str) -> str | None:
     """Return the first live dormant-stance pattern, if any."""
-    if ACTIVE_OVERRIDE_RE.search(body):
+    if RETRACTION_MARKER_RE.search(body):
         return None
     lines = prose_lines_for_stance(title, body)
     prose = "\n".join(lines)

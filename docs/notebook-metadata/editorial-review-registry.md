@@ -85,14 +85,14 @@ Curation sur les PRs `fix(sudoku,#3801): ... factual errors` mergées sur main (
   review_scope: factual
   notes: "fix(sudoku,#3801): stale-benchmark-numbers honesty (cells 37+40)"
 
-- notebook_path: Sudoku/Sudoku-11-Choco-Csharp.ipynb
+- notebook_path: Sudoku/Sudoku-11-Choco-CSharp.ipynb
   reviewer: jsboigeEpita
   review_date: 2026-07-22
   evidence_pr: "#7794"
   review_scope: factual
   notes: "fix(sudoku,#3801): reconcile '1-50 ms' claim with 728 ms cold-start output"
 
-- notebook_path: Sudoku/Sudoku-12-Z3-Csharp.ipynb
+- notebook_path: Sudoku/Sudoku-12-Z3-CSharp.ipynb
   reviewer: jsboigeEpita
   review_date: 2026-07-22
   evidence_pr: "#7801"
@@ -104,7 +104,7 @@ Curation sur les PRs `fix(sudoku,#3801): ... factual errors` mergées sur main (
 
 | Notebook | PR | Auteur | Raison non-promotion |
 |----------|-----|--------|----------------------|
-| `Sudoku/Sudoku-14-BDD-Csharp.ipynb` | #7970 | `jsboige@gmail.com` | auteur = owner_logique (`po-2023` aliased jsboige) — auto-review par règle §3.1 #4 |
+| `Sudoku/Sudoku-14-BDD-CSharp.ipynb` | #7970 | `jsboige@gmail.com` | auteur = owner_logique (`po-2023` aliased jsboige) — auto-review par règle §3.1 #4 |
 
 ## 5. Acceptance criteria
 

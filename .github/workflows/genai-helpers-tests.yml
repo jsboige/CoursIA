@@ -87,7 +87,7 @@ jobs:
       - name: Install deps (numpy requests python-dotenv pillow librosa pytest)
         run: |
           python -m pip install --upgrade pip
-          pip install numpy requests python-dotenv pillow librosa pytest
+          pip install numpy requests python-dotenv pillow librosa pytest nbformat
 
       - name: Run GenAI helpers tests
         run: |

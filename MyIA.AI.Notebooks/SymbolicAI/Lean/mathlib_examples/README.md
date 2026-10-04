@@ -69,7 +69,7 @@ aperçu exhaustif.
 
 ### Où aller ensuite
 
-- **Prise en main Mathlib côté notebook** : `Lean-6-Mathlib-Essentials.ipynb`
+- **Prise en main Mathlib côté notebook** : `Lean-06-Mathlib-Essentials-Lean.ipynb`
   (tactiques exercées sur Mathlib importé directement) et
   `Lean-26-Munkres-Tribute.ipynb` (cours 18.901 de Munkres, exécuté sur ce lake).
 - **Projets Lean plus complets** : [`calibration_lean/`](../calibration_lean/),

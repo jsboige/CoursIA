@@ -1,0 +1,11 @@
+date: '2026-10-04'
+by: myia-po-2027:CoursIA
+python_sha: 37d57e27b1a2eb42f3368ffb35758a2e99e1c2c8
+csharp_sha: 4be90894fde497efe55915f29cc273c0b1b76e2c
+content_python_sha: 38d80548508c77b6729c733896193fd3847953e02b34e32aa77a92f94f274365
+content_csharp_sha: 8fe5cc4aba880f6b5edab7cd9c89618ca93e09af268abf8dee262bde3fb1e33c
+reason: >-
+  Corrige 0010 : son content_csharp_sha (58e69ce7) citait le blob pre-#17636
+  (commit 15c605c5, 2026-09-24), calcule depuis un worktree sans le main du 01/10.
+  Re-attestation de l etat reel du head : python consolide (38d80548), csharp
+  = version main courante (8fe5cc4a, blob 4be90894 via 17528ec3).

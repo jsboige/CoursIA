@@ -124,7 +124,7 @@ def load_traces(path: str | Path, *, strict: bool = False) -> dict:
     from .trace_contract import validate_manifest, enforce_instrument
     # ``expected="sae"`` declare au contrat l'intention du chargeur : un
     # manifeste strictement minimal (juste d_sae, k, layer, sans
-    # discriminant declare, Tell c.1050 ★★ fondateur) sera accepte avec
+    # discriminant declare) sera accepte avec
     # UserWarning plutot que REFUSE comme un melange silencieux.
     meta = validate_manifest(meta, strict=strict, expected="sae")
     enforce_instrument(meta, "sae")

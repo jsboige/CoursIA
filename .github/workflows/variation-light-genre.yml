@@ -107,8 +107,15 @@ jobs:
           # de ce que le ratio protege. Constate le 2026-08-10 sur #10328
           # (60 mergees, 30 vues, lane po-2024:CoursIA a 11 grains lue <=2).
           gh pr list --state merged --search "merged:$TODAY" --limit 500 \
-            --json number,body,mergedAt,labels,files > /tmp/merged.json 2>/dev/null || \
+            --json number,body,mergedAt,labels,files,baseRefName > /tmp/merged.json 2>/dev/null || \
             printf '[]' > /tmp/merged.json
+          # #18940 : filtre --base main. baseRefName ajoute au --json ci-dessus
+          # permet d'eliminer les PRs empilees sur une branche de feature du
+          # comptage G-VAR-2. Les PRs sans baseRefName (retrocompat) sont
+          # preservees ; le fallback cp preserve le fichier si jq echoue.
+          jq '[.[] | select((.baseRefName == "main") or (.baseRefName == null))]' /tmp/merged.json > /tmp/merged.main.json 2>/dev/null || \
+            cp /tmp/merged.json /tmp/merged.main.json
+          mv /tmp/merged.main.json /tmp/merged.json
 
           # Body circule par fichier : printf '%s' ne reinterprete rien (cf
           # variation-tag-guard `check-light-cap`, meme idiome).

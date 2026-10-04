@@ -97,6 +97,15 @@ class PercentSlippageModel:
 # -- the USDT-cash-marking-as-phantom theory does not hold given real profit.)
 # See #1027 (Phase 3 verdict comment 2026-07-16).
 #
+# Account currency (2026-10): the Phase 2/3 figures above ran on a USDT
+# account, which cannot value USD-quoted assets before a USDT/USD conversion
+# exists on QC. Measured on the isolated crypto sleeve (BTC/ETH, 0 fee, same
+# code and data): USD account Sharpe 0.734 / CAGR 32.8% vs USDT account
+# Sharpe 0.298 / CAGR 10.0%; BTC buy-and-hold from 2018 places 0 orders on a
+# USDT account and 1 order from 2022. The "data-source effect" attributed to
+# the Binance -> Coinbase migration was this artifact. Default is now USD with
+# a BTC/ETH universe (the 6-coin basket breaks a USD account: 0 orders).
+#
 # MiCA migration (2026-06-28): crypto sleeve migrated Binance -> Coinbase.
 # Binance France services cease 2026-07-01 (no CASP MiCA licence); Coinbase
 # holds CASP MiCA France + is QC-native. Coinbase Crypto Price Data on QC covers
@@ -122,6 +131,10 @@ class PortfolioHybridIBKRCoinbase(QCAlgorithm):
       orders so the 0.8% taker rate applies). Set to a flat bps value (e.g. 10)
       to override with PercentFeeModel and isolate the pure fee effect (10
       reproduces the Binance basis on Coinbase data). See README MiCA section.
+
+    Account-currency fix (2026-10) adds:
+    - ``account_currency`` (default ``USD``; ``USDT`` reproduces the earlier runs).
+    - ``crypto_universe`` (default ``btceth``; ``basket6`` = the earlier 6-coin basket).
     """
 
     # Intra-sleeve weights (research allocation WITHIN each sleeve, fixed).
@@ -142,8 +155,11 @@ class PortfolioHybridIBKRCoinbase(QCAlgorithm):
 
     IBKR_SECTORS = ["XLK", "XLF", "XLE", "XLV", "XLY", "XLI", "XLB", "XLU", "XLP"]
     # Coinbase pairs are USD-quoted (BTCUSD, not BTCUSDT). Only BTC/ETH have
-    # continuous full-window data on QC; the basket rule falls back gracefully.
-    CRYPTO_TICKERS = ["BTCUSD", "ETHUSD", "SOLUSD", "ADAUSD", "LTCUSD", "XRPUSD"]
+    # continuous full-window data on QC; selected by the crypto_universe parameter.
+    CRYPTO_UNIVERSES = {
+        "btceth": ["BTCUSD", "ETHUSD"],
+        "basket6": ["BTCUSD", "ETHUSD", "SOLUSD", "ADAUSD", "LTCUSD", "XRPUSD"],
+    }
 
     @staticmethod
     def _parse_date(value, default):
@@ -180,10 +196,12 @@ class PortfolioHybridIBKRCoinbase(QCAlgorithm):
         raw_fee = self.get_parameter("crypto_fee_bps")
         self.crypto_fee_bps = float(raw_fee) if raw_fee else None
 
-        # Account currency USDT (NOT USD -- see header findings). Coinbase crypto
-        # (BTCUSD) is USD-quoted; QC auto-converts USD quote -> USDT account, like
-        # the Binance canonical converts equity USD -> USDT. Set BEFORE set_cash.
-        self.set_account_currency("USDT")
+        # Account currency USD by default (see header "Account currency" finding):
+        # a USDT account cannot value USD-quoted assets until a USDT/USD conversion
+        # exists on QC, so a 2018 start keeps the crypto sleeve in cash for years.
+        # "USDT" stays selectable to reproduce the pre-2026-10 README results.
+        # Set BEFORE set_cash.
+        self.set_account_currency(self.get_parameter("account_currency", "USD"))
         self.set_cash(100000)
 
         # DEFAULT brokerage (no set_brokerage_model): IBKR margin rejects Crypto.
@@ -212,9 +230,11 @@ class PortfolioHybridIBKRCoinbase(QCAlgorithm):
         # flat value to override with PercentFeeModel instead (used to isolate the
         # pure fee effect: crypto_fee_bps=10 reproduces the Binance basis on the
         # SAME Coinbase data, isolating data-source vs fee-level contributions).
-        # Only BTCUSD/ETHUSD have continuous full-window data; basket falls back.
+        # Only BTCUSD/ETHUSD have continuous full-window data, hence the btceth
+        # default; basket6 (legacy) breaks a USD account on QC (0 orders).
+        universe = self.get_parameter("crypto_universe", "btceth")
         self.crypto_symbols = {}
-        for ticker in self.CRYPTO_TICKERS:
+        for ticker in self.CRYPTO_UNIVERSES[universe]:
             sec = self.add_crypto(ticker, Resolution.DAILY, Market.COINBASE)
             if self.crypto_fee_bps is None:
                 sec.set_fee_model(CoinbaseFeeModel())

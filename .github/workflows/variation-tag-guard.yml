@@ -315,7 +315,13 @@ jobs:
           # faux positif contre les lanes productives (cf #10328, 2026-08-10 :
           # 60 mergees pour 30 vues). Meme correctif dans variation-light-genre.yml.
           gh pr list --state merged --search "merged:$TODAY" --limit 500 \
-            --json number,body,mergedAt,labels > /tmp/merged.json 2>/dev/null || true
+            --json number,body,mergedAt,labels,baseRefName > /tmp/merged.json 2>/dev/null || true
+          # #18940 : filtre --base main. Voir justification au site 1 de
+          # always-on-guards.yml ; ce guard sert de controle positif de la
+          # suppression de l'adjacence sur PR empilee (cf. #18910).
+          jq '[.[] | select((.baseRefName == "main") or (.baseRefName == null))]' /tmp/merged.json > /tmp/merged.main.json 2>/dev/null || \
+            cp /tmp/merged.json /tmp/merged.main.json
+          mv /tmp/merged.main.json /tmp/merged.json
 
           # Le body circule par fichier : printf '%s' ne reinterprete rien
           # (newlines, quotes, $), contrairement a un passage en arg CLI.

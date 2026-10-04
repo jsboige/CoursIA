@@ -292,6 +292,19 @@ def _lire_cellule(nb_path: Path, cell_index: int) -> str:
     return "".join(nb["cells"][cell_index]["source"])
 
 
+def _cellule_contenant(nb_path: Path, marqueur: str) -> str:
+    """Source de la premiere cellule CODE contenant le marqueur.
+
+    Robuste aux enrichissements markdown : retrouver une cellule par son
+    appel d'organe ne casse pas quand une cellule pedagogique s'insere.
+    """
+    nb = json.load(open(nb_path, encoding="utf-8"))
+    for cell in nb["cells"]:
+        if cell["cell_type"] == "code" and marqueur in "".join(cell["source"]):
+            return "".join(cell["source"])
+    raise AssertionError(f"aucune cellule code ne contient {marqueur!r}")
+
+
 def test_notebook_cellule_dgp_byte_identique_module():
     """La cellule DGP (index 3) du notebook consomme l'organe, sans redefinition.
 
@@ -312,12 +325,13 @@ def test_notebook_cellule_dgp_byte_identique_module():
 
 
 def test_notebook_cellule_pc_consomme_lorgane():
-    """La cellule PC (index 7) reference ddo.executer_pc.
+    """La cellule PC reference ddo.executer_pc.
 
-    Note: index +1 depuis enrichissement markdown pedagogique (cellule 6 = intro markdown).
+    La cellule est retrouvee par contenu (appel de l'organe), pas par index
+    fige : sous enrichissement markdown pedagogique, l'index a deja glisse
+    deux fois (7 puis 6) et cassait le test a chaque fois.
     """
-    src = _lire_cellule(NB_PATH, 7)
-    assert "ddo.executer_pc" in src
+    src = _cellule_contenant(NB_PATH, "ddo.executer_pc")
     assert "alpha=0.01" in src, (
         "le notebook motive alpha=0.01 pour PC (v-structure robuste 20/20)"
     )

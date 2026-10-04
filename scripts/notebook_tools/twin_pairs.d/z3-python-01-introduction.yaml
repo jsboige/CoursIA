@@ -6,6 +6,7 @@
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Z3 EST le moteur SOTA SMT, branche NATIVEMENT des deux cotes : Microsoft.Z3 (NuGet officiel, `#r \"nuget: Microsoft.Z3\"` + `using Microsoft.Z3;`, API Context ctx.MkSolver/MkConst) et pyz3 (pip z3-solver, `from z3 import *`, API fonctionnelle Solver()/Int()) sont les deux bindings de la meme lib C++ Z3 sous-jacente — pas un pont intermediaire type IKVM/PythonNet. Parite firsthand sur le concept central (SMT de base, contrainte insatisfiable) cellule 5 des deux notebooks : Python pyz3 `s.check() -> unsat` (x>5 ET x<3) == C# Microsoft.Z3 `s.check() -> UNSATISFIABLE`, meme verdict du meme moteur. Aucune asymetrie de machinerie a corriger."
   known_differences:
+    - "2026-10-02 lane myia-po-2024:CoursIA-2 : nav Python seul -- fleche avant 01->01b retablie (ordre canonique de la serie, fix #17419 ; l'ancienne fleche erronee de Z3-08 vers 01b etait son seul rattachement). 01b est Python-only, aucun equivalent C# a faire evoluer. Edition markdown-only, aucune cellule code touchee, sorties C.2 inchangees."
     - "Python : pyz3 (z3-solver), `from z3 import *`, API fonctionnelle (Solver(), Int('x'), s.check() -> sat/unsat)."
     - "C# : Microsoft.Z3 .NET, `using Microsoft.Z3;`, API orientee Context (ctx.MkSolver(), ctx.MkConst(...), Status.TRUE)."
     - "Concept demontre (SMT de base, x>=10 & x<=2 -> unsat) verifie firsthand cote Python (NB-01 CLEAN)."

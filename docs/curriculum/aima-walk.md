@@ -101,13 +101,13 @@ métaheuristiques composées) — l'épilogue le nomme.
 
 ### Phase 7 — Décision multi-agents (AIMA ch. 5 approfondi + théorie des jeux) — GameTheory, ~2 h 30
 
-15. **`GameTheory/GameTheory-02-NormalForm.ipynb`** (45 min) — formes normales, équilibres
+15. **`GameTheory/GameTheory-02-NormalForm-Python.ipynb`** (45 min) — formes normales, équilibres
     purs et mixtes. *Suppose : Phase 3 (minimax).*
-16. **`GameTheory-06-EvolutionTrust.ipynb`** (45 min) — tournoi d'Axelrod, émergence de la
+16. **`GameTheory-06-EvolutionTrust-Python.ipynb`** (45 min) — tournoi d'Axelrod, émergence de la
     coopération — la pause narrative du parcours.
-17. **`GameTheory-13-ImperfectInfo-CFR.ipynb`** (1 h) — information imparfaite, counterfactual
+17. **`GameTheory-13-ImperfectInfo-CFR-Python.ipynb`** (1 h) — information imparfaite, counterfactual
     regret minimization (poker AI). *Companion formel optionnel :
-    `GameTheory-02b-Lean-Definitions.ipynb`* (45 min) — les mêmes définitions en Lean 4
+    `GameTheory-02b-Lean-Definitions-Lean.ipynb`* (45 min) — les mêmes définitions en Lean 4
     (embryon #7 : les lacs Lean comme compagnons formels).
 
 ### Phase 8 — Planification (AIMA ch. 10-11) — série Planners (durée non chiffrée ici)

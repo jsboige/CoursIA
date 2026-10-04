@@ -7625,7 +7625,7 @@ simulation vers l'avant. Mais la version naive est **myope et couteuse** : loin 
 les rollouts aleatoires echouent (recompense eparse) et les estimations s'ecrasent vers zero ; et il
 faut re-simuler a chaque pas. MCTS corrige les deux defauts en construisant un arbre asymetrique
 guide par UCB — pour une implementation complete sur des jeux a deux joueurs, voir
-[GameTheory-17-MultiAgent-RL](../GameTheory/GameTheory-17-MultiAgent-RL.ipynb) et les notebooks
+[GameTheory-17-MultiAgent-RL-Python](../GameTheory/GameTheory-17-MultiAgent-RL-Python.ipynb) et les notebooks
 OpenSpiel de la serie [GameTheory](../GameTheory/README.md).",,,,,,,,7a062a5a3d433d67,,,,,,,,
 MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,fdbe41b8,markdown,fr,b2b95ce8fbdcd4d8,"## 8. Exercices
 
@@ -7778,7 +7778,7 @@ MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,7234522c,markdown,fr,53543101
 ### Passerelles vers les autres series
 
 - **[GameTheory](../GameTheory/README.md)** : MCTS est au coeur d'AlphaZero ; le notebook
-  [GameTheory-17-MultiAgent-RL](../GameTheory/GameTheory-17-MultiAgent-RL.ipynb) applique
+  [GameTheory-17-MultiAgent-RL-Python](../GameTheory/GameTheory-17-MultiAgent-RL-Python.ipynb) applique
   ces idees aux jeux a deux joueurs via OpenSpiel.
 - **[Search](../Search/README.md)** : la planification par modèle EST de la recherche dans un espace
   d'etats — value itération (notebook 5) et A* sont deux reponses au même problème.

@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: Search
-pedagogical_count: 155
-breakdown: Applications=59, Part1-Foundations=43, Part4-Metaheuristics=35, Part2-CSP=18
-maturity: BETA=141, ALPHA=9, DRAFT=5
+pedagogical_count: 156
+breakdown: Applications=59, Part1-Foundations=43, Part4-Metaheuristics=35, Part2-CSP=18, Discrepancy=1
+maturity: BETA=142, ALPHA=9, DRAFT=5
 -->
 
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ SymbolicAI](../SymbolicAI/README.md)
@@ -229,7 +229,7 @@ Le levier .NET retenu a dépendu de la dépendance sous-jacente de chaque notebo
 
 | Cible | Dépendance Python | Levier .NET retenu | Remarque |
 |-------|-------------------|-------------|----------------------|
-| CSP-1 à CSP-9 (modélisation par contraintes) | `ortools` (CSP-3 à CSP-8) | **Choco-solver** via **IKVM** (CSP-1/2/3/4/5/7) ; **Google.OrTools** NuGet natif (CSP-6/8) ; from-scratch Yokoo DisCSP (CSP-9) | Précédent fondateur : `Sudoku-11-Choco-Csharp` (Choco via IKVM) et son binôme `Sudoku-11-Choco-Python` |
+| CSP-1 à CSP-9 (modélisation par contraintes) | `ortools` (CSP-3 à CSP-8) | **Choco-solver** via **IKVM** (CSP-1/2/3/4/5/7) ; **Google.OrTools** NuGet natif (CSP-6/8) ; from-scratch Yokoo DisCSP (CSP-9) | Précédent fondateur : `Sudoku-11-Choco-CSharp` (Choco via IKVM) et son binôme `Sudoku-11-Choco-Python` |
 | Search-9 Linear Programming | `pulp` | **Google.OrTools** (NuGet natif, GLOP / PDLP) | Port direct, sans IKVM |
 | Recherche d'états et jeux (Search-1 à Search-8) | aucune dépendance lourde | **.NET Interactive** pur, structures from-scratch | BFS/DFS/A*, Minimax/MCTS, DLX directement portés |
 | Applications (App-1 à App-20) | `ortools`, `pygad`, stdlib | Mix from-scratch / OR-Tools natif / GeneticSharp selon le sujet | 20 binômes complets |
@@ -536,6 +536,10 @@ dotnet --version
 
 ---
 
+## Activités associées
+
+L'activité [Exploration : cannibales et missionnaires](../GenAI/activites/Activites-Vulgarisation.md#1-exploration--cannibales-et-missionnaires) met la modélisation d'états et l'arbre d'exploration de cette série en situation de jeu d'équipe.
+
 ## Conclusion / Prochaines étapes
 
 ### Ce que vous avez appris
@@ -577,8 +581,8 @@ Le hub Search alignait une riche prose sur la double approche *exploration syst�
 | ML | `learning_theory_lean` (#5054) | Novikoff perceptron 0 sorry #4140 | [`Perceptron.lean`](../ML/learning_theory_lean/Perceptron/Perceptron.lean) (lake, pas notebook pédagogique) |
 | Probas | `decision_theory_lean` (#5053) | Concentration uniforme + Hoeffding (PAC iter-2) | [Infer-3-Factor-Graphs](../Probas/Infer/Infer-3-Factor-Graphs.ipynb) (factor graphs + PAC) |
 | QC | `kelly_lean` (#5047) | Kelly criterion + mean-variance bound | [QC-Py-10-Risk-Portfolio-Management](../QuantConnect/Python/QC-Py-10-Risk-Portfolio-Management.ipynb) (Kelly sizing) |
-| GameTheory | `game_theory_lean/SocialChoice` (lakes standalone `social_choice_lean` #5050 + `cooperative_games_lean` absorbés post-#4365, contenue dans `game_theory_lean/`) | Arrow + Sen voting | [GameTheory-15-CooperativeGames](../GameTheory/GameTheory-15-CooperativeGames.ipynb) |
-| GameTheory | `game_theory_lean/CooperativeGames/Shapley.lean` (lake `cooperative_games_lean` supprimé post-#4365, contenu absorbé) | Bondareva-Shapley 0 sorry #3954 | [GameTheory-13-ImperfectInfo-CFR](../GameTheory/GameTheory-13-ImperfectInfo-CFR.ipynb) |
+| GameTheory | `game_theory_lean/SocialChoice` (lakes standalone `social_choice_lean` #5050 + `cooperative_games_lean` absorbés post-#4365, contenue dans `game_theory_lean/`) | Arrow + Sen voting | [GameTheory-15-CooperativeGames-Python](../GameTheory/GameTheory-15-CooperativeGames-Python.ipynb) |
+| GameTheory | `game_theory_lean/CooperativeGames/Shapley.lean` (lake `cooperative_games_lean` supprimé post-#4365, contenu absorbé) | Bondareva-Shapley 0 sorry #3954 | [GameTheory-13-ImperfectInfo-CFR-Python](../GameTheory/GameTheory-13-ImperfectInfo-CFR-Python.ipynb) |
 | SymbolicAI | `argumentation_lean` (#5043 MERGED) | Tweety Preferred extensions + Dung framework | [Tweety-3-Dung-Csharp](../SymbolicAI/Tweety/Tweety-3-Dung-Csharp.ipynb) (Dung Preferred semantics) |
 
 ```mermaid

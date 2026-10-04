@@ -30,7 +30,7 @@ Dit autrement : la progression verticale d'ICT n'est pas une *liste* de substrat
 
 ### 2.3 S⊥ (Čech cohomologie) : adjonction **Const ⊣ Γ** (Global sections — Presheaf constant)
 
-- **Substrat transversal** : à toute strate `S_k` on peut attacher un **site** (catégorie des ouverts d'observation) et un **faisceau** (sections locales = mesures ICT-15d, cf. `ICT-15d-CechObstruction.ipynb`).
+- **Substrat transversal** : à toute strate `S_k` on peut attacher un **site** (catégorie des ouverts d'observation) et un **faisceau** (sections locales = mesures ICT-15d, cf. `ICT-15d-CechObstruction-Python.ipynb`).
 - **Adjonction candidate** : `Γ : Sh(X) → Set` (sections globales) admet un adjoint à gauche `Const : Set → Sh(X)` (préfaisceau constant).
 - **Capacité nouvelle** : l'**obstruction** au recollement, mesurée par `H¹(X, F) ≠ 0`. C'est précisément la **Solidity** de Schreiber (`⇉⊣⇝⊣Rh`) : le rapport entre le vide, l'horizon et le rythme qui tient ensemble.
 - **Test falsifiable** : `ICT-15d` a déjà livré la mesure `s2/s1, cob, rank` sur 4 substrats avec verdict `NON_TRIVIAL` (cf. `dissociations-matrix.md` § ICT-15d-corr). Mais la mesure est **SVD-dominée**, pas Čech-discriminante (note 12183/12257). Le discriminant falsifiable : *est-ce que la cohomologie Čech **distingue** un substrat cohérent d'un substrat incohérent mieux que ne le ferait une mesure scalaire agrégée ?* — à pré-enregistrer.
@@ -111,8 +111,8 @@ Le JSON committé est vérifié contre une ré-exécution fraîche par le test a
 ## 6. Crédit témoin & sources
 
 - **Schreiber, U.** « Perì Pantheōrías », *nLab*, 2025-03-08 (notes pour *Theories of Everything with Curt Jaimungal*). Vérifié firsthand : la page **ne parle pas** de conscience (cf. [#8182](https://github.com/jsboige/CoursIA/issues/8182) § « Précaution cardinale »). L'importation est donc **structurelle** (vocabulaire modal), pas thématique.
-- **ICT strates** : cadrage `docs/grothendieckian-lens.md` § « deux axes » + `docs/ict/dissociations-matrix.md` (matrice 4-objets `(s, q, π, W)`).
-- **Cohomologie Čech** : `ICT-15d-CechObstruction.ipynb` + `dissociations-matrix.md` § ICT-15d-corr.
+- **ICT strates** : cadrage `docs/cadrage/grothendieckian-lens.md` § « deux axes » + `docs/ict/dissociations-matrix.md` (matrice 4-objets `(s, q, π, W)`).
+- **Cohomologie Čech** : `ICT-15d-CechObstruction-Python.ipynb` + `dissociations-matrix.md` § ICT-15d-corr.
 - **Adjonction Forgetful ⊣ Free** : forme catégorielle classique (Mac Lane, *Categories for the Working Mathematician*, Springer 1998, ISBN 978-0387984032). Grade A (mathématique), importation grade C.
 - **Tresse** : [#7738](https://github.com/jsboige/CoursIA/issues/7738) CLOSED — la cartographie Thom/Grothendieck/Schmidhuber/Friston est posée.
 - **Iceberg** : [#8182](https://github.com/jsboige/CoursIA/issues/8182) § « La carte des insights » — aucun des trois triplets de Schreiber n'était listé en L1-L5 (Schreiber est L0, hors-iceberg) ; l'apport de ce prototype est de **refermer** la boucle Schreiber ↔ tresse en proposant un mapping catégorie-par-catégorie.
@@ -130,6 +130,6 @@ Le JSON committé est vérifié contre une ré-exécution fraîche par le test a
 - **Tresse conceptuelle** : [#7738](https://github.com/jsboige/CoursIA/issues/7738) — CLOSED, cadrage livré.
 - **Substrat-test proposé** : ICT-12c `PregnanceAnimat` (`MyIA.AI.Notebooks/IIT/ICT-Series/ict/pregnance_animat.py`).
 - **Matrice de dissociation** : `docs/ict/dissociations-matrix.md` (la case « s ⟂ π » est déjà testée).
-- **Lens grothendieckienne** : `docs/grothendieckian-lens.md` § *« Quand le recollement échoue — l'obstruction pour seul invariant »* (témoignage de Schreiber en prose, pas une section nommée).
+- **Lens grothendieckienne** : `docs/cadrage/grothendieckian-lens.md` § *« Quand le recollement échoue — l'obstruction pour seul invariant »* (témoignage de Schreiber en prose, pas une section nommée).
 
 — myia-po-2027:CoursIA-2, c.1331p258, prototype grade C

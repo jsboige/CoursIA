@@ -47,7 +47,7 @@ Ce premier livrable établit le **cœur formel** documenté de la preuve — la
 - **Build** : `lake build Minimax` (dépend de Mathlib4)
 - **CI** : `.github/workflows/lean-minimax.yml` (`sorry-filter-mode: standalone-tactic`,
   baseline `0`)
-- **Couverture i18n (EPIC #4980)** : **bilingue complet — Pattern A**. Les 3 modules
+- **Couverture i18n (EPIC #4980)** : **bilingue complet — Pattern A**. Les modules
   `Minimax/ZeroSum.lean`, `Minimax/Concavity.lean`, `Minimax/SionApplication.lean`
   ont chacun un miroir `_en.lean` (`ZeroSum_en`, `Concavity_en`, `SionApplication_en`),
   plus les deux agrégateurs `Minimax.lean` (FR canonique) et `Minimax_en.lean` (miroir

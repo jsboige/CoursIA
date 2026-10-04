@@ -178,5 +178,50 @@ class TestGhRowExtraction(unittest.TestCase):
         self.assertIsNotNone(d.tzinfo)
 
 
+class TestEpicRecognition(unittest.TestCase):
+    """#18203 geste 2: an EPIC is recognized by label OR title prefix.
+
+    On `main`, recognition reads the label only, so an EPIC titled `[EPIC] x`
+    without the label is invisible to the sweep -- it can fall behind with no
+    report ever naming it. These controls fail on `main` (`is_epic` does not
+    exist there) and pass on this branch.
+    """
+
+    def test_label_recognized(self):
+        self.assertTrue(_mod.is_epic(
+            {"title": "Tirage des grains", "labels": [{"name": "EPIC"}]}))
+
+    def test_title_prefix_recognized_without_label(self):
+        self.assertTrue(_mod.is_epic(
+            {"title": "[EPIC] Tirage des grains", "labels": []}))
+
+    def test_title_prefix_case_insensitive(self):
+        self.assertTrue(_mod.is_epic(
+            {"title": "[epic] lowercase prefix", "labels": []}))
+
+    def test_title_prefix_after_leading_space(self):
+        self.assertTrue(_mod.is_epic(
+            {"title": "  [EPIC] padded prefix", "labels": []}))
+
+    def test_plain_issue_not_epic(self):
+        self.assertFalse(_mod.is_epic(
+            {"title": "Bug report", "labels": [{"name": "bug"}]}))
+
+    def test_mid_title_mention_not_epic(self):
+        """Prefix, not substring: a note MENTIONING [EPIC] is not one."""
+        self.assertFalse(_mod.is_epic(
+            {"title": "Note about [EPIC] conventions", "labels": []}))
+
+    def test_no_title_no_labels_not_epic(self):
+        self.assertFalse(_mod.is_epic({"title": None, "labels": None}))
+
+    def test_both_channels_coexist_dedup(self):
+        """Label AND prefix on the same issue: still one EPIC (bool predicate,
+        no double count -- the dedup happens because recognition is a filter
+        over the issue list, not a union of two lists)."""
+        d = {"title": "[EPIC] double convention", "labels": [{"name": "EPIC"}]}
+        self.assertTrue(_mod.is_epic(d))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -15,6 +15,7 @@ import pytest
 from intraday_loader import synthesize_intraday, hourly_log_returns
 from realized_variance import (
     daily_bipower_variation,
+    daily_ohlc_variance,
     daily_realized_variance,
     daily_realized_volatility,
     daily_squared_returns,
@@ -149,3 +150,59 @@ class TestLogTransform:
         log_rv = realized_variance_to_log(rv)
         assert np.isfinite(log_rv).all()
         assert log_rv.iloc[3] == pytest.approx(0.0)
+
+
+class TestDailyOhlcVariance:
+    @staticmethod
+    def _bars(rows):
+        idx = pd.date_range("2024-01-01", periods=len(rows), freq="D")
+        return pd.DataFrame(rows, columns=["Open", "High", "Low", "Close"], index=idx)
+
+    def test_hand_computed_value(self):
+        bars = self._bars([(100, 101, 99, 100), (102, 104, 101, 103)])
+        v = daily_ohlc_variance(bars)
+        on = np.log(102 / 100) ** 2
+        gk = 0.5 * np.log(104 / 101) ** 2 - (2 * np.log(2) - 1) * np.log(103 / 102) ** 2
+        assert len(v) == 1
+        assert v.iloc[0] == pytest.approx(on + gk, rel=1e-12)
+        assert v.name == "RV_ohlc"
+
+    def test_without_overnight_keeps_first_bar(self):
+        bars = self._bars([(100, 101, 99, 100), (102, 104, 101, 103)])
+        v = daily_ohlc_variance(bars, overnight=False)
+        assert len(v) == 2
+        assert v.iloc[0] == pytest.approx(0.5 * np.log(101 / 99) ** 2, rel=1e-12)
+
+    def test_flat_bar_with_no_gap_is_zero(self):
+        bars = self._bars([(50, 50, 50, 50), (50, 50, 50, 50)])
+        assert daily_ohlc_variance(bars).iloc[0] == 0.0
+
+    def test_inconsistent_range_is_clipped_at_zero(self):
+        # High below the close: GK alone would be negative
+        bars = self._bars([(100, 100, 100, 100), (100, 100.1, 99.9, 103)])
+        assert daily_ohlc_variance(bars).iloc[0] >= 0.0
+
+    def test_lowercase_columns_accepted(self):
+        bars = self._bars([(100, 101, 99, 100), (102, 104, 101, 103)])
+        bars.columns = [c.lower() for c in bars.columns]
+        assert len(daily_ohlc_variance(bars)) == 1
+
+    def test_missing_column_raises(self):
+        bars = self._bars([(100, 101, 99, 100)]).drop(columns=["Low"])
+        with pytest.raises(ValueError):
+            daily_ohlc_variance(bars)
+
+    def test_unbiased_on_simulated_gbm(self):
+        # Driftless GBM sampled finely: mean of the proxy ~ daily variance
+        rng = np.random.default_rng(0)
+        sigma_d, n_days, n_steps = 0.01, 4000, 390
+        rows, prev_close = [], 100.0
+        for _ in range(n_days):
+            open_ = prev_close * np.exp(rng.normal(0, sigma_d * 0.5))
+            path = open_ * np.exp(np.cumsum(rng.normal(0, sigma_d / np.sqrt(n_steps), n_steps)))
+            path = np.concatenate([[open_], path])
+            rows.append((open_, path.max(), path.min(), path[-1]))
+            prev_close = path[-1]
+        v = daily_ohlc_variance(self._bars(rows))
+        expected = sigma_d ** 2 * (1 + 0.25)
+        assert v.mean() == pytest.approx(expected, rel=0.08)

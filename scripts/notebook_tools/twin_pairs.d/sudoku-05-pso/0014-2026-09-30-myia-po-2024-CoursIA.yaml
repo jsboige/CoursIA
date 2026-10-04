@@ -1,0 +1,15 @@
+date: '2026-09-30'
+by: myia-po-2024:CoursIA
+python_sha: 91571df04c47d1678721318de2e0f87c20905827
+csharp_sha: 77be394cde2ec33dff8a38321a0af4b205fe725b
+content_python_sha: f41893dc19015c8870db87a6c2eef71e4261600a32c39d6766368eb400bbc4b6
+content_csharp_sha: c5d30efd12b4d01934de3a3310f84d5545a1f748c4c63ef244360706a6f54d9e
+reason: >-
+  Rebaseline cote C# seul, tranche Sudoku de #18053 (ordre code / interpretation) :
+  deplacement de DEUX cellules markdown uniquement (lecture des configs apres
+  code[22], interpretation mealpy apres code[42]) -- cellules code byte-identiques
+  a main (ordre et contenu), outputs et execution_count inchanges, aucune re-exec
+  due (C.2/C.3, markdown-only). Cote Python non modifie (byte-identique a main).
+  Valeurs pedagogiques conservees telles quelles pendant le deplacement (regle
+  passe 2 de #18053 : jamais re-ecrire un nombre pendant un move). Precedent de
+  forme : rebaseline markdown-only unilaterale SC-04 2026-08-01.

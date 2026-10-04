@@ -4,7 +4,7 @@ Complete training pipeline for ML models on financial OHLCV data. Designed for G
 
 ## 4-Type Classification
 
-All 4 notebooks in this directory are **(c) standalone research** — independent analysis using local data (yfinance, sklearn, PyTorch), no QuantConnect Cloud dependency.
+All notebooks in this directory are **(c) standalone research** — independent analysis using local data (yfinance, sklearn, PyTorch), no QuantConnect Cloud dependency.
 
 | Notebook | Topic | Type |
 |----------|-------|------|

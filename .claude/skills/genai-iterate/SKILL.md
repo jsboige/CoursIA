@@ -23,8 +23,8 @@ Iterer sur un notebook GenAI (`MyIA.AI.Notebooks/GenAI/`) contre la stack auto-h
 
 ### Phase 1 — Pre-flight (CLI genai-stack)
 ```
-python genai.py docker        # service up ?
-python genai.py auth          # token present + correct (Bearer comfyui / Basic forge / none vllm) ?
+python genai.py docker status # service up ? (docker exige sa sous-commande : status/start/stop — commands/docker.py:277)
+python genai.py auth audit    # token present + correct (Bearer comfyui / Basic forge / none vllm) ? (auth exige une action : init/sync/audit/get-token/reconstruct-env)
 python genai.py gpu           # VRAM libre sur le GPU cible ?
 python genai.py quant summary # bonne quant chargee ?
 ```
@@ -46,9 +46,7 @@ python genai.py quant summary # bonne quant chargee ?
 - Pas d'URL placeholder `yourdomain.com` — vrai sous-domaine.
 
 ## FLAGS connus (inventaire 2026-05-23)
-- `yourdomain.com` dans `Image/04-4-Cross-Stitch-Legacy`, `Texte/10_LocalLlama`.
 - `02-5-Multi-Model-TTS-Gateway` 401.
-- `LOCAL_MODE` leak dans outputs de `02-4-Z-Image-Lumina2`, `02-1-Qwen-Image-Edit-2509`.
 - Naming `COMFYUI_API_TOKEN` = `COMFYUI_AUTH_TOKEN` (alias canonique, deux noms pour le même secret — géré par `render_envs.py`). `COMFYUI_BEARER_TOKEN` n'est plus géré.
 
 ## Anti-patterns interdits

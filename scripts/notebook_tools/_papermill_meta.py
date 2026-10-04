@@ -26,13 +26,27 @@ def strip_stale_papermill_metadata(nb):
     describe that pass (old dates, old duration) and would let a reviewer date
     the fresh outputs to the wrong run. An absent metadata is missing
     information; a stale one is misleading information (#11146).
+
+    The same rationale applies per cell (#18305, suite #11146) : un executeur
+    qui reecrit un carnet touche les sorties de chaque cellule code mais laisse
+    les blocs ``cells[i].metadata.execution`` (``iopub.status.busy``,
+    ``iopub.status.idle``, ``iopub.execute_input``, ``shell.execute_reply``) et
+    ``cells[i].metadata.papermill`` (``start_time``, ``duration``) dater des
+    executions precedentes. On retire le wrapper ``execution`` ENTIER (et non
+    seulement sa cle ``papermill``) : chaque cle qu'il porte date une passe
+    anterieure, et les separateurs par cle laisseraient passer une nouvelle
+    cle ``iopub.quelque_chose`` au prochain ajout de la spec Jupyter, sans
+    gate. C'est le defaut STALE_IOPUB mesure sur MGS-02 (cf. #18305, instance
+    du 2026-08-20 preservee par la passe anterieure alors que le notebook etait
+    re-execute en 09/2026).
     """
     metadata = nb.get("metadata")
-    if not metadata:
-        return
-    metadata.pop("papermill", None)
-    execution = metadata.get("execution")
-    if isinstance(execution, dict):
-        execution.pop("papermill", None)
-        if not execution:
-            metadata.pop("execution", None)
+    if metadata:
+        metadata.pop("papermill", None)
+        metadata.pop("execution", None)
+    for cell in nb.get("cells", []) or []:
+        cell_meta = cell.get("metadata")
+        if not cell_meta:
+            continue
+        cell_meta.pop("papermill", None)
+        cell_meta.pop("execution", None)

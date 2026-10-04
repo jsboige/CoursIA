@@ -132,7 +132,7 @@ class TestM4Anchors:
 
 
 class TestStateMachineM4Shapes:
-    """Negative controls on the M4-specific verdict shapes (Tell c.856-L1:
+    """Negative controls on the M4-specific verdict shapes (
     every silence is paired with a mutation that must make the control
     speak)."""
 

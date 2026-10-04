@@ -13,10 +13,11 @@
   sont numérotées dans le sens de l'orientation), en déduit le writhe, la
   normalisation de Kauffman f(D) et le polynôme de Jones V(t), et ajoute
   un critère de planarité par comptage de faces (formule d'Euler). Ce
-  critère établit que le code `figureEightDiagram` de `Knots.Basic` n'est
-  pas plan : c'est un noeud virtuel, dont le polynôme de Jones est celui
-  du trèfle. `figureEightPlanarDiagram` fournit un code plan du noeud en
-  huit, sur lequel V(t) prend la valeur du manuel.
+  critère a établi que l'ancien code `figureEightDiagram` de `Knots.Basic`
+  (dérivé du code DT de KnotInfo) n'était pas plan : un noeud virtuel,
+  dont le polynôme de Jones était celui du trèfle. Le code a été
+  canonicalisé vers le code plan de KnotAtlas (issue #17595) : le
+  diagramme est plan, de writhe nul, et V(t) y prend la valeur du manuel.
 
   ## Somme d'états
 
@@ -80,10 +81,12 @@
     raison. f(D) est construit pour être invariant (le facteur (−A³)^(−w)
     compense le mouvement I), mais les théorèmes `jones_*` restent des
     égalités de diagrammes.
-  - **Code `figureEightDiagram` de `Knots.Basic`** : non plan
-    (`figureEightDiagram_not_planar`). Sa correction touche d'autres
-    modules (Conway, Invariant) et le notebook Lean-17c ; elle est suivie
-    par #17595. Cette tranche ne modifie pas `Knots.Basic`.
+  - **Code `figureEightDiagram` de `Knots.Basic`** : ancien code non plan
+    (noeud virtuel, 4 faces, writhe 4). Canonicalisé vers le code plan de
+    KnotAtlas par #17595 : le diagramme est désormais plan
+    (`figureEightDiagram_planar`), de writhe nul, et ses invariants valent
+    les valeurs du manuel. L'historique du défaut est documenté à la
+    section planarité.
   - **Signe lu sur l'étiquetage** : `crossingSign` suppose des arêtes
     numérotées consécutivement le long de l'orientation (convention
     KnotInfo/KnotAtlas). Sur un code qui ne la respecte pas, le signe n'a
@@ -234,8 +237,10 @@ def bracket (d : KnotDiagram) : LP :=
 Les valeurs sont confirmées par calcul exact dans le noyau (`decide` —
 la représentation `LP` est intégralement computable). Le trèfle donne la
 valeur du manuel pour le trèfle à main droite (justification de la
-convention A14) ; le code `figureEightDiagram` donne A⁸ + 1 − A⁻⁴, qui
-n'est pas le bracket du noeud en huit : ce code n'est pas plan (tranche 2).
+convention A14) ; le code planaire canonique `figureEightDiagram` donne
+A⁸ − A⁴ + 1 − A⁻⁴ + A⁻⁸, la valeur du manuel pour le noeud en huit
+(#17595 ; l'ancien code DT-dérivé donnait A⁸ + 1 − A⁻⁴, celle d'un noeud
+virtuel).
 -/
 
 /-- Le bracket du diagramme du noeud trivial vaut 1 : unique état vide,
@@ -250,12 +255,11 @@ theorem bracket_trefoilDiagram :
   decide
 
 set_option maxRecDepth 100000 in
-/-- Valeur du bracket sur le code `figureEightDiagram` : A⁸ + 1 − A⁻⁴.
-Ce code n'est pas plan (`figureEightDiagram_not_planar`) : la valeur est
-celle d'un noeud virtuel, pas le bracket du noeud en huit, qui vaut
-A⁸ − A⁴ + 1 − A⁻⁴ + A⁻⁸ (`bracket_figureEightPlanarDiagram`). -/
+/-- Valeur du bracket sur le code planaire canonique `figureEightDiagram`
+(#17595) : A⁸ − A⁴ + 1 − A⁻⁴ + A⁻⁸, valeur du manuel, symétrique en
+A ↔ A⁻¹. L'ancien code DT-dérivé (noeud virtuel) donnait A⁸ + 1 − A⁻⁴. -/
 theorem bracket_figureEightDiagram :
-    bracket figureEightDiagram = [(8, 1), (0, 1), (-4, -1)] := by
+    bracket figureEightDiagram = [(8, 1), (4, -1), (0, 1), (-4, -1), (-8, 1)] := by
   decide
 
 /-- Le bracket distingue (au niveau des diagrammes) le trèfle du noeud
@@ -386,11 +390,12 @@ theorem writhe_mirror_trefoil : writhe trefoil.mirror.diagram = -3 := by
   rw [writhe_mirror trefoil trefoil_wf (by decide)]
   decide
 
-/-- Writhe du code `figureEightDiagram` du lac : ses quatre croisements
-sont positifs. Un diagramme minimal du noeud en huit a un writhe nul (le
-noeud est amphichiral) : ce chiffre est un premier indice du défaut de ce
-code, établi par `figureEightDiagram_not_planar`. -/
-theorem writhe_figureEightDiagram : writhe figureEightDiagram = 4 := by
+/-- Writhe du code planaire canonique `figureEightDiagram` : deux
+croisements positifs, deux négatifs (signes lus par `crossingSign` :
+[−1, −1, 1, 1]), writhe nul comme attendu d'un diagramme minimal d'un
+noeud amphichiral. L'ancien code DT-dérivé avait writhe 4 — premier
+indice de son défaut (voir la section planarité). -/
+theorem writhe_figureEightDiagram : writhe figureEightDiagram = 0 := by
   decide
 
 /-! ## Tranche 2 — planarité : faces de la carte combinatoire
@@ -484,22 +489,32 @@ changer les faces. -/
 theorem mirror_trefoil_planar : trefoil.mirror.diagram.planar = true := by
   decide
 
-/-- Le code `figureEightDiagram` du lac n'a que 4 faces pour 4 croisements,
-au lieu des 6 d'un diagramme plan : sa carte est de genre 1 (tore). -/
-theorem faceCount_figureEightDiagram : figureEightDiagram.faceCount = 4 := by
+/-- Le code planaire canonique `figureEightDiagram` (#17595) a les 6 faces
+d'un diagramme plan à 4 croisements (formule d'Euler). L'ancien code
+DT-dérivé n'en avait que 4 : carte de genre 1 (tore) — premier témoin du
+défaut, avant `figureEightDiagram_planar`. -/
+theorem faceCount_figureEightDiagram : figureEightDiagram.faceCount = 6 := by
   decide
 
-/-- **Le code `figureEightDiagram` de `Knots.Basic` n'est pas un diagramme
-plan.** Il décrit un noeud virtuel : ses valeurs de bracket et de Jones ne
-sont pas celles du noeud en huit (voir `jones_figureEightDiagram`). -/
-theorem figureEightDiagram_not_planar : figureEightDiagram.planar = false := by
+/-- **Le code `figureEightDiagram` de `Knots.Basic` est un diagramme
+plan** (canonicalisation #17595 vers le code KnotAtlas
+`X[4,2,5,1], X[8,6,1,5], X[6,3,7,4], X[2,7,3,8]`, lu dans la convention
+horaire du module : le miroir du diagramme KnotAtlas, encore un noeud en
+huit par amphichiralité). L'ancien code DT-dérivé décrivait un noeud
+virtuel : ses valeurs de bracket et de Jones étaient celles du trèfle. -/
+theorem figureEightDiagram_planar : figureEightDiagram.planar = true := by
   decide
 
 /-- Un code PD plan du noeud en huit : celui de KnotAtlas
 (`X[4,2,5,1], X[8,6,1,5], X[6,3,7,4], X[2,7,3,8]`). Lu dans la
 convention horaire du module, il décrit le miroir du diagramme de
 KnotAtlas, qui est encore un noeud en huit puisque ce noeud est
-amphichiral. -/
+amphichiral.
+
+Conservé comme **nom historique** : depuis la canonicalisation #17595 il
+désigne le même diagramme que `figureEightDiagram`, et les deux noms
+portent donc les mêmes valeurs. La suppression du doublon est différée
+tant que `Knots.FigureEight` (PR #18078) s'y réfère. -/
 def figureEightPlanarDiagram : KnotDiagram where
   crossings := [
     ⟨4, 2, 5, 1⟩,
@@ -509,12 +524,15 @@ def figureEightPlanarDiagram : KnotDiagram where
   ]
   numEdges := 8
 
+/-- Le code planaire est bien formé. -/
 theorem figureEightPlanarDiagram_wf : figureEightPlanarDiagram.wf = true := by
   decide
 
+/-- Le code planaire a les 6 faces d'un diagramme plan à 4 croisements. -/
 theorem faceCount_figureEightPlanarDiagram : figureEightPlanarDiagram.faceCount = 6 := by
   decide
 
+/-- Le code planaire est plan. -/
 theorem figureEightPlanarDiagram_planar : figureEightPlanarDiagram.planar = true := by
   decide
 
@@ -590,12 +608,35 @@ theorem jones_trefoil_ne_mirror :
 
 set_option maxRecDepth 100000 in
 /-- V(4₁) = t² − t + 1 − t⁻¹ + t⁻² : valeur du manuel pour le noeud en huit. -/
+theorem jones_figureEightDiagram :
+    jones figureEightDiagram = [(2, 1), (1, -1), (0, 1), (-1, -1), (-2, 1)] := by
+  decide
+
+set_option maxRecDepth 100000 in
+/-- Le polynôme de Jones du noeud en huit est invariant par t ↦ t⁻¹,
+signature de l'amphichiralité du noeud. -/
+theorem jones_figureEightDiagram_invert :
+    lpInvert (jones figureEightDiagram) = jones figureEightDiagram := by
+  decide
+
+set_option maxRecDepth 100000 in
+/-- Trèfle et noeud en huit ont des polynômes de Jones distincts. (Sur
+l'ancien code DT-dérivé, le Jones du "huit" égalait celui du trèfle —
+téton du défaut, disparu avec la canonicalisation #17595.) -/
+theorem jones_figureEight_ne_trefoil :
+    jones figureEightDiagram ≠ jones trefoilDiagram := by
+  decide
+
+set_option maxRecDepth 100000 in
+/-- V(4₁) = t² − t + 1 − t⁻¹ + t⁻² sur le nom historique du code planaire :
+même valeur que `jones_figureEightDiagram`, puisque les deux noms
+désignent le même diagramme depuis la canonicalisation #17595. -/
 theorem jones_figureEightPlanarDiagram :
     jones figureEightPlanarDiagram = [(2, 1), (1, -1), (0, 1), (-1, -1), (-2, 1)] := by
   decide
 
 set_option maxRecDepth 100000 in
-/-- Le polynôme de Jones du noeud en huit est invariant par t ↦ t⁻¹,
+/-- Le polynôme de Jones du code planaire est invariant par t ↦ t⁻¹,
 signature de l'amphichiralité du noeud. -/
 theorem jones_figureEightPlanarDiagram_invert :
     lpInvert (jones figureEightPlanarDiagram) = jones figureEightPlanarDiagram := by
@@ -605,16 +646,6 @@ set_option maxRecDepth 100000 in
 /-- Trèfle et noeud en huit ont des polynômes de Jones distincts. -/
 theorem jones_figureEightPlanar_ne_trefoil :
     jones figureEightPlanarDiagram ≠ jones trefoilDiagram := by
-  decide
-
-set_option maxRecDepth 100000 in
-/-- **Défaut du code `figureEightDiagram` du lac** : son polynôme de Jones
-est celui du trèfle à main droite, pas celui du noeud en huit. Avec
-`figureEightDiagram_not_planar`, ce théorème établit que ce code décrit un
-noeud virtuel ; les valeurs de la tranche 1 calculées sur lui
-(`bracket_figureEightDiagram`) portent sur ce noeud virtuel. -/
-theorem jones_figureEightDiagram :
-    jones figureEightDiagram = jones trefoilDiagram := by
   decide
 
 end Knots

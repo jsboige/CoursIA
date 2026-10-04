@@ -120,7 +120,7 @@ espace, écrire ce qu'on a cherché »), pas la formule.
 
 | Terrain | Application concrète | Référence canonique |
 |---|---|---|
-| ICT-Series | Avant toute allégation de transition de strate (sortie ICT-19 vers 21/22) | `ICT-21-SAETrajectoires.ipynb`, `ICT-SAE-JLens-TeteATete.ipynb` |
+| ICT-Series | Avant toute allégation de transition de strate (sortie ICT-19 vers 21/22) | `ICT-21-SAETrajectoires-Python.ipynb`, `ICT-SAE-JLens-TeteATete.ipynb` |
 | GameTheory | Avant toute allégation « le joueur découvre une nouvelle stratégie » | `game_theory_lean/`, identifier si la stratégie existait dans le réservoir initial |
 | Probas / Infer.NET | Avant toute allégation « le modèle identifie un nouveau régime » | `discrepancy_lean` + transport au PBPI/Bande de Credibilité |
 | Planners | Avant toute allégation « le solveur explore au-delà du domaine » | domaine relaxé (PDDL relaxation) vs domaine initial |

@@ -252,4 +252,24 @@ stopwords = [
     "aB3xZ9kL7mN2pQ8vR5tY4wU6jH1nC0e",               # legacy QWEN_API_USER_TOKEN fixture (L171)
     "2%=tVJ6@!Nc(7#VTvj-Bh3^nm0WY-Lij",              # redacted alphabet sample reused as fixture (L200)
     "NOT_A_REAL_TOKEN_BUT_LONG_ENOUGH_TO_MATCH",     # explicit placeholder fixture (L269)
+    # --- #18001 chunk-boundary truncation FP (square-access-token on a matplotlib PNG) ---
+    # EAAAAAebJ2rfTll8H1yy7zOhoAAID = a 29-char base64 window INTERIOR to the PNG output
+    # (image/png, one 122-KB line, L994) of GameTheory-14-DifferentialGames-Python.ipynb
+    # (git mv from GameTheory-14-DifferentialGames.ipynb, GameTheory unique-pass #16231).
+    # NOT a credential: no ``sq0atp-`` prefix anywhere in the file; the window is interior
+    # matplotlib chart data (a Stackelberg-equilibrium figure). The finding is a gitleaks
+    # 8.24.3 chunking artifact, measured 2026-09-27 by docker repro (v8.24.3, this config):
+    # the greedy ``EAAA[A-Za-z0-9+/]+`` run normally extends 100+ chars and is suppressed
+    # by the ``^[A-Za-z0-9+/]{100,}={0,2}$`` allowlist above -- but the rename's nav-line
+    # edit added +14 bytes BEFORE the PNG line, shifting every byte offset, and a chunk
+    # boundary now falls INSIDE the stream, truncating the run to 29 chars (match ends
+    # mid-stream, ``wImkbhfam...`` follows) -- under the 100-char allowlist floor.
+    # Evidence: old-path file with identical PNG content scans GREEN on main; the renamed
+    # file (only 5 non-PNG lines differ) flags exactly 1; reverting ONLY the nav line
+    # makes it green again; the PNG line alone scans green. A real Square access token
+    # would have to CONTAIN this exact 29-char substring to be disarmed -- detector
+    # stays armed. Residual class risk (any byte-shift can move a chunk edge into any
+    # giant base64 line and mint a NEW truncated window) is documented for a future
+    # durable grain; this entry only disarms the measured instance.
+    "EAAAAAebJ2rfTll8H1yy7zOhoAAID",
 ]

@@ -40,7 +40,7 @@ Usage:
     python wsl_papermill.py check-env [--mode auto]
 
 Examples:
-    python wsl_papermill.py execute MyIA.AI.Notebooks/GameTheory/GameTheory-01-Setup.ipynb
+    python wsl_papermill.py execute MyIA.AI.Notebooks/GameTheory/GameTheory-01-Setup-Python.ipynb
     python wsl_papermill.py batch MyIA.AI.Notebooks/GameTheory/ --kernel python3
     python wsl_papermill.py check-env --mode native
 """

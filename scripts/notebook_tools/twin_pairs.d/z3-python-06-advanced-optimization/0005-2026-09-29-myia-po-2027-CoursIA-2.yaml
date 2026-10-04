@@ -1,0 +1,19 @@
+date: '2026-09-29'
+by: myia-po-2027:CoursIA-2
+python_sha: f514383306282b7f9a006e394177fe0017790c8e
+csharp_sha: 63b0e649ffae29098e91229288fa3af6ed69fd93
+content_python_sha: 6289c298a3b1d8627119a088d5019b0f48d1a8ddd2afcc9d51eecdd26b40c473
+content_csharp_sha: fd1690e0282479291a3c0b88a2d3ec87bec6067c04b252d9f1434691d053d67c
+reason: >-
+  Re-attestation de parite -- conversion de separateurs horizontaux (#18421,
+  PR #18429, lane myia-po-2027:CoursIA-2), markdown-only. Le separateur
+  decoratif standalone de Python (cellule(s) markdown 0) et C# (cellule(s)
+  markdown 0, 28) est converti de regle horizontale en asterisques
+  (politique hr_separator : le separateur excluait le notebook du rendu du
+  site, EPIC #10921). Diff mesure par comparaison de blobs JSON : 3
+  cellule(s) markdown, une ligne de source par cellule convertie ; nombre de
+  cellules, sorties, execution_count et metadata byte-identiques. Les deux
+  jambes portent la meme conversion. Les blobs de notebooks attestes ici
+  sont ceux de la tete de la PR (f93cc3ef4fff) ; cette attestation ne
+  modifie aucun notebook. Aucun strip outile posterieur en attente.
+  parity_level native-both intacte.

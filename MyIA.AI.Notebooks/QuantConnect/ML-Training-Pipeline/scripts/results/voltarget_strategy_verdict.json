@@ -1,0 +1,313 @@
+{
+  "preregistration": "issue #18921, comment 5964767205 (2026-10-03T02:44:26Z), section 4",
+  "verdict_block": [
+    "2007-01-01",
+    "2026-08-31"
+  ],
+  "method": {
+    "blocks": 21,
+    "draws": 10000,
+    "rng_seed": 18921,
+    "sharpe": "mean/std(ddof=1)*sqrt(252) of daily net returns, rf=0"
+  },
+  "stats": {
+    "rv21": {
+      "n_days": 4945,
+      "sharpe": 1.0862,
+      "cagr": 0.0727,
+      "max_drawdown": -0.1417,
+      "gross_exposure_mean": 0.8709,
+      "turnover_chart_mean": 0.00427,
+      "qc": {
+        "backtest_id": "1f1c8ff6ee198539cf0dad8e3d9cb11c",
+        "sharpe": "0.546",
+        "cagr": "7.259%",
+        "drawdown": "14.200%",
+        "orders": 584
+      }
+    },
+    "har": {
+      "n_days": 4945,
+      "sharpe": 1.0796,
+      "cagr": 0.0857,
+      "max_drawdown": -0.194,
+      "gross_exposure_mean": 0.9719,
+      "turnover_chart_mean": 0.002397,
+      "qc": {
+        "backtest_id": "7dbd00cb4d3ba5f02b33b48c68dd4800",
+        "sharpe": "0.604",
+        "cagr": "8.560%",
+        "drawdown": "19.400%",
+        "orders": 565
+      }
+    },
+    "tsfm": {
+      "n_days": 4945,
+      "sharpe": 1.1099,
+      "cagr": 0.0809,
+      "max_drawdown": -0.1741,
+      "gross_exposure_mean": 0.9362,
+      "turnover_chart_mean": 0.002081,
+      "qc": {
+        "backtest_id": "f31e85e66fd26549503ad977232cac2f",
+        "sharpe": "0.599",
+        "cagr": "8.077%",
+        "drawdown": "17.400%",
+        "orders": 561
+      }
+    },
+    "placebo_0": {
+      "n_days": 4945,
+      "sharpe": 0.9927,
+      "cagr": 0.0862,
+      "max_drawdown": -0.2254,
+      "gross_exposure_mean": 0.9908,
+      "turnover_chart_mean": 0.004977,
+      "qc": {
+        "backtest_id": "31e4af580a1143a995174743f44382c9",
+        "sharpe": "0.56",
+        "cagr": "8.614%",
+        "drawdown": "22.500%",
+        "orders": 585
+      }
+    },
+    "placebo_1": {
+      "n_days": 4945,
+      "sharpe": 0.9326,
+      "cagr": 0.0845,
+      "max_drawdown": -0.2235,
+      "gross_exposure_mean": 0.9909,
+      "turnover_chart_mean": 0.005525,
+      "qc": {
+        "backtest_id": "37faf43b970a2e2b5932f63b5cb91325",
+        "sharpe": "0.522",
+        "cagr": "8.442%",
+        "drawdown": "22.300%",
+        "orders": 591
+      }
+    },
+    "placebo_7": {
+      "n_days": 4945,
+      "sharpe": 1.0439,
+      "cagr": 0.0945,
+      "max_drawdown": -0.2314,
+      "gross_exposure_mean": 0.9898,
+      "turnover_chart_mean": 0.005105,
+      "qc": {
+        "backtest_id": "256c566bdbf08f08c1233a09700b5273",
+        "sharpe": "0.616",
+        "cagr": "9.437%",
+        "drawdown": "23.100%",
+        "orders": 586
+      }
+    },
+    "placebo_42": {
+      "n_days": 4945,
+      "sharpe": 0.9578,
+      "cagr": 0.0873,
+      "max_drawdown": -0.246,
+      "gross_exposure_mean": 0.9911,
+      "turnover_chart_mean": 0.005222,
+      "qc": {
+        "backtest_id": "5315da735e1b0fed0f8fca4e9b668412",
+        "sharpe": "0.545",
+        "cagr": "8.724%",
+        "drawdown": "24.600%",
+        "orders": 587
+      }
+    },
+    "placebo_99": {
+      "n_days": 4945,
+      "sharpe": 1.0435,
+      "cagr": 0.0935,
+      "max_drawdown": -0.2172,
+      "gross_exposure_mean": 0.9903,
+      "turnover_chart_mean": 0.005437,
+      "qc": {
+        "backtest_id": "ec069d59fcba112fc61be558dd1fce35",
+        "sharpe": "0.613",
+        "cagr": "9.342%",
+        "drawdown": "21.700%",
+        "orders": 588
+      }
+    },
+    "placebo_123": {
+      "n_days": 4945,
+      "sharpe": 0.9689,
+      "cagr": 0.0874,
+      "max_drawdown": -0.2224,
+      "gross_exposure_mean": 0.9911,
+      "turnover_chart_mean": 0.005104,
+      "qc": {
+        "backtest_id": "5fc1118a95a4e965b7a791ecb78579b2",
+        "sharpe": "0.551",
+        "cagr": "8.732%",
+        "drawdown": "22.200%",
+        "orders": 588
+      }
+    },
+    "placebo_256": {
+      "n_days": 4945,
+      "sharpe": 1.044,
+      "cagr": 0.0945,
+      "max_drawdown": -0.2017,
+      "gross_exposure_mean": 0.9908,
+      "turnover_chart_mean": 0.005436,
+      "qc": {
+        "backtest_id": "1769bb1cc79d57a932385131b510ee49",
+        "sharpe": "0.616",
+        "cagr": "9.436%",
+        "drawdown": "20.200%",
+        "orders": 592
+      }
+    },
+    "placebo_1000": {
+      "n_days": 4945,
+      "sharpe": 1.0107,
+      "cagr": 0.0895,
+      "max_drawdown": -0.2115,
+      "gross_exposure_mean": 0.989,
+      "turnover_chart_mean": 0.004953,
+      "qc": {
+        "backtest_id": "c1d90de77b1b12da73e120246b1a5bfd",
+        "sharpe": "0.581",
+        "cagr": "8.940%",
+        "drawdown": "21.200%",
+        "orders": 585
+      }
+    }
+  },
+  "strategy_verdict": {
+    "candidates": {
+      "har": {
+        "diff": -0.0066,
+        "p_raw": 0.5423,
+        "p_holm": 0.656,
+        "ci95": [
+          -0.1127,
+          0.0963
+        ],
+        "verdict": "NO BEATS"
+      },
+      "tsfm": {
+        "diff": 0.0237,
+        "p_raw": 0.328,
+        "p_holm": 0.656,
+        "ci95": [
+          -0.0828,
+          0.1273
+        ],
+        "verdict": "INCONCLUSIVE"
+      }
+    },
+    "placebo": {
+      "placebo_0": {
+        "diff": -0.0935,
+        "p_raw": 0.782
+      },
+      "placebo_1": {
+        "diff": -0.1536,
+        "p_raw": 0.9181
+      },
+      "placebo_7": {
+        "diff": -0.0422,
+        "p_raw": 0.6308
+      },
+      "placebo_42": {
+        "diff": -0.1284,
+        "p_raw": 0.8615
+      },
+      "placebo_99": {
+        "diff": -0.0427,
+        "p_raw": 0.6458
+      },
+      "placebo_123": {
+        "diff": -0.1173,
+        "p_raw": 0.8441
+      },
+      "placebo_256": {
+        "diff": -0.0422,
+        "p_raw": 0.649
+      },
+      "placebo_1000": {
+        "diff": -0.0755,
+        "p_raw": 0.7372
+      }
+    },
+    "placebo_max_diff": -0.0422
+  },
+  "contamination_subblock": {
+    "candidates": {
+      "har": {
+        "diff": 0.1209,
+        "p_raw": 0.18,
+        "p_holm": 0.36,
+        "ci95": [
+          -0.1276,
+          0.4219
+        ],
+        "verdict": "INCONCLUSIVE"
+      },
+      "tsfm": {
+        "diff": 0.0767,
+        "p_raw": 0.3117,
+        "p_holm": 0.36,
+        "ci95": [
+          -0.2199,
+          0.4374
+        ],
+        "verdict": "INCONCLUSIVE"
+      }
+    },
+    "placebo": {
+      "placebo_0": {
+        "diff": 0.1896,
+        "p_raw": 0.1522
+      },
+      "placebo_1": {
+        "diff": 0.0245,
+        "p_raw": 0.4663
+      },
+      "placebo_7": {
+        "diff": 0.0793,
+        "p_raw": 0.3477
+      },
+      "placebo_42": {
+        "diff": -0.2054,
+        "p_raw": 0.8412
+      },
+      "placebo_99": {
+        "diff": 0.0091,
+        "p_raw": 0.477
+      },
+      "placebo_123": {
+        "diff": 0.0118,
+        "p_raw": 0.4776
+      },
+      "placebo_256": {
+        "diff": 0.1769,
+        "p_raw": 0.2556
+      },
+      "placebo_1000": {
+        "diff": 0.0577,
+        "p_raw": 0.3957
+      }
+    },
+    "placebo_max_diff": 0.1896
+  },
+  "rv21_source_check": {
+    "months": 236,
+    "months_without_qc_point": [
+      "2007-01"
+    ],
+    "months_not_rebalanced_by_qc": 85,
+    "of_which_1st_on_weekend": 68,
+    "months_compared": 150,
+    "pairs": 600,
+    "correlation": 0.9997,
+    "rel_gap_mean": 0.0063,
+    "rel_gap_median": 0.0,
+    "rel_gap_p95": 0.0324,
+    "rel_gap_max": 0.1308
+  }
+}

@@ -2162,6 +2162,96 @@ theorem trefoil_crossing_number :
   unfold Knot.crossingNumberOfDiagram Knot.diagram trefoil trefoilDiagram
   decide
 
+/-! ### The true minimum (Phase 4a): definition and invariance
+
+`Knot.crossingNumber` (Phase 3, cf `Knots.Basic_en`) counts the crossings of
+the current diagram — a provisional UPPER bound. The true crossing number is
+the minimum, taken over all diagrams equivalent in the Reidemeister sense.
+`ReidemeisterEquiv` already exists and is a proven equivalence relation
+(`reidemeister_equiv_equivalence`, `Knots.Reidemeister_en`): the minimum can
+therefore be defined NOW on this abstract class. No finiteness of the class
+is required — ℕ is well ordered and the class contains the current diagram,
+so `sInf` of a nonempty subset of ℕ is well defined.
+
+What is proven here: the minimum is an INVARIANT of the knot in the sense of
+`KnotEquiv`, the current diagram upper-bounds it, and the unknot realizes it
+exactly (0). What remains open (Phase 4+): COMPUTING this minimum — the
+search procedure requires the concrete Reidemeister moves (PD-code surgery)
+and a bounded exploration. No new `sorry` is introduced. -/
+
+/-- `k` realizes the count `n`: there exists a diagram equivalent to that of
+`k` (in the `ReidemeisterEquiv` sense) whose crossing list has exactly `n`
+entries. -/
+def Knot.RealizesCrossingCount (k : Knot) (n : ℕ) : Prop :=
+  ∃ d : KnotDiagram, ReidemeisterEquiv k.diagram d ∧ d.crossings.length = n
+
+/-- Minimal crossing number: `sInf` of the realizable counts. This is the
+Phase 4a definition of the true crossing number; `Knot.crossingNumber`
+(Phase 3) remains its computable upper bound. Well defined without
+finiteness of the equivalence class: ℕ is well ordered and the set is
+nonempty (witness: the current diagram). The definition is `noncomputable`:
+`sInf` on ℕ goes through `Nat.instInfSet`, not executable — it is a function
+of the abstract class, not an algorithm (the computation remains Phase 4+). -/
+noncomputable def Knot.minimalCrossingNumber (k : Knot) : Nat :=
+  sInf {n | k.RealizesCrossingCount n}
+
+/-- Reflexivity: the current diagram realizes its own crossing count. -/
+theorem realizesCrossingCount_reflects (k : Knot) :
+    k.RealizesCrossingCount k.diagram.crossings.length :=
+  ⟨k.diagram, ReidemeisterEquiv.refl _, rfl⟩
+
+/-- Nonemptiness: the set of realizable counts contains at least the count
+of the current diagram. -/
+theorem realizableCrossingCounts_nonempty (k : Knot) :
+    {n | k.RealizesCrossingCount n}.Nonempty :=
+  ⟨_, realizesCrossingCount_reflects k⟩
+
+/-- Upper bound: the minimum is at most the crossing count of the current
+diagram (`crossingNumberOfDiagram`), hence at most `crossingNumber` Phase 3
+(definitionally equal). -/
+theorem minimalCrossingNumber_le (k : Knot) :
+    k.minimalCrossingNumber ≤ k.crossingNumberOfDiagram :=
+  Nat.sInf_le (realizesCrossingCount_reflects k)
+
+/-- Equivalent diagrams ⇒ same realizable counts: the Reidemeister classes
+of two equivalent diagrams coincide (symmetry + transitivity of
+`ReidemeisterEquiv`). -/
+theorem realizesCrossingCount_congr {d₁ d₂ : KnotDiagram}
+    (h : ReidemeisterEquiv d₁ d₂) {n : ℕ}
+    (h₁ : ∃ d, ReidemeisterEquiv d₁ d ∧ d.crossings.length = n) :
+    ∃ d, ReidemeisterEquiv d₂ d ∧ d.crossings.length = n := by
+  obtain ⟨d, hd, hn⟩ := h₁
+  exact ⟨d, ReidemeisterEquiv.trans (reidemeister_equiv_symm h) hd, hn⟩
+
+/-- **Invariance**: the minimal crossing number is an invariant of the knot
+in the sense of `KnotEquiv` — two equivalent knots have the same minimum. -/
+theorem minimalCrossingNumber_invariant {k₁ k₂ : Knot} (h : KnotEquiv k₁ k₂) :
+    k₁.minimalCrossingNumber = k₂.minimalCrossingNumber := by
+  unfold Knot.minimalCrossingNumber
+  apply congrArg sInf
+  ext n
+  constructor
+  · intro hn
+    exact realizesCrossingCount_congr h hn
+  · intro hn
+    exact realizesCrossingCount_congr (reidemeister_equiv_symm h) hn
+
+/-- The unknot realizes exactly 0: its standard diagram has no crossing, and
+no count is strictly negative. First EXACT value of the minimum — obtained
+without classification. -/
+theorem unknot_minimalCrossingNumber : unknot.minimalCrossingNumber = 0 := by
+  have h0 : unknot.RealizesCrossingCount 0 :=
+    ⟨unknotDiagram, ReidemeisterEquiv.refl _, rfl⟩
+  have hle : unknot.minimalCrossingNumber ≤ 0 := Nat.sInf_le h0
+  omega
+
+/-- The trefoil: upper bound 3, via `trefoil_crossing_number` (Phase 3
+definition). The strict equality minimal = 3 requires the classification of
+knots with ≤ 2 crossings, out of reach for this lake. -/
+theorem trefoil_minimalCrossingNumber_le :
+    trefoil.minimalCrossingNumber ≤ 3 :=
+  (minimalCrossingNumber_le trefoil).trans trefoil_crossing_number.le
+
 /-! ## 7. Unknotting number
 
 The unknotting number u(K) is the minimum number of crossing changes

@@ -265,7 +265,7 @@ pattern sibling canonique.
 **Chemin** : `MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/`
 
 **39 fichiers FR canoniques**, **32 fichiers EN siblings** (↻08-28).
-~1894 lignes FR canonique (le plus gros contributeur de lignes FR du repo). Lake
+Le plus gros contributeur de lignes FR du repo. Lake
 = **cœur PEDA Conway** (Life + Doomsday + FRACTRAN + Look-and-Say + Nim + Angel +
 **Hashlife**).
 

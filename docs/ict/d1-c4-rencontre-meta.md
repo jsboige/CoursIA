@@ -15,7 +15,7 @@
 
 Les cadrages déjà livrés sur la strate 7 et la jambe C4 se répartissent en deux modes d'écriture :
 
-1. **Mode vertical** — un *fil de lecture* (Thom : Sémiophysique [#7739](https://github.com/jsboige/CoursIA/issues/7739), Grothendieck : variables libres [lens](../grothendieckian-lens.md), Schmidhuber : compression-progress / beauty [#7258](https://github.com/jsboige/CoursIA/issues/7258), Friston : active inference [#7735](https://github.com/jsboige/CoursIA/issues/7735)). Chaque fil est *un* angle d'attaque sur le même objet (la strate 7 / C4) ; les fils ne se réduisent pas les uns aux autres (cf. cartographie de la tresse [#7738](https://github.com/jsboige/CoursIA/issues/7738), [`tresse-cartographie.md`](tresse-cartographie.md)).
+1. **Mode vertical** — un *fil de lecture* (Thom : Sémiophysique [#7739](https://github.com/jsboige/CoursIA/issues/7739), Grothendieck : variables libres [lens](../cadrage/grothendieckian-lens.md), Schmidhuber : compression-progress / beauty [#7258](https://github.com/jsboige/CoursIA/issues/7258), Friston : active inference [#7735](https://github.com/jsboige/CoursIA/issues/7735)). Chaque fil est *un* angle d'attaque sur le même objet (la strate 7 / C4) ; les fils ne se réduisent pas les uns aux autres (cf. cartographie de la tresse [#7738](https://github.com/jsboige/CoursIA/issues/7738), [`tresse-cartographie.md`](tresse-cartographie.md)).
 2. **Mode horizontal** — une *cartographie* qui croise les fils et pose leur non-recollement. La cartographie ne dit pas *ce que disent les fils* : elle dit *comment ils se croisent sans se recoller*. C'est le mode du document [`tresse-cartographie.md`](tresse-cartographie.md) (c.1239, B4 non-recollement).
 
 Le présent document introduit un **mode 3** — un mode *méta* :

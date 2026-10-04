@@ -779,7 +779,7 @@ def paperclip_vs_coordination_comparison() -> str:
 # Source : Ananthakrishnan, Bedaywi, Jordan, Russell, Haghtalab (2026),
 # arXiv:2607.08012, "Provably Optimal Learning Algorithms for Assistance Games".
 # Archive : G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\2026 - Ananthakrishnan et al - Provably Optimal Learning Algorithms for Assistance Games (arXiv 2607.08012).pdf
-# Identité auteurs + affiliation UC Berkeley + arXiv ID vérifiés sur la première page via pypdf (Tell c.c.c.d.G.1 ★★★★ + Tell c.c.c.d.974 ★★★).
+# Identité auteurs + affiliation UC Berkeley + arXiv ID vérifiés sur la première page via pypdf.
 
 from typing import Callable, List
 

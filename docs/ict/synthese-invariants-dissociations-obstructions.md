@@ -8,7 +8,7 @@
 
 La série ICT (cf [README ICT-Series](../../MyIA.AI.Notebooks/IIT/ICT-Series/README.md)) est partie chercher un *scalaire universel* — une grandeur unique qui mesurerait, à travers tous les substrats, l'intégration, l'irréversibilité, ce qu'on ose appeler conscience. Elle a rapporté sans fard qu'un tel scalaire **n'existe pas** : sur la synthèse cross-substrat, deux proxys se suivent quand un troisième diverge. Ce constat — et non le nombre manquant — est le résultat.
 
-Le document companion [« La mer qui monte »](../grothendieckian-lens.md) (issue [#7299](https://github.com/jsboige/CoursIA/issues/7299)) lit cette falsification comme un **candidat à une obstruction de type cohomologique** au recollement : on était parti chercher une section globale, et l'on tient, en `H¹ ≠ 0`, un *candidat* de classe d'obstruction — lecture proposée (grade C), à démontrer une fois le complexe de Čech expérimental construit (cf *Ce que ce document n'est* ci-dessous). Cette grille en tire trois régiments de lecture, distincts et complémentaires, que chaque substrat déjà instrumenté (tri auto-organisé, réaction-diffusion, Axelrod, grokking, Jeu de la Vie) peut traverser l'un après l'autre.
+Le document companion [« La mer qui monte »](../cadrage/grothendieckian-lens.md) (issue [#7299](https://github.com/jsboige/CoursIA/issues/7299)) lit cette falsification comme un **candidat à une obstruction de type cohomologique** au recollement : on était parti chercher une section globale, et l'on tient, en `H¹ ≠ 0`, un *candidat* de classe d'obstruction — lecture proposée (grade C), à démontrer une fois le complexe de Čech expérimental construit (cf *Ce que ce document n'est* ci-dessous). Cette grille en tire trois régiments de lecture, distincts et complémentaires, que chaque substrat déjà instrumenté (tri auto-organisé, réaction-diffusion, Axelrod, grokking, Jeu de la Vie) peut traverser l'un après l'autre.
 
 La grille ne remplace pas les mesures. Elle dit, pour une même trajectoire, *quelle question on est en train de poser* à la mesure — et donc quel verdict on en attend, et quel piège on évite en la surinterprétant.
 
@@ -35,8 +35,8 @@ Une dissociation n'est pas un bruit de mesure : c'est le moment où deux proxys,
 **Cas concrets instrumentés.**
 
 - **ICT-synthèse cross-substrat** (strate 5, [ICT-Series](../../MyIA.AI.Notebooks/IIT/ICT-Series/README.md)) : trois proxys de l'intégration, deux se suivent, un diverge. La dissociation est le résultat, pas un échec.
-- [**ICT-18b-ReversibilityBudget**](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget.ipynb) ([#7287](https://github.com/jsboige/CoursIA/issues/7287)) : la réversibilité y est dissociée en un **moyen** (production d'entropie $\sigma$ de Schnakenberg — *mesuré*) et une **fin** (compétence de régénération au sens de Levin — *nommée comme une autre grandeur, jamais mesurée*). Le verdict `P2 DISSOCIATION` capture exactement ce régime : on croyait mesurer « la » réversibilité, on mesurait son coût, pas sa finalité.
-- [**ICT-15b-SensitivityCanonicity**](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15b-SensitivityCanonicity.ipynb) ([#7288](https://github.com/jsboige/CoursIA/issues/7288)) : degré spectral et sensibilité de Huang, deux lectures d'une même dynamique, divergent sur la question « lequel est canonique ? ». La dissociation révèle que le choix du proxy *est* un choix de préfaisceau.
+- [**ICT-18b-ReversibilityBudget-Python**](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb) ([#7287](https://github.com/jsboige/CoursIA/issues/7287)) : la réversibilité y est dissociée en un **moyen** (production d'entropie $\sigma$ de Schnakenberg — *mesuré*) et une **fin** (compétence de régénération au sens de Levin — *nommée comme une autre grandeur, jamais mesurée*). Le verdict `P2 DISSOCIATION` capture exactement ce régime : on croyait mesurer « la » réversibilité, on mesurait son coût, pas sa finalité.
+- [**ICT-15b-SensitivityCanonicity-Python**](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15b-SensitivityCanonicity-Python.ipynb) ([#7288](https://github.com/jsboige/CoursIA/issues/7288)) : degré spectral et sensibilité de Huang, deux lectures d'une même dynamique, divergent sur la question « lequel est canonique ? ». La dissociation révèle que le choix du proxy *est* un choix de préfaisceau.
 
 **Piège évité.** Lire une dissociation comme un « bruit à corriger ». Réconcilier deux proxys divergents par moyenne les vide de leur information — c'est exactement l'unification prématurée que cette grille interdit.
 
@@ -44,7 +44,7 @@ Une dissociation n'est pas un bruit de mesure : c'est le moment où deux proxys,
 
 > **Question.** *Qu'est-ce qui empêche les sections locales de se raccorder en une section globale — et cette impossibilité est-elle stable cross-substrat ?*
 
-L'obstruction n'est pas un échec de méthode : c'est une **structure**. Quand des données locales, chacune cohérente sur son ouvert, refusent de se recoller en un tout global, ce refus est une propriété du réel, et Grothendieck lui a donné nom et mesure : la cohomologie. Au premier cran, ce qui se recolle (`H⁰`) ; au cran suivant, la *classe de l'obstruction* (`H¹`) — nulle quand tout se raccorde, non nulle exactement à la hauteur de ce qui résiste. Le dépôt formalise ce geste (cf [« Quand le recollement échoue »](../grothendieckian-lens.md), grade A sur le langage).
+L'obstruction n'est pas un échec de méthode : c'est une **structure**. Quand des données locales, chacune cohérente sur son ouvert, refusent de se recoller en un tout global, ce refus est une propriété du réel, et Grothendieck lui a donné nom et mesure : la cohomologie. Au premier cran, ce qui se recolle (`H⁰`) ; au cran suivant, la *classe de l'obstruction* (`H¹`) — nulle quand tout se raccorde, non nulle exactement à la hauteur de ce qui résiste. Le dépôt formalise ce geste (cf [« Quand le recollement échoue »](../cadrage/grothendieckian-lens.md), grade A sur le langage).
 
 **Cas concrets instrumentés.**
 
@@ -62,10 +62,10 @@ Les trois régimes se soutiennent d'un triptyque qui traverse la série :
 | Régime | Père théorique | Geste | Point d'ancrage dépôt |
 |---|---|---|---|
 | Invariants | **Grothendieck** (recollement) | Le local qui se globalise sans reste | [`SheafCohomology`](../../MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SheafCohomology/Basic.lean), `H⁰` |
-| Dissociations | **Schmidhuber** (compression / grokking) | Deux proxys se séparent quand l'un comprime mieux que l'autre | [ICT-17b-Grokking](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress.ipynb) |
+| Dissociations | **Schmidhuber** (compression / grokking) | Deux proxys se séparent quand l'un comprime mieux que l'autre | [ICT-17b-Grokking](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb) |
 | Obstructions | **Thom** (catastrophe) + **Grothendieck** (cohomologie) | Le refus du recollement comme structure informative | Arrow, Kochen-Specker, scalaire falsifié |
 
-Le lien Schmidhuber/dissociations mérite d'être dit : [ICT-17b](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress.ipynb) lit l'apprentissage comme une compression progressive (transition de phase représentationnelle). Quand deux proxys divergent, c'est souvent que l'un a franchi le seuil de compression et l'autre pas — la dissociation *est* la signature d'un grokking partiel. Thom, lui, nomme la bifurcation du mode de représentation (catastrophe), et Grothendieck dit si le nouveau mode se recolle à l'ancien — l'obstruction mesurant ce qui ne se recolle pas.
+Le lien Schmidhuber/dissociations mérite d'être dit : [ICT-17b](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb) lit l'apprentissage comme une compression progressive (transition de phase représentationnelle). Quand deux proxys divergent, c'est souvent que l'un a franchi le seuil de compression et l'autre pas — la dissociation *est* la signature d'un grokking partiel. Thom, lui, nomme la bifurcation du mode de représentation (catastrophe), et Grothendieck dit si le nouveau mode se recolle à l'ancien — l'obstruction mesurant ce qui ne se recolle pas.
 
 ## Le quatrième fil — orthogonal à la grille
 
@@ -73,7 +73,7 @@ La grille 3-régimes est **transversale** : elle dit, pour une même trajectoire
 
 ## Un substrat vu sous les trois régimes : Axelrod
 
-[ICT-13-AxelrodStrategicMorphodynamics](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics.ipynb) se laisse traverser par les trois régimes pour montrer que la grille est opératoire, pas décorative.
+[ICT-13-AxelrodStrategicMorphodynamics-Python](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb) se laisse traverser par les trois régimes pour montrer que la grille est opératoire, pas décorative.
 
 - **Invariants.** Qu'est-ce qui se transporte d'un tournoi Axelrod à l'autre, indépendamment des stratégies seed ? Une structure de morphodynamique stratégique — la *forme* du paysage de coopération, pas son contenu.
 - **Dissociations.** Deux proxys du « succès » d'une stratégie (score cumulé vs robustesse face à l'invasion) se séparent : une stratégie peut dominer le score et perdre à l'invasion. Le motif de la séparation révèle que « succès » portait deux sens confondus.
@@ -115,7 +115,7 @@ Le détecteur est validé sur des fixtures à insatisfiabilité **prouvée à la
 
 ### Le résultat mesuré : la question n'est pas posable
 
-Mesure sur S1 (tri auto-organisé), trois coarse-grainings `k ∈ {3, 4, 6}` × cinq graines `{0, 1, 7, 42, 99}`, proxys câblés comme dans [ICT-15c](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15c-MetaProxyObstruction.ipynb) (`f(x) = x`, anti-saturation) :
+Mesure sur S1 (tri auto-organisé), trois coarse-grainings `k ∈ {3, 4, 6}` × cinq graines `{0, 1, 7, 42, 99}`, proxys câblés comme dans [ICT-15c](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15c-MetaProxyObstruction-Python.ipynb) (`f(x) = x`, anti-saturation) :
 
 ```
 recouvrements distincts  : 1
@@ -140,16 +140,16 @@ Cette synthèse ne lance aucun nouveau dispatch. Elle éclaire deux chantiers d�
 
 ## Ce que ce document n'est pas
 
-- **Pas un théorème.** Grade C-documentaire : la grille est une *direction de lecture*, vérifiable sur des cas concrets, mais la lecture qui fait des divergences ICT des classes de cohomologie est, à ce jour, *proposée*, pas démontrée (cf [« La mer qui monte »](../grothendieckian-lens.md), qui le dit sans fard). Seul le langage cohomologique est au grade A (formalisé, 0 `sorry` de production).
+- **Pas un théorème.** Grade C-documentaire : la grille est une *direction de lecture*, vérifiable sur des cas concrets, mais la lecture qui fait des divergences ICT des classes de cohomologie est, à ce jour, *proposée*, pas démontrée (cf [« La mer qui monte »](../cadrage/grothendieckian-lens.md), qui le dit sans fard). Seul le langage cohomologique est au grade A (formalisé, 0 `sorry` de production).
 - **Pas une unification.** La grille décrit une famille de phénomènes ; elle ne force pas une théorie unique. Trois régimes distincts, pas un méta-proxy.
 - **Pas un nouveau dispatch.** Aucune nouvelle dépendance expérimentale n'est créée ici. Les chantiers N1/N2 existent par ailleurs ; ce document les éclaire, ne les déclenche pas.
 
 ## Repères vérifiables
 
 - Série ICT : [`MyIA.AI.Notebooks/IIT/ICT-Series/`](../../MyIA.AI.Notebooks/IIT/ICT-Series/) ([Epic #4588](https://github.com/jsboige/CoursIA/issues/4588)) — strate 5 « scalaire universel falsifié ».
-- Doc companion obstruction/recollement : [`docs/grothendieckian-lens.md`](../grothendieckian-lens.md) ([#7299](https://github.com/jsboige/CoursIA/issues/7299)).
+- Doc companion obstruction/recollement : [`docs/cadrage/grothendieckian-lens.md`](../cadrage/grothendieckian-lens.md) ([#7299](https://github.com/jsboige/CoursIA/issues/7299)).
 - Langage cohomologique formalisé : [`grothendieck_lean/Grothendieck/SheafCohomology/`](../../MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SheafCohomology/Basic.lean) (0 `sorry` de production).
-- Dissociations instrumentées : [ICT-15b](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15b-SensitivityCanonicity.ipynb) ([#7288](https://github.com/jsboige/CoursIA/issues/7288)), [ICT-18b](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget.ipynb) ([#7287](https://github.com/jsboige/CoursIA/issues/7287)).
+- Dissociations instrumentées : [ICT-15b](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15b-SensitivityCanonicity-Python.ipynb) ([#7288](https://github.com/jsboige/CoursIA/issues/7288)), [ICT-18b](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb) ([#7287](https://github.com/jsboige/CoursIA/issues/7287)).
 - Obstructions érigées en impossibilité : [`social_choice_lean`](../../MyIA.AI.Notebooks/GameTheory/social_choice_lean/) (Arrow), [#7290](https://github.com/jsboige/CoursIA/issues/7290) (Kochen-Specker).
 - Test de contextualité (possibiliste, CSP) + garde anti-analogie-décorative : [`ict/proxy_contextuality.py`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ict/proxy_contextuality.py), 47 tests dont l'insatisfiabilité prouvée à la main de la boîte PR ([#7290](https://github.com/jsboige/CoursIA/issues/7290)).
 - Quatrième fil (diachronique) — généalogie de `p̂` : [`docs/ict/genealogy-representation-interne.md`](genealogy-representation-interne.md) ([#7735](https://github.com/jsboige/CoursIA/issues/7735)).

@@ -5,8 +5,7 @@ Carver #13 (Carver 2023, *Advanced Futures Trading Strategies*, Harriman House,
 ISBN 9780857199683) — soft cap on gross leverage driven by the effective
 breadth of absolute forecast magnitudes.
 
-Formula (REPAIR-7 c.1113, semantic correction by adjoint po-2025 habilite n°3
-Tell c.15069 strict):
+Formula (REPAIR-7 c.1113, semantic correction by adjoint po-2025 habilite n°3):
 
     breadth = sum(|f_i|) / sqrt(sum(f_i^2))
 

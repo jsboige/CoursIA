@@ -1,0 +1,355 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage{enumitem}
+\usepackage{geometry}
+\usepackage{xcolor}
+\usepackage{soul}
+
+\geometry{left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm}
+\sethlcolor{green!25}
+
+\title{5BD ALT1 - Introduction au Trading Algorithmique \\ \textbf{QCM de Rattrapage 2025}}
+\author{}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\vspace{1cm}
+
+\textbf{Instructions :} La bonne réponse est surlignée en vert.
+\textbf{Aucun matériel} (calculatrice, notes de cours, téléphone portable, etc.) n'est autorisé.
+
+\vspace{0.5cm}
+
+\section*{Section Théorique}
+
+\begin{enumerate}
+    \item Quelle est la principale différence entre les ordres au marché et les ordres à cours limité ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item Les ordres au marché garantissent le prix mais pas l'exécution, tandis que les ordres à cours limité garantissent l'exécution mais pas le prix.
+        \item Les ordres au marché sont exécutés immédiatement au meilleur prix disponible, tandis que les ordres à cours limité ne sont exécutés qu'à un prix spécifié ou meilleur.
+        \item Les ordres au marché sont réservés aux investisseurs institutionnels, tandis que les ordres à cours limité sont accessibles à tous.
+        \item Les ordres au marché ont des frais de transaction plus élevés que les ordres à cours limité.
+    \end{enumerate}
+
+    \item Qu'est-ce que le "slippage" dans le contexte du trading ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item La différence entre le prix attendu d'une transaction et le prix auquel la transaction est réellement exécutée.
+        \item Un type d'ordre stop-loss, conçu pour limiter les pertes potentielles sur une position ouverte en vendant un actif s'il atteint un certain prix.
+        \item Le coût total des frais de courtage et des commissions facturés par un broker pour l'exécution d'une série de transactions sur une période donnée.
+        \item Une stratégie de scalping, qui vise à réaliser de nombreux petits profits en capitalisant sur de faibles fluctuations de prix au cours d'une séance de trading.
+    \end{enumerate}
+    
+    \item Quel est l'impact du biais de survie (survivorship bias) dans le backtesting de stratégies de trading ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item Il sous-estime la performance, car il inclut par erreur des actifs délistés qui, ayant souvent une performance négative avant leur retrait, introduisent un biais pessimiste dans le calcul du rendement global.
+        \item Il surestime la performance en n'incluant que les actifs qui ont "survécu" sur une période donnée, ignorant ceux qui ont échoué.
+        \item Son impact est généralement considéré comme négligeable, car la plupart des plateformes de backtesting modernes appliquent automatiquement des facteurs de correction standards pour ce type de biais statistique.
+        \item Il améliore la robustesse des backtests en concentrant l'analyse uniquement sur les actifs les plus liquides et performants du marché, qui sont les seuls pertinents pour une stratégie viable.
+    \end{enumerate}
+
+    \item En quoi consiste une stratégie de "pairs trading" ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item Acheter simultanément une paire d'actions du même secteur industriel, en anticipant que la performance de l'ensemble du secteur va augmenter.
+        \item Exploiter la différence de prix temporaire entre deux actifs fortement corrélés, en achetant l'un et en vendant l'autre.
+        \item Une méthode d'investissement spécifique au marché du Forex qui consiste à prendre des positions sur des paires de devises comme EUR/USD ou GBP/JPY.
+        \item Une stratégie de market making avancée qui implique de fournir simultanément de la liquidité à l'achat et à la vente pour une paire d'actifs financiers.
+    \end{enumerate}
+    
+    \item Quel est l'objectif principal de la diversification de portefeuille ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item Maximiser les rendements à court terme en se concentrant sur un petit nombre d'actifs très performants et en acceptant un niveau de risque plus élevé.
+        \item Simplifier la gestion et le suivi du portefeuille en détenant un nombre réduit d'actifs, ce qui diminue les coûts de transaction et la complexité de l'analyse.
+        \item Éliminer complètement le risque systémique (ou risque de marché), ce qui est théoriquement impossible même avec une diversification maximale.
+        \item Réduire le risque en investissant dans une variété d'actifs qui ne sont pas parfaitement corrélés.
+    \end{enumerate}
+
+    \item Que mesure l'indicateur "Bêta" d'un actif ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item Le rendement total de l'actif sur une période donnée.
+        \item La volatilité d'un actif par rapport à la volatilité du marché dans son ensemble.
+        \item Le ratio des transactions gagnantes par rapport aux transactions perdantes.
+        \item Le niveau de liquidité d'un actif.
+    \end{enumerate}
+    
+    \item Quel est l'objectif principal d'un algorithme d'exécution de type VWAP (Volume Weighted Average Price) ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item Exécuter un ordre de taille importante en une seule transaction massive pour tenter de garantir le meilleur prix possible, même si cela augmente fortement l'impact sur le marché.
+        \item Exécuter un ordre important en le fractionnant pour que son prix moyen corresponde au prix moyen du marché pondéré par le volume sur une période donnée, minimisant ainsi l'impact sur le marché.
+        \item Fragmenter un ordre de vente pour l'exécuter progressivement par petits blocs, mais seulement lorsque le prix de l'actif atteint de nouveaux plus hauts pendant la journée.
+        \item Une stratégie algorithmique de type TWAP (Time Weighted Average Price), qui répartit les ordres de manière strictement uniforme dans le temps sans tenir compte des variations de volume.
+    \end{enumerate}
+    \item Qu'est-ce qu'un événement "cygne noir" (black swan) en finance ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item Un événement positif et attendu qui entraîne une forte hausse du marché.
+        \item Un événement récurrent qui se produit chaque année à la même période.
+        \item Une correction mineure du marché qui se résorbe rapidement.
+        \item Un événement extrêmement rare, imprévisible et ayant un impact massif sur les marchés.
+    \end{enumerate}
+    
+    \item Comment le "data snooping" peut-il fausser les résultats d'un backtest ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item Le processus d'utilisation de données de marché de mauvaise qualité, incomplètes ou non nettoyées, ce qui rend les conclusions du backtest non fiables.
+        \item En testant de manière répétée de nombreuses variantes d'une stratégie sur le même jeu de données, ce qui conduit à trouver des modèles qui ne sont que du bruit.
+        \item L'erreur consistant à utiliser des séries de prix historiques qui ne sont pas correctement ajustées pour les dividendes et les fractionnements d'actions (splits).
+        \item L'omission délibérée ou accidentelle des coûts de transaction réalistes et de l'effet de slippage, ce qui conduit à une surestimation de la performance.
+    \end{enumerate}
+
+    \item Quel est le rôle des "dark pools" dans le trading moderne ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item Ce sont des marchés boursiers réglementés et transparents, spécialement conçus pour la négociation d'actions de petites et moyennes entreprises à faible capitalisation.
+        \item Ce sont des plateformes de trading privées où de grands blocs d'actions peuvent être négociés anonymement sans impacter le marché public.
+        \item Ce sont des forums en ligne et des communautés privées où des traders individuels se réunissent pour partager et discuter de stratégies de trading potentiellement illégales.
+        \item Une nouvelle catégorie de cryptomonnaie intraçable, conçue spécifiquement pour être utilisée dans des transactions financières anonymes et de gré à gré.
+    \end{enumerate}
+    \item Quelle est la principale caractéristique du High-Frequency Trading (HFT) ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item Des opérations exécutées en quelques microsecondes pour exploiter de faibles inefficacités de marché.
+        \item Une stratégie d'investissement à long terme, sur plusieurs semaines ou mois, basée sur des données fondamentales.
+        \item Un type de trading qui repose exclusivement sur l'analyse technique pour des positions de quelques heures.
+        \item Une approche qui ne nécessite pas une infrastructure technologique avancée et peut être pratiquée par des traders particuliers.
+    \end{enumerate}
+
+    \item Qu'est-ce qu'un ordre "Fill-or-Kill" (FOK) ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item Un ordre qui doit être exécuté dans sa totalité immédiatement, sinon il est annulé.
+        \item Un ordre qui reste actif jusqu'à ce que l'utilisateur l'annule manuellement.
+        \item Un ordre qui déclenche un autre ordre une fois exécuté (One-Triggers-Other).
+        \item Un ordre qui est divisé en une partie visible et une partie cachée pour ne pas alerter le marché.
+    \end{enumerate}
+
+    \item Selon le critère de Kelly, comment un trader devrait-il ajuster la taille de ses positions si la volatilité de sa stratégie augmente ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item Le critère de Kelly ne tient pas compte de la volatilité dans son calcul.
+        \item Il devrait réduire la fraction du capital allouée à la stratégie.
+        \item La taille de la position devrait être augmentée pour compenser la volatilité.
+        \item Il est conseillé de doubler la taille de la position pour maximiser les gains.
+    \end{enumerate}
+
+    \item Quel biais comportemental décrit la tendance des investisseurs à surévaluer un bien qu'ils possèdent déjà ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item L'aversion à la perte.
+        \item Le biais du statu quo.
+        \item L'effet de dotation (endowment effect).
+        \item Le biais de représentativité.
+    \end{enumerate}
+
+    \item Qu'est-ce qu'une stratégie de "Regime Switching" ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item Une stratégie qui consiste à passer d'un actif à un autre au sein du même portefeuille.
+        \item Une approche qui adapte la stratégie de trading en fonction du régime de marché détecté (par ex. haute ou basse volatilité).
+        \item Une méthode pour changer dynamiquement les paramètres d'un indicateur technique.
+        \item Une technique de backtesting qui utilise différents jeux de données.
+    \end{enumerate}
+    
+    \item Quel est le principal avantage d'un portefeuille à faible Bêta combiné à un effet de levier, par rapport à un portefeuille à Bêta élevé sans levier ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item Le portefeuille à faible Bêta avec levier est intrinsèquement moins risqué.
+        \item Il peut théoriquement offrir une meilleure croissance composée à long terme pour un niveau de risque similaire.
+        \item Les coûts de financement associés au levier sont toujours inférieurs aux gains potentiels.
+        \item Il élimine complètement les risques de "queue épaisse" (fat tail risks).
+    \end{enumerate}
+    
+    \item Quel est le rôle principal d'un "market maker" ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item Un régulateur qui surveille les activités de marché pour prévenir les abus.
+        \item Un trader qui spécule uniquement sur la direction future des prix.
+        \item Un arbitre qui résout les différends entre courtiers et investisseurs.
+        \item Un participant qui fournit de la liquidité en affichant simultanément des ordres d'achat et de vente pour un actif.
+    \end{enumerate}
+
+    \item Qu'est-ce qu'un ordre "Iceberg" ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item Un grand ordre divisé en une petite partie visible et une grande partie cachée.
+        \item Un ordre qui est automatiquement annulé si le marché bouge contre la position.
+        \item Un ordre conditionnel qui ne s'active que si un autre actif atteint un certain prix.
+        \item Un type d'ordre utilisé exclusivement sur les marchés de cryptomonnaies.
+    \end{enumerate}
+
+    \item Pourquoi l'apprentissage par renforcement (Reinforcement Learning) est-il une approche prometteuse en trading algorithmique ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item Il permet de prédire le prix exact d'une action plusieurs jours à l'avance avec une grande précision.
+        \item Il élimine la nécessité d'utiliser des données de marché historiques pour l'entraînement.
+        \item Il permet à un agent d'apprendre une politique de trading optimale par essais et erreurs, en interagissant directement avec l'environnement du marché.
+        \item Il est principalement utilisé pour des tâches de classification de sentiment sur des articles de presse financière.
+    \end{enumerate}
+    
+    \item Dans le contexte du HFT, pourquoi la "co-location" des serveurs est-elle cruciale ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item Pour des raisons de sécurité, afin de protéger les algorithmes contre le piratage.
+        \item C'est une exigence réglementaire imposée par les autorités boursières.
+        \item Pour réduire les coûts de matériel en partageant des serveurs avec d'autres entreprises.
+        \item Pour minimiser la latence en plaçant les serveurs de trading physiquement au plus près des serveurs de la bourse.
+    \end{enumerate}
+
+\end{enumerate}
+
+\newpage
+
+\section*{Section Pratique - Lean / QuantConnect}
+
+\begin{enumerate}
+    \setcounter{enumi}{20}
+    \item En Python, comment programmer une fonction \texttt{MyDailyRebalance} pour qu'elle soit exécutée chaque jour, 10 minutes après l'ouverture du marché américain de référence ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item \texttt{self.Schedule.On(self.DateRules.EveryDay(), self.TimeRules.MarketOpen("SPY", 10), self.MyDailyRebalance)}
+        \item \texttt{self.Every(timedelta(days=1), self.MyDailyRebalance)}
+        \item \texttt{self.OnData = self.MyDailyRebalance}
+        \item \texttt{self.Schedule.SetTime(Time(9, 40), self.MyDailyRebalance)}
+    \end{enumerate}
+
+    \item Dans l'environnement de recherche QuantConnect (QuantBooks), comment accède-t-on aux données historiques pour un actif ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item En utilisant la méthode \texttt{self.History(symbol, N, resolution) pour obtenir les N dernières barres.}
+        \item En important un fichier CSV directement dans le notebook.
+        \item La méthode \texttt{self.GetHistory(symbol)}
+        \item Les données historiques ne sont pas accessibles directement dans les notebooks de recherche.
+    \end{enumerate}
+
+    \item Quel est l'avantage d'utiliser le "Framework de haut niveau" (Alpha, Portfolio, Risk, Execution) de Lean ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item Il garantit de meilleures performances d'exécution des ordres par rapport aux primitives de bas niveau grâce à une optimisation interne de la latence.
+        \item Il permet de structurer la stratégie en modules indépendants et réutilisables, facilitant la complexité.
+        \item Son utilisation est rendue obligatoire par QuantConnect pour tout algorithme destiné à être déployé en trading en direct avec des fonds réels.
+        \item Il est implémenté exclusivement en C\# et n'est donc pas officiellement disponible pour les stratégies développées en Python.
+    \end{enumerate}
+
+    \item Qu'est-ce qu'un "Insight" dans le contexte du framework Alpha de Lean ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item Un type d'ordre d'exécution spécial, comme un ordre Iceberg, conçu pour minimiser l'impact sur le marché lors de la négociation de grands volumes.
+        \item Une prédiction de marché générée par un modèle Alpha, contenant une direction, une magnitude et une période.
+        \item Une métrique de performance historique, comme le ratio de Sharpe ou le drawdown maximum, calculée pour un algorithme après un backtest.
+        \item Le rapport de journalisation (log) qui est généré en détail à la fin d'un backtest et qui contient toutes les transactions et les statistiques de performance.
+    \end{enumerate}
+
+    \item Dans la plateforme QuantConnect, quel est l'objectif principal de l'optimisation de paramètres ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item Le processus qui consiste à exécuter le même backtest plusieurs fois sur différentes périodes pour vérifier la stabilité et la robustesse des résultats obtenus.
+        \item Tester systématiquement une stratégie avec différentes valeurs pour ses paramètres (ex: période d'une moyenne mobile) afin de trouver la combinaison la plus performante.
+        \item Une fonctionnalité avancée qui permet de transpiler le code d'une stratégie Python en C\# pour une exécution plus rapide lors des backtests intensifs.
+        \item Une technique utilisée pour réduire le nombre d'actifs dans l'univers de trading afin de simplifier et d'accélérer l'exécution d'un backtest complexe.
+    \end{enumerate}
+    
+    \item Quelle méthode de l'API est utilisée pour passer un ordre simple d'achat au marché pour 100 actions de l'actif "SPY" ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item \texttt{self.Buy("SPY", 100)}
+        \item \texttt{self.SetHoldings("SPY", 100)}
+        \item \texttt{self.Order("SPY", 100)}
+        \item \texttt{self.MarketOrder("SPY", 100)}
+    \end{enumerate}
+
+    \item Quel est le rôle du "Portfolio Construction Model" dans le framework de haut niveau ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item Il est responsable de l'analyse des données de marché pour générer les signaux de trading initiaux (les "Insights") qui forment la base de la stratégie.
+        \item Son rôle principal est de gérer le risque global du portefeuille en liquidant automatiquement les positions qui dépassent un certain seuil de perte prédéfini.
+        \item Il traduit les "Insights" en "Portfolio Targets" (pondérations cibles pour chaque actif), qui seront ensuite transformées en ordres.
+        \item Il s'agit du modèle final de la chaîne qui prend les ordres et les exécute sur le marché en essayant de minimiser les coûts de transaction comme le slippage.
+    \end{enumerate}
+    
+    \item Quelle est l'utilité de la méthode \texttt{SetWarmUp} dans un algorithme Lean ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item Elle permet de pré-charger et de calculer les indicateurs techniques sur une période donnée avant le début du backtest pour éviter les signaux biaisés au démarrage.
+        \item Elle est utilisée pour définir une période de "paper trading" simulé qui s'exécute avant le backtest afin de s'assurer que la logique de passage d'ordres est correcte.
+        \item Son but est de pré-allouer de la mémoire vive et de "chauffer" les cœurs du processeur pour optimiser la vitesse des calculs intensifs qui auront lieu plus tard dans l'algorithme.
+        \item C'est une méthode alternative pour spécifier la durée totale (en jours ou en années) du backtest, après quoi l'algorithme s'arrêtera automatiquement.
+    \end{enumerate}
+
+    \item Qu'est-ce qu'un "Universe Selection Model" ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item Un modèle qui choisit le meilleur courtier en fonction des frais et de la latence.
+        \item Un modèle d'apprentissage automatique pour prédire le sentiment de l'univers des investisseurs.
+        \item Le modèle de risque par défaut appliqué à tous les portefeuilles.
+        \item Un modèle qui détermine dynamiquement l'ensemble des actifs sur lesquels l'algorithme peut trader.
+    \end{enumerate}
+    
+    \item Comment Lean aide-t-il à gérer les ajustements de données comme les splits et les dividendes ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item L'utilisateur est responsable de trouver, télécharger et intégrer manuellement des données qui sont déjà ajustées pour prendre en compte ces événements.
+        \item Lean ajuste automatiquement les prix historiques pour refléter ces événements, assurant que les backtests sont basés sur des données cohérentes.
+        \item Par défaut, les splits et dividendes sont ignorés dans les backtests car leur impact est considéré comme non significatif sur les stratégies à moyen ou long terme.
+        \item L'ajustement automatique des données pour les splits et dividendes est une fonctionnalité avancée qui nécessite une souscription payante à un plan supérieur.
+    \end{enumerate}
+    
+    \item Quelle est la fonction de la méthode \texttt{CalculateOrderQuantity} ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item Elle calcule le nombre d'actions à acheter ou vendre pour atteindre une pondération cible du portefeuille, en tenant compte des frais.
+        \item Elle exécute immédiatement un ordre au marché pour une quantité spécifiée.
+        \item Elle retourne la quantité totale d'un actif actuellement détenu dans le portefeuille.
+        \item Elle est utilisée pour ajuster la quantité d'un ordre déjà soumis mais pas encore exécuté.
+    \end{enumerate}
+
+    \item Comment peut-on accéder au prix de clôture d'une barre de données pour le symbole "SPY" à l'intérieur de la méthode \texttt{OnData(self, slice)} ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item \texttt{slice.GetPrice("SPY")}
+        \item \texttt{self.Securities["SPY"].Price}
+        \item \texttt{slice.Bars["SPY"].Close}
+        \item \texttt{slice["SPY"].ClosePrice}
+    \end{enumerate}
+
+    \item Parmi les modèles de construction de portefeuille suivants, lequel vise à minimiser la volatilité du portefeuille ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item \texttt{EqualWeightingPortfolioConstructionModel}
+        \item \texttt{MeanVarianceOptimizationPortfolioConstructionModel}
+        \item \texttt{InsightWeightingPortfolioConstructionModel}
+        \item \texttt{AccumulativeInsightPortfolioConstructionModel}
+    \end{enumerate}
+
+    \item Quel est le rôle de l'objet \texttt{OrderTicket} retourné après un appel à une méthode d'ordre ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item Il représente la facture finale des frais de transaction pour l'ordre exécuté.
+        \item C'est une chaîne de caractères contenant le message de confirmation du courtier.
+        \item Il s'agit d'une instruction conditionnelle qui annule l'ordre si le marché est trop volatil.
+        \item Il permet de suivre le statut de l'ordre (ex: \texttt{Submitted, \texttt{Filled}) et de le modifier ou l'annuler si le courtier le permet.}
+    \end{enumerate}
+
+    \item Quel modèle d'exécution tente de passer des ordres au prix moyen pondéré par le volume sur une période ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item \texttt{ImmediateExecutionModel}
+        \item \texttt{StandardDeviationExecutionModel}
+        \item \texttt{VolumeWeightedAveragePriceExecutionModel}
+        \item \texttt{SpreadExecutionModel}
+    \end{enumerate}
+
+    \item Dans un modèle Alpha personnalisé, quelle méthode doit être implémentée pour générer des \texttt{Insight}s ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item \texttt{Update(self, algorithm, data)}
+        \item \texttt{OnData(self, data)}
+        \item \texttt{GenerateInsights(self, algorithm)}
+        \item \texttt{OnSecuritiesChanged(self, algorithm, changes)}
+    \end{enumerate}
+
+    \item Quel paramètre d'un \texttt{Insight} est utilisé pour indiquer la prédiction de mouvement du prix (hausse, baisse, stable) ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item \texttt{Magnitude}
+        \item \texttt{Confidence}
+        \item \texttt{Direction}
+        \item \texttt{Weight}
+    \end{enumerate}
+
+    \item Quel modèle de gestion du risque liquide toutes les positions si le portefeuille atteint un certain pourcentage de perte maximal ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item \texttt{MaximumSectorExposureRiskManagementModel}
+        \item \texttt{MaximumDrawdownPercentPortfolio}
+        \item \texttt{TrailingStopRiskManagementModel}
+        \item \texttt{MaximumUnrealizedProfitPercentPerSecurity}
+    \end{enumerate}
+
+    \item Comment définir le capital de départ de l'algorithme à 50 000 EUR dans la méthode \texttt{Initialize} ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item \texttt{self.Portfolio.Cash = 50000}
+        \item \texttt{self.SetCash("EUR", 50000)}
+        \item \texttt{self.SetInitialCash(50000, "EUR")}
+        \item \texttt{self.SetAccountValue(50000, "EUR")}
+    \end{enumerate}
+
+    \item Que se passe-t-il si un algorithme utilisant l'\texttt{ImmediateExecutionModel} reçoit une cible de portefeuille pour un actif en dehors des heures de marché ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item L'ordre est automatiquement annulé et une erreur est consignée.
+        \item Le modèle attendra l'ouverture du marché suivante pour placer un ordre à cours limité.
+        \item L'ordre au marché est envoyé immédiatement et sera exécuté à l'ouverture du marché le jour suivant.
+        \item L'algorithme se met en pause jusqu'à la prochaine session de trading.
+    \end{enumerate}
+\end{enumerate}
+
+\end{document}

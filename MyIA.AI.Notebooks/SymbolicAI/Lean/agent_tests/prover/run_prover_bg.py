@@ -29,7 +29,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from prover import DEMOS, PROVED_DEMOS, TraceLogger
 from prover.provers import MultiAgentSorryProver, AutonomousProver
-from prover.config import create_client
+from prover.config import create_client, PROVIDERS
+from prover.provider_gate import (
+    effective_agent_providers,
+    validate_provider_credentials,
+)
 from prover.lean_utils import count_real_sorries, stub_theorem_proof
 from prover.tree_lock import (
     acquire_tree_lock,
@@ -262,6 +266,9 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
                goal: str = "", director_provider: str = None,
                coordinator_provider: str = None,
                tactic_provider: str = None,
+               search_provider: str = None,
+               critic_provider: str = None,
+               diagnosis_provider: str = None,
                use_diagnosis_agent: bool = False,
                concurrent_search_count: int = 0,
                force_lock: bool = False):
@@ -293,6 +300,38 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
         print("Must specify --demo or --file/--line")
         sys.exit(1)
 
+    # #18709 fail-fast: refuse to launch when a routed provider has no
+    # credentials, BEFORE taking the tree lock — same contract as the root
+    # launcher (#1453). Founder case (po-2025, 2026-10-01, x2): Search/Critic
+    # are P6-pinned to 'zai' and crashed 'Missing credentials' ~45 min in
+    # (build + GoalExtract already done) on a lane without ZAI_API_KEY, and
+    # this launcher exposed neither the override flags nor the gate.
+    if mode == "multi":
+        eff = effective_agent_providers(
+            provider, local_provider,
+            coordinator_provider=coordinator_provider,
+            tactic_provider=tactic_provider,
+            search_provider=search_provider,
+            critic_provider=critic_provider,
+            diagnosis_provider=diagnosis_provider,
+            director_provider=director_provider,
+            use_diagnosis_agent=use_diagnosis_agent)
+    else:
+        # AutonomousProver dials a single agent on ``provider`` — gating the
+        # multi-agent map here would false-refuse the launch.
+        eff = {"reasoning": provider}
+    gate_problems = validate_provider_credentials(eff, PROVIDERS)
+    if gate_problems:
+        for _p in gate_problems:
+            print(f"[GATE] {_p}")
+        print(
+            "[GATE] refusing to launch — set the listed keys or pass "
+            "explicit --search-provider/--critic-provider/"
+            "--diagnosis-provider overrides"
+        )
+        return {"name": name, "result_kind": "provider_gate",
+                "reason": "; ".join(gate_problems)}
+
     # One prover per tree (#6790): run-7 was launched through THIS launcher
     # while run-6 held the same tree — run-7's cleanup reverted run-6's
     # build-passing candidate. Refuse the second run instead.
@@ -308,7 +347,8 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
         return _run_with_calibration_stub(
             demo, name, filepath, line, mode, iterations, provider,
             local_provider, director_provider, coordinator_provider,
-            tactic_provider, use_diagnosis_agent, concurrent_search_count,
+            tactic_provider, search_provider, critic_provider,
+            diagnosis_provider, use_diagnosis_agent, concurrent_search_count,
         )
     finally:
         release_tree_lock(lock_path)
@@ -317,6 +357,8 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
 def _run_with_calibration_stub(demo, name, filepath, line, mode, iterations,
                                provider, local_provider, director_provider,
                                coordinator_provider, tactic_provider,
+                               search_provider, critic_provider,
+                               diagnosis_provider,
                                use_diagnosis_agent, concurrent_search_count):
     """Run body under the tree lock, with #1453 calibration preparation.
 
@@ -368,7 +410,8 @@ def _run_with_calibration_stub(demo, name, filepath, line, mode, iterations,
         return _run_prover_locked(
             demo, name, filepath, line, mode, iterations, provider,
             local_provider, director_provider, coordinator_provider,
-            tactic_provider, use_diagnosis_agent, concurrent_search_count,
+            tactic_provider, search_provider, critic_provider,
+            diagnosis_provider, use_diagnosis_agent, concurrent_search_count,
             calibration=calibration,
         )
     finally:
@@ -379,7 +422,8 @@ def _run_with_calibration_stub(demo, name, filepath, line, mode, iterations,
 
 def _run_prover_locked(demo, name, filepath, line, mode, iterations, provider,
                        local_provider, director_provider, coordinator_provider,
-                       tactic_provider, use_diagnosis_agent,
+                       tactic_provider, search_provider, critic_provider,
+                       diagnosis_provider, use_diagnosis_agent,
                        concurrent_search_count, calibration=False):
     """The original run body, executed while holding the tree lock."""
     original = Path(filepath).read_text(encoding="utf-8")
@@ -436,7 +480,10 @@ def _run_prover_locked(demo, name, filepath, line, mode, iterations, provider,
             trace=trace, provider=provider, local_provider=local_provider,
             director_provider=director_provider,
             coordinator_provider=coordinator_provider,
-            tactic_provider=tactic_provider)
+            tactic_provider=tactic_provider,
+            search_provider=search_provider,
+            critic_provider=critic_provider,
+            diagnosis_provider=diagnosis_provider)
         if director_provider:
             print(f"  Director: ENABLED (provider={director_provider})")
     else:
@@ -454,6 +501,20 @@ def _run_prover_locked(demo, name, filepath, line, mode, iterations, provider,
             result = prover.prove_sorry(demo=demo, max_iterations=iterations)
     except Exception as e:
         print(f"\nProver crashed: {e}")
+        if mode == "multi":
+            # #18709: print the per-agent provider map so a credentials
+            # crash points at the culprit agent's provider instead of a
+            # bare message (the constructor resolves P6 pins lazily enough
+            # that the exception itself carries no agent name).
+            print(
+                "  [CRASH-CONTEXT] "
+                f"search={getattr(prover, 'search_provider', '?')} "
+                f"critic={getattr(prover, 'critic_provider', '?')} "
+                f"diagnosis={getattr(prover, 'diagnosis_provider', '?')} "
+                f"coordinator={getattr(prover, 'coordinator_provider', '?')} "
+                f"tactic={getattr(prover, 'tactic_provider', '?')} "
+                f"reasoning={provider} fast={local_provider}"
+            )
         result = {"error": str(e)}
     elapsed = time.time() - start
 
@@ -554,6 +615,20 @@ if __name__ == "__main__":
                         help="Enable DiagnosisAgent (LLM-powered qualitative "
                              "verification replacing mechanical VerifyExecutor). "
                              "Only used in --mode multi.")
+    parser.add_argument("--search-provider", default=None,
+                        help="Provider for SearchAgent. #7477 P6 routing pins "
+                             "fast-class agents (Search/Critic/Diagnosis) to "
+                             "'zai' via the p6_routing map — on a lane without "
+                             "ZAI_API_KEY every multi run crashed 'Missing "
+                             "credentials' ~45 min in with no override path "
+                             "(#18709). This exposes the override the prover "
+                             "class already accepts.")
+    parser.add_argument("--critic-provider", default=None,
+                        help="Provider for CriticAgent (see --search-provider).")
+    parser.add_argument("--diagnosis-provider", default=None,
+                        help="Provider for DiagnosisAgent (see "
+                             "--search-provider). Only consumed when "
+                             "--use-diagnosis-agent is set.")
     parser.add_argument("--concurrent-search", type=int, default=0,
                         help="Number of ADDITIONAL SearchAgents to run in "
                              "parallel (B.7). 0 = single search (default). "
@@ -577,9 +652,14 @@ if __name__ == "__main__":
         director_provider=args.director_provider,
         coordinator_provider=args.coordinator_provider,
         tactic_provider=args.tactic_provider,
+        search_provider=args.search_provider,
+        critic_provider=args.critic_provider,
+        diagnosis_provider=args.diagnosis_provider,
         use_diagnosis_agent=args.use_diagnosis_agent,
         concurrent_search_count=args.concurrent_search,
         force_lock=args.force_lock,
     )
     if isinstance(summary, dict) and summary.get("result_kind") == "locked":
         sys.exit(3)  # same contract as the outer launcher (#6790)
+    if isinstance(summary, dict) and summary.get("result_kind") == "provider_gate":
+        sys.exit(5)  # #18709: same contract as the outer launcher gate

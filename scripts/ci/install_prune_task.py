@@ -14,7 +14,10 @@ Modes :
     --uninstall                               supprime la tache
     --dry-run (--install | --uninstall)       affiche argv schtasks sans l'executer
     --run                                     execute la purge (invoqué PAR la tache) :
-                                              journal horodate, jamais de couleur/TTY
+                                              journal horodate, jamais de couleur/TTY ;
+                                              relaie --warn-threshold (defaut 20, #3895)
+                                              a l'organe : ligne [WARN][prune-task] en
+                                              journal au-dela du seuil de refus
 
 Garde de securite (#14476) : --install REFUSE de cabler --apply si le script
 cible ne contient pas encore les deux voies du fix PR #14481 (resolution
@@ -23,6 +26,9 @@ d'intersection de jetons deploierait l'attribution fausse (et destructive)
 TOUS LES JOURS.
 
 Journal : %LOCALAPPDATA%\CoursIA\prune_task\logs\prune_YYYYMMDD.log
+
+#3895 (roo-extensions) : les REFUS de l'organe ne sont plus un echec (rc=0) ;
+le rc de la tache ne rougit plus que sur panne gh/git ou echec d'application.
 """
 from __future__ import annotations
 
@@ -158,8 +164,15 @@ def cmd_uninstall(dry_run: bool = False) -> int:
     return 0
 
 
-def cmd_run(repo: Path) -> int:
-    """Invoque par la tache planifiee : journal horodate, pas de TTY."""
+def cmd_run(repo: Path, warn_threshold: int = 20) -> int:
+    """Invoque par la tache planifiee : journal horodate, pas de TTY.
+
+    `--warn-threshold` (#3895) est relaie a l'organe : au-dela, il emet sa
+    ligne [WARN][prune-task] (stderr, fusionne ici dans le journal) -- le
+    rapport detaille des refus ne vit plus seulement en fin de journal, il
+    porte un marqueur qu'une lane peut relever et poster sur le dashboard
+    workspace au cycle suivant.
+    """
     LOG_DIR.mkdir(parents=True, exist_ok=True)
     log = log_path_for()
     stamp = _dt.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
@@ -168,12 +181,15 @@ def cmd_run(repo: Path) -> int:
         fh.flush()
         proc = subprocess.run(
             [sys.executable, str(prune_script_path(repo)),
-             "--path", str(repo), "--apply"],
+             "--path", str(repo), "--apply",
+             "--warn-threshold", str(warn_threshold)],
             stdout=fh, stderr=subprocess.STDOUT,
         )
         fh.write(f"=== {_dt.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')} "
                  f"run end rc={proc.returncode} ===\n")
-    # exit code non zero si l'organe a echoue -- visible dans le journal
+    # exit code non zero si l'organe a echoue -- visible dans le journal.
+    # Depuis #3895, les REFUS de l'organe ne comptent plus comme echec :
+    # rc!=0 = panne gh/git ou echec d'application, uniquement.
     return proc.returncode
 
 
@@ -191,6 +207,9 @@ def main(argv: list[str] | None = None) -> int:
                    help="checkout principal du depot (defaut D:\\Dev\\CoursIA-2)")
     p.add_argument("--time", default="03:17",
                    help="heure quotidienne HH:MM (defaut 03:17, hors heures ouvrables)")
+    p.add_argument("--warn-threshold", type=int, default=20, metavar="N",
+                   help="seuil refused > N pour l'emission [WARN][prune-task] "
+                        "de l'organe en mode --run (defaut 20, #3895)")
     args = p.parse_args(argv)
 
     if args.dry_run and (args.install == args.uninstall or args.status or args.run):
@@ -203,7 +222,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.uninstall:
         return cmd_uninstall(dry_run=args.dry_run)
     if args.run:
-        return cmd_run(repo)
+        return cmd_run(repo, warn_threshold=args.warn_threshold)
     p.print_help()
     return 1
 

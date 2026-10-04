@@ -594,6 +594,47 @@ def test_template_populates_mechanical_fields_but_not_verdicts():
     assert "verdict: READY" not in template
 
 
+def test_restamp_warning_is_silent_without_an_existing_dossier():
+    assert mod.restamp_warning(_base_snapshot()) is None
+
+
+def test_restamp_warning_names_the_new_comment_gesture():
+    warning = mod.restamp_warning(_snapshot(_body()))
+    assert warning is not None
+    assert "comment 2 of 2" in warning
+    assert "NEW" in warning and "never PATCH" in warning
+
+
+def _filled(template: str) -> str:
+    verdicts = {
+        "complete": "true", "body": "read", "checks": "latest-wins-green",
+        "b0": "clear", "scope": "pass", "domain": "pass", "verdict": "READY",
+    }
+    lines = []
+    for line in template.splitlines():
+        key = line.split(":", 1)[0]
+        lines.append(f"{key}: {verdicts[key]}" if key in verdicts else line)
+    return "\n".join(lines)
+
+
+def test_patched_restamp_can_never_match_but_a_new_comment_does():
+    """#18072/#17985/#18134: the template counts the dossier it would replace."""
+    snapshot = _snapshot(_body())
+    stamped = _filled(mod.render_template(snapshot))
+
+    patched = _base_snapshot()
+    patched["comments"].append(_comment(stamped))
+    assert any(
+        error.startswith("comments-reviewed is stale") for error in _errors(patched)
+    )
+
+    posted = _snapshot(_body())
+    posted["comments"].append(_comment(stamped))
+    ready, errors = mod.evaluate(posted)
+    assert errors == []
+    assert ready
+
+
 def test_metadata_identity_ignores_only_check_order():
     first = {
         "number": 123,
@@ -610,6 +651,96 @@ def test_metadata_identity_ignores_only_check_order():
     changed = dict(first)
     changed["updatedAt"] = "2026-09-16T19:00:01Z"
     assert mod._metadata_identity(first) != mod._metadata_identity(changed)
+
+
+def _bracket_reads(monkeypatch, first, second=None):
+    """Stub every network read `load_snapshot` performs, and count them.
+
+    `load_snapshot` reads the PR metadata twice -- before and after the
+    surfaces -- and refuses the snapshot when the two disagree. `first` and
+    `second` are payload FACTORIES (one callable per read) so a test steers
+    the second read without aliasing the first.
+
+    The stubbed check runs also pin the source of truth (#16957): the
+    snapshot's `checkRuns` come from `commits/<head>/check-runs`, keyed on the
+    exact head commit, never from the rollup.
+    """
+    calls = {"metadata": 0, "check_runs_head": None}
+    runs = [
+        {
+            "id": 1,
+            "name": "PR gate",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-09-28T10:00:00Z",
+        }
+    ]
+
+    def fake_pr_metadata(pr, *, with_rollup):
+        calls["metadata"] += 1
+        factory = first if calls["metadata"] == 1 else (second or first)
+        return factory()
+
+    def fake_head_check_runs(head_sha):
+        calls["check_runs_head"] = head_sha
+        return list(runs)
+
+    monkeypatch.setattr(mod, "_pr_metadata", fake_pr_metadata)
+    monkeypatch.setattr(mod, "_head_check_runs", fake_head_check_runs)
+    monkeypatch.setattr(mod, "_issue_comments", lambda pr: [{"id": 1}])
+    monkeypatch.setattr(mod, "_reviews", lambda pr: [{"id": 2}])
+    monkeypatch.setattr(mod, "review_threads", lambda pr: [{"thread": 1}])
+    return calls, runs
+
+
+def _metadata_payload(**changes):
+    """The shape `_pr_metadata` renders -- what the stability identity hashes."""
+    payload = _base_snapshot()
+    payload["updatedAt"] = "2026-09-28T12:00:00Z"
+    payload["headRefName"] = "feature/bracket"
+    payload.update(changes)
+    return payload
+
+
+def test_load_snapshot_reads_metadata_twice_and_takes_checks_from_rest(monkeypatch):
+    calls, runs = _bracket_reads(monkeypatch, _metadata_payload)
+
+    snapshot = mod.load_snapshot(123)
+
+    assert calls["metadata"] == 2
+    assert calls["check_runs_head"] == HEAD
+    assert snapshot["checkRuns"] == runs
+    assert snapshot["comments"] == [{"id": 1}]
+    assert snapshot["reviews"] == [{"id": 2}]
+    assert snapshot["threads"] == [{"thread": 1}]
+
+
+def test_load_snapshot_aborts_when_a_check_concludes_during_the_read(monkeypatch):
+    """#17390 acceptance 2: the guard must go red, not absolve.
+
+    A check moving from in-progress to a conclusion between the two metadata
+    reads makes the snapshot born of an already-stale state: the gate refuses
+    it (transient UNKNOWN, the caller retries) instead of certifying it.
+    """
+    in_progress = _metadata_payload(
+        statusCheckRollup=[{"name": "PR gate", "status": "IN_PROGRESS", "conclusion": None}]
+    )
+    concluded = _metadata_payload(
+        statusCheckRollup=[{"name": "PR gate", "status": "COMPLETED", "conclusion": "SUCCESS"}]
+    )
+    _bracket_reads(monkeypatch, lambda: in_progress, lambda: concluded)
+
+    with pytest.raises(RuntimeError, match="changed while prevalidation snapshot was read"):
+        mod.load_snapshot(123)
+
+
+def test_load_snapshot_aborts_when_any_surface_moves_during_the_read(monkeypatch):
+    first = _metadata_payload()
+    moved = _metadata_payload(updatedAt="2026-09-28T12:00:05Z")
+    _bracket_reads(monkeypatch, lambda: first, lambda: moved)
+
+    with pytest.raises(RuntimeError, match="changed while prevalidation snapshot was read"):
+        mod.load_snapshot(123)
 
 
 def test_ready_dossier_is_evidence_not_merge_authorization():
@@ -1097,9 +1228,74 @@ def test_skipped_and_neutral_conclusions_are_not_red():
          "conclusion": "skipped", "started_at": "2026-09-20T10:00:00Z"},
         {"id": 2, "name": "coverage", "status": "completed",
          "conclusion": "neutral", "started_at": "2026-09-20T10:01:00Z"},
+        {"id": 3, "name": "PR gate", "status": "completed",
+         "conclusion": "success", "started_at": "2026-09-20T10:02:00Z"},
     ]
     verdict, errors = mod.evaluate(snapshot)
     assert verdict == mod.VERDICT_READY, errors
+
+
+_CODEQL_ONLY = [
+    {"id": i, "name": name, "status": "completed", "conclusion": "success",
+     "started_at": "2026-09-30T04:30:40Z"}
+    for i, name in enumerate(
+        ["Analyze (actions)", "Analyze (csharp)", "Analyze (python)", "CodeQL"],
+        start=1,
+    )
+]
+_ABSENT_PR_GATE = (
+    "checks claim 'latest-wins-green' is contradicted by the absence of "
+    "required check 'PR gate' on the head"
+)
+
+
+def test_head_without_pr_gate_run_is_not_green_by_vacuity():
+    """#18579 founding case (#18527, #18500): the pull_request workflows never
+    fired on the head, only the CodeQL legs ran. Every present check is green,
+    so pre-#18579 nothing contradicted the claim and the dossier read READY."""
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"] = list(_CODEQL_ONLY)
+    errors = _errors(snapshot)
+    assert any(_ABSENT_PR_GATE in error for error in errors), errors
+
+
+def test_head_with_no_check_run_at_all_is_not_green():
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"] = []
+    errors = _errors(snapshot)
+    assert any(_ABSENT_PR_GATE in error for error in errors), errors
+
+
+def test_pr_gate_in_flight_without_completed_run_is_not_green():
+    """In flight has no verdict yet: with no earlier completed run on the head,
+    the required check has said nothing and cannot be claimed green."""
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"] = list(_CODEQL_ONLY) + [
+        {"id": 9, "name": "PR gate", "status": "in_progress",
+         "conclusion": None, "started_at": "2026-09-30T10:20:00Z"}
+    ]
+    errors = _errors(snapshot)
+    assert any(_ABSENT_PR_GATE in error for error in errors), errors
+
+
+def test_pr_gate_rerun_in_flight_keeps_the_last_completed_green():
+    """Positive control: a rerun in flight falls back to the last completed
+    run of the same head, which is green -- the presence rule adds nothing."""
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"] = list(_CODEQL_ONLY) + [
+        {"id": 8, "name": "PR gate", "status": "completed",
+         "conclusion": "success", "started_at": "2026-09-30T10:00:00Z"},
+        {"id": 9, "name": "PR gate", "status": "in_progress",
+         "conclusion": None, "started_at": "2026-09-30T10:20:00Z"},
+    ]
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_blocked_dossier_is_not_refused_for_an_absent_pr_gate():
+    """The presence rule refutes a READY claim only: a BLOCKED dossier on a
+    head without CI stays readable (exit 3), it is the reason it is blocked."""
+    assert mod.check_claim_contradictions("BLOCKED", []) == []
 
 
 def test_in_flight_rerun_has_no_verdict_and_hides_nothing():
@@ -1544,8 +1740,15 @@ def test_blocked_dossier_on_frozen_campaign_keeps_its_own_message(
     monkeypatch, capsys
 ):
     """Le gel ne re-ecrit pas un verdict BLOCKED : deja non mergeable, il
-    garde son message propre (l'exemption READY-only du check)."""
-    snapshot = _snapshot_with(title=FROZEN_TITLE, verdict="BLOCKED", b0="blocked")
+    garde son message propre (l'exemption READY-only du check). Le dossier
+    porte un second motif (checks) : le re-jeu B.0 de #19093 ne l'expire pas,
+    on teste bien le gel sur un BLOCKED intact."""
+    snapshot = _snapshot_with(
+        title=FROZEN_TITLE,
+        verdict="BLOCKED",
+        b0="blocked",
+        checks="BLOCKED:gate rouge",
+    )
     rc = _run_main(monkeypatch, snapshot)
     assert rc == mod.EXIT_BLOCKED_WITH_SUBSTANCE
     assert capsys.readouterr().out.startswith("BLOCKED-WITH-SUBSTANCE")
@@ -1696,3 +1899,208 @@ def test_main_exits_ready_when_organ_agrees(monkeypatch, capsys):
     monkeypatch.setattr(mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []})
     monkeypatch.setattr(sys, "argv", ["check_adjoint_prevalidation.py", "123"])
     assert mod.main() == mod.EXIT_READY
+
+
+# --- #19093 : un dossier BLOCKED dont le seul motif b0 est eteint expire ------
+# Mesure fondatrice (2026-10-04, #19012) : dossier BLOCKED 02:49Z pour une
+# reserve de review, APPROVE coordinateur 06:13Z sur la meme tete, le gate
+# repondait toujours rc=3 a 10:24Z -- la PR a dormi 4 h. La fingerprint
+# neutralise les reviews posterieures du coordinateur (_is_own_later_act),
+# donc sa levee n'expire pas le tampon : c'est le re-jeu de l'organe B.0 qui
+# tranche, symetriquement au re-jeu des claims `b0: clear` (#17698).
+
+
+def _blocked_b0_snapshot(**changes: str):
+    """Dossier BLOCKED dont b0 est le SEUL champ bloquant (acceptance #19093)."""
+    fields = {"verdict": "BLOCKED", "b0": "blocked:reserve vivante"}
+    fields.update(changes)
+    return _snapshot_with(**fields)
+
+
+def test_blocked_b0_only_expired_when_organ_no_longer_blocks(monkeypatch, capsys):
+    """Acceptance 1 : organ rc=0 -> le gate ne rend PAS 3 et nomme le re-tampon."""
+    snapshot = _blocked_b0_snapshot()
+    monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
+    monkeypatch.setattr(mod.gh_identity, "pin_gh_token", lambda: None)
+    monkeypatch.setattr(mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []})
+    monkeypatch.setattr(sys, "argv", ["check_adjoint_prevalidation.py", "123"])
+    assert mod.main() == mod.EXIT_NO_DOSSIER
+    out = capsys.readouterr().out
+    assert "NO-DOSSIER" in out
+    assert "no longer blocks PR #123" in out
+    assert "re-stamp" in out and "third-party lane" in out
+
+
+def test_blocked_b0_only_stands_when_organ_still_blocks(monkeypatch, capsys):
+    """Acceptance 2 (temoin negatif) : organ rc=1 -> le gate rend toujours 3."""
+    snapshot = _blocked_b0_snapshot()
+    monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
+    monkeypatch.setattr(mod.gh_identity, "pin_gh_token", lambda: None)
+    monkeypatch.setattr(
+        mod,
+        "probe_b0",
+        lambda pr: {"blocked": True, "blocking": [{"kind": "nit", "author": "u", "src": "c"}]},
+    )
+    monkeypatch.setattr(sys, "argv", ["check_adjoint_prevalidation.py", "123"])
+    assert mod.main() == mod.EXIT_BLOCKED_WITH_SUBSTANCE
+    assert capsys.readouterr().out.startswith("BLOCKED-WITH-SUBSTANCE")
+
+
+def test_blocked_with_other_motif_not_touched_by_the_recheck(monkeypatch, capsys):
+    """Acceptance 3 : un autre motif bloquant (checks) garde son dossier,
+    meme quand l'organe B.0 ne bloque plus -- sa raison peut tenir encore."""
+    snapshot = _blocked_b0_snapshot(checks="BLOCKED:gate rouge")
+    monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
+    monkeypatch.setattr(mod.gh_identity, "pin_gh_token", lambda: None)
+    monkeypatch.setattr(mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []})
+    monkeypatch.setattr(sys, "argv", ["check_adjoint_prevalidation.py", "123"])
+    assert mod.main() == mod.EXIT_BLOCKED_WITH_SUBSTANCE
+    assert capsys.readouterr().out.startswith("BLOCKED-WITH-SUBSTANCE")
+
+
+def test_recheck_blocked_b0_never_probes_a_non_blocked_verdict():
+    """Le probe n'est paye que pour un dossier BLOCKED existant : ni READY,
+    ni dossier absent (symetrique de test_b0_probe_not_paid_...)."""
+    probe, calls = _organ(False)
+    verdict, dossier = _ready_dossier()
+    assert mod.recheck_blocked_b0(123, verdict, dossier, probe) == (verdict, [], dossier)
+    assert mod.recheck_blocked_b0(123, "", None, probe) == ("", [], None)
+    assert calls == []
+
+
+# --- #18637 : advisories sticky (marqueur en FIN de corps) et resumes de bot --
+
+_STICKY_STALE = (
+    "✅ No unanchored measurement claim detected in the notebooks this PR changed.\n\n"
+    "Scope = notebooks CHANGED in this PR.\n"
+    "<!-- Sticky Pull Request Commentstale-claim-advisory -->"
+)
+
+
+def test_sticky_advisory_pose_does_not_expire_the_dossier():
+    """#18637 acceptance (positive control) : la pose d'un advisory sticky par
+    ``github-actions[bot]`` apres le dossier laisse le verdict lisible. Mesure
+    fondatrice (2026-09-30) : 19 dossiers sur 22 perimes par ces seules poses
+    et reecritures de bot.
+    """
+    for body in (
+        _STICKY_STALE,
+        "⚠️ Factual-mislabel review needed.\n<!-- Sticky Pull Request Commentfactual-mislabel-advisory -->",
+        "<!-- REVIEW-COVERAGE:START -->\nseuil depasse\n<!-- REVIEW-COVERAGE:END -->",
+        "## Golden-Set Execution (H.7 P3)\n\n✅ **3/3** notebooks passed",
+        "## Notebook PR Validation: PASS\n\n| nb | ok |",
+        "## Notebook outputs-required (H.4 schema): **PASS** (every code cell carries an `outputs: list`)",
+    ):
+        base = _stamped_snapshot("")
+        base["comments"].pop()
+        snapshot = _stamped_snapshot(_dossier_for(base))
+        pose = _comment(body, login="github-actions[bot]")
+        pose["createdAt"] = T1
+        snapshot["comments"].append(pose)
+        verdict, errors = mod.evaluate(snapshot)
+        assert verdict == mod.VERDICT_READY, (body.splitlines()[0], errors)
+
+
+def test_sticky_advisory_rewrite_keeps_the_fingerprint():
+    """#18637 : la reecriture en place d'un advisory sticky ne change pas le hash,
+    sa presence le change toujours."""
+    base = _base_snapshot()
+    v1 = dict(base, comments=[_comment(_STICKY_STALE, "github-actions[bot]")])
+    v2 = dict(base, comments=[_comment(
+        "⚠️ Stale-claim review needed: contenu different.\n"
+        "<!-- Sticky Pull Request Commentstale-claim-advisory -->",
+        "github-actions[bot]")])
+    assert mod.surfaces_fingerprint(v1) == mod.surfaces_fingerprint(v2)
+    assert mod.surfaces_fingerprint(base) != mod.surfaces_fingerprint(v1)
+
+
+def test_sticky_forms_require_the_bot_author_and_a_listed_header():
+    """#18637 (negative controls) : un tiers qui recopie la forme perime le
+    dossier ; un en-tete sticky non liste (non consultatif) aussi ; un marqueur
+    sticky qui n'est pas en fin de corps aussi."""
+    cases = (
+        (_STICKY_STALE, "clusterManager-Myia"),
+        ("## Golden-Set Execution (H.7 P3)\ncopie", "myia-po-2023"),
+        ("## Notebook outputs-required (H.4 schema): **PASS** copie", "myia-po-2023"),
+        ("rapport\n<!-- Sticky Pull Request Commentsome-blocking-guard -->", "github-actions[bot]"),
+        ("<!-- Sticky Pull Request Commentstale-claim-advisory -->\nsuite ajoutee", "github-actions[bot]"),
+    )
+    for body, login in cases:
+        base = _stamped_snapshot("")
+        base["comments"].pop()
+        snapshot = _stamped_snapshot(_dossier_for(base))
+        row = _comment(body, login=login)
+        row["createdAt"] = T1
+        snapshot["comments"].append(row)
+        errors = _errors(snapshot)
+        assert any("discussion changed after dossier" in e for e in errors), (login, body[:40])
+
+
+def test_pre18637_stamp_stays_verifiable():
+    """#18637 transition : un dossier tamponne AVANT le correctif (empreinte
+    qui hache le corps entier du sticky) reste accepte tant que les surfaces
+    n'ont pas bouge -- le merge du correctif ne tue pas les dossiers intacts."""
+    base = _base_snapshot()
+    snap = dict(base, comments=[_comment(_STICKY_STALE, "github-actions[bot]")])
+    old = mod.pre18637_surfaces_fingerprint(snap)
+    new = mod.surfaces_fingerprint(snap)
+    assert old != new
+    rewritten = dict(base, comments=[_comment(
+        "⚠️ autre texte\n<!-- Sticky Pull Request Commentstale-claim-advisory -->",
+        "github-actions[bot]")])
+    # l'ancienne empreinte, elle, bouge avec le corps : elle ne protege que
+    # l'etat exact qu'elle a tamponne.
+    assert mod.pre18637_surfaces_fingerprint(rewritten) != old
+
+
+# --- #19002 : la base doit etre `main` pour READY -------------------------
+# Mesure du 2026-10-03 : 4 PRs a base != main dans le pool ouvert, dont
+# #18819 (base squash-mergee) et #18993 (base fermee sans merge). Avant
+# #19002, le gate rendait rc=0 READY sur ces PRs, et merge_ready fusionnait
+# dans la branche morte. La regle : un dossier READY exige une base
+# `main` ; sinon, refus. Trois tests : un temoin positif (base main, le
+# chemin nominal inchange), un temoin negatif sur une base de feature
+# encore ouverte (#18985/#18967), un temoin negatif sur une base dont la
+# PR porteuse est fermee ou mergee (#18819/#18993).
+
+
+def test_base_main_does_not_change_a_ready_dossier():
+    """Temooin positif : une PR a base main, dossier READY canonique,
+    verdict READY inchange. Le chemin nominal n'est pas casse par #19002."""
+    snapshot = _snapshot(_body())
+    assert snapshot["baseRefName"] == "main"
+    verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+    assert not errors
+
+
+def test_base_feature_open_refuses_ready_and_names_the_base():
+    """Temooin negatif : PR empilee sur une branche de feature encore
+    ouverte (#18985 / #18967). Le gate refuse READY et nomme la base
+    pour que la lane sache ou retargeter."""
+    snapshot = _snapshot(_body())
+    snapshot["baseRefName"] = "docs/qc-book-inventory-reconciliation"
+    verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+    assert verdict == "", verdict
+    assert dossier is None, dossier
+    assert any("baseRefName must be 'main'" in e for e in errors), errors
+    # Le message nomme la base fautive -- la lane en a besoin pour le
+    # retarget, et la regle sans le nom forcerait a rouvrir le PR.
+    assert any(
+        "docs/qc-book-inventory-reconciliation" in e for e in errors
+    ), errors
+
+
+def test_base_dead_refuses_ready_and_names_the_base():
+    """Temooin negatif : PR empilee sur une branche dont la PR porteuse
+    est fermee ou squash-mergee (#18819 / #18993). Meme verdict que la
+    base de feature, avec un nom different -- le gate refuse dans les
+    deux cas parce que son contrat ne sait pas dire 'cette base est
+    morte' (et n'a pas besoin de le dire : retarget sur main)."""
+    snapshot = _snapshot(_body())
+    snapshot["baseRefName"] = "renum/17063-complexity-05b"  # #18819
+    verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+    assert verdict == "", verdict
+    assert dossier is None, dossier
+    assert any("baseRefName must be 'main'" in e for e in errors), errors
+    assert any("renum/17063-complexity-05b" in e for e in errors), errors

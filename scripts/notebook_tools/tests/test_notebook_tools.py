@@ -64,7 +64,7 @@ class TestShouldSkip:
         assert should_skip(Path("notebooks/Search-1-BFS.ipynb")) is False
 
     def test_normal_path(self):
-        assert should_skip(Path("MyIA.AI.Notebooks/Sudoku/Sudoku-01-Backtracking-Csharp.ipynb")) is False
+        assert should_skip(Path("MyIA.AI.Notebooks/Sudoku/Sudoku-01-Backtracking-CSharp.ipynb")) is False
 
     def test_output_in_nested_path(self):
         assert should_skip(Path("deep/nested/test_output.ipynb")) is True

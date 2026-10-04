@@ -41,7 +41,7 @@ survey.
 
 ### Where to go next
 
-- **Mathlib hands-on in notebook form**: `Lean-6-Mathlib-Essentials.ipynb`
+- **Mathlib hands-on in notebook form**: `Lean-06-Mathlib-Essentials-Lean.ipynb`
   (tactics exercised on directly imported Mathlib) and
   `Lean-26-Munkres-Tribute.ipynb` (Munkres' course 18.901, executed on this lake).
 - **Fuller Lean projects**: [`calibration_lean/`](../calibration_lean/),

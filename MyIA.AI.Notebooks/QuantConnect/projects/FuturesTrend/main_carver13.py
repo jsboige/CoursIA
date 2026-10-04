@@ -389,7 +389,7 @@ class CarverThirteen(QCAlgorithm):
 
     def _breadth_multiplier(self, forecasts):
         """Effective breadth multiplier — inverse concentration, sign-invariant
-        (Tell c.1069 strict, REPAIR-3 c.1109 + REPAIR-5 c.1111 + REPAIR-7
+        (REPAIR-3 c.1109 + REPAIR-5 c.1111 + REPAIR-7
         c.1113 + REPAIR-8 c.1115 — successive honesty requalifications after
         adjoint po-2025 preflights `msg-20260911T043805-i7tl0g`,
         `msg-20260911T053342-rwwap4`, `msg-20260911T063424-qnc0q9`,
@@ -409,7 +409,7 @@ class CarverThirteen(QCAlgorithm):
             breadth = sum(|f_i|) / sqrt(sum(f_i^2))
 
         Reading (REPAIR-7 c.1113, semantic correction by adjoint po-2025
-        habilité n°3 Tell c.15069 strict): the ratio ranges from **1.0
+        habilité n°3): the ratio ranges from **1.0
         (one |f_i| dominates, the rest are zero — MINIMUM effective
         breadth, MAXIMUM concentration)** to **sqrt(N) (all |f_i| equal
         — MAXIMUM effective breadth, ZERO concentration)**. This is the
@@ -605,7 +605,7 @@ class CarverThirteen(QCAlgorithm):
             # from the steady-state value for ~5 half-lives. Bound by
             # max_slow + 2 (= 258) so the slowest pair has at least 2
             # extra bars of EWMA burn-in before the forecast is read.
-            # Tell c.1069 strict: this is a tightening of the guard, not
+            # this is a tightening of the guard, not
             # a speculative fix; the rationale is grounded in the EWMA
             # half-life arithmetic documented above.
             if len(closes) < self.max_slow + 2:
@@ -701,7 +701,7 @@ class CarverThirteen(QCAlgorithm):
                     target_weight = 0.0
 
             # Retarget the delta directly to avoid fabricated round-trip
-            # costs (Tell c.1069 strict, REPAIR-3 c.1109 adjoint po-2025
+            # costs (REPAIR-3 c.1109 adjoint po-2025
             # preflight `msg-20260911T043805-i7tl0g`):
             # - liquidate only when sign change (long -> short or vice versa)
             #   OR when target_weight ~ 0;

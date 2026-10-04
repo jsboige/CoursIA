@@ -88,7 +88,7 @@ non clippée, par exemple), pas sur Kelly capé.
 ## Fichiers
 
 - Verdict (this) : `MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/docs/M11g_FEE_AWARE_KELLY.md`
-- Script : `scripts/m11g_fee_aware_kelly.py` (~250 lignes, réutilise LW2008 de m11c)
+- Script : `scripts/m11g_fee_aware_kelly.py` (réutilise LW2008 de m11c)
 - Results : `results/m11g_fee_aware_kelly/results.{csv,json}` (525 rows)
 
 ## Cross-references

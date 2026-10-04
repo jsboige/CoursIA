@@ -86,7 +86,7 @@ Rules
   char (NOT a Python triple-quoted string opening), ends with the JSON-quote
   closer followed by optional comma/newline, and the last content character
   (before the closer) is not a sentence-ending punctuation mark. The founding
-  incident (Tell c.1158-L1): the 4.2e Focal-Loss notebook had cells 19/20
+  incident: the 4.2e Focal-Loss notebook had cells 19/20
   whose ``source`` was JSON-dumped list entries pasted verbatim, rendering as
   literal escaped JSON (e.g. ``"# 4.2e -- section heading\\n"``) instead of
   as proper markdown. The earlier ``markdown-rendering guard`` was a faux
@@ -176,14 +176,14 @@ RULE_SEVERITY = {
     # block, which is exactly the cliquet the issue asks for ("la prochaine
     # tranche ne puisse pas l'introduire sans rougir").
     "source_list_broken_words": ERROR,
-    # #16221 (Tell c.1158-L1): ERROR (bloquant) -- a markdown cell whose source
+    # #16221: ERROR (bloquant) -- a markdown cell whose source
     # line starts with 4-space + JSON-quote opener and ends with the JSON-quote
     # closer + optional comma + optional newline is a repr-quoted Python-list
     # entry (a string from a JSON-dumped nbformat `source`). Such a line is a
     # SINGLE-LINE representation of what should be NORMAL MARKDOWN PROSE: pasted
     # verbatim into a markdown cell, the line renders as a literal escaped
     # JSON-encoded string ("# 4.2e -- section heading\\n") instead of an H2
-    # heading + a paragraph. Tell c.1158-L1 fondateur (the guard was a faux
+    # heading + a paragraph. (the guard was a faux
     # negatif on this class -- the cell LOOKS fine structurally).
     "repr_quoted_source_entries": ERROR,
     # #17005: ERROR (bloquant) -- ligne de continuation de puce/blockquote
@@ -324,7 +324,7 @@ RULE_REPAIR = {
     "math_paren_delims": (
         "python scripts/notebook_tools/fix_math_delims.py --apply <notebook>"
     ),
-    # #16221 / Tell c.1158-L1 fondateur : un entry JSON-dumped (forme
+    # #16221 : un entry JSON-dumped (forme
     # `    "# 4.2e -- section heading\\n",`) doit etre decode puis reinsere
     # comme entree(s) de liste markdown distinctes (chaque '\n' du contenu
     # redevient une ligne, chaque '","' redevient une entree separee). Voir
@@ -498,7 +498,7 @@ def _math_prose_text(lines, fenced: set[int]) -> str:
 _COLLAPSED_HEADING_START_RE = re.compile(r"^\s{0,3}#{1,6}\s+\S")
 _COLLAPSED_SINGLE_MIN_LEN = 80
 
-# #16221 / Tell c.1158-L1: a repr-quoted source entry -- a single source-list
+# #16221: a repr-quoted source entry -- a single source-list
 # element of the JSON-dumped nbformat form `    "content\\n",`. Cell-renders
 # literally as escaped JSON (`"# 4.2e -- section heading\n",`) instead of as
 # proper markdown heading + paragraph. The signature is:
@@ -937,7 +937,7 @@ def _selfcheck() -> int:
     print("selfcheck OK: source_list_broken_words fires on the post-repair "
           "mid-word boundary and the verbatim #12363 witness (helper level); "
           "silent on newline-terminated and space-preserved joins")
-    # ---- repr_quoted_source_entries (#16221 / Tell c.1158-L1) -----------------
+    # ---- repr_quoted_source_entries (#16221) -----------------
     # Positive: the canonical founding-incident line shape (JSON-dumped list
     # entry pasted into a markdown cell -- renders as escaped JSON, not
     # markdown). Negatives: (a) the same line inside a ```python fenced code
@@ -1343,7 +1343,7 @@ def scan_cell(cell) -> list[dict]:
                 "evidence": text.strip()[:100],
                 "hash": _cell_hash(rule, text),
             }]
-    # ---- repr-quoted source entries (#16221 / Tell c.1158-L1) -------------------
+    # ---- repr-quoted source entries (#16221) -------------------
     # A markdown cell whose `source` line(s) carry JSON-dumped list entries
     # (repr-quoted form `    "content\\n",`) renders those lines as literal
     # escaped JSON, not as markdown prose. Concrete failure mode (the founding

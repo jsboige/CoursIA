@@ -4,7 +4,7 @@ Resume operationnel : CLAUDE.md section F.
 
 **Regle user 2026-05-06 (incident scipy DLL/sklearn force-reinstall)** : un environnement Python degrade ne se contourne **jamais** par delegation, fallback ou skip. On repare **coute que coute**, en demandant un UAC user au besoin pour les operations privilegiees.
 
-> **macOS / Linux** : les mode d'echec Python different de Windows (pas de DLL locking au sens Windows, pas d'UAC, pas de Defender quarantine). Le workflow de reparation est le meme en esprit (cleanup `~xxx/` + force-reinstall + verifier l'import), mais les commandes shells different. Cf la section **[Reparation sous macOS / Linux](#reparation-sous-macos--linux)** ci-dessous. Pour le setup d'un poste contributeur Mac/Linux, cf [kernels-runtime.md](kernels-runtime.md) et le doc `setup-linux-macos.md` (a venir, Epic #10643).
+> **macOS / Linux** : les mode d'echec Python different de Windows (pas de DLL locking au sens Windows, pas d'UAC, pas de Defender quarantine). Le workflow de reparation est le meme en esprit (cleanup `~xxx/` + force-reinstall + verifier l'import), mais les commandes shells different. Cf la section **[Reparation sous macOS / Linux](#reparation-sous-macos--linux)** ci-dessous. Pour le setup d'un poste contributeur Mac/Linux, cf [kernels-runtime.md](kernels-runtime.md) et [setup-linux-macos.md](setup-linux-macos.md).
 
 ---
 

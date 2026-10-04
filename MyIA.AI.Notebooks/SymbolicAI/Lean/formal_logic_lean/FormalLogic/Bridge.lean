@@ -7,7 +7,7 @@ import Mathlib.Tactic.FinCases
 /-!
 # Pont execution ↔ certification (Tranche A, EPIC #15066)
 
-Ce module est le versant Lean du notebook `Lean-3b-Formalized-Formal-Logic.ipynb` :
+Ce module est le versant Lean du notebook `Lean-03b-Formalized-Formal-Logic-Lean-Python.ipynb` :
 les formules definies ici sont **les memes** que celles executees par le raisonneur
 Tweety dans le notebook (fragment fini a deux atomes, syntaxe commune serialisable).
 Le notebook fabrique ses tables de verite par execution ; ici, chaque ligne de table

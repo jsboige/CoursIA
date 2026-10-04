@@ -9,8 +9,8 @@
   - SignalingGame: Two-phase games (sender/receiver)
   - InformationSet: Partition of decision nodes (imperfect info)
 
-  Based on GameTheory-11-BayesianGames.ipynb and
-           GameTheory-13-ImperfectInfo-CFR.ipynb
+  Based on GameTheory-11-BayesianGames-Python.ipynb and
+           GameTheory-13-ImperfectInfo-CFR-Python.ipynb
 
   Note: These are pedagogical definitions for teaching purposes.
   For a full formalization, one would need measure-theoretic probability

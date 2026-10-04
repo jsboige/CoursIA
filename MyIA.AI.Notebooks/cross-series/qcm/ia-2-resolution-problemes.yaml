@@ -1,0 +1,1030 @@
+- id: ia2-001
+  theme: ia-2-resolution-problemes
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: Dans un problème à satisfaction de contrainte, comment s'appelle l'heuristique qui consiste
+    à choisir dans les domaines les valeurs les moins contraignantes pour la suite?
+  choix_unique: true
+  options:
+  - texte: L'inférence
+    correcte: false
+  - texte: AC-3
+    correcte: false
+  - texte: PC-2
+    correcte: false
+  - texte: MRV
+    correcte: false
+  - texte: Deg
+    correcte: false
+  - texte: Le backtracking
+    correcte: false
+  - texte: LCV
+    correcte: true
+  - texte: Le backjumping
+    correcte: false
+  - texte: L'exploration taboue
+    correcte: false
+  - texte: La pondération de contraintes
+    correcte: false
+  - texte: Min-Conflicts
+    correcte: false
+- id: ia2-002
+  theme: ia-2-resolution-problemes
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: 'Considérez le problème à satisfaction de contraintes suivant:
+
+    Lors d''une matinée de cours, les professeurs A,B,C & D se voient assigner une classe parmi {1,2,3,4,5},
+    respectant les contraintes suivantes:
+
+    A≠1B≠2D≥3D<B|C-B|≠1C≠5Utilisez l''un des algorithmes pour déterminer le nombre d''assignations respectant
+    ces contraintes.'
+  choix_unique: true
+  options:
+  - texte: '8'
+    correcte: false
+  - texte: '9'
+    correcte: false
+  - texte: '10'
+    correcte: true
+  - texte: '11'
+    correcte: false
+  - texte: '12'
+    correcte: false
+- id: ia2-003
+  theme: ia-2-resolution-problemes
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: Dans un problème à satisfaction de contrainte, comment s'appelle l'algorithme qui consiste à
+    appliquer la cohérence d'arc aux domaines des variables non assignées?
+  choix_unique: true
+  options:
+  - texte: L'inférence
+    correcte: false
+  - texte: AC-3
+    correcte: true
+  - texte: PC-2
+    correcte: false
+  - texte: MRV
+    correcte: false
+  - texte: Deg
+    correcte: false
+  - texte: Le backtracking
+    correcte: false
+  - texte: LCV
+    correcte: false
+  - texte: Le backjumping
+    correcte: false
+  - texte: L'exploration taboue
+    correcte: false
+  - texte: La pondération de contraintes
+    correcte: false
+  - texte: Min-Conflicts
+    correcte: false
+- id: ia2-004
+  theme: ia-2-resolution-problemes
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: Dans un problème à satisfaction de contrainte, comment s'appelle une heuristique d'assignation
+    pour l'exploration locale?
+  choix_unique: true
+  options:
+  - texte: L'inférence
+    correcte: false
+  - texte: AC-3
+    correcte: false
+  - texte: PC-2
+    correcte: false
+  - texte: MRV
+    correcte: false
+  - texte: Deg
+    correcte: false
+  - texte: Le backtracking
+    correcte: false
+  - texte: LCV
+    correcte: false
+  - texte: Le backjumping
+    correcte: false
+  - texte: L'exploration taboue
+    correcte: false
+  - texte: La pondération de contraintes
+    correcte: false
+  - texte: Min-Conflicts
+    correcte: true
+- id: ia2-005
+  theme: ia-2-resolution-problemes
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: Parmi les opérations suivantes, laquelle n'est pas utilisée lors de l'exécution d'un algorithme
+    génétique?
+  choix_unique: true
+  options:
+  - texte: Accroissement de la population
+    correcte: true
+  - texte: Evaluation de la fonction d'adaptation
+    correcte: false
+  - texte: Sélection des meilleurs phénotypes
+    correcte: false
+  - texte: Recombinaison des génômes
+    correcte: false
+  - texte: Application de mutations aléatoires
+    correcte: false
+  - texte: Initialisation de la population
+    correcte: false
+- id: ia2-006
+  theme: ia-2-resolution-problemes
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: 'Soit b le facteur de branchement d''un espace d''états, et h une heuristique qui indique par
+    un booléen si la direction est bonne ou mauvaise.
+
+    Quel est son facteur de branchement effectif?'
+  choix_unique: true
+  options:
+  - texte: b
+    correcte: false
+  - texte: b/2
+    correcte: true
+  - texte: 2*b
+    correcte: false
+  - texte: √b
+    correcte: false
+  - texte: b²
+    correcte: false
+  - texte: √b/2
+    correcte: false
+  - texte: b²/2
+    correcte: false
+  - texte: 2*√b
+    correcte: false
+  - texte: 2*b²
+    correcte: false
+- id: ia2-007
+  theme: ia-2-resolution-problemes
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: 'Soit b le facteur de branchement, d la profondeur minimale d''une solution et m celle de l''espace
+    d''états.
+
+    Quelle est la complexité en temps de l''exploration bidirectionnelle?'
+  choix_unique: true
+  options:
+  - texte: 2O(bd/2)
+    correcte: true
+  - texte: 2O(bd)
+    correcte: false
+  - texte: O(b2d)
+    correcte: false
+  - texte: O(bd)/2
+    correcte: false
+  - texte: O(bd²)
+    correcte: false
+  - texte: O((b/2)d)
+    correcte: false
+  - texte: O((2b)d)
+    correcte: false
+  - texte: O((b/2)2d)
+    correcte: false
+- id: ia2-008
+  theme: ia-2-resolution-problemes
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: 'Soient b le facteur de branchement, m la profondeur maximale de l''espace d''états, et d celle
+    de la solution de moindre coût.
+
+    Quelle est la complexité en mémoire de l''exploration itérative en profondeur ?'
+  choix_unique: true
+  options:
+  - texte: O(bd/2)
+    correcte: false
+  - texte: O(bd)
+    correcte: false
+  - texte: O(bm)
+    correcte: false
+  - texte: O(dm)
+    correcte: false
+  - texte: O(db)
+    correcte: false
+  - texte: O(bm)
+    correcte: false
+  - texte: O(db)
+    correcte: true
+  - texte: O(dm)
+    correcte: false
+  - texte: O(db/2)
+    correcte: false
+  - texte: O(mb)
+    correcte: false
+  - texte: O(md/2)
+    correcte: false
+- id: ia2-009
+  theme: ia-2-resolution-problemes
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: Un fermier doit traverser une rivière avec son grain, son oie et son renard. Sa barque ne peut
+    contenir que l'une de ses possessions. De combien de façons peut-il traverser la rivière si un renard
+    non gardé mangera l'oie et l'oie non gardée le grain.
+  choix_unique: true
+  options:
+  - texte: '0'
+    correcte: false
+  - texte: '1'
+    correcte: false
+  - texte: '2'
+    correcte: true
+  - texte: '3'
+    correcte: false
+  - texte: '4'
+    correcte: false
+- id: ia2-010
+  theme: ia-2-resolution-problemes
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: 'La figure suivante donne la description d''un espace d''exploration où sont représentés les 
+    coûts d''étapes, et les valeurs d''une fonction heuristique utilisée en exploration informée.
+
+    [figure externe non disponible]
+
+
+    Quels sont les solutions renvoyées respectivement par une exploration en profondeur d''abord, une
+    exploration glouton, et une exploration A étoile?'
+  choix_unique: true
+  options:
+  - texte: SAEFG, SCDFG, SBEFG
+    correcte: true
+  - texte: SBEFG, SAEFG, SCDFG
+    correcte: false
+  - texte: SCDFG, SBEFG, SAEFG
+    correcte: false
+  - texte: SAEFG, SBEFG, SCDFG
+    correcte: false
+  - texte: SBEFG, SCDFG, SAEFG
+    correcte: false
+  - texte: SCDFG, SAEFG, SBEFG
+    correcte: false
+- id: ia2-011
+  theme: ia-2-resolution-problemes
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: Laquelle des stratégies suivantes est informée?
+  choix_unique: true
+  options:
+  - texte: En largeur d'abord
+    correcte: false
+  - texte: A coût uniforme
+    correcte: false
+  - texte: Bidirectionnelle
+    correcte: false
+  - texte: En profondeur d'abord
+    correcte: false
+  - texte: En profondeur limitée
+    correcte: false
+  - texte: Itérative en profondeur
+    correcte: false
+  - texte: Par le meilleur d'abord
+    correcte: true
+- id: ia2-012
+  theme: ia-2-resolution-problemes
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: Parmi les stratégies d'exploration suivante, laquelle n'est pas une stratégie d'exploration
+    locale?
+  choix_unique: true
+  options:
+  - texte: Exploration A étoile
+    correcte: true
+  - texte: Exploration par escalade
+    correcte: false
+  - texte: Exploration par recuit simulé
+    correcte: false
+  - texte: Exploration locale en faisceau
+    correcte: false
+  - texte: Algorithme génétique
+    correcte: false
+  - texte: Min-Conflicts
+    correcte: false
+  - texte: WalkSat
+    correcte: false
+  - texte: Exploration taboue
+    correcte: false
+- id: ia2-013
+  theme: ia-2-resolution-problemes
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: Pour un facteur de branchement de 10 et une profondeur de 5, quel est l'ordre de grandeur du
+    surcoût de l'exploration itérative en profondeur vis à vis de l'exploration en profondeur limitée?
+  choix_unique: true
+  options:
+  - texte: 55%
+    correcte: false
+  - texte: 5%
+    correcte: false
+  - texte: 10%
+    correcte: true
+  - texte: 15%
+    correcte: false
+  - texte: 20%
+    correcte: false
+  - texte: 25%
+    correcte: false
+  - texte: 30%
+    correcte: false
+  - texte: 35%
+    correcte: false
+  - texte: 40%
+    correcte: false
+  - texte: 45%
+    correcte: false
+  - texte: 50%
+    correcte: false
+- id: ia2-014
+  theme: ia-2-resolution-problemes
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: "Vous êtes John McClain, et devez résoudre l'énigme suivante pour désactiver une bombe: vous\
+    \ disposez d'eau à volonté et de jarres de  volumes 3L et 5L, et vous devez remplir un volume de 4L.\
+    \ \n\nConsidérez l'heuristique qui consiste à attribuer aux volumes d'eaux de 0 à 5L les coûts suivants\
+    \ { 2,1,1,0,3} et en sommant pour chaque jarre.\nEn partant des jarres vides et en utilisant cette\
+    \ heuristique, combien d'étapes mènent à la solution?"
+  choix_unique: true
+  options:
+  - texte: '5'
+    correcte: false
+  - texte: '6'
+    correcte: false
+  - texte: '7'
+    correcte: false
+  - texte: '8'
+    correcte: true
+  - texte: '9'
+    correcte: false
+  - texte: '10'
+    correcte: false
+  - texte: '11'
+    correcte: false
+  - texte: '12'
+    correcte: false
+- id: ia2-015
+  theme: ia-2-resolution-problemes
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: Dans le cadre de l'exploration adverseriale, comment s'appelle la technique qui consiste à se
+    prémunir de l'éventualité qu'un évènement puisse être autrement retardé au-delà de la profondeur à
+    laquelle la fonction d'évaluation est exécutée?
+  choix_unique: true
+  options:
+  - texte: Le test d'arrêt
+    correcte: false
+  - texte: Le Cutoff
+    correcte: false
+  - texte: La recherche de stabilité
+    correcte: false
+  - texte: La recherche de quiescence
+    correcte: false
+  - texte: L'effet d'horizon
+    correcte: false
+  - texte: L'extension de singularité
+    correcte: true
+  - texte: L'échelle
+    correcte: false
+- id: ia2-016
+  theme: ia-2-resolution-problemes
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: 'Dans un jeu hypothétique, l''arbre Minimax se termine sur un coup du joueur Min avec les branches
+    et feuilles suivantes, pour lesquelles est donnée l''utilité correspondante:
+
+    B1:F1:5F2:8F3:3B2:F1:5F2:2F3:6B3:F1:1F2:8F3:3En appliquant l''élagage Alpha-Bêta pour une exploration
+    en profondeur dans l''ordre présenté, combien de feuilles se retrouvent élaguées?'
+  choix_unique: true
+  options:
+  - texte: '1'
+    correcte: false
+  - texte: '2'
+    correcte: false
+  - texte: '3'
+    correcte: true
+  - texte: '4'
+    correcte: false
+  - texte: '5'
+    correcte: false
+  - texte: '6'
+    correcte: false
+  - texte: '7'
+    correcte: false
+  - texte: '8'
+    correcte: false
+  - texte: '9'
+    correcte: false
+  - texte: '0'
+    correcte: false
+- id: ia2-017
+  theme: ia-2-resolution-problemes
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: 'Dans un jeu hypothétique, l''arbre Minimax se termine sur un coup du joueur Min avec les branches
+    et feuilles suivantes, pour lesquelles est donnée l''utilité correspondante:
+
+    B1:F1:5F2:8F3:4B2:F1:5F2:6F3:2B3:F1:7F2:8F3:3En appliquant l''élagage Alpha-Bêta pour une exploration
+    en profondeur dans l''ordre présenté, combien de feuilles se retrouvent élaguées?'
+  choix_unique: true
+  options:
+  - texte: '0'
+    correcte: true
+  - texte: '1'
+    correcte: false
+  - texte: '2'
+    correcte: false
+  - texte: '3'
+    correcte: false
+  - texte: '4'
+    correcte: false
+  - texte: '5'
+    correcte: false
+  - texte: '6'
+    correcte: false
+  - texte: '7'
+    correcte: false
+  - texte: '8'
+    correcte: false
+  - texte: '9'
+    correcte: false
+- id: ia2-018
+  theme: ia-2-resolution-problemes
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: 'Dans un jeu stochastique hypothétique, l''arbre Minimax se termine sur un coup du joueur Min
+    après un nœud de chance avec les probabilités et l''utilité résultantes suivantes:
+
+    C1.1: p=0.8F1:5F2:2F3:3C1.2: p=0.2
+
+    F1:4F2:5F3:6C2.1: p=0.9
+
+    F1:1F2:8F3:9C2.2: p=0.1
+
+    F1:7
+
+    F2:8
+
+    F3:5
+
+    Quelle est la valeur ExpectiMinimax de la partie?'
+  choix_unique: false
+  options:
+  - texte: '0.4'
+    correcte: false
+  - texte: '1.4'
+    correcte: false
+  - texte: '2.4'
+    correcte: true
+  - texte: '3.4'
+    correcte: false
+  - texte: '4.4'
+    correcte: false
+  - texte: '2.2'
+    correcte: false
+  - texte: '3.2'
+    correcte: true
+  - texte: '4.2'
+    correcte: false
+  - texte: '5.2'
+    correcte: false
+  - texte: '6.2'
+    correcte: false
+- id: ia2-019
+  theme: ia-2-resolution-problemes
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: 'Dans un jeu stochastique hypothétique, l''arbre Minimax se termine sur un coup du joueur Min
+    après un nœud de chance avec les probabilités et l''utilité résultantes suivantes:
+
+    C1.1: p=0.8F1:5F2:6F3:7C1.2: p=0.2
+
+    F1:4F2:5F3:6C2.1: p=0.9
+
+    F1:10F2:8F3:9C2.2: p=0.1
+
+    F1:7
+
+    F2:8
+
+    F3:5
+
+    Quelle est la valeur ExpectiMinimax de la partie?'
+  choix_unique: false
+  options:
+  - texte: '4.8'
+    correcte: false
+  - texte: '5.8'
+    correcte: false
+  - texte: '6.8'
+    correcte: false
+  - texte: '7.8'
+    correcte: false
+  - texte: '8.8'
+    correcte: false
+  - texte: '9.8'
+    correcte: false
+  - texte: '4.7'
+    correcte: true
+  - texte: '5.7'
+    correcte: false
+  - texte: '6.7'
+    correcte: false
+  - texte: '7.7'
+    correcte: true
+  - texte: '8.7'
+    correcte: false
+  - texte: '9.7'
+    correcte: false
+- id: ia2-020
+  theme: ia-2-resolution-problemes
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: 'Dans un jeu hypothétique, l''arbre Minimax se termine sur un coup du joueur Min avec les branches
+    et feuilles suivantes, pour lesquelles est donnée l''utilité correspondante:
+
+    B1:F1:1F2:2F3:3B2:F1:4F2:5F3:6B3:F1:7F2:8F3:9Quelle est la valeur Minimax de la partie?'
+  choix_unique: true
+  options:
+  - texte: '1'
+    correcte: false
+  - texte: '2'
+    correcte: false
+  - texte: '3'
+    correcte: false
+  - texte: '4'
+    correcte: false
+  - texte: '5'
+    correcte: false
+  - texte: '6'
+    correcte: false
+  - texte: '7'
+    correcte: true
+  - texte: '8'
+    correcte: false
+  - texte: '9'
+    correcte: false
+- id: ia2-021
+  theme: ia-2-resolution-problemes
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: 'Dans un jeu hypothétique, l''arbre Minimax se termine sur un coup du joueur Min avec les branches
+    et feuilles suivantes, pour lesquelles est donnée l''utilité correspondante:
+
+    B1:F1:5F2:8F3:1B2:F1:2F2:5F3:6B3:F1:7F2:8F3:3Quelle est la valeur Minimax de la partie?'
+  choix_unique: true
+  options:
+  - texte: '1'
+    correcte: false
+  - texte: '2'
+    correcte: false
+  - texte: '3'
+    correcte: true
+  - texte: '4'
+    correcte: false
+  - texte: '5'
+    correcte: false
+  - texte: '6'
+    correcte: false
+  - texte: '7'
+    correcte: false
+  - texte: '8'
+    correcte: false
+  - texte: '9'
+    correcte: false
+- id: ia2-022
+  theme: ia-2-resolution-problemes
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: 'Considérez le problème à satisfaction de contraintes suivant:
+
+    Lors d''une matinée de cours, les professeurs A,B,C & D se voient assigner une classe parmi {1,2,3,4,5},
+    respectant les contraintes suivantes:
+
+    A≠1B≠2D≥3D<B|C-B|≠1C≠5Utilisez les techniques abordées en cours pour déterminer le nombre d''assignations
+    respectant ces contraintes.'
+  choix_unique: true
+  options:
+  - texte: '8'
+    correcte: false
+  - texte: '9'
+    correcte: false
+  - texte: '10'
+    correcte: true
+  - texte: '11'
+    correcte: false
+  - texte: '12'
+    correcte: false
+- id: ia2-023
+  theme: ia-2-resolution-problemes
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: Dans un problème à satisfaction de contrainte, comment s'appelle la technique qui consiste à
+    ordonner les valeurs des domaines dans le cadre de nouvelles assignations?
+  choix_unique: true
+  options:
+  - texte: L'inférence
+    correcte: false
+  - texte: AC-3
+    correcte: false
+  - texte: PC-2
+    correcte: false
+  - texte: MRV
+    correcte: false
+  - texte: Deg
+    correcte: false
+  - texte: Le backtracking
+    correcte: false
+  - texte: LCV
+    correcte: true
+  - texte: Le backjumping
+    correcte: false
+  - texte: L'exploration taboue
+    correcte: false
+  - texte: La pondération de contraintes
+    correcte: false
+  - texte: Min-Conflicts
+    correcte: false
+- id: ia2-024
+  theme: ia-2-resolution-problemes
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: Dans un problème à satisfaction de contrainte, quelles sont les techniques pour ordonner les
+    variables dans le cadre de nouvelles assignations?
+  choix_unique: false
+  options:
+  - texte: L'inférence
+    correcte: false
+  - texte: AC-3
+    correcte: false
+  - texte: PC-2
+    correcte: false
+  - texte: MRV
+    correcte: true
+  - texte: Deg
+    correcte: true
+  - texte: Le backtracking
+    correcte: false
+  - texte: LCV
+    correcte: false
+  - texte: Le backjumping
+    correcte: false
+  - texte: L'exploration taboue
+    correcte: false
+  - texte: Min-Conflicts
+    correcte: false
+- id: ia2-025
+  theme: ia-2-resolution-problemes
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: 'Soit b le facteur de branchement, d la profondeur minimale d''une solution et m celle de l''espace
+    d''états.
+
+    Quelle est la complexité en temps de l''exploration bidirectionnelle?'
+  choix_unique: true
+  options:
+  - texte: O(bd/2)
+    correcte: true
+  - texte: O(bd)
+    correcte: false
+  - texte: O(b2d)
+    correcte: false
+  - texte: O(bd)/2
+    correcte: false
+  - texte: O(bd²)
+    correcte: false
+  - texte: O((b/2)d)
+    correcte: false
+  - texte: O((2b)d)
+    correcte: false
+  - texte: O((b/2)2d)
+    correcte: false
+- id: ia2-026
+  theme: ia-2-resolution-problemes
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: "Vous êtes John McClain, et devez résoudre l'énigme suivante pour désactiver une bombe: vous\
+    \ disposez d'eau à volonté et de jarres de  volumes 3L et 5L, et vous devez remplir un volume de 4L.\
+    \ \n\nConsidérez l'heuristique qui consiste à attribuer aux volumes d'eaux de 0 à 5L les coûts suivants\
+    \ { 2,1,1,1,0,3} et en sommant pour chaque jarre.\nEn partant des jarres vides et en utilisant cette\
+    \ heuristique, combien d'étapes mènent à la solution?"
+  choix_unique: true
+  options:
+  - texte: '5'
+    correcte: false
+  - texte: '6'
+    correcte: false
+  - texte: '7'
+    correcte: false
+  - texte: '8'
+    correcte: true
+  - texte: '9'
+    correcte: false
+  - texte: '10'
+    correcte: false
+  - texte: '11'
+    correcte: false
+  - texte: '12'
+    correcte: false
+- id: ia2-027
+  theme: ia-2-resolution-problemes
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: "La figure suivante donne la description d'un espace d'exploration où sont représentés les \
+    \ coûts d'étapes, et les valeurs d'une fonction heuristique utilisée en exploration informée.\n[figure:\
+    \ images/ia2-027.png]Quels sont les solutions renvoyées respectivement par:\n une exploration en profondeur\
+    \ d'abord, \nune exploration glouton, \nune exploration A étoile?"
+  choix_unique: true
+  options:
+  - texte: SAEFG, SCDFG, SBEFG
+    correcte: true
+  - texte: SBEFG, SAEFG, SCDFG
+    correcte: false
+  - texte: SCDFG, SBEFG, SAEFG
+    correcte: false
+  - texte: SAEFG, SBEFG, SCDFG
+    correcte: false
+  - texte: SBEFG, SCDFG, SAEFG
+    correcte: false
+  - texte: SCDFG, SAEFG, SBEFG
+    correcte: false
+- id: ia2-028
+  theme: ia-2-resolution-problemes
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: 'L''exploration informée est aussi appelée:'
+  choix_unique: true
+  options:
+  - texte: Exploration simple
+    correcte: false
+  - texte: Exploration en ligne
+    correcte: false
+  - texte: Exploration locale
+    correcte: false
+  - texte: Exploration globale
+    correcte: false
+  - texte: Exploration heuristique
+    correcte: true
+  - texte: Exploration aveugle
+    correcte: false
+- id: ia2-029
+  theme: ia-2-resolution-problemes
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: Parmi les techniques d'exploration suivante, laquelle est non-informée?
+  choix_unique: true
+  options:
+  - texte: Algorithme A étoile
+    correcte: false
+  - texte: Exploration gloutonne
+    correcte: false
+  - texte: Recuit simulé
+    correcte: false
+  - texte: Exploration en faisceau stochastique
+    correcte: false
+  - texte: Algorithme de Dijkstra
+    correcte: true
+  - texte: Algorithmes génétiques
+    correcte: false
+  - texte: Descente de gradient
+    correcte: false
+  - texte: Escalade stochastique du premier choix
+    correcte: false
+- id: ia2-030
+  theme: ia-2-resolution-problemes
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: 'Dans un jeu hypothétique, l''arbre Minimax se termine sur un coup du joueur Min (feuilles Fi)
+    avec les branches et feuilles suivantes, pour lesquelles est donnée l''utilité correspondante:
+
+    B1:F1:5F2:8F3:3B2:F1:5F2:2F3:6B3:F1:8F2:1F3:3En appliquant l''élagage Alpha-Bêta pour une exploration
+    en profondeur dans l''ordre présenté, combien de feuilles se retrouvent élaguées?'
+  choix_unique: true
+  options:
+  - texte: '1'
+    correcte: false
+  - texte: '2'
+    correcte: true
+  - texte: '3'
+    correcte: false
+  - texte: '4'
+    correcte: false
+  - texte: '5'
+    correcte: false
+  - texte: '6'
+    correcte: false
+  - texte: '7'
+    correcte: false
+  - texte: '8'
+    correcte: false
+  - texte: '9'
+    correcte: false
+  - texte: '0'
+    correcte: false
+- id: ia2-031
+  theme: ia-2-resolution-problemes
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: 'Dans un jeu hypothétique, l''arbre Minimax se termine sur un coup du joueur Min (feuilles Fi)
+    avec les branches et feuilles suivantes, pour lesquelles est donnée l''utilité correspondante:
+
+    B1:F1:5F2:8F3:4B2:F1:5F2:6F3:2B3:F1:7F2:3F3:8En appliquant l''élagage Alpha-Bêta pour une exploration
+    en profondeur dans l''ordre présenté, combien de feuilles se retrouvent élaguées?'
+  choix_unique: true
+  options:
+  - texte: '0'
+    correcte: false
+  - texte: '1'
+    correcte: true
+  - texte: '2'
+    correcte: false
+  - texte: '3'
+    correcte: false
+  - texte: '4'
+    correcte: false
+  - texte: '5'
+    correcte: false
+  - texte: '6'
+    correcte: false
+  - texte: '7'
+    correcte: false
+  - texte: '8'
+    correcte: false
+  - texte: '9'
+    correcte: false
+- id: ia2-032
+  theme: ia-2-resolution-problemes
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: 'Dans un jeu hypothétique, l''arbre Minimax se termine sur un coup du joueur Min (feuilles Fi)
+    avec les branches et feuilles suivantes, pour lesquelles est donnée l''utilité correspondante:
+
+    B1:F1:5F2:8F3:4B2:F1:2F2:5F3:6B3:F1:3F2:7F3:8En appliquant l''élagage Alpha-Bêta pour une exploration
+    en profondeur dans l''ordre présenté, combien de feuilles se retrouvent élaguées?'
+  choix_unique: true
+  options:
+  - texte: '0'
+    correcte: false
+  - texte: '1'
+    correcte: false
+  - texte: '2'
+    correcte: false
+  - texte: '3'
+    correcte: false
+  - texte: '4'
+    correcte: true
+  - texte: '5'
+    correcte: false
+  - texte: '6'
+    correcte: false
+  - texte: '7'
+    correcte: false
+  - texte: '8'
+    correcte: false
+  - texte: '9'
+    correcte: false
+- id: ia2-033
+  theme: ia-2-resolution-problemes
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: 'Dans un jeu stochastique hypothétique, l''arbre Minimax se termine sur un coup du joueur Min
+    après un nœud de chance avec les probabilités et l''utilité résultantes suivantes:
+
+    C1.1: p=0.8F1:5F2:3F3:3C1.2: p=0.2
+
+    F1:5F2:5F3:6C2.1: p=0.9
+
+    F1:1F2:8F3:9C2.2: p=0.1
+
+    F1:7
+
+    F2:8
+
+    F3:5
+
+    Quelle est la valeur ExpectiMinimax de la partie?'
+  choix_unique: true
+  options:
+  - texte: '0.4'
+    correcte: false
+  - texte: '1.4'
+    correcte: false
+  - texte: '2.4'
+    correcte: false
+  - texte: '3.4'
+    correcte: true
+  - texte: '4.4'
+    correcte: false
+  - texte: '2.2'
+    correcte: false
+  - texte: '3.2'
+    correcte: false
+  - texte: '4.2'
+    correcte: false
+  - texte: '5.2'
+    correcte: false
+  - texte: '6.2'
+    correcte: false
+- id: ia2-034
+  theme: ia-2-resolution-problemes
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: 'Dans un jeu stochastique hypothétique, l''arbre Minimax se termine sur un coup du joueur Min
+    après un nœud de chance avec les probabilités et l''utilité résultantes suivantes:
+
+    C1.1: p=0.8F1:5F2:6F3:7C1.2: p=0.2
+
+    F1:4F2:5F3:6C2.1: p=0.9
+
+    F1:10F2:8F3:9C2.2: p=0.1
+
+    F1:7
+
+    F2:8
+
+    F3:6
+
+    Quelle est la valeur ExpectiMinimax de la partie?'
+  choix_unique: true
+  options:
+  - texte: '4.8'
+    correcte: false
+  - texte: '5.8'
+    correcte: false
+  - texte: '6.8'
+    correcte: false
+  - texte: '7.8'
+    correcte: true
+  - texte: '8.8'
+    correcte: false
+  - texte: '9.8'
+    correcte: false
+  - texte: '4.7'
+    correcte: false
+  - texte: '5.7'
+    correcte: false
+  - texte: '6.7'
+    correcte: false
+  - texte: '7.7'
+    correcte: false
+  - texte: '8.7'
+    correcte: false
+  - texte: '9.7'
+    correcte: false
+- id: ia2-035
+  theme: ia-2-resolution-problemes
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: 'Dans un jeu hypothétique, l''arbre Minimax se termine sur un coup du joueur Min (feuilles Fi)
+    avec les branches et feuilles suivantes, pour lesquelles est donnée l''utilité correspondante:
+
+    B1:F1:1F2:2F3:3B2:F1:4F2:5F3:6B3:F1:6F2:8F3:9Quelle est la valeur Minimax de la partie?'
+  choix_unique: true
+  options:
+  - texte: '1'
+    correcte: false
+  - texte: '2'
+    correcte: false
+  - texte: '3'
+    correcte: false
+  - texte: '4'
+    correcte: false
+  - texte: '5'
+    correcte: false
+  - texte: '6'
+    correcte: true
+  - texte: '7'
+    correcte: false
+  - texte: '8'
+    correcte: false
+  - texte: '9'
+    correcte: false
+- id: ia2-036
+  theme: ia-2-resolution-problemes
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: 'Dans un jeu hypothétique, l''arbre Minimax se termine sur un coup du joueur Min (feuilles Fi)
+    avec les branches et feuilles suivantes, pour lesquelles est donnée l''utilité correspondante:
+
+    B1:F1:5F2:8F3:1B2:F1:2F2:5F3:6B3:F1:7F2:8F3:2Quelle est la valeur Minimax de la partie?'
+  choix_unique: true
+  options:
+  - texte: '1'
+    correcte: false
+  - texte: '2'
+    correcte: true
+  - texte: '3'
+    correcte: false
+  - texte: '4'
+    correcte: false
+  - texte: '5'
+    correcte: false
+  - texte: '6'
+    correcte: false
+  - texte: '7'
+    correcte: false
+  - texte: '8'
+    correcte: false
+  - texte: '9'
+    correcte: false

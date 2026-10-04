@@ -198,7 +198,7 @@ def main() -> int:
     parser.add_argument(
         "--notebook",
         type=Path,
-        default=Path("MyIA.AI.Notebooks/GameTheory/GameTheory-06e-Open-Source-Game-Theory.ipynb"),
+        default=Path("MyIA.AI.Notebooks/GameTheory/GameTheory-06e-Open-Source-Game-Theory-Python.ipynb"),
     )
     parser.add_argument(
         "--engine",

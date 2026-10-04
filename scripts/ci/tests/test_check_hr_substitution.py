@@ -39,7 +39,7 @@ def test_detect_4_notations_commommark():
     \\* \\* \\*|___)\\s*$` couvre les 4 formes. Les 2 dernieres
     (`* * *`, `___`) etaient silencieuses dans la version d'avant #17428.
 
-    Tell c.1493 fondateur nuance : bug latent dans `detect_hr_substitutions`
+    bug latent dans `detect_hr_substitutions`
     ligne 113 (`m.group(1).replace(...)`) -- la regex etait non-capturante,
     donc group(1) levait IndexError. **Deuxieme bug revele par le fix** :
     l'assertion `notations == ["---", "***", "* * *", "___"]` etait dans le

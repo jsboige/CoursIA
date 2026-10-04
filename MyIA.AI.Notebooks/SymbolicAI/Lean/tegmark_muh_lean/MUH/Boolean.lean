@@ -122,4 +122,80 @@ example : (fullBoolean.rels[2]?.getD defaultUnary).table
 example : (fullBoolean.rels[2]?.getD defaultUnary).table
     (fun _ => (0 : Fin 2)) = (1 : Fin 2) := rfl
 
+/-! ## Les identités de Sheffer (Tegmark R16 Annexe A, eq. (A2))
+
+Tegmark affirme que le seul générateur NAND (Sheffer) redéfinit toute
+l'algèbre de Boole : chaque connectique s'écrit par composition de `|`.
+Les théorèmes ci-dessous **prouvent** les six identités dont l'énoncé
+est vrai sur la table à 2 éléments — F, T, ¬, &, ∨, → — par épuisement
+des cas (`forall_fin2`, `forall_fin2_fin2`).
+
+Note d'honnêteté : les deux dernières identités citées dans l'en-tête
+de ce module (`X⊕Y = (X|Y)|((X|X)|(Y|Y))` et `X≡Y = X|Y`) **ne sont pas
+des identités** de la table NAND à 2 éléments — p.ex. `X|Y` en (1,1)
+vaut 0 alors que X≡Y y vaut 1. Elles ne sont pas prouvées ici ; la
+formulation exacte de l'éq. (A2) du papier demande vérification avant
+toute formalisation. -/
+
+/-- La relation OR (binaire) : X∨Y = (X|X)|(Y|Y) (Tegmark eq. (A2)).
+    Table : 0∨0=0, 0∨1=1, 1∨0=1, 1∨1=1. -/
+def orTable : Fin 2 → Fin 2 → Fin 2 := fun
+  | ⟨0, _⟩, ⟨0, _⟩ => ⟨0, by decide⟩
+  | ⟨0, _⟩, ⟨1, _⟩ => ⟨1, by decide⟩
+  | ⟨1, _⟩, ⟨0, _⟩ => ⟨1, by decide⟩
+  | ⟨1, _⟩, ⟨1, _⟩ => ⟨1, by decide⟩
+
+/-- La relation IMPLIES (binaire) : X→Y = X|(Y|Y) (Tegmark eq. (A2)).
+    Table : 0→0=1, 0→1=1, 1→0=0, 1→1=1. -/
+def impliesTable : Fin 2 → Fin 2 → Fin 2 := fun
+  | ⟨0, _⟩, ⟨0, _⟩ => ⟨1, by decide⟩
+  | ⟨0, _⟩, ⟨1, _⟩ => ⟨1, by decide⟩
+  | ⟨1, _⟩, ⟨0, _⟩ => ⟨0, by decide⟩
+  | ⟨1, _⟩, ⟨1, _⟩ => ⟨1, by decide⟩
+
+/-- **Tegmark (A2), constante T** : `T = X|(X|X)` — pour tout X, le
+    NAND de X et de ¬X vaut toujours 1. -/
+theorem tegmark_T (x : Fin 2) :
+    nandTable x (nandTable x x) = (1 : Fin 2) :=
+  forall_fin2
+    (P := fun a => nandTable a (nandTable a a) = (1 : Fin 2)) rfl rfl x
+
+/-- **Tegmark (A2), constante F** : `F = (X|(X|X))|(X|(X|X))` — le NAND
+    de T avec lui-même vaut toujours 0. -/
+theorem tegmark_F (x : Fin 2) :
+    nandTable (nandTable x (nandTable x x))
+              (nandTable x (nandTable x x)) = (0 : Fin 2) :=
+  forall_fin2
+    (P := fun a => nandTable (nandTable a (nandTable a a))
+              (nandTable a (nandTable a a)) = (0 : Fin 2)) rfl rfl x
+
+/-- **Tegmark (A2), négation** : `¬X = X|X` — NOT s'obtient par NAND
+    de X avec lui-même. -/
+theorem tegmark_not (x : Fin 2) :
+    notTable x = nandTable x x :=
+  forall_fin2 (P := fun a => notTable a = nandTable a a) rfl rfl x
+
+/-- **Tegmark (A2), conjonction** : `X&Y = (X|Y)|(X|Y)` — AND est le
+    NAND du NAND. -/
+theorem tegmark_and (x y : Fin 2) :
+    andTable x y = nandTable (nandTable x y) (nandTable x y) :=
+  forall_fin2_fin2
+    (P := fun a b => andTable a b = nandTable (nandTable a b) (nandTable a b))
+    rfl rfl rfl rfl x y
+
+/-- **Tegmark (A2), disjonction** : `X∨Y = (X|X)|(Y|Y)` — OR par loi de
+    De Morgan via NAND. -/
+theorem tegmark_or (x y : Fin 2) :
+    orTable x y = nandTable (nandTable x x) (nandTable y y) :=
+  forall_fin2_fin2
+    (P := fun a b => orTable a b = nandTable (nandTable a a) (nandTable b b))
+    rfl rfl rfl rfl x y
+
+/-- **Tegmark (A2), implication** : `X→Y = X|(Y|Y)`. -/
+theorem tegmark_implies (x y : Fin 2) :
+    impliesTable x y = nandTable x (nandTable y y) :=
+  forall_fin2_fin2
+    (P := fun a b => impliesTable a b = nandTable a (nandTable b b))
+    rfl rfl rfl rfl x y
+
 end Boolean

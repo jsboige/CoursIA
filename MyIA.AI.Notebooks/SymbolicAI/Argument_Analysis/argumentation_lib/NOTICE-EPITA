@@ -14,7 +14,7 @@ CoursIA copy
 
 | File in CoursIA `argumentation_lib/` | Upstream path in EPITA-IS | Upstream commit |
 |---------------------------------------|----------------------------|-----------------|
-| `_shared_state.py` (1121 lines) **partial**  | `argumentation_analysis/core/shared_state.py` | a8025f60 (2026-07-02) |
+| `_shared_state.py` (1502 lines) **partial**  | `argumentation_analysis/core/shared_state.py` | bfff7542 (2026-09-29, re-vendor audit #18478) |
 | `_state_manager_plugin.py` (840 lines) **partial** | `argumentation_analysis/core/state_manager_plugin.py` | 9834462 (clusterManager LGTM SHA, B.2 vendor faa10e74f, PRs #2137/#2856) |
 | `_taxonomy_sophism_detector.py` (442 lines) | `argumentation_analysis/agents/core/informal/taxonomy_sophism_detector.py` | a8025f60 (2026-07-02) |
 | `_informal_definitions.py` (891 lines) | `argumentation_analysis/agents/core/informal/informal_definitions.py` | a8025f60 (2026-07-02) |
@@ -84,7 +84,7 @@ below are the **known missing surface**, which downstream consumers should treat
 
 | CoursIA file              | Missing surface (upstream symbols absent in CoursIA) |
 |---------------------------|-----------------------------------------------------|
-| `_shared_state.py` (1121 lines vs 1483 upstream at a8025f60, delta -370 +8 CoursIA-only) | `DesignationRecord`, `record_designation`, `_designation_fingerprint`, `backfill_last_designation_for`, `record_cap_breach`, `set_source_metadata`, `add_structured_arg_status` (and surrounding helpers) |
+| `_shared_state.py` (1502 lines vs 1811 upstream at bfff7542, delta -357 +48 CoursIA-only: 20-line header + `quality_fraction` inline, see drift note) | `DesignationRecord`, `record_designation`, `_designation_fingerprint`, `_designation_delta_summary`, `backfill_last_designation_for`, `record_cap_breach`, `record_designation_unresolved`, `record_unresolved_designation`, `set_source_metadata`, `add_structured_arg_status` (the designation machinery + structured-arg surface) |
 | `_state_manager_plugin.py` (840 lines; upstream SHA 9834462) | `record_designation` (the trace-writing companion of `designate_next_agent`, which DID cross). The pair is a contract: designating without recording the motivation is observable at runtime. |
 
 The two files are still **safe to import** for the symbols they do vendore
@@ -373,6 +373,27 @@ consistency; the verbatim copy is the reference contract and the
 CoursIA shim will eventually re-route via the resolved solver choice
 (post-#1339). The adf_handler.py file has **0 upstream commits** between
 a8025f60 and HEAD (verified via `git log a8025f60..HEAD -- adf_handler.py`).
+
+**Note re: shared_state upstream drift (re-vendored, audit #18478)** : between
+a8025f60 (2026-07-02) and bfff7542 (2026-09-29), 13 RETAINED symbols evolved
+upstream (`git diff --stat`: 364 insertions, 36 deletions) while the vendored
+copy stayed pinned -- the notebook 08e was teaching replaced contracts (audit
+#18478). The copy is re-vendored at **bfff7542** on the same deliberate
+perimeter (designation machinery excluded, list above). Evolutions picked up:
+`add_belief_set(propositions=...)` (#2643), `add_trace_entry` anchor guard +
+closed `move` vocabulary (#2295), `add_counter_argument` validation frame
+(#1180), `add_quality_score` unit contract `overall` = SUM of per-virtue [0,1]
+scores (#1942), `get_weak_arguments` fraction contract [0,1] + ValueError
+guard > 1.0 (#1942/#1951), `add_governance_decision(extraction_method=...)`
+(#1281), `add_{fol,propositional,modal}_analysis_result` provenance `message`
+(#1279), `add_{aspic,belief_revision,bipolar}_result` extra params, `belief_sets`
+value type widened to `Dict[str, Any]`, plus the new `count_designation_turns`
+helper (#1765, no excluded-symbol dependency). One documented CoursIA-only
+divergence: upstream `get_weak_arguments` imports `quality_fraction` from
+`argumentation_analysis.plugins.narrative_synthesis_plugin` -- outside the
+vendoring perimeter -- so the function is inlined VERBATIM from that module
+(bfff7542 l.277-299) as a module-level definition in `_shared_state.py`. Same
+definition, one place; the inline is flagged in the file header.
 
 **Sub-tranche plan (after this PR)** :
 

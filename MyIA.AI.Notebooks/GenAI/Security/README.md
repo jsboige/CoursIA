@@ -1,9 +1,10 @@
 # GenAI Security — Oversight scalable et contrôle par interprétabilité
 
-Cette section héberge la distillation GenAI/sécurité issue de l'EPIC #16741 (distillation corpus Tegmark). Deux axes y cohabitent :
+Cette section héberge la distillation GenAI/sécurité issue de l'EPIC #16741 (distillation corpus Tegmark), complétée par un axe sécurité des outils d'agents. Trois axes y cohabitent :
 
 - **Oversight scalable** (sub-grain #16754) — la surveillance d'agents plus forts par des agents plus faibles — et ses statistiques d'accompagnement (Elo oversight-spécifique, scaling laws double-ReLU, NSO imbriqué). Source : R12.
 - **Contrôle par interprétabilité** (sub-grain #16758) — direction du refus, ablation directionnelle, steering, finetuning shallow, machine unlearning et évaluation awareness, mesurés sur un témoin synthétique. Sources : R11 et R14.
+- **Surface d'attaque des outils** (issue #18213) — les attaques du client MCP sur la couche outils : injection par description (tool poisoning), rug pull (mutation du catalogue après approbation), collision de noms entre serveurs — et leurs défenses (empreinte SHA-256, diff d'inventaire, allowlist qualifiée), démontrées sur des serveurs MCP locaux réels.
 
 ## Sources canoniques
 
@@ -27,6 +28,7 @@ Notre cluster CoursIA-2 héberge plusieurs agents reviewers (Hermes, NanoClaw, j
 | [`Oversight/Oversight-Scaling-Laws-Wargames.ipynb`](Oversight/Oversight-Scaling-Laws-Wargames.ipynb) | Notebook pratique | Scénario Wargames de R12 §5 en simulation stochastique pure : protocole 3 rôles (Defender / Attacker bayésien / Judge), sans LLM externe. |
 | [`Oversight/Oversight-Scaling-Laws-Statistics.ipynb`](Oversight/Oversight-Scaling-Laws-Statistics.ipynb) | Notebook pratique | Consolidation du module statistique du sub-grain #16754 (Elo L-BFGS-B, double-ReLU 3 phases + AIC, NSO imbriqué n*) et relecture des trois notebooks précédents. |
 | [`Control/Control-Refusal-Direction.ipynb`](Control/Control-Refusal-Direction.ipynb) | Notebook pratique | Contrôle par interprétabilité (R11 §2.2.5, R14 §3.1-3.2) sur un témoin synthétique entraîné from scratch : direction du refus par différence de moyennes, ablation directionnelle (brute vs centrée) et son contrôle aléatoire, dose-réponse de steering, finetuning shallow à dix exemples avec contrôle négatif, tableau forget/retain et simulation du biais d'évaluation awareness. Auto-contenu, exécutable sans GPU ni LLM externe ; le passage à une famille open-weights réelle est déclaré `RECOVERABLE-MACHINE`. |
+| [`Tooling/Tooling-MCP-Attack-Surface.ipynb`](Tooling/Tooling-MCP-Attack-Surface.ipynb) | Notebook pratique | Surface d'attaque des outils MCP (issue #18213) : trois attaques démontrées de bout en bout sur des serveurs MCP stdio locaux écrits puis exécutés dans le notebook (injection par description, rug pull après approbation, collision de noms entre serveurs), et trois défenses mesurables (empreinte SHA-256 par outil, diff d'inventaire AJOUT/RETRAIT/MUTATION, allowlist qualifiée par serveur). Auto-contenu, exécutable sans GPU ni LLM externe. |
 
 ## État des livraisons du sub-grain #16754
 

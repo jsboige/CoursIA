@@ -51,6 +51,12 @@ ADVISORY, never auto-close (#10466 "Ce que l'organe ne doit pas faire"):
     must not produce the "probably delivered" label. Measured on #10984
     (open #10986 + six merged PRs = a multi-phase rollout the old heuristic
     mislabeled). An open *issue* mention does NOT trigger this: only PR refs.
+    The reason SPLITS the two origins of the cross-referenced event (#18102):
+    a PR whose body/title declares the issue ("plausible next phase") vs a
+    comment-only mention on a PR that never names it (contextual, undeclared
+    -- e.g. a census comment on another family's PR, permanent while that PR
+    stays open, measured freezing #15173/#15703 out of the label forever).
+    Verdict unchanged in both cases; the title stays closed for labelling.
   - A merged PR counts ONLY if it carries a **declared delivery marker**
     (`See #N` / `Part of #N` / `Closes #N` / `Fixes #N` / `Refs #N`) in its
     CURRENT body (#15060, measured 2026-09-10). The timeline's
@@ -267,10 +273,40 @@ def classify(
     # multi-phase rollout shape (e.g. #10984, referenced by open #10986 plus
     # six merged PRs). Partial deliveries write `See #N` correctly, so the
     # "merged + silent" heuristic alone mislabels the rollout as delivered.
+    # #18102: the REASON now separates the two ways a cross-referenced event
+    # comes to exist on an open PR. A PR whose body/title mentions the issue
+    # plausibly carries its next phase; a PR whose body/title never mention it
+    # was cross-referenced by a COMMENT alone (e.g. a census comment listing
+    # issues from other families -- permanent while the PR stays open) and the
+    # mention is contextual. The verdict stays in_flight in both cases (change
+    # of reason first, verdict unchanged); an unreadable body defaults to
+    # "undeclared", fail-safe like #15060. Reading the PR title here informs
+    # the reason of an already-decided verdict -- it is NOT the #17759 title
+    # channel, which stays closed for every labelling decision.
     open_prs = [r for r in cross_refs if r.get("is_pr") and r.get("state") == "open"]
     if open_prs:
-        prs = ", ".join(f"#{r['pr_number']}" for r in open_prs)
-        return ("in_flight", f"open PR(s) {prs} reference this issue")
+        target_n = issue.get("number")
+        anchor = re.compile(rf"#{target_n}\b") if target_n else None
+
+        def _declared_open(r: dict) -> bool:
+            if anchor is None:
+                return False
+            return bool(anchor.search(r.get("body") or "")
+                        or anchor.search(r.get("title") or ""))
+
+        declared_open, comment_only = [], []
+        for r in open_prs:
+            (declared_open if _declared_open(r) else comment_only).append(r)
+        parts = []
+        if declared_open:
+            prs = ", ".join(f"#{r['pr_number']}" for r in declared_open)
+            parts.append(f"open PR(s) {prs} declare this issue in body/title "
+                         f"(plausible next phase)")
+        if comment_only:
+            prs = ", ".join(f"#{r['pr_number']}" for r in comment_only)
+            parts.append(f"open PR(s) {prs} reference it via comments only "
+                         f"(cross-referenced contextual mention, undeclared)")
+        return ("in_flight", "; ".join(parts))
 
     merged = [r for r in cross_refs if r.get("merged_at")]
     if not merged:
@@ -389,8 +425,8 @@ def _parse_cross_ref_events(events: list[dict]) -> list[dict]:
 
     Each ref carries ``"body": None``: the timeline payload does NOT embed the
     PR body (nor its edit history), and the network-free contract ends here.
-    The driver (:func:`_with_merged_pr_bodies`) replaces the value on the
-    merged refs, and :func:`classify` treats a missing body as NOT declared
+    The driver (:func:`_with_pr_bodies`) replaces the value on the
+    merged and open refs, and :func:`classify` treats a missing body as NOT declared
     (fail-safe, #15060).
     """
     refs = []
@@ -432,15 +468,19 @@ def _parse_label_events(events: list[dict], label: str) -> list[dict]:
     return out
 
 
-def _with_merged_pr_bodies(
+def _with_pr_bodies(
     repo: str, refs: list[dict], cache: dict[int, tuple[str, str]],
 ) -> list[dict]:
-    """Attach the CURRENT body and title of each merged PR to its ref.
+    """Attach the CURRENT body and title of each merged OR open PR to its ref.
 
-    Body = the delivery-marker gate (#15060). Title = the ``no_delivery``
-    title-only REPORT (#17759) -- never a labelling decision. The per-run
-    ``cache`` holds ``(body, title)`` tuples so a PR referenced by several
-    issues costs one REST call.
+    Merged PR body = the delivery-marker gate (#15060); merged PR title = the
+    ``no_delivery`` title-only REPORT (#17759) -- never a labelling decision.
+    OPEN PR body+title = the ``in_flight`` reason split (#18102): whether the
+    PR itself declares the issue or the cross-referenced event was posed by a
+    comment alone. Closed-unmerged PRs (abandoned lanes) are not fetched --
+    they drive no verdict branch. The per-run ``cache`` holds
+    ``(body, title)`` tuples so a PR referenced by several issues costs one
+    REST call.
 
     A cross-referenced event is posed when the body FIRST mentions the issue
     and is never retracted when the mention later disappears -- #15149's
@@ -451,12 +491,12 @@ def _with_merged_pr_bodies(
     A body that cannot be fetched (PR deleted, gh hiccup) reads as ``""``
     (and its title as ``""``) -- NOT declared -- which is fail-safe: the
     sweep is advisory, and a ref it cannot verify must not produce a
-    candidate label.
+    candidate label, nor claim "plausible next phase" in a reason.
     """
     out = []
     for r in refs:
         r = dict(r)
-        if r.get("merged_at") and r.get("is_pr"):
+        if r.get("is_pr") and (r.get("merged_at") or r.get("state") == "open"):
             pr = r["pr_number"]
             if pr not in cache:
                 try:
@@ -593,7 +633,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  #{number:<6} SKIP  ({exc})")
             continue
         try:
-            refs = _with_merged_pr_bodies(repo, refs, body_cache)
+            refs = _with_pr_bodies(repo, refs, body_cache)
         except Exception as exc:  # body fetch failure -- fail safe, do not label
             print(f"  #{number:<6} SKIP  (pr body fetch failed: {exc})")
             continue

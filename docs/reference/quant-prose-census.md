@@ -67,11 +67,11 @@ Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules
 
 | Notebook | Drainable |
 |---|---|
-| `MyIA.AI.Notebooks\GameTheory\GameTheory-08-CombinatorialGames-Csharp.ipynb` | 27 |
+| `MyIA.AI.Notebooks\GameTheory\GameTheory-08-CombinatorialGames-CSharp.ipynb` | 27 |
 | `MyIA.AI.Notebooks\GameTheory\SocialChoice\04-Computational-Aggregation-SAT-Z3-Csharp.ipynb` | 22 |
-| `MyIA.AI.Notebooks\GameTheory\GameTheory-08-CombinatorialGames.ipynb` | 19 |
-| `MyIA.AI.Notebooks\GameTheory\GameTheory-15b-Lean-CooperativeGames.ipynb` | 13 |
-| `MyIA.AI.Notebooks\GameTheory\GameTheory-07-ExtensiveForm-Csharp.ipynb` | 13 |
+| `MyIA.AI.Notebooks\GameTheory\GameTheory-08-CombinatorialGames-Python.ipynb` | 19 |
+| `MyIA.AI.Notebooks\GameTheory\GameTheory-15b-Lean-CooperativeGames-Lean.ipynb` | 13 |
+| `MyIA.AI.Notebooks\GameTheory\GameTheory-07-ExtensiveForm-CSharp.ipynb` | 13 |
 
 ### GenAI (drainable total = 1776)
 
@@ -87,11 +87,11 @@ Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules
 
 | Notebook | Drainable |
 |---|---|
-| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-25-InoculationRL.ipynb` | 37 |
-| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-21-SAETrajectoires.ipynb` | 13 |
-| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-13-AxelrodStrategicMorphodynamics.ipynb` | 10 |
-| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-15e-Bridge2-RecoverabilityAgency.ipynb` | 9 |
-| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-15c-MetaProxyObstruction.ipynb` | 8 |
+| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-25-InoculationRL-Python.ipynb` | 37 |
+| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-21-SAETrajectoires-Python.ipynb` | 13 |
+| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb` | 10 |
+| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-15e-Bridge2-RecoverabilityAgency-Python.ipynb` | 9 |
+| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-15c-MetaProxyObstruction-Python.ipynb` | 8 |
 
 ### ML (drainable total = 433)
 
@@ -158,8 +158,8 @@ Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules
 | Notebook | Drainable |
 |---|---|
 | `MyIA.AI.Notebooks\Sudoku\Sudoku-03-Genetic-Python.ipynb` | 70 |
-| `MyIA.AI.Notebooks\Sudoku\Sudoku-18-Comparison-Csharp.ipynb` | 64 |
-| `MyIA.AI.Notebooks\Sudoku\Sudoku-13-SymbolicAutomata-Csharp.ipynb` | 61 |
+| `MyIA.AI.Notebooks\Sudoku\Sudoku-18-Comparison-CSharp.ipynb` | 64 |
+| `MyIA.AI.Notebooks\Sudoku\Sudoku-13-SymbolicAutomata-CSharp.ipynb` | 61 |
 | `MyIA.AI.Notebooks\Sudoku\Sudoku-18-Comparison-Python.ipynb` | 53 |
 | `MyIA.AI.Notebooks\Sudoku\Sudoku-04-SimulatedAnnealing-Python.ipynb` | 51 |
 

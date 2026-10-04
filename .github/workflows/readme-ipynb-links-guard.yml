@@ -1,0 +1,272 @@
+name: readme-ipynb-links-guard
+
+# Durable guard for the #13025 / #18911 defect class: README files in rendered
+# subtrees (those that participate in the Quarto build per `scripts/regen_quarto_render.py`)
+# linking raw `.ipynb` paths when a sibling `.html` render exists. The raw link
+# 404s on the GitHub Pages deployment, while the sibling render is served there.
+#
+# Detection reuses `scripts/regen_quarto_render.py --check-readme-links` :
+# the file already enumerates the violations in three classes (STALE_LINK,
+# BROKEN, DEAD_RENDER) and documents the bright lines. This workflow fails
+# the PR if any STALE_LINK is introduced -- new violations are never allowed,
+# and the merge-gate does not see the legacy backlog (2428 violations already
+# committed, see #18911 -- they are sweep material for follow-up PRs).
+#
+# Scope: main-repo READMEs and the `regen_quarto_render.py` + new fixer only.
+# Submodules are separate repos with their own CI.
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'MyIA.AI.Notebooks/**/README.md'
+      - 'MyIA.AI.Notebooks/**/*.ipynb'
+      - '_quarto.yml'
+      - 'scripts/regen_quarto_render.py'
+      - 'scripts/notebook_tools/fix_ipynb_links.py'
+      - 'scripts/notebook_tools/tests/test_fix_ipynb_links.py'
+      - 'scripts/notebook_tools/tests/test_readme_links_guard_workflow.py'
+      - '.github/workflows/readme-ipynb-links-guard.yml'
+  push:
+    branches: [ main ]
+    paths:
+      - 'MyIA.AI.Notebooks/**/README.md'
+      - 'MyIA.AI.Notebooks/**/*.ipynb'
+      - '_quarto.yml'
+      - 'scripts/regen_quarto_render.py'
+      - 'scripts/notebook_tools/fix_ipynb_links.py'
+      - 'scripts/notebook_tools/tests/test_readme_links_guard_workflow.py'
+  workflow_dispatch:
+
+# Annule les runs obsolètes (memes PR / push en rafale). Forme fix de
+# #13372 -- `cancel-in-progress: ${{ github.event_name == 'pull_request' }}`
+# evite l'annulation en cascade sur push main consecutifs (defaut fondateur
+# porte par check_concurrency_conj.py).
+concurrency:
+  group: readme-ipynb-links-guard-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check:
+    name: Audit README -> .ipynb links
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # La PR ne doit PAS introduire de nouvelle violation STALE_LINK
+      # (defaut fondateur #13025). On compare la PR (head) a la base (main)
+      # et on rougit UNIQUEMENT sur les violations NOUVELLES -- le backlog
+      # historique (2428 violations mesure 2026-10-03) reste au sweep par
+      # famille en aval (#18911 acceptation #2).
+      - name: Compute delta (new STALE_LINK on this PR vs base)
+        run: |
+          set -euo pipefail
+          # Base de comparaison calculee au RUN, pas figee a l'ouverture de
+          # la PR : `github.event.pull_request.base.sha` ne suit PAS les
+          # avances de main -- les notebooks entres sur main apres
+          # l'ouverture (ex. Search-03f, #19013) apparaissaient comme
+          # "nouveaux" sur la PR (mesure : base figee 1741 vs head 1751,
+          # 10 faux nouveaux). Sur le merge-ref, merge-base origin/main
+          # HEAD = main courant ; sur push main, la base = HEAD^1.
+          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+            BASE_SHA=$(git merge-base origin/main HEAD)
+          else
+            BASE_SHA=$(git rev-parse HEAD^1)
+          fi
+          echo "BASE_SHA calcule: ${BASE_SHA}"
+          # F1 (Tell c.16866 / Hermes review 09:33Z) -- les violations
+          # `::error::STALE_LINK` partent sur STDERR (regen_quarto_render.py
+          # l.503 `print(..., file=sys.stderr)`), le `grep` du round 1 ne
+          # capturait que stdout et rendait `NEW=0` alors qu'une violation
+          # etait presente. Fautes fondateures mesurees : run 37109571492
+          # du 2026-10-03 -- 1 violation reelle dans le log, 0 dans le delta.
+          # Fix : `2>&1` fusionne stdout+stderr AVANT le grep, dans les DEUX
+          # passes (PR + base). Le temoin est la run suivant ce commit :
+          # une STALE_LINK injectee doit faire `NOUVELLES >= 1` (=exit 1).
+          #
+          # F3 (Tell c.16866 / adjoint review 24) -- les `|| true` aux
+          # lignes 84, 86, 89, 91 mangeaient les pannes scanner / checkout :
+          # un `grep` qui ne matche pas (parce que le scanner est tombe)
+          # rendait `pr_violations.txt` VIDE avec exit 0 ; un `git checkout`
+          # rate sur la base faisait travailler le second scan sur le
+          # working tree PR -- et la comparaison `comm -23 PR base` rendait
+          # un delta vide, donc NEW=0, donc exit 0, alors que rien n'avait
+          # ete verifie. Voie propre : capturer le rc de chaque etape
+          # SANS `|| true`, et rouge si l'une a echoue. Le temoin est
+          # `/tmp/scan_status.txt` : chaque ligne nomme la passe et son rc.
+          # Si une ligne contient "FAIL", le job rouge meme avec NEW=0.
+          #
+          # F4 (adjoint c25) -- le V2 confondait "scan qui trouve des
+          # violations" (rc=1 normal) et "vraie panne scanner" (rc=2+).
+          # PIPESTATUS[@] donne le rc de chaque etape du pipe, separe
+          # du rc final. La voie : si PY_RC >= 2 (ou PY_RC=1 mais le
+          # stdout est vide alors qu'on a le droit d'attendre un
+          # inventaire) c'est une panne ; si GREP_RC=1 seul c'est "pas
+          # de match" (legitime, pas une panne). Témoins explicites
+          # par categorie : /tmp/scan_kind.txt nomme propre/backlog/
+          # nouvelle_violation/panne_scanner/panne_checkout.
+          : > /tmp/scan_status.txt
+          : > /tmp/scan_kind.txt
+          set +e
+          # F1 (Hermes review af2a967985) : les violations ::error::STALE_LINK
+          # partent sur STDERR (regen_quarto_render.py:504) -- 2>&1 les fusionne
+          # dans le pipe pour que grep les voie (sinon faux vert structurel).
+          python scripts/regen_quarto_render.py --check-readme-links 2>&1 \
+            | tee /tmp/python_stdout.txt \
+            | grep -E '^::error::STALE_LINK ' \
+            | sort -u > /tmp/pr_violations.txt
+          PYPIPE_RC=("${PIPESTATUS[@]}")
+          PY_RC=${PYPIPE_RC[0]}
+          GREP_RC=${PYPIPE_RC[2]}
+          SORT_RC=${PYPIPE_RC[3]}
+          echo "PR python_rc=${PY_RC} grep_rc=${GREP_RC} sort_rc=${SORT_RC}" >> /tmp/scan_status.txt
+          # Tri des cas pour le PR
+          if [ "${PY_RC}" -ge 2 ]; then
+            echo "panne_scanner" >> /tmp/scan_kind.txt
+            echo "::error::Scanner en panne sur PR (rc=${PY_RC}) -- le script ne s'est pas execute."
+            cat /tmp/python_stdout.txt
+            exit 1
+          fi
+          # F6 (Tell c.4 / adjoint c26) -- PY_RC=1 sans resume stdout = crash
+          if [ "${PY_RC}" -eq 1 ]; then
+            if grep -q "README-link audit:" /tmp/python_stdout.txt; then
+              : # resume present -- l'audit a echoue normalement (violations)
+            else
+              echo "panne_scanner" >> /tmp/scan_kind.txt
+              echo "::error::Scanner en crash sur PR (rc=1, pas de resume stdout) -- voir stderr."
+              cat /tmp/python_stdout.txt
+              exit 1
+            fi
+          fi
+          # F7 (Tell c.4 / adjoint c26) -- grep rc=2 (regex malformee ou
+          # fichier absent) doit etre refuse, pas ignore. Avant V4, seul
+          # rc=1 etait distingue de rc=0 -- rc=2 passait inapercu.
+          if [ "${GREP_RC}" -ge 2 ]; then
+            echo "panne_scanner" >> /tmp/scan_kind.txt
+            echo "::error::grep en panne sur PR (rc=${GREP_RC}) -- regex ou entree invalide."
+            cat /tmp/python_stdout.txt
+            exit 1
+          fi
+          if [ "${SORT_RC}" -ge 2 ]; then
+            echo "panne_scanner" >> /tmp/scan_kind.txt
+            echo "::error::sort en panne franche sur PR (rc=${SORT_RC})"
+            exit 1
+          fi
+          PR_VIOLATIONS=$(wc -l < /tmp/pr_violations.txt | tr -d ' ')
+          if [ "${PR_VIOLATIONS}" -gt 0 ]; then
+            echo "nouvelle_violation OU backlog" >> /tmp/scan_kind.txt
+          else
+            echo "propre" >> /tmp/scan_kind.txt
+          fi
+          # Sortie de la base (main)
+          git checkout "${BASE_SHA}" -- MyIA.AI.Notebooks scripts/regen_quarto_render.py _quarto.yml 2>/dev/null
+          CHECKOUT_BASE_RC=$?
+          echo "CHECKOUT_BASE rc=${CHECKOUT_BASE_RC}" >> /tmp/scan_status.txt
+          if [ "${CHECKOUT_BASE_RC}" -ne 0 ]; then
+            echo "panne_checkout" >> /tmp/scan_kind.txt
+            echo "::error::git checkout base en panne (rc=${CHECKOUT_BASE_RC}) -- la comparaison delta est invalide."
+            exit 1
+          fi
+          python scripts/regen_quarto_render.py --check-readme-links 2>&1 \
+            | tee /tmp/python_stdout_base.txt \
+            | grep -E '^::error::STALE_LINK ' \
+            | sort -u > /tmp/base_violations.txt
+          PYPIPE_RC=("${PIPESTATUS[@]}")
+          BASE_PY_RC=${PYPIPE_RC[0]}
+          BASE_GREP_RC=${PYPIPE_RC[2]}
+          BASE_SORT_RC=${PYPIPE_RC[3]}
+          echo "BASE python_rc=${BASE_PY_RC} grep_rc=${BASE_GREP_RC} sort_rc=${BASE_SORT_RC}" >> /tmp/scan_status.txt
+          if [ "${BASE_PY_RC}" -ge 2 ]; then
+            echo "panne_scanner" >> /tmp/scan_kind.txt
+            echo "::error::Scanner en panne sur base (rc=${BASE_PY_RC}) -- le script ne s'est pas execute."
+            cat /tmp/python_stdout_base.txt
+            exit 1
+          fi
+          # F6 -- idem passe base : rc=1 sans resume = crash
+          if [ "${BASE_PY_RC}" -eq 1 ]; then
+            if grep -q "README-link audit:" /tmp/python_stdout_base.txt; then
+              : # resume present
+            else
+              echo "panne_scanner" >> /tmp/scan_kind.txt
+              echo "::error::Scanner en crash sur base (rc=1, pas de resume stdout) -- voir stderr."
+              cat /tmp/python_stdout_base.txt
+              exit 1
+            fi
+          fi
+          # F7 -- idem passe base : grep rc=2 refuse
+          if [ "${BASE_GREP_RC}" -ge 2 ]; then
+            echo "panne_scanner" >> /tmp/scan_kind.txt
+            echo "::error::grep en panne sur base (rc=${BASE_GREP_RC}) -- regex ou entree invalide."
+            cat /tmp/python_stdout_base.txt
+            exit 1
+          fi
+          if [ "${BASE_SORT_RC}" -ge 2 ]; then
+            echo "panne_scanner" >> /tmp/scan_kind.txt
+            echo "::error::sort en panne franche sur base (rc=${BASE_SORT_RC})"
+            exit 1
+          fi
+          BASE_VIOLATIONS=$(wc -l < /tmp/base_violations.txt | tr -d ' ')
+          if [ "${BASE_VIOLATIONS}" -gt 0 ]; then
+            # Backlog historique -- c'est attendu, pas une nouvelle violation
+            echo "backlog" >> /tmp/scan_kind.txt
+          else
+            echo "propre" >> /tmp/scan_kind.txt
+          fi
+          # Retour au working tree PR
+          git checkout HEAD -- MyIA.AI.Notebooks scripts/regen_quarto_render.py _quarto.yml 2>/dev/null
+          CHECKOUT_BACK_RC=$?
+          echo "CHECKOUT_BACK rc=${CHECKOUT_BACK_RC}" >> /tmp/scan_status.txt
+          if [ "${CHECKOUT_BACK_RC}" -ne 0 ]; then
+            echo "panne_checkout" >> /tmp/scan_kind.txt
+            echo "::error::git checkout retour en panne (rc=${CHECKOUT_BACK_RC})"
+            exit 1
+          fi
+          set -e
+          # Témoin global : categorisation finale
+          KIND=$(sort -u /tmp/scan_kind.txt | tr '\n' ',' | sed 's/,$//')
+          echo "Scan kind: ${KIND}"
+          # Delta = PR \ base (nouvelles violations = PR a des violations que la base n'a pas)
+          comm -23 /tmp/pr_violations.txt /tmp/base_violations.txt > /tmp/delta_violations.txt
+          NEW=$(wc -l < /tmp/delta_violations.txt | tr -d ' ')
+          BASE_N=$(wc -l < /tmp/base_violations.txt | tr -d ' ')
+          PR_N=$(wc -l < /tmp/pr_violations.txt | tr -d ' ')
+          echo "STALE_LINK base (${BASE_SHA:0:7}): ${BASE_N}"
+          echo "STALE_LINK head (PR): ${PR_N}"
+          echo "STALE_LINK NOUVELLES sur cette PR: ${NEW}"
+          if [ "${NEW}" -gt 0 ]; then
+            echo "::error::Nouvelle violation STALE_LINK sur cette PR (defaut #13025, PR-body #18911) :"
+            cat /tmp/delta_violations.txt
+            exit 1
+          fi
+          echo "Aucune nouvelle violation STALE_LINK sur cette PR."
+
+      - name: Smoke test the new fixer (#18911)
+        # Verifie que `fix_ipynb_links.py` reste fonctionnel -- c'est l'outil
+        # canonique qui sera utilise pour les vagues de sweep en aval -- et
+        # rejoue les temoins du bloc delta ci-dessus (test_readme_links_guard_
+        # workflow.py extrait le bloc run: VERBATIM et le rejoue sur un depot
+        # sandbox : propre rc0, backlog 2/2/0 rc0, nouvelle STALE_LINK stderr
+        # 2/3/1 rc1, traceback rc1, scanner rc2 refuse, checkout base refuse).
+        # Le runner Ubuntu n'a pas pytest par defaut (#18970 -- "No module
+        # named pytest") : on l'installe avant d'executer les tests.
+        run: |
+          python -m pip install --quiet pytest
+          python -m pytest scripts/notebook_tools/tests/test_fix_ipynb_links.py \
+            scripts/notebook_tools/tests/test_readme_links_guard_workflow.py -v
+
+      - name: Audit total (advisory -- backlog connu de 2428)
+        # Audit SANS gating : rend le compteur global pour information. Le delta
+        # ci-dessus a deja rougi ou pas sur les NOUVELLES violations, le backlog
+        # historique reste un travail de sweep en aval (voir #18911 acceptation #2).
+        continue-on-error: true
+        run: |
+          python scripts/regen_quarto_render.py --check-readme-links 2>&1 \
+            | tail -3 || true

@@ -2234,9 +2234,27 @@ def _cli_append(args: argparse.Namespace) -> int:
 
 def _cli_spool_status(args: argparse.Namespace) -> int:
     if args.out_dir:
+        # Explicit --out-dir: the caller named the spool dir, so a missing dir
+        # means "nothing pending here" -- same as a fresh `--out-dir` for append,
+        # not an uninitialised state-dir. We do not refuse here.
         status = spool_status(Path(args.out_dir))
     else:
         state_dir = Path(args.state_dir) if args.state_dir else default_state_dir()
+        # Default path: mirror ``_cli_append`` -- a state-dir that has not run
+        # ``init --apply`` for ANY LEDGER has no per-ledger spool anywhere, and
+        # we must refuse rather than silently report ``pending=0``. A typo'd
+        # ``--state-dir`` (or any directory the agent has never built) is the
+        # precise trap we close here -- see #18006, suite de #17940.
+        # ``init`` is one-ledger-at-a-time, so a state-dir initialised for one
+        # LEDGER but not another is *not* uninitialised -- we only refuse when
+        # NO ledger has a spool dir.
+        if not any((state_dir / ledger / "spool").is_dir() for ledger in LEDGERS):
+            raise LedgerError(
+                "UNINITIALISED_STATE_DIR",
+                f"state-dir {state_dir} has no <ledger>/spool/ for any ledger -- "
+                "run `debt_ledger.py init --apply --state-dir <dir>` first, "
+                "or pass --out-dir explicitly to inspect an arbitrary dir",
+            )
         status = {
             ledger: spool_status(state_dir / ledger / "spool")[ledger]
             for ledger in LEDGERS

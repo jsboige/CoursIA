@@ -681,3 +681,62 @@ def test_delivery_factor_graduation():
     for state in (ss.DELIVERY_DELIVERED, ss.DELIVERY_NONE_IN_WINDOW,
                   ss.DELIVERY_UNAVAILABLE, ss.DELIVERY_EMPTY_CORPUS):
         assert ss.delivery_factor(state, 12.0, 14, 0.0) == 1.0
+
+
+# --- Geste 3 #18203 : helper last_delivery_per_issue -----------------------
+
+
+def test_last_delivery_per_issue_picks_newest_merged_at():
+    """L'organe retourne la date de la PR la plus recente qui cite l'issue."""
+    prs = [
+        {"mergedAt": "2026-09-15T12:00:00Z", "body": "closes #18500"},
+        {"mergedAt": "2026-09-28T08:00:00Z", "body": "fixes #18500"},
+        {"mergedAt": "2026-09-20T18:00:00Z", "body": "see #18500"},
+    ]
+    out = ss.last_delivery_per_issue(prs, [18500])
+    assert out == {18500: "2026-09-28T08:00:00Z"}
+
+
+def test_last_delivery_per_issue_ignores_prs_without_merged_at():
+    """Une PR non mergée ne compte pas comme livraison, meme si elle cite."""
+    prs = [
+        {"mergedAt": None, "body": "closes #18500"},
+        {"mergedAt": "2026-09-28T08:00:00Z", "body": "fixes #18500"},
+    ]
+    assert ss.last_delivery_per_issue(prs, [18500]) == {18500: "2026-09-28T08:00:00Z"}
+
+
+def test_last_delivery_per_issue_returns_none_when_no_pr_cites():
+    """Issue qui n'a aucune PR mergée qui la cite -> None."""
+    prs = [
+        {"mergedAt": "2026-09-28T08:00:00Z", "body": "fixes #19999"},
+    ]
+    assert ss.last_delivery_per_issue(prs, [18500]) == {18500: None}
+
+
+def test_last_delivery_per_issue_empty_corpus():
+    """Corpus vide -> toutes les issues None, sans crash."""
+    assert ss.last_delivery_per_issue([], [18500, 18600]) == {18500: None, 18600: None}
+
+
+def test_last_delivery_per_issue_does_not_count_self_citation():
+    """Une PR ne se cite pas elle-meme."""
+    prs = [
+        {"mergedAt": "2026-09-28T08:00:00Z", "body": "closes #18500",
+         "number": 18500},
+    ]
+    assert ss.last_delivery_per_issue(prs, [18500]) == {18500: None}
+
+
+def test_last_delivery_per_issue_handles_multiple_issues_at_once():
+    """Plusieurs issues, chaque issue recupere SA derniere livraison."""
+    prs = [
+        {"mergedAt": "2026-09-15T12:00:00Z", "body": "closes #18500"},
+        {"mergedAt": "2026-09-28T08:00:00Z", "body": "fixes #18600"},
+        {"mergedAt": "2026-09-25T08:00:00Z", "body": "closes #18600"},
+    ]
+    out = ss.last_delivery_per_issue(prs, [18500, 18600])
+    assert out == {18500: "2026-09-15T12:00:00Z", 18600: "2026-09-28T08:00:00Z"}
+
+
+# --- end geste 3 #18203 -----------------------------------------------------

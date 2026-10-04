@@ -50,6 +50,19 @@ REPO = "jsboige/CoursIA"
 # 28 aout : chaque jour, pris seul, avait l'air calme.
 DEFAULT_WINDOW_DAYS = 14
 
+# Mode --belt (cf #18832, #18866) : la fenetre par defaut (14 j) oublie les
+# livraisons au-dela, et `belt_sort_key` reclasse alors l'issue a sa date
+# de creation (comme si elle n'avait jamais ete servie). Une vieille issue
+# servie il y a 15 a 30 jours passe devant une issue de juin-aout que
+# personne n'a jamais servie, ce qui contredit la regle du tapis. La
+# fenetre doit etre nettement plus longue qu'un tour complet de la file :
+# avec ~100 grains/jour et ~500 issues ouvertes, un tour fait ~5 j, et
+# une lane a regime lent (10-20 grains/jour) complete un tour en 25-50 j.
+# 90 j couvrent les deux regimes. Le plafond `MERGED_FETCH_LIMIT = 400`
+# borne le corpus de toute facon -- si la fenetre depasse 400 PRs, le
+# tapis sert avec ce qui rentre, comme la volee ponderee aujourd'hui.
+BELT_WINDOW_DAYS = 90
+
 # Amortissement plus mordant que celui par issue : une zone qui a deja recu
 # quatre notebooks neufs dans la quinzaine n'a pas besoin du cinquieme.
 SERIES_SCALE_DEFAULT = 2.0
@@ -253,6 +266,47 @@ DELIVERY_UNAVAILABLE = "unavailable"      # fetch/cache indisponible : neutre
 DELIVERY_EMPTY_CORPUS = "empty_corpus"    # fenetre valide mais 0 PR mergee
 DELIVERY_NONE_IN_WINDOW = "none_in_window"  # mesure valide, aucune declaration
 DELIVERY_DELIVERED = "delivered"          # livraison datee, age calculable
+
+
+# --- Date de derniere livraison reelle pour le POOL ENTIER (#18203 geste 3) -
+#
+# `measure_delivery` ne couvre que les umbrellas (un sous-ensemble du pool).
+# La geste 3 veut mesurer l'attente d'une issue sur sa **derniere livraison**
+# (la derniere PR mergée qui la cite), pas sur son `updatedAt` -- un commentaire
+# de bot, un ping de dispatch ou un claim remettent `updatedAt` à zéro sans
+# livraison, et le facteur de poids du tirage en est trompé. Cette fonction
+# étend la mesure à toutes les issues du pool, pour que `weight()` puisse
+# pondérer l'attente sur la livraison et non plus sur l'activite.
+#
+# Sortie : `dict[int, str | None]` -- `None` si l'issue n'a aucune livraison
+# dans le corpus de PRs mergées (l'appelant doit alors retomber sur l'age de
+# creation pour ne pas laisser un silence se lire comme "fraicheur").
+def last_delivery_per_issue(prs, issue_numbers):
+    """Map issue -> `mergedAt` (ISO) de la PR la plus recente qui la cite, ou None.
+
+    Coût : zero appel reseau supplementaire -- c'est un regroupement du meme
+    corpus `delivery_prs` deja fetché pour `measure_delivery`. Le balayage est
+    O(N*M) sur N PRs * M issues, sans hash, parce que le pool fait < 1k
+    issues et la fenetre plafonne à `MERGED_FETCH_LIMIT` PRs.
+
+    Convention : `cited_issues(pr)` est la seule definition de "declare servir
+    une issue" (voir `#13435`). Le label `candidate-delivered` n'entre pas
+    ici -- c'est un signal de cycle (label pose par un workflow quotidien),
+    pas une livraison tracable sur le graphe de PRs.
+    """
+    requested = {int(n) for n in issue_numbers}
+    last: dict[int, str] = {}
+    for pr in prs or []:
+        if not pr.get("mergedAt"):
+            continue
+        stamp = pr["mergedAt"]
+        for num in cited_issues(pr):
+            if num in requested:
+                # max par comparaison lexicographique d'ISO 8601 (meme TZ)
+                cur = last.get(num)
+                if cur is None or stamp > cur:
+                    last[num] = stamp
+    return {n: last.get(n) for n in requested}
 
 
 def delivery_factor(state, age_days, window_days, boost_max):

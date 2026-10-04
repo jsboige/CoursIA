@@ -232,10 +232,19 @@ def test_release_none_is_noop():
 # ──────────────────────────────────────────────────────────────────────────
 
 
-def test_inner_launcher_refuses_locked_tree(tmp_path):
+def test_inner_launcher_refuses_locked_tree(tmp_path, monkeypatch):
     """prover/run_prover_bg.run_prover must refuse a tree whose lock is held
     (returns result_kind='locked' BEFORE touching the file or any LLM)."""
     pytest.importorskip(_LLM_STACK, reason="prover LLM stack absent (bare CI)")
+    # #18709 : le gate de cles refuse AVANT le tree lock quand une cle de
+    # provider est absente (env machine-dependent : runners CI sans ZAI_API_KEY,
+    # poste local sans OPENROUTER/LOCAL_LLM...). Ce cas a ses propres tests
+    # dans test_provider_gate_18709.py ; ici on neutralise le gate pour
+    # atteindre le cas verrou, qui reste un refus AVANT tout appel LLM.
+    monkeypatch.setattr(
+        "prover.run_prover_bg.validate_provider_credentials",
+        lambda eff, providers: [],
+    )
     from prover.run_prover_bg import run_prover
 
     (tmp_path / "lakefile.lean").write_text("-- lake", encoding="utf-8")

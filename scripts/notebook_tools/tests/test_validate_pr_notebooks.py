@@ -570,7 +570,7 @@ class TestValidateNotebookLeanTextErrors:
     (display_data / execute_result), never as output_type=="error". A whole
     Lean notebook can be red (every cell ❌) while CI stays green. The
     detector anchors on the toolchain-emitted `severity: error` message.
-    Regression guard for #5151 (Sudoku-19-Lean-Propagation: failed import ->
+    Regression guard for #5151 (Sudoku-19-Lean-Propagation-Lean: failed import ->
     48 unknown-identifier + 12 unknown-constant cascade, CI all green)."""
 
     def _lean_err_output(self) -> dict:
@@ -887,7 +887,8 @@ class TestGetChangedNotebooksPerimeter:
     def _git(repo: Path, *args: str) -> str:
         import subprocess
         return subprocess.run(
-            ["git", *args], capture_output=True, text=True, check=True,
+            ["git", *args], capture_output=True, check=True,
+            encoding="utf-8", errors="replace",
             cwd=str(repo),
         ).stdout.strip()
 

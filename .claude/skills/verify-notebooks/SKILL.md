@@ -33,7 +33,7 @@ Verify and test Jupyter notebooks in the CoursIA repository.
 
 | Family | Path | Kernel | Notes |
 |--------|------|--------|-------|
-| Sudoku | Sudoku/ | .NET C# | `#!import`, cell-by-cell only |
+| Sudoku | Sudoku/ | Mixed | C# (`#!import`, cell-by-cell only) + Python, one twin per notebook |
 | Search | Search/ | Mixed | GeneticSharp=C#, PyGad=Python |
 | SymbolicAI | SymbolicAI/ | Mixed | Tweety=Python+JPype |
 | GenAI | GenAI/ | Python | API keys required, use `/validate-genai` first |

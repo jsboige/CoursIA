@@ -63,7 +63,6 @@ Tous les verdicts de la table ci-dessous sont **GREEN-par-grep** / **RED-par-gre
 | `MyIA.AI.Notebooks/QuantConnect/kelly_lean` | 4 | 0 | 0 | 0 | 0 | GREEN |
 | `MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters` | 2 | 0 | 0 | 0 | 0 | GREEN |
 | `MyIA.AI.Notebooks/GameTheory/social_choice_lean` | 1 | 0 | 0 | 0 | 0 | GREEN |
-| `MyIA.AI.Notebooks/GameTheory/repeated_games_lean` | 1 | 0 | 0 | 0 | 0 | GREEN |
 | `MyIA.AI.Notebooks/GameTheory/minimax_lean` | 5 | 0 | 0 | 0 | 0 | GREEN |
 | `MyIA.AI.Notebooks/GameTheory/game_theory_lean` | 25 | 0 | 0 | 0 | 0 | GREEN |
 | `MyIA.AI.Notebooks/GameTheory/conway_cgt_lean` | 2 | 0 | 0 | 0 | 0 | GREEN |

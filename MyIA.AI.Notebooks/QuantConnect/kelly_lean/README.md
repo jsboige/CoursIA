@@ -121,9 +121,12 @@ atteint le même résultat de façon plus élémentaire et 0 sorry. Généralisa
 **distributions non-Bernoulli** (gain/perte continus, multi-issues) : ouvert, hors
 périmètre du cadre canonique de Kelly (pari de Bernoulli).
 
-## Notebook compagnon
+## Notebooks compagnons
 
-Présentation pédagogique du position sizing / critère de Kelly (Python, paire Lean +
-Python côte à côte) à venir dans la série QuantConnect. Le câblage du notebook
-revient au propriétaire de la série QuantConnect (convention des lakes frères : le
-lake est le livrable formel, le `lake build` est la preuve d'exécution).
+Le lake est le livrable formel (`lake build` = preuve d'exécution, convention des
+lakes frères) ; deux notebooks compagnons le rendent pédagogique :
+
+| Notebook | Rôle |
+|---|---|
+| [`Kelly_companion.ipynb`](Kelly_companion.ipynb) | **Volet numérique (Python)** : montre, côte à côte avec les théorèmes prouvés, pourquoi `f*` maximise le taux de croissance espéré `g(f)` et pourquoi tout sur-pari (`f > f*`) ou sous-pari (`f < f*`) est strictement sous-optimal — narration économique, figures et lien trading. |
+| [`Kelly_companion_lean.ipynb`](Kelly_companion_lean.ipynb) | **Jumeau à kernel Lean 4** : chaque énoncé du lake est importé et vérifié par le noyau Lean lui-même (`#check`, `#print axioms`, exemples re-prouvés en cellule) — les énoncés qui compilent, pas la prose recopiée. |

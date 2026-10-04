@@ -79,7 +79,7 @@ Tracker global: issue #29
 ## Phase 0: Lire le backlog (OBLIGATOIRE)
 
 ```
-1. Lire projects/OPTIMIZATION_BACKLOG.md
+1. Lire projects/_docs/OPTIMIZATION_BACKLOG.md
    - Verifier si la strategie a un plafond confirme -> STOP si oui
    - Lire les hypotheses deja testees et rejetees -> NE PAS retester
    - Appliquer les regles universelles (18 patterns confirmes)
@@ -221,7 +221,7 @@ Le workflow est concu pour survivre aux redemarrages:
 
 ## Regles critiques
 
-0. **BACKLOG AVANT TOUT** - Lire `projects/OPTIMIZATION_BACKLOG.md` avant de commencer. Ne pas retester des hypotheses rejetees.
+0. **BACKLOG AVANT TOUT** - Lire `projects/_docs/OPTIMIZATION_BACKLOG.md` avant de commencer. Ne pas retester des hypotheses rejetees.
 1. **Notebook AVANT code** - Ne jamais modifier main.py sans avoir d'abord explore dans le notebook
 2. **read_file AVANT update_file_contents** - Collaboration lock QC
 3. **1 seul backtest a la fois** - Node unique QC

@@ -67,7 +67,7 @@ Playwright-OWUI/
 
 Cette section documente **ce qui est commité** dans le harnais et **ce qui est ignoré**, avec le motif. Décision tranchée par [#10025](https://github.com/jsboige/CoursIA/issues/10025) (livrable 1 — périmètre publiable ; le livrable 2, les patterns `.gitignore` globaux, est dans la PR #10057).
 
-### Committé (34 fichiers tracked)
+### Committé
 
 | Catégorie | Fichiers | Motif |
 |-----------|----------|-------|

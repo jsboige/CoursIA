@@ -316,8 +316,8 @@ IIT/
 ├── ICT-07-ScaleFreeSignatures-Python.ipynb        # ✅ signatures scale-free & criticalité (loi de Borel τ=3/2)
 ├── ICT-08-AttractorLandscapesEWS-Python.ipynb     # ✅ strate 2 : paysages d'attracteurs + early-warning signals
 ├── ICT-09-AgencyRegeneration-Python.ipynb         # ✅ strate 2 : agence = régénération réaction-diffusion (Gray-Scott)
-├── ICT-10-CatastropheGrammar.ipynb        # ✅ charnière strate 2→3 : grammaire des catastrophes (fronce, pli, lacet de prédation)
-├── ICT-22b-CausalInterventionEngine.ipynb # ✅ moteur d'intervention causal — 5 ops, contrôles appariés, format Gate 24 (accrétion du palier 22, #15479)
+├── ICT-10-CatastropheGrammar-Python.ipynb        # ✅ charnière strate 2→3 : grammaire des catastrophes (fronce, pli, lacet de prédation)
+├── ICT-22b-CausalInterventionEngine-Python.ipynb # ✅ moteur d'intervention causal — 5 ops, contrôles appariés, format Gate 24 (accrétion du palier 22, #15479)
 └── ict/
     ├── self_sorting.py      # ✅ modèle vue-cellule (Cell, SelfSortingArray, scheduler)
     ├── kin_sorting.py       # ✅ règles enrichies : réparation bidirectionnelle + affinité kin
@@ -438,11 +438,11 @@ l'énoncé de D2 (#7746) est terme à terme, dans l'ordre :
 
 | D2 — « cinq expériences du jeu évolutif » | notebook livré | lettre au README |
 |---|---|---|
-| vocabulaire fixe | [ICT-26-SignalingConvention](ICT-26-SignalingConvention.ipynb) | A — convention |
-| invention de symboles | [ICT-27-SymbolInvention](ICT-27-SymbolInvention.ipynb) | B — invention |
-| seuil $\rho_c$ | [ICT-28-CollectiveAdoption](ICT-28-CollectiveAdoption.ipynb) | C — adoption |
-| inoculation | [ICT-29-ConceptInoculation](ICT-29-ConceptInoculation.ipynb) | D — inoculation |
-| inhibition de l'innovation | [ICT-30-InhibitedInvention](ICT-30-InhibitedInvention.ipynb) | E — inhibition |
+| vocabulaire fixe | [ICT-26-SignalingConvention-Python](ICT-26-SignalingConvention-Python.ipynb) | A — convention |
+| invention de symboles | [ICT-27-SymbolInvention-Python](ICT-27-SymbolInvention-Python.ipynb) | B — invention |
+| seuil $\rho_c$ | [ICT-28-CollectiveAdoption-Python](ICT-28-CollectiveAdoption-Python.ipynb) | C — adoption |
+| inoculation | [ICT-29-ConceptInoculation-Python](ICT-29-ConceptInoculation-Python.ipynb) | D — inoculation |
+| inhibition de l'innovation | [ICT-30-InhibitedInvention-Python](ICT-30-InhibitedInvention-Python.ipynb) | E — inhibition |
 
 Le README **cite déjà #7746** comme Epic de sa « strate 7 » : les deux cartes s'accordaient donc sur
 l'objet et divergeaient seulement sur son axe. Ces cinq notebooks sont des **pattes, pas des
@@ -462,10 +462,10 @@ n'apparaissait jusqu'ici dans aucune des deux cartes. Leur nature se lit pourtan
 | Document | Nature | Axe |
 |---|---|---|
 | [ICT-Life-SubstratCertifie](ICT-Life-SubstratCertifie.ipynb) | calibration du substrat GOL (B3/S23, correction certifiée en Lean) | vertical — substrat |
-| [ICT-32-StratificationCausaleLife](ICT-32-StratificationCausaleLife.ipynb) | apportionment de Hoel **sur** ce substrat | vertical — substrat |
-| [ICT-33-SoupCollisions](ICT-33-SoupCollisions.ipynb) | ensembles ouverts et bruit macro **sur** ce substrat | vertical — substrat |
-| [ICT-31-ContrasteTroisSubstrats](ICT-31-ContrasteTroisSubstrats.ipynb) | contraste mesuré **entre** bistable, Gray-Scott et GOL | transverse — cross-substrat |
-| [ICT-34-BancRecollementLectures](ICT-34-BancRecollementLectures.ipynb) | banc de recollement de quatre lectures, un seul verdict | transverse — cross-substrat |
+| [ICT-32-StratificationCausaleLife-Python](ICT-32-StratificationCausaleLife-Python.ipynb) | apportionment de Hoel **sur** ce substrat | vertical — substrat |
+| [ICT-33-SoupCollisions-Python](ICT-33-SoupCollisions-Python.ipynb) | ensembles ouverts et bruit macro **sur** ce substrat | vertical — substrat |
+| [ICT-31-ContrasteTroisSubstrats-Python](ICT-31-ContrasteTroisSubstrats-Python.ipynb) | contraste mesuré **entre** bistable, Gray-Scott et GOL | transverse — cross-substrat |
+| [ICT-34-BancRecollementLectures-Python](ICT-34-BancRecollementLectures-Python.ipynb) | banc de recollement de quatre lectures, un seul verdict | transverse — cross-substrat |
 
 **Les deux derniers sont des pattes**, par le critère même de la divergence 3 : ils portent sur
 plusieurs substrats à la fois. **Les trois premiers appellent un barreau**, et ce barreau n'est
@@ -528,7 +528,7 @@ d'attracteurs est engendré par la dynamique elle-même**, et lève ces limites 
   sémiophysique** de R. Thom, tenu *sans complaisance* — chaque image (saillance, prégnance, actant) attachée
   à une grandeur calculée sur la fronce canonique, le caveat de non-prédictivité (Thom lui-même) explicite.
 
-  > **Note de rigueur (audit #4, [#7733](https://github.com/jsboige/CoursIA/issues/7733)).** Le **représentant interne `p̂`** mesuré dans ICT-10/12/14 est un **anticipateur** (extrapolation à partir du signal observé) ; il n'est **PAS** la **prégnance thomienne**, qui est chez R. Thom « un fluide invasif qui se propage de forme saillante en forme saillante » — une *section locale* au sens de Grothendieck, pas une grandeur interne à l'agent. L'identification `p̂ ≡ prégnance` relèverait d'une lecture spéculative des deux côtés : chez Thom, la prégnance est biologique et transférable ; ici, `p̂` est représentationnel et contraint. La correspondance `p̂ ↔ anticipation` du Ch.2 « Le Langage » de Thom est **nommée** (cf. ligne 394 ci-dessus), pas démontrée — le grade C documentaire est explicitement reconnu (`docs/grothendieckian-lens.md` §3, ligne 41-43, en fait le cadrage canonique). Cf. note de rigueur dédiée en fin de document.
+  > **Note de rigueur (audit #4, [#7733](https://github.com/jsboige/CoursIA/issues/7733)).** Le **représentant interne `p̂`** mesuré dans ICT-10/12/14 est un **anticipateur** (extrapolation à partir du signal observé) ; il n'est **PAS** la **prégnance thomienne**, qui est chez R. Thom « un fluide invasif qui se propage de forme saillante en forme saillante » — une *section locale* au sens de Grothendieck, pas une grandeur interne à l'agent. L'identification `p̂ ≡ prégnance` relèverait d'une lecture spéculative des deux côtés : chez Thom, la prégnance est biologique et transférable ; ici, `p̂` est représentationnel et contraint. La correspondance `p̂ ↔ anticipation` du Ch.2 « Le Langage » de Thom est **nommée** (cf. ligne 394 ci-dessus), pas démontrée — le grade C documentaire est explicitement reconnu (`docs/cadrage/grothendieckian-lens.md` §3, ligne 41-43, en fait le cadrage canonique). Cf. note de rigueur dédiée en fin de document.
 
 Les notebooks suivants (**ICT-11/12** profils d'agence causale et renormalisation causale,
 **ICT-Synthèse**) poursuivront la même règle : *ne pas ouvrir cinq fronts à la fois* — une métaphore
@@ -557,9 +557,9 @@ qu'au vu de ce qu'une expérience explicite en mesure.
 La batterie de l'**ENJEU** — auto-maintien / retour au bassin attracteur `B` après une
 perturbation contrefactuelle `do(·)` (Pearl, fil rouge causalité ICT-5), fusionnée à la batterie
 MOYEN d'ICT-18 sur le banc de substrats S1-S5 de l'ICT-Synthèse (S5 = *pur dissipateur* = contrôle
-négatif **obligatoire**) — est **livrée** : [ICT-19](ICT-19-EnjeuBattery.ipynb) (#5489, cadrage B
+négatif **obligatoire**) — est **livrée** : [ICT-19](ICT-19-EnjeuBattery-Python.ipynb) (#5489, cadrage B
 verrouillé user 2026-07-06) puis raffinée par
-[ICT-19b](ICT-19b-EnjeuBattery-Raffinement.ipynb) (#5728, mesure S4 en espace de champ ; renommée
+[ICT-19b](ICT-19b-EnjeuBattery-Raffinement-Python.ipynb) (#5728, mesure S4 en espace de champ ; renommée
 **ICT-19b**, #7260). Le livrable est la **paire** `{I_thermo, I_stake}` (jamais un indice agrégé),
 séparée par les gates falsifiables ENJEU-1 / ENJEU-2, sur la **distinction sémantique** :
 réversibilité *thermodynamique* (detailed balance, `σ=0` — le MOYEN que `I_thermo` mesure) ↔
@@ -612,14 +612,14 @@ poursuit). Spec de cadrage complète : **#5483** ; reframe parent triade moyen /
 | | `p̂` (représentant interne ICT) | Prégnance (R. Thom, *Sémiophysique*) |
 |---|---|---|
 | **Nature** | Anticipateur représentationnel — extrapolation du signal observé (persistance, moyenne mobile, AR(1) testées en baseline) | « Fluide invasif qui se propage de forme saillante en forme saillante » |
-| **Localisation mathématique** | Grandeur interne à l'agent (`ICT-10`, mesure sur 3 familles de trajectoires × 3 baselines adverses) | *Section locale* d'un site au sens de Grothendieck (cf. `docs/grothendieckian-lens.md` § 3) |
+| **Localisation mathématique** | Grandeur interne à l'agent (`ICT-10`, mesure sur 3 familles de trajectoires × 3 baselines adverses) | *Section locale* d'un site au sens de Grothendieck (cf. `docs/cadrage/grothendieckian-lens.md` § 3) |
 | **Statut épistémique** | **Mesurée** : banc durci, verdict régime-dépendant (réel sur trajectoire lisse 5/5 graines, illusoire sur dérive et créneau) | **Nommée / spéculative** : pas de mesure correspondante dans le dépôt |
 | **Transférabilité** | Non-transférable — apprentissage spécifique par agent | Transférable — passe de forme saillante en forme saillante (propriété biologique thomienne) |
-| **Référence canonique** | ICT-10 charnière strate 2→3 | `docs/grothendieckian-lens.md:41` (cadrage Grothendieck + Thom explicite) |
+| **Référence canonique** | ICT-10 charnière strate 2→3 | `docs/cadrage/grothendieckian-lens.md:41` (cadrage Grothendieck + Thom explicite) |
 
 La correspondance **`p̂ ↔ anticipation`** du Ch.2 « Le Langage » de Thom (cf. ligne 394) est *nommée* dans le dépôt — pas démontrée. L'identification **`p̂ ≡ prégnance`** relèverait d'une lecture **spéculative des deux côtés**, à éviter :
 
 - chez Thom, la *prégnance* est **biologique** et **transférable** (analogue sémiotique d'une substance invasive) ;
 - ici, `p̂` est **représentationnel** et **contraint** (sortie d'un algorithme d'extrapolation).
 
-Le grade C documentaire est **explicitement reconnu** dans `docs/grothendieckian-lens.md` § 3 (« une direction et non un théorème livré ») ; cette note de rigueur rend la même prudence lisible côté ICT. Pré-enregistré : [#7733](https://github.com/jsboige/CoursIA/issues/7733) (mandat user 2026-07-20, audit #4).
+Le grade C documentaire est **explicitement reconnu** dans `docs/cadrage/grothendieckian-lens.md` § 3 (« une direction et non un théorème livré ») ; cette note de rigueur rend la même prudence lisible côté ICT. Pré-enregistré : [#7733](https://github.com/jsboige/CoursIA/issues/7733) (mandat user 2026-07-20, audit #4).

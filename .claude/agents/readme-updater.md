@@ -213,6 +213,7 @@ Workflow typique :
 ```python
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt="""
     Tu es un agent readme-updater.
     Lis les instructions dans .claude/agents/readme-updater.md

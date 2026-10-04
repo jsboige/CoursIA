@@ -2083,6 +2083,31 @@ class TacticTools:
                 # Skip blank lines within replacement
 
             old_line = lines[sorry_line - 1]
+            inline_decl = re.match(
+                r"^(\s*(?:theorem|lemma)\s+[^\n]*?\s*:=\s*)(?:by\s+)?sorry\s*(?:--.*)?$",
+                old_line,
+            )
+            if inline_decl:
+                if not replacement_lines or re.match(
+                    r"(?:theorem|lemma|def|abbrev|instance|axiom)\b",
+                    replacement_lines[0].lstrip(),
+                ):
+                    return json.dumps({
+                        "error": "BLOCKED: replace the inline sorry with proof tactics, not a declaration",
+                        "replaced": old_line.strip(),
+                    }, ensure_ascii=False)
+                if replacement_lines[0] == "by":
+                    replacement_lines = replacement_lines[1:]
+                elif replacement_lines[0].startswith("by "):
+                    replacement_lines[0] = replacement_lines[0][3:]
+                if not replacement_lines:
+                    return json.dumps({"error": "BLOCKED: inline sorry requires proof tactics"})
+                body_indent = min(len(line) - len(line.lstrip()) for line in replacement_lines)
+                proof_indent = " " * (indent + 2)
+                replacement_lines = [
+                    inline_decl.group(1).rstrip() + " by",
+                    *(proof_indent + line[body_indent:] for line in replacement_lines),
+                ]
             lines[sorry_line - 1:sorry_line] = replacement_lines
             new_content = "\n".join(lines)
 

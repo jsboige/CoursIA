@@ -76,6 +76,28 @@ class TestAnchors:
         cells = [_md("# Titre"), _code("a"), _md("interp de code[0]")]
         assert scan_anchors(cells) == []
 
+    def test_oor_label_reports_the_actual_carrier_state(self):
+        # #17875 second defaut : le libelle abs_state etait binaire
+        # ("markdown" / "out of notebook") -- une cellule de code PRESENTE a
+        # l'index absolu etait annoncee "out of notebook". Le libelle doit
+        # rendre l'etat reel du porteur : code existant, markdown, ou
+        # reellement au-dela du carnet.
+        # code_abs = [1, 2, 3], n_code = 3 : code[3] est OOR et la cellule
+        # absolue 3 EXISTE (code).
+        code_carrier = [_md("voir code[3]"), _code("a"), _code("b"), _code("c")]
+        msg = scan_anchors(code_carrier)[0]["message"]
+        assert "absolute cell 3 is a code cell" in msg
+        assert "out of notebook" not in msg
+        # code_abs = [1, 4, 5], n_code = 3 : code[3] est OOR, la cellule
+        # absolue 3 est du markdown (ancre pensee au layout MAIN).
+        md_carrier = [_md("voir code[3]"), _code("a"), _md("p"), _md("q"),
+                      _code("b"), _code("c")]
+        assert "absolute cell 3 is markdown" in scan_anchors(md_carrier)[0]["message"]
+        # n = 6, n_code = 3 : code[9] est OOR et l'index absolu depasse le carnet.
+        beyond = [_md("voir code[9]"), _code("a"), _code("b"), _code("c"),
+                  _md("pied"), _md("fin")]
+        assert "absolute cell 9 is out of notebook" in scan_anchors(beyond)[0]["message"]
+
 
 # ---------------------------------------------------------------------------
 # Class (c): diacritics

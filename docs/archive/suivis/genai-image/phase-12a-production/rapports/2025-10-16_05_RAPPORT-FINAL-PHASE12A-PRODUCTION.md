@@ -151,7 +151,7 @@ La Phase 12A a permis de déployer avec succès ComfyUI + Qwen Image-Edit en pro
 
 **Exécution**:
 - ✅ Tests lancés: 2/2 URLs testées
-- ⚠️ Screenshots: 2 fichiers générés (28.75 KB total)
+- ⚠️ Screenshots générés (28.75 KB total)
   - [`comfyui-ui.png`](screenshots/comfyui-ui.png): 8.31 KB
   - [`forge-ui.png`](screenshots/forge-ui.png): 20.44 KB
 - ❌ Détection éléments UI: Échec (sélecteurs async)
@@ -261,7 +261,7 @@ Firefox can't establish a connection to wss://qwen-image-edit.myia.io
 
 ## 📚 Documentation Produite
 
-### Scripts Automatisés (1235+ lignes)
+### Scripts Automatisés
 
 | Script | Lignes | Description |
 |--------|--------|-------------|
@@ -271,7 +271,7 @@ Firefox can't establish a connection to wss://qwen-image-edit.myia.io
 | [`2025-10-15_23_update-rapport-final.ps1`](2025-10-15_23_update-rapport-final.ps1) | 317 | Mise à jour rapport d'exécution |
 | **Total Scripts Phase 12A** | **1235+** | **4 scripts principaux + utilitaires** |
 
-### Documentation Technique (2600+ lignes)
+### Documentation Technique
 
 | Document | Lignes | Description |
 |----------|--------|-------------|
@@ -478,7 +478,7 @@ Firefox can't establish a connection to wss://qwen-image-edit.myia.io
 | API OpenAI compatible | ⚠️ Endpoints natifs ComfyUI (5/9) | 56% | ⚠️ Partiel |
 | Tests automatisés complets | ✅ Scripts + MCP créés | 100% | ✅ Parfait |
 | Service Forge préservé | ✅ Non impacté, tests OK | 100% | ✅ Parfait |
-| Documentation exhaustive | ✅ 2600+ lignes produites | 100% | ✅ Parfait |
+| Documentation exhaustive | ✅ produites | 100% | ✅ Parfait |
 | WebSocket fonctionnel | ✅ Configuration corrigée | 95% | ⏳ Validation utilisateur |
 | **Score Global Phase 12A** | **Infrastructure déployée** | **92.7%** | **✅ Succès** |
 
@@ -631,8 +631,8 @@ Firefox can't establish a connection to wss://qwen-image-edit.myia.io
    - Isolation GPU: Parfaite (Forge non impacté)
 
 4. **📚 Documentation Exhaustive**
-   - 2600+ lignes documentation technique
-   - 1235+ lignes scripts automatisés
+   - Documentation technique
+   - Scripts automatisés
    - 4 rapports JSON structurés
    - 4 screenshots haute qualité
 
@@ -678,8 +678,8 @@ Firefox can't establish a connection to wss://qwen-image-edit.myia.io
 | **Infrastructure** | 92.7% | ComfyUI opérationnel, validation finale requise |
 | **Performance GPU** | 100% | VRAM 5.2%, température 28°C |
 | **Réseau/SSL** | 100% | HTTPS valide, latence 18ms |
-| **Scripts** | 100% | 1235+ lignes, 4 scripts majeurs |
-| **Documentation** | 100% | 2600+ lignes, 5 documents |
+| **Scripts** | 100% | 4 scripts majeurs |
+| **Documentation** | 100% | 5 documents |
 | **Tests** | 95% | 4 phases, validation utilisateur finale requise |
 | **WebSocket** | 95% | Configuration corrigée, validation requise |
 | **Score Global** | **92.7%** | **✅ Infrastructure Production Ready** |

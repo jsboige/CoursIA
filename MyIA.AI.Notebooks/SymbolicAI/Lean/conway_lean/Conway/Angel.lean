@@ -120,16 +120,24 @@ Pas une étape tactique -- une impossibilité portée par le système :
 Archivée dans `G:\Mon Drive\MyIA\IA\Bibliographie IA\` :
 
 - **Bowditch (2007)** "The Angel Game in the Plane", Combinatorics, Probability and
-  Computing 16(3):349-362, DOI:10.1017/s0963548306008297 -- paywall Cambridge Core,
-  pas archivé en local.
+  Computing 16(3):349-362, DOI:10.1017/s0963548306008297 -- paywall Cambridge Core.
+  Stub canonique archivé en local (DOI + abstract Crossref, pas de copie
+  PDF : droits Cambridge) :
+  `2007 - Bowditch - The Angel Game in the Plane.placeholder.md`.
 - **Máthé (2007)** "The Angel of Power 2 Wins", Combinatorics, Probability and
-  Computing 16(3):363-374, DOI:10.1017/s0963548306008303 -- paywall Cambridge Core,
-  pas archivé en local.
+  Computing 16(3):363-374, DOI:10.1017/s0963548306008303 -- paywall Cambridge Core.
+  Stub canonique archivé en local (DOI + abstract Crossref) :
+  `2007 - Mathe - The Angel of Power 2 Wins.placeholder.md`.
 - **Kloster (2007)** "A solution to the Angel Problem", Theoretical Computer Science
-  389(1-2):266-277, DOI:10.1016/j.tcs.2007.08.006 -- paywall Elsevier, pas archivé.
+  389(1-2):266-277, DOI:10.1016/j.tcs.2007.08.006 -- paywall Elsevier.
+  Stub canonique archivé en local (DOI + abstract Crossref) :
+  `2007 - Kloster - A Solution to the Angel Problem.placeholder.md`.
 - **Gács (2007)** "The Angel Wins", arXiv:0706.2817v1, archivé en local :
-  `2007 - Gács - The Angel Wins.pdf`. Vérifié pypdf première page
+  `2007 - Gacs - The Angel Wins.pdf`. Vérifié pypdf première page
   (28 pages, 362933 octets, arXiv:0706.2817v1, Peter Gács).
+- **MathOverflow post 357433** (2021, archive) "reference request - Conway's lesser-known
+  results", archivé en local :
+  `Technical Web Docs/2021 - MathOverflow 357433 - reference request - Conways lesser-known results.html`.
 
 ## ISSUE DE SUIVI
 

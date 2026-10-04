@@ -46,9 +46,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # Shallow checkout (fetch-depth: 2) instead of full history. The
-          # base ref is then fetched explicitly with depth=1, so the diff
-          # below still works. Issue #11835 — saves the bulk of CI time
+          # Shallow checkout (fetch-depth: 2) instead of full history. La
+          # base du diff est HEAD^1 (premier parent du merge ref), present
+          # par construction -- aucun fetch supplementaire de la base.
+          # Issue #11835 — saves the bulk of CI time
           # on the 2.1 Go repo (was ~120 s of clone-time per push).
           fetch-depth: 2
 
@@ -58,11 +59,14 @@ jobs:
 
       - name: Compteurs quantitatifs ajoutes en prose
         run: |
-          # `checkout@v4` avec `fetch-depth: 2` ne tire que le HEAD et son
-          # parent -- `origin/<base_ref>` n'est PAS present. Un fetch
-          # explicite depth=1 le ramene. Le commentaire anterieur precisait
-          # qu'un `--depth=0` etait invalide (entier positif exige) ; ce
-          # fetch est depth=1, donc legal, et tient en quelques Ko.
-          git fetch --depth=1 origin "${{ github.base_ref }}" -q
+          # Base du diff : HEAD^1, le premier parent du merge commit pose par
+          # checkout@v4 (refs/pull/N/merge, fetch-depth: 2) -- present par
+          # construction, merge-base resolu en parent direct, diff = plateau
+          # exact de la PR. L'ancienne forme `origin/<base_ref>...HEAD`
+          # exigeait un fetch depth=1 de la base et mourait en course quand
+          # main bougeait entre la construction du merge ref et ce fetch :
+          # bornes shallow sans ancetre commun, `no merge base` (exit 128),
+          # faux rouge bloquant sur des PRs sans defaut de prose (#18629).
+          # Fix identique a docs-transients-guard (#18595, tete 41af837).
           python scripts/notebook_tools/check_prose_quantitative_claims.py \
-            --diff "origin/${{ github.base_ref }}...HEAD" --strict
+            --diff "HEAD^1...HEAD" --strict

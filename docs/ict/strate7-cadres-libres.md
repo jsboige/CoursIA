@@ -45,7 +45,7 @@ où `AdmExt(L_t)` est l'**ensemble des extensions admissibles** d'un espace loca
 
 > **Note de notation.** `AdmExt`, et non `Ext`. Dans ce voisinage — où l'on invoque Grothendieck, `H¹ ≠ 0` et l'obstruction cohomologique — `Ext(A, B)` se lit inévitablement comme le **foncteur dérivé** `Ext¹(A, B)` : un groupe abélien, avec somme de Baer et suite longue. Ce n'est **pas** ce dont il s'agit ici : `AdmExt(L_t)` est un *ensemble* de prolongements admissibles, dont aucune structure de groupe n'a été établie. Emprunter le nom reviendrait à emprunter la structure sans l'avoir démontrée.
 
-Lien grothendieckien (cf. [`docs/grothendieckian-lens.md`](../grothendieckian-lens.md)) : un objet local admet *plusieurs* extensions globales non équivalentes (cf. obstruction cohomologique `H¹ ≠ 0`, [`synthese-invariants-dissociations-obstructions.md`](synthese-invariants-dissociations-obstructions.md) §« Pourquoi cette grille »). Le choix d'extension est précisément **là où l'agent intervient comme décideur** : `H¹ ≠ 0` est la mesure *qu'il y a quelque chose à choisir* ; `|AdmExt(L_t)|` est la mesure *combien* il y a à choisir ; et la **qualité du choix** (cf. §4) est ce qui distingue une extension utile d'une extension manipulatrice.
+Lien grothendieckien (cf. [`docs/cadrage/grothendieckian-lens.md`](../cadrage/grothendieckian-lens.md)) : un objet local admet *plusieurs* extensions globales non équivalentes (cf. obstruction cohomologique `H¹ ≠ 0`, [`synthese-invariants-dissociations-obstructions.md`](synthese-invariants-dissociations-obstructions.md) §« Pourquoi cette grille »). Le choix d'extension est précisément **là où l'agent intervient comme décideur** : `H¹ ≠ 0` est la mesure *qu'il y a quelque chose à choisir* ; `|AdmExt(L_t)|` est la mesure *combien* il y a à choisir ; et la **qualité du choix** (cf. §4) est ce qui distingue une extension utile d'une extension manipulatrice.
 
 ### 1.3 Barrière conservée : pas de bit physique ex nihilo
 
@@ -256,7 +256,7 @@ Le passage « nommé sans démonstration » au rang « construit » ou « mesur�
 
 - **Veille TOE ↔ conscience (jalon 2/3)** : [#8182](https://github.com/jsboige/CoursIA/issues/8182) — l'iceberg de Jaimungal et le carrefour Schreiber ; la strate 7 ne s'y aventure pas publiquement.
 
-- **Discipline grade C** : [`docs/grothendieckian-lens.md`](../grothendieckian-lens.md) — l'invariant d'ICT n'est pas dans le monde mais dans la *méthode*, et tout cadrage grade C est posé comme témoin de lecture, pas comme claim.
+- **Discipline grade C** : [`docs/cadrage/grothendieckian-lens.md`](../cadrage/grothendieckian-lens.md) — l'invariant d'ICT n'est pas dans le monde mais dans la *méthode*, et tout cadrage grade C est posé comme témoin de lecture, pas comme claim.
 
 
 — *CoursIA-2 — c.1246 (po-2025) — 2026-08-06*

@@ -1,0 +1,70 @@
+name: Trading Backtester Tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'MyIA.Trading.Backtester/**'
+      - 'MyIA.Trading.Backtester.Tests/**'
+      - 'MyIA.Trading.Converter/**'
+      - 'MyIA.AI.Shared/**'
+      - '.github/workflows/dotnet-trading-backtester-tests.yml'
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, edited, reopened]
+    paths:
+      - 'MyIA.Trading.Backtester/**'
+      - 'MyIA.Trading.Backtester.Tests/**'
+      - 'MyIA.Trading.Converter/**'
+      - 'MyIA.AI.Shared/**'
+      - '.github/workflows/dotnet-trading-backtester-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: trading-backtester-tests-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  backtester-tests:
+    name: Backtester.Tests (windows-latest, 115 floor)
+    runs-on: windows-latest
+    timeout-minutes: 20
+    env:
+      BACKTESTER_TESTS_FLOOR: 115
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+          cache: true
+          cache-dependency-path: |
+            MyIA.Trading.Backtester.Tests/MyIA.Trading.Backtester.Tests.csproj
+            MyIA.Trading.Backtester/MyIA.Trading.Backtester.csproj
+            MyIA.Trading.Converter/MyIA.Trading.Converter.csproj
+            MyIA.AI.Shared/MyIA.AI.Shared.csproj
+
+      - name: Run Backtester.Tests
+        run: dotnet test MyIA.Trading.Backtester.Tests/MyIA.Trading.Backtester.Tests.csproj --nologo
+
+      - name: Collection floor-guard
+        if: always()
+        shell: bash
+        env:
+          DOTNET_CLI_UI_LANGUAGE: en
+        run: |
+          PROJECT=MyIA.Trading.Backtester.Tests/MyIA.Trading.Backtester.Tests.csproj
+          LISTED=$(dotnet test "$PROJECT" --list-tests --nologo | grep -cE '^    [A-Za-z_]' || true)
+          if [ "$LISTED" -eq 0 ]; then
+            echo "::error::No tests collected from Backtester.Tests."
+            exit 1
+          fi
+          if [ "$LISTED" -lt "$BACKTESTER_TESTS_FLOOR" ]; then
+            echo "::error::Coverage regression: $LISTED tests listed; floor=$BACKTESTER_TESTS_FLOOR. Update the floor in the same PR if intentional."
+            exit 1
+          fi
+          echo "OK: $LISTED tests listed (floor=$BACKTESTER_TESTS_FLOOR)."

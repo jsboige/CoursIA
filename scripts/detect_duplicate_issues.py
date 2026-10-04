@@ -24,6 +24,15 @@ is broken and we'd be silencing the very signal it was built for. See
 `--self-test` and the unit tests in
 `scripts/tests/test_detect_duplicate_issues.py`.
 
+Under `--self-test` the control issues are **poured into the scanned lot**
+via `gh issue view` (#18039): a counted window (`--limit N`) slides with the
+repository's head and the pair (~5000 numbers behind at #18039) had left it,
+turning the daily self-test permanently red. The pour fetches the real
+issues and adds them to the lot; the **detector** still has to find the pair
+by title equality within the window -- nothing is hardcoded. If an issue of
+a control pair cannot be fetched (deleted, transferred), it is absent from
+the lot by definition: the control goes missing and the self-test exits 2.
+
 What it does NOT do
 -------------------
 - It does NOT close duplicates. Closing is a human/coord decision because
@@ -161,6 +170,29 @@ def _gh_issue_list(limit: int, state: str = "all") -> list[dict]:
     return json.loads(proc.stdout)
 
 
+def _gh_issue_view(number: int) -> dict:
+    """Fetch ONE issue by number via `gh issue view`.
+
+    Used only by the self-test pour (#18039): the positive-control pair
+    lives far behind the repository head, so a `--limit N` window can never
+    reach it. The row returned is the real GitHub record -- the detector
+    must still find the burst by itself.
+    """
+    proc = subprocess.run(
+        [
+            "gh", "issue", "view", str(number),
+            "--json", "number,title,createdAt,state",
+        ],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        timeout=60,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError(
+            f"`gh issue view {number}` failed: {proc.stderr.strip()}"
+        )
+    return json.loads(proc.stdout)
+
+
 def _parse_iso(ts: str) -> datetime:
     """Parse ISO 8601 returned by gh (Z-suffix) into aware datetime."""
     return datetime.fromisoformat(ts.replace("Z", "+00:00"))
@@ -283,6 +315,27 @@ def _cli(argv: list[str] | None = None) -> int:
     except RuntimeError as e:
         print(str(e), file=sys.stderr)
         return 1
+
+    if args.self_test:
+        # #18039: pour the positive-control issues into the lot. The pair
+        # is far behind the head and a counted window cannot see it; the
+        # pour adds the REAL GitHub records and the detector still has to
+        # find the burst. An unfetchable control issue stays out of the lot
+        # -> the control goes missing -> exit 2 (fail-closed).
+        seen = {int(d["number"]) for d in rows_raw}
+        for ctrl in KNOWN_POSITIVE_CONTROLS:
+            for n in ctrl:
+                if n in seen:
+                    continue
+                try:
+                    rows_raw.append(_gh_issue_view(n))
+                except RuntimeError as e:
+                    print(
+                        f"WARNING: control issue #{n} not fetchable -- "
+                        f"counted as removed from the lot: {e}",
+                        file=sys.stderr,
+                    )
+
     rows = [IssueRow.from_gh_dict(d) for d in rows_raw]
     result = detect_burst_pairs(rows, window_seconds=args.window_seconds)
 

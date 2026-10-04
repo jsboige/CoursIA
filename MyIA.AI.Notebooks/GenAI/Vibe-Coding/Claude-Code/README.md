@@ -128,7 +128,7 @@ Semaine 3: Atelier 05 (Automatisation avancée)
 
 ## Notebooks Interactifs CLI
 
-Une série de **5 notebooks Jupyter** pour apprendre et expérimenter avec `claude -p` en ligne de commande.
+Une série de **notebooks Jupyter** pour apprendre et expérimenter avec `claude -p` en ligne de commande.
 
 | Notebook | Durée | Description |
 |----------|-------|-------------|

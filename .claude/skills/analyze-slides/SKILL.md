@@ -57,10 +57,10 @@ Analyse UNIQUEMENT la mise en forme et les visuels (le texte est deja extrait ci
 ### 4. Appel MCP
 
 ```python
-result = mcp__sk-agent__analyze_image(
-    image_source=f"{deck_path}/extracted/renders/slide_{num:02d}.png",
-    model="qwen3-vl-8b-thinking",
-    prompt=prompt_avec_texte
+result = mcp__sk-agent__call_agent(
+    prompt=prompt_avec_texte,
+    attachment=f"{deck_path}/extracted/renders/slide_{num:02d}.png",
+    model_override="qwen3-vl-8b-thinking"
 )
 ```
 

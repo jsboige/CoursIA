@@ -53,10 +53,10 @@ D:\dev\CoursIA\.vibe\
 
 **Phase 2 : Selection — le picker d'abord (P0 inclus)**
 - **Premier geste de selection : le picker calibre**, apres lecture inbox/dashboard — jamais de scan manuel du pool avant lui :
-  `python scripts/pick_idle_grain.py --lane "myia-po-2025:Microsoft VS Code" --prev-genre <genre> --json`
+  `python scripts/pick_idle_grain.py --belt --lane "myia-po-2025:Microsoft VS Code" --json`
   (verification des claims active ; `--no-check-claims` interdit)
-- Sortie `"mode": "repair"` : **P0** — le picker retourne le backlog rouge/review de la lane ; la reparation de la PR nommee EST le grain du cycle, preparee en relais humain comme tout livrable Vibe.
-- Sinon : filtrer les candidats selon le **profil Vibe** : mono-sujet, CPU/local, verifiable textuellement. Exclus : GPU/vision, QuantConnect, Lean froid, notebooks a re-executer, travail relationnel/multi-fichiers, catalogue (enumeration des PRs de la lane via le tag `Grain:` du body, jamais `--author @me` : faux 0 silencieux sur cette machine multi-comptes).
+- Cle `"repair"` non nulle : **P0** — le picker retourne le backlog rouge/review de la lane ; la reparation de la PR nommee (`repair.grain`) EST le grain du cycle, preparee en relais humain comme tout livrable Vibe.
+- Sinon : prendre les `picks` du tapis **dans l'ordre** (derniere visite la plus ancienne en tete), en ne sautant que les candidats hors **profil Vibe** : mono-sujet, CPU/local, verifiable textuellement. Exclus : GPU/vision, QuantConnect, Lean froid, notebooks a re-executer, travail relationnel/multi-fichiers, catalogue (enumeration des PRs de la lane via le tag `Grain:` du body, jamais `--author @me` : faux 0 silencieux sur cette machine multi-comptes).
 - Avant d'editer : `check_lane_claim.py --lane "myia-po-2025:Microsoft VS Code" <N>`, puis `[CLAIMED]` en commentaire d'issue (tag `Grain:` et clause `paths:` sur deux lignes distinctes).
 
 **Phase 3 : Execution**

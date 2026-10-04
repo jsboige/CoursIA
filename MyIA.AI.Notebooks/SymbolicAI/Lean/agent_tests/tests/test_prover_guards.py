@@ -179,7 +179,55 @@ def test_file_replace_sorry_writes_real_tactic(tactic_tools):
     assert "error" not in out, out
     content = Path(tactic_tools._filepath).read_text(encoding="utf-8")
     assert "sorry" not in content
-    assert "trivial" in content
+    assert "theorem t : True := by\n  trivial" in content
+
+
+@pytest.fixture
+def inline_tactic_tools(tmp_path):
+    fake = tmp_path / "Inline.lean"
+    body = (
+        "import Mathlib.Tactic\n"
+        + "\n".join(f"-- padding {i}" for i in range(50))
+        + "\ntheorem nimSum_single : True := by sorry\n"
+        + "\n".join(f"-- tail {i}" for i in range(50))
+        + "\n"
+    )
+    fake.write_text(body, encoding="utf-8")
+    sorry_line = next(i + 1 for i, line in enumerate(body.splitlines()) if "by sorry" in line)
+    state = ProofState(theorem_statement="nimSum_single")
+    sctx = SorryContext(
+        filepath=str(fake), sorry_line=sorry_line, indentation=0,
+        indent_str="", full_file=body,
+    )
+    return TacticTools(state, str(fake), sctx), sorry_line
+
+
+@pytest.mark.parametrize("replacement, proof", [
+    ("by\n  decide", "  decide"),
+    ("by\n  simp [nimSum]", "  simp [nimSum]"),
+    ("simp [nimSum]", "  simp [nimSum]"),
+    ("by\n  have h : True := trivial\n  exact h", "  have h : True := trivial\n  exact h"),
+])
+def test_file_replace_sorry_keeps_inline_declaration(inline_tactic_tools, replacement, proof):
+    import json
+    tools, sorry_line = inline_tactic_tools
+    result = json.loads(tools.file_replace_sorry(sorry_line, replacement, build_check=False))
+    assert "error" not in result, result
+    content = Path(tools._filepath).read_text(encoding="utf-8")
+    assert "theorem nimSum_single : True := by\n" + proof in content
+    assert "by sorry" not in content
+
+
+def test_file_replace_sorry_refuses_inline_redeclaration(inline_tactic_tools):
+    import json
+    tools, sorry_line = inline_tactic_tools
+    before = Path(tools._filepath).read_text(encoding="utf-8")
+    result = json.loads(tools.file_replace_sorry(
+        sorry_line, "theorem nimSum_single : True := by\n  simp [nimSum]",
+        build_check=False,
+    ))
+    assert "BLOCKED" in result["error"]
+    assert Path(tools._filepath).read_text(encoding="utf-8") == before
 
 
 # ──────────────────────────────────────────────────────────────────────────

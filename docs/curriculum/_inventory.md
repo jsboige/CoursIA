@@ -16,7 +16,7 @@
 **Date** : 2026-08-31 (premier balayage) · 2026-09-02 (complément).
 **Complément du 2026-09-02** : l'entrée #8 citait `SymbolicAI/Lean/social_choice_lean/`, chemin absent de `main` — le lake vit sous `GameTheory/`. Un second balayage a par ailleurs relevé six fichiers manquants : trois embryons réels (#35-37) et trois faux positifs du motif, inscrits `DROP` (#38-40) pour ne pas être re-investigués.
 **Source** : `Grep "^## \s*(Parcours|parcours|Phase)" MyIA.AI.Notebooks/**/*.md` + lecture ciblée des 17 fichiers les plus structurants.
-**Livré via** : `docs/curriculum/_inventory.md` (portée : 1 fichier nouveau, **< 200 lignes**).
+**Livré via** : `docs/curriculum/_inventory.md` (portée : fichier nouveau, taille bornée).
 
 **But** : cet inventaire **ne modifie aucun fichier de parcours existant**. Il les classe. La promotion effective (`genai-rush.md`, `symbolic-formalization.md`, `aima-walk.md`, etc.) appartient aux phases 2+ de l'EPIC #13844.
 
@@ -61,7 +61,7 @@
 | 26 | `MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/README.md` L61 + L226 | Apprenant RAG / Kernel Memory | Variable | « Parcours de lecture par niveau » tabulaire (Débutant+ / Intermédiaire / Avancé / Pratique) | **RELOCATE** — table « niveau » la plus propre du dépôt, modèle à exporter |
 | 27 | `MyIA.AI.Notebooks/GenAI/SemanticKernel/README.md` L91 | Apprenant Semantic Kernel | Variable | « Parcours recommandé » | **INTEGRATE** — branche du GenAI rush |
 | 28 | `MyIA.AI.Notebooks/GenAI/Vibe-Coding/docs/ROO-GUIDED-PATH.md` | Apprenant Roo Code (tutor agent intégré) | Variable | « Parcours progressif » lié à un outil spécifique | **ARCHIVE** — chemin agent-tutor, hors syllabus général |
-| 29 | `MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/.../livresagites-parcours.md` | Cas d'usage industriel WordPress + LLM | 5 parcours numérotés (0-4) | Monolithique ~400 lignes | **INTEGRATE** — modèle « N parcours numérotés » pour un cas d'usage ; à ne pas intégrer tel quel (trop long), à scinder |
+| 29 | `MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/.../livresagites-parcours.md` | Cas d'usage industriel WordPress + LLM | 5 parcours numérotés (0-4) | Monolithique | **INTEGRATE** — modèle « N parcours numérotés » pour un cas d'usage ; à ne pas intégrer tel quel (trop long), à scinder |
 | 30 | `MyIA.AI.Notebooks/RL/README.md` L75-99 | Apprenant reinforcement learning | Variable | « Parcours d'apprentissage » | **INTEGRATE** — branche GenAI rush / ML |
 | 31 | `MyIA.AI.Notebooks/Sudoku/README.md` L40-80 + L475-496 | Débutant → Avancé IA symbolique | Débutant / Intermédiaire / Avancé + parcours C#/Python complets | « Parcours par niveau » + parcours complets par langage | **ARCHIVE** — série isolée (standalone), sans lien narratif transverse |
 | 32 | `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/0X-*/README.md` (6 sous-séries) | Idem 14 | Idem 14 | Sous-parcours par phase (0X-Foundations → 06-Real-World) | **INTEGRATE** — granularité plus fine que le README parent |
@@ -117,7 +117,7 @@ serve de référence à l'EPIC #13844.
 |---|---|
 | Un seul fichier `_inventory.md` créé | ✅ |
 | Aucun fichier existant modifié | ✅ |
-| < 200 lignes diff (cible PR atomique) | ✅ (~150 lignes) |
+| diff borné (cible PR atomique) | ✅ |
 | 30+ embryons identifiés | ✅ |
 | Chaque embryon cité avec source `path:LN` | ✅ |
 | Statut proposé (RELOCATE / INTEGRATE / ARCHIVE / DROP) | ✅ |

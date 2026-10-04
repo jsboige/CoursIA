@@ -640,3 +640,125 @@ def test_epic_verdict_wins_over_container():
 if __name__ == "__main__":
     import pytest
     sys.exit(pytest.main([__file__, "-v"]))
+
+
+# --- #18102 : la raison du verdict in_flight separe declare vs commentaire ---
+
+def test_in_flight_reason_declared_body_names_next_phase():
+    # Controle negatif de l'acceptance : une PR ouverte qui DECLARE l'issue
+    # dans son body (rollout multi-phases, #10984/#10986) rend in_flight avec
+    # la raison « prochaine phase plausible ».
+    issue = _issue(title="rollout phase 7 of N", comments=[])
+    refs = [
+        {"pr_number": 10995, "merged_at": "2026-08-14T23:18:16Z", "is_pr": True,
+         "state": "closed", "body": "See #1."},
+        {"pr_number": 10986, "merged_at": None, "is_pr": True, "state": "open",
+         "body": "Phase 2 of the rollout: continuing #1.", "title": "rollout p2"},
+    ]
+    verdict, why = classify(issue, refs)
+    assert verdict == "in_flight"
+    assert "#10986" in why
+    assert "declare this issue in body/title" in why
+    assert "next phase" in why
+    assert "comments only" not in why
+
+
+def test_in_flight_reason_declared_title_counts():
+    # Le titre porte la reference canonique `fix(#N):` quand le body est vide :
+    # il informe la RAISON uniquement (#18102 nomme body/titre), jamais une
+    # decision de label (le canal titre reste ferme, arbitrage #17759).
+    issue = _issue(title="x", comments=[])
+    refs = [{"pr_number": 2, "merged_at": None, "is_pr": True, "state": "open",
+             "body": "", "title": "fix(#1): repair the gate"}]
+    verdict, why = classify(issue, refs)
+    assert verdict == "in_flight"
+    assert "#2" in why
+    assert "declare this issue in body/title" in why
+
+
+def test_in_flight_reason_comment_only_flags_contextual():
+    # Controle positif de l'acceptance : #15173 <- #17434 -- un commentaire de
+    # census sur une PR ouverte d'une AUTRE famille pose un cross-referenced
+    # permanent alors que ni son body ni son titre ne citent l'issue. La
+    # raison nomme la PR et son caractere non declare (le masque « travail en
+    # cours » leve).
+    issue = _issue(title="delivered but frozen", comments=[])
+    refs = [
+        {"pr_number": 17434, "merged_at": None, "is_pr": True, "state": "open",
+         "body": "GenAI Image series maintenance notes.", "title": "genai(image): batch 4"},
+        {"pr_number": 15800, "merged_at": "2026-09-10T00:00:00Z", "is_pr": True,
+         "state": "closed", "body": "See #1."},
+    ]
+    verdict, why = classify(issue, refs)
+    assert verdict == "in_flight"
+    assert "#17434" in why
+    assert "comments only" in why
+    assert "undeclared" in why
+    assert "next phase" not in why
+
+
+def test_in_flight_reason_mixed_open_prs_lists_both():
+    # Deux PRs ouvertes, une declarante et une contextuelle : la raison cite
+    # les deux origines, chacune avec son caractere.
+    issue = _issue(title="x", comments=[])
+    refs = [
+        {"pr_number": 10, "merged_at": None, "is_pr": True, "state": "open",
+         "body": "Next: rework #1 benchmarks.", "title": "bench"},
+        {"pr_number": 20, "merged_at": None, "is_pr": True, "state": "open",
+         "body": "Unrelated family.", "title": "other"},
+    ]
+    verdict, why = classify(issue, refs)
+    assert verdict == "in_flight"
+    assert "#10" in why and "#20" in why
+    assert "declare this issue in body/title" in why
+    assert "comments only" in why
+
+
+def test_in_flight_reason_unreadable_body_defaults_undeclared():
+    # Body non transporté (None, shape _parse_cross_ref_events) : unverifiable
+    # => conservateur « undeclared », jamais « prochaine phase plausible »
+    # (fail-safe coherent #15060).
+    issue = _issue(title="x", comments=[])
+    refs = [{"pr_number": 3, "merged_at": None, "is_pr": True, "state": "open"}]
+    verdict, why = classify(issue, refs)
+    assert verdict == "in_flight"
+    assert "comments only" in why and "undeclared" in why
+
+
+def test_with_pr_bodies_fetches_open_prs_too(monkeypatch):
+    # Wiring #18102 : le driver attache body+title des PRs OUVERTES (raison
+    # in_flight), pas seulement des mergees (gate #15060). La PR fermee
+    # non-margee (voie abandonnee) n'est PAS consultee.
+    import candidate_delivered as cd
+
+    fetched = []
+
+    def fake_gh_json(args):
+        assert args[0] == "pr" and args[-1] == "body,title"
+        fetched.append(int(args[2]))
+        bodies = {10: ("Phase 2: continuing #1.", "rollout p2"),
+                  20: ("GenAI census notes.", "genai(image): batch"),
+                  30: ("See #1.", "delivery")}
+        return dict(zip(("body", "title"), bodies[int(args[2])]))
+
+    monkeypatch.setattr(cd, "_gh_json", fake_gh_json)
+    refs = [
+        {"pr_number": 10, "merged_at": None, "is_pr": True, "state": "open", "body": None},
+        {"pr_number": 20, "merged_at": None, "is_pr": True, "state": "open", "body": None},
+        {"pr_number": 30, "merged_at": "2026-09-01T00:00:00Z", "is_pr": True,
+         "state": "closed", "body": None},
+        {"pr_number": 40, "merged_at": None, "is_pr": True, "state": "closed", "body": None},
+    ]
+    out = cd._with_pr_bodies("jsboige/CoursIA", refs, {})
+    assert sorted(fetched) == [10, 20, 30]  # 40 (fermee non-margee) epargnee
+    by_pr = {r["pr_number"]: r for r in out}
+    assert by_pr[10]["body"] == "Phase 2: continuing #1."
+    assert by_pr[20]["title"] == "genai(image): batch"
+    assert by_pr[40].get("body") is None  # non enrichie
+
+    # Et la raison suit : 10 declarante, 20 contextuelle.
+    issue = _issue(title="x", number=1, comments=[])
+    verdict, why = cd.classify(issue, out)
+    assert verdict == "in_flight"
+    assert "#10" in why and "declare this issue in body/title" in why
+    assert "#20" in why and "comments only" in why

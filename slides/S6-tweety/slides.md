@@ -43,7 +43,7 @@ layout: section
 
 ## Duree totale estimee
 
-**~7 heures** (10 notebooks, 20 min a 60 min chacun)
+**~7 heures** (notebooks de 20 min a 60 min chacun)
 
 ---
 layout: section

@@ -9,6 +9,7 @@ Le geste de la série : rendre chaque identité **calculée dans une sortie** �
 | # | Notebook | Source / écho | Outil |
 |---|----------|---------------|-------|
 | 01 | [01-formes-modulaires-sl2z-hecke.ipynb](01-formes-modulaires-sl2z-hecke.ipynb) | *A Course in Arithmetic* ch. VII ; pont Γ₀(11) courbe 11a1 ↔ η²η₁₁² ; formule `coeffHeckeT` du lake | Python stdlib |
+| 02 | [02-monstrous-moonshine-invariant-j.ipynb](02-monstrous-moonshine-invariant-j.ipynb) | Conway & Norton *Monstrous Moonshine* (1979) ; invariant $j$ et groupe Monstre ; récit cp4space/Wertheim | Python stdlib |
 
 ## Conventions
 
@@ -21,5 +22,6 @@ Le geste de la série : rendre chaque identité **calculée dans une sortie** �
 
 - **« Plaisir des mathématiques »** — J.-P. Serre, Institut Henri Poincaré, 2026 (YouTube `tNtoTzGltak`) — la culture du contre-exemple qui ouvre la série.
 - **« À propos de la correspondance Grothendieck-Serre »** — dialogue J.-P. Serre / Alain Connes, Fondation Hugot du Collège de France, 2019 (YouTube `pOv-ygSynRI`) — l'orthogonalité Langlands/Grothendieck.
+- **« The most magical subject in math (modular forms) »** — Richard Borcherds, The Mansions of Science, 2026 (YouTube `lhE4DZWFQ1U`) — la « cinquième opération arithmétique » d'Eichler [00:00], la construction du Monstre par Griess racontée par son prouveur [01:30], et la ligne de conduite de la série : *« the logical way to teach a subject and the best psychological way to teach it are usually different »* [02:25].
 
 Transcriptions complètes (timestampées) : `G:\Mon Drive\MyIA\IA\Bibliographie IA\NumberTheory\` — hors dépôt, conformément à la convention bibliographique. À archiver pour la suite : Diamond & Shurman, *A First Course in Modular Forms*.

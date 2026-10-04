@@ -462,7 +462,7 @@ _OTHER_LINE = "C:\\Users\\jsboi\\AppData\\Local\\Temp\\test_audio.mp3"
 # windowsapps) catch 3 source-nb leaks the 6-token taxonomy missed. Each
 # fixture mirrors a real source-nb leak line observed in:
 # - Planners-0-Setup (AppData\\Local\\Programs user-local Python install)
-# - ICT-21-SAETrajectoires (miniconda3\\envs\\coursia-sae torch warning)
+# - ICT-21-SAETrajectoires-Python (miniconda3\\envs\\coursia-sae torch warning)
 # - Tweety-7b-Ranking-Probabilistic (Microsoft\\WindowsApps Python launcher)
 _PYTHON_LINE = (
     "C:\\Users\\jsboi\\AppData\\Local\\Programs\\Python\\Python313\\python.exe"
@@ -1157,7 +1157,8 @@ def _cli(*args, timeout=60):
     completed ``subprocess.CompletedProcess``."""
     return subprocess.run(
         [sys.executable, str(_SMP_SCRIPT), *args],
-        capture_output=True, text=True, timeout=timeout,
+        capture_output=True, text=True, encoding="utf-8",
+        errors="replace", timeout=timeout,
     )
 
 

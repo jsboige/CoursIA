@@ -13,11 +13,12 @@
   of every crossing off the labelling of the PD code (edges are numbered
   along the orientation), derives the writhe, Kauffman's normalisation
   f(D) and the Jones polynomial V(t), and adds a planarity criterion by
-  face counting (Euler's formula). This criterion establishes that the
-  `figureEightDiagram` code of `Knots.Basic_en` is not planar: it is a
-  virtual knot, whose Jones polynomial is that of the trefoil.
-  `figureEightPlanarDiagram` provides a planar code of the figure-eight
-  knot, on which V(t) takes the textbook value.
+  face counting (Euler's formula). This criterion established that the
+  former `figureEightDiagram` code of `Knots.Basic_en` (derived from the
+  KnotInfo DT-code) was not planar: a virtual knot whose Jones polynomial
+  was that of the trefoil. The code has been canonicalized to the planar
+  KnotAtlas code (issue #17595): the diagram is planar, of zero writhe,
+  and V(t) takes the textbook value.
 
   ## State sum
 
@@ -78,10 +79,12 @@
     reason. f(D) is built to be invariant (the factor (−A³)^(−w)
     compensates move I), but the `jones_*` theorems remain equalities of
     diagrams.
-  - **`figureEightDiagram` code of `Knots.Basic_en`**: not planar
-    (`figureEightDiagram_not_planar`). Fixing it touches other modules
-    (Conway, Invariant) and the Lean-17c notebook; it is tracked by
-    #17595. This slice does not modify `Knots.Basic_en`.
+  - **`figureEightDiagram` code of `Knots.Basic_en`**: the former code was
+    not planar (virtual knot, 4 faces, writhe 4). Canonicalized to the
+    planar KnotAtlas code by #17595: the diagram is now planar
+    (`figureEightDiagram_planar`), of zero writhe, and its invariants take
+    the textbook values. The history of the defect is documented in the
+    planarity section.
   - **Sign read off the labelling**: `crossingSign` assumes edges
     numbered consecutively along the orientation (KnotInfo/KnotAtlas
     convention). On a code that does not follow it, the sign is
@@ -234,9 +237,10 @@ def bracket (d : KnotDiagram) : LP :=
 Values are confirmed by exact computation in the kernel (`decide` — the
 `LP` representation is computable throughout). The trefoil gives the
 textbook value for the right-handed trefoil (the rationale for
-convention A14); the `figureEightDiagram` code gives A⁸ + 1 − A⁻⁴, which
-is not the bracket of the figure-eight knot: this code is not planar
-(slice 2).
+convention A14); the canonical planar code `figureEightDiagram` gives
+A⁸ − A⁴ + 1 − A⁻⁴ + A⁻⁸, the textbook value for the figure-eight knot
+(#17595; the former DT-derived code gave A⁸ + 1 − A⁻⁴, that of a virtual
+knot).
 -/
 
 /-- The bracket of the unknot diagram is 1: unique empty state, one
@@ -251,12 +255,11 @@ theorem bracket_trefoilDiagram :
   decide
 
 set_option maxRecDepth 100000 in
-/-- Bracket value on the `figureEightDiagram` code: A⁸ + 1 − A⁻⁴. This
-code is not planar (`figureEightDiagram_not_planar`): the value is that
-of a virtual knot, not the bracket of the figure-eight knot, which is
-A⁸ − A⁴ + 1 − A⁻⁴ + A⁻⁸ (`bracket_figureEightPlanarDiagram`). -/
+/-- Bracket value on the canonical planar code `figureEightDiagram`
+(#17595): A⁸ − A⁴ + 1 − A⁻⁴ + A⁻⁸, the textbook value, symmetric under
+A ↔ A⁻¹. The former DT-derived code (virtual knot) gave A⁸ + 1 − A⁻⁴. -/
 theorem bracket_figureEightDiagram :
-    bracket figureEightDiagram = [(8, 1), (0, 1), (-4, -1)] := by
+    bracket figureEightDiagram = [(8, 1), (4, -1), (0, 1), (-4, -1), (-8, 1)] := by
   decide
 
 /-- The bracket distinguishes (at the diagram level) the trefoil from the
@@ -388,11 +391,12 @@ theorem writhe_mirror_trefoil : writhe trefoil.mirror.diagram = -3 := by
   rw [writhe_mirror trefoil trefoil_wf (by decide)]
   decide
 
-/-- Writhe of the lake's `figureEightDiagram` code: its four crossings
-are positive. A minimal figure-eight diagram has writhe zero (the knot is
-amphichiral): this value is a first hint of the defect of this code,
-established by `figureEightDiagram_not_planar`. -/
-theorem writhe_figureEightDiagram : writhe figureEightDiagram = 4 := by
+/-- Writhe of the canonical planar code `figureEightDiagram`: two
+positive crossings, two negative (signs read by `crossingSign`:
+[−1, −1, 1, 1]), writhe zero as expected from a minimal diagram of an
+amphichiral knot. The former DT-derived code had writhe 4 — a first hint
+of its defect (see the planarity section). -/
+theorem writhe_figureEightDiagram : writhe figureEightDiagram = 0 := by
   decide
 
 /-! ## Slice 2 — planarity: faces of the combinatorial map
@@ -485,22 +489,32 @@ without changing its faces. -/
 theorem mirror_trefoil_planar : trefoil.mirror.diagram.planar = true := by
   decide
 
-/-- The lake's `figureEightDiagram` code has only 4 faces for 4
-crossings, instead of the 6 of a planar diagram: its map has genus 1
-(torus). -/
-theorem faceCount_figureEightDiagram : figureEightDiagram.faceCount = 4 := by
+/-- The canonical planar code `figureEightDiagram` (#17595) has the 6
+faces of a planar diagram with 4 crossings (Euler's formula). The former
+DT-derived code had only 4: a genus-1 map (torus) — first witness of the
+defect, before `figureEightDiagram_planar`. -/
+theorem faceCount_figureEightDiagram : figureEightDiagram.faceCount = 6 := by
   decide
 
-/-- **The `figureEightDiagram` code of `Knots.Basic_en` is not a planar
-diagram.** It describes a virtual knot: its bracket and Jones values are
-not those of the figure-eight knot (see `jones_figureEightDiagram`). -/
-theorem figureEightDiagram_not_planar : figureEightDiagram.planar = false := by
+/-- **The `figureEightDiagram` code of `Knots.Basic_en` is a planar
+diagram** (canonicalization #17595 to the KnotAtlas code
+`X[4,2,5,1], X[8,6,1,5], X[6,3,7,4], X[2,7,3,8]`, read in the module's
+clockwise convention: the mirror of the KnotAtlas diagram, still a
+figure-eight knot by amphichirality). The former DT-derived code
+described a virtual knot: its bracket and Jones values were those of the
+trefoil. -/
+theorem figureEightDiagram_planar : figureEightDiagram.planar = true := by
   decide
 
 /-- A planar PD code of the figure-eight knot: the KnotAtlas one
-(`X[4,2,5,1], X[8,6,1,5], X[6,3,7,4], X[2,7,3,8]`). Read in the module's
-clockwise convention, it describes the mirror of the KnotAtlas diagram,
-which is still a figure-eight knot since that knot is amphichiral. -/
+(`X[4,2,5,1], X[8,6,1,5], X[6,3,7,4], X[2,7,3,8]`). Read in the
+module's clockwise convention, it describes the mirror of the KnotAtlas
+diagram, still a figure-eight knot by amphichirality.
+
+Kept as a **historical name**: since canonicalization #17595 it denotes
+the same diagram as `figureEightDiagram`, so both names carry the same
+values. Removing the duplicate is deferred as long as `Knots.FigureEight`
+(PR #18078) refers to it. -/
 def figureEightPlanarDiagram : KnotDiagram where
   crossings := [
     ⟨4, 2, 5, 1⟩,
@@ -510,22 +524,25 @@ def figureEightPlanarDiagram : KnotDiagram where
   ]
   numEdges := 8
 
+/-- The planar code is well formed. -/
 theorem figureEightPlanarDiagram_wf : figureEightPlanarDiagram.wf = true := by
   decide
 
+/-- The planar code has the 6 faces of a planar diagram with 4 crossings. -/
 theorem faceCount_figureEightPlanarDiagram : figureEightPlanarDiagram.faceCount = 6 := by
   decide
 
+/-- The planar code is planar. -/
 theorem figureEightPlanarDiagram_planar : figureEightPlanarDiagram.planar = true := by
   decide
 
-/-- Two positive and two negative crossings: writhe zero, as expected
-from a minimal diagram of an amphichiral knot. -/
+/-- Two positive and two negative crossings: zero writhe, as expected of
+a minimal diagram of an amphichiral knot. -/
 theorem writhe_figureEightPlanarDiagram : writhe figureEightPlanarDiagram = 0 := by
   decide
 
 set_option maxRecDepth 100000 in
-/-- Bracket of the planar figure eight: A⁸ − A⁴ + 1 − A⁻⁴ + A⁻⁸, the
+/-- Bracket of the planar figure-eight: A⁸ − A⁴ + 1 − A⁻⁴ + A⁻⁸, the
 textbook value, symmetric under A ↔ A⁻¹. -/
 theorem bracket_figureEightPlanarDiagram :
     bracket figureEightPlanarDiagram = [(8, 1), (4, -1), (0, 1), (-4, -1), (-8, 1)] := by
@@ -591,13 +608,37 @@ theorem jones_trefoil_ne_mirror :
 set_option maxRecDepth 100000 in
 /-- V(4₁) = t² − t + 1 − t⁻¹ + t⁻²: textbook value for the figure-eight
 knot. -/
-theorem jones_figureEightPlanarDiagram :
-    jones figureEightPlanarDiagram = [(2, 1), (1, -1), (0, 1), (-1, -1), (-2, 1)] := by
+theorem jones_figureEightDiagram :
+    jones figureEightDiagram = [(2, 1), (1, -1), (0, 1), (-1, -1), (-2, 1)] := by
   decide
 
 set_option maxRecDepth 100000 in
 /-- The Jones polynomial of the figure eight is invariant under
 t ↦ t⁻¹, the signature of the knot's amphichirality. -/
+theorem jones_figureEightDiagram_invert :
+    lpInvert (jones figureEightDiagram) = jones figureEightDiagram := by
+  decide
+
+set_option maxRecDepth 100000 in
+/-- The trefoil and the figure eight have distinct Jones polynomials. (On
+the former DT-derived code, the Jones of the "eight" equaled that of the
+trefoil — a telltale of the defect, gone with the #17595
+canonicalization.) -/
+theorem jones_figureEight_ne_trefoil :
+    jones figureEightDiagram ≠ jones trefoilDiagram := by
+  decide
+
+set_option maxRecDepth 100000 in
+/-- V(4₁) = t² − t + 1 − t⁻¹ + t⁻² on the historical name of the planar
+code: the same value as `jones_figureEightDiagram`, since both names
+denote the same diagram since canonicalization #17595. -/
+theorem jones_figureEightPlanarDiagram :
+    jones figureEightPlanarDiagram = [(2, 1), (1, -1), (0, 1), (-1, -1), (-2, 1)] := by
+  decide
+
+set_option maxRecDepth 100000 in
+/-- The Jones polynomial of the planar code is invariant under t ↦ t⁻¹,
+the signature of the knot's amphichirality. -/
 theorem jones_figureEightPlanarDiagram_invert :
     lpInvert (jones figureEightPlanarDiagram) = jones figureEightPlanarDiagram := by
   decide
@@ -606,17 +647,6 @@ set_option maxRecDepth 100000 in
 /-- The trefoil and the figure eight have distinct Jones polynomials. -/
 theorem jones_figureEightPlanar_ne_trefoil :
     jones figureEightPlanarDiagram ≠ jones trefoilDiagram := by
-  decide
-
-set_option maxRecDepth 100000 in
-/-- **Defect of the lake's `figureEightDiagram` code**: its Jones
-polynomial is that of the right-handed trefoil, not that of the
-figure-eight knot. Together with `figureEightDiagram_not_planar`, this
-theorem establishes that the code describes a virtual knot; the slice 1
-values computed on it (`bracket_figureEightDiagram`) concern that virtual
-knot. -/
-theorem jones_figureEightDiagram :
-    jones figureEightDiagram = jones trefoilDiagram := by
   decide
 
 end Knots_en

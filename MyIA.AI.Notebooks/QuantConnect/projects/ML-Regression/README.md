@@ -22,4 +22,4 @@ Stratégie de régression Ridge prédisant les rendements du jour suivant sur un
 
 ## Fichiers
 
-- `main.py` — Stratégie (227 lignes, `MLRegressionAlgorithm`)
+- `main.py` — Stratégie (`MLRegressionAlgorithm`)

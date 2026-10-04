@@ -403,3 +403,183 @@ class TestModuleStructure:
             out = rqr.replace_render_block(yml, new_render_block)
             assert top_key in out, f"top key {top_key} lost"
             assert 'body: x' in out, f"tail content lost after {top_key}"
+
+
+# ---------------------------------------------------------------------------
+# has_hr_separator — garde `---` (#11451), appliquee aux .md comme aux .ipynb
+# ---------------------------------------------------------------------------
+
+class TestHasHrSeparator:
+    """La garde syntaxique `has_hr_separator` determine si un fichier (notebook
+    ou .md) doit etre exclu du rendu Quarto (YAMLException si `---` hr).
+
+    Regles testees (cf. issue #11451, etendu aux docs/*.md par #18422) :
+      - `---` seul en debut de cellule markdown (ou apres ligne vide) -> True
+      - `text\\n---` (soulignement setext H2) -> False (pas un bloc YAML)
+      - `---` a l'interieur d'un bloc de code fence (``` ou ~~~) -> ignore
+      - Fichier illisible (OSError, JSON invalide) -> False (laisse CI trancher)
+      - Fichier non markdown / sans cells -> False
+    """
+
+    def _write_md(self, tmp_path: Path, name: str, body: str) -> str:
+        """Helper: write a markdown file under docs/, return repo-relative POSIX path."""
+        md_path = tmp_path / name
+        md_path.parent.mkdir(parents=True, exist_ok=True)
+        md_path.write_text(body, encoding="utf-8")
+        # Repo-relative POSIX path (tmp_path stands in for REPO_ROOT in the
+        # tests via monkeypatch below).
+        return name
+
+    def test_md_with_hr_separator_returns_true(self, tmp_path, monkeypatch):
+        """Un .md avec `---` precede d'une ligne vide declenche la garde."""
+        rel = self._write_md(tmp_path, "docs/test-hr.md",
+                              "Titre introductif\n\n---\n\nSuite du texte\n")
+        monkeypatch.setattr(rqr, "REPO_ROOT", tmp_path)
+        assert rqr.has_hr_separator(rel) is True
+
+    def test_md_with_hr_at_start_returns_true(self, tmp_path, monkeypatch):
+        """Un .md commencant par `---` (debut de cellule) declenche la garde."""
+        rel = self._write_md(tmp_path, "docs/test-hr-start.md",
+                              "---\ntitle: foo\n---\n")
+        monkeypatch.setattr(rqr, "REPO_ROOT", tmp_path)
+        assert rqr.has_hr_separator(rel) is True
+
+    def test_md_with_setext_heading_returns_false(self, tmp_path, monkeypatch):
+        """Un .md avec `text\\n---` (soulignement setext H2) n'est PAS un hr YAML.
+
+        C'est le cas explicitement distingue par la garde (lignes 187-190 du
+        module) : seul un `---` precede d'une ligne vide ou du debut ouvre
+        un bloc yaml_metadata_block.
+        """
+        rel = self._write_md(tmp_path, "docs/test-setext.md",
+                              "Titre H1\n=========\n\nTitre H2\n---------\n\nSuite\n")
+        monkeypatch.setattr(rqr, "REPO_ROOT", tmp_path)
+        assert rqr.has_hr_separator(rel) is False
+
+    def test_md_with_no_separator_returns_false(self, tmp_path, monkeypatch):
+        """Un .md propre (sans `---`) n'est pas exclu."""
+        rel = self._write_md(tmp_path, "docs/test-clean.md",
+                              "# Titre normal\n\nDu contenu sans hr.\n\nPlus de contenu.\n")
+        monkeypatch.setattr(rqr, "REPO_ROOT", tmp_path)
+        assert rqr.has_hr_separator(rel) is False
+
+    def test_md_with_hr_inside_code_fence_returns_false(self, tmp_path, monkeypatch):
+        """Un `---` a l'interieur d'un bloc ```code``` n'est PAS un hr YAML."""
+        rel = self._write_md(tmp_path, "docs/test-fence.md",
+                              "# Titre\n\n```python\n---\ncode block\n```\n")
+        monkeypatch.setattr(rqr, "REPO_ROOT", tmp_path)
+        assert rqr.has_hr_separator(rel) is False
+
+    def test_md_unreadable_returns_false(self, tmp_path, monkeypatch):
+        """Fichier inexistant ou illisible : on retourne False, la CI tranchera."""
+        monkeypatch.setattr(rqr, "REPO_ROOT", tmp_path)
+        # Path qui n'existe pas
+        assert rqr.has_hr_separator("docs/does-not-exist.md") is False
+
+    def test_md_with_inline_text_above_hr_returns_false(self, tmp_path, monkeypatch):
+        """Un .md avec `text\\n---\\n` (texte immediatement avant le hr) -> False.
+
+        Variante du setext : la garde ne declenche QUE si la ligne precedente
+        est vide (separateur horizontal) OU si on est au debut (ligne vide
+        initiale). Une ligne de texte immediatement au-dessus n'ouvre PAS un
+        bloc yaml_metadata_block.
+        """
+        rel = self._write_md(tmp_path, "docs/test-inline-hr.md",
+                              "Une ligne de texte\n---\nPlus de texte\n")
+        monkeypatch.setattr(rqr, "REPO_ROOT", tmp_path)
+        assert rqr.has_hr_separator(rel) is False
+
+    def test_ipynb_with_hr_in_markdown_cell_returns_true(self, tmp_path, monkeypatch):
+        """Un .ipynb avec une cellule markdown portant `---` hr declenche la garde."""
+        nb_content = '''{
+  "cells": [
+    {"cell_type": "markdown", "metadata": {}, "source": ["Titre\\n\\n---\\n\\nSuite"]}
+  ],
+  "metadata": {},
+  "nbformat": 4,
+  "nbformat_minor": 5
+}'''
+        nb_path = tmp_path / "test-hr.ipynb"
+        nb_path.write_text(nb_content, encoding="utf-8")
+        monkeypatch.setattr(rqr, "REPO_ROOT", tmp_path)
+        assert rqr.has_hr_separator("test-hr.ipynb") is True
+
+    def test_ipynb_clean_returns_false(self, tmp_path, monkeypatch):
+        """Un .ipynb SANS `---` hr dans ses cellules markdown -> False."""
+        nb_content = '''{
+  "cells": [
+    {"cell_type": "markdown", "metadata": {}, "source": ["# Titre propre\\n\\nDu contenu"]}
+  ],
+  "metadata": {},
+  "nbformat": 4,
+  "nbformat_minor": 5
+}'''
+        nb_path = tmp_path / "test-clean.ipynb"
+        nb_path.write_text(nb_content, encoding="utf-8")
+        monkeypatch.setattr(rqr, "REPO_ROOT", tmp_path)
+        assert rqr.has_hr_separator("test-clean.ipynb") is False
+
+
+# ---------------------------------------------------------------------------
+# git_tracked_docs_md — exclusion des .md avec `---` hr (cf. #18422)
+# ---------------------------------------------------------------------------
+
+class TestGitTrackedDocsMd:
+    """Valide que la fonction `git_tracked_docs_md` :
+      - filtre les .md avec hr separator (garde #11451)
+      - filtre les README.md (deja comptabilises par git_tracked_readmes)
+      - filtre les fichiers sous EXCLUDE_MARKERS (archive, vendored)
+      - trie la sortie (deterministic diffs)
+    """
+
+    def test_excludes_md_with_hr_separator(self, monkeypatch):
+        """Un .md avec `---` hr doit etre exclu de la liste rendue."""
+        clean_md = "docs/clean.md"
+        hr_md = "docs/hr.md"
+        fake_output = f"{clean_md}\n{hr_md}\n"
+
+        def fake_run(*args, **kwargs):
+            class Result:
+                stdout = fake_output
+                returncode = 0
+            return Result()
+
+        monkeypatch.setattr(rqr.subprocess, "run", fake_run)
+        # Override has_hr_separator pour la fixture
+        monkeypatch.setattr(rqr, "has_hr_separator",
+                            lambda p: p.endswith("hr.md"))
+
+        result = rqr.git_tracked_docs_md()
+        assert clean_md in result
+        assert hr_md not in result
+        assert result == sorted(result, key=lambda s: s.lower())
+
+    def test_excludes_readmes(self, monkeypatch):
+        """Les README.md sous docs/ sont exclus (deja comptabilises par readmes)."""
+        fake_output = "docs/README.md\ndocs/other.md\n"
+
+        def fake_run(*args, **kwargs):
+            class Result:
+                stdout = fake_output
+                returncode = 0
+            return Result()
+
+        monkeypatch.setattr(rqr.subprocess, "run", fake_run)
+        result = rqr.git_tracked_docs_md()
+        assert "docs/README.md" not in result
+        assert "docs/other.md" in result
+
+    def test_excludes_archive_markers(self, monkeypatch):
+        """Les .md sous docs/archive/ sont exclus (EXCLUDE_MARKERS)."""
+        fake_output = "docs/archive/old.md\ndocs/active.md\n"
+
+        def fake_run(*args, **kwargs):
+            class Result:
+                stdout = fake_output
+                returncode = 0
+            return Result()
+
+        monkeypatch.setattr(rqr.subprocess, "run", fake_run)
+        result = rqr.git_tracked_docs_md()
+        assert "docs/archive/old.md" not in result
+        assert "docs/active.md" in result

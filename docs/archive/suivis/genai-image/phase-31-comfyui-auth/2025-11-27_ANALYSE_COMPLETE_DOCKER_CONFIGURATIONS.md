@@ -154,7 +154,7 @@ _archive-20251125/
 ```
 
 #### 📋 Contenu de l'Archive
-1. **docker-compose.yml.obsolete** : Configuration multi-services (316 lignes)
+1. **docker-compose.yml.obsolete** : Configuration multi-services
    - Services : flux-1-dev, stable-diffusion-35, comfyui-workflows, orchestrator
    - Réseau : genai-dev-network (172.20.0.0/16)
    - Volumes : genai-models, genai-outputs, genai-cache

@@ -19,6 +19,15 @@ Status (2026-06-28):
 - IBKR sleeve: DONE + SOTA-OK (validated live against IB Gateway paper,
   account summary + positions read surface). Order placement gated on the
   gateway's "Read-Only API" being OFF (USER-HAND) + a reviewed orchestrator.
-- Risk / circuit breakers: implemented, dry-run validated.
-- Orchestrator: TODO (next cycle).
+- Risk / circuit breakers: implemented, dry-run validated; state persists
+  across restarts (``RiskGate.save`` / ``RiskGate.load``).
+- Rebalancing planner (``rebalance.py``): inverse-volatility target weights
+  and whole-share order planning, unit-tested.
+- Orchestrator core (``orchestrator.run_cycle``): one dry-run-by-default
+  rebalancing cycle against any ``Broker``.
+- IBKR adapter (``ibkr_broker.IBKRBroker``, 2026-10-03): UCITS lines by
+  conId, sleeve ledger built from tagged executions (never the account
+  value), delayed prices with fallbacks, collared limit orders on a paper
+  account only. ``python -m paper_harness.ibkr_cycle`` runs one dry cycle
+  against IB Gateway paper (validated read-only).
 """

@@ -265,6 +265,58 @@ PILOT: list[Guard] = [
         blocking=True,
     ),
     Guard(
+        name="notebook-nav-chain-guard",
+        source="notebook-nav-chain-guard.yml",
+        paths=NOTEBOOK_GLOBS + [
+            "MyIA.AI.Notebooks/**/README.md",
+            "scripts/notebook_tools/check_notebook_nav_chain.py",
+            "scripts/tests/baseline_nb_nav_chain.json",
+            ".github/workflows/notebook-nav-chain-guard.yml",
+        ],
+        argv=["python", "scripts/notebook_tools/check_notebook_nav_chain.py",
+              "--check"],
+        blocking=True,
+    ),
+    # F2 #18970 -- garde delta-only sur les violations STALE_LINK /
+    # BROKEN / DEAD_RENDER. L'audit BRUT de `regen_quarto_render.py
+    # --check-readme-links` rend 2432 violations au 2026-10-03 : un argv
+    # qui enverrait cette commande en blocking=True rougirait systematiquement
+    # toute PR touchant un README de serie ou un notebook rendu. Le delta
+    # argv (3-temps : HEAD capture -> base capture -> comparateur) ne
+    # rougit QUE sur les violations NOUVELLES introduites par la PR,
+    # laissant le backlog historique au sweep par famille en aval (#18911
+    # acceptation #2). Temoin verifie localement : une STALE_LINK injectee
+    # dans HEAD fait `NOUVELLES=1` (=exit 1), un PR sans nouvelle
+    # violation passe (exit 0) sur le meme depot.
+    Guard(
+        name="readme-ipynb-links-guard",
+        source="readme-ipynb-links-guard.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/README.md",
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "_quarto.yml",
+            "scripts/regen_quarto_render.py",
+            "scripts/notebook_tools/dump_readme_link_violations.py",
+            "scripts/notebook_tools/diff_readme_link_violations.py",
+            ".github/workflows/readme-ipynb-links-guard.yml",
+        ],
+        # Le dump imprime le JSON sur stdout ; le moteur fast-lane le
+        # capture via payload_of() et l'ecrit dans {name}.head.json (puis
+        # base.json apres bascule phase 2). Le comparator recoit les deux.
+        argv=["python",
+              "scripts/notebook_tools/dump_readme_link_violations.py"],
+        delta_argv=["python",
+                    "scripts/notebook_tools/diff_readme_link_violations.py",
+                    "{base_json}", "{head_json}"],
+        swap_paths=[
+            "MyIA.AI.Notebooks",
+            "scripts/regen_quarto_render.py",
+            "_quarto.yml",
+        ],
+        blocking=True,
+        needs_base=True,
+    ),
+    Guard(
         name="notebook-interp-positioning-guard",
         source="notebook-interp-positioning.yml",
         paths=NOTEBOOK_GLOBS + [
@@ -474,6 +526,9 @@ TRANCHE1: list[Guard] = [
             # `scripts/check_docs_links.py`; pinned by
             # `test_deck_scope_is_wired_into_the_fast_lane`.
             "slides/**",
+            # Book inventory (#18899): scanned as a single file, so the gate
+            # must fire when it changes. Mirror of SCAN_SCOPES.
+            "MyIA.AI.Notebooks/QuantConnect/BOOK_MAPPING.md",
             "scripts/check_docs_links.py",
         ],
         argv=["python", "scripts/check_docs_links.py", "--check",
@@ -1166,7 +1221,7 @@ TRANCHE9: list[Guard] = [
 #   'Invalid Notebook / outputs is a required property /
 #    Using nbformat v5.10.4 and nbconvert v7.17.0'
 #
-# Le c.1082 fabrication de GameTheory-06g-Bounded-Agents-Lean.ipynb a omis
+# Le c.1082 fabrication de GameTheory-06f-Bounded-Agents-Lean.ipynb a omis
 # la cle `outputs` de 9/9 cellules code. Papermill (validator permissif) a
 # accepte, le kernel lean4-wsl n'a rien produit (hang faute de `.lake/`), la
 # cle n'a jamais ete injectee -- resultat : un notebook structurellement
@@ -1174,8 +1229,7 @@ TRANCHE9: list[Guard] = [
 #
 # Renomme TRANCHE9 -> TRANCHE10 pour eviter la collision avec l'interval-kind
 # mergé sur main via PR #15624 (3342d97342, 2026-09-12T02:57:59+02:00 -- anterieur
-# a ce rebase). Collision signalee par le rebase c.1090 (Tell c.1065-L3 ★★
-# fondateur `rebase-vers-une-cible-NOMMEE-herite-de-sa-peremption`).
+# a ce rebase). Collision signalee par le rebase c.1090.
 #
 # Ce garde verifie la PRESENCE + le TYPE de `outputs` sur chaque cellule
 # code. `outputs: []` est PASS (la forme canonique d'une cellule non executee
@@ -1221,7 +1275,7 @@ TRANCHE10: list[Guard] = [
 # `notebook-source-collapse-ratchet.yml` a absorber.
 #
 # Le defaut fondeur est #15862 : la cellule `c989_independent_v2` de
-# GameTheory-06e-Open-Source-Game-Theory.ipynb a perdu 3116 caracteres de
+# GameTheory-06e-Open-Source-Game-Theory-Python.ipynb a perdu 3116 caracteres de
 # source (8425 -> 5309, -37.0 %) -- une table declarative et un `assert` ont
 # disparu -- et AUCUN des ~30 ratchets n'a bronche, parce que tous mesurent
 # des SORTIES, des sequences ou de la structure. Aucun ne mesurait la
@@ -1474,5 +1528,51 @@ TRANCHE15: list[Guard] = [
             "--all", "--check",
         ],
         blocking=True,
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 16 (#18048) -- garde caracteres de controle dans les sources de
+# cellules. Un outil d'ecriture qui interprete les echappements Python
+# transforme ``\a``, ``\b``, ``\f`` ou ``\v`` d'une source en caractere de
+# controle : le JSON reste valide (controles echappes \u0007/\b/\f), le
+# notebook s'execute, aucun organe ne rougissait -- mais le rendu est casse
+# (LaTeX illisible, regex affichee fausse).
+#
+# Temoins fondateurs (body #18048, tous deux en test dans
+# scripts/tests/test_check_control_chars_in_cells.py) :
+#   - POSITIF : tete f19ca6ff91 de la PR #17919 (MGS-01-Introduction
+#     cellule 10) -- 3x U+0007 dans ``$\sigma\<BEL>pprox 12$`` (intention
+#     : ``\approx``) ;
+#   - NEGATIF : main post-fix -- la cellule 18 markdown de
+#     auditer-la-conformite-visuelle.ipynb porte le texte LITERAL ``\b``
+#     (frontiere de regex, backslash + b en clair), qui ne doit JAMAIS
+#     rougir ; son U+0008 herite est repare dans la meme PR.
+#
+# Forme : delta base-vs-head sur les cellules AJOUTEES ou MODIFIEES (le
+# stock herite ne rougit pas -- une source identique a l'identique dans la
+# base est exempee), bloquant. rc=2 = incident d'entree (git/JSON), pas
+# une faute de la PR : warn_rc=(2,) le rend neutre au check-run, titre
+# distinct, non silencieux (forme hr-substitution-guard, #17941).
+# ---------------------------------------------------------------------------
+TRANCHE16: list[Guard] = [
+    Guard(
+        name="control-chars-in-cells-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**/*.ipynb",
+            "scripts/ci/check_control_chars_in_cells.py",
+            "scripts/tests/test_check_control_chars_in_cells.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/ci/check_control_chars_in_cells.py",
+            "--diff", "{base_ref}...HEAD",
+        ],
+        blocking=True,
+        needs_base=True,
+        warn_rc=(2,),
     ),
 ]

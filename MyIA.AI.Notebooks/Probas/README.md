@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: Probas
-pedagogical_count: 74
-breakdown: DecisionTheory=31, Infer=21, PyMC=19, Applications=3
-maturity: BETA=73, ALPHA=1
+pedagogical_count: 77
+breakdown: DecisionTheory=32, Infer=21, PyMC=20, Applications=4
+maturity: BETA=74, ALPHA=2, DRAFT=1
 -->
 
 > **À propos des décomptes** : le marqueur `CATALOG-STATUS` ci-dessus est la **source de vérité autoritative** pour les volumes (notebooks par sous-série, maturité). Il est régénéré chaque nuit par le workflow [`catalog-cron.yml`](../../.github/workflows/catalog-cron.yml) à 03:37 UTC sur `main` (commit par `github-actions[bot]`, livré par la PR permanente `chore/catalog-refresh-pending`). Pour les **décomptes par kernel** (C#/.NET vs Python vs Lean 4) au sein d'une sous-série — c'est-à-dire la répartition **technique** par interpréteur —, ce README reste autoritatif car la décomposition langagière par sous-série n'est pas dans le marqueur agrégé ; cette granularité est documentée ici par lecture directe des `metadata.kernelspec.language` des notebooks (`28 C# + 41 Python + 3 Lean 4 = 72 ✓` au 19/09/2026). Si vous observez un décalage entre ce marqueur et une phrase en prose de ce README, **fiez-vous au marqueur** ; la prose sera ré-alignée manuellement lors du prochain passage — sauf si le marqueur est lui-même en retard sur le disque (sa PR de régénération en attente de merge) : au 19/09/2026 c'est le cas, le marqueur affiche encore les comptes d'avant l'arrivée des notebooks DoWhy-3/4/5 (mergés les 12-14/09/2026) ; la prose ci-dessous est alors mesurée sur le disque et prend temporairement l'avance.
@@ -13,13 +13,13 @@ maturity: BETA=73, ALPHA=1
 
 Le monde réel est incertain. Un diagnostic médical n'est jamais sûr à 100%, un classement sportif dépend de performances intrinsèquement variables, et les données que nous collectons sont toujours bruitées ou incomplètes. La programmation probabiliste offre un cadre rigoureux pour modéliser cette incertitude : plutôt que de calculer une seule réponse, on obtient une **distribution de probabilités** qui quantifie notre confiance dans chaque résultat possible.
 
-Cette série couvre trois stacks complémentaires : **Infer.NET** (Microsoft, C#/.NET Interactive) pour l'inférence par **message passing déterministe** (EP/VMP, plus un échantillonneur de Gibbs disponible), **PyMC** (Python) pour l'**échantillonnage stochastique MCMC** (NUTS), et des **applications standalone** (RSA, identification causale avec DoWhy, percolation de liens sur tore fini). Elle totalise **72 notebooks** — **28 en C#/.NET Interactive**, **41 en Python**, **3 en Lean 4** (voir le marqueur `CATALOG-STATUS` ci-dessus pour le décompte autoritatif).
+Cette série couvre trois stacks complémentaires : **Infer.NET** (Microsoft, C#/.NET Interactive) pour l'inférence par **message passing déterministe** (EP/VMP, plus un échantillonneur de Gibbs disponible), **PyMC** (Python) pour l'**échantillonnage stochastique MCMC** (NUTS), et des **applications standalone** (RSA, identification causale avec DoWhy, percolation de liens sur tore fini, géométrie catégorique quotients/fibres). Elle totalise **72 notebooks** — **28 en C#/.NET Interactive**, **41 en Python**, **3 en Lean 4** (voir le marqueur `CATALOG-STATUS` ci-dessus pour le décompte autoritatif).
 
-Le corpus bayésien ([`Infer/`](Infer/README.md)) compte **21 notebooks** : socle numéroté 1-20 (le numéro 6 n'existe pas — le debugging vit en accretion `Infer-2b`), accretion de premier modèle `Infer-1b`, et `Infer-20` *Quotients et fibres* en kernel Python. Il couvre les fondements (distributions, graphes de facteurs), les modèles classiques (réseaux bayésiens, TrueSkill, LDA, HMM), les frontières (causalité, processus gaussiens, modèles hiérarchiques, filtre de Kalman, détection de rupture, analyse de survie) et la géométrie catégorique (quotients, fibres, recollement).
+Le corpus bayésien ([`Infer/`](Infer/README.md)) couvre le socle numéroté 1-19 (le numéro 6 n'existe pas — le debugging vit en accretion `Infer-2b`) et l'accretion de premier modèle `Infer-1b` : fondements (distributions, graphes de facteurs), modèles classiques (réseaux bayésiens, TrueSkill, LDA, HMM), frontières (causalité, processus gaussiens, modèles hiérarchiques, filtre de Kalman, détection de rupture, analyse de survie). La géométrie catégorique (quotients, fibres, recollement) vit en application autonome : [`Applications/Quotients-Fibres-Recollement-Python.ipynb`](Applications/Quotients-Fibres-Recollement-Python.ipynb) (kernel Python).
 
-L'**arc décision** ([`DecisionTheory/DecInfer/`](DecisionTheory/DecInfer/README.md)) en extrait des **notebooks C#** (utilité espérée, EVPI, MDPs, bandits, jusqu'au Thompson Sampling DecInfer-10). Il est en outre certifié par un lake compagnon **Lean 4** ([`decision_theory_lean`](decision_theory_lean/)) et ses **notebooks à kernel Lean** (DecInfer-02 utilité espérée vNM, DecInfer-09 indice de Gittins) : les identités d'escompte y sont démontrées (`0 sorry`), le théorème d'optimalité restant énoncé — sa preuve complète attend une formalisation des MDP absente de Mathlib.
+L'**arc décision** ([`DecisionTheory/DecInfer/`](DecisionTheory/DecInfer/README.md)) en extrait des **notebooks C#** (utilité espérée, EVPI, MDPs, bandits, jusqu'au Thompson Sampling DecInfer-10). Il est en outre certifié par un lake compagnon **Lean 4** ([`decision_theory_lean`](DecisionTheory/decision_theory_lean/)) et ses **notebooks à kernel Lean** (DecInfer-02 utilité espérée vNM, DecInfer-08b indice de Gittins) : les identités d'escompte y sont démontrées (`0 sorry`), le théorème d'optimalité restant énoncé — sa preuve complète attend une formalisation des MDP absente de Mathlib.
 
-Le versant **PyMC** porte ces modèles en Python avec l'échantillonnage NUTS : le **corpus bayésien PyMC** ([`PyMC/`](PyMC/README.md), en miroir de l'arc Infer — paires numérotées, la paire de debugging étant `PyMC-06` ↔ l'accrétion `Infer-2b` ; fondations, modèles classiques, inférence causale, puis frontières : séquences, reco, processus gaussien épars, filtre de Kalman, change-point, survie) et les **miroirs de l'arc décision** ([`DecisionTheory/DecPyMC/`](DecisionTheory/DecPyMC/README.md), renumérotés, dont la **jambe actuarielle** 8-12).
+Le versant **PyMC** porte ces modèles en Python avec l'échantillonnage NUTS : le **corpus bayésien PyMC** ([`PyMC/`](PyMC/README.md), en miroir de l'arc Infer — paires numérotées, la paire de debugging étant `PyMC-02b` ↔ `Infer-2b` (toutes deux accrétions 2b, cf renommage #17808) ; fondations, modèles classiques, inférence causale, puis frontières : séquences, reco, processus gaussien épars, filtre de Kalman, change-point, survie) et les **miroirs de l'arc décision** ([`DecisionTheory/DecPyMC/`](DecisionTheory/DecPyMC/README.md), renumérotés, dont la **jambe actuarielle** 8-12).
 
 La **percolation** ([`Applications/Percolation/`](Applications/Percolation/README.md)) complète ce trio Lean avec [`Percolation-Lean`](Applications/Percolation/Percolation-Lean.ipynb) (noyau fini prouvé sans `sorry`, compagnon du lake `percolation_lean`), jumeau de la simulation Python [`Percolation-Supercritique`](Applications/Percolation/Percolation-Supercritique.ipynb) (trois régimes mesurés).
 
@@ -114,7 +114,7 @@ EP converge sans diverger mais **inverse à la fois l'assignation des composante
 
 ### Phase 3 : Décision bayésienne (arc autonome, ~7h)
 
-La seconde moitié passe de l'inférence à la décision : comment choisir une action quand on ne connaît que des probabilités ? Chez **Infer.NET**, cet arc a été extrait dans [`DecisionTheory/DecInfer/`](DecisionTheory/DecInfer/README.md) (renumérotés 1-10, accretion Lean 2b) : les notebooks 1-4 posent les fondations (axiomes de l'utilité, fonctions mono- et multi-attributs), les notebooks 5-8 appliquent aux réseaux de décision, valeur de l'information, systèmes experts robustes et processus décisionnels de Markov (MDPs) — qui relient cette série à [RL](../RL/). Le compagnon DecInfer-09 (kernel Lean 4 via WSL) formalise les identités d'escompte géométrique de l'indice de Gittins dans le lake [`decision_theory_lean`](decision_theory_lean/) — placé directement sous `Probas/` (hors de toute sous-série) pour être visible des deux pistes (Infer.NET / PyMC) ; le théorème d'optimalité y est énoncé, sa preuve complète exigeant une formalisation des MDP qui manque encore à Mathlib. Le notebook DecInfer-10 (Thompson Sampling) clôt l'arc sur les bandits bayésiens en pratique. Côté PyMC, le cœur de cet arc est reproduit dans [`DecisionTheory/DecPyMC/`](DecisionTheory/DecPyMC/) (renumérotés, dont la jambe actuarielle 8-12).
+La seconde moitié passe de l'inférence à la décision : comment choisir une action quand on ne connaît que des probabilités ? Chez **Infer.NET**, cet arc a été extrait dans [`DecisionTheory/DecInfer/`](DecisionTheory/DecInfer/README.md) (renumérotés 1-10, accretion Lean 2b) : les notebooks 1-4 posent les fondations (axiomes de l'utilité, fonctions mono- et multi-attributs), les notebooks 5-8 appliquent aux réseaux de décision, valeur de l'information, systèmes experts robustes et processus décisionnels de Markov (MDPs) — qui relient cette série à [RL](../RL/). Le compagnon DecInfer-08b (kernel Lean 4 via WSL) formalise les identités d'escompte géométrique de l'indice de Gittins dans le lake [`decision_theory_lean`](DecisionTheory/decision_theory_lean/) — descendu dans `DecisionTheory/` auprès de ses consommateurs (décision #4362 — il reste visible des deux pistes via le README de la sous-série) ; le théorème d'optimalité y est énoncé, sa preuve complète exigeant une formalisation des MDP qui manque encore à Mathlib. Le notebook DecInfer-10 (Thompson Sampling) clôt l'arc sur les bandits bayésiens en pratique. Côté PyMC, le cœur de cet arc est reproduit dans [`DecisionTheory/DecPyMC/`](DecisionTheory/DecPyMC/) (renumérotés, dont la jambe actuarielle 8-12).
 
 ### Parcours alternatifs
 
@@ -161,7 +161,7 @@ Pour les étudiants en recherche opérationnelle ou finance :
 6. **Value of information** (DecInfer-06) : EVPI, EVSI — quand un test est-il rentable ?
 7. **Expert systems** (DecInfer-07) : Minimax, Minimax Regret, robustesse
 8. **Sequential** (DecInfer-08) : MDPs, bandits, POMDPs — passerelle vers le RL
-9. **Gittins en Lean** (DecInfer-09) : identités d'escompte démontrées (`0 sorry`), théorème d'optimalité énoncé — pont vers [SymbolicAI/Lean](../SymbolicAI/Lean/README.md)
+9. **Gittins en Lean** (DecInfer-08b) : identités d'escompte démontrées (`0 sorry`), théorème d'optimalité énoncé — pont vers [SymbolicAI/Lean](../SymbolicAI/Lean/README.md)
 10. **Thompson Sampling** (DecInfer-10) : bandits bayésiens en pratique, regret cumulé
 
 #### Parcours rapide Python (standalone, ~2h)
@@ -170,7 +170,7 @@ Si vous préférez Python au C#, commencez par **PyMC-01-Setup** (introduction s
 
 #### Parcours PyMC complet (31 notebooks, ~21h)
 
-Les notebooks PyMC portent les modèles Infer.NET en Python avec PyMC et l'échantillonnage NUTS : le corpus bayésien dans `PyMC/`, **numéroté 1:1 avec son jumeau Infer** — à une asymétrie près : `Infer-20` (quotients et fibres) n'a pas de jumeau PyMC (le debugging vit en accrétion `2b` des deux côtés) — (fondations 1-3 ; modèles classiques 4-13 dont l'inférence causale en 5 et les modèles hiérarchiques en 12 ; séquences 14, recommandation 15 et frontières 16-19 : processus gaussien épars, filtre de Kalman, change-point, analyse de survie), et le cœur de l'arc décision dans `DecisionTheory/DecPyMC/` (renumérotés 1-12, dont la jambe actuarielle 8-12). Ils constituent un excellent complément pour comparer les approches d'inférence (message passing vs MCMC) et rejoindre l'écosystème Python data science. La progression suit la même structure pédagogique en 3 phases que la série Infer.NET.
+Les notebooks PyMC portent les modèles Infer.NET en Python avec PyMC et l'échantillonnage NUTS : le corpus bayésien dans `PyMC/`, **numéroté 1:1 avec son jumeau Infer** — à une asymétrie près : l'ex-`Infer-20` (devenu `Quotients-Fibres-Recollement`) n'a pas de jumeau PyMC (le debugging vit en accrétion `2b` des deux côtés) — (fondations 1-3 ; modèles classiques 4-13 dont l'inférence causale en 5 et les modèles hiérarchiques en 12 ; séquences 14, recommandation 15 et frontières 16-19 : processus gaussien épars, filtre de Kalman, change-point, analyse de survie), et le cœur de l'arc décision dans `DecisionTheory/DecPyMC/` (socle 1-7 + capstone 08 ; l'arc actuariel T1-T5 vit dans `DecisionTheory/Actuariat/`). Ils constituent un excellent complément pour comparer les approches d'inférence (message passing vs MCMC) et rejoindre l'écosystème Python data science. La progression suit la même structure pédagogique en 3 phases que la série Infer.NET.
 
 ## Quel stack choisir ?
 
@@ -227,14 +227,14 @@ Deux stacks, un même parcours de 20 modèles : **Infer.NET** (C#, message passi
 ```
 Probas/
 ├── Applications/                # Applications standalone
+│   ├── Quotients-Fibres-Recollement-Python.ipynb # Géométrie catégorique (kernel Python, ex-Infer-20)
 │   ├── Percolation/             # Simulation supercritique (Python) + compagnon Lean 4 (lake percolation_lean)
 │   └── Pyro_RSA_Hyperbole.ipynb # Pragmatique linguistique (Python)
 ├── PyMC/                # Port PyMC : bayésien + causal (1-13, dont PyMC-5 causal) + séquences/reco et frontières (14-19)
 │   ├── PyMC-01-Setup.ipynb ... PyMC-19-Survival-Analysis.ipynb
 │   └── README.md                # Documentation détaillée de la série PyMC
-├── decision_theory_lean/        # Projet Lake (directement sous Probas/) : escompte géométrique + théorème de Gittins ; héberge les preuves VNM et Coherence/Dutch Book
-├── Infer/                       # Corpus bayésien (21 notebooks : socle 1-20 sans le 6, accretions 1b/2b ; Infer-20 kernel Python)
-│   ├── Infer-1-Setup.ipynb ... Infer-20-Quotients-et-Fibres.ipynb
+├── Infer/                       # Corpus bayésien : socle 1-19 sans le 6, accretions 1b/2b
+│   ├── Infer-1-Setup.ipynb ... Infer-19-Survival-Analysis.ipynb
 │   ├── Infer-1b-Premiers-Modeles.ipynb  # Accretion du premier modèle (ex-Infer-101)
 │   ├── README.md                # Documentation détaillée de la série bayésienne
 │   ├── Infer-Glossary.md        # Glossaire des termes Infer.NET
@@ -242,8 +242,10 @@ Probas/
 │   ├── SvgChartHelper.cs        # Helper rendu SVG des modèles
 │   └── scripts/                 # test_notebooks.py + setup_environment.ps1
 └── DecisionTheory/              # Arc théorie de la décision : Infer.NET + PyMC (miroirs) + pont causal
-    ├── DecInfer/                # DecInfer-01-Utility-Foundations ... DecInfer-10-Thompson-Sampling (+ companions Lean 2/9)
-    ├── DecPyMC/                 # DecPyMC-1-Utility-Foundations ... DecPyMC-12-Freq-Sev-Hierarchique (dont jambe actuarielle 8-12)
+    ├── DecInfer/                # DecInfer-01-Utility-Foundations ... DecInfer-10-Thompson-Sampling (+ companions Lean 02/02b/08b)
+    ├── DecPyMC/                 # DecPyMC-1-Utility-Foundations ... DecPyMC-7-Sequential + DecPyMC-08-Actuariat-Capstone (escalier vers Actuariat/)
+    ├── Actuariat/               # Sous-série actuarielle T1-T5 : Actuariat-01 ... Actuariat-05 (ex-DecPyMC-8..12, descente #14873)
+    ├── decision_theory_lean/    # Projet Lake descendu auprès de ses consommateurs (#4362) : escompte géométrique + théorème de Gittins ; héberge les preuves VNM et Coherence/Dutch Book
     ├── Causal-Bridges/          # Do-Calculus-Bridge + DoWhy-1..5 + Quasi-Experimental : pont causal unifié (Pearl, dowhy)
     └── voi/                     # Harnais VoI cross-engine Infer.NET x PyMC (contrat JSON commun, #13682) — hors compte notebooks
 ```
@@ -275,7 +277,6 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 | 17 | Kalman Filter | Système dynamique linéaire gaussien, filtrage fermé |
 | 18 | Change-Point | `DiscreteUniform` + `switch`, détection de rupture bayésienne |
 | 19 | Survival Analysis | Exponentiel conjugué (Gamma), Weibull `k` inféré, sélection LOO |
-| 20 | Quotients-et-Fibres | Quotients, fibres, recollement : ce qui survit à la projection, information commune de deux représentations, garde-fou Ruzsa (kernel Python) |
 
 > **Note** : l'arc **théorie de la décision** vit désormais dans [`DecisionTheory/DecInfer/`](DecisionTheory/DecInfer/README.md) (renumérotation 1-10), voir tableau dédié ci-dessous.
 
@@ -303,11 +304,11 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 | 18 | Change-Point | Switch bayésien, catastrophes minières (Poisson) |
 | 19 | Survival Analysis | Weibull inféré directement, sélection LOO arviZ |
 
-> **Note** : l'arc **théorie de la décision** PyMC (12 notebooks) vit dans [`DecisionTheory/DecPyMC/`](DecisionTheory/DecPyMC/README.md) (renommés `DecPyMC-1..12`), voir tableau dédié ci-dessous.
+> **Note** : l'arc **théorie de la décision** PyMC (socle 1-7 + capstone 08) vit dans [`DecisionTheory/DecPyMC/`](DecisionTheory/DecPyMC/README.md) (socle `DecPyMC-1..7` + capstone `DecPyMC-08` ; l'ancienne jambe actuarielle 8-12 vit dans [`DecisionTheory/Actuariat/`](DecisionTheory/Actuariat/README.md), T1-T5), voir tableau dédié ci-dessous.
 
-## Série Infer.NET (corpus bayésien 1-20 + accretions 1b/2b · arc décision C# + companions Lean 4 en 2, 2b et 9)
+## Série Infer.NET (corpus bayésien + accretions 1b/2b · arc décision C# et companions Lean 4)
 
-La série C#/.NET se scinde en deux arcs : le **corpus bayésien** (dans [`Infer/`](Infer/README.md) : socle numéroté 1-20 dont `Infer-20` en kernel Python, plus les accretions 1b et 2b) et l'**arc théorie de la décision** ([`DecisionTheory/DecInfer/`](DecisionTheory/DecInfer/README.md)) qui mixe deux kernels — des notebooks **C#** (utilité espérée, EVPI, MDPs, bandits, Thompson Sampling DecInfer-10) et des notebooks **Lean 4** (DecInfer-02 utilité espérée vNM, DecInfer-02b cohérence de de Finetti et DecInfer-09 indice de Gittins, formalisation des lemmes). L'ensemble `DecisionTheory/` réunit les notebooks DecInfer (C# et Lean), leurs miroirs Python [`DecisionTheory/DecPyMC/`](DecisionTheory/DecPyMC/README.md), et les notebooks du pont causal [`DecisionTheory/Causal-Bridges/`](DecisionTheory/Causal-Bridges/README.md) — plus le lake compagnon Lean [`decision_theory_lean`](decision_theory_lean/) et le harnais VoI cross-engine [`DecisionTheory/voi/`](DecisionTheory/voi/README.md) (tous deux hors compte notebooks). La documentation détaillée de chaque notebook, les patterns Infer.NET avancés et les exercices corrigés vivent dans ces README.
+La série C#/.NET se scinde en deux arcs : le **corpus bayésien** (socle numéroté 1-19 plus les accretions 1b et 2b dans [`Infer/`](Infer/README.md), et l'application autonome *Quotients, fibres et recollement* dans [`Applications/`](Applications/)) et l'**arc théorie de la décision** ([`DecisionTheory/DecInfer/`](DecisionTheory/DecInfer/README.md)) qui mixe deux kernels — des notebooks **C#** (utilité espérée, EVPI, MDPs, bandits, Thompson Sampling DecInfer-10) et des notebooks **Lean 4** (DecInfer-02 utilité espérée vNM, DecInfer-02b cohérence de de Finetti et DecInfer-08b indice de Gittins, formalisation des lemmes). L'ensemble `DecisionTheory/` réunit les DecInfer (arc C# et companions Lean), leurs miroirs Python [`DecisionTheory/DecPyMC/`](DecisionTheory/DecPyMC/README.md), et les notebooks du pont causal [`DecisionTheory/Causal-Bridges/`](DecisionTheory/Causal-Bridges/README.md) — plus le lake compagnon Lean [`decision_theory_lean`](DecisionTheory/decision_theory_lean/) et le harnais VoI cross-engine [`DecisionTheory/voi/`](DecisionTheory/voi/README.md) (tous deux hors compte notebooks). La documentation détaillée de chaque notebook, les patterns Infer.NET avancés et les exercices corrigés vivent dans ces README.
 
 ### Progression
 
@@ -316,15 +317,15 @@ La série C#/.NET se scinde en deux arcs : le **corpus bayésien** (dans [`Infer
 | **Fondations** | 1-3 | Setup, distributions, factor graphs | 2h |
 | **Modèles classiques** | 4-13 | Bayesian networks, IRT, TrueSkill, LDA, HMM | 8h |
 | **Frontières bayésiennes** | 14-19 | Séquences (HMM), recommandation, GP sparse, filtre de Kalman, change-point, survie | 4,5h |
-| **Géométrie catégorique** | 20 | Quotients, fibres, recollement — ce qui survit à la projection | — |
+| **Géométrie catégorique** | [Applications/](Applications/) (ex-20) | Quotients, fibres, recollement — ce qui survit à la projection | — |
 | **Accretions** | 1b, 2b | Premier modèle ; debugging, bonnes pratiques | 1h |
 | **Décision (arc autonome)** | [DecisionTheory/DecInfer/ 1-10 + accretion 2b](DecisionTheory/DecInfer/README.md) | Théorie de la décision bayésienne + preuves Lean (vNM, de Finetti, Gittins) | 7h |
 
 Les **notebooks Infer.NET C#** (corpus bayésien et accretions + arc décision) et les **notebooks Lean 4** de l'arc décision sont détaillés individuellement dans [*Ce que chaque notebook apporte*](#ce-que-chaque-notebook-apporte) ci-dessous (apport pédagogique par notebook) ; le contenu exhaustif — patterns avancés, exercices corrigés — vit dans [Infer/README.md](Infer/README.md), [DecisionTheory/DecInfer/README.md](DecisionTheory/DecInfer/README.md) et [DecisionTheory/DecPyMC/README.md](DecisionTheory/DecPyMC/README.md).
 
-## Série PyMC (19 corpus notebooks, Python + 12 extraits DecisionTheory/DecPyMC)
+## Série PyMC (19 corpus notebooks, Python + les notebooks décision DecisionTheory — socle DecPyMC et sa sous-série Actuariat)
 
-Port Python des modèles Infer.NET, utilisant l'échantillonnage MCMC (NUTS) au lieu du message passing. Permet de comparer les deux approches d'inférence sur des modèles identiques. La série `PyMC/` suit la même numérotation que la série Infer (le numéro 6 n'existe pas — le debugging vit en accrétion `PyMC-02b` jumelle de `Infer-2b` ; `Infer-20`, kernel Python propre au dossier `Infer/`, n'a pas de jumeau) — fondations 1-3, modèles classiques 4-13 (réseaux bayésiens, inférence causale, IRT, TrueSkill, classification, sélection de modèles, topic models, modèles hiérarchiques, crowdsourcing), puis frontières 14-19 (séquences/HMM, recommandation, processus gaussien épars, filtre de Kalman, change-point, analyse de survie) ; l'apport pédagogique de chacun est détaillé dans le [tableau de la série PyMC](#série-pymc) ci-dessus. Le cœur de l'arc décision vit dans `DecisionTheory/DecPyMC/` (renumérotés 1-12, dont la jambe actuarielle 8-12).
+Port Python des modèles Infer.NET, utilisant l'échantillonnage MCMC (NUTS) au lieu du message passing. Permet de comparer les deux approches d'inférence sur des modèles identiques. La série `PyMC/` suit la même numérotation que la série Infer (le numéro 6 n'existe pas — le debugging vit en accrétion `PyMC-02b` jumelle de `Infer-2b` ; l'ex-`Infer-20` (quotients et fibres), kernel Python autonome désormais dans `Applications/`, n'a pas de jumeau) — fondations 1-3, modèles classiques 4-13 (réseaux bayésiens, inférence causale, IRT, TrueSkill, classification, sélection de modèles, topic models, modèles hiérarchiques, crowdsourcing), puis frontières 14-19 (séquences/HMM, recommandation, processus gaussien épars, filtre de Kalman, change-point, analyse de survie) ; l'apport pédagogique de chacun est détaillé dans le [tableau de la série PyMC](#série-pymc) ci-dessus. Le cœur de l'arc décision vit dans `DecisionTheory/DecPyMC/` (socle 1-7 + capstone 08 ; l'arc actuariel T1-T5 vit dans `DecisionTheory/Actuariat/`).
 
 ### Phase 1 — Fondations (notebooks 1-3, ~2h)
 
@@ -348,9 +349,9 @@ Port Python des modèles Infer.NET, utilisant l'échantillonnage MCMC (NUTS) au 
 | 12 | [PyMC-12-Modeles-Hierarchiques](PyMC/PyMC-12-Modeles-Hierarchiques.ipynb) | Partial pooling bayésien, shrinkage, paramétrisation non-centrée, divergences NUTS comme diagnostic du funnel |
 | 13 | [PyMC-13-Crowdsourcing](PyMC/PyMC-13-Crowdsourcing.ipynb) | Agrégation de labels, workers, communautés |
 
-### Phase 3 — Théorie de la décision (sous-série DecisionTheory/DecPyMC/, ~10h)
+### Phase 3 — Théorie de la décision (sous-séries DecisionTheory/DecPyMC/ + Actuariat/, ~6h + ~4h)
 
-> Les notebooks décisionnels ont été extraits vers une sous-série autonome : [DecisionTheory/DecPyMC/](DecisionTheory/DecPyMC/README.md) (notebooks 1 à 12), miroir Python de [DecisionTheory/DecInfer/](DecisionTheory/DecInfer/README.md). Les notebooks 8-12 forment la **jambe actuarielle** — le passage de la décision bayésienne au métier de l'assurance (crédibilité, tarification, ruine, valeur de l'information en souscription, fréquence × sévérité).
+> Les notebooks décisionnels ont été extraits vers une sous-série autonome : [DecisionTheory/DecPyMC/](DecisionTheory/DecPyMC/README.md) (socle 1 à 7 + capstone 08), miroir Python de [DecisionTheory/DecInfer/](DecisionTheory/DecInfer/README.md). L'ancienne jambe actuarielle (8-12) descend en sous-série dédiée [DecisionTheory/Actuariat/](DecisionTheory/Actuariat/README.md) — le passage de la décision bayésienne au métier de l'assurance (prime pure, fréquence × sévérité, crédibilité, ruine, valeur de l'information en souscription), régraduée T1-T5.
 
 | # | Notebook | Sujet |
 |---|----------|-------|
@@ -361,11 +362,8 @@ Port Python des modèles Infer.NET, utilisant l'échantillonnage MCMC (NUTS) au 
 | 5 | [DecPyMC-5-Value-Information](DecisionTheory/DecPyMC/DecPyMC-5-Value-Information.ipynb) | EVPI, EVSI, valeur de l'information parfaite et d'échantillon |
 | 6 | [DecPyMC-6-Expert-Systems](DecisionTheory/DecPyMC/DecPyMC-6-Expert-Systems.ipynb) | Systèmes experts, Minimax, Minimax Regret, décisions robustes |
 | 7 | [DecPyMC-7-Sequential](DecisionTheory/DecPyMC/DecPyMC-7-Sequential.ipynb) | MDPs, itération de valeur/politique, bandits, POMDPs |
-| 8 | [DecPyMC-8-Actuarial-Credibility](DecisionTheory/DecPyMC/DecPyMC-8-Actuarial-Credibility.ipynb) | Crédibilité actuarielle de Bühlmann–Straub : hiérarchie contractuelle, hétérogénéité |
-| 9 | [DecPyMC-9-Prime-Pure-Chargement](DecisionTheory/DecPyMC/DecPyMC-9-Prime-Pure-Chargement.ipynb) | Du risque à la prime : prime pure, chargement, prime commerciale |
-| 10 | [DecPyMC-10-Ruine-Lundberg](DecisionTheory/DecPyMC/DecPyMC-10-Ruine-Lundberg.ipynb) | Ruine et capital : processus de Cramér–Lundberg, inégalité de Lundberg |
-| 11 | [DecPyMC-11-Valeur-Info-Souscription](DecisionTheory/DecPyMC/DecPyMC-11-Valeur-Info-Souscription.ipynb) | Valeur de l'information en souscription |
-| 12 | [DecPyMC-12-Freq-Sev-Hierarchique](DecisionTheory/DecPyMC/DecPyMC-12-Freq-Sev-Hierarchique.ipynb) | Fréquence × sévérité hiérarchique : le partial pooling en assurance |
+| 8 | [DecPyMC-08-Actuariat-Capstone](DecisionTheory/DecPyMC/DecPyMC-08-Actuariat-Capstone.ipynb) | Capstone : l'escalier vers la sous-série [Actuariat](DecisionTheory/Actuariat/README.md) (T1-T5) |
+| — | [Sous-série Actuariat T1-T5](DecisionTheory/Actuariat/README.md) | Prime pure et chargement · fréquence × sévérité · crédibilité · ruine · valeur de l'information en souscription |
 
 ### Phase 4 — Inférence causale (notebook 5, ~1h)
 
@@ -415,9 +413,12 @@ Ce que le pont ajoute par rapport aux quatre notebooks pris isolément :
 
 ## Applications standalone (dossier [`Applications/`](Applications/))
 
+Les applications autonomes sont aujourd'hui toutes en kernel Python ; si un notebook .NET rejoint `Applications/`, la section se scinde par technologie (une sous-section par kernel), sur le modèle de la division théorie de la décision.
+
 | Notebook | Kernel | Contenu | Durée |
 | -------- | ------- | ------- | ----- |
 | [Pyro_RSA_Hyperbole](Applications/Pyro_RSA_Hyperbole.ipynb) | Python 3 | Rational Speech Acts, hyperboles | 30 min |
+| [Quotients-Fibres-Recollement-Python](Applications/Quotients-Fibres-Recollement-Python.ipynb) | Python 3 | Quotients, fibres et recollement : ce qui survit à la projection | 30 min |
 
 ### Pyro_RSA_Hyperbole.ipynb
 
@@ -428,6 +429,15 @@ Application avancée à la linguistique pragmatique :
 - Question Under Discussion (QUD)
 
 *L'entrée du corpus bayésien C#, `Infer-1b` (accrétion du premier modèle), vit dans [`Infer/`](Infer/README.md) et y est documentée.*
+
+### Quotients-Fibres-Recollement-Python.ipynb
+
+Protocole de **représentation** — et non d'inférence : deux observations d'un même phénomène latent, comparées autrement que par « laquelle est la plus proche de la vérité ». Quatre temps (deux représentations, mesures d'information commune sur l'intersection, quotient `Q`, fibres), le temps 4 n'étant atteint que si le temps 3 a produit un quotient opérationnel :
+
+- Information conditionnelle mesurée pour de vrai : KL discrète (`scipy.special.rel_entr`) et entropies de Shannon, graine fixée, **sans Infer.NET** (le sujet sort de la famille inférentielle stricte) ;
+- Garde-fou Ruzsa et critère d'acceptation hérité de de Finetti : un quotient décoratif ne passe pas ;
+- 2 exercices vérifiables — vos deux représentations et leur information commune ; raffiner le quotient et démasquer un quotient déguisé ;
+- Ex-20 du corpus [`Infer/`](Infer/README.md), désormais **application autonome** : kernel Python propre, dossier d'accueil `Applications/`.
 
 ### Percolation (sous-dossier [`Applications/Percolation/`](Applications/Percolation/README.md))
 
@@ -583,7 +593,7 @@ La visualisation des factor graphs nécessite **Graphviz installé**. Si `dot` n
 
 ### Kernels : un par sous-série, jamais mélangés
 
-Chaque notebook de la série Probas utilise un **unique kernel** : `.NET (C#)` pour le corpus `Infer/` et l'arc `DecisionTheory/DecInfer/` (arc C#) ; `Python 3` pour `PyMC/`, `Pyro_RSA`, `DecisionTheory/DecPyMC/`, `Applications/Percolation/Percolation-Supercritique` et `Infer-20-Quotients-et-Fibres` ; `coursia-ml-training` pour les notebooks du pont causal qui l'exigent ; **Lean 4** (WSL) pour `DecInfer-02`, `DecInfer-02b`, `DecInfer-09` et `Percolation-Lean`. Aucun notebook ne mélange les kernels. (Historiquement, `Infer-1b` avait été rédigé en mode polyglot .NET Interactive avec des cellules `#kernel` par langage ; ce n'est plus le cas — il est aujourd'hui un notebook C#/.NET.)
+Chaque notebook de la série Probas utilise un **unique kernel** : `.NET (C#)` pour le corpus `Infer/` et l'arc `DecisionTheory/DecInfer/` (arc C#) ; `Python 3` pour `PyMC/`, `Pyro_RSA`, `DecisionTheory/DecPyMC/`, `Applications/Percolation/Percolation-Supercritique` et `Applications/Quotients-Fibres-Recollement-Python` ; `coursia-ml-training` pour les notebooks du pont causal qui l'exigent ; **Lean 4** (WSL) pour `DecInfer-02`, `DecInfer-02b`, `DecInfer-08b` et `Percolation-Lean`. Aucun notebook ne mélange les kernels. (Historiquement, `Infer-1b` avait été rédigé en mode polyglot .NET Interactive avec des cellules `#kernel` par langage ; ce n'est plus le cas — il est aujourd'hui un notebook C#/.NET.)
 
 ### PyMC : échantillonnage très lent ou divergence NUTS
 
@@ -592,6 +602,10 @@ Chaque notebook de la série Probas utilise un **unique kernel** : `.NET (C#)` p
 - Consultez [PyMC-02b-Debugging-Python](PyMC/PyMC-02b-Debugging-Python.ipynb) pour des diagnostics détaillés (trace plots, effective sample size, tree depth).
 
 ## Ressources
+
+### Activités associées
+
+Les activités [Chaîne de Markov de la météo](../GenAI/activites/Activites-Vulgarisation.md#6-probabilités--chaîne-de-markov-de-la-météo) et [Axiomes de préférences rationnelles](../GenAI/activites/Activites-Vulgarisation.md#7-axiomes-de-préférences-rationnelles-et-irrationalité-humaine) exercent en jeu d'équipe la distribution stationnaire et la théorie de l'utilité enseignées ici.
 
 ### Infer.NET
 
@@ -621,7 +635,7 @@ Cette série ancre mathématiquement ses résultats phares dans un assistant de 
 | Probas (DecisionTheory)  | `decision_theory_lean`           | Axiomes de Von Neumann-Morgenstern ⇒ existence d'une utilité espérée (`0 sorry`)  | [`DecInfer-02-Lean-ExpectedUtility`](DecisionTheory/DecInfer/DecInfer-02-Lean-ExpectedUtility.ipynb)  |
 | Probas (DecisionTheory)  | `decision_theory_lean`           | Coherence utility ⟹ preferences (loterie de référence) (`0 sorry`)                | [`DecisionTheory/DecInfer/`](DecisionTheory/DecInfer/README.md) Coherence   |
 | Probas (PAC Learning)    | chaîne PAC iter-2 complète       | `pac_finite_class_bound` + `pac_agnostic_generalization` (`0 sorry bout-en-bout`)  | notebook PAC Learning compagnon Lean                                 |
-| Probas (DecisionTheory)  | `decision_theory_lean` Peters    | Indice de Gittins, identités d'escompte (`0 sorry`, ref `v4.27.0-rc1`)            | [`DecInfer-09-Lean-Gittins`](DecisionTheory/DecInfer/DecInfer-09-Lean-Gittins.ipynb)                                          |
+| Probas (DecisionTheory)  | `decision_theory_lean` Peters    | Indice de Gittins, identités d'escompte (`0 sorry`, ref `v4.27.0-rc1`)            | [`DecInfer-08b-Lean-Gittins`](DecisionTheory/DecInfer/DecInfer-08b-Lean-Gittins.ipynb)                                          |
 | QC ↔ Probas              | `kelly_lean`                     | Fraction risquée `f* = μ−σ²/2` sous log-bienveillance (`0 sorry`)                  | [`Kelly_companion.ipynb`](../QuantConnect/kelly_lean/Kelly_companion.ipynb)                                           |
 | GameTheory ↔ Probas      | `game_theory_lean` (Arrow)       | Impossibilité d'Arrow (5 axiomes ⇒ dictature)                                     | [`01-Arrow-Impossibility-Theorem.ipynb`](../GameTheory/SocialChoice/01-Arrow-Impossibility-Theorem.ipynb)                                          |
 | Search ↔ Probas          | `search_lean`                    | Consistance heuristique `h ≤ h*` ⇒ optimalité `A*`                                 | hub Search (cf [`search_lean/`](../Search/search_lean/))                                     |
@@ -632,7 +646,7 @@ flowchart LR
     subgraph SIM["Probas — simulation numérique"]
         NB_DT["DecInfer-02 — vNM (kernel Lean)"]
         NB_CO["Arc DecInfer — Coherence"]
-        NB_GIT["DecInfer-09 Gittins companion"]
+        NB_GIT["DecInfer-08b Gittins companion"]
         NB_PAC["PAC Learning iter-2"]
         NB_MCMC["PyMC NUTS / HMC"]
         NB_EP["Infer.NET EP / VMP"]
@@ -674,7 +688,7 @@ Cette série vous a fait changer de regard sur l'incertitude : plutôt que de la
 
 - **Le geste fondateur** — remplacer une prédiction ponctuelle par une **distribution**. Un modèle probabiliste ne dit pas « la probabilité est 0.73 » mais « voici la distribution complète N(0.73, 0.12) », et cette densité porte l'information que la moyenne dissimule : la confiance, les queues, les modes multiples. C'est ce déplacement qui ouvre tout le reste.
 - **La double inférence** — Infer.NET (message passing déterministe, EP/VMP/Gibbs) et PyMC (échantillonnage MCMC, NUTS) résolvent les mêmes modèles par des voies opposées : non pas « exact vs approché » (EP est lui-même approché en général), mais **déterministe vs stochastique**. Le traverser sur des modèles jumeaux (notebook à notebook, Infer-N ↔ PyMC-N) ancre une intuition qu'aucun cours théorique ne donne : **quand le message passing déterministe s'applique, il est rapide et reproductible ; quand le modèle sort de son domaine, l'échantillonnage prend le relais mais exige des diagnostics** (R-hat, effective sample size, trace plots).
-- **La décision** — la seconde moitié franchit le pas : des croyances (distributions) aux **actions**. Utilité espérée E[U], valeur de l'information (EVPI/EVSI), réseaux de décision, et enfin les MDP qui relient cette série à l'apprentissage par renforcement. Chez Infer.NET cet arc forme un **track autonome** ([`DecisionTheory/DecInfer/`](DecisionTheory/DecInfer/README.md)) ; son compagnon Lean 4 (DecInfer-09) pousse l'exigence jusqu'à **formaliser** les identités d'escompte de l'indice de Gittins — l'assurance que les identités numériques ne sont pas des approximations accidentelles mais des théorèmes.
+- **La décision** — la seconde moitié franchit le pas : des croyances (distributions) aux **actions**. Utilité espérée E[U], valeur de l'information (EVPI/EVSI), réseaux de décision, et enfin les MDP qui relient cette série à l'apprentissage par renforcement. Chez Infer.NET cet arc forme un **track autonome** ([`DecisionTheory/DecInfer/`](DecisionTheory/DecInfer/README.md)) ; son compagnon Lean 4 (DecInfer-08b) pousse l'exigence jusqu'à **formaliser** les identités d'escompte de l'indice de Gittins — l'assurance que les identités numériques ne sont pas des approximations accidentelles mais des théorèmes.
 
 La thèse pratique est honnête : un modèle probabiliste est plus lourd à bâtir qu'un classifieur, mais il est le seul à pouvoir dire « je ne sais pas » — et dans le diagnostic médical, le classement sportif ou l'évaluation de compétences, cette honnêteté est précisément ce qu'on cherche.
 

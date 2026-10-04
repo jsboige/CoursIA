@@ -84,9 +84,13 @@ jobs:
         with:
           python-version: '3.11'
 
+      # NOTE (collision /tmp, 2026-09-28) : `${{ runner.temp }}` (per-slot)
+      # au lieu de `/tmp` nu -- `/tmp` est hote-global sur le runner a slots
+      # partages et `harness-coauthor-guard.yml` y ecrivait le meme
+      # `/tmp/head.json` au format dict (cf pip-leak-guard.yml, #18059).
       - name: HEAD scan (PR head)
         run: |
-          python scripts/notebook_tools/audit_solution_leaks.py --json > /tmp/head.json
+          python scripts/notebook_tools/audit_solution_leaks.py --json > "${{ runner.temp }}/solution-head.json"
 
       # Swap MyIA.AI.Notebooks/ to the PR base ref, scan, then restore. head.json
       # is already captured above, so the swap cannot contaminate the delta.
@@ -99,7 +103,7 @@ jobs:
           # (le working tree est restore depuis ce checkout juste apres).
           git fetch --depth=1 origin "${{ github.event.pull_request.base.sha }}" -q
           git checkout ${{ github.event.pull_request.base.sha }} -- MyIA.AI.Notebooks
-          python scripts/notebook_tools/audit_solution_leaks.py --json > /tmp/base.json
+          python scripts/notebook_tools/audit_solution_leaks.py --json > "${{ runner.temp }}/solution-base.json"
           git checkout HEAD -- MyIA.AI.Notebooks
 
       - name: "Report HIGH delta (WARN — never fails)"
@@ -113,7 +117,7 @@ jobs:
             echo "Detector candidates, not auto-verdicts: verify by CONTENT"
             echo "(cf exercise-example-labeling.md) — a guided example is legitimate._"
             echo ""
-            python scripts/notebook_tools/solution_leak_delta.py /tmp/base.json /tmp/head.json
+            python scripts/notebook_tools/solution_leak_delta.py "${{ runner.temp }}/solution-base.json" "${{ runner.temp }}/solution-head.json"
           } >> "$GITHUB_STEP_SUMMARY"
 
       # workflow_dispatch (no base ref): single scan, full markdown report to summary.

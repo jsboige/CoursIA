@@ -128,7 +128,7 @@ Sur 590 PRs échantillonnées (490 ipynb + 100 non-ipynb), 75 % portent un tag `
 
 ## Livrables
 
-1. **`scripts/variation_genre_recensement.py`** (161 lignes) — standalone census, idempotent, lecture JSON pré-fetché.
+1. **`scripts/variation_genre_recensement.py`** — standalone census, idempotent, lecture JSON pré-fetché.
 2. **`data/census/variation_genre_census_2026-08-10.csv`** (optionnel) — 1 ligne par PR, 11 colonnes.
 3. **`docs/reference/variation-genre-census-2026-08-10.md`** (ce document) — closure de la discussion sur l'organe.
 

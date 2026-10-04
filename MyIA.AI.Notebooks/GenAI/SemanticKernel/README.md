@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-SemanticKernel
-pedagogical_count: 20
-breakdown: SemanticKernel=20
-maturity: BETA=15, TEMPLATE=3, DRAFT=2
+pedagogical_count: 21
+breakdown: SemanticKernel=21
+maturity: BETA=16, TEMPLATE=3, DRAFT=2
 -->
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Génération de texte](../Texte/README.md)
@@ -38,6 +38,7 @@ Parcours pédagogique complet sur Semantic Kernel en Python :
 | 10 | [SK-10-NotebookMaker](10-SemanticKernel-NotebookMaker.ipynb) | **Système 3-agents** interactif (Admin, Coder, Reviewer) avec function calling | 60 min |
 | 10a | [SK-10a-NotebookMaker-batch](10a-SemanticKernel-NotebookMaker-batch.ipynb) | Version batch avec contexte agentique borné et budget de tours | 30 min |
 | 10b | [SK-10b-NotebookMaker-batch-param](10b-SemanticKernel-NotebookMaker-batch-parameterized.ipynb) | Version batch paramétrée pour Papermill | 30 min |
+| 11 | [SK-11-A2A](11-SemanticKernel-A2A.ipynb) | Le protocole Agent2Agent à côté de MCP : AgentCard, serveur FastAPI local, cycle de vie des tâches, échange client réel | 40 min |
 
 ## Démos interactives (curriculum)
 
@@ -49,6 +50,7 @@ Ces notebooks appliquent Semantic Kernel à des cas d'usage concrets. Ils font p
 | [Créateur de mail personnalisé](Créateur%20de%20mail%20personnalisé.ipynb) | Python | Workflow multi-agents SK (InputCollector, EmailGenerator) pour la rédaction de courriels | 3 |
 | [fort-boyard-csharp](fort-boyard-csharp.ipynb) | C# (.NET) | AgentGroupChat : duel Père Fouras vs Laurent Jalabert (jeu de devinette) | 3 |
 | [fort-boyard-python](fort-boyard-python.ipynb) | Python | Contrepartie Python du duel Fort Boyard (TerminationStrategy personnalisee) | 3 |
+| [Semantic-fleet-Radix-PromptMatcher](Semantic-fleet-Radix-PromptMatcher.ipynb) | C# (.NET) | **Routage MultiConnector par préfixe** : matcher radix-tree de l'organe réel du sous-module `semantic-fleet` (plus long préfixe) vs scan O(n), incluant le branchement drop-in du délégué `PromptMatcher` | 3 |
 
 ## Templates
 

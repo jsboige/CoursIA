@@ -32,7 +32,7 @@ Agent orchestrateur pour iterer sur les 110 notebooks GenAI (`MyIA.AI.Notebooks/
 - ComfyUI : **Bearer token** (hash bcrypt côté serveur, `bcrypt_hash` dans la config). Env canonique `COMFYUI_API_TOKEN` (alias `COMFYUI_AUTH_TOKEN`, deux noms pour le même secret, gérés par `render_envs.py`). Le bearer vit dans `.secrets/qwen-api-user.token`. `COMFYUI_BEARER_TOKEN`/`COMFYUI_RAW_TOKEN` ne sont plus gérés (cf #14382).
 - Forge : **Basic auth** — env `FORGE_USER` / `FORGE_PASSWORD`.
 - vLLM (z-image) : pas d'auth.
-- Verifier l'auth de chaque service : `python genai.py auth`.
+- Verifier l'auth de chaque service : `python genai.py auth audit` (`auth` exige une action parmi `init`, `sync`, `audit`, `get-token`, `reconstruct-env` — `commands/auth.py:27`).
 - **FLAG inventaire (résolu par #16647)** : `COMFYUI_API_TOKEN` = `COMFYUI_AUTH_TOKEN` (alias canonique). `COMFYUI_BEARER_TOKEN` n'est plus géré — éviter le nom dans les nouveaux notebooks/docs.
 
 ## Quantization (recommandations verifiees via commands/quant.py)
@@ -62,27 +62,27 @@ Commandes :
 
 | Commande | Role |
 |----------|------|
-| `python genai.py docker` | Gestion conteneurs (up/down/status) |
+| `python genai.py docker status` | Gestion conteneurs (status/start/stop) |
 | `python genai.py validate` | Validation stack (services, auth, modeles) |
 | `python genai.py notebooks` | Mapping notebooks <-> services |
-| `python genai.py models` | Modeles disponibles |
+| `python genai.py models list-checkpoints` | Checkpoints/modeles disponibles (models exige son action : download-qwen/download-nunchaku/setup-zimage/list-checkpoints/list-nodes — commands/models.py:514,576) |
 | `python genai.py gpu` | Etat GPU / VRAM |
-| `python genai.py auth` | Verifier l'auth par service |
+| `python genai.py auth audit` | Verifier l'auth par service |
 | `python genai.py quant {summary,apply}` | Quantization |
 
 ## Mission (workflow type)
 
 1. **Inventaire** : `python genai.py validate` + `python genai.py notebooks` pour l'etat services + mapping. Lire `.env.example` pour la carte sous-domaines.
 2. **Cibler** un notebook GenAI : identifier son service + son sous-domaine + son auth requise.
-3. **Pre-flight** : `genai.py docker` (service up ?), `genai.py auth` (token present ?), `genai.py gpu` (VRAM libre ?), `genai.py quant summary` (bonne quant chargee ?).
+3. **Pre-flight** : `genai.py docker status` (service up ?), `genai.py auth audit` (token present ?), `genai.py gpu` (VRAM libre ?), `genai.py quant summary` (bonne quant chargee ?).
 4. **Iterer** sur le notebook : moderniser (libs/APIs obsoletes -> deleguer `notebook-modernizer`), executer (deleguer `notebook-executor` via MCP Jupyter), valider (`notebook-validator` + skill `validate-genai`).
 5. **Commit** notebook AVEC outputs reels (regle C.2). Pas de markdown explicatif en remplacement d'execution. Pas de leak `LOCAL_MODE` dans les outputs committes.
 
 ## FLAGS inventaire (a corriger — verifie 2026-05-23)
 
-1. URLs placeholder `yourdomain.com` : `Image/04-4-Cross-Stitch-Legacy` (cell ~256), `Texte/10_LocalLlama` (cell ~509) — remplacer par le vrai sous-domaine.
-2. `02-5-Multi-Model-TTS-Gateway` : 401 (auth a corriger).
-3. Leak `LOCAL_MODE` dans les outputs committes de `02-4-Z-Image-Lumina2` + `02-1-Qwen-Image-Edit-2509` — re-executer en mode remote propre.
+1. `02-5-Multi-Model-TTS-Gateway` : 401 (auth a corriger).
+
+(Le drapeau « Leak `LOCAL_MODE` » de l'inventaire 2026-05-23 est retire : les deux carnets cites ne portent plus `LOCAL_MODE` nulle part, source compris — mesure `git grep -c LOCAL_MODE` sur `main`, 0/0.)
 
 ## Anti-patterns interdits
 

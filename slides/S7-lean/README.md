@@ -29,21 +29,21 @@ Deck de presentation pour la serie de 14 notebooks **Lean 4** (`SymbolicAI/Lean/
 
 | Notebook | Theme | Duree |
 |----------|-------|-------|
-| Lean-1-Setup | Installation elan, kernel Jupyter | 15 min |
-| Lean-2-Dependent-Types | CIC, types dependants | 35 min |
-| Lean-3-Propositions-Proofs | Prop, Curry-Howard | 45 min |
-| Lean-4-Quantifiers | ∀, ∃, arithmetique Nat | 40 min |
-| Lean-5-Tactics | Mode tactique | 50 min |
+| Lean-01-Setup-Lean-Python | Installation elan, kernel Jupyter | 15 min |
+| Lean-02-Dependent-Types-Lean | CIC, types dependants | 35 min |
+| Lean-03-Propositions-Proofs-Lean | Prop, Curry-Howard | 45 min |
+| Lean-04-Quantifiers-Lean | ∀, ∃, arithmetique Nat | 40 min |
+| Lean-05-Tactics-Lean | Mode tactique | 50 min |
 
 ### Partie 2 : Integration IA
 
 | Notebook | Theme | Duree |
 |----------|-------|-------|
-| Lean-6-Mathlib-Essentials | Mathlib4, tactiques avancees | 45 min |
-| Lean-7-LLM-Integration | LeanCopilot, AlphaProof | 50 min |
-| Lean-7b-Examples | Exemples progressifs, benchmarks | 40 min |
-| Lean-8-Agentic-Proving | Agents autonomes, APOLLO | 55 min |
-| Lean-9-SK-Multi-Agents | Semantic Kernel multi-agents | 45 min |
+| Lean-06-Mathlib-Essentials-Lean | Mathlib4, tactiques avancees | 45 min |
+| Lean-07-LLM-Integration-Lean-Python | LeanCopilot, AlphaProof | 50 min |
+| Lean-07b-Examples-Python | Exemples progressifs, benchmarks | 40 min |
+| Lean-08-Agentic-Proving-Python | Agents autonomes, APOLLO | 55 min |
+| Lean-09-SK-Multi-Agents-Lean-Python | Semantic Kernel multi-agents | 45 min |
 | Lean-10-LeanDojo | LeanDojo, tracing, RL | 45 min |
 | Lean-11-TorchLean | Verification NNs (IBP, CROWN) | 90-120 min |
 | Lean-12-Sensitivity-Theorem | Theoreme de sensibilite | 60 min |

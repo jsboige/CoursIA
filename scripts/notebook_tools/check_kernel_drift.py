@@ -217,6 +217,34 @@ def diff_kernel(base_info, head_info):
     return diffs
 
 
+# Transitions de version pre-acceptees (#17679, option 1, decision
+# coordinateur 2026-09-26) : la derive va dans le sens du canon decide --
+# ce n'est pas une regression, pas plus qu'une derive de patch (#17371).
+# La DIRECTION porte l'acceptation : la transition inverse reste rouge.
+# Portee au kernel .NET C# mesure dans le depot (kernelspec
+# ``.net-csharp`` : 141 notebooks a 13.0, 7 a 12.0 au 2026-09-27) -- la
+# classe fondatrice Python 3.11 -> 3.13 reste hors table.
+CANONICAL_LANGUAGE_TRANSITIONS = {
+    (".net-csharp", "12.0", "13.0"):
+        "C# 12.0 -> 13.0 : convergence vers le canon C# 13.0 (#17679)",
+}
+
+
+def accepted_canonical_transition(base_info, head_info):
+    """Vrai quand la derive de version EST une transition canon (#17679).
+
+    Exige le meme ``kernelspec.name`` (un changement de kernel reste rouge
+    par construction) et la direction exacte de la table : ``12.0 ->
+    13.0`` est accepte, ``13.0 -> 12.0`` ne l'est pas.
+    """
+    if base_info["kernelspec_name"] != head_info["kernelspec_name"]:
+        return False
+    key = (base_info["kernelspec_name"],
+           _version_prefix(base_info["language_version"]),
+           _version_prefix(head_info["language_version"]))
+    return key in CANONICAL_LANGUAGE_TRANSITIONS
+
+
 def body_has_derive_exemption(body):
     """Defect 1: PR body contains '## Diagnostic dérive' section.
 
@@ -435,6 +463,13 @@ def _run(args_obj):
         base_sig = float_signatures(base_nb)
         head_sig = float_signatures(head_nb)
         kernel_diffs = diff_kernel(base_kernel, head_kernel)
+        # #17679 : la transition canon C# 12.0 -> 13.0 est attendue (option
+        # 1, decision coordinateur) -- seule, elle ne fait pas finding.
+        canonical_transition = False
+        if kernel_diffs and accepted_canonical_transition(base_kernel,
+                                                          head_kernel):
+            canonical_transition = True
+            kernel_diffs = []
         # Defect 2: pass notebooks for id-based alignment
         sig_diffs = diff_signatures(base_sig, head_sig,
                                      base_nb=base_nb, head_nb=head_nb)
@@ -446,6 +481,7 @@ def _run(args_obj):
                 "base_kernel": base_kernel,
                 "head_kernel": head_kernel,
                 "body_exemption": body_exempts,
+                "canonical_transition": canonical_transition,
             }
             # Defect 1: if body exempts and drift is documented, downgrade
             if body_exempts and (kernel_diffs or sig_diffs):

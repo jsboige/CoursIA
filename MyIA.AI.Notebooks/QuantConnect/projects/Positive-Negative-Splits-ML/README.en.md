@@ -5,7 +5,7 @@
 
 ## Description
 
-LinearRegression positive/negative split prediction. Uses earnings surprise magnitude and historical split ratios to predict post-earnings drift.
+LinearRegression positive/negative split prediction. Uses the split factor (from the split event) and the technology-sector momentum (XLK ROC 22-day) to predict post-split drift.
 
 ## How to Run
 
@@ -16,11 +16,12 @@ LinearRegression positive/negative split prediction. Uses earnings surprise magn
 
 | Metric | Value |
 |--------|-------|
-| Sharpe Ratio | 1.736 |
-| CAGR | 90.83% |
-| Max Drawdown | 42.4% |
+| Sharpe Ratio | 1.511 |
+| CAGR | 75.72% |
+| Max Drawdown | 37.60% |
 | Model | LinearRegression |
-| Rebalance | Event-driven (earnings) |
+| Rebalance | Event-driven (stock splits) |
+| Backtest window | 2018-2024 (aligned #1630, see `docs/qc/qc-strategies-status.md` L460) |
 
 ## Files
 

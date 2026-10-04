@@ -27,6 +27,7 @@ from detect_solution_leaks import (
     discover_notebooks,
     display_path,
     get_parent_header_key,
+    is_leaky_stub,
     is_stub_code,
     scan_notebook,
 )
@@ -1377,4 +1378,126 @@ class TestLeakFixPrescription:
         fix = highs[0]["fix"]
         assert "ONLY if" in fix
         assert "exercise-example-labeling.md" in fix
+
+
+# ---------------------------------------------------------------------------
+# Leaky-stub advisory: stub AND commented-out solution evidence (#18121)
+# ---------------------------------------------------------------------------
+
+class TestLeakyStub:
+    """Detect the leaky-stub class: a cell classified as stub (TODO/pass/sorry)
+    AND ALSO carrying commented-out evidence of a real solution body
+    (function/class/proof declaration with `:=`, or a tactic marker like
+    `by simp`/`by decide`).
+
+    Founder case: Lean-36 cells 19/21/23 -- the cell carries `-- TODO etudiant`
+    AND a fully commented-out Lean proof (theorem/lemma/example with `:= by
+    simp [...]`). Before this fix, `is_stub_code` returned True on the TODO
+    marker alone and the proof body was invisible.
+
+    Family-agnostic: tested here on Lean (the dominant leaky-stub substrate in
+    this corpus), Python (header comment with `# def foo(): ...`), and a
+    negative on plain stubs that should NOT fire this branch.
+    """
+
+    def test_lean36_founder_cell_is_leaky_stub(self):
+        # Cell 19 of Lean-36 verbatim (excerpt). TODO marker + commented-out
+        # Lean proof body.
+        cell = (
+            "-- TODO etudiant (exercice 1) : prouver la correction du decideur.\n"
+            "-- Decommentez et completez.\n"
+            "--\n"
+            "-- theorem sameBinaryTable_iff (r1 r2 : Fin 2 -> Fin 2 -> Fin 2) :\n"
+            "--     sameBinaryTable r1 r2 = true <-> forall i j, r1 i j = r2 i j := by\n"
+            "--   simp [sameBinaryTable] ouvre les deux sens.\n"
+        )
+        assert is_stub_code(cell) is True
+        assert is_leaky_stub(cell) is True
+
+    def test_plain_todo_is_not_leaky_stub(self):
+        # A stub with only an instruction comment -- the proof body is NOT
+        # commented out (only the marker is). Should not fire leaky-stub.
+        cell = (
+            "-- TODO etudiant (exercice 2) : ecrire la preuve.\n"
+            "--\n"
+            "-- Indice : utiliser `decide`.\n"
+        )
+        assert is_stub_code(cell) is True
+        assert is_leaky_stub(cell) is False
+
+    def test_comment_only_header_is_not_leaky_stub(self):
+        # A header comment that mentions `theorem` but defines nothing
+        # (no `:=` body, no tactic). Should not fire leaky-stub: the student
+        # is told what to prove, not handed the proof.
+        cell = (
+            "-- TODO : prouver que `sameBinaryTable` est une equivalence.\n"
+            "-- Indice : ouvrir la definition puis appliquer decide.\n"
+        )
+        assert is_stub_code(cell) is True
+        assert is_leaky_stub(cell) is False
+
+    def test_python_todo_with_commented_def_is_leaky_stub(self):
+        # Python cell with `# TODO` stub marker AND a commented-out def body
+        # below. The header `# def foo(): ...` is the leaky-stub evidence.
+        cell = (
+            "# TODO etudiant : implementer foo()\n"
+            "#\n"
+            "# def foo(n):\n"
+            "#     return n * 2\n"
+        )
+        assert is_stub_code(cell) is True
+        assert is_leaky_stub(cell) is True
+
+    def test_python_todo_with_commented_tactic_is_leaky_stub(self):
+        # Python stub with `# TODO` marker AND a commented-out tactic
+        # evidence line (`# by simp`). The cell IS leaky-stub: the TODO
+        # is the stub, the commented tactic proves the proof was written.
+        # We test the positive case -- the negative inverse is covered by
+        # test_real_solution_without_stub_marker_is_not_leaky_stub and
+        # test_pass_only_is_not_leaky_stub.
+        cell = (
+            "# TODO etudiant\n"
+            "#\n"
+            "# # preuve :\n"
+            "# by simp\n"
+        )
+        assert is_stub_code(cell) is True
+        assert is_leaky_stub(cell) is True
+
+    def test_csharp_todo_with_commented_method_is_leaky_stub(self):
+        # C# cell with `// TODO` AND a commented-out method body.
+        cell = (
+            "// TODO etudiant : implementer Solve()\n"
+            "//\n"
+            "// public int Solve(int n) {\n"
+            "//     return n * 2;\n"
+            "// }\n"
+        )
+        assert is_stub_code(cell) is True
+        assert is_leaky_stub(cell) is True
+
+    def test_pass_only_is_not_leaky_stub(self):
+        # Their/Lua/C family idioms where `pass` is the TODO marker. A
+        # `pass` cell without commented-out def body is a clean stub, not
+        # leaky.
+        cell = "pass\n"
+        assert is_stub_code(cell) is True
+        assert is_leaky_stub(cell) is False
+
+    def test_real_solution_without_stub_marker_is_not_leaky_stub(self):
+        # An executable solution (def/class with real body) does NOT carry
+        # a TODO marker, so `is_stub_code` returns False -- leaky-stub must
+        # also return False (no stub, no leak). The HIGH path catches this
+        # cell separately.
+        cell = (
+            "def solve(n):\n"
+            "    return n * 2\n"
+        )
+        assert is_stub_code(cell) is False
+        assert is_leaky_stub(cell) is False
+
+
+# ---------------------------------------------------------------------------
+# end of #18121 leaky-stub tests
+# ---------------------------------------------------------------------------
 

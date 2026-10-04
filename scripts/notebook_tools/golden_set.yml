@@ -116,6 +116,20 @@ notebooks:
     title: "GT-4c - Existence de Nash (point fixe de Brouwer, best-response numpy)"
     kernel: python3
     rationale: "Theoreme d'existence d'un equilibre de Nash (Brouwer sur le simplexe) ; implementation from-scratch numpy pur (best-response sigmoide, Matching Pennies) ; 0 solver externe, 0 random -> purement deterministe ; certifie Papermill ~12 s CPU, 0 erreur."
+  # Chargeur de socle GT-13 (post-merge #17891) -- verrouille la classe de
+  # defaut silent-flood via verbose=True + tqdm (cf cellule 2, chargeur qui
+  # exec en sous-process pour neutraliser le bruit). Verifie les 4 criteres
+  # d'admission (cf #17964) : kernel python3 pur, deps couvertes par
+  # golden_set.lock.txt (numpy/matplotlib/tqdm), timeout 600s (44.7s mesures
+  # localement sur coursia-ml-training 3.13.x), determinisme (seed explicite
+  # dans run_benchmark, OFTRL_strategy_Q = [0.9772, 0.0228] constant sur
+  # 4 seeds x 2 modes). Cellules cibles GT-13[5,8,11,20,23] executees via le
+  # chargeur de la cellule 2.
+  - path: MyIA.AI.Notebooks/GameTheory/GameTheory-13d-Optimistic-CFR-Python.ipynb
+    series: GameTheory
+    title: "GT-13d - Optimistic CFR / OFTRL (chargeur de socle, Kuhn Poker)"
+    kernel: python3
+    rationale: "Solveurs CFR / CFR+ / DCFR / OFTRL from-scratch numpy pur ; benchmark Kuhn Poker 4 seeds x 2 modes (simultaneous/alternating) ; chargeur de socle GT-13 (cellule 2) qui exec les cellules cibles GT-13[5,8,11,20,23] en sous-process avec wrapper _TqdmSilent neutralisant le bruit verbose ; deterministe (seed figee par run_benchmark, OFTRL constant cross-seeds) ; certifie Papermill ~45s CPU, 0 erreur, 0 secret leak."
 
 # -----------------------------------------------------------------------------
 # Candidats DEFERRES (v3+) : a certifier quand le lockfile etendra sa couverture.

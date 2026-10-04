@@ -6,7 +6,7 @@ name: Notebook outputs required (H.4 schema)
 #   'Invalid Notebook / outputs is a required property /
 #    Using nbformat v5.10.4 and nbconvert v7.17.1'
 #
-# Le notebook livre (GameTheory-06g-Bounded-Agents-Lean.ipynb) avait 9/9
+# Le notebook livre (GameTheory-06f-Bounded-Agents-Lean.ipynb) avait 9/9
 # cellules code SANS la cle `outputs` (pas `outputs: []` vide -- la cle etait
 # absente du dict). Papermill a accepte (validator permissif), n'a rien
 # produit en sortie (kernel `lean4-wsl` hang faute de `.lake/`), et la cle

@@ -27,7 +27,7 @@ Correctifs implementes :
    ``prouvé``/``donné``/``vérifié`` entre backticks = intacts (noms, pas
    prose). Fenetre locution ``donné`` passee a 60 chars (c.1317-L7).
 
-Contraintes structurelles (cf tells c.1343 fondateurs) :
+Contraintes structurelles :
 - ``source[]`` est preservee (list-edit par item, JAMAIS split('\n')) -- evite
   la re-serialisation visible (-184 lignes sur #16993).
 - byte-identique newline terminal (read_bytes / write_bytes).
@@ -57,7 +57,7 @@ from typing import List, Optional
 # --- Constantes morphologiques ----------------------------------------------
 
 # Auxiliaires avoir/etre (signal 2+ chars pour eviter "a" ambigu avec article)
-# + semi-auxiliaire "peut" (cf Tell c.1317-L4 ★★★★ fondateur).
+# + semi-auxiliaire "peut".
 AUXILIAIRES_2CHARS_PLUS = frozenset({
     # avoir
     "ai", "as", "avons", "avez", "ont",
@@ -103,7 +103,7 @@ _SENTENCE_BOUND = re.compile(r"[.!?]|\n\s*\n")
 # "il/on décide" vs 6 non-accentuees -- flagguer partout (sémantique v1,
 # issue #17323) produisait des faux positifs contre la prose de main.
 #
-# Invariant préservé (Tell c.1345-L1 ★★★★★ fondateur) : les cellules CODE
+# Invariant préservé : les cellules CODE
 # ne sont JAMAIS scannées (filtre `cell_type == 'markdown'`).
 # Donc `by decide` dans une cellule code = intact.
 
@@ -172,7 +172,7 @@ def is_prouve_legitimate(ctx_before: str) -> bool:
     la v2 fenetre-libre legitimisait a travers les frontieres de phrase --
     "est prouvé par Tao. Tao le prouvé" comptait 2 fautifs au lieu de 3).
     Compromis : fenetre 30 chars COUPEE au dernier séparateur de phrase.
-    Refuse : "se prouve" (cf Tell c.1315-L15 ★★★ fondateur -- "se prouve" toujours
+    Refuse : "se prouve" ("se prouve" toujours
     fautif, car "se" n'est pas un auxiliaire avoir/etre).
     """
     ctx = _strip_accents(_normalize(ctx_before))
@@ -188,7 +188,7 @@ def is_prouve_legitimate(ctx_before: str) -> bool:
 def is_donne_legitimate(ctx_before: str) -> bool:
     """Verifie si 'donne' est dans une locution figee (etant donne / tant donne).
 
-    Fenetre 60 chars avant (Tell c.1317-L7 ★★★★ fondateur -- mots intercalés
+    Fenetre 60 chars avant (mots intercalés
     OK), **bornee a la phrase courante** (#17523, cf ``_SENTENCE_BOUND``) :
     sans cette borne, une locution d'une phrase anterieure legitimisait un
     « donné » fautif de la phrase suivante (defaut que documentait le skip de
@@ -260,7 +260,7 @@ def _scan_cell_source(cell_index: int, src_text: str) -> List[MorphoFinding]:
                 context=src_text[max(0, m.start() - 30):m.end() + 15].replace("\n", " "),
             ))
     # Pattern 2 : forme ACCENTUEE "donné" fautive SAUF locution SAUF backticks.
-    # Fenetre 60 chars (Tell c.1317-L7 ★★★★ -- mots intercales OK).
+    # Fenetre 60 chars (mots intercales OK).
     for m in re.finditer(r"\bdonné\b", src_text):
         if bt_mask[m.start()]:
             continue
@@ -274,7 +274,7 @@ def _scan_cell_source(cell_index: int, src_text: str) -> List[MorphoFinding]:
                 context=src_text[max(0, m.start() - 30):m.end() + 15].replace("\n", " "),
             ))
     # Pattern 3 (c.1412) : forme ACCENTUEE "vérifié" fautive SAUF auxiliaire
-    # SAUF backticks. Transposition Tell c.1315 (verifie) au cas 'vérifié'.
+    # SAUF backticks. Transposition au cas 'vérifié'.
     for m in re.finditer(r"\bvérifié\b", src_text):
         if bt_mask[m.start()]:
             continue
@@ -344,12 +344,12 @@ def scan_notebook(path: Path) -> MorphoReport:
 def repair_notebook(path: Path, dry_run: bool = False) -> MorphoReport:
     """Reapply les corrections morphologiques sur un notebook.
 
-    Strategie list-edit (Tell c.1343-L1 ★★★★★ fondateur NEW) : pour chaque item
+    Strategie list-edit : pour chaque item
     de source[] contenant le pattern, remplacer **uniquement** cet item via
     ``src.copy() + src[idx] = new_item``. JAMAIS de split/rejoin qui perd les
     \n finaux.
 
-    Strategie byte-identique (Tell c.1331-L5 ★★★★ fondateur NEW) : read_bytes
+    Strategie byte-identique : read_bytes
     + write_bytes, preservation newline terminal bi-directionnelle.
     """
     raw = path.read_bytes()
@@ -364,7 +364,7 @@ def repair_notebook(path: Path, dry_run: bool = False) -> MorphoReport:
         src = cell["source"]
         if isinstance(src, list):
             # List-edit preservant structure (chaque item sauf le dernier
-            # DOIT se terminer par \n -- Tell c.1336-L1 strict).
+            # DOIT se terminer par \n).
             new_src = None
             for item_idx, item_text in enumerate(src):
                 findings = _scan_cell_source(ci, item_text)
@@ -431,7 +431,7 @@ def _self_test() -> int:
     if is_prouve_legitimate("on "):
         failures.append("'on prouve' devrait etre fautif (verbe 3e pers.)")
 
-    # "se prouve" : toujours fautif (Tell c.1315-L15 ★★★ fondateur)
+    # "se prouve" : toujours fautif
     if is_prouve_legitimate("se "):
         failures.append("'se prouve' devrait etre fautif (cf Tell c.1315-L15)")
 

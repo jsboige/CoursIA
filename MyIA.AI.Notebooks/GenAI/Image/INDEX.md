@@ -1,7 +1,7 @@
 # 📑 INDEX COMPLET - GenAI Images Ecosystem CoursIA
 
 > **Guide de navigation complet de l'écosystème GenAI Images**  
-> Production-ready | 20 Notebooks | APIs Externes | Documentation Complète
+> Production-ready | APIs Externes | Documentation Complète
 
 ---
 
@@ -42,7 +42,7 @@ L'écosystème **GenAI Images CoursIA** est une plateforme modulaire complète p
 | Métrique | Valeur |
 |----------|--------|
 | **Notebooks totaux** | 20 |
-| **Tutoriels complets** | 4 (8500+ lignes) |
+| **Tutoriels complets** | 4 |
 | **Exemples sectoriels** | 3 domaines |
 | **APIs configurées** | 3 (OpenAI, OpenRouter, GPT-5) |
 | **Niveaux formation** | 4 (00-04) |
@@ -246,7 +246,7 @@ MyIA.AI.Notebooks/GenAI/
 
 ## 📚 Tutoriels et Guides
 
-### Tutoriels Complets (1000-1600 lignes)
+### Tutoriels Complets
 
 #### 1. **DALL-E 3 Complete Guide** 📘
 **Fichier** : [`tutorials/dalle3-complete-guide.md`](../tutorials/dalle3-complete-guide.md)  

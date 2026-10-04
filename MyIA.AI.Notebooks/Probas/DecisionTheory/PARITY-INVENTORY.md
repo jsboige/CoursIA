@@ -8,6 +8,11 @@
 > `NUMBERING-DRIFT` livrée par [PR #13017](https://github.com/jsboige/CoursIA/pull/13017) (po-2023).
 > Sans inventaire, le verdict NUMBERING-DRIFT ne dispose pas d'un mapping de référence pour
 > argumenter les tranches de renommage à venir.
+>
+> **Etat mesuré au 2026-10-02** : l'arc actuariel (ex-DecPyMC-8 à 12) est descendu en sous-série dédiée
+> [`Actuariat/`](Actuariat/README.md) — régraduation T1-T5 = `Actuariat-01..05` (arbitrage #14873 G3).
+> Le présent document reste le snapshot pré-merge du HEAD `87dffc2bd9c` : ses références à
+> DecPyMC-8/9/12 décrivent l'état historique au moment de la tranche P0 et sont conservées telles quelles.
 
 ## Périmètre strict de la tranche
 
@@ -31,7 +36,7 @@ DecInfer/  (10 notebooks : 8 C#/.NET + 2 Lean 4)
         DecInfer-06  Value-Information        (decalé)   │ décalées
         DecInfer-07  Expert-Systems           (decalé)   │
         DecInfer-08  Sequential               (decalé)  ─┘
-        DecInfer-09  Lean-Gittins             (companion Lean, suffixe)
+        DecInfer-08b  Lean-Gittins             (companion Lean, suffixe)
         DecInfer-10 Thompson-Sampling        (aligné au DecPyMC-7 multi-section, extension unilatérale)
 
 DecPyMC/   (9+ notebooks : NUTS/ADVI Python)
@@ -74,7 +79,7 @@ L'EPIC #12933 a déjà diagnostiqué la cause (cf body §La cause n'est pas un m
 > `DecInfer-02-Lean-ExpectedUtility` est un companion formel légitime, mais son insertion dans
 > la séquence principale a décalé tous les concepts communs suivants.
 
-Le même mécanisme vaut pour `DecInfer-09-Lean-Gittins` (companion Lean, intercalé en N°9, suivi
+Le même mécanisme vaut pour `DecInfer-08b-Lean-Gittins` (companion Lean, intercalé en N°9, suivi
 du Thompson Sampling en N°10). Les companions Lean NE DEVRAIENT PAS décaler le compteur commun,
 mais le système de numérotation initial les a traités comme des entrées à part entière.
 
@@ -87,7 +92,7 @@ Trois voies possibles (à arbitrer en EPIC, pas dans cette tranche) :
 
 | Voie | Description | Effet sur les notebooks | Risque |
 |---|---|---|---|
-| **(a) Suffixe compagnon** (recommandée par le principle directeur) | Renommer `DecInfer-02-Lean-ExpectedUtility` → `DecInfer-01b-Lean-ExpectedUtility` (companion de #1, suffixe `b`). Idem `DecInfer-09-Lean-Gittins` → `DecInfer-08b-Lean-Gittins`. Les DecInfer-03..08 restent alignés avec DecPyMC-2..7. | 2 `git mv` + réparations de liens entrants (REVIEW, datasets, manifestes) ; pas de renommage côté PyMC. | Faible (companions explicites, déjà conventionnés `App-Nb` / `SW-Nb`). |
+| **(a) Suffixe compagnon** (recommandée par le principle directeur) | Renommer `DecInfer-02-Lean-ExpectedUtility` → `DecInfer-01b-Lean-ExpectedUtility` (companion de #1, suffixe `b`). Idem `DecInfer-09-Lean-Gittins` → `DecInfer-08b-Lean-Gittins` (G4c). Les DecInfer-03..08 restent alignés avec DecPyMC-2..7. | 2 `git mv` + réparations de liens entrants (REVIEW, datasets, manifestes) ; pas de renommage côté PyMC. | Faible (companions explicites, déjà conventionnés `App-Nb` / `SW-Nb`). |
 | **(b) Re-numérotation totale PyMC** | Renommer `DecPyMC-2..7` → `DecPyMC-3..8` pour s'aligner à DecInfer. Coûteux en références entrantes. | 6 renommages + réparations systématiques des liens Python (catalogue, baselines, tests). | Élevé (les notebooks PyMC sont les plus référencés par les notebooks Causal-Bridges et autres arcs). |
 | **(c) Slot compagnon vide PyMC** | Ajouter `DecPyMC-1b` et `DecPyMC-8b` vides (companion slot non rempli) pour préserver la parité des nombres, sans toucher au contenu PyMC. | 2 fichiers stubs vides, déclaration d'absence. | Faible techniquement, fort symboliquement (pourquoi des fichiers vides ?). |
 
@@ -140,7 +145,7 @@ explicitement les extensions unilatérales. Chaque fichier suit le format `_sche
 | `DecInfer-06-Value-Information.ipynb` | `84dbb0657965` |
 | `DecInfer-07-Expert-Systems.ipynb` | `395123d8c37b` |
 | `DecInfer-08-Sequential.ipynb` | `17f2afe786af` |
-| `DecInfer-09-Lean-Gittins.ipynb` | `b3428a08ced3` |
+| `DecInfer-08b-Lean-Gittins.ipynb` | `b3428a08ced3` |
 | `DecInfer-10-Thompson-Sampling.ipynb` | `fc01f40aa3b8` |
 | `DecPyMC-1-Utility-Foundations.ipynb` | `ed6ab40b030f` |
 | `DecPyMC-2-Utility-Money.ipynb` | `b873c515ac49` |

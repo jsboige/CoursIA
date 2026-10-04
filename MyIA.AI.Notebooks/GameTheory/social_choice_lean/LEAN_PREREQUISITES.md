@@ -112,7 +112,7 @@ La reproduction des preuves de `Basic.lean` n'est pas realiste a ce niveau — l
 
 ### Durée totale estimée : 30-38h (lecture + exercices Mathlib)
 
-Pour reproduire les preuves existantes : **45-55h** supplémentaires. Les preuves d'Arrow.lean (~950 lignes) représentent le gros du travail.
+Pour reproduire les preuves existantes : **45-55h** supplémentaires. Les preuves d'Arrow.lean représentent le gros du travail.
 
 ---
 
@@ -189,7 +189,7 @@ L'ordre `Voting.lean` avant `Arrow.lean` est recommandé car :
 ## Points d'entrée rapides
 
 **Pour lire les énoncés sans reproduire les preuves** :
-1. Ouvrir `Basic.lean`, lire les `def` et `structure` (lignes 1-80)
+1. Ouvrir `Basic.lean`, lire les `def` et `structure`
 2. Ouvrir `Arrow.lean`, lire les definitions de `weak_pareto`, `ind_of_irr_alts`, `is_dictatorship`, puis l'énoncé `arrow_impossibility`
 3. Ouvrir `Sen.lean`, lire `is_decisive_over`, `minimal_liberal`, puis l'énoncé `sen_impossibility`
 

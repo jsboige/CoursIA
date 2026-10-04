@@ -25,7 +25,7 @@ Interface uniforme (cf. __init__.py) :
 CLI :
     python clients/qwen3_tts_customvoice.py --text "..." --out <wav> [--language French] [--speaker serena] [--instruct "..."] [--device cuda]
 
-Tell c.c.c.d.sota-not-workaround Prong A : organ-first = qwen-tts 0.1.1 (paquet PyPI officiel Qwen).
+Prong A : organ-first = qwen-tts 0.1.1 (paquet PyPI officiel Qwen).
 Pas de réimplémentation locale du wrapper transformers.
 """
 from __future__ import annotations
@@ -42,7 +42,7 @@ import torch
 
 
 DEFAULT_MODEL_ID = "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice"
-DEFAULT_SPEAKER = "serena"  # Tell c.c.c.d.G.1 ★★★★ — vérif first-hand c.818, snake_case lowercase
+DEFAULT_SPEAKER = "serena"  # vérif first-hand c.818, snake_case lowercase
 DEFAULT_LANGUAGE = "French"
 SAMPLE_RATE = 24000  # Qwen3-TTS 12 Hz output upsample to 24 kHz
 
@@ -50,7 +50,7 @@ SAMPLE_RATE = 24000  # Qwen3-TTS 12 Hz output upsample to 24 kHz
 def get_supported_speakers() -> list[str]:
     """Retourne la liste des voix premium supportées par le CustomVoice 1.7B.
 
-    Tell c.c.c.d.G.1 ★★★★ — vérif first-hand c.818 16:42Z :
+    vérif first-hand c.818 16:42Z :
     model._validate_speakers(['Chelsie']) → ValueError "Unsupported speakers: ['Chelsie'].
     Supported: ['aiden', 'dylan', 'eric', 'ono_anna', 'ryan', 'serena', 'sohee', 'uncle_fu', 'vivian']"
     La doc README affichait des Capitalized names ('Chelsie', 'Ethan', etc.) qui ne sont PAS

@@ -150,11 +150,11 @@ Case 14-bis adoptera le design case 12 (deux territoires concurrents, payoff int
 
 | Fichier | Δ |
 |---|---|
-| `MyIA.AI.Notebooks/IIT/ICT-Series/ict/hoffman_interface_toy_n8_relaxed.py` | +310 lignes (créé) |
-| `MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests/test_hoffman_interface_toy_n8_relaxed.py` | +265 lignes (créé, 23 tests dont 2 slow) |
-| `MyIA.AI.Notebooks/IIT/ICT-Series/ict/results/hoffman_interface_toy_n8_relaxed_results.json` | +422 lignes (créé, artefact) |
-| `MyIA.AI.Notebooks/IIT/ICT-Series/ict/scratchpad_hoffman_toy_case14.md` | +140 lignes (créé, pré-enregistrement + révision symétries) |
-| `docs/ict/hoffman-interface-distillation-case14.md` | +200 lignes (créé, grade C) |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ict/hoffman_interface_toy_n8_relaxed.py` | (créé) |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests/test_hoffman_interface_toy_n8_relaxed.py` | (créé, 23 tests dont 2 slow) |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ict/results/hoffman_interface_toy_n8_relaxed_results.json` | (créé, artefact) |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ict/scratchpad_hoffman_toy_case14.md` | (créé, pré-enregistrement + révision symétries) |
+| `docs/ict/hoffman-interface-distillation-case14.md` | (créé, grade C) |
 
 ## Voir aussi
 

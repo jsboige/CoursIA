@@ -30,7 +30,7 @@ Prover calibration targets for benchmarking the multi-agent Lean prover.
 
 - This module benchmarks the multi-agent Lean prover's ability to close textbook-style proofs
 - All targets now closed; module is retained as a permanent regression suite for prover changes
-- Verification: code-level count (docstrings `/-- ... -/` and comments `-- ...` stripped) = **0** `sorry` in production (cf [Lean README](../Lean-1-Setup.ipynb)). NB: the naive `grep -nE '^[^/]*\bsorry\b' Calibration/Nash.lean` returns **3** hits on main — all prose inside target F's docstring (L90/96/97), not proof terms
+- Verification: code-level count (docstrings `/-- ... -/` and comments `-- ...` stripped) = **0** `sorry` in production (cf [Lean README](../Lean-01-Setup-Lean-Python.ipynb)). NB: the naive `grep -nE '^[^/]*\bsorry\b' Calibration/Nash.lean` returns **3** hits on main — all prose inside target F's docstring (L90/96/97), not proof terms
 
 ## Conclusion
 

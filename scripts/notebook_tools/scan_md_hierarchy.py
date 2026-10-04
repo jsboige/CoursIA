@@ -264,7 +264,19 @@ def iter_notebooks(args):
         else:
             unresolved.append(a)
     if unresolved:
-        raise ValueError('not a notebook nor a directory: ' + ', '.join(unresolved))
+        # Les appelants passent AUSSI des pathlib.Path (le mode diff resout ses
+        # tetes contre la racine du depot) : sans str(), un PosixPath ici levait
+        # `TypeError: sequence item 0: expected str instance, PosixPath found` et
+        # enterrait le diagnostic sous un crash (#14801, run 36457091976 -- un
+        # notebook absent de l'arbre du runner, checkout incomplet).
+        missing = [a for a in unresolved if pathlib.Path(a).suffix == '.ipynb']
+        msg = ('not a notebook nor a directory: '
+               + ', '.join(str(a) for a in unresolved))
+        if missing:
+            msg += ('\n  hint: ' + ', '.join(str(a) for a in missing)
+                    + ' end(ent) en .ipynb mais sont absents de l\'arbre de '
+                      'travail -- checkout incomplet, pas un constat de derive')
+        raise ValueError(msg)
 
 
 # --- Drift mode (#11831) ------------------------------------------------------

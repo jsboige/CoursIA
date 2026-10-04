@@ -81,7 +81,7 @@ lean --version  # Lean 4.x.x
 #eval 2 + 2          -- 4
 ```
 
-> **Notebook** : `Lean-1-Setup.ipynb` — 15 min
+> **Notebook** : `Lean-01-Setup-Lean-Python.ipynb` — 15 min
 
 ---
 
@@ -107,7 +107,7 @@ def head : {n : Nat} → Vector α (n + 1) → α
 #check @List.map  -- List.map : (α → β) → List α → List β
 ```
 
-> **Notebook** : `Lean-2-Dependent-Types.ipynb` — 35 min
+> **Notebook** : `Lean-02-Dependent-Types-Lean.ipynb` — 35 min
 
 ---
 
@@ -133,7 +133,7 @@ theorem not_not (h : ¬¬P) : P := h (fun np => np (h np))  -- EM requis
 - **Classique** : `Classical.em : ∀ P, P ∨ ¬P` (Law of Excluded Middle)
 - **Propext** : `propext : P ↔ Q → P = Q`
 
-> **Notebook** : `Lean-3-Propositions-Proofs.ipynb` — 45 min
+> **Notebook** : `Lean-03-Propositions-Proofs-Lean.ipynb` — 45 min
 
 ---
 
@@ -162,7 +162,7 @@ theorem add_zero : ∀ n : Nat, n + 0 = n
 theorem eq_symm {a b : α} (h : a = b) : b = a := h.symm
 ```
 
-> **Notebook** : `Lean-4-Quantifiers.ipynb` — 40 min
+> **Notebook** : `Lean-04-Quantifiers-Lean.ipynb` — 40 min
 
 ---
 
@@ -189,7 +189,7 @@ theorem de_morgan (h : ¬(P ∨ Q)) : ¬P ∧ ¬Q := by
 | `omega` | Arithmetique lineaire ℤ/ℕ |
 | `tauto` | Tautologies propositionnelles |
 
-> **Notebook** : `Lean-5-Tactics.ipynb` — 50 min
+> **Notebook** : `Lean-05-Tactics-Lean.ipynb` — 50 min
 
 ---
 layout: section
@@ -220,7 +220,7 @@ example (n : ℕ) (h : n > 5) : n ≥ 6 := by omega
 example? (a b c : ℕ) : a * (b + c) = a * b + a * c  -- suggest: mul_add
 ```
 
-> **Notebook** : `Lean-6-Mathlib-Essentials.ipynb` — 45 min
+> **Notebook** : `Lean-06-Mathlib-Essentials-Lean.ipynb` — 45 min
 
 ---
 
@@ -248,7 +248,7 @@ theorem fermat_last_n2 : ∀ a b c : ℕ, a^2 + b^2 = c^2 → ... := by
 | **AlphaProof** | RL + Monte Carlo tree search | Research |
 | **Draft-Sketch-Prove** | LLM + formal verification | Research |
 
-> **Notebook** : `Lean-7-LLM-Integration.ipynb` — 50 min
+> **Notebook** : `Lean-07-LLM-Integration-Lean-Python.ipynb` — 50 min
 
 ---
 
@@ -276,7 +276,7 @@ result = prover.prove(lean_file, target_theorem="Arrow_theorem")
 - **Erdős problèmes** : nombre de Ramsey R(4,4) = 18
 - **Competition IMO** : problèmes olympiques
 
-> **Notebook** : `Lean-8-Agentic-Proving.ipynb` — 55 min
+> **Notebook** : `Lean-08-Agentic-Proving-Python.ipynb` — 55 min
 
 ---
 
@@ -303,7 +303,7 @@ kernel.add_plugin(lean_plugin, "Lean")
 - **Checker** : verifie la validite formelle
 - **Explainer** : traduit la preuve en prose mathematique
 
-> **Notebook** : `Lean-9-SK-Multi-Agents.ipynb` — 45 min
+> **Notebook** : `Lean-09-SK-Multi-Agents-Lean-Python.ipynb` — 45 min
 
 ---
 

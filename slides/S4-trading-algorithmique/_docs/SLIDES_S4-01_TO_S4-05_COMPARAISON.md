@@ -216,7 +216,7 @@ Intelligence Artificielle -- S4
 **Problèmes identifiés** :
 - ✅ **Layout standard** : Liste hiérarchique simple
 - ⚠️ **Contenu dense** : 3 sections principales avec sous-items
-- ⚠️ **Risque d'overflow** : 9 lignes de contenu peuvent être trop pour Slidev
+- ⚠️ **Risque d'overflow** : le contenu peut être trop pour Slidev
 
 **Comparaison avec PPTX** :
 - PPTX (1500x1125) a plus de densité de pixels
@@ -276,7 +276,7 @@ Intelligence Artificielle -- S4
 **Problèmes identifiés** :
 - ✅ **Layout standard** : Liste hiérarchique simple
 - ⚠️ **Contenu très dense** : 3 sections avec 2-3 sous-items chacune
-- ⚠️ **Risque d'overflow élevé** : 10 lignes de contenu
+- ⚠️ **Risque d'overflow élevé** : contenu dense
 
 **Recommandations** :
 - Probablement à scinder en 2 slides pour éviter l'overflow
@@ -340,7 +340,7 @@ Intelligence Artificielle -- S4
 ### 3. Contenu Dense
 
 **Problème** :
-- Plusieurs slides ont 8-10 lignes de contenu
+- Plusieurs slides au contenu dense
 - Risque d'overflow dans Slidev
 
 **Solution** :

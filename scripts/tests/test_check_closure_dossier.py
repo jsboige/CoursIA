@@ -32,6 +32,7 @@ from check_closure_dossier import (  # noqa: E402
     render_template,
     validate_dossier,
     main,
+    _merged_referring_prs,
 )
 
 
@@ -151,6 +152,66 @@ def test_commentaire_neutre_posterieur_ne_perime_pas():
     assert errors == []
 
 
+# --- latest-wins : seul le dernier dossier compte (#18095) -------------------
+
+def test_dossier_malforme_puis_dossier_valide_ferme():
+    # Controle positif (forme #16916) : un premier dossier malforme ne masque
+    # plus le dossier correct poste apres lui.
+    malformed = _dossier_body().replace("residue: none\n", "")
+    snap = _snapshot(comments=[
+        _comment(malformed, created="2026-09-20T10:00:00Z"),
+        _comment(_dossier_body(comments_reviewed=1),
+                 created="2026-09-21T10:00:00Z"),
+    ])
+    verdict, errors, dossier = evaluate(snap)
+    assert verdict == "CLOSE"
+    assert errors == []
+    assert dossier.comment_index == 1
+
+
+def test_dossier_valide_puis_dossier_malforme_refuse():
+    # Controle negatif : le dernier dossier fait foi, meme malforme -- un
+    # dossier valide plus ancien ne le rattrape pas.
+    malformed = _dossier_body(comments_reviewed=1).replace("residue: none\n", "")
+    snap = _snapshot(comments=[
+        _comment(_dossier_body(), created="2026-09-20T10:00:00Z"),
+        _comment(malformed, created="2026-09-21T10:00:00Z"),
+    ])
+    verdict, errors, dossier = evaluate(snap)
+    assert verdict == "REFUSED"
+    assert any("missing fields: residue" in e for e in errors)
+    assert dossier.comment_index == 1
+
+
+def test_keep_puis_close_rend_close(monkeypatch):
+    monkeypatch.setattr(ccd, "gh_json", lambda args: {
+        "number": 17910, "state": "OPEN"})
+    snap = _snapshot(comments=[
+        _comment(_dossier_body(verdict="KEEP", residue="followup #17910"),
+                 created="2026-09-20T10:00:00Z"),
+        _comment(_dossier_body(comments_reviewed=1),
+                 created="2026-09-21T10:00:00Z"),
+    ])
+    verdict, errors, _ = evaluate(snap)
+    assert verdict == "CLOSE"
+    assert errors == []
+
+
+def test_close_puis_keep_rend_keep(monkeypatch):
+    # Symetrique : un KEEP recent retire un CLOSE plus ancien.
+    monkeypatch.setattr(ccd, "gh_json", lambda args: {
+        "number": 17910, "state": "OPEN"})
+    snap = _snapshot(comments=[
+        _comment(_dossier_body(), created="2026-09-20T10:00:00Z"),
+        _comment(_dossier_body(verdict="KEEP", residue="followup #17910",
+                               comments_reviewed=1),
+                 created="2026-09-21T10:00:00Z"),
+    ])
+    verdict, errors, _ = evaluate(snap)
+    assert verdict == "KEEP"
+    assert errors == []
+
+
 def test_pr_ouverte_referencant_lissue_refuse():
     # Le contrat dit open-prs: 0 ; le live en trouve une -> perime.
     snap = _snapshot(comments=[_comment(_dossier_body())], open_prs=[18050])
@@ -171,6 +232,12 @@ def test_fille_citee_fermee_refuse(monkeypatch):
 
 def test_pr_citee_non_merged_refuse(monkeypatch):
     def fake_gh_json(args):
+        # La resolution issue/PR (#18323) precede le pr view : #18002 est
+        # bien une PR (cle pull_request presente).
+        if args[0] == "api":
+            assert args[1] == "repos/o/r/issues/18002", args
+            return {"number": 18002, "state": "OPEN",
+                    "pull_request": {"url": "x"}}
         assert args[:2] == ["pr", "view"], args
         return {"state": "OPEN", "mergedAt": None}
     monkeypatch.setattr(ccd, "gh_json", fake_gh_json)
@@ -179,6 +246,38 @@ def test_pr_citee_non_merged_refuse(monkeypatch):
     verdict, errors, _ = evaluate(snap)
     assert verdict == "REFUSED"
     assert any("#18002 is not MERGED" in e for e in errors)
+
+
+def test_issue_citee_dans_la_preuve_ne_crash_pas(monkeypatch):
+    # #18323 : citer l'issue d'audit dans sa propre preuve (« verdict de
+    # l'audit #16834 ») faisait echouer gh pr view -> UNKNOWN pour tout le
+    # dossier. Une reference d'issue n'est pas une PR citee : elle sort du
+    # controle « PRs citees : toutes MERGED ». #17901 couvre le critere via
+    # le raccourci merged_prs.
+    def fake_gh_json(args):
+        assert args[0] == "api" and args[1] == "repos/o/r/issues/16834", args
+        return {"number": 16834, "state": "OPEN"}  # pas de cle pull_request
+    monkeypatch.setattr(ccd, "gh_json", fake_gh_json)
+    snap = _snapshot(comments=[
+        _comment(_dossier_body(
+            items=("critere A -> verdict de l'audit #16834 "
+                   "et PR #17901",)))])
+    verdict, errors, _ = evaluate(snap)
+    assert verdict == "CLOSE"
+    assert errors == []
+
+
+def test_numero_cite_introuvable_reste_fail_closed(monkeypatch):
+    # Une erreur reseau/404 sur la resolution du #N cite lève RuntimeError :
+    # c'est sweep()/main() qui la convertissent en UNKNOWN (fail-closed
+    # conserve, #18323 exigence 2) -- evaluate ne l'avale jamais.
+    def boom(args):
+        raise RuntimeError("gh: Not Found (HTTP 404)")
+    monkeypatch.setattr(ccd, "gh_json", boom)
+    snap = _snapshot(comments=[
+        _comment(_dossier_body(items=("critere A -> PR #404404",)))])
+    with pytest.raises(RuntimeError):
+        evaluate(snap)
 
 
 def test_pr_citee_deja_dans_les_merged_ne_requete_pas(monkeypatch):
@@ -286,6 +385,24 @@ def test_template_rend_les_champs_mecaniques():
     assert "open-prs: 0" in out
     assert "comments-reviewed: 2" in out
     assert "REPLACE_WITH_CLOSE_OR_KEEP" in out
+
+
+def test_template_rempli_tel_quel_se_parse():
+    """Remplir chaque REPLACE_WITH sur place doit donner un dossier valide :
+    l'item d'acceptation est rendu sous `acceptance:`, pas apres
+    `comments-reviewed` (#18480 : le gabarit rempli sur place etait refuse)."""
+    snap = _snapshot(comments=[_comment("x")])
+    out = render_template(snap, "myia-po-2026:CoursIA-3")
+    filled = (out
+              .replace("REPLACE_WITH_CLOSE_OR_KEEP", "CLOSE")
+              .replace("REPLACE_WITH_none_OR_followup_#M_OR_waiver:_<motif daté>",
+                       "none")
+              .replace("REPLACE_WITH <critère du body> -> <PR#/commit/fichier:ligne>",
+                       "critere du body -> #17901"))
+    assert "REPLACE" not in filled
+    dossier, errors = parse_dossier(filled, 0, "jsboige")
+    assert errors == []
+    assert dossier.fields["verdict"] == "CLOSE"
 
 
 def test_main_rc_close_0_keep_3_refuse_1_inconnu_2(monkeypatch, capsys):
@@ -402,3 +519,150 @@ def test_merged_referring_prs_lit_le_body_sans_jq(monkeypatch):
     assert len(prs) == 1
     assert prs[0]["body"].startswith("Grain:")
     assert prs[0]["number"] == 17901
+
+
+def test_merged_referring_prs_resout_une_reference_cross_repo(monkeypatch):
+    # #17301, mesure 2026-09-28 : MyIntelligenceAgency/Z3.Linq#31 (merged)
+    # reference l'issue -> l'organe resout toute cross-ref dans le depot SOURCE,
+    # sinon gh rend "Could not resolve to a PullRequest" sur le depot cible et
+    # le template crash (blocage Lot D #18140).
+    import subprocess as _sp
+    import json as _json
+    # Payload reel mesure sur #17301 : le depot vit dans
+    # source.issue.repository.full_name (source.repository est None).
+    timeline = [_json.dumps([{
+        "event": "cross-referenced",
+        "source": {"issue": {"number": 31,
+                             "repository": {"full_name": "MyIntelligenceAgency/Z3.Linq"},
+                             "pull_request": {"merged_at": "2026-09-23T18:39:12Z"}}},
+    }])]
+    seen = {}
+
+    class _P:
+        def __init__(self, stdout, returncode=0):
+            self.stdout = stdout
+            self.returncode = returncode
+
+    def fake_run(args, **kwargs):
+        tail = tuple(args[1:])
+        if tail[0] == "api":
+            return _P("".join(timeline))
+        if tail[:2] == ("pr", "view"):
+            seen[("--repo",)] = tail
+            assert "--repo" in tail and "MyIntelligenceAgency/Z3.Linq" in tail, (
+                "la PR cross-ref doit etre resolue dans son depot source, "
+                "pas dans le depot cible")
+            return _P(_json.dumps({"body": "Grain: DEEP/lean -- lane myia-po-2024:CoursIA"}))
+        return _P("", returncode=1)
+
+    monkeypatch.setattr(_sp, "run", fake_run)
+    prs = ccd._merged_referring_prs("jsboige/CoursIA", 17301)
+    assert len(prs) == 1
+    assert prs[0]["number"] == 31
+    assert prs[0]["repo"] == "MyIntelligenceAgency/Z3.Linq"
+
+
+def test_pr_cross_repo_ne_satisfait_pas_le_raccourci_des_prs_citees(monkeypatch):
+    # Un #N nu dans le dossier designe une PR du depot CIBLE : une PR de meme
+    # numero venue d'un depot soeur ne doit pas court-circuiter la verification
+    # (le dossier citerait #31 sans preuve que la PR 31 du depot cible existe).
+    def fake_gh_json(args):
+        if args[0] == "api":
+            assert args[1] == "repos/o/r/issues/31", args
+            return {"number": 31, "state": "OPEN",
+                    "pull_request": {"url": "x"}}  # PR 31 existe dans o/r
+        assert args[:2] == ["pr", "view"], f"appel gh inattendu: {args}"
+        assert args[args.index("--repo") + 1] == "o/r", (
+            "le numero nu doit etre verifie dans le depot cible")
+        return {"state": "OPEN", "mergedAt": None}  # PR 31 de o/r : non merged
+
+    monkeypatch.setattr(ccd, "gh_json", fake_gh_json)
+    snap = _snapshot(
+        comments=[_comment(_dossier_body(items=("critere A -> PR #31",)))],
+        merged_prs=[
+            {"number": 31, "merged_at": "2026-09-23T18:39:12Z",
+             "repo": "MyIntelligenceAgency/Z3.Linq",
+             "body": "Grain: DEEP/lean -- lane myia-po-2024:CoursIA"},
+        ],
+    )
+    verdict, errors, _ = evaluate(snap)
+    assert verdict == "REFUSED"
+    assert any("cited PR #31 is not MERGED" in e for e in errors)
+
+
+# --- _merged_referring_prs : body depuis timeline -----------------------------
+
+def test_merged_referring_prs_lit_body_depuis_timeline(monkeypatch):
+    """Le body d'une PR mergée doit être lu depuis la timeline (source.issue.body)
+    quand il est présent, sans `gh pr view` supplémentaire.
+
+    Mesure : sur #15578, 555 references = 4 min de latence eliminees (1 appel
+    gh api de moins par referencee). Ce test verifie le fast-path.
+    """
+    timeline = [
+        {"event": "cross-referenced",
+         "source": {"type": "issue",
+                    "issue": {"number": 17901,
+                              "body": "Grain: DEEP/notebook-python -- lane X",
+                              "pull_request": {"merged_at": "2026-09-19T10:00:00Z"},
+                              "repository": {"full_name": "o/r"}}}},
+    ]
+    def fake_gh_json(args):
+        assert args[0] == "api", f"appel inattendu: {args}"
+        return timeline
+    monkeypatch.setattr(ccd, "gh_json", fake_gh_json)
+    out = _merged_referring_prs("o/r", 15578)
+    assert len(out) == 1
+    assert out[0]["number"] == 17901
+    assert out[0]["merged_at"] == "2026-09-19T10:00:00Z"
+    assert out[0]["repo"] == "o/r"
+    assert out[0]["body"] == "Grain: DEEP/notebook-python -- lane X"
+
+
+def test_merged_referring_prs_fallback_gh_pr_view_si_body_absent(monkeypatch):
+    """Si la timeline ne porte pas le body (PR tres ancienne ou depot soeur
+    tronque), fallback explicite vers `gh pr view --json body`.
+    Defense en profondeur : ne JAMAIS perdre un body qu'on avait avant ce fix.
+    """
+    timeline = [
+        {"event": "cross-referenced",
+         "source": {"type": "issue",
+                    "issue": {"number": 17901,
+                              "pull_request": {"merged_at": "2026-09-19T10:00:00Z"},
+                              "repository": {"full_name": "o/r"}}}}  # body absent
+    ]
+    calls = []
+    def fake_gh_json(args):
+        calls.append(args[:2])
+        if args[0] == "api":
+            return timeline
+        if args[:2] == ["pr", "view"]:
+            return {"body": "Body depuis fallback"}
+        raise AssertionError(f"appel inattendu: {args}")
+    monkeypatch.setattr(ccd, "gh_json", fake_gh_json)
+    out = _merged_referring_prs("o/r", 15578)
+    assert len(out) == 1
+    assert out[0]["body"] == "Body depuis fallback"
+    # On a bien appele gh pr view en fallback
+    assert ["pr", "view"] in [c[:2] for c in calls]
+
+
+def test_merged_referring_prs_ignore_les_cross_ref_non_merged(monkeypatch):
+    """Un cross-reference sans pull_request.merged_at ne doit pas être inclus.
+    Verifie qu'on ne perd pas le filtre existant en ajoutant le fast-path.
+    """
+    timeline = [
+        {"event": "cross-referenced",
+         "source": {"type": "issue",
+                    "issue": {"number": 17901,
+                              "body": "Pas mergé",
+                              "pull_request": {"merged_at": None},
+                              "repository": {"full_name": "o/r"}}}},
+        {"event": "commented"},  # autre event, ignoré
+    ]
+    def fake_gh_json(args):
+        return timeline
+    monkeypatch.setattr(ccd, "gh_json", fake_gh_json)
+    out = _merged_referring_prs("o/r", 15578)
+    assert out == []
+

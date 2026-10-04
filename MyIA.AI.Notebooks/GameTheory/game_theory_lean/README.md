@@ -291,7 +291,7 @@ pour éviter de retélécharger `~3 GB` à chaque incrément.
 | `cooperative_games_lean/` | **Supprimé** (rm #6587, absorbé dans `game_theory_lean/CooperativeGames/`) | contenu (Basic / ConeKernel / Shapley, FR + EN) préservé byte-identique sous `CooperativeGames/` |
 | `stable_marriage_lean/` | **Supprimé** (c.305 finalisation + PR #5971 doublon) | — |
 | [`lean_game_defs/`](../lean_game_defs/) | Couche introductive (pas un Lake) | 6 fichiers `.lean` de **référence** pour copier-coller dans les notebooks d'enseignement ; 0 sorries, Mathlib-free |
-| [`decision_theory_lean/`](../../Probas/decision_theory_lean/) | Modèle architectural | `lean_lib Gittins`/`Utility`/`Coherence` cohabitent comme libs distinctes du même package — **modèle** suivi ici |
+| [`decision_theory_lean/`](../../Probas/DecisionTheory/decision_theory_lean/) | Modèle architectural | `lean_lib Gittins`/`Utility`/`Coherence` cohabitent comme libs distinctes du même package — **modèle** suivi ici |
 
 ## Voir aussi
 

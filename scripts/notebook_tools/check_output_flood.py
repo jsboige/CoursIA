@@ -1,7 +1,7 @@
 """Ratchet gate: a re-execution must not let a notebook's output-object count
 explode per cell or in totality.
 
-Issue: user report 2026-09-06 (Sudoku-15-Infer-Csharp.ipynb, then 45 434 lines).
+Issue: user report 2026-09-06 (Sudoku-15-Infer-CSharp.ipynb, then 45 434 lines).
 A re-execution of the notebook on a machine where ``InferenceEngine.ShowProgress``
 defaults to true made every Infer.NET run emit one dot PER ITERATION, and the
 ``.net-csharp`` kernel turns each ``Console.Write(".")`` into a separate

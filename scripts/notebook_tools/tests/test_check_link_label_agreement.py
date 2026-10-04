@@ -86,8 +86,8 @@ def test_repo_deck_links_produce_no_false_positive():
 def test_lying_label_on_a_deck_is_detected():
     """A rename that updates the href and leaves the label behind must fire."""
     src = (
-        "*Notebooks : [GameTheory-02-NormalForm]"
-        "(../../MyIA.AI.Notebooks/GameTheory/GameTheory-09-BackwardInduction.ipynb).*\n"
+        "*Notebooks : [GameTheory-02-NormalForm-Python]"
+        "(../../MyIA.AI.Notebooks/GameTheory/GameTheory-09-BackwardInduction-Python.ipynb).*\n"
     )
     findings = organ.check_text(src, "slides/05-theorie-des-jeux/slides.md")
     assert len(findings) == 1
@@ -102,8 +102,8 @@ def test_deck_basename_form_is_accepted_without_loosening():
     glose outside the brackets are irrelevant to the comparison.
     """
     for src in (
-        "*Notebooks : [GameTheory-02-NormalForm]"
-        "(../../MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm.ipynb) (matrices).*\n",
+        "*Notebooks : [GameTheory-02-NormalForm-Python]"
+        "(../../MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Python.ipynb) (matrices).*\n",
         "[Infer-1b-Premiers-Modeles](../../MyIA.AI.Notebooks/Probas/Infer/"
         "Infer-1b-Premiers-Modeles.ipynb)\n",
     ):
@@ -116,7 +116,7 @@ def test_naive_basename_equality_would_false_positive():
     If the predicate were ever rewritten as `label == target basename`, the deck
     corpus would light up: the label omits the extension.
     """
-    label, target = "GameTheory-02-NormalForm", "GameTheory-02-NormalForm.ipynb"
+    label, target = "GameTheory-02-NormalForm-Python", "GameTheory-02-NormalForm-Python.ipynb"
     assert label != target  # the naive form would flag this healthy link
     src = f"*Notebooks : [{label}](../../MyIA.AI.Notebooks/GameTheory/{target}).*\n"
     assert organ.check_text(src, "slides/x/slides.md") == []

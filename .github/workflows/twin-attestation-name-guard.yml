@@ -50,6 +50,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github/workflows/twin-attestation-name-guard.yml
+            scripts/notebook_tools/twin_pairs.d/
 
       - name: Gate twin_pairs.d component lengths
         run: |

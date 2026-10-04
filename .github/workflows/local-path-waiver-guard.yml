@@ -10,6 +10,12 @@ name: Local path waiver guard
 on:
   issue_comment:
     types: [created, edited]
+  # Pas de filtre `paths:` (#18853, review ai-01 5395319838) : il supprimait le
+  # run `pull_request` sur presque toutes les PRs, or c'est la SEULE surface ou
+  # l'avertissement s'affiche sur la PR -- le run `issue_comment` s'attache a
+  # `main`, jamais a la tete de PR. Un garde dont le verdict doit rester visible
+  # sur la PR ne peut pas etre filtre par chemins ; le sparse-checkout suffit au
+  # gain de temps (91 s -> ~6 s).
   pull_request:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
@@ -42,6 +48,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github/workflows/local-path-waiver-guard.yml
+            scripts/check_local_path_waivers.py
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'

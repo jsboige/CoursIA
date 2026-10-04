@@ -77,3 +77,56 @@ def argType (r : Rel n sizes) (i : Fin r.sig.arity) : Fin n :=
   r.sig.args i
 
 end Structure
+
+/-! ## Aides d'analyse par cas sur `Fin`, sans Mathlib
+
+Les tactiques `fin_cases` / `fin_match` vivent dans Mathlib ; ces
+auxiliaires font le même travail en découpant sur le champ `val`
+(l'hypothèse `isLt` élimine les valeurs hors bornes par `omega`). -/
+
+/-- Analyse exhaustive d'un prédicat sur `Fin 2` : deux cas, `0` et `1`. -/
+theorem forall_fin2 {P : Fin 2 → Prop} (h₀ : P 0) (h₁ : P 1) : ∀ x : Fin 2, P x := by
+  intro x
+  cases x with
+  | mk v h =>
+    match v with
+    | 0 => exact h₀
+    | 1 => exact h₁
+    | n + 2 => exact absurd h (by omega)
+
+/-- Analyse exhaustive d'un prédicat à deux variables sur `Fin 2` :
+    les quatre entrées de la table de vérité. -/
+theorem forall_fin2_fin2 {P : Fin 2 → Fin 2 → Prop}
+    (h₀₀ : P 0 0) (h₀₁ : P 0 1) (h₁₀ : P 1 0) (h₁₁ : P 1 1) :
+    ∀ x y : Fin 2, P x y := by
+  intro x y
+  cases x with
+  | mk xv xh =>
+    match xv with
+    | 0 =>
+      cases y with
+      | mk yv yh =>
+        match yv with
+        | 0 => exact h₀₀
+        | 1 => exact h₀₁
+        | n + 2 => exact absurd yh (by omega)
+    | 1 =>
+      cases y with
+      | mk yv yh =>
+        match yv with
+        | 0 => exact h₁₀
+        | 1 => exact h₁₁
+        | n + 2 => exact absurd yh (by omega)
+    | n + 2 => exact absurd xh (by omega)
+
+/-- Analyse exhaustive d'un prédicat sur `Fin 3` : trois cas. -/
+theorem forall_fin3 {P : Fin 3 → Prop}
+    (h₀ : P 0) (h₁ : P 1) (h₂ : P 2) : ∀ x : Fin 3, P x := by
+  intro x
+  cases x with
+  | mk v h =>
+    match v with
+    | 0 => exact h₀
+    | 1 => exact h₁
+    | 2 => exact h₂
+    | n + 3 => exact absurd h (by omega)

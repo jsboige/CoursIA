@@ -70,6 +70,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github/workflows/candidate-delivered-advisory.yml
+            scripts/candidate_delivered.py
+            scripts/issue_containers.py
 
       - name: Set up Python
         uses: actions/setup-python@v5

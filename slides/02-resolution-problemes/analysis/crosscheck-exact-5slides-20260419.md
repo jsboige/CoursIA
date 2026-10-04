@@ -20,10 +20,9 @@ Methode: sk-agent vision (glm-4.6v) sur PPTX references + extraction Slidev mark
 **PPTX (slide 48):**
 - Pseudocode complet ALGORITHME-GENETIQUE (boucle population, SELECTION-ALEATOIRE, REPRODUIRE, MUTATION)
 - Fonction REPRODUIRE(x,y) detaillee avec LONGUEUR, SOUS-CHAINE
-- ~15 lignes de code
 
 **Slidev (slide 52):**
-- Pseudocode condense en 1 ligne: `algorithme genetique (selection, reproduction, mutation, retour meilleur individu)`
+- Pseudocode condense: `algorithme genetique (selection, reproduction, mutation, retour meilleur individu)`
 - Concepts cles (population, genes, phenotype, fitness) preserves
 - Fonction REPRODUIRE absente
 

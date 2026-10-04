@@ -17,7 +17,7 @@
   proves that best responses are invariant under rescaling the prior,
   which is exactly what normalization-independence means.
 
-  Based on GameTheory-11-BayesianGames.ipynb. See #2610 (phase 1:
+  Based on GameTheory-11-BayesianGames-Python.ipynb. See #2610 (phase 1:
   Bayesian games — research report recommends finite types first).
 -/
 

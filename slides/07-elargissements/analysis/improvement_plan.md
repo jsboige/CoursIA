@@ -84,7 +84,7 @@ Ces slides servent de pauses respiratoires entre sections - essentielles pour ab
 
 ## 3. Cross-references notebooks
 
-### GenAI/ (58 notebooks)
+### GenAI/
 **Pertinence**: Ethique de l'IA generative, biais dans les modeles
 **Notebooks cles**:
 - `GenAI/LLM/*` - Pour limites et biais des LLMs

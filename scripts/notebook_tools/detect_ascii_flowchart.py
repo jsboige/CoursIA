@@ -85,7 +85,7 @@ from nbformat.validator import ValidationError
 # Boite : `+---------+`, `+========+`, `[ ... ]`, `┌───┐`, etc.
 # On accepte les boites ASCII classiques `+---+` (3+ dashes/equals entre +)
 # et les boites Unicode box-drawing. Exclure les tables Markdown `| --- |`.
-# c.475 patch (Tell c.475-L2 ★ NEW) : on preserve le leading whitespace
+# c.475 patch : on preserve le leading whitespace
 # (les boites peuvent etre indentees dans une liste markdown) MAIS sans
 # l'ancre de fin `\s*$` qui rendait le pattern aveugle aux boites
 # cote a cote sur la meme ligne. `_line_is_box` utilise match() qui
@@ -138,7 +138,7 @@ def _line_has_connector(line: str) -> bool:
     a des boites ET des bare-connecteurs en nombre coherent, c'est un
     flowchart (les bare-connecteurs sont confirmes par le contexte).
 
-    c.475 patch (Tell c.475-L4 ★ NEW) : une ligne qui EST une boite ASCII
+    c.475 patch : une ligne qui EST une boite ASCII
     (`+--------+`) contient `--` qui matche `_RE_CONNECTOR_ARROW`, ce qui
     faisait compter les boites elles-memes comme connecteurs, et un simple
     encadre de titre `+--------+ / | Title | / +--------+` (single box) etait
@@ -176,7 +176,7 @@ def _is_markdown_table_separator(line: str) -> bool:
 def _is_markdown_table_row(line: str) -> bool:
     """Exclure les lignes de cellules de tableau Markdown `| col1 | col2 |`.
 
-    Tell c.475-L5 ★ NEW : une ligne de tableau peut contenir une fleche
+    une ligne de tableau peut contenir une fleche
     (`| Process | ... | Generate -> Review -> Publish |`) qui matche
     `_RE_CONNECTOR_ARROW`. Si la fenetre demarre sur une telle ligne, le
     detecteur traite le tableau markdown comme un flowchart (faux positif
@@ -282,11 +282,11 @@ def _find_flowchart_blocks(cell_source: str) -> list[dict]:
       C. `(boxes_inline >= 2 and connectors >= 1)` -- flowchart horizontal
          (au moins 2 boites **sur la meme ligne** + un connecteur ; cette
          condition stricte evite le faux positif `single_box_only` ou 2
-         boites occupees par 2 rangees verticales distinctes). Tell c.475-L2 ★
-         (NEW) : `boxes_inline` = max par ligne du nombre de boites ASCII
+         boites occupees par 2 rangees verticales distinctes).
+         `boxes_inline` = max par ligne du nombre de boites ASCII
          cote a cote ; discriminant pour flowcharts horizontaux.
 
-    Tell c.475-L3 ★ (NEW) : la condition `boxes_inline >= 2` distingue
+    la condition `boxes_inline >= 2` distingue
     veritablement un flowchart horizontal (boites separees par `---`/`|---|`
     sur la meme ligne) d'une simple **juxtaposition verticale** (boites
     empilees dans la meme fenetre sans lien de flux). Mesure empirique c.475 :
@@ -306,7 +306,7 @@ def _find_flowchart_blocks(cell_source: str) -> list[dict]:
         if _is_markdown_table_separator(lines[i]):
             i += 1
             continue
-        # c.475 patch (Tell c.475-L5 ★ NEW) : exclure aussi les lignes de
+        # c.475 patch : exclure aussi les lignes de
         # cellules de tableau `| col | col |` du point de depart de la
         # fenetre (sinon les fleches `->` dans une colonne de tableau
         # declenchent la branche C comme faux positif massif).
@@ -359,7 +359,7 @@ def _find_flowchart_blocks(cell_source: str) -> list[dict]:
 def _count_boxes_on_line(line: str) -> int:
     """Compte le nombre de boites ASCII `+---+` distinctes sur une ligne.
 
-    Tell c.475-L2 ★ (NEW) : une flowchart horizontal a N boites sur la MEME
+    une flowchart horizontal a N boites sur la MEME
     ligne (separees par `---` ou `|---|`). Une juxtaposition verticale a
     1 boite par ligne. Le discriminant `max(boxes_inline)` sur la fenetre
     detecte la disposition horizontale.

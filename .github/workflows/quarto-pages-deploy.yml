@@ -292,6 +292,13 @@ jobs:
           echo "/tmp/quarto-${QUARTO_VERSION}/bin" >> "$GITHUB_PATH"
           "/tmp/quarto-${QUARTO_VERSION}/bin/quarto" --version
 
+      # #17407 : `python` nu n'est pas expose par les slots natifs du parc
+      # coursia-linux (contrat image seulement — le script est stdlib-only,
+      # le rendu s'en sert a l'etape "Regenerate render list").
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
       - name: Regenerate render list
         run: python scripts/regen_quarto_render.py
 

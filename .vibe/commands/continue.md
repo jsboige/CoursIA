@@ -47,23 +47,23 @@
 **Premier geste de selection : le picker calibre** — apres la lecture inbox/dashboard (Phase 1), jamais de scan manuel du pool avant lui :
 
 ```bash
-python scripts/pick_idle_grain.py --lane "myia-po-2025:Microsoft VS Code" --prev-genre <genre precedent> --json
+python scripts/pick_idle_grain.py --belt --lane "myia-po-2025:Microsoft VS Code" --json
 ```
 
 - La verification des claims est active sur ce tirage ; `--no-check-claims` est interdit.
-- `--prev-genre` = genre du grain precedent de la lane, lu sur le tag `Grain:` de sa derniere PR mergee :
+- Genre du grain precedent de la lane (pour la barriere G-VAR-3 ci-dessous), lu sur le tag `Grain:` de sa derniere PR mergee :
   ```bash
   gh pr list --state merged --limit 50 --json body,mergedAt --jq '[.[] | select(.body != null and (.body | contains("myia-po-2025:Microsoft VS Code"))) | {m: .mergedAt, g: (.body | capture("(?m)^Grain:[ \t]*[A-Z]+/(?<g>[a-z-]+)").g // "?")}] | sort_by(.m) | last | if . == null then "(aucun)" else .g end'
   ```
-  Réponse `(aucun)` ou `?` -> omettre le drapeau : `?` signifie que la lane a été trouvée, mais que son tag `Grain:` n'a pas fourni de genre capturable.
+  Réponse `(aucun)` ou `?` -> pas de barriere G-VAR-3 a appliquer : `?` signifie que la lane a été trouvée, mais que son tag `Grain:` n'a pas fourni de genre capturable.
 
-**Interpretation de la sortie JSON :**
+**Interpretation de la sortie JSON** (un seul document, `"mode": "belt"`) :
 
-- `"mode": "repair"` + `"assignment": "reparer-son-rouge"` -> **P0** : le picker retourne le backlog rouge/review de la lane. Le grain du cycle EST la reparation de la PR nommee dans `grain` (points de review d'abord : `python scripts/check_unaddressed_nits.py <N>`). La reparation se prepare comme tout livrable Vibe : branche locale + commit + [REVIEW-NEEDED] (jamais de push direct sur la branche de la PR). Tant qu'il reste une PR a reprendre, pas de nouveau grain.
-- Sinon -> tirage de candidats. Filtrer selon le **profil Vibe** (Phase 3). Aucun candidat compatible -> `--reroll 1` ; toujours aucun -> post [ASK] sur le dashboard en demandant un steering compatible profil Vibe. Ne JAMAIS claimer un grain hors profil.
+- `"repair"` non nul -> **P0** : le picker retourne le backlog rouge/review de la lane sous cette cle (`repair.assignment`, `repair.grain`). Le grain du cycle EST la reparation de la PR nommee dans `repair.grain` (points de review d'abord : `python scripts/check_unaddressed_nits.py <N>`). La reparation se prepare comme tout livrable Vibe : branche locale + commit + [REVIEW-NEEDED] (jamais de push direct sur la branche de la PR). Tant qu'il reste une PR a reprendre, pas de nouveau grain.
+- `"repair": null` -> **le tapis** : `picks` est la tete de la file de tout l'ouvert, triee par derniere visite (la plus ancienne en tete, une issue jamais servie passe devant). Prendre les candidats **dans l'ordre**. Un candidat ne se saute que pour une barriere reelle : hors **profil Vibe** (Phase 3), ou second grain LIGHT du meme genre d'affilee (G-VAR-3). Chaque saut est dit dans le rapport de cycle, et l'issue sautee reste en tete pour le tirage suivant. Aucun des `picks` compatible -> relancer avec `--grains 20` et continuer de descendre la file ; toujours aucun -> post [ASK] sur le dashboard en demandant un steering compatible profil Vibe. Ne JAMAIS claimer un grain hors profil. Le tapis ne pondere pas : pas de preference de famille, de serie ni d'EPIC, et `--reroll` n'a pas d'objet.
 
 **P1** : steering coordinateur nomme (DM / dashboard) — prime sur le tirage quand il existe ET est compatible profil.
-**P2** : candidat retenu du tirage.
+**P2** : candidat retenu du tapis.
 
 **Avant d'EDITER (verrou anti-collision)** :
 
@@ -159,7 +159,7 @@ roo-state-manager_conversation_browser
 
 | Commande | Action |
 |----------|--------|
-| `python scripts/pick_idle_grain.py --lane "myia-po-2025:Microsoft VS Code" --prev-genre <genre> --json` | Premier geste de selection (verification des claims active) |
+| `python scripts/pick_idle_grain.py --belt --lane "myia-po-2025:Microsoft VS Code" --json` | Premier geste de selection (verification des claims active) |
 | `gh pr list --state open --limit 100 --json number,title,body --jq '.[] \| select(.body != null and (.body \| contains("myia-po-2025:Microsoft VS Code"))) \| "#\(.number) \(.title)"'` | PRs ouvertes de la lane (via tag `Grain:`, jamais `--author @me`) |
 | `python scripts/check_unaddressed_nits.py <N>` | Points de review non leves sur une PR |
 | `python scripts/check_lane_claim.py --lane "myia-po-2025:Microsoft VS Code" <N>` | Verrou de claim avant edition |

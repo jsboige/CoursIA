@@ -34,7 +34,8 @@ def _run(by_class, args, held):
     """Tire en simulant check_lane_claim : ``held`` = numeros tenus ailleurs."""
     real = pick.check_claims
     pick.check_claims = lambda nums, lane: {
-        n: ("BLOQUE par myia-po-2000:CoursIA" if n in held else "libre")
+        n: (pick.CLAIM_CODE_BLOCKED if n in held else pick.CLAIM_CODE_FREE,
+            "BLOQUE par myia-po-2000:CoursIA" if n in held else "libre")
         for n in nums}
     try:
         return pick.draw_unclaimed(by_class, args, random.Random(7),
@@ -74,7 +75,8 @@ def test_poignee_etroite_tenue_puise_dans_la_reserve_globale():
     """Une passe locale non vide ne devient pas terminale apres claim-check."""
     real = pick.check_claims
     pick.check_claims = lambda nums, lane: {
-        n: ("BLOQUE par other:lane" if n == 1 else "libre") for n in nums}
+        n: (pick.CLAIM_CODE_BLOCKED if n == 1 else pick.CLAIM_CODE_FREE,
+            "BLOQUE par other:lane" if n == 1 else "libre") for n in nums}
     state = {}
     try:
         picks, _, conflicts = pick.draw_unclaimed(
@@ -100,7 +102,8 @@ def test_reserve_globale_ne_reintroduit_ni_claim_ni_livraison():
     real_check = pick.check_claims
     real_draw = pick.draw
     pick.check_claims = lambda nums, lane: {
-        n: ("BLOQUE par other:lane" if n == 1 else "libre") for n in nums}
+        n: (pick.CLAIM_CODE_BLOCKED if n == 1 else pick.CLAIM_CODE_FREE,
+            "BLOQUE par other:lane" if n == 1 else "libre") for n in nums}
     pick.draw = lambda items, n, *args, **kwargs: items[:n]
     state = {}
     try:
@@ -167,7 +170,8 @@ def test_deja_claim_par_cette_lane_n_est_pas_un_conflit():
     """Reprendre son propre grain est le cas nominal, pas une collision."""
     real = pick.check_claims
     pick.check_claims = lambda nums, lane: {
-        n: "deja claim par cette lane" for n in nums}
+        n: (pick.CLAIM_CODE_OWNED_BY_ME, "deja claim par cette lane")
+        for n in nums}
     try:
         picks, _, conflicts = pick.draw_unclaimed(
             dict(EMPTY, grain=[_it(1)]), _args(), random.Random(7),

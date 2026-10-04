@@ -283,3 +283,89 @@ def test_diff_signatures_added_mixed_only_float_ones_reported():
         [("c1", "ok\n"), ("injected", None), ("c3", "[3.0, 3.0]\n")],
     ) == ["c3"]
 
+
+
+# --- #17679 : table d'acceptation canon C# 13.0 ------------------------------
+# Decision coordinateur 2026-09-26 (option 1) : C# 13.0 devient le canon ;
+# la derive 12.0 -> 13.0 est attendue et couverte par la table, pas une
+# regression. Controles exigés par la décision : un positif (12.0 -> 13.0
+# vert) et deux negatifs (13.0 -> 12.0 rouge ; changement de kernelspec.name
+# rouge).
+
+
+def test_canonical_transition_cs12_to_cs13_accepted():
+    a = {"language_version": "12.0", "kernelspec_name": ".net-csharp"}
+    b = {"language_version": "13.0", "kernelspec_name": ".net-csharp"}
+    assert ckd.accepted_canonical_transition(a, b) is True
+    # la derive brute existe bien (le guard la mesure) -- c'est la table
+    # qui l'accepte, pas une absence de detection
+    assert ckd.diff_kernel(a, b)
+
+
+def test_canonical_transition_cs13_to_cs12_refused():
+    # Negatif 1 : la direction inverse est une regression du canon.
+    a = {"language_version": "13.0", "kernelspec_name": ".net-csharp"}
+    b = {"language_version": "12.0", "kernelspec_name": ".net-csharp"}
+    assert ckd.accepted_canonical_transition(a, b) is False
+
+
+def test_canonical_transition_kernelspec_change_refused():
+    # Negatif 2 : un changement de kernelspec.name reste rouge, meme avec
+    # des versions couvertes par la table.
+    a = {"language_version": "12.0", "kernelspec_name": ".net-csharp"}
+    b = {"language_version": "13.0", "kernelspec_name": ".net-fsharp"}
+    assert ckd.accepted_canonical_transition(a, b) is False
+
+
+def test_canonical_transition_python_minor_stays_out():
+    # La classe fondatrice (Python 3.11 -> 3.13) reste hors table : la
+    # table est scoped au kernel, pas au couple de numeros.
+    a = {"language_version": "3.11.16", "kernelspec_name": "python3"}
+    b = {"language_version": "3.13.3", "kernelspec_name": "python3"}
+    assert ckd.accepted_canonical_transition(a, b) is False
+
+
+def _patched_run(monkeypatch, base_nb, head_nb):
+    """Run _run() on one fake notebook pair, git fully stubbed."""
+    import types
+    monkeypatch.setattr(ckd, "resolve_base", lambda ref: "fake-base")
+    monkeypatch.setattr(ckd, "changed_notebooks",
+                        lambda base: ["Fake/Sudoku-1.ipynb"])
+    monkeypatch.setattr(
+        ckd, "read_blob",
+        lambda ref, p, cwd=None: base_nb if ref == "fake-base" else head_nb)
+    args = types.SimpleNamespace(base_ref="origin/main", json=False,
+                                 explain=False)
+    return ckd._run(args)
+
+
+def test_run_cs12_to_cs13_is_green_end_to_end(monkeypatch):
+    # Trajet COMPLET : la transition canon seule ne produit aucun finding
+    # -- le ratchet ne rougit pas la convergence vers le canon.
+    base_nb = _nb(".net-csharp", "12.0", ["total = 3\n"])
+    head_nb = _nb(".net-csharp", "13.0", ["total = 3\n"])
+    result = _patched_run(monkeypatch, base_nb, head_nb)
+    assert result["findings"] == []
+
+
+def test_run_cs13_to_cs12_is_red_end_to_end(monkeypatch):
+    # Controle negatif du trajet : la direction inverse fait finding.
+    base_nb = _nb(".net-csharp", "13.0", ["total = 3\n"])
+    head_nb = _nb(".net-csharp", "12.0", ["total = 3\n"])
+    result = _patched_run(monkeypatch, base_nb, head_nb)
+    assert len(result["findings"]) == 1
+    assert "language_info.version" in result["findings"][0]["kernel_diffs"][0]
+
+
+def test_run_canonical_transition_does_not_mask_sig_drift(monkeypatch):
+    # La table ne masque QUE la derive de version : une derive de
+    # signature float coexistante reste un finding (elle releve de C.4).
+    base_nb = _nb(".net-csharp", "12.0", ["[1.0, 1.0, 1.0]\n"])
+    head_nb = _nb(".net-csharp", "13.0",
+                  ["[1.0, 0.9999999999999999, 1.0]\n"])
+    result = _patched_run(monkeypatch, base_nb, head_nb)
+    assert len(result["findings"]) == 1
+    f = result["findings"][0]
+    assert f["kernel_diffs"] == []
+    assert f["signature_drift_cells"]
+    assert f["canonical_transition"] is True
