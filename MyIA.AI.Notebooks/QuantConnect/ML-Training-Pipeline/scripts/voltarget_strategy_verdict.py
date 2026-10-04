@@ -26,9 +26,15 @@ diff greater than the largest of the 8 placebo diffs; ``NO BEATS`` is diff <=
 0; everything else is ``INCONCLUSIVE``.
 
 Outputs the aggregate JSON (verdicts, per-variant stats) on stdout, and with
-``--out-dir`` also writes ``voltarget_strategy_verdict.json`` — the
-falsifiability aggregate committed to the repo. The chart JSONs stay outside
-it (results-artifact-policy).
+``--out-dir`` also writes it there (``--out-name``, default
+``voltarget_strategy_verdict.json``) — the falsifiability aggregate committed
+to the repo. The chart JSONs stay outside it (results-artifact-policy).
+
+Experiment 5a-bis (pre-registration: issue #18921, comment 5965207764) reruns
+the same grid with the rebalance calendar fixed. ``--reference-dir`` points to
+the chart JSONs of the 5a run and adds its section 5 table: each variant's
+stats under both calendars, and rv21 (this run) minus rv21 (reference run)
+with the same paired bootstrap. That table is descriptive and decides nothing.
 """
 
 from __future__ import annotations
@@ -41,6 +47,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from strategy_metrics import cagr, max_drawdown, sharpe
+
 TICKERS = ["SPY", "QQQ", "IEF", "GLD"]
 BASELINE = "rv21"
 CANDIDATES = ["har", "tsfm"]
@@ -50,6 +58,8 @@ CONTAMINATION_START = "2025-01-01"
 BLOCK, DRAWS, RNG_SEED = 21, 10_000, 18921
 EQUITY_SERIES = [f"e{k}" for k in range(5)]
 TRADING_DAYS = 252
+REPORTED = ["sharpe", "cagr", "max_drawdown", "gross_exposure_mean", "turnover_chart_mean"]
+PREREG_5A = "issue #18921, comment 5964767205 (2026-10-03T02:44:26Z), section 4"
 
 
 def _points(values: list) -> tuple[list, list]:
@@ -112,10 +122,6 @@ def series_values(chart: dict, key: str) -> pd.Series:
     return pd.Series(ys, index=_ny_dates(ts)).groupby(level=0).last().sort_index()
 
 
-def _sharpe(r: np.ndarray, axis: int | None = None) -> np.ndarray:
-    return r.mean(axis=axis) / r.std(axis=axis, ddof=1) * math.sqrt(TRADING_DAYS)
-
-
 def circular_block_diff(returns_a: pd.Series, returns_b: pd.Series,
                         block: int = BLOCK, draws: int = DRAWS,
                         seed: int = RNG_SEED, chunk: int = 500) -> dict:
@@ -138,8 +144,8 @@ def circular_block_diff(returns_a: pd.Series, returns_b: pd.Series,
         hi = min(draws, lo + chunk)
         starts = rng.integers(0, n, size=(hi - lo, n_blocks))
         pos = ((starts[:, :, None] + offsets) % n).reshape(hi - lo, -1)[:, :n]
-        diffs[lo:hi] = _sharpe(a[pos], axis=1) - _sharpe(b[pos], axis=1)
-    return {"observed": float(_sharpe(a) - _sharpe(b)),
+        diffs[lo:hi] = sharpe(a[pos], axis=1) - sharpe(b[pos], axis=1)
+    return {"observed": float(sharpe(a) - sharpe(b)),
             "p_one_sided": float((diffs <= 0).mean()),
             "ci95": [float(np.quantile(diffs, 0.025)), float(np.quantile(diffs, 0.975))]}
 
@@ -169,14 +175,14 @@ def variant_stats(rets: pd.Series, exposure: dict, turnover: dict,
     fraction of the portfolio (0.41 at the first rebalance, measured).
     """
     years = (rets.index[-1] - rets.index[0]).days / 365.25
-    wealth = (1.0 + rets).cumprod()
+    r = rets.to_numpy()
     gross = _in_block(series_values(exposure, "Equity - Long Ratio")
                       + series_values(exposure, "Equity - Short Ratio"))
     turn = _in_block(series_values(turnover, "Portfolio Turnover"))
     out = {"n_days": int(len(rets)),
-           "sharpe": round(float(_sharpe(rets.to_numpy())), 4),
-           "cagr": round(float(wealth.iloc[-1] ** (1.0 / years) - 1.0), 4),
-           "max_drawdown": round(float((wealth / wealth.cummax() - 1.0).min()), 4),
+           "sharpe": round(float(sharpe(r)), 4),
+           "cagr": round(cagr(r, years), 4),
+           "max_drawdown": round(max_drawdown(r), 4),
            "gross_exposure_mean": round(float(gross.mean()), 4),
            "turnover_chart_mean": round(float(turn.mean()), 6)}
     if qc_stats:
@@ -274,8 +280,42 @@ def contamination(returns: dict[str, pd.Series]) -> dict:
     return compare({m: r.loc[r.index >= CONTAMINATION_START] for m, r in returns.items()})
 
 
+def calendar_effect(returns: dict[str, pd.Series], stats: dict[str, dict],
+                    ref_returns: dict[str, pd.Series], ref_stats: dict[str, dict]) -> dict:
+    """Pre-reg 5a-bis section 5: every variant under the two calendars.
+
+    ``delta`` is this run minus the reference run. The baseline difference
+    goes through the same paired bootstrap as the verdict: it measures what
+    the calendar defect cost the published code, and decides nothing.
+    """
+    table = {}
+    for m in stats:
+        now = {k: stats[m][k] for k in REPORTED}
+        ref = {k: ref_stats[m][k] for k in REPORTED}
+        table[m] = {"this_run": now, "reference": ref,
+                    "delta": {k: round(now[k] - ref[k], 6) for k in REPORTED}}
+    b = circular_block_diff(returns[BASELINE], ref_returns[BASELINE])
+    return {"stats_by_calendar": table,
+            "rv21_minus_reference_rv21": {"diff": round(b["observed"], 4),
+                                          "p_one_sided": round(b["p_one_sided"], 4),
+                                          "ci95": [round(x, 4) for x in b["ci95"]]}}
+
+
 def _read(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def load_run(charts_dir: Path, sessions: pd.DatetimeIndex) -> tuple[dict, dict]:
+    """Daily net returns and section 4 stats of the 11 variants of one run."""
+    returns, stats = {}, {}
+    for m in [BASELINE, *CANDIDATES, *(f"placebo_{s}" for s in PLACEBO_SEEDS)]:
+        d = charts_dir
+        returns[m] = daily_returns(daily_close_equity(_read(d / f"{m}_coursia-18921-equity.json")),
+                                   sessions)
+        qc_stats = _read(d / f"{m}_stats.json") if (d / f"{m}_stats.json").exists() else None
+        stats[m] = variant_stats(returns[m], _read(d / f"{m}_Exposure.json"),
+                                 _read(d / f"{m}_Portfolio_Turnover.json"), qc_stats)
+    return returns, stats
 
 
 def main() -> None:
@@ -285,22 +325,21 @@ def main() -> None:
     ap.add_argument("--forecasts", type=Path,
                     default=Path(__file__).resolve().parent / "results" / "voltarget_forecasts.csv")
     ap.add_argument("--out-dir", type=Path, default=None,
-                    help="also write voltarget_strategy_verdict.json here")
+                    help="also write the aggregate JSON here")
+    ap.add_argument("--out-name", default="voltarget_strategy_verdict.json",
+                    help="file name of the aggregate JSON written under --out-dir")
+    ap.add_argument("--preregistration", default=PREREG_5A,
+                    help="pre-registration the run answers to, copied into the JSON")
+    ap.add_argument("--reference-dir", type=Path, default=None,
+                    help="chart JSONs of the reference run: adds the 5a-bis section 5 table")
     args = ap.parse_args()
 
     sessions = load_sessions(args.spy_csv)
-    returns, stats = {}, {}
-    for m in [BASELINE, *CANDIDATES, *(f"placebo_{s}" for s in PLACEBO_SEEDS)]:
-        d = args.charts_dir
-        returns[m] = daily_returns(daily_close_equity(_read(d / f"{m}_coursia-18921-equity.json")),
-                                   sessions)
-        qc_stats = _read(d / f"{m}_stats.json") if (d / f"{m}_stats.json").exists() else None
-        stats[m] = variant_stats(returns[m], _read(d / f"{m}_Exposure.json"),
-                                 _read(d / f"{m}_Portfolio_Turnover.json"), qc_stats)
+    returns, stats = load_run(args.charts_dir, sessions)
 
     forecasts = pd.read_csv(args.forecasts, parse_dates=["date"])
     result = {
-        "preregistration": "issue #18921, comment 5964767205 (2026-10-03T02:44:26Z), section 4",
+        "preregistration": args.preregistration,
         "verdict_block": [VERDICT_START, VERDICT_END],
         "method": {"blocks": BLOCK, "draws": DRAWS, "rng_seed": RNG_SEED,
                    "sharpe": "mean/std(ddof=1)*sqrt(252) of daily net returns, rf=0"},
@@ -310,10 +349,14 @@ def main() -> None:
         "rv21_source_check": rv21_source_check(
             _read(args.charts_dir / f"{BASELINE}_coursia-18921-rv21.json"), forecasts),
     }
+    if args.reference_dir:
+        ref_returns, ref_stats = load_run(args.reference_dir, sessions)
+        result["calendar_effect"] = {"reference_charts": args.reference_dir.name,
+                                     **calendar_effect(returns, stats, ref_returns, ref_stats)}
     text = json.dumps(result, indent=2) + "\n"
     if args.out_dir:
         args.out_dir.mkdir(parents=True, exist_ok=True)
-        (args.out_dir / "voltarget_strategy_verdict.json").write_text(text, encoding="utf-8")
+        (args.out_dir / args.out_name).write_text(text, encoding="utf-8")
     print(text)
 
 

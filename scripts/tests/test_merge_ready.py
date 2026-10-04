@@ -88,6 +88,10 @@ def default_view(
         "isDraft": draft,
         "body": body if body is not None else GRAIN_MED,
         "headRefOid": head,
+        # baseRefName is the branch the PR is targeting. The merge-ready
+        # defense-in-depth check (#19002) refuses anything other than
+        # `main`. Tests that need a non-`main` base override this field.
+        "baseRefName": "main",
         "baseRefOid": BASE,
         "files": [{"path": p} for p in files],
         "changedFiles": len(files),
@@ -151,6 +155,8 @@ class ScriptedRunner:
         twin_stdout: str = "",
         commits: dict[str, dict] | None = None,
         auto_tree: str | None = None,
+        base_search: dict[str, list[dict]] | None = None,
+        base_search_rc: int = 0,
     ):
         self.token = token
         self.token_rc = token_rc
@@ -174,6 +180,13 @@ class ScriptedRunner:
         # ``repos/.../commits/<sha>`` et arbre rendu par ``git merge-tree``.
         self.commits = commits or {}
         self.auto_tree = auto_tree
+        # #19014 : reponses scriptees pour ``gh pr list --search head:<base>``.
+        # Cle = la valeur de ``--search head:<base>`` (avec le prefixe),
+        # valeur = la liste JSON de PRs (avec etat) que gh rendrait. La
+        # cle absente rend [] ; ``base_search_rc`` non nul fait echouer
+        # la commande pour tester le chemin ``unreadable``.
+        self.base_search = base_search or {}
+        self.base_search_rc = base_search_rc
         self.calls: list[tuple[list[str], dict | None]] = []
         self.sleeps: list[float] = []
 
@@ -194,6 +207,18 @@ class ScriptedRunner:
             if self.token_rc != 0:
                 return mr.RunResult(self.token_rc, "", "auth failed")
             return mr.RunResult(0, self.token + "\n", "")
+        if c[:3] == ["gh", "pr", "list"] and "--search" in c:
+            # #19014 : ``gh pr list --search head:<branche>`` -- liveness
+            # de la base. Le ScriptedRunner regarde la cle correspondante
+            # dans ``self.base_search`` et rend cette liste (ou [] si
+            # non scriptee). ``base_search_rc != 0`` simule un crash gh.
+            search_key = next(
+                (arg for arg in c if arg.startswith("head:")), None
+            )
+            if self.base_search_rc != 0:
+                return mr.RunResult(self.base_search_rc, "", "gh failed")
+            rows = self.base_search.get(search_key or "", [])
+            return mr.RunResult(0, json.dumps(rows), "")
         if c[:3] == ["gh", "pr", "list"]:
             return mr.RunResult(
                 0, json.dumps([{"number": n} for n in self.prs]), ""
@@ -1164,3 +1189,101 @@ def test_tete_du_gate_differente_de_la_tete_lue(tmp_path):
     )
     _, lines, _ = run_organ(tmp_path, ScriptedRunner(views={123: view}))
     assert lines[-1]["reason"] == "head-moved"
+
+
+# --- #19002 : defense en profondeur sur la base -----------------------------
+# Le gate refuse deja READY si la base n'est pas `main` (cf test_base_*
+# dans test_check_adjoint_prevalidation.py). Merge_ready verifie
+# independamment : un rc 0 accidente du gate, un gate anterieur a #19002,
+# ou un chemin futur qui court-circuiterait le gate ne doit pas suffire
+# a merger dans une branche morte. Trois tests : temoin positif (base
+# main, chemin nominal inchange), temoin negatif sur une base de feature
+# ouverte (#18985/#18967), temoin negatif sur une base morte (#18819).
+
+
+def test_base_main_does_not_change_merge_ready_outcome(tmp_path):
+    """Temooin positif : avec `view.baseRefName = 'main'`, le merge_ready
+    n'invoque pas la nouvelle raison de skip. Le chemin nominal d'une
+    PR a base main reste inchange."""
+    runner = ScriptedRunner(views={123: default_view()})
+    assert runner.views[123]["baseRefName"] == "main"
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    # Le verdict par defaut d'un ScriptedRunner est would-merge (gate_rc=0
+    # et tous les autres controles passent). Ce qui compte ici : aucune
+    # ligne ne porte le motif `base-not-main:` (le champ reason est None
+    # sur les merges reussis, donc on teste avec get(..., "")).
+    for line in lines:
+        reason = line.get("reason") or ""
+        assert "base-not-main" not in reason, lines
+
+
+def test_base_feature_open_triggers_base_live_not_main_skip(tmp_path):
+    """Temooin negatif (#19014) : PR empilee sur une branche de feature
+    encore ouverte. merge_ready distingue ce cas d'une base morte : le
+    motif `base-live-not-main:<branche>` dit a la lane d'attendre le merge
+    de la PR porteuse (cf. git-workflow.md L898 collision guard). Le gate
+    est simule a rc=0 READY (comme si une version anterieure du gate
+    avait ete deployee) ; seul le check merge_ready arrete la machine.
+    Le ScriptedRunner repond a `gh pr list --search head:<base>` avec une
+    PR OPEN pour signifier que la base est vivante."""
+    view = default_view()
+    view["baseRefName"] = "feature/voltargeting-vol-forecast-sizing"  # #18967
+    base_search_rows = [{"number": 18967, "state": "OPEN"}]
+    runner = ScriptedRunner(
+        views={123: view},
+        base_search={f"head:{view['baseRefName']}": base_search_rows},
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0  # l'organe termine, il a juste skip
+    assert lines[-1]["verdict"] == "skipped"
+    # Le motif inclut la branche fautive ET la liveness -- une lane
+    # qui lit `live` sait qu'elle doit attendre la PR porteuse, pas
+    # retargeter.
+    assert (
+        "base-live-not-main:feature/voltargeting-vol-forecast-sizing"
+        in lines[-1]["reason"]
+    ), lines[-1]
+
+
+def test_base_dead_triggers_base_gone_skip(tmp_path):
+    """Temooin negatif (#19014) : PR empilee sur une branche dont la PR
+    porteuse est fermee ou squash-mergee. merge_ready distingue ce cas
+    d'une base vivante : le motif `base-gone:<branche>` dit a la lane
+    de retargeter sur `main` (cf. git-workflow.md L898 collision guard).
+    Le ScriptedRunner repond a `gh pr list --search head:<base>` avec
+    une liste vide (la PR porteuse a disparu, sa tete ne reapparait dans
+    aucune PR ouverte). Verifie sur la branche morte de #18819
+    (squash-mergee le 02/10)."""
+    view = default_view()
+    view["baseRefName"] = "renum/17063-complexity-05b"  # #18819
+    runner = ScriptedRunner(
+        views={123: view},
+        base_search={f"head:{view['baseRefName']}": []},
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "skipped"
+    assert (
+        "base-gone:renum/17063-complexity-05b" in lines[-1]["reason"]
+    ), lines[-1]
+
+
+def test_base_not_main_unreadable_fail_closed(tmp_path):
+    """Temooin degrade (#19014) : si `gh pr list --search head:<base>`
+    echoue (rc non nul, reponse non list, ou reseau), merge_ready ne
+    declare pas une liveness qu'il n'a pas mesuree. Il emet
+    `base-not-main-unreadable:<branche>` -- la lane ne recoit pas un
+    message confiant, mais l'organe refuse le merge par defaut. Le gate
+    refusera de toute facon, mais l'echec doit etre visible."""
+    view = default_view()
+    view["baseRefName"] = "feature/inconnu"  # PR qui n'existe pas
+    runner = ScriptedRunner(
+        views={123: view},
+        base_search_rc=1,  # simulateur de crash gh
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0  # l'organe termine
+    assert lines[-1]["verdict"] == "skipped"
+    assert (
+        "base-not-main-unreadable:feature/inconnu" in lines[-1]["reason"]
+    ), lines[-1]

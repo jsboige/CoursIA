@@ -113,6 +113,12 @@ NOTEBOOK_SUBTREES = (
     # (ex SymbolicAI/Geometry/, tranche 19 #18423).
     "MyIA.AI.Notebooks/SymbolicAI/Lean/",             # tranche 13 #10923 (33 notebooks .ipynb pedagogique Lean)
     "MyIA.AI.Notebooks/cross-series/",                # tranche 13 #10923 (1)
+    "MyIA.AI.Notebooks/Compression/",                 # tranche finale #18423 (1, codes prefixes Shannon-Fano -> Huffman)
+    # Prefix famille : couvre OR-tools-Stiegler.ipynb au niveau racine de
+    # SymbolicAI/ (38 cellules, pedagogique). Les sous-repertoires deja
+    # couverts par leurs entrees individuelles ci-dessus restent dedup
+    # (precedent Integrations-DotNet/ <- Aspire/, tranche 18 #13581).
+    "MyIA.AI.Notebooks/SymbolicAI/",                  # tranche finale #18423 (prefix famille, +1 racine)
 )
 
 # Notebook subtrees that must NOT render (archived families only — vendored
@@ -140,6 +146,21 @@ NOTEBOOK_EXCLUDE_MARKERS = (
 # L'ancienne liste des 7 (App-9b + MGS-4/8/9/11/14/15) est conservee dans
 # l'historique git du fichier. Laisser ce tuple vide sauf raison mesuree.
 NOTEBOOK_EXCLUDE_FILES = ()
+
+# Notebooks git-tracks qui restent HORS perimetre de rendu, avec raison
+# mesuree (#18423 : « le dire dans le script plutot que laisser implicite »).
+# La garde uncovered_notebooks() verifie que c'est exactement la population
+# non rendue : tout nouveau .ipynb hors sous-arbres ET hors cette liste fait
+# rougir --check (le hole de couverture ne peut plus revenir silencieusement).
+NOTEBOOKS_HORS_PERIMETRE = {
+    # Outil interne de notation (GradeBookApp), pas un carnet de cours.
+    "MyIA.AI.Notebooks/GradeBook.ipynb",
+    # Recherche interne (validation e2e quant), hors publication pedagogique.
+    "MyIA.AI.Notebooks/GenAI/_research/e2e_quant_validation.ipynb",
+    # Sondes d'outillage : reproduction du bug .NET #17361, smoke runtime.
+    "scripts/notebook_tools/probes/dotnet-restore-bug-17361.ipynb",
+    "scripts/notebook_tools/verify_runtime_smoke.ipynb",
+}
 
 # Sous-arbres `docs/` dont les `*.md` non-README sont rendus en HTML par
 # Quarto (issue #18422, Axe C #4211 etendu des READMEs aux .md simples).
@@ -275,6 +296,33 @@ def git_tracked_notebooks() -> list[str]:
     # Sort for deterministic diffs (by path, case-insensitive)
     paths.sort(key=lambda s: s.lower())
     return paths
+
+
+def uncovered_notebooks() -> list[str]:
+    """Git-tracked ``.ipynb`` neither rendered nor declared out-of-scope (#18423).
+
+    Diff d'ensemble (un motif qui rate les noms pointes est un faux negatif) :
+    enumeration exhaustive ``git ls-files '*.ipynb'``, moins la render-list,
+    moins les archives (NOTEBOOK_EXCLUDE_MARKERS), moins
+    NOTEBOOKS_HORS_PERIMETRE. Tout residu = trou de couverture : soit un
+    sous-arbre a ajouter, soit une exclusion a declarer, soit un carnet
+    hr-bloque (#11451) sous sous-arbre rendu.
+    """
+    out = subprocess.run(
+        ["git", "-C", str(REPO_ROOT), "-c", "core.quotePath=false", "ls-files", "*.ipynb"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace", check=True,
+    )
+    rendered = set(git_tracked_notebooks())
+    uncovered = []
+    for line in out.stdout.splitlines():
+        p = line.strip()
+        if not p or p in rendered or p in NOTEBOOKS_HORS_PERIMETRE:
+            continue
+        if any(bad in p for bad in NOTEBOOK_EXCLUDE_MARKERS):
+            continue
+        uncovered.append(p)
+    uncovered.sort(key=str.lower)
+    return uncovered
 
 
 def git_tracked_readmes() -> list[str]:
@@ -535,8 +583,17 @@ def main() -> int:
         n = len(git_tracked_readmes()) + 1
         n_docs = len(git_tracked_docs_md())
         nb = len(git_tracked_notebooks())
+        uncovered = uncovered_notebooks()
+        if uncovered:
+            print("::error::notebooks git-tracks ni rendus ni declares hors "
+                  "perimetre : " + ", ".join(uncovered)
+                  + " -- ajouter le sous-arbre a NOTEBOOK_SUBTREES ou declarer "
+                    "l'exclusion dans NOTEBOOKS_HORS_PERIMETRE (#18423)",
+                  file=sys.stderr)
+            return 1
         print(f"_quarto.yml render list up to date "
-              f"({n} READMEs, {n_docs} docs/*.md, {nb} notebooks).")
+              f"({n} READMEs, {n_docs} docs/*.md, {nb} notebooks, "
+              f"{len(NOTEBOOKS_HORS_PERIMETRE)} declares hors perimetre).")
         return 0
 
     QUARTO_YML.write_text(proposed, encoding="utf-8")

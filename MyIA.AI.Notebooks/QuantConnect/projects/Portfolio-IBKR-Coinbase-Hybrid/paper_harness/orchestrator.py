@@ -3,10 +3,12 @@
 :func:`run_cycle` chains the pure pieces of the harness around a broker:
 
 1. restore the persisted :class:`~paper_harness.risk.RiskGate` and mark the
-   current equity (a breaker can trip here);
+   current equity (a breaker or the first loss alert can trip here);
 2. compute target weights from the signal closes
-   (:func:`~paper_harness.rebalance.inverse_vol_weights`), optionally scaled
-   down (``exposure_scale``, e.g. 0.5 after a first loss threshold);
+   (:func:`~paper_harness.rebalance.inverse_vol_weights`), scaled by the
+   smaller of ``exposure_scale`` (manual) and the gate's own scale: 0 once the
+   drawdown breaker has tripped (the book is liquidated), 0.5 while the first
+   threshold holds the exposure halved;
 3. map each signal symbol to the line actually traded (a US ETF signal can
    drive a European UCITS line: the weights carry no currency);
 4. plan whole-share orders (:func:`~paper_harness.rebalance.plan_orders`);
@@ -16,9 +18,9 @@
 7. append one JSON line to the journal and save the gate state.
 
 The broker is anything that implements :class:`Broker`; prices, positions
-and equity must share one currency. No adapter is wired here: the IBKR one
-needs European contracts (exchange, currency) validated against a running
-IB Gateway first.
+and equity must share one currency. The IBKR adapter lives in
+:mod:`paper_harness.ibkr_broker`; :mod:`paper_harness.ibkr_cycle` runs one
+cycle with it from the command line.
 """
 from __future__ import annotations
 
@@ -41,7 +43,12 @@ class Broker(Protocol):
     def prices(self, symbols: Sequence[str]) -> dict[str, float]: ...
 
     def place(self, symbol: str, quantity: int) -> str:
-        """Send a market order for ``quantity`` shares (signed); return its id."""
+        """Send a marketable order for ``quantity`` shares (signed); return its id.
+
+        Marketable means a market order, or a limit order with a collar: the
+        adapter chooses. An adapter that books its fills before returning
+        lets the sells of a cycle fund its buys.
+        """
         ...
 
 
@@ -73,6 +80,8 @@ class CycleReport:
     dry_run: bool
     equity: float
     gate: str
+    scale: float
+    alert: str | None
     weights: dict[str, float]
     orders: list[OrderRecord] = field(default_factory=list)
 
@@ -107,12 +116,11 @@ def run_cycle(
     equity = broker.equity()
     mark = gate.update_equity(equity)
 
+    scale = min(cfg.exposure_scale, gate.exposure_scale)
     signal_weights = inverse_vol_weights(
         signal_closes, cfg.budget_per_line, cfg.max_weight, cfg.lookback
     )
-    weights = {
-        cfg.signal_to_line[s]: w * cfg.exposure_scale for s, w in signal_weights.items()
-    }
+    weights = {cfg.signal_to_line[s]: w * scale for s, w in signal_weights.items()}
     held = broker.positions()
     symbols = sorted(set(weights) | {s for s, q in held.items() if q})
     prices = broker.prices(symbols)
@@ -126,6 +134,8 @@ def run_cycle(
         dry_run=dry_run,
         equity=equity,
         gate=mark.reason,
+        scale=scale,
+        alert=gate.alert,
         weights=weights,
     )
     after = {s: float(q) for s, q in held.items()}

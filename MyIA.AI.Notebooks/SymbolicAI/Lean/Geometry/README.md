@@ -14,7 +14,7 @@ Le programme est **gradué** : chaque notebook principal ne suppose que ce qui l
 | 03b | [Geometry-03b-Ritt-Decomposition-Python.ipynb](Geometry-03b-Ritt-Decomposition-Python.ipynb) | Licence | Accrétion du 03 : le théorème du papillon — la conclusion est un quotient, scission de Ritt, bord dégénéré où l'énoncé est **muet** et non faux, contrôle sur 400 figures | Livré (#17511) |
 | 04 | [Geometry-04-DD-AR-Python.ipynb](Geometry-04-DD-AR-Python.ipynb) | Licence | Base de déduction à règles (DD) et raisonnement algébrique (AR), la moitié symbolique d'AlphaGeometry : fermeture à point fixe, trace de preuve lisible, la limite combinatoire sans construction, AR (`sympy.groebner`) en oracle ; fil rouge et témoin négatif réfuté deux fois | Livré |
 | 04b | Geometry-04b — IMO-AG-30 | Recherche | Wu associé à DD+AR (Sinha et al. 2024), proposeur neuronal | À venir |
-| 05 | Geometry-05 — Pont formel | Recherche | Un théorème de 02/03 énoncé et prouvé en Lean/Mathlib : que garantit « prouvé par Gröbner » ? | À venir |
+| 05 | Geometry-05 — Pont formel | Recherche | Un théorème de 02/03 énoncé et prouvé en Lean/Mathlib : que garantit « prouvé par Gröbner » ? | En cours — première marche : le lac companion [`geometry_lean`](geometry_lean/) prouve le fil rouge (milieu de l'hypoténuse) |
 
 Les notebooks 01, 02 et 03 forment la **première volée** : ils se mergent ensemble, dans l'ordre — le premier état public de la série est déjà une progression complète.
 
@@ -25,9 +25,10 @@ Le **théorème du milieu de l'hypoténuse** traverse 01, 02 et 03 :
 - en 01, on le **vérifie numériquement** sur 10 000 figures, et on mesure ce que cette vérification prouve (preuve probabiliste Schwartz–Zippel) et ne prouve pas ;
 - en 02, on le **démontre** : la conclusion appartient à l'idéal des hypothèses, décidée exactement par Gröbner ;
 - en 03, on le **redémontre** par la méthode de Wu, avec les conditions de non-dégénérescence explicites ;
-- en 04, on le regarde par **DD + AR** : la fermeture de règles démontre le combinatoire, s'arrête devant le métrique — et l'algèbre prouve le reste, avec un énoncé faux réfuté deux fois.
+- en 04, on le regarde par **DD + AR** : la fermeture de règles démontre le combinatoire, s'arrête devant le métrique — et l'algèbre prouve le reste, avec un énoncé faux réfuté deux fois ;
+- dans le lac companion [`geometry_lean`](geometry_lean/), il est **prouvé formellement** en Lean/Mathlib — la position 05 du programme ouvre le pont entre « prouvé par Gröbner » et « prouvé au noyau ».
 
-Quatre regards sur le même objet — on compare des *méthodes*, pas des exemples.
+Cinq regards sur le même objet — on compare des *méthodes*, pas des exemples.
 
 ## Prérequis et coût
 
