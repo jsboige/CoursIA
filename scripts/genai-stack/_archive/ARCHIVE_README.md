@@ -26,7 +26,7 @@ registre ; #18838 en est la preuve d'entrée en git.
 | `deploy_comfyui_auth.py` | OBSOLETE — déploiement one-shot | `genai.py docker start` | ce registre ; #18838 |
 | `diagnose_comfyui_auth.py` | BROKEN — import `docker_qwen_manager` inexistant | `genai.py auth audit` | ce registre ; #18838 |
 | `test_correction_setup_complete.py` | BROKEN — import `setup_complete_qwen` inexistant | none — closed dead-end | ce registre ; #18838 |
-| `validate_genai_ecosystem.py` | OBSOLETE — volumineux (873 lignes), chevauche `validate.py` | `genai.py validate --full` | ce registre ; #18838 |
+| `validate_genai_ecosystem.py` | OBSOLETE — volumineux, chevauche `validate.py` | `genai.py validate --full` | ce registre ; #18838 |
 | `validate_mission_documentation.py` | OBSOLETE — valide des docs de mission nov 2025 inexistantes | none — closed dead-end | ce registre ; #18838 |
 
 ## Fichiers depuis `utils/` (tout le répertoire)
