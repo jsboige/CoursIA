@@ -32,6 +32,15 @@ l'auteur. La grille de robustesse (point 4 du protocole) balaie ces seuils :
 | `top_n` | 20 | {10, 20} |
 | `min_yield` | 0.03 | {0.025, 0.03, 0.04} |
 
+Mode de balayage (déclaré avant tout calcul, c.`59a808dd84`) : **un paramètre
+à la fois (OAT)** — chaque variante ne change qu'un seul seuil, les autres
+restant à leur défaut. Soit 7 backtests : `zone1_dd` ∈ {0.04, 0.07} ;
+`zone2_dd` ∈ {0.08, 0.12} ; `top_n` ∈ {10} ; `min_yield` ∈ {0.025, 0.04}
+(les défauts 0.05 / 0.10 / 20 / 0.03 sont portés par le run de base). Le
+produit cartésien complet (3 × 3 × 2 × 3 = 54 points) n'est pas exécuté :
+quota d'appels API QC partagé par la flotte (10/min). L'OAT couvre chaque
+axe indépendamment ; la base `f41b0eed` sert de référence à chaque ligne.
+
 Proxys déclarés (non spécifiés par la fiche) :
 
 - **Taux de distribution** = rendement du dividende / rendement des bénéfices
@@ -85,7 +94,7 @@ restants (grille de robustesse, frais doublés, corrélations, sous-périodes).
 | 1. Cloner le projet source | Non réalisable (accès refusé) → réimplémentation déclarée, DM envoyé au coordinateur pour le canal d'accès de la flotte |
 | 2. Backtest frais IBKR | **Livré** : v2 `f41b0eed` Completed (Sharpe 0,404 / CAGR 9,22 % / DD 16,4 %) |
 | 3. Mesures + comparaisons | **SPY détenu et 60/40 livrés** ; corrélations ETF à venir |
-| 4. Verdict + robustesse | À venir (grille fixée ci-dessus, non encore exécutée) |
+| 4. Verdict + robustesse | **Grille OAT en cours** (7 backtests, mode déclaré ci-dessus) ; verdict BEATS/NO BEATS/INCONCLUSIVE à venir |
 | 5. Couverture données fondamentales | Vérification à venir (trous rendement/payout sur 2018-2026) |
 | 6. Gel du code au verdict | À venir |
 
