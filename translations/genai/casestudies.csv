@@ -1665,40 +1665,101 @@ if shared_state.pdf_path and os.path.exists(shared_state.pdf_path):
     print(f""PDF présent sur le disque : {shared_state.pdf_path} ({taille} octets)"")
 else:
     print(""Aucun PDF produit : ni par l'agent, ni par le filet de sécurité."")",,,,,,,,82390aead8a159ba,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,345efbaf,code,fr,44a8eed68d85a766,"# Tell c.adjoint-c24 : la cellule 26 lit Maintenant le contenu reel du PDF (extraction pypdf)
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,345efbaf,code,fr,e364180594525fb6,"# Tell c.adjoint-c24 : la cellule 26 lit Maintenant le contenu reel du PDF (extraction pypdf)
 # Tell c.adjoint-c25 : assertion stricte -- TOUS les ingredients et TOUTES les etapes
 # doivent etre retrouves dans le PDF, pas seulement 1.
+# Tell c.adjoint-c26 : V8 -- la logique V4 etait laxiste (split("","")[0] et s[:30]
+# laissaient passer un PDF dont la moitie de la recette etait absente). Le temoin
+# de l'adjoint : ingredients=['riz, 500 g', 'oignon, 2 pieces'] + steps=['Cuire le
+# riz puis ajouter les oignons pendant vingt minutes.'] + pdf='vegetarien riz oignon
+# Cuire le riz puis ajouter les ' -> V4 disait OK alors que 'oignon, 2 pieces' et
+# 'les oignons pendant vingt minutes' etaient absents. V8 normalise espaces/retours
+# ligne/casse, exige (a) la chaine complete OU (b) ingredient+quantite separes
+# presents, (c) overlap mots >= 0.4 ET 2 derniers mots de l'etape presents dans le PDF.
 import pypdf
+import re
+
 pdf_path = shared_state.pdf_path
 reader = pypdf.PdfReader(pdf_path)
-pdf_text = ""\n"".join(p.extract_text() or """" for p in reader.pages)
+pdf_text = chr(10).join(p.extract_text() or """" for p in reader.pages)
 print(f""PDF généré avec succès: {pdf_path}"")
 print(f""Taille: {os.path.getsize(pdf_path)} octets"")
 print(f""Contenu extrait ({len(pdf_text)} caracteres):"")
 print(pdf_text)
 
+
+def _norm(s):
+    return re.sub(r""\s+"", "" "", s).strip().lower()
+
+
+def _endswith(s, n_words=2):
+    words = _norm(s).split()
+    return "" "".join(words[-n_words:]) if len(words) >= n_words else _norm(s)
+
+
+def _check_ingredient(ing, pdf_text):
+    """"""Vrai si l'ingredient (quantite + nom) est present dans le PDF.
+    Test: chaine normalisee directe, OU variante sans virgule, OU split (nom + quantite)
+    tous deux presents. Necessaire car le PDF peut mettre l'ingredient sur plusieurs lignes ou
+    avec une virgule differente.
+    """"""
+    pdf_n = _norm(pdf_text)
+    ing_n = _norm(ing)
+    if ing_n in pdf_n:
+        return True
+    ing_no_comma = ing_n.replace("","", "" "")
+    if ing_no_comma in pdf_n:
+        return True
+    parts = [p.strip() for p in ing.split("","")]
+    if len(parts) == 2 and _norm(parts[0]) in pdf_n and _norm(parts[1]) in pdf_n:
+        return True
+    return False
+
+
+def _check_step(s, pdf_text, n_min_overlap=0.4):
+    """"""Vrai si l'etape est presente dans le PDF avec un overlap de mots >= n_min_overlap
+    ET les 2 derniers mots de l'etape sont dans le PDF (signe que la fin n'est pas
+    tronquee). Le seul debut [:30] de V4 ne protegeait pas contre la troncature finale.
+    """"""
+    pdf_n = _norm(pdf_text)
+    s_n = _norm(s)
+    if s_n in pdf_n:
+        return True
+    s_words = s_n.split()
+    if not s_words:
+        return False
+    p_words = set(pdf_n.split())
+    overlap = sum(1 for w in s_words if w in p_words) / len(s_words)
+    end_ok = _endswith(s, 2) in pdf_n
+    return overlap >= n_min_overlap and end_ok
+
+
 missing = []
-if not shared_state.diet or shared_state.diet not in pdf_text:
+if not shared_state.diet or _norm(shared_state.diet) not in _norm(pdf_text):
     missing.append(f""regime={shared_state.diet!r} absent du PDF"")
 if not shared_state.ingredients:
     missing.append(""ingredients vides"")
 else:
-    missing_ing = [i for i in shared_state.ingredients if i.split(',')[0].strip() not in pdf_text]
+    missing_ing = [i for i in shared_state.ingredients if not _check_ingredient(i, pdf_text)]
     if missing_ing:
-        missing.append(f""{len(missing_ing)}/{len(shared_state.ingredients)} ingredients absents: {missing_ing[:3]}"")
+        missing.append(
+            f""{len(missing_ing)}/{len(shared_state.ingredients)} ingredients absents: {missing_ing[:3]}""
+        )
 if not shared_state.steps:
     missing.append(""etapes vides"")
 else:
-    missing_step = [s for s in shared_state.steps if s[:30] not in pdf_text]
+    missing_step = [s for s in shared_state.steps if not _check_step(s, pdf_text)]
     if missing_step:
-        missing.append(f""{len(missing_step)}/{len(shared_state.steps)} etapes absentes (debut): {missing_step[0][:50]}"")
+        missing.append(
+            f""{len(missing_step)}/{len(shared_state.steps)} etapes absentes: {missing_step[0][:50]}""
+        )
 if missing:
     raise RuntimeError(
         f""PDF incomplet -- {len(missing)} chaine(s) manquante(s) : ""
         + "" / "".join(missing)
     )
 print(""OK : PDF exporte la recette complete (regime + tous ingredients + toutes etapes)."")
-",,,,,,,,44a8eed68d85a766,,,,,,,,
+",,,,,,,,e364180594525fb6,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,644bdc70,markdown,fr,0935ba5b54f06f58,"## Conclusion
 
 Ce notebook a mis en oeuvre une collaboration multi-agents pour generer une recette personnalisee et produire un PDF.
@@ -1760,12 +1821,12 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,c9681143,ma
 ","**Reading the generation** — the multi-agent system produced the recipe for this run (here **“Grilled Vegetable Tacos”** — the model varies the recipe at each run), a vegetarian recipe for **6 people** that respects the collected constraints: **no mushrooms** and **no dairy products**. The `[InputCollector]` first recorded the three criteria (diet, exclusions, guests), then the `[RecipeGenerator]` proposed a suitable recipe — here we see the two agents collaborating through the shared state.
 
 **What this output demonstrates about the multi-agent system**: the recipe is not a free-form response to “write a vegetarian recipe” — it is the **result of a protocol** in which each constraint was explicitly collected and then propagated to the generator via `RecipeState`. If we changed “6 guests” to “2 guests,” the recipe quantities would adjust because the generator reads `state.guests`. This is the added value of the architecture compared with a monolithic prompt: the constraints are **structured and traceable**, not buried in a sentence. This is also what makes the system reusable for other cases (meal menu, shopping list) by changing the plugins, not by rewriting the prompt.",,,,,,,c6033665cc870ebc,6d71da904b8edf2b,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,943a4bd5,markdown,fr,d109566bb2fdee26,"**Lecture du livrable PDF** — la conversation a déroulé les trois rôles attendus : `[InputCollector]` a enregistré les contraintes dans l'état partagé, `[RecipeGenerator]` a validé la recette (drapeau `ready_to_generate` armé), puis **`[PDFGenerator]` a joué son tour** en invoquant `generate_pdf` — c'est précisément le tour que la condition d'arrêt d'origine (`ready_to_generate`) coupait. La cellule suivante **vérifie strictement** que le PDF exporté contient le régime, **tous** les ingrédients et **toutes** les étapes de la recette : elle lève un `RuntimeError` explicite si une seule chaîne manque, ce qui distingue le succès réel (sortie cohérente avec la conversation) d'un succès trompeur (PDF vide accepté comme valide).
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,943a4bd5,markdown,fr,127d3620e9d477ae,"**Lecture du livrable PDF** — la conversation a déroulé les trois rôles attendus : `[InputCollector]` a enregistré les contraintes dans l'état partagé, `[RecipeGenerator]` a validé la recette (drapeau `ready_to_generate` armé), puis **`[PDFGenerator]` a joué son tour** en invoquant `generate_pdf` — c'est précisément le tour que la condition d'arrêt d'origine (`ready_to_generate`) coupait. La cellule precedente **vérifie strictement** que le PDF exporté contient le régime, **tous** les ingrédients et **toutes** les étapes de la recette : elle lève un `RuntimeError` explicite si une seule chaîne manque, ce qui distingue le succès réel (sortie cohérente avec la conversation) d'un succès trompeur (PDF vide accepté comme valide).
 
 **Ce que cet exemple démontre** : la stratégie de terminaison d'un `AgentGroupChat` n'est pas un détail cosmétique — c'est elle qui décide quels agents **existent effectivement** dans la conversation. Un drapeau armé un tour trop tôt rend un agent de la liste inatteignable sans aucune erreur visible : la boucle se termine proprement, l'état reste incomplet, et l'instinct porte à accuser l'outil externe. Diagnostiquer ce défaut exige de lire la **séquence** des tours (qui a parlé ? qui n'a jamais parlé ?), pas les exceptions — il n'y en a aucune. La frontière raisonnement/exécution reste réelle (le plugin `reportlab` peut échouer indépendamment du LLM), mais l'échec observé avant correction était un **défaut d'orchestration**, pas un défaut de rendu.
 ","**Reading the PDF deliverable** — the conversation played out the three expected roles: `[InputCollector]` recorded the constraints in the shared state, `[RecipeGenerator]` validated the recipe (`ready_to_generate` flag set), then **`[PDFGenerator]` took its turn** by invoking `generate_pdf` — this is precisely the turn that the original stopping condition (`ready_to_generate`) cut off. The verification cell confirms the file on disk (path + size in bytes), then the next cell displays the success branch with the structured content of the shared state.
 
-**What this example demonstrates**: the termination strategy of an `AgentGroupChat` is not a cosmetic detail — it is what decides which agents **actually exist** in the conversation. A flag set one turn too early makes an agent in the list unreachable with no visible error: the loop ends cleanly, the state remains incomplete, and instinct leads one to blame the external tool. Diagnosing this flaw requires reading the **sequence** of turns (who spoke? who never spoke?), not the exceptions — there are none. The reasoning/execution boundary remains real (the `reportlab` plugin can fail independently of the LLM), but the failure observed before the correction was an **orchestration flaw**, not a rendering flaw.",,,,,,,d109566bb2fdee26,e8e92d513de9960b,,,,,,,
+**What this example demonstrates**: the termination strategy of an `AgentGroupChat` is not a cosmetic detail — it is what decides which agents **actually exist** in the conversation. A flag set one turn too early makes an agent in the list unreachable with no visible error: the loop ends cleanly, the state remains incomplete, and instinct leads one to blame the external tool. Diagnosing this flaw requires reading the **sequence** of turns (who spoke? who never spoke?), not the exceptions — there are none. The reasoning/execution boundary remains real (the `reportlab` plugin can fail independently of the LLM), but the failure observed before the correction was an **orchestration flaw**, not a rendering flaw.",,,,,,,127d3620e9d477ae,e8e92d513de9960b,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,1969ae56,markdown,fr,27ca5071235eb784,"### Vue d'ensemble : un chatbot médical multi-agent en 3 rôles
 
 Ce notebook implémente une consultation médicale simulée entre trois agents LLM : un **médecin généraliste** qui pose des questions complémentaires au patient, une **IA médicale d'analyse** qui propose des hypothèses diagnostiques, et un **pharmacien** qui vérifie les interactions médicamenteuses. Le tout orchestré par un `AgentGroupChat` Semantic Kernel avec une **stratégie de terminaison** à limite d'échanges (6 messages) — la détection d'un diagnostic final par mot-clé étant laissée en exercice. Le notebook couvre les patterns : `Kernel` + `plugins` natifs, `ChatCompletionAgent`, `AgentGroupChat`, `TerminationStrategy`, et `auto function calling`. C'est un cas d'usage type pour les **synthetic clinical reasoning** où plusieurs LLM agents simulent une consultation réelle.","### Overview: a 3-role multi-agent medical chatbot
