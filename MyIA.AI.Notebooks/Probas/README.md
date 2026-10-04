@@ -399,7 +399,7 @@ La causalité est traitée à **quatre endroits** du dépôt, chacun avec son mo
 | [CausalBridges-05 — Le confondeur non observé](DecisionTheory/Causal-Bridges/CausalBridges-05-Dowhy-Sensibilite-Confounder.ipynb) | ~50 min | Sensibilité, pas certitude : robustness value de Cinelli-Hazlett (`linear-partial-R2`), **E-value natif** `dowhy`, bornes de Rosenbaum exactes (Γ*), courbe de bascule du confondeur simulé |
 | [CausalBridges-06 — L'instrument faible](DecisionTheory/Causal-Bridges/CausalBridges-06-Dowhy-Instrument-Faible.ipynb) | ~45 min | Variable instrumentale via `dowhy` (pipeline `identify` + `estimate(iv)` + `refute`) ; F-stat Staiger-Stock, biais IV vs OLS en Monte-Carlo, **verdict NON_IDENTIFIABLE** honnête sur exclusion violée |
 | [CausalBridges-07 — Quasi-Experimental](DecisionTheory/Causal-Bridges/CausalBridges-07-Quasi-Experimental.ipynb) | ~50 min | Méthodes quasi-expérimentales (DiD, contrôle synthétique, RDD, variables instrumentales) sur données réalistes ; estimands et hypothèses d'identification explicités |
-| [CausalBridges-08 — Décomposer la discrimination](DecisionTheory/Causal-Bridges/CausalBridges-08-Causal-Fairness.ipynb) | ~50 min | Équité causale : critères structurels Str-DE/IE/SE, famille TV (TE, Exp-SE, NDE, NIE) — Lem 4.1 et Thm 4.2 vérifiés avec `dowhy` sur données de crédit |
+| [CausalBridges-08 — Décomposer la discrimination](DecisionTheory/Causal-Bridges/CausalBridges-08-Causal-Fairness.html) | ~50 min | Équité causale : critères structurels Str-DE/IE/SE, famille TV (TE, Exp-SE, NDE, NIE) — Lem 4.1 et Thm 4.2 vérifiés avec `dowhy` sur données de crédit |
 
 | Série | Moteur | Angle causal |
 |-------|--------|--------------|
@@ -637,7 +637,7 @@ Cette série ancre mathématiquement ses résultats phares dans un assistant de 
 | ---                      | ---                              | ---                                                                               | ---                                                                  |
 | Probas (DecisionTheory)  | `decision_theory_lean`           | Axiomes de Von Neumann-Morgenstern ⇒ existence d'une utilité espérée (`0 sorry`)  | [`DecInfer-02-Lean-ExpectedUtility`](DecisionTheory/DecInfer/DecInfer-02-Lean-ExpectedUtility.ipynb)  |
 | Probas (DecisionTheory)  | `decision_theory_lean`           | Coherence utility ⟹ preferences (loterie de référence) (`0 sorry`)                | [`DecisionTheory/DecInfer/`](DecisionTheory/DecInfer/README.md) Coherence   |
-| ML ↔ Probas (PAC Learning) | [`learning_theory_lean`](../ML/learning_theory_lean/) | `pac_finite_class_bound` + `pac_agnostic_generalization` (`0 sorry bout-en-bout`) | [`2.8-Theorie-PAC`](../ML/DataScienceWithAgents/02-ML-Cours/2.8-Theorie-PAC.ipynb) + [`2.8b-Theorie-PAC-Lean`](../ML/DataScienceWithAgents/02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb) |
+| ML ↔ Probas (PAC Learning) | [`learning_theory_lean`](../ML/learning_theory_lean/) | `pac_finite_class_bound` + `pac_agnostic_generalization` (`0 sorry bout-en-bout`) | [`2.8-Theorie-PAC`](../ML/DataScienceWithAgents/02-ML-Cours/2.8-Theorie-PAC.html) + [`2.8b-Theorie-PAC-Lean`](../ML/DataScienceWithAgents/02-ML-Cours/2.8b-Theorie-PAC-Lean.html) |
 | Probas (DecisionTheory)  | `decision_theory_lean` Peters    | Indice de Gittins, identités d'escompte (`0 sorry`, ref `v4.27.0-rc1`)            | [`DecInfer-08b-Lean-Gittins`](DecisionTheory/DecInfer/DecInfer-08b-Lean-Gittins.ipynb)                                          |
 | QC ↔ Probas              | `kelly_lean`                     | Fraction risquée `f* = μ−σ²/2` sous log-bienveillance (`0 sorry`)                  | [`Kelly_companion.ipynb`](../QuantConnect/kelly_lean/Kelly_companion.ipynb)                                           |
 | GameTheory ↔ Probas      | `game_theory_lean` (Arrow)       | Impossibilité d'Arrow (5 axiomes ⇒ dictature)                                     | [`01-Arrow-Impossibility-Theorem.ipynb`](../GameTheory/SocialChoice/01-Arrow-Impossibility-Theorem.ipynb)                                          |
@@ -721,7 +721,7 @@ La série Probas/Infer+PyMC distille et adapte un corpus de modèles probabilist
 - **Rabiner (1989)** — HMM tutorial, base conceptuelle d'Infer-14 / PyMC-14.
 - **Minka, T., Winn, J., et al. (2018)** — *Infer.NET 2.4*, Microsoft Research Cambridge (cité PyMC-1).
 
-Les notebooks qui distillent directement MBML (Infer-3 Murder Mystery, PyMC-3 Murder Mystery, PyMC-8 TrueSkill) citent la source canonique **inline** ; les autres notebooks s'appuient sur la **bibliographie footer** « Pour aller plus loin » (Infer-1 cell 38, Infer-15 cell 88) ou sur les **sources primaires** académiques. Le tableau de correspondance [`docs/reference/mbml-source-attribution.md`](../../docs/reference/mbml-source-attribution.md) inventorie chaque notebook avec sa source/attribution.
+Les notebooks qui distillent directement MBML (Infer-3 Murder Mystery, PyMC-3 Murder Mystery, PyMC-8 TrueSkill) citent la source canonique **inline** ; les autres notebooks s'appuient sur la **bibliographie footer** « Pour aller plus loin » (Infer-1, cellule 38 ; Infer-15, cellule 88) ou sur les **sources primaires** académiques. Le tableau de correspondance [`docs/reference/mbml-source-attribution.md`](../../docs/reference/mbml-source-attribution.md) inventorie chaque notebook avec sa source/attribution.
 
 ## Licence
 
