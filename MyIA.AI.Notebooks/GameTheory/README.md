@@ -359,8 +359,7 @@ Les notebooks numérotés de 18 à 25 ne prolongent pas le parcours principal. C
 | 22 | [Ensembles limites](GameTheory-06i-Ensembles-Limites-Poincare-Bendixson-Python.ipynb) | Poincaré-Bendixson en dimension 2 : point fixe, orbite périodique ou cycle hétérocline, classés mécaniquement, et l'échec du théorème au-delà du plan | Python | Recherche |
 | 23 | [Affectation de Kuhn-Munkres](GameTheory-16f-Munkres-Assignment-Python.ipynb) | L'affectation optimale en arithmétique entière exacte, certifiée par dualité LP, et le pont vers le cœur de Shapley-Shubik | Python | Licence |
 | 23b | [Affectation en Lean](GameTheory-16f-Lean-Assignment-Lean.ipynb) | Dualité et optimalité de Kuhn-Munkres exécutées depuis le lake `assignment_lean` | Lean | Recherche |
-| 24 | [Banc humour](GameTheory-18c-Humour-Banc-Python.ipynb) | Banc de calibration : forme partagée contre stimulus, matrice de confusion | Python | Recherche |
-| 24b | [Banc humour, passage à l'échelle](GameTheory-18d-Humour-Banc-Dur-Python.ipynb) | Comparaison de modèles de langage, circularité, paires minimales | Python | Recherche |
+| 24 | [Banc humour](GameTheory-18c-Humour-Banc-Python.ipynb) | Banc de calibration (forme partagée contre stimulus, matrice de confusion) puis passage à l'échelle consolidé : corpus Argumentum 120 instances, comparaison LLM, circularité, paires minimales (#14032) | Python | Recherche |
 | 25 | [Persuasion bayésienne](GameTheory-17e-Bayesian-Persuasion-Python.ipynb) | La concavification évaluée par deux méthodes indépendantes (programme linéaire et enveloppe concave) dont l'accord est vérifié, avec un contrôle négatif | Python | Recherche |
 
 ## Installation
