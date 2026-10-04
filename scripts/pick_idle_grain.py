@@ -3933,12 +3933,14 @@ def upsert_orphans_comment(number: int, body: str) -> None:
 # sur le meme patrimoine le meme jour.
 # Une visite, c'est desormais la plus recente de trois dates :
 #   1. la derniere PR mergee qui cite l'issue (`last_delivery_stamp`) ;
-#   2. le plus recent claim ENCORE ACTIF sur l'issue, toutes lanes
-#      (`last_claim_stamp`, lu sur la tete de file par `settle_belt_head`) ;
-#      la grammaire et la reduction sont celles de l'organe
-#      `check_lane_claim.py` (`active_claim_stamp`), jamais une regex propre :
-#      un claim rendu (`[RELEASED]`, `[DONE]`, livraison fermee) n'a pas
-#      servi l'issue, qui reprend son rang ;
+#   2. le plus recent marqueur de claim pose sur l'issue par une lane,
+#      toutes lanes (`last_claim_stamp`, lu sur la tete de file par
+#      `settle_belt_head`) ; la grammaire est celle de l'organe
+#      `check_lane_claim.py` (`claim_visit_stamp`), jamais une regex propre.
+#      Une cloture (`[RELEASED]`, `[DONE]`, `[DELIVERED]`...) est aussi une
+#      visite : elle AVANCE la date, elle ne l'efface pas -- mesure #7742,
+#      rendue le 19/09 apres deux tranches mergees, qu'une lecture « rendu =
+#      rang rendu » remettait en tete comme jamais servie ;
 #   3. la creation de la plus recente sous-issue ouverte qui la nomme comme
 #      parent (`last_child_stamp`, `apply_child_visits`, zero appel reseau).
 _PARENT_BODY_RE = re.compile(r"(?i)\bpart of #(\d+)")
@@ -4008,35 +4010,29 @@ def apply_child_visits(pool: list[dict], targets: list[dict]) -> dict[int, str]:
     return latest
 
 
-def active_claim_stamp(
-    comments: list[dict],
-    pr_states: dict[int, str] | None = None,
-) -> str | None:
-    """``createdAt`` serveur du plus recent claim encore actif, toutes lanes.
+def claim_visit_stamp(comments: list[dict]) -> str | None:
+    """``createdAt`` serveur du plus recent marqueur de claim attribue a une lane.
 
-    Lecture et reduction deleguees a l'organe des claims (#19147, reserve
-    tierce) : ``_sort_events`` lit les marqueurs avec sa grammaire (decorations
-    markdown et non-ASCII tolerees, blocs fence neutralises, mentions en milieu
-    de ligne ignorees), ``compute_active_claims`` rejoue ouvertures, amendements,
-    overrides et clotures. Un claim clos ne laisse aucune date : l'issue
-    reprend le rang que lui donnent ses merges. ``pr_states`` est transmis au
-    reducteur pour les ``[DELIVERED]`` (injection testable, comme dans
-    l'organe).
+    Lecture deleguee a l'organe des claims (#19147, reserve tierce) :
+    ``_sort_events`` lit les marqueurs avec sa grammaire (decorations markdown
+    et non-ASCII tolerees, blocs fence neutralises, mentions en milieu de ligne
+    ignorees). Tout marqueur compte -- prise, amendement, override, livraison,
+    rendu : chacun dit qu'une lane a servi l'issue a cette date. Un marqueur
+    sans lane (citation, gabarit) n'est la visite de personne.
     """
-    from check_lane_claim import _sort_events, compute_active_claims
+    from check_lane_claim import _sort_events
 
-    active, _unattributed = compute_active_claims(
-        _sort_events({"comments": comments}), pr_states)
-    stamps = [ev.created_at for ev in active.values() if ev.created_at]
+    stamps = [ev.created_at for ev in _sort_events({"comments": comments})
+              if ev.lane and ev.created_at]
     return max(stamps) if stamps else None
 
 
 def latest_claim_stamp(issue_number: int) -> str | None:
-    """Date du plus recent claim actif de l'issue (cf `active_claim_stamp`).
+    """Date du plus recent marqueur de claim de l'issue (cf `claim_visit_stamp`).
 
     Toutes lanes confondues : une reservation est une visite, quelle que soit
-    la lane qui la pose. Cout : 1 requete. ``None`` si aucun claim actif ou si
-    la lecture echoue -- l'issue garde alors sa date de merge, comme avant.
+    la lane qui la pose. Cout : 1 requete. ``None`` si aucun marqueur ou si la
+    lecture echoue -- l'issue garde alors sa date de merge, comme avant.
     """
     try:
         out = subprocess.run(
@@ -4046,7 +4042,7 @@ def latest_claim_stamp(issue_number: int) -> str | None:
             timeout=30,
         ).stdout
         comments = (json.loads(out) or {}).get("comments") or []
-        return active_claim_stamp(
+        return claim_visit_stamp(
             [c for c in comments if isinstance(c, dict)])
     except Exception:  # noqa: BLE001 - sonde best-effort, l'issue garde son merge
         return None

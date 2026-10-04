@@ -733,7 +733,7 @@ def _claim(at: str, body: str) -> dict:
     return {"createdAt": at, "body": body, "author": {"login": "jsboige"}}
 
 
-def test_active_claim_stamp_reads_decorated_markers_like_the_organ():
+def test_claim_visit_stamp_reads_decorated_markers_like_the_organ():
     """Reserve tierce #19147, point 1 : la grammaire est celle de
     ``check_lane_claim.py`` (#10906, #12711), pas une regex propre au tapis."""
     for body in (
@@ -744,13 +744,13 @@ def test_active_claim_stamp_reads_decorated_markers_like_the_organ():
         "→[CLAIMED] lane myia-po-2027:CoursIA -- T1",
         "[claimed] lane myia-po-2027:CoursIA -- T1",
     ):
-        assert pig.active_claim_stamp(
+        assert pig.claim_visit_stamp(
             [_claim("2026-10-04T09:50:12Z", body)]) == "2026-10-04T09:50:12Z", body
 
 
-def test_active_claim_stamp_ignores_quoted_and_midline_mentions():
+def test_claim_visit_stamp_ignores_quoted_and_midline_mentions():
     """Une citation en bloc fence, une mention en milieu de ligne, un marqueur
-    sans lane ne sont pas des reservations."""
+    sans lane ne sont la visite de personne."""
     fenced = ("Le gabarit est :\n```\n[CLAIMED] lane myia-po-2027:CoursIA"
               " -- T1\n```\n")
     comments = [
@@ -759,81 +759,63 @@ def test_active_claim_stamp_ignores_quoted_and_midline_mentions():
                "T1 livree. Le [CLAIMED] du matin reste valable."),
         _claim("2026-10-04T11:00:00Z", "> [CLAIMED] cite sans lane"),
     ]
-    assert pig.active_claim_stamp(comments) is None
+    assert pig.claim_visit_stamp(comments) is None
 
 
-def test_active_claim_stamp_released_claim_gives_the_rank_back():
-    """Point 2 de la reserve : un claim rendu n'a pas servi l'issue."""
-    comments = [
-        _claim("2026-10-04T09:50:12Z",
-               "[CLAIMED] lane myia-po-2027:CoursIA -- T1"),
-        _claim("2026-10-04T12:00:00Z",
-               "[RELEASED] lane myia-po-2027:CoursIA -- rendu"),
-    ]
-    assert pig.active_claim_stamp(comments) is None
-    for close in ("DONE", "ABANDONED", "CANCELLED"):
-        assert pig.active_claim_stamp([
-            comments[0],
+def test_claim_visit_stamp_closures_advance_the_visit():
+    """Point 2 de la reserve : une cloture est lue, et c'est une visite.
+    Elle AVANCE la date au lieu de la laisser figee sur la prise."""
+    claim = _claim("2026-10-04T09:50:12Z",
+                   "[CLAIMED] lane myia-po-2027:CoursIA -- T1")
+    for close in ("RELEASED", "DONE", "ABANDONED", "CANCELLED", "DELIVERED"):
+        assert pig.claim_visit_stamp([
+            claim,
             _claim("2026-10-04T12:00:00Z",
-                   f"[{close}] lane myia-po-2027:CoursIA"),
-        ]) is None, close
+                   f"[{close}] lane myia-po-2027:CoursIA -- PR #19999"),
+        ]) == "2026-10-04T12:00:00Z", close
 
 
-def test_active_claim_stamp_keeps_the_lane_still_holding_it():
-    """Une lane rend, une autre tient encore : la date est celle du claim
-    encore actif, pas la plus recente de toutes."""
+def test_claim_visit_stamp_counts_every_lane():
+    """Toutes lanes : la plus recente marque, quelle que soit la lane."""
     comments = [
         _claim("2026-10-04T08:00:00Z",
                "[CLAIMED] lane myia-po-2024:CoursIA -- B"),
         _claim("2026-10-04T09:00:00Z",
                "[CLAIMED] lane myia-po-2027:CoursIA -- A"),
-        _claim("2026-10-04T12:00:00Z",
-               "[RELEASED] lane myia-po-2027:CoursIA -- rendu"),
+        _claim("2026-10-04T07:00:00Z",
+               "[RELEASED] lane myia-po-2023:CoursIA -- ancien"),
     ]
-    assert pig.active_claim_stamp(comments) == "2026-10-04T08:00:00Z"
+    assert pig.claim_visit_stamp(comments) == "2026-10-04T09:00:00Z"
 
 
-def test_active_claim_stamp_delivered_follows_the_pr_state():
-    """``[DELIVERED]`` suit la semantique v2 de l'organe (#12386) : PR ouverte
-    ou mergee = encore tenue, PR fermee sans merge = rendue."""
-    def comments():
-        return [
-            _claim("2026-10-04T09:00:00Z",
-                   "[CLAIMED] lane myia-po-2027:CoursIA -- T1"),
-            _claim("2026-10-04T15:00:00Z",
-                   "[DELIVERED] lane myia-po-2027:CoursIA -- PR #19999"),
-        ]
-    assert pig.active_claim_stamp(
-        comments(), {19999: "OPEN"}) == "2026-10-04T15:00:00Z"
-    assert pig.active_claim_stamp(comments(), {19999: "CLOSED"}) is None
-
-
-def test_belt_released_issue_returns_ahead_of_visited_ones():
-    """Bout en bout sur le tri : apres un ``[RELEASED]``, l'issue repasse
-    devant une issue visitee plus recemment."""
-    claim = _claim("2026-10-04T09:00:00Z",
-                   "[CLAIMED] lane myia-po-2027:CoursIA -- T1")
-    release = _claim("2026-10-04T12:00:00Z",
-                     "[RELEASED] lane myia-po-2027:CoursIA -- rendu")
+def test_belt_released_issue_stays_behind_7742_scenario():
+    """Bout en bout, cas mesure #7742 : prise le 31/08, rendue le 19/09 apres
+    deux tranches mergees. Lue a la prise seule, elle repassait devant une
+    issue visitee le 10/09 ; lue a sa cloture, elle reste derriere."""
+    claim = _claim("2026-08-31T01:31:34Z",
+                   "[CLAIMED] lane myia-po-2024:CoursIA -- paths: a.ipynb")
+    release = _claim("2026-09-19T14:46:38Z",
+                     "[RELEASED] lane myia-po-2024:CoursIA -- tranches "
+                     "livrees, le claim rend la main")
 
     def order(comments):
         pool = [
-            _make_item(100, age_days=60, idle=0,
-                       last="2026-08-01T00:00:00Z",
-                       created="2026-07-01T00:00:00Z"),
-            _make_item(200, age_days=10, idle=0,
-                       last="2026-09-20T00:00:00Z",
+            _make_item(7742, age_days=75, idle=0, last=None,
+                       created="2026-07-21T16:31:50Z"),
+            _make_item(200, age_days=30, idle=0,
+                       last="2026-09-10T00:00:00Z",
                        created="2026-09-01T00:00:00Z"),
         ]
         pig.settle_belt_head(
             pool, need=2,
-            probe=lambda n: pig.active_claim_stamp(comments)
-            if n == 100 else None,
+            probe=lambda n: pig.claim_visit_stamp(comments)
+            if n == 7742 else None,
             max_probes=4)
         return [it["number"] for it in pool]
 
-    assert order([claim]) == [200, 100]            # tenue : elle recule
-    assert order([claim, release]) == [100, 200]   # rendue : elle revient
+    assert order([]) == [7742, 200]                 # jamais servie : en tete
+    assert order([claim]) == [7742, 200]            # prise le 31/08 < 10/09
+    assert order([claim, release]) == [200, 7742]   # rendue le 19/09 : derriere
 
 
 def test_latest_claim_stamp_reads_claims_of_any_lane(monkeypatch):
