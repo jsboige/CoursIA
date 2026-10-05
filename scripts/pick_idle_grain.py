@@ -279,16 +279,18 @@ from series_saturation import (  # noqa: E402
     DEFAULT_WINDOW_DAYS,
     DELIVERY_DELIVERED,
     DELIVERY_EMPTY_CORPUS,
+    DELIVERY_FIELDS,
     DELIVERY_NONE_IN_WINDOW,
     DELIVERY_UNAVAILABLE,
-    MERGED_FETCH_LIMIT,
     enrich_parent_families,
     EXPANSION,
     NEUTRAL,
     SERIES_SCALE_DEFAULT,
+    SLICE_DAYS,
     cited_issues,
     delivery_factor,
     fetch_merged,
+    fetch_merged_slices,
     fetch_series_visits,
     last_delivery_per_issue,
     measure_delivery,
@@ -895,6 +897,12 @@ LONG_VISITS_SCALE = 16.0
 # la lane qui lit le tirage et le coordinateur qui provisionne.
 PARKING_SIGNAL_THRESHOLD = 12
 
+# Champs que le compteur d'affluence lit : `title` et `body` portent les
+# formes de declaration que `cited_issues` reconnait. Pas de `files` ici --
+# l'affluence se compte par issue citee, la zone d'atterrissage est l'affaire
+# de `series_saturation`.
+VISITS_FIELDS = ("number", "title", "body", "mergedAt")
+
 
 def fetch_visits(
     days: int = VISITS_WINDOW_DAYS,
@@ -919,27 +927,30 @@ def fetch_visits(
     ainsi contre 181 reelles -- **44 % de la population absente**, et 3 des
     "ratages d'attribution" que je poursuivais n'etaient que des PRs jamais
     pechees. Cle de tri != cle de filtre est un faux silencieux.
+
+    Le meme faux silencieux vivait un cran plus loin, dans le `--limit 400`
+    lui-meme : sur une fenetre courte il ne mord pas, mais
+    ``LONG_VISITS_WINDOW_DAYS`` (30 j) rendait 400 PRs -- une douzaine de
+    jours -- et la troncature emporte les plus ANCIENNES. Le corpus vient
+    desormais de l'organe de tranches de dates (#18832, mesure du 2026-10-05),
+    partage avec ``fetch_merged`` : un plafond atteint y est retreci puis
+    refuse, jamais rendu en silence.
     """
     cutoff = NOW - dt.timedelta(days=days)
-    stamp = cutoff.strftime("%Y-%m-%dT%H:%M:%S+00:00")
-    command = [
-        "gh", "pr", "list", "--repo", REPO, "--state", "merged",
-        "--limit", "400", "--search", f"merged:>={stamp}",
-        "--json", "number,title,body,mergedAt",
-    ]
+    since = cutoff.date().isoformat()
     identity = [
         "gh", "pr", "list", "--repo", REPO, "--state", "merged",
-        "--limit", "400", "--window-days", str(days),
-        "--json", "number,title,body,mergedAt",
+        "--sliced", str(SLICE_DAYS), "--since", since,
+        "--fields", ",".join(VISITS_FIELDS),
     ]
 
     def fetch_raw() -> list[dict]:
-        raw = subprocess.run(
-            command,
-            capture_output=True, text=True, encoding="utf-8", errors="replace",
-            check=True, timeout=60,
-        ).stdout
-        return json.loads(raw)
+        return fetch_merged_slices(
+            since,
+            slice_days=SLICE_DAYS,
+            today=NOW.date(),
+            fields=VISITS_FIELDS,
+        )
 
     try:
         prs = _cached_payload(
@@ -5365,10 +5376,16 @@ def main(argv: list[str] | None = None) -> int:
     # un tour complet de la file au regime lent (10-20 grains/jour). La cle
     # de cache integre `days` (cf fetch_merged identity), donc le payload
     # 14 j et 90 j ne se chevauchent pas.
+    #
+    # `DELIVERY_FIELDS` et non le jeu complet : cette mesure ne lit que le
+    # titre et le corps des PRs (`cited_issues`). Demander `files` ici ferait
+    # payer 5x le payload pour des fichiers que personne ne lirait -- mesure
+    # du 2026-10-05, 582 s contre ~110 s sur la meme fenetre de 90 j.
     delivery_window_days = BELT_WINDOW_DAYS if args.belt else DEFAULT_WINDOW_DAYS
     umbrella_numbers = [it["number"] for it in pool if it["klass"] == "umbrella"]
     delivery_prs, delivery_fetch_err = fetch_merged(
         delivery_window_days,
+        fields=DELIVERY_FIELDS,
         cache=payload_cache,
         cache_mode=effective_cache_mode,
         cache_status=cache_status,

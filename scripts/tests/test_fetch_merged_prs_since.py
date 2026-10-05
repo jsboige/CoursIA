@@ -194,3 +194,90 @@ def test_run_gh_argv_is_accepted_by_gh():
     assert not unknown, (
         "run_gh passe des options que `gh pr list` n'a pas : {} "
         "(c'est exactement la faute `--page`)".format(unknown))
+
+
+# --- champs demandes par le consommateur (#18832, 2026-10-05) ---------------
+#
+# Le garde G-VAR-3 lit `body` et `mergedAt` ; le tapis (`pick_idle_grain.py`)
+# a besoin en plus de `title` (formes structurelles de declaration) et de
+# `files` (zone d'atterrissage). Les deux consommateurs ne s'accordent pas, et
+# un champ oublie ne leve rien : la saturation tomberait toutes zones
+# confondues, ou l'attribution perdrait ses formes de titre. D'ou un jeu de
+# champs explicite par appel, epingle ci-dessous.
+
+
+class _Proc:
+    """Stand-in minimal de `subprocess.CompletedProcess`."""
+
+    def __init__(self, stdout: str):
+        self.stdout = stdout
+
+
+def test_run_gh_requests_the_fields_it_is_given(monkeypatch):
+    """Le `--json` est construit depuis `fields`, pas fige."""
+    calls = {}
+
+    def fake_run(argv, **kwargs):
+        calls["argv"] = argv
+        return _Proc("[]")
+
+    monkeypatch.setattr(fmps.subprocess, "run", fake_run)
+    fmps.run_gh("2026-08-01", "2026-08-04", ("number", "title", "files"))
+
+    argv = calls["argv"]
+    idx = argv.index("--json")
+    assert argv[idx + 1] == "number,title,files", argv
+
+
+def test_run_gh_default_fields_stay_the_guard_minimum(monkeypatch):
+    """Sans argument, on ne paie pas le payload du tapis."""
+    calls = {}
+
+    def fake_run(argv, **kwargs):
+        calls["argv"] = argv
+        return _Proc("[]")
+
+    monkeypatch.setattr(fmps.subprocess, "run", fake_run)
+    fmps.run_gh("2026-08-01", "2026-08-04")
+
+    argv = calls["argv"]
+    assert argv[argv.index("--json") + 1] == "number,body,mergedAt", argv
+
+
+def test_fetch_forwards_fields_to_the_real_gh_call(monkeypatch):
+    """`run=None` doit construire l'appel gh AVEC les champs demandes.
+
+    Le piege ferme ici est un `fields` accepte puis ignore : la fonction
+    rendrait alors un corpus sans `files`, et la saturation de zone se
+    tairait sans que rien ne rougisse.
+    """
+    seen = {}
+
+    def fake_gh(since, until, fields=fmps.DEFAULT_JSON_FIELDS):
+        seen["fields"] = fields
+        return []
+
+    monkeypatch.setattr(fmps, "run_gh", fake_gh)
+    fmps.fetch("2026-08-01", today=date(2026, 8, 1),
+               fields=("number", "files"))
+
+    assert seen["fields"] == ("number", "files"), seen
+
+
+def test_fetch_keeps_the_two_argument_protocol_for_injected_run():
+    """Un `run` injecte garde son protocole `(since, until)`.
+
+    Les fakes existants (et les tests ci-dessus) appellent `run` avec deux
+    arguments : passer `fields` jusqu'a eux leverait un TypeError et casserait
+    le controle, pas la production.
+    """
+    seen = []
+
+    def fake_run(since, until):
+        seen.append((since, until))
+        return []
+
+    fmps.fetch("2026-08-01", run=fake_run, today=date(2026, 8, 1),
+               fields=("number", "files"))
+
+    assert seen, "le run injecte n'a jamais ete appele"

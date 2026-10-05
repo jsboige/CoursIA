@@ -209,6 +209,12 @@ def test_three_shared_payloads_are_reused_without_changing_derivations(
             cache=cache, cache_mode="auto", cache_status=first_status
         ),
     )
+    # Nombre d'allers-retours du PREMIER passage. Le fetch de la fenetre
+    # mergee est desormais decoupe en tranches de dates (#18832) : le total
+    # depend donc de la largeur des fenetres, et un `len(calls) == 3` figé
+    # mesurerait la largeur des tranches, pas la reutilisation. Ce que ce test
+    # epingle, c'est que le SECOND passage n'ajoute AUCUN appel.
+    first_pass_calls = len(calls)
     second_status = {}
     second = (
         pig.fetch_pool(
@@ -221,7 +227,12 @@ def test_three_shared_payloads_are_reused_without_changing_derivations(
     )
 
     assert first == second
-    assert len(calls) == 3
+    # Une source au moins par payload (pool, visites, saturation), et surtout :
+    # le second passage ne re-appelle pas le reseau une seule fois.
+    assert first_pass_calls >= 3, first_pass_calls
+    assert len(calls) == first_pass_calls, (
+        "le second passage a re-appele le reseau : {}".format(
+            calls[first_pass_calls:]))
     assert {entry["status"] for entry in first_status.values()} == {"miss"}
     assert {entry["status"] for entry in second_status.values()} == {"hit"}
     # Un hit SANS sonde n'est pas une mesure : la suite doit pouvoir le dire.

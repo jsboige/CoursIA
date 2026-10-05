@@ -740,3 +740,82 @@ def test_last_delivery_per_issue_handles_multiple_issues_at_once():
 
 
 # --- end geste 3 #18203 -----------------------------------------------------
+
+
+# --- fenetre couverte par tranches de dates (#18832, 2026-10-05) ------------
+#
+# Le defaut vise : `fetch_merged` servait sa fenetre par UN appel
+# `gh pr list --limit 400`. Mesure du 2026-10-05 : la fenetre `--belt` de 90 j
+# (cutoff 2026-07-07) rendait 400 PRs dont la plus ancienne datait du
+# 2026-09-30 -- cinq jours au lieu de quatre-vingt-dix. La troncature emporte
+# les plus ANCIENNES, donc les livraisons des issues servies : elles lisaient
+# `last_delivery_stamp = None`, soit "jamais livree", et le tapis les laissait
+# camper en tete. Les controles ci-dessous epinglent les deux sens -- un corpus
+# plus grand qu'une page est rendu ENTIER, et une tranche indecoupable rend une
+# ERREUR plutot qu'un corpus partiel qui a l'air complet.
+
+
+def _window_pr(n: int, merged_at: str) -> dict:
+    return {"number": n, "title": "pr %d" % n, "body": "closes #%d" % n,
+            "files": [], "mergedAt": merged_at}
+
+
+def test_fetch_merged_returns_more_than_one_page(monkeypatch):
+    """Un corpus de 1200 PRs -- trois fois l'ancien plafond -- est rendu entier.
+
+    C'est le controle positif du correctif : avec l'appel unique, cette fenetre
+    rendait au plus 400 lignes et les 800 plus anciennes disparaissaient en
+    silence.
+    """
+    prs = [_window_pr(n, "2026-09-08T10:00:00Z") for n in range(1200)]
+    seen = {}
+
+    def fake_slices(since, **kwargs):
+        seen["since"] = since
+        seen.update(kwargs)
+        return prs
+
+    monkeypatch.setattr(ss, "fetch_merged_slices", fake_slices)
+    got, err = ss.fetch_merged(90, now=_dt.datetime(2026, 10, 5, 12, 0,
+                                                   tzinfo=_dt.timezone.utc))
+    assert err is None, err
+    assert len(got) == 1200, (
+        "la fenetre a ete tronquee a {} lignes au lieu de 1200".format(len(got)))
+    assert seen["since"] == "2026-07-07", seen
+    # `files` porte la zone d'atterrissage, `title` les formes structurelles :
+    # heriter du minimum du garde G-VAR-3 les ferait disparaitre en silence.
+    assert "files" in seen["fields"] and "title" in seen["fields"], seen
+
+
+def test_fetch_merged_surfaces_an_unsliceable_window_as_an_error(monkeypatch):
+    """Une tranche d'un jour encore au plafond leve : on rend l'erreur.
+
+    Rendre le corpus partiel serait le defaut d'origine -- un corpus tronque
+    qui a l'air complet -- donc l'appelant doit retomber sur la valeur neutre.
+    """
+    def boom(since, **kwargs):
+        raise RuntimeError("fetch_merged_prs_since: the single day 2026-07-07 "
+                           "returned 1000 PRs, at the search cap of 1000.")
+
+    monkeypatch.setattr(ss, "fetch_merged_slices", boom)
+    got, err = ss.fetch_merged(90, now=_dt.datetime(2026, 10, 5, 12, 0,
+                                                   tzinfo=_dt.timezone.utc))
+    assert got == []
+    assert err and "RuntimeError" in err, err
+
+
+def test_measure_delivery_does_not_call_a_large_honest_corpus_truncated():
+    """Sans `fetch_limit`, la taille du corpus ne dit plus rien.
+
+    Depuis que le corpus est couvert par tranches, 3000 PRs sur 90 j est le
+    regime NORMAL du depot : garder un defaut a 400 ferait rougir le signal de
+    troncature a chaque passage et le noierait dans le bruit.
+    """
+    corpus = [_window_pr(n, "2026-09-08T10:00:00Z") for n in range(3000)]
+    sig = ss.measure_delivery(corpus, [1101], now=_NOW, days=90)
+    assert sig["corpus_size"] == 3000
+    assert sig["truncated"] is False
+    # Le cas explicite reste mesurable : un appelant qui borne lui-meme.
+    sig2 = ss.measure_delivery(corpus, [1101], now=_NOW, days=90,
+                               fetch_limit=400)
+    assert sig2["truncated"] is True

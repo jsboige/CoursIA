@@ -41,6 +41,17 @@ that comes back AT the cap is halved and retried; a one-day slice still at the
 cap raises rather than truncating, because a silent truncation here is
 indistinguishable from a healthy fetch.
 
+## Second consumer (2026-10-05)
+
+The belt (`pick_idle_grain.py --belt`) asked `series_saturation.fetch_merged`
+for a **90-day** window -- deliberately, so that a slow lane's turn of the queue
+is covered -- and got a single capped `gh pr list`: **400** PRs whose oldest was
+five days old. The truncation dropped the OLDEST again, which is exactly where a
+served issue's last delivery lives, so those issues read `last_delivery_stamp =
+None` and the belt ranked them by their creation date, squatting at the head.
+Same cause, second consumer: the belt and `fetch_visits` now come through this
+function instead of rebuilding a capped call of their own.
+
 ## Output
 
 A single JSON array on stdout:
@@ -73,13 +84,23 @@ SLICE_DAYS = 3
 
 DEFAULT_DAYS = 21
 
+# Fields a consumer may ask for. The G-VAR-3 adjacency guard reads `body`
+# (declared issues) and `mergedAt`, and nothing else -- asking for more would
+# make it pay the payload of the repo's whole window for fields it drops. The
+# belt (`pick_idle_grain.py`, `series_saturation.py`) additionally needs
+# `title` (structural declaration forms) and `files` (landing zone), so it
+# passes its own tuple. Kept explicit rather than a fixed list precisely
+# because the two consumers disagree.
+DEFAULT_JSON_FIELDS = ("number", "body", "mergedAt")
+
 
 def since_date(days: int) -> str:
     """Return the ISO cutoff ``today - days``."""
     return (date.today() - timedelta(days=days)).isoformat()
 
 
-def run_gh(since: str, until: str) -> list[dict]:
+def run_gh(since: str, until: str,
+           fields=DEFAULT_JSON_FIELDS) -> list[dict]:
     """One date slice of merged PRs, ``[since, until)`` on MERGE time.
 
     Uses only flags `gh pr list` actually has -- `--search` and `--limit`.
@@ -93,15 +114,16 @@ def run_gh(since: str, until: str) -> list[dict]:
             "--state", "merged",
             "--search", f"merged:>={since} merged:<{until}",
             "--limit", str(SEARCH_RESULT_CAP),
-            "--json", "number,body,mergedAt",
+            "--json", ",".join(fields),
         ],
         capture_output=True, text=True, encoding="utf-8", errors="replace", check=True,
     )
     return json.loads(out.stdout)
 
 
-def fetch(since: str, run=run_gh, slice_days: int = SLICE_DAYS,
-          today: date | None = None) -> list[dict]:
+def fetch(since: str, run=None, slice_days: int = SLICE_DAYS,
+          today: date | None = None,
+          fields=DEFAULT_JSON_FIELDS) -> list[dict]:
     """Walk ``[since, tomorrow)`` in date slices and merge them into one list.
 
     ``run`` is dependency-injected for tests. A slice that returns exactly
@@ -109,7 +131,15 @@ def fetch(since: str, run=run_gh, slice_days: int = SLICE_DAYS,
     and retried, and a one-day slice still at the cap raises -- returning it
     would silently drop merges and hand the guard a partial sequence that looks
     complete.
+
+    ``run=None`` (the default) builds the real gh call for ``fields``. An
+    injected ``run`` keeps its 2-argument ``(since, until)`` protocol, so the
+    existing fakes are unaffected and ``fields`` never reaches them.
     """
+    if run is None:
+        def run(s, u, _fields=fields):  # noqa: F811 -- gh call bound to fields
+            return run_gh(s, u, _fields)
+
     start = date.fromisoformat(since)
     end = (today or date.today()) + timedelta(days=1)
     acc: list[dict] = []

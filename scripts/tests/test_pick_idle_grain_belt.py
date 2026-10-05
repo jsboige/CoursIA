@@ -544,6 +544,19 @@ def _patch_belt_network(monkeypatch, prs, red_state):
                                             for n in nums})
     # Le tapis lit aussi les claims comme visites : jamais de reseau en test.
     monkeypatch.setattr(pig, "latest_claim_stamp", lambda n: None)
+    # Les trois lectures de visites et la fenetre de livraisons partent du
+    # meme payload cache et finiraient en `gh` reel : elles manquaient a ce
+    # helper, dont le docstring promet pourtant « sans toucher au reseau ».
+    # Depuis #19209 ces fenetres sont couvertes par tranches de dates, donc
+    # un test non hermétique ne fait plus UN appel mais une quarantaine
+    # (30 j -> 10 tranches, 90 j -> 30) et la suite partait en timeout. On
+    # coupe a la source plutot que de laisser le nombre d'appels decider de
+    # la duree du test ; le contenu rendu est neutre, ces tests portent sur
+    # la FORME du JSON (`repair`, `last_delivery_window_days`), pas sur les
+    # visites.
+    monkeypatch.setattr(pig, "fetch_visits", lambda **k: ({}, None))
+    monkeypatch.setattr(pig, "fetch_series_visits", lambda **k: ({}, {}, None))
+    monkeypatch.setattr(pig, "fetch_merged", lambda *a, **k: ([], None))
 
 
 def test_belt_json_emits_single_document_when_red_present(monkeypatch, capsys):

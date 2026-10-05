@@ -112,7 +112,12 @@ def test_fetch_visits_cache_name_separates_windows(monkeypatch):
     """Les deux fenetres partagent la fonction mais pas l'identite de cache :
     1 j sous le nom `visits`, 30 j sous `long_visits` -- sinon le status de
     l'une ecrase celui de l'autre et un stale 30 j se lirait sur la colonne
-    du jour."""
+    du jour.
+
+    Depuis #18832 la fenetre est couverte par tranches de dates, donc une
+    fenetre emet plusieurs appels : l'invariant n'est plus « un appel par
+    fenetre » mais « un seul point de coupe par fenetre, et deux coupes
+    distinctes ». C'est la coupe qui porte l'identite de cache."""
     import json
 
     calls = []
@@ -132,8 +137,35 @@ def test_fetch_visits_cache_name_separates_windows(monkeypatch):
         pass
 
     pig.fetch_visits(days=1, cache_name="visits")
+    short_calls = len(calls)
     pig.fetch_visits(days=30, cache_name="long_visits")
-    assert len(calls) == 2
-    stamps = [c[c.index("--search") + 1] if "--search" in c else None
-              for c in calls]
-    assert stamps[0] != stamps[1], "les deux fenetres doivent couper a des dates distinctes"
+
+    assert short_calls >= 1, "la fenetre de 1 j n'a emis aucun appel"
+    assert len(calls) > short_calls, "la fenetre de 30 j n'a emis aucun appel"
+
+    def _cut(chunk):
+        """Debut de fenetre (`merged:>=`) de la plus ancienne tranche emise.
+
+        C'est le `--search` qui porte la vraie coupe : `--since` n'existe que
+        dans la cle de cache, pas dans la commande `gh`.
+        """
+        starts = set()
+        for call in chunk:
+            if "--search" not in call:
+                continue
+            for token in call[call.index("--search") + 1].split():
+                if token.startswith("merged:>="):
+                    starts.add(token[len("merged:>="):])
+        return min(starts) if starts else None
+
+    short_cut = _cut(calls[:short_calls])
+    long_cut = _cut(calls[short_calls:])
+
+    assert short_cut is not None, "la fenetre de 1 j n'a emis aucune tranche"
+    assert long_cut is not None, "la fenetre de 30 j n'a emis aucune tranche"
+    assert short_cut != long_cut, (
+        "les deux fenetres doivent couper a des dates distinctes : {} vs "
+        "{}".format(short_cut, long_cut))
+    assert long_cut < short_cut, (
+        "la fenetre de 30 j doit couper AVANT celle de 1 j : {} vs "
+        "{}".format(long_cut, short_cut))
