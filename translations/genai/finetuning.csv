@@ -4930,11 +4930,11 @@ Trois lectures :
 
 Three readings:
 
-1. **The parameter count depends ONLY on `r`**: for each `r`, the three values of `alpha` display the same total (`2 · r · d` per target module, x 2 modules x 24 layers). `alpha` buys **no** parameters -- it only rescales the update (`scale = α/r`, last column). Raising `alpha` at fixed `r` speeds up the amplitude of the same adapter, it does not enlarge it.
+1. **The parameter count depends ONLY on `r`**: for each `r`, the three values of `alpha` display the same total (`2 · r · d` per target module, over the two targeted projections and the 24 layers). `alpha` buys **no** parameters -- it only rescales the update (`scale = α/r`, last column). Raising `alpha` at fixed `r` speeds up the amplitude of the same adapter, it does not enlarge it.
 
 2. **The orders of magnitude**: from `r=2` (393,216 params, 0.030% of the model) to `r=64` (12.6M, 0.968%) -- a factor 32 between the extremes, and always under 1% of the model. The grid is computed on OPT-1.3b's actual dimensions (d_model 2048, 24 layers, targets q_proj+v_proj): the `r=16` of the next section predicts **3,145,728** parameters there -- exactly the figure `get_peft_model` measures. The mechanics' theory and the API agree to the parameter.
 
-3. **The steering rule**: underfitting → raise `r`; overfitting or stylistic drift → lower `r` or lower `alpha`. On a dataset of a few hundred examples (ours has 10), `r=8-16` is the reasonable plateau.",,,,,,,fc059a0532b75679,94e3aea7623663d4,,,,,,,
+3. **The steering rule**: underfitting → raise `r`; overfitting or stylistic drift → lower `r` or lower `alpha`. On a dataset of a few hundred examples (ours has 10), `r=8-16` is the reasonable plateau.",,,,,,,fc059a0532b75679,bc0eb6a7781554a5,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,d9953324,markdown,fr,5831cadc4a4a6a0b,"### Lecture du résultat : le moment où la quantization prend effet
 
 La cellule précédente a **trois étapes** qui paraissent triviales mais chacune marque un point de non-retour sur l'empreinte mémoire. À lire dans l'ordre où elles s'exécutent :
