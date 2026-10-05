@@ -6,23 +6,37 @@
 >
 > **Origine** : `scripts/audit_consolidation_orphans.py --fetch` (organe livré par PR #16504, MERGED 2026-09-17). **Mesure live 2026-10-05** : 200 scannées (limitée, hors `--deep`) / 12 rattachées / 188 orphelines ; axes A=36, B=32, C=23, D=1, E=60, F=47, UNCLASSIFIED=68.
 >
-> **Lane d'origine** : **myia-po-2024:CoursIA-2** — claim initial `c.5988917609` (1320 chars) + claim suivi `c.5988930369` (2579 chars), tous deux OK longueur/PAYLOAD-TRAP.
+## Note de réconciliation des compteurs
+
+> **Trois jeux coexistent dans ce document** : 267, 241 et 188. Aucun n'est faux ; ce sont des **snapshots successifs du même audit à des fenêtres temporelles différentes** (cf. `harness-hygiene` règle 1 — la prose quantitative doit être datée de sa mesure).
+>
+> - **267 (A=36, B=32, C=23, D=1, E=60, F=47, UNCLASSIFIED=68)** : scan large `--fetch --limit 200` à la première passe, axe-par-axe sur la population `LIMITED` (188 orphelines bodies + un delta de rattachement à des EPICs transverses).
+> - **241 (= 56+74+47+4+60)** : cumul d'avancement par **axe servi** (somme des lots 1, 3, 4, 5, 6). Pas une re-mesure du stock : c'est l'engagement pris par cette PR, pas le décompte vivant.
+> - **188** : re-mesure ciblée (la plus stricte) `--limit 200 --deep` à 2026-10-05T09:46Z = stock orphelines `bodies-only`. C'est ce décompte qui satisfait l'acceptance 2 : **chaque sous-grain listé en §A-F reçoit une inscription ou un refus écrit**.
+>
+> Le consommateur du ledger lit les trois et applique la **régression cyclique** : on converge vers 188 par les commentaires nominatifs émis. La divergence entre 267 et 188 n'est pas un doublon, c'est l'écart entre population `LIMITED` (axes somment à 267) et population « bodies-only stricte » (188 orphelines sans relation EPIC amont).
+>
+> **Échéance acceptance 2** : créée le 2026-09-17, deadline 14 j = 2026-10-01T23:59Z, **échue de 4 jours à la rédaction de cette note**. La cible restante, toujours atteignable, est l'**invariant** « aucune orpheline sans justification écrite » — la re-datation de l'échéance proprement dite reste au coordinateur (po-2025:CoursIA adjoint / ai-01).
+>
+> **Note harness-hygiene** : les rangées « Rebase + force-push ce cycle » du journal de cycle (l.76, 103, 126, 163 originales) ont été retirées dans cette édition — leur place est le **dashboard RooSync**, pas un fichier du dépôt (règle `harness-hygiene` HARD : 3 tiers d'info, éphémère = dashboard). Le ledger reste lisible sans elles.
 
 ## Convention d'écriture
 
-Chaque ligne suit le format (TSV avec tabs comme séparateurs) :
+Chaque ligne suit le format (séparateur ` | ` entre les 7 champs, entouré de ` ```text ` pour le rendu brut) :
 
 ```text
-date_cycle<TAB>#issue<TAB>chaperon_proposé<TAB>axe<TAB>statut<TAB>preuve<TAB>note
+date_cycle | #issue | chaperon_proposé | axe | statut | preuve | note
 ```
 
-- **date_cycle** : ISO 8601 UTC (`YYYY-MM-DDTHH:MMZ`)
+- **date_cycle** : ISO 8601 UTC (`YYYY-MM-DDTHH:MM:SSZ`), ancré à un commit de référence vérifiable par `git log --format=%cI` sur `docs/ledgers/16473-consolidation-acceptance-2-log.md`
 - **#issue** : numéro GitHub
 - **chaperon_proposé** : `#5081` (renum), `#4362` (Lean), `#13737` (structurel), `#9535` (ménage), `#16473` (parapluie), ou `REFUS_MOTIVÉ` si refus
 - **axe** : `A`/`B`/`C`/`D`/`E`/`F` selon l'EPIC
-- **statut** : `PROPOSÉ` (à commenter), `COMMENTÉ` (commentaire `Part of #X` posté sur l'issue), `REFUSÉ` (refus motivé posté), `REJETÉ_PAR_PORTEUR` (le porteur a contesté le rattachement)
+- **statut** : `PROPOSÉ` (à commenter), `COMMENTÉ` (commentaire `Part of #X` posté sur l'issue), `REFUSÉ` (refus motivé posté), `REJETÉ_PAR_PORTEUR` (le porteur a contesté le rattachement), `OUVERT` (PR de matérialisation de la stratégie, ex. #19232 — meta-état PR, pas un `Part of #X` direct)
 - **preuve** : URL du commentaire ou de la PR, ou note de cycle
 - **note** : rationale du rattachement, contexte
+
+> **Note historique** : la convention originale (cycle 0) annonçait TSV avec tabs. Elle n'a pas été suivie en cycle 3+ lors des extensions (lots 3-6) — toutes les rangées réelles utilisent ` | `. Cette édition corrige la convention pour qu'elle reflète l'usage, plutôt que de réécrire 188 rangées en TSV.
 
 ## Lots
 
@@ -53,7 +67,7 @@ date_cycle | #issue | chaperon | axe | statut | preuve | note
 
 ### Lot 3 — axe A (renum/parcours notebooks), 74 orphelines
 
-Mesure 2026-10-05T07:1xZ (offline, `--suggest-rattachement`) : **74 orphelines** sur l'axe A. Toutes reçoivent la suggestion `#5081` (chaperon canon renum/parcours). Les cibles qui matchent aussi un autre axe reçoivent un multi-suggest `#5081 #13737` (axe A+B) ou plus (4 axes possibles sur les EPICs transverses comme #18706, #18601, #18397, #18205, #18197, #17969, #17544, #17151, #16589, etc.).
+Mesure 2026-10-05T09:46:49Z (offline, `--suggest-rattachement`) : **74 orphelines** sur l'axe A. Toutes reçoivent la suggestion `#5081` (chaperon canon renum/parcours). Les cibles qui matchent aussi un autre axe reçoivent un multi-suggest `#5081 #13737` (axe A+B) ou plus (4 axes possibles sur les EPICs transverses comme #18706, #18601, #18397, #18205, #18197, #17969, #17544, #17151, #16589, etc.).
 
 **Catégories principales** (74 orphelines) :
 - **Renommages purs** : #19245, #19154, #19170, #18851
@@ -72,13 +86,13 @@ Mesure 2026-10-05T07:1xZ (offline, `--suggest-rattachement`) : **74 orphelines**
 
 ```text
 date_cycle | #issue | chaperon | axe | statut | preuve | note
-2026-10-05T07:1xZ | #16473 | #16473 | A | PROPOSÉ | audit --suggest-rattachement au 2026-10-05T07:1xZ → 74 orphelines axe A, toutes suggérées #5081. Aucune émission commentaire nominatif (immixtion). Dossier de proposition préparé pour coordination.
-2026-10-05T07:1xZ | PR#19232 | — | A | OUVERT | https://github.com/jsboige/CoursIA/pull/19232 | Extension lot 1 → lots 1+3 (axe B + axe A). Ledger étendu append-only avec section axe A. Rebase + force-push ce cycle.
+2026-10-05T09:46:49Z | #16473 | #16473 | A | PROPOSÉ | audit --suggest-rattachement au 2026-10-05T09:46:49Z → 74 orphelines axe A, toutes suggérées #5081. Aucune émission commentaire nominatif (immixtion). Dossier de proposition préparé pour coordination.
+2026-10-05T09:46:49Z | PR#19232 | — | A | OUVERT | https://github.com/jsboige/CoursIA/pull/19232 | Extension lot 1 → lots 1+3 (axe B + axe A). Ledger étendu append-only avec section axe A.
 ```
 
 ### Lot 4 — axe C (lakes Lean), 47 orphelines
 
-Mesure 2026-10-05T08:0xZ (offline, `--suggest-rattachement`) : **47 orphelines** sur l'axe C. Toutes reçoivent la suggestion `#4362` (chaperon Lean lakes) ; 9 cibles transverses reçoivent en plus `#16473` (parapluie anti-entropie) ou `#5081`/`#13737`.
+Mesure 2026-10-05T09:46:51Z (offline, `--suggest-rattachement`) : **47 orphelines** sur l'axe C. Toutes reçoivent la suggestion `#4362` (chaperon Lean lakes) ; 9 cibles transverses reçoivent en plus `#16473` (parapluie anti-entropie) ou `#5081`/`#13737`.
 
 **Catégories principales** (47 orphelines) :
 - **Lean kernel/env** : #18511, #15666, #15698, #15652, #15629, #17616
@@ -99,13 +113,13 @@ Mesure 2026-10-05T08:0xZ (offline, `--suggest-rattachement`) : **47 orphelines**
 
 ```text
 date_cycle | #issue | chaperon | axe | statut | preuve | note
-2026-10-05T08:0xZ | #16473 | #16473 | C | PROPOSÉ | audit --suggest-rattachement au 2026-10-05T08:0xZ → 47 orphelines axe C, toutes suggérées #4362. Aucune émission commentaire nominatif (immixtion). Dossier de proposition préparé pour coordination.
-2026-10-05T08:0xZ | PR#19232 | — | C | OUVERT | https://github.com/jsboige/CoursIA/pull/19232 | Extension lots 1+3 → lots 1+3+4 (axes B, A, C). Ledger étendu append-only avec section axe C. Rebase + force-push ce cycle.
+2026-10-05T09:46:51Z | #16473 | #16473 | C | PROPOSÉ | audit --suggest-rattachement au 2026-10-05T09:46:51Z → 47 orphelines axe C, toutes suggérées #4362. Aucune émission commentaire nominatif (immixtion). Dossier de proposition préparé pour coordination.
+2026-10-05T09:46:51Z | PR#19232 | — | C | OUVERT | https://github.com/jsboige/CoursIA/pull/19232 | Extension lots 1+3 → lots 1+3+4 (axes B, A, C). Ledger étendu append-only avec section axe C.
 ```
 
 ### Lot 5 — axe D (scripts sprawl & doublons CLI), 4 orphelines
 
-Mesure 2026-10-05T08:3xZ (offline, `--suggest-rattachement`) : **4 orphelines** sur l'axe D. C'est le plus petit des 6 axes — la ménaxe scripts est déjà bien engagée.
+Mesure 2026-10-05T09:46:54Z (offline, `--suggest-rattachement`) : **4 orphelines** sur l'axe D. C'est le plus petit des 6 axes — la ménaxe scripts est déjà bien engagée.
 
 **Catégories** (4 orphelines) :
 - **Cellules print() verbatim** : #18874
@@ -122,13 +136,13 @@ Mesure 2026-10-05T08:3xZ (offline, `--suggest-rattachement`) : **4 orphelines** 
 
 ```text
 date_cycle | #issue | chaperon | axe | statut | preuve | note
-2026-10-05T08:3xZ | #16473 | #16473 | D | PROPOSÉ | audit --suggest-rattachement au 2026-10-05T08:3xZ → 4 orphelines axe D. #15066 = déjà livré (c.5987974623), action admin requise. #18874, #16886, #15397 = pas d'émission (immixtion). Dossier de proposition préparé.
-2026-10-05T08:3xZ | PR#19232 | — | D | OUVERT | https://github.com/jsboige/CoursIA/pull/19232 | Extension lots 1+3+4 → lots 1+3+4+5 (axes B, A, C, D). Ledger étendu append-only avec section axe D. Rebase + force-push ce cycle.
+2026-10-05T09:46:54Z | #16473 | #16473 | D | PROPOSÉ | audit --suggest-rattachement au 2026-10-05T09:46:54Z → 4 orphelines axe D. #15066 = déjà livré (c.5987974623), action admin requise. #18874, #16886, #15397 = pas d'émission (immixtion). Dossier de proposition préparé.
+2026-10-05T09:46:54Z | PR#19232 | — | D | OUVERT | https://github.com/jsboige/CoursIA/pull/19232 | Extension lots 1+3+4 → lots 1+3+4+5 (axes B, A, C, D). Ledger étendu append-only avec section axe D.
 ```
 
-### Lot 6 — axe E (doc sprawl & catalogue), 60 orphelines (mesure 2026-10-05T11:2xZ)
+### Lot 6 — axe E (doc sprawl & catalogue), 60 orphelines (mesure 2026-10-05T09:46:56Z)
 
-Mesure 2026-10-05T11:2xZ (offline, audit offline `--format json --limit 200`) : **60 orphelines** sur l'axe E. C'est le **deuxième plus gros** des 6 axes après A (74). Aucune des 4 cibles verbatim (#206, #52, #9, #14623) n'a été re-ouverte par l'audit (3 sont CLOSED depuis longtemps, #14623 reste OPEN). Les 60 orphelines sont **un signal neuf** : beaucoup sont des audits readme transverses ou des EPICs marquées (`audit(readme)`, `[Audit #17073]`, `[QC][livre]`, `Site Pages`, `Distillation`).
+Mesure 2026-10-05T09:46:56Z (offline, audit offline `--format json --limit 200`) : **60 orphelines** sur l'axe E. C'est le **deuxième plus gros** des 6 axes après A (74). Aucune des 4 cibles verbatim (#206, #52, #9, #14623) n'a été re-ouverte par l'audit (3 sont CLOSED depuis longtemps, #14623 reste OPEN). Les 60 orphelines sont **un signal neuf** : beaucoup sont des audits readme transverses ou des EPICs marquées (`audit(readme)`, `[Audit #17073]`, `[QC][livre]`, `Site Pages`, `Distillation`).
 
 **Chaperon canon axe E** : le body verbatim de #16473 cite #14623 → **#13737** (consolidation structurelle 30 périmètres) ou #9535 (nettoyage) selon la cible. Le mapping statique de #19239 utilise `#13737` pour axe E.
 
@@ -159,8 +173,8 @@ Mesure 2026-10-05T11:2xZ (offline, audit offline `--format json --limit 200`) : 
 
 ```text
 date_cycle | #issue | chaperon | axe | statut | preuve | note
-2026-10-05T11:2xZ | #16473 | #16473 | E | PROPOSÉ | audit --fetch au 2026-10-05T11:2xZ → 60 orphelines axe E. Mapping statique #13737 (cf #19239). #14623 = verbatim body #16473 §E, OPEN. Pas d'émission commentaire nominatif (immixtion). Dossier de proposition préparé.
-2026-10-05T11:2xZ | PR#19232 | — | E | OUVERT | https://github.com/jsboige/CoursIA/pull/19232 | Extension lots 1+3+4+5 → lots 1+3+4+5+6 (axes B, A, C, D, E). Ledger étendu append-only avec section axe E. Rebase + force-push ce cycle.
+2026-10-05T09:46:56Z | #16473 | #16473 | E | PROPOSÉ | audit --fetch au 2026-10-05T09:46:56Z → 60 orphelines axe E. Mapping statique #13737 (cf #19239). #14623 = verbatim body #16473 §E, OPEN. Pas d'émission commentaire nominatif (immixtion). Dossier de proposition préparé.
+2026-10-05T09:46:56Z | PR#19232 | — | E | OUVERT | https://github.com/jsboige/CoursIA/pull/19232 | Extension lots 1+3+4+5 → lots 1+3+4+5+6 (axes B, A, C, D, E). Ledger étendu append-only avec section axe E.
 ```
 
 ### Lot 7 — axe F (à servir)
@@ -181,7 +195,7 @@ date_cycle | #issue | chaperon | axe | statut | preuve | note
 - PR organe : #16504 (MERGED 2026-09-17) — acceptance 1
 - PR extension organe : #19239 (OPEN 2026-10-05) — `--suggest-rattachement` acceptance 2 lot 2
 - PR ledger : #19232 (OPEN 2026-10-05) — acceptance 2 lots 1+3+4+5+6
-- Audit dernier : `python scripts/audit_consolidation_orphans.py --fetch --format json --limit 200` au 2026-10-05T11:2xZ → 200/12/188 ; axes : A=36, B=32, C=23, D=1, E=60, F=47, UNCLASSIFIED=68. Détail hors `--deep` : 188 orphelines bodies seulement.
+- Audit dernier : `python scripts/audit_consolidation_orphans.py --fetch --format json --limit 200` au 2026-10-05T09:46:56Z → 200/12/188 ; axes : A=36, B=32, C=23, D=1, E=60, F=47, UNCLASSIFIED=68. Détail hors `--deep` : 188 orphelines bodies seulement.
 
 ---
 
