@@ -88,6 +88,39 @@ vers une forme sérialisable puis reconstruit au load.
 | `ComponentModel.Serialization.NodeSurrogate` (+ `PropertySurrogate`) | La forme arborescente sérialisable XML. Projection du graphe vivant vers discriminateur de type + sac de propriétés + enfants récursifs. |
 | `ComponentModel.Serialization.MetadataXmlSerializer` | Façade `Serialize` / `Deserialize<T>` : sérialise le graphe en XML indenté ; au load reconstruit l'arbre concret (instanciation par discriminateur, restauration des propriétés de valeur, re-link des `Parent` via `AddChild`). |
 
+## A3-T1 — Filtres metadata-driven (#7265, pépite #19088)
+
+Première tranche de la pépite A3 (object explorer). Port des **filtres** d'
+`Aricie.Shared/Libs/Aricie.Core/Components/ComponentModel/Filters/` (l'intégralité du
+dossier source, mesurée sur `Aricie.PortalKeeper@master`) vers C# nullable. Logique pure,
+aucune dépendance UI — le socle des tris/filtrages metadata-driven que A3-T2
+(attributs PropertyEditor) et A3-T3 (pattern explorer) viendront brancher.
+
+| Type | Rôle |
+|------|------|
+| `ComponentModel.Filters.IFilter` / `IDescriptor` | Contrats : `Match<T>` réflexif + signature CodeDom. |
+| `ComponentModel.Filters.FilterExpression` | Expression booléenne composée `FilterInExpression` × And/Or (évaluation left-to-right, court-circuit). |
+| `ComponentModel.Filters.SimpleFilter<T>` | Comparaison réflexive d'une propriété contre une valeur (`CodeBinaryOperatorType` : égalité, >, ≥, <, ≤, identité). |
+| `ComponentModel.Filters.PredicateFilter<T>` | Prédicat appliqué à une propriété réflexive du contenu. |
+| `ComponentModel.Filters.ListFilter<T>` (+ `ScopeOperator`) | Filtre interne appliqué à chaque élément d'une propriété-liste, agrégé Any/All. |
+| `ComponentModel.Filters.SimpleComparer` / `SimpleComparer<T>` | Comparateurs réflexifs par propriété + direction, avec variantes à délégués et `IEqualityComparer<T>`. |
+| `ComponentModel.Filters.SimpleSorter<T>` / `CustomSorter<T>` / `InvertComparer<T>` | Tris par valeur entière, par délégué, tri inversé. |
+| `ComponentModel.Filters.InvariantCharComparer` | Égalité de chars insensible à la casse, culture invariante. |
+| `ComponentModel.Filters.ReflectionCache` (internal) | Cache process-wide de `PropertyInfo` par type — remplaçant de `Aricie.Services.ReflectionHelper`. |
+
+Dépendance ajoutée : `System.CodeDom` 8.0.0 (NuGet — les expressions CodeDom ne sont
+plus dans le framework partagé net9).
+
+### Écarts mesurés au source VB (détail dans la PR)
+
+Le port corrige cinq défauts de l'original, chacun documenté dans le code et la PR :
+branches inversées de `FilterExpression.GetCodeExpression` (Count 0/1), lecture de la
+propriété-liste sur le filtre au lieu du contenu (`ListFilter`), filtre interne appliqué
+au contenu au lieu des éléments, mutation d'une expression CodeDom en cache partagé
+(`SimpleFilter` — corruption cross-instance), liste vide non-vraie pour `All`
+(vacuité). Le chemin Workflow Foundation (`System.Workflow.Activities.Rules`) est
+abandonné : le namespace n'existe pas sur net9 et la méthode était inatteignable.
+
 ## Build & tests
 
 ```bash
@@ -161,7 +194,8 @@ Vérification locale : `dotnet build MyIA.AI.Shared.sln -c Release` (0 warning,
 
 ## Tranches suivantes (hors cette ancre)
 
-- **A3** — Object explorer UI : `AdvancedGridView`, `PropertyEditor`, filtres.
+- **A3-T2** — Attributs PropertyEditor (le vocabulaire metadata renderer-agnostique complet).
+- **A3-T3** — Pattern explorer (AdvancedGridView/PropertyEditor en pattern sur surface moderne — design-gate sur la surface de rendu avant d'ouvrir).
 
 ## Références
 
