@@ -65,7 +65,7 @@ Outils internes du livre, sans exemple de stratégie à reproduire.
 | # | Script du livre | Modèle | Ressource du dépôt | Statut |
 |---|-----------------|--------|--------------------|--------|
 | 01 | LinearRegression | régression linéaire | [QC-Py-20-ML-Regression-Prediction](Python/QC-Py-20-ML-Regression-Prediction.ipynb) | COVERED |
-| 02 | PolynomialRegression | régression polynomiale | [QC-Py-20-ML-Regression-Prediction](Python/QC-Py-20-ML-Regression-Prediction.ipynb) (Partie 2, degrés 1/2/5 comparés) | COVERED |
+| 02 | PolynomialRegression | régression polynomiale | [QC-Py-20-ML-Regression-Prediction](Python/QC-Py-20-ML-Regression-Prediction.ipynb) (Partie 2, degrés 1/2/3 comparés) | COVERED |
 | 03 | LassoRegression | régularisation L1 | [QC-Py-20-ML-Regression-Prediction](Python/QC-Py-20-ML-Regression-Prediction.ipynb), [Stoploss-Volatility-ML](projects/Stoploss-Volatility-ML/) | COVERED |
 | 04 | RidgeRegression | régularisation L2 | [QC-Py-20-ML-Regression-Prediction](Python/QC-Py-20-ML-Regression-Prediction.ipynb), [ML-Regression](projects/ML-Regression/) | COVERED |
 | 05 | MarkovSwitchingDynamicRegression | régression à changement de régime (statsmodels) | [Markov-Regime-Detection](projects/Markov-Regime-Detection/) (`MarkovRegression`) | COVERED |
