@@ -774,36 +774,34 @@ imports is a separate Epic sub-tranche).
 introduced in the shim.  Every public symbol either re-exports
 `_jvm_compat` (C184) or stdlib-only `logging`.  No derivation logic.
 
-## Entonnoir de sophismes -- FallacyWorkflowPlugin closure (#18391)
+## Entonnoir de sophismes -- FallacyWorkflowPlugin execution (#18391, portee 3)
 
-Seven files vendored from the EPITA-IS fallacy-detection funnel, at commit
-`ecfd9b9c31d299ad9e08ee0e7a726d436f4ebd8e` (the commit cited by issue #18391):
+Portee 2 of #18391 -- the verbatim vendoring of the seven funnel modules from
+the EPITA-IS tronc at commit `ecfd9b9c31d299ad9e08ee0e7a726d436f4ebd8e`
+(`_fallacy_workflow_plugin`, `_exploration_plugin`, `_identification_models`,
+`_taxonomy_navigator`, `_taxonomy_tree`, `_taxonomy_local_overrides`,
+`_plaintext_destination`), wired through the `_epita_vendor_shim` sys.modules
+bridge -- landed on `main` as #19287 while this tranche was in flight. This
+tranche (#19204) therefore keeps the vendored files **byte-identical to
+#19287** (the earlier import-rewritten variants of this branch are superseded)
+and adds only what portee 3 needs: the notebook wiring that runs the funnel for
+real (`Argumentation-02` section 5, via the same shim imports as #19287's
+smoke test), plus the two deviations below -- which the verbatim vendoring
+needs to function at all, and which its no-LLM smoke test could not observe.
 
-| File in CoursIA `argumentation_lib/` | Upstream path in EPITA-IS |
-|---------------------------------------|---------------------------|
-| `_fallacy_workflow_plugin.py` | `argumentation_analysis/plugins/fallacy_workflow_plugin.py` |
-| `_exploration_plugin.py` | `argumentation_analysis/plugins/exploration_plugin.py` |
-| `_identification_models.py` | `argumentation_analysis/plugins/identification_models.py` |
-| `_taxonomy_navigator.py` | `argumentation_analysis/agents/utils/taxonomy_navigator.py` |
-| `_taxonomy_tree.py` | `argumentation_analysis/utils/taxonomy_tree.py` |
-| `_taxonomy_local_overrides.py` | `argumentation_analysis/utils/taxonomy_local_overrides.py` |
-| `_plaintext_destination.py` | `argumentation_analysis/core/plaintext_destination.py` |
+The dependency closure of the entry point (`FallacyWorkflowPlugin`) is the
+seven modules vendored by #19287 (BFS over the upstream import graph,
+111,612 bytes; runtime dependency `semantic_kernel`, verified against
+1.42.0).
 
-**Dependency closure.** A BFS over the upstream imports of the entry point
-(`FallacyWorkflowPlugin`) closes on exactly these seven modules, 111,612 bytes.
-No other `argumentation_analysis.*` module is reachable -- established by
-walking the import graph, not by inspection. Runtime dependency:
-`semantic_kernel` (verified against 1.42.0); only public SK symbols are used.
+### Deviations carried on top of the #19287 verbatim blob
 
-### Declared deviations from the cited upstream commit
+A single file deviates: `_fallacy_workflow_plugin.py`, by exactly 27
+insertions / 3 deletions (header honesty plus the two fixes below). Every
+other vendored file is byte-identical to #19287. The fixes keep their
+historical numbering (2, 3) from the first version of this section: there is
+no deviation 1 anymore -- the import rewrites are superseded by the shim.
 
-Deviations 1 and 4 are mechanical and behaviour-neutral. Deviation 2 is the
-substantive one: without it the vendored funnel resolves nothing. No file
-carries more than the deviations named against it below.
-
-1. **Imports rewritten** (six of the seven files) from `argumentation_analysis.*` package
-   paths to vendored relative names -- the same transformation applied to every
-   other module of this package.
 2. **`_fallacy_workflow_plugin.py` reads the taxonomy CSV as `utf-8-sig`**
    instead of `utf-8`. The vendored CSV
    (`data/argumentum_fallacies_taxonomy.csv`) is a byte-faithful mirror of
@@ -819,28 +817,20 @@ carries more than the deviations named against it below.
    like `utf-8`, so the change has no other effect. Note the notebook series
    already read this CSV as `utf-8-sig` (cell `[2]` of `Argumentation-02`):
    the vendored reader was the outlier.
-3. **`_fallacy_workflow_plugin.py` detaches the descent-trace FileHandler before
-   its truncating write** (`_persist_trace`). That handler is opened in mode
-   `"w"` at the start of the run and keeps its file offset, so writing the JSON
-   underneath it left the handler emitting at the old offset and padded the
-   artifact with NUL bytes. Measured on a 7-fallacy run: 8240 chars of JSON
-   followed by 3624 NULs -- `json.load` on the declared trace file raised
-   `Extra data`. The caller's `finally` still re-detaches harmlessly.
-4. **`_plaintext_destination.py` sets `encoding="utf-8", errors="replace"`** on
-   the `git check-ignore` call that already passes `text=True`. This file has no
-   `argumentation_analysis.*` import (standard library only), so deviation 1 does
-   not apply to it. The repository gate `check-subprocess-encoding` refuses
-   `text=True` without an explicit encoding -- on a cp1252 host, the child's
-   UTF-8 output is decoded with the wrong codec (#12811). Only the exit code is
-   consumed, so the deviation is behaviour-neutral.
+3. **`_fallacy_workflow_plugin.py` detaches the descent-trace FileHandler
+   before its truncating write** (`_persist_trace`). That handler is opened in
+   mode `"w"` at the start of the run and keeps its file offset, so writing
+   the JSON underneath it left the handler emitting at the old offset and
+   padded the artifact with NUL bytes. Measured on a 7-fallacy run: 8240
+   chars of JSON followed by 3624 NULs -- `json.load` on the declared trace
+   file raised `Extra data`. The caller's `finally` still re-detaches
+   harmlessly.
 
-Per-file summary:
-
-| File | Deviations |
-|------|-----------|
-| `_fallacy_workflow_plugin.py` | 1, 2, 3 |
-| `_plaintext_destination.py` | 4 |
-| `_exploration_plugin.py`, `_identification_models.py`, `_taxonomy_navigator.py`, `_taxonomy_tree.py`, `_taxonomy_local_overrides.py` | 1 |
+Not re-applied on top of #19287: the import rewrites of the earlier variant
+(superseded by the shim bridge), and the `check-subprocess-encoding`
+`encoding=` fix on `_plaintext_destination.py` (behaviour-neutral,
+gate-compliance only). The latter is flagged to the #19287 lane as a latent
+gate finding rather than touched here, so the file stays out of this diff.
 
 ### Verification of the vendored funnel (measured 2026-10-05)
 
