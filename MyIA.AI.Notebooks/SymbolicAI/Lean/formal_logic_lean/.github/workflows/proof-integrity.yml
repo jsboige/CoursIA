@@ -1,0 +1,139 @@
+name: Lean proof-integrity (formal_logic_lean)
+
+# CI pour le lake consumer FFL formal_logic_lean (EPIC #15066 — Tweety <-> Lean).
+# Reference issue : #19290 (criteres de mort observables).
+# Lake : MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/
+# Ponts CONSUMER_PINNE :
+#   - Foundation         @ 81810b9f22c (pilote #15520)
+#   - ProvabilityLogic   @ 01628c51f61 (pilote #15916)
+#   - ModalLogic (fork)  @ e659872fde  (pilote tranche C #15066, compat 4.33.1)
+#   - mathlib4           @ v4.33.1
+# Toolchain : leanprover/lean4:v4.33.1.
+#
+# Profil axiome (re-verifie 2026-10-05 sur main, scripts/lean/count_code_sorry.py
+# + lecture `lake env` via LeanVerifier.check_axioms) :
+#   - distinct_code_sorry = 0 sur 8 fichiers .lean (8 modules cibles compiles)
+#   - axiome footprint = standard Mathlib uniquement (propext, funext, Quot.*,
+#     Classical.choice) -- pas de `native_decide`, pas de `sorryAx`, pas
+#     d'axiome non-standard. Aucun axiome a whitelister au-dela des defauts.
+#   - 7 modules : FormalLogic.{Bridge, FolBridge, GLBridge, ModalBridge,
+#     FairBotLoeb, ModalZoo, racine}.
+#
+# fail-on-sorry: true -- la lake est concue pour etre complete (consomme 3
+# FFL upstream pins en CONSUMER_PINNE, pilote tranche C #15066). Le moindre
+# sorry reel = rouge, conformement au contrat B.3 de pr-review-discipline.
+#
+# target-modules : on enumere les 6 sous-modules plutot que "*" pour eviter
+# le piege #10889 (compteur i18n _en qui double le compte). Ce lake n'a PAS
+# de sibling i18n (convention EPIC #4980 inapplicable : upstream FFL est
+# anglais uniquement, les modules ici sont des ponts d'integration et
+# n'exposent pas de docstring FR/EN bilingue). Une verification
+# include-i18n-siblings: "false" explicite garde la liste a 6.
+#
+# Substitution R3 (submodule-maintenance R3 etat 1, gate absent avant #19290) :
+# ce PR clot l'etat 1 et fait basculer formal_logic_lean vers l'etat 3 (gate
+# cable, declenche, vert sur main) -- les futures PRs touchant le lake
+# heriteront d'un filet automatise.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/lake-manifest.json'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/.github/workflows/proof-integrity.yml'
+      # Le gate lui-meme : un changement de proof-integrity.yml doit re-executer
+      # le gate (cf. lean-conway.yml, lean-knot.yml memes precautions).
+      - '.github/workflows/lean-axiom.yml'
+      - 'scripts/lean/check_target_coverage.py'
+  pull_request:
+    types: [opened, synchronize, edited, reopened]
+    paths:
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/lake-manifest.json'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/.github/workflows/proof-integrity.yml'
+      - '.github/workflows/lean-axiom.yml'
+      - 'scripts/lean/check_target_coverage.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lean-formal-logic-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  ci:
+    uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean
+      display-name: formal_logic_lean
+      # Baseline 0 (re-verifie 2026-10-05, scripts/lean/count_code_sorry.py --
+      # 8 fichiers, distinct_code_sorry = 0). Toute introduction de sorry
+      # reel = rouge, conformement au contrat anti-regression §D (CLAUDE.md
+      # section D) et B.3 (pr-review-discipline).
+      sorry-baseline: "0"
+      # Mode "real" : filtre qui strip commentaires et compte `\bsorry\b`
+      # word-bounded (cf. lean-conway.yml mode=real). Exclut prosodie
+      # ("Each sorry is a target", "Left as sorry", "remain sorry-gated").
+      # Le mode raw sur-compte (incident fondateur 2026-08-14, 484 naifs
+      # pour 21 reels sur 21 lakes -- scripts/lean/count_code_sorry.py est
+      # l'instrument canonique, pas `grep -c sorry`).
+      sorry-filter-mode: real
+
+  # B.3 / #8677 / #8782 : proof-integrity blocking gate. fail-on-sorry: true,
+  # allow-axioms vide (les defauts standard Mathlib suffisent -- la lake n'a
+  # pas d'axiome non-standard). target-modules enumere les 6 sous-modules
+  # plutot que "*" pour eviter la derive #10889 et garder un diagnostic
+  # precis en cas de regression.
+  proof-integrity:
+    needs: ci  # c.14922 parity avec conway_lean / knot_lean : serialiser les deux compiles.
+    uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean
+      display-name: formal_logic_lean
+      target-modules: "FormalLogic.Bridge,FormalLogic.FolBridge,FormalLogic.GLBridge,FormalLogic.ModalBridge,FormalLogic.FairBotLoeb,FormalLogic.ModalZoo"
+      # allow-axioms vide : les defauts standard (propext, funext, Quot.lift,
+      # Quot.mk, Quot.sound, Classical.choice) couvrent l'empreinte axiomique
+      # mesuree (scripts/lean/audit_*.py si besoin sur main). Toute
+      # introduction d'un nouvel axiome non-standard = rouge par construction
+      # ("new axiom = new red", pas de wildcard qui detruirait cette propriete).
+      allow-axioms: ""
+      fail-on-sorry: true
+
+  # Advisory proof-integrity coverage (See #8782). La liste target-modules
+  # ci-dessus est hand-maintenue ; un gate qui inspecte 6 de N compiles
+  # (= `lake -R build` elabore 8 modules dans le manifest, 1 racine + 6
+  # sous-modules + 1 implicit) est un "vert hors-cible" potentiel. Ce job
+  # imprime le delta (compiles vs target) et sort toujours 0 : il ne fail
+  # jamais CI, il rend le gap lisible dans le log.
+  target-coverage:
+    name: formal_logic_lean target-coverage
+    # Routage #14283 tranche 3 : self-hosted coursia-ephemeral. Le `if:`
+    # ci-dessous est la garde anti-fork exigee par
+    # scripts/ci/check_self_hosted_runner_policy.py ; un `runs-on` STATIQUE
+    # la rend auditable (une expression dynamique leve DYNAMIC_RUNS_ON).
+    # Les PRs de fork sautent le job -- pr_gate.py compte `skipped` comme OK.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && always()
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Install PyYAML
+        run: pip install pyyaml
+      - name: Advisory target-coverage delta
+        run: |
+          python3 scripts/lean/check_target_coverage.py \
+            --project-path MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean \
+            --from-workflow MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/.github/workflows/proof-integrity.yml \
+            --lib-root FormalLogic \
+            --name formal_logic_lean
