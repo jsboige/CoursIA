@@ -57,7 +57,6 @@ VERDICT_START, VERDICT_END = "2007-01-01", "2026-08-31"
 CONTAMINATION_START = "2025-01-01"
 BLOCK, DRAWS, RNG_SEED = 21, 10_000, 18921
 EQUITY_SERIES = [f"e{k}" for k in range(5)]
-TRADING_DAYS = 252
 REPORTED = ["sharpe", "cagr", "max_drawdown", "gross_exposure_mean", "turnover_chart_mean"]
 PREREG_5A = "issue #18921, comment 5964767205 (2026-10-03T02:44:26Z), section 4"
 

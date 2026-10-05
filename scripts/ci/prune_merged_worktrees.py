@@ -310,31 +310,57 @@ def run_git(cwd: str, *args: str, check: bool = True) -> subprocess.CompletedPro
     )
 
 
-def current_repo_root() -> str:
-    """Racine du repo CoursIA resolue depuis ce script.
+def _ancestor_repo_root(start: Path) -> str | None:
+    """Plus proche ancetre de `start` qui ressemble a un depot git.
 
-    Les 3 appels `run_git(...)` (worktree list, cle de cache par remote
-    origin, worktree remove) doivent operer sur le repo hebergeant ce
-    script, independamment du cwd du processus appelant. Avant, ils
-    passaient `"."` et resolvaient contre le cwd reel -- casse depuis une
-    tache planifiee (#14473) ou tout autre cwd non-repo (#17904).
-
-    La racine est le plus proche ancetre de `__file__` qui contient
-    `.gitmodules` ou `.git/`. Cachee au premier appel (memoization
-    legere, pas de cache disque).
+    Rend None si aucun ancetre ne porte `.gitmodules` ni `.git/` (le
+    repertoire est hors de tout depot). Pur filesystem : aucun appel git,
+    donc utilisable sans cout dans les resolutions chaudes.
     """
+    p = start.resolve()
+    while p != p.parent:
+        if (p / ".gitmodules").is_file() or (p / ".git").exists():
+            return str(p)
+        p = p.parent
+    return None
+
+
+# Cible explicite posee par main() depuis --path (Maintenance#64, contrat
+# #18219 : le cwd de l'ANALYSE redirige le scan). None = pas de cible.
+_SCAN_ROOT_OVERRIDE: str | None = None
+
+
+def current_repo_root() -> str:
+    """Racine du repo VISE PAR LE SCAN, en trois priorites (Maintenance#64).
+
+    1. `--path` : la cible explicite de l'analyse, posee par main(). C'est
+       le contrat documente de --path depuis #18219 (« le cwd de l'analyse
+       redirige le scan ») -- contrat que la resolution par `__file__` seule
+       ne tenait pas : un wrapper multi-fermes invoquant une seule copie du
+       script scannait N fois sa ferme d'origine.
+    2. le repo contenant le cwd du processus, s'il existe (invocation
+       `cd <ferme> ; python <script>`, l'autre style du wrapper fleet).
+       Non memoise : depend du cwd courant.
+    3. le repo hebergeant ce script (tache planifiee #14473 : cwd System32
+       hors de tout repo ; #17904). Cache au premier appel.
+
+    L'ordre restaure la visée multi-fermes (priorites 1-2) SANS regresser
+    la robustesse schtasks (priorite 3) : un cwd hors repo tombe toujours
+    sur le repo du script.
+    """
+    if _SCAN_ROOT_OVERRIDE is not None:
+        return _SCAN_ROOT_OVERRIDE
+    cwd_root = _ancestor_repo_root(Path.cwd())
+    if cwd_root is not None:
+        return cwd_root
     cache_attr = "_coursia_root_cache"
     cached = getattr(current_repo_root, cache_attr, None)
     if cached is not None:
         return cached
-    p = Path(__file__).resolve().parent
-    while p != p.parent:
-        if (p / ".gitmodules").is_file() or (p / ".git").exists():
-            setattr(current_repo_root, cache_attr, str(p))
-            return str(p)
-        p = p.parent
-    setattr(current_repo_root, cache_attr, os.getcwd())
-    return os.getcwd()
+    script_root = _ancestor_repo_root(Path(__file__).resolve().parent)
+    root = script_root if script_root is not None else os.getcwd()
+    setattr(current_repo_root, cache_attr, root)
+    return root
 
 
 def _repo_root_for_worktree(wt_path: str) -> str:
@@ -1717,7 +1743,10 @@ def main() -> int:
     p.add_argument(
         "--path",
         default=None,
-        help="Cwd pour `git worktree list`. Default = CWD.",
+        help="Cible de l'analyse : cwd ET racine du scan (`git worktree "
+             "list` + cle de cache). Doit vivre dans un depot git "
+             "(Maintenance#64, multi-fermes). Default = CWD s'il est "
+             "dans un repo, sinon le repo de ce script.",
     )
     p.add_argument(
         "--warn-threshold",
@@ -1751,15 +1780,16 @@ def main() -> int:
     except OSError:
         current_path = cwd
 
-    # `--path` est le cwd de l'ANALYSE, pas un filtre -- contrat porte par
-    # l'en-tete (`--path /c/dev/CoursIA-X`) et par le help ci-dessus. Les
-    # trois appels `run_git(...)` resolvent leur cible en PREMIER argument,
-    # pas via le cwd reel du processus : depuis un autre dossier -- le cas
-    # de la tache planifiee (#14473), dont le cwd est System32 -- il fallait
-    # que les sites ne s'appuient pas sur `"."`. Resolution adoptee :
-    #   - `run_git(current_repo_root(), ...)` pour `worktree list` et la cle
-    #     de cache (`remote get-url origin`) : la racine du repo de CE
-    #     script, ou du `--path` apres le `os.chdir` ci-dessous ;
+    # `--path` est le cwd de l'ANALYSE ET la cible du scan -- contrat porte
+    # par l'en-tete et le help. Les appels `run_git(...)` resolvent leur
+    # cible en PREMIER argument, pas via le cwd reel du processus : depuis
+    # un autre dossier -- le cas de la tache planifiee (#14473), dont le
+    # cwd est System32 -- il fallait que les sites ne s'appuient pas sur
+    # `"."`. Resolution adoptee (Maintenance#64) :
+    #   - `run_git(current_repo_root(), ...)` pour `worktree list` et la
+    #     cle de cache (`remote get-url origin`) : priorite 1 la cible
+    #     explicite du `--path` (posee ci-dessous), priorite 2 le repo du
+    #     cwd, priorite 3 le repo de CE script ;
     #   - `run_git(_repo_root_for_worktree(wt.path), ...)` pour
     #     `worktree remove` : le depot HEBERGEUR du worktree, pas forcement
     #     le meme (les tests hermetiques vivent dans des repo e phemeres
@@ -1772,6 +1802,21 @@ def main() -> int:
         except OSError as e:
             print(f"ERROR: --path inutilisable ({args.path}): {e}", file=sys.stderr)
             return 2
+        # Maintenance#64 : un --path hors de tout depot git doit echouer
+        # TOUT DE SUITE et bruyamment -- le repli silencieux sur le repo de
+        # ce script faisait scannera le wrapper fleet N fois sa ferme
+        # d'origine en croyant couvrir les autres.
+        path_root = _ancestor_repo_root(Path(current_path))
+        if path_root is None:
+            print(
+                f"ERROR: --path hors de tout depot git ({args.path}) -- "
+                f"la cible du scan serait retombee sur le repo de ce "
+                f"script (Maintenance#64)",
+                file=sys.stderr,
+            )
+            return 2
+        global _SCAN_ROOT_OVERRIDE
+        _SCAN_ROOT_OVERRIDE = path_root
 
     try:
         worktrees = list_worktrees()

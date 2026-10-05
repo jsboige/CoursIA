@@ -47,6 +47,7 @@ import Grothendieck.Fppf
 import Grothendieck.Godement
 import Grothendieck.GodementFunctor
 import Grothendieck.GodementMono
+import Grothendieck.GodementAcyclicity
 import Grothendieck.GodementResolution
 import Grothendieck.KanExtensions
 import Grothendieck.LawvereTierney
@@ -191,12 +192,25 @@ Substance réelle :
 - `Grothendieck.GodementMono` (Partie 86) : C⁰ préserve les monomorphismes
   (instance `PreservesMonomorphisms`) — prérequis nommé par la Partie 85,
   fil du complexe de Godement.
-- `Grothendieck.GodementResolution` (Partie 87) : la différentielle degré 0
-  `d⁰` de la résolution canonique de Godement est posée (sans `ShortComplex`),
-  avec exactitude en degré 0 (mono sur les faisceaux). La null-homotopie
-  `μ ≫ d⁰ = 0` est volontairement non-posée — frontière nommée
-  `acyclic_godementF`, renvoyée à la Partie 88 avec l'acyclicité aux degrés
-  supérieurs.
+- `Grothendieck.GodementResolution` (Partie 87) : la **suite des unités
+  itérées** `F → C⁰F → C⁰²F` est posée (`godementUnitIter`, l'unité de `C⁰`
+  réappliquée), avec le **témoin** `godementUnit_comp_injective` : sur les
+  faisceaux, le composé `μ ≫ μ(C⁰F)` est injectif, donc cette suite de
+  morphismes n'est **pas un complexe** — `μ ≫ d⁰ = 0` est faux pour ce
+  morphisme, ce n'est pas un énoncé différé. L'exactitude en F (`0 → F → C⁰F`,
+  mono sur les faisceaux) est le seul fait d'exactitude posé. La vraie
+  différentielle de la résolution canonique (conoyau de l'unité, God58 II.4.1)
+  et l'acyclicité aux degrés supérieurs sont la Partie 89.
+- `Grothendieck.GodementAcyclicity` (Partie 88) : l'**allongement de la suite
+  des unités au maillon suivant** — le morphisme `C⁰²F → C⁰³F`
+  (`godementUnitIter_at_iterate`) est l'unité réappliquée au préfaisceau
+  itéré `C⁰F` ; égalité de définition (`godementUnitIter_at_iterate_def`) et
+  extension structurelle de la suite de deux à trois flèches
+  (`godementUnitChain_extends`). Aucune propriété de complexe, de
+  null-composition ni d'**acyclicité** `H^n(C⁰F) = 0` n'est posée ni promise :
+  elles exigent d'abord la vraie différentielle (conoyau de l'unité,
+  God58 II.4.1), **frontière nommée** traitée en Partie 89 (calibration
+  `#1453`).
 
 Tous les `sorry`s ne sont pas comblés — la plupart sont des échafaudages
 intentionnels pour le prouveur multi-agent (cf. Epic #1453).
@@ -300,11 +314,24 @@ Substance (English):
 - `Grothendieck.GodementMono` (Part 86): C⁰ preserves monomorphisms
   (instance `PreservesMonomorphisms`) — prerequisite named by Part 85,
   thread of the Godement complex.
-- `Grothendieck.GodementResolution` (Part 87): the degree-0 differential `d⁰`
-  of the canonical Godement resolution is posed (without `ShortComplex`),
-  with exactness at degree 0 (mono on sheaves). The null-homotopy
-  `μ ≫ d⁰ = 0` is voluntarily not posed — named frontier `acyclic_godementF`,
-  deferred to Part 88 along with acyclicity at higher degrees.
+- `Grothendieck.GodementResolution` (Part 87): the **iterated unit
+  sequence** `F → C⁰F → C⁰²F` is posed (`godementUnitIter`, the unit of `C⁰`
+  re-applied), together with the **witness** `godementUnit_comp_injective`:
+  on sheaves, the composite `μ ≫ μ(C⁰F)` is injective, so this sequence of
+  morphisms is **not a complex** — `μ ≫ d⁰ = 0` is false for this morphism,
+  not a deferred statement. Exactness at F (`0 → F → C⁰F`, mono on sheaves)
+  is the only exactness fact posed. The true differential of the canonical
+  resolution (cokernel of the unit, God58 II.4.1) and acyclicity at higher
+  degrees are Part 89.
+- `Grothendieck.GodementAcyclicity` (Part 88): the **lengthening of the unit
+  sequence by one link** — the morphism `C⁰²F → C⁰³F`
+  (`godementUnitIter_at_iterate`) is the unit re-applied at the iterated
+  presheaf `C⁰F`; definitional equality (`godementUnitIter_at_iterate_def`)
+  and structural extension of the sequence from two to three arrows
+  (`godementUnitChain_extends`). No complex property, no null-composition
+  and no **acyclicity** `H^n(C⁰F) = 0` is posed or promised: they first
+  require the true differential (cokernel of the unit, God58 II.4.1),
+  **named frontier** to be treated in Part 89 (calibration `#1453`).
 
 Not all `sorry`s are filled — most are intentional scaffolds for the
 multi-agent prover (cf. Epic #1453).
