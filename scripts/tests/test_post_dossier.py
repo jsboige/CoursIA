@@ -30,12 +30,30 @@ HEAD = "0123456789abcdef0123456789abcdef01234567"
 
 def _adjoint_body(**overrides: str) -> str:
     fields = {name: "1" for name in sorted(mod.adjoint_gate.REQUIRED_FIELDS)}
+    # Un READY doit etre coherent AVANT le POST (#19312) : le poster rejoue
+    # desormais les controles auto-portants du gate. Le fixture decrit donc ce
+    # que le gate accepterait, sinon les chemins nominaux seraient refuses par
+    # ce controle et non par le sujet du test.
     fields.update(
-        lane=LANE,
-        pr="101",
-        head=HEAD,
-        verdict="READY",
-        checks="latest-wins-green",
+        {
+            "lane": LANE,
+            "pr": "101",
+            "head": HEAD,
+            "verdict": "READY",
+            "checks": "latest-wins-green",
+            # REQUIRED_FIELDS pose "1" partout : ces trois-la ne sont pas des
+            # entiers et le gate les refuse a cette valeur. Le fixture
+            # d'origine les portait tels quels -- c'est exactement le dossier
+            # incoherent que #19312 fait refuser AVANT le POST.
+            "complete": "true",
+            "body": "read",
+            "b0": "clear",
+            "scope": "pass",
+            "domain": "pass",
+            "organ": mod.adjoint_gate.ORGAN_NAME,
+            "organ-command": f"{mod.adjoint_gate.ORGAN_NAME} --derive-verdict 101",
+            "organ-rc": "0",
+        }
     )
     fields.update(overrides)
     return (
@@ -147,6 +165,39 @@ def test_parse_errors_refused(tmp_path, monkeypatch):
     monkeypatch.setattr(mod, "gh_json", lambda args: (_ for _ in ()).throw(AssertionError("gh must not be called")))
     rc = mod.main(["--pr", "101", "--file", str(_write(tmp_path, body)), "--lane", LANE])
     assert rc == mod.EXIT_REFUSED
+
+
+def test_incoherent_domain_refused_before_any_gh_call(tmp_path, monkeypatch, capsys):
+    """#19312 -- un READY avec ``domain: ci`` est refuse par le POSTER.
+
+    Le gate le refusait deja, mais seulement APRES le POST : il demande
+    l'instantane de la PR, donc il ne tourne qu'une fois le dossier publie. Sur
+    #19207, deux dossiers sont partis ainsi et ont du etre supprimes a la main.
+    Ce controle positif exige qu'aucun appel gh ne parte.
+    """
+    router = GhRouter()
+    monkeypatch.setattr(mod, "gh_json", router)
+    monkeypatch.setattr(mod, "run_gate", GateStub(rc=1))
+    body = _adjoint_body(domain="ci")
+    rc = mod.main(["--pr", "101", "--file", str(_write(tmp_path, body)), "--lane", LANE])
+    assert rc == mod.EXIT_REFUSED
+    assert router.calls == [], "le refus doit preceder tout appel gh"
+    assert "domain must be 'pass' or 'not-applicable'" in capsys.readouterr().err
+
+
+def test_incoherent_organ_command_refused_before_any_gh_call(tmp_path, monkeypatch, capsys):
+    """Le controle auto-portant est parametre par la cible : une commande
+    d'organe qui nomme une AUTRE PR est refusee, et toujours sans appel gh."""
+    router = GhRouter()
+    monkeypatch.setattr(mod, "gh_json", router)
+    monkeypatch.setattr(mod, "run_gate", GateStub(rc=1))
+    body = _adjoint_body(**{
+        "organ-command": f"{mod.adjoint_gate.ORGAN_NAME} --derive-verdict 999",
+    })
+    rc = mod.main(["--pr", "101", "--file", str(_write(tmp_path, body)), "--lane", LANE])
+    assert rc == mod.EXIT_REFUSED
+    assert router.calls == []
+    assert "--derive-verdict 101" in capsys.readouterr().err
 
 
 def test_stale_head_refused(tmp_path, monkeypatch):
