@@ -1,0 +1,453 @@
+# -*- coding: utf-8 -*-
+"""Tests de check_equivalence.py (#19301, equivalence page/carnet).
+
+Couvre :
+- _normalize_line : prefixes Lean, espaces
+- extract_outputs : outputs text/plain et stream, exclusion des lignes deja dans sources
+- notebook_to_page_url : chemin -> URL
+- fetch_page : mock 200, 404, reseau fail
+- check_equivalence : EQUIVALENT, LOST_OUTPUTS, MISSING_PAGE, UNKNOWN, NOTEBOOK_ERROR
+
+Le reseau est mocke pour eviter CI reseau (lecon : UNKNOWN = jamais un rouge).
+"""
+
+from __future__ import annotations
+
+import importlib.util
+import json
+import sys
+from pathlib import Path
+from unittest import mock
+
+import pytest
+
+MODULE_PATH = (Path(__file__).resolve().parents[1] / "notebook_tools"
+               / "check_equivalence.py")
+spec = importlib.util.spec_from_file_location(
+    "check_equivalence", MODULE_PATH)
+mod = importlib.util.module_from_spec(spec)
+sys.modules["check_equivalence"] = mod
+spec.loader.exec_module(mod)
+
+
+# -----------------------------------------------------------------------------
+# _normalize_line
+# -----------------------------------------------------------------------------
+
+class TestNormalizeLine:
+    def test_simple(self):
+        assert mod._normalize_line("hello world") == "hello world"
+
+    def test_lean_prefix_dashes(self):
+        # ──────▶ foo -> foo
+        assert mod._normalize_line("──────▶ foo") == "foo"
+
+    def test_lean_prefix_dashes_variant(self):
+        # ─────── > foo -> foo
+        assert mod._normalize_line("───────── > bar") == "bar"
+
+    def test_lean_prefix_double_dash(self):
+        # --▶ foo -> foo
+        assert mod._normalize_line("---▶ baz") == "baz"
+
+    def test_lean_prefix_equals(self):
+        # ===▶ foo -> foo
+        assert mod._normalize_line("====▶ qux") == "qux"
+
+    def test_whitespace_collapse(self):
+        # "foo   bar" -> "foo bar"
+        assert mod._normalize_line("foo   bar") == "foo bar"
+
+    def test_strip(self):
+        # "  hello  " -> "hello"
+        assert mod._normalize_line("  hello  ") == "hello"
+
+    def test_combined_lean_and_whitespace(self):
+        # "──────▶   foo  bar  " -> "foo bar"
+        assert mod._normalize_line("──────▶   foo  bar  ") == "foo bar"
+
+    def test_no_prefix_unchanged(self):
+        # Sans prefixe, on ne touche pas au contenu
+        assert mod._normalize_line("just a normal line") == "just a normal line"
+
+    def test_empty(self):
+        # Ligne vide reste vide
+        assert mod._normalize_line("") == ""
+
+
+# -----------------------------------------------------------------------------
+# extract_outputs
+# -----------------------------------------------------------------------------
+
+def _make_notebook_with_outputs(path: Path, sources: list[str], outputs: list[dict]) -> None:
+    """Cree un .ipynb minimal avec sources et outputs specifies."""
+    cells = []
+    for src in sources:
+        cells.append({
+            "cell_type": "code",
+            "metadata": {},
+            "source": [f"{src}\n"],
+            "outputs": [],
+            "execution_count": 1,
+        })
+    for out in outputs:
+        cells.append({
+            "cell_type": "code",
+            "metadata": {},
+            "source": ["x = 1\n"],
+            "outputs": [out],
+            "execution_count": 2,
+        })
+    nb = {
+        "cells": cells,
+        "metadata": {"kernelspec": {"name": "python3"}},
+        "nbformat": 4,
+        "nbformat_minor": 5,
+    }
+    path.write_text(json.dumps(nb, ensure_ascii=False), encoding="utf-8")
+
+
+class TestExtractOutputs:
+    def test_text_plain_output(self, tmp_path):
+        nb = tmp_path / "test.ipynb"
+        _make_notebook_with_outputs(
+            nb,
+            sources=["x = 1"],
+            outputs=[{
+                "output_type": "execute_result",
+                "data": {"text/plain": "42"},
+                "metadata": {},
+            }],
+        )
+        result = mod.extract_outputs(str(nb))
+        assert "42" in result
+        assert "x = 1" not in result  # la source est exclue
+
+    def test_stream_output(self, tmp_path):
+        nb = tmp_path / "test.ipynb"
+        _make_notebook_with_outputs(
+            nb,
+            sources=["print('hello')"],
+            outputs=[{
+                "output_type": "stream",
+                "name": "stdout",
+                "text": "world\n",
+            }],
+        )
+        result = mod.extract_outputs(str(nb))
+        assert "world" in result
+
+    def test_display_data_output(self, tmp_path):
+        nb = tmp_path / "test.ipynb"
+        _make_notebook_with_outputs(
+            nb,
+            sources=["x = 1"],
+            outputs=[{
+                "output_type": "display_data",
+                "data": {"text/plain": "rendered text"},
+                "metadata": {},
+            }],
+        )
+        result = mod.extract_outputs(str(nb))
+        assert "rendered text" in result
+
+    def test_excludes_lines_in_sources(self, tmp_path):
+        nb = tmp_path / "test.ipynb"
+        _make_notebook_with_outputs(
+            nb,
+            sources=["x = 1"],
+            outputs=[{
+                "output_type": "stream",
+                "name": "stdout",
+                "text": "x = 1\n",  # la sortie re-affiche le code source
+            }],
+        )
+        result = mod.extract_outputs(str(nb))
+        # La ligne "x = 1" doit etre filtree (deja dans sources)
+        assert "x = 1" not in result
+
+    def test_json_malformed(self, tmp_path):
+        nb = tmp_path / "bad.ipynb"
+        nb.write_text("{ not json", encoding="utf-8")
+        result = mod.extract_outputs(str(nb))
+        assert result == []
+
+    def test_no_code_cells(self, tmp_path):
+        nb = tmp_path / "test.ipynb"
+        cells = [{
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": ["# Title\n"],
+        }]
+        (tmp_path / "test.ipynb").write_text(
+            json.dumps({"cells": cells, "metadata": {}, "nbformat": 4, "nbformat_minor": 5}),
+            encoding="utf-8",
+        )
+        result = mod.extract_outputs(str(nb))
+        assert result == []
+
+
+# -----------------------------------------------------------------------------
+# notebook_to_page_url
+# -----------------------------------------------------------------------------
+
+class TestNotebookToPageUrl:
+    def test_simple(self):
+        url = mod.notebook_to_page_url(
+            "MyIA.AI.Notebooks/ML/ML.Net/ML-1-Python.ipynb",
+            "https://jsboige.github.io/CoursIA",
+        )
+        assert url == "https://jsboige.github.io/CoursIA/ML/ML.Net/ML-1-Python.html"
+
+    def test_with_trailing_slash(self):
+        url = mod.notebook_to_page_url(
+            "MyIA.AI.Notebooks/ML/ML.Net/ML-1-Python.ipynb",
+            "https://jsboige.github.io/CoursIA/",
+        )
+        assert url == "https://jsboige.github.io/CoursIA/ML/ML.Net/ML-1-Python.html"
+
+    def test_absolute_path(self):
+        url = mod.notebook_to_page_url(
+            "D:/CoursIA-2/MyIA.AI.Notebooks/Search/Search-01.ipynb",
+            "https://jsboige.github.io/CoursIA",
+        )
+        # L'URL doit etre relative au prefixe MyIA.AI.Notebooks
+        assert url == "https://jsboige.github.io/CoursIA/Search/Search-01.html"
+
+
+# -----------------------------------------------------------------------------
+# fetch_page (mock reseau)
+# -----------------------------------------------------------------------------
+
+class TestFetchPage:
+    def test_200_ok(self):
+        fake_resp = mock.MagicMock()
+        fake_resp.status = 200
+        fake_resp.read.return_value = b"<html><body>OK</body></html>"
+        fake_resp.__enter__ = mock.MagicMock(return_value=fake_resp)
+        fake_resp.__exit__ = mock.MagicMock(return_value=False)
+        with mock.patch("urllib.request.urlopen", return_value=fake_resp):
+            status, html, err = mod.fetch_page("https://example.com/page.html")
+        assert status == 200
+        assert html == "<html><body>OK</body></html>"
+        assert err is None
+
+    def test_404_returns_http_error(self):
+        import urllib.error
+        with mock.patch(
+            "urllib.request.urlopen",
+            side_effect=urllib.error.HTTPError(
+                "https://example.com/missing.html", 404, "Not Found", {}, None
+            ),
+        ):
+            status, html, err = mod.fetch_page("https://example.com/missing.html")
+        assert status == 404
+        assert html is None
+        assert "404" in err
+
+    def test_network_failure_returns_zero(self):
+        import urllib.error
+        with mock.patch(
+            "urllib.request.urlopen",
+            side_effect=urllib.error.URLError("DNS resolution failed"),
+        ):
+            status, html, err = mod.fetch_page("https://nonexistent.invalid/page.html")
+        assert status == 0
+        assert html is None
+        assert "DNS" in err or "url_error" in err
+
+    def test_unexpected_exception(self):
+        with mock.patch("urllib.request.urlopen", side_effect=OSError("boom")):
+            status, html, err = mod.fetch_page("https://example.com/page.html")
+        assert status == 0
+        assert html is None
+        assert "boom" in err
+
+
+# -----------------------------------------------------------------------------
+# check_equivalence (integration)
+# -----------------------------------------------------------------------------
+
+class TestCheckEquivalence:
+    def test_equivalent(self, tmp_path):
+        nb = tmp_path / "test.ipynb"
+        _make_notebook_with_outputs(
+            nb,
+            sources=["x = 1"],
+            outputs=[{
+                "output_type": "stream",
+                "name": "stdout",
+                "text": "42\n",
+            }],
+        )
+        fake_resp = mock.MagicMock()
+        fake_resp.status = 200
+        fake_resp.read.return_value = b"<html><body>42</body></html>"
+        fake_resp.__enter__ = mock.MagicMock(return_value=fake_resp)
+        fake_resp.__exit__ = mock.MagicMock(return_value=False)
+        with mock.patch("urllib.request.urlopen", return_value=fake_resp):
+            verdict = mod.check_equivalence(str(nb))
+        assert verdict["verdict"] == "EQUIVALENT"
+        assert verdict["found_lines"] == 1
+        assert verdict["total_lines"] == 1
+        assert verdict["missing_lines"] == []
+
+    def test_lost_outputs(self, tmp_path):
+        nb = tmp_path / "test.ipynb"
+        _make_notebook_with_outputs(
+            nb,
+            sources=["x = 1"],
+            outputs=[{
+                "output_type": "stream",
+                "name": "stdout",
+                "text": "secret_value_xyz\n",
+            }],
+        )
+        fake_resp = mock.MagicMock()
+        fake_resp.status = 200
+        fake_resp.read.return_value = b"<html><body>autre chose</body></html>"
+        fake_resp.__enter__ = mock.MagicMock(return_value=fake_resp)
+        fake_resp.__exit__ = mock.MagicMock(return_value=False)
+        with mock.patch("urllib.request.urlopen", return_value=fake_resp):
+            verdict = mod.check_equivalence(str(nb))
+        assert verdict["verdict"] == "LOST_OUTPUTS"
+        assert verdict["found_lines"] == 0
+        assert "secret_value_xyz" in verdict["missing_lines"]
+
+    def test_missing_page(self, tmp_path):
+        nb = tmp_path / "test.ipynb"
+        _make_notebook_with_outputs(
+            nb,
+            sources=["x = 1"],
+            outputs=[{"output_type": "stream", "name": "stdout", "text": "x\n"}],
+        )
+        import urllib.error
+        with mock.patch(
+            "urllib.request.urlopen",
+            side_effect=urllib.error.HTTPError(
+                "https://example.com/test.html", 404, "Not Found", {}, None
+            ),
+        ):
+            verdict = mod.check_equivalence(str(nb))
+        assert verdict["verdict"] == "MISSING_PAGE"
+        assert verdict["status"] == 404
+
+    def test_unknown_network(self, tmp_path):
+        nb = tmp_path / "test.ipynb"
+        _make_notebook_with_outputs(
+            nb,
+            sources=["x = 1"],
+            outputs=[{"output_type": "stream", "name": "stdout", "text": "x\n"}],
+        )
+        import urllib.error
+        with mock.patch(
+            "urllib.request.urlopen",
+            side_effect=urllib.error.URLError("timeout"),
+        ):
+            verdict = mod.check_equivalence(str(nb))
+        assert verdict["verdict"] == "UNKNOWN"
+        assert verdict["error"] is not None
+
+    def test_notebook_not_found(self):
+        verdict = mod.check_equivalence("/nonexistent/path/to/carnet.ipynb")
+        assert verdict["verdict"] == "NOTEBOOK_ERROR"
+        assert "not found" in verdict["error"]
+
+    def test_lean_prefix_in_page(self, tmp_path):
+        """Un prefixe Lean dans la page ne doit pas bloquer la detection."""
+        nb = tmp_path / "test.ipynb"
+        _make_notebook_with_outputs(
+            nb,
+            sources=["x = 1"],
+            outputs=[{
+                "output_type": "stream",
+                "name": "stdout",
+                "text": "alpha beta\n",
+            }],
+        )
+        # Page avec prefixe Lean ──────▶
+        fake_resp = mock.MagicMock()
+        fake_resp.status = 200
+        # Encode la page avec prefixes Lean ; bytes literal ne peut pas porter
+        # d'unicode non-ASCII, on encode donc la chaîne en utf-8.
+        page_html = "<html><body>──────▶ alpha beta ──────▶</body></html>"
+        fake_resp.read.return_value = page_html.encode("utf-8")
+        fake_resp.__enter__ = mock.MagicMock(return_value=fake_resp)
+        fake_resp.__exit__ = mock.MagicMock(return_value=False)
+        with mock.patch("urllib.request.urlopen", return_value=fake_resp):
+            verdict = mod.check_equivalence(str(nb))
+        # La normalisation doit permettre la detection
+        assert verdict["verdict"] == "EQUIVALENT"
+        assert verdict["found_lines"] == 1
+
+
+# -----------------------------------------------------------------------------
+# main() : codes de sortie (CLI)
+# -----------------------------------------------------------------------------
+
+class TestMainCLI:
+    def test_cli_equivalent(self, tmp_path):
+        nb = tmp_path / "test.ipynb"
+        _make_notebook_with_outputs(
+            nb,
+            sources=["x = 1"],
+            outputs=[{"output_type": "stream", "name": "stdout", "text": "42\n"}],
+        )
+        fake_resp = mock.MagicMock()
+        fake_resp.status = 200
+        fake_resp.read.return_value = b"<html>42</html>"
+        fake_resp.__enter__ = mock.MagicMock(return_value=fake_resp)
+        fake_resp.__exit__ = mock.MagicMock(return_value=False)
+        with mock.patch("urllib.request.urlopen", return_value=fake_resp):
+            rc = mod.main(["--notebook", str(nb), "--report"])
+        assert rc == 0
+
+    def test_cli_lost_outputs(self, tmp_path):
+        nb = tmp_path / "test.ipynb"
+        _make_notebook_with_outputs(
+            nb,
+            sources=["x = 1"],
+            outputs=[{"output_type": "stream", "name": "stdout", "text": "secret\n"}],
+        )
+        fake_resp = mock.MagicMock()
+        fake_resp.status = 200
+        fake_resp.read.return_value = b"<html>autre</html>"
+        fake_resp.__enter__ = mock.MagicMock(return_value=fake_resp)
+        fake_resp.__exit__ = mock.MagicMock(return_value=False)
+        with mock.patch("urllib.request.urlopen", return_value=fake_resp):
+            rc = mod.main(["--notebook", str(nb), "--json"])
+        assert rc == 1
+
+    def test_cli_missing_page(self, tmp_path):
+        nb = tmp_path / "test.ipynb"
+        _make_notebook_with_outputs(
+            nb,
+            sources=["x = 1"],
+            outputs=[{"output_type": "stream", "name": "stdout", "text": "x\n"}],
+        )
+        import urllib.error
+        with mock.patch(
+            "urllib.request.urlopen",
+            side_effect=urllib.error.HTTPError("url", 404, "Not Found", {}, None),
+        ):
+            rc = mod.main(["--notebook", str(nb), "--report"])
+        assert rc == 2
+
+    def test_cli_unknown_network(self, tmp_path):
+        nb = tmp_path / "test.ipynb"
+        _make_notebook_with_outputs(
+            nb,
+            sources=["x = 1"],
+            outputs=[{"output_type": "stream", "name": "stdout", "text": "x\n"}],
+        )
+        import urllib.error
+        with mock.patch(
+            "urllib.request.urlopen",
+            side_effect=urllib.error.URLError("timeout"),
+        ):
+            rc = mod.main(["--notebook", str(nb), "--report"])
+        assert rc == 3
+
+    def test_cli_notebook_error(self):
+        rc = mod.main(["--notebook", "/nonexistent.ipynb", "--report"])
+        assert rc == 4
