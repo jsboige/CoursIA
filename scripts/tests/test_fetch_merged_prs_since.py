@@ -27,8 +27,10 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import fetch_merged_prs_since as fmps  # noqa: E402
+from gh_payload_cache import PayloadCache  # noqa: E402
 
 
 def _pr(n: int, merged_at: str) -> dict:
@@ -194,3 +196,110 @@ def test_run_gh_argv_is_accepted_by_gh():
     assert not unknown, (
         "run_gh passe des options que `gh pr list` n'a pas : {} "
         "(c'est exactement la faute `--page`)".format(unknown))
+
+
+# --- cache par tranche (#19236) ------------------------------------------
+#
+# Le defaut : le cache de fenetre (une entree pour tout `[since, tomorrow)`)
+# expire toutes les heures, et a chaque expiration **toutes** les tranches
+# repartaient en appels live -- 7 min 25 s a froid pour chaque lane. Une
+# journee close ne bouge plus : seule la tranche qui contient le jour courant
+# merite d'etre re-interrogee.
+
+
+def _counting_run(calls):
+    def run(since: str, until: str) -> list[dict]:
+        calls.append((since, until))
+        return [_pr(1, since + "T00:00:00Z")]
+
+    return run
+
+
+def test_only_the_current_day_slice_is_refetched_after_the_short_ttl(tmp_path):
+    """Le controle negatif de l'acceptance : une tranche passee ne re-interroge
+    pas l'API, la tranche du jour si.
+
+    Le disque est le vrai `PayloadCache` (pas un double) : c'est lui qui porte
+    la decision de TTL, un faux cache testerait le test.
+    """
+    clock = [1_000_000.0]
+    cache = PayloadCache(tmp_path, max_entries=200, clock=lambda: clock[0])
+    calls: list[tuple[str, str]] = []
+    run = _counting_run(calls)
+    today = date(2026, 10, 5)
+
+    fmps.fetch("2026-09-25", run=run, today=today, slice_cache=cache)
+    cold = list(calls)
+    assert len(cold) > 1, "le premier passage doit peupler plusieurs tranches"
+
+    calls.clear()
+    clock[0] += 3600  # 1 h : la TTL courte est expiree, la longue ne l'est pas
+    fmps.fetch("2026-09-25", run=run, today=today, slice_cache=cache)
+    warm = list(calls)
+
+    assert len(warm) == 1, (
+        "a chaud, seule la tranche qui contient le jour courant doit repartir "
+        "en requete, pas {}".format(warm))
+    since, until = warm[0]
+    assert since <= today.isoformat() < until, (
+        "la tranche refetchee doit etre celle qui contient aujourd'hui, "
+        "obtenu [{} , {})".format(since, until))
+
+
+def test_a_closed_slice_survives_the_short_ttl_by_construction(tmp_path):
+    """Sans la TTL longue, la tranche close repart avec les autres : c'est
+    exactement ce que le correctif supprime."""
+    clock = [2_000_000.0]
+    cache = PayloadCache(tmp_path, max_entries=200, clock=lambda: clock[0])
+    calls: list[tuple[str, str]] = []
+    run = _counting_run(calls)
+
+    fmps.fetch("2026-09-25", run=run, today=date(2026, 10, 5), slice_cache=cache)
+    closed = [c for c in calls if c[1] <= "2026-10-05"]
+    calls.clear()
+    clock[0] += 3600
+    fmps.fetch("2026-09-25", run=run, today=date(2026, 10, 5), slice_cache=cache)
+
+    replayed = [c for c in calls if c in closed]
+    assert replayed == [], (
+        "aucune tranche close ne doit etre rejouee a chaud, obtenu {}".format(
+            replayed))
+
+
+def test_the_slice_cache_does_not_change_the_corpus(tmp_path):
+    """Un cache qui accelere en changeant le resultat n'est pas un cache."""
+    run = _counting_run([])
+    today = date(2026, 10, 5)
+
+    plain = fmps.fetch("2026-09-25", run=run, today=today)
+    cache = PayloadCache(tmp_path, max_entries=200)
+    cold = fmps.fetch("2026-09-25", run=run, today=today, slice_cache=cache)
+    warm = fmps.fetch("2026-09-25", run=run, today=today, slice_cache=cache)
+
+    assert cold == plain
+    assert warm == plain
+
+
+def test_slice_cache_key_separates_the_field_sets_and_the_slices():
+    """`files` est le champ le plus cher : deux appelants aux besoins differents
+    ne doivent pas se servir mutuellement une reponse amputee."""
+    base = fmps.slice_cache_key("2026-10-01", "2026-10-04", "number,body")
+    richer = fmps.slice_cache_key("2026-10-01", "2026-10-04",
+                                  "number,body,files")
+    shifted = fmps.slice_cache_key("2026-10-04", "2026-10-07", "number,body")
+
+    assert base != richer
+    assert base != shifted
+    assert len({base, richer, shifted}) == 3
+
+
+def test_no_slice_cache_means_no_behaviour_change():
+    """Le cache est opt-in : un appelant qui n'en passe pas garde exactement le
+    decoupage d'avant, sans lecture disque."""
+    calls: list[tuple[str, str]] = []
+    run = _counting_run(calls)
+    fmps.fetch("2026-09-25", run=run, today=date(2026, 10, 5))
+    first = list(calls)
+    calls.clear()
+    fmps.fetch("2026-09-25", run=run, today=date(2026, 10, 5))
+    assert calls == first, "sans cache, chaque appel re-interroge chaque tranche"

@@ -19,7 +19,9 @@ fil du texte.
 from __future__ import annotations
 
 import datetime as dt
+import json
 import sys
+import types
 from pathlib import Path
 
 import pytest
@@ -832,3 +834,112 @@ def test_fetch_merged_no_longer_calls_gh_in_a_single_capped_request(monkeypatch)
     monkeypatch.setattr(ss, "fetch_merged_window", lambda **kw: [])
     prs, err = ss.fetch_merged(90, now=_NOW_19209)
     assert err is None and prs == []
+
+
+# --- cache par tranche, cote APPELANT (#19236) ----------------------------
+#
+# Le correctif vit dans `fetch_merged_prs_since.fetch`, mais il ne sert a rien
+# s'il n'est pas CABLE ici : un `fetch` capable et un appelant qui ne lui passe
+# jamais de cache, c'est exactement le corpus tronque de #19209 rejoue (une
+# capacite presente et inutilisee). Les tests ci-dessous portent donc sur la
+# chaine complete `fetch_merged -> fetch -> run_gh`, pas sur le calibreur seul.
+
+_NOW_19236 = dt.datetime(2026, 10, 5, 12, 0, tzinfo=dt.timezone.utc)
+
+
+def _gh_stub(calls: list[tuple[str, ...]]):
+    """Remplace le binaire `gh` : compte les appels, rend un tableau vide."""
+    def fake_run(argv, **kw):
+        calls.append(tuple(argv))
+        return types.SimpleNamespace(stdout="[]", returncode=0)
+
+    return fake_run
+
+
+def test_no_cache_means_no_slice_cache_either(monkeypatch):
+    """Un appelant sans cache garde le comportement d'avant, sans lecture disque."""
+    seen: list[dict] = []
+    monkeypatch.setattr(ss, "fetch_merged_window",
+                        lambda **kw: (seen.append(kw), [])[1])
+    ss.fetch_merged(9, now=_NOW_19236)
+    assert seen[0]["slice_cache"] is None, seen[0]
+    assert seen[0]["slice_cache_mode"] == "off", seen[0]
+
+
+def test_the_slice_cache_lives_in_its_own_directory(monkeypatch, tmp_path):
+    """Le sous-repertoire n'est pas cosmetique.
+
+    `PayloadCache._prune()` evince par mtime DANS un repertoire : ~30 tranches
+    rangees avec les cles `series`/`pool`/`visits` de l'appelant (32 entrees par
+    defaut) feraient expulser ces dernieres, et l'appelant paierait une lecture
+    froide en croyant avoir un cache.
+    """
+    from gh_payload_cache import PayloadCache
+
+    seen: list[dict] = []
+    monkeypatch.setattr(ss, "fetch_merged_window",
+                        lambda **kw: (seen.append(kw), [])[1])
+    outer = PayloadCache(tmp_path, max_entries=32)
+    ss.fetch_merged(9, now=_NOW_19236, cache=outer, cache_mode="auto")
+
+    inner = seen[0]["slice_cache"]
+    assert inner is not None, "le cache de fenetre n'a pas cable son cache de tranche"
+    assert inner.directory != outer.directory, (
+        "les tranches doivent vivre a part, sinon _prune() evince les cles de "
+        f"l'appelant : {inner.directory} == {outer.directory}")
+    assert inner.directory.parent == outer.directory, inner.directory
+    assert inner.max_entries >= 40, (
+        f"~30 tranches ne tiennent pas dans {inner.max_entries} entrees")
+    assert inner.clock is outer.clock, (
+        "les deux couches doivent partager l'horloge de l'appelant")
+
+
+def test_window_expiry_replays_only_the_current_slice(monkeypatch, tmp_path):
+    """L'acceptance mesuree sur la CHAINE REELLE, pas sur un double.
+
+    `cache_ttl_seconds=0` expire la fenetre a chaque appel -- c'est la montre du
+    tapis apres une heure : le blob de fenetre est perime. Ce qui reste a
+    mesurer, c'est combien d'appels `gh` repartent a ce moment-la. Avant
+    #19236 : une par tranche (4 ici). Apres : une seule, celle du jour.
+    """
+    from gh_payload_cache import PayloadCache
+
+    clock = [1_000_000.0]
+    calls: list[tuple[str, ...]] = []
+    monkeypatch.setattr(ss.subprocess, "run", _gh_stub(calls))
+
+    outer = PayloadCache(tmp_path, max_entries=32, clock=lambda: clock[0])
+    kwargs = dict(now=_NOW_19236, cache=outer, cache_mode="auto",
+                  cache_ttl_seconds=0)
+
+    ss.fetch_merged(9, **kwargs)
+    cold = len(calls)
+    assert cold > 1, f"le premier passage doit peupler plusieurs tranches : {cold}"
+
+    calls.clear()
+    clock[0] += 3600  # 1 h : la fenetre est perimee, les journees closes non
+    ss.fetch_merged(9, **kwargs)
+
+    assert len(calls) == 1, (
+        "a chaud, seule la tranche du jour doit repartir en requete ; obtenu "
+        f"{len(calls)} appels gh : {calls}")
+    assert "merged:>=2026-10-05" in " ".join(calls[0]), calls[0]
+
+
+def test_the_cached_window_does_not_change_the_corpus(monkeypatch, tmp_path):
+    """Un cache qui accelere en changeant le corpus n'est pas un cache."""
+    from gh_payload_cache import PayloadCache
+
+    payload = json.dumps([{"number": 7, "title": "t", "body": "b",
+                           "files": [], "mergedAt": "2026-10-05T01:00:00Z"}])
+    monkeypatch.setattr(ss.subprocess, "run",
+                        lambda argv, **kw: types.SimpleNamespace(
+                            stdout=payload, returncode=0))
+
+    plain, err_plain = ss.fetch_merged(9, now=_NOW_19236)
+    outer = PayloadCache(tmp_path, max_entries=32)
+    cached, err_cached = ss.fetch_merged(9, now=_NOW_19236, cache=outer,
+                                         cache_mode="auto", cache_ttl_seconds=0)
+
+    assert err_plain is None and err_cached is None
+    assert cached == plain, f"corpus different a travers le cache : {cached} vs {plain}"

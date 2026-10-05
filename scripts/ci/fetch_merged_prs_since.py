@@ -55,6 +55,7 @@ A single JSON array on stdout:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import subprocess
 import sys
@@ -70,6 +71,16 @@ SEARCH_RESULT_CAP = 1000
 # ~40% of the cap. Slices are halved on demand, so this is a starting point,
 # not a throughput assumption.
 SLICE_DAYS = 3
+
+# TTL du cache PAR TRANCHE (#19236). Le cache de fenetre vit au-dessus (une
+# seule entree pour tout `[since, tomorrow)`), donc a chaque expiration de
+# celui-ci **toutes** les tranches repartaient en appels `gh` live -- 7 min 25 s
+# a froid, payees une fois par heure et par lane. Une tranche dont le `until`
+# est anterieur ou egal au debut du jour courant est CLOSE : les fusions d'une
+# journee passee n'arrivent plus, la re-interroger ne peut rien rapporter. La
+# tranche qui contient le jour courant, elle, bouge encore.
+PAST_SLICE_TTL_SECONDS = 30 * 24 * 60 * 60
+CURRENT_SLICE_TTL_SECONDS = 10 * 60
 
 DEFAULT_DAYS = 21
 
@@ -107,8 +118,57 @@ def run_gh(since: str, until: str, fields: str = DEFAULT_FIELDS) -> list[dict]:
     return json.loads(out.stdout)
 
 
+def slice_cache_key(since: str, until: str, fields: str) -> str:
+    """Cle stable d'une tranche : elle change avec la tranche ET le jeu de champs.
+
+    Le jeu de champs entre dans la cle parce que le meme `[since, until)` ramene
+    un payload different selon `--json` (`files` est le champ le plus cher). Deux
+    appelants aux besoins differents ne doivent pas se servir mutuellement une
+    reponse amputee.
+    """
+    material = json.dumps(
+        {"schema": 1, "slice": [since, until], "fields": fields},
+        sort_keys=True, separators=(",", ":"),
+    )
+    return "slice-" + hashlib.sha256(material.encode("utf-8")).hexdigest()[:24]
+
+
+def cached_run(run, cache, *, today: date, fields: str, mode: str = "auto",
+               past_ttl: float = PAST_SLICE_TTL_SECONDS,
+               current_ttl: float = CURRENT_SLICE_TTL_SECONDS):
+    """Enveloppe `run` d'un cache **par tranche** (#19236).
+
+    `cache` est duck-type : tout objet exposant
+    ``get_or_fetch(key, ttl_seconds, fetch, *, mode=...)`` et rendant un objet
+    portant ``.payload``. On ne l'importe pas d'ici -- ce module vit sous
+    `scripts/ci/` et la couche de cache sous `scripts/` ; l'injection evite au
+    test de dependre d'un `sys.path` commun.
+
+    Le choix de TTL est le coeur du correctif : une tranche dont le `until` est
+    anterieur ou egal a `today` est close (les fusions d'une journee passee
+    n'arrivent plus), l'autre contient le jour courant et reste courte. La
+    comparaison est lexicographique sur des dates ISO, donc exacte.
+    """
+    today_iso = today.isoformat()
+
+    def wrapped(since: str, until: str) -> list[dict]:
+        ttl = past_ttl if until <= today_iso else current_ttl
+        result = cache.get_or_fetch(
+            slice_cache_key(since, until, fields),
+            ttl,
+            lambda: run(since, until),
+            mode=mode,
+        )
+        return result.payload
+
+    return wrapped
+
+
 def fetch(since: str, run=None, slice_days: int = SLICE_DAYS,
-          today: date | None = None, fields: str = DEFAULT_FIELDS) -> list[dict]:
+          today: date | None = None, fields: str = DEFAULT_FIELDS,
+          *, slice_cache=None, slice_cache_mode: str = "auto",
+          past_slice_ttl: float = PAST_SLICE_TTL_SECONDS,
+          current_slice_ttl: float = CURRENT_SLICE_TTL_SECONDS) -> list[dict]:
     """Walk ``[since, tomorrow)`` in date slices and merge them into one list.
 
     ``run`` is dependency-injected for tests -- a two-argument callable
@@ -122,8 +182,17 @@ def fetch(since: str, run=None, slice_days: int = SLICE_DAYS,
     """
     if run is None:
         run = lambda s, u: run_gh(s, u, fields)  # noqa: E731
+    day = today or date.today()
+    if slice_cache is not None:
+        # Le cache s'installe SOUS la logique de decoupage : le halving d'une
+        # tranche saturee continue de s'appliquer, chaque sous-tranche ayant sa
+        # propre cle. Un cache pose au-dessus du decoupage figerait la tranche
+        # tronquee au lieu de la laisser se scinder.
+        run = cached_run(run, slice_cache, today=day, fields=fields,
+                         mode=slice_cache_mode, past_ttl=past_slice_ttl,
+                         current_ttl=current_slice_ttl)
     start = date.fromisoformat(since)
-    end = (today or date.today()) + timedelta(days=1)
+    end = day + timedelta(days=1)
     acc: list[dict] = []
     seen: set[int] = set()
     cur = start

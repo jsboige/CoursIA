@@ -87,6 +87,20 @@ NEW_NB_MIN_ADDITIONS = 200
 # cher : il est demande une fois, pas par tranche supplementaire.
 MERGED_FIELDS = "number,title,body,files,mergedAt"
 
+# Cache PAR TRANCHE (#19236). Le cache de fenetre ci-dessous porte **une seule**
+# entree pour tout `[since, tomorrow)` et expire en une heure ; a chaque
+# expiration **toutes** ses tranches repartaient en appels `gh` live -- 5 pour
+# la fenetre par defaut (14 j), 30 pour celle du tapis (90 j), soit 7 min 25 s a
+# froid payees une fois par heure et par lane. Or une journee close ne bouge
+# plus : seule la tranche qui contient le jour courant merite d'etre
+# re-interrogee. Le sous-repertoire est **distinct** a dessein : `_prune()`
+# evince par mtime *dans un repertoire*, donc des tranches fraiches rangees
+# avec les cles `series`/`pool`/`visits` les feraient expulser au-dela de la
+# retention de l'appelant (30 tranches contre 32 entrees par defaut : la marge
+# serait nulle, et l'expulsion silencieuse).
+SLICE_CACHE_SUBDIR = "slices"
+SLICE_CACHE_MAX_ENTRIES = 400
+
 _PARENT_RE = re.compile(
     r"(?:enfant\s+de|fille\s+de|sous-t\w+\s+de|part\s+of"
     r"|paire\s+\d+\s*/\s*\d+\s+de)[^#\n]{0,40}#(\d{4,6})\b",
@@ -188,6 +202,26 @@ def family_of(path: str) -> str:
     return "/".join(parts[:2]) if len(parts) >= 2 else path
 
 
+def slice_cache_for(cache: PayloadCache | None) -> PayloadCache | None:
+    """Cache par tranche (#19236), dans un sous-repertoire dedie.
+
+    Rend `None` quand l'appelant n'a pas de cache : le cache par tranche est
+    opt-in, exactement comme le cache de fenetre qu'il double. La construction
+    est sans effet de bord -- `PayloadCache.__init__` ne cree rien, seul un
+    `_write` materialise le repertoire.
+
+    L'horloge est **celle de l'appelant** : les deux couches mesurent des ages
+    dans le meme referentiel, et une horloge injectee (tests) doit gouverner la
+    pile entiere -- sinon le seul moyen d'expirer la TTL courte serait de
+    dormir pour de vrai.
+    """
+    if cache is None:
+        return None
+    return PayloadCache(cache.directory / SLICE_CACHE_SUBDIR,
+                        max_entries=SLICE_CACHE_MAX_ENTRIES,
+                        clock=cache.clock)
+
+
 def fetch_merged(
     days: int,
     now: dt.datetime | None = None,
@@ -217,14 +251,22 @@ def fetch_merged(
         "--json", MERGED_FIELDS,
     ]
 
+    slice_cache = slice_cache_for(cache)
+
     def fetch_raw() -> list[dict]:
         # Tranches de dates plutot qu'un `--search` unique : le corpus rendu
         # atteint le cutoff au lieu de s'arreter au plafond de l'API de
         # recherche, qui emportait les livraisons les plus anciennes (#19209).
         # Une tranche indecoupable LEVE -- jamais un corpus partiel qui aurait
         # l'air complet.
+        #
+        # Le cache par tranche (#19236) s'installe SOUS le cache de fenetre :
+        # quand celui-ci expire, seule la tranche du jour repart en requete, les
+        # journees closes etant servies depuis le disque. Il suit le mode de
+        # l'appelant, donc `off` le rend inerte comme le cache de fenetre.
         return fetch_merged_window(
             since=start.isoformat(), fields=MERGED_FIELDS, today=now.date(),
+            slice_cache=slice_cache, slice_cache_mode=cache_mode,
         )
 
     try:
