@@ -193,26 +193,41 @@ class TestExtractOutputs:
 
 class TestNotebookToPageUrl:
     def test_simple(self):
+        """Le prefixe MyIA.AI.Notebooks/ est garde dans l'URL publiee.
+
+        Leçon revue coord 05/10, c.5994810325 : le site gh-pages de jsboige/CoursIA
+        garde `MyIA.AI.Notebooks/` dans le path publie. Un retrait causait
+        MISSING_PAGE sur tout le corpus reel.
+        """
         url = mod.notebook_to_page_url(
             "MyIA.AI.Notebooks/ML/ML.Net/ML-1-Python.ipynb",
             "https://jsboige.github.io/CoursIA",
         )
-        assert url == "https://jsboige.github.io/CoursIA/ML/ML.Net/ML-1-Python.html"
+        assert url == "https://jsboige.github.io/CoursIA/MyIA.AI.Notebooks/ML/ML.Net/ML-1-Python.html"
 
     def test_with_trailing_slash(self):
         url = mod.notebook_to_page_url(
             "MyIA.AI.Notebooks/ML/ML.Net/ML-1-Python.ipynb",
             "https://jsboige.github.io/CoursIA/",
         )
-        assert url == "https://jsboige.github.io/CoursIA/ML/ML.Net/ML-1-Python.html"
+        assert url == "https://jsboige.github.io/CoursIA/MyIA.AI.Notebooks/ML/ML.Net/ML-1-Python.html"
 
     def test_absolute_path(self):
         url = mod.notebook_to_page_url(
             "D:/CoursIA-2/MyIA.AI.Notebooks/Search/Search-01.ipynb",
             "https://jsboige.github.io/CoursIA",
         )
-        # L'URL doit etre relative au prefixe MyIA.AI.Notebooks
-        assert url == "https://jsboige.github.io/CoursIA/Search/Search-01.html"
+        # L'URL garde le path complet incluant MyIA.AI.Notebooks/
+        assert url == "https://jsboige.github.io/CoursIA/D:/CoursIA-2/MyIA.AI.Notebooks/Search/Search-01.html"
+
+    def test_windows_backslash_normalized(self):
+        """Le path Windows avec backslash doit etre normalise en forward slash."""
+        url = mod.notebook_to_page_url(
+            "D:\\CoursIA-2\\MyIA.AI.Notebooks\\Search\\Search-01.ipynb",
+            "https://jsboige.github.io/CoursIA",
+        )
+        assert "\\\\" not in url
+        assert "/MyIA.AI.Notebooks/Search/Search-01.html" in url
 
 
 # -----------------------------------------------------------------------------
@@ -291,6 +306,95 @@ class TestCheckEquivalence:
         assert verdict["found_lines"] == 1
         assert verdict["total_lines"] == 1
         assert verdict["missing_lines"] == []
+
+    def test_html_entities_desechappees(self, tmp_path):
+        """Les entites HTML (&quot;, &amp;, etc.) doivent etre deshéchappées.
+
+        Leçon revue coord 05/10 : 528 entités `&quot;` sur une page Search-02
+        sans deshéchappage font manquer toutes les chaines text/plain du carnet.
+        """
+        nb = tmp_path / "test.ipynb"
+        _make_notebook_with_outputs(
+            nb,
+            sources=["print('hello & world')"],
+            outputs=[{
+                "output_type": "stream",
+                "name": "stdout",
+                "text": "hello & world\n",
+            }],
+        )
+        # Page avec entites HTML : &amp; -> &, &quot; -> ", &lt; -> <, &gt; -> >
+        html_src = "<html>hello &amp; world</html>"
+        fake_resp = mock.MagicMock()
+        fake_resp.status = 200
+        fake_resp.read.return_value = html_src.encode("utf-8")
+        fake_resp.__enter__ = mock.MagicMock(return_value=fake_resp)
+        fake_resp.__exit__ = mock.MagicMock(return_value=False)
+        with mock.patch("urllib.request.urlopen", return_value=fake_resp):
+            verdict = mod.check_equivalence(str(nb))
+        assert verdict["verdict"] == "EQUIVALENT"
+        assert verdict["found_lines"] == 1
+
+    def test_raw_input_output_decorations(self, tmp_path):
+        """'Raw input: <ligne>' et 'Raw output: <ligne>' sont des decorations HTML.
+
+        Leçon revue coord 05/10 : Serre100/08 a 28 lignes qui apparaissent dans
+        la page entourées de "Raw input: ..." / "Raw output: ...". La recherche
+        substring (et non whole-word) doit les considerer comme trouvees.
+        """
+        nb = tmp_path / "test.ipynb"
+        _make_notebook_with_outputs(
+            nb,
+            sources=["x = 1"],
+            outputs=[{
+                "output_type": "stream",
+                "name": "stdout",
+                "text": "42\n",
+            }],
+        )
+        # Page avec decorations widgets Jupyter
+        html_src = (
+            "<html><body>"
+            "<div class='prompt'>Raw input: 42</div>"
+            "<div class='output'>Raw output: 42</div>"
+            "</body></html>"
+        )
+        fake_resp = mock.MagicMock()
+        fake_resp.status = 200
+        fake_resp.read.return_value = html_src.encode("utf-8")
+        fake_resp.__enter__ = mock.MagicMock(return_value=fake_resp)
+        fake_resp.__exit__ = mock.MagicMock(return_value=False)
+        with mock.patch("urllib.request.urlopen", return_value=fake_resp):
+            verdict = mod.check_equivalence(str(nb))
+        assert verdict["verdict"] == "EQUIVALENT"
+        assert verdict["found_lines"] == 1
+
+    def test_url_garde_prefixe(self, tmp_path):
+        """L'URL doit garder MyIA.AI.Notebooks/ dans le rel (cf test_simple)."""
+        # Le carnet doit inclure MyIA.AI.Notebooks/ dans son path pour
+        # que le test reflemente l'usage reel.
+        sub = tmp_path / "MyIA.AI.Notebooks" / "Search"
+        sub.mkdir(parents=True)
+        nb = sub / "Search-01.ipynb"
+        _make_notebook_with_outputs(
+            nb,
+            sources=["x = 1"],
+            outputs=[{
+                "output_type": "stream",
+                "name": "stdout",
+                "text": "42\n",
+            }],
+        )
+        fake_resp = mock.MagicMock()
+        fake_resp.status = 200
+        fake_resp.read.return_value = b"<html>42</html>"
+        fake_resp.__enter__ = mock.MagicMock(return_value=fake_resp)
+        fake_resp.__exit__ = mock.MagicMock(return_value=False)
+        with mock.patch("urllib.request.urlopen", return_value=fake_resp):
+            verdict = mod.check_equivalence(str(nb))
+        # Le path complet inclut MyIA.AI.Notebooks/
+        assert "MyIA.AI.Notebooks" in verdict["page_url"]
+        assert verdict["page_url"].endswith(".html")
 
     def test_lost_outputs(self, tmp_path):
         nb = tmp_path / "test.ipynb"

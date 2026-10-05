@@ -26,6 +26,7 @@ import re
 import sys
 import urllib.error
 import urllib.request
+from html import unescape as html_unescape
 from pathlib import Path
 from typing import Iterable
 
@@ -115,16 +116,15 @@ def fetch_page(page_url: str) -> tuple[int, str | None, str | None]:
 def notebook_to_page_url(notebook_path: str, base_url: str) -> str:
     """Convertit un chemin de carnet en URL de page publiee.
 
-    MyIA.AI.Notebooks/Series/file.ipynb -> <base>/Series/file.html
+    Le site gh-pages garde le prefixe `MyIA.AI.Notebooks/` dans le path publie.
+    Donc : `MyIA.AI.Notebooks/Series/file.ipynb` -> `<base>/MyIA.AI.Notebooks/Series/file.html`
+    (leçon revue coord 05/10, c.5994810325 : le retrait du prefixe causait MISSING_PAGE
+    sur tout le corpus reel).
     """
     p = Path(notebook_path)
-    parts = list(p.parts)
-    if "MyIA.AI.Notebooks" in parts:
-        idx = parts.index("MyIA.AI.Notebooks")
-        rel = "/".join(parts[idx + 1 :])
-    else:
-        rel = str(p).replace("\\", "/")
-    rel = rel[:-len(".ipynb")] + ".html"
+    rel = str(p).replace("\\", "/")
+    if rel.endswith(".ipynb"):
+        rel = rel[:-len(".ipynb")] + ".html"
     return f"{base_url.rstrip('/')}/{rel}"
 
 
@@ -165,14 +165,22 @@ def check_equivalence(notebook_path: str, base_url: str = DEFAULT_BASE_URL) -> d
         return verdict
     outputs = extract_outputs(notebook_path)
     verdict["total_lines"] = len(outputs)
-    html_norm = WHITESPACE_PATTERN.sub(" ", html)
+    # Deshéchapper le HTML avant recherche (&quot; -> ", &amp; -> &, &lt; -> <, etc.)
+    # Leçon revue coord 05/10, c.5994810325 : 528 entités `&quot;` sur une page
+    # Search-02, ce qui faisait manquer la majorité des chaines text/plain du carnet.
+    page_text = html_unescape(html)
+    page_norm = WHITESPACE_PATTERN.sub(" ", page_text)
     missing: list[str] = []
     found = 0
     for line in outputs:
         line_norm = _normalize_line(line)
         if not line_norm:
             continue
-        if line_norm in html_norm:
+        # Recherche substring (et non whole-word) : la page peut entourer la valeur
+        # de décorations (Raw input, Raw output, prefixe widget, etc.).
+        # Leçon revue coord 05/10 : Serre100/08 a 28 lignes "Raw input / Raw output"
+        # qui entourent la valeur ; sans substring search elles sont LOST_OUTPUTS.
+        if line_norm in page_norm:
             found += 1
         else:
             missing.append(line)
