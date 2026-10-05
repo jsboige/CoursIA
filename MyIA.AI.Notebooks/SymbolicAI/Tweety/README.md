@@ -32,7 +32,7 @@ Un nom de notebook Tweety suit la forme `Tweety-<NN>[<lettre>]-<Titre>-<Noyau?>.
 | numéro nu `01`–`12` | `Tweety-01-Setup-Python` | une marche du parcours principal : on peut s'arrêter là |
 | lettre après le numéro | `Tweety-02b-Semantics-CSharp` | un approfondissement du palier `02`, facultatif |
 | suffixe `-Python` / `-CSharp` / `-Lean` / `-Lean-Python` | `Tweety-3b-Modal-Lab-Lean-Python` | le kernel à installer ; `-Lean-Python` désigne un notebook Python qui pilote Lean |
-| `-CSharp` vs `-Csharp` | `Tweety-10-MLN-CSharp` vs `Tweety-02-Basic-Logics-CSharp` | deux écritures historiques du même suffixe, encore en cours de normalisation (#16231) |
+| `-CSharp` vs `-Csharp` | `Tweety-10-MLN-CSharp` vs `Tweety-5-Abstract-Argumentation-Csharp` | deux écritures historiques du même suffixe, encore en cours de normalisation (#16231) |
 
 La normalisation des noms est en cours (#16231) — la colonne **Stack** des tables fait foi.
 
