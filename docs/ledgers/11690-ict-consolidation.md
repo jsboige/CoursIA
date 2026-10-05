@@ -24,7 +24,7 @@ Une ligne par notebook, cinq colonnes : **Intention** (ce que le cadrage `ICT-0-
 | 4 | ICT-25 | tri des négatifs, désordre de sections établi | **LU** (tranche 1, 2026-08-24) |
 | 5 | GWT / SAE + non numérotés | alimente #7260 (renumérotation) | **LU 3/3 tranches** (lectures du 2026-09-19 ; posées au ledger par #16814, #16821, #16827 — rang complet, 100 % des strands) |
 | 6 | **Fondations 01 → 09** (extension #11690) | `ICT-01` à `ICT-09` — racine de la numérotation, les deux piliers + strate dynamique | **LU** (tranche A de l'extension, 2026-10-05) |
-| 7 | **Tranche B 10 → 17b** (extension #11690) | `ICT-10` à `ICT-17b` non couverts par les strands 1-5 | **EN COURS 15/25** (strand 7, ouvert 2026-10-05 — jusqu'à `ICT-15e`) |
+| 7 | **Tranche B 10 → 17b** (extension #11690) | `ICT-10` à `ICT-17b` non couverts par les strands 1-5 | **EN COURS 16/25** (strand 7, ouvert 2026-10-05 — jusqu'à `ICT-15f`) |
 
 Les accrétions `-b/-c/-d` se tranchent dans le strand où elles tombent.
 
@@ -661,3 +661,13 @@ Deuxième tranche de la partition ai-01 (DM 13:41Z : A 01-09, **B 10-17b**, C 20
 | Résultat | **Verdict CONFIRMED ×3** (agrégé `{'CONFIRMED': 3}`) : Mahalanobis RD-vs-naif > p95 partout (2,836>2,689 · 2,784>2,750 · 2,756>2,670), dynamic_ratio 1,597 / 1,132 / 1,652. Le md discute honnêtement l'hétérogénéité des marges (13 % → 65 %, maillon faible = variant spots) et la ligne seed 7 (1,652) qui écarte l'artefact de graine. Sanity négatif exécuté : diffusion pure ratio 0,757. Le bridge #2 reste vivant sur les 3 configurations — pas démontré uniforme. |
 | Critique | (1) La discrimination repose entièrement sur le contraste random-walk : **RD-vs-diff sous le p95 null sur les trois substrats** (1,776/2,460/1,668 vs 2,689/2,750/2,670) — la signature « irréductiblement temporelle » pourrait se réduire à une interpolation lisse entre extrema, nuance non surfacée dans le md (l'exo 2 extended_signature serait la réponse). (2) Diversité de graines limitée à un seul alternatif (seed 7). (3) Exos 1-2 silencieux. |
 | Verdict | **SOLIDE** — épistémologie exemplaire : pré-enregistrement écrit, trois contrôles dont un sanity négatif exécuté, seuil par permutation, lecture des magnitudes au-delà du binaire, reproductibilité montrée. Le pont #2 est livré vivant avec sa marge faible déclarée. |
+
+### `ICT-15f-Bridge1bis-DecoupledFamily` — 24 cellules (16 md, 8 code, 8/8 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| Intention | **Pont #1-bis** (#9531, chantier 1/3) : la falsification du Pont #1 (σ courbure locale sans pouvoir prédictif propre, acquise sur la fronce de Thom #8944) est-elle un **vrai négatif général** ou un artefact du couplage σ↔largeur (ρ≈0,93 sur la fronce) ? Construction d'une famille où σ et largeur varient **indépendamment par construction**, puis rejeu du protocole avec corrélation partielle **à 2 covariables** (FWL : largeur ET barrière). |
+| Contenu réel | Module réutilisable `ict.basin_family` ; 30 échantillons ; découplage vérifié (corr(σ,width)=+0,000, seuil <0,2) ; **fuite de barrière identifiée** (corr(σ,barrier)=+0,463) d'où le passage à 2 covariables ; null p95 par permutation ; 4 seeds [0,1,7,42] ; **contrôle nul re-couplé** (a fixe, b varie) ; contraste déterministe (géométrique, insensible) vs stochastique (dépend de tout) ; 3 exos **silencieux** (dont un qui renvoie vers `tests/test_basin_family.py`). |
+| Résultat | **CONFIRMED-NEGATIVE 4/4 seeds** : partial ρ(σ\|w,b) = 0,173 / 0,170 / 0,128 / 0,136, tous sous leur null p95 (0,324 / 0,385 / 0,360 / 0,372) — σ n'a **aucun** pouvoir prédictif propre sur la récupérabilité une fois largeur et barrière contrôlées. Contrôle re-couplé : ρ(σ,width)=+1,000, partial=+0,000, « reproduit motif fronce = True » — l'instrument détecte le couplage quand il existe. Le négatif de la fronce est **généralisé**, pas un artefact. |
+| Critique | (1) 4 seeds et non la batterie canonique de 5 (99 absent). (2) La dégradation « récupération déterministe = géométrique insensible à la barrière » (0,800 constant) frôle la trivialité — le carnet le dit lui-même (leçon 3) mais le contraste ne vit que sur la jambe stochastique. (3) Exos silencieux. |
+| Verdict | **SOLIDE** — design quasi irréprochable : découplage par construction **vérifié en sortie**, confondant (barrière) identifié puis intégré à la purge (FWL 2-cov), null par seed, contrôle positif re-couplé exécuté, verdict unanime. La falsification du Pont #1 sort généralisée avec la méthode qui l'établit. |
