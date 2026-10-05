@@ -286,3 +286,128 @@ def test_rendered_job_names_mimics_check_unique_check_run_names(tmp_path):
     # reuse  -> ignore (uses:)
     # deploy -> "deploy" (cle)
     assert names == ["Build (Python 3.11)", "deploy"]
+
+
+# --- Decouverte dynamique + exemption natif (#19193) ----------------------
+
+
+def test_absorbed_guards_decouvre_dynamiquement_les_tranches(monkeypatch):
+    """`absorbed_guards` couvre TOUTES les listes de Guard du registre.
+
+    Preuve de non-regression : une nouvelle TRANCHE18 ajoutee au registre est
+    automatiquement couverte sans toucher au filet. Le test injecte une
+    TRANCHE_TEST factice dans `fast_lane_registry` (via monkeypatch sur
+    `vars(reg)`) et verifie qu'elle apparait dans le resultat.
+    """
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
+    import fast_lane_registry as fl_reg
+
+    tranche_test = [caci.Guard(
+        name="guard-temoin-tranche-x",
+        source="check_unique_check_run_names.yml",  # existe vraiment
+        paths=[],
+        argv=["echo", "noop"],
+        blocking=True,
+    )]
+    monkeypatch.setattr(fl_reg, "TRANCHE_TEST_X", tranche_test, raising=False)
+    seen = {g.name for g in caci.absorbed_guards()}
+    assert "guard-temoin-tranche-x" in seen, (
+        f"TRANCHE_TEST_X ajoutee mais non couverte par le filet dynamique. "
+        f"Gardes vus : {sorted(seen)[:5]}..."
+    )
+
+
+def test_absorbed_guards_exempte_les_fast_lane_native():
+    """Les gardes `source == FAST_LANE_NATIVE` ne sont PAS dans `absorbed_guards()`.
+
+    Raison : un garde natif n'a pas de workflow d'origine, donc le filet ne
+    peut rien verifier. Le contrat fondateur de la PR est qu'ils sont
+    exemptes par declaration, et le saut n'est pas silencieux : la sortie
+    du CLI les enumere separement (cf `mismatches`).
+    """
+    import fast_lane_registry as fl_reg
+    seen_native = {g.name for g in caci.absorbed_guards()
+                   if g.source == fl_reg.FAST_LANE_NATIVE}
+    assert seen_native == set(), (
+        f"Gardes natifs encore dans absorbed_guards(): {seen_native}"
+    )
+
+
+def test_mismatches_exempte_decl_les_natifs(monkeypatch):
+    """`native_exemptions()` enumere les exemptions natives en parallele des problemes.
+
+    Preuve du contrat : un saut silencieux fabriquerait une garantie fausse.
+    Le filet doit signaler les deux classes separement (cf `_main` qui
+    affiche EXEMPTE: avant MISMATCH:).
+    """
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
+    import fast_lane_registry as fl_reg
+
+    tranche_test = [caci.Guard(
+        name="guard-temoin-natif-x",
+        source=fl_reg.FAST_LANE_NATIVE,
+        paths=[],
+        argv=["echo", "noop"],
+        blocking=False,
+    )]
+    monkeypatch.setattr(fl_reg, "TRANCHE_NATIVE_TEST", tranche_test, raising=False)
+
+    exemptions = caci.native_exemptions()
+    exempte_names = {line.split("'")[1] for line in exemptions}
+    assert "guard-temoin-natif-x" in exempte_names, (
+        f"Garde natif injecte absent des exemptions signalees : {exemptions}"
+    )
+
+
+def test_mismatches_temoin_negatif_renommage_rougit(monkeypatch):
+    """Témoin négatif : renommer un garde absorbe d'une tranche >= 6 fait rougir.
+
+    Le contrat fondateur : si quelqu'un renomme `guard.name` SANS mettre a
+    jour le job dans le workflow source, le filet doit signaler un mismatch.
+    On injecte un garde fictif dans TRANCHE_TEST avec un nom qui n'existe
+    pas dans le workflow source, et on verifie que `mismatches()` le signale.
+    """
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
+    import fast_lane_registry as fl_reg
+
+    fake_yaml = FakeYaml()
+    fake_wf_content = (
+        "jobs:\n"
+        "  job_renomme:\n"
+        '    name: "Job renomme dans le workflow source"\n'
+    )
+
+    class _FakeWorkflowSource:
+        def __init__(self, content):
+            self.content = content
+            self.name = "fake-source.yml"
+
+        def is_file(self):
+            return True
+
+        def read_text(self, encoding="utf-8"):
+            return self.content
+
+    tranche_test = [caci.Guard(
+        name="guard-renomme-dans-le-registre",
+        source="fake-source.yml",
+        paths=[],
+        argv=["echo", "noop"],
+        blocking=True,
+    )]
+    monkeypatch.setattr(fl_reg, "TRANCHE_RENOMMAGE_TEST", tranche_test, raising=False)
+
+    # Monkeypatcher WORKFLOWS_DIR + _parse_workflow pour pointer sur notre contenu
+    fake_source = _FakeWorkflowSource(fake_wf_content)
+    monkeypatch.setattr(caci, "WORKFLOWS_DIR",
+                        type("P", (), {"__truediv__": lambda s, p: fake_source})())
+    monkeypatch.setattr(caci, "_parse_workflow",
+                        lambda text, yaml: fake_yaml.safe_load(text))
+
+    problems = caci.mismatches()
+    assert any("guard-renomme-dans-le-registre" in p for p in problems), (
+        f"Renommage non detecte. Problems : {problems}"
+    )
