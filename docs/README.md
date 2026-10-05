@@ -8,7 +8,7 @@ Fichiers présents directement à la racine du répertoire `docs/`. Triage initi
 
 | Fichier | Verdict | Raison |
 |---------|---------|--------|
-| [README.md](README.md) (ce fichier) | **KEEP** | Index vivant — **146** `*.md` live sous `docs/` (hors `archive/`, figée à dessein), **tous atteignables** depuis cet index directement ou via un index de sous-répertoire (mesure c.886, complétion des 42 manquants). L'atteignabilité est la bonne métrique : un doc cité par `lean/README.md` ou `ict/README.md` est dans l'index, pas absent |
+| [README.md](README.md) (ce fichier) | **KEEP** | Index vivant — tous les `*.md` live sous `docs/` (hors `archive/`, figée à dessein) sont **atteignables** depuis cet index, directement ou via un index de sous-répertoire. L'atteignabilité est la bonne métrique : un doc cité par `lean/README.md` ou `ict/README.md` est dans l'index, pas absent. L'invariant n'est plus un compte écrit ici — ce chiffre avait dérivé de plus de soixante fichiers — mais la sortie de `python scripts/check_docs_index.py`, qui rend `exit 1` dès qu'un doc vivant devient inatteignable |
 | [index.qmd](index.qmd) | **KEEP + repair** | Portail Quarto miroir du `index.md` racine — 3 liens cassés détectés (lean/README.md → lean/coordinator-workflow.md ; ../parcours.qmd → ../../parcours.qmd ; ../COURSE_CATALOG.generated.md → ../../COURSE_CATALOG.generated.md) — corrigés c.805 |
 | [grothendieckian-lens.md](cadrage/grothendieckian-lens.md) | **KEEP** | Manifesto pédagogique transversal, durable, lié depuis `index.md` racine + docs/README.md ; aucune rot détectée |
 | [magnifica-humanitas-dialogue.md](magnifica-humanitas-dialogue.md) | **nouveau** (2026-08-17) | Dialogue avec l'encyclique *Magnifica Humanitas* (Léon XIV, 2026) — le programme du dépôt confronté, § par §, aux appels du texte (vérification comme bien commun, désarmement, choix social, écologie, éducation) ; tensions conservées. #11359 |
@@ -57,6 +57,15 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/bibliography-hygiene.md](reference/bibliography-hygiene.md) | Détail de `.claude/rules/bibliography-hygiene.md` — gisement partagé `G:\Mon Drive\MyIA\IA\Bibliographie IA`, procédure de dépôt (recherche auteur *et* titre, vérification première page), nomenclature et rayons. Les publications sous droits ne sont jamais committées |
 | [reference/review-coverage-threshold.md](reference/review-coverage-threshold.md) | Document de support de l'organe `scripts/review_coverage.py` — pourquoi le seuil vaut 300 et comment l'ajuster (le nombre n'est pas arbitraire, sa dérivation est écrite) |
 | [reference/variation-genre-census-2026-08-10.md](reference/variation-genre-census-2026-08-10.md) | Census G-VAR-2/G-VAR-3 anti-blanchiment de genre (#10290), fenêtre 7 j 2026-08-03 → 2026-08-10 — mesure fondatrice des plafonds de [variation-protocol.md](../.claude/rules/variation-protocol.md) |
+| [reference/_archive-convention.md](reference/_archive-convention.md) | Convention _archive/ — modèle ML-Training-Pipeline généralisé |
+| [reference/git-workflow-detail.md](reference/git-workflow-detail.md) | Git workflow — détail : verbatim force-push, incidents, rationale |
+| [reference/lane-claim-detail.md](reference/lane-claim-detail.md) | Lane claim protocol — détail (référencé depuis .claude/rules/lane-claim-protocol.md) |
+| [reference/notebook-quantitative-prose.md](reference/notebook-quantitative-prose.md) | Valeurs quantitatives en prose de notebook — détail de la règle C.5 |
+| [reference/picker-delaisse-detail.md](reference/picker-delaisse-detail.md) | Picker delaisse — verification FIRSTHAND (detail) |
+| [reference/prevalidation-dossier-order-detail.md](reference/prevalidation-dossier-order-detail.md) | Prévalidation — pourquoi l'ordre compte, et ce que la tête vient périmer |
+| [reference/sota-verdicts-detail.md](reference/sota-verdicts-detail.md) | SOTA — détail : mandat verbatim, incidents d'axes, mesures anti-fabrication |
+| [reference/submodule-maintenance-detail.md](reference/submodule-maintenance-detail.md) | Sous-modules — détail : état vérifié, incidents et mesures datées |
+| [reference/variation-protocol-detail.md](reference/variation-protocol-detail.md) | Protocole de variation — détail, justifications mesurées, incidents fondateurs |
 
 ### Outils & méthodologie (docs/reference/)
 
@@ -82,6 +91,12 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/slides-layout-pattern.md](reference/slides-layout-pattern.md) | Motif de mise en page des decks Slidev (campagne #10950) — écrit après qu'un diagnostic « les grilles sont impossibles dans Slidev » ait bloqué trois itérations : le contre-exemple est dans le document |
 | [reference/backtester-e2-cadrage.md](reference/backtester-e2-cadrage.md) | Cadrage Option C du port `MyIA.Trading.Backtester` (E2) et déblocage des préconditions — #7357 (EPIC différée), parent #7265 |
 | [reference/backtester-e2-svm-kernel.md](reference/backtester-e2-svm-kernel.md) | Substitution du SVM à noyau dans le port E2 du Backtester Aricie — grain prescrit par le body de #7357, cadrage #12541 |
+| [reference/adk-migration-2-eval.md](reference/adk-migration-2-eval.md) | Audit migration ADK 2.0 — google-adk==2.8.0 sur Track2-GoogleADK |
+| [reference/agent-cloud-agnosticisme.md](reference/agent-cloud-agnosticisme.md) | Session cloud d'agnosticisme — rôle et circulation |
+| [reference/bot-review-harness.md](reference/bot-review-harness.md) | Bot Review Harness — pointer externe |
+| [reference/branch-cleanup-manifest.README.md](reference/branch-cleanup-manifest.README.md) | Manifeste de préservation des branches distantes — issue #14238 |
+| [reference/shared-keyring-myia-keys.md](reference/shared-keyring-myia-keys.md) | Trousseau partagé MyIA-Keys — organe d'accès, bootstrap par machine, empreinte de preuve |
+| [reference/tricephale-circulation.md](reference/tricephale-circulation.md) | Tricéphalie — coordinateur, titulaire, secrétaire |
 
 ## GenAI (docs/genai/)
 
@@ -96,6 +111,10 @@ Documentation détaillée de l'infrastructure GenAI (ComfyUI, Docker, modèles l
 | [genai/secrets-management.md](genai/secrets-management.md) | Secrets management — central source of truth (master.env + render_envs.py) |
 | [genai/service-security-audit.md](genai/service-security-audit.md) | Audit de sécurisation des services IA auto-hébergés (po-2023) |
 | [genai/audio-fading-remediation.md](genai/audio-fading-remediation.md) | Remédiation FADING audio et verdicts SOTA associés (#11719) — référence opérationnelle ; le détecteur vit dans les scripts, ce document porte le raisonnement |
+| [genai/decision-models.md](genai/decision-models.md) | Modèles de décision — relevé et shortlist |
+| [genai/model-mapping-openai.md](genai/model-mapping-openai.md) | Mapping des modèles OpenAI — génération courante |
+| [genai/model-mapping.md](genai/model-mapping.md) | Inventaire et table de correspondance — modèles GenAI/OpenAI |
+| [genai/vibe-coding-workspace-map.md](genai/vibe-coding-workspace-map.md) | Vibe-Coding — Carte des workspaces GenAI |
 
 ## QuantConnect (docs/qc/)
 
@@ -126,6 +145,17 @@ Iteration history prover, intractable diagnosis, LLM endpoints. **Index du sous-
 | [lean/mimo-converse-cartography.md](lean/mimo-converse-cartography.md) | Cartographie converse MIMO (#11152) — correspondance brique → source, mesurée le 2026-08-16 sur le Mathlib et le SLT du manifest `mimo_lean` courant |
 | [lean/junctions-scan-po-2026.md](lean/junctions-scan-po-2026.md) | Scan des jonctions NTFS Mathlib sur `myia-po-2026` (2026-09-01) — #13962, enfant de #4362 (mutualisation du cluster) |
 | [lean/cluster-junctions-c857.md](lean/cluster-junctions-c857.md) | Scan de mutualisation Mathlib à l'échelle du cluster (c.857, po-2024, 2026-09-02) — pendant du précédent, vue multi-machines |
+| [lean/alexander-strategy/c652-reidemeister-invariance.md](lean/alexander-strategy/c652-reidemeister-invariance.md) | Stratégie de preuve — invariance de Reidemeister de alexanderPolynomialSigned |
+| [lean/approval-core-bgp2026-design.md](lean/approval-core-bgp2026-design.md) | Cadrage — Core d'approbation |
+| [lean/discrepancy-as-negative-control.md](lean/discrepancy-as-negative-control.md) | Discrepancy_lean comme contrôle négatif d'allégation de strate-advance |
+| [lean/junctions-scan-po-2023.md](lean/junctions-scan-po-2023.md) | Scan NTFS junctions Mathlib — myia-po-2023 |
+| [lean/junctions-scan-po-2024.md](lean/junctions-scan-po-2024.md) | Junctions Mathlib — scan po-2024 : 22 jonctions vivantes vers un store VIDE |
+| [lean/junctions-scan-po-2027-CoursIA2.md](lean/junctions-scan-po-2027-CoursIA2.md) | Mathlib NTFS Junctions — Scan po-2027 |
+| [lean/junctions-scan-po-2027.md](lean/junctions-scan-po-2027.md) | Junctions Mathlib — scan po-2027 |
+| [lean/knot-4.33-investigation.md](lean/knot-4.33-investigation.md) | Lean 4 — knot_lean 4.33.0 bloquée par synthèse Decidable |
+| [lean/l750-pivot-scope-discipline.md](lean/l750-pivot-scope-discipline.md) | L750 ★★ — Pivot Lean specialist, discipline de scope, remédiation OOM |
+| [lean/life-components-schema.md](lean/life-components-schema.md) | Schéma de motifs et de réactions de Game of Life — tranches 1-4 de #15635 |
+| [lean/origami-reconnaissance.md](lean/origami-reconnaissance.md) | Origami géométrie différentielle — Pli 1 reconnaissance |
 
 > Note : `lean/stable_marriage_intractable_diagnosis.md` a été déplacé vers [archive/lean-intractable-diagnosis/stable-marriage.md](archive/lean-intractable-diagnosis/stable-marriage.md) (archivé c.696).
 
@@ -157,6 +187,11 @@ Documentation de cadrage et de synthèse de la série ICT (strate 7) — tous **
 | [ict/tresse-cartographie.md](ict/tresse-cartographie.md) | Cartographie horizontale : la tresse (Thom / Grothendieck / Schmidhuber / Friston) |
 | [ict/dissociations-matrix.md](ict/dissociations-matrix.md) | Matrice de dissociations 4-objets `(s, q, π, W)` |
 | [ict/d1-c4-rencontre-meta.md](ict/d1-c4-rencontre-meta.md) | Méta-cadrage : rencontre D1 ↔ C4 (le formel et l'opérationnel) |
+| [ict/dalrymple-2024-gs-ai-distillation.md](ict/dalrymple-2024-gs-ai-distillation.md) | Distillation CB2 — Dalrymple et al. 2024, "Towards Guaranteed Safe AI" |
+| [ict/hoffman-interface-distillation-case12.md](ict/hoffman-interface-distillation-case12.md) | Case 12 — Hoffman interface theory : dissociation FBT émergente en toy 3-bit |
+| [ict/hoffman-interface-distillation-case13.md](ict/hoffman-interface-distillation-case13.md) | Case 13 — Hoffman interface theory : toy N=16 RÉFUTE la mise à l'échelle monotone de la dissociation FBT |
+| [ict/hoffman-interface-distillation-case14.md](ict/hoffman-interface-distillation-case14.md) | Case 14 — Hoffman interface theory : toy N=8, M=2, compression bit2 → NULL INSTRUMENTAL |
+| [ict/hoffman-interface-distillation.md](ict/hoffman-interface-distillation.md) | Case 11 — Hoffman interface theory : toy falsifiable en 2-bit |
 
 ### Pré-enregistrements, distillations et prototypes (docs/ict/)
 
@@ -185,6 +220,10 @@ Guides pédagogiques et parcours d'apprentissage.
 | [curriculum/genai.md](curriculum/genai.md) | Parcours GenAI multimodale (Image, Audio, Vidéo, Texte) |
 | [curriculum/stage5_mamba_ssm.md](curriculum/stage5_mamba_ssm.md) | Note d'exploration Mamba/SSM pour le forecasting financier |
 | [curriculum/_inventory.md](curriculum/_inventory.md) | Inventaire des embryons de parcours — Phase 0 de l'EPIC #13844. **Fichier de travail tenu à la main** (statut `MANUEL`, non régénéré) : recense ce qui existe déjà en germe avant d'écrire de nouveaux parcours |
+| [curriculum/aima-walk-competences.md](curriculum/aima-walk-competences.md) | « Recherche et Corpus » au prisme des référentiels de compétences en IA — pilote #17982 |
+| [curriculum/aima-walk.md](curriculum/aima-walk.md) | Recherche et Corpus (AIMA-inspired) — lire le dépôt comme un corpus de recherche |
+| [curriculum/genai-rush.md](curriculum/genai-rush.md) | Accéléré vers GenAI |
+| [curriculum/symbolic-formalization.md](curriculum/symbolic-formalization.md) | IA Symbolique et Formalisation |
 
 ## Métadonnées notebooks (docs/notebook-metadata/)
 
@@ -198,6 +237,7 @@ Schémas canoniques de métadonnées par notebook : registre datasets (licence +
 | [notebook-metadata/EDITORIAL_REVIEW_CARD.md](notebook-metadata/EDITORIAL_REVIEW_CARD.md) | **KEEP** | Template canonique c.764 — copié/adapté par chaque reviewer pour ajouter une entrée à `editorial-review-registry.md`. 5 portées : typo / factual / pedagogie / substance / full (seules `factual`/`substance`/`full` permettent promotion `BETA → FINAL`, cf `docs/PARCOURS.md` §Axe 1). 93 lignes |
 | [notebook-metadata/editorial-review-registry.md](notebook-metadata/editorial-review-registry.md) | **KEEP** | Pilote fondateur c.764 (phase 2 issue #8051 critère #4) — registre whitelist YAML curé manuellement des revues éditoriales tierces. Sans signal `editorial_reviewed_by` non-null dans ce registre, `classify_editorial()` n'émet jamais `FINAL` (598 entrées historiques rétrogradées par défaut, design anti-auto-promotion). Consommé par `scripts/audit/check_editorial_review.py`. 179 lignes |
 | [notebook-metadata/production-scope.md](notebook-metadata/production-scope.md) | **KEEP** | Dérivation **mécanique** v1 du périmètre PRODUCTION (Epic #11259, tâches T1 + T1b) : quels notebooks du dépôt sont du matériel de production, par un critère reproductible plutôt que par jugement au cas par cas. 25 Ko — la pièce de référence quand une règle dit « sur les notebooks de production » |
+| [notebook-metadata/pedagogical-roles-registry.md](notebook-metadata/pedagogical-roles-registry.md) | Registre des rôles pédagogiques — pedagogical_role |
 
 ## Lecture transversale
 
@@ -269,6 +309,20 @@ Tables d'audit cumulatives par Epic (mandat user, format longue durée).
 | [ledgers/12204-ict-chantier-1-a2.md](ledgers/12204-ict-chantier-1-a2.md) | EPIC #12204, tranche A2 — l'opération 1 (*Recoordonner*) passe de `RAPPORTÉ` à `FIRSTHAND`. Le ledger porte la mesure qui autorise le changement de label, pas le label seul |
 | [ledgers/12204-ict-chantier-1-a3.md](ledgers/12204-ict-chantier-1-a3.md) | EPIC #12204, tranche A3 — vérification des opérations 3 et 9 (`teorth/pfr`, `planning_lean` sans `sorry`) : les deux que le tour d'horizon précédent n'avait pas atteintes |
 | [ledgers/12204-ict-chantier-1-audit-froid.md](ledgers/12204-ict-chantier-1-audit-froid.md) | EPIC #12204, tranche audit-froid — trois labels par opération, **quatre entrées tombées**. Un audit dont le livrable est ce qui ne survit pas à la relecture est plus utile qu'un audit qui confirme |
+| [ledgers/12204-ict-chantier-1-a5.md](ledgers/12204-ict-chantier-1-a5.md) | Chantier 1 — tranche A5 : opérations 2, 6, 10 après la distillation Sandholm |
+| [ledgers/12204-ict-chantier-1-a6.md](ledgers/12204-ict-chantier-1-a6.md) | Chantier 1 — tranche A6 : statuation des opérations 11-13 (promotions TABLE) et de la file d'attente |
+| [ledgers/13746-tests-eclates-dissipation.md](ledgers/13746-tests-eclates-dissipation.md) | EPIC #13746 — Ledger dissipation câblage tests éclatés |
+| [ledgers/14169-g1-recouvrement.md](ledgers/14169-g1-recouvrement.md) | Ledger G1 — Recouvrement 28 PRs amont endjin/Z3.Linq vs fork MyIntelligenceAgency/Z3.Linq |
+| [ledgers/14169-z3linq-upstream-overlap.md](ledgers/14169-z3linq-upstream-overlap.md) | Z3.Linq — recouvrement fork / amont |
+| [ledgers/14549-tensorsharp-multimodal.md](ledgers/14549-tensorsharp-multimodal.md) | Issue #14549 — TensorSharp multimodal axe Image/Vidéo — ledger unique c.257→c.259 |
+| [ledgers/14591-volet-bc-mesure.md](ledgers/14591-volet-bc-mesure.md) | 14591 Volets B + C — mesure chiffrée |
+| [ledgers/14598-ict-tests-timeout-dissipation.md](ledgers/14598-ict-tests-timeout-dissipation.md) | EPIC #14598 — Ledger dissipation timeout ICT tests/ |
+| [ledgers/15159-wan-video-inv.md](ledgers/15159-wan-video-inv.md) | Issue #15159 — axe Vidéo Wan 2.1/2.2 sur TensorSharp .NET — ledger d'investigation |
+| [ledgers/15573-cadrage-granulaire.md](ledgers/15573-cadrage-granulaire.md) | Ledger — Issue #15573 (cadrage granulaire) |
+| [ledgers/15615-gradation-foundations.md](ledgers/15615-gradation-foundations.md) | Ledger — Issue #15615 (gradation GameTheory, strate "Fondations") |
+| [ledgers/17375-md-content-loss-justified.md](ledgers/17375-md-content-loss-justified.md) | Ledger #17375 -- md-content-loss justification |
+| [ledgers/18493-counter-scan-classification.md](ledgers/18493-counter-scan-classification.md) | Issue #18493 — Scan des compteurs littéraux dans commentaires code |
+| [ledgers/18741-qualification-14-notebooks.md](ledgers/18741-qualification-14-notebooks.md) | Qualification des notebooks GenAI sous le seuil du compteur canonique |
 
 ## Suivis de cycle (docs/suivis/)
 
@@ -294,6 +348,8 @@ Les autres documents de cadrage vivent au premier niveau de `docs/` (Grothendiec
 | Fichier | Description |
 |---------|-------------|
 | [ci/slow-lane.md](ci/slow-lane.md) | Voie asynchrone (tranche 1, #12856) — sortir du `pull_request` les contrôles lourds **et idempotents** pour les payer ailleurs. Le critère d'éligibilité (idempotence) est ce qui distingue un déplacement légitime d'un contournement de garde |
+| [ci/po2024-topology-baseline.md](ci/po2024-topology-baseline.md) | Topologie baseline hôte myia-po-2024 — sous-grain #15574 |
+| [ci/scripts-tests-triage.md](ci/scripts-tests-triage.md) | Scripts Tests (CPU) — point de triage unique |
 
 ## Harnais (docs/harness/)
 
@@ -306,6 +362,27 @@ Les autres documents de cadrage vivent au premier niveau de `docs/` (Grothendiec
 | Fichier | Description |
 |---------|-------------|
 | [ml/tsad-benchmark-flaws.md](ml/tsad-benchmark-flaws.md) | Défauts des benchmarks TSAD (détection d'anomalies sur séries temporelles) et place du *Matrix Profile* — note de référence compagnon des notebooks ML-10. Sert à ne pas présenter comme un résultat ce qui est un artefact de protocole d'évaluation |
+| [ml/bdh-evaluation.md](ml/bdh-evaluation.md) | Évaluation BDH (Dragon Hatchling) — verdict complet |
+
+## Autres répertoires (docs/xai-shap-strategy/, docs/test-fixtures/)
+
+Répertoires de documentation sans section propre (stratégie de série, fixtures de test).
+
+| Fichier | Description |
+|---------|-------------|
+| [test-fixtures/md-table-guard/fixture-17306.md](test-fixtures/md-table-guard/fixture-17306.md) | Fixture md-table-guard #17306 |
+| [xai-shap-strategy/c655-xai-shap-attribution.md](xai-shap-strategy/c655-xai-shap-attribution.md) | Stratégie — XAI-Shap-Attribution : le pont Shap ↔ do-calculus |
+
+
+## .NET (docs/dotnet/)
+
+Deltas runtime et digests de performance .NET, mesurés sur les bancs et les carnets types du dépôt.
+
+| Fichier | Description |
+|---------|-------------|
+| [dotnet/net11-runtime-deltas.md](dotnet/net11-runtime-deltas.md) | .NET 9 → 10 → 11 — Deltas runtime mesurés sur les bancs et carnets types du dépôt |
+| [dotnet/net11-toub-digest.md](dotnet/net11-toub-digest.md) | .NET 11 — Digest de performance |
+
 
 ## Rapports transients (docs/transients/)
 
