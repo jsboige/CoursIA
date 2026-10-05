@@ -809,5 +809,213 @@ class TestConflictingTargetsCaseOnly(unittest.TestCase):
                              [tgt_rel])
 
 
+class TestCaseOnlyRenameCommits(unittest.TestCase):
+    """Defaut 9 (#19159) : un renommage de casse seule ne se committait pas.
+
+    Le `git mv` reussissait et la vague restait a MOITIE appliquee : le commit 1
+    nommait ses deux chemins, et git refuse un pathspec des que l'index porte une
+    variante de casse du chemin nomme (`will not add file alias`), meme quand
+    l'index porte deja la bonne casse. Trois proprietes sont verifiees ici, et
+    la premiere vaut sur toute plateforme : l'index doit finir sur la casse
+    CIBLE, `--apply` doit produire un commit, et la garde d'index etranger doit
+    survivre a la disparition du pathspec.
+    """
+
+    OLD_CASE = "MyIA.AI.Notebooks/S/S-03-Reasoning-Csharp.ipynb"
+    NEW_CASE = "MyIA.AI.Notebooks/S/S-03-Reasoning-CSharp.ipynb"
+
+    def _repo_casse(self, repo: Path) -> str:
+        """Depot temporaire avec un notebook dont le suffixe est en casse basse."""
+        _git(repo, "init", "-q")
+        _git(repo, "config", "user.email", "test@example.invalid")
+        _git(repo, "config", "user.name", "test")
+        _git(repo, "config", "core.ignorecase", "true")
+        _write_nb(repo, self.OLD_CASE, _nb([_md("Base.")]))
+        _git(repo, "add", "-A")
+        _git(repo, "commit", "-qm", "base")
+        return _git(repo, "rev-parse", "HEAD").strip()
+
+    def test_move_records_the_target_case_in_the_index(self):
+        """L'index doit porter la casse CIBLE : c'est ce que le `git mv` direct
+        ne faisait pas, et ce qui faisait echouer le commit."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            self._repo_casse(repo)
+            rn.move_file(repo, self.OLD_CASE, self.NEW_CASE)
+            suivis = _git(repo, "ls-files")
+            self.assertIn(self.NEW_CASE, suivis)
+            self.assertNotIn(self.OLD_CASE, suivis)
+            self.assertTrue((repo / self.NEW_CASE).is_file())
+
+    def test_apply_commits_a_case_only_rename(self):
+        """Le cas fondateur : `--apply` doit rendre 0 et committer la casse cible.
+
+        Le notebook se cite lui-meme et un README le cite : le commit 2 (referents)
+        touche donc AUSSI le chemin renomme, ce qui eprouve les deux commits sur
+        la casse seule, pas seulement le premier.
+        """
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = self._repo_casse(repo)
+            nom = self.OLD_CASE.rsplit("/", 1)[-1]
+            _write_nb(repo, self.OLD_CASE, _nb([_md(f"Voir {nom}.")]))
+            _write(repo, "MyIA.AI.Notebooks/S/README.md", f"Serie : [{nom}]({nom}).")
+            _git(repo, "add", "-A")
+            _git(repo, "commit", "-qm", "referents")
+            base = _git(repo, "rev-parse", "HEAD").strip()
+            tsv = Path(str(repo) + ".table.tsv")
+            tsv.write_text(f"{self.OLD_CASE}\t{self.NEW_CASE}\n", encoding="utf-8")
+
+            cwd = os.getcwd()
+            os.chdir(repo)
+            try:
+                with mock.patch.object(rn, "run_organs", return_value=0):
+                    rc = rn.main(["--mapping", str(tsv), "--apply",
+                                  "--lane", "test-lane"])
+            finally:
+                os.chdir(cwd)
+            self.assertEqual(rc, 0)
+
+            c1 = _git(repo, "diff", "--name-status", base, "HEAD~1")
+            self.assertIn(self.NEW_CASE, c1)
+            head = _git(repo, "ls-tree", "-r", "--name-only", "HEAD")
+            self.assertIn(self.NEW_CASE, head)
+            self.assertNotIn(self.OLD_CASE, head)
+            self.assertEqual(_git(repo, "status", "--porcelain").strip(), "")
+            # le commit 2 a bien emporte le referent, et le notebook deplace
+            c2 = _git(repo, "diff", "--name-status", "HEAD~1", "HEAD")
+            self.assertIn("MyIA.AI.Notebooks/S/README.md", c2)
+
+    def test_commit_moves_refuses_a_foreign_staged_path(self):
+        """La garde que portait le pathspec doit survivre a son retrait : un
+        chemin etranger dans l'index fait refuser la passe, sans rien committer."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = self._repo_casse(repo)
+            rn.move_file(repo, self.OLD_CASE, self.NEW_CASE)
+            _write(repo, "Intrus.md", "x\n")
+            _git(repo, "add", "Intrus.md")
+
+            rc = rn.commit_moves(repo, {self.OLD_CASE, self.NEW_CASE}, "c1")
+            self.assertEqual(rc, 1)
+            self.assertEqual(_git(repo, "rev-parse", "HEAD").strip(), base)
+
+
+class Test19157IdempotenceEtNoyauEnTete(unittest.TestCase):
+    """#19157 defauts 1 et 2 : `canonical_target` n'etait pas idempotent sur un
+    nom deja en `-Lean-Python`, et un mot de noyau EN TETE de titre passait sous
+    le radar de `target_violation`.
+
+    Les tests ci-dessous fabriquent le defaut et pincent le verdict. La
+    contre-epreuve d'ensemble est le diff de `--propose` sur tout l'arbre, cite
+    dans le body de la PR (critere 5 de l'issue) : 5 cibles mortes qui
+    redeviennent CONFORME, 44 cibles qui repetent le noyau qui tombent en
+    A TRANCHER.
+    """
+
+    SIX_TWEETY = (
+        "Tweety-02d-FOL-Lab-Lean-Python.ipynb",
+        "Tweety-02e-Preuves-Hilbert-Gentzen-Lean-Python.ipynb",
+        "Tweety-02f-Modal-Zoo-Lean-Python.ipynb",
+        "Tweety-03b-Modal-Lab-Lean-Python.ipynb",
+        "Tweety-05d-Stable-Synthesis-Lean-Python.ipynb",
+        "Tweety-05e-Propositional-Lab-Lean-Python.ipynb",
+    )
+
+    def test_1_idempotence_sur_tout_l_arbre(self):
+        """Critere 1 : `canonical_target(canonical_target(x, k), k) ==
+        canonical_target(x, k)` sur tout `MyIA.AI.Notebooks`.
+
+        Les quatre suffixes sont eprouves, pas seulement le noyau detecte : la
+        propriete doit tenir pour tout appel, y compris ceux qu'un appelant
+        ferait avec un autre noyau.
+        """
+        root = Path(__file__).resolve().parents[3] / "MyIA.AI.Notebooks"
+        noms = sorted({p.name for p in root.rglob("*.ipynb")})
+        self.assertGreater(len(noms), 1000, f"arbre de notebooks absent sous {root}")
+        for nom in noms:
+            for noyau in ("python", "csharp", "lean", "lean-python"):
+                une_fois = rn.canonical_target(nom, noyau)
+                with self.subTest(notebook=nom, noyau=noyau):
+                    self.assertEqual(rn.canonical_target(une_fois, noyau), une_fois)
+
+    def test_1b_idempotence_hors_grammaire(self):
+        """Le retour anticipe (nom hors grammaire de serie) empilait lui aussi :
+        `Diagnostic-Medical` -> `-Python` -> `-Python-Python`."""
+        for nom, noyau, cible in (
+            ("Diagnostic-Medical.ipynb", "python", "Diagnostic-Medical-Python.ipynb"),
+            ("Diagnostic-Medical-Python.ipynb", "python", "Diagnostic-Medical-Python.ipynb"),
+            ("SmartGrid-Energy-Lean.ipynb", "lean", "SmartGrid-Energy-Lean.ipynb"),
+        ):
+            with self.subTest(notebook=nom):
+                self.assertEqual(rn.canonical_target(nom, noyau), cible)
+
+    def test_2_les_six_noms_tweety_sortent_conformes(self):
+        """Critere 2 : les six cibles de la serie Tweety sont deja canoniques."""
+        for nom in self.SIX_TWEETY:
+            with self.subTest(notebook=nom):
+                self.assertEqual(rn.canonical_target(nom, "lean-python"), nom)
+                self.assertIsNone(rn.target_violation(nom))
+
+    def test_3_noyau_en_tete_de_titre_detecte(self):
+        """Critere 3 : un mot de noyau en tete de titre est un infixe comme un
+        autre -- `_KERNEL_INFIX_RE` exigeait un separateur AVANT le mot."""
+        self.assertEqual(
+            rn.target_violation("Tweety-05b-Lean-Argumentation-Lean.ipynb"),
+            "mot de noyau en infixe du titre",
+        )
+        # Le nom d'avant #19150 produit exactement cette cible : le meme verdict
+        # doit tomber sur le nom reellement present dans l'arbre au moment du
+        # --propose.
+        self.assertEqual(
+            rn.canonical_target("Tweety-5b-Lean-Argumentation.ipynb", "lean"),
+            "Tweety-05b-Lean-Argumentation-Lean.ipynb",
+        )
+
+    def test_3b_pas_de_faux_positif_sur_un_mot_qui_contient_le_noyau(self):
+        """Le mot doit etre ENTIER : `Pythonic` et `Lean4` ne sont pas des mots
+        de noyau, et un titre qui commence par autre chose reste conforme."""
+        for nom in ("GameTheory-02-NormalForm-Python.ipynb",
+                    "X-01-Pythonic-Intro-Python.ipynb",
+                    "X-01-Lean4-Intro-Lean.ipynb",
+                    "Tweety-02d-FOL-Lab-Lean-Python.ipynb"):
+            with self.subTest(notebook=nom):
+                self.assertIsNone(rn.target_violation(nom))
+
+    def test_4_lean_python_sans_preuve_ne_devient_pas_python(self):
+        """Le retrait en point fixe ne doit pas EFFACER une revendication Lean :
+        un nom en `-Lean-Python` sous noyau python SANS preuve citee tombe en
+        A TRANCHER, comme la queue `-Lean` (#17801 point 2) -- jamais un
+        `-Python` silencieux."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            _init_repo(repo)
+            _write_nb(repo, "MyIA.AI.Notebooks/S/S-01-Swaps-Lean-Python.ipynb",
+                      _nb([_md("swaps"), _code("print('aucun appel lake')")]))
+            _git(repo, "add", "-A")
+            _git(repo, "commit", "-qm", "serie")
+            table = rn.propose("MyIA.AI.Notebooks/S", repo)
+            self.assertIn("A TRANCHER", table)
+            self.assertIn("sans preuve", table)
+            self.assertNotIn("S-01-Swaps-Python.ipynb", table)
+
+    def test_4b_la_preuve_citee_rend_le_suffixe_lean_python_stable(self):
+        """Controle symetrique : AVEC la preuve, la cible garde `-Lean-Python`
+        et n'est plus empilee -- c'est le cas des six Tweety."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            _init_repo(repo)
+            _write_nb(repo, "MyIA.AI.Notebooks/S/S-01-FOL-Lab-Lean-Python.ipynb",
+                      _nb([_md("lab"),
+                           _code('run_wsl(f"cd {to_wsl(LAKE_DIR)} && '
+                                 'lake build FormalLogic.FolBridge")')]))
+            _git(repo, "add", "-A")
+            _git(repo, "commit", "-qm", "serie")
+            table = rn.propose("MyIA.AI.Notebooks/S", repo)
+            self.assertIn("`MyIA.AI.Notebooks/S/S-01-FOL-Lab-Lean-Python.ipynb` | "
+                          "`MyIA.AI.Notebooks/S/S-01-FOL-Lab-Lean-Python.ipynb`", table)
+            self.assertIn("CONFORME", table)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -625,13 +625,21 @@ def _default_branch(repo: str, fetch=_gh_json) -> str:
 #: la reponse `workflow_runs[].name`). La liste reste explicite et documentee
 #: pour qu'une derive silencieuse d'un nom GitHub ne fausse pas le verdict.
 #:
-#: Pourquoi cette liste : un workflow `push: main` path-filtered qui n'a PAS
-#: de trigger `pull_request` peut etre rouge sur main sans rougir la PR
-#: candidate (la PR ne touche pas les paths concernes). C'est precisement le
-#: cas que la derogation vise : main est reellement rouge, mais la PR n'a
-#: aucun moyen de le voir. A ce jour (2026-10-02) le seul workflow repondant
-#: a ce critere est `Scripts & Notebook-Tools Tests` (scripts-tests.yml,
-#: push main, paths `scripts/**`, pas de trigger pull_request).
+#: Pourquoi cette liste : un workflow path-filtre `scripts/**` peut etre
+#: rouge sur main sans rougir la PR candidate -- sauf a toucher les memes
+#: paths, la PR ne declenche pas le workflow et ne voit donc jamais ce
+#: rouge. C'est precisement le cas que la derogation vise : main est
+#: reellement rouge, mais la PR n'a aucun moyen de le voir. A ce jour
+#: (2026-10-04) le seul workflow repondant a ce critere est `Scripts &
+#: Notebook-Tools Tests` (scripts-tests.yml : declencheurs push main ET
+#: pull_request, tous deux filtres par la MEME liste de chemins -- les deux
+#: incluent `tests/**`, `pytest.ini`, `.github/workflows/**` et une poignee
+#: de sujets hors `scripts/` (registre d'attributions, `conway_lean/**`,
+#: `prosody_lab/syllable_pitch.py`, `Track2-GoogleADK/**`, ...). Une PR qui
+#: ne touche AUCUN de ces chemins ne le declenche sur aucun des deux. #19069
+#: corrige ici deux mentions erronees successives : « pas de trigger
+#: pull_request » (version initiale) puis « une PR hors `scripts/**` », qui
+#: ignorait `tests/**` et `.github/workflows/**` (releve Hermes).
 MAIN_RED_WORKFLOWS = (
     # (yml_path, display_name)
     ("scripts-tests.yml", "Scripts & Notebook-Tools Tests"),
@@ -642,10 +650,14 @@ def _main_red_motif(repo: str, fetch=_gh_json) -> "str | None":
     """#18686 + #18790 + #18796 : motif de rouge observable sur la branche
     par defaut, ou None si vert.
 
-    Pour chaque workflow de `MAIN_RED_WORKFLOWS`, lit le DERNIER run sur
-    `main` via l'API workflow-directe
+    Pour chaque workflow de `MAIN_RED_WORKFLOWS`, lit le DERNIER run
+    REELLEMENT CONCLU sur `main` via l'API workflow-directe
     `repos/{repo}/actions/workflows/{yml_path}/runs?branch={branch}&event=push
-    &status=completed&per_page=1`. Le premier run rendu est le verdict le
+    &status=completed&per_page=10`, puis saute cote client les runs sans
+    verdict (`cancelled`, `skipped` : `status=completed` les inclut, et en
+    passe de merge en rafale la concurrence du workflow annule les runs
+    intermediaires -- le dernier run rendu masquait alors le rouge reel,
+    #19069). Le premier run `success`/`failure` rendu est le verdict le
     plus frais de ce workflow sur main, **independamment de son anciennete**
     (limite de la fenetre globale du commit de tete : un merge non lie aux
     paths du workflow peut evict le run hors de la fenetre de 100 -- CR
@@ -690,7 +702,7 @@ def _main_red_motif(repo: str, fetch=_gh_json) -> "str | None":
         try:
             payload = fetch(
                 "repos/{}/actions/workflows/{}/runs"
-                "?branch={}&event=push&status=completed&per_page=1".format(
+                "?branch={}&event=push&status=completed&per_page=10".format(
                     repo, _yml, branch
                 )
             )
@@ -701,8 +713,22 @@ def _main_red_motif(repo: str, fetch=_gh_json) -> "str | None":
         )
         if not isinstance(entries, list) or not entries:
             continue
-        run = entries[0]
-        if not isinstance(run, dict):
+        # #19069 : `status=completed` inclut les runs `cancelled`/`skipped`.
+        # En passe de merge en rafale, la concurrence du workflow annule les
+        # runs intermediaires et le dernier run rendu n'a alors AUCUN
+        # verdict : la derogation restait fermee alors que le dernier run
+        # reellement conclu sur main etait rouge. On saute les runs sans
+        # verdict et on prend le premier reellement conclu.
+        run = next(
+            (
+                r
+                for r in entries
+                if isinstance(r, dict)
+                and r.get("conclusion") in ("success", "failure")
+            ),
+            None,
+        )
+        if run is None:
             continue
         # Garde-fou : le display_name GitHub doit matcher le display_name
         # canonique de l'entree. Un changement de nom cote GitHub ne fait

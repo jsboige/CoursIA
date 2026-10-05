@@ -10,9 +10,9 @@ Le catalogue rassemble **plusieurs centaines de notebooks pédagogiques** répar
 
 <!-- CATALOG-STATUS
 series: ALL
-total: 1345
-breakdown: SymbolicAI=314, GenAI=257, Search=156, ML=127, QuantConnect=115, GameTheory=109, IIT=93, Probas=77, Sudoku=38, RL=37, Complexity=9, CaseStudies=6, NLP=5, Compression=1, cross-series=1
-maturity: BETA=1183, DRAFT=88, ALPHA=70, TEMPLATE=4
+total: 1354
+breakdown: SymbolicAI=317, GenAI=259, Search=157, ML=127, QuantConnect=115, GameTheory=110, IIT=94, Probas=77, Sudoku=38, RL=37, Complexity=10, CaseStudies=6, NLP=5, Compression=1, cross-series=1
+maturity: BETA=1192, DRAFT=88, ALPHA=70, TEMPLATE=4
 -->
 
 <sub>*Marqueur auto-régénéré quotidiennement par `.github/workflows/catalog-cron.yml` (file [`COURSE_CATALOG.generated.md`](../COURSE_CATALOG.generated.md) — source de vérité sur les volumes et la maturité). Toute PR qui modifierait ce bloc est signalée par `catalog-drift.yml` (read-only, catalog-pr-hygiene R1).*</sub>
@@ -103,7 +103,7 @@ Complexity
 GameTheory
 ├── (à plat) - Nash, Minimax, Coopétition, MARL, Mechanism Design
 ├── SocialChoice/ - Arrow, Sen, Condorcet (Lean 4)
-└── *_lean/ + lean_game_defs(_ext)/ - 9 lakes (game_theory_lean [Arrow, Shapley, Stable Marriage], conway_cgt_lean, minimax_lean, assignment_lean, asymmetric_information_lean, social_choice_lean, social_choice_lean_peters [lake de référence externe], lean_game_defs, lean_game_defs_ext — ces deux derniers en `lakefile.toml`, pas `.lean`)
+└── *_lean/ + lean_game_defs(_ext)/ - 9 lakes (game_theory_lean [Arrow, Shapley, Stable Marriage], conway_cgt_lean, minimax_lean, assignment_lean, asymmetric_information_lean, social_choice_lean, social_choice_lean_peters [lake de référence externe, sous SocialChoice/], lean_game_defs, lean_game_defs_ext — ces deux derniers en `lakefile.toml`, pas `.lean`)
 
 ML
 ├── ML.Net/ - Tutoriels ML.NET C# (classification, régression, clustering)

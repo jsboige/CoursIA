@@ -299,6 +299,103 @@ class TestAnalyse:
         assert f == sorted(f, key=lambda x: (x["kind"], x["notebook"]))
 
 
+# ------------------------------- 4b. vue intra-serie du statut d'entree (#19076)
+
+def _serie(tmp_path, name, ids, links):
+    """Comme `_chain`, mais la serie porte un NOM choisi : indispensable pour
+    poser deux series distinctes dans le meme graphe (le cas fondateur est un
+    lien INTER-series)."""
+    base = tmp_path / "MyIA.AI.Notebooks" / name
+    paths = {}
+    for i in ids:
+        # Une cible nue (`02`) recoit `.ipynb` ; une cible deja nommee
+        # (`../Serie/07.ipynb`) est prise telle quelle -- c'est ce qui permet le
+        # lien INTER-series du cas fondateur.
+        targets = [d if d.endswith(".ipynb") else f"{d}.ipynb"
+                   for d in links.get(i, [])]
+        cells = [("markdown", "\n".join(f"[Suivant]({d})" for d in targets))]
+        paths[i] = _write(base / f"{i}.ipynb", cells)
+    return base, paths
+
+
+class TestExternallyAnchored:
+    """Le statut d'entree est calcule sur le graphe GLOBAL : un lien venu d'une
+    AUTRE serie retire a un carnet son statut d'entree dans la sienne, sans
+    qu'aucune chaine interne ne le rattache -- il est alors reclasse
+    `unreachable` (cas fondateur 07-Aspire, arbitrage coordinateur option b,
+    PR #19075).
+
+    `analyse` publie desormais les DEUX vues. Ces tests pinent les deux
+    moities, parce qu'une seule des deux serait un demi-fix :
+      - le VERDICT est inchange (le carnet reste `unreachable`, aucun
+        `orphan_entry` nouveau, aucun baseline a realigner) ;
+      - la DIVERGENCE est rapportee (`externally_anchored` + ses sources),
+        parce que c'est elle qui rend l'arbitrage (a)/(b) mesurable au lieu
+        d'etre re-decouvert a chaque nouveau lien inter-series.
+    """
+
+    SERIE = "MyIA.AI.Notebooks/Serie"
+    AUTRE = "MyIA.AI.Notebooks/Autre"
+
+    def _report(self, tmp_path, external_link):
+        """Serie {01 -> 02, 07} ; `external_link` ajoute Autre/Ext-1 -> Serie/07."""
+        _, p = _serie(tmp_path, "Serie", ["01", "02", "07"], {"01": ["02"]})
+        nodes = list(p.values())
+        if external_link:
+            _, q = _serie(tmp_path, "Autre", ["Ext-1"],
+                          {"Ext-1": ["../Serie/07.ipynb"]})
+            nodes += list(q.values())
+        inbound, outbound, series = cnc.build_graph(nodes)
+        r = cnc.analyse(inbound, outbound, series)
+        return next(s for s in r["series"] if s["series"] == self.SERIE), r["findings"]
+
+    def test_without_external_link_07_is_an_orphan_entry(self, tmp_path):
+        # Etat AVANT : 01 -> 02, et 07 sans aucun lien entrant.
+        rec, findings = self._report(tmp_path, external_link=False)
+        kinds = {(f["kind"], f["notebook"]) for f in findings}
+        assert ("orphan_entry", f"{self.SERIE}/07.ipynb") in kinds
+        assert not any(k == "unreachable" for k, _ in kinds)
+        assert rec["externally_anchored"] == []
+
+    def test_founder_shape_keeps_unreachable_and_reports_the_divergence(self, tmp_path):
+        # Etat APRES (#19075) : le lien inter-series a fait perdre a 07 son
+        # statut d'entree -> `unreachable`. Le verdict NE BOUGE PAS.
+        rec, findings = self._report(tmp_path, external_link=True)
+        kinds = {(f["kind"], f["notebook"]) for f in findings}
+        assert ("unreachable", f"{self.SERIE}/07.ipynb") in kinds
+        assert not any(k == "orphan_entry" for k, _ in kinds), (
+            "la vue intra-serie est INFORMATIVE : elle ne doit pas ressusciter "
+            "un orphan_entry que l'arbitrage option b a reclasse"
+        )
+        # ...et la divergence est nommee, avec sa source.
+        assert rec["externally_anchored"] == [{
+            "notebook": f"{self.SERIE}/07.ipynb",
+            "sources": [f"{self.AUTRE}/Ext-1.ipynb"],
+        }]
+
+    def test_intra_series_inbound_disqualifies_from_the_view(self, tmp_path):
+        # 02 recoit un lien INTRA-serie (01) ET un lien externe : il n'est pas
+        # « entree de sa serie privee de ce statut », il est simplement atteint.
+        _, p = _serie(tmp_path, "Serie", ["01", "02", "03"], {"01": ["02"], "02": ["03"]})
+        _, q = _serie(tmp_path, "Autre", ["Ext-1"], {"Ext-1": ["../Serie/02.ipynb"]})
+        inbound, outbound, series = cnc.build_graph(list(p.values()) + list(q.values()))
+        r = cnc.analyse(inbound, outbound, series)
+        rec = next(s for s in r["series"] if s["series"] == self.SERIE)
+        assert rec["externally_anchored"] == []
+
+    def test_the_view_never_reaches_findings_or_baseline_keys(self, tmp_path):
+        # Garde structurelle : si `externally_anchored` fuyait dans `findings`,
+        # le depot entier prendrait d'un coup un NEW finding par carnet ancre
+        # de l'exterieur, et le baseline passerait de « connu » a « a realigner »
+        # a chaque lien INTER-series nouveau. Le champ est un RAPPORT, pas un
+        # verdict : c'est la propriete que ce test tient.
+        rec, findings = self._report(tmp_path, external_link=True)
+        assert rec["externally_anchored"], "controle positif : la vue doit etre non vide ici"
+        assert not any("externally_anchored" in f for f in findings)
+        keys = cnc._finding_keys({"findings": findings})
+        assert not any(k[0] == "externally_anchored" for k in keys)
+
+
 # -------------------------------------------------------------- 5. baseline
 
 class TestBaselineIO:

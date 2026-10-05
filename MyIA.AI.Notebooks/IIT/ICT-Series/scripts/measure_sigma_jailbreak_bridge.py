@@ -34,6 +34,31 @@ valeur ecrit son propre artefact, a cote, sous le nom donne par ``--out``.
         --model TinyLlama/TinyLlama-1.1B-Chat-v1.0 \
         --out runs/ict_sigma_jailbreak_bridge_tinyllama.json
 
+Placement sur GPU
+-----------------
+``--device`` vaut ``cpu`` par defaut : les runs deja committes sont **inchanges**,
+et le protocole de reference reste celui qu'ils ont suivi. Un modele de taille
+superieure a besoin de ``--device cuda`` pour tenir dans un temps raisonnable ;
+le placement ne touche ni les prompts, ni l'echelle, ni le classifieur, ni le
+critere -- mais il **change le chemin numerique**, et un decodage glouton amplifie
+la moindre difference d'arrondi en un texte different.
+
+Le controle qui borne ce changement se fait en rejouant le **modele de reference**
+sur GPU : la comparaison de ses sequences d'etats et de ses sigmas avec celles de
+l'artefact committe (CPU) mesure le **plancher de bruit** du changement de
+placement, a modele fixe. Mesure sur Qwen2.5-0.5B-Instruct : 16/48 trajectoires
+seulement sont identiques entre CPU/float32 et GPU/bfloat16, et sigma de la
+classe benigne passe de 4.3e-5 a 3.1e-2 -- le placement est un effet de premier
+ordre sur ce banc, une comparaison inter-modeles **a travers deux devices
+differents n'est donc pas valide**. Ce rejeu sert alors de **reference
+appariee** : la replication sur GPU se compare a lui, pas a l'artefact CPU.
+
+    python scripts/measure_sigma_jailbreak_bridge.py --full \
+        --model Qwen/Qwen2.5-0.5B-Instruct --device cuda --dtype bfloat16 \
+        --out runs/ict_sigma_jailbreak_bridge_ctrl_gpu.json
+
+
+
 Ce que ce script ne persiste PAS : le texte genere. Les artefacts ne portent que
 les etats classes par tour, leurs longueurs, et les agregats. Le banc est un banc
 de robustesse ; publier les completions n'ajoute rien a la mesure.
@@ -194,9 +219,10 @@ def collapse2(traj: list[str]) -> list[str]:
 def rollout(tok, model, torch, prompt: str, n_turns: int) -> list[str]:
     msgs = [{"role": "user", "content": prompt}]
     states = []
+    dev = next(model.parameters()).device
     for t in range(n_turns):
         ids = tok.apply_chat_template(msgs, add_generation_prompt=True,
-                                      return_tensors="pt", return_dict=False)
+                                      return_tensors="pt", return_dict=False).to(dev)
         with torch.no_grad():
             out = model.generate(ids, max_new_tokens=MAX_NEW_TOKENS, do_sample=False,
                                  pad_token_id=tok.eos_token_id)
@@ -218,6 +244,8 @@ def main() -> int:
     ap.add_argument("--model", default=MODEL,
                     help="remplace le modele par defaut, protocole inchange")
     ap.add_argument("--dtype", default="float32", choices=("float32", "bfloat16"))
+    ap.add_argument("--device", default="cpu",
+                    help="'cpu' (defaut : protocole de reference) ou 'cuda'")
     ap.add_argument("--out", default=os.path.join(SERIES, "runs",
                                                   "ict_sigma_jailbreak_bridge.json"))
     args = ap.parse_args()
@@ -232,9 +260,10 @@ def main() -> int:
     t0 = time.time()
     tok = AutoTokenizer.from_pretrained(args.model)
     model = AutoModelForCausalLM.from_pretrained(args.model, dtype=dtype)
+    model.to(args.device)
     model.eval()
-    print(f"[load {time.time() - t0:.1f}s] {args.model} ({args.dtype}) greedy, "
-          f"{args.turns} tours, {n_prompts} prompts/classe", flush=True)
+    print(f"[load {time.time() - t0:.1f}s] {args.model} ({args.dtype}, {args.device}) "
+          f"greedy, {args.turns} tours, {n_prompts} prompts/classe", flush=True)
 
     traj: dict[int, list[list[str]]] = {}
     for sev in (0, 1, 2):
@@ -288,6 +317,7 @@ def main() -> int:
         "reference_model": MODEL,
         "is_replication": args.model != MODEL,
         "dtype": args.dtype,
+        "device": args.device,
         "decoding": "greedy (do_sample=False) -- entierement reproductible",
         "turns": args.turns,
         "n_prompts_per_class": n_prompts,

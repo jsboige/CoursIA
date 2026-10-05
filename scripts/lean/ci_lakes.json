@@ -232,15 +232,15 @@
     },
     {
       "lake": "socialchoicepeters",
-      "project-path": "MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters",
+      "project-path": "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters",
       "display-name": "social_choice_lean_peters",
       "sorry-baseline": "0",
       "sorry-filter-mode": "real",
       "paths": [
-        "MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters/**.lean",
-        "MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters/lakefile.lean",
-        "MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters/lakefile.toml",
-        "MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters/lean-toolchain"
+        "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters/**.lean",
+        "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters/lakefile.lean",
+        "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters/lakefile.toml",
+        "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters/lean-toolchain"
       ]
     },
     {
