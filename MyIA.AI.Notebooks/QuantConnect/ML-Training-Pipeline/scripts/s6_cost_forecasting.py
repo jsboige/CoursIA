@@ -39,6 +39,7 @@ sys.path.insert(0, str(SCRIPT_DIR))
 
 from m11g_fee_aware_kelly import _load_one_coin  # noqa: E402
 from m11c_sharpe_test import ledoit_wolf_sharpe_diff_se  # noqa: E402
+import strategy_metrics  # noqa: E402
 
 COINS = ["BTC-USD", "ETH-USD", "SOL-USD", "LTC-USD", "XRP-USD", "ADA-USD", "DOT-USD"]
 HORIZONS = [1, 5, 10]  # forecast horizons for cost prediction
@@ -250,11 +251,13 @@ def evaluate_one_combo(coin: str, horizon: int, seed: int) -> dict | None:
 
 
 def _sharpe_ann(returns: np.ndarray) -> float:
-    if len(returns) < 10:
+    """Annualized Sharpe (``strategy_metrics.sharpe``: ddof=1, risk-free 0, 365 days).
+
+    Returns nan for fewer than 10 returns or a standard deviation <= 1e-12.
+    """
+    if len(returns) < 10 or float(np.std(returns, ddof=1)) <= 1e-12:
         return float("nan")
-    mu = float(np.mean(returns))
-    sigma = float(np.std(returns, ddof=1))
-    return (mu / sigma) * np.sqrt(365) if sigma > 1e-12 else float("nan")
+    return float(strategy_metrics.sharpe(returns, periods_per_year=365))
 
 
 def _binomial_pvalue_one_sided(k: int, n: int) -> float:
