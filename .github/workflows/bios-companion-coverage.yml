@@ -1,0 +1,48 @@
+name: bi-OS companion coverage
+
+# Organe de l'item 3 de #10643 (criteres 2-3 de l'acceptance) : ces
+# criteres "se constataient a la main, ou ne se constataient pas".
+# Le garde gele l'etat mesure au 2026-10-05 (20/20 in-scope couverts,
+# 0 cross-ref README manquant, 0 carnet Setup windows-only apres
+# calibration du faux positif C# IsOSPlatform) :
+#   - uncovered_companion : .ps1 d'infrastructure sans .sh compagnon --
+#     ECHEC (c'est la dent du garde : un nouveau .ps1 seul rougit la PR) ;
+#   - missing_readme_xref / setup_windows_only : avertissements visibles,
+#     jamais fatals (le distant peut se refermer sans rouge).
+# Perimetre = celui de l'acceptance : Vibe-Coding/, docs/archive/ et
+# _archive/ exclus, .ps1 Windows par nature exemptes (table dans le script).
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '**/*.ps1'
+      - '**/*.sh'
+      - '**/README*.md'
+      - '**/*[Ss]etup*.ipynb'
+      - 'scripts/ci/check_companion_coverage.py'
+      - '.github/workflows/bios-companion-coverage.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bios-companion-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  coverage:
+    name: Companion coverage (ps1/sh + Setup bi-OS)
+    # Routage #14283 tranche 3c (ai-01 2026-09-02) : jambe Linux auto-hebergee.
+    # Garde anti-fork au niveau job + runs-on STATIQUE (une expression leverait
+    # DYNAMIC_RUNS_ON dans check_self_hosted_runner_policy.py).
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Couverture compagnons bi-OS
+        run: python scripts/ci/check_companion_coverage.py
