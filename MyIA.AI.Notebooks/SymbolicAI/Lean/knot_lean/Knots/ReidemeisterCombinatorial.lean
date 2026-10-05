@@ -186,48 +186,74 @@ diagramme). L'implémentation effective est l'objet des passes prouveur
 sur les `sorry` restants — voir issue #18611, lemmes 1-4.
 -/
 def verifyMovesAux : Nat → KnotDiagram → KnotDiagram → Bool
-  | 0, d, d' => d == d'
+  | 0, d, d' => decide (d = d')
   | k+1, d, d' =>
-    -- Squelette : on considére `d == d'` (clôture réflexive à 0 mouvement)
-    -- et chaque successeur à 1 mouvement de `d`. Le retour `false` est
+    -- Squelette : on décide l'égalité `d = d'` (clôture réflexive à 0 mouvement,
+    -- via le `DecidableEq` dérivé — pas de `LawfulBEq` requis) et chaque
+    -- successeur à 1 mouvement de `d`. Le retour `false` est
     -- conservative (sound : `verifyMovesAux = true → ReidemeisterEquiv`,
     -- l'inverse n'est pas demandée).
-    d == d' ||
+    decide (d = d') ||
     (oneStepWitnesses d).any fun d_next => verifyMovesAux k d_next d'
 
 /-- Interface publique du vérificateur borné. -/
 def verifyMoves (n : Nat) (d₁ d₂ : KnotDiagram) : Bool :=
   verifyMovesAux n d₁ d₂
 
-/-! ## 4. Soundness (énoncé, à prouver par passe prouveur subséquente)
+/-! ## 4. Soundness
 
-La soundness est le lemme-cible : « si `verifyMoves n d₁ d₂ = true`, alors
+La soundness : « si `verifyMoves n d₁ d₂ = true`, alors
 `ReidemeisterEquiv d₁ d₂ ». La réciproque (complétude) est hors scope —
 l'algorithme est volontairement borné et perd des témoins au-delà du budget.
 
-**Preuve visée** : récurrence sur `n`.
-- `n = 0` : `verifyMovesAux 0 d₁ d₂ = (d₁ == d₂) = true` → `d₁ = d₂` →
-  `ReidemeisterEquiv.refl d₁`.
+**Preuve** (le plan « visé » de la PR2+, tenu) : récurrence sur `n`.
+- `n = 0` : `verifyMovesAux 0 d₁ d₂ = decide (d₁ = d₂) = true` → `d₁ = d₂`
+  (par `of_decide_eq_true`, via le `DecidableEq` dérivé) → `ReidemeisterEquiv.refl d₁`.
 - `n = k+1` : `verifyMovesAux (k+1) d₁ d₂ = true` →
-  (`d₁ == d₂` ∧ réflexivité) ∨ (∃ d_next, `verifyMovesAux k d_next d₂ = true`
+  (`decide (d₁ = d₂) = true` ∧ réflexivité) ∨ (∃ d_next, `verifyMovesAux k d_next d₂ = true`
   ∧ `ReidemeisterStep d₁ d_next`). Cas par cas, le premier se ramène à
   `n = 0`, le second utilise l'hypothèse d'induction pour obtenir
   `ReidemeisterEquiv d_next d₂`, puis `ReidemeisterEquiv.step` + `trans`
   ferment le diagramme.
 
-L'instrumentation concrète (lemme `Or.inl`/`Or.inr` dans le `Bool`, extraction
-du témoin `d_next` depuis `(oneStepWitnesses d).any`) est l'objet de la
-PR2+ ; elle dépend de `List.any`/`List.find` qui sont décidable dans Mathlib.
+L'instrumentation concrète (`Bool.or_eq_true_iff` puis extraction du témoin
+`d_next` depuis `(oneStepWitnesses d).any` par `List.any_eq_true`) est en
+place ; le mur PR2+ restant — l'énumération réelle des témoins — est isolé
+dans le lemme-pont `oneStepWitnesses_sound` ci-dessous.
 -/
+/-- Lemme-pont nommé (pattern `named-hard-wall`) : chaque témoin rendu par
+`oneStepWitnesses d` est un successeur à un `ReidemeisterStep` de `d`.
+
+Implémentation courante : la liste est vide, la preuve est triviale par
+`List.not_mem_nil`. Quand l'énumération réelle des témoins à 1 mouvement
+atterrira (PR2+), seule la preuve de CE lemme change — l'induction de
+`verifyMoves_sound` ci-dessous reste intacte. -/
+theorem oneStepWitnesses_sound (d d' : KnotDiagram)
+    (h : d' ∈ oneStepWitnesses d) : ReidemeisterStep d d' := by
+  simp [oneStepWitnesses] at h
+
 theorem verifyMoves_sound :
     ∀ (n : Nat) (d₁ d₂ : KnotDiagram),
       verifyMoves n d₁ d₂ = true → ReidemeisterEquiv d₁ d₂ := by
-  intro n d₁ d₂ h
-  -- La soundness du squelette (qui ne retourne `true` que sur `d₁ == d'`) :
-  -- trivial par `rfl` et `ReidemeisterEquiv.refl`. La version pleine (qui
-  -- consomme `oneStepWitnesses`) sera ajoutée en PR2+ sans modifier
-  -- l'énoncé.
-  sorry
+  intro n
+  induction n with
+  | zero =>
+    intro d₁ d₂ h
+    simp only [verifyMoves, verifyMovesAux] at h
+    have hd : d₁ = d₂ := of_decide_eq_true h
+    subst hd
+    exact ReidemeisterEquiv.refl d₁
+  | succ k ih =>
+    intro d₁ d₂ h
+    simp only [verifyMoves, verifyMovesAux] at h
+    rcases Bool.or_eq_true_iff.mp h with heq | hany
+    · have hd : d₁ = d₂ := of_decide_eq_true heq
+      subst hd
+      exact ReidemeisterEquiv.refl d₁
+    · obtain ⟨d_next, hmem, hver⟩ := List.any_eq_true.mp hany
+      exact ReidemeisterEquiv.trans
+        (ReidemeisterEquiv.step (oneStepWitnesses_sound d₁ d_next hmem))
+        (ih d_next d₂ hver)
 
 /-! ## 5. Helpers pour `Lidman.lean` (cible indirecte)
 

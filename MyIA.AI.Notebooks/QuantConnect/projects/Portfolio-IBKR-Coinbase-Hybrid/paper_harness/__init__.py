@@ -24,5 +24,10 @@ Status (2026-06-28):
 - Rebalancing planner (``rebalance.py``): inverse-volatility target weights
   and whole-share order planning, unit-tested.
 - Orchestrator core (``orchestrator.run_cycle``): one dry-run-by-default
-  rebalancing cycle against any ``Broker``; the IBKR adapter is still TODO.
+  rebalancing cycle against any ``Broker``.
+- IBKR adapter (``ibkr_broker.IBKRBroker``, 2026-10-03): UCITS lines by
+  conId, sleeve ledger built from tagged executions (never the account
+  value), delayed prices with fallbacks, collared limit orders on a paper
+  account only. ``python -m paper_harness.ibkr_cycle`` runs one dry cycle
+  against IB Gateway paper (validated read-only).
 """

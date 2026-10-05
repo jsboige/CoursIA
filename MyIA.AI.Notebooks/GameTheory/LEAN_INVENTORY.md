@@ -19,7 +19,7 @@ module-set réel du disque (issue #13138). Ligne `conway_cgt_lean` re-synchronis
 | `minimax_lean` | v4.33.0 | 0 | ZeroSum + Concavity + SionApplication (+ `_en`) | COMPLET |
 | `assignment_lean` | v4.33.0 | 0 | Definitions / Duality / KuhnMunkres / Optimality (+ `_en`) | COMPLET (#12598) |
 | `asymmetric_information_lean` | v4.33.0 | 0 | Lemons / Signaling / Screening / MiyazakiWilson / BayesianLink (+ `_en`) | COMPLET (Epic #12844) |
-| `social_choice_lean_peters` | v4.32.1 | 0 | PetersTour (+ `_en`) | Référence seule |
+| `SocialChoice/social_choice_lean_peters` | v4.32.1 | 0 | PetersTour (+ `_en`) | Référence seule |
 | `conway_cgt_lean` | v4.31.0-rc2 | 0 | CGTTour (+ `_en`) | Tour de référence |
 
 **Tombstones (absorbés, EPIC #4365)** :
@@ -102,11 +102,11 @@ véracité Vickrey + contre-exemple au premier prix (#1469). Build repris par
 
 ---
 
-### 4. social_choice_lean_peters
+### 4. social_choice_lean_peters (sous `SocialChoice/` depuis #4362)
 
 **Objectif** : projet de référence important DominikPeters/SocialChoiceLean comme dépendance Lake.
 
-**Toolchain** : v4.32.1 (pin effectif ; **hors cible du parc** depuis #14773 — dependance amont `SocialChoiceLean` incompatible 4.33, cf. `social_choice_lean_peters/README.md §Statut`) | **Dépendances** : Mathlib4 (`520045ab`), SocialChoiceLean `94a4c650` (revs effectives du `lake-manifest.json`)
+**Toolchain** : v4.32.1 (pin effectif ; **hors cible du parc** depuis #14773 — dependance amont `SocialChoiceLean` incompatible 4.33, cf. `SocialChoice/social_choice_lean_peters/README.md §Statut`) | **Dépendances** : Mathlib4 (`520045ab`), SocialChoiceLean `94a4c650` (revs effectives du `lake-manifest.json`)
 
 | Fichier | sorry | Description |
 |------|-------|-------------|
@@ -282,7 +282,7 @@ Folk (`folk_theorem_discounted`) porte 1 sorry stretch, toléré au titre de #48
 | minimax_lean | COMPLET | 0 sorry ; application de Sion prouvée. |
 | assignment_lean | COMPLET | 0 sorry (#12598). |
 | asymmetric_information_lean | COMPLET | 0 code sorry (Epic #12844). |
-| social_choice_lean_peters | N/A | Référence seule (Peters `94a4c650`, Mathlib `520045ab`, v4.32.1). |
+| SocialChoice/social_choice_lean_peters | N/A | Référence seule (Peters `94a4c650`, Mathlib `520045ab`, v4.32.1). |
 | conway_cgt_lean | N/A | Tour de référence (v4.31.0-rc2, suit l'amont). |
 
 Les cibles de calibration Conway (Doomsday / FRACTRAN / Look-and-Say / Nim / Angel) vivent dans `SymbolicAI/Lean/conway_lean/` et sont toujours consommées par `agent_tests/prover/config.py` (co-évolution du harnais prover #1453).
