@@ -12,9 +12,9 @@ import pytest
 from ict.humor_pairs import (
     LABELS,
     _common_prefix_len,
+    banc_humour_path,
     build_pairs,
     build_prompts_json,
-    gt24b_path,
     label_distribution,
     load_corpus_dur,
     measure_humor_differential,
@@ -22,12 +22,12 @@ from ict.humor_pairs import (
     validate_pairs,
 )
 
-# Les cellules endpoint de GT-24b exigent la cle OpenRouter (presente dans
+# Les cellules endpoint du banc humour exigent la cle OpenRouter (presente dans
 # .secrets/master.env sur les machines du cluster, absente en CI sans secrets).
 # Le corpus lui-meme est deterministe et n'appelle jamais l'API.
 _NEEDS_KEY = pytest.mark.skipif(
     not os.environ.get("OPENROUTER_API_KEY"),
-    reason="cle OPENROUTER_API_KEY requise par les cellules endpoint de GT-24b",
+    reason="cle OPENROUTER_API_KEY requise par les cellules endpoint du banc humour",
 )
 
 
@@ -39,8 +39,8 @@ def corpus() -> list[dict]:
 # Les deux tests de rejet ne chargent pas le corpus : pas de cle requise.
 
 
-def test_gt24b_path_exists() -> None:
-    assert gt24b_path().exists(), f"GT-24b manquant : {gt24b_path()}"
+def test_banc_humour_path_exists() -> None:
+    assert banc_humour_path().exists(), f"banc humour manquant : {banc_humour_path()}"
 
 
 @_NEEDS_KEY
@@ -59,7 +59,7 @@ def test_label_distribution_sums_to_corpus(corpus: list[dict]) -> None:
 
 @_NEEDS_KEY
 def test_load_corpus_dur_cwd_independent(tmp_path: Path) -> None:
-    # Regression : la cellule 4 de GT-24b resout son cache Argumentum en chemin
+    # Regression : la cellule 26 du banc humour resout son cache Argumentum en chemin
     # relatif — depuis un cwd sans cache, elle declenchait un fetch reseau.
     prev = Path.cwd()
     os.chdir(tmp_path)

@@ -645,6 +645,14 @@ MAIN_RED_WORKFLOWS = (
     ("scripts-tests.yml", "Scripts & Notebook-Tools Tests"),
 )
 
+#: #19180 : conclusions qui portent un verdict ROUGE sur main. `timed_out`
+#: (le workflow a epuise son temps) et `startup_failure` (il n'a pas pu
+#: demarrer) sont des rouges reels : main n'a pas rendu de vert. Seules les
+#: conclusions SANS verdict -- `cancelled`, `skipped`, et toute autre valeur
+#: hors des deux tuples -- se sautent (#19069).
+MAIN_RED_CONCLUSIONS = ("failure", "timed_out", "startup_failure")
+MAIN_VERDICT_CONCLUSIONS = ("success",) + MAIN_RED_CONCLUSIONS
+
 
 def _main_red_motif(repo: str, fetch=_gh_json) -> "str | None":
     """#18686 + #18790 + #18796 : motif de rouge observable sur la branche
@@ -657,8 +665,10 @@ def _main_red_motif(repo: str, fetch=_gh_json) -> "str | None":
     verdict (`cancelled`, `skipped` : `status=completed` les inclut, et en
     passe de merge en rafale la concurrence du workflow annule les runs
     intermediaires -- le dernier run rendu masquait alors le rouge reel,
-    #19069). Le premier run `success`/`failure` rendu est le verdict le
-    plus frais de ce workflow sur main, **independamment de son anciennete**
+    #19069). Le premier run a verdict rendu -- `success`, ou un rouge de
+    `MAIN_RED_CONCLUSIONS` (#19180 : `timed_out` et `startup_failure` en
+    sont) -- est le verdict le plus frais de ce workflow sur main,
+    **independamment de son anciennete**
     (limite de la fenetre globale du commit de tete : un merge non lie aux
     paths du workflow peut evict le run hors de la fenetre de 100 -- CR
     ai-01 2026-10-02 18:55Z sur #18796).
@@ -718,13 +728,15 @@ def _main_red_motif(repo: str, fetch=_gh_json) -> "str | None":
         # runs intermediaires et le dernier run rendu n'a alors AUCUN
         # verdict : la derogation restait fermee alors que le dernier run
         # reellement conclu sur main etait rouge. On saute les runs sans
-        # verdict et on prend le premier reellement conclu.
+        # verdict et on prend le premier reellement conclu. #19180 : un
+        # `timed_out` ou un `startup_failure` EST un verdict (rouge) ; le
+        # sauter remontait jusqu'au vert precedent et declarait main vert.
         run = next(
             (
                 r
                 for r in entries
                 if isinstance(r, dict)
-                and r.get("conclusion") in ("success", "failure")
+                and r.get("conclusion") in MAIN_VERDICT_CONCLUSIONS
             ),
             None,
         )
@@ -735,15 +747,20 @@ def _main_red_motif(repo: str, fetch=_gh_json) -> "str | None":
         # PAS evoluer silencieusement le verdict : on ignore le run.
         if run.get("name") != display_name:
             continue
-        if run.get("conclusion") != "failure":
+        if run.get("conclusion") not in MAIN_RED_CONCLUSIONS:
             continue
         created = run.get("created_at") or ""
         if latest is None or created > (latest.get("created_at") or ""):
             latest = run
     if latest is None:
         return None
-    return "main rouge: workflow `{}` en echec sur {} (run {})".format(
+    conclusion = latest.get("conclusion")
+    # Le motif nomme la conclusion quand ce n'est pas un `failure` ordinaire,
+    # pour que la derogation reste justifiable a la relecture (#19180).
+    qualifier = "" if conclusion == "failure" else " ({})".format(conclusion)
+    return "main rouge: workflow `{}` en echec{} sur {} (run {})".format(
         latest.get("name") or "?",
+        qualifier,
         branch,
         (latest.get("html_url") or "").rsplit("/", 1)[-1] or "?",
     )

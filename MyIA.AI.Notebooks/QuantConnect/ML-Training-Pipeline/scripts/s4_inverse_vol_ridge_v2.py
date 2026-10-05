@@ -43,6 +43,8 @@ import numpy as np
 import pandas as pd
 from sklearn.linear_model import Ridge
 
+import strategy_metrics
+
 SCRIPT_DIR = Path(__file__).resolve().parent
 RESULTS_DIR = SCRIPT_DIR / "results" / "s4_inverse_vol_ridge_v2"
 
@@ -395,16 +397,18 @@ def walk_forward(
 
 
 def _sharpe(returns: np.ndarray) -> float:
-    if len(returns) < 2 or np.std(returns) < 1e-10:
+    """Annualized Sharpe (``strategy_metrics.sharpe``: ddof=1, risk-free 0, 252 days).
+
+    Returns 0.0 for fewer than 2 returns or a standard deviation below 1e-10.
+    """
+    if len(returns) < 2 or np.std(returns, ddof=1) < 1e-10:
         return 0.0
-    return float(np.mean(returns) / np.std(returns) * np.sqrt(252))
+    return float(strategy_metrics.sharpe(returns))
 
 
 def _max_drawdown(returns: np.ndarray) -> float:
-    cum = np.cumprod(1 + returns)
-    running_max = np.maximum.accumulate(cum)
-    dd = (cum - running_max) / running_max
-    return float(dd.min())
+    """Max drawdown, starting capital as first peak (``strategy_metrics.max_drawdown``)."""
+    return strategy_metrics.max_drawdown(returns)
 
 
 # ── Multi-seed runner ────────────────────────────────────────────────────────

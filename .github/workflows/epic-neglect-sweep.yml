@@ -12,6 +12,14 @@ name: EPIC neglect sweep
 # blocking: the job always exits 0, closes nothing, assigns nothing -- it
 # NAMES, the coordinator slices (G.9: read the EPIC body before concluding).
 #
+# "Never blocking" porte sur le VERDICT, pas sur la capacite de l'organe a
+# publier (#19211). Un echec d'ECRITURE qui persiste (>= 2 jours sans
+# publication alors que le balayage est quotidien) sort en 2 et rougit le
+# run : sans ca, cet organe est reste vert 35 jours d'affilee sans jamais
+# publier son rapport, et rien nulle part ne le disait. Rougir ici ne bloque
+# aucun merge : merge_dwell ne surveille que scripts-tests.yml en
+# `event=push`, et ce workflow ne tourne qu'en `schedule`/`dispatch`.
+#
 # Standalone organ by design: the picker selects a grain FOR a lane; this
 # sweep measures EPIC neglect FLEET-wide -- different cadence, different
 # consumer, no picker state.

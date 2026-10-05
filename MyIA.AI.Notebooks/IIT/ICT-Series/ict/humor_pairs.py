@@ -35,7 +35,7 @@ _CORPUS_CELL_END = 33
 _REQUIRED_FIELDS = ("id", "texte", "features", "label", "justification", "source")
 
 
-def gt24b_path() -> Path:
+def banc_humour_path() -> Path:
     """Chemin canonique du banc humour consolide, resolu depuis ce module."""
     return (
         Path(__file__).resolve().parents[3]
@@ -47,16 +47,16 @@ def gt24b_path() -> Path:
 def _corpus_cwd() -> Path:
     """Repertoire d'execution reproduisant le cwd du pilote ICT-35.
 
-    La cellule 29 du banc consolide resout son cache Argumentum en chemin RELATIF
+    La cellule 26 du banc consolide resout son cache Argumentum en chemin RELATIF
     (``Path("argumentum_scenarii.csv")``) : selon le cwd, elle fait un hit
     cache ou declenche un fetch GitHub raw. Le cache du pilote vit dans le
     dossier ICT-Series ; a defaut on retombe sur le dossier du notebook
-    (comportement natif du banc, fetch documente dans sa cellule 4).
+    (comportement natif du banc, fetch documente dans sa cellule 28).
     """
-    for d in (Path(__file__).resolve().parent, gt24b_path().parent):
+    for d in (Path(__file__).resolve().parent, banc_humour_path().parent):
         if (d / "argumentum_scenarii.csv").exists():
             return d
-    return gt24b_path().parent
+    return banc_humour_path().parent
 
 
 @contextmanager
@@ -70,14 +70,14 @@ def _cwd(path: Path) -> Iterator[None]:
 
 
 def load_corpus_dur(path: Path | None = None) -> list[dict[str, Any]]:
-    """Charge ``CORPUS_DUR`` en executant les cellules de GT-24b.
+    """Charge ``CORPUS_DUR`` en executant les cellules du banc humour (18c).
 
     Reproduction deterministe (``random.seed(42)`` est pose par le banc
     lui-meme dans la cellule 33) ; le notebook source n'est jamais modifie.
     L'exec se fait dans le cwd portant le cache Argumentum (cf :func:`_corpus_cwd`)
     pour ne pas dependre du repertoire appelant.
     """
-    nb_path = path or gt24b_path()
+    nb_path = path or banc_humour_path()
     nb = json.loads(nb_path.read_text(encoding="utf-8"))
     ns: dict[str, Any] = {}
     with _cwd(_corpus_cwd()):
