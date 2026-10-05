@@ -134,7 +134,7 @@ Mesure 2026-10-05T11:2xZ (offline, audit offline `--format json --limit 200`) : 
 
 **Catégories principales** (60 orphelines) :
 - **Audits readme transverses** : #18062 (GenAI 24 README), #18063 (QuantConnect 52 README), #18064 (Autres séries 33 README)
-- **Sites Pages** : #18422 (docs/*.md servis brut), #18423 (263 notebooks hors NOTEBOOK_SUBTREES), #18911 (1740 liens README -> .ipynb brut)
+- **Sites Pages** : #18422 (docs/*.md servis brut), #18423 (notebooks hors NOTEBOOK_SUBTREES jamais rendus), #18911 (1740 liens README -> .ipynb brut)
 - **Audits partitions Hermes / NanoClaw** : #18244, #18545, #18578, #18684
 - **EPICs transverses** : #17969, #18205, #18601, #18703, #18706
 - **Catalogues / parcours** : #17883, #17926, #17978, #17982, #18732, #19144
