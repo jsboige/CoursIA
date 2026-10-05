@@ -137,7 +137,7 @@ métaheuristiques composées) — l'épilogue le nomme.
 ### Épilogue — Où le corpus dépasse AIMA, ~45 min
 
 25. **`IIT/IIT-01-IntroToPyPhi.ipynb`** (45 min) — théorie de l'information intégrée :
-    hors AIMA, propre au dépôt. Prolongements nommés : `Search-09d-Lean-Discrepancy-Komlos`
+    hors AIMA, propre au dépôt. Prolongements nommés : `Discrepancy-02-Komlos-Lean`
     (recherche **formelle**, compagnon Lean de la phase 2), la série IIT complète (59
     notebooks de la famille la plus dense du dépôt, cf `docs/curriculum/recherche.md`).
 

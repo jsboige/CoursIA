@@ -18,6 +18,7 @@ fil du texte.
 """
 from __future__ import annotations
 
+import datetime as dt
 import sys
 from pathlib import Path
 
@@ -664,6 +665,23 @@ def test_delivery_window_effective_and_truncation():
     assert sig2["truncated"] is True
 
 
+def test_delivery_truncated_requires_an_explicit_fetch_limit():
+    """Greffe #19212 sur #19213 : le corpus honnete post-#19209 (~9650 PRs
+    sur 90 j) rendait `len(prs) >= fetch_limit` (defaut 400) toujours vrai --
+    chaque tirage imprimait « TRONQUEE par la limite de fetch » sur un corpus
+    COMPLET. La troncature ne se deduit plus que d'un plafond EXPLICITEMENT
+    passe par un appelant qui fetch encore sous limite."""
+    corpus = [_delivery_pr(n, "2026-09-09T10:00:00Z") for n in range(401)]
+    sig = ss.measure_delivery(corpus, [1101], now=_NOW, days=14)
+    assert sig["truncated"] is False, (
+        "un corpus de 401 PRs sans plafond explicite n'est pas tronque "
+        "post-#19209 (fetch decoupe : la saturation LEVE, elle ne tronque pas)"
+    )
+    sig2 = ss.measure_delivery(corpus, [1101], now=_NOW, days=14,
+                               fetch_limit=400)
+    assert sig2["truncated"] is True
+
+
 def test_delivery_factor_graduation():
     """Livraison toute recente = 1.0 ; age croissant vers le plafond quand
     la derniere livraison vieillit jusqu'a l'horizon ; absence valide =
@@ -740,3 +758,77 @@ def test_last_delivery_per_issue_handles_multiple_issues_at_once():
 
 
 # --- end geste 3 #18203 -----------------------------------------------------
+
+
+# --- Fenetre --belt : le corpus doit atteindre le cutoff (#19209) ------------
+#
+# `BELT_WINDOW_DAYS` a ete porte a 90 par #18866, mais la couverture REELLE
+# restait de ~5 jours : l'unique `gh pr list --limit 400 --search` passait par
+# l'API de recherche, plafonnee, et la troncature emportait les livraisons les
+# plus ANCIENNES -- exactement celles qu'une fenetre longue existe pour voir.
+# Les deux controles ci-dessous epinglent la couverture (le cutoff est
+# reellement demande) et le refus du corpus partiel (une tranche indecoupable
+# rend une ERREUR, jamais un corpus tronque qui aurait l'air complet).
+
+_NOW_19209 = dt.datetime(2026, 10, 5, 12, 0, tzinfo=dt.timezone.utc)
+
+
+def test_belt_window_asks_for_the_full_cutoff(monkeypatch):
+    """Acceptance 1 : la fenetre de 90 j demande le corpus jusqu'au cutoff.
+
+    2026-10-05 moins 90 jours = 2026-07-07 -- la date que l'issue mesure.
+    """
+    calls: list[dict] = []
+
+    def fake_fetch(**kw):
+        calls.append(kw)
+        return []
+
+    monkeypatch.setattr(ss, "fetch_merged_window", fake_fetch)
+    prs, err = ss.fetch_merged(90, now=_NOW_19209)
+    assert err is None, err
+    assert prs == []
+    assert len(calls) == 1, calls
+    assert calls[0]["since"] == "2026-07-07", (
+        f"le cutoff demande doit atteindre 90 j, obtenu {calls[0]['since']!r}"
+    )
+    assert calls[0]["today"] == _NOW_19209.date()
+
+
+def test_belt_window_asks_for_the_files_field(monkeypatch):
+    """`files` est necessaire a `family_of` : le fetch doit le demander."""
+    calls: list[dict] = []
+    monkeypatch.setattr(ss, "fetch_merged_window",
+                        lambda **kw: (calls.append(kw), [])[1])
+    ss.fetch_merged(90, now=_NOW_19209)
+    assert "files" in calls[0]["fields"], calls[0]["fields"]
+
+
+def test_indivisible_slice_is_an_error_not_a_partial_corpus(monkeypatch):
+    """Acceptance 3 : une tranche indecoupable rend une ERREUR.
+
+    Le corpus doit etre VIDE avec un message -- jamais une liste partielle qui
+    se lirait comme un corpus complet (c'est le defaut que #19209 corrige).
+    """
+    def boom(**kw):
+        raise RuntimeError("tranche indecoupable : 1000 PRs sur un seul jour")
+
+    monkeypatch.setattr(ss, "fetch_merged_window", boom)
+    prs, err = ss.fetch_merged(90, now=_NOW_19209)
+    assert prs == [], f"un corpus partiel ne doit jamais sortir : {prs!r}"
+    assert err is not None and "RuntimeError" in err, err
+
+
+def test_fetch_merged_no_longer_calls_gh_in_a_single_capped_request(monkeypatch):
+    """Le defaut d'origine : un `gh pr list --limit 400` unique.
+
+    Controle negatif -- si `fetch_merged` rappelle `subprocess.run` en direct,
+    c'est que le fetch plafonne est revenu.
+    """
+    def forbidden(*a, **kw):
+        raise AssertionError(f"appel gh direct dans fetch_merged : {a!r}")
+
+    monkeypatch.setattr(ss.subprocess, "run", forbidden)
+    monkeypatch.setattr(ss, "fetch_merged_window", lambda **kw: [])
+    prs, err = ss.fetch_merged(90, now=_NOW_19209)
+    assert err is None and prs == []

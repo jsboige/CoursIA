@@ -322,6 +322,11 @@
     },
     {
       "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python_en.ipynb",
+      "series": "MyIA.AI.Notebooks/GenAI/FineTuning"
+    },
+    {
+      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python_en.ipynb",
       "series": "MyIA.AI.Notebooks/GenAI/FineTuning"
     },

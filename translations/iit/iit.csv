@@ -8843,7 +8843,7 @@ généralisé) ; puis on lui applique la **même batterie d'émergence causale**
 cadre *Causal Emergence 2.0* de Jansma & Hoel). C'est le seul instrument de toute la série
 branché **sans modification** sur des substrats radicalement différents.
 ",,,,,,,,0a3041a4eee5ce67,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Synthese-CrossSubstrat.ipynb,08eebbfc,markdown,fr,d2e10c4b3a42b233,"## 1. Le fil de la série — tableau récapitulatif
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Synthese-CrossSubstrat.ipynb,08eebbfc,markdown,fr,d68be429a2b189de,"## 1. Le fil de la série — tableau récapitulatif
 
 Le cœur de ce capstone : une ligne par notebook, la **question centrale**, le **verdict
 réellement committé** (pas l'intuition de départ), et les **chiffres des gates** qui le
@@ -8872,7 +8872,7 @@ soutiennent. On y lit deux constantes de la série — (a) une capacité n'est c
 ligne, un « OUI » s'accompagne d'un « mais » chiffré, et le dernier tiers (ICT-10 → 13) répète
 le même mot — *régime-dépendant*. La question du capstone est de savoir si cette répétition
 cache un **scalaire commun** transférable, ou si elle **est** le résultat.
-",,,,,,,,d2e10c4b3a42b233,,,,,,,,
+",,,,,,,,d68be429a2b189de,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Synthese-CrossSubstrat.ipynb,79b7556a,markdown,fr,ea403f09c290f569,"## 2. Le fil unificateur : un seul appareil, trois substrats
 
 Chaque substrat produit une **trajectoire** d'états. On la discrétise **grossièrement** (un choix
@@ -9001,12 +9001,12 @@ bascules occasionnelles. L'état est le **décile** de la biomasse.
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Synthese-CrossSubstrat.ipynb,cde2cec9,code,fr,969a99683f1da620,"s2 = traj_S2(SEED0)
 print(f""S2 (bistable)     longueur={len(s2):5d}  etats distincts={len(set(s2)):3d}  ""
       f""(deciles occupes)"")",,,,,,,,969a99683f1da620,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Synthese-CrossSubstrat.ipynb,7a32caab,markdown,fr,158acea9605981dc,"### S3 — le réplicateur stratégique (strate 3)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Synthese-CrossSubstrat.ipynb,7a32caab,markdown,fr,f933b7f79cb0dc2c,"### S3 — le réplicateur stratégique (strate 3)
 
 Le dilemme du prisonnier itéré sous dynamique de réplicateur ([ICT-13](ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb)) :
 plusieurs trajectoires depuis des populations initiales aléatoires, résumées par la **stratégie
 dominante** (argmax des fréquences) à chaque pas.
-",,,,,,,,158acea9605981dc,,,,,,,,
+",,,,,,,,f933b7f79cb0dc2c,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Synthese-CrossSubstrat.ipynb,22d84be9,code,fr,05d8fdf21508abdf,"s3 = traj_S3(SEED0)
 print(f""S3 (replicateur)  longueur={len(s3):5d}  etats distincts={len(set(s3)):3d}  ""
       f""(strategies dominantes)"")",,,,,,,,05d8fdf21508abdf,,,,,,,,
@@ -9332,7 +9332,7 @@ def block_shuffle(states, rng, b=10):
 
 # Indice : comparer S.trajectory_battery(block_shuffle(...)) a S.trajectory_battery(states)
 print(""Exercice 3 a completer : implementer block_shuffle et comparer au controle total."")",,,,,,,,8682120d4b5e1bcf,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Synthese-CrossSubstrat.ipynb,a309752b,markdown,fr,7939e836d2c6b38c,"## Pour aller plus loin
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Synthese-CrossSubstrat.ipynb,a309752b,markdown,fr,754ed67779e7583f,"## Pour aller plus loin
 
 - [ICT-0 — Cadrage de la série](ICT-0-Framing.md) : les deux articles fondateurs (Levin ;
   Jansma & Hoel), le principe méthodologique *sans complaisance*, la feuille de route.
@@ -9354,7 +9354,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Synthese-CrossSubstrat.ipynb,a309752b,markd
 ***
 *ICT-Synthèse — un seul appareil de mesure, cinq substrats. Epic #4588. Voir
 [ICT-0-Framing](ICT-0-Framing.md) pour le cadrage de la série.*
-",,,,,,,,7939e836d2c6b38c,,,,,,,,
+",,,,,,,,754ed67779e7583f,,,,,,,,
 MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,3653fac8,markdown,fr,9d9369847748e1bc,"# IIT - Introduction à PyPhi et Integrated Information Theory
 
 ## Navigation
@@ -10843,7 +10843,7 @@ ICT-1 calculait $\Phi$ **état par état** sur le système entier. ICT-2 soulèv
 
 Ce notebook, comme ICT-1, **n'exécute pas PyPhi** sur les tableaux (le code resterait intraitable pour $N > 5$). Il introduit les concepts pour que [ICT-6 (Sorting-to-TPM bridge)](ICT-06-SortingToTPM-CausalEmergence-Python.ipynb) puisse les opérationnaliser sur les simulations.
 ",,,,,,,,89ceb0c8d6589ca8,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,8928045b,markdown,fr,a349cc9f0654610d,"# Tete-a-tete SAE <-> J-space -- les deux lentilles du workspace global sur Qwen3.5-9B-Base (couche 16)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,8928045b,markdown,fr,08f17103207c190e,"# Tete-a-tete SAE <-> J-space -- les deux lentilles du workspace global sur Qwen3.5-9B-Base (couche 16)
 
 **Navigation** : [Index](README.md) | [<< ICT-24 WorkspaceIgnition](ICT-24-WorkspaceIgnition-Python.ipynb) | [ICT-21 SAE Trajectoires >>](ICT-21-SAETrajectoires-Python.ipynb)
 
@@ -10854,8 +10854,8 @@ L'article d'Anthropic *Global Workspace in Claude* (2025) identifie le **workspa
 **Qwen3.5-9B-Base est le SEUL modèle pour lequel les DEUX appareils sont publies** (SAE officiel Qwen-Scope *et* lens Jacobian-Lens `jlens` d'Anthropic). Ce notebook en profite : un **tete-a-tete GPU-free** qui charge les traces pre-extraites des deux lentilles **a la couche 16** et compare ce que chacune capture et ce que l'autre rate.
 
 > **Question fondatrice.** *Sur la même couche (16) du même modèle (Qwen3.5-9B-Base), les deux lentilles -- SAE et J-space -- identifient-elles les mêmes positions/token comme ""workspace"", et separaient-elles les mêmes regimes de prompts ?*
-",,,,,,,,a349cc9f0654610d,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,e4c78fa7,markdown,fr,44267e9bc74dea4d,"## Objectifs d'apprentissage
+",,,,,,,,08f17103207c190e,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,e4c78fa7,markdown,fr,6d288a2a8bc314cd,"## Objectifs d'apprentissage
 
 A la fin de ce notebook, vous saurez :
 1. **Charger deux familles de lentilles** (SAE Qwen-Scope et J-Lens Anthropic) sur le même substrat pre-extrait, en respectant le garde-fou anti-melange (`meta[""lens""]`).
@@ -10869,7 +10869,7 @@ A la fin de ce notebook, vous saurez :
 - Python 3.10+, numpy, matplotlib. **Aucun GPU requis** : les traces sont pre-extraites.
 
 ### Duree estimee : 35 minutes
-",,,,,,,,44267e9bc74dea4d,,,,,,,,
+",,,,,,,,6d288a2a8bc314cd,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,71824809,markdown,fr,1db2c5bf0ae87111,"## Garde-fous d'honnetete (a lire avant les chiffres)
 
 Ces cinq garde-fous conditionnent la lecture de chaque résultat. Ils sont issus de la docstring de `ict/jlens_traces.py` et de `ict/workspace.py`.
@@ -11230,7 +11230,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,aa4fe6a0,code,fr,
 resultats_ex3 = None  # TODO etudiant
 print(""Exercice a completer"")
 ",,,,,,,,c26581313a814979,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,369561c5,markdown,fr,13d7960983edc65e,"## Conclusion
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,369561c5,markdown,fr,ff3efe527623d4f1,"## Conclusion
 
 Ce notebook realise un **tete-a-tete GPU-free** entre les deux lentilles du workspace global -- SAE (Qwen-Scope) et J-Lens (Anthropic) -- **sur le même modèle (Qwen3.5-9B-Base), a la même couche (16)**, seul modèle pour lequel les deux appareils sont publies.
 
@@ -11250,15 +11250,15 @@ Ce notebook realise un **tete-a-tete GPU-free** entre les deux lentilles du work
 ### Pont avec la serie
 
 Ce tete-a-tete est la **piste Track S** de l'Epic #5681 : il complete [ICT-24](ICT-24-WorkspaceIgnition-Python.ipynb) (workspace / J-lens) et [ICT-21](ICT-21-SAETrajectoires-Python.ipynb) (substrat SAE) en confrontant leurs deux operationalisations du même concept. Le verdict observationnel de convergence/divergence alimente la **gate de co-localisation cross-méthode** de #5681.
-",,,,,,,,13d7960983edc65e,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,1ddcd2ce,markdown,fr,fd401bed4a8ba672,"## References
+",,,,,,,,ff3efe527623d4f1,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,1ddcd2ce,markdown,fr,45acb205160c6e6b,"## References
 
 - Anthropic, *Global Workspace in Claude* (2025) -- [anthropic.com/research/global-workspace](https://www.anthropic.com/research/global-workspace). Opérateur d'acces = jacobien des logits (J-space).
 - Qwen-Scope : SAE officiel `Qwen/SAE-Res-Qwen3.5-9B-Base-W64K-L0_50` (top-k strict, L0=50).
 - Jacobian-Lens : `neuronpedia/jacobian-lens`, `qwen3.5-9b-pt` (dépendance Anthropic, jamais copiee).
 - Serie ICT : [ICT-21](ICT-21-SAETrajectoires-Python.ipynb) (substrat SAE), [ICT-24](ICT-24-WorkspaceIgnition-Python.ipynb) (workspace / J-lens), [ICT-Synthese](ICT-Synthese-CrossSubstrat.ipynb).
 - Epics : #5681 (J-Lens Track S), #4588 (ICT strate 5), #5101 (pipeline SAE).
-",,,,,,,,fd401bed4a8ba672,,,,,,,,
+",,,,,,,,45acb205160c6e6b,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12b-LearnedValence-Python.ipynb,9023e649,markdown,fr,a92541b7e0edf102,"# ICT-12b — Valence APPRISE, transferable, reversible : l'expérience manquante (#7740)
 
 **Sous-série ICT** (trajectoires intégrées, Epic #4588, strate 3). Notebook compagnon d'[ICT-12](ICT-12-ValenceFieldsAndAnimats-Python.ipynb).
@@ -11714,7 +11714,7 @@ Cette dissociation **survit à l'analyse multi-graines** : sur les cinq graines 
 *Portée honnête* : ce notebook couvre les **six mesures** 1, 2, 3, 4, 5, 6 + la matrice de dissociation. Les mesures 4 (énergie-libre adaptive) et 5 (information prédictive), différées en PR-A comme recherche, sont désormais livrées (§7) : `free_energy` mode `fixed` n'est qu'un habillage du MSE (gate 1), mais la précision *adaptive* amortit l'explosion erratique (gate 2), et l'information mutuelle $I(\hat q;o)$ y est *anti-corrélée* au MSE (plafond épistémique). Trois lecteurs orthogonaux de $\hat q$.
 
 > **Voir aussi.** [ICT-12](ICT-12-ValenceFieldsAndAnimats-Python.ipynb) (valence programmée, champ spatial), [ICT-12b](ICT-12b-LearnedValence-Python.ipynb) (valence apprise désincarnée, le banc algorithmique que cet animat incarne), [ICT-0-Framing](ICT-0-Framing.md) (jambe C1, #7740).",,,,,,,,42b9a6fc6ee518dd,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12d-InhibitedActionAnimat-Python.ipynb,905617e2,markdown,fr,469f8286938ce08f,"# ICT-12d — Animat inhibé (Laborit) : contrôlabilité, rigidification, dette d'irréversibilité (#7741)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12d-InhibitedActionAnimat-Python.ipynb,905617e2,markdown,fr,d1985fed4688c865,"# ICT-12d — Animat inhibé (Laborit) : contrôlabilité, rigidification, dette d'irréversibilité (#7741)
 
 **Sous-série ICT** (trajectoires intégrées, Epic #4588). Notebook compagnon du module [`ict.inhibited_action`](ict/inhibited_action.py) (PR [#8825](https://github.com/jsboige/CoursIA/pull/8825)). **Jambe C2** de la tresse transverse — *parallèle* à [C1 — ICT-12c](ICT-12c-PregnanceAnimat-Python.ipynb) (prégnance/valence incarnée, #7740), et distincte d'[ICT-30](ICT-30-InhibitedInvention-Python.ipynb) (inhibition de l'**innovation**, strate 7 collective, #7746) : ici l'inhibition porte sur l'**action** d'un animat individuel (strate 3/5).
 
@@ -11725,7 +11725,7 @@ Henri Laborit (*L'Éloge de la fuite*, 1976) : des rats soumis à des chocs dév
 Ce notebook incarne ce maillon comme un substrat expérimental **falsifiable** (substrat + bancs dans `ict.inhibited_action`), puis le relie quantitativement à la **dette d'irréversibilité** $I(R)$ d'[ICT-18](ICT-18-ArrowOfTimeReversibilization-Python.ipynb). Quatre verdicts falsifiables, chacun avec son contrôle négatif.
 
 > *Portée honnête* : la rencontre avec la strate 7 (inhibition de l'**innovation**, ICT-30) est une issue ultérieure ; ce notebook reste au niveau **animat** (strate 3/5). La lecture post-structuraliste (Foucault/Derrida/Serres) de la boucle signifiant/signifié = générateur de modèles, hors scope expérimental (spec #7741).
-",,,,,,,,469f8286938ce08f,,,,,,,,
+",,,,,,,,d1985fed4688c865,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12d-InhibitedActionAnimat-Python.ipynb,3a817b58,code,fr,ca0eab3e0aa640f2,"import sys, os
 sys.path.insert(0, os.getcwd())  # ICT-Series/ pour `from ict import ...`
 
@@ -11876,12 +11876,12 @@ ax.set_title(""Efficacité de l'action orientée but"")
 ax.set_ylim(0, 1.05)
 fig.tight_layout(); plt.show()
 ",,,,,,,,51387e4aeebe5a91,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12d-InhibitedActionAnimat-Python.ipynb,fb1e38c0,markdown,fr,f6cfa87e1eb762f1,"## 5. Le pont $I(R)$ : la dette d'irréversibilité échappe à l'action
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12d-InhibitedActionAnimat-Python.ipynb,fb1e38c0,markdown,fr,63849e1f9576317a,"## 5. Le pont $I(R)$ : la dette d'irréversibilité échappe à l'action
 
 Le pont vers la dette d'irréversibilité $I(R)$ (cf. [ICT-18](ICT-18-ArrowOfTimeReversibilization-Python.ipynb), `ict.reversibility_budget.work_budget`) n'est pas « la dette monte sous inhibition » : une permutation déterministe porte *aussi* une forte flèche du temps. Le finding est plus fin — **sous inhibition ($\alpha=0$), changer d'action ne change plus la dette subie** : l'animat a perdu toute prise sur l'irréversibilité qu'il subit, devenue dictée par la dérive seule. À contrôlabilité partielle ($\alpha=0.5$), l'action modulait encore cette dette.
 
 **Verdict falsifiable** : `trapped` ssi (a) l'effet de l'action sur la dette est nul sous inhibition ($|\Delta| < 10^{-9}$), ET (b) non-négligeable à contrôle partiel ($|\Delta(\alpha{=}0.5)| > 0.5$) — preuve que l'action était opérante puis a cessé de l'être.
-",,,,,,,,f6cfa87e1eb762f1,,,,,,,,
+",,,,,,,,63849e1f9576317a,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12d-InhibitedActionAnimat-Python.ipynb,5dede94a,code,fr,807c933807836dff,"v5 = irreversibility_debt_bridge(n_states=9)
 for k, val in v5.items():
     print(f""  {k:34} = {val:.3f}"" if isinstance(val, float) else f""  {k:34} = {val}"")
@@ -11903,11 +11903,11 @@ ax.set_title(r""Sous $\alpha=0$, l'action ne change plus la dette (barres confon
 ax.legend()
 fig.tight_layout(); plt.show()
 ",,,,,,,,807c933807836dff,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12d-InhibitedActionAnimat-Python.ipynb,ac5b445c,markdown,fr,1635e15a5ba27aee,"## 7. Synthèse — la factorisation 4-objets et le seuil de bascule
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12d-InhibitedActionAnimat-Python.ipynb,ac5b445c,markdown,fr,6a0e912dccb7c1df,"## 7. Synthèse — la factorisation 4-objets et le seuil de bascule
 
 Les quatre verdicts se laissent lire sur la [factorisation 4-objets](../../../docs/ict/dissociations-matrix.md) $(s, q, \pi, W)$ : l'inhibition de l'action attaque l'**opérateur de workspace** $W$ (l'animat ne peut plus *agir en retour* sur la totalité), puis, par rétroaction, la **prégnance/valence** $\pi$ (rigidification) et la **représentation prédictive** $q$ (perte d'efficacité). C'est l'envers de la [dissociation $\hat p / \pi$ d'ICT-12c](ICT-12c-PregnanceAnimat-Python.ipynb) : là-bas on séparait deux grandeurs qui *tiennent* ; ici on montre une grandeur ($W$) qui *s'effondre*, et emporte les autres.
 
-Le **seuil de bascule** est la contrôlabilité $\alpha_c$ en-dessous de laquelle l'animat inhibe — l'analogue, au niveau animat, du seuil de performativité $\rho_c$ du [cadrage strate 7](ICT-0-Framing.md) (D1/D2). Sa rencontre avec l'inhibition de l'**innovation** collective (ICT-30, #7746) est l'issue ultérieure.",,,,,,,,1635e15a5ba27aee,,,,,,,,
+Le **seuil de bascule** est la contrôlabilité $\alpha_c$ en-dessous de laquelle l'animat inhibe — l'analogue, au niveau animat, du seuil de performativité $\rho_c$ du [cadrage strate 7](ICT-0-Framing.md) (D1/D2). Sa rencontre avec l'inhibition de l'**innovation** collective (ICT-30, #7746) est l'issue ultérieure.",,,,,,,,6a0e912dccb7c1df,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12d-InhibitedActionAnimat-Python.ipynb,991202bf,code,fr,78f5d4d44095c266,"import pandas as pd
 rows = [
     (""Détection"",         ""detected"",      r""$|\hat\alpha - \alpha| < 0.1$ sur 3 régimes"",        int(v2[""detected""])),
@@ -11946,7 +11946,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12d-InhibitedActionAnimat-Python.ipynb,0d14
 # ...  # animat non-adaptatif : actions uniformes sans condition sur chat
 # print(""a completer"")
 ",,,,,,,,3d7e566a38c47287,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12d-InhibitedActionAnimat-Python.ipynb,399cd847,markdown,fr,347825ddf37bd6a5,"## Conclusion
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12d-InhibitedActionAnimat-Python.ipynb,399cd847,markdown,fr,b3a494874983df64,"## Conclusion
 
 **Ce notebook incarne le maillon « animat inhibé » de l'échelle Laborit** (animat simple → *animat inhibé* → agent augmenté → agent créateur → collectif) comme un substrat expérimental falsifiable, et en livre quatre verdicts contrôlés :
 
@@ -11959,7 +11959,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12d-InhibitedActionAnimat-Python.ipynb,399c
 
 **Portée honnête** : substrat 1-torus minimal (anneau à 9 états) — l'objet est la *mécanique* de l'inhibition de l'action (détection → rigidification → perte de prise sur $I(R)$), transposable à des animats richer. La rencontre avec la strate 7 (inhibition de l'**innovation**, [ICT-30](ICT-30-InhibitedInvention-Python.ipynb), #7746) est une issue ultérieure ; ce notebook reste au niveau **animat individuel**.
 
-*Module* : [`ict.inhibited_action`](ict/inhibited_action.py) (PR [#8825](https://github.com/jsboige/CoursIA/pull/8825)). *Parallèle* : [C1 — ICT-12c](ICT-12c-PregnanceAnimat-Python.ipynb) (#7740). *Références* : Laborit 1976 (*L'Éloge de la fuite*) ; spec #7741 (conversation de conception tours 756-761, 2026-07-20) ; pont $I(R)$ via `ict.reversibility_budget` (ICT-18).",,,,,,,,347825ddf37bd6a5,,,,,,,,
+*Module* : [`ict.inhibited_action`](ict/inhibited_action.py) (PR [#8825](https://github.com/jsboige/CoursIA/pull/8825)). *Parallèle* : [C1 — ICT-12c](ICT-12c-PregnanceAnimat-Python.ipynb) (#7740). *Références* : Laborit 1976 (*L'Éloge de la fuite*) ; spec #7741 (conversation de conception tours 756-761, 2026-07-20) ; pont $I(R)$ via `ict.reversibility_budget` (ICT-18).",,,,,,,,b3a494874983df64,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14b-ActiveInferenceEFE-Python.ipynb,e6fa7102,markdown,fr,416ae1adf092b3ee,"# ICT-14b — Inférence active : l'expected free energy pilote l'action
 
 **Strate 4 (FEP) épaisse — banc d'inférence active.** Part of #4588 (Epic ICT).
@@ -24717,7 +24717,7 @@ L'objet n'est **pas nommé**. On utilise « discriminant Čech » (terme
 technique de la théorie), pas de lettre grecque décorée sur l'objet
 stabilisé. La falsification empirique est consignée ; le baptême suivra si
 l'objet survit à d'autres substrats.",,,,,,,,11ba538d576b1fcd,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15k-RecollementMacroCells-Python.ipynb,hdr,markdown,fr,76f576c87fd238ba,"# ICT-15k — Recollement des macrocells : le quadtree de Hashlife comme espace etale
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15k-RecollementMacroCells-Python.ipynb,hdr,markdown,fr,ba248805f221c9c0,"# ICT-15k — Recollement des macrocells : le quadtree de Hashlife comme espace etale
 
 > **Serie ICT** (Information – Causalite – Topologie, Epic #4588) — Chantier 3, **Grain 1** de l'issue #12206 : un recouvrement non-jouet sur un substrat qui existe deja. Le strand d'obstruction (15b a 15i) avait rendu un verdict `TRIVIAL` honnete : notre Cech mesurait une cochaine ponderee sans jamais construire le nerf ni poser la condition de cocycle (#7744). Ce notebook remplace le coeur manquant par la seule structure de recouvrement que le substrat impose de lui-meme : le **quadtree de Hashlife** (R. W. Gosper, *Hash Life*, memo 1984), dont la memoisation est, litteralement, une condition de recollement.
 
@@ -24738,10 +24738,10 @@ information → quotients / fibres → transports → compatibilite → obstruct
 **Duree estimee.** ~1 h.
 
 **Plan.** §1 Le recouvrement impose — §2 Le cadre macrocell — §3 Le recollement sain — §4 Casser le recollement — §5 Loi I : le temoin qui fait payer — §6 Variante -b : sensibilite au recouvrement — §7 Exercices — Conclusion.
-",,,,,,,,76f576c87fd238ba,,,,,,,,
+",,,,,,,,ba248805f221c9c0,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15k-RecollementMacroCells-Python.ipynb,statut-epistemique,markdown,fr,16e8778ab95eef31,> **Statut épistémique** — **Sans verdict à ce jour** : aucune ligne de la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md) ne concerne ce notebook ; son statut épistémique sera porté par la matrice le cas échéant.,,,,,,,,16e8778ab95eef31,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15k-RecollementMacroCells-Python.ipynb,acquis-renvoi,markdown,fr,11f85dd732ce8b41,"> **Acquis et parenté** : chantier 3 grain 1 — reprend là où [ICT-15d-CechObstruction-Python](ICT-15d-CechObstruction-Python.ipynb) avait rendu son verdict TRIVIAL, et rend observable la dette §2 de [#12206](https://github.com/jsboige/CoursIA/issues/12206) : le recouvrement imposé par le substrat (bords définis avant les sections).
-",,,,,,,,11f85dd732ce8b41,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15k-RecollementMacroCells-Python.ipynb,acquis-renvoi,markdown,fr,3bafccef909c307b,"> **Acquis et parenté** : chantier 3 grain 1 — reprend là où [ICT-15d-CechObstruction-Python](ICT-15d-CechObstruction-Python.ipynb) avait rendu son verdict TRIVIAL, et rend observable la dette §2 de [#12206](https://github.com/jsboige/CoursIA/issues/12206) : le recouvrement imposé par le substrat (bords définis avant les sections).
+",,,,,,,,3bafccef909c307b,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15k-RecollementMacroCells-Python.ipynb,s1,markdown,fr,0ec154a2c8bd53a5,"## 1. Le recouvrement impose par le substrat
 
 En topologie algebrique, un **recouvrement** d'un espace est une famille d'ouverts dont l'union recouvre tout ; les donnees definies sur chaque ouvert (les **sections**) doivent **se recoller** sur les intersections. Le strand 15b-15i pretendait detecter des obstructions a un tel recollement — mais sur un recouvrement que l'experimentateur choisissait lui-meme, et sans jamais ecrire la condition de cocycle. La lecon du verdict `TRIVIAL` (#7744) : *l'experience avait mesure la mauvaise chose*.
@@ -24811,10 +24811,10 @@ print(f""  blinker : periode            = {periode(blinker)}      (attendu 2)"")
 print(f""  bloc 2x2: periode            = {periode(np.ones((2, 2), dtype=bool))}      (attendu 1)"")
 print(f""  glider  : pas / case diag.   = {pas_diagonal(glider)}      (attendu 4 -> c/4)"")
 ",,,,,,,,cc4c6b7656395780,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15k-RecollementMacroCells-Python.ipynb,calib_lect,markdown,fr,4123a7234228e03a,"### Lecture — le moteur herite du certificat
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15k-RecollementMacroCells-Python.ipynb,calib_lect,markdown,fr,3b0583d8bc702697,"### Lecture — le moteur herite du certificat
 
-`blinker` p=2, `bloc` p=1, `glider` 4 pas par case diagonale (vitesse c/4) : le moteur reproduit les constantes canoniques du substrat certifie [ICT-Life-SubstratCertifie](ICT-Life-SubstratCertifie.ipynb), lui-meme adosse au theoreme `hashlife_correct` prouve dans `conway_lean` (zéro `sorry` code, ICT-Life §5). Toute divergence mesuree dans la suite sera donc attributable au **recollement**, pas au moteur.
-",,,,,,,,4123a7234228e03a,,,,,,,,
+`blinker` p=2, `bloc` p=1, `glider` 4 pas par case diagonale (vitesse c/4) : le moteur reproduit les constantes canoniques du substrat certifie [ICT-Life-SubstratCertifie](ICT-Life-SubstratCertifie.ipynb), lui-meme adosse au theoreme `hashlife_correct` prouve dans `conway_lean` (ICT-Life §5). Toute divergence mesuree dans la suite sera donc attributable au **recollement**, pas au moteur.
+",,,,,,,,3b0583d8bc702697,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15k-RecollementMacroCells-Python.ipynb,s2,markdown,fr,289e791340c238af,"## 2. Le cadre macrocell : patch, cle canonique, memo
 
 Le vocabulaire du §1 devient trois fonctions :
@@ -25272,7 +25272,7 @@ profit_total_casse = None   # TODO etudiant : somme des session_bookmaker(..., m
 profit_total_sain = None    # TODO etudiant : somme des session_bookmaker(..., marge=1, T=10)
 print(""Exercice a completer : le bookmaker systematique sur dix soupes"")
 ",,,,,,,,c694f4f6b858d57a,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15k-RecollementMacroCells-Python.ipynb,conclusion,markdown,fr,02024a17c37a5246,"## Conclusion — la chaine completee sur un substrat reel
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15k-RecollementMacroCells-Python.ipynb,conclusion,markdown,fr,3c9aec283eafb60c,"## Conclusion — la chaine completee sur un substrat reel
 
 | Experience | Recollement sain (marge 1) | Recollement casse (marge 0) |
 |---|---|---|
@@ -25291,7 +25291,7 @@ Ce que le strand 15b-15i n'avait pas — et que ce notebook pose :
 **Limites honnetes.** Nous memoisons **un pas** (marge 1, rayon du voisinage) — pas les sauts temporels `2^k` du Hashlife complet de Gosper ; la grille est 64×64 a bord mort ; les corpus sont petits et le corpus frontiere est construit pour exhiber la collision (la soupe montre que le phenomene existe aussi sans le vouloir). Le grain 2 de #12206 (banc de recollement de lectures heterogenes) reste a brancher sur un corpus reel, et le grain 3 (`Descent.lean`) a ouvrir.
 
 **Renvois.** #12206 (chantier), #7744 (constat fondateur), [ICT-Life-SubstratCertifie](ICT-Life-SubstratCertifie.ipynb) (certificat + pont Lean), [ICT-31-ContrasteTroisSubstrats-Python](ICT-31-ContrasteTroisSubstrats-Python.ipynb), `conway_lean/Conway/Life/HashlifeCorrectness.lean`.
-",,,,,,,,02024a17c37a5246,,,,,,,,
+",,,,,,,,3c9aec283eafb60c,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15l-IndependanceGenerateur-Python.ipynb,il-e0da936f,markdown,fr,67f1a61d80c28f54,"# ICT-15l — Indépendance au générateur de nouveauté : le relief b1 survit-il au contrôle de dimension ?
 
 **Issue** : [#13308](https://github.com/jsboige/CoursIA/issues/13308)
@@ -27197,7 +27197,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21b-SAECalibration-Python.ipynb,9dd49b3a,ma
 - Module de mesure : `ict/sae_calibration.py` (numpy-only, tests dans `ict/tests/test_sae_calibration.py`).
 - Script d'extraction : `scripts/extract_sae_fidelity.py` (GPU confiné, régénération déterministe).
 - Issue #12940 — bug latent de layout `W_dec` dans le path clamp d'ICT-21, découvert par cette calibration.",,,,,,,,ffacd8d16bc278fc,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21c-SAECatastrophes-Python.ipynb,e0971260,markdown,fr,e7f3a865d66c44fe,"# ICT-21c-SAECatastrophes-Python — forme et dynamique des perturbations du dictionnaire
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21c-SAECatastrophes-Python.ipynb,e0971260,markdown,fr,86da5a50ba53a064,"# ICT-21c-SAECatastrophes-Python — forme et dynamique des perturbations du dictionnaire
 
 **Navigation** : [Index](README.md) | [<< ICT-21b-SAECalibration-Python](ICT-21b-SAECalibration-Python.ipynb) | [Tete-a-tete SAE<->J-space >>](ICT-SAE-JLens-TeteATete.ipynb)
 
@@ -27226,7 +27226,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21c-SAECatastrophes-Python.ipynb,e0971260,m
 
 ## Le banc : trois échelles, deux régimes
 
-Les paires trained/control proviennent d'ICT-21 : le régime **trained** est le modèle ayant atteint sa phase de spécialisation, le **control** un témoin apparié (cf. `ict/sae_traces.py` pour le protocole d'appariement). Chaque trace donne, par token et par registre (code, prose FR, dialogue, math, récit EN), les identifiants et intensités des 50 features actives.",,,,,,,,e7f3a865d66c44fe,,,,,,,,
+Les paires trained/control proviennent d'ICT-21 : le régime **trained** est le modèle ayant atteint sa phase de spécialisation, le **control** un témoin apparié (cf. `ict/sae_traces.py` pour le protocole d'appariement). Chaque trace donne, par token et par registre (code, prose FR, dialogue, math, récit EN), les identifiants et intensités des 50 features actives.",,,,,,,,86da5a50ba53a064,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21c-SAECatastrophes-Python.ipynb,statut-epistemique,markdown,fr,16e8778ab95eef31,> **Statut épistémique** — **Sans verdict à ce jour** : aucune ligne de la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md) ne concerne ce notebook ; son statut épistémique sera porté par la matrice le cas échéant.,,,,,,,,16e8778ab95eef31,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21c-SAECatastrophes-Python.ipynb,canon-ict-root,code,fr,74a7173355b5413a,"# Racine canonique de la serie : remonte les parents depuis le dossier du
 # notebook jusqu'au package ict/, puis en derive les dossiers de donnees.
@@ -27482,13 +27482,13 @@ rows = [{""frac_gardee"": round(float(f), 3), ""n_kept"": int(k), ""FVU"": round
         for f, k, v, l, o in zip(d[""fracs""], d[""n_keeps""], d[""fvus""], d[""l0s""], d[""overlaps""])]
 df_gpu = pd.DataFrame(rows)
 df_gpu",,,,,,,,890bd89f89409d05,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21c-SAECatastrophes-Python.ipynb,a411cd7b,markdown,fr,dbfd924a6b30f876,"### Lecture du résultat — une largeur constante ne garantit pas la fidélité
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21c-SAECatastrophes-Python.ipynb,a411cd7b,markdown,fr,801f2d7572a92488,"### Lecture du résultat — une largeur constante ne garantit pas la fidélité
 
 La dégradation réelle confirme la hiérarchie du banc, en plus dur : garder 50 % du dictionnaire fait passer le FVU de 0,2849 à 0,4692 ; à 15 %, il atteint 0,8217. Pourtant le L0 reste proche de 50 (50,00 → 49,71) : le code sparse **recolle** presque sa largeur en recrutant d'autres features, sans conserver sa fidélité. L'overlap_diff64 reste entre 2 et 3 : cette mesure de déplacement des voisins est presque insensible à une ablation qui dégrade fortement le FVU. Chaque indicateur répond donc à une question différente.
 
 C'est une instance expérimentale de la limite « *sparsity is not a good proxy* » discutée par Sharkey et al. (R14) : ici, **la même largeur active** accompagne des reconstructions de qualité très différente *sous ablation*. Ce contraste complète celui d'[ICT-21](ICT-21-SAETrajectoires-Python.ipynb), qui compare plusieurs SAE à largeur égale ; il ne prouve ni qu'un SAE plus dense serait plus interprétable, ni que le remplacement des features préserve leurs concepts. Voir d'autres features occuper les places libérées n'établit **pas** un *feature splitting* ou une *absorption* : il faudrait suivre des concepts étiquetés et leurs effets, pas seulement L0 et FVU.
 
-C'est aussi la frontière honnête du banc numpy : entre la masse (proxy) et le FVU mesuré après re-forward, l'écart de définition inclut le recrutement de features de remplacement que le banc figé ne voit pas. Une masse perdue seule ne suffit donc pas à prédire le FVU ; les proxys servent à formuler des hypothèses à confronter au re-forward, pas à remplacer cette mesure.",,,,,,,,dbfd924a6b30f876,,,,,,,,
+C'est aussi la frontière honnête du banc numpy : entre la masse (proxy) et le FVU mesuré après re-forward, l'écart de définition inclut le recrutement de features de remplacement que le banc figé ne voit pas. Une masse perdue seule ne suffit donc pas à prédire le FVU ; les proxys servent à formuler des hypothèses à confronter au re-forward, pas à remplacer cette mesure.",,,,,,,,801f2d7572a92488,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21c-SAECatastrophes-Python.ipynb,5cebecec,markdown,fr,b43505fb4056e37a,"
 
 ## Exercices",,,,,,,,b43505fb4056e37a,,,,,,,,
@@ -27537,12 +27537,12 @@ def quatrieme_echelle():
     return None
 
 quatrieme_echelle()",,,,,,,,4daf54b28ffef891,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21c-SAECatastrophes-Python.ipynb,fa6501e5,markdown,fr,b175d52d2ee5095f,"### Ce que les exercices doivent révéler
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21c-SAECatastrophes-Python.ipynb,fa6501e5,markdown,fr,cc9f3e6fb5b39c5e,"### Ce que les exercices doivent révéler
 
 - **Exercice 1** : comparer l'entropie des poids par feature et la fragilité des registres teste une hypothèse sur la **répartition de l'usage**. Si math a l'entropie la plus basse et casse plus tôt, cette association suggère un noyau concentré ; elle ne démontre ni une cause ni une meilleure interprétabilité. L'entropie de cette distribution n'est **pas** une longueur MDL : celle-ci devrait compter ensemble les bits nécessaires pour décrire le dictionnaire et les codes résiduels à une précision fixée, puis être comparée hors échantillon. R14 propose MDL comme candidat *conditionnel* au choix du code et de la tâche, pas comme score garanti. Pour le lien avec la reconstruction et les limites des SAE, voir la grille d'[ICT-21](ICT-21-SAETrajectoires-Python.ipynb).
 - **Exercice 2** : la distinction entre path-divergence (banc figé, mesurée) et hystérésis (re-forward, à mesurer). C'est le cœur méthodologique du notebook : chaque limite du banc est aussi une expérience désignée.
-- **Exercice 3** : la question d'échelle laissée ouverte — palier ou monotone — avec un protocole prêt (le script existe, la paire calibration 8B aussi).",,,,,,,,b175d52d2ee5095f,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21c-SAECatastrophes-Python.ipynb,117eda5e,markdown,fr,84a162aba10381a5,"
+- **Exercice 3** : la question d'échelle laissée ouverte — palier ou monotone — avec un protocole prêt (le script existe, la paire calibration 8B aussi).",,,,,,,,cc9f3e6fb5b39c5e,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21c-SAECatastrophes-Python.ipynb,117eda5e,markdown,fr,eaa845bcb4882aff,"
 
 ***
 
@@ -27574,7 +27574,7 @@ L'agenda que ce notebook ouvre pour #8236 : le balayage d'échelle complet (4B, 
 
 ***
 
-**Navigation** : [Index](README.md) | [<< ICT-21b-SAECalibration-Python](ICT-21b-SAECalibration-Python.ipynb) | [Tete-a-tete SAE<->J-space >>](ICT-SAE-JLens-TeteATete.ipynb)",,,,,,,,84a162aba10381a5,,,,,,,,
+**Navigation** : [Index](README.md) | [<< ICT-21b-SAECalibration-Python](ICT-21b-SAECalibration-Python.ipynb) | [Tete-a-tete SAE<->J-space >>](ICT-SAE-JLens-TeteATete.ipynb)",,,,,,,,eaa845bcb4882aff,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-22-LLMSubstrat-Python.ipynb,6395fbd6,markdown,fr,6eb6b4556b8c271a,> **Statut épistémique** — **Établi** : Le transformer (4ᵉ substrat) s'intègre au banc cross-substrat. Portée et détail dans la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md).,,,,,,,,6eb6b4556b8c271a,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-22b-CausalInterventionEngine-Python.ipynb,02f8f360,code,fr,20cb3d72a9078e43,"# Parameters
 nb_name = ""ICT-22b-CausalInterventionEngine-Python""",,,,,,,,20cb3d72a9078e43,,,,,,,,
@@ -29425,16 +29425,16 @@ a la connaissance de la fiabilite locale, exactement la fibre que le quotient gl
 principe, pas qu'elle est reparlee. Reconstruire la fibre a partir des seuls desaccords (exercice 3)
 est le pas suivant — et c'est la ou la non-trivialite reelle du recollement se cache.
 ",,,,,,,,45dd1638910ce088,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35-HumorCausalProbe-Pilot-Python.ipynb,14791a35,code,fr,3342acea2eed7729,"# Parameters
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35-HumorCausalProbe-Pilot-Python.ipynb,14791a35,code,fr,fe0f84b7197a7973,"# Parameters
 nb_name = ""ICT-35-HumorCausalProbe-Pilot-Python""
-",,,,,,,,3342acea2eed7729,,,,,,,,
+",,,,,,,,fe0f84b7197a7973,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35-HumorCausalProbe-Pilot-Python.ipynb,statut-epistemique,markdown,fr,16e8778ab95eef31,> **Statut épistémique** — **Sans verdict à ce jour** : aucune ligne de la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md) ne concerne ce notebook ; son statut épistémique sera porté par la matrice le cas échéant.,,,,,,,,16e8778ab95eef31,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35-HumorCausalProbe-Pilot-Python.ipynb,acquis-renvoi,markdown,fr,c89100c5ce4d2c32,"> **Acquis et parenté** : strate 5 (ICT-21 → ICT-25 prolongée par ICT-35 → ICT-39 — le LLM comme substrat). Étage 0 du programme HumorCausalProbe ([#5635](https://github.com/jsboige/CoursIA/issues/5635), [#8236](https://github.com/jsboige/CoursIA/issues/8236)) : la baseline de shortcuts lexicaux se mesure **avant** toute phase SAE, les phases suivantes restant aval.
 ",,,,,,,,c89100c5ce4d2c32,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35-HumorCausalProbe-Pilot-Python.ipynb,frontmatter,markdown,fr,6c1a2dba679a6676,"## ICT-35 -- HumorCausalProbe-Pilot : substrat HLS, sans GPU, sans confusion explication/mecanisme
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35-HumorCausalProbe-Pilot-Python.ipynb,frontmatter,markdown,fr,fd09fb5bb702ea2d,"## ICT-35 -- HumorCausalProbe-Pilot : substrat HLS, sans GPU, sans confusion explication/mecanisme
 
 > **Serie ICT** (*Integrated Causal Trajectories*, EPIC #4588) -- strate 5 : *extraction GPU-free*.
-> Issue : **#14035**. prerequis livre : **GT-28b** banc humour dur (120 instances annotees, #12785 MERGED 2026-08-27).
+> Issue : **#14035**. prerequis livre : banc humour dur **consolide dans GT-18c** (120 instances annotees, #12785 puis absorption #14032).
 > Aval : #5635 (Gate 24 workspace), #8236 (multi-echelle), #5105 (Inoculation).
 
 ## Étage 0 -- baseline de shortcuts lexicaux (PAS Phase 1 SAE)
@@ -29488,7 +29488,7 @@ L'etage 0 ne discrimine **que** la couche 1 (jeu sonore / repetition + incongrui
 
 ## Sources
 
-- `MyIA.AI.Notebooks/GameTheory/GameTheory-24b-Humour-Banc-Dur.ipynb` : CORPUS_DUR 120 instances (cell[10]), labellisation manuelle par heuristique Argumentum (cf note methodo de l'acceptance).
+- `MyIA.AI.Notebooks/GameTheory/GameTheory-18c-Humour-Banc-Python.ipynb` : CORPUS_DUR 120 instances (cell[33], section echelle consolidee #14032), labellisation manuelle par heuristique Argumentum (cf note methodo de l'acceptance).
 - `G:\Mon Drive\MyIA\IA\Bibliographie IA\MachineLearning\Computational Humor\` : sources HLS (Attardo/Raskin GTVH + Mihalcea/Pulido humor stylometry), **prevues comme reference** pour la taxonomie -- la mise en archive effective est a faire dans le scope de #14033, pas de ce notebook.
 
 
@@ -29504,8 +29504,8 @@ Le protocole c.927 (po-2025 DM msg-20260903T164919-gtux5n) bascule l'unité de m
 
 3. **frontmatter prose**. v5 affirmait `StratifiedGroupKFold` la ou le code execute `StratifiedKFold(n_splits=3)` sur 36 unites group-level (la confusion venait de c.920 -- `StratifiedGroupKFold` sur 60 instances aurait ete coherent, mais c.927 a bascule sur `StratifiedKFold` quand l'unite est devenue le groupe H). La v6 aligne la prose sur le code.
 
-Le verdict `INCONCLUSIVE borne` tient structurellement sur ce sous-corpus (36 unites), ce qui etait la conclusion v4/v5 reformulee en termes de mesure plus robuste (p fini + IC95 + verdict logic corrigee).",,,,,,,,6c1a2dba679a6676,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35-HumorCausalProbe-Pilot-Python.ipynb,setup,code,fr,8efec03b46b8d6cf,"# -*- coding: utf-8 -*-
+Le verdict `INCONCLUSIVE borne` tient structurellement sur ce sous-corpus (36 unites), ce qui etait la conclusion v4/v5 reformulee en termes de mesure plus robuste (p fini + IC95 + verdict logic corrigee).",,,,,,,,fd09fb5bb702ea2d,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35-HumorCausalProbe-Pilot-Python.ipynb,setup,code,fr,f9598ee12ebf2247,"# -*- coding: utf-8 -*-
 # Setup. Pas de service externe ; pas de GPU. CPU-only, sklearn, json, random.
 import json
 import random
@@ -29528,19 +29528,20 @@ SEED = 13306
 random.seed(SEED)
 np.random.seed(SEED)
 
-GT28B = Path(""MyIA.AI.Notebooks/GameTheory/GameTheory-24b-Humour-Banc-Dur.ipynb"")
-assert GT28B.exists(), f""GT-28b manquant : {GT28B.resolve()}""
-print(f""[setup] GT-28b present : {GT28B}"")
+GT28B = Path(""MyIA.AI.Notebooks/GameTheory/GameTheory-18c-Humour-Banc-Python.ipynb"")  # consolide #14032
+assert GT28B.exists(), f""banc humour 18c manquant : {GT28B.resolve()}""
+print(f""[setup] banc humour 18c (consolide #14032) present : {GT28B}"")
 print(f""[setup] seed = {SEED}"")
 print(f""[setup] sklearn LogisticRegression baseline (CPU)"")
-",,,,,,,,8efec03b46b8d6cf,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35-HumorCausalProbe-Pilot-Python.ipynb,extract-corpus,code,fr,0bd9530de5adfac4,"# Re-execute cell[1]..cell[10] de GT-28b pour obtenir CORPUS_DUR.
+",,,,,,,,f9598ee12ebf2247,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35-HumorCausalProbe-Pilot-Python.ipynb,extract-corpus,code,fr,dba15f7cd945bcc4,"# Re-execute la section passage-a-l'echelle (cell[26..33]) du banc humour
+# consolide (18c, ex-GT-28b absorbe par #14032) pour obtenir CORPUS_DUR.
 # C'est une REPRODUCTION : on n'edite pas le notebook source, on importe
-# ses cellules et on les execute ici. Source de verite = GT-28b.ipynb.
+# ses cellules et on les execute ici. Source de verite = 18c consolide.
 nb_src = json.loads(GT28B.read_text(encoding=""utf-8""))
 code_cells = [(i, ''.join(c['source'])) for i, c in enumerate(nb_src['cells'])
-               if c['cell_type'] == 'code' and i <= 10]
-print(f""[extract] {len(code_cells)} cellules code GT-28b[0..10] a executer"")
+               if c['cell_type'] == 'code' and 26 <= i <= 33]
+print(f""[extract] {len(code_cells)} cellules code 18c[26..33] a executer"")
 
 ns = {}
 for i, src in code_cells:
@@ -29550,8 +29551,8 @@ CORPUS_DUR = ns['CORPUS_DUR']
 print(f""[extract] CORPUS_DUR : {len(CORPUS_DUR)} instances"")
 print(f""[extract] distribution par label : {dict(Counter(i['label'] for i in CORPUS_DUR))}"")
 print(f""[extract] distribution par source : {dict(Counter(i['source'] for i in CORPUS_DUR))}"")
-",,,,,,,,0bd9530de5adfac4,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35-HumorCausalProbe-Pilot-Python.ipynb,stratify,code,fr,c36e0546332f3f23,"# Stratification : 6 humour_reussi (cell[17] de GT-28b), tous les non-humour disponibles.
+",,,,,,,,dba15f7cd945bcc4,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35-HumorCausalProbe-Pilot-Python.ipynb,stratify,code,fr,544cb16815238426,"# Stratification : 6 humour_reussi (cell[42] du banc consolide), tous les non-humour disponibles.
 # 6 humour_reussi (le label 'humour_reussi') vs ~72 non-humour (4 autres labels).
 # Le ratio 1:12 maximise la variete des non-humour pour la diversite des negatifs.
 # ATTENTION (c.920, fixe en c.927) : la strategie d'echantillonnage est maintenant **par
@@ -29580,7 +29581,7 @@ for label in ['rire_sans_recadrage', 'recadrage_sans_rire', 'rien', 'offensif_co
 print(f""[stratify] humour_reussi = {len(H_REUSSI)} instances"")
 print(f""[stratify] non-humour    = {len(NON_HUMOUR)} instances (toutes disponibles)"")
 print(f""[stratify] ratio H:N     = 1:{len(NON_HUMOUR)//len(H_REUSSI)}"")
-",,,,,,,,c36e0546332f3f23,,,,,,,,
+",,,,,,,,544cb16815238426,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35-HumorCausalProbe-Pilot-Python.ipynb,match-pairs,code,fr,f84efbe6a0fb4e61,"# Appariement par longueur (token count approximatif, +/-20 %).
 # On definit la longueur d'une instance par le nombre de mots de son texte.
 def text_length(inst):
@@ -30041,17 +30042,17 @@ print()
 print(""[P2] Etages superieurs gates par #5635 (GPU Gate 24 workspace) et #14033 (substrat"")
 print(""     taxonomique). Aucune action GPU ou embeddings n est prise par ce notebook."")
 ",,,,,,,,e64a47aa645159d8,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35-HumorCausalProbe-Pilot-Python.ipynb,navlinks,markdown,fr,1c2fabb70edfd5b8,"## Voir aussi
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35-HumorCausalProbe-Pilot-Python.ipynb,navlinks,markdown,fr,3e54066960fc4f0c,"## Voir aussi
 
 - **#14035** -- issue de reference, protocole falsifiable, acceptance (cible haute).
 - **#14032** -- consolidation de la methode de labellisation (GT-28 / GT-28b).
 - **#14033** -- substrat taxonomique croissant (corpus apparie + 3 labels + taxonomie sourcee).
-- **`MyIA.AI.Notebooks/GameTheory/GameTheory-24b-Humour-Banc-Dur.ipynb`** -- CORPUS_DUR 120 instances, source de verite.
+- **`MyIA.AI.Notebooks/GameTheory/GameTheory-18c-Humour-Banc-Python.ipynb`** -- banc humour consolide (#14032) : CORPUS_DUR 120 instances, source de verite.
 - **`MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21-SAETrajectories.ipynb`** -- substrat S4 (SAE Qwen3.5-9B), aval + tard.
 - **`MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb`** -- Gate 24, gated etages superieurs (GPU).
 - **#5635, #8236, #5105, #4588** -- aval ICT-Series.
 
-- **Note :** ICT-35 -- *HumorCausalProbe-Pilot*, sub-grain exploratoire de #14035, **etage 0 lexical baseline**, GPU-free. Verdict INCONCLUSIVE borne sur 30 appariements exploratoires (6 positifs uniques x 5 + 30 negatifs uniques). Mesure StratifiedKFold(n_splits=3) sur 36 unites group-level (fix c.920 fuite de groupe via unification par moyenne H + c.927 bascule unite-de-mesure). L'etape d'apres est #14033 (substrat taxonomique), pas Phase 2 SAE. Si le verdict devient FEATURE_CANDIDATE apres elargissement (>100 textes positifs uniques) ou changement d'etage, ce notebook sera promu en ICT-35 numerote definitif ; sinon il restera un -Pilot archive pour tracabilite.",,,,,,,,1c2fabb70edfd5b8,,,,,,,,
+- **Note :** ICT-35 -- *HumorCausalProbe-Pilot*, sub-grain exploratoire de #14035, **etage 0 lexical baseline**, GPU-free. Verdict INCONCLUSIVE borne sur 30 appariements exploratoires (6 positifs uniques x 5 + 30 negatifs uniques). Mesure StratifiedKFold(n_splits=3) sur 36 unites group-level (fix c.920 fuite de groupe via unification par moyenne H + c.927 bascule unite-de-mesure). L'etape d'apres est #14033 (substrat taxonomique), pas Phase 2 SAE. Si le verdict devient FEATURE_CANDIDATE apres elargissement (>100 textes positifs uniques) ou changement d'etage, ce notebook sera promu en ICT-35 numerote definitif ; sinon il restera un -Pilot archive pour tracabilite.",,,,,,,,3e54066960fc4f0c,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35b-HumorCausalPairs-SAE-Python.ipynb,9f5dffbc,code,fr,5b5b5c243286a86f,"# Parameters
 nb_name = ""ICT-35b-HumorCausalPairs-SAE-Python""",,,,,,,,5b5b5c243286a86f,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35b-HumorCausalPairs-SAE-Python.ipynb,statut-epistemique,markdown,fr,16e8778ab95eef31,> **Statut épistémique** — **Sans verdict à ce jour** : aucune ligne de la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md) ne concerne ce notebook ; son statut épistémique sera porté par la matrice le cas échéant.,,,,,,,,16e8778ab95eef31,,,,,,,,
@@ -30427,22 +30428,22 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35c-HumorDepthProfile-SAE-Python.ipynb,eac1
 - **ICT-35b** (tranche 1) -- protocole, pre-enregistrement, verdict mid 12/24.
 - `ict/humor_pairs.py` -- corpus, paires, mesure pre-registree (docstrings).
 - Issue **#14035** -- protocole complet et ecarts documentes.",,,,,,,,42a246051d906845,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35d-HumorTypologyBreakdown-SAE-Python.ipynb,452199a6,code,fr,06d909fc08a6a96b,"# Parameters
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35d-HumorTypologyBreakdown-SAE-Python.ipynb,452199a6,code,fr,e639575f01cff499,"# Parameters
 nb_name = ""ICT-35d-HumorTypologyBreakdown-SAE-Python""
 layers = {""early"": 4, ""mid"": 12, ""late"": 19}
 n_layers_model = 24
 n_draws = 2048
 seed = 42
-n_boot = 4000",,,,,,,,06d909fc08a6a96b,,,,,,,,
+n_boot = 4000",,,,,,,,e639575f01cff499,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35d-HumorTypologyBreakdown-SAE-Python.ipynb,75013201,markdown,fr,16e8778ab95eef31,> **Statut épistémique** — **Sans verdict à ce jour** : aucune ligne de la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md) ne concerne ce notebook ; son statut épistémique sera porté par la matrice le cas échéant.,,,,,,,,16e8778ab95eef31,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35d-HumorTypologyBreakdown-SAE-Python.ipynb,e920c82e,markdown,fr,f2386d7c02470165,"## ICT-35d -- HumorTypologyBreakdown-SAE : le verdict survit-il à la forme de la blague ? (#14035, tranche finale)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35d-HumorTypologyBreakdown-SAE-Python.ipynb,e920c82e,markdown,fr,3d3ca1d347539bc4,"## ICT-35d -- HumorTypologyBreakdown-SAE : le verdict survit-il à la forme de la blague ? (#14035, tranche finale)
 
 [ICT-35b](ICT-35b-HumorCausalPairs-SAE-Python.ipynb) a mesuré le différentiel humour→unfun des **30 paires prises ensemble** à la couche 12/24 (`INCONCLUSIVE`), [ICT-35c](ICT-35c-HumorDepthProfile-SAE-Python.ipynb) a montré que le verdict **survit à la profondeur** (early/mid/late, `INCONCLUSIVE` stable, top-5 disjoints). Restaient deux critères du protocole [#14035](https://github.com/jsboige/CoursIA/issues/14035) :
 
 1. **critère 4 de la phase 1** — stabilité **inter-formes** : pun, sociale/non-topical, topical. Un signal noyé dans l'agrégat de 30 paires hétérogènes peut exister dans une seule forme — c'est l'objection que cette tranche lève (ou confirme) ;
 2. **critère d'acceptance** — effets rapportés avec **IC et taille d'effet**, pas seulement des seuils binaires.
 
-Cette tranche mesure les **mêmes 6 traces** (3 couches × trained/control, aucun run GPU nouveau) en les **découpant par type** selon une annotation figée *avant* toute mesure par type. Elle énonce ensuite ce que le protocole implique pour la phase 2 interventionnelle, et porte le **verdict final** de l'issue.",,,,,,,,f2386d7c02470165,,,,,,,,
+Cette tranche mesure les **mêmes 6 traces** (3 couches × trained/control, aucun run GPU nouveau) en les **découpant par type** selon une annotation figée *avant* toute mesure par type. Elle énonce ensuite ce que le protocole implique pour la phase 2 interventionnelle, et porte le **verdict final** de l'issue.",,,,,,,,3d3ca1d347539bc4,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35d-HumorTypologyBreakdown-SAE-Python.ipynb,8603cbd8,code,fr,835025f7766c46f1,"# -*- coding: utf-8 -*-
 # Setup. Reproduction du corpus GT-24b (meme geste que ICT-35b/35c) :
 # les cellules code [0..10] de GameTheory-24b-Humour-Banc-Dur.ipynb sont
@@ -30634,16 +30635,16 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35d-HumorTypologyBreakdown-SAE-Python.ipynb
 # le max|z| null p95, le surplus de comptes est-il autre chose que du bruit ?
 # TODO etudiant : compter n_|z|>2.5 sur 3 jambes et confronter au null p95.
 print(""Exercice a completer : seuil |z|>2.5 vs controle familial"")",,,,,,,,04828926556b2bf3,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35d-HumorTypologyBreakdown-SAE-Python.ipynb,6224753a,markdown,fr,d87c7c8bb315f7e3,"## Conclusion et voir aussi
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35d-HumorTypologyBreakdown-SAE-Python.ipynb,6224753a,markdown,fr,3328718006ec59d6,"## Conclusion et voir aussi
 
 Cette tranche finale de [#14035](https://github.com/jsboige/CoursIA/issues/14035) complète le triptyque : le pilote a posé la baseline lexicale, la tranche 1 a mesuré l'agrégat sur SAE, la tranche 2 a éprouvé la profondeur, celle-ci éprouve la **forme** et rapporte les effets avec leur incertitude. Le verdict final **`AUCUNE_FEATURE_STABLE`** est l'énoncé le plus fort que les données portent, et il ferme la phase 1 honnêtement : la phase 2 n'a pas d'objet sur ces traces, et toute reprise passe par une nouvelle phase 1 (SAE plus large, banc équilibré), pas par un contournement du garde-fou « candidates pré-enregistrées ».
 
 - [ICT-35-HumorCausalProbe-Pilot-Python](ICT-35-HumorCausalProbe-Pilot-Python.ipynb) — étage 0, baseline de shortcuts lexicaux
 - [ICT-35b-HumorCausalPairs-SAE-Python](ICT-35b-HumorCausalPairs-SAE-Python.ipynb) — tranche 1, paires minimales sur SAE
 - [ICT-35c-HumorDepthProfile-SAE-Python](ICT-35c-HumorDepthProfile-SAE-Python.ipynb) — tranche 2, le verdict aux trois profondeurs
-- [GameTheory-24b-Humour-Banc-Dur](../../GameTheory/GameTheory-24b-Humour-Banc-Dur.ipynb) — le banc source des paires
-- Sources humor computationnel : `G:\Mon Drive\MyIA\IA\Bibliographie IA\MachineLearning\Computational Humor\`",,,,,,,,d87c7c8bb315f7e3,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,24605642,markdown,fr,3bd2a53d3eed5222,"# ICT-36 — F-Lens : mode factored-geometry, sous-espaces et additivite
+- [GameTheory-18d-Humour-Banc-Dur-Python](../../GameTheory/GameTheory-18d-Humour-Banc-Dur-Python.ipynb) — le banc source des paires
+- Sources humor computationnel : `G:\Mon Drive\MyIA\IA\Bibliographie IA\MachineLearning\Computational Humor\`",,,,,,,,3328718006ec59d6,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,24605642,markdown,fr,b73acc06bae64c50,"# ICT-36 — F-Lens : mode factored-geometry, sous-espaces et additivite
 
 **Navigation** : [<< ICT-35](ICT-35-HumorCausalProbe-Pilot-Python.ipynb) | [Index](../README.md)
 
@@ -30665,7 +30666,7 @@ Le mode factored-geometry etudie l'**organisation geometrique** des facteurs ; i
 
 - arXiv:2602.02385 (factored representations) — bibliotheque canonique CoursIA.
 - #15478 (issue grain) ; Part of #15475 (Epic toolkit multi-instrument) ; Depends on #15476 (contrat de trace v1) ; complements #15477 (F-Lens belief-state).
-",,,,,,,,3bd2a53d3eed5222,,,,,,,,
+",,,,,,,,b73acc06bae64c50,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,statut-epistemique,markdown,fr,16e8778ab95eef31,> **Statut épistémique** — **Sans verdict à ce jour** : aucune ligne de la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md) ne concerne ce notebook ; son statut épistémique sera porté par la matrice le cas échéant.,,,,,,,,16e8778ab95eef31,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,4e2c7895,markdown,fr,9736bd7c4d73b8d4,"## Sources et substance (reventilation c.1119)
 
@@ -30680,7 +30681,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,4e2c
 
 **Pas de licence détectée** sur les deux dépôts Astera (cf. preflight Epic #15475) : la substance LIVRÉE est donc une **réimplémentation from-scratch** des méthodes publiées, sans copie de code. Le test `H.1 — Pondération et centrage explicites et testés` honore cette contrainte.
 ",,,,,,,,9736bd7c4d73b8d4,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,f8d07025,code,fr,66ab683b6c2fad40,"# Parametres du notebook
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,f8d07025,code,fr,327b494f46539dc0,"# Parametres du notebook
 nb_name = ""ICT-36-FLens-FactoredGeometry-Python""
 N_SEEDS = 5  # multi-seed : au moins 4 seeds requis (cf .claude/rules/pr-review-discipline.md, critere C)
 N_DIM_RESIDUAL = 256  # dimension typique d'un residual stream LLM (proxy)
@@ -30691,7 +30692,7 @@ NOISE_LEVELS = (0.0, 0.1, 0.25, 0.5, 1.0)  # sweep de bruit
 RNG_SEEDS = tuple(range(N_SEEDS))  # (0, 1, 2, 3, 4)
 print(f""N_SEEDS={N_SEEDS} RNG_SEEDS={RNG_SEEDS}"")
 print(f""N_DIM_RESIDUAL={N_DIM_RESIDUAL} N_FACTORS={N_FACTORS} N_TOKENS={N_TOKENS}"")
-",,,,,,,,66ab683b6c2fad40,,,,,,,,
+",,,,,,,,327b494f46539dc0,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,canon-ict-root,code,fr,74a7173355b5413a,"# Racine canonique de la serie : remonte les parents depuis le dossier du
 # notebook jusqu'au package ict/, puis en derive les dossiers de donnees.
 # La serie reste executable depuis sa racine comme depuis le dossier d'une
@@ -30770,11 +30771,11 @@ _bases_toy, _dim_toy = make_factor_bases(2, 8, mode=""orthogonal"")
 _X_toy, _w_toy = synthesize_activations(_bases_toy, 16, rng=np.random.default_rng(0))
 print(f""smoke: {len(_bases_toy)} bases {_bases_toy[0].shape} dim_per_factor={_dim_toy} X={_X_toy.shape}"")
 print(""make_factor_bases et synthesize_activations pretes."")",,,,,,,,5e7db609dd5b0fff,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,f7126499,markdown,fr,7adc12ac79d5c34e,"## Exercice 1 — Regime orthogonal : additivite exacte attendue
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,f7126499,markdown,fr,a07d86f2a2adc101,"## Exemple guidé 1 — Regime orthogonal : additivite exacte attendue
 
 Avec des sous-espaces factoriels disjoints, l'additivite dimensionnelle devrait etre **exacte** : la dimension jointe egale la somme des dimensions factorielles. Ce test etablit la ligne de base.
-",,,,,,,,7adc12ac79d5c34e,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,6f02f3f4,code,fr,831130644228d960,"results_orthogonal = {}
+",,,,,,,,a07d86f2a2adc101,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,6f02f3f4,code,fr,35490c2ce238c64b,"results_orthogonal = {}
 for seed in RNG_SEEDS:
     rng = np.random.default_rng(seed)
     bases, dim_per = make_factor_bases(N_FACTORS, N_DIM_RESIDUAL, mode=""orthogonal"", rng=rng)
@@ -30802,17 +30803,17 @@ for seed in RNG_SEEDS:
         ""max_pairwise_overlap"": max(overlaps) if overlaps else 0.0,
     }
 
-print(""=== Exercice 1 : regime orthogonal ==="")
+print(""=== Exemple guide 1 : regime orthogonal ==="")
 for seed, r in results_orthogonal.items():
     print(f""  seed={seed} NC@95 joint={r['joint_dim_95']:>3} ""
           f""sum_factors={r['sum_factor_dims_95']:>3} gap={r['additivity_gap']:>2} ""
           f""max_pair_overlap={r['max_pairwise_overlap']:.4f}"")
-",,,,,,,,831130644228d960,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,3fac3c7d,markdown,fr,64c21523de51a7a2,"## Exercice 2 — Regime superpose : orthogonalite degradee
+",,,,,,,,35490c2ce238c64b,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,3fac3c7d,markdown,fr,0fc38953711389b7,"## Exemple guidé 2 — Regime superpose : orthogonalite degradee
 
 Les sous-espaces se chevauchent partiellement (overlap 0.4). L'additivite devrait etre **degradee** : la dimension jointe est inferieure a la somme des dimensions factorielles (les facteurs partagent de la variance).
-",,,,,,,,64c21523de51a7a2,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,4e03a9db,code,fr,058e68350be9bd80,"results_superposed = {}
+",,,,,,,,0fc38953711389b7,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,4e03a9db,code,fr,23f8993e72041069,"results_superposed = {}
 for seed in RNG_SEEDS:
     rng = np.random.default_rng(seed)
     bases, dim_per = make_factor_bases(N_FACTORS, N_DIM_RESIDUAL, mode=""superposed"", overlap=0.4, rng=rng)
@@ -30839,17 +30840,17 @@ for seed in RNG_SEEDS:
         ""max_pairwise_overlap"": max(overlaps) if overlaps else 0.0,
     }
 
-print(""=== Exercice 2 : regime superpose (overlap=0.4) ==="")
+print(""=== Exemple guide 2 : regime superpose (overlap=0.4) ==="")
 for seed, r in results_superposed.items():
     print(f""  seed={seed} NC@95 joint={r['joint_dim_95']:>3} ""
           f""sum_factors={r['sum_factor_dims_95']:>3} gap={r['additivity_gap']:>2} ""
           f""max_pair_overlap={r['max_pairwise_overlap']:.4f}"")
-",,,,,,,,058e68350be9bd80,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,e7eff439,markdown,fr,48e104b7345d7fdb,"## Exercice 3 — Sweep de bruit : sensibilite et verdicts falsifiables
+",,,,,,,,23f8993e72041069,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,e7eff439,markdown,fr,44be1b67c93eab00,"## Exemple guidé 3 — Sweep de bruit : sensibilite et verdicts falsifiables
 
 Bruit additif gaussien de niveaux 0.0, 0.1, 0.25, 0.5, 1.0. La structure factorisee devrait disparaitre progressivement : au-dela d'un niveau de bruit pre-enregistre, les sous-espaces factoriels ne se separent plus de l'hypothese nulle (sous-espaces aleatoires apparies).
-",,,,,,,,48e104b7345d7fdb,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,23f8c73c,markdown,fr,67769686fb273ca2,"## Distinction belief-state vs factorisation géométrique
+",,,,,,,,44be1b67c93eab00,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,23f8c73c,markdown,fr,b37e7756ff202948,"## Distinction belief-state vs factorisation géométrique
 
 ICT-36 (ce notebook) et **ICT-37** (`ICT-37-FLens-BeliefState-Python.ipynb`, PR #15662 sur lane `myia-po-2023:CoursIA-2`) sont deux **modes complémentaires** de la même **Factored Geometry Lens (F-Lens)**. La distinction est **non triviale** et les résultats ne sont **pas interchangeables** :
 
@@ -30861,8 +30862,8 @@ ICT-36 (ce notebook) et **ICT-37** (`ICT-37-FLens-BeliefState-Python.ipynb`, PR 
 Un modèle peut avoir une **excellente décodabilité belief** (R² > 0.989, cf. ZM) **sans** factorisation orthogonale propre, et inversement. ICT-36 et ICT-37 rendent **deux verdicts distincts** sur le même réseau — c'est précisément ce que l'acceptance #15478 demande (« les résultats ne confondent pas décodabilité belief et factorisation géométrique »).
 
 **Pour ce notebook** : on se concentre sur la géométrie des sous-espaces factoriels. La décodabilité belief n'est **pas** mesurée ici ; pour cela, voir ICT-37.
-",,,,,,,,67769686fb273ca2,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,1a5ac137,code,fr,ad24cdd17ee8b11d,"# null_overlap_distribution : importee du module (extraction #15943). Cf. l'avertissement
+",,,,,,,,b37e7756ff202948,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,1a5ac137,code,fr,9dc85d58662ecc17,"# null_overlap_distribution : importee du module (extraction #15943). Cf. l'avertissement
 # de sa docstring -- le VRAI test H1 est ci-dessous (paires appariees null_pairs).
 results_noise_sweep = {}
 for noise_var in NOISE_LEVELS:
@@ -30923,7 +30924,7 @@ for noise_var in NOISE_LEVELS:
         }
     results_noise_sweep[noise_var] = per_seed
 
-print(""=== Exercice 3 : sweep de bruit ==="")
+print(""=== Exemple guide 3 : sweep de bruit ==="")
 print(f""{'noise':>6} {'seed':>4} {'joint':>6} {'sumF':>5} {'gap':>4} {'overlap':>7} {'null95':>7} {'sep?':>5}"")
 print(f""{'note':>6} sep? = overlap < null95 (sous-espaces plus orthogonaux que le hasard)"")
 for noise_var, per_seed in results_noise_sweep.items():
@@ -30932,7 +30933,7 @@ for noise_var, per_seed in results_noise_sweep.items():
               f""{r['sum_factor_dims_95']:>5d} {r['additivity_gap']:>4d} ""
               f""{r['max_pair_overlap']:>7.4f} {r['null_q95_overlap']:>7.4f} ""
               f""{'YES' if r['separates_from_null'] else 'no':>5}"")
-",,,,,,,,ad24cdd17ee8b11d,,,,,,,,
+",,,,,,,,9dc85d58662ecc17,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,6aa7226d,code,fr,fa5e05e2ece5464a,"# Protocole freeze-and-vary : on gele UN facteur et on varie l'AUTRE
 # (cle d'isolement de la contribution factorielle, cf. arXiv:2602.02385)
 # Implementation : pour chaque seed, on genere 2 bases orthogonales via
@@ -30981,7 +30982,7 @@ print(f""  varied sensitivity (ecart-type inter-realisations) = {freeze_vary_res
 print()
 print(""Verdict attendu : frozen NC@95 doit etre proche du nombre de facteurs dominants (2 ici, gele + varie) ; varied sensitivity reflete la variabilite du facteur varie."")
 ",,,,,,,,fa5e05e2ece5464a,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,3a5fca3a,markdown,fr,784ab53e6a623ca6,"## Verdict multi-seed et hypothese falsifiable
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,3a5fca3a,markdown,fr,c84065b084a20dd0,"## Verdict multi-seed et hypothese falsifiable
 
 Les hypotheses du grain #15478 — H1 a H3 a la livraison initiale (#15514), H4 ajoutee
 par le suivi du 15/09 (criteres « courbe en k » et « axes de graine independants »,
@@ -30990,7 +30991,7 @@ section dediee ci-dessous) :
 1. **H1 (separation)** : les sous-espaces factoriels reels sont PLUS orthogonaux que
    des paires de sous-espaces aleatoires apparies. Le sens implemente depuis la
    livraison initiale est `max_real < null_q95` : l'overlap reel passe SOUS le
-   quantile 95 de la distribution nulle (cf. Exercice 3, « sep? = overlap < null95 »).
+   quantile 95 de la distribution nulle (cf. Exemple guidé 3, « sep? = overlap < null95 »).
    Une redaction anterieure de cette ligne affichait `>` a tort : coquille de prose,
    le code a toujours teste `<`.
 2. **H2 (additivite jointe)** : la dimension jointe est compatible avec une organisation additive dans le regime factorise orthogonal (test : gap additivite faible et stable sur les seeds).
@@ -31000,10 +31001,10 @@ section dediee ci-dessous) :
    `k_cross = n_privees + 1` pre-enregistre dans le regime superpose, et reste sous la
    bande a tout k dans le regime orthogonal — data-seed et null-seed sur deux axes
    d'entropie disjointe (section H4 ci-dessous).
-",,,,,,,,784ab53e6a623ca6,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,7a83615f,code,fr,8fac995fc9183422,"# H1 : separation des sous-espaces factoriels vs hypothese nulle
+",,,,,,,,c84065b084a20dd0,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,7a83615f,code,fr,78078fda3a96f9f5,"# H1 : separation des sous-espaces factoriels vs hypothese nulle
 # Multi-seed 5 seeds conformement a l'AC #15478 (>= 4 seeds avec IC)
-# On utilise la metrique corrigee d'Exercice 3 (results_noise_sweep[0.0],
+# On utilise la metrique corrigee d'Exemple guide 3 (results_noise_sweep[0.0],
 # regime orthogonal = bruit nul) qui projette sur les sous-espaces factoriels
 # reels et compare a des paires de sous-espaces aleatoires apparies.
 # NB : le test archaique null_overlap_distribution(Q aleatoire vs full space)
@@ -31076,7 +31077,7 @@ elif n_sep >= 3:
     print(""H1 PARTIALLY SUPPORTED : majorite des seeds separent, mais resultats heterogenes."")
 else:
     print(""H1 INCONCLUSIVE : la separation n'est pas reproductible cross-seed."")
-",,,,,,,,8fac995fc9183422,,,,,,,,
+",,,,,,,,78078fda3a96f9f5,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,h4-courbe-md,markdown,fr,2de104b2ce4d94b6,"## Hypothese H4 — Courbe overlap-vs-k et axes de graine independants (suivi du 15/09)
 
 Le verdict H1 ci-dessus resume la separation par un **scalaire a k fixe** (`k = dim_per_factor`). Le commentaire du 15/09 sur #15478 demande l'overlap **rapporte comme courbe en k** — *« un scalaire depend du choix de k, la courbe dit ou la separation commence et ou elle sature »* — et la separation des axes de graine (data-seed vs graine du temoin). H4 porte ces deux exigences au regime synthetique de ce notebook.
@@ -31284,7 +31285,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,2c55
 
 Cette section est reservee a la sortie reelle du notebook apres execution. Les valeurs exactes dependent du kernel et du seed ; voir les cellules code ci-dessus pour les sorties verbatim. Le verdict final (cellules Verdict multi-seed et H4) est l'output scientifique livrable.
 ",,,,,,,,f320879eb362f448,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-37-FLens-BeliefState-Python.ipynb,9572779c,markdown,fr,d987b33ada9c1c93,"# ICT-37 - F-Lens : mode belief-state, probing lineaire et geometrie predictive held-out
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-37-FLens-BeliefState-Python.ipynb,9572779c,markdown,fr,d8b15452394ddb00,"# ICT-37 - F-Lens : mode belief-state, probing lineaire et geometrie predictive held-out
 
 **Navigation** : [>> ICT-35](./ICT-35-HumorCausalProbe-Pilot-Python.ipynb) | voir aussi #15478 (mode factored-geometry, ICT-36, PR #15514)
 
@@ -31330,9 +31331,9 @@ Ce notebook repond a ""quel etat predictif est accessible ?"" (mode belief-state
 - [x] Pre/post LayerNorm sont distingues explicitement.
 - [x] Notebook execute avec outputs reels, 3 exemples guides, 3 exercices non resolus et verdict par hypothese.
 - [x] Aucune dependance directe au code non licencie des depots etudies (reimplementation propre depuis arXiv:2602.02385).
-",,,,,,,,d987b33ada9c1c93,,,,,,,,
+",,,,,,,,d8b15452394ddb00,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-37-FLens-BeliefState-Python.ipynb,statut-epistemique,markdown,fr,16e8778ab95eef31,> **Statut épistémique** — **Sans verdict à ce jour** : aucune ligne de la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md) ne concerne ce notebook ; son statut épistémique sera porté par la matrice le cas échéant.,,,,,,,,16e8778ab95eef31,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-37-FLens-BeliefState-Python.ipynb,ae39ac6f,markdown,fr,9e466bb9bb134aad,"## Voisins et positionnement
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-37-FLens-BeliefState-Python.ipynb,ae39ac6f,markdown,fr,e59ef73687498009,"## Voisins et positionnement
 
 Même geste que le S-Lens ([ICT-38](./ICT-38-SLens-SelfLocation-Python.ipynb)) : nommer les voisins de
 l'instrument, et ce qui nous en sépare.
@@ -31366,8 +31367,8 @@ rendrait les primitives intestables sans GPU. Aucune licence détectée sur ces 
 computationnelle de Crutchfield, enseignée dans la série en
 [ICT-17 — EpsilonMachine](./ICT-17-EpsilonMachine-Python.ipynb) — à lire avant ce notebook pour qui veut la
 construction de l'objet, celui-ci n'en testant que l'accessibilité linéaire.
-",,,,,,,,9e466bb9bb134aad,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-37-FLens-BeliefState-Python.ipynb,dd1ac0ab,code,fr,1ce7ee25d15460e0,"# Parametres du notebook
+",,,,,,,,e59ef73687498009,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-37-FLens-BeliefState-Python.ipynb,dd1ac0ab,code,fr,b2afb44aeff17914,"# Parametres du notebook
 nb_name = ""ICT-37-FLens-BeliefState-Python""
 N_SEEDS = 5  # multi-seed : au moins 4 seeds (acceptance #15477)
 N_TRAIN = 6000  # points d'entrainement
@@ -31381,7 +31382,7 @@ print(f""N_SEEDS={N_SEEDS}, N_TRAIN={N_TRAIN}, N_TEST={N_TEST}, DIM={DIM}"")
 print(f""Verdict par hypothese : H1 SUPPORTED si accuracy_belief - accuracy_shuffle >= 0.3"")
 print(f""                       H2 SUPPORTED si accuracy_preLN > accuracy_postLN (orthogonal)"")
 print(f""                       H3 SUPPORTED si belief > next_token par >= 0.1 (RRXOR)"")
-",,,,,,,,1ce7ee25d15460e0,,,,,,,,
+",,,,,,,,b2afb44aeff17914,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-37-FLens-BeliefState-Python.ipynb,85657928,code,fr,66ef80803a50f47c,"# Imports : numpy uniquement (acceptance #15477 primitives numpy-only)
 # numpy.linalg suffit : pas de scikit-learn, pas de scipy, pas de torch.
 # Rationale : autonomie CPU-only, reproductibilite, deploiement sur toute machine.
@@ -33650,7 +33651,7 @@ artifact = {
 }
 print(""\nSortie de reference (extrait verbatim) :"")
 print(json.dumps(artifact, ensure_ascii=True)[:1200])",,,,,,,,98b00774a39da255,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-40b-AnalogCognitionWaves-Python.ipynb,652dec8e,markdown,fr,1a4b0b2d5871dc85,"# ICT-40b — Cognition analogique : les ondes cérébrales comme substrat de calcul (Miller-Brincat-Roy 2026)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-40b-AnalogCognitionWaves-Python.ipynb,652dec8e,markdown,fr,2c40a1cea5d1aa81,"# ICT-40b — Cognition analogique : les ondes cérébrales comme substrat de calcul (Miller-Brincat-Roy 2026)
 
 *[Série ICT — Integrated Causal Trajectories, Epic #4588.](./README.md) Grain autonome — distillation externe, CPU uniquement. See #16550.*
 
@@ -33665,9 +33666,9 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-40b-AnalogCognitionWaves-Python.ipynb,652de
 | Calcul analogique (§ *Analog computation with waves*, Fig. 6-7) | La somme des ondes de contexte code chaque combinaison, sans re-câblage | Somme de stencils rectifiés 2 contextes × 2 modes | Matrice de distances des 4 combinaisons, effet d'interaction |
 | Onde voyageuse (§ *Traveling waves*, Fig. 5) | Le balayage d'une onde instancie la transition entre sous-espaces de codage | Front voyageur interpolant deux stencils | Trajectoire PCA, angle principal avant/après |
 
-Un cinquième banc (anesthésie) confronte le régime organisé à un régime lent désaligné et mesure l'effondrement de la cohérence inter-régionale — l'argument convergence du papier (des anesthésiques à cibles moléculaires différentes produisent le même tableau d'ondes lentes désynchronisées, Bardon et al. 2025 ; Eisen et al. 2026).",,,,,,,,1a4b0b2d5871dc85,,,,,,,,
+Un cinquième banc (anesthésie) confronte le régime organisé à un régime lent désaligné et mesure l'effondrement de la cohérence inter-régionale — l'argument convergence du papier (des anesthésiques à cibles moléculaires différentes produisent le même tableau d'ondes lentes désynchronisées, Bardon et al. 2025 ; Eisen et al. 2026).",,,,,,,,2c40a1cea5d1aa81,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-40b-AnalogCognitionWaves-Python.ipynb,statut-epistemique,markdown,fr,16e8778ab95eef31,> **Statut épistémique** — **Sans verdict à ce jour** : aucune ligne de la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md) ne concerne ce notebook ; son statut épistémique sera porté par la matrice le cas échéant.,,,,,,,,16e8778ab95eef31,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-40b-AnalogCognitionWaves-Python.ipynb,03ea3a8e,markdown,fr,81a1b1d2147cc3ad,"## Garde-fous d'honnêteté (à lire avant les chiffres)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-40b-AnalogCognitionWaves-Python.ipynb,03ea3a8e,markdown,fr,47a2e1bd5137b5cb,"## Garde-fous d'honnêteté (à lire avant les chiffres)
 
 Ces garde-fous conditionnent la lecture de chaque valeur mesurée ci-dessous ; ils prolongent ceux du [cadrage ICT-0](ICT-0-Framing.md).
 
@@ -33676,7 +33677,7 @@ Ces garde-fous conditionnent la lecture de chaque valeur mesurée ci-dessous ; i
 3. **Préprint non relu.** z48x7_v3 est un preprint de juillet 2026 ; les résultats empiriques cités (Chen et al. 2026, Rigotti et al. 2013, Davis et al. 2020...) sont ceux que le papier rapporte — non revérifiés ici.
 4. **Proxys assumés.** PLV (valeur de verrouillage de phase) et angle principal sont des instruments de banc. Le pont vers $\Phi$ ([ICT-15](ICT-15-IntegratedComplexity-Python.ipynb)) est **qualitatif** : il relie deux littératures, il ne calcule pas d'information intégrée.
 5. **Déterminisme complet.** Toutes les expériences sont semées ; relancer ce notebook redonne exactement les mêmes chiffres.
-6. **Ce qui réfuterait chaque banc.** Gating plat à champ fort (§2) ; sélectivité d'objet inchangée entre stencils (§3) ; 4 combinaisons confondues (§4) ; trajectoire sans transition (§5) ; PLV intact sous régime anesthésique (§6). Chaque section affiche la valeur qui aurait pu dire non.",,,,,,,,81a1b1d2147cc3ad,,,,,,,,
+6. **Ce qui réfuterait chaque banc.** Gating plat à champ fort (§2) ; sélectivité d'objet inchangée entre stencils (§3) ; 4 combinaisons confondues (§4) ; trajectoire sans transition (§5) ; PLV intact sous régime anesthésique (§6). Chaque section affiche la valeur qui aurait pu dire non.",,,,,,,,47a2e1bd5137b5cb,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-40b-AnalogCognitionWaves-Python.ipynb,1e583228,markdown,fr,7b59c0cc0055bc53,"## 1. Le problème de contrôle : pourquoi des synapses seules ne suffisent pas
 
 Le point de départ du papier est un argument de **complexité du contrôle**. La cognition dirigée vers un but exige de coordonner des centaines de millions de neurones en une fraction de seconde. Un contrôleur purement synaptique devrait « savoir » quels neurones et quelles synapses encodent chaque représentation pour les sélectionner — une charge computationnelle invraisemblable.
@@ -33993,9 +33994,9 @@ plt.show()
 
 print(f""PLV moyenne — organisé : {plv_org:.3f} | anesthésié : {plv_an:.3f}"")
 print(""Effondrement de la cohérence inter-régionale :"", f""{1 - plv_an / max(plv_org, 1e-9):.0%}."")",,,,,,,,1ca15777120d24ab,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-40b-AnalogCognitionWaves-Python.ipynb,a1d25970,markdown,fr,57423491ecfd6133,"**Lecture.** Dans le régime organisé, les phases régionales restent verrouillées (PLV ≈ 1 : la différence de phase entre deux régions est constante — c'est le verrouillage, pas la synchronisation stricte). Dans le régime anesthésié, la cohérence s'effondre : chaque région dérive seule. Le toyet reproduit la *structure* de l'argument convergence — c'est l'**organisation**, pas le support moléculaire, qui porte l'intégration à grande échelle.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-40b-AnalogCognitionWaves-Python.ipynb,a1d25970,markdown,fr,77a4da0c078cf4e8,"**Lecture.** Dans le régime organisé, les phases régionales restent verrouillées (PLV ≈ 1 : la différence de phase entre deux régions est constante — c'est le verrouillage, pas la synchronisation stricte). Dans le régime anesthésié, la cohérence s'effondre : chaque région dérive seule. Le toyet reproduit la *structure* de l'argument convergence — c'est l'**organisation**, pas le support moléculaire, qui porte l'intégration à grande échelle.
 
-**Le pont vers $\Phi$, assumé comme qualitatif.** Le papier se compare lui-même à l'IIT : même intuition (l'organisation et l'auto-influence comptent), mécanisme différent — pas une « hot zone » mais la dynamique ondulatoire cortex-wide. Notre série a l'instrument du côté IIT : [ICT-15](ICT-15-IntegratedComplexity-Python.ipynb) mesure la complexité intégrée par les trois scalaires fondateurs, et [ICT-14b](ICT-14b-ActiveInferenceEFE-Python.ipynb) côté énergie libre. Le PLV ci-dessus n'est **pas** un $\Phi$ — c'est un proxy de banc, et le pont entre les deux littératures est une question ouverte, pas un résultat : mesurer comment un système à PLV élevé se classe sur les instruments d'ICT-15 serait le grain suivant naturel.",,,,,,,,57423491ecfd6133,,,,,,,,
+**Le pont vers $\Phi$, assumé comme qualitatif.** Le papier se compare lui-même à l'IIT : même intuition (l'organisation et l'auto-influence comptent), mécanisme différent — pas une « hot zone » mais la dynamique ondulatoire cortex-wide. Notre série a l'instrument du côté IIT : [ICT-15](ICT-15-IntegratedComplexity-Python.ipynb) mesure la complexité intégrée par les trois scalaires fondateurs, et [ICT-14b](ICT-14b-ActiveInferenceEFE-Python.ipynb) côté énergie libre. Le PLV ci-dessus n'est **pas** un $\Phi$ — c'est un proxy de banc, et le pont entre les deux littératures est une question ouverte, pas un résultat : mesurer comment un système à PLV élevé se classe sur les instruments d'ICT-15 serait le grain suivant naturel.",,,,,,,,77a4da0c078cf4e8,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-40b-AnalogCognitionWaves-Python.ipynb,9dacc84e,markdown,fr,c1c171b510b7750f,"## 8. Exercices
 
 Trois exercices, dans l'esprit de la série : chacun étend un banc d'une marche, avec énoncé, indice et étapes. Les stubs s'exécutent sans erreur (convention C.1 : aucune erreur volontaire) — le notebook tourne de bout en bout même non complété.",,,,,,,,c1c171b510b7750f,,,,,,,,
@@ -34067,7 +34068,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-40b-AnalogCognitionWaves-Python.ipynb,b4a2d
 # angle_diag = transition_diagonale(weights, pat_from, pat_to)
 # print(f""angle diagonal : {angle_diag:.1f} deg (horizontal : {angle_tr:.1f} deg)"")
 print(""Exercice a completer"")",,,,,,,,d05f9c00675ba382,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-40b-AnalogCognitionWaves-Python.ipynb,a12e217a,markdown,fr,4307d0d2411fcd34,"## Conclusion — ce que le toyet établit, et ce qu'il n'établit pas
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-40b-AnalogCognitionWaves-Python.ipynb,a12e217a,markdown,fr,f0e3ae2eed09bb5e,"## Conclusion — ce que le toyet établit, et ce qu'il n'établit pas
 
 **Établi (dans le monde jouet)** : les quatre mécanismes du papier fonctionnent *séparément et mesurablement* — un champ faible module le tir par phase ; un stencil inhibiteur fait émerger la sélectivité mixte sur une connectivité chevauchante sans toucher aux poids ; la somme de deux ondes de contexte sépare les combinaisons en une opération parallèle ; un balayage instancie une transition de sous-espace ; et la désorganisation des phases effondre l'intégration inter-régionale alors que rien d'autre ne change. Chaque banc porte sa propre condition de réfutation, et les valeurs sont affichées.
 
@@ -34084,7 +34085,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-40b-AnalogCognitionWaves-Python.ipynb,a12e2
 - Bardon, A. G., et al. (2025). *Convergent effects of different anesthetics on changes in phase alignment of cortical oscillations*. Cell Rep. 44.
 - Buzsáki, G. (2006). *Rhythms of the Brain*. Oxford University Press.
 
-*Notebook de la série [ICT](./README.md) — Epic #4588. Suite logique côté instruments : [ICT-15](ICT-15-IntegratedComplexity-Python.ipynb) (complexité intégrée), [ICT-14b](ICT-14b-ActiveInferenceEFE-Python.ipynb) (inférence active). See #16550.*",,,,,,,,4307d0d2411fcd34,,,,,,,,
+*Notebook de la série [ICT](./README.md) — Epic #4588. Suite logique côté instruments : [ICT-15](ICT-15-IntegratedComplexity-Python.ipynb) (complexité intégrée), [ICT-14b](ICT-14b-ActiveInferenceEFE-Python.ipynb) (inférence active). See #16550.*",,,,,,,,f0e3ae2eed09bb5e,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41-SAE-GeometrieFeatures-Python.ipynb,6da41e17,markdown,fr,32ea6af1db698a8a,"# Geometrie des features SAE : galaxy, atome, dense -- R04 x R09 sur nos traces
 
 Deux papiers dessinent la meme anatomie sous deux angles : **R04** (Li et al. 2024,
@@ -36301,11 +36302,11 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,fa7fb0de,ma
 - Notre arc : ICT-41 (issue #16747 — géométrie SAE) ; ICT-42 (issue #16749 — crosscoder R05, arXiv:2503.03730) ; R11 — Singapore Consensus (arXiv:2608.14611) §2.2.2 ; scoping #16760, grain #16890.
 - Théorie : Thm F.1 (LR = Σ⁻¹θ en gaussien homoscédastique) ; LEACE / Belrose et al. (Thm G.1 : direction diff-in-means = effacement linéaire optimal de nullité 1).
 - Meng, Bau, Andonian & Belinkov, *Locating and Editing Factual Associations in GPT* (ROME, NeurIPS 2022), arXiv:2202.05262 — la ligne cousine de notre carte de patching (section 1) : meme question (ou vit le fait ?), reponse par causal tracing puis *edition* des poids MLP ; ce notebook s'arrete a l'observation, l'edition reste hors perimetre.",,,,,,,,18d097b3a1567af2,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,2824b3e9,markdown,fr,4d57e6bdbdb20331,"# ICT-45 — Inoculation et bifurcation : la troisième échelle (9B)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,2824b3e9,markdown,fr,df8442aabc046607,"# ICT-45 — Inoculation et bifurcation : la troisième échelle (9B)
 **Navigation** : [Index](README.md) | [44 — Geometry of Truth](ICT-44-GeometryOfTruth-Python.ipynb) | [46 — Strate 7 : freebits de second ordre](ICT-46-Strate7-FreeCoordinates-Python.ipynb)
 
 Ce carnet étend le pilote **ICT-42** à la troisième taille, **Qwen3.5-9B-Base** (32 couches, SAE Qwen-Scope W64K-L0_50, 65 536 features) — le couple de référence historique de la série (#5101), apparié en génération au 2B du pilote (tous deux Qwen3.5, saut ×4.5). La question du pilote se repose à cette échelle : **l'inoculation d'un panel de features SAE à mi-profondeur provoque-t-elle une bifurcation représentationnelle, et cette bifurcation durcit-elle ou s'adoucit-elle quand la taille croît ?**
-",,,,,,,,4d57e6bdbdb20331,,,,,,,,
+",,,,,,,,df8442aabc046607,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,5fdf548e,markdown,fr,01514d5f3da7c3ba,"> **Statut épistémique** — Extension d'échelle du pilote ICT-42 (sans verdict à ce jour sur la matrice de dissociation). Les deux échelles du pilote montraient des régimes opposés (réponse massive précoce du 1.7B, transition plus tardive et douce du 2B) ; ce carnet mesure où le 9B se situe, et ne prétend à aucun verdict tant que la lecture croisée des trois échelles n'est pas faite. Les mêmes garde-fous que le pilote s'appliquent.
 ",,,,,,,,01514d5f3da7c3ba,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,4ba12608,markdown,fr,53feb5c8afb9bfeb,"## Garde-fous d'honnêteté (à lire avant les résultats)
@@ -36675,25 +36676,29 @@ resume_mp = pd.DataFrame([{
 ",,,,,,,,4794fe719e24950e,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,df1a5e94,markdown,fr,a52b02c298a3072d,"**Contrôle apparié.** Quand on annule le confondant d'activité (bande ×8, pool 83 candidats pour le 9B, même facteur que le pilote), le tableau se décompose en deux effets. À α = 1 au 9B : panel différentiel 0.327, panel apparié en norme 0.045, panel aléatoire 0.006. Le tirage apparié diverge donc ~7× plus que l'aléatoire — **l'activité de la feature participe de la réponse** — mais reste ~7× sous le panel différentiel — **l'identité différentielle code→prose porte l'essentiel**. Même décomposition qu'au 2B (0.647 / 0.080 / 0.010). Caveat honnête : la bande garantit le même ordre de grandeur, pas la même moyenne (le tirage 9B est tombé à 0.0023 contre 0.0129 pour le panel, bas de bande).
 ",,,,,,,,a52b02c298a3072d,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,01a1cf95,markdown,fr,50256c824a62d960,"## Fidélité du relevé linéaire J-lens — troisième appareil, même question
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,01a1cf95,markdown,fr,f3a3249ec66807af,"## Fidélité du relevé linéaire J-lens — troisième appareil, même question
 
-L'inoculation mesure ce qu'une **écriture** mi-réseau produit sur la sortie ; le J-lens mesure ce qu'une **lecture** linéaire mi-réseau reconstruit du resid final. Les traces `calib_jlens_*.npz` (pipeline `extract_jlens_fidelity.py`) appliquent à chaque taille un jacobien moyen fit sur WikiText (n = 458) et quantifient l'accord par set de prompts : `overlap@10`, `rel_l2`, KL(modele || lens). Aux deux échelles déjà calibrées s'ajoute le 9B — via le **lens publié** `neuronpedia/jacobian-lens`, de construction identique (provenance et mesure de l'abandon du fit local : cellule de transparence ci-dessous).
-",,,,,,,,50256c824a62d960,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,cd309c9e,code,fr,64f65a02626f3500,"# Fidelite J-lens aux profondeurs de calibration, trois echelles.
+L'inoculation mesure ce qu'une **écriture** mi-réseau produit sur la sortie ; le J-lens mesure ce qu'une **lecture** linéaire mi-réseau reconstruit du resid final. Les traces `calib_jlens_*.npz` (pipeline `extract_jlens_fidelity.py`) appliquent à chaque taille un jacobien moyen fit sur WikiText (n = 458) et quantifient l'accord par set de prompts : `overlap@10`, `rel_l2`, KL(modele || lens). Aux deux échelles déjà calibrées s'ajoutent le 9B puis le 27B — chacun via le **lens publié** `neuronpedia/jacobian-lens` (provenance et mesure de l'abandon du fit local 9B : cellule de transparence ci-dessous). Le 27B est la plus grande taille du parc Qwen3.5 couverte par un lens publié.
+",,,,,,,,f3a3249ec66807af,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,cd309c9e,code,fr,e47678b2ae55a38f,"# Fidelite J-lens aux profondeurs de calibration, quatre echelles.
 CALIB = {
     ""Qwen3-1.7B-Base"": (""traces/calib_jlens_qwen3-1-7b.npz"", 7, 14),
     ""Qwen3.5-2B-Base"": (""traces/calib_jlens_qwen3-5-2b.npz"", 6, 12),
     ""Qwen3.5-9B-Base"": (""traces/calib_jlens_qwen3-5-9b.npz"", 8, 16),
+    ""Qwen3.5-27B"": (""traces/calib_jlens_qwen3-5-27b.npz"", 16, 32),
 }
 SETS = [""code_python"", ""prose_fr"", ""dialogue"", ""math"", ""narrative_en""]
 rows = []
 for ech, (fname, l_quart, l_midi) in CALIB.items():
     z = np.load(fname, allow_pickle=False)
-    if ech == ""Qwen3.5-9B-Base"":
+    if ""meta_provenance"" in z.files:
         prov = """".join(chr(int(c)) for c in z[""meta_provenance""])
         sha16 = """".join(chr(int(c)) for c in z[""meta_lens_sha256""])
-        print(f""[provenance 9B] {prov}"")
-        print(f""[sha256/16]     {sha16} (lens publie, cf. cellule transparence)"")
+        if not prov.startswith(""local_fit:""):
+            print(f""[provenance {ech}] {prov}"")
+            print(f""[sha256/16]      {sha16} (lens publie, cf. cellule transparence)"")
+    else:
+        print(f""[provenance {ech}] fit local (trace anterieure, cf. cellule transparence)"")
     for st in SETS:
         for frac, layer in ((0.25, l_quart), (0.5, l_midi)):
             ov, rl, kl = z[f""{st}__{layer}""]
@@ -36710,15 +36715,15 @@ for ech, (fname, l_quart, l_midi) in CALIB.items():
 fidel = pd.DataFrame(rows)
 moyennes = fidel.groupby([""frac"", ""echelle""])[[""overlap@10"", ""rel_l2"", ""kl_nats""]].mean().round(4)
 moyennes
-",,,,,,,,64f65a02626f3500,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,a881bd0b,markdown,fr,62da127f9197d430,"**Le relevé linéaire cesse de s'améliorer avec l'échelle.** Moyennes sur les cinq sets à mi-réseau (frac 0.5) : KL 12.52 (1.7B) → 8.18 (2B) → **9.36 nats (9B)** ; overlap@10 0.021 → 0.042 → 0.044. La fidélité gagne de 1.7B à 2B **puis régresse au 9B** — et les cinq sets sont d'accord (KL 2B → 9B : code 9.66 → 10.02, prose 8.12 → 10.22, dialogue 8.10 → 9.46, math 9.21 → 9.83, narrative 5.82 → 7.24).
+",,,,,,,,e47678b2ae55a38f,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,a881bd0b,markdown,fr,618215746731ae26,"**Le relevé linéaire poursuit sa régression au-delà du 9B.** Moyennes sur les cinq sets à mi-réseau (frac 0.5) : KL 12.52 (1.7B) → 8.18 (2B) → 9.36 (9B) → **10,41 nats (27B)** ; overlap@10 0.021 → 0.042 → 0.044 → 0,026. L'amélioration 1.7B→2B puis la régression 9B s'accentue au 27B : quatre sets sur cinq se dégradent au midi (KL 9B → 27B : code 10.02 → 11.29, prose 10.22 → 10.26, dialogue 9.46 → 11.61, narrative 7.24 → 9.24), seul math tient (9.83 → 9.65).
 
-À toute taille, le **gradient de profondeur domine** : KL à frac 0.25 ≫ frac 0.5 (moyennes 22.5 / 11.1 / 14.4 contre 12.5 / 8.2 / 9.4) — plus la source approche la cible, meilleur le linéaire, et cette hiérarchie ne bouge jamais.
+À toute taille le **gradient de profondeur domine** (KL frac 0.25 > frac 0.5 aux quatre échelles : 22.5 / 11.1 / 14.4 / 11,94 contre 12.5 / 8.2 / 9.4 / 10,41) — mais il **s'atténue au 27B** : à frac 0.25 le 27B repasse devant le 9B (11.94 contre 14.4) et l'écart quart→midi se resserre de 5.0 nats à 1.5. Les profondeurs précoces du grand modèle deviennent plus lisibles pendant que son mi-réseau régresse : l'avantage du linéaire migre des profondeurs tardives vers les précoces relatives.
 
 **Lecture couplée à l'inoculation.** Les deux appareils racontent la même histoire : la part d'une écriture mi-réseau que le resid final propage *linéairement* rétrécit avec la taille — adoucissement de la bifurcation (m(1) 0.647 → 0.327) côté expérience, plateau puis régression du relevé linéaire côté instrument. Le chemin mi-réseau → sortie se médialise de plus en plus par du calcul non linéaire qu'un jacobien moyen statique ne capture pas. Dernier garde-fou : le top-10 du resid final reste hors de portée partout (overlap ≤ 0.07) — le lens répond « dans quelle direction », jamais « quelles features seront actives ».
-",,,,,,,,62da127f9197d430,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,a7bb7328,code,fr,43e6b08e19b9ed8c,"# KL par set et echelle, aux deux profondeurs de calibration.
-ordre = [""Qwen3-1.7B-Base"", ""Qwen3.5-2B-Base"", ""Qwen3.5-9B-Base""]
+",,,,,,,,618215746731ae26,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,a7bb7328,code,fr,3b09ecbf56a1a894,"# KL par set et echelle, aux deux profondeurs de calibration.
+ordre = [""Qwen3-1.7B-Base"", ""Qwen3.5-2B-Base"", ""Qwen3.5-9B-Base"", ""Qwen3.5-27B""]
 fig, axes = plt.subplots(1, 2, figsize=(11.5, 3.6), sharey=True)
 for ax, frac in zip(axes, (0.25, 0.5)):
     piv = (
@@ -36734,23 +36739,25 @@ axes[0].set_ylabel(""KL(modele || lens), nats"")
 axes[0].legend(title="""", fontsize=8)
 plt.tight_layout()
 plt.show()
-",,,,,,,,43e6b08e19b9ed8c,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,0a22ea51,markdown,fr,3dd2fceda661a182,"**Transparence de provenance.** 1.7B et 2B : fits locaux (`fit_jlens_local.py`, WikiText n = 458, min 600 car., cible = resid final). 9B : **lens publié** `neuronpedia/jacobian-lens` — spec vérifiée au chargement : 31 couches sources (sur-ensemble des [8, 16] de calibration), cible resid final d_model 4096, n_prompts 458, construction identique. Le fit local 9B a été lancé puis **abandonné sur mesure** : prompt 1 > 69 min sans complétion (GPU sain, 100 % util — chaque passe backward du graphe 32 couches est bornée par la bande passante DRAM), extrapolation ~8-16 jours pour 458 prompts. L'artefact canonique remplace un fit redondant ; `meta_provenance` / `meta_lens_sha256` portent la traçabilité dans la trace. Caveat honnête : un écart d'artefact (fitteur différent) ne s'exclut pas formellement, mais la construction étant identique (mêmes prompts, même cible, même moyenne accumulée), l'écart attendu est de l'ordre de l'accumulation flottante — pas +1.2 nat systématique sur cinq sets.
-",,,,,,,,3dd2fceda661a182,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,4b72922e,markdown,fr,a53a865976aca4f2,"## Limites (assumées, elles délimitent le jalon)
+",,,,,,,,3b09ecbf56a1a894,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,0a22ea51,markdown,fr,f66f4e36733dd637,"**Transparence de provenance.** 1.7B et 2B : fits locaux (`fit_jlens_local.py`, WikiText n = 458, min 600 car., cible = resid final). 9B : **lens publié** `neuronpedia/jacobian-lens` — spec vérifiée au chargement : 31 couches sources (sur-ensemble des [8, 16] de calibration), cible resid final d_model 4096, n_prompts 458, construction identique. Le fit local 9B a été lancé puis **abandonné sur mesure** : prompt 1 > 69 min sans complétion (GPU sain, 100 % util — chaque passe backward du graphe 32 couches est bornée par la bande passante DRAM), extrapolation ~8-16 jours pour 458 prompts. L'artefact canonique remplace un fit redondant ; `meta_provenance` / `meta_lens_sha256` portent la traçabilité dans la trace. Caveat honnête : un écart d'artefact (fitteur différent) ne s'exclut pas formellement, mais la construction étant identique (mêmes prompts, même cible, même moyenne accumulée), l'écart attendu est de l'ordre de l'accumulation flottante — pas +1.2 nat systématique sur cinq sets.
 
-- **Trois échelles, pas une loi d'échelle.** 1.7B → 2B → 9B : les sauts sont hétérogènes (×1.2, ×4.5) et le 9B change aussi de dictionnaire (W64K vs W32K) : la « tendance » lue sur trois points dont un changement de support est un indice, pas un ajustement.
+27B : **lens publié** aussi — `qwen3.5-27b/jlens/Salesforce-wikitext/Qwen3.5-27B_jacobian_lens.pt` (fichier 3 150 Mo, sha256/16 `bb2e080ae9c9c208`, 63 couches sources sur-ensemble des [16, 32] de calibration, d_model 5120, n_prompts 672). **Deux changements de construction assumés à cette taille** : (i) le parc Qwen3.5 n'existe qu'en **instruct** à 27B (pas de jumeau `-Base`, mesuré au Hub et cohérent avec l'inventaire ICT-43) alors que les trois échelles inférieures sont des `-Base` ; (ii) le fit couvre **672** prompts contre 458 au 9B (même dataset, même cible). La fidélité reste une mesure interne (lens comparé à SON modèle), mais la lecture cross-échelle porte ces deux confondants. Côté ressource : le modèle 27B bf16 (~54 Go) ne tient pas en 24 Go de VRAM — l'extraction tourne via l'extension `--offload` de l'organe (init meta + plan accelerate GPU/CPU + lecture tensor par tensor, mesuré : `from_pretrained` matérialise le state dict entier en RAM sur ce transformers Windows), chemin validé au 9B (EXTRACT_OK au 9B, metriques au meme ordre que la trace commitee (KL midi moyen 9.37 vs 9.36, echantillon 1 vs 4 prompts/set)), extraction complète en 8 min sur RTX 3090 + 3080 Ti.
+",,,,,,,,f66f4e36733dd637,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,4b72922e,markdown,fr,a71dae83c0998c56,"## Limites (assumées, elles délimitent le jalon)
+
+- **Quatre échelles côté J-lens, trois côté inoculation — pas une loi d'échelle.** 1.7B → 2B → 9B → 27B pour la fidélité (les sauts sont hétérogènes, ×1.2 / ×4.5 / ×3, et le 9B change aussi de dictionnaire W64K vs W32K) ; l'inoculation reste mesurée sur trois (pas de traces d'inoculation 27B dans ce carnet). Et le point 27B change DEUX choses à la fois : la taille ET le régime (instruct vs base) ET la taille du fit (672 vs 458 prompts) — un indice sur quatre points dont un double changement de support, jamais un ajustement.
 - **Pas d'hystérésis**, passes indépendantes par α (même limite que le pilote).
 - **Divergence dans l'espace SAE top-k uniquement** : ce que le dictionnaire ne code pas est invisible.
 - **Panel code/prose** : le panel différentiel encode la discrimination code↔prose ; d'autres contrastes (math, dialogue) pourraient inoculer différemment.
-",,,,,,,,a53a865976aca4f2,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,b955a62d,markdown,fr,318790747a46ad08,"## Ce qu'il faut retenir
+",,,,,,,,a71dae83c0998c56,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,b955a62d,markdown,fr,9a8da082058788f7,"## Ce qu'il faut retenir
 
 1. **La bifurcation recule et s'adoucit avec la taille.** À intervention identique (16 features différentielles clampeées à mi-profondeur), le point de transition α* passe de ≈ 0.375 (1.7B) à ≈ 0.625 (2B) à ≈ 0.875 (9B), la pente maximale de 1.40 à 0.76, et la divergence finale m(1) de 1.10 à 0.33. Le 9B est le plus robuste des trois à l'inoculation.
 2. **La spécificité, elle, ne s'érode pas.** Contrôle permuté : le 9B répond ×53 plus au panel différentiel qu'à un panel aléatoire (0.327 vs 0.006) — sélectivité préservée, amplitude réduite.
 3. **Magnitude et rotation se dissocient.** Le 9B diverge le moins en valeurs (m(1) = 0.33) mais remplace encore 81 % de son top-50 : la bifurcation à grande échelle est une réorganisation plus qu'une destruction.
-4. **La fidélité du relevé linéaire ne suit pas l'échelle.** KL mi-réseau (moyenne 5 sets) : 12.52 → 8.18 → **9.36 nats** — amélioration 1.7B→2B puis régression au 9B, les cinq sets d'accord. Instrument et expérience convergent : la part *linéairement* propagée d'une écriture mi-réseau rétrécit avec la taille. Statut : indice robuste sur trois points (dont un changement de dictionnaire W32K→W64K et un lens 9B d'origine publiée), pas une loi d'échelle.
-",,,,,,,,318790747a46ad08,,,,,,,,
+4. **La fidélité du relevé linéaire ne suit pas l'échelle — et régresse plus fort au 27B.** KL mi-réseau (moyenne 5 sets) : 12.52 → 8.18 → 9.36 → **10.41 nats** — amélioration 1.7B→2B puis régression continue 9B→27B, quatre sets sur cinq d'accord. Au quart de profondeur, mouvement inverse : 11.94 au 27B contre 14.4 au 9B, l'écart quart→midi se resserre de 5.0 à 1.5 nats. Instrument et expérience convergent sur le midi : la part *linéairement* propagée d'une écriture mi-réseau rétrécit avec la taille. Statut : indice sur quatre points dont un double changement de support (27B instruct sans jumeau `-Base`, fit 672 vs 458 prompts), pas une loi d'échelle.
+",,,,,,,,9a8da082058788f7,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,5284f8ce,markdown,fr,b43505fb4056e37a,"## Exercices
 ",,,,,,,,b43505fb4056e37a,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,289584ae,markdown,fr,1cb831d40e87ed75,"### Exercice 1 — Divergence de Jaccard des top-k par intensité
@@ -40846,3 +40853,148 @@ C'est la question de l'échange, elle reste ouverte, et c'est exactement pourquo
 
 **Fin du notebook**. Merci pour votre attention !
 ",,,,,,,,b7faa1eac8a7046c,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,ec005c59,markdown,fr,b43505fb4056e37a,"## Exercices
+",,,,,,,,b43505fb4056e37a,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,959038b0,markdown,fr,b4ea96dc19a3cdf3,"### Exercice 1 — Sweep d'overlap : où l'additivité se dégrade-t-elle ?
+
+Les trois régimes ci-dessus sont mesurés à **paramètres fixes** : overlap 0 ou 0,4, quatre facteurs, 2 048 tokens. Les trois exercices suivants font varier chacun **un** paramètre du protocole et mesurent ce que la fenêtre fixe ne peut pas voir. Chaque énoncé fixe les paramètres exacts à employer : le résultat attendu est vérifié par une exécution de référence (hors notebook).
+
+Les primitives importées plus haut (`make_factor_bases`, `synthesize_activations`, `weighted_pca`, `nc_at`, `basis_overlap`) suffisent — ne rien réécrire du module.
+
+Le carnet compare **deux** points d'overlap : 0 (Exemple guidé 1) et 0,4 (Exemple guidé 2). Un point ne fait pas une courbe : on ne sait pas si la dégradation est progressive, brutale, ni si sa dispersion entre graines change.
+
+**Protocole** — mode `superposed`, quatre facteurs, 2 048 tokens, les cinq graines `RNG_SEEDS`, pour `overlap` ∈ {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6} :
+
+1. mesurer l'écart d'additivité `|NC@95 joint − Σ NC@95 factoriels|` pour chaque graine ;
+2. tabuler, par overlap, l'écart **moyen**, **min** et **max** ;
+3. qualifier : la moyenne croît-elle de façon monotone ? La dispersion entre graines se comporte-t-elle comme la moyenne ?
+
+**Indices**
+
+- Recopier le motif de l'Exemple guidé 2 en paramétrant `overlap` (`make_factor_bases(..., mode=""superposed"", overlap=..., rng=...)`).
+- Le « min » et le « max » sur les graines sont deux nombres distincts de la moyenne : c'est la dispersion qui porte le fait marquant.
+
+**Vocabulaire de l'axe x** — le paramètre de grille `overlap` est l'**écart-type des coefficients de mélange** injectés entre sous-espaces (non borné), pas l'overlap géométrique lui-même. Pour un axe homogène au vocabulaire du carnet, reporter aussi l'overlap **mesuré** par point de grille : `basis_overlap(bases[i], bases[j]).max()` sur les paires, comme `max_pair_overlap` l'imprime dans les Exemples guidés.
+
+**Ce que l'exercice fait mesurer** — la dégradation de l'additivité avec le paramètre de mélange *et* la stabilité de sa mesure.
+",,,,,,,,b4ea96dc19a3cdf3,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,6a54bb45,code,fr,99f799e81bfd14a7,"# Exercice 1 — Sweep d'overlap : ou l'additivite se degrade-t-elle ? (a completer)
+# TODO etudiant : mesurer l'ecart d'additivite sur une grille d'overlap.
+# Etape 1 : OVERLAPS = (0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6) ; quatre facteurs, 2048 tokens, RNG_SEEDS.
+# Etape 2 : pour chaque overlap, mesurer l'ecart par graine (motif de l'Exemple guide 2).
+# Etape 3 : tabuler ecart moyen, min, max par overlap et qualifier la monotonie de la moyenne.
+# Indice : la dispersion entre graines (min / max) est le second fait a lire, pas seulement la moyenne.
+# Indice : reporter aussi, par point de grille, l'overlap geometrique mesure (basis_overlap(bases[i], bases[j]).max())
+#         pour que l'axe x se lise dans le vocabulaire du carnet (le parametre overlap est un ecart-type de melange).
+
+OVERLAPS = (0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6)
+
+def ecart_additivite(n_factors, n_tokens, overlap, seed):
+    """"""Ecart |NC@95 joint - somme des NC@95 factoriels| pour un tirage donne.""""""
+    # TODO etudiant
+    pass
+
+# for ov in OVERLAPS: ...   # decommenter une fois implemente
+print(""Exercice 1 a completer : sweep d'overlap et stabilite de l'ecart d'additivite."")
+",,,,,,,,99f799e81bfd14a7,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,782cb453,markdown,fr,a33d0fdd4f16e42e,"### Exercice 2 — Nombre de facteurs : le côté joint sature-t-il ?
+
+Le carnet fixe `N_FACTORS = 4`. Ce nombre pilote la taille de chaque sous-espace (`dim // n_factors` : 128, 64 ou 32 sur les 256 dimensions du stream). Que devient l'écart d'additivité quand le **nombre** de facteurs change, à budget de dimensions constant ?
+
+**Protocole** — mode `orthogonal`, 2 048 tokens, les cinq graines `RNG_SEEDS`, pour `n_factors` ∈ {2, 4, 8} :
+
+1. mesurer `NC@95` joint et la somme des `NC@95` factoriels (moyennes sur les graines) ;
+2. tabuler aussi `dim_per_factor` (`make_factor_bases` le renvoie) ;
+3. qualifier : lequel des deux côtés — joint ou somme — bouge avec le nombre de facteurs, et lequel sature ?
+
+**Indices**
+
+- Le côté joint sature à une valeur proche du **budget total** de dimensions ; le côté somme, lui, dépend du découpage.
+- À huit facteurs, `dim_per_factor` vaut 32 : vérifier que chaque projection factorielle a encore assez de dimensions pour porter son `NC@95`.
+
+**Ce que l'exercice fait mesurer** — l'additivité n'est pas symétrique entre ses deux côtés, et la saturation du côté joint est une propriété du budget de dimensions.
+",,,,,,,,a33d0fdd4f16e42e,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,8684d7c2,code,fr,85042f235d8fa864,"# Exercice 2 — Nombre de facteurs : le cote joint sature-t-il ? (a completer)
+# TODO etudiant : mesurer les deux cotes de l'additivite en fonction de n_factors.
+# Etape 1 : N_FACTORS_GRID = (2, 4, 8) ; mode orthogonal, 2048 tokens, RNG_SEEDS.
+# Etape 2 : pour chaque n_factors, moyenne sur graines de NC@95 joint, de la somme des NC@95
+#           factoriels et de l'ecart ; recuperer dim_per_factor renvoye par make_factor_bases.
+# Etape 3 : tabuler (n_factors, dim_per_factor, joint, somme, ecart) et dire quel cote sature.
+# Indice : le cote joint est borne par le budget total des 256 dimensions du stream.
+
+N_FACTORS_GRID = (2, 4, 8)
+
+def deux_cotes_additivite(n_factors, n_tokens, seed):
+    """"""Retourne (joint, somme_factorielle, dim_per_factor) pour un tirage donne.""""""
+    # TODO etudiant
+    pass
+
+# for nf in N_FACTORS_GRID: ...   # decommenter une fois implemente
+print(""Exercice 2 a completer : nombre de facteurs et saturation du cote joint."")
+",,,,,,,,85042f235d8fa864,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,a2efc359,markdown,fr,6ef3444be7f5b333,"### Exercice 3 — Nombre de tokens : le plancher d'échantillonnage
+
+Le carnet fixe `N_TOKENS = 2 048` et traite l'écart d'additivité comme une propriété **géométrique**. Or une PCA sur $n$ échantillons ne peut pas rendre plus de $n$ directions (rang de la matrice) : le côté joint a donc un **plancher** qui n'a rien de géométrique. Le carnet a déjà rencontré ce genre d'artefact avec l'hypothèse nulle (`null_overlap_distribution`) — cet exercice le mesure pour la dimension.
+
+**Protocole** — mode `orthogonal`, quatre facteurs, les cinq graines `RNG_SEEDS`, pour `n_tokens` ∈ {64, 256, 1 024, 4 096} :
+
+1. mesurer `NC@95` joint et la somme des `NC@95` factoriels (moyennes sur les graines) ;
+2. tabuler l'écart d'additivité correspondant ;
+3. vérifier le plancher au plus petit échantillon, puis dire ce qui reste de l'écart à 4 096 tokens.
+
+**Indices**
+
+- À 64 tokens, le côté joint est borné par le rang de la matrice centrée (≤ 63) : le comparer à sa borne.
+- Le côté somme, lui, est mesuré sur des projections de dimension 64 : il ne subit pas la même borne.
+- La conclusion utile : l'écart à petit échantillon mesure surtout le **manque de données**, pas la géométrie.
+
+**Ce que l'exercice fait mesurer** — le plancher d'échantillonnage de `NC@95` et la part d'écart qui survit à grand échantillon.
+",,,,,,,,6ef3444be7f5b333,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,fb5e7286,code,fr,2f0cd66bbdbd943e,"# Exercice 3 — Nombre de tokens : le plancher d'echantillonnage (a completer)
+# TODO etudiant : mesurer les deux cotes de l'additivite en fonction de n_tokens.
+# Etape 1 : N_TOKENS_GRID = (64, 256, 1024, 4096) ; mode orthogonal, 4 facteurs, RNG_SEEDS.
+# Etape 2 : pour chaque n_tokens, moyenne sur graines de NC@95 joint, de la somme des NC@95
+#           factoriels et de l'ecart.
+# Etape 3 : comparer le joint a 64 tokens a sa borne de rang, puis lire ce qui reste a 4096.
+# Indice : une PCA sur n echantillons ne rend pas plus de n directions -- borner le joint par n.
+
+N_TOKENS_GRID = (64, 256, 1024, 4096)
+
+def plancher_echantillonnage(n_tokens, n_factors, seed):
+    """"""Retourne (joint, somme_factorielle) pour un tirage donne.""""""
+    # TODO etudiant
+    pass
+
+# for nt in N_TOKENS_GRID: ...   # decommenter une fois implemente
+print(""Exercice 3 a completer : plancher d'echantillonnage de NC@95."")
+",,,,,,,,2f0cd66bbdbd943e,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35-HumorCausalProbe-Pilot-Python.ipynb,557db768,markdown,fr,327b7a46bdc3ea83,"## Lecture 1 -- Le sous-corpus : 120 instances, un label a 48
+
+La sortie de l'extraction (cellules du banc 18c re-executees, aucune edition du notebook source) fixe le terrain : CORPUS_DUR = 120 instances, 5 categories ({'rire_sans_recadrage': 14, 'recadrage_sans_rire': 13, 'rien': 38, 'humour_reussi': 48, 'offensif_compris_non_partage': 7}) et 4 sources ({'ArgumentumGames/Argumentum': 60, 'blague-manuelle': 30, 'declaration-factuelle': 20, 'edge-case-curated': 10}).
+
+Le label positif `humour_reussi` est la categorie la plus fournie du corpus brut (48 sur 120, soit 40 %) : la difficulte ne vient pas de sa rarete mais de la stratification du protocole, qui n'en retient que 6 (cellule suivante). C'est la premiere instance du motif « sous-corpus appauvri » du frontmatter : le protocole borne sa propre puissance statistique avant meme la premiere feature.",,,,,,,,327b7a46bdc3ea83,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35-HumorCausalProbe-Pilot-Python.ipynb,a09b12e5,markdown,fr,ee22a9f0961619a0,"## Lecture 2 -- Appariement par longueur : 6 + 24, deltas nuls
+
+La cellule d'appariement produit deux choses. D'abord 6 paires par longueur **exactement egales** (delta = 0 pour les 6 : longueurs [10, 14, 19, 20, 23, 23] cote humour, apparies a des non-humour de memes longueurs au mot pres). Ensuite 24 paires supplementaires en round-robin sur les non-humour restants (4 par humour_reussi), jusqu'a epuisement — total : 30 appariements exploratoires, 30 negatifs uniques, 6 textes positifs sources.
+
+La lecture a retenir : l'appariement +/-20 % annonce dans le frontmatter est en pratique **exact** sur les 6 paires initiales — la longueur ne confond pas la discrimination, c'est une variable controlee au mot pres. Et le design 6 H x 5 repetitions est entierement determine par la taille du sous-ensemble stratifie : 30 appariements exploratoires, pas 30 paires minimales independantes. C'est la limite structurelle citee en ouverture, chiffree ici.",,,,,,,,ee22a9f0961619a0,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35-HumorCausalProbe-Pilot-Python.ipynb,8f964f59,markdown,fr,1af8cac0d66a9f8b,"## Lecture 3 -- F1 0.229 : sous le ratio de classe
+
+La CV group-level (3 folds, 2 H en test par fold, 12 unites par fold) donne un F1 de `0.229 +/- 0.168` — folds 0.000, 0.286, 0.400 — pour une baseline aleatoire au ratio de classe de `0.286`. Le classifieur lexical est **en dessous de la baseline random** : sur 36 unites (6 H + 30 N), rien ne permet encore de deviner qui est H.
+
+Deuxieme lecture, plus informative : la probabilite positive OOF moyenne sur les 6 H est `0.373 +/- 0.303`, et la liste par H est polaire : ['0.629', '0.048', '0.214', '0.220', '0.203', '0.923']. Un seul texte H est confiant (0.923), un seul est nettement sous 0.1 (0.048) — le modele a appris des idiosyncrasies par instance, pas une regle de classe. C'est le comportement attendu quand le signal reel est au-dela du lexique : le verdict INCONCLUSIVE porte au moins un diagnostic de dispersion.",,,,,,,,1af8cac0d66a9f8b,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35-HumorCausalProbe-Pilot-Python.ipynb,f2d0d74d,markdown,fr,a2c16a9aecab7325,"## Lecture 4 -- p = 0.2772 : la discrimination est compatible avec le null
+
+Le controle de permutation (v6) permute les 36 unites au niveau global (preservation 6H/30N), refit le pipeline intra-fold pour CHAQUE permutation, et ne stocke qu'UNE moyenne CV par permutation. Resultat : distribution nulle `0.162 +/- 0.119`, IC95 [0.000, 0.385], 27 moyennes nulles sur 100 superieures ou egales au reel — p_value fini (k+1)/(N+1) = `0.2772`.
+
+0.229 (F1 reel) est au-dedans du nuage null : la difference reel - null = +0.067, inferieure a un ecart-type null (0.119). Le verdict de permutation est donc sans appel : la discrimination observee est compatible avec le hasard intra-fold, et le p fini reste loin du seuil 0.05. C'est la mesure la plus solide du notebook (100 repetitions, 3 folds chacune) et elle penche vers la negativite de l'etage lexical.",,,,,,,,a2c16a9aecab7325,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35-HumorCausalProbe-Pilot-Python.ipynb,2beff9d1,markdown,fr,6a3867c5c125cd63,"## Lecture 5 -- Le strip : IC95 [-0.138, +0.671], aucun verdict
+
+Le second controle retire les marqueurs humoristiques de surface (ponctuation expressive, verbes de recadrage, callbacks) puis re-mesure la probabilite positive OOF. Resultats : rappel baseline sur H test = `0.333 +/- 0.236` (folds 0.000 / 0.500 / 0.500) ; delta de probabilite original -> strippe = `+0.178 +/- 0.312` par H, IC95 `[-0.138, 0.671]`.
+
+L'IC95 traverse 0, et la cellule le dit explicitement : sur 6 H, un intervalle qui traverse 0 est trivialement attendu — il ne PROUVE ni que la surface porte l'information humoristique, ni qu'elle ne la porte pas. La cellule declare donc « strip n'a pas d'effet clair » et refuse le verdict SURFACE_SEULE qui aurait ete abusif (la cellule de verdict le rappelle dans ses limites). Coherent avec le rapport v6 : trois mesures, trois non-conclusions honnetes.",,,,,,,,6a3867c5c125cd63,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35-HumorCausalProbe-Pilot-Python.ipynb,732d3924,markdown,fr,0d10ad9ef9b3f0ca,"## Lecture 6 -- Le verdict ferme : INCONCLUSIVE borne, et ce qu'il borne
+
+La cellule de verdict n'a pas de decision a chercher : `p_value fini 0.2772` >= 0.05 — le premier terme de la regle de decision tombe, le verdict est `INCONCLUSIVE borne` par construction (RAISON imprimee). Les 7 limites affichees ne sont pas une parade : elles delimitent le perimetre exact du resultat — 36 unites group-level, 6 features lexicales, labellisation par heuristique Argumentum (1 seul LLM, qwen3.6-35b-a3b), permutation intra-fold correcte, pipeline intra-fold.
+
+La lecture la plus importante est epistemique : ce verdict **ne falsifie pas** l'humour lexical. Il borne la discrimination de CES 6 features sur CE sous-corpus a CE stade de la taxonomie (couche 1 : jeu sonore / repetition + incongruite perceptible). Les etages superieurs (embeddings, contexte narratif, SAE — gates #5635 / #14033) sont les seuls a pouvoir trancher au-dela. Un resultat negatif proprement circonscrit est plus utilisable qu'un verdict fort indefendable : c'est la discipline que le notebook s'est imposee depuis le frontmatter.",,,,,,,,0d10ad9ef9b3f0ca,,,,,,,,

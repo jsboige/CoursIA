@@ -37,7 +37,7 @@ Complementary, not duplicate. `social_choice_lean` uses custom `PrefOrder` (our 
 ## EPIC #4365 Status (anti-proliferation GT 6→2)
 
 This lake is **explicitly out of scope** for absorption into
-[`game_theory_lean/`](../game_theory_lean/) under EPIC #4365 Phase 4 (merge
+[`game_theory_lean/`](../../game_theory_lean/) under EPIC #4365 Phase 4 (merge
 cohesive post-convergence lakes). History of the status:
 
 1. **Upstream lock (`INTRINSIC` verdict, since lifted)**: at decision time
@@ -45,7 +45,7 @@ cohesive post-convergence lakes). History of the status:
    [`DominikPeters/SocialChoiceLean`](https://github.com/DominikPeters/SocialChoiceLean)
    was pinned at `355075e3` on the `v4.27.0-rc1` family, and its port to the
    post-#4364 target was not under our control — `INTRINSIC` verdict per
-   [`sota-not-workaround.md`](../../../.claude/rules/sota-not-workaround.md).
+   [`sota-not-workaround.md`](../../../../.claude/rules/sota-not-workaround.md).
    **That lock was lifted by upstream itself**: since 2026-08-21 (#12134,
    commit `d8ec0b08ba`), the effective pin is Peters `94a4c650` /
    Mathlib `520045ab` on `lean-toolchain` `v4.32.1` — the family of the rest
@@ -100,7 +100,7 @@ results, the current reference implementation of social-choice theory in Lean 4.
 
 ### Complementary, not duplicate
 
-This project and [`social_choice_lean/`](../social_choice_lean/) cover the same
+This project and [`social_choice_lean/`](../../social_choice_lean/) cover the same
 theory through **different frameworks**: Peters uses Mathlib's strict
 `LinearOrder`, while `social_choice_lean/` uses the reflexive-total-transitive
 `PrefOrder` (closer to the welfare-economics tradition). Reading both shows how
@@ -111,5 +111,5 @@ the framework choice shapes the definitions and proofs.
 - **Companion notebook**: planned (not yet created) — a teaching tour of Peters'
   results, which this project would back.
 - **Upstream**: [DominikPeters/SocialChoiceLean](https://github.com/DominikPeters/SocialChoiceLean) (MIT).
-- **Our proofs**: [`social_choice_lean/`](../social_choice_lean/) — Arrow / Sen /
+- **Our proofs**: [`social_choice_lean/`](../../social_choice_lean/) — Arrow / Sen /
   median voter in the `PrefOrder` framework.

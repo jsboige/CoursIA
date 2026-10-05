@@ -170,3 +170,34 @@ def test_inconsistent_position_cap_is_refused(tmp_path):
     with pytest.raises(ValueError, match="RISK_MAX_POSITION_PCT"):
         run_cycle(broker, SIGNALS, risk, CFG, state_path=tmp_path / "r.json",
                   journal_path=tmp_path / "j.jsonl", starting_capital=10_000.0)
+
+
+class CashBroker(FakeBroker):
+    """Books every order at its price and refuses a buy above its cash, like the adapter."""
+
+    def __init__(self, cash, positions, prices):
+        equity = cash + sum(q * prices[s] for s, q in positions.items())
+        super().__init__(equity, positions, prices)
+        self.cash = cash
+
+    def place(self, symbol, quantity):
+        if quantity > 0 and quantity * self._prices[symbol] > self.cash:
+            raise RuntimeError(f"buying {quantity} {symbol} exceeds the cash")
+        self.cash -= quantity * self._prices[symbol]
+        return super().place(symbol, quantity)
+
+
+def test_a_cycle_never_buys_more_than_its_cash_plus_its_sells(tmp_path):
+    # IUSM held a little above its target, SXR8 absent: the band would keep
+    # IUSM, and the buy of SXR8 would overdraw the sleeve (#19113).
+    # a target large enough for both lines to hit the 50 % cap: fully invested
+    cfg = CycleConfig(signal_to_line=CFG.signal_to_line, budget_per_line=1.0, band=0.03,
+                      cash_reserve=0.002)
+    probe = _run(tmp_path, FakeBroker(10_000.0, {}, {"SXR8": 50.0, "IUSM": 20.0}), cfg=cfg)
+    target = {o.symbol: o.quantity for o in probe.orders}
+    held = {"IUSM": target["IUSM"] + 10}  # 200 above target: under the 300 band
+    broker = CashBroker(10_000.0 - held["IUSM"] * 20.0, held, {"SXR8": 50.0, "IUSM": 20.0})
+    report = _run(tmp_path / "b", broker, cfg=cfg, dry_run=False)
+    assert sum(report.weights.values()) == pytest.approx(1.0)
+    assert broker.cash >= 0.002 * 10_000.0 - 1e-9
+    assert all(o.allowed for o in report.orders)

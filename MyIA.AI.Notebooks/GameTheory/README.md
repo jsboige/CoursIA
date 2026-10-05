@@ -331,7 +331,7 @@ Quatre itinéraires qui traversent paliers et lettres pour un public précis.
 
 Le dossier [SocialChoice/](SocialChoice/README.md) traite l'agrégation des préférences : Arrow, Sen, méthodes de vote, encodage SAT/Z3, manipulation, comités. Son README porte son propre parcours et ses propres approfondissements.
 
-Depuis le parcours principal, on y entre après le palier 16. Aucun notebook d'escalier ne la présente encore depuis la série mère : le palier 16 en tient lieu. Ses formalisations vivent pour l'instant dans les lakes de la série mère (`game_theory_lean/SocialChoice`, et le lake de référence `social_choice_lean_peters`).
+Depuis le parcours principal, on y entre après le palier 16. Aucun notebook d'escalier ne la présente encore depuis la série mère : le palier 16 en tient lieu. Ses formalisations vivent pour l'instant dans `game_theory_lean/SocialChoice` et le lake de référence `SocialChoice/social_choice_lean_peters` (descendu au sein de la sous-série, #4362).
 
 | # | Notebook | Ce qu'on y apprend | Noyau | Public |
 |---|----------|--------------------|-------|--------|
@@ -559,7 +559,7 @@ La série aligne simulation numérique et preuve formelle : les notebooks motive
 | `conway_cgt_lean` | Visite de la théorie des jeux combinatoires de Conway (`vihdzp/combinatorial-games`) | 08d |
 | `assignment_lean` | Dualité faible et optimalité à gap nul de Kuhn-Munkres (#12598) | 23, 23b |
 | `asymmetric_information_lean` | Akerlof (seuil de pooling exact), Spence, Rothschild-Stiglitz, Wilson-Miyazaki | 17b, 17c, 17d |
-| `social_choice_lean_peters` | Lake de référence externe (D. Peters, MIT) : Gibbard-Satterthwaite, Split Cycle et d'autres règles | SocialChoice 01b, 07 |
+| `SocialChoice/social_choice_lean_peters` | Lake de référence externe (D. Peters, MIT) : Gibbard-Satterthwaite, Split Cycle et d'autres règles | SocialChoice 01b, 07 |
 
 Les anciens lakes autonomes du choix social, des jeux coopératifs, du mariage stable et des jeux répétés ont été absorbés dans `game_theory_lean` (#4365). `repeated_games_lean/` a été retirée du disque (coquille sans module, #4362) ; `social_choice_lean/` ne reste que comme coquille documentaire. Au niveau du dépôt, voir le [hub SymbolicAI/Lean](../SymbolicAI/Lean/README.md) et la feuille de route Lean ([#4038](https://github.com/jsboige/CoursIA/issues/4038)).
 
@@ -578,7 +578,7 @@ Les anciens lakes autonomes du choix social, des jeux coopératifs, du mariage s
 ```
 GameTheory/
 ├── GameTheory-*.ipynb             # parcours principal, approfondissements, extensions
-├── SocialChoice/                  # sous-série Choix social (son propre README)
+├── SocialChoice/                  # sous-série Choix social (son propre README, lake social_choice_lean_peters/)
 ├── assets/readme/                 # figures du README et leur MANIFEST
 ├── game_theory_utils.py           # utilitaires partagés
 ├── limit_sets.py                  # détecteur d'ensembles limites (extension 22)
@@ -589,8 +589,8 @@ GameTheory/
 ├── scripts/                       # installation des kernels WSL (OpenSpiel, Lean)
 ├── game_theory_lean/              # lake multi-module (voir Formalisations Lean)
 ├── minimax_lean/  assignment_lean/  asymmetric_information_lean/  conway_cgt_lean/
-├── lean_game_defs/  lean_game_defs_ext/  social_choice_lean_peters/
-├── social_choice_lean/                          # coquille documentaire (absorbée)
+├── lean_game_defs/  lean_game_defs_ext/
+├── social_choice_lean/                          # coquille documentaire (absorbée ; peters vit sous SocialChoice/)
 ├── LEAN_INVENTORY.md              # inventaire des lakes
 ├── install_wsl_kernel.md          # installation des kernels WSL
 └── requirements.txt

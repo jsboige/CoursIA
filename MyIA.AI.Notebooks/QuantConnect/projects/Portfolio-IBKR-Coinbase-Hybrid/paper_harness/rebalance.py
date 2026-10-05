@@ -11,7 +11,8 @@ the orchestrator sends anything:
    given the current positions, prices and equity. A tolerance band skips
    trades too small to be worth their fee, a minimum notional skips orders a
    broker would reject or charge disproportionately, and sells are listed
-   before buys so the buys are funded.
+   before buys so the buys are funded. Given the cash, :func:`fit_to_cash`
+   keeps the buys within the cash plus the sells (#19113).
 
 Volatility convention: simple daily returns, sample standard deviation
 (``ddof=1``), annualised with sqrt(252) -- the convention of the research
@@ -99,6 +100,8 @@ def plan_orders(
     band: float = 0.0,
     min_notional: float = 0.0,
     cash_reserve: float = 0.0,
+    cash: float | None = None,
+    release_skipped_sells: bool = True,
 ) -> list[OrderIntent]:
     """Whole-share orders that move ``positions`` toward ``target_weights``.
 
@@ -107,8 +110,12 @@ def plan_orders(
       (``0.03`` = 3 %). This is the rule the selection backtest simulated, so
       the harness reproduces it rather than inventing another one.
     - ``min_notional``: skip an order whose value is below this amount.
-    - ``cash_reserve``: fraction of equity kept out of the targets to pay
-      commissions, so the buys never overdraw the account.
+    - ``cash_reserve``: fraction of equity kept out of the targets, and out of
+      the cash the buys may spend, to pay commissions and limit-price slippage.
+    - ``cash``: the sleeve's cash before the cycle. When given, the plan is
+      made affordable (see :func:`fit_to_cash`); when ``None`` it is returned
+      unchecked, as before the constraint existed.
+    - ``release_skipped_sells``: how :func:`fit_to_cash` funds a shortfall.
 
     Target quantities are rounded down, so the planned holdings never exceed
     the targets. Every symbol held but absent from ``target_weights`` has a
@@ -119,6 +126,10 @@ def plan_orders(
     whatever its size, and neither ``band`` nor ``min_notional`` applies.
     Otherwise a return to cash (``exposure_scale=0``, a liquidating breaker)
     would leave every holding smaller than the band in place.
+
+    The band alone does not keep the buys within the cash: a line held above
+    its target by less than the band is not sold, while another line under its
+    target is bought, so the buys can exceed the cash plus the sells (#19113).
     """
     if equity <= 0:
         raise ValueError("equity must be positive")
@@ -126,6 +137,7 @@ def plan_orders(
         raise ValueError("cash_reserve must be in [0, 1)")
     investable = equity * (1.0 - cash_reserve)
     orders: list[OrderIntent] = []
+    skipped_sells: list[OrderIntent] = []
     for symbol in sorted(set(target_weights) | {s for s, q in positions.items() if q}):
         price = prices.get(symbol)
         if price is None or not math.isfinite(price) or price <= 0:
@@ -137,17 +149,78 @@ def plan_orders(
         if delta == 0:
             continue
         value = abs(delta) * price
+        intent = OrderIntent(
+            symbol=symbol,
+            quantity=delta,
+            price=price,
+            current_weight=held * price / equity,
+            target_weight=target_w,
+        )
         exit_line = target_w == 0.0
         if not exit_line and (value < band * equity or value < min_notional):
+            # a sell skipped by the band alone can still fund the buys
+            if delta < 0 and value >= min_notional:
+                skipped_sells.append(intent)
             continue
-        orders.append(
-            OrderIntent(
-                symbol=symbol,
-                quantity=delta,
-                price=price,
-                current_weight=held * price / equity,
-                target_weight=target_w,
-            )
+        orders.append(intent)
+    if cash is not None:
+        orders = fit_to_cash(
+            orders,
+            available=cash - cash_reserve * equity,
+            skipped_sells=skipped_sells if release_skipped_sells else (),
+            min_notional=min_notional,
         )
     orders.sort(key=lambda o: (o.quantity > 0, o.symbol))
     return orders
+
+
+def fit_to_cash(
+    orders: Sequence[OrderIntent],
+    available: float,
+    skipped_sells: Sequence[OrderIntent] = (),
+    min_notional: float = 0.0,
+) -> list[OrderIntent]:
+    """Make the buys of a plan payable by ``available`` plus its sells.
+
+    ``available`` is the cash the buys may spend before any sell (the cash less
+    the reserve); the sells are executed first, so their proceeds count. When
+    the buys exceed it, two steps, in order:
+
+    1. sells that the band skipped are released, the largest first, until the
+       buys fit: they move an overweight line back to its target, so the money
+       comes from where the plan wanted less, not from the line it wanted more;
+    2. if that is not enough, every buy is scaled by the same factor and
+       rounded down to whole shares, and a buy left under ``min_notional`` (or
+       at zero) is dropped.
+
+    Rounding down keeps the scaled total within the factor, so the result
+    never spends more than ``available`` plus the sells. A plan that already
+    fits is returned unchanged.
+    """
+    orders = list(orders)
+
+    def shortfall() -> float:
+        buys = sum(o.notional for o in orders if o.quantity > 0)
+        sells = sum(o.notional for o in orders if o.quantity < 0)
+        return buys - (available + sells)
+
+    if shortfall() <= 1e-9:
+        return orders
+    for sell in sorted(skipped_sells, key=lambda o: (-o.notional, o.symbol)):
+        orders.append(sell)
+        if shortfall() <= 1e-9:
+            return orders
+    sells = [o for o in orders if o.quantity < 0]
+    buys = [o for o in orders if o.quantity > 0]
+    budget = available + sum(o.notional for o in sells)
+    total = sum(o.notional for o in buys)
+    factor = max(0.0, budget) / total
+    kept: list[OrderIntent] = []
+    for o in buys:
+        quantity = math.floor(o.quantity * factor)
+        if quantity <= 0 or quantity * o.price < min_notional:
+            continue
+        kept.append(
+            OrderIntent(o.symbol, quantity, o.price, o.current_weight, o.target_weight)
+        )
+    return sells + kept
