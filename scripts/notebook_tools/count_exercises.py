@@ -416,8 +416,14 @@ STUB_PATTERNS = [
     # returned literal in mid-cell without a sentinel comment stays a derived
     # return. (OWUI issue #15676 -- ``return -1  # valeur "a completer
     # (placeholder neutre)"`` in cell 11.)
+    # C# form (#18741 PR C): the tail uses ``//`` and the vocabulary is the
+    # student-marker family -- ``return -1; // TODO etudiant`` (Aspire 01
+    # c23, the /health waiter). ``;?`` absorbs the C# statement terminator;
+    # ``TODO`` and ``etudiant`` join the vocabulary exactly as in
+    # ``_STUDENT_MARKER_VOCAB_RE``: a bare-number return annotated with a
+    # student TODO is a sentinel, not a computation.
     re.compile(
-        r"\breturn\s+-?\d+\s*#.*\b(?:a compl[eé]ter|a remplir|placeholder|neutre|stub)\b",
+        r"\breturn\s+-?\d+\s*;?\s*(?://|#|--)\s*(?:TODO\b|[^\n]*\b(?:a compl[eé]ter|a remplir|placeholder|neutre|stub|etudiant)\b)",
         re.IGNORECASE,
     ),
     # Pure-sentinelle string literals: ``return "a determiner"``,
@@ -535,6 +541,30 @@ EXECUTABLE_PLACEHOLDER_PATTERN_IDX = frozenset({1, 2})
 _STUDENT_MARKER_VOCAB_RE = re.compile(
     r"\bTODO\b|\bExercice\b|[eé]tudiant|[aà] compl[eé]ter|[aà] vous",
     re.IGNORECASE,
+)
+
+#: (#18741 PR C) Reading-exercise declaration. Some markdown cell of the
+#: notebook announces that its exercises are READING exercises -- Audio 06-3
+#: c11 ``## 5. Trois exercices de lecture chiffree`` : the answer is prose
+#: written next to the notebook, no code stub exists, so the numbered
+#: headers below can never pair. Measured scope: 8 notebooks in the corpus
+#: carry the phrase; the gate below only fires on headers that are ALSO
+#: unpaired, so paired local exercises in those notebooks are untouched.
+READING_EXERCISE_SECTION_RE = re.compile(r"exercices?\s+de\s+lecture", re.IGNORECASE)
+
+#: (#18741 PR C) External write-space evidence in a numbered exercise
+#: header -- the stub lives OUTSIDE the notebook, in the lab project beside
+#: it. Direct form: a backticked source-file path (Orleans 01 c9 ``Ouvrir
+#: `OrleansAgentLab/Grains.cs` et completer ...``). Indirect form:
+#: ``Completer `Class.Member(...)``` (Orleans 02 c20/22/24) -- the dotted
+#: member belongs to the lab file the exercise section points to; the
+#: ``[^`]*`` tail absorbs argument lists inside the backticks. A header
+#: whose local stub pairs never reaches these gates (pairing is checked
+#: first), so the only headers counted are those with strictly no local
+#: write-space AND positive external evidence in their own text.
+EXTERNAL_CS_PATH_RE = re.compile(r"`[^`]*\.(?:cs|csproj|fs)`")
+EXTERNAL_COMPLETE_MEMBER_RE = re.compile(
+    r"compl[eé]t\w*\s+`[A-Za-z_]\w*\.[A-Za-z_]\w*[^`]*`", re.IGNORECASE
 )
 
 
@@ -1059,7 +1089,7 @@ class ExerciseHit:
     cell_index: int
     cell_type: str  # 'markdown' or 'code'
     source: str  # full cell source (joined)
-    detected_by: str  # 'markdown_header' | 'code_cell_comment'
+    detected_by: str  # 'markdown_header' | 'code_cell_comment' | 'reading_header' | 'external_header'
 
     @property
     def preview(self) -> str:
@@ -1425,6 +1455,24 @@ def count_exercises_in_notebook(path: Path) -> NotebookCount:
     deferred_unpaired: dict[int, int] = {}
     blocker_of: dict[int, int] = {}
     unpaired_header_cells: set[int] = set()
+    #: (#18741 PR C) Headers counted by the reading/external gates, by kind.
+    #: The deferred-chain resolution below consults it: in a reading section
+    #: (Audio 06-3), consecutive numbered headers block EACH OTHER (c12
+    #: blocked by c13, c13 by c14), so the upper chain members are deferred
+    #: and only the terminal reaches the gate -- a gated terminal covers its
+    #: chain exactly the way a stub-paired terminal does.
+    gated_kind: dict[int, str] = {}
+    #: (#18741 PR C) Reading-exercise scope: a notebook that declares its
+    #: exercises are reading exercises somewhere in its markdown. Precomputed
+    #: once -- the declaration lives in a SECTION header (Audio 06-3 c11),
+    #: not in each numbered exercise header below it.
+    reading_scope = any(
+        READING_EXERCISE_SECTION_RE.search(
+            "".join(c.get("source", []))
+        )
+        for c in cells
+        if c.get("cell_type") == "markdown"
+    )
     for idx in sorted(header_cell_indices):
         instance_count = header_instance_counts[idx]
         header_source = header_sources[idx]
@@ -1579,7 +1627,45 @@ def count_exercises_in_notebook(path: Path) -> NotebookCount:
                     # only if that nearer header itself finds no write-space
                     # (resolved after the loop, blocker chain walk).
                     deferred_unpaired[idx] = instance_count
-                elif not forward_has_code_cell:
+                    continue
+                # (#18741 PR C) Two strictly-evidenced exceptions before the
+                # drop: the exercise is real but its write-space is NOT a local
+                # code cell. A reading exercise (the notebook declares
+                # "exercices de lecture" -- the answer is prose, Audio 06-3) or
+                # an external-file exercise (the header names the lab source to
+                # complete, Orleans 01/02 -- the stub lives in the .csproj
+                # beside the notebook and no local stub can ever pair). Both
+                # gates require positive evidence; the generic drop rule below
+                # is unchanged for headers without it. Counted hits do NOT
+                # inflate unpaired_markdown_instances: their write-space
+                # exists, elsewhere.
+                if reading_scope:
+                    for _ in range(instance_count):
+                        result.exercises.append(
+                            ExerciseHit(
+                                cell_index=idx,
+                                cell_type="markdown",
+                                source=header_source,
+                                detected_by="reading_header",
+                            )
+                        )
+                    gated_kind[idx] = "reading_header"
+                    continue
+                if EXTERNAL_CS_PATH_RE.search(header_source) or (
+                    EXTERNAL_COMPLETE_MEMBER_RE.search(header_source)
+                ):
+                    for _ in range(instance_count):
+                        result.exercises.append(
+                            ExerciseHit(
+                                cell_index=idx,
+                                cell_type="markdown",
+                                source=header_source,
+                                detected_by="external_header",
+                            )
+                        )
+                    gated_kind[idx] = "external_header"
+                    continue
+                if not forward_has_code_cell:
                     result.unpaired_markdown_instances += instance_count
                     unpaired_header_cells.add(idx)
                 continue
@@ -1609,6 +1695,20 @@ def count_exercises_in_notebook(path: Path) -> NotebookCount:
         if terminal in unpaired_header_cells:
             result.unpaired_markdown_instances += count
             unpaired_header_cells.add(idx)
+        elif terminal in gated_kind:
+            # (#18741 PR C) The chain's terminal was counted by a
+            # reading/external gate: the deferred members above it are
+            # exercises of the same family (Audio 06-3 -- c12/c13 deferred
+            # behind their successors, terminal c14 reading-counted).
+            for _ in range(count):
+                result.exercises.append(
+                    ExerciseHit(
+                        cell_index=idx,
+                        cell_type="markdown",
+                        source=header_sources[idx],
+                        detected_by=gated_kind[terminal],
+                    )
+                )
 
     # Second pass: code-cell exercises with NO preceding markdown header.
     #
