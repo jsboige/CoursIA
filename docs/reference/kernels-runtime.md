@@ -59,6 +59,21 @@ dotnet tool update --global Microsoft.dotnet-interactive --version 1.0.712001
 dotnet interactive jupyter install
 ```
 
+### Conformite flotte au canon : matrice machine x version
+
+Chaque ligne est une **mesure firsthand de la machine**, jamais une deduction d'une autre machine ni la simple constatation que la commande repond : c'est precisement l'erreur qui a produit la [divergence po-2024](#divergence-po-2024-du-2026-08-16-11157--le-pin-netait-jamais-installe), ou le tool store portait un build derive sans qu'aucun `dotnet interactive --version` de routine ne le signale.
+
+| Machine | Version mesuree | Date | Source de la mesure |
+|---------|-----------------|------|---------------------|
+| `myia-po-2023` | **1.0.712001** | 2026-10-02 | `dotnet tool list -g`, apres montee depuis 1.0.707101 (`dotnet tool update -g` + `dotnet interactive jupyter install`, regle F) |
+| `myia-po-2024` | **1.0.712001** | 2026-08-16 | le tool store ne portait que ce build (Roslyn 5.0.25.56712, hote `tools/net10.0/any/`) — la divergence #11157 s'est fermee par **montee du canon**, jamais par downgrade |
+| `myia-po-2025` | **1.0.712001** | 2026-10-02 | `dotnet tool list -g` — conforme, aucune mise a niveau requise |
+| `myia-po-2026` | **1.0.712001** | 2026-10-05 (re-mesure) | `dotnet tool list -g` et `dotnet interactive --version` = `1.0.712001+df4e5cbc…` |
+| `myia-ai-01` | **1.0.712001 teste en `--tool-path` isole** ; outil **global** encore `1.0.617701` | 2026-10-02 | install de 1.0.712001 dans un tool-path isole + cellule `#load` reelle : **SUCCES** (`Greet says: Hello from helper.cs`) — le `ArgumentNullException` #8485 **non reproduit** ; la mise a niveau **globale** n'a pas ete faite (commande machine-globale, hors portee d'une lane worker) et reste due au **coordinateur** |
+| `myia-po-2027` | **non mesuree** | — | mesure demandee a sa lane ; cette machine est celle du bug `#r "nuget:"` documente sous l'ancien canon ([`dotnet-restore-rfc-17361.md`](dotnet-restore-rfc-17361.md)) |
+
+**Etat de l'acceptance de #18766** : le canon est **unique** et documente ici — oui ; **4 machines sur 6 sont conformes par mesure** (`po-2023`, `po-2024`, `po-2025`, `po-2026`). Il reste `ai-01` — canon **installe et teste en isole** (cellule `#load` reelle OK, bug #8485 non reproduit) mais outil **global** encore `1.0.617701`, la mise a niveau globale etant une commande machine-globale due au **coordinateur** — et `po-2027` (mesure a demander a sa lane). Tant que ces deux lignes ne sont pas mesurees, l'affirmation « toutes les machines conformes » reste **indisponible** : elle s'ecrit quand les mesures existent, pas avant — un canon tenu « par confiance de compte » est exactement le mecanisme qui a laisse la divergence vivre trois semaines.
+
 **Canon `language_info.version` : C# 13.0 (#17679, décision coordinateur 2026-09-26).** L'environnement épinglé du dépôt (SDK 10.0.112, dotnet-interactive 1.0.617701) émet **C# 13.0** ; les notebooks encore stampés `12.0` (34 au constat du 2026-09-24, artefacts d'exécutions sous SDK 8) convergent à leur re-exécution. **Note (02/10/2026)** : cette mesure date du canon dni 1.0.617701 ; sous le nouveau canon 1.0.712001 (hote net10.0, Roslyn 5.x), le stamp `language_info.version` sera re-mesuré a la premiere re-execution d'un notebook .NET — si un drift `13.0 -> 14.0` apparait, il suit la meme voie decisionnelle que #17679. La dérive `12.0 -> 13.0` est donc **attendue et couverte par C.4** : le `Kernel drift guard` la tient pour verte via sa table d'acceptation `CANONICAL_LANGUAGE_TRANSITIONS` ([`check_kernel_drift.py`](../../scripts/notebook_tools/check_kernel_drift.py)) — la transition inverse (`13.0 -> 12.0`) et tout changement de `kernelspec.name` restent rouges.
 
 ### Consequence du pin : plafond Roslyn 4.12.0.0 sur les packages NuGet (canon 1.0.617701)
@@ -108,7 +123,7 @@ dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.617701
 dotnet interactive jupyter install
 ```
 
-Verifications post-reparation sur po-2024 : version `1.0.617701+fb2fd802...` confirmee, `#!import` minimal OK (`FORTY_TWO=42`), AutoML 0.22.3 OK (RSquared 0,996). **Epilogue (02/10/2026, #18766)** : le depin a eu lieu — le canon fleet passe a `1.0.712001`, exactement le build sur lequel po-2024 tournait lors de cette divergence. La divergence est fermee par montee du canon (po-2024 etait « en avance »), la reparation historique ci-dessus reste documentee pour la methode (uninstall + install pinne quand `dotnet tool update` refuse le downgrade). Mesures de conformite flotte en cours sur #18766 : po-2026 verifiee 1.0.712001, ai-01 montee par sa lane soeur (test `#!import` en `--tool-path` isole d'abord), po-2023/po-2025/po-2027 mesures demandees.
+Verifications post-reparation sur po-2024 : version `1.0.617701+fb2fd802...` confirmee, `#!import` minimal OK (`FORTY_TWO=42`), AutoML 0.22.3 OK (RSquared 0,996). **Epilogue (02/10/2026, #18766)** : le depin a eu lieu — le canon fleet passe a `1.0.712001`, exactement le build sur lequel po-2024 tournait lors de cette divergence. La divergence est fermee par montee du canon (po-2024 etait « en avance »), la reparation historique ci-dessus reste documentee pour la methode (uninstall + install pinne quand `dotnet tool update` refuse le downgrade). Mesures de conformite flotte : matrice tenue a jour dans [Conformite flotte au canon](#conformite-flotte-au-canon--matrice-machine-x-version) (au 2026-10-05 : `po-2023`/`po-2024`/`po-2025`/`po-2026` conformes par mesure ; `ai-01` canon teste en isole mais outil global encore sur l'ancien pin ; `po-2027` pas encore mesuree).
 
 ## Python 3.10+ (notebooks Python)
 

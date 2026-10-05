@@ -213,6 +213,58 @@ def test_19069_runs_tous_sans_verdict_ferme_la_derogation():
     ) is None
 
 
+# --- #19180 : un run timed_out sur main est un rouge, pas un run sans verdict -
+
+#: Fenetre de l'issue #19180 : le run le plus recent a epuise son temps
+#: (`timed_out`), le precedent etait vert. Avant le correctif, le filtre
+#: `success`/`failure` sautait le `timed_out` comme un `cancelled` et
+#: remontait jusqu'au vert : main etait declare vert alors qu'il ne l'etait pas.
+_TIMED_OUT_THEN_GREEN = [
+    {"id": 2002, "name": "Scripts & Notebook-Tools Tests",
+     "conclusion": "timed_out", "created_at": "2026-10-05T00:40:00Z",
+     "html_url": "https://github.com/o/r/actions/runs/2002"},
+    {"id": 2001, "name": "Scripts & Notebook-Tools Tests",
+     "conclusion": "success", "created_at": "2026-10-05T00:10:00Z",
+     "html_url": "https://github.com/o/r/actions/runs/2001"},
+]
+
+
+def test_19180_timed_out_puis_success_la_derogation_souvre():
+    motif = merge_dwell._main_red_motif(
+        "o/r", fetch=_runs_fetch(_TIMED_OUT_THEN_GREEN)
+    )
+    assert motif is not None
+    assert "2002" in motif
+    assert "timed_out" in motif
+
+
+def test_19180_startup_failure_compte_aussi_rouge():
+    runs = [dict(_TIMED_OUT_THEN_GREEN[0], conclusion="startup_failure"),
+            _TIMED_OUT_THEN_GREEN[1]]
+    motif = merge_dwell._main_red_motif("o/r", fetch=_runs_fetch(runs))
+    assert motif is not None
+    assert "startup_failure" in motif
+
+
+def test_19180_controle_negatif_cancelled_puis_success_reste_vert():
+    # Le comportement #19069 ne change pas : un `cancelled` n'a pas de
+    # verdict, il se saute, et le vert qui le precede ferme la derogation.
+    runs = [dict(_TIMED_OUT_THEN_GREEN[0], conclusion="cancelled"),
+            _TIMED_OUT_THEN_GREEN[1]]
+    assert merge_dwell._main_red_motif("o/r", fetch=_runs_fetch(runs)) is None
+
+
+def test_19180_motif_failure_inchange():
+    # Le message d'un `failure` ordinaire garde sa forme d'avant #19180.
+    motif = merge_dwell._main_red_motif(
+        "o/r", fetch=_runs_fetch(_CANCELLED_THEN_RED)
+    )
+    assert motif == (
+        "main rouge: workflow `Scripts & Notebook-Tools Tests` en echec "
+        "sur main (run 37225392464)"
+    )
+
+
 def test_head_committed_at_leve_sans_date():
     with pytest.raises(merge_dwell.DwellError):
         merge_dwell.head_committed_at(

@@ -115,25 +115,43 @@ def test_fetch_visits_cache_name_separates_windows(monkeypatch):
     du jour."""
     import json
 
-    calls = []
-
     class _FakeCompleted:
         def __init__(self, stdout):
             self.stdout = stdout
 
-    def fake_run(cmd, **kwargs):
-        calls.append(cmd)
-        return _FakeCompleted("[]")
+    def fake_run(calls):
+        def run(cmd, **kwargs):
+            calls.append(cmd)
+            return _FakeCompleted("[]")
+        return run
 
     # Rend une liste vide : le compteur est vide, seule la commande importe.
-    monkeypatch.setattr(pig.subprocess, "run", fake_run)
-
-    class _NullCache:
-        pass
-
+    short_calls: list[list[str]] = []
+    monkeypatch.setattr(pig.subprocess, "run", fake_run(short_calls))
     pig.fetch_visits(days=1, cache_name="visits")
+
+    long_calls: list[list[str]] = []
+    monkeypatch.setattr(pig.subprocess, "run", fake_run(long_calls))
     pig.fetch_visits(days=30, cache_name="long_visits")
-    assert len(calls) == 2
-    stamps = [c[c.index("--search") + 1] if "--search" in c else None
-              for c in calls]
-    assert stamps[0] != stamps[1], "les deux fenetres doivent couper a des dates distinctes"
+
+    # Depuis #19209 une fenetre n'est plus ramenee par UN appel : elle l'est
+    # par des TRANCHES de dates (le `--search` unique plafonnait a 1000 et la
+    # troncature emportait les plus anciennes). Le nombre d'appels depend donc
+    # de la largeur de la fenetre et n'est plus 1 : l'assertion porte sur ce
+    # que ce test NOMME -- les deux fenetres coupent a des dates DISTINCTES,
+    # donc ne partagent pas la meme identite de cache.
+    assert short_calls, "la fenetre de 1 j doit interroger l'API"
+    assert long_calls, "la fenetre de 30 j doit interroger l'API"
+
+    def cutoffs(cmds):
+        return {c[c.index("--search") + 1] for c in cmds if "--search" in c}
+
+    short_cut, long_cut = cutoffs(short_calls), cutoffs(long_calls)
+    assert short_cut and long_cut, (short_calls, long_calls)
+    assert not (short_cut & long_cut), (
+        "les deux fenetres doivent couper a des dates distinctes : "
+        f"{sorted(short_cut)} vs {sorted(long_cut)}"
+    )
+    # La fenetre de 30 j doit remonter PLUS LOIN : sinon les deux fenetres
+    # couvriraient la meme periode et le nom de cache ne separerait rien.
+    assert min(long_cut) < min(short_cut), (sorted(long_cut)[:1], sorted(short_cut)[:1])

@@ -53,6 +53,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import sys
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -238,7 +239,27 @@ def check_notebooks(
             )
             continue
 
-        cnt = count_exercises_in_notebook(path)
+        # #19215 (review 5411248369) : le comptage doit porter sur la MEME
+        # revision que le diff credite, pas sur l'arbre du jour. Un carnet
+        # MODIFIE par une PR puis RENOMME (ou supprime) par une PR suivante
+        # est absent de l'arbre : `count_exercises_in_notebook` levait un
+        # FileNotFoundError qui emportait tout le balayage -- les autres PR
+        # de la fenetre n'etaient pas mesurees. Le blob de tete, lui, existe
+        # par construction pour un chemin MODIFIED.
+        #
+        # La classification, elle, reste sur `path` : `classify_notebook` lit
+        # les regles de REPERTOIRE (`IIT/`, `groupe-`, `_`) et le fichier
+        # temporaire du blob ne les porte pas -- classify sur le blob
+        # reclasserait le carnet en `archive`/`tooling` sur son seul prefixe.
+        count_path = path
+        if head_ref and _HAS_CREDITED:
+            try:
+                count_path = _read_git_blob(head_ref, str(path).replace("\\", "/"))
+            except (subprocess.CalledProcessError, OSError):
+                # Blob absent de la tete : on garde l'arbre du jour. Si lui
+                # aussi manque, l'echec est nomme par l'appelant (sweep).
+                count_path = path
+        cnt = count_exercises_in_notebook(count_path)
         if cnt.parse_error is not None:
             result.parse_errors.append(
                 NotebookVerdict(

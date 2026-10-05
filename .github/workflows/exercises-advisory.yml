@@ -252,3 +252,32 @@ jobs:
             echo "RESULT: all in-corpus modified notebooks meet their threshold (verified)."
           fi
           exit 0
+
+      - name: Credited-examples sweep over the day's merged PRs (nocturne)
+        # #19101 -- l'etape precedente porte la branche « exemples credites »
+        # de #18761, mais elle est DORMANTE sous `schedule` : le diff exige
+        # `--base` ET `--pr-body-file`, et le mode nocturne n'a pas de contexte
+        # PR, donc pas de body. Le test de l'etape (l.136) echouait, la branche
+        # `else` sans `--base` etait prise, et le diff n'etait **jamais**
+        # mesure : le label `credited-examples-lost` ne pouvait pas etre pose.
+        #
+        # Ce balayage le reveille SANS reintroduire `pull_request` sur ce
+        # workflow (interdit : le clone par PR est la motivation de #12817
+        # tranche 1). Il rejoue le diff apres coup, PR par PR, avec SA base et
+        # SON body -- option 1 de #19101, assumee post-mortem.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          # Le masque `|| echo "::warning::..."` est RETIRE (review #19215,
+          # point 3) : un plantage permanent laissait le run vert chaque nuit
+          # -- exactement la classe de defaut de #19214 (35 jours verts sans
+          # rapport). Le contrat de l'organe reste : ses pannes ATTENDUES
+          # (refs absentes, body illisible, plafond atteint) sont nommees en
+          # [WARN] et le script sort 0 ; ce qui ROUGIT ici est l'imprevu
+          # (traceback, crash) -- jamais masque. Sans effet merge : la mesure
+          # du body de #19214 vaut aussi pour ce workflow (schedule/dispatch
+          # seulement, hors du perimetre `merge_dwell`).
+          python scripts/notebook_tools/credited_examples_sweep.py \
+            --hours 24 --apply
