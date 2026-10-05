@@ -154,7 +154,7 @@ Les notebooks SC-01 et SC-02 renvoient au projet Lake `game_theory_lean/SocialCh
 | Théorème de Sen | `Sen.lean` | 0 | Prouvé |
 | Modèles de vote | `Voting.lean` | 0 | Banks, STV, Median Voter |
 
-Le projet `social_choice_lean_peters/` (DominikPeters, Lean 4 + Mathlib) formalise 12 règles de vote et 4 théorèmes d'impossibilité supplémentaires (Gibbard-Satterthwaite, Condorcet Participation, Condorcet Reinforcement, Duggan-Schwartz). Inventaire détaillé : [LEAN_INVENTORY.md](../LEAN_INVENTORY.md).
+Le projet `social_choice_lean_peters/` (au sein de cette série depuis #4362 ; DominikPeters, Lean 4 + Mathlib) formalise 12 règles de vote et 4 théorèmes d'impossibilité supplémentaires (Gibbard-Satterthwaite, Condorcet Participation, Condorcet Reinforcement, Duggan-Schwartz). Inventaire détaillé : [LEAN_INVENTORY.md](../LEAN_INVENTORY.md).
 
 ## Concepts clés
 

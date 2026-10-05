@@ -39,7 +39,16 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 MODULE_DIR = os.path.join(ROOT, "MyIA.AI.Notebooks", "ML", "DataScienceWithAgents")
 sys.path.insert(0, MODULE_DIR)
 
-from auto_evaluation import MOMENTS, question  # noqa: E402
+from auto_evaluation import (  # noqa: E402
+    MOMENTS,
+    _REPONSES_CONNUES,
+    _collecter_reponse,
+    _enregistrer,
+    _resoudre_bonne,
+    _resoudre_reponse,
+    bilan_session,
+    question,
+)
 
 CHOIX = [
     "Pour accélérer l'entraînement",
@@ -134,3 +143,109 @@ def test_entree_d_auteur_mal_formee_leve(kwargs):
     base.update(kwargs)
     with pytest.raises(ValueError):
         question(**base)
+
+
+# --- Tests des ajouts portes depuis #18885 (voir #19027) -----------------------
+
+
+@pytest.fixture(autouse=True)
+def _reset_session():
+    """Vide la memoire de session avant chaque test pour des comptes deterministes."""
+    _REPONSES_CONNUES.clear()
+    yield
+    _REPONSES_CONNUES.clear()
+
+
+def test_question_enregistre_le_resultat():
+    """Chaque appel a ``question`` memorise le verdict dans la session."""
+    _capture(texte="Q1 ?", choix=CHOIX, bonne="B", explication=EXPLICATION, reponse="B")
+    _capture(texte="Q2 ?", choix=CHOIX, bonne="B", explication=EXPLICATION)
+    decompte = bilan_session()
+    assert decompte == {"posees": 2, "repondues": 1, "bonnes": 1, "manquees": 1, "fausses": 0}
+
+
+def test_bilan_session_vide_au_demarrage():
+    """Le bilan d'une session vide rend tous les compteurs a zero."""
+    decompte = bilan_session()
+    assert decompte == {"posees": 0, "repondues": 0, "bonnes": 0, "manquees": 0, "fausses": 0}
+
+
+def test_bilan_session_compte_les_reponses_fausses():
+    """Le bilan distingue vraie reponse fausse de reponse manquee."""
+    _capture(texte="Q ?", choix=CHOIX, bonne="B", explication=EXPLICATION, reponse="A")
+    decompte = bilan_session()
+    assert decompte["posees"] == 1
+    assert decompte["repondues"] == 1
+    assert decompte["fausses"] == 1
+    assert decompte["bonnes"] == 0
+    assert decompte["manquees"] == 0
+
+
+def test_resoudre_bonne_accepte_une_lettre():
+    """Retrocompatibilite : ``bonne='B'`` reste fonctionnel."""
+    assert _resoudre_bonne("B", CHOIX) == "B"
+
+
+def test_resoudre_bonne_accepte_le_texte_exact():
+    """Ajout #18885 : la bonne reponse peut etre passee par son texte exact."""
+    assert _resoudre_bonne(CHOIX[1], CHOIX) == "B"
+
+
+def test_resoudre_bonne_rejette_lettre_inconnue():
+    with pytest.raises(ValueError):
+        _resoudre_bonne("D", CHOIX)
+
+
+def test_resoudre_bonne_rejette_texte_inexistant():
+    with pytest.raises(ValueError):
+        _resoudre_bonne("reponse bidon", CHOIX)
+
+
+def test_resoudre_reponse_rend_none_si_absente():
+    assert _resoudre_reponse(None, CHOIX) is None
+
+
+def test_resoudre_reponse_accepte_lettre_ou_texte():
+    assert _resoudre_reponse("A", CHOIX) == "A"
+    assert _resoudre_reponse(CHOIX[2], CHOIX) == "C"
+
+
+def test_resoudre_reponse_leve_si_ne_resout_pas():
+    with pytest.raises(ValueError):
+        _resoudre_reponse("D", CHOIX)
+
+
+def test_question_accepte_bonne_par_texte():
+    """Ajout #18885 : un appelant peut designer la bonne reponse par son contenu."""
+    valeur, _ = _capture(
+        texte="Pourquoi separer ?", choix=CHOIX, bonne=CHOIX[1], explication=EXPLICATION, reponse=CHOIX[1]
+    )
+    assert valeur is True
+
+
+def test_question_accepte_reponse_par_texte():
+    """Ajout #18885 : un apprenant peut repondre par le texte d'un choix."""
+    valeur, _ = _capture(
+        texte="Pourquoi separer ?", choix=CHOIX, bonne="B", explication=EXPLICATION,
+        reponse=CHOIX[1]
+    )
+    assert valeur is True
+
+
+def test_enregistrer_tolere_les_enonces_identiques():
+    """Deux questions au meme enonce ne collisionnent pas dans la session."""
+    _enregistrer("Q ?", {"verdict": True, "reponse": "A", "moment": "avant"})
+    _enregistrer("Q ?", {"verdict": False, "reponse": "B", "moment": "apres"})
+    decompte = bilan_session()
+    assert decompte["posees"] == 2
+    assert decompte["bonnes"] == 1
+    assert decompte["fausses"] == 1
+
+
+def test_collecter_reponse_rend_none_si_stdin_non_interactif(monkeypatch):
+    """Sous Papermill / kernel non interactif, la collecte rend None (pas d'erreur volontaire)."""
+    def _input_vide(prompt):
+        raise EOFError
+
+    monkeypatch.setattr("builtins.input", _input_vide)
+    assert _collecter_reponse(CHOIX) is None

@@ -104,7 +104,11 @@ Quatre causes, dont la derniere est arrivee en dernier et couvre le plus :
    rend la cause distincte « check requis non conclu » -- le geste est la
    reprise coordinateur, jamais une reparation de lane ;
 2. **conflit avec main** ;
-3. **CHANGES_REQUESTED non leve** ;
+3. **CHANGES_REQUESTED non leve** -- mais seulement si l'organe B.0 n'a pas
+   deja evalue la PR et ne l'a pas declaree claire. GitHub conserve la
+   derniere review PAR AUTEUR : un CR dont la reserve a ete levee par une
+   review TIERCE ulterieure reste affiche a jamais, et le compter ferait
+   reparer une PR que le merge-gate accepte (#18829) ;
 4. **point de review non leve** (mandat 2026-08-24 : "ne plus produire tant
    qu'il leur reste des points a traiter dans leurs vieilles PRs, ca doit leur
    etre propose en premier lieu"). Les trois premieres causes sont
@@ -2871,6 +2875,7 @@ def blocking_causes(state: dict, *, age_hours: float | None = None,
                     resolved_keys_by_name: dict[str, set[str]] | None = None,
                     dwell_by_name: dict[str, dict] | None = None,
                     gate_evidence: dict[str, tuple[list[str], list[str]]] | None = None,
+                    review_points_clear: bool = False,
                     ) -> list[str]:
     """Causes qui empechent VRAIMENT le merge, formulees en geste de reparation.
 
@@ -2891,6 +2896,17 @@ def blocking_causes(state: dict, *, age_hours: float | None = None,
     un rouge substance. La cause est formulee comme geste = commentaire
     + `--ignore-red` ou `rerun/updater-branch` selon le cas -- la lane peut
     poser un acte (commenter) mais ne peut pas derainer la file seule.
+
+    `review_points_clear` (defaut False = fail-closed) : l'appelant declare que
+    l'organe du merge-gate B.0 a EVALUE les surfaces de review de cette PR et
+    n'y a trouve aucun point non leve. Un `CHANGES_REQUESTED` encore affiche
+    n'est alors PAS une cause -- GitHub conserve la derniere review PAR AUTEUR,
+    donc la reserve d'un tiers reste `CHANGES_REQUESTED` a jamais meme quand une
+    review TIERCE posterieure l'a levee ; l'organe, lui, lit la levee. Mesure
+    fondatrice #18829 : CR Hermes du 02/10 10:29Z, leve par ai-01 le 04/10
+    02:35Z, organe rc=0 -- et le picker ouvrait quand meme une file de
+    reparation sur la PR, premier geste de la lane. Defaut False : sans verdict
+    d'organe (panne, PR jamais evaluee) la cause est CONSERVEE.
 
     Le critere reste PASSIF si `age_hours` ou `saturation_hours` ne sont pas
     fournis (defaut=None), ce qui preserve la signature utilisee par les 12
@@ -3009,6 +3025,13 @@ def blocking_causes(state: dict, *, age_hours: float | None = None,
             latest[review["author"]["login"]] = review
     for login, review in latest.items():
         if review["state"] == "CHANGES_REQUESTED":
+            if review_points_clear:
+                # Cf la docstring : l'organe a evalue les surfaces de review et
+                # n'a rien trouve de non leve. L'etat natif est alors un residu
+                # de GitHub (derniere review PAR AUTEUR), pas un verdict vivant.
+                # Le compter ferait ouvrir une file de reparation sur une PR que
+                # le merge-gate accepte (#18829).
+                continue
             causes.append(f"CHANGES_REQUESTED non leve ({login})")
     # 3ᵉ declencheur `file_saturation` (cf issue #12830) : aucun check n'a
     # demarre (PENDING/QUEUED partout), pas de conflit, pas de CHANGES_REQUESTED
@@ -3202,6 +3225,11 @@ def unaddressed_review_points(numbers: list[int]) -> dict[int, int]:
     l'appelant DIT que la surface n'a pas ete regardee (cf `nits_unavailable`).
     Une erreur de CONTRAT avec l'organe (TypeError/AttributeError), en revanche,
     n'est pas une PR illisible : elle est relancee pour rester visible (#15139).
+
+    Valeur rendue : le NOMBRE de points non leves, `0` pour une PR evaluee et
+    declaree claire, et AUCUNE entree pour une PR non evaluee (panne par-PR,
+    exception avalee). Le `0` porte l'information « evaluee, claire » ; une
+    entree manquante reste traitee comme non evaluee (#18829).
     """
     if not numbers:
         return {}
@@ -3226,8 +3254,17 @@ def unaddressed_review_points(numbers: list[int]) -> dict[int, int]:
             raise
         except Exception:  # noqa: BLE001 - une PR illisible ne bloque pas les autres
             continue
-        if result.get("blocked"):
-            out[n] = len(result.get("blocking") or [])
+        blocking = result.get("blocking") or []
+        if blocking:
+            out[n] = len(blocking)
+        elif not result.get("blocked"):
+            # #18829 : l'organe a EVALUE cette PR et la declare claire. Le 0 est
+            # une INFORMATION, pas une absence -- sans cette entree, l'appelant
+            # ne distingue pas « evaluee, claire » de « jamais evaluee » et doit
+            # conserver la cause par defaut (fail-closed). C'est ce 0 qui
+            # autorise `blocking_causes` a ignorer un `CHANGES_REQUESTED` natif
+            # deja leve.
+            out[n] = 0
     return out
 
 
@@ -3511,7 +3548,11 @@ def red_backlog(lane: str, threshold_hours: float,
                                  infra_rerun=set(infra_rerun),
                                  resolved_keys_by_name=keys_by_name,
                                  dwell_by_name=dwell_by_name,
-                                 gate_evidence=gate_evidence_for(state, gate_cache))
+                                 gate_evidence=gate_evidence_for(state, gate_cache),
+                                 # `== 0` et non `not ...` : une PR ABSENTE du
+                                 # dict n'a pas ete evaluee par l'organe, et la
+                                 # cause doit alors etre conservee (fail-closed).
+                                 review_points_clear=nits_by_pr.get(pr["number"]) == 0)
         n_nits = nits_by_pr.get(pr["number"], 0)
         if n_nits:
             # Un point de review non leve est une cause A PART ENTIERE : la PR
@@ -3884,22 +3925,163 @@ def upsert_orphans_comment(number: int, body: str) -> None:
 # ou biaise vers le recent. Les filtres actifs (exclusions, urnes) restent
 # appliques, et les issues tenues par une autre lane sont sautees comme
 # dans la voie normale -- aucun court-circuit de ce contrat.
+# Mandat user 2026-10-04 : le tapis avance au claim, pas au merge. Mesure
+# fondatrice du meme jour : l'EPIC #7265 n'avait plus vu de merge depuis
+# aout ; po-2027:CoursIA l'a servie a 09:50Z en creant la sous-issue #19088
+# et en reservant CELLE-CI, donc l'EPIC est restee en tete de file, ni
+# reservee ni visitee, et po-2024:CoursIA l'a tiree a 19:49Z -- deux lanes
+# sur le meme patrimoine le meme jour.
+# Une visite, c'est desormais la plus recente de trois dates :
+#   1. la derniere PR mergee qui cite l'issue (`last_delivery_stamp`) ;
+#   2. le plus recent marqueur de claim pose sur l'issue par une lane,
+#      toutes lanes (`last_claim_stamp`, lu sur la tete de file par
+#      `settle_belt_head`) ; la grammaire est celle de l'organe
+#      `check_lane_claim.py` (`claim_visit_stamp`), jamais une regex propre.
+#      Une cloture (`[RELEASED]`, `[DONE]`, `[DELIVERED]`...) est aussi une
+#      visite : elle AVANCE la date, elle ne l'efface pas -- mesure #7742,
+#      rendue le 19/09 apres deux tranches mergees, qu'une lecture « rendu =
+#      rang rendu » remettait en tete comme jamais servie ;
+#   3. la creation de la plus recente sous-issue ouverte qui la nomme comme
+#      parent (`last_child_stamp`, `apply_child_visits`, zero appel reseau).
+_PARENT_BODY_RE = re.compile(r"(?i)\bpart of #(\d+)")
+_PARENT_TITLE_RE = re.compile(r"^\s*\[#(\d+)\b")
+
+
+def belt_visit_stamp(it: dict) -> str | None:
+    """Derniere visite connue de l'issue, ``None`` si elle n'a jamais ete servie.
+
+    Les trois dates sont des ISO 8601 UTC serveur (suffixe ``Z``) : l'ordre
+    lexicographique est l'ordre chronologique.
+    """
+    stamps = [s for s in (it.get("last_delivery_stamp"),
+                          it.get("last_claim_stamp"),
+                          it.get("last_child_stamp")) if s]
+    return max(stamps) if stamps else None
+
+
 def belt_sort_key(it: dict) -> tuple:
     """Cle de tri deterministe pour le tapis roulant.
 
-    Spec #18832 : **une seule ligne de temps** -- derniere PR mergee citant
-    l'issue, sinon date de creation, sinon NOW. La plus ancienne en tete.
-    Une sous-issue tout juste creee repart en queue, pas en tete.
+    Spec #18832 : **une seule ligne de temps** -- derniere visite (merge
+    d'une PR citant l'issue, claim pose sur elle, ou creation d'une
+    sous-issue qui la nomme ; cf `belt_visit_stamp`), sinon date de
+    creation, sinon NOW. La plus ancienne en tete. Une sous-issue tout juste
+    creee repart en queue, pas en tete, et pousse son parent avec elle.
 
     Tri : (stamp ISO asc, numero asc).
     """
-    stamp = it.get("last_delivery_stamp") or it.get("created_at") or NOW.isoformat()
+    stamp = belt_visit_stamp(it) or it.get("created_at") or NOW.isoformat()
     return (stamp, it.get("number", 0))
+
+
+def parent_refs(it: dict) -> set[int]:
+    """Parents nommes par une issue : prefixe de titre ``[#N`` et ``Part of #N``.
+
+    ``Part of #N`` est la syntaxe de lien sure de git-workflow.md ; le
+    prefixe de titre est la forme des sous-grains d'EPIC (``[#7265 -
+    pepite A3] ...``). Une issue ne se nomme pas elle-meme.
+    """
+    refs = {int(m) for m in _PARENT_BODY_RE.findall(it.get("body") or "")}
+    m = _PARENT_TITLE_RE.match(it.get("title") or "")
+    if m:
+        refs.add(int(m.group(1)))
+    refs.discard(it.get("number"))
+    return refs
+
+
+def apply_child_visits(pool: list[dict], targets: list[dict]) -> dict[int, str]:
+    """Pose ``last_child_stamp`` sur ``targets`` : creer une sous-issue visite le parent.
+
+    ``pool`` = toutes les issues ouvertes lues (corps et date de creation deja
+    charges par `fetch_pool`) : zero appel reseau. Rend ``{parent: stamp}``.
+    """
+    latest: dict[int, str] = {}
+    for child in pool:
+        created = child.get("created_at")
+        if not created:
+            continue
+        for parent in parent_refs(child):
+            if created > latest.get(parent, ""):
+                latest[parent] = created
+    for it in targets:
+        stamp = latest.get(it["number"])
+        if stamp:
+            it["last_child_stamp"] = stamp
+    return latest
+
+
+def claim_visit_stamp(comments: list[dict]) -> str | None:
+    """``createdAt`` serveur du plus recent marqueur de claim attribue a une lane.
+
+    Lecture deleguee a l'organe des claims (#19147, reserve tierce) :
+    ``_sort_events`` lit les marqueurs avec sa grammaire (decorations markdown
+    et non-ASCII tolerees, blocs fence neutralises, mentions en milieu de ligne
+    ignorees). Tout marqueur compte -- prise, amendement, override, livraison,
+    rendu : chacun dit qu'une lane a servi l'issue a cette date. Un marqueur
+    sans lane (citation, gabarit) n'est la visite de personne.
+    """
+    from check_lane_claim import _sort_events
+
+    stamps = [ev.created_at for ev in _sort_events({"comments": comments})
+              if ev.lane and ev.created_at]
+    return max(stamps) if stamps else None
+
+
+def latest_claim_stamp(issue_number: int) -> str | None:
+    """Date du plus recent marqueur de claim de l'issue (cf `claim_visit_stamp`).
+
+    Toutes lanes confondues : une reservation est une visite, quelle que soit
+    la lane qui la pose. Cout : 1 requete. ``None`` si aucun marqueur ou si la
+    lecture echoue -- l'issue garde alors sa date de merge, comme avant.
+    """
+    try:
+        out = subprocess.run(
+            ["gh", "issue", "view", str(issue_number), "--repo", REPO,
+             "--json", "comments"],
+            capture_output=True, text=True, encoding="utf-8", check=True,
+            timeout=30,
+        ).stdout
+        comments = (json.loads(out) or {}).get("comments") or []
+        return claim_visit_stamp(
+            [c for c in comments if isinstance(c, dict)])
+    except Exception:  # noqa: BLE001 - sonde best-effort, l'issue garde son merge
+        return None
+
+
+def settle_belt_head(
+    belt_pool: list[dict],
+    need: int,
+    probe: Callable[[int], str | None],
+    max_probes: int,
+) -> set[int]:
+    """Lit les claims de la tete de file jusqu'a ce que ses ``need`` premieres places soient stables.
+
+    Une issue reservee depuis son dernier merge recule a la date de sa
+    reservation ; la place liberee est prise par la suivante, qui est lue a
+    son tour. Trie ``belt_pool`` en place et rend les numeros sondes. Le
+    plafond ``max_probes`` borne le cout reseau si toute la tete est reservee.
+    """
+    probed: set[int] = set()
+    belt_pool.sort(key=belt_sort_key)
+    while len(probed) < max_probes:
+        todo = [it for it in belt_pool[:need] if it["number"] not in probed]
+        if not todo:
+            break
+        for it in todo:
+            if len(probed) >= max_probes:
+                break
+            probed.add(it["number"])
+            stamp = probe(it["number"])
+            if stamp:
+                it["last_claim_stamp"] = stamp
+        belt_pool.sort(key=belt_sort_key)
+    return probed
 
 
 def belt_filter(
     admitted: list[dict],
     args,
+    urns: set[str] | None = None,
 ) -> list[dict]:
     """Filtre le pool admissible pour le mode --belt.
 
@@ -3907,11 +4089,20 @@ def belt_filter(
     urnes), sauf l'admissibilite par DWELL/zone -- le tapis ne refuse
     JAMAIS, par contrat (cf issue #18832). Les bornes du tapis sont
     uniquement celles que le caller passe en CLI.
+
+    ``urns`` : urnes EFFECTIVES, deja passees par
+    ``apply_delivered_urn_gate`` (#15069). Le caller ``main`` les fournit
+    toujours ; relire ``args.urns`` brut rendrait l'urne ``delivered``
+    (presente par defaut) a une lane worker, qui ne doit jamais la recevoir.
+    ``None`` garde la lecture de ``args.urns`` pour les appels sans lane.
     """
     excluded_issues_set = {int(v) for v in _csv_values(args.exclude_issue)}
     required_labels_set = set(_csv_values(args.require_label))
     excluded_labels_set = set(_csv_values(args.exclude_label))
-    selected_urns_set = {v.casefold() for v in _csv_values([args.urns])}
+    if urns is None:
+        selected_urns_set = {v.casefold() for v in _csv_values([args.urns])}
+    else:
+        selected_urns_set = {v.casefold() for v in urns}
 
     def _keep(item: dict) -> bool:
         n = item["number"]
@@ -4759,6 +4950,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--umbrellas", type=int, default=2, help="candidats urne 'umbrella' (defaut 2)")
     ap.add_argument("--delivered", type=int, default=2, help="candidats urne 'delivered' (defaut 2)")
     ap.add_argument("--reroll", type=int, default=0, help="decale la graine pour un nouveau tirage")
+    ap.add_argument("--belt-merge-only", dest="belt_merge_only",
+                    action="store_true",
+                    help="tapis : ne compter comme visite que le merge d'une "
+                         "PR citant l'issue (ordre d'avant le 2026-10-04 ; "
+                         "par defaut, un claim et la creation d'une sous-issue "
+                         "comptent aussi)")
     ap.add_argument("--belt", action="store_true",
                     help="#18832 mode 'tapis roulant' : trie le pool ouvert "
                          "par date de derniere livraison (None = jamais servie en "
@@ -5265,7 +5462,7 @@ def main(argv: list[str] | None = None) -> int:
             metrics = belt_report_metrics(pool, closed_7d=None)
             print_belt_report(metrics)
             return 0
-        belt_pool = belt_filter(admitted, args)
+        belt_pool = belt_filter(admitted, args, urns=selected_urns)
         belt_pool.sort(key=belt_sort_key)
         # Verification des claims tenes par une autre lane : on regarde
         # plus large que `args.grains` pour tolerer un remplacement si
@@ -5275,6 +5472,13 @@ def main(argv: list[str] | None = None) -> int:
         # point 6 -- le verbe "CLEAR" humain est reserve a l'affichage).
         belt_check_window = max(args.grains + 4, 8)
         belt_check_window = min(belt_check_window, len(belt_pool))
+        # Le tapis avance au claim, pas au merge (mandat user 2026-10-04,
+        # cf `belt_visit_stamp`). La sous-issue d'abord (gratuit), puis les
+        # claims de la tete de file. `--belt-merge-only` rend l'ancien ordre.
+        if not args.belt_merge_only:
+            apply_child_visits(pool, belt_pool)
+            settle_belt_head(belt_pool, belt_check_window, latest_claim_stamp,
+                             max_probes=belt_check_window * 3 + 12)
         belt_check_nums = [it["number"] for it in belt_pool[:belt_check_window]]
         belt_claims = check_claims(belt_check_nums, args.lane)
         belt_picks: list[dict] = []
@@ -5388,18 +5592,18 @@ def main(argv: list[str] | None = None) -> int:
                 inact = int(it.get("idle", 0))
                 vus = visits.get(it["number"], 0)
                 genre = it.get("genre", "")
-                stamp = it.get("last_delivery_stamp")
+                stamp = belt_visit_stamp(it)
                 # Le titre est precede du marqueur "jamais servie" quand
-                # `last_delivery_stamp` est None : c'est lui que la file
-                # remonte en tete, il merite un signe visible.
+                # aucune visite n'est connue (ni merge, ni claim, ni
+                # sous-issue) : c'est elle que la file remonte en tete.
                 marker = "[NEVER] " if stamp is None else ""
                 title = it.get("title", "")[:60]
                 print(f"{urn:<10} {age:>4}j {inact:>5}j {vus:>4} "
                       f"{genre:<14} {'-':>5}  {marker}{title}")
             print()
-            print("Belt : pool trie par date de derniere livraison (None = "
-                  "jamais servie, classe en tete). Deterministe, sans "
-                  "ponderation.")
+            print("Belt : pool trie par date de derniere visite -- merge, "
+                  "claim ou sous-issue (None = jamais servie, classee par sa "
+                  "creation). Deterministe, sans ponderation.")
         return 0
     filtered, filter_funnel = filter_candidates_with_continuity(
         admitted,

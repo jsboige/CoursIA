@@ -14,7 +14,7 @@
 C4 se tient à l'intersection de plusieurs fils :
 
 - **Fil thomien** : la *prégnance* π est directement héritée de la théorie des catastrophes (cf. [`docs/ict/synthese-invariants-dissociations-obstructions.md`](synthese-invariants-dissociations-obstructions.md), et la lecture dédiée de la *Sémiophysique* — [#7739](https://github.com/jsboige/CoursIA/issues/7739), PR [#9559](https://github.com/jsboige/CoursIA/pull/9559) MERGED c.1240).
-- **Fil grothendieckien** : la *non-canonicité* des prolongements d'un espace local (cf. [`docs/grothendieckian-lens.md`](../grothendieckian-lens.md)) donne la forme de la *grammaire* (plusieurs prolongements non-équivalents admissibles, `|AdmExt(L_t)| > 1`).
+- **Fil grothendieckien** : la *non-canonicité* des prolongements d'un espace local (cf. [`docs/cadrage/grothendieckian-lens.md`](../cadrage/grothendieckian-lens.md)) donne la forme de la *grammaire* (plusieurs prolongements non-équivalents admissibles, `|AdmExt(L_t)| > 1`).
 - **Fil luhmanien / fristonien** : l'*autopoïesis* et l'*active inference* donnent la forme de la boucle *représentation locale → action sur la totalité* (le système n'est pas *représenté* passivement, il agit pour maintenir ses propres conditions d'existence).
 - **Fil do-calculus** : *P(R)* est directement l'application du do-calculus de Pearl (cf. *« Causality »*, Cambridge UP, 2009) à la grammaire de propagation : on interventionne la bascule représentation-locale → action-sur-tout, et on mesure la divergence des trajectoires.
 
