@@ -491,6 +491,16 @@ PLACEHOLDER_VALUE_RE = re.compile(
     re.IGNORECASE,
 )
 
+#: Line-tail placeholder vocabulary on a ``return`` (#18741 PR B). The tail
+#: comment is stripped before operand analysis, so a return that SELF-DECLARES
+#: its value provisional -- ``return "api"  # placeholder — a affiner`` (OWUI
+#: 05 c17) -- read as a computed string literal. Same vocabulary family as the
+#: ``return <number>  # ...`` stub pattern (#15676).
+_RETURN_TAIL_PLACEHOLDER_RE = re.compile(
+    r"^\s*(?://|#|--).*\b(?:a compl[eé]ter|a remplir|placeholder|neutre|stub)\b",
+    re.IGNORECASE,
+)
+
 # Indices of STUB_PATTERNS that are COMMENT markers (# TODO, # Indice, // TODO,
 # -- TODO). A leftover comment marker in an otherwise COMPLETE body is not itself
 # a stub signal: `# TODO etudiant` above a full implementation is an instructor's
@@ -503,6 +513,51 @@ PLACEHOLDER_VALUE_RE = re.compile(
 # a mixed cell (Search-11 cell 43 -- a complete `profit_function` plus a
 # truncated `# A COMPLETER` Problem skeleton), which must stay a stub.
 COMMENT_STUB_PATTERN_IDX = frozenset({3, 4, 5, 6, 7, 8})
+
+#: Indices of the EXECUTABLE placeholder markers (``pass`` [1], ``return
+#: None`` [2]) that stay stubs UNLESS the body otherwise computes a result
+#: (#18741 PR B). Measured incident: PT_11c c7 -- a COMPLETE worked verifier
+#: whose fallback ``except ValueError: pass`` / ``return None`` fired the
+#: unconditional markers, so the Exercice 1 header absorbed it (backward
+#: pairing) and its real stub counted standalone -> 4 hits for 3 exercises.
+#: The gate mirrors the comment-marker one: a canonical stub (signature +
+#: comments + ``return None``) has no derived return, so ``_body_computes_
+#: result`` stays False and the marker keeps firing.
+EXECUTABLE_PLACEHOLDER_PATTERN_IDX = frozenset({1, 2})
+
+#: Student-marker vocabulary that names a write-hole when it sits beside an
+#: executable placeholder marker or a placeholder assignment (#18741 PR B).
+#: ``Exercice`` is included on purpose: the annotated ``pass`` of Wan 02-3
+#: c28/c30 and AnimateDiff 01-5 c24 (``# Exercice: ...`` directly above the
+#: ``pass``) is the write-hole itself, while the INCIDENTAL fallbacks of a
+#: worked body (PT_11c c7 ``except ValueError: pass``) carry no vocabulary
+#: within two lines -- the discriminator measured on both families.
+_STUDENT_MARKER_VOCAB_RE = re.compile(
+    r"\bTODO\b|\bExercice\b|[eé]tudiant|[aà] compl[eé]ter|[aà] vous",
+    re.IGNORECASE,
+)
+
+
+def _executable_markers_are_deliberate(
+    pattern: "re.Pattern[str]", source: str
+) -> bool:
+    """True when at least one match of an executable placeholder marker
+    (``pass`` / ``return None``) carries student-marker vocabulary on its own
+    line or within the two lines above it.
+
+    The EXECUTABLE_PLACEHOLDER gate targets the incidental fallback of a
+    worked body; a ``pass`` annotated ``# Exercice: ...`` right above names
+    the student's write-hole and keeps its verdict whatever the surrounding
+    body computes (#18741 PR B -- Wan 02-3 c28/c30, AnimateDiff 01-5 c24
+    vs PT_11c c7, Sudoku-17 c28).
+    """
+    lines = source.split("\n")
+    for m in pattern.finditer(source):
+        line_no = source.count("\n", 0, m.start())
+        window = "\n".join(lines[max(0, line_no - 2):line_no + 1])
+        if _STUDENT_MARKER_VOCAB_RE.search(window):
+            return True
+    return False
 
 # Index of the generic ``<name> = None`` assignment pattern above (the #15688
 # widening of ``result = None``). The COMMENT markers above are stubs UNLESS
@@ -639,10 +694,16 @@ def _return_is_derived(
 
     Line-tail comments (``// TODO``, ``# a completer``) are stripped before
     analysis (#18146): the comment slashes used to satisfy the binary-operator
-    regex and mark placeholder returns as computed.
+    regex and mark placeholder returns as computed. One tail is NOT stripped
+    but READ: a tail carrying the placeholder vocabulary declares the returned
+    value provisional (#18741 PR B -- OWUI 05 c17 ``return "api"  # placeholder
+    -- a affiner`` read as a solved string and gated the cell's ``# TODO``
+    marker away).
     """
-    m = re.match(r"^return\b(.*?)(?:\s(?://|#).*)?$", return_stmt.strip())
+    m = re.match(r"^return\b(.*?)(\s(?://|#).*)?$", return_stmt.strip())
     if not m:
+        return False
+    if _RETURN_TAIL_PLACEHOLDER_RE.match(m.group(2) or ""):
         return False
     operand = m.group(1).strip().rstrip(";").strip()
     if not operand or re.match(r"^(?:none|null)\b", operand, re.IGNORECASE):
@@ -670,12 +731,35 @@ def _return_is_derived(
         assign_re = re.compile(
             rf"^(?:[A-Za-z_]\w*\s*,\s*)*{re.escape(base)}\s*[+\-*/%]?=(?!=)"
         )
-        none_only_re = re.compile(
-            rf"^(?:[A-Za-z_]\w*\s*,\s*)*{re.escape(base)}\s*=\s*None\b"
+        # An assignment of a PLACEHOLDER VALUE is not a computation (#18741
+        # PR B -- Video 02-6 c16: ``trouvees = []`` ... ``return trouvees``
+        # read as derived, gating the ``# Indice`` / ``# TODO etudiant``
+        # markers away). Same empty-typed family the literal branch above
+        # already rejects on the return itself.
+        # NB: second fragment is a plain raw string -- ``\{`` in an f-string
+        # opens a replacement field (the backslash then lands in the
+        # expression part, a hard SyntaxError pre-3.12).
+        placeholder_only_re = re.compile(
+            rf'^(?:[A-Za-z_]\w*\s*,\s*)*{re.escape(base)}\s*=\s*'
+            r'(?:None|null|False|0|0\.0|0\.0[fF]|\[\]|\{\}|\(\)|\x22\x22|\x27\x27|set\(\))\s*$',
+            re.IGNORECASE,
         )
         for ln in code_lines_before:
-            if assign_re.match(ln) and not none_only_re.match(ln):
+            if assign_re.match(ln) and not placeholder_only_re.match(ln):
                 return True  # assigned a computed value before the return
+        # A placeholder-seeded container the body FILLS by mutation computes
+        # its result (#15080 D01 c30 regression of the gate above: ``rows =
+        # []`` then ``rows.append(...)`` in the loop, ``return rows`` -- a
+        # full solution, not a passthrough). Only the never-touched shape
+        # (Video 02-6 c16 ``trouvees = []`` ... ``return trouvees``) is a
+        # placeholder return.
+        mutate_re = re.compile(
+            rf"\b{re.escape(base)}\s*\.\s*(?:append|extend|insert|update|pop"
+            rf"|clear|remove|add|setdefault)\b"
+            rf"|\b{re.escape(base)}\s*\[[^\]]*\]\s*[+\-*/%]?=(?!=)"
+        )
+        if any(mutate_re.search(ln) for ln in code_lines_before):
+            return True
         return False
     if re.search(r"[+\-*/%]|\b(?:and|or|in)\b|\bis\s+not\b", operand):
         return True  # binary expression
@@ -776,6 +860,121 @@ def _none_placeholder_passthrough(source: str) -> bool:
                 reassigned = True
                 break
         if not reassigned:
+            return True
+    return False
+
+
+def _name_reassigned_after(
+    lines: list[str], line_no: int, name: str, also_placeholder: bool = False
+) -> bool:
+    """True when ``name`` is reassigned a computed value at same-or-deeper
+    indentation after ``lines[line_no]`` (the scoping rule of
+    :func:`_none_placeholder_passthrough`, factored out for reuse). With
+    ``also_placeholder`` the reassignment itself must be non-placeholder.
+    """
+    indent = len(lines[line_no]) - len(lines[line_no].lstrip(" \t"))
+    tail = "" if also_placeholder else r"(?!\s*(?:None|null)\b)"
+    reassign_re = re.compile(
+        rf"^[ \t]*(?:[A-Za-z_]\w*\s*,\s*)*{re.escape(name)}"
+        rf"\s*[+\-*/%]?=(?!=){tail}",
+        re.IGNORECASE,
+    )
+    for j in range(line_no + 1, len(lines)):
+        if reassign_re.match(lines[j]):
+            j_indent = len(lines[j]) - len(lines[j].lstrip(" \t"))
+            if j_indent >= indent:
+                return True
+    return False
+
+
+#: Cell-level dict/list-literal assignment opener whose values are collected
+#: until the matching closer (#18741 PR B).
+_TEMPLATE_ASSIGN_OPEN_RE = re.compile(r"^([A-Za-z_]\w*)\s*=\s*([\[{])")
+
+#: Scalar placeholder assignment whose tail comment names the student's
+#: write-space (#18741 PR B, differencier-les-assistants c27:
+#: ``ASSISTANT_A_REECRIRE = ""   # A vous : le nom, tel qu'il figure...``).
+#: The vocabulary tail is REQUIRED for scalars -- a bare ``model = None``
+#: initializer or the seeded container of a worked body (D01 c30 ``rows =
+#: []``) must not read as a hole -- and the name must never be reassigned.
+_SCALAR_PLACEHOLDER_ASSIGN_RE = re.compile(
+    r"^([A-Za-z_]\w*)\s*=\s*(?:None|null|False|0|0\.0|0\.0[fF]"
+    r"|\x22\x22|\x27\x27|set\(\))\s*(?:#|//|--)"
+)
+
+
+def _placeholder_template_assignment(source: str) -> bool:
+    """True when a ``name = {``/``[`` literal's every value is a None hole.
+
+    The measured shape (#18741 PR B, Texte 09b c30): the STUDENT part of the
+    cell is ``reponses = {"P1": None, "P2": None, "P3": None}`` -- a template
+    of None holes IS the write-space handed to the student, the assignment
+    twin of the RETURNED template :func:`_return_literal_is_template` already
+    recognizes -- while the instructor's ``verifier_classification`` helper
+    below carries a derived ``return ok`` that made ``_body_computes_result``
+    testify for the whole cell, gating the ``# TODO etudiant`` markers away.
+
+    Deliberately narrower than PLACEHOLDER_VALUE_RE: only ``None``/``null``
+    count as holes here. A cell-level ``{"seed": 0, "epochs": 3}`` config or a
+    ``[False, ...]`` flag list uses 0/False legitimately, and the cost of a
+    false stub (an over-counted exercise) exceeds a missed one. A name later
+    reassigned a computed value in its scope is a pipeline initializer, not a
+    placeholder (Kokoro-01-5 c38 family).
+    """
+    lines = source.split("\n")
+    for i, ln in enumerate(lines):
+        # Scalar twin first: ``X = ""  # A vous : ...`` -- the write-space is
+        # the placeholder assignment itself, the computing helper that shares
+        # the cell is the instructor's (differencier c27). The tail must name
+        # the student (vocab) and the name is never reassigned after.
+        ms = _SCALAR_PLACEHOLDER_ASSIGN_RE.match(ln.strip())
+        if ms:
+            scalar_name = ms.group(1)
+            tail = ln.strip()[ms.end():]
+            if _STUDENT_MARKER_VOCAB_RE.search(tail) and not _name_reassigned_after(
+                lines, i, scalar_name
+            ):
+                return True
+            continue
+        m = _TEMPLATE_ASSIGN_OPEN_RE.match(ln.strip())
+        if not m:
+            continue
+        name, opener = m.group(1), m.group(2)
+        closer = "]" if opener == "[" else "}"
+        first = ln.strip().split("=", 1)[1].lstrip()
+        if first.startswith(opener):
+            first = first[1:]
+        entries: list[str] = []
+        if closer in first:
+            entries.extend(
+                e.strip() for e in first.split(closer, 1)[0].split(",") if e.strip()
+            )
+            terminated = True
+        else:
+            if first.strip():
+                entries.append(first.rstrip(","))
+            terminated = False
+            for j in range(i + 1, min(i + 60, len(lines))):
+                nxt = lines[j].strip()
+                if nxt.startswith(closer):
+                    terminated = True
+                    break
+                entries.append(nxt.rstrip(","))
+            if not terminated:
+                continue  # unterminated literal: not our shape
+        if not entries:
+            continue
+        for entry in entries:
+            value = entry.split(":", 1)[1].strip() if ":" in entry else entry
+            # The TODO vocabulary rides in the tail (``"P1": None,  # TODO
+            # etudiant``): strip it before judging the value. NB: the split
+            # eats the whitespace AHEAD of the comment marker too, so the
+            # leftover is ``"None, "`` -- strip whitespace BEFORE the trailing
+            # comma (a bare rstrip(",") sees a space and keeps the comma).
+            value = re.split(r"\s(?:#|//|--)", value)[0].strip().rstrip(",").strip()
+            if not re.match(r"^(?:None|null)$", value, re.IGNORECASE):
+                return False
+        if not _name_reassigned_after(lines, i, name):
             return True
     return False
 
@@ -926,6 +1125,18 @@ def _is_stub_code(source: str) -> bool:
             # a completer" print / raise / assert) stay unconditional.
             if idx in COMMENT_STUB_PATTERN_IDX and _body_computes_result(source):
                 continue
+            # ``pass`` / ``return None`` as an incidental FALLBACK of a body
+            # that computes a real result is not a stub shape (#18741 PR B,
+            # PT_11c c7): the executable markers share the computing-body
+            # gate of the comment markers above -- UNLESS the marker is
+            # annotated with student vocabulary beside it (a ``pass`` under
+            # ``# Exercice: ...`` names the write-hole, Wan 02-3 c28).
+            if (
+                idx in EXECUTABLE_PLACEHOLDER_PATTERN_IDX
+                and _body_computes_result(source)
+                and not _executable_markers_are_deliberate(pat, source)
+            ):
+                continue
             # The generic ``<name> = None`` assignment is a stub marker only
             # in its placeholder shape (#15713 + #15688): the composed gate
             # rejects signature defaults, demo initializers later reassigned,
@@ -936,6 +1147,11 @@ def _is_stub_code(source: str) -> bool:
             ):
                 continue
             return True
+    # A cell-level dict/list template of None holes is the write-space handed
+    # to the student, whatever computed helper shares the cell (#18741 PR B,
+    # Texte 09b c30): judged on shape, before any body-computes testimony.
+    if _placeholder_template_assignment(source):
+        return True
     lines = [
         ln.strip()
         for ln in source.strip().split("\n")

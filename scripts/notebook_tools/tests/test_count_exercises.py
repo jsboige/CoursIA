@@ -2351,3 +2351,227 @@ class TestAccentedPrintMarkerAndImportGuard:
             "an import block is not a stub: headers must pair their own "
             "stubs (got %d)" % result.count
         )
+
+
+# ---------------------------------------------------------------------------
+# Placeholder body vs computing body (#18741 PR B -- cause 3)
+# ---------------------------------------------------------------------------
+
+class TestBodyPlaceholderVsComputing:
+    """Three under-count shapes + one over-count shape, measured cell by cell
+    on 2026-10-05 (#18741 diagnostic): a cell carries EXPLICIT stub markers
+    (# TODO / # Indice) but ``_body_computes_result`` reads its placeholder
+    body as a computation, gating the markers away; and PT_11c c7 -- the
+    converse -- a complete worked verifier whose fallback ``pass`` /
+    ``return None`` fire the unconditional executable markers.
+    """
+
+    def test_string_return_with_placeholder_tail_is_a_stub(self):
+        """OWUI 05 c17: ``return "api"  # placeholder - a affiner`` -- the
+        returned string self-declares as provisional in its line-tail
+        comment. The string-literal branch read any returned string as a
+        solved value, the # TODO marker was gated away -> under-count."""
+        source = (
+            "def approche_du_scenario(scenario: str) -> str:\n"
+            '    # TODO : renvoyer "api" ou "navigateur" selon le scenario.\n'
+            "    # Indice : donnees/comparer -> api ; rendu/visuel -> navigateur.\n"
+            '    return "api"  # placeholder — a affiner\n'
+            "\n"
+            'for s in ["Verifier l isolation des tenants",\n'
+            '          "Verifier le rendu d un bloc de code"]:\n'
+            '    print(f"  {approche_du_scenario(s):12} : {s}")\n'
+        )
+        assert _is_stub_code(source) is True
+
+    def test_bare_name_return_of_empty_container_is_a_stub(self):
+        """Video 02-6 c16: ``trouvees = []`` ... ``return trouvees`` -- the
+        bare-name branch counted the EMPTY-list assignment as a computed
+        value, so the # Indice / # TODO etudiant markers were gated away."""
+        source = (
+            "def detecte_restriction_territoriale(texte_licence: str) -> list:\n"
+            '    entites_connues = [\n'
+            '        "European Union", "United Kingdom", "France",\n'
+            '    ]\n'
+            "    trouvees = []\n"
+            "    # Indice : chercher l'amorce, puis scanner les N caracteres suivants.\n"
+            "    # TODO etudiant\n"
+            "    return trouvees\n"
+        )
+        assert _is_stub_code(source) is True
+
+    def test_none_dict_with_provided_checker_is_a_stub(self):
+        """Texte 09b c30: the student part is a dict of None (``reponses``);
+        the cell also carries the instructor's ``verifier_classification``
+        helper whose derived ``return ok`` testified for the whole cell, and
+        the TODO markers were gated away."""
+        source = (
+            "# Exercice 2 : classifier les attaques (stub etudiant)\n"
+            "# TODO etudiant : remplir le dictionnaire\n"
+            "\n"
+            "reponses = {\n"
+            '    "P1": None,  # TODO etudiant : "directe" / "indirecte" / "jailbreak"\n'
+            '    "P2": None,  # TODO etudiant\n'
+            '    "P3": None,  # TODO etudiant\n'
+            "}\n"
+            "\n"
+            "def verifier_classification(reponses):\n"
+            '    ok = (reponses.get("P1") == "directe"\n'
+            '          and reponses.get("P2") == "indirecte"\n'
+            '          and reponses.get("P3") == "jailbreak")\n'
+            '    print("Classification correcte :", ok)\n'
+            "    return ok\n"
+            "verifier_classification(reponses)\n"
+        )
+        assert _is_stub_code(source) is True
+
+    def test_computing_body_with_fallback_markers_is_not_a_stub(self):
+        """PT_11c c7 (the converse direction): a COMPLETE worked verifier
+        whose fallback ``pass`` / ``return None`` fired the unconditional
+        executable markers. The header absorbed it and the real stub below
+        counted standalone -> over-count (PT_11c 4/3)."""
+        source = (
+            "import re\n"
+            "from typing import Optional\n"
+            "\n"
+            "def extract_answer_sympy(completion: str) -> Optional[float]:\n"
+            '    """Extrait la derniere valeur numerique d\'une completion."""\n'
+            r'    boxed = re.findall(r"\boxed\{([^}]+)\}", completion)' + "\n"
+            "    if boxed:\n"
+            "        try:\n"
+            "            return float(boxed[-1])\n"
+            "        except ValueError:\n"
+            "            pass\n"
+            "    return None\n"
+            "\n"
+            'tests = [("2+2 ?", 4.0), ("5*3 ?", 15.0)]\n'
+            "for completion, gt in tests:\n"
+            "    r = extract_answer_sympy(completion)\n"
+            '    print(f"  reward({completion!r} vs {gt}) = {r}")\n'
+        )
+        assert _is_stub_code(source) is False
+
+    def test_canonical_return_none_stub_stays_a_stub(self):
+        # The executable-marker gate must not touch the canonical C.1 shape:
+        # no derived return anywhere, the body never computes.
+        assert _is_stub_code("def extraire(texte):\n    # TODO etudiant\n    return None") is True
+        assert _is_stub_code("class Analyseur:\n    def mesure(self, x):\n        pass") is True
+
+    def test_annotated_pass_keeps_stub_verdict_on_computing_body(self):
+        """Wan 02-3 c28 (measured): a computing function whose ``pass`` names
+        the write-hole (``# Exercice: ...`` directly above) keeps its stub
+        verdict -- the gate targets INCIDENTAL fallbacks, not annotated
+        write-holes."""
+        source = (
+            "def test_camera_movements(base_scene, movements):\n"
+            '    templates = {"pan": f"a pan across {base_scene}"}\n'
+            "    results = {}\n"
+            "    for movement in movements:\n"
+            "        prompt = templates.get(movement, base_scene)\n"
+            "        # Exercice: Generer avec le mouvement\n"
+            "        pass\n"
+            "        results[movement] = {\"prompt\": prompt}\n"
+            "    return results\n"
+        )
+        assert _is_stub_code(source) is True
+
+    def test_unannotated_fallback_return_none_stays_gated(self):
+        """Sudoku-17 c28 (measured, trimmed): a worked CoT solver class whose
+        ``parse_assignment`` ends in a ``return None`` fallback. No student
+        vocabulary sits beside the fallback -- gated even though it is a
+        pattern-2 match."""
+        source = (
+            "# Exemple resolu : Solveur LLM avec Chain-of-Thought\n"
+            "class ChainOfThoughtSudokuSolver:\n"
+            "    def build_prompt(self, partial):\n"
+            '        prompt = "You are an expert at solving sudoku.\\n"\n'
+            "        for i in range(len(partial)):\n"
+            "            for j in range(len(partial[0])):\n"
+            '                prompt += f"({i},{j}) = {partial[i][j]}\\n"\n'
+            "        return prompt\n"
+            "\n"
+            "    def parse_assignment(self, llm_response):\n"
+            '        cleaned = llm_response.replace(" ", "")\n'
+            "        match = re.findall(r'([0-8],[0-8]=[1-9])', cleaned)\n"
+            "        if match:\n"
+            "            puzzle_str = match[-1]\n"
+            "            return (int(puzzle_str[1]), int(puzzle_str[3]))\n"
+            "        return None\n"
+        )
+        assert _is_stub_code(source) is False
+
+    def test_scalar_placeholder_with_student_tail_is_a_stub(self):
+        """differencier-les-assistants c27 (measured): the student write-space
+        is a scalar placeholder assignment (``= ""  # A vous : ...``); the
+        computing helper that shares the cell is the instructor's."""
+        source = (
+            'ASSISTANT_A_REECRIRE = ""   # A vous : le nom, tel qu\'il figure dans PERSONAS.\n'
+            "\n"
+            "\n"
+            "def remesurer(nom_assistant, nouveau_prompt):\n"
+            "    if nom_assistant not in PERSONAS or not nouveau_prompt.strip():\n"
+            "        return None\n"
+            "    nouvelles = dict(reponses)\n"
+            "    return sum(1 for _ in nouvelles) / len(nouvelles)\n"
+            "\n"
+            "resultat = remesurer(ASSISTANT_A_REECRIRE, \"\")\n"
+        )
+        assert _is_stub_code(source) is True
+
+    def test_scalar_placeholder_without_student_tail_is_not_a_stub(self):
+        """The vocabulary tail is the discriminator: a bare initializer or a
+        seeded container of a computing body (D01 c30) must not read as a
+        hole."""
+        source = (
+            "def mur(dims):\n"
+            "    rows = []  # accumulateur des mesures\n"
+            "    for n in dims:\n"
+            "        rows.append(n)\n"
+            "    return rows\n"
+        )
+        assert _is_stub_code(source) is False
+
+    def test_pt11c_mini_notebook_counts_three(self, tmp_path):
+        """End-to-end on the PT_11c geometry: import block above the Exercice
+        1 header, worked verifier falsely read as stub, real stubs below each
+        header. Expected: exactly 3 (was 4 with PR A alone)."""
+        nb = _write_nb(
+            tmp_path / "pt11c_mini.ipynb",
+            [
+                _md("# Titre"),
+                _code(
+                    "import re\n"
+                    "from typing import Optional\n"
+                    "\n"
+                    "def extract_answer_sympy(completion: str) -> Optional[float]:\n"
+                    r'    boxed = re.findall(r"\d+", completion)' + "\n"
+                    "    if boxed:\n"
+                    "        return float(boxed[-1])\n"
+                    "    return None\n"
+                ),
+                _md("### Exercice 1 : etendre le parser"),
+                _code(
+                    "def extract_answer_sci(completion: str) -> Optional[float]:\n"
+                    '    """TODO etudiant : notation scientifique."""\n'
+                    "    sci_pattern = None  # TODO etudiant : regex\n"
+                    "    return None  # TODO etudiant : retourner le nombre\n"
+                    '    print("Exercice à compléter : notation scientifique")\n'
+                ),
+                _md("On evalue maintenant la recompense."),
+                _md("### Exercice 2 : recompense"),
+                _code(
+                    'print("Exercice 2 à compléter : la fonction de recompense")\n'
+                    "recompense = calcule_recompense(trajectoire)\n"
+                ),
+                _md("Enfin, la penalite."),
+                _md("### Exercice 3 : penalite"),
+                _code(
+                    'print("Exercice 3 à compléter : la penalite")\n'
+                    "penalite = calcule_penalite(ecarts)\n"
+                ),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 3, (
+            "the worked verifier must stop reading as a stub so header 1 "
+            "pairs its real stub (got %d)" % result.count
+        )
