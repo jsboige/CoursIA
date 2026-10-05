@@ -8,10 +8,10 @@ classes observed:
 
   - Kernel change: ``metadata.kernelspec.name`` or
     ``metadata.language_info.version`` differs at major.minor level
-    (Python 3.11 -> 3.13). Patch-only drift (3.13.3 -> 3.13.15) is NOT
-    flagged: the venv patch evolves under the canonical interpreter and
-    never changes repr() semantics (#17371). Outputs may format
-    ``repr(np.float64(0.9999999999999999))`` instead
+    (Python 3.10.11 -> 3.13.3, 3.11 -> 3.13). Patch-only drift (3.13.3 ->
+    3.13.15) is NOT flagged: the venv patch evolves under the canonical
+    interpreter and never changes repr() semantics (#17371). Outputs may
+    format ``repr(np.float64(0.9999999999999999))`` instead
     of ``[1.0, 1.0, ...]`` even when the cell computes the same values.
   - Float format drift: NumPy 1.x prints ``[1.0, 1.0, 1.0]``; NumPy 2.x
     prints ``[1.0, 0.9999999999999999, 1.0]``. The values are within
@@ -222,22 +222,37 @@ def diff_kernel(base_info, head_info):
 # ce n'est pas une regression, pas plus qu'une derive de patch (#17371).
 # La DIRECTION porte l'acceptation : la transition inverse reste rouge.
 # Portee mesuree au 2026-10-05 :
-#   - C# ``.net-csharp`` : 141 notebooks a 13.0, 7 a 12.0 (#17679, transition acceptee) ;
+#   - C# ``.net-csharp`` : 141 notebooks a 13.0, 7 a 12.0 (#17679).
 #   - Python ``python3`` (serie QC/Python) : 11 versions heterogenes
 #     (3.8.10, 3.9.0, 3.10.0, 3.10.11, 3.10.19, 3.11.0, 3.11.9, 3.11.14,
 #     3.11.15, 3.13.3, 3.13.7, 3.13.12, 3.13.14) ; 60 carnets ``python3`` + 2
-#     ``conda-torch`` ; canon documente dans requirements.txt = 3.11
-#     (QuantConnect cloud, ligne 23). La transition 3.10 -> 3.11 est la
-#     migration historique de la serie ; 3.11 -> 3.13 la convergence
-#     future. Les deux restent acceptees en direction du canon.
-# La transition inverse (3.13 -> 3.11, 3.11 -> 3.10) reste rouge.
+#     ``conda-torch``.
+#   - Decision duale sur le canon (coord. 2026-10-05T03:43:46Z, DM
+#     msg-20261005T034346-qyldsl) : **deux canons**, pas un seul --
+#     (a) **canon des algorithmes deployes sur QC Cloud = Python 3.11**,
+#         documente dans ``MyIA.AI.Notebooks/QuantConnect/requirements.txt`` ;
+#     (b) **canon de l'execution locale des carnets = Python 3.13**, qui est
+#         l'interpreteur de la flotte -- c'est lui qui ecrit
+#         ``language_info.version`` a chaque rejeu.
+#     Les deux roles sont separes par design ; la migration historique
+#     ``3.10 -> 3.11`` reste couverte, et la convergence future
+#     ``3.11 -> 3.13`` aussi, plus les sauts directs ``3.8/3.9/3.10 -> 3.13``
+#     (cas fondateur de #19181, PR #19163 : 3.10.11 -> 3.13.3).
+# La transition inverse (3.13 -> 3.11, 3.11 -> 3.10, 3.13 -> 3.8/3.9/3.10)
+# reste rouge.
 CANONICAL_LANGUAGE_TRANSITIONS = {
     (".net-csharp", "12.0", "13.0"):
         "C# 12.0 -> 13.0 : convergence vers le canon C# 13.0 (#17679)",
     ("python3", "3.10", "3.11"):
-        "Python 3.10 -> 3.11 : convergence vers le canon QC/Python (#19181)",
+        "Python 3.10 -> 3.11 : convergence vers le canon QC/Python 3.11 (#19181)",
     ("python3", "3.11", "3.13"):
-        "Python 3.11 -> 3.13 : convergence vers le canon Python 3.13 (#19181)",
+        "Python 3.11 -> 3.13 : convergence vers le canon d'execution 3.13 (#19181)",
+    ("python3", "3.10", "3.13"):
+        "Python 3.10 -> 3.13 : convergence directe vers le canon d'execution 3.13 (#19181, cas fondateur)",
+    ("python3", "3.9", "3.13"):
+        "Python 3.9 -> 3.13 : convergence directe vers le canon d'execution 3.13 (#19181)",
+    ("python3", "3.8", "3.13"):
+        "Python 3.8 -> 3.13 : convergence directe vers le canon d'execution 3.13 (#19181)",
 }
 
 

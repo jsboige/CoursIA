@@ -319,16 +319,22 @@ def test_canonical_transition_kernelspec_change_refused():
 
 # --- #19181 : table d'acceptation canon Python (QC/Python) -----------------
 # Mesure du 2026-10-05 sur la serie QC/Python : 11 versions heterogenes
-# (3.8.10 a 3.13.14) ; 60 carnets ``python3`` + 2 ``conda-torch``. Canon
-# documente dans ``MyIA.AI.Notebooks/QuantConnect/requirements.txt`` (3.11,
-# QuantConnect cloud). La transition 3.10 -> 3.11 est la migration
-# historique de la serie ; 3.11 -> 3.13 la convergence future. Les deux
-# restent acceptees en direction du canon ; la direction inverse reste
-# rouge.
+# (3.8.10 a 3.13.14) ; 60 carnets ``python3`` + 2 ``conda-torch``.
+# Decision duale coord. (2026-10-05T03:43:46Z, DM
+# msg-20261005T034346-qyldsl) :
+#   - canon des algorithmes deployes sur QC Cloud = Python 3.11
+#     (documented in ``MyIA.AI.Notebooks/QuantConnect/requirements.txt``) ;
+#   - canon de l'execution locale des carnets = Python 3.13 (l'interpreteur
+#     de la flotte qui ecrit ``language_info.version`` a chaque rejeu).
+# Transitions acceptees en direction du canon : 3.10 -> 3.11 (historique
+# QC Cloud), 3.11 -> 3.13 (convergence locale), et sauts directs
+# 3.8/3.9/3.10 -> 3.13 (cas fondateur de #19181, PR #19163 : 3.10.11 ->
+# 3.13.3). La direction inverse reste rouge.
 
 
 def test_canonical_transition_python_311_to_313_accepted():
-    # Positif 1 : la convergence vers Python 3.13 est couverte.
+    # Positif 1 : la convergence vers Python 3.13 (canon d'execution) est
+    # couverte.
     a = {"language_version": "3.11.16", "kernelspec_name": "python3"}
     b = {"language_version": "3.13.3", "kernelspec_name": "python3"}
     assert ckd.accepted_canonical_transition(a, b) is True
@@ -337,9 +343,35 @@ def test_canonical_transition_python_311_to_313_accepted():
 
 
 def test_canonical_transition_python_310_to_311_accepted():
-    # Positif 2 : la migration historique vers le canon 3.11 est couverte.
+    # Positif 2 : la migration historique vers le canon QC Cloud 3.11 est
+    # couverte.
     a = {"language_version": "3.10.19", "kernelspec_name": "python3"}
     b = {"language_version": "3.11.9", "kernelspec_name": "python3"}
+    assert ckd.accepted_canonical_transition(a, b) is True
+
+
+def test_canonical_transition_python_31011_to_3133_accepted():
+    # Positif 3 (cas fondateur #19181, PR #19163) : la convergence directe
+    # 3.10.11 -> 3.13.3 est couverte. La flotte rejette les carnets en
+    # 3.13 (interpreteur local), donc cette transition est le passage
+    # reel ; les transitions via 3.11 sont possibles mais ne se
+    # composent pas (cle tuple exact).
+    a = {"language_version": "3.10.11", "kernelspec_name": "python3"}
+    b = {"language_version": "3.13.3", "kernelspec_name": "python3"}
+    assert ckd.accepted_canonical_transition(a, b) is True
+
+
+def test_canonical_transition_python_38_to_313_accepted():
+    # Positif 4 : 3.8 -> 3.13 (le saut le plus large) est couvert.
+    a = {"language_version": "3.8.10", "kernelspec_name": "python3"}
+    b = {"language_version": "3.13.3", "kernelspec_name": "python3"}
+    assert ckd.accepted_canonical_transition(a, b) is True
+
+
+def test_canonical_transition_python_39_to_313_accepted():
+    # Positif 5 : 3.9 -> 3.13 est couvert.
+    a = {"language_version": "3.9.0", "kernelspec_name": "python3"}
+    b = {"language_version": "3.13.3", "kernelspec_name": "python3"}
     assert ckd.accepted_canonical_transition(a, b) is True
 
 
@@ -357,8 +389,16 @@ def test_canonical_transition_python_311_to_310_refused():
     assert ckd.accepted_canonical_transition(a, b) is False
 
 
+def test_canonical_transition_python_313_to_38_refused():
+    # Negatif 3 : retomber de 3.13 a 3.8 reste rouge, meme si 3.8 -> 3.13
+    # est accepte dans l'autre sens.
+    a = {"language_version": "3.13.3", "kernelspec_name": "python3"}
+    b = {"language_version": "3.8.10", "kernelspec_name": "python3"}
+    assert ckd.accepted_canonical_transition(a, b) is False
+
+
 def test_canonical_transition_python_kernelspec_change_refused():
-    # Negatif 3 : un changement de kernelspec.name reste rouge, meme avec
+    # Negatif 4 : un changement de kernelspec.name reste rouge, meme avec
     # des versions couvertes par la table.
     a = {"language_version": "3.11.9", "kernelspec_name": "python3"}
     b = {"language_version": "3.13.3", "kernelspec_name": "python311"}
