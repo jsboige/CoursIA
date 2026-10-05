@@ -20,10 +20,12 @@ avec SA base et SON body -- c'est l'option 1 de #19101.
 - **`changeType` n'existe pas dans `gh pr list --json files`** (mesure gh
   2.83.2 : cette forme ne rend que `{additions, deletions, path}`). Le
   classifieur ADDED/DELETED/RENAMED se nourrit donc de **GraphQL**
-  (`pullRequest.files.nodes { path changeType }`), pagine au curseur. Un
-  carnet supprime (#19040 a supprime GameTheory-18d) fait sinon planter le
-  balayage en `FileNotFoundError` : le repli « tout MODIFIED » de la premiere
-  version classait tout en modifie.
+  (`pullRequest.files.nodes { path changeType previousFilename }`), pagine au
+  curseur. Un carnet supprime (#19040 a supprime GameTheory-18d) fait sinon
+  planter le balayage en `FileNotFoundError` : le repli « tout MODIFIED » de la
+  premiere version classait tout en modifie. `previousFilename` (#19251) donne
+  le chemin de base d'un RENAMED : quand il est present, le renommage est
+  **mesure** comme un MODIFIED ; quand il manque, il reste nomme NON MESURE.
 - **le cote « apres » est la tete de la PR, pas l'arbre de travail** :
   `check_notebooks` recoit `head_ref=headRefOid`, et le commit est amene
   localement s'il manque (PR squash-mergee : l'objet n'est pas dans `main`).
@@ -78,7 +80,7 @@ GRAPHQL_FILES = """query($owner: String!, $name: String!, $num: Int!, $cursor: S
   repository(owner: $owner, name: $name) {
     pullRequest(number: $num) {
       files(first: 100, after: $cursor) {
-        nodes { path changeType }
+        nodes { path changeType previousFilename }
         pageInfo { hasNextPage endCursor }
       }
     }
@@ -155,10 +157,12 @@ def pr_files(repo: str, number: int, run=_gh_json) -> list[dict]:
         cursor = page.get("endCursor")
 
 
-def _ipynb_by_change(files: list[dict]) -> tuple[list[str], list[str], list[str]]:
-    """`(modifies, ajoutes, renommes)` parmi les `.ipynb` de la PR.
+def _ipynb_by_change(
+    files: list[dict],
+) -> tuple[list[str], list[str], list[tuple[str, str]], list[str]]:
+    """`(modifies, ajoutes, renommes_mesurables, renommes_non_mesurables)`.
 
-    Deux exclusions et une separation, toutes structurelles, toutes lues de
+    Trois exclusions et une separation, toutes structurelles, toutes lues de
     `changeType` (GraphQL) :
 
       - `DELETED` : supprime, plus rien a compter (meme regle que le
@@ -167,17 +171,27 @@ def _ipynb_by_change(files: list[dict]) -> tuple[list[str], list[str], list[str]
         l'ouverture du carnet levait `FileNotFoundError` sur GameTheory-18d
         (supprime par #19040) ;
       - `ADDED` : neuf, donc **rien a perdre** par construction ;
-      - `RENAMED` : la version de base existe **sous un autre chemin**, que
-        cette source n'expose pas (`previousFilename` absent du jeu GraphQL
-        demande ici). On ne peut donc pas la comparer -- et contrairement a
-        `ADDED`, un renommage **peut** perdre des exemples. NON MESURE.
+      - `RENAMED` : la version de base existe **sous un autre chemin**. Depuis
+        #19251 ce chemin est demande au jeu GraphQL (`previousFilename`) :
+        quand il est present, le renommage est **mesurable** et rendu comme la
+        paire `(chemin_de_tete, chemin_de_base)`, pour que le diff credite soit
+        calcule entre `base:previous` et `head:path` -- un `git mv` suivi d'une
+        edition peut perdre des exemples comme un `MODIFIED`.
+
+    `previousFilename` peut manquer (renommage detecte par git sous un seuil de
+    similarite, ou reponse d'API degradee) : ces renommages-la restent
+    **non mesurables** et sont rendus a part, pour etre **nommes** NON MESURES
+    plutot que comptes comme zero perte.
 
     Pourquoi separer plutot que compter en erreur : `credited_diff_errors > 0`
     **bloque** la pose du label (#18761). Une erreur structurelle sur un carnet
     empechait donc la mesure reelle des carnets modifies de la meme PR -- un
     faux positif d'erreur produisait un faux zero de pertes.
     """
-    modified, added, renamed = [], [], []
+    modified: list[str] = []
+    added: list[str] = []
+    renamed_measured: list[tuple[str, str]] = []
+    renamed_unmeasured: list[str] = []
     for f in (files or []):
         path = f.get("path") or ""
         if not path.endswith(".ipynb"):
@@ -188,10 +202,14 @@ def _ipynb_by_change(files: list[dict]) -> tuple[list[str], list[str], list[str]
         if change == "ADDED":
             added.append(path)
         elif change == "RENAMED":
-            renamed.append(path)
+            previous = f.get("previousFilename") or ""
+            if previous:
+                renamed_measured.append((path, previous))
+            else:
+                renamed_unmeasured.append(path)
         else:
             modified.append(path)
-    return modified, added, renamed
+    return modified, added, renamed_measured, renamed_unmeasured
 
 
 def ipynb_paths(files: list[dict]) -> list[str]:
@@ -253,18 +271,27 @@ def sweep(repo: str, repo_dir: Path, hours: int, now: dt.datetime,
         except RuntimeError as exc:
             errors.append(f"#{number}: fichiers illisibles ({exc})")
             continue
-        paths, added, renamed = _ipynb_by_change(files)
+        modified, added, renamed_measured, renamed_unmeasured = \
+            _ipynb_by_change(files)
+        # #19251 -- un renommage dont `previousFilename` est connu est mesure
+        # comme un MODIFIED : sa tete se lit au nouveau chemin, sa base a
+        # l'ancien. `base_path_of` porte cette correspondance ; un renommage
+        # sans `previousFilename` reste NON MESURE et seulement nomme.
+        base_path_of = {head: prev for head, prev in renamed_measured}
+        paths = modified + [head for head, _ in renamed_measured]
+        renamed = len(renamed_measured) + len(renamed_unmeasured)
         if not paths and not added and not renamed:
             continue
         if not paths:
             # PR sans carnet mesurable : rien a perdre (ajouts) ou rien de
-            # comparable (renommages). On la NOMME plutot que de la faire
-            # disparaitre du rapport.
+            # comparable (renommages sans chemin de base). On la NOMME plutot
+            # que de la faire disparaitre du rapport.
             rows.append({
                 "number": number,
                 "notebooks": 0,
                 "added_notebooks": len(added),
-                "renamed_notebooks": len(renamed),
+                "renamed_notebooks": renamed,
+                "renamed_measured": len(renamed_measured),
                 "credited_lost_unexempted": 0,
                 "credited_diff_errors": 0,
                 "would_label": False,
@@ -298,7 +325,8 @@ def sweep(repo: str, repo_dir: Path, hours: int, now: dt.datetime,
             continue
         try:
             result = check([Path(p) for p in paths], base_ref=base,
-                           head_ref=head_ref, pr_body=body)
+                           head_ref=head_ref, pr_body=body,
+                           base_path_of=base_path_of)
         except (OSError, ValueError) as exc:
             # #19215 (review 5411248369, voie 2) : un carnet illisible depuis
             # l'arbre du jour ne doit pas emporter les AUTRES PR de la
@@ -317,7 +345,8 @@ def sweep(repo: str, repo_dir: Path, hours: int, now: dt.datetime,
             "number": number,
             "notebooks": len(paths),
             "added_notebooks": len(added),
-            "renamed_notebooks": len(renamed),
+            "renamed_notebooks": renamed,
+            "renamed_measured": len(renamed_measured),
             "credited_lost_unexempted": lost,
             "credited_diff_errors": diff_errors,
             # #18761 : le label ne se pose QUE si tous les diffs ont reussi.
@@ -370,11 +399,16 @@ def main(argv: list[str] | None = None) -> int:
         mark = "LABEL" if row["would_label"] else "  -  "
         added = row.get("added_notebooks", 0)
         renamed = row.get("renamed_notebooks", 0)
+        renamed_measured = row.get("renamed_measured", 0)
+        renamed_unmeasured = renamed - renamed_measured
         suffix = ""
         if added:
             suffix += f" (+{added} neuf(s), rien a perdre)"
-        if renamed:
-            suffix += f" ({renamed} renomme(s), NON MESURE(S) : base a un autre chemin)"
+        if renamed_measured:
+            suffix += f" ({renamed_measured} renomme(s) mesure(s) via previousFilename)"
+        if renamed_unmeasured:
+            suffix += (f" ({renamed_unmeasured} renomme(s) NON MESURE(S) : "
+                       "previousFilename absent)")
         print(f"  [{mark}] #{row['number']}: {row['notebooks']} carnet(s) modifie(s), "
               f"pertes non exemptees={row['credited_lost_unexempted']}, "
               f"erreurs de diff={row['credited_diff_errors']}{suffix}")
