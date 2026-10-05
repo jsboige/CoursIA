@@ -270,6 +270,65 @@ def test_native_guards_are_declared_with_the_exact_sentinel():
         )
 
 
+def test_aucun_garde_bloquant_n_est_inert_sans_declaration():
+    """Un garde `blocking=True` non absorbe ne bloque RIEN (#19168).
+
+    Le job « Always-on guards » lance `fast_lane.py --shadow`, et le moteur
+    calcule `effective_shadow = args.shadow and not guard.absorbed` : un garde
+    non absorbe emet sous `fast-lane (ombre): ` avec une conclusion NEUTRE et
+    n'entre pas dans `blocking_failed`. Son `blocking=True` est alors une
+    declaration sans effet, invisible partout -- le registre dit « bloquant »,
+    le rollup dit « ombre ».
+
+    Deux etats sont legitimes, et deux seulement : absorbe (il bloque
+    vraiment), ou volontairement en ombre avec un motif ET un critere de
+    bascule ecrits dans `shadow_reason`. Tout le reste est la classe que cette
+    issue ferme.
+
+    Mesure fondatrice : sur la tete `34e045d3` de #19098, le check-run sortait
+    sous `fast-lane (ombre): control-chars-in-cells-guard` alors que TRANCHE16
+    le declare bloquant.
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    import fast_lane_registry
+
+    guards = {}
+    for value in vars(fast_lane_registry).values():
+        if isinstance(value, list) and value and all(
+                isinstance(item, Guard) for item in value):
+            for guard in value:
+                guards[guard.name] = guard
+    assert len(guards) >= 30, f"registre lu partiellement : {len(guards)}"
+
+    inertes, contradictoires, declares, absorbes = [], [], [], []
+    for name, guard in sorted(guards.items()):
+        if not guard.blocking:
+            continue
+        if guard.absorbed:
+            absorbes.append(name)
+            if guard.shadow_reason:
+                contradictoires.append(name)
+        elif guard.shadow_reason:
+            declares.append(name)
+        else:
+            inertes.append(name)
+
+    assert inertes == [], (
+        "gardes bloquants ni absorbes ni declares en ombre : leur "
+        "`blocking=True` ne bloque rien (le moteur les emet sous "
+        "`fast-lane (ombre): ` avec une conclusion neutre). Les absorber, ou "
+        "leur ecrire un `shadow_reason` avec son critere de bascule : "
+        f"{inertes}")
+    assert contradictoires == [], (
+        "gardes absorbes qui portent encore un motif d'ombre : la declaration "
+        "est perimee, l'absorbe rend le motif faux : "
+        f"{contradictoires}")
+    # Controle positif : sans lui, vider le registre rendrait ce test vrai en
+    # silence -- il ne mesurerait plus rien.
+    assert absorbes, "aucun garde absorbe : le controle serait aveugle"
+    assert declares, "aucune ombre declaree : le controle serait aveugle"
+
+
 def test_delta_guards_declare_what_they_swap():
     """Sans `swap_paths`, la phase 2 basculerait un ensemble vide et le delta
     comparerait HEAD a lui-meme -- un vert silencieux."""
