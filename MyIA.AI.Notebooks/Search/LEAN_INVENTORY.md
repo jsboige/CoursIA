@@ -25,7 +25,7 @@ A* vs BFS sur terrain pondéré — convention sibling-lake). Répond aussi au p
 problème non-trivial (heuristique discriminante), pas un graphe à coût uniforme où A*
 dégénère en BFS.
 
-² Notebook câblé : **Search-09e-Komlos-Lean.ipynb** (`Search/Discrepancy/`, kernel
+² Notebook câblé : **Search-09e-Komlos-Lean.ipynb** (`Search/Part1-Foundations/`, kernel
 `lean4-wsl`, descendu le 2026-10-04 de l'ancien chemin
 `Search/Part1-Foundations/Search-09d-Lean-Discrepancy-Komlos.ipynb` par #19151) — `#check` des
 énoncés du lake (Komlós, Beck–Fiala, régimes Bansal–Jiang 2025) et
