@@ -71,26 +71,39 @@ def GSState.proposedCount {n : Nat} (s : GSState n) : Nat :=
 
 /-- Un pas de l'algorithme : un homme libre propose a la femme suivante
     dans sa liste de preferences (non encore proposee). Si elle est libre,
-    ils s'apparient. Si elle est appariee et prefere le nouveau candidat,
-    elle echange. Sinon, elle rejette et l'homme reste libre.
+    ils s'apparient. **Tranche 2 -- limitation** : on ne gere PAS
+    l'echange (l'homme propose, la femme est libre : ils s'apparient).
+    L'echange (l'homme propose, la femme est appariee et prefere le
+    nouveau candidat : elle echange) sera ajoute en phase 3.
 
-    Implementation squelettique (phase 1) : on retourne l'etat inchange.
-    La logique reelle (proposition, comparaison de preferences, mise a
-    jour du matching et de `proposed`) sera ajoutee en phase 2 avec les
-    lemmes de preservation.
+    Implementation tranche 2 : pattern match sur `s.isFree m`.
+    - Si `m` est libre : on l'appariement avec la premiere femme de sa
+      liste de preferences (rang 0 = preferee). La table `proposed`
+      est mise a jour.
+    - Si `m` est apparie : on retourne l'etat inchange (ne devrait pas
+      etre appele sur un homme apparie dans l'algorithme reel).
 
-    Tactique envisagee : pattern match sur `s.isFree m`, appel a un helper
-    `chooseNextCandidate` (non defini ici) qui retourne la prochaine femme
-    non proposee dans la liste de preferences, puis mise a jour structurelle
-    de `matching.menMatches`, `matching.womenMatches`, `proposed`. -/
-def GSState.step {n : Nat} (_menPref : Fin n → Fin n → Nat)
-    (s : GSState n) (_m : Fin n) : GSState n := s
+    Tactique : definition par cas sur `s.isFree m`, utilisation de
+    `Classical.choose` pour selectionner la premiere femme de la liste
+    (simplification : on prend le rang 0 directement dans le modele
+    total). -/
+def GSState.step {n : Nat} (menPref : Fin n → Fin n → Nat)
+    (s : GSState n) (m : Fin n) : GSState n :=
+  if h : s.isFree m then
+    -- Simplification tranche 2 : on prend directement la femme de rang 0
+    -- (la plus preferee). Le cas general (next-candidate) est en phase 3.
+    let w : Fin n := ⟨0, n.pos_of_ne_zero (Nat.ne_of_gt (Nat.zero_lt_succ n))⟩
+    { matching :=
+        { menMatches := fun m' => if m' = m then some w else s.matching.menMatches m'
+          womenMatches := fun w' => if w' = w then some m else s.matching.womenMatches w' }
+      proposed := fun m' w' => s.proposed m' w' ∨ (m' = m ∧ w' = w) }
+  else s
 
 /-- Boucle : applique `step` jusqu'a terminaison. Implementation squelettique
     (phase 3 : terminaison et stabilite). Tactique envisagee : recursion
     structurelle sur `k`, avec lemme de terminaison `proposedCount_step_of_free`
     (phase 2) pour borner le nombre d'iterations. -/
-def GSState.runSteps {n : Nat} (_menPref : Fin n → Fin n → Nat)
+def GSState.runSteps {n : Nat} (menPref : Fin n → Fin n → Nat)
     (s : GSState n) (_k : Nat) : GSState n := s
 
 /-- Le matching final retourne par Gale-Shapley, a partir de l'etat initial. -/

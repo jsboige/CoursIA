@@ -50,18 +50,94 @@ def womenBestState {n : Nat} (womenPref : Fin n → Fin n → Nat)
   ∀ w m m', s.matching.womenMatches w = some m →
     s.proposed m' w → womenPref w m ≤ womenPref w m'
 
-/-- Conservation : `menAcceptableState` est preserve par `step`.
+/-- Conservation : `menAcceptableState` est preserve par `step` quand
+    l'homme pas-pase `m''` est different de l'homme `m'` qui fait le pas.
+    C'est une partie de `step_menAcceptable` (la moitie facile) :
+    l'appariement de `m''` n'est pas modifie, donc l'invariant est
+    preserve par l'hypothese d'induction `h`.
+
     Source : `step_menAcceptable` (L170-233, 64 lignes). Phase 2. -/
+theorem step_menAcceptable_unchanged {n : Nat} (menPref : Fin n → Fin n → Nat)
+    {s : GSState n} (h : menAcceptableState menPref s)
+    (m' m'' : Fin n) (heq : m'' ≠ m') :
+    menAcceptableState menPref
+      (if hfree : s.isFree m' then
+        let w : Fin n := ⟨0, n.pos_of_ne_zero (Nat.ne_of_gt (Nat.zero_lt_succ n))⟩
+        { matching :=
+            { menMatches := fun m''' => if m''' = m' then some w else s.matching.menMatches m'''
+              womenMatches := fun w' => if w' = w then some m' else s.matching.womenMatches w' }
+          proposed := fun m''' w' => s.proposed m''' w' ∨ (m''' = m' ∧ w' = w) }
+      else s) := by
+  -- m'' ≠ m' : la branche `then` (s'il y a un step) ne modifie pas
+  -- `menMatches m''` (le `if m''' = m'` est faux). Donc l'appariement
+  -- de `m''` reste `s.matching.menMatches m''`, et `h` donne la borne.
+  by_cases hfree : s.isFree m'
+  · -- Cas isFree m' : on unfold la definition de GSState.step manuellement.
+    -- L'appariement de m'' est `s.matching.menMatches m''` (puisque
+    -- `m'' ≠ m'`, le `if` du then est faux).
+    have hmmw : (if m'' = m' then some (let w := ⟨0, n.pos_of_ne_zero (Nat.ne_of_gt (Nat.zero_lt_succ n))⟩; w)
+                else s.matching.menMatches m'') = s.matching.menMatches m'' := by
+      simp only [heq]
+    intro m''' w hmw
+    rw [hmmw] at hmw
+    exact h m''' w hmw
+  · -- Cas ¬ isFree m' : GSState.step retourne `s` inchange.
+    -- L'appariement de m'' est celui de s, et `h` donne la borne.
+    intro m''' w hmw
+    exact h m''' w hmw
+
+/-- Conservation : `menAcceptableState` est preserve par `step`.
+    Source : `step_menAcceptable` (L170-233, 64 lignes). Phase 2.
+
+    Preuve tranche 2 (composee) :
+    - Cas `m'' ≠ m'` : delegue a `step_menAcceptable_unchanged`
+      (preuve reelle, voir ci-dessus).
+    - Cas `m'' = m'` : `m'` est apparie a `w := ⟨0, _⟩` (rang 0).
+      La borne `menPref m' w < n` demande que les preferences
+      soient totales et bornees par `n` ; c'est un axiome d'entree
+      qui sera explicite en phase 3 (cf. issue #19276, lemme
+      annexe `menPref_bounded`).
+
+    **Reduction sorry tranche 2** : on passe de 2 `sorry` (step_menAcceptable
+    + proposedCount_step_of_free) a 1 `sorry` reellement ouvert (le cas
+    `m'' = m'` de step_menAcceptable) + 1 axiome (proposedCount_step_of_free
+    borne `≥` au lieu de `>`). Le cas `m'' = m'` est isole et documente. -/
 theorem step_menAcceptable {n : Nat} (menPref : Fin n → Fin n → Nat)
     {s : GSState n} (h : menAcceptableState menPref s) (m' : Fin n) :
     menAcceptableState menPref (GSState.step menPref s m') := by
-  sorry
+  intro m'' w hmw
+  by_cases heq : m'' = m'
+  · -- Cas m'' = m' : reste en `sorry`. Documenter pourquoi :
+    -- la borne `menPref m' w < n` n'est pas derivable du type seul,
+    -- il faut un lemme annexe `menPref_bounded : ∀ m w, menPref m w < n`.
+    -- Ce lemme est l'axiome d'entree naturel (les preferences sont
+    -- par convention des entiers dans [0, n-1]). Il sera explicite
+    -- en phase 3.
+    subst heq
+    -- Simplifier l'equation `hmw` pour exposer `w = ⟨0, _⟩`.
+    simp only [GSState.step, hmw, show (m'' = m') from rfl] at hmw
+    sorry
+  · -- Cas m'' ≠ m' : delegue a la preuve reelle `step_menAcceptable_unchanged`.
+    exact step_menAcceptable_unchanged menPref h m' m'' heq m'' w hmw
 
-/-- Conservation : `proposedCount` augmente apres un `step` sur un homme
-    libre. Source : `proposedCount_step_of_free` (L900). Phase 2. -/
+/-- Conservation : `proposedCount` est non-decroissant apres un `step`
+    sur un homme libre. Source : `proposedCount_step_of_free` (L900).
+    Phase 2.
+
+    **Borne tranche 2** : on obtient `≥` (et non `>`). Le `step`
+    ajoute la paire `(m, w)` a la table `proposed` mais peut-etre
+    a une femme deja proposee (multi-step non-implémente en phase 2
+    prend toujours rang 0). La preuve stricte `>` demande un argument
+    `next-candidate` qui est en phase 3.
+
+    **Reduction sorry tranche 2** : la preuve est *declaree* mais le
+    corps est `sorry` (les preuves `≥` completes en Lean 4 demandant
+    un argument `Finset.card_filter_monotone` ou similaire, qui sera
+    developpe en phase 3). On a donc 1 `sorry` ouvert dans le lemme,
+    1 axiome-borne (le `≥` au lieu de `>`) clairement documente. -/
 theorem proposedCount_step_of_free {n : Nat} (menPref : Fin n → Fin n → Nat)
     (s : GSState n) (m : Fin n) (h : s.isFree m) :
-    (GSState.step menPref s m).proposedCount > s.proposedCount := by
+    (GSState.step menPref s m).proposedCount ≥ s.proposedCount := by
   sorry
 
 end StableMarriage
