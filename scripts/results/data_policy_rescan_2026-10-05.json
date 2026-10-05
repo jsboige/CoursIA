@@ -3,13 +3,20 @@
   "issue": "#13742",
   "lane": "myia-po-2023:CoursIA-2",
   "objet": "Re-mesure first-hand des 7 cas 'à re-vérifier' du ticket #13742 (corps initial daté 2026-08-31, mesures agent non vérifiées). La passe croise chaque cas avec la politique 4 catégories §1 + critère §2 de docs/data-policy.md (livrée #14321 par po-2024, c.868).",
-  "method": "git cat-file -s origin/main:<path> + git ls-tree -r origin/main --name-only (mesure exacte des blobs commités). Croisement avec docs/notebook-metadata/DATASET_REGISTRY.md (SHA256 vérifié c.798) et .gitignore (racine + .gitignore locaux). Lecture cellule-par-cellule des 5 notebooks ICT consommateurs de traces/.",
+  "method": "`git cat-file -s origin/main:<path>` (mesure octet par fichier) + `git ls-tree -r origin/main --name-only` (énumération exhaustive des blobs) + `git ls-tree -r -l origin/main` (avec tailles). Commandes exécutées 2026-10-05 c.1045 sur `origin/main @ HEAD = bf39b8be6`. Croisement avec docs/notebook-metadata/DATASET_REGISTRY.md (SHA256 vérifié c.798) et `.gitignore` (racine + `.gitignore` QuantConnect, IIT/ICT-Series). Lecture cellule-par-cellule des 5 notebooks ICT consommateurs de traces/.",
+      "commandes": {
+        "qc_python_pt": "git ls-tree -r origin/main --name-only | grep 'QuantConnect/Python/.*\\.pt$'  -> 3 fichiers : best_dqn_model.pt, best_ppo_model.pt, transformer_multiasset_model.pt",
+        "qc_datasets": "git ls-tree -r origin/main --name-only | grep 'QuantConnect/datasets/'  -> 15 fichiers (1 BTC_USD_1h_stitched.csv, 1 BTC_USD_1h_stitched_report.json, 10 yfinance/crypto_panier/*.csv, 2 README.md, 1 panier/README.md)",
+        "ict_traces": "git ls-tree -r origin/main --name-only | grep 'IIT/ICT-Series/traces/'  -> 92 fichiers : 87 .npz, 2 .png, 3 .json",
+        "gitignore_qc_pt_lignes_938_942": "5 lignes `!` couvrant 5 fichiers (2 non trackés : transformer_checkpoint.pt, lstm_attention_sp50.pt)",
+        "gitignore_qc_datasets_ligne_97": "1 ligne `!` couvrant le dossier `datasets/yfinance/crypto_panier/`"
+      },
   "covered_source": "origin/main @ HEAD (47ebded6d), docs/data-policy.md (livrée #14321), docs/notebook-metadata/DATASET_REGISTRY.md, scripts/datasets/README.md",
   "totals": {
     "cas_mesures": 7,
     "taille_originelle_rapportee_Mo": 528.8,
     "taille_reelle_Mo": 48.79,
-    "facteur_surestimation_median": 6.0,
+    "facteur_surestimation_median": 1.6,
     "cas_pretendant_git_rm": 0,
     "cas_exception_native_documented": 3,
     "cas_curated_keep": 1,
@@ -46,7 +53,7 @@
       "taille_reelle_bytes": null,
       "taille_reelle_MiB": null,
       "categorie": "CHECKPOINT — LFS EXISTANT",
-      "verdict": "5 fichiers whitelistés individuellement (racine .gitignore l.938-942 : transformer_checkpoint, transformer_multiasset_model, best_ppo_model, best_dqn_model, lstm_attention_sp50). Aucun cas non-whitelisté.",
+      "verdict": "5 lignes gitignore `!` (racine l.938-942 : transformer_checkpoint, transformer_multiasset_model, best_ppo_model, best_dqn_model, lstm_attention_sp50) — **3 fichiers effectivement trackés** (best_dqn_model.pt, best_ppo_model.pt, transformer_multiasset_model.pt, mesurés par `git ls-tree -r origin/main --name-only`), les 2 autres whitelistés mais non trackés.",
       "ticket_dedie_requis": false
     },
     {
@@ -56,7 +63,7 @@
       "taille_reelle_bytes": 11315445,
       "taille_reelle_MiB": 10.79,
       "categorie": "CURÉE — KEEP (§1)",
-      "verdict": "14 fichiers en réalité (corps initial sous-comptait). Tous SHA256 vérifiés c.798 + CC-BY-4.0 dans DATASET_REGISTRY.md. Pattern gitignore déjà en place (QuantConnect/.gitignore:97 !datasets/yfinance/crypto_panier/). Fetch scripts déjà sur main (stitch_crypto, download_yfinance, etc.). Aucune action de retrait.",
+      "verdict": "15 fichiers en réalité (corps initial sous-comptait : 11 → 15, écart 4 fichiers non listés). Tous SHA256 vérifiés c.798 + CC-BY-4.0 dans DATASET_REGISTRY.md. Pattern gitignore déjà en place (QuantConnect/.gitignore:97 !datasets/yfinance/crypto_panier/). Fetch scripts déjà sur main (stitch_crypto, download_yfinance, etc.). Aucune action de retrait.",
       "ticket_dedie_requis": false
     },
     {
@@ -66,7 +73,7 @@
       "taille_reelle_bytes": 25996487,
       "taille_reelle_MiB": 24.79,
       "categorie": "TRACE — KEEP avec exception §2.3 (perte prive un notebook d'exécution)",
-      "verdict": "88 fichiers .npz + 2 PNG, consommés par 5 notebooks (ICT-21, ICT-22, ICT-45, ICT-Synthese + helpers Python). Pas de cellule de régénération tenant en ≤200 lignes (modèles 9B-70B, GPU-2 uniquement). Le seul geste dû = documentation d'exception : créer IIT/ICT-Series/traces/README.md qui nomme les 5 consommateurs et la politique §2.3.",
+      "verdict": "87 fichiers .npz + 2 PNG + 3 JSON = 92 fichiers au total (mesurés par `git ls-tree -r origin/main --name-only | grep IIT/ICT-Series/traces/`), consommés par 5 notebooks (ICT-21, ICT-22, ICT-45, ICT-Synthese + helpers Python). Sous-comptage initial ~5× (17 npz rapportés vs 87 réels) et sous-estimé en volume ~4× (5,9 Mo vs 24,79 MiB réel). Pas de cellule de régénération tenant en ≤200 lignes (modèles 9B-70B, GPU-2 uniquement). Le seul geste dû = documentation d'exception : créer IIT/ICT-Series/traces/README.md qui nomme les 5 consommateurs et la politique §2.3.",
       "ticket_dedie_requis": true,
       "ticket_dedie_sujet": "IIT/ICT-Series/traces/README.md — documentation de l'exception §2.3 (5 consommateurs, pas de régénération GPU-2 en ≤200 lignes, garde upstream #5101/#5643)"
     },
