@@ -6,8 +6,8 @@ Thibodeaux, v1.1.0 du 01/10/2026). Protocole : issue
 [jsboige/CoursIA#19174](https://github.com/jsboige/CoursIA/issues/19174). Discussion
 publique de la fiche : [forum QuantConnect, discussion 21181](https://www.quantconnect.com/forum/discussion/21181/).
 Références de comparaison : celles de l'évaluation #18904, projet
-[`FourSleeve774Benchmarks`](../FourSleeve774Benchmarks/), réutilisées sans être relancées
-(même fenêtre, mêmes frais, même rebalancement).
+`FourSleeve774Benchmarks` ([PR #19139](https://github.com/jsboige/CoursIA/pull/19139)),
+réutilisées sans être relancées (même fenêtre, mêmes frais, même rebalancement).
 
 ## Pourquoi une réimplémentation
 
@@ -38,7 +38,7 @@ stratégie : il est rapporté, il ne sert pas de verdict.
 
 | Point laissé ouvert | Choix de cette réimplémentation |
 |---------------------|---------------------------------|
-| Univers (20 ETF) | les 5 ajouts nommés par la version 1.1.0 (UUP, FXF, AIA, DBA, RLY) et 15 lignes choisies ici : actions US SPY, QQQ, IWM, VNQ ; actions hors US EFA, EEM, EWJ, VGK ; obligations TLT, IEF, SHY, LQD, TIP ; matières premières GLD, DBC |
+| Univers (20 ETF) | les 5 ajouts nommés par la version 1.1.0 (UUP, FXF, AIA, DBA, RLY) et les autres, choisis ici : actions US SPY, QQQ, IWM, VNQ ; actions hors US EFA, EEM, EWJ, VGK ; obligations TLT, IEF, SHY, LQD, TIP ; matières premières GLD, DBC |
 | Taux de variation avec saut | `P[t−21] / P[t−21−h] − 1` pour h ∈ {5, 21, 63, 126, 252}, sur les clôtures journalières ajustées, `t` étant la dernière clôture connue |
 | Score | moyenne simple des cinq taux de variation |
 | Moment du calcul | 30 minutes après l'ouverture du premier jour de bourse du mois, sur les clôtures jusqu'à la séance précédente |
@@ -117,8 +117,8 @@ Sharpe à taux sans risque nul. Frais annuels en % du capital de départ.
 | SPY détenu | 0,785 | 13,92 % | −33,61 % | 0,11 | 0,00 % | — |
 | 60/40 SPY/IEF | 0,815 | 8,87 % | −21,19 % | 0,32 | 0,02 % | — |
 
-Les références viennent du projet [`FourSleeve774Benchmarks`](../FourSleeve774Benchmarks/)
-(évaluation #18904), réutilisées sans être relancées.
+Les références viennent du projet `FourSleeve774Benchmarks` (évaluation #18904,
+[PR #19139](https://github.com/jsboige/CoursIA/pull/19139)), réutilisées sans être relancées.
 
 Ce que ces runs montrent :
 
@@ -130,7 +130,7 @@ Ce que ces runs montrent :
   négatif (lecture littérale déclarée). Lignes les plus souvent retenues : QQQ (70 mois),
   SPY (53), GLD (52), AIA (43) ; obligations longues et intermédiaires rarement (TLT 17,
   IEF 10).
-- **La liquidation complète coûte sans rien apporter.** En moyenne 3,5 lignes sur 5 sont
+- **La liquidation complète coûte sans rien apporter.** En moyenne 3,5 positions sur 5 sont
   reconduites d'un mois sur l'autre, et la règle les vend puis les rachète. Ne traiter
   que les écarts (`liquidate=0`) vise les mêmes cibles, divise la rotation par 2,6 et
   presque par deux les frais, pour environ 0,1 point de CAGR en plus.
