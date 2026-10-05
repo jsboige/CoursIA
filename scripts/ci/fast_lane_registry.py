@@ -1689,6 +1689,66 @@ TRANCHE16: list[Guard] = [
 
 
 # ---------------------------------------------------------------------------
+# TRANCHE 18 (#19374) -- garde des blobs CRLF/mixed sous attribut `eol=lf` ou
+# `text`. La classe de #19287 : un fichier CRLF/mixed committe avec un
+# attribut qui declare du LF, le worktree est renormalise a chaque checkout
+# mais le blob ne l'est jamais -- tout check sur tree propre s'arrete
+# (merge_ready, check_clean_cycle_exit). Le precedent #19373 a renormalise
+# les deux fichiers d'#19287 ; aucun garde empechait la prochaine instance.
+#
+# Temoins fondateurs :
+#   - POSITIF : la tete de #19287 (commit 92f999a83c) commit deux fichiers
+#     avec `i/mixed w/mixed attr/text eol=lf` (cf `git ls-files --eol` sur
+#     les deux `_fallacy_*.py`). Le garde doit rougir sur un delta qui
+#     re-touche ces deux fichiers.
+#   - NEGATIF : `git ls-files --eol` sur main au 2026-10-06 rend 232 lignes
+#     `i/crlf` ou `i/mixed` ; TOUTES portent `attr/` (vide) ou `attr/-text`,
+#     jamais `attr/lf` ou `attr/text` -- le garde ne rougit pas main
+#     (verification pre-absorption : `python scripts/ci/check_eol_blob_attribute.py
+#     --diff origin/main...HEAD` -> CLEAN :: 0 changed file(s)).
+#
+# Forme : delta-based sur la PR (pas l'heritance main). `needs_base=True`
+# pour substituer `{base_ref}` en `origin/main` par defaut, ou la base de
+# la PR dans le runner. Bloquant.
+# ---------------------------------------------------------------------------
+TRANCHE18: list[Guard] = [
+    Guard(
+        name="eol-blob-attribute-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**/*.py",
+            "**/*.md",
+            "**/*.ipynb",
+            "**/*.json",
+            "**/*.csv",
+            "**/*.yml",
+            "**/*.yaml",
+            "**/*.bat",
+            "**/*.sh",
+            "**/*.cs",
+            "**/*.lean",
+            ".gitattributes",
+            "scripts/ci/check_eol_blob_attribute.py",
+            "scripts/tests/test_check_eol_blob_attribute.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/ci/check_eol_blob_attribute.py",
+            "--diff", "{base_ref}...HEAD",
+        ],
+        blocking=True,
+        # `absorbed=True` (#19168, convention TRANCHE8/9/10/14/15/16/17) :
+        # un garde sans workflow d'origine n'a aucun autre emetteur de son
+        # nom de check-run. Verifie vert sur main (`--diff origin/main...HEAD`
+        # -> rc=0, 0 mismatch), l'absorption ne rougit aucune PR par dette
+        # heritee.
+        absorbed=True,
+        needs_base=True,
+    ),
+]
+
+# ---------------------------------------------------------------------------
 # TRANCHE 17 (#19116) -- garde de parite jumeau FR/<lang> scopee au diff.
 # Une PR notebook-only qui casse la parite d'un jumeau ``xxx_<lang>.ipynb``
 # (re-execution native au lieu du re-rendu T4, #18844) n'etait vue par
