@@ -61,7 +61,6 @@ mineur (n−1)×(n−1) de la matrice n×n vaut Δ(t) à une unité ±t^k près.
 diagramme : mineur sans la première ligne ni la dernière colonne.
 -/
 
-/-- Fusionne les classes contenant x et y d'une partition d'étiquettes. -/
 -- **Tranche 3 (#18397) — extraction arcPartition**
 -- Le bloc historique `mergePair` ... `alexanderRow_sum_zero` (915 lignes,
 -- origin/main 71514d576 l.65-979) a été déplacé à l'identique vers
