@@ -173,7 +173,7 @@ class: pilot-teachingstep
 
 </TeachingStep>
 
-<TeachingStep v-click="2" placement="start" size="sm">
+<TeachingStep v-click="2" placement="start" size="lg">
 
 - **Attention :** chaque position combine les informations du contexte. Les poids d’attention ne constituent pas une explication causale complète.
 - **Activité polysémie :** donner deux sens à « avocat », écrire deux phrases, puis dessiner les liens vers les mots qui lèvent l’ambiguïté.

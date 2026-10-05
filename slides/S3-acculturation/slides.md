@@ -939,21 +939,21 @@ layout: default
 
 <div class="ts-compare">
 
-<TeachingStep v-click="1" placement="below" size="sm">
+<TeachingStep v-click="1" placement="below" size="md">
 
 **Solveurs Modulo Théorie**
 
 - SAT + Quantificateurs
-- + Théories arithmétiques
-- + Optimiseurs
+- \+ Théories arithmétiques
+- \+ Optimiseurs
 
 <template #visual>
-<img src="./images/img_048.png" alt="Cartographie des médias et réseaux sociaux : TV, presse, blogs, forums, podcasts, partage vidéo et photo" />
+<img src="./images/img_029.png" alt="Progression du backtracking sur le problème des N-reines : retour arrière après violation de contrainte" />
 </template>
 
 </TeachingStep>
 
-<TeachingStep v-click="2" placement="below" size="sm">
+<TeachingStep v-click="2" placement="below" size="md">
 
 **Ingénierie de connaissances**
 
@@ -963,7 +963,7 @@ layout: default
 - Linked Data
 
 <template #visual>
-<img src="./images/img_049.png" alt="Architecture du web sémantique : Trust, Proof, Logic, Ontology, RDF, XML, URI, Unicode" />
+<img src="./images/img_048.png" alt="Nuage Linked Open Data : les jeux de données publiques interconnectées du web des données" />
 </template>
 
 </TeachingStep>
