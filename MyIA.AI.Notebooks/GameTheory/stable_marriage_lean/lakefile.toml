@@ -1,0 +1,22 @@
+name = "stable_marriage_lean"
+defaultTargets = ["StableMarriage"]
+
+# Tranche 0 du port Gale-Shapley (issue #19276).
+# Aucun code reel -- juste la structure + stubs qui compilent.
+# Le port substantiel (800-1200 LOC, 46 lemmes, 5 theoremes selon
+# PORT_ANALYSIS.md) est prevu en tranches ulterieures.
+#
+# Cf. PORT_ANALYSIS.md (meme repertoire) pour le detail du verdict
+# HIGH-EFFORT PORT, les ponts de type (Preferences partial -> total,
+# Matching Option -> bijection), l'option B (GSState separe pour
+# l'etat intermediaire), et les 4 phases prevues.
+#
+# Convention i18n EPIC #4980 (ratifiee user 04/07, pattern #6585 cf
+# lean_game_defs_ext/lakefile.toml) : `globs` (et non `roots`) pour
+# que `lake build` auto-decouvre le sibling `_en` racine (miroir EN,
+# module `StableMarriage_en`) si/quand il est cree. Sans globs, le
+# sibling racine EN (`StableMarriage_en.lean`) ne serait PAS
+# type-checke par la CI (orphan-trap, faux-green -- cf conway #6678).
+[[lean_lib]]
+name = "StableMarriage"
+globs = ["StableMarriage.*", "StableMarriage_en"]
