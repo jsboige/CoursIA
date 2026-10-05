@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
-# CI-CHECK:
-#   ^ With no argument this script only CHECKS -- every installer sits behind
-#     --auto-fix -- so the CI advisory guard can execute it as a host-readiness
-#     probe without mutating the runner. See bash-syntax-advisory.yml (#10643).
+# CI-CHECK: --check
+#   ^ Dry mode read by the CI advisory guard (bash-syntax-advisory.yml, #10643).
+#     --check probes host readiness and installs NOTHING (a missing package is
+#     reported, never installed), writes no checkpoint and no log file, and
+#     implies no --auto-fix (NuGet / .NET / kernel installers stay off). The
+#     bare default (no flag) still installs missing packages: only --check is
+#     dry.
 # =============================================================================
 # SETUP ENVIRONNEMENT NOTEBOOKS - CoursIA (Linux / macOS)
 # =============================================================================
@@ -10,11 +13,14 @@
 # .NET tooling and Jupyter kernels the CoursIA notebooks rely on, with a
 # checkpoint/resume mechanism so an interrupted run can pick up where it left.
 #
-# Usage: ./scripts/environment/setup_environment.sh [--auto-fix] [--install-optional] [--force] [--resume]
+# Usage: ./scripts/environment/setup_environment.sh [--auto-fix] [--install-optional] [--force] [--resume] [--check]
 #   --auto-fix          Configure NuGet / .NET Interactive / Jupyter kernels (default: only check)
 #   --install-optional  Also install the optional ML packages (torch, tensorflow, ...)
 #   --force             Reinstall even already-installed packages
 #   --resume            Reload checkpoints from a previous (interrupted) run
+#   --check             Dry probe: report missing packages without installing,
+#                      write no checkpoint/log, ignore --auto-fix (exit codes
+#                      keep their semantics: 0 all present, 1 <=2 missing, 2 more)
 #
 # Differences from the PowerShell version:
 #   - Detects python3 first, falls back to python (macOS often only has python3).
@@ -35,18 +41,28 @@ AUTO_FIX=0
 INSTALL_OPTIONAL=0
 FORCE=0
 RESUME=0
+CHECK_ONLY=0
 for arg in "$@"; do
   case "$arg" in
     --auto-fix|-a)      AUTO_FIX=1 ;;
     --install-optional) INSTALL_OPTIONAL=1 ;;
     --force|-f)         FORCE=1 ;;
     --resume|-r)        RESUME=1 ;;
+    --check|-c)         CHECK_ONLY=1 ;;
     --help|-h)
-      sed -n '2,20p' "$0"
+      sed -n '2,26p' "$0"
       exit 0 ;;
     *) echo "[WARN] Unknown argument: $arg" ;;
   esac
 done
+# --check is dry: the auto-fix installers (NuGet source, .NET Interactive,
+# kernels) must never run under it even if both flags were passed.
+if [[ $CHECK_ONLY -eq 1 ]]; then
+  if [[ $AUTO_FIX -eq 1 ]]; then
+    echo "[INFO] --check implies no --auto-fix: installers stay off."
+  fi
+  AUTO_FIX=0
+fi
 
 # ---------------------------------------------------------------------------
 # Config
@@ -105,8 +121,15 @@ PIP=( "$PYTHON" -m pip )
 # Checkpoints (plain text, one name per line)
 # ---------------------------------------------------------------------------
 is_done() { [[ -f "$CHECKPOINT_FILE" ]] && grep -qx "$1" "$CHECKPOINT_FILE"; }
-save_checkpoint() { printf '%s\n' "$1" >> "$CHECKPOINT_FILE"; action "Checkpoint: $1" "SUCCESS"; }
+save_checkpoint() {
+  # --check writes nothing: the checkpoint file is part of the install flow.
+  [[ $CHECK_ONLY -eq 1 ]] && return 0
+  printf '%s\n' "$1" >> "$CHECKPOINT_FILE"; action "Checkpoint: $1" "SUCCESS"
+}
 skip_if_done() {  # skip_if_done CHECKPOINT DESCRIPTION -> 0 if should skip
+  # --check never trusts a checkpoint: it re-probes the host every run, so a
+  # package uninstalled after a completed setup is reported as missing again.
+  [[ $CHECK_ONLY -eq 1 ]] && return 1
   if is_done "$1" && [[ $FORCE -eq 0 ]]; then
     action "Étape déjà terminée: $2" "INFO"
     return 0
@@ -123,6 +146,11 @@ pip_installed() {  # pip_installed PKG -> 0 if installed
 
 install_pip_package() {  # install_pip_package PKG [OPTIONAL]
   local pkg="$1" optional="${2:-0}"
+  # --check never installs: a missing package is the finding, not a job.
+  if [[ $CHECK_ONLY -eq 1 ]]; then
+    action "$pkg manquant (mode --check : installation non tentée)" "WARNING"
+    return 1
+  fi
   action "Installation de $pkg via $PYTHON -m pip..." "INFO"
   if "${PIP[@]}" install "$pkg" >/dev/null 2>&1; then
     action "$pkg installé avec succès" "SUCCESS"
@@ -227,7 +255,9 @@ install_dotnet_kernels() {
 # INITIALISATION
 # =============================================================================
 section "INITIALISATION"
-if [[ $RESUME -eq 1 ]]; then
+if [[ $CHECK_ONLY -eq 1 ]]; then
+  action "Mode --check : sonde sans installation, aucun fichier écrit." "INFO"
+elif [[ $RESUME -eq 1 ]]; then
   if [[ -f "$CHECKPOINT_FILE" ]]; then
     action "Mode reprise activé — checkpoints chargés depuis $CHECKPOINT_FILE" "INFO"
   else
@@ -404,15 +434,19 @@ printf '\n%sRECOMMANDATIONS:%s\n' "$C_CYAN" "$C_RESET"
 printf "  2. Tester l'environnement: ./scripts/environment/audit_environment.sh\n"
 printf '  3. Pour les packages optionnels: ./scripts/environment/setup_environment.sh --install-optional\n'
 
-# Log final
-{
-  echo "SETUP ENVIRONNEMENT - $(date)"
-  echo "================================"
-  echo "Packages requis installés: $INSTALLED_REQUIRED/$TOTAL_REQUIRED ($SUCCESS_RATE%)"
-  echo "Packages échoués: ${FAILED_REQUIRED[*]}"
-  echo "Tests d'import réussis: $PASSED_TESTS/${#TEST_PKGS[@]}"
-} > "$LOG_FILE"
-printf '\nLog sauvegardé: %s\n' "$LOG_FILE"
+# Log final (skipped under --check: the dry probe leaves no file behind)
+if [[ $CHECK_ONLY -eq 1 ]]; then
+  printf '\nMode --check : aucun log écrit.\n'
+else
+  {
+    echo "SETUP ENVIRONNEMENT - $(date)"
+    echo "================================"
+    echo "Packages requis installés: $INSTALLED_REQUIRED/$TOTAL_REQUIRED ($SUCCESS_RATE%)"
+    echo "Packages échoués: ${FAILED_REQUIRED[*]}"
+    echo "Tests d'import réussis: $PASSED_TESTS/${#TEST_PKGS[@]}"
+  } > "$LOG_FILE"
+  printf '\nLog sauvegardé: %s\n' "$LOG_FILE"
+fi
 
 # Exit code (same semantics as the .ps1)
 if [[ ${#FAILED_REQUIRED[@]} -eq 0 && $PASSED_TESTS -eq ${#TEST_PKGS[@]} ]]; then

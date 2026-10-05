@@ -142,15 +142,22 @@ jobs:
           # next companion, and no script is executed on a guess -- only on its
           # author's declaration.
           #
-          # Safety: every wired declaration was READ before wiring; none of the
-          # five installs anything.
-          #   setup_environment.sh      check-only without --auto-fix (every
-          #                             installer sits behind that flag). It does
-          #                             append its relative CHECKPOINT_FILE
-          #                             (setup_checkpoint.txt) to the CWD -- a
-          #                             log file, harmless in an ephemeral job
-          #                             workspace, and the only write of the set.
-          #   audit_environment.sh      read-only without --export-json.
+          # Safety: every wired declaration was READ before wiring, and each
+          # says below what it really does -- verified against the script
+          # bodies, not against their own comments.
+          #   setup_environment.sh --check
+          #                             dry probe: reports missing pip
+          #                             packages without installing (install
+          #                             refused under --check), writes no
+          #                             checkpoint and no log file, implies no
+          #                             --auto-fix. The BARE default (no
+          #                             argument) installs missing packages
+          #                             for real -- that is why the
+          #                             declaration carries --check.
+          #   audit_environment.sh      read-only toward the system; appends
+          #                             its own audit_<timestamp>.log to the
+          #                             job CWD (untracked) -- the only write
+          #                             of the set.
           #   setup_lean4_native.sh --check / h7_p3_notebook_runner.sh
           #                             --check-env verify then exit.
           #   build_advisory.sh check   denominator check, no build.
