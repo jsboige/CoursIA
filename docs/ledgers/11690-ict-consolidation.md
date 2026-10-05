@@ -24,7 +24,7 @@ Une ligne par notebook, cinq colonnes : **Intention** (ce que le cadrage `ICT-0-
 | 4 | ICT-25 | tri des négatifs, désordre de sections établi | **LU** (tranche 1, 2026-08-24) |
 | 5 | GWT / SAE + non numérotés | alimente #7260 (renumérotation) | **LU 3/3 tranches** (lectures du 2026-09-19 ; posées au ledger par #16814, #16821, #16827 — rang complet, 100 % des strands) |
 | 6 | **Fondations 01 → 09** (extension #11690) | `ICT-01` à `ICT-09` — racine de la numérotation, les deux piliers + strate dynamique | **LU** (tranche A de l'extension, 2026-10-05) |
-| 7 | **Tranche B 10 → 17b** (extension #11690) | `ICT-10` à `ICT-17b` non couverts par les strands 1-5 | **EN COURS 12/25** (strand 7, ouvert 2026-10-05 — jusqu'à `ICT-15`) |
+| 7 | **Tranche B 10 → 17b** (extension #11690) | `ICT-10` à `ICT-17b` non couverts par les strands 1-5 | **EN COURS 13/25** (strand 7, ouvert 2026-10-05 — jusqu'à `ICT-15b`) |
 
 Les accrétions `-b/-c/-d` se tranchent dans le strand où elles tombent.
 
@@ -631,3 +631,13 @@ Deuxième tranche de la partition ai-01 (DM 13:41Z : A 01-09, **B 10-17b**, C 20
 | Résultat | Gains crédités oui sur les 3 substrats (ex. S1 3,808/2,144/0,341 ; S3 2,390/2,089/0,941). **Gate 4 : NE CONVERGE PAS** — tau moyen **−0,067**, 33 % positif seulement (les 3 facettes classent différemment les substrats, ex. seed 1 : ec\|fe +1,00 mais fe\|k −1,00). **Gate 5 : COINCIDENT à Δ près** — changepoints Φ=6, F=4, K=2 pour un pli à l'index 4 (écart max 2 pas) : les trois scalaires localisent le **même** changement de régime. Bilan : « ni prouvée ni réfutée, *opérationalisée* » — l'identité Φ=F=K n'est pas affirmée, sa mesure est livrée falsifiable. |
 | Critique | (1) Les taus par graine sont instables (seed 99 : k concorde à +1,00 avec ec quand seed 1 les oppose à −1,00) sans lecture par graine dans le md. (2) Gate 5 évalué sur une seule graine (seed=7 par défaut) — la coïncidence des changepoints n'est pas multi-seed. (3) Exos silencieux, dont l'exo 1 (LZMA) qui mesurerait K avec le vrai compresseur au lieu de zlib. |
 | Verdict | **SOLIDE** — le capstone tire la conclusion honnête à deux faces : divergence des **classements** (négatif assumé, affiché en sortie) + convergence des **changepoints** à travers le pli ; verdict INTRINSIC documenté pour Φ strict (intégrale sur toutes les partitions intractable), proxy déclaré. La thèse fondatrice sort *opérationalisée*, pas décrétée. |
+
+### `ICT-15b-SensitivityCanonicity` — 43 cellules (26 md, 17 code, 17/17 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| Intention | Transposer le théorème de Huang 2019 (`s(f) ≥ √deg(f)` pour toute fonction booléenne, #7288, strate 5 cross-substrat) au zoo ICT : la sensibilité locale borne-t-elle les substrats de la série ? Conjecture testable, réfutable, comptée. |
+| Contenu réel | 8 substrats (S1 tri · S2 bistable · S3 opinion · S4 motif · S5 gray-scott · S6 axelrod ipd · S7 may logistique · S8 grokking) ; pour chacun : trajectoire, vocabulaire quantifié, s_max, deg_proxy, threshold=√deg, ratio, verdict ; étiquette la plus sensible nominative (label 11, s_x=1, état complet affiché) ; **contrôle canonique** sur fonctions booléennes connues (OR n=4, Parité n=4 : borne respectée True) ; S3 strict ≥80 % en variante ; 3 exos en squelette commenté **silencieux**. |
+| Résultat | **Conjecture REJETÉE sur 5/8 substrats** — ratios : S2 0,000 · S8 0,408 · S6 0,603 · S1/S5 0,736 (inconsistants) vs S3 1,000 · S4 1,000 · S7 2,000 (consistants) ; verdict global compté « 3 consistent / 5 inconsistent / 0 inconclusive ». Interprétation écrite : la sensibilité locale ne suffit pas à borner le zoo, l'intégration exige une information irréductiblement globale — le négatif **sert la thèse** de la série. |
+| Critique | (1) Le rejet de S2 repose sur s_max=0 : la trajectoire reste entièrement dans le régime haut (2000/2000) et ne visite jamais deux états voisins — l'« inconsistency » mesure peut-être la couverture d'échantillonnage, pas la structure ; aucune mise en garde de ce type dans le md. (2) Exos silencieux, dont l'exo 3 (vérification manuelle MAJ_4) qui serait le contrôle étudiant le plus direct de la borne. |
+| Verdict | **SOLIDE** — banc de réfutation canonique : conjecture posée, comptée, rejetée à 5/8 avec interprétation théorique, contrôle positif sur fonctions connues exécuté. Le caveat S2 (s_max nul par non-visite) est la seule dette, de lecture. |
