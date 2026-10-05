@@ -40,14 +40,12 @@ sys.path.insert(0, str(CI_DIR))
 
 import fast_lane_registry as reg  # noqa: E402
 from check_unique_check_run_names import _parse_workflow, _load_yaml  # noqa: E402
-from fast_lane_registry import Guard, FAST_LANE_NATIVE  # noqa: E402
-
-# Lot pilote (#11835) et tranches dont l'alignement byte-identique est en
-# cours dans le cadre du programme #12567. Ces deux categories sont
-# signalees en sortie (jamais le saut silencieux -- cf programme fondateur
-# de la PR #19193) mais ne sont pas exigees.
-PILOT_LOT_NAME = "PILOT"
-ALIGNMENT_EN_COURS = frozenset({"TRANCHE10"})
+from fast_lane_registry import (  # noqa: E402
+    Guard,
+    FAST_LANE_NATIVE,
+    PILOT_LOT_NAME,
+    TRANCHE_ALIGNMENT_EN_COURS,
+)
 
 EXIT_OK, EXIT_MISMATCH, EXIT_BROKEN = 0, 1, 2
 WORKFLOWS_DIR = ROOT / ".github" / "workflows"
@@ -80,13 +78,13 @@ def absorbed_guards():
       par declaration (cf `native_exemptions`).
     - Gardes du lot `PILOT` (programme #12567, #11835) : absorption par
       declaration sans alignement byte-identique.
-    - Gardes des tranches `ALIGNMENT_EN_COURS` (programme #12567) : absorption
+    - Gardes des tranches `TRANCHE_ALIGNMENT_EN_COURS` (programme #12567) : absorption
       faite mais le `name:` du job source n'a pas ete renomme byte-identique.
       Le filet les signale en sortie mais ne les exige pas.
     """
     pilot_set = set(map(id, getattr(reg, PILOT_LOT_NAME, [])))
     align_set = set()
-    for tranche_name in ALIGNMENT_EN_COURS:
+    for tranche_name in TRANCHE_ALIGNMENT_EN_COURS:
         align_set.update(map(id, getattr(reg, tranche_name, [])))
     for guard in all_guards():
         if guard.source == FAST_LANE_NATIVE:
@@ -188,12 +186,12 @@ def alignment_en_cours_exemptions() -> list[str]:
     portee par le programme #12567.
     """
     align_set = set()
-    for tranche_name in ALIGNMENT_EN_COURS:
+    for tranche_name in TRANCHE_ALIGNMENT_EN_COURS:
         align_set.update(map(id, getattr(reg, tranche_name, [])))
     return [
         f"{guard.name!r}: tranche {tranche_name} (programme #12567), "
         "absorption faite mais job.name du workflow source non aligne."
-        for tranche_name in ALIGNMENT_EN_COURS
+        for tranche_name in TRANCHE_ALIGNMENT_EN_COURS
         for guard in getattr(reg, tranche_name, [])
         if guard.source != FAST_LANE_NATIVE and id(guard) in align_set
     ]
