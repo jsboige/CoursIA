@@ -38,7 +38,7 @@ Cette sous-série du parcours [GameTheory](../README.md) explore ces résultats 
 | SC-05 | [05-Gibbard-Satterthwaite](05-Gibbard-Satterthwaite.ipynb) | Gibbard-Satterthwaite sans mystère : la manipulation comme témoin (ex-GT-22, re-slot #12375) | 30 min | COMPLET |
 | SC-06 | [06-Mobius-Aggregation-Pouvoir-Manipulation](06-Mobius-Aggregation-Pouvoir-Manipulation.ipynb) | Möbius sur le treillis des coalitions : dividendes de Harsanyi, poids contre pouvoir, manipulation pondérée (See #12204) | 40 min | COMPLET |
 | SC-07 | [07-Committees-Core](07-Committees-Core.ipynb) | Élections de comité par approbation : core, quotas Hare/Droop, certificats de paiement et règle de l'entropie harmonique (arXiv 2609.11912, See #16848) | 40 min | COMPLET |
-| SC-08 | [08-Kemeny-RankedPairs-Dodgson](08-Kemeny-RankedPairs-Dodgson.ipynb) | Kemeny, Ranked Pairs et Dodgson : les trois règles NP-dures du choix social, formulation Z3 du Kemeny winner comme optimisation SMT (Handbook of Computational Social Choice ch. 2 §2.4, ch. 4 §4.1-4.2, ch. 5 §5.3, See #19263) | 35 min | COMPLET |
+| SC-08 | [08-Kemeny-RankedPairs-Dodgson](08-Kemeny-RankedPairs-Dodgson.html) | Kemeny, Ranked Pairs et Dodgson : les trois règles NP-dures du choix social, formulation Z3 du Kemeny winner comme optimisation SMT (Handbook of Computational Social Choice ch. 2 §2.4, ch. 4 §4.1-4.2, ch. 5 §5.3, See #19263) | 35 min | COMPLET |
 
 **Durée totale** : ~5h50
 
