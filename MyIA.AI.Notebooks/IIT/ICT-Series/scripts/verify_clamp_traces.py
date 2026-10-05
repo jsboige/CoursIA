@@ -215,7 +215,10 @@ def differing_values(a: Path, b: Path) -> tuple[int, int]:
             if not isinstance(x, np.ndarray):
                 # Un membre pourri arrive en bytes bruts sous numpy 2.x (sans
                 # lever a l'acces) : ce ne sont pas des valeurs comparables.
-                raise ValueError(f"membre {key!r} illisible dans {a.name}")
+                # ValueError (pas TypeError) : c'est le contrat du juge, dont
+                # le tuple d'except declenche ILLISIBLE -- un TypeError y
+                # echapperait et tuerait l'audit.
+                raise ValueError(f"membre {key!r} illisible dans {a.name}")  # noqa: TRY004
             total += int(x.size)
             if key not in zb.files:
                 # Tableau present seulement dans la reference : il manque au bras.
@@ -223,7 +226,7 @@ def differing_values(a: Path, b: Path) -> tuple[int, int]:
                 continue
             y = zb[key]
             if not isinstance(y, np.ndarray):
-                raise ValueError(f"membre {key!r} illisible dans {b.name}")
+                raise ValueError(f"membre {key!r} illisible dans {b.name}")  # noqa: TRY004
             if x.shape != y.shape:
                 diff += int(x.size)
                 continue
@@ -240,7 +243,7 @@ def differing_values(a: Path, b: Path) -> tuple[int, int]:
                 # pas -- un traceback qui tuerait l'audit des autres bras
                 # (#19249, reproduction independante de l'adjoint 2026-10-05 :
                 # membre extra corrompu present dans le bras seul).
-                raise ValueError(f"membre {key!r} illisible dans {b.name}")
+                raise ValueError(f"membre {key!r} illisible dans {b.name}")  # noqa: TRY004
             diff += int(y.size)
             total += int(y.size)
     return diff, total
