@@ -115,6 +115,14 @@ appellera avant tout ordre :
   la position est vendue en entier, quelle que soit sa taille, sans bande ni notionnel
   minimum. Sinon un retour au cash laisserait en place toute position plus petite que la
   bande.
+- La bande seule ne garantit pas que les achats tiennent dans les liquidités : une ligne en
+  surpoids de moins que la bande n'est pas vendue pendant qu'une autre ligne est achetée.
+  Quand l'orchestrateur lui passe les liquidités (`cash`), `plan_orders` rend le plan payable
+  par `fit_to_cash` : il libère d'abord les ventes que la bande avait écartées, le plus gros
+  surpoids en premier, puis, si cela ne suffit pas, réduit tous les achats dans la même
+  proportion, en parts entières. Sans cette contrainte, l'adaptateur du courtier refusait
+  l'achat après l'envoi des ventes. La mesure sur 2005-2026 et le choix de cet ordre sont
+  dans #19113.
 
 `RiskGate.save` / `RiskGate.load` conservent le pic d'équité, l'équité d'ouverture et un
 éventuel arrêt dans un fichier JSON, écrit de façon atomique. Sans cela, un redémarrage du
