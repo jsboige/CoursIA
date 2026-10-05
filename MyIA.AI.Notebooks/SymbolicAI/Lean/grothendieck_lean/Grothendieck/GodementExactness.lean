@@ -105,7 +105,7 @@ theorem mono_toGodement_of_isSheaf (F : X.Presheaf AddCommGrpCat.{u})
   exact (AddCommGrpCat.mono_iff_injective _).mpr
     (godementUnit_injective_of_isSheaf F hF U.unop)
 
-/-- Note de l'auteur : la **réduction de l'exactitude en `C⁰F` au mono de
+/- Note de l'auteur : la **réduction de l'exactitude en `C⁰F` au mono de
 l'unité du conoyau** ([God58] II.4.1) — qui était l'énoncé 3 du draft r65
 (`exact_toGodement_godementCanonicalDZero_of_mono`) — est **retirée de cette
 Partie** et reportée à la Partie 91. La frontière mathématique est la
