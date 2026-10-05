@@ -671,18 +671,77 @@ host_distress() {
   return "$HOST_VERDICT_RC"
 }
 
-# Somme, en Mo, des caps memoire des conteneurs CI DEJA en vol. On lit la
-# limite REELLEMENT APPLIQUEE par docker (HostConfig.Memory), pas une
+# Points d'acces des demons Docker qui peuvent porter des conteneurs CI sur
+# cette machine. ai-01 en fait tourner deux (Docker Desktop sur le socket par
+# defaut, docker-ce sur /var/run/docker-ce.sock, cf resolve_blkio_device et
+# #15164) : ne sonder que le endpoint de DOCKER_HOST compte une MOITIE de
+# flotte et compare ce demi-total au budget ENTIER -- c'est ainsi que la
+# machine a atteint 20480 Mo nominaux sur un budget declare de 12288 sans
+# qu'aucun garde ne rougisse. `default` designe le endpoint courant
+# (DOCKER_HOST ou socket par defaut) ; les autres entrees sont des chemins de
+# socket unix. La liste se declare sans toucher au code :
+# COURSIA_RUNNER_DOCKER_ENDPOINTS="default /var/run/docker-ce.sock"
+ci_docker_endpoints() {
+  local eps="${COURSIA_RUNNER_DOCKER_ENDPOINTS:-default /var/run/docker-ce.sock}"
+  printf '%s\n' "$eps"
+}
+
+# Somme, en Mo, des caps memoire des conteneurs CI DEJA en vol -- sur TOUS les
+# demons de ci_docker_endpoints, pas seulement celui de DOCKER_HOST (#15164).
+# On lit la limite REELLEMENT APPLIQUEE par docker (HostConfig.Memory), pas une
 # re-derivation des variables de ce script : c'est la seule facon de compter
 # une famille lancee par un AUTRE processus, avec un autre environnement --
 # soit exactement le trou que cmd_lean documente depuis toujours (« la somme
 # des caps des familles actives n'est gardee par RIEN »).
+#
+# FAIL-CLOSED, sur la bonne frontiere. L'existence d'un daemon se sonde par
+# `docker ps` : un daemon qui ne repond pas peut porter des conteneurs, et
+# compter 0 pour lui serait exactement le defaut que ce garde ferme -- on
+# refuse, et la raison part sur stderr : les appelants lisent le nombre par
+# substitution de commande, et une globale posee dans la sous-couche de $( )
+# n'atteint jamais l'appelant -- stderr, lui, traverse. Un chemin de socket
+# ABSENT n'est pas un daemon muet : c'est un daemon non installe, qui ne porte
+# rien sur cette machine -- il sort du perimetre, et le DIT sur stderr.
+#
+# Deduplication par ID de demon, AU MIEUX : DOCKER_HOST peut designer un
+# socket deja liste, et le meme daemon rendu deux fois serait compte deux
+# fois. Si l'ID ne se lit pas (info muet ou vide), on ne refuse PAS -- on
+# enumere sans dedup, ce qui ne peut que surcompter (refus conservateur),
+# jamais sous-compter.
 running_ci_mb() {
-  local ids
-  ids="$(docker ps -q --filter 'label=coursia-ci=1' 2>/dev/null)"
-  if [ -z "$ids" ]; then echo 0; return 0; fi
-  docker inspect --format '{{.HostConfig.Memory}}' $ids 2>/dev/null \
-    | awk '{ s += $1 } END { printf "%d", s/1048576 }'
+  local ep d id ids ins total=0 seen=" "
+  for ep in $(ci_docker_endpoints); do
+    case "$ep" in
+      default) d="docker" ;;
+      unix://*) d="docker -H $ep" ;;
+      *) d="docker -H unix://$ep" ;;
+    esac
+    case "$ep" in
+      default|tcp://*) ;;
+      *)
+        if [ ! -e "${ep#unix://}" ]; then
+          echo "[budget] socket $ep absent -- daemon non installe, hors perimetre" >&2
+          continue
+        fi
+        ;;
+    esac
+    if ! ids="$($d ps -q --filter 'label=coursia-ci=1' 2>/dev/null)"; then
+      echo "demon Docker injoignable sur '$ep' (docker ps en echec) -- le budget n'est PAS mesurable : un daemon muet peut porter des conteneurs. Reparer le daemon, ou retirer '$ep' de COURSIA_RUNNER_DOCKER_ENDPOINTS si ce demon n'existe plus sur cette machine, puis relancer. (#15164)" >&2
+      return 1
+    fi
+    id="$($d info --format '{{.ID}}' 2>/dev/null)" || id=""
+    if [ -n "$id" ]; then
+      case "$seen" in *" $id "*) continue ;; esac
+      seen="$seen $id "
+    fi
+    [ -n "$ids" ] || continue
+    if ! ins="$($d inspect --format '{{.HostConfig.Memory}}' $ids 2>/dev/null)"; then
+      echo "docker inspect muet sur '$ep' alors que le daemon repond -- budget non mesurable. (#15164)" >&2
+      return 1
+    fi
+    total=$(( total + $(printf '%s\n' "$ins" | awk '{ s += $1 } END { printf "%d", (s+0)/1048576 }') ))
+  done
+  echo "$total"
 }
 
 # Refuse le demarrage si la famille demandee ne tient pas dans le budget, ou si
@@ -693,7 +752,9 @@ assert_memory_budget() {
   local per_mb want_mb used_mb budget_mb rc
   per_mb="$(mem_to_mb "$per")"
   want_mb=$(( per_mb * n ))
-  used_mb="$(running_ci_mb)"
+  if ! used_mb="$(running_ci_mb)"; then
+    die "budget CI NON MESURABLE -- REFUS. La ligne ci-dessus nomme le daemon injoignable : tant qu'il ne repond pas, la somme en vol ne peut pas etre etablie, et compter 0 pour lui serait exactement le defaut que ce garde ferme. Reparer le daemon, ou ajuster COURSIA_RUNNER_DOCKER_ENDPOINTS, puis relancer. (#15164)"
+  fi
   budget_mb=$(( BUDGET_GB * 1024 ))
 
   # Un refus qui ne montre pas sa mesure se conteste au juge, puis se contourne.
@@ -742,7 +803,7 @@ Arreter une autre famille, ou demarrer '$famille $max_n'."
 # mot-cle `auto` : le N cesse d'etre un chiffre choisi a la main -- c'est un
 # `8` ecrit a la main qui a sature la machine -- et se DERIVE de la mesure.
 budget_slots() {
-  local per_mb reste_mb part_mb n rc
+  local per_mb reste_mb part_mb n rc used_mb
   per_mb="$(mem_to_mb "$1")"
   # Hote en detresse OU non mesurable : `auto` rend 0. Fail-closed dans LES DEUX
   # cas -- une mesure qui echoue doit couter un refus, sinon la panne de sonde
@@ -751,7 +812,16 @@ budget_slots() {
   host_distress; rc=$?
   [ -n "$HOST_VERDICT_OUT" ] && echo "$HOST_VERDICT_OUT" >&2
   if [ "$rc" -ne 0 ]; then echo 0; return 0; fi
-  reste_mb=$(( BUDGET_GB * 1024 - $(running_ci_mb) ))
+  # Meme fail-closed pour la somme en vol (#15164) : un daemon muet rend la
+  # mesure impossible, et `auto` rend 0 slots plutot que de dimensionner sur
+  # un demi-perimetre. Le refus explique part sur stderr ; c'est start, par
+  # assert_memory_budget, qui tue le demarrage explicite.
+  if ! used_mb="$(running_ci_mb)"; then
+    echo "[budget] auto rend 0 slot : mesure du budget impossible (raison ci-dessus) (#15164)" >&2
+    echo 0
+    return 0
+  fi
+  reste_mb=$(( BUDGET_GB * 1024 - used_mb ))
   # Part maximale qu'UNE famille peut reclamer d'un coup : la moitie du
   # residuel. Les familles coexistent par design (prefixes distincts, gardes
   # PPID aveugles l'un a l'autre) -- laisser la premiere tout prendre revient
