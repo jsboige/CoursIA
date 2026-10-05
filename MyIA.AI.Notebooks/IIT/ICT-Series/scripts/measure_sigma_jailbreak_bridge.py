@@ -57,6 +57,35 @@ appariee** : la replication sur GPU se compare a lui, pas a l'artefact CPU.
         --model Qwen/Qwen2.5-0.5B-Instruct --device cuda --dtype bfloat16 \
         --out runs/ict_sigma_jailbreak_bridge_ctrl_gpu.json
 
+Placement avec offload (modeles ~27 B et plus)
+----------------------------------------------
+Un modele dont les poids bf16 excedent la VRAM cumulee (Qwen3.5-27B : 52 Go)
+exige ``--device-map auto`` : le chargeur maison de ce script repartit les
+**groupes atomiques** (une couche entiere, jamais coupee) sur les GPU selon les
+budgets ``--max-memory``, le reste execute sur CPU. C'est encore du
+**placement** -- memes poids, memes prompts, meme classifieur, meme critere --
+mais le chemin numerique traverse des noyaux CPU en plus des noyaux CUDA, donc
+il se borne de la meme facon : en rejouant un modele **deja mesure sur GPU**
+avec le meme mecanisme d'offload, la comparaison mesure le plancher de bruit
+propre a l'offload, a modele fixe. La replication offloadee se compare a ce
+controle, pas a l'artefact GPU plein.
+
+Pourquoi un chargeur maison et pas ``from_pretrained(device_map=...)`` :
+(1) le chemin accelerate segfault sur la machine de mesure (lecture mmap dans
+``core_model_loading._materialize_copy``, isole par reproducteur minimal --
+le checkpoint lui-meme lit proprement) ; (2) ``dispatch_model`` d'accelerate
+stream les poids CPU vers le GPU a chaque forward, ce qui corrompt la sortie
+sur ce modele et coute un transfert complet par token. Ici chaque groupe
+execute sur SON device, seules les activations traversent les frontieres ;
+les couches CPU calculent en float32 (cast exact depuis bf16 -- ce CPU n'a ni
+AMX ni AVX-512-BF16, le bf16 CPU y est ~7x plus lent). ``CUDA_DEVICE_ORDER``
+est force a ``PCI_BUS_ID`` dans ce mode pour que les indices cuda soient
+stables d'une machine a l'autre.
+
+    python scripts/measure_sigma_jailbreak_bridge.py --full \
+        --model Qwen/Qwen3.5-27B --dtype bfloat16 --device-map auto \
+        --max-memory "cuda:1=21GiB,cuda:0=11GiB" \
+        --out runs/ict_sigma_jailbreak_bridge_qwen35_27b.json
 
 
 Ce que ce script ne persiste PAS : le texte genere. Les artefacts ne portent que
@@ -214,6 +243,138 @@ def collapse2(traj: list[str]) -> list[str]:
 
 
 # --------------------------------------------------------------------------- #
+#  Chargeur offload multi-GPU + CPU (modeles excedant la VRAM cumulee)
+# --------------------------------------------------------------------------- #
+def load_model_offload(model_id, dtype, max_memory):
+    """Charge le modele par groupes atomiques : GPU selon budgets, reste sur CPU.
+
+    Cf docstring « Placement avec offload » : ce chargeur remplace le chemin
+    accelerate sur la machine de mesure (segfault isole par reproducteur) et
+    evite le streaming par token de ``dispatch_model`` (sortie corrompue).
+    Les couches CPU calculent en float32 -- cast exact depuis bf16, ce CPU
+    n'ayant ni AMX ni AVX-512-BF16. Les handles safetensors restent ouverts :
+    les couches CPU non executees (tour visuelle, MTP) vivent sur le mmap.
+    """
+    import glob
+    import torch
+    from accelerate import init_empty_weights
+    from huggingface_hub import snapshot_download
+    from safetensors import safe_open
+    from transformers import AutoConfig, AutoModelForCausalLM
+
+    snap = model_id if os.path.isdir(model_id) else snapshot_download(model_id)
+    shards = sorted(glob.glob(os.path.join(snap, "*.safetensors")))
+    if not shards:
+        raise SystemExit(f"aucun shard safetensors sous {snap}")
+
+    handles, merged = [], {}
+    for shard in shards:
+        fp = safe_open(shard, framework="pt", device="cpu")
+        handles.append(fp)               # vivants jusqu'a la fin du process
+        for k in fp.keys():
+            merged[k] = fp.get_slice(k)  # jamais materialise ici
+
+    cfg = AutoConfig.from_pretrained(snap)
+    with init_empty_weights():
+        model = AutoModelForCausalLM.from_config(cfg)
+    sd = model.state_dict()
+
+    # remap : cle exacte d'abord, variante composite (model.language_model.*)
+    # ensuite -- les checkpoints multimodaux sont prefixes, la vue CausalLM non.
+    remap = {}
+    for k in sd:
+        if k in merged:
+            remap[k] = k
+        elif k.startswith("model.") and \
+                "model.language_model." + k[len("model."):] in merged:
+            remap[k] = "model.language_model." + k[len("model."):]
+        else:
+            raise SystemExit(f"cle de checkpoint introuvable pour {k} "
+                             "-- refus de charger un modele partiel")
+
+    def natkey(s):
+        return [int(p) if p.isdigit() else p for p in re.split(r"(\d+)", s)]
+
+    def owner(k):
+        parts = k.split(".")
+        if len(parts) >= 3 and parts[1] == "layers":
+            return ".".join(parts[:3])   # model.layers.N : atomique
+        return ".".join(parts[:-1]) if len(parts) > 1 else k
+
+    groups: dict[str, list[str]] = {}
+    for k in sorted(sd.keys(), key=natkey):
+        groups.setdefault(owner(k), []).append(k)
+
+    # budgets : remplir le plus gros GPU d'abord ; une couche entiere doit tenir
+    order = sorted(max_memory.items(), key=lambda kv: kv[1], reverse=True)
+    avail = [(f"cuda:{i}", b) for i, b in order]
+    idx = 0
+    plan: dict[str, str] = {}
+    for gname, keys in groups.items():
+        nbytes = sum(sd[k].numel() * dtype.itemsize for k in keys)
+        while idx < len(avail) and avail[idx][1] < nbytes:
+            idx += 1
+        if idx < len(avail):
+            dev, rest = avail[idx]
+            avail[idx] = (dev, rest - nbytes)
+        else:
+            dev = "cpu"
+        for k in keys:
+            plan[k] = dev
+
+    target_sd = {}
+    group_dtype: dict[str, object] = {}   # dtype de calcul = celui du plus gros param
+    for k in sd.keys():
+        src_t = merged[remap[k]]
+        t = src_t[...]
+        dev = plan[k]
+        ckpt_dt = src_t.get_dtype()
+        if dev != "cpu":
+            # miroir de core_model_loading : les parametres fp32 du checkpoint
+            # (A_log, normes de linear_attn) restent fp32, les autres prennent
+            # le dtype demande
+            want = torch.float32 if ckpt_dt == "F32" else dtype
+            target_sd[k] = t.to(device=dev, dtype=want)
+        else:
+            target_sd[k] = t.float() if ckpt_dt == "BF16" else t
+        g = owner(k)
+        if g not in group_dtype or sd[k].numel() > group_dtype[g][1]:
+            group_dtype[g] = (target_sd[k].dtype, sd[k].numel())
+    model.load_state_dict(target_sd, strict=True, assign=True)
+    del target_sd
+
+    def _to(x, dev, dt):
+        if torch.is_tensor(x):
+            x = x.to(dev)
+            return x.to(dt) if x.is_floating_point() else x
+        if isinstance(x, tuple):
+            return tuple(_to(e, dev, dt) for e in x)
+        if isinstance(x, list):
+            return [_to(e, dev, dt) for e in x]
+        if isinstance(x, dict):
+            return {kk: _to(v, dev, dt) for kk, v in x.items()}
+        return x
+
+    for gname, keys in groups.items():
+        dev = plan[keys[0]]
+        dt = group_dtype[gname][0]
+        model.get_submodule(gname).register_forward_pre_hook(
+            lambda m, args, kwargs, _dev=dev, _dt=dt:
+                (_to(args, _dev, _dt), _to(kwargs, _dev, _dt)),
+            with_kwargs=True)
+    model.eval()
+
+    from collections import Counter
+    layers_per_dev = Counter(plan[keys[0]] for keys in groups.values())
+    placement = ("offload-maison [%s] groupes=%s (couches CPU en float32)"
+                 % (",".join(f"cuda:{i}={b // 2**30}GiB" for i, b in
+                             sorted(max_memory.items(), key=lambda kv: -kv[1])),
+                    ",".join(f"{d}:{n}" for d, n in
+                             sorted(layers_per_dev.items()))))
+    return model, placement
+
+
+# --------------------------------------------------------------------------- #
 #  Rollout
 # --------------------------------------------------------------------------- #
 def rollout(tok, model, torch, prompt: str, n_turns: int) -> list[str]:
@@ -246,32 +407,70 @@ def main() -> int:
     ap.add_argument("--dtype", default="float32", choices=("float32", "bfloat16"))
     ap.add_argument("--device", default="cpu",
                     help="'cpu' (defaut : protocole de reference) ou 'cuda'")
+    ap.add_argument("--device-map", default=None, choices=("auto",),
+                    help="placement maison multi-GPU + CPU (groupes atomiques) -- "
+                         "modeles excedant la VRAM cumulee ; incompatibilite avec "
+                         "--device ; force CUDA_DEVICE_ORDER=PCI_BUS_ID")
+    ap.add_argument("--max-memory", default=None,
+                    help="budgets VRAM par GPU pour --device-map, ex. "
+                         "'cuda:1=21GiB,cuda:0=11GiB' (le plus gros GPU d'abord "
+                         "dans l'ordre de remplissage)")
     ap.add_argument("--out", default=os.path.join(SERIES, "runs",
                                                   "ict_sigma_jailbreak_bridge.json"))
     args = ap.parse_args()
     if not (args.pilot or args.full):
         ap.error("choisir --pilot ou --full")
+    if args.device_map and args.device != "cpu":
+        ap.error("--device-map exclut --device (le placement est delegue au chargeur maison)")
+    if args.device_map and not args.max_memory:
+        ap.error("--device-map exige --max-memory (budgets VRAM par GPU)")
+    if args.device_map:
+        # indices cuda stables d'une machine a l'autre ; sans effet sur les modes
+        # --device cpu/cuda deja committes (leur ordre d'enumeration reste le defaut)
+        os.environ.setdefault("CUDA_DEVICE_ORDER", "PCI_BUS_ID")
 
     import torch
-    from transformers import AutoModelForCausalLM, AutoTokenizer
+    from transformers import AutoTokenizer
 
     dtype = {"float32": torch.float32, "bfloat16": torch.bfloat16}[args.dtype]
     n_prompts = args.n_prompts or (1 if args.pilot else len(PROMPTS[0]))
     t0 = time.time()
     tok = AutoTokenizer.from_pretrained(args.model)
-    model = AutoModelForCausalLM.from_pretrained(args.model, dtype=dtype)
-    model.to(args.device)
-    model.eval()
-    print(f"[load {time.time() - t0:.1f}s] {args.model} ({args.dtype}, {args.device}) "
+    if args.device_map:
+        max_memory = {}
+        for kv in args.max_memory.split(","):
+            dev, budget = kv.split("=", 1)
+            dev = dev.strip()
+            if not dev.startswith("cuda:"):
+                ap.error("cle de budget non-GPU refusee (le CPU est implicite) : " + dev)
+            unit = budget.strip()[-3:]
+            if unit not in ("GiB", "MiB"):
+                ap.error("unite attendue GiB/MiB : " + budget)
+            max_memory[int(dev.split(":", 1)[1])] = int(budget.strip()[:-3]) * {
+                "GiB": 2**30, "MiB": 2**20}[unit]
+        model, placement = load_model_offload(args.model, dtype, max_memory)
+    else:
+        from transformers import AutoModelForCausalLM
+        model = AutoModelForCausalLM.from_pretrained(args.model, dtype=dtype)
+        model.to(args.device)
+        model.eval()
+        placement = args.device
+    print(f"[load {time.time() - t0:.1f}s] {args.model} ({args.dtype}, {placement}) "
           f"greedy, {args.turns} tours, {n_prompts} prompts/classe", flush=True)
 
     traj: dict[int, list[list[str]]] = {}
+    jl_path = args.out + ".rollouts.jsonl"   # checkpoint incrémental : un run
+    os.makedirs(os.path.dirname(args.out), exist_ok=True)  # offload de 27B dure
+    with open(jl_path, "w", encoding="utf-8") as fh:       # des heures -- chaque
+        fh.write("")                                        # rollout survit a un crash
     for sev in (0, 1, 2):
         traj[sev] = []
         for i, p in enumerate(PROMPTS[sev][:n_prompts]):
             ts = time.time()
             st = rollout(tok, model, torch, p, args.turns)
             traj[sev].append(st)
+            with open(jl_path, "a", encoding="utf-8") as fh:
+                fh.write(json.dumps({"sev": sev, "i": i, "states": st}) + "\n")
             print(f"  s={sev} [{i + 1}/{n_prompts}] {''.join(st)}  "
                   f"({time.time() - ts:.1f}s)", flush=True)
 
@@ -317,7 +516,7 @@ def main() -> int:
         "reference_model": MODEL,
         "is_replication": args.model != MODEL,
         "dtype": args.dtype,
-        "device": args.device,
+        "device": placement,
         "decoding": "greedy (do_sample=False) -- entierement reproductible",
         "turns": args.turns,
         "n_prompts_per_class": n_prompts,
