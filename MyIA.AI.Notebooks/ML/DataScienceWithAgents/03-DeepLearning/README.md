@@ -80,6 +80,24 @@ d'entraînement coûte quand le modèle ne tient plus sur une machine :
 - Volet 3 — DDP / ZeRO / FSDP et parallélisme de pipeline (GPipe contre 1F1B) [3.13] (#18210) : la mémoire par rang selon la stratégie de découpage, et l'occupation en vol des activations selon l'ordre des micro-lots.
 - Volet 4 — Deux vraies cartes : DDP et FSDP sous `nccl`, et le rang qui fait attendre l'autre [3.13b] (#19256) : le pic CUDA et le temps par pas mesurés sur cartes hétérogènes, et la signature du déséquilibre — l'attente se lit chez la carte saine.
 
+## Livres de référence
+
+Cette série ancre ses carnets dans la **référence canonique du deep learning** : *Deep Learning* (Goodfellow, Bengio & Courville, MIT Press, 2016). Les chapitres cités par les carnets de la série :
+
+| Chapitre | Sujet | Carnet(s) d'ancrage |
+|---|---|---|
+| ch. 5 | Machine learning de base | [3.0-Théorie-Information](3.0-Theorie-Information.ipynb) (entropie, KL) |
+| ch. 6 (6.5) | Réseaux feedforward, backprop | [3.1-Rétropropagation](3.1-Retropropagation.ipynb) — contre-exemple fondateur soldé |
+| ch. 7 (5.2.2, 7.5, 7.8) | Régularisation | [3.3-Régularisation](3.3-Regularisation.ipynb) |
+| ch. 8 (8.1-8.3) | Optimisation pour le deep learning | [2.2-Descente-de-gradient](../02-ML-Cours/2.2-Descente-de-gradient.ipynb) (carnet 02, ancrage par [#19329](https://github.com/jsboige/CoursIA/pull/19329)) |
+| ch. 9 | Réseaux convolutifs | [4.1-Conv-NumPy-Torch-Allclose](../04-Vision/4.1-Conv-NumPy-Torch-Allclose.ipynb) |
+| ch. 14 | Autoencodeurs | (passerelle vers [3.6 / 3.6b](3.6-Modeles-Generatifs.ipynb) ch. 20) |
+| ch. 20 (20.10.3, 20.10.4, 20.10.5) | Modèles génératifs profonds (VAE, GAN, débruitage) | [3.6-Modeles-Generatifs](3.6-Modeles-Generatifs.ipynb), [3.6b-Modeles-Generatifs-PyTorch](3.6b-Modeles-Generatifs-PyTorch.ipynb) |
+
+**Lecture recommandée du livre** pour cette série : ch. 6 (pour [3.1](3.1-Retropropagation.ipynb)), ch. 8 (pour [2.2](../02-ML-Cours/2.2-Descente-de-gradient.ipynb) et [3.2](3.2-Optimisateurs.ipynb)), ch. 9 (pour [4.1](../04-Vision/4.1-Conv-NumPy-Torch-Allclose.ipynb)), ch. 20 (pour [3.6 / 3.6b / 3.6c / 3.6d / 3.6e](3.6-Modeles-Generatifs.ipynb)). Le livre est **PDF archivé** dans le gisement partagé — voir [docs/reference/bibliography-hygiene.md](../../../../docs/reference/bibliography-hygiene.md).
+
+**Survey unificateur** (à lire en complément pour la série 3.6) : Luo, C. (2022), *Understanding Diffusion Models: A Unified Perspective* — démontre dans « Three Equivalent Interpretations » (p. 15-17, éq. 115-118) que prédire $\epsilon$, prédire $x_0$ et régresser le score sont trois réparamétrisations du même objectif ; c'est l'arc de fond des carnets 3.6, 3.6c, 3.6d, 3.6e. Ancré par le [3.6d](3.6d-Modeles-Generatifs-Score-SDE-from-scratch.ipynb) (passerelle vers le score) et le [3.10-Modeles-Generatifs-Diffusion-SOTA](3.10-Modeles-Generatifs-Diffusion-SOTA.ipynb) (librerie `diffusers`).
+
 ## Prérequis
 
 - [02-ML-Cours](../02-ML-Cours/README.md) en entier — en particulier [2.2 (descente de
