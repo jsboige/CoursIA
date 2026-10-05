@@ -24,7 +24,7 @@ Une ligne par notebook, cinq colonnes : **Intention** (ce que le cadrage `ICT-0-
 | 4 | ICT-25 | tri des négatifs, désordre de sections établi | **LU** (tranche 1, 2026-08-24) |
 | 5 | GWT / SAE + non numérotés | alimente #7260 (renumérotation) | **LU 3/3 tranches** (lectures du 2026-09-19 ; posées au ledger par #16814, #16821, #16827 — rang complet, 100 % des strands) |
 | 6 | **Fondations 01 → 09** (extension #11690) | `ICT-01` à `ICT-09` — racine de la numérotation, les deux piliers + strate dynamique | **LU** (tranche A de l'extension, 2026-10-05) |
-| 7 | **Tranche B 10 → 17b** (extension #11690) | `ICT-10` à `ICT-17b` non couverts par les strands 1-5 | **EN COURS 13/25** (strand 7, ouvert 2026-10-05 — jusqu'à `ICT-15b`) |
+| 7 | **Tranche B 10 → 17b** (extension #11690) | `ICT-10` à `ICT-17b` non couverts par les strands 1-5 | **EN COURS 14/25** (strand 7, ouvert 2026-10-05 — jusqu'à `ICT-15c`) |
 
 Les accrétions `-b/-c/-d` se tranchent dans le strand où elles tombent.
 
@@ -641,3 +641,13 @@ Deuxième tranche de la partition ai-01 (DM 13:41Z : A 01-09, **B 10-17b**, C 20
 | Résultat | **Conjecture REJETÉE sur 5/8 substrats** — ratios : S2 0,000 · S8 0,408 · S6 0,603 · S1/S5 0,736 (inconsistants) vs S3 1,000 · S4 1,000 · S7 2,000 (consistants) ; verdict global compté « 3 consistent / 5 inconsistent / 0 inconclusive ». Interprétation écrite : la sensibilité locale ne suffit pas à borner le zoo, l'intégration exige une information irréductiblement globale — le négatif **sert la thèse** de la série. |
 | Critique | (1) Le rejet de S2 repose sur s_max=0 : la trajectoire reste entièrement dans le régime haut (2000/2000) et ne visite jamais deux états voisins — l'« inconsistency » mesure peut-être la couverture d'échantillonnage, pas la structure ; aucune mise en garde de ce type dans le md. (2) Exos silencieux, dont l'exo 3 (vérification manuelle MAJ_4) qui serait le contrôle étudiant le plus direct de la borne. |
 | Verdict | **SOLIDE** — banc de réfutation canonique : conjecture posée, comptée, rejetée à 5/8 avec interprétation théorique, contrôle positif sur fonctions connues exécuté. Le caveat S2 (s_max nul par non-visite) est la seule dette, de lecture. |
+
+### `ICT-15c-MetaProxyObstruction` — 23 cellules (12 md, 11 code, 11/11 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| Intention | #7395, lecture cohomologie-obstruction (doc Grothendieck 19/07/2026) : **l'obstruction elle-même est-elle informative** ? Quand deux proxys divergent, la structure du désaccord forme-t-elle un objet stable (méta-proxy) ou du bruit ? |
+| Contenu réel | 4 substrats (Gray-Scott 64×64 intégrée 800 pas · Axelrod stratégie dominante · Grokking marche biaisée crossover · May biomasse 16 quantiles) ; 3 proxys (spectral_gap, sens_mean, sens_max) ; vecteur d'obstruction `(a−b)/(\|a\|+\|b\|)` invariant d'échelle et antisymétrique ; 6 paires cross-substrat ; heatmap committée (`ICT-15c-obstruction-heatmap.png`) ; **leçon d'instrument documentée** : #7578 — `f(x)=x%2` saturait la sensibilité (mean=max=1,0 partout → discrimination artefactuelle), remplacée par l'identité qui restaure un panel non plafonné. 3 exos **silencieux**. |
+| Résultat | Signatures différenciées (ex. gray_scott spectral 0,500 / sens 0 ; may spectral 0,0067 / sens_max 4,000) ; paires : norms L₂ de 0,7207 (axelrod↔grokking) à 1,7170 (gray_scott↔may) ; mean_norm_L₂ = **1,2598** → **VERDICT = NOISE** (seuils falsifiables écrits : STABLE ≤ 0,05, NOISE ≥ 0,30) — le motif d'obstruction n'est PAS un objet stable, le méta-proxy est rejeté tel quel. |
+| Critique | (1) Le verdict NOISE clôt le fil sans analyse des paires : gray_scott↔may (1,7170) et axelrod↔grokking (0,7207) encadrent un facteur 2,4 d'hétérogénéité que le md n'exploite pas. (2) Exo 1 redemande « le verdict 4 substrats » déjà imprimé par la cellule 12 — exercice sans écart au livré. (3) Un seul état par substrat (pas de graines) : la stabilité du verdict NOISE elle-même n'est pas mesurée. |
+| Verdict | **SOLIDE** — négatif propre et falsifiable : seuils écrits AVANT la mesure, verdict NOISE assumé en sortie, artefact d'instrument (saturation #7578) diagnostiqué et corrigé avec sa trace pédagogique. L'objet méta-proxy n'existe pas en l'état — c'est un résultat, pas un échec. |
