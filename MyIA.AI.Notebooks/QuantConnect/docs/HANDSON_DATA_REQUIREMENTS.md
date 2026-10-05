@@ -78,7 +78,7 @@ Ce document documente les prérequis de données pour les exemples du livre qui 
 Pour le cours de trading quantitatif:
 
 1. **Focus sur les exemples backtestables**: Sections 05 + exemples ML "purs" de la section 06
-2. **Documents les prérequis**: Pour Ex16/17/19, expliquer aux étudiants pourquoi ils ne peuvent pas être backtestés directement
+2. **Documents les prérequis**: Pour Ex16/17, expliquer aux étudiants pourquoi ils ne peuvent pas être backtestés directement (Ex19 l'est désormais, cf. section dédiée)
 3. **Alternatives QC**: Proposer des implémentations QC équivalentes pour les concepts
 
 ---
