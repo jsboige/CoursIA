@@ -131,6 +131,22 @@ def excerpt(text: str, limit: int = 200) -> str:
     return ""
 
 
+def portable_basename(path: str) -> str:
+    """Basename d'un chemin, portable -- coupe sur `/` ET sur `\\`.
+
+    `PurePath(...).name` suit le separateur de la plateforme courante : sous
+    POSIX il ne coupe pas un chemin Windows, et le basename rendu est le chemin
+    entier. Un dossier produit sous Windows puis relu sur Linux laisserait donc
+    passer exactement le chemin machine qu'il existe pour empecher -- et la
+    fuite est silencieuse, puisqu'elle ne produit qu'une ligne plus longue.
+    Meme forme de panne pour un APPARIEMENT de chemins (l'axe citations) : deux
+    chemins egaux vus de Windows cessent de se reconnaitre sous Linux, et le
+    verdict tombe en faux negatif sans rien signaler.
+    On coupe donc sur les deux separateurs, sans dependre de l'OS.
+    """
+    return str(path).replace("\\", "/").rsplit("/", 1)[-1]
+
+
 def portable_command(argv: Sequence[str], outfile: str | None = None) -> str:
     """Commande relisible : interpreteur par son basename, temporaire masque.
 
@@ -142,7 +158,7 @@ def portable_command(argv: Sequence[str], outfile: str | None = None) -> str:
     parts: list[str] = []
     for index, arg in enumerate(argv):
         if index == 0:
-            parts.append(Path(str(arg)).name)
+            parts.append(portable_basename(str(arg)))
         elif outfile and str(arg) == str(outfile):
             parts.append("<tmp>/charge-utile.json")
         else:
@@ -197,7 +213,7 @@ def judge_citations(payload: Any, rc: int, notebook: str) -> tuple[str, str]:
         return ERROR, f"organe non concluant (rc={rc})"
     if payload is None:
         return ERROR, "sortie JSON illisible -- verdict impossible"
-    wanted = Path(str(notebook).replace("\\", "/")).name
+    wanted = portable_basename(notebook)
     mine: list[str] = []
     occurrences = payload.get("occurrences") or {}
     if not isinstance(occurrences, dict):
@@ -206,7 +222,7 @@ def judge_citations(payload: Any, rc: int, notebook: str) -> tuple[str, str]:
         for hit in hits or []:
             if not isinstance(hit, dict):
                 continue
-            if Path(str(hit.get("notebook", ""))).name == wanted:
+            if portable_basename(hit.get("notebook", "")) == wanted:
                 mine.append(str(arxiv_id))
                 break
     if not mine:

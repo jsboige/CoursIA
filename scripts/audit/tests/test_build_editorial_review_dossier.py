@@ -178,6 +178,29 @@ def test_citations_ignore_a_neighbour_notebook():
     assert verdict == dos.PASS
 
 
+def test_citations_match_across_platform_path_spellings():
+    """L'organe peut rendre un chemin absolu Windows la ou on lui a passe un
+    chemin relatif POSIX -- le dossier se lit sur une autre machine que celle
+    qui l'a produit.
+
+    L'appariement se fait sur le basename PORTABLE : `Path(...).name` ne coupe
+    que le separateur de l'OS courant, donc sous Linux un chemin Windows ne se
+    reconnait plus, `mine` reste vide, et le verdict tombe en « 0 citation »
+    alors que la citation existe -- un faux negatif que rien ne signale. La
+    premiere assertion est celle qui discrimine : mal apparie on obtient PASS.
+    """
+    payload = {
+        "occurrences": {"cs/0011047": [
+            {"notebook": r"C:\repo\MyIA.AI.Notebooks\Sudoku"
+                         r"\Sudoku-01-Backtracking-Python.ipynb",
+             "cell_idx": 0}]},
+        "delta_not_covered": ["cs/0011047"],
+    }
+    verdict, detail = dos.judge_citations(payload, 0, NOTEBOOK)
+    assert verdict == dos.WARN
+    assert "cs/0011047" in detail
+
+
 def test_citations_unreadable_payload_is_error():
     assert dos.judge_citations(None, 0, NOTEBOOK)[0] == dos.ERROR
 
@@ -292,7 +315,18 @@ def test_provenance_carries_organ_and_return_code():
 
 
 def test_portable_command_reduces_interpreter_to_its_basename():
+    """Le basename se coupe sur les DEUX separateurs, pas seulement celui de la
+    plateforme qui execute le test.
+
+    Le dossier traverse les plateformes : produit sous Windows, relu sous Linux,
+    ou l'inverse. `Path(...).name` ne coupe que le separateur de l'OS courant --
+    sous POSIX il rendait donc `C:\\Python313\\python.exe` entier, et la fuite du
+    chemin machine etait silencieuse (une ligne plus longue, aucun rouge). Les
+    deux cas sont epingles ici pour que la regression ne puisse pas revenir par
+    la plateforme d'execution du test.
+    """
     assert dos.portable_command([r"C:\Python313\python.exe", "x.py"]) == "python.exe x.py"
+    assert dos.portable_command(["/usr/bin/python3", "x.py"]) == "python3 x.py"
 
 
 def test_portable_command_masks_the_temporary_payload_file():
