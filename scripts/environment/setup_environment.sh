@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# CI-CHECK:
+#   ^ With no argument this script only CHECKS -- every installer sits behind
+#     --auto-fix -- so the CI advisory guard can execute it as a host-readiness
+#     probe without mutating the runner. See bash-syntax-advisory.yml (#10643).
 # =============================================================================
 # SETUP ENVIRONNEMENT NOTEBOOKS - CoursIA (Linux / macOS)
 # =============================================================================
