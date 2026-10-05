@@ -1,7 +1,8 @@
 """K_trajectory: instrument de perplexité structurelle pour trajectoires Hashlife.
 
-T12 (#18446, #13483) — instrument de mesure de la complexité de Kolmogorov
-approchée par compression LZ sur fenêtres d'observation croissantes.
+T12 (#18446, #13483, tranche 3 #19227) — instrument de mesure de la complexité
+de Kolmogorov approchée par compression LZ sur fenêtres d'observation
+croissantes.
 
 Le discriminant publié dans #18446 : pour une trajectoire t observée à des
 fenêtres W = 2^n, le quotient K_trajectory(t, W=2^n) / n tend vers 0 pour les
@@ -16,9 +17,19 @@ Cette tranche 1 livre :
 3. Un verdict explicite sur le discriminant K(t, 2^n) / n (asymptote vs
    convergence à 0).
 
+La tranche 3 (#19227) ajoute :
+4. Mode `--mode bounds` : calcule K_min_lz(t) = K(t, W_last) (borne
+   inférieure LZ de Kolmogorov) et K_first_lz(t) = K(t, W=1) pour chaque
+   témoin admis. Publie le verdict final falsifiable
+   SOUP-FRAGILE-CONJECTURE-VERIFIEE / NON-VERIFIEE / INCONCLUSIVE au sens
+   de l'acceptance #18446 (item 4).
+5. Mode `--json-in` : consomme le JSON produit par `--mode measure`
+   (n'a pas besoin de ré-exécuter la mesure -- gain de temps + déterminisme).
+
 Usage :
     python scripts/hashlife/k_trajectory.py --mode measure
     python scripts/hashlife/k_trajectory.py --mode verify-corpus
+    python scripts/hashlife/k_trajectory.py --mode bounds --json-in results.json
 """
 from __future__ import annotations
 
@@ -410,11 +421,130 @@ def cmd_verify_corpus(args: argparse.Namespace) -> int:
     return 0 if ok else 1
 
 
+def compute_bounds(results: list[dict]) -> dict:
+    """Bornes inférieures LZ de Kolmogorov par témoin.
+
+    T12 tranche 3 (#19227, fille de #18446) : pour chaque témoin admis,
+    publie K_min(t) = K(t, W_last) (la borne asymptotique LZ quand W
+    double) et K_first(t) = K(t, W=1) (la borne brute non compressée).
+
+    K(t, W) est mesuré par compression zlib de la fenêtre W de la
+    trajectoire. La borne inférieure LZ d'un témoin est donc :
+        K_min(t) = K(t, W_last)
+    et la borne supérieure triviale est :
+        K_max(t) = K(t, W=1)  (LZ déjà plus court que le brut)
+
+    Pour un programme périodique, K_min tend vers 0 quand la période est
+    entièrement capturée par LZ. Pour la soupe, K_min reste au-dessus
+    d'un plancher non-trivial.
+
+    Note sur Kolmogorov : la complexité de Kolmogorov K(t) est
+    incalculable en général, mais l'instrument tranche 1 mesure K(t, W)
+    = LZ-length(t[:W]) qui en est une borne basse vérifiable.
+    """
+    by_name: dict[str, list[dict]] = {}
+    for r in results:
+        by_name.setdefault(r["trajectory"], []).append(r)
+
+    bounds = {}
+    for name, runs in by_name.items():
+        runs_sorted = sorted(runs, key=lambda r: r["n"])
+        if len(runs_sorted) < 2:
+            bounds[name] = {
+                "k_min_lz": None,
+                "k_first_lz": None,
+                "ratio": None,
+                "window_last": None,
+                "verdict_local": "INCONCLUSIVE (insufficient data points)",
+            }
+            continue
+        k_first = runs_sorted[0]["k_trajectory"]
+        k_last = runs_sorted[-1]["k_trajectory"]
+        w_first = runs_sorted[0]["W"]
+        w_last = runs_sorted[-1]["W"]
+        ratio = k_last / k_first if k_first > 0 else float("inf")
+        bounds[name] = {
+            "k_min_lz": k_last,
+            "k_first_lz": k_first,
+            "ratio": ratio,
+            "window_first": w_first,
+            "window_last": w_last,
+        }
+    return bounds
+
+
+def final_verdict(bounds: dict, verdicts: dict) -> str:
+    """Verdict final falsifiable T12 (#18446 acceptance).
+
+    SOUP-FRAGILE-CONJECTURE-VERIFIEE : tous les soupes mesurées sont
+    SOUP-FRAGILE-* ET la décroissance est strictement < 0.7 sur le
+    ratio.
+    NON-VERIFIEE : au moins une soupe mesurée est SOUP-FRAGILE-WEAK
+    ou PERIODIC-COLLAPSED, OU un programme Turing-complet auto-entretenu
+    n'atteint pas le seuil PROGRAM-CONFIRMED.
+    INCONCLUSIVE : pas de soupe ou pas de programme mesuré.
+    """
+    soups = [n for n in bounds if n.startswith("soup_")]
+    programs = [n for n in bounds if not n.startswith("soup_")]
+    if not soups or not programs:
+        return "INCONCLUSIVE (corpus manque de soupe ou de programme)"
+    # Conjecture vérifiée si tous les soupes sont SOUP-FRAGILE-CONFIRMED
+    # (ratio < 0.7 sur les soupes) ET qu'aucun programme n'est PERIODIC-COLLAPSED
+    # qui masquerait un PROGRAM-CONFIRMED.
+    soup_verified = all(
+        "SOUP-FRAGILE-CONFIRMED" in verdicts.get(s, "")
+        for s in soups
+    )
+    program_unambiguous = all(
+        "PERIODIC-COLLAPSED" not in verdicts.get(p, "")
+        for p in programs
+    )
+    if soup_verified and program_unambiguous:
+        return "SOUP-FRAGILE-CONJECTURE-VERIFIEE"
+    return "NON-VERIFIEE (limites de K_trajectory documentees tranche 2)"
+
+
+def cmd_bounds(args: argparse.Namespace) -> int:
+    """Mode bounds : calcule les bornes inférieures LZ par témoin.
+
+    Soit --json-in (un JSON produit par --mode measure), soit ré-exécute
+    la mesure. Les bornes sont publiées en stdout et optionnellement en
+    JSON via --json-out.
+    """
+    if args.json_in:
+        with open(args.json_in, encoding="utf-8") as f:
+            data = json.load(f)
+        results = data["results"]
+        verdicts_in = data.get("verdicts", {})
+    else:
+        results = measure_corpus()
+        verdicts_in = verdict(results)
+
+    bounds = compute_bounds(results)
+    final = final_verdict(bounds, verdicts_in)
+
+    print(f"{'Trajectory':25s}  {'W_first':>8s}  {'W_last':>7s}  {'K_first':>8s}  {'K_min':>8s}  {'ratio':>7s}")
+    print("-" * 80)
+    for name, b in bounds.items():
+        if b["k_min_lz"] is None:
+            print(f"{name:25s}  {'-':>8s}  {'-':>7s}  {'-':>8s}  {'-':>8s}  {'-':>7s}  ({b['verdict_local']})")
+        else:
+            print(f"{name:25s}  {b['window_first']:>8d}  {b['window_last']:>7d}  {b['k_first_lz']:>8d}  {b['k_min_lz']:>8d}  {b['ratio']:>7.3f}")
+    print()
+    print(f"=== Verdict final T12 (#18446) ===")
+    print(f"  {final}")
+    if args.json_out:
+        out = {"bounds": bounds, "final_verdict": final, "per_trajectory_verdicts": verdicts_in}
+        Path(args.json_out).write_text(json.dumps(out, indent=2, ensure_ascii=False))
+        print(f"\n[INFO] bornes écrites dans {args.json_out}")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0] if __doc__ else "K_trajectory")
     parser.add_argument(
         "--mode",
-        choices=["measure", "verify-corpus"],
+        choices=["measure", "verify-corpus", "bounds"],
         default="measure",
         help="Mode d'exécution (défaut: measure)",
     )
@@ -423,9 +553,16 @@ def main() -> int:
         default=None,
         help="Si fourni, écrit les résultats en JSON à ce chemin",
     )
+    parser.add_argument(
+        "--json-in",
+        default=None,
+        help="JSON d'entrée (résultats de `--mode measure`), pour les modes qui consomment des résultats",
+    )
     args = parser.parse_args()
     if args.mode == "measure":
         return cmd_measure(args)
+    if args.mode == "bounds":
+        return cmd_bounds(args)
     return cmd_verify_corpus(args)
 
 
