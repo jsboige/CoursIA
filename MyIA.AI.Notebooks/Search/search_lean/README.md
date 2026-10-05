@@ -193,7 +193,7 @@ flowchart TD
 
 Le module [`Szpiro.lean`](Szpiro.lean) (miroir EN : [`Szpiro_en.lean`](Szpiro_en.lean))
 est le sibling Lean du carnet
-[`Research-10-Szpiro-Pasten-2026-Python.ipynb`](../Applications/Research/Research-10-Szpiro-Pasten-2026-Python.ipynb) :
+[`Research-10-Szpiro-Pasten-2026-Python.ipynb`](../Applications/Research/Research-10-Szpiro-Pasten-2026-Python.html) :
 Pasten 2026, *Improved Bounds for Szpiro's Conjecture* (arXiv 2609.17390) rend la borne
 `h(E) ≪ N·log log N` **inconditionnelle** — elle était connue sous GRH — et prouve
 `h(E) ≪_S N` pour les courbes semistables hors d'un ensemble fini.
@@ -242,6 +242,6 @@ Phases suivantes (suivi #4048) :
   of Minimum Cost Paths*, IEEE Trans. Syst. Sci. Cybern. **4**(2), 1968.
 - H. Pasten, *Improved Bounds for Szpiro's Conjecture*, arXiv 2609.17390 (2026),
   archivé `G:\Mon Drive\MyIA\IA\Bibliographie IA\NumberTheory\` — carnet compagnon
-  [`Research-10-Szpiro-Pasten-2026-Python.ipynb`](../Applications/Research/Research-10-Szpiro-Pasten-2026-Python.ipynb).
+  [`Research-10-Szpiro-Pasten-2026-Python.ipynb`](../Applications/Research/Research-10-Szpiro-Pasten-2026-Python.html).
 - S. Russell, P. Norvig, *Artificial Intelligence: A Modern Approach*, §3.5 (A* Search).
 - Notebooks compagnons : [`Search-02-Uninformed.ipynb`](../Part1-Foundations/Search-02-Uninformed.html), [`Search-03-Informed.ipynb`](../Part1-Foundations/Search-03-Informed.ipynb) (le notebook historique [`Exploration_non_informée_et_informée_intro.ipynb`](../_archive/Exploration_non_informée_et_informée_intro.ipynb) est archivé depuis 2026-07-03).
