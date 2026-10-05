@@ -117,6 +117,7 @@ normed space is closed. This is the building block for the cone-closed kernel: t
 general (finitely-generated, possibly dependent) cone is a finite union
 (Carathéodory) of such simplicial cones, each closed here. -/
 
+-- MSZ ch. 5 -- the conic hull of a linearly independent set is closed (technical lemma of the Bondareva-Farkas plan).
 theorem conicHull_linearIndependent_isClosed
     {ι F : Type*} [Fintype ι] [NormedAddCommGroup F] [NormedSpace ℝ F]
     [FiniteDimensional ℝ F] (v : ι → F) (hli : LinearIndependent ℝ v) :
@@ -177,6 +178,7 @@ closed (brick 1); finite union of closed sets is closed. -/
     Every point of a finitely-generated cone lies in the simplicial cone of some
     linearly-independent sub-family. Proved by well-founded induction on the
     cardinality of the carrying finset (minimal-cardinality ⟹ full support). -/
+-- MSZ ch. 5 -- membership characterization of the cone via a linearly independent subset.
 theorem mem_cone_iff_exists_li_subset
     {ι F : Type*} [Fintype ι] [DecidableEq ι] [NormedAddCommGroup F] [NormedSpace ℝ F]
     [FiniteDimensional ℝ F] (v : ι → F) (y : F)
@@ -323,6 +325,7 @@ theorem mem_cone_iff_exists_li_subset
   exact (measure Finset.card).wf.induction Finset.univ step hgood_univ
 
 /-- **Brick 3.** A finitely-generated conic hull is closed. -/
+-- MSZ ch. 5 -- a finitely generated cone is closed (key of the Farkas lemma).
 theorem finGenCone_isClosed
     {ι F : Type*} [Fintype ι] [DecidableEq ι] [NormedAddCommGroup F] [NormedSpace ℝ F]
     [FiniteDimensional ℝ F] (v : ι → F) :
@@ -392,6 +395,7 @@ is a finitely-generated cone (standard-basis generators `gen S = phiAugCont v (P
 hence closed by `finGenCone_isClosed`, so `closure(image) = image`. Membership reduces to
 `∃ w ≥ 0, phiAugCont v w = y`. -/
 
+-- MSZ ch. 5 -- `y in augCone` iff a certain inequality holds (intermediate form of the Farkas lemma).
 theorem augCone_mem_iff (v : Finset N → ℝ) (y : (Option N) → ℝ) :
     y ∈ augCone v ↔ ∃ w : Finset N → ℝ, (∀ S, 0 ≤ w S) ∧ phiAugCont v w = y := by
   -- Standard-basis generators: gen S = phiAugCont v (e_S), where e_S = Pi.single S 1.
@@ -472,6 +476,7 @@ def balancedUnit (t : ℝ) : (Option N) → ℝ := fun j => match j with
     generators `phiAugCont v (Pi.single S 1)`. The (⟸) direction is load-bearing for
     the witness decoding: it translates a separating functional `f` into coalitional
     rationality of the candidate witness `x`. -/
+-- MSZ ch. 5 -- cone / augmented-cone duality (symmetric form of the Farkas lemma).
 lemma augCone_dual_iff (v : Finset N → ℝ) (f : ((Option N) → ℝ) →L[ℝ] ℝ) :
     (∀ y ∈ augCone v, 0 ≤ f y) ↔
       ∀ S : Finset N, 0 ≤ f (phiAugCont v (Pi.single S 1)) := by
@@ -507,6 +512,7 @@ load-bearing decoding step. -/
 
 /-- `some i` coordinate of the `S`-generator: the incidence indicator `1` if
     `i ∈ S`, else `0`. Generalizes the grand-coalition special case to any `S`. -/
+-- MSZ ch. 5 -- application of the generating family to an active index (Farkas lemma decomposition).
 lemma gen_apply_some (v : Finset N → ℝ) (S : Finset N) (i : N) :
     (phiAugCont v (Pi.single S 1)) (some i) = if i ∈ S then (1 : ℝ) else 0 := by
   -- defeq: `(phiAugCont v (Pi.single S 1)) (some i)` reduces to the `some` branch,
@@ -534,6 +540,7 @@ lemma gen_apply_some (v : Finset N → ℝ) (S : Finset N) (i : N) :
 
 /-- `none` coordinate of the `S`-generator: the coalition value `v S`.
     Generalizes the grand-coalition special case to any `S`. -/
+-- MSZ ch. 5 -- application of the generating family to an inactive index.
 lemma gen_apply_none (v : Finset N → ℝ) (S : Finset N) :
     (phiAugCont v (Pi.single S 1)) none = v S := by
   -- defeq: the `none` branch is `∑ T, w T * v T` with `w = Pi.single S 1`.
@@ -560,6 +567,7 @@ witness `x i := f (base-some i) / (-f (base-none))`. -/
 /-- **Generator decomposition (vector form)** — the `S`-generator equals the
     incidence combination over `S` (one `some i` basis vector per `i ∈ S`) plus
     the value multiple `v S • Pi.single none 1` along the `none` axis. -/
+-- MSZ ch. 5 -- canonical decomposition of an augmented-cone element in terms of the generating family.
 lemma gen_decomp (v : Finset N → ℝ) (S : Finset N) :
     phiAugCont v (Pi.single S 1) =
       (∑ i ∈ S, (Pi.single (some i) 1 : (Option N) → ℝ)) + v S • Pi.single none 1 := by
@@ -607,6 +615,7 @@ lemma gen_decomp (v : Finset N → ℝ) (S : Finset N) :
     `f`, `f (generator S) = ∑ i ∈ S, f (base-some i) + v S * f (base-none)`.
     This is the algebraic form that the witness decoding consumes (apply `f`
     to `gen_decomp`). -/
+-- MSZ ch. 5 -- linearity of the generating-family map.
 lemma gen_apply_linear (v : Finset N → ℝ) (S : Finset N)
     (f : ((Option N) → ℝ) →L[ℝ] ℝ) :
     f (phiAugCont v (Pi.single S 1)) =
@@ -620,6 +629,7 @@ lemma gen_apply_linear (v : Finset N → ℝ) (S : Finset N)
     plus linearity turns `f (balancedUnit (v(N)+t)) < 0` into
     `f (phiAugCont v (Pi.single ⊤ 1)) + t * f (Pi.single none 1) < 0`; combined with the
     nonnegativity on the generator, `t * f (Pi.single none 1) < 0`, hence the sign (t > 0). -/
+-- MSZ ch. 5 -- existence of a hyperplane separating the cone from a point that does not belong to it (Farkas lemma).
 lemma separatingFunctional_none_neg (v : Finset N → ℝ) {t : ℝ} (ht : 0 < t)
     (f : ((Option N) → ℝ) →L[ℝ] ℝ)
     (hfCone : ∀ y ∈ augCone v, 0 ≤ f y)
@@ -688,6 +698,7 @@ the dual cone inequality `0 ≤ f (generator S)` via the linearity identity
     grand-coalition generator plus `t` times the `none` basis vector. Under a
     separating functional, this identity yields the strict budget
     `∑ x ≤ v(N) + t`. -/
+-- MSZ ch. 5 -- decomposition of the balancedness condition in terms of the augmented cone.
 lemma balancedUnit_decomp (v : Finset N → ℝ) (t : ℝ) :
     balancedUnit (v Finset.univ + t) =
       phiAugCont v (Pi.single Finset.univ 1) + t • Pi.single none 1 := by
@@ -709,6 +720,7 @@ lemma balancedUnit_decomp (v : Finset N → ℝ) (t : ℝ) :
     pre-imputation `x` that is coalitionally rational and within the budget
     `∑ x ≤ v(N) + t`. The balanced-game hypothesis enters only later, in
     `Basic.lean`, via the bridge that *produces* such an `f`. -/
+-- MSZ ch. 5 -- existence of a pre-imputation in the strict core (direct consequence of balancedness).
 lemma exists_preimputation_strict_core (v : Finset N → ℝ) {t : ℝ} (ht : 0 < t)
     (f : ((Option N) → ℝ) →L[ℝ] ℝ)
     (hfCone : ∀ y ∈ augCone v, 0 ≤ f y)
