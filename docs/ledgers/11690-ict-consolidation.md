@@ -24,7 +24,7 @@ Une ligne par notebook, cinq colonnes : **Intention** (ce que le cadrage `ICT-0-
 | 4 | ICT-25 | tri des négatifs, désordre de sections établi | **LU** (tranche 1, 2026-08-24) |
 | 5 | GWT / SAE + non numérotés | alimente #7260 (renumérotation) | **LU 3/3 tranches** (lectures du 2026-09-19 ; posées au ledger par #16814, #16821, #16827 — rang complet, 100 % des strands) |
 | 6 | **Fondations 01 → 09** (extension #11690) | `ICT-01` à `ICT-09` — racine de la numérotation, les deux piliers + strate dynamique | **LU** (tranche A de l'extension, 2026-10-05) |
-| 7 | **Tranche B 10 → 17b** (extension #11690) | `ICT-10` à `ICT-17b` non couverts par les strands 1-5 | **EN COURS 23/25** (strand 7, ouvert 2026-10-05 — jusqu'à `ICT-16`) |
+| 7 | **Tranche B 10 → 17b** (extension #11690) | `ICT-10` à `ICT-17b` non couverts par les strands 1-5 | **EN COURS 24/25** (strand 7, ouvert 2026-10-05 — jusqu'à `ICT-17`) |
 
 Les accrétions `-b/-c/-d` se tranchent dans le strand où elles tombent.
 
@@ -741,3 +741,13 @@ Deuxième tranche de la partition ai-01 (DM 13:41Z : A 01-09, **B 10-17b**, C 20
 | Résultat | Scénario A : Spearman(MDL, NLL) = **+1,000**, argmin MDL = argmin NLL = k2, réduction NLL +2 443 bits ; Scénario B (i.i.d., structure absente) : Spearman **+1,000**, argmin = k0 des deux côtés, réduction **0 bit** — MDL sélectionne correctement **quand la structure existe et quand elle n'existe pas**. La bosse est mesurée avec un vrai pic, et le proxy interne est corroboré par un compresseur externe (tau +0,786). |
 | Critique | (1) La corrélation MDL↔zlib porte sur **8 trajectoires** (p=0,006 sur n=8) — significative mais étroite ; (2) les deux scénarios NLL sont **construits** (A/B synthétiques), pas des substrats ICT réels — le raccord au reste de la série n'est pas mesuré ; (3) 3 exos silencieux. |
 | Verdict | **SOLIDE** — la paire de contrôles est le geste fort : MDL validé **et** falsifié au bon endroit (scénario sans structure → k0, 0 bit gagné), proxy corrélé à un instrument indépendant, bosse tracée avec son pic chiffré. Banc MDL honnête et complet. |
+
+### `ICT-17-EpsilonMachine` — 28 cellules (17 md, 11 code, 11/11 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| Intention | #5100 (strate 5) : **troisième jambe computationnelle** — l'ε-machine de Crutchfield (U-algorithme, partition en états causaux) répond à « quelle mémoire minimale pour prédire ce processus ? ». C_μ (complexité statistique) et E (information multi-mutuelle passé/futur, **plafond théorique**) ; raccord explicite aux substrats ICT-2 (S1), ICT-10/12 (S2), ICT-13 (S3). |
+| Contenu réel | U-algorithme réel (partition états causaux) ; contrôle de synchronisation (séquence cyclique 0,1,2 : 88 histoires → **3 états causaux**, correct) ; 3 substrats ICT avec n_C, C_μ, E ; C_μ **mobile** sur fenêtres (r=0,50→0,55+, 46 fenêtres) ; **Gate 8 Crutchfield vs Hoel** (VI normalisée + métrique complémentaire agree/n_used, note C198 sur les granularités) ; **Gate 9** : tous les I(estimateur ; futur) ≤ E, testé avec un estimateur plug-in **et** un estimateur uniforme dégénéré ; 3 exos silencieux (sweep history_len · sweep tolérance · 3 conditions initiales S3). |
+| Résultat | S1 : 2 états, C_μ 0,9709, E 0,9562 · S2 : 8 états, C_μ 1,5540, E 0,5458 · S3 : 8 états (règle 110, distribution 1946/54). **Gate 9 PASSED** : E 0,5458 (plafond), I plug-in 0,5230, **I uniforme 0,0018** — écarts au plafond 0,0229 vs 0,5441 (l'estimateur dégénéré est bien écrasé sous le plafond). Gate 8 : VI_norm = 1,000 sur les 3 substrats (différence de granularité), agree/n_used 0,600/0,681/**0,009** — documenté « HONNÊTE » plutôt que maquillé. |
+| Critique | (1) Le ratio S3 agree/n_used = 0,009 (18 accord / 1 980 désaccord) est extrême et renvoyé à la seule note de granularité (C198) — le cas S3 méritait un diagnostic propre. (2) Gate 9 (plafond I ≤ E) n'est vérifié que sur S2. (3) 3 exos silencieux. |
+| Verdict | **SOLIDE** — algorithme réel (pas de proxy), contrôle de synchronisation, et surtout deux gates qui testent l'instrument contre ses limites : Gate 8 déclare l'accord Crutchfield/Hoel **impossible par construction** (granularités différentes) et reporte la métrique complémentaire au lieu de l'enterrer ; Gate 9 vérifie le plafond théorique avec un bon **et** un mauvais estimateur. La jambe computationnelle est raccordée à des substrats nommés de la série. |
