@@ -14,6 +14,7 @@
   71514d576. No reformatting, no tactic modified. -/
 
 import Knots.Basic
+import Knots.ConwayPD
 
 import Mathlib.Algebra.Polynomial.Basic
 

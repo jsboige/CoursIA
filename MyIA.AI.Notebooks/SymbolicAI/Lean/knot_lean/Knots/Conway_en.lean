@@ -38,6 +38,7 @@ import Knots.Basic_en
 import Knots.Invariant_en
 import Knots.Mutation_en
 import Knots.ConwayPD_en
+import Knots.ArcPartition_en
 
 import Mathlib.Algebra.Polynomial.Basic
 import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
@@ -80,8 +81,6 @@ diagram: the minor without the first row and without the last column.
 -- Theorems `alexander_unknot`, `alexander_trefoil`, `det_two_aux`,
 -- `det_three_aux` (l.987+) stay here in Conway_en.lean because they consume
 -- the polynomial minor, not `arcPartition`.
-
-import Knots.ArcPartition_en
 
 /-- Type of Alexander polynomial values: ℤ[t]. -/
 abbrev AlexanderPoly := Polynomial ℤ

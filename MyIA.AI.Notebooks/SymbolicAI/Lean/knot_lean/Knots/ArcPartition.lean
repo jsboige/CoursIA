@@ -14,6 +14,7 @@
   origin/main 71514d576. Aucun reformatage, aucune tactique modifiée. -/
 
 import Knots.Basic
+import Knots.ConwayPD
 
 import Mathlib.Algebra.Polynomial.Basic
 
