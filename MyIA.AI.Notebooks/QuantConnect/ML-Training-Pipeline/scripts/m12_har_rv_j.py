@@ -65,6 +65,7 @@ from realized_variance import (  # noqa: E402
     har_lag_features,
     realized_variance_to_log,
 )
+import strategy_metrics  # noqa: E402
 
 CLUSTER_ASSETS = (
     "BTC-USD", "ETH-USD", "SOL-USD", "LTC-USD", "XRP-USD", "ADA-USD", "DOT-USD",
@@ -355,11 +356,13 @@ def walk_forward_har_rv_j(
 # ── Evaluation helpers ───────────────────────────────────────────────────────
 
 def _sharpe_ann(returns: np.ndarray) -> float:
-    if len(returns) < 10:
+    """Annualized Sharpe (``strategy_metrics.sharpe``: ddof=1, risk-free 0, 365 days).
+
+    Returns nan for fewer than 10 returns or a standard deviation <= 1e-12.
+    """
+    if len(returns) < 10 or float(np.std(returns, ddof=1)) <= 1e-12:
         return float("nan")
-    mu = float(np.mean(returns))
-    sigma = float(np.std(returns, ddof=1))
-    return (mu / sigma) * np.sqrt(365) if sigma > 1e-12 else float("nan")
+    return float(strategy_metrics.sharpe(returns, periods_per_year=365))
 
 
 def _fold_summaries(fold_results: list[dict]) -> list[dict]:
