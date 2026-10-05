@@ -240,11 +240,15 @@ def diff_kernel(base_info, head_info):
 #     (cas fondateur de #19181, PR #19163 : 3.10.11 -> 3.13.3).
 #     Le saut ``3.12 -> 3.13`` est couvert : ICT-47 (PainAxisDistillation)
 #     sur main est a ``language_info.version = 3.12.13`` (mesure directe
-#     sur le carnet, 2026-10-05), et la flotte le rejeu en 3.13 --
-#     sans cette entree, le carnet rougirait systematiquement. Le saut
-#     ``3.11 -> 3.12`` reste lui aussi implicite (3.12 = release
-#     courante de plusieurs carnets), mais n'est pas ajoute en
-#     l'absence d'un carnet de reference qui le pratique.
+#     sur le carnet, 2026-10-05), mais son kernelspec est ``py310-gpu``
+#     (distinct de ``python3``), donc le tuple ``("python3", "3.12", "3.13")``
+#     ne s'applique pas a ce carnet -- la table exige le meme nom de
+#     kernel entre base et tete. L'entree anticipe la convergence vers
+#     le canon pour un futur carnet ``python3`` a 3.12.x ; aucun carnet
+#     de cette forme n'est encore mesuré sur main. Le saut
+#     ``3.11 -> 3.12`` reste implicite (3.12 = release courante de
+#     plusieurs carnets), mais n'est pas ajoute en l'absence d'un carnet
+#     de reference ``python3`` qui le pratique.
 #     Les sauts ``3.8 -> 3.13`` et ``3.9 -> 3.13`` sont **exclus** : la
 #     serie ICT (#5635, ICT-24) reste sur ``requires-python >=3.9,<3.10``
 #     (contrainte ``pyphi==1.2.0``, mesure #19160), et le cliquet n'a
@@ -265,7 +269,7 @@ CANONICAL_LANGUAGE_TRANSITIONS = {
     ("python3", "3.10", "3.13"):
         "Python 3.10 -> 3.13 : convergence directe vers le canon d'execution 3.13 (#19181, cas fondateur)",
     ("python3", "3.12", "3.13"):
-        "Python 3.12 -> 3.13 : convergence vers le canon d'execution 3.13 (#19181, ICT-47 a 3.12.13 sur main)",
+        "Python 3.12 -> 3.13 : convergence vers le canon d'execution 3.13 (#19181, anticipation -- pas de carnet `python3` a 3.12 mesure)",
 }
 
 

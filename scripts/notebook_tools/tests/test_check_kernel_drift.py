@@ -327,9 +327,12 @@ def test_canonical_transition_kernelspec_change_refused():
 #   - canon de l'execution locale des carnets = Python 3.13 (l'interpreteur
 #     de la flotte qui ecrit ``language_info.version`` a chaque rejeu).
 # Transitions acceptees en direction du canon : 3.10 -> 3.11 (historique
-# QC Cloud), 3.11 -> 3.13 (convergence locale), et sauts directs
-# 3.8/3.9/3.10 -> 3.13 (cas fondateur de #19181, PR #19163 : 3.10.11 ->
-# 3.13.3). La direction inverse reste rouge.
+# QC Cloud), 3.11 -> 3.13 (convergence locale), 3.10 -> 3.13 (cas
+# fondateur de #19181, PR #19163 : 3.10.11 -> 3.13.3), et 3.12 -> 3.13
+# (anticipation de convergence ; ICT-47 sur main est a `py310-gpu`
+# 3.12.13, kernelspec distinct de `python3`, donc hors scope de ce
+# tuple -- l'entree anticipe un futur carnet `python3` a 3.12). La
+# direction inverse reste rouge.
 
 
 def test_canonical_transition_python_311_to_313_accepted():
